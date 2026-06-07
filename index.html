@@ -63,6 +63,7 @@
   .btn.blue{background:var(--blue);color:#fff;}
   .btn.ghost{background:var(--white);}
   .btn:disabled{opacity:.4;filter:grayscale(.4);box-shadow:none;cursor:not-allowed;}
+  .btn.small{width:auto;font-size:12px;letter-spacing:.5px;padding:8px 16px;border-radius:10px;box-shadow:2px 2px 0 var(--ink);}
 
   .pill{
     display:inline-block;border:2.5px solid var(--ink);border-radius:999px;
@@ -257,23 +258,26 @@
 
   .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;transition:opacity .18s ease;}
   .pcard{
+    position:relative;
     border:2.5px solid var(--ink);border-radius:10px;background:var(--white);
     padding:7px 8px;box-shadow:2px 2px 0 var(--ink);transition:transform .1s ease, box-shadow .1s ease;
     text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:2px;
+    min-height:72px;            /* uniform box height across all cards */
   }
   .pcard:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--ink);}
   .pcard:disabled{opacity:.34;filter:grayscale(.7);box-shadow:none;}
   .pcard.taken{opacity:.5;filter:grayscale(.55);}
-  .drafted-tag{display:inline-block;margin-top:4px;font-weight:900;font-size:9px;letter-spacing:.5px;
+  .drafted-tag{position:absolute;right:8px;bottom:6px;font-weight:900;font-size:9px;letter-spacing:.5px;
     text-transform:uppercase;color:#fff;background:var(--teal);border-radius:5px;padding:2px 6px;}
   .pcard .ptop{display:flex;justify-content:space-between;align-items:center;gap:6px;}
   .pcard .nm{font-weight:900;font-size:12px;line-height:1.02;}
-  .capbadge{display:inline-block;margin-left:3px;color:var(--gold);font-size:11px;
+  .capbadge{display:inline-block;margin-right:3px;color:var(--gold);font-size:11px;
     vertical-align:1px;text-shadow:0 0 1px var(--ink),0 0 1px var(--ink);}
   .awardbadge{display:inline-block;background:var(--gold);color:var(--ink);
     font-weight:900;font-size:9px;letter-spacing:.2px;padding:2px 6px;border-radius:999px;
     border:1.5px solid var(--ink);line-height:1.2;white-space:nowrap;}
-  .pcard .awards{margin-top:4px;display:flex;flex-wrap:wrap;gap:4px;}
+  .pcard .awards{position:absolute;right:8px;bottom:6px;margin:0;display:flex;flex-wrap:wrap;
+    justify-content:flex-end;gap:4px;max-width:60%;}
   .flip-back .awards{margin-top:2px;display:flex;flex-wrap:wrap;gap:2px;justify-content:center;}
   .flip-back .awardbadge{font-size:6.5px;padding:1px 4px;border-width:1px;}
   .pcard .posbadge{font-weight:900;font-size:9px;letter-spacing:.5px;color:#fff;background:var(--blue);
@@ -557,10 +561,10 @@
   .pen-board{margin:8px 0 4px;display:flex;flex-direction:column;gap:8px;}
   .pen-row{display:flex;align-items:center;gap:8px;}
   .pen-row .pen-team{font-weight:900;font-size:12px;letter-spacing:.3px;
-    flex:0 0 auto;max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    flex:0 0 44%;width:44%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
     display:inline-flex;align-items:center;gap:5px;}
   .pen-row .pen-score{font-family:'Anton',Impact,sans-serif;font-size:18px;line-height:1;
-    min-width:18px;text-align:center;color:var(--ink);}
+    flex:0 0 auto;width:20px;text-align:center;color:var(--ink);}
   .pen-dots-row{display:flex;gap:5px;align-items:center;}
   .pen-dots-row .pen-dot{width:auto;height:auto;border:none;background:none;border-radius:0;
     font-size:17px;line-height:1;animation:penPop .2s ease-out both;}
@@ -673,6 +677,8 @@
     transition:opacity .4s ease, transform .4s cubic-bezier(.3,1.4,.5,1);margin-top:6px;}
   .reveal-team.show{opacity:1;transform:none;}
   .reveal-team-num{font-family:'Anton',Impact,sans-serif;font-size:72px;line-height:.9;color:var(--gold);}
+  .reveal-team-num.red{color:var(--red);} .reveal-team-num.orange{color:var(--orange);}
+  .reveal-team-num.gold{color:var(--gold);} .reveal-team-num.green{color:#4ade80;}
   .reveal-team-label{font-weight:900;font-size:13px;letter-spacing:3px;color:#fff;}
   .reveal-go{width:100%;max-width:460px;opacity:0;transition:opacity .4s ease;}
   .reveal-go.show{opacity:1;}
@@ -726,6 +732,57 @@
   .res-rank{display:inline-flex;align-items:center;gap:6px;margin:0 0 8px;
     font-weight:900;font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:#5a5048;}
   .res-rank b{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:16px;color:var(--ink);}
+  .res-rank.clickable{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;}
+
+  /* ---------- Top 10 leaderboard popup ---------- */
+  .lb-bg{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;
+    padding:18px;background:rgba(0,0,0,.6);}
+  .lb-bg.show{display:flex;animation:fade .2s ease;}
+  .lb-card{position:relative;background:var(--ink);color:#fff;border:3px solid var(--ink);
+    border-radius:18px;box-shadow:var(--shadow);width:100%;max-width:460px;max-height:88vh;
+    overflow-y:auto;padding:22px 18px;}
+  .lb-title{font-family:'Anton',Impact,sans-serif;font-size:26px;text-align:center;margin:0 0 14px;color:var(--gold);}
+  .lb-row{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid rgba(255,255,255,.1);}
+  .lb-row:last-child{border-bottom:none;}
+  .lb-rank{flex:0 0 26px;font-family:'Anton',Impact,sans-serif;font-size:20px;text-align:center;color:#fff;opacity:.85;}
+  .lb-name{flex:1 1 auto;min-width:0;font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lb-meta{flex:0 0 auto;font-size:11px;font-weight:800;opacity:.7;}
+  .lb-ov{flex:0 0 auto;font-family:'Anton',Impact,sans-serif;font-size:20px;min-width:30px;text-align:right;}
+  .lb-ov.red{color:var(--red);} .lb-ov.orange{color:var(--orange);} .lb-ov.gold{color:var(--gold);} .lb-ov.green{color:#4ade80;}
+  .lb-row.you{background:rgba(244,180,19,.16);border-radius:10px;border-bottom-color:transparent;}
+  .lb-empty{text-align:center;opacity:.7;font-weight:600;padding:20px 0;}
+  .lb-prompt{background:rgba(244,180,19,.14);border:2px solid var(--gold);border-radius:12px;
+    padding:14px;margin-bottom:14px;text-align:center;font-weight:800;font-size:14px;line-height:1.4;}
+  .lb-prompt input{width:100%;margin-top:10px;padding:11px 12px;border-radius:9px;border:2px solid var(--ink);
+    font-family:inherit;font-weight:700;font-size:15px;color:var(--ink);}
+  .lb-prompt .btn{margin-top:10px;}
+  /* flag picker grid */
+  .flag-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(46px,1fr));gap:8px;
+    max-height:240px;overflow-y:auto;margin-top:12px;padding:8px;border-radius:10px;
+    background:rgba(0,0,0,.25);-webkit-overflow-scrolling:touch;}
+  .flag-opt{padding:0;aspect-ratio:3/2;border:2px solid transparent;border-radius:6px;background:none;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .08s ease;}
+  .flag-opt:hover{border-color:var(--gold);}
+  .flag-opt:active{transform:scale(.92);}
+  .flag-opt .flag-ico{width:100%;height:100%;border-radius:4px;}
+
+  /* ---------- share targets popup ---------- */
+  .share-bg{position:fixed;inset:0;z-index:85;display:none;align-items:flex-end;justify-content:center;
+    background:rgba(22,18,15,.55);}
+  .share-bg.show{display:flex;animation:fade .2s ease;}
+  .share-sheet{background:var(--white);border:3px solid var(--ink);border-radius:22px 22px 0 0;
+    width:100%;max-width:560px;padding:14px 0 calc(14px + env(safe-area-inset-bottom));box-shadow:0 -6px 0 var(--ink);}
+  /* one horizontal, scrollable line of options */
+  .share-row{display:flex;flex-wrap:nowrap;gap:14px;overflow-x:auto;padding:2px 16px 6px;
+    -webkit-overflow-scrolling:touch;scrollbar-width:none;}
+  .share-row::-webkit-scrollbar{display:none;}
+  .share-opt{flex:0 0 auto;width:62px;display:flex;flex-direction:column;align-items:center;gap:6px;
+    border:none;background:none;padding:2px 0;font-weight:800;font-size:10px;letter-spacing:.2px;
+    text-align:center;color:var(--ink);cursor:pointer;}
+  .share-opt:active{transform:scale(.92);}
+  .share-opt .ico{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:var(--paper);border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);}
+  .share-opt .ico svg{display:block;width:28px;height:28px;}
   .res-message{font-weight:700;font-size:14px;line-height:1.45;margin:12px auto 0;max-width:340px;color:var(--ink);}
   .res-section{font-weight:900;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#8a7d70;margin:18px 0 8px;}
   .res-recap-row,.res-squad-row{display:flex;align-items:center;gap:10px;border:2px solid var(--ink);border-radius:12px;
@@ -956,7 +1013,7 @@
         <path class="trophy-glint" d="M25 5.5 C 22 10.5 22 18.5 26 23.5 C 23 17.5 23 10.5 27 5.5 Z" fill="#fff" opacity="0"/>
       </svg></div>
       <h1 class="display">Spin. Pick. Conquer.</h1>
-      <p>Draft a legend each round. Build your dream VI.</p>
+      <p>Build your dream VI.</p>
       <div class="rules">
         <div class="rule"><span class="n">1</span><span>Spin a random nation &amp; year.</span></div>
         <div class="rule"><span class="n">2</span><span>Draft a player to fill your VI: GK · DEF · DEF · MID · FWD · FLEX.</span></div>
@@ -987,8 +1044,8 @@
         <span class="mc-check">✓</span>
         <div class="mc-label">Hard Mode</div>
         <div class="mc-icon">🧠</div>
-        <div class="mc-headline">Stats Only</div>
-        <div class="mc-desc">Overall ratings are hidden. Pick players based on their stats alone. True World Cup knowledge required.</div>
+        <div class="mc-headline">Names Only</div>
+        <div class="mc-desc">Ratings are hidden. Test your ball knowledge!</div>
       </button>
     </div>
     <div class="stack" style="margin-top:20px;">
@@ -1158,6 +1215,23 @@
   <div class="profile-card">
     <button class="profile-close" id="profile-close" aria-label="Close">✕</button>
     <div id="profile-content"></div>
+  </div>
+</div>
+
+<!-- ===== Top 10 leaderboard popup ===== -->
+<div class="lb-bg" id="lb-bg">
+  <div class="lb-card">
+    <button class="profile-close" id="lb-close" aria-label="Close">✕</button>
+    <div class="lb-title">🏅 Top 10 Drafts</div>
+    <div id="lb-name-prompt" style="display:none"></div>
+    <div id="lb-list"></div>
+  </div>
+</div>
+
+<!-- ===== share targets popup (single scrollable row at the bottom) ===== -->
+<div class="share-bg" id="share-bg">
+  <div class="share-sheet">
+    <div class="share-row" id="share-grid"></div>
   </div>
 </div>
 
@@ -1747,9 +1821,20 @@ const TOURNAMENT_RESULTS = {
   round16:      { label:'Round of 16',      cls:''          },
   group:        { label:'Group stage',      cls:''          },
 };
+// Selection-page badge labels — phrased to describe THE TEAM's finish
+// (e.g. "Quarter-finalist" rather than "Quarter-finals").
+const FINISH_LABELS = {
+  champion:     { label:'🏆 Champion',        cls:'champion'  },
+  runner_up:    { label:'🥈 Runner-up',       cls:'runner_up' },
+  third:        { label:'🥉 Third place',      cls:'third'     },
+  fourth:       { label:'Fourth place',        cls:''          },
+  quarterfinal: { label:'Quarter-finalist',    cls:''          },
+  round16:      { label:'Round of 16',         cls:''          },
+  group:        { label:'Group stage',         cls:''          },
+};
 function tournamentFinish(squad){
   const p = squad.find(x=>x.tournament_result!=null);
-  return p ? (TOURNAMENT_RESULTS[p.tournament_result] || null) : null;
+  return p ? (FINISH_LABELS[p.tournament_result] || null) : null;
 }
 
 function paintSquad(){
@@ -1803,19 +1888,9 @@ function statLine(p){
 }
 
 // Mode-dependent body of a player card.
-// EASY: position-coloured OVR, no other stats.
-// HARD: stats only (goals, perf, skill, caps), no OVR.
+// EASY: position-coloured OVR. HARD: nothing — no OVR and no stats (blind pick).
 function cardStatBlock(p){
-  const has = v => v!==null && v!==undefined;
-  if(gameMode==='hard'){
-    const main=[];
-    main.push(`${has(p.goals)?p.goals:'—'} Goals`);          // tournament goals (always shown)
-    if(has(p.wc_performance)) main.push(`Perf ${p.wc_performance}`);
-    if(has(p.skill_rating))   main.push(`Skill ${p.skill_rating}`);
-    let out=`<div class="statline">${main.join(' · ')}</div>`;
-    out+=`<div class="statline caps">${has(p.appearances)?p.appearances:'—'} Caps</div>`; // career caps, last + muted
-    return out;
-  }
+  if(gameMode==='hard') return '';
   // easy mode (default)
   const ov = p.wc_overall ?? p.overall ?? '—';
   return `<div class="ovr ${p.position}">${ov}<small>OVR</small></div>`;
@@ -1844,7 +1919,7 @@ function renderGrid(squad){
     btn.disabled = elig.length===0 || taken; // grey out & block re-picking
     btn.innerHTML=`
       <div class="ptop">
-        <span class="nm">${p.name}${p.is_captain?'<span class="capbadge" title="Captain">★</span>':''}</span>
+        <span class="nm">${p.is_captain?'<span class="capbadge" title="Captain">★</span>':''}${p.name}</span>
         <span class="posbadge ${p.position}">${p.position}</span>
       </div>
       ${cardStatBlock(p)}
@@ -1918,12 +1993,22 @@ function slotBadgeStyle(slot, player){
   return `background:${c};color:${txt}`;
 }
 // count a number up to target over dur ms
-function countUp(el, target, dur){
+// Set the tier colour class (red/orange/gold/green) on an element for value v.
+function applyTierClass(el, v){
+  if(!el) return;
+  el.classList.remove('red','orange','gold','green');
+  el.classList.add(ovTier(v));
+}
+// Count a number up to target. If colorEl is given, its tier colour updates live
+// on every tick, so the colour shifts as the value crosses each threshold.
+function countUp(el, target, dur, colorEl){
   const start=Date.now();
   const iv=setInterval(()=>{
     const t=Math.min(1,(Date.now()-start)/dur);
-    el.textContent=Math.round(target*t);
-    if(t>=1){ el.textContent=target; clearInterval(iv); }
+    const v=Math.round(target*t);
+    el.textContent=v;
+    applyTierClass(colorEl, v);
+    if(t>=1){ el.textContent=target; applyTierClass(colorEl, target); clearInterval(iv); }
   },22);
 }
 
@@ -1933,14 +2018,14 @@ function countUp(el, target, dur){
 // Overall-rating tier colour, shared by the reveal overlay and the results
 // squad list. red ≤70, orange 71–80, gold 81–90, green 91+ (the top tier is
 // green so the best players stand out brightest).
-function ovTier(o){ return o>90?'green':o>80?'gold':o>70?'orange':'red'; }
+function ovTier(o){ return o>=90?'green':o>=80?'gold':o>=70?'orange':'red'; }
 
 function runRevealOverlay(){
   const ov=$('reveal-overlay'), stack=$('reveal-stack');
   const team=$('reveal-team'), go=$('btn-reveal-go');
   stack.innerHTML='';
   team.classList.remove('show'); team.style.display='none';
-  $('reveal-team-num').textContent='0';
+  $('reveal-team-num').textContent='0'; applyTierClass($('reveal-team-num'), 0);
   go.classList.remove('show'); go.style.display='none'; go.disabled=false;
 
   const picks=orderPicksForDisplay(gs.result.scoredPicks, ['GK','DEF','DEF','MID','FWD','FLEX']);
@@ -1949,7 +2034,7 @@ function runRevealOverlay(){
     const row=document.createElement('div'); row.className='rv-entry';
     row.innerHTML=`<span class="rv-badge" style="${slotBadgeStyle(pick.slot,p)}">${pick.slot}</span>
       <span class="rv-name">${p.name}</span>
-      <span class="rv-right"><span class="rv-ov ${ovTier(p.overall)}"><span class="rv-ov-num" data-ov="${p.overall}">0</span><small>OVR</small></span></span>`;
+      <span class="rv-right"><span class="rv-ov red"><span class="rv-ov-num" data-ov="${p.overall}">0</span><small>OVR</small></span></span>`;
     stack.appendChild(row);
   });
 
@@ -1959,7 +2044,7 @@ function runRevealOverlay(){
     setTimeout(()=>{
       row.classList.add('show');
       const ovEl=row.querySelector('.rv-ov-num');
-      countUp(ovEl, +ovEl.dataset.ov, 400);  // count up over 0.4s
+      countUp(ovEl, +ovEl.dataset.ov, 400, row.querySelector('.rv-ov')); // colour shifts as it counts
     }, 300 + i*350);                          // 0.35s apart
   });
 
@@ -1967,7 +2052,7 @@ function runRevealOverlay(){
   setTimeout(()=>{
     team.style.display='';
     setTimeout(()=>team.classList.add('show'), 20);
-    countUp($('reveal-team-num'), gs.result.teamOverall, 700);
+    countUp($('reveal-team-num'), gs.result.teamOverall, 700, $('reveal-team-num'));
   }, afterAll);
   setTimeout(()=>{
     go.style.display='';
@@ -2010,6 +2095,211 @@ function recordDraftRank(overall, progress){
   return { rank: better+1, total };
 }
 
+// ---------- global leaderboard (Supabase) ----------
+// Paste your Supabase project URL and PUBLIC anon key below. The anon key is
+// safe to ship in client code: anon can only SELECT the table. All writes go
+// through SECURITY DEFINER functions — submit_draft() inserts (clamping values)
+// and set_draft_name() names a freshly-created, still-unnamed row once. anon has
+// no direct INSERT/UPDATE/DELETE. Until these are filled in, the game falls back
+// to the per-device board above.
+const SUPABASE_URL      = 'https://jcrrxqfpdelrmvjuihnm.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
+const SUPABASE_READY = /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(SUPABASE_URL)
+  && SUPABASE_ANON_KEY && SUPABASE_ANON_KEY.indexOf('YOUR-')!==0;
+
+function sbHeaders(extra){
+  return Object.assign({
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer '+SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json'
+  }, extra||{});
+}
+function sbCount(res){
+  // PostgREST returns "<range>/<total>" in Content-Range when Prefer: count=exact
+  const cr = res.headers.get('content-range') || '/0';
+  return parseInt(cr.split('/')[1], 10) || 0;
+}
+
+// Insert this draft into the global table, then rank it among ALL drafts.
+// Ranking matches the local rule: higher overall, ties broken by further progress.
+async function submitGlobalRank(overall, progress, meta){
+  // Insert via the submit_draft() function (validates/clamps the values).
+  // anon has no direct INSERT on the table — only this function can write.
+  const ins = await fetch(`${SUPABASE_URL}/rest/v1/rpc/submit_draft`, {
+    method:'POST', headers: sbHeaders(),
+    body: JSON.stringify({
+      p_overall: overall, p_progress: progress,
+      p_mode: (meta && meta.mode) || null,
+      p_result: (meta && meta.result) || null,
+      p_furthest: (meta && meta.furthest) || null
+    })
+  });
+  if(!ins.ok) throw new Error('leaderboard submit failed: '+ins.status);
+  const id = await ins.json().catch(()=>null); // submit_draft() returns the new row id
+
+  const totalRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1`, {
+    headers: sbHeaders({ 'Prefer':'count=exact' })
+  });
+  const total = sbCount(totalRes);
+
+  const orFilter = encodeURIComponent(`(overall.gt.${overall},and(overall.eq.${overall},progress.gt.${progress}))`);
+  const betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}`, {
+    headers: sbHeaders({ 'Prefer':'count=exact' })
+  });
+  const better = sbCount(betterRes);
+
+  return { rank: better+1, total, id };
+}
+
+// ---------- Top 10 leaderboard popup ----------
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// Short round/result tag for a leaderboard row.
+function lbMetaLabel(row){
+  if(/winner|champion/i.test(row.result||'')) return '🏆';
+  const map={'Final':'Final','Semi-final':'SF','Quarter-final':'QF','Round of 16':'R16','Group Stage':'Grp'};
+  return map[row.furthest] || '';
+}
+
+async function fetchTopDrafts(limit){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,flag,overall,progress,result,furthest&order=overall.desc,progress.desc,created_at.asc&limit=${limit}`, {
+    headers: sbHeaders()
+  });
+  if(!res.ok) throw new Error('leaderboard fetch failed: '+res.status);
+  return res.json();
+}
+
+function renderLeaderboardRows(rows, highlightId){
+  const list=$('lb-list');
+  if(!rows.length){ list.innerHTML='<div class="lb-empty">No drafts yet — be the first on the board!</div>'; return; }
+  list.innerHTML = rows.map((row,i)=>{
+    const you = highlightId!=null && row.id===highlightId;
+    const nm  = (row.name && String(row.name).trim()) ? row.name : 'Anonymous';
+    const fl  = (row.flag && String(row.flag).trim()) ? flagChip(row.flag) : '';
+    return `<div class="lb-row${you?' you':''}">
+      <span class="lb-rank">${i+1}</span>
+      <span class="lb-name">${fl?fl+' ':''}${escapeHtml(nm)}</span>
+      <span class="lb-meta">${lbMetaLabel(row)}</span>
+      <span class="lb-ov ${ovTier(row.overall)}">${row.overall}</span>
+    </div>`;
+  }).join('');
+}
+
+async function refreshLeaderboardList(highlightId){
+  const list=$('lb-list');
+  list.innerHTML='<div class="lb-empty">Loading…</div>';
+  try{
+    let rows;
+    if(SUPABASE_READY){
+      rows = await fetchTopDrafts(10);
+    }else{
+      // not connected yet → preview this device's best drafts (no names)
+      rows = loadLeaderboard().sort((a,b)=> b.overall-a.overall || b.progress-a.progress)
+        .slice(0,10).map(e=>({ id:null, name:'You (this device)', overall:e.overall, progress:e.progress }));
+    }
+    renderLeaderboardRows(rows, highlightId);
+  }catch(e){
+    list.innerHTML='<div class="lb-empty">Couldn’t load the leaderboard. Try again.</div>';
+  }
+}
+
+function openLeaderboard(highlightId, promptName){
+  const pr=$('lb-name-prompt');
+  if(promptName && SUPABASE_READY && gs && gs.result && gs.result._lbId){
+    pr.style.display='';
+    pr.innerHTML=`<div class="lb-prompt">
+        🎉 You cracked the Top 10!<br>Enter your name for the board:
+        <input id="lb-name-input" maxlength="20" placeholder="Your name" autocomplete="off" />
+        <button class="btn gold" id="lb-name-save">Next: Pick Your Flag →</button>
+      </div>`;
+    $('lb-name-save').addEventListener('click', showFlagPicker);
+    const i0=$('lb-name-input');
+    if(i0){ i0.addEventListener('keydown',e=>{ if(e.key==='Enter') showFlagPicker(); }); setTimeout(()=>i0.focus(),60); }
+  }else{
+    pr.style.display='none'; pr.innerHTML='';
+  }
+  $('lb-bg').classList.add('show');
+  refreshLeaderboardList(highlightId);
+}
+function closeLeaderboard(){ $('lb-bg').classList.remove('show'); }
+
+let pendingLbName='';
+
+// Nations offered in the flag picker (modern flagcdn list + defunct inline SVGs).
+function lbFlagCountries(){
+  const set=new Set(Object.keys(FLAG_CODES).filter(c=>c!=='USA'));
+  Object.keys(FLAG_SVG).forEach(c=>set.add(c));
+  return [...set].sort();
+}
+
+// Step 2: after the name, show a scrollable grid of flags to pick from.
+function showFlagPicker(){
+  const inp=$('lb-name-input');
+  pendingLbName=((inp&&inp.value)||'').trim().slice(0,20) || 'Anonymous';
+  const pr=$('lb-name-prompt');
+  const opts=lbFlagCountries().map(c=>{
+    const url=flagImg(c,80);
+    return `<button class="flag-opt" data-flag="${escapeHtml(c)}" title="${escapeHtml(c)}">
+      <span class="flag-ico${url?'':' flag-none'}"${url?` style="background-image:url('${url}')"`:''}></span></button>`;
+  }).join('');
+  pr.innerHTML=`<div class="lb-prompt">
+      Pick your flag, <b>${escapeHtml(pendingLbName)}</b>:
+      <div class="flag-grid" id="lb-flag-grid">${opts}</div>
+      <button class="btn ghost small" id="lb-skip-flag" style="margin-top:10px;">Skip — no flag</button>
+    </div>`;
+  pr.querySelectorAll('.flag-opt').forEach(b=>b.addEventListener('click',()=>commitLeaderboardEntry(b.dataset.flag)));
+  $('lb-skip-flag').addEventListener('click',()=>commitLeaderboardEntry(''));
+}
+
+// Commit name + chosen flag via the secured function, then refresh the board.
+async function commitLeaderboardEntry(flag){
+  const id=gs.result._lbId;
+  const name=pendingLbName || 'Anonymous';
+  if(SUPABASE_READY && id!=null){
+    try{
+      // set_draft_entry() only names a freshly-created, still-unnamed row.
+      await fetch(`${SUPABASE_URL}/rest/v1/rpc/set_draft_entry`, {
+        method:'POST', headers: sbHeaders({ 'Prefer':'return=minimal' }),
+        body: JSON.stringify({ p_id: id, p_name: name, p_flag: flag || '' })
+      });
+    }catch(e){ /* leave the row name-less if the call fails */ }
+  }
+  $('lb-name-prompt').style.display='none';
+  $('lb-name-prompt').innerHTML='';
+  refreshLeaderboardList(id);
+}
+
+// Fill the rank line on the results page. Records the draft once (guarded), using
+// the global Supabase board when configured and reachable, else the local board.
+async function fillRankBadge(overall, progress){
+  const el = $('res-rank-line'); if(!el) return;
+  if(gs.result._lb){ // already computed (e.g. re-render) — just show it
+    el.innerHTML = `🏅 This draft ranks <b>${gs.result._lb.rank}</b> of <b>${gs.result._lb.total}</b> drafts`;
+    return;
+  }
+  if(gs.result._lbStarted) return; // a submission is already in flight
+  gs.result._lbStarted = true;
+
+  if(SUPABASE_READY){
+    try{
+      const lb = await submitGlobalRank(overall, progress, {
+        mode: gameMode || 'easy',
+        result: gs.result.resultLabel || '',
+        furthest: (simResult && simResult.furthestRound) || ''
+      });
+      gs.result._lb = lb;
+      gs.result._lbId = lb.id;
+      el.innerHTML = `🏅 This draft ranks <b>${lb.rank}</b> of <b>${lb.total}</b> drafts`;
+      // qualified for the Top 10 → prompt for a name on the leaderboard popup
+      if(lb.rank<=10) setTimeout(()=>openLeaderboard(lb.id, true), 700);
+      return;
+    }catch(e){ /* network/config issue → fall back to local board */ }
+  }
+  const lb = recordDraftRank(overall, progress);
+  gs.result._lb = lb;
+  el.innerHTML = `🏅 This draft ranks <b>${lb.rank}</b> of <b>${lb.total}</b> drafts`;
+}
+
 function goToResults(){
   const r=gs.result, sim=simResult;
   const oc=simOutcome(sim);
@@ -2021,20 +2311,21 @@ function goToResults(){
     'Quarter-final':'Quarter-finals','Semi-final':'Semi-finals','Final':'Final'};
   const champ = sim && !sim.eliminated && sim.furthestRound==='Final';
 
-  // record this draft once and rank it among all drafts played on this device.
-  // Tiebreaker = how far the team advanced (0=group … 4=lost final, 5=champion).
+  // tournament progress for ranking — how far the team advanced
+  // (0=group … 4=lost final, 5=champion).
   const ROUND_PROGRESS={'Group Stage':0,'Round of 16':1,'Quarter-final':2,'Semi-final':3,'Final':4};
   const progress = champ ? 5 : (sim ? (ROUND_PROGRESS[sim.furthestRound] ?? 0) : 0);
-  if(!gs.result._lb) gs.result._lb = recordDraftRank(r.teamOverall, progress);
-  const lb = gs.result._lb;
   const roundName = sim ? (ROUND_DISPLAY[sim.furthestRound]||sim.furthestRound) : oc.label;
 
   const modeBadge = gameMode==='hard'
     ? `<div class="center" style="margin:0 0 8px;"><span class="mode-pill hard">Played on Hard Mode ⚡</span></div>`
     : `<div class="center" style="margin:0 0 8px;"><span class="mode-pill easy">Played on Easy Mode</span></div>`;
 
-  const rankBadge = `<div class="center" style="margin:0 0 8px;">
-    <span class="res-rank">🏅 This draft ranks <b>${lb.rank}</b> of <b>${lb.total}</b> drafts</span></div>`;
+  // filled in asynchronously by fillRankBadge (global Supabase board, local fallback)
+  const rankBadge = `<div class="center" style="margin:0 0 4px;">
+      <span class="res-rank" id="res-rank-line">🏅 Ranking this draft…</span></div>
+    <div class="center" style="margin:0 0 8px;">
+      <button class="btn ghost small" id="res-leaderboard">🏅 All-Time Top 10</button></div>`;
 
   // The black recap box (built from the same sim result) is the page centrepiece.
   let html=`<div class="results-wrap">
@@ -2063,6 +2354,8 @@ function goToResults(){
   });
   $('res-share').addEventListener('click', shareResult);
   $('res-again').addEventListener('click', newGame);
+  $('res-leaderboard').addEventListener('click', ()=>openLeaderboard(gs.result&&gs.result._lbId, false));
+  fillRankBadge(r.teamOverall, progress);   // global rank (Supabase) or local fallback
 
   showScreen('reveal');
   window.scrollTo({top:0,behavior:'smooth'});
@@ -2109,29 +2402,24 @@ function openProfile(p){
       <span class="posbadge ${p.position}" style="background:${slotColor(p.position,p)}">${p.position}</span>
     </div>`;
 
-  // career World Cup history table
+  // career World Cup history table — appearances + overall only for now
   html+=`<div class="profile-section-label">Career World Cup History</div>
     <table class="profile-table"><thead><tr>
-      <th>Year</th><th>Country</th><th>Apps</th><th>Goals</th><th>Skill</th><th>WC Perf</th><th>Overall</th>
+      <th>Year</th><th>Country</th><th>Apps</th><th>Overall</th>
     </tr></thead><tbody>`;
   all.forEach(x=>{
     const drafted = x.year===p.year && x.country===p.country;
     html+=`<tr class="${drafted?'is-drafted':''}">
       <td>${x.year}</td><td>${x.country}</td>
-      <td>${dash(x.appearances)}</td><td>${dash(x.goals)}</td>
-      <td>${dash(x.skill_rating)}</td><td>${dash(x.wc_performance)}</td>
+      <td>${dash(x.appearances)}</td>
       <td>${ovOf(x)}</td></tr>`;
   });
   html+=`</tbody></table>`;
 
-  // stats panel for the drafted year — every non-null stat we have
+  // stats panel for the drafted year — appearances + overall only (more to come)
   html+=`<div class="profile-section-label">${p.year} Tournament — Stats</div><div class="profile-stats">`;
   const statDefs=[
-    ['skill_rating','Skill'],['wc_performance','WC Perf'],['wc_overall','Overall'],
-    ['age_at_tournament','Age at tournament'],['club_at_tournament','Club'],['birth_year','Birth year'],
-    ['appearances','Apps'],['goals','Goals'],['assists','Assists'],
-    ['key_passes','Key Passes'],['tackles','Tackles'],['interceptions','Interceptions'],
-    ['clearances','Clearances'],['clean_sheets','Clean Sheets'],['pass_completion','Pass %'],
+    ['appearances','Apps'],['wc_overall','Overall'],
   ];
   statDefs.forEach(([k,label])=>{
     if(p[k]!=null) html+=`<div class="profile-stat"><div class="k">${label}</div><div class="v">${p[k]}</div></div>`;
@@ -2173,7 +2461,7 @@ function reportText(){
          + "I challenge you to do the same → RunThe.gg/pitch";
   } else if(simResult && simResult.furthestRound==='Group Stage'){
     text = "⚽ I drafted a squad on RunThePitch but couldn't escape the group stage. "
-         + "Think you can do better? Build your dream XI → RunThe.gg/pitch";
+         + "Think you can do better? Build your dream VI → RunThe.gg/pitch";
   } else {
     const reached = simResult ? (ROUND_PHRASE[simResult.furthestRound]||simResult.furthestRound) : 'the tournament';
     text = `⚽ I drafted a squad on RunThePitch and reached ${reached}. `
@@ -2189,9 +2477,12 @@ function goToReport(){
   showScreen('report');
 }
 
-// Share the result: a JPG of the black recap box + the encouraging text via the
-// native share sheet. Degrades gracefully to text-only share, then clipboard.
-async function shareResult(){
+const SHARE_URL='https://runthe.gg/pitch';
+function showToast(msg){ const t=$('toast'); if(msg) t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600); }
+
+// Native share of a JPG of the black recap box + the encouraging text (the only
+// path that can attach the image). Degrades to text-only share, then clipboard.
+async function nativeShareWithImage(){
   const text=reportText();
   const box=document.getElementById('results-summary-box');
   let file=null;
@@ -2202,19 +2493,72 @@ async function shareResult(){
       if(blob) file=new File([blob],'runthepitch.jpg',{type:'image/jpeg'});
     }catch(e){ /* snapshot failed → share text only */ }
   }
-  // 1) native share with the image (mobile Safari / Android)
   if(file && navigator.canShare && navigator.canShare({files:[file]})){
     try{ await navigator.share({ files:[file], text, title:'RunThePitch' }); return; }
     catch(e){ if(e && e.name==='AbortError') return; }
   }
-  // 2) native share, text only
   if(navigator.share){
     try{ await navigator.share({ text }); return; }
     catch(e){ if(e && e.name==='AbortError') return; }
   }
-  // 3) clipboard fallback (desktop)
-  await copyToClipboard(text);
-  const t=$('toast'); t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600);
+  await copyToClipboard(text); showToast('Copied to clipboard ✓');
+}
+
+function openShareUrl(href){ window.open(href,'_blank','noopener,noreferrer'); closeSharePopup(); }
+function closeSharePopup(){ $('share-bg').classList.remove('show'); }
+
+// Instagram has no web "post to story" URL — the supported path is the OS share
+// sheet with the image, where the user picks Instagram → Add to Story. On mobile
+// we hand the JPG to the native sheet; on desktop we explain it's a phone action.
+function shareToInstagram(){
+  closeSharePopup();
+  if(navigator.share){ nativeShareWithImage(); return; }
+  showToast('Open RunThePitch on your phone to post to your Instagram story');
+}
+
+// Inline brand/utility SVG icons for the share popup.
+const SHARE_ICONS = {
+  image:   `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#E5402A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8 7l4-4 4 4"/><path d="M6 12v6a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-6"/></svg>`,
+  instagram:`<svg viewBox="0 0 24 24" width="26" height="26"><defs><radialGradient id="igg" cx="0.3" cy="1" r="1.1"><stop offset="0" stop-color="#FED576"/><stop offset=".25" stop-color="#F47133"/><stop offset=".5" stop-color="#BC3081"/><stop offset="1" stop-color="#4C63D2"/></radialGradient></defs><rect width="24" height="24" rx="6" fill="url(#igg)"/><rect x="5" y="5" width="14" height="14" rx="4.5" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3.4" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="16.4" cy="7.6" r="1.15" fill="#fff"/></svg>`,
+  x:       `<svg viewBox="0 0 24 24" width="24" height="24"><path fill="#000" d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.66l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231zm-1.16 17.52h1.833L7.084 4.126H5.117z"/></svg>`,
+  whatsapp:`<svg viewBox="0 0 32 32" width="26" height="26"><path fill="#25D366" d="M16 .5C7.4.5.5 7.4.5 16c0 2.8.7 5.4 2 7.7L.5 31.5l8-2.1c2.2 1.2 4.8 1.9 7.5 1.9 8.6 0 15.5-6.9 15.5-15.5S24.6.5 16 .5z"/><path fill="#fff" d="M12.3 9.1c-.3-.6-.5-.6-.8-.6h-.7c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.8s1.2 3.3 1.4 3.5c.2.2 2.4 3.8 6 5.2 3 1.2 3.6 1 4.2.9.6-.1 2-.8 2.3-1.6.3-.8.3-1.5.2-1.6-.1-.1-.3-.2-.7-.4-.3-.2-2-1-2.3-1.1-.3-.1-.5-.2-.8.2-.2.3-.9 1.1-1.1 1.3-.2.2-.4.2-.7.1-.4-.2-1.5-.6-2.9-1.8-1.1-1-1.8-2.2-2-2.5-.2-.3 0-.5.1-.7.1-.1.3-.4.5-.6.1-.2.2-.3.3-.6.1-.2.1-.4 0-.6-.1-.2-.7-1.9-1-2.4z"/></svg>`,
+  telegram:`<svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="12" r="12" fill="#29A9EB"/><path fill="#fff" d="M5.5 11.7l11-4.24c.5-.18.96.12.8.9l-1.87 8.8c-.13.6-.5.74-1 .46l-2.76-2.03-1.33 1.28c-.15.15-.27.27-.55.27l.2-2.8 5.1-4.6c.22-.2-.05-.31-.34-.11l-6.3 3.96-2.71-.85c-.59-.18-.6-.59.13-.87z"/></svg>`,
+  facebook:`<svg viewBox="0 0 24 24" width="26" height="26"><path fill="#1877F2" d="M24 12a12 12 0 1 0-13.875 11.854v-8.385H7.078V12h3.047V9.356c0-3.007 1.792-4.668 4.533-4.668 1.312 0 2.686.234 2.686.234v2.953H15.83c-1.49 0-1.955.925-1.955 1.874V12h3.328l-.532 3.469h-2.796v8.385A12.002 12.002 0 0 0 24 12z"/></svg>`,
+  reddit:  `<svg viewBox="0 0 24 24" width="26" height="26"><circle cx="12" cy="12" r="12" fill="#FF4500"/><path fill="#fff" d="M20 12.2a1.76 1.76 0 0 0-2.97-1.27 6.6 6.6 0 0 0-3.5-1.1l.6-2.8 1.95.42a1.26 1.26 0 1 0 .13-.86l-2.18-.46a.36.36 0 0 0-.43.28l-.66 3.1a6.68 6.68 0 0 0-3.6 1.1 1.76 1.76 0 1 0-1.94 2.88 3.4 3.4 0 0 0-.04.54c0 2.27 2.64 4.1 5.9 4.1s5.9-1.83 5.9-4.1c0-.18-.01-.36-.04-.53.51-.32 1.25-.88 1.25-1.81zM8.1 13.46a1.05 1.05 0 1 1 2.1 0 1.05 1.05 0 0 1-2.1 0zm6.06 2.84c-.74.74-2.86.74-3.6 0a.3.3 0 0 1 .43-.42c.5.5 2.24.5 2.74 0a.3.3 0 1 1 .43.42zm-.18-1.79a1.05 1.05 0 1 1 0-2.1 1.05 1.05 0 0 1 0 2.1z"/></svg>`,
+  linkedin:`<svg viewBox="0 0 24 24" width="26" height="26"><rect width="24" height="24" rx="3" fill="#0A66C2"/><path fill="#fff" d="M7.06 9.34H4.5V19h2.56V9.34zM5.78 8.2a1.49 1.49 0 1 0 0-2.98 1.49 1.49 0 0 0 0 2.98zM19.5 19h-2.56v-4.71c0-1.12-.02-2.57-1.56-2.57-1.57 0-1.8 1.22-1.8 2.49V19h-2.56V9.34h2.46v1.32h.03c.34-.65 1.18-1.34 2.43-1.34 2.6 0 3.08 1.71 3.08 3.93V19z"/></svg>`,
+  sms:     `<svg viewBox="0 0 24 24" width="26" height="26"><path fill="#34C759" d="M12 3C6.5 3 2 6.7 2 11.2c0 2.3 1.2 4.4 3.1 5.9-.1 1-.5 2.3-1.4 3.4 1.7-.2 3.3-.9 4.4-1.6 1.2.4 2.5.6 3.9.6 5.5 0 10-3.7 10-8.2S17.5 3 12 3z"/></svg>`,
+  email:   `<svg viewBox="0 0 24 24" width="26" height="26"><rect x="2.5" y="5" width="19" height="14" rx="2.5" fill="#5B6470"/><path d="M3.5 7.5l8.5 6 8.5-6" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  link:    `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#138A6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 13.5a4 4 0 0 0 5.66 0l2.5-2.5a4 4 0 0 0-5.66-5.66l-1.1 1.1"/><path d="M14.5 10.5a4 4 0 0 0-5.66 0l-2.5 2.5a4 4 0 0 0 5.66 5.66l1.1-1.1"/></svg>`,
+  text:    `<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#16120F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="12" height="16" rx="2"/><path d="M9 4V3h6v1"/><path d="M9 9h6M9 12.5h6M9 16h4"/></svg>`
+};
+
+// "Share Your Result" → a popup of share targets (social, messaging, copy link).
+function shareResult(){
+  const text=reportText();
+  const t=encodeURIComponent(text), u=encodeURIComponent(SHARE_URL);
+  const grid=$('share-grid'); grid.innerHTML='';
+  const add=(icon,label,fn)=>{
+    const b=document.createElement('button'); b.className='share-opt';
+    b.innerHTML=`<span class="ico">${icon}</span><span>${label}</span>`;
+    b.addEventListener('click',fn); grid.appendChild(b);
+  };
+
+  // Order (left→right): Copy Link, Share image, Messages, WhatsApp, X, Reddit,
+  // Instagram, Facebook, Telegram, LinkedIn, Email.
+  // (Share image + Instagram only appear where native sharing exists.)
+  add(SHARE_ICONS.link,     'Copy Link',   async ()=>{ await copyToClipboard(SHARE_URL); closeSharePopup(); showToast('Link copied ✓'); });
+  if(navigator.share) add(SHARE_ICONS.image,'Share image', ()=>{ closeSharePopup(); nativeShareWithImage(); });
+  add(SHARE_ICONS.sms,      'Messages',    ()=>{ window.location.href=`sms:?&body=${t}`; closeSharePopup(); });
+  add(SHARE_ICONS.whatsapp, 'WhatsApp',    ()=>openShareUrl(`https://wa.me/?text=${t}`));
+  add(SHARE_ICONS.x,        'X / Twitter', ()=>openShareUrl(`https://twitter.com/intent/tweet?text=${t}`));
+  add(SHARE_ICONS.reddit,   'Reddit',      ()=>openShareUrl(`https://www.reddit.com/submit?url=${u}&title=${t}`));
+  if(navigator.share) add(SHARE_ICONS.instagram,'Instagram', shareToInstagram);
+  add(SHARE_ICONS.facebook, 'Facebook',    ()=>openShareUrl(`https://www.facebook.com/sharer/sharer.php?u=${u}&quote=${t}`));
+  add(SHARE_ICONS.telegram, 'Telegram',    ()=>openShareUrl(`https://t.me/share/url?url=${u}&text=${t}`));
+  add(SHARE_ICONS.linkedin, 'LinkedIn',    ()=>openShareUrl(`https://www.linkedin.com/sharing/share-offsite/?url=${u}`));
+  add(SHARE_ICONS.email,    'Email',       ()=>{ window.location.href=`mailto:?subject=${encodeURIComponent('My RunThePitch squad')}&body=${t}`; closeSharePopup(); });
+
+  $('share-bg').classList.add('show');
 }
 
 // Copy the report to the clipboard as PLAIN text. iOS Safari needs an explicit
@@ -2335,6 +2679,13 @@ $('btn-reveal-go').addEventListener('click',()=>{
 
 // player profile modal close handlers
 $('profile-close').addEventListener('click',closeProfile);
+
+// leaderboard popup open/close
+$('lb-close').addEventListener('click',closeLeaderboard);
+$('lb-bg').addEventListener('click',e=>{ if(e.target===$('lb-bg')) closeLeaderboard(); });
+
+// share targets popup open/close (tap outside the row to dismiss)
+$('share-bg').addEventListener('click',e=>{ if(e.target===$('share-bg')) closeSharePopup(); });
 $('profile-bg').addEventListener('click',e=>{ if(e.target===$('profile-bg')) closeProfile(); });
 
 // ============================================================
@@ -2478,12 +2829,45 @@ function groupStageAdvance(teamOverall){
   return Math.random() < 0.20;
 }
 
-// Group stage — simple pass/fail, no match detail.
-function simulateGroupStage(userOverall){
-  if(!groupStageAdvance(userOverall)) return { advanced:false, message:"Your squad was eliminated in the group stage." };
-  return { advanced:true, message: userOverall>=80
-    ? "Your squad dominated the group stage."
-    : "Your squad scraped through the group stage." };
+// One group match → W/D/L plus a consistent scoreline, weighted by team strength.
+function simGroupMatchResult(userOverall, oppOverall){
+  const cap=g=>Math.max(0,Math.min(5,g));
+  const pWin=winProbability(userOverall, oppOverall);
+  const drawShare=0.26;                 // ~1 in 4 group games is drawn
+  const r=Math.random();
+  const res = r < pWin*(1-drawShare) ? 'W'
+            : (r < pWin*(1-drawShare)+drawShare ? 'D' : 'L');
+  let us=cap(Math.round(expectedGoals(userOverall)*(0.4+Math.random()*1.2)));
+  let them=cap(Math.round(expectedGoals(oppOverall)*(0.4+Math.random()*1.2)));
+  if(res==='W'){ if(us<=them){ us=cap(them+1); if(us<=them) them=us-1; } }
+  else if(res==='L'){ if(them<=us){ them=cap(us+1); if(them<=us) us=them-1; } }
+  else { them=us; }                     // draw → level scoreline
+  return { res, userGoals:us, opponentGoals:them };
+}
+
+// Group stage: play three matchdays, then advance based on the RECORD (points),
+// so the shown results always match the outcome.
+//   ≥6 pts (3-0, 2-1, or better)  → advance
+//   4–5 pts (e.g. 1-1-1)          → 50% coin-flip
+//   ≤3 pts (e.g. 0-3)             → eliminated
+function simulateGroupStage(userOverall, pool){
+  const matchdays=[]; let w=0,d=0,l=0;
+  for(let i=0;i<3;i++){
+    const opp = pool ? drawOpponent(pool,'easy') : null;
+    if(!opp) break;
+    const m = simGroupMatchResult(userOverall, opp.teamOverall);
+    if(m.res==='W') w++; else if(m.res==='D') d++; else l++;
+    matchdays.push({ country:opp.country, year:opp.year, teamOverall:opp.teamOverall,
+      userGoals:m.userGoals, opponentGoals:m.opponentGoals, res:m.res });
+  }
+  const pts = w*3 + d;
+  const advanced = pts>=6 ? true : (pts>=4 ? Math.random()<0.5 : false);
+  let message;
+  if(!advanced)            message="Your squad was eliminated in the group stage.";
+  else if(l===0 && d===0)  message="Your squad won every group game.";
+  else if(l===0)           message="Your squad went through unbeaten.";
+  else                     message="Your squad scraped through the group stage.";
+  return { advanced, message, matchdays, record:{w,d,l} };
 }
 
 // Scoring tendency by position: forwards score most, goalkeepers never.
@@ -2584,7 +2968,7 @@ function simulateMatch(userSquad, userOverall, opponent){
 function simulateTournament(userSquad, userOverall, playerPool){
   const rounds = ['Round of 16','Quarter-final','Semi-final','Final'];
   const result = {
-    groupStage: simulateGroupStage(userOverall),
+    groupStage: simulateGroupStage(userOverall, playerPool),
     matches: [],
     rounds,
     furthestRound: 'Group Stage',
@@ -3076,22 +3460,11 @@ async function runSimulationScreen(){
   $('sim-gs-status').innerHTML=`<div class="sim-threat" style="margin:0;">Matchdays</div>`;
 
   const daysBox=$('sim-gs-days');
-  const gOpps=[]; for(let i=0;i<3;i++){ const o=drawOpponent(pool,'easy'); if(o) gOpps.push(o); }
-  let wins=0, draws=0, losses=0;
-  for(let i=0;i<gOpps.length;i++){
-    const o=gOpps[i];
-    let us, them;
-    if(adv){
-      const win = Math.random() < (userOverall>=60 ? 0.78 : 0.55);
-      us = 1+Math.floor(Math.random()*3);
-      them = win ? Math.floor(Math.random()*us) : us + (Math.random()<0.5?0:1);
-    } else {
-      const lose = Math.random() < 0.7;
-      them = 1+Math.floor(Math.random()*3);
-      us = lose ? Math.floor(Math.random()*them) : them;
-    }
-    const res = us>them?'W':(us<them?'L':'D');
-    if(res==='W') wins++; else if(res==='D') draws++; else losses++;
+  // Render the exact matchdays the engine produced (record drives advancement).
+  const mds=simResult.groupStage.matchdays;
+  for(let i=0;i<mds.length;i++){
+    const o=mds[i];
+    const us=o.userGoals, them=o.opponentGoals, res=o.res;
     const col = res==='W'?'var(--teal)':(res==='L'?'var(--red)':'#8a7d70');
     const row=document.createElement('div');
     row.className='goal-event';
@@ -3103,6 +3476,7 @@ async function runSimulationScreen(){
     simScrollEnd(row);
     await simSleep(950);
   }
+  const wins=simResult.groupStage.record.w, draws=simResult.groupStage.record.d, losses=simResult.groupStage.record.l;
 
   // banner reflects the ACTUAL matchday record, not just team rating
   let line;
