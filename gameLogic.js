@@ -204,7 +204,7 @@ function createGameState() {
     picks: [],
     openSlots: ['GK', 'DEF', 'DEF', 'MID', 'FWD', 'FLEX'],
     filledSlots: {},
-    respins: { country: 1, year: 1 },
+    respins: { full: 1 },
     phase: 'SPINNING',
     currentSpin: null,
     startTime: Date.now(),
@@ -235,33 +235,19 @@ function confirmSpin(state, country, year) {
   };
 }
 
-function useCountryRespin(state) {
-  if (state.respins.country <= 0) throw new Error('No country re-spins remaining.');
+// A single full re-spin per game: spins BOTH a new nation and a new year.
+function useFullRespin(state) {
+  if (state.respins.full <= 0) throw new Error('No re-spins remaining.');
   const newCountry = spinCountry(state);
   const newYear = spinYear(newCountry);
   const squad = getSquad(newCountry, newYear);
   return {
     state: {
       ...state,
-      respins: { ...state.respins, country: state.respins.country - 1 },
+      respins: { ...state.respins, full: state.respins.full - 1 },
       currentSpin: { country: newCountry, year: newYear, squad },
     },
     newCountry,
-    newYear,
-  };
-}
-
-function useYearRespin(state) {
-  if (state.respins.year <= 0) throw new Error('No year re-spins remaining.');
-  const country = state.currentSpin.country;
-  const newYear = spinYear(country);
-  const squad = getSquad(country, newYear);
-  return {
-    state: {
-      ...state,
-      respins: { ...state.respins, year: state.respins.year - 1 },
-      currentSpin: { country, year: newYear, squad },
-    },
     newYear,
   };
 }
@@ -355,10 +341,19 @@ function computeResult(state) {
   const diff = boostedAvg - neutralAvg;
   const coherenceScore = clamp(50 + diff * 1.5, 0, 100);
 
-  // Team overall is the straight average of the six drafted players' overalls.
-  const teamOverall = Math.round(
-    state.picks.reduce((sum, pick) => sum + pick.player.overall, 0) / state.picks.length
-  );
+  // Team overall is a weighted average of the six drafted players' overalls,
+  // where each player's weight grows with their rating (weight = overall^2).
+  // This makes a 90+ star lift the team rating more, while a 60-floor player
+  // weighs in slightly less — without letting any one pick run away with it.
+  const TEAM_WEIGHT_POW = 2;
+  let weightedSumOv = 0, weightTotalOv = 0;
+  for (const pick of state.picks) {
+    const ov = pick.player.overall;
+    const w = Math.pow(ov, TEAM_WEIGHT_POW);
+    weightedSumOv += ov * w;
+    weightTotalOv += w;
+  }
+  const teamOverall = Math.round(weightedSumOv / weightTotalOv);
 
   const tier = RESULT_TIERS.find(t => teamOverall >= t.min && teamOverall <= t.max)
     || RESULT_TIERS[RESULT_TIERS.length - 1];
@@ -441,7 +436,7 @@ function getGameSummary(state) {
   const lines = [
     `Phase: ${state.phase}`,
     `Open slots: ${state.openSlots.join(', ') || 'none'}`,
-    `Re-spins — country: ${state.respins.country}, year: ${state.respins.year}`,
+    `Re-spins remaining: ${state.respins.full}`,
     `Picks:`,
   ];
   for (const pick of state.picks) {
@@ -466,8 +461,7 @@ const publicAPI = {
   spinCountry,
   spinYear,
   confirmSpin,
-  useCountryRespin,
-  useYearRespin,
+  useFullRespin,
   getAvailableSlots,
   selectPlayer,
   getSquadIdentity,
@@ -581,27 +575,19 @@ function runTests() {
   console.log('✓ Test 5 passed — match report');
   console.log('\n--- Match Report ---\n' + report + '\n-------------------');
 
-  // Test 6 — Re-spin mechanic
+  // Test 6 — Re-spin mechanic (single full re-spin per game)
   let s2 = createGameState();
   s2 = confirmSpin(s2, 'Brazil', 1970);
-  console.assert(s2.respins.country === 1, 'Test 6: initial country respins = 1');
-  const { state: s3, newCountry, newYear } = useCountryRespin(s2);
-  console.assert(s3.respins.country === 0, 'Test 6: after country respin = 0');
+  console.assert(s2.respins.full === 1, 'Test 6: initial full respins = 1');
+  const { state: s3, newCountry, newYear } = useFullRespin(s2);
+  console.assert(s3.respins.full === 0, 'Test 6: after full respin = 0');
   console.assert(typeof newCountry === 'string' && newCountry.length > 0, 'Test 6: newCountry is valid');
   console.assert(typeof newYear === 'number', 'Test 6: newYear is valid');
+  console.assert(s3.currentSpin.country === newCountry && s3.currentSpin.year === newYear,
+    'Test 6: full respin updates both country and year');
   let threw = false;
-  try { useCountryRespin(s3); } catch (e) { threw = true; }
-  console.assert(threw, 'Test 6: second country respin should throw');
-
-  let s4 = createGameState();
-  s4 = confirmSpin(s4, 'Argentina', 1986);
-  const { state: s5, newYear: ny2 } = useYearRespin(s4);
-  console.assert(s5.respins.year === 0, 'Test 6: after year respin = 0');
-  console.assert(s5.currentSpin.country === 'Argentina', 'Test 6: country still Argentina');
-  console.assert(typeof ny2 === 'number', 'Test 6: newYear from year respin is valid');
-  let threw2 = false;
-  try { useYearRespin(s5); } catch (e) { threw2 = true; }
-  console.assert(threw2, 'Test 6: second year respin should throw');
+  try { useFullRespin(s3); } catch (e) { threw = true; }
+  console.assert(threw, 'Test 6: second full respin should throw');
   console.log('✓ Test 6 passed — re-spin mechanic');
 
   // Test 7 — Daily challenge seed

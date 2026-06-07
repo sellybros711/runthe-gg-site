@@ -650,7 +650,14 @@
     border-radius:7px;padding:5px 8px;min-width:44px;text-align:center;}
   .rv-name{flex:1 1 auto;color:#fff;font-weight:800;font-size:15px;line-height:1.12;}
   .rv-right{flex:0 0 auto;text-align:right;}
-  .rv-ov{font-family:'Anton',Impact,sans-serif;font-size:30px;line-height:.9;color:var(--gold);display:block;}
+  .rv-ov{font-family:'Anton',Impact,sans-serif;font-size:30px;line-height:.9;color:var(--gold);
+    display:inline-flex;align-items:baseline;gap:3px;}
+  .rv-ov small{font-family:'Archivo',system-ui,sans-serif;font-size:11px;font-weight:900;letter-spacing:.5px;}
+  /* overall colour escalates with rating */
+  .rv-ov.red{color:var(--red);}
+  .rv-ov.orange{color:var(--orange);}
+  .rv-ov.green{color:#4ade80;}
+  .rv-ov.gold{color:var(--gold);}
   .rv-sub{display:block;font-size:9px;font-weight:700;color:rgba(255,255,255,.6);letter-spacing:.3px;margin-top:1px;}
   .reveal-team{text-align:center;color:#fff;opacity:0;transform:scale(.9);
     transition:opacity .4s ease, transform .4s cubic-bezier(.3,1.4,.5,1);margin-top:6px;}
@@ -1060,8 +1067,7 @@
       <span class="mode-pill" id="select-mode-pill" style="display:none"></span>
     </div>
     <div class="sel-respins" id="select-respins">
-      <button id="btn-respin-country" class="rebtn">↻ Nation</button>
-      <button id="btn-respin-year" class="rebtn">↻ Year</button>
+      <button id="btn-respin-full" class="rebtn">↻ Re-spin (1)</button>
     </div>
     <div class="mini-pitch" id="mini-pitch">
       <div class="mslot" id="mini-gk"><span class="ml">GK</span></div>
@@ -1304,10 +1310,24 @@ async function boot(){
   console.log('=== End Validation ===');
 
   allCountries = G.getAllCountries();
+  preloadFlags();
   const b = $('btn-start');
   b.disabled = false;
   b.textContent = 'Kick Off';
   startFlagMarquee();
+}
+
+// Warm the browser cache with every nation's flag (both sizes used in the UI)
+// so a freshly-shown flag never paints blank-white while its remote image is
+// still loading — the cause of the occasional white flag on the spin reel.
+function preloadFlags(){
+  const seen = new Set();
+  allCountries.forEach(c => {
+    [160, 320].forEach(w => {
+      const url = flagImg(c, w);
+      if (url && !seen.has(url)) { seen.add(url); const img = new Image(); img.src = url; }
+    });
+  });
 }
 
 // ---------- progress dots ----------
@@ -1482,17 +1502,11 @@ function eligibleSlotsFor(player){
 }
 
 function updateRespinButtons(){
-  const country = gs.currentSpin ? gs.currentSpin.country : null;
-  const yearCount = country ? G.getYearsForCountry(country).length : 1;
-  const cBtn=$('btn-respin-country'), yBtn=$('btn-respin-year');
-  // Only show a re-spin button when that re-spin is still available.
-  const cOn = gs.respins.country>0;
-  const yOn = gs.respins.year>0 && yearCount>1;
-  cBtn.style.display = cOn ? '' : 'none';
-  cBtn.textContent = `↻ Nation (${gs.respins.country})`;
-  yBtn.style.display = yOn ? '' : 'none';
-  yBtn.textContent = `↻ Year (${gs.respins.year})`;
-  $('select-respins').style.display = (cOn||yOn) ? '' : 'none';
+  // One full re-spin per game (re-rolls both nation and year). Same in all modes.
+  const on = gs.respins.full>0;
+  const btn=$('btn-respin-full');
+  btn.textContent = `↻ Re-spin (${gs.respins.full})`;
+  $('select-respins').style.display = on ? '' : 'none';
 }
 
 // ============================================================
@@ -1792,17 +1806,14 @@ function renderGrid(squad){
   // players already drafted this game can't be picked again
   const pickedIds = new Set(gs.picks.map(pk=>pk.player.player_id));
   const available = p => eligibleSlotsFor(p).length>0 && !pickedIds.has(p.player_id);
-  // sort: available first, then by position
+  // sort: available first, then grouped by position, then overall high→low
   const order={GK:0,DEF:1,MID:2,FWD:3};
-  // Many squad members share an identical overall (the 60 floor). They're truly
-  // equal, so break ties by career caps descending (more experienced first)
-  // before falling back to name — useful ordering without fabricating gaps.
-  const caps = p => (p.appearances ?? 0);
+  const ov = p => (p.wc_overall ?? p.overall ?? 0);  // the value shown on the card
   const sorted=[...squad].sort((a,b)=>{
     const aa=available(a), ab=available(b);
     if(aa!==ab) return aa?-1:1;
     return (order[a.position]-order[b.position])
-      || (caps(b)-caps(a))
+      || (ov(b)-ov(a))
       || a.name.localeCompare(b.name);
   });
   sorted.forEach(p=>{
@@ -1908,14 +1919,14 @@ function runRevealOverlay(){
   go.classList.remove('show'); go.style.display='none'; go.disabled=false;
 
   const picks=orderPicksForDisplay(gs.result.scoredPicks, ['GK','DEF','DEF','MID','FWD','FLEX']);
+  // overall colour escalates: red ≤70, orange 71–80, green 81–90, gold 91+
+  const ovColor=o=>o>90?'gold':o>80?'green':o>70?'orange':'red';
   picks.forEach(pick=>{
     const p=pick.player;
-    const sub=(p.skill_rating!=null||p.wc_performance!=null)
-      ? `Skill ${p.skill_rating??'—'} · Perf ${p.wc_performance??'—'}` : '';
     const row=document.createElement('div'); row.className='rv-entry';
     row.innerHTML=`<span class="rv-badge" style="${slotBadgeStyle(pick.slot,p)}">${pick.slot}</span>
       <span class="rv-name">${p.name}</span>
-      <span class="rv-right"><span class="rv-ov" data-ov="${p.overall}">0</span>${sub?`<span class="rv-sub">${sub}</span>`:''}</span>`;
+      <span class="rv-right"><span class="rv-ov ${ovColor(p.overall)}"><span class="rv-ov-num" data-ov="${p.overall}">0</span><small>OVR</small></span></span>`;
     stack.appendChild(row);
   });
 
@@ -1924,7 +1935,7 @@ function runRevealOverlay(){
   rows.forEach((row,i)=>{
     setTimeout(()=>{
       row.classList.add('show');
-      const ovEl=row.querySelector('.rv-ov');
+      const ovEl=row.querySelector('.rv-ov-num');
       countUp(ovEl, +ovEl.dataset.ov, 400);  // count up over 0.4s
     }, 300 + i*350);                          // 0.35s apart
   });
@@ -2200,17 +2211,11 @@ $('btn-start-draft').addEventListener('click',()=>{ gs=G.createGameState(); goTo
 $('btn-go-spin').addEventListener('click',startSpin);
 $('btn-start-wc').addEventListener('click',()=>{ $('btn-start-wc').disabled=true; runSimulationScreen(); });
 
-$('btn-respin-country').addEventListener('click',()=>{
-  if(gs.respins.country<=0) return;
-  const {state}=G.useCountryRespin(gs);
+$('btn-respin-full').addEventListener('click',()=>{
+  if(gs.respins.full<=0) return;
+  const {state}=G.useFullRespin(gs);
   gs=state;
-  doRespin();
-});
-$('btn-respin-year').addEventListener('click',()=>{
-  if(gs.respins.year<=0) return;
-  const {state}=G.useYearRespin(gs);
-  gs=state;
-  doYearRespin();   // year-only: country wheel stays static
+  doRespin();   // animates BOTH the nation and year wheels
 });
 
 $('sheet-cancel').addEventListener('click',closeSheet);
@@ -2350,12 +2355,17 @@ const SCORER_WEIGHTS = { FWD:1.0, MID:0.55, DEF:0.12, GK:0 };
 // Own goals are almost always defenders (occasionally the keeper), never forwards.
 const OG_WEIGHTS     = { DEF:1.0, GK:0.5, MID:0.25, FWD:0.1 };
 
+// How sharply a higher overall increases scoring likelihood. Overall is raised
+// to this power so top-rated players score noticeably more than weak ones
+// (e.g. 90 vs 60 ≈ 3.4× before the position weight) rather than just ~1.5×.
+const SCORER_OVERALL_POW = 3;
+
 // Weighted scorer pick — higher overall = more likely to score, scaled by a
 // position weight so goalkeepers don't score and defenders rarely do.
 function simPickScorer(squad, weights){
   if(!squad.length) return { name:'Unknown', country:'' };
   weights = weights || SCORER_WEIGHTS;
-  const w = p => Math.max(1, p.overall||1) * (weights[p.position] ?? 0.3);
+  const w = p => Math.pow(Math.max(1, p.overall||1), SCORER_OVERALL_POW) * (weights[p.position] ?? 0.3);
   const total = squad.reduce((a,p)=>a+w(p),0);
   if(total<=0) return squad[0];
   let r = Math.random()*total;
@@ -2665,10 +2675,32 @@ const SB_BALL = `<svg class="sb-ball" viewBox="0 0 24 24" aria-hidden="true">`+
   `<g stroke="#fff" stroke-width="1.05" fill="none"><path d="M3.4 12.7l3.3 1.1"/><path d="M20.6 12.7l-3.3 1.1"/><path d="M9.3 20.1l1.1-3.2"/><path d="M14.7 20.1l-1.1-3.2"/></g></svg>`;
 
 // Build a scoreboard element. Opponent flag uses the existing flagChip() system.
+// FIFA/IOC three-letter codes for every nation in the dataset — used on the
+// live scoreboard so the opponent label is short and never truncates.
+const COUNTRY_CODE3 = {
+  "Algeria":"ALG","Angola":"ANG","Argentina":"ARG","Australia":"AUS","Austria":"AUT",
+  "Belgium":"BEL","Bolivia":"BOL","Bosnia and Herzegovina":"BIH","Brazil":"BRA","Bulgaria":"BUL",
+  "Cameroon":"CMR","Canada":"CAN","Cape Verde":"CPV","Chile":"CHI","China PR":"CHN",
+  "Colombia":"COL","Costa Rica":"CRC","Croatia":"CRO","Curaçao":"CUW","Czech Republic":"CZE",
+  "Czechoslovakia":"TCH","DR Congo":"COD","Denmark":"DEN","East Germany":"GDR","Ecuador":"ECU",
+  "Egypt":"EGY","El Salvador":"SLV","England":"ENG","FR Yugoslavia":"YUG","France":"FRA",
+  "Germany":"GER","Ghana":"GHA","Greece":"GRE","Haiti":"HAI","Honduras":"HON","Hungary":"HUN",
+  "Iceland":"ISL","Iran":"IRN","Iraq":"IRQ","Israel":"ISR","Italy":"ITA","Ivory Coast":"CIV",
+  "Jamaica":"JAM","Japan":"JPN","Jordan":"JOR","Kuwait":"KUW","Mexico":"MEX","Morocco":"MAR",
+  "Netherlands":"NED","New Zealand":"NZL","Nigeria":"NGA","North Korea":"PRK","Northern Ireland":"NIR",
+  "Norway":"NOR","Panama":"PAN","Paraguay":"PAR","Peru":"PER","Poland":"POL","Portugal":"POR",
+  "Qatar":"QAT","Republic of Ireland":"IRL","Romania":"ROU","Russia":"RUS","Saudi Arabia":"KSA",
+  "Scotland":"SCO","Senegal":"SEN","Serbia":"SRB","Serbia and Montenegro":"SCG","Slovakia":"SVK",
+  "Slovenia":"SVN","South Africa":"RSA","South Korea":"KOR","Soviet Union":"URS","Spain":"ESP",
+  "Sweden":"SWE","Switzerland":"SUI","Togo":"TOG","Trinidad and Tobago":"TRI","Tunisia":"TUN",
+  "Turkey":"TUR","Ukraine":"UKR","United Arab Emirates":"UAE","United States":"USA","Uruguay":"URU",
+  "Uzbekistan":"UZB","Wales":"WAL","West Germany":"FRG","Yugoslavia":"YUG","Zaire":"ZAI"
+};
+const code3 = c => COUNTRY_CODE3[c] || (c || '').slice(0,3).toUpperCase();
+
 function makeScoreboard(opp, opts={}){
-  const mobile = window.innerWidth < 390;
-  const youLabel = mobile ? 'YOU' : 'YOUR TEAM';
-  const oppLabel = mobile ? String(opp.year) : `${opp.country} ${opp.year}`;
+  const youLabel = 'YOU';
+  const oppLabel = code3(opp.country);
   const wrap=document.createElement('div');
   wrap.className='sb-wrap';
   wrap.innerHTML=`

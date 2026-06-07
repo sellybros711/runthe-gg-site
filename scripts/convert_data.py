@@ -3,7 +3,7 @@
 import csv, json, unicodedata, re, os
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-IN_PATH  = os.path.join(BASE, 'data', 'world_cup_full_rosters_1966_2026.json')
+IN_PATH  = os.path.join(BASE, 'data', 'world_cup_full_rosters_1966_2026_4.json')
 OUT_PATH = os.path.join(BASE, 'data', 'players_all.json')
 
 COUNTRY_CODES = {
