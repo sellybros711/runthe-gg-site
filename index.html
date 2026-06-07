@@ -502,8 +502,8 @@
   .sel-respins .rebtn{flex:1 1 auto;text-align:center;padding:9px 8px;font-size:12px;}
 
   /* mini team preview — same behaviour as the lineup circles, in a row */
-  .mini-pitch{flex:0 0 auto;display:flex;gap:6px;margin-bottom:9px;}
-  .mslot{position:relative;flex:1 1 0;aspect-ratio:1;border-radius:50%;
+  .mini-pitch{flex:0 0 auto;display:flex;align-items:flex-start;gap:6px;margin-bottom:9px;}
+  .mslot{position:relative;flex:1 1 0;min-width:0;aspect-ratio:1;border-radius:50%;overflow:hidden;
     display:grid;place-items:center;text-align:center;}
   .mslot .ml{font-family:'Arial Narrow','Archivo',system-ui,sans-serif;
     font-weight:900;font-stretch:condensed;font-size:11px;line-height:1;letter-spacing:-.2px;}
@@ -742,6 +742,12 @@
     border-radius:18px;box-shadow:var(--shadow);width:100%;max-width:460px;max-height:88vh;
     overflow-y:auto;padding:22px 18px;}
   .lb-title{font-family:'Anton',Impact,sans-serif;font-size:26px;text-align:center;margin:0 0 14px;color:var(--gold);}
+  .lb-toggles{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
+  .lb-seg{display:flex;gap:6px;background:rgba(255,255,255,.08);border-radius:11px;padding:4px;}
+  .lb-seg button{flex:1 1 0;border:none;background:none;color:rgba(255,255,255,.7);
+    font-family:inherit;font-weight:800;font-size:12px;letter-spacing:.3px;padding:8px 4px;
+    border-radius:8px;cursor:pointer;text-transform:uppercase;}
+  .lb-seg button.active{background:var(--gold);color:var(--ink);}
   .lb-row{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid rgba(255,255,255,.1);}
   .lb-row:last-child{border-bottom:none;}
   .lb-rank{flex:0 0 26px;font-family:'Anton',Impact,sans-serif;font-size:20px;text-align:center;color:#fff;opacity:.85;}
@@ -783,6 +789,25 @@
   .share-opt .ico{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     background:var(--paper);border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);}
   .share-opt .ico svg{display:block;width:28px;height:28px;}
+
+  /* ---------- rating feedback ---------- */
+  .rate-trigger{display:inline-block;margin:8px auto 4px;padding:6px 4px;background:none;border:none;
+    color:#8a7d70;font-family:inherit;font-weight:700;font-size:12px;text-decoration:underline;
+    text-underline-offset:3px;cursor:pointer;flex:0 0 auto;align-self:center;}
+  .rate-bg{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;
+    padding:18px;background:rgba(0,0,0,.6);}
+  .rate-bg.show{display:flex;animation:fade .2s ease;}
+  .rate-card{position:relative;background:var(--white);border:3px solid var(--ink);border-radius:18px;
+    box-shadow:var(--shadow);width:100%;max-width:420px;max-height:90vh;overflow-y:auto;padding:22px 18px;}
+  .rate-title{font-family:'Anton',Impact,sans-serif;font-size:24px;margin:0 0 4px;}
+  .rate-sub{font-weight:600;font-size:13px;color:#8a7d70;margin-bottom:14px;}
+  .rate-field{display:block;font-weight:900;font-size:11px;letter-spacing:.5px;text-transform:uppercase;
+    color:#5a5048;margin-bottom:12px;}
+  .rate-field input,.rate-field textarea{display:block;width:100%;margin-top:5px;padding:10px 11px;
+    border:2px solid var(--ink);border-radius:9px;font-family:inherit;font-weight:700;font-size:15px;
+    color:var(--ink);text-transform:none;letter-spacing:normal;}
+  .rate-field textarea{resize:vertical;font-weight:600;}
+  .rate-card .btn{margin-top:4px;}
   .res-message{font-weight:700;font-size:14px;line-height:1.45;margin:12px auto 0;max-width:340px;color:var(--ink);}
   .res-section{font-weight:900;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#8a7d70;margin:18px 0 8px;}
   .res-recap-row,.res-squad-row{display:flex;align-items:center;gap:10px;border:2px solid var(--ink);border-radius:12px;
@@ -1153,6 +1178,7 @@
       <div class="mslot" id="mini-flex"><span class="ml">FLEX</span></div>
     </div>
     <div class="grid" id="player-grid"></div>
+    <button class="rate-trigger" id="rate-link-select">Disagree with a rating?</button>
   </section>
 
   <!-- ===== RESULTS (final summary + tappable squad) ===== -->
@@ -1224,6 +1250,17 @@
     <button class="profile-close" id="lb-close" aria-label="Close">✕</button>
     <div class="lb-title">🏅 Top 10 Drafts</div>
     <div id="lb-name-prompt" style="display:none"></div>
+    <div class="lb-toggles">
+      <div class="lb-seg" id="lb-seg-window">
+        <button data-w="day">Daily</button>
+        <button data-w="week">Weekly</button>
+        <button data-w="all">All-Time</button>
+      </div>
+      <div class="lb-seg" id="lb-seg-mode">
+        <button data-m="easy">Easy</button>
+        <button data-m="hard">Hard</button>
+      </div>
+    </div>
     <div id="lb-list"></div>
   </div>
 </div>
@@ -1232,6 +1269,21 @@
 <div class="share-bg" id="share-bg">
   <div class="share-sheet">
     <div class="share-row" id="share-grid"></div>
+  </div>
+</div>
+
+<!-- ===== rating feedback form ===== -->
+<div class="rate-bg" id="rate-bg">
+  <div class="rate-card">
+    <button class="profile-close" id="rate-close" aria-label="Close">✕</button>
+    <div class="rate-title">Disagree with a rating?</div>
+    <div class="rate-sub">Fill in the fields below and we'll take a look.</div>
+    <label class="rate-field">Player name<input id="rate-name" maxlength="60" autocomplete="off"></label>
+    <label class="rate-field">Country<input id="rate-country" maxlength="40" autocomplete="off"></label>
+    <label class="rate-field">Year<input id="rate-year" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+    <label class="rate-field">Suggested overall<input id="rate-ovr" inputmode="numeric" maxlength="3" autocomplete="off"></label>
+    <label class="rate-field">Explanation (optional)<textarea id="rate-note" rows="3" maxlength="500"></textarea></label>
+    <button class="btn red" id="rate-submit">Submit</button>
   </div>
 </div>
 
@@ -2137,13 +2189,16 @@ async function submitGlobalRank(overall, progress, meta){
   if(!ins.ok) throw new Error('leaderboard submit failed: '+ins.status);
   const id = await ins.json().catch(()=>null); // submit_draft() returns the new row id
 
-  const totalRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1`, {
+  // Rank within the SAME mode's all-time board (easy and hard are separate).
+  const modeFilt = `&mode=eq.${(meta && meta.mode) || 'easy'}`;
+
+  const totalRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1${modeFilt}`, {
     headers: sbHeaders({ 'Prefer':'count=exact' })
   });
   const total = sbCount(totalRes);
 
   const orFilter = encodeURIComponent(`(overall.gt.${overall},and(overall.eq.${overall},progress.gt.${progress}))`);
-  const betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}`, {
+  const betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}${modeFilt}`, {
     headers: sbHeaders({ 'Prefer':'count=exact' })
   });
   const better = sbCount(betterRes);
@@ -2152,6 +2207,8 @@ async function submitGlobalRank(overall, progress, meta){
 }
 
 // ---------- Top 10 leaderboard popup ----------
+// Toggle state: time window + mode (easy/hard boards are separate).
+let lbWindow='all', lbMode='easy', lbHighlightId=null;
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 // Short round/result tag for a leaderboard row.
@@ -2161,10 +2218,27 @@ function lbMetaLabel(row){
   return map[row.furthest] || '';
 }
 
-async function fetchTopDrafts(limit){
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,flag,overall,progress,result,furthest&order=overall.desc,progress.desc,created_at.asc&limit=${limit}`, {
-    headers: sbHeaders()
-  });
+// Cutoff timestamp for a time window ('day' = since local midnight,
+// 'week' = since local midnight on the most recent Sunday, 'all' = no cutoff).
+function lbCutoffISO(window){
+  const d=new Date(); d.setHours(0,0,0,0);
+  if(window==='day')  return d.toISOString();
+  if(window==='week'){ d.setDate(d.getDate()-d.getDay()); return d.toISOString(); } // 0 = Sunday
+  return null;
+}
+async function fetchTopDrafts(limit, opts){
+  opts=opts||{};
+  let filt='';
+  if(opts.mode && opts.mode!=='all') filt+=`&mode=eq.${opts.mode}`;
+  const cut=lbCutoffISO(opts.window);
+  if(cut) filt+=`&created_at=gte.${encodeURIComponent(cut)}`;
+  const order='&order=overall.desc,progress.desc,created_at.asc&limit='+limit;
+  // Prefer the full select (with flag); if the flag column isn't there yet,
+  // fall back to a flag-less select so the board still loads.
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,flag,overall,progress,result,furthest${filt}${order}`, { headers: sbHeaders() });
+  if(!res.ok){
+    res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,overall,progress,result,furthest${filt}${order}`, { headers: sbHeaders() });
+  }
   if(!res.ok) throw new Error('leaderboard fetch failed: '+res.status);
   return res.json();
 }
@@ -2185,19 +2259,25 @@ function renderLeaderboardRows(rows, highlightId){
   }).join('');
 }
 
+function lbSetActiveToggles(){
+  document.querySelectorAll('#lb-seg-window button').forEach(b=>b.classList.toggle('active', b.dataset.w===lbWindow));
+  document.querySelectorAll('#lb-seg-mode button').forEach(b=>b.classList.toggle('active', b.dataset.m===lbMode));
+}
+
 async function refreshLeaderboardList(highlightId){
+  if(highlightId!==undefined) lbHighlightId=highlightId;
   const list=$('lb-list');
   list.innerHTML='<div class="lb-empty">Loading…</div>';
   try{
     let rows;
     if(SUPABASE_READY){
-      rows = await fetchTopDrafts(10);
+      rows = await fetchTopDrafts(10, { window:lbWindow, mode:lbMode });
     }else{
       // not connected yet → preview this device's best drafts (no names)
       rows = loadLeaderboard().sort((a,b)=> b.overall-a.overall || b.progress-a.progress)
         .slice(0,10).map(e=>({ id:null, name:'You (this device)', overall:e.overall, progress:e.progress }));
     }
-    renderLeaderboardRows(rows, highlightId);
+    renderLeaderboardRows(rows, lbHighlightId);
   }catch(e){
     list.innerHTML='<div class="lb-empty">Couldn’t load the leaderboard. Try again.</div>';
   }
@@ -2218,6 +2298,10 @@ function openLeaderboard(highlightId, promptName){
   }else{
     pr.style.display='none'; pr.innerHTML='';
   }
+  // default to the all-time board for the mode just played (easy/hard)
+  lbWindow='all';
+  lbMode=(gameMode==='hard')?'hard':'easy';
+  lbSetActiveToggles();
   $('lb-bg').classList.add('show');
   refreshLeaderboardList(highlightId);
 }
@@ -2336,7 +2420,9 @@ function goToResults(){
     <div class="stack" style="margin-top:16px;">
       <button class="btn red" id="res-share">Share Your Result →</button>
       <button class="btn teal" id="res-again">Play Again</button>
-    </div></div>`;
+    </div>
+    <div class="center"><button class="rate-trigger" id="rate-link-results">Disagree with a rating?</button></div>
+    </div>`;
   c.innerHTML=html;
   $('summary-host').appendChild(buildSummaryCard());
 
@@ -2355,6 +2441,7 @@ function goToResults(){
   $('res-share').addEventListener('click', shareResult);
   $('res-again').addEventListener('click', newGame);
   $('res-leaderboard').addEventListener('click', ()=>openLeaderboard(gs.result&&gs.result._lbId, false));
+  $('rate-link-results').addEventListener('click', ()=>openRatingForm());
   fillRankBadge(r.teamOverall, progress);   // global rank (Supabase) or local fallback
 
   showScreen('reveal');
@@ -2683,6 +2770,72 @@ $('profile-close').addEventListener('click',closeProfile);
 // leaderboard popup open/close
 $('lb-close').addEventListener('click',closeLeaderboard);
 $('lb-bg').addEventListener('click',e=>{ if(e.target===$('lb-bg')) closeLeaderboard(); });
+// time-window + mode toggles
+$('lb-seg-window').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; lbWindow=b.dataset.w; lbSetActiveToggles(); refreshLeaderboardList(); });
+$('lb-seg-mode').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; lbMode=b.dataset.m; lbSetActiveToggles(); refreshLeaderboardList(); });
+
+// ---------- rating feedback form ----------
+const RATING_FEEDBACK_EMAIL='sellybros711@gmail.com';
+// Paste your Formspree form endpoint here (Formspree → your form → it looks like
+// https://formspree.io/f/abcdwxyz). When set, submissions are emailed silently
+// to the address on that form; until then it falls back to opening the mail app.
+const FORMSPREE_ENDPOINT='https://formspree.io/f/xojzebbj';
+const FORMSPREE_READY=/^https:\/\/formspree\.io\/f\/[A-Za-z0-9]+$/.test(FORMSPREE_ENDPOINT)
+  && FORMSPREE_ENDPOINT.indexOf('YOUR_FORM_ID')===-1;
+function openRatingForm(prefill){
+  prefill=prefill||{};
+  $('rate-name').value    = prefill.name||'';
+  $('rate-country').value = prefill.country||'';
+  $('rate-year').value    = prefill.year||'';
+  $('rate-ovr').value     = '';
+  $('rate-note').value    = '';
+  $('rate-bg').classList.add('show');
+  setTimeout(()=>$('rate-name').focus(),60);
+}
+function closeRatingForm(){ $('rate-bg').classList.remove('show'); }
+async function submitRatingForm(){
+  const name=$('rate-name').value.trim();
+  const country=$('rate-country').value.trim();
+  const year=$('rate-year').value.trim();
+  const ovr=$('rate-ovr').value.trim();
+  const note=$('rate-note').value.trim();
+  if(!name){ $('rate-name').focus(); return; }   // player name is required
+
+  // 1) Formspree (silent email) when configured.
+  if(FORMSPREE_READY){
+    const btn=$('rate-submit'); const label=btn.textContent; btn.disabled=true; btn.textContent='Sending…';
+    try{
+      const res=await fetch(FORMSPREE_ENDPOINT,{
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
+        body:JSON.stringify({
+          _subject:'RunThePitch — Rating feedback',
+          player_name:name, country:country||'—', year:year||'—',
+          suggested_overall:ovr||'—', explanation:note||'—'
+        })
+      });
+      if(res.ok){ btn.disabled=false; btn.textContent=label; closeRatingForm(); showToast('Thanks — feedback sent ✓'); return; }
+    }catch(e){ /* network issue → fall through to mailto */ }
+    btn.disabled=false; btn.textContent=label;
+  }
+
+  // 2) Fallback: open the mail app pre-addressed to us.
+  const body=
+    `Player name: ${name}\n`+
+    `Country: ${country||'—'}\n`+
+    `Year: ${year||'—'}\n`+
+    `Suggested overall: ${ovr||'—'}\n\n`+
+    `Explanation:\n${note||'—'}`;
+  window.location.href=`mailto:${RATING_FEEDBACK_EMAIL}?subject=${encodeURIComponent('RunThePitch — Rating feedback')}&body=${encodeURIComponent(body)}`;
+  closeRatingForm();
+}
+$('rate-link-select').addEventListener('click',()=>{
+  const s=gs&&gs.currentSpin;
+  openRatingForm(s?{country:s.country, year:s.year}:{});   // pre-fill the current nation/year
+});
+$('rate-submit').addEventListener('click',submitRatingForm);
+$('rate-close').addEventListener('click',closeRatingForm);
+$('rate-bg').addEventListener('click',e=>{ if(e.target===$('rate-bg')) closeRatingForm(); });
 
 // share targets popup open/close (tap outside the row to dismiss)
 $('share-bg').addEventListener('click',e=>{ if(e.target===$('share-bg')) closeSharePopup(); });
@@ -2718,7 +2871,10 @@ $('profile-bg').addEventListener('click',e=>{ if(e.target===$('profile-bg')) clo
 // ------------------------------------------------------------
 function winProbability(userOverall, opponentOverall){
   const diff = userOverall - opponentOverall;
-  return 1 / (1 + Math.exp(-diff * 0.12));
+  // Steeper sigmoid (0.20) so rating gaps bite hard in the knockouts — a low-80s
+  // squad facing a 90+ Final opponent is a heavy underdog, making a title run
+  // for a weak team almost impossible.
+  return 1 / (1 + Math.exp(-diff * 0.20));
 }
 function expectedGoals(teamOverall){
   return (teamOverall / 100) * 1.8;
