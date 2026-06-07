@@ -579,6 +579,16 @@
   .sim-summary-row:last-child{border-bottom:none;}
   .sim-summary .win-marker{color:#4ade80;}
   .sim-summary .loss-marker{color:var(--red);}
+  /* match-row hierarchy: round label muted, score is the focal point */
+  .sim-summary-row .m-round{font-weight:900;font-size:11px;letter-spacing:.5px;
+    text-transform:uppercase;opacity:.7;flex:0 0 auto;}
+  .sim-summary-row .m-line{display:inline-flex;align-items:baseline;gap:6px;
+    justify-content:flex-end;flex:1 1 auto;min-width:0;white-space:nowrap;}
+  .sim-summary-row .m-you{font-weight:800;font-size:11px;letter-spacing:.5px;text-transform:uppercase;opacity:.55;}
+  .sim-summary-row .m-score{font-family:'Anton',Impact,sans-serif;font-size:19px;
+    color:#fff;letter-spacing:.5px;}
+  .sim-summary-row .m-opp{font-weight:600;font-size:12px;opacity:.8;
+    overflow:hidden;text-overflow:ellipsis;}
   .sim-summary .sim-sub-label{font-weight:900; font-size:11px; letter-spacing:1px; margin:12px 0 2px; opacity:.75;}
   /* helper bits used by the animation flow */
   .sim-gs-result{font-weight:900; font-size:15px;}
@@ -713,6 +723,9 @@
     100%{transform:translateY(106vh) rotate(720deg);opacity:1;}
   }
   .res-teamov{font-weight:800;font-size:14px;margin-top:8px;color:#5a5048;}
+  .res-rank{display:inline-flex;align-items:center;gap:6px;margin:0 0 8px;
+    font-weight:900;font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:#5a5048;}
+  .res-rank b{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:16px;color:var(--ink);}
   .res-message{font-weight:700;font-size:14px;line-height:1.45;margin:12px auto 0;max-width:340px;color:var(--ink);}
   .res-section{font-weight:900;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#8a7d70;margin:18px 0 8px;}
   .res-recap-row,.res-squad-row{display:flex;align-items:center;gap:10px;border:2px solid var(--ink);border-radius:12px;
@@ -729,6 +742,11 @@
     display:flex;flex-direction:column;align-items:center;line-height:1;}
   .res-squad-row .r-ov-lbl{font-family:'Archivo',system-ui,sans-serif;font-size:8px;font-weight:900;
     letter-spacing:.5px;color:#8a7d70;margin-bottom:1px;}
+  /* overall tier colours — match the draft reveal (top tier green); legible on white */
+  .res-squad-row .r-ov.red{color:var(--red);}
+  .res-squad-row .r-ov.orange{color:var(--orange);}
+  .res-squad-row .r-ov.gold{color:var(--gold);}
+  .res-squad-row .r-ov.green{color:#1F9E57;}
 
   /* ---------- difficulty / mode select screen ---------- */
   #screen-mode.active{display:flex;flex-direction:column;}
@@ -1148,6 +1166,8 @@
 <script src="gameLogic.js"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
 <script src="data/players_all.js"></script>
+<!-- html2canvas: snapshots the results recap box into a JPG for sharing. Optional — sharing degrades to text-only if it fails to load. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
 <script>
 const G = window.RunThePitch;
 
@@ -1910,6 +1930,11 @@ function countUp(el, target, dur){
 // ============================================================
 //  POST-DRAFT DARK REVEAL OVERLAY  (over the live pitch)
 // ============================================================
+// Overall-rating tier colour, shared by the reveal overlay and the results
+// squad list. red ≤70, orange 71–80, gold 81–90, green 91+ (the top tier is
+// green so the best players stand out brightest).
+function ovTier(o){ return o>90?'green':o>80?'gold':o>70?'orange':'red'; }
+
 function runRevealOverlay(){
   const ov=$('reveal-overlay'), stack=$('reveal-stack');
   const team=$('reveal-team'), go=$('btn-reveal-go');
@@ -1919,14 +1944,12 @@ function runRevealOverlay(){
   go.classList.remove('show'); go.style.display='none'; go.disabled=false;
 
   const picks=orderPicksForDisplay(gs.result.scoredPicks, ['GK','DEF','DEF','MID','FWD','FLEX']);
-  // overall colour escalates: red ≤70, orange 71–80, green 81–90, gold 91+
-  const ovColor=o=>o>90?'gold':o>80?'green':o>70?'orange':'red';
   picks.forEach(pick=>{
     const p=pick.player;
     const row=document.createElement('div'); row.className='rv-entry';
     row.innerHTML=`<span class="rv-badge" style="${slotBadgeStyle(pick.slot,p)}">${pick.slot}</span>
       <span class="rv-name">${p.name}</span>
-      <span class="rv-right"><span class="rv-ov ${ovColor(p.overall)}"><span class="rv-ov-num" data-ov="${p.overall}">0</span><small>OVR</small></span></span>`;
+      <span class="rv-right"><span class="rv-ov ${ovTier(p.overall)}"><span class="rv-ov-num" data-ov="${p.overall}">0</span><small>OVR</small></span></span>`;
     stack.appendChild(row);
   });
 
@@ -1962,6 +1985,31 @@ function outcomeColor(label){
   return 'var(--red)';
 }
 
+// ---------- local leaderboard ----------
+// Every completed draft is stored locally as { overall, progress } so each new
+// result can be ranked against all drafts played on this device. Ranking is by
+// team overall (highest = best); ties are broken by how far the team advanced
+// in the tournament (progress: 0=group exit … 4=lost final, 5=champion).
+const LEADERBOARD_KEY='rtp_leaderboard';
+// Coerce stored entries to { overall, progress }, tolerating the old number-only format.
+function normEntry(e){
+  if(typeof e==='number') return { overall:e, progress:0 };
+  return { overall:+e.overall||0, progress:+e.progress||0 };
+}
+function loadLeaderboard(){
+  try{ const a=JSON.parse(localStorage.getItem(LEADERBOARD_KEY)); return Array.isArray(a)?a.map(normEntry):[]; }
+  catch(e){ return []; }
+}
+function recordDraftRank(overall, progress){
+  const board=loadLeaderboard();
+  board.push({ overall, progress });
+  try{ localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(board)); }catch(e){}
+  const total=board.length;
+  // "better" = higher overall, or equal overall with further tournament progress
+  const better=board.filter(e => e.overall>overall || (e.overall===overall && e.progress>progress)).length;
+  return { rank: better+1, total };
+}
+
 function goToResults(){
   const r=gs.result, sim=simResult;
   const oc=simOutcome(sim);
@@ -1972,50 +2020,34 @@ function goToResults(){
   const ROUND_DISPLAY={'Group Stage':'Group Stage','Round of 16':'Round of 16',
     'Quarter-final':'Quarter-finals','Semi-final':'Semi-finals','Final':'Final'};
   const champ = sim && !sim.eliminated && sim.furthestRound==='Final';
-  const roundName = sim ? (ROUND_DISPLAY[sim.furthestRound]||sim.furthestRound) : oc.label;
 
-  const header = champ
-    ? `<div class="res-champ">
-        <div class="champ-trophy">🏆</div>
-        <div class="res-result champ">WORLD CUP CHAMPIONS</div>
-        <div class="res-teamov">Team Overall: ${r.teamOverall}/100</div>
-        ${oc.message?`<div class="res-message">${oc.message}</div>`:''}
-      </div>`
-    : `<div class="res-eyebrow">Eliminated in the</div>
-       <div class="res-result" style="color:${color}">${roundName.toUpperCase()}</div>
-       <div class="res-teamov">Team Overall: ${r.teamOverall}/100</div>
-       ${oc.message?`<div class="res-message">${oc.message}</div>`:''}`;
+  // record this draft once and rank it among all drafts played on this device.
+  // Tiebreaker = how far the team advanced (0=group … 4=lost final, 5=champion).
+  const ROUND_PROGRESS={'Group Stage':0,'Round of 16':1,'Quarter-final':2,'Semi-final':3,'Final':4};
+  const progress = champ ? 5 : (sim ? (ROUND_PROGRESS[sim.furthestRound] ?? 0) : 0);
+  if(!gs.result._lb) gs.result._lb = recordDraftRank(r.teamOverall, progress);
+  const lb = gs.result._lb;
+  const roundName = sim ? (ROUND_DISPLAY[sim.furthestRound]||sim.furthestRound) : oc.label;
 
   const modeBadge = gameMode==='hard'
     ? `<div class="center" style="margin:0 0 8px;"><span class="mode-pill hard">Played on Hard Mode ⚡</span></div>`
     : `<div class="center" style="margin:0 0 8px;"><span class="mode-pill easy">Played on Easy Mode</span></div>`;
 
+  const rankBadge = `<div class="center" style="margin:0 0 8px;">
+    <span class="res-rank">🏅 This draft ranks <b>${lb.rank}</b> of <b>${lb.total}</b> drafts</span></div>`;
+
+  // The black recap box (built from the same sim result) is the page centrepiece.
   let html=`<div class="results-wrap">
-    <div class="res-header">${header}</div>
+    <div id="summary-host"></div>
     ${modeBadge}
-    <div class="res-section">Tournament Recap</div>`;
-
-  const gsAdv = sim ? sim.groupStage.advanced : true;
-  html+=`<div class="res-recap-row"><span class="r-round">Group Stage</span>
-    <span class="r-mid"></span>
-    <span class="r-mark">${gsAdv?'✅ Advanced':'❌ Eliminated'}</span></div>`;
-  if(sim){
-    sim.matches.forEach(m=>{
-      const won=m.winner==='user';
-      const pen=m.penalties?' (pens)':'';
-      html+=`<div class="res-recap-row">
-        <span class="r-round">${m.round}</span>
-        <span class="r-mid">${flagChip(m.opponent.country)} ${m.opponent.country} ${m.opponent.year} · ${m.userGoals}–${m.opponentGoals}${pen}</span>
-        <span class="r-mark">${won?'✅':'❌'}</span></div>`;
-    });
-  }
-
-  html+=`<div class="res-section">Your Squad</div><div id="res-squad"></div>
+    ${rankBadge}
+    <div class="res-section">Your Squad: ${r.teamOverall} OVR</div><div id="res-squad"></div>
     <div class="stack" style="margin-top:16px;">
-      <button class="btn red" id="res-share">Share Your Team →</button>
+      <button class="btn red" id="res-share">Share Your Result →</button>
       <button class="btn teal" id="res-again">Play Again</button>
     </div></div>`;
   c.innerHTML=html;
+  $('summary-host').appendChild(buildSummaryCard());
 
   const squadBox=$('res-squad');
   const picks=orderPicksForDisplay(r.scoredPicks, ['GK','DEF','DEF','MID','FWD','FLEX']);
@@ -2025,11 +2057,11 @@ function goToResults(){
     row.innerHTML=`<span class="r-badge" style="${slotBadgeStyle(pick.slot,p)}">${pick.slot}</span>
       <span class="r-name">${p.name}</span>
       <span class="r-cy">${flagChip(p.country)} ${p.year}</span>
-      <span class="r-ov"><small class="r-ov-lbl">OVR</small>${p.overall}</span>`;
+      <span class="r-ov ${ovTier(p.overall)}"><small class="r-ov-lbl">OVR</small>${p.overall}</span>`;
     row.addEventListener('click',()=>openProfile(p));
     squadBox.appendChild(row);
   });
-  $('res-share').addEventListener('click', goToReport);
+  $('res-share').addEventListener('click', shareResult);
   $('res-again').addEventListener('click', newGame);
 
   showScreen('reveal');
@@ -2125,18 +2157,64 @@ function closeProfile(){ $('profile-bg').classList.remove('show'); }
 // ============================================================
 //  REPORT SCREEN
 // ============================================================
-// Share-card text, with a hard-mode marker added below the emoji grid.
+// Share-card text. Encourages the recipient to play; a World Cup win turns it
+// into a direct challenge. Plain text only (no URL encoding).
 function reportText(){
-  let text=G.generateMatchReport(gs.result);
-  if(gameMode==='hard') text=text.replace('\nRunThe.gg/pitch','\n[Hard Mode]\nRunThe.gg/pitch');
+  const champ = simResult && !simResult.eliminated && simResult.furthestRound==='Final';
+  const ROUND_PHRASE={
+    'Group Stage':'the group stage','Round of 16':'the Round of 16',
+    'Quarter-final':'the Quarter-finals','Semi-final':'the Semi-finals','Final':'the Final'
+  };
+  let text;
+  if(champ){
+    text = "🏆⚽ I just WON the World Cup on RunThePitch!\n"
+         + "I drafted a squad of legends and went all the way. "
+         + "Think you can build a team good enough to lift the trophy? "
+         + "I challenge you to do the same → RunThe.gg/pitch";
+  } else if(simResult && simResult.furthestRound==='Group Stage'){
+    text = "⚽ I drafted a squad on RunThePitch but couldn't escape the group stage. "
+         + "Think you can do better? Build your dream XI → RunThe.gg/pitch";
+  } else {
+    const reached = simResult ? (ROUND_PHRASE[simResult.furthestRound]||simResult.furthestRound) : 'the tournament';
+    text = `⚽ I drafted a squad on RunThePitch and reached ${reached}. `
+         + "Can you build a better team and go further? Play → RunThe.gg/pitch";
+  }
+  if(gameMode==='hard') text += "\n[Hard Mode]";
   return text;
 }
 
 function goToReport(){
   const text=reportText();
-  // style the emoji grid line a touch
   $('report-box').textContent=text;
   showScreen('report');
+}
+
+// Share the result: a JPG of the black recap box + the encouraging text via the
+// native share sheet. Degrades gracefully to text-only share, then clipboard.
+async function shareResult(){
+  const text=reportText();
+  const box=document.getElementById('results-summary-box');
+  let file=null;
+  if(box && window.html2canvas){
+    try{
+      const canvas=await html2canvas(box,{backgroundColor:'#16120F',scale:2,useCORS:true,logging:false});
+      const blob=await new Promise(res=>canvas.toBlob(res,'image/jpeg',0.92));
+      if(blob) file=new File([blob],'runthepitch.jpg',{type:'image/jpeg'});
+    }catch(e){ /* snapshot failed → share text only */ }
+  }
+  // 1) native share with the image (mobile Safari / Android)
+  if(file && navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({ files:[file], text, title:'RunThePitch' }); return; }
+    catch(e){ if(e && e.name==='AbortError') return; }
+  }
+  // 2) native share, text only
+  if(navigator.share){
+    try{ await navigator.share({ text }); return; }
+    catch(e){ if(e && e.name==='AbortError') return; }
+  }
+  // 3) clipboard fallback (desktop)
+  await copyToClipboard(text);
+  const t=$('toast'); t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600);
 }
 
 // Copy the report to the clipboard as PLAIN text. iOS Safari needs an explicit
@@ -2263,6 +2341,37 @@ $('profile-bg').addEventListener('click',e=>{ if(e.target===$('profile-bg')) clo
 //  WORLD CUP SIMULATION ENGINE
 //  (kept here in index.html, separate from gameLogic.js)
 // ============================================================
+//
+//  testSimulation() output (1000 games per overall, see CHANGE 6;
+//  sigmoid multiplier = 0.12 as specified, averaged over 5 runs):
+//    OVR 65: ~0.0%
+//    OVR 70: ~0.0%
+//    OVR 75: ~0.3%
+//    OVR 80: ~1.7%
+//    OVR 85: ~5.9%
+//    OVR 90: ~14.2%
+//    OVR 95: ~28.4%
+//  The curve tracks the intended shape (weak squads near-hopeless, only
+//  elite squads contend). Absolute rates sit below the aspirational targets
+//  because the validation ladder ends with a 94-rated Final opponent — and
+//  the multiplier is fixed at 0.12 because that is the value that reproduces
+//  the CHANGE 1 matchup probabilities (75v70≈65%, 75v80≈35%, 90v90≈50%,
+//  95v85≈77%). Raising it to chase a ~48% top-end would violate those.
+//
+// ------------------------------------------------------------
+//  CORE DIFFICULTY MODEL
+//  winProbability is the SINGLE source of truth for who wins a
+//  match (CHANGE 1). Extra-time and penalty resolution follow it
+//  for consistency rather than introducing a second randomness
+//  system. expectedGoals ties the scoreline to team strength.
+// ------------------------------------------------------------
+function winProbability(userOverall, opponentOverall){
+  const diff = userOverall - opponentOverall;
+  return 1 / (1 + Math.exp(-diff * 0.12));
+}
+function expectedGoals(teamOverall){
+  return (teamOverall / 100) * 1.8;
+}
 
 // Average overall of a squad — same approach used for the user's team.
 function simTeamOverall(squad){
@@ -2315,39 +2424,66 @@ function drawOpponent(pool, difficulty){
   return pool.splice(pick,1)[0];
 }
 
-// Historical tournament_result tiers that make a realistic opponent per round.
-const ROUND_RESULTS = {
-  'Round of 16':   ['group','round16','quarterfinal'],
-  'Quarter-final': ['quarterfinal','third','fourth','runner_up','champion'],
-  'Semi-final':    ['third','fourth','runner_up','champion'],
-  'Final':         ['runner_up','champion'],
+// CHANGE 5 — strictly enforced opponent pools per knockout round.
+// Each round draws from a team_overall band, preferring squads whose historical
+// tournament_result fits the round; a wider band is the fallback. The Final is
+// special: opponents must always be elite (team_overall >= 90).
+const ROUND_OPPONENTS = {
+  'Round of 16':   { range:[65,78], prefer:['group','round16'],              fallback:[60,80] },
+  'Quarter-final': { range:[75,84], prefer:['round16','quarterfinal'],       fallback:[70,86] },
+  'Semi-final':    { range:[83,91], prefer:['quarterfinal','third','fourth'], fallback:[80,93] },
+  'Final':         { range:[90,99], prefer:['runner_up','champion'],          fallback:null },
 };
 
-// Draw an opponent appropriate to the knockout round: first try squads whose
-// historical tournament_result fits the round, weighted by difficulty within
-// that subset. If none qualify, fall back to the plain difficulty draw so the
-// player is never left without an opponent.
-function drawOpponentForRound(pool, round, difficulty){
-  const allowed = ROUND_RESULTS[round];
-  if(allowed){
-    const subset = pool.map((o,i)=>i).filter(i=>allowed.includes(pool[i].tournamentResult));
-    if(subset.length){
-      const [lo,hi] = SIM_DIFF_RANGES[difficulty] || SIM_DIFF_RANGES.medium;
-      let idxs = subset.filter(i=>pool[i].teamOverall>=lo && pool[i].teamOverall<=hi);
-      if(!idxs.length) idxs = subset; // keep the realistic subset even if the band is empty
-      const pick = idxs[Math.floor(Math.random()*idxs.length)];
-      return pool.splice(pick,1)[0];
-    }
+// Draw an opponent for a knockout round, removing it from `pool` so the same
+// squad is never faced twice in one run. Selection order:
+//   1) in-range squads whose tournament_result matches the round preference
+//   2) any in-range squad
+//   3) the wider fallback band
+//   4) (Final only) any squad >= 90, else the single highest-rated squad
+//   5) (non-Final last resort) any remaining squad
+function drawOpponentForRound(pool, round){
+  if(!pool.length) return null;
+  const cfg = ROUND_OPPONENTS[round];
+  const inBand = (lo,hi) => pool.map((o,i)=>i).filter(i=>pool[i].teamOverall>=lo && pool[i].teamOverall<=hi);
+  let candidates = [];
+
+  if(cfg){
+    const idxs = inBand(cfg.range[0], cfg.range[1]);
+    const preferred = idxs.filter(i=>cfg.prefer.includes(pool[i].tournamentResult));
+    candidates = preferred.length ? preferred : idxs;
+    if(!candidates.length && cfg.fallback) candidates = inBand(cfg.fallback[0], cfg.fallback[1]);
   }
-  return drawOpponent(pool, difficulty);
+
+  // The Final opponent must always be elite — never fall back below 90.
+  if(!candidates.length && round==='Final'){
+    const all = pool.map((o,i)=>i);
+    const elite = all.filter(i=>pool[i].teamOverall>=90);
+    if(elite.length) candidates = elite;
+    else { const maxOv = Math.max(...all.map(i=>pool[i].teamOverall)); candidates = all.filter(i=>pool[i].teamOverall===maxOv); }
+  }
+  // Non-Final last resort: any remaining squad so the run is never stranded.
+  if(!candidates.length) candidates = pool.map((o,i)=>i);
+
+  const pick = candidates[Math.floor(Math.random()*candidates.length)];
+  return pool.splice(pick,1)[0];
+}
+
+// CHANGE 4 — stricter group-stage gate. A 75-overall squad now clears the
+// group only ~60% of the time; this is the first hard wall for a weak side.
+function groupStageAdvance(teamOverall){
+  if(teamOverall >= 80) return Math.random() < 0.92;
+  if(teamOverall >= 70) return Math.random() < 0.60;
+  if(teamOverall >= 60) return Math.random() < 0.35;
+  return Math.random() < 0.20;
 }
 
 // Group stage — simple pass/fail, no match detail.
 function simulateGroupStage(userOverall){
-  if(userOverall>=60) return { advanced:true, message:"Your squad dominated the group stage." };
-  const chance = userOverall>=50 ? 0.70 : 0.40;
-  if(Math.random()<chance) return { advanced:true, message:"Your squad scraped through the group stage." };
-  return { advanced:false, message:"Your squad was eliminated in the group stage." };
+  if(!groupStageAdvance(userOverall)) return { advanced:false, message:"Your squad was eliminated in the group stage." };
+  return { advanced:true, message: userOverall>=80
+    ? "Your squad dominated the group stage."
+    : "Your squad scraped through the group stage." };
 }
 
 // Scoring tendency by position: forwards score most, goalkeepers never.
@@ -2389,32 +2525,47 @@ function simMakeGoalEvent(beneficiary, userSquad, opponent, extraTime){
 // Simulate one knockout match.
 function simulateMatch(userSquad, userOverall, opponent){
   const oppOverall = opponent.teamOverall;
-  const clampGoals = g => Math.max(0, Math.min(5, g));
-  const roll = ov => clampGoals(Math.round(((ov/100)*2.2) * (0.3 + Math.random()*1.6)));
+  const cap = g => Math.max(0, Math.min(5, g)); // 0..5 goals per team
 
-  let userGoals = roll(userOverall);
-  let opponentGoals = roll(oppOverall);
-  let extraTime=false, penalties=false, penaltyWinner=null;
-  const goalEvents=[];
+  // CHANGE 1 — the sigmoid is the single source of truth for the result.
+  const userWins = Math.random() < winProbability(userOverall, oppOverall);
+  const winSide  = userWins ? 'user' : 'opponent';
 
-  for(let i=0;i<userGoals;i++)     goalEvents.push(simMakeGoalEvent('user', userSquad, opponent, false));
-  for(let i=0;i<opponentGoals;i++) goalEvents.push(simMakeGoalEvent('opponent', userSquad, opponent, false));
+  // CHANGE 2 — scoreline driven by each team's expected goals.
+  let userGoals     = cap(Math.round(expectedGoals(userOverall) * (0.4 + Math.random()*1.2)));
+  let opponentGoals = cap(Math.round(expectedGoals(oppOverall)  * (0.4 + Math.random()*1.2)));
 
-  if(userGoals===opponentGoals){
-    extraTime=true;
-    // 55% chance one team wins it in extra time (was 45%) — this roughly halves
-    // how often matches go all the way to a penalty shootout.
-    if(Math.random()<0.55){
-      // one team scores in ET, weighted toward the higher overall
-      const toUser = Math.random()*(userOverall+oppOverall) < userOverall;
-      if(toUser){ userGoals++; goalEvents.push(simMakeGoalEvent('user', userSquad, opponent, true)); }
-      else      { opponentGoals++; goalEvents.push(simMakeGoalEvent('opponent', userSquad, opponent, true)); }
-    }
-    if(userGoals===opponentGoals){
-      penalties=true;
-      penaltyWinner = Math.random()<0.5 ? 'user' : 'opponent';
+  let extraTime=false, penalties=false, penaltyWinner=null, etGoalTeam=null;
+
+  // CHANGE 3 — only when level after 90: extra time, then penalties.
+  if(userGoals === opponentGoals){
+    extraTime = true;
+    if(Math.random() < 0.65){
+      // a single extra-time goal settles it, awarded to the determined winner
+      etGoalTeam = winSide;
+      if(winSide==='user') userGoals = cap(userGoals+1); else opponentGoals = cap(opponentGoals+1);
+    } else {
+      // still level → shootout. The winner follows the sigmoid (CHANGE 1);
+      // the animated board still shows a tense, close shootout.
+      penalties = true;
+      penaltyWinner = winSide;
     }
   }
+
+  // CHANGE 2 — enforce the probability-driven winner on the scoreline (cap-safe).
+  if(!penalties){
+    if(userWins && userGoals <= opponentGoals){
+      if(opponentGoals >= 5){ opponentGoals = 4; userGoals = 5; } else userGoals = opponentGoals + 1;
+    } else if(!userWins && opponentGoals <= userGoals){
+      if(userGoals >= 5){ userGoals = 4; opponentGoals = 5; } else opponentGoals = userGoals + 1;
+    }
+  }
+
+  // Build goal events; the ET-scoring side's last goal is flagged as extra-time.
+  const goalEvents=[];
+  const pushGoals=(team,n,etLast)=>{ for(let i=0;i<n;i++) goalEvents.push(simMakeGoalEvent(team, userSquad, opponent, !!etLast && i===n-1)); };
+  pushGoals('user', userGoals, etGoalTeam==='user');
+  pushGoals('opponent', opponentGoals, etGoalTeam==='opponent');
 
   let winner;
   if(userGoals>opponentGoals) winner='user';
@@ -2432,7 +2583,6 @@ function simulateMatch(userSquad, userOverall, opponent){
 // Run the full tournament from group stage through the final.
 function simulateTournament(userSquad, userOverall, playerPool){
   const rounds = ['Round of 16','Quarter-final','Semi-final','Final'];
-  const diffs  = ['easy','medium','hard','elite'];
   const result = {
     groupStage: simulateGroupStage(userOverall),
     matches: [],
@@ -2450,7 +2600,7 @@ function simulateTournament(userSquad, userOverall, playerPool){
   }
 
   for(let i=0;i<rounds.length;i++){
-    const opp = drawOpponentForRound(playerPool, rounds[i], diffs[i]);
+    const opp = drawOpponentForRound(playerPool, rounds[i]);
     if(!opp) break;
     const m = simulateMatch(userSquad, userOverall, opp);
     m.round = rounds[i];
@@ -2469,6 +2619,29 @@ function simulateTournament(userSquad, userOverall, playerPool){
   simFinalizeMOT(result, userSquad);
   return result;
 }
+
+// CHANGE 6 — temporary console validation: 1000 runs per overall, logging the
+// share of complete World Cup wins (group + four knockout rounds, win/loss
+// driven purely by the sigmoid against an escalating opponent ladder).
+function testSimulation(){
+  const overalls = [65, 70, 75, 80, 85, 90, 95];
+  overalls.forEach(ov => {
+    let wcWins = 0;
+    let attempts = 1000;
+    for (let i = 0; i < attempts; i++) {
+      if (!groupStageAdvance(ov)) continue;
+      const opponents = [72, 79, 87, 94];
+      let survived = true;
+      for (let opp of opponents) {
+        const prob = winProbability(ov, opp);
+        if (Math.random() >= prob) { survived = false; break; }
+      }
+      if (survived) wcWins++;
+    }
+    console.log(`OVR ${ov}: WC wins = ${wcWins}/1000 (${(wcWins/10).toFixed(1)}%)`);
+  });
+}
+testSimulation();
 
 // Most goals by a user player, tiebreak by overall. Falls back to the
 // highest-rated player if nobody scored.
@@ -2813,24 +2986,24 @@ async function playMatchAnimation(m){
   return won;
 }
 
-function showSimSummary(){
+// Build the black recap box (outcome + matches + top scorer + MOT). It is the
+// shareable centrepiece on the final results page; id lets html2canvas snapshot it.
+function buildSummaryCard(){
   const r=simResult;
-  const content=$('sim-content');
-
-  // single source of truth — and push it onto gs.result so the final results
-  // page and the shareable report show the SAME outcome the sim just produced.
   const oc = simOutcome(r);
-  gs.result.resultLabel = oc.label;
-  gs.result.resultEmoji = oc.emoji;
   const emoji = oc.emoji, headline = oc.label;
 
   const rows = r.matches.map(m=>{
     const won=m.winner==='user';
     const pen=m.penalties?` (pens ${won?'W':'L'})`:'';
     return `<div class="sim-summary-row">
-      <span>${m.round}</span>
-      <span>Your Team ${m.userGoals} — ${m.opponentGoals} ${m.opponent.country} ${m.opponent.year}${pen}
-        <span class="${won?'win-marker':'loss-marker'}">${won?'✅':'❌'}</span></span>
+      <span class="m-round">${m.round}</span>
+      <span class="m-line">
+        <span class="m-you">You</span>
+        <span class="m-score">${m.userGoals}–${m.opponentGoals}</span>
+        <span class="m-opp">${m.opponent.country} ${m.opponent.year}${pen}</span>
+        <span class="${won?'win-marker':'loss-marker'}">${won?'✅':'❌'}</span>
+      </span>
     </div>`;
   }).join('');
 
@@ -2840,10 +3013,10 @@ function showSimSummary(){
 
   const card=document.createElement('div');
   card.className='sim-summary';
+  card.id='results-summary-box';
   card.innerHTML=`
     ${emoji?`<div style="text-align:center;font-size:62px;line-height:1;margin-bottom:2px;">${emoji}</div>`:''}
-    <div class="display" style="text-align:center;font-size:34px;line-height:1.05;color:#fff;margin:${emoji?'2px':'4px'} 0 4px;">${headline}</div>
-    <div style="text-align:center;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase;opacity:.75;margin-bottom:${oc.message?'10px':'16px'};">Final Standing</div>
+    <div class="display" style="text-align:center;font-size:34px;line-height:1.05;color:#fff;margin:${emoji?'2px':'4px'} 0 ${oc.message?'8px':'14px'};">${headline}</div>
     ${oc.message?`<div style="text-align:center;font-weight:600;font-size:13px;line-height:1.45;color:var(--gold);margin-bottom:16px;">${oc.message}</div>`:''}
     <div class="sim-sub-label">MATCHES</div>
     ${rows || '<div class="sim-summary-row"><span>No knockout matches</span><span></span></div>'}
@@ -2851,19 +3024,31 @@ function showSimSummary(){
     <div class="sim-summary-row"><span>${topName}</span><span>${topGoals} goal${topGoals===1?'':'s'}</span></div>
     <div class="sim-sub-label">MAN OF THE TOURNAMENT</div>
     <div class="sim-summary-row"><span>${mot}</span><span></span></div>`;
-  content.appendChild(card);
-  card.scrollIntoView({behavior:'smooth',block:'center'});
+  return card;
+}
 
+function showSimSummary(){
+  const r=simResult;
+  const content=$('sim-content');
+
+  // single source of truth — push the outcome onto gs.result so the results
+  // page and the shareable report show the SAME outcome the sim just produced.
+  const oc = simOutcome(r);
+  gs.result.resultLabel = oc.label;
+  gs.result.resultEmoji = oc.emoji;
+
+  // The recap box now lives on the final results page — the sim screen just
+  // offers the button through to it once the matches have finished.
   setTimeout(()=>{
-    const wrap=document.createElement('div'); wrap.className='stack';
+    const wrap=document.createElement('div'); wrap.className='stack'; wrap.style.marginTop='10px';
     const btn=document.createElement('button');
-    btn.className='btn red';
+    btn.className='btn red big';
     btn.textContent='Continue to Results';
     btn.addEventListener('click', goToResults);
     wrap.appendChild(btn);
     content.appendChild(wrap);
     wrap.scrollIntoView({behavior:'smooth',block:'center'});
-  }, 1000);
+  }, 600);
 }
 
 // Entry point: runs after the draft completes, before the reveal screen.
