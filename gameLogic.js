@@ -355,13 +355,10 @@ function computeResult(state) {
   const diff = boostedAvg - neutralAvg;
   const coherenceScore = clamp(50 + diff * 1.5, 0, 100);
 
-  // Coherence bonus: ±7.5 max
-  const coherenceBonus = clamp((coherenceScore - 50) * 0.15, -7.5, 7.5);
-
-  const rawTeam = clamp(baseAvg + coherenceBonus, 0, 100);
-
-  // Non-linear team curve (same shape as individual curve)
-  const teamOverall = Math.round(applyCurve(rawTeam));
+  // Team overall is the straight average of the six drafted players' overalls.
+  const teamOverall = Math.round(
+    state.picks.reduce((sum, pick) => sum + pick.player.overall, 0) / state.picks.length
+  );
 
   const tier = RESULT_TIERS.find(t => teamOverall >= t.min && teamOverall <= t.max)
     || RESULT_TIERS[RESULT_TIERS.length - 1];

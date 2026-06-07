@@ -472,7 +472,7 @@
   #screen-home.active{display:flex;flex-direction:column;align-items:stretch;
     height:calc(100svh - 24px);}
   #screen-home .roundbar{flex:0 0 auto;margin-bottom:10px;}
-  #screen-home .home-spin{flex:0 0 auto;margin:0 0 10px;}
+  #screen-home .home-spin{flex:0 0 auto;margin:10px 0 0;}
   #screen-home .pitch-cap{flex:0 0 auto;margin:0 0 6px;}
   /* field flexes to fill the leftover height, keeping its aspect ratio & circles proportional */
   #screen-home #pitch-wrap{flex:0 1 auto;min-height:0;width:100%;aspect-ratio:10 / 14;
@@ -722,6 +722,51 @@
     display:flex;flex-direction:column;align-items:center;line-height:1;}
   .res-squad-row .r-ov-lbl{font-family:'Archivo',system-ui,sans-serif;font-size:8px;font-weight:900;
     letter-spacing:.5px;color:#8a7d70;margin-bottom:1px;}
+
+  /* ---------- difficulty / mode select screen ---------- */
+  #screen-mode.active{display:flex;flex-direction:column;}
+  .mode-head{text-align:center;margin:10px 0 18px;}
+  .mode-title{font-family:'Anton',Impact,sans-serif;font-size:clamp(30px,8vw,42px);
+    text-transform:uppercase;line-height:1;letter-spacing:.5px;}
+  .mode-sub{font-weight:600;font-size:14px;color:#8a7d70;margin-top:6px;}
+  .mode-cards{display:flex;gap:12px;}
+  @media (max-width:430px){ .mode-cards{flex-direction:column;} }
+  .mode-card{flex:1 1 0;border:2px solid var(--ink);border-radius:16px;background:var(--white);
+    padding:18px 16px;text-align:center;color:var(--ink);position:relative;
+    transition:opacity .15s ease, transform .08s ease, box-shadow .1s ease, background .15s ease;
+    box-shadow:var(--shadow-sm);}
+  .mode-card:active{transform:translate(2px,2px);box-shadow:none;}
+  .mode-card .mc-label{font-weight:900;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;}
+  .mode-card .mc-icon{font-size:40px;line-height:1;margin:8px 0;}
+  .mode-card .mc-headline{font-family:'Anton',Impact,sans-serif;font-size:20px;text-transform:uppercase;margin-bottom:6px;}
+  .mode-card .mc-desc{font-weight:600;font-size:12.5px;line-height:1.42;color:#5a5048;}
+  .mode-card .mc-check{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;
+    display:none;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:14px;}
+  .mode-card.easy{border-color:var(--teal);background:rgba(19,138,107,.06);}
+  .mode-card.easy .mc-label,.mode-card.easy .mc-headline{color:var(--teal);}
+  .mode-card.hard{border-color:var(--red);background:rgba(229,64,42,.06);}
+  .mode-card.hard .mc-label,.mode-card.hard .mc-headline{color:var(--red);}
+  .mode-cards.has-sel .mode-card{opacity:.6;}
+  .mode-card.selected{opacity:1 !important;border-width:3px;}
+  .mode-card.easy.selected{background:rgba(19,138,107,.16);}
+  .mode-card.hard.selected{background:rgba(229,64,42,.16);}
+  .mode-card.selected .mc-check{display:flex;}
+  .mode-card.easy .mc-check{background:var(--teal);}
+  .mode-card.hard .mc-check{background:var(--red);}
+
+  /* mode pill (draft header + results) */
+  .mode-pill{flex:0 0 auto;font-weight:900;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    padding:4px 10px;border-radius:999px;border:2px solid var(--ink);color:#fff;box-shadow:2px 2px 0 var(--ink);
+    white-space:nowrap;}
+  .mode-pill.easy{background:var(--teal);}
+  .mode-pill.hard{background:var(--red);}
+
+  /* easy-mode OVR on player cards (position-coloured) */
+  .pcard .ovr{font-family:'Anton',Impact,sans-serif;font-size:21px;line-height:1;}
+  .pcard .ovr small{font-family:'Archivo',system-ui,sans-serif;font-size:9px;font-weight:900;letter-spacing:.5px;margin-left:3px;}
+  .pcard .ovr.GK{color:var(--pos-gk);}  .pcard .ovr.DEF{color:var(--pos-def);}
+  .pcard .ovr.MID{color:var(--pos-mid);} .pcard .ovr.FWD{color:var(--pos-fwd);}
+  .pcard .statline.caps{color:#9a8d80;font-size:9px;}
 </style>
 </head>
 <body>
@@ -886,10 +931,10 @@
         <path class="trophy-glint" d="M25 5.5 C 22 10.5 22 18.5 26 23.5 C 23 17.5 23 10.5 27 5.5 Z" fill="#fff" opacity="0"/>
       </svg></div>
       <h1 class="display">Spin. Pick. Conquer.</h1>
-      <p>Draft a legend each round. Build your dream XI.</p>
+      <p>Draft a legend each round. Build your dream VI.</p>
       <div class="rules">
         <div class="rule"><span class="n">1</span><span>Spin a random nation &amp; year.</span></div>
-        <div class="rule"><span class="n">2</span><span>Draft a player to fill your XI: GK · DEF · DEF · MID · FWD · FLEX.</span></div>
+        <div class="rule"><span class="n">2</span><span>Draft a player to fill your VI: GK · DEF · DEF · MID · FWD · FLEX.</span></div>
         <div class="rule"><span class="n">3</span><span>Repeat for six rounds to complete your squad.</span></div>
         <div class="rule"><span class="n">4</span><span>Simulate a World Cup against historic squads — go all the way and lift the trophy.</span></div>
       </div>
@@ -899,14 +944,38 @@
     </div>
   </section>
 
+  <!-- ===== MODE SELECT (difficulty) ===== -->
+  <section id="screen-mode" class="screen">
+    <div class="mode-head">
+      <div class="mode-title">Choose Your Mode</div>
+      <div class="mode-sub">How well do you know your World Cup history?</div>
+    </div>
+    <div class="mode-cards" id="mode-cards">
+      <button class="mode-card easy" id="mode-easy" data-mode="easy">
+        <span class="mc-check">✓</span>
+        <div class="mc-label">Easy Mode</div>
+        <div class="mc-icon">👁</div>
+        <div class="mc-headline">Ratings Visible</div>
+        <div class="mc-desc">Player overall ratings are shown during the draft. Use them to build the best squad possible.</div>
+      </button>
+      <button class="mode-card hard" id="mode-hard" data-mode="hard">
+        <span class="mc-check">✓</span>
+        <div class="mc-label">Hard Mode</div>
+        <div class="mc-icon">🧠</div>
+        <div class="mc-headline">Stats Only</div>
+        <div class="mc-desc">Overall ratings are hidden. Pick players based on their stats alone. True World Cup knowledge required.</div>
+      </button>
+    </div>
+    <div class="stack" style="margin-top:20px;">
+      <button id="btn-start-draft" class="btn red big" disabled>Start Draft</button>
+    </div>
+  </section>
+
   <!-- ===== HOME (pitch + spin) ===== -->
   <section id="screen-home" class="screen">
     <div class="roundbar">
       <span class="label" id="home-round-label">Round 1 / 6</span>
       <div class="dots" id="home-dots"></div>
-    </div>
-    <div class="stack home-spin">
-      <button id="btn-go-spin" class="btn red big" disabled>Loading squads…</button>
     </div>
     <div class="pitch-cap">Your Starting VI</div>
     <div class="pitch-wrap" id="pitch-wrap">
@@ -951,6 +1020,9 @@
       <div class="pr-label">Team Rating</div>
       <div class="pr-score"><span id="pr-score-val">0</span><small>/100</small></div>
     </div>
+    <div class="stack home-spin">
+      <button id="btn-go-spin" class="btn red big" disabled>Loading squads…</button>
+    </div>
     <div class="stack">
       <button id="btn-start-wc" class="btn red big" style="display:none">⚽ Start World Cup</button>
     </div>
@@ -985,6 +1057,7 @@
       <span class="sel-flag" id="select-flag"></span>
       <span class="sel-title" id="select-country"></span>
       <span class="finish-badge" id="select-finish" style="display:none"></span>
+      <span class="mode-pill" id="select-mode-pill" style="display:none"></span>
     </div>
     <div class="sel-respins" id="select-respins">
       <button id="btn-respin-country" class="rebtn">↻ Nation</button>
@@ -1163,6 +1236,7 @@ const SLOT_LABELS = {GK:"Goalkeeper",DEF:"Defender",MID:"Midfielder",FWD:"Forwar
 let gs = null;
 let allCountries = [];
 let selectedPlayer = null; // for slot sheet
+let gameMode = null; // 'easy' or 'hard' — chosen on the difficulty screen
 
 function $(id){return document.getElementById(id);}
 function showScreen(name){
@@ -1653,6 +1727,10 @@ function paintSquad(){
   const fb=$('select-finish');
   if(fin){ fb.textContent=fin.label; fb.className='finish-badge'+(fin.cls?' '+fin.cls:''); fb.style.display=''; }
   else   { fb.style.display='none'; }
+  // persistent mode indicator (far right of the header)
+  const mp=$('select-mode-pill');
+  if(gameMode){ mp.textContent=gameMode==='hard'?'HARD':'EASY'; mp.className='mode-pill '+gameMode; mp.style.display=''; }
+  else        { mp.style.display='none'; }
   updateMiniPitch();
   renderGrid(squad);
   updateRespinButtons();
@@ -1690,6 +1768,25 @@ function statLine(p){
   return seg.join(' · ');
 }
 
+// Mode-dependent body of a player card.
+// EASY: position-coloured OVR, no other stats.
+// HARD: stats only (goals, perf, skill, caps), no OVR.
+function cardStatBlock(p){
+  const has = v => v!==null && v!==undefined;
+  if(gameMode==='hard'){
+    const main=[];
+    main.push(`${has(p.goals)?p.goals:'—'} Goals`);          // tournament goals (always shown)
+    if(has(p.wc_performance)) main.push(`Perf ${p.wc_performance}`);
+    if(has(p.skill_rating))   main.push(`Skill ${p.skill_rating}`);
+    let out=`<div class="statline">${main.join(' · ')}</div>`;
+    out+=`<div class="statline caps">${has(p.appearances)?p.appearances:'—'} Caps</div>`; // career caps, last + muted
+    return out;
+  }
+  // easy mode (default)
+  const ov = p.wc_overall ?? p.overall ?? '—';
+  return `<div class="ovr ${p.position}">${ov}<small>OVR</small></div>`;
+}
+
 function renderGrid(squad){
   const g=$('player-grid'); g.innerHTML='';
   // players already drafted this game can't be picked again
@@ -1719,8 +1816,7 @@ function renderGrid(squad){
         <span class="nm">${p.name}${p.is_captain?'<span class="capbadge" title="Captain">★</span>':''}</span>
         <span class="posbadge ${p.position}">${p.position}</span>
       </div>
-      <div class="psub">${p.height?p.height+' cm':'—'}</div>
-      <div class="statline">${statLine(p)}</div>
+      ${cardStatBlock(p)}
       ${taken?'<span class="drafted-tag">✓ Drafted</span>':awardBadges(p)}`;
     if(!btn.disabled) btn.addEventListener('click',()=>openSheet(p));
     g.appendChild(btn);
@@ -1879,8 +1975,13 @@ function goToResults(){
        <div class="res-teamov">Team Overall: ${r.teamOverall}/100</div>
        ${oc.message?`<div class="res-message">${oc.message}</div>`:''}`;
 
+  const modeBadge = gameMode==='hard'
+    ? `<div class="center" style="margin:0 0 8px;"><span class="mode-pill hard">Played on Hard Mode ⚡</span></div>`
+    : `<div class="center" style="margin:0 0 8px;"><span class="mode-pill easy">Played on Easy Mode</span></div>`;
+
   let html=`<div class="results-wrap">
     <div class="res-header">${header}</div>
+    ${modeBadge}
     <div class="res-section">Tournament Recap</div>`;
 
   const gsAdv = sim ? sim.groupStage.advanced : true;
@@ -2013,33 +2114,89 @@ function closeProfile(){ $('profile-bg').classList.remove('show'); }
 // ============================================================
 //  REPORT SCREEN
 // ============================================================
+// Share-card text, with a hard-mode marker added below the emoji grid.
+function reportText(){
+  let text=G.generateMatchReport(gs.result);
+  if(gameMode==='hard') text=text.replace('\nRunThe.gg/pitch','\n[Hard Mode]\nRunThe.gg/pitch');
+  return text;
+}
+
 function goToReport(){
-  const text=G.generateMatchReport(gs.result);
+  const text=reportText();
   // style the emoji grid line a touch
   $('report-box').textContent=text;
   showScreen('report');
 }
 
-async function copyReport(){
-  const text=G.generateMatchReport(gs.result);
+// Copy the report to the clipboard as PLAIN text. iOS Safari needs an explicit
+// selection range on a focused textarea for execCommand('copy') to work.
+async function copyToClipboard(text){
   try{
     await navigator.clipboard.writeText(text);
+    return true;
   }catch(e){
-    const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);
-    ta.select();try{document.execCommand('copy');}catch(_){}document.body.removeChild(ta);
+    const ta=document.createElement('textarea');
+    ta.value=text;
+    ta.setAttribute('readonly','');
+    ta.style.position='fixed';
+    ta.style.top='0';
+    ta.style.opacity='0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try{ ta.setSelectionRange(0, text.length); }catch(_){}
+    let ok=false;
+    try{ ok=document.execCommand('copy'); }catch(_){}
+    document.body.removeChild(ta);
+    return ok;
   }
+}
+
+async function copyReport(){
+  const text=reportText();
+  // On mobile use the native share sheet, passing PLAIN text only (no URL) so
+  // the result is never percent-encoded by a share link.
+  if(navigator.share){
+    try{
+      await navigator.share({ text });
+      return;
+    }catch(e){
+      if(e && e.name==='AbortError') return; // user dismissed the share sheet
+      // any other failure → fall through to clipboard copy
+    }
+  }
+  await copyToClipboard(text);
   const t=$('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);
 }
 
+// Show the difficulty screen with a fresh (unselected) state.
+function goToModeSelect(){
+  gameMode=null;
+  document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('selected'));
+  $('mode-cards').classList.remove('has-sel');
+  $('btn-start-draft').disabled=true;
+  showScreen('mode');
+}
+
 function newGame(){
-  gs = G.createGameState();
-  goToHome();
+  goToModeSelect();   // reset mode and re-pick difficulty for the new game
 }
 
 // ============================================================
 //  WIRING
 // ============================================================
-$('btn-start').addEventListener('click',()=>{ gs=G.createGameState(); goToHome(); });
+$('btn-start').addEventListener('click',goToModeSelect);
+
+// difficulty cards: select one, then enable START DRAFT
+document.querySelectorAll('.mode-card').forEach(card=>{
+  card.addEventListener('click',()=>{
+    gameMode=card.dataset.mode;
+    document.querySelectorAll('.mode-card').forEach(c=>c.classList.toggle('selected',c===card));
+    $('mode-cards').classList.add('has-sel');
+    $('btn-start-draft').disabled=false;
+  });
+});
+$('btn-start-draft').addEventListener('click',()=>{ gs=G.createGameState(); goToHome(); });
 $('btn-go-spin').addEventListener('click',startSpin);
 $('btn-start-wc').addEventListener('click',()=>{ $('btn-start-wc').disabled=true; runSimulationScreen(); });
 
@@ -2188,24 +2345,33 @@ function simulateGroupStage(userOverall){
   return { advanced:false, message:"Your squad was eliminated in the group stage." };
 }
 
-// Weighted scorer pick — higher overall = more likely to score.
-function simPickScorer(squad){
+// Scoring tendency by position: forwards score most, goalkeepers never.
+const SCORER_WEIGHTS = { FWD:1.0, MID:0.55, DEF:0.12, GK:0 };
+// Own goals are almost always defenders (occasionally the keeper), never forwards.
+const OG_WEIGHTS     = { DEF:1.0, GK:0.5, MID:0.25, FWD:0.1 };
+
+// Weighted scorer pick — higher overall = more likely to score, scaled by a
+// position weight so goalkeepers don't score and defenders rarely do.
+function simPickScorer(squad, weights){
   if(!squad.length) return { name:'Unknown', country:'' };
-  const total = squad.reduce((a,p)=>a+Math.max(1,p.overall||1),0);
+  weights = weights || SCORER_WEIGHTS;
+  const w = p => Math.max(1, p.overall||1) * (weights[p.position] ?? 0.3);
+  const total = squad.reduce((a,p)=>a+w(p),0);
+  if(total<=0) return squad[0];
   let r = Math.random()*total;
-  for(const p of squad){ r -= Math.max(1,p.overall||1); if(r<=0) return p; }
+  for(const p of squad){ r -= w(p); if(r<=0) return p; }
   return squad[squad.length-1];
 }
 
 // Build one goal event for a beneficiary team ('user' | 'opponent').
-// ~1 in 12 goals are own goals: the scorer is drawn from the OTHER team
-// but the goal still counts for the beneficiary.
+// Own goals are rare (~1 in 40): the scorer is drawn from the OTHER team
+// (biased toward defenders) but the goal still counts for the beneficiary.
 function simMakeGoalEvent(beneficiary, userSquad, opponent, extraTime){
-  const isOG = Math.random() < 1/12;
+  const isOG = Math.random() < 1/40;
   let scorerSquad;
   if(beneficiary==='user') scorerSquad = isOG ? opponent.squad : userSquad;
   else                     scorerSquad = isOG ? userSquad      : opponent.squad;
-  const scorer = simPickScorer(scorerSquad);
+  const scorer = simPickScorer(scorerSquad, isOG ? OG_WEIGHTS : SCORER_WEIGHTS);
   const minute = extraTime ? (91+Math.floor(Math.random()*30)) : (1+Math.floor(Math.random()*90));
   return { minute, scorer:scorer.name, scorerCountry:scorer.country, team:beneficiary, isOG };
 }
@@ -2471,6 +2637,12 @@ async function simAnimatePenalties(card, m){
   card.appendChild(board);
   simScrollEnd(board);
 
+  // Scope lookups to THIS board. The ids repeat across matches, so a global
+  // getElementById would resolve to the first shootout's board and append
+  // every later match's kicks into it (combining two games into one).
+  const dotsEl  = { user:board.querySelector('#pen-dots-user'),  opp:board.querySelector('#pen-dots-opp')  };
+  const scoreEl = { user:board.querySelector('#pen-score-user'), opp:board.querySelector('#pen-score-opp') };
+
   const seq=simBuildPenaltySeq(m.penaltyWinner); // alternating user, opp, user, …
   const score={user:0,opponent:0};
   for(const k of seq){
@@ -2478,8 +2650,8 @@ async function simAnimatePenalties(card, m){
     const dot=document.createElement('span');
     dot.className='pen-dot'+(k.scored?' scored':' missed');
     dot.textContent = k.scored ? '●' : '○';
-    $('pen-dots-'+row).appendChild(dot);
-    if(k.scored){ score[k.team]++; $('pen-score-'+row).textContent=score[k.team]; }
+    dotsEl[row].appendChild(dot);
+    if(k.scored){ score[k.team]++; scoreEl[row].textContent=score[k.team]; }
     await simSleep(800); // reveal one kick at a time, alternating teams
   }
   await simSleep(300);
