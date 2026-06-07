@@ -2545,14 +2545,14 @@ function reportText(){
     text = "🏆⚽ I just WON the World Cup on RunThePitch!\n"
          + "I drafted a squad of legends and went all the way. "
          + "Think you can build a team good enough to lift the trophy? "
-         + "I challenge you to do the same → RunThe.gg/pitch";
+         + "I challenge you to do the same → https://runthe.gg/pitch";
   } else if(simResult && simResult.furthestRound==='Group Stage'){
     text = "⚽ I drafted a squad on RunThePitch but couldn't escape the group stage. "
-         + "Think you can do better? Build your dream VI → RunThe.gg/pitch";
+         + "Think you can do better? Build your dream VI → https://runthe.gg/pitch";
   } else {
     const reached = simResult ? (ROUND_PHRASE[simResult.furthestRound]||simResult.furthestRound) : 'the tournament';
     text = `⚽ I drafted a squad on RunThePitch and reached ${reached}. `
-         + "Can you build a better team and go further? Play → RunThe.gg/pitch";
+         + "Can you build a better team and go further? Play → https://runthe.gg/pitch";
   }
   if(gameMode==='hard') text += "\n[Hard Mode]";
   return text;
@@ -3205,9 +3205,12 @@ function simFinalizeMOT(result, userSquad){
 //  SIMULATION ANIMATION FLOW
 // ============================================================
 let simResult = null;
-const simSleep = ms => new Promise(r=>setTimeout(r,ms));
+// Global pacing factor for the World Cup simulation (>1 = slower).
+const SIM_SPEED = 1.2;
+const simSleep = ms => new Promise(r=>setTimeout(r, ms*SIM_SPEED));
 
 async function simEllipsisFor(el, ms){
+  ms*=SIM_SPEED;
   const start=Date.now(); let n=1;
   while(Date.now()-start<ms){ el.textContent='.'.repeat(n%4); n++; await simSleep(250); }
   el.textContent='';
@@ -3375,9 +3378,9 @@ async function simAnimatePenalties(card, m){
     dot.textContent = k.scored ? '●' : '○';
     dotsEl[row].appendChild(dot);
     if(k.scored){ score[k.team]++; scoreEl[row].textContent=score[k.team]; }
-    await simSleep(800); // reveal one kick at a time, alternating teams
+    await simSleep(800*0.8); // reveal one kick at a time — shootout runs 20% faster than the rest
   }
-  await simSleep(300);
+  await simSleep(300*0.8);
 }
 
 // ===== live match scoreboard (visual only — reflects the simulated state) =====
@@ -3489,7 +3492,8 @@ async function playMatchAnimation(m){
 
   const fill=card.querySelector('.match-clock-fill');
   const goalsBox=card.querySelector('.sim-goals');
-  const regulation=2500;
+  const regulation=2500*SIM_SPEED;     // slowed pacing
+  const etDur=600*SIM_SPEED;
   const regEvents=m.goalEvents.filter(e=>e.minute<=90);
   const etEvents =m.goalEvents.filter(e=>e.minute>90);
 
@@ -3504,8 +3508,8 @@ async function playMatchAnimation(m){
     const etLabel=document.createElement('div'); etLabel.className='sim-et-label'; etLabel.textContent='EXTRA TIME';
     goalsBox.appendChild(etLabel);
     simScrollEnd(etLabel);
-    etEvents.forEach(e=>{ const d=((e.minute-90)/30)*600; simScheduleGoal(goalsBox,e,d); sbScheduleScore(sb,e,d); });
-    await sbDriveClock(fill, sb, 75, 100, 91, 120, 600);  // gold 91'→120'
+    etEvents.forEach(e=>{ const d=((e.minute-90)/30)*etDur; simScheduleGoal(goalsBox,e,d); sbScheduleScore(sb,e,d); });
+    await sbDriveClock(fill, sb, 75, 100, 91, 120, etDur);  // gold 91'→120'
   }
 
   // freeze the final minute, then flip to FT — the scoreboard's score IS the
