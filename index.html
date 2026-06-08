@@ -750,6 +750,7 @@
     border-radius:18px;box-shadow:var(--shadow);width:100%;max-width:460px;max-height:88vh;
     overflow-y:auto;padding:22px 18px;}
   .lb-title{font-family:'Anton',Impact,sans-serif;font-size:26px;text-align:center;margin:0 0 14px;color:var(--gold);}
+  .lb-trophy{width:18px;height:26px;display:inline-block;vertical-align:-5px;margin-right:4px;}
   .lb-toggles{display:flex;flex-direction:column;gap:8px;margin-bottom:14px;}
   .lb-seg{display:flex;gap:6px;background:rgba(255,255,255,.08);border-radius:11px;padding:4px;}
   .lb-seg button{flex:1 1 0;border:none;background:none;color:rgba(255,255,255,.7);
@@ -1263,7 +1264,7 @@
 <div class="lb-bg" id="lb-bg">
   <div class="lb-card">
     <button class="profile-close" id="lb-close" aria-label="Close">✕</button>
-    <div class="lb-title">🏅 Top 10 Drafts</div>
+    <div class="lb-title"><svg class="lb-trophy" viewBox="0 0 64 92" aria-hidden="true"><defs><linearGradient id="gold-lb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".35" stop-color="#E8C25A"/><stop offset=".7" stop-color="#C18F22"/><stop offset="1" stop-color="#8A5E12"/></linearGradient><linearGradient id="goldRim-lb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F6DC82"/><stop offset="1" stop-color="#9C6C18"/></linearGradient><radialGradient id="globe-lb" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".55" stop-color="#DDB047"/><stop offset="1" stop-color="#946614"/></radialGradient><linearGradient id="malachite-lb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2F6B4D"/><stop offset="1" stop-color="#173A2A"/></linearGradient></defs><rect x="18.5" y="83" width="27" height="6.6" rx="1.6" fill="url(#malachite-lb)" stroke="#123124" stroke-width=".6"/><rect x="20" y="79.4" width="24" height="3.8" fill="url(#goldRim-lb)" stroke="#6e4b10" stroke-width=".5"/><rect x="22" y="76.2" width="20" height="3.4" fill="url(#malachite-lb)" stroke="#123124" stroke-width=".5"/><rect x="23.5" y="73.4" width="17" height="3" fill="url(#goldRim-lb)" stroke="#6e4b10" stroke-width=".5"/><path d="M32 73.5 C 28 73 26.6 67 27 61 C 27.3 55 26.8 51 27.4 47 C 28 41 25 36 22.5 28.5 C 25 26.5 28 25.8 32 25.6 C 36 25.8 39 26.5 41.5 28.5 C 39 36 36 41 36.6 47 C 37.2 51 36.7 55 37 61 C 37.4 67 36 73 32 73.5 Z" fill="url(#gold-lb)" stroke="#7a5414" stroke-width="1"/><circle cx="32" cy="13.4" r="12" fill="url(#globe-lb)" stroke="#7a5414" stroke-width="1"/><g fill="none" stroke="#8a5e16" stroke-width=".7" opacity=".55"><ellipse cx="32" cy="13.4" rx="5.3" ry="12"/><line x1="20.2" y1="13.4" x2="43.8" y2="13.4"/><path d="M21.8 7 Q32 10 42.2 7"/><path d="M21.8 19.8 Q32 16.8 42.2 19.8"/></g></svg>Top 10 Drafts</div>
     <div id="lb-name-prompt" style="display:none"></div>
     <div class="lb-toggles">
       <div class="lb-seg" id="lb-seg-window">
@@ -2191,6 +2192,37 @@ function sbCount(res){
   return parseInt(cr.split('/')[1], 10) || 0;
 }
 
+// ---------- all-time draft total (global, monotonic) ----------
+// The number of drafts ever played, across BOTH modes. This is the figure the
+// results line shows ("ranks X of Y all-time drafts"). It must only ever grow,
+// so the last-known total is cached locally and used as a floor: if Supabase is
+// briefly unreachable (or a submit falls back to the local board), we still show
+// the highest total seen rather than letting the count visibly reset.
+const ALLTIME_KEY='rtp_alltime_total';
+function cachedAllTime(){
+  const n=parseInt(localStorage.getItem(ALLTIME_KEY),10);
+  return (Number.isFinite(n) && n>0) ? n : 0;
+}
+function bumpAllTime(n){
+  // Persist the larger of (server count, cached floor) so it never decreases.
+  const best=Math.max(n||0, cachedAllTime());
+  try{ localStorage.setItem(ALLTIME_KEY, String(best)); }catch(e){}
+  return best;
+}
+// Global all-time count (all modes). Returns max(server, cached floor); on any
+// failure returns the cached floor so the displayed total never drops.
+async function fetchAllTimeTotal(){
+  if(SUPABASE_READY){
+    try{
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1`, {
+        headers: sbHeaders({ 'Prefer':'count=exact' })
+      });
+      if(res.ok) return bumpAllTime(sbCount(res));
+    }catch(e){ /* fall through to cached floor */ }
+  }
+  return cachedAllTime();
+}
+
 // Insert this draft into the global table, then rank it among ALL drafts.
 // Ranking matches the local rule: higher overall, ties broken by further progress.
 async function submitGlobalRank(overall, progress, meta){
@@ -2208,13 +2240,12 @@ async function submitGlobalRank(overall, progress, meta){
   if(!ins.ok) throw new Error('leaderboard submit failed: '+ins.status);
   const id = await ins.json().catch(()=>null); // submit_draft() returns the new row id
 
-  // Rank within the SAME mode's all-time board (easy and hard are separate).
+  // Rank within the SAME mode's all-time board (easy and hard are separate),
+  // but the displayed TOTAL is the global all-time count across both modes
+  // (monotonic — never decreases). That's the "of Y all-time drafts" figure.
   const modeFilt = `&mode=eq.${(meta && meta.mode) || 'easy'}`;
 
-  const totalRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1${modeFilt}`, {
-    headers: sbHeaders({ 'Prefer':'count=exact' })
-  });
-  const total = sbCount(totalRes);
+  const total = await fetchAllTimeTotal();
 
   const orFilter = encodeURIComponent(`(overall.gt.${overall},and(overall.eq.${overall},progress.gt.${progress}))`);
   const betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}${modeFilt}`, {
@@ -2377,7 +2408,7 @@ async function commitLeaderboardEntry(flag){
 async function fillRankBadge(overall, progress){
   const el = $('res-rank-line'); if(!el) return;
   if(gs.result._lb){ // already computed (e.g. re-render) — just show it
-    el.innerHTML = `🏅 This draft ranks <b>${gs.result._lb.rank}</b> of <b>${gs.result._lb.total}</b> drafts`;
+    el.innerHTML = `🏅 This draft ranks <b>${gs.result._lb.rank}</b> of <b>${gs.result._lb.total}</b> all-time drafts`;
     return;
   }
   if(gs.result._lbStarted) return; // a submission is already in flight
@@ -2392,15 +2423,19 @@ async function fillRankBadge(overall, progress){
       });
       gs.result._lb = lb;
       gs.result._lbId = lb.id;
-      el.innerHTML = `🏅 This draft ranks <b>${lb.rank}</b> of <b>${lb.total}</b> drafts`;
+      el.innerHTML = `🏅 This draft ranks <b>${lb.rank}</b> of <b>${lb.total}</b> all-time drafts`;
       // qualified for the Top 10 → prompt for a name on the leaderboard popup
       if(lb.rank<=10) setTimeout(()=>openLeaderboard(lb.id, true), 700);
       return;
     }catch(e){ /* network/config issue → fall back to local board */ }
   }
-  const lb = recordDraftRank(overall, progress);
-  gs.result._lb = lb;
-  el.innerHTML = `🏅 This draft ranks <b>${lb.rank}</b> of <b>${lb.total}</b> drafts`;
+  // Fallback: rank this draft on the local board, but show the global all-time
+  // total (cached floor) — never the tiny per-device count — so the figure can
+  // never appear to reset/decrease.
+  const local = recordDraftRank(overall, progress);
+  const total = Math.max(cachedAllTime(), local.total);
+  gs.result._lb = { rank: local.rank, total };
+  el.innerHTML = `🏅 This draft ranks <b>${local.rank}</b> of <b>${total}</b> all-time drafts`;
 }
 
 function goToResults(){
@@ -3340,7 +3375,7 @@ function simScheduleGoal(box, e, delay){
     d.className='goal-event';
     d.textContent = e.isOG
       ? `⚽ ${e.minute}' OG (${e.scorer})`
-      : `⚽ ${e.minute}' ${e.scorer} (${e.scorerCountry})`;
+      : `⚽ ${e.minute}' ${e.scorer} (${e.team==='user' ? 'your team' : e.scorerCountry})`;
     box.appendChild(d);
     simScrollEnd(d);
   }, Math.max(0,delay));
@@ -3565,7 +3600,7 @@ function buildSummaryCard(){
         <span class="m-you">You</span>
         <span class="m-score">${m.userGoals}–${m.opponentGoals}</span>
         <span class="m-opp">${m.opponent.country} ${m.opponent.year}${pen}</span>
-        <span class="${won?'win-marker':'loss-marker'}">${won?'✅':'❌'}</span>
+        <span class="${won?'win-marker':'loss-marker'}">${won?'✓':'✗'}</span>
       </span>
     </div>`;
   }).join('');
@@ -3681,14 +3716,14 @@ async function runSimulationScreen(){
       const next=simResult.rounds[i+1];
       note.className='sim-advance';
       note.textContent = next
-        ? pickOne([`✅ Through to the ${next}!`,`✅ Booked a ${next} spot!`,`✅ Marching on to the ${next}!`])
+        ? pickOne([`✓ Through to the ${next}!`,`✓ Booked a ${next} spot!`,`✓ Marching on to the ${next}!`])
         : '🏆 CHAMPIONS OF THE WORLD!';
     } else {
       note.className='sim-advance loss';
       note.textContent = pickOne([
-        `❌ Knocked out in the ${simResult.matches[i].round}.`,
-        `❌ The run ends in the ${simResult.matches[i].round}.`,
-        `❌ Heartbreak in the ${simResult.matches[i].round}.`,
+        `✗ Knocked out in the ${simResult.matches[i].round}.`,
+        `✗ The run ends in the ${simResult.matches[i].round}.`,
+        `✗ Heartbreak in the ${simResult.matches[i].round}.`,
       ]);
     }
     content.appendChild(note);
