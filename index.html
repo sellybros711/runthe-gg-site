@@ -4,6 +4,33 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>RunThePitch — World Cup Edition</title>
+<meta name="description" content="Spin a random nation & year, draft a legend each round, and build your dream XI. Then simulate a World Cup and go all the way." />
+<meta name="theme-color" content="#0b1324" />
+
+<!-- ===== Favicons / app icons (the trophy) ===== -->
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+<!-- ===== Social link preview (Open Graph + Twitter) ===== -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThePitch" />
+<meta property="og:title" content="RunThePitch — World Cup Edition" />
+<meta property="og:description" content="Spin. Pick. Conquer. Draft a legend each round, build your dream XI, and simulate a World Cup." />
+<meta property="og:url" content="https://runthe.gg/" />
+<meta property="og:image" content="https://runthe.gg/og-image.png" />
+<meta property="og:image:secure_url" content="https://runthe.gg/og-image.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="RunThePitch World Cup Edition — Spin. Pick. Conquer." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="RunThePitch — World Cup Edition" />
+<meta name="twitter:description" content="Spin. Pick. Conquer. Draft a legend each round, build your dream XI, and simulate a World Cup." />
+<meta name="twitter:image" content="https://runthe.gg/og-image.png" />
+<meta name="twitter:image:alt" content="RunThePitch World Cup Edition — Spin. Pick. Conquer." />
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -2246,7 +2273,11 @@ async function submitGlobalRank(overall, progress, meta){
   // both measured against every draft ever played, regardless of mode.
   const total = await fetchAllTimeTotal();
 
-  const orFilter = encodeURIComponent(`(overall.gt.${overall},and(overall.eq.${overall},progress.gt.${progress}))`);
+  // The drafts.overall column is an integer (submit_draft rounds on insert), so
+  // compare against the rounded value — a decimal like 84.6 makes Postgres reject
+  // the int comparison (HTTP 400), which would silently count 0 and rank everyone #1.
+  const ov = Math.round(overall);
+  const orFilter = encodeURIComponent(`(overall.gt.${ov},and(overall.eq.${ov},progress.gt.${progress}))`);
   const betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}`, {
     headers: sbHeaders({ 'Prefer':'count=exact' })
   });
@@ -3324,22 +3355,34 @@ function simFlavourPlayer(squad, opts={}){
 }
 const shortNm = n => { const a=n.split(' '); return a.length>1?a[a.length-1]:n; };
 
-// one line of colour about a player, varied each call
-function simPlayerLine(squad){
+// one line of colour about a player, varied each call. The scoreline is passed
+// in so the line never contradicts it — e.g. no "clean sheet" after conceding,
+// no "bagged a brace" without two goals.
+function simPlayerLine(squad, userGoals, opponentGoals){
   const gk = squad.find(p=>p.position==='GK');
   const att = simFlavourPlayer(squad,{outfield:true});
   const def = simFlavourPlayer(squad,{position:'DEF'});
   const mid = simFlavourPlayer(squad,{position:'MID'});
+  // when goals are unknown (older calls), allow every line
+  const scored = userGoals==null ? Infinity : userGoals;
+  const conceded = opponentGoals==null ? null : opponentGoals;
   const lines=[
-    `${shortNm(att.name)} bagged a brace to ease the nerves.`,
-    `${shortNm(att.name)} curled in a beauty from the edge of the box.`,
-    `${shortNm(att.name)} latched onto a through ball and finished cool.`,
+    // score-dependent lines — only offered when the scoreline supports them
+    ...(scored>=2 ? [`${shortNm(att.name)} bagged a brace to ease the nerves.`] : []),
+    ...(scored>=1 ? [
+      `${shortNm(att.name)} curled in a beauty from the edge of the box.`,
+      `${shortNm(att.name)} latched onto a through ball and finished cool.`,
+      `A towering ${shortNm(def.name)} header set the tone.`,
+    ] : []),
+    // clean-sheet line only when nothing was conceded; otherwise a neutral defensive line
+    ...(conceded===0
+      ? [ gk ? `${shortNm(gk.name)} kept a vital clean sheet.` : `A disciplined back line kept it tight.` ]
+      : [ gk ? `${shortNm(gk.name)} was beaten but kept his side in it.` : `The back line dug in despite conceding.` ]),
+    // score-agnostic colour — always safe
     `${shortNm(mid.name)} pulled every string in midfield.`,
     `${shortNm(mid.name)} dictated the tempo from deep.`,
     `${shortNm(def.name)} was a wall at the back all game.`,
-    `A towering ${shortNm(def.name)} header set the tone.`,
     gk ? `${shortNm(gk.name)} pulled off a stunning point-blank save.` : `The defence held firm under pressure.`,
-    gk ? `${shortNm(gk.name)} kept a vital clean sheet.` : `A disciplined back line kept it tight.`,
     `${shortNm(att.name)} ran the channels ragged.`,
     `Super-sub ${shortNm(att.name)} changed the game off the bench.`,
   ];
@@ -3687,7 +3730,7 @@ async function runSimulationScreen(){
     row.className='goal-event';
     row.innerHTML=`<b>MD${i+1}</b> vs ${flagChip(o.country)} ${o.country} ${o.year} — <b>${us}–${them}</b> `+
       `<span style="color:${col};font-weight:900">${res}</span><br>`+
-      `<span style="opacity:.78;font-weight:600">${simPlayerLine(userSquad)}</span>`;
+      `<span style="opacity:.78;font-weight:600">${simPlayerLine(userSquad, us, them)}</span>`;
     // group stage stays simple — just the result line, no scoreboard
     daysBox.appendChild(row);
     simScrollEnd(row);
