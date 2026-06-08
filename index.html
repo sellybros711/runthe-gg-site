@@ -2428,11 +2428,15 @@ async function fillRankBadge(overall, progress){
       return;
     }catch(e){ /* network/config issue → fall back to local board */ }
   }
-  // Fallback: rank this draft on the local board, but show the global all-time
-  // total (cached floor) — never the tiny per-device count — so the figure can
-  // never appear to reset/decrease.
+  // Fallback: the submit failed (or Supabase isn't ready). Rank this draft on
+  // the local board, but still try a DIRECT global count query so the real
+  // all-time total shows whenever the database is reachable at all — even if
+  // only the insert failed. The per-device count is the last resort (e.g. the
+  // page was opened from a file:// URL with no network access), and the cached
+  // floor guarantees the number never decreases once it has been seen.
   const local = recordDraftRank(overall, progress);
-  const total = Math.max(cachedAllTime(), local.total);
+  let total = await fetchAllTimeTotal();
+  if(total < local.total) total = local.total;
   gs.result._lb = { rank: local.rank, total };
   el.innerHTML = `🏅 This draft ranks <b>${local.rank}</b> of <b>${total}</b> all-time drafts`;
 }
