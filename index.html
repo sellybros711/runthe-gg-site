@@ -2240,15 +2240,14 @@ async function submitGlobalRank(overall, progress, meta){
   if(!ins.ok) throw new Error('leaderboard submit failed: '+ins.status);
   const id = await ins.json().catch(()=>null); // submit_draft() returns the new row id
 
-  // Rank within the SAME mode's all-time board (easy and hard are separate),
-  // but the displayed TOTAL is the global all-time count across both modes
-  // (monotonic — never decreases). That's the "of Y all-time drafts" figure.
-  const modeFilt = `&mode=eq.${(meta && meta.mode) || 'easy'}`;
-
+  // Rank across BOTH modes' all-time drafts, matching the displayed TOTAL
+  // (which is the global all-time count across both modes, monotonic — never
+  // decreases). So "ranks X of Y all-time drafts" is consistent: X and Y are
+  // both measured against every draft ever played, regardless of mode.
   const total = await fetchAllTimeTotal();
 
   const orFilter = encodeURIComponent(`(overall.gt.${overall},and(overall.eq.${overall},progress.gt.${progress}))`);
-  const betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}${modeFilt}`, {
+  const betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}`, {
     headers: sbHeaders({ 'Prefer':'count=exact' })
   });
   const better = sbCount(betterRes);
