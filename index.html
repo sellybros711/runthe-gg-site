@@ -1195,13 +1195,13 @@
       </div>
       <div class="reel-card">
         <div class="reel-stage">
-          <div class="reel-block country">
-            <div class="reel-cap">Nation</div>
-            <div class="reel-vp"><div class="reel-strip" id="reel-country"></div></div>
-          </div>
           <div class="reel-block year">
             <div class="reel-cap">Year</div>
             <div class="reel-vp"><div class="reel-strip" id="reel-year"></div></div>
+          </div>
+          <div class="reel-block country">
+            <div class="reel-cap">Nation</div>
+            <div class="reel-vp"><div class="reel-strip" id="reel-country"></div></div>
           </div>
         </div>
         <div class="landed-name" id="landed-name"></div>
@@ -1569,8 +1569,8 @@ function goToHome(){
 function startSpin(){
   if(!gs) gs=G.createGameState();
   openSpinOverlay();
-  const country=G.spinCountry(gs);
-  const year=G.spinYear(country);
+  const year=G.spinYearFirst();
+  const country=G.spinCountryFromYear(year);
   doSpin(country,year);
 }
 
@@ -1631,12 +1631,12 @@ function spinStrip(strip, rowH, duration){
 // animation only — spins both reels and shows the landed result
 async function doSpinAnim(country, year){
   $('landed-name').innerHTML='';
-  $('reel-year').innerHTML='';            // year stays blank during the nation spin
-  buildCountryStrip(country,true);        // build the nation reel just as it starts spinning
-  await spinStrip($('reel-country'),COUNTRY_ROW,2600);
-  $('landed-name').innerHTML=`${flagChip(country,'lg')} ${country}`;
-  buildYearStrip(year,true);              // build the year reel only now, as it starts spinning
+  $('reel-country').innerHTML='';         // country stays blank during the year spin
+  buildYearStrip(year,true);              // build the year reel just as it starts spinning
   await spinStrip($('reel-year'),YEAR_ROW,1700);
+  // landed-name stays blank until both wheels have settled
+  buildCountryStrip(country,true);        // build the nation reel only now, as it starts spinning
+  await spinStrip($('reel-country'),COUNTRY_ROW,2600);
   $('landed-name').innerHTML=`${flagChip(country,'lg')} ${country} <span class="yr">'${String(year).slice(2)}</span>`;
 }
 
@@ -1646,8 +1646,8 @@ async function doSpin(country, year){
   resolveSpin(country, year);
 }
 
-// COUNTRY re-spin: a brand-new nation landed, so BOTH wheels animate
-// (country spins to the new nation, then the year spins for it).
+// Full re-spin: a brand-new year (and a country drawn from it), so BOTH wheels
+// animate (year spins first, then the country spins from that year's pool).
 async function doRespin(){
   const {country, year}=gs.currentSpin;
   openSpinOverlay();
@@ -1655,34 +1655,49 @@ async function doRespin(){
   setTimeout(goToSelect, 650);
 }
 
-// Open the overlay for a YEAR-only re-spin: the country wheel is pinned to the
-// current nation (no animation) and only the year reel will move.
-function openSpinOverlayForYear(country){
+// YEAR re-spin: under the year-first order, changing the year also changes the
+// pool of countries, so a fresh country is drawn from the new year. BOTH wheels
+// animate in sequence (year first, then country).
+async function doYearRespin(){
+  const newYear=G.spinYearFirst();
+  const newCountry=G.spinCountryFromYear(newYear);
+  gs=G.confirmSpin(gs, newCountry, newYear);
+  openSpinOverlay();
+  await doSpinAnim(newCountry, newYear);
+  setTimeout(goToSelect, 650);
+}
+
+// Open the overlay for a COUNTRY-only re-spin: the year wheel is pinned to the
+// current year (no animation) and only the country reel will move.
+function openSpinOverlayForCountry(year){
   $('landed-name').innerHTML='';
-  // country reel: build with the current nation as the target, then snap it
-  // straight to its landed position so it sits completely static.
-  buildCountryStrip(country, false);
-  const cstrip=$('reel-country');
-  cstrip.style.transition='none';
-  cstrip.style.transform=`translateY(${-(cstrip._targetIndex*COUNTRY_ROW)}px)`;
-  // year reel resets to the top, ready to spin
-  $('reel-year').style.transition='none';
-  $('reel-year').style.transform='translateY(0)';
-  buildYearStrip(2022, false);
+  // year reel: build with the current year as the target, then snap it straight
+  // to its landed position so it sits completely static.
+  buildYearStrip(year, false);
+  const ystrip=$('reel-year');
+  ystrip.style.transition='none';
+  ystrip.style.transform=`translateY(${-(ystrip._targetIndex*YEAR_ROW)}px)`;
+  // country reel resets to the top, ready to spin
+  $('reel-country').style.transition='none';
+  $('reel-country').style.transform='translateY(0)';
+  $('reel-country').innerHTML='';
   $('spin-round-label').textContent=roundLabel();
   renderDots('spin-dots');
   $('spin-overlay').classList.add('show');
 }
 
-// YEAR re-spin: country stays completely static; ONLY the year wheel spins.
-async function doYearRespin(){
-  const {country, year}=gs.currentSpin;
-  openSpinOverlayForYear(country);
-  // country shown immediately and never animates
-  $('landed-name').innerHTML=`${flagChip(country,'lg')} ${country}`;
-  buildYearStrip(year, true);
-  await spinStrip($('reel-year'), YEAR_ROW, 1700);
-  $('landed-name').innerHTML=`${flagChip(country,'lg')} ${country} <span class="yr">'${String(year).slice(2)}</span>`;
+// COUNTRY re-spin: year stays completely static; ONLY the country wheel spins,
+// drawing a new nation from the current year's pool.
+async function doCountryRespin(){
+  const {year}=gs.currentSpin;
+  const newCountry=G.spinCountryFromYear(year);
+  gs=G.confirmSpin(gs, newCountry, year);
+  openSpinOverlayForCountry(year);
+  // year shown immediately and never animates
+  $('landed-name').innerHTML=`<span class="yr">'${String(year).slice(2)}</span>`;
+  buildCountryStrip(newCountry, true);
+  await spinStrip($('reel-country'), COUNTRY_ROW, 2600);
+  $('landed-name').innerHTML=`${flagChip(newCountry,'lg')} ${newCountry} <span class="yr">'${String(year).slice(2)}</span>`;
   setTimeout(goToSelect, 650);
 }
 
