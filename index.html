@@ -4,6 +4,35 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>RunThePitch — World Cup Edition</title>
+<meta name="description" content="Spin a random nation & year, draft a legend each round, and build your dream XI. Then simulate a World Cup and go all the way." />
+<meta name="theme-color" content="#0b1324" />
+
+<!-- ===== Favicons / app icons (the trophy) ===== -->
+<link rel="icon" href="/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+<!-- ===== Social link preview (Open Graph + Twitter) ===== -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThePitch" />
+<meta property="og:title" content="RunThePitch — World Cup Edition" />
+<meta property="og:description" content="Spin. Pick. Conquer. Draft a legend each round, build your dream XI, and simulate a World Cup." />
+<meta property="og:url" content="https://runthe.gg/" />
+<meta property="og:image" content="https://runthe.gg/og-image.png" />
+<meta property="og:image:secure_url" content="https://runthe.gg/og-image.png" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="RunThePitch World Cup Edition — Spin. Pick. Conquer." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@RunThePitch" />
+<meta name="twitter:creator" content="@RunThePitch" />
+<meta name="twitter:title" content="RunThePitch — World Cup Edition" />
+<meta name="twitter:description" content="Spin. Pick. Conquer. Draft a legend each round, build your dream XI, and simulate a World Cup." />
+<meta name="twitter:image" content="https://runthe.gg/og-image.png" />
+<meta name="twitter:image:alt" content="RunThePitch World Cup Edition — Spin. Pick. Conquer." />
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -264,21 +293,30 @@
   .rebtn:disabled{background:#9a9088;color:#efe9e2;opacity:.55;filter:grayscale(.7);
     box-shadow:none;cursor:not-allowed;}
 
-  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;transition:opacity .18s ease;}
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;transition:opacity .18s ease;}
   .pcard{
     position:relative;
     border:2.5px solid var(--ink);border-radius:10px;background:var(--white);
-    padding:7px 8px;box-shadow:2px 2px 0 var(--ink);transition:transform .1s ease, box-shadow .1s ease;
-    text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:2px;
-    min-height:72px;            /* uniform box height across all cards */
+    padding:5px 7px 7px;box-shadow:2px 2px 0 var(--ink);transition:transform .1s ease, box-shadow .1s ease;
+    text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:1px;
+    min-height:60px;            /* uniform height — sized so 2-line names fit too */
   }
   .pcard:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--ink);}
   .pcard:disabled{opacity:.34;filter:grayscale(.7);box-shadow:none;}
   .pcard.taken{opacity:.5;filter:grayscale(.55);}
-  .drafted-tag{position:absolute;right:8px;bottom:6px;font-weight:900;font-size:9px;letter-spacing:.5px;
+  .drafted-tag{position:absolute;right:7px;bottom:5px;font-weight:900;font-size:9px;letter-spacing:.5px;
     text-transform:uppercase;color:#fff;background:var(--teal);border-radius:5px;padding:2px 6px;}
   .pcard .ptop{display:flex;justify-content:space-between;align-items:center;gap:6px;}
   .pcard .nm{font-weight:900;font-size:12px;line-height:1.02;}
+  /* captain → bold collegiate "C" patch in the bottom-right corner of the box */
+  .pcard .cap-c{position:absolute;right:6px;bottom:5px;width:18px;height:18px;
+    display:grid;place-items:center;border:1.5px solid var(--ink);border-radius:5px;
+    background:var(--gold);color:var(--ink);box-shadow:1px 1px 0 var(--ink);
+    font-family:'Anton',Impact,sans-serif;font-size:14px;line-height:1;letter-spacing:.5px;
+    padding-top:1px;}
+  /* keep awards / drafted tag clear of the captain patch when both are present */
+  .pcard.cap .awards{right:30px;}
+  .pcard.cap .drafted-tag{right:30px;}
   .capbadge{display:inline-block;margin-right:3px;color:var(--gold);font-size:11px;
     vertical-align:1px;text-shadow:0 0 1px var(--ink),0 0 1px var(--ink);}
   .awardbadge{display:inline-block;background:var(--gold);color:var(--ink);
@@ -878,7 +916,9 @@
   .mode-pill.hard{background:var(--red);}
 
   /* easy-mode OVR on player cards (position-coloured) */
-  .pcard .ovr{font-family:'Anton',Impact,sans-serif;font-size:21px;line-height:1;}
+  /* pin the OVR to the bottom so it sits the same distance from the border in
+     every card, whether the name is one line or two */
+  .pcard .ovr{font-family:'Anton',Impact,sans-serif;font-size:21px;line-height:1;margin-top:auto;}
   .pcard .ovr small{font-family:'Archivo',system-ui,sans-serif;font-size:9px;font-weight:900;letter-spacing:.5px;margin-left:3px;}
   .pcard .ovr.GK{color:var(--pos-gk);}  .pcard .ovr.DEF{color:var(--pos-def);}
   .pcard .ovr.MID{color:var(--pos-mid);} .pcard .ovr.FWD{color:var(--pos-fwd);}
@@ -1155,13 +1195,13 @@
       </div>
       <div class="reel-card">
         <div class="reel-stage">
-          <div class="reel-block country">
-            <div class="reel-cap">Nation</div>
-            <div class="reel-vp"><div class="reel-strip" id="reel-country"></div></div>
-          </div>
           <div class="reel-block year">
             <div class="reel-cap">Year</div>
             <div class="reel-vp"><div class="reel-strip" id="reel-year"></div></div>
+          </div>
+          <div class="reel-block country">
+            <div class="reel-cap">Nation</div>
+            <div class="reel-vp"><div class="reel-strip" id="reel-country"></div></div>
           </div>
         </div>
         <div class="landed-name" id="landed-name"></div>
@@ -1305,11 +1345,12 @@
 
 <div class="copied-toast" id="toast">Copied to clipboard ✓</div>
 
-<script src="gameLogic.js"></script>
+<!-- ?v= cache-buster: index.html is always served fresh (max-age=0) but these
+     assets are cached for hours by the CDN/browser. Bump this on every deploy so
+     a fresh index.html never pairs with a stale gameLogic.js / players file. -->
+<script src="gameLogic.js?v=14"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
-<script src="data/players_all.js"></script>
-<!-- html2canvas: snapshots the results recap box into a JPG for sharing. Optional — sharing degrades to text-only if it fails to load. -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+<script src="data/players_all.js?v=14"></script>
 <script>
 const G = window.RunThePitch;
 
@@ -1433,7 +1474,8 @@ async function boot(){
   let fetchErr = null;
 
   // Single source of truth: the comprehensive dataset (1966–2026).
-  let players = await fetchPlayers('data/players_all.json');
+  // ?v= cache-buster keeps this in lockstep with deploys (see script tags above).
+  let players = await fetchPlayers('data/players_all.json?v=14');
 
   // file:// fallback (fetch blocked when opened directly via file://).
   if((!players || !players.length) && Array.isArray(window.PLAYERS_ALL)){
@@ -1531,8 +1573,8 @@ function goToHome(){
 function startSpin(){
   if(!gs) gs=G.createGameState();
   openSpinOverlay();
-  const country=G.spinCountry(gs);
-  const year=G.spinYear(country);
+  const year=G.spinYearFirst();
+  const country=G.spinCountryFromYear(year);
   doSpin(country,year);
 }
 
@@ -1593,12 +1635,12 @@ function spinStrip(strip, rowH, duration){
 // animation only — spins both reels and shows the landed result
 async function doSpinAnim(country, year){
   $('landed-name').innerHTML='';
-  $('reel-year').innerHTML='';            // year stays blank during the nation spin
-  buildCountryStrip(country,true);        // build the nation reel just as it starts spinning
-  await spinStrip($('reel-country'),COUNTRY_ROW,2600);
-  $('landed-name').innerHTML=`${flagChip(country,'lg')} ${country}`;
-  buildYearStrip(year,true);              // build the year reel only now, as it starts spinning
+  $('reel-country').innerHTML='';         // country stays blank during the year spin
+  buildYearStrip(year,true);              // build the year reel just as it starts spinning
   await spinStrip($('reel-year'),YEAR_ROW,1700);
+  // landed-name stays blank until both wheels have settled
+  buildCountryStrip(country,true);        // build the nation reel only now, as it starts spinning
+  await spinStrip($('reel-country'),COUNTRY_ROW,2600);
   $('landed-name').innerHTML=`${flagChip(country,'lg')} ${country} <span class="yr">'${String(year).slice(2)}</span>`;
 }
 
@@ -1608,8 +1650,8 @@ async function doSpin(country, year){
   resolveSpin(country, year);
 }
 
-// COUNTRY re-spin: a brand-new nation landed, so BOTH wheels animate
-// (country spins to the new nation, then the year spins for it).
+// Full re-spin: a brand-new year (and a country drawn from it), so BOTH wheels
+// animate (year spins first, then the country spins from that year's pool).
 async function doRespin(){
   const {country, year}=gs.currentSpin;
   openSpinOverlay();
@@ -1617,34 +1659,49 @@ async function doRespin(){
   setTimeout(goToSelect, 650);
 }
 
-// Open the overlay for a YEAR-only re-spin: the country wheel is pinned to the
-// current nation (no animation) and only the year reel will move.
-function openSpinOverlayForYear(country){
+// YEAR re-spin: under the year-first order, changing the year also changes the
+// pool of countries, so a fresh country is drawn from the new year. BOTH wheels
+// animate in sequence (year first, then country).
+async function doYearRespin(){
+  const newYear=G.spinYearFirst();
+  const newCountry=G.spinCountryFromYear(newYear);
+  gs=G.confirmSpin(gs, newCountry, newYear);
+  openSpinOverlay();
+  await doSpinAnim(newCountry, newYear);
+  setTimeout(goToSelect, 650);
+}
+
+// Open the overlay for a COUNTRY-only re-spin: the year wheel is pinned to the
+// current year (no animation) and only the country reel will move.
+function openSpinOverlayForCountry(year){
   $('landed-name').innerHTML='';
-  // country reel: build with the current nation as the target, then snap it
-  // straight to its landed position so it sits completely static.
-  buildCountryStrip(country, false);
-  const cstrip=$('reel-country');
-  cstrip.style.transition='none';
-  cstrip.style.transform=`translateY(${-(cstrip._targetIndex*COUNTRY_ROW)}px)`;
-  // year reel resets to the top, ready to spin
-  $('reel-year').style.transition='none';
-  $('reel-year').style.transform='translateY(0)';
-  buildYearStrip(2022, false);
+  // year reel: build with the current year as the target, then snap it straight
+  // to its landed position so it sits completely static.
+  buildYearStrip(year, false);
+  const ystrip=$('reel-year');
+  ystrip.style.transition='none';
+  ystrip.style.transform=`translateY(${-(ystrip._targetIndex*YEAR_ROW)}px)`;
+  // country reel resets to the top, ready to spin
+  $('reel-country').style.transition='none';
+  $('reel-country').style.transform='translateY(0)';
+  $('reel-country').innerHTML='';
   $('spin-round-label').textContent=roundLabel();
   renderDots('spin-dots');
   $('spin-overlay').classList.add('show');
 }
 
-// YEAR re-spin: country stays completely static; ONLY the year wheel spins.
-async function doYearRespin(){
-  const {country, year}=gs.currentSpin;
-  openSpinOverlayForYear(country);
-  // country shown immediately and never animates
-  $('landed-name').innerHTML=`${flagChip(country,'lg')} ${country}`;
-  buildYearStrip(year, true);
-  await spinStrip($('reel-year'), YEAR_ROW, 1700);
-  $('landed-name').innerHTML=`${flagChip(country,'lg')} ${country} <span class="yr">'${String(year).slice(2)}</span>`;
+// COUNTRY re-spin: year stays completely static; ONLY the country wheel spins,
+// drawing a new nation from the current year's pool.
+async function doCountryRespin(){
+  const {year}=gs.currentSpin;
+  const newCountry=G.spinCountryFromYear(year);
+  gs=G.confirmSpin(gs, newCountry, year);
+  openSpinOverlayForCountry(year);
+  // year shown immediately and never animates
+  $('landed-name').innerHTML=`<span class="yr">'${String(year).slice(2)}</span>`;
+  buildCountryStrip(newCountry, true);
+  await spinStrip($('reel-country'), COUNTRY_ROW, 2600);
+  $('landed-name').innerHTML=`${flagChip(newCountry,'lg')} ${newCountry} <span class="yr">'${String(year).slice(2)}</span>`;
   setTimeout(goToSelect, 650);
 }
 
@@ -1986,15 +2043,16 @@ function renderGrid(squad){
     const elig=eligibleSlotsFor(p);
     const taken = pickedIds.has(p.player_id);
     const btn=document.createElement('button');
-    btn.className='pcard'+(taken?' taken':'');
+    btn.className='pcard'+(taken?' taken':'')+(p.is_captain?' cap':'');
     btn.disabled = elig.length===0 || taken; // grey out & block re-picking
     btn.innerHTML=`
       <div class="ptop">
-        <span class="nm">${p.is_captain?'<span class="capbadge" title="Captain">★</span>':''}${p.name}</span>
+        <span class="nm">${p.name}</span>
         <span class="posbadge ${p.position}">${p.position}</span>
       </div>
       ${cardStatBlock(p)}
-      ${taken?'<span class="drafted-tag">✓ Drafted</span>':awardBadges(p)}`;
+      ${taken?'<span class="drafted-tag">✓ Drafted</span>':awardBadges(p)}
+      ${p.is_captain?'<span class="cap-c" title="Captain" aria-label="Captain">C</span>':''}`;
     if(!btn.disabled) btn.addEventListener('click',()=>openSheet(p));
     g.appendChild(btn);
   });
@@ -2225,9 +2283,10 @@ async function fetchAllTimeTotal(){
 
 // Insert this draft into the global table, then rank it among ALL drafts.
 // Ranking matches the local rule: higher overall, ties broken by further progress.
-async function submitGlobalRank(overall, progress, meta){
-  // Insert via the submit_draft() function (validates/clamps the values).
-  // anon has no direct INSERT on the table — only this function can write.
+// Insert this draft into the global table (for board membership + naming).
+// anon has no direct INSERT — only the submit_draft() function can write.
+// Returns the new row id. Throws if the insert didn't go through.
+async function submitDraftRow(overall, progress, meta){
   const ins = await fetch(`${SUPABASE_URL}/rest/v1/rpc/submit_draft`, {
     method:'POST', headers: sbHeaders(),
     body: JSON.stringify({
@@ -2238,21 +2297,28 @@ async function submitGlobalRank(overall, progress, meta){
     })
   });
   if(!ins.ok) throw new Error('leaderboard submit failed: '+ins.status);
-  const id = await ins.json().catch(()=>null); // submit_draft() returns the new row id
+  return await ins.json().catch(()=>null); // submit_draft() returns the new row id
+}
 
-  // Rank across BOTH modes' all-time drafts, matching the displayed TOTAL
-  // (which is the global all-time count across both modes, monotonic — never
-  // decreases). So "ranks X of Y all-time drafts" is consistent: X and Y are
-  // both measured against every draft ever played, regardless of mode.
-  const total = await fetchAllTimeTotal();
-
-  const orFilter = encodeURIComponent(`(overall.gt.${overall},and(overall.eq.${overall},progress.gt.${progress}))`);
+// Rank this draft among ALL drafts ever played, purely by team overall (ties
+// broken by further tournament progress). This is the AUTHORITATIVE ranking and
+// is computed directly from the global board — it does NOT depend on this
+// draft's own insert succeeding, so an insert hiccup can never collapse the rank
+// to the tiny per-device board (which used to show e.g. "3 of 671").
+async function fetchGlobalRank(overall, progress){
+  // The drafts.overall column is an integer (submit_draft rounds on insert), so
+  // compare against the rounded value — a decimal like 77.8 makes Postgres reject
+  // the int comparison (HTTP 400). We also require an OK response so a failed
+  // count can't silently read 0 and rank everyone #1.
+  const ov = Math.round(overall);
+  const orFilter = encodeURIComponent(`(overall.gt.${ov},and(overall.eq.${ov},progress.gt.${progress}))`);
   const betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}`, {
     headers: sbHeaders({ 'Prefer':'count=exact' })
   });
+  if(!betterRes.ok) throw new Error('rank query failed: '+betterRes.status);
   const better = sbCount(betterRes);
-
-  return { rank: better+1, total, id };
+  const total = await fetchAllTimeTotal();
+  return { rank: better+1, total };
 }
 
 // ---------- Top 10 leaderboard popup ----------
@@ -2415,30 +2481,32 @@ async function fillRankBadge(overall, progress){
 
   if(SUPABASE_READY){
     try{
-      const lb = await submitGlobalRank(overall, progress, {
-        mode: gameMode || 'easy',
-        result: gs.result.resultLabel || '',
-        furthest: (simResult && simResult.furthestRound) || ''
-      });
-      gs.result._lb = lb;
-      gs.result._lbId = lb.id;
-      el.innerHTML = `🏅 This draft ranks <b>${lb.rank}</b> of <b>${lb.total}</b> all-time drafts`;
-      // qualified for the Top 10 → prompt for a name on the leaderboard popup
-      if(lb.rank<=10) setTimeout(()=>openLeaderboard(lb.id, true), 700);
+      // Add this draft to the global board (for naming + id). Tolerate an insert
+      // hiccup — the rank below is computed independently and must not depend on it.
+      let id = null;
+      try{
+        id = await submitDraftRow(overall, progress, {
+          mode: gameMode || 'easy',
+          result: gs.result.resultLabel || '',
+          furthest: (simResult && simResult.furthestRound) || ''
+        });
+      }catch(e){ id = null; }
+      // Authoritative rank by team overall, straight from the global board.
+      const { rank, total } = await fetchGlobalRank(overall, progress);
+      gs.result._lb = { rank, total, id };
+      gs.result._lbId = id;
+      el.innerHTML = `🏅 This draft ranks <b>${rank}</b> of <b>${total}</b> all-time drafts`;
+      // qualified for the Top 10 → prompt for a name (only if the insert gave an id)
+      if(id && rank<=10) setTimeout(()=>openLeaderboard(id, true), 700);
       return;
-    }catch(e){ /* network/config issue → fall back to local board */ }
+    }catch(e){ /* global board unreachable → per-device fallback below */ }
   }
-  // Fallback: the submit failed (or Supabase isn't ready). Rank this draft on
-  // the local board, but still try a DIRECT global count query so the real
-  // all-time total shows whenever the database is reachable at all — even if
-  // only the insert failed. The per-device count is the last resort (e.g. the
-  // page was opened from a file:// URL with no network access), and the cached
-  // floor guarantees the number never decreases once it has been seen.
+  // Last resort (e.g. offline / file://): rank on the per-device board, and show
+  // the per-device total too so the rank and total stay consistent (never a small
+  // local rank paired with the big global total).
   const local = recordDraftRank(overall, progress);
-  let total = await fetchAllTimeTotal();
-  if(total < local.total) total = local.total;
-  gs.result._lb = { rank: local.rank, total };
-  el.innerHTML = `🏅 This draft ranks <b>${local.rank}</b> of <b>${total}</b> all-time drafts`;
+  gs.result._lb = { rank: local.rank, total: local.total };
+  el.innerHTML = `🏅 This draft ranks <b>${local.rank}</b> of <b>${local.total}</b> all-time drafts`;
 }
 
 function goToResults(){
@@ -2624,22 +2692,219 @@ function goToReport(){
 const SHARE_URL='https://runthe.gg/pitch';
 function showToast(msg){ const t=$('toast'); if(msg) t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600); }
 
-// Native share of a JPG of the black recap box + the encouraging text (the only
-// path that can attach the image). Degrades to text-only share, then clipboard.
+// ── Shareable result card ─────────────────────────────────────────────────────
+// Renders a 1080×1350 (Instagram 4:5, also fine on X) PNG containing the drafted
+// XI with overalls plus a brief simulation recap, in the game's brand style.
+// Purpose-built on a canvas (no html2canvas dependency) so it always contains the
+// roster — the old path only snapshotted the recap box.
+const SHARE_TROPHY_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 92"><defs>
+  <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".35" stop-color="#E8C25A"/><stop offset=".7" stop-color="#C18F22"/><stop offset="1" stop-color="#8A5E12"/></linearGradient>
+  <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F6DC82"/><stop offset="1" stop-color="#9C6C18"/></linearGradient>
+  <radialGradient id="g3" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".55" stop-color="#DDB047"/><stop offset="1" stop-color="#946614"/></radialGradient>
+  <linearGradient id="g4" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2F6B4D"/><stop offset="1" stop-color="#173A2A"/></linearGradient></defs>
+  <rect x="18.5" y="83" width="27" height="6.6" rx="1.6" fill="url(#g4)" stroke="#123124" stroke-width=".6"/>
+  <rect x="20" y="79.4" width="24" height="3.8" fill="url(#g2)" stroke="#6e4b10" stroke-width=".5"/>
+  <rect x="22" y="76.2" width="20" height="3.4" fill="url(#g4)" stroke="#123124" stroke-width=".5"/>
+  <rect x="23.5" y="73.4" width="17" height="3" fill="url(#g2)" stroke="#6e4b10" stroke-width=".5"/>
+  <path d="M32 73.5 C 28 73 26.6 67 27 61 C 27.3 55 26.8 51 27.4 47 C 28 41 25 36 22.5 28.5 C 25 26.5 28 25.8 32 25.6 C 36 25.8 39 26.5 41.5 28.5 C 39 36 36 41 36.6 47 C 37.2 51 36.7 55 37 61 C 37.4 67 36 73 32 73.5 Z" fill="url(#g1)" stroke="#7a5414" stroke-width="1"/>
+  <circle cx="32" cy="13.4" r="12" fill="url(#g3)" stroke="#7a5414" stroke-width="1"/>
+  <g fill="none" stroke="#8a5e16" stroke-width=".7" opacity=".55"><ellipse cx="32" cy="13.4" rx="5.3" ry="12"/><line x1="20.2" y1="13.4" x2="43.8" y2="13.4"/><path d="M21.8 7 Q32 10 42.2 7"/><path d="M21.8 19.8 Q32 16.8 42.2 19.8"/></g></svg>`;
+
+function loadImg(src, cross){
+  return new Promise((res)=>{ const i=new Image(); if(cross) i.crossOrigin='anonymous';
+    i.onload=()=>res(i); i.onerror=()=>res(null); i.src=src; });
+}
+function rrect(x,ctx,X,Y,W,H,r){ ctx.beginPath(); ctx.moveTo(X+r,Y); ctx.arcTo(X+W,Y,X+W,Y+H,r); ctx.arcTo(X+W,Y+H,X,Y+H,r); ctx.arcTo(X,Y+H,X,Y,r); ctx.arcTo(X,Y,X+W,Y,r); ctx.closePath(); }
+
+// up to 4 recap lines from the simulation (knockout scores + top scorer)
+function shareRecapLines(){
+  const r=simResult; if(!r) return [];
+  const ABBR={'Round of 16':'R16','Quarter-final':'QF','Semi-final':'SF','Final':'F'};
+  const lines=[];
+  (r.matches||[]).slice(0,3).forEach(m=>{
+    const won=m.winner==='user'; const pen=m.penalties?` (pens ${won?'W':'L'})`:'';
+    lines.push({ t:`${ABBR[m.round]||m.round}  You ${m.userGoals}–${m.opponentGoals} ${m.opponent.country} ${m.opponent.year}${pen}`, won });
+  });
+  if(!(r.matches&&r.matches.length) && r.groupStage){
+    const g=r.groupStage.record; lines.push({ t:`Group stage: ${g.w}W ${g.d}D ${g.l}L`, won:r.groupStage.advanced });
+  }
+  let topName='', topGoals=0;
+  Object.entries(r.userGoalScorers||{}).forEach(([n,g])=>{ if(g>topGoals){ topGoals=g; topName=n; } });
+  if(topName) lines.push({ t:`Top scorer: ${shortNm(topName)} (${topGoals})`, won:null });
+  return lines.slice(0,4);
+}
+
+async function buildShareCanvas(){
+  await (document.fonts && document.fonts.ready);
+  const W=1080,H=1350,CX=W/2;
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
+  const ink='#16120F', cream='#FDF6E3';
+  const ovColor=o=> o>=90?'#1F9E57':o>=80?'#F4B413':o>=70?'#F47B20':'#E5402A';
+
+  // background (matches hero / OG card)
+  x.fillStyle='#0b1324'; x.fillRect(0,0,W,H);
+  let g=x.createRadialGradient(CX,300,40,CX,300,640);
+  g.addColorStop(0,'rgba(244,180,19,0.34)'); g.addColorStop(.45,'rgba(244,180,19,0.12)'); g.addColorStop(1,'rgba(244,180,19,0)');
+  x.fillStyle=g; x.fillRect(0,0,W,H);
+  g=x.createRadialGradient(CX,H+60,80,CX,H+60,720);
+  g.addColorStop(0,'rgba(19,138,107,0.28)'); g.addColorStop(1,'rgba(19,138,107,0)');
+  x.fillStyle=g; x.fillRect(0,0,W,H);
+  const stripe=x.createLinearGradient(0,0,W,0);
+  stripe.addColorStop(0,'#9C6C18'); stripe.addColorStop(.32,'#F4B413'); stripe.addColorStop(.5,'#FCEFA8'); stripe.addColorStop(.68,'#F4B413'); stripe.addColorStop(1,'#9C6C18');
+  x.fillStyle=stripe; x.fillRect(0,0,W,12);
+
+  // header — wordmark + edition pill
+  x.textAlign='center'; x.textBaseline='alphabetic';
+  x.font='400 60px Anton';
+  const seg=[['RUN',cream],['THE','#138A6B'],['PITCH',cream]];
+  let tot=0; for(const [t] of seg) tot+=x.measureText(t).width; let lx=CX-tot/2;
+  x.textAlign='left'; x.save(); x.shadowColor='rgba(0,0,0,.4)'; x.shadowBlur=6; x.shadowOffsetY=2;
+  for(const [t,col] of seg){ x.fillStyle=col; x.fillText(t,lx,98); lx+=x.measureText(t).width; } x.restore();
+  // edition pill
+  x.font='900 22px Archivo'; const pill='WORLD CUP EDITION'; const sp=4;
+  let pw=0; for(const ch of pill) pw+=x.measureText(ch).width+sp; pw-=sp;
+  const ph=40, pwBox=pw+34, px0=CX-pwBox/2, py0=120;
+  const pg=x.createLinearGradient(0,py0,0,py0+ph); pg.addColorStop(0,'#FCEFA8'); pg.addColorStop(1,'#F4B413');
+  rrect('',x,px0,py0,pwBox,ph,10); x.fillStyle=pg; x.lineWidth=2.5; x.strokeStyle=ink; x.fill(); x.stroke();
+  x.fillStyle=ink; let wx=px0+17; for(const ch of pill){ x.fillText(ch,wx,py0+27); wx+=x.measureText(ch).width+sp; }
+
+  // result block
+  const oc=simOutcome(simResult);
+  let y=200;
+  // World Cup winners get the actual trophy graphic (no emojis anywhere).
+  const isChamp = simResult ? (!simResult.eliminated && simResult.furthestRound==='Final')
+                            : (oc.label==='World Cup Winners');
+  if(isChamp){
+    const trophyImg=await loadImg('data:image/svg+xml;base64,'+btoa(SHARE_TROPHY_SVG));
+    if(trophyImg){
+      const th=150, tw=th*(64/92), tx=CX-tw/2, ty=y;
+      // gold halo behind the cup
+      let hg=x.createRadialGradient(CX,ty+th*0.45,10,CX,ty+th*0.45,th*0.85);
+      hg.addColorStop(0,'rgba(244,180,19,0.5)'); hg.addColorStop(.5,'rgba(244,180,19,0.16)'); hg.addColorStop(1,'rgba(244,180,19,0)');
+      x.fillStyle=hg; x.fillRect(0,ty-20,W,th+40);
+      x.save(); x.shadowColor='rgba(0,0,0,.5)'; x.shadowBlur=24; x.shadowOffsetY=10;
+      x.drawImage(trophyImg, tx, ty, tw, th); x.restore();
+      y+=th+8;
+    } else { y+=14; }
+  } else { y+=14; }
+  x.textAlign='center'; x.font='400 70px Anton'; x.fillStyle=cream;
+  x.save(); x.shadowColor='rgba(244,180,19,.3)'; x.shadowBlur=16;
+  x.fillText((oc.label||'').toUpperCase(), CX, y+56); x.restore(); y+=86;
+  // squad overall
+  x.font='900 34px Archivo'; x.fillStyle='#F4B413';
+  x.fillText(`YOUR SQUAD · ${gs.result.teamOverall.toFixed(1)} OVR`, CX, y+18); y+=44;
+  // mode tag
+  x.font='800 22px Archivo'; x.fillStyle='rgba(234,225,204,.85)';
+  x.fillText(gameMode==='hard'?'HARD MODE':'EASY MODE', CX, y+16); y+=46;
+
+  // recap lines
+  const lines=shareRecapLines();
+  if(lines.length){
+    x.textAlign='left';
+    x.font='900 20px Archivo'; x.fillStyle='rgba(244,180,19,.85)';
+    x.fillText('TOURNAMENT RECAP', 64, y+8);
+    x.fillStyle='rgba(244,180,19,.25)'; x.fillRect(310, y, W-64-310, 2);
+    y+=30;
+    x.font='700 26px Archivo';
+    lines.forEach(ln=>{
+      x.fillStyle = ln.won===true?'#5fd39a':(ln.won===false?'#ff8a7a':'#EAE1CC');
+      let t=ln.t; // ellipsize to width
+      const maxW=W-128; while(x.measureText(t).width>maxW && t.length>4){ t=t.slice(0,-2); } if(t!==ln.t) t+='…';
+      x.fillText(t, 64, y+22); y+=38;
+    });
+    y+=8;
+  }
+
+  // roster heading
+  x.textAlign='left'; x.font='900 20px Archivo'; x.fillStyle='rgba(255,255,255,.7)';
+  x.fillText('YOUR STARTING XI', 64, y+8);
+  x.fillStyle='rgba(255,255,255,.18)'; x.fillRect(300, y, W-64-300, 2); y+=26;
+
+  // roster rows (white cards)
+  const picks=orderPicksForDisplay(gs.result.scoredPicks, ['GK','DEF','DEF','MID','FWD','FLEX']);
+  const rowH=Math.min(96, Math.floor((H-110-y)/picks.length)-12), gap=12, mX=60, rW=W-2*mX;
+  // preload flags (CORS-safe; null on failure → no flag drawn)
+  const flagImgs=await Promise.all(picks.map(pk=>{ const u=flagImg(pk.player.country,160); return u?loadImg(u,true):Promise.resolve(null); }));
+
+  picks.forEach((pick,i)=>{
+    const p=pick.player; const ry=y+i*(rowH+gap);
+    // card
+    rrect('',x,mX,ry,rW,rowH,16); x.fillStyle='#FFFFFF'; x.fill();
+    x.lineWidth=3; x.strokeStyle=ink; x.stroke();
+    const cy=ry+rowH/2;
+    // position badge
+    const bc=slotColor(pick.slot,p); const bw=92, bh=40, bx=mX+18, by=cy-bh/2;
+    rrect('',x,bx,by,bw,bh,9); x.fillStyle=bc; x.fill();
+    x.fillStyle = bc===PITCH_COLORS.GK ? ink : '#fff';
+    x.font='900 22px Archivo'; x.textAlign='center'; x.fillText(pick.slot, bx+bw/2, cy+8); x.textAlign='left';
+    // overall (right)
+    const ov=p.overall; const ovc=ovColor(ov);
+    x.font='400 50px Anton'; x.fillStyle=ovc; x.textAlign='right';
+    const ovX=mX+rW-26; x.fillText(String(ov), ovX, cy+16);
+    x.font='800 15px Archivo'; x.fillStyle='#8a7d70';
+    x.fillText('OVR', ovX, cy-18); x.textAlign='left';
+    // flag + year (before overall)
+    let rightX=ovX - x.measureText('00').width - 78;
+    x.font='800 24px Archivo'; x.fillStyle='#5a5048';
+    const yrW=x.measureText(String(p.year)).width;
+    x.textAlign='right'; x.fillText(String(p.year), rightX, cy+9); x.textAlign='left';
+    const fl=flagImgs[i];
+    if(fl){ const fw=46, fh=31, fx=rightX-yrW-12-fw, fy=cy-fh/2;
+      x.save(); rrect('',x,fx,fy,fw,fh,5); x.clip(); x.drawImage(fl,fx,fy,fw,fh); x.restore();
+      x.lineWidth=1.5; x.strokeStyle='rgba(0,0,0,.25)'; rrect('',x,fx,fy,fw,fh,5); x.stroke();
+    }
+    // name (truncate to available width; reserve room for the captain "C" badge)
+    const capGap = p.is_captain ? 44 : 0;
+    const nameX=bx+bw+18; const nameMax=(fl?rightX-yrW-12-46-12:rightX-yrW-12)-nameX-10-capGap;
+    x.font='900 30px Archivo'; x.fillStyle=ink;
+    let nm=p.name;
+    while(x.measureText(nm).width>nameMax && nm.length>3){ nm=nm.slice(0,-2); }
+    if(nm!==p.name) nm=nm.replace(/…?$/,'')+'…';
+    x.fillText(nm, nameX, cy+10);
+    // captain → bold collegiate "C" patch (gold disc, dark letter)
+    if(p.is_captain){
+      const nmW=x.measureText(nm).width, r=17, ccx=nameX+nmW+14+r, ccy=cy;
+      x.beginPath(); x.arc(ccx,ccy,r,0,Math.PI*2);
+      x.fillStyle='#F4B413'; x.fill(); x.lineWidth=2.5; x.strokeStyle=ink; x.stroke();
+      x.fillStyle=ink; x.font='900 24px Archivo'; x.textAlign='center'; x.textBaseline='middle';
+      x.fillText('C', ccx, ccy+1); x.textAlign='left'; x.textBaseline='alphabetic';
+    }
+  });
+
+  // footer
+  x.textAlign='center';
+  x.font='900 30px Archivo'; x.fillStyle='#F4B413';
+  x.fillText('runthe.gg', CX, H-34);
+  x.font='600 20px Archivo'; x.fillStyle='rgba(234,225,204,.8)';
+  x.fillText('Spin. Pick. Conquer.', CX, H-66);
+  x.textAlign='left';
+  return c;
+}
+
+// Native share of the result card PNG + the encouraging text (the only path that
+// can attach the image). Degrades to download (desktop), then text, then clipboard.
 async function nativeShareWithImage(){
   const text=reportText();
-  const box=document.getElementById('results-summary-box');
   let file=null;
-  if(box && window.html2canvas){
-    try{
-      const canvas=await html2canvas(box,{backgroundColor:'#16120F',scale:2,useCORS:true,logging:false});
-      const blob=await new Promise(res=>canvas.toBlob(res,'image/jpeg',0.92));
-      if(blob) file=new File([blob],'runthepitch.jpg',{type:'image/jpeg'});
-    }catch(e){ /* snapshot failed → share text only */ }
-  }
+  try{
+    const canvas=await buildShareCanvas();
+    const blob=await new Promise(res=>canvas.toBlob(res,'image/png',0.95));
+    if(blob) file=new File([blob],'runthepitch.png',{type:'image/png'});
+  }catch(e){ /* render failed → share text only */ }
+
   if(file && navigator.canShare && navigator.canShare({files:[file]})){
     try{ await navigator.share({ files:[file], text, title:'RunThePitch' }); return; }
     catch(e){ if(e && e.name==='AbortError') return; }
+  }
+  // Desktop / no file-share: download the image so it can still be posted, + copy text.
+  if(file){
+    try{
+      const url=URL.createObjectURL(file);
+      const a=document.createElement('a'); a.href=url; a.download='runthepitch.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(()=>URL.revokeObjectURL(url), 4000);
+      await copyToClipboard(text); showToast('Image saved · caption copied ✓'); return;
+    }catch(e){ /* fall through */ }
   }
   if(navigator.share){
     try{ await navigator.share({ text }); return; }
@@ -3324,22 +3589,34 @@ function simFlavourPlayer(squad, opts={}){
 }
 const shortNm = n => { const a=n.split(' '); return a.length>1?a[a.length-1]:n; };
 
-// one line of colour about a player, varied each call
-function simPlayerLine(squad){
+// one line of colour about a player, varied each call. The scoreline is passed
+// in so the line never contradicts it — e.g. no "clean sheet" after conceding,
+// no "bagged a brace" without two goals.
+function simPlayerLine(squad, userGoals, opponentGoals){
   const gk = squad.find(p=>p.position==='GK');
   const att = simFlavourPlayer(squad,{outfield:true});
   const def = simFlavourPlayer(squad,{position:'DEF'});
   const mid = simFlavourPlayer(squad,{position:'MID'});
+  // when goals are unknown (older calls), allow every line
+  const scored = userGoals==null ? Infinity : userGoals;
+  const conceded = opponentGoals==null ? null : opponentGoals;
   const lines=[
-    `${shortNm(att.name)} bagged a brace to ease the nerves.`,
-    `${shortNm(att.name)} curled in a beauty from the edge of the box.`,
-    `${shortNm(att.name)} latched onto a through ball and finished cool.`,
+    // score-dependent lines — only offered when the scoreline supports them
+    ...(scored>=2 ? [`${shortNm(att.name)} bagged a brace to ease the nerves.`] : []),
+    ...(scored>=1 ? [
+      `${shortNm(att.name)} curled in a beauty from the edge of the box.`,
+      `${shortNm(att.name)} latched onto a through ball and finished cool.`,
+      `A towering ${shortNm(def.name)} header set the tone.`,
+    ] : []),
+    // clean-sheet line only when nothing was conceded; otherwise a neutral defensive line
+    ...(conceded===0
+      ? [ gk ? `${shortNm(gk.name)} kept a vital clean sheet.` : `A disciplined back line kept it tight.` ]
+      : [ gk ? `${shortNm(gk.name)} was beaten but kept his side in it.` : `The back line dug in despite conceding.` ]),
+    // score-agnostic colour — always safe
     `${shortNm(mid.name)} pulled every string in midfield.`,
     `${shortNm(mid.name)} dictated the tempo from deep.`,
     `${shortNm(def.name)} was a wall at the back all game.`,
-    `A towering ${shortNm(def.name)} header set the tone.`,
     gk ? `${shortNm(gk.name)} pulled off a stunning point-blank save.` : `The defence held firm under pressure.`,
-    gk ? `${shortNm(gk.name)} kept a vital clean sheet.` : `A disciplined back line kept it tight.`,
     `${shortNm(att.name)} ran the channels ragged.`,
     `Super-sub ${shortNm(att.name)} changed the game off the bench.`,
   ];
@@ -3587,8 +3864,8 @@ async function playMatchAnimation(m){
   return won;
 }
 
-// Build the black recap box (outcome + matches + top scorer + MOT). It is the
-// shareable centrepiece on the final results page; id lets html2canvas snapshot it.
+// Build the black recap box (outcome + matches + top scorer + MOT) shown on the
+// final results page. (The share image is rendered separately by buildShareCanvas.)
 function buildSummaryCard(){
   const r=simResult;
   const oc = simOutcome(r);
@@ -3687,7 +3964,7 @@ async function runSimulationScreen(){
     row.className='goal-event';
     row.innerHTML=`<b>MD${i+1}</b> vs ${flagChip(o.country)} ${o.country} ${o.year} — <b>${us}–${them}</b> `+
       `<span style="color:${col};font-weight:900">${res}</span><br>`+
-      `<span style="opacity:.78;font-weight:600">${simPlayerLine(userSquad)}</span>`;
+      `<span style="opacity:.78;font-weight:600">${simPlayerLine(userSquad, us, them)}</span>`;
     // group stage stays simple — just the result line, no scoreboard
     daysBox.appendChild(row);
     simScrollEnd(row);

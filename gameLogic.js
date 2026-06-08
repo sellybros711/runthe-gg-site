@@ -226,6 +226,30 @@ function spinYear(country) {
   return years[Math.floor(Math.random() * years.length)];
 }
 
+// New randomization order: pick a year first, then a country from that year.
+function spinYearFirst() {
+  const years = [...new Set(
+    _players.map(p => p.year)
+  )].sort((a, b) => a - b);
+  return years[Math.floor(Math.random() * years.length)];
+}
+
+function spinCountryFromYear(year) {
+  const countries = [...new Set(
+    _players
+      .filter(p => p.year === year)
+      .map(p => p.country)
+  )];
+  if (!countries.length) {
+    throw new Error(
+      'No countries found for year: ' + year
+    );
+  }
+  return countries[
+    Math.floor(Math.random() * countries.length)
+  ];
+}
+
 function confirmSpin(state, country, year) {
   const squad = getSquad(country, year);
   return {
@@ -238,8 +262,8 @@ function confirmSpin(state, country, year) {
 // A single full re-spin per game: spins BOTH a new nation and a new year.
 function useFullRespin(state) {
   if (state.respins.full <= 0) throw new Error('No re-spins remaining.');
-  const newCountry = spinCountry(state);
-  const newYear = spinYear(newCountry);
+  const newYear = spinYearFirst();
+  const newCountry = spinCountryFromYear(newYear);
   const squad = getSquad(newCountry, newYear);
   return {
     state: {
@@ -341,13 +365,16 @@ function computeResult(state) {
   const diff = boostedAvg - neutralAvg;
   const coherenceScore = clamp(50 + diff * 1.5, 0, 100);
 
-  // Team overall = average of the five highest-rated drafted players; the
-  // lowest of the six is dropped. Rounded to one decimal place, which adds
-  // variance and gives the leaderboard finer separation between squads.
-  const sortedOv = state.picks.map(p => p.player.overall).sort((a, b) => b - a);
-  const top5 = sortedOv.slice(0, 5);
-  const teamOverall = top5.length
-    ? Math.round((top5.reduce((a, b) => a + b, 0) / top5.length) * 10) / 10
+  // Team overall = average of all six drafted players. Each 99-rated player
+  // nudges the total up very slightly, so stacking elite talent is rewarded.
+  // Rounded to one decimal place for finer leaderboard separation.
+  const overalls = state.picks.map(p => p.player.overall);
+  const squadAvg = overalls.length
+    ? overalls.reduce((a, b) => a + b, 0) / overalls.length
+    : 0;
+  const num99 = overalls.filter(o => o >= 99).length;
+  const teamOverall = overalls.length
+    ? Math.min(100, Math.round((squadAvg + num99 * 0.15) * 10) / 10)
     : 0;
 
   const tier = RESULT_TIERS.find(t => teamOverall >= t.min && teamOverall <= t.max)
@@ -425,6 +452,30 @@ function spinYearSeeded(country, rng) {
   return years[Math.floor(rng() * years.length)];
 }
 
+// Seeded versions of the new year-first order, for daily challenge mode.
+function spinYearFirstSeeded(rng) {
+  const years = [...new Set(
+    _players.map(p => p.year)
+  )].sort((a, b) => a - b);
+  return years[Math.floor(rng() * years.length)];
+}
+
+function spinCountryFromYearSeeded(year, rng) {
+  const countries = [...new Set(
+    _players
+      .filter(p => p.year === year)
+      .map(p => p.country)
+  )];
+  if (!countries.length) {
+    throw new Error(
+      'No countries found for year: ' + year
+    );
+  }
+  return countries[
+    Math.floor(rng() * countries.length)
+  ];
+}
+
 // ─── Utilities ────────────────────────────────────────────────────────────────
 
 function getGameSummary(state) {
@@ -455,6 +506,10 @@ const publicAPI = {
   createGameState,
   spinCountry,
   spinYear,
+  spinYearFirst,
+  spinCountryFromYear,
+  spinYearFirstSeeded,
+  spinCountryFromYearSeeded,
   confirmSpin,
   useFullRespin,
   getAvailableSlots,
