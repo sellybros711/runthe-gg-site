@@ -44,6 +44,13 @@
   button{font-family:inherit;cursor:pointer;}
   .app{max-width:520px;margin:0 auto;padding:18px 16px 48px;}
 
+  /* site-wide navigation footer (additive; sits at natural bottom of every screen) */
+  .site-footer{margin-top:40px;padding:20px 0 8px;text-align:center;
+    font-size:12px;color:#9a9387;font-family:'Archivo',system-ui,sans-serif;}
+  .site-footer a{color:#9a9387;text-decoration:none;}
+  .site-footer a:hover{text-decoration:underline;}
+  .site-footer .sep{margin:0 8px;color:#bcb6a8;}
+
   /* ---------- shared ---------- */
   .screen{display:none;animation:fade .35s ease both;}
   .screen.active{display:block;}
@@ -250,11 +257,12 @@
   .squad-head .t{font-family:'Anton';font-size:21px;line-height:.92;}
   .squad-head .s{font-weight:600;font-size:11px;color:#8a7d70;}
   .respins-inline{display:flex;flex-direction:column;gap:5px;flex:0 0 auto;}
-  .rebtn{border:2px solid var(--ink);background:var(--white);color:var(--ink);
+  .rebtn{border:2px solid var(--ink);background:var(--red);color:#fff;
     font-weight:900;font-size:11px;letter-spacing:.5px;text-transform:uppercase;
     padding:6px 10px;border-radius:999px;box-shadow:2px 2px 0 var(--ink);white-space:nowrap;}
   .rebtn:active{transform:translate(2px,2px);box-shadow:none;}
-  .rebtn:disabled{opacity:.35;box-shadow:none;cursor:not-allowed;}
+  .rebtn:disabled{background:#9a9088;color:#efe9e2;opacity:.55;filter:grayscale(.7);
+    box-shadow:none;cursor:not-allowed;}
 
   .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;transition:opacity .18s ease;}
   .pcard{
@@ -1205,6 +1213,11 @@
     </div>
   </section>
 
+  <!-- ===== site-wide navigation footer (additive) ===== -->
+  <footer class="site-footer">
+    <a href="/">Home</a><span class="sep">·</span><a href="about.html">About</a><span class="sep">·</span><a href="privacy.html">Privacy</a><span class="sep">·</span><a href="contact.html">Contact</a>
+  </footer>
+
 </div>
 
 <div class="sheet-bg" id="sheet-bg">
@@ -1280,7 +1293,7 @@
     <div class="rate-sub">Fill in the fields below and we'll take a look.</div>
     <label class="rate-field">Player name<input id="rate-name" maxlength="60" autocomplete="off"></label>
     <label class="rate-field">Country<input id="rate-country" maxlength="40" autocomplete="off"></label>
-    <label class="rate-field">Year<input id="rate-year" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+    <label class="rate-field">Year<input id="rate-year" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" oninput="this.value=this.value.replace(/[^0-9]/g,'')"></label>
     <label class="rate-field">Suggested overall<input id="rate-ovr" inputmode="numeric" maxlength="3" autocomplete="off"></label>
     <label class="rate-field">Explanation (optional)<textarea id="rate-note" rows="3" maxlength="500"></textarea></label>
     <button class="btn red" id="rate-submit">Submit</button>
@@ -1528,9 +1541,9 @@ function openSpinOverlay(){
   $('reel-country').style.transform='translateY(0)';
   $('reel-year').style.transition='none';
   $('reel-year').style.transform='translateY(0)';
-  // pre-fill reels with a teaser
-  buildCountryStrip(pickRandomCountry(), false);
-  buildYearStrip(2022, false);
+  // both reels stay blank until each one actually starts spinning
+  $('reel-country').innerHTML='';
+  $('reel-year').innerHTML='';
   $('spin-round-label').textContent=roundLabel();
   renderDots('spin-dots');
   $('spin-overlay').classList.add('show');
@@ -1577,10 +1590,11 @@ function spinStrip(strip, rowH, duration){
 // animation only — spins both reels and shows the landed result
 async function doSpinAnim(country, year){
   $('landed-name').innerHTML='';
-  buildCountryStrip(country,true);
-  buildYearStrip(year,true);
+  $('reel-year').innerHTML='';            // year stays blank during the nation spin
+  buildCountryStrip(country,true);        // build the nation reel just as it starts spinning
   await spinStrip($('reel-country'),COUNTRY_ROW,2600);
   $('landed-name').innerHTML=`${flagChip(country,'lg')} ${country}`;
+  buildYearStrip(year,true);              // build the year reel only now, as it starts spinning
   await spinStrip($('reel-year'),YEAR_ROW,1700);
   $('landed-name').innerHTML=`${flagChip(country,'lg')} ${country} <span class="yr">'${String(year).slice(2)}</span>`;
 }
@@ -1649,10 +1663,12 @@ function eligibleSlotsFor(player){
 
 function updateRespinButtons(){
   // One full re-spin per game (re-rolls both nation and year). Same in all modes.
-  const on = gs.respins.full>0;
+  // Stays visible after use — just greys out (disabled) instead of disappearing.
+  const left = gs.respins.full;
   const btn=$('btn-respin-full');
-  btn.textContent = `↻ Re-spin (${gs.respins.full})`;
-  $('select-respins').style.display = on ? '' : 'none';
+  btn.textContent = left>0 ? `↻ Re-spin (${left})` : '↻ Re-spin used';
+  btn.disabled = left<=0;
+  $('select-respins').style.display = '';
 }
 
 // ============================================================
@@ -1824,7 +1840,7 @@ function showPitchResult(){
   const iv=setInterval(()=>{
     const t=Math.min(1,(Date.now()-start)/dur);
     el.textContent=Math.round(target*t);
-    if(t>=1){el.textContent=target;clearInterval(iv);}
+    if(t>=1){el.textContent=target.toFixed(1);clearInterval(iv);}
   },22);
   box.scrollIntoView({behavior:'smooth',block:'center'});
   // reveal the Start World Cup button once the rating has landed
@@ -2053,14 +2069,15 @@ function applyTierClass(el, v){
 }
 // Count a number up to target. If colorEl is given, its tier colour updates live
 // on every tick, so the colour shifts as the value crosses each threshold.
-function countUp(el, target, dur, colorEl){
+function countUp(el, target, dur, colorEl, decimals){
   const start=Date.now();
+  const fmt=v=>(decimals!=null)?Number(v).toFixed(decimals):String(Math.round(v));
   const iv=setInterval(()=>{
     const t=Math.min(1,(Date.now()-start)/dur);
-    const v=Math.round(target*t);
-    el.textContent=v;
-    applyTierClass(colorEl, v);
-    if(t>=1){ el.textContent=target; applyTierClass(colorEl, target); clearInterval(iv); }
+    const n=target*t;
+    el.textContent=fmt(n);
+    applyTierClass(colorEl, n);
+    if(t>=1){ el.textContent=fmt(target); applyTierClass(colorEl, target); clearInterval(iv); }
   },22);
 }
 
@@ -2104,7 +2121,7 @@ function runRevealOverlay(){
   setTimeout(()=>{
     team.style.display='';
     setTimeout(()=>team.classList.add('show'), 20);
-    countUp($('reveal-team-num'), gs.result.teamOverall, 700, $('reveal-team-num'));
+    countUp($('reveal-team-num'), gs.result.teamOverall, 700, $('reveal-team-num'), 1);
   }, afterAll);
   setTimeout(()=>{
     go.style.display='';
@@ -2409,14 +2426,14 @@ function goToResults(){
   const rankBadge = `<div class="center" style="margin:0 0 4px;">
       <span class="res-rank" id="res-rank-line">🏅 Ranking this draft…</span></div>
     <div class="center" style="margin:0 0 8px;">
-      <button class="btn ghost small" id="res-leaderboard">🏅 All-Time Top 10</button></div>`;
+      <button class="btn ghost small" id="res-leaderboard">🏅 View Leaderboard</button></div>`;
 
   // The black recap box (built from the same sim result) is the page centrepiece.
   let html=`<div class="results-wrap">
     <div id="summary-host"></div>
     ${modeBadge}
     ${rankBadge}
-    <div class="res-section">Your Squad: ${r.teamOverall} OVR</div><div id="res-squad"></div>
+    <div class="res-section">Your Squad: ${r.teamOverall.toFixed(1)} OVR</div><div id="res-squad"></div>
     <div class="stack" style="margin-top:16px;">
       <button class="btn red" id="res-share">Share Your Result →</button>
       <button class="btn teal" id="res-again">Play Again</button>

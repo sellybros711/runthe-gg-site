@@ -341,19 +341,14 @@ function computeResult(state) {
   const diff = boostedAvg - neutralAvg;
   const coherenceScore = clamp(50 + diff * 1.5, 0, 100);
 
-  // Team overall is a weighted average of the six drafted players' overalls,
-  // where each player's weight grows with their rating (weight = overall^2).
-  // This makes a 90+ star lift the team rating more, while a 60-floor player
-  // weighs in slightly less — without letting any one pick run away with it.
-  const TEAM_WEIGHT_POW = 2;
-  let weightedSumOv = 0, weightTotalOv = 0;
-  for (const pick of state.picks) {
-    const ov = pick.player.overall;
-    const w = Math.pow(ov, TEAM_WEIGHT_POW);
-    weightedSumOv += ov * w;
-    weightTotalOv += w;
-  }
-  const teamOverall = Math.round(weightedSumOv / weightTotalOv);
+  // Team overall = average of the five highest-rated drafted players; the
+  // lowest of the six is dropped. Rounded to one decimal place, which adds
+  // variance and gives the leaderboard finer separation between squads.
+  const sortedOv = state.picks.map(p => p.player.overall).sort((a, b) => b - a);
+  const top5 = sortedOv.slice(0, 5);
+  const teamOverall = top5.length
+    ? Math.round((top5.reduce((a, b) => a + b, 0) / top5.length) * 10) / 10
+    : 0;
 
   const tier = RESULT_TIERS.find(t => teamOverall >= t.min && teamOverall <= t.max)
     || RESULT_TIERS[RESULT_TIERS.length - 1];
@@ -391,7 +386,7 @@ function generateMatchReport(result) {
 
   return [
     'RunThePitch: World Cup Edition ⚽',
-    `${result.resultLabel} ${result.resultEmoji} | Score: ${result.teamOverall}/100`,
+    `${result.resultLabel} ${result.resultEmoji} | Score: ${result.teamOverall.toFixed(1)}/100`,
     grid,
     'RunThe.gg/pitch',
   ].join('\n');
