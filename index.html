@@ -2321,6 +2321,26 @@ async function fetchGlobalRank(overall, progress){
   return { rank: better+1, total };
 }
 
+// Rank this draft within ONE specific board: a given mode (easy/hard) and time
+// window (all/week/day). Top-10 qualification is per board — a draft can miss the
+// all-time-across-both-modes Top 10 (e.g. an 87 ranked 42nd overall) yet still
+// crack the hard-mode board, the weekly board, or today's board. Returns the
+// 1-based rank within that board (count of strictly-better drafts + 1).
+async function fetchRankInBoard(overall, progress, opts){
+  opts = opts || {};
+  const ov = Math.round(overall);
+  const orFilter = encodeURIComponent(`(overall.gt.${ov},and(overall.eq.${ov},progress.gt.${progress}))`);
+  let filt = `&or=${orFilter}`;
+  if(opts.mode && opts.mode!=='all') filt += `&mode=eq.${opts.mode}`;
+  const cut = lbCutoffISO(opts.window);
+  if(cut) filt += `&created_at=gte.${encodeURIComponent(cut)}`;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1${filt}`, {
+    headers: sbHeaders({ 'Prefer':'count=exact' })
+  });
+  if(!res.ok) throw new Error('board rank query failed: '+res.status);
+  return sbCount(res) + 1;
+}
+
 // ---------- Top 10 leaderboard popup ----------
 // Toggle state: time window + mode (easy/hard boards are separate).
 let lbWindow='all', lbMode='easy', lbHighlightId=null;
@@ -2398,12 +2418,16 @@ async function refreshLeaderboardList(highlightId){
   }
 }
 
-function openLeaderboard(highlightId, promptName){
+function openLeaderboard(highlightId, promptName, opts){
+  opts = opts || {};
   const pr=$('lb-name-prompt');
   if(promptName && SUPABASE_READY && gs && gs.result && gs.result._lbId){
+    const WINDOW_LABEL = { all:'all-time', week:'weekly', day:'daily' };
+    const wlabel = WINDOW_LABEL[opts.window] || 'all-time';
+    const mlabel = (opts.mode==='hard') ? 'Hard Mode ' : '';
     pr.style.display='';
     pr.innerHTML=`<div class="lb-prompt">
-        🎉 You cracked the Top 10!<br>Enter your name for the board:
+        🎉 You cracked the ${mlabel}${wlabel} Top 10!<br>Enter your name for the board:
         <input id="lb-name-input" maxlength="20" placeholder="Your name" autocomplete="off" />
         <button class="btn gold" id="lb-name-save">Next: Pick Your Flag →</button>
       </div>`;
@@ -2413,9 +2437,10 @@ function openLeaderboard(highlightId, promptName){
   }else{
     pr.style.display='none'; pr.innerHTML='';
   }
-  // default to the all-time board for the mode just played (easy/hard)
-  lbWindow='all';
-  lbMode=(gameMode==='hard')?'hard':'easy';
+  // Open to the board the draft cracked (or, when just viewing, the all-time board
+  // for the mode just played). easy/hard boards are separate.
+  lbWindow = opts.window || 'all';
+  lbMode = opts.mode || ((gameMode==='hard')?'hard':'easy');
   lbSetActiveToggles();
   $('lb-bg').classList.add('show');
   refreshLeaderboardList(highlightId);
@@ -2496,8 +2521,25 @@ async function fillRankBadge(overall, progress){
       gs.result._lb = { rank, total, id };
       gs.result._lbId = id;
       el.innerHTML = `🏅 This draft ranks <b>${rank}</b> of <b>${total}</b> all-time drafts`;
-      // qualified for the Top 10 → prompt for a name (only if the insert gave an id)
-      if(id && rank<=10) setTimeout(()=>openLeaderboard(id, true), 700);
+      // Top-10 qualification is PER BOARD: the played mode (easy/hard) across the
+      // all-time, weekly and daily windows. Prompt for a name if the draft cracks
+      // ANY of them — not just the all-time-across-both-modes rank above (which is
+      // why an 87 on hard could rank 42nd overall yet still belong in the hard Top 10).
+      if(id){
+        const mode = gameMode || 'easy';
+        const WINDOWS = ['all','week','day']; // all-time wins display priority
+        let crackedWindow = null;
+        for(const w of WINDOWS){
+          try{
+            const r = await fetchRankInBoard(overall, progress, { mode, window:w });
+            if(r<=10){ crackedWindow = w; break; }
+          }catch(e){ /* this board failed to load — try the next one */ }
+        }
+        if(crackedWindow){
+          const cw = crackedWindow;
+          setTimeout(()=>openLeaderboard(id, true, { mode, window:cw }), 700);
+        }
+      }
       return;
     }catch(e){ /* global board unreachable → per-device fallback below */ }
   }
