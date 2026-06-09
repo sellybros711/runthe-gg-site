@@ -22,8 +22,10 @@
 </script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>RunThePitch — World Cup Edition</title>
-<meta name="description" content="Spin a random year & nation, draft a legend each round, and build your dream VI. Then simulate a World Cup and go all the way." />
+<!-- Primary Meta Tags -->
+<title>RunThePitch: World Cup Edition</title>
+<meta name="title" content="RunThePitch: World Cup Edition" />
+<meta name="description" content="Spin. Pick. Conquer. Build your dream World Cup squad and simulate your run to glory." />
 <meta name="theme-color" content="#0b1324" />
 
 <!-- ===== Favicons / app icons (the trophy) ===== -->
@@ -32,23 +34,30 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
 
-<!-- ===== Social link preview (Open Graph + Twitter) ===== -->
+<!-- Open Graph / Facebook / iMessage -->
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThePitch" />
-<meta property="og:title" content="RunThePitch — World Cup Edition" />
-<meta property="og:description" content="Spin. Pick. Conquer. Draft a legend each round, build your dream VI, and simulate a World Cup." />
-<meta property="og:url" content="https://runthe.gg/" />
+<meta property="og:url" content="https://runthe.gg" />
+<meta property="og:title" content="RunThePitch: World Cup Edition" />
+<meta property="og:description" content="Spin. Pick. Conquer. Build your dream World Cup squad and simulate your run to glory." />
 <meta property="og:image" content="https://runthe.gg/og-image.png" />
 <meta property="og:image:secure_url" content="https://runthe.gg/og-image.png" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta property="og:image:alt" content="RunThePitch World Cup Edition — Spin. Pick. Conquer." />
+
+<!-- Twitter / X -->
+<!-- NOTE: X/Twitter aggressively caches link previews. After deploying a new
+     og-image, force a refresh via the X Card Validator (cards-dev.twitter.com/validator).
+     iMessage caches previews per-device and can take time to update. Future image
+     updates can bust caches by versioning the URL, e.g. og-image.png?v=0.0.26 -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:site" content="@RunThePitch" />
 <meta name="twitter:creator" content="@RunThePitch" />
-<meta name="twitter:title" content="RunThePitch — World Cup Edition" />
-<meta name="twitter:description" content="Spin. Pick. Conquer. Draft a legend each round, build your dream VI, and simulate a World Cup." />
+<meta name="twitter:url" content="https://runthe.gg" />
+<meta name="twitter:title" content="RunThePitch: World Cup Edition" />
+<meta name="twitter:description" content="Spin. Pick. Conquer. Build your dream World Cup squad and simulate your run to glory." />
 <meta name="twitter:image" content="https://runthe.gg/og-image.png" />
 <meta name="twitter:image:alt" content="RunThePitch World Cup Edition — Spin. Pick. Conquer." />
 
@@ -651,7 +660,9 @@
     height:6px; background:#e5ddd4; border-radius:3px; margin:10px 0;
     overflow:hidden; border:1.5px solid var(--ink);
   }
-  .match-clock-fill{height:100%; background:var(--teal); width:0%; transition:width linear; border-radius:2px;}
+  .match-clock-fill{height:100%; background:var(--teal); width:0%; transition:width linear, background .3s ease; border-radius:2px;}
+  /* CHANGE 2 — slow-motion tension cue: warm the bar toward amber/gold */
+  .match-clock-fill.slowmo{ background:#F5A623; }
   .goal-event{font-size:13px; font-weight:700; margin:4px 0; animation:fade 0.25s ease both;}
   .sim-scoreline{
     font-family:'Anton',sans-serif; font-size:28px; text-align:center;
@@ -724,6 +735,9 @@
     font-family:'Courier New',ui-monospace,monospace;font-size:18px;letter-spacing:.5px;
     display:flex;align-items:center;justify-content:center;}
   .sb-time.et{color:#F5C518;}
+  /* CHANGE 2 — slow-motion tension cue: gently pulse the clock readout */
+  .sb-time.slowmo{animation:sbTimePulse 1s ease-in-out infinite;}
+  @keyframes sbTimePulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
   .sb-team{display:flex;align-items:center;gap:8px;padding:0 12px;flex:1 1 0;min-width:0;}
   .sb-team-opp{justify-content:flex-end;text-align:right;}
   .sb-team-flag{flex:0 0 auto;display:inline-flex;align-items:center;}
@@ -796,13 +810,29 @@
   .profile-bg{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;
     padding:18px;background:rgba(0,0,0,.6);}
   .profile-bg.show{display:flex;animation:fade .2s ease;}
+  /* card is a fixed-height flex column: header stays put, body scrolls */
   .profile-card{position:relative;background:var(--white);border:3px solid var(--ink);border-radius:18px;
-    box-shadow:var(--shadow);width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:20px;}
+    box-shadow:var(--shadow);width:100%;max-width:480px;max-height:90vh;overflow:hidden;
+    display:flex;flex-direction:column;}
   .profile-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;
     border:2px solid var(--ink);background:#fff;font-weight:900;font-size:15px;line-height:1;cursor:pointer;z-index:2;}
+  /* fixed header */
+  .profile-header{flex:0 0 auto;padding:20px 20px 12px;border-bottom:2px solid #eee;}
+  /* scrollable body: ~70vh cap, momentum scroll on iOS */
+  .profile-body{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    max-height:70vh;padding:14px 20px 20px;}
   .profile-h-name{font-family:'Anton',Impact,sans-serif;font-size:28px;line-height:1;margin:0 30px 6px 0;}
-  .profile-h-meta{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;margin-bottom:6px;flex-wrap:wrap;}
+  .profile-h-meta{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;flex-wrap:wrap;}
   .profile-h-meta .posbadge{font-weight:900;font-size:10px;color:#fff;border-radius:6px;padding:3px 7px;}
+  /* gold ICON pill for historical greats */
+  .profile-iconbadge{font-weight:900;font-size:10px;letter-spacing:1px;color:var(--ink);
+    background:linear-gradient(180deg,#FCEFA8,#F4B413);border:1.5px solid var(--ink);
+    border-radius:6px;padding:3px 8px;text-transform:uppercase;box-shadow:1.5px 1.5px 0 var(--ink);}
+  .profile-details{list-style:none;margin:2px 0 0;padding:0;}
+  .profile-details li{display:flex;justify-content:space-between;gap:12px;
+    padding:6px 2px;border-bottom:1px solid #eee;font-size:13px;font-weight:600;}
+  .profile-details li .dk{color:#8a7d70;}
+  .profile-details li .dv{font-weight:800;text-align:right;}
   .profile-section-label{font-weight:900;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#8a7d70;margin:16px 0 6px;}
   .profile-table{width:100%;border-collapse:collapse;font-size:12px;}
   .profile-table th{text-align:left;font-weight:900;color:#8a7d70;padding:4px 6px;border-bottom:2px solid var(--ink);
@@ -999,6 +1029,7 @@
   .rate-card .btn{margin-top:4px;}
   .res-message{font-weight:700;font-size:14px;line-height:1.45;margin:12px auto 0;max-width:340px;color:var(--ink);}
   .res-section{font-weight:900;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#8a7d70;margin:18px 0 8px;}
+  .res-bio-hint{font-weight:700;font-size:11px;color:#9a8d80;margin:-2px 0 8px;text-align:right;}
   .res-recap-row,.res-squad-row{display:flex;align-items:center;gap:10px;border:2px solid var(--ink);border-radius:12px;
     background:#fff;padding:9px 12px;margin-bottom:8px;box-shadow:2px 2px 0 var(--ink);font-weight:700;font-size:13px;}
   .res-recap-row .r-round{font-weight:900;min-width:92px;flex:0 0 auto;}
@@ -1509,7 +1540,8 @@
 <div class="profile-bg" id="profile-bg">
   <div class="profile-card">
     <button class="profile-close" id="profile-close" aria-label="Close">✕</button>
-    <div id="profile-content"></div>
+    <div id="profile-header" class="profile-header"></div>
+    <div id="profile-content" class="profile-body"></div>
   </div>
 </div>
 
@@ -1563,9 +1595,9 @@
 <!-- ?v= cache-buster: index.html is always served fresh (max-age=0) but these
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
-<script src="gameLogic.js?v=0.0.25"></script>
+<script src="gameLogic.js?v=0.0.26"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
-<script src="data/players_all.js?v=0.0.25"></script>
+<script src="data/players_all.js?v=0.0.26"></script>
 <script>
 const G = window.RunThePitch;
 
@@ -1689,8 +1721,9 @@ async function boot(){
   let fetchErr = null;
 
   // Single source of truth: the comprehensive dataset (1966–2026).
-  // ?v= cache-buster keeps this in lockstep with deploys (see script tags above).
-  let players = await fetchPlayers('data/players_all.json?v=0.0.25');
+  // Date.now() cache-buster forces a fresh load every time, so updated overalls
+  // always appear immediately after a data swap (never a stale cached copy).
+  let players = await fetchPlayers('data/players_all.json?v=' + Date.now());
 
   // file:// fallback (fetch blocked when opened directly via file://).
   if((!players || !players.length) && Array.isArray(window.PLAYERS_ALL)){
@@ -1715,17 +1748,22 @@ async function boot(){
   console.log('[RunThePitch] Years available:', years.join(', '));
   console.log('[RunThePitch] Countries available ('+countries.length+'):', countries.join(', '));
 
-  // ===== one-time data validation (Dataset v2) =====
-  console.log('=== Dataset v2 Validation ===');
+  // ===== one-time data validation (RERATED dataset) =====
+  // Confirms the overalls the GAME loaded (window.PLAYERS) exactly match the
+  // source data file. If any line logs MISMATCH, the data is stale.
+  console.log('=== RERATED Dataset Validation ===');
   const _p = window.PLAYERS;
-  console.log('Total:', _p.length);
-  console.log('Pelé 1970:', _p.find(x=>x.name.includes('Pelé')&&x.year===1970)?.wc_overall);
-  console.log('Maradona 1986:', _p.find(x=>x.name.includes('Maradona')&&x.year===1986&&x.wc_overall>85)?.wc_overall);
-  console.log('Messi 2022:', _p.find(x=>x.name.includes('Messi')&&x.year===2022)?.wc_overall);
+  const _ov = (nm,yr)=> _p.find(x=>x.name.includes(nm)&&x.year===yr)?.wc_overall;
+  console.log('Total players:', _p.length, _p.length===9976?'OK':'EXPECTED 9976');
+  console.log('is_icon players:', _p.filter(x=>x.is_icon).length, _p.filter(x=>x.is_icon).length===372?'OK':'EXPECTED 372');
+  [['Pelé',1970,99],['Diego Maradona',1986,99],['Lionel Messi',2022,99],
+   ['Lionel Messi',2006,86],['Thierry Henry',2006,93],['Thierry Henry',1998,83]
+  ].forEach(([nm,yr,exp])=>{
+    const got=_ov(nm,yr);
+    console.log(`${nm} ${yr}: ${got} (expected ${exp})`, got===exp?'OK':'MISMATCH');
+  });
   console.log('Players at floor (60):', _p.filter(x=>x.wc_overall===60).length);
   console.log('Elite (90+):', _p.filter(x=>x.wc_overall>=90).length);
-  console.log('2026 team_overall null:', _p.find(x=>x.year===2026)?.team_overall);
-  console.log('skill_rating present:', _p.filter(x=>x.skill_rating!=null).length);
   console.log('=== End Validation ===');
 
   allCountries = G.getAllCountries();
@@ -2257,15 +2295,18 @@ function renderGrid(squad){
   // players already drafted this game can't be picked again
   const pickedIds = new Set(gs.picks.map(pk=>pk.player.player_id));
   const available = p => eligibleSlotsFor(p).length>0 && !pickedIds.has(p.player_id);
-  // sort: available first, then grouped by position, then overall high→low
+  // sort: available first, then grouped by position. EASY orders each position by
+  // overall (high→low); HARD is a blind pick, so it orders each position
+  // alphabetically by name instead — no rating hint from the ordering.
   const order={GK:0,DEF:1,MID:2,FWD:3};
   const ov = p => (p.wc_overall ?? p.overall ?? 0);  // the value shown on the card
+  const hard = gameMode==='hard';
   const sorted=[...squad].sort((a,b)=>{
     const aa=available(a), ab=available(b);
     if(aa!==ab) return aa?-1:1;
-    return (order[a.position]-order[b.position])
-      || (ov(b)-ov(a))
-      || a.name.localeCompare(b.name);
+    if(a.position!==b.position) return order[a.position]-order[b.position];
+    return hard ? a.name.localeCompare(b.name)
+                : ((ov(b)-ov(a)) || a.name.localeCompare(b.name));
   });
   sorted.forEach(p=>{
     const elig=eligibleSlotsFor(p);
@@ -2772,7 +2813,9 @@ function goToResults(){
     <div id="summary-host"></div>
     ${modeBadge}
     ${rankBadge}
-    <div class="res-section">Your Squad: ${r.teamOverall.toFixed(1)} OVR</div><div id="res-squad"></div>
+    <div class="res-section">Your Squad: ${r.teamOverall.toFixed(1)} OVR</div>
+    <div class="res-bio-hint">Tap a player for their bio card</div>
+    <div id="res-squad"></div>
     <div class="stack" style="margin-top:16px;">
       <button class="btn red" id="res-share">Share Your Result →</button>
       <button class="btn teal" id="res-again">Play Again</button>
@@ -2841,50 +2884,71 @@ function openProfile(p){
     .sort((a,b)=>(a.year-b.year) || a.country.localeCompare(b.country));
   const ovOf = x => (x.wc_overall ?? x.skill_rating ?? x.overall ?? '—');
   const dash = v => (v==null ? '—' : v);
+  // a stat tile, only when the value is present (nulls omitted entirely)
+  const tile = (label,val)=> val==null ? '' :
+    `<div class="profile-stat"><div class="k">${label}</div><div class="v">${val}</div></div>`;
+  // a key/value detail row, only when the value is present
+  const detail = (label,val)=> val==null ? '' :
+    `<li><span class="dk">${label}</span><span class="dv">${val}</span></li>`;
 
-  let html=`
+  // ── fixed header: name, country, position, captain ★, ICON pill, award badges ──
+  const fin = p.tournament_result ? (TOURNAMENT_RESULTS[p.tournament_result]||{label:p.tournament_result}) : null;
+  let badges='';
+  if(p.is_icon) badges+=`<span class="profile-iconbadge" title="Historical icon">ICON</span>`;
+  if(p.award!=null){
+    const list=Array.isArray(p.award)?p.award:[p.award];
+    list.forEach(a=>badges+=`<span class="awardbadge">${AWARD_LABELS[a]||a}</span>`);
+  }
+  const header=`
     <div class="profile-h-name">${p.name}${p.is_captain?' <span title="Captain" style="color:var(--gold)">★</span>':''}</div>
     <div class="profile-h-meta">
       ${flagChip(p.country)} <span>${p.country}</span>
       <span class="posbadge ${p.position}" style="background:${slotColor(p.position,p)}">${p.position}</span>
+      ${badges}
     </div>`;
 
-  // career World Cup history table — appearances + overall only for now
+  // ── scrollable body ──
+  let html='';
+
+  // tournament info for the drafted year — result + the rating tiles
+  html+=`<div class="profile-section-label">${p.year} ${p.country} — Tournament</div>`;
+  if(fin) html+=`<div class="profile-tags"><span class="finish-badge${fin.cls?' '+fin.cls:''}">${fin.label}</span></div>`;
+  const tiles=[
+    tile('Overall', p.wc_overall),
+    tile('Skill', p.skill_rating),
+    tile('WC Performance', p.wc_performance),
+    tile('Squad Strength', p.team_overall),
+  ].join('');
+  if(tiles) html+=`<div class="profile-stats">${tiles}</div>`;
+
+  // player details — every non-null field, never a dash for missing data
+  const details=[
+    detail('Age at tournament', p.age_at_tournament),
+    detail('Birth year', p.birth_year),
+    detail('Club', p.club_at_tournament),
+    detail('Career caps', p.appearances),
+    detail("Ballon d'Or", p.ballon_dor),
+  ].join('');
+  if(details) html+=`<div class="profile-section-label">Player Details</div><ul class="profile-details">${details}</ul>`;
+
+  // career World Cup history — one row per tournament: Year | Apps | Goals | Overall
   html+=`<div class="profile-section-label">Career World Cup History</div>
     <table class="profile-table"><thead><tr>
-      <th>Year</th><th>Country</th><th>Apps</th><th>Overall</th>
+      <th>Year</th><th>Apps</th><th>Overall</th>
     </tr></thead><tbody>`;
   all.forEach(x=>{
     const drafted = x.year===p.year && x.country===p.country;
     html+=`<tr class="${drafted?'is-drafted':''}">
-      <td>${x.year}</td><td>${x.country}</td>
+      <td>${x.year}</td>
       <td>${dash(x.appearances)}</td>
       <td>${ovOf(x)}</td></tr>`;
   });
   html+=`</tbody></table>`;
 
-  // stats panel for the drafted year — appearances + overall only (more to come)
-  html+=`<div class="profile-section-label">${p.year} Tournament — Stats</div><div class="profile-stats">`;
-  const statDefs=[
-    ['appearances','Apps'],['wc_overall','Overall'],
-  ];
-  statDefs.forEach(([k,label])=>{
-    if(p[k]!=null) html+=`<div class="profile-stat"><div class="k">${label}</div><div class="v">${p[k]}</div></div>`;
-  });
-  html+=`</div>`;
-
-  // tags: tournament result, captain, awards
-  const fin = p.tournament_result ? (TOURNAMENT_RESULTS[p.tournament_result]||null) : null;
-  let tags='';
-  if(fin) tags+=`<span class="finish-badge${fin.cls?' '+fin.cls:''}">${fin.label}</span>`;
-  if(p.is_captain) tags+=`<span class="finish-badge champion">★ Captain</span>`;
-  if(p.award!=null){
-    const list=Array.isArray(p.award)?p.award:[p.award];
-    list.forEach(a=>tags+=`<span class="awardbadge">${AWARD_LABELS[a]||a}</span>`);
-  }
-  if(tags) html+=`<div class="profile-tags">${tags}</div>`;
-
+  $('profile-header').innerHTML=header;
   $('profile-content').innerHTML=html;
+  $('profile-bg').scrollTop=0;
+  $('profile-content').scrollTop=0;
   $('profile-bg').classList.add('show');
 }
 function closeProfile(){ $('profile-bg').classList.remove('show'); }
@@ -2892,30 +2956,43 @@ function closeProfile(){ $('profile-bg').classList.remove('show'); }
 // ============================================================
 //  REPORT SCREEN
 // ============================================================
-// Share-card text. Encourages the recipient to play; a World Cup win turns it
-// into a direct challenge. Plain text only (no URL encoding).
-function reportText(){
-  const champ = simResult && !simResult.eliminated && simResult.furthestRound==='Final';
-  const ROUND_PHRASE={
-    'Group Stage':'the group stage','Round of 32':'the Round of 32','Round of 16':'the Round of 16',
-    'Quarter-final':'the Quarter-finals','Semi-final':'the Semi-finals','Final':'the Final'
-  };
-  let text;
-  if(champ){
-    text = "🏆⚽ I just WON the World Cup on RunThePitch!\n"
-         + "I drafted a squad of legends and went all the way. "
-         + "Think you can build a team good enough to lift the trophy? "
-         + "I challenge you to do the same → https://runthe.gg/pitch";
-  } else if(simResult && simResult.furthestRound==='Group Stage'){
-    text = "⚽ I drafted a squad on RunThePitch but couldn't escape the group stage. "
-         + "Think you can do better? Build your dream VI → https://runthe.gg/pitch";
-  } else {
-    const reached = simResult ? (ROUND_PHRASE[simResult.furthestRound]||simResult.furthestRound) : 'the tournament';
-    text = `⚽ I drafted a squad on RunThePitch and reached ${reached}. `
-         + "Can you build a better team and go further? Play → https://runthe.gg/pitch";
+// Share-card text (CHANGE 1) — short, SEO-first, exactly four lines. Every result
+// tier leads with "World Cup" for search optimisation:
+//   [result message]
+//   [score]/100
+//   Tap the link to draft your squad ⚽
+//   https://runthe.gg
+// The first three lines (shareTextCore) are the navigator.share() text; the
+// clipboard fallback copies the whole block — link included — since that's what
+// people paste into a tweet.
+const SHARE_CTA  = 'Tap the link to draft your squad ⚽';
+const SHARE_HOME = 'https://runthe.gg';
+
+function shareResultMessage(){
+  const r=simResult;
+  if(r && !r.eliminated && r.furthestRound==='Final')
+    return 'I just won the World Cup on RunThePitch 🏆';
+  const round = r ? r.furthestRound : 'Group Stage';
+  switch(round){
+    case 'Final':         return 'I made the World Cup Final on RunThePitch ⚽';
+    case 'Semi-final':    return 'I reached the World Cup Semi-finals on RunThePitch ⚽';
+    case 'Quarter-final': return 'I reached the World Cup Quarter-finals on RunThePitch ⚽';
+    case 'Round of 16':   return 'I made the World Cup Round of 16 on RunThePitch ⚽';
+    case 'Round of 32':   return 'I reached the World Cup Round of 32 on RunThePitch ⚽';
+    default:              return 'I flamed out of the World Cup group stage on RunThePitch 😤';
   }
-  if(gameMode==='hard') text += "\n[Hard Mode]";
-  return text;
+}
+function shareScoreLine(){
+  const s = (gs.result && gs.result.teamOverall!=null) ? +gs.result.teamOverall : 0;
+  return `${s.toFixed(1)}/100`;
+}
+// First three lines (message + score + CTA) — used as navigator.share() text.
+function shareTextCore(){
+  return `${shareResultMessage()}\n${shareScoreLine()}\n${SHARE_CTA}`;
+}
+// Full four-line block including the link — for clipboard + the on-screen box.
+function reportText(){
+  return `${shareTextCore()}\n${SHARE_HOME}`;
 }
 
 function goToReport(){
@@ -3137,7 +3214,7 @@ async function buildShareCanvas(){
 // Native share of the result card PNG + the encouraging text (the only path that
 // can attach the image). Degrades to download (desktop), then text, then clipboard.
 async function nativeShareWithImage(){
-  const text=reportText();
+  const text=shareTextCore();   // message + score + CTA (link passed via url / appended on copy)
   let file=null;
   try{
     const canvas=await buildShareCanvas();
@@ -3146,7 +3223,7 @@ async function nativeShareWithImage(){
   }catch(e){ /* render failed → share text only */ }
 
   if(file && navigator.canShare && navigator.canShare({files:[file]})){
-    try{ await navigator.share({ files:[file], text, title:'RunThePitch' }); return; }
+    try{ await navigator.share({ files:[file], text, title:'RunThePitch: World Cup Edition', url:SHARE_HOME }); return; }
     catch(e){ if(e && e.name==='AbortError') return; }
   }
   // Desktop / no file-share: download the image so it can still be posted, + copy text.
@@ -3156,14 +3233,14 @@ async function nativeShareWithImage(){
       const a=document.createElement('a'); a.href=url; a.download='runthepitch.png';
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(()=>URL.revokeObjectURL(url), 4000);
-      await copyToClipboard(text); showToast('Image saved · caption copied ✓'); return;
+      await copyToClipboard(reportText()); showToast('Image saved · caption copied ✓'); return;
     }catch(e){ /* fall through */ }
   }
   if(navigator.share){
-    try{ await navigator.share({ text }); return; }
+    try{ await navigator.share({ text, title:'RunThePitch: World Cup Edition', url:SHARE_HOME }); return; }
     catch(e){ if(e && e.name==='AbortError') return; }
   }
-  await copyToClipboard(text); showToast('Copied to clipboard ✓');
+  await copyToClipboard(reportText()); showToast('Copied to clipboard ✓');
 }
 
 // Copy the report to the clipboard as PLAIN text. iOS Safari needs an explicit
@@ -3191,19 +3268,19 @@ async function copyToClipboard(text){
 }
 
 async function copyReport(){
-  const text=reportText();
-  // On mobile use the native share sheet, passing PLAIN text only (no URL) so
-  // the result is never percent-encoded by a share link.
+  // On mobile use the native share sheet with the new title/text/url. The text is
+  // the first three lines (message + score + CTA); the url is passed separately.
   if(navigator.share){
     try{
-      await navigator.share({ text });
+      await navigator.share({ title:'RunThePitch: World Cup Edition', text:shareTextCore(), url:SHARE_HOME });
       return;
     }catch(e){
       if(e && e.name==='AbortError') return; // user dismissed the share sheet
       // any other failure → fall through to clipboard copy
     }
   }
-  await copyToClipboard(text);
+  // Clipboard fallback copies the full four-line block (link included).
+  await copyToClipboard(reportText());
   const t=$('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);
 }
 
@@ -3565,6 +3642,29 @@ function expectedGoals(teamOverall){
   return (teamOverall / 100) * 1.8;
 }
 
+// Below-86 penalty: squads under 86 take a steep per-match multiplier so a weak
+// side almost never strings together a full title run. ≥86 is untouched (1.0),
+// so 86-90 teams scale purely on the base sigmoid in the knockouts. Calibrated
+// so OVR 85 and below stay under ~1% full-tournament win rate.
+function belowThresholdPenalty(userTeamOverall){
+  if(userTeamOverall >= 86) return 1.0;
+  const deficit = 86 - userTeamOverall;
+  return Math.max(0.05, 0.66 - (deficit - 1) * 0.07);
+}
+
+// Elite boost: squads at 91+ get a per-match multiplier that compounds across
+// the knockout rounds. ≥86 but <91 get no boost (1.0), so 86-90 also scale on
+// the base curve. Base (1.34) sets the 91 floor (~45% WC win rate); the
+// per-point term (0.02) gently shapes how 95 sits between 91 and 99. (Tuned up
+// from the 1.22/0.07 starting point: 1.22 left 91 near ~37% under the 0.95 cap,
+// and a steep per-point term saturated 95 against the cap rather than letting it
+// scale between the two.)
+function eliteBoost(userTeamOverall){
+  if(userTeamOverall < 91) return 1.0;
+  const surplus = userTeamOverall - 91;
+  return 1.34 + (surplus * 0.02);
+}
+
 // CHANGE 1 — scoreline variance that scales with the strength gap. The stronger
 // team gets a higher variance ceiling (blowouts become possible when the gap is
 // large); the weaker team's ceiling shrinks as the gap grows. Win probability is
@@ -3679,12 +3779,17 @@ function drawOpponentForRound(pool, round){
 // CHANGE 4 — stricter group-stage gate. A 75-overall squad now clears the
 // group only ~60% of the time; this is the first hard wall for a weak side.
 function groupStageAdvance(teamOverall){
-  if(teamOverall >= 92) return true;                 // elite squads never fall at the group stage
-  if(teamOverall >= 87) return Math.random() < 0.97;
-  if(teamOverall >= 80) return Math.random() < 0.92;
-  if(teamOverall >= 70) return Math.random() < 0.60;
-  if(teamOverall >= 60) return Math.random() < 0.35;
-  return Math.random() < 0.20;
+  // 86+ almost always advances
+  if(teamOverall >= 90) return true;            // automatic
+  if(teamOverall >= 86) return Math.random() < 0.98;
+  // 80-85: strong but not guaranteed
+  if(teamOverall >= 83) return Math.random() < 0.88;
+  if(teamOverall >= 80) return Math.random() < 0.78;
+  // Under 80: misses more often, scaling down
+  if(teamOverall >= 75) return Math.random() < 0.55;
+  if(teamOverall >= 70) return Math.random() < 0.40;
+  if(teamOverall >= 65) return Math.random() < 0.28;
+  return Math.random() < 0.18;
 }
 
 // One group match → W/D/L plus a consistent scoreline, weighted by team strength.
@@ -3703,11 +3808,11 @@ function simGroupMatchResult(userOverall, oppOverall){
   return { res, userGoals:us, opponentGoals:them };
 }
 
-// Group stage: play three matchdays, then advance based on the RECORD (points),
-// so the shown results always match the outcome.
-//   ≥6 pts (3-0, 2-1, or better)  → advance
-//   4–5 pts (e.g. 1-1-1)          → 50% coin-flip
-//   ≤3 pts (e.g. 0-3)             → eliminated
+// Group stage: play three matchdays, then decide advancement via the strength
+// gate groupStageAdvance (CHANGE 3) — 86+ almost always go through, sub-80 sides
+// exit far more often. The shown matchday record is then reconciled to the
+// outcome so the displayed results never contradict the verdict (no "won every
+// game" yet eliminated, and no winless side sneaking through).
 function simulateGroupStage(userOverall, pool){
   const matchdays=[]; let w=0,d=0,l=0;
   for(let i=0;i<3;i++){
@@ -3718,8 +3823,35 @@ function simulateGroupStage(userOverall, pool){
     matchdays.push({ country:opp.country, year:opp.year, teamOverall:opp.teamOverall,
       userGoals:m.userGoals, opponentGoals:m.opponentGoals, res:m.res });
   }
+  // Strength-based advancement gate (CHANGE 3).
+  const advanced = groupStageAdvance(userOverall);
+
+  // Force a matchday into a given result with a believable scoreline.
+  const cap=g=>Math.max(0,Math.min(5,g));
+  const setRes=(md,res)=>{
+    let us=md.userGoals, them=md.opponentGoals;
+    if(res==='W'){ if(us<=them){ us=cap(them+1); if(us<=them) them=us-1; } }
+    else if(res==='L'){ if(them<=us){ them=cap(us+1); if(them<=us) us=them-1; } }
+    else { them=us; }
+    md.userGoals=us; md.opponentGoals=them; md.res=res;
+  };
+  const tally=()=>{ w=d=l=0; matchdays.forEach(m=>{ if(m.res==='W')w++; else if(m.res==='D')d++; else l++; }); };
+
+  // Reconcile the record with the verdict so the shown results stay plausible.
+  if(advanced){
+    // A side that advanced should not look winless — give it at least one win.
+    if(w===0 && matchdays.length){
+      const md = matchdays.find(m=>m.res==='D') || matchdays.find(m=>m.res==='L') || matchdays[0];
+      setRes(md,'W'); tally();
+    }
+  } else {
+    // An eliminated side should not look dominant — knock any 2nd/3rd win down.
+    while(w>1){
+      const md = matchdays.find(m=>m.res==='W');
+      setRes(md,'L'); tally();
+    }
+  }
   const pts = w*3 + d;
-  const advanced = pts>=6 ? true : (pts>=4 ? Math.random()<0.5 : false);
   let message;
   if(!advanced)            message="Your squad was eliminated in the group stage.";
   else if(l===0 && d===0)  message="Your squad won every group game.";
@@ -3790,8 +3922,17 @@ function simulateMatch(userSquad, userOverall, opponent){
   const oppOverall = opponent.teamOverall;
   const cap = g => Math.max(0, Math.min(7, g)); // 0..7 goals per team (CHANGE 1)
 
-  // The sigmoid is the single source of truth for who wins — unchanged.
-  const userWins = Math.random() < winProbability(userOverall, oppOverall);
+  // The sigmoid is the base source of truth for who wins, then the below-86
+  // penalty and the 91+ elite boost are applied together. The result is capped
+  // at 0.95 so even a 99 squad is never guaranteed any single match — the
+  // ~75% title rate for elite teams comes from chaining strong wins, not from
+  // a near-certain individual game.
+  const baseProb = winProbability(userOverall, oppOverall);
+  const penalty  = belowThresholdPenalty(userOverall);
+  const boost    = eliteBoost(userOverall);
+  let finalProb  = baseProb * penalty * boost;
+  finalProb = Math.min(finalProb, 0.95);
+  const userWins = Math.random() < finalProb;
   const winSide  = userWins ? 'user' : 'opponent';
 
   // CHANGE 1/2 — scoreline magnitude scales with the strength gap; the stronger
@@ -3895,25 +4036,33 @@ function simulateTournament(userSquad, userOverall, playerPool){
 // CHANGE 6 — temporary console validation: 1000 runs per overall, logging the
 // share of complete World Cup wins (group + five knockout rounds, win/loss
 // driven purely by the sigmoid against an escalating opponent ladder).
-function testSimulation(){
-  const overalls = [65, 70, 75, 80, 85, 90, 95];
-  overalls.forEach(ov => {
-    let wcWins = 0;
-    let attempts = 1000;
-    for (let i = 0; i < attempts; i++) {
+function testWinThreshold(){
+  for (let ov = 80; ov <= 99; ov++) {
+    let wins = 0;
+    const trials = 5000;
+    for (let i = 0; i < trials; i++) {
       if (!groupStageAdvance(ov)) continue;
-      const opponents = [66, 72, 79, 87, 94];
+      const opps = [74, 80, 87, 93];
       let survived = true;
-      for (let opp of opponents) {
-        const prob = winProbability(ov, opp);
-        if (Math.random() >= prob) { survived = false; break; }
+      for (const opp of opps) {
+        let prob = winProbability(ov, opp)
+          * belowThresholdPenalty(ov)
+          * eliteBoost(ov);
+        prob = Math.min(prob, 0.95);
+        if (Math.random() >= prob) {
+          survived = false;
+          break;
+        }
       }
-      if (survived) wcWins++;
+      if (survived) wins++;
     }
-    console.log(`OVR ${ov}: WC wins = ${wcWins}/1000 (${(wcWins/10).toFixed(1)}%)`);
-  });
+    console.log(
+      `OVR ${ov}: ${(wins/trials*100).toFixed(2)}% ` +
+      `WC win rate`
+    );
+  }
 }
-testSimulation();
+testWinThreshold();
 
 // Most goals by a user player, tiebreak by overall. Falls back to the
 // highest-rated player if nobody scored.
@@ -4115,6 +4264,16 @@ function simSimulateShootout(){
   return {seq, win:null}; // exhausted sudden death without separation
 }
 
+// CHANGE 3 — penalty reveal pacing: starts comfortable (1.0s) and ramps to a
+// tenser 1.5s by the 10th kick, holding there for deep sudden death.
+const PEN_START_DELAY = 1000;  // first kick: 1.0s
+const PEN_END_DELAY   = 1500;  // ramps to 1.5s
+const PEN_RAMP_KICKS  = 10;    // reaches max by the 10th kick
+function getPenaltyDelay(kickNumber){   // kickNumber starts at 1
+  const progress = Math.min((kickNumber - 1) / PEN_RAMP_KICKS, 1);
+  return PEN_START_DELAY + (PEN_END_DELAY - PEN_START_DELAY) * progress;
+}
+
 function simBuildPenaltySeq(winner){
   let out, guard=0;
   do { out = simSimulateShootout(); } while(out.win !== winner && guard++ < 300);
@@ -4149,14 +4308,19 @@ async function simAnimatePenalties(card, m){
 
   const seq=simBuildPenaltySeq(m.penaltyWinner); // alternating user, opp, user, …
   const score={user:0,opponent:0};
+  // CHANGE 3 — reveals ramp from 1.0s to 1.5s apart as the shootout goes deeper,
+  // building tension (and staying at 1.5s through any long sudden death). seq is
+  // already trimmed to the clinching kick, so early-termination is untouched.
+  let kickNumber=0;
   for(const k of seq){
+    kickNumber++;
     const row = k.team==='user' ? 'user' : 'opp';
     const dot=document.createElement('span');
     dot.className='pen-dot'+(k.scored?' scored':' missed');
     dot.textContent = k.scored ? '●' : '○';
     dotsEl[row].appendChild(dot);
     if(k.scored){ score[k.team]++; scoreEl[row].textContent=score[k.team]; }
-    await simSleep(800*0.8); // reveal one kick at a time — shootout runs 20% faster than the rest
+    await new Promise(r=>setTimeout(r, getPenaltyDelay(kickNumber)));
   }
   await simSleep(300*0.8);
 }
@@ -4228,21 +4392,70 @@ function sbBumpScore(wrap, side){
 function sbScheduleScore(wrap, e, delay){
   setTimeout(()=> sbBumpScore(wrap, e.team==='user'?'user':'opp'), Math.max(0,delay));
 }
+// CHANGE 1 — dynamic slow-motion. Returns the speed the clock should advance at
+// for the given moment: half speed (2× slower) in the closing minutes of a close
+// game (regulation 70–90 or extra time 100–120, margin ≤ 1), normal otherwise.
+// The score passed in is the LIVE running score at that simulated minute, so the
+// effect reacts as goals are revealed — a goal that widens the margin past 1
+// returns play to normal speed for the rest.
+function getSpeedMultiplier(simMinute, userScore, oppScore, isExtraTime){
+  const margin = Math.abs(userScore - oppScore);
+  const isClose = margin <= 1;                                   // 0 or 1 goal
+  if(!isExtraTime && simMinute>=70  && simMinute<=90  && isClose) return 0.5;
+  if( isExtraTime && simMinute>=100 && simMinute<=120 && isClose) return 0.5;
+  return 1.0;
+}
+const SLOWMO_EASE_MS = 300; // ease speed changes over ~0.3s rather than snapping
+
 // ONE setInterval loop drives the clock-bar fill AND the scoreboard minute from
-// a single shared progress value, so they can never drift apart:
-//   progress = elapsed_ms / dur ; fill = progress * range ; minute = round(progress * range)
+// a single shared progress value, so they can never drift apart. Goal events are
+// revealed (and the running score bumped) as the simulated minute crosses them,
+// so the score stays locked to the clock even when slow-motion stretches a
+// window. The advance rate is scaled by getSpeedMultiplier, eased over ~0.3s,
+// and a slow window adds a gentle scoreboard pulse + warm bar tint (CHANGE 2).
 // (setInterval is used over rAF so it still advances — and always resolves —
 //  even when the tab is backgrounded; rAF pauses while hidden.)
-function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur){
+function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
+  opts = opts || {};
+  const events   = (opts.events||[]).slice().sort((a,b)=>a.minute-b.minute);
+  const isET     = !!opts.isExtraTime;
+  const score    = opts.score || {user:0, opp:0};
+  const goalsBox = opts.goalsBox;
+  const timeEl   = wrap && wrap.querySelector('.sb-time');
+  let ei=0;
+  const revealUpTo=(minute)=>{
+    while(ei<events.length && events[ei].minute<=minute){
+      const e=events[ei++];
+      if(goalsBox) simScheduleGoal(goalsBox, e, 0);
+      const side = e.team==='user' ? 'user' : 'opp';
+      if(side==='user') score.user++; else score.opp++;
+      sbBumpScore(wrap, side);
+    }
+  };
+  const setSlow=(on)=>{
+    if(fill)   fill.classList.toggle('slowmo', on);
+    if(timeEl) timeEl.classList.toggle('slowmo', on);
+  };
   return new Promise(resolve=>{
-    const start=performance.now(); const gold=fromMin>90;
+    const gold=fromMin>90;
+    let p=0, curSpeed=1.0, last=performance.now();
     const tick=()=>{
-      const p=Math.min(1,(performance.now()-start)/dur);
+      const now=performance.now(); const dt=Math.min(100, now-last); last=now;
+      const simMinute = fromMin + (toMin-fromMin)*p;
+      const target = getSpeedMultiplier(simMinute, score.user, score.opp, isET);
+      // ease curSpeed toward target — full 0.5 range crosses in ~SLOWMO_EASE_MS
+      const maxStep = (dt/SLOWMO_EASE_MS) * 0.5;
+      curSpeed += Math.max(-maxStep, Math.min(maxStep, target-curSpeed));
+      setSlow(target < 1.0);
+      p = Math.min(1, p + (dt/dur)*curSpeed);
+      const minNow = fromMin + (toMin-fromMin)*p;
       fill.style.width=(fromPct+(toPct-fromPct)*p)+'%';
-      sbSetTime(wrap, Math.max(1,Math.round(fromMin+(toMin-fromMin)*p))+"'", gold);
-      if(p>=1){ clearInterval(iv); resolve(); }
+      sbSetTime(wrap, Math.max(1,Math.round(minNow))+"'", gold);
+      revealUpTo(minNow);
+      if(p>=1){ clearInterval(iv); revealUpTo(toMin); setSlow(false); resolve(); }
     };
     const iv=setInterval(tick, 1000/60);
+    last=performance.now();
     tick();
   });
 }
@@ -4276,18 +4489,21 @@ async function playMatchAnimation(m){
   const etEvents =m.goalEvents.filter(e=>e.minute>90);
 
   const baseWidth = m.extraTime ? 75 : 100;
-  // ONE rAF driver fills the clock bar AND ticks the scoreboard minute in lockstep.
-  // Goal reveals (and matching score bumps) fire at the same proportional times.
-  fill.style.transition='none';
-  regEvents.forEach(e=>{ const d=(e.minute/90)*regulation; simScheduleGoal(goalsBox,e,d); sbScheduleScore(sb,e,d); });
-  await sbDriveClock(fill, sb, 0, baseWidth, 0, 90, regulation);
+  // ONE driver fills the clock bar, ticks the scoreboard minute, AND reveals goals
+  // (with their score bumps) as the minute crosses them — all in lockstep, so the
+  // slow-motion windows react to the live running score. The transition keeps the
+  // amber slow-mo tint smooth while width is set manually each frame.
+  fill.style.transition='background .3s ease';
+  const liveScore={user:0, opp:0};  // shared across regulation + extra time
+  await sbDriveClock(fill, sb, 0, baseWidth, 0, 90, regulation,
+    {events:regEvents, isExtraTime:false, score:liveScore, goalsBox});
 
   if(m.extraTime){
     const etLabel=document.createElement('div'); etLabel.className='sim-et-label'; etLabel.textContent='EXTRA TIME';
     goalsBox.appendChild(etLabel);
     simScrollEnd(etLabel);
-    etEvents.forEach(e=>{ const d=((e.minute-90)/30)*etDur; simScheduleGoal(goalsBox,e,d); sbScheduleScore(sb,e,d); });
-    await sbDriveClock(fill, sb, 75, 100, 91, 120, etDur);  // gold 91'→120'
+    await sbDriveClock(fill, sb, 75, 100, 91, 120, etDur,   // gold 91'→120'
+      {events:etEvents, isExtraTime:true, score:liveScore, goalsBox});
   }
 
   // freeze the final minute, then flip to FT — the scoreboard's score IS the
