@@ -95,7 +95,36 @@
   }
   .btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink);}
   .btn.red{background:var(--red);color:#fff;}
+  .btn.green{background:var(--pos-mid);color:#fff;}
   .btn.teal{background:var(--teal);color:#fff;}
+  /* Friendly: Solo Draft (60%) + Friendly (38%) side by side, 2% gap.
+     Stack only on very small screens (<320px). */
+  .home-cta-row{display:flex;gap:2%;width:100%;max-width:460px;margin:0 auto;position:relative;z-index:2;}
+  .home-cta-row .btn{width:60%;}
+  .home-cta-row #btn-friendly{width:38%;}
+  @media (max-width:319px){
+    .home-cta-row{flex-direction:column;gap:10px;}
+    .home-cta-row .btn,.home-cta-row #btn-friendly{width:100%;}
+  }
+  /* Friendly mode screens */
+  .fr-wrap{max-width:460px;margin:0 auto;text-align:center;padding:8px 4px 24px;}
+  .fr-title{font-family:'Anton',Impact,sans-serif;font-size:34px;line-height:1.05;text-transform:uppercase;color:var(--ink);margin:18px 0 6px;}
+  .fr-sub{font-weight:900;color:var(--teal);font-size:16px;margin-bottom:14px;}
+  .fr-desc{font-weight:600;color:#5a5048;font-size:15px;line-height:1.5;margin-bottom:22px;}
+  .fr-muted{font-size:12px;color:#9a9387;font-weight:600;margin-top:12px;}
+  .fr-lineup{list-style:none;padding:0;margin:0 0 18px;text-align:left;}
+  .fr-lineup li{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--ink);
+    border-radius:12px;padding:8px 12px;margin-bottom:8px;box-shadow:var(--shadow-sm);}
+  .fr-lineup .fr-badge{font-weight:900;color:#fff;font-size:12px;border-radius:7px;padding:4px 8px;min-width:46px;text-align:center;}
+  .fr-lineup .fr-nm{font-weight:900;flex:1;text-align:left;}
+  .fr-lineup .fr-yr{font-weight:800;color:#5a5048;font-size:13px;}
+  .fr-lineup .flag-ico{width:26px;height:18px;border-radius:3px;background-size:cover;background-position:center;border:1px solid rgba(0,0,0,.2);}
+  .fr-linkbox{width:100%;border:2px solid var(--ink);border-radius:12px;padding:12px;font-size:12px;
+    font-family:monospace;background:#fff;margin-bottom:14px;resize:none;color:#333;}
+  .fr-tease-ov{font-family:'Anton',Impact,sans-serif;font-size:40px;color:var(--gold);margin:6px 0;}
+  .fr-result-img{width:100%;border:3px solid var(--ink);border-radius:14px;box-shadow:var(--shadow-sm);display:block;margin:0 auto 16px;}
+  .fr-banner{width:100%;background:var(--ink);color:#fff;font-weight:900;font-size:12px;
+    letter-spacing:.5px;text-align:center;height:28px;line-height:28px;border-radius:8px;margin-bottom:8px;}
   .btn.blue{background:var(--blue);color:#fff;}
   .btn.ghost{background:var(--white);}
   .btn:disabled{opacity:.4;filter:grayscale(.4);box-shadow:none;cursor:not-allowed;}
@@ -627,8 +656,8 @@
     font-size:13px; font-weight:700; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.1); gap:10px;
   }
   .sim-summary-row:last-child{border-bottom:none;}
-  .sim-summary .win-marker{color:#4ade80;}
-  .sim-summary .loss-marker{color:var(--red);}
+  .sim-summary .win-marker{color:#4ade80;font-weight:900;}
+  .sim-summary .loss-marker{color:var(--red);font-weight:900;}
   /* match-row hierarchy: round label muted, score is the focal point */
   .sim-summary-row .m-round{font-weight:900;font-size:11px;letter-spacing:.5px;
     text-transform:uppercase;opacity:.7;flex:0 0 auto;}
@@ -1142,7 +1171,10 @@
         <div class="rule"><span class="n">3</span><span>Repeat for six rounds to complete your squad.</span></div>
         <div class="rule"><span class="n">4</span><span>Simulate a World Cup against historic squads — go all the way and lift the trophy.</span></div>
       </div>
-      <button id="btn-start" class="btn red" disabled>Loading squads…</button>
+      <div class="home-cta-row">
+        <button id="btn-friendly" class="btn green" disabled>FRIENDLY</button>
+        <button id="btn-start" class="btn red" disabled>Loading squads…</button>
+      </div>
       <!-- flag lane (scrolls right) below the kickoff button -->
       <div class="flag-marquee bottom"><div class="flag-lane right" id="flag-lane-2"></div></div>
     </div>
@@ -1257,6 +1289,7 @@
 
   <!-- ===== SELECT ===== -->
   <section id="screen-select" class="screen">
+    <div class="fr-banner" id="select-friendly-banner" style="display:none"></div>
     <div class="sel-top">
       <span class="sel-flag" id="select-flag"></span>
       <span class="sel-title" id="select-country"></span>
@@ -1299,6 +1332,63 @@
   <section id="screen-sim" class="screen">
     <div class="sim-wrap">
       <div id="sim-content"></div>
+    </div>
+  </section>
+
+  <!-- ===== FRIENDLY: mode intro ===== -->
+  <section id="screen-friendly-intro" class="screen">
+    <div class="fr-wrap">
+      <div class="fr-title">FRIENDLY MODE</div>
+      <div class="fr-sub">Build your squad then challenge a friend</div>
+      <div class="fr-desc">You'll draft your lineup first. After you're done, you'll get a link to share with your friend. They build their squad and the match kicks off.</div>
+      <button id="btn-friendly-build" class="btn green big">BUILD MY SQUAD →</button>
+    </div>
+  </section>
+
+  <!-- ===== FRIENDLY: challenge ready (challenger, after draft) ===== -->
+  <section id="screen-challenge-ready" class="screen">
+    <div class="fr-wrap">
+      <div class="fr-title">CHALLENGE READY! 🔥</div>
+      <div class="fr-desc">Share this link with your friend. They'll build their squad and the match will kick off automatically.</div>
+      <ul class="fr-lineup" id="cr-lineup"></ul>
+      <textarea id="cr-link" class="fr-linkbox" rows="3" readonly></textarea>
+      <button id="cr-share" class="btn green big">SHARE CHALLENGE LINK</button>
+      <div style="height:10px"></div>
+      <button id="cr-copy" class="btn ghost">COPY LINK</button>
+      <div class="fr-muted">Your friend has 24 hours to accept before the link expires.</div>
+    </div>
+  </section>
+
+  <!-- ===== FRIENDLY: opponent landing ===== -->
+  <section id="screen-challenge-landing" class="screen">
+    <div class="fr-wrap">
+      <div class="fr-title">YOU'VE BEEN CHALLENGED! ⚽</div>
+      <div class="fr-desc">Your opponent has built their squad. Can you beat them?</div>
+      <ul class="fr-lineup" id="cl-mystery"></ul>
+      <div class="fr-sub" style="margin-bottom:4px">Opponent Team Overall</div>
+      <div class="fr-tease-ov" id="cl-ov">—</div>
+      <button id="cl-accept" class="btn green big">ACCEPT CHALLENGE →</button>
+      <div class="fr-muted">Build your squad to reveal their lineup and start the match</div>
+    </div>
+  </section>
+
+  <!-- ===== FRIENDLY: expired ===== -->
+  <section id="screen-friendly-expired" class="screen">
+    <div class="fr-wrap">
+      <div class="fr-title">CHALLENGE EXPIRED</div>
+      <div class="fr-desc">This challenge has expired. Ask your friend to send a new one.</div>
+      <button id="fx-solo" class="btn red big">Play Solo Instead</button>
+    </div>
+  </section>
+
+  <!-- ===== FRIENDLY: result ===== -->
+  <section id="screen-friendly-result" class="screen">
+    <div class="fr-wrap">
+      <img id="fr-result-img" class="fr-result-img" alt="Friendly match result" />
+      <button id="fr-share" class="btn green big">SHARE RESULT</button>
+      <div style="height:10px"></div>
+      <button id="fr-again" class="btn teal">PLAY AGAIN</button>
+      <div class="fr-muted">Send this to your friend so they can see the result!</div>
     </div>
   </section>
 
@@ -1404,9 +1494,9 @@
 <!-- ?v= cache-buster: index.html is always served fresh (max-age=0) but these
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
-<script src="gameLogic.js?v=17"></script>
+<script src="gameLogic.js?v=18"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
-<script src="data/players_all.js?v=17"></script>
+<script src="data/players_all.js?v=18"></script>
 <script>
 const G = window.RunThePitch;
 
@@ -1531,7 +1621,7 @@ async function boot(){
 
   // Single source of truth: the comprehensive dataset (1966–2026).
   // ?v= cache-buster keeps this in lockstep with deploys (see script tags above).
-  let players = await fetchPlayers('data/players_all.json?v=17');
+  let players = await fetchPlayers('data/players_all.json?v=18');
 
   // file:// fallback (fetch blocked when opened directly via file://).
   if((!players || !players.length) && Array.isArray(window.PLAYERS_ALL)){
@@ -1573,7 +1663,9 @@ async function boot(){
   preloadFlags();
   const b = $('btn-start');
   b.disabled = false;
-  b.textContent = 'Kick Off';
+  b.textContent = 'SOLO DRAFT';
+  const bf = $('btn-friendly');
+  if(bf) bf.disabled = false;
   startFlagMarquee();
 }
 
@@ -2034,6 +2126,14 @@ function paintSquad(){
   const mp=$('select-mode-pill');
   if(gameMode){ mp.textContent=gameMode==='hard'?'HARD':'EASY'; mp.className='mode-pill '+gameMode; mp.style.display=''; }
   else        { mp.style.display='none'; }
+  // Friendly opponent: persistent reminder banner showing the challenger's rating
+  const fb2=$('select-friendly-banner');
+  if(fb2){
+    if(friendlyMode && friendlyRole==='opponent' && challengerData){
+      fb2.textContent=`⚔️ FRIENDLY vs OPPONENT ${Math.round(challengerData.teamOverall)} OVR`;
+      fb2.style.display='';
+    } else { fb2.style.display='none'; }
+  }
   updateMiniPitch();
   renderGrid(squad);
   updateRespinButtons();
@@ -2144,10 +2244,16 @@ function assign(player, slot){
     $('btn-go-spin').style.display='none';
     $('btn-start-wc').style.display='none';
     updatePitch();   // fills the six circles with surnames on the pitch
-    setTimeout(()=>{
-      // dark overlay reveal of the overalls + team rating, over the live pitch
-      runRevealOverlay();
-    }, 700);
+    // Friendly mode: skip the Solo reveal/World-Cup sim and branch into the
+    // challenge flow (challenger → share link; opponent → run the match).
+    if(friendlyMode){
+      setTimeout(friendlyOnDraftComplete, 700);
+    } else {
+      setTimeout(()=>{
+        // dark overlay reveal of the overalls + team rating, over the live pitch
+        runRevealOverlay();
+      }, 700);
+    }
   } else {
     goToHome();
   }
@@ -3076,6 +3182,7 @@ async function copyReport(){
 
 // Show the difficulty screen with a fresh (unselected) state.
 function goToModeSelect(){
+  if(typeof friendlyReset==='function') friendlyReset(); // Solo entry clears Friendly state
   gameMode=null;
   document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('selected'));
   $('mode-cards').classList.remove('has-sel');
@@ -4101,7 +4208,7 @@ function buildSummaryCard(){
         <span class="m-you">You</span>
         <span class="m-score">${m.userGoals}–${m.opponentGoals}</span>
         <span class="m-opp">${m.opponent.country} ${m.opponent.year}${pen}</span>
-        <span class="${won?'win-marker':'loss-marker'}">${won?'✓':'✗'}</span>
+        <span class="${won?'win-marker':'loss-marker'}">${won?'W':'L'}</span>
       </span>
     </div>`;
   }).join('');
@@ -4237,7 +4344,380 @@ async function runSimulationScreen(){
   showSimSummary();
 }
 
-boot();
+// ============================================================
+//  FRIENDLY MODE  (additive — does not touch Solo Draft)
+// ============================================================
+// A player drafts a squad, gets a share link encoding their lineup, and a friend
+// opens that link, drafts their own squad, and a single match is simulated with
+// the existing simulateMatch engine. Result is rendered to a shareable canvas.
+let friendlyMode = false;
+let friendlyRole = null;       // 'challenger' | 'opponent'
+let challengerData = null;     // decoded lineup of the link sender (opponent flow)
+let friendlyMatchResult = null;
+let pendingFriendly = null;    // { data } | { expired:true } parsed from the URL
+const FRIENDLY_TTL_MS = 24*60*60*1000; // 24 hours
+
+// Surname for the result card: the last name token, plus any generational
+// suffix kept attached (e.g. "Vincent Aboubakar Jr." → "Aboubakar Jr.").
+const NAME_SUFFIXES = new Set(['jr','jr.','sr','sr.','ii','iii','iv','filho','júnior','junior','neto']);
+function surnameOf(name){
+  const parts=(name||'').trim().split(/\s+/);
+  if(parts.length<=1) return name||'';
+  const last=parts[parts.length-1];
+  if(NAME_SUFFIXES.has(last.toLowerCase()) && parts.length>=2){
+    return parts.slice(-2).join(' '); // family name + suffix
+  }
+  return last;
+}
+
+// Unicode-safe base64 (player names carry accents → plain btoa would throw).
+function frEncode(obj){ return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))); }
+function frDecode(str){ return JSON.parse(decodeURIComponent(escape(atob(str)))); }
+
+// Reset all Friendly state (used when returning to Solo / Play Again).
+function friendlyReset(){
+  friendlyMode=false; friendlyRole=null; challengerData=null; friendlyMatchResult=null;
+}
+
+// Build the encoded lineup object from the just-completed draft (gs.result).
+function friendlyLineupObject(role){
+  const picks=orderPicksForDisplay(gs.result.scoredPicks, ['GK','DEF','DEF','MID','FWD','FLEX'])
+    .map(pk=>{ const p=pk.player; return {
+      slot: pk.slot,
+      playerId: String(p.player_id),
+      playerName: p.name,
+      country: p.country,
+      year: p.year,
+      position: p.position,
+      wc_overall: p.overall,
+      flag: flagImg(p.country,160) || ''
+    };});
+  return { role, picks, teamOverall: gs.result.teamOverall, gameMode:'easy', timestamp: Date.now() };
+}
+
+// Convert encoded picks → squad objects the simulation engine understands.
+function friendlySquadFromPicks(picks){
+  return picks.map(p=>({
+    player_id: p.playerId, name: p.playerName, country: p.country, year: p.year,
+    position: p.position, overall: p.wc_overall, is_captain:false, slot:p.slot
+  }));
+}
+
+// ---- entry: tapping FRIENDLY on the home screen ----
+function startFriendly(){
+  friendlyReset();
+  friendlyMode=true; friendlyRole='challenger';
+  gameMode='easy';                 // overalls visible — keeps Friendly accessible
+  showScreen('friendly-intro');
+}
+
+// ---- challenger finished their draft → Challenge Ready screen ----
+function friendlyOnDraftComplete(){
+  if(friendlyRole==='opponent') return runFriendlyMatch();
+  showChallengeReady();
+}
+
+function showChallengeReady(){
+  const lineup=friendlyLineupObject('challenger');
+  // compact lineup preview (no overalls — keeps it competitive for the friend)
+  const ul=$('cr-lineup'); ul.innerHTML='';
+  lineup.picks.forEach(p=>{
+    const li=document.createElement('li');
+    const col=slotColor(p.slot,{position:p.position});
+    const txt=col===PITCH_COLORS.GK?'#111':'#fff';
+    li.innerHTML=`<span class="fr-badge" style="background:${col};color:${txt}">${p.slot}</span>`+
+      `<span class="fr-nm">${escapeHtml(p.playerName)}</span>`+
+      `${flagChip(p.country)}<span class="fr-yr">${p.year}</span>`;
+    ul.appendChild(li);
+  });
+  // self-consistent link (works in preview and production); decode reads the
+  // ?friendly= query param regardless of host.
+  const url=`${location.origin}${location.pathname}?friendly=${frEncode(lineup)}`;
+  $('cr-link').value=url;
+  $('cr-share')._url=url;
+  $('cr-copy')._url=url;
+  showScreen('challenge-ready');
+}
+
+async function friendlyShareLink(url){
+  if(navigator.share){
+    try{ await navigator.share({ title:'RunThePitch Challenge', text:'I built my squad — can you beat it?', url }); return; }
+    catch(e){ if(e && e.name==='AbortError') return; }
+  }
+  await copyToClipboard(url);
+  showToast('Link copied! Send it to your friend.');
+}
+
+// ---- opponent landing ----
+// Parse the ?friendly= param once at load. Sets pendingFriendly and cleans the URL.
+function parseFriendlyParam(){
+  let encoded=null;
+  try{ encoded=new URLSearchParams(window.location.search).get('friendly'); }catch(e){}
+  if(!encoded) return;
+  let data=null;
+  try{ data=frDecode(encoded); }catch(e){ data=null; }
+  // CHANGE 9 — clean the URL so a refresh won't re-trigger the challenge.
+  try{ window.history.replaceState({}, document.title, window.location.pathname); }catch(e){}
+  if(!data || !Array.isArray(data.picks)){ return; }
+  if(typeof data.timestamp==='number' && (Date.now()-data.timestamp)>FRIENDLY_TTL_MS){
+    pendingFriendly={ expired:true }; return;
+  }
+  pendingFriendly={ data };
+}
+
+function showChallengeLanding(data){
+  challengerData=data;
+  friendlyMode=true; friendlyRole='opponent';
+  gameMode='easy';
+  // MYSTERY teaser — fixed formation slots, names hidden as "???"
+  const slots=['GK','DEF','DEF','MID','FWD','FLEX'];
+  const ul=$('cl-mystery'); ul.innerHTML='';
+  slots.forEach(s=>{
+    const col=PITCH_COLORS[s]||PITCH_COLORS.FLEX;
+    const txt=col===PITCH_COLORS.GK?'#111':'#fff';
+    const li=document.createElement('li');
+    li.innerHTML=`<span class="fr-badge" style="background:${col};color:${txt}">${s}</span>`+
+      `<span class="fr-nm" style="letter-spacing:2px;color:#9a9387">???</span>`;
+    ul.appendChild(li);
+  });
+  $('cl-ov').textContent=Math.round(data.teamOverall);
+  showScreen('challenge-landing');
+}
+
+// ---- the Friendly match ----
+async function runFriendlyMatch(){
+  const userSquad = gs.picks.map(p=>p.player);          // Player B (current user)
+  const userOverall = gs.result.teamOverall;
+  const chSquad = friendlySquadFromPicks(challengerData.picks); // Player A
+  const chOverall = challengerData.teamOverall;
+
+  const m = simulateMatch(userSquad, userOverall, {
+    country:'FRIEND', year:'', teamOverall: chOverall, squad: chSquad
+  });
+
+  const opponentScore = m.userGoals;     // Player B (current user)
+  const challengerScore = m.opponentGoals; // Player A (link sender)
+  const opponentGoals = m.goalEvents.filter(e=>e.team==='user').map(e=>({minute:e.minute,scorer:e.scorer}));
+  const challengerGoals = m.goalEvents.filter(e=>e.team==='opponent').map(e=>({minute:e.minute,scorer:e.scorer}));
+
+  const totalOv = userOverall + chOverall;
+  const possOpp = Math.round((userOverall/totalOv)*100);
+  const possession = { opponent: possOpp, challenger: 100-possOpp };
+  const shots = {
+    opponent: Math.round(expectedGoals(userOverall)*3.5),
+    challenger: Math.round(expectedGoals(chOverall)*3.5)
+  };
+  const saves = {
+    opponent: Math.max(0, shots.challenger - challengerScore),
+    challenger: Math.max(0, shots.opponent - opponentScore)
+  };
+
+  // Man of the match: best overall on the winning team (highest overall overall on a draw).
+  const oppBest = [...userSquad].sort((a,b)=>(b.overall||0)-(a.overall||0))[0];
+  const chBest  = [...chSquad].sort((a,b)=>(b.overall||0)-(a.overall||0))[0];
+  let mom;
+  if(opponentScore>challengerScore)       mom={ name:oppBest.name, team:'YOU',    overall:oppBest.overall };
+  else if(challengerScore>opponentScore)  mom={ name:chBest.name,  team:'FRIEND', overall:chBest.overall  };
+  else mom = (oppBest.overall||0)>=(chBest.overall||0)
+        ? { name:oppBest.name, team:'YOU', overall:oppBest.overall }
+        : { name:chBest.name, team:'FRIEND', overall:chBest.overall };
+
+  const normSquad = arr => orderPicksForDisplay(arr.map(p=>({slot:p.slot,player:p})), ['GK','DEF','DEF','MID','FWD','FLEX'])
+    .map(x=>({ slot:x.slot, name:x.player.name, overall:x.player.overall }));
+
+  friendlyMatchResult = {
+    opponentScore, challengerScore, opponentGoals, challengerGoals,
+    possession, shots, saves, manOfMatch: mom,
+    opponentSquad: normSquad(gs.result.scoredPicks.map(p=>({...p.player,slot:p.slot}))),
+    challengerSquad: normSquad(chSquad),
+    opponentTeamOverall: Math.round(userOverall),
+    challengerTeamOverall: Math.round(chOverall)
+  };
+
+  incrementFriendlyCount();   // non-blocking, fails silently
+  await showFriendlyResult(friendlyMatchResult);
+}
+
+// ---- CHANGE 7 — Supabase friendly counter (fails silently) ----
+// Table: friendly_stats { id int pk =1, total_played int default 0, last_played timestamp }
+// -- To check total friendlies played:
+// -- SELECT total_played FROM friendly_stats WHERE id = 1;
+async function incrementFriendlyCount(){
+  if(!SUPABASE_READY) return;
+  try{
+    let current=0;
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/friendly_stats?select=total_played&id=eq.1`, { headers: sbHeaders() });
+    if(res.ok){ const rows=await res.json(); current=(rows&&rows[0]&&rows[0].total_played)||0; }
+    await fetch(`${SUPABASE_URL}/rest/v1/friendly_stats?on_conflict=id`, {
+      method:'POST',
+      headers: sbHeaders({ 'Prefer':'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify({ id:1, total_played: current+1, last_played: new Date().toISOString() })
+    });
+  }catch(e){ console.log('Counter update failed silently', e); }
+}
+
+// ---- CHANGE 6 — shareable result image (390×700 portrait canvas) ----
+async function buildFriendlyResultCanvas(R){
+  await (document.fonts && document.fonts.ready);
+  const Wc=390, Hc=700, S=2;
+  const c=document.createElement('canvas'); c.width=Wc*S; c.height=Hc*S;
+  const x=c.getContext('2d'); x.scale(S,S);
+  const youWin=R.opponentScore>R.challengerScore, draw=R.opponentScore===R.challengerScore;
+
+  // SECTION 1 — header
+  x.fillStyle='#0A0F1E'; x.fillRect(0,0,Wc,80);
+  x.textAlign='center';
+  x.fillStyle='#F4B413'; x.font='900 20px Archivo';
+  x.fillText('RUNTHEPITCH', Wc/2, 34);
+  x.fillStyle='#fff'; x.font='700 13px Archivo';
+  x.fillText('FRIENDLY MATCH', Wc/2, 56);
+  x.fillStyle='#F4B413'; x.fillRect(40,72,Wc-80,2);
+
+  // SECTION 2 — scoreline
+  x.fillStyle='#0A0F1E'; x.fillRect(0,80,Wc,120);
+  x.fillStyle='rgba(255,255,255,.7)'; x.font='800 12px Archivo';
+  x.fillText('YOU', 60, 120); x.fillText('FRIEND', Wc-60, 120);
+  x.fillStyle='#fff'; x.font='900 18px Archivo';
+  x.fillText(String(R.opponentTeamOverall), 60, 142);
+  x.fillText(String(R.challengerTeamOverall), Wc-60, 142);
+  x.fillStyle='#fff'; x.font='900 48px Archivo'; x.textAlign='right';
+  x.fillText(String(R.opponentScore), Wc/2-18, 158);
+  x.textAlign='left';
+  x.fillText(String(R.challengerScore), Wc/2+18, 158);
+  x.fillStyle='#F4B413'; x.textAlign='center'; x.font='900 40px Archivo';
+  x.fillText('–', Wc/2, 156);
+  x.font='900 16px Archivo';
+  x.fillStyle = draw?'#F4B413':(youWin?'#1F9E57':'#E5402A');
+  x.fillText(draw?'DRAW':(youWin?'YOU WIN':'YOU LOSE'), Wc/2, 190);
+
+  // SECTION 3 — box score
+  x.fillStyle='#F8F5F0'; x.fillRect(0,200,Wc,120);
+  const rows=[['Possession',R.possession.opponent+'%',R.possession.challenger+'%'],
+             ['Shots',R.shots.opponent,R.shots.challenger],
+             ['Saves',R.saves.opponent,R.saves.challenger]];
+  x.font='800 12px Archivo';
+  x.fillStyle='#9a8f80'; x.textAlign='left'; x.fillText('YOU',24,222);
+  x.textAlign='right'; x.fillText('FRIEND',Wc-24,222);
+  rows.forEach((r,i)=>{
+    const ry=232+i*28;
+    if(i%2===0){ x.fillStyle='rgba(0,0,0,.04)'; x.fillRect(12,ry,Wc-24,26); }
+    x.fillStyle='#16120F'; x.font='900 14px Archivo';
+    x.textAlign='left'; x.fillText(String(r[1]),24,ry+18);
+    x.textAlign='center'; x.fillStyle='#5a5048'; x.font='700 12px Archivo';
+    x.fillText(r[0],Wc/2,ry+18);
+    x.textAlign='right'; x.fillStyle='#16120F'; x.font='900 14px Archivo';
+    x.fillText(String(r[2]),Wc-24,ry+18);
+  });
+
+  // SECTION 4 — goal events
+  x.fillStyle='#FFFFFF'; x.fillRect(0,320,Wc,100);
+  x.textAlign='left'; x.font='700 12px Archivo'; x.fillStyle='#16120F';
+  const all=[...R.opponentGoals.map(g=>({...g,team:'YOU'})),
+             ...R.challengerGoals.map(g=>({...g,team:'FRIEND'}))].sort((a,b)=>a.minute-b.minute);
+  if(!all.length){
+    x.textAlign='center'; x.fillStyle='#5a5048'; x.font='800 14px Archivo';
+    x.fillText('0–0 — Goalless draw', Wc/2, 372);
+  } else {
+    const shown=all.slice(0,5);
+    shown.forEach((g,i)=>{
+      x.fillStyle='#16120F'; x.font='700 12px Archivo'; x.textAlign='left';
+      x.fillText(`⚽ ${g.minute}'  ${surnameOf(g.scorer)} (${g.team})`, 20, 340+i*15);
+    });
+    if(all.length>5){ x.fillStyle='#9a8f80'; x.fillText(`+${all.length-5} more`, 20, 340+5*15); }
+  }
+
+  // SECTION 5 — both lineups
+  x.fillStyle='#0F1424'; x.fillRect(0,420,Wc,200);
+  x.textAlign='center'; x.font='900 12px Archivo'; x.fillStyle='#F4B413';
+  x.fillText('YOUR SQUAD', Wc*0.25, 442); x.fillText("FRIEND'S SQUAD", Wc*0.75, 442);
+  const drawCol=(squad,cx)=>{
+    squad.forEach((p,i)=>{
+      const ry=458+i*26;
+      const col=slotColor(p.slot,{position:''})||'#5B6470';
+      const txt=col===PITCH_COLORS.GK?'#111':'#fff';
+      x.fillStyle=col; rrect('',x,cx-78,ry,30,18,4); x.fill();
+      x.fillStyle=txt; x.font='900 9px Archivo'; x.textAlign='center'; x.fillText(p.slot,cx-63,ry+13);
+      x.fillStyle='#fff'; x.font='800 11px Archivo'; x.textAlign='left';
+      // Surname only, keeping any generational suffix (Jr., Sr., II, III…)
+      // attached to the actual family name. Ellipsize only as a last resort.
+      const nameMax=100;
+      let nm=surnameOf(p.name);
+      let truncated=false;
+      while(x.measureText(nm).width>nameMax && nm.length>3){ nm=nm.slice(0,-2); truncated=true; }
+      if(truncated) nm+='…';
+      x.fillText(nm,cx-44,ry+13);
+      x.fillStyle='#F4B413'; x.font='900 11px Archivo'; x.textAlign='right';
+      x.fillText(String(p.overall),cx+82,ry+13);
+    });
+  };
+  drawCol(R.opponentSquad, Wc*0.25);
+  drawCol(R.challengerSquad, Wc*0.75);
+
+  // SECTION 6 — man of the match
+  x.fillStyle='#F4B413'; x.fillRect(0,620,Wc,60);
+  x.fillStyle='#16120F'; x.textAlign='center'; x.font='900 14px Archivo';
+  let mtxt=`MAN OF THE MATCH ⭐ ${surnameOf(R.manOfMatch.name)} (${R.manOfMatch.team})`;
+  while(x.measureText(mtxt).width>Wc-24 && mtxt.length>10){ mtxt=mtxt.slice(0,-2); }
+  x.fillText(mtxt, Wc/2, 656);
+
+  // SECTION 7 — footer
+  x.fillStyle='#0A0F1E'; x.fillRect(0,680,Wc,20);
+  x.fillStyle='rgba(255,255,255,.6)'; x.font='700 11px Archivo'; x.textAlign='center';
+  x.fillText('RunThe.gg', Wc/2, 694);
+
+  return c;
+}
+
+async function showFriendlyResult(R){
+  let canvas;
+  try{ canvas=await buildFriendlyResultCanvas(R); }catch(e){ canvas=null; }
+  const img=$('fr-result-img');
+  if(canvas){
+    img.src=canvas.toDataURL('image/png');
+    img.style.display='';
+    canvas.toBlob(b=>{ $('fr-share')._blob=b; }, 'image/png', 0.95);
+  } else { img.style.display='none'; }
+  showScreen('friendly-result');
+}
+
+async function friendlyShareResult(){
+  const blob=$('fr-share')._blob;
+  if(blob && navigator.canShare){
+    const file=new File([blob],'runthepitch-friendly.png',{type:'image/png'});
+    if(navigator.canShare({files:[file]})){
+      try{ await navigator.share({ files:[file], title:'RunThePitch', text:'Friendly match result' }); return; }
+      catch(e){ if(e && e.name==='AbortError') return; }
+    }
+  }
+  // download fallback
+  if(blob){
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download='runthepitch-friendly.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+    showToast('Image saved ✓');
+  }
+}
+
+// ---- wiring ----
+$('btn-friendly').addEventListener('click', startFriendly);
+$('btn-friendly-build').addEventListener('click', ()=>{ gs=G.createGameState(); goToHome(); });
+$('cr-share').addEventListener('click', ()=>friendlyShareLink($('cr-share')._url));
+$('cr-copy').addEventListener('click', async ()=>{ await copyToClipboard($('cr-copy')._url); showToast('Link copied! Send it to your friend.'); });
+$('cl-accept').addEventListener('click', ()=>{ gs=G.createGameState(); goToHome(); });
+$('fx-solo').addEventListener('click', ()=>{ friendlyReset(); goToModeSelect(); });
+$('fr-share').addEventListener('click', friendlyShareResult);
+$('fr-again').addEventListener('click', ()=>{ friendlyReset(); showScreen('start'); });
+
+// After data loads, route to the Friendly landing/expired screen if a link was opened.
+function friendlyAfterBoot(){
+  if(!pendingFriendly) return;
+  if(pendingFriendly.expired) showScreen('friendly-expired');
+  else if(pendingFriendly.data) showChallengeLanding(pendingFriendly.data);
+}
+
+parseFriendlyParam();   // synchronous: decode + clean URL before boot resolves
+boot().then(friendlyAfterBoot);
 </script>
 </body>
 </html>
