@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>RunThePitch — World Cup Edition</title>
-<meta name="description" content="Spin a random nation & year, draft a legend each round, and build your dream XI. Then simulate a World Cup and go all the way." />
+<meta name="description" content="Spin a random year & nation, draft a legend each round, and build your dream VI. Then simulate a World Cup and go all the way." />
 <meta name="theme-color" content="#0b1324" />
 
 <!-- ===== Favicons / app icons (the trophy) ===== -->
@@ -17,7 +17,7 @@
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThePitch" />
 <meta property="og:title" content="RunThePitch — World Cup Edition" />
-<meta property="og:description" content="Spin. Pick. Conquer. Draft a legend each round, build your dream XI, and simulate a World Cup." />
+<meta property="og:description" content="Spin. Pick. Conquer. Draft a legend each round, build your dream VI, and simulate a World Cup." />
 <meta property="og:url" content="https://runthe.gg/" />
 <meta property="og:image" content="https://runthe.gg/og-image.png" />
 <meta property="og:image:secure_url" content="https://runthe.gg/og-image.png" />
@@ -29,7 +29,7 @@
 <meta name="twitter:site" content="@RunThePitch" />
 <meta name="twitter:creator" content="@RunThePitch" />
 <meta name="twitter:title" content="RunThePitch — World Cup Edition" />
-<meta name="twitter:description" content="Spin. Pick. Conquer. Draft a legend each round, build your dream XI, and simulate a World Cup." />
+<meta name="twitter:description" content="Spin. Pick. Conquer. Draft a legend each round, build your dream VI, and simulate a World Cup." />
 <meta name="twitter:image" content="https://runthe.gg/og-image.png" />
 <meta name="twitter:image:alt" content="RunThePitch World Cup Edition — Spin. Pick. Conquer." />
 
@@ -819,6 +819,52 @@
   .flag-opt:active{transform:scale(.92);}
   .flag-opt .flag-ico{width:100%;height:100%;border-radius:4px;}
 
+  /* ---------- add-to-leaderboard entry modal (shows on every results page) ---------- */
+  /* Retro theme: cream paper card, thick ink border + hard offset shadow,
+     Anton headline, chunky press-down button — matching the rest of the game. */
+  .entry-bg{position:fixed;inset:0;z-index:95;display:none;align-items:center;justify-content:center;
+    padding:18px;background:rgba(22,18,15,.6);}
+  .entry-bg.show{display:flex;animation:fade .2s ease;}
+  .entry-card{position:relative;background:var(--paper);border:3px solid var(--ink);border-radius:18px;
+    max-width:360px;width:100%;padding:24px 22px;box-shadow:var(--shadow);max-height:90vh;overflow-y:auto;}
+  .entry-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;
+    border:2px solid var(--ink);background:#fff;color:var(--ink);font-weight:900;font-size:15px;line-height:1;
+    cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;}
+  .entry-close:active{transform:translate(2px,2px);}
+  .entry-title{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;
+    font-size:26px;line-height:1;color:var(--ink);margin:0 30px 0 0;letter-spacing:.5px;}
+  .entry-sub{font-weight:700;font-size:13px;color:#8a7d70;margin:6px 0 0;}
+  .entry-badge{display:inline-flex;align-items:center;gap:8px;margin:14px 0 4px;padding:8px 16px;
+    border:2.5px solid var(--ink);border-radius:999px;color:#fff;font-weight:900;font-size:14px;
+    text-transform:uppercase;letter-spacing:.5px;box-shadow:var(--shadow-sm);}
+  .entry-name{width:100%;box-sizing:border-box;border:2.5px solid var(--ink);border-radius:11px;
+    padding:12px 14px;font-size:16px;font-family:inherit;font-weight:800;color:var(--ink);
+    background:#fff;outline:none;margin-top:14px;}
+  .entry-name::placeholder{color:#b3a995;font-weight:700;}
+  .entry-name:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(244,180,19,.35);}
+  .entry-flag-label{font-weight:900;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;
+    color:#8a7d70;margin:16px 0 8px;}
+  .entry-flag-row{display:flex;gap:8px;overflow-x:auto;padding:4px 2px;-webkit-overflow-scrolling:touch;}
+  .entry-flag-row::-webkit-scrollbar{display:none;}
+  .entry-flag-opt{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:2.5px solid var(--ink);
+    background-size:cover;background-position:center;background-color:#e6e0d4;cursor:pointer;padding:0;
+    box-shadow:1px 1px 0 var(--ink);transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;}
+  .entry-flag-opt.sel{border-color:var(--gold);transform:scale(1.12);box-shadow:0 0 0 2px var(--gold),2px 2px 0 var(--ink);}
+  .entry-submit{width:100%;height:50px;border:3px solid var(--ink);border-radius:14px;background:var(--teal);
+    color:#fff;font-weight:900;font-size:16px;text-transform:uppercase;letter-spacing:1px;
+    cursor:pointer;margin-top:18px;font-family:inherit;box-shadow:var(--shadow-sm);
+    transition:transform .08s ease,box-shadow .08s ease;}
+  .entry-submit:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink);}
+  .entry-submit:disabled{opacity:.4;filter:grayscale(.4);box-shadow:none;cursor:not-allowed;transform:none;}
+  .entry-skip{display:block;width:100%;text-align:center;background:none;border:none;
+    color:#8a7d70;font-weight:700;font-size:13px;text-decoration:underline;text-underline-offset:3px;
+    cursor:pointer;margin-top:14px;font-family:inherit;}
+  .entry-toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);
+    background:var(--teal);color:#fff;font-weight:900;font-size:13px;padding:12px 22px;
+    border:3px solid var(--ink);border-radius:999px;box-shadow:var(--shadow-sm);text-transform:uppercase;
+    letter-spacing:1px;z-index:120;opacity:0;transition:all .3s ease;pointer-events:none;}
+  .entry-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
   /* ---------- share targets popup ---------- */
   .share-bg{position:fixed;inset:0;z-index:85;display:none;align-items:flex-end;justify-content:center;
     background:rgba(22,18,15,.55);}
@@ -1091,8 +1137,8 @@
       <h1 class="display">Spin. Pick. Conquer.</h1>
       <p>Build your dream VI.</p>
       <div class="rules">
-        <div class="rule"><span class="n">1</span><span>Spin a random nation &amp; year.</span></div>
-        <div class="rule"><span class="n">2</span><span>Draft a player to fill your VI: GK · DEF · DEF · MID · FWD · FLEX.</span></div>
+        <div class="rule"><span class="n">1</span><span>Spin a random year &amp; nation.</span></div>
+        <div class="rule"><span class="n">2</span><span>Draft a player to fill your starting VI:<br>GK · DEF · DEF · MID · FWD · FLEX.</span></div>
         <div class="rule"><span class="n">3</span><span>Repeat for six rounds to complete your squad.</span></div>
         <div class="rule"><span class="n">4</span><span>Simulate a World Cup against historic squads — go all the way and lift the trophy.</span></div>
       </div>
@@ -1320,6 +1366,22 @@
     <div id="lb-list"></div>
   </div>
 </div>
+
+<!-- ===== add-to-leaderboard entry modal (every results page) ===== -->
+<div class="entry-bg" id="entry-bg">
+  <div class="entry-card">
+    <button class="entry-close" id="entry-close" aria-label="Close">✕</button>
+    <h3 class="entry-title">Add to Leaderboard</h3>
+    <p class="entry-sub">Enter your name to save your score</p>
+    <div><span class="entry-badge" id="entry-badge"></span></div>
+    <input class="entry-name" id="entry-name" maxlength="20" placeholder="Your name (max 20 chars)" autocomplete="off" />
+    <div class="entry-flag-label">Your Flag</div>
+    <div class="entry-flag-row" id="entry-flag-row"></div>
+    <button class="entry-submit" id="entry-submit">Save to Leaderboard</button>
+    <button class="entry-skip" id="entry-skip">Skip — stay anonymous</button>
+  </div>
+</div>
+<div class="entry-toast" id="entry-toast">Added to leaderboard!</div>
 
 
 <!-- ===== rating feedback form ===== -->
@@ -2608,6 +2670,10 @@ function goToResults(){
   showScreen('reveal');
   window.scrollTo({top:0,behavior:'smooth'});
   if(champ) setTimeout(launchConfetti, 250); // celebrate the win
+
+  // Always-on add-to-leaderboard prompt: appears on EVERY results page after a
+  // 1s beat, with no score threshold or Top-10 check.
+  setTimeout(()=>openEntryModal(roundName, Math.round(r.teamOverall), color), 1000);
 }
 
 // Falling confetti for a World Cup win.
@@ -2730,7 +2796,7 @@ function showToast(msg){ const t=$('toast'); if(msg) t.textContent=msg; t.classL
 
 // ── Shareable result card ─────────────────────────────────────────────────────
 // Renders a 1080×1350 (Instagram 4:5, also fine on X) PNG containing the drafted
-// XI with overalls plus a brief simulation recap, in the game's brand style.
+// VI with overalls plus a brief simulation recap, in the game's brand style.
 // Purpose-built on a canvas (no html2canvas dependency) so it always contains the
 // roster — the old path only snapshotted the recap box.
 const SHARE_TROPHY_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 92"><defs>
@@ -2866,7 +2932,7 @@ async function buildShareCanvas(){
 
   // roster heading
   x.textAlign='left'; x.font='900 20px Archivo'; x.fillStyle='rgba(255,255,255,.7)';
-  x.fillText('YOUR STARTING XI', 64, y+8);
+  x.fillText('YOUR STARTING VI', 64, y+8);
   x.fillStyle='rgba(255,255,255,.18)'; x.fillRect(300, y, W-64-300, 2); y+=26;
 
   // roster rows (white cards)
@@ -2886,12 +2952,17 @@ async function buildShareCanvas(){
     rrect('',x,bx,by,bw,bh,9); x.fillStyle=bc; x.fill();
     x.fillStyle = bc===PITCH_COLORS.GK ? ink : '#fff';
     x.font='900 22px Archivo'; x.textAlign='center'; x.fillText(pick.slot, bx+bw/2, cy+8); x.textAlign='left';
-    // overall (right)
+    // overall (right) — caption + number anchored to the card body (ry/rowH) so
+    // the "OVR" label always sits INSIDE the white card, just above the number,
+    // and scales with the row height (previously it floated above the card edge).
     const ov=p.overall; const ovc=ovColor(ov);
-    x.font='400 50px Anton'; x.fillStyle=ovc; x.textAlign='right';
-    const ovX=mX+rW-26; x.fillText(String(ov), ovX, cy+16);
-    x.font='800 15px Archivo'; x.fillStyle='#8a7d70';
-    x.fillText('OVR', ovX, cy-18); x.textAlign='left';
+    x.textAlign='right'; const ovX=mX+rW-26;
+    const ovrFont=Math.max(11, Math.round(rowH*0.17));
+    const numFont=Math.round(rowH*0.46);
+    x.font='800 '+ovrFont+'px Archivo'; x.fillStyle='#8a7d70';
+    x.fillText('OVR', ovX, ry+Math.round(rowH*0.34));
+    x.font='400 '+numFont+'px Anton'; x.fillStyle=ovc;
+    x.fillText(String(ov), ovX, ry+rowH-Math.round(rowH*0.16)); x.textAlign='left';
     // flag + year (before overall)
     let rightX=ovX - x.measureText('00').width - 78;
     x.font='800 24px Archivo'; x.fillStyle='#5a5048';
@@ -3088,6 +3159,89 @@ $('lb-bg').addEventListener('click',e=>{ if(e.target===$('lb-bg')) closeLeaderbo
 $('lb-seg-window').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; lbWindow=b.dataset.w; lbSetActiveToggles(); refreshLeaderboardList(); });
 $('lb-seg-mode').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; lbMode=b.dataset.m; lbSetActiveToggles(); refreshLeaderboardList(); });
 
+// ---------- add-to-leaderboard entry modal (every results page) ----------
+// Fixed ordered list of flag options. Each name maps through the SAME flag image
+// system used everywhere else in the game (flagImg / FLAG_CODES).
+const ENTRY_FLAGS = ['Argentina','Australia','Belgium','Brazil','Canada','Chile',
+  'Colombia','Croatia','Denmark','Ecuador','Egypt','England','France','Germany',
+  'Ghana','Greece','Honduras','Hungary','Iran','Italy','Jamaica','Japan','Mexico',
+  'Morocco','Netherlands','New Zealand','Nigeria','Norway','Poland','Portugal',
+  'Romania','Russia','Saudi Arabia','Scotland','Senegal','Serbia','South Korea',
+  'Spain','Sweden','Switzerland','Tunisia','Turkey','Ukraine','Uruguay','USA','Wales'];
+let entrySelectedFlag = 'USA';
+
+function buildEntryFlagRow(){
+  const row=$('entry-flag-row'); if(!row) return;
+  row.innerHTML=ENTRY_FLAGS.map(c=>{
+    const url=flagImg(c,80);
+    return `<button class="entry-flag-opt" data-flag="${escapeHtml(c)}" title="${escapeHtml(c)}"${url?` style="background-image:url('${url}')"`:''}></button>`;
+  }).join('');
+  row.querySelectorAll('.entry-flag-opt').forEach(b=>b.addEventListener('click',()=>{
+    entrySelectedFlag=b.dataset.flag;
+    row.querySelectorAll('.entry-flag-opt').forEach(x=>x.classList.toggle('sel',x===b));
+    b.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
+  }));
+}
+function updateEntrySubmit(){
+  $('entry-submit').disabled = !((($('entry-name').value)||'').trim().length);
+}
+function openEntryModal(resultLabel, score, color){
+  const badge=$('entry-badge');
+  badge.textContent=`${resultLabel}  ${score}/100`;
+  badge.style.background=color||'var(--teal)';
+  // pre-fill name from a returning player's saved value
+  $('entry-name').value=(localStorage.getItem('rtp_player_name')||'').slice(0,20);
+  // build flags, then pre-select the saved flag (default USA)
+  buildEntryFlagRow();
+  const savedFlag=localStorage.getItem('rtp_player_flag');
+  entrySelectedFlag=(savedFlag && ENTRY_FLAGS.includes(savedFlag)) ? savedFlag : 'USA';
+  const sel=$('entry-flag-row').querySelector('.entry-flag-opt[data-flag="'+entrySelectedFlag+'"]');
+  if(sel) sel.classList.add('sel');
+  updateEntrySubmit();
+  $('entry-bg').classList.add('show');
+  if(sel) sel.scrollIntoView({inline:'center',block:'nearest'});
+}
+function closeEntryModal(){ $('entry-bg').classList.remove('show'); }
+
+// Name a freshly-submitted draft row. The row itself was already inserted
+// (anonymously) by fillRankBadge, so closing via X/Skip simply leaves it as the
+// anonymous entry it already is. Here we attach the chosen name + flag, waiting
+// briefly for the row id if the insert is still in flight.
+async function commitEntryNaming(name, flag){
+  let id = gs.result && gs.result._lbId;
+  for(let i=0;i<25 && id==null && SUPABASE_READY;i++){
+    await new Promise(r=>setTimeout(r,200));
+    id = gs.result && gs.result._lbId;
+  }
+  if(SUPABASE_READY && id!=null){
+    try{
+      await fetch(`${SUPABASE_URL}/rest/v1/rpc/set_draft_entry`, {
+        method:'POST', headers: sbHeaders({ 'Prefer':'return=minimal' }),
+        body: JSON.stringify({ p_id:id, p_name:name, p_flag:flag||'' })
+      });
+    }catch(e){ /* leave the row anonymous if the call fails */ }
+  }
+}
+function showEntryToast(){
+  const t=$('entry-toast'); t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+function submitEntry(){
+  const name=((($('entry-name').value)||'').trim()).slice(0,20);
+  if(!name) return;
+  const flag=entrySelectedFlag||'';
+  try{ localStorage.setItem('rtp_player_name', name); }catch(e){}
+  try{ localStorage.setItem('rtp_player_flag', flag); }catch(e){}
+  commitEntryNaming(name, flag);
+  closeEntryModal();
+  showEntryToast();
+}
+$('entry-close').addEventListener('click', closeEntryModal); // X → record anonymous
+$('entry-skip').addEventListener('click', closeEntryModal);  // Skip → record anonymous
+$('entry-bg').addEventListener('click', e=>{ if(e.target===$('entry-bg')) closeEntryModal(); });
+$('entry-name').addEventListener('input', updateEntrySubmit);
+$('entry-submit').addEventListener('click', submitEntry);
+
 // ---------- rating feedback form ----------
 const RATING_FEEDBACK_EMAIL='sellybros711@gmail.com';
 // Paste your Formspree form endpoint here (Formspree → your form → it looks like
@@ -3192,6 +3346,20 @@ function expectedGoals(teamOverall){
   return (teamOverall / 100) * 1.8;
 }
 
+// CHANGE 1 — scoreline variance that scales with the strength gap. The stronger
+// team gets a higher variance ceiling (blowouts become possible when the gap is
+// large); the weaker team's ceiling shrinks as the gap grows. Win probability is
+// untouched — this only shapes the MARGIN, not who wins.
+function getRandomFactor(isStrongerTeam, gap){
+  if(isStrongerTeam){
+    const ceiling = 1.2 + (gap / 100) * 2.0;
+    return 0.1 + Math.random() * ceiling;
+  } else {
+    const ceiling = 0.8 - (gap / 100) * 0.6;
+    return 0.1 + Math.random() * Math.max(ceiling, 0.2);
+  }
+}
+
 // Average overall of a squad — same approach used for the user's team.
 function simTeamOverall(squad){
   if(!squad || !squad.length) return 0;
@@ -3291,6 +3459,8 @@ function drawOpponentForRound(pool, round){
 // CHANGE 4 — stricter group-stage gate. A 75-overall squad now clears the
 // group only ~60% of the time; this is the first hard wall for a weak side.
 function groupStageAdvance(teamOverall){
+  if(teamOverall >= 92) return true;                 // elite squads never fall at the group stage
+  if(teamOverall >= 87) return Math.random() < 0.97;
   if(teamOverall >= 80) return Math.random() < 0.92;
   if(teamOverall >= 70) return Math.random() < 0.60;
   if(teamOverall >= 60) return Math.random() < 0.35;
@@ -3361,31 +3531,56 @@ function simPickScorer(squad, weights){
   return squad[squad.length-1];
 }
 
+// CHANGE 4 — unique, conflict-free minute assignment for goal events.
+//   Type 1: no two events in a match share the same minute.
+//   Type 2: the same player's goals are at least 3 minutes apart.
+// Regulation goals fall in 1..90, extra-time goals in 91..120. `usedMinutes`
+// (all minutes taken this match) and `scorerMinutes` (minutes per scorer) are
+// reset once per match in simulateMatch.
+function simAssignMinute(usedMinutes, scorerMinutes, scorerName, isET){
+  const lo = isET ? 91 : 1;
+  const hi = isET ? 120 : 90;
+  let minute = lo + Math.floor(Math.random() * (hi - lo + 1));
+  const prior = scorerMinutes[scorerName] || (scorerMinutes[scorerName] = []);
+  const conflicts = mm => usedMinutes.has(mm) || prior.some(p => Math.abs(p - mm) < 3);
+  let guard = 0;
+  while(conflicts(minute) && guard++ < 400){
+    minute = minute >= hi ? lo : minute + 1; // walk forward, wrapping within the window
+  }
+  usedMinutes.add(minute);
+  prior.push(minute);
+  return minute;
+}
+
 // Build one goal event for a beneficiary team ('user' | 'opponent').
 // Own goals are rare (~1 in 40): the scorer is drawn from the OTHER team
 // (biased toward defenders) but the goal still counts for the beneficiary.
-function simMakeGoalEvent(beneficiary, userSquad, opponent, extraTime){
+function simMakeGoalEvent(beneficiary, userSquad, opponent, extraTime, usedMinutes, scorerMinutes){
   const isOG = Math.random() < 1/40;
   let scorerSquad;
   if(beneficiary==='user') scorerSquad = isOG ? opponent.squad : userSquad;
   else                     scorerSquad = isOG ? userSquad      : opponent.squad;
   const scorer = simPickScorer(scorerSquad, isOG ? OG_WEIGHTS : SCORER_WEIGHTS);
-  const minute = extraTime ? (91+Math.floor(Math.random()*30)) : (1+Math.floor(Math.random()*90));
+  const minute = simAssignMinute(usedMinutes, scorerMinutes, scorer.name, !!extraTime);
   return { minute, scorer:scorer.name, scorerCountry:scorer.country, team:beneficiary, isOG };
 }
 
 // Simulate one knockout match.
 function simulateMatch(userSquad, userOverall, opponent){
   const oppOverall = opponent.teamOverall;
-  const cap = g => Math.max(0, Math.min(5, g)); // 0..5 goals per team
+  const cap = g => Math.max(0, Math.min(7, g)); // 0..7 goals per team (CHANGE 1)
 
-  // CHANGE 1 — the sigmoid is the single source of truth for the result.
+  // The sigmoid is the single source of truth for who wins — unchanged.
   const userWins = Math.random() < winProbability(userOverall, oppOverall);
   const winSide  = userWins ? 'user' : 'opponent';
 
-  // CHANGE 2 — scoreline driven by each team's expected goals.
-  let userGoals     = cap(Math.round(expectedGoals(userOverall) * (0.4 + Math.random()*1.2)));
-  let opponentGoals = cap(Math.round(expectedGoals(oppOverall)  * (0.4 + Math.random()*1.2)));
+  // CHANGE 1/2 — scoreline magnitude scales with the strength gap; the stronger
+  // team can run up a blowout when the gap is large. No floor of 1 on either
+  // side, so the losing team can finish on 0 (1-0, 3-0, 4-0, …).
+  const strengthGap   = Math.abs(userOverall - oppOverall);
+  const userIsStronger = userOverall >= oppOverall;
+  let userGoals     = cap(Math.round(expectedGoals(userOverall) * getRandomFactor(userIsStronger, strengthGap)));
+  let opponentGoals = cap(Math.round(expectedGoals(oppOverall)  * getRandomFactor(!userIsStronger, strengthGap)));
 
   let extraTime=false, penalties=false, penaltyWinner=null, etGoalTeam=null;
 
@@ -3404,18 +3599,23 @@ function simulateMatch(userSquad, userOverall, opponent){
     }
   }
 
-  // CHANGE 2 — enforce the probability-driven winner on the scoreline (cap-safe).
+  // Enforce the probability-driven winner on the scoreline (cap-safe). Winning
+  // team always finishes with at least 1 goal; losing team may stay on 0.
   if(!penalties){
     if(userWins && userGoals <= opponentGoals){
-      if(opponentGoals >= 5){ opponentGoals = 4; userGoals = 5; } else userGoals = opponentGoals + 1;
+      if(opponentGoals >= 7){ opponentGoals = 6; userGoals = 7; } else userGoals = opponentGoals + 1;
     } else if(!userWins && opponentGoals <= userGoals){
-      if(userGoals >= 5){ userGoals = 4; opponentGoals = 5; } else opponentGoals = userGoals + 1;
+      if(userGoals >= 7){ userGoals = 6; opponentGoals = 7; } else opponentGoals = userGoals + 1;
     }
   }
 
   // Build goal events; the ET-scoring side's last goal is flagged as extra-time.
+  // CHANGE 4 — per-match minute trackers guarantee unique minutes and ≥3-minute
+  // gaps between a single player's goals.
+  const usedMinutes = new Set();
+  const scorerMinutes = {};
   const goalEvents=[];
-  const pushGoals=(team,n,etLast)=>{ for(let i=0;i<n;i++) goalEvents.push(simMakeGoalEvent(team, userSquad, opponent, !!etLast && i===n-1)); };
+  const pushGoals=(team,n,etLast)=>{ for(let i=0;i<n;i++) goalEvents.push(simMakeGoalEvent(team, userSquad, opponent, !!etLast && i===n-1, usedMinutes, scorerMinutes)); };
   pushGoals('user', userGoals, etGoalTeam==='user');
   pushGoals('opponent', opponentGoals, etGoalTeam==='opponent');
 
@@ -3651,20 +3851,51 @@ function simScheduleGoal(box, e, delay){
   }, Math.max(0,delay));
 }
 
-// Deterministic shootout that respects the decided winner (winner 4/5, loser 3/5).
-function simBuildPenaltySeq(winner){
-  const mk = scored => {
-    const arr=[true,true,true,true,true];
-    const idx=[0,1,2,3,4].sort(()=>Math.random()-0.5);
-    for(let i=0;i<5-scored;i++) arr[idx[i]]=false;
-    return arr;
-  };
-  const winArr=mk(4), loseArr=mk(3);
-  const userArr = winner==='user' ? winArr : loseArr;
-  const oppArr  = winner==='user' ? loseArr : winArr;
+// CHANGE 5 — a shootout ends the moment one team has mathematically clinched it.
+// Returns 'a' (user), 'b' (opponent), or null (continue). Only valid for the
+// standard 5-kick phase; sudden death is resolved separately.
+function shootoutOver(aScored, aMissed, bScored, bMissed, totalKicks){
+  const aRemaining = totalKicks - aScored - aMissed;
+  const bRemaining = totalKicks - bScored - bMissed;
+  if(aScored > bScored + bRemaining) return 'a';   // A has won — B cannot catch up
+  if(bScored > aScored + aRemaining) return 'b';   // B has won — A cannot catch up
+  if(aRemaining === 0 && bRemaining === 0){         // all kicks taken
+    if(aScored > bScored) return 'a';
+    if(bScored > aScored) return 'b';
+  }
+  return null;                                       // shootout continues
+}
+
+// CHANGE 5/6 — a realistic shootout: 75% base conversion, early termination once
+// the result is mathematically decided, and sudden death when level after five.
+// The winner is predetermined by the sigmoid (penaltyWinner), so we reject-sample
+// shootouts until the natural outcome matches it — this keeps win probability
+// exactly while producing varied scorelines (3-1, 4-2, 5-4, …) and never
+// animating kicks past the clinching moment.
+function simSimulateShootout(){
   const seq=[];
-  for(let i=0;i<5;i++){ seq.push({team:'user',scored:userArr[i]}); seq.push({team:'opponent',scored:oppArr[i]}); }
-  return seq;
+  let aS=0,aM=0,bS=0,bM=0; // a = user, b = opponent
+  const total=5;
+  for(let i=0;i<5;i++){
+    const us = Math.random() < 0.75; seq.push({team:'user', scored:us}); us?aS++:aM++;
+    let o = shootoutOver(aS,aM,bS,bM,total); if(o) return {seq, win:o==='a'?'user':'opponent'};
+    const os = Math.random() < 0.75; seq.push({team:'opponent', scored:os}); os?bS++:bM++;
+    o = shootoutOver(aS,aM,bS,bM,total); if(o) return {seq, win:o==='a'?'user':'opponent'};
+  }
+  // Level after five → sudden death: one kick each, first to lead a completed
+  // round wins. Capped at 10 rounds; thereafter the caller's tiebreaker decides.
+  for(let r=0;r<10;r++){
+    const us = Math.random() < 0.75; seq.push({team:'user', scored:us}); us?aS++:aM++;
+    const os = Math.random() < 0.75; seq.push({team:'opponent', scored:os}); os?bS++:bM++;
+    if(aS!==bS) return {seq, win: aS>bS ? 'user' : 'opponent'};
+  }
+  return {seq, win:null}; // exhausted sudden death without separation
+}
+
+function simBuildPenaltySeq(winner){
+  let out, guard=0;
+  do { out = simSimulateShootout(); } while(out.win !== winner && guard++ < 300);
+  return out.seq;
 }
 
 async function simAnimatePenalties(card, m){
