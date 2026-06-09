@@ -120,7 +120,14 @@
      Stack only on very small screens (<320px). */
   .home-cta-row{display:flex;gap:2%;width:100%;max-width:460px;margin:0 auto;position:relative;z-index:2;}
   .home-cta-row .btn{width:55%;flex-direction:column;gap:2px;line-height:1.05;padding:13px 10px;}
-  .home-cta-row #btn-friendly{width:43%;}
+  /* Friendly button lives in a wrapper so the "Coming soon!" badge above it
+     stays crisp while the disabled button itself is faded. */
+  .cta-friendly-wrap{width:43%;position:relative;display:flex;}
+  .cta-friendly-wrap #btn-friendly{width:100%;}
+  .coming-soon{position:absolute;top:-10px;left:50%;transform:translateX(-50%);z-index:3;
+    background:var(--gold);color:var(--ink);font-size:9px;font-weight:900;letter-spacing:.5px;
+    text-transform:uppercase;white-space:nowrap;padding:2px 8px;border-radius:8px;
+    border:2px solid var(--ink);box-shadow:1px 1px 0 var(--ink);}
   /* keep the bold label on a single line with a touch of breathing room */
   .home-cta-row .btn-label{font-size:16px;letter-spacing:.5px;white-space:nowrap;}
   /* unbolded subtext beneath each button label */
@@ -1195,10 +1202,13 @@
         <div class="rule"><span class="n">4</span><span>Simulate a World Cup against historic squads — go all the way and lift the trophy.</span></div>
       </div>
       <div class="home-cta-row">
-        <button id="btn-friendly" class="btn green" disabled>
-          <span class="btn-label">FRIENDLY</span>
-          <span class="btn-sub">Challenge a friend</span>
-        </button>
+        <div class="cta-friendly-wrap">
+          <span class="coming-soon">Coming soon!</span>
+          <button id="btn-friendly" class="btn green" disabled>
+            <span class="btn-label">FRIENDLY</span>
+            <span class="btn-sub">Challenge a friend</span>
+          </button>
+        </div>
         <button id="btn-start" class="btn red" disabled>
           <span class="btn-label">Loading squads…</span>
           <span class="btn-sub">World Cup simulator</span>
@@ -1524,9 +1534,9 @@
 <!-- ?v= cache-buster: index.html is always served fresh (max-age=0) but these
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
-<script src="gameLogic.js?v=0.0.21"></script>
+<script src="gameLogic.js?v=0.0.22"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
-<script src="data/players_all.js?v=0.0.21"></script>
+<script src="data/players_all.js?v=0.0.22"></script>
 <script>
 const G = window.RunThePitch;
 
@@ -1651,7 +1661,7 @@ async function boot(){
 
   // Single source of truth: the comprehensive dataset (1966–2026).
   // ?v= cache-buster keeps this in lockstep with deploys (see script tags above).
-  let players = await fetchPlayers('data/players_all.json?v=0.0.21');
+  let players = await fetchPlayers('data/players_all.json?v=0.0.22');
 
   // file:// fallback (fetch blocked when opened directly via file://).
   if((!players || !players.length) && Array.isArray(window.PLAYERS_ALL)){
@@ -1694,9 +1704,11 @@ async function boot(){
   const b = $('btn-start');
   b.disabled = false;
   const bLabel = b.querySelector('.btn-label');
-  if(bLabel) bLabel.textContent = 'SOLO DRAFT'; else b.textContent = 'SOLO DRAFT';
+  if(bLabel) bLabel.textContent = 'DRAFT NOW'; else b.textContent = 'DRAFT NOW';
+  // TEMP: Friendly mode disabled until the share-link issue is resolved.
+  // Re-enable by restoring: if(bf) bf.disabled = false;
   const bf = $('btn-friendly');
-  if(bf) bf.disabled = false;
+  if(bf) bf.disabled = true;
   startFlagMarquee();
 }
 
