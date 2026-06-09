@@ -878,45 +878,56 @@
   .flag-opt:active{transform:scale(.92);}
   .flag-opt .flag-ico{width:100%;height:100%;border-radius:4px;}
 
-  /* ---------- add-to-leaderboard entry modal (shows on every results page) ---------- */
-  /* Retro theme: cream paper card, thick ink border + hard offset shadow,
-     Anton headline, chunky press-down button — matching the rest of the game. */
+  /* ---------- consolidated leaderboard entry modal (shows on every results page) ---------- */
+  /* Dark/gold theme: charcoal card, gold border + accents, white body text.
+     Holds the name input, flag picker, day/week/all-time + easy/hard tabs, and the
+     scrollable Top-100 board all in one popup. */
   .entry-bg{position:fixed;inset:0;z-index:95;display:none;align-items:center;justify-content:center;
-    padding:18px;background:rgba(22,18,15,.6);}
+    padding:18px;background:rgba(0,0,0,.66);}
   .entry-bg.show{display:flex;animation:fade .2s ease;}
-  .entry-card{position:relative;background:var(--paper);border:3px solid var(--ink);border-radius:18px;
-    max-width:360px;width:100%;padding:24px 22px;box-shadow:var(--shadow);max-height:90vh;overflow-y:auto;}
+  .entry-card{position:relative;background:#1a1a1a;border:2px solid #F5C518;border-radius:16px;
+    max-width:460px;width:100%;padding:24px 22px;box-shadow:0 18px 50px rgba(0,0,0,.5);
+    max-height:92vh;overflow-y:auto;color:#fff;}
   .entry-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;
-    border:2px solid var(--ink);background:#fff;color:var(--ink);font-weight:900;font-size:15px;line-height:1;
+    border:2px solid #F5C518;background:transparent;color:#F5C518;font-weight:900;font-size:15px;line-height:1;
     cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center;}
-  .entry-close:active{transform:translate(2px,2px);}
+  .entry-close:active{transform:translate(1px,1px);}
   .entry-title{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;
-    font-size:26px;line-height:1;color:var(--ink);margin:0 30px 0 0;letter-spacing:.5px;}
-  .entry-sub{font-weight:700;font-size:13px;color:#8a7d70;margin:6px 0 0;}
+    font-size:28px;line-height:1;color:var(--gold);margin:0 30px 0 0;letter-spacing:.5px;}
+  .entry-sub{font-weight:700;font-size:13px;color:#b9b9b9;margin:6px 0 0;}
   .entry-badge{display:inline-flex;align-items:center;gap:8px;margin:14px 0 4px;padding:8px 16px;
-    border:2.5px solid var(--ink);border-radius:999px;color:#fff;font-weight:900;font-size:14px;
-    text-transform:uppercase;letter-spacing:.5px;box-shadow:var(--shadow-sm);}
-  .entry-name{width:100%;box-sizing:border-box;border:2.5px solid var(--ink);border-radius:11px;
-    padding:12px 14px;font-size:16px;font-family:inherit;font-weight:800;color:var(--ink);
-    background:#fff;outline:none;margin-top:14px;}
-  .entry-name::placeholder{color:#b3a995;font-weight:700;}
-  .entry-name:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(244,180,19,.35);}
+    border:2.5px solid rgba(255,255,255,.25);border-radius:999px;color:#fff;font-weight:900;font-size:14px;
+    text-transform:uppercase;letter-spacing:.5px;}
+  .entry-name{width:100%;box-sizing:border-box;border:2px solid #F5C518;border-radius:11px;
+    padding:12px 14px;font-size:16px;font-family:inherit;font-weight:800;color:#fff;
+    background:#262626;outline:none;margin-top:14px;}
+  .entry-name::placeholder{color:#8a8a8a;font-weight:700;}
+  .entry-name:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(244,180,19,.3);}
   .entry-flag-label{font-weight:900;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;
-    color:#8a7d70;margin:16px 0 8px;}
+    color:var(--gold);margin:16px 0 8px;}
   .entry-flag-row{display:flex;gap:8px;overflow-x:auto;padding:4px 2px;-webkit-overflow-scrolling:touch;}
   .entry-flag-row::-webkit-scrollbar{display:none;}
-  .entry-flag-opt{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:2.5px solid var(--ink);
-    background-size:cover;background-position:center;background-color:#e6e0d4;cursor:pointer;padding:0;
-    box-shadow:1px 1px 0 var(--ink);transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;}
-  .entry-flag-opt.sel{border-color:var(--gold);transform:scale(1.12);box-shadow:0 0 0 2px var(--gold),2px 2px 0 var(--ink);}
-  .entry-submit{width:100%;height:50px;border:3px solid var(--ink);border-radius:14px;background:var(--teal);
-    color:#fff;font-weight:900;font-size:16px;text-transform:uppercase;letter-spacing:1px;
-    cursor:pointer;margin-top:18px;font-family:inherit;box-shadow:var(--shadow-sm);
-    transition:transform .08s ease,box-shadow .08s ease;}
-  .entry-submit:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink);}
-  .entry-submit:disabled{opacity:.4;filter:grayscale(.4);box-shadow:none;cursor:not-allowed;transform:none;}
+  .entry-flag-opt{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:2.5px solid #555;
+    background-size:cover;background-position:center;background-color:#333;cursor:pointer;padding:0;
+    transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;}
+  .entry-flag-opt.sel{border-color:var(--gold);transform:scale(1.12);box-shadow:0 0 0 2px var(--gold);}
+  .entry-board-label{font-weight:900;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;
+    color:var(--gold);margin:18px 0 8px;}
+  /* scrollable Top-100 board embedded in the modal */
+  .entry-lb-list{max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
+    border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:2px 8px;background:rgba(0,0,0,.25);}
+  .entry-submit{width:100%;height:50px;border:none;border-radius:14px;background:var(--gold);
+    color:#1a1a1a;font-weight:900;font-size:16px;text-transform:uppercase;letter-spacing:1px;
+    cursor:pointer;margin-top:18px;font-family:inherit;
+    transition:transform .08s ease,filter .15s ease;}
+  .entry-submit:active{transform:translateY(2px);}
+  .entry-submit:disabled{opacity:.4;filter:grayscale(.4);cursor:not-allowed;transform:none;}
+  .entry-submit.saving{background:#7a6a1a;color:#fff;cursor:wait;}
+  .entry-submit.saved{background:#1F9E57;color:#fff;}
+  .entry-error{color:#ff8a7a;font-weight:800;font-size:13px;text-align:center;margin-top:10px;display:none;}
+  .entry-error.show{display:block;}
   .entry-skip{display:block;width:100%;text-align:center;background:none;border:none;
-    color:#8a7d70;font-weight:700;font-size:13px;text-decoration:underline;text-underline-offset:3px;
+    color:#b9b9b9;font-weight:700;font-size:13px;text-decoration:underline;text-underline-offset:3px;
     cursor:pointer;margin-top:14px;font-family:inherit;}
   .entry-toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);
     background:var(--teal);color:#fff;font-weight:900;font-size:13px;padding:12px 22px;
@@ -1476,13 +1487,17 @@
   </div>
 </div>
 
-<!-- ===== Top 10 leaderboard popup ===== -->
-<div class="lb-bg" id="lb-bg">
-  <div class="lb-card">
-    <button class="profile-close" id="lb-close" aria-label="Close">✕</button>
-    <div class="lb-title"><svg class="lb-trophy" viewBox="0 0 64 92" aria-hidden="true"><defs><linearGradient id="gold-lb" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".35" stop-color="#E8C25A"/><stop offset=".7" stop-color="#C18F22"/><stop offset="1" stop-color="#8A5E12"/></linearGradient><linearGradient id="goldRim-lb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F6DC82"/><stop offset="1" stop-color="#9C6C18"/></linearGradient><radialGradient id="globe-lb" cx=".38" cy=".32" r=".8"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".55" stop-color="#DDB047"/><stop offset="1" stop-color="#946614"/></radialGradient><linearGradient id="malachite-lb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2F6B4D"/><stop offset="1" stop-color="#173A2A"/></linearGradient></defs><rect x="18.5" y="83" width="27" height="6.6" rx="1.6" fill="url(#malachite-lb)" stroke="#123124" stroke-width=".6"/><rect x="20" y="79.4" width="24" height="3.8" fill="url(#goldRim-lb)" stroke="#6e4b10" stroke-width=".5"/><rect x="22" y="76.2" width="20" height="3.4" fill="url(#malachite-lb)" stroke="#123124" stroke-width=".5"/><rect x="23.5" y="73.4" width="17" height="3" fill="url(#goldRim-lb)" stroke="#6e4b10" stroke-width=".5"/><path d="M32 73.5 C 28 73 26.6 67 27 61 C 27.3 55 26.8 51 27.4 47 C 28 41 25 36 22.5 28.5 C 25 26.5 28 25.8 32 25.6 C 36 25.8 39 26.5 41.5 28.5 C 39 36 36 41 36.6 47 C 37.2 51 36.7 55 37 61 C 37.4 67 36 73 32 73.5 Z" fill="url(#gold-lb)" stroke="#7a5414" stroke-width="1"/><circle cx="32" cy="13.4" r="12" fill="url(#globe-lb)" stroke="#7a5414" stroke-width="1"/><g fill="none" stroke="#8a5e16" stroke-width=".7" opacity=".55"><ellipse cx="32" cy="13.4" rx="5.3" ry="12"/><line x1="20.2" y1="13.4" x2="43.8" y2="13.4"/><path d="M21.8 7 Q32 10 42.2 7"/><path d="M21.8 19.8 Q32 16.8 42.2 19.8"/></g></svg>Top 10 Drafts</div>
-    <div id="lb-name-prompt" style="display:none"></div>
-    <div class="lb-toggles">
+<!-- ===== consolidated leaderboard entry modal (every results page) ===== -->
+<div class="entry-bg" id="entry-bg">
+  <div class="entry-card">
+    <button class="entry-close" id="entry-close" aria-label="Close">✕</button>
+    <h3 class="entry-title">🏆 Leaderboard</h3>
+    <p class="entry-sub">Enter your name to save your score</p>
+    <div><span class="entry-badge" id="entry-badge"></span></div>
+    <input class="entry-name" id="entry-name" maxlength="20" placeholder="Your name" autocomplete="off" />
+    <div class="entry-flag-label">Your Flag</div>
+    <div class="entry-flag-row" id="entry-flag-row"></div>
+    <div class="lb-toggles" style="margin-top:18px;">
       <div class="lb-seg" id="lb-seg-window">
         <button data-w="day">Daily</button>
         <button data-w="week">Weekly</button>
@@ -1493,21 +1508,9 @@
         <button data-m="hard">Hard</button>
       </div>
     </div>
-    <div id="lb-list"></div>
-  </div>
-</div>
-
-<!-- ===== add-to-leaderboard entry modal (every results page) ===== -->
-<div class="entry-bg" id="entry-bg">
-  <div class="entry-card">
-    <button class="entry-close" id="entry-close" aria-label="Close">✕</button>
-    <h3 class="entry-title">Add to Leaderboard</h3>
-    <p class="entry-sub">Enter your name to save your score</p>
-    <div><span class="entry-badge" id="entry-badge"></span></div>
-    <input class="entry-name" id="entry-name" maxlength="20" placeholder="Your name (max 20 chars)" autocomplete="off" />
-    <div class="entry-flag-label">Your Flag</div>
-    <div class="entry-flag-row" id="entry-flag-row"></div>
+    <div class="entry-lb-list" id="lb-list"></div>
     <button class="entry-submit" id="entry-submit">Save to Leaderboard</button>
+    <div class="entry-error" id="entry-error">Couldn’t save — please try again.</div>
     <button class="entry-skip" id="entry-skip">Skip — stay anonymous</button>
   </div>
 </div>
@@ -1534,9 +1537,9 @@
 <!-- ?v= cache-buster: index.html is always served fresh (max-age=0) but these
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
-<script src="gameLogic.js?v=0.0.22"></script>
+<script src="gameLogic.js?v=0.0.23"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
-<script src="data/players_all.js?v=0.0.22"></script>
+<script src="data/players_all.js?v=0.0.23"></script>
 <script>
 const G = window.RunThePitch;
 
@@ -1661,7 +1664,7 @@ async function boot(){
 
   // Single source of truth: the comprehensive dataset (1966–2026).
   // ?v= cache-buster keeps this in lockstep with deploys (see script tags above).
-  let players = await fetchPlayers('data/players_all.json?v=0.0.22');
+  let players = await fetchPlayers('data/players_all.json?v=0.0.23');
 
   // file:// fallback (fetch blocked when opened directly via file://).
   if((!players || !players.length) && Array.isArray(window.PLAYERS_ALL)){
@@ -2511,11 +2514,12 @@ async function submitDraftRow(overall, progress, meta){
 // draft's own insert succeeding, so an insert hiccup can never collapse the rank
 // to the tiny per-device board (which used to show e.g. "3 of 671").
 async function fetchGlobalRank(overall, progress){
-  // The drafts.overall column is an integer (submit_draft rounds on insert), so
-  // compare against the rounded value — a decimal like 77.8 makes Postgres reject
-  // the int comparison (HTTP 400). We also require an OK response so a failed
-  // count can't silently read 0 and rank everyone #1.
-  const ov = Math.round(overall);
+  // The drafts.overall column is numeric(5,1), so compare against the one-decimal
+  // value for precise ranking (e.g. 77.8 ranks above 77.3). We also require an OK
+  // response so a failed count can't silently read 0 and rank everyone #1.
+  // NOTE: requires the DB migration making `overall` numeric(5,1); against the old
+  // integer column a decimal filter is rejected (HTTP 400) and rank falls back.
+  const ov = (+overall).toFixed(1);
   const orFilter = encodeURIComponent(`(overall.gt.${ov},and(overall.eq.${ov},progress.gt.${progress}))`);
   const betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}`, {
     headers: sbHeaders({ 'Prefer':'count=exact' })
@@ -2533,7 +2537,7 @@ async function fetchGlobalRank(overall, progress){
 // 1-based rank within that board (count of strictly-better drafts + 1).
 async function fetchRankInBoard(overall, progress, opts){
   opts = opts || {};
-  const ov = Math.round(overall);
+  const ov = (+overall).toFixed(1); // numeric(5,1) column → one-decimal comparison
   const orFilter = encodeURIComponent(`(overall.gt.${ov},and(overall.eq.${ov},progress.gt.${progress}))`);
   let filt = `&or=${orFilter}`;
   if(opts.mode && opts.mode!=='all') filt += `&mode=eq.${opts.mode}`;
@@ -2594,7 +2598,7 @@ function renderLeaderboardRows(rows, highlightId){
       <span class="lb-rank">${i+1}</span>
       <span class="lb-name">${fl?fl+' ':''}${escapeHtml(nm)}</span>
       <span class="lb-meta">${lbMetaLabel(row)}</span>
-      <span class="lb-ov ${ovTier(row.overall)}">${row.overall}</span>
+      <span class="lb-ov ${ovTier(row.overall)}">${(+row.overall).toFixed(1)}</span>
     </div>`;
   }).join('');
 }
@@ -2611,91 +2615,16 @@ async function refreshLeaderboardList(highlightId){
   try{
     let rows;
     if(SUPABASE_READY){
-      rows = await fetchTopDrafts(10, { window:lbWindow, mode:lbMode });
+      rows = await fetchTopDrafts(100, { window:lbWindow, mode:lbMode });
     }else{
       // not connected yet → preview this device's best drafts (no names)
       rows = loadLeaderboard().sort((a,b)=> b.overall-a.overall || b.progress-a.progress)
-        .slice(0,10).map(e=>({ id:null, name:'You (this device)', overall:e.overall, progress:e.progress }));
+        .slice(0,100).map(e=>({ id:null, name:'You (this device)', overall:e.overall, progress:e.progress }));
     }
     renderLeaderboardRows(rows, lbHighlightId);
   }catch(e){
     list.innerHTML='<div class="lb-empty">Couldn’t load the leaderboard. Try again.</div>';
   }
-}
-
-function openLeaderboard(highlightId, promptName, opts){
-  opts = opts || {};
-  const pr=$('lb-name-prompt');
-  if(promptName && SUPABASE_READY && gs && gs.result && gs.result._lbId){
-    const WINDOW_LABEL = { all:'all-time', week:'weekly', day:'daily' };
-    const wlabel = WINDOW_LABEL[opts.window] || 'all-time';
-    const mlabel = (opts.mode==='hard') ? 'Hard Mode ' : '';
-    pr.style.display='';
-    pr.innerHTML=`<div class="lb-prompt">
-        🎉 You cracked the ${mlabel}${wlabel} Top 10!<br>Enter your name for the board:
-        <input id="lb-name-input" maxlength="20" placeholder="Your name" autocomplete="off" />
-        <button class="btn gold" id="lb-name-save">Next: Pick Your Flag →</button>
-      </div>`;
-    $('lb-name-save').addEventListener('click', showFlagPicker);
-    const i0=$('lb-name-input');
-    if(i0){ i0.addEventListener('keydown',e=>{ if(e.key==='Enter') showFlagPicker(); }); setTimeout(()=>i0.focus(),60); }
-  }else{
-    pr.style.display='none'; pr.innerHTML='';
-  }
-  // Open to the board the draft cracked (or, when just viewing, the all-time board
-  // for the mode just played). easy/hard boards are separate.
-  lbWindow = opts.window || 'all';
-  lbMode = opts.mode || ((gameMode==='hard')?'hard':'easy');
-  lbSetActiveToggles();
-  $('lb-bg').classList.add('show');
-  refreshLeaderboardList(highlightId);
-}
-function closeLeaderboard(){ $('lb-bg').classList.remove('show'); }
-
-let pendingLbName='';
-
-// Nations offered in the flag picker (modern flagcdn list + defunct inline SVGs).
-function lbFlagCountries(){
-  const set=new Set(Object.keys(FLAG_CODES).filter(c=>c!=='USA'));
-  Object.keys(FLAG_SVG).forEach(c=>set.add(c));
-  return [...set].sort();
-}
-
-// Step 2: after the name, show a scrollable grid of flags to pick from.
-function showFlagPicker(){
-  const inp=$('lb-name-input');
-  pendingLbName=((inp&&inp.value)||'').trim().slice(0,20) || 'Anonymous';
-  const pr=$('lb-name-prompt');
-  const opts=lbFlagCountries().map(c=>{
-    const url=flagImg(c,80);
-    return `<button class="flag-opt" data-flag="${escapeHtml(c)}" title="${escapeHtml(c)}">
-      <span class="flag-ico${url?'':' flag-none'}"${url?` style="background-image:url('${url}')"`:''}></span></button>`;
-  }).join('');
-  pr.innerHTML=`<div class="lb-prompt">
-      Pick your flag, <b>${escapeHtml(pendingLbName)}</b>:
-      <div class="flag-grid" id="lb-flag-grid">${opts}</div>
-      <button class="btn ghost small" id="lb-skip-flag" style="margin-top:10px;">Skip — no flag</button>
-    </div>`;
-  pr.querySelectorAll('.flag-opt').forEach(b=>b.addEventListener('click',()=>commitLeaderboardEntry(b.dataset.flag)));
-  $('lb-skip-flag').addEventListener('click',()=>commitLeaderboardEntry(''));
-}
-
-// Commit name + chosen flag via the secured function, then refresh the board.
-async function commitLeaderboardEntry(flag){
-  const id=gs.result._lbId;
-  const name=pendingLbName || 'Anonymous';
-  if(SUPABASE_READY && id!=null){
-    try{
-      // set_draft_entry() only names a freshly-created, still-unnamed row.
-      await fetch(`${SUPABASE_URL}/rest/v1/rpc/set_draft_entry`, {
-        method:'POST', headers: sbHeaders({ 'Prefer':'return=minimal' }),
-        body: JSON.stringify({ p_id: id, p_name: name, p_flag: flag || '' })
-      });
-    }catch(e){ /* leave the row name-less if the call fails */ }
-  }
-  $('lb-name-prompt').style.display='none';
-  $('lb-name-prompt').innerHTML='';
-  refreshLeaderboardList(id);
 }
 
 // Fill the rank line on the results page. Records the draft once (guarded), using
@@ -2726,25 +2655,6 @@ async function fillRankBadge(overall, progress){
       gs.result._lb = { rank, total, id };
       gs.result._lbId = id;
       el.innerHTML = `🏅 This draft ranks <b>${rank}</b> of <b>${total}</b> all-time drafts`;
-      // Top-10 qualification is PER BOARD: the played mode (easy/hard) across the
-      // all-time, weekly and daily windows. Prompt for a name if the draft cracks
-      // ANY of them — not just the all-time-across-both-modes rank above (which is
-      // why an 87 on hard could rank 42nd overall yet still belong in the hard Top 10).
-      if(id){
-        const mode = gameMode || 'easy';
-        const WINDOWS = ['all','week','day']; // all-time wins display priority
-        let crackedWindow = null;
-        for(const w of WINDOWS){
-          try{
-            const r = await fetchRankInBoard(overall, progress, { mode, window:w });
-            if(r<=10){ crackedWindow = w; break; }
-          }catch(e){ /* this board failed to load — try the next one */ }
-        }
-        if(crackedWindow){
-          const cw = crackedWindow;
-          setTimeout(()=>openLeaderboard(id, true, { mode, window:cw }), 700);
-        }
-      }
       return;
     }catch(e){ /* global board unreachable → per-device fallback below */ }
   }
@@ -2812,7 +2722,7 @@ function goToResults(){
   });
   $('res-share').addEventListener('click', nativeShareWithImage);
   $('res-again').addEventListener('click', newGame);
-  $('res-leaderboard').addEventListener('click', ()=>openLeaderboard(gs.result&&gs.result._lbId, false));
+  $('res-leaderboard').addEventListener('click', ()=>openEntryModal(roundName, r.teamOverall, color));
   $('rate-link-results').addEventListener('click', ()=>openRatingForm());
   fillRankBadge(r.teamOverall, progress);   // global rank (Supabase) or local fallback
 
@@ -2822,7 +2732,7 @@ function goToResults(){
 
   // Always-on add-to-leaderboard prompt: appears on EVERY results page after a
   // 1s beat, with no score threshold or Top-10 check.
-  setTimeout(()=>openEntryModal(roundName, Math.round(r.teamOverall), color), 1000);
+  setTimeout(()=>openEntryModal(roundName, r.teamOverall, color), 1000);
 }
 
 // Falling confetti for a World Cup win.
@@ -3302,10 +3212,7 @@ $('btn-reveal-go').addEventListener('click',()=>{
 // player profile modal close handlers
 $('profile-close').addEventListener('click',closeProfile);
 
-// leaderboard popup open/close
-$('lb-close').addEventListener('click',closeLeaderboard);
-$('lb-bg').addEventListener('click',e=>{ if(e.target===$('lb-bg')) closeLeaderboard(); });
-// time-window + mode toggles
+// leaderboard board time-window + mode toggles (embedded in the entry modal)
 $('lb-seg-window').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; lbWindow=b.dataset.w; lbSetActiveToggles(); refreshLeaderboardList(); });
 $('lb-seg-mode').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; lbMode=b.dataset.m; lbSetActiveToggles(); refreshLeaderboardList(); });
 
@@ -3337,8 +3244,12 @@ function updateEntrySubmit(){
 }
 function openEntryModal(resultLabel, score, color){
   const badge=$('entry-badge');
-  badge.textContent=`${resultLabel}  ${score}/100`;
+  badge.textContent=`${resultLabel}  ${(+score).toFixed(1)}/100`;
   badge.style.background=color||'var(--teal)';
+  // reset the submit button + any prior error from a previous open
+  const btn=$('entry-submit');
+  btn.className='entry-submit'; btn.textContent='Save to Leaderboard'; btn.disabled=false;
+  $('entry-error').classList.remove('show');
   // pre-fill name from a returning player's saved value
   $('entry-name').value=(localStorage.getItem('rtp_player_name')||'').slice(0,20);
   // build flags, then pre-select the saved flag (default USA)
@@ -3348,6 +3259,11 @@ function openEntryModal(resultLabel, score, color){
   const sel=$('entry-flag-row').querySelector('.entry-flag-opt[data-flag="'+entrySelectedFlag+'"]');
   if(sel) sel.classList.add('sel');
   updateEntrySubmit();
+  // embedded board: default to the mode just played, all-time window
+  lbWindow='all';
+  lbMode=(gameMode==='hard')?'hard':'easy';
+  lbSetActiveToggles();
+  refreshLeaderboardList(gs.result&&gs.result._lbId);
   $('entry-bg').classList.add('show');
   if(sel) sel.scrollIntoView({inline:'center',block:'nearest'});
 }
@@ -3357,34 +3273,70 @@ function closeEntryModal(){ $('entry-bg').classList.remove('show'); }
 // (anonymously) by fillRankBadge, so closing via X/Skip simply leaves it as the
 // anonymous entry it already is. Here we attach the chosen name + flag, waiting
 // briefly for the row id if the insert is still in flight.
+// Write name + flag onto this draft's already-inserted (anonymous) row via the
+// secured set_draft_entry() function. Waits briefly for the row id if the insert
+// is still in flight, then POSTs with a single retry. Returns true on success.
 async function commitEntryNaming(name, flag){
   let id = gs.result && gs.result._lbId;
   for(let i=0;i<25 && id==null && SUPABASE_READY;i++){
     await new Promise(r=>setTimeout(r,200));
     id = gs.result && gs.result._lbId;
   }
-  if(SUPABASE_READY && id!=null){
-    try{
-      await fetch(`${SUPABASE_URL}/rest/v1/rpc/set_draft_entry`, {
-        method:'POST', headers: sbHeaders({ 'Prefer':'return=minimal' }),
-        body: JSON.stringify({ p_id:id, p_name:name, p_flag:flag||'' })
-      });
-    }catch(e){ /* leave the row anonymous if the call fails */ }
+  if(!SUPABASE_READY || id==null) return false;
+  const payload = JSON.stringify({ p_id:id, p_name:name, p_flag:flag||'' });
+  const doPost = ()=> fetch(`${SUPABASE_URL}/rest/v1/rpc/set_draft_entry`, {
+    method:'POST', headers: sbHeaders({ 'Prefer':'return=minimal' }), body: payload
+  });
+  try{
+    let res = await doPost();
+    if(!res.ok){
+      console.error('Leaderboard save error:', res.status);
+      await new Promise(r=>setTimeout(r,800));
+      res = await doPost(); // retry once
+      if(!res.ok){ console.error('Retry failed:', res.status); return false; }
+    }
+    console.log('Saved to leaderboard:', name);
+    return true;
+  }catch(e){
+    console.error('Leaderboard save exception:', e);
+    return false;
   }
 }
 function showEntryToast(){
   const t=$('entry-toast'); t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2000);
 }
-function submitEntry(){
+// Read the name at tap time, save it, and keep the modal open until the write
+// resolves. Shows Saving… / Saved! ✓ on the button and refreshes the board so the
+// player immediately sees their entry. On failure the modal stays open to retry.
+async function submitEntry(){
   const name=((($('entry-name').value)||'').trim()).slice(0,20);
   if(!name) return;
   const flag=entrySelectedFlag||'';
+  console.log('[Leaderboard] Saving name:', name);
+  console.log('[Leaderboard] Score:', gs.result&&gs.result.teamOverall);
+  console.log('[Leaderboard] Flag:', flag);
   try{ localStorage.setItem('rtp_player_name', name); }catch(e){}
   try{ localStorage.setItem('rtp_player_flag', flag); }catch(e){}
-  commitEntryNaming(name, flag);
-  closeEntryModal();
+
+  const btn=$('entry-submit'); const err=$('entry-error');
+  err.classList.remove('show');
+  btn.disabled=true; btn.classList.add('saving'); btn.textContent='Saving…';
+
+  const ok = await commitEntryNaming(name, flag);
+  console.log('[Leaderboard] Save result:', ok ? 'SUCCESS' : 'FAILED');
+
+  if(!ok){
+    // keep the modal open so the player can try again
+    btn.classList.remove('saving'); btn.disabled=false; btn.textContent='Save to Leaderboard';
+    err.classList.add('show');
+    return;
+  }
+  // success: show the new entry on the board, flash Saved! ✓, then close
+  await refreshLeaderboardList(gs.result&&gs.result._lbId);
+  btn.classList.remove('saving'); btn.classList.add('saved'); btn.textContent='Saved! ✓';
   showEntryToast();
+  setTimeout(closeEntryModal, 900);
 }
 $('entry-close').addEventListener('click', closeEntryModal); // X → record anonymous
 $('entry-skip').addEventListener('click', closeEntryModal);  // Skip → record anonymous
