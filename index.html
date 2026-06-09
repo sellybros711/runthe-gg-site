@@ -1404,9 +1404,9 @@
 <!-- ?v= cache-buster: index.html is always served fresh (max-age=0) but these
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
-<script src="gameLogic.js?v=14"></script>
+<script src="gameLogic.js?v=17"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
-<script src="data/players_all.js?v=14"></script>
+<script src="data/players_all.js?v=17"></script>
 <script>
 const G = window.RunThePitch;
 
@@ -1531,7 +1531,7 @@ async function boot(){
 
   // Single source of truth: the comprehensive dataset (1966–2026).
   // ?v= cache-buster keeps this in lockstep with deploys (see script tags above).
-  let players = await fetchPlayers('data/players_all.json?v=14');
+  let players = await fetchPlayers('data/players_all.json?v=17');
 
   // file:// fallback (fetch blocked when opened directly via file://).
   if((!players || !players.length) && Array.isArray(window.PLAYERS_ALL)){
