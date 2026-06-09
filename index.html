@@ -1524,9 +1524,9 @@
 <!-- ?v= cache-buster: index.html is always served fresh (max-age=0) but these
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
-<script src="gameLogic.js?v=1.0.20"></script>
+<script src="gameLogic.js?v=0.0.21"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
-<script src="data/players_all.js?v=1.0.20"></script>
+<script src="data/players_all.js?v=0.0.21"></script>
 <script>
 const G = window.RunThePitch;
 
@@ -1651,7 +1651,7 @@ async function boot(){
 
   // Single source of truth: the comprehensive dataset (1966–2026).
   // ?v= cache-buster keeps this in lockstep with deploys (see script tags above).
-  let players = await fetchPlayers('data/players_all.json?v=1.0.20');
+  let players = await fetchPlayers('data/players_all.json?v=0.0.21');
 
   // file:// fallback (fetch blocked when opened directly via file://).
   if((!players || !players.length) && Array.isArray(window.PLAYERS_ALL)){
@@ -4412,8 +4412,7 @@ function frEncodeLineup(){
       ct: p.country,                     // country
       yr: p.year,                        // year
       ps: p.position,                    // position
-      ov: p.overall,                     // overall
-      fl: flagImg(p.country,160) || ''   // flag
+      ov: p.overall                      // overall
     };});
   const encodeObject = { p: minimalPicks, to: gs.result.teamOverall, ts: Date.now() };
   const jsonString = JSON.stringify(encodeObject);
@@ -4433,7 +4432,7 @@ function frDecodeParam(param){
   return {
     picks: raw.p.map(p=>({
       slot: p.sl, playerId: p.id, playerName: p.nm, country: p.ct,
-      year: p.yr, position: p.ps, wc_overall: p.ov, flag: p.fl
+      year: p.yr, position: p.ps, wc_overall: p.ov, flag: flagImg(p.ct,160) || ''
     })),
     teamOverall: raw.to,
     timestamp: raw.ts
