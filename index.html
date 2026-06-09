@@ -374,15 +374,19 @@
     font-family:'Anton',Impact,sans-serif;font-size:14px;line-height:1;letter-spacing:.5px;
     padding-top:1px;}
   /* keep awards / drafted tag clear of the captain patch when both are present */
-  .pcard.cap .awards{right:30px;}
+  .pcard.cap .pbottom{padding-right:24px;}
   .pcard.cap .drafted-tag{right:30px;}
   .capbadge{display:inline-block;margin-right:3px;color:var(--gold);font-size:11px;
     vertical-align:1px;text-shadow:0 0 1px var(--ink),0 0 1px var(--ink);}
   .awardbadge{display:inline-block;background:var(--gold);color:var(--ink);
     font-weight:900;font-size:9px;letter-spacing:.2px;padding:2px 6px;border-radius:999px;
     border:1.5px solid var(--ink);line-height:1.2;white-space:nowrap;}
-  .pcard .awards{position:absolute;right:8px;bottom:6px;margin:0;display:flex;flex-wrap:wrap;
-    justify-content:flex-end;gap:4px;max-width:60%;}
+  /* bottom row of the card: OVR on the left, award pills on the right. In normal
+     flow (not absolute) so two-pill awards grow the card instead of overlapping
+     the name. */
+  .pcard .pbottom{display:flex;align-items:flex-end;gap:6px;margin-top:auto;}
+  .pcard .awards{margin:0;display:flex;flex-wrap:wrap;justify-content:flex-end;align-content:flex-end;
+    gap:4px;flex:1 1 auto;min-width:0;}
   .flip-back .awards{margin-top:2px;display:flex;flex-wrap:wrap;gap:2px;justify-content:center;}
   .flip-back .awardbadge{font-size:6.5px;padding:1px 4px;border-width:1px;}
   .pcard .posbadge{font-weight:900;font-size:9px;letter-spacing:.5px;color:#fff;background:var(--blue);
@@ -838,6 +842,21 @@
     font-weight:900;font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:#5a5048;}
   .res-rank b{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:16px;color:var(--ink);}
   .res-rank.clickable{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;}
+  /* podium indicator: a top-3 all-time finish gets a big celebratory banner */
+  .res-rank.podium{display:flex;flex-direction:column;align-items:center;gap:3px;text-transform:none;
+    letter-spacing:0;border:2.5px solid var(--ink);border-radius:16px;padding:12px 20px;margin:4px auto 10px;
+    box-shadow:4px 4px 0 var(--ink);animation:podiumPop .5s cubic-bezier(.18,.89,.32,1.28) both;}
+  .res-rank.podium .podtrophy{width:48px;height:56px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));}
+  .res-rank.podium .podium-place{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:27px;
+    line-height:1;letter-spacing:.5px;}
+  .res-rank.podium .podium-sub{font-weight:900;font-size:12px;color:#5a5048;text-transform:uppercase;letter-spacing:.5px;}
+  .res-rank.podium.gold{background:linear-gradient(160deg,#FFF7DA,#FBE6A1);}
+  .res-rank.podium.gold .podium-place{color:#B8860B;}
+  .res-rank.podium.silver{background:linear-gradient(160deg,#FAFAFA,#D8D8D8);}
+  .res-rank.podium.silver .podium-place{color:#6E6E6E;}
+  .res-rank.podium.bronze{background:linear-gradient(160deg,#FBE7CE,#E3B07A);}
+  .res-rank.podium.bronze .podium-place{color:#8A4B1E;}
+  @keyframes podiumPop{0%{transform:scale(.4);opacity:0;}100%{transform:scale(1);opacity:1;}}
 
   /* ---------- Top 10 leaderboard popup ---------- */
   .lb-bg{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;
@@ -856,7 +875,14 @@
   .lb-seg button.active{background:var(--gold);color:var(--ink);}
   .lb-row{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid rgba(255,255,255,.1);}
   .lb-row:last-child{border-bottom:none;}
-  .lb-rank{flex:0 0 26px;font-family:'Anton',Impact,sans-serif;font-size:20px;text-align:center;color:#fff;opacity:.85;}
+  .lb-rank{flex:0 0 30px;font-family:'Anton',Impact,sans-serif;font-size:20px;text-align:center;color:#fff;opacity:.85;}
+  /* top-3 rows: metallic trophy + number in the matching metal colour */
+  .lb-rank.medal{display:flex;flex-direction:column;align-items:center;justify-content:center;opacity:1;line-height:1;}
+  .lb-rank.medal .lb-medal-svg{width:22px;height:25px;display:block;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45));}
+  .lb-rank.medal .lb-medal-num{font-family:'Anton',Impact,sans-serif;font-size:12px;line-height:1;margin-top:1px;}
+  .lb-rank.medal.gold .lb-medal-num{color:#F4D469;}
+  .lb-rank.medal.silver .lb-medal-num{color:#DcDcDc;}
+  .lb-rank.medal.bronze .lb-medal-num{color:#E0995A;}
   .lb-name{flex:1 1 auto;min-width:0;font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .lb-meta{flex:0 0 auto;font-size:11px;font-weight:800;opacity:.7;}
   .lb-ov{flex:0 0 auto;font-family:'Anton',Impact,sans-serif;font-size:20px;min-width:30px;text-align:right;}
@@ -1034,7 +1060,7 @@
   /* easy-mode OVR on player cards (position-coloured) */
   /* pin the OVR to the bottom so it sits the same distance from the border in
      every card, whether the name is one line or two */
-  .pcard .ovr{font-family:'Anton',Impact,sans-serif;font-size:21px;line-height:1;margin-top:auto;}
+  .pcard .ovr{font-family:'Anton',Impact,sans-serif;font-size:21px;line-height:1;flex:0 0 auto;}
   .pcard .ovr small{font-family:'Archivo',system-ui,sans-serif;font-size:9px;font-weight:900;letter-spacing:.5px;margin-left:3px;}
   .pcard .ovr.GK{color:var(--pos-gk);}  .pcard .ovr.DEF{color:var(--pos-def);}
   .pcard .ovr.MID{color:var(--pos-mid);} .pcard .ovr.FWD{color:var(--pos-fwd);}
@@ -1537,9 +1563,9 @@
 <!-- ?v= cache-buster: index.html is always served fresh (max-age=0) but these
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
-<script src="gameLogic.js?v=0.0.23"></script>
+<script src="gameLogic.js?v=0.0.24"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
-<script src="data/players_all.js?v=0.0.23"></script>
+<script src="data/players_all.js?v=0.0.24"></script>
 <script>
 const G = window.RunThePitch;
 
@@ -1664,7 +1690,7 @@ async function boot(){
 
   // Single source of truth: the comprehensive dataset (1966–2026).
   // ?v= cache-buster keeps this in lockstep with deploys (see script tags above).
-  let players = await fetchPlayers('data/players_all.json?v=0.0.23');
+  let players = await fetchPlayers('data/players_all.json?v=0.0.24');
 
   // file:// fallback (fetch blocked when opened directly via file://).
   if((!players || !players.length) && Array.isArray(window.PLAYERS_ALL)){
@@ -2252,8 +2278,11 @@ function renderGrid(squad){
         <span class="nm">${p.name}</span>
         <span class="posbadge ${p.position}">${p.position}</span>
       </div>
-      ${cardStatBlock(p)}
-      ${taken?'<span class="drafted-tag">✓ Drafted</span>':awardBadges(p)}
+      <div class="pbottom">
+        ${cardStatBlock(p)}
+        ${taken?'':awardBadges(p)}
+      </div>
+      ${taken?'<span class="drafted-tag">✓ Drafted</span>':''}
       ${p.is_captain?'<span class="cap-c" title="Captain" aria-label="Captain">C</span>':''}`;
     if(!btn.disabled) btn.addEventListener('click',()=>openSheet(p));
     g.appendChild(btn);
@@ -2412,7 +2441,8 @@ function outcomeColor(label){
 // Every completed draft is stored locally as { overall, progress } so each new
 // result can be ranked against all drafts played on this device. Ranking is by
 // team overall (highest = best); ties are broken by how far the team advanced
-// in the tournament (progress: 0=group exit … 4=lost final, 5=champion).
+// in the tournament (progress: 0=group exit, 1=R32, 2=R16, 3=QF, 4=SF,
+// 5=lost final, 6=champion).
 const LEADERBOARD_KEY='rtp_leaderboard';
 // Coerce stored entries to { overall, progress }, tolerating the old number-only format.
 function normEntry(e){
@@ -2558,7 +2588,7 @@ function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'
 // Short round/result tag for a leaderboard row.
 function lbMetaLabel(row){
   if(/winner|champion/i.test(row.result||'')) return '🏆';
-  const map={'Final':'Final','Semi-final':'SF','Quarter-final':'QF','Round of 16':'R16','Group Stage':'Grp'};
+  const map={'Final':'Final','Semi-final':'SF','Quarter-final':'QF','Round of 16':'R16','Round of 32':'R32','Group Stage':'Grp'};
   return map[row.furthest] || '';
 }
 
@@ -2587,15 +2617,42 @@ async function fetchTopDrafts(limit, opts){
   return res.json();
 }
 
+// Metallic trophy SVG for a podium rank (1=gold, 2=silver, 3=bronze). `cls` both
+// styles/sizes the svg and disambiguates the gradient id so multiple trophies can
+// coexist on the page (e.g. the leaderboard medals and the results banner).
+function metalTrophySvg(rank, cls){
+  const T={ 1:['#FCEFA8','#E8C25A','#8A5E12'],
+            2:['#FFFFFF','#CFCFCF','#6E6E6E'],
+            3:['#F4C892','#C77B3A','#5A2E12'] }[rank];
+  if(!T) return '';
+  const id='trg'+rank+'_'+(cls||'').replace(/[^a-z0-9]/gi,'');
+  return `<svg class="${cls||''}" viewBox="0 0 24 28" aria-hidden="true">`
+    +`<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">`
+    +`<stop offset="0" stop-color="${T[0]}"/><stop offset=".5" stop-color="${T[1]}"/><stop offset="1" stop-color="${T[2]}"/>`
+    +`</linearGradient></defs>`
+    +`<path d="M5 4 C2.5 4 2.5 9 5.6 9.5" fill="none" stroke="${T[1]}" stroke-width="1.4"/>`
+    +`<path d="M19 4 C21.5 4 21.5 9 18.4 9.5" fill="none" stroke="${T[1]}" stroke-width="1.4"/>`
+    +`<path d="M6 3 H18 V8 C18 13 14.5 15 12 15 C9.5 15 6 13 6 8 Z" fill="url(#${id})" stroke="#00000033" stroke-width=".6"/>`
+    +`<rect x="11" y="15" width="2" height="4" fill="url(#${id})"/>`
+    +`<rect x="8" y="19" width="8" height="2" rx="1" fill="url(#${id})"/>`
+    +`<rect x="6.5" y="21" width="11" height="2.6" rx="1.3" fill="url(#${id})" stroke="#00000022" stroke-width=".5"/>`
+    +`</svg>`;
+}
+const MEDAL_TIERS=['gold','silver','bronze'];
+
 function renderLeaderboardRows(rows, highlightId){
   const list=$('lb-list');
   if(!rows.length){ list.innerHTML='<div class="lb-empty">No drafts yet — be the first on the board!</div>'; return; }
   list.innerHTML = rows.map((row,i)=>{
     const you = highlightId!=null && row.id===highlightId;
-    const nm  = (row.name && String(row.name).trim()) ? row.name : 'Anonymous';
+    const nm  = cleanDisplayName((row.name && String(row.name).trim()) ? row.name : 'Anonymous');
     const fl  = (row.flag && String(row.flag).trim()) ? flagChip(row.flag) : '';
+    const rank=i+1;
+    const rankCell = rank<=3
+      ? `<span class="lb-rank medal ${MEDAL_TIERS[rank-1]}">${metalTrophySvg(rank,'lb-medal-svg')}<span class="lb-medal-num">${rank}</span></span>`
+      : `<span class="lb-rank">${rank}</span>`;
     return `<div class="lb-row${you?' you':''}">
-      <span class="lb-rank">${i+1}</span>
+      ${rankCell}
       <span class="lb-name">${fl?fl+' ':''}${escapeHtml(nm)}</span>
       <span class="lb-meta">${lbMetaLabel(row)}</span>
       <span class="lb-ov ${ovTier(row.overall)}">${(+row.overall).toFixed(1)}</span>
@@ -2627,12 +2684,27 @@ async function refreshLeaderboardList(highlightId){
   }
 }
 
+// Render the results-page rank line. A top-3 all-time finish gets the big metallic
+// podium banner; everything else gets the plain one-line rank.
+function renderRankLine(el, rank, total){
+  if(rank<=3 && total>0){
+    const place=['1st','2nd','3rd'][rank-1];
+    el.className='res-rank podium '+MEDAL_TIERS[rank-1];
+    el.innerHTML = metalTrophySvg(rank,'podtrophy')
+      + `<span class="podium-place">#${rank} All-Time</span>`
+      + `<span class="podium-sub">${place} of ${total} drafts — incredible!</span>`;
+  }else{
+    el.className='res-rank';
+    el.innerHTML = `🏅 This draft ranks <b>${rank}</b> of <b>${total}</b> all-time drafts`;
+  }
+}
+
 // Fill the rank line on the results page. Records the draft once (guarded), using
 // the global Supabase board when configured and reachable, else the local board.
 async function fillRankBadge(overall, progress){
   const el = $('res-rank-line'); if(!el) return;
   if(gs.result._lb){ // already computed (e.g. re-render) — just show it
-    el.innerHTML = `🏅 This draft ranks <b>${gs.result._lb.rank}</b> of <b>${gs.result._lb.total}</b> all-time drafts`;
+    renderRankLine(el, gs.result._lb.rank, gs.result._lb.total);
     return;
   }
   if(gs.result._lbStarted) return; // a submission is already in flight
@@ -2654,7 +2726,8 @@ async function fillRankBadge(overall, progress){
       const { rank, total } = await fetchGlobalRank(overall, progress);
       gs.result._lb = { rank, total, id };
       gs.result._lbId = id;
-      el.innerHTML = `🏅 This draft ranks <b>${rank}</b> of <b>${total}</b> all-time drafts`;
+      renderRankLine(el, rank, total);
+      if(rank<=3){ try{ launchConfetti(); }catch(e){} } // celebrate a podium finish
       return;
     }catch(e){ /* global board unreachable → per-device fallback below */ }
   }
@@ -2663,7 +2736,8 @@ async function fillRankBadge(overall, progress){
   // local rank paired with the big global total).
   const local = recordDraftRank(overall, progress);
   gs.result._lb = { rank: local.rank, total: local.total };
-  el.innerHTML = `🏅 This draft ranks <b>${local.rank}</b> of <b>${local.total}</b> all-time drafts`;
+  renderRankLine(el, local.rank, local.total);
+  if(local.rank<=3){ try{ launchConfetti(); }catch(e){} } // celebrate a podium finish
 }
 
 function goToResults(){
@@ -2673,14 +2747,14 @@ function goToResults(){
   const c=$('results-content');
 
   // round the run ended in, for the "Eliminated in the …" headline
-  const ROUND_DISPLAY={'Group Stage':'Group Stage','Round of 16':'Round of 16',
+  const ROUND_DISPLAY={'Group Stage':'Group Stage','Round of 32':'Round of 32','Round of 16':'Round of 16',
     'Quarter-final':'Quarter-finals','Semi-final':'Semi-finals','Final':'Final'};
   const champ = sim && !sim.eliminated && sim.furthestRound==='Final';
 
   // tournament progress for ranking — how far the team advanced
   // (0=group … 4=lost final, 5=champion).
-  const ROUND_PROGRESS={'Group Stage':0,'Round of 16':1,'Quarter-final':2,'Semi-final':3,'Final':4};
-  const progress = champ ? 5 : (sim ? (ROUND_PROGRESS[sim.furthestRound] ?? 0) : 0);
+  const ROUND_PROGRESS={'Group Stage':0,'Round of 32':1,'Round of 16':2,'Quarter-final':3,'Semi-final':4,'Final':5};
+  const progress = champ ? 6 : (sim ? (ROUND_PROGRESS[sim.furthestRound] ?? 0) : 0);
   const roundName = sim ? (ROUND_DISPLAY[sim.furthestRound]||sim.furthestRound) : oc.label;
 
   const modeBadge = gameMode==='hard'
@@ -2823,7 +2897,7 @@ function closeProfile(){ $('profile-bg').classList.remove('show'); }
 function reportText(){
   const champ = simResult && !simResult.eliminated && simResult.furthestRound==='Final';
   const ROUND_PHRASE={
-    'Group Stage':'the group stage','Round of 16':'the Round of 16',
+    'Group Stage':'the group stage','Round of 32':'the Round of 32','Round of 16':'the Round of 16',
     'Quarter-final':'the Quarter-finals','Semi-final':'the Semi-finals','Final':'the Final'
   };
   let text;
@@ -2880,7 +2954,7 @@ function rrect(x,ctx,X,Y,W,H,r){ ctx.beginPath(); ctx.moveTo(X+r,Y); ctx.arcTo(X
 // up to 4 recap lines from the simulation (knockout scores + top scorer)
 function shareRecapLines(){
   const r=simResult; if(!r) return [];
-  const ABBR={'Round of 16':'R16','Quarter-final':'QF','Semi-final':'SF','Final':'F'};
+  const ABBR={'Round of 32':'R32','Round of 16':'R16','Quarter-final':'QF','Semi-final':'SF','Final':'F'};
   const lines=[];
   (r.matches||[]).slice(0,3).forEach(m=>{
     const won=m.winner==='user'; const pen=m.penalties?` (pens ${won?'W':'L'})`:'';
@@ -3302,6 +3376,41 @@ async function commitEntryNaming(name, flag){
     return false;
   }
 }
+// ---------- name moderation ----------
+// Keeps profanity and slurs off the leaderboard. The input is normalised first —
+// lower-cased, accents stripped, common leetspeak mapped back to letters, and all
+// non-letters removed — so evasions like "f.u.c.k", "n1gg4" or "$hit" still match.
+// Matching is substring-based on the collapsed string and deliberately errs toward
+// over-blocking (a blocked player just picks another name); edit BANNED_TERMS to tune.
+const BANNED_TERMS = [
+  // strong profanity
+  'fuck','fuk','phuck','motherfuck','shit','bullshit','bitch','biatch','cunt',
+  'whore','slut','bastard','asshole','dumbass','jackass','dickhead','jackoff',
+  'jerkoff','douche','wank','twat','prick','bollock','pussy','cock','dick','dildo',
+  // racial / ethnic / homophobic / ableist slurs
+  'nigg','niglet','negro','chink','gook','kike','spic','wetback','beaner','coon',
+  'raghead','towelhead','sandnig','paki','faggot','fagot','dyke','tranny','troon',
+  'retard','golliwog','wog','redskin','gyppo','zipperhead','slanteye','rapist',
+  // sexual-pun handles and offensive name references
+  'mehoff','meoff','georgefloyd',
+];
+function normalizeForFilter(s){
+  return (s||'')
+    .toLowerCase()
+    .normalize('NFKD').replace(/[̀-ͯ]/g,'')   // strip accents
+    .replace(/[@4]/g,'a').replace(/[$5]/g,'s').replace(/0/g,'o')
+    .replace(/[1!|]/g,'i').replace(/3/g,'e').replace(/7/g,'t').replace(/8/g,'b')
+    .replace(/[^a-z]/g,'')                               // drop spaces & punctuation
+    .replace(/([a-z])\1{2,}/g,'$1');                     // collapse 3+ repeats (reeetard → retard)
+}
+function isBannedName(s){
+  const n=normalizeForFilter(s);
+  return n ? BANNED_TERMS.some(w=>n.includes(w)) : false;
+}
+// Display guard: hide a stored name that trips the filter (covers entries saved
+// before moderation existed, until they're removed from the database).
+function cleanDisplayName(s){ return isBannedName(s) ? 'Anonymous' : s; }
+
 function showEntryToast(){
   const t=$('entry-toast'); t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2000);
@@ -3312,6 +3421,13 @@ function showEntryToast(){
 async function submitEntry(){
   const name=((($('entry-name').value)||'').trim()).slice(0,20);
   if(!name) return;
+  // Moderation: reject profanity/slurs and keep the modal open with a prompt.
+  if(isBannedName(name)){
+    const err=$('entry-error');
+    err.textContent='That name isn’t allowed — please choose another.';
+    err.classList.add('show');
+    return;
+  }
   const flag=entrySelectedFlag||'';
   console.log('[Leaderboard] Saving name:', name);
   console.log('[Leaderboard] Score:', gs.result&&gs.result.teamOverall);
@@ -3329,6 +3445,7 @@ async function submitEntry(){
   if(!ok){
     // keep the modal open so the player can try again
     btn.classList.remove('saving'); btn.disabled=false; btn.textContent='Save to Leaderboard';
+    err.textContent='Couldn’t save — please try again.';
     err.classList.add('show');
     return;
   }
@@ -3518,6 +3635,7 @@ function drawOpponent(pool, difficulty){
 // tournament_result fits the round; a wider band is the fallback. The Final is
 // special: opponents must always be elite (team_overall >= 90).
 const ROUND_OPPONENTS = {
+  'Round of 32':   { range:[58,72], prefer:['group','round16'],              fallback:[55,76] },
   'Round of 16':   { range:[65,78], prefer:['group','round16'],              fallback:[60,80] },
   'Quarter-final': { range:[75,84], prefer:['round16','quarterfinal'],       fallback:[70,86] },
   'Semi-final':    { range:[83,91], prefer:['quarterfinal','third','fourth'], fallback:[80,93] },
@@ -3736,7 +3854,7 @@ function simulateMatch(userSquad, userOverall, opponent){
 
 // Run the full tournament from group stage through the final.
 function simulateTournament(userSquad, userOverall, playerPool){
-  const rounds = ['Round of 16','Quarter-final','Semi-final','Final'];
+  const rounds = ['Round of 32','Round of 16','Quarter-final','Semi-final','Final'];
   const result = {
     groupStage: simulateGroupStage(userOverall, playerPool),
     matches: [],
@@ -3775,7 +3893,7 @@ function simulateTournament(userSquad, userOverall, playerPool){
 }
 
 // CHANGE 6 — temporary console validation: 1000 runs per overall, logging the
-// share of complete World Cup wins (group + four knockout rounds, win/loss
+// share of complete World Cup wins (group + five knockout rounds, win/loss
 // driven purely by the sigmoid against an escalating opponent ladder).
 function testSimulation(){
   const overalls = [65, 70, 75, 80, 85, 90, 95];
@@ -3784,7 +3902,7 @@ function testSimulation(){
     let attempts = 1000;
     for (let i = 0; i < attempts; i++) {
       if (!groupStageAdvance(ov)) continue;
-      const opponents = [72, 79, 87, 94];
+      const opponents = [66, 72, 79, 87, 94];
       let survived = true;
       for (let opp of opponents) {
         const prob = winProbability(ov, opp);
@@ -3857,6 +3975,9 @@ function simOutcome(r){
     case 'Round of 16': return {
       label:'Round of 16', emoji:'',
       message:'Knocked out in the last sixteen. Shake it off, spin again, and chase the cup!' };
+    case 'Round of 32': return {
+      label:'Round of 32', emoji:'',
+      message:'Knocked out in the last thirty-two. Dust yourself off, spin again, and go deeper!' };
     default: return {
       label:'Group Stage Exit', emoji:'',
       message:'Out in the group stage — every champion starts somewhere. Build a new squad and try again!' };
