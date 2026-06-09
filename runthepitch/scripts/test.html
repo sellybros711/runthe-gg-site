@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head><title>GameLogic Tests</title></head>
+<body>
+<pre id="out"></pre>
+<script>
+// Capture console output
+const out = document.getElementById('out');
+const orig = { log: console.log, assert: console.assert, error: console.error };
+const lines = [];
+console.log = (...a) => { lines.push(a.join(' ')); orig.log(...a); out.textContent = lines.join('\n'); };
+console.assert = (cond, msg) => {
+  if (!cond) {
+    const err = 'ASSERTION FAILED: ' + msg;
+    lines.push(err);
+    orig.error(err);
+    out.textContent = lines.join('\n');
+  }
+};
+console.error = (...a) => { lines.push('ERROR: ' + a.join(' ')); orig.error(...a); out.textContent = lines.join('\n'); };
+window.onerror = (msg, src, line) => { lines.push('UNCAUGHT: ' + msg + ' @ ' + line); out.textContent = lines.join('\n'); };
+</script>
+<script src="gameLogic.js"></script>
+<script>
+try { runTests(); } catch(e) { console.error(e.message); }
+</script>
+</body>
+</html>
