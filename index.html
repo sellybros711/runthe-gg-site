@@ -1,6 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>
+  // Friendly mode parameter — must run first, before any library, any
+  // DOMContentLoaded, or the large bottom script. Capturing the raw param here
+  // guarantees the incoming-challenge signal survives even if a later script
+  // throws before the routing code runs (the cause of recipients landing on the
+  // home screen instead of the challenge landing).
+  (function() {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const fp = urlParams.get('friendly');
+      if (fp) {
+        window.__FRIENDLY_RAW = fp;       // raw param, stored before anything can clear it
+        window.__FRIENDLY_INCOMING = true;
+      }
+    } catch(e) {
+      console.error('Friendly param read:', e);
+    }
+  })();
+</script>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>RunThePitch — World Cup Edition</title>
@@ -1505,9 +1524,9 @@
 <!-- ?v= cache-buster: index.html is always served fresh (max-age=0) but these
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
-<script src="gameLogic.js?v=19"></script>
+<script src="gameLogic.js?v=1.0.20"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
-<script src="data/players_all.js?v=19"></script>
+<script src="data/players_all.js?v=1.0.20"></script>
 <script>
 const G = window.RunThePitch;
 
@@ -1632,7 +1651,7 @@ async function boot(){
 
   // Single source of truth: the comprehensive dataset (1966–2026).
   // ?v= cache-buster keeps this in lockstep with deploys (see script tags above).
-  let players = await fetchPlayers('data/players_all.json?v=19');
+  let players = await fetchPlayers('data/players_all.json?v=1.0.20');
 
   // file:// fallback (fetch blocked when opened directly via file://).
   if((!players || !players.length) && Array.isArray(window.PLAYERS_ALL)){
@@ -4507,8 +4526,12 @@ async function friendlyShareLink(url){
 // shown. Stores the challenger lineup on window.CHALLENGER_DATA and sets the
 // FRIENDLY_INCOMING / FRIENDLY_EXPIRED flags, then cleans the URL.
 function parseFriendlyParam(){
-  let friendlyParam=null;
-  try{ friendlyParam=new URLSearchParams(window.location.search).get('friendly'); }catch(e){}
+  // Prefer the param captured synchronously by the <head> script (cannot be
+  // lost); fall back to reading the URL directly.
+  let friendlyParam=window.__FRIENDLY_RAW || null;
+  if(!friendlyParam){
+    try{ friendlyParam=new URLSearchParams(window.location.search).get('friendly'); }catch(e){}
+  }
   if(!friendlyParam) return;
   try{
     const d = frDecodeParam(friendlyParam); // short keys → full picks/teamOverall/timestamp
@@ -4519,11 +4542,13 @@ function parseFriendlyParam(){
     const expired = (Date.now() - d.timestamp) > FRIENDLY_TTL_MS;
     // Clean the URL AFTER storing data so a refresh won't re-trigger / re-corrupt.
     try{ window.history.replaceState({}, document.title, window.location.pathname); }catch(e){}
-    if(expired){ window.CHALLENGER_DATA=null; window.FRIENDLY_EXPIRED=true; }
+    window.__FRIENDLY_RAW=null; // raw param consumed; data is safely stored
+    if(expired){ window.CHALLENGER_DATA=null; window.FRIENDLY_EXPIRED=true; window.FRIENDLY_INCOMING=false; }
     else       { window.FRIENDLY_INCOMING=true; }
   }catch(e){
-    console.error('Failed to parse friendly link:', e);
+    console.error('Friendly decode failed:', e);
     window.CHALLENGER_DATA=null;
+    window.FRIENDLY_INCOMING=false;
     try{ window.history.replaceState({}, document.title, window.location.pathname); }catch(_){}
   }
 }
