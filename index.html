@@ -100,8 +100,12 @@
   /* Friendly: Solo Draft (60%) + Friendly (38%) side by side, 2% gap.
      Stack only on very small screens (<320px). */
   .home-cta-row{display:flex;gap:2%;width:100%;max-width:460px;margin:0 auto;position:relative;z-index:2;}
-  .home-cta-row .btn{width:60%;}
-  .home-cta-row #btn-friendly{width:38%;}
+  .home-cta-row .btn{width:55%;flex-direction:column;gap:2px;line-height:1.05;padding:13px 10px;}
+  .home-cta-row #btn-friendly{width:43%;}
+  /* keep the bold label on a single line with a touch of breathing room */
+  .home-cta-row .btn-label{font-size:16px;letter-spacing:.5px;white-space:nowrap;}
+  /* unbolded subtext beneath each button label */
+  .home-cta-row .btn-sub{font-weight:400;font-size:8px;letter-spacing:.2px;text-transform:uppercase;opacity:.92;white-space:nowrap;}
   @media (max-width:319px){
     .home-cta-row{flex-direction:column;gap:10px;}
     .home-cta-row .btn,.home-cta-row #btn-friendly{width:100%;}
@@ -1172,8 +1176,14 @@
         <div class="rule"><span class="n">4</span><span>Simulate a World Cup against historic squads — go all the way and lift the trophy.</span></div>
       </div>
       <div class="home-cta-row">
-        <button id="btn-friendly" class="btn green" disabled>FRIENDLY</button>
-        <button id="btn-start" class="btn red" disabled>Loading squads…</button>
+        <button id="btn-friendly" class="btn green" disabled>
+          <span class="btn-label">FRIENDLY</span>
+          <span class="btn-sub">Challenge a friend</span>
+        </button>
+        <button id="btn-start" class="btn red" disabled>
+          <span class="btn-label">Loading squads…</span>
+          <span class="btn-sub">World Cup simulator</span>
+        </button>
       </div>
       <!-- flag lane (scrolls right) below the kickoff button -->
       <div class="flag-marquee bottom"><div class="flag-lane right" id="flag-lane-2"></div></div>
@@ -1362,13 +1372,14 @@
   <!-- ===== FRIENDLY: opponent landing ===== -->
   <section id="screen-challenge-landing" class="screen">
     <div class="fr-wrap">
-      <div class="fr-title">YOU'VE BEEN CHALLENGED! ⚽</div>
-      <div class="fr-desc">Your opponent has built their squad. Can you beat them?</div>
+      <div class="fr-title">YOU'VE BEEN CHALLENGED! ⚔️</div>
+      <div class="fr-desc">A friend has built their World Cup dream squad and wants to face you in a <b>HEAD-TO-HEAD FRIENDLY MATCH</b>.<br><br>Draft your own 6-player squad from World Cup history. Once you're done, the match simulates instantly — and you'll see exactly how it plays out, goal by goal.<br><br>Think you can beat them? 🔥</div>
       <ul class="fr-lineup" id="cl-mystery"></ul>
-      <div class="fr-sub" style="margin-bottom:4px">Opponent Team Overall</div>
+      <div class="fr-sub" style="margin-bottom:4px">Their Team Overall</div>
       <div class="fr-tease-ov" id="cl-ov">—</div>
-      <button id="cl-accept" class="btn green big">ACCEPT CHALLENGE →</button>
-      <div class="fr-muted">Build your squad to reveal their lineup and start the match</div>
+      <div class="fr-muted" style="margin-top:0;margin-bottom:14px">Can you build a squad to top that?</div>
+      <button id="cl-accept" class="btn green big">ACCEPT THE CHALLENGE →</button>
+      <div class="fr-muted">You'll draft your squad then the match kicks off automatically</div>
     </div>
   </section>
 
@@ -1494,9 +1505,9 @@
 <!-- ?v= cache-buster: index.html is always served fresh (max-age=0) but these
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
-<script src="gameLogic.js?v=18"></script>
+<script src="gameLogic.js?v=19"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
-<script src="data/players_all.js?v=18"></script>
+<script src="data/players_all.js?v=19"></script>
 <script>
 const G = window.RunThePitch;
 
@@ -1621,7 +1632,7 @@ async function boot(){
 
   // Single source of truth: the comprehensive dataset (1966–2026).
   // ?v= cache-buster keeps this in lockstep with deploys (see script tags above).
-  let players = await fetchPlayers('data/players_all.json?v=18');
+  let players = await fetchPlayers('data/players_all.json?v=19');
 
   // file:// fallback (fetch blocked when opened directly via file://).
   if((!players || !players.length) && Array.isArray(window.PLAYERS_ALL)){
@@ -1663,7 +1674,8 @@ async function boot(){
   preloadFlags();
   const b = $('btn-start');
   b.disabled = false;
-  b.textContent = 'SOLO DRAFT';
+  const bLabel = b.querySelector('.btn-label');
+  if(bLabel) bLabel.textContent = 'SOLO DRAFT'; else b.textContent = 'SOLO DRAFT';
   const bf = $('btn-friendly');
   if(bf) bf.disabled = false;
   startFlagMarquee();
@@ -4354,7 +4366,6 @@ let friendlyMode = false;
 let friendlyRole = null;       // 'challenger' | 'opponent'
 let challengerData = null;     // decoded lineup of the link sender (opponent flow)
 let friendlyMatchResult = null;
-let pendingFriendly = null;    // { data } | { expired:true } parsed from the URL
 const FRIENDLY_TTL_MS = 24*60*60*1000; // 24 hours
 
 // Surname for the result card: the last name token, plus any generational
@@ -4370,9 +4381,45 @@ function surnameOf(name){
   return last;
 }
 
-// Unicode-safe base64 (player names carry accents → plain btoa would throw).
-function frEncode(obj){ return btoa(unescape(encodeURIComponent(JSON.stringify(obj)))); }
-function frDecode(str){ return JSON.parse(decodeURIComponent(escape(atob(str)))); }
+// Compact, URL-safe encoding of the challenger lineup. Short keys keep the
+// payload tiny, and percent-encoding the base64 prevents '+'/'/'/'=' from being
+// mangled by the query string (the bug that was corrupting shared links).
+function frEncodeLineup(){
+  const minimalPicks = orderPicksForDisplay(gs.result.scoredPicks, ['GK','DEF','DEF','MID','FWD','FLEX'])
+    .map(pk=>{ const p=pk.player; return {
+      sl: pk.slot,                       // slot
+      id: String(p.player_id),           // player_id
+      nm: p.name,                        // name
+      ct: p.country,                     // country
+      yr: p.year,                        // year
+      ps: p.position,                    // position
+      ov: p.overall,                     // overall
+      fl: flagImg(p.country,160) || ''   // flag
+    };});
+  const encodeObject = { p: minimalPicks, to: gs.result.teamOverall, ts: Date.now() };
+  const jsonString = JSON.stringify(encodeObject);
+  const base64 = btoa(
+    encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g, (m,p1)=>String.fromCharCode('0x'+p1))
+  );
+  return window.location.origin + window.location.pathname + '?friendly=' + encodeURIComponent(base64);
+}
+// Decode the ?friendly= param back into challenger data, mapping short keys to
+// the full names the rest of the Friendly flow expects.
+function frDecodeParam(param){
+  const base64 = decodeURIComponent(param);
+  const jsonString = decodeURIComponent(
+    Array.from(atob(base64), c => '%' + c.charCodeAt(0).toString(16).padStart(2,'0')).join('')
+  );
+  const raw = JSON.parse(jsonString);
+  return {
+    picks: raw.p.map(p=>({
+      slot: p.sl, playerId: p.id, playerName: p.nm, country: p.ct,
+      year: p.yr, position: p.ps, wc_overall: p.ov, flag: p.fl
+    })),
+    teamOverall: raw.to,
+    timestamp: raw.ts
+  };
+}
 
 // Reset all Friendly state (used when returning to Solo / Play Again).
 function friendlyReset(){
@@ -4430,9 +4477,8 @@ function showChallengeReady(){
       `${flagChip(p.country)}<span class="fr-yr">${p.year}</span>`;
     ul.appendChild(li);
   });
-  // self-consistent link (works in preview and production); decode reads the
-  // ?friendly= query param regardless of host.
-  const url=`${location.origin}${location.pathname}?friendly=${frEncode(lineup)}`;
+  // self-consistent, compact, URL-safe link (works in preview and production).
+  const url=frEncodeLineup();
   $('cr-link').value=url;
   $('cr-share')._url=url;
   $('cr-copy')._url=url;
@@ -4440,33 +4486,51 @@ function showChallengeReady(){
 }
 
 async function friendlyShareLink(url){
-  if(navigator.share){
-    try{ await navigator.share({ title:'RunThePitch Challenge', text:'I built my squad — can you beat it?', url }); return; }
+  const shareData = {
+    title: 'RunThePitch: Friendly Challenge ⚽🔥',
+    text: `I just built my World Cup squad on RunThePitch and I'm challenging YOU to a head-to-head match!\nTap the link to accept the challenge 👇`,
+    url
+  };
+  // Native share sends title/text/url as separate fields (mobile share sheet).
+  if(navigator.canShare && navigator.canShare(shareData)){
+    try{ await navigator.share(shareData); return; }
     catch(e){ if(e && e.name==='AbortError') return; }
   }
-  await copyToClipboard(url);
-  showToast('Link copied! Send it to your friend.');
+  // Fallback: copy ONLY the clean URL — never the title/text block.
+  try{ await navigator.clipboard.writeText(url); }
+  catch(e){ await copyToClipboard(url); }
+  showToast('Challenge link copied! Send it to your friend 🔥');
 }
 
 // ---- opponent landing ----
-// Parse the ?friendly= param once at load. Sets pendingFriendly and cleans the URL.
+// Parse the ?friendly= param at the very start of load, BEFORE any screen is
+// shown. Stores the challenger lineup on window.CHALLENGER_DATA and sets the
+// FRIENDLY_INCOMING / FRIENDLY_EXPIRED flags, then cleans the URL.
 function parseFriendlyParam(){
-  let encoded=null;
-  try{ encoded=new URLSearchParams(window.location.search).get('friendly'); }catch(e){}
-  if(!encoded) return;
-  let data=null;
-  try{ data=frDecode(encoded); }catch(e){ data=null; }
-  // CHANGE 9 — clean the URL so a refresh won't re-trigger the challenge.
-  try{ window.history.replaceState({}, document.title, window.location.pathname); }catch(e){}
-  if(!data || !Array.isArray(data.picks)){ return; }
-  if(typeof data.timestamp==='number' && (Date.now()-data.timestamp)>FRIENDLY_TTL_MS){
-    pendingFriendly={ expired:true }; return;
+  let friendlyParam=null;
+  try{ friendlyParam=new URLSearchParams(window.location.search).get('friendly'); }catch(e){}
+  if(!friendlyParam) return;
+  try{
+    const d = frDecodeParam(friendlyParam); // short keys → full picks/teamOverall/timestamp
+    // Store challenger data BEFORE cleaning the URL.
+    window.CHALLENGER_DATA = {
+      picks: d.picks, teamOverall: d.teamOverall, timestamp: d.timestamp
+    };
+    const expired = (Date.now() - d.timestamp) > FRIENDLY_TTL_MS;
+    // Clean the URL AFTER storing data so a refresh won't re-trigger / re-corrupt.
+    try{ window.history.replaceState({}, document.title, window.location.pathname); }catch(e){}
+    if(expired){ window.CHALLENGER_DATA=null; window.FRIENDLY_EXPIRED=true; }
+    else       { window.FRIENDLY_INCOMING=true; }
+  }catch(e){
+    console.error('Failed to parse friendly link:', e);
+    window.CHALLENGER_DATA=null;
+    try{ window.history.replaceState({}, document.title, window.location.pathname); }catch(_){}
   }
-  pendingFriendly={ data };
 }
 
 function showChallengeLanding(data){
-  challengerData=data;
+  window.CHALLENGER_DATA = data;   // single source of truth through the opponent flow
+  challengerData = data;           // mirror for the select-screen banner
   friendlyMode=true; friendlyRole='opponent';
   gameMode='easy';
   // MYSTERY teaser — fixed formation slots, names hidden as "???"
@@ -4486,10 +4550,18 @@ function showChallengeLanding(data){
 
 // ---- the Friendly match ----
 async function runFriendlyMatch(){
+  // Safety: challenger data must survive the entire opponent draft. If it's
+  // missing, fall back to the normal solo World Cup simulation rather than crash.
+  if(!window.CHALLENGER_DATA){
+    console.error('Challenger data missing');
+    friendlyReset();
+    runSimulationScreen(); // solo fallback
+    return;
+  }
   const userSquad = gs.picks.map(p=>p.player);          // Player B (current user)
   const userOverall = gs.result.teamOverall;
-  const chSquad = friendlySquadFromPicks(challengerData.picks); // Player A
-  const chOverall = challengerData.teamOverall;
+  const chSquad = friendlySquadFromPicks(window.CHALLENGER_DATA.picks); // Player A
+  const chOverall = window.CHALLENGER_DATA.teamOverall;
 
   const m = simulateMatch(userSquad, userOverall, {
     country:'FRIEND', year:'', teamOverall: chOverall, squad: chSquad
@@ -4536,6 +4608,9 @@ async function runFriendlyMatch(){
 
   incrementFriendlyCount();   // non-blocking, fails silently
   await showFriendlyResult(friendlyMatchResult);
+  // Result image is generated — only now is it safe to clear challenger data.
+  window.CHALLENGER_DATA = null;
+  window.FRIENDLY_INCOMING = false;
 }
 
 // ---- CHANGE 7 — Supabase friendly counter (fails silently) ----
@@ -4703,21 +4778,34 @@ async function friendlyShareResult(){
 $('btn-friendly').addEventListener('click', startFriendly);
 $('btn-friendly-build').addEventListener('click', ()=>{ gs=G.createGameState(); goToHome(); });
 $('cr-share').addEventListener('click', ()=>friendlyShareLink($('cr-share')._url));
-$('cr-copy').addEventListener('click', async ()=>{ await copyToClipboard($('cr-copy')._url); showToast('Link copied! Send it to your friend.'); });
+$('cr-copy').addEventListener('click', async ()=>{
+  // Copy ONLY the clean URL — never any title/text block.
+  const url=$('cr-copy')._url;
+  try{ await navigator.clipboard.writeText(url); }
+  catch(e){ await copyToClipboard(url); }
+  showToast('Challenge link copied! Send it to your friend 🔥');
+});
 $('cl-accept').addEventListener('click', ()=>{ gs=G.createGameState(); goToHome(); });
 $('fx-solo').addEventListener('click', ()=>{ friendlyReset(); goToModeSelect(); });
 $('fr-share').addEventListener('click', friendlyShareResult);
 $('fr-again').addEventListener('click', ()=>{ friendlyReset(); showScreen('start'); });
 
-// After data loads, route to the Friendly landing/expired screen if a link was opened.
-function friendlyAfterBoot(){
-  if(!pendingFriendly) return;
-  if(pendingFriendly.expired) showScreen('friendly-expired');
-  else if(pendingFriendly.data) showChallengeLanding(pendingFriendly.data);
+// Route the initial screen based on the parsed friendly flags. Runs BEFORE the
+// default home screen can paint, so the home screen never flashes for an
+// incoming challenge. Re-asserted after boot in case it's called again.
+function friendlyRouteInitial(){
+  if(window.FRIENDLY_EXPIRED){ showScreen('friendly-expired'); return true; }
+  if(window.FRIENDLY_INCOMING && window.CHALLENGER_DATA){ showChallengeLanding(window.CHALLENGER_DATA); return true; }
+  return false;
 }
 
-parseFriendlyParam();   // synchronous: decode + clean URL before boot resolves
-boot().then(friendlyAfterBoot);
+// 1) Parse the ?friendly= param synchronously, before anything renders.
+parseFriendlyParam();
+// 2) Intercept the initial screen immediately (no home-screen flash).
+friendlyRouteInitial();
+// 3) Boot the engine; re-assert the friendly screen once data is ready (the
+//    landing screen's ACCEPT button needs the engine initialised).
+boot().then(friendlyRouteInitial);
 </script>
 </body>
 </html>
