@@ -2916,14 +2916,14 @@ function runRevealOverlay(){
 
   ov.classList.toggle('full', isFullDraft());
   // Reveal in pitch order — attackers first (top) down to the keeper last. Each
-  // pick is placed by the player's ACTUAL position, so a FLEX filled by a forward
-  // reveals among the forwards (right after the dedicated FWD), a FLEX filled by a
-  // midfielder reveals among the midfielders, and so on.
+  // pick is placed by position, and the FLEX always reveals with the forwards
+  // (right after the dedicated FWD), whatever position the flex player plays.
   const POS_RANK={FWD:0,MID:1,DEF:2,GK:3};
+  const rankOf = pk => pk.slot==='FLEX' ? POS_RANK.FWD : (POS_RANK[pk.player.position] ?? 1.5);
   const picks=[...gs.result.scoredPicks].sort((a,b)=>{
-    const ra=POS_RANK[a.player.position] ?? 1.5, rb=POS_RANK[b.player.position] ?? 1.5;
+    const ra=rankOf(a), rb=rankOf(b);
     if(ra!==rb) return ra-rb;
-    return (a.slot==='FLEX'?1:0)-(b.slot==='FLEX'?1:0);  // dedicated slot before FLEX
+    return (a.slot==='FLEX'?1:0)-(b.slot==='FLEX'?1:0);  // dedicated FWD before FLEX
   });
   picks.forEach(pick=>{
     const p=pick.player;
