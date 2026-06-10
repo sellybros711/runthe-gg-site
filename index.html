@@ -1373,6 +1373,7 @@
           <span class="btn-label">Loading squads…</span>
           <span class="btn-sub">World Cup simulator</span>
         </button>
+        <button id="btn-home-leaderboard" class="btn ghost small" style="margin-top:10px;">🏅 View Leaderboard</button>
       </div>
       <!-- flag lane (scrolls right) below the kickoff button -->
       <div class="flag-marquee bottom"><div class="flag-lane right" id="flag-lane-2"></div></div>
@@ -3863,6 +3864,9 @@ function newGame(){
 //  WIRING
 // ============================================================
 $('btn-start').addEventListener('click',goToDraftTypeSelect);
+// Home-screen leaderboard view: opens the existing leaderboard popup (view-only,
+// no name prompt). Does not change any leaderboard behaviour.
+$('btn-home-leaderboard').addEventListener('click', ()=>openLeaderboard());
 
 // draft-type cards: select Quick or Full, then enable Continue
 document.querySelectorAll('#draft-type-cards .mode-card').forEach(card=>{
