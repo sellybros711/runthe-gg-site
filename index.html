@@ -2600,6 +2600,7 @@ const AWARD_LABELS = {
 // Build award-badge HTML for a player (string or array of award values).
 // Returns '' when the player has no award.
 function awardBadges(p){
+  if(gameMode==='hard') return '';   // hard mode = blind pick: no award hints until the reveal
   if(p.award==null) return '';
   const list = Array.isArray(p.award) ? p.award : [p.award];
   const pills = list.map(a=>`<span class="awardbadge">${AWARD_LABELS[a] || a}</span>`).join(' ');
@@ -2672,7 +2673,9 @@ function renderGrid(squad){
     const elig=eligibleSlotsFor(p);
     const taken = pickedIds.has(p.player_id);
     const btn=document.createElement('button');
-    btn.className='pcard'+(taken?' taken':'')+(p.is_captain?' cap':'');
+    // hard mode = blind pick: don't flag captains until the reveal
+    const showCap = p.is_captain && gameMode!=='hard';
+    btn.className='pcard'+(taken?' taken':'')+(showCap?' cap':'');
     btn.disabled = elig.length===0 || taken; // grey out & block re-picking
     btn.innerHTML=`
       <div class="ptop">
@@ -2684,7 +2687,7 @@ function renderGrid(squad){
         ${cardBottomRight(p, taken)}
       </div>
       ${taken?'<span class="drafted-tag">✓ Drafted</span>':''}
-      ${p.is_captain?'<span class="cap-c" title="Captain" aria-label="Captain">C</span>':''}`;
+      ${showCap?'<span class="cap-c" title="Captain" aria-label="Captain">C</span>':''}`;
     if(!btn.disabled) btn.addEventListener('click',()=>openSheet(p));
     g.appendChild(btn);
   });
