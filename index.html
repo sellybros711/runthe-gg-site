@@ -2080,9 +2080,9 @@ function buildYearStrip(target, animate){
   strip.innerHTML=items.map(y=>`<div class="reel-item"><span class="yr">${y}</span></div>`).join('');
   strip._targetIndex=DECOYS;
 }
-// Both Full Team Draft and Quick Draft now use the same (base) wheel timing.
-// (Full Draft was previously 2x faster; speed halved so the spin reads clearly.)
-function spinDur(base){ return base; }
+// Full Team Draft has ~twice the rounds, so its year/country wheels spin 1.5x
+// faster than Quick Draft (which uses the base timing) to keep the flow snappy.
+function spinDur(base){ return isFullDraft() ? Math.round(base/1.5) : base; }
 function spinStrip(strip, rowH, duration){
   strip.style.transition='none';
   strip.style.transform='translateY(0)';
