@@ -2903,7 +2903,9 @@ function runRevealOverlay(){
   go.classList.remove('show'); go.style.display='none'; go.disabled=false;
 
   ov.classList.toggle('full', isFullDraft());
-  const picks=orderPicksForDisplay(gs.result.scoredPicks, draftSlotOrder());
+  // Reveal attackers first (top) → goalkeeper last (bottom), matching the pitch
+  // lineup orientation. Rows render + count up in this order.
+  const picks=orderPicksForDisplay(gs.result.scoredPicks, draftSlotOrder()).slice().reverse();
   picks.forEach(pick=>{
     const p=pick.player;
     const row=document.createElement('div'); row.className='rv-entry';
