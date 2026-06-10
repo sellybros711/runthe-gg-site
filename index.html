@@ -1685,7 +1685,7 @@
       </div>
       <div class="rc-plus">×</div>
       <div class="rc-side">
-        <div class="rc-num" id="rc-bonus-num">1.00</div>
+        <div class="rc-num" id="rc-bonus-num">1.000</div>
         <div class="rc-lab">LEADERSHIP<br>&amp; AWARDS</div>
       </div>
     </div>
@@ -2721,7 +2721,7 @@ function assign(player, slot){
 // ============================================================
 //  LEADERSHIP & AWARDS BONUS
 // ============================================================
-// Multiplicative bonus: each captain multiplies the squad rating by ×1.01 and
+// Multiplicative bonus: each captain multiplies the squad rating by ×1.005 and
 // each award by ×1.02 (awards count separately; a player who is both captain and
 // an award winner stacks both). The combined multiplier scales with how strong
 // the base squad is, so the same accolades are worth more overall on a better team.
@@ -2730,8 +2730,8 @@ function getLeadershipBonus(picks){
   picks.forEach(pick=>{
     const p=pick.player;
     if(p.is_captain){
-      multiplier*=1.01;
-      breakdown.push({ name:p.name, type:'captain', value:1.01 });
+      multiplier*=1.005;
+      breakdown.push({ name:p.name, type:'captain', value:1.005 });
     }
     if(p.award){
       let awards=[];
@@ -2874,7 +2874,7 @@ function runRevealOverlay(){
   const combine=$('reveal-combine'), tnum=$('reveal-team-num'), tlab=$('reveal-team-label');
   combine.classList.remove('merge'); combine.style.display='';
   $('rc-base-num').textContent='0.0'; applyTierClass($('rc-base-num'), 0);
-  $('rc-bonus-num').textContent='1.00';
+  $('rc-bonus-num').textContent='1.000';
   $('rc-breakdown').innerHTML='';
   tnum.style.display='none'; tnum.classList.remove('merge');
   tnum.textContent='0'; applyTierClass(tnum, 0);
@@ -2909,7 +2909,7 @@ function runRevealOverlay(){
   const bd      = gs.result.leadershipBreakdown || [];
 
   // STEP 1-2 — show base × multiplier side by side, both count up over 1.2s.
-  // Base counts 0→base (tier colour); the multiplier counts 1.00→mult (2 decimals).
+  // Base counts 0→base (tier colour); the multiplier counts 1.000→mult (3 decimals).
   setTimeout(()=>{
     team.style.display='';
     setTimeout(()=>team.classList.add('show'), 20);
@@ -2917,8 +2917,8 @@ function runRevealOverlay(){
     const mEl=$('rc-bonus-num'), mDur=1200, mSt=Date.now();
     const mIv=setInterval(()=>{
       const t=Math.min(1,(Date.now()-mSt)/mDur), e=1-Math.pow(1-t,3);
-      mEl.textContent=(1+(mult-1)*e).toFixed(2);
-      if(t>=1){ mEl.textContent=mult.toFixed(2); clearInterval(mIv); }
+      mEl.textContent=(1+(mult-1)*e).toFixed(3);
+      if(t>=1){ mEl.textContent=mult.toFixed(3); clearInterval(mIv); }
     },22);
   }, afterAll);
 
@@ -2929,7 +2929,7 @@ function runRevealOverlay(){
       const line=document.createElement('div'); line.className='rc-bd-line';
       const icon = b.type==='captain' ? lbCaptainBadge() : lbAwardIcon(b.award);
       const what = b.type==='captain' ? 'Captain' : awardLabel(b.award);
-      line.innerHTML=`${icon}<span>${b.name} — ${what} ×${b.value.toFixed(2)}</span>`;
+      line.innerHTML=`${icon}<span>${b.name} — ${what} ×${b.value.toFixed(3)}</span>`;
       $('rc-breakdown').appendChild(line);
       setTimeout(()=>line.classList.add('show'), 20);
     }, breakdownStart + i*250);
