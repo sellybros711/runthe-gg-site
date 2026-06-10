@@ -4892,7 +4892,7 @@ function simFinalizeMOT(result, userSquad){
 // ============================================================
 let simResult = null;
 // Global pacing factor for the World Cup simulation (>1 = slower).
-const SIM_SPEED = 1.6;
+const SIM_SPEED = 1.8;
 const simSleep = ms => new Promise(r=>setTimeout(r, ms*SIM_SPEED));
 
 async function simEllipsisFor(el, ms){
@@ -5198,16 +5198,16 @@ function sbScheduleScore(wrap, e, delay){
   setTimeout(()=> sbBumpScore(wrap, e.team==='user'?'user':'opp'), Math.max(0,delay));
 }
 // CHANGE 1 — dynamic slow-motion. Returns the speed the clock should advance at
-// for the given moment: half speed (2× slower) in the closing minutes of a close
-// game (regulation 70–90 or extra time 100–120, margin ≤ 1), normal otherwise.
+// for the given moment: 2.5× slower in the closing minutes of a close game
+// (regulation 65–90 or extra time 95–120, margin ≤ 1), normal otherwise.
 // The score passed in is the LIVE running score at that simulated minute, so the
 // effect reacts as goals are revealed — a goal that widens the margin past 1
 // returns play to normal speed for the rest.
 function getSpeedMultiplier(simMinute, userScore, oppScore, isExtraTime){
   const margin = Math.abs(userScore - oppScore);
   const isClose = margin <= 1;                                   // 0 or 1 goal
-  if(!isExtraTime && simMinute>=70  && simMinute<=90  && isClose) return 0.5;
-  if( isExtraTime && simMinute>=100 && simMinute<=120 && isClose) return 0.5;
+  if(!isExtraTime && simMinute>=65  && simMinute<=90  && isClose) return 0.4;
+  if( isExtraTime && simMinute>=95  && simMinute<=120 && isClose) return 0.4;
   return 1.0;
 }
 const SLOWMO_EASE_MS = 300; // ease speed changes over ~0.3s rather than snapping
