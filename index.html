@@ -51,7 +51,7 @@
 <!-- NOTE: X/Twitter aggressively caches link previews. After deploying a new
      og-image, force a refresh via the X Card Validator (cards-dev.twitter.com/validator).
      iMessage caches previews per-device and can take time to update. Future image
-     updates can bust caches by versioning the URL, e.g. og-image.png?v=0.0.26 -->
+     updates can bust caches by versioning the URL, e.g. og-image.png?v=0.0.27 -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:site" content="@RunThePitch" />
 <meta name="twitter:creator" content="@RunThePitch" />
@@ -803,6 +803,40 @@
   .reveal-team-num.red{color:var(--red);} .reveal-team-num.orange{color:var(--orange);}
   .reveal-team-num.gold{color:var(--gold);} .reveal-team-num.green{color:#4ade80;}
   .reveal-team-label{font-weight:900;font-size:13px;letter-spacing:3px;color:#fff;}
+  /* leadership/awards count-up + combine */
+  /* baseline alignment puts the × on the same baseline as the digits, so it sits
+     optically centred between the two figures (as in running maths text) — this
+     holds throughout the count-up regardless of the digits' changing values */
+  .reveal-combine{display:flex;align-items:baseline;justify-content:center;gap:14px;
+    transition:opacity .45s ease, transform .5s cubic-bezier(.5,0,.5,1);}
+  .reveal-combine.merge{gap:0;opacity:0;transform:scale(.55);}
+  .rc-side{display:flex;flex-direction:column;align-items:center;}
+  .rc-num{font-family:'Anton',Impact,sans-serif;font-size:54px;line-height:.9;color:var(--gold);}
+  /* squad-rating count-up matches the per-player overall tier colours */
+  .rc-num.red{color:var(--red);} .rc-num.orange{color:var(--orange);}
+  .rc-num.gold{color:var(--gold);} .rc-num.green{color:#4ade80;}
+  .rc-lab{font-weight:900;font-size:9.5px;letter-spacing:1.4px;color:#fff;margin-top:5px;opacity:.82;}
+  .rc-plus{font-family:'Anton',Impact,sans-serif;font-size:46px;line-height:.9;
+    color:var(--gold);font-weight:900;margin:0;}
+  .rc-breakdown{margin-top:14px;display:flex;flex-direction:column;gap:6px;align-items:center;}
+  .rc-bd-line{font-size:12px;font-weight:700;color:rgba(255,255,255,.85);letter-spacing:.2px;
+    display:flex;align-items:center;gap:7px;
+    opacity:0;transform:translateY(6px);transition:opacity .3s ease, transform .3s ease;}
+  .rc-bd-line.show{opacity:1;transform:none;}
+  /* retro gold award icons + captain patch in the breakdown */
+  .rc-bd-line .lb-ic{width:17px;height:17px;flex:0 0 auto;
+    filter:drop-shadow(1px 1px 0 var(--ink));}
+  .rc-bd-line .lb-ic.boot{width:20px;}
+  .lb-cap{display:inline-grid;place-items:center;flex:0 0 auto;width:17px;height:17px;
+    border:1.5px solid var(--ink);border-radius:5px;background:var(--gold);color:var(--ink);
+    box-shadow:1px 1px 0 var(--ink);font-family:'Anton',Impact,sans-serif;font-size:12px;
+    line-height:1;letter-spacing:.5px;padding-top:1px;}
+  @keyframes rcMergePulse{0%{transform:scale(.6)}55%{transform:scale(1.28)}100%{transform:scale(1)}}
+  @keyframes rcGoldFlash{
+    0%{text-shadow:0 0 0 rgba(255,196,0,0)}
+    40%{text-shadow:0 0 38px rgba(255,196,0,.95),0 0 78px rgba(255,196,0,.55)}
+    100%{text-shadow:0 0 0 rgba(255,196,0,0)}}
+  .reveal-team-num.merge{animation:rcMergePulse .5s ease, rcGoldFlash .3s ease;}
   .reveal-go{width:100%;max-width:460px;opacity:0;transition:opacity .4s ease;}
   .reveal-go.show{opacity:1;}
 
@@ -1530,8 +1564,23 @@
 <div class="reveal-overlay" id="reveal-overlay">
   <div class="reveal-stack" id="reveal-stack"></div>
   <div class="reveal-team" id="reveal-team" style="display:none">
-    <div class="reveal-team-num" id="reveal-team-num">0</div>
-    <div class="reveal-team-label">TEAM OVERALL</div>
+    <!-- STEP 1-2: base squad rating × leadership multiplier, side by side -->
+    <div class="reveal-combine" id="reveal-combine">
+      <div class="rc-side">
+        <div class="rc-num" id="rc-base-num">0.0</div>
+        <div class="rc-lab">SQUAD RATING</div>
+      </div>
+      <div class="rc-plus">×</div>
+      <div class="rc-side">
+        <div class="rc-num" id="rc-bonus-num">1.00</div>
+        <div class="rc-lab">LEADERSHIP<br>&amp; AWARDS</div>
+      </div>
+    </div>
+    <!-- STEP 3: bonus breakdown lines -->
+    <div class="rc-breakdown" id="rc-breakdown"></div>
+    <!-- STEP 4: official combined overall -->
+    <div class="reveal-team-num" id="reveal-team-num" style="display:none">0</div>
+    <div class="reveal-team-label" id="reveal-team-label" style="display:none">OFFICIAL TEAM OVERALL</div>
   </div>
   <button class="btn red big reveal-go" id="btn-reveal-go" style="display:none">START WORLD CUP</button>
 </div>
@@ -1595,9 +1644,9 @@
 <!-- ?v= cache-buster: index.html is always served fresh (max-age=0) but these
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
-<script src="gameLogic.js?v=0.0.26"></script>
+<script src="gameLogic.js?v=0.0.27"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
-<script src="data/players_all.js?v=0.0.26"></script>
+<script src="data/players_all.js?v=0.0.27"></script>
 <script>
 const G = window.RunThePitch;
 
@@ -2352,6 +2401,7 @@ function assign(player, slot){
   gs = G.selectPlayer(gs, player.player_id, slot);
   closeSheet();
   if(gs.phase==='COMPLETE'){
+    applyLeadershipBonus();   // bake the official (base × multiplier) overall into gs.result
     // back to the pitch: fill the final slot (and slide FLEX into formation),
     // then run the flip reveal before handing off to the scorecard screen.
     showScreen('home');
@@ -2373,6 +2423,50 @@ function assign(player, slot){
   } else {
     goToHome();
   }
+}
+
+// ============================================================
+//  LEADERSHIP & AWARDS BONUS
+// ============================================================
+// Multiplicative bonus: each captain multiplies the squad rating by ×1.01 and
+// each award by ×1.02 (awards count separately; a player who is both captain and
+// an award winner stacks both). The combined multiplier scales with how strong
+// the base squad is, so the same accolades are worth more overall on a better team.
+function getLeadershipBonus(picks){
+  let multiplier=1; const breakdown=[];
+  picks.forEach(pick=>{
+    const p=pick.player;
+    if(p.is_captain){
+      multiplier*=1.01;
+      breakdown.push({ name:p.name, type:'captain', value:1.01 });
+    }
+    if(p.award){
+      let awards=[];
+      if(Array.isArray(p.award)) awards=p.award;
+      else if(typeof p.award==='string') awards=p.award.split('|').map(a=>a.trim()).filter(Boolean);
+      awards.forEach(a=>{
+        multiplier*=1.02;
+        breakdown.push({ name:p.name, type:'award', award:a, value:1.02 });
+      });
+    }
+  });
+  return { multiplier, breakdown };
+}
+
+// Fold the leadership/awards multiplier into gs.result so the OFFICIAL team
+// overall (base × multiplier) is the single number used everywhere downstream —
+// leaderboard, simulation, results, share text/images, friendly links. The base
+// and multiplier are preserved separately for the reveal animation only. Idempotent.
+function applyLeadershipBonus(){
+  if(!gs || !gs.result || gs.result._bonusApplied) return;
+  const base = gs.result.teamOverall;
+  const { multiplier, breakdown } = getLeadershipBonus(gs.result.scoredPicks||gs.picks||[]);
+  const official = Math.min(100, Math.round(base * multiplier * 10)/10);
+  gs.result.baseTeamOverall     = base;
+  gs.result.leadershipMultiplier= multiplier;
+  gs.result.leadershipBreakdown = breakdown;
+  gs.result.teamOverall         = official;   // official number — used everywhere downstream
+  gs.result._bonusApplied       = true;
 }
 
 // ============================================================
@@ -2419,6 +2513,55 @@ function countUp(el, target, dur, colorEl, decimals){
     if(t>=1){ el.textContent=fmt(target); applyTierClass(colorEl, target); clearInterval(iv); }
   },22);
 }
+// Ease-out (cubic) count up — fast start, slowing at the end. Always shows
+// `decimals` places; fires onDone when it lands.
+function countUpEase(el, target, dur, decimals, colorEl, onDone){
+  const start=Date.now();
+  const fmt=v=>Number(v).toFixed(decimals);
+  const iv=setInterval(()=>{
+    const t=Math.min(1,(Date.now()-start)/dur);
+    const e=1-Math.pow(1-t,3);
+    const n=target*e;
+    el.textContent=fmt(n);
+    applyTierClass(colorEl, n);   // colour shifts as it crosses each tier
+    if(t>=1){ el.textContent=fmt(target); applyTierClass(colorEl, target); clearInterval(iv); if(onDone) onDone(); }
+  },22);
+}
+// Pretty award label: "golden_boot" → "Golden Boot".
+function awardLabel(a){
+  return String(a).replace(/[_-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+}
+// Retro captain badge for the bonus breakdown — bold ink "C" on a gold rounded
+// square, matching the .cap-c patch from the selection cards.
+function lbCaptainBadge(){ return '<span class="lb-cap">C</span>'; }
+// Retro gold trophy icons for each award. Boot and ball get bespoke graphics;
+// glove and young-player get a glove / star. Falls back to a gold star.
+function lbAwardIcon(award){
+  const ball = `<svg class="lb-ic" viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="9.3" fill="var(--gold)" stroke="var(--ink)" stroke-width="1.7"/>
+    <polygon points="12,6.6 15.4,9.1 14.1,13.1 9.9,13.1 8.6,9.1" fill="var(--ink)"/>
+    <path d="M12 2.7V6.6M20.6 8.7 15.4 9.1M17.7 18.6 14.1 13.1M6.3 18.6 9.9 13.1M3.4 8.7 8.6 9.1"
+      stroke="var(--ink)" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>`;
+  const boot = `<svg class="lb-ic boot" viewBox="0 0 26 22" aria-hidden="true">
+    <path d="M3 4 L10 4 C12 4 12.6 5.4 13.4 7.4 L14.4 10 L21 12.2 C23 12.9 23.6 14 23.6 15.6 L23.6 16.8 L4.2 16.8 C3.3 16.8 2.6 16.2 2.5 15.3 L2.4 5.4 C2.4 4.6 2.6 4 3 4 Z"
+      fill="var(--gold)" stroke="var(--ink)" stroke-width="1.6" stroke-linejoin="round"/>
+    <circle cx="7" cy="19.6" r="1.25" fill="var(--ink)"/>
+    <circle cx="13" cy="19.6" r="1.25" fill="var(--ink)"/>
+    <circle cx="19" cy="19.6" r="1.25" fill="var(--ink)"/></svg>`;
+  const glove = `<svg class="lb-ic" viewBox="0 0 24 24" aria-hidden="true">
+    <path d="M7 21 V12 L5.4 9.6 a1.5 1.5 0 0 1 2.4-1.8 L9 9 V5 a1.5 1.5 0 0 1 3 0 V8.6 V4.4 a1.5 1.5 0 0 1 3 0 V8.6 V5.4 a1.5 1.5 0 0 1 3 0 V13 c0 4.4-1.6 8-5.2 8 Z"
+      fill="var(--gold)" stroke="var(--ink)" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+  const star = `<svg class="lb-ic" viewBox="0 0 24 24" aria-hidden="true">
+    <polygon points="12,2.4 14.9,8.9 22,9.6 16.6,14.3 18.3,21.4 12,17.5 5.7,21.4 7.4,14.3 2,9.6 9.1,8.9"
+      fill="var(--gold)" stroke="var(--ink)" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+  switch(award){
+    case 'golden_boot':  return boot;
+    case 'golden_ball':  return ball;
+    case 'golden_glove': return glove;
+    case 'best_young_player': return star;
+    default: return star;
+  }
+}
 
 // ============================================================
 //  POST-DRAFT DARK REVEAL OVERLAY  (over the live pitch)
@@ -2429,11 +2572,20 @@ function countUp(el, target, dur, colorEl, decimals){
 function ovTier(o){ return o>=90?'green':o>=80?'gold':o>=70?'orange':'red'; }
 
 function runRevealOverlay(){
+  if(!gs.result._bonusApplied) applyLeadershipBonus();
   const ov=$('reveal-overlay'), stack=$('reveal-stack');
   const team=$('reveal-team'), go=$('btn-reveal-go');
   stack.innerHTML='';
   team.classList.remove('show'); team.style.display='none';
-  $('reveal-team-num').textContent='0'; applyTierClass($('reveal-team-num'), 0);
+  // reset the count-up + combine elements
+  const combine=$('reveal-combine'), tnum=$('reveal-team-num'), tlab=$('reveal-team-label');
+  combine.classList.remove('merge'); combine.style.display='';
+  $('rc-base-num').textContent='0.0'; applyTierClass($('rc-base-num'), 0);
+  $('rc-bonus-num').textContent='1.00';
+  $('rc-breakdown').innerHTML='';
+  tnum.style.display='none'; tnum.classList.remove('merge');
+  tnum.textContent='0'; applyTierClass(tnum, 0);
+  tlab.style.display='none';
   go.classList.remove('show'); go.style.display='none'; go.disabled=false;
 
   const picks=orderPicksForDisplay(gs.result.scoredPicks, ['GK','DEF','DEF','MID','FWD','FLEX']);
@@ -2457,15 +2609,65 @@ function runRevealOverlay(){
   });
 
   const afterAll = 300 + rows.length*350 + 300;
+  const base    = gs.result.baseTeamOverall;
+  const mult    = gs.result.leadershipMultiplier;
+  const official= gs.result.teamOverall;
+  const bd      = gs.result.leadershipBreakdown || [];
+
+  // STEP 1-2 — show base × multiplier side by side, both count up over 1.2s.
+  // Base counts 0→base (tier colour); the multiplier counts 1.00→mult (2 decimals).
   setTimeout(()=>{
     team.style.display='';
     setTimeout(()=>team.classList.add('show'), 20);
-    countUp($('reveal-team-num'), gs.result.teamOverall, 700, $('reveal-team-num'), 1);
+    countUpEase($('rc-base-num'), base, 1200, 1, $('rc-base-num')); // tier colour shifts as it counts
+    const mEl=$('rc-bonus-num'), mDur=1200, mSt=Date.now();
+    const mIv=setInterval(()=>{
+      const t=Math.min(1,(Date.now()-mSt)/mDur), e=1-Math.pow(1-t,3);
+      mEl.textContent=(1+(mult-1)*e).toFixed(2);
+      if(t>=1){ mEl.textContent=mult.toFixed(2); clearInterval(mIv); }
+    },22);
   }, afterAll);
+
+  // STEP 3 — after the count-up + 0.5s pause, fade in breakdown lines (skip if no bonus)
+  const breakdownStart = afterAll + 1200 + 500;
+  bd.forEach((b,i)=>{
+    setTimeout(()=>{
+      const line=document.createElement('div'); line.className='rc-bd-line';
+      const icon = b.type==='captain' ? lbCaptainBadge() : lbAwardIcon(b.award);
+      const what = b.type==='captain' ? 'Captain' : awardLabel(b.award);
+      line.innerHTML=`${icon}<span>${b.name} — ${what} ×${b.value.toFixed(2)}</span>`;
+      $('rc-breakdown').appendChild(line);
+      setTimeout(()=>line.classList.add('show'), 20);
+    }, breakdownStart + i*250);
+  });
+  const breakdownEnd = breakdownStart + (bd.length>0 ? bd.length*250 : 0);
+
+  // STEP 4 — 1.0s after breakdown completes, merge into the official overall
+  const mergeAt = breakdownEnd + 1000;
+  setTimeout(()=>{
+    const combine=$('reveal-combine'), tnum=$('reveal-team-num'), tlab=$('reveal-team-label');
+    $('rc-breakdown').innerHTML='';
+    combine.classList.add('merge');                      // slide together + fade
+    setTimeout(()=>{
+      combine.style.display='none';
+      tnum.style.display=''; tlab.style.display='';
+      tnum.classList.add('merge');                       // pulse + gold flash
+      // final satisfying tick-up from the base value to the official combined value
+      const dur=500, st=Date.now();
+      const iv=setInterval(()=>{
+        const t=Math.min(1,(Date.now()-st)/dur);
+        const v=base+(official-base)*t;
+        tnum.textContent=v.toFixed(1); applyTierClass(tnum, v);
+        if(t>=1){ tnum.textContent=official.toFixed(1); applyTierClass(tnum, official); clearInterval(iv); }
+      },22);
+    }, 480);
+  }, mergeAt);
+
+  // STEP 5 — 0.8s after the official number lands, show the GO button
   setTimeout(()=>{
     go.style.display='';
     setTimeout(()=>go.classList.add('show'), 20);
-  }, afterAll + 700 + 800);                   // team lands, then 0.8s pause
+  }, mergeAt + 480 + 500 + 800);
 }
 
 // ============================================================
@@ -3642,27 +3844,44 @@ function expectedGoals(teamOverall){
   return (teamOverall / 100) * 1.8;
 }
 
-// Below-86 penalty: squads under 86 take a steep per-match multiplier so a weak
-// side almost never strings together a full title run. ≥86 is untouched (1.0),
-// so 86-90 teams scale purely on the base sigmoid in the knockouts. Calibrated
-// so OVR 85 and below stay under ~1% full-tournament win rate.
+// Per-match win penalty for weaker squads. 86+ is penalty-free here — the 86-90
+// band is now shaped by the knockout form ramp in eliteBoost (which dips below
+// 1.0 at 86 and rises to the elite floor at 91). Below 86 keeps an aggressive,
+// continuous penalty so sub-86 squads stay near-hopeless (85 ≈ 0%).
 function belowThresholdPenalty(userTeamOverall){
   if(userTeamOverall >= 86) return 1.0;
-  const deficit = 86 - userTeamOverall;
-  return Math.max(0.05, 0.66 - (deficit - 1) * 0.07);
+  return 0.72 * Math.pow(0.78, 86 - userTeamOverall);
 }
 
-// Elite boost: squads at 91+ get a per-match multiplier that compounds across
-// the knockout rounds. ≥86 but <91 get no boost (1.0), so 86-90 also scale on
-// the base curve. Base (1.34) sets the 91 floor (~45% WC win rate); the
-// per-point term (0.02) gently shapes how 95 sits between 91 and 99. (Tuned up
-// from the 1.22/0.07 starting point: 1.22 left 91 near ~37% under the 0.95 cap,
-// and a steep per-point term saturated 95 against the cap rather than letting it
-// scale between the two.)
+// CHANGE 2 — early-knockout penalty for weak squads. Applies ONLY to teams 84
+// and below, and ONLY in the first two knockout rounds (roundIndex 0 and 1), so
+// a side that sneaks out of the group frequently exits in the Round of 32/16
+// rather than routinely reaching the quarters. Teams 85+ are unaffected.
+function earlyRoundPenalty(userTeamOverall, roundIndex){
+  if(userTeamOverall > 84) return 1.0;
+  if(roundIndex >= 2) return 1.0;
+  const deficit = 84 - userTeamOverall;   // 84 → 0.82x, 80 → ~0.62x, 75 → ~0.44x
+  return 0.82 * Math.pow(0.93, deficit);
+}
+
+// Knockout form multiplier — a piecewise ramp from 86 to 99, compounding across
+// the knockout rounds. Calibrated against the live opponent pool (with the
+// gap-scaled win cap in simulateMatch active) to the target win-rate curve:
+//   86 ≈ 2%, 87 ≈ 5%, 88 ≈ 9%, 89 ≈ 15%, 90 ≈ 19%, 91 ≈ 28%, 92 ≈ 40%,
+//   then 93+ resume the original elite line (93 ≈ 43%, 94 ≈ 50%, … 99 ≈ 82%).
+// The 90→92 band was steepened on request (90 shifted down ~3pts, 92 up ~5pts,
+// 91 scaled to the midpoint); 89-and-below and 93-and-above are unchanged. The
+// 86-89 segment rises 0.92→1.2125 (slope 0.0975); below 86 gets no multiplier
+// (the sub-86 penalty in belowThresholdPenalty keeps weak squads near-hopeless).
 function eliteBoost(userTeamOverall){
-  if(userTeamOverall < 91) return 1.0;
-  const surplus = userTeamOverall - 91;
-  return 1.34 + (surplus * 0.02);
+  const ov = userTeamOverall;
+  if(ov >= 93) return 1.34 + (ov - 91) * 0.02;             // 93+ : original elite line
+  if(ov >= 92) return 1.46 + (ov - 92) * (1.38 - 1.46);    // 92→93 (back to the line)
+  if(ov >= 91) return 1.34 + (ov - 91) * (1.46 - 1.34);    // 91→92
+  if(ov >= 90) return 1.22 + (ov - 90) * (1.34 - 1.22);    // 90→91
+  if(ov >= 89) return 1.2125 + (ov - 89) * (1.22 - 1.2125);// 89→90
+  if(ov >= 86) return 0.92 + (ov - 86) * 0.0975;           // 86→89
+  return 1.0;
 }
 
 // CHANGE 1 — scoreline variance that scales with the strength gap. The stronger
@@ -3686,6 +3905,24 @@ function simTeamOverall(squad){
   return Math.round(sum/squad.length);
 }
 
+// CHANGE 4 — derive an attack/defense split for an opponent from its real
+// squad roster (positions + ratings), blended 50/50 with team_overall so squads
+// with thin positional data stay sane.
+function getOpponentPositionalRatings(squad, teamOverall){
+  const ovOf = p => (p.wc_overall ?? p.overall ?? teamOverall);
+  const byPos = pos => {
+    const players = squad.filter(p => p.position === pos);
+    if(!players.length) return teamOverall;
+    return players.reduce((s,p)=>s+ovOf(p),0) / players.length;
+  };
+  const rawDefense = byPos('GK')*0.45 + byPos('DEF')*0.55;
+  const rawAttack  = byPos('FWD')*0.55 + byPos('MID')*0.45;
+  return {
+    attack:  rawAttack*0.5  + teamOverall*0.5,
+    defense: rawDefense*0.5 + teamOverall*0.5,
+  };
+}
+
 // Build every unique country+year combination from the loaded dataset.
 // Uses the engine accessors (which carry computed `overall`) so it scales
 // automatically as more tournament data is added to window.PLAYERS.
@@ -3706,7 +3943,8 @@ function buildOpponentPool(excludeCountry, excludeYear){
       // opponents per knockout round); null when unavailable.
       const tr = squad.find(p=>p.tournament_result!=null);
       const tournamentResult = tr ? tr.tournament_result : null;
-      pool.push({ country, year, squad, teamOverall, tournamentResult });
+      const { attack, defense } = getOpponentPositionalRatings(squad, teamOverall);
+      pool.push({ country, year, squad, teamOverall, tournamentResult, attack, defense });
     });
   });
   return pool;
@@ -3917,31 +4155,109 @@ function simMakeGoalEvent(beneficiary, userSquad, opponent, extraTime, usedMinut
   return { minute, scorer:scorer.name, scorerCountry:scorer.country, team:beneficiary, isOG };
 }
 
-// Simulate one knockout match.
-function simulateMatch(userSquad, userOverall, opponent){
+// CHANGE 3 — attack/defense ratings derived from the user's ACTUAL drafted
+// players. The FLEX slot's position decides the team's identity: a FWD flex is
+// ATTACKING (flex = second striker), a MID flex is BALANCED (flex = second mid).
+function getUserPositionalRatings(picks){
+  const ovOf = p => (p && p.player ? (p.player.wc_overall ?? p.player.overall ?? 60) : 60);
+  const gk   = picks.find(p => p.slot === 'GK');
+  const defs = picks.filter(p => p.slot === 'DEF');
+  const mid  = picks.find(p => p.slot === 'MID');
+  const fwd  = picks.find(p => p.slot === 'FWD');
+  const flex = picks.find(p => p.slot === 'FLEX');
+
+  const flexIsFWD = !!(flex && flex.player && flex.player.position === 'FWD');
+  const identity  = flexIsFWD ? 'ATTACKING' : 'BALANCED';
+
+  // DEFENSE: GK weighted heaviest, then the back line.
+  const gkOv  = gk ? ovOf(gk) : 60;
+  const defOv = defs.length ? defs.reduce((s,p)=>s+ovOf(p),0)/defs.length : 60;
+  const defense = gkOv*0.45 + defOv*0.55;
+
+  // ATTACK: MID + FWD + FLEX, weighted by identity.
+  const midOv  = mid  ? ovOf(mid)  : 60;
+  const fwdOv  = fwd  ? ovOf(fwd)  : 60;
+  const flexOv = flex ? ovOf(flex) : 60;
+  let attack;
+  if(flexIsFWD) attack = fwdOv*0.40 + flexOv*0.35 + midOv*0.25;  // FWD-heavy
+  else          attack = fwdOv*0.40 + midOv*0.30  + flexOv*0.30; // flex = 2nd mid
+
+  return { attack, defense, identity };
+}
+
+// CHANGE 5 — Poisson sampler for natural football score distributions (lots of
+// 0s/1s/2s, the occasional 4 or 5).
+function samplePoisson(lambda){
+  const L = Math.exp(-lambda);
+  let k = 0, p = 1;
+  do { k++; p *= Math.random(); } while(p > L);
+  return k - 1;
+}
+
+// CHANGE 5 — scoreline driven by positional attack vs defense, sampled with
+// Poisson for variety. 1.35 is the baseline xG for evenly matched sides; the
+// identity multipliers make attacking squads live in open games and balanced
+// squads grind out low-scoring wins. Returns goal COUNTS only — the winner is
+// still enforced afterward by the calibrated probability engine.
+function generateScoreline(userRatings, oppRatings, identity){
+  let userXG = 1.35 * Math.pow(1.06, (userRatings.attack - oppRatings.defense) / 2);
+  let oppXG  = 1.35 * Math.pow(1.06, (oppRatings.attack  - userRatings.defense) / 2);
+
+  if(identity === 'ATTACKING'){ userXG *= 1.15; oppXG *= 1.10; }
+  else                        { oppXG *= 0.90; }
+
+  userXG = Math.min(Math.max(userXG, 0.3), 3.6);
+  oppXG  = Math.min(Math.max(oppXG,  0.3), 3.6);
+
+  const userGoals = Math.min(samplePoisson(userXG), 7);
+  const oppGoals  = Math.min(samplePoisson(oppXG),  7);
+  return { userGoals, oppGoals, userXG, oppXG };
+}
+
+// Simulate one knockout match. `roundIndex` (0 = first knockout round) drives the
+// early-round penalty; `userRatings`/`identity` enable the positional scoreline
+// model. When ratings are absent (e.g. the friendly match) the legacy gap-based
+// scoreline is used so those callers keep working unchanged.
+function simulateMatch(userSquad, userOverall, opponent, roundIndex, userRatings, identity){
+  if(roundIndex == null) roundIndex = 99;          // non-tournament callers: no early penalty
   const oppOverall = opponent.teamOverall;
   const cap = g => Math.max(0, Math.min(7, g)); // 0..7 goals per team (CHANGE 1)
 
   // The sigmoid is the base source of truth for who wins, then the below-86
-  // penalty and the 91+ elite boost are applied together. The result is capped
-  // at 0.95 so even a 99 squad is never guaranteed any single match — the
-  // ~75% title rate for elite teams comes from chaining strong wins, not from
-  // a near-certain individual game.
+  // penalty and the 91+ elite boost are applied together.
   const baseProb = winProbability(userOverall, oppOverall);
   const penalty  = belowThresholdPenalty(userOverall);
   const boost    = eliteBoost(userOverall);
-  let finalProb  = baseProb * penalty * boost;
-  finalProb = Math.min(finalProb, 0.95);
+  const early    = earlyRoundPenalty(userOverall, roundIndex);
+  let finalProb  = baseProb * penalty * boost * early;
+  // Win-probability cap scales with how badly you outclass the opponent. A close
+  // match stays at 0.95 (even a 99 squad can be upset), but a heavy favourite —
+  // e.g. an elite side meeting a weak early-round opponent — earns a higher
+  // ceiling (up to 0.99). This makes stronger squads markedly safer in the early
+  // rounds (where mismatches are largest) and far less safe deep in the bracket,
+  // so higher overalls go farther and rarely suffer early upsets.
+  const gap     = userOverall - oppOverall;
+  const maxProb = Math.min(0.99, 0.95 + Math.max(0, gap - 10) * 0.0025);
+  finalProb = Math.min(finalProb, maxProb);
   const userWins = Math.random() < finalProb;
   const winSide  = userWins ? 'user' : 'opponent';
 
-  // CHANGE 1/2 — scoreline magnitude scales with the strength gap; the stronger
-  // team can run up a blowout when the gap is large. No floor of 1 on either
-  // side, so the losing team can finish on 0 (1-0, 3-0, 4-0, …).
-  const strengthGap   = Math.abs(userOverall - oppOverall);
-  const userIsStronger = userOverall >= oppOverall;
-  let userGoals     = cap(Math.round(expectedGoals(userOverall) * getRandomFactor(userIsStronger, strengthGap)));
-  let opponentGoals = cap(Math.round(expectedGoals(oppOverall)  * getRandomFactor(!userIsStronger, strengthGap)));
+  // Scoreline magnitude. When positional ratings are available (tournament
+  // matches) the Poisson model in generateScoreline drives the goal counts off
+  // the user's real attackers/defenders vs the opponent's derived split; the
+  // winner is still enforced below by the probability engine. Otherwise (e.g.
+  // the friendly match) fall back to the legacy gap-based scoreline.
+  let userGoals, opponentGoals;
+  if(userRatings && opponent.attack != null && opponent.defense != null){
+    const sl = generateScoreline(userRatings, { attack:opponent.attack, defense:opponent.defense }, identity || 'BALANCED');
+    userGoals     = cap(sl.userGoals);
+    opponentGoals = cap(sl.oppGoals);
+  } else {
+    const strengthGap    = Math.abs(userOverall - oppOverall);
+    const userIsStronger = userOverall >= oppOverall;
+    userGoals     = cap(Math.round(expectedGoals(userOverall) * getRandomFactor(userIsStronger, strengthGap)));
+    opponentGoals = cap(Math.round(expectedGoals(oppOverall)  * getRandomFactor(!userIsStronger, strengthGap)));
+  }
 
   let extraTime=false, penalties=false, penaltyWinner=null, etGoalTeam=null;
 
@@ -3994,8 +4310,9 @@ function simulateMatch(userSquad, userOverall, opponent){
 }
 
 // Run the full tournament from group stage through the final.
-function simulateTournament(userSquad, userOverall, playerPool){
+function simulateTournament(userSquad, userOverall, playerPool, userRatings){
   const rounds = ['Round of 32','Round of 16','Quarter-final','Semi-final','Final'];
+  const identity = userRatings ? userRatings.identity : 'BALANCED';
   const result = {
     groupStage: simulateGroupStage(userOverall, playerPool),
     matches: [],
@@ -4015,7 +4332,7 @@ function simulateTournament(userSquad, userOverall, playerPool){
   for(let i=0;i<rounds.length;i++){
     const opp = drawOpponentForRound(playerPool, rounds[i]);
     if(!opp) break;
-    const m = simulateMatch(userSquad, userOverall, opp);
+    const m = simulateMatch(userSquad, userOverall, opp, i, userRatings, identity);
     m.round = rounds[i];
     result.matches.push(m);
     result.furthestRound = rounds[i];
@@ -4037,32 +4354,53 @@ function simulateTournament(userSquad, userOverall, playerPool){
 // share of complete World Cup wins (group + five knockout rounds, win/loss
 // driven purely by the sigmoid against an escalating opponent ladder).
 function testWinThreshold(){
+  // Five knockout rounds (R32, R16, QF, SF, Final); roundIndex matches the live
+  // engine so earlyRoundPenalty is exercised for the first two rounds.
+  const rounds = ['R32','R16','QF','SF','Final'];
+  const opps   = [65, 72, 80, 87, 93];
   for (let ov = 80; ov <= 99; ov++) {
     let wins = 0;
     const trials = 5000;
+    const elimByRound = { Group:0, R32:0, R16:0, QF:0, SF:0, Final:0 };
     for (let i = 0; i < trials; i++) {
-      if (!groupStageAdvance(ov)) continue;
-      const opps = [74, 80, 87, 93];
+      if (!groupStageAdvance(ov)) { elimByRound.Group++; continue; }
       let survived = true;
-      for (const opp of opps) {
-        let prob = winProbability(ov, opp)
+      for (let r = 0; r < opps.length; r++) {
+        let prob = winProbability(ov, opps[r])
           * belowThresholdPenalty(ov)
-          * eliteBoost(ov);
+          * eliteBoost(ov)
+          * earlyRoundPenalty(ov, r);
         prob = Math.min(prob, 0.95);
-        if (Math.random() >= prob) {
-          survived = false;
-          break;
-        }
+        if (Math.random() >= prob) { survived = false; elimByRound[rounds[r]]++; break; }
       }
       if (survived) wins++;
     }
-    console.log(
-      `OVR ${ov}: ${(wins/trials*100).toFixed(2)}% ` +
-      `WC win rate`
-    );
+    let line = `OVR ${ov}: ${(wins/trials*100).toFixed(2)}% WC win rate`;
+    if (ov === 80 || ov === 82 || ov === 84) {
+      line += `  | elim dist: ${JSON.stringify(elimByRound)}`;
+    }
+    console.log(line);
   }
 }
 testWinThreshold();
+
+// CHANGE 6 — Test B: scoreline variety. Evenly matched (84/84) should spread
+// across many results with no single score dominating; a mismatch should
+// produce frequent blowouts.
+function testScorelines(){
+  const hist = (uR, oR, id, label) => {
+    const counts = {};
+    for (let i = 0; i < 500; i++) {
+      const r = generateScoreline(uR, oR, id);
+      const key = r.userGoals + '-' + r.oppGoals;
+      counts[key] = (counts[key] || 0) + 1;
+    }
+    console.log(`Scoreline distribution [${label}]:`, counts);
+  };
+  hist({attack:84,defense:84}, {attack:84,defense:84}, 'BALANCED', 'even 84v84');
+  hist({attack:95,defense:84}, {attack:70,defense:70}, 'ATTACKING', 'mismatch 95atk vs 70def');
+}
+testScorelines();
 
 // Most goals by a user player, tiebreak by overall. Falls back to the
 // highest-rated player if nobody scored.
@@ -4597,9 +4935,10 @@ async function runSimulationScreen(){
 
   const userSquad = gs.picks.map(p=>p.player);
   const userOverall = gs.result.teamOverall;
+  const userRatings = getUserPositionalRatings(gs.picks);
   const pool = buildOpponentPool(null, null);
 
-  simResult = simulateTournament(userSquad, userOverall, pool);
+  simResult = simulateTournament(userSquad, userOverall, pool, userRatings);
 
   // --- group stage: three matchdays with their own colour each run ---
   const adv=simResult.groupStage.advanced;
