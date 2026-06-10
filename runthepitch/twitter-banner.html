@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>RunThePitch — Twitter banner (1500×500)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;background:#222;display:flex;align-items:center;justify-content:center;min-height:100vh;}
+  /* Renders at exactly 1500×500 — the X/Twitter profile header size. */
+  #bn{width:1500px;height:500px;display:block;}
+  #save{position:fixed;top:10px;left:10px;font:600 13px Archivo,sans-serif;}
+</style>
+</head>
+<body>
+  <!-- Standalone Twitter/X banner. Same dark hero branding as the OG card, sized
+       1500×500. Exposes a PNG data URL on window.__bannerDataURL for export. -->
+  <canvas id="bn" width="1500" height="500"></canvas>
+  <a id="save" download="twitter-banner.png">⬇ Save PNG</a>
+<script>
+(async function(){
+  await (document.fonts && document.fonts.ready);
+
+  const W=1500, H=500, CX=W/2;
+  const c=document.getElementById('bn'), x=c.getContext('2d');
+  const ink='#16120F', cream='#FDF6E3', teal='#138A6B', gold='#F4B413';
+
+  // ---- background: dark navy + warm gold glow (centre) + teal glow (bottom) ----
+  x.fillStyle='#0b1324'; x.fillRect(0,0,W,H);
+  let g=x.createRadialGradient(CX,215,40,CX,215,640);
+  g.addColorStop(0,'rgba(244,180,19,0.34)'); g.addColorStop(.45,'rgba(244,180,19,0.12)'); g.addColorStop(1,'rgba(244,180,19,0)');
+  x.fillStyle=g; x.fillRect(0,0,W,H);
+  g=x.createRadialGradient(CX,H+30,80,CX,H+30,820);
+  g.addColorStop(0,'rgba(19,138,107,0.30)'); g.addColorStop(1,'rgba(19,138,107,0)');
+  x.fillStyle=g; x.fillRect(0,0,W,H);
+
+  // ---- subtle pitch markings along the bottom (matches the hero backdrop) ----
+  x.save();
+  x.strokeStyle='rgba(47,214,115,0.16)'; x.lineWidth=2.5;
+  x.beginPath(); x.moveTo(0,452); x.lineTo(W,452); x.stroke();              // touchline
+  x.beginPath(); x.ellipse(CX,452,170,30,0,Math.PI,0,true); x.stroke();      // centre arc
+  x.beginPath(); x.arc(CX,452,4,0,Math.PI*2); x.fillStyle='rgba(47,214,115,0.22)'; x.fill();
+  x.restore();
+
+  // ---- gold top accent stripe ----
+  const stripe=x.createLinearGradient(0,0,W,0);
+  stripe.addColorStop(0,'#9C6C18'); stripe.addColorStop(.32,'#F4B413'); stripe.addColorStop(.5,'#FCEFA8'); stripe.addColorStop(.68,'#F4B413'); stripe.addColorStop(1,'#9C6C18');
+  x.fillStyle=stripe; x.fillRect(0,0,W,12);
+
+  // ---- wordmark: RUN (cream) · THE (teal) · PITCH (cream), Anton display ----
+  x.textBaseline='alphabetic';
+  x.font='400 138px Anton';
+  const seg=[['RUN',cream],['THE',teal],['PITCH',cream]];
+  let tot=0; for(const [t] of seg) tot+=x.measureText(t).width;
+  let lx=CX-tot/2; const baseY=235;
+  x.save(); x.shadowColor='rgba(0,0,0,.45)'; x.shadowBlur=14; x.shadowOffsetY=5; x.textAlign='left';
+  for(const [t,col] of seg){ x.fillStyle=col; x.fillText(t,lx,baseY); lx+=x.measureText(t).width; }
+  x.restore();
+
+  // ---- "WORLD CUP EDITION" gold pill ----
+  x.textAlign='left';
+  x.font='900 28px Archivo'; const pill='WORLD CUP EDITION'; const sp=6;
+  let pw=0; for(const ch of pill) pw+=x.measureText(ch).width+sp; pw-=sp;
+  const ph=52, pwBox=pw+44, px0=CX-pwBox/2, py0=262;
+  const pg=x.createLinearGradient(0,py0,0,py0+ph); pg.addColorStop(0,'#FCEFA8'); pg.addColorStop(1,'#F4B413');
+  const r=13;
+  x.beginPath();
+  x.moveTo(px0+r,py0); x.arcTo(px0+pwBox,py0,px0+pwBox,py0+ph,r); x.arcTo(px0+pwBox,py0+ph,px0,py0+ph,r);
+  x.arcTo(px0,py0+ph,px0,py0,r); x.arcTo(px0,py0,px0+pwBox,py0,r); x.closePath();
+  x.fillStyle=pg; x.fill(); x.lineWidth=3; x.strokeStyle=ink; x.stroke();
+  x.fillStyle=ink; let wx=px0+22; for(const ch of pill){ x.fillText(ch,wx,py0+35); wx+=x.measureText(ch).width+sp; }
+
+  // ---- tagline: SPIN. PICK. CONQUER. ----
+  x.textAlign='center';
+  x.font='400 50px Anton'; x.fillStyle=cream;
+  x.save(); x.shadowColor='rgba(0,0,0,.4)'; x.shadowBlur=8; x.shadowOffsetY=3;
+  x.fillText('SPIN. PICK. CONQUER.', CX, 388); x.restore();
+
+  // ---- URL (kept centre, clear of the bottom-left avatar safe zone) ----
+  x.font='900 26px Archivo'; x.fillStyle=gold; x.textAlign='left';
+  const url='runthe.gg', usp=3;
+  let uw=0; for(const ch of url) uw+=x.measureText(ch).width+usp; uw-=usp;
+  let ux=CX-uw/2;
+  for(const ch of url){ x.fillText(ch,ux,432); ux+=x.measureText(ch).width+usp; }
+
+  // ---- expose the PNG so it can be saved as twitter-banner.png ----
+  const dataURL=c.toDataURL('image/png');
+  window.__bannerDataURL=dataURL;
+  document.getElementById('save').href=dataURL;
+})();
+</script>
+</body>
+</html>
