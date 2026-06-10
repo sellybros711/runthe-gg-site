@@ -676,6 +676,8 @@
   /* CHANGE 2 — slow-motion tension cue: warm the bar toward amber/gold */
   .match-clock-fill.slowmo{ background:#F5A623; }
   .goal-event{font-size:13px; font-weight:700; margin:4px 0; animation:fade 0.25s ease both;}
+  /* opponent goals in red so it's easy to read which team scored */
+  .goal-event.opp{color:var(--red);}
   .sim-scoreline{
     font-family:'Anton',sans-serif; font-size:28px; text-align:center;
     margin:10px 0 6px; letter-spacing:1px;
@@ -5024,7 +5026,9 @@ function simScrollEnd(el){ el.scrollIntoView({behavior:'smooth',block:'end'}); }
 function simScheduleGoal(box, e, delay){
   setTimeout(()=>{
     const d=document.createElement('div');
-    d.className='goal-event';
+    // opponent goals (incl. own goals credited to them) print in red so it's
+    // instantly clear which side scored.
+    d.className='goal-event'+(e.team!=='user' ? ' opp' : '');
     d.textContent = e.isOG
       ? `⚽ ${e.minute}' OG (${e.scorer})`
       : `⚽ ${e.minute}' ${e.scorer} (${e.team==='user' ? 'your team' : e.scorerCountry})`;
