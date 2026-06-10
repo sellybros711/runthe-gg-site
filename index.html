@@ -1486,7 +1486,6 @@
   <section id="screen-formation" class="screen">
     <div class="fm-kicker">★ Your Formation ★</div>
     <div class="fm-reel-vp"><div class="fm-reel-strip" id="fm-reel"></div></div>
-    <div class="fm-name" id="fm-name"></div>
     <div class="fm-req" id="fm-req"></div>
     <button id="btn-formation-go" class="btn red big">Start Draft →</button>
   </section>
@@ -3960,9 +3959,9 @@ function showFormationReveal(){
   showScreen('formation');
   const target=FORMATIONS[Math.floor(Math.random()*FORMATIONS.length)];
   pendingFormation=target;
-  const name=$('fm-name'), req=$('fm-req'), go=$('btn-formation-go');
-  name.classList.remove('show'); req.classList.remove('show'); go.classList.remove('show');
-  name.textContent=''; req.textContent='';
+  const req=$('fm-req'), go=$('btn-formation-go');
+  req.classList.remove('show'); go.classList.remove('show');
+  req.textContent='';
   // build a slot-machine strip of formation names, target near the end
   const strip=$('fm-reel'); const items=[];
   const DECOYS=22;
@@ -3976,7 +3975,7 @@ function showFormationReveal(){
   strip.style.transition='transform 2600ms cubic-bezier(.12,.62,.2,1)';
   strip.style.transform=`translateY(${-(targetIndex*rowH)}px)`;
   const settle=()=>{
-    name.textContent=target.name; name.classList.add('show');
+    // formation number already shows in the reel — only reveal the description line
     req.textContent=formationReqLine(target); setTimeout(()=>req.classList.add('show'),250);
     setTimeout(()=>go.classList.add('show'),550);
   };
