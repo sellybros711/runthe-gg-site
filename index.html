@@ -2657,7 +2657,7 @@ function renderGrid(squad){
   const available = p => eligibleSlotsFor(p).length>0 && !pickedIds.has(p.player_id);
   // sort: available first, then grouped by position. EASY orders each position by
   // overall (high→low); HARD is a blind pick, so it orders each position
-  // alphabetically by name instead — no rating hint from the ordering.
+  // alphabetically by surname instead — no rating hint from the ordering.
   const order={GK:0,DEF:1,MID:2,FWD:3};
   const ov = p => (p.wc_overall ?? p.overall ?? 0);  // the value shown on the card
   const hard = gameMode==='hard';
@@ -2665,7 +2665,7 @@ function renderGrid(squad){
     const aa=available(a), ab=available(b);
     if(aa!==ab) return aa?-1:1;
     if(a.position!==b.position) return order[a.position]-order[b.position];
-    return hard ? a.name.localeCompare(b.name)
+    return hard ? (surnameOf(a.name).localeCompare(surnameOf(b.name)) || a.name.localeCompare(b.name))
                 : ((ov(b)-ov(a)) || a.name.localeCompare(b.name));
   });
   sorted.forEach(p=>{
