@@ -2080,9 +2080,9 @@ function buildYearStrip(target, animate){
   strip.innerHTML=items.map(y=>`<div class="reel-item"><span class="yr">${y}</span></div>`).join('');
   strip._targetIndex=DECOYS;
 }
-// Full Team Draft has ~twice the rounds, so its year/country wheels spin 3x
+// Full Team Draft has ~twice the rounds, so its year/country wheels spin 2x
 // faster to keep the 11-pick flow snappy. Quick Draft keeps the original timing.
-function spinDur(base){ return isFullDraft() ? Math.round(base/3) : base; }
+function spinDur(base){ return isFullDraft() ? Math.round(base/2) : base; }
 function spinStrip(strip, rowH, duration){
   strip.style.transition='none';
   strip.style.transform='translateY(0)';
@@ -4858,7 +4858,7 @@ function simFinalizeMOT(result, userSquad){
 // ============================================================
 let simResult = null;
 // Global pacing factor for the World Cup simulation (>1 = slower).
-const SIM_SPEED = 1.2;
+const SIM_SPEED = 1.32;
 const simSleep = ms => new Promise(r=>setTimeout(r, ms*SIM_SPEED));
 
 async function simEllipsisFor(el, ms){
