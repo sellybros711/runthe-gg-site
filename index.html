@@ -4047,12 +4047,21 @@ $('lb-seg-drafttype').addEventListener('click',e=>{ const b=e.target.closest('bu
 // ---------- add-to-leaderboard entry modal (every results page) ----------
 // Fixed ordered list of flag options. Each name maps through the SAME flag image
 // system used everywhere else in the game (flagImg / FLAG_CODES).
-const ENTRY_FLAGS = ['Argentina','Australia','Belgium','Brazil','Canada','Chile',
-  'Colombia','Croatia','Denmark','Ecuador','Egypt','England','France','Germany',
-  'Ghana','Greece','Honduras','Hungary','Iran','Italy','Jamaica','Japan','Mexico',
-  'Morocco','Netherlands','New Zealand','Nigeria','Norway','Poland','Portugal',
-  'Romania','Russia','Saudi Arabia','Scotland','Senegal','Serbia','South Korea',
-  'Spain','Sweden','Switzerland','Tunisia','Turkey','Ukraine','Uruguay','USA','Wales'];
+// Every flag the game can draw — all FLAG_CODES nations plus the defunct-nation
+// SVGs — so users can pick any of them. Deduped by the actual flag image (so the
+// same flag never appears twice, e.g. USA/United States, Germany/West Germany),
+// USA first as the default, then alphabetical.
+const ENTRY_FLAGS = (() => {
+  const names = [...Object.keys(FLAG_CODES), ...Object.keys(FLAG_SVG)];
+  const ordered = ['USA', ...names.filter(c => c !== 'USA').sort((a,b)=>a.localeCompare(b))];
+  const seen = new Set(); const out = [];
+  ordered.forEach(c => {
+    const url = flagImg(c, 80);
+    if(!url || seen.has(url)) return;   // skip missing + duplicate-image flags
+    seen.add(url); out.push(c);
+  });
+  return out;
+})();
 let entrySelectedFlag = 'USA';
 
 function buildEntryFlagRow(){
