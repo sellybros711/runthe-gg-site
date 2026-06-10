@@ -2887,7 +2887,7 @@ function runRevealOverlay(){
     const p=pick.player;
     const row=document.createElement('div'); row.className='rv-entry';
     row.innerHTML=`<span class="rv-badge" style="${slotBadgeStyle(pick.slot,p)}">${pick.slot}</span>
-      <span class="rv-name">${p.name}</span>
+      <span class="rv-name">${flagChip(p.country)} ${p.name}</span>
       <span class="rv-right"><span class="rv-ov red"><span class="rv-ov-num" data-ov="${p.overall}">0</span><small>OVR</small></span></span>`;
     stack.appendChild(row);
   });
