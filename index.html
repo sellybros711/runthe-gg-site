@@ -666,16 +666,25 @@
     transition:transform .6s cubic-bezier(.65,0,.25,1);
     will-change:transform;
   }
-  .sim-card{
+  /* each carousel cell fills the stage and vertically centres its box */
+  .sim-slide{
     flex:0 0 100%; width:100%; height:100%;
-    display:flex; flex-direction:column;          /* feed flexes; everything else is fixed */
+    display:flex; flex-direction:column; justify-content:center; align-items:stretch;
+  }
+  /* the visible box shrinks to fit its content, stays centred, and only grows up
+     to the stage height (the maximum) — then the feed scrolls inside it */
+  .sim-card{
+    max-height:100%;
+    display:flex; flex-direction:column;
     border:3px solid var(--ink); border-radius:16px; background:var(--white);
     box-shadow:var(--shadow-sm); padding:16px; margin:0; overflow:hidden;
+    animation:fade .3s ease both;
   }
   .sim-card > *{ flex:0 0 auto; }
-  /* the goal feed / matchday list takes the leftover height and scrolls inside */
+  /* the feed takes only the room it needs; it shrinks + scrolls only when the box
+     reaches its maximum height */
   .sim-card .sim-goals,
-  .sim-card #sim-gs-days{ flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .sim-card #sim-gs-days{ flex:0 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
   .sim-round-header{
     font-family:'Anton',sans-serif; font-size:22px; text-transform:uppercase;
     letter-spacing:1px; margin-bottom:6px;
@@ -5094,6 +5103,15 @@ function simSwipeTo(i){
   const track = $('sim-content');
   if(track) track.style.transform = `translateX(${-i*100}%)`;
 }
+// Create a new carousel cell (centres a shrink-to-fit box) and return the inner
+// box to render the match/group content into.
+function simNewSlide(){
+  const slide=document.createElement('div'); slide.className='sim-slide';
+  const card=document.createElement('div'); card.className='sim-card';
+  slide.appendChild(card);
+  $('sim-content').appendChild(slide);
+  return card;
+}
 
 function simScheduleGoal(box, e, delay){
   setTimeout(()=>{
@@ -5466,8 +5484,9 @@ function showSimSummary(){
     btn.textContent='Continue to Results';
     btn.addEventListener('click', goToResults);
     wrap.appendChild(btn);
-    // place the button on the current (last) slide so it stays in view
-    const cur=$('sim-content').children[simSlideIndex] || content;
+    // place the button inside the current (last) slide's box so it stays in view
+    const curSlide=$('sim-content').children[simSlideIndex];
+    const cur=(curSlide && curSlide.querySelector('.sim-card')) || content;
     cur.appendChild(wrap);
   }, 600);
 }
@@ -5489,12 +5508,10 @@ async function runSimulationScreen(){
 
   // --- group stage: three matchdays with their own colour each run ---
   const adv=simResult.groupStage.advanced;
-  const gsCard=document.createElement('div');
-  gsCard.className='sim-card';
+  const gsCard=simNewSlide();   // group stage = slide 0
   gsCard.innerHTML=`<div class="sim-round-header sim-slide-in">Group Stage</div>
     <div id="sim-gs-status">${pickOne(['Kicking off the group stage','Group stage underway','First whistle in the groups'])}<span id="sim-gs-dots"></span></div>
     <div id="sim-gs-days" style="margin-top:6px;"></div>`;
-  content.appendChild(gsCard);
 
   await simEllipsisFor($('sim-gs-dots'), 900);
   $('sim-gs-status').innerHTML=`<div class="sim-threat" style="margin:0;">Matchdays</div>`;
@@ -5536,12 +5553,10 @@ async function runSimulationScreen(){
 
   // --- knockout rounds (each match is its own slide; advancing swipes across) ---
   for(let i=0;i<simResult.matches.length;i++){
-    const slide=document.createElement('div');
-    slide.className='sim-card';
-    content.appendChild(slide);
+    const card=simNewSlide();
     simSwipeTo(simSlideIndex+1);   // current match swipes off-left, this one in from the right
     await simSleep(650);           // let the swipe land before kickoff
-    const won = await playMatchAnimation(simResult.matches[i], slide);
+    const won = await playMatchAnimation(simResult.matches[i], card);
     const note=document.createElement('div');
     if(won){
       const next=simResult.rounds[i+1];
@@ -5557,7 +5572,7 @@ async function runSimulationScreen(){
         `✗ Heartbreak in the ${simResult.matches[i].round}.`,
       ]);
     }
-    slide.appendChild(note);       // note lives on this match's slide
+    card.appendChild(note);        // note lives inside this match's box
     await simSleep(900);
     if(!won) break;
   }
