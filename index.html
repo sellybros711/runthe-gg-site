@@ -651,12 +651,31 @@
   .center{text-align:center;}
 
   /* ---------- world cup simulation ---------- */
-  .sim-wrap { max-width:520px; margin:0 auto; padding:18px 16px 48px; }
-  .sim-card{
-    border:3px solid var(--ink); border-radius:16px; background:var(--white);
-    box-shadow:var(--shadow-sm); padding:16px; margin-bottom:14px;
-    animation:fade 0.3s ease both;
+  /* ===== Horizontal match carousel — presentation only, sim logic unchanged =====
+     Each match is one full-width slide that fills the stage. Advancing swipes the
+     current match off to the left while the next swipes in from the right. The page
+     never scrolls vertically; a long goal feed scrolls inside its own box. */
+  .sim-wrap{
+    max-width:520px; margin:0 auto; padding:14px 16px 18px;
+    position:relative; overflow:hidden;
+    height:calc(100vh - 92px); height:calc(100dvh - 92px);
   }
+  #sim-content{
+    display:flex; flex-wrap:nowrap; align-items:stretch; height:100%;
+    transform:translateX(0);
+    transition:transform .6s cubic-bezier(.65,0,.25,1);
+    will-change:transform;
+  }
+  .sim-card{
+    flex:0 0 100%; width:100%; height:100%;
+    display:flex; flex-direction:column;          /* feed flexes; everything else is fixed */
+    border:3px solid var(--ink); border-radius:16px; background:var(--white);
+    box-shadow:var(--shadow-sm); padding:16px; margin:0; overflow:hidden;
+  }
+  .sim-card > *{ flex:0 0 auto; }
+  /* the goal feed / matchday list takes the leftover height and scrolls inside */
+  .sim-card .sim-goals,
+  .sim-card #sim-gs-days{ flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
   .sim-round-header{
     font-family:'Anton',sans-serif; font-size:22px; text-transform:uppercase;
     letter-spacing:1px; margin-bottom:6px;
@@ -5062,7 +5081,19 @@ const GROUP_OUT_LINES=[
   'A campaign to forget. Out before the knockouts.',
 ];
 
-function simScrollEnd(el){ el.scrollIntoView({behavior:'smooth',block:'end'}); }
+// Horizontal carousel: never scroll the page. Keep the newest line visible by
+// scrolling its own feed container (goal feed / matchday list) to the bottom.
+function simScrollEnd(el){
+  const box = el.closest('.sim-goals, #sim-gs-days');
+  if(box) box.scrollTop = box.scrollHeight;
+}
+// Carousel position: slide 0 is the group stage, then one slide per knockout match.
+let simSlideIndex = 0;
+function simSwipeTo(i){
+  simSlideIndex = i;
+  const track = $('sim-content');
+  if(track) track.style.transform = `translateX(${-i*100}%)`;
+}
 
 function simScheduleGoal(box, e, delay){
   setTimeout(()=>{
@@ -5316,10 +5347,8 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
 }
 
 // Animate one knockout match card. Returns true if the user won.
-async function playMatchAnimation(m){
-  const content=$('sim-content');
+async function playMatchAnimation(m, card){
   const opp=m.opponent;
-  const card=document.createElement('div');
   card.className='sim-card';
   card.innerHTML=`
     <div class="sim-round-header sim-slide-in">${m.round.toUpperCase()}</div>
@@ -5331,8 +5360,6 @@ async function playMatchAnimation(m){
   // live broadcast scoreboard, pinned to the top of the match card
   const sb=makeScoreboard(opp);
   card.insertBefore(sb, card.firstChild);
-  content.appendChild(card);
-  simScrollEnd(card);
   await simSleep(800);
   sb.classList.add('show'); // fade in at match start
 
@@ -5439,8 +5466,9 @@ function showSimSummary(){
     btn.textContent='Continue to Results';
     btn.addEventListener('click', goToResults);
     wrap.appendChild(btn);
-    content.appendChild(wrap);
-    wrap.scrollIntoView({behavior:'smooth',block:'center'});
+    // place the button on the current (last) slide so it stays in view
+    const cur=$('sim-content').children[simSlideIndex] || content;
+    cur.appendChild(wrap);
   }, 600);
 }
 
@@ -5449,6 +5477,8 @@ async function runSimulationScreen(){
   showScreen('sim');
   const content=$('sim-content');
   content.innerHTML='';
+  content.style.transform='translateX(0)';   // reset the carousel to the first slide
+  simSlideIndex=0;
 
   const userSquad = gs.picks.map(p=>p.player);
   const userOverall = gs.result.teamOverall;
@@ -5504,9 +5534,14 @@ async function runSimulationScreen(){
 
   if(!adv){ showSimSummary(); return; }
 
-  // --- knockout rounds ---
+  // --- knockout rounds (each match is its own slide; advancing swipes across) ---
   for(let i=0;i<simResult.matches.length;i++){
-    const won = await playMatchAnimation(simResult.matches[i]);
+    const slide=document.createElement('div');
+    slide.className='sim-card';
+    content.appendChild(slide);
+    simSwipeTo(simSlideIndex+1);   // current match swipes off-left, this one in from the right
+    await simSleep(650);           // let the swipe land before kickoff
+    const won = await playMatchAnimation(simResult.matches[i], slide);
     const note=document.createElement('div');
     if(won){
       const next=simResult.rounds[i+1];
@@ -5522,8 +5557,7 @@ async function runSimulationScreen(){
         `✗ Heartbreak in the ${simResult.matches[i].round}.`,
       ]);
     }
-    content.appendChild(note);
-    simScrollEnd(note);
+    slide.appendChild(note);       // note lives on this match's slide
     await simSleep(900);
     if(!won) break;
   }
