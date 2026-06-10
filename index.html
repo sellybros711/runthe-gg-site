@@ -655,21 +655,27 @@
      Each match is one full-width slide that fills the stage. Advancing swipes the
      current match off to the left while the next swipes in from the right. The page
      never scrolls vertically; a long goal feed scrolls inside its own box. */
+  /* the stage fills the space below the masthead via a pure flex chain (see the
+     body.sim-mode rules) — no fixed heights, so the match is always centred */
   .sim-wrap{
-    max-width:520px; margin:0 auto; padding:14px 16px 18px;
+    max-width:520px; width:100%; margin:0 auto;
     position:relative; overflow:hidden;
-    height:calc(100vh - 92px); height:calc(100dvh - 92px);
+    display:flex; flex-direction:column;
   }
   #sim-content{
-    display:flex; flex-wrap:nowrap; align-items:stretch; height:100%;
+    display:flex; flex-direction:row; flex-wrap:nowrap; align-items:stretch;
+    flex:1 1 auto; min-height:0;
     transform:translateX(0);
     transition:transform .6s cubic-bezier(.65,0,.25,1);
     will-change:transform;
   }
-  /* each carousel cell fills the stage and vertically centres its box */
+  /* each carousel cell is a full-width column that vertically centres its box.
+     The horizontal inset lives HERE (not on .sim-wrap) so neighbouring slides sit
+     fully off-screen and never peek into the frame during a swipe. */
   .sim-slide{
-    flex:0 0 100%; width:100%; height:100%;
+    flex:0 0 100%; min-width:100%;
     display:flex; flex-direction:column; justify-content:center; align-items:stretch;
+    padding:8px 16px;
   }
   /* the visible box shrinks to fit its content, stays centred, and only grows up
      to the stage height (the maximum) — then the feed scrolls inside it */
@@ -685,6 +691,15 @@
      reaches its maximum height */
   .sim-card .sim-goals,
   .sim-card #sim-gs-days{ flex:0 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  /* Sim screen: make the app a full-height flex column so the stage fills the room
+     below the (now larger) masthead and the match is genuinely centred on screen. */
+  body.sim-mode .app{ display:flex; flex-direction:column; min-height:100vh; min-height:100dvh; padding-bottom:14px; }
+  body.sim-mode #screen-sim{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+  body.sim-mode .sim-wrap{ flex:1 1 auto; min-height:0; }
+  body.sim-mode .masthead{ margin-bottom:6px; }
+  body.sim-mode .masthead .logo{ font-size:42px; }
+  body.sim-mode .masthead .kicker{ font-size:12px; }
+  body.sim-mode .masthead .edition{ font-size:13px; }
   .sim-round-header{
     font-family:'Anton',sans-serif; font-size:22px; text-transform:uppercase;
     letter-spacing:1px; margin-bottom:6px;
@@ -1957,6 +1972,7 @@ function showScreen(name){
   // compact mode hides the masthead so the select page fits one screen
   document.body.classList.toggle('sel-mode', name==='select');
   document.body.classList.toggle('home-mode', name==='home');
+  document.body.classList.toggle('sim-mode', name==='sim');
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
