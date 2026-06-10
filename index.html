@@ -981,6 +981,16 @@
   .entry-bg{position:fixed;inset:0;z-index:95;display:none;align-items:center;justify-content:center;
     padding:18px;background:rgba(0,0,0,.66);}
   .entry-bg.show{display:flex;animation:fade .2s ease;}
+  /* view-only mode (opened from the home screen): show just the board, hide the
+     name/flag submission UI. No leaderboard behaviour changes — only visibility. */
+  .entry-bg.view-only .entry-sub,
+  .entry-bg.view-only .entry-badge,
+  .entry-bg.view-only .entry-name,
+  .entry-bg.view-only .entry-flag-label,
+  .entry-bg.view-only .entry-flag-row,
+  .entry-bg.view-only .entry-submit,
+  .entry-bg.view-only .entry-error,
+  .entry-bg.view-only .entry-skip{display:none !important;}
   .entry-card{position:relative;background:#1a1a1a;border:2px solid #F5C518;border-radius:16px;
     max-width:460px;width:100%;padding:24px 22px;box-shadow:0 18px 50px rgba(0,0,0,.5);
     max-height:92vh;overflow-y:auto;color:#fff;}
@@ -3864,9 +3874,9 @@ function newGame(){
 //  WIRING
 // ============================================================
 $('btn-start').addEventListener('click',goToDraftTypeSelect);
-// Home-screen leaderboard view: opens the existing leaderboard popup (view-only,
-// no name prompt). Does not change any leaderboard behaviour.
-$('btn-home-leaderboard').addEventListener('click', ()=>openLeaderboard());
+// Home-screen leaderboard view: opens the existing leaderboard board in view-only
+// mode (board visible, score-entry UI hidden). Does not change leaderboard behaviour.
+$('btn-home-leaderboard').addEventListener('click', openLeaderboardView);
 
 // draft-type cards: select Quick or Full, then enable Continue
 document.querySelectorAll('#draft-type-cards .mode-card').forEach(card=>{
@@ -4013,7 +4023,20 @@ function buildEntryFlagRow(){
 function updateEntrySubmit(){
   $('entry-submit').disabled = !((($('entry-name').value)||'').trim().length);
 }
+// View-only leaderboard, opened from the home screen. Reuses the exact same
+// board (same toggles, same data, same rendering) but hides the score-entry UI,
+// so nothing about how the leaderboard works changes — it's just viewable.
+function openLeaderboardView(){
+  $('entry-bg').classList.add('view-only');
+  $('entry-error').classList.remove('show');
+  lbWindow='all'; lbMode='easy'; lbDraftType='quick';
+  lbSetActiveToggles();
+  refreshLeaderboardList();
+  $('entry-bg').classList.add('show');
+}
+
 function openEntryModal(resultLabel, score, color){
+  $('entry-bg').classList.remove('view-only');   // ensure full entry UI is shown
   const badge=$('entry-badge');
   badge.textContent=`${resultLabel}  ${(+score).toFixed(1)}/100`;
   badge.style.background=color||'var(--teal)';
@@ -4039,7 +4062,7 @@ function openEntryModal(resultLabel, score, color){
   $('entry-bg').classList.add('show');
   if(sel) sel.scrollIntoView({inline:'center',block:'nearest'});
 }
-function closeEntryModal(){ $('entry-bg').classList.remove('show'); }
+function closeEntryModal(){ $('entry-bg').classList.remove('show'); $('entry-bg').classList.remove('view-only'); }
 
 // Name a freshly-submitted draft row. The row itself was already inserted
 // (anonymously) by fillRankBadge, so closing via X/Skip simply leaves it as the
