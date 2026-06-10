@@ -141,6 +141,12 @@
   .home-cta-row .btn-label{font-size:16px;letter-spacing:.5px;white-space:nowrap;}
   /* unbolded subtext beneath each button label */
   .home-cta-row .btn-sub{font-weight:400;font-size:8px;letter-spacing:.2px;text-transform:uppercase;opacity:.92;white-space:nowrap;}
+  /* small, centered text-link leaderboard button on its own line below the CTAs */
+  #btn-home-leaderboard{display:block;margin:11px auto 0;background:none;border:none;
+    color:#F5C518;font-family:inherit;font-weight:800;font-size:11px;letter-spacing:1px;
+    text-transform:uppercase;cursor:pointer;padding:5px 8px;opacity:.92;
+    text-decoration:underline;text-underline-offset:3px;-webkit-tap-highlight-color:transparent;}
+  #btn-home-leaderboard:hover,#btn-home-leaderboard:active{opacity:1;}
   @media (max-width:319px){
     .home-cta-row{flex-direction:column;gap:10px;}
     .home-cta-row .btn,.home-cta-row #btn-friendly{width:100%;}
@@ -1383,8 +1389,9 @@
           <span class="btn-label">Loading squads…</span>
           <span class="btn-sub">World Cup simulator</span>
         </button>
-        <button id="btn-home-leaderboard" class="btn ghost small" style="margin-top:10px;">🏅 View Leaderboard</button>
       </div>
+      <!-- small, centered text link on its own line (never in the CTA row) -->
+      <button id="btn-home-leaderboard" type="button">🏅 View Leaderboard</button>
       <!-- flag lane (scrolls right) below the kickoff button -->
       <div class="flag-marquee bottom"><div class="flag-lane right" id="flag-lane-2"></div></div>
     </div>
