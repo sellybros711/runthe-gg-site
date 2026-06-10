@@ -2809,6 +2809,22 @@ function orderPicksForDisplay(picks, slotOrder){
   return out.concat(pool);
 }
 
+// Move the FLEX pick next to its real position group — a flex-midfielder sits
+// with the midfielders, a flex-forward with the forwards (inserted right after
+// the dedicated slot of that position). Used on the results screen + share image
+// so the squad reads true-to-position. No-op when there's no FLEX (e.g. full draft).
+function groupFlexByPosition(ordered){
+  const fi=ordered.findIndex(p=>p.slot==='FLEX');
+  if(fi<0) return ordered;
+  const flex=ordered[fi];
+  const rest=ordered.filter((_,i)=>i!==fi);
+  const pos=flex.player.position;
+  let insertAt=rest.length;
+  for(let i=rest.length-1;i>=0;i--){ if(rest[i].player.position===pos){ insertAt=i+1; break; } }
+  rest.splice(insertAt,0,flex);
+  return rest;
+}
+
 // position-badge colour for a slot (FLEX inherits the chosen position's colour)
 function slotColor(slot, player){
   if(slot==='FLEX' && player) return player.position==='FWD'?PITCH_COLORS.FWD:PITCH_COLORS.MID;
@@ -3418,7 +3434,7 @@ function goToResults(){
   $('summary-host').appendChild(buildSummaryCard());
 
   const squadBox=$('res-squad');
-  const picks=orderPicksForDisplay(r.scoredPicks, draftSlotOrder());
+  const picks=groupFlexByPosition(orderPicksForDisplay(r.scoredPicks, draftSlotOrder()));
   picks.forEach(pick=>{
     const p=pick.player;
     const row=document.createElement('div'); row.className='res-squad-row';
@@ -3738,7 +3754,7 @@ async function buildShareCanvas(){
   x.fillStyle='rgba(255,255,255,.18)'; x.fillRect(300, y, W-64-300, 2); y+=26;
 
   // roster rows (white cards)
-  const picks=orderPicksForDisplay(gs.result.scoredPicks, ['GK','DEF','DEF','MID','FWD','FLEX']);
+  const picks=groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, ['GK','DEF','DEF','MID','FWD','FLEX']));
   const rowH=Math.min(96, Math.floor((H-110-y)/picks.length)-12), gap=12, mX=60, rW=W-2*mX;
   // preload flags (CORS-safe; null on failure → no flag drawn)
   const flagImgs=await Promise.all(picks.map(pk=>{ const u=flagImg(pk.player.country,160); return u?loadImg(u,true):Promise.resolve(null); }));
