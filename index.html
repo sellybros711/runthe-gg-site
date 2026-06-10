@@ -51,7 +51,7 @@
 <!-- NOTE: X/Twitter aggressively caches link previews. After deploying a new
      og-image, force a refresh via the X Card Validator (cards-dev.twitter.com/validator).
      iMessage caches previews per-device and can take time to update. Future image
-     updates can bust caches by versioning the URL, e.g. og-image.png?v=0.0.27 -->
+     updates can bust caches by versioning the URL, e.g. og-image.png?v=0.0.28 -->
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:site" content="@RunThePitch" />
 <meta name="twitter:creator" content="@RunThePitch" />
@@ -394,6 +394,10 @@
      flow (not absolute) so two-pill awards grow the card instead of overlapping
      the name. */
   .pcard .pbottom{display:flex;align-items:flex-end;gap:6px;margin-top:auto;}
+  /* age at tournament — muted, sits in the bottom-right of the awards row */
+  .pcard .age-badge{align-self:flex-end;font-weight:900;font-size:11px;color:#9a8d80;
+    letter-spacing:.2px;line-height:1;white-space:nowrap;flex:0 0 auto;}
+  .pcard .age-badge .age-u{font-size:8px;font-weight:800;margin-left:1px;opacity:.85;}
   .pcard .awards{margin:0;display:flex;flex-wrap:wrap;justify-content:flex-end;align-content:flex-end;
     gap:4px;flex:1 1 auto;min-width:0;}
   .flip-back .awards{margin-top:2px;display:flex;flex-wrap:wrap;gap:2px;justify-content:center;}
@@ -624,14 +628,16 @@
   .mslot{position:relative;flex:1 1 0;min-width:0;aspect-ratio:1;border-radius:50%;overflow:hidden;
     display:grid;place-items:center;text-align:center;}
   .mslot .ml{font-family:'Arial Narrow','Archivo',system-ui,sans-serif;
-    font-weight:900;font-stretch:condensed;font-size:11px;line-height:1;letter-spacing:-.2px;}
+    font-weight:900;font-stretch:condensed;font-size:11px;line-height:1;letter-spacing:-.2px;
+    paint-order:stroke fill;}
   .mslot:not(.filled){background:rgba(255,255,255,.80);border:2.4px solid currentColor;}
-  .mslot:not(.filled) .ml{color:currentColor;}
-  #mini-gk:not(.filled) .ml{color:#7A5200;}
+  .mslot:not(.filled) .ml{color:currentColor;-webkit-text-stroke:.4px currentColor;}
+  #mini-gk:not(.filled) .ml{color:#7A5200;-webkit-text-stroke-color:#7A5200;}
   .mslot.filled{background:currentColor center/cover no-repeat;
     border:2.4px solid currentColor;box-shadow:0 2px 5px rgba(0,0,0,.35);}
   .mslot.filled .ml{color:#fff;background:rgba(0,0,0,.52);
-    padding:1px 4px;border-radius:5px;text-shadow:0 1px 2px rgba(0,0,0,.95);}
+    padding:1px 4px;border-radius:5px;text-shadow:0 1px 2px rgba(0,0,0,.95);
+    -webkit-text-stroke:.4px #fff;}
 
   .loading{text-align:center;padding:60px 0;font-weight:800;color:#8a7d70;}
   .err{border:3px solid var(--red);background:#fff;border-radius:14px;padding:16px;font-weight:700;color:var(--red);text-align:center;}
@@ -1130,6 +1136,58 @@
   .pcard .ovr.GK{color:var(--pos-gk);}  .pcard .ovr.DEF{color:var(--pos-def);}
   .pcard .ovr.MID{color:var(--pos-mid);} .pcard .ovr.FWD{color:var(--pos-fwd);}
   .pcard .statline.caps{color:#9a8d80;font-size:9px;}
+
+  /* ---------- draft-type select (Quick vs Full) — reuses .mode-* styling ---------- */
+  #screen-draft-type.active{display:flex;flex-direction:column;}
+  .mode-card.quick{border-color:var(--blue);background:rgba(42,75,155,.06);}
+  .mode-card.quick .mc-label,.mode-card.quick .mc-headline{color:var(--blue);}
+  .mode-card.quick.selected{background:rgba(42,75,155,.16);}
+  .mode-card.quick .mc-check{background:var(--blue);}
+  .mode-card.full{border-color:var(--gold);background:rgba(244,180,19,.08);}
+  .mode-card.full .mc-label,.mode-card.full .mc-headline{color:#9c6c18;}
+  .mode-card.full.selected{background:rgba(244,180,19,.20);}
+  .mode-card.full .mc-check{background:var(--gold);color:var(--ink);}
+  .mode-card .mc-sub{font-weight:900;font-size:12px;letter-spacing:.5px;margin-bottom:6px;opacity:.85;}
+  /* retro inline-SVG card icons (replace the old emoji) */
+  .mode-card .mc-icon{display:flex;align-items:center;justify-content:center;height:48px;}
+  .mc-ico-svg{width:46px;height:46px;display:block;filter:drop-shadow(2px 2px 0 rgba(22,18,15,.18));}
+  /* keep the position abbreviations together on one line */
+  .mc-desc .mc-pos{white-space:nowrap;}
+
+  /* ---------- formation reveal screen ---------- */
+  #screen-formation.active{display:flex;flex-direction:column;align-items:center;
+    justify-content:center;min-height:calc(100svh - 90px);text-align:center;}
+  .fm-kicker{font-weight:900;font-size:12px;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:14px;}
+  .fm-reel-vp{position:relative;height:120px;width:240px;overflow:hidden;border:3px solid var(--ink);
+    border-radius:18px;background:linear-gradient(var(--paper),#fff);box-shadow:var(--shadow-sm);}
+  .fm-reel-vp::before,.fm-reel-vp::after{content:"";position:absolute;left:0;right:0;height:32px;z-index:3;pointer-events:none;}
+  .fm-reel-vp::before{top:0;background:linear-gradient(#fff,rgba(255,255,255,0));}
+  .fm-reel-vp::after{bottom:0;background:linear-gradient(rgba(255,255,255,0),#fff);}
+  .fm-reel-strip{position:absolute;left:0;right:0;top:0;will-change:transform;}
+  .fm-reel-item{height:120px;display:flex;align-items:center;justify-content:center;
+    font-family:'Anton',Impact,sans-serif;font-size:64px;color:var(--blue);letter-spacing:2px;}
+  .fm-name{font-family:'Anton',Impact,sans-serif;font-size:64px;line-height:1;margin:8px 0 4px;color:var(--ink);
+    opacity:0;transform:scale(.8);transition:opacity .4s ease, transform .4s cubic-bezier(.3,1.4,.5,1);}
+  .fm-name.show{opacity:1;transform:none;}
+  .fm-req{font-weight:900;font-size:15px;color:#5a5048;letter-spacing:.3px;margin-bottom:24px;min-height:20px;
+    opacity:0;transition:opacity .4s ease;}
+  .fm-req.show{opacity:1;}
+  #btn-formation-go{max-width:340px;opacity:0;transition:opacity .4s ease;}
+  #btn-formation-go.show{opacity:1;}
+
+  /* ---------- Full Draft (11) pitch — smaller circles so 5-wide rows fit 390px ---------- */
+  .pitch-wrap.full .pslot{width:16.5%;}
+  .pitch-wrap.full .pslot .psl-label{font-size:12px;}
+  .pitch-wrap.full .pslot .psl-ov{font-size:18px;}
+  /* Full Draft mini preview wraps to two rows so 11 circles stay legible */
+  .mini-pitch.full{flex-wrap:wrap;gap:5px 4px;}
+  .mini-pitch.full .mslot{flex:0 0 calc((100% - 5*4px)/6);}
+  .mini-pitch.full .mslot .ml{font-size:9px;}
+  /* Full Draft reveal: tighter rows so all 11 fit (overlay already scrolls) */
+  .reveal-overlay.full .reveal-stack{gap:6px;}
+  .reveal-overlay.full .rv-entry{padding:6px 12px;}
+  .reveal-overlay.full .rv-name{font-size:13px;}
+  .reveal-overlay.full .rv-ov{font-size:24px;}
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
      crossorigin="anonymous"></script>
@@ -1346,6 +1404,61 @@
     <div class="stack" style="margin-top:20px;">
       <button id="btn-start-draft" class="btn red big" disabled>Start Draft</button>
     </div>
+  </section>
+
+  <!-- ===== DRAFT TYPE SELECT (Quick 6 vs Full 11) ===== -->
+  <section id="screen-draft-type" class="screen">
+    <div class="mode-head">
+      <div class="mode-title">Choose Your Draft</div>
+      <div class="mode-sub">How big a squad will you build?</div>
+    </div>
+    <div class="mode-cards" id="draft-type-cards">
+      <button class="mode-card quick" id="draft-quick" data-draft="quick">
+        <span class="mc-check">✓</span>
+        <div class="mc-label">Quick Draft</div>
+        <div class="mc-icon">
+          <svg class="mc-ico-svg" viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M28 3 L9 27 H21 L18 45 L39 19 H26 Z" fill="var(--gold)"
+              stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="mc-sub">6 Rounds</div>
+        <div class="mc-desc">Draft a 6-player squad — <span class="mc-pos">GK, DEF, DEF, MID, FWD, FLEX</span>. Fast and sharp.</div>
+      </button>
+      <button class="mode-card full" id="draft-full" data-draft="full">
+        <span class="mc-check">✓</span>
+        <div class="mc-label">Full Team Draft</div>
+        <div class="mc-icon">
+          <svg class="mc-ico-svg" viewBox="0 0 48 48" aria-hidden="true">
+            <!-- floodlight pylons -->
+            <line x1="8" y1="13" x2="8" y2="24" stroke="var(--ink)" stroke-width="2.5"/>
+            <rect x="3.5" y="8.5" width="9" height="5" rx="1.5" fill="var(--gold)" stroke="var(--ink)" stroke-width="2"/>
+            <line x1="40" y1="13" x2="40" y2="24" stroke="var(--ink)" stroke-width="2.5"/>
+            <rect x="35.5" y="8.5" width="9" height="5" rx="1.5" fill="var(--gold)" stroke="var(--ink)" stroke-width="2"/>
+            <!-- stadium bowl (stacked ellipses for a retro stand/pitch look) -->
+            <ellipse cx="24" cy="31" rx="20" ry="11" fill="var(--blue)" stroke="var(--ink)" stroke-width="3"/>
+            <ellipse cx="24" cy="28" rx="20" ry="11" fill="#E5402A" stroke="var(--ink)" stroke-width="3"/>
+            <ellipse cx="24" cy="28" rx="11.5" ry="6" fill="var(--pos-mid)" stroke="var(--ink)" stroke-width="2.5"/>
+            <line x1="24" y1="22.5" x2="24" y2="33.5" stroke="#fff" stroke-width="1.4"/>
+            <circle cx="24" cy="28" r="2.2" fill="none" stroke="#fff" stroke-width="1.2"/>
+          </svg>
+        </div>
+        <div class="mc-sub">11 Rounds</div>
+        <div class="mc-desc">Draft a full starting XI. A random formation decides your positions. The ultimate test.</div>
+      </button>
+    </div>
+    <div class="stack" style="margin-top:20px;">
+      <button id="btn-draft-type-next" class="btn red big" disabled>Continue</button>
+    </div>
+  </section>
+
+  <!-- ===== FORMATION REVEAL (Full Draft only) ===== -->
+  <section id="screen-formation" class="screen">
+    <div class="fm-kicker">★ Your Formation ★</div>
+    <div class="fm-reel-vp"><div class="fm-reel-strip" id="fm-reel"></div></div>
+    <div class="fm-name" id="fm-name"></div>
+    <div class="fm-req" id="fm-req"></div>
+    <button id="btn-formation-go" class="btn red big">Start Draft →</button>
   </section>
 
   <!-- ===== HOME (pitch + spin) ===== -->
@@ -1614,6 +1727,10 @@
         <button data-m="easy">Easy</button>
         <button data-m="hard">Hard</button>
       </div>
+      <div class="lb-seg" id="lb-seg-drafttype">
+        <button data-dt="quick">Quick Draft</button>
+        <button data-dt="full">Full Draft</button>
+      </div>
     </div>
     <div class="entry-lb-list" id="lb-list"></div>
     <button class="entry-submit" id="entry-submit">Save to Leaderboard</button>
@@ -1742,6 +1859,39 @@ let gs = null;
 let allCountries = [];
 let selectedPlayer = null; // for slot sheet
 let gameMode = null; // 'easy' or 'hard' — chosen on the difficulty screen
+let draftType = 'quick'; // 'quick' (6-man) or 'full' (11-man) — chosen on the draft-type screen
+let pendingFormation = null; // formation chosen on the reveal screen, before the game state exists
+
+// Full Team Draft formations. Each is "DEF-MID-FWD" plus 1 GK (11 total).
+// Generic positions only — no left/right/centre designations.
+const FORMATIONS = [
+  { name:'4-4-2', def:4, mid:4, fwd:2 },
+  { name:'4-3-3', def:4, mid:3, fwd:3 },
+  { name:'4-5-1', def:4, mid:5, fwd:1 },
+  { name:'3-5-2', def:3, mid:5, fwd:2 },
+  { name:'3-4-3', def:3, mid:4, fwd:3 },
+  { name:'5-3-2', def:5, mid:3, fwd:2 },
+  { name:'5-4-1', def:5, mid:4, fwd:1 },
+];
+// Build the openSlots list for a formation: GK first, then DEF/MID/FWD blocks.
+function slotsFromFormation(f){
+  const s=['GK'];
+  for(let i=0;i<f.def;i++) s.push('DEF');
+  for(let i=0;i<f.mid;i++) s.push('MID');
+  for(let i=0;i<f.fwd;i++) s.push('FWD');
+  return s;
+}
+// The slot order used for reveal / results lists, derived from the draft.
+// Quick keeps its exact original order (incl. FLEX); Full follows the formation.
+function draftSlotOrder(){
+  if(gs && gs.draftType==='full' && gs.formation){
+    return slotsFromFormation(gs.formation);
+  }
+  return ['GK','DEF','DEF','MID','FWD','FLEX'];
+}
+// Total rounds this draft (6 for quick, 11 for full).
+function draftTotalSlots(){ return gs ? gs.picks.length + gs.openSlots.length : 6; }
+function isFullDraft(){ return !!(gs && gs.draftType==='full'); }
 
 function $(id){return document.getElementById(id);}
 function showScreen(name){
@@ -1843,15 +1993,16 @@ function preloadFlags(){
 
 // ---------- progress dots ----------
 function renderDots(containerId){
-  const filled = 6 - gs.openSlots.length;
+  const total = draftTotalSlots();
+  const filled = gs.picks.length;
   const c = $(containerId); c.innerHTML='';
-  for(let i=0;i<6;i++){
+  for(let i=0;i<total;i++){
     const d=document.createElement('div');
     d.className='dot'+(i<filled?' done':(i===filled?' active':''));
     c.appendChild(d);
   }
 }
-function roundLabel(){return `Round ${6-gs.openSlots.length+1} / 6`;}
+function roundLabel(){const total=draftTotalSlots();return `Round ${gs.picks.length+1} / ${total}`;}
 
 function shortName(n){const parts=n.split(' ');return parts.length>1?parts[parts.length-1]:n;}
 
@@ -1863,6 +2014,10 @@ let pendingCountry=null, pendingYear=null;
 // HOME: pitch + SPIN THE WHEEL button (shown at start and between rounds)
 function goToHome(){
   if(!gs) gs=G.createGameState();
+  // Set up the right pitch for this draft type (Quick = static 6; Full = formation rows)
+  if(isFullDraft()) buildFullPitch(); else restoreQuickPitch();
+  const cap=$('screen-home').querySelector('.pitch-cap');
+  if(cap) cap.textContent = isFullDraft() ? 'Your Starting XI' : 'Your Starting VI';
   $('home-round-label').textContent=roundLabel();
   renderDots('home-dots');
   const b=$('btn-go-spin');
@@ -1925,6 +2080,9 @@ function buildYearStrip(target, animate){
   strip.innerHTML=items.map(y=>`<div class="reel-item"><span class="yr">${y}</span></div>`).join('');
   strip._targetIndex=DECOYS;
 }
+// Full Team Draft has ~twice the rounds, so its year/country wheels spin 3x
+// faster to keep the 11-pick flow snappy. Quick Draft keeps the original timing.
+function spinDur(base){ return isFullDraft() ? Math.round(base/3) : base; }
 function spinStrip(strip, rowH, duration){
   strip.style.transition='none';
   strip.style.transform='translateY(0)';
@@ -1944,10 +2102,10 @@ async function doSpinAnim(country, year){
   $('landed-name').innerHTML='';
   $('reel-country').innerHTML='';         // country stays blank during the year spin
   buildYearStrip(year,true);              // build the year reel just as it starts spinning
-  await spinStrip($('reel-year'),YEAR_ROW,1700);
+  await spinStrip($('reel-year'),YEAR_ROW,spinDur(1700));
   // landed-name stays blank until both wheels have settled
   buildCountryStrip(country,true);        // build the nation reel only now, as it starts spinning
-  await spinStrip($('reel-country'),COUNTRY_ROW,2600);
+  await spinStrip($('reel-country'),COUNTRY_ROW,spinDur(2600));
   $('landed-name').innerHTML=`${flagChip(country,'lg')} ${country} <span class="yr">'${String(year).slice(2)}</span>`;
 }
 
@@ -2007,7 +2165,7 @@ async function doCountryRespin(){
   // year shown immediately and never animates
   $('landed-name').innerHTML=`<span class="yr">'${String(year).slice(2)}</span>`;
   buildCountryStrip(newCountry, true);
-  await spinStrip($('reel-country'), COUNTRY_ROW, 2600);
+  await spinStrip($('reel-country'), COUNTRY_ROW, spinDur(2600));
   $('landed-name').innerHTML=`${flagChip(newCountry,'lg')} ${newCountry} <span class="yr">'${String(year).slice(2)}</span>`;
   setTimeout(goToSelect, 650);
 }
@@ -2044,6 +2202,71 @@ function updateRespinButtons(){
 // must mirror the --pos-* CSS variables
 const PITCH_COLORS={GK:'#F4B413',DEF:'#2A4B9B',MID:'#1F9E57',FWD:'#E5402A',FLEX:'#5B6470'};
 const pitchSlotPlayers={}; // element id -> player
+
+// ---- Full Team Draft (11): dynamic pitch circles built from the formation ----
+// Quick Draft keeps its six static, hand-authored slots & FLEX animation; Full
+// Draft replaces them with formation rows. fullPitchLayout holds the live slots.
+let fullPitchLayout = []; // [{id, pos, top, left}] in formation order
+
+// Rows reuse the same vertical bands as the Quick pitch: GK bottom, DEF lower
+// third, MID middle, FWD upper third. X is spread evenly per row.
+const FULL_ROW_TOP = { DEF:70, MID:50, FWD:24 };
+function rowXs(n){ const out=[]; for(let i=0;i<n;i++) out.push((i+1)/(n+1)*100); return out; }
+
+// Build (or rebuild) the dynamic .pslot circles for the current formation.
+function buildFullPitch(){
+  const wrap=$('pitch-wrap'); if(!wrap || !gs || !gs.formation) return;
+  // remove any previously generated full slots; hide the static quick slots
+  wrap.querySelectorAll('.pslot.full-slot').forEach(el=>el.remove());
+  wrap.querySelectorAll('.pslot:not(.full-slot)').forEach(el=>{ el.style.display='none'; });
+  wrap.classList.add('full');
+  fullPitchLayout=[];
+  const f=gs.formation;
+  const rows=[['DEF',f.def],['MID',f.mid],['FWD',f.fwd]];
+  rows.forEach(([pos,count])=>{
+    const xs=rowXs(count);
+    xs.forEach((x,i)=>{
+      const id=`psf-${pos}-${i}`;
+      const el=document.createElement('div');
+      el.className='pslot full-slot';
+      el.id=id;
+      el.style.color=PITCH_COLORS[pos];
+      el.style.left=x+'%'; el.style.top=FULL_ROW_TOP[pos]+'%';
+      el.innerHTML=`<span class="psl-label">${pos}</span>`;
+      wrap.appendChild(el);
+      fullPitchLayout.push({id,pos,top:FULL_ROW_TOP[pos],left:x});
+    });
+  });
+  // GK at the bottom centre
+  const gkEl=document.createElement('div');
+  gkEl.className='pslot full-slot'; gkEl.id='psf-GK-0';
+  gkEl.style.color=PITCH_COLORS.GK; gkEl.style.left='50%'; gkEl.style.top='87%';
+  gkEl.innerHTML='<span class="psl-label">GK</span>';
+  wrap.appendChild(gkEl);
+  fullPitchLayout.unshift({id:'psf-GK-0',pos:'GK',top:87,left:50});
+}
+
+// Restore the static six-slot Quick pitch (used when leaving Full Draft).
+function restoreQuickPitch(){
+  const wrap=$('pitch-wrap'); if(!wrap) return;
+  wrap.classList.remove('full');
+  wrap.querySelectorAll('.pslot.full-slot').forEach(el=>el.remove());
+  wrap.querySelectorAll('.pslot:not(.full-slot)').forEach(el=>{ el.style.display=''; });
+}
+
+// Map the current picks onto the dynamic full-pitch slots (in formation order).
+function fullPitchAssignments(){
+  const res={}; fullPitchLayout.forEach(s=>res[s.id]=null);
+  const cursor={GK:0,DEF:0,MID:0,FWD:0};
+  const idsByPos={GK:[],DEF:[],MID:[],FWD:[]};
+  fullPitchLayout.forEach(s=>idsByPos[s.pos].push(s.id));
+  gs.picks.forEach(p=>{
+    const list=idsByPos[p.slot]; if(!list) return;
+    const id=list[cursor[p.slot]++];
+    if(id) res[id]=p.player;
+  });
+  return res;
+}
 
 function pitchPicks(){
   // map the current picks onto the six pitch slots
@@ -2112,6 +2335,14 @@ function setPitchSlot(id, player, color, emptyLabel){
 
 function updatePitch(){
   if(!gs) return;
+  if(isFullDraft()){
+    const res=fullPitchAssignments();
+    fullPitchLayout.forEach(s=>{
+      setPitchSlot(s.id, res[s.id], PITCH_COLORS[s.pos], s.pos);
+    });
+    if(gs.phase!=='COMPLETE') $('pitch-result').classList.remove('show');
+    return;
+  }
   const {res, flexPos}=pitchPicks();
   setPitchSlot('ps-gk',  res['ps-gk'],  PITCH_COLORS.GK,  'GK');
   setPitchSlot('ps-def1',res['ps-def1'],PITCH_COLORS.DEF, 'DEF');
@@ -2161,8 +2392,48 @@ function setMiniSlot(id, player, color, emptyLabel){
     lbl.textContent=emptyLabel;
   }
 }
+// Build the dynamic 11-circle mini preview for Full Draft (replaces the 6 static).
+let fullMiniLayout=[]; // [{id,pos}] in formation order
+function buildFullMiniPitch(){
+  const mp=$('mini-pitch'); if(!mp || !gs || !gs.formation) return;
+  mp.classList.add('full');
+  mp.innerHTML='';
+  fullMiniLayout=[];
+  slotsFromFormation(gs.formation).forEach((pos,i)=>{
+    const id=`mf-${i}`;
+    const el=document.createElement('div');
+    el.className='mslot'; el.id=id;
+    el.innerHTML=`<span class="ml">${pos}</span>`;
+    mp.appendChild(el);
+    fullMiniLayout.push({id,pos});
+  });
+}
+function restoreQuickMiniPitch(){
+  const mp=$('mini-pitch'); if(!mp) return;
+  mp.classList.remove('full');
+  if(!$('mini-gk')){
+    mp.innerHTML=`<div class="mslot" id="mini-gk"><span class="ml">GK</span></div>
+      <div class="mslot" id="mini-def1"><span class="ml">DEF</span></div>
+      <div class="mslot" id="mini-def2"><span class="ml">DEF</span></div>
+      <div class="mslot" id="mini-mid"><span class="ml">MID</span></div>
+      <div class="mslot" id="mini-fwd"><span class="ml">FWD</span></div>
+      <div class="mslot" id="mini-flex"><span class="ml">FLEX</span></div>`;
+  }
+}
+
 function updateMiniPitch(){
-  if(!gs || !$('mini-gk')) return;
+  if(!gs) return;
+  if(isFullDraft()){
+    if(!fullMiniLayout.length || !$(fullMiniLayout[0].id)) buildFullMiniPitch();
+    const cursor={GK:0,DEF:0,MID:0,FWD:0};
+    const idsByPos={GK:[],DEF:[],MID:[],FWD:[]};
+    fullMiniLayout.forEach(s=>idsByPos[s.pos].push(s.id));
+    const filled={};
+    gs.picks.forEach(p=>{ const id=idsByPos[p.slot][cursor[p.slot]++]; if(id) filled[id]=p.player; });
+    fullMiniLayout.forEach(s=>setMiniSlot(s.id, filled[s.id]||null, PITCH_COLORS[s.pos], s.pos));
+    return;
+  }
+  if(!$('mini-gk')) return;
   const {res, flexPos}=pitchPicks();
   setMiniSlot('mini-gk',  res['ps-gk'],  PITCH_COLORS.GK,  'GK');
   setMiniSlot('mini-def1',res['ps-def1'],PITCH_COLORS.DEF, 'DEF');
@@ -2177,7 +2448,9 @@ function updateMiniPitch(){
 
 // reveal: flip each slot in order, show overall, then the team result
 function runPitchReveal(done){
-  const order=['ps-gk','ps-def1','ps-def2','ps-mid','ps-fwd','ps-flex'];
+  const order = isFullDraft()
+    ? fullPitchLayout.map(s=>s.id)
+    : ['ps-gk','ps-def1','ps-def2','ps-mid','ps-fwd','ps-flex'];
   const ovById={};
   (gs.result.scoredPicks||[]).forEach(sp=>{ ovById[sp.player.player_id]=sp.player.overall; });
   order.forEach((id,i)=>{
@@ -2229,7 +2502,7 @@ function goToSelect(){
 
 // open slots remaining this draft, in formation order
 function openSlotsLabel(){
-  const order=['GK','DEF','DEF','MID','FWD','FLEX'];
+  const order=draftSlotOrder();
   const open=[...gs.openSlots]; const out=[];
   order.forEach(p=>{const i=open.indexOf(p); if(i>=0){out.push(p);open.splice(i,1);}});
   return out.join(' · ');
@@ -2293,6 +2566,7 @@ function paintSquad(){
       fb2.style.display='';
     } else { fb2.style.display='none'; }
   }
+  if(isFullDraft()) buildFullMiniPitch(); else restoreQuickMiniPitch();
   updateMiniPitch();
   renderGrid(squad);
   updateRespinButtons();
@@ -2312,6 +2586,25 @@ function awardBadges(p){
   const list = Array.isArray(p.award) ? p.award : [p.award];
   const pills = list.map(a=>`<span class="awardbadge">${AWARD_LABELS[a] || a}</span>`).join(' ');
   return `<div class="awards">${pills}</div>`;
+}
+
+// Player's age at the tournament (factual). Returns '' when unknown.
+function ageBadge(p){
+  if(p.age_at_tournament==null) return '';
+  return `<span class="age-badge" title="Age at tournament">${p.age_at_tournament}<span class="age-u">y</span></span>`;
+}
+// Bottom-right cluster of a card: the age, then any award pills. They share the
+// existing right-aligned `.awards` row, so the age sits in the bottom-right
+// corner on its own, and to the LEFT of an award badge when one is present. The
+// captain "C" patch is a separate corner element with reserved padding, so the
+// age also sits to the left of it. Taken cards show the "Drafted" tag instead.
+function cardBottomRight(p, taken){
+  if(taken) return '';
+  const age = ageBadge(p);
+  const aw  = awardBadges(p); // '<div class="awards">…</div>' or ''
+  if(aw)  return aw.replace('<div class="awards">', '<div class="awards">'+age);
+  if(age) return `<div class="awards">${age}</div>`;
+  return '';
 }
 
 function statLine(p){
@@ -2370,7 +2663,7 @@ function renderGrid(squad){
       </div>
       <div class="pbottom">
         ${cardStatBlock(p)}
-        ${taken?'':awardBadges(p)}
+        ${cardBottomRight(p, taken)}
       </div>
       ${taken?'<span class="drafted-tag">✓ Drafted</span>':''}
       ${p.is_captain?'<span class="cap-c" title="Captain" aria-label="Captain">C</span>':''}`;
@@ -2588,7 +2881,8 @@ function runRevealOverlay(){
   tlab.style.display='none';
   go.classList.remove('show'); go.style.display='none'; go.disabled=false;
 
-  const picks=orderPicksForDisplay(gs.result.scoredPicks, ['GK','DEF','DEF','MID','FWD','FLEX']);
+  ov.classList.toggle('full', isFullDraft());
+  const picks=orderPicksForDisplay(gs.result.scoredPicks, draftSlotOrder());
   picks.forEach(pick=>{
     const p=pick.player;
     const row=document.createElement('div'); row.className='rv-entry';
@@ -2750,13 +3044,23 @@ function bumpAllTime(n){
 }
 // Global all-time count (all modes). Returns max(server, cached floor); on any
 // failure returns the cached floor so the displayed total never drops.
-async function fetchAllTimeTotal(){
+// Total drafts of a given draft_type (quick/full). When draftTypeVal is omitted,
+// counts all drafts (legacy behaviour). Per-type totals are NOT cached against the
+// global floor, so the count stays specific to the board being shown.
+async function fetchAllTimeTotal(draftTypeVal){
+  const dt = dtFilter(draftTypeVal);
   if(SUPABASE_READY){
     try{
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1`, {
+      let res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1${dt}`, {
         headers: sbHeaders({ 'Prefer':'count=exact' })
       });
-      if(res.ok) return bumpAllTime(sbCount(res));
+      if(!res.ok && dt){ // pre-migration: retry without draft_type filter
+        res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1`, {
+          headers: sbHeaders({ 'Prefer':'count=exact' })
+        });
+        if(res.ok) return bumpAllTime(sbCount(res));
+      }
+      if(res.ok) return dt ? sbCount(res) : bumpAllTime(sbCount(res));
     }catch(e){ /* fall through to cached floor */ }
   }
   return cachedAllTime();
@@ -2768,15 +3072,36 @@ async function fetchAllTimeTotal(){
 // anon has no direct INSERT — only the submit_draft() function can write.
 // Returns the new row id. Throws if the insert didn't go through.
 async function submitDraftRow(overall, progress, meta){
-  const ins = await fetch(`${SUPABASE_URL}/rest/v1/rpc/submit_draft`, {
-    method:'POST', headers: sbHeaders(),
-    body: JSON.stringify({
-      p_overall: overall, p_progress: progress,
-      p_mode: (meta && meta.mode) || null,
-      p_result: (meta && meta.result) || null,
-      p_furthest: (meta && meta.furthest) || null
-    })
+  const draftTypeVal = (meta && meta.draftType) || 'quick';
+  const base = {
+    p_overall: overall, p_progress: progress,
+    p_mode: (meta && meta.mode) || null,
+    p_result: (meta && meta.result) || null,
+    p_furthest: (meta && meta.furthest) || null
+  };
+  const doPost = (body)=> fetch(`${SUPABASE_URL}/rest/v1/rpc/submit_draft`, {
+    method:'POST', headers: sbHeaders(), body: JSON.stringify(body)
   });
+
+  // PREFERRED (anti-forgery): send the drafted player IDs and let the hardened
+  // submit_draft() RECOMPUTE the score server-side from wc_players — the browser
+  // number (p_overall) is never trusted. See supabase/03_harden_submit_draft.sql.
+  const ids = (gs && Array.isArray(gs.picks))
+    ? gs.picks.map(p => String(p.player.player_id)) : null;
+  if(ids && ids.length){
+    const secure = await doPost({
+      p_player_ids: ids, p_progress: progress,
+      p_mode: base.p_mode, p_result: base.p_result,
+      p_furthest: base.p_furthest, p_draft_type: draftTypeVal
+    });
+    if(secure.ok) return await secure.json().catch(()=>null);
+    // else: DB not yet migrated to the player-id signature → legacy fallback below
+  }
+
+  // LEGACY fallback (pre-migration DB): the old score-trusting signature. Kept so
+  // saves don't break in the window before the SQL migration is applied.
+  let ins = await doPost(Object.assign({ p_draft_type: draftTypeVal }, base));
+  if(!ins.ok) ins = await doPost(base); // older signature without p_draft_type
   if(!ins.ok) throw new Error('leaderboard submit failed: '+ins.status);
   return await ins.json().catch(()=>null); // submit_draft() returns the new row id
 }
@@ -2786,20 +3111,29 @@ async function submitDraftRow(overall, progress, meta){
 // is computed directly from the global board — it does NOT depend on this
 // draft's own insert succeeding, so an insert hiccup can never collapse the rank
 // to the tiny per-device board (which used to show e.g. "3 of 671").
-async function fetchGlobalRank(overall, progress){
+async function fetchGlobalRank(overall, progress, draftTypeVal){
   // The drafts.overall column is numeric(5,1), so compare against the one-decimal
   // value for precise ranking (e.g. 77.8 ranks above 77.3). We also require an OK
   // response so a failed count can't silently read 0 and rank everyone #1.
   // NOTE: requires the DB migration making `overall` numeric(5,1); against the old
   // integer column a decimal filter is rejected (HTTP 400) and rank falls back.
+  // Ranking is per draft_type — a Full Draft is ranked only against other Full
+  // drafts (and Quick only against Quick + legacy). Falls back to all drafts if
+  // the column isn't present yet.
   const ov = (+overall).toFixed(1);
   const orFilter = encodeURIComponent(`(overall.gt.${ov},and(overall.eq.${ov},progress.gt.${progress}))`);
-  const betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}`, {
+  const dt = dtFilter(draftTypeVal);
+  let betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}${dt}`, {
     headers: sbHeaders({ 'Prefer':'count=exact' })
   });
+  if(!betterRes.ok && dt){ // pre-migration: retry without the draft_type filter
+    betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}`, {
+      headers: sbHeaders({ 'Prefer':'count=exact' })
+    });
+  }
   if(!betterRes.ok) throw new Error('rank query failed: '+betterRes.status);
   const better = sbCount(betterRes);
-  const total = await fetchAllTimeTotal();
+  const total = await fetchAllTimeTotal(draftTypeVal);
   return { rank: better+1, total };
 }
 
@@ -2814,6 +3148,7 @@ async function fetchRankInBoard(overall, progress, opts){
   const orFilter = encodeURIComponent(`(overall.gt.${ov},and(overall.eq.${ov},progress.gt.${progress}))`);
   let filt = `&or=${orFilter}`;
   if(opts.mode && opts.mode!=='all') filt += `&mode=eq.${opts.mode}`;
+  filt += dtFilter(opts.draftType);
   const cut = lbCutoffISO(opts.window);
   if(cut) filt += `&created_at=gte.${encodeURIComponent(cut)}`;
   const res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1${filt}`, {
@@ -2824,8 +3159,12 @@ async function fetchRankInBoard(overall, progress, opts){
 }
 
 // ---------- Top 10 leaderboard popup ----------
-// Toggle state: time window + mode (easy/hard boards are separate).
-let lbWindow='all', lbMode='easy', lbHighlightId=null;
+// Toggle state: time window + mode (easy/hard) + draft type (quick/full). The
+// Quick and Full boards are entirely separate.
+let lbWindow='all', lbMode='easy', lbDraftType='quick', lbHighlightId=null;
+// PostgREST filter fragment selecting one draft_type. Legacy rows are backfilled
+// to 'quick' by the migration, so a plain equality is correct.
+function dtFilter(dt){ return (dt==='quick'||dt==='full') ? `&draft_type=eq.${dt}` : ''; }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 // Short round/result tag for a leaderboard row.
@@ -2847,6 +3186,7 @@ async function fetchTopDrafts(limit, opts){
   opts=opts||{};
   let filt='';
   if(opts.mode && opts.mode!=='all') filt+=`&mode=eq.${opts.mode}`;
+  filt+=dtFilter(opts.draftType);
   const cut=lbCutoffISO(opts.window);
   if(cut) filt+=`&created_at=gte.${encodeURIComponent(cut)}`;
   const order='&order=overall.desc,progress.desc,created_at.asc&limit='+limit;
@@ -2855,6 +3195,12 @@ async function fetchTopDrafts(limit, opts){
   let res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,flag,overall,progress,result,furthest${filt}${order}`, { headers: sbHeaders() });
   if(!res.ok){
     res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,overall,progress,result,furthest${filt}${order}`, { headers: sbHeaders() });
+  }
+  // pre-migration fallback: if the draft_type filter broke the query, drop it.
+  if(!res.ok && opts.draftType){
+    const filt2=filt.replace(dtFilter(opts.draftType),'');
+    res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,flag,overall,progress,result,furthest${filt2}${order}`, { headers: sbHeaders() });
+    if(!res.ok) res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,overall,progress,result,furthest${filt2}${order}`, { headers: sbHeaders() });
   }
   if(!res.ok) throw new Error('leaderboard fetch failed: '+res.status);
   return res.json();
@@ -2906,6 +3252,7 @@ function renderLeaderboardRows(rows, highlightId){
 function lbSetActiveToggles(){
   document.querySelectorAll('#lb-seg-window button').forEach(b=>b.classList.toggle('active', b.dataset.w===lbWindow));
   document.querySelectorAll('#lb-seg-mode button').forEach(b=>b.classList.toggle('active', b.dataset.m===lbMode));
+  document.querySelectorAll('#lb-seg-drafttype button').forEach(b=>b.classList.toggle('active', b.dataset.dt===lbDraftType));
 }
 
 async function refreshLeaderboardList(highlightId){
@@ -2915,7 +3262,7 @@ async function refreshLeaderboardList(highlightId){
   try{
     let rows;
     if(SUPABASE_READY){
-      rows = await fetchTopDrafts(100, { window:lbWindow, mode:lbMode });
+      rows = await fetchTopDrafts(100, { window:lbWindow, mode:lbMode, draftType:lbDraftType });
     }else{
       // not connected yet → preview this device's best drafts (no names)
       rows = loadLeaderboard().sort((a,b)=> b.overall-a.overall || b.progress-a.progress)
@@ -2961,12 +3308,13 @@ async function fillRankBadge(overall, progress){
       try{
         id = await submitDraftRow(overall, progress, {
           mode: gameMode || 'easy',
+          draftType: (gs.draftType || 'quick'),
           result: gs.result.resultLabel || '',
           furthest: (simResult && simResult.furthestRound) || ''
         });
       }catch(e){ id = null; }
-      // Authoritative rank by team overall, straight from the global board.
-      const { rank, total } = await fetchGlobalRank(overall, progress);
+      // Authoritative rank by team overall, within this draft's own board.
+      const { rank, total } = await fetchGlobalRank(overall, progress, (gs.draftType || 'quick'));
       gs.result._lb = { rank, total, id };
       gs.result._lbId = id;
       renderRankLine(el, rank, total);
@@ -3028,7 +3376,7 @@ function goToResults(){
   $('summary-host').appendChild(buildSummaryCard());
 
   const squadBox=$('res-squad');
-  const picks=orderPicksForDisplay(r.scoredPicks, ['GK','DEF','DEF','MID','FWD','FLEX']);
+  const picks=orderPicksForDisplay(r.scoredPicks, draftSlotOrder());
   picks.forEach(pick=>{
     const p=pick.player;
     const row=document.createElement('div'); row.className='res-squad-row';
@@ -3486,35 +3834,100 @@ async function copyReport(){
   const t=$('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);
 }
 
+// Show the DRAFT TYPE screen (Quick vs Full) with a fresh (unselected) state.
+// This is the new first step of the Solo flow; difficulty follows it.
+function goToDraftTypeSelect(){
+  if(typeof friendlyReset==='function') friendlyReset(); // Solo entry clears Friendly state
+  draftType='quick';
+  pendingFormation=null;
+  document.querySelectorAll('#draft-type-cards .mode-card').forEach(c=>c.classList.remove('selected'));
+  $('draft-type-cards').classList.remove('has-sel');
+  $('btn-draft-type-next').disabled=true;
+  showScreen('draft-type');
+}
+
 // Show the difficulty screen with a fresh (unselected) state.
 function goToModeSelect(){
-  if(typeof friendlyReset==='function') friendlyReset(); // Solo entry clears Friendly state
   gameMode=null;
-  document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('selected'));
+  document.querySelectorAll('#mode-cards .mode-card').forEach(c=>c.classList.remove('selected'));
   $('mode-cards').classList.remove('has-sel');
   $('btn-start-draft').disabled=true;
   showScreen('mode');
 }
 
 function newGame(){
-  goToModeSelect();   // reset mode and re-pick difficulty for the new game
+  goToDraftTypeSelect();   // re-pick draft type, then difficulty, for the new game
 }
 
 // ============================================================
 //  WIRING
 // ============================================================
-$('btn-start').addEventListener('click',goToModeSelect);
+$('btn-start').addEventListener('click',goToDraftTypeSelect);
+
+// draft-type cards: select Quick or Full, then enable Continue
+document.querySelectorAll('#draft-type-cards .mode-card').forEach(card=>{
+  card.addEventListener('click',()=>{
+    draftType=card.dataset.draft;
+    document.querySelectorAll('#draft-type-cards .mode-card').forEach(c=>c.classList.toggle('selected',c===card));
+    $('draft-type-cards').classList.add('has-sel');
+    $('btn-draft-type-next').disabled=false;
+  });
+});
+$('btn-draft-type-next').addEventListener('click',goToModeSelect);
 
 // difficulty cards: select one, then enable START DRAFT
-document.querySelectorAll('.mode-card').forEach(card=>{
+document.querySelectorAll('#mode-cards .mode-card').forEach(card=>{
   card.addEventListener('click',()=>{
     gameMode=card.dataset.mode;
-    document.querySelectorAll('.mode-card').forEach(c=>c.classList.toggle('selected',c===card));
+    document.querySelectorAll('#mode-cards .mode-card').forEach(c=>c.classList.toggle('selected',c===card));
     $('mode-cards').classList.add('has-sel');
     $('btn-start-draft').disabled=false;
   });
 });
-$('btn-start-draft').addEventListener('click',()=>{ gs=G.createGameState(); goToHome(); });
+// Start Draft: Quick goes straight to the board; Full shows the formation reveal first.
+$('btn-start-draft').addEventListener('click',()=>{
+  if(draftType==='full'){ showFormationReveal(); return; }
+  gs=G.createGameState();
+  goToHome();
+});
+
+// ---------- formation reveal (Full Draft only) ----------
+function formationReqLine(f){
+  return `Draft 1 GK · ${f.def} DEF · ${f.mid} MID · ${f.fwd} FWD`;
+}
+function showFormationReveal(){
+  showScreen('formation');
+  const target=FORMATIONS[Math.floor(Math.random()*FORMATIONS.length)];
+  pendingFormation=target;
+  const name=$('fm-name'), req=$('fm-req'), go=$('btn-formation-go');
+  name.classList.remove('show'); req.classList.remove('show'); go.classList.remove('show');
+  name.textContent=''; req.textContent='';
+  // build a slot-machine strip of formation names, target near the end
+  const strip=$('fm-reel'); const items=[];
+  const DECOYS=22;
+  for(let i=0;i<DECOYS;i++) items.push(FORMATIONS[Math.floor(Math.random()*FORMATIONS.length)].name);
+  items.push(target.name);
+  items.push(FORMATIONS[0].name); items.push(FORMATIONS[1].name);
+  strip.innerHTML=items.map(n=>`<div class="fm-reel-item">${n}</div>`).join('');
+  const rowH=120, targetIndex=DECOYS;
+  strip.style.transition='none'; strip.style.transform='translateY(0)';
+  void strip.offsetHeight;
+  strip.style.transition='transform 2600ms cubic-bezier(.12,.62,.2,1)';
+  strip.style.transform=`translateY(${-(targetIndex*rowH)}px)`;
+  const settle=()=>{
+    name.textContent=target.name; name.classList.add('show');
+    req.textContent=formationReqLine(target); setTimeout(()=>req.classList.add('show'),250);
+    setTimeout(()=>go.classList.add('show'),550);
+  };
+  let done=false; const fin=()=>{ if(done)return; done=true; settle(); };
+  strip.addEventListener('transitionend',fin,{once:true});
+  setTimeout(fin,2900);
+}
+$('btn-formation-go').addEventListener('click',()=>{
+  const f=pendingFormation||FORMATIONS[1];
+  gs=G.createGameState({ draftType:'full', formation:f, openSlots:slotsFromFormation(f) });
+  goToHome();
+});
 $('btn-go-spin').addEventListener('click',startSpin);
 $('btn-start-wc').addEventListener('click',()=>{ $('btn-start-wc').disabled=true; runSimulationScreen(); });
 
@@ -3568,6 +3981,7 @@ $('profile-close').addEventListener('click',closeProfile);
 // leaderboard board time-window + mode toggles (embedded in the entry modal)
 $('lb-seg-window').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; lbWindow=b.dataset.w; lbSetActiveToggles(); refreshLeaderboardList(); });
 $('lb-seg-mode').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; lbMode=b.dataset.m; lbSetActiveToggles(); refreshLeaderboardList(); });
+$('lb-seg-drafttype').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return; lbDraftType=b.dataset.dt; lbSetActiveToggles(); refreshLeaderboardList(); });
 
 // ---------- add-to-leaderboard entry modal (every results page) ----------
 // Fixed ordered list of flag options. Each name maps through the SAME flag image
@@ -3612,9 +4026,10 @@ function openEntryModal(resultLabel, score, color){
   const sel=$('entry-flag-row').querySelector('.entry-flag-opt[data-flag="'+entrySelectedFlag+'"]');
   if(sel) sel.classList.add('sel');
   updateEntrySubmit();
-  // embedded board: default to the mode just played, all-time window
+  // embedded board: default to the mode + draft type just played, all-time window
   lbWindow='all';
   lbMode=(gameMode==='hard')?'hard':'easy';
+  lbDraftType=(gs && gs.draftType==='full')?'full':'quick';
   lbSetActiveToggles();
   refreshLeaderboardList(gs.result&&gs.result._lbId);
   $('entry-bg').classList.add('show');
@@ -4160,6 +4575,24 @@ function simMakeGoalEvent(beneficiary, userSquad, opponent, extraTime, usedMinut
 // ATTACKING (flex = second striker), a MID flex is BALANCED (flex = second mid).
 function getUserPositionalRatings(picks){
   const ovOf = p => (p && p.player ? (p.player.wc_overall ?? p.player.overall ?? 60) : 60);
+  // Full Team Draft: no FLEX. Defense = GK + ALL defenders (same GK/DEF weighting);
+  // Attack = ALL midfielders + forwards (same FWD/MID weighting). Identity from formation.
+  if(isFullDraft()){
+    const avg=(arr)=>arr.length?arr.reduce((s,p)=>s+ovOf(p),0)/arr.length:60;
+    const gks  = picks.filter(p=>p.slot==='GK');
+    const defs = picks.filter(p=>p.slot==='DEF');
+    const mids = picks.filter(p=>p.slot==='MID');
+    const fwds = picks.filter(p=>p.slot==='FWD');
+    const identity = (gs && gs.formation && gs.formation.fwd===3) ? 'ATTACKING' : 'BALANCED';
+    const gkOv=avg(gks), defOv=avg(defs);
+    const defense = gkOv*0.45 + defOv*0.55;
+    const midOv=avg(mids), fwdOv=avg(fwds);
+    // Mirror the Quick weightings at line level: ATTACKING leans on forwards.
+    const attack = identity==='ATTACKING'
+      ? fwdOv*0.60 + midOv*0.40
+      : fwdOv*0.50 + midOv*0.50;
+    return { attack, defense, identity };
+  }
   const gk   = picks.find(p => p.slot === 'GK');
   const defs = picks.filter(p => p.slot === 'DEF');
   const mid  = picks.find(p => p.slot === 'MID');
@@ -5082,6 +5515,7 @@ function frDecodeParam(param){
 // Reset all Friendly state (used when returning to Solo / Play Again).
 function friendlyReset(){
   friendlyMode=false; friendlyRole=null; challengerData=null; friendlyMatchResult=null;
+  draftType='quick'; pendingFormation=null; // Friendly is always the 6-man draft
 }
 
 // Build the encoded lineup object from the just-completed draft (gs.result).
@@ -5450,7 +5884,7 @@ $('cr-copy').addEventListener('click', async ()=>{
   showToast('Challenge link copied! Send it to your friend 🔥');
 });
 $('cl-accept').addEventListener('click', ()=>{ gs=G.createGameState(); goToHome(); });
-$('fx-solo').addEventListener('click', ()=>{ friendlyReset(); goToModeSelect(); });
+$('fx-solo').addEventListener('click', ()=>{ goToDraftTypeSelect(); });
 $('fr-share').addEventListener('click', friendlyShareResult);
 $('fr-again').addEventListener('click', ()=>{ friendlyReset(); showScreen('start'); });
 

@@ -199,10 +199,17 @@ function getSquad(country, year) {
 
 // ─── Game state ───────────────────────────────────────────────────────────────
 
-function createGameState() {
+// Additive: an optional `opts` object lets the Full Team Draft (11-man) pass its
+// own slot list and formation. Called with no arguments it produces the EXACT
+// original 6-man Quick Draft state, so every existing caller is unchanged.
+//   opts.openSlots  — explicit slot array (Full Draft builds this from a formation)
+//   opts.draftType  — 'quick' | 'full' (defaults to 'quick')
+//   opts.formation  — { name, def, mid, fwd } for Full Draft (null otherwise)
+function createGameState(opts) {
+  opts = opts || {};
   return {
     picks: [],
-    openSlots: ['GK', 'DEF', 'DEF', 'MID', 'FWD', 'FLEX'],
+    openSlots: opts.openSlots ? [...opts.openSlots] : ['GK', 'DEF', 'DEF', 'MID', 'FWD', 'FLEX'],
     filledSlots: {},
     respins: { full: 1 },
     phase: 'SPINNING',
@@ -210,6 +217,8 @@ function createGameState() {
     startTime: Date.now(),
     endTime: null,
     result: null,
+    draftType: opts.draftType || 'quick',
+    formation: opts.formation || null,
   };
 }
 
@@ -327,6 +336,11 @@ function selectPlayer(state, playerId, slotPosition) {
 // ─── Identity and scoring ─────────────────────────────────────────────────────
 
 function getSquadIdentity(state) {
+  // Full Team Draft has no FLEX slot — identity comes from the formation shape:
+  // a 3-forward formation (4-3-3, 3-4-3) is ATTACKING, everything else BALANCED.
+  if (state && state.draftType === 'full' && state.formation) {
+    return state.formation.fwd === 3 ? 'ATTACKING' : 'BALANCED';
+  }
   const flexPick = state.filledSlots['FLEX'];
   if (!flexPick) return null;
   return flexPick.position === 'MID' ? 'BALANCED' : 'ATTACKING';
