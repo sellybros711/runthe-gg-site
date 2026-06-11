@@ -2681,6 +2681,24 @@ const AWARD_LABELS = {
   golden_glove:      '🧤 Golden Glove',
   best_young_player: '⭐ Best Young Player',
 };
+// Standalone (hex-coloured) versions of the reveal-screen gold award icons, for
+// rasterising onto the share canvas. Same shapes as lbAwardIcon.
+const AWARD_ICON_SVG = {
+  golden_ball: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.3" fill="#F4B413" stroke="#16120F" stroke-width="1.7"/><polygon points="12,6.6 15.4,9.1 14.1,13.1 9.9,13.1 8.6,9.1" fill="#16120F"/><path d="M12 2.7V6.6M20.6 8.7 15.4 9.1M17.7 18.6 14.1 13.1M6.3 18.6 9.9 13.1M3.4 8.7 8.6 9.1" stroke="#16120F" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>`,
+  golden_boot: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 22"><path d="M3 4 L10 4 C12 4 12.6 5.4 13.4 7.4 L14.4 10 L21 12.2 C23 12.9 23.6 14 23.6 15.6 L23.6 16.8 L4.2 16.8 C3.3 16.8 2.6 16.2 2.5 15.3 L2.4 5.4 C2.4 4.6 2.6 4 3 4 Z" fill="#F4B413" stroke="#16120F" stroke-width="1.6" stroke-linejoin="round"/><circle cx="7" cy="19.6" r="1.25" fill="#16120F"/><circle cx="13" cy="19.6" r="1.25" fill="#16120F"/><circle cx="19" cy="19.6" r="1.25" fill="#16120F"/></svg>`,
+  golden_glove: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M7 21 V12 L5.4 9.6 a1.5 1.5 0 0 1 2.4-1.8 L9 9 V5 a1.5 1.5 0 0 1 3 0 V8.6 V4.4 a1.5 1.5 0 0 1 3 0 V8.6 V5.4 a1.5 1.5 0 0 1 3 0 V13 c0 4.4-1.6 8-5.2 8 Z" fill="#F4B413" stroke="#16120F" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
+  best_young_player: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><polygon points="12,2.4 14.9,8.9 22,9.6 16.6,14.3 18.3,21.4 12,17.5 5.7,21.4 7.4,14.3 2,9.6 9.1,8.9" fill="#F4B413" stroke="#16120F" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
+};
+function awardIconUri(award){
+  const svg=AWARD_ICON_SVG[award] || AWARD_ICON_SVG.best_young_player;
+  return 'data:image/svg+xml,'+encodeURIComponent(svg);
+}
+// Normalise a player's award field to an array of award keys.
+function awardList(p){
+  if(!p || p.award==null) return [];
+  if(Array.isArray(p.award)) return p.award;
+  return String(p.award).split('|').map(a=>a.trim()).filter(Boolean);
+}
 // Build award-badge HTML for a player (string or array of award values).
 // Returns '' when the player has no award.
 function awardBadges(p){
@@ -3830,6 +3848,8 @@ async function buildShareCanvas(){
   const rowH=Math.min(96, Math.floor((H-110-y)/picks.length)-12), gap=12, mX=60, rW=W-2*mX;
   // preload flags (CORS-safe; null on failure → no flag drawn)
   const flagImgs=await Promise.all(picks.map(pk=>{ const u=flagImg(pk.player.country,160); return u?loadImg(u,true):Promise.resolve(null); }));
+  // preload the gold award icons for each pick (data-URI SVGs; one img per award)
+  const awardImgs=await Promise.all(picks.map(pk=>Promise.all(awardList(pk.player).map(a=>loadImg(awardIconUri(a))))));
 
   picks.forEach((pick,i)=>{
     const p=pick.player; const ry=y+i*(rowH+gap);
@@ -3863,21 +3883,33 @@ async function buildShareCanvas(){
       x.save(); rrect('',x,fx,fy,fw,fh,5); x.clip(); x.drawImage(fl,fx,fy,fw,fh); x.restore();
       x.lineWidth=1.5; x.strokeStyle='rgba(0,0,0,.25)'; rrect('',x,fx,fy,fw,fh,5); x.stroke();
     }
-    // name (truncate to available width; reserve room for the captain "C" badge)
+    // name (truncate to available width; reserve room for the captain "C" badge
+    // and any award icons that follow)
+    const aw = awardImgs[i] || [];
+    const isize = Math.round(rowH*0.40);
     const capGap = p.is_captain ? 44 : 0;
-    const nameX=bx+bw+18; const nameMax=(fl?rightX-yrW-12-46-12:rightX-yrW-12)-nameX-10-capGap;
+    const awardGap = aw.length * (isize+6);
+    const nameX=bx+bw+18; const nameMax=(fl?rightX-yrW-12-46-12:rightX-yrW-12)-nameX-10-capGap-awardGap;
     x.font='900 30px Archivo'; x.fillStyle=ink;
     let nm=p.name;
     while(x.measureText(nm).width>nameMax && nm.length>3){ nm=nm.slice(0,-2); }
     if(nm!==p.name) nm=nm.replace(/…?$/,'')+'…';
     x.fillText(nm, nameX, cy+10);
+    let cursorX=nameX+x.measureText(nm).width;   // right edge of the name
     // captain → bold collegiate "C" patch (gold disc, dark letter)
     if(p.is_captain){
-      const nmW=x.measureText(nm).width, r=17, ccx=nameX+nmW+14+r, ccy=cy;
+      const r=17, ccx=cursorX+14+r, ccy=cy;
       x.beginPath(); x.arc(ccx,ccy,r,0,Math.PI*2);
       x.fillStyle='#F4B413'; x.fill(); x.lineWidth=2.5; x.strokeStyle=ink; x.stroke();
       x.fillStyle=ink; x.font='900 24px Archivo'; x.textAlign='center'; x.textBaseline='middle';
       x.fillText('C', ccx, ccy+1); x.textAlign='left'; x.textBaseline='alphabetic';
+      cursorX=ccx+r;   // right edge of the captain badge
+    }
+    // award icons — same gold symbols as the team-overall reveal screen, placed
+    // after the name (or after the captain badge if they're also a captain)
+    if(aw.length){
+      let ax=cursorX+10;
+      aw.forEach(img=>{ if(img) x.drawImage(img, ax, cy-isize/2, isize, isize); ax+=isize+6; });
     }
   });
 
