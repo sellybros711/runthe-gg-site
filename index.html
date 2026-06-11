@@ -1233,38 +1233,27 @@
     transition:transform .24s cubic-bezier(.34,1.4,.5,1), background .2s ease;}
   .seg[data-active="full"] .seg-thumb,
   .seg[data-active="hard"] .seg-thumb{transform:translateX(100%);}
-  #seg-draft[data-active="quick"] .seg-thumb{background:var(--blue);}
-  #seg-draft[data-active="full"]  .seg-thumb{background:var(--gold);}
+  #seg-draft[data-active="quick"] .seg-thumb{background:var(--gold);}
+  #seg-draft[data-active="full"]  .seg-thumb{background:var(--blue);}
   #seg-mode[data-active="easy"]   .seg-thumb{background:var(--teal);}
   #seg-mode[data-active="hard"]   .seg-thumb{background:var(--red);}
   .seg-opt{flex:1 1 0;position:relative;z-index:1;background:transparent;border:0;cursor:pointer;
     padding:13px 8px;font-family:'Anton',Impact,sans-serif;font-size:18px;text-transform:uppercase;
     letter-spacing:.5px;color:var(--ink);transition:color .2s ease;}
   /* the active option's text turns light to read on the coloured thumb */
-  #seg-draft[data-active="quick"] .seg-opt[data-draft="quick"],
+  #seg-draft[data-active="full"]  .seg-opt[data-draft="full"],
   #seg-mode[data-active="easy"]   .seg-opt[data-mode="easy"],
   #seg-mode[data-active="hard"]   .seg-opt[data-mode="hard"]{color:#fff;}
-  /* gold thumb (Full) keeps dark ink text for contrast */
-  #seg-draft[data-active="full"]  .seg-opt[data-draft="full"]{color:var(--ink);}
+  /* gold thumb (Quick) keeps dark ink text for contrast */
+  #seg-draft[data-active="quick"] .seg-opt[data-draft="quick"]{color:var(--ink);}
 
-  /* live description cards */
-  .setup-info{display:flex;gap:12px;}
-  @media (max-width:430px){ .setup-info{flex-direction:column;} }
-  .setup-card{flex:1 1 0;border:2px solid var(--ink);border-radius:16px;background:var(--white);
-    padding:16px 14px;text-align:center;color:var(--ink);box-shadow:var(--shadow-sm);
-    transition:border-color .2s ease, background .2s ease;}
-  .setup-card .mc-icon{display:flex;align-items:center;justify-content:center;height:48px;margin-bottom:8px;}
-  .setup-card .mc-sub{font-weight:900;font-size:11px;letter-spacing:.5px;margin-bottom:4px;opacity:.85;}
-  .setup-card .mc-headline{font-family:'Anton',Impact,sans-serif;font-size:19px;text-transform:uppercase;margin-bottom:6px;}
-  .setup-card .mc-desc{font-weight:600;font-size:12.5px;line-height:1.42;color:#5a5048;}
-  .setup-card.quick{border-color:var(--blue);background:rgba(42,75,155,.06);}
-  .setup-card.quick .mc-headline,.setup-card.quick .mc-sub{color:var(--blue);}
-  .setup-card.full{border-color:var(--gold);background:rgba(244,180,19,.08);}
-  .setup-card.full .mc-headline,.setup-card.full .mc-sub{color:#9c6c18;}
-  .setup-card.easy{border-color:var(--teal);background:rgba(19,138,107,.06);}
-  .setup-card.easy .mc-headline,.setup-card.easy .mc-sub{color:var(--teal);}
-  .setup-card.hard{border-color:var(--red);background:rgba(229,64,42,.06);}
-  .setup-card.hard .mc-headline,.setup-card.hard .mc-sub{color:var(--red);}
+  /* single borderless live-description panel (no button look) */
+  .setup-info{text-align:center;padding:6px 6px 0;}
+  .si-combo{font-family:'Anton',Impact,sans-serif;font-size:18px;text-transform:uppercase;
+    letter-spacing:.5px;margin-bottom:6px;transition:color .2s ease;}
+  .si-desc{font-weight:600;font-size:13.5px;line-height:1.5;color:#5a5048;max-width:340px;margin:0 auto;}
+  .setup-info.quick .si-combo{color:#9c6c18;}
+  .setup-info.full  .si-combo{color:var(--blue);}
   .mode-title{font-family:'Anton',Impact,sans-serif;font-size:clamp(30px,8vw,42px);
     text-transform:uppercase;line-height:1;letter-spacing:.5px;}
   .mode-sub{font-weight:600;font-size:14px;color:#8a7d70;margin-top:6px;}
@@ -1571,12 +1560,12 @@
       <div class="mode-sub">Pick your squad size and difficulty.</div>
     </div>
 
-    <!-- Draft size slider -->
+    <!-- Draft mode slider -->
     <div class="setup-block">
-      <div class="setup-label">Draft Size</div>
+      <div class="setup-label">Draft Mode</div>
       <div class="seg" id="seg-draft" data-active="quick">
         <span class="seg-thumb"></span>
-        <button type="button" class="seg-opt" data-draft="quick">Quick</button>
+        <button type="button" class="seg-opt" data-draft="quick">Quick Draft</button>
         <button type="button" class="seg-opt" data-draft="full">Full Team</button>
       </div>
     </div>
@@ -1591,20 +1580,10 @@
       </div>
     </div>
 
-    <!-- Live descriptions — update with whatever is actively selected -->
-    <div class="setup-info">
-      <div class="setup-card" id="setup-card-draft">
-        <div class="mc-icon" id="setup-icon-draft"></div>
-        <div class="mc-sub"  id="setup-sub-draft"></div>
-        <div class="mc-headline" id="setup-head-draft"></div>
-        <div class="mc-desc" id="setup-desc-draft"></div>
-      </div>
-      <div class="setup-card" id="setup-card-mode">
-        <div class="mc-icon" id="setup-icon-mode"></div>
-        <div class="mc-sub"  id="setup-sub-mode"></div>
-        <div class="mc-headline" id="setup-head-mode"></div>
-        <div class="mc-desc" id="setup-desc-mode"></div>
-      </div>
+    <!-- Single live description — changes with the combination of both sliders -->
+    <div class="setup-info" id="setup-info">
+      <div class="si-combo" id="setup-combo"></div>
+      <div class="si-desc"  id="setup-desc"></div>
     </div>
 
     <div class="stack" style="margin-top:18px;">
@@ -4146,68 +4125,32 @@ async function copyReport(){
   const t=$('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);
 }
 
-// Retro SVG icons + copy for each option, driven live by the two sliders.
-const DRAFT_INFO = {
-  quick: {
-    sub:'6 Rounds', head:'Quick Draft',
-    desc:'Draft a 6-player squad — <span class="mc-pos">GK, DEF, DEF, MID, FWD, FLEX</span>. Fast and sharp.',
-    svg:`<svg class="mc-ico-svg" viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M28 3 L9 27 H21 L18 45 L39 19 H26 Z" fill="var(--gold)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>
-    </svg>`,
+// One description per combination of the two sliders. Keyed draftType_gameMode.
+const SETUP_COMBOS = {
+  quick_easy: {
+    combo:'Quick Draft · Easy',
+    desc:'6 fast rounds — GK, DEF, DEF, MID, FWD, FLEX. Overall ratings stay visible, so you can chase the strongest lineup possible.',
   },
-  full: {
-    sub:'11 Rounds', head:'Full Team Draft',
-    desc:'Draft a full starting XI. A random formation decides your positions. The ultimate test.',
-    svg:`<svg class="mc-ico-svg" viewBox="0 0 48 48" aria-hidden="true">
-      <line x1="8" y1="13" x2="8" y2="24" stroke="var(--ink)" stroke-width="2.5"/>
-      <rect x="3.5" y="8.5" width="9" height="5" rx="1.5" fill="var(--gold)" stroke="var(--ink)" stroke-width="2"/>
-      <line x1="40" y1="13" x2="40" y2="24" stroke="var(--ink)" stroke-width="2.5"/>
-      <rect x="35.5" y="8.5" width="9" height="5" rx="1.5" fill="var(--gold)" stroke="var(--ink)" stroke-width="2"/>
-      <ellipse cx="24" cy="31" rx="20" ry="11" fill="var(--blue)" stroke="var(--ink)" stroke-width="3"/>
-      <ellipse cx="24" cy="28" rx="20" ry="11" fill="#E5402A" stroke="var(--ink)" stroke-width="3"/>
-      <ellipse cx="24" cy="28" rx="11.5" ry="6" fill="var(--pos-mid)" stroke="var(--ink)" stroke-width="2.5"/>
-      <line x1="24" y1="22.5" x2="24" y2="33.5" stroke="#fff" stroke-width="1.4"/>
-      <circle cx="24" cy="28" r="2.2" fill="none" stroke="#fff" stroke-width="1.2"/>
-    </svg>`,
+  quick_hard: {
+    combo:'Quick Draft · Hard',
+    desc:'6 fast rounds — GK, DEF, DEF, MID, FWD, FLEX. Ratings are hidden, so you draft on name and gut alone. A quick test of your ball knowledge.',
   },
-};
-const MODE_INFO = {
-  easy: {
-    sub:'Ratings Visible', head:'Easy Mode',
-    desc:'Player overall ratings are shown during the draft. Use them to build the best squad possible.',
-    svg:`<svg class="mc-ico-svg" viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M4 24 C13 12 35 12 44 24 C35 36 13 36 4 24 Z" fill="var(--paper)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>
-      <circle cx="24" cy="24" r="8" fill="var(--teal)" stroke="var(--ink)" stroke-width="3"/>
-      <circle cx="24" cy="24" r="3" fill="var(--ink)"/>
-      <circle cx="21.3" cy="21.3" r="1.5" fill="#fff"/>
-    </svg>`,
+  full_easy: {
+    combo:'Full Team · Easy',
+    desc:'A full starting XI across 11 rounds, with a random formation deciding your positions. Overall ratings stay visible to help you build the ultimate team.',
   },
-  hard: {
-    sub:'Names Only', head:'Hard Mode',
-    desc:'Ratings are hidden. Test your ball knowledge!',
-    svg:`<svg class="mc-ico-svg" viewBox="0 0 48 48" aria-hidden="true">
-      <path d="M24 8 C18 6 12 9 13 15 C8 16 8 22 12 24 C9 28 12 34 18 33 C19 38 24 38 24 33 Z" fill="var(--gold)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>
-      <path d="M24 8 C30 6 36 9 35 15 C40 16 40 22 36 24 C39 28 36 34 30 33 C29 38 24 38 24 33 Z" fill="var(--gold)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>
-      <path d="M24 8 V33" stroke="var(--ink)" stroke-width="2.4" fill="none"/>
-      <path d="M17 17 C20 18 20 21 18 22 M31 17 C28 18 28 21 30 22 M16 26 C19 26 20 28 19 30 M32 26 C29 26 28 28 29 30" stroke="var(--ink)" stroke-width="2" fill="none" stroke-linecap="round"/>
-    </svg>`,
+  full_hard: {
+    combo:'Full Team · Hard',
+    desc:'A full starting XI across 11 rounds, with a random formation deciding your positions. Ratings are hidden — pure ball knowledge, no safety net. The ultimate test.',
   },
 };
 
-// Repaint the two live description cards from the current draftType + gameMode.
+// Repaint the single live description from the current draftType + gameMode combo.
 function renderSetupInfo(){
-  const d=DRAFT_INFO[draftType]||DRAFT_INFO.quick;
-  const m=MODE_INFO[gameMode]||MODE_INFO.easy;
-  $('setup-card-draft').className='setup-card '+draftType;
-  $('setup-icon-draft').innerHTML=d.svg;
-  $('setup-sub-draft').textContent=d.sub;
-  $('setup-head-draft').textContent=d.head;
-  $('setup-desc-draft').innerHTML=d.desc;
-  $('setup-card-mode').className='setup-card '+gameMode;
-  $('setup-icon-mode').innerHTML=m.svg;
-  $('setup-sub-mode').textContent=m.sub;
-  $('setup-head-mode').textContent=m.head;
-  $('setup-desc-mode').innerHTML=m.desc;
+  const c = SETUP_COMBOS[draftType+'_'+gameMode] || SETUP_COMBOS.quick_easy;
+  $('setup-info').className='setup-info '+draftType;
+  $('setup-combo').textContent=c.combo;
+  $('setup-desc').textContent=c.desc;
 }
 
 // Show the combined setup screen (draft size + difficulty) with sensible
