@@ -118,11 +118,6 @@
   .x-follow a{color:#8a8073;text-decoration:none;}
   .x-follow a b{color:var(--ink);font-weight:800;}
   .x-follow a:hover{text-decoration:underline;}
-  /* on the home/start screen, pin the footer to the bottom of the screen */
-  body.home-page .site-footer{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:520px;
-    padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--paper);
-    border-top:1px solid rgba(0,0,0,.06);z-index:30;}
-  body.home-page .app{padding-bottom:96px;}
 
   /* ---------- shared ---------- */
   .screen{display:none;animation:fade .35s ease both;}
@@ -2062,7 +2057,6 @@ function showScreen(name){
   document.body.classList.toggle('sel-mode', name==='select');
   document.body.classList.toggle('home-mode', name==='home');
   document.body.classList.toggle('sim-mode', name==='sim');
-  document.body.classList.toggle('home-page', name==='start');   // pins the footer on the start screen
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -6324,8 +6318,6 @@ function friendlyRouteInitial(){
 parseFriendlyParam();
 // 2) Intercept the initial screen immediately (no home-screen flash).
 friendlyRouteInitial();
-// Pin the footer on the start screen if that's where we landed.
-document.body.classList.toggle('home-page', !!($('screen-start') && $('screen-start').classList.contains('active')));
 // 3) Boot the engine; re-assert the friendly screen once data is ready (the
 //    landing screen's ACCEPT button needs the engine initialised).
 boot().then(friendlyRouteInitial);
