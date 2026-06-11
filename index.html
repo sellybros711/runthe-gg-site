@@ -1638,11 +1638,11 @@
       <button id="btn-respin-full" class="rebtn">↻ Re-spin (1)</button>
     </div>
     <div class="mini-pitch" id="mini-pitch">
-      <div class="mslot" id="mini-gk"><span class="ml">GK</span></div>
+      <div class="mslot" id="mini-fwd"><span class="ml">FWD</span></div>
+      <div class="mslot" id="mini-mid"><span class="ml">MID</span></div>
       <div class="mslot" id="mini-def1"><span class="ml">DEF</span></div>
       <div class="mslot" id="mini-def2"><span class="ml">DEF</span></div>
-      <div class="mslot" id="mini-mid"><span class="ml">MID</span></div>
-      <div class="mslot" id="mini-fwd"><span class="ml">FWD</span></div>
+      <div class="mslot" id="mini-gk"><span class="ml">GK</span></div>
       <div class="mslot" id="mini-flex"><span class="ml">FLEX</span></div>
     </div>
     <div class="grid" id="player-grid"></div>
@@ -1967,11 +1967,18 @@ function slotsFromFormation(f){
 }
 // The slot order used for reveal / results lists, derived from the draft.
 // Quick keeps its exact original order (incl. FLEX); Full follows the formation.
+// Position display order: forwards first → goalkeeper last, with FLEX kept last.
+// Used everywhere positions are listed so the order matches the lineup screen.
+function reversePosOrder(slots){
+  const flex = slots.filter(s=>s==='FLEX');
+  const rest = slots.filter(s=>s!=='FLEX').reverse();
+  return rest.concat(flex);
+}
 function draftSlotOrder(){
-  if(gs && gs.draftType==='full' && gs.formation){
-    return slotsFromFormation(gs.formation);
-  }
-  return ['GK','DEF','DEF','MID','FWD','FLEX'];
+  const base = (gs && gs.draftType==='full' && gs.formation)
+    ? slotsFromFormation(gs.formation)
+    : ['FWD','MID','DEF','DEF','GK','FLEX'];
+  return reversePosOrder(base);   // FWD → … → GK (FLEX last)
 }
 // Total rounds this draft (6 for quick, 11 for full).
 function draftTotalSlots(){ return gs ? gs.picks.length + gs.openSlots.length : 6; }
@@ -2484,7 +2491,7 @@ function buildFullMiniPitch(){
   mp.classList.add('full');
   mp.innerHTML='';
   fullMiniLayout=[];
-  slotsFromFormation(gs.formation).forEach((pos,i)=>{
+  reversePosOrder(slotsFromFormation(gs.formation)).forEach((pos,i)=>{
     const id=`mf-${i}`;
     const el=document.createElement('div');
     el.className='mslot'; el.id=id;
@@ -2497,11 +2504,11 @@ function restoreQuickMiniPitch(){
   const mp=$('mini-pitch'); if(!mp) return;
   mp.classList.remove('full');
   if(!$('mini-gk')){
-    mp.innerHTML=`<div class="mslot" id="mini-gk"><span class="ml">GK</span></div>
+    mp.innerHTML=`<div class="mslot" id="mini-fwd"><span class="ml">FWD</span></div>
+      <div class="mslot" id="mini-mid"><span class="ml">MID</span></div>
       <div class="mslot" id="mini-def1"><span class="ml">DEF</span></div>
       <div class="mslot" id="mini-def2"><span class="ml">DEF</span></div>
-      <div class="mslot" id="mini-mid"><span class="ml">MID</span></div>
-      <div class="mslot" id="mini-fwd"><span class="ml">FWD</span></div>
+      <div class="mslot" id="mini-gk"><span class="ml">GK</span></div>
       <div class="mslot" id="mini-flex"><span class="ml">FLEX</span></div>`;
   }
 }
@@ -2726,7 +2733,7 @@ function renderGrid(squad){
   // sort: available first, then grouped by position. EASY orders each position by
   // overall (high→low); HARD is a blind pick, so it orders each position
   // alphabetically by surname instead — no rating hint from the ordering.
-  const order={GK:0,DEF:1,MID:2,FWD:3};
+  const order={FWD:0,MID:1,DEF:2,GK:3};   // forwards first → goalkeeper last (matches the lineup)
   const ov = p => (p.wc_overall ?? p.overall ?? 0);  // the value shown on the card
   const hard = gameMode==='hard';
   const sorted=[...squad].sort((a,b)=>{
@@ -3809,7 +3816,7 @@ async function buildShareCanvas(){
   x.fillStyle='rgba(255,255,255,.18)'; x.fillRect(300, y, W-64-300, 2); y+=26;
 
   // roster rows (white cards)
-  const picks=groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, ['GK','DEF','DEF','MID','FWD','FLEX']));
+  const picks=groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, ['FWD','MID','DEF','DEF','GK','FLEX']));
   const rowH=Math.min(96, Math.floor((H-110-y)/picks.length)-12), gap=12, mX=60, rW=W-2*mX;
   // preload flags (CORS-safe; null on failure → no flag drawn)
   const flagImgs=await Promise.all(picks.map(pk=>{ const u=flagImg(pk.player.country,160); return u?loadImg(u,true):Promise.resolve(null); }));
@@ -5690,7 +5697,7 @@ function surnameOf(name){
 // payload tiny, and percent-encoding the base64 prevents '+'/'/'/'=' from being
 // mangled by the query string (the bug that was corrupting shared links).
 function frEncodeLineup(){
-  const minimalPicks = orderPicksForDisplay(gs.result.scoredPicks, ['GK','DEF','DEF','MID','FWD','FLEX'])
+  const minimalPicks = orderPicksForDisplay(gs.result.scoredPicks, ['FWD','MID','DEF','DEF','GK','FLEX'])
     .map(pk=>{ const p=pk.player; return {
       sl: pk.slot,                       // slot
       id: String(p.player_id),           // player_id
@@ -5733,7 +5740,7 @@ function friendlyReset(){
 
 // Build the encoded lineup object from the just-completed draft (gs.result).
 function friendlyLineupObject(role){
-  const picks=orderPicksForDisplay(gs.result.scoredPicks, ['GK','DEF','DEF','MID','FWD','FLEX'])
+  const picks=orderPicksForDisplay(gs.result.scoredPicks, ['FWD','MID','DEF','DEF','GK','FLEX'])
     .map(pk=>{ const p=pk.player; return {
       slot: pk.slot,
       playerId: String(p.player_id),
@@ -5845,7 +5852,7 @@ function showChallengeLanding(data){
   friendlyMode=true; friendlyRole='opponent';
   gameMode='easy';
   // MYSTERY teaser — fixed formation slots, names hidden as "???"
-  const slots=['GK','DEF','DEF','MID','FWD','FLEX'];
+  const slots=['FWD','MID','DEF','DEF','GK','FLEX'];
   const ul=$('cl-mystery'); ul.innerHTML='';
   slots.forEach(s=>{
     const col=PITCH_COLORS[s]||PITCH_COLORS.FLEX;
@@ -5905,7 +5912,7 @@ async function runFriendlyMatch(){
         ? { name:oppBest.name, team:'YOU', overall:oppBest.overall }
         : { name:chBest.name, team:'FRIEND', overall:chBest.overall };
 
-  const normSquad = arr => orderPicksForDisplay(arr.map(p=>({slot:p.slot,player:p})), ['GK','DEF','DEF','MID','FWD','FLEX'])
+  const normSquad = arr => orderPicksForDisplay(arr.map(p=>({slot:p.slot,player:p})), ['FWD','MID','DEF','DEF','GK','FLEX'])
     .map(x=>({ slot:x.slot, name:x.player.name, overall:x.player.overall }));
 
   friendlyMatchResult = {
