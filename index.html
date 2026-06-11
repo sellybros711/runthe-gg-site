@@ -5425,9 +5425,9 @@ function simChampionConfetti(){
   })(start);
 }
 
-// Animate one knockout match card. Returns true if the user won.
-// isFinal=true means a win here crowns the champion (triggers confetti).
-async function playMatchAnimation(m, card, isFinal){
+// Build the match card's static content (round, opponent, scoreboard at 0–0)
+// BEFORE it swipes in, so the box arrives fully sized — no empty-box flash.
+function buildMatchCard(card, m){
   const opp=m.opponent;
   card.className='sim-card';
   card.innerHTML=`
@@ -5437,12 +5437,16 @@ async function playMatchAnimation(m, card, isFinal){
     <div class="match-clock-bar"><div class="match-clock-fill"></div></div>
     <div class="sim-goals"></div>
     <div class="sim-final" style="display:none"></div>`;
-  // live broadcast scoreboard, pinned to the top of the match card
+  // live broadcast scoreboard, pinned to the top — visible from the moment it swipes in
   const sb=makeScoreboard(opp);
   card.insertBefore(sb, card.firstChild);
-  await simSleep(800);
-  sb.classList.add('show'); // fade in at match start
+  sb.classList.add('show');
+}
 
+// Animate one knockout match card (already built by buildMatchCard). Returns true
+// if the user won. isFinal=true means a win here crowns the champion (confetti).
+async function playMatchAnimation(m, card, isFinal){
+  const sb=card.querySelector('.sb-wrap');   // scoreboard built earlier by buildMatchCard
   const fill=card.querySelector('.match-clock-fill');
   const goalsBox=card.querySelector('.sim-goals');
   const regulation=2500*SIM_SPEED;     // slowed pacing
@@ -5616,12 +5620,15 @@ async function runSimulationScreen(){
 
   // --- knockout rounds (each match is its own slide; advancing swipes across) ---
   for(let i=0;i<simResult.matches.length;i++){
+    const m = simResult.matches[i];
     const card=simNewSlide();
-    simSwipeTo(simSlideIndex+1);   // current match swipes off-left, this one in from the right
-    await simSleep(650);           // let the swipe land before kickoff
+    buildMatchCard(card, m);       // fill the box BEFORE it swipes in — no empty-box flash
+    simSwipeTo(simSlideIndex+1);   // swipe the already-filled match box in from the right
+    await simSleep(650);           // let the swipe land
+    await simSleep(1100);          // hold on the round + opponent + scoreboard before kickoff
     const next = simResult.rounds[i+1];
     const isFinal = !next;         // a win here wins the whole tournament
-    const won = await playMatchAnimation(simResult.matches[i], card, isFinal);
+    const won = await playMatchAnimation(m, card, isFinal);
 
     if(won && isFinal){
       // CHAMPIONS! confetti already dropped — now morph the WIN stamp into the
