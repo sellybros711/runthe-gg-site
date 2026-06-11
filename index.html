@@ -3871,6 +3871,9 @@ async function buildShareCanvas(){
 
   picks.forEach((pick,i)=>{
     const p=pick.player; const ry=y+i*(rowH+gap);
+    // retro hard offset drop shadow behind the card (matches the results page)
+    const csh=6;
+    rrect('',x,mX+csh,ry+csh,rW,rowH,16); x.fillStyle=ink; x.fill();
     // card
     rrect('',x,mX,ry,rW,rowH,16); x.fillStyle='#FFFFFF'; x.fill();
     x.lineWidth=3; x.strokeStyle=ink; x.stroke();
@@ -3887,10 +3890,11 @@ async function buildShareCanvas(){
     x.textAlign='right'; const ovX=mX+rW-26;
     const ovrFont=Math.max(11, Math.round(rowH*0.17));
     const numFont=Math.round(rowH*0.46);
+    // OVR label + number, vertically centred in the card (number centred on cy)
     x.font='800 '+ovrFont+'px Archivo'; x.fillStyle='#8a7d70';
-    x.fillText('OVR', ovX, ry+Math.round(rowH*0.34));
+    x.fillText('OVR', ovX, cy - Math.round(rowH*0.18));
     x.font='400 '+numFont+'px Anton'; x.fillStyle=ovc;
-    x.fillText(String(ov), ovX, ry+rowH-Math.round(rowH*0.16)); x.textAlign='left';
+    x.fillText(String(ov), ovX, cy + Math.round(numFont*0.34)); x.textAlign='left';
     // flag + year (before overall)
     let rightX=ovX - x.measureText('00').width - 78;
     x.font='800 24px Archivo'; x.fillStyle='#5a5048';
