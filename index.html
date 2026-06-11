@@ -3485,15 +3485,18 @@ async function refreshLeaderboardList(highlightId){
 // Render the results-page rank line. A top-3 all-time finish gets the big metallic
 // podium banner; everything else gets the plain one-line rank.
 function renderRankLine(el, rank, total){
+  // Rank/total are computed within this draft's own board (quick vs full), so name
+  // the type in the copy — display only, no leaderboard behaviour changes.
+  const dtLabel = (gs && gs.draftType==='full') ? 'Full Draft' : 'Quick Draft';
   if(rank<=3 && total>0){
     const place=['1st','2nd','3rd'][rank-1];
     el.className='res-rank podium '+MEDAL_TIERS[rank-1];
     el.innerHTML = metalTrophySvg(rank,'podtrophy')
       + `<span class="podium-place">#${rank} All-Time</span>`
-      + `<span class="podium-sub">${place} of ${total} drafts — incredible!</span>`;
+      + `<span class="podium-sub">${place} of ${total} ${dtLabel}s — incredible!</span>`;
   }else{
     el.className='res-rank';
-    el.innerHTML = `🏅 This draft ranks <b>${rank}</b> of <b>${total}</b> all-time drafts`;
+    el.innerHTML = `🏅 This draft ranks <b>${rank}</b> of <b>${total}</b> all-time ${dtLabel}s`;
   }
 }
 
