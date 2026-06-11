@@ -152,12 +152,12 @@
   .home-cta-row .btn-label{font-size:16px;letter-spacing:.5px;white-space:nowrap;}
   /* unbolded subtext beneath each button label */
   .home-cta-row .btn-sub{font-weight:400;font-size:8px;letter-spacing:.2px;text-transform:uppercase;opacity:.92;white-space:nowrap;}
-  /* small, centered text-link buttons on their own line below the CTAs */
-  #btn-home-leaderboard,#btn-add-home{display:block;margin:11px auto 0;background:none;border:none;
+  /* small text-link buttons sit side by side on one row below the CTAs */
+  .home-textlinks{display:flex;justify-content:center;align-items:center;gap:18px;margin-top:11px;}
+  #btn-home-leaderboard,#btn-add-home{background:none;border:none;
     color:#F5C518;font-family:inherit;font-weight:800;font-size:11px;letter-spacing:1px;
     text-transform:uppercase;cursor:pointer;padding:5px 8px;opacity:.92;
     text-decoration:underline;text-underline-offset:3px;-webkit-tap-highlight-color:transparent;}
-  #btn-add-home{margin-top:6px;}
   #btn-home-leaderboard:hover,#btn-home-leaderboard:active,
   #btn-add-home:hover,#btn-add-home:active{opacity:1;}
   /* Add-to-home instructions popup */
@@ -1549,9 +1549,11 @@
           <span class="btn-sub">World Cup simulator</span>
         </button>
       </div>
-      <!-- small, centered text links on their own line (never in the CTA row) -->
-      <button id="btn-home-leaderboard" type="button">🏅 View Leaderboard</button>
-      <button id="btn-add-home" type="button">📲 Add to Home Screen</button>
+      <!-- small text links on one row: Add to Home (left) · View Leaderboard (right) -->
+      <div class="home-textlinks">
+        <button id="btn-add-home" type="button">📲 Add to Home Screen</button>
+        <button id="btn-home-leaderboard" type="button">🏅 View Leaderboard</button>
+      </div>
       <!-- flag lane (scrolls right) below the kickoff button -->
       <div class="flag-marquee bottom"><div class="flag-lane right" id="flag-lane-2"></div></div>
     </div>
