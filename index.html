@@ -3802,14 +3802,38 @@ function shareEliminatedRound(r){
   const map={'Final':'Final','Semi-final':'Semi-Final','Quarter-final':'Quarter-Final','Round of 16':'Round of 16','Round of 32':'Round of 32'};
   return (r && map[r.furthestRound]) || 'Group Stage';
 }
+// Y at which the roster starts on the share canvas. MUST mirror the y-advances in
+// the header drawing in buildShareCanvas — used to size the canvas so the 11-man
+// bubbles get a consistent height no matter the outcome (trophy / recap length).
+function shareHeaderHeight(isChamp, isElim, recapCount){
+  let y=200;
+  y += isChamp ? 158 : 14;                 // trophy / spacing
+  if(isElim) y += 34;                       // "ELIMINATED IN" banner
+  y += 86;                                  // round / result heading
+  y += 98;                                  // team overall number
+  y += 36;                                  // "TEAM OVERALL" label
+  y += 46;                                  // mode tag
+  if(recapCount>0) y += 30 + recapCount*38 + 8;  // tournament recap
+  y += 26;                                  // roster heading
+  return y;
+}
 
 async function buildShareCanvas(){
   await (document.fonts && document.fonts.ready);
   const W=1080,CX=W/2;
-  // Taller canvas for the 11-man roster so the player bubbles (and the OVR) fit
-  // comfortably with even spacing; quick draft (6) keeps the 4:5 frame.
+  // Size the canvas so the player bubbles get a CONSISTENT height. For the 11-man
+  // roster, the trophy + recap length would otherwise squeeze the rows, so we
+  // pre-measure the header and grow the canvas to keep a fixed bubble height.
   const squadSize=(gs.result&&gs.result.scoredPicks)?gs.result.scoredPicks.length:6;
-  const H=squadSize>6 ? 1640 : 1350;
+  const fullRoster=squadSize>6;
+  const oc=simOutcome(simResult);
+  const isChamp = simResult ? (!simResult.eliminated && simResult.furthestRound==='Final') : (oc.label==='World Cup Winners');
+  const isElim = !isChamp;
+  const recapCount = shareRecapLines().length;
+  const ROW_H = 78, ROW_GAP = 12;          // fixed full-draft bubble height + gap
+  const H = fullRoster
+    ? (shareHeaderHeight(isChamp, isElim, recapCount) + squadSize*(ROW_H+ROW_GAP) + 110)
+    : 1350;
   const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
   const ink='#16120F', cream='#FDF6E3';
   const ovColor=o=> o>=90?'#1F9E57':o>=80?'#F4B413':o>=70?'#F47B20':'#E5402A';
@@ -3841,12 +3865,8 @@ async function buildShareCanvas(){
   rrect('',x,px0,py0,pwBox,ph,10); x.fillStyle=pg; x.lineWidth=2.5; x.strokeStyle=ink; x.fill(); x.stroke();
   x.fillStyle=ink; let wx=px0+17; for(const ch of pill){ x.fillText(ch,wx,py0+27); wx+=x.measureText(ch).width+sp; }
 
-  // result block
-  const oc=simOutcome(simResult);
+  // result block (oc / isChamp / isElim computed up top so the canvas was sized right)
   let y=200;
-  // World Cup winners get the actual trophy graphic (no emojis anywhere).
-  const isChamp = simResult ? (!simResult.eliminated && simResult.furthestRound==='Final')
-                            : (oc.label==='World Cup Winners');
   if(isChamp){
     const trophyImg=await loadImg('data:image/svg+xml;base64,'+btoa(SHARE_TROPHY_SVG));
     if(trophyImg){
@@ -3922,7 +3942,8 @@ async function buildShareCanvas(){
 
   // roster rows (white cards)
   const picks=groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, draftSlotOrder()));
-  const rowH=Math.min(96, Math.floor((H-110-y)/picks.length)-12), gap=12, mX=60, rW=W-2*mX;
+  const gap=ROW_GAP, mX=60, rW=W-2*mX;
+  const rowH=fullRoster ? ROW_H : Math.min(96, Math.floor((H-110-y)/picks.length)-12);
   // preload flags (CORS-safe; null on failure → no flag drawn)
   const flagImgs=await Promise.all(picks.map(pk=>{ const u=flagImg(pk.player.country,160); return u?loadImg(u,true):Promise.resolve(null); }));
   // preload the gold award icons for each pick (data-URI SVGs; one img per award)
