@@ -737,6 +737,18 @@
   .sim-result-win{color:var(--pos-mid);}
   .sim-result-loss{color:var(--red);}
   @media (max-width:359px){ .sim-result-win,.sim-result-loss{font-size:32px;} }
+  /* champion: the WIN stamp morphs into a big glowing golden trophy line */
+  .sim-final.sim-champion{
+    font-family:'Anton',Impact,sans-serif; font-weight:400;
+    font-size:30px; line-height:1; letter-spacing:1.5px; margin:8px 0 2px;
+    text-align:center; text-transform:uppercase; color:#F4B413;
+    -webkit-text-stroke:2px var(--ink); paint-order:stroke fill;
+    animation:simChampPop .55s cubic-bezier(.2,1.5,.4,1) both, simChampGlow 1.5s ease-in-out .55s infinite;}
+  @keyframes simChampPop{ from{opacity:0;transform:scale(.45) rotate(-5deg);} to{opacity:1;transform:none;} }
+  @keyframes simChampGlow{
+    0%,100%{ text-shadow:0 0 12px rgba(244,180,19,.55), 3px 3px 0 var(--ink); }
+    50%    { text-shadow:0 0 24px rgba(244,180,19,1),   3px 3px 0 var(--ink); } }
+  @media (max-width:359px){ .sim-final.sim-champion{font-size:25px;} }
   .penalty-dots{display:flex; gap:6px; justify-content:center; margin:8px 0; flex-wrap:wrap;}
   .pen-dot{
     width:16px; height:16px; border-radius:50%; border:2px solid var(--ink);
@@ -5380,8 +5392,42 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
   });
 }
 
+// Celebratory confetti dropping from the top of the screen — fired when the user
+// wins the final. Self-contained canvas overlay that cleans itself up.
+function simChampionConfetti(){
+  const c=document.createElement('canvas');
+  c.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:9999;';
+  document.body.appendChild(c);
+  const ctx=c.getContext('2d');
+  const dpr=Math.min(2, window.devicePixelRatio||1);
+  const W=()=>window.innerWidth, H=()=>window.innerHeight;
+  c.width=W()*dpr; c.height=H()*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+  const COLORS=['#F4B413','#E5402A','#138A6B','#FBF4E6','#2A4B9B','#FCEFA8'];
+  const N=160, P=[];
+  for(let i=0;i<N;i++){
+    P.push({ x:Math.random()*W(), y:-20-Math.random()*H()*0.6,
+      w:6+Math.random()*8, h:8+Math.random()*10, color:COLORS[(Math.random()*COLORS.length)|0],
+      rot:Math.random()*Math.PI, vr:(Math.random()-0.5)*0.3,
+      vy:2.2+Math.random()*3.6, vx:(Math.random()-0.5)*1.6,
+      sway:Math.random()*Math.PI*2, swayV:0.02+Math.random()*0.05 });
+  }
+  const start=performance.now(), DUR=5000, FADE=900;
+  (function frame(t){
+    const e=t-start; ctx.clearRect(0,0,W(),H()); let alive=false;
+    for(const p of P){
+      p.sway+=p.swayV; p.x+=p.vx+Math.sin(p.sway)*0.9; p.y+=p.vy; p.rot+=p.vr;
+      if(p.y<H()+30) alive=true;
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+      ctx.globalAlpha = e>DUR-FADE ? Math.max(0,(DUR-e)/FADE) : 1;
+      ctx.fillStyle=p.color; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore();
+    }
+    if(e<DUR && alive) requestAnimationFrame(frame); else c.remove();
+  })(start);
+}
+
 // Animate one knockout match card. Returns true if the user won.
-async function playMatchAnimation(m, card){
+// isFinal=true means a win here crowns the champion (triggers confetti).
+async function playMatchAnimation(m, card, isFinal){
   const opp=m.opponent;
   card.className='sim-card';
   card.innerHTML=`
@@ -5436,6 +5482,7 @@ async function playMatchAnimation(m, card){
   finalEl.className='sim-final '+(won?'sim-result-win':'sim-result-loss');
   finalEl.textContent = won ? (m.penalties?'Win on Penalties':'Win') : 'Eliminated';
   simScrollEnd(finalEl);
+  if(won && isFinal) simChampionConfetti();   // confetti the instant they're crowned
   await simSleep(1200);   // scoreboard stays visible above the result
   return won;
 }
@@ -5572,24 +5619,34 @@ async function runSimulationScreen(){
     const card=simNewSlide();
     simSwipeTo(simSlideIndex+1);   // current match swipes off-left, this one in from the right
     await simSleep(650);           // let the swipe land before kickoff
-    const won = await playMatchAnimation(simResult.matches[i], card);
-    const note=document.createElement('div');
-    if(won){
-      const next=simResult.rounds[i+1];
-      note.className='sim-advance';
-      note.textContent = next
-        ? pickOne([`✓ Through to the ${next}!`,`✓ Booked a ${next} spot!`,`✓ Marching on to the ${next}!`])
-        : '🏆 CHAMPIONS OF THE WORLD!';
+    const next = simResult.rounds[i+1];
+    const isFinal = !next;         // a win here wins the whole tournament
+    const won = await playMatchAnimation(simResult.matches[i], card, isFinal);
+
+    if(won && isFinal){
+      // CHAMPIONS! confetti already dropped — now morph the WIN stamp into the
+      // big golden line (no small green note; the stamp carries the moment).
+      await simSleep(1500);
+      const finalEl=card.querySelector('.sim-final');
+      finalEl.className='sim-final sim-champion';
+      finalEl.textContent='CHAMPIONS OF THE WORLD';
+      await simSleep(1800);
     } else {
-      note.className='sim-advance loss';
-      note.textContent = pickOne([
-        `✗ Knocked out in the ${simResult.matches[i].round}.`,
-        `✗ The run ends in the ${simResult.matches[i].round}.`,
-        `✗ Heartbreak in the ${simResult.matches[i].round}.`,
-      ]);
+      const note=document.createElement('div');
+      if(won){
+        note.className='sim-advance';
+        note.textContent = pickOne([`✓ Through to the ${next}!`,`✓ Booked a ${next} spot!`,`✓ Marching on to the ${next}!`]);
+      } else {
+        note.className='sim-advance loss';
+        note.textContent = pickOne([
+          `✗ Knocked out in the ${simResult.matches[i].round}.`,
+          `✗ The run ends in the ${simResult.matches[i].round}.`,
+          `✗ Heartbreak in the ${simResult.matches[i].round}.`,
+        ]);
+      }
+      card.appendChild(note);      // note lives inside this match's box
+      await simSleep(900);
     }
-    card.appendChild(note);        // note lives inside this match's box
-    await simSleep(900);
     if(!won) break;
   }
 
