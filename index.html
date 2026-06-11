@@ -1169,6 +1169,12 @@
   .res-squad-row:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--ink);}
   .res-squad-row .r-badge{flex:0 0 auto;font-weight:900;font-size:10px;color:#fff;border-radius:6px;padding:3px 7px;min-width:42px;text-align:center;}
   .res-squad-row .r-name{flex:1 1 auto;font-weight:900;min-width:0;}
+  /* captain + award badges next to the name on the results rows (20px, matched) */
+  .res-squad-row .r-name .lb-cap,
+  .res-squad-row .r-name .lb-ic{vertical-align:middle;margin-left:5px;width:20px;height:20px;}
+  .res-squad-row .r-name .lb-cap{font-size:14px;}
+  .res-squad-row .r-name .lb-ic{filter:drop-shadow(1px 1px 0 var(--ink));}
+  .res-squad-row .r-name .lb-ic.boot{width:23px;}
   .res-squad-row .r-cy{flex:0 0 auto;font-size:11px;color:#8a7d70;font-weight:700;display:inline-flex;align-items:center;gap:4px;}
   .res-squad-row .r-ov{flex:0 0 auto;font-family:'Anton',Impact,sans-serif;font-size:22px;
     display:flex;flex-direction:column;align-items:center;line-height:1;}
@@ -3535,8 +3541,10 @@ function goToResults(){
   picks.forEach(pick=>{
     const p=pick.player;
     const row=document.createElement('div'); row.className='res-squad-row';
+    const caps = p.is_captain ? lbCaptainBadge() : '';
+    const awards = awardList(p).map(a=>lbAwardIcon(a)).join('');
     row.innerHTML=`<span class="r-badge" style="${slotBadgeStyle(pick.slot,p)}">${pick.slot}</span>
-      <span class="r-name">${p.name}</span>
+      <span class="r-name">${p.name}${caps}${awards}</span>
       <span class="r-cy">${flagChip(p.country)} ${p.year}</span>
       <span class="r-ov ${ovTier(p.overall)}"><small class="r-ov-lbl">OVR</small>${p.overall}</span>`;
     row.addEventListener('click',()=>openProfile(p));
