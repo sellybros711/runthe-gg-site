@@ -3895,11 +3895,12 @@ async function buildShareCanvas(){
     x.textAlign='right'; const ovX=mX+rW-26;
     const ovrFont=Math.max(11, Math.round(rowH*0.17));
     const numFont=Math.round(rowH*0.46);
-    // OVR label + number, vertically centred in the card (number centred on cy)
+    // OVR label stacked ABOVE the number, the pair vertically centred in the card
+    // with a clear gap so the label and number never overlap.
     x.font='800 '+ovrFont+'px Archivo'; x.fillStyle='#8a7d70';
-    x.fillText('OVR', ovX, cy - Math.round(rowH*0.18));
+    x.fillText('OVR', ovX, cy - Math.round(rowH*0.15));
     x.font='400 '+numFont+'px Anton'; x.fillStyle=ovc;
-    x.fillText(String(ov), ovX, cy + Math.round(numFont*0.34)); x.textAlign='left';
+    x.fillText(String(ov), ovX, cy + Math.round(rowH*0.28)); x.textAlign='left';
     // flag + year (before overall)
     let rightX=ovX - x.measureText('00').width - 78;
     x.font='800 24px Archivo'; x.fillStyle='#5a5048';
