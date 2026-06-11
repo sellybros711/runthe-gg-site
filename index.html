@@ -1073,7 +1073,32 @@
   .lb-ov{flex:0 0 auto;font-family:'Anton',Impact,sans-serif;font-size:20px;min-width:30px;text-align:right;}
   .lb-ov.red{color:var(--red);} .lb-ov.orange{color:var(--orange);} .lb-ov.gold{color:var(--gold);} .lb-ov.green{color:#4ade80;}
   .lb-row.you{background:rgba(244,180,19,.16);border-radius:10px;border-bottom-color:transparent;}
+  /* expandable rows (carry a stored lineup) get a pointer + a chevron hint */
+  .lb-row.has-lineup{cursor:pointer;border-radius:10px;transition:background .12s ease;}
+  .lb-row.has-lineup:hover,.lb-row.has-lineup:active{background:rgba(255,255,255,.07);}
+  .lb-chev{flex:0 0 auto;font-size:18px;line-height:1;opacity:.5;margin-left:-2px;}
   .lb-empty{text-align:center;opacity:.7;font-weight:600;padding:20px 0;}
+
+  /* ---------- leaderboard lineup popup ---------- */
+  .lineup-bg{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;
+    background:rgba(11,19,36,.72);padding:18px;}
+  .lineup-bg.show{display:flex;animation:fade .2s ease;}
+  .lineup-card{position:relative;width:100%;max-width:430px;max-height:88vh;overflow-y:auto;
+    background:var(--paper);border:3px solid var(--ink);border-radius:18px;box-shadow:var(--shadow);
+    padding:20px 16px 18px;}
+  .lineup-head{text-align:center;margin:2px 0 14px;}
+  .lineup-name{font-family:'Anton',Impact,sans-serif;font-size:24px;line-height:1.1;color:var(--ink);
+    display:flex;align-items:center;justify-content:center;gap:7px;flex-wrap:wrap;}
+  .lineup-meta{display:flex;align-items:center;justify-content:center;gap:10px;margin-top:6px;}
+  .lineup-meta .lu-ov{font-family:'Anton',Impact,sans-serif;font-size:18px;}
+  .lineup-meta .lu-ov.red{color:var(--red);} .lineup-meta .lu-ov.orange{color:var(--orange);}
+  .lineup-meta .lu-ov.gold{color:var(--gold);} .lineup-meta .lu-ov.green{color:#1F9E57;}
+  .lineup-meta .lu-result{display:inline-flex;align-items:center;font-weight:900;font-size:13px;color:#5a5048;}
+  .lineup-meta .lu-result .ico-em{height:1.2em;}
+  .lineup-squad{display:flex;flex-direction:column;gap:8px;}
+  .lineup-squad .res-squad-row{cursor:default;}
+  .lineup-squad .res-squad-row:active{transform:none;box-shadow:var(--shadow-sm);}
+  .lineup-empty{text-align:center;opacity:.7;font-weight:600;padding:18px 0;color:var(--ink);}
   .lb-prompt{background:rgba(244,180,19,.14);border:2px solid var(--gold);border-radius:12px;
     padding:14px;margin-bottom:14px;text-align:center;font-weight:800;font-size:14px;line-height:1.4;}
   .lb-prompt input{width:100%;margin-top:10px;padding:11px 12px;border-radius:9px;border:2px solid var(--ink);
@@ -1887,6 +1912,18 @@
   </div>
 </div>
 <div class="entry-toast" id="entry-toast">Added to leaderboard!</div>
+
+<!-- ===== leaderboard lineup popup (tap a board row to see its squad) ===== -->
+<div class="lineup-bg" id="lineup-bg">
+  <div class="lineup-card">
+    <button class="profile-close" id="lineup-close" aria-label="Close">✕</button>
+    <div class="lineup-head">
+      <div class="lineup-name" id="lineup-name"></div>
+      <div class="lineup-meta" id="lineup-meta"></div>
+    </div>
+    <div class="lineup-squad" id="lineup-squad"></div>
+  </div>
+</div>
 
 
 <!-- ===== rating feedback form ===== -->
@@ -3408,9 +3445,12 @@ async function fetchTopDrafts(limit, opts){
   const cut=lbCutoffISO(opts.window);
   if(cut) filt+=`&created_at=gte.${encodeURIComponent(cut)}`;
   const order='&order=overall.desc,progress.desc,created_at.asc&limit='+limit;
-  // Prefer the full select (with flag); if the flag column isn't there yet,
-  // fall back to a flag-less select so the board still loads.
-  let res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,flag,overall,progress,result,furthest${filt}${order}`, { headers: sbHeaders() });
+  // Prefer the richest select (flag + lineup); fall back step by step if a
+  // column isn't present yet so the board always loads.
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,flag,overall,progress,result,furthest,player_ids${filt}${order}`, { headers: sbHeaders() });
+  if(!res.ok){
+    res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,flag,overall,progress,result,furthest${filt}${order}`, { headers: sbHeaders() });
+  }
   if(!res.ok){
     res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,overall,progress,result,furthest${filt}${order}`, { headers: sbHeaders() });
   }
@@ -3457,7 +3497,11 @@ function emToSvg(s){
     .replace(/🥉/g, metalTrophySvg(3,'ico-em'));
 }
 
+// Most-recently rendered board rows, so the click handler can find a row's
+// lineup (player_ids) by its index.
+let lbCurrentRows = [];
 function renderLeaderboardRows(rows, highlightId){
+  lbCurrentRows = rows || [];
   const list=$('lb-list');
   if(!rows.length){ list.innerHTML='<div class="lb-empty">No drafts yet — be the first on the board!</div>'; return; }
   list.innerHTML = rows.map((row,i)=>{
@@ -3468,14 +3512,64 @@ function renderLeaderboardRows(rows, highlightId){
     const rankCell = rank<=3
       ? `<span class="lb-rank medal ${MEDAL_TIERS[rank-1]}">${metalTrophySvg(rank,'lb-medal-svg')}<span class="lb-medal-num">${rank}</span></span>`
       : `<span class="lb-rank">${rank}</span>`;
-    return `<div class="lb-row${you?' you':''}">
+    // a row is expandable only when it actually carries a stored lineup
+    const hasLineup = Array.isArray(row.player_ids) && row.player_ids.length>0;
+    return `<div class="lb-row${you?' you':''}${hasLineup?' has-lineup':''}" data-i="${i}">
       ${rankCell}
       <span class="lb-name">${fl?fl+' ':''}${escapeHtml(nm)}</span>
       <span class="lb-meta">${emToSvg(lbMetaLabel(row))}</span>
       <span class="lb-ov ${ovTier(row.overall)}">${(+row.overall).toFixed(1)}</span>
+      ${hasLineup?'<span class="lb-chev" aria-hidden="true">›</span>':''}
     </div>`;
   }).join('');
 }
+
+// Lazy id→player lookup over the loaded dataset (rebuilt once PLAYERS arrives).
+let PLAYERS_BY_ID=null;
+function playerById(id){
+  if((!PLAYERS_BY_ID || PLAYERS_BY_ID.__n!==(window.PLAYERS||[]).length) && (window.PLAYERS||[]).length){
+    PLAYERS_BY_ID={__n:window.PLAYERS.length};
+    window.PLAYERS.forEach(p=>{ PLAYERS_BY_ID[String(p.player_id)]=p; });
+  }
+  return (PLAYERS_BY_ID && PLAYERS_BY_ID[String(id)]) || null;
+}
+function luOv(p){ return p.wc_overall ?? p.overall ?? p.skill_rating ?? '—'; }
+
+// Expand a leaderboard row into the squad that produced it, styled like the
+// results-screen player rows.
+function openLineupModal(row){
+  const ids = Array.isArray(row.player_ids) ? row.player_ids : [];
+  const nm  = cleanDisplayName((row.name && String(row.name).trim()) ? row.name : 'Anonymous');
+  const fl  = (row.flag && String(row.flag).trim()) ? flagChip(row.flag)+' ' : '';
+  $('lineup-name').innerHTML = fl+escapeHtml(nm);
+  const resultTag = emToSvg(lbMetaLabel(row));
+  $('lineup-meta').innerHTML =
+    `<span class="lu-ov ${ovTier(row.overall)}">${(+row.overall).toFixed(1)} OVR</span>`
+    + (resultTag ? `<span class="lu-result">${resultTag}</span>` : '');
+
+  const box=$('lineup-squad'); box.innerHTML='';
+  const ORDER={GK:0,DEF:1,MID:2,FWD:3};
+  const players = ids.map(id=>playerById(id)).filter(Boolean)
+    .sort((a,b)=>(ORDER[a.position]??9)-(ORDER[b.position]??9) || (luOv(b)-luOv(a)));
+  if(!players.length){
+    box.innerHTML='<div class="lineup-empty">Lineup unavailable for this entry.</div>';
+  }else{
+    players.forEach(p=>{
+      const ov     = luOv(p);
+      const caps   = p.is_captain ? lbCaptainBadge() : '';
+      const awards = awardList(p).map(a=>lbAwardIcon(a)).join('');
+      const r=document.createElement('div'); r.className='res-squad-row';
+      r.innerHTML=`<span class="r-badge" style="${slotBadgeStyle(p.position,p)}">${p.position}</span>
+        <span class="r-name">${escapeHtml(p.name)}${caps}${awards}</span>
+        <span class="r-cy">${flagChip(p.country)} ${p.year}</span>
+        <span class="r-ov ${ovTier(ov)}"><small class="r-ov-lbl">OVR</small>${ov}</span>`;
+      box.appendChild(r);
+    });
+  }
+  $('lineup-bg').querySelector('.lineup-card').scrollTop=0;
+  $('lineup-bg').classList.add('show');
+}
+function closeLineupModal(){ $('lineup-bg').classList.remove('show'); }
 
 function lbSetActiveToggles(){
   document.querySelectorAll('#lb-seg-window button').forEach(b=>b.classList.toggle('active', b.dataset.w===lbWindow));
@@ -4537,6 +4631,16 @@ $('entry-skip').addEventListener('click', closeEntryModal);  // Skip → record 
 $('entry-bg').addEventListener('click', e=>{ if(e.target===$('entry-bg')) closeEntryModal(); });
 $('entry-name').addEventListener('input', updateEntrySubmit);
 $('entry-submit').addEventListener('click', submitEntry);
+
+// Tap a board row with a stored lineup → show the squad behind that score.
+$('lb-list').addEventListener('click', e=>{
+  const rowEl = e.target.closest('.lb-row.has-lineup');
+  if(!rowEl) return;
+  const row = lbCurrentRows[+rowEl.dataset.i];
+  if(row) openLineupModal(row);
+});
+$('lineup-close').addEventListener('click', closeLineupModal);
+$('lineup-bg').addEventListener('click', e=>{ if(e.target===$('lineup-bg')) closeLineupModal(); });
 
 // ---------- rating feedback form ----------
 const RATING_FEEDBACK_EMAIL='sellybros711@gmail.com';
