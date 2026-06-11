@@ -9,9 +9,14 @@
 --
 -- Run AFTER 03_harden_submit_draft.sql. Existing rows keep player_ids = NULL
 -- (their lineup predates this feature); new saves carry the lineup going forward.
+--
+-- `slots` is a parallel array of slot labels (GK/DEF/MID/FWD/FLEX) in the same
+-- order as player_ids. It is DISPLAY-ONLY — the score is still recomputed from
+-- player_ids, so a mislabeled slot can never affect ranking.
 -- ----------------------------------------------------------------------------
 
 ALTER TABLE drafts ADD COLUMN IF NOT EXISTS player_ids text[];
+ALTER TABLE drafts ADD COLUMN IF NOT EXISTS slots      text[];
 
 -- Re-create submit_draft with the SAME validation/scoring as 03, but now also
 -- writing the authoritative player_ids onto the row.
@@ -21,7 +26,8 @@ CREATE OR REPLACE FUNCTION submit_draft(
   p_mode       text   DEFAULT 'easy',
   p_result     text   DEFAULT NULL,
   p_furthest   text   DEFAULT NULL,
-  p_draft_type text   DEFAULT 'quick'
+  p_draft_type text   DEFAULT 'quick',
+  p_slots      text[] DEFAULT NULL
 ) RETURNS bigint
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -89,15 +95,20 @@ BEGIN
   v_mult    := power(1.005, v_caps) * power(1.02, v_awards);   -- captain ×1.005, award ×1.02 (match client)
   v_overall := round(v_base * v_mult, 1);                      -- uncapped — can exceed 100
 
-  INSERT INTO drafts (overall, progress, mode, result, furthest, draft_type, player_ids)
+  -- store slots only when the array lines up with the ids (else leave NULL)
+  INSERT INTO drafts (overall, progress, mode, result, furthest, draft_type, player_ids, slots)
   VALUES (v_overall, v_prog,
           CASE WHEN p_mode = 'hard' THEN 'hard' ELSE 'easy' END,
-          p_result, p_furthest, v_dtype, p_player_ids)
+          p_result, p_furthest, v_dtype, p_player_ids,
+          CASE WHEN coalesce(cardinality(p_slots),0) = n_ids THEN p_slots ELSE NULL END)
   RETURNING id INTO v_id;
 
   RETURN v_id;
 END;
 $$;
 
-REVOKE ALL ON FUNCTION submit_draft(text[], int, text, text, text, text) FROM public;
-GRANT  EXECUTE ON FUNCTION submit_draft(text[], int, text, text, text, text) TO anon, authenticated;
+-- Drop the older 6-arg signature so PostgREST always resolves to this 7-arg one.
+DROP FUNCTION IF EXISTS submit_draft(text[], int, text, text, text, text);
+
+REVOKE ALL ON FUNCTION submit_draft(text[], int, text, text, text, text, text[]) FROM public;
+GRANT  EXECUTE ON FUNCTION submit_draft(text[], int, text, text, text, text, text[]) TO anon, authenticated;

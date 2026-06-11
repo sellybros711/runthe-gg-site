@@ -3343,13 +3343,25 @@ async function submitDraftRow(overall, progress, meta){
   // number (p_overall) is never trusted. See supabase/03_harden_submit_draft.sql.
   const ids = (gs && Array.isArray(gs.picks))
     ? gs.picks.map(p => String(p.player.player_id)) : null;
+  // parallel slot labels (GK/DEF/MID/FWD/FLEX) so the leaderboard lineup popup
+  // can show each player's actual slot — display-only, never used for scoring.
+  const slots = (gs && Array.isArray(gs.picks))
+    ? gs.picks.map(p => String(p.slot || p.player.position || '')) : null;
   if(ids && ids.length){
     const secure = await doPost({
       p_player_ids: ids, p_progress: progress,
       p_mode: base.p_mode, p_result: base.p_result,
-      p_furthest: base.p_furthest, p_draft_type: draftTypeVal
+      p_furthest: base.p_furthest, p_draft_type: draftTypeVal,
+      p_slots: slots
     });
     if(secure.ok) return await secure.json().catch(()=>null);
+    // else: DB doesn't have the p_slots signature yet → retry without it
+    const secure2 = await doPost({
+      p_player_ids: ids, p_progress: progress,
+      p_mode: base.p_mode, p_result: base.p_result,
+      p_furthest: base.p_furthest, p_draft_type: draftTypeVal
+    });
+    if(secure2.ok) return await secure2.json().catch(()=>null);
     // else: DB not yet migrated to the player-id signature → legacy fallback below
   }
 
@@ -3447,7 +3459,10 @@ async function fetchTopDrafts(limit, opts){
   const order='&order=overall.desc,progress.desc,created_at.asc&limit='+limit;
   // Prefer the richest select (flag + lineup); fall back step by step if a
   // column isn't present yet so the board always loads.
-  let res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,flag,overall,progress,result,furthest,player_ids${filt}${order}`, { headers: sbHeaders() });
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,flag,overall,progress,result,furthest,player_ids,slots${filt}${order}`, { headers: sbHeaders() });
+  if(!res.ok){
+    res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,flag,overall,progress,result,furthest,player_ids${filt}${order}`, { headers: sbHeaders() });
+  }
   if(!res.ok){
     res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,flag,overall,progress,result,furthest${filt}${order}`, { headers: sbHeaders() });
   }
@@ -3548,18 +3563,25 @@ function openLineupModal(row){
     + (resultTag ? `<span class="lu-result">${resultTag}</span>` : '');
 
   const box=$('lineup-squad'); box.innerHTML='';
-  const ORDER={GK:0,DEF:1,MID:2,FWD:3};
-  const players = ids.map(id=>playerById(id)).filter(Boolean)
-    .sort((a,b)=>(ORDER[a.position]??9)-(ORDER[b.position]??9) || (luOv(b)-luOv(a)));
-  if(!players.length){
+  // pair each id with its stored slot (GK/DEF/MID/FWD/FLEX); fall back to the
+  // player's natural position when an entry predates slot storage
+  const slots = Array.isArray(row.slots) ? row.slots : [];
+  const ORDER={GK:0,DEF:1,MID:2,FWD:3,FLEX:4};
+  const entries = ids.map((id,i)=>{
+    const p=playerById(id); if(!p) return null;
+    const slot=(slots[i] && String(slots[i]).trim()) ? String(slots[i]).trim().toUpperCase() : p.position;
+    return { p, slot };
+  }).filter(Boolean)
+    .sort((a,b)=>(ORDER[a.slot]??9)-(ORDER[b.slot]??9) || (luOv(b.p)-luOv(a.p)));
+  if(!entries.length){
     box.innerHTML='<div class="lineup-empty">Lineup unavailable for this entry.</div>';
   }else{
-    players.forEach(p=>{
+    entries.forEach(({p,slot})=>{
       const ov     = luOv(p);
       const caps   = p.is_captain ? lbCaptainBadge() : '';
       const awards = awardList(p).map(a=>lbAwardIcon(a)).join('');
       const r=document.createElement('div'); r.className='res-squad-row';
-      r.innerHTML=`<span class="r-badge" style="${slotBadgeStyle(p.position,p)}">${p.position}</span>
+      r.innerHTML=`<span class="r-badge" style="${slotBadgeStyle(slot,p)}">${slot}</span>
         <span class="r-name">${escapeHtml(p.name)}${caps}${awards}</span>
         <span class="r-cy">${flagChip(p.country)} ${p.year}</span>
         <span class="r-ov ${ovTier(ov)}"><small class="r-ov-lbl">OVR</small>${ov}</span>`;
