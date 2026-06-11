@@ -3097,11 +3097,11 @@ function runRevealOverlay(){
     setTimeout(()=>{
       row.classList.add('show');
       const ovEl=row.querySelector('.rv-ov-num');
-      countUp(ovEl, +ovEl.dataset.ov, 400, row.querySelector('.rv-ov')); // colour shifts as it counts
-    }, 300 + i*350);                          // 0.35s apart
+      countUp(ovEl, +ovEl.dataset.ov, 520, row.querySelector('.rv-ov')); // colour shifts as it counts
+    }, 300 + i*450);                          // slower reveal — 0.45s apart
   });
 
-  const afterAll = 300 + rows.length*350 + 300;
+  const afterAll = 300 + rows.length*450 + 400;
   const base    = gs.result.baseTeamOverall;
   const mult    = gs.result.leadershipMultiplier;
   const official= gs.result.teamOverall;
@@ -3112,8 +3112,8 @@ function runRevealOverlay(){
   setTimeout(()=>{
     team.style.display='';
     setTimeout(()=>team.classList.add('show'), 20);
-    countUpEase($('rc-base-num'), base, 1200, 1, $('rc-base-num')); // tier colour shifts as it counts
-    const mEl=$('rc-bonus-num'), mDur=1200, mSt=Date.now();
+    countUpEase($('rc-base-num'), base, 1700, 1, $('rc-base-num')); // tier colour shifts as it counts
+    const mEl=$('rc-bonus-num'), mDur=1700, mSt=Date.now();
     const mIv=setInterval(()=>{
       const t=Math.min(1,(Date.now()-mSt)/mDur), e=1-Math.pow(1-t,3);
       mEl.textContent=(1+(mult-1)*e).toFixed(3);
@@ -3122,7 +3122,7 @@ function runRevealOverlay(){
   }, afterAll);
 
   // STEP 3 — after the count-up + 0.5s pause, fade in breakdown lines (skip if no bonus)
-  const breakdownStart = afterAll + 1200 + 500;
+  const breakdownStart = afterAll + 1700 + 700;
   bd.forEach((b,i)=>{
     setTimeout(()=>{
       const line=document.createElement('div'); line.className='rc-bd-line';
@@ -3131,12 +3131,12 @@ function runRevealOverlay(){
       line.innerHTML=`${icon}<span>${b.name} — ${what} ×${b.value.toFixed(3)}</span>`;
       $('rc-breakdown').appendChild(line);
       setTimeout(()=>line.classList.add('show'), 20);
-    }, breakdownStart + i*250);
+    }, breakdownStart + i*350);
   });
-  const breakdownEnd = breakdownStart + (bd.length>0 ? bd.length*250 : 0);
+  const breakdownEnd = breakdownStart + (bd.length>0 ? bd.length*350 : 0);
 
   // STEP 4 — 1.0s after breakdown completes, merge into the official overall
-  const mergeAt = breakdownEnd + 1000;
+  const mergeAt = breakdownEnd + 1400;
   setTimeout(()=>{
     const combine=$('reveal-combine'), tnum=$('reveal-team-num'), tlab=$('reveal-team-label');
     $('rc-breakdown').innerHTML='';
@@ -3146,21 +3146,21 @@ function runRevealOverlay(){
       tnum.style.display=''; tlab.style.display='';
       tnum.classList.add('merge');                       // pulse + gold flash
       // final satisfying tick-up from the base value to the official combined value
-      const dur=500, st=Date.now();
+      const dur=800, st=Date.now();
       const iv=setInterval(()=>{
         const t=Math.min(1,(Date.now()-st)/dur);
         const v=base+(official-base)*t;
         tnum.textContent=v.toFixed(1); applyTierClass(tnum, v);
         if(t>=1){ tnum.textContent=official.toFixed(1); applyTierClass(tnum, official); clearInterval(iv); }
       },22);
-    }, 480);
+    }, 620);
   }, mergeAt);
 
   // STEP 5 — 0.8s after the official number lands, show the GO button
   setTimeout(()=>{
     go.style.display='';
     setTimeout(()=>go.classList.add('show'), 20);
-  }, mergeAt + 480 + 500 + 800);
+  }, mergeAt + 620 + 800 + 800);
 }
 
 // ============================================================
