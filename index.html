@@ -883,6 +883,11 @@
   .reveal-team-num{font-family:'Anton',Impact,sans-serif;font-size:72px;line-height:.9;color:var(--gold);}
   .reveal-team-num.red{color:var(--red);} .reveal-team-num.orange{color:var(--orange);}
   .reveal-team-num.gold{color:var(--gold);} .reveal-team-num.green{color:#4ade80;}
+  /* 100+ team overall: golden with a pulsing glow, anywhere a team rating shows */
+  .over100{ color:#F4B413 !important; animation:over100Glow 1.4s ease-in-out infinite; }
+  @keyframes over100Glow{
+    0%,100%{ text-shadow:0 0 7px rgba(244,180,19,.55), 0 0 16px rgba(244,180,19,.35); }
+    50%    { text-shadow:0 0 15px rgba(244,180,19,1),  0 0 30px rgba(244,180,19,.7); } }
   .reveal-team-label{font-weight:900;font-size:13px;letter-spacing:3px;color:#fff;}
   /* leadership/awards count-up + combine */
   /* baseline alignment puts the × on the same baseline as the digits, so it sits
@@ -2578,11 +2583,13 @@ function showPitchResult(){
   // it's decided by the simulation the user launches next.
   const box=$('pitch-result'); box.classList.add('show');
   const el=$('pr-score-val'), target=r.teamOverall, dur=900, start=Date.now();
-  el.textContent='0';
+  el.textContent='0'; el.classList.remove('over100');
   const iv=setInterval(()=>{
     const t=Math.min(1,(Date.now()-start)/dur);
-    el.textContent=Math.round(target*t);
-    if(t>=1){el.textContent=target.toFixed(1);clearInterval(iv);}
+    const v=target*t;
+    el.textContent=Math.round(v);
+    el.classList.toggle('over100', v>=100);   // golden glow once it crosses 100
+    if(t>=1){el.textContent=target.toFixed(1); el.classList.toggle('over100', target>=100); clearInterval(iv);}
   },22);
   box.scrollIntoView({behavior:'smooth',block:'center'});
   // reveal the Start World Cup button once the rating has landed
@@ -2929,7 +2936,7 @@ function slotBadgeStyle(slot, player){
 // Set the tier colour class (red/orange/gold/green) on an element for value v.
 function applyTierClass(el, v){
   if(!el) return;
-  el.classList.remove('red','orange','gold','green');
+  el.classList.remove('red','orange','gold','green','over100');
   el.classList.add(ovTier(v));
 }
 // Count a number up to target. If colorEl is given, its tier colour updates live
@@ -3001,7 +3008,7 @@ function lbAwardIcon(award){
 // Overall-rating tier colour, shared by the reveal overlay and the results
 // squad list. red ≤70, orange 71–80, gold 81–90, green 91+ (the top tier is
 // green so the best players stand out brightest).
-function ovTier(o){ return o>=90?'green':o>=80?'gold':o>=70?'orange':'red'; }
+function ovTier(o){ return o>=100?'over100':o>=90?'green':o>=80?'gold':o>=70?'orange':'red'; }
 
 function runRevealOverlay(){
   if(!gs.result._bonusApplied) applyLeadershipBonus();
@@ -3511,7 +3518,7 @@ function goToResults(){
     <div id="summary-host"></div>
     ${modeBadge}
     ${rankBadge}
-    <div class="res-section">Your Squad: ${r.teamOverall.toFixed(1)} OVR</div>
+    <div class="res-section">Your Squad: <span class="${r.teamOverall>=100?'over100':''}">${r.teamOverall.toFixed(1)}</span> OVR</div>
     <div class="res-bio-hint">Tap a player for their bio card</div>
     <div id="res-squad"></div>
     <div class="stack" style="margin-top:16px;">
@@ -3804,10 +3811,13 @@ async function buildShareCanvas(){
   // screen: a large tier-coloured number (green ≥90, gold ≥80, orange ≥70,
   // else red) with a spaced "TEAM OVERALL" label beneath, to one decimal.
   const teamOv = gs.result.teamOverall;
-  const teamColor = teamOv>=90?'#4ade80':teamOv>=80?'#F4B413':teamOv>=70?'#F47B20':'#E5402A';
+  const over100 = teamOv >= 100;
+  const teamColor = over100 ? '#F4B413' : (teamOv>=90?'#4ade80':teamOv>=80?'#F4B413':teamOv>=70?'#F47B20':'#E5402A');
   x.textAlign='center';
   x.font='400 96px Anton'; x.fillStyle=teamColor;
-  x.save(); x.shadowColor='rgba(0,0,0,.4)'; x.shadowBlur=14; x.shadowOffsetY=3;
+  x.save();
+  if(over100){ x.shadowColor='rgba(244,180,19,0.95)'; x.shadowBlur=30; x.shadowOffsetY=0; }
+  else        { x.shadowColor='rgba(0,0,0,.4)'; x.shadowBlur=14; x.shadowOffsetY=3; }
   x.fillText(teamOv.toFixed(1), CX, y+74); x.restore(); y+=98;
   // spaced "TEAM OVERALL" label (matches the reveal screen's letter-spacing)
   x.font='900 22px Archivo'; x.fillStyle=cream;
