@@ -33,6 +33,12 @@
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
 <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
 <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+<!-- Add-to-home-screen support -->
+<link rel="manifest" href="/manifest.json" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="RunThePitch" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 
 <!-- Open Graph / Facebook / iMessage -->
 <meta property="og:type" content="website" />
@@ -141,12 +147,28 @@
   .home-cta-row .btn-label{font-size:16px;letter-spacing:.5px;white-space:nowrap;}
   /* unbolded subtext beneath each button label */
   .home-cta-row .btn-sub{font-weight:400;font-size:8px;letter-spacing:.2px;text-transform:uppercase;opacity:.92;white-space:nowrap;}
-  /* small, centered text-link leaderboard button on its own line below the CTAs */
-  #btn-home-leaderboard{display:block;margin:11px auto 0;background:none;border:none;
+  /* small, centered text-link buttons on their own line below the CTAs */
+  #btn-home-leaderboard,#btn-add-home{display:block;margin:11px auto 0;background:none;border:none;
     color:#F5C518;font-family:inherit;font-weight:800;font-size:11px;letter-spacing:1px;
     text-transform:uppercase;cursor:pointer;padding:5px 8px;opacity:.92;
     text-decoration:underline;text-underline-offset:3px;-webkit-tap-highlight-color:transparent;}
-  #btn-home-leaderboard:hover,#btn-home-leaderboard:active{opacity:1;}
+  #btn-add-home{margin-top:6px;}
+  #btn-home-leaderboard:hover,#btn-home-leaderboard:active,
+  #btn-add-home:hover,#btn-add-home:active{opacity:1;}
+  /* Add-to-home instructions popup */
+  .a2hs-bg{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;
+    padding:20px;background:rgba(0,0,0,.66);}
+  .a2hs-bg.show{display:flex;animation:fade .2s ease;}
+  .a2hs-card{position:relative;max-width:380px;width:100%;background:var(--paper);border:3px solid var(--ink);
+    border-radius:18px;box-shadow:var(--shadow);padding:22px 20px;text-align:center;color:var(--ink);}
+  .a2hs-card h3{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:24px;letter-spacing:1px;
+    text-transform:uppercase;margin:0 0 6px;}
+  .a2hs-card p{font-weight:600;font-size:14px;line-height:1.5;margin:8px 0;}
+  .a2hs-card .a2hs-step{display:flex;align-items:center;gap:8px;justify-content:center;
+    font-weight:700;font-size:14px;margin:10px 0;}
+  .a2hs-card kbd{background:#fff;border:2px solid var(--ink);border-radius:6px;padding:2px 7px;
+    font-family:inherit;font-weight:900;box-shadow:1.5px 1.5px 0 var(--ink);}
+  .a2hs-close{margin-top:14px;}
   @media (max-width:319px){
     .home-cta-row{flex-direction:column;gap:10px;}
     .home-cta-row .btn,.home-cta-row #btn-friendly{width:100%;}
@@ -1483,8 +1505,9 @@
           <span class="btn-sub">World Cup simulator</span>
         </button>
       </div>
-      <!-- small, centered text link on its own line (never in the CTA row) -->
+      <!-- small, centered text links on their own line (never in the CTA row) -->
       <button id="btn-home-leaderboard" type="button">🏅 View Leaderboard</button>
+      <button id="btn-add-home" type="button">📲 Add to Home Screen</button>
       <!-- flag lane (scrolls right) below the kickoff button -->
       <div class="flag-marquee bottom"><div class="flag-lane right" id="flag-lane-2"></div></div>
     </div>
@@ -1867,6 +1890,16 @@
 </div>
 
 <div class="copied-toast" id="toast">Copied to clipboard ✓</div>
+
+<!-- Add to Home Screen / bookmark instructions -->
+<div class="a2hs-bg" id="a2hs-bg">
+  <div class="a2hs-card">
+    <h3 id="a2hs-title">Add RunThePitch</h3>
+    <div id="a2hs-body"></div>
+    <button class="btn red a2hs-close" id="a2hs-close" type="button">Got it</button>
+  </div>
+</div>
+
 
 <!-- ?v= cache-buster: index.html is always served fresh (max-age=0) but these
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
@@ -4061,6 +4094,44 @@ $('btn-start').addEventListener('click',goToDraftTypeSelect);
 // Home-screen leaderboard view: opens the existing leaderboard board in view-only
 // mode (board visible, score-entry UI hidden). Does not change leaderboard behaviour.
 $('btn-home-leaderboard').addEventListener('click', openLeaderboardView);
+
+// ---- Add to Home Screen / bookmark ----
+let deferredInstallPrompt = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstallPrompt = e; });
+function a2hsIsIOS(){ return /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1); }
+function a2hsIsAndroid(){ return /android/i.test(navigator.userAgent); }
+function a2hsStandalone(){ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true; }
+function showA2HS(){
+  const body=$('a2hs-body'), title=$('a2hs-title');
+  if(a2hsStandalone()){
+    title.textContent='Already added 🎉';
+    body.innerHTML=`<p>You're already running RunThePitch from your home screen.</p>`;
+  } else if(a2hsIsIOS()){
+    title.textContent='Add to Home Screen';
+    body.innerHTML=`<p>In Safari, tap the <b>Share</b> button (the square with an arrow) at the bottom, then choose <b>“Add to Home Screen”</b>.</p>`;
+  } else if(a2hsIsAndroid()){
+    title.textContent='Add to Home Screen';
+    body.innerHTML=`<p>Tap the browser <b>menu</b> (⋮, top-right), then choose <b>“Add to Home screen”</b> (or “Install app”).</p>`;
+  } else {
+    const mac=/mac/i.test(navigator.platform||navigator.userAgent);
+    title.textContent='Bookmark RunThePitch';
+    body.innerHTML=`<div class="a2hs-step">Press <kbd>${mac?'⌘ Cmd':'Ctrl'}</kbd> + <kbd>D</kbd></div>
+      <p>to bookmark this page for quick access.</p>
+      <p style="opacity:.75;font-size:12px;">In Chrome or Edge you can also click the install icon in the address bar to add it as an app.</p>`;
+  }
+  $('a2hs-bg').classList.add('show');
+}
+$('btn-add-home').addEventListener('click', async ()=>{
+  if(deferredInstallPrompt){            // native one-tap install (Android / desktop Chrome-Edge)
+    deferredInstallPrompt.prompt();
+    try{ await deferredInstallPrompt.userChoice; }catch(e){}
+    deferredInstallPrompt=null;
+    return;
+  }
+  showA2HS();                           // otherwise show device-specific instructions
+});
+$('a2hs-close').addEventListener('click', ()=>$('a2hs-bg').classList.remove('show'));
+$('a2hs-bg').addEventListener('click', e=>{ if(e.target===$('a2hs-bg')) $('a2hs-bg').classList.remove('show'); });
 
 // draft-type cards: select Quick or Full, then enable Continue
 document.querySelectorAll('#draft-type-cards .mode-card').forEach(card=>{

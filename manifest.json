@@ -1,0 +1,15 @@
+{
+  "name": "RunThePitch — World Cup Edition",
+  "short_name": "RunThePitch",
+  "description": "Spin a random nation & year, draft a legend each round, build your dream XI, then simulate a World Cup.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FBF4E6",
+  "theme_color": "#0b1324",
+  "icons": [
+    { "src": "/favicon-48x48.png", "sizes": "48x48", "type": "image/png" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}
