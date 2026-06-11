@@ -91,7 +91,7 @@ BEGIN
 
   -- ---- recompute the score (mirrors gameLogic computeResult + leadership) ----
   v_base    := LEAST(100, round(v_avg + v_num99 * 0.15, 1));
-  v_mult    := power(1.01, v_caps) * power(1.02, v_awards);
+  v_mult    := power(1.005, v_caps) * power(1.02, v_awards);   -- captain ×1.005, award ×1.02 (match client)
   v_overall := LEAST(100, round(v_base * v_mult, 1));
 
   INSERT INTO drafts (overall, progress, mode, result, furthest, draft_type)
