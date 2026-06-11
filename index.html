@@ -3900,7 +3900,7 @@ async function buildShareCanvas(){
   x.fillStyle='rgba(255,255,255,.18)'; x.fillRect(300, y, W-64-300, 2); y+=26;
 
   // roster rows (white cards)
-  const picks=groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, ['FWD','MID','DEF','DEF','GK','FLEX']));
+  const picks=groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, draftSlotOrder()));
   const rowH=Math.min(96, Math.floor((H-110-y)/picks.length)-12), gap=12, mX=60, rW=W-2*mX;
   // preload flags (CORS-safe; null on failure → no flag drawn)
   const flagImgs=await Promise.all(picks.map(pk=>{ const u=flagImg(pk.player.country,160); return u?loadImg(u,true):Promise.resolve(null); }));
@@ -4108,16 +4108,14 @@ function showA2HS(){
     body.innerHTML=`<p>You're already running RunThePitch from your home screen.</p>`;
   } else if(a2hsIsIOS()){
     title.textContent='Add to Home Screen';
-    body.innerHTML=`<p>In Safari, tap the <b>Share</b> button (the square with an arrow) at the bottom, then choose <b>“Add to Home Screen”</b>.</p>`;
+    body.innerHTML=`<p>Tap the <b>Share</b> button, then choose <b>“Add to Home Screen”</b>.</p>`;
   } else if(a2hsIsAndroid()){
     title.textContent='Add to Home Screen';
-    body.innerHTML=`<p>Tap the browser <b>menu</b> (⋮, top-right), then choose <b>“Add to Home screen”</b> (or “Install app”).</p>`;
+    body.innerHTML=`<p>Tap the browser <b>menu</b> (⋮), then choose <b>“Add to Home screen”</b>.</p>`;
   } else {
     const mac=/mac/i.test(navigator.platform||navigator.userAgent);
     title.textContent='Bookmark RunThePitch';
-    body.innerHTML=`<div class="a2hs-step">Press <kbd>${mac?'⌘ Cmd':'Ctrl'}</kbd> + <kbd>D</kbd></div>
-      <p>to bookmark this page for quick access.</p>
-      <p style="opacity:.75;font-size:12px;">In Chrome or Edge you can also click the install icon in the address bar to add it as an app.</p>`;
+    body.innerHTML=`<p>Press <kbd>${mac?'⌘':'Ctrl'}</kbd> + <kbd>D</kbd> to bookmark this page for quick access.</p>`;
   }
   $('a2hs-bg').classList.add('show');
 }
