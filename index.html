@@ -160,10 +160,10 @@
     padding:20px;background:rgba(0,0,0,.66);}
   .a2hs-bg.show{display:flex;animation:fade .2s ease;}
   .a2hs-card{position:relative;max-width:380px;width:100%;background:var(--paper);border:3px solid var(--ink);
-    border-radius:18px;box-shadow:var(--shadow);padding:22px 20px;text-align:center;color:var(--ink);}
+    border-radius:18px;box-shadow:var(--shadow);padding:22px 16px;text-align:center;color:var(--ink);}
   .a2hs-card h3{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:24px;letter-spacing:1px;
     text-transform:uppercase;margin:0 0 6px;}
-  .a2hs-card p{font-weight:600;font-size:14px;line-height:1.5;margin:8px 0;}
+  .a2hs-card p{font-weight:600;font-size:12px;line-height:1.45;margin:8px 0;}
   .a2hs-card .a2hs-step{display:flex;align-items:center;gap:8px;justify-content:center;
     font-weight:700;font-size:14px;margin:10px 0;}
   .a2hs-card kbd{background:#fff;border:2px solid var(--ink);border-radius:6px;padding:2px 7px;
@@ -4108,7 +4108,7 @@ function showA2HS(){
     body.innerHTML=`<p>You're already running RunThePitch from your home screen.</p>`;
   } else if(a2hsIsIOS()){
     title.textContent='Add to Home Screen';
-    body.innerHTML=`<p>Tap the <b>Share</b> button, then choose <b>“Add to Home Screen”</b>.</p>`;
+    body.innerHTML=`<p>In your browser, tap the <b>Share</b> button (the square with an arrow) at the bottom, then choose <b>“Add to Home Screen”</b>.</p>`;
   } else if(a2hsIsAndroid()){
     title.textContent='Add to Home Screen';
     body.innerHTML=`<p>Tap the browser <b>menu</b> (⋮), then choose <b>“Add to Home screen”</b>.</p>`;
