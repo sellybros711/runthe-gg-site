@@ -1252,7 +1252,7 @@
   .fm-name{font-family:'Anton',Impact,sans-serif;font-size:64px;line-height:1;margin:8px 0 4px;color:var(--ink);
     opacity:0;transform:scale(.8);transition:opacity .4s ease, transform .4s cubic-bezier(.3,1.4,.5,1);}
   .fm-name.show{opacity:1;transform:none;}
-  .fm-req{font-weight:900;font-size:15px;color:#5a5048;letter-spacing:.3px;margin-bottom:24px;min-height:20px;
+  .fm-req{font-weight:900;font-size:15px;color:#5a5048;letter-spacing:.3px;margin-top:16px;margin-bottom:24px;min-height:20px;
     opacity:0;transition:opacity .4s ease;}
   .fm-req.show{opacity:1;}
   #btn-formation-go{max-width:340px;opacity:0;transition:opacity .4s ease;}
@@ -4016,7 +4016,10 @@ $('btn-start-draft').addEventListener('click',()=>{
 
 // ---------- formation reveal (Full Draft only) ----------
 function formationReqLine(f){
-  return `Draft 1 GK · ${f.def} DEF · ${f.mid} MID · ${f.fwd} FWD`;
+  // colour each "<n> POS" to match the position tags on the player cards; "Draft"
+  // keeps the muted .fm-req colour.
+  const seg=(n,pos)=>`<span style="color:${PITCH_COLORS[pos]}">${n} ${pos}</span>`;
+  return `Draft ${seg(1,'GK')} · ${seg(f.def,'DEF')} · ${seg(f.mid,'MID')} · ${seg(f.fwd,'FWD')}`;
 }
 function showFormationReveal(){
   showScreen('formation');
@@ -4039,7 +4042,7 @@ function showFormationReveal(){
   strip.style.transform=`translateY(${-(targetIndex*rowH)}px)`;
   const settle=()=>{
     // formation number already shows in the reel — only reveal the description line
-    req.textContent=formationReqLine(target); setTimeout(()=>req.classList.add('show'),250);
+    req.innerHTML=formationReqLine(target); setTimeout(()=>req.classList.add('show'),250);
     setTimeout(()=>go.classList.add('show'),550);
   };
   let done=false; const fin=()=>{ if(done)return; done=true; settle(); };
