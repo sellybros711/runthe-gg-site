@@ -4356,10 +4356,13 @@ function openLeaderboardView(){
 
 function openEntryModal(resultLabel, score, color){
   $('entry-bg').classList.remove('view-only');   // ensure full entry UI is shown
-  // two pills: the result (champion → trophy, otherwise "Elim: <round>") + the overall
+  // two pills: the result (champion → trophy, runner-up → silver, otherwise
+  // "Elim: <round>") + the overall
   const sim=simResult;
-  const champ = sim && !sim.eliminated && sim.furthestRound==='Final';
-  const resultText = !sim ? resultLabel : (champ ? '🏆 Champion' : `Elim: ${resultLabel}`);
+  const champ    = sim && !sim.eliminated && sim.furthestRound==='Final';
+  const runnerUp = sim &&  sim.eliminated && sim.furthestRound==='Final';
+  const resultText = !sim ? resultLabel
+    : (champ ? '🏆 Champion' : (runnerUp ? '🥈 Runner-Up' : `Elim: ${resultLabel}`));
   const bResult=$('entry-badge-result'), bOvr=$('entry-badge-ovr');
   bResult.textContent=resultText; bResult.style.background=color||'var(--teal)';
   bOvr.textContent=`Ovr: ${(+score).toFixed(1)}`; bOvr.style.background=color||'var(--teal)';
