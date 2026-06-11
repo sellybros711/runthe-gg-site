@@ -1250,10 +1250,14 @@
   /* single borderless live-description panel (no button look) */
   .setup-info{text-align:center;padding:6px 6px 0;}
   .si-combo{font-family:'Anton',Impact,sans-serif;font-size:18px;text-transform:uppercase;
-    letter-spacing:.5px;margin-bottom:6px;transition:color .2s ease;}
+    letter-spacing:.5px;margin-bottom:6px;}
   .si-desc{font-weight:600;font-size:13.5px;line-height:1.5;color:#5a5048;max-width:340px;margin:0 auto;}
-  .setup-info.quick .si-combo{color:#9c6c18;}
-  .setup-info.full  .si-combo{color:var(--blue);}
+  /* each half of the combo line matches its own slider; dot stays dark */
+  .si-dot{color:#5a5048;}
+  .si-draft.quick{color:#9c6c18;}
+  .si-draft.full{color:var(--blue);}
+  .si-mode.easy{color:var(--teal);}
+  .si-mode.hard{color:var(--red);}
   .mode-title{font-family:'Anton',Impact,sans-serif;font-size:clamp(30px,8vw,42px);
     text-transform:uppercase;line-height:1;letter-spacing:.5px;}
   .mode-sub{font-weight:600;font-size:14px;color:#8a7d70;margin-top:6px;}
@@ -4126,31 +4130,24 @@ async function copyReport(){
 }
 
 // One description per combination of the two sliders. Keyed draftType_gameMode.
+const SETUP_DRAFT_LABEL = { quick:'Quick Draft', full:'Full Team' };
+const SETUP_MODE_LABEL  = { easy:'Easy', hard:'Hard' };
 const SETUP_COMBOS = {
-  quick_easy: {
-    combo:'Quick Draft · Easy',
-    desc:'6 fast rounds — GK, DEF, DEF, MID, FWD, FLEX. Overall ratings stay visible, so you can chase the strongest lineup possible.',
-  },
-  quick_hard: {
-    combo:'Quick Draft · Hard',
-    desc:'6 fast rounds — GK, DEF, DEF, MID, FWD, FLEX. Ratings are hidden, so you draft on name and gut alone. A quick test of your ball knowledge.',
-  },
-  full_easy: {
-    combo:'Full Team · Easy',
-    desc:'A full starting XI across 11 rounds, with a random formation deciding your positions. Overall ratings stay visible to help you build the ultimate team.',
-  },
-  full_hard: {
-    combo:'Full Team · Hard',
-    desc:'A full starting XI across 11 rounds, with a random formation deciding your positions. Ratings are hidden — pure ball knowledge, no safety net. The ultimate test.',
-  },
+  quick_easy:'6 fast rounds — GK, DEF, DEF, MID, FWD, FLEX. Overall ratings stay visible, so you can chase the strongest lineup possible.',
+  quick_hard:'6 fast rounds — GK, DEF, DEF, MID, FWD, FLEX. Ratings are hidden, so you draft on name and gut alone. A quick test of your ball knowledge.',
+  full_easy:'A full starting XI across 11 rounds, with a random formation deciding your positions. Overall ratings stay visible to help you build the ultimate team.',
+  full_hard:'A full starting XI across 11 rounds, with a random formation deciding your positions. Ratings are hidden — pure ball knowledge, no safety net. The ultimate test.',
 };
 
 // Repaint the single live description from the current draftType + gameMode combo.
+// Each half of the combo line is tinted to match its own slider; the dot stays dark.
 function renderSetupInfo(){
-  const c = SETUP_COMBOS[draftType+'_'+gameMode] || SETUP_COMBOS.quick_easy;
-  $('setup-info').className='setup-info '+draftType;
-  $('setup-combo').textContent=c.combo;
-  $('setup-desc').textContent=c.desc;
+  $('setup-info').className='setup-info';
+  $('setup-combo').innerHTML =
+    `<span class="si-draft ${draftType}">${SETUP_DRAFT_LABEL[draftType]||''}</span>`
+    +`<span class="si-dot"> · </span>`
+    +`<span class="si-mode ${gameMode}">${SETUP_MODE_LABEL[gameMode]||''}</span>`;
+  $('setup-desc').textContent = SETUP_COMBOS[draftType+'_'+gameMode] || SETUP_COMBOS.quick_easy;
 }
 
 // Show the combined setup screen (draft size + difficulty) with sensible
