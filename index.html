@@ -1096,7 +1096,7 @@
   /* view-only mode (opened from the home screen): show just the board, hide the
      name/flag submission UI. No leaderboard behaviour changes — only visibility. */
   .entry-bg.view-only .entry-sub,
-  .entry-bg.view-only .entry-badge,
+  .entry-bg.view-only .entry-badges,
   .entry-bg.view-only .entry-name,
   .entry-bg.view-only .entry-flag-label,
   .entry-bg.view-only .entry-flag-row,
@@ -1113,7 +1113,8 @@
   .entry-title{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;
     font-size:28px;line-height:1;color:var(--gold);margin:0 30px 0 0;letter-spacing:.5px;}
   .entry-sub{font-weight:700;font-size:13px;color:#b9b9b9;margin:6px 0 0;}
-  .entry-badge{display:inline-flex;align-items:center;gap:8px;margin:14px 0 4px;padding:8px 16px;
+  .entry-badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:14px 0 4px;}
+  .entry-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;
     border:2.5px solid rgba(255,255,255,.25);border-radius:999px;color:#fff;font-weight:900;font-size:14px;
     text-transform:uppercase;letter-spacing:.5px;}
   .entry-name{width:100%;box-sizing:border-box;border:2px solid #F5C518;border-radius:11px;
@@ -1852,7 +1853,7 @@
     <button class="entry-close" id="entry-close" aria-label="Close">✕</button>
     <h3 class="entry-title">🏆 Leaderboard</h3>
     <p class="entry-sub">Enter your name to save your score</p>
-    <div><span class="entry-badge" id="entry-badge"></span></div>
+    <div class="entry-badges"><span class="entry-badge" id="entry-badge-result"></span><span class="entry-badge" id="entry-badge-ovr"></span></div>
     <input class="entry-name" id="entry-name" maxlength="20" placeholder="Your name" autocomplete="off" />
     <div class="entry-flag-label">Your Flag</div>
     <div class="entry-flag-row" id="entry-flag-row"></div>
@@ -4355,9 +4356,13 @@ function openLeaderboardView(){
 
 function openEntryModal(resultLabel, score, color){
   $('entry-bg').classList.remove('view-only');   // ensure full entry UI is shown
-  const badge=$('entry-badge');
-  badge.textContent=`${resultLabel}  ${(+score).toFixed(1)}`;
-  badge.style.background=color||'var(--teal)';
+  // two pills: the result (champion → trophy, otherwise "Elim: <round>") + the overall
+  const sim=simResult;
+  const champ = sim && !sim.eliminated && sim.furthestRound==='Final';
+  const resultText = !sim ? resultLabel : (champ ? '🏆 Champion' : `Elim: ${resultLabel}`);
+  const bResult=$('entry-badge-result'), bOvr=$('entry-badge-ovr');
+  bResult.textContent=resultText; bResult.style.background=color||'var(--teal)';
+  bOvr.textContent=`Ovr: ${(+score).toFixed(1)}`; bOvr.style.background=color||'var(--teal)';
   // reset the submit button + any prior error from a previous open
   const btn=$('entry-submit');
   btn.className='entry-submit'; btn.textContent='Save to Leaderboard'; btn.disabled=false;
