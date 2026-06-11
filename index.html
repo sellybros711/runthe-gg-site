@@ -1280,6 +1280,8 @@
   /* retro inline-SVG card icons (replace the old emoji) */
   .mode-card .mc-icon{display:flex;align-items:center;justify-content:center;height:48px;}
   .mc-ico-svg{width:46px;height:46px;display:block;filter:drop-shadow(2px 2px 0 rgba(22,18,15,.18));}
+  /* inline trophy/medal graphic that sits like an emoji within a run of text */
+  .ico-em{height:1.05em;width:auto;display:inline-block;vertical-align:-.18em;}
   /* keep the position abbreviations together on one line */
   .mc-desc .mc-pos{white-space:nowrap;}
 
@@ -1529,14 +1531,28 @@
       <button class="mode-card easy" id="mode-easy" data-mode="easy">
         <span class="mc-check">✓</span>
         <div class="mc-label">Easy Mode</div>
-        <div class="mc-icon">👁</div>
+        <div class="mc-icon">
+          <svg class="mc-ico-svg" viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M4 24 C13 12 35 12 44 24 C35 36 13 36 4 24 Z" fill="var(--paper)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>
+            <circle cx="24" cy="24" r="8" fill="var(--teal)" stroke="var(--ink)" stroke-width="3"/>
+            <circle cx="24" cy="24" r="3" fill="var(--ink)"/>
+            <circle cx="21.3" cy="21.3" r="1.5" fill="#fff"/>
+          </svg>
+        </div>
         <div class="mc-headline">Ratings Visible</div>
         <div class="mc-desc">Player overall ratings are shown during the draft. Use them to build the best squad possible.</div>
       </button>
       <button class="mode-card hard" id="mode-hard" data-mode="hard">
         <span class="mc-check">✓</span>
         <div class="mc-label">Hard Mode</div>
-        <div class="mc-icon">🧠</div>
+        <div class="mc-icon">
+          <svg class="mc-ico-svg" viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M24 8 C18 6 12 9 13 15 C8 16 8 22 12 24 C9 28 12 34 18 33 C19 38 24 38 24 33 Z" fill="var(--gold)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M24 8 C30 6 36 9 35 15 C40 16 40 22 36 24 C39 28 36 34 30 33 C29 38 24 38 24 33 Z" fill="var(--gold)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>
+            <path d="M24 8 V33" stroke="var(--ink)" stroke-width="2.4" fill="none"/>
+            <path d="M17 17 C20 18 20 21 18 22 M31 17 C28 18 28 21 30 22 M16 26 C19 26 20 28 19 30 M32 26 C29 26 28 28 29 30" stroke="var(--ink)" stroke-width="2" fill="none" stroke-linecap="round"/>
+          </svg>
+        </div>
         <div class="mc-headline">Names Only</div>
         <div class="mc-desc">Ratings are hidden. Test your ball knowledge!</div>
       </button>
@@ -1851,7 +1867,7 @@
 <div class="entry-bg" id="entry-bg">
   <div class="entry-card">
     <button class="entry-close" id="entry-close" aria-label="Close">✕</button>
-    <h3 class="entry-title">🏆 Leaderboard</h3>
+    <h3 class="entry-title"><svg class="ico-em" viewBox="0 0 24 28" aria-hidden="true"><defs><linearGradient id="trgTitle" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".5" stop-color="#E8C25A"/><stop offset="1" stop-color="#8A5E12"/></linearGradient></defs><path d="M5 4 C2.5 4 2.5 9 5.6 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M19 4 C21.5 4 21.5 9 18.4 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M6 3 H18 V8 C18 13 14.5 15 12 15 C9.5 15 6 13 6 8 Z" fill="url(#trgTitle)" stroke="#00000033" stroke-width=".6"/><rect x="11" y="15" width="2" height="4" fill="url(#trgTitle)"/><rect x="8" y="19" width="8" height="2" rx="1" fill="url(#trgTitle)"/><rect x="6.5" y="21" width="11" height="2.6" rx="1.3" fill="url(#trgTitle)" stroke="#00000022" stroke-width=".5"/></svg> Leaderboard</h3>
     <p class="entry-sub">Enter your name to save your score</p>
     <div class="entry-badges"><span class="entry-badge" id="entry-badge-result"></span><span class="entry-badge" id="entry-badge-ovr"></span></div>
     <input class="entry-name" id="entry-name" maxlength="20" placeholder="Your name" autocomplete="off" />
@@ -2715,7 +2731,7 @@ function paintSquad(){
   // how this nation finished that World Cup (badge, top-right of the header)
   const fin=tournamentFinish(squad);
   const fb=$('select-finish');
-  if(fin){ fb.textContent=fin.label; fb.className='finish-badge'+(fin.cls?' '+fin.cls:''); fb.style.display=''; }
+  if(fin){ fb.innerHTML=emToSvg(fin.label); fb.className='finish-badge'+(fin.cls?' '+fin.cls:''); fb.style.display=''; }
   else   { fb.style.display='none'; }
   // persistent mode indicator (far right of the header)
   const mp=$('select-mode-pill');
@@ -3438,6 +3454,16 @@ function metalTrophySvg(rank, cls){
 }
 const MEDAL_TIERS=['gold','silver','bronze'];
 
+// Swap the gold-trophy / silver-medal emojis for the game's own retro trophy
+// graphic so result labels match the rest of the UI. Only valid in innerHTML
+// contexts (it returns inline <svg> markup, not text).
+function emToSvg(s){
+  return String(s==null?'':s)
+    .replace(/🏆/g, metalTrophySvg(1,'ico-em'))
+    .replace(/🥈/g, metalTrophySvg(2,'ico-em'))
+    .replace(/🥉/g, metalTrophySvg(3,'ico-em'));
+}
+
 function renderLeaderboardRows(rows, highlightId){
   const list=$('lb-list');
   if(!rows.length){ list.innerHTML='<div class="lb-empty">No drafts yet — be the first on the board!</div>'; return; }
@@ -3452,7 +3478,7 @@ function renderLeaderboardRows(rows, highlightId){
     return `<div class="lb-row${you?' you':''}">
       ${rankCell}
       <span class="lb-name">${fl?fl+' ':''}${escapeHtml(nm)}</span>
-      <span class="lb-meta">${lbMetaLabel(row)}</span>
+      <span class="lb-meta">${emToSvg(lbMetaLabel(row))}</span>
       <span class="lb-ov ${ovTier(row.overall)}">${(+row.overall).toFixed(1)}</span>
     </div>`;
   }).join('');
@@ -3676,7 +3702,7 @@ function openProfile(p){
 
   // tournament info for the drafted year — result + the rating tiles
   html+=`<div class="profile-section-label">${p.year} ${p.country} — Tournament</div>`;
-  if(fin) html+=`<div class="profile-tags"><span class="finish-badge${fin.cls?' '+fin.cls:''}">${fin.label}</span></div>`;
+  if(fin) html+=`<div class="profile-tags"><span class="finish-badge${fin.cls?' '+fin.cls:''}">${emToSvg(fin.label)}</span></div>`;
   const tiles=[
     tile('Overall', p.wc_overall),
     tile('Skill', p.skill_rating),
@@ -4364,7 +4390,7 @@ function openEntryModal(resultLabel, score, color){
   const resultText = !sim ? resultLabel
     : (champ ? '🏆 Champion' : (runnerUp ? '🥈 Runner-Up' : `Elim: ${resultLabel}`));
   const bResult=$('entry-badge-result'), bOvr=$('entry-badge-ovr');
-  bResult.textContent=resultText; bResult.style.background=color||'var(--teal)';
+  bResult.innerHTML=emToSvg(resultText); bResult.style.background=color||'var(--teal)';
   bOvr.textContent=`Ovr: ${(+score).toFixed(1)}`; bOvr.style.background=color||'var(--teal)';
   // reset the submit button + any prior error from a previous open
   const btn=$('entry-submit');
@@ -5735,7 +5761,7 @@ function buildSummaryCard(){
   card.className='sim-summary';
   card.id='results-summary-box';
   card.innerHTML=`
-    ${emoji?`<div style="text-align:center;font-size:62px;line-height:1;margin-bottom:2px;">${emoji}</div>`:''}
+    ${emoji?`<div style="text-align:center;font-size:62px;line-height:1;margin-bottom:2px;">${emToSvg(emoji)}</div>`:''}
     <div class="display" style="text-align:center;font-size:34px;line-height:1.05;color:#fff;margin:${emoji?'2px':'4px'} 0 ${oc.message?'8px':'14px'};">${headline}</div>
     ${oc.message?`<div style="text-align:center;font-weight:600;font-size:13px;line-height:1.45;color:var(--gold);margin-bottom:16px;">${oc.message}</div>`:''}
     <div class="sim-sub-label">MATCHES</div>
