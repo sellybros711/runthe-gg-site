@@ -726,18 +726,16 @@
     font-family:'Anton',sans-serif; font-size:28px; text-align:center;
     margin:10px 0 6px; letter-spacing:1px;
   }
-  /* big retro WIN / ELIMINATED stamp: condensed Anton with an ink outline and a
-     solid extruded drop-shadow that connects to the letters (no gap) */
+  /* big retro WIN / ELIMINATED stamp: condensed Anton with an ink outline (no drop-shadow) */
   .sim-result-win,.sim-result-loss{
     font-family:'Anton',Impact,sans-serif; font-weight:400;
-    font-size:38px; line-height:.95; letter-spacing:2px; margin:6px 0 2px;
+    font-size:46px; line-height:.95; letter-spacing:2px; margin:6px 0 2px;
     text-align:center; text-transform:uppercase;
     -webkit-text-stroke:2px var(--ink); paint-order:stroke fill;
-    text-shadow:1px 1px 0 var(--ink), 2px 2px 0 var(--ink), 3px 3px 0 var(--ink);
     animation:fade .25s ease both;}
   .sim-result-win{color:var(--pos-mid);}
   .sim-result-loss{color:var(--red);}
-  @media (max-width:359px){ .sim-result-win,.sim-result-loss{font-size:32px;} }
+  @media (max-width:359px){ .sim-result-win,.sim-result-loss{font-size:40px;} }
   /* champion: the WIN stamp morphs into a big glowing golden trophy line */
   .sim-final.sim-champion{
     font-family:'Anton',Impact,sans-serif; font-weight:400;
