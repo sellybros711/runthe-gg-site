@@ -701,8 +701,13 @@
   body.sim-mode .masthead .kicker{ font-size:12px; }
   body.sim-mode .masthead .edition{ font-size:13px; }
   .sim-round-header{
-    font-family:'Anton',sans-serif; font-size:22px; text-transform:uppercase;
-    letter-spacing:1px; margin-bottom:6px;
+    font-family:'Anton',sans-serif; font-size:27px; text-transform:uppercase;
+    letter-spacing:1.5px; margin-bottom:8px; color:var(--ink); display:inline-block;
+  }
+  /* red→gold accent bar under the round name so it stands out */
+  .sim-round-header::after{
+    content:''; display:block; height:4px; margin-top:3px; border-radius:2px;
+    background:linear-gradient(90deg, var(--red), var(--gold));
   }
   .sim-slide-in{animation:simSlide .4s cubic-bezier(.3,1.2,.5,1) both;}
   @keyframes simSlide{from{opacity:0;transform:translateY(-18px);}to{opacity:1;transform:none;}}
@@ -5699,7 +5704,7 @@ async function runSimulationScreen(){
     buildMatchCard(card, m);       // fill the box BEFORE it swipes in — no empty-box flash
     simSwipeTo(simSlideIndex+1);   // swipe the already-filled match box in from the right
     await simSleep(650);           // let the swipe land
-    await simSleep(1100);          // hold on the round + opponent + scoreboard before kickoff
+    await simSleep(500);           // brief beat on the round + opponent + scoreboard before kickoff
     const next = simResult.rounds[i+1];
     const isFinal = !next;         // a win here wins the whole tournament
     const won = await playMatchAnimation(m, card, isFinal);
