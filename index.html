@@ -3881,7 +3881,6 @@ async function buildShareCanvas(){
     } else { y+=14; }
   } else { y+=14; }
   // eliminated → small red "ELIMINATED IN" above the round name; champions keep the trophy label
-  const isElim = !isChamp;
   if(isElim){
     x.textAlign='left'; x.font='800 28px Archivo'; x.fillStyle='#ff6a5a';
     const elw='ELIMINATED IN', esp=3;
