@@ -2877,7 +2877,7 @@ function applyLeadershipBonus(){
   if(!gs || !gs.result || gs.result._bonusApplied) return;
   const base = gs.result.teamOverall;
   const { multiplier, breakdown } = getLeadershipBonus(gs.result.scoredPicks||gs.picks||[]);
-  const official = Math.min(100, Math.round(base * multiplier * 10)/10);
+  const official = Math.round(base * multiplier * 10)/10;   // uncapped — can exceed 100
   gs.result.baseTeamOverall     = base;
   gs.result.leadershipMultiplier= multiplier;
   gs.result.leadershipBreakdown = breakdown;

@@ -3,7 +3,7 @@
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const RESULT_TIERS = [
-  { min: 95, max: 100, label: 'World Cup Winners',  emoji: '🏆' },
+  { min: 95, max: Infinity, label: 'World Cup Winners',  emoji: '🏆' },
   { min: 85, max: 94,  label: 'Runner-up',          emoji: '🥈' },
   { min: 75, max: 84,  label: 'Semi-finals',        emoji: '4️⃣'  },
   { min: 65, max: 74,  label: 'Quarter-finals',     emoji: '8️⃣'  },
@@ -388,7 +388,7 @@ function computeResult(state) {
     : 0;
   const num99 = overalls.filter(o => o >= 99).length;
   const teamOverall = overalls.length
-    ? Math.min(100, Math.round((squadAvg + num99 * 0.15) * 10) / 10)
+    ? Math.round((squadAvg + num99 * 0.15) * 10) / 10   // uncapped — can exceed 100
     : 0;
 
   const tier = RESULT_TIERS.find(t => teamOverall >= t.min && teamOverall <= t.max)
@@ -626,7 +626,7 @@ function runTests() {
   console.assert(state.phase === 'COMPLETE', 'Test 4: phase should be COMPLETE');
   console.assert(state.result !== null, 'Test 4: result should not be null');
   console.assert(getSquadIdentity(state) === 'ATTACKING', 'Test 4: identity should be ATTACKING');
-  console.assert(state.result.teamOverall >= 40 && state.result.teamOverall <= 100, `Test 4: teamOverall ${state.result.teamOverall} out of range`);
+  console.assert(state.result.teamOverall >= 40, `Test 4: teamOverall ${state.result.teamOverall} out of range`);
   const validLabels = RESULT_TIERS.map(t => t.label);
   console.assert(validLabels.includes(state.result.resultLabel), `Test 4: invalid resultLabel ${state.result.resultLabel}`);
   console.log('✓ Test 4 passed — full game simulation');

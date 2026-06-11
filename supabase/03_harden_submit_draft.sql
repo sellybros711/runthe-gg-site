@@ -90,9 +90,9 @@ BEGIN
   END IF;
 
   -- ---- recompute the score (mirrors gameLogic computeResult + leadership) ----
-  v_base    := LEAST(100, round(v_avg + v_num99 * 0.15, 1));
+  v_base    := round(v_avg + v_num99 * 0.15, 1);              -- uncapped — can exceed 100
   v_mult    := power(1.005, v_caps) * power(1.02, v_awards);   -- captain ×1.005, award ×1.02 (match client)
-  v_overall := LEAST(100, round(v_base * v_mult, 1));
+  v_overall := round(v_base * v_mult, 1);                      -- uncapped — can exceed 100
 
   INSERT INTO drafts (overall, progress, mode, result, furthest, draft_type)
   VALUES (v_overall, v_prog,
