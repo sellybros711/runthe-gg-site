@@ -4027,7 +4027,7 @@ function formationReqLine(f){
   // each "<n> POS" is a filled badge in the position colour used on the player
   // cards; "Draft" stays the muted .fm-req colour.
   const badge=(n,pos)=>`<span class="fm-pos-badge ${pos}">${n} ${pos}</span>`;
-  return `Draft ${badge(1,'GK')} ${badge(f.def,'DEF')} ${badge(f.mid,'MID')} ${badge(f.fwd,'FWD')}`;
+  return `${badge(1,'GK')} ${badge(f.def,'DEF')} ${badge(f.mid,'MID')} ${badge(f.fwd,'FWD')}`;
 }
 function showFormationReveal(){
   showScreen('formation');
