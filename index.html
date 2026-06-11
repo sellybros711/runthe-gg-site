@@ -2668,6 +2668,7 @@ function goToSelect(){
   closeSpinOverlay();
   $('player-grid').style.opacity=1;
   showScreen('select');   // make the screen visible first so mini circles measure
+  $('player-grid').scrollTop=0;   // always start each round scrolled to the top
   paintSquad();
 }
 
