@@ -1,4 +1,4 @@
-// RunThePitch: World Cup Edition — Player data pipeline (dataset v2)
+// RunThePitch: World Cup Game — Player data pipeline (dataset v2)
 // Reads the clean JSON roster (real integers, null for blanks) and emits
 // data/players_all.json in the shape the game engine expects.
 //

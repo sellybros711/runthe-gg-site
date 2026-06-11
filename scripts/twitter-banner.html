@@ -58,9 +58,9 @@
   for(const [t,col] of seg){ x.fillStyle=col; x.fillText(t,lx,baseY); lx+=x.measureText(t).width; }
   x.restore();
 
-  // ---- "WORLD CUP EDITION" gold pill ----
+  // ---- "WORLD CUP GAME" gold pill ----
   x.textAlign='left';
-  x.font='900 28px Archivo'; const pill='WORLD CUP EDITION'; const sp=6;
+  x.font='900 28px Archivo'; const pill='WORLD CUP GAME'; const sp=6;
   let pw=0; for(const ch of pill) pw+=x.measureText(ch).width+sp; pw-=sp;
   const ph=52, pwBox=pw+44, px0=CX-pwBox/2, py0=262;
   const pg=x.createLinearGradient(0,py0,0,py0+ph); pg.addColorStop(0,'#FCEFA8'); pg.addColorStop(1,'#F4B413');

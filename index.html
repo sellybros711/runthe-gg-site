@@ -23,8 +23,8 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <!-- Primary Meta Tags -->
-<title>RunThePitch: World Cup Edition</title>
-<meta name="title" content="RunThePitch: World Cup Edition" />
+<title>RunThePitch: World Cup Game</title>
+<meta name="title" content="RunThePitch: World Cup Game" />
 <meta name="description" content="Spin. Pick. Conquer. Build your dream World Cup squad and simulate your run to glory." />
 <meta name="theme-color" content="#0b1324" />
 
@@ -44,14 +44,14 @@
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThePitch" />
 <meta property="og:url" content="https://runthe.gg" />
-<meta property="og:title" content="RunThePitch: World Cup Edition" />
+<meta property="og:title" content="RunThePitch: World Cup Game" />
 <meta property="og:description" content="Spin. Pick. Conquer. Build your dream World Cup squad and simulate your run to glory." />
 <meta property="og:image" content="https://runthe.gg/og-image.png?v=2" />
 <meta property="og:image:secure_url" content="https://runthe.gg/og-image.png?v=2" />
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="RunThePitch World Cup Edition — Spin. Pick. Conquer." />
+<meta property="og:image:alt" content="RunThePitch World Cup Game — Spin. Pick. Conquer." />
 
 <!-- Twitter / X -->
 <!-- NOTE: X/Twitter aggressively caches link previews. After deploying a new
@@ -62,10 +62,10 @@
 <meta name="twitter:site" content="@RunThePitch" />
 <meta name="twitter:creator" content="@RunThePitch" />
 <meta name="twitter:url" content="https://runthe.gg" />
-<meta name="twitter:title" content="RunThePitch: World Cup Edition" />
+<meta name="twitter:title" content="RunThePitch: World Cup Game" />
 <meta name="twitter:description" content="Spin. Pick. Conquer. Build your dream World Cup squad and simulate your run to glory." />
 <meta name="twitter:image" content="https://runthe.gg/og-image.png?v=2" />
-<meta name="twitter:image:alt" content="RunThePitch World Cup Edition — Spin. Pick. Conquer." />
+<meta name="twitter:image:alt" content="RunThePitch World Cup Game — Spin. Pick. Conquer." />
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1329,7 +1329,7 @@
   <div class="masthead">
     <div class="kicker">★ RunThe.gg presents ★</div>
     <div class="logo display">Run<span class="pitch">The</span>Pitch</div>
-    <span class="edition">World Cup Edition</span>
+    <span class="edition">World Cup Game</span>
   </div>
 
   <!-- ===== START (intro) ===== -->
@@ -3858,7 +3858,7 @@ async function buildShareCanvas(){
   x.textAlign='left'; x.save(); x.shadowColor='rgba(0,0,0,.4)'; x.shadowBlur=6; x.shadowOffsetY=2;
   for(const [t,col] of seg){ x.fillStyle=col; x.fillText(t,lx,98); lx+=x.measureText(t).width; } x.restore();
   // edition pill
-  x.font='900 22px Archivo'; const pill='WORLD CUP EDITION'; const sp=4;
+  x.font='900 22px Archivo'; const pill='WORLD CUP GAME'; const sp=4;
   let pw=0; for(const ch of pill) pw+=x.measureText(ch).width+sp; pw-=sp;
   const ph=40, pwBox=pw+34, px0=CX-pwBox/2, py0=120;
   const pg=x.createLinearGradient(0,py0,0,py0+ph); pg.addColorStop(0,'#FCEFA8'); pg.addColorStop(1,'#F4B413');
@@ -4042,7 +4042,7 @@ async function nativeShareWithImage(){
   }catch(e){ /* render failed → share text only */ }
 
   if(file && navigator.canShare && navigator.canShare({files:[file]})){
-    try{ await navigator.share({ files:[file], text, title:'RunThePitch: World Cup Edition', url:SHARE_HOME }); return; }
+    try{ await navigator.share({ files:[file], text, title:'RunThePitch: World Cup Game', url:SHARE_HOME }); return; }
     catch(e){ if(e && e.name==='AbortError') return; }
   }
   // Desktop / no file-share: download the image so it can still be posted, + copy text.
@@ -4056,7 +4056,7 @@ async function nativeShareWithImage(){
     }catch(e){ /* fall through */ }
   }
   if(navigator.share){
-    try{ await navigator.share({ text, title:'RunThePitch: World Cup Edition', url:SHARE_HOME }); return; }
+    try{ await navigator.share({ text, title:'RunThePitch: World Cup Game', url:SHARE_HOME }); return; }
     catch(e){ if(e && e.name==='AbortError') return; }
   }
   await copyToClipboard(reportText()); showToast('Copied to clipboard ✓');
@@ -4091,7 +4091,7 @@ async function copyReport(){
   // the first three lines (message + score + CTA); the url is passed separately.
   if(navigator.share){
     try{
-      await navigator.share({ title:'RunThePitch: World Cup Edition', text:shareTextCore(), url:SHARE_HOME });
+      await navigator.share({ title:'RunThePitch: World Cup Game', text:shareTextCore(), url:SHARE_HOME });
       return;
     }catch(e){
       if(e && e.name==='AbortError') return; // user dismissed the share sheet

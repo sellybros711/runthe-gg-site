@@ -1,4 +1,4 @@
-// RunThePitch: World Cup Edition — position-specific overall recalculation.
+// RunThePitch: World Cup Game — position-specific overall recalculation.
 //
 // Reads  data/world_cup_full_rosters_1966_2026_1.csv
 // Writes data/world_cup_full_rosters_1966_2026_2.csv  (same data + position_overall)

@@ -1,4 +1,4 @@
-// RunThePitch: World Cup Edition — Game Logic Engine
+// RunThePitch: World Cup Game — Game Logic Engine
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -426,7 +426,7 @@ function generateMatchReport(result) {
   const grid = result.scoredPicks.map(emojiMap).join(' ');
 
   return [
-    'RunThePitch: World Cup Edition ⚽',
+    'RunThePitch: World Cup Game ⚽',
     `${result.resultLabel} ${result.resultEmoji} | Score: ${result.teamOverall.toFixed(1)}/100`,
     grid,
     'RunThe.gg/pitch',
