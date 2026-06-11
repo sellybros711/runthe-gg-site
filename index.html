@@ -1602,7 +1602,7 @@
     </div>
     <div class="pitch-result" id="pitch-result">
       <div class="pr-label">Team Rating</div>
-      <div class="pr-score"><span id="pr-score-val">0</span><small>/100</small></div>
+      <div class="pr-score"><span id="pr-score-val">0</span></div>
     </div>
     <div class="stack home-spin">
       <button id="btn-go-spin" class="btn red big" disabled>Loading squads…</button>
@@ -3657,7 +3657,7 @@ function closeProfile(){ $('profile-bg').classList.remove('show'); }
 // Share-card text (CHANGE 1) — short, SEO-first, exactly four lines. Every result
 // tier leads with "World Cup" for search optimisation:
 //   [result message]
-//   [score]/100
+//   [score]
 //   Tap the link to draft your squad ⚽
 //   https://runthe.gg
 // The first three lines (shareTextCore) are the navigator.share() text; the
@@ -3682,7 +3682,7 @@ function shareResultMessage(){
 }
 function shareScoreLine(){
   const s = (gs.result && gs.result.teamOverall!=null) ? +gs.result.teamOverall : 0;
-  return `${s.toFixed(1)}/100`;
+  return `${s.toFixed(1)}`;
 }
 // First three lines (message + score + CTA) — used as navigator.share() text.
 function shareTextCore(){
@@ -4201,7 +4201,7 @@ function openLeaderboardView(){
 function openEntryModal(resultLabel, score, color){
   $('entry-bg').classList.remove('view-only');   // ensure full entry UI is shown
   const badge=$('entry-badge');
-  badge.textContent=`${resultLabel}  ${(+score).toFixed(1)}/100`;
+  badge.textContent=`${resultLabel}  ${(+score).toFixed(1)}`;
   badge.style.background=color||'var(--teal)';
   // reset the submit button + any prior error from a previous open
   const btn=$('entry-submit');
