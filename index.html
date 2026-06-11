@@ -1255,6 +1255,14 @@
   .fm-req{font-weight:900;font-size:15px;color:#5a5048;letter-spacing:.3px;margin-top:16px;margin-bottom:24px;min-height:20px;
     opacity:0;transition:opacity .4s ease;}
   .fm-req.show{opacity:1;}
+  /* filled position badges in the formation description — same colours as the cards */
+  .fm-pos-badge{display:inline-block;font-weight:900;font-size:13px;letter-spacing:.5px;
+    color:#fff;border-radius:6px;padding:3px 8px;margin:3px 2px;vertical-align:middle;
+    border:2px solid var(--ink);box-shadow:1.5px 1.5px 0 var(--ink);}
+  .fm-pos-badge.GK{background:var(--pos-gk);color:var(--ink);}
+  .fm-pos-badge.DEF{background:var(--pos-def);}
+  .fm-pos-badge.MID{background:var(--pos-mid);}
+  .fm-pos-badge.FWD{background:var(--pos-fwd);}
   #btn-formation-go{max-width:340px;opacity:0;transition:opacity .4s ease;}
   #btn-formation-go.show{opacity:1;}
 
@@ -4016,10 +4024,10 @@ $('btn-start-draft').addEventListener('click',()=>{
 
 // ---------- formation reveal (Full Draft only) ----------
 function formationReqLine(f){
-  // colour each "<n> POS" to match the position tags on the player cards; "Draft"
-  // keeps the muted .fm-req colour.
-  const seg=(n,pos)=>`<span style="color:${PITCH_COLORS[pos]}">${n} ${pos}</span>`;
-  return `Draft ${seg(1,'GK')} · ${seg(f.def,'DEF')} · ${seg(f.mid,'MID')} · ${seg(f.fwd,'FWD')}`;
+  // each "<n> POS" is a filled badge in the position colour used on the player
+  // cards; "Draft" stays the muted .fm-req colour.
+  const badge=(n,pos)=>`<span class="fm-pos-badge ${pos}">${n} ${pos}</span>`;
+  return `Draft ${badge(1,'GK')} ${badge(f.def,'DEF')} ${badge(f.mid,'MID')} ${badge(f.fwd,'FWD')}`;
 }
 function showFormationReveal(){
   showScreen('formation');
