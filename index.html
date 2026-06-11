@@ -3784,22 +3784,32 @@ function shareRecapLines(){
   const r=simResult; if(!r) return [];
   const ABBR={'Round of 32':'R32','Round of 16':'R16','Quarter-final':'QF','Semi-final':'SF','Final':'F'};
   const lines=[];
+  // group stage record always shown first
+  if(r.groupStage){
+    const g=r.groupStage.record; lines.push({ t:`Group stage: ${g.w}W ${g.d}D ${g.l}L`, won:r.groupStage.advanced });
+  }
   (r.matches||[]).slice(0,3).forEach(m=>{
     const won=m.winner==='user'; const pen=m.penalties?` (pens ${won?'W':'L'})`:'';
     lines.push({ t:`${ABBR[m.round]||m.round}  You ${m.userGoals}–${m.opponentGoals} ${m.opponent.country} ${m.opponent.year}${pen}`, won });
   });
-  if(!(r.matches&&r.matches.length) && r.groupStage){
-    const g=r.groupStage.record; lines.push({ t:`Group stage: ${g.w}W ${g.d}D ${g.l}L`, won:r.groupStage.advanced });
-  }
   let topName='', topGoals=0;
   Object.entries(r.userGoalScorers||{}).forEach(([n,g])=>{ if(g>topGoals){ topGoals=g; topName=n; } });
   if(topName) lines.push({ t:`Top scorer: ${shortNm(topName)} (${topGoals})`, won:null });
-  return lines.slice(0,4);
+  return lines.slice(0,5);
+}
+// Round the run ended in, phrased for the "ELIMINATED IN …" headline.
+function shareEliminatedRound(r){
+  const map={'Final':'Final','Semi-final':'Semi-Final','Quarter-final':'Quarter-Final','Round of 16':'Round of 16','Round of 32':'Round of 32'};
+  return (r && map[r.furthestRound]) || 'Group Stage';
 }
 
 async function buildShareCanvas(){
   await (document.fonts && document.fonts.ready);
-  const W=1080,H=1350,CX=W/2;
+  const W=1080,CX=W/2;
+  // Taller canvas for the 11-man roster so the player bubbles (and the OVR) fit
+  // comfortably with even spacing; quick draft (6) keeps the 4:5 frame.
+  const squadSize=(gs.result&&gs.result.scoredPicks)?gs.result.scoredPicks.length:6;
+  const H=squadSize>6 ? 1640 : 1350;
   const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
   const ink='#16120F', cream='#FDF6E3';
   const ovColor=o=> o>=90?'#1F9E57':o>=80?'#F4B413':o>=70?'#F47B20':'#E5402A';
@@ -3850,9 +3860,20 @@ async function buildShareCanvas(){
       y+=th+8;
     } else { y+=14; }
   } else { y+=14; }
+  // eliminated → small red "ELIMINATED IN" above the round name; champions keep the trophy label
+  const isElim = !isChamp;
+  if(isElim){
+    x.textAlign='left'; x.font='800 28px Archivo'; x.fillStyle='#ff6a5a';
+    const elw='ELIMINATED IN', esp=3;
+    let ew=0; for(const ch of elw) ew+=x.measureText(ch).width+esp; ew-=esp;
+    let ex=CX-ew/2;
+    for(const ch of elw){ x.fillText(ch, ex, y+20); ex+=x.measureText(ch).width+esp; }
+    y+=34;
+  }
   x.textAlign='center'; x.font='400 70px Anton'; x.fillStyle=cream;
   x.save(); x.shadowColor='rgba(244,180,19,.3)'; x.shadowBlur=16;
-  x.fillText((oc.label||'').toUpperCase(), CX, y+56); x.restore(); y+=86;
+  const headingLabel = isElim ? shareEliminatedRound(simResult) : (oc.label||'');
+  x.fillText(headingLabel.toUpperCase(), CX, y+56); x.restore(); y+=86;
   // team overall — styled exactly like the post-draft TEAM OVERALL reveal
   // screen: a large tier-coloured number (green ≥90, gold ≥80, orange ≥70,
   // else red) with a spaced "TEAM OVERALL" label beneath, to one decimal.
