@@ -118,6 +118,11 @@
   .x-follow a{color:#8a8073;text-decoration:none;}
   .x-follow a b{color:var(--ink);font-weight:800;}
   .x-follow a:hover{text-decoration:underline;}
+  /* on the home/start screen, pin the footer to the bottom of the screen */
+  body.home-page .site-footer{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:520px;
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));background:var(--paper);
+    border-top:1px solid rgba(0,0,0,.06);z-index:30;}
+  body.home-page .app{padding-bottom:96px;}
 
   /* ---------- shared ---------- */
   .screen{display:none;animation:fade .35s ease both;}
@@ -1787,7 +1792,7 @@
 
   <!-- ===== site-wide navigation footer (additive) ===== -->
   <footer class="site-footer">
-    <div class="x-follow"><a href="https://x.com/RunThePitch" target="_blank" rel="noopener noreferrer">Follow <b>@RunThePitch</b> on X</a></div>
+    <div class="x-follow"><a href="https://x.com/RunThePitch" target="_blank" rel="noopener noreferrer">Follow <b>@RunThePitch</b> on X for News and Updates</a></div>
     <a href="/">Home</a><span class="sep">·</span><a href="about.html">About</a><span class="sep">·</span><a href="privacy.html">Privacy</a><span class="sep">·</span><a href="contact.html">Contact</a>
   </footer>
 
@@ -2057,6 +2062,7 @@ function showScreen(name){
   document.body.classList.toggle('sel-mode', name==='select');
   document.body.classList.toggle('home-mode', name==='home');
   document.body.classList.toggle('sim-mode', name==='sim');
+  document.body.classList.toggle('home-page', name==='start');   // pins the footer on the start screen
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -2093,6 +2099,9 @@ async function boot(){
       '<div class="err">Couldn\'t load player data.<br>Make sure <b>data/players_all.json</b> sits next to index.html.<br><br>'+(fetchErr?fetchErr.message:'No data found')+'</div>';
     return;
   }
+
+  // strip stray trailing asterisks left in some source names (e.g. "Zahovič *")
+  players.forEach(p=>{ if(p && typeof p.name==='string') p.name=p.name.replace(/\s*\*+\s*$/,'').trim(); });
 
   G.initEngine(players);
   window.PLAYERS = players; // expose the loaded dataset for the simulation engine
@@ -6315,6 +6324,8 @@ function friendlyRouteInitial(){
 parseFriendlyParam();
 // 2) Intercept the initial screen immediately (no home-screen flash).
 friendlyRouteInitial();
+// Pin the footer on the start screen if that's where we landed.
+document.body.classList.toggle('home-page', !!($('screen-start') && $('screen-start').classList.contains('active')));
 // 3) Boot the engine; re-assert the friendly screen once data is ready (the
 //    landing screen's ACCEPT button needs the engine initialised).
 boot().then(friendlyRouteInitial);
