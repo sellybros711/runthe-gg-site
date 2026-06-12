@@ -5598,15 +5598,17 @@ function simBuildPenaltySeq(winner){
   return out.seq;
 }
 
-async function simAnimatePenalties(card, m){
+async function simAnimatePenalties(card, m, opts){
+  opts = opts || {};
   const label=document.createElement('div'); label.className='sim-pen-label'; label.textContent='Penalty Shootout';
   card.appendChild(label);
 
-  const oppName = `${flagChip(m.opponent.country)} ${m.opponent.country} ${m.opponent.year}`;
+  const userName = opts.youLabel || 'YOUR TEAM';
+  const oppName = opts.oppLabel || `${flagChip(m.opponent.country)} ${m.opponent.country} ${m.opponent.year}`;
   const board=document.createElement('div'); board.className='pen-board';
   board.innerHTML=`
     <div class="pen-row" id="pen-row-user">
-      <span class="pen-team">YOUR TEAM</span>
+      <span class="pen-team">${userName}</span>
       <span class="pen-score" id="pen-score-user">0</span>
       <span class="pen-dots-row" id="pen-dots-user"></span>
     </div>
@@ -5638,9 +5640,9 @@ async function simAnimatePenalties(card, m){
     dot.textContent = k.scored ? '●' : '○';
     dotsEl[row].appendChild(dot);
     if(k.scored){ score[k.team]++; scoreEl[row].textContent=score[k.team]; }
-    await new Promise(r=>setTimeout(r, getPenaltyDelay(kickNumber)));
+    await new Promise(r=>setTimeout(r, opts.penDelay || getPenaltyDelay(kickNumber)));
   }
-  await simSleep(300*0.8);
+  await (opts.wait||simSleep)(300*0.8);
 }
 
 // ===== live match scoreboard (visual only — reflects the simulated state) =====
@@ -5762,7 +5764,7 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
     const tick=()=>{
       const now=performance.now(); const dt=Math.min(100, now-last); last=now;
       const simMinute = fromMin + (toMin-fromMin)*p;
-      const target = getSpeedMultiplier(simMinute, score.user, score.opp, isET);
+      const target = opts.noSlowmo ? 1.0 : getSpeedMultiplier(simMinute, score.user, score.opp, isET);
       // ease curSpeed toward target — full 0.5 range crosses in ~SLOWMO_EASE_MS
       const maxStep = (dt/SLOWMO_EASE_MS) * 0.5;
       curSpeed += Math.max(-maxStep, Math.min(maxStep, target-curSpeed));
@@ -5838,8 +5840,10 @@ async function playMatchAnimation(m, card, isFinal, opts){
   const sb=card.querySelector('.sb-wrap');   // scoreboard built earlier by buildMatchCard
   const fill=card.querySelector('.match-clock-fill');
   const goalsBox=card.querySelector('.sim-goals');
-  const regulation=2500*SIM_SPEED;     // slowed pacing
-  const etDur=600*SIM_SPEED;
+  const wait = opts.wait || simSleep;            // friendlies pass a faster, fixed clock
+  const noSlowmo = !!opts.noSlowmo;
+  const regulation = opts.regDur || 2500*SIM_SPEED;   // slowed pacing (solo)
+  const etDur      = opts.etDur  || 600*SIM_SPEED;
   const regEvents=m.goalEvents.filter(e=>e.minute<=90);
   const etEvents =m.goalEvents.filter(e=>e.minute>90);
 
@@ -5851,23 +5855,23 @@ async function playMatchAnimation(m, card, isFinal, opts){
   fill.style.transition='background .3s ease';
   const liveScore={user:0, opp:0};  // shared across regulation + extra time
   await sbDriveClock(fill, sb, 0, baseWidth, 0, 90, regulation,
-    {events:regEvents, isExtraTime:false, score:liveScore, goalsBox});
+    {events:regEvents, isExtraTime:false, score:liveScore, goalsBox, noSlowmo});
 
   if(m.extraTime){
     const etLabel=document.createElement('div'); etLabel.className='sim-et-label'; etLabel.textContent='EXTRA TIME';
     goalsBox.appendChild(etLabel);
     simScrollEnd(etLabel);
     await sbDriveClock(fill, sb, 75, 100, 91, 120, etDur,   // gold 91'→120'
-      {events:etEvents, isExtraTime:true, score:liveScore, goalsBox});
+      {events:etEvents, isExtraTime:true, score:liveScore, goalsBox, noSlowmo});
   }
 
   // freeze the final minute, then flip to FT — the scoreboard's score IS the
   // final result line, so no separate "YOUR TEAM x — y" text is shown.
   sbSetTime(sb, m.extraTime ? "120'" : "90'", m.extraTime);
-  await simSleep(500);
+  await wait(500);
   sbSetTime(sb, 'FT', false);
 
-  if(m.penalties){ await simSleep(300); await simAnimatePenalties(card, m); }
+  if(m.penalties){ await wait(300); await simAnimatePenalties(card, m, opts); }
 
   const won = m.winner==='user';
   const finalEl=card.querySelector('.sim-final');
@@ -5878,7 +5882,7 @@ async function playMatchAnimation(m, card, isFinal, opts){
     : (opts.loseText || 'Eliminated');
   simScrollEnd(finalEl);
   if(won && isFinal) simChampionConfetti();   // confetti the instant they're crowned
-  await simSleep(1200);   // scoreboard stays visible above the result
+  await wait(1200);   // scoreboard stays visible above the result
   return won;
 }
 
@@ -6361,11 +6365,18 @@ async function playFriendlyMatchAnimation(m, labels){
   simSlideIndex=0;
   const card=simNewSlide();
   buildFriendlyMatchCard(card, m, labels);
-  await simSleep(550);   // beat on the scoreboard before kickoff
+  // Friendlies are time-boxed to ~30s max: a fixed, fast clock with no slow-mo
+  // and short penalty kicks (regulation ~14s, +ET ~4s, +pens ≤ ~7s, + beats).
+  const fastWait = ms=>new Promise(r=>setTimeout(r, ms));
+  await fastWait(450);   // brief beat on the scoreboard before kickoff
   const won = m.winner==='user';
   const winnerShort = won ? labels.youShort : labels.friendShort;
   const stamp = `${winnerShort} WINS${m.penalties?' (PENS)':''}`;
-  await playMatchAnimation(m, card, false, { winText:stamp, loseText:stamp });
+  await playMatchAnimation(m, card, false, {
+    winText:stamp, loseText:stamp,
+    regDur:14000, etDur:4000, noSlowmo:true, wait:fastWait, penDelay:600,
+    youLabel:labels.youShort, oppLabel:labels.friendShort
+  });
   // proceed button → resolves when tapped, so the player controls the pacing
   await new Promise(resolve=>{
     const wrap=document.createElement('div'); wrap.className='stack'; wrap.style.marginTop='12px';
