@@ -298,21 +298,33 @@ function selectPlayer(state, playerId, slotPosition) {
   const player = state.currentSpin.squad.find(p => p.player_id === playerId);
   if (!player) throw new Error(`Player ${playerId} not in current squad.`);
 
+  // Which slot label the pick is RECORDED as. For the Full-draft FLEX builder a
+  // flex pick resolves to the player's real position (DEF/MID/FWD) so the whole
+  // app downstream treats it as a normal position pick; FLEX is just the
+  // drafting mechanism. Quick-draft FLEX stays labelled 'FLEX'.
+  let recordedSlot = slotPosition;
   if (slotPosition === 'FLEX') {
-    if (player.position !== 'MID' && player.position !== 'FWD')
+    if (player.position === 'GK')
+      throw new Error('FLEX slot cannot be a goalkeeper.');
+    if (state.draftType === 'full') {
+      // cap: no outfield position may exceed 5 (fixed + flex combined)
+      const count = state.picks.filter(p => p.player.position === player.position).length;
+      if (count >= 5) throw new Error(`${player.position} is already at the cap of 5.`);
+      recordedSlot = player.position;
+    } else if (player.position !== 'MID' && player.position !== 'FWD') {
       throw new Error('FLEX slot only accepts MID or FWD players.');
-  } else {
-    if (player.position !== slotPosition)
-      throw new Error(`Player position ${player.position} does not match slot ${slotPosition}.`);
+    }
+  } else if (player.position !== slotPosition) {
+    throw new Error(`Player position ${player.position} does not match slot ${slotPosition}.`);
   }
 
   const newOpenSlots = [...state.openSlots];
   const idx = newOpenSlots.indexOf(slotPosition);
   newOpenSlots.splice(idx, 1);
 
-  const pick = { player, slot: slotPosition };
+  const pick = { player, slot: recordedSlot };
   const newPicks = [...state.picks, pick];
-  const newFilledSlots = { ...state.filledSlots, [slotPosition]: player };
+  const newFilledSlots = { ...state.filledSlots, [recordedSlot]: player };
 
   let newState = {
     ...state,
@@ -336,10 +348,11 @@ function selectPlayer(state, playerId, slotPosition) {
 // ─── Identity and scoring ─────────────────────────────────────────────────────
 
 function getSquadIdentity(state) {
-  // Full Team Draft has no FLEX slot — identity comes from the formation shape:
-  // a 3-forward formation (4-3-3, 3-4-3) is ATTACKING, everything else BALANCED.
-  if (state && state.draftType === 'full' && state.formation) {
-    return state.formation.fwd === 3 ? 'ATTACKING' : 'BALANCED';
+  // Full Team Draft: identity comes from the live shape — a 3+ forward side
+  // (4-3-3, 3-4-3, 3-3-4, 3-2-5, 4-2-4 …) plays ATTACKING, everything else BALANCED.
+  if (state && state.draftType === 'full') {
+    const fwd = state.picks.filter(p => p.player.position === 'FWD').length;
+    return fwd >= 3 ? 'ATTACKING' : 'BALANCED';
   }
   const flexPick = state.filledSlots['FLEX'];
   if (!flexPick) return null;

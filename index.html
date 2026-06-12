@@ -549,6 +549,16 @@
   /* ---------- soccer pitch ---------- */
   .pitch-cap{font-weight:900;font-size:11px;letter-spacing:2px;text-transform:uppercase;
     color:#8a7d70;text-align:center;margin:18px 0 6px;}
+  /* live full-draft shape readout (counters under the squad caption) */
+  .full-shape{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:0 0 8px;}
+  .full-shape .shape-form{font-family:'Anton',Impact,sans-serif;font-size:15px;color:var(--ink);
+    letter-spacing:1px;align-self:center;margin-right:2px;}
+  .full-shape .shape-chip{font-weight:900;font-size:11px;letter-spacing:.5px;color:#fff;
+    border-radius:7px;padding:3px 8px;border:2px solid var(--ink);box-shadow:1px 1px 0 var(--ink);}
+  .full-shape .shape-chip.DEF{background:var(--pos-def);}
+  .full-shape .shape-chip.MID{background:var(--pos-mid);}
+  .full-shape .shape-chip.FWD{background:var(--pos-fwd);}
+  .full-shape .shape-chip.capped{filter:grayscale(.15);outline:2px solid var(--gold);outline-offset:1px;}
   .pitch-wrap{position:relative;width:100%;aspect-ratio:10 / 14;background:#15663a;
     border:3px solid var(--ink);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-sm);}
   .pitch-svg{position:absolute;top:0;left:0;width:100%;height:100%;display:block;}
@@ -1662,6 +1672,7 @@
       <div class="dots" id="home-dots"></div>
     </div>
     <div class="pitch-cap">Your Starting VI</div>
+    <div class="full-shape" id="full-shape-home" style="display:none"></div>
     <div class="pitch-wrap" id="pitch-wrap">
       <svg class="pitch-svg" viewBox="0 0 300 420" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
         <rect x="0" y="0" width="300" height="420" fill="#15663a"/>
@@ -1755,6 +1766,7 @@
       <div class="mslot" id="mini-gk"><span class="ml">GK</span></div>
       <div class="mslot" id="mini-flex"><span class="ml">FLEX</span></div>
     </div>
+    <div class="full-shape" id="full-shape-select" style="display:none"></div>
     <div class="grid" id="player-grid"></div>
     <button class="rate-trigger" id="rate-link-select">Disagree with a rating?</button>
   </section>
@@ -2021,7 +2033,7 @@
 <!-- ?v= cache-buster: index.html is always served fresh (max-age=0) but these
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
-<script src="gameLogic.js?v=0.0.28"></script>
+<script src="gameLogic.js?v=0.0.29"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
 <script src="data/players_all.js?v=0.0.28"></script>
 <script>
@@ -2122,8 +2134,30 @@ let gameMode = null; // 'easy' or 'hard' — chosen on the difficulty screen
 let draftType = 'quick'; // 'quick' (6-man) or 'full' (11-man) — chosen on the draft-type screen
 let pendingFormation = null; // formation chosen on the reveal screen, before the game state exists
 
-// Full Team Draft formations. Each is "DEF-MID-FWD" plus 1 GK (11 total).
-// Generic positions only — no left/right/centre designations.
+// Full Team Draft (flex builder): 1 GK + floors DEF3 / MID2 / FWD2 + 3 FLEX.
+// FLEX accepts DEF/MID/FWD (never GK); cap 5 per outfield position. The legal
+// shapes that emerge are exactly: 3-5-2, 3-4-3, 3-3-4, 3-2-5, 4-4-2, 4-3-3,
+// 4-2-4, 5-3-2, 5-2-3 (DEF 3-5, MID 2-5, FWD 2-5, outfield = 10).
+const FULL_OPEN_SLOTS = ['GK','DEF','DEF','DEF','MID','MID','FWD','FWD','FLEX','FLEX','FLEX'];
+const FULL_FLOORS = { DEF:3, MID:2, FWD:2 };
+const FULL_POS_CAP = 5;
+// Live counts of each outfield position among the current picks (Full draft).
+function fullPosCounts(){
+  const c={GK:0,DEF:0,MID:0,FWD:0};
+  if(gs) gs.picks.forEach(p=>{ if(c[p.player.position]!=null) c[p.player.position]++; });
+  return c;
+}
+// "DEF n · MID n · FWD n" readout, with capped positions flagged.
+function fullShapeReadout(){
+  const c=fullPosCounts();
+  return ['DEF','MID','FWD'].map(pos=>{
+    const capped = c[pos]>=FULL_POS_CAP;
+    return `<span class="shape-chip ${pos}${capped?' capped':''}">${pos} ${c[pos]}${capped?' ·MAX':''}</span>`;
+  }).join('');
+}
+
+// (legacy) Full Team Draft formations — retained only for reference; the flex
+// builder above replaces the formation spin-wheel.
 const FORMATIONS = [
   { name:'4-4-2', def:4, mid:4, fwd:2 },
   { name:'4-3-3', def:4, mid:3, fwd:3 },
@@ -2151,10 +2185,14 @@ function reversePosOrder(slots){
   return rest.concat(flex);
 }
 function draftSlotOrder(){
-  const base = (gs && gs.draftType==='full' && gs.formation)
-    ? slotsFromFormation(gs.formation)
-    : ['FWD','MID','DEF','DEF','GK','FLEX'];
-  return reversePosOrder(base);   // FWD → … → GK (FLEX last)
+  if(gs && gs.draftType==='full'){
+    // flex picks are recorded by their real position, so order by position
+    // (GK → DEF → MID → FWD), with any still-open FLEX slots kept last
+    const cur=[...gs.picks.map(p=>p.slot), ...gs.openSlots];
+    const rank={GK:0,DEF:1,MID:2,FWD:3,FLEX:5};
+    return cur.slice().sort((a,b)=>(rank[a]??4)-(rank[b]??4));
+  }
+  return reversePosOrder(['FWD','MID','DEF','DEF','GK','FLEX']);
 }
 // Total rounds this draft (6 for quick, 11 for full).
 function draftTotalSlots(){ return gs ? gs.picks.length + gs.openSlots.length : 6; }
@@ -2285,6 +2323,7 @@ function goToHome(){
   if(!gs) gs=G.createGameState();
   // Set up the right pitch for this draft type (Quick = static 6; Full = formation rows)
   if(isFullDraft()) buildFullPitch(); else restoreQuickPitch();
+  updateFullShapeReadout();   // shows the live x-y-z readout for full, hides for quick
   const cap=$('screen-home').querySelector('.pitch-cap');
   if(cap) cap.textContent = isFullDraft() ? 'Your Starting XI' : 'Your Starting VI';
   $('home-round-label').textContent=roundLabel();
@@ -2448,8 +2487,16 @@ function resolveSpin(country, year){
 
 function eligibleSlotsFor(player){
   const slots=new Set();
+  const full=isFullDraft();
+  // Full draft: a FLEX slot can take DEF/MID/FWD, but only while that position is
+  // below the cap of 5 (fixed + flex). When a position hits 5 it has no dedicated
+  // slot left AND is flex-blocked → the player becomes ineligible (greyed out).
+  const posCount = full ? gs.picks.filter(pk=>pk.player.position===player.position).length : 0;
   gs.openSlots.forEach(s=>{
-    if(s==='FLEX'){ if(player.position==='MID'||player.position==='FWD') slots.add('FLEX'); }
+    if(s==='FLEX'){
+      if(full){ if(player.position!=='GK' && posCount<FULL_POS_CAP) slots.add('FLEX'); }
+      else    { if(player.position==='MID'||player.position==='FWD') slots.add('FLEX'); }
+    }
     else if(s===player.position) slots.add(s);
   });
   return [...slots];
@@ -2482,37 +2529,69 @@ let fullPitchLayout = []; // [{id, pos, top, left}] in formation order
 const FULL_ROW_TOP = { DEF:70, MID:50, FWD:24 };
 function rowXs(n){ const out=[]; for(let i=0;i<n;i++) out.push((i+1)/(n+1)*100); return out; }
 
-// Build (or rebuild) the dynamic .pslot circles for the current formation.
+// Open slots remaining per slot label (DEF/MID/FWD/GK/FLEX) for the full draft.
+function fullOpenCounts(){
+  const o={GK:0,DEF:0,MID:0,FWD:0,FLEX:0};
+  if(gs) gs.openSlots.forEach(s=>{ if(o[s]!=null) o[s]++; });
+  return o;
+}
+// Build the dynamic .pslot circles for the LIVE shape (filled picks by real
+// position + remaining fixed slots + a neutral band for unfilled FLEX), then
+// fill them. Total is always 11. Replaces the old fixed-formation pitch.
+const FULL_BAND_TOP = { FWD:22, FLEX:39, MID:53, DEF:70, GK:88 };
 function buildFullPitch(){
-  const wrap=$('pitch-wrap'); if(!wrap || !gs || !gs.formation) return;
-  // remove any previously generated full slots; hide the static quick slots
+  const wrap=$('pitch-wrap'); if(!wrap || !gs) return;
   wrap.querySelectorAll('.pslot.full-slot').forEach(el=>el.remove());
   wrap.querySelectorAll('.pslot:not(.full-slot)').forEach(el=>{ el.style.display='none'; });
   wrap.classList.add('full');
   fullPitchLayout=[];
-  const f=gs.formation;
-  const rows=[['DEF',f.def],['MID',f.mid],['FWD',f.fwd]];
-  rows.forEach(([pos,count])=>{
-    const xs=rowXs(count);
-    xs.forEach((x,i)=>{
-      const id=`psf-${pos}-${i}`;
+  const cnt=fullPosCounts(), open=fullOpenCounts();
+  // band order top→bottom: FWD, FLEX(pending), MID, DEF, GK
+  const bands=[
+    {pos:'FWD', n:cnt.FWD+open.FWD},
+    {pos:'FLEX',n:open.FLEX, flex:true},
+    {pos:'MID', n:cnt.MID+open.MID},
+    {pos:'DEF', n:cnt.DEF+open.DEF},
+    {pos:'GK',  n:cnt.GK+open.GK},
+  ];
+  bands.forEach(b=>{
+    if(b.n<=0) return;
+    const xs=rowXs(b.n), top=FULL_BAND_TOP[b.flex?'FLEX':b.pos];
+    for(let i=0;i<b.n;i++){
+      const id=`psf-${b.flex?'FLEX':b.pos}-${i}`;
       const el=document.createElement('div');
-      el.className='pslot full-slot';
+      el.className='pslot full-slot'+(b.flex?' flexband':'');
       el.id=id;
-      el.style.color=PITCH_COLORS[pos];
-      el.style.left=x+'%'; el.style.top=FULL_ROW_TOP[pos]+'%';
-      el.innerHTML=`<span class="psl-label">${pos}</span>`;
+      el.style.color=PITCH_COLORS[b.flex?'FLEX':b.pos];
+      el.style.left=xs[i]+'%'; el.style.top=top+'%';
+      el.innerHTML=`<span class="psl-label">${b.flex?'FLEX':b.pos}</span>`;
       wrap.appendChild(el);
-      fullPitchLayout.push({id,pos,top:FULL_ROW_TOP[pos],left:x});
-    });
+      fullPitchLayout.push({id,pos:b.pos,flex:!!b.flex});
+    }
   });
-  // GK at the bottom centre
-  const gkEl=document.createElement('div');
-  gkEl.className='pslot full-slot'; gkEl.id='psf-GK-0';
-  gkEl.style.color=PITCH_COLORS.GK; gkEl.style.left='50%'; gkEl.style.top='87%';
-  gkEl.innerHTML='<span class="psl-label">GK</span>';
-  wrap.appendChild(gkEl);
-  fullPitchLayout.unshift({id:'psf-GK-0',pos:'GK',top:87,left:50});
+  // fill the position bands with the drafted players (flex band stays as labels)
+  const filled={GK:[],DEF:[],MID:[],FWD:[]};
+  gs.picks.forEach(p=>{ if(filled[p.slot]) filled[p.slot].push(p.player); });
+  const cursor={GK:0,DEF:0,MID:0,FWD:0};
+  fullPitchLayout.forEach(s=>{
+    if(s.flex) return;
+    const player = filled[s.pos] ? (filled[s.pos][cursor[s.pos]++]||null) : null;
+    setPitchSlot(s.id, player, PITCH_COLORS[s.pos], s.pos, true);   // no per-rebuild pop
+  });
+  updateFullShapeReadout();
+}
+
+// Live "x-y-z" + capped-position chips, shown on the home pitch + select screen.
+function updateFullShapeReadout(){
+  const show=isFullDraft();
+  ['full-shape-home','full-shape-select'].forEach(id=>{
+    const el=$(id); if(!el) return;
+    el.style.display = show ? 'flex' : 'none';
+    if(show){
+      const c=fullPosCounts();
+      el.innerHTML = `<span class="shape-form">${c.DEF}-${c.MID}-${c.FWD}</span>` + fullShapeReadout();
+    }
+  });
 }
 
 // Restore the static six-slot Quick pitch (used when leaving Full Draft).
@@ -2566,7 +2645,7 @@ function fitLabel(el, sel='.psl-label', max=PSL_MAX_FONT, minF=8){
   }
 }
 
-function setPitchSlot(id, player, color, emptyLabel){
+function setPitchSlot(id, player, color, emptyLabel, noPop){
   const el=$(id); if(!el) return;
   const lbl=el.querySelector('.psl-label');
   el.style.color=color;
@@ -2576,8 +2655,8 @@ function setPitchSlot(id, player, color, emptyLabel){
   if(!wm){ wm=document.createElement('span'); wm.className='psl-flag-wm'; el.insertBefore(wm, el.firstChild); }
   if(player){
     if(!el.classList.contains('filled')){
-      el.classList.add('filled','pop');
-      setTimeout(()=>el.classList.remove('pop'),360);
+      el.classList.add('filled');
+      if(!noPop){ el.classList.add('pop'); setTimeout(()=>el.classList.remove('pop'),360); }
     }
     // solid position colour comes from CSS (background:currentColor); the flag
     // becomes a low-opacity watermark behind the surname (image, else emoji).
@@ -2605,10 +2684,7 @@ function setPitchSlot(id, player, color, emptyLabel){
 function updatePitch(){
   if(!gs) return;
   if(isFullDraft()){
-    const res=fullPitchAssignments();
-    fullPitchLayout.forEach(s=>{
-      setPitchSlot(s.id, res[s.id], PITCH_COLORS[s.pos], s.pos);
-    });
+    buildFullPitch();   // rebuild the live shape (counts change as flex resolves)
     if(gs.phase!=='COMPLETE') $('pitch-result').classList.remove('show');
     return;
   }
@@ -2664,17 +2740,24 @@ function setMiniSlot(id, player, color, emptyLabel){
 // Build the dynamic 11-circle mini preview for Full Draft (replaces the 6 static).
 let fullMiniLayout=[]; // [{id,pos}] in formation order
 function buildFullMiniPitch(){
-  const mp=$('mini-pitch'); if(!mp || !gs || !gs.formation) return;
+  const mp=$('mini-pitch'); if(!mp || !gs) return;
   mp.classList.add('full');
   mp.innerHTML='';
   fullMiniLayout=[];
-  reversePosOrder(slotsFromFormation(gs.formation)).forEach((pos,i)=>{
-    const id=`mf-${i}`;
-    const el=document.createElement('div');
-    el.className='mslot'; el.id=id;
-    el.innerHTML=`<span class="ml">${pos}</span>`;
-    mp.appendChild(el);
-    fullMiniLayout.push({id,pos});
+  const cnt=fullPosCounts(), open=fullOpenCounts();
+  // FWD → MID → DEF → GK, with any still-open FLEX slots shown last
+  const bands=[['FWD',cnt.FWD+open.FWD,false],['MID',cnt.MID+open.MID,false],
+               ['DEF',cnt.DEF+open.DEF,false],['GK',cnt.GK+open.GK,false],
+               ['FLEX',open.FLEX,true]];
+  bands.forEach(([pos,n,flex])=>{
+    for(let i=0;i<n;i++){
+      const id=`mf-${flex?'FLEX':pos}-${i}`;
+      const el=document.createElement('div');
+      el.className='mslot'+(flex?' flexband':''); el.id=id;
+      el.innerHTML=`<span class="ml">${flex?'FLEX':pos}</span>`;
+      mp.appendChild(el);
+      fullMiniLayout.push({id,pos,flex:!!flex});
+    }
   });
 }
 function restoreQuickMiniPitch(){
@@ -2693,13 +2776,16 @@ function restoreQuickMiniPitch(){
 function updateMiniPitch(){
   if(!gs) return;
   if(isFullDraft()){
-    if(!fullMiniLayout.length || !$(fullMiniLayout[0].id)) buildFullMiniPitch();
+    buildFullMiniPitch();   // rebuild for the live shape
+    const filled={GK:[],DEF:[],MID:[],FWD:[]};
+    gs.picks.forEach(p=>{ if(filled[p.slot]) filled[p.slot].push(p.player); });
     const cursor={GK:0,DEF:0,MID:0,FWD:0};
-    const idsByPos={GK:[],DEF:[],MID:[],FWD:[]};
-    fullMiniLayout.forEach(s=>idsByPos[s.pos].push(s.id));
-    const filled={};
-    gs.picks.forEach(p=>{ const id=idsByPos[p.slot][cursor[p.slot]++]; if(id) filled[id]=p.player; });
-    fullMiniLayout.forEach(s=>setMiniSlot(s.id, filled[s.id]||null, PITCH_COLORS[s.pos], s.pos));
+    fullMiniLayout.forEach(s=>{
+      if(s.flex){ setMiniSlot(s.id, null, PITCH_COLORS.FLEX, 'FLEX'); return; }
+      const player = filled[s.pos] ? (filled[s.pos][cursor[s.pos]++]||null) : null;
+      setMiniSlot(s.id, player, PITCH_COLORS[s.pos], s.pos);
+    });
+    updateFullShapeReadout();
     return;
   }
   if(!$('mini-gk')) return;
@@ -4417,10 +4503,11 @@ $('seg-mode').querySelectorAll('.seg-opt').forEach(opt=>{
     renderSetupInfo();
   });
 });
-// Start Draft: Quick goes straight to the board; Full shows the formation reveal first.
+// Start Draft. Quick = 6-man; Full = 11-man flex builder (no formation wheel).
 $('btn-setup-go').addEventListener('click',()=>{
-  if(draftType==='full'){ showFormationReveal(); return; }
-  gs=G.createGameState();
+  gs = (draftType==='full')
+    ? G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS })
+    : G.createGameState();
   goToHome();
 });
 
@@ -5162,15 +5249,16 @@ function simMakeGoalEvent(beneficiary, userSquad, opponent, extraTime, usedMinut
 // ATTACKING (flex = second striker), a MID flex is BALANCED (flex = second mid).
 function getUserPositionalRatings(picks){
   const ovOf = p => (p && p.player ? (p.player.wc_overall ?? p.player.overall ?? 60) : 60);
-  // Full Team Draft: no FLEX. Defense = GK + ALL defenders (same GK/DEF weighting);
-  // Attack = ALL midfielders + forwards (same FWD/MID weighting). Identity from formation.
+  // Full Team Draft (flex builder): picks are recorded by real position. Defense =
+  // GK + ALL defenders; Attack = ALL midfielders + forwards. Identity = 3+ forwards.
   if(isFullDraft()){
     const avg=(arr)=>arr.length?arr.reduce((s,p)=>s+ovOf(p),0)/arr.length:60;
-    const gks  = picks.filter(p=>p.slot==='GK');
-    const defs = picks.filter(p=>p.slot==='DEF');
-    const mids = picks.filter(p=>p.slot==='MID');
-    const fwds = picks.filter(p=>p.slot==='FWD');
-    const identity = (gs && gs.formation && gs.formation.fwd===3) ? 'ATTACKING' : 'BALANCED';
+    const posOf = p => (p && p.player ? p.player.position : null);
+    const gks  = picks.filter(p=>posOf(p)==='GK');
+    const defs = picks.filter(p=>posOf(p)==='DEF');
+    const mids = picks.filter(p=>posOf(p)==='MID');
+    const fwds = picks.filter(p=>posOf(p)==='FWD');
+    const identity = fwds.length>=3 ? 'ATTACKING' : 'BALANCED';
     const gkOv=avg(gks), defOv=avg(defs);
     const defense = gkOv*0.45 + defOv*0.55;
     const midOv=avg(mids), fwdOv=avg(fwds);
@@ -6888,8 +6976,10 @@ $('btn-friendly-build').addEventListener('click', ()=>{
   friendlyMyName=($('fr-name-challenger').value||'').trim();
   draftType = ($('fr-seg-draft').dataset.active==='full') ? 'full' : 'quick';
   gameMode  = ($('fr-seg-mode').dataset.active==='hard') ? 'hard' : 'easy';
-  if(draftType==='full'){ showFormationReveal(); }      // random formation, then draft XI
-  else { gs=G.createGameState(); goToHome(); }
+  gs = (draftType==='full')
+    ? G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS })   // flex builder
+    : G.createGameState();
+  goToHome();
 });
 $('cr-share').addEventListener('click', ()=>friendlyShareLink($('cr-share')._url));
 $('cr-copy').addEventListener('click', async ()=>{
@@ -6904,8 +6994,10 @@ $('cl-accept').addEventListener('click', ()=>{
   gameMode = ($('cl-seg-mode').dataset.active==='hard') ? 'hard' : 'easy';
   // draft size is LOCKED to the challenger's so the squads are comparable
   draftType = (window.CHALLENGER_DATA && window.CHALLENGER_DATA.draftType==='full') ? 'full' : 'quick';
-  if(draftType==='full'){ showFormationReveal(); }
-  else { gs=G.createGameState(); goToHome(); }
+  gs = (draftType==='full')
+    ? G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS })
+    : G.createGameState();
+  goToHome();
 });
 $('fx-solo').addEventListener('click', ()=>{ goToDraftTypeSelect(); });
 $('fr-share').addEventListener('click', friendlyShareResult);
