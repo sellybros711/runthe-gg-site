@@ -202,6 +202,10 @@
   .fr-lineup .flag-ico{width:26px;height:18px;border-radius:3px;background-size:cover;background-position:center;border:1px solid rgba(0,0,0,.2);}
   .fr-linkbox{width:100%;border:2px solid var(--ink);border-radius:12px;padding:12px;font-size:12px;
     font-family:monospace;background:#fff;margin-bottom:14px;resize:none;color:#333;}
+  .fr-name-input{width:100%;max-width:300px;border:3px solid var(--ink);border-radius:12px;padding:12px 14px;
+    font-family:inherit;font-weight:800;font-size:16px;color:var(--ink);background:#fff;text-align:center;
+    margin:0 auto 14px;display:block;box-shadow:var(--shadow-sm);}
+  .fr-name-input::placeholder{color:#b3a99c;font-weight:700;}
   .fr-tease-ov{font-family:'Anton',Impact,sans-serif;font-size:40px;color:var(--gold);margin:6px 0;}
   .fr-result-img{width:100%;border:3px solid var(--ink);border-radius:14px;box-shadow:var(--shadow-sm);display:block;margin:0 auto 16px;}
   .fr-banner{width:100%;background:var(--ink);color:#fff;font-weight:900;font-size:12px;
@@ -1573,7 +1577,7 @@
       <div class="home-cta-row">
         <div class="cta-friendly-wrap">
           <button id="btn-friendly" class="btn green">
-            <span class="btn-label">FRIENDLY</span>
+            <span class="btn-label">FRIENDLIES</span>
             <span class="btn-sub">Challenge a friend</span>
           </button>
         </div>
@@ -1766,12 +1770,13 @@
     </div>
   </section>
 
-  <!-- ===== FRIENDLY: mode intro ===== -->
+  <!-- ===== FRIENDLIES: mode intro ===== -->
   <section id="screen-friendly-intro" class="screen">
     <div class="fr-wrap">
-      <div class="fr-title">FRIENDLY MODE</div>
+      <div class="fr-title">FRIENDLIES</div>
       <div class="fr-sub">Build your squad then challenge a friend</div>
       <div class="fr-desc">You'll draft your lineup first. After you're done, you'll get a link to share with your friend. They build their squad and the match kicks off.</div>
+      <input id="fr-name-challenger" class="fr-name-input" maxlength="16" placeholder="Your name (for your team)" autocomplete="off" />
       <button id="btn-friendly-build" class="btn green big">BUILD MY SQUAD →</button>
     </div>
   </section>
@@ -1798,15 +1803,14 @@
     </div>
   </section>
 
-  <!-- ===== FRIENDLY: opponent landing ===== -->
+  <!-- ===== FRIENDLIES: opponent landing ===== -->
   <section id="screen-challenge-landing" class="screen">
     <div class="fr-wrap">
       <div class="fr-title">YOU'VE BEEN CHALLENGED! ⚔️</div>
-      <div class="fr-desc">A friend has built their World Cup dream squad and wants to face you in a <b>HEAD-TO-HEAD FRIENDLY MATCH</b>.<br><br>Draft your own 6-player squad from World Cup history. Once you're done, the match simulates instantly — and you'll see exactly how it plays out, goal by goal.<br><br>Think you can beat them? 🔥</div>
+      <div class="fr-desc"><b id="cl-from"></b>A friend has built their World Cup dream squad and wants to face you in a <b>HEAD-TO-HEAD MATCH</b>.<br><br>Draft your own squad from World Cup history. Once you're done, the match plays out live — goal by goal.<br><br>Think you can beat them? 🔥</div>
       <ul class="fr-lineup" id="cl-mystery"></ul>
-      <div class="fr-sub" style="margin-bottom:4px">Their Team Overall</div>
-      <div class="fr-tease-ov" id="cl-ov">—</div>
-      <div class="fr-muted" style="margin-top:0;margin-bottom:14px">Can you build a squad to top that?</div>
+      <div class="fr-muted" style="margin-top:0;margin-bottom:14px">Their squad is a mystery — out-draft them.</div>
+      <input id="fr-name-opponent" class="fr-name-input" maxlength="16" placeholder="Your name (for your team)" autocomplete="off" />
       <button id="cl-accept" class="btn green big">ACCEPT THE CHALLENGE →</button>
       <div class="fr-muted">You'll draft your squad then the match kicks off automatically</div>
     </div>
@@ -6053,7 +6057,15 @@ let friendlyMode = false;
 let friendlyRole = null;       // 'challenger' | 'opponent'
 let challengerData = null;     // decoded lineup of the link sender (opponent flow)
 let friendlyMatchResult = null;
+let friendlyMyName = '';       // this device's player name → their team name
 const FRIENDLY_TTL_MS = 24*60*60*1000; // 24 hours
+
+// "NAME's XI" (11) / "NAME's VI" (6); falls back to a generic label when blank.
+function frTeamName(name, size, fallback){
+  const n=(name||'').trim();
+  const suffix = (size>=11)?'XI':'VI';
+  return n ? `${n.toUpperCase()}'S ${suffix}` : (fallback||'SQUAD');
+}
 
 // Surname for the result card: the last name token, plus any generational
 // suffix kept attached (e.g. "Vincent Aboubakar Jr." → "Aboubakar Jr.").
@@ -6084,9 +6096,9 @@ function frBuildPayload(){
       ps: p.position,                    // position
       ov: p.overall                      // overall
     };});
-  return { p: minimalPicks, to: gs.result.teamOverall, ts: Date.now() };
+  return { p: minimalPicks, to: gs.result.teamOverall, ts: Date.now(), nm: friendlyMyName || '' };
 }
-// Map a raw payload {p,to,ts} → the challenger data the Friendly flow expects.
+// Map a raw payload {p,to,ts,nm} → the challenger data the Friendly flow expects.
 function frMapRaw(raw){
   return {
     picks: (raw.p||[]).map(p=>({
@@ -6094,7 +6106,8 @@ function frMapRaw(raw){
       year: p.yr, position: p.ps, wc_overall: p.ov, flag: flagImg(p.ct,160) || ''
     })),
     teamOverall: raw.to,
-    timestamp: raw.ts
+    timestamp: raw.ts,
+    name: raw.nm || ''
   };
 }
 // Legacy embedded link (fallback when Supabase is unreachable). Percent-encoding
@@ -6141,7 +6154,8 @@ async function sbFetchChallenge(code){
 // Reset all Friendly state (used when returning to Solo / Play Again).
 function friendlyReset(){
   friendlyMode=false; friendlyRole=null; challengerData=null; friendlyMatchResult=null;
-  draftType='quick'; pendingFormation=null; // Friendly is always the 6-man draft
+  friendlyMyName='';
+  draftType='quick'; pendingFormation=null; // Friendly is always the 6-man draft (for now)
 }
 
 // Build the encoded lineup object from the just-completed draft (gs.result).
@@ -6246,7 +6260,7 @@ function parseFriendlyParam(){
     const d = frDecodeParam(friendlyParam); // short keys → full picks/teamOverall/timestamp
     // Store challenger data BEFORE cleaning the URL.
     window.CHALLENGER_DATA = {
-      picks: d.picks, teamOverall: d.teamOverall, timestamp: d.timestamp
+      picks: d.picks, teamOverall: d.teamOverall, timestamp: d.timestamp, name: d.name
     };
     const expired = (Date.now() - d.timestamp) > FRIENDLY_TTL_MS;
     // Clean the URL AFTER storing data so a refresh won't re-trigger / re-corrupt.
@@ -6270,7 +6284,7 @@ function applyChallengerRaw(raw){
   if(expired || !d.picks || !d.picks.length){
     window.CHALLENGER_DATA=null; window.FRIENDLY_EXPIRED=true; window.FRIENDLY_INCOMING=false;
   }else{
-    window.CHALLENGER_DATA = { picks:d.picks, teamOverall:d.teamOverall, timestamp:d.timestamp };
+    window.CHALLENGER_DATA = { picks:d.picks, teamOverall:d.teamOverall, timestamp:d.timestamp, name:d.name };
     window.FRIENDLY_INCOMING=true;
   }
 }
@@ -6304,7 +6318,11 @@ function showChallengeLanding(data){
       `<span class="fr-nm" style="letter-spacing:2px;color:#9a9387">???</span>`;
     ul.appendChild(li);
   });
-  $('cl-ov').textContent=Math.round(data.teamOverall);
+  // Opponent overall is hidden now — keep it a mystery until the match.
+  const fromEl=$('cl-from');
+  if(fromEl) fromEl.textContent = (data.name && String(data.name).trim())
+    ? `${String(data.name).trim()} has challenged you! `
+    : '';
   showScreen('challenge-landing');
 }
 
@@ -6332,38 +6350,59 @@ async function runFriendlyMatch(){
   const opponentGoals = m.goalEvents.filter(e=>e.team==='user').map(e=>({minute:e.minute,scorer:e.scorer}));
   const challengerGoals = m.goalEvents.filter(e=>e.team==='opponent').map(e=>({minute:e.minute,scorer:e.scorer}));
 
+  // Team names (this device = the "opponent" side; link sender = "challenger").
+  const youShort    = (friendlyMyName||'YOU').toUpperCase();
+  const friendShort = ((window.CHALLENGER_DATA.name)||'FRIEND').toUpperCase();
+  const youTeam    = frTeamName(friendlyMyName, userSquad.length, 'YOUR SQUAD');
+  const friendTeam = frTeamName(window.CHALLENGER_DATA.name, chSquad.length, "FRIEND'S SQUAD");
+
+  // ---- box-score stats (plausible figures derived from ratings + scoreline) ----
   const totalOv = userOverall + chOverall;
   const possOpp = Math.round((userOverall/totalOv)*100);
   const possession = { opponent: possOpp, challenger: 100-possOpp };
+  const xgU=expectedGoals(userOverall), xgC=expectedGoals(chOverall);
   const shots = {
-    opponent: Math.round(expectedGoals(userOverall)*3.5),
-    challenger: Math.round(expectedGoals(chOverall)*3.5)
+    opponent:   Math.max(opponentScore,   Math.round(xgU*3.5)+1),
+    challenger: Math.max(challengerScore, Math.round(xgC*3.5)+1)
+  };
+  const shotsOnTarget = {
+    opponent:   Math.max(opponentScore,   Math.round(shots.opponent*0.45)),
+    challenger: Math.max(challengerScore, Math.round(shots.challenger*0.45))
+  };
+  const corners = {
+    opponent:   Math.max(1, Math.round(xgU*2.2)),
+    challenger: Math.max(1, Math.round(xgC*2.2))
+  };
+  const fouls = {
+    opponent:   8 + Math.round(Math.max(0,(100-userOverall))/8),
+    challenger: 8 + Math.round(Math.max(0,(100-chOverall))/8)
   };
   const saves = {
-    opponent: Math.max(0, shots.challenger - challengerScore),
-    challenger: Math.max(0, shots.opponent - opponentScore)
+    opponent:   Math.max(0, shotsOnTarget.challenger - challengerScore),
+    challenger: Math.max(0, shotsOnTarget.opponent - opponentScore)
   };
 
-  // Man of the match: best overall on the winning team (highest overall overall on a draw).
+  // Man of the match: best overall on the winning team (highest overall on a draw).
   const oppBest = [...userSquad].sort((a,b)=>(b.overall||0)-(a.overall||0))[0];
   const chBest  = [...chSquad].sort((a,b)=>(b.overall||0)-(a.overall||0))[0];
   let mom;
-  if(opponentScore>challengerScore)       mom={ name:oppBest.name, team:'YOU',    overall:oppBest.overall };
-  else if(challengerScore>opponentScore)  mom={ name:chBest.name,  team:'FRIEND', overall:chBest.overall  };
+  if(opponentScore>challengerScore)       mom={ name:oppBest.name, team:youShort,    overall:oppBest.overall };
+  else if(challengerScore>opponentScore)  mom={ name:chBest.name,  team:friendShort, overall:chBest.overall  };
   else mom = (oppBest.overall||0)>=(chBest.overall||0)
-        ? { name:oppBest.name, team:'YOU', overall:oppBest.overall }
-        : { name:chBest.name, team:'FRIEND', overall:chBest.overall };
+        ? { name:oppBest.name, team:youShort, overall:oppBest.overall }
+        : { name:chBest.name, team:friendShort, overall:chBest.overall };
 
   const normSquad = arr => groupFlexByPosition(orderPicksForDisplay(arr.map(p=>({slot:p.slot,player:p})), ['FWD','MID','DEF','DEF','GK','FLEX']))
     .map(x=>({ slot:x.slot, name:x.player.name, overall:x.player.overall }));
 
   friendlyMatchResult = {
     opponentScore, challengerScore, opponentGoals, challengerGoals,
-    possession, shots, saves, manOfMatch: mom,
+    possession, shots, shotsOnTarget, corners, fouls, saves, manOfMatch: mom,
     opponentSquad: normSquad(gs.result.scoredPicks.map(p=>({...p.player,slot:p.slot}))),
     challengerSquad: normSquad(chSquad),
     opponentTeamOverall: Math.round(userOverall),
-    challengerTeamOverall: Math.round(chOverall)
+    challengerTeamOverall: Math.round(chOverall),
+    youShort, friendShort, youTeam, friendTeam
   };
 
   incrementFriendlyCount();   // non-blocking, fails silently
@@ -6386,13 +6425,15 @@ async function incrementFriendlyCount(){
   }catch(e){ /* counter is best-effort; never blocks the match */ }
 }
 
-// ---- CHANGE 6 — shareable result image (390×700 portrait canvas) ----
+// ---- shareable result image (390×800 portrait canvas) ----
 async function buildFriendlyResultCanvas(R){
   await (document.fonts && document.fonts.ready);
-  const Wc=390, Hc=700, S=2;
+  const Wc=390, Hc=800, S=2;
   const c=document.createElement('canvas'); c.width=Wc*S; c.height=Hc*S;
   const x=c.getContext('2d'); x.scale(S,S);
   const youWin=R.opponentScore>R.challengerScore, draw=R.opponentScore===R.challengerScore;
+  const youShort=R.youShort||'YOU', friendShort=R.friendShort||'FRIEND';
+  const fit=(s,max)=>{ let t=String(s); while(x.measureText(t).width>max && t.length>2){ t=t.slice(0,-1);} return t===String(s)?t:t+'…'; };
 
   // SECTION 1 — header
   x.fillStyle='#0A0F1E'; x.fillRect(0,0,Wc,80);
@@ -6400,76 +6441,83 @@ async function buildFriendlyResultCanvas(R){
   x.fillStyle='#F4B413'; x.font='900 20px Archivo';
   x.fillText('RUNTHEPITCH', Wc/2, 34);
   x.fillStyle='#fff'; x.font='700 13px Archivo';
-  x.fillText('FRIENDLY MATCH', Wc/2, 56);
+  x.fillText('FRIENDLIES', Wc/2, 56);
   x.fillStyle='#F4B413'; x.fillRect(40,72,Wc-80,2);
 
   // SECTION 2 — scoreline
   x.fillStyle='#0A0F1E'; x.fillRect(0,80,Wc,120);
   x.fillStyle='rgba(255,255,255,.7)'; x.font='800 12px Archivo';
-  x.fillText('YOU', 60, 120); x.fillText('FRIEND', Wc-60, 120);
+  x.fillText(fit(youShort,150), 75, 118); x.fillText(fit(friendShort,150), Wc-75, 118);
   x.fillStyle='#fff'; x.font='900 18px Archivo';
-  x.fillText(String(R.opponentTeamOverall), 60, 142);
-  x.fillText(String(R.challengerTeamOverall), Wc-60, 142);
+  x.fillText(String(R.opponentTeamOverall), 75, 140);
+  x.fillText(String(R.challengerTeamOverall), Wc-75, 140);
   x.fillStyle='#fff'; x.font='900 48px Archivo'; x.textAlign='right';
-  x.fillText(String(R.opponentScore), Wc/2-18, 158);
+  x.fillText(String(R.opponentScore), Wc/2-18, 160);
   x.textAlign='left';
-  x.fillText(String(R.challengerScore), Wc/2+18, 158);
+  x.fillText(String(R.challengerScore), Wc/2+18, 160);
   x.fillStyle='#F4B413'; x.textAlign='center'; x.font='900 40px Archivo';
-  x.fillText('–', Wc/2, 156);
+  x.fillText('–', Wc/2, 158);
   x.font='900 16px Archivo';
   x.fillStyle = draw?'#F4B413':(youWin?'#1F9E57':'#E5402A');
   x.fillText(draw?'DRAW':(youWin?'YOU WIN':'YOU LOSE'), Wc/2, 190);
 
-  // SECTION 3 — box score
-  x.fillStyle='#F8F5F0'; x.fillRect(0,200,Wc,120);
-  const rows=[['Possession',R.possession.opponent+'%',R.possession.challenger+'%'],
-             ['Shots',R.shots.opponent,R.shots.challenger],
-             ['Saves',R.saves.opponent,R.saves.challenger]];
-  x.font='800 12px Archivo';
-  x.fillStyle='#9a8f80'; x.textAlign='left'; x.fillText('YOU',24,222);
-  x.textAlign='right'; x.fillText('FRIEND',Wc-24,222);
+  // SECTION 3 — box score (expanded)
+  const boxY=200, boxH=212;
+  x.fillStyle='#F8F5F0'; x.fillRect(0,boxY,Wc,boxH);
+  const rows=[
+    ['Possession', R.possession.opponent+'%', R.possession.challenger+'%'],
+    ['Shots', R.shots.opponent, R.shots.challenger],
+    ['Shots on Target', (R.shotsOnTarget?R.shotsOnTarget.opponent:'—'), (R.shotsOnTarget?R.shotsOnTarget.challenger:'—')],
+    ['Corners', (R.corners?R.corners.opponent:'—'), (R.corners?R.corners.challenger:'—')],
+    ['Fouls', (R.fouls?R.fouls.opponent:'—'), (R.fouls?R.fouls.challenger:'—')],
+    ['Saves', R.saves.opponent, R.saves.challenger]
+  ];
+  x.font='800 11px Archivo';
+  x.fillStyle='#9a8f80'; x.textAlign='left'; x.fillText(fit(youShort,120),24,boxY+20);
+  x.textAlign='right'; x.fillText(fit(friendShort,120),Wc-24,boxY+20);
   rows.forEach((r,i)=>{
-    const ry=232+i*28;
+    const ry=boxY+28+i*28;
     if(i%2===0){ x.fillStyle='rgba(0,0,0,.04)'; x.fillRect(12,ry,Wc-24,26); }
     x.fillStyle='#16120F'; x.font='900 14px Archivo';
     x.textAlign='left'; x.fillText(String(r[1]),24,ry+18);
-    x.textAlign='center'; x.fillStyle='#5a5048'; x.font='700 12px Archivo';
+    x.textAlign='center'; x.fillStyle='#5a5048'; x.font='700 11px Archivo';
     x.fillText(r[0],Wc/2,ry+18);
     x.textAlign='right'; x.fillStyle='#16120F'; x.font='900 14px Archivo';
     x.fillText(String(r[2]),Wc-24,ry+18);
   });
 
   // SECTION 4 — goal events
-  x.fillStyle='#FFFFFF'; x.fillRect(0,320,Wc,100);
+  const goY=412;
+  x.fillStyle='#FFFFFF'; x.fillRect(0,goY,Wc,92);
   x.textAlign='left'; x.font='700 12px Archivo'; x.fillStyle='#16120F';
-  const all=[...R.opponentGoals.map(g=>({...g,team:'YOU'})),
-             ...R.challengerGoals.map(g=>({...g,team:'FRIEND'}))].sort((a,b)=>a.minute-b.minute);
+  const all=[...R.opponentGoals.map(g=>({...g,team:youShort})),
+             ...R.challengerGoals.map(g=>({...g,team:friendShort}))].sort((a,b)=>a.minute-b.minute);
   if(!all.length){
     x.textAlign='center'; x.fillStyle='#5a5048'; x.font='800 14px Archivo';
-    x.fillText('0–0 — Goalless draw', Wc/2, 372);
+    x.fillText('0–0 — Goalless draw', Wc/2, goY+50);
   } else {
     const shown=all.slice(0,5);
     shown.forEach((g,i)=>{
       x.fillStyle='#16120F'; x.font='700 12px Archivo'; x.textAlign='left';
-      x.fillText(`⚽ ${g.minute}'  ${surnameOf(g.scorer)} (${g.team})`, 20, 340+i*15);
+      x.fillText(`⚽ ${g.minute}'  ${surnameOf(g.scorer)} (${g.team})`, 20, goY+18+i*14);
     });
-    if(all.length>5){ x.fillStyle='#9a8f80'; x.fillText(`+${all.length-5} more`, 20, 340+5*15); }
+    if(all.length>5){ x.fillStyle='#9a8f80'; x.fillText(`+${all.length-5} more`, 20, goY+18+5*14); }
   }
 
   // SECTION 5 — both lineups
-  x.fillStyle='#0F1424'; x.fillRect(0,420,Wc,200);
-  x.textAlign='center'; x.font='900 12px Archivo'; x.fillStyle='#F4B413';
-  x.fillText('YOUR SQUAD', Wc*0.25, 442); x.fillText("FRIEND'S SQUAD", Wc*0.75, 442);
+  const lnY=504, lnH=204;
+  x.fillStyle='#0F1424'; x.fillRect(0,lnY,Wc,lnH);
+  x.textAlign='center'; x.font='900 11px Archivo'; x.fillStyle='#F4B413';
+  x.fillText(fit(R.youTeam||'YOUR SQUAD',172), Wc*0.25, lnY+20);
+  x.fillText(fit(R.friendTeam||"FRIEND'S SQUAD",172), Wc*0.75, lnY+20);
   const drawCol=(squad,cx)=>{
     squad.forEach((p,i)=>{
-      const ry=458+i*26;
+      const ry=lnY+32+i*26;
       const col=slotColor(p.slot,{position:''})||'#5B6470';
       const txt=col===PITCH_COLORS.GK?'#111':'#fff';
       x.fillStyle=col; rrect('',x,cx-78,ry,30,18,4); x.fill();
       x.fillStyle=txt; x.font='900 9px Archivo'; x.textAlign='center'; x.fillText(p.slot,cx-63,ry+13);
       x.fillStyle='#fff'; x.font='800 11px Archivo'; x.textAlign='left';
-      // Surname only, keeping any generational suffix (Jr., Sr., II, III…)
-      // attached to the actual family name. Ellipsize only as a last resort.
       const nameMax=100;
       let nm=surnameOf(p.name);
       let truncated=false;
@@ -6484,16 +6532,16 @@ async function buildFriendlyResultCanvas(R){
   drawCol(R.challengerSquad, Wc*0.75);
 
   // SECTION 6 — man of the match
-  x.fillStyle='#F4B413'; x.fillRect(0,620,Wc,60);
+  x.fillStyle='#F4B413'; x.fillRect(0,708,Wc,60);
   x.fillStyle='#16120F'; x.textAlign='center'; x.font='900 14px Archivo';
   let mtxt=`MAN OF THE MATCH ⭐ ${surnameOf(R.manOfMatch.name)} (${R.manOfMatch.team})`;
   while(x.measureText(mtxt).width>Wc-24 && mtxt.length>10){ mtxt=mtxt.slice(0,-2); }
-  x.fillText(mtxt, Wc/2, 656);
+  x.fillText(mtxt, Wc/2, 744);
 
   // SECTION 7 — footer
-  x.fillStyle='#0A0F1E'; x.fillRect(0,680,Wc,20);
+  x.fillStyle='#0A0F1E'; x.fillRect(0,768,Wc,32);
   x.fillStyle='rgba(255,255,255,.6)'; x.font='700 11px Archivo'; x.textAlign='center';
-  x.fillText('RunThe.gg', Wc/2, 694);
+  x.fillText('RunThe.gg', Wc/2, 788);
 
   return c;
 }
@@ -6531,7 +6579,10 @@ async function friendlyShareResult(){
 
 // ---- wiring ----
 $('btn-friendly').addEventListener('click', startFriendly);
-$('btn-friendly-build').addEventListener('click', ()=>{ gs=G.createGameState(); goToHome(); });
+$('btn-friendly-build').addEventListener('click', ()=>{
+  friendlyMyName=($('fr-name-challenger').value||'').trim();
+  gs=G.createGameState(); goToHome();
+});
 $('cr-share').addEventListener('click', ()=>friendlyShareLink($('cr-share')._url));
 $('cr-copy').addEventListener('click', async ()=>{
   // Copy ONLY the clean URL — never any title/text block.
@@ -6540,7 +6591,10 @@ $('cr-copy').addEventListener('click', async ()=>{
   catch(e){ await copyToClipboard(url); }
   showToast('Challenge link copied! Send it to your friend 🔥');
 });
-$('cl-accept').addEventListener('click', ()=>{ gs=G.createGameState(); goToHome(); });
+$('cl-accept').addEventListener('click', ()=>{
+  friendlyMyName=($('fr-name-opponent').value||'').trim();
+  gs=G.createGameState(); goToHome();
+});
 $('fx-solo').addEventListener('click', ()=>{ goToDraftTypeSelect(); });
 $('fr-share').addEventListener('click', friendlyShareResult);
 $('fr-again').addEventListener('click', ()=>{ friendlyReset(); showScreen('start'); });
