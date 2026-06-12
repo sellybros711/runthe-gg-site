@@ -6380,7 +6380,7 @@ function frEncodeLineup(){
   const base64 = btoa(
     encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g, (m,p1)=>String.fromCharCode('0x'+p1))
   );
-  return window.location.origin + window.location.pathname + '?friendly=' + encodeURIComponent(base64);
+  return window.location.origin + '/challenge/?friendly=' + encodeURIComponent(base64);
 }
 // Decode the legacy ?friendly= param back into challenger data.
 function frDecodeParam(param){
@@ -6392,8 +6392,10 @@ function frDecodeParam(param){
 }
 
 // ---- Supabase short-link transport ----
+// Challenge links go through /challenge/ so the link-preview scraper picks up the
+// challenge-specific OG card; the static page there redirects real users to /?c=.
 function frChallengeUrl(code){
-  return window.location.origin + window.location.pathname + '?c=' + encodeURIComponent(code);
+  return window.location.origin + '/challenge/?c=' + encodeURIComponent(code);
 }
 // Store the payload server-side, return its short code. Throws on failure.
 async function sbCreateChallenge(payload){
