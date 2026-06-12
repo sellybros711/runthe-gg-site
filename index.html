@@ -3058,10 +3058,16 @@ function openSheet(player){
   $('sheet-name').textContent=player.name;
   $('sheet-sub').innerHTML=`${player.position} · ${flagChip(player.country)} ${player.country} ${player.year}`;
   const opts=$('slot-opts'); opts.innerHTML='';
+  const POS_NAME={GK:'Goalkeeper',DEF:'Defender',MID:'Midfielder',FWD:'Forward'};
   elig.forEach(slot=>{
     const o=document.createElement('button');
     o.className='slot-opt '+slot;
-    o.innerHTML=`<span class="nm-pos">${SLOT_LABELS[slot]}</span><span class="tag">${slot}</span>`;
+    // For the Full-draft FLEX slot, show what it actually becomes for THIS player
+    // (their real position) instead of the static "Flex (MID/FWD)".
+    const label = (slot==='FLEX' && isFullDraft())
+      ? `Flex → ${POS_NAME[player.position]||player.position}`
+      : SLOT_LABELS[slot];
+    o.innerHTML=`<span class="nm-pos">${label}</span><span class="tag">${slot}</span>`;
     o.addEventListener('click',()=>assign(player,slot));
     opts.appendChild(o);
   });
