@@ -41,7 +41,7 @@ const rules=[
   {t:'Spin a random year & nation.'},
   {t:'Draft a player from the following positions:', sub:'GK · DEF · DEF · MID · FWD · FLEX'},
   {t:'Repeat until you complete your squad.', hl:true},
-  {t:'Simulate a World Cup against historic squads to lift the trophy — or challenge a friend to a Friendly.', hl:true},
+  {t:'Simulate a World Cup against historic squads to lift the trophy — or challenge a friend to a Head-to-Head Friendly.', hl:true},
 ];
 function wrap(text, font, maxW){
   x.font=font; const words=text.split(' '); const lines=[]; let cur='';
