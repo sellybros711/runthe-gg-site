@@ -792,6 +792,9 @@
   .sim-roster .sr-pos{flex:0 0 auto;font-weight:900;font-size:8px;border-radius:4px;padding:2px 4px;
     min-width:26px;text-align:center;}
   .sim-roster .sr-nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sim-roster .sr-meta{flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;}
+  .sim-roster .sr-meta .flag-ico{width:18px;height:12px;border-radius:2px;}
+  .sim-roster .sr-yr{font-weight:800;font-size:10px;color:#8a7d70;}
   .match-clock-bar{
     height:6px; background:#e5ddd4; border-radius:3px; margin:10px 0;
     overflow:hidden; border:1.5px solid var(--ink);
@@ -6633,8 +6636,11 @@ function buildFriendlyMatchCard(card, m, labels){
   const rosterCol = (sq, name)=>{
     const rows=(sq||[]).map(p=>{
       const pos=p.position||p.slot||'';
+      const fl = p.country ? flagChip(p.country) : '';
+      const yr = p.year ? `<span class="sr-yr">${p.year}</span>` : '';
       return `<div class="sr-row"><span class="sr-pos" style="${slotBadgeStyle(pos,{position:pos})}">${pos}</span>`+
-        `<span class="sr-nm">${escapeHtml(surnameOf(p.name))}</span></div>`;
+        `<span class="sr-nm">${escapeHtml(surnameOf(p.name))}</span>`+
+        `<span class="sr-meta">${fl}${yr}</span></div>`;
     }).join('');
     return `<div class="sim-roster"><div class="sr-head">${escapeHtml(name)}</div>${rows}</div>`;
   };
