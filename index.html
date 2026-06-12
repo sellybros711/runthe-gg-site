@@ -6074,7 +6074,7 @@ function surnameOf(name){
 // The compact challenge payload {p:[…short-keyed picks…], to:teamOverall, ts}.
 // Used both for the Supabase short-link store and the legacy embedded link.
 function frBuildPayload(){
-  const minimalPicks = orderPicksForDisplay(gs.result.scoredPicks, ['FWD','MID','DEF','DEF','GK','FLEX'])
+  const minimalPicks = groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, ['FWD','MID','DEF','DEF','GK','FLEX']))
     .map(pk=>{ const p=pk.player; return {
       sl: pk.slot,                       // slot
       id: String(p.player_id),           // player_id
@@ -6146,7 +6146,7 @@ function friendlyReset(){
 
 // Build the encoded lineup object from the just-completed draft (gs.result).
 function friendlyLineupObject(role){
-  const picks=orderPicksForDisplay(gs.result.scoredPicks, ['FWD','MID','DEF','DEF','GK','FLEX'])
+  const picks=groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, ['FWD','MID','DEF','DEF','GK','FLEX']))
     .map(pk=>{ const p=pk.player; return {
       slot: pk.slot,
       playerId: String(p.player_id),
@@ -6354,7 +6354,7 @@ async function runFriendlyMatch(){
         ? { name:oppBest.name, team:'YOU', overall:oppBest.overall }
         : { name:chBest.name, team:'FRIEND', overall:chBest.overall };
 
-  const normSquad = arr => orderPicksForDisplay(arr.map(p=>({slot:p.slot,player:p})), ['FWD','MID','DEF','DEF','GK','FLEX'])
+  const normSquad = arr => groupFlexByPosition(orderPicksForDisplay(arr.map(p=>({slot:p.slot,player:p})), ['FWD','MID','DEF','DEF','GK','FLEX']))
     .map(x=>({ slot:x.slot, name:x.player.name, overall:x.player.overall }));
 
   friendlyMatchResult = {
