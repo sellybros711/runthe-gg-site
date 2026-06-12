@@ -21,6 +21,12 @@
         window.__CHALLENGE_CODE = cc;
         window.__FRIENDLY_INCOMING = true;
       }
+      // Watch-the-match link (?w=ABC123) — Player A watches Player B's result.
+      const wc = urlParams.get('w');
+      if (wc) {
+        window.__WATCH_CODE = wc;
+        window.__FRIENDLY_INCOMING = true;
+      }
     } catch(e) {
       console.error('Friendly param read:', e);
     }
@@ -1865,10 +1871,13 @@
   <section id="screen-friendly-result" class="screen">
     <div class="fr-wrap">
       <img id="fr-result-img" class="fr-result-img" alt="Friendlies match result" />
-      <button id="fr-share" class="btn green big">SHARE RESULT</button>
+      <button id="fr-send-result" class="btn green big" style="display:none">SEND MATCH TO WATCH →</button>
+      <div id="fr-send-note" class="fr-muted" style="display:none;margin-top:6px;margin-bottom:8px">Let your friend watch the match play out, then see this result.</div>
+      <button id="fr-share" class="btn teal big">SHARE RESULT IMAGE</button>
       <div style="height:10px"></div>
-      <button id="fr-again" class="btn red big">PLAY AGAIN</button>
-      <div class="fr-muted">Send this to your friend so they can see the result!</div>
+      <button id="fr-new-friendly" class="btn green">NEW FRIENDLY</button>
+      <div style="height:10px"></div>
+      <button id="fr-again" class="btn red big">HOME MENU</button>
     </div>
   </section>
 
@@ -6121,7 +6130,83 @@ let challengerData = null;     // decoded lineup of the link sender (opponent fl
 let friendlyMatchResult = null;
 let friendlyMyName = '';       // this device's player name → their team name
 let friendlyMyFlag = 'USA';    // this device's chosen flag (shown on the scoreboard)
+let friendlyLastMatch = null;  // the raw match object B just simulated (for the watch link)
 const FRIENDLY_TTL_MS = 24*60*60*1000; // 24 hours
+
+// ---- "watch the match" link (Player B → Player A) ----
+function frWatchUrl(code){ return window.location.origin + window.location.pathname + '?w=' + encodeURIComponent(code); }
+const flipSide = s => s==='user' ? 'opponent' : (s==='opponent' ? 'user' : s);
+// Flip a match/result from B's perspective to A's, so A watches their OWN team as
+// "you". A was the link sender ("challenger"/friend) in B's computation.
+function flipMatch(m){
+  return {
+    userGoals: m.opponentGoals, opponentGoals: m.userGoals,
+    winner: flipSide(m.winner),
+    extraTime: m.extraTime, penalties: m.penalties,
+    penaltyWinner: m.penaltyWinner ? flipSide(m.penaltyWinner) : null,
+    goalEvents: (m.goalEvents||[]).map(e=>({ ...e, team: flipSide(e.team) })),
+    opponent: { country:'FRIEND', year:'', teamOverall: m.opponent.teamOverall }
+  };
+}
+function flipResult(R){
+  const sw = o => o ? { opponent:o.challenger, challenger:o.opponent } : o;
+  return {
+    opponentScore: R.challengerScore, challengerScore: R.opponentScore,
+    opponentGoals: R.challengerGoals, challengerGoals: R.opponentGoals,
+    possession: sw(R.possession), shots: sw(R.shots), shotsOnTarget: sw(R.shotsOnTarget),
+    corners: sw(R.corners), fouls: sw(R.fouls), saves: sw(R.saves),
+    manOfMatch: R.manOfMatch,
+    opponentSquad: R.challengerSquad, challengerSquad: R.opponentSquad,
+    opponentTeamOverall: R.challengerTeamOverall, challengerTeamOverall: R.opponentTeamOverall,
+    youShort: R.friendShort, friendShort: R.youShort,
+    youTeam: R.friendTeam, friendTeam: R.youTeam,
+    youFlag: R.friendFlag, friendFlag: R.youFlag,
+    youWon: R.winnerShort===R.friendShort,
+    winnerShort: R.winnerShort, pens: R.pens,
+    penScore: R.penScore ? { user:R.penScore.opp, opp:R.penScore.user } : undefined
+  };
+}
+function buildWatchPayload(m, R){
+  return {
+    m: flipMatch(m), R: flipResult(R),
+    labels: { youShort:R.friendShort, friendShort:R.youShort, youFlag:R.friendFlag, friendFlag:R.youFlag }
+  };
+}
+async function createWatchLink(){
+  if(!SUPABASE_READY || !friendlyLastMatch || !friendlyMatchResult) throw new Error('no match to share');
+  const code = await sbCreateChallenge({ p:[], w: buildWatchPayload(friendlyLastMatch, friendlyMatchResult) });
+  return frWatchUrl(code);
+}
+async function friendlyShareWatch(url){
+  const them = (friendlyMatchResult && friendlyMatchResult.friendShort) || 'your friend';
+  const shareData = { title:'RunThePitch: Watch our match ⚽', text:`Watch our Friendly match play out, then see the result 👆`, url };
+  if(navigator.canShare && navigator.canShare(shareData)){
+    try{ await navigator.share(shareData); return; }catch(e){ if(e&&e.name==='AbortError') return; }
+  }
+  try{ await navigator.clipboard.writeText(url); }catch(e){ await copyToClipboard(url); }
+  showToast('Watch link copied — send it to your friend ⚽');
+}
+
+// Player A opens a ?w= link: replay B's match from A's perspective, then results.
+async function resolveWatchCode(){
+  const code=window.__WATCH_CODE; if(!code) return;
+  try{
+    const payload = SUPABASE_READY ? await sbFetchChallenge(code) : null;
+    if(payload && payload.w && payload.w.m) window.__WATCH_DATA = payload.w;
+    else window.FRIENDLY_EXPIRED=true;
+  }catch(e){ window.FRIENDLY_EXPIRED=true; }
+  window.__WATCH_CODE=null; window.FRIENDLY_LOADING=false;
+  try{ window.history.replaceState({}, document.title, window.location.pathname); }catch(_){}
+}
+async function watchFriendlyReplay(data){
+  friendlyMode=true; friendlyRole='watcher';
+  friendlyMyName = (data.labels && data.labels.youShort) || '';
+  friendlyMyFlag = (data.labels && data.labels.youFlag) || 'USA';
+  friendlyMatchResult = data.R;
+  friendlyLastMatch = data.m;
+  await playFriendlyMatchAnimation(data.m, data.labels);
+  await showFriendlyResult(data.R);
+}
 
 // Populate a friendly flag picker (reuses ENTRY_FLAGS). Clicking a swatch sets
 // friendlyMyFlag and highlights it. Defaults to the current friendlyMyFlag.
@@ -6235,7 +6320,7 @@ async function sbFetchChallenge(code){
 // Reset all Friendly state (used when returning to Solo / Play Again).
 function friendlyReset(){
   friendlyMode=false; friendlyRole=null; challengerData=null; friendlyMatchResult=null;
-  friendlyMyName='';
+  friendlyMyName=''; friendlyLastMatch=null;
   draftType='quick'; pendingFormation=null; // Friendly is always the 6-man draft (for now)
 }
 
@@ -6500,6 +6585,7 @@ async function runFriendlyMatch(){
   const m = simulateMatch(userSquad, userOverall, {
     country:'FRIEND', year:'', teamOverall: chOverall, squad: chSquad
   });
+  friendlyLastMatch = m;   // keep for the "send to watch" link
 
   const opponentScore = m.userGoals;     // Player B (current user)
   const challengerScore = m.opponentGoals; // Player A (link sender)
@@ -6764,6 +6850,11 @@ async function showFriendlyResult(R){
     img.style.display='';
     canvas.toBlob(b=>{ $('fr-share')._blob=b; }, 'image/png', 0.95);
   } else { img.style.display='none'; }
+  // Player B (just played live) gets a "send the match to watch" button for A.
+  const showSend = (friendlyRole==='opponent') && SUPABASE_READY;
+  $('fr-send-result').style.display = showSend ? '' : 'none';
+  $('fr-send-note').style.display   = showSend ? '' : 'none';
+  $('fr-send-result').disabled=false; $('fr-send-result').textContent='SEND MATCH TO WATCH →';
   showScreen('friendly-result');
 }
 
@@ -6814,6 +6905,13 @@ $('cl-accept').addEventListener('click', ()=>{
 $('fx-solo').addEventListener('click', ()=>{ goToDraftTypeSelect(); });
 $('fr-share').addEventListener('click', friendlyShareResult);
 $('fr-again').addEventListener('click', ()=>{ friendlyReset(); showScreen('start'); });
+$('fr-new-friendly').addEventListener('click', ()=>{ startFriendly(); });
+$('fr-send-result').addEventListener('click', async ()=>{
+  const btn=$('fr-send-result'); btn.disabled=true; btn.textContent='Generating link…';
+  try{ await friendlyShareWatch(await createWatchLink()); }
+  catch(e){ showToast('Could not create the watch link'); }
+  btn.disabled=false; btn.textContent='SEND MATCH TO WATCH →';
+});
 
 // Route the initial screen based on the parsed friendly flags. Runs BEFORE the
 // default home screen can paint, so the home screen never flashes for an
@@ -6827,16 +6925,22 @@ function friendlyRouteInitial(){
 // 1) Decide the entry path. A short ?c= link needs an async Supabase fetch, so
 //    show a loading screen first (no home-screen flash); a legacy ?friendly=
 //    link decodes synchronously and routes immediately.
-if(window.__CHALLENGE_CODE){
+if(window.__CHALLENGE_CODE || window.__WATCH_CODE){
   window.FRIENDLY_LOADING=true;
+  if(window.__WATCH_CODE){ const t=$('screen-challenge-loading'); const h=t&&t.querySelector('.fr-title'); if(h) h.textContent='LOADING MATCH…'; }
   showScreen('challenge-loading');
 }else{
   parseFriendlyParam();
   friendlyRouteInitial();
 }
-// 2) Boot the engine, then (for short links) fetch the challenge and route. The
-//    landing screen's ACCEPT button needs the engine initialised either way.
+// 2) Boot the engine, then (for short links) fetch + route. A ?w= watch link
+//    replays B's match for A; a ?c= challenge shows the landing.
 boot().then(async ()=>{
+  if(window.__WATCH_CODE){
+    await resolveWatchCode();
+    if(window.__WATCH_DATA){ const d=window.__WATCH_DATA; window.__WATCH_DATA=null; return watchFriendlyReplay(d); }
+    return friendlyRouteInitial();   // expired / unavailable
+  }
   if(window.FRIENDLY_LOADING) await resolveCodeChallenge();
   friendlyRouteInitial();
 });
