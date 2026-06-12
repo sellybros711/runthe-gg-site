@@ -15,6 +15,12 @@
         window.__FRIENDLY_RAW = fp;       // raw param, stored before anything can clear it
         window.__FRIENDLY_INCOMING = true;
       }
+      // Short Supabase challenge code (?c=ABC123) — the new, link-safe transport.
+      const cc = urlParams.get('c');
+      if (cc) {
+        window.__CHALLENGE_CODE = cc;
+        window.__FRIENDLY_INCOMING = true;
+      }
     } catch(e) {
       console.error('Friendly param read:', e);
     }
@@ -1566,8 +1572,7 @@
       </div>
       <div class="home-cta-row">
         <div class="cta-friendly-wrap">
-          <span class="coming-soon">Coming soon!</span>
-          <button id="btn-friendly" class="btn green" disabled>
+          <button id="btn-friendly" class="btn green">
             <span class="btn-label">FRIENDLY</span>
             <span class="btn-sub">Challenge a friend</span>
           </button>
@@ -1782,6 +1787,14 @@
       <div style="height:10px"></div>
       <button id="cr-copy" class="btn ghost">COPY LINK</button>
       <div class="fr-muted">Your friend has 24 hours to accept before the link expires.</div>
+    </div>
+  </section>
+
+  <!-- ===== FRIENDLY: loading a challenge from its short code ===== -->
+  <section id="screen-challenge-loading" class="screen">
+    <div class="fr-wrap">
+      <div class="fr-title">LOADING CHALLENGE…</div>
+      <div class="fr-desc">Fetching your friend's squad. One sec ⚽</div>
     </div>
   </section>
 
@@ -2177,10 +2190,8 @@ async function boot(){
   b.disabled = false;
   const bLabel = b.querySelector('.btn-label');
   if(bLabel) bLabel.textContent = 'DRAFT NOW'; else b.textContent = 'DRAFT NOW';
-  // TEMP: Friendly mode disabled until the share-link issue is resolved.
-  // Re-enable by restoring: if(bf) bf.disabled = false;
   const bf = $('btn-friendly');
-  if(bf) bf.disabled = true;
+  if(bf) bf.disabled = false;   // Friendly mode is live (Supabase short-link transport)
   startFlagMarquee();
 }
 
@@ -6060,7 +6071,9 @@ function surnameOf(name){
 // Compact, URL-safe encoding of the challenger lineup. Short keys keep the
 // payload tiny, and percent-encoding the base64 prevents '+'/'/'/'=' from being
 // mangled by the query string (the bug that was corrupting shared links).
-function frEncodeLineup(){
+// The compact challenge payload {p:[…short-keyed picks…], to:teamOverall, ts}.
+// Used both for the Supabase short-link store and the legacy embedded link.
+function frBuildPayload(){
   const minimalPicks = orderPicksForDisplay(gs.result.scoredPicks, ['FWD','MID','DEF','DEF','GK','FLEX'])
     .map(pk=>{ const p=pk.player; return {
       sl: pk.slot,                       // slot
@@ -6071,29 +6084,58 @@ function frEncodeLineup(){
       ps: p.position,                    // position
       ov: p.overall                      // overall
     };});
-  const encodeObject = { p: minimalPicks, to: gs.result.teamOverall, ts: Date.now() };
-  const jsonString = JSON.stringify(encodeObject);
-  const base64 = btoa(
-    encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g, (m,p1)=>String.fromCharCode('0x'+p1))
-  );
-  return window.location.origin + window.location.pathname + '?friendly=' + encodeURIComponent(base64);
+  return { p: minimalPicks, to: gs.result.teamOverall, ts: Date.now() };
 }
-// Decode the ?friendly= param back into challenger data, mapping short keys to
-// the full names the rest of the Friendly flow expects.
-function frDecodeParam(param){
-  const base64 = decodeURIComponent(param);
-  const jsonString = decodeURIComponent(
-    Array.from(atob(base64), c => '%' + c.charCodeAt(0).toString(16).padStart(2,'0')).join('')
-  );
-  const raw = JSON.parse(jsonString);
+// Map a raw payload {p,to,ts} → the challenger data the Friendly flow expects.
+function frMapRaw(raw){
   return {
-    picks: raw.p.map(p=>({
+    picks: (raw.p||[]).map(p=>({
       slot: p.sl, playerId: p.id, playerName: p.nm, country: p.ct,
       year: p.yr, position: p.ps, wc_overall: p.ov, flag: flagImg(p.ct,160) || ''
     })),
     teamOverall: raw.to,
     timestamp: raw.ts
   };
+}
+// Legacy embedded link (fallback when Supabase is unreachable). Percent-encoding
+// the base64 keeps '+'/'/'/'=' from being mangled in the query string.
+function frEncodeLineup(){
+  const jsonString = JSON.stringify(frBuildPayload());
+  const base64 = btoa(
+    encodeURIComponent(jsonString).replace(/%([0-9A-F]{2})/g, (m,p1)=>String.fromCharCode('0x'+p1))
+  );
+  return window.location.origin + window.location.pathname + '?friendly=' + encodeURIComponent(base64);
+}
+// Decode the legacy ?friendly= param back into challenger data.
+function frDecodeParam(param){
+  const base64 = decodeURIComponent(param);
+  const jsonString = decodeURIComponent(
+    Array.from(atob(base64), c => '%' + c.charCodeAt(0).toString(16).padStart(2,'0')).join('')
+  );
+  return frMapRaw(JSON.parse(jsonString));
+}
+
+// ---- Supabase short-link transport ----
+function frChallengeUrl(code){
+  return window.location.origin + window.location.pathname + '?c=' + encodeURIComponent(code);
+}
+// Store the payload server-side, return its short code. Throws on failure.
+async function sbCreateChallenge(payload){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/create_friendly_challenge`, {
+    method:'POST', headers: sbHeaders(), body: JSON.stringify({ p_payload: payload })
+  });
+  if(!res.ok) throw new Error('create challenge failed '+res.status);
+  const code = await res.json();           // scalar text, e.g. "AB12CD"
+  if(!code) throw new Error('no code returned');
+  return String(code).replace(/^"|"$/g,'');
+}
+// Fetch a stored payload by code; null if missing/expired.
+async function sbFetchChallenge(code){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_friendly_challenge`, {
+    method:'POST', headers: sbHeaders(), body: JSON.stringify({ p_code: code })
+  });
+  if(!res.ok) throw new Error('fetch challenge failed '+res.status);
+  return await res.json();                 // payload object or null
 }
 
 // Reset all Friendly state (used when returning to Solo / Play Again).
@@ -6140,7 +6182,7 @@ function friendlyOnDraftComplete(){
   showChallengeReady();
 }
 
-function showChallengeReady(){
+async function showChallengeReady(){
   const lineup=friendlyLineupObject('challenger');
   // compact lineup preview (no overalls — keeps it competitive for the friend)
   const ul=$('cr-lineup'); ul.innerHTML='';
@@ -6153,12 +6195,22 @@ function showChallengeReady(){
       `${flagChip(p.country)}<span class="fr-yr">${p.year}</span>`;
     ul.appendChild(li);
   });
-  // self-consistent, compact, URL-safe link (works in preview and production).
-  const url=frEncodeLineup();
-  $('cr-link').value=url;
-  $('cr-share')._url=url;
-  $('cr-copy')._url=url;
   showScreen('challenge-ready');
+  // Generate the share link. PREFERRED: store the lineup in Supabase and hand
+  // out a short ?c=CODE link (survives every messaging app). FALLBACK: the
+  // legacy long ?friendly= link if Supabase is unreachable.
+  const shareBtn=$('cr-share'), copyBtn=$('cr-copy'), linkEl=$('cr-link');
+  shareBtn.disabled=true; copyBtn.disabled=true;
+  linkEl.value='Generating your challenge link…';
+  let url=null;
+  if(SUPABASE_READY){
+    try{ url = frChallengeUrl(await sbCreateChallenge(frBuildPayload())); }
+    catch(e){ url=null; }
+  }
+  if(!url) url = frEncodeLineup();   // graceful fallback
+  linkEl.value=url;
+  shareBtn._url=url; copyBtn._url=url;
+  shareBtn.disabled=false; copyBtn.disabled=false;
 }
 
 async function friendlyShareLink(url){
@@ -6208,6 +6260,32 @@ function parseFriendlyParam(){
     window.FRIENDLY_INCOMING=false;
     try{ window.history.replaceState({}, document.title, window.location.pathname); }catch(_){}
   }
+}
+
+// Store a fetched/decoded raw payload as the incoming challenger, applying the
+// 24h TTL. Mirrors parseFriendlyParam's bookkeeping.
+function applyChallengerRaw(raw){
+  const d = frMapRaw(raw);
+  const expired = (Date.now() - d.timestamp) > FRIENDLY_TTL_MS;
+  if(expired || !d.picks || !d.picks.length){
+    window.CHALLENGER_DATA=null; window.FRIENDLY_EXPIRED=true; window.FRIENDLY_INCOMING=false;
+  }else{
+    window.CHALLENGER_DATA = { picks:d.picks, teamOverall:d.teamOverall, timestamp:d.timestamp };
+    window.FRIENDLY_INCOMING=true;
+  }
+}
+// Resolve an incoming ?c=CODE short link by fetching its payload from Supabase.
+// A missing/unreachable challenge is treated as expired (friendly UX fallback).
+async function resolveCodeChallenge(){
+  const code = window.__CHALLENGE_CODE; if(!code) return;
+  try{
+    const payload = SUPABASE_READY ? await sbFetchChallenge(code) : null;
+    if(payload && Array.isArray(payload.p) && payload.p.length){ applyChallengerRaw(payload); }
+    else { window.FRIENDLY_EXPIRED=true; }
+  }catch(e){ window.FRIENDLY_EXPIRED=true; }
+  window.__CHALLENGE_CODE=null;
+  window.FRIENDLY_LOADING=false;
+  try{ window.history.replaceState({}, document.title, window.location.pathname); }catch(_){}
 }
 
 function showChallengeLanding(data){
@@ -6302,15 +6380,10 @@ async function runFriendlyMatch(){
 async function incrementFriendlyCount(){
   if(!SUPABASE_READY) return;
   try{
-    let current=0;
-    const res=await fetch(`${SUPABASE_URL}/rest/v1/friendly_stats?select=total_played&id=eq.1`, { headers: sbHeaders() });
-    if(res.ok){ const rows=await res.json(); current=(rows&&rows[0]&&rows[0].total_played)||0; }
-    await fetch(`${SUPABASE_URL}/rest/v1/friendly_stats?on_conflict=id`, {
-      method:'POST',
-      headers: sbHeaders({ 'Prefer':'resolution=merge-duplicates,return=minimal' }),
-      body: JSON.stringify({ id:1, total_played: current+1, last_played: new Date().toISOString() })
+    await fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_friendly_played`, {
+      method:'POST', headers: sbHeaders({ 'Prefer':'return=minimal' }), body:'{}'
     });
-  }catch(e){ console.log('Counter update failed silently', e); }
+  }catch(e){ /* counter is best-effort; never blocks the match */ }
 }
 
 // ---- CHANGE 6 — shareable result image (390×700 portrait canvas) ----
@@ -6481,13 +6554,22 @@ function friendlyRouteInitial(){
   return false;
 }
 
-// 1) Parse the ?friendly= param synchronously, before anything renders.
-parseFriendlyParam();
-// 2) Intercept the initial screen immediately (no home-screen flash).
-friendlyRouteInitial();
-// 3) Boot the engine; re-assert the friendly screen once data is ready (the
-//    landing screen's ACCEPT button needs the engine initialised).
-boot().then(friendlyRouteInitial);
+// 1) Decide the entry path. A short ?c= link needs an async Supabase fetch, so
+//    show a loading screen first (no home-screen flash); a legacy ?friendly=
+//    link decodes synchronously and routes immediately.
+if(window.__CHALLENGE_CODE){
+  window.FRIENDLY_LOADING=true;
+  showScreen('challenge-loading');
+}else{
+  parseFriendlyParam();
+  friendlyRouteInitial();
+}
+// 2) Boot the engine, then (for short links) fetch the challenge and route. The
+//    landing screen's ACCEPT button needs the engine initialised either way.
+boot().then(async ()=>{
+  if(window.FRIENDLY_LOADING) await resolveCodeChallenge();
+  friendlyRouteInitial();
+});
 </script>
 </body>
 </html>
