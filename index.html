@@ -5797,7 +5797,9 @@ async function simAnimatePenalties(card, m, opts){
   const dotsEl  = { user:board.querySelector('#pen-dots-user'),  opp:board.querySelector('#pen-dots-opp')  };
   const scoreEl = { user:board.querySelector('#pen-score-user'), opp:board.querySelector('#pen-score-opp') };
 
-  const seq=simBuildPenaltySeq(m.penaltyWinner); // alternating user, opp, user, …
+  // Replay an exact stored sequence when provided (so a watched match matches the
+  // shootout the player who simulated it saw); otherwise generate a fresh one.
+  const seq = (opts.penSeq && opts.penSeq.length) ? opts.penSeq : simBuildPenaltySeq(m.penaltyWinner);
   const score={user:0,opponent:0};
   // CHANGE 3 — reveals ramp from 1.0s to 1.5s apart as the shootout goes deeper,
   // building tension (and staying at 1.5s through any long sudden death). seq is
@@ -5813,7 +5815,7 @@ async function simAnimatePenalties(card, m, opts){
     if(k.scored){ score[k.team]++; scoreEl[row].textContent=score[k.team]; }
     await new Promise(r=>setTimeout(r, opts.penDelay || getPenaltyDelay(kickNumber)));
   }
-  if(opts.onPenalties) opts.onPenalties({ user:score.user, opp:score.opponent });
+  if(opts.onPenalties) opts.onPenalties({ user:score.user, opp:score.opponent, seq });
   await (opts.wait||simSleep)(300*0.8);
 }
 
@@ -6258,6 +6260,7 @@ function flipMatch(m){
     extraTime: m.extraTime, penalties: m.penalties,
     penaltyWinner: m.penaltyWinner ? flipSide(m.penaltyWinner) : null,
     goalEvents: (m.goalEvents||[]).map(e=>({ ...e, team: flipSide(e.team) })),
+    penSeq: (m.penSeq||[]).map(k=>({ ...k, team: flipSide(k.team) })),  // exact shootout, flipped to A's POV
     opponent: { country:'FRIEND', year:'', teamOverall: m.opponent.teamOverall }
   };
 }
@@ -6686,6 +6689,7 @@ async function playFriendlyMatchAnimation(m, labels){
     winText:stamp, loseText:stamp,
     regDur:14000, etDur:4000, noSlowmo:true, wait:fastWait, penDelay:600,
     youLabel:labels.youShort, oppLabel:labels.friendShort,
+    penSeq: m.penSeq,                     // exact shootout when replaying a watch link
     onPenalties:s=>{ penScore=s; }
   });
   // proceed button → resolves when tapped, so the player controls the pacing
@@ -6793,7 +6797,10 @@ async function runFriendlyMatch(){
   // Stage 2: play the match out live, THEN reveal the full box score.
   const penScore = await playFriendlyMatchAnimation(m, { youShort, friendShort, youFlag, friendFlag,
     youSquad: friendlyMatchResult.opponentSquad, friendSquad: friendlyMatchResult.challengerSquad });
-  if(penScore) friendlyMatchResult.penScore = penScore;
+  if(penScore){
+    friendlyMatchResult.penScore = { user:penScore.user, opp:penScore.opp };
+    if(penScore.seq) friendlyLastMatch.penSeq = penScore.seq;   // exact shootout for the watch link
+  }
   await showFriendlyResult(friendlyMatchResult);
   // Result image is generated — only now is it safe to clear challenger data.
   window.CHALLENGER_DATA = null;
