@@ -2948,9 +2948,10 @@ function assign(player, slot){
     $('btn-go-spin').style.display='none';
     $('btn-start-wc').style.display='none';
     updatePitch();   // fills the six circles with surnames on the pitch
-    // Friendly mode: skip the Solo reveal/World-Cup sim and branch into the
-    // challenge flow (challenger → share link; opponent → run the match).
-    if(friendlyMode){
+    // Friendly opponent goes straight into the match. Everyone else — solo AND
+    // the friendly CHALLENGER — gets the team-overall reveal first (the
+    // challenger then proceeds to the share screen via btn-reveal-go).
+    if(friendlyMode && friendlyRole==='opponent'){
       setTimeout(friendlyOnDraftComplete, 700);
     } else {
       setTimeout(()=>{
@@ -3141,6 +3142,8 @@ function runRevealOverlay(){
   tnum.textContent='0'; applyTierClass(tnum, 0);
   tlab.style.display='none';
   go.classList.remove('show'); go.style.display='none'; go.disabled=false;
+  // friendly challenger continues to the share screen; everyone else simulates
+  go.textContent = (friendlyMode && friendlyRole==='challenger') ? 'CONTINUE →' : 'START WORLD CUP';
 
   ov.classList.toggle('full', isFullDraft());
   // Reveal in pitch order — attackers first (top) down to the keeper last. Each
@@ -4457,7 +4460,9 @@ $('btn-again').addEventListener('click',newGame);
 $('btn-reveal-go').addEventListener('click',()=>{
   $('btn-reveal-go').disabled=true;
   $('reveal-overlay').classList.remove('show');
-  runSimulationScreen();
+  // Friendly challenger: reveal → share screen. Everyone else → World Cup sim.
+  if(friendlyMode && friendlyRole==='challenger'){ showChallengeReady(); }
+  else { runSimulationScreen(); }
 });
 
 // player profile modal close handlers
