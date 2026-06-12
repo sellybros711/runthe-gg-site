@@ -5675,12 +5675,14 @@ const COUNTRY_CODE3 = {
 const code3 = c => COUNTRY_CODE3[c] || (c || '').slice(0,3).toUpperCase();
 
 function makeScoreboard(opp, opts={}){
-  const youLabel = 'YOU';
-  const oppLabel = code3(opp.country);
+  const youLabel = opts.youLabel || 'YOU';
+  const oppLabel = opts.oppLabel || code3(opp.country);
+  const tournament = opts.tournament || 'FIFA WORLD CUP';
+  const oppFlag = (opts.oppFlag!==undefined) ? opts.oppFlag : flagChip(opp.country,'sb-flag');
   const wrap=document.createElement('div');
   wrap.className='sb-wrap';
   wrap.innerHTML=`
-    <div class="sb-tournament">FIFA WORLD CUP</div>
+    <div class="sb-tournament">${tournament}</div>
     <div class="sb-bar">
       <div class="sb-time">${opts.time||"0'"}</div>
       <div class="sb-team sb-team-user">
@@ -5692,7 +5694,7 @@ function makeScoreboard(opp, opts={}){
       </div>
       <div class="sb-team sb-team-opp">
         <span class="sb-team-label sb-opp-label">${oppLabel}</span>
-        <span class="sb-team-flag">${flagChip(opp.country,'sb-flag')}</span>
+        <span class="sb-team-flag">${oppFlag}</span>
       </div>
     </div>`;
   return wrap;
@@ -5831,7 +5833,8 @@ function buildMatchCard(card, m){
 
 // Animate one knockout match card (already built by buildMatchCard). Returns true
 // if the user won. isFinal=true means a win here crowns the champion (confetti).
-async function playMatchAnimation(m, card, isFinal){
+async function playMatchAnimation(m, card, isFinal, opts){
+  opts = opts || {};
   const sb=card.querySelector('.sb-wrap');   // scoreboard built earlier by buildMatchCard
   const fill=card.querySelector('.match-clock-fill');
   const goalsBox=card.querySelector('.sim-goals');
@@ -5870,7 +5873,9 @@ async function playMatchAnimation(m, card, isFinal){
   const finalEl=card.querySelector('.sim-final');
   finalEl.style.display='';
   finalEl.className='sim-final '+(won?'sim-result-win':'sim-result-loss');
-  finalEl.textContent = won ? (m.penalties?'Win on Penalties':'Win') : 'Eliminated';
+  finalEl.textContent = won
+    ? (opts.winText || (m.penalties?'Win on Penalties':'Win'))
+    : (opts.loseText || 'Eliminated');
   simScrollEnd(finalEl);
   if(won && isFinal) simChampionConfetti();   // confetti the instant they're crowned
   await simSleep(1200);   // scoreboard stays visible above the result
@@ -6327,6 +6332,51 @@ function showChallengeLanding(data){
   showScreen('challenge-landing');
 }
 
+// Build the friendly match card (mirrors buildMatchCard, but it's a head-to-head
+// between two NAMED squads — no real opponent nation).
+function buildFriendlyMatchCard(card, m, labels){
+  card.className='sim-card';
+  card.innerHTML=`
+    <div class="sim-round-header sim-slide-in">FRIENDLY MATCH</div>
+    <div class="sim-vs">vs ${escapeHtml(labels.friendShort)}</div>
+    <div class="sim-threat">Head-to-Head</div>
+    <div class="match-clock-bar"><div class="match-clock-fill"></div></div>
+    <div class="sim-goals"></div>
+    <div class="sim-final" style="display:none"></div>`;
+  const sb=makeScoreboard(m.opponent, {
+    youLabel: labels.youShort, oppLabel: labels.friendShort,
+    tournament:'FRIENDLY MATCH', oppFlag: SB_BALL
+  });
+  card.insertBefore(sb, card.firstChild);
+  sb.classList.add('show');
+}
+
+// Play the friendly match out live on the sim screen (ticking scoreboard +
+// goal-by-goal), then wait for the user to tap through to the box score.
+async function playFriendlyMatchAnimation(m, labels){
+  showScreen('sim');
+  const content=$('sim-content');
+  content.innerHTML='';
+  content.style.transform='translateX(0)';
+  simSlideIndex=0;
+  const card=simNewSlide();
+  buildFriendlyMatchCard(card, m, labels);
+  await simSleep(550);   // beat on the scoreboard before kickoff
+  const won = m.winner==='user';
+  const winnerShort = won ? labels.youShort : labels.friendShort;
+  const stamp = `${winnerShort} WINS${m.penalties?' (PENS)':''}`;
+  await playMatchAnimation(m, card, false, { winText:stamp, loseText:stamp });
+  // proceed button → resolves when tapped, so the player controls the pacing
+  await new Promise(resolve=>{
+    const wrap=document.createElement('div'); wrap.className='stack'; wrap.style.marginTop='12px';
+    const btn=document.createElement('button'); btn.className='btn red big'; btn.textContent='See Full Result →';
+    btn.addEventListener('click', resolve, {once:true});
+    wrap.appendChild(btn);
+    card.appendChild(wrap);
+    simScrollEnd(wrap);
+  });
+}
+
 // ---- the Friendly match ----
 async function runFriendlyMatch(){
   // Safety: challenger data must survive the entire opponent draft. If it's
@@ -6403,10 +6453,15 @@ async function runFriendlyMatch(){
     challengerSquad: normSquad(chSquad),
     opponentTeamOverall: Math.round(userOverall),
     challengerTeamOverall: Math.round(chOverall),
-    youShort, friendShort, youTeam, friendTeam
+    youShort, friendShort, youTeam, friendTeam,
+    youWon: m.winner==='user',
+    winnerShort: (m.winner==='user') ? youShort : friendShort,
+    pens: !!m.penalties
   };
 
   incrementFriendlyCount();   // non-blocking, fails silently
+  // Stage 2: play the match out live, THEN reveal the full box score.
+  await playFriendlyMatchAnimation(m, { youShort, friendShort });
   await showFriendlyResult(friendlyMatchResult);
   // Result image is generated — only now is it safe to clear challenger data.
   window.CHALLENGER_DATA = null;
@@ -6432,7 +6487,8 @@ async function buildFriendlyResultCanvas(R){
   const Wc=390, Hc=800, S=2;
   const c=document.createElement('canvas'); c.width=Wc*S; c.height=Hc*S;
   const x=c.getContext('2d'); x.scale(S,S);
-  const youWin=R.opponentScore>R.challengerScore, draw=R.opponentScore===R.challengerScore;
+  const youWin=(R.youWon!==undefined)?R.youWon:(R.opponentScore>R.challengerScore);
+  const draw=(R.winnerShort===undefined) && (R.opponentScore===R.challengerScore);
   const youShort=R.youShort||'YOU', friendShort=R.friendShort||'FRIEND';
   const fit=(s,max)=>{ let t=String(s); while(x.measureText(t).width>max && t.length>2){ t=t.slice(0,-1);} return t===String(s)?t:t+'…'; };
 
@@ -6460,7 +6516,8 @@ async function buildFriendlyResultCanvas(R){
   x.fillText('–', Wc/2, 158);
   x.font='900 16px Archivo';
   x.fillStyle = draw?'#F4B413':(youWin?'#1F9E57':'#E5402A');
-  const winLabel = draw ? 'DRAW' : fit((youWin?youShort:friendShort)+' WINS', Wc-40);
+  const winnerName = R.winnerShort || (youWin?youShort:friendShort);
+  const winLabel = draw ? 'DRAW' : fit(winnerName+' WINS'+(R.pens?' (PENS)':''), Wc-40);
   x.fillText(winLabel, Wc/2, 190);
 
   // SECTION 3 — box score (expanded)
