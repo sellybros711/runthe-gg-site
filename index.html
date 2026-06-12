@@ -6231,7 +6231,9 @@ let friendlyLastMatch = null;  // the raw match object B just simulated (for the
 const FRIENDLY_TTL_MS = 24*60*60*1000; // 24 hours
 
 // ---- "watch the match" link (Player B → Player A) ----
-function frWatchUrl(code){ return window.location.origin + window.location.pathname + '?w=' + encodeURIComponent(code); }
+// Watch links go through /watch/ so the link-preview scraper picks up the
+// watch-specific OG card; the static page there redirects real users to /?w=.
+function frWatchUrl(code){ return window.location.origin + '/watch/?w=' + encodeURIComponent(code); }
 const flipSide = s => s==='user' ? 'opponent' : (s==='opponent' ? 'user' : s);
 // Flip a match/result from B's perspective to A's, so A watches their OWN team as
 // "you". A was the link sender ("challenger"/friend) in B's computation.
