@@ -1873,6 +1873,9 @@
       <img id="fr-result-img" class="fr-result-img" alt="Friendlies match result" />
       <button id="fr-send-result" class="btn green big" style="display:none">SEND MATCH TO WATCH →</button>
       <div id="fr-send-note" class="fr-muted" style="display:none;margin-top:6px;margin-bottom:8px">Let your friend watch the match play out, then see this result.</div>
+      <textarea id="fr-watch-link" class="fr-linkbox" rows="3" readonly style="display:none"></textarea>
+      <button id="fr-watch-copy" class="btn ghost" style="display:none">COPY WATCH LINK</button>
+      <div style="height:10px"></div>
       <button id="fr-share" class="btn teal big">SHARE RESULT IMAGE</button>
       <div style="height:10px"></div>
       <button id="fr-new-friendly" class="btn green">NEW FRIENDLY</button>
@@ -6855,6 +6858,8 @@ async function showFriendlyResult(R){
   $('fr-send-result').style.display = showSend ? '' : 'none';
   $('fr-send-note').style.display   = showSend ? '' : 'none';
   $('fr-send-result').disabled=false; $('fr-send-result').textContent='SEND MATCH TO WATCH →';
+  // hide any previous run's watch-link box until a new link is generated
+  $('fr-watch-link').style.display='none'; $('fr-watch-copy').style.display='none';
   showScreen('friendly-result');
 }
 
@@ -6908,9 +6913,22 @@ $('fr-again').addEventListener('click', ()=>{ friendlyReset(); showScreen('start
 $('fr-new-friendly').addEventListener('click', ()=>{ startFriendly(); });
 $('fr-send-result').addEventListener('click', async ()=>{
   const btn=$('fr-send-result'); btn.disabled=true; btn.textContent='Generating link…';
-  try{ await friendlyShareWatch(await createWatchLink()); }
+  try{
+    const url = await createWatchLink();
+    // reveal a copyable box (some share sheets are awkward) + confirm
+    const box=$('fr-watch-link'), copy=$('fr-watch-copy');
+    box.value=url; box.style.display=''; copy.style.display=''; copy._url=url;
+    showToast('Watch link ready — send it to your friend ⚽');
+    await friendlyShareWatch(url);
+  }
   catch(e){ showToast('Could not create the watch link'); }
   btn.disabled=false; btn.textContent='SEND MATCH TO WATCH →';
+});
+$('fr-watch-copy').addEventListener('click', async ()=>{
+  const url=$('fr-watch-copy')._url; if(!url) return;
+  try{ await navigator.clipboard.writeText(url); }
+  catch(e){ await copyToClipboard(url); }
+  showToast('Watch link copied! Send it to your friend ⚽');
 });
 
 // Route the initial screen based on the parsed friendly flags. Runs BEFORE the
