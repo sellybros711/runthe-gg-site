@@ -3076,9 +3076,9 @@ function openSheet(player){
   elig.forEach(slot=>{
     const o=document.createElement('button');
     o.className='slot-opt '+slot;
-    // For the Full-draft FLEX slot, show what it actually becomes for THIS player
-    // (their real position) instead of the static "Flex (MID/FWD)".
-    const label = (slot==='FLEX' && isFullDraft())
+    // FLEX shows what it actually becomes for THIS player (their real position),
+    // in both Quick and Full drafts, instead of the static "Flex (MID/FWD)".
+    const label = (slot==='FLEX')
       ? `Flex → ${POS_NAME[player.position]||player.position}`
       : SLOT_LABELS[slot];
     o.innerHTML=`<span class="nm-pos">${label}</span><span class="tag">${slot}</span>`;
