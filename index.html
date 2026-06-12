@@ -779,6 +779,19 @@
     font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase;
     margin-bottom:10px; color:#8a7d70;
   }
+  /* both lineups shown under the live match log (friendly match) */
+  .sim-rosters{margin-top:14px;border-top:2px dashed rgba(22,18,15,.18);padding-top:10px;}
+  .sim-rosters .sr-cap{font-weight:900;font-size:10px;letter-spacing:2px;text-transform:uppercase;
+    color:#8a7d70;text-align:center;margin-bottom:8px;}
+  .sim-rosters .sr-cols{display:flex;gap:12px;}
+  .sim-roster{flex:1 1 0;min-width:0;}
+  .sim-roster .sr-head{font-family:'Anton',Impact,sans-serif;font-size:15px;text-transform:uppercase;
+    text-align:center;color:var(--ink);margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .sim-roster .sr-row{display:flex;align-items:center;gap:6px;font-weight:700;font-size:11.5px;
+    color:#16120F;padding:2px 0;min-width:0;}
+  .sim-roster .sr-pos{flex:0 0 auto;font-weight:900;font-size:8px;border-radius:4px;padding:2px 4px;
+    min-width:26px;text-align:center;}
+  .sim-roster .sr-nm{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .match-clock-bar{
     height:6px; background:#e5ddd4; border-radius:3px; margin:10px 0;
     overflow:hidden; border:1.5px solid var(--ink);
@@ -6303,7 +6316,8 @@ async function watchFriendlyReplay(data){
   friendlyMyFlag = (data.labels && data.labels.youFlag) || 'USA';
   friendlyMatchResult = data.R;
   friendlyLastMatch = data.m;
-  await playFriendlyMatchAnimation(data.m, data.labels);
+  await playFriendlyMatchAnimation(data.m, Object.assign({}, data.labels, {
+    youSquad: data.R.opponentSquad, friendSquad: data.R.challengerSquad }));
   await showFriendlyResult(data.R);
 }
 
@@ -6615,12 +6629,26 @@ function showChallengeLanding(data){
 // between two NAMED squads — no real opponent nation).
 function buildFriendlyMatchCard(card, m, labels){
   card.className='sim-card';
+  // both rosters, shown under the live match log for the duration of the match
+  const rosterCol = (sq, name)=>{
+    const rows=(sq||[]).map(p=>{
+      const pos=p.position||p.slot||'';
+      return `<div class="sr-row"><span class="sr-pos" style="${slotBadgeStyle(pos,{position:pos})}">${pos}</span>`+
+        `<span class="sr-nm">${escapeHtml(surnameOf(p.name))}</span></div>`;
+    }).join('');
+    return `<div class="sim-roster"><div class="sr-head">${escapeHtml(name)}</div>${rows}</div>`;
+  };
+  const rostersHtml = (labels.youSquad||labels.friendSquad)
+    ? `<div class="sim-rosters"><div class="sr-cap">LINEUPS</div><div class="sr-cols">`+
+      rosterCol(labels.youSquad, labels.youShort)+rosterCol(labels.friendSquad, labels.friendShort)+
+      `</div></div>` : '';
   card.innerHTML=`
     <div class="sim-round-header sim-slide-in">FRIENDLY MATCH</div>
     <div class="sim-vs">vs ${escapeHtml(labels.friendShort)}</div>
     <div class="sim-threat">Head-to-Head</div>
     <div class="match-clock-bar"><div class="match-clock-fill"></div></div>
     <div class="sim-goals"></div>
+    ${rostersHtml}
     <div class="sim-final" style="display:none"></div>`;
   const sb=makeScoreboard(m.opponent, {
     youLabel: labels.youShort, oppLabel: labels.friendShort,
@@ -6740,7 +6768,7 @@ async function runFriendlyMatch(){
   const normSquad = arr => arr
     .map(p=>({ slot:p.slot, name:p.name, overall:p.overall, position:p.position, country:p.country, year:p.year }))
     .sort((a,b)=>(POSR[a.position]??1.5)-(POSR[b.position]??1.5) || (b.overall||0)-(a.overall||0))
-    .map(p=>({ slot:p.slot, name:p.name, overall:p.overall, country:p.country, year:p.year }));
+    .map(p=>({ slot:p.slot, name:p.name, overall:p.overall, position:p.position, country:p.country, year:p.year }));
 
   const youFlag    = friendlyMyFlag || 'USA';
   const friendFlag = (window.CHALLENGER_DATA.ownerFlag) || 'USA';
@@ -6759,7 +6787,8 @@ async function runFriendlyMatch(){
 
   incrementFriendlyCount();   // non-blocking, fails silently
   // Stage 2: play the match out live, THEN reveal the full box score.
-  const penScore = await playFriendlyMatchAnimation(m, { youShort, friendShort, youFlag, friendFlag });
+  const penScore = await playFriendlyMatchAnimation(m, { youShort, friendShort, youFlag, friendFlag,
+    youSquad: friendlyMatchResult.opponentSquad, friendSquad: friendlyMatchResult.challengerSquad });
   if(penScore) friendlyMatchResult.penScore = penScore;
   await showFriendlyResult(friendlyMatchResult);
   // Result image is generated — only now is it safe to clear challenger data.
