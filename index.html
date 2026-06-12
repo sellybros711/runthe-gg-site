@@ -204,8 +204,15 @@
     font-family:monospace;background:#fff;margin-bottom:14px;resize:none;color:#333;}
   .fr-name-input{width:100%;max-width:300px;border:3px solid var(--ink);border-radius:12px;padding:12px 14px;
     font-family:inherit;font-weight:800;font-size:16px;color:var(--ink);background:#fff;text-align:center;
-    margin:0 auto 14px;display:block;box-shadow:var(--shadow-sm);}
+    margin:26px auto 28px;display:block;box-shadow:var(--shadow-sm);}
   .fr-name-input::placeholder{color:#b3a99c;font-weight:700;}
+  /* friendly flag picker (reuses the leaderboard swatch styling) */
+  .fr-flag-label{font-weight:900;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#8a7d70;margin:18px 0 8px;}
+  .fr-flag-row{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:none;}
+  .fr-flag-row::-webkit-scrollbar{display:none;}
+  .fr-flag-opt{flex:0 0 auto;width:42px;height:30px;border-radius:6px;border:2px solid var(--ink);
+    background-size:cover;background-position:center;cursor:pointer;opacity:.85;box-shadow:1px 1px 0 var(--ink);}
+  .fr-flag-opt.sel{opacity:1;outline:3px solid var(--gold);outline-offset:1px;}
   .fr-tease-ov{font-family:'Anton',Impact,sans-serif;font-size:40px;color:var(--gold);margin:6px 0;}
   .fr-result-img{width:100%;border:3px solid var(--ink);border-radius:14px;box-shadow:var(--shadow-sm);display:block;margin:0 auto 16px;}
   .fr-banner{width:100%;background:var(--ink);color:#fff;font-weight:900;font-size:12px;
@@ -1793,7 +1800,9 @@
         </div>
       </div>
       <input id="fr-name-challenger" class="fr-name-input" maxlength="16" placeholder="Your name (for your team)" autocomplete="off" />
-      <button id="btn-friendly-build" class="btn green big">BUILD MY SQUAD →</button>
+      <div class="fr-flag-label">Pick your flag</div>
+      <div class="fr-flag-row" id="fr-flag-challenger"></div>
+      <button id="btn-friendly-build" class="btn green big" style="margin-top:18px">BUILD MY SQUAD&nbsp;→</button>
     </div>
   </section>
 
@@ -1836,7 +1845,9 @@
         </div>
       </div>
       <input id="fr-name-opponent" class="fr-name-input" maxlength="16" placeholder="Your name (for your team)" autocomplete="off" />
-      <button id="cl-accept" class="btn green big">ACCEPT THE CHALLENGE →</button>
+      <div class="fr-flag-label">Pick your flag</div>
+      <div class="fr-flag-row" id="fr-flag-opponent"></div>
+      <button id="cl-accept" class="btn green big" style="margin-top:18px">ACCEPT THE&nbsp;CHALLENGE&nbsp;→</button>
       <div class="fr-muted">You'll draft your squad then the match kicks off automatically</div>
     </div>
   </section>
@@ -5682,6 +5693,7 @@ async function simAnimatePenalties(card, m, opts){
     if(k.scored){ score[k.team]++; scoreEl[row].textContent=score[k.team]; }
     await new Promise(r=>setTimeout(r, opts.penDelay || getPenaltyDelay(kickNumber)));
   }
+  if(opts.onPenalties) opts.onPenalties({ user:score.user, opp:score.opponent });
   await (opts.wait||simSleep)(300*0.8);
 }
 
@@ -5721,6 +5733,7 @@ function makeScoreboard(opp, opts={}){
   const oppLabel = opts.oppLabel || code3(opp.country);
   const tournament = opts.tournament || 'FIFA WORLD CUP';
   const oppFlag = (opts.oppFlag!==undefined) ? opts.oppFlag : flagChip(opp.country,'sb-flag');
+  const youFlag = (opts.youFlag!==undefined) ? opts.youFlag : SB_BALL;
   const wrap=document.createElement('div');
   wrap.className='sb-wrap';
   wrap.innerHTML=`
@@ -5728,7 +5741,7 @@ function makeScoreboard(opp, opts={}){
     <div class="sb-bar">
       <div class="sb-time">${opts.time||"0'"}</div>
       <div class="sb-team sb-team-user">
-        <span class="sb-team-flag">${SB_BALL}</span>
+        <span class="sb-team-flag">${youFlag}</span>
         <span class="sb-team-label">${youLabel}</span>
       </div>
       <div class="sb-score">
@@ -6107,7 +6120,23 @@ let friendlyRole = null;       // 'challenger' | 'opponent'
 let challengerData = null;     // decoded lineup of the link sender (opponent flow)
 let friendlyMatchResult = null;
 let friendlyMyName = '';       // this device's player name → their team name
+let friendlyMyFlag = 'USA';    // this device's chosen flag (shown on the scoreboard)
 const FRIENDLY_TTL_MS = 24*60*60*1000; // 24 hours
+
+// Populate a friendly flag picker (reuses ENTRY_FLAGS). Clicking a swatch sets
+// friendlyMyFlag and highlights it. Defaults to the current friendlyMyFlag.
+function buildFriendlyFlagRow(rowId){
+  const row=$(rowId); if(!row) return;
+  row.innerHTML=ENTRY_FLAGS.map(c=>{
+    const url=flagImg(c,80);
+    return `<button type="button" class="fr-flag-opt${c===friendlyMyFlag?' sel':''}" data-flag="${escapeHtml(c)}" title="${escapeHtml(c)}"${url?` style="background-image:url('${url}')"`:''}></button>`;
+  }).join('');
+  row.querySelectorAll('.fr-flag-opt').forEach(b=>b.addEventListener('click',()=>{
+    friendlyMyFlag=b.dataset.flag;
+    row.querySelectorAll('.fr-flag-opt').forEach(x=>x.classList.toggle('sel',x===b));
+    b.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
+  }));
+}
 
 // "NAME's XI" (11) / "NAME's VI" (6); falls back to a generic label when blank.
 function frTeamName(name, size, fallback){
@@ -6146,9 +6175,9 @@ function frBuildPayload(){
       ov: p.overall                      // overall
     };});
   return { p: minimalPicks, to: gs.result.teamOverall, ts: Date.now(), nm: friendlyMyName || '',
-           dt: (gs && gs.draftType==='full') ? 'full' : 'quick' };
+           dt: (gs && gs.draftType==='full') ? 'full' : 'quick', ff: friendlyMyFlag || 'USA' };
 }
-// Map a raw payload {p,to,ts,nm,dt} → the challenger data the Friendly flow expects.
+// Map a raw payload {p,to,ts,nm,dt,ff} → the challenger data the Friendly flow expects.
 function frMapRaw(raw){
   return {
     picks: (raw.p||[]).map(p=>({
@@ -6158,7 +6187,8 @@ function frMapRaw(raw){
     teamOverall: raw.to,
     timestamp: raw.ts,
     name: raw.nm || '',
-    draftType: (raw.dt==='full') ? 'full' : 'quick'
+    draftType: (raw.dt==='full') ? 'full' : 'quick',
+    ownerFlag: raw.ff || 'USA'
   };
 }
 // Legacy embedded link (fallback when Supabase is unreachable). Percent-encoding
@@ -6238,10 +6268,11 @@ function startFriendly(){
   friendlyReset();
   friendlyMode=true; friendlyRole='challenger';
   gameMode='easy';                 // overalls visible — keeps Friendly accessible
-  // fresh sliders + name each time the intro is opened
+  // fresh sliders + name + flag each time the intro is opened
   const sd=$('fr-seg-draft'); if(sd) sd.dataset.active='quick';
   const sm=$('fr-seg-mode');  if(sm) sm.dataset.active='easy';
   const nm=$('fr-name-challenger'); if(nm) nm.value='';
+  friendlyMyFlag='USA'; buildFriendlyFlagRow('fr-flag-challenger');
   showScreen('friendly-intro');
 }
 
@@ -6316,7 +6347,7 @@ function parseFriendlyParam(){
     const d = frDecodeParam(friendlyParam); // short keys → full picks/teamOverall/timestamp
     // Store challenger data BEFORE cleaning the URL.
     window.CHALLENGER_DATA = {
-      picks: d.picks, teamOverall: d.teamOverall, timestamp: d.timestamp, name: d.name, draftType: d.draftType
+      picks: d.picks, teamOverall: d.teamOverall, timestamp: d.timestamp, name: d.name, draftType: d.draftType, ownerFlag: d.ownerFlag
     };
     const expired = (Date.now() - d.timestamp) > FRIENDLY_TTL_MS;
     // Clean the URL AFTER storing data so a refresh won't re-trigger / re-corrupt.
@@ -6340,7 +6371,7 @@ function applyChallengerRaw(raw){
   if(expired || !d.picks || !d.picks.length){
     window.CHALLENGER_DATA=null; window.FRIENDLY_EXPIRED=true; window.FRIENDLY_INCOMING=false;
   }else{
-    window.CHALLENGER_DATA = { picks:d.picks, teamOverall:d.teamOverall, timestamp:d.timestamp, name:d.name, draftType:d.draftType };
+    window.CHALLENGER_DATA = { picks:d.picks, teamOverall:d.teamOverall, timestamp:d.timestamp, name:d.name, draftType:d.draftType, ownerFlag:d.ownerFlag };
     window.FRIENDLY_INCOMING=true;
   }
 }
@@ -6382,9 +6413,10 @@ function showChallengeLanding(data){
   if(noteEl) noteEl.textContent = isFull
     ? 'Full Team match — draft your starting XI'
     : 'Quick match — draft your starting VI';
-  // reset the opponent's difficulty slider + name each time
+  // reset the opponent's difficulty slider + name + flag each time
   const segMode=$('cl-seg-mode'); if(segMode) segMode.dataset.active='easy';
   const noEl=$('fr-name-opponent'); if(noEl) noEl.value='';
+  friendlyMyFlag='USA'; buildFriendlyFlagRow('fr-flag-opponent');
   // Opponent overall is hidden now — keep it a mystery until the match.
   const fromEl=$('cl-from');
   if(fromEl) fromEl.textContent = (data.name && String(data.name).trim())
@@ -6406,7 +6438,9 @@ function buildFriendlyMatchCard(card, m, labels){
     <div class="sim-final" style="display:none"></div>`;
   const sb=makeScoreboard(m.opponent, {
     youLabel: labels.youShort, oppLabel: labels.friendShort,
-    tournament:'FRIENDLY MATCH', oppFlag: SB_BALL
+    tournament:'FRIENDLY MATCH',
+    youFlag: flagChip(labels.youFlag,'sb-flag'),
+    oppFlag:  flagChip(labels.friendFlag,'sb-flag')
   });
   card.insertBefore(sb, card.firstChild);
   sb.classList.add('show');
@@ -6429,10 +6463,12 @@ async function playFriendlyMatchAnimation(m, labels){
   const won = m.winner==='user';
   const winnerShort = won ? labels.youShort : labels.friendShort;
   const stamp = `${winnerShort} WINS${m.penalties?' (PENS)':''}`;
+  let penScore=null;
   await playMatchAnimation(m, card, false, {
     winText:stamp, loseText:stamp,
     regDur:14000, etDur:4000, noSlowmo:true, wait:fastWait, penDelay:600,
-    youLabel:labels.youShort, oppLabel:labels.friendShort
+    youLabel:labels.youShort, oppLabel:labels.friendShort,
+    onPenalties:s=>{ penScore=s; }
   });
   // proceed button → resolves when tapped, so the player controls the pacing
   await new Promise(resolve=>{
@@ -6443,6 +6479,7 @@ async function playFriendlyMatchAnimation(m, labels){
     card.appendChild(wrap);
     simScrollEnd(wrap);
   });
+  return penScore;
 }
 
 // ---- the Friendly match ----
@@ -6511,13 +6548,15 @@ async function runFriendlyMatch(){
         ? { name:oppBest.name, team:youShort, overall:oppBest.overall }
         : { name:chBest.name, team:friendShort, overall:chBest.overall };
 
-  // Order any squad (6 or 11) attackers→keeper by the player's real position.
+  // Order any squad (6 or 11) attackers→keeper; carry country + year for the image.
   const POSR={FWD:0,MID:1,DEF:2,GK:3};
   const normSquad = arr => arr
-    .map(p=>({ slot:p.slot, name:p.name, overall:p.overall, position:p.position }))
+    .map(p=>({ slot:p.slot, name:p.name, overall:p.overall, position:p.position, country:p.country, year:p.year }))
     .sort((a,b)=>(POSR[a.position]??1.5)-(POSR[b.position]??1.5) || (b.overall||0)-(a.overall||0))
-    .map(p=>({ slot:p.slot, name:p.name, overall:p.overall }));
+    .map(p=>({ slot:p.slot, name:p.name, overall:p.overall, country:p.country, year:p.year }));
 
+  const youFlag    = friendlyMyFlag || 'USA';
+  const friendFlag = (window.CHALLENGER_DATA.ownerFlag) || 'USA';
   friendlyMatchResult = {
     opponentScore, challengerScore, opponentGoals, challengerGoals,
     possession, shots, shotsOnTarget, corners, fouls, saves, manOfMatch: mom,
@@ -6525,7 +6564,7 @@ async function runFriendlyMatch(){
     challengerSquad: normSquad(chSquad),
     opponentTeamOverall: Math.round(userOverall),
     challengerTeamOverall: Math.round(chOverall),
-    youShort, friendShort, youTeam, friendTeam,
+    youShort, friendShort, youTeam, friendTeam, youFlag, friendFlag,
     youWon: m.winner==='user',
     winnerShort: (m.winner==='user') ? youShort : friendShort,
     pens: !!m.penalties
@@ -6533,7 +6572,8 @@ async function runFriendlyMatch(){
 
   incrementFriendlyCount();   // non-blocking, fails silently
   // Stage 2: play the match out live, THEN reveal the full box score.
-  await playFriendlyMatchAnimation(m, { youShort, friendShort });
+  const penScore = await playFriendlyMatchAnimation(m, { youShort, friendShort, youFlag, friendFlag });
+  if(penScore) friendlyMatchResult.penScore = penScore;
   await showFriendlyResult(friendlyMatchResult);
   // Result image is generated — only now is it safe to clear challenger data.
   window.CHALLENGER_DATA = null;
@@ -6573,6 +6613,20 @@ async function buildFriendlyResultCanvas(R){
   const youShort=R.youShort||'YOU', friendShort=R.friendShort||'FRIEND';
   const fit=(s,max)=>{ let t=String(s); while(x.measureText(t).width>max && t.length>2){ t=t.slice(0,-1);} return t===String(s)?t:t+'…'; };
 
+  // preload flags (chosen owner flags + every squad player's nation) for crisp,
+  // CORS-clean drawing (flagcdn serves CORS headers, so the canvas stays exportable)
+  const flagOf = (cc)=> cc ? loadImg(flagImg(cc,80), true) : Promise.resolve(null);
+  const [ownerYouImg, ownerFriendImg, youFlags, friendFlags] = await Promise.all([
+    flagOf(R.youFlag||'USA'), flagOf(R.friendFlag||'USA'),
+    Promise.all(R.opponentSquad.map(p=>flagOf(p.country))),
+    Promise.all(R.challengerSquad.map(p=>flagOf(p.country)))
+  ]);
+  const drawFlag=(img,fx,fy,fw,fh)=>{
+    if(!img) return;
+    x.save(); rrect('',x,fx,fy,fw,fh,4); x.clip(); x.drawImage(img,fx,fy,fw,fh); x.restore();
+    x.lineWidth=1.4; x.strokeStyle='rgba(255,255,255,.35)'; rrect('',x,fx,fy,fw,fh,4); x.stroke();
+  };
+
   // SECTION 1 — header
   x.fillStyle='#0A0F1E'; x.fillRect(0,0,Wc,80);
   x.textAlign='center';
@@ -6582,24 +6636,28 @@ async function buildFriendlyResultCanvas(R){
   x.fillText('FRIENDLIES', Wc/2, 56);
   x.fillStyle='#F4B413'; x.fillRect(40,72,Wc-80,2);
 
-  // SECTION 2 — scoreline
+  // SECTION 2 — scoreline (chosen flag on top, player name below; no overalls)
   x.fillStyle='#0A0F1E'; x.fillRect(0,80,Wc,120);
-  x.fillStyle='rgba(255,255,255,.7)'; x.font='800 12px Archivo';
-  x.fillText(fit(youShort,150), 75, 118); x.fillText(fit(friendShort,150), Wc-75, 118);
-  x.fillStyle='#fff'; x.font='900 18px Archivo';
-  x.fillText(String(R.opponentTeamOverall), 75, 140);
-  x.fillText(String(R.challengerTeamOverall), Wc-75, 140);
-  x.fillStyle='#fff'; x.font='900 48px Archivo'; x.textAlign='right';
-  x.fillText(String(R.opponentScore), Wc/2-18, 160);
+  const sfw=46, sfh=31, sfy=96;
+  drawFlag(ownerYouImg,    75-sfw/2,      sfy, sfw, sfh);
+  drawFlag(ownerFriendImg, (Wc-75)-sfw/2, sfy, sfw, sfh);
+  x.fillStyle='#fff'; x.font='900 13px Archivo'; x.textAlign='center';
+  x.fillText(fit(youShort,120),    75,    sfy+sfh+14);
+  x.fillText(fit(friendShort,120), Wc-75, sfy+sfh+14);
+  x.fillStyle='#fff'; x.font='900 46px Archivo'; x.textAlign='right';
+  x.fillText(String(R.opponentScore), Wc/2-16, 152);
   x.textAlign='left';
-  x.fillText(String(R.challengerScore), Wc/2+18, 160);
-  x.fillStyle='#F4B413'; x.textAlign='center'; x.font='900 40px Archivo';
-  x.fillText('–', Wc/2, 158);
-  x.font='900 16px Archivo';
+  x.fillText(String(R.challengerScore), Wc/2+16, 152);
+  x.fillStyle='#F4B413'; x.textAlign='center'; x.font='900 38px Archivo';
+  x.fillText('–', Wc/2, 150);
+  x.font='900 15px Archivo';
   x.fillStyle = draw?'#F4B413':(youWin?'#1F9E57':'#E5402A');
   const winnerName = R.winnerShort || (youWin?youShort:friendShort);
-  const winLabel = draw ? 'DRAW' : fit(winnerName+' WINS'+(R.pens?' (PENS)':''), Wc-40);
-  x.fillText(winLabel, Wc/2, 190);
+  x.fillText(draw?'DRAW':fit(winnerName+' WINS', Wc-40), Wc/2, 182);
+  if(R.pens && R.penScore){
+    x.font='800 12px Archivo'; x.fillStyle='rgba(255,255,255,.85)';
+    x.fillText(`Penalties ${R.penScore.user}–${R.penScore.opp}`, Wc/2, 197);
+  }
 
   // SECTION 3 — box score (expanded)
   const boxY=200, boxH=212;
@@ -6651,26 +6709,36 @@ async function buildFriendlyResultCanvas(R){
   x.fillText(fit(R.friendTeam||"FRIEND'S SQUAD",172), Wc*0.75, lnY+20);
   const compact=rowH<22;
   const badgeH=compact?13:18, badgeW=compact?24:30, badgeFont=compact?7:9, nameFont=compact?10:11;
-  const drawCol=(squad,cx)=>{
+  const flW=compact?16:20, flH=compact?11:13;
+  const drawCol=(squad,cx,flagArr)=>{
     squad.forEach((p,i)=>{
       const ry=lnY+30+i*rowH;
+      const baseY=ry+badgeH-4;
       const col=slotColor(p.slot,{position:''})||'#5B6470';
       const txt=col===PITCH_COLORS.GK?'#111':'#fff';
       x.fillStyle=col; rrect('',x,cx-78,ry,badgeW,badgeH,4); x.fill();
       x.fillStyle=txt; x.font=`900 ${badgeFont}px Archivo`; x.textAlign='center'; x.fillText(p.slot,cx-78+badgeW/2,ry+badgeH-5);
+      // right side: nation flag + tournament year (replaces the overall)
+      const yr = p.year ? String(p.year) : '';
+      x.fillStyle='#F4B413'; x.font=`800 ${nameFont}px Archivo`; x.textAlign='right';
+      x.fillText(yr, cx+82, baseY);
+      const yrW = yr ? x.measureText(yr).width : 0;
+      const fl = flagArr && flagArr[i];
+      if(fl){ drawFlag(fl, cx+82-yrW-(yr?6:0)-flW, ry+(badgeH-flH)/2, flW, flH); }
+      const nameRight = cx+82-yrW-(yr?6:0)-flW-6;
+      // name fills the space between the badge and the flag
       x.fillStyle='#fff'; x.font=`800 ${nameFont}px Archivo`; x.textAlign='left';
-      const nameMax=100;
+      const nameX=cx-78+badgeW+6;
+      const nameMax=Math.max(20, nameRight-nameX);
       let nm=surnameOf(p.name);
       let truncated=false;
       while(x.measureText(nm).width>nameMax && nm.length>3){ nm=nm.slice(0,-2); truncated=true; }
       if(truncated) nm+='…';
-      x.fillText(nm,cx-78+badgeW+6,ry+badgeH-4);
-      x.fillStyle='#F4B413'; x.font=`900 ${nameFont}px Archivo`; x.textAlign='right';
-      x.fillText(String(p.overall),cx+82,ry+badgeH-4);
+      x.fillText(nm,nameX,baseY);
     });
   };
-  drawCol(R.opponentSquad, Wc*0.25);
-  drawCol(R.challengerSquad, Wc*0.75);
+  drawCol(R.opponentSquad, Wc*0.25, youFlags);
+  drawCol(R.challengerSquad, Wc*0.75, friendFlags);
 
   // SECTION 6 — man of the match
   x.fillStyle='#F4B413'; x.fillRect(0,momY,Wc,60);
