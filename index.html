@@ -1271,19 +1271,19 @@
     transition:transform .24s cubic-bezier(.34,1.4,.5,1), background .2s ease;}
   .seg[data-active="full"] .seg-thumb,
   .seg[data-active="hard"] .seg-thumb{transform:translateX(100%);}
-  #seg-draft[data-active="quick"] .seg-thumb{background:var(--gold);}
-  #seg-draft[data-active="full"]  .seg-thumb{background:var(--blue);}
-  #seg-mode[data-active="easy"]   .seg-thumb{background:var(--teal);}
-  #seg-mode[data-active="hard"]   .seg-thumb{background:var(--red);}
+  .seg.k-draft[data-active="quick"] .seg-thumb{background:var(--gold);}
+  .seg.k-draft[data-active="full"]  .seg-thumb{background:var(--blue);}
+  .seg.k-mode[data-active="easy"]   .seg-thumb{background:var(--teal);}
+  .seg.k-mode[data-active="hard"]   .seg-thumb{background:var(--red);}
   .seg-opt{flex:1 1 0;position:relative;z-index:1;background:transparent;border:0;cursor:pointer;
     padding:13px 8px;font-family:'Anton',Impact,sans-serif;font-size:18px;text-transform:uppercase;
     letter-spacing:.5px;color:var(--ink);transition:color .2s ease;}
   /* the active option's text turns light to read on the coloured thumb */
-  #seg-draft[data-active="full"]  .seg-opt[data-draft="full"],
-  #seg-mode[data-active="easy"]   .seg-opt[data-mode="easy"],
-  #seg-mode[data-active="hard"]   .seg-opt[data-mode="hard"]{color:#fff;}
+  .seg.k-draft[data-active="full"]  .seg-opt[data-draft="full"],
+  .seg.k-mode[data-active="easy"]   .seg-opt[data-mode="easy"],
+  .seg.k-mode[data-active="hard"]   .seg-opt[data-mode="hard"]{color:#fff;}
   /* gold thumb (Quick) keeps dark ink text for contrast */
-  #seg-draft[data-active="quick"] .seg-opt[data-draft="quick"]{color:var(--ink);}
+  .seg.k-draft[data-active="quick"] .seg-opt[data-draft="quick"]{color:var(--ink);}
 
   /* single borderless live-description panel (no button look) */
   .setup-info{text-align:center;padding:6px 6px 0;}
@@ -1606,7 +1606,7 @@
     <!-- Draft mode slider -->
     <div class="setup-block">
       <div class="setup-label">Draft Mode</div>
-      <div class="seg" id="seg-draft" data-active="quick">
+      <div class="seg k-draft" id="seg-draft" data-active="quick">
         <span class="seg-thumb"></span>
         <button type="button" class="seg-opt" data-draft="quick">Quick Draft</button>
         <button type="button" class="seg-opt" data-draft="full">Full Team</button>
@@ -1616,7 +1616,7 @@
     <!-- Difficulty slider -->
     <div class="setup-block">
       <div class="setup-label">Difficulty</div>
-      <div class="seg" id="seg-mode" data-active="easy">
+      <div class="seg k-mode" id="seg-mode" data-active="easy">
         <span class="seg-thumb"></span>
         <button type="button" class="seg-opt" data-mode="easy">Easy</button>
         <button type="button" class="seg-opt" data-mode="hard">Hard</button>
@@ -1776,6 +1776,22 @@
       <div class="fr-title">FRIENDLIES</div>
       <div class="fr-sub">Build your squad then challenge a friend</div>
       <div class="fr-desc">You'll draft your lineup first. After you're done, you'll get a link to share with your friend. They build their squad and the match kicks off.</div>
+      <div class="setup-block" style="max-width:340px;margin:0 auto 14px;">
+        <div class="setup-label">Draft Mode</div>
+        <div class="seg k-draft" id="fr-seg-draft" data-active="quick">
+          <span class="seg-thumb"></span>
+          <button type="button" class="seg-opt" data-draft="quick">Quick Draft</button>
+          <button type="button" class="seg-opt" data-draft="full">Full Team</button>
+        </div>
+      </div>
+      <div class="setup-block" style="max-width:340px;margin:0 auto 16px;">
+        <div class="setup-label">Difficulty</div>
+        <div class="seg k-mode" id="fr-seg-mode" data-active="easy">
+          <span class="seg-thumb"></span>
+          <button type="button" class="seg-opt" data-mode="easy">Easy</button>
+          <button type="button" class="seg-opt" data-mode="hard">Hard</button>
+        </div>
+      </div>
       <input id="fr-name-challenger" class="fr-name-input" maxlength="16" placeholder="Your name (for your team)" autocomplete="off" />
       <button id="btn-friendly-build" class="btn green big">BUILD MY SQUAD →</button>
     </div>
@@ -1809,7 +1825,16 @@
       <div class="fr-title">YOU'VE BEEN CHALLENGED! ⚔️</div>
       <div class="fr-desc"><b id="cl-from"></b>A friend has built their World Cup dream squad and wants to face you in a <b>HEAD-TO-HEAD MATCH</b>.<br><br>Draft your own squad from World Cup history. Once you're done, the match plays out live — goal by goal.<br><br>Think you can beat them? 🔥</div>
       <ul class="fr-lineup" id="cl-mystery"></ul>
-      <div class="fr-muted" style="margin-top:0;margin-bottom:14px">Their squad is a mystery — out-draft them.</div>
+      <div class="fr-muted" style="margin-top:0;margin-bottom:6px">Their squad is a mystery — out-draft them.</div>
+      <div class="fr-sub" id="cl-mode-note" style="font-size:14px;margin-bottom:14px"></div>
+      <div class="setup-block" style="max-width:340px;margin:0 auto 12px;">
+        <div class="setup-label">Your Difficulty</div>
+        <div class="seg k-mode" id="cl-seg-mode" data-active="easy">
+          <span class="seg-thumb"></span>
+          <button type="button" class="seg-opt" data-mode="easy">Easy</button>
+          <button type="button" class="seg-opt" data-mode="hard">Hard</button>
+        </div>
+      </div>
       <input id="fr-name-opponent" class="fr-name-input" maxlength="16" placeholder="Your name (for your team)" autocomplete="off" />
       <button id="cl-accept" class="btn green big">ACCEPT THE CHALLENGE →</button>
       <div class="fr-muted">You'll draft your squad then the match kicks off automatically</div>
@@ -4376,6 +4401,16 @@ $('btn-setup-go').addEventListener('click',()=>{
   goToHome();
 });
 
+// Generic seg slider: clicking an option just flips data-active (read on submit).
+// Used by the Friendlies draft-mode / difficulty sliders.
+function wireSeg(id){
+  const seg=$(id); if(!seg) return;
+  seg.querySelectorAll('.seg-opt').forEach(opt=>{
+    opt.addEventListener('click',()=>{ seg.dataset.active = opt.dataset.draft || opt.dataset.mode; });
+  });
+}
+wireSeg('fr-seg-draft'); wireSeg('fr-seg-mode'); wireSeg('cl-seg-mode');
+
 // ---------- formation reveal (Full Draft only) ----------
 function formationReqLine(f){
   // each "<n> POS" is a filled badge in the position colour used on the player
@@ -6110,9 +6145,10 @@ function frBuildPayload(){
       ps: p.position,                    // position
       ov: p.overall                      // overall
     };});
-  return { p: minimalPicks, to: gs.result.teamOverall, ts: Date.now(), nm: friendlyMyName || '' };
+  return { p: minimalPicks, to: gs.result.teamOverall, ts: Date.now(), nm: friendlyMyName || '',
+           dt: (gs && gs.draftType==='full') ? 'full' : 'quick' };
 }
-// Map a raw payload {p,to,ts,nm} → the challenger data the Friendly flow expects.
+// Map a raw payload {p,to,ts,nm,dt} → the challenger data the Friendly flow expects.
 function frMapRaw(raw){
   return {
     picks: (raw.p||[]).map(p=>({
@@ -6121,7 +6157,8 @@ function frMapRaw(raw){
     })),
     teamOverall: raw.to,
     timestamp: raw.ts,
-    name: raw.nm || ''
+    name: raw.nm || '',
+    draftType: (raw.dt==='full') ? 'full' : 'quick'
   };
 }
 // Legacy embedded link (fallback when Supabase is unreachable). Percent-encoding
@@ -6201,6 +6238,10 @@ function startFriendly(){
   friendlyReset();
   friendlyMode=true; friendlyRole='challenger';
   gameMode='easy';                 // overalls visible — keeps Friendly accessible
+  // fresh sliders + name each time the intro is opened
+  const sd=$('fr-seg-draft'); if(sd) sd.dataset.active='quick';
+  const sm=$('fr-seg-mode');  if(sm) sm.dataset.active='easy';
+  const nm=$('fr-name-challenger'); if(nm) nm.value='';
   showScreen('friendly-intro');
 }
 
@@ -6275,7 +6316,7 @@ function parseFriendlyParam(){
     const d = frDecodeParam(friendlyParam); // short keys → full picks/teamOverall/timestamp
     // Store challenger data BEFORE cleaning the URL.
     window.CHALLENGER_DATA = {
-      picks: d.picks, teamOverall: d.teamOverall, timestamp: d.timestamp, name: d.name
+      picks: d.picks, teamOverall: d.teamOverall, timestamp: d.timestamp, name: d.name, draftType: d.draftType
     };
     const expired = (Date.now() - d.timestamp) > FRIENDLY_TTL_MS;
     // Clean the URL AFTER storing data so a refresh won't re-trigger / re-corrupt.
@@ -6299,7 +6340,7 @@ function applyChallengerRaw(raw){
   if(expired || !d.picks || !d.picks.length){
     window.CHALLENGER_DATA=null; window.FRIENDLY_EXPIRED=true; window.FRIENDLY_INCOMING=false;
   }else{
-    window.CHALLENGER_DATA = { picks:d.picks, teamOverall:d.teamOverall, timestamp:d.timestamp, name:d.name };
+    window.CHALLENGER_DATA = { picks:d.picks, teamOverall:d.teamOverall, timestamp:d.timestamp, name:d.name, draftType:d.draftType };
     window.FRIENDLY_INCOMING=true;
   }
 }
@@ -6322,8 +6363,11 @@ function showChallengeLanding(data){
   challengerData = data;           // mirror for the select-screen banner
   friendlyMode=true; friendlyRole='opponent';
   gameMode='easy';
-  // MYSTERY teaser — fixed formation slots, names hidden as "???"
-  const slots=['FWD','MID','DEF','DEF','GK','FLEX'];
+  const isFull = data.draftType==='full';
+  // MYSTERY teaser — generic formation slots sized to the locked draft, names "???"
+  const slots = isFull
+    ? ['FWD','FWD','FWD','MID','MID','MID','DEF','DEF','DEF','DEF','GK']
+    : ['FWD','MID','DEF','DEF','GK','FLEX'];
   const ul=$('cl-mystery'); ul.innerHTML='';
   slots.forEach(s=>{
     const col=PITCH_COLORS[s]||PITCH_COLORS.FLEX;
@@ -6333,6 +6377,14 @@ function showChallengeLanding(data){
       `<span class="fr-nm" style="letter-spacing:2px;color:#9a9387">???</span>`;
     ul.appendChild(li);
   });
+  // Tell the opponent which match size they're locked into (matches the challenger).
+  const noteEl=$('cl-mode-note');
+  if(noteEl) noteEl.textContent = isFull
+    ? 'Full Team match — draft your starting XI'
+    : 'Quick match — draft your starting VI';
+  // reset the opponent's difficulty slider + name each time
+  const segMode=$('cl-seg-mode'); if(segMode) segMode.dataset.active='easy';
+  const noEl=$('fr-name-opponent'); if(noEl) noEl.value='';
   // Opponent overall is hidden now — keep it a mystery until the match.
   const fromEl=$('cl-from');
   if(fromEl) fromEl.textContent = (data.name && String(data.name).trim())
@@ -6459,8 +6511,12 @@ async function runFriendlyMatch(){
         ? { name:oppBest.name, team:youShort, overall:oppBest.overall }
         : { name:chBest.name, team:friendShort, overall:chBest.overall };
 
-  const normSquad = arr => groupFlexByPosition(orderPicksForDisplay(arr.map(p=>({slot:p.slot,player:p})), ['FWD','MID','DEF','DEF','GK','FLEX']))
-    .map(x=>({ slot:x.slot, name:x.player.name, overall:x.player.overall }));
+  // Order any squad (6 or 11) attackers→keeper by the player's real position.
+  const POSR={FWD:0,MID:1,DEF:2,GK:3};
+  const normSquad = arr => arr
+    .map(p=>({ slot:p.slot, name:p.name, overall:p.overall, position:p.position }))
+    .sort((a,b)=>(POSR[a.position]??1.5)-(POSR[b.position]??1.5) || (b.overall||0)-(a.overall||0))
+    .map(p=>({ slot:p.slot, name:p.name, overall:p.overall }));
 
   friendlyMatchResult = {
     opponentScore, challengerScore, opponentGoals, challengerGoals,
@@ -6500,7 +6556,16 @@ async function incrementFriendlyCount(){
 // ---- shareable result image (390×800 portrait canvas) ----
 async function buildFriendlyResultCanvas(R){
   await (document.fonts && document.fonts.ready);
-  const Wc=390, Hc=800, S=2;
+  const Wc=390, S=2;
+  // The lineup section grows with squad size (6 → roomy rows, 11 → compact rows),
+  // and the canvas height follows so nothing overflows.
+  const nP   = Math.max(R.opponentSquad.length, R.challengerSquad.length, 6);
+  const rowH = nP>6 ? 17 : 26;
+  const lnY  = 504;                       // sections above are fixed-height
+  const lnH  = 30 + nP*rowH + 8;          // header + rows + pad
+  const momY = lnY + lnH;
+  const footY= momY + 60;
+  const Hc   = footY + 32;
   const c=document.createElement('canvas'); c.width=Wc*S; c.height=Hc*S;
   const x=c.getContext('2d'); x.scale(S,S);
   const youWin=(R.youWon!==undefined)?R.youWon:(R.opponentScore>R.challengerScore);
@@ -6579,44 +6644,45 @@ async function buildFriendlyResultCanvas(R){
     if(all.length>5){ x.fillStyle='#9a8f80'; x.fillText(`+${all.length-5} more`, 20, goY+18+5*14); }
   }
 
-  // SECTION 5 — both lineups
-  const lnY=504, lnH=204;
+  // SECTION 5 — both lineups (rows + fonts compact for a full XI)
   x.fillStyle='#0F1424'; x.fillRect(0,lnY,Wc,lnH);
   x.textAlign='center'; x.font='900 11px Archivo'; x.fillStyle='#F4B413';
   x.fillText(fit(R.youTeam||'YOUR SQUAD',172), Wc*0.25, lnY+20);
   x.fillText(fit(R.friendTeam||"FRIEND'S SQUAD",172), Wc*0.75, lnY+20);
+  const compact=rowH<22;
+  const badgeH=compact?13:18, badgeW=compact?24:30, badgeFont=compact?7:9, nameFont=compact?10:11;
   const drawCol=(squad,cx)=>{
     squad.forEach((p,i)=>{
-      const ry=lnY+32+i*26;
+      const ry=lnY+30+i*rowH;
       const col=slotColor(p.slot,{position:''})||'#5B6470';
       const txt=col===PITCH_COLORS.GK?'#111':'#fff';
-      x.fillStyle=col; rrect('',x,cx-78,ry,30,18,4); x.fill();
-      x.fillStyle=txt; x.font='900 9px Archivo'; x.textAlign='center'; x.fillText(p.slot,cx-63,ry+13);
-      x.fillStyle='#fff'; x.font='800 11px Archivo'; x.textAlign='left';
+      x.fillStyle=col; rrect('',x,cx-78,ry,badgeW,badgeH,4); x.fill();
+      x.fillStyle=txt; x.font=`900 ${badgeFont}px Archivo`; x.textAlign='center'; x.fillText(p.slot,cx-78+badgeW/2,ry+badgeH-5);
+      x.fillStyle='#fff'; x.font=`800 ${nameFont}px Archivo`; x.textAlign='left';
       const nameMax=100;
       let nm=surnameOf(p.name);
       let truncated=false;
       while(x.measureText(nm).width>nameMax && nm.length>3){ nm=nm.slice(0,-2); truncated=true; }
       if(truncated) nm+='…';
-      x.fillText(nm,cx-44,ry+13);
-      x.fillStyle='#F4B413'; x.font='900 11px Archivo'; x.textAlign='right';
-      x.fillText(String(p.overall),cx+82,ry+13);
+      x.fillText(nm,cx-78+badgeW+6,ry+badgeH-4);
+      x.fillStyle='#F4B413'; x.font=`900 ${nameFont}px Archivo`; x.textAlign='right';
+      x.fillText(String(p.overall),cx+82,ry+badgeH-4);
     });
   };
   drawCol(R.opponentSquad, Wc*0.25);
   drawCol(R.challengerSquad, Wc*0.75);
 
   // SECTION 6 — man of the match
-  x.fillStyle='#F4B413'; x.fillRect(0,708,Wc,60);
+  x.fillStyle='#F4B413'; x.fillRect(0,momY,Wc,60);
   x.fillStyle='#16120F'; x.textAlign='center'; x.font='900 14px Archivo';
   let mtxt=`MAN OF THE MATCH ⭐ ${surnameOf(R.manOfMatch.name)} (${R.manOfMatch.team})`;
   while(x.measureText(mtxt).width>Wc-24 && mtxt.length>10){ mtxt=mtxt.slice(0,-2); }
-  x.fillText(mtxt, Wc/2, 744);
+  x.fillText(mtxt, Wc/2, momY+36);
 
   // SECTION 7 — footer
-  x.fillStyle='#0A0F1E'; x.fillRect(0,768,Wc,32);
+  x.fillStyle='#0A0F1E'; x.fillRect(0,footY,Wc,32);
   x.fillStyle='rgba(255,255,255,.6)'; x.font='700 11px Archivo'; x.textAlign='center';
-  x.fillText('RunThe.gg', Wc/2, 788);
+  x.fillText('RunThe.gg', Wc/2, footY+20);
 
   return c;
 }
@@ -6656,7 +6722,10 @@ async function friendlyShareResult(){
 $('btn-friendly').addEventListener('click', startFriendly);
 $('btn-friendly-build').addEventListener('click', ()=>{
   friendlyMyName=($('fr-name-challenger').value||'').trim();
-  gs=G.createGameState(); goToHome();
+  draftType = ($('fr-seg-draft').dataset.active==='full') ? 'full' : 'quick';
+  gameMode  = ($('fr-seg-mode').dataset.active==='hard') ? 'hard' : 'easy';
+  if(draftType==='full'){ showFormationReveal(); }      // random formation, then draft XI
+  else { gs=G.createGameState(); goToHome(); }
 });
 $('cr-share').addEventListener('click', ()=>friendlyShareLink($('cr-share')._url));
 $('cr-copy').addEventListener('click', async ()=>{
@@ -6668,7 +6737,11 @@ $('cr-copy').addEventListener('click', async ()=>{
 });
 $('cl-accept').addEventListener('click', ()=>{
   friendlyMyName=($('fr-name-opponent').value||'').trim();
-  gs=G.createGameState(); goToHome();
+  gameMode = ($('cl-seg-mode').dataset.active==='hard') ? 'hard' : 'easy';
+  // draft size is LOCKED to the challenger's so the squads are comparable
+  draftType = (window.CHALLENGER_DATA && window.CHALLENGER_DATA.draftType==='full') ? 'full' : 'quick';
+  if(draftType==='full'){ showFormationReveal(); }
+  else { gs=G.createGameState(); goToHome(); }
 });
 $('fx-solo').addEventListener('click', ()=>{ goToDraftTypeSelect(); });
 $('fr-share').addEventListener('click', friendlyShareResult);
