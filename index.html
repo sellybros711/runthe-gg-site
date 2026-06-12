@@ -1828,10 +1828,10 @@
   <!-- ===== FRIENDLY: result ===== -->
   <section id="screen-friendly-result" class="screen">
     <div class="fr-wrap">
-      <img id="fr-result-img" class="fr-result-img" alt="Friendly match result" />
+      <img id="fr-result-img" class="fr-result-img" alt="Friendlies match result" />
       <button id="fr-share" class="btn green big">SHARE RESULT</button>
       <div style="height:10px"></div>
-      <button id="fr-again" class="btn teal">PLAY AGAIN</button>
+      <button id="fr-again" class="btn red big">PLAY AGAIN</button>
       <div class="fr-muted">Send this to your friend so they can see the result!</div>
     </div>
   </section>
@@ -6228,9 +6228,10 @@ async function showChallengeReady(){
 }
 
 async function friendlyShareLink(url){
+  const fromName = (friendlyMyName && friendlyMyName.trim()) ? friendlyMyName.trim() : 'a friend';
   const shareData = {
-    title: 'RunThePitch: Friendly Challenge ⚽🔥',
-    text: `I just built my World Cup squad on RunThePitch and I'm challenging YOU to a head-to-head match!\nTap the link to accept the challenge 👇`,
+    title: 'RunThePitch: Friendlies Challenge ⚽🔥',
+    text: `You have been challenged by ${fromName} to a Friendly match. Click the link to accept👆`,
     url
   };
   // Native share sends title/text/url as separate fields (mobile share sheet).
@@ -6459,7 +6460,8 @@ async function buildFriendlyResultCanvas(R){
   x.fillText('–', Wc/2, 158);
   x.font='900 16px Archivo';
   x.fillStyle = draw?'#F4B413':(youWin?'#1F9E57':'#E5402A');
-  x.fillText(draw?'DRAW':(youWin?'YOU WIN':'YOU LOSE'), Wc/2, 190);
+  const winLabel = draw ? 'DRAW' : fit((youWin?youShort:friendShort)+' WINS', Wc-40);
+  x.fillText(winLabel, Wc/2, 190);
 
   // SECTION 3 — box score (expanded)
   const boxY=200, boxH=212;
