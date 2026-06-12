@@ -38,10 +38,10 @@ x.fillStyle='rgba(8,14,26,.55)'; rrect(cardX,cardY,cardW,cardH,22); x.fill();
 x.lineWidth=2; x.strokeStyle='rgba(244,180,19,.45)'; rrect(cardX,cardY,cardW,cardH,22); x.stroke();
 
 const rules=[
-  [{t:'Spin a random year & nation.'}],
-  [{t:'Draft a player to fill your starting VI: GK · DEF · DEF · MID · FWD · FLEX.'}],
-  [{t:'Repeat until you complete your squad.',hl:true}],
-  [{t:'Simulate a World Cup against historic squads to lift the trophy — or challenge a friend to a Friendly.',hl:true}],
+  {t:'Spin a random year & nation.'},
+  {t:'Draft a player from the following positions:', sub:'GK · DEF · DEF · MID · FWD · FLEX'},
+  {t:'Repeat until you complete your squad.', hl:true},
+  {t:'Simulate a World Cup against historic squads to lift the trophy — or challenge a friend to a Friendly.', hl:true},
 ];
 function wrap(text, font, maxW){
   x.font=font; const words=text.split(' '); const lines=[]; let cur='';
@@ -57,10 +57,12 @@ rules.forEach((r,i)=>{
   // text (wrapped)
   x.textAlign='left';
   const font='700 23px ArchivoBold';
-  const lines=wrap(r[0].t, font, cardW-150);
-  x.font=font; x.fillStyle = r[0].hl ? '#FFE9A8' : cream;
+  const lines=wrap(r.t, font, cardW-150);
+  x.font=font; x.fillStyle = r.hl ? '#FFE9A8' : cream;
   lines.forEach((ln,li)=>{ x.fillText(ln, cardX+92, ry+li*30); });
-  ry += Math.max(70, lines.length*30+34);
+  let used=lines.length*30;
+  if(r.sub){ x.font='900 22px ArchivoBlack'; x.fillStyle='#FFE9A8'; x.fillText(r.sub, cardX+92, ry+used+2); used+=30; }
+  ry += Math.max(70, used+34);
 });
 
 // ---- CTA buttons ----
