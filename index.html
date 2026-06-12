@@ -1904,8 +1904,6 @@
       <textarea id="fr-watch-link" class="fr-linkbox" rows="3" readonly style="display:none"></textarea>
       <button id="fr-watch-copy" class="btn ghost" style="display:none">COPY WATCH LINK</button>
       <div style="height:10px"></div>
-      <button id="fr-share" class="btn teal big">SHARE RESULT IMAGE</button>
-      <div style="height:10px"></div>
       <button id="fr-new-friendly" class="btn green">NEW FRIENDLY</button>
       <div style="height:10px"></div>
       <button id="fr-again" class="btn red big">HOME MENU</button>
@@ -6984,7 +6982,6 @@ async function showFriendlyResult(R){
   if(canvas){
     img.src=canvas.toDataURL('image/png');
     img.style.display='';
-    canvas.toBlob(b=>{ $('fr-share')._blob=b; }, 'image/png', 0.95);
   } else { img.style.display='none'; }
   // Player B (just played live) gets a "send the match to watch" button for A.
   const showSend = (friendlyRole==='opponent') && SUPABASE_READY;
@@ -7045,7 +7042,6 @@ $('cl-accept').addEventListener('click', ()=>{
   goToHome();
 });
 $('fx-solo').addEventListener('click', ()=>{ goToDraftTypeSelect(); });
-$('fr-share').addEventListener('click', friendlyShareResult);
 $('fr-again').addEventListener('click', ()=>{ friendlyReset(); showScreen('start'); });
 $('fr-new-friendly').addEventListener('click', ()=>{ startFriendly(); });
 $('fr-send-result').addEventListener('click', async ()=>{
