@@ -2549,10 +2549,11 @@ function fullOpenCounts(){
   if(gs) gs.openSlots.forEach(s=>{ if(o[s]!=null) o[s]++; });
   return o;
 }
-// Build the dynamic .pslot circles for the LIVE shape (filled picks by real
-// position + remaining fixed slots + a neutral band for unfilled FLEX), then
-// fill them. Total is always 11. Replaces the old fixed-formation pitch.
-const FULL_BAND_TOP = { FWD:22, FLEX:39, MID:53, DEF:70, GK:88 };
+// Build the dynamic .pslot circles for the LIVE shape. The 3 FLEX slots are
+// distributed across the three outfield lines (so the empty board reads as a
+// 4-3-3: DEF 3+FLEX, MID 2+FLEX, FWD 2+FLEX) — no separate FLEX line. Purely
+// cosmetic; the draft logic/cap is unchanged. Total is always 11.
+const FULL_BAND_TOP = { FWD:24, MID:50, DEF:73, GK:90 };
 function buildFullPitch(){
   const wrap=$('pitch-wrap'); if(!wrap || !gs) return;
   wrap.querySelectorAll('.pslot.full-slot').forEach(el=>el.remove());
@@ -2560,37 +2561,38 @@ function buildFullPitch(){
   wrap.classList.add('full');
   fullPitchLayout=[];
   const cnt=fullPosCounts(), open=fullOpenCounts();
-  // band order top→bottom: FWD, FLEX(pending), MID, DEF, GK
-  const bands=[
-    {pos:'FWD', n:cnt.FWD+open.FWD},
-    {pos:'FLEX',n:open.FLEX, flex:true},
-    {pos:'MID', n:cnt.MID+open.MID},
-    {pos:'DEF', n:cnt.DEF+open.DEF},
-    {pos:'GK',  n:cnt.GK+open.GK},
-  ];
-  bands.forEach(b=>{
-    if(b.n<=0) return;
-    const xs=rowXs(b.n), top=FULL_BAND_TOP[b.flex?'FLEX':b.pos];
-    for(let i=0;i<b.n;i++){
-      const id=`psf-${b.flex?'FLEX':b.pos}-${i}`;
-      const el=document.createElement('div');
-      el.className='pslot full-slot'+(b.flex?' flexband':'');
-      el.id=id;
-      el.style.color=PITCH_COLORS[b.flex?'FLEX':b.pos];
-      el.style.left=xs[i]+'%'; el.style.top=top+'%';
-      el.innerHTML=`<span class="psl-label">${b.flex?'FLEX':b.pos}</span>`;
-      wrap.appendChild(el);
-      fullPitchLayout.push({id,pos:b.pos,flex:!!b.flex});
-    }
-  });
-  // fill the position bands with the drafted players (flex band stays as labels)
   const filled={GK:[],DEF:[],MID:[],FWD:[]};
   gs.picks.forEach(p=>{ if(filled[p.slot]) filled[p.slot].push(p.player); });
-  const cursor={GK:0,DEF:0,MID:0,FWD:0};
+
+  // spread remaining unfilled FLEX slots over DEF → MID → FWD (3 flex = 1 each)
+  const flexLine={DEF:0,MID:0,FWD:0};
+  { let fl=open.FLEX; const ord=['DEF','MID','FWD']; let i=0; while(fl>0){ flexLine[ord[i%3]]++; fl--; i++; } }
+
+  const drawLine=(pos)=>{
+    const items=[];
+    (filled[pos]||[]).forEach(pl=>items.push({player:pl}));        // drafted players
+    for(let i=0;i<(open[pos]||0);i++) items.push({});               // open dedicated slot
+    if(pos!=='GK'){ for(let i=0;i<(flexLine[pos]||0);i++) items.push({flex:true}); } // flex on this line
+    if(!items.length) return;
+    const xs=rowXs(items.length), top=FULL_BAND_TOP[pos];
+    items.forEach((it,i)=>{
+      const id=`psf-${pos}-${i}`;
+      const el=document.createElement('div');
+      el.className='pslot full-slot'+(it.flex?' flexband':'');
+      el.id=id;
+      el.style.color=PITCH_COLORS[it.flex?'FLEX':pos];
+      el.style.left=xs[i]+'%'; el.style.top=top+'%';
+      el.innerHTML=`<span class="psl-label">${it.flex?'FLEX':pos}</span>`;
+      wrap.appendChild(el);
+      fullPitchLayout.push({id,pos,flex:!!it.flex,player:it.player||null});
+    });
+  };
+  ['FWD','MID','DEF','GK'].forEach(drawLine);   // top → bottom
+
+  // fill drafted players; open dedicated slots show their position label; flex stays 'FLEX'
   fullPitchLayout.forEach(s=>{
     if(s.flex) return;
-    const player = filled[s.pos] ? (filled[s.pos][cursor[s.pos]++]||null) : null;
-    setPitchSlot(s.id, player, PITCH_COLORS[s.pos], s.pos, true);   // no per-rebuild pop
+    setPitchSlot(s.id, s.player||null, PITCH_COLORS[s.pos], s.pos, true);   // no per-rebuild pop
   });
   updateFullShapeReadout();
 }
