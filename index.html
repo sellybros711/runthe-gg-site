@@ -2047,7 +2047,7 @@
 <!-- ?v= cache-buster: index.html is always served fresh (max-age=0) but these
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
-<script src="gameLogic.js?v=0.0.29"></script>
+<script src="gameLogic.js?v=0.0.30"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
 <script src="data/players_all.js?v=0.0.28"></script>
 <script>
@@ -4528,7 +4528,7 @@ $('seg-mode').querySelectorAll('.seg-opt').forEach(opt=>{
 // Start Draft. Quick = 6-man; Full = 11-man flex builder (no formation wheel).
 $('btn-setup-go').addEventListener('click',()=>{
   gs = (draftType==='full')
-    ? G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS })
+    ? G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS, respins:{ full: (gameMode==='easy'?2:1) } })
     : G.createGameState();
   goToHome();
 });
@@ -7028,7 +7028,7 @@ $('btn-friendly-build').addEventListener('click', ()=>{
   draftType = ($('fr-seg-draft').dataset.active==='full') ? 'full' : 'quick';
   gameMode  = ($('fr-seg-mode').dataset.active==='hard') ? 'hard' : 'easy';
   gs = (draftType==='full')
-    ? G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS })   // flex builder
+    ? G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS, respins:{ full: (gameMode==='easy'?2:1) } })   // flex builder
     : G.createGameState();
   goToHome();
 });
@@ -7046,7 +7046,7 @@ $('cl-accept').addEventListener('click', ()=>{
   // draft size is LOCKED to the challenger's so the squads are comparable
   draftType = (window.CHALLENGER_DATA && window.CHALLENGER_DATA.draftType==='full') ? 'full' : 'quick';
   gs = (draftType==='full')
-    ? G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS })
+    ? G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS, respins:{ full: (gameMode==='easy'?2:1) } })
     : G.createGameState();
   goToHome();
 });

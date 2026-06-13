@@ -211,7 +211,7 @@ function createGameState(opts) {
     picks: [],
     openSlots: opts.openSlots ? [...opts.openSlots] : ['GK', 'DEF', 'DEF', 'MID', 'FWD', 'FLEX'],
     filledSlots: {},
-    respins: { full: 1 },
+    respins: opts.respins ? { ...opts.respins } : { full: 1 },
     phase: 'SPINNING',
     currentSpin: null,
     startTime: Date.now(),
