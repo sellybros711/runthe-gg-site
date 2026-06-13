@@ -6055,16 +6055,11 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
   };
   return new Promise(resolve=>{
     const gold=fromMin>90;
-    let p=0, curSpeed=1.0, last=performance.now();
+    setSlow(false);              // slow-motion removed — clock runs at a steady rate
+    let p=0, last=performance.now();
     const tick=()=>{
       const now=performance.now(); const dt=Math.min(100, now-last); last=now;
-      const simMinute = fromMin + (toMin-fromMin)*p;
-      const target = opts.noSlowmo ? 1.0 : getSpeedMultiplier(simMinute, score.user, score.opp, isET);
-      // ease curSpeed toward target — full 0.5 range crosses in ~SLOWMO_EASE_MS
-      const maxStep = (dt/SLOWMO_EASE_MS) * 0.5;
-      curSpeed += Math.max(-maxStep, Math.min(maxStep, target-curSpeed));
-      setSlow(target < 1.0);
-      p = Math.min(1, p + (dt/dur)*curSpeed);
+      p = Math.min(1, p + (dt/dur));
       const minNow = fromMin + (toMin-fromMin)*p;
       fill.style.width=(fromPct+(toPct-fromPct)*p)+'%';
       sbSetTime(wrap, Math.max(1,Math.round(minNow))+"'", gold);
@@ -6136,16 +6131,22 @@ async function playMatchAnimation(m, card, isFinal, opts){
   const sb=card.querySelector('.sb-wrap');   // scoreboard built earlier by buildMatchCard
   const fill=card.querySelector('.match-clock-fill');
   const goalsBox=card.querySelector('.sim-goals');
-  const wait = opts.wait || simSleep;            // friendlies pass a faster, fixed clock
-  const noSlowmo = !!opts.noSlowmo;
-  const regulation = opts.regDur || 2500*SIM_SPEED;   // slowed pacing (solo)
-  const etDur      = opts.etDur  || 600*SIM_SPEED;
-  const regEvents=m.goalEvents.filter(e=>e.minute<=90);
-  const etEvents =m.goalEvents.filter(e=>e.minute>90);
+  const wait = opts.wait || simSleep;            // callers pass a fixed-ms clock
+  // Two-half regulation with a halftime pause and randomized stoppage time, so
+  // every game's length varies a little. No slow-motion.
+  const firstDur  = opts.firstHalfDur  || 2000;
+  const secondDur = opts.secondHalfDur || 2200;
+  const htPause   = opts.halftimePause || 500;
+  const etDur     = opts.etDur || 1500;
+  const stoppage  = m.extraTime ? 0 : (1 + Math.floor(Math.random()*(opts.stoppageMax||5))); // +1..max
+  const regEnd    = 90 + stoppage;                 // clock end for regulation
+  const firstEv  = m.goalEvents.filter(e=>e.minute<=45);
+  const secondEv = m.goalEvents.filter(e=>e.minute>45 && e.minute<=90);
+  const etEvents = m.goalEvents.filter(e=>e.minute>90);
 
   // live, accumulating box score (when stats are supplied)
   let boxPanel=null;
-  const finalMinute = m.extraTime ? 120 : 90;
+  const finalMinute = m.extraTime ? 120 : regEnd;
   if(opts.boxStats){
     boxPanel = makeLiveBoxPanel(opts.boxLabels&&opts.boxLabels.you, opts.boxLabels&&opts.boxLabels.opp);
     const before = card.querySelector('.sim-goals');
@@ -6154,29 +6155,37 @@ async function playMatchAnimation(m, card, isFinal, opts){
   }
   const onMinute = boxPanel ? (min=>updateLiveBox(boxPanel, opts.boxStats, min/finalMinute)) : null;
 
-  const baseWidth = m.extraTime ? 75 : 100;
-  // ONE driver fills the clock bar, ticks the scoreboard minute, AND reveals goals
-  // (with their score bumps) as the minute crosses them — all in lockstep, so the
-  // slow-motion windows react to the live running score. The transition keeps the
-  // amber slow-mo tint smooth while width is set manually each frame.
   fill.style.transition='background .3s ease';
-  const liveScore={user:0, opp:0};  // shared across regulation + extra time
-  await sbDriveClock(fill, sb, 0, baseWidth, 0, 90, regulation,
-    {events:regEvents, isExtraTime:false, score:liveScore, goalsBox, noSlowmo, onMinute});
+  const liveScore={user:0, opp:0};       // shared across both halves + extra time
+  const baseWidth = m.extraTime ? 75 : 100;
+  const halfPct   = (45/finalMinute)*baseWidth;   // bar position at the 45' mark
+
+  // FIRST HALF — 0' → 45'
+  await sbDriveClock(fill, sb, 0, halfPct, 0, 45, firstDur,
+    {events:firstEv, score:liveScore, goalsBox, onMinute});
+
+  // HALF TIME — brief pause
+  sbSetTime(sb, 'HT', false);
+  const htLabel=document.createElement('div'); htLabel.className='sim-et-label'; htLabel.textContent='HALF TIME';
+  goalsBox.appendChild(htLabel); simScrollEnd(htLabel);
+  await wait(htPause);
+
+  // SECOND HALF — 45' → 90' (+ stoppage)
+  await sbDriveClock(fill, sb, halfPct, baseWidth, 45, regEnd, secondDur,
+    {events:secondEv, score:liveScore, goalsBox, onMinute});
 
   if(m.extraTime){
     const etLabel=document.createElement('div'); etLabel.className='sim-et-label'; etLabel.textContent='EXTRA TIME';
     goalsBox.appendChild(etLabel);
     simScrollEnd(etLabel);
     await sbDriveClock(fill, sb, 75, 100, 91, 120, etDur,   // gold 91'→120'
-      {events:etEvents, isExtraTime:true, score:liveScore, goalsBox, noSlowmo, onMinute});
+      {events:etEvents, isExtraTime:true, score:liveScore, goalsBox, onMinute});
   }
   if(boxPanel) updateLiveBox(boxPanel, opts.boxStats, 1);   // settle on the final figures
 
-  // freeze the final minute, then flip to FT — the scoreboard's score IS the
-  // final result line, so no separate "YOUR TEAM x — y" text is shown.
-  sbSetTime(sb, m.extraTime ? "120'" : "90'", m.extraTime);
-  await wait(500);
+  // freeze the final minute, then flip to FT.
+  sbSetTime(sb, m.extraTime ? "120'" : (regEnd+"'"), m.extraTime);
+  await wait(opts.ftFreeze || 400);
   sbSetTime(sb, 'FT', false);
 
   if(m.penalties){ await wait(300); await simAnimatePenalties(card, m, opts); }
@@ -6190,7 +6199,7 @@ async function playMatchAnimation(m, card, isFinal, opts){
     : (opts.loseText || 'Eliminated');
   simScrollEnd(finalEl);
   if(won && isFinal) simChampionConfetti();   // confetti the instant they're crowned
-  await wait(1200);   // scoreboard stays visible above the result
+  await wait(opts.finalPause || 1200);   // scoreboard stays visible above the result
   return won;
 }
 
@@ -6327,11 +6336,17 @@ async function runSimulationScreen(){
     const card=simNewSlide();
     buildMatchCard(card, m);       // fill the box BEFORE it swipes in — no empty-box flash
     simSwipeTo(simSlideIndex+1);   // swipe the already-filled match box in from the right
-    await simSleep(650);           // let the swipe land
-    await simSleep(500);           // brief beat on the round + opponent + scoreboard before kickoff
+    const kbWait = ms=>new Promise(r=>setTimeout(r, ms));
+    await kbWait(500);             // let the swipe land
+    await kbWait(350);             // brief beat before kickoff
     const next = simResult.rounds[i+1];
     const isFinal = !next;         // a win here wins the whole tournament
+    // Knockout games are capped at ~15s: two short halves + halftime + stoppage,
+    // plus extra time / penalties only when tied.
     const won = await playMatchAnimation(m, card, isFinal, {
+      wait: kbWait,
+      firstHalfDur:3000, secondHalfDur:3300, halftimePause:450, stoppageMax:5,
+      etDur:2200, ftFreeze:350, finalPause:1000, penDelay:300,
       boxStats: computeMatchStats(simResult.userOverall, m.opponent.teamOverall, m.userGoals, m.opponentGoals),
       boxLabels:{ you:'YOU', opp: code3(m.opponent.country) }
     });
@@ -6823,9 +6838,12 @@ async function playFriendlyMatchAnimation(m, labels){
   const winnerShort = won ? labels.youShort : labels.friendShort;
   const stamp = `${winnerShort} WINS${m.penalties?' (PENS)':''}`;
   let penScore=null;
+  // Friendlies are the longer, detailed experience — capped at ~45s: two full
+  // halves + halftime + stoppage, plus extra time / penalties only when tied.
   await playMatchAnimation(m, card, false, {
     winText:stamp, loseText:stamp,
-    regDur:14000, etDur:4000, noSlowmo:true, wait:fastWait, penDelay:600,
+    firstHalfDur:12000, secondHalfDur:13000, halftimePause:1200, stoppageMax:5,
+    etDur:6000, ftFreeze:600, finalPause:1200, wait:fastWait, penDelay:550,
     youLabel:labels.youShort, oppLabel:labels.friendShort,
     boxStats: labels.boxStats, boxLabels:{ you:labels.youShort, opp:labels.friendShort },
     penSeq: m.penSeq,                     // exact shootout when replaying a watch link
