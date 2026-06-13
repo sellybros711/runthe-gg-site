@@ -1870,14 +1870,6 @@
       <ul class="fr-lineup" id="cl-mystery"></ul>
       <div class="fr-muted" style="margin-top:0;margin-bottom:6px">Their squad is a mystery — out-draft them.</div>
       <div class="fr-sub" id="cl-mode-note" style="font-size:14px;margin-bottom:14px"></div>
-      <div class="setup-block" style="max-width:340px;margin:0 auto 12px;">
-        <div class="setup-label">Your Difficulty</div>
-        <div class="seg k-mode" id="cl-seg-mode" data-active="easy">
-          <span class="seg-thumb"></span>
-          <button type="button" class="seg-opt" data-mode="easy">Easy</button>
-          <button type="button" class="seg-opt" data-mode="hard">Hard</button>
-        </div>
-      </div>
       <input id="fr-name-opponent" class="fr-name-input" maxlength="16" placeholder="Your name (for your team)" autocomplete="off" />
       <div class="fr-flag-label">Pick your flag</div>
       <div class="fr-flag-row" id="fr-flag-opponent"></div>
@@ -4541,7 +4533,7 @@ function wireSeg(id){
     opt.addEventListener('click',()=>{ seg.dataset.active = opt.dataset.draft || opt.dataset.mode; });
   });
 }
-wireSeg('fr-seg-draft'); wireSeg('fr-seg-mode'); wireSeg('cl-seg-mode');
+wireSeg('fr-seg-draft'); wireSeg('fr-seg-mode');
 
 // ---------- formation reveal (Full Draft only) ----------
 function formationReqLine(f){
@@ -6379,7 +6371,8 @@ function frBuildPayload(){
       ov: p.overall                      // overall
     };});
   return { p: minimalPicks, to: gs.result.teamOverall, ts: Date.now(), nm: friendlyMyName || '',
-           dt: (gs && gs.draftType==='full') ? 'full' : 'quick', ff: friendlyMyFlag || 'USA' };
+           dt: (gs && gs.draftType==='full') ? 'full' : 'quick', ff: friendlyMyFlag || 'USA',
+           gm: (gameMode==='hard') ? 'hard' : 'easy' };   // challenger sets the difficulty for both
 }
 // Map a raw payload {p,to,ts,nm,dt,ff} → the challenger data the Friendly flow expects.
 function frMapRaw(raw){
@@ -6392,7 +6385,8 @@ function frMapRaw(raw){
     timestamp: raw.ts,
     name: raw.nm || '',
     draftType: (raw.dt==='full') ? 'full' : 'quick',
-    ownerFlag: raw.ff || 'USA'
+    ownerFlag: raw.ff || 'USA',
+    gameMode: (raw.gm==='hard') ? 'hard' : 'easy'
   };
 }
 // Legacy embedded link (fallback when Supabase is unreachable). Percent-encoding
@@ -6553,7 +6547,7 @@ function parseFriendlyParam(){
     const d = frDecodeParam(friendlyParam); // short keys → full picks/teamOverall/timestamp
     // Store challenger data BEFORE cleaning the URL.
     window.CHALLENGER_DATA = {
-      picks: d.picks, teamOverall: d.teamOverall, timestamp: d.timestamp, name: d.name, draftType: d.draftType, ownerFlag: d.ownerFlag
+      picks: d.picks, teamOverall: d.teamOverall, timestamp: d.timestamp, name: d.name, draftType: d.draftType, ownerFlag: d.ownerFlag, gameMode: d.gameMode
     };
     const expired = (Date.now() - d.timestamp) > FRIENDLY_TTL_MS;
     // Clean the URL AFTER storing data so a refresh won't re-trigger / re-corrupt.
@@ -6577,7 +6571,7 @@ function applyChallengerRaw(raw){
   if(expired || !d.picks || !d.picks.length){
     window.CHALLENGER_DATA=null; window.FRIENDLY_EXPIRED=true; window.FRIENDLY_INCOMING=false;
   }else{
-    window.CHALLENGER_DATA = { picks:d.picks, teamOverall:d.teamOverall, timestamp:d.timestamp, name:d.name, draftType:d.draftType, ownerFlag:d.ownerFlag };
+    window.CHALLENGER_DATA = { picks:d.picks, teamOverall:d.teamOverall, timestamp:d.timestamp, name:d.name, draftType:d.draftType, ownerFlag:d.ownerFlag, gameMode:d.gameMode };
     window.FRIENDLY_INCOMING=true;
   }
 }
@@ -6614,13 +6608,12 @@ function showChallengeLanding(data){
       `<span class="fr-nm" style="letter-spacing:2px;color:#9a9387">???</span>`;
     ul.appendChild(li);
   });
-  // Tell the opponent which match size they're locked into (matches the challenger).
+  // Match size AND difficulty are both locked to the challenger's choice.
+  const isHard = data.gameMode==='hard';
   const noteEl=$('cl-mode-note');
-  if(noteEl) noteEl.textContent = isFull
-    ? 'Full Team match — draft your starting XI'
-    : 'Quick match — draft your starting VI';
-  // reset the opponent's difficulty slider + name + flag each time
-  const segMode=$('cl-seg-mode'); if(segMode) segMode.dataset.active='easy';
+  if(noteEl) noteEl.textContent =
+    (isFull ? 'Full Team match — draft your starting XI' : 'Quick match — draft your starting VI')
+    + (isHard ? ' · Hard Mode (ratings hidden)' : ' · Easy Mode (ratings visible)');
   const noEl=$('fr-name-opponent'); if(noEl) noEl.value='';
   friendlyMyFlag='USA'; buildFriendlyFlagRow('fr-flag-opponent');
   // Opponent overall is hidden now — keep it a mystery until the match.
@@ -7042,8 +7035,8 @@ $('cr-copy').addEventListener('click', async ()=>{
 });
 $('cl-accept').addEventListener('click', ()=>{
   friendlyMyName=($('fr-name-opponent').value||'').trim();
-  gameMode = ($('cl-seg-mode').dataset.active==='hard') ? 'hard' : 'easy';
-  // draft size is LOCKED to the challenger's so the squads are comparable
+  // draft size AND difficulty are LOCKED to the challenger's choice
+  gameMode  = (window.CHALLENGER_DATA && window.CHALLENGER_DATA.gameMode==='hard') ? 'hard' : 'easy';
   draftType = (window.CHALLENGER_DATA && window.CHALLENGER_DATA.draftType==='full') ? 'full' : 'quick';
   gs = (draftType==='full')
     ? G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS, respins:{ full: (gameMode==='easy'?2:1) } })
