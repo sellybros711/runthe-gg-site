@@ -6122,6 +6122,9 @@ function buildMatchCard(card, m){
   const sb=makeScoreboard(opp);
   card.insertBefore(sb, card.firstChild);
   sb.classList.add('show');
+  // empty box score, shown immediately (like the scoreboard); fills as the match plays
+  const box=makeLiveBoxPanel('YOU', code3(opp.country));
+  card.insertBefore(box, card.querySelector('.sim-goals'));
 }
 
 // Animate one knockout match card (already built by buildMatchCard). Returns true
@@ -6144,13 +6147,17 @@ async function playMatchAnimation(m, card, isFinal, opts){
   const secondEv = m.goalEvents.filter(e=>e.minute>45 && e.minute<=90);
   const etEvents = m.goalEvents.filter(e=>e.minute>90);
 
-  // live, accumulating box score (when stats are supplied)
+  // live, accumulating box score. Prefer a panel already built into the card
+  // (so the empty box shows the moment the match appears, like the scoreboard).
   let boxPanel=null;
   const finalMinute = m.extraTime ? 120 : regEnd;
   if(opts.boxStats){
-    boxPanel = makeLiveBoxPanel(opts.boxLabels&&opts.boxLabels.you, opts.boxLabels&&opts.boxLabels.opp);
-    const before = card.querySelector('.sim-goals');
-    if(before) card.insertBefore(boxPanel, before); else card.appendChild(boxPanel);
+    boxPanel = card.querySelector('.live-box') ||
+      makeLiveBoxPanel(opts.boxLabels&&opts.boxLabels.you, opts.boxLabels&&opts.boxLabels.opp);
+    if(!boxPanel.parentNode){
+      const before = card.querySelector('.sim-goals');
+      if(before) card.insertBefore(boxPanel, before); else card.appendChild(boxPanel);
+    }
     updateLiveBox(boxPanel, opts.boxStats, 0);
   }
   const onMinute = boxPanel ? (min=>updateLiveBox(boxPanel, opts.boxStats, min/finalMinute)) : null;
@@ -6341,12 +6348,12 @@ async function runSimulationScreen(){
     await kbWait(350);             // brief beat before kickoff
     const next = simResult.rounds[i+1];
     const isFinal = !next;         // a win here wins the whole tournament
-    // Knockout games are capped at ~15s: two short halves + halftime + stoppage,
-    // plus extra time / penalties only when tied.
+    // Typical knockout game runs ~15s (two halves + halftime + stoppage); tied
+    // games add extra time / penalties on top.
     const won = await playMatchAnimation(m, card, isFinal, {
       wait: kbWait,
-      firstHalfDur:3000, secondHalfDur:3300, halftimePause:450, stoppageMax:5,
-      etDur:2200, ftFreeze:350, finalPause:1000, penDelay:300,
+      firstHalfDur:6000, secondHalfDur:6500, halftimePause:500, stoppageMax:5,
+      etDur:2600, ftFreeze:350, finalPause:1000, penDelay:320,
       boxStats: computeMatchStats(simResult.userOverall, m.opponent.teamOverall, m.userGoals, m.opponentGoals),
       boxLabels:{ you:'YOU', opp: code3(m.opponent.country) }
     });
@@ -6818,6 +6825,9 @@ function buildFriendlyMatchCard(card, m, labels){
   });
   card.insertBefore(sb, card.firstChild);
   sb.classList.add('show');
+  // empty box score, shown immediately (fills as the match plays)
+  const box=makeLiveBoxPanel(labels.youShort, labels.friendShort);
+  card.insertBefore(box, card.querySelector('.sim-goals'));
 }
 
 // Play the friendly match out live on the sim screen (ticking scoreboard +
