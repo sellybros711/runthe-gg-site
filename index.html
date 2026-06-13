@@ -780,6 +780,33 @@
     margin-bottom:10px; color:#8a7d70;
   }
   /* both lineups shown under the live match log (friendly match) */
+  /* live, accumulating box score inside the match card */
+  .live-box{margin:10px 0 4px;border:2px solid var(--ink);border-radius:12px;background:#0F1424;
+    padding:8px 10px;box-shadow:var(--shadow-sm);}
+  .live-box .lbx-head{display:flex;align-items:center;justify-content:space-between;
+    margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,.14);}
+  .live-box .lbx-head .lbx-team{font-family:'Anton',Impact,sans-serif;font-size:12px;color:#fff;
+    max-width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .live-box .lbx-head .lbx-title{font-weight:900;font-size:9px;letter-spacing:1.5px;color:var(--gold);}
+  .live-box .lbx-row{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:12px;color:#fff;padding:2px 0;}
+  .live-box .lbx-row .lbx-l{flex:1 1 auto;text-align:center;font-weight:700;font-size:10.5px;color:rgba(255,255,255,.6);}
+  .live-box .lbx-row .lbx-u,.live-box .lbx-row .lbx-o{flex:0 0 38px;font-family:'Anton',Impact,sans-serif;font-size:15px;}
+  .live-box .lbx-row .lbx-u{text-align:left;} .live-box .lbx-row .lbx-o{text-align:right;}
+  /* box-scores modal (all matches, one scroll) */
+  #boxscores-list{display:flex;flex-direction:column;gap:12px;}
+  .bsm-match{border:2px solid var(--ink);border-radius:12px;background:#0F1424;padding:10px 12px;}
+  .bsm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;}
+  .bsm-top .bsm-round{font-family:'Anton',Impact,sans-serif;font-size:14px;color:var(--gold);text-transform:uppercase;}
+  .bsm-top .bsm-score{font-family:'Anton',Impact,sans-serif;font-size:18px;color:#fff;}
+  .bsm-top .bsm-score.win{color:#4ade80;} .bsm-top .bsm-score.loss{color:#f98a7a;}
+  .bsm-opp{font-weight:700;font-size:12px;color:rgba(255,255,255,.78);display:flex;align-items:center;gap:6px;margin-bottom:6px;}
+  .bsm-opp .flag-ico{width:20px;height:14px;border-radius:2px;}
+  .bsm-row{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:12px;color:#fff;padding:2px 0;}
+  .bsm-row .bsm-l{flex:1 1 auto;text-align:center;font-weight:700;font-size:11px;color:rgba(255,255,255,.6);}
+  .bsm-row .bsm-u,.bsm-row .bsm-o{flex:0 0 42px;font-family:'Anton',Impact,sans-serif;font-size:15px;}
+  .bsm-row .bsm-u{text-align:left;} .bsm-row .bsm-o{text-align:right;}
+  .bsm-row.bsm-headrow{border-bottom:1px solid rgba(255,255,255,.14);margin-bottom:3px;padding-bottom:3px;}
+  .bsm-row.bsm-headrow .bsm-u,.bsm-row.bsm-headrow .bsm-o{font-family:'Archivo',system-ui,sans-serif;font-size:10px;font-weight:900;color:rgba(255,255,255,.55);letter-spacing:.5px;}
   .sim-rosters{margin-top:14px;border-top:2px dashed rgba(22,18,15,.18);padding-top:10px;}
   .sim-rosters .sr-cap{font-weight:900;font-size:10px;letter-spacing:2px;text-transform:uppercase;
     color:#8a7d70;text-align:center;margin-bottom:8px;}
@@ -2005,6 +2032,15 @@
       <div class="lineup-meta" id="lineup-meta"></div>
     </div>
     <div class="lineup-squad" id="lineup-squad"></div>
+  </div>
+</div>
+
+<!-- ===== tournament box scores (all matches, one scroll) ===== -->
+<div class="lineup-bg" id="boxscores-bg">
+  <div class="lineup-card">
+    <button class="profile-close" id="boxscores-close" aria-label="Close">✕</button>
+    <div class="lineup-head"><div class="lineup-name">MATCH BOX SCORES</div></div>
+    <div id="boxscores-list"></div>
   </div>
 </div>
 
@@ -3880,6 +3916,7 @@ function goToResults(){
     <div class="res-bio-hint">Tap a player for their bio card</div>
     <div id="res-squad"></div>
     <div class="stack" style="margin-top:16px;">
+      <button class="btn blue" id="res-boxscores">📊 View Match Box Scores</button>
       <button class="btn red" id="res-share">Share Your Result →</button>
       <button class="btn teal" id="res-again">Play Again</button>
     </div>
@@ -3904,6 +3941,7 @@ function goToResults(){
   });
   $('res-share').addEventListener('click', nativeShareWithImage);
   $('res-again').addEventListener('click', newGame);
+  $('res-boxscores').addEventListener('click', openBoxScores);
   $('res-leaderboard').addEventListener('click', ()=>openEntryModal(roundName, r.teamOverall, color));
   $('rate-link-results').addEventListener('click', ()=>openRatingForm());
   fillRankBadge(r.teamOverall, progress);   // global rank (Supabase) or local fallback
@@ -4842,6 +4880,8 @@ $('lb-list').addEventListener('click', e=>{
 });
 $('lineup-close').addEventListener('click', closeLineupModal);
 $('lineup-bg').addEventListener('click', e=>{ if(e.target===$('lineup-bg')) closeLineupModal(); });
+$('boxscores-close').addEventListener('click', closeBoxScores);
+$('boxscores-bg').addEventListener('click', e=>{ if(e.target===$('boxscores-bg')) closeBoxScores(); });
 
 // ---------- rating feedback form ----------
 const RATING_FEEDBACK_EMAIL='sellybros711@gmail.com';
@@ -5443,6 +5483,7 @@ function simulateTournament(userSquad, userOverall, playerPool, userRatings){
     eliminated: false,
     userGoalScorers: {},
     manOfTournament: null,
+    userOverall,   // kept so the results page can build per-match box scores
   };
 
   if(!result.groupStage.advanced){
@@ -5883,6 +5924,91 @@ function sbBumpScore(wrap, side){
 function sbScheduleScore(wrap, e, delay){
   setTimeout(()=> sbBumpScore(wrap, e.team==='user'?'user':'opp'), Math.max(0,delay));
 }
+
+// ===== live box score (shared by friendly + tournament matches) =====
+// Plausible match stats derived from team ratings + the final score (the engine
+// has no per-minute event log). 'u' = user/your side, 'o' = opponent.
+function computeMatchStats(uOv, oOv, uGoals, oGoals){
+  const totalOv = (uOv+oOv) || 1;
+  const possU = Math.round((uOv/totalOv)*100);
+  const xgU = expectedGoals(uOv), xgO = expectedGoals(oOv);
+  const shots = { u:Math.max(uGoals, Math.round(xgU*3.5)+1), o:Math.max(oGoals, Math.round(xgO*3.5)+1) };
+  const sot   = { u:Math.max(uGoals, Math.round(shots.u*0.45)), o:Math.max(oGoals, Math.round(shots.o*0.45)) };
+  const corners = { u:Math.max(1, Math.round(xgU*2.2)), o:Math.max(1, Math.round(xgO*2.2)) };
+  const fouls = { u:8+Math.round(Math.max(0,100-uOv)/8), o:8+Math.round(Math.max(0,100-oOv)/8) };
+  const saves = { u:Math.max(0, sot.o-oGoals), o:Math.max(0, sot.u-uGoals) };
+  return { poss:{u:possU,o:100-possU}, shots, sot, corners, fouls, saves };
+}
+const BOX_STAT_ROWS = [
+  {k:'poss', label:'Possession', pct:true},
+  {k:'shots', label:'Shots'},
+  {k:'sot', label:'Shots on Target'},
+  {k:'corners', label:'Corners'},
+  {k:'fouls', label:'Fouls'},
+  {k:'saves', label:'Saves'},
+];
+function boxRowsHtml(){
+  return BOX_STAT_ROWS.map(r=>`<div class="lbx-row" data-k="${r.k}"><span class="lbx-u">0</span><span class="lbx-l">${r.label}</span><span class="lbx-o">0</span></div>`).join('');
+}
+// A live-updating panel placed inside the match card.
+function makeLiveBoxPanel(youLabel, oppLabel){
+  const el=document.createElement('div'); el.className='live-box';
+  el.innerHTML=`<div class="lbx-head"><span class="lbx-team">${escapeHtml(youLabel||'YOU')}</span>`+
+    `<span class="lbx-title">MATCH STATS</span>`+
+    `<span class="lbx-team">${escapeHtml(oppLabel||'OPP')}</span></div>`+boxRowsHtml();
+  return el;
+}
+// frac 0..1 — counting stats accumulate, possession eases from 50/50 to final.
+function updateLiveBox(el, stats, frac){
+  if(!el||!stats) return;
+  const f=Math.max(0,Math.min(1,frac));
+  BOX_STAT_ROWS.forEach(r=>{
+    const row=el.querySelector(`.lbx-row[data-k="${r.k}"]`); if(!row) return;
+    if(r.pct){
+      const u=Math.round(50+(stats.poss.u-50)*f);
+      row.querySelector('.lbx-u').textContent=u+'%';
+      row.querySelector('.lbx-o').textContent=(100-u)+'%';
+    } else {
+      row.querySelector('.lbx-u').textContent=Math.round((stats[r.k].u||0)*f);
+      row.querySelector('.lbx-o').textContent=Math.round((stats[r.k].o||0)*f);
+    }
+  });
+}
+
+// Results-page "View Match Box Scores": one scroll listing every match the team
+// played (group + knockout), each with its full box score.
+function openBoxScores(){
+  const r=simResult, box=$('boxscores-list'); if(!r||!box) return;
+  const items=[];
+  ((r.groupStage&&r.groupStage.matchdays)||[]).forEach((md,i)=>{
+    items.push({ round:`Group Stage · Matchday ${i+1}`, country:md.country, year:md.year,
+      oppOv:md.teamOverall, us:md.userGoals, them:md.opponentGoals });
+  });
+  (r.matches||[]).forEach(m=>{
+    items.push({ round:m.round, country:m.opponent.country, year:m.opponent.year,
+      oppOv:m.opponent.teamOverall, us:m.userGoals, them:m.opponentGoals, pens:m.penalties });
+  });
+  box.innerHTML = items.map(it=>{
+    const s=computeMatchStats(r.userOverall||0, it.oppOv||0, it.us, it.them);
+    const rows=BOX_STAT_ROWS.map(rr=>{
+      const u = rr.pct ? s.poss.u+'%' : s[rr.k].u;
+      const o = rr.pct ? s.poss.o+'%' : s[rr.k].o;
+      return `<div class="bsm-row"><span class="bsm-u">${u}</span><span class="bsm-l">${rr.label}</span><span class="bsm-o">${o}</span></div>`;
+    }).join('');
+    const rc = it.us>it.them?'win':(it.us<it.them?'loss':'draw');
+    return `<div class="bsm-match">
+      <div class="bsm-top"><span class="bsm-round">${escapeHtml(it.round)}</span>`+
+      `<span class="bsm-score ${rc}">${it.us}–${it.them}${it.pens?' (p)':''}</span></div>
+      <div class="bsm-opp">vs ${flagChip(it.country)} ${escapeHtml(it.country||'')} ${it.year||''}</div>
+      <div class="bsm-row bsm-headrow"><span class="bsm-u">YOU</span><span class="bsm-l"></span><span class="bsm-o">OPP</span></div>
+      ${rows}
+    </div>`;
+  }).join('') || '<div class="lineup-empty">No matches played.</div>';
+  $('boxscores-bg').classList.add('show');
+  const card=$('boxscores-bg').querySelector('.lineup-card'); if(card) card.scrollTop=0;
+}
+function closeBoxScores(){ $('boxscores-bg').classList.remove('show'); }
+
 // CHANGE 1 — dynamic slow-motion. Returns the speed the clock should advance at
 // for the given moment: 2.5× slower in the closing minutes of a close game
 // (regulation 65–90 or extra time 95–120, margin ≤ 1), normal otherwise.
@@ -5943,7 +6069,8 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
       fill.style.width=(fromPct+(toPct-fromPct)*p)+'%';
       sbSetTime(wrap, Math.max(1,Math.round(minNow))+"'", gold);
       revealUpTo(minNow);
-      if(p>=1){ clearInterval(iv); revealUpTo(toMin); setSlow(false); resolve(); }
+      if(opts.onMinute) opts.onMinute(minNow);
+      if(p>=1){ clearInterval(iv); revealUpTo(toMin); if(opts.onMinute) opts.onMinute(toMin); setSlow(false); resolve(); }
     };
     const iv=setInterval(tick, 1000/60);
     last=performance.now();
@@ -6016,6 +6143,17 @@ async function playMatchAnimation(m, card, isFinal, opts){
   const regEvents=m.goalEvents.filter(e=>e.minute<=90);
   const etEvents =m.goalEvents.filter(e=>e.minute>90);
 
+  // live, accumulating box score (when stats are supplied)
+  let boxPanel=null;
+  const finalMinute = m.extraTime ? 120 : 90;
+  if(opts.boxStats){
+    boxPanel = makeLiveBoxPanel(opts.boxLabels&&opts.boxLabels.you, opts.boxLabels&&opts.boxLabels.opp);
+    const before = card.querySelector('.sim-goals');
+    if(before) card.insertBefore(boxPanel, before); else card.appendChild(boxPanel);
+    updateLiveBox(boxPanel, opts.boxStats, 0);
+  }
+  const onMinute = boxPanel ? (min=>updateLiveBox(boxPanel, opts.boxStats, min/finalMinute)) : null;
+
   const baseWidth = m.extraTime ? 75 : 100;
   // ONE driver fills the clock bar, ticks the scoreboard minute, AND reveals goals
   // (with their score bumps) as the minute crosses them — all in lockstep, so the
@@ -6024,15 +6162,16 @@ async function playMatchAnimation(m, card, isFinal, opts){
   fill.style.transition='background .3s ease';
   const liveScore={user:0, opp:0};  // shared across regulation + extra time
   await sbDriveClock(fill, sb, 0, baseWidth, 0, 90, regulation,
-    {events:regEvents, isExtraTime:false, score:liveScore, goalsBox, noSlowmo});
+    {events:regEvents, isExtraTime:false, score:liveScore, goalsBox, noSlowmo, onMinute});
 
   if(m.extraTime){
     const etLabel=document.createElement('div'); etLabel.className='sim-et-label'; etLabel.textContent='EXTRA TIME';
     goalsBox.appendChild(etLabel);
     simScrollEnd(etLabel);
     await sbDriveClock(fill, sb, 75, 100, 91, 120, etDur,   // gold 91'→120'
-      {events:etEvents, isExtraTime:true, score:liveScore, goalsBox, noSlowmo});
+      {events:etEvents, isExtraTime:true, score:liveScore, goalsBox, noSlowmo, onMinute});
   }
+  if(boxPanel) updateLiveBox(boxPanel, opts.boxStats, 1);   // settle on the final figures
 
   // freeze the final minute, then flip to FT — the scoreboard's score IS the
   // final result line, so no separate "YOUR TEAM x — y" text is shown.
@@ -6192,7 +6331,10 @@ async function runSimulationScreen(){
     await simSleep(500);           // brief beat on the round + opponent + scoreboard before kickoff
     const next = simResult.rounds[i+1];
     const isFinal = !next;         // a win here wins the whole tournament
-    const won = await playMatchAnimation(m, card, isFinal);
+    const won = await playMatchAnimation(m, card, isFinal, {
+      boxStats: computeMatchStats(simResult.userOverall, m.opponent.teamOverall, m.userGoals, m.opponentGoals),
+      boxLabels:{ you:'YOU', opp: code3(m.opponent.country) }
+    });
 
     if(won && isFinal){
       // CHAMPIONS! confetti already dropped — now morph the WIN stamp into the
@@ -6315,7 +6457,8 @@ async function watchFriendlyReplay(data){
   friendlyMatchResult = data.R;
   friendlyLastMatch = data.m;
   await playFriendlyMatchAnimation(data.m, Object.assign({}, data.labels, {
-    youSquad: data.R.opponentSquad, friendSquad: data.R.challengerSquad }));
+    youSquad: data.R.opponentSquad, friendSquad: data.R.challengerSquad,
+    boxStats: computeMatchStats(data.R.opponentTeamOverall, data.R.challengerTeamOverall, data.R.opponentScore, data.R.challengerScore) }));
   await showFriendlyResult(data.R);
 }
 
@@ -6684,6 +6827,7 @@ async function playFriendlyMatchAnimation(m, labels){
     winText:stamp, loseText:stamp,
     regDur:14000, etDur:4000, noSlowmo:true, wait:fastWait, penDelay:600,
     youLabel:labels.youShort, oppLabel:labels.friendShort,
+    boxStats: labels.boxStats, boxLabels:{ you:labels.youShort, opp:labels.friendShort },
     penSeq: m.penSeq,                     // exact shootout when replaying a watch link
     onPenalties:s=>{ penScore=s; }
   });
@@ -6791,7 +6935,8 @@ async function runFriendlyMatch(){
   incrementFriendlyCount();   // non-blocking, fails silently
   // Stage 2: play the match out live, THEN reveal the full box score.
   const penScore = await playFriendlyMatchAnimation(m, { youShort, friendShort, youFlag, friendFlag,
-    youSquad: friendlyMatchResult.opponentSquad, friendSquad: friendlyMatchResult.challengerSquad });
+    youSquad: friendlyMatchResult.opponentSquad, friendSquad: friendlyMatchResult.challengerSquad,
+    boxStats: computeMatchStats(userOverall, chOverall, opponentScore, challengerScore) });
   if(penScore){
     friendlyMatchResult.penScore = { user:penScore.user, opp:penScore.opp };
     if(penScore.seq) friendlyLastMatch.penSeq = penScore.seq;   // exact shootout for the watch link
