@@ -2042,7 +2042,7 @@
 <div class="lineup-bg" id="boxscores-bg">
   <div class="lineup-card">
     <button class="profile-close" id="boxscores-close" aria-label="Close">✕</button>
-    <div class="lineup-head"><div class="lineup-name">MATCH BOX SCORES</div></div>
+    <div class="lineup-head"><div class="lineup-name">MATCH STATS</div></div>
     <div id="boxscores-list"></div>
   </div>
 </div>
@@ -3924,7 +3924,7 @@ function goToResults(){
     <div class="res-bio-hint">Tap a player for their bio card</div>
     <div id="res-squad"></div>
     <div class="stack" style="margin-top:16px;">
-      <button class="btn blue" id="res-boxscores">📊 View Match Box Scores</button>
+      <button class="btn blue" id="res-boxscores">📊 View Match Stats</button>
       <button class="btn red" id="res-share">Share Your Result →</button>
       <button class="btn teal" id="res-again">Play Again</button>
     </div>
@@ -6050,8 +6050,11 @@ function openBoxScores(){
       ${rows}
     </div>`;
   }).join('') || '<div class="lineup-empty">No matches played.</div>';
-  $('boxscores-bg').classList.add('show');
-  const card=$('boxscores-bg').querySelector('.lineup-card'); if(card) card.scrollTop=0;
+  const bg=$('boxscores-bg');
+  bg.classList.add('show');
+  // reset the scroll to the top once the modal is laid out (it was display:none)
+  const card=bg.querySelector('.lineup-card');
+  if(card){ card.scrollTop=0; requestAnimationFrame(()=>{ card.scrollTop=0; }); }
 }
 function closeBoxScores(){ $('boxscores-bg').classList.remove('show'); }
 
