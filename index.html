@@ -2532,14 +2532,17 @@ function resolveSpin(country, year){
 function eligibleSlotsFor(player){
   const slots=new Set();
   const full=isFullDraft();
-  // Full draft: a FLEX slot can take DEF/MID/FWD, but only while that position is
-  // below the cap of 5 (fixed + flex). When a position hits 5 it has no dedicated
-  // slot left AND is flex-blocked → the player becomes ineligible (greyed out).
   const posCount = full ? gs.picks.filter(pk=>pk.player.position===player.position).length : 0;
   gs.openSlots.forEach(s=>{
     if(s==='FLEX'){
-      if(full){ if(player.position!=='GK' && posCount<fullCap(player.position)) slots.add('FLEX'); }
-      else    { if(player.position==='MID'||player.position==='FWD') slots.add('FLEX'); }
+      if(full){
+        // Full draft: only offer FLEX once the player's dedicated slots are full
+        // (and the position is below its cap). So a player always fills its own
+        // line first; FLEX only appears when it's the only option left.
+        const dedicatedOpen = gs.openSlots.includes(player.position);
+        if(player.position!=='GK' && !dedicatedOpen && posCount<fullCap(player.position)) slots.add('FLEX');
+      }
+      else { if(player.position==='MID'||player.position==='FWD') slots.add('FLEX'); }
     }
     else if(s===player.position) slots.add(s);
   });
@@ -4463,8 +4466,8 @@ const SETUP_MODE_LABEL  = { easy:'Easy', hard:'Hard' };
 const SETUP_COMBOS = {
   quick_easy:'6 fast rounds — GK, DEF, DEF, MID, FWD, FLEX. Overall ratings stay visible, so you can chase the strongest lineup possible.',
   quick_hard:'6 fast rounds — GK, DEF, DEF, MID, FWD, FLEX. Ratings are hidden, so you draft on name and gut alone. A quick test of your ball knowledge.',
-  full_easy:'A full starting XI across 11 rounds — the players you draft decide your formation (1 GK, then DEF/MID/FWD with flex slots). Overall ratings stay visible to help you build the ultimate team.',
-  full_hard:'A full starting XI across 11 rounds — the players you draft decide your formation (1 GK, then DEF/MID/FWD with flex slots). Ratings are hidden — pure ball knowledge, no safety net. The ultimate test.',
+  full_easy:'A full starting XI across 11 rounds — the players you draft decide your formation (1 GK, 3 DEF, 2 MID, 2 FWD, plus 3 FLEX slots that can be any outfield position: DEF, MID or FWD). Overall ratings stay visible to help you build the ultimate team.',
+  full_hard:'A full starting XI across 11 rounds — the players you draft decide your formation (1 GK, 3 DEF, 2 MID, 2 FWD, plus 3 FLEX slots that can be any outfield position: DEF, MID or FWD). Ratings are hidden — pure ball knowledge, no safety net. The ultimate test.',
 };
 
 // Repaint the single live description from the current draftType + gameMode combo.
