@@ -790,8 +790,11 @@
   .live-box .lbx-head .lbx-title{font-weight:900;font-size:9px;letter-spacing:1.5px;color:var(--gold);}
   .live-box .lbx-row{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:12px;color:#fff;padding:2px 0;}
   .live-box .lbx-row .lbx-l{flex:1 1 auto;text-align:center;font-weight:700;font-size:10.5px;color:rgba(255,255,255,.6);}
-  .live-box .lbx-row .lbx-u,.live-box .lbx-row .lbx-o{flex:0 0 38px;font-family:'Anton',Impact,sans-serif;font-size:15px;}
-  .live-box .lbx-row .lbx-u{text-align:left;} .live-box .lbx-row .lbx-o{text-align:right;}
+  .live-box .lbx-row .lbx-u,.live-box .lbx-row .lbx-o{flex:0 0 50px;font-family:'Anton',Impact,sans-serif;font-size:15px;
+    text-align:center;border-radius:5px;padding:1px 0;transition:background .25s ease;}
+  /* leader = green box, trailer = red box (ties stay neutral) */
+  .lbx-u.lead,.lbx-o.lead,.bsm-u.lead,.bsm-o.lead{background:#1F9E57;color:#fff;}
+  .lbx-u.trail,.lbx-o.trail,.bsm-u.trail,.bsm-o.trail{background:#E5402A;color:#fff;}
   /* box-scores modal (all matches, one scroll) */
   #boxscores-list{display:flex;flex-direction:column;gap:12px;}
   .bsm-match{border:2px solid var(--ink);border-radius:12px;background:#0F1424;padding:10px 12px;}
@@ -803,10 +806,10 @@
   .bsm-opp .flag-ico{width:20px;height:14px;border-radius:2px;}
   .bsm-row{display:flex;align-items:center;justify-content:space-between;font-weight:800;font-size:12px;color:#fff;padding:2px 0;}
   .bsm-row .bsm-l{flex:1 1 auto;text-align:center;font-weight:700;font-size:11px;color:rgba(255,255,255,.6);}
-  .bsm-row .bsm-u,.bsm-row .bsm-o{flex:0 0 42px;font-family:'Anton',Impact,sans-serif;font-size:15px;}
-  .bsm-row .bsm-u{text-align:left;} .bsm-row .bsm-o{text-align:right;}
+  .bsm-row .bsm-u,.bsm-row .bsm-o{flex:0 0 52px;font-family:'Anton',Impact,sans-serif;font-size:15px;
+    text-align:center;border-radius:5px;padding:1px 0;}
   .bsm-row.bsm-headrow{border-bottom:1px solid rgba(255,255,255,.14);margin-bottom:3px;padding-bottom:3px;}
-  .bsm-row.bsm-headrow .bsm-u,.bsm-row.bsm-headrow .bsm-o{font-family:'Archivo',system-ui,sans-serif;font-size:10px;font-weight:900;color:rgba(255,255,255,.55);letter-spacing:.5px;}
+  .bsm-row.bsm-headrow .bsm-u,.bsm-row.bsm-headrow .bsm-o{font-family:'Archivo',system-ui,sans-serif;font-size:10px;font-weight:900;color:rgba(255,255,255,.55);letter-spacing:.5px;background:none;}
   .sim-rosters{margin-top:14px;border-top:2px dashed rgba(22,18,15,.18);padding-top:10px;}
   .sim-rosters .sr-cap{font-weight:900;font-size:10px;letter-spacing:2px;text-transform:uppercase;
     color:#8a7d70;text-align:center;margin-bottom:8px;}
@@ -5931,18 +5934,45 @@ function sbScheduleScore(wrap, e, delay){
 }
 
 // ===== live box score (shared by friendly + tournament matches) =====
-// Plausible match stats derived from team ratings + the final score (the engine
-// has no per-minute event log). 'u' = user/your side, 'o' = opponent.
+// Plausible, VARIED match stats that reflect the actual result. Shots on target
+// are anchored to the goals scored (you can't score more than you put on target),
+// saves to the opponent's on-target shots, possession to ratings + the scoreline
+// — all with per-game randomness so no two games look the same. Computed ONCE per
+// match and cached on the match object so the live panel and the box-scores view
+// always agree. 'u' = your side, 'o' = opponent.
 function computeMatchStats(uOv, oOv, uGoals, oGoals){
-  const totalOv = (uOv+oOv) || 1;
-  const possU = Math.round((uOv/totalOv)*100);
-  const xgU = expectedGoals(uOv), xgO = expectedGoals(oOv);
-  const shots = { u:Math.max(uGoals, Math.round(xgU*3.5)+1), o:Math.max(oGoals, Math.round(xgO*3.5)+1) };
-  const sot   = { u:Math.max(uGoals, Math.round(shots.u*0.45)), o:Math.max(oGoals, Math.round(shots.o*0.45)) };
-  const corners = { u:Math.max(1, Math.round(xgU*2.2)), o:Math.max(1, Math.round(xgO*2.2)) };
-  const fouls = { u:8+Math.round(Math.max(0,100-uOv)/8), o:8+Math.round(Math.max(0,100-oOv)/8) };
-  const saves = { u:Math.max(0, sot.o-oGoals), o:Math.max(0, sot.u-uGoals) };
+  const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+  const xgU=expectedGoals(uOv), xgO=expectedGoals(oOv);
+  // shots on target ≥ goals, boosted by attacking strength + noise
+  const sot = {
+    u: uGoals + ri(1,4) + Math.round(xgU*0.8),
+    o: oGoals + ri(1,4) + Math.round(xgO*0.8),
+  };
+  // total shots = on-target + off-target attempts
+  const shots = { u: sot.u + ri(2,7), o: sot.o + ri(2,7) };
+  // keeper saves the opponent's on-target shots that didn't go in
+  const saves = { u: Math.max(0, sot.o-oGoals), o: Math.max(0, sot.u-uGoals) };
+  // possession: rating share, nudged by the scoreline, plus game-to-game noise
+  let possU = (uOv/((uOv+oOv)||1))*100 + (uGoals-oGoals)*2 + ri(-8,8);
+  possU = Math.max(30, Math.min(70, Math.round(possU)));
+  const corners = { u: Math.max(0, Math.round(shots.u*0.35)+ri(-1,2)), o: Math.max(0, Math.round(shots.o*0.35)+ri(-1,2)) };
+  const fouls = { u: ri(6,16), o: ri(6,16) };
   return { poss:{u:possU,o:100-possU}, shots, sot, corners, fouls, saves };
+}
+// Compute the box once per match and cache it on the match/matchday object, so
+// the live panel and the results view always show the same figures.
+function matchBox(obj, uOv, oOv, uG, oG){
+  if(obj && obj.box) return obj.box;
+  const b = computeMatchStats(uOv||0, oOv||0, uG, oG);
+  if(obj) obj.box = b;
+  return b;
+}
+// Build a box-stats object from a stored friendly result (so a watched replay's
+// live panel matches the figures the result image shows).
+function boxFromResult(R){
+  const g=(o)=> o ? {u:o.opponent, o:o.challenger} : {u:0,o:0};
+  return { poss:g(R.possession), shots:g(R.shots), sot:g(R.shotsOnTarget),
+           corners:g(R.corners), fouls:g(R.fouls), saves:g(R.saves) };
 }
 const BOX_STAT_ROWS = [
   {k:'poss', label:'Possession', pct:true},
@@ -5963,20 +5993,28 @@ function makeLiveBoxPanel(youLabel, oppLabel){
     `<span class="lbx-team">${escapeHtml(oppLabel||'OPP')}</span></div>`+boxRowsHtml();
   return el;
 }
+// Highlight the leading value green and the trailing value red (ties = neutral).
+function markLead(uEl, oEl, uVal, oVal){
+  uEl.classList.remove('lead','trail'); oEl.classList.remove('lead','trail');
+  if(uVal>oVal){ uEl.classList.add('lead'); oEl.classList.add('trail'); }
+  else if(oVal>uVal){ oEl.classList.add('lead'); uEl.classList.add('trail'); }
+}
 // frac 0..1 — counting stats accumulate, possession eases from 50/50 to final.
 function updateLiveBox(el, stats, frac){
   if(!el||!stats) return;
   const f=Math.max(0,Math.min(1,frac));
   BOX_STAT_ROWS.forEach(r=>{
     const row=el.querySelector(`.lbx-row[data-k="${r.k}"]`); if(!row) return;
+    const uEl=row.querySelector('.lbx-u'), oEl=row.querySelector('.lbx-o');
+    let u,o;
     if(r.pct){
-      const u=Math.round(50+(stats.poss.u-50)*f);
-      row.querySelector('.lbx-u').textContent=u+'%';
-      row.querySelector('.lbx-o').textContent=(100-u)+'%';
+      u=Math.round(50+(stats.poss.u-50)*f); o=100-u;
+      uEl.textContent=u+'%'; oEl.textContent=o+'%';
     } else {
-      row.querySelector('.lbx-u').textContent=Math.round((stats[r.k].u||0)*f);
-      row.querySelector('.lbx-o').textContent=Math.round((stats[r.k].o||0)*f);
+      u=Math.round((stats[r.k].u||0)*f); o=Math.round((stats[r.k].o||0)*f);
+      uEl.textContent=u; oEl.textContent=o;
     }
+    markLead(uEl, oEl, u, o);
   });
 }
 
@@ -5987,18 +6025,21 @@ function openBoxScores(){
   const items=[];
   ((r.groupStage&&r.groupStage.matchdays)||[]).forEach((md,i)=>{
     items.push({ round:`Group Stage · Matchday ${i+1}`, country:md.country, year:md.year,
-      oppOv:md.teamOverall, us:md.userGoals, them:md.opponentGoals });
+      box:matchBox(md, r.userOverall, md.teamOverall, md.userGoals, md.opponentGoals),
+      us:md.userGoals, them:md.opponentGoals });
   });
   (r.matches||[]).forEach(m=>{
     items.push({ round:m.round, country:m.opponent.country, year:m.opponent.year,
-      oppOv:m.opponent.teamOverall, us:m.userGoals, them:m.opponentGoals, pens:m.penalties });
+      box:matchBox(m, r.userOverall, m.opponent.teamOverall, m.userGoals, m.opponentGoals),
+      us:m.userGoals, them:m.opponentGoals, pens:m.penalties });
   });
   box.innerHTML = items.map(it=>{
-    const s=computeMatchStats(r.userOverall||0, it.oppOv||0, it.us, it.them);
+    const s=it.box;
     const rows=BOX_STAT_ROWS.map(rr=>{
-      const u = rr.pct ? s.poss.u+'%' : s[rr.k].u;
-      const o = rr.pct ? s.poss.o+'%' : s[rr.k].o;
-      return `<div class="bsm-row"><span class="bsm-u">${u}</span><span class="bsm-l">${rr.label}</span><span class="bsm-o">${o}</span></div>`;
+      const uv = rr.pct ? s.poss.u : s[rr.k].u, ov = rr.pct ? s.poss.o : s[rr.k].o;
+      const ur = rr.pct ? uv+'%' : uv, orr = rr.pct ? ov+'%' : ov;
+      const uc = uv>ov?' lead':(uv<ov?' trail':''), oc = ov>uv?' lead':(ov<uv?' trail':'');
+      return `<div class="bsm-row"><span class="bsm-u${uc}">${ur}</span><span class="bsm-l">${rr.label}</span><span class="bsm-o${oc}">${orr}</span></div>`;
     }).join('');
     const rc = it.us>it.them?'win':(it.us<it.them?'loss':'draw');
     return `<div class="bsm-match">
@@ -6359,7 +6400,7 @@ async function runSimulationScreen(){
       wait: kbWait,
       firstHalfDur:6000, secondHalfDur:6500, halftimePause:500, stoppageMax:5,
       etDur:2600, ftFreeze:350, finalPause:1000, penDelay:320,
-      boxStats: computeMatchStats(simResult.userOverall, m.opponent.teamOverall, m.userGoals, m.opponentGoals),
+      boxStats: matchBox(m, simResult.userOverall, m.opponent.teamOverall, m.userGoals, m.opponentGoals),
       boxLabels:{ you:'YOU', opp: code3(m.opponent.country) }
     });
 
@@ -6485,7 +6526,7 @@ async function watchFriendlyReplay(data){
   friendlyLastMatch = data.m;
   await playFriendlyMatchAnimation(data.m, Object.assign({}, data.labels, {
     youSquad: data.R.opponentSquad, friendSquad: data.R.challengerSquad,
-    boxStats: computeMatchStats(data.R.opponentTeamOverall, data.R.challengerTeamOverall, data.R.opponentScore, data.R.challengerScore) }));
+    boxStats: boxFromResult(data.R) }));
   await showFriendlyResult(data.R);
 }
 
@@ -6907,31 +6948,16 @@ async function runFriendlyMatch(){
   const youTeam    = frTeamName(friendlyMyName, userSquad.length, 'YOUR SQUAD');
   const friendTeam = frTeamName(window.CHALLENGER_DATA.name, chSquad.length, "FRIEND'S SQUAD");
 
-  // ---- box-score stats (plausible figures derived from ratings + scoreline) ----
-  const totalOv = userOverall + chOverall;
-  const possOpp = Math.round((userOverall/totalOv)*100);
-  const possession = { opponent: possOpp, challenger: 100-possOpp };
-  const xgU=expectedGoals(userOverall), xgC=expectedGoals(chOverall);
-  const shots = {
-    opponent:   Math.max(opponentScore,   Math.round(xgU*3.5)+1),
-    challenger: Math.max(challengerScore, Math.round(xgC*3.5)+1)
-  };
-  const shotsOnTarget = {
-    opponent:   Math.max(opponentScore,   Math.round(shots.opponent*0.45)),
-    challenger: Math.max(challengerScore, Math.round(shots.challenger*0.45))
-  };
-  const corners = {
-    opponent:   Math.max(1, Math.round(xgU*2.2)),
-    challenger: Math.max(1, Math.round(xgC*2.2))
-  };
-  const fouls = {
-    opponent:   8 + Math.round(Math.max(0,(100-userOverall))/8),
-    challenger: 8 + Math.round(Math.max(0,(100-chOverall))/8)
-  };
-  const saves = {
-    opponent:   Math.max(0, shotsOnTarget.challenger - challengerScore),
-    challenger: Math.max(0, shotsOnTarget.opponent - opponentScore)
-  };
+  // ---- box-score stats: one varied, result-reflecting model, reused by both the
+  // live panel and the shareable result image so they always match. ----
+  const friendlyBox = computeMatchStats(userOverall, chOverall, opponentScore, challengerScore);
+  const toSide = o => ({ opponent:o.u, challenger:o.o });
+  const possession   = toSide(friendlyBox.poss);
+  const shots        = toSide(friendlyBox.shots);
+  const shotsOnTarget= toSide(friendlyBox.sot);
+  const corners      = toSide(friendlyBox.corners);
+  const fouls        = toSide(friendlyBox.fouls);
+  const saves        = toSide(friendlyBox.saves);
 
   // Man of the match: best overall on the winning team (highest overall on a draw).
   const oppBest = [...userSquad].sort((a,b)=>(b.overall||0)-(a.overall||0))[0];
@@ -6969,7 +6995,7 @@ async function runFriendlyMatch(){
   // Stage 2: play the match out live, THEN reveal the full box score.
   const penScore = await playFriendlyMatchAnimation(m, { youShort, friendShort, youFlag, friendFlag,
     youSquad: friendlyMatchResult.opponentSquad, friendSquad: friendlyMatchResult.challengerSquad,
-    boxStats: computeMatchStats(userOverall, chOverall, opponentScore, challengerScore) });
+    boxStats: friendlyBox });
   if(penScore){
     friendlyMatchResult.penScore = { user:penScore.user, opp:penScore.opp };
     if(penScore.seq) friendlyLastMatch.penSeq = penScore.seq;   // exact shootout for the watch link
@@ -7073,15 +7099,20 @@ async function buildFriendlyResultCanvas(R){
   x.font='800 11px Archivo';
   x.fillStyle='#9a8f80'; x.textAlign='left'; x.fillText(fit(youShort,120),24,boxY+20);
   x.textAlign='right'; x.fillText(fit(friendShort,120),Wc-24,boxY+20);
+  // numeric value for lead/trail comparison (strip the % off possession)
+  const numOf = v => parseInt(String(v),10);
   rows.forEach((r,i)=>{
     const ry=boxY+28+i*28;
     if(i%2===0){ x.fillStyle='rgba(0,0,0,.04)'; x.fillRect(12,ry,Wc-24,26); }
-    x.fillStyle='#16120F'; x.font='900 14px Archivo';
-    x.textAlign='left'; x.fillText(String(r[1]),24,ry+18);
-    x.textAlign='center'; x.fillStyle='#5a5048'; x.font='700 11px Archivo';
-    x.fillText(r[0],Wc/2,ry+18);
-    x.textAlign='right'; x.fillStyle='#16120F'; x.font='900 14px Archivo';
-    x.fillText(String(r[2]),Wc-24,ry+18);
+    const uv=numOf(r[1]), ov=numOf(r[2]);
+    // leader = green pill, trailer = red pill (ties stay neutral)
+    const pill=(cx,lead)=>{ x.save(); x.fillStyle=lead?'#1F9E57':'#E5402A';
+      rrect('',x,cx-30,ry+2,60,22,6); x.fill(); x.restore(); };
+    if(!isNaN(uv)&&!isNaN(ov)&&uv!==ov){ pill(48, uv>ov); pill(Wc-48, ov>uv); }
+    x.textAlign='center'; x.font='900 14px Archivo';
+    x.fillStyle=(!isNaN(uv)&&!isNaN(ov)&&uv!==ov)?'#fff':'#16120F'; x.fillText(String(r[1]),48,ry+18);
+    x.fillStyle=(!isNaN(uv)&&!isNaN(ov)&&uv!==ov)?'#fff':'#16120F'; x.fillText(String(r[2]),Wc-48,ry+18);
+    x.fillStyle='#5a5048'; x.font='700 11px Archivo'; x.fillText(r[0],Wc/2,ry+18);
   });
 
   // SECTION 4 — goal events
