@@ -459,6 +459,9 @@
   .pcard .age-badge .age-u{font-size:8px;font-weight:800;margin-left:1px;opacity:.85;}
   .pcard .awards{margin:0;display:flex;flex-wrap:wrap;justify-content:flex-end;align-content:flex-end;
     gap:4px;flex:1 1 auto;min-width:0;}
+  .pcard .awards .aw-ic{flex:0 0 auto;display:inline-flex;}
+  .pcard .awards .lb-ic{width:17px;height:17px;display:block;filter:drop-shadow(1px 1px 0 var(--ink));}
+  .pcard .awards .lb-ic.boot{width:19px;}
   .flip-back .awards{margin-top:2px;display:flex;flex-wrap:wrap;gap:2px;justify-content:center;}
   .flip-back .awardbadge{font-size:6.5px;padding:1px 4px;border-width:1px;}
   .pcard .posbadge{font-weight:900;font-size:9px;letter-spacing:.5px;color:#fff;background:var(--blue);
@@ -3007,14 +3010,14 @@ function awardList(p){
   if(Array.isArray(p.award)) return p.award;
   return String(p.award).split('|').map(a=>a.trim()).filter(Boolean);
 }
-// Build award-badge HTML for a player (string or array of award values).
-// Returns '' when the player has no award.
+// Build award-badge HTML for a player. Uses the compact gold icons (same as the
+// results screen) so a long label like "Golden Ball" can't overflow the card.
 function awardBadges(p){
   if(gameMode==='hard') return '';   // hard mode = blind pick: no award hints until the reveal
-  if(p.award==null) return '';
-  const list = Array.isArray(p.award) ? p.award : [p.award];
-  const pills = list.map(a=>`<span class="awardbadge">${AWARD_LABELS[a] || a}</span>`).join(' ');
-  return `<div class="awards">${pills}</div>`;
+  const list = awardList(p);
+  if(!list.length) return '';
+  const icons = list.map(a=>`<span class="aw-ic" title="${escapeHtml(AWARD_LABELS[a]||a)}">${lbAwardIcon(a)}</span>`).join('');
+  return `<div class="awards">${icons}</div>`;
 }
 
 // Player's age at the tournament (factual). Returns '' when unknown.
