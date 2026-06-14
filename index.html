@@ -2075,7 +2075,7 @@
 <!-- ?v= cache-buster: index.html is always served fresh (max-age=0) but these
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
-<script src="gameLogic.js?v=0.0.30"></script>
+<script src="gameLogic.js?v=0.0.31"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
 <script src="data/players_all.js?v=0.0.28"></script>
 <script>
@@ -2183,6 +2183,8 @@ let pendingFormation = null; // formation chosen on the reveal screen, before th
 const FULL_OPEN_SLOTS = ['GK','DEF','DEF','DEF','MID','MID','FWD','FWD','FLEX','FLEX','FLEX'];
 const FULL_FLOORS = { DEF:3, MID:2, FWD:2 };
 const FULL_POS_CAP = 5;
+// Per-position cap (fixed + flex). Forwards are limited to 4; DEF/MID to 5.
+function fullCap(pos){ return pos==='FWD' ? 4 : FULL_POS_CAP; }
 // Live counts of each outfield position among the current picks (Full draft).
 function fullPosCounts(){
   const c={GK:0,DEF:0,MID:0,FWD:0};
@@ -2193,7 +2195,7 @@ function fullPosCounts(){
 function fullShapeReadout(){
   const c=fullPosCounts();
   return ['DEF','MID','FWD'].map(pos=>{
-    const capped = c[pos]>=FULL_POS_CAP;
+    const capped = c[pos]>=fullCap(pos);
     return `<span class="shape-chip ${pos}${capped?' capped':''}">${pos} ${c[pos]}${capped?' ·MAX':''}</span>`;
   }).join('');
 }
@@ -2536,7 +2538,7 @@ function eligibleSlotsFor(player){
   const posCount = full ? gs.picks.filter(pk=>pk.player.position===player.position).length : 0;
   gs.openSlots.forEach(s=>{
     if(s==='FLEX'){
-      if(full){ if(player.position!=='GK' && posCount<FULL_POS_CAP) slots.add('FLEX'); }
+      if(full){ if(player.position!=='GK' && posCount<fullCap(player.position)) slots.add('FLEX'); }
       else    { if(player.position==='MID'||player.position==='FWD') slots.add('FLEX'); }
     }
     else if(s===player.position) slots.add(s);

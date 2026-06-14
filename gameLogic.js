@@ -307,9 +307,10 @@ function selectPlayer(state, playerId, slotPosition) {
     if (player.position === 'GK')
       throw new Error('FLEX slot cannot be a goalkeeper.');
     if (state.draftType === 'full') {
-      // cap: no outfield position may exceed 5 (fixed + flex combined)
+      // cap (fixed + flex combined): forwards max 4, DEF/MID max 5
+      const cap = player.position === 'FWD' ? 4 : 5;
       const count = state.picks.filter(p => p.player.position === player.position).length;
-      if (count >= 5) throw new Error(`${player.position} is already at the cap of 5.`);
+      if (count >= cap) throw new Error(`${player.position} is already at the cap of ${cap}.`);
       recordedSlot = player.position;
     } else if (player.position !== 'MID' && player.position !== 'FWD') {
       throw new Error('FLEX slot only accepts MID or FWD players.');
