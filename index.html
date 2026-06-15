@@ -6932,15 +6932,24 @@ function frDecodeParam(param){
 function frChallengeUrl(code){
   return window.location.origin + '/challenge/?c=' + encodeURIComponent(code);
 }
-// Store the payload server-side, return its short code. Throws on failure.
+// Store the payload server-side, return its short code. Retries a few times with
+// backoff so a transient network blip never falls through to a giant link.
+// Throws only after every attempt fails.
 async function sbCreateChallenge(payload){
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/create_friendly_challenge`, {
-    method:'POST', headers: sbHeaders(), body: JSON.stringify({ p_payload: payload })
-  });
-  if(!res.ok) throw new Error('create challenge failed '+res.status);
-  const code = await res.json();           // scalar text, e.g. "AB12CD"
-  if(!code) throw new Error('no code returned');
-  return String(code).replace(/^"|"$/g,'');
+  let lastErr=null;
+  for(let attempt=0; attempt<3; attempt++){
+    if(attempt) await new Promise(r=>setTimeout(r, 600*attempt));   // 0, 600ms, 1200ms
+    try{
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/create_friendly_challenge`, {
+        method:'POST', headers: sbHeaders(), body: JSON.stringify({ p_payload: payload })
+      });
+      if(!res.ok) throw new Error('create challenge failed '+res.status);
+      const code = await res.json();         // scalar text, e.g. "AB12CD"
+      if(!code) throw new Error('no code returned');
+      return String(code).replace(/^"|"$/g,'');
+    }catch(e){ lastErr=e; }
+  }
+  throw lastErr || new Error('create challenge failed');
 }
 // Fetch a stored payload by code; null if missing/expired.
 async function sbFetchChallenge(code){
@@ -7015,21 +7024,36 @@ async function showChallengeReady(){
     ul.appendChild(li);
   });
   showScreen('challenge-ready');
-  // Generate the share link. PREFERRED: store the lineup in Supabase and hand
-  // out a short ?c=CODE link (survives every messaging app). FALLBACK: the
-  // legacy long ?friendly= link if Supabase is unreachable.
+  // Generate the share link: store the lineup in Supabase and hand out a short
+  // ?c=CODE link (survives every messaging app). We NEVER fall back to the
+  // legacy long ?friendly= link here — a giant base64 URL must never be shared.
+  // On total failure we surface an error and let the buttons re-try generation.
+  await generateChallengeLink();
+}
+
+// Build (or re-build) the short ?c= challenge link and wire up the buttons.
+// Keeps the giant ?friendly= link out of the share sheet entirely.
+async function generateChallengeLink(){
   const shareBtn=$('cr-share'), copyBtn=$('cr-copy'), linkEl=$('cr-link');
   shareBtn.disabled=true; copyBtn.disabled=true;
+  shareBtn._url=null; copyBtn._url=null; shareBtn._retry=false;
   linkEl.value='Generating your challenge link…';
   let url=null;
   if(SUPABASE_READY){
     try{ url = frChallengeUrl(await sbCreateChallenge(frBuildPayload())); }
     catch(e){ url=null; }
   }
-  if(!url) url = frEncodeLineup();   // graceful fallback
-  linkEl.value=url;
-  shareBtn._url=url; copyBtn._url=url;
-  shareBtn.disabled=false; copyBtn.disabled=false;
+  if(url){
+    linkEl.value=url;
+    shareBtn._url=url; copyBtn._url=url;
+    shareBtn.disabled=false; copyBtn.disabled=false;
+  }else{
+    // Couldn't reach the link service. Don't share anything broken — let the
+    // user tap to retry rather than send a giant fallback link.
+    linkEl.value="Couldn't create your link. Tap Share to try again.";
+    shareBtn._url=null; copyBtn._url=null; shareBtn._retry=true;
+    shareBtn.disabled=false; copyBtn.disabled=true;
+  }
 }
 
 async function friendlyShareLink(url){
@@ -7542,10 +7566,15 @@ $('btn-friendly-build').addEventListener('click', ()=>{
     : G.createGameState();
   goToHome();
 });
-$('cr-share').addEventListener('click', ()=>friendlyShareLink($('cr-share')._url));
+$('cr-share').addEventListener('click', ()=>{
+  // If link generation failed, the Share button doubles as a retry.
+  if($('cr-share')._retry || !$('cr-share')._url){ generateChallengeLink(); return; }
+  friendlyShareLink($('cr-share')._url);
+});
 $('cr-copy').addEventListener('click', async ()=>{
   // Copy ONLY the clean URL — never any title/text block.
   const url=$('cr-copy')._url;
+  if(!url) return;
   try{ await navigator.clipboard.writeText(url); }
   catch(e){ await copyToClipboard(url); }
   showToast('Challenge link copied! Send it to your friend 🔥');
