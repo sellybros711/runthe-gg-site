@@ -6197,7 +6197,8 @@ function openRosterUpdates(){
   const wcPanel=$('panel-wc'), crPanel=$('panel-cr'); if(!wcPanel) return;
   const allChanged = (window.PLAYERS||[]).filter(p=>p.pre_wc_overall!=null);
   const byDateThenDelta = (a,b) => {
-    const dc = (a.wc_date||'').localeCompare(b.wc_date||'');
+    // newest date first; undated entries sort to the bottom
+    const dc = (b.wc_date||'').localeCompare(a.wc_date||'');
     if(dc!==0) return dc;
     const cc = (a.country||'').localeCompare(b.country||'');
     if(cc!==0) return cc;
