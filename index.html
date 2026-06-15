@@ -6396,16 +6396,16 @@ async function runSimulationScreen(){
     buildMatchCard(card, m);       // fill the box BEFORE it swipes in — no empty-box flash
     simSwipeTo(simSlideIndex+1);   // swipe the already-filled match box in from the right
     const kbWait = ms=>new Promise(r=>setTimeout(r, ms));
-    await kbWait(400);             // let the swipe land
-    await kbWait(250);             // brief beat before kickoff
+    await kbWait(350);             // let the swipe land
+    await kbWait(200);             // brief beat before kickoff
     const next = simResult.rounds[i+1];
     const isFinal = !next;         // a win here wins the whole tournament
     // Typical knockout game runs ~15s (two halves + halftime + stoppage); tied
     // games add extra time / penalties on top.
     const won = await playMatchAnimation(m, card, isFinal, {
       wait: kbWait,
-      firstHalfDur:4000, secondHalfDur:4300, halftimePause:450, stoppageMax:5,
-      etDur:2300, ftFreeze:300, finalPause:850, penDelay:300,
+      firstHalfDur:3300, secondHalfDur:3500, halftimePause:400, stoppageMax:5,
+      etDur:1400, ftFreeze:250, finalPause:650, penDelay:170,
       boxStats: matchBox(m, simResult.userOverall, m.opponent.teamOverall, m.userGoals, m.opponentGoals),
       boxLabels:{ you:'YOU', opp: code3(m.opponent.country) }
     });
