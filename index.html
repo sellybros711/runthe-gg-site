@@ -5686,9 +5686,8 @@ const SIM_SPEED = 2.34;
 const simSleep = ms => new Promise(r=>setTimeout(r, ms*SIM_SPEED));
 
 async function simEllipsisFor(el, ms){
-  ms*=SIM_SPEED;
   const start=Date.now(); let n=1;
-  while(Date.now()-start<ms){ el.textContent='.'.repeat(n%4); n++; await simSleep(250); }
+  while(Date.now()-start<ms){ el.textContent='.'.repeat(n%4); n++; await new Promise(r=>setTimeout(r,130)); }
   el.textContent='';
 }
 
@@ -6654,7 +6653,7 @@ async function runSimulationScreen(){
     <div id="sim-gs-status">${pickOne(['Kicking off the group stage','Group stage underway','First whistle in the groups'])}<span id="sim-gs-dots"></span></div>
     <div id="sim-gs-days" style="margin-top:6px;"></div>`;
 
-  await simEllipsisFor($('sim-gs-dots'), 900);
+  await simEllipsisFor($('sim-gs-dots'), 380);   // brief "kicking off" beat, then matchdays
   $('sim-gs-status').innerHTML=`<div class="sim-threat" style="margin:0;">Matchdays</div>`;
 
   const daysBox=$('sim-gs-days');
@@ -6672,7 +6671,7 @@ async function runSimulationScreen(){
     // group stage stays simple — just the result line, no scoreboard
     daysBox.appendChild(row);
     simScrollEnd(row);
-    await simSleep(950);
+    await simSleep(600);
   }
   const wins=simResult.groupStage.record.w, draws=simResult.groupStage.record.d, losses=simResult.groupStage.record.l;
 
