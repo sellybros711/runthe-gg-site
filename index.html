@@ -175,6 +175,30 @@
   .tl-ico{height:15px;width:auto;flex:0 0 auto;}
   #btn-home-leaderboard:hover,#btn-home-leaderboard:active,
   #btn-add-home:hover,#btn-add-home:active{opacity:1;}
+  /* 2026 roster-updates link (its own line, centered, doesn't crowd the row) */
+  .roster-link{display:block;margin:9px auto 0;background:none;border:none;cursor:pointer;
+    color:#F5C518;font-family:inherit;font-weight:800;font-size:11px;letter-spacing:1px;
+    text-transform:uppercase;padding:4px 8px;opacity:.92;text-decoration:underline;
+    text-underline-offset:3px;-webkit-tap-highlight-color:transparent;}
+  .roster-link:hover,.roster-link:active{opacity:1;}
+  /* roster-updates popup (reuses the lineup overlay shell) */
+  .roster-sub{font-weight:600;font-size:12px;color:#8a7d70;margin-top:4px;text-align:center;}
+  #roster-list{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+  .ru-row{display:flex;align-items:center;gap:10px;border:2px solid var(--ink);border-radius:12px;
+    background:var(--white);padding:9px 11px;box-shadow:var(--shadow-sm);}
+  .ru-row .ru-flag{flex:0 0 auto;width:26px;height:18px;border-radius:3px;}
+  .ru-row .ru-name{flex:1 1 auto;min-width:0;font-weight:900;font-size:14px;color:var(--ink);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ru-row .ru-name .ru-pos{font-weight:900;font-size:9px;color:#fff;background:var(--blue);
+    border-radius:5px;padding:2px 5px;margin-right:6px;letter-spacing:.5px;}
+  .ru-row .ru-rate{flex:0 0 auto;display:flex;align-items:center;gap:6px;font-family:'Anton',Impact,sans-serif;}
+  .ru-row .ru-old{font-size:17px;color:#9a8d80;}
+  .ru-row .ru-arrow{font-size:13px;color:#9a8d80;}
+  .ru-row .ru-new{font-size:20px;color:#1F9E57;}
+  .ru-row .ru-delta{font-weight:900;font-size:11px;font-family:'Archivo',system-ui,sans-serif;
+    color:#1F9E57;background:rgba(31,158,87,.14);border-radius:6px;padding:2px 5px;}
+  .ru-note{font-weight:600;font-size:11px;color:#8a7d70;margin-top:2px;}
+  .ru-empty{text-align:center;color:#8a7d70;font-weight:600;padding:24px 8px;line-height:1.5;}
   /* Add-to-home instructions popup */
   .a2hs-bg{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;
     padding:20px;background:rgba(0,0,0,.66);}
@@ -1663,6 +1687,7 @@
         <button id="btn-add-home" type="button"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="10.4" y1="4.3" x2="13.6" y2="4.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="19.6" r=".95" fill="currentColor"/><rect x="8.4" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="8.4" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/></svg> Add to Home Screen</button>
         <button id="btn-home-leaderboard" type="button"><svg class="tl-ico" viewBox="0 0 24 28" aria-hidden="true"><defs><linearGradient id="tlTrophy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".5" stop-color="#E8C25A"/><stop offset="1" stop-color="#8A5E12"/></linearGradient></defs><path d="M5 4 C2.5 4 2.5 9 5.6 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M19 4 C21.5 4 21.5 9 18.4 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M6 3 H18 V8 C18 13 14.5 15 12 15 C9.5 15 6 13 6 8 Z" fill="url(#tlTrophy)" stroke="#00000033" stroke-width=".6"/><rect x="11" y="15" width="2" height="4" fill="url(#tlTrophy)"/><rect x="8" y="19" width="8" height="2" rx="1" fill="url(#tlTrophy)"/><rect x="6.5" y="21" width="11" height="2.6" rx="1.3" fill="url(#tlTrophy)" stroke="#00000022" stroke-width=".5"/></svg> View Leaderboard</button>
       </div>
+      <button id="btn-roster-updates" type="button" class="roster-link">⚡ 2026 Roster Updates</button>
       <!-- flag lane (scrolls right) below the kickoff button -->
       <div class="flag-marquee bottom"><div class="flag-lane right" id="flag-lane-2"></div></div>
     </div>
@@ -2047,6 +2072,18 @@
     <button class="profile-close" id="boxscores-close" aria-label="Close">✕</button>
     <div class="lineup-head"><div class="lineup-name">MATCH STATS</div></div>
     <div id="boxscores-list"></div>
+  </div>
+</div>
+
+<!-- ===== 2026 roster updates ===== -->
+<div class="lineup-bg" id="roster-bg">
+  <div class="lineup-card">
+    <button class="profile-close" id="roster-close" aria-label="Close">✕</button>
+    <div class="lineup-head">
+      <div class="lineup-name">⚡ 2026 ROSTER UPDATES</div>
+      <div class="roster-sub">Players upgraded for their 2026 World Cup form</div>
+    </div>
+    <div id="roster-list"></div>
   </div>
 </div>
 
@@ -4893,6 +4930,9 @@ $('lineup-close').addEventListener('click', closeLineupModal);
 $('lineup-bg').addEventListener('click', e=>{ if(e.target===$('lineup-bg')) closeLineupModal(); });
 $('boxscores-close').addEventListener('click', closeBoxScores);
 $('boxscores-bg').addEventListener('click', e=>{ if(e.target===$('boxscores-bg')) closeBoxScores(); });
+$('btn-roster-updates').addEventListener('click', openRosterUpdates);
+$('roster-close').addEventListener('click', closeRosterUpdates);
+$('roster-bg').addEventListener('click', e=>{ if(e.target===$('roster-bg')) closeRosterUpdates(); });
 
 // ---------- rating feedback form ----------
 const RATING_FEEDBACK_EMAIL='sellybros711@gmail.com';
@@ -6065,6 +6105,44 @@ function openBoxScores(){
   if(card){ card.scrollTop=0; requestAnimationFrame(()=>{ card.scrollTop=0; }); }
 }
 function closeBoxScores(){ $('boxscores-bg').classList.remove('show'); }
+
+// ---- 2026 roster updates (home-screen popup) ----
+// DISPLAY-ONLY list of players upgraded for their 2026 World Cup form. Add one
+// entry per upgrade; `note` is optional. Actual ratings live in players_all.json
+// — this list just highlights what changed.
+//   { name:'Lionel Messi', country:'Argentina', old:96, new:97, note:'2 goals vs ___' }
+const ROSTER_UPDATES = [
+  // add real updates here as the 2026 World Cup unfolds, e.g.:
+  // { name:'', country:'', old:0, new:0, note:'' },
+];
+
+function rosterPos(name, country){
+  const p=(window.PLAYERS||[]).find(x=>x.year===2026 && x.country===country && normName(x.name)===normName(name));
+  return p ? p.position : '';
+}
+function openRosterUpdates(){
+  const box=$('roster-list'); if(!box) return;
+  if(!ROSTER_UPDATES.length){
+    box.innerHTML='<div class="ru-empty">No upgrades yet.<br>Players who outperform at the 2026 World Cup will appear here.</div>';
+  } else {
+    box.innerHTML = ROSTER_UPDATES.map(u=>{
+      const d=(+u.new||0)-(+u.old||0);
+      const pos=rosterPos(u.name, u.country);
+      return `<div class="ru-row">
+        ${flagChip(u.country,'ru-flag')}
+        <div style="flex:1 1 auto;min-width:0;">
+          <div class="ru-name">${pos?`<span class="ru-pos">${pos}</span>`:''}${escapeHtml(u.name)}</div>
+          ${u.note?`<div class="ru-note">${escapeHtml(u.note)}</div>`:''}
+        </div>
+        <div class="ru-rate"><span class="ru-old">${u.old}</span><span class="ru-arrow">▸</span><span class="ru-new">${u.new}</span>${d>0?`<span class="ru-delta">+${d}</span>`:''}</div>
+      </div>`;
+    }).join('');
+  }
+  $('roster-bg').classList.add('show');
+  const card=$('roster-bg').querySelector('.lineup-card');
+  if(card){ card.scrollTop=0; requestAnimationFrame(()=>{ card.scrollTop=0; }); }
+}
+function closeRosterUpdates(){ $('roster-bg').classList.remove('show'); }
 
 // CHANGE 1 — dynamic slow-motion. Returns the speed the clock should advance at
 // for the given moment: 2.5× slower in the closing minutes of a close game
