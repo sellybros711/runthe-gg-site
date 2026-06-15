@@ -5817,8 +5817,12 @@ function simBuildPenaltySeq(winner){
 
 async function simAnimatePenalties(card, m, opts){
   opts = opts || {};
+  // Append into the scrollable goal feed (the card itself is clipped at the stage
+  // height) so the shootout is visible and the feed auto-scrolls to it.
+  const feed = card.querySelector('.sim-goals') || card;
   const label=document.createElement('div'); label.className='sim-pen-label'; label.textContent='Penalty Shootout';
-  card.appendChild(label);
+  feed.appendChild(label);
+  simScrollEnd(label);
 
   const userName = opts.youLabel || 'YOUR TEAM';
   const oppName = opts.oppLabel || `${flagChip(m.opponent.country)} ${m.opponent.country} ${m.opponent.year}`;
@@ -5834,7 +5838,7 @@ async function simAnimatePenalties(card, m, opts){
       <span class="pen-score" id="pen-score-opp">0</span>
       <span class="pen-dots-row" id="pen-dots-opp"></span>
     </div>`;
-  card.appendChild(board);
+  feed.appendChild(board);
   simScrollEnd(board);
 
   // Scope lookups to THIS board. The ids repeat across matches, so a global
@@ -5859,6 +5863,7 @@ async function simAnimatePenalties(card, m, opts){
     dot.textContent = k.scored ? '●' : '○';
     dotsEl[row].appendChild(dot);
     if(k.scored){ score[k.team]++; scoreEl[row].textContent=score[k.team]; }
+    simScrollEnd(board);   // keep the shootout pinned in view as kicks come in
     await new Promise(r=>setTimeout(r, opts.penDelay || getPenaltyDelay(kickNumber)));
   }
   if(opts.onPenalties) opts.onPenalties({ user:score.user, opp:score.opponent, seq });
