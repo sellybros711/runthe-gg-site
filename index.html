@@ -6373,13 +6373,16 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
   const goalsBox = opts.goalsBox;
   const timeEl   = wrap && wrap.querySelector('.sb-time');
   let ei=0;
-  const revealUpTo=(minute)=>{
+  let pauseUntil = 0;   // epoch ms — clock progress is frozen until this passes
+  const GOAL_PAUSE_MS = 500 * SIM_SPEED;  // scales with global speed so fast/slow modes feel right
+  const revealUpTo=(minute, now)=>{
     while(ei<events.length && events[ei].minute<=minute){
       const e=events[ei++];
       if(goalsBox) simScheduleGoal(goalsBox, e, 0);
       const side = e.team==='user' ? 'user' : 'opp';
       if(side==='user') score.user++; else score.opp++;
       sbBumpScore(wrap, side);
+      pauseUntil = now + GOAL_PAUSE_MS;   // freeze clock so user can register the goal
     }
   };
   const setSlow=(on)=>{
@@ -6392,7 +6395,9 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
     let p=0, last=performance.now();
     const tick=()=>{
       const now=performance.now(); const dt=Math.min(100, now-last); last=now;
-      p = Math.min(1, p + (dt/dur));
+      if(now > pauseUntil){     // only advance during non-pause window
+        p = Math.min(1, p + (dt/dur));
+      }
       const minNow = fromMin + (toMin-fromMin)*p;
       fill.style.width=(fromPct+(toPct-fromPct)*p)+'%';
       // stoppage phases display added time as "45+N" / "90+N"
@@ -6400,9 +6405,9 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
         ? `${opts.stoppageBase}+${Math.max(1,Math.round(minNow-opts.stoppageBase))}'`
         : `${Math.max(1,Math.round(minNow))}'`;
       sbSetTime(wrap, timeStr, gold);
-      revealUpTo(minNow);
+      revealUpTo(minNow, now);
       if(opts.onProgress) opts.onProgress(p);
-      if(p>=1){ clearInterval(iv); revealUpTo(toMin); if(opts.onProgress) opts.onProgress(1); setSlow(false); resolve(); }
+      if(p>=1 && now>pauseUntil){ clearInterval(iv); revealUpTo(toMin, now); if(opts.onProgress) opts.onProgress(1); setSlow(false); resolve(); }
     };
     const iv=setInterval(tick, 1000/60);
     last=performance.now();
