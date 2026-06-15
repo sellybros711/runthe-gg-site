@@ -183,7 +183,21 @@
   .roster-link:hover,.roster-link:active{opacity:1;}
   /* roster-updates popup (reuses the lineup overlay shell) */
   .roster-sub{font-weight:600;font-size:12px;color:#8a7d70;margin-top:4px;text-align:center;}
-  #roster-list{display:flex;flex-direction:column;gap:8px;margin-top:6px;}
+  /* roster tabs */
+  .roster-tabs{display:flex;gap:0;margin:12px 0 4px;border:2.5px solid var(--ink);border-radius:12px;overflow:hidden;}
+  .roster-tab{flex:1;background:var(--white);border:none;cursor:pointer;font-family:'Archivo',system-ui,sans-serif;
+    font-weight:900;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#8a7d70;
+    padding:9px 4px;transition:background .15s,color .15s;-webkit-tap-highlight-color:transparent;
+    display:flex;align-items:center;justify-content:center;gap:5px;}
+  .roster-tab:first-child{border-right:2px solid var(--ink);}
+  .roster-tab.active{background:var(--ink);color:#fff;}
+  .ru-tab-icon{width:15px;height:15px;flex:0 0 auto;}
+  .ru-icon-bolt{width:11px;height:16px;vertical-align:middle;margin-right:6px;position:relative;top:-1px;}
+  .ru-cal-icon{width:13px;height:13px;vertical-align:middle;margin-right:3px;position:relative;top:-1px;color:#8a7d70;}
+  .ru-date-header{display:flex;align-items:center;gap:5px;}
+  .roster-tab-panel{display:none;}
+  .roster-tab-panel.active{display:flex;flex-direction:column;gap:8px;}
+  #roster-list{margin-top:2px;}
   .ru-row{display:flex;align-items:center;gap:10px;border:2px solid var(--ink);border-radius:12px;
     background:var(--white);padding:9px 11px;box-shadow:var(--shadow-sm);}
   .ru-row .ru-flag{flex:0 0 auto;width:26px;height:18px;border-radius:3px;}
@@ -191,14 +205,25 @@
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .ru-row .ru-name .ru-pos{font-weight:900;font-size:9px;color:#fff;background:var(--blue);
     border-radius:5px;padding:2px 5px;margin-right:6px;letter-spacing:.5px;}
+  .ru-row .ru-name .ru-pos.GK{background:var(--pos-gk);color:var(--ink);}
+  .ru-row .ru-name .ru-pos.DEF{background:var(--pos-def);}
+  .ru-row .ru-name .ru-pos.MID{background:var(--pos-mid);}
+  .ru-row .ru-name .ru-pos.FWD{background:var(--pos-fwd);}
   .ru-row .ru-rate{flex:0 0 auto;display:flex;align-items:center;gap:6px;font-family:'Anton',Impact,sans-serif;}
   .ru-row .ru-old{font-size:17px;color:#9a8d80;}
   .ru-row .ru-arrow{font-size:13px;color:#9a8d80;}
   .ru-row .ru-new{font-size:20px;color:#1F9E57;}
   .ru-row .ru-delta{font-weight:900;font-size:11px;font-family:'Archivo',system-ui,sans-serif;
     color:#1F9E57;background:rgba(31,158,87,.14);border-radius:6px;padding:2px 5px;}
+  .ru-row .ru-delta.ru-delta-neg{color:var(--red);background:rgba(229,64,42,.12);}
+  .ru-row .ru-new.ru-new-neg{color:var(--red);}
+  .ru-year{font-weight:900;font-size:9px;color:#8a7d70;background:#ede6dc;
+    border-radius:5px;padding:2px 5px;margin-left:6px;letter-spacing:.5px;}
   .ru-note{font-weight:600;font-size:11px;color:#8a7d70;margin-top:2px;}
   .ru-empty{text-align:center;color:#8a7d70;font-weight:600;padding:24px 8px;line-height:1.5;}
+  .ru-date-header{font-weight:900;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    color:#8a7d70;padding:10px 2px 4px;border-top:1.5px solid #e8ddd4;margin-top:4px;}
+  .ru-date-header:first-child{border-top:none;margin-top:0;padding-top:4px;}
   /* Add-to-home instructions popup */
   .a2hs-bg{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;
     padding:20px;background:rgba(0,0,0,.66);}
@@ -2080,10 +2105,26 @@
   <div class="lineup-card">
     <button class="profile-close" id="roster-close" aria-label="Close">✕</button>
     <div class="lineup-head">
-      <div class="lineup-name">⚡ 2026 ROSTER UPDATES</div>
-      <div class="roster-sub">Players upgraded for their 2026 World Cup form</div>
+      <div class="lineup-name">
+        <svg class="ru-icon-bolt" viewBox="0 0 14 20" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="9,0 2,11 7,11 5,20 12,9 7,9" fill="#F4B413" stroke="#1a1209" stroke-width="1" stroke-linejoin="round"/></svg>
+        2026 ROSTER UPDATES
+      </div>
+      <div class="roster-sub">Live updates as the 2026 World Cup unfolds</div>
     </div>
-    <div id="roster-list"></div>
+    <div class="roster-tabs">
+      <button class="roster-tab active" id="tab-wc" type="button">
+        <svg class="ru-tab-icon" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 2h12v6a6 6 0 01-12 0V2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none"/><path d="M3 4H1v3a3 3 0 003 3M15 4h2v3a3 3 0 01-3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="6" y="14" width="6" height="2" rx="1" fill="currentColor"/><rect x="4" y="16" width="10" height="1.5" rx=".75" fill="currentColor"/></svg>
+        WC Performances
+      </button>
+      <button class="roster-tab" id="tab-cr" type="button">
+        <svg class="ru-tab-icon" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2h14a1 1 0 011 1v9a1 1 0 01-1 1H6l-4 3V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none"/><line x1="5" y1="6.5" x2="13" y2="6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="5" y1="9.5" x2="10" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        Community Requests
+      </button>
+    </div>
+    <div id="roster-list">
+      <div class="roster-tab-panel active" id="panel-wc"></div>
+      <div class="roster-tab-panel" id="panel-cr"></div>
+    </div>
   </div>
 </div>
 
@@ -2120,7 +2161,7 @@
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
 <script src="gameLogic.js?v=0.0.31"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
-<script src="data/players_all.js?v=0.0.28"></script>
+<script src="data/players_all.js?v=0.0.30"></script>
 <script>
 const G = window.RunThePitch;
 
@@ -4933,6 +4974,8 @@ $('boxscores-bg').addEventListener('click', e=>{ if(e.target===$('boxscores-bg')
 $('btn-roster-updates').addEventListener('click', openRosterUpdates);
 $('roster-close').addEventListener('click', closeRosterUpdates);
 $('roster-bg').addEventListener('click', e=>{ if(e.target===$('roster-bg')) closeRosterUpdates(); });
+$('tab-wc').addEventListener('click', ()=>switchRosterTab('tab-wc'));
+$('tab-cr').addEventListener('click', ()=>switchRosterTab('tab-cr'));
 
 // ---------- rating feedback form ----------
 const RATING_FEEDBACK_EMAIL='sellybros711@gmail.com';
@@ -6111,38 +6154,76 @@ function closeBoxScores(){ $('boxscores-bg').classList.remove('show'); }
 // entry per upgrade; `note` is optional. Actual ratings live in players_all.json
 // — this list just highlights what changed.
 //   { name:'Lionel Messi', country:'Argentina', old:96, new:97, note:'2 goals vs ___' }
-const ROSTER_UPDATES = [
-  // add real updates here as the 2026 World Cup unfolds, e.g.:
-  // { name:'', country:'', old:0, new:0, note:'' },
-];
+// Upgrade tracking is now fully automatic — no manual arrays needed.
+// To record an upgrade: in the CSV set pre_wc_overall=<old rating>, bump wc_overall,
+// and optionally set wc_note and is_community_request=1. Then re-run convertData.js.
 
 function rosterPos(name, country){
   const p=(window.PLAYERS||[]).find(x=>x.year===2026 && x.country===country && normName(x.name)===normName(name));
   return p ? p.position : '';
 }
-function openRosterUpdates(){
-  const box=$('roster-list'); if(!box) return;
-  if(!ROSTER_UPDATES.length){
-    box.innerHTML='<div class="ru-empty">No upgrades yet.<br>Players who outperform at the 2026 World Cup will appear here.</div>';
-  } else {
-    box.innerHTML = ROSTER_UPDATES.map(u=>{
-      const d=(+u.new||0)-(+u.old||0);
-      const pos=rosterPos(u.name, u.country);
-      return `<div class="ru-row">
-        ${flagChip(u.country,'ru-flag')}
-        <div style="flex:1 1 auto;min-width:0;">
-          <div class="ru-name">${pos?`<span class="ru-pos">${pos}</span>`:''}${escapeHtml(u.name)}</div>
-          ${u.note?`<div class="ru-note">${escapeHtml(u.note)}</div>`:''}
-        </div>
-        <div class="ru-rate"><span class="ru-old">${u.old}</span><span class="ru-arrow">▸</span><span class="ru-new">${u.new}</span>${d>0?`<span class="ru-delta">+${d}</span>`:''}</div>
-      </div>`;
-    }).join('');
+const RU_CAL_SVG = `<svg class="ru-cal-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="1" y="3" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><line x1="1" y1="7" x2="15" y2="7" stroke="currentColor" stroke-width="1.4"/><line x1="5" y1="1" x2="5" y2="5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><line x1="11" y1="1" x2="11" y2="5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+function fmtRosterDate(iso){
+  if(!iso) return '';
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dt = new Date(iso+'T12:00:00Z');
+  return `${RU_CAL_SVG} ${months[dt.getUTCMonth()]} ${dt.getUTCDate()}`;
+}
+function renderRosterPanel(players, emptyMsg, showYear){
+  if(!players.length) return `<div class="ru-empty">${emptyMsg}</div>`;
+  let html='', lastDate='';
+  for(const p of players){
+    const d=(+p.wc_overall||0)-(+p.pre_wc_overall||0);
+    if(p.wc_date && p.wc_date!==lastDate){
+      html+=`<div class="ru-date-header">${fmtRosterDate(p.wc_date)}</div>`;
+      lastDate=p.wc_date;
+    }
+    const deltaBadge = d>0 ? `<span class="ru-delta">+${d}</span>`
+                     : d<0 ? `<span class="ru-delta ru-delta-neg">${d}</span>` : '';
+    const yearTag = showYear && p.year ? `<span class="ru-year">${p.year}</span>` : '';
+    html+=`<div class="ru-row">
+      ${flagChip(p.country,'ru-flag')}
+      <div style="flex:1 1 auto;min-width:0;">
+        <div class="ru-name">${p.position?`<span class="ru-pos ${p.position}">${p.position}</span>`:''}${escapeHtml(p.name)}${yearTag}</div>
+        ${p.wc_note?`<div class="ru-note">${escapeHtml(p.wc_note)}</div>`:''}
+      </div>
+      <div class="ru-rate"><span class="ru-old">${p.pre_wc_overall}</span><span class="ru-arrow">▸</span><span class="ru-new ${d<0?'ru-new-neg':''}">${p.wc_overall}</span>${deltaBadge}</div>
+    </div>`;
   }
+  return html;
+}
+
+function openRosterUpdates(){
+  const wcPanel=$('panel-wc'), crPanel=$('panel-cr'); if(!wcPanel) return;
+  const allChanged = (window.PLAYERS||[]).filter(p=>p.pre_wc_overall!=null);
+  const byDateThenDelta = (a,b) => {
+    const dc = (a.wc_date||'').localeCompare(b.wc_date||'');
+    if(dc!==0) return dc;
+    const cc = (a.country||'').localeCompare(b.country||'');
+    if(cc!==0) return cc;
+    return (b.wc_overall||0)-(a.wc_overall||0);
+  };
+  const wcUpgrades = allChanged.filter(p=>p.year===2026 && !p.is_community_request).sort(byDateThenDelta);
+  const crUpgrades = allChanged.filter(p=>p.is_community_request).sort((a,b)=>{
+    if(b.year!==a.year) return b.year-a.year;
+    const cc=(a.country||'').localeCompare(b.country||'');
+    if(cc!==0) return cc;
+    return (b.wc_overall||0)-(a.wc_overall||0);
+  });
+  wcPanel.innerHTML = renderRosterPanel(wcUpgrades,
+    'No upgrades yet.<br>Players who shine at the 2026 World Cup will appear here.', false);
+  crPanel.innerHTML = renderRosterPanel(crUpgrades,
+    'No community requests approved yet.<br><br>Think a player\'s rating is off? Tap <strong>Disagree with a rating?</strong> on any player card to submit a request. We review every submission and update ratings here when we agree.', true);
   $('roster-bg').classList.add('show');
   const card=$('roster-bg').querySelector('.lineup-card');
   if(card){ card.scrollTop=0; requestAnimationFrame(()=>{ card.scrollTop=0; }); }
 }
 function closeRosterUpdates(){ $('roster-bg').classList.remove('show'); }
+
+function switchRosterTab(tabId){
+  ['tab-wc','tab-cr'].forEach(id=>$(''+id).classList.toggle('active', id===tabId));
+  ['panel-wc','panel-cr'].forEach(id=>$(''+id).classList.toggle('active', id===tabId.replace('tab-','panel-')));
+}
 
 // CHANGE 1 — dynamic slow-motion. Returns the speed the clock should advance at
 // for the given moment: 2.5× slower in the closing minutes of a close game

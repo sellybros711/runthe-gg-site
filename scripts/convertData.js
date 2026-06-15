@@ -1,16 +1,41 @@
 // RunThePitch: World Cup Game — Player data pipeline (dataset v2)
-// Reads the clean JSON roster (real integers, null for blanks) and emits
-// data/players_all.json in the shape the game engine expects.
+// Reads the RERATED CSV and emits data/players_all.json in the shape the game engine expects.
 //
 // wc_overall (integer 60-99) is the rating the game engine uses for individual
 // players. skill_rating is carried through as a fallback rating. Fields with no
 // data in this dataset are set to null explicitly (null = unknown).
+//
+// To record a rating upgrade: in the CSV set pre_wc_overall=<old rating>, bump
+// wc_overall to the new rating, optionally add a wc_note, and set
+// is_community_request=1 if it was community-requested. Then re-run this script.
 
 const fs = require('fs');
 const path = require('path');
 
-const IN_PATH  = path.join(__dirname, 'data', 'world_cup_full_rosters_1966_2026.json');
-const OUT_PATH = path.join(__dirname, 'data', 'players_all.json');
+const IN_PATH  = path.join(__dirname, '..', 'data', 'world_cup_full_rosters_1966_2026_RERATED_3.json');
+const OUT_PATH = path.join(__dirname, '..', 'data', 'players_all.json');
+const JS_PATH  = path.join(__dirname, '..', 'data', 'players_all.js');
+
+// ─── CSV parser ───────────────────────────────────────────────────────────────
+function parseCSV(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const headers = lines[0].split(',');
+  return lines.slice(1).map(line => {
+    // handle quoted fields
+    const vals = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { vals.push(cur); cur = ''; }
+      else { cur += c; }
+    }
+    vals.push(cur);
+    const row = {};
+    headers.forEach((h, i) => { row[h.trim()] = (vals[i] || '').trim(); });
+    return row;
+  });
+}
 
 // ─── FIFA 3-letter country codes ──────────────────────────────────────────────
 const COUNTRY_CODES = {
@@ -75,13 +100,13 @@ function awardOrNull(v) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 function main() {
   const text = fs.readFileSync(IN_PATH, 'utf8');
-  const rows = JSON.parse(text); // clean JSON: real integers, null for blanks
+  const rows = IN_PATH.endsWith('.json') ? JSON.parse(text) : parseCSV(text);
 
   const players = [];
   const idCounts = new Map(); // base id → count, for _2/_3 suffixes
 
   for (const row of rows) {
-    const name = (row.player_name || '').trim();
+    const name = (row.player_name || row.name || '').trim();
     if (!name) continue;
     const country = (row.country || '').trim();
     const year    = intOrNull(row.wc_year);
@@ -139,6 +164,13 @@ function main() {
       birth_year:          intOrNull(row.birth_year),
       club_at_tournament:  strOrNull(row.club_at_tournament),
       award:               awardOrNull(row.award),
+      // upgrade tracking: set pre_wc_overall to the OLD rating before bumping wc_overall
+      // wc_note is an optional short reason (e.g. "2 goals vs France")
+      // is_community_request=1 routes the upgrade to the Community Requests tab instead
+      pre_wc_overall:      intOrNull(row.pre_wc_overall),
+      wc_note:             strOrNull(row.wc_note),
+      wc_date:             strOrNull(row.wc_date),
+      is_community_request: intOrNull(row.is_community_request) === 1,
     });
   }
 
@@ -174,6 +206,17 @@ function main() {
 
   fs.writeFileSync(OUT_PATH, JSON.stringify(players, null, 2));
   console.log('Wrote', OUT_PATH);
+  // Also write the JS wrapper so file:// preview works
+  fs.writeFileSync(JS_PATH, `window.PLAYERS = ${JSON.stringify(players)};\n`);
+  console.log('Wrote', JS_PATH);
+  // Summary of upgrades recorded
+  const upgraded = players.filter(p => p.pre_wc_overall != null);
+  if (upgraded.length) {
+    console.log(`\nUpgrades recorded (${upgraded.length}):`);
+    upgraded.forEach(p => console.log(`  ${p.name} (${p.country}): ${p.pre_wc_overall} → ${p.wc_overall}${p.wc_note ? ' — ' + p.wc_note : ''}`));
+  } else {
+    console.log('\nNo upgrades recorded yet (pre_wc_overall column is empty for all players).');
+  }
 }
 
 main();
