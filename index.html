@@ -6708,7 +6708,7 @@ async function runSimulationScreen(){
     const won = await playMatchAnimation(m, card, isFinal, {
       wait: kbWait,
       firstHalfDur:3100, secondHalfDur:3300, halftimePause:400, stoppageMax:5,
-      etDur:1200, ftFreeze:250, finalPause:650, penDelay:150,
+      etDur:1200, ftFreeze:250, finalPause:650,
       boxStats: matchBox(m, simResult.userOverall, m.opponent.teamOverall, m.userGoals, m.opponentGoals),
       boxLabels:{ you:'YOU', opp: code3(m.opponent.country) }
     });
@@ -7208,7 +7208,7 @@ async function playFriendlyMatchAnimation(m, labels){
   await playMatchAnimation(m, card, false, {
     winText:stamp, loseText:stamp,
     firstHalfDur:11000, secondHalfDur:12000, halftimePause:1200, stoppageMax:5,
-    etDur:6000, ftFreeze:600, finalPause:1200, wait:fastWait, penDelay:450,
+    etDur:6000, ftFreeze:600, finalPause:1200, wait:fastWait,
     youLabel:labels.youShort, oppLabel:labels.friendShort,
     boxStats: labels.boxStats, boxLabels:{ you:labels.youShort, opp:labels.friendShort },
     penSeq: m.penSeq,                     // exact shootout when replaying a watch link
