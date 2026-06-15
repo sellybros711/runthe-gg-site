@@ -5703,85 +5703,29 @@ function simThreatLabel(ov){
 // No number emojis — a plain text finish plus a unique encouraging message.
 function simOutcome(r){
   if(!r) return { label: gs.result.resultLabel, emoji: gs.result.resultEmoji||'', message:'' };
-  const motName = r && r.manOfTournament && r.manOfTournament.player ? shortNm(r.manOfTournament.player) : null;
-  const motGoals = r && r.manOfTournament ? r.manOfTournament.goals : 0;
-  const motRef = motName ? (motGoals >= 3 ? `${motName}'s ${motGoals} goals were the stuff of legend. ` : motGoals >= 1 ? `${motName} delivered when it mattered most. ` : `${motName} was immense throughout. `) : '';
-
-  if(!r.eliminated && r.furthestRound==='Final'){
-    const msgs = [
-      `Champions of the world — you drafted a squad for the ages!`,
-      `${motRef}This squad wrote history. World Cup winners.`,
-      `From the first whistle to the final, this team was unstoppable. Pure class.`,
-      `The trophy is yours. ${motRef}What a run.`,
-      `You built a team, you ran the pitch, you won the World Cup. Legendary.`,
-      `Every game, every draft pick — it all led to this. World champions.`,
-    ];
-    return { label:'World Cup Winners', emoji:'🏆', message: pickOne(msgs) };
-  }
-
-  let msgs, label, emoji;
+  if(!r.eliminated && r.furthestRound==='Final') return {
+    label:'World Cup Winners', emoji:'🏆',
+    message:'Champions of the world — you drafted a squad for the ages!' };
   switch(r.furthestRound){
-    case 'Final':
-      msgs = [
-        `So close to glory — the final was one game too far. Spin again and go all the way!`,
-        `Runners-up at the World Cup. ${motRef}Agonizingly close. One more run.`,
-        `The final slipped away, but reaching it is no small thing. Draft again and finish the job.`,
-        `Silver isn't gold. ${motRef}You know what to do — spin and come back stronger.`,
-        `You made the final. That's elite. Now imagine lifting the trophy.`,
-      ];
-      label='Runners-up'; emoji='🥈'; break;
-
-    case 'Semi-final':
-      msgs = [
-        `A top-four finish at the World Cup — just one game from the final. Spin again and go all the way!`,
-        `The semi-final is where the dream ended. ${motRef}So close. Spin it back.`,
-        `Four teams left and you were one of them. That's a serious squad. Push further next time.`,
-        `Semi-final heartbreak. ${motRef}Almost. Draft sharper and make the final.`,
-        `You were 90 minutes from the final. Build that squad again and don't stop.`,
-      ];
-      label='Semi-Finalists'; emoji=''; break;
-
-    case 'Quarter-final':
-      msgs = [
-        `A strong run to the last eight. Draft sharper next time and push for more!`,
-        `Quarter-final exit — you were in the business end of the tournament. ${motRef}So close.`,
-        `The last eight. Not many teams get this far. Come back and go deeper.`,
-        `A World Cup quarter-finalist — that's a squad to be proud of. Now go one further.`,
-        `${motRef}The quarter-final was the end of the road, but the road was a good one. Spin again.`,
-      ];
-      label='Quarter-Finalists'; emoji=''; break;
-
-    case 'Round of 16':
-      msgs = [
-        `Knocked out in the round of 16. Shake it off, spin again, and chase the cup!`,
-        `The last 16 was as far as this squad could take you. ${motRef}Build a better one.`,
-        `Plenty of teams go home in the round of 16. Draft smarter and make the quarters.`,
-        `${motRef}So close to the last eight. One more spin and push through.`,
-        `A solid tournament run ends at the round of 16. The next squad can go further.`,
-      ];
-      label='Round of 16'; emoji=''; break;
-
-    case 'Round of 32':
-      msgs = [
-        `Knocked out in the round of 32. Dust yourself off, spin again, and go deeper!`,
-        `First knockout round exit. ${motRef}The group stage wasn't enough to build momentum.`,
-        `Out at the first hurdle in the knockouts. Draft a tighter squad and get past it.`,
-        `The round of 32 was a step too far this time. Spin again — the quarters are waiting.`,
-      ];
-      label='Round of 32'; emoji=''; break;
-
-    default:
-      msgs = [
-        `Out in the group stage — every champion starts somewhere. Build a new squad and try again!`,
-        `Group stage exit. ${motRef}The tournament barely started. Spin and come back stronger.`,
-        `This squad couldn't make it out of the groups. Draft smarter and get to the knockouts.`,
-        `A tough group ended the run early. Every World Cup winner has failed to qualify before — this is your rebuild.`,
-        `The groups were unforgiving. ${motRef}Regroup, redraft, and go again.`,
-        `Not every spin produces a winner — but every winner started with a spin. Go again.`,
-      ];
-      label='Group Stage Exit'; emoji=''; break;
+    case 'Final': return {
+      label:'Runners-up', emoji:'🥈',
+      message:'Agonizingly close to glory. Run it back and lift the trophy!' };
+    case 'Semi-final': return {
+      label:'Semi-Finalists', emoji:'',
+      message:'A top-four finish — just one game from the final. Spin again and go all the way!' };
+    case 'Quarter-final': return {
+      label:'Quarter-Finalists', emoji:'',
+      message:'A strong run to the last eight. Draft sharper next time and push for more!' };
+    case 'Round of 16': return {
+      label:'Round of 16', emoji:'',
+      message:'Knocked out in the last sixteen. Shake it off, spin again, and chase the cup!' };
+    case 'Round of 32': return {
+      label:'Round of 32', emoji:'',
+      message:'Knocked out in the last thirty-two. Dust yourself off, spin again, and go deeper!' };
+    default: return {
+      label:'Group Stage Exit', emoji:'',
+      message:'Out in the group stage — every champion starts somewhere. Build a new squad and try again!' };
   }
-  return { label, emoji, message: pickOne(msgs) };
 }
 
 // ---- flavour text generators (make every run feel different) ----
@@ -5808,132 +5752,56 @@ const shortNm = n => { const a=n.split(' '); return a.length>1?a[a.length-1]:n; 
 function simPlayerLine(squad, userGoals, opponentGoals){
   const gk = squad.find(p=>p.position==='GK');
   const att = simFlavourPlayer(squad,{outfield:true});
-  const att2 = simFlavourPlayer(squad,{outfield:true});
   const def = simFlavourPlayer(squad,{position:'DEF'});
-  const def2 = simFlavourPlayer(squad,{position:'DEF'});
   const mid = simFlavourPlayer(squad,{position:'MID'});
-  const mid2 = simFlavourPlayer(squad,{position:'MID'});
-  const fwd = simFlavourPlayer(squad,{position:'FWD'}) || att;
   // when goals are unknown (older calls), allow every line
   const scored = userGoals==null ? Infinity : userGoals;
   const conceded = opponentGoals==null ? null : opponentGoals;
-  const winning = scored > (conceded??0);
-  const losing  = conceded != null && conceded > scored;
-  const tight   = conceded != null && Math.abs(scored - (conceded??0)) <= 1;
-
   const lines=[
-    // score-dependent — attacking highlights
-    ...(scored>=3 ? [
-      `${shortNm(att.name)} was unplayable — a hat-trick performance from start to finish.`,
-      `${shortNm(fwd.name)} terrorised the defence all night. Three goals and it still felt like more.`,
-    ] : []),
-    ...(scored>=2 ? [
-      `${shortNm(att.name)} bagged a brace to ease the nerves.`,
-      `${shortNm(att.name)} and ${shortNm(att2.name!==att.name?att2:fwd)} combined for a masterclass going forward.`,
-      `${shortNm(fwd.name)} was clinical — two chances, two goals.`,
-      `A brilliant one-two between ${shortNm(mid.name)} and ${shortNm(att.name)} opened them up.`,
-    ] : []),
+    // score-dependent lines — only offered when the scoreline supports them
+    ...(scored>=2 ? [`${shortNm(att.name)} bagged a brace to ease the nerves.`] : []),
     ...(scored>=1 ? [
       `${shortNm(att.name)} curled in a beauty from the edge of the box.`,
-      `${shortNm(att.name)} latched onto a through ball and finished cool as you like.`,
-      `A towering ${shortNm(def.name)} header from a corner set the tone.`,
-      `${shortNm(fwd.name)} ran in behind, held off the defender, and slotted home.`,
-      `A whipped ${shortNm(mid.name)} cross found ${shortNm(att.name)} unmarked at the back post.`,
-      `${shortNm(att.name)} cut inside from the left and curled it into the far corner.`,
-      `${shortNm(fwd.name)} won the penalty and stepped up to convert it themselves.`,
-      `A thunderous ${shortNm(mid.name)} strike from 25 yards left the keeper with no chance.`,
-      `${shortNm(att.name)} showed incredible composure in a one-on-one with the keeper.`,
+      `${shortNm(att.name)} latched onto a through ball and finished cool.`,
+      `A towering ${shortNm(def.name)} header set the tone.`,
     ] : []),
-    // comeback / tight game lines
-    ...(losing ? [
-      `${shortNm(att.name)} gave everything but couldn't find the equaliser.`,
-      `${shortNm(mid.name)} pressed relentlessly but the goals wouldn't come.`,
-    ] : []),
-    ...(tight && winning ? [
-      `A nervy win, but ${shortNm(def.name)} held the line when it mattered.`,
-      `${shortNm(gk ? gk.name : def.name)} bailed them out in the final minutes.`,
-    ] : []),
-    // clean-sheet / defensive lines
-    ...(conceded===0 ? [
-      gk ? `${shortNm(gk.name)} kept a commanding clean sheet — barely threatened all game.` : `A disciplined back line kept it tight throughout.`,
-      `${shortNm(def.name)} and ${shortNm(def2.name!==def.name?def2:mid)} were immense at the back. Watertight.`,
-      gk ? `${shortNm(gk.name)} marshalled the area brilliantly — clean sheet, no debate.` : `The defensive unit was absolutely solid.`,
-      `Not a shot on target in the second half. ${shortNm(def.name)} completely shut the door.`,
-    ] : [
-      gk ? `${shortNm(gk.name)} was beaten but pulled off two crucial stops to stay in it.` : `The back line dug in despite conceding.`,
-      `${shortNm(def.name)} was tested repeatedly but didn't crack under pressure.`,
-      gk ? `A shaky spell for ${shortNm(gk.name)}, but he came up big when it counted.` : `Goals conceded, but the defence stayed composed.`,
-    ]),
-    // midfield / tactical lines — always safe
-    `${shortNm(mid.name)} pulled every string in midfield — the engine of this team.`,
-    `${shortNm(mid.name)} dictated the tempo from deep, always finding space.`,
-    `${shortNm(mid2.name)} broke up play time and again and drove forward with purpose.`,
-    `${shortNm(mid.name)} covered every blade of grass. A complete midfield display.`,
-    `Pressing high and hard — ${shortNm(mid.name)} led the press and won the ball constantly.`,
-    `${shortNm(mid.name)}'s passing range unlocked the defence time and again.`,
-    // defensive colour — always safe
-    `${shortNm(def.name)} was a wall at the back all game. Dominant in the air.`,
-    `${shortNm(def.name)} read every danger ball before it became a threat.`,
-    `${shortNm(def2.name)} put in a tactical masterclass at the back — VAR couldn't touch him.`,
-    // goalkeeper colour — always safe
-    gk ? `${shortNm(gk.name)} pulled off a stunning point-blank save to keep the lead.` : `The defence held firm under intense pressure.`,
-    gk ? `${shortNm(gk.name)}'s distribution set the tempo — ball-playing keeper at his best.` : `The back line stayed organised and compact all game.`,
-    gk ? `A massive hand from ${shortNm(gk.name)} tipped a dangerous cross over the bar.` : `The back four were alert to every threat.`,
-    // attacking colour — always safe
-    `${shortNm(att.name)} ran the channels ragged and kept the defence guessing.`,
-    `${shortNm(fwd.name)} held up play brilliantly and brought others into the game.`,
-    `${shortNm(att.name)} drifted inside and was a constant threat in behind the defence.`,
-    `${shortNm(fwd.name)} pressed their back line from the first minute — intensity personified.`,
-    // set pieces & soccer moments — always safe
-    `Set pieces were a weapon today — ${shortNm(def.name)} was a danger on every ball.`,
-    `${shortNm(mid.name)}'s delivery from wide was precise all game.`,
-    `A yellow card for dissent didn't rattle this team — they kept their composure.`,
+    // clean-sheet line only when nothing was conceded; otherwise a neutral defensive line
+    ...(conceded===0
+      ? [ gk ? `${shortNm(gk.name)} kept a vital clean sheet.` : `A disciplined back line kept it tight.` ]
+      : [ gk ? `${shortNm(gk.name)} was beaten but kept his side in it.` : `The back line dug in despite conceding.` ]),
+    // score-agnostic colour — always safe
+    `${shortNm(mid.name)} pulled every string in midfield.`,
+    `${shortNm(mid.name)} dictated the tempo from deep.`,
+    `${shortNm(def.name)} was a wall at the back all game.`,
+    gk ? `${shortNm(gk.name)} pulled off a stunning point-blank save.` : `The defence held firm under pressure.`,
+    `${shortNm(att.name)} ran the channels ragged.`,
+    `Super-sub ${shortNm(att.name)} changed the game off the bench.`,
   ];
   return pickOne(lines);
 }
 
 const GROUP_WIN_LINES=[
-  ‘Topped the group with a game to spare.’,
-  ‘Cruised through as group winners.’,
-  ‘Through in style — maximum points.’,
-  ‘Powered out of the group unbeaten.’,
-  ‘Group winners. Took control from the opening match and never let go.’,
-  ‘Dominated the group from start to finish. A statement run.’,
-  ‘Six points before the final whistle even blew. Ruthless.’,
-  ‘Sent a message to the rest of the tournament — this squad means business.’,
-  ‘The group was settled early. Comfortable, clinical, controlled.’,
-  ‘Group stage complete. Winners. The knockouts await.’,
+  'Topped the group with a game to spare.',
+  'Cruised through as group winners.',
+  'Through in style — maximum points.',
+  'Powered out of the group unbeaten.',
 ];
 const GROUP_SCRAPE_LINES=[
-  ‘Squeaked through despite a stumble.’,
-  ‘Survived a scare to grab a knockout spot.’,
-  ‘Held their nerve after dropping points.’,
-  ‘Through, but it was far from comfortable.’,
-  ‘Scraped into the knockouts on goal difference — but they made it.’,
-  ‘A rollercoaster group stage ends in qualification. The hard part starts now.’,
-  ‘Dropped points but found a way through. Character over quality.’,
-  ‘The final group game was a must-win — and they delivered.’,
-  ‘Not pretty, but effective. Through to the knockout rounds.’,
-  ‘Bounced back after a rocky result to confirm their place in the last sixteen.’,
+  'Squeaked through despite a stumble.',
+  'Survived a scare to grab a knockout spot.',
+  'Held their nerve after dropping points.',
+  'Through, but it was far from comfortable.',
 ];
 const GROUP_UNBEATEN_LINES=[
-  ‘Through unbeaten — no losses in the group.’,
-  ‘Qualified without tasting defeat.’,
-  ‘Solid and steady — advanced unbeaten.’,
-  ‘Three group games, no defeats. A confident platform for the knockouts.’,
-  ‘Unbeaten in the group — a clean slate heading into the knockout stage.’,
+  'Through unbeaten — no losses in the group.',
+  'Qualified without tasting defeat.',
+  'Solid and steady — advanced unbeaten.',
 ];
 const GROUP_OUT_LINES=[
-  ‘A shock early exit — out in the group stage.’,
-  ‘Couldn\’t find a way through. Group stage elimination.’,
-  ‘Dreams dashed early — eliminated in the groups.’,
-  ‘A campaign to forget. Out before the knockouts.’,
-  ‘The group stage exposed the gaps. Back to the drawing board.’,
-  ‘Eliminated before the knockout rounds. Every great squad starts with a loss.’,
-  ‘An early flight home. The World Cup waits for no one.’,
-  ‘The group was brutal, and this squad paid the price.’,
-  ‘Couldn\’t secure the points needed. Group stage exit.’,
-  ‘Three games. Not enough. The tournament moves on without them.’,
+  'A shock early exit — out in the group stage.',
+  'Couldn’t find a way through. Group stage elimination.',
+  'Dreams dashed early — eliminated in the groups.',
+  'A campaign to forget. Out before the knockouts.',
 ];
 
 // Horizontal carousel: never scroll the page. Keep the newest line visible by
@@ -6180,10 +6048,7 @@ function computeMatchStats(uOv, oOv, uGoals, oGoals){
   possU = Math.max(30, Math.min(70, Math.round(possU)));
   const corners = { u: Math.max(0, Math.round(shots.u*0.35)+ri(-1,2)), o: Math.max(0, Math.round(shots.o*0.35)+ri(-1,2)) };
   const fouls = { u: ri(6,16), o: ri(6,16) };
-  // yellow cards scale loosely with fouls; red cards are rare (1-in-12 chance per side)
-  const yellows = { u: Math.max(0, Math.round(fouls.u*0.22)+ri(-1,1)), o: Math.max(0, Math.round(fouls.o*0.22)+ri(-1,1)) };
-  const reds = { u: Math.random()<0.08?1:0, o: Math.random()<0.08?1:0 };
-  return { poss:{u:possU,o:100-possU}, shots, sot, corners, fouls, saves, yellows, reds };
+  return { poss:{u:possU,o:100-possU}, shots, sot, corners, fouls, saves };
 }
 // Compute the box once per match and cache it on the match/matchday object, so
 // the live panel and the results view always show the same figures.
@@ -6198,8 +6063,7 @@ function matchBox(obj, uOv, oOv, uG, oG){
 function boxFromResult(R){
   const g=(o)=> o ? {u:o.opponent, o:o.challenger} : {u:0,o:0};
   return { poss:g(R.possession), shots:g(R.shots), sot:g(R.shotsOnTarget),
-           corners:g(R.corners), fouls:g(R.fouls), saves:g(R.saves),
-           yellows:{u:0,o:0}, reds:{u:0,o:0} };
+           corners:g(R.corners), fouls:g(R.fouls), saves:g(R.saves) };
 }
 const BOX_STAT_ROWS = [
   {k:'poss', label:'Possession', pct:true},
@@ -6208,8 +6072,6 @@ const BOX_STAT_ROWS = [
   {k:'corners', label:'Corners'},
   {k:'fouls', label:'Fouls'},
   {k:'saves', label:'Saves'},
-  {k:'yellows', label:'Yellow Cards'},
-  {k:'reds', label:'Red Cards'},
 ];
 function boxRowsHtml(){
   return BOX_STAT_ROWS.map(r=>`<div class="lbx-row" data-k="${r.k}"><span class="lbx-u">0</span><span class="lbx-l">${r.label}</span><span class="lbx-o">0</span></div>`).join('');
@@ -6335,8 +6197,7 @@ function openRosterUpdates(){
   const wcPanel=$('panel-wc'), crPanel=$('panel-cr'); if(!wcPanel) return;
   const allChanged = (window.PLAYERS||[]).filter(p=>p.pre_wc_overall!=null);
   const byDateThenDelta = (a,b) => {
-    // newest date first; undated entries sort to the bottom
-    const dc = (b.wc_date||'').localeCompare(a.wc_date||'');
+    const dc = (a.wc_date||'').localeCompare(b.wc_date||'');
     if(dc!==0) return dc;
     const cc = (a.country||'').localeCompare(b.country||'');
     if(cc!==0) return cc;
