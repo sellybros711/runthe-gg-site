@@ -134,7 +134,7 @@ function ctaButton(x,CX,by,bw,bh,fill,label,sub){
   x.textAlign='center'; x.fillStyle=gold; x.font='400 88px AntonR'; x.fillText('HOW IT WORKS', CX, 300);
   const steps=[
     ['1','Spin a random year & nation','From 1966 to 2026 — anyone could come up.'],
-    ['2','Draft your XI, slot by slot','GK · DEF · DEF · MID · FWD · FLEX.'],
+    ['2','Draft your squad, slot by slot','Build your dream lineup.'],
     ['3','Simulate your World Cup run','Face historic squads and chase the trophy.'],
     ['4','Or challenge a friend','Head-to-head Friendly, winner takes bragging rights.'],
   ];
