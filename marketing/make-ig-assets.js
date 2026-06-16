@@ -69,7 +69,7 @@ function footer(x,CX,cy,s){
   const kick='PLAY NOW AT', ksp=4*s;
   let kw=0; for(const ch of kick) kw+=x.measureText(ch).width+ksp; kw-=ksp;
   let kx=CX-kw/2; x.textAlign='left';
-  for(const ch of kick){ x.fillText(ch,kx,cy-46*s); kx+=x.measureText(ch).width+ksp; }
+  for(const ch of kick){ x.fillText(ch,kx,cy-62*s); kx+=x.measureText(ch).width+ksp; }
   // large URL with letter-spacing + soft shadow so it stands out
   x.save(); x.shadowColor='rgba(0,0,0,.45)'; x.shadowBlur=10*s; x.shadowOffsetY=3*s;
   x.fillStyle=gold; x.font=`400 ${58*s}px AntonR`;
@@ -103,18 +103,18 @@ function ctaButton(x,CX,by,bw,bh,fill,label,sub){
   // headline
   x.textAlign='center'; x.save(); x.shadowColor='rgba(0,0,0,.4)'; x.shadowBlur=10; x.shadowOffsetY=3;
   x.fillStyle=cream; x.font='400 104px AntonR';
-  x.fillText('SPIN. PICK.', CX, 560);
-  x.fillStyle=gold; x.fillText('CONQUER.', CX, 668);
+  x.fillText('SPIN. PICK.', CX, 520);
+  x.fillStyle=gold; x.fillText('CONQUER.', CX, 628);
   x.restore();
   // subline
   x.fillStyle='rgba(253,246,227,.92)'; x.font='700 34px ArchivoBold';
-  x.fillText('Draft a squad from 60+ years of World Cup', CX, 748);
-  x.fillText('legends — then simulate your run to glory.', CX, 792);
+  x.fillText('Draft a squad from 60+ years of World Cup', CX, 708);
+  x.fillText('legends — then simulate your run to glory.', CX, 752);
   // two CTAs
-  ctaButton(x,CX-262,840,490,118,'#1Fa34f','FRIENDLIES','CHALLENGE A FRIEND');
-  ctaButton(x,CX+262,840,490,118,'#E5402A','SOLO DRAFT','SIMULATE A WORLD CUP');
+  ctaButton(x,CX-262,800,490,118,'#1Fa34f','FRIENDLIES','CHALLENGE A FRIEND');
+  ctaButton(x,CX+262,800,490,118,'#E5402A','SOLO DRAFT','SIMULATE A WORLD CUP');
   // url
-  footer(x,CX,H-46,1.0);
+  footer(x,CX,H-58,1.0);
   fs.writeFileSync('marketing/ig-feed.png', c.toBuffer('image/png'));
   console.log('wrote marketing/ig-feed.png');
 })();
@@ -130,17 +130,17 @@ function ctaButton(x,CX,by,bw,bh,fill,label,sub){
   // headline
   x.textAlign='center'; x.save(); x.shadowColor='rgba(0,0,0,.4)'; x.shadowBlur=10; x.shadowOffsetY=3;
   x.fillStyle=cream; x.font='400 132px AntonR';
-  x.fillText('BUILD YOUR', CX, 860);
-  x.fillText('DREAM', CX, 1000);
-  x.fillStyle=gold; x.fillText('WORLD CUP', CX, 1140);
-  x.fillStyle=cream; x.fillText('SQUAD', CX, 1280);
+  x.fillText('BUILD YOUR', CX, 800);
+  x.fillText('DREAM', CX, 940);
+  x.fillStyle=gold; x.fillText('WORLD CUP', CX, 1080);
+  x.fillStyle=cream; x.fillText('SQUAD', CX, 1220);
   x.restore();
   x.fillStyle='rgba(253,246,227,.9)'; x.font='700 40px ArchivoBold';
-  x.fillText('Spin a year & nation. Draft legends.', CX, 1380);
-  x.fillText('Challenge a friend head-to-head.', CX, 1432);
+  x.fillText('Spin a year & nation. Draft legends.', CX, 1320);
+  x.fillText('Challenge a friend head-to-head.', CX, 1372);
   // single CTA
-  ctaButton(x,CX,1540,720,150,'#1Fa34f','PLAY FREE','NO APP · JUST TAP');
-  footer(x,CX,1810,1.25);
+  ctaButton(x,CX,1480,720,150,'#1Fa34f','PLAY FREE','NO APP · JUST TAP');
+  footer(x,CX,1800,1.25);
   fs.writeFileSync('marketing/ig-story.png', c.toBuffer('image/png'));
   console.log('wrote marketing/ig-story.png');
 })();
