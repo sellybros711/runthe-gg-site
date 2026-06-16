@@ -258,3 +258,107 @@ function ctaButton(x,CX,by,bw,bh,fill,label,sub){
   fs.writeFileSync('marketing/ig-challenge.png', c.toBuffer('image/png'));
   console.log('wrote marketing/ig-challenge.png');
 })();
+
+// Position → accent color (used by the card grid + pitch mockup).
+const POS_COL={ GK:'#F4B413', DEF:'#2f7de5', MID:'#1Fa34f', FWD:'#E5402A' };
+
+// One compact gold rating card. Scales its inner type to the card width.
+function miniCard(x,cx0,cy0,cw,chh,p){
+  x.save(); x.shadowColor='rgba(0,0,0,.45)'; x.shadowBlur=24; x.shadowOffsetY=10;
+  const pg=x.createLinearGradient(0,cy0,0,cy0+chh); pg.addColorStop(0,'#FCEFA8'); pg.addColorStop(.5,'#F4B413'); pg.addColorStop(1,'#D89A0C');
+  rrect(x,cx0,cy0,cw,chh,26); x.fillStyle=pg; x.fill(); x.restore();
+  x.lineWidth=4; x.strokeStyle=ink; rrect(x,cx0,cy0,cw,chh,26); x.stroke();
+  // OVR + pos chip, top-left
+  x.textAlign='left'; x.fillStyle=ink; x.font='400 96px AntonR'; x.fillText(p.ovr, cx0+30, cy0+108);
+  // position pill
+  const pcol=POS_COL[p.pos]||ink; x.font='900 24px ArchivoBlack';
+  const pw=x.measureText(p.pos).width+28; rrect(x,cx0+34,cy0+126,pw,38,12); x.fillStyle=pcol; x.fill();
+  x.fillStyle='#fff'; x.textAlign='center'; x.fillText(p.pos, cx0+34+pw/2, cy0+152);
+  // divider
+  x.strokeStyle='rgba(22,18,15,.3)'; x.lineWidth=2; x.beginPath(); x.moveTo(cx0+30,cy0+184); x.lineTo(cx0+cw-30,cy0+184); x.stroke();
+  // name (auto-fit), country · year
+  x.textAlign='center'; x.fillStyle=ink;
+  let ns=46; x.font=`400 ${ns}px AntonR`; while(x.measureText(p.name).width>cw-44 && ns>22){ ns-=1; x.font=`400 ${ns}px AntonR`; }
+  x.fillText(p.name, cx0+cw/2, cy0+236);
+  x.font='900 24px ArchivoBlack'; x.fillStyle='#3a2c08'; x.fillText(`${p.country} · ${p.year}`, cx0+cw/2, cy0+272);
+}
+
+// ----------------------------------------------------------------------------
+// 6) LEGEND CARD GRID  1080×1350 — six of the most iconic names ever.
+// ----------------------------------------------------------------------------
+(function legends(){
+  const cards=[
+    { name:'PELÉ',     country:'BRAZIL',    year:'1970', ovr:'99', pos:'FWD' },
+    { name:'MARADONA', country:'ARGENTINA', year:'1986', ovr:'99', pos:'MID' },
+    { name:'MESSI',    country:'ARGENTINA', year:'2022', ovr:'99', pos:'FWD' },
+    { name:'RONALDO',  country:'BRAZIL',    year:'2002', ovr:'99', pos:'FWD' },
+    { name:'MBAPPÉ',   country:'FRANCE',    year:'2022', ovr:'99', pos:'FWD' },
+    { name:'C. RONALDO',country:'PORTUGAL', year:'2018', ovr:'96', pos:'FWD' },
+  ];
+  const W=1080,H=1350,CX=W/2; const c=createCanvas(W,H),x=c.getContext('2d');
+  background(x,W,H);
+  wordmark(x,CX,150,66);
+  x.textAlign='center'; x.fillStyle=gold; x.font='400 70px AntonR'; x.fillText('DRAFT THE GREATS', CX, 244);
+  // 2 × 3 grid
+  const mx=60, gap=40, cw=(W-mx*2-gap)/2, chh=288, gy0=300, rowGap=34;
+  cards.forEach((p,i)=>{
+    const col=i%2, row=(i/2|0);
+    const cx0=mx+col*(cw+gap), cy0=gy0+row*(chh+rowGap);
+    miniCard(x,cx0,cy0,cw,chh,p);
+  });
+  footer(x,CX,H-44,1.0);
+  fs.writeFileSync('marketing/ig-legends.png', c.toBuffer('image/png'));
+  console.log('wrote marketing/ig-legends.png');
+})();
+
+// ----------------------------------------------------------------------------
+// 7) DREAM TEAM MOCKUP  1080×1350 — an all-time XI on a pitch (4-3-3).
+// ----------------------------------------------------------------------------
+(function dreamteam(){
+  const W=1080,H=1350,CX=W/2; const c=createCanvas(W,H),x=c.getContext('2d');
+  background(x,W,H);
+  wordmark(x,CX,140,62);
+  x.textAlign='center'; x.fillStyle=gold; x.font='400 64px AntonR'; x.fillText('YOUR DREAM SQUAD', CX, 226);
+
+  // ---- pitch ----
+  const px0=60,py0=270,pw=W-120,ph=940;
+  // turf with stripes
+  const turf=x.createLinearGradient(0,py0,0,py0+ph); turf.addColorStop(0,'#157a3e'); turf.addColorStop(1,'#0f5e30');
+  rrect(x,px0,py0,pw,ph,28); x.fillStyle=turf; x.fill();
+  x.save(); rrect(x,px0,py0,pw,ph,28); x.clip();
+  for(let i=0;i<8;i++){ if(i%2){ x.fillStyle='rgba(255,255,255,.04)'; x.fillRect(px0,py0+i*ph/8,pw,ph/8); } }
+  x.restore();
+  x.lineWidth=3; x.strokeStyle='rgba(255,255,255,.55)'; rrect(x,px0,py0,pw,ph,28); x.stroke();
+  // markings: halfway line + center circle + penalty boxes
+  x.beginPath(); x.moveTo(px0,py0+ph/2); x.lineTo(px0+pw,py0+ph/2); x.stroke();
+  x.beginPath(); x.arc(CX,py0+ph/2,70,0,Math.PI*2); x.stroke();
+  x.strokeRect(CX-150,py0,300,120);           // top box
+  x.strokeRect(CX-150,py0+ph-120,300,120);     // bottom box
+
+  // ---- player node ----
+  function node(cx,cy,p){
+    const r=42, col=POS_COL[p.pos]||ink;
+    x.fillStyle='rgba(0,0,0,.35)'; x.beginPath(); x.arc(cx+4,cy+5,r,0,Math.PI*2); x.fill();
+    x.fillStyle=col; x.beginPath(); x.arc(cx,cy,r,0,Math.PI*2); x.fill();
+    x.lineWidth=4; x.strokeStyle='#fff'; x.stroke();
+    x.fillStyle='#fff'; x.font='400 40px AntonR'; x.textAlign='center'; x.fillText(p.ovr,cx,cy+14);
+    // name plate
+    x.font='900 26px ArchivoBlack'; const nm=p.name.toUpperCase();
+    const nw=x.measureText(nm).width+24; const ny=cy+r+10;
+    rrect(x,cx-nw/2,ny,nw,38,10); x.fillStyle='rgba(11,19,36,.9)'; x.fill();
+    x.fillStyle=cream; x.fillText(nm,cx,ny+27);
+  }
+  // lines from top (FWD) to bottom (GK)
+  const line=(y,arr)=>{ const n=arr.length; arr.forEach((p,i)=>{ const cx=px0+pw*(i+1)/(n+1); node(cx,y,p); }); };
+  line(py0+120, [
+    {name:'Messi',ovr:'99',pos:'FWD'},{name:'Pelé',ovr:'99',pos:'FWD'},{name:'Ronaldo',ovr:'99',pos:'FWD'} ]);
+  line(py0+360, [
+    {name:'Zidane',ovr:'99',pos:'MID'},{name:'Maradona',ovr:'99',pos:'MID'},{name:'Xavi',ovr:'92',pos:'MID'} ]);
+  line(py0+600, [
+    {name:'Cafu',ovr:'92',pos:'DEF'},{name:'Beckenbauer',ovr:'99',pos:'DEF'},{name:'Maldini',ovr:'93',pos:'DEF'},{name:'R. Carlos',ovr:'92',pos:'DEF'} ]);
+  line(py0+820, [ {name:'Yashin',ovr:'93',pos:'GK'} ]);
+
+  footer(x,CX,H-44,1.0);
+  fs.writeFileSync('marketing/ig-team.png', c.toBuffer('image/png'));
+  console.log('wrote marketing/ig-team.png');
+})();

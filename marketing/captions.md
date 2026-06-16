@@ -97,6 +97,33 @@ Tag who you're challenging 👇 — then send them RunThe.gg
 
 ---
 
+## 6) LEGEND CARD GRID (pairs with ig-legends.png)
+
+**Caption**
+Pelé. Maradona. Messi. R9. Mbappé. CR7. 🐐
+The greatest to ever do it at a World Cup — and you can draft them into your squad. Spin the right year and a 99 could be yours.
+
+Which one are you building around? 👇 RunThe.gg (link in bio)
+
+**Hashtags**
+#GOAT #worldcup #football #soccer #messi #ronaldo #pele #maradona #mbappe #worldcup2026 #footballlegends
+
+---
+
+## 7) DREAM TEAM MOCKUP (pairs with ig-team.png)
+
+**Caption**
+An all-time XI on one pitch. 🤯 Yashin in goal, Beckenbauer marshalling the back, Zidane–Maradona–Xavi pulling strings, Messi–Pelé–Ronaldo up top.
+
+Think you can build better? Draft your own dream squad free → RunThe.gg
+
+**Engagement prompt:** "Name one player you'd swap in. 👇"
+
+**Hashtags**
+#dreamteam #worldcup #football #soccer #bestXI #footballdebate #worldcup2026 #goat
+
+---
+
 ## CTA variations (rotate to avoid fatigue)
 - Free. No app. Just tap → runthe.gg
 - Link in bio. Go build your XI. ⚽
