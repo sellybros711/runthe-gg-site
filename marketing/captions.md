@@ -69,6 +69,34 @@ No app. No signup. Just tap → runthe.gg
 4. Hit Simulate → trophy lift moment.
 5. End card (ig-feed or ig-story): "Free. No app. runthe.gg 👆"
 
+## 4) PLAYER SPOTLIGHT (pairs with ig-spotlight.png)
+
+**Caption**
+99-rated. Brazil, 2002. The original Ronaldo. 🇧🇷⚽
+Spin the right year and a legend like this could land in your squad. Who would YOU build around?
+
+Draft yours free → RunThe.gg (link in bio)
+
+**Series idea:** post one card a day — different era, different nation, different icon. Ask "draft him or pass?" to drive comments.
+
+**Hashtags**
+#Ronaldo #Brazil #worldcup #footballlegend #soccer #footballcard #worldcup2026 #r9 #footy #thebeautifulgame
+
+---
+
+## 5) CHALLENGE A FRIEND (pairs with ig-challenge.png)
+
+**Caption**
+You vs them. 🆚 Build a World Cup squad, simulate the match, and settle who actually knows ball.
+Loser doesn't get to talk for a week. 😤
+
+Tag who you're challenging 👇 — then send them RunThe.gg
+
+**Hashtags**
+#football #soccer #worldcup #challenge #footballbanter #groupchat #worldcup2026 #footy #headtohead
+
+---
+
 ## CTA variations (rotate to avoid fatigue)
 - Free. No app. Just tap → runthe.gg
 - Link in bio. Go build your XI. ⚽

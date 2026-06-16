@@ -178,3 +178,83 @@ function ctaButton(x,CX,by,bw,bh,fill,label,sub){
   fs.writeFileSync('marketing/ig-howto.png', c.toBuffer('image/png'));
   console.log('wrote marketing/ig-howto.png');
 })();
+
+// ----------------------------------------------------------------------------
+// 4) PLAYER SPOTLIGHT  1080×1080 — a draft "rating card" template.
+//    Edit the `card` object to feature any player. Data shown here matches the
+//    in-game rating (Ronaldo, Brazil 2002, 99 OVR, FWD).
+// ----------------------------------------------------------------------------
+(function spotlight(){
+  const card={ name:'RONALDO', country:'BRAZIL', year:'2002', ovr:'99', pos:'FWD' };
+  const W=1080,H=1080,CX=W/2; const c=createCanvas(W,H),x=c.getContext('2d');
+  background(x,W,H);
+  wordmark(x,CX,160,66);
+  x.textAlign='center'; x.fillStyle=gold; x.font='400 50px AntonR'; x.fillText('DRAFT LEGENDS LIKE THIS', CX, 232);
+
+  // ---- the rating card ----
+  const cw=560, chh=600, cx0=CX-cw/2, cy0=290;
+  // drop shadow + gold gradient panel
+  x.save(); x.shadowColor='rgba(0,0,0,.5)'; x.shadowBlur=40; x.shadowOffsetY=18;
+  const pg=x.createLinearGradient(0,cy0,0,cy0+chh); pg.addColorStop(0,'#FCEFA8'); pg.addColorStop(.5,'#F4B413'); pg.addColorStop(1,'#D89A0C');
+  rrect(x,cx0,cy0,cw,chh,40); x.fillStyle=pg; x.fill(); x.restore();
+  x.lineWidth=5; x.strokeStyle=ink; rrect(x,cx0,cy0,cw,chh,40); x.stroke();
+
+  // OVR (big) + position, top-left stack
+  x.textAlign='center'; x.fillStyle=ink;
+  x.font='400 180px AntonR'; x.fillText(card.ovr, cx0+120, cy0+170);
+  x.font='400 56px AntonR';  x.fillText(card.pos, cx0+120, cy0+232);
+
+  // divider
+  x.strokeStyle='rgba(22,18,15,.35)'; x.lineWidth=3;
+  x.beginPath(); x.moveTo(cx0+50, cy0+300); x.lineTo(cx0+cw-50, cy0+300); x.stroke();
+
+  // name (auto-fit), country + year
+  let ns=92; x.font=`400 ${ns}px AntonR`; while(x.measureText(card.name).width>cw-80 && ns>40){ ns-=2; x.font=`400 ${ns}px AntonR`; }
+  x.fillStyle=ink; x.fillText(card.name, CX, cy0+400);
+  x.font='900 40px ArchivoBlack'; x.fillStyle='#3a2c08';
+  x.fillText(`${card.country} · ${card.year}`, CX, cy0+470);
+
+  // little "WORLD CUP LEGEND" tag inside the card
+  x.font='900 26px ArchivoBlack'; x.fillStyle='rgba(22,18,15,.55)';
+  x.fillText('—  WORLD CUP LEGEND  —', CX, cy0+540);
+
+  footer(x,CX,H-58,1.0);
+  fs.writeFileSync('marketing/ig-spotlight.png', c.toBuffer('image/png'));
+  console.log('wrote marketing/ig-spotlight.png');
+})();
+
+// ----------------------------------------------------------------------------
+// 5) CHALLENGE A FRIEND  1080×1080 — head-to-head Friendlies promo.
+// ----------------------------------------------------------------------------
+(function challenge(){
+  const W=1080,H=1080,CX=W/2; const c=createCanvas(W,H),x=c.getContext('2d');
+  background(x,W,H);
+  wordmark(x,CX,250,104);
+  pill(x,CX,280,28,24,54);
+
+  // headline
+  x.textAlign='center'; x.save(); x.shadowColor='rgba(0,0,0,.4)'; x.shadowBlur=10; x.shadowOffsetY=3;
+  x.fillStyle=cream; x.font='400 108px AntonR'; x.fillText('CHALLENGE', CX, 470);
+  x.fillStyle=gold;  x.fillText('A FRIEND', CX, 580);
+  x.restore();
+
+  // VS medallion row
+  function team(cx,label,col){
+    x.fillStyle=ink; x.beginPath(); x.arc(cx+6,646,66,0,Math.PI*2); x.fill();
+    x.fillStyle=col; x.beginPath(); x.arc(cx,640,66,0,Math.PI*2); x.fill();
+    x.lineWidth=5; x.strokeStyle=ink; x.stroke();
+    x.fillStyle='#fff'; x.font='900 30px ArchivoBlack'; x.textAlign='center'; x.fillText(label,cx,650);
+  }
+  team(CX-150,'YOU','#1Fa34f');
+  x.fillStyle=gold; x.font='400 72px AntonR'; x.fillText('VS', CX, 662);
+  team(CX+150,'THEM','#E5402A');
+
+  // subline
+  x.fillStyle='rgba(253,246,227,.92)'; x.font='700 34px ArchivoBold';
+  x.fillText('Build your squads. Simulate the match.', CX, 770);
+  x.fillText('Winner takes the group-chat bragging rights.', CX, 814);
+
+  footer(x,CX,H-58,1.0);
+  fs.writeFileSync('marketing/ig-challenge.png', c.toBuffer('image/png'));
+  console.log('wrote marketing/ig-challenge.png');
+})();
