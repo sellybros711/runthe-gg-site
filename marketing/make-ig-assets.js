@@ -60,6 +60,27 @@ function pill(x,CX,py0,fontPx,padX,height){
   x.fillStyle=ink; let wx=x0+padX; for(const ch of label){ x.fillText(ch,wx,py0+height*0.68); wx+=x.measureText(ch).width+sp; }
 }
 
+// Footer URL block: small "PLAY NOW AT" label above a large gold "RunThe.gg".
+// `cy` is the baseline of the big URL line; `s` scales the whole block.
+function footer(x,CX,cy,s){
+  x.textAlign='center';
+  // small kicker label
+  x.fillStyle='rgba(253,246,227,.8)'; x.font=`900 ${22*s}px ArchivoBlack`;
+  const kick='PLAY NOW AT', ksp=4*s;
+  let kw=0; for(const ch of kick) kw+=x.measureText(ch).width+ksp; kw-=ksp;
+  let kx=CX-kw/2; x.textAlign='left';
+  for(const ch of kick){ x.fillText(ch,kx,cy-46*s); kx+=x.measureText(ch).width+ksp; }
+  // large URL with letter-spacing + soft shadow so it stands out
+  x.save(); x.shadowColor='rgba(0,0,0,.45)'; x.shadowBlur=10*s; x.shadowOffsetY=3*s;
+  x.fillStyle=gold; x.font=`400 ${58*s}px AntonR`;
+  const url='RunThe.gg', usp=2*s;
+  let uw=0; for(const ch of url) uw+=x.measureText(ch).width+usp; uw-=usp;
+  let ux=CX-uw/2;
+  for(const ch of url){ x.fillText(ch,ux,cy); ux+=x.measureText(ch).width+usp; }
+  x.restore();
+  x.textAlign='center';
+}
+
 // Big CTA button (filled) with label + sublabel, centered.
 function ctaButton(x,CX,by,bw,bh,fill,label,sub){
   const bx=CX-bw/2;
@@ -90,10 +111,10 @@ function ctaButton(x,CX,by,bw,bh,fill,label,sub){
   x.fillText('Draft a squad from 60+ years of World Cup', CX, 748);
   x.fillText('legends — then simulate your run to glory.', CX, 792);
   // two CTAs
-  ctaButton(x,CX-262,890,490,120,'#1Fa34f','FRIENDLIES','CHALLENGE A FRIEND');
-  ctaButton(x,CX+262,890,490,120,'#E5402A','SOLO DRAFT','SIMULATE A WORLD CUP');
+  ctaButton(x,CX-262,840,490,118,'#1Fa34f','FRIENDLIES','CHALLENGE A FRIEND');
+  ctaButton(x,CX+262,840,490,118,'#E5402A','SOLO DRAFT','SIMULATE A WORLD CUP');
   // url
-  x.textAlign='center'; x.font='900 34px ArchivoBlack'; x.fillStyle=gold; x.fillText('runthe.gg', CX, H-44);
+  footer(x,CX,H-46,1.0);
   fs.writeFileSync('marketing/ig-feed.png', c.toBuffer('image/png'));
   console.log('wrote marketing/ig-feed.png');
 })();
@@ -118,8 +139,8 @@ function ctaButton(x,CX,by,bw,bh,fill,label,sub){
   x.fillText('Spin a year & nation. Draft legends.', CX, 1380);
   x.fillText('Challenge a friend head-to-head.', CX, 1432);
   // single CTA
-  ctaButton(x,CX,1560,720,150,'#1Fa34f','PLAY FREE','NO APP · JUST TAP');
-  x.textAlign='center'; x.font='900 44px ArchivoBlack'; x.fillStyle=gold; x.fillText('runthe.gg', CX, 1800);
+  ctaButton(x,CX,1540,720,150,'#1Fa34f','PLAY FREE','NO APP · JUST TAP');
+  footer(x,CX,1810,1.25);
   fs.writeFileSync('marketing/ig-story.png', c.toBuffer('image/png'));
   console.log('wrote marketing/ig-story.png');
 })();
@@ -138,9 +159,9 @@ function ctaButton(x,CX,by,bw,bh,fill,label,sub){
     ['3','Simulate your World Cup run','Face historic squads and chase the trophy.'],
     ['4','Or challenge a friend','Head-to-head Friendly, winner takes bragging rights.'],
   ];
-  let ry=430; const cardX=70, cardW=W-140;
+  let ry=410; const cardX=70, cardW=W-140;
   steps.forEach(([n,t,s])=>{
-    const ch=190;
+    const ch=172;
     x.fillStyle='rgba(8,14,26,.55)'; rrect(x,cardX,ry,cardW,ch,24); x.fill();
     x.lineWidth=2; x.strokeStyle='rgba(244,180,19,.4)'; rrect(x,cardX,ry,cardW,ch,24); x.stroke();
     // number circle
@@ -151,9 +172,9 @@ function ctaButton(x,CX,by,bw,bh,fill,label,sub){
     x.textAlign='left';
     x.fillStyle=cream; x.font='900 42px ArchivoBlack'; x.fillText(t,cardX+180,ry+ch/2-6);
     x.fillStyle='rgba(253,246,227,.78)'; x.font='600 30px ArchivoSemi'; x.fillText(s,cardX+180,ry+ch/2+42);
-    ry+=ch+24;
+    ry+=ch+22;
   });
-  x.textAlign='center'; x.font='900 40px ArchivoBlack'; x.fillStyle=gold; x.fillText('runthe.gg', CX, H-50);
+  footer(x,CX,H-46,1.0);
   fs.writeFileSync('marketing/ig-howto.png', c.toBuffer('image/png'));
   console.log('wrote marketing/ig-howto.png');
 })();
