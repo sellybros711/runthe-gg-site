@@ -1,131 +1,76 @@
 # RunThePitch — Instagram / TikTok captions
 
-Brand voice: confident, playful, football-obsessed. Free, no app — just tap.
-Link in bio → runthe.gg
+All graphics are REAL screenshots of the game (captured by marketing/capture-game.js).
+Nothing is mocked up or redrawn. Link in bio → RunThe.gg
 
 ---
 
-## 1) FEED POST — "Spin. Pick. Conquer." (pairs with ig-feed.png)
-
-**Primary caption**
-Spin a year. Spin a nation. Draft a squad from 60+ years of World Cup legends — then simulate your run to glory. ⚽🏆
-
-Could be '70 Brazil. Could be '90s nobody. That's the fun.
-
-🆚 Or challenge a mate head-to-head and settle it for good.
-
-Free. No app. Just tap → runthe.gg (link in bio)
-
-**Hashtags**
-#WorldCup #football #soccer #footballgame #worldcup2026 #footy #footballtwitter #soccergame #fantasyfootball #footballfans #thebeautifulgame #footballedit
-
----
-
-## 2) STORY / REEL COVER — "Build your dream squad" (pairs with ig-story.png)
-
-**On-screen text ideas (overlay)**
-- "POV: you just drafted prime Ronaldo into your World Cup XI"
-- "Tag the mate you're challenging 👇"
-- Sticker: "Link in bio → runthe.gg"
+## game-start.png — the actual start screen (hero)
 
 **Caption**
-Build your dream World Cup squad in 60 seconds. 🌍⚽
-Drag, draft, simulate — then send a Friendly to your group chat and watch them sweat.
+Spin. Pick. Conquer. ⚽🏆
+Build a squad from 60+ years of World Cup legends, then simulate your run to glory — or challenge a friend head-to-head. Free, no app, just tap.
 
-Who you starting? 👀 runthe.gg
+Play now → RunThe.gg (link in bio)
 
 **Hashtags**
-#worldcup #soccer #football #worldcup2026 #footballreels #footygame #soccertiktok
+#WorldCup #football #soccer #footballgame #worldcup2026 #footy #fantasyfootball #thebeautifulgame
 
 ---
 
-## 3) "HOW IT WORKS" CAROUSEL / POST (pairs with ig-howto.png)
+## game-legends.png — real draft cards for the GOATs
 
 **Caption**
-How it works (it takes 60 seconds 🕐):
-1️⃣ Spin a random year & nation — 1966 to 2026
-2️⃣ Draft your XI slot by slot: GK · DEF · DEF · MID · FWD · FLEX
-3️⃣ Simulate your World Cup run vs historic squads
-4️⃣ Or challenge a friend head-to-head 🆚
+Messi. Pelé. R9. Maradona. Mbappé. CR7. 🐐
+These are the actual in-game cards — spin the right year and a 99 could land in your squad. Who are you building around? 👇
 
-No app. No signup. Just tap → runthe.gg
+RunThe.gg (link in bio)
 
 **Hashtags**
-#football #soccer #worldcup #footballgame #worldcup2026 #howtoplay #footy
+#GOAT #messi #ronaldo #pele #maradona #mbappe #worldcup #football #soccer #worldcup2026
 
 ---
 
-## Short hooks (Reels / TikTok first 2 seconds — pick one)
-- "I gave myself a random World Cup year and had to build a squad…"
+## game-pitch.png — "Your Starting VI"
+
+**Caption**
+Every draft starts here: GK · DEF · DEF · MID · FWD · FLEX. 🟩
+Spin the wheel, fill every slot, build your dream lineup. Can you put together the perfect XI?
+
+Draft yours free → RunThe.gg
+
+**Hashtags**
+#football #soccer #worldcup #footballgame #lineup #worldcup2026 #footy
+
+---
+
+## game-draft.png — the real selection screen
+
+**Caption**
+Random year, random nation — now draft the best player you can. 🌍
+Real ratings, real World Cup squads from 1966 to 2026. Every pick counts.
+
+No app. No signup. Just tap → RunThe.gg
+
+**Hashtags**
+#worldcup #football #soccer #footballgame #draft #worldcup2026 #footy #footballfans
+
+---
+
+## Short hooks (Reels / TikTok — screen-record the real app)
+- "Random World Cup year… build the best XI you can."
 - "This free site lets you draft a World Cup team from ANY era."
-- "Rating your World Cup drafts until I get a perfect XI."
 - "Send this to the friend who thinks they know ball. 🆚"
-- "Stop arguing about GOATs — draft them and simulate it."
+- "Rating my World Cup drafts until I get a perfect XI."
 
-## Reel script (15–20s)
-1. Hook (0–2s): "Random year… random nation… build the best XI you can."
-2. Show the spin → year + flag lands.
-3. Quick draft montage: tap GK, DEF, MID, FWD… overalls flashing.
-4. Hit Simulate → trophy lift moment.
-5. End card (ig-feed or ig-story): "Free. No app. runthe.gg 👆"
+## Reel idea (screen recording — all real game footage)
+1. Open RunThe.gg → tap SOLO DRAFT.
+2. Spin the wheel → year + nation lands.
+3. Draft each slot (real cards, real ratings).
+4. Simulate → trophy lift.
+5. End on the start screen: "Free. No app. RunThe.gg 👆"
 
-## 4) PLAYER SPOTLIGHT (pairs with ig-spotlight.png)
-
-**Caption**
-99-rated. Brazil, 2002. The original Ronaldo. 🇧🇷⚽
-Spin the right year and a legend like this could land in your squad. Who would YOU build around?
-
-Draft yours free → RunThe.gg (link in bio)
-
-**Series idea:** post one card a day — different era, different nation, different icon. Ask "draft him or pass?" to drive comments.
-
-**Hashtags**
-#Ronaldo #Brazil #worldcup #footballlegend #soccer #footballcard #worldcup2026 #r9 #footy #thebeautifulgame
-
----
-
-## 5) CHALLENGE A FRIEND (pairs with ig-challenge.png)
-
-**Caption**
-You vs them. 🆚 Build a World Cup squad, simulate the match, and settle who actually knows ball.
-Loser doesn't get to talk for a week. 😤
-
-Tag who you're challenging 👇 — then send them RunThe.gg
-
-**Hashtags**
-#football #soccer #worldcup #challenge #footballbanter #groupchat #worldcup2026 #footy #headtohead
-
----
-
-## 6) LEGEND CARD GRID (pairs with ig-legends.png)
-
-**Caption**
-Pelé. Maradona. Messi. R9. Mbappé. CR7. 🐐
-The greatest to ever do it at a World Cup — and you can draft them into your squad. Spin the right year and a 99 could be yours.
-
-Which one are you building around? 👇 RunThe.gg (link in bio)
-
-**Hashtags**
-#GOAT #worldcup #football #soccer #messi #ronaldo #pele #maradona #mbappe #worldcup2026 #footballlegends
-
----
-
-## 7) DREAM TEAM MOCKUP (pairs with ig-team.png)
-
-**Caption**
-An all-time XI on one pitch. 🤯 Yashin in goal, Beckenbauer marshalling the back, Zidane–Maradona–Xavi pulling strings, Messi–Pelé–Ronaldo up top.
-
-Think you can build better? Draft your own dream squad free → RunThe.gg
-
-**Engagement prompt:** "Name one player you'd swap in. 👇"
-
-**Hashtags**
-#dreamteam #worldcup #football #soccer #bestXI #footballdebate #worldcup2026 #goat
-
----
-
-## CTA variations (rotate to avoid fatigue)
-- Free. No app. Just tap → runthe.gg
-- Link in bio. Go build your XI. ⚽
-- Challenge your group chat → runthe.gg
+## CTA variations (rotate)
+- Free. No app. Just tap → RunThe.gg
+- Challenge your group chat → RunThe.gg
 - Who makes your all-time World Cup XI? Draft it 👇
