@@ -863,6 +863,25 @@
   .bsm-row.bsm-headrow{border-bottom:1px solid rgba(255,255,255,.14);margin-bottom:3px;padding-bottom:3px;}
   .bsm-row.bsm-headrow .bsm-u,.bsm-row.bsm-headrow .bsm-o{font-family:'Archivo',system-ui,sans-serif;font-size:10px;font-weight:900;color:rgba(255,255,255,.55);letter-spacing:.5px;background:none;}
   .sim-rosters{margin-top:14px;border-top:2px dashed rgba(22,18,15,.18);padding-top:10px;}
+  /* live-box tab bar */
+  .lbx-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.14);margin-bottom:4px;}
+  .lbx-tab{flex:1;background:none;border:none;cursor:pointer;font-family:'Archivo',system-ui,sans-serif;
+    font-weight:900;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.45);
+    padding:5px 0 7px;transition:color .18s ease,border-bottom .18s ease;border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .lbx-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+  .lbx-panel{display:none;} .lbx-panel.active{display:block;}
+  /* player stats table inside live-box */
+  .lbx-ptable{width:100%;border-collapse:collapse;font-size:10.5px;}
+  .lbx-ptable th{font-weight:900;font-size:9px;letter-spacing:.5px;text-transform:uppercase;
+    color:rgba(255,255,255,.45);padding:3px 3px 4px;border-bottom:1px solid rgba(255,255,255,.14);text-align:center;}
+  .lbx-ptable th.lbx-pname{text-align:left;}
+  .lbx-ptable td{padding:3px 3px;text-align:center;color:#fff;font-weight:700;border-bottom:1px solid rgba(255,255,255,.07);}
+  .lbx-ptable td.lbx-pname{text-align:left;font-weight:800;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:90px;}
+  .lbx-ptable td.lbx-ppos{font-size:9px;font-weight:900;letter-spacing:.3px;}
+  .lbx-ptable td.lbx-ppos.GK{color:#F4B413;} .lbx-ptable td.lbx-ppos.DEF{color:#4ade80;}
+  .lbx-ptable td.lbx-ppos.MID{color:#60a5fa;} .lbx-ptable td.lbx-ppos.FWD{color:#f87171;}
+  .lbx-ptable .lbx-goal{color:#F4B413;font-weight:900;}
+  .lbx-ptable .lbx-yc{color:#F4B413;} .lbx-ptable .lbx-rc{color:#E5402A;font-weight:900;}
   .sim-rosters .sr-cap{font-weight:900;font-size:10px;letter-spacing:2px;text-transform:uppercase;
     color:#8a7d70;text-align:center;margin-bottom:8px;}
   .sim-rosters .sr-cols{display:flex;gap:12px;}
@@ -970,6 +989,88 @@
   .sim-advance{font-weight:900; font-size:14px; text-align:center; color:var(--teal); margin-top:12px; margin-bottom:14px; animation:fade .3s ease both;}
   .sim-advance.loss{color:var(--red);}
 
+  /* ---------- match result popup overlay ---------- */
+  .match-popup-overlay{
+    position:fixed; inset:0; z-index:9999;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,0);
+    transition:background .35s ease;
+    pointer-events:none;
+  }
+  .match-popup-overlay.active{
+    background:rgba(0,0,0,.72);
+    pointer-events:all;
+  }
+  .match-popup{
+    background:var(--white);
+    border-radius:20px;
+    padding:28px 24px 24px;
+    width:min(340px,90vw);
+    text-align:center;
+    box-shadow:0 12px 60px rgba(0,0,0,.55);
+    transform:scale(.7) translateY(30px);
+    opacity:0;
+    transition:transform .38s cubic-bezier(.2,1.4,.4,1), opacity .3s ease;
+    position:relative;
+  }
+  .match-popup-overlay.active .match-popup{
+    transform:scale(1) translateY(0);
+    opacity:1;
+  }
+  .match-popup.win{ border-top:6px solid var(--teal); }
+  .match-popup.loss{ border-top:6px solid var(--red); }
+  .match-popup.champion{ border-top:6px solid var(--gold); }
+  .mp-stamp{
+    font-family:'Anton',Impact,sans-serif; font-weight:400;
+    font-size:52px; line-height:1; letter-spacing:2px;
+    -webkit-text-stroke:2px var(--ink); paint-order:stroke fill;
+    text-shadow:3px 3px 0 var(--ink);
+    margin-bottom:4px;
+  }
+  .match-popup.win .mp-stamp{ color:var(--teal); }
+  .match-popup.loss .mp-stamp{ color:var(--red); }
+  .match-popup.champion .mp-stamp{ color:var(--gold); animation:simChampGlow 1.5s ease-in-out infinite; }
+  .mp-msg{
+    font-weight:700; font-size:14px; line-height:1.4;
+    color:#4a4038; margin:8px 0 16px;
+  }
+  /* bracket track */
+  .mp-bracket{
+    display:flex; align-items:center; justify-content:center;
+    gap:0; margin:14px 0 18px; flex-wrap:wrap; row-gap:8px;
+  }
+  .mp-bracket-node{
+    display:flex; flex-direction:column; align-items:center;
+    gap:3px;
+  }
+  .mp-bracket-dot{
+    width:18px; height:18px; border-radius:50%;
+    border:2.5px solid #ccc; background:#fff;
+    transition:background .35s ease, border-color .35s ease, box-shadow .35s ease;
+  }
+  .mp-bracket-dot.done{ background:var(--teal); border-color:var(--teal); box-shadow:0 0 8px rgba(31,158,87,.6); }
+  .mp-bracket-dot.current{ background:var(--gold); border-color:var(--gold); box-shadow:0 0 12px rgba(244,180,19,.8); animation:dotPulse 1s ease-in-out infinite; }
+  .mp-bracket-dot.elim{ background:var(--red); border-color:var(--red); box-shadow:0 0 12px rgba(229,64,42,.8); animation:dotPulse 1s ease-in-out infinite; }
+  .mp-bracket-dot.champ{ background:var(--gold); border-color:var(--gold); box-shadow:0 0 16px rgba(244,180,19,1); animation:dotPulse .7s ease-in-out infinite; }
+  @keyframes dotPulse{ 0%,100%{transform:scale(1);} 50%{transform:scale(1.25);} }
+  .mp-bracket-label{
+    font-size:9px; font-weight:900; letter-spacing:.4px;
+    text-transform:uppercase; color:#9a8d80; white-space:nowrap;
+  }
+  .mp-bracket-line{
+    width:22px; height:2.5px; background:#e0d9d2; margin-bottom:21px; flex-shrink:0;
+    transition:background .35s ease;
+  }
+  .mp-bracket-line.done{ background:var(--teal); }
+  .mp-auto-bar{
+    height:4px; border-radius:2px; background:#e0d9d2; overflow:hidden; margin-top:4px;
+  }
+  .mp-auto-bar-fill{
+    height:100%; width:0%; background:var(--teal);
+    transition:width linear;
+  }
+  .match-popup.loss .mp-auto-bar-fill{ background:var(--red); }
+
   /* ---------- live match scoreboard (Qatar-2022 broadcast style) ---------- */
   .sb-wrap{margin-bottom:12px;opacity:0;transition:opacity .3s ease;}
   .sb-wrap.show{opacity:1;}
@@ -1033,6 +1134,9 @@
   .rv-badge{flex:0 0 auto;font-weight:900;font-size:11px;letter-spacing:.5px;color:#fff;
     border-radius:7px;padding:5px 8px;min-width:44px;text-align:center;}
   .rv-name{flex:1 1 auto;color:#fff;font-weight:800;font-size:15px;line-height:1.12;}
+  .rv-year{display:inline-block;font-size:10px;font-weight:900;letter-spacing:.3px;
+    color:rgba(255,255,255,.55);background:rgba(255,255,255,.12);border-radius:5px;
+    padding:1px 5px;margin-left:4px;vertical-align:middle;}
   .rv-right{flex:0 0 auto;text-align:right;}
   .rv-ov{font-family:'Anton',Impact,sans-serif;font-size:30px;line-height:.9;color:var(--gold);
     display:inline-flex;align-items:baseline;gap:3px;}
@@ -3433,7 +3537,7 @@ function runRevealOverlay(){
     const p=pick.player;
     const row=document.createElement('div'); row.className='rv-entry';
     row.innerHTML=`<span class="rv-badge" style="${slotBadgeStyle(pick.slot,p)}">${pick.slot}</span>
-      <span class="rv-name">${flagChip(p.country)} ${p.name}</span>
+      <span class="rv-name">${flagChip(p.country)} ${p.name} <span class="rv-year">${p.year}</span></span>
       <span class="rv-right"><span class="rv-ov red"><span class="rv-ov-num" data-ov="${p.overall}">0</span><small>OVR</small></span></span>`;
     stack.appendChild(row);
   });
@@ -5911,6 +6015,137 @@ const GROUP_OUT_LINES=[
   'Three games, not enough points. The tournament moves on without them.',
 ];
 
+const KNOCKOUT_WIN_LINES=[
+  'What a result. Onward.',
+  'Clinical. They weren\'t going home yet.',
+  'A nervy win, but a win is a win.',
+  'That\'s what this squad was built for.',
+  'Grit. Quality. Through.',
+  'Another round, another notch on the belt.',
+  'The tournament takes notice.',
+  'Not their prettiest, but they\'ll take it.',
+  'Keep the faith. Keep winning.',
+  'Into the next round — and this squad believes.',
+  'A cold-blooded finish when it mattered most.',
+  'One step closer. Don\'t stop now.',
+  'They came, they fought, they advanced.',
+  'This squad has something. It\'s hard to stop.',
+];
+const KNOCKOUT_WIN_PENS_LINES=[
+  'Penalties are a lottery — and they won it.',
+  'Ice in their veins. Through on pens.',
+  'The shootout belonged to them.',
+  'Nerve-wracking. Brilliant. Advanced.',
+  'Every kick a heartbeat. They held on.',
+  'Penalties decided it — and they didn\'t blink.',
+  'Saved their best for the shootout.',
+];
+const KNOCKOUT_LOSS_LINES=[
+  'The dream ends here.',
+  'So close. Not close enough.',
+  'A brave run, cut short.',
+  'They gave everything. It wasn\'t their day.',
+  'The tournament has no mercy. Neither did the scoreboard.',
+  'Out, but not forgotten.',
+  'The World Cup moves on. They won\'t forget this one.',
+  'Knocked out by a better side on the day.',
+  'Every elimination stings. That one stings.',
+  'The journey ends, but the squad was real.',
+  'Heads high. They made it further than most.',
+  'Cup football is brutal. They found out.',
+  'That\'s the last whistle. End of the road.',
+  'A valiant effort — not enough today.',
+];
+const KNOCKOUT_LOSS_PENS_LINES=[
+  'Penalty heartbreak. So cruel.',
+  'It came down to spot kicks. They lost.',
+  'Eliminated on pens. The cruelest way to go.',
+  'A shootout lottery — and they drew the short straw.',
+  'Penalties ended it. The squad deserved more.',
+  'Out on penalties. Football can be devastating.',
+];
+
+// ---- match result popup overlay ----
+const BRACKET_ROUNDS=['Group Stage','Round of 32','Round of 16','Quarter-final','Semi-final','Final'];
+const BRACKET_LABELS=['GRP','R32','R16','QF','SF','FIN'];
+
+function showMatchResultPopup(opts){
+  // opts: { won, isPens, isFinal, currentRound, nextRound, onDismiss }
+  return new Promise(resolve=>{
+    const ov=document.createElement('div');
+    ov.className='match-popup-overlay';
+    const roundIdx=BRACKET_ROUNDS.indexOf(opts.currentRound);
+
+    // build bracket nodes
+    let bracketHtml='';
+    BRACKET_ROUNDS.forEach((r,i)=>{
+      if(i>0) bracketHtml+=`<div class="mp-bracket-line${i<=(opts.won?roundIdx+1:roundIdx)?' done':''}"></div>`;
+      const nextIdx = opts.won ? roundIdx+1 : roundIdx;
+      let dotCls='';
+      if(opts.won && opts.isFinal && i===roundIdx) dotCls='champ';
+      else if(i<nextIdx) dotCls='done';
+      else if(i===nextIdx) dotCls=opts.won?'current':'elim';
+      bracketHtml+=`<div class="mp-bracket-node"><div class="mp-bracket-dot ${dotCls}"></div><div class="mp-bracket-label">${BRACKET_LABELS[i]}</div></div>`;
+    });
+
+    let stamp, msgLine, popupCls;
+    if(opts.isFinal && opts.won){
+      stamp='CHAMPIONS!'; popupCls='champion';
+      msgLine=pickOne(['World Cup winners. History made.','The greatest prize in football. Yours.','From the draft to the trophy. Unbelievable.','Champions of the world. Nothing more to say.']);
+    } else if(opts.won){
+      stamp='ADVANCED'; popupCls='win';
+      msgLine=opts.isPens?pickOne(KNOCKOUT_WIN_PENS_LINES):pickOne(KNOCKOUT_WIN_LINES);
+      if(opts.nextRound) msgLine+=` Next up: ${opts.nextRound}.`;
+    } else {
+      stamp='ELIMINATED'; popupCls='loss';
+      msgLine=opts.isPens?pickOne(KNOCKOUT_LOSS_PENS_LINES):pickOne(KNOCKOUT_LOSS_LINES);
+    }
+
+    ov.innerHTML=`<div class="match-popup ${popupCls}">
+      <div class="mp-stamp">${stamp}</div>
+      <div class="mp-msg">${msgLine}</div>
+      <div class="mp-bracket">${bracketHtml}</div>
+      ${!opts.won?`<button class="btn red big" id="mp-results-btn" style="width:100%;margin-top:4px">CONTINUE TO RESULTS</button>`:''}
+      ${opts.won&&!opts.isFinal?`<div class="mp-auto-bar"><div class="mp-auto-bar-fill" id="mp-bar"></div></div>`:''}
+    </div>`;
+    document.body.appendChild(ov);
+    requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ov.classList.add('active'); }); });
+
+    if(!opts.won){
+      ov.querySelector('#mp-results-btn').addEventListener('click',()=>{
+        ov.classList.remove('active');
+        setTimeout(()=>{ ov.remove(); resolve(); goToResults(); },350);
+      });
+    } else {
+      // animate bracket dots lighting up in sequence
+      const dots=ov.querySelectorAll('.mp-bracket-dot');
+      const lines=ov.querySelectorAll('.mp-bracket-line');
+      // reset all, then replay
+      dots.forEach(d=>{ d.className='mp-bracket-dot'; });
+      lines.forEach(l=>{ l.className='mp-bracket-line'; });
+      const animTarget = opts.isFinal ? roundIdx : roundIdx+1;
+      let di=0;
+      function lightNext(){
+        if(di>animTarget){ startDismiss(); return; }
+        if(di>0 && lines[di-1]) lines[di-1].classList.add('done');
+        const dot=dots[di];
+        if(di===animTarget) dot.classList.add(opts.isFinal?'champ':(opts.won?'current':'elim'));
+        else dot.classList.add('done');
+        di++;
+        setTimeout(lightNext, di<=animTarget?280:0);
+      }
+      setTimeout(lightNext, 350);
+
+      function startDismiss(){
+        if(opts.isFinal){ setTimeout(()=>{ ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); }, 2800); return; }
+        const bar=ov.querySelector('#mp-bar');
+        if(bar){ bar.style.transition=`width 3.5s linear`; bar.style.width='100%'; }
+        setTimeout(()=>{ ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); },3600);
+      }
+    }
+  });
+}
+
 // Horizontal carousel: never scroll the page. Keep the newest line visible by
 // scrolling its own feed container (goal feed / matchday list) to the bottom.
 function simScrollEnd(el){
@@ -6183,30 +6418,124 @@ const BOX_STAT_ROWS = [
   {k:'shots', label:'Shots'},
   {k:'sot', label:'Shots on Target'},
   {k:'corners', label:'Corners'},
-  {k:'fouls', label:'Fouls'},
+  {k:'fouls', label:'Fouls', lowerIsBetter:true},
   {k:'saves', label:'Saves'},
-  {k:'yellows', label:'Yellow Cards'},
-  {k:'reds', label:'Red Cards'},
+  {k:'yellows', label:'Yellow Cards', lowerIsBetter:true},
+  {k:'reds', label:'Red Cards', lowerIsBetter:true},
 ];
 function boxRowsHtml(){
   return BOX_STAT_ROWS.map(r=>`<div class="lbx-row" data-k="${r.k}"><span class="lbx-u">0</span><span class="lbx-l">${r.label}</span><span class="lbx-o">0</span></div>`).join('');
 }
+// Simulate per-player stats for a match given the user's picks, team box totals, and goal events.
+function simPlayerStats(picks, box, goalEvents){
+  const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+  const userGoals = (goalEvents||[]).filter(e=>e.team==='user'&&!e.isOG).map(e=>e.scorer);
+  const userAssistSources = (goalEvents||[]).filter(e=>e.team==='user'&&!e.isOG);
+
+  // Weight shots by position
+  const SHOT_W={GK:0.02,DEF:0.10,MID:0.28,FWD:0.60};
+  const totalShots = box ? (box.shots.u||0) : 10;
+  const totalSoT   = box ? (box.sot.u||0)  : 5;
+  const totalFouls = box ? (box.fouls.u||0) : 10;
+  const totalYC    = box ? (box.yellows.u||0) : 1;
+  const totalRC    = box ? (box.reds.u||0)    : 0;
+  const totalSaves = box ? (box.saves.u||0)   : 3;
+
+  // Build weighted pool for distributing shots
+  const wTotal = picks.reduce((s,pk)=>s+(SHOT_W[pk.player.position]||0.1),0);
+
+  // Assign assists: one per goal (to a different player than the scorer when possible)
+  const assistMap={};
+  userAssistSources.forEach(e=>{
+    const eligible = picks.filter(pk=>pk.player.name!==e.scorer);
+    if(!eligible.length) return;
+    // weight assists to MID/FWD
+    const aw={GK:0.01,DEF:0.08,MID:0.45,FWD:0.46};
+    const aWtot = eligible.reduce((s,pk)=>s+(aw[pk.player.position]||0.1),0);
+    let r=Math.random()*aWtot;
+    for(const pk of eligible){ r-=(aw[pk.player.position]||0.1); if(r<=0){ assistMap[pk.player.name]=(assistMap[pk.player.name]||0)+1; break; } }
+  });
+
+  // Distribute shots proportionally with noise, ensure SoT ≤ shots
+  let shotPool=totalShots, sotPool=totalSoT;
+  const rows = picks.map(pk=>{
+    const p=pk.player, pos=p.position;
+    const w=(SHOT_W[pos]||0.1)/wTotal;
+    const sh = pos==='GK' ? 0 : Math.max(0, Math.round(w*totalShots*2*Math.random()));
+    const sot= pos==='GK' ? 0 : Math.min(sh, Math.max(0, Math.round(sh*(totalSoT/(totalShots||1))+(Math.random()-.5))));
+    const goals = userGoals.filter(n=>n===p.name).length;
+    const assists = assistMap[p.name]||0;
+    // fouls: DEF/MID heavy
+    const fw={GK:0.03,DEF:0.38,MID:0.38,FWD:0.21};
+    const fouls = Math.max(0, Math.round((fw[pos]||0.1)*totalFouls*(0.5+Math.random())));
+    // saves only for GK
+    const saves = pos==='GK' ? totalSaves : 0;
+    // cards
+    const yc = pos==='GK'?0: (Math.random()<(totalYC/Math.max(picks.length,1))*1.5)?1:0;
+    const rc = pos==='GK'?0: (yc&&Math.random()<(totalRC/Math.max(picks.length,1)))?1:0;
+    return { name:p.name, pos, goals, assists, shots:sh, sot, fouls, saves, yc, rc };
+  });
+  return rows;
+}
+
+function playerStatsTableHtml(rows){
+  const isGK = rows.some(r=>r.pos==='GK'&&r.saves>0);
+  const cols = isGK
+    ? ['G','A','Sh','SoT','Sv','F','YC','RC']
+    : ['G','A','Sh','SoT','F','YC','RC'];
+  const head = cols.map(c=>`<th>${c}</th>`).join('');
+  const body = rows.map(r=>{
+    const cells = isGK
+      ? [r.goals,r.assists,r.shots,r.sot,r.saves,r.fouls,r.yc,r.rc]
+      : [r.goals,r.assists,r.shots,r.sot,r.fouls,r.yc,r.rc];
+    const tds = cells.map((v,i)=>{
+      const col=cols[i];
+      let cls='';
+      if(col==='G'&&v>0) cls=' class="lbx-goal"';
+      else if(col==='YC'&&v>0) cls=' class="lbx-yc"';
+      else if(col==='RC'&&v>0) cls=' class="lbx-rc"';
+      return `<td${cls}>${v>0?v:'—'}</td>`;
+    }).join('');
+    const lastName=r.name.split(' ').pop();
+    return `<tr><td class="lbx-pname" title="${escapeHtml(r.name)}">${escapeHtml(lastName)}</td><td class="lbx-ppos ${r.pos}">${r.pos}</td>${tds}</tr>`;
+  }).join('');
+  return `<table class="lbx-ptable"><thead><tr><th class="lbx-pname">Player</th><th>Pos</th>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
 // A live-updating panel placed inside the match card.
 function makeLiveBoxPanel(youLabel, oppLabel){
   const el=document.createElement('div'); el.className='live-box';
-  el.innerHTML=`<div class="lbx-head"><span class="lbx-team">${escapeHtml(youLabel||'YOU')}</span>`+
+  el.innerHTML=
+    `<div class="lbx-head"><span class="lbx-team">${escapeHtml(youLabel||'YOU')}</span>`+
     `<span class="lbx-title">MATCH STATS</span>`+
-    `<span class="lbx-team">${escapeHtml(oppLabel||'OPP')}</span></div>`+boxRowsHtml();
+    `<span class="lbx-team">${escapeHtml(oppLabel||'OPP')}</span></div>`+
+    `<div class="lbx-tabs">`+
+      `<button class="lbx-tab active" data-tab="team">TEAM</button>`+
+      `<button class="lbx-tab" data-tab="players">PLAYERS</button>`+
+    `</div>`+
+    `<div class="lbx-panel active" data-panel="team">${boxRowsHtml()}</div>`+
+    `<div class="lbx-panel" data-panel="players"><div class="lbx-players-placeholder" style="color:rgba(255,255,255,.4);font-size:11px;text-align:center;padding:12px 0;">Stats available at full time</div></div>`;
+  // tab switching
+  el.querySelectorAll('.lbx-tab').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const t=btn.dataset.tab;
+      el.querySelectorAll('.lbx-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));
+      el.querySelectorAll('.lbx-panel').forEach(p=>p.classList.toggle('active',p.dataset.panel===t));
+    });
+  });
   return el;
 }
 // Highlight the leading value green and the trailing value red (ties = neutral).
-function markLead(uEl, oEl, uVal, oVal){
+function markLead(uEl, oEl, uVal, oVal, lowerIsBetter){
   uEl.classList.remove('lead','trail'); oEl.classList.remove('lead','trail');
-  if(uVal>oVal){ uEl.classList.add('lead'); oEl.classList.add('trail'); }
-  else if(oVal>uVal){ oEl.classList.add('lead'); uEl.classList.add('trail'); }
+  const uWins = lowerIsBetter ? uVal<oVal : uVal>oVal;
+  const oWins = lowerIsBetter ? oVal<uVal : oVal>uVal;
+  if(uWins){ uEl.classList.add('lead'); oEl.classList.add('trail'); }
+  else if(oWins){ oEl.classList.add('lead'); uEl.classList.add('trail'); }
 }
 // frac 0..1 — counting stats accumulate, possession eases from 50/50 to final.
-function updateLiveBox(el, stats, frac){
+// opts.picks + opts.goalEvents: when frac===1 the player panel is populated.
+function updateLiveBox(el, stats, frac, opts){
   if(!el||!stats) return;
   const f=Math.max(0,Math.min(1,frac));
   BOX_STAT_ROWS.forEach(r=>{
@@ -6220,8 +6549,17 @@ function updateLiveBox(el, stats, frac){
       u=Math.round((stats[r.k].u||0)*f); o=Math.round((stats[r.k].o||0)*f);
       uEl.textContent=u; oEl.textContent=o;
     }
-    markLead(uEl, oEl, u, o);
+    markLead(uEl, oEl, u, o, r.lowerIsBetter);
   });
+  // At full time populate the players panel
+  if(f>=1 && opts && opts.picks && !el._playersFilled){
+    el._playersFilled=true;
+    const panel=el.querySelector('[data-panel="players"]');
+    if(panel){
+      const rows=simPlayerStats(opts.picks, stats, opts.goalEvents||[]);
+      panel.innerHTML=playerStatsTableHtml(rows);
+    }
+  }
 }
 
 // Results-page "View Match Box Scores": one scroll listing every match the team
@@ -6502,7 +6840,8 @@ async function playMatchAnimation(m, card, isFinal, opts){
     }
     updateLiveBox(boxPanel, opts.boxStats, 0);
   }
-  const boxAt = boxPanel ? (fr=>updateLiveBox(boxPanel, opts.boxStats, fr)) : null;
+  const lbOpts = {picks: opts.picks, goalEvents: m.goalEvents};
+  const boxAt = boxPanel ? (fr=>updateLiveBox(boxPanel, opts.boxStats, fr, lbOpts)) : null;
   const op = (a,b)=> boxAt ? (p=>boxAt(a+(b-a)*p)) : undefined;   // map a clock phase to a box-frac range
 
   fill.style.transition='background .3s ease';
@@ -6542,7 +6881,7 @@ async function playMatchAnimation(m, card, isFinal, opts){
     await sbDriveClock(fill, sb, baseWidth, baseWidth, 90, 90+secStop, secondStopDur,
       {score:liveScore, stoppageBase:90, onProgress:op(F.sh, 1)});
   }
-  if(boxPanel) updateLiveBox(boxPanel, opts.boxStats, 1);   // settle on the final figures
+  if(boxPanel) updateLiveBox(boxPanel, opts.boxStats, 1, lbOpts);   // settle on the final figures
 
   // freeze the final minute, then flip to FT.
   sbSetTime(sb, m.extraTime ? "120'" : (secStop>0 ? `90+${secStop}'` : "90'"), m.extraTime);
@@ -6552,13 +6891,6 @@ async function playMatchAnimation(m, card, isFinal, opts){
   if(m.penalties){ await wait(300); await simAnimatePenalties(card, m, opts); }
 
   const won = m.winner==='user';
-  const finalEl=card.querySelector('.sim-final');
-  finalEl.style.display='';
-  finalEl.className='sim-final '+(won?'sim-result-win':'sim-result-loss');
-  finalEl.textContent = won
-    ? (opts.winText || (m.penalties?'Win on Penalties':'Win'))
-    : (opts.loseText || 'Eliminated');
-  simScrollEnd(finalEl);
   if(won && isFinal) simChampionConfetti();   // confetti the instant they're crowned
   await wait(opts.finalPause || 1200);   // scoreboard stays visible above the result
   return won;
@@ -6605,7 +6937,7 @@ function buildSummaryCard(){
   return card;
 }
 
-function showSimSummary(){
+function showSimSummary(skipButton){
   const r=simResult;
   const content=$('sim-content');
 
@@ -6615,8 +6947,9 @@ function showSimSummary(){
   gs.result.resultLabel = oc.label;
   gs.result.resultEmoji = oc.emoji;
 
-  // The recap box now lives on the final results page — the sim screen just
-  // offers the button through to it once the matches have finished.
+  // Knockout eliminations show the results button in the popup — only add the
+  // inline button for group-stage exits (skipButton not set).
+  if(skipButton) return;
   setTimeout(()=>{
     const wrap=document.createElement('div'); wrap.className='stack'; wrap.style.marginTop='10px';
     const btn=document.createElement('button');
@@ -6709,38 +7042,36 @@ async function runSimulationScreen(){
       firstHalfDur:3100, secondHalfDur:3300, halftimePause:400, stoppageMax:5,
       etDur:1200, ftFreeze:250, finalPause:650,
       boxStats: matchBox(m, simResult.userOverall, m.opponent.teamOverall, m.userGoals, m.opponentGoals),
-      boxLabels:{ you:'YOU', opp: code3(m.opponent.country) }
+      boxLabels:{ you:'YOU', opp: code3(m.opponent.country) },
+      picks: gs.picks
     });
 
+    // brief pause so the final score registers, then show the popup
+    await simSleep(700);
+    await showMatchResultPopup({
+      won, isFinal,
+      isPens: !!m.penalties,
+      currentRound: m.round,
+      nextRound: next || null,
+    });
     if(won && isFinal){
-      // CHAMPIONS! confetti already dropped — now morph the WIN stamp into the
-      // big golden line (no small green note; the stamp carries the moment).
-      await simSleep(1500);
+      // morph the WIN stamp into the champion line after popup clears
       const finalEl=card.querySelector('.sim-final');
       finalEl.className='sim-final sim-champion';
       finalEl.textContent='CHAMPIONS OF THE WORLD';
-      await simSleep(1800);
-    } else {
-      const note=document.createElement('div');
-      if(won){
-        note.className='sim-advance';
-        note.textContent = pickOne([`✓ Through to the ${next}!`,`✓ Booked a ${next} spot!`,`✓ Marching on to the ${next}!`]);
-      } else {
-        note.className='sim-advance loss';
-        note.textContent = pickOne([
-          `✗ Knocked out in the ${simResult.matches[i].round}.`,
-          `✗ The run ends in the ${simResult.matches[i].round}.`,
-          `✗ Heartbreak in the ${simResult.matches[i].round}.`,
-        ]);
-      }
-      card.appendChild(note);      // note lives inside this match's box
-      await simSleep(900);
+      await simSleep(1200);
     }
     if(!won) break;
   }
 
   await simSleep(400);
-  showSimSummary();
+  showSimSummary(true);
+  if(!simResult.eliminated){
+    // champions — popup already auto-dismissed, go to results
+    await simSleep(800);
+    goToResults();
+  }
+  // eliminated path: popup's "Continue to Results" button calls goToResults directly
 }
 
 // ============================================================
