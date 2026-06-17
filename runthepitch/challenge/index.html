@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>You've been challenged to a Friendly — RunThePitch</title>
+<meta name="description" content="Click to accept and build your squad. · runthe.gg" />
+
+<!-- Challenge-specific link-preview card (scrapers read this static page; real
+     users are redirected into the app below, preserving the ?c= code). The
+     homepage keeps its own generic og-image.png — only this route differs. -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="RunThePitch" />
+<meta property="og:url" content="https://runthe.gg/challenge/" />
+<meta property="og:title" content="You've been challenged to a Friendly" />
+<meta property="og:description" content="Click to accept and build your squad. · runthe.gg" />
+<meta property="og:image" content="https://runthe.gg/og-challenge.png?v=1" />
+<meta property="og:image:secure_url" content="https://runthe.gg/og-challenge.png?v=1" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="You've been challenged to a Friendly on RunThePitch — Click to Accept" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:site" content="@RunThePitch" />
+<meta name="twitter:creator" content="@RunThePitch" />
+<meta name="twitter:url" content="https://runthe.gg/challenge/" />
+<meta name="twitter:title" content="You've been challenged to a Friendly" />
+<meta name="twitter:description" content="Click to accept and build your squad. · runthe.gg" />
+<meta name="twitter:image" content="https://runthe.gg/og-challenge.png?v=1" />
+<meta name="twitter:image:alt" content="You've been challenged to a Friendly on RunThePitch — Click to Accept" />
+
+<!-- Forward real visitors into the app, carrying the ?c= (or ?friendly=) code.
+     Scrapers don't run JS, so they keep the challenge card above. -->
+<script>
+  (function(){
+    try {
+      var qs = window.location.search || '';
+      window.location.replace('/' + qs);
+    } catch (e) {
+      window.location.href = '/';
+    }
+  })();
+</script>
+<meta http-equiv="refresh" content="0; url=/" />
+<style>
+  html,body{margin:0;height:100%;background:#0b1324;color:#FDF6E3;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    display:flex;align-items:center;justify-content:center;text-align:center;}
+  .l{font-weight:800;letter-spacing:.5px;opacity:.9;}
+  a{color:#F4B413;}
+</style>
+</head>
+<body>
+  <div class="l">Loading your challenge… <a href="/">Tap here</a> if it doesn't open.</div>
+</body>
+</html>
