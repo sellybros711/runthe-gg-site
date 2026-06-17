@@ -2642,10 +2642,10 @@ async function doSpinAnim(country, year){
   $('landed-name').innerHTML='';
   $('reel-country').innerHTML='';         // country stays blank during the year spin
   buildYearStrip(year,true);              // build the year reel just as it starts spinning
-  await spinStrip($('reel-year'),YEAR_ROW,spinDur(1700));
+  await spinStrip($('reel-year'),YEAR_ROW,spinDur(1100));
   // landed-name stays blank until both wheels have settled
   buildCountryStrip(country,true);        // build the nation reel only now, as it starts spinning
-  await spinStrip($('reel-country'),COUNTRY_ROW,spinDur(2600));
+  await spinStrip($('reel-country'),COUNTRY_ROW,spinDur(1700));
   $('landed-name').innerHTML=`${flagChip(country,'lg')} ${country} <span class="yr">'${String(year).slice(2)}</span>`;
 }
 
@@ -6015,6 +6015,51 @@ const GROUP_OUT_LINES=[
   'Three games, not enough points. The tournament moves on without them.',
 ];
 
+const GROUP_QUALIFY_LINES=[
+  'Group stage: complete. The knockouts await.',
+  'Through to the knockout rounds. Don\'t stop now.',
+  'Qualified. The real tournament starts here.',
+  'Three group games down. The hard part begins.',
+  'They made it out of the group. Now prove it.',
+  'Out of the group and into the knockouts. Business time.',
+  'Survived the group stage. Time to make noise.',
+  'Group stage cleared. The bracket opens up.',
+  'Into the knockouts — this squad earned it.',
+  'Qualified in style. The Round of 32 awaits.',
+];
+const GROUP_QUALIFY_PERFECT_LINES=[
+  'Perfect group stage. Maximum points. A statement.',
+  'Three wins from three. This squad means business.',
+  'Dominated the group. The rest of the field is on notice.',
+  'Flawless group stage — nine points, top of the table.',
+  'Swept through the group. Momentum is everything.',
+];
+const GROUP_QUALIFY_UNBEATEN_LINES=[
+  'Unbeaten in the group — a clean slate for the knockouts.',
+  'No defeats in the group. A solid foundation.',
+  'Through unbeaten. Character and quality on show.',
+  'Qualified without losing once. Build on that.',
+];
+const GROUP_QUALIFY_SCRAPE_LINES=[
+  'Scraped through. Not pretty, but they\'re in.',
+  'Made it, just about. The knockouts are a fresh start.',
+  'Qualified on the wire. Fortune favors the bold.',
+  'A wobble in the group, but they\'re still alive.',
+  'Dropped points but found a way through. That\'s what matters.',
+];
+const GROUP_ELIM_LINES=[
+  'The group stage was the end of the road.',
+  'Out in the groups. The tournament is unforgiving.',
+  'Three games, not enough points. A brutal exit.',
+  'Eliminated before the knockouts even began.',
+  'The group exposed every weakness. Back to the drawing board.',
+  'An early flight home. The World Cup waits for no one.',
+  'Group stage elimination. Every dynasty starts somewhere.',
+  'Couldn\'t make it out of the group. The squad needed more.',
+  'Three matches. Not enough. That\'s football.',
+  'The dream dies in the group stage. Rebuild and go again.',
+];
+
 const KNOCKOUT_WIN_LINES=[
   'What a result. Onward.',
   'Clinical. They weren\'t going home yet.',
@@ -6088,17 +6133,18 @@ function showMatchResultPopup(opts){
       bracketHtml+=`<div class="mp-bracket-node"><div class="mp-bracket-dot ${dotCls}"></div><div class="mp-bracket-label">${BRACKET_LABELS[i]}</div></div>`;
     });
 
+    const isGroupStage = opts.currentRound === 'Group Stage';
     let stamp, msgLine, popupCls;
     if(opts.isFinal && opts.won){
       stamp='CHAMPIONS!'; popupCls='champion';
       msgLine=pickOne(['World Cup winners. History made.','The greatest prize in football. Yours.','From the draft to the trophy. Unbelievable.','Champions of the world. Nothing more to say.']);
     } else if(opts.won){
-      stamp='ADVANCED'; popupCls='win';
-      msgLine=opts.isPens?pickOne(KNOCKOUT_WIN_PENS_LINES):pickOne(KNOCKOUT_WIN_LINES);
-      if(opts.nextRound) msgLine+=` Next up: ${opts.nextRound}.`;
+      stamp=isGroupStage?'QUALIFIED':'ADVANCED'; popupCls='win';
+      msgLine=opts.gsPopupMsg||(opts.isPens?pickOne(KNOCKOUT_WIN_PENS_LINES):pickOne(KNOCKOUT_WIN_LINES));
+      if(!isGroupStage && opts.nextRound) msgLine+=` Next up: ${opts.nextRound}.`;
     } else {
       stamp='ELIMINATED'; popupCls='loss';
-      msgLine=opts.isPens?pickOne(KNOCKOUT_LOSS_PENS_LINES):pickOne(KNOCKOUT_LOSS_LINES);
+      msgLine=opts.gsPopupMsg||(opts.isPens?pickOne(KNOCKOUT_LOSS_PENS_LINES):pickOne(KNOCKOUT_LOSS_LINES));
     }
 
     ov.innerHTML=`<div class="match-popup ${popupCls}">
@@ -7020,9 +7066,30 @@ async function runSimulationScreen(){
   banner.textContent=`${line} (${wins}W ${draws}D ${losses}L)`;
   daysBox.appendChild(banner);
   simScrollEnd(banner);
-  await simSleep(adv?900:1300);
+  await simSleep(adv?700:900);
 
-  if(!adv){ showSimSummary(); return; }
+  // pick group-stage popup message
+  let gsPopupMsg;
+  if(!adv){
+    gsPopupMsg = pickOne(GROUP_ELIM_LINES);
+  } else if(losses===0 && draws===0){
+    gsPopupMsg = pickOne(GROUP_QUALIFY_PERFECT_LINES);
+  } else if(losses===0){
+    gsPopupMsg = pickOne(GROUP_QUALIFY_UNBEATEN_LINES);
+  } else {
+    gsPopupMsg = pickOne(GROUP_QUALIFY_SCRAPE_LINES);
+  }
+
+  await showMatchResultPopup({
+    won: adv,
+    isFinal: false,
+    isPens: false,
+    currentRound: 'Group Stage',
+    nextRound: adv ? 'Round of 32' : null,
+    gsPopupMsg,
+  });
+
+  if(!adv){ showSimSummary(true); return; }
 
   // --- knockout rounds (each match is its own slide; advancing swipes across) ---
   for(let i=0;i<simResult.matches.length;i++){
