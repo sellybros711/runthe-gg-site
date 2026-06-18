@@ -12,7 +12,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const IN_PATH  = path.join(__dirname, '..', 'data', 'world_cup_full_rosters_1966_2026_RERATED_3.json');
+const IN_PATH  = path.join(__dirname, '..', 'data', 'world_cup_full_rosters_1966_2026_4.json');
 const OUT_PATH = path.join(__dirname, '..', 'data', 'players_all.json');
 const JS_PATH  = path.join(__dirname, '..', 'data', 'players_all.js');
 

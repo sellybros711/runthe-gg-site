@@ -184,7 +184,6 @@
   /* roster-updates popup (reuses the lineup overlay shell) */
   .roster-sub{font-weight:600;font-size:12px;color:#8a7d70;margin-top:4px;text-align:center;}
   /* roster tabs */
-  .roster-tabs{display:flex;gap:0;margin:12px 0 4px;border:2.5px solid var(--ink);border-radius:12px;overflow:hidden;}
   .roster-tab{flex:1;background:var(--white);border:none;cursor:pointer;font-family:'Archivo',system-ui,sans-serif;
     font-weight:900;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:#8a7d70;
     padding:9px 4px;transition:background .15s,color .15s;-webkit-tap-highlight-color:transparent;
@@ -847,6 +846,39 @@
   /* leader = green box, trailer = red box (ties stay neutral) */
   .lbx-u.lead,.lbx-o.lead,.bsm-u.lead,.bsm-o.lead{background:#1F9E57;color:#fff;}
   .lbx-u.trail,.lbx-o.trail,.bsm-u.trail,.bsm-o.trail{background:#E5402A;color:#fff;}
+  /* box-scores modal tabs */
+  .bsm-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,.14);margin:6px 0 4px;}
+  .bsm-tab{flex:1;background:none;border:none;cursor:pointer;font-family:'Archivo',system-ui,sans-serif;
+    font-weight:900;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.45);
+    padding:5px 0 7px;transition:color .18s ease,border-bottom .18s ease;border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .bsm-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+  .bsm-panel{display:none;} .bsm-panel.active{display:block;}
+  /* tournament totals section */
+  .bsm-totals-hdr{font-weight:900;font-size:10px;letter-spacing:.8px;text-transform:uppercase;
+    color:var(--ink);margin:14px 0 5px;border-top:2px solid var(--ink);padding-top:10px;}
+  /* tournament totals table sits on the light page bg — override to dark ink */
+  #boxscores-list .lbx-ptable{color:var(--ink);}
+  #boxscores-list .lbx-ptable th{color:#6b5e52;}
+  #boxscores-list .lbx-ptable td{color:var(--ink);}
+  #boxscores-list .lbx-ptable td.lbx-ppos.GK{color:#b8860b;}
+  #boxscores-list .lbx-ptable td.lbx-ppos.DEF{color:#1a7a40;}
+  #boxscores-list .lbx-ptable td.lbx-ppos.MID{color:#1a4e8a;}
+  #boxscores-list .lbx-ptable td.lbx-ppos.FWD{color:#b83226;}
+  #boxscores-list .lbx-ptable .lbx-goal{color:#b8860b;}
+  #boxscores-list .lbx-ptable .lbx-yc{color:#b8860b;}
+  #boxscores-list .lbx-ptable .lbx-rc{color:#b83226;}
+  /* inside a dark bsm-match card, restore white text */
+  #boxscores-list .bsm-match .lbx-ptable{ color:#fff; }
+  #boxscores-list .bsm-match .lbx-ptable th{ color:rgba(255,255,255,.45); }
+  #boxscores-list .bsm-match .lbx-ptable td{ color:#fff; }
+  #boxscores-list .bsm-match .lbx-ptable td.lbx-pname{ color:#fff; }
+  #boxscores-list .bsm-match .lbx-ptable td.lbx-ppos.GK{color:#F4B413;}
+  #boxscores-list .bsm-match .lbx-ptable td.lbx-ppos.DEF{color:#4ade80;}
+  #boxscores-list .bsm-match .lbx-ptable td.lbx-ppos.MID{color:#60a5fa;}
+  #boxscores-list .bsm-match .lbx-ptable td.lbx-ppos.FWD{color:#f87171;}
+  #boxscores-list .bsm-match .lbx-ptable .lbx-goal{color:#F4B413;}
+  #boxscores-list .bsm-match .lbx-ptable .lbx-yc{color:#F4B413;}
+  #boxscores-list .bsm-match .lbx-ptable .lbx-rc{color:#E5402A;}
   /* box-scores modal (all matches, one scroll) */
   #boxscores-list{display:flex;flex-direction:column;gap:12px;}
   .bsm-match{border:2px solid var(--ink);border-radius:12px;background:#0F1424;padding:10px 12px;}
@@ -2215,19 +2247,9 @@
       </div>
       <div class="roster-sub">Live updates as the 2026 World Cup unfolds</div>
     </div>
-    <div class="roster-tabs">
-      <button class="roster-tab active" id="tab-wc" type="button">
-        <svg class="ru-tab-icon" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 2h12v6a6 6 0 01-12 0V2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none"/><path d="M3 4H1v3a3 3 0 003 3M15 4h2v3a3 3 0 01-3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="6" y="14" width="6" height="2" rx="1" fill="currentColor"/><rect x="4" y="16" width="10" height="1.5" rx=".75" fill="currentColor"/></svg>
-        WC Performances
-      </button>
-      <button class="roster-tab" id="tab-cr" type="button">
-        <svg class="ru-tab-icon" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M2 2h14a1 1 0 011 1v9a1 1 0 01-1 1H6l-4 3V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" fill="none"/><line x1="5" y1="6.5" x2="13" y2="6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="5" y1="9.5" x2="10" y2="9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Community Requests
-      </button>
-    </div>
+
     <div id="roster-list">
-      <div class="roster-tab-panel active" id="panel-wc"></div>
-      <div class="roster-tab-panel" id="panel-cr"></div>
+      <div id="panel-wc"></div>
     </div>
   </div>
 </div>
@@ -2265,7 +2287,7 @@
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
 <script src="gameLogic.js?v=0.0.31"></script>
 <!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
-<script src="data/players_all.js?v=0.0.30"></script>
+<script src="data/players_all.js?v=0.0.31"></script>
 <script>
 const G = window.RunThePitch;
 
@@ -2652,6 +2674,7 @@ async function doSpinAnim(country, year){
 // fresh spin: animate, then confirm + glide into selection
 async function doSpin(country, year){
   await doSpinAnim(country, year);
+  await new Promise(r=>setTimeout(r,500));
   resolveSpin(country, year);
 }
 
@@ -4054,7 +4077,12 @@ async function fillRankBadge(overall, progress){
           result: gs.result.resultLabel || '',
           furthest: (simResult && simResult.furthestRound) || ''
         });
-      }catch(e){ id = null; }
+        console.log('[RTP] draft submitted, id:', id);
+        // Bump the cached floor by 1 immediately so the total never shows stale
+        bumpAllTime(cachedAllTime() + 1);
+      }catch(e){ console.warn('[RTP] draft submit failed:', e); id = null; }
+      // Brief pause so the DB write propagates before we read the count back
+      await new Promise(r=>setTimeout(r, 600));
       // Authoritative rank by team overall, within this draft's own board.
       const { rank, total } = await fetchGlobalRank(overall, progress, (gs.draftType || 'quick'));
       gs.result._lb = { rank, total, id };
@@ -4685,7 +4713,15 @@ function goToDraftSetup(){
 function goToDraftTypeSelect(){ goToDraftSetup(); }
 
 function newGame(){
-  goToDraftSetup();   // re-pick draft size + difficulty for the new game
+  const lastMode = gameMode; // remember before goToDraftSetup resets it
+  const lastDraft = gs && gs.draftType ? gs.draftType : draftType;
+  goToDraftSetup();
+  // restore last-used mode and draft type so the player can just hit Go again
+  gameMode = lastMode;
+  draftType = lastDraft;
+  $('seg-mode').dataset.active = lastMode;
+  $('seg-draft').dataset.active = lastDraft;
+  renderSetupInfo();
 }
 
 // ============================================================
@@ -5078,8 +5114,6 @@ $('boxscores-bg').addEventListener('click', e=>{ if(e.target===$('boxscores-bg')
 $('btn-roster-updates').addEventListener('click', openRosterUpdates);
 $('roster-close').addEventListener('click', closeRosterUpdates);
 $('roster-bg').addEventListener('click', e=>{ if(e.target===$('roster-bg')) closeRosterUpdates(); });
-$('tab-wc').addEventListener('click', ()=>switchRosterTab('tab-wc'));
-$('tab-cr').addEventListener('click', ()=>switchRosterTab('tab-cr'));
 
 // ---------- rating feedback form ----------
 const RATING_FEEDBACK_EMAIL='sellybros711@gmail.com';
@@ -5786,7 +5820,7 @@ function simFinalizeMOT(result, userSquad){
 // ============================================================
 let simResult = null;
 // Global pacing factor for the World Cup simulation (>1 = slower).
-const SIM_SPEED = 2.34;
+const SIM_SPEED = 1.934;
 const simSleep = ms => new Promise(r=>setTimeout(r, ms*SIM_SPEED));
 
 async function simEllipsisFor(el, ms){
@@ -6163,30 +6197,27 @@ function showMatchResultPopup(opts){
         setTimeout(()=>{ ov.remove(); resolve(); goToResults(); },350);
       });
     } else {
-      // animate bracket dots lighting up in sequence
+      // Instantly fill all previously-completed rounds, then animate only the new one.
       const dots=ov.querySelectorAll('.mp-bracket-dot');
       const lines=ov.querySelectorAll('.mp-bracket-line');
-      // reset all, then replay
-      dots.forEach(d=>{ d.className='mp-bracket-dot'; });
-      lines.forEach(l=>{ l.className='mp-bracket-line'; });
       const animTarget = opts.isFinal ? roundIdx : roundIdx+1;
-      let di=0;
-      function lightNext(){
-        if(di>animTarget){ startDismiss(); return; }
-        if(di>0 && lines[di-1]) lines[di-1].classList.add('done');
-        const dot=dots[di];
-        if(di===animTarget) dot.classList.add(opts.isFinal?'champ':(opts.won?'current':'elim'));
-        else dot.classList.add('done');
-        di++;
-        setTimeout(lightNext, di<=animTarget?280:0);
-      }
-      setTimeout(lightNext, 350);
+      // pre-fill completed rounds immediately (no animation)
+      dots.forEach((d,i)=>{ d.className='mp-bracket-dot'+(i<animTarget?' done':''); });
+      lines.forEach((l,i)=>{ l.className='mp-bracket-line'+(i<animTarget?' done':''); });
+      // then animate just the final dot after a short pause
+      setTimeout(()=>{
+        if(animTarget<dots.length){
+          if(animTarget>0 && lines[animTarget-1]) lines[animTarget-1].classList.add('done');
+          dots[animTarget].classList.add(opts.isFinal?'champ':'current');
+        }
+        startDismiss();
+      }, 400);
 
       function startDismiss(){
         if(opts.isFinal){ setTimeout(()=>{ ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); }, 2800); return; }
         const bar=ov.querySelector('#mp-bar');
-        if(bar){ bar.style.transition=`width 3.5s linear`; bar.style.width='100%'; }
-        setTimeout(()=>{ ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); },3600);
+        if(bar){ bar.style.transition=`width 2.5s linear`; bar.style.width='100%'; }
+        setTimeout(()=>{ ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); },2600);
       }
     }
   });
@@ -6473,12 +6504,22 @@ function boxRowsHtml(){
   return BOX_STAT_ROWS.map(r=>`<div class="lbx-row" data-k="${r.k}"><span class="lbx-u">0</span><span class="lbx-l">${r.label}</span><span class="lbx-o">0</span></div>`).join('');
 }
 // Simulate per-player stats for a match given the user's picks, team box totals, and goal events.
-function simPlayerStats(picks, box, goalEvents){
-  const ri=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
-  const userGoals = (goalEvents||[]).filter(e=>e.team==='user'&&!e.isOG).map(e=>e.scorer);
-  const userAssistSources = (goalEvents||[]).filter(e=>e.team==='user'&&!e.isOG);
+// liveGoals: subset of goalEvents seen so far (for mid-match updates). Defaults to goalEvents.
+// Deterministic seeded RNG so non-goal stats are stable across live refreshes.
+function _seededRng(seed){
+  let s=seed|0;
+  return ()=>{ s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/0xffffffff; };
+}
+function simPlayerStats(picks, box, goalEvents, liveGoals){
+  // liveGoals: goals seen so far (for mid-match); defaults to all goalEvents at FT
+  const live = liveGoals || goalEvents || [];
+  const all  = goalEvents || [];
 
-  // Weight shots by position
+  // Seed from player ids so stats are stable on re-render
+  const seed = picks.reduce((s,pk)=>s+(pk.player.player_id||0),0);
+  const rng  = _seededRng(seed);
+  const ri   = (a,b)=>a+Math.floor(rng()*(b-a+1));
+
   const SHOT_W={GK:0.02,DEF:0.10,MID:0.28,FWD:0.60};
   const totalShots = box ? (box.shots.u||0) : 10;
   const totalSoT   = box ? (box.sot.u||0)  : 5;
@@ -6486,39 +6527,43 @@ function simPlayerStats(picks, box, goalEvents){
   const totalYC    = box ? (box.yellows.u||0) : 1;
   const totalRC    = box ? (box.reds.u||0)    : 0;
   const totalSaves = box ? (box.saves.u||0)   : 3;
+  const wTotal     = picks.reduce((s,pk)=>s+(SHOT_W[pk.player.position]||0.1),0);
 
-  // Build weighted pool for distributing shots
-  const wTotal = picks.reduce((s,pk)=>s+(SHOT_W[pk.player.position]||0.1),0);
-
-  // Assign assists: one per goal (to a different player than the scorer when possible)
+  // Assign assists for ALL goals (stable, uses seeded rng)
   const assistMap={};
-  userAssistSources.forEach(e=>{
-    const eligible = picks.filter(pk=>pk.player.name!==e.scorer);
+  all.filter(e=>e.team==='user'&&!e.isOG).forEach(e=>{
+    const eligible=picks.filter(pk=>pk.player.name!==e.scorer);
     if(!eligible.length) return;
-    // weight assists to MID/FWD
     const aw={GK:0.01,DEF:0.08,MID:0.45,FWD:0.46};
-    const aWtot = eligible.reduce((s,pk)=>s+(aw[pk.player.position]||0.1),0);
-    let r=Math.random()*aWtot;
+    const aWtot=eligible.reduce((s,pk)=>s+(aw[pk.player.position]||0.1),0);
+    let r=rng()*aWtot;
     for(const pk of eligible){ r-=(aw[pk.player.position]||0.1); if(r<=0){ assistMap[pk.player.name]=(assistMap[pk.player.name]||0)+1; break; } }
   });
 
-  // Distribute shots proportionally with noise, ensure SoT ≤ shots
-  let shotPool=totalShots, sotPool=totalSoT;
+  // Count goals/assists from live events only (updates in real time)
+  const liveUserGoals = live.filter(e=>e.team==='user'&&!e.isOG).map(e=>e.scorer);
+  const liveAssistMap = {};
+  live.filter(e=>e.team==='user'&&!e.isOG).forEach(e=>{
+    const eligible=picks.filter(pk=>pk.player.name!==e.scorer);
+    if(!eligible.length) return;
+    const aw={GK:0.01,DEF:0.08,MID:0.45,FWD:0.46};
+    const aWtot=eligible.reduce((s,pk)=>s+(aw[pk.player.position]||0.1),0);
+    let r=rng()*aWtot;
+    for(const pk of eligible){ r-=(aw[pk.player.position]||0.1); if(r<=0){ liveAssistMap[pk.player.name]=(liveAssistMap[pk.player.name]||0)+1; break; } }
+  });
+
   const rows = picks.map(pk=>{
     const p=pk.player, pos=p.position;
     const w=(SHOT_W[pos]||0.1)/wTotal;
-    const sh = pos==='GK' ? 0 : Math.max(0, Math.round(w*totalShots*2*Math.random()));
-    const sot= pos==='GK' ? 0 : Math.min(sh, Math.max(0, Math.round(sh*(totalSoT/(totalShots||1))+(Math.random()-.5))));
-    const goals = userGoals.filter(n=>n===p.name).length;
-    const assists = assistMap[p.name]||0;
-    // fouls: DEF/MID heavy
+    const sh  = pos==='GK' ? 0 : Math.max(0, Math.round(w*totalShots*2*rng()));
+    const sot = pos==='GK' ? 0 : Math.min(sh, Math.max(0, Math.round(sh*(totalSoT/(totalShots||1))+(rng()-.5))));
+    const goals   = liveUserGoals.filter(n=>n===p.name).length;
+    const assists = liveAssistMap[p.name]||0;
     const fw={GK:0.03,DEF:0.38,MID:0.38,FWD:0.21};
-    const fouls = Math.max(0, Math.round((fw[pos]||0.1)*totalFouls*(0.5+Math.random())));
-    // saves only for GK
+    const fouls = Math.max(0, Math.round((fw[pos]||0.1)*totalFouls*(0.5+rng())));
     const saves = pos==='GK' ? totalSaves : 0;
-    // cards
-    const yc = pos==='GK'?0: (Math.random()<(totalYC/Math.max(picks.length,1))*1.5)?1:0;
-    const rc = pos==='GK'?0: (yc&&Math.random()<(totalRC/Math.max(picks.length,1)))?1:0;
+    const yc = pos==='GK'?0:(rng()<(totalYC/Math.max(picks.length,1))*1.5?1:0);
+    const rc = pos==='GK'?0:(yc&&rng()<(totalRC/Math.max(picks.length,1))?1:0);
     return { name:p.name, pos, goals, assists, shots:sh, sot, fouls, saves, yc, rc };
   });
   return rows;
@@ -6556,11 +6601,11 @@ function makeLiveBoxPanel(youLabel, oppLabel){
     `<span class="lbx-title">MATCH STATS</span>`+
     `<span class="lbx-team">${escapeHtml(oppLabel||'OPP')}</span></div>`+
     `<div class="lbx-tabs">`+
-      `<button class="lbx-tab active" data-tab="team">TEAM</button>`+
-      `<button class="lbx-tab" data-tab="players">PLAYERS</button>`+
+      `<button class="lbx-tab active" data-tab="players">PLAYERS</button>`+
+      `<button class="lbx-tab" data-tab="team">TEAM</button>`+
     `</div>`+
-    `<div class="lbx-panel active" data-panel="team">${boxRowsHtml()}</div>`+
-    `<div class="lbx-panel" data-panel="players"><div class="lbx-players-placeholder" style="color:rgba(255,255,255,.4);font-size:11px;text-align:center;padding:12px 0;">Stats available at full time</div></div>`;
+    `<div class="lbx-panel active" data-panel="players"><div class="lbx-players-placeholder" style="color:rgba(255,255,255,.4);font-size:11px;text-align:center;padding:12px 0;">Stats available at full time</div></div>`+
+    `<div class="lbx-panel" data-panel="team">${boxRowsHtml()}</div>`;
   // tab switching
   el.querySelectorAll('.lbx-tab').forEach(btn=>{
     btn.addEventListener('click',()=>{
@@ -6580,7 +6625,7 @@ function markLead(uEl, oEl, uVal, oVal, lowerIsBetter){
   else if(oWins){ oEl.classList.add('lead'); uEl.classList.add('trail'); }
 }
 // frac 0..1 — counting stats accumulate, possession eases from 50/50 to final.
-// opts.picks + opts.goalEvents: when frac===1 the player panel is populated.
+// opts.picks + opts.goalEvents: player panel updates live on goals and settles at FT.
 function updateLiveBox(el, stats, frac, opts){
   if(!el||!stats) return;
   const f=Math.max(0,Math.min(1,frac));
@@ -6597,15 +6642,18 @@ function updateLiveBox(el, stats, frac, opts){
     }
     markLead(uEl, oEl, u, o, r.lowerIsBetter);
   });
-  // At full time populate the players panel
+  // Populate/refresh player panel at full time
   if(f>=1 && opts && opts.picks && !el._playersFilled){
     el._playersFilled=true;
-    const panel=el.querySelector('[data-panel="players"]');
-    if(panel){
-      const rows=simPlayerStats(opts.picks, stats, opts.goalEvents||[]);
-      panel.innerHTML=playerStatsTableHtml(rows);
-    }
+    refreshLivePlayerPanel(el, stats, opts);
   }
+}
+// Redraws the player panel with stats up to the current goal count.
+// Called at FT (final) and also after each live goal.
+function refreshLivePlayerPanel(el, stats, opts){
+  const panel=el.querySelector('[data-panel="players"]'); if(!panel) return;
+  const rows=simPlayerStats(opts.picks, stats, opts.goalEvents||[], opts.goalsSeenSoFar||opts.goalEvents||[]);
+  panel.innerHTML=playerStatsTableHtml(rows);
 }
 
 // Results-page "View Match Box Scores": one scroll listing every match the team
@@ -6614,35 +6662,79 @@ function openBoxScores(){
   const r=simResult, box=$('boxscores-list'); if(!r||!box) return;
   const items=[];
   ((r.groupStage&&r.groupStage.matchdays)||[]).forEach((md,i)=>{
-    items.push({ round:`Group Stage · Matchday ${i+1}`, country:md.country, year:md.year,
+    items.push({ round:`Group Stage · MD${i+1}`, country:md.country, year:md.year,
       box:matchBox(md, r.userOverall, md.teamOverall, md.userGoals, md.opponentGoals),
-      us:md.userGoals, them:md.opponentGoals });
+      us:md.userGoals, them:md.opponentGoals, playerStats: md._playerStats||null });
   });
   (r.matches||[]).forEach(m=>{
     items.push({ round:m.round, country:m.opponent.country, year:m.opponent.year,
       box:matchBox(m, r.userOverall, m.opponent.teamOverall, m.userGoals, m.opponentGoals),
-      us:m.userGoals, them:m.opponentGoals, pens:m.penalties });
+      us:m.userGoals, them:m.opponentGoals, pens:m.penalties, playerStats: m._playerStats||null });
   });
-  box.innerHTML = items.map(it=>{
+
+  // Build per-match HTML with TEAM / PLAYERS tabs
+  const matchHtml = items.map((it,idx)=>{
     const s=it.box;
-    const rows=BOX_STAT_ROWS.map(rr=>{
-      const uv = rr.pct ? s.poss.u : s[rr.k].u, ov = rr.pct ? s.poss.o : s[rr.k].o;
-      const ur = rr.pct ? uv+'%' : uv, orr = rr.pct ? ov+'%' : ov;
-      const uc = uv>ov?' lead':(uv<ov?' trail':''), oc = ov>uv?' lead':(ov<uv?' trail':'');
+    const teamRows=BOX_STAT_ROWS.map(rr=>{
+      const uv=rr.pct?s.poss.u:s[rr.k].u, ov=rr.pct?s.poss.o:s[rr.k].o;
+      const ur=rr.pct?uv+'%':uv, orr=rr.pct?ov+'%':ov;
+      const lw=rr.lowerIsBetter;
+      const uc=(lw?uv<ov:uv>ov)?' lead':((lw?uv>ov:uv<ov)?' trail':'');
+      const oc=(lw?ov<uv:ov>uv)?' lead':((lw?ov>uv:ov<uv)?' trail':'');
       return `<div class="bsm-row"><span class="bsm-u${uc}">${ur}</span><span class="bsm-l">${rr.label}</span><span class="bsm-o${oc}">${orr}</span></div>`;
     }).join('');
-    const rc = it.us>it.them?'win':(it.us<it.them?'loss':'draw');
+    const playerHtml = it.playerStats
+      ? playerStatsTableHtml(it.playerStats)
+      : `<div style="color:rgba(255,255,255,.4);font-size:11px;text-align:center;padding:10px 0">No player data</div>`;
+    const rc=it.us>it.them?'win':(it.us<it.them?'loss':'draw');
+    const uid=`bsm-${idx}`;
     return `<div class="bsm-match">
-      <div class="bsm-top"><span class="bsm-round">${escapeHtml(it.round)}</span>`+
-      `<span class="bsm-score ${rc}">${it.us}–${it.them}${it.pens?' (p)':''}</span></div>
+      <div class="bsm-top"><span class="bsm-round">${escapeHtml(it.round)}</span>
+        <span class="bsm-score ${rc}">${it.us}–${it.them}${it.pens?' (p)':''}</span></div>
       <div class="bsm-opp">vs ${flagChip(it.country)} ${escapeHtml(it.country||'')} ${it.year||''}</div>
-      <div class="bsm-row bsm-headrow"><span class="bsm-u">YOU</span><span class="bsm-l"></span><span class="bsm-o">OPP</span></div>
-      ${rows}
+      <div class="bsm-tabs">
+        <button class="bsm-tab active" data-bsm="${uid}" data-panel="players">PLAYERS</button>
+        <button class="bsm-tab" data-bsm="${uid}" data-panel="team">TEAM</button>
+      </div>
+      <div class="bsm-panel active" data-bsm="${uid}" data-panel="players">${playerHtml}</div>
+      <div class="bsm-panel" data-bsm="${uid}" data-panel="team">
+        <div class="bsm-row bsm-headrow"><span class="bsm-u">YOU</span><span class="bsm-l"></span><span class="bsm-o">OPP</span></div>
+        ${teamRows}
+      </div>
     </div>`;
   }).join('') || '<div class="lineup-empty">No matches played.</div>';
+
+  // Tournament totals (sum across all matches with player stats)
+  const allStats = items.map(it=>it.playerStats).filter(Boolean);
+  let totalsHtml = '';
+  if(allStats.length>0){
+    const totMap={};
+    allStats.forEach(matchRows=>{
+      matchRows.forEach(row=>{
+        if(!totMap[row.name]) totMap[row.name]={name:row.name,pos:row.pos,goals:0,assists:0,shots:0,sot:0,fouls:0,saves:0,yc:0,rc:0};
+        const t=totMap[row.name];
+        t.goals+=row.goals; t.assists+=row.assists; t.shots+=row.shots;
+        t.sot+=row.sot; t.fouls+=row.fouls; t.saves+=row.saves; t.yc+=row.yc; t.rc+=row.rc;
+      });
+    });
+    const POS_ORDER={GK:3,DEF:2,MID:1,FWD:0};
+    const totRows=Object.values(totMap).sort((a,b)=>(POS_ORDER[b.pos]||0)-(POS_ORDER[a.pos]||0)||(b.goals-a.goals));
+    totalsHtml=`<div class="bsm-totals-hdr">TOURNAMENT TOTALS</div>`+playerStatsTableHtml(totRows);
+  }
+
+  box.innerHTML = matchHtml + totalsHtml;
+
+  // Wire tab switching
+  box.querySelectorAll('.bsm-tab').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const uid=btn.dataset.bsm, panel=btn.dataset.panel;
+      box.querySelectorAll(`.bsm-tab[data-bsm="${uid}"]`).forEach(b=>b.classList.toggle('active',b.dataset.panel===panel));
+      box.querySelectorAll(`.bsm-panel[data-bsm="${uid}"]`).forEach(p=>p.classList.toggle('active',p.dataset.panel===panel));
+    });
+  });
+
   const bg=$('boxscores-bg');
   bg.classList.add('show');
-  // reset the scroll to the top once the modal is laid out (it was display:none)
   const card=bg.querySelector('.lineup-card');
   if(card){ card.scrollTop=0; requestAnimationFrame(()=>{ card.scrollTop=0; }); }
 }
@@ -6693,37 +6785,24 @@ function renderRosterPanel(players, emptyMsg, showYear){
 }
 
 function openRosterUpdates(){
-  const wcPanel=$('panel-wc'), crPanel=$('panel-cr'); if(!wcPanel) return;
+  const wcPanel=$('panel-wc'); if(!wcPanel) return;
   const allChanged = (window.PLAYERS||[]).filter(p=>p.pre_wc_overall!=null);
   const byDateThenDelta = (a,b) => {
-    // newest date first; undated entries sort to the bottom
     const dc = (b.wc_date||'').localeCompare(a.wc_date||'');
     if(dc!==0) return dc;
     const cc = (a.country||'').localeCompare(b.country||'');
     if(cc!==0) return cc;
     return (b.wc_overall||0)-(a.wc_overall||0);
   };
-  const wcUpgrades = allChanged.filter(p=>p.year===2026 && !p.is_community_request).sort(byDateThenDelta);
-  const crUpgrades = allChanged.filter(p=>p.is_community_request).sort((a,b)=>{
-    if(b.year!==a.year) return b.year-a.year;
-    const cc=(a.country||'').localeCompare(b.country||'');
-    if(cc!==0) return cc;
-    return (b.wc_overall||0)-(a.wc_overall||0);
-  });
+  const wcUpgrades = allChanged.sort(byDateThenDelta);
   wcPanel.innerHTML = renderRosterPanel(wcUpgrades,
     'No upgrades yet.<br>Players who shine at the 2026 World Cup will appear here.', false);
-  crPanel.innerHTML = renderRosterPanel(crUpgrades,
-    'No community requests approved yet.<br><br>Think a player\'s rating is off? Tap <strong>Disagree with a rating?</strong> on any player card to submit a request. We review every submission and update ratings here when we agree.', true);
   $('roster-bg').classList.add('show');
   const card=$('roster-bg').querySelector('.lineup-card');
   if(card){ card.scrollTop=0; requestAnimationFrame(()=>{ card.scrollTop=0; }); }
 }
 function closeRosterUpdates(){ $('roster-bg').classList.remove('show'); }
 
-function switchRosterTab(tabId){
-  ['tab-wc','tab-cr'].forEach(id=>$(''+id).classList.toggle('active', id===tabId));
-  ['panel-wc','panel-cr'].forEach(id=>$(''+id).classList.toggle('active', id===tabId.replace('tab-','panel-')));
-}
 
 // CHANGE 1 — dynamic slow-motion. Returns the speed the clock should advance at
 // for the given moment: 2.5× slower in the closing minutes of a close game
@@ -6765,6 +6844,7 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
       const side = e.team==='user' ? 'user' : 'opp';
       if(side==='user') score.user++; else score.opp++;
       sbBumpScore(wrap, side);
+      if(opts.onGoal) opts.onGoal(e);
       pauseUntil = now + GOAL_PAUSE_MS;   // freeze clock so user can register the goal
     }
   };
@@ -6894,17 +6974,36 @@ async function playMatchAnimation(m, card, isFinal, opts){
   const liveScore={user:0, opp:0};       // shared across both halves + extra time
   const baseWidth = m.extraTime ? 75 : 100;
   const pct45 = baseWidth*0.5;            // bar at 45'  (half of regulation)
-  // box-frac milestones differ for ET vs non-ET games
   const F = m.extraTime
-    ? {fh:0.34, fs:0.37, sh:0.72}        // FH, +FH stoppage, SH … then ET → 1
-    : {fh:0.45, fs:0.50, sh:0.90};       // FH, +FH stoppage, SH … then +SH stoppage → 1
+    ? {fh:0.34, fs:0.37, sh:0.72}
+    : {fh:0.45, fs:0.50, sh:0.90};
+
+  // Live goal tracker for player panel — grows as each goal fires
+  const goalsSeenSoFar = [];
+  lbOpts.stats = opts.boxStats;
+  // Initialize player panel immediately at match start with 0 goals
+  if(boxPanel && lbOpts.picks){
+    const initPanel = boxPanel.querySelector('[data-panel="players"]');
+    if(initPanel){
+      const initRows = simPlayerStats(lbOpts.picks, opts.boxStats, lbOpts.goalEvents, []);
+      initPanel.innerHTML = playerStatsTableHtml(initRows);
+    }
+  }
+  const onGoal = boxPanel ? (e=>{
+    goalsSeenSoFar.push(e);
+    const panel = boxPanel.querySelector('[data-panel="players"]');
+    if(panel && lbOpts.picks){
+      const rows = simPlayerStats(lbOpts.picks, lbOpts.stats||null, lbOpts.goalEvents, goalsSeenSoFar);
+      panel.innerHTML = playerStatsTableHtml(rows);
+    }
+  }) : null;
 
   // FIRST HALF — 0' → 45'
   await sbDriveClock(fill, sb, 0, pct45, 0, 45, firstDur,
-    {events:firstEv, score:liveScore, goalsBox, onProgress:op(0, F.fh)});
+    {events:firstEv, score:liveScore, goalsBox, onProgress:op(0, F.fh), onGoal});
   // FIRST-HALF STOPPAGE — 45+1 … 45+N
   await sbDriveClock(fill, sb, pct45, pct45, 45, 45+firstStop, firstStopDur,
-    {score:liveScore, stoppageBase:45, onProgress:op(F.fh, F.fs)});
+    {score:liveScore, stoppageBase:45, onProgress:op(F.fh, F.fs), onGoal});
 
   // HALF TIME — brief pause
   sbSetTime(sb, 'HT', false);
@@ -6914,18 +7013,17 @@ async function playMatchAnimation(m, card, isFinal, opts){
 
   // SECOND HALF — 46' → 90'
   await sbDriveClock(fill, sb, pct45, baseWidth, 45, 90, secondDur,
-    {events:secondEv, score:liveScore, goalsBox, onProgress:op(F.fs, F.sh)});
+    {events:secondEv, score:liveScore, goalsBox, onProgress:op(F.fs, F.sh), onGoal});
 
   if(m.extraTime){
     const etLabel=document.createElement('div'); etLabel.className='sim-et-label'; etLabel.textContent='EXTRA TIME';
     goalsBox.appendChild(etLabel);
     simScrollEnd(etLabel);
-    await sbDriveClock(fill, sb, 75, 100, 91, 120, etDur,   // gold 91'→120'
-      {events:etEvents, isExtraTime:true, score:liveScore, goalsBox, onProgress:op(F.sh, 1)});
+    await sbDriveClock(fill, sb, 75, 100, 91, 120, etDur,
+      {events:etEvents, isExtraTime:true, score:liveScore, goalsBox, onProgress:op(F.sh, 1), onGoal});
   } else if(secStop>0){
-    // SECOND-HALF STOPPAGE — 90+1 … 90+N (bar stays full)
     await sbDriveClock(fill, sb, baseWidth, baseWidth, 90, 90+secStop, secondStopDur,
-      {score:liveScore, stoppageBase:90, onProgress:op(F.sh, 1)});
+      {score:liveScore, stoppageBase:90, onProgress:op(F.sh, 1), onGoal});
   }
   if(boxPanel) updateLiveBox(boxPanel, opts.boxStats, 1, lbOpts);   // settle on the final figures
 
@@ -6935,6 +7033,9 @@ async function playMatchAnimation(m, card, isFinal, opts){
   sbSetTime(sb, 'FT', false);
 
   if(m.penalties){ await wait(300); await simAnimatePenalties(card, m, opts); }
+
+  // Store final player stats on the match object for the results box-scores view
+  if(opts.picks) m._playerStats = simPlayerStats(opts.picks, opts.boxStats, m.goalEvents);
 
   const won = m.winner==='user';
   if(won && isFinal) simChampionConfetti();   // confetti the instant they're crowned
@@ -7047,7 +7148,9 @@ async function runSimulationScreen(){
     row.innerHTML=`<b>MD${i+1}</b> vs ${flagChip(o.country)} ${o.country} ${o.year} — <b>${us}–${them}</b> `+
       `<span style="color:${col};font-weight:900">${res}</span><br>`+
       `<span style="opacity:.78;font-weight:600">${simPlayerLine(userSquad, us, them)}</span>`;
-    // group stage stays simple — just the result line, no scoreboard
+    // store player stats for results box scores view
+    const gsBox = matchBox(o, simResult.userOverall, o.teamOverall, us, them);
+    o._playerStats = simPlayerStats(gs.picks, gsBox, o.goalEvents||[]);
     daysBox.appendChild(row);
     simScrollEnd(row);
     await simSleep(600);
@@ -7106,8 +7209,8 @@ async function runSimulationScreen(){
     // games add extra time / penalties on top.
     const won = await playMatchAnimation(m, card, isFinal, {
       wait: kbWait,
-      firstHalfDur:3100, secondHalfDur:3300, halftimePause:400, stoppageMax:5,
-      etDur:1200, ftFreeze:250, finalPause:650,
+      firstHalfDur:2562, secondHalfDur:2727, halftimePause:331, stoppageMax:5,
+      etDur:992, ftFreeze:206, finalPause:537,
       boxStats: matchBox(m, simResult.userOverall, m.opponent.teamOverall, m.userGoals, m.opponentGoals),
       boxLabels:{ you:'YOU', opp: code3(m.opponent.country) },
       picks: gs.picks
