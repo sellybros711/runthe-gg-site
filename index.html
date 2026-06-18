@@ -4238,7 +4238,9 @@ function goToResults(){
   $('summary-host').appendChild(buildSummaryCard());
 
   const squadBox=$('res-squad');
-  const picks=groupFlexByPosition(orderPicksForDisplay(r.scoredPicks, draftSlotOrder()));
+  // Display attacking players first: reverse the position-ordered list so it runs
+  // FWD → … → GK (top to bottom) instead of GK → … → FWD.
+  const picks=groupFlexByPosition(orderPicksForDisplay(r.scoredPicks, draftSlotOrder())).reverse();
   picks.forEach(pick=>{
     const p=pick.player;
     const row=document.createElement('div'); row.className='res-squad-row';
