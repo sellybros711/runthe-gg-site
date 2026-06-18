@@ -4038,7 +4038,7 @@ function renderLeaderboardRows(rows, highlightId){
       : `<span class="lb-rank">${rank}</span>`;
     // a row is expandable only when it actually carries a stored lineup
     const hasLineup = Array.isArray(row.player_ids) && row.player_ids.length>0;
-    return `<div class="lb-row${you?' you':''}${hasLineup?' has-lineup':''}" data-i="${i}">
+    return `<div class="lb-row${you?' you':''}${hasLineup?' has-lineup':''}" data-i="${i}" data-id="${row.id==null?'':row.id}">
       ${rankCell}
       <span class="lb-name">${fl?fl+' ':''}${escapeHtml(nm)}</span>
       <span class="lb-meta">${emToSvg(lbMetaLabel(row))}</span>
@@ -5204,7 +5204,12 @@ $('entry-submit').addEventListener('click', submitEntry);
 $('lb-list').addEventListener('click', e=>{
   const rowEl = e.target.closest('.lb-row.has-lineup');
   if(!rowEl) return;
-  const row = lbCurrentRows[+rowEl.dataset.i];
+  // Resolve the clicked row by its stable id first (immune to any index/render
+  // desync), falling back to the positional index for local preview rows that
+  // have no id. This guarantees a row always opens its OWN stored lineup.
+  const rid = rowEl.dataset.id;
+  const row = (rid ? lbCurrentRows.find(r=>String(r.id)===rid) : null)
+            || lbCurrentRows[+rowEl.dataset.i];
   if(row) openLineupModal(row);
 });
 $('lineup-close').addEventListener('click', closeLineupModal);
