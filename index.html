@@ -3909,8 +3909,12 @@ async function fetchGlobalRank(overall, progress, draftTypeVal){
   }
   if(!betterRes.ok) throw new Error('rank query failed: '+betterRes.status);
   const better = sbCount(betterRes);
-  const total = await fetchAllTimeTotal(draftTypeVal);
-  return { rank: better+1, total };
+  const rank = better + 1;
+  // The total is read in a separate query, so a freshly-inserted draft may not be
+  // reflected in it yet (replication lag). Never let the count fall below this
+  // draft's own rank — that would render an impossible "ranks N+1 of N".
+  const total = Math.max(await fetchAllTimeTotal(draftTypeVal), rank);
+  return { rank, total };
 }
 
 // Rank this draft within ONE specific board: a given mode (easy/hard) and time
