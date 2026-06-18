@@ -4403,18 +4403,17 @@ const SHARE_HOME = 'https://runthe.gg';
 
 // Draft size word: VI for the 6-man Quick draft, XI for the 11-man Full draft.
 function draftSizeLabel(){ return (gs && gs.draftType==='full') ? 'XI' : 'VI'; }
-function shareModeLabel(){ return (gameMode==='hard') ? 'Hard Mode' : 'Easy Mode'; }
-// Outcome clause + the mode played. Champion = won; lost final = came up short;
-// otherwise the furthest stage reached.
+function shareModeLabel(){ return (gameMode==='hard') ? 'Hard' : 'Easy'; }
+// Outcome clause. Champion = won; lost final = came up short; otherwise the
+// furthest stage reached.
 function shareStagePhrase(){
   const r=simResult;
-  const onMode = ` on ${shareModeLabel()}`;
-  if(r && !r.eliminated && r.furthestRound==='Final') return `won the World Cup${onMode} 🏆`;
-  if(r &&  r.eliminated && r.furthestRound==='Final') return `reached the Finals but came up short${onMode}`;
+  if(r && !r.eliminated && r.furthestRound==='Final') return 'won the World Cup 🏆';
+  if(r &&  r.eliminated && r.furthestRound==='Final') return 'reached the Finals but came up short';
   const map={'Semi-final':'Semi-Finals','Quarter-final':'Quarter-Finals',
              'Round of 16':'Round of 16','Round of 32':'Round of 32','Group Stage':'Group Stage'};
   const stage=(r && map[r.furthestRound]) || 'Group Stage';
-  return `reached the ${stage} of the World Cup${onMode}`;
+  return `reached the ${stage} of the World Cup`;
 }
 // Top scorer as "Surname (goals)", or "None" if nobody scored.
 function shareLeadScorer(){
@@ -4428,7 +4427,7 @@ function shareLeadScorer(){
 function shareTextCore(){
   const rating=(gs.result && gs.result.teamOverall!=null) ? (+gs.result.teamOverall).toFixed(1) : '—';
   return `My RunThePitch starting ${draftSizeLabel()} ${shareStagePhrase()}. `
-       + `Team Rating: ${rating}. Lead Goalscorer: ${shareLeadScorer()}. Try to beat me!`;
+       + `Mode: ${shareModeLabel()}. Team Rating: ${rating}. Lead Goalscorer: ${shareLeadScorer()}. Try to beat me!`;
 }
 // Full four-line block including the link — for clipboard + the on-screen box.
 function reportText(){
