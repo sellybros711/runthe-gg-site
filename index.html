@@ -6734,8 +6734,11 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
     ? (timeProgress != null ? timeProgress : (allGoalCount > 0 ? Math.min(1, live.length / allGoalCount) : 0))
     : 1;
 
-  const totalShots = Math.round((box ? (box.shots.u||0) : 10) * progress);
-  const totalSoT   = Math.round((box ? (box.sot.u||0)  : 5)  * progress);
+  const userGoalsSeen = live.filter(e=>e.team==='user' && !e.isOG).length;
+  // shots/SoT must always cover the goals scored so far (you can't score without
+  // shooting), so floor the running totals at the live user-goal count.
+  const totalShots = Math.max(userGoalsSeen, Math.round((box ? (box.shots.u||0) : 10) * progress));
+  const totalSoT   = Math.min(totalShots, Math.max(userGoalsSeen, Math.round((box ? (box.sot.u||0) : 5) * progress)));
   const totalFouls = Math.round((box ? (box.fouls.u||0) : 10) * progress);
   const totalYC    = hideCards ? 0 : (box ? (box.yellows.u||0) : 1);
   const totalRC    = hideCards ? 0 : (box ? (box.reds.u||0)    : 0);
@@ -6766,17 +6769,32 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
 
   // Proportional floor allocation — guarantees stats never decrease as totals grow.
   // floor(fraction * total) is monotonically non-decreasing in total for any fixed fraction≥0.
-  function allocFloor(weights, total){
-    const wSum = weights.reduce((a,b)=>a+b,0);
-    if(!wSum || !total) return weights.map(()=>0);
-    return weights.map(w=>Math.floor(w/wSum*total));
+  // Highest-averages (D'Hondt) apportionment: distributes EXACTLY `total` whole
+  // units across `weights`, so the per-player rows always sum to the team total.
+  // It is house-monotone — raising `total` never lowers anyone's share, so live
+  // stats only ever grow. `caps` optionally limits each player (used so SoT ≤ shots).
+  function allocExact(weights, total, caps){
+    const n=weights.length, alloc=new Array(n).fill(0);
+    if(!(total>0)) return alloc;
+    for(let s=0;s<total;s++){
+      let best=-1, bestVal=-Infinity;
+      for(let i=0;i<n;i++){
+        if(weights[i]<=0) continue;
+        if(caps && alloc[i]>=caps[i]) continue;
+        const v=weights[i]/(alloc[i]+1);
+        if(v>bestVal){ bestVal=v; best=i; }
+      }
+      if(best<0) break;           // no eligible player left (all zero-weight or capped)
+      alloc[best]++;
+    }
+    return alloc;
   }
 
-  const shotAlloc = allocFloor(playerShotW, totalShots);
-  const foulAlloc = allocFloor(playerFoulW, totalFouls);
-  // SoT: proportional to each player's shots (ensures sot ≤ shots always)
-  const sotRatio  = totalShots>0 ? totalSoT/totalShots : 0;
-  const sotAlloc  = shotAlloc.map(sh=>Math.min(sh, Math.floor(sh*sotRatio)));
+  const shotAlloc = allocExact(playerShotW, totalShots);
+  const foulAlloc = allocExact(playerFoulW, totalFouls);
+  // SoT distributed in proportion to each player's shots, capped at their shot
+  // count (so SoT ≤ shots), summing exactly to the team SoT total.
+  const sotAlloc  = allocExact(shotAlloc, totalSoT, shotAlloc);
 
   // Goals/assists come purely from live events (truly real-time)
   const liveUserGoals = live.filter(e=>e.team==='user'&&!e.isOG).map(e=>e.scorer);
@@ -6909,6 +6927,19 @@ function markLead(uEl, oEl, uVal, oVal, lowerIsBetter){
 function updateLiveBox(el, stats, frac, opts){
   if(!el||!stats) return;
   const f=Math.max(0,Math.min(1,frac));
+  // When the user's picks are known, compute the per-player rows ONCE and derive
+  // the YOUR-side team totals (shots/SoT/fouls/saves/cards) from those same rows,
+  // so the TEAM tab and the PLAYERS tab can never disagree. Opponent side and the
+  // stats with no player breakdown (possession, corners) stay model-driven.
+  let you=null, rows=null;
+  if(opts && opts.picks){
+    const liveGoals = opts.goalsSeenSoFar || opts.goalEvents || [];
+    rows = simPlayerStats(opts.picks, stats, opts.goalEvents||[], liveGoals,
+            { cardEvents: opts.cardEvents||[], timeProgress: f });
+    you = rows.reduce((a,r)=>{ a.shots+=r.shots; a.sot+=r.sot; a.fouls+=r.fouls;
+            a.saves+=r.saves; a.yellows+=r.yc; a.reds+=r.rc; return a; },
+            {shots:0,sot:0,fouls:0,saves:0,yellows:0,reds:0});
+  }
   BOX_STAT_ROWS.forEach(r=>{
     const row=el.querySelector(`.lbx-row[data-k="${r.k}"]`); if(!row) return;
     const uEl=row.querySelector('.lbx-u'), oEl=row.querySelector('.lbx-o');
@@ -6917,15 +6948,22 @@ function updateLiveBox(el, stats, frac, opts){
       u=Math.round(50+(stats.poss.u-50)*f); o=100-u;
       uEl.textContent=u+'%'; oEl.textContent=o+'%';
     } else {
-      u=Math.round((stats[r.k].u||0)*f); o=Math.round((stats[r.k].o||0)*f);
+      // your side from the player rows when available (guarantees the totals match
+      // the per-player box), else the scaled model figure.
+      u = (you && (r.k in you)) ? you[r.k] : Math.round((stats[r.k].u||0)*f);
+      o = Math.round((stats[r.k].o||0)*f);
       uEl.textContent=u; oEl.textContent=o;
     }
     markLead(uEl, oEl, u, o, r.lowerIsBetter);
   });
-  // Populate/refresh player panel at full time
-  if(f>=1 && opts && opts.picks && !el._playersFilled){
-    el._playersFilled=true;
-    refreshLivePlayerPanel(el, stats, opts);
+  // Render the PLAYERS tab from the SAME rows (only when they change, so the table
+  // isn't rebuilt on every animation frame).
+  if(rows){
+    const panel=el.querySelector('[data-panel="players"]');
+    if(panel){
+      const sig=rows.map(r=>`${r.goals}.${r.assists}.${r.shots}.${r.sot}.${r.saves}.${r.fouls}.${r.yc}.${r.rc}`).join('|');
+      if(el._rowsSig!==sig){ el._rowsSig=sig; panel.innerHTML=playerStatsTableHtml(rows); }
+    }
   }
 }
 // Redraws the player panel with stats up to the current goal count.
@@ -7251,7 +7289,6 @@ async function playMatchAnimation(m, card, isFinal, opts){
       const before = card.querySelector('.sim-goals');
       if(before) card.insertBefore(boxPanel, before); else card.appendChild(boxPanel);
     }
-    updateLiveBox(boxPanel, opts.boxStats, 0);
   }
   // Generate card events for this match if not already done
   if(!m.cardEvents && opts.boxStats && opts.picks){
@@ -7259,22 +7296,25 @@ async function playMatchAnimation(m, card, isFinal, opts){
   }
   const allCardEvents = m.cardEvents || [];
 
-  const lbOpts = {picks: opts.picks, goalEvents: m.goalEvents, cardEvents: allCardEvents};
-  const boxAt = boxPanel ? (fr=>updateLiveBox(boxPanel, opts.boxStats, fr, lbOpts)) : null;
+  // Live event trackers — grow as goals/cards fire during the animation. The live
+  // box reads these so the TEAM tab and the per-player rows are built from the SAME
+  // state every frame and can never disagree.
+  const goalsSeenSoFar = [];
+  const cardsSeenSoFar = [];
 
-  // Track overall match time fraction (0–1) so player stats scale with the clock
+  // Track overall match time fraction (0–1) so player stats scale with the clock.
   let matchTimeProgress = 0;
-  let lastPanelRefreshProg = -1;
+  const lbOpts = boxPanel ? {picks: opts.picks, goalEvents: m.goalEvents,
+                             goalsSeenSoFar, cardEvents: cardsSeenSoFar} : null;
+  // A single updateLiveBox call refreshes BOTH the team tab and the players tab
+  // from one computation, so their shot/foul/etc. totals always match.
+  const boxAt = boxPanel ? (fr=>updateLiveBox(boxPanel, opts.boxStats, fr, lbOpts)) : null;
+  if(boxAt) boxAt(0);   // show the empty box (zeros) immediately, like the scoreboard
 
   const op = (a,b)=> (p=>{
     const fr = a+(b-a)*p;
-    if(boxAt) boxAt(fr);
     matchTimeProgress = fr;
-    // Throttle: refresh player panel every ~3% match progress (~2-3 game minutes)
-    if(fr - lastPanelRefreshProg >= 0.03){
-      lastPanelRefreshProg = fr;
-      refreshPlayerPanel();
-    }
+    if(boxAt) boxAt(fr);   // updates team + player tabs together
   });
 
   fill.style.transition='background .3s ease';
@@ -7285,33 +7325,11 @@ async function playMatchAnimation(m, card, isFinal, opts){
     ? {fh:0.34, fs:0.37, sh:0.72}
     : {fh:0.45, fs:0.50, sh:0.90};
 
-  // Live trackers — grow as events fire during animation
-  const goalsSeenSoFar = [];
-  const cardsSeenSoFar = [];
-  lbOpts.stats = opts.boxStats;
-
-  const refreshPlayerPanel = ()=>{
-    if(!boxPanel || !lbOpts.picks) return;
-    const panel = boxPanel.querySelector('[data-panel="players"]');
-    if(!panel) return;
-    const rows = simPlayerStats(lbOpts.picks, lbOpts.stats||null, lbOpts.goalEvents, goalsSeenSoFar, {cardEvents: cardsSeenSoFar, timeProgress: matchTimeProgress||null});
-    panel.innerHTML = playerStatsTableHtml(rows);
-  };
-
-  // Initialize player panel at match start (zero goals, zero cards)
-  if(boxPanel && lbOpts.picks){
-    const initPanel = boxPanel.querySelector('[data-panel="players"]');
-    if(initPanel){
-      const initRows = simPlayerStats(lbOpts.picks, opts.boxStats, lbOpts.goalEvents, [], {cardEvents:[]});
-      initPanel.innerHTML = playerStatsTableHtml(initRows);
-    }
-  }
-
-  const onGoal = boxPanel ? (e=>{ goalsSeenSoFar.push(e); refreshPlayerPanel(); }) : null;
+  const onGoal = boxPanel ? (e=>{ goalsSeenSoFar.push(e); if(boxAt) boxAt(matchTimeProgress); }) : null;
 
   const onCard = (e, goalsBox)=>{
     cardsSeenSoFar.push(e);
-    refreshPlayerPanel();
+    if(boxAt) boxAt(matchTimeProgress);
     if(!goalsBox) return;
     const isRed = e.cardType==='RC' || e.cardType==='Y2R';
     const cardLabel = e.cardType==='Y2R' ? '2nd yellow' : (isRed ? 'Red card' : 'Yellow card');
