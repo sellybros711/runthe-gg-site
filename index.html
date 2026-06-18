@@ -650,10 +650,11 @@
   .pitch-wrap.full .psl-corner.tr{top:-4px;right:-4px;}
   .pitch-wrap.full .psl-corner.br{bottom:-4px;right:-4px;}
   .pitch-wrap.full .psl-corner.bl{bottom:-4px;left:-4px;}
-  /* year + overall badge below each filled circle */
+  /* year + overall badge below each filled circle — laid out horizontally
+     (year on the left, overall on the right) in every game mode */
   .psl-badge{
-    position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);
-    display:none;flex-direction:column;align-items:center;gap:2px;
+    position:absolute;top:calc(100% + 3px);left:50%;transform:translateX(-50%);
+    display:none;flex-direction:row;align-items:center;gap:3px;
     white-space:nowrap;pointer-events:none;z-index:3;
   }
   .pslot.filled .psl-badge{display:flex;}
@@ -669,22 +670,15 @@
   .psl-badge-ov.orange{background:#F47B20;}
   .psl-badge-ov.gold{background:#F4B413;color:#1a1008;}
   .psl-badge-ov.green{background:#1F9E57;}
-  /* 11-man full pitch: show year only, no overall */
-  .pitch-wrap.full .psl-badge{gap:1px;top:calc(100% + 2px);}
-  .pitch-wrap.full .psl-badge-year{font-size:9px;padding:1px 4px;}
-  .pitch-wrap.full .psl-badge-ov{display:none;}
+  /* 11-man full pitch: tighter, smaller badges so the horizontal year+overall
+     fits under the densely-packed circles without colliding with neighbours */
+  .pitch-wrap.full .psl-badge{gap:2px;top:calc(100% + 2px);}
+  .pitch-wrap.full .psl-badge-year{font-size:8px;padding:1px 3px;}
+  .pitch-wrap.full .psl-badge-ov{font-size:10px;padding:1px 4px;line-height:1.25;}
   /* quick draft: slightly bigger year */
   .pitch-wrap:not(.full) .psl-badge-year{font-size:10px;padding:1px 6px;}
   /* Quick Draft circles are a touch smaller than the 22% default. */
   .pitch-wrap:not(.full) .pslot{width:20%;}
-  /* The keeper sits at the very bottom of the pitch (top:87%), so a normal
-     stacked year-over-overall badge gets clipped by the pitch's bottom edge.
-     For the GK only, lay the badge out HORIZONTALLY (year + overall side by
-     side) and tuck it a touch tighter so it's short enough to sit underneath
-     the keeper without being cut off — even on small/short phones. Other
-     slots keep the standard stacked badge. */
-  #ps-gk .psl-badge{flex-direction:row;gap:3px;align-items:center;top:calc(100% + 2px);}
-  #ps-gk .psl-badge-ov{font-size:12px;padding:1px 5px;line-height:1.2;}
   /* EMPTY: frosted glass circle, position-colour outline, gentle opacity pulse */
   .pslot:not(.filled){
     background:rgba(255,255,255,.15);
@@ -2874,7 +2868,7 @@ function fullOpenCounts(){
 // distributed across the three outfield lines (so the empty board reads as a
 // 4-3-3: DEF 3+FLEX, MID 2+FLEX, FWD 2+FLEX) — no separate FLEX line. Purely
 // cosmetic; the draft logic/cap is unchanged. Total is always 11.
-const FULL_BAND_TOP = { FWD:24, MID:50, DEF:73, GK:90 };
+const FULL_BAND_TOP = { FWD:24, MID:50, DEF:73, GK:88 };  /* GK nudged up from 90 so its year+overall badge clears the pitch's bottom edge */
 function buildFullPitch(){
   const wrap=$('pitch-wrap'); if(!wrap || !gs) return;
   wrap.querySelectorAll('.pslot.full-slot').forEach(el=>el.remove());
