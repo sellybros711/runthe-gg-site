@@ -675,12 +675,16 @@
   .pitch-wrap.full .psl-badge-ov{display:none;}
   /* quick draft: slightly bigger year */
   .pitch-wrap:not(.full) .psl-badge-year{font-size:10px;padding:1px 6px;}
-  /* GK sits at the very bottom of the pitch (top:87%), so its year/OVR badge —
-     which normally hangs below the circle — gets clipped by the pitch's bottom
-     edge (overflow:hidden). Flip the GK badge to sit ABOVE its circle instead,
-     in the open central gap between the keeper and the two defenders. */
-  #ps-gk .psl-badge{top:auto;bottom:calc(100% + 4px);}
-  .pitch-wrap.full #ps-gk .psl-badge{top:auto;bottom:calc(100% + 2px);}
+  /* Quick Draft circles are a touch smaller than the 22% default. */
+  .pitch-wrap:not(.full) .pslot{width:20%;}
+  /* The keeper sits at the very bottom of the pitch (top:87%), so a normal
+     stacked year-over-overall badge gets clipped by the pitch's bottom edge.
+     For the GK only, lay the badge out HORIZONTALLY (year + overall side by
+     side) and tuck it a touch tighter so it's short enough to sit underneath
+     the keeper without being cut off — even on small/short phones. Other
+     slots keep the standard stacked badge. */
+  #ps-gk .psl-badge{flex-direction:row;gap:3px;align-items:center;top:calc(100% + 2px);}
+  #ps-gk .psl-badge-ov{font-size:12px;padding:1px 5px;line-height:1.2;}
   /* EMPTY: frosted glass circle, position-colour outline, gentle opacity pulse */
   .pslot:not(.filled){
     background:rgba(255,255,255,.15);
@@ -6355,7 +6359,7 @@ function showMatchResultPopup(opts){
       <div class="mp-bracket">${bracketHtml}</div>
       ${!opts.won?`<button class="btn red big" id="mp-results-btn" style="width:100%;margin-top:4px">CONTINUE TO RESULTS</button>`:''}
       ${opts.won&&opts.isFinal?`<button class="btn red big" id="mp-results-btn" style="width:100%;margin-top:4px">CONTINUE TO RESULTS</button>`:''}
-      ${opts.won&&!opts.isFinal?`<button class="btn teal big" id="mp-next-btn" style="width:100%;margin-top:4px">Continue →</button>`:''}
+      ${opts.won&&!opts.isFinal?`<button class="btn teal big" id="mp-next-btn" style="width:100%;margin-top:4px">Continue →</button><div class="mp-auto-bar"><div class="mp-auto-bar-fill" id="mp-bar"></div></div>`:''}
     </div>`;
     document.body.appendChild(ov);
     requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ov.classList.add('active'); }); });
@@ -6384,12 +6388,20 @@ function showMatchResultPopup(opts){
 
       function startDismiss(){
         if(opts.isFinal){
+          // Final win: no auto-advance — let the user savour the ending; manual button only.
           const btn=ov.querySelector('#mp-results-btn');
           if(btn) btn.addEventListener('click',()=>{ ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); });
           return;
         }
+        // Between rounds: auto-advance after 3s (progress bar shows the countdown);
+        // the Continue button lets an impatient user skip ahead early.
+        let done=false;
+        const advance=()=>{ if(done) return; done=true; ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); };
+        const bar=ov.querySelector('#mp-bar');
+        if(bar){ bar.style.transition='width 3s linear'; requestAnimationFrame(()=>{ bar.style.width='100%'; }); }
         const btn=ov.querySelector('#mp-next-btn');
-        if(btn) btn.addEventListener('click',()=>{ ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); });
+        if(btn) btn.addEventListener('click',advance);
+        setTimeout(advance, 3000);
       }
     }
   });
