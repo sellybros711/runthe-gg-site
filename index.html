@@ -675,6 +675,12 @@
   .pitch-wrap.full .psl-badge-ov{display:none;}
   /* quick draft: slightly bigger year */
   .pitch-wrap:not(.full) .psl-badge-year{font-size:10px;padding:1px 6px;}
+  /* GK sits at the very bottom of the pitch (top:87%), so its year/OVR badge —
+     which normally hangs below the circle — gets clipped by the pitch's bottom
+     edge (overflow:hidden). Flip the GK badge to sit ABOVE its circle instead,
+     in the open central gap between the keeper and the two defenders. */
+  #ps-gk .psl-badge{top:auto;bottom:calc(100% + 4px);}
+  .pitch-wrap.full #ps-gk .psl-badge{top:auto;bottom:calc(100% + 2px);}
   /* EMPTY: frosted glass circle, position-colour outline, gentle opacity pulse */
   .pslot:not(.filled){
     background:rgba(255,255,255,.15);
