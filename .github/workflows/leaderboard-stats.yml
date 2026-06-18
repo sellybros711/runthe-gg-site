@@ -1,0 +1,87 @@
+name: Leaderboard stats
+
+# Read-only health check for the leaderboard + ratings. Prints exact counts
+# (Quick vs Full vs grand total, anonymous vs named, lineups stored, recent
+# activity) and FAILS the run if it spots one of the bug classes we've hit
+# before — so a daily failure email flags it quickly.
+#
+# Runs on demand (Actions → Leaderboard stats → Run workflow) and daily.
+# Uses the same SUPABASE_DB_URL secret as the sync workflow. Only SELECTs —
+# it never writes.
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: '0 13 * * *'   # daily at 13:00 UTC
+
+concurrency:
+  group: leaderboard-stats
+  cancel-in-progress: true
+
+jobs:
+  stats:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Query leaderboard + ratings health
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not set."; exit 1
+          fi
+
+          EXPECTED=$(node -e "console.log(require('./data/players_all.json').length)")
+          echo "Expected wc_players rows (from repo data): $EXPECTED"
+          echo ""
+          echo "----- leaderboard / ratings metrics -----"
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -P pager=off -A -F $'\t' -c "
+            select metric, value from (
+              select 1  ord, 'total_drafts'      metric, count(*)::text value from drafts
+              union all select 2,  'quick_drafts',     count(*)::text from drafts where draft_type='quick'
+              union all select 3,  'full_drafts',      count(*)::text from drafts where draft_type='full'
+              union all select 4,  'bad_draft_type',   count(*)::text from drafts where draft_type is null or draft_type not in ('quick','full')
+              union all select 5,  'with_lineup',      count(*)::text from drafts where player_ids is not null
+              union all select 6,  'missing_lineup',   count(*)::text from drafts where player_ids is null
+              union all select 7,  'named',            count(*)::text from drafts where name is not null and btrim(name) <> ''
+              union all select 8,  'anonymous',        count(*)::text from drafts where name is null or btrim(name) = ''
+              union all select 9,  'last_24h',         count(*)::text from drafts where created_at >= now() - interval '24 hours'
+              union all select 10, 'last_1h',          count(*)::text from drafts where created_at >= now() - interval '1 hour'
+              union all select 11, 'max_overall',      coalesce(max(overall)::text,'-') from drafts
+              union all select 12, 'min_overall',      coalesce(min(overall)::text,'-') from drafts
+              union all select 13, 'wc_players_rows',  count(*)::text from wc_players
+            ) t order by ord;"
+          echo "-----------------------------------------"
+          echo ""
+
+          # ---- anomaly checks (each appends to FLAGS) ----
+          FLAGS=""
+
+          ACTUAL=$(psql "$SUPABASE_DB_URL" -At -c "select count(*) from wc_players;")
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::warning::wc_players has $ACTUAL rows but repo data has $EXPECTED — table is out of sync. Run 'Sync wc_players to Supabase'."
+            FLAGS="$FLAGS wc_players_out_of_sync($ACTUAL/$EXPECTED)"
+          else
+            echo "OK: wc_players row count matches repo data ($ACTUAL)."
+          fi
+
+          BADTYPE=$(psql "$SUPABASE_DB_URL" -At -c "select count(*) from drafts where draft_type is null or draft_type not in ('quick','full');")
+          if [ "$BADTYPE" != "0" ]; then
+            echo "::warning::$BADTYPE draft rows have a missing/unknown draft_type — they won't count on either board."
+            FLAGS="$FLAGS bad_draft_type($BADTYPE)"
+          else
+            echo "OK: every draft has a valid draft_type."
+          fi
+
+          if [ -n "$FLAGS" ]; then
+            echo ""
+            echo "::error::Leaderboard health check found issues:$FLAGS"
+            exit 1
+          fi
+          echo ""
+          echo "All leaderboard health checks passed."
