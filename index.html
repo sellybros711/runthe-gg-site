@@ -2715,7 +2715,7 @@ function buildYearStrip(target, animate){
 }
 // Full Team Draft has ~twice the rounds, so its year/country wheels spin 1.5x
 // faster than Quick Draft (which uses the base timing) to keep the flow snappy.
-function spinDur(base){ return isFullDraft() ? Math.round(base/1.5) : base; }
+function spinDur(base){ return Math.round(base/1.5); } // both draft types spin at the faster full-draft speed
 function spinStrip(strip, rowH, duration){
   strip.style.transition='none';
   strip.style.transform='translateY(0)';
