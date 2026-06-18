@@ -4075,14 +4075,17 @@ function openLineupModal(row){
   // pair each id with its stored slot (GK/DEF/MID/FWD/FLEX); fall back to the
   // player's natural position when an entry predates slot storage
   const slots = Array.isArray(row.slots) ? row.slots : [];
-  // attackers-first (FLEX/FWD → GK) to match the results page squad order
-  const ORDER={FLEX:0,FWD:1,MID:2,DEF:3,GK:4};
+  // attackers-first (FWD → GK) to match the results page. A FLEX pick is grouped
+  // by the player's real position (what they were drafted as) — so a flex-forward
+  // sits with the forwards, a flex-defender with the defenders, etc.
+  const ORDER={FWD:0,MID:1,DEF:2,GK:3};
+  const effPos = e => (e.slot==='FLEX' ? (e.p.position||'') : e.slot);
   const entries = ids.map((id,i)=>{
     const p=playerById(id); if(!p) return null;
     const slot=(slots[i] && String(slots[i]).trim()) ? String(slots[i]).trim().toUpperCase() : p.position;
     return { p, slot };
   }).filter(Boolean)
-    .sort((a,b)=>(ORDER[a.slot]??9)-(ORDER[b.slot]??9) || (luOv(b.p)-luOv(a.p)));
+    .sort((a,b)=>(ORDER[effPos(a)]??9)-(ORDER[effPos(b)]??9) || (luOv(b.p)-luOv(a.p)));
   if(!entries.length){
     box.innerHTML='<div class="lineup-empty">Lineup unavailable for this entry.</div>';
   }else{
