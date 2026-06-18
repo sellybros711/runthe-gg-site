@@ -4075,7 +4075,8 @@ function openLineupModal(row){
   // pair each id with its stored slot (GK/DEF/MID/FWD/FLEX); fall back to the
   // player's natural position when an entry predates slot storage
   const slots = Array.isArray(row.slots) ? row.slots : [];
-  const ORDER={GK:0,DEF:1,MID:2,FWD:3,FLEX:4};
+  // attackers-first (FLEX/FWD → GK) to match the results page squad order
+  const ORDER={FLEX:0,FWD:1,MID:2,DEF:3,GK:4};
   const entries = ids.map((id,i)=>{
     const p=playerById(id); if(!p) return null;
     const slot=(slots[i] && String(slots[i]).trim()) ? String(slots[i]).trim().toUpperCase() : p.position;
@@ -4614,8 +4615,8 @@ async function buildShareCanvas(){
   x.fillText('YOUR STARTING VI', 64, y+8);
   x.fillStyle='rgba(255,255,255,.18)'; x.fillRect(300, y, W-64-300, 2); y+=26;
 
-  // roster rows (white cards)
-  const picks=groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, draftSlotOrder()));
+  // roster rows (white cards) — attackers-first (FWD → GK) to match the results page
+  const picks=groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, draftSlotOrder())).reverse();
   const gap=ROW_GAP, mX=60, rW=W-2*mX;
   const rowH=fullRoster ? ROW_H : Math.min(96, Math.floor((H-110-y)/picks.length)-12);
   // preload flags (CORS-safe; null on failure → no flag drawn)
