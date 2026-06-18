@@ -4261,7 +4261,7 @@ function goToResults(){
     row.addEventListener('click',()=>openProfile(p));
     squadBox.appendChild(row);
   });
-  $('res-share').addEventListener('click', nativeShareWithImage);
+  $('res-share').addEventListener('click', copyReport);   // text-only share (message + runthe.gg link)
   $('res-again').addEventListener('click', newGame);
   $('res-boxscores').addEventListener('click', openBoxScores);
   $('res-leaderboard').addEventListener('click', ()=>openEntryModal(roundName, r.teamOverall, color));
@@ -4399,30 +4399,32 @@ function closeProfile(){ $('profile-bg').classList.remove('show'); }
 // The first three lines (shareTextCore) are the navigator.share() text; the
 // clipboard fallback copies the whole block — link included — since that's what
 // people paste into a tweet.
-const SHARE_CTA  = 'Tap the link to draft your squad ⚽';
 const SHARE_HOME = 'https://runthe.gg';
 
-function shareResultMessage(){
+// Draft size word: VI for the 6-man Quick draft, XI for the 11-man Full draft.
+function draftSizeLabel(){ return (gs && gs.draftType==='full') ? 'XI' : 'VI'; }
+// "won the World Cup" for a champion, else "reached the {stage} of the World Cup".
+function shareStagePhrase(){
   const r=simResult;
-  if(r && !r.eliminated && r.furthestRound==='Final')
-    return 'I just won the World Cup on RunThePitch 🏆';
-  const round = r ? r.furthestRound : 'Group Stage';
-  switch(round){
-    case 'Final':         return 'I made the World Cup Final on RunThePitch ⚽';
-    case 'Semi-final':    return 'I reached the World Cup Semi-finals on RunThePitch ⚽';
-    case 'Quarter-final': return 'I reached the World Cup Quarter-finals on RunThePitch ⚽';
-    case 'Round of 16':   return 'I made the World Cup Round of 16 on RunThePitch ⚽';
-    case 'Round of 32':   return 'I reached the World Cup Round of 32 on RunThePitch ⚽';
-    default:              return 'I flamed out of the World Cup group stage on RunThePitch 😤';
-  }
+  if(r && !r.eliminated && r.furthestRound==='Final') return 'won the World Cup 🏆';
+  const map={'Final':'Final','Semi-final':'Semi-Finals','Quarter-final':'Quarter-Finals',
+             'Round of 16':'Round of 16','Round of 32':'Round of 32','Group Stage':'Group Stage'};
+  const stage=(r && map[r.furthestRound]) || 'Group Stage';
+  return `reached the ${stage} of the World Cup`;
 }
-function shareScoreLine(){
-  const s = (gs.result && gs.result.teamOverall!=null) ? +gs.result.teamOverall : 0;
-  return `${s.toFixed(1)}`;
+// Top scorer as "Surname (goals)", or "None" if nobody scored.
+function shareLeadScorer(){
+  const r=simResult; if(!r) return 'None';
+  let topName='', topGoals=0;
+  Object.entries(r.userGoalScorers||{}).forEach(([n,g])=>{ if(g>topGoals){ topGoals=g; topName=n; } });
+  return topName ? `${shortNm(topName)} (${topGoals})` : 'None';
 }
-// First three lines (message + score + CTA) — used as navigator.share() text.
+// Tweet body. The runthe.gg link is appended by reportText() (clipboard/desktop)
+// and passed as the share-sheet url on mobile.
 function shareTextCore(){
-  return `${shareResultMessage()}\n${shareScoreLine()}\n${SHARE_CTA}`;
+  const rating=(gs.result && gs.result.teamOverall!=null) ? (+gs.result.teamOverall).toFixed(1) : '—';
+  return `My RunThePitch starting ${draftSizeLabel()} ${shareStagePhrase()}. `
+       + `Team Rating: ${rating}. Lead Goalscorer: ${shareLeadScorer()}. Try to beat me!`;
 }
 // Full four-line block including the link — for clipboard + the on-screen box.
 function reportText(){
