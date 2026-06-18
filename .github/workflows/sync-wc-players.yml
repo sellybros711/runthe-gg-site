@@ -1,0 +1,63 @@
+name: Sync wc_players to Supabase
+
+# Keeps the Supabase `wc_players` table (the server's authoritative ratings that
+# submit_draft() recomputes every leaderboard score from) in lockstep with the
+# player data in this repo. Runs whenever the data or the generated CSV changes
+# on main, and can also be run on demand (workflow_dispatch).
+#
+# REQUIRED SECRET (Settings → Secrets and variables → Actions → New secret):
+#   SUPABASE_DB_URL  — the Postgres connection URI from
+#     Supabase → Project Settings → Database → Connection string → URI.
+#     Use the **Session pooler** URI (…pooler.supabase.com:5432) so it works
+#     from GitHub's IPv4 runners, and keep the password in the URI.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'data/players_all.json'
+      - 'supabase/wc_players.csv'
+      - 'scripts/makeWcPlayersCsv.js'
+      - '.github/workflows/sync-wc-players.yml'
+  workflow_dispatch: {}
+
+# Never run two syncs at once; cancel an in-flight run if a newer push arrives.
+concurrency:
+  group: sync-wc-players
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Regenerate from data/players_all.json so the table always matches the
+      # deployed player data, even if the committed CSV was somehow stale.
+      - name: Regenerate wc_players.csv
+        run: node scripts/makeWcPlayersCsv.js
+
+      - name: Load into Supabase (atomic truncate + import)
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ]; then
+            echo "::error::SUPABASE_DB_URL secret is not set — add it under Settings → Secrets → Actions."
+            exit 1
+          fi
+          # One transaction: empty the table and reload it from the CSV. If
+          # anything fails the transaction rolls back, so the table is never left
+          # half-loaded. FORCE_NOT_NULL keeps blank awards as '' (the column is
+          # NOT NULL) instead of importing them as NULL.
+          psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 <<'SQL'
+          BEGIN;
+          TRUNCATE wc_players;
+          \copy wc_players(player_id,wc_overall,position,is_captain,award) FROM 'supabase/wc_players.csv' WITH (FORMAT csv, HEADER true, FORCE_NOT_NULL(award))
+          COMMIT;
+          SQL
+          echo -n "wc_players row count after sync: "
+          psql "$SUPABASE_DB_URL" -At -c "select count(*) from wc_players;"
