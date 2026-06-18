@@ -4403,14 +4403,18 @@ const SHARE_HOME = 'https://runthe.gg';
 
 // Draft size word: VI for the 6-man Quick draft, XI for the 11-man Full draft.
 function draftSizeLabel(){ return (gs && gs.draftType==='full') ? 'XI' : 'VI'; }
-// "won the World Cup" for a champion, else "reached the {stage} of the World Cup".
+function shareModeLabel(){ return (gameMode==='hard') ? 'Hard Mode' : 'Easy Mode'; }
+// Outcome clause + the mode played. Champion = won; lost final = came up short;
+// otherwise the furthest stage reached.
 function shareStagePhrase(){
   const r=simResult;
-  if(r && !r.eliminated && r.furthestRound==='Final') return 'won the World Cup 🏆';
-  const map={'Final':'Final','Semi-final':'Semi-Finals','Quarter-final':'Quarter-Finals',
+  const onMode = ` on ${shareModeLabel()}`;
+  if(r && !r.eliminated && r.furthestRound==='Final') return `won the World Cup${onMode} 🏆`;
+  if(r &&  r.eliminated && r.furthestRound==='Final') return `reached the Finals but came up short${onMode}`;
+  const map={'Semi-final':'Semi-Finals','Quarter-final':'Quarter-Finals',
              'Round of 16':'Round of 16','Round of 32':'Round of 32','Group Stage':'Group Stage'};
   const stage=(r && map[r.furthestRound]) || 'Group Stage';
-  return `reached the ${stage} of the World Cup`;
+  return `reached the ${stage} of the World Cup${onMode}`;
 }
 // Top scorer as "Surname (goals)", or "None" if nobody scored.
 function shareLeadScorer(){
