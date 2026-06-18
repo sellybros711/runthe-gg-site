@@ -618,7 +618,7 @@
     position:absolute;width:22%;aspect-ratio:1;transform:translate(-50%,-50%);
     border-radius:50%;display:grid;place-items:center;text-align:center;z-index:2;
     transition:top .4s ease-in-out, left .4s ease-in-out;
-    backface-visibility:hidden;overflow:hidden;
+    backface-visibility:hidden;overflow:visible;
   }
   .pslot .psl-label{font-family:'Arial Narrow','Archivo',system-ui,sans-serif;
     font-weight:900;font-stretch:condensed;font-size:16px;line-height:1;padding:2px;
@@ -632,7 +632,49 @@
     position:absolute;inset:0;display:none;align-items:center;justify-content:center;
     font-size:200%;line-height:1;opacity:1;z-index:0;pointer-events:none;
     background-size:cover;background-position:center;background-repeat:no-repeat;
+    border-radius:50%;overflow:hidden;
   }
+  /* captain + award corner badges on pitch circles */
+  .psl-corner{position:absolute;z-index:4;pointer-events:none;}
+  .psl-corner.tl{top:-5px;left:-5px;}
+  .psl-corner.tr{top:-5px;right:-5px;}
+  .psl-corner.br{bottom:-5px;right:-5px;}
+  .psl-corner.bl{bottom:-5px;left:-5px;}
+  .psl-corner .lb-cap{width:14px;height:14px;font-size:10px;border-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.5);}
+  .psl-corner .lb-ic{width:14px;height:14px;display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6));}
+  .psl-corner .lb-ic.boot{width:16px;}
+  .pitch-wrap.full .psl-corner .lb-cap{width:11px;height:11px;font-size:8px;border-radius:3px;}
+  .pitch-wrap.full .psl-corner .lb-ic{width:11px;height:11px;}
+  .pitch-wrap.full .psl-corner .lb-ic.boot{width:13px;}
+  .pitch-wrap.full .psl-corner.tl{top:-4px;left:-4px;}
+  .pitch-wrap.full .psl-corner.tr{top:-4px;right:-4px;}
+  .pitch-wrap.full .psl-corner.br{bottom:-4px;right:-4px;}
+  .pitch-wrap.full .psl-corner.bl{bottom:-4px;left:-4px;}
+  /* year + overall badge below each filled circle */
+  .psl-badge{
+    position:absolute;top:calc(100% + 4px);left:50%;transform:translateX(-50%);
+    display:none;flex-direction:column;align-items:center;gap:2px;
+    white-space:nowrap;pointer-events:none;z-index:3;
+  }
+  .pslot.filled .psl-badge{display:flex;}
+  .psl-badge-year{
+    font-size:9px;font-weight:900;letter-spacing:.5px;color:#fff;
+    background:rgba(0,0,0,.6);border-radius:4px;padding:1px 5px;line-height:1.4;
+  }
+  .psl-badge-ov{
+    font-family:'Anton',Impact,sans-serif;font-size:13px;color:#fff;
+    border-radius:5px;padding:1px 6px;line-height:1.3;
+  }
+  .psl-badge-ov.red{background:#E5402A;}
+  .psl-badge-ov.orange{background:#F47B20;}
+  .psl-badge-ov.gold{background:#F4B413;color:#1a1008;}
+  .psl-badge-ov.green{background:#1F9E57;}
+  /* 11-man full pitch: show year only, no overall */
+  .pitch-wrap.full .psl-badge{gap:1px;top:calc(100% + 2px);}
+  .pitch-wrap.full .psl-badge-year{font-size:9px;padding:1px 4px;}
+  .pitch-wrap.full .psl-badge-ov{display:none;}
+  /* quick draft: slightly bigger year */
+  .pitch-wrap:not(.full) .psl-badge-year{font-size:10px;padding:1px 6px;}
   /* EMPTY: frosted glass circle, position-colour outline, gentle opacity pulse */
   .pslot:not(.filled){
     background:rgba(255,255,255,.15);
@@ -913,7 +955,11 @@
   .lbx-ptable td.lbx-ppos.GK{color:#F4B413;} .lbx-ptable td.lbx-ppos.DEF{color:#4ade80;}
   .lbx-ptable td.lbx-ppos.MID{color:#60a5fa;} .lbx-ptable td.lbx-ppos.FWD{color:#f87171;}
   .lbx-ptable .lbx-goal{color:#F4B413;font-weight:900;}
-  .lbx-ptable .lbx-yc{color:#F4B413;} .lbx-ptable .lbx-rc{color:#E5402A;font-weight:900;}
+  .lbx-ptable .lbx-yc,.lbx-ptable .lbx-rc{line-height:1;}
+  .card-ico{display:inline-block;width:9px;height:12px;border-radius:1.5px;vertical-align:middle;}
+  .card-ico.yc{background:#F4B413;}
+  .card-ico.rc{background:#E5402A;}
+  .card-ico.yc2{background:linear-gradient(90deg,#F4B413 50%,#E5402A 50%);}
   .sim-rosters .sr-cap{font-weight:900;font-size:10px;letter-spacing:2px;text-transform:uppercase;
     color:#8a7d70;text-align:center;margin-bottom:8px;}
   .sim-rosters .sr-cols{display:flex;gap:12px;}
@@ -936,6 +982,8 @@
   /* CHANGE 2 — slow-motion tension cue: warm the bar toward amber/gold */
   .match-clock-fill.slowmo{ background:#F5A623; }
   .goal-event{font-size:13px; font-weight:700; margin:4px 0; animation:fade 0.25s ease both;}
+  .card-event-yellow{color:#b8860b; font-size:12px; font-weight:700; opacity:.9;}
+  .card-event-red{color:var(--red); font-size:12px; font-weight:900;}
   /* colour goals by team so it's easy to read who scored */
   .goal-event.you{color:var(--pos-mid);}
   .goal-event.opp{color:var(--red);}
@@ -991,27 +1039,46 @@
   @keyframes penPop{from{transform:scale(.4);opacity:0;}to{transform:scale(1);opacity:1;}}
   .sim-summary{
     border:3px solid var(--ink); border-radius:16px; background:var(--ink);
-    color:var(--gold); padding:20px; margin-bottom:14px; animation:fade 0.4s ease both;
+    color:#f0e8d8; padding:16px; margin-bottom:14px; animation:fade 0.4s ease both;
+    box-shadow:var(--shadow);
   }
-  .sim-summary h2{font-family:'Anton',sans-serif; font-size:20px; margin:0 0 14px; letter-spacing:1px;}
+  .sim-summary h2{font-family:'Anton',sans-serif; font-size:20px; margin:0 0 10px; letter-spacing:1px;}
   .sim-summary-row{
     display:flex; justify-content:space-between; align-items:center;
-    font-size:13px; font-weight:700; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.1); gap:10px;
+    font-size:12px; font-weight:700; padding:4px 0; border-bottom:1px solid rgba(240,232,216,0.15); gap:10px;
   }
   .sim-summary-row:last-child{border-bottom:none;}
-  .sim-summary .win-marker{color:#4ade80;font-weight:900;}
-  .sim-summary .loss-marker{color:var(--red);font-weight:900;}
-  /* match-row hierarchy: round label muted, score is the focal point */
-  .sim-summary-row .m-round{font-weight:900;font-size:11px;letter-spacing:.5px;
-    text-transform:uppercase;opacity:.7;flex:0 0 auto;}
-  .sim-summary-row .m-line{display:inline-flex;align-items:baseline;gap:6px;
+  .sim-summary .win-marker{color:#4ecf8a;font-weight:900;}
+  .sim-summary .loss-marker{color:#ff6b5b;font-weight:900;}
+  .sim-summary-row .m-round{font-weight:900;font-size:10px;letter-spacing:.5px;
+    text-transform:uppercase;opacity:.5;flex:0 0 auto;color:#f0e8d8;}
+  .sim-summary-row .m-line{display:inline-flex;align-items:baseline;gap:5px;
     justify-content:flex-end;flex:1 1 auto;min-width:0;white-space:nowrap;}
-  .sim-summary-row .m-you{font-weight:800;font-size:11px;letter-spacing:.5px;text-transform:uppercase;opacity:.55;}
-  .sim-summary-row .m-score{font-family:'Anton',Impact,sans-serif;font-size:19px;
-    color:#fff;letter-spacing:.5px;}
-  .sim-summary-row .m-opp{font-weight:600;font-size:12px;opacity:.8;
+  .sim-summary-row .m-you{font-weight:800;font-size:10px;letter-spacing:.5px;text-transform:uppercase;opacity:.4;}
+  .sim-summary-row .m-score{font-family:'Anton',Impact,sans-serif;font-size:17px;
+    color:#f0e8d8;letter-spacing:.5px;}
+  .sim-summary-row .m-opp{font-weight:600;font-size:11px;opacity:.65;
     overflow:hidden;text-overflow:ellipsis;}
-  .sim-summary .sim-sub-label{font-weight:900; font-size:11px; letter-spacing:1px; margin:12px 0 2px; opacity:.75;}
+  .sim-summary .sim-sub-label{
+    font-family:'Anton',sans-serif; font-size:11px; letter-spacing:2px; text-transform:uppercase;
+    margin:10px 0 0; padding:6px 0 4px; color:var(--gold);
+    border-top:1px solid rgba(240,232,216,0.2); display:block;
+  }
+  .sim-summary .sim-sub-label:first-of-type{margin-top:4px;}
+  /* player stats table inside the summary card */
+  .sim-summary .lbx-ptable{color:#f0e8d8;width:100%;border-collapse:collapse;font-size:11px;}
+  .sim-summary .lbx-ptable th{color:rgba(240,232,216,.45);font-weight:900;font-size:8.5px;letter-spacing:.5px;text-transform:uppercase;padding:2px 4px;text-align:center;}
+  .sim-summary .lbx-ptable th.lbx-pname{text-align:left;}
+  .sim-summary .lbx-ptable td{color:#f0e8d8;padding:3px 4px;text-align:center;border-bottom:1px solid rgba(240,232,216,.08);}
+  .sim-summary .lbx-ptable tr:last-child td{border-bottom:none;}
+  .sim-summary .lbx-ptable td.lbx-pname{text-align:left;font-weight:800;}
+  .sim-summary .lbx-ptable td.lbx-ppos.GK{color:#f4b413;}
+  .sim-summary .lbx-ptable td.lbx-ppos.DEF{color:#4ecf8a;}
+  .sim-summary .lbx-ptable td.lbx-ppos.MID{color:#6eb0f5;}
+  .sim-summary .lbx-ptable td.lbx-ppos.FWD{color:#ff6b5b;}
+  .sim-summary .lbx-ptable .lbx-goal{color:var(--gold);font-weight:900;}
+  .sim-summary .lbx-ptable .lbx-yc{color:#f4b413;}
+  .sim-summary .lbx-ptable .lbx-rc{color:#ff6b5b;}
   /* helper bits used by the animation flow */
   .sim-gs-result{font-weight:900; font-size:15px;}
   .sim-gs-result.pass{color:var(--teal);}
@@ -2927,11 +2994,31 @@ function setPitchSlot(id, player, color, emptyLabel, noPop){
     lbl.textContent=shortName(player.name);
     fitLabel(el);
     pitchSlotPlayers[id]=player;
+    // year + overall badge below the circle
+    let badge=el.querySelector('.psl-badge');
+    if(!badge){ badge=document.createElement('div'); badge.className='psl-badge'; el.appendChild(badge); }
+    badge.innerHTML=`<span class="psl-badge-year">${player.year}</span><span class="psl-badge-ov ${ovTier(player.overall)}">${player.overall}</span>`;
+    // captain + award corner badges — captain always top-left, awards clockwise: TR, BR, BL
+    el.querySelectorAll('.psl-corner').forEach(c=>c.remove());
+    const corners=['tl','tr','br','bl'];
+    let ci=0;
+    if(player.is_captain){
+      const c=document.createElement('span'); c.className=`psl-corner tl`;
+      c.innerHTML=lbCaptainBadge(); el.appendChild(c); ci=1;
+    }
+    const awards=awardList(player);
+    awards.forEach(a=>{
+      if(ci>=4) return;
+      const pos=corners[ci++];
+      const c=document.createElement('span'); c.className=`psl-corner ${pos}`;
+      c.innerHTML=lbAwardIcon(a); el.appendChild(c);
+    });
   } else {
     el.classList.remove('filled');
     el.style.background='';
     el.style.backgroundImage='';
     wm.style.backgroundImage=''; wm.textContent='';
+    el.querySelectorAll('.psl-corner').forEach(c=>c.remove());
     lbl.style.whiteSpace='';
     lbl.style.fontSize='';
     // FLEX shows a second line listing what can be slotted there
@@ -4181,19 +4268,28 @@ function launchConfetti(){
   const old=document.getElementById('confetti-layer'); if(old) old.remove();
   const layer=document.createElement('div'); layer.id='confetti-layer'; layer.className='confetti-layer';
   document.body.appendChild(layer);
-  const colors=['#F5C518','#E5402A','#138A6B','#2A4B9B','#F47B20','#ffffff'];
-  for(let i=0;i<240;i++){
-    const p=document.createElement('span'); p.className='confetti-piece';
-    p.style.left=Math.random()*100+'vw';
-    p.style.background=colors[Math.floor(Math.random()*colors.length)];
-    p.style.width=(6+Math.random()*6)+'px';
-    p.style.height=(9+Math.random()*9)+'px';
-    p.style.animationDuration=(2.6+Math.random()*2.6)+'s';
-    p.style.animationDelay=(Math.random()*1.6)+'s';
-    p.style.opacity=(0.7+Math.random()*0.3);
-    layer.appendChild(p);
+  const colors=['#F5C518','#E5402A','#138A6B','#2A4B9B','#F47B20','#ffffff','#FF69B4','#00CFFF'];
+  function spawnBatch(count, delayBase){
+    for(let i=0;i<count;i++){
+      const p=document.createElement('span'); p.className='confetti-piece';
+      p.style.left=Math.random()*100+'vw';
+      p.style.background=colors[Math.floor(Math.random()*colors.length)];
+      const isCircle=Math.random()<0.25;
+      const sz=6+Math.random()*8;
+      p.style.width=sz+'px';
+      p.style.height=isCircle?sz+'px':(sz*1.4+Math.random()*6)+'px';
+      p.style.borderRadius=isCircle?'50%':'2px';
+      p.style.animationDuration=(2.4+Math.random()*3.2)+'s';
+      p.style.animationDelay=(delayBase+Math.random()*1.2)+'s';
+      p.style.opacity=(0.75+Math.random()*0.25);
+      p.style.transform=`rotate(${Math.random()*360}deg)`;
+      layer.appendChild(p);
+    }
   }
-  setTimeout(()=>{ const l=document.getElementById('confetti-layer'); if(l) l.remove(); }, 8000);
+  spawnBatch(300, 0);
+  setTimeout(()=>spawnBatch(200, 0), 1800);
+  setTimeout(()=>spawnBatch(150, 0), 3600);
+  setTimeout(()=>{ const l=document.getElementById('confetti-layer'); if(l) l.remove(); }, 14000);
 }
 
 // ============================================================
@@ -5600,11 +5696,11 @@ function generateScoreline(userRatings, oppRatings, identity){
   if(identity === 'ATTACKING'){ userXG *= 1.15; oppXG *= 1.10; }
   else                        { oppXG *= 0.90; }
 
-  userXG = Math.min(Math.max(userXG, 0.3), 3.6);
-  oppXG  = Math.min(Math.max(oppXG,  0.3), 3.6);
+  userXG = Math.min(Math.max(userXG, 0.3), 2.8);
+  oppXG  = Math.min(Math.max(oppXG,  0.3), 2.8);
 
-  const userGoals = Math.min(samplePoisson(userXG), 7);
-  const oppGoals  = Math.min(samplePoisson(oppXG),  7);
+  const userGoals = Math.min(samplePoisson(userXG), 5);
+  const oppGoals  = Math.min(samplePoisson(oppXG),  5);
   return { userGoals, oppGoals, userXG, oppXG };
 }
 
@@ -5658,7 +5754,7 @@ function simulateMatch(userSquad, userOverall, opponent, roundIndex, userRatings
   // CHANGE 3 — only when level after 90: extra time, then penalties.
   if(userGoals === opponentGoals){
     extraTime = true;
-    if(Math.random() < 0.65){
+    if(Math.random() < 0.58){
       // a single extra-time goal settles it, awarded to the determined winner
       etGoalTeam = winSide;
       if(winSide==='user') userGoals = cap(userGoals+1); else opponentGoals = cap(opponentGoals+1);
@@ -5701,6 +5797,72 @@ function simulateMatch(userSquad, userOverall, opponent, roundIndex, userRatings
     opponent:{ country:opponent.country, year:opponent.year, teamOverall:opponent.teamOverall },
     userGoals, opponentGoals, winner, goalEvents, extraTime, penalties, penaltyWinner
   };
+}
+
+// Generate card events (yellow/red) with real minutes for a match.
+// Handles 2nd-yellow-becomes-red. Returns sorted array of card events.
+// isQuickDraft: halves card prevalence for the shorter quick-draft mode.
+function generateCardEvents(picks, box, isQuickDraft){
+  const rawYC = Math.max(0, (box&&box.yellows&&box.yellows.u)||0);
+  const rawRC = Math.max(0, (box&&box.reds&&box.reds.u)||0);
+  // Quick draft: half as prevalent
+  const totalYC = isQuickDraft ? Math.round(rawYC*0.5) : rawYC;
+  const totalRC = isQuickDraft ? (rawRC>0 && Math.random()<0.5 ? 1 : 0) : rawRC;
+  if(totalYC===0 && totalRC===0) return [];
+
+  const outfield = picks.filter(pk=>pk.player.position!=='GK');
+  if(!outfield.length) return [];
+
+  // Stable seeded RNG so card assignment is deterministic per squad
+  const seed = picks.reduce((s,pk)=>{
+    const id=pk.player.player_id||pk.player.name||'';
+    let h=0; for(let i=0;i<id.length;i++) h=(h*31+id.charCodeAt(i))|0;
+    return (s^h)|0;
+  }, 0);
+  const rng = _seededRng((seed^0x4B1D5A3C)|0);
+
+  // Weight players by position — defenders foul most, forwards less
+  const FOUL_W = {DEF:0.40, MID:0.35, FWD:0.25};
+  const foulSum = outfield.reduce((s,pk)=>s+(FOUL_W[pk.player.position]||0.1),0);
+  // Weighted shuffle: higher weight = more likely to get a card
+  const pool = outfield.map(pk=>({
+    name:pk.player.name,
+    w:(FOUL_W[pk.player.position]||0.1)/foulSum,
+    r:rng()
+  })).sort((a,b)=>b.w*b.r - a.w*a.r);
+
+  const events=[];
+  const usedCardMins=new Set();
+  const pickMin=(lo,hi)=>{
+    let m=lo+Math.floor(Math.random()*(hi-lo+1));
+    // avoid exact same minute as another card
+    let tries=0;
+    while(usedCardMins.has(m) && tries++<30) m=m>=hi?lo:m+1;
+    usedCardMins.add(m); return m;
+  };
+
+  // Assign yellow cards — spread across the match (5'–88')
+  for(let i=0;i<Math.min(totalYC,pool.length);i++){
+    events.push({minute:pickMin(5,88), playerName:pool[i].name, cardType:'YC'});
+  }
+
+  // Direct red cards (rare, separate from 2nd-yellow): prefer players without a YC
+  for(let i=0;i<totalRC;i++){
+    const noCard=pool.filter(p=>!events.some(e=>e.playerName===p.name));
+    const target=(noCard.length?noCard:pool)[Math.floor(rng()*(noCard.length||pool.length))];
+    events.push({minute:pickMin(30,85), playerName:target.name, cardType:'RC'});
+  }
+
+  // Sort by minute, then apply 2nd-yellow → red rule
+  events.sort((a,b)=>a.minute-b.minute);
+  const ycCount={};
+  for(const ev of events){
+    if(ev.cardType==='YC'){
+      ycCount[ev.playerName]=(ycCount[ev.playerName]||0)+1;
+      if(ycCount[ev.playerName]===2) ev.cardType='Y2R'; // 2nd yellow = sent off
+    }
+  }
+  return events;
 }
 
 // Run the full tournament from group stage through the final.
@@ -6186,7 +6348,8 @@ function showMatchResultPopup(opts){
       <div class="mp-msg">${msgLine}</div>
       <div class="mp-bracket">${bracketHtml}</div>
       ${!opts.won?`<button class="btn red big" id="mp-results-btn" style="width:100%;margin-top:4px">CONTINUE TO RESULTS</button>`:''}
-      ${opts.won&&!opts.isFinal?`<div class="mp-auto-bar"><div class="mp-auto-bar-fill" id="mp-bar"></div></div>`:''}
+      ${opts.won&&opts.isFinal?`<button class="btn red big" id="mp-results-btn" style="width:100%;margin-top:4px">CONTINUE TO RESULTS</button>`:''}
+      ${opts.won&&!opts.isFinal?`<button class="btn teal big" id="mp-next-btn" style="width:100%;margin-top:4px">Continue →</button>`:''}
     </div>`;
     document.body.appendChild(ov);
     requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ov.classList.add('active'); }); });
@@ -6214,10 +6377,13 @@ function showMatchResultPopup(opts){
       }, 400);
 
       function startDismiss(){
-        if(opts.isFinal){ setTimeout(()=>{ ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); }, 2800); return; }
-        const bar=ov.querySelector('#mp-bar');
-        if(bar){ bar.style.transition=`width 2.5s linear`; bar.style.width='100%'; }
-        setTimeout(()=>{ ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); },2600);
+        if(opts.isFinal){
+          const btn=ov.querySelector('#mp-results-btn');
+          if(btn) btn.addEventListener('click',()=>{ ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); });
+          return;
+        }
+        const btn=ov.querySelector('#mp-next-btn');
+        if(btn) btn.addEventListener('click',()=>{ ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); });
       }
     }
   });
@@ -6468,8 +6634,8 @@ function computeMatchStats(uOv, oOv, uGoals, oGoals){
   const corners = { u: Math.max(0, Math.round(shots.u*0.35)+ri(-1,2)), o: Math.max(0, Math.round(shots.o*0.35)+ri(-1,2)) };
   const fouls = { u: ri(6,16), o: ri(6,16) };
   // yellow cards scale loosely with fouls; red cards are rare (~8% per side).
-  const yellows = { u: Math.max(0, Math.round(fouls.u*0.22)+ri(-1,1)), o: Math.max(0, Math.round(fouls.o*0.22)+ri(-1,1)) };
-  const reds = { u: Math.random()<0.08?1:0, o: Math.random()<0.08?1:0 };
+  const yellows = { u: Math.max(0, Math.round(fouls.u*0.13)+ri(-1,0)), o: Math.max(0, Math.round(fouls.o*0.13)+ri(-1,0)) };
+  const reds = { u: Math.random()<0.04?1:0, o: Math.random()<0.04?1:0 };
   return { poss:{u:possU,o:100-possU}, shots, sot, corners, fouls, saves, yellows, reds };
 }
 // Compute the box once per match and cache it on the match/matchday object, so
@@ -6510,81 +6676,168 @@ function _seededRng(seed){
   let s=seed|0;
   return ()=>{ s=(s*1664525+1013904223)&0xffffffff; return (s>>>0)/0xffffffff; };
 }
-function simPlayerStats(picks, box, goalEvents, liveGoals){
+function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, cardEvents=null, timeProgress=null}={}){
   // liveGoals: goals seen so far (for mid-match); defaults to all goalEvents at FT
   const live = liveGoals || goalEvents || [];
-  const all  = goalEvents || [];
 
-  // Seed from player ids so stats are stable on re-render
-  const seed = picks.reduce((s,pk)=>s+(pk.player.player_id||0),0);
-  const rng  = _seededRng(seed);
-  const ri   = (a,b)=>a+Math.floor(rng()*(b-a+1));
+  // Build a stable integer seed from player ids (handles string ids)
+  const seed = picks.reduce((s,pk)=>{
+    const id = pk.player.player_id || pk.player.name || '';
+    let h=0; for(let i=0;i<id.length;i++) h=(h*31+id.charCodeAt(i))|0;
+    return (s^h)|0;
+  }, 0);
 
-  const SHOT_W={GK:0.02,DEF:0.10,MID:0.28,FWD:0.60};
-  const totalShots = box ? (box.shots.u||0) : 10;
-  const totalSoT   = box ? (box.sot.u||0)  : 5;
-  const totalFouls = box ? (box.fouls.u||0) : 10;
-  const totalYC    = box ? (box.yellows.u||0) : 1;
-  const totalRC    = box ? (box.reds.u||0)    : 0;
-  const totalSaves = box ? (box.saves.u||0)   : 3;
-  const wTotal     = picks.reduce((s,pk)=>s+(SHOT_W[pk.player.position]||0.1),0);
+  // SEPARATE seeded RNGs per stat category — scoring a goal must never shift the
+  // shot/foul sequence.  Each category gets its own LCG starting from a different
+  // offset so their sequences are independent.
+  const shotRng  = _seededRng((seed ^ 0x9e3779b9)|0);
+  const foulRng  = _seededRng((seed ^ 0x6c62272e)|0);
+  const cardRng  = _seededRng((seed ^ 0x517cc1b7)|0);
+  const asstRng  = _seededRng((seed ^ 0x2c91dca5)|0);
 
-  // Assign assists for ALL goals (stable, uses seeded rng)
-  const assistMap={};
-  all.filter(e=>e.team==='user'&&!e.isOG).forEach(e=>{
-    const eligible=picks.filter(pk=>pk.player.name!==e.scorer);
-    if(!eligible.length) return;
-    const aw={GK:0.01,DEF:0.08,MID:0.45,FWD:0.46};
-    const aWtot=eligible.reduce((s,pk)=>s+(aw[pk.player.position]||0.1),0);
-    let r=rng()*aWtot;
-    for(const pk of eligible){ r-=(aw[pk.player.position]||0.1); if(r<=0){ assistMap[pk.player.name]=(assistMap[pk.player.name]||0)+1; break; } }
+  // When called mid-match (liveGoals !== null), scale shots/fouls/saves by the
+  // fraction of total goals seen so far — prevents stats showing at kickoff and
+  // keeps them growing naturally. At full time (liveGoals === null) use 100%.
+  const isMidMatch = liveGoals !== null;
+  // timeProgress: explicit 0-1 clock fraction passed by the live animation so
+  // shots/fouls grow with the clock rather than waiting for goal events.
+  // Falls back to goal-ratio when not supplied (group stage, FT, etc.).
+  const allGoalCount = (goalEvents||[]).length;
+  const progress = isMidMatch
+    ? (timeProgress != null ? timeProgress : (allGoalCount > 0 ? Math.min(1, live.length / allGoalCount) : 0))
+    : 1;
+
+  const totalShots = Math.round((box ? (box.shots.u||0) : 10) * progress);
+  const totalSoT   = Math.round((box ? (box.sot.u||0)  : 5)  * progress);
+  const totalFouls = Math.round((box ? (box.fouls.u||0) : 10) * progress);
+  const totalYC    = hideCards ? 0 : (box ? (box.yellows.u||0) : 1);
+  const totalRC    = hideCards ? 0 : (box ? (box.reds.u||0)    : 0);
+  const totalSaves = Math.round((box ? (box.saves.u||0) : 3) * progress);
+
+  const SHOT_W = {GK:0,    DEF:0.10, MID:0.28, FWD:0.60};
+  const FOUL_W = {GK:0.04, DEF:0.38, MID:0.33, FWD:0.25};
+
+  // Rating multiplier: normalises overall (60–99) to a [0.5, 1.5] range so
+  // higher-rated players get meaningfully more shots and are more likely to assist.
+  const ratingMult = pk => {
+    const ov = Math.max(60, Math.min(99, pk.player.overall || 75));
+    return 0.5 + (ov - 60) / 39;   // 60→0.5, 79.5→1.0, 99→1.5
+  };
+
+  // Pre-compute stable per-player weights (noise applied once per player, seeded)
+  // Using separate RNGs means these are completely unaffected by goal events.
+  const playerShotW = picks.map(pk=>{
+    const w = SHOT_W[pk.player.position]||0;
+    return w * ratingMult(pk) * (0.5 + shotRng()*0.5);
   });
+  const playerFoulW = picks.map(pk=>{
+    const w = FOUL_W[pk.player.position]||0.05;
+    return w * (0.5 + foulRng()*0.5);
+  });
+  // Stable per-player card priority (used for tie-breaking quota distribution)
+  const cardPrio = picks.map(()=>cardRng());
 
-  // Count goals/assists from live events only (updates in real time)
+  // Proportional floor allocation — guarantees stats never decrease as totals grow.
+  // floor(fraction * total) is monotonically non-decreasing in total for any fixed fraction≥0.
+  function allocFloor(weights, total){
+    const wSum = weights.reduce((a,b)=>a+b,0);
+    if(!wSum || !total) return weights.map(()=>0);
+    return weights.map(w=>Math.floor(w/wSum*total));
+  }
+
+  const shotAlloc = allocFloor(playerShotW, totalShots);
+  const foulAlloc = allocFloor(playerFoulW, totalFouls);
+  // SoT: proportional to each player's shots (ensures sot ≤ shots always)
+  const sotRatio  = totalShots>0 ? totalSoT/totalShots : 0;
+  const sotAlloc  = shotAlloc.map(sh=>Math.min(sh, Math.floor(sh*sotRatio)));
+
+  // Goals/assists come purely from live events (truly real-time)
   const liveUserGoals = live.filter(e=>e.team==='user'&&!e.isOG).map(e=>e.scorer);
   const liveAssistMap = {};
   live.filter(e=>e.team==='user'&&!e.isOG).forEach(e=>{
     const eligible=picks.filter(pk=>pk.player.name!==e.scorer);
     if(!eligible.length) return;
     const aw={GK:0.01,DEF:0.08,MID:0.45,FWD:0.46};
-    const aWtot=eligible.reduce((s,pk)=>s+(aw[pk.player.position]||0.1),0);
-    let r=rng()*aWtot;
-    for(const pk of eligible){ r-=(aw[pk.player.position]||0.1); if(r<=0){ liveAssistMap[pk.player.name]=(liveAssistMap[pk.player.name]||0)+1; break; } }
+    const aWtot=eligible.reduce((s,pk)=>s+(aw[pk.player.position]||0.1)*ratingMult(pk),0);
+    let r=asstRng()*aWtot;
+    for(const pk of eligible){ r-=(aw[pk.player.position]||0.1)*ratingMult(pk); if(r<=0){ liveAssistMap[pk.player.name]=(liveAssistMap[pk.player.name]||0)+1; break; } }
   });
 
-  const rows = picks.map(pk=>{
+  const POS_ORDER = {FWD:0,MID:1,DEF:2,GK:3};
+  const baseRows = picks.map((pk,i)=>{
     const p=pk.player, pos=p.position;
-    const w=(SHOT_W[pos]||0.1)/wTotal;
-    const sh  = pos==='GK' ? 0 : Math.max(0, Math.round(w*totalShots*2*rng()));
-    const sot = pos==='GK' ? 0 : Math.min(sh, Math.max(0, Math.round(sh*(totalSoT/(totalShots||1))+(rng()-.5))));
     const goals   = liveUserGoals.filter(n=>n===p.name).length;
     const assists = liveAssistMap[p.name]||0;
-    const fw={GK:0.03,DEF:0.38,MID:0.38,FWD:0.21};
-    const fouls = Math.max(0, Math.round((fw[pos]||0.1)*totalFouls*(0.5+rng())));
-    const saves = pos==='GK' ? totalSaves : 0;
-    const yc = pos==='GK'?0:(rng()<(totalYC/Math.max(picks.length,1))*1.5?1:0);
-    const rc = pos==='GK'?0:(yc&&rng()<(totalRC/Math.max(picks.length,1))?1:0);
-    return { name:p.name, pos, goals, assists, shots:sh, sot, fouls, saves, yc, rc };
+    const saves   = pos==='GK' ? totalSaves : 0;
+    return { name:p.name, pos, goals, assists,
+             shots:shotAlloc[i], sot:sotAlloc[i], fouls:foulAlloc[i],
+             saves, yc:0, rc:0, _cardPrio:cardPrio[i] };
   });
-  return rows;
+
+  // Scorers must have shots ≥ goals and sot ≥ goals (you can't score without shooting)
+  baseRows.forEach(row=>{
+    if(row.shots < row.goals) row.shots = row.goals;
+    if(row.sot   < row.goals) row.sot   = row.goals;
+  });
+
+  // Card assignment: use explicit card events when available (live match or final),
+  // otherwise fall back to seeded quota allocation (group stage post-hoc).
+  if(cardEvents !== null){
+    // Authoritative: read directly from card events seen so far
+    cardEvents.forEach(ev=>{
+      const row = baseRows.find(r=>r.name===ev.playerName);
+      if(!row) return;
+      if(ev.cardType==='YC')  row.yc++;
+      if(ev.cardType==='Y2R'){ row.yc++; row.rc=1; }
+      if(ev.cardType==='RC')  row.rc=1;
+    });
+  } else if(!hideCards){
+    // Fallback: seeded quota (used for group stage stats where no card events exist)
+    const outfield = baseRows.filter(r=>r.pos!=='GK');
+    const foulSum  = outfield.reduce((s,r)=>s+r.fouls+1,0);
+    const ycPool   = outfield.map(r=>({r, score:(r.fouls+1)/foulSum + r._cardPrio*0.15}));
+    ycPool.sort((a,b)=>b.score-a.score);
+    const ycCount  = Math.min(totalYC, outfield.length);
+    for(let i=0;i<ycCount;i++) ycPool[i].r.yc=1;
+    const rcCount  = Math.min(totalRC, outfield.length);
+    if(rcCount>0){
+      const rcPool = outfield.map(r=>({r, score:(r.yc?10:0)+r._cardPrio}));
+      rcPool.sort((a,b)=>b.score-a.score);
+      for(let i=0;i<rcCount;i++) rcPool[i].r.rc=1;
+    }
+  }
+
+  // Sort FWD → MID → DEF → GK; within same position keep original draft order
+  baseRows.sort((a,b)=>(POS_ORDER[a.pos]||0)-(POS_ORDER[b.pos]||0));
+  // Strip internal field before returning
+  baseRows.forEach(r=>{ delete r._cardPrio; });
+  return baseRows;
 }
 
-function playerStatsTableHtml(rows){
+function playerStatsTableHtml(rows, {cardTotals=false}={}){
   const isGK = rows.some(r=>r.pos==='GK'&&r.saves>0);
   const cols = isGK
     ? ['G','A','Sh','SoT','Sv','F','YC','RC']
     : ['G','A','Sh','SoT','F','YC','RC'];
-  const head = cols.map(c=>`<th>${c}</th>`).join('');
+  const YC_HEAD = '<span class="card-ico yc" title="Yellow cards"></span>';
+  const RC_HEAD = '<span class="card-ico rc" title="Red cards"></span>';
+  const head = cols.map(c=>c==='YC'?`<th>${YC_HEAD}</th>`:c==='RC'?`<th>${RC_HEAD}</th>`:`<th>${c}</th>`).join('');
   const body = rows.map(r=>{
     const cells = isGK
       ? [r.goals,r.assists,r.shots,r.sot,r.saves,r.fouls,r.yc,r.rc]
       : [r.goals,r.assists,r.shots,r.sot,r.fouls,r.yc,r.rc];
     const tds = cells.map((v,i)=>{
       const col=cols[i];
+      if(col==='YC'){
+        if(cardTotals) return `<td class="lbx-yc">${v>0?v:'—'}</td>`;
+        return `<td class="lbx-yc">${v>0?'<span class="card-ico yc"></span>':'—'}</td>`;
+      }
+      if(col==='RC'){
+        if(cardTotals) return `<td class="lbx-rc">${v>0?v:'—'}</td>`;
+        return `<td class="lbx-rc">${v>0?'<span class="card-ico rc"></span>':'—'}</td>`;
+      }
       let cls='';
       if(col==='G'&&v>0) cls=' class="lbx-goal"';
-      else if(col==='YC'&&v>0) cls=' class="lbx-yc"';
-      else if(col==='RC'&&v>0) cls=' class="lbx-rc"';
       return `<td${cls}>${v>0?v:'—'}</td>`;
     }).join('');
     const lastName=r.name.split(' ').pop();
@@ -6652,7 +6905,7 @@ function updateLiveBox(el, stats, frac, opts){
 // Called at FT (final) and also after each live goal.
 function refreshLivePlayerPanel(el, stats, opts){
   const panel=el.querySelector('[data-panel="players"]'); if(!panel) return;
-  const rows=simPlayerStats(opts.picks, stats, opts.goalEvents||[], opts.goalsSeenSoFar||opts.goalEvents||[]);
+  const rows=simPlayerStats(opts.picks, stats, opts.goalEvents||[], opts.goalsSeenSoFar||opts.goalEvents||[], {cardEvents: opts.cardEvents||[]});
   panel.innerHTML=playerStatsTableHtml(rows);
 }
 
@@ -6719,7 +6972,7 @@ function openBoxScores(){
     });
     const POS_ORDER={GK:3,DEF:2,MID:1,FWD:0};
     const totRows=Object.values(totMap).sort((a,b)=>(POS_ORDER[b.pos]||0)-(POS_ORDER[a.pos]||0)||(b.goals-a.goals));
-    totalsHtml=`<div class="bsm-totals-hdr">TOURNAMENT TOTALS</div>`+playerStatsTableHtml(totRows);
+    totalsHtml=`<div class="bsm-totals-hdr">TOURNAMENT TOTALS</div>`+playerStatsTableHtml(totRows,{cardTotals:true});
   }
 
   box.innerHTML = matchHtml + totalsHtml;
@@ -6829,15 +7082,17 @@ const SLOWMO_EASE_MS = 300; // ease speed changes over ~0.3s rather than snappin
 //  even when the tab is backgrounded; rAF pauses while hidden.)
 function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
   opts = opts || {};
-  const events   = (opts.events||[]).slice().sort((a,b)=>a.minute-b.minute);
-  const isET     = !!opts.isExtraTime;
-  const score    = opts.score || {user:0, opp:0};
-  const goalsBox = opts.goalsBox;
-  const timeEl   = wrap && wrap.querySelector('.sb-time');
-  let ei=0;
-  let pauseUntil = 0;   // epoch ms — clock progress is frozen until this passes
-  const GOAL_PAUSE_MS = 500 * SIM_SPEED;  // scales with global speed so fast/slow modes feel right
+  const events      = (opts.events||[]).slice().sort((a,b)=>a.minute-b.minute);
+  const cardEvents  = (opts.cardEvents||[]).slice().sort((a,b)=>a.minute-b.minute);
+  const isET        = !!opts.isExtraTime;
+  const score       = opts.score || {user:0, opp:0};
+  const goalsBox    = opts.goalsBox;
+  const timeEl      = wrap && wrap.querySelector('.sb-time');
+  let ei=0, ci=0;
+  let pauseUntil = 0;
+  const GOAL_PAUSE_MS = 500 * SIM_SPEED;
   const revealUpTo=(minute, now)=>{
+    // Fire goal events
     while(ei<events.length && events[ei].minute<=minute){
       const e=events[ei++];
       if(goalsBox) simScheduleGoal(goalsBox, e, 0);
@@ -6845,7 +7100,12 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
       if(side==='user') score.user++; else score.opp++;
       sbBumpScore(wrap, side);
       if(opts.onGoal) opts.onGoal(e);
-      pauseUntil = now + GOAL_PAUSE_MS;   // freeze clock so user can register the goal
+      pauseUntil = now + GOAL_PAUSE_MS;
+    }
+    // Fire card events
+    while(ci<cardEvents.length && cardEvents[ci].minute<=minute){
+      const e=cardEvents[ci++];
+      if(opts.onCard) opts.onCard(e, goalsBox);
     }
   };
   const setSlow=(on)=>{
@@ -6966,44 +7226,94 @@ async function playMatchAnimation(m, card, isFinal, opts){
     }
     updateLiveBox(boxPanel, opts.boxStats, 0);
   }
-  const lbOpts = {picks: opts.picks, goalEvents: m.goalEvents};
+  // Generate card events for this match if not already done
+  if(!m.cardEvents && opts.boxStats && opts.picks){
+    m.cardEvents = generateCardEvents(opts.picks, opts.boxStats, !isFullDraft());
+  }
+  const allCardEvents = m.cardEvents || [];
+
+  const lbOpts = {picks: opts.picks, goalEvents: m.goalEvents, cardEvents: allCardEvents};
   const boxAt = boxPanel ? (fr=>updateLiveBox(boxPanel, opts.boxStats, fr, lbOpts)) : null;
-  const op = (a,b)=> boxAt ? (p=>boxAt(a+(b-a)*p)) : undefined;   // map a clock phase to a box-frac range
+
+  // Track overall match time fraction (0–1) so player stats scale with the clock
+  let matchTimeProgress = 0;
+  let lastPanelRefreshProg = -1;
+
+  const op = (a,b)=> (p=>{
+    const fr = a+(b-a)*p;
+    if(boxAt) boxAt(fr);
+    matchTimeProgress = fr;
+    // Throttle: refresh player panel every ~3% match progress (~2-3 game minutes)
+    if(fr - lastPanelRefreshProg >= 0.03){
+      lastPanelRefreshProg = fr;
+      refreshPlayerPanel();
+    }
+  });
 
   fill.style.transition='background .3s ease';
-  const liveScore={user:0, opp:0};       // shared across both halves + extra time
+  const liveScore={user:0, opp:0};
   const baseWidth = m.extraTime ? 75 : 100;
-  const pct45 = baseWidth*0.5;            // bar at 45'  (half of regulation)
+  const pct45 = baseWidth*0.5;
   const F = m.extraTime
     ? {fh:0.34, fs:0.37, sh:0.72}
     : {fh:0.45, fs:0.50, sh:0.90};
 
-  // Live goal tracker for player panel — grows as each goal fires
+  // Live trackers — grow as events fire during animation
   const goalsSeenSoFar = [];
+  const cardsSeenSoFar = [];
   lbOpts.stats = opts.boxStats;
-  // Initialize player panel immediately at match start with 0 goals
+
+  const refreshPlayerPanel = ()=>{
+    if(!boxPanel || !lbOpts.picks) return;
+    const panel = boxPanel.querySelector('[data-panel="players"]');
+    if(!panel) return;
+    const rows = simPlayerStats(lbOpts.picks, lbOpts.stats||null, lbOpts.goalEvents, goalsSeenSoFar, {cardEvents: cardsSeenSoFar, timeProgress: matchTimeProgress||null});
+    panel.innerHTML = playerStatsTableHtml(rows);
+  };
+
+  // Initialize player panel at match start (zero goals, zero cards)
   if(boxPanel && lbOpts.picks){
     const initPanel = boxPanel.querySelector('[data-panel="players"]');
     if(initPanel){
-      const initRows = simPlayerStats(lbOpts.picks, opts.boxStats, lbOpts.goalEvents, []);
+      const initRows = simPlayerStats(lbOpts.picks, opts.boxStats, lbOpts.goalEvents, [], {cardEvents:[]});
       initPanel.innerHTML = playerStatsTableHtml(initRows);
     }
   }
-  const onGoal = boxPanel ? (e=>{
-    goalsSeenSoFar.push(e);
-    const panel = boxPanel.querySelector('[data-panel="players"]');
-    if(panel && lbOpts.picks){
-      const rows = simPlayerStats(lbOpts.picks, lbOpts.stats||null, lbOpts.goalEvents, goalsSeenSoFar);
-      panel.innerHTML = playerStatsTableHtml(rows);
+
+  const onGoal = boxPanel ? (e=>{ goalsSeenSoFar.push(e); refreshPlayerPanel(); }) : null;
+
+  const onCard = (e, goalsBox)=>{
+    cardsSeenSoFar.push(e);
+    refreshPlayerPanel();
+    if(!goalsBox) return;
+    const isRed = e.cardType==='RC' || e.cardType==='Y2R';
+    const cardLabel = e.cardType==='Y2R' ? '2nd yellow' : (isRed ? 'Red card' : 'Yellow card');
+    const entry = document.createElement('div');
+    entry.className = 'goal-event' + (isRed ? ' card-event-red' : ' card-event-yellow');
+    entry.innerHTML = `${isRed ? '🟥' : '🟨'} ${e.minute}' ${escapeHtml(e.playerName)} (${cardLabel})`;
+    goalsBox.appendChild(entry);
+    simScrollEnd(entry);
+    if(isRed){
+      const msg = document.createElement('div');
+      msg.className = 'sim-et-label';
+      msg.style.color='var(--red)';
+      msg.textContent = '⚠ DOWN TO 10 MEN';
+      goalsBox.appendChild(msg);
+      simScrollEnd(msg);
     }
-  }) : null;
+  };
+
+  // Split card events by match period
+  const cardEv1  = allCardEvents.filter(e=>e.minute<=45);
+  const cardEv2  = allCardEvents.filter(e=>e.minute>45 && e.minute<=90);
+  const cardEvEt = allCardEvents.filter(e=>e.minute>90);
 
   // FIRST HALF — 0' → 45'
   await sbDriveClock(fill, sb, 0, pct45, 0, 45, firstDur,
-    {events:firstEv, score:liveScore, goalsBox, onProgress:op(0, F.fh), onGoal});
+    {events:firstEv, cardEvents:cardEv1, score:liveScore, goalsBox, onProgress:op(0, F.fh), onGoal, onCard});
   // FIRST-HALF STOPPAGE — 45+1 … 45+N
   await sbDriveClock(fill, sb, pct45, pct45, 45, 45+firstStop, firstStopDur,
-    {score:liveScore, stoppageBase:45, onProgress:op(F.fh, F.fs), onGoal});
+    {score:liveScore, stoppageBase:45, onProgress:op(F.fh, F.fs), onGoal, onCard});
 
   // HALF TIME — brief pause
   sbSetTime(sb, 'HT', false);
@@ -7013,17 +7323,17 @@ async function playMatchAnimation(m, card, isFinal, opts){
 
   // SECOND HALF — 46' → 90'
   await sbDriveClock(fill, sb, pct45, baseWidth, 45, 90, secondDur,
-    {events:secondEv, score:liveScore, goalsBox, onProgress:op(F.fs, F.sh), onGoal});
+    {events:secondEv, cardEvents:cardEv2, score:liveScore, goalsBox, onProgress:op(F.fs, F.sh), onGoal, onCard});
 
   if(m.extraTime){
     const etLabel=document.createElement('div'); etLabel.className='sim-et-label'; etLabel.textContent='EXTRA TIME';
     goalsBox.appendChild(etLabel);
     simScrollEnd(etLabel);
     await sbDriveClock(fill, sb, 75, 100, 91, 120, etDur,
-      {events:etEvents, isExtraTime:true, score:liveScore, goalsBox, onProgress:op(F.sh, 1), onGoal});
+      {events:etEvents, cardEvents:cardEvEt, isExtraTime:true, score:liveScore, goalsBox, onProgress:op(F.sh, 1), onGoal, onCard});
   } else if(secStop>0){
     await sbDriveClock(fill, sb, baseWidth, baseWidth, 90, 90+secStop, secondStopDur,
-      {score:liveScore, stoppageBase:90, onProgress:op(F.sh, 1), onGoal});
+      {score:liveScore, stoppageBase:90, onProgress:op(F.sh, 1), onGoal, onCard});
   }
   if(boxPanel) updateLiveBox(boxPanel, opts.boxStats, 1, lbOpts);   // settle on the final figures
 
@@ -7035,7 +7345,7 @@ async function playMatchAnimation(m, card, isFinal, opts){
   if(m.penalties){ await wait(300); await simAnimatePenalties(card, m, opts); }
 
   // Store final player stats on the match object for the results box-scores view
-  if(opts.picks) m._playerStats = simPlayerStats(opts.picks, opts.boxStats, m.goalEvents);
+  if(opts.picks) m._playerStats = simPlayerStats(opts.picks, opts.boxStats, m.goalEvents, null, {cardEvents: m.cardEvents||[]});
 
   const won = m.winner==='user';
   if(won && isFinal) simChampionConfetti();   // confetti the instant they're crowned
@@ -7068,19 +7378,56 @@ function buildSummaryCard(){
   Object.entries(r.userGoalScorers).forEach(([n,g])=>{ if(g>topGoals){ topGoals=g; topName=n; } });
   const mot = r.manOfTournament ? r.manOfTournament.player : '—';
 
+  // Build tournament totals player stats table
+  const allMatchStats = [
+    ...((r.groupStage&&r.groupStage.matchdays)||[]).map(md=>md._playerStats).filter(Boolean),
+    ...(r.matches||[]).map(m=>m._playerStats).filter(Boolean),
+  ];
+  let totalStatsHtml = '';
+  if(allMatchStats.length > 0){
+    const totMap = {};
+    allMatchStats.forEach(matchRows=>{
+      matchRows.forEach(row=>{
+        if(!totMap[row.name]) totMap[row.name]={name:row.name,pos:row.pos,goals:0,assists:0,shots:0,sot:0,fouls:0,saves:0,yc:0,rc:0};
+        const t=totMap[row.name];
+        t.goals+=row.goals; t.assists+=row.assists; t.shots+=row.shots;
+        t.sot+=row.sot; t.fouls+=row.fouls; t.saves+=row.saves; t.yc+=row.yc; t.rc+=row.rc;
+      });
+    });
+    const POS_ORDER={FWD:0,MID:1,DEF:2,GK:3};
+    const totRows=Object.values(totMap).sort((a,b)=>(POS_ORDER[a.pos]||0)-(POS_ORDER[b.pos]||0)||(b.goals-a.goals));
+    totalStatsHtml = `<div class="sim-sub-label">PLAYER STATS</div>`+playerStatsTableHtml(totRows,{cardTotals:true});
+  }
+
+  // Build bracket graphic showing tournament progress
+  const champ = r && !r.eliminated && r.furthestRound==='Final';
+  const elimRound = r ? r.furthestRound : null;
+  let bracketHtml='';
+  BRACKET_ROUNDS.forEach((round,i)=>{
+    if(i>0) bracketHtml+=`<div class="mp-bracket-line${(champ?i<=BRACKET_ROUNDS.length:i<=BRACKET_ROUNDS.indexOf(elimRound))?' done':''}"></div>`;
+    let dotCls='';
+    const roundIdx = BRACKET_ROUNDS.indexOf(elimRound);
+    if(champ && i===BRACKET_ROUNDS.length-1) dotCls='champ';
+    else if(i<roundIdx) dotCls='done';
+    else if(i===roundIdx) dotCls=champ?'done':'elim';
+    bracketHtml+=`<div class="mp-bracket-node"><div class="mp-bracket-dot ${dotCls}"></div><div class="mp-bracket-label">${BRACKET_LABELS[i]}</div></div>`;
+  });
+
   const card=document.createElement('div');
   card.className='sim-summary';
   card.id='results-summary-box';
   card.innerHTML=`
+    <div class="mp-bracket" style="margin:0 auto 12px;">${bracketHtml}</div>
     ${emoji?`<div style="text-align:center;font-size:62px;line-height:1;margin-bottom:2px;">${emToSvg(emoji)}</div>`:''}
-    <div class="display" style="text-align:center;font-size:34px;line-height:1.05;color:#fff;margin:${emoji?'2px':'4px'} 0 ${oc.message?'8px':'14px'};">${headline}</div>
-    ${oc.message?`<div style="text-align:center;font-weight:600;font-size:13px;line-height:1.45;color:var(--gold);margin-bottom:16px;">${oc.message}</div>`:''}
+    <div class="display" style="text-align:center;font-size:34px;line-height:1.05;color:#f0e8d8;margin:${emoji?'2px':'4px'} 0 ${oc.message?'8px':'14px'};">${headline}</div>
+    ${oc.message?`<div style="text-align:center;font-weight:600;font-size:13px;line-height:1.45;color:rgba(240,232,216,.55);margin-bottom:12px;">${oc.message}</div>`:''}
     <div class="sim-sub-label">MATCHES</div>
     ${rows || '<div class="sim-summary-row"><span>No knockout matches</span><span></span></div>'}
     <div class="sim-sub-label">TOP SCORER</div>
     <div class="sim-summary-row"><span>${topName}</span><span>${topGoals} goal${topGoals===1?'':'s'}</span></div>
     <div class="sim-sub-label">MAN OF THE TOURNAMENT</div>
-    <div class="sim-summary-row"><span>${mot}</span><span></span></div>`;
+    <div class="sim-summary-row" style="border-bottom:none"><span>${mot}</span><span></span></div>
+    ${totalStatsHtml}`;
   return card;
 }
 
@@ -7148,30 +7495,30 @@ async function runSimulationScreen(){
     row.innerHTML=`<b>MD${i+1}</b> vs ${flagChip(o.country)} ${o.country} ${o.year} — <b>${us}–${them}</b> `+
       `<span style="color:${col};font-weight:900">${res}</span><br>`+
       `<span style="opacity:.78;font-weight:600">${simPlayerLine(userSquad, us, them)}</span>`;
-    // store player stats for results box scores view
+    // Generate goal events for this group stage matchday (scorers, assists, minutes)
+    // so player stats show goals/assists just like knockout matches.
+    if(!o.goalEvents){
+      const usedMins=new Set(), scorerMins={};
+      const fakeOpp={squad:[]};
+      const evs=[];
+      for(let g=0;g<(us||0);g++) evs.push(simMakeGoalEvent('user', userSquad, fakeOpp, false, usedMins, scorerMins));
+      for(let g=0;g<(them||0);g++) evs.push(simMakeGoalEvent('opponent', userSquad, fakeOpp, false, usedMins, scorerMins));
+      evs.sort((a,b)=>a.minute-b.minute);
+      o.goalEvents=evs;
+      // tally group stage scorers so top scorer is correct even on group exit
+      evs.forEach(e=>{ if(e.team==='user'&&!e.isOG) simResult.userGoalScorers[e.scorer]=(simResult.userGoalScorers[e.scorer]||0)+1; });
+    }
     const gsBox = matchBox(o, simResult.userOverall, o.teamOverall, us, them);
-    o._playerStats = simPlayerStats(gs.picks, gsBox, o.goalEvents||[]);
+    if(!o.cardEvents) o.cardEvents = generateCardEvents(gs.picks, gsBox, !isFullDraft());
+    o._playerStats = simPlayerStats(gs.picks, gsBox, o.goalEvents, null, {cardEvents: o.cardEvents});
     daysBox.appendChild(row);
     simScrollEnd(row);
     await simSleep(600);
   }
   const wins=simResult.groupStage.record.w, draws=simResult.groupStage.record.d, losses=simResult.groupStage.record.l;
+  await simSleep(adv?500:700);
 
-  // banner reflects the ACTUAL matchday record, not just team rating
-  let line;
-  if(!adv)                          line = pickOne(GROUP_OUT_LINES);
-  else if(losses===0 && draws===0)  line = pickOne(GROUP_WIN_LINES);      // perfect 3 wins
-  else if(losses===0)               line = pickOne(GROUP_UNBEATEN_LINES); // wins + draws, no loss
-  else                              line = pickOne(GROUP_SCRAPE_LINES);   // dropped a game
-  const banner=document.createElement('div');
-  banner.className='sim-gs-result '+(adv?'pass':'fail');
-  banner.style.marginTop='8px';
-  banner.textContent=`${line} (${wins}W ${draws}D ${losses}L)`;
-  daysBox.appendChild(banner);
-  simScrollEnd(banner);
-  await simSleep(adv?700:900);
-
-  // pick group-stage popup message
+  // pick group-stage popup message (record appended inside)
   let gsPopupMsg;
   if(!adv){
     gsPopupMsg = pickOne(GROUP_ELIM_LINES);
@@ -7182,6 +7529,7 @@ async function runSimulationScreen(){
   } else {
     gsPopupMsg = pickOne(GROUP_QUALIFY_SCRAPE_LINES);
   }
+  gsPopupMsg += ` <span style="opacity:.75;font-weight:700">${wins}W ${draws}D ${losses}L</span>`;
 
   await showMatchResultPopup({
     won: adv,
@@ -7237,8 +7585,7 @@ async function runSimulationScreen(){
   await simSleep(400);
   showSimSummary(true);
   if(!simResult.eliminated){
-    // champions — popup already auto-dismissed, go to results
-    await simSleep(800);
+    await simSleep(400);
     goToResults();
   }
   // eliminated path: popup's "Continue to Results" button calls goToResults directly
