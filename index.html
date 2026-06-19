@@ -6062,23 +6062,25 @@ function generateCardEvents(picks, box, isQuickDraft){
   const outfield = picks.filter(pk=>pk.player.position!=='GK');
   if(!outfield.length) return [];
 
-  // Stable seeded RNG so card assignment is deterministic per squad
-  const seed = picks.reduce((s,pk)=>{
-    const id=pk.player.player_id||pk.player.name||'';
-    let h=0; for(let i=0;i<id.length;i++) h=(h*31+id.charCodeAt(i))|0;
-    return (s^h)|0;
-  }, 0);
-  const rng = _seededRng((seed^0x4B1D5A3C)|0);
-
-  // Weight players by position — defenders foul most, forwards less
-  const FOUL_W = {DEF:0.40, MID:0.35, FWD:0.25};
-  const foulSum = outfield.reduce((s,pk)=>s+(FOUL_W[pk.player.position]||0.1),0);
-  // Weighted shuffle: higher weight = more likely to get a card
-  const pool = outfield.map(pk=>({
-    name:pk.player.name,
-    w:(FOUL_W[pk.player.position]||0.1)/foulSum,
-    r:rng()
-  })).sort((a,b)=>b.w*b.r - a.w*a.r);
+  // Card likelihood by position — defenders foul most, midfielders next, forwards
+  // rarely — scaled down for better players (higher overall = more disciplined).
+  // Cards are drawn fresh each match (Math.random, not a squad seed) so over a
+  // tournament they land on DIFFERENT players in line with these weights rather
+  // than always the same one. Totals are unchanged.
+  const POS_W = {DEF:1.0, MID:0.5, FWD:0.16};
+  const discipline = ov => { const o=Math.max(60,Math.min(99,ov||75)); return 1.35 - 0.9*((o-60)/39); }; // 60→1.35, 99→0.45
+  const weighted = outfield.map(pk=>({
+    name: pk.player.name,
+    w: (POS_W[pk.player.position]||0.3) * discipline(pk.player.overall),
+  }));
+  // Pick an index from a pool in proportion to weight.
+  const drawWeighted = pool => {
+    const tot=pool.reduce((s,it)=>s+it.w,0);
+    if(tot<=0) return Math.floor(Math.random()*pool.length);
+    let r=Math.random()*tot;
+    for(let i=0;i<pool.length;i++){ r-=pool[i].w; if(r<=0) return i; }
+    return pool.length-1;
+  };
 
   const events=[];
   const usedCardMins=new Set();
@@ -6090,15 +6092,20 @@ function generateCardEvents(picks, box, isQuickDraft){
     usedCardMins.add(m); return m;
   };
 
-  // Assign yellow cards — spread across the match (5'–88')
-  for(let i=0;i<Math.min(totalYC,pool.length);i++){
-    events.push({minute:pickMin(5,88), playerName:pool[i].name, cardType:'YC'});
+  // Yellow cards — weighted, WITHOUT replacement so a single match's yellows land
+  // on distinct players (spread across the match, 5'–88').
+  const ycPool=weighted.slice();
+  for(let i=0;i<Math.min(totalYC,ycPool.length);i++){
+    const idx=drawWeighted(ycPool);
+    events.push({minute:pickMin(5,88), playerName:ycPool[idx].name, cardType:'YC'});
+    ycPool.splice(idx,1);
   }
 
   // Direct red cards (rare, separate from 2nd-yellow): prefer players without a YC
   for(let i=0;i<totalRC;i++){
-    const noCard=pool.filter(p=>!events.some(e=>e.playerName===p.name));
-    const target=(noCard.length?noCard:pool)[Math.floor(rng()*(noCard.length||pool.length))];
+    const noCard=weighted.filter(p=>!events.some(e=>e.playerName===p.name));
+    const src=noCard.length?noCard:weighted;
+    const target=src[drawWeighted(src)];
     events.push({minute:pickMin(30,85), playerName:target.name, cardType:'RC'});
   }
 
