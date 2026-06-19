@@ -7385,7 +7385,7 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
   const timeEl      = wrap && wrap.querySelector('.sb-time');
   let ei=0, ci=0;
   let pauseUntil = 0;
-  const GOAL_PAUSE_MS = 500 * SIM_SPEED;
+  const GOAL_PAUSE_MS = 250 * SIM_SPEED;
   const revealUpTo=(minute, now)=>{
     // Fire goal events
     while(ei<events.length && events[ei].minute<=minute){
