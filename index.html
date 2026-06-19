@@ -7140,7 +7140,9 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
 }
 
 function playerStatsTableHtml(rows, {cardTotals=false}={}){
-  const isGK = rows.some(r=>r.pos==='GK'&&r.saves>0);
+  // Show the Saves column whenever a keeper is in the lineup (not only once saves
+  // have been recorded), so every stat column is present — and empty — from kickoff.
+  const isGK = rows.some(r=>r.pos==='GK');
   const cols = isGK
     ? ['G','A','Sh','SoT','Sv','Tk','F','YC','RC']
     : ['G','A','Sh','SoT','Tk','F','YC','RC'];
