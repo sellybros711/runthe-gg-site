@@ -4783,19 +4783,21 @@ async function copyToClipboard(text){
 }
 
 async function copyReport(){
-  // On mobile use the native share sheet with the new title/text/url. The text is
-  // the first three lines (message + score + CTA); the url is passed separately.
+  // Put the message AND the link together in `text` with no separate `url`. When
+  // both text and url are passed, some targets (notably X/Twitter on desktop) keep
+  // only the url and drop the message — combining them guarantees both are shared.
+  const text=reportText();   // message + runthe.gg link
   if(navigator.share){
     try{
-      await navigator.share({ title:'RunThePitch: World Cup Game', text:shareTextCore(), url:SHARE_HOME });
+      await navigator.share({ title:'RunThePitch: World Cup Game', text });
       return;
     }catch(e){
       if(e && e.name==='AbortError') return; // user dismissed the share sheet
       // any other failure → fall through to clipboard copy
     }
   }
-  // Clipboard fallback copies the full four-line block (link included).
-  await copyToClipboard(reportText());
+  // Clipboard fallback copies the full message + link.
+  await copyToClipboard(text);
   const t=$('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);
 }
 
