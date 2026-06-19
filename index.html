@@ -463,6 +463,8 @@
     align-items:center;justify-content:center;padding:18px;
     background:rgba(15,12,10,.72);backdrop-filter:blur(1.5px);}
   .spin-overlay.show{display:flex;animation:fade .25s ease;}
+  /* lock background scroll while the spin overlay is open */
+  body.spin-lock{overflow:hidden;}
   .spin-modal{width:100%;max-width:460px;animation:fade .3s ease both;}
   .spin-overlay .roundbar{margin-bottom:12px;}
   .spin-overlay .roundbar .label{color:#fff;}
@@ -2738,8 +2740,9 @@ function openSpinOverlay(){
   $('spin-round-label').textContent=roundLabel();
   renderDots('spin-dots');
   $('spin-overlay').classList.add('show');
+  document.body.classList.add('spin-lock');
 }
-function closeSpinOverlay(){ $('spin-overlay').classList.remove('show'); }
+function closeSpinOverlay(){ $('spin-overlay').classList.remove('show'); document.body.classList.remove('spin-lock'); }
 
 function pickRandomCountry(){return allCountries[Math.floor(Math.random()*allCountries.length)];}
 
@@ -2838,6 +2841,7 @@ function openSpinOverlayForCountry(year){
   $('spin-round-label').textContent=roundLabel();
   renderDots('spin-dots');
   $('spin-overlay').classList.add('show');
+  document.body.classList.add('spin-lock');
 }
 
 // COUNTRY re-spin: year stays completely static; ONLY the country wheel spins,
