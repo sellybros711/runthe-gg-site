@@ -169,17 +169,19 @@
   .sim-summary{ position:relative; }
   .res-mode-corner{ position:absolute; top:12px; right:12px; z-index:2; }
   /* ---------- share popup (reuses the lineup-bg shell) ---------- */
-  .share-preview{ display:block; width:100%; border-radius:14px; border:2px solid var(--ink);
-    margin:2px 0 10px; background:#0b1324; }
-  .share-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px 12px; margin:6px 0 16px; }
-  .shr-opt{ display:flex; flex-direction:column; align-items:center; gap:8px;
+  /* Cap the preview height and use shorter, full-width tiles so the whole popup
+     fits on screen without scrolling. */
+  .share-preview{ display:block; max-width:100%; width:auto; height:auto; max-height:34vh;
+    margin:2px auto 8px; border-radius:14px; border:2px solid var(--ink); background:#0b1324; }
+  .share-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:4px 0 10px; }
+  .shr-opt{ display:flex; flex-direction:column; align-items:center; gap:5px;
     background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  .shr-opt .si{ width:100%; aspect-ratio:1/1; border-radius:20px; display:flex; align-items:center; justify-content:center;
-    border:3px solid var(--ink); box-shadow:5px 5px 0 var(--ink); transition:transform .08s ease, box-shadow .08s ease; }
-  .shr-opt:active .si{ transform:translate(5px,5px); box-shadow:0 0 0 var(--ink); }
-  .shr-opt .si svg{ width:48%; height:48%; fill:#fff; }
+  .shr-opt .si{ width:100%; aspect-ratio:1.6/1; border-radius:14px; display:flex; align-items:center; justify-content:center;
+    border:2.5px solid var(--ink); box-shadow:4px 4px 0 var(--ink); transition:transform .08s ease, box-shadow .08s ease; }
+  .shr-opt:active .si{ transform:translate(4px,4px); box-shadow:0 0 0 var(--ink); }
+  .shr-opt .si svg{ height:52%; width:auto; fill:#fff; }
   .shr-opt .sl{ font-size:11px; font-weight:800; color:var(--ink); letter-spacing:.3px; }
-  .share-copy{ width:100%; }
+  .share-copy{ width:100%; padding:12px; }
   /* Friendly: Solo Draft (60%) + Friendly (38%) side by side, 2% gap.
      Stack only on very small screens (<320px). */
   .home-cta-row{display:flex;gap:2%;width:100%;max-width:460px;margin:0 auto;position:relative;z-index:2;}
