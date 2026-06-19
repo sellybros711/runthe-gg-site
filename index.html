@@ -6666,15 +6666,15 @@ function showMatchResultPopup(opts){
           if(btn) btn.addEventListener('click',()=>{ ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); });
           return;
         }
-        // Between rounds: auto-advance after 3s (progress bar shows the countdown);
+        // Between rounds: auto-advance after 1.5s (progress bar shows the countdown);
         // the Continue button lets an impatient user skip ahead early.
         let done=false;
         const advance=()=>{ if(done) return; done=true; ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); };
         const bar=ov.querySelector('#mp-bar');
-        if(bar){ bar.style.transition='width 3s linear'; requestAnimationFrame(()=>{ bar.style.width='100%'; }); }
+        if(bar){ bar.style.transition='width 1.5s linear'; requestAnimationFrame(()=>{ bar.style.width='100%'; }); }
         const btn=ov.querySelector('#mp-next-btn');
         if(btn) btn.addEventListener('click',advance);
-        setTimeout(advance, 3000);
+        setTimeout(advance, 1500);
       }
     }
   });
@@ -7901,11 +7901,10 @@ async function runSimulationScreen(){
       nextRound: next || null,
     });
     if(won && isFinal){
-      // morph the WIN stamp into the champion line after popup clears
-      const finalEl=card.querySelector('.sim-final');
-      finalEl.className='sim-final sim-champion';
-      finalEl.textContent='CHAMPIONS OF THE WORLD';
-      await simSleep(1200);
+      // championship: the popup's CONTINUE TO RESULTS button advances straight to
+      // the results page — no auto timer / intermediate screen.
+      goToResults();
+      return;
     }
     if(!won) break;
   }
