@@ -4884,7 +4884,7 @@ async function buildSimpleShareCanvas(){
   const r=simResult;
   const isChamp = r ? (!r.eliminated && r.furthestRound==='Final') : false;
   const picks=groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, draftSlotOrder())).reverse();
-  const TOP=372, ROW_H=92, GAP=14, BOTTOM=176;
+  const TOP=446, ROW_H=92, GAP=14, BOTTOM=176;
   const H = TOP + picks.length*(ROW_H+GAP) + BOTTOM;
   const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
 
@@ -4901,21 +4901,38 @@ async function buildSimpleShareCanvas(){
   x.textBaseline='alphabetic'; x.textAlign='left'; x.font='400 58px Anton';
   const seg=[['RUN',cream],['THE','#138A6B'],['PITCH',cream]];
   let tot=0; for(const [t] of seg) tot+=x.measureText(t).width; let lx=CX-tot/2;
-  for(const [t,col] of seg){ x.fillStyle=col; x.fillText(t,lx,92); lx+=x.measureText(t).width; }
+  for(const [t,col] of seg){ x.fillStyle=col; x.fillText(t,lx,88); lx+=x.measureText(t).width; }
 
-  // bracket indicator + elimination headline
-  drawCanvasBracket(x, CX, 150, r, isChamp);
+  // bracket indicator
+  drawCanvasBracket(x, CX, 148, r, isChamp);
+
+  // result headline
   if(isChamp){
-    x.textAlign='center'; x.font='400 60px Anton'; x.fillStyle='#F4B413';
+    x.textAlign='center'; x.font='400 58px Anton'; x.fillStyle='#F4B413';
     x.save(); x.shadowColor='rgba(244,180,19,.5)'; x.shadowBlur=18;
-    x.fillText('WORLD CUP CHAMPIONS', CX, 272); x.restore();
+    x.fillText('WORLD CUP CHAMPIONS', CX, 280); x.restore();
   } else {
     x.textAlign='center'; x.font='800 26px Archivo'; x.fillStyle='#ff6a5a';
-    x.fillText('ELIMINATED IN', CX, 234);
-    x.font='400 62px Anton'; x.fillStyle=cream;
+    x.fillText('ELIMINATED IN', CX, 228);
+    x.font='400 54px Anton'; x.fillStyle=cream;
     x.save(); x.shadowColor='rgba(0,0,0,.4)'; x.shadowBlur=12;
-    x.fillText(shareEliminatedRound(r).toUpperCase(), CX, 298); x.restore();
+    x.fillText(shareEliminatedRound(r).toUpperCase(), CX, 286); x.restore();
   }
+
+  // team overall — tier-coloured number + spaced label, like the reveal screen
+  const teamOv = gs.result.teamOverall;
+  const over100 = teamOv >= 100;
+  const teamColor = over100 ? '#F4B413' : (teamOv>=90?'#4ade80':teamOv>=80?'#F4B413':teamOv>=70?'#F47B20':'#E5402A');
+  x.textAlign='center'; x.font='400 78px Anton'; x.fillStyle=teamColor;
+  x.save();
+  if(over100){ x.shadowColor='rgba(244,180,19,0.95)'; x.shadowBlur=26; }
+  else        { x.shadowColor='rgba(0,0,0,.4)'; x.shadowBlur=12; }
+  x.fillText(teamOv.toFixed(1), CX, 378); x.restore();
+  x.font='900 19px Archivo'; x.fillStyle=cream;
+  const tlbl='TEAM OVERALL', tsp=3;
+  let tlw=0; x.textAlign='left'; for(const ch of tlbl) tlw+=x.measureText(ch).width+tsp; tlw-=tsp;
+  let tlx=CX-tlw/2;
+  for(const ch of tlbl){ x.fillText(ch, tlx, 406); tlx+=x.measureText(ch).width+tsp; }
   x.textAlign='left';
 
   // roster rows (white cards) — same style as the results page
@@ -4933,9 +4950,9 @@ async function buildSimpleShareCanvas(){
     x.fillStyle = bc===PITCH_COLORS.GK ? ink : '#fff';
     x.font='900 22px Archivo'; x.textAlign='center'; x.fillText(pick.slot, bx+bw/2, cy+8); x.textAlign='left';
     const ov=p.overall, ovc=ovColor(ov);
-    const ovX=mX+rW-26, ovrFont=16, numFont=38, ovrGap=4;
-    // nudge the OVR stack up a touch so the number never kisses the card's lower border
-    const topY=cy-(ovrFont+ovrGap+numFont)/2 - 4;
+    const ovX=mX+rW-26, ovrFont=15, numFont=36, ovrGap=-2;
+    // OVR label + number sit tight together, centred vertically in the card
+    const topY=cy-(ovrFont+ovrGap+numFont)/2;
     x.textAlign='right'; x.textBaseline='top';
     x.font='800 '+ovrFont+'px Archivo'; x.fillStyle='#8a7d70'; x.fillText('OVR', ovX, topY);
     x.font='400 '+numFont+'px Anton'; x.fillStyle=ovc; x.fillText(String(ov), ovX, topY+ovrFont+ovrGap);
