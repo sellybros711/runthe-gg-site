@@ -170,18 +170,17 @@
   .sim-summary{ position:relative; }
   .res-mode-corner{ position:absolute; top:12px; right:12px; z-index:2; }
   /* ---------- share popup (reuses the lineup-bg shell) ---------- */
-  /* Cap the preview height and use shorter, full-width tiles so the whole popup
-     fits on screen without scrolling. */
-  .share-preview{ display:block; max-width:100%; width:auto; height:auto; max-height:34vh;
-    margin:2px auto 8px; border-radius:14px; border:2px solid var(--ink); background:#0b1324; }
-  .share-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:4px 0 10px; }
-  .shr-opt{ display:flex; flex-direction:column; align-items:center; gap:5px;
+  /* Make the preview prominent; keep tiles short so it all fits the fixed height. */
+  .share-preview{ display:block; max-width:100%; width:auto; height:auto; max-height:46vh;
+    margin:2px auto 6px; border-radius:14px; border:2px solid var(--ink); background:#0b1324; }
+  .share-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin:2px 0 8px; }
+  .shr-opt{ display:flex; flex-direction:column; align-items:center; gap:4px;
     background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
-  .shr-opt .si{ width:100%; aspect-ratio:1.6/1; border-radius:14px; display:flex; align-items:center; justify-content:center;
+  .shr-opt .si{ width:100%; aspect-ratio:2.1/1; border-radius:13px; display:flex; align-items:center; justify-content:center;
     border:2.5px solid var(--ink); box-shadow:4px 4px 0 var(--ink); transition:transform .08s ease, box-shadow .08s ease; }
   .shr-opt:active .si{ transform:translate(4px,4px); box-shadow:0 0 0 var(--ink); }
-  .shr-opt .si svg{ height:52%; width:auto; fill:#fff; }
-  .shr-opt .sl{ font-size:11px; font-weight:800; color:var(--ink); letter-spacing:.3px; }
+  .shr-opt .si svg{ height:60%; width:auto; fill:#fff; }
+  .shr-opt .sl{ font-size:10px; font-weight:800; color:var(--ink); letter-spacing:.3px; }
   .share-copy{ width:100%; padding:12px; }
   /* Friendly: Solo Draft (60%) + Friendly (38%) side by side, 2% gap.
      Stack only on very small screens (<320px). */
