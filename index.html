@@ -6920,10 +6920,13 @@ function computeMatchStats(uOv, oOv, uGoals, oGoals){
   possU = Math.max(30, Math.min(70, Math.round(possU)));
   const corners = { u: Math.max(0, Math.round(shots.u*0.35)+ri(-1,2)), o: Math.max(0, Math.round(shots.o*0.35)+ri(-1,2)) };
   const fouls = { u: ri(6,16), o: ri(6,16) };
+  // tackles: a side defends (and tackles) more when it has LESS of the ball.
+  const tackles = { u: Math.max(6, Math.round((100-possU)*0.28)+ri(2,8)),
+                    o: Math.max(6, Math.round(possU*0.28)+ri(2,8)) };
   // yellow cards scale loosely with fouls; red cards are rare (~8% per side).
   const yellows = { u: Math.max(0, Math.round(fouls.u*0.13)+ri(-1,0)), o: Math.max(0, Math.round(fouls.o*0.13)+ri(-1,0)) };
   const reds = { u: Math.random()<0.04?1:0, o: Math.random()<0.04?1:0 };
-  return { poss:{u:possU,o:100-possU}, shots, sot, corners, fouls, saves, yellows, reds };
+  return { poss:{u:possU,o:100-possU}, shots, sot, corners, fouls, tackles, saves, yellows, reds };
 }
 // Compute the box once per match and cache it on the match/matchday object, so
 // the live panel and the results view always show the same figures.
@@ -6940,7 +6943,7 @@ function boxFromResult(R){
   // yellows/reds may be absent on older stored friendly results — default to 0
   // so the live box never reads .u off an undefined stat.
   return { poss:g(R.possession), shots:g(R.shots), sot:g(R.shotsOnTarget),
-           corners:g(R.corners), fouls:g(R.fouls), saves:g(R.saves),
+           corners:g(R.corners), fouls:g(R.fouls), tackles:g(R.tackles), saves:g(R.saves),
            yellows:g(R.yellows), reds:g(R.reds) };
 }
 const BOX_STAT_ROWS = [
@@ -6948,6 +6951,7 @@ const BOX_STAT_ROWS = [
   {k:'shots', label:'Shots'},
   {k:'sot', label:'Shots on Target'},
   {k:'corners', label:'Corners'},
+  {k:'tackles', label:'Tackles'},
   {k:'fouls', label:'Fouls', lowerIsBetter:true},
   {k:'saves', label:'Saves'},
   {k:'yellows', label:'Yellow Cards', lowerIsBetter:true},
@@ -6979,6 +6983,7 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
   // offset so their sequences are independent.
   const shotRng  = _seededRng((seed ^ 0x9e3779b9)|0);
   const foulRng  = _seededRng((seed ^ 0x6c62272e)|0);
+  const tackRng  = _seededRng((seed ^ 0x1b873593)|0);
   const cardRng  = _seededRng((seed ^ 0x517cc1b7)|0);
   const asstRng  = _seededRng((seed ^ 0x2c91dca5)|0);
 
@@ -7003,9 +7008,12 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
   const totalYC    = hideCards ? 0 : (box ? (box.yellows.u||0) : 1);
   const totalRC    = hideCards ? 0 : (box ? (box.reds.u||0)    : 0);
   const totalSaves = Math.round((box ? (box.saves.u||0) : 3) * progress);
+  const totalTackles = Math.round((box ? (box.tackles.u||0) : 16) * progress);
 
   const SHOT_W = {GK:0,    DEF:0.10, MID:0.28, FWD:0.60};
   const FOUL_W = {GK:0.04, DEF:0.38, MID:0.33, FWD:0.25};
+  // Tackles: defenders most, midfielders next, forwards rarely; keepers never.
+  const TACKLE_W = {GK:0, DEF:1.0, MID:0.45, FWD:0.10};
 
   // Rating multiplier: normalises overall (60–99) to a [0.5, 1.5] range so
   // higher-rated players get meaningfully more shots and are more likely to assist.
@@ -7023,6 +7031,11 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
   const playerFoulW = picks.map(pk=>{
     const w = FOUL_W[pk.player.position]||0.05;
     return w * (0.5 + foulRng()*0.5);
+  });
+  // Tackle weight scales UP with rating — better players win more tackles.
+  const playerTackleW = picks.map(pk=>{
+    const w = TACKLE_W[pk.player.position]||0;
+    return w * ratingMult(pk) * (0.5 + tackRng()*0.5);
   });
   // Stable per-player card priority (used for tie-breaking quota distribution)
   const cardPrio = picks.map(()=>cardRng());
@@ -7052,6 +7065,7 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
 
   const shotAlloc = allocExact(playerShotW, totalShots);
   const foulAlloc = allocExact(playerFoulW, totalFouls);
+  const tackleAlloc = allocExact(playerTackleW, totalTackles);
   // SoT uses the SAME fixed shot weights (not the live shotAlloc, whose changing
   // values would let D'Hondt move a SoT between players → a count going down).
   // With fixed weights and totalSoT ≤ totalShots, house-monotonicity guarantees
@@ -7077,7 +7091,7 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
     const assists = liveAssistMap[p.name]||0;
     const saves   = pos==='GK' ? totalSaves : 0;
     return { name:p.name, pos, goals, assists,
-             shots:shotAlloc[i], sot:sotAlloc[i], fouls:foulAlloc[i],
+             shots:shotAlloc[i], sot:sotAlloc[i], fouls:foulAlloc[i], tackles:tackleAlloc[i],
              saves, yc:0, rc:0, _cardPrio:cardPrio[i] };
   });
 
@@ -7124,15 +7138,15 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
 function playerStatsTableHtml(rows, {cardTotals=false}={}){
   const isGK = rows.some(r=>r.pos==='GK'&&r.saves>0);
   const cols = isGK
-    ? ['G','A','Sh','SoT','Sv','F','YC','RC']
-    : ['G','A','Sh','SoT','F','YC','RC'];
+    ? ['G','A','Sh','SoT','Sv','Tk','F','YC','RC']
+    : ['G','A','Sh','SoT','Tk','F','YC','RC'];
   const YC_HEAD = '<span class="card-ico yc" title="Yellow cards"></span>';
   const RC_HEAD = '<span class="card-ico rc" title="Red cards"></span>';
   const head = cols.map(c=>c==='YC'?`<th>${YC_HEAD}</th>`:c==='RC'?`<th>${RC_HEAD}</th>`:`<th>${c}</th>`).join('');
   const body = rows.map(r=>{
     const cells = isGK
-      ? [r.goals,r.assists,r.shots,r.sot,r.saves,r.fouls,r.yc,r.rc]
-      : [r.goals,r.assists,r.shots,r.sot,r.fouls,r.yc,r.rc];
+      ? [r.goals,r.assists,r.shots,r.sot,r.saves,r.tackles,r.fouls,r.yc,r.rc]
+      : [r.goals,r.assists,r.shots,r.sot,r.tackles,r.fouls,r.yc,r.rc];
     const tds = cells.map((v,i)=>{
       const col=cols[i];
       if(col==='YC'){
@@ -7199,8 +7213,8 @@ function updateLiveBox(el, stats, frac, opts){
     rows = simPlayerStats(opts.picks, stats, opts.goalEvents||[], liveGoals,
             { cardEvents: opts.cardEvents||[], timeProgress: f });
     you = rows.reduce((a,r)=>{ a.shots+=r.shots; a.sot+=r.sot; a.fouls+=r.fouls;
-            a.saves+=r.saves; a.yellows+=r.yc; a.reds+=r.rc; return a; },
-            {shots:0,sot:0,fouls:0,saves:0,yellows:0,reds:0});
+            a.saves+=r.saves; a.tackles+=r.tackles; a.yellows+=r.yc; a.reds+=r.rc; return a; },
+            {shots:0,sot:0,fouls:0,saves:0,tackles:0,yellows:0,reds:0});
   }
   BOX_STAT_ROWS.forEach(r=>{
     const row=el.querySelector(`.lbx-row[data-k="${r.k}"]`); if(!row) return;
@@ -7291,9 +7305,9 @@ function openBoxScores(){
     const totMap={};
     allStats.forEach(matchRows=>{
       matchRows.forEach(row=>{
-        if(!totMap[row.name]) totMap[row.name]={name:row.name,pos:row.pos,goals:0,assists:0,shots:0,sot:0,fouls:0,saves:0,yc:0,rc:0};
+        if(!totMap[row.name]) totMap[row.name]={name:row.name,pos:row.pos,goals:0,assists:0,shots:0,sot:0,tackles:0,fouls:0,saves:0,yc:0,rc:0};
         const t=totMap[row.name];
-        t.goals+=row.goals; t.assists+=row.assists; t.shots+=row.shots;
+        t.goals+=row.goals; t.assists+=row.assists; t.shots+=row.shots; t.tackles+=row.tackles;
         t.sot+=row.sot; t.fouls+=row.fouls; t.saves+=row.saves; t.yc+=row.yc; t.rc+=row.rc;
       });
     });
@@ -7695,9 +7709,9 @@ function buildSummaryCard(){
     const totMap = {};
     allMatchStats.forEach(matchRows=>{
       matchRows.forEach(row=>{
-        if(!totMap[row.name]) totMap[row.name]={name:row.name,pos:row.pos,goals:0,assists:0,shots:0,sot:0,fouls:0,saves:0,yc:0,rc:0};
+        if(!totMap[row.name]) totMap[row.name]={name:row.name,pos:row.pos,goals:0,assists:0,shots:0,sot:0,tackles:0,fouls:0,saves:0,yc:0,rc:0};
         const t=totMap[row.name];
-        t.goals+=row.goals; t.assists+=row.assists; t.shots+=row.shots;
+        t.goals+=row.goals; t.assists+=row.assists; t.shots+=row.shots; t.tackles+=row.tackles;
         t.sot+=row.sot; t.fouls+=row.fouls; t.saves+=row.saves; t.yc+=row.yc; t.rc+=row.rc;
       });
     });
