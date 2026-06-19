@@ -7733,8 +7733,6 @@ function buildSummaryCard(){
     ${oc.message?`<div style="text-align:center;font-weight:600;font-size:13px;line-height:1.45;color:rgba(240,232,216,.55);margin-bottom:12px;">${oc.message}</div>`:''}
     <div class="sim-sub-label">MATCHES</div>
     ${rows || '<div class="sim-summary-row"><span>No knockout matches</span><span></span></div>'}
-    <div class="sim-sub-label">TOP SCORER</div>
-    <div class="sim-summary-row"><span>${topName}</span><span>${topGoals} goal${topGoals===1?'':'s'}</span></div>
     <div class="sim-sub-label">MAN OF THE TOURNAMENT</div>
     <div class="sim-summary-row" style="border-bottom:none"><span>${mot}</span><span></span></div>
     ${totalStatsHtml}`;
