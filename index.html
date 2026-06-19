@@ -6589,6 +6589,89 @@ const KNOCKOUT_LOSS_PENS_LINES=[
   'Out on penalties. Football can be devastating.',
 ];
 
+// Builds a knockout result line that's unique to THIS match: the scoreline,
+// margin, opponent, penalties/extra-time, the squad's standout scorer, and
+// whether they were underdogs or favourites — then falls back to the varied
+// static pools so no two runs feel the same.
+function knockoutResultMsg(opts){
+  const m = opts.match;
+  if(!m){ // no match context (shouldn't happen for knockout) → static pools
+    if(opts.won) return opts.isPens?pickOne(KNOCKOUT_WIN_PENS_LINES):pickOne(KNOCKOUT_WIN_LINES);
+    return opts.isPens?pickOne(KNOCKOUT_LOSS_PENS_LINES):pickOne(KNOCKOUT_LOSS_LINES);
+  }
+  const opp = m.opponent.country;
+  const us = m.userGoals, them = m.opponentGoals;
+  const margin = Math.abs(us - them);
+  const pens = !!m.penalties, et = !!m.extraTime;
+  const round = opts.currentRound;
+  const score = `${Math.max(us,them)}–${Math.min(us,them)}`; // winner's score first
+  // squad's standout scorer in this match
+  const sc={}; (m.goalEvents||[]).filter(e=>e.team==='user'&&!e.isOG).forEach(e=>sc[e.scorer]=(sc[e.scorer]||0)+1);
+  let star='', starG=0; for(const k in sc){ if(sc[k]>starG){ starG=sc[k]; star=k; } }
+  const who = star?shortNm(star):'';
+  // relative strength (was this an upset?)
+  const oppOv = Math.round(m.opponent.teamOverall||75);
+  const myOv  = (simResult&&simResult.userOverall)||(gs.result&&gs.result.teamOverall)||75;
+  const underdog = myOv + 4 < oppOv, favourite = myOv > oppOv + 6;
+
+  const pool=[];
+  if(opts.won){
+    if(pens){
+      pool.push(`${opp} beaten on penalties — ice in the veins.`,
+                `A shootout for the ages. ${opp} sent home.`,
+                `${us}–${them}, then nerve from twelve yards. Through.`,
+                `Every kick a heartbeat — and ${opp} blinked first.`,
+                ...KNOCKOUT_WIN_PENS_LINES);
+    } else if(margin>=3){
+      pool.push(`${score}. ${opp} dismantled.`,
+                `A statement. ${opp} swept aside ${score}.`,
+                `Ruthless — ${opp} never stood a chance.`,
+                `${score} and this squad is sending a message.`,
+                `${opp} put to the sword. Total control.`);
+    } else if(margin===2){
+      pool.push(`A composed ${score} win over ${opp}.`,
+                `${opp} dispatched ${score}. Job done.`,
+                `Two clear goals — ${opp} couldn't live with them.`,
+                `${score}. Comfortable when it counted.`);
+    } else { // 1-goal
+      pool.push(`${score}. They edged out ${opp}.`,
+                `By the finest margin — ${opp} beaten ${score}.`,
+                `${et?'Extra-time drama':'A nervy finish'}, but past ${opp} ${score}.`,
+                `One goal in it. ${opp} so nearly took them down.`,
+                `Squeaked past ${opp} ${score}. Through is through.`);
+    }
+    if(starG>=3) pool.push(`Hat-trick hero ${who} fires them past ${opp}!`, `${who} with THREE — ${opp} had no answer.`);
+    else if(starG===2) pool.push(`${who}'s brace sinks ${opp}.`, `Two from ${who}, and ${opp} are out.`);
+    if(underdog) pool.push(`Giant-killers! ${opp} (${oppOv} OVR) stunned.`, `The underdogs roll on — ${opp} never saw it coming.`);
+    if(favourite && margin>=2) pool.push(`Business as usual. ${opp} brushed aside.`);
+    if(round==='Semi-final') pool.push(`Into the FINAL — ${opp} beaten when it mattered most.`, `One game from glory. ${opp} couldn't stop them.`);
+    else if(round==='Quarter-final') pool.push(`Into the semis! ${opp} sent packing.`);
+    pool.push(...KNOCKOUT_WIN_LINES);
+  } else {
+    if(pens){
+      pool.push(`${us}–${them}, then penalty heartbreak against ${opp}.`,
+                `So cruel — out to ${opp} from the spot.`,
+                ...KNOCKOUT_LOSS_PENS_LINES);
+    } else if(margin>=3){
+      pool.push(`Outclassed. ${opp} ran out ${score} winners.`,
+                `${opp} were simply too strong — a chastening ${score}.`,
+                `Blown away by ${opp}.`);
+    } else if(margin<=1){
+      pool.push(`Heartbreak. ${opp} edged it ${score}.`,
+                `By a single goal, ${opp} end the dream.`,
+                `${et?'Extra-time agony':'An agonising finish'} — ${opp} go through ${score}.`,
+                `So close against ${opp}. Out ${score}.`);
+    } else {
+      pool.push(`${opp} had a touch too much, winning ${score}.`,
+                `The run ends against ${opp}, ${score}.`);
+    }
+    if(underdog) pool.push(`No shame in it — ${opp} (${oppOv} OVR) were the stronger side.`, `They punched above their weight, but ${opp} prevailed.`);
+    if(favourite) pool.push(`A shock. ${opp} pull off the upset.`, `The favourites fall — ${opp} stun them.`);
+    pool.push(...KNOCKOUT_LOSS_LINES);
+  }
+  return pickOne(pool);
+}
+
 // ---- match result popup overlay ----
 const BRACKET_ROUNDS=['Group Stage','Round of 32','Round of 16','Quarter-final','Semi-final','Final'];
 const BRACKET_LABELS=['GRP','R32','R16','QF','SF','FIN'];
@@ -6619,11 +6702,11 @@ function showMatchResultPopup(opts){
       msgLine=pickOne(['World Cup winners. History made.','The greatest prize in football. Yours.','From the draft to the trophy. Unbelievable.','Champions of the world. Nothing more to say.']);
     } else if(opts.won){
       stamp=isGroupStage?'QUALIFIED':'ADVANCED'; popupCls='win';
-      msgLine=opts.gsPopupMsg||(opts.isPens?pickOne(KNOCKOUT_WIN_PENS_LINES):pickOne(KNOCKOUT_WIN_LINES));
-      if(!isGroupStage && opts.nextRound) msgLine+=` Next up: ${opts.nextRound}.`;
+      // The next-round line is dropped — the bracket animation already shows it.
+      msgLine=opts.gsPopupMsg||knockoutResultMsg(opts);
     } else {
       stamp='ELIMINATED'; popupCls='loss';
-      msgLine=opts.gsPopupMsg||(opts.isPens?pickOne(KNOCKOUT_LOSS_PENS_LINES):pickOne(KNOCKOUT_LOSS_LINES));
+      msgLine=opts.gsPopupMsg||knockoutResultMsg(opts);
     }
 
     ov.innerHTML=`<div class="match-popup ${popupCls}">
@@ -6666,15 +6749,15 @@ function showMatchResultPopup(opts){
           if(btn) btn.addEventListener('click',()=>{ ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); });
           return;
         }
-        // Between rounds: auto-advance after 1.5s (progress bar shows the countdown);
+        // Between rounds: auto-advance after 2s (progress bar shows the countdown);
         // the Continue button lets an impatient user skip ahead early.
         let done=false;
         const advance=()=>{ if(done) return; done=true; ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); };
         const bar=ov.querySelector('#mp-bar');
-        if(bar){ bar.style.transition='width 1.5s linear'; requestAnimationFrame(()=>{ bar.style.width='100%'; }); }
+        if(bar){ bar.style.transition='width 2s linear'; requestAnimationFrame(()=>{ bar.style.width='100%'; }); }
         const btn=ov.querySelector('#mp-next-btn');
         if(btn) btn.addEventListener('click',advance);
-        setTimeout(advance, 1500);
+        setTimeout(advance, 2000);
       }
     }
   });
@@ -7899,6 +7982,7 @@ async function runSimulationScreen(){
       isPens: !!m.penalties,
       currentRound: m.round,
       nextRound: next || null,
+      match: m,
     });
     if(won && isFinal){
       // championship: the popup's CONTINUE TO RESULTS button advances straight to
