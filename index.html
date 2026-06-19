@@ -7048,9 +7048,11 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
 
   const shotAlloc = allocExact(playerShotW, totalShots);
   const foulAlloc = allocExact(playerFoulW, totalFouls);
-  // SoT distributed in proportion to each player's shots, capped at their shot
-  // count (so SoT ≤ shots), summing exactly to the team SoT total.
-  const sotAlloc  = allocExact(shotAlloc, totalSoT, shotAlloc);
+  // SoT uses the SAME fixed shot weights (not the live shotAlloc, whose changing
+  // values would let D'Hondt move a SoT between players → a count going down).
+  // With fixed weights and totalSoT ≤ totalShots, house-monotonicity guarantees
+  // each player's SoT only grows and never exceeds that player's shots.
+  const sotAlloc  = allocExact(playerShotW, totalSoT);
 
   // Goals/assists come purely from live events (truly real-time)
   const liveUserGoals = live.filter(e=>e.team==='user'&&!e.isOG).map(e=>e.scorer);
