@@ -4447,16 +4447,17 @@ const SHARE_HOME = 'https://runthe.gg';
 // Draft size word: VI for the 6-man Quick draft, XI for the 11-man Full draft.
 function draftSizeLabel(){ return (gs && gs.draftType==='full') ? 'XI' : 'VI'; }
 function shareModeLabel(){ return (gameMode==='hard') ? 'Hard' : 'Easy'; }
-// Outcome clause. Champion = won; lost final = came up short; otherwise the
-// furthest stage reached.
-function shareStagePhrase(){
+// First sentence of the share message. Champions "won the World Cup"; everyone
+// else "lost in the World Cup {stage}". Always ends "… on RunThePitch".
+function shareFirstSentence(){
   const r=simResult;
-  if(r && !r.eliminated && r.furthestRound==='Final') return 'won the World Cup 🏆';
-  if(r &&  r.eliminated && r.furthestRound==='Final') return 'reached the Finals but came up short';
-  const map={'Semi-final':'Semi-Finals','Quarter-final':'Quarter-Finals',
+  const size=draftSizeLabel();
+  if(r && !r.eliminated && r.furthestRound==='Final')
+    return `My starting ${size} won the World Cup on RunThePitch 🏆`;
+  const map={'Final':'Finals','Semi-final':'Semi-Finals','Quarter-final':'Quarter-Finals',
              'Round of 16':'Round of 16','Round of 32':'Round of 32','Group Stage':'Group Stage'};
   const stage=(r && map[r.furthestRound]) || 'Group Stage';
-  return `reached the ${stage} of the World Cup`;
+  return `My starting ${size} lost in the World Cup ${stage} on RunThePitch`;
 }
 // Top scorer as "Surname (goals)", or "None" if nobody scored.
 function shareLeadScorer(){
@@ -4470,7 +4471,7 @@ function shareLeadScorer(){
 const SHARE_HASHTAGS = '#RunThePitch #WorldCup #FIFA';
 function shareTextCore(){
   const rating=(gs.result && gs.result.teamOverall!=null) ? (+gs.result.teamOverall).toFixed(1) : '—';
-  return `My RunThePitch starting ${draftSizeLabel()} ${shareStagePhrase()}. `
+  return `${shareFirstSentence()}. `
        + `Mode: ${shareModeLabel()}. Team Rating: ${rating}. Lead Goalscorer: ${shareLeadScorer()}. Try to beat me! `
        + SHARE_HASHTAGS;
 }
