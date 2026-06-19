@@ -4467,10 +4467,12 @@ function shareLeadScorer(){
 }
 // Tweet body. The runthe.gg link is appended by reportText() (clipboard/desktop)
 // and passed as the share-sheet url on mobile.
+const SHARE_HASHTAGS = '#RunThePitch #WorldCup #FIFA';
 function shareTextCore(){
   const rating=(gs.result && gs.result.teamOverall!=null) ? (+gs.result.teamOverall).toFixed(1) : '—';
   return `My RunThePitch starting ${draftSizeLabel()} ${shareStagePhrase()}. `
-       + `Mode: ${shareModeLabel()}. Team Rating: ${rating}. Lead Goalscorer: ${shareLeadScorer()}. Try to beat me!`;
+       + `Mode: ${shareModeLabel()}. Team Rating: ${rating}. Lead Goalscorer: ${shareLeadScorer()}. Try to beat me! `
+       + SHARE_HASHTAGS;
 }
 // Full four-line block including the link — for clipboard + the on-screen box.
 function reportText(){
@@ -4930,8 +4932,9 @@ async function buildSimpleShareCanvas(){
     x.fillStyle = bc===PITCH_COLORS.GK ? ink : '#fff';
     x.font='900 22px Archivo'; x.textAlign='center'; x.fillText(pick.slot, bx+bw/2, cy+8); x.textAlign='left';
     const ov=p.overall, ovc=ovColor(ov);
-    const ovX=mX+rW-26, ovrFont=16, numFont=42, ovrGap=4;
-    const topY=cy-(ovrFont+ovrGap+numFont)/2;
+    const ovX=mX+rW-26, ovrFont=16, numFont=38, ovrGap=4;
+    // nudge the OVR stack up a touch so the number never kisses the card's lower border
+    const topY=cy-(ovrFont+ovrGap+numFont)/2 - 4;
     x.textAlign='right'; x.textBaseline='top';
     x.font='800 '+ovrFont+'px Archivo'; x.fillStyle='#8a7d70'; x.fillText('OVR', ovX, topY);
     x.font='400 '+numFont+'px Anton'; x.fillStyle=ovc; x.fillText(String(ov), ovX, topY+ovrFont+ovrGap);
