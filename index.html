@@ -171,7 +171,8 @@
   /* ---------- share popup (reuses the lineup-bg shell) ---------- */
   .share-preview{ display:block; width:100%; border-radius:14px; border:2px solid var(--ink);
     margin:2px 0 10px; background:#0b1324; }
-  .share-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px 14px; margin:6px 0 16px; }
+  .share-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px 14px;
+    margin:6px auto 16px; max-width:340px; }
   .share-opt{ display:flex; flex-direction:column; align-items:center; gap:8px;
     background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .share-opt .si{ width:100%; aspect-ratio:1/1; border-radius:20px; display:flex; align-items:center; justify-content:center;
@@ -4986,7 +4987,7 @@ const SHARE_ICON = {
   telegram:`<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.139-5.061 3.345-.479.329-.913.489-1.302.481-.428-.009-1.252-.242-1.865-.442-.751-.244-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.015 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>`,
 };
 const SHARE_TARGETS = [
-  {key:'x',        label:'X',        color:'#000000', build:(m,l)=>`https://twitter.com/intent/tweet?text=${encodeURIComponent(m)}&url=${encodeURIComponent(l)}`},
+  {key:'x',        label:'X/Twitter', color:'#000000', build:(m,l)=>`https://twitter.com/intent/tweet?text=${encodeURIComponent(m)}&url=${encodeURIComponent(l)}`},
   {key:'reddit',   label:'Reddit',   color:'#FF4500', build:(m,l)=>`https://www.reddit.com/submit?url=${encodeURIComponent(l)}&title=${encodeURIComponent(m)}`},
   {key:'threads',  label:'Threads',  color:'#101010', build:(m,l)=>`https://www.threads.net/intent/post?text=${encodeURIComponent(m+' '+l)}`},
   {key:'facebook', label:'Facebook', color:'#1877F2', build:(m,l)=>`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(l)}`},
