@@ -148,6 +148,14 @@
   .btn.red{background:var(--red);color:#fff;}
   .btn.green{background:var(--pos-mid);color:#fff;}
   .btn.teal{background:var(--teal);color:#fff;}
+  /* Pulsing glow to draw attention to the Share button (encourages sharing). */
+  @keyframes shareGlow{
+    0%,100%{ box-shadow:var(--shadow-sm), 0 0 8px 1px rgba(244,180,19,.45); }
+    50%{ box-shadow:var(--shadow-sm), 0 0 20px 5px rgba(244,180,19,.9); }
+  }
+  .btn.share-glow{ animation:shareGlow 1.7s ease-in-out infinite; }
+  .btn.share-glow:active{ animation:none; }
+  @media (prefers-reduced-motion: reduce){ .btn.share-glow{ animation:none; } }
   /* Friendly: Solo Draft (60%) + Friendly (38%) side by side, 2% gap.
      Stack only on very small screens (<320px). */
   .home-cta-row{display:flex;gap:2%;width:100%;max-width:460px;margin:0 auto;position:relative;z-index:2;}
@@ -4236,9 +4244,9 @@ function goToResults(){
     <div class="res-bio-hint">Tap a player for their bio card</div>
     <div id="res-squad"></div>
     <div class="stack" style="margin-top:16px;">
-      <button class="btn blue" id="res-boxscores">📊 View Match Stats</button>
-      <button class="btn red" id="res-share">Share Your Result →</button>
       <button class="btn teal" id="res-again">Play Again</button>
+      <button class="btn blue" id="res-boxscores">📊 View Match Stats</button>
+      <button class="btn red share-glow" id="res-share">Share Your Result →</button>
     </div>
     <div class="center"><button class="rate-trigger" id="rate-link-results">Disagree with a rating?</button></div>
     </div>`;
