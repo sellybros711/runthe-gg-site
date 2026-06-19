@@ -1497,6 +1497,7 @@
      name/flag submission UI. No leaderboard behaviour changes — only visibility. */
   .entry-bg.view-only .entry-sub,
   .entry-bg.view-only .entry-badges,
+  .entry-bg.view-only .entry-name-row,
   .entry-bg.view-only .entry-name,
   .entry-bg.view-only .entry-flag-label,
   .entry-bg.view-only .entry-flag-row,
@@ -1517,9 +1518,10 @@
   .entry-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;
     border:2.5px solid rgba(255,255,255,.25);border-radius:999px;color:#fff;font-weight:900;font-size:14px;
     text-transform:uppercase;letter-spacing:.5px;}
-  .entry-name{width:100%;box-sizing:border-box;border:2px solid #F5C518;border-radius:11px;
+  .entry-name-row{display:flex;gap:8px;align-items:stretch;margin-top:14px;}
+  .entry-name{flex:1 1 auto;min-width:0;box-sizing:border-box;border:2px solid #F5C518;border-radius:11px;
     padding:12px 14px;font-size:16px;font-family:inherit;font-weight:800;color:#fff;
-    background:#262626;outline:none;margin-top:14px;}
+    background:#262626;outline:none;}
   .entry-name::placeholder{color:#8a8a8a;font-weight:700;}
   .entry-name:focus{border-color:var(--gold);box-shadow:0 0 0 3px rgba(244,180,19,.3);}
   .entry-flag-label{font-weight:900;font-size:11px;text-transform:uppercase;letter-spacing:1.5px;
@@ -1535,9 +1537,9 @@
   /* scrollable Top-100 board embedded in the modal */
   .entry-lb-list{max-height:50vh;overflow-y:auto;-webkit-overflow-scrolling:touch;
     border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:2px 8px;background:rgba(0,0,0,.25);}
-  .entry-submit{width:100%;height:50px;border:none;border-radius:14px;background:var(--gold);
-    color:#1a1a1a;font-weight:900;font-size:16px;text-transform:uppercase;letter-spacing:1px;
-    cursor:pointer;margin-top:18px;font-family:inherit;
+  .entry-submit{flex:0 0 auto;border:none;border-radius:11px;background:var(--gold);
+    color:#1a1a1a;font-weight:900;font-size:14px;text-transform:uppercase;letter-spacing:.5px;
+    padding:0 18px;cursor:pointer;font-family:inherit;white-space:nowrap;
     transition:transform .08s ease,filter .15s ease;}
   .entry-submit:active{transform:translateY(2px);}
   .entry-submit:disabled{opacity:.4;filter:grayscale(.4);cursor:not-allowed;transform:none;}
@@ -2294,7 +2296,10 @@
     <h3 class="entry-title"><svg class="ico-em" viewBox="0 0 24 28" aria-hidden="true"><defs><linearGradient id="trgTitle" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".5" stop-color="#E8C25A"/><stop offset="1" stop-color="#8A5E12"/></linearGradient></defs><path d="M5 4 C2.5 4 2.5 9 5.6 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M19 4 C21.5 4 21.5 9 18.4 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M6 3 H18 V8 C18 13 14.5 15 12 15 C9.5 15 6 13 6 8 Z" fill="url(#trgTitle)" stroke="#00000033" stroke-width=".6"/><rect x="11" y="15" width="2" height="4" fill="url(#trgTitle)"/><rect x="8" y="19" width="8" height="2" rx="1" fill="url(#trgTitle)"/><rect x="6.5" y="21" width="11" height="2.6" rx="1.3" fill="url(#trgTitle)" stroke="#00000022" stroke-width=".5"/></svg> Leaderboard</h3>
     <p class="entry-sub">Enter your name to save your score</p>
     <div class="entry-badges"><span class="entry-badge" id="entry-badge-result"></span><span class="entry-badge" id="entry-badge-ovr"></span></div>
-    <input class="entry-name" id="entry-name" maxlength="20" placeholder="Your name" autocomplete="off" />
+    <div class="entry-name-row">
+      <input class="entry-name" id="entry-name" maxlength="20" placeholder="Your name" autocomplete="off" />
+      <button class="entry-submit" id="entry-submit">Save</button>
+    </div>
     <div class="entry-flag-label">Your Flag</div>
     <div class="entry-flag-row" id="entry-flag-row"></div>
     <div class="lb-toggles" style="margin-top:18px;">
@@ -2313,7 +2318,6 @@
       </div>
     </div>
     <div class="entry-lb-list" id="lb-list"></div>
-    <button class="entry-submit" id="entry-submit">Save to Leaderboard</button>
     <div class="entry-error" id="entry-error">Couldn’t save — please try again.</div>
     <button class="entry-skip" id="entry-skip">Skip — stay anonymous</button>
   </div>
@@ -5316,7 +5320,7 @@ function openEntryModal(resultLabel, score, color){
   bOvr.textContent=`Ovr: ${(+score).toFixed(1)}`; bOvr.style.background=color||'var(--teal)';
   // reset the submit button + any prior error from a previous open
   const btn=$('entry-submit');
-  btn.className='entry-submit'; btn.textContent='Save to Leaderboard'; btn.disabled=false;
+  btn.className='entry-submit'; btn.textContent='Save'; btn.disabled=false;
   $('entry-error').classList.remove('show');
   // pre-fill name from a returning player's saved value
   $('entry-name').value=(localStorage.getItem('rtp_player_name')||'').slice(0,20);
@@ -5439,7 +5443,7 @@ async function submitEntry(){
 
   if(!ok){
     // keep the modal open so the player can try again
-    btn.classList.remove('saving'); btn.disabled=false; btn.textContent='Save to Leaderboard';
+    btn.classList.remove('saving'); btn.disabled=false; btn.textContent='Save';
     err.textContent='Couldn’t save — please try again.';
     err.classList.add('show');
     return;
