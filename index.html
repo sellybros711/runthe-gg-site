@@ -6782,6 +6782,12 @@ function showMatchResultPopup(opts){
       bracketHtml+=`<div class="mp-bracket-node"><div class="mp-bracket-dot ${dotCls}"></div><div class="mp-bracket-label">${BRACKET_LABELS[i]}</div></div>`;
     });
 
+    // Auto-advance after 2.5s on every popup EXCEPT the championship win, which
+    // lingers until tapped so the moment can be savoured. The Continue button is
+    // always present and advances early. The timer honours the speed toggle.
+    const autoAdvance = !(opts.won && opts.isFinal);
+    const POPUP_AUTO_MS = 2500;
+
     const isGroupStage = opts.currentRound === 'Group Stage';
     let stamp, msgLine, popupCls;
     if(opts.isFinal && opts.won){
@@ -6803,23 +6809,41 @@ function showMatchResultPopup(opts){
       ${!opts.won?`<button class="btn red big" id="mp-results-btn" style="width:100%;margin-top:4px">CONTINUE TO RESULTS</button>`:''}
       ${opts.won&&opts.isFinal?`<button class="btn red big" id="mp-results-btn" style="width:100%;margin-top:4px">CONTINUE TO RESULTS</button>`:''}
       ${opts.won&&!opts.isFinal?`<button class="btn teal big" id="mp-next-btn" style="width:100%;margin-top:4px">Continue →</button>`:''}
+      ${autoAdvance?`<div class="mp-auto-bar"><div class="mp-auto-bar-fill"></div></div>`:''}
     </div>`;
     document.body.appendChild(ov);
     requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ov.classList.add('active'); }); });
 
+    // Kick off the countdown bar (sized to the speed-scaled timer) when auto-advancing.
+    let autoTimer=null;
+    const startAutoBar=ms=>{
+      const fill=ov.querySelector('.mp-auto-bar-fill');
+      if(!fill) return;
+      fill.style.transitionDuration=ms+'ms';
+      requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ fill.style.width='100%'; }); });
+    };
+
     if(!opts.won){
-      ov.querySelector('#mp-results-btn').addEventListener('click',()=>{
-        ov.classList.remove('active');
-        setTimeout(()=>{ ov.remove(); resolve(); goToResults(); },350);
-      });
-    } else {
-      // Tap-to-continue. The button is wired up FRONT (not after the bracket
-      // animation) so a tap — or the toolbar's Skip — is never dropped while the
-      // bracket fills in. Final wins and between-round wins both advance on tap.
       let done=false;
-      const advance=()=>{ if(done) return; done=true; ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); };
+      const advance=()=>{ if(done) return; done=true; clearTimeout(autoTimer); ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); goToResults(); },350); };
+      ov.querySelector('#mp-results-btn').addEventListener('click',advance);
+      const ms=POPUP_AUTO_MS/SIM_RATE;
+      autoTimer=setTimeout(advance,ms);
+      startAutoBar(ms);
+    } else {
+      // Tap-to-continue + auto-advance. The button is wired up FRONT (not after the
+      // bracket animation) so a tap — or the toolbar's Skip — is never dropped while
+      // the bracket fills in. Between-round wins auto-advance after 2.5s; the
+      // championship win (isFinal) waits for a tap.
+      let done=false;
+      const advance=()=>{ if(done) return; done=true; clearTimeout(autoTimer); ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); };
       const btn=ov.querySelector(opts.isFinal?'#mp-results-btn':'#mp-next-btn');
       if(btn) btn.addEventListener('click',advance);
+      if(autoAdvance){
+        const ms=POPUP_AUTO_MS/SIM_RATE;
+        autoTimer=setTimeout(advance,ms);
+        startAutoBar(ms);
+      }
 
       // Instantly fill all previously-completed rounds, then animate only the new one.
       const dots=ov.querySelectorAll('.mp-bracket-dot');
