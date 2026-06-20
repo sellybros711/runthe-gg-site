@@ -215,6 +215,49 @@
     text-transform:uppercase;padding:4px 8px;opacity:.92;text-decoration:underline;
     text-underline-offset:3px;-webkit-tap-highlight-color:transparent;}
   .roster-link:hover,.roster-link:active{opacity:1;}
+
+  /* ===== redesigned landing: one primary CTA + demoted secondary links ===== */
+  .home-primary{position:relative;z-index:2;width:100%;max-width:460px;margin:2px auto 0;
+    flex-direction:column;gap:2px;line-height:1.05;}
+  .home-primary .btn-label{font-size:20px;letter-spacing:.5px;white-space:nowrap;}
+  .home-primary .btn-sub{font-weight:400;font-size:9px;letter-spacing:.3px;
+    text-transform:uppercase;opacity:.92;white-space:nowrap;}
+  .home-secondary{position:relative;z-index:2;display:flex;flex-wrap:wrap;justify-content:center;
+    align-items:center;gap:6px 18px;max-width:440px;margin:14px auto 0;}
+  .home-2nd{background:none;border:none;cursor:pointer;color:#F5C518;font-family:inherit;
+    font-weight:800;font-size:11.5px;letter-spacing:.5px;text-transform:uppercase;opacity:.9;
+    padding:4px 2px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;
+    -webkit-tap-highlight-color:transparent;text-decoration:underline;text-underline-offset:3px;}
+  .home-2nd:hover,.home-2nd:active{opacity:1;}
+  .home-2nd .tl-ico{height:14px;width:auto;flex:0 0 auto;}
+  .home-2nd .h2-emoji{font-size:12px;text-decoration:none;}
+
+  /* micro-demo: spin chip → flipping player card → caption */
+  .home-demo{position:relative;z-index:2;margin:15px auto 17px;max-width:340px;
+    display:flex;flex-direction:column;align-items:center;gap:10px;perspective:600px;}
+  .hd-stage{display:flex;align-items:center;justify-content:center;gap:10px;}
+  .hd-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+    width:84px;height:72px;border-radius:12px;background:rgba(7,11,26,.62);
+    border:2px solid rgba(244,180,19,.45);box-shadow:0 4px 12px rgba(0,0,0,.4);}
+  .hd-chip.spinning{border-color:rgba(244,180,19,.85);}
+  .hd-flag{font-size:26px;line-height:1;}
+  .hd-yr{font-family:'Anton',Impact,sans-serif;font-size:16px;color:#FCEFA8;letter-spacing:1px;}
+  .hd-arrow{color:#F5C518;font-size:28px;font-weight:900;line-height:1;opacity:.75;}
+  .hd-card{width:100px;height:72px;border-radius:12px;background:var(--white);
+    border:2.5px solid var(--ink);box-shadow:3px 3px 0 rgba(0,0,0,.45);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    transform:rotateY(90deg);opacity:0;transform-origin:left center;
+    transition:transform .45s cubic-bezier(.2,.7,.2,1),opacity .3s;}
+  .hd-card.flipped{transform:rotateY(0);opacity:1;}
+  .hd-pos{font-size:9px;font-weight:900;letter-spacing:.8px;color:#fff;background:var(--ink);
+    padding:1px 7px;border-radius:6px;}
+  .hd-name{font-family:'Anton',Impact,sans-serif;font-size:16px;color:var(--ink);line-height:1.05;}
+  .hd-ovr{font-family:'Anton',Impact,sans-serif;font-size:12px;color:#0a7d4f;letter-spacing:.5px;}
+  .hd-cap{font-weight:800;font-size:13px;letter-spacing:.3px;color:#F4ECDA;
+    text-shadow:0 1px 3px rgba(0,0,0,.85);opacity:0;transition:opacity .35s;}
+  .hd-cap.show{opacity:1;}
+  @media (prefers-reduced-motion:reduce){ .hd-card{transition:opacity .2s;} }
+
   /* roster-updates popup (reuses the lineup overlay shell) */
   .roster-sub{font-weight:600;font-size:12px;color:#8a7d70;margin-top:4px;text-align:center;}
   /* roster tabs */
@@ -1428,6 +1471,16 @@
     font-weight:900;font-size:12px;letter-spacing:.5px;text-transform:uppercase;color:#5a5048;}
   .res-rank b{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:16px;color:var(--ink);}
   .res-rank.clickable{cursor:pointer;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;}
+  /* near-miss "go again" gap under the rank line */
+  .res-nearmiss{display:inline-block;margin:2px auto 6px;font-weight:700;font-size:12.5px;
+    line-height:1.4;color:#5a5048;max-width:340px;}
+  .res-nearmiss b{font-family:'Anton',Impact,sans-serif;font-weight:400;color:#B8860B;font-size:15px;}
+  /* end-of-run re-draft hook (tailored "fix it" framing above the re-draft button) */
+  .res-redraft{margin-top:16px;}
+  .res-redraft-hook{text-align:center;font-weight:700;font-size:13px;line-height:1.4;
+    color:#4a4038;background:#fbf4e6;border:2px solid var(--ink);border-radius:12px;
+    padding:9px 12px;box-shadow:2px 2px 0 rgba(0,0,0,.18);}
+  .res-redraft-hook b{color:var(--ink);}
   /* podium indicator: a top-3 all-time finish gets a big celebratory banner */
   .res-rank.podium{display:flex;flex-direction:column;align-items:center;gap:3px;text-transform:none;
     letter-spacing:0;border:2.5px solid var(--ink);border-radius:16px;padding:12px 20px;margin:4px auto 10px;
@@ -1960,31 +2013,35 @@
         <path class="trophy-glint" d="M25 5.5 C 22 10.5 22 18.5 26 23.5 C 23 17.5 23 10.5 27 5.5 Z" fill="#fff" opacity="0"/>
       </svg></div>
       <h1 class="display">Spin. Pick. Conquer.</h1>
-      <p>Build your squad of footballers from<br><b>over 60 years</b> of World Cup legends</p>
-      <div class="rules">
-        <div class="rule"><span class="n">1</span><span>Spin a random year &amp; nation.</span></div>
-        <div class="rule"><span class="n">2</span><span>Draft a player each round to fill your squad's positions.</span></div>
-        <div class="rule"><span class="n">3</span><span>Build a 6-player squad (Quick Draft) or a full starting XI (Full Team).</span></div>
-        <div class="rule"><span class="n">4</span><span>Simulate a World Cup against historic squads to lift the trophy, or challenge a friend to a Head-to-Head Friendly.</span></div>
-      </div>
-      <div class="home-cta-row">
-        <div class="cta-friendly-wrap">
-          <button id="btn-friendly" class="btn green">
-            <span class="btn-label">FRIENDLIES</span>
-            <span class="btn-sub">Challenge a friend</span>
-          </button>
+
+      <!-- 3-second micro-demo (replaces the wall of rules): a spin locks a random
+           nation + year, then a player card flips in — "that's it, your turn." -->
+      <div class="home-demo" id="home-demo" aria-hidden="true">
+        <div class="hd-stage">
+          <div class="hd-chip" id="hd-chip"><span class="hd-flag" id="hd-flag">🇧🇷</span><span class="hd-yr" id="hd-yr">1970</span></div>
+          <div class="hd-arrow">›</div>
+          <div class="hd-card" id="hd-card">
+            <span class="hd-pos" id="hd-pos">FWD</span>
+            <span class="hd-name" id="hd-name">Pelé</span>
+            <span class="hd-ovr" id="hd-ovr">99 OVR</span>
+          </div>
         </div>
-        <button id="btn-start" class="btn red" disabled>
-          <span class="btn-label">Loading squads…</span>
-          <span class="btn-sub">Original World Cup Simulator</span>
-        </button>
+        <div class="hd-cap" id="hd-cap">That's it — your turn.</div>
       </div>
-      <!-- small text links on one row: Add to Home (left) · View Leaderboard (right) -->
-      <div class="home-textlinks">
-        <button id="btn-add-home" type="button"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="10.4" y1="4.3" x2="13.6" y2="4.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="19.6" r=".95" fill="currentColor"/><rect x="8.4" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="8.4" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/></svg> Add to Home Screen</button>
-        <button id="btn-home-leaderboard" type="button"><svg class="tl-ico" viewBox="0 0 24 28" aria-hidden="true"><defs><linearGradient id="tlTrophy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".5" stop-color="#E8C25A"/><stop offset="1" stop-color="#8A5E12"/></linearGradient></defs><path d="M5 4 C2.5 4 2.5 9 5.6 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M19 4 C21.5 4 21.5 9 18.4 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M6 3 H18 V8 C18 13 14.5 15 12 15 C9.5 15 6 13 6 8 Z" fill="url(#tlTrophy)" stroke="#00000033" stroke-width=".6"/><rect x="11" y="15" width="2" height="4" fill="url(#tlTrophy)"/><rect x="8" y="19" width="8" height="2" rx="1" fill="url(#tlTrophy)"/><rect x="6.5" y="21" width="11" height="2.6" rx="1.3" fill="url(#tlTrophy)" stroke="#00000022" stroke-width=".5"/></svg> View Leaderboard</button>
+
+      <!-- ONE obvious primary action -->
+      <button id="btn-start" class="btn red big home-primary" disabled>
+        <span class="btn-label">Loading squads…</span>
+        <span class="btn-sub">Draft a squad &amp; win the World Cup</span>
+      </button>
+
+      <!-- secondary actions, demoted to small links -->
+      <div class="home-secondary">
+        <button id="btn-friendly" type="button" class="home-2nd"><span class="h2-emoji">⚔️</span> Friendlies</button>
+        <button id="btn-home-leaderboard" type="button" class="home-2nd"><svg class="tl-ico" viewBox="0 0 24 28" aria-hidden="true"><defs><linearGradient id="tlTrophy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".5" stop-color="#E8C25A"/><stop offset="1" stop-color="#8A5E12"/></linearGradient></defs><path d="M5 4 C2.5 4 2.5 9 5.6 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M19 4 C21.5 4 21.5 9 18.4 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M6 3 H18 V8 C18 13 14.5 15 12 15 C9.5 15 6 13 6 8 Z" fill="url(#tlTrophy)" stroke="#00000033" stroke-width=".6"/><rect x="11" y="15" width="2" height="4" fill="url(#tlTrophy)"/><rect x="8" y="19" width="8" height="2" rx="1" fill="url(#tlTrophy)"/><rect x="6.5" y="21" width="11" height="2.6" rx="1.3" fill="url(#tlTrophy)" stroke="#00000022" stroke-width=".5"/></svg> Leaderboard</button>
+        <button id="btn-roster-updates" type="button" class="home-2nd"><span class="h2-emoji">⚡</span> Roster Updates</button>
+        <button id="btn-add-home" type="button" class="home-2nd"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="10.4" y1="4.3" x2="13.6" y2="4.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="19.6" r=".95" fill="currentColor"/><rect x="8.4" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="8.4" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/></svg> Add to Home</button>
       </div>
-      <button id="btn-roster-updates" type="button" class="roster-link">⚡ 2026 Roster Updates</button>
       <!-- flag lane (scrolls right) below the kickoff button -->
       <div class="flag-marquee bottom"><div class="flag-lane right" id="flag-lane-2"></div></div>
     </div>
@@ -2709,10 +2766,61 @@ async function boot(){
   const b = $('btn-start');
   b.disabled = false;
   const bLabel = b.querySelector('.btn-label');
-  if(bLabel) bLabel.textContent = 'SOLO DRAFT'; else b.textContent = 'SOLO DRAFT';
+  if(bLabel) bLabel.textContent = 'START WORLD CUP'; else b.textContent = 'START WORLD CUP';
   const bf = $('btn-friendly');
   if(bf) bf.disabled = false;   // Friendly mode is live (Supabase short-link transport)
   startFlagMarquee();
+  startHomeDemo();              // kick off the looping landing micro-demo
+}
+
+// ---- landing micro-demo: a spin locks a nation+year, a player card flips in ----
+// Replaces the old wall of text rules with a 3-second "show, don't tell" loop.
+const HOME_DEMO=[
+  {flag:'🇧🇷',yr:1970,pos:'FWD',name:'Pelé',ovr:99},
+  {flag:'🇦🇷',yr:1986,pos:'MID',name:'Maradona',ovr:99},
+  {flag:'🇫🇷',yr:1998,pos:'MID',name:'Zidane',ovr:96},
+  {flag:'🇳🇱',yr:1974,pos:'FWD',name:'Cruyff',ovr:96},
+  {flag:'🇩🇪',yr:1990,pos:'MID',name:'Matthäus',ovr:92},
+  {flag:'🇮🇹',yr:1982,pos:'FWD',name:'Rossi',ovr:90},
+];
+const HOME_SPIN_FLAGS=['🇧🇷','🇦🇷','🇫🇷','🇩🇪','🇮🇹','🇪🇸','🇳🇱','🇵🇹','🇺🇾','🏴󠁧󠁢󠁥󠁮󠁧󠁿'];
+const HOME_SPIN_YEARS=[1970,1986,1998,1974,1982,2014,2022,1966,1990,2006];
+let homeDemoTimers=[], homeDemoIdx=0, homeDemoStarted=false;
+function startHomeDemo(){
+  if(homeDemoStarted) return; homeDemoStarted=true;
+  const chip=$('hd-chip'), flag=$('hd-flag'), yr=$('hd-yr'), card=$('hd-card'),
+        pos=$('hd-pos'), name=$('hd-name'), ovr=$('hd-ovr'), cap=$('hd-cap');
+  if(!chip||!card) return;
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const T=(fn,ms)=>{ const id=setTimeout(fn,ms); homeDemoTimers.push(id); return id; };
+  const paint=d=>{ pos.textContent=d.pos; name.textContent=d.name; ovr.textContent=d.ovr+' OVR'; };
+  function cycle(){
+    homeDemoTimers=[];
+    const active = $('screen-start') && $('screen-start').classList.contains('active');
+    const d=HOME_DEMO[homeDemoIdx++ % HOME_DEMO.length];
+    paint(d);
+    if(reduce || !active){
+      // off-screen or reduced motion: just show the locked state, re-check later
+      flag.textContent=d.flag; yr.textContent=d.yr;
+      card.classList.add('flipped'); cap.classList.add('show');
+      if(!reduce) T(cycle, 1600);
+      return;
+    }
+    card.classList.remove('flipped'); cap.classList.remove('show'); chip.classList.add('spinning');
+    let ticks=0;
+    const spin=setInterval(()=>{
+      flag.textContent=HOME_SPIN_FLAGS[(Math.random()*HOME_SPIN_FLAGS.length)|0];
+      yr.textContent=HOME_SPIN_YEARS[(Math.random()*HOME_SPIN_YEARS.length)|0];
+      if(++ticks>=9){
+        clearInterval(spin);
+        flag.textContent=d.flag; yr.textContent=d.yr; chip.classList.remove('spinning');
+        T(()=>card.classList.add('flipped'), 200);
+        T(()=>cap.classList.add('show'), 700);
+        T(cycle, 3300);
+      }
+    },120);
+  }
+  cycle();
 }
 
 // Warm the browser cache with every nation's flag (both sizes used in the UI)
@@ -4294,6 +4402,7 @@ async function fillRankBadge(overall, progress){
       gs.result._lb = { rank, total, id };
       gs.result._lbId = id;
       renderRankLine(el, rank, total);
+      fillNearMiss(rank, overall);              // specific "go again" gap
       if(rank<=3){ try{ launchConfetti(); }catch(e){} } // celebrate a podium finish
       return;
     }catch(e){ /* global board unreachable → per-device fallback below */ }
@@ -4304,7 +4413,49 @@ async function fillRankBadge(overall, progress){
   const local = recordDraftRank(overall, progress);
   gs.result._lb = { rank: local.rank, total: local.total };
   renderRankLine(el, local.rank, local.total);
+  fillNearMiss(local.rank, overall);          // specific "go again" gap
   if(local.rank<=3){ try{ launchConfetti(); }catch(e){} } // celebrate a podium finish
+}
+
+// Weakest line of the just-finished squad, for the end-of-run "fix it" hook.
+// Averages each line's overalls (GK/DEF/MID/FWD) and returns the lowest.
+function weakestLine(){
+  const picks = (gs.result && gs.result.scoredPicks) || (gs && gs.picks) || [];
+  const ovOf  = p => (p && p.player ? (p.player.overall ?? p.player.wc_overall ?? 60) : 60);
+  const posOf = p => (p && p.player ? p.player.position : null);
+  const lines = {GK:[],DEF:[],MID:[],FWD:[]};
+  picks.forEach(p=>{ const k=posOf(p); if(lines[k]) lines[k].push(ovOf(p)); });
+  const avg = a => a.length ? a.reduce((s,x)=>s+x,0)/a.length : null;
+  const META = {GK:{label:'goalkeeping',fix:'keeper'},DEF:{label:'defence',fix:'defence'},
+                MID:{label:'midfield',fix:'midfield'},FWD:{label:'attack',fix:'attack'}};
+  let worst=null, wAvg=Infinity;
+  ['GK','DEF','MID','FWD'].forEach(k=>{ const a=avg(lines[k]); if(a!=null && a<wAvg){ wAvg=a; worst=k; } });
+  return worst ? { line:worst, label:META[worst].label, fix:META[worst].fix, avg:wAvg } : null;
+}
+
+// Surface a specific, beatable gap ("0.6 OVR off the all-time Top 10") — the
+// strongest "go again" trigger. Skips podium finishers (already celebrated).
+async function fillNearMiss(rank, overall){
+  const el=$('res-nearmiss'); if(!el || rank<=3) return;
+  const dt=(gs.draftType||'quick');
+  let top=null;
+  try{ if(SUPABASE_READY) top=await fetchTopDrafts(10,{mode:'all',draftType:dt,window:'all'}); }catch(e){ top=null; }
+  let thresh=null, tier='';
+  if(top && top.length>=10 && rank>10){ thresh=+top[9].overall; tier='Top 10'; }
+  else if(top && top.length>=3 && rank<=10){ thresh=+top[2].overall; tier='Top 3'; }
+  if(thresh==null){ // local-board fallback
+    const board=loadLeaderboard().slice().sort((a,b)=>b.overall-a.overall);
+    if(rank>10 && board.length>=10){ thresh=board[9].overall; tier='Top 10'; }
+    else if(board.length>=3){ thresh=board[2].overall; tier='Top 3'; }
+  }
+  if(thresh==null) return;
+  const gap = thresh - overall;
+  let msg;
+  if(gap>0 && gap<=8)  msg = `So close — <b>${gap.toFixed(1)} OVR</b> off the all-time ${tier}. Re-draft to break in?`;
+  else if(gap<=0)      msg = `Right on the all-time ${tier} cut line — one better pick gets you in.`;
+  else return;         // too far to be a credible nudge
+  el.innerHTML='🎯 '+msg;
+  el.hidden=false;
 }
 
 function goToResults(){
@@ -4335,6 +4486,7 @@ function goToResults(){
   let html=`<div class="results-wrap">
     <div id="summary-host"></div>
     ${rankBadge}
+    <div class="center"><span class="res-nearmiss" id="res-nearmiss" hidden></span></div>
     <div class="res-actions">
       <button class="btn red share-glow" id="res-share"><svg class="si-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg> Share</button>
       <button class="btn ghost" id="res-leaderboard">${metalTrophySvg(1,'lb-trophy')} Leaderboard</button>
@@ -4342,14 +4494,37 @@ function goToResults(){
     <div class="res-section">Your Squad: <span class="${r.teamOverall>=100?'over100':''}">${r.teamOverall.toFixed(1)}</span> OVR</div>
     <div class="res-bio-hint">Tap a player for their bio card</div>
     <div id="res-squad"></div>
-    <div class="stack" style="margin-top:16px;">
-      <button class="btn blue" id="res-boxscores">📊 View Match Stats</button>
-      <button class="btn teal" id="res-again">Draft a New Squad</button>
+    <div class="res-redraft">
+      <div class="res-redraft-hook" id="res-redraft-hook"></div>
+      <div class="stack" style="margin-top:10px;">
+        <button class="btn teal" id="res-again">Draft a New Squad</button>
+        <button class="btn blue" id="res-boxscores">📊 View Match Stats</button>
+      </div>
     </div>
     <div class="center"><button class="rate-trigger" id="rate-link-results">Disagree with a rating?</button></div>
     </div>`;
   c.innerHTML=html;
   $('summary-host').appendChild(buildSummaryCard());
+
+  // ---- tailored end-of-run hook: name where the run ended + the weakest line,
+  // and pre-frame the Re-draft button with a concrete goal to "go again" for. ----
+  (function(){
+    const hookEl=$('res-redraft-hook'), againBtn=$('res-again');
+    if(!hookEl||!againBtn) return;
+    if(champ){
+      hookEl.innerHTML='🏆 <b>World Cup won.</b> Can you go back-to-back?';
+      againBtn.textContent='Re-draft — defend your title →';
+      return;
+    }
+    const weak=weakestLine();
+    if(weak){
+      hookEl.innerHTML=`Out in the <b>${roundName}</b>. Weakest line: <b>${weak.label}</b> (${Math.round(weak.avg)} OVR avg).`;
+      againBtn.textContent=`Re-draft — fix your ${weak.fix} →`;
+    }else{
+      hookEl.innerHTML=`Out in the <b>${roundName}</b>. Run it back?`;
+      againBtn.textContent='Re-draft →';
+    }
+  })();
 
   const squadBox=$('res-squad');
   // Display attacking players first: reverse the position-ordered list so it runs
