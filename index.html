@@ -891,6 +891,33 @@
      below the (now larger) masthead and the match is genuinely centred on screen. */
   body.sim-mode .app{ display:flex; flex-direction:column; min-height:100vh; min-height:100dvh; padding-bottom:14px; }
   body.sim-mode #screen-sim{ flex:1 1 auto; min-height:0; display:flex; flex-direction:column; }
+  /* Persistent playback toolbar: speed toggle (1×/2×) + Skip to result. Sits above
+     the match carousel as a flex-none row and stays put through every round, so an
+     impatient player always has a way to take control. */
+  .sim-controls{
+    flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+    gap:10px; max-width:520px; width:100%; margin:0 auto 8px; padding:0 16px;
+  }
+  .sim-controls.hidden{ display:none; }
+  .sim-speed-toggle{
+    display:inline-flex; border:3px solid var(--ink); border-radius:11px;
+    overflow:hidden; background:var(--white); box-shadow:var(--shadow-sm);
+  }
+  .sim-speed-btn{
+    appearance:none; border:none; background:transparent; cursor:pointer;
+    font-family:'Anton',sans-serif; font-size:15px; letter-spacing:.5px;
+    color:var(--ink); padding:6px 15px; line-height:1;
+  }
+  .sim-speed-btn + .sim-speed-btn{ border-left:3px solid var(--ink); }
+  .sim-speed-btn.active{ background:var(--ink); color:var(--white); }
+  .sim-skip-btn{
+    appearance:none; cursor:pointer; line-height:1;
+    font-family:'Anton',sans-serif; font-size:15px; letter-spacing:.5px; text-transform:uppercase;
+    color:var(--ink); background:var(--gold);
+    border:3px solid var(--ink); border-radius:11px; box-shadow:var(--shadow-sm);
+    padding:7px 16px;
+  }
+  .sim-skip-btn:active{ transform:translate(1px,1px); box-shadow:none; }
   body.sim-mode .sim-wrap{ flex:1 1 auto; min-height:0; }
   body.sim-mode .masthead{ margin-bottom:6px; }
   body.sim-mode .masthead .logo{ font-size:42px; }
@@ -2134,6 +2161,13 @@
 
   <!-- ===== SIMULATION ===== -->
   <section id="screen-sim" class="screen">
+    <div id="sim-controls" class="sim-controls hidden">
+      <div class="sim-speed-toggle" id="sim-speed-toggle">
+        <button type="button" class="sim-speed-btn active" data-rate="1">1×</button>
+        <button type="button" class="sim-speed-btn" data-rate="2">2×</button>
+      </div>
+      <button type="button" id="sim-skip-btn" class="sim-skip-btn">Skip to result ⏭</button>
+    </div>
     <div class="sim-wrap">
       <div id="sim-content"></div>
     </div>
@@ -4274,6 +4308,7 @@ async function fillRankBadge(overall, progress){
 }
 
 function goToResults(){
+  const _sc=document.getElementById('sim-controls'); if(_sc) _sc.classList.add('hidden');
   const r=gs.result, sim=simResult;
   const oc=simOutcome(sim);
   const color=outcomeColor(oc.label);
@@ -6284,7 +6319,33 @@ function simFinalizeMOT(result, userSquad){
 let simResult = null;
 // Global pacing factor for the World Cup simulation (>1 = slower).
 const SIM_SPEED = 1.934;
-const simSleep = ms => new Promise(r=>setTimeout(r, ms*SIM_SPEED));
+// Live playback controls, driven by the persistent sim toolbar:
+//   SIM_RATE divides every delay (1 = 1×, 2 = 2× / twice as fast).
+//   simSkip short-circuits every delay so the run fast-forwards straight to results.
+let SIM_RATE = 1;
+let simSkip  = false;
+// One delay primitive honours BOTH controls: skip → resolve immediately, otherwise
+// wait the requested ms scaled by the current speed. Everything that pauses routes
+// through it (group stage, knockout beats, penalties, the match clock, popups).
+const simDelay = ms => new Promise(r=>{ if(simSkip) return r(); setTimeout(r, ms/SIM_RATE); });
+const simSleep = ms => simDelay(ms*SIM_SPEED);
+
+// ---- persistent sim toolbar handlers (speed toggle + skip-to-result) ----
+function simSetRate(rate){
+  SIM_RATE = rate;
+  document.querySelectorAll('#sim-speed-toggle .sim-speed-btn').forEach(b=>{
+    b.classList.toggle('active', Number(b.dataset.rate)===rate);
+  });
+}
+function simSkipToResult(){
+  if(simSkip) return;
+  simSkip = true;
+  const c=document.getElementById('sim-controls'); if(c) c.classList.add('hidden');
+  // If a result popup is on screen when Skip is pressed, dismiss it so the
+  // fast-forward proceeds through it (terminal popups navigate to results).
+  const btn = document.querySelector('.match-popup-overlay #mp-next-btn, .match-popup-overlay #mp-results-btn');
+  if(btn) btn.click();
+}
 
 async function simEllipsisFor(el, ms){
   const start=Date.now(); let n=1;
@@ -6697,6 +6758,14 @@ const BRACKET_LABELS=['GRP','R32','R16','QF','SF','FIN'];
 function showMatchResultPopup(opts){
   // opts: { won, isPens, isFinal, currentRound, nextRound, onDismiss }
   return new Promise(resolve=>{
+    // Skip-to-result: don't interrupt the fast-forward with a popup. A terminal
+    // (loss / group-exit) popup is where the jump to the results page happens, so
+    // trigger it here; intermediate wins just resolve and the loop races on, and
+    // the final-win navigation is handled by the caller.
+    if(simSkip){
+      if(!opts.won) goToResults();
+      return resolve();
+    }
     const ov=document.createElement('div');
     ov.className='match-popup-overlay';
     const roundIdx=BRACKET_ROUNDS.indexOf(opts.currentRound);
@@ -6733,7 +6802,7 @@ function showMatchResultPopup(opts){
       <div class="mp-bracket">${bracketHtml}</div>
       ${!opts.won?`<button class="btn red big" id="mp-results-btn" style="width:100%;margin-top:4px">CONTINUE TO RESULTS</button>`:''}
       ${opts.won&&opts.isFinal?`<button class="btn red big" id="mp-results-btn" style="width:100%;margin-top:4px">CONTINUE TO RESULTS</button>`:''}
-      ${opts.won&&!opts.isFinal?`<button class="btn teal big" id="mp-next-btn" style="width:100%;margin-top:4px">Continue →</button><div class="mp-auto-bar"><div class="mp-auto-bar-fill" id="mp-bar"></div></div>`:''}
+      ${opts.won&&!opts.isFinal?`<button class="btn teal big" id="mp-next-btn" style="width:100%;margin-top:4px">Continue →</button>`:''}
     </div>`;
     document.body.appendChild(ov);
     requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ ov.classList.add('active'); }); });
@@ -6744,39 +6813,26 @@ function showMatchResultPopup(opts){
         setTimeout(()=>{ ov.remove(); resolve(); goToResults(); },350);
       });
     } else {
+      // Tap-to-continue. The button is wired up FRONT (not after the bracket
+      // animation) so a tap — or the toolbar's Skip — is never dropped while the
+      // bracket fills in. Final wins and between-round wins both advance on tap.
+      let done=false;
+      const advance=()=>{ if(done) return; done=true; ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); };
+      const btn=ov.querySelector(opts.isFinal?'#mp-results-btn':'#mp-next-btn');
+      if(btn) btn.addEventListener('click',advance);
+
       // Instantly fill all previously-completed rounds, then animate only the new one.
       const dots=ov.querySelectorAll('.mp-bracket-dot');
       const lines=ov.querySelectorAll('.mp-bracket-line');
       const animTarget = opts.isFinal ? roundIdx : roundIdx+1;
-      // pre-fill completed rounds immediately (no animation)
       dots.forEach((d,i)=>{ d.className='mp-bracket-dot'+(i<animTarget?' done':''); });
       lines.forEach((l,i)=>{ l.className='mp-bracket-line'+(i<animTarget?' done':''); });
-      // then animate just the final dot after a short pause
       setTimeout(()=>{
         if(animTarget<dots.length){
           if(animTarget>0 && lines[animTarget-1]) lines[animTarget-1].classList.add('done');
           dots[animTarget].classList.add(opts.isFinal?'champ':'current');
         }
-        startDismiss();
       }, 400);
-
-      function startDismiss(){
-        if(opts.isFinal){
-          // Final win: no auto-advance — let the user savour the ending; manual button only.
-          const btn=ov.querySelector('#mp-results-btn');
-          if(btn) btn.addEventListener('click',()=>{ ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); });
-          return;
-        }
-        // Between rounds: auto-advance after 2s (progress bar shows the countdown);
-        // the Continue button lets an impatient user skip ahead early.
-        let done=false;
-        const advance=()=>{ if(done) return; done=true; ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); };
-        const bar=ov.querySelector('#mp-bar');
-        if(bar){ bar.style.transition='width 2s linear'; requestAnimationFrame(()=>{ bar.style.width='100%'; }); }
-        const btn=ov.querySelector('#mp-next-btn');
-        if(btn) btn.addEventListener('click',advance);
-        setTimeout(advance, 2000);
-      }
     }
   });
 }
@@ -6924,7 +6980,7 @@ async function simAnimatePenalties(card, m, opts){
     dotsEl[row].appendChild(dot);
     if(k.scored){ score[k.team]++; scoreEl[row].textContent=score[k.team]; }
     simScrollEnd(board);   // keep the shootout pinned in view as kicks come in
-    await new Promise(r=>setTimeout(r, opts.penDelay || getPenaltyDelay(kickNumber)));
+    await simDelay(opts.penDelay || getPenaltyDelay(kickNumber));
   }
   if(opts.onPenalties) opts.onPenalties({ user:score.user, opp:score.opponent, seq });
   await (opts.wait||simSleep)(300*0.8);
@@ -7538,7 +7594,8 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
   const timeEl      = wrap && wrap.querySelector('.sb-time');
   let ei=0, ci=0;
   let pauseUntil = 0;
-  const GOAL_PAUSE_MS = 250 * SIM_SPEED;
+  // Goal celebration pause scales with the live speed toggle (read per-goal).
+  const goalPause = () => 250 * SIM_SPEED / SIM_RATE;
   const revealUpTo=(minute, now)=>{
     // Fire goal events
     while(ei<events.length && events[ei].minute<=minute){
@@ -7548,7 +7605,7 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
       if(side==='user') score.user++; else score.opp++;
       sbBumpScore(wrap, side);
       if(opts.onGoal) opts.onGoal(e);
-      pauseUntil = now + GOAL_PAUSE_MS;
+      pauseUntil = now + goalPause();
     }
     // Fire card events
     while(ci<cardEvents.length && cardEvents[ci].minute<=minute){
@@ -7563,11 +7620,26 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
   return new Promise(resolve=>{
     const gold=fromMin>90;
     setSlow(false);              // slow-motion removed — clock runs at a steady rate
+    // Skip-to-result: fire every remaining event and jump the bar to full now.
+    if(simSkip){
+      fill.style.width=toPct+'%';
+      const tStr = (opts.stoppageBase!=null)
+        ? `${opts.stoppageBase}+${Math.max(1,Math.round(toMin-opts.stoppageBase))}'`
+        : `${Math.max(1,Math.round(toMin))}'`;
+      sbSetTime(wrap, tStr, gold);
+      revealUpTo(toMin, 0);
+      if(opts.onProgress) opts.onProgress(1);
+      return resolve();
+    }
     let p=0, last=performance.now();
     const tick=()=>{
+      if(simSkip){               // Skip pressed mid-clock — finish this phase instantly.
+        clearInterval(iv); fill.style.width=toPct+'%'; revealUpTo(toMin, 0);
+        if(opts.onProgress) opts.onProgress(1); setSlow(false); return resolve();
+      }
       const now=performance.now(); const dt=Math.min(100, now-last); last=now;
       if(now > pauseUntil){     // only advance during non-pause window
-        p = Math.min(1, p + (dt/dur));
+        p = Math.min(1, p + (dt/dur)*SIM_RATE);   // speed toggle scales the advance
       }
       const minNow = fromMin + (toMin-fromMin)*p;
       fill.style.width=(fromPct+(toPct-fromPct)*p)+'%';
@@ -7890,6 +7962,14 @@ function showSimSummary(skipButton){
 // Entry point: runs after the draft completes, before the reveal screen.
 async function runSimulationScreen(){
   showScreen('sim');
+  // reset + wire the persistent playback toolbar (speed toggle + skip-to-result)
+  simSkip=false; simSetRate(1);
+  const simCtrls=$('sim-controls');
+  if(simCtrls){
+    simCtrls.classList.remove('hidden');
+    $('sim-skip-btn').onclick=simSkipToResult;
+    simCtrls.querySelectorAll('.sim-speed-btn').forEach(b=>{ b.onclick=()=>simSetRate(Number(b.dataset.rate)); });
+  }
   const content=$('sim-content');
   content.innerHTML='';
   content.style.transform='translateX(0)';   // reset the carousel to the first slide
@@ -7977,7 +8057,7 @@ async function runSimulationScreen(){
     const card=simNewSlide();
     buildMatchCard(card, m);       // fill the box BEFORE it swipes in — no empty-box flash
     simSwipeTo(simSlideIndex+1);   // swipe the already-filled match box in from the right
-    const kbWait = ms=>new Promise(r=>setTimeout(r, ms));
+    const kbWait = simDelay;       // honours the live speed toggle + skip-to-result
     await kbWait(350);             // let the swipe land
     await kbWait(200);             // brief beat before kickoff
     const next = simResult.rounds[i+1];
