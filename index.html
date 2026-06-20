@@ -2371,7 +2371,7 @@
   <footer class="site-footer">
     <div class="footer-actions">
       <button id="btn-roster-updates" type="button" class="footer-btn"><span class="fb-emoji">⚡</span> Roster Updates</button>
-      <button id="btn-add-home" type="button" class="footer-btn"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="10.4" y1="4.3" x2="13.6" y2="4.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="19.6" r=".95" fill="currentColor"/><rect x="8.4" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="8.4" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/></svg> Add to Home</button>
+      <button id="btn-add-home" type="button" class="footer-btn"><span class="fb-emoji">📲</span> Add to Home</button>
     </div>
     <div class="x-follow"><a href="https://x.com/RunThePitch" target="_blank" rel="noopener noreferrer">Follow <b>@RunThePitch</b> on X for News and Updates</a></div>
     <a href="/">Home</a><span class="sep">·</span><a href="about.html">About</a><span class="sep">·</span><a href="privacy.html">Privacy</a><span class="sep">·</span><a href="contact.html">Contact</a>
@@ -2865,17 +2865,19 @@ function startHomeDemo(){
     const d=pick(HOME_DEMO);
     E('hd-scene-draft').hidden=false; E('hd-scene-sim').hidden=true;
     E('hd-pos').textContent=d.pos; E('hd-name').textContent=d.name; E('hd-ovr').textContent=d.ovr+' OVR';
+    // Start the caption fade-OUT now, but only swap in the new text once it's
+    // fully hidden (at the reveal) so the upcoming line never flashes early.
     E('hd-card').classList.remove('flipped'); E('hd-cap').classList.remove('show');
-    E('hd-cap').textContent=pick(HOME_DRAFT_CAPS);
     if(reduce){
       setFlag(E('hd-flag'),d.country); E('hd-yr').textContent=d.yr;
-      E('hd-card').classList.add('flipped'); E('hd-cap').classList.add('show'); await sleep(2400); return;
+      E('hd-card').classList.add('flipped');
+      E('hd-cap').textContent=pick(HOME_DRAFT_CAPS); E('hd-cap').classList.add('show'); await sleep(2400); return;
     }
     E('hd-chip').classList.add('spinning');
     for(let i=0;i<9;i++){ const s=pick(HOME_SPIN); setFlag(E('hd-flag'),s.country); E('hd-yr').textContent=s.yr; await sleep(115); }
     setFlag(E('hd-flag'),d.country); E('hd-yr').textContent=d.yr; E('hd-chip').classList.remove('spinning');
     await sleep(220); E('hd-card').classList.add('flipped');
-    await sleep(520); E('hd-cap').classList.add('show');
+    await sleep(520); E('hd-cap').textContent=pick(HOME_DRAFT_CAPS); E('hd-cap').classList.add('show');
     await sleep(1700);
   }
 
@@ -2883,11 +2885,14 @@ function startHomeDemo(){
     const opp=pick(HOME_SPIN), res=pick(HOME_SIM_RESULTS);
     E('hd-scene-draft').hidden=true; E('hd-scene-sim').hidden=false;
     setFlag(E('hd-opp-flag'),opp.country); E('hd-opp-yr').textContent="'"+String(opp.yr).slice(2);
-    const result=E('hd-result'); result.className='hd-result'+(res.champ?' champ':''); result.textContent=res.tag;
-    E('hd-cap').classList.remove('show'); E('hd-cap').textContent=pick(HOME_SIM_CAPS);
+    // Keep the result + caption empty/hidden until their reveal so neither flashes early.
+    const result=E('hd-result'); result.className='hd-result'; result.textContent='';
+    E('hd-cap').classList.remove('show');
     const score=E('hd-score'); score.textContent='0–0';
+    const showResult=()=>{ result.className='hd-result'+(res.champ?' champ':''); result.textContent=res.tag; result.classList.add('show'); };
     if(reduce){
-      score.textContent=res.score; result.classList.add('show'); E('hd-cap').classList.add('show'); await sleep(2400); return;
+      score.textContent=res.score; showResult();
+      E('hd-cap').textContent=pick(HOME_SIM_CAPS); E('hd-cap').classList.add('show'); await sleep(2400); return;
     }
     const [a,b]=res.score.split('–').map(Number);
     let ca=0, cb=0; const steps=Math.max(a,b);
@@ -2899,8 +2904,8 @@ function startHomeDemo(){
       score.textContent=ca+'–'+cb;
     }
     score.textContent=res.score; score.classList.remove('ticking');   // settle on the exact final
-    await sleep(260); result.classList.add('show');
-    await sleep(380); E('hd-cap').classList.add('show');
+    await sleep(260); showResult();
+    await sleep(380); E('hd-cap').textContent=pick(HOME_SIM_CAPS); E('hd-cap').classList.add('show');
     await sleep(1800);
   }
 
