@@ -6584,7 +6584,8 @@ const SIM_SPEED = 1.934;
 // Live playback controls, driven by the persistent sim toolbar:
 //   SIM_RATE divides every delay (1 = 1×, 2 = 2× / twice as fast).
 //   simSkip short-circuits every delay so the run fast-forwards straight to results.
-let SIM_RATE = 1;
+// SIM_RATE persists across games (and reloads) until the player switches it.
+let SIM_RATE = (()=>{ const n=parseInt(localStorage.getItem('rtp_sim_rate'),10); return (n===1||n===2)?n:1; })();
 let simSkip  = false;
 // One delay primitive honours BOTH controls: skip → resolve immediately, otherwise
 // wait the requested ms scaled by the current speed. Everything that pauses routes
@@ -6595,6 +6596,7 @@ const simSleep = ms => simDelay(ms*SIM_SPEED);
 // ---- persistent sim toolbar handlers (speed toggle + skip-to-result) ----
 function simSetRate(rate){
   SIM_RATE = rate;
+  try{ localStorage.setItem('rtp_sim_rate', String(rate)); }catch(e){}
   document.querySelectorAll('#sim-speed-toggle .sim-speed-btn').forEach(b=>{
     b.classList.toggle('active', Number(b.dataset.rate)===rate);
   });
@@ -7046,7 +7048,8 @@ function showMatchResultPopup(opts){
 
     // Auto-advance after 2.5s on every popup EXCEPT the championship win, which
     // lingers until tapped so the moment can be savoured. The Continue button is
-    // always present and advances early. The timer honours the speed toggle.
+    // always present and advances early. This timer is FIXED — the 1×/2× speed
+    // toggle only changes the on-pitch simulation pace, not the popup dwell time.
     const autoAdvance = !(opts.won && opts.isFinal);
     const POPUP_AUTO_MS = 2500;
 
@@ -7089,7 +7092,7 @@ function showMatchResultPopup(opts){
       let done=false;
       const advance=()=>{ if(done) return; done=true; clearTimeout(autoTimer); ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); goToResults(); },350); };
       ov.querySelector('#mp-results-btn').addEventListener('click',advance);
-      const ms=POPUP_AUTO_MS/SIM_RATE;
+      const ms=POPUP_AUTO_MS;
       autoTimer=setTimeout(advance,ms);
       startAutoBar(ms);
     } else {
@@ -7102,7 +7105,7 @@ function showMatchResultPopup(opts){
       const btn=ov.querySelector(opts.isFinal?'#mp-results-btn':'#mp-next-btn');
       if(btn) btn.addEventListener('click',advance);
       if(autoAdvance){
-        const ms=POPUP_AUTO_MS/SIM_RATE;
+        const ms=POPUP_AUTO_MS;
         autoTimer=setTimeout(advance,ms);
         startAutoBar(ms);
       }
@@ -8249,7 +8252,7 @@ function showSimSummary(skipButton){
 async function runSimulationScreen(){
   showScreen('sim');
   // reset + wire the persistent playback toolbar (speed toggle + skip-to-result)
-  simSkip=false; simSetRate(1);
+  simSkip=false; simSetRate(SIM_RATE);   // keep the player's chosen speed game-to-game
   const simCtrls=$('sim-controls');
   if(simCtrls){
     simCtrls.classList.remove('hidden');
