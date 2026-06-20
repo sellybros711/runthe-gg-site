@@ -125,6 +125,17 @@
   .site-footer a{color:#9a9387;text-decoration:none;}
   .site-footer a:hover{text-decoration:underline;}
   .site-footer .sep{margin:0 8px;color:#bcb6a8;}
+  /* footer action buttons (Roster Updates / Add to Home), above the X-follow line */
+  .footer-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin:0 0 18px;}
+  .footer-btn{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+    background:var(--white);border:2px solid var(--ink);border-radius:10px;color:var(--ink);
+    font-family:'Archivo',system-ui,sans-serif;font-weight:800;font-size:11.5px;letter-spacing:.4px;
+    text-transform:uppercase;padding:8px 15px;box-shadow:2px 2px 0 var(--ink);
+    -webkit-tap-highlight-color:transparent;}
+  .footer-btn:hover{background:#fbf4e6;}
+  .footer-btn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 var(--ink);}
+  .footer-btn .tl-ico{height:14px;width:auto;flex:0 0 auto;color:var(--ink);}
+  .footer-btn .fb-emoji{font-size:13px;}
   /* mini "follow us on X" ad, sits in the gap above the footer links */
   .x-follow{margin:0 0 16px;font-size:13px;font-weight:600;}
   .x-follow a{color:#8a8073;text-decoration:none;}
@@ -223,14 +234,19 @@
   .home-primary .btn-sub{font-weight:400;font-size:9px;letter-spacing:.3px;
     text-transform:uppercase;opacity:.92;white-space:nowrap;}
   .home-secondary{position:relative;z-index:2;display:flex;flex-wrap:wrap;justify-content:center;
-    align-items:center;gap:6px 18px;max-width:440px;margin:14px auto 0;}
-  .home-2nd{background:none;border:none;cursor:pointer;color:#F5C518;font-family:inherit;
-    font-weight:800;font-size:11.5px;letter-spacing:.5px;text-transform:uppercase;opacity:.9;
-    padding:4px 2px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;
-    -webkit-tap-highlight-color:transparent;text-decoration:underline;text-underline-offset:3px;}
-  .home-2nd:hover,.home-2nd:active{opacity:1;}
-  .home-2nd .tl-ico{height:14px;width:auto;flex:0 0 auto;}
-  .home-2nd .h2-emoji{font-size:12px;text-decoration:none;}
+    align-items:stretch;gap:10px;max-width:440px;margin:14px auto 0;}
+  /* secondary buttons: outlined/ghost pills — clearly buttons, but quieter than
+     the solid primary CTA above them */
+  .home-2nd{cursor:pointer;color:#F5C518;font-family:inherit;font-weight:800;font-size:12.5px;
+    letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;
+    display:inline-flex;align-items:center;justify-content:center;gap:7px;
+    background:rgba(7,11,26,.55);border:2px solid rgba(244,180,19,.6);border-radius:11px;
+    padding:10px 20px;box-shadow:0 3px 10px rgba(0,0,0,.35);
+    -webkit-tap-highlight-color:transparent;transition:transform .1s ease,background .15s ease,border-color .15s ease;}
+  .home-2nd:hover{background:rgba(7,11,26,.72);border-color:rgba(244,180,19,.85);}
+  .home-2nd:active{transform:translateY(1px);}
+  .home-2nd .tl-ico{height:15px;width:auto;flex:0 0 auto;}
+  .home-2nd .h2-emoji{font-size:13px;}
 
   /* micro-demo: two looping scenes (draft → simulate) + a varying caption */
   .home-demo{position:relative;z-index:2;margin:15px auto 17px;max-width:340px;
@@ -2071,8 +2087,6 @@
       <div class="home-secondary">
         <button id="btn-friendly" type="button" class="home-2nd"><span class="h2-emoji">⚔️</span> Friendlies</button>
         <button id="btn-home-leaderboard" type="button" class="home-2nd"><svg class="tl-ico" viewBox="0 0 24 28" aria-hidden="true"><defs><linearGradient id="tlTrophy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".5" stop-color="#E8C25A"/><stop offset="1" stop-color="#8A5E12"/></linearGradient></defs><path d="M5 4 C2.5 4 2.5 9 5.6 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M19 4 C21.5 4 21.5 9 18.4 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M6 3 H18 V8 C18 13 14.5 15 12 15 C9.5 15 6 13 6 8 Z" fill="url(#tlTrophy)" stroke="#00000033" stroke-width=".6"/><rect x="11" y="15" width="2" height="4" fill="url(#tlTrophy)"/><rect x="8" y="19" width="8" height="2" rx="1" fill="url(#tlTrophy)"/><rect x="6.5" y="21" width="11" height="2.6" rx="1.3" fill="url(#tlTrophy)" stroke="#00000022" stroke-width=".5"/></svg> Leaderboard</button>
-        <button id="btn-roster-updates" type="button" class="home-2nd"><span class="h2-emoji">⚡</span> Roster Updates</button>
-        <button id="btn-add-home" type="button" class="home-2nd"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="10.4" y1="4.3" x2="13.6" y2="4.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="19.6" r=".95" fill="currentColor"/><rect x="8.4" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="8.4" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/></svg> Add to Home</button>
       </div>
       <!-- flag lane (scrolls right) below the kickoff button -->
       <div class="flag-marquee bottom"><div class="flag-lane right" id="flag-lane-2"></div></div>
@@ -2355,6 +2369,10 @@
 
   <!-- ===== site-wide navigation footer (additive) ===== -->
   <footer class="site-footer">
+    <div class="footer-actions">
+      <button id="btn-roster-updates" type="button" class="footer-btn"><span class="fb-emoji">⚡</span> Roster Updates</button>
+      <button id="btn-add-home" type="button" class="footer-btn"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="10.4" y1="4.3" x2="13.6" y2="4.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="19.6" r=".95" fill="currentColor"/><rect x="8.4" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="8.4" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/></svg> Add to Home</button>
+    </div>
     <div class="x-follow"><a href="https://x.com/RunThePitch" target="_blank" rel="noopener noreferrer">Follow <b>@RunThePitch</b> on X for News and Updates</a></div>
     <a href="/">Home</a><span class="sep">·</span><a href="about.html">About</a><span class="sep">·</span><a href="privacy.html">Privacy</a><span class="sep">·</span><a href="contact.html">Contact</a>
   </footer>
