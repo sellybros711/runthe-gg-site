@@ -204,11 +204,23 @@ function main() {
     console.log('All player_ids unique: NO — duplicates:', [...dupes].slice(0, 20));
   }
 
-  fs.writeFileSync(OUT_PATH, JSON.stringify(players, null, 2));
-  console.log('Wrote', OUT_PATH);
-  // Also write the JS wrapper so file:// preview works
+  // ─── Shrink the shipped dataset ───────────────────────────────────────────
+  // Drop null/undefined fields from every player. The game reads each field with
+  // ?? / || / truthy / != null checks, so a MISSING key behaves exactly like null
+  // — but omitting them removes ~19 always-empty columns (height, minutes, tackles,
+  // saves, …) plus per-row nulls, roughly halving the file and its parse time.
+  for (const p of players) {
+    for (const k of Object.keys(p)) {
+      if (p[k] === null || p[k] === undefined) delete p[k];
+    }
+  }
+
+  // Minified (no indentation) — the file is fetched, not read by humans.
+  fs.writeFileSync(OUT_PATH, JSON.stringify(players));
+  console.log('Wrote', OUT_PATH, '(' + (fs.statSync(OUT_PATH).size/1048576).toFixed(2) + ' MB)');
+  // Also write the JS wrapper (file:// fallback only — loaded on demand).
   fs.writeFileSync(JS_PATH, `window.PLAYERS = ${JSON.stringify(players)};\n`);
-  console.log('Wrote', JS_PATH);
+  console.log('Wrote', JS_PATH, '(' + (fs.statSync(JS_PATH).size/1048576).toFixed(2) + ' MB)');
   // Summary of upgrades recorded
   const upgraded = players.filter(p => p.pre_wc_overall != null);
   if (upgraded.length) {

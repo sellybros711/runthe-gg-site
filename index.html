@@ -2410,8 +2410,9 @@
      assets are cached for hours by the CDN/browser. Bump this on every deploy so
      a fresh index.html never pairs with a stale gameLogic.js / players file. -->
 <script src="gameLogic.js?v=0.0.32"></script>
-<!-- JS wrapper of players_all.json — lets the game run when opened directly (file://), where fetch() is blocked. -->
-<script src="data/players_all.js?v=0.0.32"></script>
+<!-- The player dataset is fetched async by boot() (data/players_all.json), so it
+     no longer blocks first paint. The players_all.js wrapper is loaded on demand
+     only as a file:// fallback (see loadEmbeddedPlayers). -->
 <script>
 const G = window.RunThePitch;
 
@@ -2589,9 +2590,14 @@ function showScreen(name){
 
 // ---------- boot ----------
 // Fetch a JSON array of players from `url`; returns null on any failure.
+// Bump on every player-data swap. A STABLE version (not Date.now()) lets the
+// browser/CDN cache the dataset between visits — returning players load instantly
+// instead of re-downloading the whole file every time.
+const DATA_VERSION = '0.0.33';
+
 async function fetchPlayers(url){
   try{
-    const res = await fetch(url,{cache:'no-store'});
+    const res = await fetch(url);   // cacheable: revalidated via ETag, served 304 when unchanged
     if(!res.ok) throw new Error('HTTP '+res.status);
     const data = await res.json();
     return Array.isArray(data) ? data : (data.players || data.data || []);
@@ -2600,18 +2606,30 @@ async function fetchPlayers(url){
   }
 }
 
+// file:// fallback: inject the embedded window.PLAYERS wrapper (players_all.js)
+// on demand, only when fetch() is unavailable (e.g. opening index.html directly).
+function loadEmbeddedPlayers(){
+  return new Promise(resolve=>{
+    if(Array.isArray(window.PLAYERS) && window.PLAYERS.length) return resolve(window.PLAYERS);
+    const s=document.createElement('script');
+    s.src='data/players_all.js?v='+DATA_VERSION;
+    s.onload=()=>resolve(Array.isArray(window.PLAYERS)?window.PLAYERS:null);
+    s.onerror=()=>resolve(null);
+    document.head.appendChild(s);
+  });
+}
+
 async function boot(){
   let fetchErr = null;
 
-  // Single source of truth: the comprehensive dataset (1966–2026).
-  // Date.now() cache-buster forces a fresh load every time, so updated overalls
-  // always appear immediately after a data swap (never a stale cached copy).
-  let players = await fetchPlayers('data/players_all.json?v=' + Date.now());
+  // Single source of truth: the comprehensive dataset (1966–2026), fetched async
+  // so it never blocks the page. Cached between visits via the stable ?v=.
+  let players = await fetchPlayers('data/players_all.json?v=' + DATA_VERSION);
 
   // file:// fallback (fetch blocked when opened directly via file://).
-  if((!players || !players.length) && Array.isArray(window.PLAYERS_ALL)){
-    players = window.PLAYERS_ALL;
-    fetchErr = new Error('fetch unavailable — used embedded file:// wrapper (players_all.js)');
+  if(!players || !players.length){
+    players = await loadEmbeddedPlayers();
+    if(players && players.length) fetchErr = new Error('fetch unavailable — used embedded file:// wrapper (players_all.js)');
   }
 
   if(!players || !players.length){
