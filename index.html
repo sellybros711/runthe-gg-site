@@ -232,15 +232,19 @@
   .home-2nd .tl-ico{height:14px;width:auto;flex:0 0 auto;}
   .home-2nd .h2-emoji{font-size:12px;text-decoration:none;}
 
-  /* micro-demo: spin chip → flipping player card → caption */
+  /* micro-demo: two looping scenes (draft → simulate) + a varying caption */
   .home-demo{position:relative;z-index:2;margin:15px auto 17px;max-width:340px;
-    display:flex;flex-direction:column;align-items:center;gap:10px;perspective:600px;}
+    display:flex;flex-direction:column;align-items:center;gap:9px;perspective:600px;}
+  .hd-scene{display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:8px;min-height:96px;}
+  .hd-scene[hidden]{display:none;}
+  /* scene 1: draft */
   .hd-stage{display:flex;align-items:center;justify-content:center;gap:10px;}
-  .hd-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  .hd-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
     width:84px;height:72px;border-radius:12px;background:rgba(7,11,26,.62);
     border:2px solid rgba(244,180,19,.45);box-shadow:0 4px 12px rgba(0,0,0,.4);}
   .hd-chip.spinning{border-color:rgba(244,180,19,.85);}
-  .hd-flag{font-size:26px;line-height:1;}
+  .hd-flag .flag-ico{width:32px;height:21px;border-radius:4px;}
   .hd-yr{font-family:'Anton',Impact,sans-serif;font-size:16px;color:#FCEFA8;letter-spacing:1px;}
   .hd-arrow{color:#F5C518;font-size:28px;font-weight:900;line-height:1;opacity:.75;}
   .hd-card{width:100px;height:72px;border-radius:12px;background:var(--white);
@@ -253,7 +257,23 @@
     padding:1px 7px;border-radius:6px;}
   .hd-name{font-family:'Anton',Impact,sans-serif;font-size:16px;color:var(--ink);line-height:1.05;}
   .hd-ovr{font-family:'Anton',Impact,sans-serif;font-size:12px;color:#0a7d4f;letter-spacing:.5px;}
-  .hd-cap{font-weight:800;font-size:13px;letter-spacing:.3px;color:#F4ECDA;
+  /* scene 2: simulate */
+  .hd-match{display:flex;align-items:center;justify-content:center;gap:12px;
+    background:rgba(7,11,26,.62);border:2px solid rgba(244,180,19,.45);border-radius:12px;
+    padding:10px 16px;box-shadow:0 4px 12px rgba(0,0,0,.4);}
+  .hd-side{display:flex;align-items:center;gap:5px;font-family:'Anton',Impact,sans-serif;
+    font-size:15px;color:#FCEFA8;letter-spacing:.5px;}
+  .hd-side.hd-you{color:#fff;}
+  .hd-match .hd-flag .flag-ico{width:26px;height:17px;}
+  .hd-score{font-family:'Anton',Impact,sans-serif;font-size:23px;color:#fff;
+    min-width:56px;text-align:center;transition:color .2s;}
+  .hd-score.ticking{color:#FCEFA8;}
+  .hd-result{font-weight:900;font-size:12px;letter-spacing:.6px;text-transform:uppercase;
+    color:#2FD673;opacity:0;transform:translateY(4px);transition:opacity .3s,transform .3s;}
+  .hd-result.show{opacity:1;transform:none;}
+  .hd-result.champ{color:#F5C518;}
+  /* caption */
+  .hd-cap{font-weight:800;font-size:13px;letter-spacing:.3px;color:#F4ECDA;min-height:17px;
     text-shadow:0 1px 3px rgba(0,0,0,.85);opacity:0;transition:opacity .35s;}
   .hd-cap.show{opacity:1;}
   @media (prefers-reduced-motion:reduce){ .hd-card{transition:opacity .2s;} }
@@ -2017,16 +2037,28 @@
       <!-- 3-second micro-demo (replaces the wall of rules): a spin locks a random
            nation + year, then a player card flips in — "that's it, your turn." -->
       <div class="home-demo" id="home-demo" aria-hidden="true">
-        <div class="hd-stage">
-          <div class="hd-chip" id="hd-chip"><span class="hd-flag" id="hd-flag">🇧🇷</span><span class="hd-yr" id="hd-yr">1970</span></div>
-          <div class="hd-arrow">›</div>
-          <div class="hd-card" id="hd-card">
-            <span class="hd-pos" id="hd-pos">FWD</span>
-            <span class="hd-name" id="hd-name">Pelé</span>
-            <span class="hd-ovr" id="hd-ovr">99 OVR</span>
+        <!-- scene 1: draft — a spin locks a nation+year, a player card flips in -->
+        <div class="hd-scene" id="hd-scene-draft">
+          <div class="hd-stage">
+            <div class="hd-chip" id="hd-chip"><span class="hd-flag" id="hd-flag"></span><span class="hd-yr" id="hd-yr">1970</span></div>
+            <div class="hd-arrow">›</div>
+            <div class="hd-card" id="hd-card">
+              <span class="hd-pos" id="hd-pos">FWD</span>
+              <span class="hd-name" id="hd-name">Pelé</span>
+              <span class="hd-ovr" id="hd-ovr">99 OVR</span>
+            </div>
           </div>
         </div>
-        <div class="hd-cap" id="hd-cap">That's it — your turn.</div>
+        <!-- scene 2: simulate — a knockout match score ticks, then the result -->
+        <div class="hd-scene" id="hd-scene-sim" hidden>
+          <div class="hd-match">
+            <span class="hd-side hd-you">YOU</span>
+            <span class="hd-score" id="hd-score">0–0</span>
+            <span class="hd-side"><span class="hd-flag" id="hd-opp-flag"></span><span class="hd-yr" id="hd-opp-yr">'98</span></span>
+          </div>
+          <div class="hd-result" id="hd-result"></div>
+        </div>
+        <div class="hd-cap" id="hd-cap">Draft your squad.</div>
       </div>
 
       <!-- ONE obvious primary action -->
@@ -2773,54 +2805,95 @@ async function boot(){
   startHomeDemo();              // kick off the looping landing micro-demo
 }
 
-// ---- landing micro-demo: a spin locks a nation+year, a player card flips in ----
-// Replaces the old wall of text rules with a 3-second "show, don't tell" loop.
+// ---- landing micro-demo: two looping scenes (draft → simulate) ----
+// Replaces the old wall of text rules with a "show, don't tell" loop using the
+// same flag graphics as the rest of the app.
 const HOME_DEMO=[
-  {flag:'🇧🇷',yr:1970,pos:'FWD',name:'Pelé',ovr:99},
-  {flag:'🇦🇷',yr:1986,pos:'MID',name:'Maradona',ovr:99},
-  {flag:'🇫🇷',yr:1998,pos:'MID',name:'Zidane',ovr:96},
-  {flag:'🇳🇱',yr:1974,pos:'FWD',name:'Cruyff',ovr:96},
-  {flag:'🇩🇪',yr:1990,pos:'MID',name:'Matthäus',ovr:92},
-  {flag:'🇮🇹',yr:1982,pos:'FWD',name:'Rossi',ovr:90},
+  {country:'Brazil',yr:1970,pos:'FWD',name:'Pelé',ovr:99},
+  {country:'Argentina',yr:1986,pos:'MID',name:'Maradona',ovr:99},
+  {country:'France',yr:1998,pos:'MID',name:'Zidane',ovr:96},
+  {country:'Netherlands',yr:1974,pos:'FWD',name:'Cruyff',ovr:96},
+  {country:'Germany',yr:1990,pos:'MID',name:'Matthäus',ovr:92},
+  {country:'Italy',yr:1982,pos:'FWD',name:'Rossi',ovr:90},
+  {country:'England',yr:1966,pos:'FWD',name:'Hurst',ovr:88},
 ];
-const HOME_SPIN_FLAGS=['🇧🇷','🇦🇷','🇫🇷','🇩🇪','🇮🇹','🇪🇸','🇳🇱','🇵🇹','🇺🇾','🏴󠁧󠁢󠁥󠁮󠁧󠁿'];
-const HOME_SPIN_YEARS=[1970,1986,1998,1974,1982,2014,2022,1966,1990,2006];
-let homeDemoTimers=[], homeDemoIdx=0, homeDemoStarted=false;
+const HOME_SPIN=[
+  {country:'Brazil',yr:1970},{country:'Argentina',yr:1986},{country:'France',yr:1998},
+  {country:'Germany',yr:2014},{country:'Italy',yr:1982},{country:'Spain',yr:2010},
+  {country:'Netherlands',yr:1974},{country:'Portugal',yr:2006},{country:'Uruguay',yr:1970},
+  {country:'England',yr:1966},
+];
+const HOME_DRAFT_CAPS=['Draft your squad.','Pick a legend each round.','Your XI, your way.',
+  'Build from 60 years of legends.','Spin. Pick. Repeat.','One pick at a time.'];
+const HOME_SIM_CAPS=['Then simulate the World Cup.','Play your way to the final.','Win it all.',
+  'Knockout football, simulated.','Chase the trophy.','See how far your squad goes.'];
+const HOME_SIM_RESULTS=[
+  {score:'2–1',tag:'→ Quarter-final'},{score:'3–0',tag:'→ Semi-final'},
+  {score:'2–2',tag:'Won on penalties'},{score:'4–1',tag:'→ Into the Final'},
+  {score:'1–0',tag:'🏆 Champions',champ:true},{score:'3–2',tag:'🏆 Champions',champ:true},
+];
+let homeDemoStarted=false;
 function startHomeDemo(){
   if(homeDemoStarted) return; homeDemoStarted=true;
-  const chip=$('hd-chip'), flag=$('hd-flag'), yr=$('hd-yr'), card=$('hd-card'),
-        pos=$('hd-pos'), name=$('hd-name'), ovr=$('hd-ovr'), cap=$('hd-cap');
-  if(!chip||!card) return;
+  const E=id=>document.getElementById(id);
+  if(!E('home-demo')||!E('hd-card')) return;
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches;
-  const T=(fn,ms)=>{ const id=setTimeout(fn,ms); homeDemoTimers.push(id); return id; };
-  const paint=d=>{ pos.textContent=d.pos; name.textContent=d.name; ovr.textContent=d.ovr+' OVR'; };
-  function cycle(){
-    homeDemoTimers=[];
-    const active = $('screen-start') && $('screen-start').classList.contains('active');
-    const d=HOME_DEMO[homeDemoIdx++ % HOME_DEMO.length];
-    paint(d);
-    if(reduce || !active){
-      // off-screen or reduced motion: just show the locked state, re-check later
-      flag.textContent=d.flag; yr.textContent=d.yr;
-      card.classList.add('flipped'); cap.classList.add('show');
-      if(!reduce) T(cycle, 1600);
-      return;
+  const sleep = ms => new Promise(r=>setTimeout(r,ms));
+  const active = () => { const s=E('screen-start'); return s && s.classList.contains('active'); };
+  const setFlag = (node,country) => { node.innerHTML = flagChip(country); };
+  const pick = a => a[(Math.random()*a.length)|0];
+
+  async function draftBeat(){
+    const d=pick(HOME_DEMO);
+    E('hd-scene-draft').hidden=false; E('hd-scene-sim').hidden=true;
+    E('hd-pos').textContent=d.pos; E('hd-name').textContent=d.name; E('hd-ovr').textContent=d.ovr+' OVR';
+    E('hd-card').classList.remove('flipped'); E('hd-cap').classList.remove('show');
+    E('hd-cap').textContent=pick(HOME_DRAFT_CAPS);
+    if(reduce){
+      setFlag(E('hd-flag'),d.country); E('hd-yr').textContent=d.yr;
+      E('hd-card').classList.add('flipped'); E('hd-cap').classList.add('show'); await sleep(2400); return;
     }
-    card.classList.remove('flipped'); cap.classList.remove('show'); chip.classList.add('spinning');
-    let ticks=0;
-    const spin=setInterval(()=>{
-      flag.textContent=HOME_SPIN_FLAGS[(Math.random()*HOME_SPIN_FLAGS.length)|0];
-      yr.textContent=HOME_SPIN_YEARS[(Math.random()*HOME_SPIN_YEARS.length)|0];
-      if(++ticks>=9){
-        clearInterval(spin);
-        flag.textContent=d.flag; yr.textContent=d.yr; chip.classList.remove('spinning');
-        T(()=>card.classList.add('flipped'), 200);
-        T(()=>cap.classList.add('show'), 700);
-        T(cycle, 3300);
-      }
-    },120);
+    E('hd-chip').classList.add('spinning');
+    for(let i=0;i<9;i++){ const s=pick(HOME_SPIN); setFlag(E('hd-flag'),s.country); E('hd-yr').textContent=s.yr; await sleep(115); }
+    setFlag(E('hd-flag'),d.country); E('hd-yr').textContent=d.yr; E('hd-chip').classList.remove('spinning');
+    await sleep(220); E('hd-card').classList.add('flipped');
+    await sleep(520); E('hd-cap').classList.add('show');
+    await sleep(1700);
   }
-  cycle();
+
+  async function simBeat(){
+    const opp=pick(HOME_SPIN), res=pick(HOME_SIM_RESULTS);
+    E('hd-scene-draft').hidden=true; E('hd-scene-sim').hidden=false;
+    setFlag(E('hd-opp-flag'),opp.country); E('hd-opp-yr').textContent="'"+String(opp.yr).slice(2);
+    const result=E('hd-result'); result.className='hd-result'+(res.champ?' champ':''); result.textContent=res.tag;
+    E('hd-cap').classList.remove('show'); E('hd-cap').textContent=pick(HOME_SIM_CAPS);
+    const score=E('hd-score'); score.textContent='0–0';
+    if(reduce){
+      score.textContent=res.score; result.classList.add('show'); E('hd-cap').classList.add('show'); await sleep(2400); return;
+    }
+    const [a,b]=res.score.split('–').map(Number);
+    let ca=0, cb=0; const steps=Math.max(a,b);
+    score.classList.add('ticking');
+    for(let i=0;i<steps;i++){
+      await sleep(360);
+      if(ca<a) ca++;
+      if(cb<b && (b>=a || Math.random()<0.6)) cb++;
+      score.textContent=ca+'–'+cb;
+    }
+    score.textContent=res.score; score.classList.remove('ticking');   // settle on the exact final
+    await sleep(260); result.classList.add('show');
+    await sleep(380); E('hd-cap').classList.add('show');
+    await sleep(1800);
+  }
+
+  (async function loop(){
+    // eslint-disable-next-line no-constant-condition
+    while(true){
+      if(!active()){ await sleep(1000); continue; }
+      await draftBeat();
+      if(active()) await simBeat();
+    }
+  })();
 }
 
 // Warm the browser cache with every nation's flag (both sizes used in the UI)
