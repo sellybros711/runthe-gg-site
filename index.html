@@ -135,6 +135,14 @@
   .footer-btn:hover{border-color:#bcb6a8;color:var(--ink);}
   .footer-btn:active{transform:translate(1px,1px);}
   .footer-btn .tl-ico{height:13px;width:auto;flex:0 0 auto;color:currentColor;}
+  /* account block (above the action buttons): makes sign-in value explicit */
+  .footer-account{margin:0 0 16px;}
+  .fa-guest{display:flex;flex-direction:column;align-items:center;gap:9px;}
+  .fa-lock{font-size:12.5px;color:#8a8073;max-width:340px;line-height:1.45;}
+  .fa-lock b{color:var(--ink);}
+  .footer-btn.fa-cta{background:var(--gold);border-color:var(--gold);color:#1a1a1a;font-size:12px;padding:9px 18px;}
+  .footer-btn.fa-cta:hover{filter:brightness(1.04);border-color:var(--gold);color:#1a1a1a;}
+  .fa-user{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;}
   /* mini "follow us on X" ad, sits in the gap above the footer links */
   .x-follow{margin:0 0 16px;font-size:13px;font-weight:600;}
   .x-follow a{color:#8a8073;text-decoration:none;}
@@ -1669,6 +1677,56 @@
     letter-spacing:1px;z-index:120;opacity:0;transition:all .3s ease;pointer-events:none;}
   .entry-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
+  /* ---------- entry modal: guest (sign-in) vs signed-in states ---------- */
+  .entry-auth-cta,.entry-saved-as{display:none;}
+  /* guest: hide the name/flag/save row, show the sign-in CTA */
+  .entry-bg.guest .entry-sub,
+  .entry-bg.guest .entry-name-row,
+  .entry-bg.guest .entry-flag-label,
+  .entry-bg.guest .entry-flag-row,
+  .entry-bg.guest .entry-submit,
+  .entry-bg.guest .entry-skip{display:none !important;}
+  .entry-bg.guest .entry-auth-cta{display:block;}
+  /* signed-in: name comes from the account, so just confirm it saved */
+  .entry-bg.signed .entry-sub,
+  .entry-bg.signed .entry-name-row,
+  .entry-bg.signed .entry-flag-label,
+  .entry-bg.signed .entry-flag-row,
+  .entry-bg.signed .entry-submit,
+  .entry-bg.signed .entry-skip{display:none !important;}
+  .entry-bg.signed .entry-saved-as{display:block;}
+  .entry-auth-cta{margin:16px 0 4px;text-align:center;}
+  .eac-lock{font-size:14px;color:#dcdcdc;line-height:1.5;margin-bottom:14px;}
+  .eac-lock b{color:var(--gold);}
+  .entry-auth-cta .eac-btn{display:block;width:100%;padding:13px 18px;}
+  .eac-guest-note{font-size:12px;color:#9a9a9a;margin-top:12px;}
+  .entry-saved-as{margin:16px 0 4px;text-align:center;font-weight:800;font-size:14px;color:#7fe0a8;}
+  .entry-saved-as b{color:var(--gold);}
+
+  /* ---------- account modal (reuses .entry-bg / .entry-card shell) ---------- */
+  .acct-card{max-width:400px;}
+  .acct-tabs{display:flex;gap:8px;margin:14px 0 4px;}
+  .acct-tab{flex:1 1 0;padding:10px 0;border:2px solid #444;border-radius:10px;background:#262626;
+    color:#b9b9b9;font-family:inherit;font-weight:800;font-size:13px;text-transform:uppercase;
+    letter-spacing:.5px;cursor:pointer;}
+  .acct-tab.sel{border-color:var(--gold);color:var(--gold);background:#2e2a1a;}
+  .acct-note{font-size:12.5px;color:#b9b9b9;line-height:1.45;margin:12px 0 14px;text-align:center;}
+  .acct-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;
+    padding:12px 14px;border:none;border-radius:11px;background:#fff;color:#1f1f1f;
+    font-family:inherit;font-weight:800;font-size:14px;cursor:pointer;}
+  .acct-google:active{transform:translateY(1px);}
+  .acct-or{display:flex;align-items:center;text-align:center;color:#777;font-size:12px;
+    font-weight:700;margin:14px 0;}
+  .acct-or::before,.acct-or::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.15);}
+  .acct-or span{padding:0 12px;}
+  .acct-input{display:block;width:100%;box-sizing:border-box;margin:0 0 10px;}
+  .acct-submit{display:block;width:100%;padding:13px 18px;margin-top:4px;}
+  .acct-userline{font-size:15px;color:#eee;text-align:center;margin:16px 0 6px;}
+  .acct-userline b{color:var(--gold);font-weight:900;}
+  .acct-username-row{display:flex;gap:8px;align-items:stretch;}
+  .acct-username-row .entry-name{margin-bottom:0;}
+  .acct-flag-save{display:block;width:100%;padding:11px 18px;margin-top:14px;}
+
   /* ---------- share targets popup ---------- */
   .share-bg{position:fixed;inset:0;z-index:85;display:none;align-items:flex-end;justify-content:center;
     background:rgba(22,18,15,.55);}
@@ -1881,6 +1939,8 @@
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
      crossorigin="anonymous"></script>
+<!-- Supabase JS (auth: email/password + Google OAuth, session persistence) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 </head>
 <body>
 <div class="app">
@@ -2365,6 +2425,18 @@
 
   <!-- ===== site-wide navigation footer (additive) ===== -->
   <footer class="site-footer">
+    <!-- account block: sits ABOVE the action buttons. Makes the value of an
+         account explicit (leaderboard + stats are sign-in only). -->
+    <div class="footer-account" id="footer-account">
+      <div class="fa-guest" id="fa-guest">
+        <div class="fa-lock">🔒 <b>Sign in to save your scores</b> to the global leaderboard &amp; track your stats</div>
+        <button id="btn-account" type="button" class="footer-btn fa-cta">👤 Sign In / Sign Up</button>
+      </div>
+      <div class="fa-user" id="fa-user" style="display:none;">
+        <button id="btn-account-user" type="button" class="footer-btn"><span id="fa-username">👤 Account</span></button>
+        <button id="btn-signout" type="button" class="footer-btn">Sign out</button>
+      </div>
+    </div>
     <div class="footer-actions">
       <button id="btn-roster-updates" type="button" class="footer-btn"><svg class="tl-ico" viewBox="0 0 14 20" aria-hidden="true"><polygon points="9,0 2,11 7,11 5,20 12,9 7,9" fill="currentColor"/></svg> Roster Updates</button>
       <button id="btn-add-home" type="button" class="footer-btn"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="10.4" y1="4.3" x2="13.6" y2="4.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="19.6" r=".95" fill="currentColor"/><rect x="8.4" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="8.4" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/></svg> Add to Home</button>
@@ -2435,6 +2507,14 @@
     <h3 class="entry-title"><svg class="ico-em" viewBox="0 0 24 28" aria-hidden="true"><defs><linearGradient id="trgTitle" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".5" stop-color="#E8C25A"/><stop offset="1" stop-color="#8A5E12"/></linearGradient></defs><path d="M5 4 C2.5 4 2.5 9 5.6 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M19 4 C21.5 4 21.5 9 18.4 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M6 3 H18 V8 C18 13 14.5 15 12 15 C9.5 15 6 13 6 8 Z" fill="url(#trgTitle)" stroke="#00000033" stroke-width=".6"/><rect x="11" y="15" width="2" height="4" fill="url(#trgTitle)"/><rect x="8" y="19" width="8" height="2" rx="1" fill="url(#trgTitle)"/><rect x="6.5" y="21" width="11" height="2.6" rx="1.3" fill="url(#trgTitle)" stroke="#00000022" stroke-width=".5"/></svg> Leaderboard</h3>
     <p class="entry-sub">Enter your name to save your score</p>
     <div class="entry-badges"><span class="entry-badge" id="entry-badge-result"></span><span class="entry-badge" id="entry-badge-ovr"></span></div>
+    <!-- guest: must sign in to post this score -->
+    <div class="entry-auth-cta" id="entry-auth-cta">
+      <div class="eac-lock">🔒 <b>Sign in to save this score</b><br>An account adds your draft to the global leaderboard and tracks your stats &amp; icons.</div>
+      <button class="entry-submit eac-btn" id="entry-auth-btn">👤 Sign In / Sign Up</button>
+      <div class="eac-guest-note">Or keep playing as a guest — your score just won’t be saved.</div>
+    </div>
+    <!-- signed-in: auto-saved confirmation -->
+    <div class="entry-saved-as" id="entry-saved-as"></div>
     <div class="entry-name-row">
       <input class="entry-name" id="entry-name" maxlength="20" placeholder="Your name" autocomplete="off" />
       <button class="entry-submit" id="entry-submit">Save</button>
@@ -2462,6 +2542,56 @@
   </div>
 </div>
 <div class="entry-toast" id="entry-toast">Added to leaderboard!</div>
+
+<!-- ===== account modal (sign in / sign up / profile) ===== -->
+<div class="entry-bg acct-bg" id="acct-bg">
+  <div class="entry-card acct-card">
+    <button class="entry-close" id="acct-close" aria-label="Close">✕</button>
+    <h3 class="entry-title">👤 Account</h3>
+
+    <!-- guest: sign in / sign up -->
+    <div id="acct-forms">
+      <div class="acct-tabs">
+        <button type="button" class="acct-tab sel" data-tab="signin">Sign In</button>
+        <button type="button" class="acct-tab" data-tab="signup">Sign Up</button>
+      </div>
+      <p class="acct-note" id="acct-note">Sign in to save your scores to the leaderboard and pick up your stats.</p>
+      <button type="button" class="acct-google" id="acct-google">
+        <svg viewBox="0 0 18 18" aria-hidden="true" width="17" height="17"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.02-3.7H.96v2.34A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.98 10.72a5.4 5.4 0 0 1 0-3.44V4.94H.96a9 9 0 0 0 0 8.12l3.02-2.34z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.46 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.94l3.02 2.34C4.68 5.16 6.66 3.58 9 3.58z"/></svg>
+        Continue with Google
+      </button>
+      <div class="acct-or"><span>or</span></div>
+      <input class="entry-name acct-input" id="acct-username" maxlength="20" placeholder="Username" autocomplete="username" style="display:none;" />
+      <input class="entry-name acct-input" id="acct-email" type="email" placeholder="Email" autocomplete="email" />
+      <input class="entry-name acct-input" id="acct-password" type="password" placeholder="Password" autocomplete="current-password" />
+      <button class="entry-submit acct-submit" id="acct-submit">Sign in</button>
+      <div class="entry-error" id="acct-error"></div>
+    </div>
+
+    <!-- after sign-up with email confirmation on -->
+    <div id="acct-confirm" style="display:none;">
+      <p class="acct-confirm-msg">✉️ <b>Check your email</b><br>We sent a confirmation link to <b id="acct-confirm-email"></b>. Click it to activate your account, then come back and sign in.</p>
+      <p class="acct-note">Didn’t get it? Check spam, or wait a minute and try again.</p>
+    </div>
+
+    <!-- signed-in: profile -->
+    <div id="acct-profile" style="display:none;">
+      <div class="acct-userline" id="acct-username-have">Signed in as <b id="acct-username-display"></b></div>
+      <div id="acct-username-set" style="display:none;">
+        <div class="entry-flag-label">Pick a username</div>
+        <div class="acct-username-row">
+          <input class="entry-name acct-input" id="acct-username2" maxlength="20" placeholder="Username" autocomplete="username" />
+          <button class="entry-submit" id="acct-save-username">Save</button>
+        </div>
+        <div class="entry-error" id="acct-error2"></div>
+      </div>
+      <div class="entry-flag-label">Your Flag</div>
+      <div class="entry-flag-row" id="acct-flag-row"></div>
+      <button class="entry-submit acct-flag-save" id="acct-save-flag">Save flag</button>
+      <button class="entry-skip" id="acct-signout">Sign out</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== share popup (preview + grid of share targets) ===== -->
 <div class="lineup-bg" id="share-bg">
@@ -4083,13 +4213,224 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const SUPABASE_READY = /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(SUPABASE_URL)
   && SUPABASE_ANON_KEY && SUPABASE_ANON_KEY.indexOf('YOUR-')!==0;
 
+// ============================================================================
+// Accounts / auth (Supabase)  —  Phase A
+// ============================================================================
+// A signed-in account is REQUIRED to post a score to the global leaderboard and
+// (later) to record stats, streaks and collectible icons. Guests can still PLAY
+// and BROWSE the board — their drafts simply aren't written. See
+// supabase/10_accounts.sql for the server side (profiles, RLS, submit_draft v10).
+let sbClient      = null;   // supabase-js client (auth + rpc)
+let authUser      = null;   // current auth.users (null = guest)
+let authProfile   = null;   // matching profiles row { username, flag, ... }
+let sbAccessToken = null;   // live JWT → sent on REST calls so RPCs run as the user
+
+function isSignedIn(){ return !!authUser; }
+function authUsername(){ return (authProfile && authProfile.username) || ''; }
+
+function initAuth(){
+  if(!SUPABASE_READY) return;
+  if(!(window.supabase && window.supabase.createClient)){
+    console.warn('[auth] supabase-js not loaded'); return;
+  }
+  try{
+    sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true }
+    });
+  }catch(e){ console.warn('[auth] init failed', e); return; }
+  // React to sign-in / sign-out / token refresh, and restore a saved session.
+  sbClient.auth.onAuthStateChange((_evt, session)=>{ applySession(session); });
+  sbClient.auth.getSession().then(({data})=>applySession(data && data.session))
+    .catch(()=>{});
+}
+
+async function applySession(session){
+  authUser      = (session && session.user) || null;
+  sbAccessToken = (session && session.access_token) || null;
+  if(authUser){ await loadProfile(); } else { authProfile = null; }
+  syncAuthUI();
+  // A guest who just signed in on the results screen → save the score they earned.
+  if(authUser) maybeSubmitPendingDraft();
+}
+
+async function loadProfile(){
+  authProfile = null;
+  if(!sbClient || !authUser) return;
+  try{
+    const { data } = await sbClient
+      .from('profiles')
+      .select('username,flag,current_streak,longest_streak')
+      .eq('id', authUser.id).maybeSingle();
+    authProfile = data || null;
+  }catch(e){ /* leave null — UI still works, just without a username */ }
+}
+
 function sbHeaders(extra){
   return Object.assign({
     'apikey': SUPABASE_ANON_KEY,
-    'Authorization': 'Bearer '+SUPABASE_ANON_KEY,
+    // Use the signed-in user's JWT when present so SECURITY DEFINER RPCs see
+    // auth.uid() (and stamp the draft's owner); fall back to anon for guests.
+    'Authorization': 'Bearer '+(sbAccessToken || SUPABASE_ANON_KEY),
     'Content-Type': 'application/json'
   }, extra||{});
 }
+// ---- save a just-finished guest draft once they sign in -------------------
+// When a guest reaches the results screen their draft isn't written. If they then
+// sign in (from the footer or the entry modal CTA), this records it under their
+// new account so the score they just earned isn't lost.
+async function maybeSubmitPendingDraft(){
+  try{
+    if(!isSignedIn() || !gs || !gs.result) return;
+    if(gs.result._lbId != null) return;                 // already saved
+    const ov = gs.result.teamOverall;
+    if(ov == null) return;
+    const prog = (gs.result._progress != null) ? gs.result._progress : 0;
+    gs.result._lb = null; gs.result._lbStarted = false;  // allow a fresh save
+    await fillRankBadge(ov, prog);
+    if($('entry-bg') && $('entry-bg').classList.contains('show')){
+      openEntryModal(gs.result.resultLabel || '', ov);   // re-render in signed-in mode
+    }
+  }catch(e){ console.warn('[auth] pending save failed', e); }
+}
+
+// ---- auth-aware UI sync (footer block + account modal) --------------------
+function syncAuthUI(){
+  const signed = isSignedIn();
+  const g = $('fa-guest'), u = $('fa-user');
+  if(g) g.style.display = signed ? 'none' : '';
+  if(u) u.style.display = signed ? '' : 'none';
+  const un = $('fa-username');
+  if(un) un.textContent = '👤 ' + (authUsername() || 'Account');
+  renderAccountModal();
+}
+
+// ---- account modal --------------------------------------------------------
+let acctTab = 'signin';            // 'signin' | 'signup'
+let acctSelectedFlag = 'USA';
+function showEl(el, on){ if(el) el.style.display = on ? '' : 'none'; }
+function acctError(msg){ const e=$('acct-error'); if(!e) return; e.textContent=msg||''; e.classList.toggle('show', !!msg); }
+
+function openAccountModal(){
+  acctError('');
+  $('acct-confirm') && ($('acct-confirm').style.display='none');
+  setAcctTab('signin');
+  renderAccountModal();
+  const bg=$('acct-bg'); if(bg) bg.classList.add('show');
+}
+function closeAccountModal(){ const bg=$('acct-bg'); if(bg) bg.classList.remove('show'); }
+
+function setAcctTab(tab){
+  acctTab = (tab==='signup') ? 'signup' : 'signin';
+  document.querySelectorAll('.acct-tab').forEach(b=>b.classList.toggle('sel', b.dataset.tab===acctTab));
+  showEl($('acct-username'), acctTab==='signup');   // username only on sign-up
+  const sub=$('acct-submit'); if(sub) sub.textContent = acctTab==='signup' ? 'Create account' : 'Sign in';
+  const note=$('acct-note');
+  if(note) note.textContent = acctTab==='signup'
+    ? 'Free account — save your scores to the global leaderboard, track your stats, and earn icons.'
+    : 'Sign in to save your scores to the leaderboard and pick up your stats.';
+  acctError('');
+}
+
+// Switches the modal between guest forms / email-confirm / signed-in profile.
+function renderAccountModal(){
+  const bg=$('acct-bg'); if(!bg) return;
+  const signed=isSignedIn();
+  const confirming = $('acct-confirm') && $('acct-confirm').style.display!=='none';
+  showEl($('acct-forms'), !signed && !confirming);
+  showEl($('acct-profile'), signed);
+  if(!signed) return;
+  const hasName = !!authUsername();
+  showEl($('acct-username-have'), hasName);
+  showEl($('acct-username-set'),  !hasName);
+  const d=$('acct-username-display'); if(d) d.textContent = authUsername();
+  // flag picker reflects the profile's saved flag
+  acctSelectedFlag = (authProfile && authProfile.flag) || acctSelectedFlag || 'USA';
+  buildAcctFlagRow();
+}
+
+function buildAcctFlagRow(){
+  const row=$('acct-flag-row'); if(!row || typeof ENTRY_FLAGS==='undefined') return;
+  row.innerHTML=ENTRY_FLAGS.map(c=>{
+    const url=flagImg(c,80);
+    return `<button class="entry-flag-opt${c===acctSelectedFlag?' sel':''}" data-flag="${escapeHtml(c)}" title="${escapeHtml(c)}"${url?` style="background-image:url('${url}')"`:''}></button>`;
+  }).join('');
+  row.querySelectorAll('.entry-flag-opt').forEach(b=>b.addEventListener('click',()=>{
+    acctSelectedFlag=b.dataset.flag;
+    row.querySelectorAll('.entry-flag-opt').forEach(x=>x.classList.toggle('sel',x===b));
+    b.scrollIntoView({inline:'center',block:'nearest',behavior:'smooth'});
+  }));
+}
+
+async function acctSubmit(){
+  if(!sbClient){ acctError('Accounts are unavailable right now.'); return; }
+  const email=($('acct-email').value||'').trim();
+  const pass =($('acct-password').value||'');
+  const btn=$('acct-submit'); btn.disabled=true; btn.classList.add('saving'); acctError('');
+  try{
+    if(acctTab==='signup'){
+      const uname=($('acct-username').value||'').trim();
+      if(!/^[A-Za-z0-9_]{3,20}$/.test(uname)) throw new Error('Username must be 3–20 letters, numbers or underscores.');
+      if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('Enter a valid email address.');
+      if(pass.length<6) throw new Error('Password must be at least 6 characters.');
+      const { data:avail, error:e0 } = await sbClient.rpc('username_available',{ p_username: uname });
+      if(e0) throw e0;
+      if(!avail) throw new Error('That username is taken — try another.');
+      const { data, error } = await sbClient.auth.signUp({
+        email, password: pass,
+        options:{ data:{ username: uname }, emailRedirectTo: location.origin }
+      });
+      if(error) throw error;
+      if(!data.session){ showConfirmPane(email); }   // email confirmation ON
+      else { closeAccountModal(); }
+    }else{
+      const { error } = await sbClient.auth.signInWithPassword({ email, password: pass });
+      if(error) throw error;
+      closeAccountModal();
+    }
+  }catch(e){
+    acctError((e && e.message) || 'Something went wrong. Please try again.');
+  }finally{ btn.disabled=false; btn.classList.remove('saving'); }
+}
+
+async function acctGoogle(){
+  if(!sbClient){ acctError('Accounts are unavailable right now.'); return; }
+  try{
+    const { error } = await sbClient.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin } });
+    if(error) throw error;
+  }catch(e){ acctError('Google sign-in isn’t enabled yet.'); }
+}
+
+function showConfirmPane(email){
+  const c=$('acct-confirm'); if(!c) return;
+  const em=$('acct-confirm-email'); if(em) em.textContent=email||'your email';
+  showEl($('acct-forms'), false);
+  showEl($('acct-profile'), false);
+  c.style.display='';
+}
+
+async function acctSaveUsername(){
+  const uname=($('acct-username2').value||'').trim();
+  const err=$('acct-error2'); if(err) err.classList.remove('show');
+  if(!/^[A-Za-z0-9_]{3,20}$/.test(uname)){ if(err){ err.textContent='3–20 letters, numbers or underscores.'; err.classList.add('show'); } return; }
+  try{
+    const { error } = await sbClient.rpc('set_username',{ p_username: uname });
+    if(error) throw error;
+    await loadProfile(); syncAuthUI();
+    showToast('Username saved ✓');
+  }catch(e){ if(err){ err.textContent=(e&&e.message)||'Could not save username.'; err.classList.add('show'); } }
+}
+
+async function acctSaveFlag(){
+  try{
+    const { error } = await sbClient.rpc('set_flag',{ p_flag: acctSelectedFlag||'' });
+    if(error) throw error;
+    await loadProfile();
+    showToast('Flag saved ✓');
+  }catch(e){ showToast('Could not save flag'); }
+}
+
+async function acctSignOut(){ try{ if(sbClient) await sbClient.auth.signOut(); }catch(e){} closeAccountModal(); }
+
 function sbCount(res){
   // PostgREST returns "<range>/<total>" in Content-Range when Prefer: count=exact
   const cr = res.headers.get('content-range') || '/0';
@@ -4470,23 +4811,28 @@ async function fillRankBadge(overall, progress){
   }
   if(gs.result._lbStarted) return; // a submission is already in flight
   gs.result._lbStarted = true;
+  gs.result._progress = progress;  // stash for a sign-in-then-save (maybeSubmitPendingDraft)
 
   if(SUPABASE_READY){
     try{
-      // Add this draft to the global board (for naming + id). Tolerate an insert
-      // hiccup — the rank below is computed independently and must not depend on it.
+      // Add this draft to the global board (for naming + id) — ONLY for signed-in
+      // users. Guests still see a computed rank below (read is public), but their
+      // draft isn't written; the entry modal prompts them to sign in to save it.
+      // Tolerate an insert hiccup — the rank below is computed independently.
       let id = null;
-      try{
-        id = await submitDraftRow(overall, progress, {
-          mode: gameMode || 'easy',
-          draftType: (gs.draftType || 'quick'),
-          result: gs.result.resultLabel || '',
-          furthest: (simResult && simResult.furthestRound) || ''
-        });
-        console.log('[RTP] draft submitted, id:', id);
-        // Bump the cached floor by 1 immediately so the total never shows stale
-        bumpAllTime(cachedAllTime() + 1);
-      }catch(e){ console.warn('[RTP] draft submit failed:', e); id = null; }
+      if(isSignedIn()){
+        try{
+          id = await submitDraftRow(overall, progress, {
+            mode: gameMode || 'easy',
+            draftType: (gs.draftType || 'quick'),
+            result: gs.result.resultLabel || '',
+            furthest: (simResult && simResult.furthestRound) || ''
+          });
+          console.log('[RTP] draft submitted, id:', id);
+          // Bump the cached floor by 1 immediately so the total never shows stale
+          bumpAllTime(cachedAllTime() + 1);
+        }catch(e){ console.warn('[RTP] draft submit failed:', e); id = null; }
+      }
       // Brief pause so the DB write propagates before we read the count back
       await new Promise(r=>setTimeout(r, 600));
       // Authoritative rank by team overall, within this draft's own board.
@@ -5624,6 +5970,7 @@ function updateEntrySubmit(){
 // board (same toggles, same data, same rendering) but hides the score-entry UI,
 // so nothing about how the leaderboard works changes — it's just viewable.
 function openLeaderboardView(){
+  $('entry-bg').classList.remove('guest','signed');   // view-only: no entry/CTA UI
   $('entry-bg').classList.add('view-only');
   $('entry-error').classList.remove('show');
   lbWindow='all'; lbMode='easy'; lbDraftType='quick';
@@ -5633,7 +5980,18 @@ function openLeaderboardView(){
 }
 
 function openEntryModal(resultLabel, score, color){
-  $('entry-bg').classList.remove('view-only');   // ensure full entry UI is shown
+  const eb=$('entry-bg');
+  eb.classList.remove('view-only');   // ensure full entry UI is shown
+  // Auth-driven mode: guests get a sign-in CTA (their score isn't saved);
+  // signed-in players see an auto-saved confirmation (name from their account).
+  eb.classList.remove('guest','signed');
+  if(isSignedIn()){
+    eb.classList.add('signed');
+    const sa=$('entry-saved-as');
+    if(sa) sa.innerHTML = 'Saved to the leaderboard as <b>'+escapeHtml(authUsername()||'your account')+'</b> ✓';
+  }else{
+    eb.classList.add('guest');
+  }
   // two pills: the result (champion → trophy, runner-up → silver, otherwise
   // "Elim: <round>") + the overall
   const sim=simResult;
@@ -5785,6 +6143,27 @@ $('entry-skip').addEventListener('click', closeEntryModal);  // Skip → record 
 $('entry-bg').addEventListener('click', e=>{ if(e.target===$('entry-bg')) closeEntryModal(); });
 $('entry-name').addEventListener('input', updateEntrySubmit);
 $('entry-submit').addEventListener('click', submitEntry);
+
+// ---- account modal + footer account wiring ----
+(function wireAccounts(){
+  const on=(id,ev,fn)=>{ const el=$(id); if(el) el.addEventListener(ev,fn); };
+  on('btn-account','click',openAccountModal);
+  on('btn-account-user','click',openAccountModal);
+  on('btn-signout','click',acctSignOut);
+  on('entry-auth-btn','click',openAccountModal);   // CTA inside the entry modal
+  on('acct-close','click',closeAccountModal);
+  on('acct-bg','click',e=>{ if(e.target===$('acct-bg')) closeAccountModal(); });
+  document.querySelectorAll('.acct-tab').forEach(b=>b.addEventListener('click',()=>setAcctTab(b.dataset.tab)));
+  on('acct-submit','click',acctSubmit);
+  on('acct-google','click',acctGoogle);
+  on('acct-save-username','click',acctSaveUsername);
+  on('acct-save-flag','click',acctSaveFlag);
+  on('acct-signout','click',acctSignOut);
+  // Enter submits the email/password form
+  ['acct-email','acct-password'].forEach(id=>on(id,'keydown',e=>{ if(e.key==='Enter') acctSubmit(); }));
+  on('acct-username','keydown',e=>{ if(e.key==='Enter' && acctTab==='signup') acctSubmit(); });
+})();
+initAuth();
 
 // Tap a board row with a stored lineup → show the squad behind that score.
 $('lb-list').addEventListener('click', e=>{
