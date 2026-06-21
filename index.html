@@ -4575,11 +4575,15 @@ async function fetchGlobalRank(overall, progress, draftTypeVal){
   const ov = (+overall).toFixed(1);
   const orFilter = encodeURIComponent(`(overall.gt.${ov},and(overall.eq.${ov},progress.gt.${progress}))`);
   const dt = dtFilter(draftTypeVal);
-  let betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}${dt}`, {
+  // Rank against the VISIBLE board: count only named drafts that beat this one, so
+  // the rank matches the player's position in the (named-only) list. The TOTAL
+  // below still counts every draft ever (fetchAllTimeTotal) → "ranks 3 of 1,000".
+  const named = '&name=not.is.null&name=neq.Anonymous';
+  let betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}${dt}${named}`, {
     headers: sbHeaders({ 'Prefer':'count=exact' })
   });
   if(!betterRes.ok && dt){ // pre-migration: retry without the draft_type filter
-    betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}`, {
+    betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}${named}`, {
       headers: sbHeaders({ 'Prefer':'count=exact' })
     });
   }
@@ -4607,6 +4611,7 @@ async function fetchRankInBoard(overall, progress, opts){
   filt += dtFilter(opts.draftType);
   const cut = lbCutoffISO(opts.window);
   if(cut) filt += `&created_at=gte.${encodeURIComponent(cut)}`;
+  filt += '&name=not.is.null&name=neq.Anonymous'; // match the named-only board
   const res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1${filt}`, {
     headers: sbHeaders({ 'Prefer':'count=exact' })
   });
