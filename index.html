@@ -4809,7 +4809,7 @@ async function loadMyDrafts(){
 // Silver 86-89 · Gold 90-94 · Icon 95-99.
 let LEGENDS=null;
 const legendsOpen={ collected:false, icon:false, gold:false, silver:false };
-const LEGEND_TIERS=[ ['collected','Collected'], ['icon','Icons'], ['gold','Gold'], ['silver','Silver'] ];
+const LEGEND_TIERS=[ ['collected','Collected'], ['icon','Legend'], ['gold','World Class'], ['silver','Star'] ];
 function getLegends(){
   if(LEGENDS) return LEGENDS;
   LEGENDS=(window.PLAYERS||[]).filter(p=>p.wc_overall>=86).map(p=>({
