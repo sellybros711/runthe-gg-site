@@ -2240,6 +2240,19 @@
   html.dark #boxscores-list .lbx-ptable .lbx-yc{ color:#F4B413; }
   html.dark #boxscores-list .lbx-ptable .lbx-rc{ color:#E5402A; }
   html.dark .bsm-totals-hdr{ border-top-color:rgba(255,255,255,.2); }
+  /* position-coloured TEXT (OVR numbers, year reels, labels) is too dark on
+     navy — lighten it in dark mode; solid badges/circles keep their colours */
+  html.dark .pcard .ovr.DEF{ color:#6c9cf0; }
+  html.dark .pcard .ovr.MID{ color:#3ad17a; }
+  html.dark .reel-item .yr,
+  html.dark .landed-name .yr,
+  html.dark .fm-reel-item{ color:#6c9cf0; }
+  html.dark .si-draft.full{ color:#6c9cf0; }
+  html.dark .si-draft.quick{ color:#e0a83a; }
+  html.dark .mode-card.quick .mc-label,
+  html.dark .mode-card.quick .mc-headline{ color:#6c9cf0; }
+  html.dark .lineup-meta .lu-ov.green,
+  html.dark .res-squad-row .r-ov.green{ color:#3ad17a; }
   /* keep these prominent borders black in dark mode (not cream) */
   html.dark .hero{ border-color:#000; }
   html.dark .btn.red{ border-color:#000; }
