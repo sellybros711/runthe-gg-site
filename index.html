@@ -1789,23 +1789,13 @@
   .prof-id-text{min-width:0;}
   .prof-name{font-family:'Anton',Impact,sans-serif;font-size:27px;line-height:1;color:#fff;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .prof-title{font-weight:900;font-size:11px;letter-spacing:.6px;text-transform:uppercase;margin-top:3px;}
-  .nc-rainbow{background:linear-gradient(90deg,#ff5a5a,#F4B413,#2ee6c0,#5a9bff,#b98cff);
+  .prof-title{font-weight:800;font-size:11px;letter-spacing:.4px;margin-top:4px;}
+  .prof-title b{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.5px;font-size:14px;text-transform:uppercase;}
+  .prof-title .pt-rest{color:#9a9a9a;font-weight:700;}
+  /* Legend tier = shimmering gradient text */
+  .nt-legend{background:linear-gradient(90deg,#F4C430,#FFF4C2,#7FE0FF,#b98cff);
     -webkit-background-clip:text;background-clip:text;color:transparent;}
-  /* cosmetics pickers */
-  .cos-sub{font-weight:900;font-size:9px;letter-spacing:.7px;text-transform:uppercase;color:#8a8a8a;margin:14px 0 7px;}
-  .cos-titles{display:flex;flex-wrap:wrap;gap:6px;}
-  .cos-chip{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:20px;
-    color:#e6e6e6;font-family:'Archivo',system-ui,sans-serif;font-weight:800;font-size:11px;padding:5px 12px;
-    cursor:pointer;-webkit-tap-highlight-color:transparent;}
-  .cos-chip.locked{opacity:.4;cursor:not-allowed;}
-  .cos-chip.on{border-color:var(--tc,#fff);color:var(--tc,#fff);box-shadow:0 0 0 1px var(--tc,#fff) inset;}
-  .cos-colors{display:flex;flex-wrap:wrap;gap:9px;}
-  .cos-sw{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.25);cursor:pointer;
-    padding:0;-webkit-tap-highlight-color:transparent;}
-  .cos-sw.locked{opacity:.35;cursor:not-allowed;}
-  .cos-sw.on{border-color:#fff;box-shadow:0 0 0 2px #161616, 0 0 0 4px #fff;}
-  /* equipped title under a leaderboard name */
+  /* name tier label under a leaderboard name */
   .lb-title{display:block;font-weight:900;font-size:8px;letter-spacing:.4px;text-transform:uppercase;
     margin-top:1px;line-height:1;}
   .prof-section-title{font-weight:900;font-size:12px;letter-spacing:1px;text-transform:uppercase;
@@ -2433,17 +2423,6 @@
           <button class="entry-submit" id="acct-save-username">Save</button>
         </div>
         <div class="entry-error" id="acct-error2"></div>
-      </div>
-
-      <button type="button" class="prof-collapse-head" id="cos-head">
-        <span class="pc-title">Customize</span>
-        <span class="pc-chev" aria-hidden="true">▸</span>
-      </button>
-      <div id="cos-body" hidden>
-        <div class="cos-sub">Title</div>
-        <div class="cos-titles" id="title-picker"></div>
-        <div class="cos-sub">Name color</div>
-        <div class="cos-colors" id="color-picker"></div>
       </div>
 
       <div class="acct-stats" id="acct-stats"></div>
@@ -4646,7 +4625,7 @@ async function loadProfile(){
   try{
     const { data } = await sbClient
       .from('profiles')
-      .select('username,flag,current_streak,longest_streak,equipped_title,name_color')
+      .select('username,flag,current_streak,longest_streak,badges')
       .eq('id', authUser.id).maybeSingle();
     authProfile = data || null;
   }catch(e){ /* leave null — UI still works, just without a username */ }
@@ -4769,60 +4748,27 @@ function renderProfilePage(){
   const pf=$('prof-flag'); if(pf) pf.innerHTML = flagChip(fl);
   const hasName=!!authUsername();
   const d=$('acct-username-display'); if(d) d.textContent = authUsername() || 'Set a username';
-  applyNameColor(d, (authProfile && authProfile.name_color) || 'default');
-  // equipped title under the name
-  const tt=$('prof-title'), etid=(authProfile && authProfile.equipped_title) || '';
-  if(tt){ if(etid){ tt.textContent=titleLabel(etid); tt.style.color=titleColor(etid); tt.style.display=''; } else { tt.style.display='none'; } }
+  // name tier from achievement badges (Bronze→Silver→Gold→Legend)
+  const m=achMetrics(), badges=totalBadges(m), tier=tierFromBadges(badges);
+  applyTierColor(d, tier);
+  const tt=$('prof-title');
+  if(tt){
+    const idx=NAME_TIERS.indexOf(tier), next=(idx<3)?NAME_TIERS[idx+1]:null;
+    const nextAt=next?Math.ceil(((idx+1)*ACH_TOTAL_BADGES)/4):null;
+    const legend=tier.css==='legend';
+    const nameTag=`<b${legend?' class="nt-legend"':` style="color:${tier.css}"`}>${tier.name}</b>`;
+    tt.innerHTML = `${nameTag} <span class="pt-rest">tier · ${badges}/${ACH_TOTAL_BADGES} badges`
+      + (next?` · ${Math.max(0,nextAt-badges)} to ${next.name}`:'')+`</span>`;
+    tt.style.display='';
+  }
   showEl($('acct-username-set'), !hasName);
   const lbl=$('acct-username-label'); if(lbl) lbl.textContent = hasName ? 'Change username' : 'Pick a username';
   acctSelectedFlag = (authProfile && authProfile.flag) || acctSelectedFlag || 'USA';
   buildAcctFlagRow();
   renderProfileStats();
   renderAchievements();
-  renderCosmetics();
   renderTopDrafts();
   renderLegends();
-}
-function applyNameColor(el, id){
-  if(!el) return;
-  el.classList.remove('nc-rainbow');
-  if(id==='rainbow'){ el.classList.add('nc-rainbow'); el.style.color=''; }
-  else if(id && id!=='default'){ el.style.color=nameColorById(id).css; }
-  else el.style.color='';
-}
-function renderCosmetics(){
-  const m=achMetrics(), tb=totalBadges(m);
-  const eqT=(authProfile && authProfile.equipped_title) || '';
-  const eqC=(authProfile && authProfile.name_color) || 'default';
-  const tp=$('title-picker');
-  if(tp){
-    let html=`<button class="cos-chip${!eqT?' on':''}" data-title="">None</button>`;
-    html+=TITLES.map(t=>{
-      const id=titleId(t), earned=achLevel(t.ach,m)>t.tier, on=(id===eqT);
-      return `<button class="cos-chip${earned?'':' locked'}${on?' on':''}" data-title="${id}"${earned?'':' disabled'}`
-        + (earned?` style="--tc:${TITLE_TIER_COLORS[t.tier]}"`:'')+`>${escapeHtml(t.name)}</button>`;
-    }).join('');
-    tp.innerHTML=html;
-  }
-  const cp=$('color-picker');
-  if(cp){
-    cp.innerHTML=NAME_COLORS.map(c=>{
-      const unlocked=tb>=c.req, on=(c.id===eqC)||(c.id==='default'&&!eqC);
-      const sw=(c.css==='rainbow')?'background:linear-gradient(90deg,#ff5a5a,#F4B413,#2ee6c0,#5a9bff,#b98cff)':`background:${c.css}`;
-      return `<button class="cos-sw${unlocked?'':' locked'}${on?' on':''}" data-color="${c.id}"${unlocked?'':' disabled'} title="${c.label}${unlocked?'':' · '+c.req+' badges'}" style="${sw}"></button>`;
-    }).join('');
-  }
-}
-async function equipCosmetics(title, color){
-  if(!sbClient || !isSignedIn()) return;
-  const t = (title!=null) ? title : ((authProfile && authProfile.equipped_title) || '');
-  const c = (color!=null) ? color : ((authProfile && authProfile.name_color) || '');
-  try{
-    const { error } = await sbClient.rpc('set_cosmetics', { p_title: t||'', p_color: (c==='default'?'':c)||'' });
-    if(error) throw error;
-    await loadProfile(); renderProfilePage(); syncAuthUI();
-    showToast('Saved ✓');
-  }catch(e){ showToast((e&&e.message)||'Could not save'); }
 }
 function openProfilePage(){
   if(!isSignedIn()){ openAccountModal(); return; }
@@ -4830,6 +4776,7 @@ function openProfilePage(){
   renderProfilePage();
   showScreen('profile');
   loadMyStats(); loadMyDrafts(); loadMyTopDrafts();
+  refreshMyBadges();   // keep this player's stored badge count current for the board
 }
 
 // ---- profile stats (server-computed; foundation for achievements/level) ----
@@ -5063,32 +5010,27 @@ function achById(id){ return ACHIEVEMENTS.find(a=>a.id===id); }
 function achLevel(achId, m){ const a=achById(achId); if(!a) return 0; const v=a.get(m); let lv=0; a.tiers.forEach(t=>{ if(v>=t) lv++; }); return lv; }
 function totalBadges(m){ return ACHIEVEMENTS.reduce((n,a)=>n+achLevel(a.id,m),0); }
 
-// ---- Cosmetics: equippable titles + name colours (Phase 4) ----
-// Titles: one per achievement tier. Earned when achLevel(ach) > tier.
-const TITLES=[
-  {ach:'draftsman',tier:0,name:'Draftsman'},{ach:'draftsman',tier:1,name:'Seasoned Drafter'},{ach:'draftsman',tier:2,name:'Draft Master'},{ach:'draftsman',tier:3,name:'Draft Legend'},
-  {ach:'worldbeater',tier:0,name:'World Champion'},{ach:'worldbeater',tier:1,name:'Serial Winner'},{ach:'worldbeater',tier:2,name:'Dynasty Builder'},
-  {ach:'daily',tier:0,name:'Daily Devotee'},{ach:'daily',tier:1,name:'Streak Keeper'},{ach:'daily',tier:2,name:'Unbreakable'},
-  {ach:'galacticos',tier:0,name:'Galáctico'},{ach:'galacticos',tier:1,name:'Dream Team'},{ach:'galacticos',tier:2,name:'Perfectionist'},
-  {ach:'globetrotter',tier:0,name:'Globetrotter'},{ach:'globetrotter',tier:1,name:'World Traveler'},{ach:'globetrotter',tier:2,name:'Continental King'},
-  {ach:'timetraveler',tier:0,name:'Time Traveler'},{ach:'timetraveler',tier:1,name:'Era Spanner'},{ach:'timetraveler',tier:2,name:'Timeless'},
-  {ach:'underdog',tier:0,name:'Underdog'},{ach:'underdog',tier:1,name:'Giant Slayer'},{ach:'underdog',tier:2,name:'Cinderella Story'},{ach:'underdog',tier:3,name:'Miracle Worker'}
+// ---- Name tier: auto-derived from achievement badges completed (0..23) ----
+// Bronze 0% · Silver 25% · Gold 50% · Legend 75%. No equipping — it climbs as
+// you complete achievements, and colours your name on the profile + leaderboard.
+const NAME_TIERS=[
+  {id:'bronze',name:'Bronze',css:'#C77B3A'},
+  {id:'silver',name:'Silver',css:'#CFD3D8'},
+  {id:'gold',  name:'Gold',  css:'#F4C430'},
+  {id:'legend',name:'Legend',css:'legend'}
 ];
-const TITLE_TIER_COLORS=['#C77B3A','#BFC4C9','#E8C25A','#7FE0FF']; // bronze/silver/gold/platinum
-function titleId(t){ return t.ach+'_'+t.tier; }
-function titleById(id){ return TITLES.find(t=>titleId(t)===id) || null; }
-function titleLabel(id){ const t=titleById(id); return t?t.name:''; }
-function titleColor(id){ const t=titleById(id); return t?TITLE_TIER_COLORS[t.tier]:'#bdbdbd'; }
-const NAME_COLORS=[
-  {id:'default',label:'Default',css:'#ffffff',req:0},
-  {id:'teal',label:'Teal',css:'#2ee6c0',req:3},
-  {id:'blue',label:'Blue',css:'#5a9bff',req:6},
-  {id:'purple',label:'Purple',css:'#b98cff',req:10},
-  {id:'gold',label:'Gold',css:'#F4B413',req:15},
-  {id:'crimson',label:'Crimson',css:'#ff5a5a',req:20},
-  {id:'rainbow',label:'Rainbow',css:'rainbow',req:23}
-];
-function nameColorById(id){ return NAME_COLORS.find(c=>c.id===id) || NAME_COLORS[0]; }
+function tierFromBadges(b){ return NAME_TIERS[Math.min(3, Math.floor(((+b||0)*4)/ACH_TOTAL_BADGES))]; }
+function applyTierColor(el, tier){
+  if(!el) return;
+  el.classList.remove('nt-legend');
+  if(!tier){ el.style.color=''; return; }
+  if(tier.css==='legend'){ el.classList.add('nt-legend'); el.style.color=''; }
+  else el.style.color=tier.css;
+}
+async function refreshMyBadges(){
+  if(!sbClient || !isSignedIn()) return;
+  try{ const { data, error } = await sbClient.rpc('refresh_my_badges'); if(!error && data!=null && authProfile) authProfile.badges=data; }catch(e){}
+}
 function renderAchievements(){
   const wrap=$('acct-ach'); if(!wrap) return;
   const cc=$('ach-count');
@@ -5513,21 +5455,22 @@ async function attachCosmetics(rows){
   if(!ids.length) return rows;
   try{
     const inList=ids.map(encodeURIComponent).join(',');
-    const res=await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=in.(${inList})&select=id,equipped_title,name_color`, { headers: sbHeaders() });
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=in.(${inList})&select=id,badges`, { headers: sbHeaders() });
     if(res.ok){
       const map={}; (await res.json()).forEach(p=>map[p.id]=p);
-      rows.forEach(r=>{ const p=r.user_id&&map[r.user_id]; if(p){ r._title=p.equipped_title||''; r._color=p.name_color||''; } });
+      rows.forEach(r=>{ const p=r.user_id&&map[r.user_id]; if(p) r._badges=p.badges||0; });
     }
   }catch(e){}
   return rows;
 }
 function lbNameCell(row, nm){
   const fl=(row.flag && String(row.flag).trim()) ? flagChip(row.flag)+' ' : '';
-  const col=row._color||'', rainbow=col==='rainbow';
-  const nameStyle=(col && col!=='default' && !rainbow) ? ` style="color:${nameColorById(col).css}"` : '';
-  const titleHtml=(row._title && titleById(row._title))
-    ? `<span class="lb-title" style="color:${titleColor(row._title)}">${escapeHtml(titleLabel(row._title))}</span>` : '';
-  return `<span class="lb-name"><span class="lb-nm${rainbow?' nc-rainbow':''}"${nameStyle}>${fl}${escapeHtml(nm)}</span>${titleHtml}</span>`;
+  const hasTier=(row._badges!=null && row._badges>0);
+  const tier=hasTier?tierFromBadges(row._badges):null;
+  const legend=tier&&tier.css==='legend';
+  const nameStyle=(tier&&!legend)?` style="color:${tier.css}"`:'';
+  const tierHtml=tier?`<span class="lb-title${legend?' nt-legend':''}"${legend?'':` style="color:${tier.css}"`}>${tier.name}</span>`:'';
+  return `<span class="lb-name"><span class="lb-nm${legend?' nt-legend':''}"${nameStyle}>${fl}${escapeHtml(nm)}</span>${tierHtml}</span>`;
 }
 function renderLeaderboardRows(rows, highlightId){
   // Every draft is shown; nameless / banned-name rows render as "Anonymous".
@@ -5839,6 +5782,7 @@ async function fillDailyRankBadge(overall, progress){
   if(isSignedIn()){
     recorded = await submitDailyRow(progress);
     await loadProfile();        // pull the freshly-updated streak
+    await refreshMyBadges();    // streak/daily may have changed the name tier
     refreshDailyStatus();       // update the home button (Played / streak)
   }
   // rank among today's board (named only); total = today's entries
@@ -5976,6 +5920,7 @@ async function fillRankBadge(overall, progress){
         // Bump the cached floor by 1 immediately so the total never shows stale
         bumpAllTime(cachedAllTime() + 1);
       }catch(e){ console.warn('[RTP] draft submit failed:', e); id = null; }
+      await refreshMyBadges();   // update name tier before the board re-reads it
       // Brief pause so the DB write propagates before we read the count back
       await new Promise(r=>setTimeout(r, 600));
       // Authoritative rank by team overall, within this draft's own board.
@@ -7327,13 +7272,6 @@ $('entry-submit').addEventListener('click', submitEntry);
     const open=body.hasAttribute('hidden'); if(open) body.removeAttribute('hidden'); else body.setAttribute('hidden','');
     head.classList.toggle('open', open);
   });
-  on('cos-head','click',()=>{
-    const body=$('cos-body'), head=$('cos-head'); if(!body||!head) return;
-    const open=body.hasAttribute('hidden'); if(open) body.removeAttribute('hidden'); else body.setAttribute('hidden','');
-    head.classList.toggle('open', open);
-  });
-  on('title-picker','click',e=>{ const b=e.target.closest('.cos-chip'); if(!b||b.disabled) return; equipCosmetics(b.dataset.title, null); });
-  on('color-picker','click',e=>{ const b=e.target.closest('.cos-sw'); if(!b||b.disabled) return; equipCosmetics(null, b.dataset.color); });
   on('topdrafts','click',async e=>{
     const h=e.target.closest('.td-head'); if(!h) return;
     const i=+h.dataset.i; topOpen[i]=!topOpen[i];
