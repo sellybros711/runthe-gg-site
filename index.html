@@ -2321,7 +2321,7 @@
        Makes the value of an account explicit (leaderboard + stats are sign-in only). -->
   <div class="acct-bar" id="acct-bar">
     <div class="fa-guest" id="fa-guest">
-      <span class="fa-lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px"><rect x="5" y="11" width="14" height="9.5" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><b>Create a free account</b> to climb the global leaderboard, earn badges &amp; track your stats &amp; streaks</span>
+      <span class="fa-lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px"><rect x="5" y="11" width="14" height="9.5" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><b>Free account</b> — climb the global leaderboard, earn badges &amp; track your stats &amp; streaks</span>
       <button id="btn-account" type="button" class="acct-bar-btn primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><circle cx="12" cy="8" r="4.2"/><path d="M3.6 20c0-4.2 3.8-6.4 8.4-6.4s8.4 2.2 8.4 6.4z"/></svg>Sign In / Sign Up</button>
     </div>
     <div class="fa-user" id="fa-user" style="display:none;">
@@ -2957,7 +2957,7 @@
     <div class="entry-badges"><span class="entry-badge" id="entry-badge-result"></span><span class="entry-badge" id="entry-badge-ovr"></span></div>
     <!-- guest: must sign in to post this score -->
     <div class="entry-auth-cta" id="entry-auth-cta">
-      <div class="eac-lock"><b>You’re on the leaderboard as Anonymous</b><br>Sign in to put your name on your score and track your stats &amp; icons.</div>
+      <div class="eac-lock"><b>Save this run to your profile!</b><br>You’re on the leaderboard as Anonymous. Create a free account and this draft counts toward your stats, badges &amp; rank.</div>
       <button class="entry-submit eac-btn" id="entry-auth-btn">Sign In / Sign Up</button>
       <div class="eac-guest-note">No account? Your score still counts — it just stays anonymous.</div>
     </div>
@@ -4756,7 +4756,7 @@ async function applySession(session){
   const justLoggedIn = !!authUser && (loginNav || oauthReturn);
   loginNav=false;
   // A guest who just signed in on the results screen → save the score they earned.
-  if(authUser) maybeSubmitPendingDraft();
+  if(authUser){ maybeSubmitPendingDraft(); claimPendingDraftId(); }
   // ...but in that case keep them on their result; otherwise show the profile.
   const rev=document.getElementById('screen-reveal');
   const onReveal=!!(rev && rev.classList.contains('active'));
@@ -4807,11 +4807,47 @@ function sbHeaders(extra){
 // Attach the signed-in account's name + flag to the anonymous row this run
 // already created as a guest (no duplicate insert). Uses set_draft_entry by id.
 async function claimAnonymousDraft(){
-  const id = gs && gs.result && gs.result._lbId;
-  if(id == null) return false;
+  let id = gs && gs.result && gs.result._lbId;
+  // The anon insert may still be in flight — wait briefly for its row id.
+  for(let i=0;i<25 && id==null && SUPABASE_READY;i++){
+    await new Promise(r=>setTimeout(r,200));
+    id = gs && gs.result && gs.result._lbId;
+  }
+  if(!SUPABASE_READY || id==null) return false;
+  // Take OWNERSHIP of the anonymous row created this run so the draft counts
+  // toward the now-signed-in player's profile (stats, badges, top drafts) — not
+  // just their name on the board. claim_draft() stamps user_id + name + flag.
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/claim_draft`, {
+      method:'POST', headers: sbHeaders({ 'Prefer':'return=minimal' }),
+      body: JSON.stringify({ p_id:id })
+    });
+    if(res.ok) return true;
+  }catch(e){ /* claim_draft not deployed yet → fall back to name-only below */ }
+  // Fallback: at least put their name + flag on the row.
   const name = authUsername() || 'Player';
   const flag = (authProfile && authProfile.flag) || '';
   return await commitEntryNaming(name, flag);
+}
+
+// Claim a draft remembered across a reload (e.g. guest finishes → signs up →
+// confirms email → returns and signs in). Safe to call on any sign-in: the
+// server only claims a still-anonymous row, and it's a no-op if there's nothing
+// pending or the id was already owned.
+async function claimPendingDraftId(){
+  if(!SUPABASE_READY || !isSignedIn()) return;
+  let id=null; try{ id=localStorage.getItem('rtp_pending_draft'); }catch(e){}
+  if(!id) return;
+  try{
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/claim_draft`, {
+      method:'POST', headers: sbHeaders({ 'Prefer':'return=minimal' }),
+      body: JSON.stringify({ p_id: Number(id) })
+    });
+    if(res.ok){
+      try{ localStorage.removeItem('rtp_pending_draft'); }catch(e){}
+      if(typeof refreshMyBadges==='function'){ try{ await refreshMyBadges(); }catch(e){} }
+    }
+  }catch(e){ /* claim_draft not deployed yet, or offline — leave pending */ }
 }
 
 async function maybeSubmitPendingDraft(){
@@ -4824,9 +4860,11 @@ async function maybeSubmitPendingDraft(){
       gs.result._lb = null; gs.result._lbStarted = false;
       await fillDailyRankBadge(ov, prog);
     } else if(gs.result._lbId != null){
-      // Played as a guest → an anonymous row exists. Claim it with the account
-      // name (rank is unchanged; the entry modal re-render refreshes the board).
-      await claimAnonymousDraft();
+      // Played as a guest → an anonymous row exists. Claim ownership so it counts
+      // toward the new profile, then refresh the badge tier (rank is unchanged;
+      // the entry modal re-render refreshes the board).
+      const claimed = await claimAnonymousDraft();
+      if(claimed && typeof refreshMyBadges==='function'){ try{ await refreshMyBadges(); }catch(e){} }
     } else {
       gs.result._lb = null; gs.result._lbStarted = false; // allow a fresh save
       await fillRankBadge(ov, prog);
@@ -6105,6 +6143,9 @@ async function fillRankBadge(overall, progress){
       const { rank, total } = await fetchGlobalRank(overall, progress, (gs.draftType || 'quick'));
       gs.result._lb = { rank, total, id };
       gs.result._lbId = id;
+      // Guests: remember this anonymous row so a later sign-in/sign-up (which may
+      // span a page reload, e.g. email confirmation) can still claim it.
+      try{ if(id!=null && !isSignedIn()) localStorage.setItem('rtp_pending_draft', String(id)); }catch(e){}
       renderRankLine(el, rank, total);
       fillNearMiss(rank, overall);              // specific "go again" gap
       if(rank<=3){ try{ launchConfetti(); }catch(e){} } // celebrate a podium finish
