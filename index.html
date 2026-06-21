@@ -1757,24 +1757,23 @@
   /* profile: achievements */
   .acct-ach-title{font-weight:900;font-size:11px;letter-spacing:1px;text-transform:uppercase;
     color:#9a9a9a;margin:18px 0 9px;text-align:left;}
-  .acct-ach{display:flex;flex-direction:column;gap:8px;}
-  .ach-row{display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.05);
-    border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:9px 11px;}
-  .ach-row.locked{opacity:.6;}
-  .ach-medal{flex:0 0 auto;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
-    justify-content:center;font-family:'Anton',Impact,sans-serif;font-size:14px;color:#1a1a1a;
-    border:2px solid rgba(0,0,0,.28);box-shadow:inset 0 1px 2px rgba(255,255,255,.4);}
-  .ach-body{flex:1 1 auto;min-width:0;}
-  .ach-name{font-weight:900;font-size:13px;color:#fff;display:flex;justify-content:space-between;
-    gap:8px;align-items:baseline;}
-  .ach-tier{font-size:8.5px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:#cdb056;flex:0 0 auto;}
-  .ach-row.locked .ach-tier{color:#8a8a8a;}
-  .ach-row.maxed .ach-tier{color:#2FD673;}
-  .ach-prog-text{font-size:10.5px;color:#9a9a9a;margin:2px 0 5px;}
-  .ach-bar{height:6px;border-radius:4px;background:rgba(255,255,255,.13);overflow:hidden;}
+  .acct-ach{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .ach-card{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+    border-radius:14px;padding:13px 10px 11px;text-align:center;}
+  .ach-card.locked{opacity:.62;}
+  .ach-card.locked .ach-badge{filter:grayscale(.7) brightness(.9);}
+  .ach-badge{width:64px;height:64px;margin:0 auto 7px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.45));}
+  .ach-badge svg{width:100%;height:100%;display:block;}
+  .ach-name{font-weight:900;font-size:13px;color:#fff;line-height:1.1;}
+  .ach-desc{font-size:10px;color:#b3b3b3;line-height:1.32;margin:3px 0 8px;min-height:26px;}
+  .ach-tier{font-size:8.5px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;color:#cdb056;}
+  .ach-card.locked .ach-tier{color:#8a8a8a;}
+  .ach-card.maxed .ach-tier{color:#2FD673;}
+  .ach-prog-text{font-family:'Anton',Impact,sans-serif;font-size:16px;color:#fff;line-height:1;margin-top:2px;}
+  .ach-bar{height:6px;border-radius:4px;background:rgba(255,255,255,.13);overflow:hidden;margin-top:8px;}
   .ach-bar span{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#F4B413,#F47B20);
     transition:width .5s cubic-bezier(.2,.7,.2,1);}
-  .ach-row.maxed .ach-bar span{background:linear-gradient(90deg,#2FD673,#1F9E57);}
+  .ach-card.maxed .ach-bar span{background:linear-gradient(90deg,#2FD673,#1F9E57);}
   .acct-flag-save{display:block;width:100%;padding:11px 18px;margin-top:14px;}
 
   /* ---------- daily challenge ---------- */
@@ -4648,14 +4647,53 @@ const ACH_TIER_COLORS = ['#6a6a6a','#C77B3A','#BFC4C9','#E8C25A','#7FE0FF']; // 
 const ACH_ROMAN = ['','I','II','III','IV'];
 function roundName(p){ const M={0:'Group',1:'R32',2:'R16',3:'QF',4:'SF',5:'Final',6:'Champion'}; return M[p]!=null?M[p]:'—'; }
 const ACHIEVEMENTS = [
-  { id:'draftsman',    name:'Draftsman',    blurb:'drafts',          tiers:[50,100,200,500], get:m=>m.games,             fmt:v=>v },
-  { id:'worldbeater',  name:'World Beater', blurb:'World Cups won',  tiers:[1,10,50],        get:m=>m.wins,              fmt:v=>v },
-  { id:'daily',        name:'Daily Devotee',blurb:'day streak',     tiers:[7,30,100],       get:m=>m.longest_streak,    fmt:v=>v },
-  { id:'galacticos',   name:'Galácticos',   blurb:'squad OVR',      tiers:[95,100,105],     get:m=>m.best_overall,      fmt:v=>(+v).toFixed(1) },
-  { id:'globetrotter', name:'Globetrotter', blurb:'confederations', tiers:[4,5,6],          get:m=>m.confedBreadth,     fmt:v=>v },
-  { id:'timetraveler', name:'Time Traveler',blurb:'decades',        tiers:[5,6,7],          get:m=>m.decadeBreadth,     fmt:v=>v },
-  { id:'underdog',     name:'Underdog',     blurb:'best run · ≤85 OVR squad', tiers:[2,3,4,6], get:m=>m.underdog_progress, fmt:v=>roundName(v), round:true }
+  { id:'draftsman',    name:'Draftsman',    desc:'Complete career drafts',          tiers:[50,100,200,500], get:m=>m.games,          fmt:v=>v },
+  { id:'worldbeater',  name:'World Beater', desc:'Win the World Cup',               tiers:[1,10,50],        get:m=>m.wins,           fmt:v=>v },
+  { id:'daily',        name:'Daily Devotee',desc:'Keep a daily streak going',       tiers:[7,30,100],       get:m=>m.longest_streak, fmt:v=>v },
+  { id:'galacticos',   name:'Galácticos',   desc:'Field a top-rated XI',            tiers:[95,100,105],     get:m=>m.best_overall,   fmt:v=>(+v).toFixed(1) },
+  { id:'globetrotter', name:'Globetrotter', desc:'One squad, many confederations',  tiers:[4,5,6],          get:m=>m.confedBreadth,  fmt:v=>v },
+  { id:'timetraveler', name:'Time Traveler',desc:'One squad, many decades',         tiers:[5,6,7],          get:m=>m.decadeBreadth,  fmt:v=>v },
+  { id:'underdog',     name:'Underdog',     desc:'Go deep with a squad ≤85 OVR',    tiers:[2,3,4,6],        get:m=>m.underdog_progress, fmt:v=>roundName(v), round:true }
 ];
+
+// --- retro merit-badge graphics: a sunburst medal (tier-coloured) + emblem ---
+function starburstPath(cx,cy,rO,rI,pts){
+  let d='';
+  for(let i=0;i<pts*2;i++){
+    const r=(i%2)?rI:rO, a=i*Math.PI/pts - Math.PI/2;
+    d+=(i?'L':'M')+(cx+r*Math.cos(a)).toFixed(1)+' '+(cy+r*Math.sin(a)).toFixed(1);
+  }
+  return d+'Z';
+}
+function achEmblem(id,col){
+  const s=`fill="none" stroke="${col}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"`;
+  const f=`fill="${col}"`;
+  switch(id){
+    case 'worldbeater':  return `<path ${s} d="M24 25 C19 25 19 31 24 32 M40 25 C45 25 45 31 40 32"/><path ${f} d="M24 22 H40 V29 C40 36 35 39 32 39 C29 39 24 36 24 29 Z"/><rect x="30" y="39" width="4" height="4" ${f}/><rect x="25" y="43" width="14" height="3.4" rx="1.5" ${f}/>`;
+    case 'galacticos':   return `<path ${f} d="${starburstPath(32,31,12,4.8,5)}"/>`;
+    case 'globetrotter': return `<circle cx="32" cy="32" r="11" ${s}/><path ${s} d="M21.5 32 H42.5 M32 21 V43"/><ellipse cx="32" cy="32" rx="4.6" ry="11" ${s}/>`;
+    case 'timetraveler': return `<circle cx="32" cy="32" r="11" ${s}/><path ${s} d="M32 25 V32.5 L37 35.5"/>`;
+    case 'daily':        return `<path ${f} d="M32 20 C34.5 25 39 26 39 31 C39 35 36 38.5 32 38.5 C28 38.5 25 35 25 31 C25 28 27 26.5 28 24.5 C30 27.5 31 27 32 25 Z"/>`;
+    case 'draftsman':    return `<rect x="23" y="21" width="18" height="22" rx="2.5" ${s}/><path ${s} d="M27.5 28 H36.5 M27.5 32 H36.5 M27.5 36 H33"/>`;
+    case 'underdog':     return `<path ${f} d="M32 21 L42 33 H36 V43 H28 V33 H22 Z"/>`;
+    default: return '';
+  }
+}
+function achBadgeSvg(id, lvl){
+  const PAL=[['#bcbcbc','#8d8d8d','#5a5a5a'],  // 0 locked grey
+             ['#F6CE98','#C77B3A','#6E380F'],  // 1 bronze
+             ['#FBFBFB','#CACACA','#777777'],  // 2 silver
+             ['#FCEFA8','#E8C25A','#7E520F'],  // 3 gold
+             ['#DFF6FF','#86D9F5','#256E89']]; // 4 platinum
+  const c=PAL[lvl]||PAL[0], g='ab_'+id+'_'+lvl;
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">`
+    +`<defs><radialGradient id="${g}" cx="40%" cy="34%" r="78%"><stop offset="0" stop-color="${c[0]}"/><stop offset="1" stop-color="${c[1]}"/></radialGradient></defs>`
+    +`<path d="${starburstPath(32,32,31,25,16)}" fill="${c[1]}" stroke="${c[2]}" stroke-width="1.4" stroke-linejoin="round"/>`
+    +`<circle cx="32" cy="32" r="23" fill="url(#${g})" stroke="${c[2]}" stroke-width="2.4"/>`
+    +`<circle cx="32" cy="32" r="18.5" fill="none" stroke="${c[2]}" stroke-width="1.3" opacity=".5"/>`
+    + achEmblem(id, c[2])
+    +`</svg>`;
+}
 async function loadMyAchievements(){
   if(!sbClient || !isSignedIn() || !authUser){ myAch=null; renderAchievements(); return; }
   try{
@@ -4695,27 +4733,21 @@ function renderAchievements(){
     const val=a.get(m), tiers=a.tiers;
     let level=0; tiers.forEach(t=>{ if(val>=t) level++; });
     const maxed=level>=tiers.length;
-    const prev = level>0 ? tiers[level-1] : (a.round?0:0);
+    const prev = level>0 ? tiers[level-1] : 0;
     const next = maxed ? null : tiers[level];
-    const frac = maxed?1:Math.max(0,Math.min(1,(val-prev)/((next-prev)||1)));
-    const medal = maxed?'★':(level>0?ACH_ROMAN[level]:'–');
+    const frac = a.round ? Math.max(0,Math.min(1,(val>=0?val:0)/6))
+                         : (maxed?1:Math.max(0,Math.min(1,(val-prev)/((next-prev)||1))));
     const tierLabel = maxed?'Max':(level>0?('Tier '+ACH_ROMAN[level]):'Locked');
-    let prog;
-    if(a.round){
-      prog = maxed ? 'Won it all with a ≤85 squad!'
-           : (val>=tiers[0] ? `Best: ${a.fmt(val)} · next: ${a.fmt(next)}`
-                            : `Reach the ${a.fmt(next)} with a ≤85 squad`);
-    } else {
-      prog = maxed ? `${a.fmt(val)} ${a.blurb} · complete`
-                   : `${a.fmt(val)} / ${a.fmt(next)} ${a.blurb}`;
-    }
-    return `<div class="ach-row${level===0?' locked':''}${maxed?' maxed':''}">
-      <span class="ach-medal" style="background:${ACH_TIER_COLORS[level]}">${medal}</span>
-      <span class="ach-body">
-        <span class="ach-name">${a.name}<span class="ach-tier">${tierLabel}</span></span>
-        <span class="ach-prog-text">${prog}</span>
-        <span class="ach-bar"><span style="width:${Math.round(frac*100)}%"></span></span>
-      </span>
+    let progNum;
+    if(a.round) progNum = maxed ? 'Champion' : (val>=0 ? a.fmt(val) : '—');
+    else        progNum = maxed ? `${a.fmt(val)}` : `${a.fmt(val)} / ${a.fmt(next)}`;
+    return `<div class="ach-card${level===0?' locked':''}${maxed?' maxed':''}">
+      <div class="ach-badge">${achBadgeSvg(a.id, level)}</div>
+      <div class="ach-name">${a.name}</div>
+      <div class="ach-desc">${a.desc}</div>
+      <div class="ach-tier">${tierLabel}</div>
+      <div class="ach-prog-text">${progNum}</div>
+      <div class="ach-bar"><span style="width:${Math.round(frac*100)}%"></span></div>
     </div>`;
   }).join('');
 }
