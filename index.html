@@ -4746,15 +4746,14 @@ async function fetchGlobalRank(overall, progress, draftTypeVal){
   const ov = (+overall).toFixed(1);
   const orFilter = encodeURIComponent(`(overall.gt.${ov},and(overall.eq.${ov},progress.gt.${progress}))`);
   const dt = dtFilter(draftTypeVal);
-  // Rank against the VISIBLE board: count only named drafts that beat this one, so
-  // the rank matches the player's position in the (named-only) list. The TOTAL
-  // below still counts every draft ever (fetchAllTimeTotal) → "ranks 3 of 1,000".
-  const named = '&name=not.is.null&name=neq.Anonymous';
-  let betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}${dt}${named}`, {
+  // Rank against EVERY draft that beats this one (named or anonymous), so the rank
+  // matches the player's position in the now all-inclusive board. The TOTAL below
+  // also counts every draft ever (fetchAllTimeTotal) → "ranks 3 of 1,000".
+  let betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}${dt}`, {
     headers: sbHeaders({ 'Prefer':'count=exact' })
   });
   if(!betterRes.ok && dt){ // pre-migration: retry without the draft_type filter
-    betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}${named}`, {
+    betterRes = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1&or=${orFilter}`, {
       headers: sbHeaders({ 'Prefer':'count=exact' })
     });
   }
@@ -4782,7 +4781,7 @@ async function fetchRankInBoard(overall, progress, opts){
   filt += dtFilter(opts.draftType);
   const cut = lbCutoffISO(opts.window);
   if(cut) filt += `&created_at=gte.${encodeURIComponent(cut)}`;
-  filt += '&name=not.is.null&name=neq.Anonymous'; // match the named-only board
+  // count every draft on this board (named + anonymous) to match the visible list
   const res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id&limit=1${filt}`, {
     headers: sbHeaders({ 'Prefer':'count=exact' })
   });
@@ -4821,11 +4820,7 @@ async function fetchTopDrafts(limit, opts){
   filt+=dtFilter(opts.draftType);
   const cut=lbCutoffISO(opts.window);
   if(cut) filt+=`&created_at=gte.${encodeURIComponent(cut)}`;
-  // Show only named drafts on the board — anonymous entries are hidden from view.
-  // NOTE: this is display-only. The all-time TOTAL (fetchAllTimeTotal) and the
-  // draft's rank (fetchGlobalRank) still count EVERY draft, so "ranks X of Y"
-  // is unchanged; we're just not listing the nameless rows.
-  filt+='&name=not.is.null&name=neq.Anonymous';
+  // Every draft is listed — guests appear as "Anonymous" (rendered client-side).
   const order='&order=overall.desc,progress.desc,created_at.asc&limit='+limit;
   // Prefer the richest select (flag + lineup); fall back step by step if a
   // column isn't present yet so the board always loads.
@@ -4886,15 +4881,11 @@ function emToSvg(s){
 // lineup (player_ids) by its index.
 let lbCurrentRows = [];
 function renderLeaderboardRows(rows, highlightId){
-  // Backstop for the server-side named-only filter: also drop rows whose name is
-  // empty, literally "anonymous" (any case), or banned (those render as Anonymous).
-  rows = (rows||[]).filter(r=>{
-    const nm = (r && r.name && String(r.name).trim()) ? String(r.name).trim() : '';
-    return nm && nm.toLowerCase()!=='anonymous' && !isBannedName(nm);
-  });
+  // Every draft is shown; nameless / banned-name rows render as "Anonymous".
+  rows = rows||[];
   lbCurrentRows = rows;
   const list=$('lb-list');
-  if(!rows.length){ list.innerHTML='<div class="lb-empty">No named drafts yet — sign in and be the first on the board!</div>'; return; }
+  if(!rows.length){ list.innerHTML='<div class="lb-empty">No drafts yet — play one to get on the board!</div>'; return; }
   list.innerHTML = rows.map((row,i)=>{
     const you = highlightId!=null && row.id===highlightId;
     const nm  = cleanDisplayName((row.name && String(row.name).trim()) ? row.name : 'Anonymous');
