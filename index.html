@@ -2588,9 +2588,9 @@
     <div class="entry-badges"><span class="entry-badge" id="entry-badge-result"></span><span class="entry-badge" id="entry-badge-ovr"></span></div>
     <!-- guest: must sign in to post this score -->
     <div class="entry-auth-cta" id="entry-auth-cta">
-      <div class="eac-lock">🔒 <b>Sign in to save this score</b><br>An account adds your draft to the global leaderboard and tracks your stats &amp; icons.</div>
-      <button class="entry-submit eac-btn" id="entry-auth-btn">👤 Sign In / Sign Up</button>
-      <div class="eac-guest-note">Or keep playing as a guest — your score just won’t be saved.</div>
+      <div class="eac-lock"><b>You’re on the leaderboard as Anonymous</b><br>Sign in to put your name on your score and track your stats &amp; icons.</div>
+      <button class="entry-submit eac-btn" id="entry-auth-btn">Sign In / Sign Up</button>
+      <div class="eac-guest-note">No account? Your score still counts — it just stays anonymous.</div>
     </div>
     <!-- signed-in: auto-saved confirmation -->
     <div class="entry-saved-as" id="entry-saved-as"></div>
@@ -4405,15 +4405,33 @@ function sbHeaders(extra){
 // When a guest reaches the results screen their draft isn't written. If they then
 // sign in (from the footer or the entry modal CTA), this records it under their
 // new account so the score they just earned isn't lost.
+// Attach the signed-in account's name + flag to the anonymous row this run
+// already created as a guest (no duplicate insert). Uses set_draft_entry by id.
+async function claimAnonymousDraft(){
+  const id = gs && gs.result && gs.result._lbId;
+  if(id == null) return false;
+  const name = authUsername() || 'Player';
+  const flag = (authProfile && authProfile.flag) || '';
+  return await commitEntryNaming(name, flag);
+}
+
 async function maybeSubmitPendingDraft(){
   try{
     if(!isSignedIn() || !gs || !gs.result) return;
-    if(gs.result._lbId != null) return;                 // already saved
     const ov = gs.result.teamOverall;
     if(ov == null) return;
     const prog = (gs.result._progress != null) ? gs.result._progress : 0;
-    gs.result._lb = null; gs.result._lbStarted = false;  // allow a fresh save
-    await fillRankBadge(ov, prog);
+    if(gs.daily){                                        // daily has its own board
+      gs.result._lb = null; gs.result._lbStarted = false;
+      await fillDailyRankBadge(ov, prog);
+    } else if(gs.result._lbId != null){
+      // Played as a guest → an anonymous row exists. Claim it with the account
+      // name (rank is unchanged; the entry modal re-render refreshes the board).
+      await claimAnonymousDraft();
+    } else {
+      gs.result._lb = null; gs.result._lbStarted = false; // allow a fresh save
+      await fillRankBadge(ov, prog);
+    }
     if($('entry-bg') && $('entry-bg').classList.contains('show')){
       openEntryModal(gs.result.resultLabel || '', ov);   // re-render in signed-in mode
     }
@@ -4445,6 +4463,15 @@ function openAccountModal(){
   const bg=$('acct-bg'); if(bg) bg.classList.add('show');
 }
 function closeAccountModal(){ const bg=$('acct-bg'); if(bg) bg.classList.remove('show'); }
+
+// Open the sign-in/up modal with a contextual reason. Returns false so callers
+// can `if(!requireAccount(...)) return;` to gate account-only features.
+function requireAccount(reason){
+  if(isSignedIn()) return true;
+  openAccountModal();
+  const note=$('acct-note'); if(note && reason) note.textContent=reason;
+  return false;
+}
 
 function setAcctTab(tab){
   acctTab = (tab==='signup') ? 'signup' : 'signin';
@@ -5068,6 +5095,7 @@ function openDailyIntro(){
 
 // Start (or replay) today's daily challenge.
 function startDailyChallenge(){
+  if(!requireAccount('Create a free account or sign in to play the Daily Challenge and build a streak.')) return;
   if(typeof friendlyReset==='function') friendlyReset();
   const theme=todaysTheme();
   DAILY = { active:true, theme, seq:buildDailySequence(theme), idx:0, date:utcDateStr() };
@@ -5218,24 +5246,23 @@ async function fillRankBadge(overall, progress){
 
   if(SUPABASE_READY){
     try{
-      // Add this draft to the global board (for naming + id) — ONLY for signed-in
-      // users. Guests still see a computed rank below (read is public), but their
-      // draft isn't written; the entry modal prompts them to sign in to save it.
+      // Add this draft to the global board (for naming + id) for EVERYONE. Guests
+      // are recorded anonymously — submit_draft() inserts a nameless row when
+      // auth.uid() is null — and the entry modal then prompts them to sign in to
+      // put their name on it. Signed-in users are auto-attributed server-side.
       // Tolerate an insert hiccup — the rank below is computed independently.
       let id = null;
-      if(isSignedIn()){
-        try{
-          id = await submitDraftRow(overall, progress, {
-            mode: gameMode || 'easy',
-            draftType: (gs.draftType || 'quick'),
-            result: gs.result.resultLabel || '',
-            furthest: (simResult && simResult.furthestRound) || ''
-          });
-          console.log('[RTP] draft submitted, id:', id);
-          // Bump the cached floor by 1 immediately so the total never shows stale
-          bumpAllTime(cachedAllTime() + 1);
-        }catch(e){ console.warn('[RTP] draft submit failed:', e); id = null; }
-      }
+      try{
+        id = await submitDraftRow(overall, progress, {
+          mode: gameMode || 'easy',
+          draftType: (gs.draftType || 'quick'),
+          result: gs.result.resultLabel || '',
+          furthest: (simResult && simResult.furthestRound) || ''
+        });
+        console.log('[RTP] draft submitted, id:', id);
+        // Bump the cached floor by 1 immediately so the total never shows stale
+        bumpAllTime(cachedAllTime() + 1);
+      }catch(e){ console.warn('[RTP] draft submit failed:', e); id = null; }
       // Brief pause so the DB write propagates before we read the count back
       await new Promise(r=>setTimeout(r, 600));
       // Authoritative rank by team overall, within this draft's own board.
@@ -6171,13 +6198,14 @@ $('btn-home-leaderboard').addEventListener('click', openLeaderboardView);
 // ---- daily challenge wiring ----
 (function wireDaily(){
   const on=(id,ev,fn)=>{ const el=$(id); if(el) el.addEventListener(ev,fn); };
-  on('btn-daily','click',openDailyIntro);
-  on('btn-daily-board','click',openDailyBoard);
+  const dailyReason='Create a free account or sign in to play the Daily Challenge and build a streak.';
+  on('btn-daily','click',()=>{ if(!requireAccount(dailyReason)) return; openDailyIntro(); });
+  on('btn-daily-board','click',openDailyBoard);   // viewing the board is open to all
   on('daily-intro-start','click',startDailyChallenge);
   on('daily-intro-back','click',()=>showScreen('start'));
   on('daily-close','click',closeDailyBoard);
   on('daily-bg','click',e=>{ if(e.target===$('daily-bg')) closeDailyBoard(); });
-  on('daily-play-btn','click',()=>{ closeDailyBoard(); openDailyIntro(); });
+  on('daily-play-btn','click',()=>{ if(!requireAccount(dailyReason)) return; closeDailyBoard(); openDailyIntro(); });
   // tap a daily row with a stored lineup → show that squad
   on('daily-list','click',e=>{
     const rowEl=e.target.closest('.lb-row.has-lineup'); if(!rowEl) return;
@@ -9463,6 +9491,7 @@ function friendlySquadFromPicks(picks){
 
 // ---- entry: tapping FRIENDLY on the home screen ----
 function startFriendly(){
+  if(!requireAccount('Create a free account or sign in to set up a Friendly challenge.')) return;
   friendlyReset();
   friendlyMode=true; friendlyRole='challenger';
   gameMode='easy';                 // overalls visible — keeps Friendly accessible
