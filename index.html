@@ -127,10 +127,11 @@
     --fill-ink:#101d33;   /* dark fills stay dark */
     --shadow-col:#000;    /* drop shadows stay black in dark mode */
   }
+  /* deep navy stays clean at the top; the warm glows sit toward the bottom */
   html.dark body{ background:
-      radial-gradient(circle at 12% 10%, rgba(244,180,19,.10), transparent 42%),
-      radial-gradient(circle at 88% 0%, rgba(229,64,42,.08), transparent 40%),
-      radial-gradient(circle at 50% 120%, rgba(19,138,107,.12), transparent 55%),
+      radial-gradient(circle at 18% 96%, rgba(244,180,19,.12), transparent 44%),
+      radial-gradient(circle at 84% 104%, rgba(229,64,42,.10), transparent 42%),
+      radial-gradient(circle at 50% 72%, rgba(19,138,107,.10), transparent 52%),
       var(--paper); }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
@@ -2239,6 +2240,9 @@
   html.dark #boxscores-list .lbx-ptable .lbx-yc{ color:#F4B413; }
   html.dark #boxscores-list .lbx-ptable .lbx-rc{ color:#E5402A; }
   html.dark .bsm-totals-hdr{ border-top-color:rgba(255,255,255,.2); }
+  /* keep these prominent borders black in dark mode (not cream) */
+  html.dark .hero{ border-color:#000; }
+  html.dark .btn.red{ border-color:#000; }
 
   /* ---------- masthead logo (theme-swapped) + theme toggle ---------- */
   /* Light mode shows the navy-text logo; dark mode shows the cream-text logo,
