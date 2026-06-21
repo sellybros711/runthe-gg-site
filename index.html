@@ -135,14 +135,22 @@
   .footer-btn:hover{border-color:#bcb6a8;color:var(--ink);}
   .footer-btn:active{transform:translate(1px,1px);}
   .footer-btn .tl-ico{height:13px;width:auto;flex:0 0 auto;color:currentColor;}
-  /* account block (above the action buttons): makes sign-in value explicit */
-  .footer-account{margin:0 0 16px;}
-  .fa-guest{display:flex;flex-direction:column;align-items:center;gap:9px;}
-  .fa-lock{font-size:12.5px;color:#8a8073;max-width:340px;line-height:1.45;}
+  /* slim account bar under the masthead (every screen): sign-in value made explicit */
+  .acct-bar{display:flex;justify-content:center;margin:2px 0 14px;padding:0 12px;
+    font-family:'Archivo',system-ui,sans-serif;}
+  .acct-bar .fa-guest{display:flex;flex-direction:row;align-items:center;justify-content:center;
+    flex-wrap:wrap;gap:8px 12px;}
+  .acct-bar .fa-user{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:10px;}
+  .fa-lock{font-size:12.5px;color:#8a8073;line-height:1.4;}
   .fa-lock b{color:var(--ink);}
-  .footer-btn.fa-cta{background:var(--gold);border-color:var(--gold);color:#1a1a1a;font-size:12px;padding:9px 18px;}
-  .footer-btn.fa-cta:hover{filter:brightness(1.04);border-color:var(--gold);color:#1a1a1a;}
-  .fa-user{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;}
+  .acct-bar-btn{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+    border:1.5px solid #d8d2c4;border-radius:9px;background:var(--white);color:#8a8073;
+    font-family:'Archivo',system-ui,sans-serif;font-weight:800;font-size:12px;letter-spacing:.3px;
+    padding:8px 15px;-webkit-tap-highlight-color:transparent;transition:filter .15s,border-color .15s,color .15s;}
+  .acct-bar-btn.primary{background:var(--gold);border-color:var(--gold);color:#1a1a1a;}
+  .acct-bar-btn.primary:hover{filter:brightness(1.04);}
+  .acct-bar-btn.ghost:hover{border-color:#bcb6a8;color:var(--ink);}
+  .acct-bar-btn:active{transform:translate(1px,1px);}
   /* mini "follow us on X" ad, sits in the gap above the footer links */
   .x-follow{margin:0 0 16px;font-size:13px;font-weight:600;}
   .x-follow a{color:#8a8073;text-decoration:none;}
@@ -1951,6 +1959,19 @@
     <span class="edition">World Cup Game</span>
   </div>
 
+  <!-- account bar: sits directly under the title, visible on every screen.
+       Makes the value of an account explicit (leaderboard + stats are sign-in only). -->
+  <div class="acct-bar" id="acct-bar">
+    <div class="fa-guest" id="fa-guest">
+      <span class="fa-lock">🔒 <b>Sign in</b> to save your scores &amp; stats</span>
+      <button id="btn-account" type="button" class="acct-bar-btn primary">👤 Sign In / Sign Up</button>
+    </div>
+    <div class="fa-user" id="fa-user" style="display:none;">
+      <button id="btn-account-user" type="button" class="acct-bar-btn"><span id="fa-username">👤 Account</span></button>
+      <button id="btn-signout" type="button" class="acct-bar-btn ghost">Sign out</button>
+    </div>
+  </div>
+
   <!-- ===== START (intro) ===== -->
   <section id="screen-start" class="screen active">
     <div class="hero">
@@ -2425,18 +2446,6 @@
 
   <!-- ===== site-wide navigation footer (additive) ===== -->
   <footer class="site-footer">
-    <!-- account block: sits ABOVE the action buttons. Makes the value of an
-         account explicit (leaderboard + stats are sign-in only). -->
-    <div class="footer-account" id="footer-account">
-      <div class="fa-guest" id="fa-guest">
-        <div class="fa-lock">🔒 <b>Sign in to save your scores</b> to the global leaderboard &amp; track your stats</div>
-        <button id="btn-account" type="button" class="footer-btn fa-cta">👤 Sign In / Sign Up</button>
-      </div>
-      <div class="fa-user" id="fa-user" style="display:none;">
-        <button id="btn-account-user" type="button" class="footer-btn"><span id="fa-username">👤 Account</span></button>
-        <button id="btn-signout" type="button" class="footer-btn">Sign out</button>
-      </div>
-    </div>
     <div class="footer-actions">
       <button id="btn-roster-updates" type="button" class="footer-btn"><svg class="tl-ico" viewBox="0 0 14 20" aria-hidden="true"><polygon points="9,0 2,11 7,11 5,20 12,9 7,9" fill="currentColor"/></svg> Roster Updates</button>
       <button id="btn-add-home" type="button" class="footer-btn"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="10.4" y1="4.3" x2="13.6" y2="4.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="19.6" r=".95" fill="currentColor"/><rect x="8.4" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="8.4" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/></svg> Add to Home</button>
@@ -4247,10 +4256,27 @@ function initAuth(){
 async function applySession(session){
   authUser      = (session && session.user) || null;
   sbAccessToken = (session && session.access_token) || null;
-  if(authUser){ await loadProfile(); } else { authProfile = null; }
+  if(authUser){ await loadProfile(); await ensureUsernameFromMetadata(); }
+  else { authProfile = null; }
   syncAuthUI();
   // A guest who just signed in on the results screen → save the score they earned.
   if(authUser) maybeSubmitPendingDraft();
+}
+
+// The username the player picked at sign-up rides along in their auth metadata.
+// If their profile somehow has no username yet (e.g. created before confirming),
+// adopt it here so "your account" shows the right name with no extra step.
+async function ensureUsernameFromMetadata(){
+  if(!sbClient || !authUser) return;
+  if(authProfile && authProfile.username) return;     // already set
+  const meta = (authUser.user_metadata && authUser.user_metadata.username) || '';
+  const uname = String(meta).trim();
+  if(!/^[A-Za-z0-9_]{3,20}$/.test(uname)) return;     // nothing usable
+  if(typeof isBannedName==='function' && isBannedName(uname)) return;
+  try{
+    const { error } = await sbClient.rpc('set_username', { p_username: uname });
+    if(!error) await loadProfile();
+  }catch(e){ /* leave for the user to set manually in the account modal */ }
 }
 
 async function loadProfile(){
@@ -4370,6 +4396,7 @@ async function acctSubmit(){
     if(acctTab==='signup'){
       const uname=($('acct-username').value||'').trim();
       if(!/^[A-Za-z0-9_]{3,20}$/.test(uname)) throw new Error('Username must be 3–20 letters, numbers or underscores.');
+      if(isBannedName(uname)) throw new Error('Please choose a different username.');
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('Enter a valid email address.');
       if(pass.length<6) throw new Error('Password must be at least 6 characters.');
       const { data:avail, error:e0 } = await sbClient.rpc('username_available',{ p_username: uname });
@@ -4412,6 +4439,7 @@ async function acctSaveUsername(){
   const uname=($('acct-username2').value||'').trim();
   const err=$('acct-error2'); if(err) err.classList.remove('show');
   if(!/^[A-Za-z0-9_]{3,20}$/.test(uname)){ if(err){ err.textContent='3–20 letters, numbers or underscores.'; err.classList.add('show'); } return; }
+  if(isBannedName(uname)){ if(err){ err.textContent='Please choose a different username.'; err.classList.add('show'); } return; }
   try{
     const { error } = await sbClient.rpc('set_username',{ p_username: uname });
     if(error) throw error;
