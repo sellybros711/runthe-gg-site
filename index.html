@@ -2225,8 +2225,14 @@
   html.dark .sim-speed-btn.active{ background:#3a4a66; color:#fff; }
   /* light progress tracks → subtle on dark */
   html.dark .match-clock-bar{ background:#22304a; }
-  html.dark .mp-bracket-line,html.dark .mp-auto-bar{ background:#22304a; }
-  html.dark .mp-bracket-dot{ background:var(--white); border-color:#3a4a66; }
+  html.dark .mp-auto-bar{ background:#22304a; }
+  /* bracket track: empty dots/lines must stay visible against the dark popup
+     (var(--white) would match the card and disappear); done state pops teal */
+  html.dark .mp-bracket-dot{ background:#2a3c5c; border-color:#5a7396; }
+  html.dark .mp-bracket-dot.done{ background:#28c08e; border-color:#28c08e; box-shadow:0 0 8px rgba(40,192,142,.6); }
+  html.dark .mp-bracket-line{ background:#3c4f73; }
+  html.dark .mp-bracket-line.done{ background:#28c08e; }
+  html.dark .mp-bracket-label{ color:#aab4c4; }
   /* footer/divider hairlines that were tuned for cream */
   html.dark .footer-btn,html.dark .acct-bar-btn{ border-color:rgba(255,255,255,.18); }
   html.dark .daily-intro-rules li{ border-bottom-color:rgba(255,255,255,.12); }
