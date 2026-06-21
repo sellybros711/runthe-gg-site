@@ -4754,19 +4754,7 @@ function renderProfilePage(){
   const pf=$('prof-flag'); if(pf) pf.innerHTML = flagChip(fl);
   const hasName=!!authUsername();
   const d=$('acct-username-display'); if(d) d.textContent = authUsername() || 'Set a username';
-  // name tier from achievement badges (Bronze→Silver→Gold→Legend)
-  const m=achMetrics(), badges=totalBadges(m), tier=tierFromBadges(badges);
-  applyTierColor(d, tier);
-  const tt=$('prof-title');
-  if(tt){
-    const idx=NAME_TIERS.indexOf(tier), next=(idx<3)?NAME_TIERS[idx+1]:null;
-    const nextAt=next?Math.ceil(((idx+1)*ACH_TOTAL_BADGES)/4):null;
-    const legend=tier.css==='legend';
-    const nameTag=`<b${legend?' class="nt-legend"':` style="color:${tier.css}"`}>${tier.name}</b>`;
-    tt.innerHTML = `${nameTag} <span class="pt-rest">tier · ${badges}/${ACH_TOTAL_BADGES} badges`
-      + (next?` · ${Math.max(0,nextAt-badges)} to ${next.name}`:'')+`</span>`;
-    tt.style.display='';
-  }
+  renderNameTier();   // colours the name + tier label (also re-run when data loads)
   showEl($('acct-username-set'), !hasName);
   const lbl=$('acct-username-label'); if(lbl) lbl.textContent = hasName ? 'Change username' : 'Pick a username';
   acctSelectedFlag = (authProfile && authProfile.flag) || acctSelectedFlag || 'USA';
@@ -5037,8 +5025,24 @@ async function refreshMyBadges(){
   if(!sbClient || !isSignedIn()) return;
   try{ const { data, error } = await sbClient.rpc('refresh_my_badges'); if(!error && data!=null && authProfile) authProfile.badges=data; }catch(e){}
 }
+// Colours the profile username by its tier and writes the tier label. Derived
+// from the same achMetrics as the achievements counter so the two always agree.
+function renderNameTier(){
+  const d=$('acct-username-display'); if(!d) return;
+  const m=achMetrics(), badges=totalBadges(m), tier=tierFromBadges(badges);
+  applyTierColor(d, tier);
+  const tt=$('prof-title'); if(!tt) return;
+  const idx=NAME_TIERS.indexOf(tier), next=(idx<3)?NAME_TIERS[idx+1]:null;
+  const nextAt=next?Math.ceil(((idx+1)*ACH_TOTAL_BADGES)/4):null;
+  const legend=tier.css==='legend';
+  const nameTag=`<b${legend?' class="nt-legend"':` style="color:${tier.css}"`}>${tier.name}</b>`;
+  tt.innerHTML = `${nameTag} <span class="pt-rest">tier · ${badges}/${ACH_TOTAL_BADGES} badges`
+    + (next?` · ${Math.max(0,nextAt-badges)} to ${next.name}`:'')+`</span>`;
+  tt.style.display='';
+}
 function renderAchievements(){
   const wrap=$('acct-ach'); if(!wrap) return;
+  renderNameTier();   // keep the header tier in sync with the badge count
   const cc=$('ach-count');
   if(!myStats && !myAch){ wrap.innerHTML='<div class="acct-stat-loading">Loading…</div>'; if(cc) cc.textContent=`0 / ${ACH_TOTAL_BADGES}`; return; }
   const m=achMetrics();
