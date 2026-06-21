@@ -268,16 +268,17 @@
   .hd-flag .flag-ico{width:32px;height:21px;border-radius:4px;}
   .hd-yr{font-family:'Anton',Impact,sans-serif;font-size:16px;color:#FCEFA8;letter-spacing:1px;}
   .hd-arrow{color:#F5C518;font-size:28px;font-weight:900;line-height:1;opacity:.75;}
-  .hd-card{width:100px;height:72px;border-radius:12px;background:var(--white);
-    border:2.5px solid var(--ink);box-shadow:3px 3px 0 rgba(0,0,0,.45);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  .hd-card{width:100px;height:72px;border-radius:12px;background:rgba(7,11,26,.62);
+    border:2px solid rgba(244,180,19,.45);box-shadow:0 4px 12px rgba(0,0,0,.4);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
     transform:rotateY(90deg);opacity:0;transform-origin:left center;
     transition:transform .45s cubic-bezier(.2,.7,.2,1),opacity .3s;}
   .hd-card.flipped{transform:rotateY(0);opacity:1;}
-  .hd-pos{font-size:9px;font-weight:900;letter-spacing:.8px;color:#fff;background:var(--ink);
+  .hd-pos{font-size:9px;font-weight:900;letter-spacing:.8px;color:#FCEFA8;
+    background:rgba(244,180,19,.16);border:1px solid rgba(244,180,19,.5);
     padding:1px 7px;border-radius:6px;}
-  .hd-name{font-family:'Anton',Impact,sans-serif;font-size:16px;color:var(--ink);line-height:1.05;}
-  .hd-ovr{font-family:'Anton',Impact,sans-serif;font-size:12px;color:#0a7d4f;letter-spacing:.5px;}
+  .hd-name{font-family:'Anton',Impact,sans-serif;font-size:16px;color:#FCEFA8;line-height:1.05;}
+  .hd-ovr{font-family:'Anton',Impact,sans-serif;font-size:12px;color:#2FD673;letter-spacing:.5px;}
   /* scene 2: simulate */
   .hd-match{display:flex;align-items:center;justify-content:center;gap:12px;
     background:rgba(7,11,26,.62);border:2px solid rgba(244,180,19,.45);border-radius:12px;
@@ -295,7 +296,7 @@
   .hd-result.champ{color:#F5C518;}
   /* caption */
   .hd-cap{font-weight:800;font-size:13px;letter-spacing:.3px;color:#F4ECDA;min-height:17px;
-    text-shadow:0 1px 3px rgba(0,0,0,.85);opacity:0;transition:opacity .35s;}
+    text-shadow:0 1px 3px rgba(0,0,0,.85);opacity:0;transition:opacity .18s;}
   .hd-cap.show{opacity:1;}
   @media (prefers-reduced-motion:reduce){ .hd-card{transition:opacity .2s;} }
 
@@ -3119,8 +3120,8 @@ function startHomeDemo(){
     for(let i=0;i<9;i++){ const s=pick(HOME_SPIN); setFlag(E('hd-flag'),s.country); E('hd-yr').textContent=s.yr; await sleep(115); }
     setFlag(E('hd-flag'),d.country); E('hd-yr').textContent=d.yr; E('hd-chip').classList.remove('spinning');
     await sleep(220); E('hd-card').classList.add('flipped');
-    await sleep(520); E('hd-cap').textContent=pick(HOME_DRAFT_CAPS); E('hd-cap').classList.add('show');
-    await sleep(1700);
+    await sleep(150); E('hd-cap').textContent=pick(HOME_DRAFT_CAPS); E('hd-cap').classList.add('show');
+    await sleep(2000);
   }
 
   async function simBeat(){
@@ -3147,8 +3148,8 @@ function startHomeDemo(){
     }
     score.textContent=res.score; score.classList.remove('ticking');   // settle on the exact final
     await sleep(260); showResult();
-    await sleep(380); E('hd-cap').textContent=pick(HOME_SIM_CAPS); E('hd-cap').classList.add('show');
-    await sleep(1800);
+    await sleep(150); E('hd-cap').textContent=pick(HOME_SIM_CAPS); E('hd-cap').classList.add('show');
+    await sleep(2000);
   }
 
   (async function loop(){
