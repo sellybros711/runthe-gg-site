@@ -4787,9 +4787,10 @@ function shareFirstSentence(){
 // Top scorer as "Surname (goals)", or "None" if nobody scored.
 function shareLeadScorer(){
   const r=simResult; if(!r) return 'None';
-  let topName='', topGoals=0;
-  Object.entries(r.userGoalScorers||{}).forEach(([n,g])=>{ if(g>topGoals){ topGoals=g; topName=n; } });
-  return topName ? `${shortNm(topName)} (${topGoals})` : 'None';
+  let topId='', topGoals=0;
+  Object.entries(r.userGoalScorers||{}).forEach(([id,g])=>{ if(g>topGoals){ topGoals=g; topId=id; } });
+  const nm = topId ? ((r.userScorerNames&&r.userScorerNames[topId])||topId) : '';
+  return nm ? `${shortNm(nm)} (${topGoals})` : 'None';
 }
 // Tweet body. The runthe.gg link is appended by reportText() (clipboard/desktop)
 // and passed as the share-sheet url on mobile.
@@ -4851,9 +4852,10 @@ function shareRecapLines(){
     const won=m.winner==='user'; const pen=m.penalties?` (pens ${won?'W':'L'})`:'';
     lines.push({ t:`${ABBR[m.round]||m.round}  You ${m.userGoals}–${m.opponentGoals} ${m.opponent.country} ${m.opponent.year}${pen}`, won });
   });
-  let topName='', topGoals=0;
-  Object.entries(r.userGoalScorers||{}).forEach(([n,g])=>{ if(g>topGoals){ topGoals=g; topName=n; } });
-  if(topName) lines.push({ t:`Top scorer: ${shortNm(topName)} (${topGoals})`, won:null });
+  let topId='', topGoals=0;
+  Object.entries(r.userGoalScorers||{}).forEach(([id,g])=>{ if(g>topGoals){ topGoals=g; topId=id; } });
+  const topNm = topId ? ((r.userScorerNames&&r.userScorerNames[topId])||topId) : '';
+  if(topNm) lines.push({ t:`Top scorer: ${shortNm(topNm)} (${topGoals})`, won:null });
   return lines.slice(0,5);
 }
 // Round the run ended in, phrased for the "ELIMINATED IN …" headline.
@@ -6214,7 +6216,9 @@ function simMakeGoalEvent(beneficiary, userSquad, opponent, extraTime, usedMinut
   else                     scorerSquad = isOG ? userSquad      : opponent.squad;
   const scorer = simPickScorer(scorerSquad, isOG ? OG_WEIGHTS : SCORER_WEIGHTS);
   const minute = simAssignMinute(usedMinutes, scorerMinutes, scorer.name, !!extraTime);
-  return { minute, scorer:scorer.name, scorerCountry:scorer.country, team:beneficiary, isOG };
+  // scorerId is the unique identity (player_id) so two squad members who share a
+  // name (e.g. Messi '18 and Messi '26) are never merged in the stats/scorer tally.
+  return { minute, scorer:scorer.name, scorerId:scorer.player_id, scorerCountry:scorer.country, team:beneficiary, isOG };
 }
 
 // CHANGE 3 — attack/defense ratings derived from the user's ACTUAL drafted
@@ -6413,6 +6417,7 @@ function generateCardEvents(picks, box, isQuickDraft){
   const discipline = ov => { const o=Math.max(60,Math.min(99,ov||75)); return 1.35 - 0.9*((o-60)/39); }; // 60→1.35, 99→0.45
   const weighted = outfield.map(pk=>({
     name: pk.player.name,
+    id: pk.player.player_id || pk.player.name,
     w: (POS_W[pk.player.position]||0.3) * discipline(pk.player.overall),
   }));
   // Pick an index from a pool in proportion to weight.
@@ -6439,16 +6444,16 @@ function generateCardEvents(picks, box, isQuickDraft){
   const ycPool=weighted.slice();
   for(let i=0;i<Math.min(totalYC,ycPool.length);i++){
     const idx=drawWeighted(ycPool);
-    events.push({minute:pickMin(5,88), playerName:ycPool[idx].name, cardType:'YC'});
+    events.push({minute:pickMin(5,88), playerName:ycPool[idx].name, playerId:ycPool[idx].id, cardType:'YC'});
     ycPool.splice(idx,1);
   }
 
   // Direct red cards (rare, separate from 2nd-yellow): prefer players without a YC
   for(let i=0;i<totalRC;i++){
-    const noCard=weighted.filter(p=>!events.some(e=>e.playerName===p.name));
+    const noCard=weighted.filter(p=>!events.some(e=>e.playerId===p.id));
     const src=noCard.length?noCard:weighted;
     const target=src[drawWeighted(src)];
-    events.push({minute:pickMin(30,85), playerName:target.name, cardType:'RC'});
+    events.push({minute:pickMin(30,85), playerName:target.name, playerId:target.id, cardType:'RC'});
   }
 
   // Sort by minute, then apply 2nd-yellow → red rule
@@ -6456,8 +6461,9 @@ function generateCardEvents(picks, box, isQuickDraft){
   const ycCount={};
   for(const ev of events){
     if(ev.cardType==='YC'){
-      ycCount[ev.playerName]=(ycCount[ev.playerName]||0)+1;
-      if(ycCount[ev.playerName]===2) ev.cardType='Y2R'; // 2nd yellow = sent off
+      const k = ev.playerId || ev.playerName;
+      ycCount[k]=(ycCount[k]||0)+1;
+      if(ycCount[k]===2) ev.cardType='Y2R'; // 2nd yellow = sent off
     }
   }
   return events;
@@ -6473,7 +6479,8 @@ function simulateTournament(userSquad, userOverall, playerPool, userRatings){
     rounds,
     furthestRound: 'Group Stage',
     eliminated: false,
-    userGoalScorers: {},
+    userGoalScorers: {},   // keyed by player_id (unique), not name
+    userScorerNames: {},   // player_id → display name, for showing the tally
     manOfTournament: null,
     userOverall,   // kept so the results page can build per-match box scores
   };
@@ -6494,7 +6501,9 @@ function simulateTournament(userSquad, userOverall, playerPool, userRatings){
 
     m.goalEvents.forEach(e=>{
       if(e.team==='user' && !e.isOG){ // genuine user-player goals only
-        result.userGoalScorers[e.scorer] = (result.userGoalScorers[e.scorer]||0) + 1;
+        const k = e.scorerId || e.scorer;
+        result.userGoalScorers[k] = (result.userGoalScorers[k]||0) + 1;
+        result.userScorerNames[k] = e.scorer;
       }
     });
 
@@ -6560,12 +6569,15 @@ testScorelines();
 // Most goals by a user player, tiebreak by overall. Falls back to the
 // highest-rated player if nobody scored.
 function simFinalizeMOT(result, userSquad){
-  const byName={}; userSquad.forEach(p=>byName[p.name]=p);
+  const byId={}; userSquad.forEach(p=>{ byId[p.player_id||p.name]=p; });
+  const names = result.userScorerNames || {};
   let best=null;
-  Object.entries(result.userGoalScorers).forEach(([name,goals])=>{
-    const ov = byName[name] ? byName[name].overall : 0;
+  Object.entries(result.userGoalScorers).forEach(([id,goals])=>{
+    const pl = byId[id];
+    const ov = pl ? pl.overall : 0;
+    const nm = (pl && pl.name) || names[id] || id;
     if(!best || goals>best.goals || (goals===best.goals && ov>best.overall)){
-      best = { player:name, goals, overall:ov, appearances:result.matches.length };
+      best = { player:nm, goals, overall:ov, appearances:result.matches.length };
     }
   });
   if(!best && userSquad.length){
@@ -6948,10 +6960,12 @@ function knockoutResultMsg(opts){
   const pens = !!m.penalties, et = !!m.extraTime;
   const round = opts.currentRound;
   const score = `${Math.max(us,them)}–${Math.min(us,them)}`; // winner's score first
-  // squad's standout scorer in this match
-  const sc={}; (m.goalEvents||[]).filter(e=>e.team==='user'&&!e.isOG).forEach(e=>sc[e.scorer]=(sc[e.scorer]||0)+1);
+  // squad's standout scorer in this match (keyed by player_id so two same-name
+  // players aren't falsely combined into one brace/hat-trick)
+  const sc={}, scName={};
+  (m.goalEvents||[]).filter(e=>e.team==='user'&&!e.isOG).forEach(e=>{ const k=e.scorerId||e.scorer; sc[k]=(sc[k]||0)+1; scName[k]=e.scorer; });
   let star='', starG=0; for(const k in sc){ if(sc[k]>starG){ starG=sc[k]; star=k; } }
-  const who = star?shortNm(star):'';
+  const who = star?shortNm(scName[star]||star):'';
   // relative strength (was this an upset?)
   const oppOv = Math.round(m.opponent.teamOverall||75);
   const myOv  = (simResult&&simResult.userOverall)||(gs.result&&gs.result.teamOverall)||75;
@@ -7522,25 +7536,28 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
   // each player's SoT only grows and never exceeds that player's shots.
   const sotAlloc  = allocExact(playerShotW, totalSoT);
 
-  // Goals/assists come purely from live events (truly real-time)
-  const liveUserGoals = live.filter(e=>e.team==='user'&&!e.isOG).map(e=>e.scorer);
+  // Goals/assists come purely from live events (truly real-time). Keyed by the
+  // scorer's player_id so two players sharing a name are never conflated.
+  const pkId = pk => pk.player.player_id || pk.player.name;
+  const liveUserGoals = live.filter(e=>e.team==='user'&&!e.isOG).map(e=>e.scorerId||e.scorer);
   const liveAssistMap = {};
   live.filter(e=>e.team==='user'&&!e.isOG).forEach(e=>{
-    const eligible=picks.filter(pk=>pk.player.name!==e.scorer);
+    const sid = e.scorerId||e.scorer;
+    const eligible=picks.filter(pk=>pkId(pk)!==sid);
     if(!eligible.length) return;
     const aw={GK:0.01,DEF:0.08,MID:0.45,FWD:0.46};
     const aWtot=eligible.reduce((s,pk)=>s+(aw[pk.player.position]||0.1)*ratingMult(pk),0);
     let r=asstRng()*aWtot;
-    for(const pk of eligible){ r-=(aw[pk.player.position]||0.1)*ratingMult(pk); if(r<=0){ liveAssistMap[pk.player.name]=(liveAssistMap[pk.player.name]||0)+1; break; } }
+    for(const pk of eligible){ r-=(aw[pk.player.position]||0.1)*ratingMult(pk); if(r<=0){ liveAssistMap[pkId(pk)]=(liveAssistMap[pkId(pk)]||0)+1; break; } }
   });
 
   const POS_ORDER = {FWD:0,MID:1,DEF:2,GK:3};
   const baseRows = picks.map((pk,i)=>{
-    const p=pk.player, pos=p.position;
-    const goals   = liveUserGoals.filter(n=>n===p.name).length;
-    const assists = liveAssistMap[p.name]||0;
+    const p=pk.player, pos=p.position, id=pkId(pk);
+    const goals   = liveUserGoals.filter(x=>x===id).length;
+    const assists = liveAssistMap[id]||0;
     const saves   = pos==='GK' ? totalSaves : 0;
-    return { name:p.name, pos, goals, assists,
+    return { id, name:p.name, pos, goals, assists,
              shots:shotAlloc[i], sot:sotAlloc[i], fouls:foulAlloc[i], tackles:tackleAlloc[i],
              saves, yc:0, rc:0, _cardPrio:cardPrio[i] };
   });
@@ -7556,7 +7573,7 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
   if(cardEvents !== null){
     // Authoritative: read directly from card events seen so far
     cardEvents.forEach(ev=>{
-      const row = baseRows.find(r=>r.name===ev.playerName);
+      const row = (ev.playerId && baseRows.find(r=>r.id===ev.playerId)) || baseRows.find(r=>r.name===ev.playerName);
       if(!row) return;
       if(ev.cardType==='YC')  row.yc++;
       if(ev.cardType==='Y2R'){ row.yc++; row.rc=1; }
@@ -7757,8 +7774,9 @@ function openBoxScores(){
     const totMap={};
     allStats.forEach(matchRows=>{
       matchRows.forEach(row=>{
-        if(!totMap[row.name]) totMap[row.name]={name:row.name,pos:row.pos,goals:0,assists:0,shots:0,sot:0,tackles:0,fouls:0,saves:0,yc:0,rc:0};
-        const t=totMap[row.name];
+        const key=row.id||row.name;   // unique per player, so same-name players stay separate
+        if(!totMap[key]) totMap[key]={name:row.name,pos:row.pos,goals:0,assists:0,shots:0,sot:0,tackles:0,fouls:0,saves:0,yc:0,rc:0};
+        const t=totMap[key];
         t.goals+=row.goals; t.assists+=row.assists; t.shots+=row.shots; t.tackles+=row.tackles;
         t.sot+=row.sot; t.fouls+=row.fouls; t.saves+=row.saves; t.yc+=row.yc; t.rc+=row.rc;
       });
@@ -8163,8 +8181,6 @@ function buildSummaryCard(){
     </div>`;
   }).join('');
 
-  let topName='—', topGoals=0;
-  Object.entries(r.userGoalScorers).forEach(([n,g])=>{ if(g>topGoals){ topGoals=g; topName=n; } });
   const mot = r.manOfTournament ? r.manOfTournament.player : '—';
 
   // Build tournament totals player stats table
@@ -8177,8 +8193,9 @@ function buildSummaryCard(){
     const totMap = {};
     allMatchStats.forEach(matchRows=>{
       matchRows.forEach(row=>{
-        if(!totMap[row.name]) totMap[row.name]={name:row.name,pos:row.pos,goals:0,assists:0,shots:0,sot:0,tackles:0,fouls:0,saves:0,yc:0,rc:0};
-        const t=totMap[row.name];
+        const key=row.id||row.name;   // unique per player, so same-name players stay separate
+        if(!totMap[key]) totMap[key]={name:row.name,pos:row.pos,goals:0,assists:0,shots:0,sot:0,tackles:0,fouls:0,saves:0,yc:0,rc:0};
+        const t=totMap[key];
         t.goals+=row.goals; t.assists+=row.assists; t.shots+=row.shots; t.tackles+=row.tackles;
         t.sot+=row.sot; t.fouls+=row.fouls; t.saves+=row.saves; t.yc+=row.yc; t.rc+=row.rc;
       });
@@ -8304,7 +8321,7 @@ async function runSimulationScreen(){
       evs.sort((a,b)=>a.minute-b.minute);
       o.goalEvents=evs;
       // tally group stage scorers so top scorer is correct even on group exit
-      evs.forEach(e=>{ if(e.team==='user'&&!e.isOG) simResult.userGoalScorers[e.scorer]=(simResult.userGoalScorers[e.scorer]||0)+1; });
+      evs.forEach(e=>{ if(e.team==='user'&&!e.isOG){ const k=e.scorerId||e.scorer; simResult.userGoalScorers[k]=(simResult.userGoalScorers[k]||0)+1; simResult.userScorerNames[k]=e.scorer; } });
     }
     const gsBox = matchBox(o, simResult.userOverall, o.teamOverall, us, them);
     if(!o.cardEvents) o.cardEvents = generateCardEvents(gs.picks, gsBox, !isFullDraft());
