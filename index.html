@@ -1736,6 +1736,25 @@
   .acct-flag-save{display:block;width:100%;padding:11px 18px;margin-top:14px;}
 
   /* ---------- daily challenge ---------- */
+  /* results rank/streak pills */
+  .dr-wrap{display:block;margin:8px 0 2px;text-transform:none;letter-spacing:normal;font-weight:400;color:var(--ink);}
+  .dr-pills{display:flex;justify-content:center;align-items:stretch;gap:12px;flex-wrap:wrap;}
+  .dr-pill{display:flex;align-items:center;gap:9px;border:3px solid var(--ink);border-radius:14px;
+    box-shadow:3px 3px 0 var(--ink);padding:8px 16px;}
+  .dr-pill .drp-col{display:flex;flex-direction:column;line-height:1.05;text-align:left;}
+  .dr-rank{background:var(--white);}
+  .dr-streak{background:linear-gradient(180deg,#FCEFA8,#F4B413);}
+  .drp-cap{font-weight:900;text-transform:uppercase;letter-spacing:.8px;font-size:9px;color:#7a6f60;}
+  .dr-streak .drp-cap{color:#6a4a00;}
+  .drp-val{font-family:'Anton',Impact,sans-serif;font-size:23px;line-height:1;color:var(--ink);}
+  .drp-sub{font-family:'Archivo',system-ui,sans-serif;font-weight:800;font-size:12px;color:#8a7d70;}
+  .dr-streak .drp-sub{color:#6a4a00;}
+  .drp-flame{display:flex;align-items:center;filter:drop-shadow(0 1px 0 rgba(0,0,0,.12));}
+  .dr-cta{background:var(--white);font-weight:800;font-size:13px;color:var(--ink);
+    text-align:center;justify-content:center;max-width:340px;line-height:1.35;}
+  .dr-note{text-align:center;font-size:10.5px;font-weight:800;color:#9a9387;margin-top:8px;
+    text-transform:uppercase;letter-spacing:.6px;}
+
   /* dark fill so white text reads on the cream page, with a thin gold outline */
   .daily-home-btn{background:var(--ink);color:#fff;border:2px solid var(--gold);margin-top:10px;}
   .daily-home-btn .btn-label,.daily-home-btn .btn-sub{color:#fff;}
@@ -3425,9 +3444,28 @@ function buildFullPitch(){
   const filled={GK:[],DEF:[],MID:[],FWD:[]};
   gs.picks.forEach(p=>{ if(filled[p.slot]) filled[p.slot].push(p.player); });
 
-  // spread remaining unfilled FLEX slots over DEF → MID → FWD (3 flex = 1 each)
+  // Distribute the remaining (unresolved) FLEX circles onto whichever outfield
+  // line currently has the FEWEST players — never onto a line already at its cap —
+  // so a spare FLEX fills the emptiest line instead of crowding a full one.
   const flexLine={DEF:0,MID:0,FWD:0};
-  { let fl=open.FLEX; const ord=['DEF','MID','FWD']; let i=0; while(fl>0){ flexLine[ord[i%3]]++; fl--; i++; } }
+  {
+    const ord=['DEF','MID','FWD'];
+    const lineTotal=(pos)=> filled[pos].length + (open[pos]||0) + flexLine[pos];
+    let fl=open.FLEX;
+    while(fl>0){
+      let best=null;
+      ord.forEach(pos=>{
+        if(lineTotal(pos) >= fullCap(pos)) return;            // this line is full
+        if(best===null){ best=pos; return; }
+        // rank by: fewest total circles → fewest drafted players → line order
+        const a=[lineTotal(pos),  filled[pos].length,  ord.indexOf(pos)];
+        const b=[lineTotal(best), filled[best].length, ord.indexOf(best)];
+        if(a[0]<b[0] || (a[0]===b[0] && (a[1]<b[1] || (a[1]===b[1] && a[2]<b[2])))) best=pos;
+      });
+      if(best===null) break;     // every outfield line at cap (shouldn't happen)
+      flexLine[best]++; fl--;
+    }
+  }
 
   const drawLine=(pos)=>{
     const items=[];
@@ -5167,17 +5205,38 @@ async function fillDailyRankBadge(overall, progress){
   // auto-open the daily board shortly after results settle
   setTimeout(()=>openDailyBoard(), 1000);
 }
+// A flame icon that grows with the streak (gold→orange→red gradient), for the
+// daily streak pill. width scales from ~18px up to a 44px cap.
+function flameSvg(streak){
+  const w=Math.round(Math.max(18, Math.min(44, 18 + (streak||0)*1.5)));
+  const h=Math.round(w*32/24);
+  return `<svg viewBox="0 0 24 32" width="${w}" height="${h}" aria-hidden="true">`
+    + `<defs><linearGradient id="drFlame" x1="0" y1="0" x2="0" y2="1">`
+    + `<stop offset="0" stop-color="#FCEFA8"/><stop offset=".45" stop-color="#F4B413"/><stop offset="1" stop-color="#E5402A"/>`
+    + `</linearGradient></defs>`
+    + `<path d="M12 1 C13 7 18 8 18 15 C18 16 17.6 17 17 18 C19.2 16.8 20 14 20 14 C21.2 17 22 20 22 23 C22 28 17.5 31 12 31 C6.5 31 2 28 2 23 C2 18 6.2 16 7 11 C9 13.2 10 14 11 13 C12.2 11 10 8 12 1 Z" fill="url(#drFlame)" stroke="#16120F" stroke-width="1.2" stroke-linejoin="round"/>`
+    + `<path d="M12 17 C12.6 19.5 15 20.5 15 23.3 C15 25.4 13.6 27 12 27 C10.4 27 9 25.6 9 23.6 C9 21.2 11 20.2 12 17 Z" fill="#FFF3C4"/>`
+    + `</svg>`;
+}
 function renderDailyRankLine(el, lb){
-  el.className='res-rank';
+  el.className='res-rank dr-wrap';
   if(!lb.signedIn){
-    el.innerHTML='<b>Daily Challenge</b> — <span style="color:var(--gold)">sign in to rank &amp; build a streak</span>';
+    el.innerHTML='<div class="dr-pills"><div class="dr-pill dr-cta">Sign in to put your name on the daily board &amp; build a streak</div></div>';
     return;
   }
-  let s='Daily Challenge';
-  if(lb.rank&&lb.total) s+=` — ranks <b>${lb.rank}</b> of <b>${lb.total}</b> today`;
-  if(lb.streak>0) s+=` · <b>${lb.streak}</b> day streak`;
-  if(lb.already) s+=' · <span style="color:#b9b9b9">(first attempt counted)</span>';
-  el.innerHTML=s;
+  let pills='';
+  if(lb.rank && lb.total){
+    pills += `<div class="dr-pill dr-rank"><span class="drp-col">`
+          +  `<span class="drp-cap">Daily Rank</span>`
+          +  `<span class="drp-val">#${lb.rank}<span class="drp-sub"> / ${lb.total}</span></span>`
+          +  `</span></div>`;
+  }
+  const st=lb.streak||0;
+  pills += `<div class="dr-pill dr-streak"><span class="drp-flame">${flameSvg(st)}</span>`
+        +  `<span class="drp-col"><span class="drp-val">${st}</span>`
+        +  `<span class="drp-cap">Day Streak</span></span></div>`;
+  el.innerHTML = `<div class="dr-pills">${pills}</div>`
+    + (lb.already ? '<div class="dr-note">First attempt counted</div>' : '');
 }
 
 // ---- daily leaderboard modal ----
