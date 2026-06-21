@@ -1809,6 +1809,9 @@
   .td-head:hover{background:rgba(255,255,255,.08);}
   .td-rank{font-family:'Anton',Impact,sans-serif;font-size:16px;color:var(--gold);flex:0 0 auto;min-width:30px;}
   .td-ov{font-family:'Anton',Impact,sans-serif;font-size:17px;flex:0 0 auto;}
+  /* team-overall colours matching the in-game reveal/leaderboard scheme */
+  .td-ov.red,.td-v.red{color:var(--red);} .td-ov.orange,.td-v.orange{color:var(--orange);}
+  .td-ov.gold,.td-v.gold{color:var(--gold);} .td-ov.green,.td-v.green{color:#4ade80;}
   .td-far{font-weight:800;font-size:11px;color:#cfcfcf;flex:1 1 auto;text-align:left;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .td-date{font-weight:700;font-size:10.5px;color:#9a9a9a;flex:0 0 auto;}
@@ -4906,7 +4909,7 @@ function renderTopDrafts(){
       <div class="td-body"${open?'':' hidden'}>
         <div class="td-grid">
           <div><span class="td-k">All-time rank</span><span class="td-v" id="td-rank-${i}">…</span></div>
-          <div><span class="td-k">Team overall</span><span class="td-v">${(+d.overall).toFixed(1)}</span></div>
+          <div><span class="td-k">Team overall</span><span class="td-v ${ovTier(d.overall)}">${(+d.overall).toFixed(1)}</span></div>
           <div><span class="td-k">Mode</span><span class="td-v">${dt} · ${mode}</span></div>
           <div><span class="td-k">How far</span><span class="td-v">${escapeHtml(howFar(d))}</span></div>
           <div><span class="td-k">Drafted</span><span class="td-v">${fmtDateShort(d.created_at)}</span></div>
