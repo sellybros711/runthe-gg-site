@@ -4653,7 +4653,7 @@ const ACHIEVEMENTS = [
   { id:'daily',        name:'Daily Devotee',blurb:'day streak',     tiers:[7,30,100],       get:m=>m.longest_streak,    fmt:v=>v },
   { id:'galacticos',   name:'Galácticos',   blurb:'squad OVR',      tiers:[95,100,105],     get:m=>m.best_overall,      fmt:v=>(+v).toFixed(1) },
   { id:'globetrotter', name:'Globetrotter', blurb:'confederations', tiers:[4,5,6],          get:m=>m.confedBreadth,     fmt:v=>v },
-  { id:'timetraveler', name:'Time Traveler',blurb:'decades',        tiers:[4,5,6],          get:m=>m.decadeBreadth,     fmt:v=>v },
+  { id:'timetraveler', name:'Time Traveler',blurb:'decades',        tiers:[5,6,7],          get:m=>m.decadeBreadth,     fmt:v=>v },
   { id:'underdog',     name:'Underdog',     blurb:'best run · ≤85 OVR squad', tiers:[2,3,4,6], get:m=>m.underdog_progress, fmt:v=>roundName(v), round:true }
 ];
 async function loadMyAchievements(){
