@@ -2248,8 +2248,11 @@
   /* Light mode shows the navy-text logo; dark mode shows the cream-text logo,
      so the wordmark is always legible against the page. No backing panel. */
   .masthead .logo-badge{display:block;background:none;border-radius:0;
-    padding:0;margin:8px 0 10px;line-height:0;box-shadow:none;}
+    padding:0;margin:-2px 0 -2px;line-height:0;box-shadow:none;}
   .masthead .logo-badge img{display:block;margin:0 auto;width:100%;max-width:560px;height:auto;}
+  /* pull the kicker + edition in tight so they read as part of the logo */
+  .masthead .kicker{margin-bottom:-2px;}
+  .masthead .edition{margin-top:-2px;}
   .masthead .logo-badge .logo-dark{display:none;}
   html.dark .masthead .logo-badge .logo-light{display:none;}
   html.dark .masthead .logo-badge .logo-dark{display:block;}
