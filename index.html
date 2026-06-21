@@ -2856,7 +2856,7 @@
       </button>
       <div class="acct-or"><span>or</span></div>
       <input class="entry-name acct-input" id="acct-username" maxlength="20" placeholder="Username" autocomplete="username" style="display:none;" />
-      <input class="entry-name acct-input" id="acct-email" type="email" placeholder="Email" autocomplete="email" />
+      <input class="entry-name acct-input" id="acct-email" type="text" placeholder="Email or username" autocomplete="username" />
       <input class="entry-name acct-input" id="acct-password" type="password" placeholder="Password" autocomplete="current-password" />
       <button type="button" class="acct-forgot" id="acct-forgot">Forgot your password?</button>
       <button class="entry-submit acct-submit" id="acct-submit">Sign in</button>
@@ -4729,6 +4729,7 @@ function setAcctTab(tab){
   document.querySelectorAll('.acct-tab').forEach(b=>b.classList.toggle('sel', b.dataset.tab===acctTab));
   showEl($('acct-username'), acctTab==='signup');   // username only on sign-up
   showEl($('acct-forgot'),   acctTab==='signin');   // forgot-password only on sign-in
+  const em=$('acct-email'); if(em) em.placeholder = (acctTab==='signin') ? 'Email or username' : 'Email';
   const sub=$('acct-submit'); if(sub) sub.textContent = acctTab==='signup' ? 'Create account' : 'Sign in';
   const note=$('acct-note');
   if(note) note.textContent = acctTab==='signup'
@@ -5085,6 +5086,18 @@ function buildAcctFlagRow(){
   }));
 }
 
+// Accept an email OR a username on sign-in: a username is resolved to its
+// account email (Supabase signs in by email).
+async function resolveLoginEmail(loginId){
+  loginId=String(loginId||'').trim();
+  if(!loginId) throw new Error('Enter your email or username.');
+  if(loginId.includes('@')) return loginId;
+  if(!sbClient) return loginId;
+  const { data, error } = await sbClient.rpc('email_for_username', { p_username: loginId });
+  if(error || !data) throw new Error('No account found with that username.');
+  return data;
+}
+
 async function acctSubmit(){
   if(!sbClient){ acctError('Accounts are unavailable right now.'); return; }
   const email=($('acct-email').value||'').trim();
@@ -5108,7 +5121,8 @@ async function acctSubmit(){
       if(!data.session){ showConfirmPane(email); }   // email confirmation ON
       else { loginNav=true; closeAccountModal(); }    // signed in immediately → profile
     }else{
-      const { error } = await sbClient.auth.signInWithPassword({ email, password: pass });
+      const loginEmail = await resolveLoginEmail(email);   // email or username
+      const { error } = await sbClient.auth.signInWithPassword({ email: loginEmail, password: pass });
       if(error) throw error;
       loginNav=true; closeAccountModal();             // → profile page
     }
@@ -5146,9 +5160,10 @@ function startChangeUsername(){
 // "Forgot your password?" — email a reset link to the address in the field.
 async function acctForgotPassword(){
   if(!sbClient){ acctError('Accounts are unavailable right now.'); return; }
-  const email=($('acct-email').value||'').trim();
+  let email;
+  try{ email = await resolveLoginEmail(($('acct-email').value||'').trim()); }catch(e){ email=''; }
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
-    acctError('Enter your account email above, then tap “Forgot your password?”.'); return;
+    acctError('Enter your account email or username above, then tap “Forgot your password?”.'); return;
   }
   try{
     const { error } = await sbClient.auth.resetPasswordForEmail(email, { redirectTo: location.origin });
