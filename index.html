@@ -1737,6 +1737,9 @@
 
   /* ---------- daily challenge ---------- */
   .daily-home-btn{background:var(--teal);margin-top:10px;}
+  .daily-board-link{display:block;margin:7px auto 0;background:none;border:0;color:#bdbdbd;
+    font:inherit;font-size:12.5px;cursor:pointer;padding:4px 8px;}
+  .daily-board-link:hover{color:var(--gold);}
   .daily-card{max-width:460px;}
   .daily-yourline{text-align:center;font-size:13px;color:#dcdcdc;margin:10px 0 6px;line-height:1.5;}
   .daily-yourline b{color:var(--gold);}
@@ -2174,6 +2177,7 @@
         <span class="btn-label">🗓️ Daily Challenge</span>
         <span class="btn-sub" id="daily-btn-sub">Today’s themed draft</span>
       </button>
+      <button id="btn-daily-board" type="button" class="daily-board-link" style="display:none">View today’s leaderboard ›</button>
 
       <!-- secondary actions, demoted to small links -->
       <div class="home-secondary">
@@ -2986,6 +2990,8 @@ async function boot(){
   if(bf) bf.disabled = false;   // Friendly mode is live (Supabase short-link transport)
   const bd = $('btn-daily');
   if(bd){ bd.style.display=''; }   // Daily Challenge is live
+  const bdb = $('btn-daily-board');
+  if(bdb){ bdb.style.display=''; } // "view today's board" link
   updateDailyButton();             // show today's theme + status
   refreshDailyStatus();            // (async) pull played/streak if signed in
   startFlagMarquee();
@@ -6108,6 +6114,7 @@ $('btn-home-leaderboard').addEventListener('click', openLeaderboardView);
 (function wireDaily(){
   const on=(id,ev,fn)=>{ const el=$(id); if(el) el.addEventListener(ev,fn); };
   on('btn-daily','click',startDailyChallenge);
+  on('btn-daily-board','click',openDailyBoard);
   on('daily-close','click',closeDailyBoard);
   on('daily-bg','click',e=>{ if(e.target===$('daily-bg')) closeDailyBoard(); });
   on('daily-play-btn','click',()=>{ closeDailyBoard(); startDailyChallenge(); });
