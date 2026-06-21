@@ -2247,12 +2247,14 @@
   /* ---------- masthead logo (theme-swapped) + theme toggle ---------- */
   /* Light mode shows the navy-text logo; dark mode shows the cream-text logo,
      so the wordmark is always legible against the page. No backing panel. */
-  .masthead .logo-badge{display:block;background:none;border-radius:0;
-    padding:0;margin:-2px 0 -2px;line-height:0;box-shadow:none;}
-  .masthead .logo-badge img{display:block;margin:0 auto;width:100%;max-width:560px;height:auto;}
-  /* pull the kicker + edition in tight so they read as part of the logo */
-  .masthead .kicker{margin-bottom:-2px;}
-  .masthead .edition{margin-top:-2px;}
+  .masthead .logo-badge{display:block;background:none;border-radius:0;padding:0;
+    margin:5px auto 7px;width:100%;max-width:560px;overflow:hidden;line-height:0;box-shadow:none;}
+  /* the PNG carries ~24% empty space on top and ~17% on the bottom; crop it with
+     negative margins (badge clips via overflow:hidden) so the wordmark sits tight
+     and the kicker + edition hug it as one centred unit */
+  .masthead .logo-badge img{display:block;width:100%;height:auto;margin:-9.7% 0 -6.8%;}
+  .masthead .kicker{margin-bottom:0;}
+  .masthead .edition{margin-top:0;}
   .masthead .logo-badge .logo-dark{display:none;}
   html.dark .masthead .logo-badge .logo-light{display:none;}
   html.dark .masthead .logo-badge .logo-dark{display:block;}
