@@ -1774,6 +1774,48 @@
   .ach-bar span{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#F4B413,#F47B20);
     transition:width .5s cubic-bezier(.2,.7,.2,1);}
   .ach-card.maxed .ach-bar span{background:linear-gradient(90deg,#2FD673,#1F9E57);}
+
+  /* ---------- full-screen profile page ---------- */
+  .prof-panel{background:#161616;border:2px solid #2a2a2a;border-radius:18px;
+    padding:16px 15px 26px;color:#fff;margin:4px 0 12px;}
+  .prof-back{background:none;border:0;color:#9bb6d8;font:inherit;font-weight:800;font-size:13px;
+    cursor:pointer;padding:2px 0;margin-bottom:6px;}
+  .prof-back:hover{color:#cfe0f3;}
+  .prof-id{display:flex;align-items:center;gap:13px;margin:6px 0 4px;}
+  .prof-flag .flag-ico{width:48px;height:32px;border-radius:6px;border:2px solid rgba(255,255,255,.25);
+    background-size:cover;background-position:center;display:block;}
+  .prof-id-text{min-width:0;}
+  .prof-name{font-family:'Anton',Impact,sans-serif;font-size:27px;line-height:1;color:#fff;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .prof-section-title{font-weight:900;font-size:12px;letter-spacing:1px;text-transform:uppercase;
+    color:#9a9a9a;margin:24px 0 11px;display:flex;align-items:baseline;gap:9px;}
+  .prof-sec-count{font-family:'Anton',Impact,sans-serif;font-size:15px;color:var(--gold);
+    letter-spacing:.5px;text-transform:none;}
+  .prof-settings{margin-top:26px;border-top:1px solid rgba(255,255,255,.1);padding-top:18px;}
+
+  /* legends collection */
+  .legends-filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+  .lf-chip{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:20px;
+    color:#cfcfcf;font-family:'Archivo',system-ui,sans-serif;font-weight:800;font-size:11px;
+    letter-spacing:.3px;padding:5px 12px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .lf-chip.active{background:var(--gold);border-color:var(--gold);color:#1a1a1a;}
+  .legends-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
+  .legend-card{position:relative;background:#202020;border:1.5px solid #333;border-radius:10px;
+    padding:7px 4px;text-align:center;overflow:hidden;content-visibility:auto;contain-intrinsic-size:auto 92px;}
+  .legend-card.r-icon{border-color:#7FE0FF;}
+  .legend-card.r-gold{border-color:#E8C25A;}
+  .legend-card.r-silver{border-color:#9aa0a6;}
+  .legend-card.locked{filter:grayscale(1) brightness(.5);opacity:.75;}
+  .lc-flag{display:block;width:34px;height:23px;border-radius:3px;margin:0 auto 5px;
+    background-size:cover;background-position:center;border:1px solid rgba(0,0,0,.35);background-color:#333;}
+  .lc-name{display:block;font-weight:800;font-size:9.5px;color:#fff;line-height:1.1;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .lc-sub{display:block;font-size:8px;color:#9a9a9a;margin-top:1px;}
+  .lc-ovr{position:absolute;top:4px;right:4px;font-family:'Anton',Impact,sans-serif;font-size:11px;
+    line-height:1;padding:2px 4px;border-radius:4px;color:#1a1a1a;}
+  .lc-ovr.r-icon{background:#7FE0FF;}.lc-ovr.r-gold{background:#E8C25A;}.lc-ovr.r-silver{background:#cfcfcf;}
+  .legends-empty{grid-column:1/-1;text-align:center;color:#9a9a9a;font-size:12px;padding:18px;}
+  body.profile-mode .masthead,body.profile-mode .acct-bar{display:none;}
   .acct-flag-save{display:block;width:100%;padding:11px 18px;margin-top:14px;}
 
   /* ---------- daily challenge ---------- */
@@ -2300,6 +2342,44 @@
     </div>
   </section>
 
+  <!-- ===== PROFILE (full-screen: identity + stats + achievements + collection) ===== -->
+  <section id="screen-profile" class="screen">
+    <div class="prof-panel">
+      <button class="prof-back" id="prof-back">‹ Back</button>
+      <div class="prof-id">
+        <span class="prof-flag" id="prof-flag"></span>
+        <div class="prof-id-text">
+          <div class="prof-name" id="acct-username-display">Player</div>
+          <button type="button" class="acct-link-btn" id="acct-change-username">Change username</button>
+        </div>
+      </div>
+      <div id="acct-username-set" style="display:none;">
+        <div class="entry-flag-label" id="acct-username-label">Pick a username</div>
+        <div class="acct-username-row">
+          <input class="entry-name acct-input" id="acct-username2" maxlength="20" placeholder="Username" autocomplete="username" />
+          <button class="entry-submit" id="acct-save-username">Save</button>
+        </div>
+        <div class="entry-error" id="acct-error2"></div>
+      </div>
+
+      <div class="acct-stats" id="acct-stats"></div>
+
+      <div class="prof-section-title">Achievements</div>
+      <div class="acct-ach" id="acct-ach"></div>
+
+      <div class="prof-section-title">Legends Collection <span class="prof-sec-count" id="legends-count"></span></div>
+      <div class="legends-filters" id="legends-filters"></div>
+      <div class="legends-grid" id="legends-grid"></div>
+
+      <div class="prof-settings">
+        <div class="entry-flag-label">Your Flag</div>
+        <div class="entry-flag-row" id="acct-flag-row"></div>
+        <button class="entry-submit acct-flag-save" id="acct-save-flag">Save flag</button>
+        <button class="entry-skip" id="acct-signout">Sign out</button>
+      </div>
+    </div>
+  </section>
+
   <!-- ===== DRAFT SETUP (size + difficulty on one page) ===== -->
   <section id="screen-setup" class="screen">
     <div class="mode-head">
@@ -2722,25 +2802,7 @@
       <div class="entry-error" id="acct-reset-error"></div>
     </div>
 
-    <!-- signed-in: profile -->
-    <div id="acct-profile" style="display:none;">
-      <div class="acct-userline" id="acct-username-have">Signed in as <b id="acct-username-display"></b><button type="button" class="acct-link-btn" id="acct-change-username">Change</button></div>
-      <div id="acct-username-set" style="display:none;">
-        <div class="entry-flag-label" id="acct-username-label">Pick a username</div>
-        <div class="acct-username-row">
-          <input class="entry-name acct-input" id="acct-username2" maxlength="20" placeholder="Username" autocomplete="username" />
-          <button class="entry-submit" id="acct-save-username">Save</button>
-        </div>
-        <div class="entry-error" id="acct-error2"></div>
-      </div>
-      <div class="acct-stats" id="acct-stats"></div>
-      <div class="acct-ach-title">Achievements</div>
-      <div class="acct-ach" id="acct-ach"></div>
-      <div class="entry-flag-label">Your Flag</div>
-      <div class="entry-flag-row" id="acct-flag-row"></div>
-      <button class="entry-submit acct-flag-save" id="acct-save-flag">Save flag</button>
-      <button class="entry-skip" id="acct-signout">Sign out</button>
-    </div>
+    <!-- signed-in users get the full-screen Profile page instead (see #screen-profile) -->
   </div>
 </div>
 
@@ -3015,6 +3077,7 @@ function showScreen(name){
   document.body.classList.toggle('sel-mode', name==='select');
   document.body.classList.toggle('home-mode', name==='home');
   document.body.classList.toggle('sim-mode', name==='sim');
+  document.body.classList.toggle('profile-mode', name==='profile');
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
@@ -4448,7 +4511,7 @@ async function applySession(session){
   authUser      = (session && session.user) || null;
   sbAccessToken = (session && session.access_token) || null;
   if(authUser){ await loadProfile(); await ensureUsernameFromMetadata(); }
-  else { authProfile = null; myStats = null; myAch = null; }
+  else { authProfile = null; myStats = null; myAch = null; myCollected = null; }
   syncAuthUI();
   if(typeof refreshDailyStatus==='function') refreshDailyStatus(); // daily played/streak
   // Returning from a Google redirect: prompt a new user to pick a username so
@@ -4563,7 +4626,6 @@ function openAccountModal(){
   setAcctTab('signin');
   renderAccountModal();
   const bg=$('acct-bg'); if(bg) bg.classList.add('show');
-  if(isSignedIn()){ loadMyStats(); loadMyAchievements(); }   // stats + achievements
 }
 function closeAccountModal(){ const bg=$('acct-bg'); if(bg) bg.classList.remove('show'); }
 
@@ -4589,27 +4651,37 @@ function setAcctTab(tab){
   acctError('');
 }
 
-// Switches the modal between guest forms / email-confirm / password-reset /
-// signed-in profile.
+// The modal is auth-only now (guest sign-in/up, email-confirm, password-reset).
+// Signed-in players get the full-screen Profile page (#screen-profile).
 function renderAccountModal(){
   const bg=$('acct-bg'); if(!bg) return;
-  const signed=isSignedIn();
   const confirming = $('acct-confirm') && $('acct-confirm').style.display!=='none';
   const recovering = acctRecovery;
   showEl($('acct-reset'), recovering);
-  showEl($('acct-forms'), !signed && !confirming && !recovering);
-  showEl($('acct-profile'), signed && !recovering);
-  if(recovering || !signed) return;
-  const hasName = !!authUsername();
-  showEl($('acct-username-have'), hasName);
-  showEl($('acct-username-set'),  !hasName);
+  showEl($('acct-forms'), !confirming && !recovering);
+}
+
+// Full-screen profile page: identity + stats + achievements + legends + settings.
+function renderProfilePage(){
+  if(!isSignedIn()) return;
+  const fl=(authProfile && authProfile.flag) || 'USA';
+  const pf=$('prof-flag'); if(pf) pf.innerHTML = flagChip(fl);
+  const hasName=!!authUsername();
+  const d=$('acct-username-display'); if(d) d.textContent = authUsername() || 'Set a username';
+  showEl($('acct-username-set'), !hasName);
   const lbl=$('acct-username-label'); if(lbl) lbl.textContent = hasName ? 'Change username' : 'Pick a username';
-  const d=$('acct-username-display'); if(d) d.textContent = authUsername();
-  // flag picker reflects the profile's saved flag
   acctSelectedFlag = (authProfile && authProfile.flag) || acctSelectedFlag || 'USA';
   buildAcctFlagRow();
-  renderProfileStats();   // shows cached stats (or "Loading…" until loadMyStats lands)
-  renderAchievements();   // shows cached badges (or "Loading…" until loads land)
+  renderProfileStats();
+  renderAchievements();
+  renderLegends();
+}
+function openProfilePage(){
+  if(!isSignedIn()){ openAccountModal(); return; }
+  closeAccountModal();
+  renderProfilePage();
+  showScreen('profile');
+  loadMyStats(); loadMyDrafts();
 }
 
 // ---- profile stats (server-computed; foundation for achievements/level) ----
@@ -4694,27 +4766,73 @@ function achBadgeSvg(id, lvl){
     + achEmblem(id, c[2])
     +`</svg>`;
 }
-async function loadMyAchievements(){
-  if(!sbClient || !isSignedIn() || !authUser){ myAch=null; renderAchievements(); return; }
+// One fetch of the player's own draft rows powers BOTH the breadth/underdog
+// achievements and the Legends collection (which players they've ever drafted).
+let myCollected = null;   // Set of player_ids the player has drafted
+async function loadMyDrafts(){
+  if(!sbClient || !isSignedIn() || !authUser){ myAch=null; myCollected=null; renderAchievements(); renderLegends(); return; }
   try{
     const uid=authUser.id;
     const q=async(table)=>{
-      const res=await fetch(`${SUPABASE_URL}/rest/v1/${table}?user_id=eq.${uid}&select=player_ids,overall,progress&limit=3000`, { headers: sbHeaders() });
+      const res=await fetch(`${SUPABASE_URL}/rest/v1/${table}?user_id=eq.${uid}&select=player_ids,overall,progress&limit=4000`, { headers: sbHeaders() });
       return res.ok ? (await res.json().catch(()=>[]) || []) : [];
     };
     const [d1,d2]=await Promise.all([q('drafts'), q('daily_results')]);
+    const col=new Set();
     let confedMax=0, decadeMax=0, underdog=-1;
     d1.concat(d2).forEach(r=>{
       const confs=new Set(), decs=new Set();
-      (r.player_ids||[]).forEach(id=>{ const p=playerById(id); if(p){ confs.add(confedOf(p.country)); decs.add(Math.floor(p.year/10)*10); } });
+      (r.player_ids||[]).forEach(id=>{
+        col.add(String(id));
+        const p=playerById(id); if(p){ confs.add(confedOf(p.country)); decs.add(Math.floor(p.year/10)*10); }
+      });
       if(confs.size>confedMax) confedMax=confs.size;
       if(decs.size>decadeMax) decadeMax=decs.size;
       const ov=+r.overall, pr=+r.progress;
       if(ov>0 && ov<=85 && pr>underdog) underdog=pr;
     });
+    myCollected=col;
     myAch={ confedBreadth:confedMax, decadeBreadth:decadeMax, underdog_progress:underdog };
   }catch(e){ /* keep cached */ }
   renderAchievements();
+  renderLegends();
+}
+
+// ---- Legends collection (OVR ≥ 85, rarity by OVR) ----
+let LEGENDS=null, legendFilter='all';
+function getLegends(){
+  if(LEGENDS) return LEGENDS;
+  LEGENDS=(window.PLAYERS||[]).filter(p=>p.wc_overall>=85).map(p=>({
+    id:String(p.player_id), name:p.name, country:p.country, year:p.year, ovr:p.wc_overall,
+    rar:(p.wc_overall>=92?'icon':(p.wc_overall>=89?'gold':'silver'))
+  })).sort((a,b)=> b.ovr-a.ovr || (a.name<b.name?-1:1));
+  return LEGENDS;
+}
+function renderLegendFilters(){
+  const wrap=$('legends-filters'); if(!wrap) return;
+  const chips=[['all','All'],['icon','Icons'],['gold','Gold'],['silver','Silver'],['collected','Collected'],['missing','Missing']];
+  wrap.innerHTML=chips.map(([k,l])=>`<button class="lf-chip${legendFilter===k?' active':''}" data-f="${k}">${l}</button>`).join('');
+}
+function renderLegends(){
+  const grid=$('legends-grid'); if(!grid) return;
+  const legs=getLegends(), col=myCollected||new Set();
+  const got=legs.reduce((n,l)=>n+(col.has(l.id)?1:0),0);
+  const cnt=$('legends-count'); if(cnt) cnt.textContent=`${got} / ${legs.length}`;
+  renderLegendFilters();
+  let list=legs;
+  if(legendFilter==='icon'||legendFilter==='gold'||legendFilter==='silver') list=legs.filter(l=>l.rar===legendFilter);
+  else if(legendFilter==='collected') list=legs.filter(l=>col.has(l.id));
+  else if(legendFilter==='missing')   list=legs.filter(l=>!col.has(l.id));
+  if(!list.length){ grid.innerHTML='<div class="legends-empty">Nothing here yet — draft some legends!</div>'; return; }
+  grid.innerHTML=list.map(l=>{
+    const owned=col.has(l.id), url=flagImg(l.country,80), rc='r-'+l.rar;
+    return `<div class="legend-card ${rc}${owned?'':' locked'}" title="${escapeHtml(l.name)} · ${escapeHtml(l.country)} ${l.year}">
+      <span class="lc-ovr ${rc}">${l.ovr}</span>
+      <span class="lc-flag"${url?` style="background-image:url('${url}')"`:''}></span>
+      <span class="lc-name">${escapeHtml(l.name)}</span>
+      <span class="lc-sub">${l.year}</span>
+    </div>`;
+  }).join('');
 }
 function achMetrics(){
   const s=myStats||{}, a=myAch||{};
@@ -4812,7 +4930,6 @@ function showConfirmPane(email){
   const c=$('acct-confirm'); if(!c) return;
   const em=$('acct-confirm-email'); if(em) em.textContent=email||'your email';
   showEl($('acct-forms'), false);
-  showEl($('acct-profile'), false);
   c.style.display='';
 }
 
@@ -4870,7 +4987,7 @@ async function acctSaveUsername(){
   try{
     const { error } = await sbClient.rpc('set_username',{ p_username: uname });
     if(error) throw error;
-    await loadProfile(); syncAuthUI();
+    await loadProfile(); syncAuthUI(); renderProfilePage();
     showToast('Username saved ✓');
   }catch(e){ if(err){ err.textContent=(e&&e.message)||'Could not save username.'; err.classList.add('show'); } }
 }
@@ -4881,11 +4998,12 @@ async function acctSaveFlag(){
     if(error) throw error;
     await loadProfile();
     syncAuthUI();                 // refresh the saved-flag shown on the account bar
+    renderProfilePage();          // ...and the profile header + picker
     showToast('Flag saved ✓');
   }catch(e){ showToast('Could not save flag'); }
 }
 
-async function acctSignOut(){ try{ if(sbClient) await sbClient.auth.signOut(); }catch(e){} closeAccountModal(); }
+async function acctSignOut(){ try{ if(sbClient) await sbClient.auth.signOut(); }catch(e){} closeAccountModal(); if(document.getElementById('screen-profile')&&document.getElementById('screen-profile').classList.contains('active')) showScreen('start'); }
 
 function sbCount(res){
   // PostgREST returns "<range>/<total>" in Content-Range when Prefer: count=exact
@@ -6911,8 +7029,10 @@ $('entry-submit').addEventListener('click', submitEntry);
 (function wireAccounts(){
   const on=(id,ev,fn)=>{ const el=$(id); if(el) el.addEventListener(ev,fn); };
   on('btn-account','click',openAccountModal);
-  on('btn-account-user','click',openAccountModal);
+  on('btn-account-user','click',openProfilePage);   // signed-in → full-screen profile
   on('btn-signout','click',acctSignOut);
+  on('prof-back','click',()=>showScreen('start'));
+  on('legends-filters','click',e=>{ const b=e.target.closest('.lf-chip'); if(!b) return; legendFilter=b.dataset.f; renderLegends(); });
   on('entry-auth-btn','click',openAccountModal);   // CTA inside the entry modal
   on('acct-close','click',closeAccountModal);
   on('acct-bg','click',e=>{ if(e.target===$('acct-bg')) closeAccountModal(); });
