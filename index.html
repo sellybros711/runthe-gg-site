@@ -5475,12 +5475,11 @@ async function attachCosmetics(rows){
 }
 function lbNameCell(row, nm){
   const fl=(row.flag && String(row.flag).trim()) ? flagChip(row.flag)+' ' : '';
-  const hasTier=(row._badges!=null && row._badges>0);
-  const tier=hasTier?tierFromBadges(row._badges):null;
+  const tier=(row._badges!=null && row._badges>0) ? tierFromBadges(row._badges) : null;
   const legend=tier&&tier.css==='legend';
   const nameStyle=(tier&&!legend)?` style="color:${tier.css}"`:'';
-  const tierHtml=tier?`<span class="lb-title${legend?' nt-legend':''}"${legend?'':` style="color:${tier.css}"`}>${tier.name}</span>`:'';
-  return `<span class="lb-name"><span class="lb-nm${legend?' nt-legend':''}"${nameStyle}>${fl}${escapeHtml(nm)}</span>${tierHtml}</span>`;
+  // name is coloured by tier; no tier-name label (it threw the name off-centre)
+  return `<span class="lb-name"><span class="lb-nm${legend?' nt-legend':''}"${nameStyle}>${fl}${escapeHtml(nm)}</span></span>`;
 }
 function renderLeaderboardRows(rows, highlightId){
   // Every draft is shown; nameless / banned-name rows render as "Anonymous".
