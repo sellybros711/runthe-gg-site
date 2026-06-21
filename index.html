@@ -1736,10 +1736,32 @@
   .acct-flag-save{display:block;width:100%;padding:11px 18px;margin-top:14px;}
 
   /* ---------- daily challenge ---------- */
-  .daily-home-btn{background:var(--teal);margin-top:10px;}
-  .daily-board-link{display:block;margin:7px auto 0;background:none;border:0;color:#bdbdbd;
-    font:inherit;font-size:12.5px;cursor:pointer;padding:4px 8px;}
-  .daily-board-link:hover{color:var(--gold);}
+  /* dark fill so white text reads on the cream page, with a thin gold outline */
+  .daily-home-btn{background:var(--ink);color:#fff;border:2px solid var(--gold);margin-top:10px;}
+  .daily-home-btn .btn-label,.daily-home-btn .btn-sub{color:#fff;}
+  .daily-board-link{display:block;margin:7px auto 0;background:none;border:0;color:#8a7d70;
+    font:inherit;font-weight:600;font-size:12.5px;cursor:pointer;padding:4px 8px;}
+  .daily-board-link:hover{color:var(--ink);}
+
+  /* daily intro / rules page */
+  .daily-intro-theme{text-align:center;background:var(--white);border:2px solid var(--ink);
+    border-radius:12px;padding:16px 16px 18px;margin:2px auto 18px;max-width:440px;box-shadow:var(--shadow-sm);}
+  .dit-label{font-weight:900;letter-spacing:2px;font-size:11px;text-transform:uppercase;color:var(--teal);}
+  .dit-name{font-family:'Anton',Impact,sans-serif;font-size:clamp(26px,7.5vw,38px);
+    text-transform:uppercase;line-height:1;margin:5px 0 6px;color:var(--ink);}
+  .dit-blurb{font-weight:600;font-size:14px;color:#5a5048;}
+  .daily-intro-rules{list-style:none;padding:0;margin:0 auto 16px;max-width:440px;}
+  .daily-intro-rules li{position:relative;padding:9px 0 9px 24px;font-size:14px;line-height:1.5;
+    color:#3a332c;border-bottom:1px solid #e7e0d0;}
+  .daily-intro-rules li:last-child{border-bottom:0;}
+  .daily-intro-rules li:before{content:"";position:absolute;left:4px;top:15px;width:8px;height:8px;
+    background:var(--gold);border-radius:2px;}
+  .daily-intro-rules b{color:var(--ink);}
+  .daily-intro-warn{background:rgba(244,180,19,.16);border:2px solid var(--gold);border-radius:10px;
+    padding:13px 16px;font-size:13.5px;line-height:1.55;color:var(--ink);max-width:440px;
+    margin:0 auto;text-align:center;}
+  .daily-intro-warn b{color:var(--red);}
+  #screen-daily-intro .stack{max-width:440px;margin-left:auto;margin-right:auto;}
   .daily-card{max-width:460px;}
   .daily-yourline{text-align:center;font-size:13px;color:#dcdcdc;margin:10px 0 6px;line-height:1.5;}
   .daily-yourline b{color:var(--gold);}
@@ -2174,7 +2196,7 @@
 
       <!-- Daily Challenge: one themed draft a day, same for everyone -->
       <button id="btn-daily" class="btn big home-primary daily-home-btn" style="display:none">
-        <span class="btn-label">🗓️ Daily Challenge</span>
+        <span class="btn-label">Daily Challenge</span>
         <span class="btn-sub" id="daily-btn-sub">Today’s themed draft</span>
       </button>
       <button id="btn-daily-board" type="button" class="daily-board-link" style="display:none">View today’s leaderboard ›</button>
@@ -2186,6 +2208,35 @@
       </div>
       <!-- flag lane (scrolls right) below the kickoff button -->
       <div class="flag-marquee bottom"><div class="flag-lane right" id="flag-lane-2"></div></div>
+    </div>
+  </section>
+
+  <!-- ===== DAILY CHALLENGE INTRO (rules + today's theme) ===== -->
+  <section id="screen-daily-intro" class="screen">
+    <div class="mode-head">
+      <div class="mode-title">Daily Challenge</div>
+      <div class="mode-sub">One themed draft. The same for everyone. Every day.</div>
+    </div>
+
+    <div class="daily-intro-theme">
+      <div class="dit-label">Today’s Challenge</div>
+      <div class="dit-name" id="daily-intro-name"></div>
+      <div class="dit-blurb" id="daily-intro-blurb"></div>
+    </div>
+
+    <ul class="daily-intro-rules">
+      <li><b>Same for everyone.</b> The theme and the nation/year spins are fixed for the day — your score is all about who you pick.</li>
+      <li><b>Draft a full Starting XI</b> using only teams that fit today’s theme, then take them through the World Cup.</li>
+      <li><b>A new challenge daily</b> at midnight UTC. Play every day to build a streak.</li>
+    </ul>
+
+    <div class="daily-intro-warn">
+      You get <b>one attempt that counts.</b> Replay as much as you like to practise — but only your <b>first completed run</b> is ranked on the daily leaderboard and counts toward your streak.
+    </div>
+
+    <div class="stack" style="margin-top:18px;">
+      <button id="daily-intro-start" class="btn red big">Start Challenge</button>
+      <button id="daily-intro-back" type="button" class="daily-board-link">‹ Back to home</button>
     </div>
   </section>
 
@@ -2628,7 +2679,7 @@
 <div class="entry-bg daily-bg" id="daily-bg">
   <div class="entry-card daily-card">
     <button class="entry-close" id="daily-close" aria-label="Close">✕</button>
-    <h3 class="entry-title">🗓️ Daily Challenge</h3>
+    <h3 class="entry-title">Daily Challenge</h3>
     <p class="entry-sub" id="daily-theme-line"></p>
     <div class="daily-yourline" id="daily-yourline"></div>
     <div class="entry-lb-list" id="daily-list"></div>
@@ -4934,22 +4985,22 @@ const WC_WINNERS = new Set(['Brazil','Germany','West Germany','Italy','Argentina
 // The rotating set of daily themes. Each is a predicate over a (country, year)
 // nation-team. The day's theme = THEMES[ dayIndexUTC % THEMES.length ].
 const THEMES = [
-  { id:'caf',        emoji:'🌍', name:'African Nations',     blurb:'Draft only from African (CAF) teams.',           test:(c,y)=>confedOf(c)==='CAF' },
-  { id:'conmebol',   emoji:'🌎', name:'South American',      blurb:'Draft only from South American (CONMEBOL) teams.', test:(c,y)=>confedOf(c)==='CONMEBOL' },
-  { id:'uefa',       emoji:'🇪🇺', name:'European Nations',    blurb:'Draft only from European (UEFA) teams.',          test:(c,y)=>confedOf(c)==='UEFA' },
-  { id:'afc',        emoji:'🌏', name:'Asian Nations',       blurb:'Draft only from Asian (AFC) teams.',              test:(c,y)=>confedOf(c)==='AFC' },
-  { id:'concacaf',   emoji:'🌎', name:'CONCACAF',            blurb:'Draft only from North & Central American teams.', test:(c,y)=>confedOf(c)==='CONCACAF' },
-  { id:'neverwon',   emoji:'🐎', name:'Never Won It',        blurb:'Only teams that have never lifted the trophy.',   test:(c,y)=>!WC_WINNERS.has(c) },
-  { id:'champions',  emoji:'👑', name:'Former Champions',    blurb:'Only nations that have won a World Cup.',          test:(c,y)=>WC_WINNERS.has(c) },
-  { id:'pre2000',    emoji:'📼', name:'Pre-2000s',           blurb:'Only teams from before the year 2000.',           test:(c,y)=>y<2000 },
-  { id:'modern',     emoji:'📱', name:'21st Century',        blurb:'Only teams from 2000 onward.',                    test:(c,y)=>y>=2000 },
-  { id:'eighties',   emoji:'🕺', name:'The 80s',             blurb:'Only teams from the 1980s.',                      test:(c,y)=>y>=1980&&y<1990 },
-  { id:'nineties',   emoji:'💿', name:'The 90s',             blurb:'Only teams from the 1990s.',                      test:(c,y)=>y>=1990&&y<2000 },
-  { id:'tens',       emoji:'📸', name:'The 2010s',           blurb:'Only teams from the 2010s.',                      test:(c,y)=>y>=2010&&y<2020 },
-  { id:'y1970',      emoji:'🏆', name:'1970 Only',           blurb:'Only teams from the 1970 World Cup.',             test:(c,y)=>y===1970 },
-  { id:'y1986',      emoji:'🇲🇽', name:'1986 Only',           blurb:'Only teams from the 1986 World Cup.',             test:(c,y)=>y===1986 },
-  { id:'y1998',      emoji:'🇫🇷', name:'1998 Only',           blurb:'Only teams from the 1998 World Cup.',             test:(c,y)=>y===1998 },
-  { id:'y2014',      emoji:'🇧🇷', name:'2014 Only',           blurb:'Only teams from the 2014 World Cup.',             test:(c,y)=>y===2014 }
+  { id:'caf',        name:'African Nations',  blurb:'Draft only from African (CAF) teams.',            test:(c,y)=>confedOf(c)==='CAF' },
+  { id:'conmebol',   name:'South American',   blurb:'Draft only from South American (CONMEBOL) teams.', test:(c,y)=>confedOf(c)==='CONMEBOL' },
+  { id:'uefa',       name:'European Nations', blurb:'Draft only from European (UEFA) teams.',           test:(c,y)=>confedOf(c)==='UEFA' },
+  { id:'afc',        name:'Asian Nations',    blurb:'Draft only from Asian (AFC) teams.',               test:(c,y)=>confedOf(c)==='AFC' },
+  { id:'concacaf',   name:'CONCACAF',         blurb:'Draft only from North & Central American teams.',  test:(c,y)=>confedOf(c)==='CONCACAF' },
+  { id:'neverwon',   name:'Never Won It',     blurb:'Only teams that have never lifted the trophy.',    test:(c,y)=>!WC_WINNERS.has(c) },
+  { id:'champions',  name:'Former Champions', blurb:'Only nations that have won a World Cup.',           test:(c,y)=>WC_WINNERS.has(c) },
+  { id:'pre2000',    name:'Pre-2000s',        blurb:'Only teams from before the year 2000.',            test:(c,y)=>y<2000 },
+  { id:'modern',     name:'21st Century',     blurb:'Only teams from 2000 onward.',                     test:(c,y)=>y>=2000 },
+  { id:'eighties',   name:'The 80s',          blurb:'Only teams from the 1980s.',                       test:(c,y)=>y>=1980&&y<1990 },
+  { id:'nineties',   name:'The 90s',          blurb:'Only teams from the 1990s.',                       test:(c,y)=>y>=1990&&y<2000 },
+  { id:'tens',       name:'The 2010s',        blurb:'Only teams from the 2010s.',                       test:(c,y)=>y>=2010&&y<2020 },
+  { id:'y1970',      name:'1970 Only',        blurb:'Only teams from the 1970 World Cup.',              test:(c,y)=>y===1970 },
+  { id:'y1986',      name:'1986 Only',        blurb:'Only teams from the 1986 World Cup.',              test:(c,y)=>y===1986 },
+  { id:'y1998',      name:'1998 Only',        blurb:'Only teams from the 1998 World Cup.',              test:(c,y)=>y===1998 },
+  { id:'y2014',      name:'2014 Only',        blurb:'Only teams from the 2014 World Cup.',              test:(c,y)=>y===2014 }
 ];
 
 // --- deterministic helpers (identical for every player on a given UTC day) ----
@@ -5001,10 +5052,18 @@ async function refreshDailyStatus(){
 function updateDailyButton(){
   const sub=$('daily-btn-sub'); if(!sub) return;
   const t=todaysTheme();
-  let s = t.emoji+' '+t.name;
-  if(isSignedIn() && dailyPlayedToday) s += ' · Played ✓';
-  if(isSignedIn() && dailyStreak>0)   s += ' · 🔥'+dailyStreak;
+  let s = 'Today: '+t.name;
+  if(isSignedIn() && dailyPlayedToday) s += ' · Played';
+  if(isSignedIn() && dailyStreak>0)   s += ' · Streak '+dailyStreak;
   sub.textContent=s;
+}
+
+// Rules + today's theme page, shown before the draft begins.
+function openDailyIntro(){
+  const t=todaysTheme();
+  const nm=$('daily-intro-name'); if(nm) nm.textContent=t.name;
+  const bl=$('daily-intro-blurb'); if(bl) bl.textContent=t.blurb;
+  showScreen('daily-intro');
 }
 
 // Start (or replay) today's daily challenge.
@@ -5060,7 +5119,7 @@ async function fillDailyRankBadge(overall, progress){
   if(isSignedIn()){
     recorded = await submitDailyRow(progress);
     await loadProfile();        // pull the freshly-updated streak
-    refreshDailyStatus();       // update the home button (Played ✓ / streak)
+    refreshDailyStatus();       // update the home button (Played / streak)
   }
   // rank among today's board (named only); total = today's entries
   let rank=null, total=null;
@@ -5082,14 +5141,13 @@ async function fillDailyRankBadge(overall, progress){
 }
 function renderDailyRankLine(el, lb){
   el.className='res-rank';
-  const theme=gs.dailyThemeName||'Daily';
   if(!lb.signedIn){
-    el.innerHTML='🗓️ <b>Daily Challenge</b> — <span style="color:var(--gold)">sign in to rank &amp; build a streak</span>';
+    el.innerHTML='<b>Daily Challenge</b> — <span style="color:var(--gold)">sign in to rank &amp; build a streak</span>';
     return;
   }
-  let s='🗓️ Daily';
+  let s='Daily Challenge';
   if(lb.rank&&lb.total) s+=` — ranks <b>${lb.rank}</b> of <b>${lb.total}</b> today`;
-  if(lb.streak>0) s+=` · 🔥 <b>${lb.streak}</b> day streak`;
+  if(lb.streak>0) s+=` · <b>${lb.streak}</b> day streak`;
   if(lb.already) s+=' · <span style="color:#b9b9b9">(first attempt counted)</span>';
   el.innerHTML=s;
 }
@@ -5100,7 +5158,7 @@ function closeDailyBoard(){ const bg=$('daily-bg'); if(bg) bg.classList.remove('
 async function openDailyBoard(){
   const bg=$('daily-bg'); if(!bg) return;
   const t=todaysTheme();
-  const tl=$('daily-theme-line'); if(tl) tl.innerHTML=`<b>${t.emoji} ${escapeHtml(t.name)}</b> — ${escapeHtml(t.blurb)}`;
+  const tl=$('daily-theme-line'); if(tl) tl.innerHTML=`<b>${escapeHtml(t.name)}</b> — ${escapeHtml(t.blurb)}`;
   const list=$('daily-list'); if(list) list.innerHTML='<div class="lb-empty">Loading…</div>';
   // play/replay button label
   const pb=$('daily-play-btn');
@@ -5109,11 +5167,11 @@ async function openDailyBoard(){
   // your-line summary
   const yl=$('daily-yourline');
   if(yl){
-    if(!isSignedIn()) yl.innerHTML='🔒 <b>Sign in</b> to rank on the daily board and build a streak.';
+    if(!isSignedIn()) yl.innerHTML='<b>Sign in</b> to rank on the daily board and build a streak.';
     else {
       const st=(authProfile&&authProfile.current_streak)||0;
-      yl.innerHTML = (dailyPlayedToday?'✅ Played today':'▶️ Not played yet')
-        + (st>0?` · 🔥 <b>${st}</b> day streak`:'');
+      yl.innerHTML = (dailyPlayedToday?'Played today':'Not played yet')
+        + (st>0?` · <b>${st}</b> day streak`:'');
     }
   }
   try{
@@ -6113,11 +6171,13 @@ $('btn-home-leaderboard').addEventListener('click', openLeaderboardView);
 // ---- daily challenge wiring ----
 (function wireDaily(){
   const on=(id,ev,fn)=>{ const el=$(id); if(el) el.addEventListener(ev,fn); };
-  on('btn-daily','click',startDailyChallenge);
+  on('btn-daily','click',openDailyIntro);
   on('btn-daily-board','click',openDailyBoard);
+  on('daily-intro-start','click',startDailyChallenge);
+  on('daily-intro-back','click',()=>showScreen('start'));
   on('daily-close','click',closeDailyBoard);
   on('daily-bg','click',e=>{ if(e.target===$('daily-bg')) closeDailyBoard(); });
-  on('daily-play-btn','click',()=>{ closeDailyBoard(); startDailyChallenge(); });
+  on('daily-play-btn','click',()=>{ closeDailyBoard(); openDailyIntro(); });
   // tap a daily row with a stored lineup → show that squad
   on('daily-list','click',e=>{
     const rowEl=e.target.closest('.lb-row.has-lineup'); if(!rowEl) return;
