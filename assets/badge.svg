@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 564" role="img" aria-label="RunThePitch badge">
+  <defs>
+    <linearGradient id="rtpGold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F6C75A"/>
+      <stop offset=".55" stop-color="#EBA61F"/>
+      <stop offset="1" stop-color="#C9870F"/>
+    </linearGradient>
+  </defs>
+
+  <!-- shield background -->
+  <path d="M256 20 C300 20 360 30 432 44 C452 48 462 64 462 86 V300 C462 408 388 474 256 544 C124 474 50 408 50 300 V86 C50 64 60 48 80 44 C152 30 212 20 256 20 Z"
+        fill="#01122A" stroke="#F4E3C9" stroke-width="14" stroke-linejoin="round"/>
+  <!-- inner teal frame -->
+  <path d="M256 48 C296 48 350 57 414 69 C429 72 437 84 437 100 V298 C437 392 372 452 256 512 C140 452 75 392 75 298 V100 C75 84 83 72 98 69 C162 57 216 48 256 48 Z"
+        fill="none" stroke="#06A291" stroke-width="9" stroke-linejoin="round"/>
+
+  <!-- ===== pitch (lower half), teal line-art ===== -->
+  <g fill="none" stroke="#06A291" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="96" y1="330" x2="416" y2="330"/>
+    <!-- box / lines fanning toward the point -->
+    <path d="M150 330 L196 470"/>
+    <path d="M362 330 L316 470"/>
+    <ellipse cx="256" cy="372" rx="74" ry="30"/>
+    <path d="M196 470 Q256 432 316 470"/>
+  </g>
+  <circle cx="256" cy="372" r="6" fill="#06A291"/>
+  <circle cx="256" cy="446" r="6" fill="#06A291"/>
+
+  <!-- ===== trophy (gold) ===== -->
+  <g>
+    <!-- globe -->
+    <circle cx="256" cy="150" r="44" fill="url(#rtpGold)" stroke="#9C6A0C" stroke-width="3"/>
+    <g fill="none" stroke="#9C6A0C" stroke-width="2.4" opacity=".85">
+      <line x1="214" y1="150" x2="298" y2="150"/>
+      <line x1="218" y1="128" x2="294" y2="128"/>
+      <line x1="218" y1="172" x2="294" y2="172"/>
+      <ellipse cx="256" cy="150" rx="17" ry="44"/>
+    </g>
+    <!-- neck + cup (vase) -->
+    <path d="M236 196 C236 214 232 230 224 250 C238 266 274 266 288 250 C280 230 276 214 276 196 Z"
+          fill="url(#rtpGold)" stroke="#9C6A0C" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M243 250 C246 282 240 300 236 312 H276 C272 300 266 282 269 250 Z"
+          fill="url(#rtpGold)" stroke="#9C6A0C" stroke-width="3" stroke-linejoin="round"/>
+    <!-- base -->
+    <rect x="226" y="312" width="60" height="14" rx="3" fill="#07605F"/>
+    <rect x="234" y="312" width="44" height="10" rx="2" fill="url(#rtpGold)"/>
+    <rect x="214" y="326" width="84" height="16" rx="4" fill="url(#rtpGold)"/>
+    <rect x="214" y="338" width="84" height="6" rx="3" fill="#07605F"/>
+  </g>
+</svg>
