@@ -4737,13 +4737,13 @@ const ACH_TIER_COLORS = ['#6a6a6a','#C77B3A','#BFC4C9','#E8C25A','#7FE0FF']; // 
 const ACH_ROMAN = ['','I','II','III','IV'];
 function roundName(p){ const M={0:'Group',1:'R32',2:'R16',3:'QF',4:'SF',5:'Final',6:'Champion'}; return M[p]!=null?M[p]:'—'; }
 const ACHIEVEMENTS = [
-  { id:'draftsman',    name:'Draftsman',    desc:'Complete career drafts',          tiers:[50,100,200,500], get:m=>m.games,          fmt:v=>v },
-  { id:'worldbeater',  name:'World Beater', desc:'Win the World Cup',               tiers:[1,10,50],        get:m=>m.wins,           fmt:v=>v },
-  { id:'daily',        name:'Daily Devotee',desc:'Keep a daily streak going',       tiers:[7,30,100],       get:m=>m.longest_streak, fmt:v=>v },
-  { id:'galacticos',   name:'Galácticos',   desc:'Field a top-rated XI',            tiers:[95,100,105],     get:m=>m.best_overall,   fmt:v=>(+v).toFixed(1) },
-  { id:'globetrotter', name:'Globetrotter', desc:'One squad, many confederations',  tiers:[4,5,6],          get:m=>m.confedBreadth,  fmt:v=>v },
-  { id:'timetraveler', name:'Time Traveler',desc:'One squad, many decades',         tiers:[5,6,7],          get:m=>m.decadeBreadth,  fmt:v=>v },
-  { id:'underdog',     name:'Underdog',     desc:'Go deep with a squad ≤85 OVR',    tiers:[2,3,4,6],        get:m=>m.underdog_progress, fmt:v=>roundName(v), round:true }
+  { id:'draftsman',    name:'Draftsman',    desc:'Finish drafts to climb the tiers.',                       tiers:[50,100,200,500], get:m=>m.games,          fmt:v=>v },
+  { id:'worldbeater',  name:'World Beater', desc:'Win the World Cup with your drafted squad.',              tiers:[1,10,50],        get:m=>m.wins,           fmt:v=>v },
+  { id:'daily',        name:'Daily Devotee',desc:'Play the Daily Challenge every day to grow your streak.', tiers:[7,30,100],       get:m=>m.longest_streak, fmt:v=>v },
+  { id:'galacticos',   name:'Galácticos',   desc:'Draft a squad with a top overall rating.',               tiers:[95,100,105],     get:m=>m.best_overall,   fmt:v=>(+v).toFixed(1) },
+  { id:'globetrotter', name:'Globetrotter', desc:'Pick players from this many confederations in one squad.',tiers:[4,5,6],          get:m=>m.confedBreadth,  fmt:v=>v },
+  { id:'timetraveler', name:'Time Traveler',desc:'Pick players from this many decades in one squad.',       tiers:[5,6,7],          get:m=>m.decadeBreadth,  fmt:v=>v },
+  { id:'underdog',     name:'Underdog',     desc:'Reach a knockout round with a squad rated 85 OVR or below.', tiers:[2,3,4,6],     get:m=>m.underdog_progress, fmt:v=>roundName(v), round:true }
 ];
 
 // --- retro merit-badge graphics: a sunburst medal (tier-coloured) + emblem ---
@@ -4764,7 +4764,11 @@ function achEmblem(id,col,light){
     case 'galacticos':   return `<path ${f} d="${starburstPath(32,31,12,4.8,5)}"/>`;
     case 'globetrotter': return `<circle cx="32" cy="32" r="11" ${s}/><path ${s} d="M21.5 32 H42.5 M32 21 V43"/><ellipse cx="32" cy="32" rx="4.6" ry="11" ${s}/>`;
     case 'timetraveler': return `<circle cx="32" cy="32" r="11" ${s}/><path ${s} d="M32 25 V32.5 L37 35.5"/>`;
-    case 'daily':        return `<path ${f} d="M32 20 C34.5 25 39 26 39 31 C39 35 36 38.5 32 38.5 C28 38.5 25 35 25 31 C25 28 27 26.5 28 24.5 C30 27.5 31 27 32 25 Z"/>`;
+    case 'daily':        return `<defs><linearGradient id="abFire" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCD34D"/><stop offset=".5" stop-color="#F47B20"/><stop offset="1" stop-color="#E5402A"/></linearGradient></defs>`
+      +`<g transform="translate(23.4 20.4) scale(.72)">`
+      +`<path d="M12 1 C13 7 18 8 18 15 C18 16 17.6 17 17 18 C19.2 16.8 20 14 20 14 C21.2 17 22 20 22 23 C22 28 17.5 31 12 31 C6.5 31 2 28 2 23 C2 18 6.2 16 7 11 C9 13.2 10 14 11 13 C12.2 11 10 8 12 1 Z" fill="url(#abFire)" stroke="${col}" stroke-width="1.2" stroke-linejoin="round"/>`
+      +`<path d="M12 17 C12.6 19.5 15 20.5 15 23.3 C15 25.4 13.6 27 12 27 C10.4 27 9 25.6 9 23.6 C9 21.2 11 20.2 12 17 Z" fill="#FFF3C4"/>`
+      +`</g>`;
     case 'draftsman':    return `<rect x="23" y="21" width="18" height="22" rx="2.5" ${s}/><path ${s} d="M27.5 28 H36.5 M27.5 32 H36.5 M27.5 36 H33"/>`;
     case 'underdog': {                                  /* outline puppy face */
       const so=`fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"`;
