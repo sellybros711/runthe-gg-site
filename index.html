@@ -2247,14 +2247,21 @@
   /* ---------- masthead logo (theme-swapped) + theme toggle ---------- */
   /* Light mode shows the navy-text logo; dark mode shows the cream-text logo,
      so the wordmark is always legible against the page. No backing panel. */
+  .masthead{margin-bottom:10px;}
   .masthead .logo-badge{display:block;background:none;border-radius:0;padding:0;
-    margin:5px auto 7px;width:100%;max-width:560px;overflow:hidden;line-height:0;box-shadow:none;}
+    margin:6px auto 2px;width:100%;max-width:560px;overflow:hidden;line-height:0;box-shadow:none;}
   /* the PNG carries ~24% empty space on top and ~17% on the bottom; crop it with
-     negative margins (badge clips via overflow:hidden) so the wordmark sits tight
-     and the kicker + edition hug it as one centred unit */
+     negative margins (badge clips via overflow:hidden) so the wordmark sits tight */
   .masthead .logo-badge img{display:block;width:100%;height:auto;margin:-9.7% 0 -6.8%;}
-  .masthead .kicker{margin-bottom:0;}
-  .masthead .edition{margin-top:0;}
+  /* "World Cup Game" is now a slim subtitle, not a heavy gold sticker */
+  .masthead .edition{display:inline-block;background:none;border:none;box-shadow:none;
+    border-radius:0;padding:0;margin:0;color:var(--teal);
+    font-weight:900;font-size:12px;letter-spacing:5px;text-transform:uppercase;}
+  html.dark .masthead .edition{color:#3bbfa9;}
+  /* tighter sign-in row under the masthead */
+  .acct-bar{margin:6px 0 12px;}
+  .acct-bar-btn{padding:7px 14px;font-size:11.5px;}
+  .acct-bar .fa-lock{font-size:12px;}
   .masthead .logo-badge .logo-dark{display:none;}
   html.dark .masthead .logo-badge .logo-light{display:none;}
   html.dark .masthead .logo-badge .logo-dark{display:block;}
@@ -2293,7 +2300,6 @@
 <div class="app">
 
   <div class="masthead">
-    <div class="kicker">★ RunThe.gg presents ★</div>
     <span class="logo-badge"><img class="logo-light" src="/assets/runthepitch-logo-full_navytext_filled-shield_transparent.png" alt="RunThePitch" width="1983" height="793" /><img class="logo-dark" src="/assets/runthepitch-logo-full_shield-navy_transparent.png" alt="RunThePitch" width="1983" height="793" /></span>
     <span class="edition">World Cup Game</span>
   </div>
