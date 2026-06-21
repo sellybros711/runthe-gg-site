@@ -1737,6 +1737,13 @@
   .acct-submit{display:block;width:100%;padding:13px 18px;margin-top:4px;}
   .acct-userline{font-size:15px;color:#eee;text-align:center;margin:16px 0 6px;}
   .acct-userline b{color:var(--gold);font-weight:900;}
+  .acct-link-btn{background:none;border:0;color:#8ab7ff;font:inherit;font-size:12px;font-weight:700;
+    cursor:pointer;padding:0 0 0 8px;text-decoration:underline;text-underline-offset:2px;}
+  .acct-link-btn:hover{color:#b9d3ff;}
+  .acct-forgot{display:block;margin:-4px 2px 10px auto;background:none;border:0;color:#9bb6d8;
+    font:inherit;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;
+    text-underline-offset:2px;}
+  .acct-forgot:hover{color:#cfe0f3;}
   .acct-username-row{display:flex;gap:8px;align-items:stretch;}
   .acct-username-row .entry-name{margin-bottom:0;}
   .acct-flag-save{display:block;width:100%;padding:11px 18px;margin-top:14px;}
@@ -2668,6 +2675,7 @@
       <input class="entry-name acct-input" id="acct-username" maxlength="20" placeholder="Username" autocomplete="username" style="display:none;" />
       <input class="entry-name acct-input" id="acct-email" type="email" placeholder="Email" autocomplete="email" />
       <input class="entry-name acct-input" id="acct-password" type="password" placeholder="Password" autocomplete="current-password" />
+      <button type="button" class="acct-forgot" id="acct-forgot">Forgot your password?</button>
       <button class="entry-submit acct-submit" id="acct-submit">Sign in</button>
       <div class="entry-error" id="acct-error"></div>
     </div>
@@ -2678,11 +2686,19 @@
       <p class="acct-note">Didn’t get it? Check spam, or wait a minute and try again.</p>
     </div>
 
+    <!-- password recovery: set a new password (opened from the email link) -->
+    <div id="acct-reset" style="display:none;">
+      <p class="acct-note">Choose a new password for your account.</p>
+      <input class="entry-name acct-input" id="acct-newpass" type="password" placeholder="New password" autocomplete="new-password" />
+      <button class="entry-submit acct-submit" id="acct-newpass-save">Update password</button>
+      <div class="entry-error" id="acct-reset-error"></div>
+    </div>
+
     <!-- signed-in: profile -->
     <div id="acct-profile" style="display:none;">
-      <div class="acct-userline" id="acct-username-have">Signed in as <b id="acct-username-display"></b></div>
+      <div class="acct-userline" id="acct-username-have">Signed in as <b id="acct-username-display"></b><button type="button" class="acct-link-btn" id="acct-change-username">Change</button></div>
       <div id="acct-username-set" style="display:none;">
-        <div class="entry-flag-label">Pick a username</div>
+        <div class="entry-flag-label" id="acct-username-label">Pick a username</div>
         <div class="acct-username-row">
           <input class="entry-name acct-input" id="acct-username2" maxlength="20" placeholder="Username" autocomplete="username" />
           <button class="entry-submit" id="acct-save-username">Save</button>
@@ -4389,7 +4405,10 @@ function initAuth(){
     });
   }catch(e){ console.warn('[auth] init failed', e); return; }
   // React to sign-in / sign-out / token refresh, and restore a saved session.
-  sbClient.auth.onAuthStateChange((_evt, session)=>{ applySession(session); });
+  sbClient.auth.onAuthStateChange((evt, session)=>{
+    applySession(session);
+    if(evt==='PASSWORD_RECOVERY') openPasswordReset();   // clicked the reset email link
+  });
   sbClient.auth.getSession().then(({data})=>applySession(data && data.session))
     .catch(()=>{});
 }
@@ -4502,6 +4521,7 @@ function syncAuthUI(){
 // ---- account modal --------------------------------------------------------
 let acctTab = 'signin';            // 'signin' | 'signup'
 let acctSelectedFlag = 'USA';
+let acctRecovery = false;          // true while completing a password-reset link
 function showEl(el, on){ if(el) el.style.display = on ? '' : 'none'; }
 function acctError(msg){ const e=$('acct-error'); if(!e) return; e.textContent=msg||''; e.classList.toggle('show', !!msg); }
 
@@ -4527,6 +4547,7 @@ function setAcctTab(tab){
   acctTab = (tab==='signup') ? 'signup' : 'signin';
   document.querySelectorAll('.acct-tab').forEach(b=>b.classList.toggle('sel', b.dataset.tab===acctTab));
   showEl($('acct-username'), acctTab==='signup');   // username only on sign-up
+  showEl($('acct-forgot'),   acctTab==='signin');   // forgot-password only on sign-in
   const sub=$('acct-submit'); if(sub) sub.textContent = acctTab==='signup' ? 'Create account' : 'Sign in';
   const note=$('acct-note');
   if(note) note.textContent = acctTab==='signup'
@@ -4535,17 +4556,21 @@ function setAcctTab(tab){
   acctError('');
 }
 
-// Switches the modal between guest forms / email-confirm / signed-in profile.
+// Switches the modal between guest forms / email-confirm / password-reset /
+// signed-in profile.
 function renderAccountModal(){
   const bg=$('acct-bg'); if(!bg) return;
   const signed=isSignedIn();
   const confirming = $('acct-confirm') && $('acct-confirm').style.display!=='none';
-  showEl($('acct-forms'), !signed && !confirming);
-  showEl($('acct-profile'), signed);
-  if(!signed) return;
+  const recovering = acctRecovery;
+  showEl($('acct-reset'), recovering);
+  showEl($('acct-forms'), !signed && !confirming && !recovering);
+  showEl($('acct-profile'), signed && !recovering);
+  if(recovering || !signed) return;
   const hasName = !!authUsername();
   showEl($('acct-username-have'), hasName);
   showEl($('acct-username-set'),  !hasName);
+  const lbl=$('acct-username-label'); if(lbl) lbl.textContent = hasName ? 'Change username' : 'Pick a username';
   const d=$('acct-username-display'); if(d) d.textContent = authUsername();
   // flag picker reflects the profile's saved flag
   acctSelectedFlag = (authProfile && authProfile.flag) || acctSelectedFlag || 'USA';
@@ -4614,6 +4639,52 @@ function showConfirmPane(email){
   showEl($('acct-forms'), false);
   showEl($('acct-profile'), false);
   c.style.display='';
+}
+
+// Reveal the username editor (prefilled) so a named user can change it.
+function startChangeUsername(){
+  const set=$('acct-username-set'); if(set) set.style.display='';
+  const lbl=$('acct-username-label'); if(lbl) lbl.textContent='Change username';
+  const inp=$('acct-username2'); if(inp){ inp.value=authUsername()||''; inp.focus(); inp.select(); }
+  const err=$('acct-error2'); if(err) err.classList.remove('show');
+}
+
+// "Forgot your password?" — email a reset link to the address in the field.
+async function acctForgotPassword(){
+  if(!sbClient){ acctError('Accounts are unavailable right now.'); return; }
+  const email=($('acct-email').value||'').trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){
+    acctError('Enter your account email above, then tap “Forgot your password?”.'); return;
+  }
+  try{
+    const { error } = await sbClient.auth.resetPasswordForEmail(email, { redirectTo: location.origin });
+    if(error) throw error;
+    acctError('');
+    showToast('Reset link sent — check your email');
+  }catch(e){ acctError((e&&e.message)||'Could not send reset email.'); }
+}
+
+// Recovery return (clicked the email link): set a new password.
+function openPasswordReset(){
+  acctRecovery=true;
+  acctError('');
+  const err=$('acct-reset-error'); if(err) err.classList.remove('show');
+  const np=$('acct-newpass'); if(np) np.value='';
+  const bg=$('acct-bg'); if(bg) bg.classList.add('show');
+  renderAccountModal();
+}
+async function acctSetNewPassword(){
+  const pass=($('acct-newpass').value||'');
+  const err=$('acct-reset-error'); if(err) err.classList.remove('show');
+  if(pass.length<6){ if(err){ err.textContent='Password must be at least 6 characters.'; err.classList.add('show'); } return; }
+  try{
+    const { error } = await sbClient.auth.updateUser({ password: pass });
+    if(error) throw error;
+    acctRecovery=false;
+    showToast('Password updated ✓');
+    closeAccountModal();
+    renderAccountModal();
+  }catch(e){ if(err){ err.textContent=(e&&e.message)||'Could not update password.'; err.classList.add('show'); } }
 }
 
 async function acctSaveUsername(){
@@ -6673,12 +6744,17 @@ $('entry-submit').addEventListener('click', submitEntry);
   document.querySelectorAll('.acct-tab').forEach(b=>b.addEventListener('click',()=>setAcctTab(b.dataset.tab)));
   on('acct-submit','click',acctSubmit);
   on('acct-google','click',acctGoogle);
+  on('acct-forgot','click',acctForgotPassword);
+  on('acct-change-username','click',startChangeUsername);
   on('acct-save-username','click',acctSaveUsername);
+  on('acct-newpass-save','click',acctSetNewPassword);
   on('acct-save-flag','click',acctSaveFlag);
   on('acct-signout','click',acctSignOut);
   // Enter submits the email/password form
   ['acct-email','acct-password'].forEach(id=>on(id,'keydown',e=>{ if(e.key==='Enter') acctSubmit(); }));
   on('acct-username','keydown',e=>{ if(e.key==='Enter' && acctTab==='signup') acctSubmit(); });
+  on('acct-username2','keydown',e=>{ if(e.key==='Enter') acctSaveUsername(); });
+  on('acct-newpass','keydown',e=>{ if(e.key==='Enter') acctSetNewPassword(); });
 })();
 initAuth();
 
