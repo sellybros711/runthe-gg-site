@@ -1789,9 +1789,36 @@
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .prof-section-title{font-weight:900;font-size:12px;letter-spacing:1px;text-transform:uppercase;
     color:#9a9a9a;margin:24px 0 11px;display:flex;align-items:baseline;gap:9px;}
+  .prof-collapse-head{width:100%;display:flex;align-items:center;gap:9px;background:none;border:0;
+    cursor:pointer;padding:0;margin:24px 0 11px;-webkit-tap-highlight-color:transparent;}
+  .pc-title{font-weight:900;font-size:12px;letter-spacing:1px;text-transform:uppercase;color:#9a9a9a;}
+  .pc-count{font-size:11px;font-weight:800;color:#bdbdbd;}
+  .pc-count b{font-family:'Anton',Impact,sans-serif;font-size:15px;color:var(--gold);letter-spacing:.5px;font-weight:400;}
+  .pc-chev{margin-left:auto;font-size:12px;color:#9a9a9a;transition:transform .2s;}
+  .prof-collapse-head.open .pc-chev{transform:rotate(90deg);}
   .prof-sec-count{font-family:'Anton',Impact,sans-serif;font-size:15px;color:var(--gold);
     letter-spacing:.5px;text-transform:none;}
   .prof-settings{margin-top:26px;border-top:1px solid rgba(255,255,255,.1);padding-top:18px;}
+
+  /* top drafts accordion */
+  .topdrafts{display:flex;flex-direction:column;gap:8px;}
+  .td-row{border:1px solid rgba(255,255,255,.12);border-radius:11px;overflow:hidden;background:rgba(255,255,255,.03);}
+  .td-head{width:100%;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);border:0;
+    cursor:pointer;padding:10px 12px;color:#fff;-webkit-tap-highlight-color:transparent;text-align:left;}
+  .td-head:hover{background:rgba(255,255,255,.08);}
+  .td-rank{font-family:'Anton',Impact,sans-serif;font-size:16px;color:var(--gold);flex:0 0 auto;min-width:30px;}
+  .td-ov{font-family:'Anton',Impact,sans-serif;font-size:17px;flex:0 0 auto;}
+  .td-far{font-weight:800;font-size:11px;color:#cfcfcf;flex:1 1 auto;text-align:left;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .td-date{font-weight:700;font-size:10.5px;color:#9a9a9a;flex:0 0 auto;}
+  .td-chev{font-size:12px;color:#9a9a9a;transition:transform .2s;flex:0 0 auto;}
+  .td-row.open .td-chev{transform:rotate(90deg);}
+  .td-body{padding:11px 12px;}
+  .td-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;margin-bottom:11px;}
+  .td-grid>div{display:flex;flex-direction:column;gap:1px;}
+  .td-k{font-size:8.5px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:#8a8a8a;}
+  .td-v{font-weight:800;font-size:13px;color:#fff;}
+  .td-roster{display:flex;flex-direction:column;gap:5px;}
 
   /* legends collection — collapsible rarity groups */
   .legends-groups{display:flex;flex-direction:column;gap:9px;}
@@ -2372,8 +2399,15 @@
 
       <div class="acct-stats" id="acct-stats"></div>
 
-      <div class="prof-section-title">Achievements</div>
-      <div class="acct-ach" id="acct-ach"></div>
+      <button type="button" class="prof-collapse-head" id="ach-head">
+        <span class="pc-title">Achievements</span>
+        <span class="pc-count"><b id="ach-count">0 / 23</b> badges</span>
+        <span class="pc-chev" aria-hidden="true">▸</span>
+      </button>
+      <div class="acct-ach" id="acct-ach" hidden></div>
+
+      <div class="prof-section-title">Your Top 10 Drafts</div>
+      <div class="topdrafts" id="topdrafts"></div>
 
       <div class="prof-section-title">Legends Collection <span class="prof-sec-count" id="legends-count"></span></div>
       <div class="legends-groups" id="legends-groups"></div>
@@ -3189,7 +3223,7 @@ async function boot(){
   // If a fresh OAuth login already opened the profile before player data loaded,
   // re-run its data now so the legends/achievements aren't stuck empty.
   const pp=document.getElementById('screen-profile');
-  if(pp && pp.classList.contains('active') && isSignedIn()){ loadMyStats(); loadMyDrafts(); }
+  if(pp && pp.classList.contains('active') && isSignedIn()){ loadMyStats(); loadMyDrafts(); loadMyTopDrafts(); }
 }
 
 // ---- landing micro-demo: two looping scenes (draft → simulate) ----
@@ -4523,7 +4557,7 @@ async function applySession(session){
   authUser      = (session && session.user) || null;
   sbAccessToken = (session && session.access_token) || null;
   if(authUser){ await loadProfile(); await ensureUsernameFromMetadata(); }
-  else { authProfile = null; myStats = null; myAch = null; myCollected = null; }
+  else { authProfile = null; myStats = null; myAch = null; myCollected = null; myTopDrafts = null; }
   syncAuthUI();
   if(typeof refreshDailyStatus==='function') refreshDailyStatus(); // daily played/streak
   // A genuine login (email sign-in, or a returning Google redirect) → land on the
@@ -4692,6 +4726,7 @@ function renderProfilePage(){
   buildAcctFlagRow();
   renderProfileStats();
   renderAchievements();
+  renderTopDrafts();
   renderLegends();
 }
 function openProfilePage(){
@@ -4699,7 +4734,7 @@ function openProfilePage(){
   closeAccountModal();
   renderProfilePage();
   showScreen('profile');
-  loadMyStats(); loadMyDrafts();
+  loadMyStats(); loadMyDrafts(); loadMyTopDrafts();
 }
 
 // ---- profile stats (server-computed; foundation for achievements/level) ----
@@ -4828,6 +4863,48 @@ async function loadMyDrafts(){
   renderLegends();
 }
 
+// ---- Top 10 personal drafts (collapsible, with all-time rank + roster) ----
+let myTopDrafts=null; const topOpen={};
+function fmtDateShort(iso){ try{ return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return ''; } }
+function howFar(d){ return (+d.progress>=6) ? 'Champion' : (d.furthest || roundName(+d.progress||0)); }
+async function loadMyTopDrafts(){
+  if(!sbClient || !isSignedIn() || !authUser){ myTopDrafts=null; renderTopDrafts(); return; }
+  try{
+    const uid=authUser.id;
+    const url=`${SUPABASE_URL}/rest/v1/drafts?user_id=eq.${uid}&select=id,overall,progress,result,furthest,mode,draft_type,created_at,player_ids,slots&order=overall.desc,progress.desc,created_at.asc&limit=10`;
+    const res=await fetch(url,{ headers: sbHeaders() });
+    myTopDrafts = res.ok ? (await res.json().catch(()=>[]) || []) : [];
+  }catch(e){ myTopDrafts=null; }
+  renderTopDrafts();
+}
+function renderTopDrafts(){
+  const host=$('topdrafts'); if(!host) return;
+  if(!myTopDrafts){ host.innerHTML='<div class="acct-stat-loading">Loading…</div>'; return; }
+  if(!myTopDrafts.length){ host.innerHTML='<div class="legends-empty">No drafts yet — play a game to fill this out!</div>'; return; }
+  host.innerHTML=myTopDrafts.map((d,i)=>{
+    const open=!!topOpen[i], dt=(d.draft_type==='full')?'Full':'Quick', mode=(d.mode==='hard')?'Hard':'Easy';
+    return `<div class="td-row${open?' open':''}">
+      <button type="button" class="td-head" data-i="${i}">
+        <span class="td-rank">#${i+1}</span>
+        <span class="td-ov ${ovTier(d.overall)}">${(+d.overall).toFixed(1)}</span>
+        <span class="td-far">${escapeHtml(howFar(d))}</span>
+        <span class="td-date">${fmtDateShort(d.created_at)}</span>
+        <span class="td-chev" aria-hidden="true">▸</span>
+      </button>
+      <div class="td-body"${open?'':' hidden'}>
+        <div class="td-grid">
+          <div><span class="td-k">All-time rank</span><span class="td-v" id="td-rank-${i}">…</span></div>
+          <div><span class="td-k">Team overall</span><span class="td-v">${(+d.overall).toFixed(1)}</span></div>
+          <div><span class="td-k">Mode</span><span class="td-v">${dt} · ${mode}</span></div>
+          <div><span class="td-k">How far</span><span class="td-v">${escapeHtml(howFar(d))}</span></div>
+          <div><span class="td-k">Drafted</span><span class="td-v">${fmtDateShort(d.created_at)}</span></div>
+        </div>
+        <div class="td-roster" id="td-roster-${i}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ---- Legends collection (OVR ≥ 86, grouped into collapsible rarity tiers) ----
 // Silver 86-89 · Gold 90-94 · Icon 95-99.
 let LEGENDS=null;
@@ -4883,13 +4960,17 @@ function achMetrics(){
     underdog_progress:(a.underdog_progress!=null?a.underdog_progress:-1)
   };
 }
+const ACH_TOTAL_BADGES = ACHIEVEMENTS.reduce((n,a)=>n+a.tiers.length,0);  // each tier = 1 badge
 function renderAchievements(){
   const wrap=$('acct-ach'); if(!wrap) return;
-  if(!myStats && !myAch){ wrap.innerHTML='<div class="acct-stat-loading">Loading…</div>'; return; }
+  const cc=$('ach-count');
+  if(!myStats && !myAch){ wrap.innerHTML='<div class="acct-stat-loading">Loading…</div>'; if(cc) cc.textContent=`0 / ${ACH_TOTAL_BADGES}`; return; }
   const m=achMetrics();
+  let earned=0;
   wrap.innerHTML = ACHIEVEMENTS.map(a=>{
     const val=a.get(m), tiers=a.tiers;
     let level=0; tiers.forEach(t=>{ if(val>=t) level++; });
+    earned+=level;
     const maxed=level>=tiers.length;
     const prev = level>0 ? tiers[level-1] : 0;
     const next = maxed ? null : tiers[level];
@@ -4908,6 +4989,7 @@ function renderAchievements(){
       <div class="ach-bar"><span style="width:${Math.round(frac*100)}%"></span></div>
     </div>`;
   }).join('');
+  if(cc) cc.textContent=`${earned} / ${ACH_TOTAL_BADGES}`;
 }
 
 function buildAcctFlagRow(){
@@ -5344,13 +5426,18 @@ function openLineupModal(row){
     `<span class="lu-ov ${ovTier(row.overall)}">${(+row.overall).toFixed(1)} OVR</span>`
     + (resultTag ? `<span class="lu-result">${resultTag}</span>` : '');
 
-  const box=$('lineup-squad'); box.innerHTML='';
-  // pair each id with its stored slot (GK/DEF/MID/FWD/FLEX); fall back to the
-  // player's natural position when an entry predates slot storage
-  const slots = Array.isArray(row.slots) ? row.slots : [];
-  // attackers-first (FWD → GK) to match the results page. A FLEX pick is grouped
-  // by the player's real position (what they were drafted as) — so a flex-forward
-  // sits with the forwards, a flex-defender with the defenders, etc.
+  $('lineup-squad').innerHTML = squadRowsHtml(row.player_ids, row.slots);
+  $('lineup-bg').querySelector('.lineup-card').scrollTop=0;
+  $('lineup-bg').classList.add('show');
+}
+function closeLineupModal(){ $('lineup-bg').classList.remove('show'); }
+
+// Build the styled squad rows for a stored draft (player_ids + parallel slots),
+// attackers-first (FWD → GK). Reused by the lineup modal and the profile's Top
+// Drafts. Returns HTML.
+function squadRowsHtml(player_ids, slotsIn){
+  const ids = Array.isArray(player_ids) ? player_ids : [];
+  const slots = Array.isArray(slotsIn) ? slotsIn : [];
   const ORDER={FWD:0,MID:1,DEF:2,GK:3};
   const effPos = e => (e.slot==='FLEX' ? (e.p.position||'') : e.slot);
   const entries = ids.map((id,i)=>{
@@ -5359,25 +5446,15 @@ function openLineupModal(row){
     return { p, slot };
   }).filter(Boolean)
     .sort((a,b)=>(ORDER[effPos(a)]??9)-(ORDER[effPos(b)]??9) || (luOv(b.p)-luOv(a.p)));
-  if(!entries.length){
-    box.innerHTML='<div class="lineup-empty">Lineup unavailable for this entry.</div>';
-  }else{
-    entries.forEach(({p,slot})=>{
-      const ov     = luOv(p);
-      const caps   = p.is_captain ? lbCaptainBadge() : '';
-      const awards = awardList(p).map(a=>lbAwardIcon(a)).join('');
-      const r=document.createElement('div'); r.className='res-squad-row';
-      r.innerHTML=`<span class="r-badge" style="${slotBadgeStyle(slot,p)}">${slot}</span>
-        <span class="r-name">${escapeHtml(p.name)}${caps}${awards}</span>
-        <span class="r-cy">${flagChip(p.country)} ${p.year}</span>
-        <span class="r-ov ${ovTier(ov)}"><small class="r-ov-lbl">OVR</small>${ov}</span>`;
-      box.appendChild(r);
-    });
-  }
-  $('lineup-bg').querySelector('.lineup-card').scrollTop=0;
-  $('lineup-bg').classList.add('show');
+  if(!entries.length) return '<div class="lineup-empty">Lineup unavailable for this entry.</div>';
+  return entries.map(({p,slot})=>{
+    const ov=luOv(p), caps=p.is_captain?lbCaptainBadge():'', awards=awardList(p).map(a=>lbAwardIcon(a)).join('');
+    return `<div class="res-squad-row"><span class="r-badge" style="${slotBadgeStyle(slot,p)}">${slot}</span>`
+      +`<span class="r-name">${escapeHtml(p.name)}${caps}${awards}</span>`
+      +`<span class="r-cy">${flagChip(p.country)} ${p.year}</span>`
+      +`<span class="r-ov ${ovTier(ov)}"><small class="r-ov-lbl">OVR</small>${ov}</span></div>`;
+  }).join('');
 }
-function closeLineupModal(){ $('lineup-bg').classList.remove('show'); }
 
 function lbSetActiveToggles(){
   document.querySelectorAll('#lb-seg-window button').forEach(b=>b.classList.toggle('active', b.dataset.w===lbWindow));
@@ -7078,6 +7155,26 @@ $('entry-submit').addEventListener('click', submitEntry);
     const grp=h.parentElement, body=grp.querySelector('.lg-body');
     grp.classList.toggle('open', legendsOpen[tier]);
     if(body) body.hidden=!legendsOpen[tier];
+  });
+  on('ach-head','click',()=>{
+    const body=$('acct-ach'), head=$('ach-head'); if(!body||!head) return;
+    const open=body.hasAttribute('hidden'); if(open) body.removeAttribute('hidden'); else body.setAttribute('hidden','');
+    head.classList.toggle('open', open);
+  });
+  on('topdrafts','click',async e=>{
+    const h=e.target.closest('.td-head'); if(!h) return;
+    const i=+h.dataset.i; topOpen[i]=!topOpen[i];
+    const row=h.parentElement, body=row.querySelector('.td-body');
+    row.classList.toggle('open', topOpen[i]); if(body) body.hidden=!topOpen[i];
+    if(!topOpen[i] || !myTopDrafts || !myTopDrafts[i]) return;
+    const d=myTopDrafts[i];
+    const rost=document.getElementById('td-roster-'+i);
+    if(rost && !rost.dataset.filled){ rost.innerHTML=squadRowsHtml(d.player_ids,d.slots); rost.dataset.filled='1'; }
+    const rk=document.getElementById('td-rank-'+i);
+    if(rk && !rk.dataset.filled){ rk.dataset.filled='1';
+      try{ const {rank,total}=await fetchGlobalRank(+d.overall,+d.progress,d.draft_type); rk.textContent=`#${rank.toLocaleString()} of ${total.toLocaleString()}`; }
+      catch(err){ rk.dataset.filled=''; rk.textContent='—'; }
+    }
   });
   on('entry-auth-btn','click',openAccountModal);   // CTA inside the entry modal
   on('acct-close','click',closeAccountModal);
