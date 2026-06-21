@@ -1807,7 +1807,8 @@
   .td-head{width:100%;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);border:0;
     cursor:pointer;padding:10px 12px;color:#fff;-webkit-tap-highlight-color:transparent;text-align:left;}
   .td-head:hover{background:rgba(255,255,255,.08);}
-  .td-rank{font-family:'Anton',Impact,sans-serif;font-size:16px;color:var(--gold);flex:0 0 auto;min-width:30px;}
+  .td-rank{font-family:'Anton',Impact,sans-serif;font-size:16px;color:#9a9a9a;flex:0 0 auto;min-width:30px;}
+  .td-rank.g1{color:#E8C25A;} .td-rank.g2{color:#CFCFCF;} .td-rank.g3{color:#C77B3A;}
   .td-ov{font-family:'Anton',Impact,sans-serif;font-size:17px;flex:0 0 auto;}
   /* overall colours matching the in-game reveal/leaderboard scheme */
   .td-ov.red,.td-v.red,.tdr-ov.red{color:var(--red);} .td-ov.orange,.td-v.orange,.tdr-ov.orange{color:var(--orange);}
@@ -4900,7 +4901,7 @@ function renderTopDrafts(){
     const open=!!topOpen[i], dt=(d.draft_type==='full')?'Full':'Quick', mode=(d.mode==='hard')?'Hard':'Easy';
     return `<div class="td-row${open?' open':''}">
       <button type="button" class="td-head" data-i="${i}">
-        <span class="td-rank">#${i+1}</span>
+        <span class="td-rank ${i<3?'g'+(i+1):''}">#${i+1}</span>
         <span class="td-ov ${ovTier(d.overall)}">${(+d.overall).toFixed(1)}</span>
         <span class="td-far">${escapeHtml(howFar(d))}</span>
         <span class="td-date">${fmtDateShort(d.created_at)}</span>
