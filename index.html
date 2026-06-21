@@ -1575,7 +1575,9 @@
   .lb-rank.medal.gold .lb-medal-num{color:#F4D469;}
   .lb-rank.medal.silver .lb-medal-num{color:#DcDcDc;}
   .lb-rank.medal.bronze .lb-medal-num{color:#E0995A;}
-  .lb-name{flex:1 1 auto;min-width:0;font-weight:800;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lb-name{flex:1 1 auto;min-width:0;font-weight:800;font-size:15px;overflow:hidden;
+    display:flex;flex-direction:column;justify-content:center;}
+  .lb-name .lb-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
   .lb-meta{flex:0 0 auto;font-size:11px;font-weight:800;opacity:.7;}
   .lb-ov{flex:0 0 auto;font-family:'Anton',Impact,sans-serif;font-size:20px;min-width:30px;text-align:right;}
   .lb-ov.red{color:var(--red);} .lb-ov.orange{color:var(--orange);} .lb-ov.gold{color:var(--gold);} .lb-ov.green{color:#4ade80;}
@@ -1787,6 +1789,25 @@
   .prof-id-text{min-width:0;}
   .prof-name{font-family:'Anton',Impact,sans-serif;font-size:27px;line-height:1;color:#fff;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .prof-title{font-weight:900;font-size:11px;letter-spacing:.6px;text-transform:uppercase;margin-top:3px;}
+  .nc-rainbow{background:linear-gradient(90deg,#ff5a5a,#F4B413,#2ee6c0,#5a9bff,#b98cff);
+    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  /* cosmetics pickers */
+  .cos-sub{font-weight:900;font-size:9px;letter-spacing:.7px;text-transform:uppercase;color:#8a8a8a;margin:14px 0 7px;}
+  .cos-titles{display:flex;flex-wrap:wrap;gap:6px;}
+  .cos-chip{background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.14);border-radius:20px;
+    color:#e6e6e6;font-family:'Archivo',system-ui,sans-serif;font-weight:800;font-size:11px;padding:5px 12px;
+    cursor:pointer;-webkit-tap-highlight-color:transparent;}
+  .cos-chip.locked{opacity:.4;cursor:not-allowed;}
+  .cos-chip.on{border-color:var(--tc,#fff);color:var(--tc,#fff);box-shadow:0 0 0 1px var(--tc,#fff) inset;}
+  .cos-colors{display:flex;flex-wrap:wrap;gap:9px;}
+  .cos-sw{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.25);cursor:pointer;
+    padding:0;-webkit-tap-highlight-color:transparent;}
+  .cos-sw.locked{opacity:.35;cursor:not-allowed;}
+  .cos-sw.on{border-color:#fff;box-shadow:0 0 0 2px #161616, 0 0 0 4px #fff;}
+  /* equipped title under a leaderboard name */
+  .lb-title{display:block;font-weight:900;font-size:8px;letter-spacing:.4px;text-transform:uppercase;
+    margin-top:1px;line-height:1;}
   .prof-section-title{font-weight:900;font-size:12px;letter-spacing:1px;text-transform:uppercase;
     color:#9a9a9a;margin:24px 0 11px;display:flex;align-items:baseline;gap:9px;}
   .prof-collapse-head{width:100%;display:flex;align-items:center;gap:9px;background:none;border:0;
@@ -2401,6 +2422,7 @@
         <span class="prof-flag" id="prof-flag"></span>
         <div class="prof-id-text">
           <div class="prof-name" id="acct-username-display">Player</div>
+          <div class="prof-title" id="prof-title" style="display:none"></div>
           <button type="button" class="acct-link-btn" id="acct-change-username">Change username</button>
         </div>
       </div>
@@ -2411,6 +2433,17 @@
           <button class="entry-submit" id="acct-save-username">Save</button>
         </div>
         <div class="entry-error" id="acct-error2"></div>
+      </div>
+
+      <button type="button" class="prof-collapse-head" id="cos-head">
+        <span class="pc-title">Customize</span>
+        <span class="pc-chev" aria-hidden="true">▸</span>
+      </button>
+      <div id="cos-body" hidden>
+        <div class="cos-sub">Title</div>
+        <div class="cos-titles" id="title-picker"></div>
+        <div class="cos-sub">Name color</div>
+        <div class="cos-colors" id="color-picker"></div>
       </div>
 
       <div class="acct-stats" id="acct-stats"></div>
@@ -4613,7 +4646,7 @@ async function loadProfile(){
   try{
     const { data } = await sbClient
       .from('profiles')
-      .select('username,flag,current_streak,longest_streak')
+      .select('username,flag,current_streak,longest_streak,equipped_title,name_color')
       .eq('id', authUser.id).maybeSingle();
     authProfile = data || null;
   }catch(e){ /* leave null — UI still works, just without a username */ }
@@ -4736,14 +4769,60 @@ function renderProfilePage(){
   const pf=$('prof-flag'); if(pf) pf.innerHTML = flagChip(fl);
   const hasName=!!authUsername();
   const d=$('acct-username-display'); if(d) d.textContent = authUsername() || 'Set a username';
+  applyNameColor(d, (authProfile && authProfile.name_color) || 'default');
+  // equipped title under the name
+  const tt=$('prof-title'), etid=(authProfile && authProfile.equipped_title) || '';
+  if(tt){ if(etid){ tt.textContent=titleLabel(etid); tt.style.color=titleColor(etid); tt.style.display=''; } else { tt.style.display='none'; } }
   showEl($('acct-username-set'), !hasName);
   const lbl=$('acct-username-label'); if(lbl) lbl.textContent = hasName ? 'Change username' : 'Pick a username';
   acctSelectedFlag = (authProfile && authProfile.flag) || acctSelectedFlag || 'USA';
   buildAcctFlagRow();
   renderProfileStats();
   renderAchievements();
+  renderCosmetics();
   renderTopDrafts();
   renderLegends();
+}
+function applyNameColor(el, id){
+  if(!el) return;
+  el.classList.remove('nc-rainbow');
+  if(id==='rainbow'){ el.classList.add('nc-rainbow'); el.style.color=''; }
+  else if(id && id!=='default'){ el.style.color=nameColorById(id).css; }
+  else el.style.color='';
+}
+function renderCosmetics(){
+  const m=achMetrics(), tb=totalBadges(m);
+  const eqT=(authProfile && authProfile.equipped_title) || '';
+  const eqC=(authProfile && authProfile.name_color) || 'default';
+  const tp=$('title-picker');
+  if(tp){
+    let html=`<button class="cos-chip${!eqT?' on':''}" data-title="">None</button>`;
+    html+=TITLES.map(t=>{
+      const id=titleId(t), earned=achLevel(t.ach,m)>t.tier, on=(id===eqT);
+      return `<button class="cos-chip${earned?'':' locked'}${on?' on':''}" data-title="${id}"${earned?'':' disabled'}`
+        + (earned?` style="--tc:${TITLE_TIER_COLORS[t.tier]}"`:'')+`>${escapeHtml(t.name)}</button>`;
+    }).join('');
+    tp.innerHTML=html;
+  }
+  const cp=$('color-picker');
+  if(cp){
+    cp.innerHTML=NAME_COLORS.map(c=>{
+      const unlocked=tb>=c.req, on=(c.id===eqC)||(c.id==='default'&&!eqC);
+      const sw=(c.css==='rainbow')?'background:linear-gradient(90deg,#ff5a5a,#F4B413,#2ee6c0,#5a9bff,#b98cff)':`background:${c.css}`;
+      return `<button class="cos-sw${unlocked?'':' locked'}${on?' on':''}" data-color="${c.id}"${unlocked?'':' disabled'} title="${c.label}${unlocked?'':' · '+c.req+' badges'}" style="${sw}"></button>`;
+    }).join('');
+  }
+}
+async function equipCosmetics(title, color){
+  if(!sbClient || !isSignedIn()) return;
+  const t = (title!=null) ? title : ((authProfile && authProfile.equipped_title) || '');
+  const c = (color!=null) ? color : ((authProfile && authProfile.name_color) || '');
+  try{
+    const { error } = await sbClient.rpc('set_cosmetics', { p_title: t||'', p_color: (c==='default'?'':c)||'' });
+    if(error) throw error;
+    await loadProfile(); renderProfilePage(); syncAuthUI();
+    showToast('Saved ✓');
+  }catch(e){ showToast((e&&e.message)||'Could not save'); }
 }
 function openProfilePage(){
   if(!isSignedIn()){ openAccountModal(); return; }
@@ -4969,14 +5048,47 @@ function renderLegends(){
 }
 function achMetrics(){
   const s=myStats||{}, a=myAch||{};
+  // Prefer server-computed breadth/underdog (get_my_stats v2) when present; fall
+  // back to the client computation so achievements still show pre-migration.
   return {
     games:s.games||0, wins:s.wins||0, longest_streak:s.longest_streak||0,
     best_overall:+(s.best_overall||0),
-    confedBreadth:a.confedBreadth||0, decadeBreadth:a.decadeBreadth||0,
-    underdog_progress:(a.underdog_progress!=null?a.underdog_progress:-1)
+    confedBreadth: (s.confed_breadth!=null ? s.confed_breadth : (a.confedBreadth||0)),
+    decadeBreadth: (s.decade_breadth!=null ? s.decade_breadth : (a.decadeBreadth||0)),
+    underdog_progress: (s.underdog_progress!=null ? s.underdog_progress : (a.underdog_progress!=null?a.underdog_progress:-1))
   };
 }
 const ACH_TOTAL_BADGES = ACHIEVEMENTS.reduce((n,a)=>n+a.tiers.length,0);  // each tier = 1 badge
+function achById(id){ return ACHIEVEMENTS.find(a=>a.id===id); }
+function achLevel(achId, m){ const a=achById(achId); if(!a) return 0; const v=a.get(m); let lv=0; a.tiers.forEach(t=>{ if(v>=t) lv++; }); return lv; }
+function totalBadges(m){ return ACHIEVEMENTS.reduce((n,a)=>n+achLevel(a.id,m),0); }
+
+// ---- Cosmetics: equippable titles + name colours (Phase 4) ----
+// Titles: one per achievement tier. Earned when achLevel(ach) > tier.
+const TITLES=[
+  {ach:'draftsman',tier:0,name:'Draftsman'},{ach:'draftsman',tier:1,name:'Seasoned Drafter'},{ach:'draftsman',tier:2,name:'Draft Master'},{ach:'draftsman',tier:3,name:'Draft Legend'},
+  {ach:'worldbeater',tier:0,name:'World Champion'},{ach:'worldbeater',tier:1,name:'Serial Winner'},{ach:'worldbeater',tier:2,name:'Dynasty Builder'},
+  {ach:'daily',tier:0,name:'Daily Devotee'},{ach:'daily',tier:1,name:'Streak Keeper'},{ach:'daily',tier:2,name:'Unbreakable'},
+  {ach:'galacticos',tier:0,name:'Galáctico'},{ach:'galacticos',tier:1,name:'Dream Team'},{ach:'galacticos',tier:2,name:'Perfectionist'},
+  {ach:'globetrotter',tier:0,name:'Globetrotter'},{ach:'globetrotter',tier:1,name:'World Traveler'},{ach:'globetrotter',tier:2,name:'Continental King'},
+  {ach:'timetraveler',tier:0,name:'Time Traveler'},{ach:'timetraveler',tier:1,name:'Era Spanner'},{ach:'timetraveler',tier:2,name:'Timeless'},
+  {ach:'underdog',tier:0,name:'Underdog'},{ach:'underdog',tier:1,name:'Giant Slayer'},{ach:'underdog',tier:2,name:'Cinderella Story'},{ach:'underdog',tier:3,name:'Miracle Worker'}
+];
+const TITLE_TIER_COLORS=['#C77B3A','#BFC4C9','#E8C25A','#7FE0FF']; // bronze/silver/gold/platinum
+function titleId(t){ return t.ach+'_'+t.tier; }
+function titleById(id){ return TITLES.find(t=>titleId(t)===id) || null; }
+function titleLabel(id){ const t=titleById(id); return t?t.name:''; }
+function titleColor(id){ const t=titleById(id); return t?TITLE_TIER_COLORS[t.tier]:'#bdbdbd'; }
+const NAME_COLORS=[
+  {id:'default',label:'Default',css:'#ffffff',req:0},
+  {id:'teal',label:'Teal',css:'#2ee6c0',req:3},
+  {id:'blue',label:'Blue',css:'#5a9bff',req:6},
+  {id:'purple',label:'Purple',css:'#b98cff',req:10},
+  {id:'gold',label:'Gold',css:'#F4B413',req:15},
+  {id:'crimson',label:'Crimson',css:'#ff5a5a',req:20},
+  {id:'rainbow',label:'Rainbow',css:'rainbow',req:23}
+];
+function nameColorById(id){ return NAME_COLORS.find(c=>c.id===id) || NAME_COLORS[0]; }
 function renderAchievements(){
   const wrap=$('acct-ach'); if(!wrap) return;
   const cc=$('ach-count');
@@ -5337,9 +5449,9 @@ async function fetchTopDrafts(limit, opts){
   const order='&order=overall.desc,progress.desc,created_at.asc&limit='+limit;
   // Prefer the richest select (flag + lineup); fall back step by step if a
   // column isn't present yet so the board always loads.
-  let res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,flag,overall,progress,result,furthest,player_ids,slots${filt}${order}`, { headers: sbHeaders() });
+  let res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,user_id,name,flag,overall,progress,result,furthest,player_ids,slots${filt}${order}`, { headers: sbHeaders() });
   if(!res.ok){
-    res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,flag,overall,progress,result,furthest,player_ids${filt}${order}`, { headers: sbHeaders() });
+    res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,user_id,name,flag,overall,progress,result,furthest,player_ids${filt}${order}`, { headers: sbHeaders() });
   }
   if(!res.ok){
     res = await fetch(`${SUPABASE_URL}/rest/v1/drafts?select=id,name,flag,overall,progress,result,furthest${filt}${order}`, { headers: sbHeaders() });
@@ -5393,6 +5505,30 @@ function emToSvg(s){
 // Most-recently rendered board rows, so the click handler can find a row's
 // lineup (player_ids) by its index.
 let lbCurrentRows = [];
+// Fetch equipped title + name colour for the rows' owners (one query), so the
+// board can show each player's current cosmetics.
+async function attachCosmetics(rows){
+  if(!sbClient || !rows || !rows.length) return rows;
+  const ids=[...new Set(rows.map(r=>r.user_id).filter(Boolean))];
+  if(!ids.length) return rows;
+  try{
+    const inList=ids.map(encodeURIComponent).join(',');
+    const res=await fetch(`${SUPABASE_URL}/rest/v1/profiles?id=in.(${inList})&select=id,equipped_title,name_color`, { headers: sbHeaders() });
+    if(res.ok){
+      const map={}; (await res.json()).forEach(p=>map[p.id]=p);
+      rows.forEach(r=>{ const p=r.user_id&&map[r.user_id]; if(p){ r._title=p.equipped_title||''; r._color=p.name_color||''; } });
+    }
+  }catch(e){}
+  return rows;
+}
+function lbNameCell(row, nm){
+  const fl=(row.flag && String(row.flag).trim()) ? flagChip(row.flag)+' ' : '';
+  const col=row._color||'', rainbow=col==='rainbow';
+  const nameStyle=(col && col!=='default' && !rainbow) ? ` style="color:${nameColorById(col).css}"` : '';
+  const titleHtml=(row._title && titleById(row._title))
+    ? `<span class="lb-title" style="color:${titleColor(row._title)}">${escapeHtml(titleLabel(row._title))}</span>` : '';
+  return `<span class="lb-name"><span class="lb-nm${rainbow?' nc-rainbow':''}"${nameStyle}>${fl}${escapeHtml(nm)}</span>${titleHtml}</span>`;
+}
 function renderLeaderboardRows(rows, highlightId){
   // Every draft is shown; nameless / banned-name rows render as "Anonymous".
   rows = rows||[];
@@ -5402,7 +5538,6 @@ function renderLeaderboardRows(rows, highlightId){
   list.innerHTML = rows.map((row,i)=>{
     const you = highlightId!=null && row.id===highlightId;
     const nm  = cleanDisplayName((row.name && String(row.name).trim()) ? row.name : 'Anonymous');
-    const fl  = (row.flag && String(row.flag).trim()) ? flagChip(row.flag) : '';
     const rank=i+1;
     const rankCell = rank<=3
       ? `<span class="lb-rank medal ${MEDAL_TIERS[rank-1]}">${metalTrophySvg(rank,'lb-medal-svg')}<span class="lb-medal-num">${rank}</span></span>`
@@ -5411,7 +5546,7 @@ function renderLeaderboardRows(rows, highlightId){
     const hasLineup = Array.isArray(row.player_ids) && row.player_ids.length>0;
     return `<div class="lb-row${you?' you':''}${hasLineup?' has-lineup':''}" data-i="${i}" data-id="${row.id==null?'':row.id}">
       ${rankCell}
-      <span class="lb-name">${fl?fl+' ':''}${escapeHtml(nm)}</span>
+      ${lbNameCell(row, nm)}
       <span class="lb-meta">${emToSvg(lbMetaLabel(row))}</span>
       <span class="lb-ov ${ovTier(row.overall)}">${(+row.overall).toFixed(1)}</span>
       ${hasLineup?'<span class="lb-chev" aria-hidden="true">›</span>':''}
@@ -5505,6 +5640,7 @@ async function refreshLeaderboardList(highlightId){
       rows = loadLeaderboard().sort((a,b)=> b.overall-a.overall || b.progress-a.progress)
         .slice(0,100).map(e=>({ id:null, name:'You (this device)', overall:e.overall, progress:e.progress }));
     }
+    if(SUPABASE_READY) await attachCosmetics(rows);
     renderLeaderboardRows(rows, lbHighlightId);
   }catch(e){
     list.innerHTML='<div class="lb-empty">Couldn’t load the leaderboard. Try again.</div>';
@@ -7191,6 +7327,13 @@ $('entry-submit').addEventListener('click', submitEntry);
     const open=body.hasAttribute('hidden'); if(open) body.removeAttribute('hidden'); else body.setAttribute('hidden','');
     head.classList.toggle('open', open);
   });
+  on('cos-head','click',()=>{
+    const body=$('cos-body'), head=$('cos-head'); if(!body||!head) return;
+    const open=body.hasAttribute('hidden'); if(open) body.removeAttribute('hidden'); else body.setAttribute('hidden','');
+    head.classList.toggle('open', open);
+  });
+  on('title-picker','click',e=>{ const b=e.target.closest('.cos-chip'); if(!b||b.disabled) return; equipCosmetics(b.dataset.title, null); });
+  on('color-picker','click',e=>{ const b=e.target.closest('.cos-sw'); if(!b||b.disabled) return; equipCosmetics(null, b.dataset.color); });
   on('topdrafts','click',async e=>{
     const h=e.target.closest('.td-head'); if(!h) return;
     const i=+h.dataset.i; topOpen[i]=!topOpen[i];
