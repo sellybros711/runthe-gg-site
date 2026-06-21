@@ -151,6 +151,9 @@
   .acct-bar-btn.primary:hover{filter:brightness(1.04);}
   .acct-bar-btn.ghost:hover{border-color:#bcb6a8;color:var(--ink);}
   .acct-bar-btn:active{transform:translate(1px,1px);}
+  /* saved-flag rectangle in place of the account icon on the signed-in bar */
+  #fa-username .flag-ico{width:20px;height:13px;border-radius:3px;margin-right:7px;
+    vertical-align:middle;border:1px solid rgba(0,0,0,.18);background-size:cover;background-position:center;}
   /* mini "follow us on X" ad, sits in the gap above the footer links */
   .x-follow{margin:0 0 16px;font-size:13px;font-weight:600;}
   .x-follow a{color:#8a8073;text-decoration:none;}
@@ -4488,7 +4491,11 @@ function syncAuthUI(){
   if(g) g.style.display = signed ? 'none' : '';
   if(u) u.style.display = signed ? '' : 'none';
   const un = $('fa-username');
-  if(un) un.textContent = '👤 ' + (authUsername() || 'Account');
+  if(un){
+    // Show the player's saved flag (rectangle) in place of the old account icon.
+    const fl = (authProfile && authProfile.flag) || 'USA';
+    un.innerHTML = flagChip(fl, 'fa-flag') + escapeHtml(authUsername() || 'Account');
+  }
   renderAccountModal();
 }
 
@@ -4627,6 +4634,7 @@ async function acctSaveFlag(){
     const { error } = await sbClient.rpc('set_flag',{ p_flag: acctSelectedFlag||'' });
     if(error) throw error;
     await loadProfile();
+    syncAuthUI();                 // refresh the saved-flag shown on the account bar
     showToast('Flag saved ✓');
   }catch(e){ showToast('Could not save flag'); }
 }
