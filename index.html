@@ -3186,6 +3186,10 @@ async function boot(){
   refreshDailyStatus();            // (async) pull played/streak if signed in
   startFlagMarquee();
   startHomeDemo();              // kick off the looping landing micro-demo
+  // If a fresh OAuth login already opened the profile before player data loaded,
+  // re-run its data now so the legends/achievements aren't stuck empty.
+  const pp=document.getElementById('screen-profile');
+  if(pp && pp.classList.contains('active') && isSignedIn()){ loadMyStats(); loadMyDrafts(); }
 }
 
 // ---- landing micro-demo: two looping scenes (draft → simulate) ----
@@ -4491,6 +4495,7 @@ let sbClient      = null;   // supabase-js client (auth + rpc)
 let authUser      = null;   // current auth.users (null = guest)
 let authProfile   = null;   // matching profiles row { username, flag, ... }
 let sbAccessToken = null;   // live JWT → sent on REST calls so RPCs run as the user
+let loginNav      = false;  // set on an explicit sign-in → route to the profile page
 
 function isSignedIn(){ return !!authUser; }
 function authUsername(){ return (authProfile && authProfile.username) || ''; }
@@ -4521,13 +4526,19 @@ async function applySession(session){
   else { authProfile = null; myStats = null; myAch = null; myCollected = null; }
   syncAuthUI();
   if(typeof refreshDailyStatus==='function') refreshDailyStatus(); // daily played/streak
-  // Returning from a Google redirect: prompt a new user to pick a username so
-  // they don't land on the board as "Anonymous". Returning users skip this.
+  // A genuine login (email sign-in, or a returning Google redirect) → land on the
+  // Profile page so players discover it (new users also get the pick-a-username
+  // prompt there). A session merely *restored* on page load does NOT trigger it.
   let oauthReturn=false;
   try{ oauthReturn = !!localStorage.getItem('rtp_oauth_pending'); if(oauthReturn) localStorage.removeItem('rtp_oauth_pending'); }catch(e){}
-  if(authUser && oauthReturn && !authUsername()) openAccountModal();
+  const justLoggedIn = !!authUser && (loginNav || oauthReturn);
+  loginNav=false;
   // A guest who just signed in on the results screen → save the score they earned.
   if(authUser) maybeSubmitPendingDraft();
+  // ...but in that case keep them on their result; otherwise show the profile.
+  const rev=document.getElementById('screen-reveal');
+  const onReveal=!!(rev && rev.classList.contains('active'));
+  if(justLoggedIn && !onReveal) openProfilePage();
 }
 
 // The username the player picked at sign-up rides along in their auth metadata.
@@ -4821,7 +4832,8 @@ const legendsOpen={ collected:false, icon:false, gold:false, silver:false };
 const LEGEND_TIERS=[ ['collected','Collected'], ['icon','Legend'], ['gold','World Class'], ['silver','Star'] ];
 function getLegends(){
   if(LEGENDS) return LEGENDS;
-  LEGENDS=(window.PLAYERS||[]).filter(p=>p.wc_overall>=86).map(p=>({
+  const src=window.PLAYERS||[]; if(!src.length) return [];   // don't memoize before data loads
+  LEGENDS=src.filter(p=>p.wc_overall>=86).map(p=>({
     id:String(p.player_id), name:p.name, country:p.country, year:p.year, ovr:p.wc_overall,
     rar:(p.wc_overall>=95?'icon':(p.wc_overall>=90?'gold':'silver'))
   })).sort((a,b)=> b.ovr-a.ovr || (a.name<b.name?-1:1));
@@ -4929,11 +4941,11 @@ async function acctSubmit(){
       });
       if(error) throw error;
       if(!data.session){ showConfirmPane(email); }   // email confirmation ON
-      else { closeAccountModal(); }
+      else { loginNav=true; closeAccountModal(); }    // signed in immediately → profile
     }else{
       const { error } = await sbClient.auth.signInWithPassword({ email, password: pass });
       if(error) throw error;
-      closeAccountModal();
+      loginNav=true; closeAccountModal();             // → profile page
     }
   }catch(e){
     acctError((e && e.message) || 'Something went wrong. Please try again.');
