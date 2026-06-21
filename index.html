@@ -1754,6 +1754,27 @@
   .acct-stat .as-lbl{display:block;font-size:8.5px;font-weight:800;text-transform:uppercase;
     letter-spacing:.5px;color:#9a9a9a;margin-top:5px;}
   .acct-stat-loading{grid-column:1/-1;text-align:center;color:#9a9a9a;font-size:12px;padding:8px;}
+  /* profile: achievements */
+  .acct-ach-title{font-weight:900;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    color:#9a9a9a;margin:18px 0 9px;text-align:left;}
+  .acct-ach{display:flex;flex-direction:column;gap:8px;}
+  .ach-row{display:flex;align-items:center;gap:11px;background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:9px 11px;}
+  .ach-row.locked{opacity:.6;}
+  .ach-medal{flex:0 0 auto;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-family:'Anton',Impact,sans-serif;font-size:14px;color:#1a1a1a;
+    border:2px solid rgba(0,0,0,.28);box-shadow:inset 0 1px 2px rgba(255,255,255,.4);}
+  .ach-body{flex:1 1 auto;min-width:0;}
+  .ach-name{font-weight:900;font-size:13px;color:#fff;display:flex;justify-content:space-between;
+    gap:8px;align-items:baseline;}
+  .ach-tier{font-size:8.5px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:#cdb056;flex:0 0 auto;}
+  .ach-row.locked .ach-tier{color:#8a8a8a;}
+  .ach-row.maxed .ach-tier{color:#2FD673;}
+  .ach-prog-text{font-size:10.5px;color:#9a9a9a;margin:2px 0 5px;}
+  .ach-bar{height:6px;border-radius:4px;background:rgba(255,255,255,.13);overflow:hidden;}
+  .ach-bar span{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#F4B413,#F47B20);
+    transition:width .5s cubic-bezier(.2,.7,.2,1);}
+  .ach-row.maxed .ach-bar span{background:linear-gradient(90deg,#2FD673,#1F9E57);}
   .acct-flag-save{display:block;width:100%;padding:11px 18px;margin-top:14px;}
 
   /* ---------- daily challenge ---------- */
@@ -2714,6 +2735,8 @@
         <div class="entry-error" id="acct-error2"></div>
       </div>
       <div class="acct-stats" id="acct-stats"></div>
+      <div class="acct-ach-title">Achievements</div>
+      <div class="acct-ach" id="acct-ach"></div>
       <div class="entry-flag-label">Your Flag</div>
       <div class="entry-flag-row" id="acct-flag-row"></div>
       <button class="entry-submit acct-flag-save" id="acct-save-flag">Save flag</button>
@@ -4426,7 +4449,7 @@ async function applySession(session){
   authUser      = (session && session.user) || null;
   sbAccessToken = (session && session.access_token) || null;
   if(authUser){ await loadProfile(); await ensureUsernameFromMetadata(); }
-  else { authProfile = null; myStats = null; }
+  else { authProfile = null; myStats = null; myAch = null; }
   syncAuthUI();
   if(typeof refreshDailyStatus==='function') refreshDailyStatus(); // daily played/streak
   // Returning from a Google redirect: prompt a new user to pick a username so
@@ -4541,7 +4564,7 @@ function openAccountModal(){
   setAcctTab('signin');
   renderAccountModal();
   const bg=$('acct-bg'); if(bg) bg.classList.add('show');
-  if(isSignedIn()) loadMyStats();   // refresh server-computed stats for the profile
+  if(isSignedIn()){ loadMyStats(); loadMyAchievements(); }   // stats + achievements
 }
 function closeAccountModal(){ const bg=$('acct-bg'); if(bg) bg.classList.remove('show'); }
 
@@ -4587,6 +4610,7 @@ function renderAccountModal(){
   acctSelectedFlag = (authProfile && authProfile.flag) || acctSelectedFlag || 'USA';
   buildAcctFlagRow();
   renderProfileStats();   // shows cached stats (or "Loading…" until loadMyStats lands)
+  renderAchievements();   // shows cached badges (or "Loading…" until loads land)
 }
 
 // ---- profile stats (server-computed; foundation for achievements/level) ----
@@ -4597,6 +4621,7 @@ async function loadMyStats(){
     if(!error && data) myStats = (typeof data==='string') ? JSON.parse(data) : data;
   }catch(e){ /* keep any cached stats */ }
   renderProfileStats();
+  renderAchievements();   // server counts feed the count/quality badges
 }
 function renderProfileStats(){
   const wrap=$('acct-stats'); if(!wrap) return;
@@ -4611,6 +4636,88 @@ function renderProfileStats(){
     ['Legends', s.legends||0]
   ];
   wrap.innerHTML = tiles.map(t=>`<div class="acct-stat"><span class="as-num">${t[1]}</span><span class="as-lbl">${t[0]}</span></div>`).join('');
+}
+
+// ---- achievements --------------------------------------------------------
+// Core counts come from get_my_stats (server, verified). The two breadth badges
+// + underdog are computed here from the player's own authoritative draft rows,
+// because the player_id prefix is lossy (CHI = Chile/China, UNI = USA/UAE) so
+// confederation can only be resolved via the full player record (client-side).
+let myAch = null;   // { confedBreadth, decadeBreadth, underdog_progress }
+const ACH_TIER_COLORS = ['#6a6a6a','#C77B3A','#BFC4C9','#E8C25A','#7FE0FF']; // locked,bronze,silver,gold,platinum
+const ACH_ROMAN = ['','I','II','III','IV'];
+function roundName(p){ const M={0:'Group',1:'R32',2:'R16',3:'QF',4:'SF',5:'Final',6:'Champion'}; return M[p]!=null?M[p]:'—'; }
+const ACHIEVEMENTS = [
+  { id:'draftsman',    name:'Draftsman',    blurb:'drafts',          tiers:[50,100,200,500], get:m=>m.games,             fmt:v=>v },
+  { id:'worldbeater',  name:'World Beater', blurb:'World Cups won',  tiers:[1,10,50],        get:m=>m.wins,              fmt:v=>v },
+  { id:'daily',        name:'Daily Devotee',blurb:'day streak',     tiers:[7,30,100],       get:m=>m.longest_streak,    fmt:v=>v },
+  { id:'galacticos',   name:'Galácticos',   blurb:'squad OVR',      tiers:[85,90,95],       get:m=>m.best_overall,      fmt:v=>(+v).toFixed(1) },
+  { id:'globetrotter', name:'Globetrotter', blurb:'confederations', tiers:[4,5,6],          get:m=>m.confedBreadth,     fmt:v=>v },
+  { id:'timetraveler', name:'Time Traveler',blurb:'decades',        tiers:[4,5,6],          get:m=>m.decadeBreadth,     fmt:v=>v },
+  { id:'underdog',     name:'Underdog',     blurb:'best run · ≤85 OVR squad', tiers:[2,3,4,6], get:m=>m.underdog_progress, fmt:v=>roundName(v), round:true }
+];
+async function loadMyAchievements(){
+  if(!sbClient || !isSignedIn() || !authUser){ myAch=null; renderAchievements(); return; }
+  try{
+    const uid=authUser.id;
+    const q=async(table)=>{
+      const res=await fetch(`${SUPABASE_URL}/rest/v1/${table}?user_id=eq.${uid}&select=player_ids,overall,progress&limit=3000`, { headers: sbHeaders() });
+      return res.ok ? (await res.json().catch(()=>[]) || []) : [];
+    };
+    const [d1,d2]=await Promise.all([q('drafts'), q('daily_results')]);
+    let confedMax=0, decadeMax=0, underdog=-1;
+    d1.concat(d2).forEach(r=>{
+      const confs=new Set(), decs=new Set();
+      (r.player_ids||[]).forEach(id=>{ const p=playerById(id); if(p){ confs.add(confedOf(p.country)); decs.add(Math.floor(p.year/10)*10); } });
+      if(confs.size>confedMax) confedMax=confs.size;
+      if(decs.size>decadeMax) decadeMax=decs.size;
+      const ov=+r.overall, pr=+r.progress;
+      if(ov>0 && ov<=85 && pr>underdog) underdog=pr;
+    });
+    myAch={ confedBreadth:confedMax, decadeBreadth:decadeMax, underdog_progress:underdog };
+  }catch(e){ /* keep cached */ }
+  renderAchievements();
+}
+function achMetrics(){
+  const s=myStats||{}, a=myAch||{};
+  return {
+    games:s.games||0, wins:s.wins||0, longest_streak:s.longest_streak||0,
+    best_overall:+(s.best_overall||0),
+    confedBreadth:a.confedBreadth||0, decadeBreadth:a.decadeBreadth||0,
+    underdog_progress:(a.underdog_progress!=null?a.underdog_progress:-1)
+  };
+}
+function renderAchievements(){
+  const wrap=$('acct-ach'); if(!wrap) return;
+  if(!myStats && !myAch){ wrap.innerHTML='<div class="acct-stat-loading">Loading…</div>'; return; }
+  const m=achMetrics();
+  wrap.innerHTML = ACHIEVEMENTS.map(a=>{
+    const val=a.get(m), tiers=a.tiers;
+    let level=0; tiers.forEach(t=>{ if(val>=t) level++; });
+    const maxed=level>=tiers.length;
+    const prev = level>0 ? tiers[level-1] : (a.round?0:0);
+    const next = maxed ? null : tiers[level];
+    const frac = maxed?1:Math.max(0,Math.min(1,(val-prev)/((next-prev)||1)));
+    const medal = maxed?'★':(level>0?ACH_ROMAN[level]:'–');
+    const tierLabel = maxed?'Max':(level>0?('Tier '+ACH_ROMAN[level]):'Locked');
+    let prog;
+    if(a.round){
+      prog = maxed ? 'Won it all with a ≤85 squad!'
+           : (val>=tiers[0] ? `Best: ${a.fmt(val)} · next: ${a.fmt(next)}`
+                            : `Reach the ${a.fmt(next)} with a ≤85 squad`);
+    } else {
+      prog = maxed ? `${a.fmt(val)} ${a.blurb} · complete`
+                   : `${a.fmt(val)} / ${a.fmt(next)} ${a.blurb}`;
+    }
+    return `<div class="ach-row${level===0?' locked':''}${maxed?' maxed':''}">
+      <span class="ach-medal" style="background:${ACH_TIER_COLORS[level]}">${medal}</span>
+      <span class="ach-body">
+        <span class="ach-name">${a.name}<span class="ach-tier">${tierLabel}</span></span>
+        <span class="ach-prog-text">${prog}</span>
+        <span class="ach-bar"><span style="width:${Math.round(frac*100)}%"></span></span>
+      </span>
+    </div>`;
+  }).join('');
 }
 
 function buildAcctFlagRow(){
