@@ -1746,6 +1746,21 @@
   .acct-forgot:hover{color:#cfe0f3;}
   .acct-username-row{display:flex;gap:8px;align-items:stretch;}
   .acct-username-row .entry-name{margin-bottom:0;}
+  /* profile: level bar + stat tiles */
+  .acct-level{margin:16px 0 2px;}
+  .acct-level .lvl-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;}
+  .acct-level .lvl-badge{font-family:'Anton',Impact,sans-serif;font-size:15px;color:var(--gold);letter-spacing:.5px;}
+  .acct-level .lvl-xp{font-size:11px;font-weight:800;color:#9a9a9a;}
+  .acct-level .lvl-bar{height:9px;border-radius:5px;background:rgba(255,255,255,.12);overflow:hidden;}
+  .acct-level .lvl-bar span{display:block;height:100%;border-radius:5px;
+    background:linear-gradient(90deg,#F4B413,#F47B20);transition:width .5s cubic-bezier(.2,.7,.2,1);}
+  .acct-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:13px 0 4px;}
+  .acct-stat{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+    border-radius:11px;padding:10px 6px;text-align:center;}
+  .acct-stat .as-num{display:block;font-family:'Anton',Impact,sans-serif;font-size:22px;color:#fff;line-height:1;}
+  .acct-stat .as-lbl{display:block;font-size:8.5px;font-weight:800;text-transform:uppercase;
+    letter-spacing:.5px;color:#9a9a9a;margin-top:5px;}
+  .acct-stat-loading{grid-column:1/-1;text-align:center;color:#9a9a9a;font-size:12px;padding:8px;}
   .acct-flag-save{display:block;width:100%;padding:11px 18px;margin-top:14px;}
 
   /* ---------- daily challenge ---------- */
@@ -2705,6 +2720,8 @@
         </div>
         <div class="entry-error" id="acct-error2"></div>
       </div>
+      <div class="acct-level" id="acct-level"></div>
+      <div class="acct-stats" id="acct-stats"></div>
       <div class="entry-flag-label">Your Flag</div>
       <div class="entry-flag-row" id="acct-flag-row"></div>
       <button class="entry-submit acct-flag-save" id="acct-save-flag">Save flag</button>
@@ -4417,7 +4434,7 @@ async function applySession(session){
   authUser      = (session && session.user) || null;
   sbAccessToken = (session && session.access_token) || null;
   if(authUser){ await loadProfile(); await ensureUsernameFromMetadata(); }
-  else { authProfile = null; }
+  else { authProfile = null; myStats = null; }
   syncAuthUI();
   if(typeof refreshDailyStatus==='function') refreshDailyStatus(); // daily played/streak
   // Returning from a Google redirect: prompt a new user to pick a username so
@@ -4522,6 +4539,7 @@ function syncAuthUI(){
 let acctTab = 'signin';            // 'signin' | 'signup'
 let acctSelectedFlag = 'USA';
 let acctRecovery = false;          // true while completing a password-reset link
+let myStats = null;                // cached server-computed profile stats
 function showEl(el, on){ if(el) el.style.display = on ? '' : 'none'; }
 function acctError(msg){ const e=$('acct-error'); if(!e) return; e.textContent=msg||''; e.classList.toggle('show', !!msg); }
 
@@ -4531,6 +4549,7 @@ function openAccountModal(){
   setAcctTab('signin');
   renderAccountModal();
   const bg=$('acct-bg'); if(bg) bg.classList.add('show');
+  if(isSignedIn()) loadMyStats();   // refresh server-computed stats for the profile
 }
 function closeAccountModal(){ const bg=$('acct-bg'); if(bg) bg.classList.remove('show'); }
 
@@ -4575,6 +4594,40 @@ function renderAccountModal(){
   // flag picker reflects the profile's saved flag
   acctSelectedFlag = (authProfile && authProfile.flag) || acctSelectedFlag || 'USA';
   buildAcctFlagRow();
+  renderProfileStats();   // shows cached stats (or "Loading…" until loadMyStats lands)
+}
+
+// ---- profile stats (server-computed; foundation for achievements/level) ----
+async function loadMyStats(){
+  if(!sbClient || !isSignedIn()){ myStats=null; renderProfileStats(); return; }
+  try{
+    const { data, error } = await sbClient.rpc('get_my_stats');
+    if(!error && data) myStats = (typeof data==='string') ? JSON.parse(data) : data;
+  }catch(e){ /* keep any cached stats */ }
+  renderProfileStats();
+}
+// XP from server-authoritative stats → tweakable without a migration.
+function profileXp(s){
+  return (s.games||0)*10 + (s.wins||0)*60 + (s.finals||0)*15
+       + (s.daily_wins||0)*40 + (s.longest_streak||0)*20 + (s.legends||0)*3;
+}
+function levelFromXp(xp){ const per=300; return { lvl:Math.floor(xp/per)+1, into:xp%per, per, pct:Math.round((xp%per)/per*100) }; }
+function renderProfileStats(){
+  const wrap=$('acct-stats'), lv=$('acct-level'); if(!wrap) return;
+  if(!myStats){ wrap.innerHTML='<div class="acct-stat-loading">Loading stats…</div>'; if(lv) lv.innerHTML=''; return; }
+  const s=myStats, L=levelFromXp(profileXp(s));
+  if(lv) lv.innerHTML =
+    `<div class="lvl-top"><span class="lvl-badge">Level ${L.lvl}</span><span class="lvl-xp">${L.into} / ${L.per} XP</span></div>`
+    + `<div class="lvl-bar"><span style="width:${L.pct}%"></span></div>`;
+  const tiles=[
+    ['Drafts', s.games||0],
+    ['World Cups', s.wins||0],
+    ['Best OVR', (s.best_overall!=null && +s.best_overall>0) ? (+s.best_overall).toFixed(1) : '—'],
+    ['Current Streak', s.current_streak||0],
+    ['Best Streak', s.longest_streak||0],
+    ['Legends', s.legends||0]
+  ];
+  wrap.innerHTML = tiles.map(t=>`<div class="acct-stat"><span class="as-num">${t[1]}</span><span class="as-lbl">${t[0]}</span></div>`).join('');
 }
 
 function buildAcctFlagRow(){
