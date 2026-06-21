@@ -1793,12 +1793,19 @@
     letter-spacing:.5px;text-transform:none;}
   .prof-settings{margin-top:26px;border-top:1px solid rgba(255,255,255,.1);padding-top:18px;}
 
-  /* legends collection */
-  .legends-filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
-  .lf-chip{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:20px;
-    color:#cfcfcf;font-family:'Archivo',system-ui,sans-serif;font-weight:800;font-size:11px;
-    letter-spacing:.3px;padding:5px 12px;cursor:pointer;-webkit-tap-highlight-color:transparent;}
-  .lf-chip.active{background:var(--gold);border-color:var(--gold);color:#1a1a1a;}
+  /* legends collection — collapsible rarity groups */
+  .legends-groups{display:flex;flex-direction:column;gap:9px;}
+  .legend-group{border:1px solid rgba(255,255,255,.12);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.03);}
+  .lg-head{width:100%;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);
+    border:0;cursor:pointer;padding:11px 13px;color:#fff;-webkit-tap-highlight-color:transparent;}
+  .lg-head:hover{background:rgba(255,255,255,.08);}
+  .lg-dot{width:11px;height:11px;border-radius:50%;flex:0 0 auto;}
+  .lg-dot.r-icon{background:#7FE0FF;}.lg-dot.r-gold{background:#E8C25A;}.lg-dot.r-silver{background:#cfcfcf;}
+  .lg-title{font-family:'Anton',Impact,sans-serif;font-size:16px;letter-spacing:.5px;flex:1 1 auto;text-align:left;}
+  .lg-count{font-weight:800;font-size:12px;color:#bdbdbd;}
+  .lg-chev{font-size:13px;color:#9a9a9a;transition:transform .2s;}
+  .legend-group.open .lg-chev{transform:rotate(90deg);}
+  .lg-body{padding:11px;}
   .legends-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;}
   .legend-card{position:relative;background:#202020;border:1.5px solid #333;border-radius:10px;
     padding:7px 4px;text-align:center;overflow:hidden;content-visibility:auto;contain-intrinsic-size:auto 92px;}
@@ -2368,8 +2375,7 @@
       <div class="acct-ach" id="acct-ach"></div>
 
       <div class="prof-section-title">Legends Collection <span class="prof-sec-count" id="legends-count"></span></div>
-      <div class="legends-filters" id="legends-filters"></div>
-      <div class="legends-grid" id="legends-grid"></div>
+      <div class="legends-groups" id="legends-groups"></div>
 
       <div class="prof-settings">
         <div class="entry-flag-label">Your Flag</div>
@@ -4798,39 +4804,46 @@ async function loadMyDrafts(){
   renderLegends();
 }
 
-// ---- Legends collection (OVR ≥ 85, rarity by OVR) ----
-let LEGENDS=null, legendFilter='all';
+// ---- Legends collection (OVR ≥ 86, grouped into collapsible rarity tiers) ----
+// Silver 86-89 · Gold 90-94 · Icon 95-99.
+let LEGENDS=null;
+const legendsOpen={ icon:false, gold:false, silver:false };
+const LEGEND_TIERS=[ ['icon','Icons'], ['gold','Gold'], ['silver','Silver'] ];
 function getLegends(){
   if(LEGENDS) return LEGENDS;
-  LEGENDS=(window.PLAYERS||[]).filter(p=>p.wc_overall>=85).map(p=>({
+  LEGENDS=(window.PLAYERS||[]).filter(p=>p.wc_overall>=86).map(p=>({
     id:String(p.player_id), name:p.name, country:p.country, year:p.year, ovr:p.wc_overall,
-    rar:(p.wc_overall>=92?'icon':(p.wc_overall>=89?'gold':'silver'))
+    rar:(p.wc_overall>=95?'icon':(p.wc_overall>=90?'gold':'silver'))
   })).sort((a,b)=> b.ovr-a.ovr || (a.name<b.name?-1:1));
   return LEGENDS;
 }
-function renderLegendFilters(){
-  const wrap=$('legends-filters'); if(!wrap) return;
-  const chips=[['all','All'],['icon','Icons'],['gold','Gold'],['silver','Silver'],['collected','Collected'],['missing','Missing']];
-  wrap.innerHTML=chips.map(([k,l])=>`<button class="lf-chip${legendFilter===k?' active':''}" data-f="${k}">${l}</button>`).join('');
+function legendCardHtml(l, owned){
+  const url=flagImg(l.country,80), rc='r-'+l.rar;
+  return `<div class="legend-card ${rc}${owned?'':' locked'}" title="${escapeHtml(l.name)} · ${escapeHtml(l.country)} ${l.year}">
+    <span class="lc-ovr ${rc}">${l.ovr}</span>
+    <span class="lc-flag"${url?` style="background-image:url('${url}')"`:''}></span>
+    <span class="lc-name">${escapeHtml(l.name)}</span>
+    <span class="lc-sub">${l.year}</span>
+  </div>`;
 }
 function renderLegends(){
-  const grid=$('legends-grid'); if(!grid) return;
+  const host=$('legends-groups'); if(!host) return;
   const legs=getLegends(), col=myCollected||new Set();
   const got=legs.reduce((n,l)=>n+(col.has(l.id)?1:0),0);
   const cnt=$('legends-count'); if(cnt) cnt.textContent=`${got} / ${legs.length}`;
-  renderLegendFilters();
-  let list=legs;
-  if(legendFilter==='icon'||legendFilter==='gold'||legendFilter==='silver') list=legs.filter(l=>l.rar===legendFilter);
-  else if(legendFilter==='collected') list=legs.filter(l=>col.has(l.id));
-  else if(legendFilter==='missing')   list=legs.filter(l=>!col.has(l.id));
-  if(!list.length){ grid.innerHTML='<div class="legends-empty">Nothing here yet — draft some legends!</div>'; return; }
-  grid.innerHTML=list.map(l=>{
-    const owned=col.has(l.id), url=flagImg(l.country,80), rc='r-'+l.rar;
-    return `<div class="legend-card ${rc}${owned?'':' locked'}" title="${escapeHtml(l.name)} · ${escapeHtml(l.country)} ${l.year}">
-      <span class="lc-ovr ${rc}">${l.ovr}</span>
-      <span class="lc-flag"${url?` style="background-image:url('${url}')"`:''}></span>
-      <span class="lc-name">${escapeHtml(l.name)}</span>
-      <span class="lc-sub">${l.year}</span>
+  host.innerHTML=LEGEND_TIERS.map(([tier,label])=>{
+    const items=legs.filter(l=>l.rar===tier);
+    const tgot=items.reduce((n,l)=>n+(col.has(l.id)?1:0),0);
+    const open=!!legendsOpen[tier];
+    const cards=items.map(l=>legendCardHtml(l, col.has(l.id))).join('');
+    return `<div class="legend-group r-${tier}${open?' open':''}">
+      <button type="button" class="lg-head" data-tier="${tier}">
+        <span class="lg-dot r-${tier}"></span>
+        <span class="lg-title">${label}</span>
+        <span class="lg-count">${tgot} / ${items.length}</span>
+        <span class="lg-chev" aria-hidden="true">▸</span>
+      </button>
+      <div class="lg-body"${open?'':' hidden'}><div class="legends-grid">${cards}</div></div>
     </div>`;
   }).join('');
 }
@@ -7032,7 +7045,13 @@ $('entry-submit').addEventListener('click', submitEntry);
   on('btn-account-user','click',openProfilePage);   // signed-in → full-screen profile
   on('btn-signout','click',acctSignOut);
   on('prof-back','click',()=>showScreen('start'));
-  on('legends-filters','click',e=>{ const b=e.target.closest('.lf-chip'); if(!b) return; legendFilter=b.dataset.f; renderLegends(); });
+  on('legends-groups','click',e=>{
+    const h=e.target.closest('.lg-head'); if(!h) return;
+    const tier=h.dataset.tier; legendsOpen[tier]=!legendsOpen[tier];
+    const grp=h.parentElement, body=grp.querySelector('.lg-body');
+    grp.classList.toggle('open', legendsOpen[tier]);
+    if(body) body.hidden=!legendsOpen[tier];
+  });
   on('entry-auth-btn','click',openAccountModal);   // CTA inside the entry modal
   on('acct-close','click',closeAccountModal);
   on('acct-bg','click',e=>{ if(e.target===$('acct-bg')) closeAccountModal(); });
