@@ -1735,6 +1735,15 @@
   .acct-username-row .entry-name{margin-bottom:0;}
   .acct-flag-save{display:block;width:100%;padding:11px 18px;margin-top:14px;}
 
+  /* ---------- daily challenge ---------- */
+  .daily-home-btn{background:var(--teal);margin-top:10px;}
+  .daily-card{max-width:460px;}
+  .daily-yourline{text-align:center;font-size:13px;color:#dcdcdc;margin:10px 0 6px;line-height:1.5;}
+  .daily-yourline b{color:var(--gold);}
+  #daily-theme-line{text-align:center;}
+  #daily-theme-line b{color:var(--gold);}
+  .daily-play{display:block;width:100%;padding:13px 18px;margin-top:14px;}
+
   /* ---------- share targets popup ---------- */
   .share-bg{position:fixed;inset:0;z-index:85;display:none;align-items:flex-end;justify-content:center;
     background:rgba(22,18,15,.55);}
@@ -2158,6 +2167,12 @@
       <button id="btn-start" class="btn red big home-primary" disabled>
         <span class="btn-label">Loading squads…</span>
         <span class="btn-sub">Draft a squad &amp; win the World Cup</span>
+      </button>
+
+      <!-- Daily Challenge: one themed draft a day, same for everyone -->
+      <button id="btn-daily" class="btn big home-primary daily-home-btn" style="display:none">
+        <span class="btn-label">🗓️ Daily Challenge</span>
+        <span class="btn-sub" id="daily-btn-sub">Today’s themed draft</span>
       </button>
 
       <!-- secondary actions, demoted to small links -->
@@ -2605,6 +2620,18 @@
   </div>
 </div>
 
+<!-- ===== daily challenge leaderboard ===== -->
+<div class="entry-bg daily-bg" id="daily-bg">
+  <div class="entry-card daily-card">
+    <button class="entry-close" id="daily-close" aria-label="Close">✕</button>
+    <h3 class="entry-title">🗓️ Daily Challenge</h3>
+    <p class="entry-sub" id="daily-theme-line"></p>
+    <div class="daily-yourline" id="daily-yourline"></div>
+    <div class="entry-lb-list" id="daily-list"></div>
+    <button class="entry-submit daily-play" id="daily-play-btn">Play Today’s Challenge</button>
+  </div>
+</div>
+
 <!-- ===== share popup (preview + grid of share targets) ===== -->
 <div class="lineup-bg" id="share-bg">
   <div class="lineup-card">
@@ -2957,6 +2984,10 @@ async function boot(){
   if(bLabel) bLabel.textContent = 'START WORLD CUP'; else b.textContent = 'START WORLD CUP';
   const bf = $('btn-friendly');
   if(bf) bf.disabled = false;   // Friendly mode is live (Supabase short-link transport)
+  const bd = $('btn-daily');
+  if(bd){ bd.style.display=''; }   // Daily Challenge is live
+  updateDailyButton();             // show today's theme + status
+  refreshDailyStatus();            // (async) pull played/streak if signed in
   startFlagMarquee();
   startHomeDemo();              // kick off the looping landing micro-demo
 }
@@ -3115,8 +3146,16 @@ function goToHome(){
 function startSpin(){
   if(!gs) gs=G.createGameState();
   openSpinOverlay();
-  const year=G.spinYearFirst();
-  const country=G.spinCountryFromYear(year);
+  let year, country;
+  if(gs && gs.daily && DAILY.active && DAILY.seq.length){
+    // Daily: pull the next pre-seeded nation/year (identical for everyone).
+    const pair = DAILY.seq[Math.min(DAILY.idx, DAILY.seq.length-1)];
+    DAILY.idx++;
+    year = pair.year; country = pair.country;
+  }else{
+    year=G.spinYearFirst();
+    country=G.spinCountryFromYear(year);
+  }
   doSpin(country,year);
 }
 
@@ -3287,7 +3326,8 @@ function updateRespinButtons(){
   const btn=$('btn-respin-full');
   btn.textContent = left>0 ? `↻ Re-spin (${left})` : '↻ Re-spin used';
   btn.disabled = left<=0;
-  $('select-respins').style.display = '';
+  // Daily uses a fixed seeded sequence → no re-spins; hide the control entirely.
+  $('select-respins').style.display = (gs && gs.daily) ? 'none' : '';
 }
 
 // ============================================================
@@ -4262,6 +4302,7 @@ async function applySession(session){
   if(authUser){ await loadProfile(); await ensureUsernameFromMetadata(); }
   else { authProfile = null; }
   syncAuthUI();
+  if(typeof refreshDailyStatus==='function') refreshDailyStatus(); // daily played/streak
   // A guest who just signed in on the results screen → save the score they earned.
   if(authUser) maybeSubmitPendingDraft();
 }
@@ -4848,10 +4889,261 @@ function renderRankLine(el, rank, total){
   }
 }
 
+// ============================================================================
+//  DAILY CHALLENGE  —  one themed Full draft per day, same for everyone
+// ============================================================================
+// The theme + spin sequence are derived deterministically from the UTC date, so
+// every player faces the identical draft. Unlimited replays, first attempt
+// ranked (server-enforced). Account required to rank/streak. See
+// supabase/12_daily_challenge.sql.
+
+// Confederation of each nation in the dataset (for confederation themes).
+const CONFED = {
+  // CONMEBOL — South America
+  Argentina:'CONMEBOL',Bolivia:'CONMEBOL',Brazil:'CONMEBOL',Chile:'CONMEBOL',Colombia:'CONMEBOL',
+  Ecuador:'CONMEBOL',Paraguay:'CONMEBOL',Peru:'CONMEBOL',Uruguay:'CONMEBOL',
+  // CAF — Africa
+  Algeria:'CAF',Angola:'CAF',Cameroon:'CAF','Cape Verde':'CAF','DR Congo':'CAF',Egypt:'CAF',Ghana:'CAF',
+  'Ivory Coast':'CAF',Morocco:'CAF',Nigeria:'CAF',Senegal:'CAF','South Africa':'CAF',Togo:'CAF',
+  Tunisia:'CAF',Zaire:'CAF',
+  // AFC — Asia/Australia
+  Australia:'AFC','China PR':'AFC',Iran:'AFC',Iraq:'AFC',Israel:'AFC',Japan:'AFC',Jordan:'AFC',
+  Kuwait:'AFC','North Korea':'AFC',Qatar:'AFC','Saudi Arabia':'AFC','South Korea':'AFC',
+  'United Arab Emirates':'AFC',Uzbekistan:'AFC',
+  // CONCACAF — North/Central America & Caribbean
+  Canada:'CONCACAF','Costa Rica':'CONCACAF',Curaçao:'CONCACAF','El Salvador':'CONCACAF',Haiti:'CONCACAF',
+  Honduras:'CONCACAF',Jamaica:'CONCACAF',Mexico:'CONCACAF',Panama:'CONCACAF','Trinidad and Tobago':'CONCACAF',
+  'United States':'CONCACAF',
+  // OFC — Oceania
+  'New Zealand':'OFC'
+  // everything else defaults to UEFA below
+};
+function confedOf(country){ return CONFED[country] || 'UEFA'; }
+
+// Every nation that has ever won the World Cup (incl. pre-1966 winners not in the
+// 1966+ dataset, e.g. Uruguay's 1930/1950 titles), so "never won" is historically
+// accurate. West Germany & Germany both count as champions.
+const WC_WINNERS = new Set(['Brazil','Germany','West Germany','Italy','Argentina','France','England','Spain','Uruguay']);
+
+// The rotating set of daily themes. Each is a predicate over a (country, year)
+// nation-team. The day's theme = THEMES[ dayIndexUTC % THEMES.length ].
+const THEMES = [
+  { id:'caf',        emoji:'🌍', name:'African Nations',     blurb:'Draft only from African (CAF) teams.',           test:(c,y)=>confedOf(c)==='CAF' },
+  { id:'conmebol',   emoji:'🌎', name:'South American',      blurb:'Draft only from South American (CONMEBOL) teams.', test:(c,y)=>confedOf(c)==='CONMEBOL' },
+  { id:'uefa',       emoji:'🇪🇺', name:'European Nations',    blurb:'Draft only from European (UEFA) teams.',          test:(c,y)=>confedOf(c)==='UEFA' },
+  { id:'afc',        emoji:'🌏', name:'Asian Nations',       blurb:'Draft only from Asian (AFC) teams.',              test:(c,y)=>confedOf(c)==='AFC' },
+  { id:'concacaf',   emoji:'🌎', name:'CONCACAF',            blurb:'Draft only from North & Central American teams.', test:(c,y)=>confedOf(c)==='CONCACAF' },
+  { id:'neverwon',   emoji:'🐎', name:'Never Won It',        blurb:'Only teams that have never lifted the trophy.',   test:(c,y)=>!WC_WINNERS.has(c) },
+  { id:'champions',  emoji:'👑', name:'Former Champions',    blurb:'Only nations that have won a World Cup.',          test:(c,y)=>WC_WINNERS.has(c) },
+  { id:'pre2000',    emoji:'📼', name:'Pre-2000s',           blurb:'Only teams from before the year 2000.',           test:(c,y)=>y<2000 },
+  { id:'modern',     emoji:'📱', name:'21st Century',        blurb:'Only teams from 2000 onward.',                    test:(c,y)=>y>=2000 },
+  { id:'eighties',   emoji:'🕺', name:'The 80s',             blurb:'Only teams from the 1980s.',                      test:(c,y)=>y>=1980&&y<1990 },
+  { id:'nineties',   emoji:'💿', name:'The 90s',             blurb:'Only teams from the 1990s.',                      test:(c,y)=>y>=1990&&y<2000 },
+  { id:'tens',       emoji:'📸', name:'The 2010s',           blurb:'Only teams from the 2010s.',                      test:(c,y)=>y>=2010&&y<2020 },
+  { id:'y1970',      emoji:'🏆', name:'1970 Only',           blurb:'Only teams from the 1970 World Cup.',             test:(c,y)=>y===1970 },
+  { id:'y1986',      emoji:'🇲🇽', name:'1986 Only',           blurb:'Only teams from the 1986 World Cup.',             test:(c,y)=>y===1986 },
+  { id:'y1998',      emoji:'🇫🇷', name:'1998 Only',           blurb:'Only teams from the 1998 World Cup.',             test:(c,y)=>y===1998 },
+  { id:'y2014',      emoji:'🇧🇷', name:'2014 Only',           blurb:'Only teams from the 2014 World Cup.',             test:(c,y)=>y===2014 }
+];
+
+// --- deterministic helpers (identical for every player on a given UTC day) ----
+function utcDayIndex(d){ return Math.floor((d ? d.getTime() : Date.now())/86400000); } // days since epoch (UTC)
+function utcDateStr(d){ return new Date((d?d.getTime():Date.now())).toISOString().slice(0,10); } // YYYY-MM-DD (UTC)
+function todaysTheme(){ return THEMES[((utcDayIndex()%THEMES.length)+THEMES.length)%THEMES.length]; }
+function hashStr(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+
+// Distinct nation-years (country+year) matching a theme, sorted canonically so
+// the seeded shuffle is identical everywhere.
+function dailyPoolForTheme(theme){
+  const seen=new Set(), out=[];
+  (window.PLAYERS||[]).forEach(p=>{
+    const k=p.country+'|'+p.year;
+    if(seen.has(k)) return;
+    seen.add(k);
+    if(theme.test(p.country, p.year)) out.push({ country:p.country, year:p.year, key:k });
+  });
+  out.sort((a,b)=> a.key<b.key?-1:(a.key>b.key?1:0));
+  return out;
+}
+
+// Build today's fixed 11-spin sequence (seeded by the UTC date + theme).
+function buildDailySequence(theme){
+  const pool=dailyPoolForTheme(theme);
+  const rng=mulberry32(hashStr(utcDateStr()+'|'+theme.id));
+  // seeded Fisher–Yates over a copy, then take the first 11 (pools are always ≥16)
+  const arr=pool.slice();
+  for(let i=arr.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); const t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
+  return arr.slice(0, Math.min(11, arr.length)).map(x=>({ country:x.country, year:x.year }));
+}
+
+let DAILY = { active:false, theme:null, seq:[], idx:0, date:null };
+
+// Whether the signed-in player has already recorded today's daily.
+let dailyPlayedToday = false, dailyStreak = 0;
+async function refreshDailyStatus(){
+  dailyPlayedToday=false;
+  if(!isSignedIn() || !sbClient){ updateDailyButton(); return; }
+  try{
+    const { data } = await sbClient.from('daily_results').select('id')
+      .eq('user_id', authUser.id).eq('date', utcDateStr()).maybeSingle();
+    dailyPlayedToday = !!data;
+  }catch(e){}
+  dailyStreak = (authProfile && authProfile.current_streak) || 0;
+  updateDailyButton();
+}
+function updateDailyButton(){
+  const sub=$('daily-btn-sub'); if(!sub) return;
+  const t=todaysTheme();
+  let s = t.emoji+' '+t.name;
+  if(isSignedIn() && dailyPlayedToday) s += ' · Played ✓';
+  if(isSignedIn() && dailyStreak>0)   s += ' · 🔥'+dailyStreak;
+  sub.textContent=s;
+}
+
+// Start (or replay) today's daily challenge.
+function startDailyChallenge(){
+  if(typeof friendlyReset==='function') friendlyReset();
+  const theme=todaysTheme();
+  DAILY = { active:true, theme, seq:buildDailySequence(theme), idx:0, date:utcDateStr() };
+  draftType='full'; gameMode='easy';
+  // Full draft, no respins (the sequence is fixed for fairness).
+  gs = G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS, respins:{ full:0 } });
+  gs.daily = true; gs.dailyTheme = theme.id; gs.dailyThemeName = theme.name;
+  goToHome();
+}
+
+// Submit today's result (first attempt counts; server enforces). Returns row id
+// or null (already played / not signed in / error).
+async function submitDailyRow(progress){
+  if(!isSignedIn() || !sbClient) return null;
+  const ids   = (gs && Array.isArray(gs.picks)) ? gs.picks.map(p=>String(p.player.player_id)) : null;
+  const slots = (gs && Array.isArray(gs.picks)) ? gs.picks.map(p=>String(p.slot||p.player.position||'')) : null;
+  if(!ids || ids.length!==11) return null;
+  try{
+    const { data, error } = await sbClient.rpc('submit_daily', {
+      p_player_ids: ids, p_progress: progress,
+      p_result: (gs.result && gs.result.resultLabel) || null,
+      p_furthest: (simResult && simResult.furthestRound) || null,
+      p_slots: slots, p_theme: gs.dailyThemeName || gs.dailyTheme || null
+    });
+    if(error){ console.warn('[daily] submit failed', error); return null; }
+    return data; // bigint id, or null if already recorded today
+  }catch(e){ console.warn('[daily] submit exception', e); return null; }
+}
+
+// Read today's daily board (named rows only; names are server-attributed).
+async function fetchDailyBoard(limit){
+  if(!sbClient) return [];
+  const { data, error } = await sbClient.from('daily_results')
+    .select('id,name,flag,overall,progress,result,furthest,player_ids,slots')
+    .eq('date', utcDateStr())
+    .order('overall',{ascending:false}).order('progress',{ascending:false}).order('created_at',{ascending:true})
+    .limit(limit||100);
+  if(error){ console.warn('[daily] board fetch failed', error); return []; }
+  return data||[];
+}
+
+// Daily rank line on the results page (+ records the attempt, +streak refresh).
+async function fillDailyRankBadge(overall, progress){
+  const el=$('res-rank-line'); if(!el) return;
+  if(gs.result._lb){ renderDailyRankLine(el, gs.result._lb); return; }
+  if(gs.result._lbStarted) return;
+  gs.result._lbStarted = true; gs.result._progress = progress;
+  let recorded=null;
+  if(isSignedIn()){
+    recorded = await submitDailyRow(progress);
+    await loadProfile();        // pull the freshly-updated streak
+    refreshDailyStatus();       // update the home button (Played ✓ / streak)
+  }
+  // rank among today's board (named only); total = today's entries
+  let rank=null, total=null;
+  try{
+    const board=await fetchDailyBoard(500);
+    total=board.length || (recorded?1:0);
+    const ov=+(+overall).toFixed(1);
+    let better=0;
+    board.forEach(r=>{ const ro=+(+r.overall).toFixed(1); if(ro>ov || (ro===ov && (r.progress||0)>progress)) better++; });
+    rank=better+1;
+  }catch(e){}
+  const lb={ rank, total, streak:(authProfile&&authProfile.current_streak)||0,
+             signedIn:isSignedIn(), already:(isSignedIn()&&recorded===null) };
+  gs.result._lb=lb; gs.result._lbId=recorded;
+  renderDailyRankLine(el, lb);
+  if(rank && rank<=3){ try{ launchConfetti(); }catch(e){} }
+  // auto-open the daily board shortly after results settle
+  setTimeout(()=>openDailyBoard(), 1000);
+}
+function renderDailyRankLine(el, lb){
+  el.className='res-rank';
+  const theme=gs.dailyThemeName||'Daily';
+  if(!lb.signedIn){
+    el.innerHTML='🗓️ <b>Daily Challenge</b> — <span style="color:var(--gold)">sign in to rank &amp; build a streak</span>';
+    return;
+  }
+  let s='🗓️ Daily';
+  if(lb.rank&&lb.total) s+=` — ranks <b>${lb.rank}</b> of <b>${lb.total}</b> today`;
+  if(lb.streak>0) s+=` · 🔥 <b>${lb.streak}</b> day streak`;
+  if(lb.already) s+=' · <span style="color:#b9b9b9">(first attempt counted)</span>';
+  el.innerHTML=s;
+}
+
+// ---- daily leaderboard modal ----
+let dailyBoardRows=[];
+function closeDailyBoard(){ const bg=$('daily-bg'); if(bg) bg.classList.remove('show'); }
+async function openDailyBoard(){
+  const bg=$('daily-bg'); if(!bg) return;
+  const t=todaysTheme();
+  const tl=$('daily-theme-line'); if(tl) tl.innerHTML=`<b>${t.emoji} ${escapeHtml(t.name)}</b> — ${escapeHtml(t.blurb)}`;
+  const list=$('daily-list'); if(list) list.innerHTML='<div class="lb-empty">Loading…</div>';
+  // play/replay button label
+  const pb=$('daily-play-btn');
+  if(pb) pb.textContent = (isSignedIn() && dailyPlayedToday) ? 'Replay (first attempt counts)' : 'Play Today’s Challenge';
+  bg.classList.add('show');
+  // your-line summary
+  const yl=$('daily-yourline');
+  if(yl){
+    if(!isSignedIn()) yl.innerHTML='🔒 <b>Sign in</b> to rank on the daily board and build a streak.';
+    else {
+      const st=(authProfile&&authProfile.current_streak)||0;
+      yl.innerHTML = (dailyPlayedToday?'✅ Played today':'▶️ Not played yet')
+        + (st>0?` · 🔥 <b>${st}</b> day streak`:'');
+    }
+  }
+  try{
+    const rows=await fetchDailyBoard(100);
+    dailyBoardRows=rows;
+    renderDailyList(rows);
+  }catch(e){ if(list) list.innerHTML='<div class="lb-empty">Couldn’t load the daily board.</div>'; }
+}
+function renderDailyList(rows){
+  const list=$('daily-list'); if(!list) return;
+  if(!rows.length){ list.innerHTML='<div class="lb-empty">No entries yet — be the first today!</div>'; return; }
+  const myId = gs && gs.result && gs.result._lbId;
+  list.innerHTML=rows.map((row,i)=>{
+    const you=(myId!=null && row.id===myId);
+    const nm=cleanDisplayName((row.name&&String(row.name).trim())?row.name:'Anonymous');
+    const fl=(row.flag&&String(row.flag).trim())?flagChip(row.flag):'';
+    const rank=i+1;
+    const rankCell = rank<=3
+      ? `<span class="lb-rank medal ${MEDAL_TIERS[rank-1]}">${metalTrophySvg(rank,'lb-medal-svg')}<span class="lb-medal-num">${rank}</span></span>`
+      : `<span class="lb-rank">${rank}</span>`;
+    const hasLineup=Array.isArray(row.player_ids)&&row.player_ids.length>0;
+    return `<div class="lb-row${you?' you':''}${hasLineup?' has-lineup':''}" data-i="${i}" data-id="${row.id==null?'':row.id}">
+      ${rankCell}
+      <span class="lb-name">${fl?fl+' ':''}${escapeHtml(nm)}</span>
+      <span class="lb-meta">${emToSvg(lbMetaLabel(row))}</span>
+      <span class="lb-ov ${ovTier(row.overall)}">${(+row.overall).toFixed(1)}</span>
+      ${hasLineup?'<span class="lb-chev" aria-hidden="true">›</span>':''}
+    </div>`;
+  }).join('');
+}
+
 // Fill the rank line on the results page. Records the draft once (guarded), using
 // the global Supabase board when configured and reachable, else the local board.
 async function fillRankBadge(overall, progress){
   const el = $('res-rank-line'); if(!el) return;
+  if(gs && gs.daily) return fillDailyRankBadge(overall, progress); // daily → its own board
   if(gs.result._lb){ // already computed (e.g. re-render) — just show it
     renderRankLine(el, gs.result._lb.rank, gs.result._lb.total);
     return;
@@ -5030,17 +5322,18 @@ function goToResults(){
   $('res-share').addEventListener('click', openSharePopup);   // grid of share targets
   $('res-again').addEventListener('click', newGame);
   $('res-boxscores').addEventListener('click', openBoxScores);
-  $('res-leaderboard').addEventListener('click', ()=>openEntryModal(roundName, r.teamOverall, color));
+  const isDaily = !!(gs && gs.daily);
+  $('res-leaderboard').addEventListener('click', ()=> isDaily ? openDailyBoard() : openEntryModal(roundName, r.teamOverall, color));
   $('rate-link-results').addEventListener('click', ()=>openRatingForm());
-  fillRankBadge(r.teamOverall, progress);   // global rank (Supabase) or local fallback
+  fillRankBadge(r.teamOverall, progress);   // daily board, global board, or local fallback
 
   showScreen('reveal');
   window.scrollTo({top:0,behavior:'smooth'});
   if(champ) setTimeout(launchConfetti, 250); // celebrate the win
 
-  // Always-on add-to-leaderboard prompt: appears on EVERY results page after a
-  // 1s beat, with no score threshold or Top-10 check.
-  setTimeout(()=>openEntryModal(roundName, r.teamOverall, color), 1000);
+  // Always-on add-to-leaderboard prompt after a 1s beat. Daily games open the
+  // daily board instead (handled inside fillDailyRankBadge), so skip here.
+  if(!isDaily) setTimeout(()=>openEntryModal(roundName, r.teamOverall, color), 1000);
 }
 
 // Falling confetti for a World Cup win.
@@ -5810,6 +6103,22 @@ $('btn-start').addEventListener('click',goToDraftTypeSelect);
 // Home-screen leaderboard view: opens the existing leaderboard board in view-only
 // mode (board visible, score-entry UI hidden). Does not change leaderboard behaviour.
 $('btn-home-leaderboard').addEventListener('click', openLeaderboardView);
+
+// ---- daily challenge wiring ----
+(function wireDaily(){
+  const on=(id,ev,fn)=>{ const el=$(id); if(el) el.addEventListener(ev,fn); };
+  on('btn-daily','click',startDailyChallenge);
+  on('daily-close','click',closeDailyBoard);
+  on('daily-bg','click',e=>{ if(e.target===$('daily-bg')) closeDailyBoard(); });
+  on('daily-play-btn','click',()=>{ closeDailyBoard(); startDailyChallenge(); });
+  // tap a daily row with a stored lineup → show that squad
+  on('daily-list','click',e=>{
+    const rowEl=e.target.closest('.lb-row.has-lineup'); if(!rowEl) return;
+    const rid=rowEl.dataset.id;
+    const row=(rid?dailyBoardRows.find(r=>String(r.id)===rid):null)||dailyBoardRows[+rowEl.dataset.i];
+    if(row) openLineupModal(row);
+  });
+})();
 
 // ---- Add to Home Screen / bookmark ----
 let deferredInstallPrompt = null;
