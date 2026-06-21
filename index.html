@@ -5095,7 +5095,14 @@ async function loadMyDrafts(){
 // ---- Top 10 personal drafts (collapsible, with all-time rank + roster) ----
 let myTopDrafts=null; const topOpen={};
 function fmtDateShort(iso){ try{ return new Date(iso).toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'}); }catch(e){ return ''; } }
-function howFar(d){ return (+d.progress>=6) ? 'Champion' : (d.furthest || roundName(+d.progress||0)); }
+function howFar(d){
+  const prog=+d.progress||0;
+  if(prog>=6) return 'Champion';
+  const far = d.furthest || roundName(prog);
+  // Reached the final but didn't win → Runner-Up (not just "Final").
+  if(prog===5 || far==='Final') return 'Runner-Up';
+  return far;
+}
 async function loadMyTopDrafts(){
   if(!sbClient || !isSignedIn() || !authUser){ myTopDrafts=null; renderTopDrafts(); return; }
   try{
