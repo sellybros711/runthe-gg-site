@@ -1792,9 +1792,15 @@
   .prof-title{font-weight:800;font-size:11px;letter-spacing:.4px;margin-top:4px;}
   .prof-title b{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.5px;font-size:14px;text-transform:uppercase;}
   .prof-title .pt-rest{color:#9a9a9a;font-weight:700;}
-  /* Legend tier = shimmering gradient text */
-  .nt-legend{background:linear-gradient(90deg,#F4C430,#FFF4C2,#7FE0FF,#b98cff);
-    -webkit-background-clip:text;background-clip:text;color:transparent;}
+  /* Legend tier = shimmering diamond text (icy gradient sweeping across) */
+  @keyframes diamondShimmer{ to{ background-position:200% 50%; } }
+  .nt-legend{
+    background:linear-gradient(100deg,#9fd8ff 0%,#ffffff 18%,#cdeeff 32%,#8fd0ff 46%,#ffffff 60%,#bfe9ff 74%,#ffffff 88%,#9fd8ff 100%);
+    background-size:200% auto;background-position:0 50%;
+    -webkit-background-clip:text;background-clip:text;
+    color:transparent;-webkit-text-fill-color:transparent;
+    filter:drop-shadow(0 0 1px rgba(150,220,255,.55));
+    animation:diamondShimmer 2.4s linear infinite;}
   /* name tier label under a leaderboard name */
   .lb-title{display:block;font-weight:900;font-size:8px;letter-spacing:.4px;text-transform:uppercase;
     margin-top:1px;line-height:1;}
