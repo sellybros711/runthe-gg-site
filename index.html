@@ -5525,9 +5525,11 @@ const NAME_TIERS=[
   {id:'legend',name:'Legend',cls:'nt-legend'},
   {id:'goat',  name:'GOAT',  cls:'nt-goat'}     // every achievement completed
 ];
+const BRONZE_MIN=5;   // fewer than this many badges → unranked (normal text)
 function tierFromBadges(b){
   b=+b||0;
   if(b>=ACH_TOTAL_BADGES) return NAME_TIERS[4];   // GOAT — 100% of all badges
+  if(b<BRONZE_MIN) return null;                   // below Bronze → no tier styling
   return NAME_TIERS[Math.min(3, Math.floor((b*4)/ACH_TOTAL_BADGES))];
 }
 function applyTierColor(el, tier){
@@ -5547,10 +5549,17 @@ function renderNameTier(){
   const m=achMetrics(), badges=totalBadges(m), tier=tierFromBadges(badges);
   applyTierColor(d, tier);
   const tt=$('prof-title'); if(!tt) return;
-  const idx=NAME_TIERS.indexOf(tier), next=(idx<4)?NAME_TIERS[idx+1]:null;
-  // GOAT requires every badge; the other steps are at 25/50/75% of the total.
-  const nextAt = next ? (idx===3 ? ACH_TOTAL_BADGES : Math.ceil(((idx+1)*ACH_TOTAL_BADGES)/4)) : null;
-  const nameTag=`<b class="${tier.cls}">${tier.name}</b>`;
+  let nameTag, next, nextAt;
+  if(!tier){                                   // unranked — fewer than BRONZE_MIN badges
+    nameTag='<b>Unranked</b>';
+    next=NAME_TIERS[0]; nextAt=BRONZE_MIN;      // next step is Bronze
+  } else {
+    const idx=NAME_TIERS.indexOf(tier);
+    next=(idx<4)?NAME_TIERS[idx+1]:null;
+    // GOAT requires every badge; the other steps are at 25/50/75% of the total.
+    nextAt = next ? (idx===3 ? ACH_TOTAL_BADGES : Math.ceil(((idx+1)*ACH_TOTAL_BADGES)/4)) : null;
+    nameTag=`<b class="${tier.cls}">${tier.name}</b>`;
+  }
   tt.innerHTML = `${nameTag} <span class="pt-rest">tier · ${badges}/${ACH_TOTAL_BADGES} badges`
     + (next?` · ${Math.max(0,nextAt-badges)} to ${next.name}`:'')+`</span>`;
   tt.style.display='';
