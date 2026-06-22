@@ -1835,7 +1835,7 @@
   .prof-title .pt-rest{color:#9a9a9a;font-weight:700;}
   /* ---- name tiers: polished metallic text with a slow sweeping shine ---- */
   @keyframes diamondShimmer{ to{ background-position:200% 50%; } }
-  .nt-bronze,.nt-silver,.nt-gold,.nt-legend{
+  .nt-bronze,.nt-silver,.nt-gold,.nt-legend,.nt-goat{
     background-size:200% auto;background-position:0 50%;
     -webkit-background-clip:text;background-clip:text;
     color:transparent;-webkit-text-fill-color:transparent;
@@ -1857,8 +1857,13 @@
     background-image:linear-gradient(100deg,#9fd8ff 0%,#ffffff 18%,#cdeeff 32%,#8fd0ff 46%,#ffffff 60%,#bfe9ff 74%,#ffffff 88%,#9fd8ff 100%);
     filter:drop-shadow(0 0 2px rgba(150,220,255,.65));
     animation-duration:4.8s;}
+  /* GOAT — the ultimate: holographic gold (gold base with prismatic glints) + glow */
+  .nt-goat{
+    background-image:linear-gradient(100deg,#FFD24A 0%,#FFFFFF 12%,#FFE680 25%,#9FE0FF 39%,#FFFFFF 53%,#FFC0E6 66%,#FFF2A0 80%,#FFD24A 100%);
+    filter:drop-shadow(0 0 3px rgba(255,205,90,.8));
+    animation-duration:4.8s;}
   @media (prefers-reduced-motion:reduce){
-    .nt-bronze,.nt-silver,.nt-gold,.nt-legend{animation:none;background-position:50% 50%;}
+    .nt-bronze,.nt-silver,.nt-gold,.nt-legend,.nt-goat{animation:none;background-position:50% 50%;}
   }
   /* name tier label under a leaderboard name */
   .lb-title{display:block;font-weight:900;font-size:8px;letter-spacing:.4px;text-transform:uppercase;
@@ -5517,12 +5522,17 @@ const NAME_TIERS=[
   {id:'bronze',name:'Bronze',cls:'nt-bronze'},
   {id:'silver',name:'Silver',cls:'nt-silver'},
   {id:'gold',  name:'Gold',  cls:'nt-gold'},
-  {id:'legend',name:'Legend',cls:'nt-legend'}
+  {id:'legend',name:'Legend',cls:'nt-legend'},
+  {id:'goat',  name:'GOAT',  cls:'nt-goat'}     // every achievement completed
 ];
-function tierFromBadges(b){ return NAME_TIERS[Math.min(3, Math.floor(((+b||0)*4)/ACH_TOTAL_BADGES))]; }
+function tierFromBadges(b){
+  b=+b||0;
+  if(b>=ACH_TOTAL_BADGES) return NAME_TIERS[4];   // GOAT — 100% of all badges
+  return NAME_TIERS[Math.min(3, Math.floor((b*4)/ACH_TOTAL_BADGES))];
+}
 function applyTierColor(el, tier){
   if(!el) return;
-  el.classList.remove('nt-bronze','nt-silver','nt-gold','nt-legend');
+  el.classList.remove('nt-bronze','nt-silver','nt-gold','nt-legend','nt-goat');
   el.style.color='';
   if(tier && tier.cls) el.classList.add(tier.cls);   // metallic gradient text
 }
@@ -5537,8 +5547,9 @@ function renderNameTier(){
   const m=achMetrics(), badges=totalBadges(m), tier=tierFromBadges(badges);
   applyTierColor(d, tier);
   const tt=$('prof-title'); if(!tt) return;
-  const idx=NAME_TIERS.indexOf(tier), next=(idx<3)?NAME_TIERS[idx+1]:null;
-  const nextAt=next?Math.ceil(((idx+1)*ACH_TOTAL_BADGES)/4):null;
+  const idx=NAME_TIERS.indexOf(tier), next=(idx<4)?NAME_TIERS[idx+1]:null;
+  // GOAT requires every badge; the other steps are at 25/50/75% of the total.
+  const nextAt = next ? (idx===3 ? ACH_TOTAL_BADGES : Math.ceil(((idx+1)*ACH_TOTAL_BADGES)/4)) : null;
   const nameTag=`<b class="${tier.cls}">${tier.name}</b>`;
   tt.innerHTML = `${nameTag} <span class="pt-rest">tier · ${badges}/${ACH_TOTAL_BADGES} badges`
     + (next?` · ${Math.max(0,nextAt-badges)} to ${next.name}`:'')+`</span>`;
