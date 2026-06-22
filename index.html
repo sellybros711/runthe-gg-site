@@ -2377,6 +2377,41 @@
     .entry-lb-list{max-height:54vh;}
     .entry-badges .entry-badge{font-size:12px;padding:5px 11px;}
   }
+
+  /* ---------- fixed top-left menu button + slide-in drawer ---------- */
+  .menu-toggle{position:fixed;top:10px;left:10px;z-index:30;
+    width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;
+    border:2px solid var(--ink);border-radius:11px;background:var(--white);color:var(--ink);
+    box-shadow:2px 2px 0 var(--shadow-col);cursor:pointer;-webkit-tap-highlight-color:transparent;
+    transition:transform .08s ease,box-shadow .08s ease;padding:0;}
+  .menu-toggle:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--shadow-col);}
+  .menu-toggle svg{width:20px;height:20px;display:block;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;}
+  .menu-drawer{position:fixed;inset:0;z-index:140;background:rgba(0,0,0,.5);
+    opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s ease;}
+  .menu-drawer.show{opacity:1;visibility:visible;}
+  .menu-panel{position:absolute;top:0;left:0;bottom:0;width:min(82vw,300px);
+    background:var(--paper);border-right:2px solid var(--ink);box-shadow:6px 0 24px rgba(0,0,0,.4);
+    padding:14px 12px calc(16px + env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch;
+    display:flex;flex-direction:column;transform:translateX(-100%);
+    transition:transform .26s cubic-bezier(.3,.8,.3,1);}
+  .menu-drawer.show .menu-panel{transform:translateX(0);}
+  .menu-head{display:flex;align-items:center;justify-content:space-between;margin:2px 4px 12px;}
+  .menu-title{font-family:'Anton',Impact,sans-serif;font-size:21px;letter-spacing:1px;text-transform:uppercase;color:var(--ink);}
+  .menu-close{width:30px;height:30px;border:2px solid var(--ink);border-radius:9px;background:var(--white);
+    color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;
+    box-shadow:2px 2px 0 var(--shadow-col);padding:0;}
+  .menu-close:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--shadow-col);}
+  .menu-close svg{width:16px;height:16px;stroke:currentColor;stroke-width:2.4;fill:none;stroke-linecap:round;}
+  .menu-items{display:flex;flex-direction:column;gap:2px;}
+  .menu-item{display:flex;align-items:center;gap:12px;width:100%;text-align:left;
+    background:none;border:0;border-radius:10px;padding:11px 12px;cursor:pointer;
+    font-family:'Archivo',system-ui,sans-serif;font-weight:800;font-size:14.5px;color:var(--ink);
+    text-decoration:none;-webkit-tap-highlight-color:transparent;transition:background .12s ease;}
+  .menu-item:hover,.menu-item:active{background:rgba(127,127,127,.16);}
+  .menu-item svg{width:21px;height:21px;flex:0 0 auto;fill:none;stroke:currentColor;
+    stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;}
+  .menu-item svg.mi-fill{fill:currentColor;stroke:none;}
+  .menu-sep{height:1px;background:rgba(127,127,127,.22);margin:8px 6px;}
 </style>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
      crossorigin="anonymous"></script>
@@ -2396,6 +2431,70 @@
       var dark=document.documentElement.classList.toggle('dark');
       try{ localStorage.setItem('rtp-theme',dark?'dark':'light'); }catch(e){}
     });
+  })();
+</script>
+<button id="menu-toggle" class="menu-toggle" type="button" aria-label="Open menu" title="Menu">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+</button>
+<div id="menu-drawer" class="menu-drawer" role="dialog" aria-modal="true" aria-label="Menu">
+  <div class="menu-panel">
+    <div class="menu-head">
+      <span class="menu-title">Menu</span>
+      <button id="menu-close" class="menu-close" type="button" aria-label="Close menu"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <nav class="menu-items">
+      <button class="menu-item" type="button" data-act="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg> Main Menu</button>
+      <button class="menu-item" type="button" data-act="profile"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></svg> Profile</button>
+      <button class="menu-item" type="button" data-act="leaderboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0z"/><path d="M6 5H3v1.5a3 3 0 0 0 3 3M18 5h3v1.5a3 3 0 0 1-3 3M12 14v3M8.5 20h7l-1-3h-5z"/></svg> Leaderboard</button>
+      <button class="menu-item" type="button" data-act="daily"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><path d="M12 12.5l1 2 2 .3-1.5 1.5.4 2.2-1.9-1-1.9 1 .4-2.2L9 14.8l2-.3z" class="mi-fill"/></svg> Daily Challenge</button>
+      <button class="menu-item" type="button" data-act="friendly"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" y1="19" x2="19" y2="13"/><line x1="16" y1="16" x2="20" y2="20"/><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"/><line x1="5" y1="14" x2="9" y2="18"/><line x1="7" y1="17" x2="4" y2="20"/></svg> Friendlies</button>
+      <button class="menu-item" type="button" data-act="roster"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="13,2 4,14 11,14 9,22 18,10 11,10" class="mi-fill"/></svg> Roster Updates</button>
+      <button class="menu-item" type="button" data-act="feedback"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z"/><path d="M8 9h8M8 12.5h5"/></svg> Feedback</button>
+      <button class="menu-item" type="button" data-act="a2hs"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4"/><line x1="10.4" y1="4.6" x2="13.6" y2="4.6"/><circle cx="12" cy="18.8" r=".9" class="mi-fill"/></svg> Add to Home</button>
+      <div class="menu-sep"></div>
+      <a class="menu-item" href="about.html"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6h.01"/></svg> About</a>
+      <a class="menu-item" href="privacy.html"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.6-3 7.7-7 9-4-1.3-7-4.4-7-9V6z"/><path d="M9.2 12l1.9 1.9 3.7-3.8"/></svg> Privacy</a>
+      <a class="menu-item" href="contact.html"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/></svg> Contact</a>
+      <div class="menu-sep"></div>
+      <button class="menu-item" type="button" data-act="auth"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 3h4a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-4M10 17l5-5-5-5M15 12H3"/></svg> <span id="menu-auth-label">Sign In / Sign Up</span></button>
+    </nav>
+  </div>
+</div>
+<script>
+  (function(){
+    var drawer=document.getElementById('menu-drawer');
+    var toggle=document.getElementById('menu-toggle');
+    if(!drawer||!toggle) return;
+    function openMenu(){
+      var lbl=document.getElementById('menu-auth-label');
+      if(lbl) lbl.textContent=(typeof isSignedIn==='function'&&isSignedIn())?'Sign Out':'Sign In / Sign Up';
+      drawer.classList.add('show');
+    }
+    function closeMenu(){ drawer.classList.remove('show'); }
+    function call(fn){ try{ if(typeof fn==='function') fn(); }catch(e){ console.warn('[menu]',e); } }
+    function act(a){
+      closeMenu();
+      switch(a){
+        case 'home': call(typeof friendlyReset==='function'?friendlyReset:null); call(function(){ showScreen('start'); }); break;
+        case 'profile': call(openProfilePage); break;
+        case 'leaderboard': call(openLeaderboardView); break;
+        case 'daily': call(openDailyIntro); break;
+        case 'friendly': call(startFriendly); break;
+        case 'roster': call(openRosterUpdates); break;
+        case 'feedback': call(function(){ openRatingForm({}); }); break;
+        case 'a2hs': { var b=document.getElementById('btn-add-home'); if(b){ b.click(); } else { call(typeof showA2HS==='function'?showA2HS:null); } break; }
+        case 'auth': (typeof isSignedIn==='function'&&isSignedIn()) ? call(acctSignOut) : call(openAccountModal); break;
+      }
+    }
+    toggle.addEventListener('click', openMenu);
+    document.getElementById('menu-close').addEventListener('click', closeMenu);
+    drawer.addEventListener('click', function(e){ if(e.target===drawer) closeMenu(); });
+    drawer.querySelectorAll('.menu-item[data-act]').forEach(function(el){
+      el.addEventListener('click', function(){ act(el.dataset.act); });
+    });
+    // plain <a> menu items (About/Privacy/Contact) just navigate — close first.
+    drawer.querySelectorAll('a.menu-item').forEach(function(el){ el.addEventListener('click', closeMenu); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeMenu(); });
   })();
 </script>
 <div class="app">
