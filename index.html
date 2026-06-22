@@ -8940,21 +8940,22 @@ const GROUP_ELIM_LINES=[
   'The dream dies in the group stage. Rebuild and go again.',
 ];
 
+// Result-NEUTRAL advance lines — safe to show after any win (blowout or squeak),
+// because they say nothing about how the match actually went. Tone-specific
+// lines (nervy/scrappy/dominant) live in the margin buckets in knockoutResultMsg.
 const KNOCKOUT_WIN_LINES=[
   'What a result. Onward.',
-  'Clinical. They weren\'t going home yet.',
-  'A nervy win, but a win is a win.',
   'That\'s what this squad was built for.',
-  'Grit. Quality. Through.',
   'Another round, another notch on the belt.',
   'The tournament takes notice.',
-  'Not their prettiest, but they\'ll take it.',
-  'Keep the faith. Keep winning.',
   'Into the next round — and this squad believes.',
-  'A cold-blooded finish when it mattered most.',
   'One step closer. Don\'t stop now.',
   'They came, they fought, they advanced.',
   'This squad has something. It\'s hard to stop.',
+  'Keep the faith. Keep winning.',
+  'Survive and advance — that\'s the whole game.',
+  'Book another flight: they\'re not going home yet.',
+  'The doubters are getting quieter by the round.',
 ];
 const KNOCKOUT_WIN_PENS_LINES=[
   'Penalties are a lottery — and they won it.',
@@ -9017,6 +9018,8 @@ function knockoutResultMsg(opts){
   const myOv  = (simResult&&simResult.userOverall)||(gs.result&&gs.result.teamOverall)||75;
   const underdog = myOv + 4 < oppOv, favourite = myOv > oppOv + 6;
 
+  const cleanSheet = them===0;
+  const goalFest = (us+them)>=6;
   const pool=[];
   if(opts.won){
     if(pens){
@@ -9024,28 +9027,41 @@ function knockoutResultMsg(opts){
                 `A shootout for the ages. ${opp} sent home.`,
                 `${us}–${them}, then nerve from twelve yards. Through.`,
                 `Every kick a heartbeat — and ${opp} blinked first.`,
+                `They turned the shootout into ${opp}'s worst nightmare.`,
+                `120 minutes couldn't separate them — twelve yards could. Past ${opp}.`,
                 ...KNOCKOUT_WIN_PENS_LINES);
     } else if(margin>=3){
       pool.push(`${score}. ${opp} dismantled.`,
                 `A statement. ${opp} swept aside ${score}.`,
                 `Ruthless — ${opp} never stood a chance.`,
                 `${score} and this squad is sending a message.`,
-                `${opp} put to the sword. Total control.`);
+                `${opp} put to the sword. Total control.`,
+                `Somebody go check on ${opp}. That was ${score}.`,
+                `${score}?! ${opp} will be seeing that one in their sleep.`,
+                `They didn't just beat ${opp} — they left a mark. ${score}.`);
     } else if(margin===2){
       pool.push(`A composed ${score} win over ${opp}.`,
                 `${opp} dispatched ${score}. Job done.`,
                 `Two clear goals — ${opp} couldn't live with them.`,
-                `${score}. Comfortable when it counted.`);
+                `${score}. Comfortable when it counted.`,
+                `Two-goal cushion, zero panic. ${opp} handled.`);
     } else { // 1-goal
       pool.push(`${score}. They edged out ${opp}.`,
                 `By the finest margin — ${opp} beaten ${score}.`,
                 `${et?'Extra-time drama':'A nervy finish'}, but past ${opp} ${score}.`,
-                `One goal in it. ${opp} so nearly took them down.`,
-                `Squeaked past ${opp} ${score}. Through is through.`);
+                `One goal in it — and it was theirs. ${opp} beaten ${score}.`,
+                `Squeaked past ${opp} ${score}. Through is through.`,
+                `One goal, ninety minutes of heart attacks — worth it. ${score}.`,
+                `Don't ask about style points. ${opp} are out, ${score}.`,
+                `A nervy win, but a win is a win.`,
+                `Not pretty. Don't care. ${opp} beaten ${score}.`,
+                `Grit over glamour — past ${opp} ${score}.`);
     }
-    if(starG>=3) pool.push(`Hat-trick hero ${who} fires them past ${opp}!`, `${who} with THREE — ${opp} had no answer.`);
+    if(cleanSheet) pool.push(`Clean sheet, job done — ${opp} kept off the board.`, `Not a single goal for ${opp}. The back line stood tall.`);
+    if(goalFest) pool.push(`A ${us}–${them} slugfest — ${opp} traded punches and lost.`, `Forget defending — this one was a ${us}–${them} track meet, and they won it.`);
+    if(starG>=3) pool.push(`Hat-trick hero ${who} fires them past ${opp}!`, `${who} with THREE — ${opp} had no answer.`, `Somebody get ${who} the matchball. Hat-trick.`);
     else if(starG===2) pool.push(`${who}'s brace sinks ${opp}.`, `Two from ${who}, and ${opp} are out.`);
-    if(underdog) pool.push(`Giant-killers! ${opp} (${oppOv} OVR) stunned.`, `The underdogs roll on — ${opp} never saw it coming.`);
+    if(underdog) pool.push(`Giant-killers! ${opp} (${oppOv} OVR) stunned.`, `The underdogs roll on — ${opp} never saw it coming.`, `On paper they had no business winning. Lucky it's played on grass.`);
     if(favourite && margin>=2) pool.push(`Business as usual. ${opp} brushed aside.`);
     if(round==='Semi-final') pool.push(`Into the FINAL — ${opp} beaten when it mattered most.`, `One game from glory. ${opp} couldn't stop them.`);
     else if(round==='Quarter-final') pool.push(`Into the semis! ${opp} sent packing.`);
@@ -9054,22 +9070,26 @@ function knockoutResultMsg(opts){
     if(pens){
       pool.push(`${us}–${them}, then penalty heartbreak against ${opp}.`,
                 `So cruel — out to ${opp} from the spot.`,
+                `120 minutes for nothing. ${opp} win the lottery.`,
                 ...KNOCKOUT_LOSS_PENS_LINES);
     } else if(margin>=3){
       pool.push(`Outclassed. ${opp} ran out ${score} winners.`,
                 `${opp} were simply too strong — a chastening ${score}.`,
-                `Blown away by ${opp}.`);
+                `Blown away by ${opp}, ${score}.`,
+                `This one got ugly. ${opp} cruise, ${score}.`);
     } else if(margin<=1){
       pool.push(`Heartbreak. ${opp} edged it ${score}.`,
                 `By a single goal, ${opp} end the dream.`,
                 `${et?'Extra-time agony':'An agonising finish'} — ${opp} go through ${score}.`,
-                `So close against ${opp}. Out ${score}.`);
+                `So close against ${opp}. Out ${score}.`,
+                `One goal. One. That's the part that stings. ${opp} ${score}.`);
     } else {
       pool.push(`${opp} had a touch too much, winning ${score}.`,
                 `The run ends against ${opp}, ${score}.`);
     }
+    if(us===0 && !pens) pool.push(`Couldn't buy a goal — ${opp} keep it clean and advance.`, `Blanked. ${opp} do just enough, ${score}.`);
     if(underdog) pool.push(`No shame in it — ${opp} (${oppOv} OVR) were the stronger side.`, `They punched above their weight, but ${opp} prevailed.`);
-    if(favourite) pool.push(`A shock. ${opp} pull off the upset.`, `The favourites fall — ${opp} stun them.`);
+    if(favourite) pool.push(`A shock. ${opp} pull off the upset.`, `The favourites fall — ${opp} stun them.`, `That's why they play the games — ${opp} stun the favourites.`);
     pool.push(...KNOCKOUT_LOSS_LINES);
   }
   return pickOne(pool);
