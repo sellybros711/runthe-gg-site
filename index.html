@@ -3255,7 +3255,7 @@
   <div class="ach-pop-card" style="text-align:center;">
     <div class="ach-pop-eyebrow">Welcome to RunThePitch</div>
     <div class="ach-pop-name" style="font-size:24px;">Pick your username</div>
-    <div class="unp-sub">This is the name shown on the leaderboards &amp; your profile. You can change it later.</div>
+    <div class="unp-sub" id="unp-sub-text">This is the name shown on the leaderboards &amp; your profile. You can change it later.</div>
     <input class="entry-name" id="unp-input" maxlength="20" placeholder="Username" autocomplete="username" />
     <div class="entry-error" id="unp-error"></div>
     <button class="btn unp-save" id="unp-save" type="button">Save Username</button>
@@ -5050,8 +5050,11 @@ async function applySession(session){
   const rev=document.getElementById('screen-reveal');
   const onReveal=!!(rev && rev.classList.contains('active'));
   if(justLoggedIn && !onReveal) openProfilePage();
-  // Fresh sign-in with no username yet (e.g. Google sign-up) → prompt for one.
-  if(justLoggedIn && !authUsername()) showUsernamePrompt();
+  // Username prompts: a legacy "Anonymous" account is forced to rename whenever
+  // signed in; a fresh sign-in with no username at all (e.g. Google) is prompted
+  // (skippable). Anonymous takes priority.
+  if(authUser && isAnonName(authUsername())) showUsernamePrompt({ force:true });
+  else if(justLoggedIn && !authUsername()) showUsernamePrompt();
 }
 
 // The username the player picked at sign-up rides along in their auth metadata.
@@ -5253,8 +5256,8 @@ function renderProfilePage(){
   if(!isSignedIn()) return;
   const fl=(authProfile && authProfile.flag) || 'USA';
   const pf=$('prof-flag'); if(pf) pf.innerHTML = flagChip(fl);
-  const hasName=!!authUsername();
-  const d=$('acct-username-display'); if(d) d.textContent = authUsername() || 'Set a username';
+  const hasName=!!authUsername() && !isAnonName(authUsername());   // "Anonymous" counts as unset
+  const d=$('acct-username-display'); if(d) d.textContent = hasName ? authUsername() : 'Set a username';
   renderNameTier();   // colours the name + tier label (also re-run when data loads)
   showEl($('acct-username-set'), !hasName);
   const lbl=$('acct-username-label'); if(lbl) lbl.textContent = hasName ? 'Change username' : 'Pick a username';
@@ -5834,10 +5837,18 @@ async function acctSetNewPassword(){
 
 // First-time username prompt — shown right after a sign-up that gives us no
 // username of its own (e.g. Google OAuth), so the player always sets a name.
-function showUsernamePrompt(){
+// Also used to force legacy "Anonymous" accounts to choose a real name.
+function isAnonName(n){ return String(n||'').trim().toLowerCase()==='anonymous'; }
+function showUsernamePrompt(opts){
   const bg=$('username-prompt-bg'); if(!bg) return;
+  const force=!!(opts && opts.force);
   const inp=$('unp-input'); if(inp) inp.value='';
   const err=$('unp-error'); if(err) err.classList.remove('show');
+  const skip=$('unp-skip'); if(skip) skip.style.display = force ? 'none' : '';   // forced → no opt-out
+  const sub=$('unp-sub-text');
+  if(sub) sub.textContent = force
+    ? '“Anonymous” is reserved — please choose a username to use on the leaderboards.'
+    : 'This is the name shown on the leaderboards & your profile. You can change it later.';
   bg.classList.add('show');
   setTimeout(()=>{ try{ if(inp) inp.focus(); }catch(e){} }, 80);
 }
@@ -7939,6 +7950,8 @@ const BANNED_TERMS = [
   'retard','golliwog','wog','redskin','gyppo','zipperhead','slanteye','rapist',
   // sexual-pun handles and offensive name references
   'mehoff','meoff','georgefloyd',
+  // reserved placeholder name — guests show as "Anonymous", so no one may take it
+  'anonymous',
 ];
 function normalizeForFilter(s){
   return (s||'')
