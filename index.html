@@ -2742,7 +2742,7 @@
     </ul>
 
     <div class="daily-intro-warn">
-      You get <b>one attempt that counts.</b> Replay as much as you like to practise — but only your <b>first completed run</b> is ranked on the daily leaderboard and counts toward your streak.
+      You get <b>one attempt that counts.</b> Replay as much as you like to practice — but only your <b>first completed run</b> is ranked on the daily leaderboard and counts toward your streak.
     </div>
 
     <div class="stack" style="margin-top:18px;">
@@ -6453,7 +6453,7 @@ function weakestLine(){
   const lines = {GK:[],DEF:[],MID:[],FWD:[]};
   picks.forEach(p=>{ const k=posOf(p); if(lines[k]) lines[k].push(ovOf(p)); });
   const avg = a => a.length ? a.reduce((s,x)=>s+x,0)/a.length : null;
-  const META = {GK:{label:'goalkeeping',fix:'keeper'},DEF:{label:'defence',fix:'defence'},
+  const META = {GK:{label:'goalkeeping',fix:'keeper'},DEF:{label:'defense',fix:'defense'},
                 MID:{label:'midfield',fix:'midfield'},FWD:{label:'attack',fix:'attack'}};
   let worst=null, wAvg=Infinity;
   ['GK','DEF','MID','FWD'].forEach(k=>{ const a=avg(lines[k]); if(a!=null && a<wAvg){ wAvg=a; worst=k; } });
@@ -7506,7 +7506,7 @@ $('sheet-bg').addEventListener('click',e=>{ if(e.target===$('sheet-bg')) closeSh
 const INFO_CONTENT = {
   chemistry: {
     title: 'Team Chemistry',
-    text: 'How well your best players match your team’s identity. Your FLEX pick sets that identity — a midfielder makes you Balanced (goalkeeper & defence count for more), a forward makes you Attacking (the front line counts for more). Chemistry is high when the positions your identity rewards are also your strongest, and it nudges your final score up or down by a few points.'
+    text: 'How well your best players match your team’s identity. Your FLEX pick sets that identity — a midfielder makes you Balanced (goalkeeper & defense count for more), a forward makes you Attacking (the front line counts for more). Chemistry is high when the positions your identity rewards are also your strongest, and it nudges your final score up or down by a few points.'
   },
   identity: {
     title: 'Team Identity',
@@ -8838,9 +8838,9 @@ function simPlayerLine(squad, userGoals, opponentGoals){
     `${nm(mid)} led the press and won the ball back relentlessly.`,
     `${nm(def)} was a wall at the back all game.`,
     `${nm(def)} read every danger before it became a threat.`,
-    gk ? `${nm(gk)} pulled off a stunning point-blank save.` : `The defence held firm under pressure.`,
+    gk ? `${nm(gk)} pulled off a stunning point-blank save.` : `The defense held firm under pressure.`,
     gk ? `${nm(gk)} commanded his area and claimed everything in the air.` : `The back four were alert to every threat.`,
-    `${nm(att)} ran the channels ragged and kept the defence guessing.`,
+    `${nm(att)} ran the channels ragged and kept the defense guessing.`,
     `${nm(att)} held up play brilliantly and brought others into the game.`,
     `Super-sub ${nm(att)} changed the game off the bench.`,
     `Set pieces were a weapon today — ${nm(def)} a danger on every ball.`,
