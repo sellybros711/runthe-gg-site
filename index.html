@@ -6853,16 +6853,11 @@ function openProfile(p){
   // ── scrollable body ──
   let html='';
 
-  // tournament info for the drafted year — result + the rating tiles
+  // tournament info for the drafted year — result badge only
   html+=`<div class="profile-section-label">${p.year} ${p.country} — Tournament</div>`;
   if(fin) html+=`<div class="profile-tags"><span class="finish-badge${fin.cls?' '+fin.cls:''}">${emToSvg(fin.label)}</span></div>`;
-  const tiles=[
-    tile('Overall', p.wc_overall),
-    tile('Skill', p.skill_rating),
-    // 'WC Performance' tile removed for now — the data isn't reliable yet.
-    tile('Squad Strength', p.team_overall),
-  ].join('');
-  if(tiles) html+=`<div class="profile-stats">${tiles}</div>`;
+  // Rating tiles (Overall / Skill / Squad Strength / WC Performance) removed for
+  // now — bringing them back once the data is solid.
 
   // player details — every non-null field, never a dash for missing data
   const details=[
