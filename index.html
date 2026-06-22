@@ -6859,7 +6859,7 @@ function openProfile(p){
   const tiles=[
     tile('Overall', p.wc_overall),
     tile('Skill', p.skill_rating),
-    tile('WC Performance', p.wc_performance),
+    // 'WC Performance' tile removed for now — the data isn't reliable yet.
     tile('Squad Strength', p.team_overall),
   ].join('');
   if(tiles) html+=`<div class="profile-stats">${tiles}</div>`;
