@@ -6004,9 +6004,16 @@ let lbWindow='all', lbMode='easy', lbDraftType='quick', lbHighlightId=null;
 function dtFilter(dt){ return (dt==='quick'||dt==='full') ? `&draft_type=eq.${dt}` : ''; }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-// Short round/result tag for a leaderboard row.
+// Short round/result tag for a leaderboard row. progress is the reliable signal
+// (6 = champion, 5 = lost final) — the result text doesn't always say "champion",
+// which made winners show "Final" just like runners-up.
 function lbMetaLabel(row){
-  if(/winner|champion/i.test(row.result||'')) return '🏆';
+  const p=Number(row.progress);
+  if(p>=6 || /winner|champion/i.test(row.result||'')) return '🏆';   // champion → trophy (emToSvg)
+  if(Number.isFinite(p)){
+    const byProg={5:'Final',4:'SF',3:'QF',2:'R16',1:'R32',0:'Grp'};
+    if(byProg[p]!=null) return byProg[p];
+  }
   const map={'Final':'Final','Semi-final':'SF','Quarter-final':'QF','Round of 16':'R16','Round of 32':'R32','Group Stage':'Grp'};
   return map[row.furthest] || '';
 }
