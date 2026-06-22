@@ -1676,6 +1676,8 @@
   .entry-bg.view-only .entry-submit,
   .entry-bg.view-only .entry-error,
   .entry-bg.view-only .entry-skip{display:none !important;}
+  /* board view shows the sign-in CTA for guests, but not the results-only note */
+  .entry-bg.view-only .eac-guest-note{display:none !important;}
   .entry-card{position:relative;background:#1a1a1a;border:2px solid #F5C518;border-radius:16px;
     max-width:460px;width:100%;padding:24px 22px;box-shadow:0 18px 50px rgba(0,0,0,.5);
     max-height:92vh;overflow-y:auto;color:#fff;}
@@ -3315,6 +3317,13 @@ function showScreen(name){
   document.body.classList.toggle('profile-mode', name==='profile');
   window.scrollTo({top:0,behavior:'smooth'});
 }
+// Name of the currently-active screen (without the "screen-" prefix).
+function currentScreenName(){
+  const a=document.querySelector('.screen.active');
+  return a ? a.id.replace(/^screen-/,'') : 'start';
+}
+// Where the profile's Back button should return to (the screen open before it).
+let profileReturnScreen='start';
 
 // ---------- boot ----------
 // Fetch a JSON array of players from `url`; returns null on any failure.
@@ -4763,6 +4772,12 @@ async function applySession(session){
   loginNav=false;
   // A guest who just signed in on the results screen → save the score they earned.
   if(authUser){ maybeSubmitPendingDraft(); claimPendingDraftId(); }
+  // If the home leaderboard view is open as a guest, refresh it now that they're
+  // signed in so the sign-in CTA drops away.
+  {
+    const eb=$('entry-bg');
+    if(authUser && eb && eb.classList.contains('show') && eb.classList.contains('view-only')) openLeaderboardView();
+  }
   // ...but in that case keep them on their result; otherwise show the profile.
   const rev=document.getElementById('screen-reveal');
   const onReveal=!!(rev && rev.classList.contains('active'));
@@ -4965,6 +4980,8 @@ function renderProfilePage(){
 }
 function openProfilePage(){
   if(!isSignedIn()){ openAccountModal(); return; }
+  const cur=currentScreenName();
+  if(cur && cur!=='profile') profileReturnScreen=cur;   // remember where we came from
   closeAccountModal();
   renderProfilePage();
   showScreen('profile');
@@ -7311,8 +7328,15 @@ function updateEntrySubmit(){
 // board (same toggles, same data, same rendering) but hides the score-entry UI,
 // so nothing about how the leaderboard works changes — it's just viewable.
 function openLeaderboardView(){
-  $('entry-bg').classList.remove('guest','signed');   // view-only: no entry/CTA UI
-  $('entry-bg').classList.add('view-only');
+  const eb=$('entry-bg');
+  eb.classList.remove('guest','signed');
+  eb.classList.add('view-only');
+  // Guests get a sign-in CTA at the top of the board prompting them to join.
+  if(!isSignedIn()){
+    eb.classList.add('guest');
+    const lk=eb.querySelector('#entry-auth-cta .eac-lock');
+    if(lk) lk.innerHTML='<b>Want your name on the board?</b><br>Create a free account to climb the leaderboard, earn badges &amp; track your stats &amp; streaks.';
+  }
   $('entry-error').classList.remove('show');
   lbWindow='all'; lbMode='easy'; lbDraftType='quick';
   lbSetActiveToggles();
@@ -7332,6 +7356,8 @@ function openEntryModal(resultLabel, score, color){
     if(sa) sa.innerHTML = 'Saved to the leaderboard as <b>'+escapeHtml(authUsername()||'your account')+'</b> ✓';
   }else{
     eb.classList.add('guest');
+    const lk=eb.querySelector('#entry-auth-cta .eac-lock');
+    if(lk) lk.innerHTML='<b>Save this run to your profile!</b><br>You’re on the leaderboard as Anonymous. Create a free account and this draft counts toward your stats, badges &amp; rank.';
   }
   // two pills: the result (champion → trophy, runner-up → silver, otherwise
   // "Elim: <round>") + the overall
@@ -7491,7 +7517,7 @@ $('entry-submit').addEventListener('click', submitEntry);
   on('btn-account','click',openAccountModal);
   on('btn-account-user','click',openProfilePage);   // signed-in → full-screen profile
   on('btn-signout','click',acctSignOut);
-  on('prof-back','click',()=>showScreen('start'));
+  on('prof-back','click',()=>showScreen(profileReturnScreen||'start'));
   on('legends-groups','click',e=>{
     const h=e.target.closest('.lg-head'); if(!h) return;
     const tier=h.dataset.tier; legendsOpen[tier]=!legendsOpen[tier];
