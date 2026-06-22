@@ -1925,6 +1925,9 @@
   .lc-ovr.r-icon{background:#7FE0FF;}.lc-ovr.r-gold{background:#E8C25A;}.lc-ovr.r-silver{background:#cfcfcf;}
   .legends-empty{grid-column:1/-1;text-align:center;color:#9a9a9a;font-size:12px;padding:18px;}
   body.profile-mode .masthead,body.profile-mode .acct-bar{display:none;}
+  /* profile hides the masthead, so reserve room up top for the fixed menu (left)
+     + theme (right) buttons — the Back button must not sit under the menu button */
+  body.profile-mode .app{padding-top:54px;}
   .acct-flag-save{display:block;width:100%;padding:11px 18px;margin-top:14px;}
 
   /* ---------- daily challenge ---------- */
