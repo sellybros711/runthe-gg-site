@@ -429,6 +429,10 @@
   .btn.blue{background:var(--blue);color:#fff;}
   .btn.ghost{background:var(--white);}
   .btn:disabled{opacity:.4;filter:grayscale(.4);box-shadow:none;cursor:not-allowed;}
+  /* "gated" buttons LOOK disabled (sign-in required) but stay clickable so the
+     tap can open the sign-in popup */
+  .btn.gated{opacity:.5;filter:grayscale(.65);box-shadow:none;}
+  .btn.gated:active{transform:none;box-shadow:none;}
   .btn.small{width:auto;font-size:12px;letter-spacing:.5px;padding:8px 16px;border-radius:10px;box-shadow:2px 2px 0 var(--shadow-col);}
 
   .pill{
@@ -2644,6 +2648,8 @@
 
     <div class="stack" style="margin-top:18px;">
       <button id="daily-intro-start" class="btn red big">Start Challenge</button>
+      <button id="daily-intro-board" type="button" class="daily-board-link">View today’s leaderboard ›</button>
+      <button id="daily-intro-streak" type="button" class="daily-board-link">View streak leaderboard ›</button>
       <button id="daily-intro-back" type="button" class="daily-board-link">‹ Back to home</button>
     </div>
   </section>
@@ -3125,6 +3131,10 @@
     <button class="entry-close" id="daily-close" aria-label="Close">✕</button>
     <h3 class="entry-title">Daily Challenge</h3>
     <p class="entry-sub" id="daily-theme-line"></p>
+    <div class="lb-seg daily-seg" id="daily-seg" style="margin:12px 0;">
+      <button type="button" data-dv="today" class="active">Today’s Board</button>
+      <button type="button" data-dv="streak">Streaks</button>
+    </div>
     <div class="daily-yourline" id="daily-yourline"></div>
     <div class="entry-lb-list" id="daily-list"></div>
     <button class="entry-submit daily-play" id="daily-play-btn">Play Today’s Challenge</button>
@@ -4985,6 +4995,7 @@ function syncAuthUI(){
     un.innerHTML = flagChip(fl, 'fa-flag') + escapeHtml(authUsername() || 'Account');
   }
   renderAccountModal();
+  if(typeof refreshStartGates==='function') refreshStartGates();  // un-gray start buttons after sign-in
 }
 
 // ---- account modal --------------------------------------------------------
@@ -5011,6 +5022,22 @@ function requireAccount(reason){
   openAccountModal();
   const note=$('acct-note'); if(note && reason) note.textContent=reason;
   return false;
+}
+
+// A mode's "start" button: anyone can reach the screen, but guests see it grayed
+// with "Sign in to play" (clicking it still opens the sign-in popup).
+function setStartGate(el, signedHtml){
+  if(!el) return;
+  const guest=!isSignedIn();
+  el.classList.toggle('gated', guest);
+  el.innerHTML = guest ? 'Sign in to play' : signedHtml;
+}
+// Re-apply the gate on whichever mode-intro screen is showing (after auth change).
+function refreshStartGates(){
+  const di=document.getElementById('screen-daily-intro');
+  if(di && di.classList.contains('active')) setStartGate($('daily-intro-start'),'Start Challenge');
+  const fi=document.getElementById('screen-friendly-intro');
+  if(fi && fi.classList.contains('active')) setStartGate($('btn-friendly-build'),'BUILD MY SQUAD&nbsp;→');
 }
 
 function setAcctTab(tab){
@@ -6048,6 +6075,7 @@ function openDailyIntro(){
   const nm=$('daily-intro-name'); if(nm) nm.textContent=t.name;
   const bl=$('daily-intro-blurb'); if(bl) bl.textContent=t.blurb;
   showScreen('daily-intro');
+  setStartGate($('daily-intro-start'),'Start Challenge');   // guests: "Sign in to play"
 }
 
 // Start (or replay) today's daily challenge.
@@ -6161,11 +6189,34 @@ function renderDailyRankLine(el, lb){
 
 // ---- daily leaderboard modal ----
 let dailyBoardRows=[];
+let dailyBoardView='today';
 function closeDailyBoard(){ const bg=$('daily-bg'); if(bg) bg.classList.remove('show'); }
-async function openDailyBoard(){
+// Top current streaks across all players (public profiles).
+async function fetchStreakBoard(limit){
+  if(!sbClient) return [];
+  try{
+    const { data, error } = await sbClient.from('profiles')
+      .select('username,flag,current_streak,longest_streak')
+      .gt('current_streak',0)
+      .order('current_streak',{ascending:false})
+      .order('longest_streak',{ascending:false})
+      .limit(limit||100);
+    if(error){ console.warn('[daily] streak fetch failed', error); return []; }
+    return data||[];
+  }catch(e){ console.warn('[daily] streak fetch exception', e); return []; }
+}
+async function openDailyBoard(view){
   const bg=$('daily-bg'); if(!bg) return;
+  dailyBoardView = (view==='streak') ? 'streak' : 'today';
+  const streak = dailyBoardView==='streak';
   const t=todaysTheme();
-  const tl=$('daily-theme-line'); if(tl) tl.innerHTML=`<b>${escapeHtml(t.name)}</b> — ${escapeHtml(t.blurb)}`;
+  const tl=$('daily-theme-line');
+  if(tl) tl.innerHTML = streak
+    ? 'Longest <b>active streaks</b> — play every day to climb.'
+    : `<b>${escapeHtml(t.name)}</b> — ${escapeHtml(t.blurb)}`;
+  // toggle active state
+  const seg=$('daily-seg');
+  if(seg) seg.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.dv===dailyBoardView));
   const list=$('daily-list'); if(list) list.innerHTML='<div class="lb-empty">Loading…</div>';
   // play/replay button label
   const pb=$('daily-play-btn');
@@ -6182,10 +6233,36 @@ async function openDailyBoard(){
     }
   }
   try{
-    const rows=await fetchDailyBoard(100);
-    dailyBoardRows=rows;
-    renderDailyList(rows);
-  }catch(e){ if(list) list.innerHTML='<div class="lb-empty">Couldn’t load the daily board.</div>'; }
+    if(streak){
+      renderStreakList(await fetchStreakBoard(100));
+    }else{
+      const rows=await fetchDailyBoard(100);
+      dailyBoardRows=rows;
+      renderDailyList(rows);
+    }
+  }catch(e){ if(list) list.innerHTML='<div class="lb-empty">Couldn’t load the board.</div>'; }
+}
+// Streak leaderboard rows (rank · flag+name · best · current streak with a flame).
+function renderStreakList(rows){
+  const list=$('daily-list'); if(!list) return;
+  if(!rows.length){ list.innerHTML='<div class="lb-empty">No active streaks yet — play today to start one!</div>'; return; }
+  const myName=(authProfile&&authProfile.username)||'';
+  list.innerHTML=rows.map((row,i)=>{
+    const nm=cleanDisplayName((row.username&&String(row.username).trim())?row.username:'Anonymous');
+    const you=(myName && row.username===myName);
+    const fl=(row.flag&&String(row.flag).trim())?flagChip(row.flag):'';
+    const rank=i+1;
+    const rankCell = rank<=3
+      ? `<span class="lb-rank medal ${MEDAL_TIERS[rank-1]}">${metalTrophySvg(rank,'lb-medal-svg')}<span class="lb-medal-num">${rank}</span></span>`
+      : `<span class="lb-rank">${rank}</span>`;
+    const st=row.current_streak||0;
+    return `<div class="lb-row${you?' you':''}">
+      ${rankCell}
+      <span class="lb-name">${fl?fl+' ':''}${escapeHtml(nm)}</span>
+      <span class="lb-meta">best ${row.longest_streak||st}</span>
+      <span class="lb-ov gold" style="display:inline-flex;align-items:center;gap:3px;">${flameSvg(Math.min(st,8))}${st}</span>
+    </div>`;
+  }).join('');
 }
 function renderDailyList(rows){
   const list=$('daily-list'); if(!list) return;
@@ -6347,6 +6424,7 @@ function goToResults(){
       <div class="stack" style="margin-top:10px;">
         <button class="btn teal" id="res-again">Draft a New Squad</button>
         <button class="btn blue" id="res-boxscores">📊 Tournament Recap</button>
+        <button class="btn ghost" id="res-home">Home</button>
       </div>
     </div>
     <div class="res-section" style="margin-top:20px;">Your Squad: <span class="${r.teamOverall>=100?'over100':''}">${r.teamOverall.toFixed(1)}</span> OVR</div>
@@ -6395,6 +6473,7 @@ function goToResults(){
   });
   $('res-share').addEventListener('click', openSharePopup);   // grid of share targets
   $('res-again').addEventListener('click', newGame);
+  { const rh=$('res-home'); if(rh) rh.addEventListener('click', ()=>{ if(typeof friendlyReset==='function') friendlyReset(); showScreen('start'); }); }
   $('res-boxscores').addEventListener('click', openBoxScores);
   const isDaily = !!(gs && gs.daily);
   $('res-leaderboard').addEventListener('click', ()=> isDaily ? openDailyBoard() : openEntryModal(roundName, r.teamOverall, color));
@@ -7181,14 +7260,17 @@ $('btn-home-leaderboard').addEventListener('click', openLeaderboardView);
 // ---- daily challenge wiring ----
 (function wireDaily(){
   const on=(id,ev,fn)=>{ const el=$(id); if(el) el.addEventListener(ev,fn); };
-  const dailyReason='Create a free account or sign in to play the Daily Challenge and build a streak.';
-  on('btn-daily','click',()=>{ if(!requireAccount(dailyReason)) return; openDailyIntro(); });
-  on('btn-daily-board','click',openDailyBoard);   // viewing the board is open to all
+  // Anyone can open the Daily Challenge intro; the Start button is gated there.
+  on('btn-daily','click',openDailyIntro);
+  on('btn-daily-board','click',()=>openDailyBoard('today'));   // viewing the board is open to all
+  on('daily-intro-board','click',()=>openDailyBoard('today'));
+  on('daily-intro-streak','click',()=>openDailyBoard('streak'));
   on('daily-intro-start','click',startDailyChallenge);
   on('daily-intro-back','click',()=>showScreen('start'));
   on('daily-close','click',closeDailyBoard);
   on('daily-bg','click',e=>{ if(e.target===$('daily-bg')) closeDailyBoard(); });
-  on('daily-play-btn','click',()=>{ if(!requireAccount(dailyReason)) return; closeDailyBoard(); openDailyIntro(); });
+  on('daily-play-btn','click',()=>{ closeDailyBoard(); openDailyIntro(); });
+  on('daily-seg','click',e=>{ const b=e.target.closest('button'); if(!b) return; openDailyBoard(b.dataset.dv); });
   // tap a daily row with a stored lineup → show that squad
   on('daily-list','click',e=>{
     const rowEl=e.target.closest('.lb-row.has-lineup'); if(!rowEl) return;
@@ -10516,7 +10598,7 @@ function friendlySquadFromPicks(picks){
 
 // ---- entry: tapping FRIENDLY on the home screen ----
 function startFriendly(){
-  if(!requireAccount('Create a free account or sign in to set up a Friendly challenge.')) return;
+  // Anyone can open the Friendly setup; the BUILD button is gated for guests.
   friendlyReset();
   friendlyMode=true; friendlyRole='challenger';
   gameMode='easy';                 // overalls visible — keeps Friendly accessible
@@ -10526,6 +10608,7 @@ function startFriendly(){
   const nm=$('fr-name-challenger'); if(nm) nm.value='';
   friendlyMyFlag='USA'; buildFriendlyFlagRow('fr-flag-challenger');
   showScreen('friendly-intro');
+  setStartGate($('btn-friendly-build'),'BUILD MY SQUAD&nbsp;→');   // guests: "Sign in to play"
 }
 
 // ---- challenger finished their draft → Challenge Ready screen ----
@@ -11082,6 +11165,7 @@ async function friendlyShareResult(){
 // ---- wiring ----
 $('btn-friendly').addEventListener('click', startFriendly);
 $('btn-friendly-build').addEventListener('click', ()=>{
+  if(!requireAccount('Create a free account or sign in to set up a Friendly challenge.')) return;
   friendlyMyName=($('fr-name-challenger').value||'').trim();
   draftType = ($('fr-seg-draft').dataset.active==='full') ? 'full' : 'quick';
   gameMode  = ($('fr-seg-mode').dataset.active==='hard') ? 'hard' : 'easy';
