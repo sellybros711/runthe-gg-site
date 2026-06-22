@@ -7923,6 +7923,10 @@ $('profile-bg').addEventListener('click',e=>{ if(e.target===$('profile-bg')) clo
 //    OVR 84: ~0.02%   OVR 85: ~0.1%   (a true longshot below 86)
 //    OVR 86: ~3.6%    OVR 88: ~13%    OVR 90: ~27%
 //    OVR 92: ~50%     OVR 95: ~64%    OVR 99: ~73%
+//  Squad ratings can exceed 100, so the model is defined continuously past 99;
+//  with the live (gap-scaled) win cap the top end keeps creeping up slowly
+//  (OVR 99 ~81%, 102 ~83%, 106 ~84.5%) but never becomes a sure thing — even a
+//  100+ squad can be upset, and over a 6-game run that caps the title rate.
 //  The curve keeps weak squads near-hopeless and only elite squads contending;
 //  it was tuned to make winning it all a little harder at every overall, with
 //  84-85 squads landing around a 0.1% chance to lift the trophy.
@@ -8564,7 +8568,7 @@ function testWinThreshold(){
   // engine so earlyRoundPenalty is exercised for the first two rounds.
   const rounds = ['R32','R16','QF','SF','Final'];
   const opps   = [65, 72, 80, 87, 93];
-  for (let ov = 80; ov <= 99; ov++) {
+  for (let ov = 80; ov <= 106; ov++) {   // teams can rate >100, so validate the full range
     let wins = 0;
     const trials = 5000;
     const elimByRound = { Group:0, R32:0, R16:0, QF:0, SF:0, Final:0 };
