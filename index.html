@@ -1839,7 +1839,7 @@
     background-size:200% auto;background-position:0 50%;
     -webkit-background-clip:text;background-clip:text;
     color:transparent;-webkit-text-fill-color:transparent;
-    animation:diamondShimmer 3.2s linear infinite;}
+    animation:diamondShimmer 6.4s linear infinite;}
   /* Bronze — warm copper with a bright burnish */
   .nt-bronze{
     background-image:linear-gradient(100deg,#7a481f 0%,#C77B3A 16%,#F6CE98 32%,#C77B3A 48%,#7a481f 64%,#E0A064 82%,#C77B3A 100%);
@@ -1856,7 +1856,7 @@
   .nt-legend{
     background-image:linear-gradient(100deg,#9fd8ff 0%,#ffffff 18%,#cdeeff 32%,#8fd0ff 46%,#ffffff 60%,#bfe9ff 74%,#ffffff 88%,#9fd8ff 100%);
     filter:drop-shadow(0 0 2px rgba(150,220,255,.65));
-    animation-duration:2.4s;}
+    animation-duration:4.8s;}
   @media (prefers-reduced-motion:reduce){
     .nt-bronze,.nt-silver,.nt-gold,.nt-legend{animation:none;background-position:50% 50%;}
   }
@@ -2823,7 +2823,7 @@
 
       <button type="button" class="prof-collapse-head" id="ach-head">
         <span class="pc-title">Achievements</span>
-        <span class="pc-count"><b id="ach-count">0 / 39</b> completed</span>
+        <span class="pc-count"><b id="ach-count">0 / 45</b> completed</span>
         <span class="pc-chev" aria-hidden="true">▸</span>
       </button>
       <div class="acct-ach" id="acct-ach" hidden></div>
@@ -5295,7 +5295,9 @@ const ACHIEVEMENTS = [
   { id:'finalist',     name:'Finalist',     desc:'Reach the World Cup Final with a drafted squad.',           tiers:[5,25,75],        get:m=>m.finals,         fmt:v=>v },
   { id:'dailyace',     name:'Daily Ace',    desc:'Win the Daily Challenge.',                                  tiers:[1,10,30],        get:m=>m.daily_wins,     fmt:v=>v },
   { id:'dailygrind',   name:'Daily Grinder',desc:'Play the Daily Challenge. Show up, every day.',             tiers:[10,50,150],      get:m=>m.daily_games,    fmt:v=>v },
-  { id:'fullxi',       name:'Full XI',      desc:'Complete Full Draft (11-player) tournaments.',              tiers:[10,50,150],      get:m=>m.full_games,     fmt:v=>v }
+  { id:'fullxi',       name:'Full XI',      desc:'Complete Full Draft (11-player) tournaments.',              tiers:[10,50,150],      get:m=>m.full_games,     fmt:v=>v },
+  { id:'quickdraw',    name:'Quick Draw',   desc:'Complete Quick Draft (6-player) tournaments.',              tiers:[10,50,150],      get:m=>Math.max(0,(m.games||0)-(m.full_games||0)), fmt:v=>v },
+  { id:'hardmode',     name:'Hard Mode',    desc:'Win the World Cup on Hard difficulty.',                     tiers:[1,5,15],         get:m=>m.hard_wins,      fmt:v=>v }
 ];
 
 // --- retro merit-badge graphics: a sunburst medal (tier-coloured) + emblem ---
@@ -5331,6 +5333,9 @@ function achEmblem(id,col,light){
       +`<circle cx="28" cy="33.6" r="1.4" ${f}/><circle cx="32" cy="33.6" r="1.4" ${f}/><circle cx="36" cy="33.6" r="1.4" ${f}/><circle cx="28" cy="38" r="1.4" ${f}/><circle cx="32" cy="38" r="1.4" ${f}/>`;
     case 'fullxi':       return `<rect x="22" y="22" width="20" height="20" rx="2.2" ${s}/><path ${s} d="M22 32 H42"/><circle cx="32" cy="32" r="3.2" ${s}/>`
       +`<circle cx="27" cy="26.5" r="1.5" ${f}/><circle cx="37" cy="26.5" r="1.5" ${f}/><circle cx="27" cy="37.5" r="1.5" ${f}/><circle cx="37" cy="37.5" r="1.5" ${f}/>`;
+    case 'quickdraw':    return `<rect x="24" y="21" width="16" height="22" rx="2.5" ${s}/><path ${f} d="M34 25 L27.5 34 H31 L30 39 L37 30 H33 Z"/>`;
+    case 'hardmode':     return `<path ${s} d="M32 21 L41 24 V31 C41 37 36.5 40.5 32 42.5 C27.5 40.5 23 37 23 31 V24 Z"/>`
+      +`<path ${s} d="M27.5 33 L32 28.5 L36.5 33 M27.5 37.5 L32 33 L36.5 37.5"/>`;
     case 'underdog': {                                  /* outline puppy face */
       const so=`fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"`;
       return `<path ${so} d="M32 23.5 C35.5 23.5 38 24 39.5 25 C43 24.5 47 26 46.5 30.5 C46 35 43.5 36.5 40.5 35 C40 38 36.5 41 32 41.5 C27.5 41 24 38 23.5 35 C20.5 36.5 18 35 17.5 30.5 C17 26 21 24.5 24.5 25 C26 24 28.5 23.5 32 23.5 Z"/>`  /* head + floppy ears */
@@ -5493,7 +5498,8 @@ function achMetrics(){
     games:s.games||0, wins:s.wins||0, longest_streak:s.longest_streak||0,
     best_overall:+(s.best_overall||0),
     legends:s.legends||0, finals:s.finals||0,
-    daily_wins:s.daily_wins||0, daily_games:s.daily_games||0, full_games:s.full_games||0,
+    daily_wins:s.daily_wins||0, daily_games:s.daily_games||0,
+    full_games:s.full_games||0, hard_wins:s.hard_wins||0,
     confedBreadth: (s.confed_breadth!=null ? s.confed_breadth : (a.confedBreadth||0)),
     decadeBreadth: (s.decade_breadth!=null ? s.decade_breadth : (a.decadeBreadth||0)),
     underdog_progress: (s.underdog_progress!=null ? s.underdog_progress : (a.underdog_progress!=null?a.underdog_progress:-1))
@@ -5576,7 +5582,8 @@ function renderAchievements(){
 // localStorage; the baseline is seeded silently the first time we have real
 // metrics, so existing players aren't spammed with everything they already own.
 const ACH_UNIT={ draftsman:'drafts', worldbeater:'World Cups', daily:'day streak', globetrotter:'confederations', timetraveler:'decades',
-  collector:'legends', finalist:'finals', dailyace:'daily wins', dailygrind:'daily plays', fullxi:'full drafts' };
+  collector:'legends', finalist:'finals', dailyace:'daily wins', dailygrind:'daily plays', fullxi:'full drafts',
+  quickdraw:'quick drafts', hardmode:'hard wins' };
 let achPopQueue=[];
 function achMetricsReady(){ return myStats!=null && myAch!=null; }
 function completedAchTiers(){
@@ -5586,7 +5593,7 @@ function completedAchTiers(){
 }
 // Bump whenever the ACHIEVEMENTS set changes so existing players silently
 // re-baseline (no popup spam for newly-added achievements they already satisfy).
-const ACH_VERSION = 2;
+const ACH_VERSION = 3;
 function achBaselineKey(){ return authUser ? ('rtp_ach_seen_'+authUser.id) : null; }
 function readAchBaseline(){
   const key=achBaselineKey(); if(!key) return null;
