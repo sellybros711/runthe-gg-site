@@ -2305,6 +2305,30 @@
   html.dark .theme-toggle .tt-moon{display:none;}
   html.dark .theme-toggle .tt-sun{display:block;}
 
+  /* ---------- achievement-unlocked popup ---------- */
+  .ach-pop-bg{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;
+    padding:20px;background:rgba(0,0,0,.66);}
+  .ach-pop-bg.show{display:flex;animation:fade .2s ease;}
+  .ach-pop-card{position:relative;width:100%;max-width:360px;background:var(--white);color:var(--ink);
+    border:3px solid var(--ink);border-radius:20px;box-shadow:var(--shadow);padding:24px 22px 22px;
+    text-align:center;animation:achPop .4s cubic-bezier(.2,1.4,.4,1) both;}
+  @keyframes achPop{from{transform:scale(.82);opacity:0;}to{transform:none;opacity:1;}}
+  .ach-pop-close{position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:50%;
+    border:2px solid var(--ink);background:var(--white);color:var(--ink);font-weight:900;font-size:14px;
+    line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;}
+  .ach-pop-close:active{transform:translate(1px,1px);}
+  .ach-pop-eyebrow{font-weight:900;font-size:11px;letter-spacing:2.5px;text-transform:uppercase;color:var(--teal);}
+  .ach-pop-badge{width:108px;height:108px;margin:10px auto 2px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));
+    animation:achBadgeIn .55s cubic-bezier(.2,1.5,.4,1) both .08s;}
+  .ach-pop-badge svg{width:100%;height:100%;display:block;}
+  @keyframes achBadgeIn{from{transform:scale(.4) rotate(-15deg);opacity:0;}to{transform:none;opacity:1;}}
+  .ach-pop-name{font-family:'Anton',Impact,sans-serif;font-size:27px;line-height:1;text-transform:uppercase;margin:4px 0 2px;}
+  .ach-pop-tier{font-weight:900;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:#C99A2E;}
+  html.dark .ach-pop-tier{color:var(--gold);}
+  .ach-pop-next{font-weight:700;font-size:13.5px;color:var(--muted-2);margin:13px 0 16px;line-height:1.45;}
+  .ach-pop-next b{color:var(--ink);}
+  .ach-pop-ok{width:100%;}
+
   /* ============ SMALL-SCREEN SCALING ============
      The layout is tuned for ~390px-wide phones. On narrower / shorter devices
      the fixed-px modals & lists overflowed and rows were cut off, so scale the
@@ -3182,6 +3206,19 @@
   </div>
 </div>
 <div class="entry-toast" id="entry-toast">Added to leaderboard!</div>
+
+<!-- ===== achievement-unlocked popup (fires the moment a badge is earned) ===== -->
+<div class="ach-pop-bg" id="ach-pop-bg">
+  <div class="ach-pop-card">
+    <button class="ach-pop-close" id="ach-pop-close" aria-label="Close" type="button">✕</button>
+    <div class="ach-pop-eyebrow">Achievement Unlocked</div>
+    <div class="ach-pop-badge" id="ach-pop-badge"></div>
+    <div class="ach-pop-name" id="ach-pop-name"></div>
+    <div class="ach-pop-tier" id="ach-pop-tier"></div>
+    <div class="ach-pop-next" id="ach-pop-next"></div>
+    <button class="btn ach-pop-ok" id="ach-pop-ok" type="button">Nice!</button>
+  </div>
+</div>
 
 <!-- ===== account modal (sign in / sign up / profile) ===== -->
 <div class="entry-bg acct-bg" id="acct-bg">
@@ -5318,6 +5355,7 @@ async function loadMyDrafts(){
   }catch(e){ /* keep cached */ }
   renderAchievements();
   renderLegends();
+  seedAchBaselineIfNeeded();   // establish the "already earned" baseline once metrics exist
 }
 
 // ---- Top 10 personal drafts (collapsible, with all-time rank + roster) ----
@@ -5498,6 +5536,86 @@ function renderAchievements(){
     </div>`;
   }).join('');
   if(cc) cc.textContent=`${earned} / ${ACH_TOTAL_BADGES}`;
+}
+
+// ---------- achievement-unlocked popups ----------
+// Alert the player the instant they complete any achievement tier. Detection
+// diffs the currently-completed tiers against a per-user baseline kept in
+// localStorage; the baseline is seeded silently the first time we have real
+// metrics, so existing players aren't spammed with everything they already own.
+const ACH_UNIT={ draftsman:'drafts', worldbeater:'World Cups', daily:'day streak', globetrotter:'confederations', timetraveler:'decades' };
+let achPopQueue=[];
+function achMetricsReady(){ return myStats!=null && myAch!=null; }
+function completedAchTiers(){
+  const m=achMetrics(), set=new Set();
+  ACHIEVEMENTS.forEach(a=>{ const v=a.get(m); a.tiers.forEach((t,i)=>{ if(v>=t) set.add(a.id+':'+i); }); });
+  return set;
+}
+function achBaselineKey(){ return authUser ? ('rtp_ach_seen_'+authUser.id) : null; }
+function seedAchBaselineIfNeeded(){
+  if(!isSignedIn() || !achMetricsReady()) return;
+  const key=achBaselineKey(); if(!key) return;
+  let prev=null; try{ prev=localStorage.getItem(key); }catch(e){}
+  if(prev==null){ try{ localStorage.setItem(key, JSON.stringify([...completedAchTiers()])); }catch(e){} }
+}
+function checkAchievementUnlocks(){
+  if(!isSignedIn() || !achMetricsReady()) return;
+  const key=achBaselineKey(); if(!key) return;
+  const cur=completedAchTiers();
+  let prevArr=null; try{ prevArr=JSON.parse(localStorage.getItem(key)||'null'); }catch(e){}
+  if(!Array.isArray(prevArr)){                 // first time on this device → baseline only
+    try{ localStorage.setItem(key, JSON.stringify([...cur])); }catch(e){}
+    return;
+  }
+  const prev=new Set(prevArr);
+  const newly=[...cur].filter(k=>!prev.has(k));
+  try{ localStorage.setItem(key, JSON.stringify([...cur])); }catch(e){}
+  if(newly.length) queueAchPopups(newly);
+}
+// Refresh server metrics after a finished game, then alert on any new badge.
+async function afterGameAchievementCheck(){
+  if(!isSignedIn()) return;
+  try{ await loadMyStats(); await loadMyDrafts(); checkAchievementUnlocks(); }catch(e){}
+}
+function queueAchPopups(keys){
+  achPopQueue.push(...keys);
+  const bg=$('ach-pop-bg');
+  if(bg && !bg.classList.contains('show')) showNextAchPop();
+}
+function showNextAchPop(){
+  const bg=$('ach-pop-bg'); if(!bg) return;
+  const key=achPopQueue.shift();
+  if(!key){ bg.classList.remove('show'); return; }
+  renderAchPopCard(key);
+  bg.classList.add('show');
+}
+function closeAchPop(){
+  if(achPopQueue.length){ showNextAchPop(); }           // show the next queued badge
+  else { const bg=$('ach-pop-bg'); if(bg) bg.classList.remove('show'); }  // else return to the page
+}
+function renderAchPopCard(key){
+  const sep=key.indexOf(':'); const id=key.slice(0,sep), idx=+key.slice(sep+1);
+  const a=ACHIEVEMENTS.find(x=>x.id===id); if(!a) return;
+  const level=idx+1;                          // tier just completed (1-based)
+  const maxed=level>=a.tiers.length;
+  const val=a.get(achMetrics());
+  const bd=$('ach-pop-badge'); if(bd) bd.innerHTML=achBadgeSvg(id, level);
+  const nm=$('ach-pop-name'); if(nm) nm.textContent=a.name;
+  const tl=$('ach-pop-tier'); if(tl) tl.textContent='Tier '+ACH_ROMAN[level]+(maxed?' · MAX':'');
+  const nx=$('ach-pop-next');
+  if(nx){
+    if(maxed){
+      nx.innerHTML='You’ve maxed out <b>'+escapeHtml(a.name)+'</b> — every tier earned!';
+    } else if(a.round){
+      nx.innerHTML='Next up: reach the <b>'+escapeHtml(roundName(a.tiers[idx+1]))+'</b>';
+    } else {
+      const rem=a.tiers[idx+1]-val;
+      const n=Math.max(0,Math.ceil(rem));
+      let unit=ACH_UNIT[id]||''; if(n===1) unit=unit.replace(/s$/,'');   // "1 draft", not "1 drafts"
+      const remTxt=(id==='galacticos') ? (Math.max(0,rem).toFixed(1)+' OVR') : (n+' '+unit);
+      nx.innerHTML='Just <b>'+remTxt+'</b> to go for <b>Tier '+ACH_ROMAN[idx+2]+'</b>';
+    }
+  }
 }
 
 function buildAcctFlagRow(){
@@ -6251,6 +6369,7 @@ async function fillDailyRankBadge(overall, progress){
              signedIn:isSignedIn(), already:(isSignedIn()&&recorded===null) };
   gs.result._lb=lb; gs.result._lbId=recorded;
   renderDailyRankLine(el, lb);
+  if(isSignedIn()) afterGameAchievementCheck();   // alert on any newly-earned badge
   if(rank && rank<=3){ try{ launchConfetti(); }catch(e){} }
   // auto-open the daily board shortly after results settle
   setTimeout(()=>openDailyBoard(), 1000);
@@ -6434,6 +6553,7 @@ async function fillRankBadge(overall, progress){
       renderRankLine(el, rank, total);
       fillNearMiss(rank, overall);              // specific "go again" gap
       if(rank<=3){ try{ launchConfetti(); }catch(e){} } // celebrate a podium finish
+      if(isSignedIn()) afterGameAchievementCheck();  // alert on any newly-earned badge
       return;
     }catch(e){ /* global board unreachable → per-device fallback below */ }
   }
@@ -7806,6 +7926,9 @@ $('entry-submit').addEventListener('click', submitEntry);
     }
   });
   on('entry-auth-btn','click',openAccountModal);   // CTA inside the entry modal
+  on('ach-pop-close','click',closeAchPop);
+  on('ach-pop-ok','click',closeAchPop);
+  on('ach-pop-bg','click',e=>{ if(e.target===$('ach-pop-bg')) closeAchPop(); });
   on('acct-close','click',closeAccountModal);
   on('acct-bg','click',e=>{ if(e.target===$('acct-bg')) closeAccountModal(); });
   document.querySelectorAll('.acct-tab').forEach(b=>b.addEventListener('click',()=>setAcctTab(b.dataset.tab)));
