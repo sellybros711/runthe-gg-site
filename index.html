@@ -1833,15 +1833,33 @@
   .prof-title{font-weight:800;font-size:11px;letter-spacing:.4px;margin-top:4px;}
   .prof-title b{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.5px;font-size:14px;text-transform:uppercase;}
   .prof-title .pt-rest{color:#9a9a9a;font-weight:700;}
-  /* Legend tier = shimmering diamond text (icy gradient sweeping across) */
+  /* ---- name tiers: polished metallic text with a slow sweeping shine ---- */
   @keyframes diamondShimmer{ to{ background-position:200% 50%; } }
-  .nt-legend{
-    background:linear-gradient(100deg,#9fd8ff 0%,#ffffff 18%,#cdeeff 32%,#8fd0ff 46%,#ffffff 60%,#bfe9ff 74%,#ffffff 88%,#9fd8ff 100%);
+  .nt-bronze,.nt-silver,.nt-gold,.nt-legend{
     background-size:200% auto;background-position:0 50%;
     -webkit-background-clip:text;background-clip:text;
     color:transparent;-webkit-text-fill-color:transparent;
-    filter:drop-shadow(0 0 1px rgba(150,220,255,.55));
-    animation:diamondShimmer 2.4s linear infinite;}
+    animation:diamondShimmer 3.2s linear infinite;}
+  /* Bronze — warm copper with a bright burnish */
+  .nt-bronze{
+    background-image:linear-gradient(100deg,#7a481f 0%,#C77B3A 16%,#F6CE98 32%,#C77B3A 48%,#7a481f 64%,#E0A064 82%,#C77B3A 100%);
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.45));}
+  /* Silver — bright chrome */
+  .nt-silver{
+    background-image:linear-gradient(100deg,#7f868d 0%,#CFD3D8 16%,#ffffff 32%,#CFD3D8 48%,#7f868d 64%,#eef1f4 82%,#CFD3D8 100%);
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.4));}
+  /* Gold — molten gold with a hot highlight */
+  .nt-gold{
+    background-image:linear-gradient(100deg,#9a6c12 0%,#F4C430 16%,#FFF7C2 32%,#F4C430 48%,#9a6c12 64%,#FFE680 82%,#F4C430 100%);
+    filter:drop-shadow(0 1px 1px rgba(0,0,0,.4));}
+  /* Legend — shimmering diamond (icy gradient sweeping across), the fastest sheen */
+  .nt-legend{
+    background-image:linear-gradient(100deg,#9fd8ff 0%,#ffffff 18%,#cdeeff 32%,#8fd0ff 46%,#ffffff 60%,#bfe9ff 74%,#ffffff 88%,#9fd8ff 100%);
+    filter:drop-shadow(0 0 2px rgba(150,220,255,.65));
+    animation-duration:2.4s;}
+  @media (prefers-reduced-motion:reduce){
+    .nt-bronze,.nt-silver,.nt-gold,.nt-legend{animation:none;background-position:50% 50%;}
+  }
   /* name tier label under a leaderboard name */
   .lb-title{display:block;font-weight:900;font-size:8px;letter-spacing:.4px;text-transform:uppercase;
     margin-top:1px;line-height:1;}
@@ -2805,7 +2823,7 @@
 
       <button type="button" class="prof-collapse-head" id="ach-head">
         <span class="pc-title">Achievements</span>
-        <span class="pc-count"><b id="ach-count">0 / 23</b> completed</span>
+        <span class="pc-count"><b id="ach-count">0 / 39</b> completed</span>
         <span class="pc-chev" aria-hidden="true">▸</span>
       </button>
       <div class="acct-ach" id="acct-ach" hidden></div>
@@ -5272,7 +5290,12 @@ const ACHIEVEMENTS = [
   { id:'galacticos',   name:'Galácticos',   desc:'Draft a squad with a top overall rating.',               tiers:[95,100,105],     get:m=>m.best_overall,   fmt:v=>(+v).toFixed(1) },
   { id:'globetrotter', name:'Globetrotter', desc:'Pick players from this many confederations in one squad.',tiers:[4,5,6],          get:m=>m.confedBreadth,  fmt:v=>v },
   { id:'timetraveler', name:'Time Traveler',desc:'Pick players from this many decades in one squad.',       tiers:[5,6,7],          get:m=>m.decadeBreadth,  fmt:v=>v },
-  { id:'underdog',     name:'Underdog',     desc:'Reach a knockout round with a squad rated 85 OVR or below.', tiers:[2,3,4,6],     get:m=>m.underdog_progress, fmt:v=>roundName(v), round:true }
+  { id:'underdog',     name:'Underdog',     desc:'Reach a knockout round with a squad rated 85 OVR or below.', tiers:[2,3,4,6],     get:m=>m.underdog_progress, fmt:v=>roundName(v), round:true },
+  { id:'collector',    name:'Collector',    desc:'Draft this many different legends across all your squads.', tiers:[50,150,350,600], get:m=>m.legends,     fmt:v=>v },
+  { id:'finalist',     name:'Finalist',     desc:'Reach the World Cup Final with a drafted squad.',           tiers:[5,25,75],        get:m=>m.finals,         fmt:v=>v },
+  { id:'dailyace',     name:'Daily Ace',    desc:'Win the Daily Challenge.',                                  tiers:[1,10,30],        get:m=>m.daily_wins,     fmt:v=>v },
+  { id:'dailygrind',   name:'Daily Grinder',desc:'Play the Daily Challenge. Show up, every day.',             tiers:[10,50,150],      get:m=>m.daily_games,    fmt:v=>v },
+  { id:'fullxi',       name:'Full XI',      desc:'Complete Full Draft (11-player) tournaments.',              tiers:[10,50,150],      get:m=>m.full_games,     fmt:v=>v }
 ];
 
 // --- retro merit-badge graphics: a sunburst medal (tier-coloured) + emblem ---
@@ -5299,6 +5322,15 @@ function achEmblem(id,col,light){
       +`<path d="M12 17 C12.6 19.5 15 20.5 15 23.3 C15 25.4 13.6 27 12 27 C10.4 27 9 25.6 9 23.6 C9 21.2 11 20.2 12 17 Z" fill="#FFF3C4"/>`
       +`</g>`;
     case 'draftsman':    return `<rect x="23" y="21" width="18" height="22" rx="2.5" ${s}/><path ${s} d="M27.5 28 H36.5 M27.5 32 H36.5 M27.5 36 H33"/>`;
+    case 'collector':    return `<rect x="20" y="25" width="18" height="14" rx="2.5" ${s} transform="rotate(-11 29 32)"/>`
+      +`<rect x="26" y="26" width="18" height="14" rx="2.5" fill="${light||'#fff'}" stroke="${col}" stroke-width="2.2"/>`
+      +`<path ${f} d="${starburstPath(35,33,3.6,1.5,5)}"/>`;
+    case 'finalist':     return `<path ${s} d="M27.5 21 L30.5 30 M36.5 21 L33.5 30"/><circle cx="32" cy="36" r="7.6" ${s}/><path ${f} d="${starburstPath(32,36,4.4,1.9,5)}"/>`;
+    case 'dailyace':     return `<rect x="22" y="24" width="20" height="18" rx="2.6" ${s}/><path ${s} d="M22 29.5 H42 M27.5 21 V25 M36.5 21 V25"/><path ${f} d="${starburstPath(32,35.8,4.4,1.8,5)}"/>`;
+    case 'dailygrind':   return `<rect x="22" y="24" width="20" height="18" rx="2.6" ${s}/><path ${s} d="M22 29.5 H42 M27.5 21 V25 M36.5 21 V25"/>`
+      +`<circle cx="28" cy="33.6" r="1.4" ${f}/><circle cx="32" cy="33.6" r="1.4" ${f}/><circle cx="36" cy="33.6" r="1.4" ${f}/><circle cx="28" cy="38" r="1.4" ${f}/><circle cx="32" cy="38" r="1.4" ${f}/>`;
+    case 'fullxi':       return `<rect x="22" y="22" width="20" height="20" rx="2.2" ${s}/><path ${s} d="M22 32 H42"/><circle cx="32" cy="32" r="3.2" ${s}/>`
+      +`<circle cx="27" cy="26.5" r="1.5" ${f}/><circle cx="37" cy="26.5" r="1.5" ${f}/><circle cx="27" cy="37.5" r="1.5" ${f}/><circle cx="37" cy="37.5" r="1.5" ${f}/>`;
     case 'underdog': {                                  /* outline puppy face */
       const so=`fill="none" stroke="${col}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"`;
       return `<path ${so} d="M32 23.5 C35.5 23.5 38 24 39.5 25 C43 24.5 47 26 46.5 30.5 C46 35 43.5 36.5 40.5 35 C40 38 36.5 41 32 41.5 C27.5 41 24 38 23.5 35 C20.5 36.5 18 35 17.5 30.5 C17 26 21 24.5 24.5 25 C26 24 28.5 23.5 32 23.5 Z"/>`  /* head + floppy ears */
@@ -5460,6 +5492,8 @@ function achMetrics(){
   return {
     games:s.games||0, wins:s.wins||0, longest_streak:s.longest_streak||0,
     best_overall:+(s.best_overall||0),
+    legends:s.legends||0, finals:s.finals||0,
+    daily_wins:s.daily_wins||0, daily_games:s.daily_games||0, full_games:s.full_games||0,
     confedBreadth: (s.confed_breadth!=null ? s.confed_breadth : (a.confedBreadth||0)),
     decadeBreadth: (s.decade_breadth!=null ? s.decade_breadth : (a.decadeBreadth||0)),
     underdog_progress: (s.underdog_progress!=null ? s.underdog_progress : (a.underdog_progress!=null?a.underdog_progress:-1))
@@ -5474,18 +5508,17 @@ function totalBadges(m){ return ACHIEVEMENTS.reduce((n,a)=>n+achLevel(a.id,m),0)
 // Bronze 0% · Silver 25% · Gold 50% · Legend 75%. No equipping — it climbs as
 // you complete achievements, and colours your name on the profile + leaderboard.
 const NAME_TIERS=[
-  {id:'bronze',name:'Bronze',css:'#C77B3A'},
-  {id:'silver',name:'Silver',css:'#CFD3D8'},
-  {id:'gold',  name:'Gold',  css:'#F4C430'},
-  {id:'legend',name:'Legend',css:'legend'}
+  {id:'bronze',name:'Bronze',cls:'nt-bronze'},
+  {id:'silver',name:'Silver',cls:'nt-silver'},
+  {id:'gold',  name:'Gold',  cls:'nt-gold'},
+  {id:'legend',name:'Legend',cls:'nt-legend'}
 ];
 function tierFromBadges(b){ return NAME_TIERS[Math.min(3, Math.floor(((+b||0)*4)/ACH_TOTAL_BADGES))]; }
 function applyTierColor(el, tier){
   if(!el) return;
-  el.classList.remove('nt-legend');
-  if(!tier){ el.style.color=''; return; }
-  if(tier.css==='legend'){ el.classList.add('nt-legend'); el.style.color=''; }
-  else el.style.color=tier.css;
+  el.classList.remove('nt-bronze','nt-silver','nt-gold','nt-legend');
+  el.style.color='';
+  if(tier && tier.cls) el.classList.add(tier.cls);   // metallic gradient text
 }
 async function refreshMyBadges(){
   if(!sbClient || !isSignedIn()) return;
@@ -5500,8 +5533,7 @@ function renderNameTier(){
   const tt=$('prof-title'); if(!tt) return;
   const idx=NAME_TIERS.indexOf(tier), next=(idx<3)?NAME_TIERS[idx+1]:null;
   const nextAt=next?Math.ceil(((idx+1)*ACH_TOTAL_BADGES)/4):null;
-  const legend=tier.css==='legend';
-  const nameTag=`<b${legend?' class="nt-legend"':` style="color:${tier.css}"`}>${tier.name}</b>`;
+  const nameTag=`<b class="${tier.cls}">${tier.name}</b>`;
   tt.innerHTML = `${nameTag} <span class="pt-rest">tier · ${badges}/${ACH_TOTAL_BADGES} badges`
     + (next?` · ${Math.max(0,nextAt-badges)} to ${next.name}`:'')+`</span>`;
   tt.style.display='';
@@ -5543,7 +5575,8 @@ function renderAchievements(){
 // diffs the currently-completed tiers against a per-user baseline kept in
 // localStorage; the baseline is seeded silently the first time we have real
 // metrics, so existing players aren't spammed with everything they already own.
-const ACH_UNIT={ draftsman:'drafts', worldbeater:'World Cups', daily:'day streak', globetrotter:'confederations', timetraveler:'decades' };
+const ACH_UNIT={ draftsman:'drafts', worldbeater:'World Cups', daily:'day streak', globetrotter:'confederations', timetraveler:'decades',
+  collector:'legends', finalist:'finals', dailyace:'daily wins', dailygrind:'daily plays', fullxi:'full drafts' };
 let achPopQueue=[];
 function achMetricsReady(){ return myStats!=null && myAch!=null; }
 function completedAchTiers(){
@@ -5551,25 +5584,34 @@ function completedAchTiers(){
   ACHIEVEMENTS.forEach(a=>{ const v=a.get(m); a.tiers.forEach((t,i)=>{ if(v>=t) set.add(a.id+':'+i); }); });
   return set;
 }
+// Bump whenever the ACHIEVEMENTS set changes so existing players silently
+// re-baseline (no popup spam for newly-added achievements they already satisfy).
+const ACH_VERSION = 2;
 function achBaselineKey(){ return authUser ? ('rtp_ach_seen_'+authUser.id) : null; }
+function readAchBaseline(){
+  const key=achBaselineKey(); if(!key) return null;
+  let raw=null; try{ raw=localStorage.getItem(key); }catch(e){}
+  if(raw==null) return { fresh:true };
+  let p=null; try{ p=JSON.parse(raw); }catch(e){}
+  if(!p || p.v!==ACH_VERSION || !Array.isArray(p.keys)) return { fresh:true };  // missing / old version
+  return { keys:new Set(p.keys) };
+}
+function writeAchBaseline(set){
+  const key=achBaselineKey(); if(!key) return;
+  try{ localStorage.setItem(key, JSON.stringify({ v:ACH_VERSION, keys:[...set] })); }catch(e){}
+}
 function seedAchBaselineIfNeeded(){
   if(!isSignedIn() || !achMetricsReady()) return;
-  const key=achBaselineKey(); if(!key) return;
-  let prev=null; try{ prev=localStorage.getItem(key); }catch(e){}
-  if(prev==null){ try{ localStorage.setItem(key, JSON.stringify([...completedAchTiers()])); }catch(e){} }
+  const b=readAchBaseline();
+  if(b && b.fresh) writeAchBaseline(completedAchTiers());   // establish (or re-establish) baseline
 }
 function checkAchievementUnlocks(){
   if(!isSignedIn() || !achMetricsReady()) return;
-  const key=achBaselineKey(); if(!key) return;
   const cur=completedAchTiers();
-  let prevArr=null; try{ prevArr=JSON.parse(localStorage.getItem(key)||'null'); }catch(e){}
-  if(!Array.isArray(prevArr)){                 // first time on this device → baseline only
-    try{ localStorage.setItem(key, JSON.stringify([...cur])); }catch(e){}
-    return;
-  }
-  const prev=new Set(prevArr);
-  const newly=[...cur].filter(k=>!prev.has(k));
-  try{ localStorage.setItem(key, JSON.stringify([...cur])); }catch(e){}
+  const b=readAchBaseline();
+  if(!b || b.fresh){ writeAchBaseline(cur); return; }   // first run / version bump → baseline only
+  const newly=[...cur].filter(k=>!b.keys.has(k));
+  writeAchBaseline(cur);
   if(newly.length) queueAchPopups(newly);
 }
 // Refresh server metrics after a finished game, then alert on any new badge.
@@ -6036,10 +6078,9 @@ async function attachCosmetics(rows){
 function lbNameCell(row, nm){
   const fl=(row.flag && String(row.flag).trim()) ? flagChip(row.flag)+' ' : '';
   const tier=(row._badges!=null && row._badges>0) ? tierFromBadges(row._badges) : null;
-  const legend=tier&&tier.css==='legend';
-  const nameStyle=(tier&&!legend)?` style="color:${tier.css}"`:'';
-  // name is coloured by tier; no tier-name label (it threw the name off-centre)
-  return `<span class="lb-name"><span class="lb-nm${legend?' nt-legend':''}"${nameStyle}>${fl}${escapeHtml(nm)}</span></span>`;
+  const cls=tier?(' '+tier.cls):'';
+  // name is coloured by its metallic tier class; no tier-name label (it threw the name off-centre)
+  return `<span class="lb-name"><span class="lb-nm${cls}">${fl}${escapeHtml(nm)}</span></span>`;
 }
 function renderLeaderboardRows(rows, highlightId){
   // Every draft is shown; nameless / banned-name rows render as "Anonymous".
