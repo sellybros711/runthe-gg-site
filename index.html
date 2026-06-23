@@ -6326,10 +6326,8 @@ const CONFED = {
   Algeria:'CAF',Angola:'CAF',Cameroon:'CAF','Cape Verde':'CAF','DR Congo':'CAF',Egypt:'CAF',Ghana:'CAF',
   'Ivory Coast':'CAF',Morocco:'CAF',Nigeria:'CAF',Senegal:'CAF','South Africa':'CAF',Togo:'CAF',
   Tunisia:'CAF',Zaire:'CAF',
-  // AFC — Asia/Australia. (Israel is intentionally NOT here — it has competed in
-  // UEFA since 1994, so it would feel out of place in an "Asian Nations" theme;
-  // it falls through to the UEFA default below.)
-  Australia:'AFC','China PR':'AFC',Iran:'AFC',Iraq:'AFC',Japan:'AFC',Jordan:'AFC',
+  // AFC — Asia/Australia
+  Australia:'AFC','China PR':'AFC',Iran:'AFC',Iraq:'AFC',Israel:'AFC',Japan:'AFC',Jordan:'AFC',
   Kuwait:'AFC','North Korea':'AFC',Qatar:'AFC','Saudi Arabia':'AFC','South Korea':'AFC',
   'United Arab Emirates':'AFC',Uzbekistan:'AFC',
   // CONCACAF — North/Central America & Caribbean
@@ -6346,6 +6344,11 @@ function confedOf(country){ return CONFED[country] || 'UEFA'; }
 // 1966+ dataset, e.g. Uruguay's 1930/1950 titles), so "never won" is historically
 // accurate. West Germany & Germany both count as champions.
 const WC_WINNERS = new Set(['Brazil','Germany','West Germany','Italy','Argentina','France','England','Spain','Uruguay']);
+// Nations that have ever HOSTED a World Cup, and multiple-time winners (dynasties).
+const WC_HOSTS = new Set(['Uruguay','Italy','France','Brazil','Switzerland','Sweden','Chile','England',
+  'Mexico','West Germany','Germany','Argentina','Spain','United States','South Korea','Japan',
+  'South Africa','Russia','Qatar','Canada']);
+const WC_DYNASTIES = new Set(['Brazil','Italy','Germany','West Germany','Argentina','Uruguay','France']);
 
 // The rotating set of daily themes. Each is a predicate over a (country, year)
 // nation-team. The day's theme = THEMES[ dayIndexUTC % THEMES.length ].
@@ -6365,7 +6368,25 @@ const THEMES = [
   { id:'y1970',      name:'1970 Only',        blurb:'Only teams from the 1970 World Cup.',              test:(c,y)=>y===1970 },
   { id:'y1986',      name:'1986 Only',        blurb:'Only teams from the 1986 World Cup.',              test:(c,y)=>y===1986 },
   { id:'y1998',      name:'1998 Only',        blurb:'Only teams from the 1998 World Cup.',              test:(c,y)=>y===1998 },
-  { id:'y2014',      name:'2014 Only',        blurb:'Only teams from the 2014 World Cup.',              test:(c,y)=>y===2014 }
+  { id:'y2014',      name:'2014 Only',        blurb:'Only teams from the 2014 World Cup.',              test:(c,y)=>y===2014 },
+  // ---- additional challenges ----
+  { id:'hosts',      name:'Host Nations',     blurb:'Only nations that have hosted a World Cup.',       test:(c,y)=>WC_HOSTS.has(c) },
+  { id:'dynasties',  name:'Dynasties',        blurb:'Only multiple-time World Cup winners.',            test:(c,y)=>WC_DYNASTIES.has(c) },
+  { id:'seventies',  name:'The 70s',          blurb:'Only teams from the 1970s.',                       test:(c,y)=>y>=1970&&y<1980 },
+  { id:'aughts',     name:'The 2000s',        blurb:'Only teams from the 2000s.',                       test:(c,y)=>y>=2000&&y<2010 },
+  { id:'twenties',   name:'The 2020s',        blurb:'Only teams from the 2020s.',                       test:(c,y)=>y>=2020&&y<2030 },
+  { id:'y1966',      name:'1966 Only',        blurb:'Only teams from the 1966 World Cup.',              test:(c,y)=>y===1966 },
+  { id:'y1974',      name:'1974 Only',        blurb:'Only teams from the 1974 World Cup.',              test:(c,y)=>y===1974 },
+  { id:'y1978',      name:'1978 Only',        blurb:'Only teams from the 1978 World Cup.',              test:(c,y)=>y===1978 },
+  { id:'y1982',      name:'1982 Only',        blurb:'Only teams from the 1982 World Cup.',              test:(c,y)=>y===1982 },
+  { id:'y1990',      name:'1990 Only',        blurb:'Only teams from the 1990 World Cup.',              test:(c,y)=>y===1990 },
+  { id:'y1994',      name:'1994 Only',        blurb:'Only teams from the 1994 World Cup.',              test:(c,y)=>y===1994 },
+  { id:'y2002',      name:'2002 Only',        blurb:'Only teams from the 2002 World Cup.',              test:(c,y)=>y===2002 },
+  { id:'y2006',      name:'2006 Only',        blurb:'Only teams from the 2006 World Cup.',              test:(c,y)=>y===2006 },
+  { id:'y2010',      name:'2010 Only',        blurb:'Only teams from the 2010 World Cup.',              test:(c,y)=>y===2010 },
+  { id:'y2018',      name:'2018 Only',        blurb:'Only teams from the 2018 World Cup.',              test:(c,y)=>y===2018 },
+  { id:'y2022',      name:'2022 Only',        blurb:'Only teams from the 2022 World Cup.',              test:(c,y)=>y===2022 },
+  { id:'y2026',      name:'2026 Only',        blurb:'Only teams from the 2026 World Cup.',              test:(c,y)=>y===2026 }
 ];
 
 // --- deterministic helpers (identical for every player on a given UTC day) ----
