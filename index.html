@@ -6043,6 +6043,9 @@ async function fetchGlobalRank(overall, progress, draftTypeVal){
   const ov = (+overall).toFixed(1);
   const orFilter = encodeURIComponent(`(overall.gt.${ov},and(overall.eq.${ov},progress.gt.${progress}))`);
   const dt = dtFilter(draftTypeVal);
+  // Kick off the all-time total in parallel — it's independent of the rank query,
+  // so the two count(*)s run concurrently instead of back-to-back.
+  const totalP = fetchAllTimeTotal(draftTypeVal);
   // Rank against EVERY draft that beats this one (named or anonymous), so the rank
   // matches the player's position in the now all-inclusive board. The TOTAL below
   // also counts every draft ever (fetchAllTimeTotal) → "ranks 3 of 1,000".
@@ -6060,7 +6063,7 @@ async function fetchGlobalRank(overall, progress, draftTypeVal){
   // The total is read in a separate query, so a freshly-inserted draft may not be
   // reflected in it yet (replication lag). Never let the count fall below this
   // draft's own rank — that would render an impossible "ranks N+1 of N".
-  const total = Math.max(await fetchAllTimeTotal(draftTypeVal), rank);
+  const total = Math.max(await totalP, rank);
   return { rank, total };
 }
 
