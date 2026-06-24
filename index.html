@@ -3598,7 +3598,7 @@ let profileReturnScreen='start';
 // Bump on every player-data swap. A STABLE version (not Date.now()) lets the
 // browser/CDN cache the dataset between visits — returning players load instantly
 // instead of re-downloading the whole file every time.
-const DATA_VERSION = '0.0.34';
+const DATA_VERSION = '0.0.35';
 
 async function fetchPlayers(url){
   try{
@@ -10192,9 +10192,36 @@ function renderRosterPanel(players, emptyMsg, showYear){
   return html;
 }
 
-function openRosterUpdates(){
+// The feed is ONE ENTRY PER UPGRADE (data/roster_updates.json), so a player who
+// improved on several matchdays shows up once per matchday. Loaded lazily on first
+// open and cached; falls back to the embedded window.ROSTER_UPDATES (file://).
+let _rosterUpdates = null;
+async function loadRosterUpdates(){
+  if(_rosterUpdates) return _rosterUpdates;
+  let data = null;
+  try{
+    const res = await fetch('data/roster_updates.json?v=' + DATA_VERSION);
+    if(res.ok) data = await res.json();
+  }catch(e){}
+  if(!Array.isArray(data)){
+    data = await new Promise(resolve=>{
+      if(Array.isArray(window.ROSTER_UPDATES)) return resolve(window.ROSTER_UPDATES);
+      const s=document.createElement('script');
+      s.src='data/roster_updates.js?v=' + DATA_VERSION;
+      s.onload=()=>resolve(Array.isArray(window.ROSTER_UPDATES)?window.ROSTER_UPDATES:null);
+      s.onerror=()=>resolve(null);
+      document.head.appendChild(s);
+    });
+  }
+  _rosterUpdates = Array.isArray(data) ? data : [];
+  return _rosterUpdates;
+}
+async function openRosterUpdates(){
   const wcPanel=$('panel-wc'); if(!wcPanel) return;
-  const allChanged = (window.PLAYERS||[]).filter(p=>p.pre_wc_overall!=null);
+  $('roster-bg').classList.add('show');
+  const card=$('roster-bg').querySelector('.lineup-card');
+  if(card){ card.scrollTop=0; requestAnimationFrame(()=>{ card.scrollTop=0; }); }
+  wcPanel.innerHTML = `<div class="ru-empty">Loading rating updates…</div>`;
   const byDateThenDelta = (a,b) => {
     const dc = (b.wc_date||'').localeCompare(a.wc_date||'');
     if(dc!==0) return dc;
@@ -10202,12 +10229,10 @@ function openRosterUpdates(){
     if(cc!==0) return cc;
     return (b.wc_overall||0)-(a.wc_overall||0);
   };
-  const wcUpgrades = allChanged.sort(byDateThenDelta);
+  const wcUpgrades = (await loadRosterUpdates()).slice().sort(byDateThenDelta);
   wcPanel.innerHTML = renderRosterPanel(wcUpgrades,
     'No upgrades yet.<br>Players who shine at the 2026 World Cup will appear here.', false);
-  $('roster-bg').classList.add('show');
-  const card=$('roster-bg').querySelector('.lineup-card');
-  if(card){ card.scrollTop=0; requestAnimationFrame(()=>{ card.scrollTop=0; }); }
+  if(card){ card.scrollTop=0; }
 }
 function closeRosterUpdates(){ $('roster-bg').classList.remove('show'); }
 

@@ -66,6 +66,12 @@ function countryCode(country) {
   return country.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase();
 }
 
+// Normalize country display names to the spelling the rest of the game keys on
+// (FLAG_CODES, CONFED, name-tier maps). The FINAL dataset renamed "Ivory Coast"
+// to "Côte d'Ivoire"; without this, flags/confederation lookups would break.
+const COUNTRY_NAME_FIX = { "Côte d'Ivoire": 'Ivory Coast' };
+function fixCountryName(c) { return COUNTRY_NAME_FIX[c] || c; }
+
 // ─── Position mapping ─────────────────────────────────────────────────────────
 const POSITION_MAP = { GK:'GK', DF:'DEF', MF:'MID', FW:'FWD' };
 
@@ -108,7 +114,7 @@ function main() {
   for (const row of rows) {
     const name = (row.player_name || row.name || '').trim();
     if (!name) continue;
-    const country = (row.country || '').trim();
+    const country = fixCountryName((row.country || '').trim());
     const year    = intOrNull(row.wc_year);
     const rawPos  = (row.position || '').trim();
     const position = POSITION_MAP[rawPos] || rawPos;
