@@ -215,9 +215,16 @@ function main() {
   // ?? / || / truthy / != null checks, so a MISSING key behaves exactly like null
   // — but omitting them removes ~19 always-empty columns (height, minutes, tackles,
   // saves, …) plus per-row nulls, roughly halving the file and its parse time.
+  //
+  // Also drop a few fields the CLIENT never reads but that carry a non-null value
+  // on every row (so the null-sweep above keeps them): is_2026 (client checks
+  // year===2026), wc_performance (not shown anywhere), is_community_request (the
+  // Roster Updates feed is built separately, from the raw source + changelog).
+  // These three alone are ~650 KB across 9,976 rows.
+  const DROP_CLIENT_UNUSED = new Set(['is_2026', 'wc_performance', 'is_community_request']);
   for (const p of players) {
     for (const k of Object.keys(p)) {
-      if (p[k] === null || p[k] === undefined) delete p[k];
+      if (p[k] === null || p[k] === undefined || DROP_CLIENT_UNUSED.has(k)) delete p[k];
     }
   }
 
