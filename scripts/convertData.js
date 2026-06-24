@@ -51,7 +51,7 @@ const COUNTRY_CODES = {
   'Soviet Union':'URS','Yugoslavia':'YUG','East Germany':'DDR',
   'Scotland':'SCO','Bulgaria':'BUL','Romania':'ROU','Hungary':'HUN',
   'Sweden':'SWE','Chile':'CHI','Colombia':'COL','Nigeria':'NGA',
-  'Ivory Coast':'CIV','Togo':'TOG','Angola':'ANG','Trinidad':'TRI',
+  'Ivory Coast':'CIV',"Côte d'Ivoire":'CIV','Togo':'TOG','Angola':'ANG','Trinidad':'TRI',
   'Trinidad and Tobago':'TRI','Honduras':'HON','Slovakia':'SVK',
   'Slovenia':'SVN','Greece':'GRE','Turkey':'TUR','Paraguay':'PAR',
   'Peru':'PER','Bolivia':'BOL','Republic of Ireland':'IRL',

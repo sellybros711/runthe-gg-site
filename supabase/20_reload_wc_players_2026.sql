@@ -1,0 +1,33 @@
+-- ============================================================================
+-- 20_reload_wc_players_2026.sql  —  Reload the server ratings after the 2026
+--                                   World Cup data swap (ratings through Jun 23)
+-- ============================================================================
+-- WHY: submit_draft() recomputes every leaderboard score from wc_players. The
+-- client now ships recalibrated 2026 ratings (data/players_all.json, DATA_VERSION
+-- 0.0.34). If the server table still holds the OLD ratings, new submissions get
+-- scored against stale numbers and the leaderboard drifts from what players see.
+-- Reloading wc_players from the freshly generated CSV keeps server == client.
+--
+-- The row COUNT is unchanged (9,976) — only wc_overall / is_captain / award
+-- values move — so this is a clean truncate-and-reimport, no schema change.
+--
+-- ── STEP 1 ────────────────────────────────────────────────────────────────
+-- Run this in the Supabase SQL editor to clear the table:
+TRUNCATE wc_players;
+
+-- ── STEP 2 (dashboard, not SQL) ─────────────────────────────────────────────
+-- Supabase Dashboard → Table editor → wc_players → Insert → Import data from CSV
+--   → upload supabase/wc_players.csv   (9,976 rows; columns line up 1:1:
+--      player_id, wc_overall, position, is_captain, award)
+--
+-- ── STEP 3 — verify (run after import) ──────────────────────────────────────
+-- Expect: 9976 rows, and the six post-ceiling stars at their new highs.
+--   select count(*) as rows from wc_players;                       -- 9976
+--   select player_id, wc_overall from wc_players
+--   where player_id in (
+--     'FRA_2026_mbappe','ARG_2026_messi','NOR_2026_haaland',
+--     'BRA_2026_junior','ESP_2026_yamal','FRA_2026_dembele'
+--   ) order by wc_overall desc;
+--   -- mbappe 99, messi 99, haaland 98, junior 98, yamal 97, dembele 97
+--   -- (exact player_id suffixes may differ; confirm against data/players_all.json)
+-- ----------------------------------------------------------------------------
