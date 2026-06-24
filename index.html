@@ -134,7 +134,10 @@
       radial-gradient(circle at 50% 72%, rgba(19,138,107,.10), transparent 52%),
       var(--paper); }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;}
+  /* overscroll-behavior-y:contain disables the browser's pull-to-refresh, so a
+     downward swipe at the top of the draft no longer reloads the page and wipes
+     an in-progress draft. Doesn't affect normal scrolling. */
+  html,body{margin:0;padding:0;overscroll-behavior-y:contain;}
   body{
     font-family:'Archivo',system-ui,-apple-system,sans-serif;
     background:
