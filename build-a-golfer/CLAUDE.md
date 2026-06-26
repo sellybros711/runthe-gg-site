@@ -593,6 +593,17 @@ allows Google Fonts, or self-host Anton.*
   thread or time). **Updating the live path now means pushing two files** (index +
   og.png) to `RunTheTour/` on `main`.
 
+- 2026-06-26: **Dropped "PGA" from all user-facing copy** (owner request). Title/
+  meta/OG/in-game text now say "pro season"; the major **"PGA Championship" was
+  renamed "The Championship"** (SCHEDULE + COURSEFIT key kept in sync; Valhalla fit
+  unchanged; majors are now The Masters / The Championship / U.S. Open / The Open);
+  player flavor notes reworded ("major champ", "tour win", "Beat Tiger at a major",
+  etc.); the data-provenance comment now says "tour rounds". OG image (`og.png`)
+  re-rendered with the "Run a pro season." tagline. Verified zero "PGA" left in the
+  game file, major renorm OK, no errors. Redeployed index + og.png to `RunTheTour/`
+  on `main`. (Internal dev docs — this CLAUDE.md and the DataGolf spec — still
+  reference the real PGA Tour data source; those aren't shipped to users.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
