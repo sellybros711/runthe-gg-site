@@ -410,6 +410,42 @@ allows Google Fonts, or self-host Anton.*
   Verified: loads clean, all buckets pull, full draft (8 picks) → season runs,
   zero page errors.
 
+- 2026-06-26 (deep audit + optimization pass). Mapped the whole game, audited
+  through ~18 lenses, delivered a prioritized report, then (owner: "do everything
+  to optimize the game and reachability"; "keep green, just fix teal") shipped 5
+  reviewable change sets to the dev branch. Known-good tag: `audit-known-good-630a7b1`.
+  - **CS1 — scaffolding + reachability:** the page was rendering in **quirks mode**
+    (no doctype) with no `<html lang>`, charset, or social meta. Added doctype/
+    head/body/charset/lang, meta description, Open Graph + Twitter cards,
+    theme-color, inline-SVG favicon, apple-touch-icon, web manifest. Generated
+    `og-image.png` (1200×630), `icon-512/192/180.png`, `manifest.webmanifest`
+    beside the file. NOTE: set absolute og:url/og:image + a canonical at deploy.
+  - **CS2 — UX:** draft skill rows now show a gold "TAKE" chip + hint so the core
+    action reads as tappable on mobile; the dead "Player" `<div>` is now a real
+    button → Your Record; share card/text lead with **Money Rank** (matches the
+    on-screen headline); footer tap targets enlarged; empty radar dims/fills in.
+  - **CS3 — teal:** unified the three different teals to the brand **#06A291**
+    (token + DOM radar + share-card radar). Green theme kept. Golfer's teal shirt
+    swatch + Spin CTA gradient intentionally left distinct.
+  - **CS4 — difficulty (Monte Carlo):** the old economy gave EVERY build ~100%
+    positive net + ~100% millionaire (net was meaningless; an OVR-81 could win a
+    major + millions on attempt one). Re-tuned via a simulator: skill slope
+    .225→.27, tighter variance (std ceiling 4.2→3.65, major mult 1.12→1.08),
+    FIELDSIZE 64→96, and a real cost stack (caddie 10% + agent 8% + travel
+    $20k/event + ~$2.6M/yr fixed, fixed prorated per event so in-season net stays
+    sane). Result: OVR-81 wins a major ~2%/finishes red ~90%; OVR-84 ≈ break-even;
+    OVR-87 contends; OVR-90 dominates. Tuning knobs all near the top
+    (`simRound`, `FIELDSIZE`, `COSTS`).
+  - **CS5 — instrumentation + retention + resilience:** vendor-neutral `track()`
+    → `window.dataLayer` + `rtt:*` events (NO vendor script/ID — wire at deploy);
+    daily **streak** with a title chip; **resume-in-progress** free-play draft
+    snapshot to localStorage (refresh mid-draft → "Resume Your Golfer (N/8)").
+  - Verified each set with Playwright (mobile + desktop). Final full regression:
+    all modes + overlays pass, zero page errors. Nothing deployed.
+  - **Audit items still open (owner to pick):** softening first-event red further
+    (B), a global online leaderboard / accounts (already parked below), real
+    privacy page for eventual AdSense, trimming font weights for first paint.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
