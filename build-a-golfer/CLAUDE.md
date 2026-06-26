@@ -580,6 +580,19 @@ allows Google Fonts, or self-host Anton.*
   on `origin/main`). The guardrail now reads: main is touched ONLY for this one
   isolated folder; still no changes to the live World Cup site or its pages.
 
+- 2026-06-26: **Link-preview fix for the live path.** Set the Open Graph / Twitter
+  title to **"Run The Tour"** and added a branded 1200×630 **`og.png`** (green
+  gradient, gold flag crest, two-tone wordmark, tagline) so shared links to
+  runthe.gg/RunTheTour show the brand + a picture. OG/twitter image + `og:url` +
+  canonical now use **absolute** `https://runthe.gg/RunTheTour/…` URLs (relative
+  paths don't work for social scrapers). Updated in the source
+  (`build-a-golfer/build-a-golfer.html`) and deployed to `main` as
+  `RunTheTour/index.html` + `RunTheTour/og.png` (still isolated to that folder).
+  NOTE: iMessage/Apple/Twitter cache previews hard — the old card can linger until
+  the platform re-scrapes (Twitter: card-validator; iMessage: often needs a fresh
+  thread or time). **Updating the live path now means pushing two files** (index +
+  og.png) to `RunTheTour/` on `main`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
