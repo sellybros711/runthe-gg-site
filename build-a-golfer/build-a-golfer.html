@@ -1275,8 +1275,15 @@ function scrDraft(){
       left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left — take one of ${S.current.name}'s skills.</div>`));
     }
   } else if(!S.spinning){
-    const spin=$(`<button class="btn teal">Spin the Wheel</button>`);
+    const left2go=8-filledCount();
+    const spin=$(`<button class="btn teal" style="font-size:24px;padding:19px">⛳ Spin the Wheel<span class="sub">${filledCount()===0?'Reveal a golfer · free':left2go+' slot'+(left2go>1?'s':'')+' to fill · free'}</span></button>`);
     spin.onclick=spin_; left.appendChild(spin);
+    // pull odds — fills the column and makes the gamble legible
+    const odds=[['★ Legendary','5%','var(--gold)'],['◆ Epic','25%','#c7a6f2'],['◇ Rare','35%','#82c1e8'],['Common','35%','var(--pagemut)']];
+    left.appendChild($(`<div class="scout" style="margin-top:12px">
+      <div style="font-weight:800;color:var(--oncard);margin-bottom:6px;font-size:11px;letter-spacing:.1em;text-transform:uppercase">Pull odds each spin</div>
+      ${odds.map(o=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-top:1px solid var(--line)"><span style="color:${o[2]};font-weight:800">${o[0]}</span><span class="mono" style="color:var(--oncard)">${o[1]}</span></div>`).join('')}
+      <div class="small muted" style="margin-top:8px;line-height:1.4">Rarer golfers tend to have higher peak skills — but take the best rating for an open slot, whoever lands.</div></div>`));
   }
   right.appendChild(buildHero());
   right.appendChild($(`<h2 style="margin:6px 0 8px">Your scorecard · ${filledCount()}/8</h2>`));
