@@ -1680,10 +1680,60 @@ function drawShareCard(cv,info,vals){
     ctx.fillStyle=c[2]; ctx.font='800 26px Impact,system-ui,sans-serif'; ctx.fillText(c[1],x,y+28);
   });
 }
-function shareCard(cv,text,name){
+function drawCareerCard(cv,info,vals){
+  const W=560,H=636,ctx=cv.getContext('2d');
+  cv.width=W; cv.height=H;
+  const bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#11432f'); bg.addColorStop(1,'#06200f');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  const sp=ctx.createRadialGradient(W/2,-30,30,W/2,-30,W); sp.addColorStop(0,'rgba(74,156,108,.30)'); sp.addColorStop(1,'rgba(74,156,108,0)');
+  ctx.fillStyle=sp; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#cda24a'; ctx.fillRect(0,0,W,7);
+  ctx.strokeStyle='rgba(205,162,74,.55)'; ctx.lineWidth=2; ctx.strokeRect(11,11,W-22,H-22);
+  ctx.textAlign='center';
+  ctx.font='700 32px Cinzel, Georgia, serif';
+  const ta='RUN THE ', tb='TOUR', wa=ctx.measureText(ta).width, wb=ctx.measureText(tb).width, tx=W/2-(wa+wb)/2;
+  ctx.textAlign='left';
+  ctx.fillStyle='#F4E3C9'; ctx.fillText(ta,tx,56);
+  ctx.fillStyle='#e7b84e'; ctx.fillText(tb,tx+wa,56);
+  ctx.textAlign='center';
+  ctx.fillStyle='#e7b84e'; ctx.font='800 13px system-ui,sans-serif';
+  ctx.fillText('· CAREER ·',W/2,78);
+  // radar
+  const cx=W/2, cy=216, R=110, n=8;
+  const ang=i=>(-Math.PI/2)+i*(2*Math.PI/n), pt=(i,r)=>[cx+Math.cos(ang(i))*r, cy+Math.sin(ang(i))*r];
+  ctx.strokeStyle='rgba(244,227,201,.14)'; ctx.lineWidth=1;
+  [0.25,0.5,0.75,1].forEach(f=>{ctx.beginPath();for(let i=0;i<n;i++){const[x,y]=pt(i,R*f);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.stroke();});
+  for(let i=0;i<n;i++){const[x,y]=pt(i,R);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();}
+  ctx.beginPath(); vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100));i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.closePath();
+  ctx.fillStyle='rgba(6,162,145,.34)'; ctx.fill(); ctx.strokeStyle='#06A291'; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.fillStyle='#e7b84e'; vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100)); ctx.beginPath(); ctx.arc(x,y,3.6,0,7); ctx.fill();});
+  ctx.fillStyle='#9cbfa8'; ctx.font='700 12px system-ui,sans-serif';
+  RLABS.forEach((L,i)=>{const[x,y]=pt(i,R+17); ctx.fillText(L,x,y+4);});
+  // name
+  let nm=(info.name||'Your Golfer').toUpperCase(), ns=32;
+  do{ ctx.font='700 '+ns+'px Cinzel, Georgia, serif'; if(ctx.measureText(nm).width<=W-64)break; ns-=2; }while(ns>16);
+  ctx.fillStyle='#F4E3C9'; ctx.fillText(nm,W/2,384);
+  ctx.fillStyle='#9cbfa8'; ctx.font='700 14px system-ui,sans-serif';
+  ctx.fillText(`${info.years} YEAR${info.years>1?'S':''}  ·  OVR ${info.ovr}  ·  MONEY RANK ${info.cRank}/${info.cN}`,W/2,406);
+  ctx.fillStyle=info.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 22px Impact,system-ui,sans-serif';
+  ctx.fillText('NET WORTH '+fmtSigned(info.net),W/2,440);
+  const cells=[
+    ['CAREER EARNINGS',fmt(info.money),'#e7b84e'],
+    ['SEASONS',info.years+'','#F4E3C9'],
+    ['CAREER WINS',info.wins+'','#F4E3C9'],
+    ['MAJORS',info.majors+'','#F4E3C9'],
+  ];
+  const colX=[W*0.28,W*0.72], y0=494, rowH=72;
+  cells.forEach((c,i)=>{
+    const x=colX[i%2], y=y0+Math.floor(i/2)*rowH;
+    ctx.fillStyle='#9cbfa8'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(c[0],x,y);
+    ctx.fillStyle=c[2]; ctx.font='800 26px Impact,system-ui,sans-serif'; ctx.fillText(c[1],x,y+28);
+  });
+}
+function shareCard(cv,text,name,suffix){
   cv.toBlob(async b=>{
     if(!b){toast('Could not build the image — copy the text instead');return;}
-    const file=new File([b],((name||'golfer').replace(/\s+/g,'-'))+'-season.png',{type:'image/png'});
+    const file=new File([b],((name||'golfer').replace(/\s+/g,'-'))+'-'+(suffix||'season')+'.png',{type:'image/png'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
       try{await navigator.share({files:[file],text}); return;}catch(e){if(e&&e.name==='AbortError')return;}
     }
@@ -1824,12 +1874,22 @@ function scrSummary(){
       <span class="pl">${s.wins}W · ${s.majors} maj · best ${bestTxt(s.best)}</span>
       <span class="mny" style="color:${s.net>=0?'#35d6a0':'#E14A33'}">${fmtSigned(s.net)}</span></div>`)));
     left.appendChild(yb);
-    const careerShare=`RUNTHETOUR CAREER — ${me.name}\n${c.seasons.length} years · ${fmt(c.money)} won · net ${fmtSigned(c.net)}\n${c.wins}W · ${c.majors} majors · career money rank #${cRank}/${careerList.length}\nRunThe.GG`;
-    const csBtn=$(`<button class="btn gold" style="margin-top:10px">↗ Share Career Stats</button>`);
-    csBtn.onclick=()=>{track('career_shared',{years:c.seasons.length});
-      if(navigator.share){navigator.share({text:careerShare}).catch(()=>{});}
-      else {navigator.clipboard?.writeText(careerShare); csBtn.textContent='Career copied ✓'; setTimeout(()=>csBtn.textContent='↗ Share Career Stats',1500);}};
-    left.appendChild(csBtn);
+    // career share card (image + text)
+    const careerShare=`RUNTHETOUR CAREER — ${me.name}\n${c.seasons.length} years · net worth ${fmtSigned(c.net)} · ${fmt(c.money)} earned\n${c.wins}W · ${c.majors} majors · career money rank #${cRank}/${careerList.length}\nRunThe.GG`;
+    const careerVals=CATS.map(x=> S.slots[x.k]? S.slots[x.k].value : REPLACEMENT);
+    const ccv=document.createElement('canvas');
+    ccv.style.cssText='width:100%;max-width:300px;display:block;margin:14px auto 4px;border-radius:14px;border:1px solid var(--line)';
+    drawCareerCard(ccv,{name:me.name,ovr,years:c.seasons.length,money:c.money,net:c.net,wins:c.wins,majors:c.majors,cRank,cN:careerList.length},careerVals);
+    left.appendChild(ccv);
+    const crow=$(`<div class="mini" style="margin-top:8px"></div>`);
+    const csave=$(`<button class="btn gold">⤓ Save Card</button>`);
+    const csBtn=$(`<button class="btn gold">↗ Share Career</button>`);
+    csave.onclick=()=>{track('career_saved',{years:c.seasons.length}); ccv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=((me.name||'golfer').replace(/\s+/g,'-'))+'-career.png';a.click();URL.revokeObjectURL(u);});};
+    csBtn.onclick=()=>{track('career_shared',{years:c.seasons.length}); shareCard(ccv,careerShare,me.name,'career');};
+    crow.appendChild(csave); crow.appendChild(csBtn); left.appendChild(crow);
+    const ccopy=$(`<button class="btn ghost" style="margin-top:8px">Copy Career Text</button>`);
+    ccopy.onclick=()=>{navigator.clipboard?.writeText(careerShare); ccopy.textContent='Copied ✓'; setTimeout(()=>ccopy.textContent='Copy Career Text',1400);};
+    left.appendChild(ccopy);
   }
 
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
