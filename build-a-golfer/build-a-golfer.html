@@ -151,6 +151,12 @@
   .rolllab{font-family:var(--body); font-weight:800; letter-spacing:.16em; font-size:10px; text-transform:uppercase; color:var(--muted)}
   .rollval{font-family:var(--display); font-style:italic; font-size:22px; color:var(--gold); margin-top:4px;
     transition:opacity .18s ease; letter-spacing:.01em}
+  .skillwheel{overflow:hidden; margin-top:7px;
+    -webkit-mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+    mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+  .skillwheel .track{display:inline-flex; align-items:center; animation:marq 20s linear infinite; will-change:transform}
+  .swchip{font-family:var(--display); font-style:italic; font-size:19px; color:var(--gold); white-space:nowrap; letter-spacing:.01em}
+  .swchip::after{content:'•'; color:var(--pagemut); font-style:normal; margin:0 16px; opacity:.6}
   .btn.goldfill{background:linear-gradient(180deg,#f9d271,#e9a81e 55%,#c98f12); color:#2a1c06; box-shadow:0 9px 22px -8px rgba(154,110,18,.8), inset 0 1px 0 rgba(255,255,255,.5); text-shadow:0 1px 0 rgba(255,255,255,.25)}
   .btn.goldfill:active{transform:translateY(2px)}
 
@@ -268,7 +274,7 @@
   @media (max-width:480px){ .wordmark{font-size:32px} .crest{width:52px;height:62px} .crestrow{gap:12px} }
   @media (max-width:380px){ .wordmark{font-size:27px} }
   @media (max-width:430px){ .attrs{grid-template-columns:1fr} h1{font-size:30px} }
-  @media (prefers-reduced-motion:reduce){ .spinning .name{animation:none} .ftrack{animation:none} .btn,.attr{transition:none} }
+  @media (prefers-reduced-motion:reduce){ .spinning .name{animation:none} .ftrack{animation:none} .skillwheel .track{animation:none} .btn,.attr{transition:none} }
 </style>
 </head>
 <body>
@@ -1002,11 +1008,12 @@ function scrTitle(){
   </svg></div>`);
   add(scene);
   const w=$(`<div class="titlewrap center"></div>`);
-  w.appendChild($(`<h1 class="hero" style="font-size:40px"><span class="hr1">Your Tour</span> <span class="hr2">Starts Here</span></h1>`));
+  w.appendChild($(`<h1 class="hero" style="font-size:40px"><span class="hr1">Your Legend</span> <span class="hr2">Starts Here</span></h1>`));
   w.appendChild($(`<p class="lede center" style="max-width:320px;margin:8px auto 6px">Build a golfer from the game's greatest skills and run them through a full PGA season.</p>`));
-  w.appendChild($(`<div class="center"><div class="rollchip">
-    <div class="rolllab">Built from 8 real skills</div>
-    <div class="rollval" id="rollval">${CATS[0].short}</div></div></div>`));
+  const swItems=CATS.map(c=>`<span class="swchip">${c.short}</span>`).join('');
+  w.appendChild($(`<div class="center"><div class="rollchip" style="min-width:300px;padding:9px 0 11px;overflow:hidden">
+    <div class="rolllab" style="padding:0 18px">Built from 8 real skills</div>
+    <div class="skillwheel"><div class="track">${swItems}${swItems}</div></div></div></div>`));
   const c=career();
   if(c.builds>0){
     w.appendChild($(`<div class="small muted center" style="margin:-4px 0 12px">Your best: <b style="color:var(--gold)">${fmt(c.bestMoney)}</b> · OVR ${c.bestOvr} · ${c.builds} build${c.builds>1?'s':''}</div>`));
@@ -1035,7 +1042,6 @@ function scrTitle(){
   mini.appendChild(how); mini.appendChild(lb);
   w.appendChild(mini);
   add(w);
-  startRoll();
 }
 function startRoll(){
   clearInterval(rollTimer);
