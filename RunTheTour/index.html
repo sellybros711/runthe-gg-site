@@ -97,7 +97,7 @@
   .cols{display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start}
   .col{min-width:0}
   .setup-cols{grid-template-columns:0.85fr 1fr; max-width:840px; margin:0 auto}
-  @media(max-width:860px){ .cols{grid-template-columns:1fr; gap:16px} }
+  @media(max-width:860px){ .cols{grid-template-columns:1fr; gap:16px} .seasoncols .scorecol{order:-1} }
 
   h1{font-family:var(--display); font-style:normal; font-weight:400; color:var(--oncard);
     letter-spacing:.01em; line-height:.96; margin:6px 0; text-transform:uppercase; text-shadow:0 2px 18px rgba(0,0,0,.5)}
@@ -1608,15 +1608,14 @@ function scrSeason(){
   </div>`));
   if(evt.major) add($(`<div class="majorbanner">★ Major Championship ★</div>`));
 
-  const cols=$(`<div class="cols"></div>`);
-  const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
-  cols.appendChild(left); cols.appendChild(right); add(cols);
-
-  // LEFT — live, re-sorting leaderboard
   const typeLbl=evt.major?'<span class="major">Major</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
   const dayLbl=ce.done?'Final':(ce.roundsDone>=2&&!ce.players.find(o=>o.p.you).made?`After ${DAYS[1]}`:`${DAYS[Math.max(0,ce.roundsDone-1)]} · Round ${Math.min(ce.roundsDone,4)}/4`);
-  left.appendChild($(`<div class="evt-head"><div><div class="nm">${evt.name}</div>
-    <div class="kx">${typeLbl} · ${fmt(evt.purse)} purse</div></div>
+  const cols=$(`<div class="cols seasoncols"></div>`);
+  const left=$(`<div class="col"></div>`), right=$(`<div class="col scorecol"></div>`);
+  cols.appendChild(left); cols.appendChild(right); add(cols);
+
+  // LEFT — live, re-sorting leaderboard (the event name lives on the scorecard now)
+  left.appendChild($(`<div class="evt-head"><div><div class="nm">Leaderboard</div></div>
     <div class="kx reg" style="text-align:right">Event ${S.evtIndex+1}/${S.schedule.length}<br><span style="color:var(--gold)">${dayLbl}</span></div></div>`));
   const ordered=liveOrder(ce);
   const meLive=ordered.find(o=>o.p.you);
@@ -1642,7 +1641,7 @@ function scrSeason(){
   else { status=(ce.roundsDone>=4?'Final round':'Round '+ce.roundsDone+' of 4')+' · '+(myPos===1?'Leading':'currently '+ord(myPos)); }
   right.appendChild($(`<div class="scorecard">
     <div class="sc-head">
-      <div><div class="sc-name">${meLive.p.name}</div><div class="small muted" style="margin-top:2px">${evt.name}</div></div>
+      <div><div class="sc-name">${evt.name}</div><div class="small muted" style="margin-top:2px">${typeLbl} · ${fmt(evt.purse)} purse</div></div>
       <div style="text-align:right"><div class="sc-pos" style="color:${myCut?'#e07a5f':(myPos===1?'var(--gold)':'var(--oncard)')}">${myCut?'CUT':ord(myPos)}</div>
         <div class="sc-topar" style="color:${meLive.total<=0?'#35d6a0':'var(--oncard)'}">${topar}</div></div>
     </div>
@@ -1670,7 +1669,7 @@ function scrSeason(){
   const skip=$(`<button class="btn ghost">Skip to End ⏭</button>`);
   skip.onclick=skipToEnd;
   row.appendChild(auto); row.appendChild(skip); ctrl.appendChild(row);
-  right.appendChild(ctrl);
+  add(ctrl);   // controls span full width below both columns (stay at the bottom on mobile)
 
   // scheduling
   if(reduce){
