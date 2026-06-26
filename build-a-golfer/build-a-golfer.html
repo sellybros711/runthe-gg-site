@@ -272,6 +272,21 @@ function installApp(){
   toast('On iPhone: tap Share, then “Add to Home Screen”.');
 }
 
+/* ---------- seeded RNG (daily challenge) ---------- */
+let RNG=Math.random;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function seededShuffle(arr,seed){const r=mulberry32((seed^0x9e3779b9)>>>0);const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function todayKey(){const d=new Date();return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate();}
+function dailyState(){return LS.get('bag_daily',null);}
+function dailyDoneToday(){const dd=dailyState();return !!(dd&&dd.date===todayKey()&&dd.done);}
+function startDaily(){
+  if(dailyDoneToday()){S.overlay='dailydone';render();return;}
+  const seed=todayKey(); reset();
+  S.daily=true; S.dailySeed=seed; S.mode='daily';
+  S.pool=seededShuffle(GOLFERS,seed);
+  S.screen='draft'; render();
+}
+
 /* ---------- data ---------- */
 const CATS=[
   {k:'dist', short:'Driving Distance', w:0.11},
@@ -344,7 +359,7 @@ const PAYOUT=[.18,.109,.069,.049,.041,.0363,.0338,.0313,.0293,.0273,.0253,.0233,
   .0177,.0167,.0157,.0149,.0141,.0133,.0125,.0117,.0109,.0101,.0097,.0093,.009,.0087,.0084,.0081,.0078,.0075,.0072,.0069];
 
 /* ---------- sim ---------- */
-function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function gauss(){let u=0,v=0;while(!u)u=RNG();while(!v)v=RNG();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function simRound(p,{major,finalRd}){
   let base=(74-p.skill)*0.225;
@@ -374,7 +389,8 @@ const SPINS=10, REPLACEMENT=62;
 let S={};
 function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);S={screen:'title',mode:'easy',pool:GOLFERS.slice(),reSpins:2,
   slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get('bag_name',''),
-  schedule:[],evtIndex:0,season:null,overlay:null,seasonPaused:false,recorded:false};}
+  schedule:[],evtIndex:0,season:null,overlay:null,seasonPaused:false,recorded:false,
+  daily:false,dailySeed:null,dailyStored:false};}
 reset();
 if(LS.get('bag_dark',false))document.body.classList.add('dark');
 
@@ -444,6 +460,7 @@ function render(){
   RT=screen;
   if(S.overlay==='rules') overlayRules(screen);
   if(S.overlay==='record') overlayRecord(screen);
+  if(S.overlay==='dailydone') overlayDailyDone(screen);
   ({title:scrTitle,draft:scrDraft,build:scrBuild,season:scrSeason,summary:scrSummary})[S.screen]();
   window.scrollTo({top:0});
 }
@@ -489,6 +506,28 @@ function overlayRecord(screen){
     <div class="board">${rows}</div>
     <h2 style="margin:16px 0 8px">Achievements · ${earnedCount}/${ACHS.length}</h2>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">${badgeGrid}</div>
+    <div style="height:14px"></div>
+    <button class="btn red">Close</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  screen.appendChild(ov);
+}
+function overlayDailyDone(screen){
+  const dd=dailyState(); const r=dd&&dd.result;
+  const body=r?`
+    <p class="lede" style="margin-bottom:12px">You've played today's challenge — a new one drops at midnight UTC.</p>
+    <div class="tiles">
+      <div class="tile"><div class="k">Net profit</div><div class="v" style="color:${r.net>=0?'#35d6a0':'#E14A33'}">${fmtSigned(r.net)}</div></div>
+      <div class="tile"><div class="k">Money rank</div><div class="v cream">#${r.moneyRank} / ${r.N}</div></div>
+      <div class="tile"><div class="k">Wins</div><div class="v cream">${r.wins}</div></div>
+      <div class="tile"><div class="k">Best finish</div><div class="v cream">${bestTxt(r.best)}</div></div>
+    </div>
+    <div class="small muted center" style="margin-top:2px">${r.name||'Your Golfer'} · OVR ${r.ovr}</div>`
+   :`<p class="lede">You've already played today. Come back at midnight UTC for a fresh wheel.</p>`;
+  const ov=$(`<div class="ov">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Daily Challenge</h3>
+    ${body}
     <div style="height:14px"></div>
     <button class="btn red">Close</button></div>`);
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
@@ -553,9 +592,13 @@ function scrTitle(){
     w.appendChild($(`<div class="small muted center" style="margin:-4px 0 12px">Your best: <b style="color:var(--gold)">${fmt(c.bestMoney)}</b> · OVR ${c.bestOvr} · ${c.builds} build${c.builds>1?'s':''}</div>`));
   }
   const stack=$(`<div class="stack"></div>`);
-  const go=$(`<button class="btn goldfill">Step to the Tee Box<span class="sub">Build your golfer</span></button>`);
+  const go=$(`<button class="btn goldfill">Step to the Tee Box<span class="sub">Build your golfer · free play</span></button>`);
   go.onclick=()=>{S.mode='easy';S.screen='draft';render();};
   stack.appendChild(go);
+  const done=dailyDoneToday();
+  const daily=$(`<button class="btn ${done?'gold':'teal'}" style="margin-top:10px">${done?'📅 Daily — Done ✓':'📅 Daily Challenge'}<span class="sub">${done?'View result · new wheel at midnight UTC':'Same wheel for everyone today'}</span></button>`);
+  daily.onclick=startDaily;
+  stack.appendChild(daily);
   w.appendChild(stack);
   const mini=$(`<div class="mini"></div>`);
   const how=$(`<button class="btn gold">⛳ How to Play</button>`);
@@ -688,7 +731,7 @@ function reveal(){
   S.spinning=true; S.current=null; render();
   const reel=app.querySelector('.reel .name');
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
-  const land=S.pool[Math.floor(Math.random()*S.pool.length)];
+  const land=S.daily?S.pool[0]:S.pool[Math.floor(Math.random()*S.pool.length)];
   S.pool=S.pool.filter(g=>g!==land);
   if(reduce){S.current=land;S.spinning=false;render();return;}
   let ticks=0, total=16+Math.floor(Math.random()*6);
@@ -731,14 +774,21 @@ function scrBuild(){
   const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${S.name}">`);
   inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name);}; add(inp);
   add($(`<div style="height:14px"></div>`));
-  add($(`<h2 style="margin:0 0 8px">Pick your season</h2>`));
-  const full=$(`<button class="btn red">Full Season<span class="sub">18 events · 4 majors</span></button>`);
-  const maj=$(`<button class="btn gold" style="margin-top:10px">Majors Only<span class="sub">The 4 that matter</span></button>`);
-  full.onclick=()=>startSeason(false); maj.onclick=()=>startSeason(true);
-  add(full); add(maj);
+  if(S.daily){
+    add($(`<h2 style="margin:0 0 8px">Today's challenge</h2>`));
+    const d=$(`<button class="btn goldfill">Play Daily Season<span class="sub">18 events · same wheel for everyone today</span></button>`);
+    d.onclick=()=>startSeason(false); add(d);
+  } else {
+    add($(`<h2 style="margin:0 0 8px">Pick your season</h2>`));
+    const full=$(`<button class="btn red">Full Season<span class="sub">18 events · 4 majors</span></button>`);
+    const maj=$(`<button class="btn gold" style="margin-top:10px">Majors Only<span class="sub">The 4 that matter</span></button>`);
+    full.onclick=()=>startSeason(false); maj.onclick=()=>startSeason(true);
+    add(full); add(maj);
+  }
 }
 function startSeason(majorsOnly){
-  S.schedule=majorsOnly?SCHEDULE.filter(e=>e.major):SCHEDULE.slice(); S.evtIndex=0;
+  S.schedule=(majorsOnly&&!S.daily)?SCHEDULE.filter(e=>e.major):SCHEDULE.slice(); S.evtIndex=0;
+  RNG = S.daily ? mulberry32((S.dailySeed^0x51ed2701)>>>0) : Math.random;
   const me=buildPlayer();
   const field=GOLFERS.map(g=>({name:g.name,skill:g.skill,clu:g.clu,you:false}));
   field.push(me);
@@ -891,7 +941,8 @@ function scrSummary(){
   const ovr=Math.round(me.skill);
   const ec=seasonNet(t);
   if(!S.recorded){S.recorded=true; const r=recordSeason({name:me.name,ovr,money:t.money,gross:ec.gross,net:ec.net,wins:t.wins,majorsWon:t.majors,played:t.played,made:t.made,moneyRank,best:t.best}); S.freshBadges=r.fresh;}
-  add($(`<div class="center"><span class="tag">Season complete</span></div>`));
+  if(S.daily&&!S.dailyStored){S.dailyStored=true; LS.set('bag_daily',{date:S.dailySeed,done:true,result:{name:me.name,ovr,net:ec.net,money:t.money,moneyRank,N,wins:t.wins,majors:t.majors,best:t.best}});}
+  add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':'Season complete'}</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
   add($(`<p class="lede center" style="margin-bottom:10px">${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
   const netCol=ec.net>=0?'#35d6a0':'#E14A33';
