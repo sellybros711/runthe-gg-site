@@ -625,6 +625,18 @@ allows Google Fonts, or self-host Anton.*
     (sandbox can't reach Supabase). Integrity is launch-grade (name-attributed +
     clamp); skills+OVR are stored so deterministic-replay can harden it later.
 
+- 2026-06-26: **Expanded roster + living-world Career Mode (career spec).** Swapped in
+  the new `golfers.json` (242 players, with born/potential/arc_age/overall/archetype/
+  data_source); `fld` now derived from `data_source`. Built the full career engine:
+  aging arcs + living ratings (§1-2), retirement + alumni (§3), 2026 living-field seeding
+  (§4), generated-rookie draft classes + name banks (§5), per-save `careerSeed` world that
+  persists/resumes and diverges per career (§6), and sim wiring (§7) — **non-daily seasons
+  use the living world** (`worldField`); the **draft pool stays peak cards** (arcade
+  identity); daily unchanged. Validated: 2026 field mean 82.5 (≈ prior calibration), stable
+  ~82 across 9 yrs as rookies replace retirees; **year-42 bug fixed** (peak Tiger ages out).
+  Spec + status saved to `runthetour-career-spec.md`. Deployed to /golf. Tuning knobs
+  (WORLD_TARGET=150, field=top-119, rookies-to-refill) flagged for review.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
