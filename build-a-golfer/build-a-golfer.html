@@ -200,7 +200,7 @@
   .ovrbadge .n{font-family:var(--mono); font-weight:800; font-size:28px; color:var(--gold); line-height:1; transition:color .2s}
   .ovrbadge .l{font:800 9px/1 var(--body); letter-spacing:.18em; color:var(--muted); margin-top:4px}
   .radarwrap{flex:1; min-width:0; display:flex; justify-content:center}
-  .radar{width:100%; max-width:198px; height:auto; display:block}
+  .radar{width:100%; max-width:236px; height:auto; display:block}
   .radar text{font-family:var(--body)}
   .card-grid{display:grid; gap:6px; margin-top:10px}
   .slot{display:flex; align-items:center; gap:10px; background:var(--board); border:1px solid var(--line);
@@ -844,7 +844,7 @@ function render(){
   app.innerHTML='';
   app.appendChild(header());
   const card=$(`<main class="card"></main>`);
-  const screen=$(`<div class="screen${['title','draft','season','setup','offseason'].includes(S.screen)?' wide':''}"></div>`);
+  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
   app.appendChild(footer());
@@ -1334,37 +1334,41 @@ function scrBuild(){
   const p=buildPlayer();
   add($(`<div class="center"><span class="tag">Your creation</span></div>`));
   add($(`<div style="height:8px"></div>`));
-  add(buildHero());
+  const cols=$(`<div class="cols"></div>`);
+  const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
+  cols.appendChild(left); cols.appendChild(right); add(cols);
+  // LEFT — identity: hero + archetype + scouting note
+  left.appendChild(buildHero());
   const arch=archetype(p);
-  add($(`<div style="text-align:center;margin-top:8px">
-    <div style="font-family:var(--display);font-style:italic;font-size:24px;color:var(--gold);line-height:1">${arch.name}</div>
-    <div class="small muted" style="margin-top:5px">${arch.desc}</div></div>`));
-  const card=$(`<div class="card-grid" style="margin-top:12px"></div>`);
+  left.appendChild($(`<div style="text-align:center;margin-top:12px">
+    <div style="font-family:var(--display);font-style:italic;font-size:26px;color:var(--gold);line-height:1">${arch.name}</div>
+    <div class="small muted" style="margin-top:6px">${arch.desc}</div></div>`));
   let best={v:-1},worst={v:200};
-  CATS.forEach(cat=>{
-    const f=S.slots[cat.k]; const v=f?f.value:REPLACEMENT;
-    if(v>best.v)best={v,c:cat.short}; if(v<worst.v)worst={v,c:cat.short};
-    card.appendChild($(`<div class="slot ${f?'':'empty'}">
-      <span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'no spin — journeyman'}</span>
-      <span class="v">${v}</span></div>`));
-  });
-  add(card);
+  CATS.forEach(cat=>{const v=S.slots[cat.k]?S.slots[cat.k].value:REPLACEMENT; if(v>best.v)best={v,c:cat.short}; if(v<worst.v)worst={v,c:cat.short};});
   const holes=CATS.filter(c=>!S.slots[c.k]).length;
   let note=`Strength: ${best.c} (${best.v}). Weakness: ${worst.c} (${worst.v}).`;
   if(holes) note+=` ${holes} slot${holes>1?'s':''} unfilled — they play as a tour journeyman.`;
   note+=` Your weakest slots are where weekends get lost — the field is full of complete golfers.`;
-  add($(`<div class="scout">${note}</div>`));
-  add($(`<div style="height:16px"></div>`));
+  left.appendChild($(`<div class="scout" style="margin-top:14px">${note}</div>`));
+  // RIGHT — scorecard + season pick
+  right.appendChild($(`<h2 style="margin:0 0 8px">Your scorecard</h2>`));
+  const card=$(`<div class="card-grid"></div>`);
+  CATS.forEach(cat=>{const f=S.slots[cat.k]; const v=f?f.value:REPLACEMENT;
+    card.appendChild($(`<div class="slot ${f?'':'empty'}">
+      <span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'no spin — journeyman'}</span>
+      <span class="v">${v}</span></div>`));});
+  right.appendChild(card);
+  right.appendChild($(`<div style="height:16px"></div>`));
   if(S.daily){
-    add($(`<h2 style="margin:0 0 8px">Today's challenge</h2>`));
+    right.appendChild($(`<h2 style="margin:0 0 8px">Today's challenge</h2>`));
     const d=$(`<button class="btn goldfill">Play Daily Season<span class="sub">18 events · same wheel for everyone today</span></button>`);
-    d.onclick=()=>startSeason(false); add(d);
+    d.onclick=()=>startSeason(false); right.appendChild(d);
   } else {
-    add($(`<h2 style="margin:0 0 8px">Pick your season</h2>`));
+    right.appendChild($(`<h2 style="margin:0 0 8px">Pick your season</h2>`));
     const full=$(`<button class="btn red">Full Season<span class="sub">18 events · 4 majors</span></button>`);
     const maj=$(`<button class="btn gold" style="margin-top:10px">Majors Only<span class="sub">The 4 that matter</span></button>`);
     full.onclick=()=>startSeason(false); maj.onclick=()=>startSeason(true);
-    add(full); add(maj);
+    right.appendChild(full); right.appendChild(maj);
   }
 }
 function fieldSample(n){
