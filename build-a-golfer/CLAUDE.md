@@ -294,6 +294,23 @@ allows Google Fonts, or self-host Anton.*
     (`--serif`); palette vars `--hgreen`/`--hgold`.
   Verified desktop + mobile, zero page errors.
 
+- 2026-06-26: Expanded roster (241) + Rarity Spin.
+  - Roster grew to **241 golfers** (now carries `rarity`/`born`/`majors`/`tier`).
+  - **Rarity-weighted pull**: each spin rolls a bucket by fixed rates
+    (`PULL_RATES`: Legendary .05 / Epic .25 / Rare .35 / Common .35 — mirrors
+    `_meta.rarity_pull_rates`), then a uniform golfer from that bucket excluding
+    any already revealed this draft (`S.revealed` set), with bucket re-roll +
+    fallback. Verified over 40k draws: 34.4/35.3/25.2/5.1%. Uses a per-draft
+    `S.drawRng` — seeded Mulberry32 for daily (reproducible, fair), Math.random
+    for free play. Replaces the old uniform `S.pool` draw.
+  - **NOTE on architecture**: the spec wants this **server-authoritative**. No
+    backend exists yet (parked), so it's implemented **client-side** with
+    `PULL_RATES` isolated as one config constant — ready to lift into backend
+    config when the server draw is approved.
+  - **Flourish**: reel shows rarity tag + colored glow (Rare blue / Epic purple /
+    Legendary gold), a toast, and a soft WebAudio chime when a Legendary lands.
+  Verified end to end, zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
