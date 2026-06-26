@@ -2502,7 +2502,11 @@
   @media (min-width:1200px){ .rtp-ad-rail{ display:block; } }
 
   .rtp-ad-mobile-bottom{ position:fixed; left:0; right:0; bottom:0; height:50px; z-index:40;
-    display:none; overflow:hidden; text-align:center;
+    display:none; overflow:hidden; text-align:center; background:transparent; }
+  /* Frame the strip ONLY once a real ad has filled it — so before AdSense serves
+     (or when it returns no ad) the empty container is invisible, not a placeholder
+     bar. Progressive enhancement: browsers without :has just show the ad itself. */
+  .rtp-ad-mobile-bottom:has(ins[data-ad-status="filled"]){
     background:var(--white); border-top:1px solid rgba(127,127,127,.18); }
   .rtp-ad-mobile-bottom .adsbygoogle{ display:inline-block; width:320px; height:50px; }
   @media (max-width:1199px){
