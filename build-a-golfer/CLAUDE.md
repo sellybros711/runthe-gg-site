@@ -188,8 +188,28 @@ allows Google Fonts, or self-host Anton.*
     instructions); footer Home/About/Privacy/Contact are wired (Contact +
     Questions → the RunThePitch Gmail).
   Verified end to end with headless Chromium, zero page errors.
-  Still NOT built (parked, need your go): online leaderboard/accounts, a daily
-  seeded challenge, the expenses/net-profit layer, real Strokes-Gained roster.
+  Still NOT built at that point: online leaderboard/accounts, daily challenge,
+  expenses layer, real Strokes-Gained roster.
+- 2026-06-26: Second optimization round (owner picked all four next items).
+  - **Expenses / net-profit layer** — caddie 10% + $8k/event travel (tunable
+    `COSTS` constants); Net surfaced green/red on the standings bar, summary
+    headline, share card, and career (best net). Gross no longer leads.
+  - **Local achievements** — 8 badges computed per season (First Win, Major
+    Champion, Grand Slam, Iron Man, In the Black, Millionaire, Money Leader,
+    Against the Odds); fresh unlocks on the summary, full grid in Your Record.
+  - **Daily seeded challenge** — UTC-date seed fixes the wheel order AND a
+    seeded RNG (`mulberry32`) threaded through the sim, so the same picks give
+    the same result for everyone (verified byte-identical across runs). One
+    play/day, locked with a result overlay; free play stays unlimited/random.
+  - **Online mode**: NOT built (needs backend + deploy → parked). Wrote a
+    concrete design at `ONLINE-MODE-PLAN.md` to execute on deploy approval; the
+    daily determinism makes server-side re-sim anti-cheat straightforward.
+  All verified end to end with headless Chromium, zero page errors.
+
+### Still parked (need owner go-ahead)
+Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
+hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
+constants in `simRound`, `SPINS`/`reSpins`.
 
 ### How to run locally
 Single self-contained file — just open `build-a-golfer.html` in a browser, or
