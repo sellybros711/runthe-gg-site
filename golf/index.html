@@ -1024,7 +1024,8 @@ function overlayLeaderboard(screen){
     <h3>🏆 Leaderboard</h3>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
     <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px">${seg('season','Single Season')}${seg('career','Career')}</div>
-    <h2 style="margin:0 0 8px">${tab==='season'?'Single-season earnings':'Career earnings'}</h2>
+    <h2 style="margin:0 0 2px">${tab==='season'?'Single Season Earnings':'Career Earnings'}</h2>
+    <div class="small muted" style="margin:0 0 8px">${tab==='season'?'Highest earnings in one season':'Career Mode total — updates after every season'}</div>
     <div class="board">${board}</div>
     <div style="height:14px"></div>
     <button class="btn red">Close</button></div>`);
