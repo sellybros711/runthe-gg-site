@@ -1,0 +1,159 @@
+# Build a Golfer — CLAUDE.md
+
+> Session-continuity doc for Claude Code. Captures the handoff so future sessions
+> have context without re-reading the original brief.
+
+## 0. GUARDRAILS (highest priority — read first)
+
+This is an **early-stage prototype in active development**. NOT production. It
+**must not be deployed or wired into the live site until the owners manually give
+the go-ahead.**
+
+- **Do not deploy** until told manually: no build-and-ship, no hosting config, no
+  domain wiring, no DNS, no analytics.
+- **Do not merge into or push to the live RunThePitch / runthe.gg site** (the
+  `main` branch of this repo, or the live deploy) until approved. It stays a
+  separate sibling.
+- **Keep it isolated.** All Build a Golfer work lives under `build-a-golfer/` on
+  the non-merged branch `claude/build-a-golfer-prototype-9zdmcq`. Do not link it
+  from the live site or share a public URL.
+- **No deploy/publish/push command without explicit, manual approval.** Before any
+  action that could affect anything outside the sandbox, STOP and ASK.
+- Treat as a private playground. When in doubt, do less and ask.
+
+### Environment note
+This repo (`sellybros711/runthe-gg-site`, CNAME `runthe.gg`) is the LIVE
+RunThePitch site. `index.html` is the live World Cup game. Build a Golfer is kept
+partitioned under `build-a-golfer/` on a feature branch that is never merged to
+`main` and never deployed — this is the handoff-approved "feature branch" option.
+
+## 1. What this is
+
+**Build a Golfer** — single-player golf game in the RunThe.GG family, sibling to
+RunThePitch (World Cup game). In-app tagline: *"A RunThe.GG Game."* Vertical
+brand: **RunTheGreen**.
+
+**Concept:** Spin a wheel, build a golfer by taking one skill from each real
+golfer that lands, then run the build through a full PGA season and see where you
+finish and how much you make.
+
+**Source of truth:** `build-a-golfer/build-a-golfer.html` — a single self-contained
+HTML file (vanilla JS, no build step) that already runs the full game. This file
+is canonical for behavior. Do NOT refactor or port to a framework until the
+owners pick a target stack (their Encore project is Vite + React; this is plain
+HTML for now).
+
+## 2. Game mechanics (current spec)
+
+**8 skill slots** (each 0–99): Driving Distance, Driving Accuracy, Approach, Short
+Game, Scrambling, Bunker, Putting, Composure.
+
+**One mode** (ratings always shown). A hidden-ratings "hard mode" was prototyped
+and removed; may return as a harder tier.
+
+**Draft:**
+- Press **Spin** → one real golfer revealed from the pool (no repeats in a draft).
+- Take **one** of that golfer's 8 skills → fills that slot with the golfer's
+  rating. One skill per golfer.
+- Repeat until all 8 slots filled.
+- **Re-spins capped at 2 for the whole draft.** A re-spin discards the current
+  golfer and reveals a new one. After both used, re-spin disappears and you must
+  take a skill from whoever is shown. You always fill all 8 slots — the tension is
+  being forced into a lesser skill, not leaving holes.
+
+**Overall rating** = weighted average of the 8 skills. Weights: distance .11,
+accuracy .12, approach .21, short game .10, scrambling .08, bunker .06, putting
+.19, composure .13 (sums to 1.0). Unfilled slots default to a "journeyman"
+baseline of **62** (radar baseline; with the 2-re-spin cap all slots fill anyway).
+
+**Roster:** ~36 golfers, mix of current stars + all-time legends, each with
+hand-tuned 0–99 ratings reflecting reputation (Bryson 99 distance, Hogan elite
+ball-striking, Seve/Cam Smith elite short game + scrambling, Gary Player 99
+bunker, Loren Roberts 98 putting, Tiger 99 composure). **Ratings are placeholders
+to be replaced with real data later (see §4 item 1).**
+
+**Season sim:**
+- Schedule: 18 events incl. 4 majors (Masters, PGA Championship, U.S. Open, The
+  Open), several signature events, a finale. A "majors only" option sims the 4.
+- Field = ~36 real golfers + player's build (37 total).
+- Each event: 4 rounds, a 36-hole cut (low ~22 + ties), scoring vs the field.
+- `simRound`: base strokes vs par = `(74 − overall) × 0.225`; `+1.4` for majors;
+  per-round SD ≈ `2.4 + (90 − composure) × 0.045` (clamped 1.7–4.2), `× 1.12` in
+  final round and majors; weak composure adds strokes on Sunday. Tuned so winners
+  land around **−19 at majors** and **−23 at regular events**.
+- Money: PGA-style payout curve per event purse. FedEx-style points on a parallel
+  curve.
+- Per-player season tracking: money, points, wins, majors, top-10s, cuts made,
+  best finish, events played, average finish.
+- Season **auto-advances** (≈1.6s/event, ≈2.4s/major) with **Pause** and **Skip
+  to results** controls — no clicking each event.
+- Ends with a summary: money won, money rank vs field, wins, majors, top-10s,
+  best finish, FedEx points & rank, full season money list, share card.
+
+## 3. UI / brand (current)
+
+Mirrors the RunThePitch shell.
+- Warm **cream** page background with a peach glow.
+- Crest + italic-condensed wordmark **"Build a Golfer"** with a small teal
+  **"A RunThe.GG Game"** subtitle.
+- Dark navy "phone" **card** with a gold top edge holding the whole app.
+- Footer: pills + **@RunTheGreen** (placeholder X handle — confirm) + Home /
+  About / Privacy / Contact.
+
+**Palette tokens:** navy `#01122A`, cream `#F4E3C9`, teal `#06A291` / `#0FA888`,
+deep teal `#07605F`, gold `#EBA61F`, plus course/board greens.
+
+**Fonts:** Anton (display, italic) + Barlow Semi Condensed (body) via Google
+Fonts, with Impact / Arial Narrow / system fallbacks. *Flag: confirm host CSP
+allows Google Fonts, or self-host Anton.*
+
+**Screens:**
+- **Title:** dusk golf-course SVG backdrop (sky, low sun, tree line, fairway with
+  mowing stripes, green + flagstick, bunker, ball); trophy; "RunTheGreen" hero; a
+  rolling ticker cycling the 8 skill names; single gold **"Step to the Tee Box"**
+  button; How to Play + Leaderboard mini-buttons.
+- **Draft:** live "build hero" at top = golfer silhouette + live **OVR** badge +
+  **8-axis radar chart** (dashed octagon = journeyman 62 baseline, teal polygon =
+  your build, gold dots = filled skills); spin reel; skill tiles; re-spin control;
+  scorecard list (shows which golfer gave each skill).
+- **Season:** persistent standings bar (season earnings, avg finish, events, cuts
+  made, best finish); majors get a gold-tinted screen + banner + gold-bordered
+  leaderboard; auto-advancing event loop.
+
+## 4. Open items / next steps (TRACK — do NOT build unless asked)
+
+1. **Real roster data** (replace placeholders). Plan: Strokes Gained (OTT,
+   approach, around-green, putting) normalized to 0–99 via tour percentiles;
+   driving distance, accuracy (fairways hit), scrambling %, sand-save % for the
+   rest. **Composure has no clean stat** — define it (final-round / major /
+   playoff performance) or rate manually. **Legends predate ShotLink** — estimate
+   by reputation / era-adjusted record. Decide roster size (~50 suggested).
+   Deliver as clean JSON the game reads.
+2. **Expenses / net-profit layer** (designed, not built). Caddie = 10% of
+   winnings; travel ≈ $8k per event entered (the knob that can put a weak build in
+   the red); optional ≈ $150k season coaching cost. Net = winnings − costs.
+   Surface **Net** in green/red on the standings bar and summary instead of
+   leading with gross. Travel figure is the tuning knob.
+3. **Online mode** (future). Same build flow, then compare your season vs other
+   users on a global leaderboard. Foreshadowed by in-app money-rank-vs-field.
+4. **Hard mode** (optional return). Ratings hidden during the draft; pick on
+   reputation.
+5. **Polish backlog.** Upgrade/animate golfer figure; replace emoji flag tiles
+   with SVG if reused; money tie-splitting; deeper field for realism; self-host
+   fonts.
+6. **Naming / handles / domain.** Confirm X handle (`@RunTheGreen` placeholder),
+   final name vs "Build a Golfer," and whether it lives on a runthe.gg subpath or
+   its own domain — **no production wiring until told.**
+
+## 5. How to work with the owners
+
+- Iterate only inside the dev sandbox. Keep the prototype runnable at every step.
+- Surface decisions (stack choice, data schema, expense tuning) — don't guess.
+- Before anything that could touch the live site, a remote, or a deploy: STOP and
+  ASK.
+
+## 6. Status log
+
+- 2026-06-26: Branch set up, isolated under `build-a-golfer/`. CLAUDE.md created.
+  Awaiting the canonical `build-a-golfer.html` from the owner (to be committed as
+  the source of truth — no reconstruction). Nothing merged or deployed.
