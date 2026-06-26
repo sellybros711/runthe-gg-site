@@ -781,7 +781,8 @@ function livingOf(g,simYear){const age=simYear-(g.born||1990), sp=skillPotential
   SKK.forEach(s=>ls[s]=clamp(Math.round(sp[s]*ageArc(s,age)),40,99));
   return {age,ls,ov:Math.round(SKK.reduce((a,s)=>a+ls[s]*CW[s],0))};}
 function pRetire(age,lo){let p; if(age<37)p=0; else if(age<=44)p=.01*(age-36)+(lo<74?.06:0);
-  else if(age<=49)p=.10+.06*(age-45)+(lo<76?.10:0); else if(age<=54)p=.40+.10*(age-50); else p=1; return Math.min(1,p);}
+  /* softened 50-54 band so aging stars hang on closer to the age-55 cap (~3-4 final seasons) */
+  else if(age<=49)p=.10+.06*(age-45)+(lo<76?.10:0); else if(age<=54)p=.16+.10*(age-50); else p=1; return Math.min(1,p);}
 function cgauss(rng,m,s){let u=0,v=0;while(!u)u=rng();while(!v)v=rng();return m+s*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
 const NAT_W=[['USA',.34],['England',.08],['Australia',.06],['South Korea',.06],['Japan',.05],['South Africa',.04],['Spain',.03],['Sweden',.03],['Canada',.03],['Ireland',.025],['Germany',.02],['Argentina',.02],['France',.02],['Italy',.015],['Denmark',.015],['Other',.14]];
 const NAT_CODE={USA:'USA',England:'ENG',Australia:'AUS','South Korea':'KOR',Japan:'JPN','South Africa':'RSA',Spain:'ESP',Sweden:'SWE',Canada:'CAN',Ireland:'IRL',Germany:'GER',Argentina:'ARG',France:'FRA',Italy:'ITA',Denmark:'DEN',Other:'INT'};
@@ -835,7 +836,10 @@ function refillWorld(w,rng){let guard=0;
   while(w.active.length<WORLD_TARGET && guard++<500){ const r=genRookie(rng,w.simYear,used); stampLiving(r,w.simYear); w.active.push(r); } }
 function seedWorld(seed){
   const rng=mulberry32((seed^0x51ed2701)>>>0);
-  const active=GOLFERS.filter(g=>String(g.data_source||'').startsWith('current')||g.born>=2000).map(g=>Object.assign({},g));
+  // Field is gated by REAL AGE: any real golfer under the retirement age plays in 2026 at their
+  // age-declined living rating and ages out (e.g. Tiger at 51 → ~4 seasons, gone by 55). Their peak
+  // CARD stays draftable in the spin. Players already past the cap in 2026 are retired (arcade-only).
+  const active=GOLFERS.filter(g=>g.born && (CAREER_START_YEAR-g.born)<FIELD_RETIRE_AGE).map(g=>Object.assign({},g));
   active.forEach(g=>{ applyCareerRoll(g,rng); stampLiving(g,CAREER_START_YEAR); });   // roll each developing player's universe potential
   const w={seed, simYear:CAREER_START_YEAR, active, alumni:[]};
   refillWorld(w,rng); return w;
@@ -851,22 +855,16 @@ function ensureWorld(){ if(S.daily) return null;
 function worldField(n){ const w=ensureWorld(); if(!w) return null;
   return w.active.slice().sort((a,b)=>b.lov-a.lov).slice(0,n)
     .map(g=>{const o={name:g.name,skill:g.lov}; SKK.forEach(s=>o[s]=g['l_'+s]); return o;}); }
-/* ---- YOUR golfer's bounded career: age, decline from year 15, retirement (spec §3-4) ---- */
-const ENTRY_AGE=22, DECLINE_START_YEAR=15, HARD_RETIRE_AGE=55;
+/* ---- YOUR golfer's bounded career: measured in YEARS PLAYED (not age). 40-year shelf life;
+   decline from year 15. The FIELD (real + generated) is the one gated by real age. ---- */
+const DECLINE_START_YEAR=15, CAREER_MAX_YEARS=40, FIELD_RETIRE_AGE=55;
 const DECLINE_RATE={dist:1.8,acc:0.9,app:1.1,sht:0.8,scr:0.8,bnk:0.8,put:0.9,clu:0.4};
-function playerAge(){ return ENTRY_AGE + ((S.year||1)-1); }
 function applyPlayerDecline(){   // erodes your bag once per year from DECLINE_START_YEAR; re-spins offset it
   if((S.year||1) < DECLINE_START_YEAR) return;
   const accel = 1 + Math.max(0,(S.year-DECLINE_START_YEAR)-4)*0.12;
   CATS.forEach(c=>{ const sl=S.slots[c.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[c.k]*accel)); });
 }
-function playerRetires(){   // rolled when you try to continue; uses the age you just finished at
-  const age=playerAge();
-  if(age>=HARD_RETIRE_AGE) return true;
-  const ov=Math.round(buildPlayer().skill);
-  const rng=mulberry32(((((S.careerSeed||1)>>>0)^0x7f4a7c15)+(S.year||1)*0x85ebca77)>>>0);
-  return rng() < pRetire(age, ov);
-}
+function playerRetires(){ return (S.year||1) >= CAREER_MAX_YEARS; }   // forced at the 40-year shelf life
 /* golfer customization palettes */
 const SKINS=[
   {id:'light', m:'#f0c6a4', s:'#e0ad84'},
@@ -1979,7 +1977,7 @@ function scrSummary(){
     LS.set('bag_daily',{date:S.dailySeed,done:true,result:{name:me.name,ovr,net:ec.net,money:t.money,moneyRank,N,wins:t.wins,majors:t.majors,best:t.best}});}
   add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':(S.year>1?('Career Mode · Year '+S.year+' complete'):'Season complete')}</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':('Year '+(S.year||1)+' · Age '+(ENTRY_AGE+((S.year||1)-1))+' · ')}${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
+  add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS+' · ')}${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
   const netCol=ec.net>=0?'#35d6a0':'#E14A33';
   add($(`<div class="center" style="margin-bottom:6px">
     <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Net profit</div>
@@ -2120,9 +2118,9 @@ function scrSummary(){
     const again=$(`<button class="btn red">Build Another Golfer</button>`);
     again.onclick=()=>{reset();render();}; right.appendChild(again);
   } else {
-    const nextAge=ENTRY_AGE+(S.year||1);   // age you'd play next season at
-    const declineSoon=(S.year||1)>=DECLINE_START_YEAR-1;
-    const cont=$(`<button class="btn goldfill">Continue to Year ${(S.year||1)+1} ▸<span class="sub">Career Mode · age ${nextAge}${declineSoon?' · the body is aging':''} · off-season, then a new season</span></button>`);
+    const lastYear=(S.year||1)>=CAREER_MAX_YEARS;
+    const declining=(S.year||1)>=DECLINE_START_YEAR;
+    const cont=$(`<button class="btn goldfill">${lastYear?'Finish Career ▸':'Continue to Year '+((S.year||1)+1)+' ▸'}<span class="sub">${lastYear?('Year '+CAREER_MAX_YEARS+' was your last — career ceremony'):('Career Mode · year '+((S.year||1)+1)+' of '+CAREER_MAX_YEARS+(declining?' · skills are declining (re-spin to repair)':'')+' · off-season, then a new season')}</span></button>`);
     cont.onclick=continueFranchise; right.appendChild(cont);
     const save=$(`<button class="btn gold" style="margin-top:10px">Save Career & Exit<span class="sub">Resume your career from the home screen anytime</span></button>`);
     save.onclick=()=>{ if(saveCareer()){ track('career_saved_exit',{year:S.year||1}); toast('Career saved — resume it from the home screen'); reset(); render(); } };
@@ -2139,16 +2137,16 @@ function continueFranchise(){
   S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false;
   // off-season tune-up: re-spin to swap fresh skills in (now also to repair age decline)
   S.offseason={changes:0,maxChanges:3,reSpins:2}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
-  track('offseason_start',{year:S.year,age:playerAge()});
+  track('offseason_start',{year:S.year});
   S.screen='offseason'; render();
 }
 function endCareer(reason){
   saveCareer();   // keep the final state addressable
-  if(S.career){ const c=S.career; S.careerEnd={reason,years:c.seasons.length,age:playerAge(),
+  if(S.career){ const c=S.career; S.careerEnd={reason,years:c.seasons.length,
     money:c.money,net:c.net,wins:c.wins,majors:c.majors,top10:c.top10,
     best: c.seasons.reduce((m,s)=>Math.max(m,s.money),0),
     bestFin: c.best}; }
-  track('career_ended',{reason,years:(S.career&&S.career.seasons.length)||1,age:playerAge()});
+  track('career_ended',{reason,years:(S.career&&S.career.seasons.length)||1});
   S.careerOver=true; S.screen='careerend'; render();
 }
 function newCareer(){ clearCareerSave(); reset(); render(); }
@@ -2275,11 +2273,12 @@ function scrRecap(){
 /* ---------- career-end ceremony (bounded career → reset) ---------- */
 function scrCareerEnd(){
   const c=S.career||{seasons:[],money:0,net:0,wins:0,majors:0,top10:0,best:99,winsList:[]};
-  const e=S.careerEnd||{years:c.seasons.length,age:playerAge(),money:c.money,net:c.net,wins:c.wins,majors:c.majors,best:0,bestFin:c.best};
+  const e=S.careerEnd||{years:c.seasons.length,money:c.money,net:c.net,wins:c.wins,majors:c.majors,best:c.seasons.reduce((m,s)=>Math.max(m,s.money),0),bestFin:c.best};
   const ccol=c.net>=0?'#35d6a0':'#E14A33';
-  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">${e.reason==='age'?'🏁 A career for the ages':'🏁 Career complete'}</span></div>`));
+  const full=(e.years>=CAREER_MAX_YEARS);
+  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">${full?'🏁 A full career — hung up the clubs':'🏁 Career complete'}</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${esc(S.name||'Your Golfer')}</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:10px">Retired at age ${e.age} · ${e.years} season${e.years===1?'':'s'} on tour · ${c.majors} major${c.majors===1?'':'s'}</p>`));
+  add($(`<p class="lede center" style="margin-bottom:10px">${e.years} season${e.years===1?'':'s'} on tour · ${c.wins} win${c.wins===1?'':'s'} · ${c.majors} major${c.majors===1?'':'s'}</p>`));
   add($(`<div class="center" style="margin-bottom:8px">
     <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Career net worth</div>
     <div class="mono" style="font-weight:800;font-size:38px;color:${ccol};margin-top:4px">${fmtSigned(c.net)}</div>
@@ -2292,7 +2291,7 @@ function scrCareerEnd(){
   tiles.appendChild(tile('Best season',fmt(e.best||0),true));
   tiles.appendChild(tile('Best finish',c.best===99?'—':(c.best===1?'WIN':'T'+c.best)));
   tiles.appendChild(tile('Seasons',e.years+''));
-  tiles.appendChild(tile('Retired age',e.age+''));
+  tiles.appendChild(tile('Shelf life',e.years+' / '+CAREER_MAX_YEARS));
   add(tiles);
   // wins list
   const wl=(c.winsList||[]);
@@ -2310,7 +2309,7 @@ function scrCareerEnd(){
   const cv=document.createElement('canvas'); cv.style.cssText='width:100%;max-width:300px;display:block;margin:16px auto 4px;border-radius:14px;border:1px solid var(--line)';
   drawCareerCard(cv,{name:S.name||'Your Golfer',ovr:Math.round(buildPlayer().skill),years:e.years,money:c.money,net:c.net,wins:c.wins,majors:c.majors,cRank:0,cN:0},careerVals);
   add(cv);
-  const share=`RUNTHETOUR CAREER — ${S.name||'Your Golfer'}\nRetired age ${e.age} · ${e.years} seasons · net worth ${fmtSigned(c.net)}\n${c.wins}W · ${c.majors} majors · ${fmt(c.money)} earned\nRunThe.GG`;
+  const share=`RUNTHETOUR CAREER — ${S.name||'Your Golfer'}\n${e.years} seasons on tour · net worth ${fmtSigned(c.net)}\n${c.wins}W · ${c.majors} majors · ${fmt(c.money)} earned\nRunThe.GG`;
   const row=$(`<div class="mini" style="margin-top:10px;max-width:520px;margin-left:auto;margin-right:auto"></div>`);
   const sh=$(`<button class="btn gold">↗ Share Career</button>`);
   sh.onclick=()=>{track('career_end_shared',{years:e.years}); shareCard(cv,share,S.name,'career');};
