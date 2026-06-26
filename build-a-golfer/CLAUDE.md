@@ -565,6 +565,21 @@ allows Google Fonts, or self-host Anton.*
   - All verified headless (setup, build hero, summary deltas, career card) with
     zero page errors; committed on the dev branch.
 
+- 2026-06-26: **First live deploy — hidden path (owner-approved).** Published the
+  prototype to **`runthe.gg/RunTheTour`** by adding a single isolated file
+  `RunTheTour/index.html` to **`main`** (the GitHub Pages branch; CNAME=runthe.gg,
+  static, no build step). Deliberately **unlinked** — no nav/button anywhere points
+  to it; reachable only by typing the URL. Verified the commit touched *only* that
+  new folder (existing pages, `index.html`/World Cup game, and the data-sync
+  workflows are untouched; sync-wc-players path filters don't match). The deployed
+  file is a copy of `build-a-golfer/build-a-golfer.html` with the two relative PWA
+  links (`apple-touch-icon`, `manifest`) stripped so nothing 404s at the new path.
+  **Source of truth remains `build-a-golfer/build-a-golfer.html` on this prototype
+  branch** — to ship an update, regenerate the stripped copy and push it to
+  `RunTheTour/index.html` on `main` (same isolated method, via a detached worktree
+  on `origin/main`). The guardrail now reads: main is touched ONLY for this one
+  isolated folder; still no changes to the live World Cup site or its pages.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
