@@ -17,13 +17,8 @@
     --body:'Barlow Semi Condensed',system-ui,'Segoe UI',Roboto,sans-serif;
     --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
     --pagebg:
-      radial-gradient(900px 460px at 82% 2%, var(--peach), transparent 58%),
-      radial-gradient(700px 460px at 8% 6%, #f5ecda, transparent 55%),
-      linear-gradient(180deg,#f3ebd9,#eef0e3);
-    --pageink:var(--ink); --pagemut:var(--inkmut); --pill:#fff; --pillb:rgba(0,0,0,.10);
-  }
-  body.dark{
-    --pagebg:radial-gradient(900px 500px at 80% 0%, #0e3b34, transparent 60%), linear-gradient(180deg,#07212f,#06151f);
+      radial-gradient(1000px 560px at 80% -4%, #0e3b34, transparent 60%),
+      linear-gradient(180deg,#0d2740,#081726);
     --pageink:#F4E3C9; --pagemut:#9fb0bd; --pill:#0d2436; --pillb:rgba(244,227,201,.16);
   }
   *{box-sizing:border-box}
@@ -54,11 +49,10 @@
   .pill{background:var(--pill); border:1px solid var(--pillb); border-radius:999px; padding:8px 14px;
     font-weight:700; font-size:13px; color:var(--pageink); cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.06)}
 
-  /* ---- the card ---- */
-  .card{position:relative; max-width:438px; margin:14px auto 0; border-radius:28px; overflow:hidden;
-    background:linear-gradient(180deg,var(--cardA),var(--cardB));
-    box-shadow:0 34px 60px -22px rgba(20,40,30,.5);}
-  .cardtop{height:5px; background:linear-gradient(90deg,#b9892a,var(--gold),#b9892a)}
+  /* ---- the card (now full-bleed: the navy page IS the surface) ---- */
+  .card{position:relative; max-width:none; margin:6px auto 0; border-radius:0; overflow:visible;
+    background:transparent; box-shadow:none;}
+  .cardtop{display:none}
   .flagstrip{display:flex; gap:6px; padding:8px 10px; background:rgba(0,0,0,.22); overflow:hidden}
   .flagstrip.bot{border-top:1px solid var(--line)} .flagstrip.top{border-bottom:1px solid var(--line)}
   .ftrack{display:flex; gap:6px; animation:marq 26s linear infinite}
@@ -568,14 +562,11 @@ function header(){
   const h=$(`<div class="head"></div>`);
   const top=$(`<div class="topbar"></div>`);
   const menu=$(`<button class="icobtn" aria-label="How to play">≡</button>`);
-  const moon=$(`<button class="icobtn" aria-label="Toggle theme">☾</button>`);
   menu.onclick=()=>{S.overlay='rules';render();};
-  moon.onclick=()=>{const d=document.body.classList.toggle('dark');LS.set('bag_dark',d);};
-  top.appendChild(menu); top.appendChild(moon);
+  top.appendChild(menu);
   h.appendChild(top);
   h.appendChild($(`<div class="lockup">${crestSVG()}
     <div class="wordmark"><span class="a">Build a</span> <span class="b">Golfer</span></div></div>`));
-  h.appendChild($(`<a class="gtype" href="https://runthe.gg" target="_blank" rel="noopener">A <b>RunThe.GG</b> Game <span class="ext">↗</span></a>`));
   const pills=$(`<div class="pills"></div>`);
   pills.appendChild($(`<div class="pill">🏌️ Player</div>`));
   const rs=$(`<button class="pill">Reset</button>`); rs.onclick=()=>{ if(S.screen==='title'){reset();render();} else {S.overlay='confirmReset';render();} };
@@ -611,7 +602,7 @@ function render(){
   const sameView=(view===_lastView);
   app.innerHTML='';
   app.appendChild(header());
-  const card=$(`<main class="card"><div class="cardtop"></div></main>`);
+  const card=$(`<main class="card"></main>`);
   const screen=$(`<div class="screen"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
