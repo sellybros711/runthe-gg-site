@@ -266,6 +266,8 @@
   .board.major{border-color:var(--gold); box-shadow:0 0 0 1px rgba(235,166,31,.4)}
 
   .tiles{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0}
+  .tiles.four{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:680px){ .tiles.four{grid-template-columns:1fr 1fr} }
   .tile{background:var(--panel); border:1px solid var(--panelb); border-radius:12px; padding:12px 14px}
   .tile .k{font:800 10px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
   .tile .v{font-family:var(--mono); font-weight:800; font-size:23px; margin-top:6px; color:var(--gold)}
@@ -844,7 +846,7 @@ function render(){
   app.innerHTML='';
   app.appendChild(header());
   const card=$(`<main class="card"></main>`);
-  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build'].includes(S.screen)?' wide':''}"></div>`);
+  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
   app.appendChild(footer());
@@ -1658,7 +1660,7 @@ function scrSummary(){
     const chips=got.map(a=>`<span class="tag" style="color:var(--gold);border-color:var(--gold)">${a.e} ${a.t}</span>`).join(' ');
     add($(`<div class="scout" style="margin:4px 0 12px;text-align:center"><b style="color:var(--gold)">Achievement${got.length>1?'s':''} unlocked</b><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center">${chips}</div></div>`));
   }
-  const tiles=$(`<div class="tiles"></div>`);
+  const tiles=$(`<div class="tiles four"></div>`);
   tiles.appendChild(tile('Money won',fmt(t.money),true));
   tiles.appendChild(tile('Money rank',moneyRank+' / '+N));
   tiles.appendChild(tile('Wins',t.wins+''));
@@ -1668,56 +1670,62 @@ function scrSummary(){
   tiles.appendChild(tile('FedEx points',t.points.toLocaleString()));
   tiles.appendChild(tile('FedEx rank',fedexRank+' / '+N));
   add(tiles);
-  add($(`<h2 style="margin:6px 0 8px">Season money list</h2>`));
+
+  // two columns: money list / career on the left, share + actions on the right
+  const cols=$(`<div class="cols"></div>`);
+  const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
+  cols.appendChild(left); cols.appendChild(right); add(cols);
+
+  left.appendChild($(`<h2 style="margin:2px 0 8px">Season money list</h2>`));
   const board=$(`<div class="board"></div>`);
   byMoney.slice(0,10).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
   if(moneyRank>10){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(byMoney[moneyRank-1],moneyRank,true));}
-  add(board);
+  left.appendChild(board);
   const recapBtn=$(`<button class="btn gold" style="margin-top:10px">Full Season Recap<span class="sub">Every event, leaderboard by leaderboard</span></button>`);
-  recapBtn.onclick=()=>{S.recapEvent=null; S.screen='recap'; render();}; add(recapBtn);
+  recapBtn.onclick=()=>{S.recapEvent=null; S.screen='recap'; render();}; left.appendChild(recapBtn);
   if(!S.daily && S.career && S.career.seasons.length>1){
     const c=S.career, ccol=c.net>=0?'#35d6a0':'#E14A33';
-    add($(`<h2 style="margin:16px 0 8px">Career · ${c.seasons.length} years</h2>`));
+    left.appendChild($(`<h2 style="margin:16px 0 8px">Career · ${c.seasons.length} years</h2>`));
     const ct=$(`<div class="tiles"></div>`);
     ct.appendChild($(`<div class="tile"><div class="k">Career net</div><div class="v" style="color:${ccol}">${fmtSigned(c.net)}</div></div>`));
     ct.appendChild(tile('Career money',fmt(c.money),true));
     ct.appendChild(tile('Career wins',c.wins+''));
     ct.appendChild(tile('Career majors',c.majors+''));
-    add(ct);
+    left.appendChild(ct);
     const yb=$(`<div class="board"></div>`);
     c.seasons.forEach(s=>yb.appendChild($(`<div class="lb" style="grid-template-columns:46px 1fr 96px">
       <span class="pos">Yr ${s.year}</span>
       <span class="pl">${s.wins}W · ${s.majors} maj · best ${bestTxt(s.best)}</span>
       <span class="mny" style="color:${s.net>=0?'#35d6a0':'#E14A33'}">${fmtSigned(s.net)}</span></div>`)));
-    add(yb);
+    left.appendChild(yb);
   }
+
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
   const share=`RUNTHETOUR — ${me.name} (OVR ${ovr})\n${fmt(t.money)} won · Money Rank ${moneyRank}/${N}${wreath}\n${t.wins}W · ${t.majors} majors\nRunThe.GG`;
-  add($(`<div style="height:14px"></div>`));
-  add($(`<h2 style="margin:0 0 8px">Share card</h2>`));
+  right.appendChild($(`<h2 style="margin:2px 0 8px">Share your season</h2>`));
   const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
   const cv=document.createElement('canvas');
-  cv.style.cssText='width:100%;max-width:300px;display:block;margin:0 auto;border-radius:14px;border:1px solid var(--line)';
+  cv.style.cssText='width:100%;max-width:300px;display:block;margin:0 auto 4px;border-radius:14px;border:1px solid var(--line)';
   drawShareCard(cv,{name:me.name,ovr,year:S.year||1,events:S.schedule.length,majors:S.schedule.filter(e=>e.major).length,money:t.money,net:ec.net,moneyRank,N,wins:t.wins,majorsWon:t.majors,best:t.best,fedexRank},vals);
-  add(cv);
+  right.appendChild(cv);
   const row=$(`<div class="mini" style="margin-top:10px"></div>`);
   const dl=$(`<button class="btn gold">⤓ Save Card</button>`);
   const sh=$(`<button class="btn gold">↗ Share</button>`);
   dl.onclick=()=>{track('result_saved');cv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=((me.name||'golfer').replace(/\s+/g,'-'))+'-season.png';a.click();URL.revokeObjectURL(u);});};
   sh.onclick=()=>{track('result_shared');shareCard(cv,share,me.name);};
-  row.appendChild(dl); row.appendChild(sh); add(row);
+  row.appendChild(dl); row.appendChild(sh); right.appendChild(row);
   const cp=$(`<button class="btn ghost" style="margin-top:10px">Copy Text Result</button>`);
   cp.onclick=()=>{track('result_copied');navigator.clipboard?.writeText(share); cp.textContent='Copied ✓'; setTimeout(()=>cp.textContent='Copy Text Result',1400);};
-  add(cp);
-  add($(`<div style="height:14px"></div>`));
+  right.appendChild(cp);
+  right.appendChild($(`<div class="sep" style="margin:16px 0"></div>`));
   if(S.daily){
     const again=$(`<button class="btn red">Build Another Golfer</button>`);
-    again.onclick=()=>{reset();render();}; add(again);
+    again.onclick=()=>{reset();render();}; right.appendChild(again);
   } else {
-    const cont=$(`<button class="btn goldfill">Continue to Year ${(S.year||1)+1} ▸<span class="sub">Same golfer · run another season</span></button>`);
-    cont.onclick=continueFranchise; add(cont);
+    const cont=$(`<button class="btn goldfill">Continue to Year ${(S.year||1)+1} ▸<span class="sub">Off-season tune-up, then a new season</span></button>`);
+    cont.onclick=continueFranchise; right.appendChild(cont);
     const retire=$(`<button class="btn ghost" style="margin-top:10px">Retire — Build New Golfer</button>`);
-    retire.onclick=()=>{reset();render();}; add(retire);
+    retire.onclick=()=>{reset();render();}; right.appendChild(retire);
   }
 }
 function continueFranchise(){
