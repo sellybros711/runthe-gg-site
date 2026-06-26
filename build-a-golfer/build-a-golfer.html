@@ -707,13 +707,31 @@ function simRound(eo,clu,{major,finalRd,courseAdj}){
   if(major&&finalRd) m-=clamp((clu-80)*0.02,-0.4,0.4);
   return m+gauss()*k.sigma;
 }
-/* course fit (§2): per-event skill-weight multipliers, renormalized to 1.0, → event-effective overall */
+/* course fit (§2): skill-weight multipliers, renormalized to 1.0, → event-effective overall.
+   Non-major events use multipliers MEASURED per-course from DataGolf historical SG (course_fit.json,
+   clamp 0.82-1.35); dist & acc share the course's driving multiplier (the distance-vs-accuracy split
+   is the pending DataGolf course-fit "B" refinement). The four majors stay hand-tuned — Augusta and
+   the rotating Open/links venues aren't in the measured set yet (the only remaining gaps). */
 const COURSEFIT={
+  // --- measured from real rounds (course_fit.json) ---
+  "Kapalua Invitational": {dist:0.923,acc:0.923,app:0.82,sht:0.82,scr:0.82,bnk:0.82,put:0.918,clu:1},  // Plantation Course at Kapalua
+  "Phoenix Open": {dist:1.249,acc:1.249,app:0.82,sht:0.987,scr:0.987,bnk:0.987,put:1.014,clu:1},  // TPC Scottsdale
+  "Pebble Beach Pro-Am": {dist:0.82,acc:0.82,app:1.153,sht:1.137,scr:1.137,bnk:1.137,put:1.088,clu:1},  // Pebble Beach GL
+  "Bay Hill Invitational": {dist:1.173,acc:1.173,app:1.206,sht:0.979,scr:0.979,bnk:0.979,put:0.973,clu:1},  // Bay Hill Club & Lodge
+  "The Players": {dist:1.227,acc:1.227,app:1.257,sht:1.13,scr:1.13,bnk:1.13,put:0.995,clu:1},  // TPC Sawgrass
+  "Hilton Head Classic": {dist:0.993,acc:0.993,app:1.179,sht:1.183,scr:1.183,bnk:1.183,put:0.959,clu:1},  // Harbour Town GL
+  "Charlotte Open": {dist:1.2,acc:1.2,app:0.956,sht:1.062,scr:1.062,bnk:1.062,put:1.09,clu:1},  // Quail Hollow Club
+  "Memorial Tournament": {dist:0.872,acc:0.872,app:1.269,sht:1.298,scr:1.298,bnk:1.298,put:1.102,clu:1},  // Muirfield Village GC
+  "Canadian Open": {dist:1.136,acc:1.136,app:1.221,sht:1.147,scr:1.147,bnk:1.147,put:0.986,clu:1},  // Glen Abbey GC
+  "Travelers Championship": {dist:1.243,acc:1.243,app:0.897,sht:1.046,scr:1.046,bnk:1.046,put:0.987,clu:1},  // TPC River Highlands
+  "Wyndham Championship": {dist:1.054,acc:1.054,app:0.82,sht:0.82,scr:0.82,bnk:0.82,put:0.975,clu:1},  // Sedgefield CC
+  "Tour Championship": {dist:0.82,acc:0.82,app:0.861,sht:0.857,scr:0.857,bnk:0.857,put:0.968,clu:1},  // East Lake GC
+  // --- majors: hand-tuned gaps (not yet in the measured set) ---
   'The Masters':      {dist:1.10,acc:0.85,app:1.30,sht:1.25,scr:1.20,bnk:1.10,put:1.20,clu:1.10},
   'U.S. Open':        {dist:0.90,acc:1.40,app:1.20,sht:1.15,scr:1.25,bnk:1.10,put:1.10,clu:1.10},
   'The Open':         {dist:0.95,acc:1.10,app:1.10,sht:1.25,scr:1.35,bnk:1.15,put:1.15,clu:1.15},
   'PGA Championship': {dist:1.10,acc:1.00,app:1.15,sht:1.00,scr:1.00,bnk:1.00,put:1.05,clu:1.05},
-  'The Players':      {dist:1.00,acc:1.20,app:1.20,sht:1.05,scr:1.05,bnk:1.05,put:1.10,clu:1.05},
+  // Scottish Open & 3M Open: not in the measured set -> neutral (eventWeights returns base weights)
 };
 function eventWeights(evt){
   const m=COURSEFIT[evt.name]; if(!m) return CATS;                 // default = neutral base weights

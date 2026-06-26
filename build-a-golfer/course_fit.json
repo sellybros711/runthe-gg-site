@@ -1,0 +1,1365 @@
+{
+ "_note": "Per-course skill multipliers measured from DataGolf historical SG (spread-ratio of each SG category vs tour-wide, gain 2.3, clamp 0.82-1.35). dist & acc share the measured DRIVING multiplier; the distance-vs-accuracy split is a DataGolf course-fit (B) refinement - see driving_split:B and dist_tilt_hint. clu always 1.0. Apply: reweight skills by mult, renormalize to 1.0, feed event-effective overall to sim. Courses not listed (thin/new) -> 1.0 or DataGolf pull.",
+ "courses": {
+  "CC at Mirasol (Sunset)": {
+   "rounds": 425,
+   "mult": {
+    "dist": 1.29,
+    "acc": 1.29,
+    "app": 1.068,
+    "sht": 1.35,
+    "scr": 1.35,
+    "bnk": 1.35,
+    "put": 1.272,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low"
+  },
+  "PGA National (Champion)": {
+   "rounds": 5196,
+   "mult": {
+    "dist": 1.002,
+    "acc": 1.002,
+    "app": 1.276,
+    "sht": 0.978,
+    "scr": 0.978,
+    "bnk": 0.978,
+    "put": 0.964,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.36,
+   "confidence": "high"
+  },
+  "TPC Sawgrass": {
+   "rounds": 6567,
+   "mult": {
+    "dist": 1.227,
+    "acc": 1.227,
+    "app": 1.257,
+    "sht": 1.13,
+    "scr": 1.13,
+    "bnk": 1.13,
+    "put": 0.995,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.37,
+   "confidence": "high"
+  },
+  "Harbour Town GL": {
+   "rounds": 6204,
+   "mult": {
+    "dist": 0.993,
+    "acc": 0.993,
+    "app": 1.179,
+    "sht": 1.183,
+    "scr": 1.183,
+    "bnk": 1.183,
+    "put": 0.959,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.39,
+   "confidence": "high"
+  },
+  "Forest Oaks CC": {
+   "rounds": 1311,
+   "mult": {
+    "dist": 1.035,
+    "acc": 1.035,
+    "app": 0.82,
+    "sht": 0.848,
+    "scr": 0.848,
+    "bnk": 0.848,
+    "put": 0.968,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium"
+  },
+  "Sedgefield CC": {
+   "rounds": 5047,
+   "mult": {
+    "dist": 1.054,
+    "acc": 1.054,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.975,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.36,
+   "confidence": "high"
+  },
+  "Plantation Course at Kapalua": {
+   "rounds": 1709,
+   "mult": {
+    "dist": 0.923,
+    "acc": 0.923,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.918,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.6,
+   "confidence": "medium"
+  },
+  "TPC Four Seasons Resort": {
+   "rounds": 5537,
+   "mult": {
+    "dist": 1.35,
+    "acc": 1.35,
+    "app": 0.894,
+    "sht": 1.042,
+    "scr": 1.042,
+    "bnk": 1.042,
+    "put": 0.979,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.41,
+   "confidence": "high"
+  },
+  "Trinity Forest Golf Club": {
+   "rounds": 460,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.945,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.45,
+   "confidence": "low"
+  },
+  "PGA West (Palmer)": {
+   "rounds": 1933,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.033,
+    "sht": 0.946,
+    "scr": 0.946,
+    "bnk": 0.946,
+    "put": 0.987,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.24,
+   "confidence": "medium"
+  },
+  "The Classic Club": {
+   "rounds": 609,
+   "mult": {
+    "dist": 1.255,
+    "acc": 1.255,
+    "app": 1.053,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.004,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium"
+  },
+  "PGA WEST TPC Stadium Course": {
+   "rounds": 225,
+   "mult": {
+    "dist": 1.237,
+    "acc": 1.237,
+    "app": 1.277,
+    "sht": 0.98,
+    "scr": 0.98,
+    "bnk": 0.98,
+    "put": 0.999,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.38,
+   "confidence": "low"
+  },
+  "Stadium Course": {
+   "rounds": 465,
+   "mult": {
+    "dist": 1.038,
+    "acc": 1.038,
+    "app": 1.278,
+    "sht": 0.958,
+    "scr": 0.958,
+    "bnk": 0.958,
+    "put": 0.82,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.35,
+   "confidence": "low"
+  },
+  "Redstone GC (Fall Creek)": {
+   "rounds": 910,
+   "mult": {
+    "dist": 0.903,
+    "acc": 0.903,
+    "app": 0.872,
+    "sht": 0.951,
+    "scr": 0.951,
+    "bnk": 0.951,
+    "put": 0.923,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium"
+  },
+  "Redstone GC (Tournament)": {
+   "rounds": 3541,
+   "mult": {
+    "dist": 1.35,
+    "acc": 1.35,
+    "app": 1.04,
+    "sht": 0.923,
+    "scr": 0.923,
+    "bnk": 0.923,
+    "put": 0.945,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "high"
+  },
+  "GC of Houston": {
+   "rounds": 2189,
+   "mult": {
+    "dist": 1.35,
+    "acc": 1.35,
+    "app": 0.835,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.93,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.27,
+   "confidence": "high"
+  },
+  "Colonial CC": {
+   "rounds": 5464,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.043,
+    "sht": 0.871,
+    "scr": 0.871,
+    "bnk": 0.871,
+    "put": 0.996,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.37,
+   "confidence": "high"
+  },
+  "Muirfield Village GC": {
+   "rounds": 5678,
+   "mult": {
+    "dist": 0.872,
+    "acc": 0.872,
+    "app": 1.269,
+    "sht": 1.298,
+    "scr": 1.298,
+    "bnk": 1.298,
+    "put": 1.102,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.32,
+   "confidence": "high"
+  },
+  "TPC Southwind": {
+   "rounds": 6849,
+   "mult": {
+    "dist": 1.112,
+    "acc": 1.112,
+    "app": 1.27,
+    "sht": 1.073,
+    "scr": 1.073,
+    "bnk": 1.073,
+    "put": 0.948,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.47,
+   "confidence": "high"
+  },
+  "Erin Hills": {
+   "rounds": 447,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.189,
+    "sht": 1.35,
+    "scr": 1.35,
+    "bnk": 1.35,
+    "put": 1.318,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.82,
+   "confidence": "low"
+  },
+  "Shinnecock Hills GC": {
+   "rounds": 446,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.35,
+    "sht": 1.247,
+    "scr": 1.247,
+    "bnk": 1.247,
+    "put": 1.325,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.59,
+   "confidence": "low"
+  },
+  "Westchester CC": {
+   "rounds": 1819,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 1.35,
+    "scr": 1.35,
+    "bnk": 1.35,
+    "put": 1.182,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium"
+  },
+  "Ridgewood CC": {
+   "rounds": 1588,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 0.955,
+    "scr": 0.955,
+    "bnk": 0.955,
+    "put": 1.034,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.47,
+   "confidence": "medium"
+  },
+  "Liberty National GC": {
+   "rounds": 787,
+   "mult": {
+    "dist": 1.266,
+    "acc": 1.266,
+    "app": 1.142,
+    "sht": 1.088,
+    "scr": 1.088,
+    "bnk": 1.088,
+    "put": 0.986,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium"
+  },
+  "Plainfield CC": {
+   "rounds": 696,
+   "mult": {
+    "dist": 0.944,
+    "acc": 0.944,
+    "app": 0.918,
+    "sht": 0.835,
+    "scr": 0.835,
+    "bnk": 0.835,
+    "put": 0.999,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.52,
+   "confidence": "medium"
+  },
+  "Bethpage State Park (Black)": {
+   "rounds": 788,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.967,
+    "sht": 0.946,
+    "scr": 0.946,
+    "bnk": 0.946,
+    "put": 1.04,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.55,
+   "confidence": "medium"
+  },
+  "Glen Oaks Club": {
+   "rounds": 379,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 0.995,
+    "scr": 0.995,
+    "bnk": 0.995,
+    "put": 0.971,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.57,
+   "confidence": "low"
+  },
+  "Cog Hill G&CC": {
+   "rounds": 2491,
+   "mult": {
+    "dist": 0.903,
+    "acc": 0.903,
+    "app": 1.041,
+    "sht": 0.996,
+    "scr": 0.996,
+    "bnk": 0.996,
+    "put": 0.969,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "high"
+  },
+  "Bellerive CC": {
+   "rounds": 744,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.995,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.941,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.49,
+   "confidence": "medium"
+  },
+  "Crooked Stick GC": {
+   "rounds": 555,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.94,
+    "sht": 0.965,
+    "scr": 0.965,
+    "bnk": 0.965,
+    "put": 0.898,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.44,
+   "confidence": "low"
+  },
+  "Conway Farms GC": {
+   "rounds": 832,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.979,
+    "sht": 0.988,
+    "scr": 0.988,
+    "bnk": 0.988,
+    "put": 0.906,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.29,
+   "confidence": "medium"
+  },
+  "Cherry Hills CC": {
+   "rounds": 269,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.958,
+    "sht": 0.909,
+    "scr": 0.909,
+    "bnk": 0.909,
+    "put": 0.82,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low"
+  },
+  "Aronimink GC": {
+   "rounds": 1041,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.12,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.46,
+   "confidence": "medium"
+  },
+  "TPC Scottsdale": {
+   "rounds": 6153,
+   "mult": {
+    "dist": 1.249,
+    "acc": 1.249,
+    "app": 0.82,
+    "sht": 0.987,
+    "scr": 0.987,
+    "bnk": 0.987,
+    "put": 1.014,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.3,
+   "confidence": "high"
+  },
+  "TPC Deere Run": {
+   "rounds": 6839,
+   "mult": {
+    "dist": 0.925,
+    "acc": 0.925,
+    "app": 0.938,
+    "sht": 0.832,
+    "scr": 0.832,
+    "bnk": 0.832,
+    "put": 0.958,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.45,
+   "confidence": "high"
+  },
+  "Glen Abbey GC": {
+   "rounds": 3666,
+   "mult": {
+    "dist": 1.136,
+    "acc": 1.136,
+    "app": 1.221,
+    "sht": 1.147,
+    "scr": 1.147,
+    "bnk": 1.147,
+    "put": 0.986,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.44,
+   "confidence": "high"
+  },
+  "Shaughnessy G&CC": {
+   "rounds": 915,
+   "mult": {
+    "dist": 1.285,
+    "acc": 1.285,
+    "app": 1.035,
+    "sht": 1.167,
+    "scr": 1.167,
+    "bnk": 1.167,
+    "put": 1.014,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium"
+  },
+  "Hamilton G&CC": {
+   "rounds": 929,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 0.906,
+    "scr": 0.906,
+    "bnk": 0.906,
+    "put": 1.016,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium"
+  },
+  "Angus Glen GC (North)": {
+   "rounds": 462,
+   "mult": {
+    "dist": 1.324,
+    "acc": 1.324,
+    "app": 0.952,
+    "sht": 0.875,
+    "scr": 0.875,
+    "bnk": 0.875,
+    "put": 0.972,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low"
+  },
+  "St. George's G&CC": {
+   "rounds": 462,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.921,
+    "sht": 0.851,
+    "scr": 0.851,
+    "bnk": 0.851,
+    "put": 1.019,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low"
+  },
+  "Royal Montreal GC (Blue)": {
+   "rounds": 455,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.955,
+    "sht": 0.956,
+    "scr": 0.956,
+    "bnk": 0.956,
+    "put": 0.882,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low"
+  },
+  "Valhalla GC": {
+   "rounds": 453,
+   "mult": {
+    "dist": 1.082,
+    "acc": 1.082,
+    "app": 1.123,
+    "sht": 1.184,
+    "scr": 1.184,
+    "bnk": 1.184,
+    "put": 0.884,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low"
+  },
+  "Whistling Straits": {
+   "rounds": 464,
+   "mult": {
+    "dist": 0.981,
+    "acc": 0.981,
+    "app": 1.123,
+    "sht": 1.35,
+    "scr": 1.35,
+    "bnk": 1.35,
+    "put": 1.111,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.52,
+   "confidence": "low"
+  },
+  "Baltusrol GC": {
+   "rounds": 484,
+   "mult": {
+    "dist": 0.859,
+    "acc": 0.859,
+    "app": 0.914,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.873,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.39,
+   "confidence": "low"
+  },
+  "Quail Hollow-PGA Championship": {
+   "rounds": 459,
+   "mult": {
+    "dist": 1.35,
+    "acc": 1.35,
+    "app": 1.103,
+    "sht": 1.35,
+    "scr": 1.35,
+    "bnk": 1.35,
+    "put": 1.049,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.57,
+   "confidence": "low"
+  },
+  "TPC River Highlands": {
+   "rounds": 6911,
+   "mult": {
+    "dist": 1.243,
+    "acc": 1.243,
+    "app": 0.897,
+    "sht": 1.046,
+    "scr": 1.046,
+    "bnk": 1.046,
+    "put": 0.987,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.33,
+   "confidence": "high"
+  },
+  "Torrey Pines GC (South)": {
+   "rounds": 4568,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.008,
+    "sht": 1.081,
+    "scr": 1.081,
+    "bnk": 1.081,
+    "put": 1.069,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.47,
+   "confidence": "high"
+  },
+  "LaCantera GC (Resort)": {
+   "rounds": 2594,
+   "mult": {
+    "dist": 1.312,
+    "acc": 1.312,
+    "app": 0.937,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.024,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "high"
+  },
+  "TPC San Antonio": {
+   "rounds": 1794,
+   "mult": {
+    "dist": 1.104,
+    "acc": 1.104,
+    "app": 1.046,
+    "sht": 1.253,
+    "scr": 1.253,
+    "bnk": 1.253,
+    "put": 0.942,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium"
+  },
+  "JW Marriott TPC San Antonio": {
+   "rounds": 862,
+   "mult": {
+    "dist": 0.955,
+    "acc": 0.955,
+    "app": 0.987,
+    "sht": 1.35,
+    "scr": 1.35,
+    "bnk": 1.35,
+    "put": 1.018,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.34,
+   "confidence": "medium"
+  },
+  "TPC San Antonio - AT&T Oaks": {
+   "rounds": 1381,
+   "mult": {
+    "dist": 1.088,
+    "acc": 1.088,
+    "app": 0.92,
+    "sht": 1.198,
+    "scr": 1.198,
+    "bnk": 1.198,
+    "put": 0.926,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.31,
+   "confidence": "medium"
+  },
+  "Grayhawk GC (Raptor)": {
+   "rounds": 1237,
+   "mult": {
+    "dist": 0.916,
+    "acc": 0.916,
+    "app": 0.973,
+    "sht": 0.984,
+    "scr": 0.984,
+    "bnk": 0.984,
+    "put": 0.985,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium"
+  },
+  "CordeValle GC": {
+   "rounds": 1637,
+   "mult": {
+    "dist": 1.063,
+    "acc": 1.063,
+    "app": 0.919,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.135,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium"
+  },
+  "Silverado CC (North)": {
+   "rounds": 877,
+   "mult": {
+    "dist": 0.86,
+    "acc": 0.86,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.994,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.43,
+   "confidence": "medium"
+  },
+  "Silverado Resort and Spa North": {
+   "rounds": 1312,
+   "mult": {
+    "dist": 0.891,
+    "acc": 0.891,
+    "app": 0.842,
+    "sht": 0.978,
+    "scr": 0.978,
+    "bnk": 0.978,
+    "put": 1.009,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.39,
+   "confidence": "medium"
+  },
+  "TPC Summerlin": {
+   "rounds": 5762,
+   "mult": {
+    "dist": 0.853,
+    "acc": 0.853,
+    "app": 0.967,
+    "sht": 1.062,
+    "scr": 1.062,
+    "bnk": 1.062,
+    "put": 1.047,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.4,
+   "confidence": "high"
+  },
+  "Congressional CC (Blue)": {
+   "rounds": 2668,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.038,
+    "sht": 0.96,
+    "scr": 0.96,
+    "bnk": 0.96,
+    "put": 1.062,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.53,
+   "confidence": "high"
+  },
+  "Robert Trent Jones GC": {
+   "rounds": 390,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.123,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.075,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.4,
+   "confidence": "low"
+  },
+  "TPC Potomac at Avenel Farm": {
+   "rounds": 770,
+   "mult": {
+    "dist": 1.35,
+    "acc": 1.35,
+    "app": 1.059,
+    "sht": 1.043,
+    "scr": 1.043,
+    "bnk": 1.043,
+    "put": 0.82,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.43,
+   "confidence": "medium"
+  },
+  "Mount Juliet": {
+   "rounds": 272,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.937,
+    "sht": 0.892,
+    "scr": 0.892,
+    "bnk": 0.892,
+    "put": 1.08,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low"
+  },
+  "Harding Park GC": {
+   "rounds": 280,
+   "mult": {
+    "dist": 1.036,
+    "acc": 1.036,
+    "app": 0.82,
+    "sht": 1.198,
+    "scr": 1.198,
+    "bnk": 1.198,
+    "put": 1.069,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low"
+  },
+  "The Grove": {
+   "rounds": 242,
+   "mult": {
+    "dist": 1.016,
+    "acc": 1.016,
+    "app": 0.82,
+    "sht": 0.872,
+    "scr": 0.872,
+    "bnk": 0.872,
+    "put": 1.066,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low"
+  },
+  "Doral Golf Resort and Spa": {
+   "rounds": 921,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.018,
+    "sht": 1.119,
+    "scr": 1.119,
+    "bnk": 1.119,
+    "put": 0.953,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium"
+  },
+  "TPC Blue Monster at Doral": {
+   "rounds": 1089,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.08,
+    "sht": 1.005,
+    "scr": 1.005,
+    "bnk": 1.005,
+    "put": 0.895,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium"
+  },
+  "Trump National Doral": {
+   "rounds": 824,
+   "mult": {
+    "dist": 1.35,
+    "acc": 1.35,
+    "app": 1.224,
+    "sht": 1.171,
+    "scr": 1.171,
+    "bnk": 1.171,
+    "put": 0.848,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.44,
+   "confidence": "medium"
+  },
+  "Club de Golf Chapultepec": {
+   "rounds": 560,
+   "mult": {
+    "dist": 1.229,
+    "acc": 1.229,
+    "app": 1.078,
+    "sht": 1.048,
+    "scr": 1.048,
+    "bnk": 1.048,
+    "put": 1.057,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.46,
+   "confidence": "low"
+  },
+  "Westin Innisbrook (Copperhead)": {
+   "rounds": 1205,
+   "mult": {
+    "dist": 0.83,
+    "acc": 0.83,
+    "app": 0.966,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.023,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium"
+  },
+  "Innisbrook Resort (Copperhead)": {
+   "rounds": 5251,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.949,
+    "sht": 0.948,
+    "scr": 0.948,
+    "bnk": 0.948,
+    "put": 0.949,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.34,
+   "confidence": "high"
+  },
+  "Firestone CC (South)": {
+   "rounds": 4508,
+   "mult": {
+    "dist": 0.862,
+    "acc": 0.862,
+    "app": 0.987,
+    "sht": 0.974,
+    "scr": 0.974,
+    "bnk": 0.974,
+    "put": 1.008,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.57,
+   "confidence": "high"
+  },
+  "Quail Hollow Club": {
+   "rounds": 6461,
+   "mult": {
+    "dist": 1.2,
+    "acc": 1.2,
+    "app": 0.956,
+    "sht": 1.062,
+    "scr": 1.062,
+    "bnk": 1.062,
+    "put": 1.09,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.44,
+   "confidence": "high"
+  },
+  "Eagle Point Golf Club": {
+   "rounds": 461,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 1.03,
+    "scr": 1.03,
+    "bnk": 1.03,
+    "put": 1.053,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.46,
+   "confidence": "low"
+  },
+  "The Old White Course": {
+   "rounds": 472,
+   "mult": {
+    "dist": 1.217,
+    "acc": 1.217,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.038,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low"
+  },
+  "The Old White TPC": {
+   "rounds": 3240,
+   "mult": {
+    "dist": 1.169,
+    "acc": 1.169,
+    "app": 0.82,
+    "sht": 0.896,
+    "scr": 0.896,
+    "bnk": 0.896,
+    "put": 0.988,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.38,
+   "confidence": "high"
+  },
+  "Sea Island Resort (Seaside)": {
+   "rounds": 2987,
+   "mult": {
+    "dist": 1.151,
+    "acc": 1.151,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.912,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.25,
+   "confidence": "high"
+  },
+  "Sea Island GC (Seaside)": {
+   "rounds": 311,
+   "mult": {
+    "dist": 1.03,
+    "acc": 1.03,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.961,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.26,
+   "confidence": "low"
+  },
+  "Pebble Beach GL": {
+   "rounds": 3406,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.153,
+    "sht": 1.137,
+    "scr": 1.137,
+    "bnk": 1.137,
+    "put": 1.088,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.27,
+   "confidence": "high"
+  },
+  "TPC Boston": {
+   "rounds": 5595,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.068,
+    "sht": 1.029,
+    "scr": 1.029,
+    "bnk": 1.029,
+    "put": 0.973,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.34,
+   "confidence": "high"
+  },
+  "RTJ Trail (Grand National)": {
+   "rounds": 1251,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.199,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.945,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.49,
+   "confidence": "medium"
+  },
+  "Keene Trace Golf Club": {
+   "rounds": 402,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.16,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.039,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.53,
+   "confidence": "low"
+  },
+  "Annandale GC": {
+   "rounds": 3694,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.021,
+    "sht": 0.86,
+    "scr": 0.86,
+    "bnk": 0.86,
+    "put": 1.026,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "high"
+  },
+  "CC of Jackson": {
+   "rounds": 2041,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 0.884,
+    "scr": 0.884,
+    "bnk": 0.884,
+    "put": 1.027,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.47,
+   "confidence": "high"
+  },
+  "Waialae CC": {
+   "rounds": 6551,
+   "mult": {
+    "dist": 1.044,
+    "acc": 1.044,
+    "app": 0.82,
+    "sht": 0.87,
+    "scr": 0.87,
+    "bnk": 0.87,
+    "put": 0.968,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.57,
+   "confidence": "high"
+  },
+  "East Lake GC": {
+   "rounds": 1767,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.861,
+    "sht": 0.857,
+    "scr": 0.857,
+    "bnk": 0.857,
+    "put": 0.968,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.31,
+   "confidence": "medium"
+  },
+  "Riviera CC": {
+   "rounds": 6381,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.844,
+    "sht": 1.251,
+    "scr": 1.251,
+    "bnk": 1.251,
+    "put": 1.069,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.49,
+   "confidence": "high"
+  },
+  "Bay Hill Club & Lodge": {
+   "rounds": 5805,
+   "mult": {
+    "dist": 1.173,
+    "acc": 1.173,
+    "app": 1.206,
+    "sht": 0.979,
+    "scr": 0.979,
+    "bnk": 0.979,
+    "put": 0.973,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.4,
+   "confidence": "high"
+  }
+ }
+}
