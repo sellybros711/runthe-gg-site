@@ -29,7 +29,7 @@
   :root{
     --cream:#F4E8D6; --peach:#F7DCCC;
     --ink:#0C1B2E; --inkmut:#6b6256;
-    --teal:#0FA888; --gold:#EBA61F; --gold2:#c79320;
+    --teal:#06A291; --gold:#EBA61F; --gold2:#c79320;
     --red:#E14A33; --red2:#b8371f;
     --cardA:#0d2740; --cardB:#0a1a2c;
     --board:rgba(255,255,255,.035); --oncard:#F4E3C9; --muted:#88a397;
@@ -1403,7 +1403,7 @@ function drawShareCard(cv,info,vals){
   [0.25,0.5,0.75,1].forEach(f=>{ctx.beginPath();for(let i=0;i<n;i++){const[x,y]=pt(i,R*f);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.stroke();});
   for(let i=0;i<n;i++){const[x,y]=pt(i,R);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();}
   ctx.beginPath(); vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100));i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.closePath();
-  ctx.fillStyle='rgba(15,168,136,.34)'; ctx.fill(); ctx.strokeStyle='#19c6a6'; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.fillStyle='rgba(6,162,145,.34)'; ctx.fill(); ctx.strokeStyle='#06A291'; ctx.lineWidth=2.5; ctx.stroke();
   ctx.fillStyle='#e7b84e'; vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100)); ctx.beginPath(); ctx.arc(x,y,3.6,0,7); ctx.fill();});
   ctx.fillStyle='#9cbfa8'; ctx.font='700 12px system-ui,sans-serif';
   RLABS.forEach((L,i)=>{const[x,y]=pt(i,R+17); ctx.fillText(L,x,y+4);});
