@@ -542,6 +542,29 @@ allows Google Fonts, or self-host Anton.*
   avg −10.3, regular −16 (within spec targets), Oakmont the toughest major. Calibration
   (BASE/SIGMA) untouched — course fit only redistributes per-event weighting.
 
+- 2026-06-26: UX batch + avatar reload + career share image.
+  - **Quick fixes:** removed "· free play" from the title CTA; stripped the ⛳
+    emoji from the Spin / How-to-Play buttons; renamed user-facing "FedEx
+    points/rank" → **Tour Points / Tour Rank** (no FedEx wording anywhere).
+  - **Auto-spin draft:** taking a skill now immediately reveals the next golfer
+    (`takeAttr` calls `reveal()` when slots remain) — no second click per pick.
+  - **Year-over-year skill deltas:** summary shows a "Skill changes vs Year N"
+    tile strip (green ▲ / red ▼ / muted ·0) from a per-year per-skill snapshot
+    stored in `S.career.skillSeasons`.
+  - **Avatar fully reloaded (owner picked head-and-shoulders portrait):**
+    `golferSVG()` is now a semi-realistic circular bust — polo shoulders+collar,
+    neck, shaded face, almond eyes (iris/pupil/catchlight), brows, nose, mouth,
+    ears, and a polo-matched cap or hair. Recolors from skin/shirt/hair/gender/
+    cap. Pants & handedness no longer apply to a portrait → customizer swaps
+    those rows for a **Hair** palette (`HAIRS`) and a **Cap on/off** toggle.
+    `.golferfig` is now a 96px square medallion (168px on setup). Unique clip
+    ids via `_figN` counter (no Math.random → daily-seed safe).
+  - **Career share image:** `drawCareerCard()` renders a CAREER card (radar +
+    net worth + earnings/seasons/wins/majors); career block now has Save / Share
+    Career (image+text) / Copy. `shareCard()` took an optional filename suffix.
+  - All verified headless (setup, build hero, summary deltas, career card) with
+    zero page errors; committed on the dev branch.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
