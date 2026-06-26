@@ -844,7 +844,7 @@ function render(){
   app.innerHTML='';
   app.appendChild(header());
   const card=$(`<main class="card"></main>`);
-  const screen=$(`<div class="screen${['title','draft','season','setup'].includes(S.screen)?' wide':''}"></div>`);
+  const screen=$(`<div class="screen${['title','draft','season','setup','offseason'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
   app.appendChild(footer());
@@ -855,7 +855,7 @@ function render(){
   if(S.overlay==='confirmReset') overlayConfirmReset(screen);
   if(S.overlay==='about') overlayAbout(screen);
   if(S.overlay==='privacy') overlayPrivacy(screen);
-  ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,season:scrSeason,summary:scrSummary,recap:scrRecap})[S.screen]();
+  ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap})[S.screen]();
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
   _lastView=view;
   // keep your place when re-rendering the same view (e.g. picking customization swatches);
@@ -1718,8 +1718,63 @@ function scrSummary(){
 }
 function continueFranchise(){
   S.year=(S.year||1)+1;
-  S.schedule=[]; S.evtIndex=0; S.season=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false;
-  startSeason(false);
+  S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false;
+  // off-season tune-up: re-spin up to 3 skills, 2 passes, must change at least one
+  S.offseason={changes:0,maxChanges:3,reSpins:2}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
+  track('offseason_start',{year:S.year});
+  S.screen='offseason'; render();
+}
+function finishOffseason(){ track('offseason_done',{changes:S.offseason.changes}); startSeason(false); }
+function offSpin(){ if(S.current||S.spinning)return; reveal(); }
+function offReSpin(){ if(S.offseason.reSpins<=0)return; S.offseason.reSpins--; track('offseason_respin'); reveal(); }
+function offTake(k){ S.slots[k]={golfer:S.current.name,value:S.current[k]}; S.offseason.changes++; S.current=null; track('offseason_swap',{slot:k}); render(); }
+function scrOffseason(){
+  const os=S.offseason||{changes:0,maxChanges:3,reSpins:2};
+  add($(`<div class="center"><span class="tag">Off-Season · Year ${S.year} prep</span></div>`));
+  add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tune your game</h1>`));
+  add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag. Make up to <b>3 changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b> to pass — you must change <b>at least one</b> rating, even if it's worse.</p>`));
+  const cols=$(`<div class="cols"></div>`);
+  const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
+  cols.appendChild(left); cols.appendChild(right); add(cols);
+  const pips=Array.from({length:os.maxChanges},(_,i)=>`<span class="pip ${i<os.changes?'on':''}"></span>`).join('');
+  left.appendChild($(`<div class="draftbar"><div><h2 style="margin:0">Changes</h2><div class="pips">${pips}</div></div>
+    <div class="spins"><span style="color:var(--gold)">${os.reSpins}</span> <span class="muted small">re-spins</span></div></div>`));
+  if(S.current||S.spinning){
+    const g=S.current; const rar=(g&&!S.spinning)?g.rarity:null;
+    const RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
+    const rarCls=rar?('rar-'+rar.toLowerCase()):''; const tag=rar?RTAG[rar]:'';
+    const sub=g&&!S.spinning?[g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · '):'';
+    left.appendChild($(`<div class="reel ${S.spinning?'spinning':''} ${rarCls} ${g&&!S.spinning?'landed':''}">
+      ${tag?`<div class="reeltag">${tag}</div>`:''}<div class="name">${g?g.name:'…'}</div><div class="sub">${sub}</div></div>`));
+  }
+  if(S.current&&!S.spinning){
+    left.appendChild($(`<div class="small muted" style="margin:10px 0 -2px;text-align:center">Tap a skill to swap it in — green is an upgrade, red a downgrade</div>`));
+    const grid=$(`<div class="attrs"></div>`);
+    CATS.forEach(cat=>{
+      const cur=S.slots[cat.k]?S.slots[cat.k].value:REPLACEMENT; const nv=S.current[cat.k]; const d=nv-cur;
+      const dcol=d>0?'#35d6a0':(d<0?'#e07a5f':'var(--muted)');
+      const bt=$(`<button class="attr" aria-label="Swap ${cat.short} to ${nv}, ${d>=0?'up':'down'} ${Math.abs(d)}">
+        <span class="lab">${cat.short}</span><span class="val">${nv}</span>
+        <span class="take" style="background:none;padding:0 0 0 2px;color:${dcol};font-family:var(--mono);font-weight:800;font-size:13px">${d>0?'▲+':(d<0?'▼':'·')}${d!==0?Math.abs(d):''}</span></button>`);
+      bt.onclick=()=>offTake(cat.k); grid.appendChild(bt);
+    });
+    left.appendChild(grid);
+    if(os.reSpins>0){ const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${os.reSpins} left</button>`); re.onclick=offReSpin; left.appendChild(re); }
+    else left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left — take one of ${S.current.name}'s skills.</div>`));
+  } else if(!S.spinning){
+    if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel</button>`); spin.onclick=offSpin; left.appendChild(spin); }
+    else left.appendChild($(`<div class="small muted center" style="padding:10px 0">All 3 changes used.</div>`));
+    const cont=$(`<button class="btn ${os.changes>=1?'goldfill':'ghost'}" ${os.changes>=1?'':'disabled'} style="margin-top:10px">Start Year ${S.year} ▸${os.changes>=1?'<span class="sub">Run the new season</span>':''}</button>`);
+    if(os.changes>=1) cont.onclick=finishOffseason;
+    left.appendChild(cont);
+    if(os.changes<1) left.appendChild($(`<div class="small muted center" style="margin-top:8px">Make at least one change to continue.</div>`));
+  }
+  right.appendChild(buildHero());
+  right.appendChild($(`<h2 style="margin:6px 0 8px">Your golfer</h2>`));
+  const card=$(`<div class="card-grid"></div>`);
+  CATS.forEach(cat=>{ const f=S.slots[cat.k];
+    card.appendChild($(`<div class="slot ${f?'':'empty'}"><span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'—'}</span><span class="v">${f?f.value:'··'}</span></div>`)); });
+  right.appendChild(card);
 }
 /* ---------- season recap ---------- */
 function scrRecap(){
