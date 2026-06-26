@@ -24,7 +24,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Cinzel:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --cream:#F4E8D6; --peach:#F7DCCC;
@@ -776,7 +776,7 @@ function resetIcon(){return `<svg viewBox="0 0 24 24" fill="none" stroke="curren
 function header(){
   const h=$(`<div class="head"></div>`);
   const top=$(`<div class="topbar"></div>`);
-  const menu=$(`<button class="icobtn" aria-label="How to play">≡</button>`);
+  const menu=$(`<button class="icobtn" aria-label="How to play" aria-haspopup="dialog" aria-expanded="${S.overlay==='rules'?'true':'false'}">≡</button>`);
   menu.onclick=()=>{S.overlay='rules';render();};
   top.appendChild(menu);
   h.appendChild(top);
@@ -806,9 +806,9 @@ function footer(){
   const mk=(t,fn)=>{const s=$(`<span style="cursor:pointer">${t}</span>`); s.onclick=fn; return s;};
   links.appendChild(mk('Home',()=>{S.overlay=null;S.screen='title';render();}));
   links.appendChild($(`<span>·</span>`));
-  links.appendChild(mk('About',()=>toast('RunTheTour — a RunThe.GG game, in development.')));
+  links.appendChild(mk('About',()=>{S.overlay='about';render();}));
   links.appendChild($(`<span>·</span>`));
-  links.appendChild(mk('Privacy',()=>toast('No accounts, no tracking — your record stays on this device.')));
+  links.appendChild(mk('Privacy',()=>{S.overlay='privacy';render();}));
   links.appendChild($(`<span>·</span>`));
   links.appendChild($(`<a href="${mail}" style="color:inherit;text-decoration:none;cursor:pointer">Contact</a>`));
   f.appendChild(links);
@@ -832,6 +832,8 @@ function render(){
   if(S.overlay==='record') overlayRecord(screen);
   if(S.overlay==='dailydone') overlayDailyDone(screen);
   if(S.overlay==='confirmReset') overlayConfirmReset(screen);
+  if(S.overlay==='about') overlayAbout(screen);
+  if(S.overlay==='privacy') overlayPrivacy(screen);
   ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,season:scrSeason,summary:scrSummary,recap:scrRecap})[S.screen]();
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
   _lastView=view;
@@ -840,7 +842,7 @@ function render(){
   window.scrollTo({top: sameView ? savedY : 0});
 }
 function overlayRules(screen){
-  const ov=$(`<div class="ov">
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>How to play</h3>
     <ol>
@@ -868,7 +870,7 @@ function overlayRecord(screen){
   const badgeGrid=ACHS.map(a=>{const on=!!badges[a.id]; return `<div style="display:flex;align-items:center;gap:8px;background:#0a2740;border:1px solid var(--line);border-radius:11px;padding:9px 10px;opacity:${on?1:.38}">
       <span style="font-size:20px;filter:${on?'none':'grayscale(1)'}">${a.e}</span>
       <span style="min-width:0"><div style="font-weight:800;font-size:12.5px;color:var(--oncard)">${a.t}</div><div class="small muted" style="font-size:10.5px;line-height:1.25">${a.d}</div></span></div>`;}).join('');
-  const ov=$(`<div class="ov">
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Your Record</h3>
     <div class="sbar" style="margin-bottom:14px">
@@ -889,7 +891,7 @@ function overlayRecord(screen){
   screen.appendChild(ov);
 }
 function overlayConfirmReset(screen){
-  const ov=$(`<div class="ov">
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Start over?</h3>
     <p class="lede">This clears your current golfer and season. Your record and Hall of Fame are kept.</p>
@@ -912,7 +914,7 @@ function overlayDailyDone(screen){
     </div>
     <div class="small muted center" style="margin-top:2px">${r.name||'Your Golfer'} · OVR ${r.ovr}</div>`
    :`<p class="lede">You've already played today. Come back at midnight UTC for a fresh wheel.</p>`;
-  const ov=$(`<div class="ov">
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Daily Challenge</h3>
     ${body}
@@ -920,6 +922,35 @@ function overlayDailyDone(screen){
     <button class="btn red">Close</button></div>`);
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  screen.appendChild(ov);
+}
+function overlayAbout(screen){
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="About RunTheTour">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>About</h3>
+    <p class="lede"><b style="color:var(--oncard)">RunTheTour</b> is a free golf game from <b style="color:var(--teal)">RunThe.GG</b> — sibling to RunThePitch. Spin a wheel of real golfers, draft one skill from each to build your own, then run a full PGA season and see how you finish.</p>
+    <p class="lede">It's in active development — new features are landing regularly. Got an idea or a bug? We'd love to hear it.</p>
+    <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour — Feedback')}" style="text-decoration:none;display:block">✉ Send Feedback</a>
+    <div style="height:10px"></div>
+    <button class="btn red">Close</button></div>`);
+  ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
+  screen.appendChild(ov);
+}
+function overlayPrivacy(screen){
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Privacy">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Privacy</h3>
+    <p class="lede">RunTheTour is built to be private by default.</p>
+    <ol style="color:#dbe6ee;padding-left:18px">
+      <li><b>No accounts.</b> There's nothing to sign up for.</li>
+      <li><b>Your data stays on your device.</b> Your golfer, look, record, and daily streak are saved only in this browser (localStorage). We can't see them, and they never leave your device.</li>
+      <li><b>Clear it anytime.</b> Use Reset, or clear this site's browser data, to wipe everything.</li>
+      <li><b>No third-party tracking or ads</b> are loaded in this build. If that ever changes, this page will be updated first and say exactly what's collected.</li>
+    </ol>
+    <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour — Privacy question')}" style="text-decoration:none;display:block">✉ Privacy Question</a>
+    <div style="height:10px"></div>
+    <button class="btn red">Close</button></div>`);
+  ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
   screen.appendChild(ov);
 }
 
