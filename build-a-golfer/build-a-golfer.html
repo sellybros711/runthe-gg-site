@@ -330,7 +330,7 @@ const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.par
    daily_started/completed, result_shared/saved/copied. */
 function track(ev,props){try{(window.dataLayer=window.dataLayer||[]).push(Object.assign({event:'rtt_'+ev},props||{}));
   window.dispatchEvent(new CustomEvent('rtt:'+ev,{detail:props||{}}));}catch(e){}}
-function career(){return LS.get('bag_career',{builds:0,bestMoney:0,bestNet:null,bestOvr:0,wins:0,majors:0,hof:[],badges:{}});}
+function career(){return LS.get('bag_career',{builds:0,bestMoney:0,bestNet:null,bestOvr:0,wins:0,majors:0,totalMoney:0,totalNet:0,hof:[],badges:{}});}
 /* expenses: caddie 10% + agent 8% of winnings, ~$20k travel/event, plus ~$2.6M/yr of fixed
    tour costs (coach, equipment, taxes, team). Fixed cost is prorated by events played so the
    running in-season net stays sensible. Tuned via Monte Carlo so a weak build can finish red. */
@@ -355,6 +355,7 @@ function evalAchievements(ctx){return ACHS.filter(a=>a.f(ctx)).map(a=>a.id);}
 function recordSeason(o){
   const c=career(); c.badges=c.badges||{};
   c.builds++; c.wins+=o.wins; c.majors+=o.majorsWon;
+  c.totalMoney=(c.totalMoney||0)+o.money; c.totalNet=(c.totalNet||0)+o.net;
   if(o.money>c.bestMoney)c.bestMoney=o.money;
   if(c.bestNet==null||o.net>c.bestNet)c.bestNet=o.net;
   if(o.ovr>c.bestOvr)c.bestOvr=o.ovr;
@@ -889,6 +890,7 @@ function render(){
   RT=screen;
   if(S.overlay==='rules') overlayRules(screen);
   if(S.overlay==='record') overlayRecord(screen);
+  if(S.overlay==='leaderboard') overlayLeaderboard(screen);
   if(S.overlay==='dailydone') overlayDailyDone(screen);
   if(S.overlay==='confirmReset') overlayConfirmReset(screen);
   if(S.overlay==='about') overlayAbout(screen);
@@ -939,7 +941,10 @@ function overlayRecord(screen){
       <span style="min-width:0"><div style="font-weight:800;font-size:12.5px;color:var(--oncard)">${a.t}</div><div class="small muted" style="font-size:10.5px;line-height:1.25">${a.d}</div></span></div>`;}).join('');
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
-    <h3>Your Record</h3>
+    <h3>Player</h3>
+    <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">
+      <div><b style="color:var(--oncard)">Guest</b><div class="small muted" style="margin-top:2px">Your record lives on this device. Sign in to sync &amp; hit the global board.</div></div>
+      <button class="btn gold acct" disabled style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap;opacity:.6">Sign in · soon</button></div>
     <div class="sbar" style="margin-bottom:14px">
       <div class="sstat wide"><div class="k">Best net profit</div><div class="v" style="color:${(c.bestNet??0)>=0?'#35d6a0':'#E14A33'};font-size:22px">${c.bestNet==null?'—':fmtSigned(c.bestNet)}</div></div>
       <div class="sstat"><div class="k">Best earned</div><div class="v gold">${fmt(c.bestMoney)}</div></div>
@@ -955,6 +960,41 @@ function overlayRecord(screen){
     <button class="btn red">Close</button></div>`);
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  screen.appendChild(ov);
+}
+function overlayLeaderboard(screen){
+  const c=career();
+  const tab=S.lbTab||'season';
+  const youName=(c.hof[0]&&c.hof[0].name)||S.name||'You';
+  const lbRowHTML=(pos,name,sub,val)=>`<div class="lb ${name===youName?'you':''}" style="grid-template-columns:34px 1fr auto">
+      <span class="pos">${pos===1?'🏆':pos}</span>
+      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>${sub?`<div class="small muted" style="font-size:10.5px">${sub}</div>`:''}</span>
+      <span class="mny" style="color:var(--gold)">${fmt(val)}</span></div>`;
+  let board;
+  if(tab==='season'){
+    board = c.hof.length
+      ? [...c.hof].sort((a,b)=>b.money-a.money).map((h,i)=>lbRowHTML(i+1,h.name||'Your Golfer','OVR '+h.ovr,h.money)).join('')
+      : `<div class="small muted center" style="padding:18px 8px">Run a season to post a single-season earnings score.</div>`;
+  } else {
+    board = c.totalMoney>0
+      ? lbRowHTML(1, youName, c.builds+' season'+(c.builds>1?'s':'')+' · '+c.wins+'W', c.totalMoney)
+      : `<div class="small muted center" style="padding:18px 8px">Play a season to start banking career earnings.</div>`;
+  }
+  const seg=(id,lab)=>`<button class="btn ${tab===id?'gold':'ghost'} lbtab" data-tab="${id}" style="font-size:12px;padding:8px 12px;width:auto">${lab}</button>`;
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Leaderboard">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>🏆 Leaderboard</h3>
+    <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">
+      <div><b style="color:var(--gold)">Global leaderboards are coming soon</b><div class="small muted" style="margin-top:2px">Sign in with your RunThe.GG account to put your tour on the public board. For now this shows your own results.</div></div>
+      <button class="btn gold" disabled style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap;opacity:.6">Sign in · soon</button></div>
+    <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px">${seg('season','Single Season')}${seg('career','Career')}</div>
+    <h2 style="margin:0 0 8px">${tab==='season'?'Single-season earnings':'Career earnings'}</h2>
+    <div class="board">${board}</div>
+    <div style="height:14px"></div>
+    <button class="btn red">Close</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  ov.querySelectorAll('.lbtab').forEach(b=>b.onclick=()=>{S.lbTab=b.dataset.tab;render();});
   screen.appendChild(ov);
 }
 function overlayConfirmReset(screen){
@@ -1097,9 +1137,9 @@ function scrTitle(){
   w.appendChild(stack);
   const mini=$(`<div class="mini"></div>`);
   const how=$(`<button class="btn gold">How to Play</button>`);
-  const lb=$(`<button class="btn gold">🏆 Your Record</button>`);
+  const lb=$(`<button class="btn gold">🏆 Leaderboard</button>`);
   how.onclick=()=>{S.overlay='rules';render();};
-  lb.onclick=()=>{S.overlay='record';render();};
+  lb.onclick=()=>{S.overlay='leaderboard';render();};
   mini.appendChild(how); mini.appendChild(lb);
   w.appendChild(mini);
   add(w);
@@ -1335,7 +1375,7 @@ function scrDraft(){
     }
   } else if(!S.spinning){
     const left2go=8-filledCount();
-    const spin=$(`<button class="btn teal" style="font-size:24px;padding:19px">Spin the Wheel<span class="sub">${filledCount()===0?'Reveal a golfer · free':left2go+' slot'+(left2go>1?'s':'')+' to fill · free'}</span></button>`);
+    const spin=$(`<button class="btn teal" style="font-size:24px;padding:19px">Spin the Wheel<span class="sub">${filledCount()===0?'Reveal a golfer':left2go+' slot'+(left2go>1?'s':'')+' to fill'}</span></button>`);
     spin.onclick=spin_; left.appendChild(spin);
     const how=$(`<button class="btn ghost" style="margin-top:10px;font-size:12px;padding:9px">How to play · pull odds</button>`);
     how.onclick=()=>{S.overlay='rules';render();};
@@ -1941,7 +1981,7 @@ function scrOffseason(){
   const os=S.offseason||{changes:0,maxChanges:3,reSpins:2};
   add($(`<div class="center"><span class="tag">Off-Season · Year ${S.year} prep</span></div>`));
   add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tune your game</h1>`));
-  add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag. Make up to <b>3 changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b> to pass — you must change <b>at least one</b> rating, even if it's worse.</p>`));
+  add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag — up to <b>3 changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. Keep your bag as-is, or spin to improve it — but once you spin, you must take a skill before moving on.</p>`));
   const cols=$(`<div class="cols"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
   cols.appendChild(left); cols.appendChild(right); add(cols);
@@ -1973,10 +2013,9 @@ function scrOffseason(){
   } else if(!S.spinning){
     if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel</button>`); spin.onclick=offSpin; left.appendChild(spin); }
     else left.appendChild($(`<div class="small muted center" style="padding:10px 0">All 3 changes used.</div>`));
-    const cont=$(`<button class="btn ${os.changes>=1?'goldfill':'ghost'}" ${os.changes>=1?'':'disabled'} style="margin-top:10px">Start Year ${S.year} ▸${os.changes>=1?'<span class="sub">Run the new season</span>':''}</button>`);
-    if(os.changes>=1) cont.onclick=finishOffseason;
+    const cont=$(`<button class="btn goldfill" style="margin-top:10px">Start Year ${S.year} ▸<span class="sub">${os.changes>0?'Run the new season':'Keep your bag — run it as-is'}</span></button>`);
+    cont.onclick=finishOffseason;
     left.appendChild(cont);
-    if(os.changes<1) left.appendChild($(`<div class="small muted center" style="margin-top:8px">Make at least one change to continue.</div>`));
   }
   right.appendChild(buildHero());
   right.appendChild($(`<h2 style="margin:6px 0 8px">Your golfer</h2>`));
