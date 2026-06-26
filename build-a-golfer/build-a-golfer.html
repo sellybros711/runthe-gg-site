@@ -230,21 +230,40 @@ let rollTimer=null;
 let seasonTimer=null;
 const add=(el)=>RT.appendChild(el);
 const fmt=(n)=>'$'+Math.round(n).toLocaleString('en-US');
+const fmtSigned=(n)=>(n<0?'−':'')+'$'+Math.round(Math.abs(n)).toLocaleString('en-US');
 const par=(s)=>s===0?'E':(s>0?'+'+s:''+s);
 const ord=(n)=>{const v=n%100; if(v>=11&&v<=13)return n+'th'; return n+({1:'st',2:'nd',3:'rd'}[n%10]||'th');};
 
 /* ---------- persistence / career ---------- */
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
           set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
-function career(){return LS.get('bag_career',{builds:0,bestMoney:0,bestOvr:0,wins:0,majors:0,hof:[]});}
+function career(){return LS.get('bag_career',{builds:0,bestMoney:0,bestNet:null,bestOvr:0,wins:0,majors:0,hof:[],badges:{}});}
+/* expenses: caddie 10% of winnings + ~$8k travel per event entered (tuning knob) */
+const COSTS={caddiePct:0.10, travelPerEvent:8000};
+function seasonNet(t){const gross=t.money, caddie=gross*COSTS.caddiePct, travel=t.played*COSTS.travelPerEvent, costs=caddie+travel; return {gross,caddie,travel,costs,net:gross-costs};}
+/* local achievements — computed from a finished season */
+const ACHS=[
+  {id:'win',  e:'🏆', t:'First Win',        d:'Win any event',                     f:c=>c.wins>=1},
+  {id:'major',e:'⛳', t:'Major Champion',    d:'Win a major championship',          f:c=>c.majorsWon>=1},
+  {id:'slam', e:'👑', t:'Grand Slam',        d:'Win all 4 majors in one season',    f:c=>c.majorsWon>=4},
+  {id:'iron', e:'🪨', t:'Iron Man',          d:'Make every cut in a season',        f:c=>c.played>0&&c.made===c.played},
+  {id:'black',e:'💰', t:'In the Black',      d:'Finish the season in profit',       f:c=>c.net>0},
+  {id:'mil',  e:'💎', t:'Millionaire',       d:'Earn $1,000,000+ in a season',      f:c=>c.gross>=1e6},
+  {id:'rich', e:'🥇', t:'Money Leader',      d:'Finish #1 on the season money list',f:c=>c.moneyRank===1},
+  {id:'under',e:'🐍', t:'Against the Odds',  d:'Turn a profit with a sub-80 build', f:c=>c.net>0&&c.ovr<80},
+];
+function evalAchievements(ctx){return ACHS.filter(a=>a.f(ctx)).map(a=>a.id);}
 function recordSeason(o){
-  const c=career();
-  c.builds++; c.wins+=o.wins; c.majors+=o.majors;
+  const c=career(); c.badges=c.badges||{};
+  c.builds++; c.wins+=o.wins; c.majors+=o.majorsWon;
   if(o.money>c.bestMoney)c.bestMoney=o.money;
+  if(c.bestNet==null||o.net>c.bestNet)c.bestNet=o.net;
   if(o.ovr>c.bestOvr)c.bestOvr=o.ovr;
-  c.hof.push({name:o.name,ovr:o.ovr,money:o.money,wins:o.wins,majors:o.majors,best:o.best});
-  c.hof.sort((a,b)=>b.money-a.money); c.hof=c.hof.slice(0,5);
-  LS.set('bag_career',c); return c;
+  c.hof.push({name:o.name,ovr:o.ovr,money:o.money,net:o.net,wins:o.wins,majors:o.majorsWon,best:o.best});
+  c.hof.sort((a,b)=>b.net-a.net); c.hof=c.hof.slice(0,5);
+  const earned=evalAchievements(o); const fresh=earned.filter(id=>!c.badges[id]);
+  earned.forEach(id=>c.badges[id]=true);
+  LS.set('bag_career',c); return {career:c,fresh};
 }
 let deferredInstall=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;});
@@ -446,24 +465,30 @@ function overlayRules(screen){
   screen.appendChild(ov);
 }
 function overlayRecord(screen){
-  const c=career();
-  const rows=c.hof.length? c.hof.map((h,i)=>`<div class="lb" style="grid-template-columns:28px 1fr 70px 92px">
+  const c=career(); const badges=c.badges||{};
+  const rows=c.hof.length? c.hof.map((h,i)=>`<div class="lb" style="grid-template-columns:28px 1fr 60px 96px">
       <span class="pos">${i===0?'🏆':i+1}</span><span class="pl">${h.name||'Your Golfer'}</span>
       <span class="sc" style="color:#bfe7df">OVR ${h.ovr}</span>
-      <span class="mny" style="color:var(--gold)">${fmt(h.money)}</span></div>`).join('')
+      <span class="mny" style="color:${(h.net??h.money)>=0?'#35d6a0':'#E14A33'}">${fmtSigned(h.net??h.money)}</span></div>`).join('')
     : `<div class="small muted center" style="padding:20px 8px">No seasons yet — build a golfer and run a season to start your record.</div>`;
+  const earnedCount=ACHS.filter(a=>badges[a.id]).length;
+  const badgeGrid=ACHS.map(a=>{const on=!!badges[a.id]; return `<div style="display:flex;align-items:center;gap:8px;background:#0a2740;border:1px solid var(--line);border-radius:11px;padding:9px 10px;opacity:${on?1:.38}">
+      <span style="font-size:20px;filter:${on?'none':'grayscale(1)'}">${a.e}</span>
+      <span style="min-width:0"><div style="font-weight:800;font-size:12.5px;color:var(--oncard)">${a.t}</div><div class="small muted" style="font-size:10.5px;line-height:1.25">${a.d}</div></span></div>`;}).join('');
   const ov=$(`<div class="ov">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Your Record</h3>
     <div class="sbar" style="margin-bottom:14px">
-      <div class="sstat wide"><div class="k">Best season earnings</div><div class="v gold">${fmt(c.bestMoney)}</div></div>
+      <div class="sstat wide"><div class="k">Best net profit</div><div class="v" style="color:${(c.bestNet??0)>=0?'#35d6a0':'#E14A33'};font-size:22px">${c.bestNet==null?'—':fmtSigned(c.bestNet)}</div></div>
+      <div class="sstat"><div class="k">Best earned</div><div class="v gold">${fmt(c.bestMoney)}</div></div>
       <div class="sstat"><div class="k">Builds</div><div class="v">${c.builds}</div></div>
       <div class="sstat"><div class="k">Best OVR</div><div class="v">${c.bestOvr||'—'}</div></div>
-      <div class="sstat"><div class="k">Career wins</div><div class="v">${c.wins}</div></div>
-      <div class="sstat"><div class="k">Majors</div><div class="v">${c.majors}</div></div>
+      <div class="sstat"><div class="k">Wins</div><div class="v">${c.wins}</div></div>
     </div>
-    <h2 style="margin:0 0 8px">Hall of Fame · your top earners</h2>
+    <h2 style="margin:0 0 8px">Hall of Fame · your top builds</h2>
     <div class="board">${rows}</div>
+    <h2 style="margin:16px 0 8px">Achievements · ${earnedCount}/${ACHS.length}</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">${badgeGrid}</div>
     <div style="height:14px"></div>
     <button class="btn red">Close</button></div>`);
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
@@ -739,8 +764,12 @@ function scrSeason(){
   // persistent season standings
   const avg=t.played?ord(Math.round(t.finishSum/t.played)):'—';
   const high=t.best===99?'—':ord(t.best);
+  const ec=seasonNet(t);
+  const netCol=ec.net>=0?'#35d6a0':'#E14A33';
   add($(`<div class="sbar">
-    <div class="sstat wide"><div class="k">Season earnings</div><div class="v gold">${fmt(t.money)}</div></div>
+    <div class="sstat wide"><div class="k">Net profit</div>
+      <div class="v" style="color:${netCol};font-size:22px">${fmtSigned(ec.net)}</div>
+      <div class="k" style="margin-top:3px;text-transform:none;letter-spacing:0">${fmt(ec.gross)} won · −${fmt(ec.costs)} costs</div></div>
     <div class="sstat"><div class="k">Avg finish</div><div class="v">${avg}</div></div>
     <div class="sstat"><div class="k">Events</div><div class="v">${t.played}</div></div>
     <div class="sstat"><div class="k">Cuts made</div><div class="v">${t.made}/${t.played}</div></div>
@@ -816,9 +845,11 @@ function drawShareCard(cv,info,vals){
   RLABS.forEach((L,i)=>{const[x,y]=pt(i,R+17); ctx.fillText(L,x,y+4);});
   // name + ovr
   ctx.fillStyle='#F4E3C9'; ctx.font='800 34px Impact,system-ui,sans-serif';
-  ctx.fillText((info.name||'Your Golfer').toUpperCase(),W/2,400);
+  ctx.fillText((info.name||'Your Golfer').toUpperCase(),W/2,392);
   ctx.fillStyle='#9fb0bd'; ctx.font='700 14px system-ui,sans-serif';
-  ctx.fillText(`OVR ${info.ovr}  ·  ${info.events} EVENTS  ·  ${info.majors} MAJORS`,W/2,424);
+  ctx.fillText(`OVR ${info.ovr}  ·  ${info.events} EVENTS  ·  ${info.majors} MAJORS`,W/2,414);
+  ctx.fillStyle=info.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 22px Impact,system-ui,sans-serif';
+  ctx.fillText('NET '+fmtSigned(info.net),W/2,448);
   // stat cells
   const cells=[
     ['MONEY WON',fmt(info.money),'#EBA61F'],
@@ -828,7 +859,7 @@ function drawShareCard(cv,info,vals){
     ['BEST FINISH',bestTxt(info.best),'#F4E3C9'],
     ['FEDEX RANK','#'+info.fedexRank+' / '+info.N,'#F4E3C9'],
   ];
-  const colX=[W*0.28,W*0.72], y0=470, rowH=72;
+  const colX=[W*0.28,W*0.72], y0=486, rowH=66;
   cells.forEach((c,i)=>{
     const x=colX[i%2], y=y0+Math.floor(i/2)*rowH;
     ctx.fillStyle='#9fb0bd'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(c[0],x,y);
@@ -857,10 +888,22 @@ function scrSummary(){
   const moneyRank=byMoney.findIndex(r=>r.n===me.name)+1;
   const fedexRank=byPoints.findIndex(r=>r.n===me.name)+1;
   const N=byMoney.length;
-  if(!S.recorded){S.recorded=true; recordSeason({name:me.name,ovr:Math.round(me.skill),money:t.money,wins:t.wins,majors:t.majors,best:t.best});}
+  const ovr=Math.round(me.skill);
+  const ec=seasonNet(t);
+  if(!S.recorded){S.recorded=true; const r=recordSeason({name:me.name,ovr,money:t.money,gross:ec.gross,net:ec.net,wins:t.wins,majorsWon:t.majors,played:t.played,made:t.made,moneyRank,best:t.best}); S.freshBadges=r.fresh;}
   add($(`<div class="center"><span class="tag">Season complete</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:8px">${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${Math.round(me.skill)}</p>`));
+  add($(`<p class="lede center" style="margin-bottom:10px">${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
+  const netCol=ec.net>=0?'#35d6a0':'#E14A33';
+  add($(`<div class="center" style="margin-bottom:6px">
+    <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Net profit</div>
+    <div class="mono" style="font-weight:800;font-size:38px;color:${netCol};margin-top:4px">${fmtSigned(ec.net)}</div>
+    <div class="small muted" style="margin-top:2px">${fmt(ec.gross)} won · caddie −${fmt(ec.caddie)} · travel −${fmt(ec.travel)}</div></div>`));
+  if(S.freshBadges&&S.freshBadges.length){
+    const got=ACHS.filter(a=>S.freshBadges.includes(a.id));
+    const chips=got.map(a=>`<span class="tag" style="color:var(--gold);border-color:var(--gold)">${a.e} ${a.t}</span>`).join(' ');
+    add($(`<div class="scout" style="margin:4px 0 12px;text-align:center"><b style="color:var(--gold)">Achievement${got.length>1?'s':''} unlocked</b><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center">${chips}</div></div>`));
+  }
   const tiles=$(`<div class="tiles"></div>`);
   tiles.appendChild(tile('Money won',fmt(t.money),true));
   tiles.appendChild(tile('Money rank',moneyRank+' / '+N));
@@ -883,7 +926,7 @@ function scrSummary(){
   const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
   const cv=document.createElement('canvas');
   cv.style.cssText='width:100%;max-width:300px;display:block;margin:0 auto;border-radius:14px;border:1px solid var(--line)';
-  drawShareCard(cv,{name:me.name,ovr:Math.round(me.skill),events:S.schedule.length,majors:S.schedule.filter(e=>e.major).length,money:t.money,moneyRank,N,wins:t.wins,majorsWon:t.majors,best:t.best,fedexRank},vals);
+  drawShareCard(cv,{name:me.name,ovr,events:S.schedule.length,majors:S.schedule.filter(e=>e.major).length,money:t.money,net:ec.net,moneyRank,N,wins:t.wins,majorsWon:t.majors,best:t.best,fedexRank},vals);
   add(cv);
   const row=$(`<div class="mini" style="margin-top:10px"></div>`);
   const dl=$(`<button class="btn gold">⤓ Save Card</button>`);
