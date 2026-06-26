@@ -1074,7 +1074,7 @@ function scrTitle(){
     const rb=$(`<button class="btn teal">Resume Your Golfer<span class="sub">${ri.n}/8 skills drafted · pick up where you left off</span></button>`);
     rb.onclick=restoreResume; stack.appendChild(rb);
   }
-  const go=$(`<button class="btn goldfill">${ri?'Start a New Golfer':'Step to the Tee Box'}<span class="sub">Build your golfer · free play</span></button>`);
+  const go=$(`<button class="btn goldfill">${ri?'Start a New Golfer':'Step to the Tee Box'}<span class="sub">Build your golfer</span></button>`);
   go.onclick=()=>{S.mode='easy';S.screen='setup';render();};
   stack.appendChild(go);
   const done=dailyDoneToday();
@@ -1085,7 +1085,7 @@ function scrTitle(){
   if(st>0) stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--gold);font-weight:700">🔥 ${st}-day daily streak — keep it alive</div>`));
   w.appendChild(stack);
   const mini=$(`<div class="mini"></div>`);
-  const how=$(`<button class="btn gold">⛳ How to Play</button>`);
+  const how=$(`<button class="btn gold">How to Play</button>`);
   const lb=$(`<button class="btn gold">🏆 Your Record</button>`);
   how.onclick=()=>{S.overlay='rules';render();};
   lb.onclick=()=>{S.overlay='record';render();};
@@ -1308,9 +1308,9 @@ function scrDraft(){
     }
   } else if(!S.spinning){
     const left2go=8-filledCount();
-    const spin=$(`<button class="btn teal" style="font-size:24px;padding:19px">⛳ Spin the Wheel<span class="sub">${filledCount()===0?'Reveal a golfer · free':left2go+' slot'+(left2go>1?'s':'')+' to fill · free'}</span></button>`);
+    const spin=$(`<button class="btn teal" style="font-size:24px;padding:19px">Spin the Wheel<span class="sub">${filledCount()===0?'Reveal a golfer · free':left2go+' slot'+(left2go>1?'s':'')+' to fill · free'}</span></button>`);
     spin.onclick=spin_; left.appendChild(spin);
-    const how=$(`<button class="btn ghost" style="margin-top:10px;font-size:12px;padding:9px">⛳ How to play · pull odds</button>`);
+    const how=$(`<button class="btn ghost" style="margin-top:10px;font-size:12px;padding:9px">How to play · pull odds</button>`);
     how.onclick=()=>{S.overlay='rules';render();};
     left.appendChild(how);
   }
@@ -1363,7 +1363,9 @@ function chime(){   // soft gold sparkle when a Legendary lands
 function takeAttr(k){
   S.slots[k]={golfer:S.current.name,value:S.current[k]};
   S.current=null; endIfDone();
-  if(S.screen==='build') track('draft_completed',{ovr:Math.round(buildPlayer().skill)});
+  if(S.screen==='build'){ track('draft_completed',{ovr:Math.round(buildPlayer().skill)}); render(); return; }
+  // still drafting — immediately spin the next pick so you never click twice
+  if(golfersLeft()>0){ reveal(); return; }
   render();
 }
 
@@ -1685,6 +1687,9 @@ function scrSummary(){
     // record the actual tournaments won this season for the career Wins list
     S.season.results.forEach(r=>{ const meR=r.order.find(o=>o.p.you); if(meR&&meR.pos===1) S.career.winsList.push({name:r.evt.name,year:S.year||1,major:!!r.evt.major}); });
     S.career.seasons.push({year:S.year||1,net:ec.net,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank});
+    // snapshot this year's per-skill build so year N+1 can show what changed
+    if(!S.daily){ S.career.skillSeasons=S.career.skillSeasons||[];
+      S.career.skillSeasons.push({year:S.year||1,skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))}); }
     // accumulate career earnings vs the (persistent) field for the multi-year money list
     S.career.fieldMoney=S.career.fieldMoney||{};
     Object.entries(S.season.totals).forEach(([n,v])=>{ S.career.fieldMoney[n]=(S.career.fieldMoney[n]||0)+v.money; });
@@ -1715,9 +1720,23 @@ function scrSummary(){
   tiles.appendChild(tile('Majors',t.majors+''));
   tiles.appendChild(tile('Top 10s',t.top10+''));
   tiles.appendChild(tile('Best finish',t.best===99?'MC':(t.best===1?'WIN':'T'+t.best)));
-  tiles.appendChild(tile('FedEx points',t.points.toLocaleString()));
-  tiles.appendChild(tile('FedEx rank',fedexRank+' / '+N));
+  tiles.appendChild(tile('Tour Points',t.points.toLocaleString()));
+  tiles.appendChild(tile('Tour Rank',fedexRank+' / '+N));
   add(tiles);
+  // year-over-year skill changes (vs the build you ran last year)
+  const ss=(!S.daily && S.career && S.career.skillSeasons)||[];
+  if(ss.length>=2){
+    const cur=ss[ss.length-1].skills, prev=ss[ss.length-2].skills, py=ss[ss.length-2].year;
+    add($(`<h2 class="center" style="margin:14px 0 8px;font-size:15px">Skill changes vs Year ${py}</h2>`));
+    const dt=$(`<div class="tiles four"></div>`);
+    CATS.forEach(c=>{
+      const d=(cur[c.k]||0)-(prev[c.k]||0);
+      const col=d>0?'#35d6a0':(d<0?'#E14A33':'var(--muted)');
+      const txt=d===0?'· 0':(d>0?'▲ +'+d:'▼ '+d);
+      dt.appendChild($(`<div class="tile"><div class="k">${c.short}</div><div class="v" style="color:${col};font-size:18px">${txt}</div></div>`));
+    });
+    add(dt);
+  }
 
   // two columns: money list / career on the left, share + actions on the right
   const cols=$(`<div class="cols"></div>`);
