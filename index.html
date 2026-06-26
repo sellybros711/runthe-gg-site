@@ -4991,8 +4991,10 @@ function runRevealOverlay(){
     },22);
   }, afterAll);
 
-  // STEP 3 — after the count-up + 0.5s pause, fade in breakdown lines (skip if no bonus)
-  const breakdownStart = afterAll + 1700 + 700;
+  // STEP 3 — the players that CAUSE the multiplier populate at the bottom WHILE
+  // the multiplier number counts up, so the number and its contributors appear
+  // together rather than one after the other (skip if no bonus).
+  const breakdownStart = afterAll + 250;
   bd.forEach((b,i)=>{
     setTimeout(()=>{
       const line=document.createElement('div'); line.className='rc-bd-line';
@@ -5005,8 +5007,9 @@ function runRevealOverlay(){
   });
   const breakdownEnd = breakdownStart + (bd.length>0 ? bd.length*350 : 0);
 
-  // STEP 4 — 1.0s after breakdown completes, merge into the official overall
-  const mergeAt = breakdownEnd + 1400;
+  // STEP 4 — merge into the official overall once BOTH the count-up and the
+  // breakdown have finished (whichever lands later), plus a beat to read it.
+  const mergeAt = Math.max(breakdownEnd, afterAll + 1700) + 1400;
   setTimeout(()=>{
     const combine=$('reveal-combine'), tnum=$('reveal-team-num'), tlab=$('reveal-team-label');
     $('rc-breakdown').innerHTML='';
