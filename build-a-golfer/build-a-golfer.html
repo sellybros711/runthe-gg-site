@@ -11,8 +11,9 @@
     --teal:#0FA888; --gold:#EBA61F; --gold2:#c79320;
     --red:#E14A33; --red2:#b8371f;
     --cardA:#0d2740; --cardB:#0a1a2c;
-    --board:#0c3a32; --oncard:#F4E3C9; --muted:#7f95a8;
-    --line:rgba(244,227,201,.13);
+    --board:rgba(255,255,255,.035); --oncard:#F4E3C9; --muted:#88a397;
+    --line:rgba(244,227,201,.09);
+    --panel:rgba(255,255,255,.045); --panelb:rgba(244,227,201,.10);
     --display:'Anton',Impact,'Arial Narrow',sans-serif;
     --serif:'Cinzel','Times New Roman',Georgia,serif;
     --body:'Barlow Semi Condensed',system-ui,'Segoe UI',Roboto,sans-serif;
@@ -28,7 +29,7 @@
   #app{max-width:none; margin:0; padding:0 0 36px}
 
   /* ---- top bar + header (cream Masters-style band) ---- */
-  .head{text-align:center; padding:14px 16px 16px; max-width:780px; margin:0 auto}
+  .head{text-align:center; padding:10px 16px 12px; max-width:780px; margin:0 auto}
   .topbar{display:flex; justify-content:flex-start; align-items:center; margin:0 0 8px}
   .icobtn{width:38px;height:38px;border-radius:11px;background:var(--pill);border:1px solid var(--pillb);
     display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--hgreen);font-size:18px;
@@ -40,7 +41,7 @@
   .divider .ln{flex:1; height:1.5px; background:linear-gradient(90deg,transparent,var(--hgold))}
   .divider .ln.r{background:linear-gradient(90deg,var(--hgold),transparent)}
   .divider .ball{width:22px;height:22px;flex:0 0 auto}
-  .wordmark{font-family:var(--serif); font-weight:700; font-size:44px; line-height:.92;
+  .wordmark{font-family:var(--serif); font-weight:700; font-size:39px; line-height:.92;
     letter-spacing:.015em; text-transform:uppercase; white-space:nowrap}
   .wordmark .a{color:var(--hgreen)} .wordmark .b{color:var(--hgold)}
   .rule{height:4px; margin-top:9px; background:
@@ -63,7 +64,12 @@
   .ftile{font-size:20px; line-height:1; width:34px; height:26px; border-radius:6px; background:#0a1626;
     border:1px solid var(--line); display:flex; align-items:center; justify-content:center; flex:0 0 auto}
   @keyframes marq{to{transform:translateX(-50%)}}
-  .screen{max-width:520px; margin:0 auto; padding:18px 15px 18px; position:relative}
+  .screen{max-width:600px; margin:0 auto; padding:18px 16px 22px; position:relative}
+  .screen.wide{max-width:1140px}
+  .cols{display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start}
+  .col{min-width:0}
+  .setup-cols{grid-template-columns:0.85fr 1fr; max-width:840px; margin:0 auto}
+  @media(max-width:860px){ .cols{grid-template-columns:1fr; gap:16px} }
 
   h1{font-family:var(--display); font-style:normal; font-weight:400; color:var(--oncard);
     letter-spacing:.01em; line-height:.96; margin:6px 0; text-transform:uppercase; text-shadow:0 2px 18px rgba(0,0,0,.5)}
@@ -104,7 +110,7 @@
   .green{position:absolute; left:50%; bottom:-6%; transform:translateX(-50%); width:160%; height:58%;
     background:radial-gradient(120% 92% at 50% 100%, #257a4f 0%, #14512f 55%, transparent 76%)}
   .ring{position:absolute; left:50%; bottom:2%; transform:translateX(-50%); border:1px solid rgba(255,255,255,.10); border-radius:50%}
-  .titlewrap{position:relative; z-index:1}
+  .titlewrap{position:relative; z-index:1; max-width:560px; margin:0 auto}
   .hero{font-family:var(--display); font-style:italic; line-height:.9; letter-spacing:.01em; margin:4px 0 2px; text-transform:none; text-shadow:0 3px 22px rgba(0,0,0,.55)}
   .hero .hr1{color:var(--oncard)} .hero .hr2{color:var(--teal)}
   .trophy{width:54px; height:72px; display:block; margin:2px auto 4px; filter:drop-shadow(0 6px 14px rgba(235,166,31,.4))}
@@ -126,8 +132,8 @@
   .spins{font-family:var(--mono); font-weight:700}
   .pips{display:flex; gap:5px; margin-top:6px; flex-wrap:wrap}
   .pip{width:9px;height:9px;border-radius:999px;background:var(--line)} .pip.on{background:var(--gold)}
-  .reel{height:82px; border-radius:16px; border:1px solid var(--line);
-    background:radial-gradient(120% 100% at 50% 0%, #11375a, #0a1f30); display:flex; align-items:center;
+  .reel{height:84px; border-radius:16px; border:1px solid var(--panelb);
+    background:radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,.08), rgba(0,0,0,.12)); display:flex; align-items:center;
     justify-content:center; overflow:hidden; position:relative}
   .reel .name{font-family:var(--display); font-weight:400; font-size:27px; text-align:center; padding:0 10px; color:var(--oncard); text-transform:uppercase; letter-spacing:.02em}
   .reel .sub{position:absolute; bottom:7px; font:800 9px/1 var(--body); letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
@@ -141,18 +147,18 @@
   @keyframes pop{0%{transform:scale(.97)}55%{transform:scale(1.02)}100%{transform:scale(1)}}
   .spinning .name{animation:flick .08s steps(1) infinite} @keyframes flick{50%{opacity:.34}}
   .attrs{display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:10px}
-  .attr{display:flex; justify-content:space-between; align-items:center; gap:8px; background:#0a2740;
+  .attr{display:flex; justify-content:space-between; align-items:center; gap:8px; background:var(--panel);
     border:1px solid var(--line); border-radius:10px; padding:8px 11px; cursor:pointer; text-align:left;
     color:var(--oncard); font:inherit; width:100%}
   .attr .lab{font-weight:600; font-size:12px; color:#cfdbe6}
   .attr .val{font-family:var(--mono); font-weight:800; font-size:16px; color:var(--gold)}
   .attr:hover:not(:disabled){border-color:var(--gold)} .attr:disabled{opacity:.32; cursor:not-allowed}
 
-  .buildhero{display:flex; align-items:center; gap:8px; background:linear-gradient(180deg,#0c3a32,#0a2740);
-    border:1px solid var(--line); border-radius:16px; padding:9px 8px; margin-bottom:10px}
+  .buildhero{display:flex; align-items:center; gap:8px; background:var(--panel);
+    border:1px solid var(--panelb); border-radius:16px; padding:11px 10px; margin-bottom:10px}
   .herofig{display:flex; flex-direction:column; align-items:center; gap:8px; flex:0 0 84px}
   .golferfig{width:70px; height:112px; display:block; filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
-  .ovrbadge{display:flex; flex-direction:column; align-items:center; background:#0a1626; border:2px solid var(--gold); border-radius:12px; padding:5px 0; width:74px}
+  .ovrbadge{display:flex; flex-direction:column; align-items:center; background:rgba(0,0,0,.28); border:2px solid var(--gold); border-radius:12px; padding:5px 0; width:74px}
   .ovrbadge .n{font-family:var(--mono); font-weight:800; font-size:28px; color:var(--gold); line-height:1; transition:color .2s}
   .ovrbadge .l{font:800 9px/1 var(--body); letter-spacing:.18em; color:var(--muted); margin-top:4px}
   .radarwrap{flex:1; min-width:0; display:flex; justify-content:center}
@@ -169,7 +175,7 @@
   .ovr{display:flex; align-items:baseline; gap:10px; justify-content:center; margin:4px 0}
   .ovr .num{font-family:var(--mono); font-weight:800; font-size:52px; color:var(--gold); line-height:1}
   .ovr .lbl{font:800 11px/1 var(--body); letter-spacing:.2em; text-transform:uppercase; color:var(--muted)}
-  .scout{background:#0a2740; border:1px solid var(--line); border-radius:11px; padding:12px 14px; font-size:13px; color:#d2e1ea; margin-top:12px}
+  .scout{background:var(--panel); border:1px solid var(--panelb); border-radius:12px; padding:12px 14px; font-size:13px; color:#dfeae2; margin-top:12px}
   input.name{width:100%; background:#0a2740; border:1px solid var(--line); color:var(--oncard);
     font:800 16px/1 var(--body); border-radius:11px; padding:13px 14px; margin-top:6px}
 
@@ -193,8 +199,8 @@
 
   .sbar{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line);
     border:1px solid var(--line); border-radius:13px; overflow:hidden; margin-bottom:14px}
-  .sstat{background:#0a2740; padding:10px 11px}
-  .sstat.wide{grid-column:1 / -1; background:linear-gradient(90deg,#0c3a32,#0a2740)}
+  .sstat{background:var(--panel); padding:10px 11px}
+  .sstat.wide{grid-column:1 / -1; background:rgba(255,255,255,.06)}
   .sstat .k{font:800 9.5px/1 var(--body); letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
   .sstat .v{font-family:var(--mono); font-weight:800; font-size:18px; margin-top:5px; color:var(--oncard)}
   .sstat .v.gold{color:var(--gold); font-size:22px}
@@ -207,7 +213,7 @@
   .board.major{border-color:var(--gold); box-shadow:0 0 0 1px rgba(235,166,31,.4)}
 
   .tiles{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0}
-  .tile{background:#0a2740; border:1px solid var(--line); border-radius:12px; padding:12px 14px}
+  .tile{background:var(--panel); border:1px solid var(--panelb); border-radius:12px; padding:12px 14px}
   .tile .k{font:800 10px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
   .tile .v{font-family:var(--mono); font-weight:800; font-size:23px; margin-top:6px; color:var(--gold)}
   .tile .v.cream{color:var(--oncard)}
@@ -747,7 +753,7 @@ function render(){
   app.innerHTML='';
   app.appendChild(header());
   const card=$(`<main class="card"></main>`);
-  const screen=$(`<div class="screen"></div>`);
+  const screen=$(`<div class="screen${['title','draft','season','setup'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
   app.appendChild(footer());
@@ -939,24 +945,26 @@ function toast(msg){
 /* ---------- setup (create your golfer) ---------- */
 function scrSetup(){
   add($(`<div class="center"><span class="tag">${S.daily?'Daily Challenge':'New golfer'}</span></div>`));
-  add($(`<h1 class="center" style="font-size:26px;margin:10px 0 2px">Create your golfer</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:6px">Set your look, then spin to build the skills.</p>`));
-  const figwrap=$(`<div style="display:flex;justify-content:center;margin:2px 0 8px"></div>`);
-  const f=$(golferSVG()); f.style.width='120px'; f.style.height='190px'; f.style.filter='drop-shadow(0 5px 10px rgba(0,0,0,.4))';
-  figwrap.appendChild(f); add(figwrap);
-  add($(`<h2 style="margin:6px 0 4px">Name</h2>`));
+  add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Create your golfer</h1>`));
+  add($(`<p class="lede center" style="margin-bottom:8px">Set your look, then spin to build the skills.</p>`));
+  const cols=$(`<div class="cols setup-cols"></div>`);
+  const left=$(`<div class="col center" style="align-self:center"></div>`), right=$(`<div class="col"></div>`);
+  cols.appendChild(left); cols.appendChild(right); add(cols);
+  const f=$(golferSVG()); f.style.width='128px'; f.style.height='205px'; f.style.filter='drop-shadow(0 6px 12px rgba(0,0,0,.4))';
+  const figwrap=$(`<div style="display:flex;justify-content:center"></div>`); figwrap.appendChild(f); left.appendChild(figwrap);
+  right.appendChild($(`<h2 style="margin:0 0 4px">Name</h2>`));
   const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${S.name}">`);
-  inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name);}; add(inp);
-  add($(`<div style="height:8px"></div>`));
-  add(handRow());
-  add(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
-  add(swatchRow('Shirt',POLOS,S.look.polo,'polo',o=>o.m));
-  add(swatchRow('Trousers',PANTS,S.look.pants,'pants',o=>o.a));
-  add($(`<div style="height:16px"></div>`));
+  inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name);}; right.appendChild(inp);
+  right.appendChild($(`<div style="height:6px"></div>`));
+  right.appendChild(handRow());
+  right.appendChild(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
+  right.appendChild(swatchRow('Shirt',POLOS,S.look.polo,'polo',o=>o.m));
+  right.appendChild(swatchRow('Trousers',PANTS,S.look.pants,'pants',o=>o.a));
+  right.appendChild($(`<div style="height:14px"></div>`));
   const go=$(`<button class="btn goldfill">Start Drafting ▸<span class="sub">${S.daily?'Same wheel for everyone today':'Spin to build your golfer'}</span></button>`);
-  go.onclick=()=>{S.screen='draft';render();}; add(go);
+  go.onclick=()=>{S.screen='draft';render();}; right.appendChild(go);
   const back=$(`<button class="btn ghost" style="margin-top:10px">‹ Back</button>`);
-  back.onclick=()=>{reset();S.screen='title';render();}; add(back);
+  back.onclick=()=>{reset();S.screen='title';render();}; right.appendChild(back);
 }
 
 /* ---------- draft ---------- */
@@ -1085,7 +1093,13 @@ function scrDraft(){
       <div class="name">${g?g.name:'…'}</div>
       <div class="sub">${sub}</div></div>`));
   }
-  const choice=$(`<div></div>`); add(choice);
+  // two responsive columns: action (reel + picks) | your build (radar + scorecard)
+  const cols=$(`<div class="cols"></div>`);
+  const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
+  cols.appendChild(left); cols.appendChild(right);
+  // move the reel (added above) into the left column if present
+  const reelEl=RT.querySelector('.reel'); if(reelEl) left.appendChild(reelEl);
+  add(cols);
   if(S.current && !S.spinning){
     const grid=$(`<div class="attrs"></div>`);
     CATS.forEach(cat=>{
@@ -1094,21 +1108,19 @@ function scrDraft(){
       if(!filled) b.onclick=()=>takeAttr(cat.k);
       grid.appendChild(b);
     });
-    choice.appendChild(grid);
+    left.appendChild(grid);
     if(S.reSpins>0){
-      const re=$(`<button class="btn ghost" style="margin-top:10px">Re-spin · ${S.reSpins} left</button>`);
-      re.onclick=reSpin; choice.appendChild(re);
+      const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${S.reSpins} left</button>`);
+      re.onclick=reSpin; left.appendChild(re);
     } else {
-      choice.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left — take one of ${S.current.name}'s skills.</div>`));
+      left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left — take one of ${S.current.name}'s skills.</div>`));
     }
   } else if(!S.spinning){
-    const spin=$(`<button class="btn teal" style="margin-top:14px">Spin the Wheel</button>`);
-    spin.onclick=spin_; choice.appendChild(spin);
+    const spin=$(`<button class="btn teal">Spin the Wheel</button>`);
+    spin.onclick=spin_; left.appendChild(spin);
   }
-  add($(`<div style="height:12px"></div>`));
-  add(buildHero());
-  add($(`<div style="height:8px"></div>`));
-  add($(`<h2 style="margin:6px 0 8px">Your scorecard · ${filledCount()}/8</h2>`));
+  right.appendChild(buildHero());
+  right.appendChild($(`<h2 style="margin:6px 0 8px">Your scorecard · ${filledCount()}/8</h2>`));
   const card=$(`<div class="card-grid"></div>`);
   CATS.forEach(cat=>{
     const f=S.slots[cat.k];
@@ -1116,7 +1128,7 @@ function scrDraft(){
       <span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'—'}</span>
       <span class="v">${f?f.value:'··'}</span></div>`));
   });
-  add(card);
+  right.appendChild(card);
 }
 function golfersLeft(){return GOLFERS.length-S.revealed.size;}
 function reveal(){
@@ -1245,19 +1257,24 @@ function scrSeason(){
 
   if(evt.major) add($(`<div class="majorbanner">★ Major Championship ★</div>`));
 
+  const cols=$(`<div class="cols"></div>`);
+  const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
+  cols.appendChild(left); cols.appendChild(right); add(cols);
+
   const typeLbl=evt.major?'<span class="major">Major</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
-  add($(`<div class="evt-head"><div><div class="nm">${evt.name}</div>
+  left.appendChild($(`<div class="evt-head"><div><div class="nm">${evt.name}</div>
     <div class="kx">${typeLbl} · ${fmt(evt.purse)} purse</div></div>
     <div class="kx reg">Event ${S.evtIndex}/${S.schedule.length}</div></div>`));
   const board=$(`<div class="board ${evt.major?'major':''}"></div>`);
   const top=order.slice(0,12); const youOut=!top.includes(me);
   top.forEach(o=>board.appendChild(lbRow(o)));
   if(youOut){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(lbRow(me));}
-  add(board);
+  left.appendChild(board);
+
   const result=(me.pos==='CUT')?'Missed cut':(me.pos===1?'WON':'T'+me.pos+(me.pos<=10?' · top 10':''));
-  add($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b> · ${par(me.score)}</span><span style="color:var(--gold)">+${fmt(me.money)}</span></div>`));
-  add(roundsRow(me));
-  add($(`<div style="height:14px"></div>`));
+  right.appendChild($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b> · ${par(me.score)}</span><span style="color:var(--gold)">+${fmt(me.money)}</span></div>`));
+  right.appendChild(roundsRow(me));
+  right.appendChild($(`<div style="height:14px"></div>`));
   if(S.evtIndex<S.schedule.length){
     const row=$(`<div class="mini"></div>`);
     const pause=$(`<button class="btn gold">${S.seasonPaused?'▶ Resume':'⏸ Pause'}</button>`);
@@ -1266,15 +1283,15 @@ function scrSeason(){
     pause.onclick=()=>{S.seasonPaused=!S.seasonPaused; render();};
     speed.onclick=()=>{S.simRate=S.simRate>=2?1:2; LS.set('bag_speed',S.simRate); render();};
     skip.onclick=()=>{clearTimeout(seasonTimer); while(S.evtIndex<S.schedule.length)playEvent(); S.screen='summary'; render();};
-    row.appendChild(pause); row.appendChild(speed); row.appendChild(skip); add(row);
+    row.appendChild(pause); row.appendChild(speed); row.appendChild(skip); right.appendChild(row);
     if(S.seasonPaused){
-      const nx=$(`<button class="btn red" style="margin-top:10px">Next Event ▸</button>`); nx.onclick=()=>render(); add(nx);
+      const nx=$(`<button class="btn red" style="margin-top:10px">Next Event ▸</button>`); nx.onclick=()=>render(); right.appendChild(nx);
     } else {
       seasonTimer=setTimeout(()=>{ if(S.screen==='season') render(); }, (evt.major?3600:2600)/S.simRate);
     }
   } else {
     const fin=$(`<button class="btn red">Season Results ▸</button>`);
-    fin.onclick=()=>{clearTimeout(seasonTimer); S.screen='summary'; render();}; add(fin);
+    fin.onclick=()=>{clearTimeout(seasonTimer); S.screen='summary'; render();}; right.appendChild(fin);
     if(!S.seasonPaused) seasonTimer=setTimeout(()=>{ if(S.screen==='season'){S.screen='summary'; render();} }, (evt.major?3800:2800)/S.simRate);
   }
 }

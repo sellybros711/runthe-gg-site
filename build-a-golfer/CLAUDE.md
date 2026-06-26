@@ -311,6 +311,22 @@ allows Google Fonts, or self-host Anton.*
     Legendary gold), a toast, and a soft WebAudio chime when a Legendary lands.
   Verified end to end, zero page errors.
 
+- 2026-06-26: Responsive layout + polish overhaul (owner feedback: "looks
+  analog/cheap, make it fill the screen").
+  - **Wide & responsive**: content-heavy screens (title/setup/draft/season) use a
+    full-width container (`.screen.wide`, max 1140) with a 2-column grid
+    (`.cols`) that collapses to one column under 860px. Draft = action (reel +
+    picks) | build (radar + scorecard); Season = leaderboard | result + controls
+    (so you act without scrolling); Setup = figure | form (fits on one screen).
+    Title keeps the faded golf-course backdrop, now full-width with centered
+    content.
+  - **Softer panels**: introduced `--panel`/`--panelb` translucent tokens and
+    retinted the navy boxes (tiles/reel/buildhero/scout/sbar/board/ovr) so they
+    melt into the green instead of reading as hard boxes.
+  - **Re-spin button** is now solid (gold-bordered) while you have spins.
+  - Smaller/raised header (wordmark 39px, tighter band).
+  Verified desktop (1366) + mobile (412), zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
