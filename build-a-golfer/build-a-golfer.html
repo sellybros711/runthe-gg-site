@@ -43,8 +43,13 @@
   .wordmark{font-family:var(--display); font-style:italic; font-size:40px; line-height:.84;
     letter-spacing:.005em}
   .wordmark .a{color:var(--pageink)} .wordmark .b{color:var(--teal)}
-  .gtype{font-family:var(--body); font-weight:800; font-size:13px; letter-spacing:.14em;
-    color:var(--teal); margin-top:8px}
+  .gtype{display:inline-flex; align-items:center; gap:5px; font-family:var(--body); font-weight:700;
+    font-size:12px; letter-spacing:.06em; color:var(--pagemut); margin-top:7px; text-decoration:none;
+    border-bottom:1px solid transparent; padding-bottom:1px; transition:border-color .15s, color .15s}
+  .gtype b{color:var(--teal); font-weight:800}
+  .gtype .ext{font-size:10px; opacity:.65}
+  .gtype:hover{color:var(--pageink); border-bottom-color:var(--teal)}
+  .gtype:hover .ext{opacity:1}
   .pills{display:flex; gap:8px; justify-content:center; margin-top:12px}
   .pill{background:var(--pill); border:1px solid var(--pillb); border-radius:999px; padding:8px 14px;
     font-weight:700; font-size:13px; color:var(--pageink); cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.06)}
@@ -570,7 +575,7 @@ function header(){
   h.appendChild(top);
   h.appendChild($(`<div class="lockup">${crestSVG()}
     <div class="wordmark"><span class="a">Build a</span> <span class="b">Golfer</span></div></div>`));
-  h.appendChild($(`<div class="gtype">A RunThe.GG Game</div>`));
+  h.appendChild($(`<a class="gtype" href="https://runthe.gg" target="_blank" rel="noopener">A <b>RunThe.GG</b> Game <span class="ext">↗</span></a>`));
   const pills=$(`<div class="pills"></div>`);
   pills.appendChild($(`<div class="pill">🏌️ Player</div>`));
   const rs=$(`<button class="pill">Reset</button>`); rs.onclick=()=>{ if(S.screen==='title'){reset();render();} else {S.overlay='confirmReset';render();} };
@@ -766,7 +771,7 @@ function scrTitle(){
   go.onclick=()=>{S.mode='easy';S.screen='setup';render();};
   stack.appendChild(go);
   const done=dailyDoneToday();
-  const daily=$(`<button class="btn ${done?'gold':'teal'}" style="margin-top:10px">${done?'📅 Daily — Done ✓':'📅 Daily Challenge'}<span class="sub">${done?'View result · new wheel at midnight UTC':'Same wheel for everyone today'}</span></button>`);
+  const daily=$(`<button class="btn ${done?'gold':'teal'}" style="margin-top:10px">${done?'Daily Challenge · Done':'Daily Challenge'}<span class="sub">${done?'View result · new wheel at midnight UTC':'Same wheel for everyone today'}</span></button>`);
   daily.onclick=startDaily;
   stack.appendChild(daily);
   w.appendChild(stack);
