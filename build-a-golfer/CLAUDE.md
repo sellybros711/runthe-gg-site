@@ -478,6 +478,35 @@ allows Google Fonts, or self-host Anton.*
     full season, recap, offseason→Yr2, majors-only, daily all pass, zero errors.
   - New analytics events: autosim_toggle, offseason_*, resume, career_shared.
 
+- 2026-06-26 (DataGolf integration spec — runthetourdatagolfspec.md).
+  - **Roster** refreshed to DataGolf SG ratings (242 golfers, `golfers_5.csv`);
+    added a `fld:1` flag on the 169 current/historical (data-grounded) players.
+  - **§1 sim retune (data-grounded):** new per-round model measured from 246,968
+    real PGA rounds — `score = BASE + courseAdj - (overall-80)*0.238 +
+    gauss(0,SIGMA)`, overall 80 = tour avg. No final-round variance mult;
+    composure only a ±0.4 major-Sunday mean nudge (the one non-data knob). Added
+    a per-event `COURSE_SD` difficulty draw for real winner spread. BASE
+    re-bisected for our field: reg `{base 0.91, sigma 2.80, csd 0.90}`, maj
+    `{base 2.74, sigma 2.90, csd 1.45}` (`SIM` const). Validated vs the spec
+    table (winner -15.4/-8.6, spreads, major cut). simRound now takes
+    (effectiveOverall, clu, opts); old simEvent removed.
+  - **§2 course fit:** `COURSEFIT` table + `eventWeights()` (renormalize to 1.0)
+    + `eventOverall()`; field players carry all 8 skills; `beginEvent` computes
+    each player's event-effective overall + the week's courseAdj.
+  - **§3 calibrated field:** `FIELDPOOL = GOLFERS.filter(g=>g.fld)`; FIELDSIZE
+    104→120; cut at top 65. Deviations from spec (flagged to owner): field runs
+    mean ~82 not 80 (kept stars to 95 → BASE re-bisected); one fixed 120-field
+    for the whole season incl. majors (spec wanted ~144 major) to keep cumulative
+    money/FedEx standings clean; added COURSE_SD (un-specced) to match the winner
+    spread targets.
+  - **Economy recentre:** the realistic sim wins/pays less, so fixed tour cost
+    $3.6M→$2.8M. Result: typical ~OVR-87/88 build profits ~76% / millionaire
+    ~58% / ~0.5 wins per season; 85-86 ≈ break-even; weak builds red; OVR-90
+    dominates (Monte Carlo over the new sim).
+  - **Parked (need DG_KEY + deploy approval):** §4 live "this week" API mode,
+    §5 weekly `dg_transform.py` auto-refresh. DG_KEY must stay server-side
+    (never committed/logged/sent to browser).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
