@@ -1338,6 +1338,23 @@
     font-weight:700; font-size:14px; line-height:1.4;
     color:var(--ink); margin:8px 0 16px;
   }
+  /* Inline win verbiage — shown ABOVE the box score inside the match slide,
+     replacing the blocking popup + Continue button for non-final wins. As a
+     direct .sim-card child it is flex:0 0 auto, so the box score below just
+     shrinks/scrolls and the card never overflows. */
+  .mp-inline{
+    flex:0 0 auto; margin:0 0 12px; padding:9px 13px; text-align:center;
+    border:2.5px solid var(--ink); border-radius:13px;
+    background:var(--teal); color:#fff; box-shadow:var(--shadow-sm);
+    opacity:0; transform:translateY(-8px);
+    transition:opacity .35s ease, transform .35s ease;
+  }
+  .mp-inline.show{ opacity:1; transform:none; }
+  .mp-inline-stamp{
+    display:block; font-family:'Anton',Impact,sans-serif; font-weight:400;
+    font-size:24px; line-height:1; letter-spacing:1.5px; margin-bottom:3px;
+  }
+  .mp-inline-msg{ display:block; font-weight:700; font-size:12.5px; line-height:1.3; }
   /* bracket track */
   .mp-bracket{
     display:flex; align-items:center; justify-content:center;
@@ -9043,6 +9060,8 @@ function simSkipToResult(){
   // fast-forward proceeds through it (terminal popups navigate to results).
   const btn = document.querySelector('.match-popup-overlay #mp-next-btn, .match-popup-overlay #mp-results-btn');
   if(btn) btn.click();
+  // Inline (non-final win) banners have no button — advance them directly.
+  if(simResolveCurrentPopup) simResolveCurrentPopup();
 }
 
 async function simEllipsisFor(el, ms){
@@ -9475,6 +9494,9 @@ function knockoutResultMsg(opts){
 const BRACKET_ROUNDS=['Group Stage','Round of 32','Round of 16','Quarter-final','Semi-final','Final'];
 const BRACKET_LABELS=['GRP','R32','R16','QF','SF','FIN'];
 
+// Set while an inline (non-final win) verbiage banner is dwelling, so Skip can
+// advance it instantly (those wins have no popup button for Skip to click).
+let simResolveCurrentPopup = null;
 function showMatchResultPopup(opts){
   // opts: { won, isPens, isFinal, currentRound, nextRound, onDismiss }
   return new Promise(resolve=>{
@@ -9485,6 +9507,32 @@ function showMatchResultPopup(opts){
     if(simSkip){
       if(!opts.won) goToResults();
       return resolve();
+    }
+    // NON-FINAL WIN: no blocking popup, no Continue button. Drop the result
+    // verbiage right above the current slide's box score, then let the sim loop
+    // slide horizontally to the next game when this resolves. (Eliminations and
+    // the championship still use the modal below — they go to the results page.)
+    if(opts.won && !opts.isFinal){
+      const isGroupStage = opts.currentRound === 'Group Stage';
+      const stamp   = isGroupStage ? 'QUALIFIED' : 'ADVANCED';
+      const msgLine = opts.gsPopupMsg || knockoutResultMsg(opts);
+      const track = $('sim-content');
+      const slide = track && track.children[simSlideIndex];
+      const card  = slide && slide.querySelector('.sim-card');
+      if(card){
+        const banner=document.createElement('div');
+        banner.className='mp-inline win';
+        banner.innerHTML=`<span class="mp-inline-stamp">${stamp}</span><span class="mp-inline-msg">${msgLine}</span>`;
+        card.insertBefore(banner, card.firstChild);
+        requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ banner.classList.add('show'); }); });
+      }
+      // Fixed, readable dwell, then advance (the speed toggle only affects the
+      // on-pitch pace, not this beat). Skip-to-result short-circuits the dwell.
+      let done=false;
+      const finish=()=>{ if(done) return; done=true; clearTimeout(dwell); simResolveCurrentPopup=null; resolve(); };
+      const dwell=setTimeout(finish, 2000);
+      simResolveCurrentPopup=finish;
+      return;
     }
     const ov=document.createElement('div');
     ov.className='match-popup-overlay';
