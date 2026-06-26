@@ -283,6 +283,17 @@ allows Google Fonts, or self-host Anton.*
     wipe an in-progress draft.
   Verified end to end, zero page errors.
 
+- 2026-06-26: New Masters-style header + theme (owner mockup).
+  - Header is now a **cream band**: green shield crest (gold flag + putting
+    green), a serif wordmark (Cinzel) — "BUILD A" green / "GOLFER" gold, all-caps
+    — with a golf-ball divider line above and a double rule below, and refined
+    serif **Player / Reset** pills with a swing icon + refresh icon.
+  - Layout: cream page + full-width **deep-green game panel** with a gold top
+    edge (content centered ~520). Replaces the all-navy full-bleed look; matches
+    the mockup (cream header → green panel). Added Cinzel via Google Fonts
+    (`--serif`); palette vars `--hgreen`/`--hgold`.
+  Verified desktop + mobile, zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
