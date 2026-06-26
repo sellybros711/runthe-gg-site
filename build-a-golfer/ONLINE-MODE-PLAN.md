@@ -52,6 +52,40 @@ That means:
   a username + streaks + cross-device history. Reuse RunThePitch's pending-claim
   pattern (`claim_*` on sign-in).
 
+### One RunThe.GG account for every game (owner request)
+Goal: a single account that works across RunThePitch, Build a Golfer, and future
+RunThe games — sign in once, play anything.
+
+**Recommended architecture — shared Supabase project / shared auth.**
+RunThePitch already has Supabase Auth + a `profiles` table (email + Google
+OAuth, `index.html` ~line 5079). The cleanest path is for Build a Golfer to use
+the **same Supabase project and the same `profiles`/auth**, and add only
+*game-scoped* tables (`bag_daily_results`, etc.). Then:
+- A user who signed up in RunThePitch is already signed in here (same JWT /
+  session), and vice-versa — true single account, shared username, one streak
+  system if desired.
+- No data migration or account-linking logic needed; it's one identity.
+- Per-game leaderboards live in per-game tables keyed by the shared `user_id`.
+
+Alternative (more isolation, more work): a separate Supabase project per game
+with an account-link table mapping the two `user_id`s. Only worth it if the
+games must stay fully independent. **Recommendation: shared project.**
+
+**⚠️ Sensitivity / guardrail.** This one is more than "a new backend" — it
+**touches the live RunThePitch project** (its auth, its `profiles` table, its
+RLS). That is exactly the kind of change the handoff says to stop and ask about.
+So this requires, explicitly:
+1. Owner go-ahead to deploy Build a Golfer at all, AND
+2. Owner go-ahead to point it at the live RunThePitch Supabase project (vs a
+   fresh project first, then merge later).
+Until both are given, this stays a design only — nothing is wired to the live
+project, and the prototype keeps using local-only `career()` storage.
+
+Suggested safe rollout: build Build a Golfer's online board on a **separate
+Supabase project first** (zero risk to the live site), prove it out, then — on a
+second explicit approval — switch auth to the shared RunThePitch project so the
+accounts unify.
+
 ## Client integration points (in build-a-golfer.html)
 Already-built seams make this small:
 - `startDaily()` / `S.dailySeed` — the seed to submit with.

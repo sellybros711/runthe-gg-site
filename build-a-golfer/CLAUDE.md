@@ -206,6 +206,23 @@ allows Google Fonts, or self-host Anton.*
     daily determinism makes server-side re-sim anti-cheat straightforward.
   All verified end to end with headless Chromium, zero page errors.
 
+- 2026-06-26: Character customization + franchise mode (owner request).
+  - **Customization** on the build screen: name (existing), skin tone (5),
+    shirt colour (7), trousers (5), and right/left-handed (flips the figure +
+    club). All persisted to `localStorage bag_look`; the build-hero figure
+    updates live. `golferSVG` is now data-driven (`SKINS`/`POLOS`/`PANTS`).
+  - **Franchise mode**: the summary now offers "Continue to Year N+1" (same
+    golfer, new season) vs "Retire — Build New Golfer". Tracks a cumulative
+    multi-year career (net, money, wins, majors) with a per-year list and a
+    "Career · N years" section; the share card shows the year. Daily mode stays
+    single-and-done (no continue).
+  - **Shared RunThe.GG account** (ask #3): NOT built — it's the parked online
+    piece AND it touches the live RunThePitch project (shared auth). Designed in
+    ONLINE-MODE-PLAN.md ("One RunThe.GG account for every game"): recommended
+    shared-Supabase-project approach, gated on two explicit approvals (deploy +
+    pointing at the live project). Safe rollout = separate project first.
+  Verified end to end with headless Chromium, zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

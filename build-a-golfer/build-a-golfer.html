@@ -386,9 +386,35 @@ function simEvent(evt,field){
 
 /* ---------- state ---------- */
 const SPINS=10, REPLACEMENT=62;
+/* golfer customization palettes */
+const SKINS=[
+  {id:'light', m:'#f0c6a4', s:'#e0ad84'},
+  {id:'tan',   m:'#e8b088', s:'#d99a6c'},
+  {id:'medium',m:'#c98d5e', s:'#b67a4d'},
+  {id:'brown', m:'#9c6b43', s:'#855836'},
+  {id:'deep',  m:'#6f4a2e', s:'#5d3c24'},
+];
+const POLOS=[
+  {id:'teal',  m:'#0FA888', s:'#0c917a'},
+  {id:'navy',  m:'#214a8c', s:'#1a3c72'},
+  {id:'red',   m:'#d23f34', s:'#b1322a'},
+  {id:'gold',  m:'#e6a91f', s:'#c98f12'},
+  {id:'white', m:'#eef0ee', s:'#d7dbd6'},
+  {id:'purple',m:'#6b4bb0', s:'#583c93'},
+  {id:'black', m:'#2b3038', s:'#1f232a'},
+];
+const PANTS=[
+  {id:'stone',a:'#c7bfa8', b:'#bcb39b'},
+  {id:'navy', a:'#2a3550', b:'#222a40'},
+  {id:'grey', a:'#9aa0a8', b:'#878d95'},
+  {id:'white',a:'#ededdf', b:'#deded1'},
+  {id:'black',a:'#262a31', b:'#1d2026'},
+];
+const DEFLOOK={skin:'tan',polo:'teal',pants:'stone',lefty:false};
 let S={};
 function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);S={screen:'title',mode:'easy',pool:GOLFERS.slice(),reSpins:2,
   slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get('bag_name',''),
+  look:Object.assign({},DEFLOOK,LS.get('bag_look',{})),year:1,career:null,
   schedule:[],evtIndex:0,season:null,overlay:null,seasonPaused:false,recorded:false,
   daily:false,dailySeed:null,dailyStored:false};}
 reset();
@@ -627,16 +653,23 @@ function toast(msg){
 }
 
 /* ---------- draft ---------- */
-function golferSVG(){return `<svg class="golferfig" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
+function golferSVG(){
+  const L=S.look||DEFLOOK;
+  const sk=SKINS.find(x=>x.id===L.skin)||SKINS[1];
+  const po=POLOS.find(x=>x.id===L.polo)||POLOS[0];
+  const pa=PANTS.find(x=>x.id===L.pants)||PANTS[0];
+  const collar=(po.id==='white')?'#cdd1cc':'#f2f1ec';
+  const flip=L.lefty?' style="transform:scaleX(-1)"':'';
+  return `<svg class="golferfig"${flip} viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
   <ellipse cx="50" cy="144" rx="24" ry="3.4" fill="rgba(0,0,0,.4)"/>
   <!-- trousers -->
-  <path d="M42,84 C41,102 41,118 42,131 l7,0 C50,118 50,102 50,85 Z" fill="#c7bfa8"/>
-  <path d="M50,85 C50,102 50,118 51,131 l7,0 C59,118 59,102 58,84 Z" fill="#bcb39b"/>
-  <line x1="45.5" y1="90" x2="45" y2="128" stroke="#b8b095" stroke-width="0.8"/>
+  <path d="M42,84 C41,102 41,118 42,131 l7,0 C50,118 50,102 50,85 Z" fill="${pa.a}"/>
+  <path d="M50,85 C50,102 50,118 51,131 l7,0 C59,118 59,102 58,84 Z" fill="${pa.b}"/>
+  <line x1="45.5" y1="90" x2="45" y2="128" stroke="${pa.b}" stroke-width="0.8"/>
   <!-- shoes -->
   <path d="M40,130 h11 v5 q-6,2.6 -12,0 z" fill="#f2f1ec"/>
   <path d="M51,130 h10 q1,4 -4,5 q-6,0 -6,-1 z" fill="#e9e7df"/>
-  <line x1="38.5" y1="134.4" x2="50.6" y2="134.4" stroke="#0FA888" stroke-width="1.2"/>
+  <line x1="38.5" y1="134.4" x2="50.6" y2="134.4" stroke="${po.m}" stroke-width="1.2"/>
   <!-- club, planted in front, iron head -->
   <line x1="51" y1="78" x2="64" y2="138" stroke="#c8ced4" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M62,136 l7,1.4 -1,3.4 -7,-1.4 z" fill="#9aa1a8"/>
@@ -644,25 +677,47 @@ function golferSVG(){return `<svg class="golferfig" viewBox="0 0 100 150" xmlns=
   <rect x="41" y="80" width="18" height="5" fill="#1c2533"/>
   <rect x="48" y="80.5" width="4" height="4" rx="1" fill="#EBA61F"/>
   <!-- polo -->
-  <path d="M36,48 C40,44 60,44 64,48 C65,61 64,73 60,82 L40,82 C36,73 35,61 36,48 Z" fill="#0FA888"/>
-  <path d="M36,48 C31,50 30,60 33,68 l8,-3 C40,58 39,52 40,49 Z" fill="#0c917a"/>
-  <path d="M64,48 C69,50 70,60 67,68 l-8,-3 C60,58 61,52 60,49 Z" fill="#0c917a"/>
-  <path d="M44,46 l6,7 6,-7 q-6,-3 -12,0 z" fill="#f2f1ec"/>
-  <rect x="49" y="50" width="2" height="13" fill="#e9e7df"/>
+  <path d="M36,48 C40,44 60,44 64,48 C65,61 64,73 60,82 L40,82 C36,73 35,61 36,48 Z" fill="${po.m}"/>
+  <path d="M36,48 C31,50 30,60 33,68 l8,-3 C40,58 39,52 40,49 Z" fill="${po.s}"/>
+  <path d="M64,48 C69,50 70,60 67,68 l-8,-3 C60,58 61,52 60,49 Z" fill="${po.s}"/>
+  <path d="M44,46 l6,7 6,-7 q-6,-3 -12,0 z" fill="${collar}"/>
+  <rect x="49" y="50" width="2" height="13" fill="${po.s}"/>
   <!-- forearms + gloved hands -->
-  <path d="M35,64 C33,70 38,76 47,78.5" stroke="#e8b088" stroke-width="6" fill="none" stroke-linecap="round"/>
-  <path d="M65,64 C67,70 62,76 53,78.5" stroke="#e8b088" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M35,64 C33,70 38,76 47,78.5" stroke="${sk.m}" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M65,64 C67,70 62,76 53,78.5" stroke="${sk.m}" stroke-width="6" fill="none" stroke-linecap="round"/>
   <circle cx="50.5" cy="78" r="4.8" fill="#f2f1ec"/>
   <!-- neck + head -->
-  <rect x="46.5" y="37" width="7" height="6" rx="1" fill="#e0a378"/>
-  <circle cx="50" cy="29" r="9.2" fill="#e8b088"/>
-  <circle cx="40.6" cy="29" r="1.8" fill="#e0a378"/><circle cx="59.4" cy="29" r="1.8" fill="#e0a378"/>
+  <rect x="46.5" y="37" width="7" height="6" rx="1" fill="${sk.s}"/>
+  <circle cx="50" cy="29" r="9.2" fill="${sk.m}"/>
+  <circle cx="40.6" cy="29" r="1.8" fill="${sk.s}"/><circle cx="59.4" cy="29" r="1.8" fill="${sk.s}"/>
   <rect x="42.6" y="27" width="14.8" height="4.2" rx="2.1" fill="#14202c"/>
   <!-- cap -->
   <path d="M40,28 C40,15 60,15 60,28 Z" fill="#f2f1ec"/>
-  <rect x="40" y="25.6" width="20" height="3" fill="#0FA888"/>
+  <rect x="40" y="25.6" width="20" height="3" fill="${po.m}"/>
   <path d="M37,28.4 q13,5.4 26,0 q-1,3.6 -4.5,4.3 q-8.5,1.9 -17,0 q-3.5,-0.7 -4.5,-4.3 z" fill="#e7e6e0"/>
 </svg>`;}
+function swatchRow(label,opts,curId,key,colorOf){
+  const row=$(`<div style="margin:9px 0"></div>`);
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${label}</div>`));
+  const wrap=$(`<div style="display:flex;gap:9px;flex-wrap:wrap"></div>`);
+  opts.forEach(o=>{
+    const sel=curId===o.id;
+    const sw=$(`<button aria-label="${label} ${o.id}" style="width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${colorOf(o)};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}"></button>`);
+    sw.onclick=()=>{S.look[key]=o.id; LS.set('bag_look',S.look); render();};
+    wrap.appendChild(sw);
+  });
+  row.appendChild(wrap); return row;
+}
+function handRow(){
+  const row=$(`<div style="margin:9px 0"></div>`);
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Handedness</div>`));
+  const wrap=$(`<div class="mini" style="margin:0"></div>`);
+  const r=$(`<button class="btn ${!S.look.lefty?'gold':'ghost'}" style="font-size:14px;padding:10px">Right-handed</button>`);
+  const l=$(`<button class="btn ${S.look.lefty?'gold':'ghost'}" style="font-size:14px;padding:10px">Left-handed</button>`);
+  r.onclick=()=>{S.look.lefty=false;LS.set('bag_look',S.look);render();};
+  l.onclick=()=>{S.look.lefty=true;LS.set('bag_look',S.look);render();};
+  wrap.appendChild(r);wrap.appendChild(l);row.appendChild(wrap);return row;
+}
 const RSHORT={dist:'DRV',acc:'ACC',app:'APP',sht:'SHT',scr:'SCR',bnk:'BNK',put:'PUT',clu:'COM'};
 function radarSVG(){
   const n=CATS.length, cx=120, cy=118, R=84;
@@ -785,6 +840,12 @@ function scrBuild(){
   const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${S.name}">`);
   inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name);}; add(inp);
   add($(`<div style="height:14px"></div>`));
+  add($(`<h2 style="margin:0 0 2px">Customize your golfer</h2>`));
+  add(handRow());
+  add(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
+  add(swatchRow('Shirt',POLOS,S.look.polo,'polo',o=>o.m));
+  add(swatchRow('Trousers',PANTS,S.look.pants,'pants',o=>o.a));
+  add($(`<div style="height:16px"></div>`));
   if(S.daily){
     add($(`<h2 style="margin:0 0 8px">Today's challenge</h2>`));
     const d=$(`<button class="btn goldfill">Play Daily Season<span class="sub">18 events · same wheel for everyone today</span></button>`);
@@ -908,7 +969,7 @@ function drawShareCard(cv,info,vals){
   ctx.fillStyle='#F4E3C9'; ctx.font='800 34px Impact,system-ui,sans-serif';
   ctx.fillText((info.name||'Your Golfer').toUpperCase(),W/2,392);
   ctx.fillStyle='#9fb0bd'; ctx.font='700 14px system-ui,sans-serif';
-  ctx.fillText(`OVR ${info.ovr}  ·  ${info.events} EVENTS  ·  ${info.majors} MAJORS`,W/2,414);
+  ctx.fillText(`OVR ${info.ovr}${info.year>1?'  ·  YR '+info.year:''}  ·  ${info.events} EVENTS  ·  ${info.majors} MAJORS`,W/2,414);
   ctx.fillStyle=info.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 22px Impact,system-ui,sans-serif';
   ctx.fillText('NET '+fmtSigned(info.net),W/2,448);
   // stat cells
@@ -951,11 +1012,17 @@ function scrSummary(){
   const N=byMoney.length;
   const ovr=Math.round(me.skill);
   const ec=seasonNet(t);
-  if(!S.recorded){S.recorded=true; const r=recordSeason({name:me.name,ovr,money:t.money,gross:ec.gross,net:ec.net,wins:t.wins,majorsWon:t.majors,played:t.played,made:t.made,moneyRank,best:t.best}); S.freshBadges=r.fresh;}
+  if(!S.recorded){S.recorded=true;
+    const r=recordSeason({name:me.name,ovr,money:t.money,gross:ec.gross,net:ec.net,wins:t.wins,majorsWon:t.majors,played:t.played,made:t.made,moneyRank,best:t.best}); S.freshBadges=r.fresh;
+    S.career=S.career||{money:0,net:0,wins:0,majors:0,top10:0,best:99,seasons:[]};
+    S.career.money+=t.money; S.career.net+=ec.net; S.career.wins+=t.wins; S.career.majors+=t.majors; S.career.top10+=t.top10;
+    if(t.best<S.career.best)S.career.best=t.best;
+    S.career.seasons.push({year:S.year||1,net:ec.net,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank});
+  }
   if(S.daily&&!S.dailyStored){S.dailyStored=true; LS.set('bag_daily',{date:S.dailySeed,done:true,result:{name:me.name,ovr,net:ec.net,money:t.money,moneyRank,N,wins:t.wins,majors:t.majors,best:t.best}});}
-  add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':'Season complete'}</span></div>`));
+  add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':(S.year>1?('Year '+S.year+' complete'):'Season complete')}</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:10px">${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
+  add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':('Year '+(S.year||1)+' · ')}${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
   const netCol=ec.net>=0?'#35d6a0':'#E14A33';
   add($(`<div class="center" style="margin-bottom:6px">
     <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Net profit</div>
@@ -981,6 +1048,22 @@ function scrSummary(){
   byMoney.slice(0,10).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
   if(moneyRank>10){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(byMoney[moneyRank-1],moneyRank,true));}
   add(board);
+  if(!S.daily && S.career && S.career.seasons.length>1){
+    const c=S.career, ccol=c.net>=0?'#35d6a0':'#E14A33';
+    add($(`<h2 style="margin:16px 0 8px">Career · ${c.seasons.length} years</h2>`));
+    const ct=$(`<div class="tiles"></div>`);
+    ct.appendChild($(`<div class="tile"><div class="k">Career net</div><div class="v" style="color:${ccol}">${fmtSigned(c.net)}</div></div>`));
+    ct.appendChild(tile('Career money',fmt(c.money),true));
+    ct.appendChild(tile('Career wins',c.wins+''));
+    ct.appendChild(tile('Career majors',c.majors+''));
+    add(ct);
+    const yb=$(`<div class="board"></div>`);
+    c.seasons.forEach(s=>yb.appendChild($(`<div class="lb" style="grid-template-columns:46px 1fr 96px">
+      <span class="pos">Yr ${s.year}</span>
+      <span class="pl">${s.wins}W · ${s.majors} maj · best ${bestTxt(s.best)}</span>
+      <span class="mny" style="color:${s.net>=0?'#35d6a0':'#E14A33'}">${fmtSigned(s.net)}</span></div>`)));
+    add(yb);
+  }
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
   const share=`BUILD A GOLFER — ${me.name} (OVR ${Math.round(me.skill)})\n${fmt(t.money)} · #${moneyRank} money${wreath}\n${t.wins}W · ${t.majors} majors · best ${bestTxt(t.best)}\nRunThe.GG`;
   add($(`<div style="height:14px"></div>`));
@@ -988,7 +1071,7 @@ function scrSummary(){
   const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
   const cv=document.createElement('canvas');
   cv.style.cssText='width:100%;max-width:300px;display:block;margin:0 auto;border-radius:14px;border:1px solid var(--line)';
-  drawShareCard(cv,{name:me.name,ovr,events:S.schedule.length,majors:S.schedule.filter(e=>e.major).length,money:t.money,net:ec.net,moneyRank,N,wins:t.wins,majorsWon:t.majors,best:t.best,fedexRank},vals);
+  drawShareCard(cv,{name:me.name,ovr,year:S.year||1,events:S.schedule.length,majors:S.schedule.filter(e=>e.major).length,money:t.money,net:ec.net,moneyRank,N,wins:t.wins,majorsWon:t.majors,best:t.best,fedexRank},vals);
   add(cv);
   const row=$(`<div class="mini" style="margin-top:10px"></div>`);
   const dl=$(`<button class="btn gold">⤓ Save Card</button>`);
@@ -999,8 +1082,21 @@ function scrSummary(){
   const cp=$(`<button class="btn ghost" style="margin-top:10px">Copy Text Result</button>`);
   cp.onclick=()=>{navigator.clipboard?.writeText(share); cp.textContent='Copied ✓'; setTimeout(()=>cp.textContent='Copy Text Result',1400);};
   add(cp);
-  const again=$(`<button class="btn red" style="margin-top:10px">Build Another Golfer</button>`);
-  again.onclick=()=>{reset();render();}; add(again);
+  add($(`<div style="height:14px"></div>`));
+  if(S.daily){
+    const again=$(`<button class="btn red">Build Another Golfer</button>`);
+    again.onclick=()=>{reset();render();}; add(again);
+  } else {
+    const cont=$(`<button class="btn goldfill">Continue to Year ${(S.year||1)+1} ▸<span class="sub">Same golfer · run another season</span></button>`);
+    cont.onclick=continueFranchise; add(cont);
+    const retire=$(`<button class="btn ghost" style="margin-top:10px">Retire — Build New Golfer</button>`);
+    retire.onclick=()=>{reset();render();}; add(retire);
+  }
+}
+function continueFranchise(){
+  S.year=(S.year||1)+1;
+  S.schedule=[]; S.evtIndex=0; S.season=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false;
+  startSeason(false);
 }
 function tile(k,v,gold){return $(`<div class="tile"><div class="k">${k}</div><div class="v ${gold?'':'cream'}">${v}</div></div>`);}
 function moneyRow(r,pos,you){return $(`<div class="lb ${you?'you':''}" style="grid-template-columns:34px 1fr 92px">
