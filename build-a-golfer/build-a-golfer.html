@@ -708,12 +708,14 @@ function simRound(eo,clu,{major,finalRd,courseAdj}){
   return m+gauss()*k.sigma;
 }
 /* course fit (§2): skill-weight multipliers, renormalized to 1.0, → event-effective overall.
-   Non-major events use multipliers MEASURED per-course from DataGolf historical SG (course_fit.json,
-   clamp 0.82-1.35); dist & acc share the course's driving multiplier (the distance-vs-accuracy split
-   is the pending DataGolf course-fit "B" refinement). The four majors stay hand-tuned — Augusta and
-   the rotating Open/links venues aren't in the measured set yet (the only remaining gaps). */
+   Every scheduled event maps to a real course whose multipliers are MEASURED per-course from DataGolf
+   historical SG (course_fit.json, clamp 0.82-1.40); dist & acc share the course's driving multiplier
+   (the distance-vs-accuracy split is the pending DataGolf course-fit "B" refinement). The four majors
+   are now measured too — each mapped to a canonical recently-measured venue (Augusta fully measured;
+   Oakmont / Valhalla / St Andrews are measured+expert blends from the 2019-26 SG pull). Scottish & 3M
+   Opens have no entry yet -> neutral (eventWeights returns base weights). */
 const COURSEFIT={
-  // --- measured from real rounds (course_fit.json) ---
+  // --- regular / signature events ---
   "Kapalua Invitational": {dist:0.923,acc:0.923,app:0.82,sht:0.82,scr:0.82,bnk:0.82,put:0.918,clu:1},  // Plantation Course at Kapalua
   "Phoenix Open": {dist:1.249,acc:1.249,app:0.82,sht:0.987,scr:0.987,bnk:0.987,put:1.014,clu:1},  // TPC Scottsdale
   "Pebble Beach Pro-Am": {dist:0.82,acc:0.82,app:1.153,sht:1.137,scr:1.137,bnk:1.137,put:1.088,clu:1},  // Pebble Beach GL
@@ -726,12 +728,11 @@ const COURSEFIT={
   "Travelers Championship": {dist:1.243,acc:1.243,app:0.897,sht:1.046,scr:1.046,bnk:1.046,put:0.987,clu:1},  // TPC River Highlands
   "Wyndham Championship": {dist:1.054,acc:1.054,app:0.82,sht:0.82,scr:0.82,bnk:0.82,put:0.975,clu:1},  // Sedgefield CC
   "Tour Championship": {dist:0.82,acc:0.82,app:0.861,sht:0.857,scr:0.857,bnk:0.857,put:0.968,clu:1},  // East Lake GC
-  // --- majors: hand-tuned gaps (not yet in the measured set) ---
-  'The Masters':      {dist:1.10,acc:0.85,app:1.30,sht:1.25,scr:1.20,bnk:1.10,put:1.20,clu:1.10},
-  'U.S. Open':        {dist:0.90,acc:1.40,app:1.20,sht:1.15,scr:1.25,bnk:1.10,put:1.10,clu:1.10},
-  'The Open':         {dist:0.95,acc:1.10,app:1.10,sht:1.25,scr:1.35,bnk:1.15,put:1.15,clu:1.15},
-  'PGA Championship': {dist:1.10,acc:1.00,app:1.15,sht:1.00,scr:1.00,bnk:1.00,put:1.05,clu:1.05},
-  // Scottish Open & 3M Open: not in the measured set -> neutral (eventWeights returns base weights)
+  // --- majors: measured venues (course_fit.json) ---
+  'The Masters':      {dist:1.137,acc:1.137,app:1.141,sht:1.339,scr:1.339,bnk:1.339,put:0.976,clu:1},  // Augusta National GC (fully measured)
+  'PGA Championship': {dist:1.124,acc:1.124,app:1.215,sht:1.11,scr:1.11,bnk:1.11,put:1.082,clu:1},  // Valhalla GC
+  'U.S. Open':        {dist:1.262,acc:1.262,app:1.191,sht:1.4,scr:1.4,bnk:1.4,put:1.194,clu:1},  // Oakmont CC
+  'The Open':         {dist:1.328,acc:1.328,app:0.85,sht:1.113,scr:1.113,bnk:1.113,put:1.265,clu:1},  // St Andrews (Old Course)
 };
 function eventWeights(evt){
   const m=COURSEFIT[evt.name]; if(!m) return CATS;                 // default = neutral base weights

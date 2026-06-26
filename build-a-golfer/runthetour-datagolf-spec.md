@@ -42,30 +42,61 @@ Validate (median over many sims should land near):
 
 ---
 
-## 2. COURSE FIT — per-course skill-weight multipliers (measured)
+## 2. COURSE FIT — per-course measured multipliers (`course_fit.json`)
 
-Course fit is now **measured per-course from real DataGolf historical SG** — the spread-ratio of each
-SG category vs the tour-wide baseline (gain 2.3, clamp 0.82–1.35) — shipped as `course_fit.json`.
-The old hand-tuned bucket table is gone.
+Each course rewards different skills. Instead of bucketed guesses, use **measured** per-course multipliers in
+`course_fit.json` — built from the spread of each SG category at that course vs tour-wide, across ~20 years of
+real rounds. 85 courses covered (essentially the whole recurring regular-season schedule), each with high
+confidence on the recurring tour stops.
 
-Apply: look up the event's course, reweight the 8 skills by its `mult`, renormalize to 1.0, and feed the
-event-effective overall into §1. Courses not listed (thin sample / brand-new) → neutral 1.0, or a fresh
-DataGolf course-fit pull.
+Apply per event: look up the event's course → take its `mult` (8 skills) → multiply the base skill weights
+(dist .11, acc .12, app .21, sht .10, scr .08, bnk .06, put .19, clu .13) by those multipliers → renormalize
+to sum 1.0 → that's the event-effective weighting; compute the player's event-effective overall and feed it to
+§1. Multipliers are clamped 0.82-1.40 so fit shades outcomes without overwhelming raw skill. `clu` is always 1.0
+(no course signal for composure).
 
-Per-course fields:
+Examples from the file (reads like real golf): Riviera rewards short game, driving suppressed (0.82); Muirfield
+Village is a ball-striking test (approach + short ~1.28); Pebble rewards approach/short on tiny greens; Redstone
+and TPC Four Seasons are bomber tracks (driving 1.35); Harbour Town and Colonial are precision courses.
 
-- `mult` — the 8 skill multipliers. `dist` and `acc` **share the measured driving multiplier**; clu is
-  always `1.0` (no course signal).
-- `driving_split` / `dist_tilt_hint` — splitting the shared driving multiplier into distance vs accuracy
-  is the **one open refinement** (DataGolf course-fit "B"). `driving_split:"B"` flags it as pending;
-  `dist_tilt_hint` ∈ [0,1] hints the lean (0 = accuracy-leaning … 1 = distance-leaning; `null` = unknown).
-  Until it's measured, dist and acc carry the same value.
-- `rounds` — sample size; `confidence` — low / medium / high. Weight any new DataGolf pulls by these.
+**A/B division (this is the efficient split):**
 
-**The four majors are the only remaining gaps.** Augusta (Masters) and the rotating Open / links venues
-aren't in the measured set, so they keep their hand-tuned profiles until measured. Map each scheduled
-event to its real course (`build-a-golfer.html` inlines the relevant subset of `course_fit.json` so the
-game stays a single self-contained file; `course_fit.json` is the source of truth in the repo).
+- **A (the file, done):** combined **driving**, **approach**, **short game**, **putting** — measured, for every
+  recurring venue. `dist` and `acc` both currently carry the same measured **driving** multiplier.
+- **B (DataGolf course-fit pull, where it matters):** the **distance-vs-accuracy split** only. A cannot separate
+  bomber-from-accuracy cleanly (both correlate with off-the-tee gains almost everywhere). Each course carries a
+  `dist_tilt_hint` (directional only) until a DataGolf course-fit pull refines `dist` vs `acc`. Prioritize courses
+  where the split actually changes drafting (clear bomber or clear accuracy tracks).
+
+**Major venues are now in the file**, sourced in three tiers (see each course's `source` + `confidence`):
+
+- **Augusta** — fully measured from 5 recent editions (high confidence).
+- **Recent rotating majors** (Oakmont, Pinehurst, Winged Foot, Shinnecock, Brookline, LACC, Oak Hill, Southern
+  Hills, Valhalla, Kiawah, Aronimink, St Andrews, Portrush, Hoylake, Troon) — `measured+expert blend`: one real
+  recent edition (~450 rounds) tempered 50/50 with documented venue character, so one week's setup doesn't
+  dominate (medium confidence).
+- **Non-recent venues** (Merion, Erin Hills, Oakland Hills, Baltusrol, Olympic Club, Carnoustie, Muirfield-Scotland,
+  Birkdale, Lytham, Royal St George's, Turnberry) — `expert` character only, no SG since 2018 (kept as floor).
+
+**Any course missing from the file** → default to 1.0, the major-archetype fallback below, or a DataGolf pull.
+Don't fall back to neutral for a major — it should feel distinct.
+
+Major-archetype defaults (fallback only, for a venue with no entry at all):
+
+| Major type | dist | acc | app | sht | scr | bnk | put | clu |
+|---|---|---|---|---|---|---|---|---|
+| Masters (Augusta) | 1.10 | 0.85 | 1.30 | 1.25 | 1.20 | 1.10 | 1.20 | 1.00 |
+| U.S. Open (penal) | 0.90 | 1.40 | 1.20 | 1.15 | 1.25 | 1.10 | 1.10 | 1.00 |
+| The Open (links) | 0.95 | 1.10 | 1.10 | 1.25 | 1.35 | 1.15 | 1.15 | 1.00 |
+| PGA Championship | 1.10 | 1.00 | 1.15 | 1.00 | 1.00 | 1.00 | 1.05 | 1.00 |
+
+Each course in the file also has a `confidence` (high/medium/low) and `rounds` count — prefer high-confidence
+fits, treat low-confidence ones as soft.
+
+**This game wires it in by mapping each of the 18 scheduled events to a canonical real course and inlining that
+subset of `course_fit.json` as `COURSEFIT` (so the build stays a single self-contained file; `course_fit.json` is
+the source of truth in the repo). The four majors map to Augusta / Valhalla (PGA) / Oakmont (U.S. Open) /
+St Andrews (The Open). Scottish & 3M Opens have no entry yet → neutral.**
 
 ---
 
@@ -126,7 +157,16 @@ The post-2004 historical legend pull was a one-time job — not part of the week
 - **§1 done** — sim rebuilt on the measured model; `BASE` re-bisected for our field (reg 0.91 / maj 2.74;
   the eligible pool runs mean ~82 with stars to 95), plus a small per-event course-difficulty draw to match
   the winner-spread targets. Validated vs the table above.
-- **§2 done** — `course_fit.json` added; per-course multipliers wired for the 12 non-major schedule events;
-  the 4 majors stay hand-tuned (the flagged gaps); Scottish Open & 3M Open default to neutral (not measured).
+- **§2 done (v3, measured majors)** — `course_fit.json` expanded to the full measured set (incl. major
+  venues in three source tiers). All 18 schedule events map to a real course; the 4 majors are now measured
+  too — Masters→Augusta (fully measured), PGA→Valhalla, U.S. Open→Oakmont, The Open→St Andrews (Old) (the
+  rotating-major measured+expert blends). Scottish & 3M Opens still default to neutral (no entry yet).
 - **§3 done** — field drawn only from data-grounded players (`fld` flag), size 120, ~top-65 cut.
 - **§4 / §5 parked** — both need `DG_KEY` + deploy approval; key must stay server-side.
+
+---
+
+## 6. IP note
+
+Deriving our own ratings/sim from DataGolf stats is fine (same as the MLB engine). Piping their live model
+**outputs** verbatim into a commercial/wagering product is a licensing question — check terms before doing that.

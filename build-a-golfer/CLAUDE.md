@@ -527,6 +527,21 @@ allows Google Fonts, or self-host Anton.*
   - Verified end to end via a scripted two-year season (`recapcheck.js`): zero
     page errors, winsList accumulates across years, all screens render.
 
+- 2026-06-26: §2 v3 — expanded course fit + **measured majors**. Owner shipped a
+  much larger `course_fit.json` (110 entries / ~85 distinct venues incl. the major
+  rotation in three source tiers: Augusta fully measured; Oakmont/Pinehurst/Valhalla/
+  Kiawah/St Andrews/etc. measured+expert blends; older venues expert-character floor;
+  clamp widened to 0.82–1.40). Replaced the repo file and the spec §2 (added the A/B
+  split write-up, major-archetype fallback table, three-tier sourcing, and a new §6 IP
+  note). Rewired the inlined `COURSEFIT` so the **four majors are now measured** instead
+  of hand-tuned — mapped to canonical venues: Masters→Augusta National, PGA→Valhalla,
+  U.S. Open→Oakmont, The Open→St Andrews (Old). The 12 regular events already matched the
+  file; Scottish & 3M Opens stay neutral (no entry). Validated: all major weights
+  renormalize to 1.0; tilts read true (Augusta/Oakmont reward short-game+scrambling,
+  Valhalla power+irons, St Andrews driving); full-season smoke test clean — major winner
+  avg −10.3, regular −16 (within spec targets), Oakmont the toughest major. Calibration
+  (BASE/SIGMA) untouched — course fit only redistributes per-event weighting.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
