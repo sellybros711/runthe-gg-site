@@ -5834,6 +5834,17 @@ function buildAcctFlagRow(){
   }));
 }
 
+// Reject if a Supabase request doesn't settle in `ms`, so a hung backend shows a
+// clear error instead of an infinite spinner. The underlying request may still
+// finish in the background; the UI just stops waiting on it.
+function withTimeout(thenable, ms, label){
+  return Promise.race([
+    Promise.resolve(thenable),
+    new Promise((_,reject)=>setTimeout(
+      ()=>reject(new Error((label||'Request')+' timed out — check your connection or try again in a moment.')), ms))
+  ]);
+}
+
 // Accept an email OR a username on sign-in: a username is resolved to its
 // account email (Supabase signs in by email).
 async function resolveLoginEmail(loginId){
@@ -5841,7 +5852,8 @@ async function resolveLoginEmail(loginId){
   if(!loginId) throw new Error('Enter your email or username.');
   if(loginId.includes('@')) return loginId;
   if(!sbClient) return loginId;
-  const { data, error } = await sbClient.rpc('email_for_username', { p_username: loginId });
+  const { data, error } = await withTimeout(
+    sbClient.rpc('email_for_username', { p_username: loginId }), 15000, 'Sign-in');
   if(error || !data) throw new Error('No account found with that username.');
   return data;
 }
@@ -5858,19 +5870,21 @@ async function acctSubmit(){
       if(isBannedName(uname)) throw new Error('Please choose a different username.');
       if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('Enter a valid email address.');
       if(pass.length<6) throw new Error('Password must be at least 6 characters.');
-      const { data:avail, error:e0 } = await sbClient.rpc('username_available',{ p_username: uname });
+      const { data:avail, error:e0 } = await withTimeout(
+        sbClient.rpc('username_available',{ p_username: uname }), 15000, 'Sign-up');
       if(e0) throw e0;
       if(!avail) throw new Error('That username is taken — try another.');
-      const { data, error } = await sbClient.auth.signUp({
+      const { data, error } = await withTimeout(sbClient.auth.signUp({
         email, password: pass,
         options:{ data:{ username: uname }, emailRedirectTo: location.origin }
-      });
+      }), 20000, 'Sign-up');
       if(error) throw error;
       if(!data.session){ showConfirmPane(email); }   // email confirmation ON
       else { loginNav=true; closeAccountModal(); }    // signed in immediately → profile
     }else{
       const loginEmail = await resolveLoginEmail(email);   // email or username
-      const { error } = await sbClient.auth.signInWithPassword({ email: loginEmail, password: pass });
+      const { error } = await withTimeout(
+        sbClient.auth.signInWithPassword({ email: loginEmail, password: pass }), 15000, 'Sign-in');
       if(error) throw error;
       loginNav=true; closeAccountModal();             // → profile page
     }
