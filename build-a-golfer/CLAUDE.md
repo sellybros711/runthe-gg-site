@@ -1,4 +1,4 @@
-# Build a Golfer — CLAUDE.md
+# RunTheTour (formerly "Build a Golfer") — CLAUDE.md
 
 > Session-continuity doc for Claude Code. Captures the handoff so future sessions
 > have context without re-reading the original brief.
@@ -370,6 +370,27 @@ allows Google Fonts, or self-host Anton.*
   - **Share card** trimmed to 4 stats — **Winnings, Tour Rank, Wins, Majors** —
     and removed the `#` from ranks.
   Verified, zero page errors.
+
+- 2026-06-26 (later): Full **RunTheTour** rebrand + new logo + figure polish.
+  - **New header logo** matching the owner's RUN THE TOUR crest: stacked serif
+    wordmark — small cream "RUN THE" over large gold "TOUR" (Cinzel), kept the
+    shield crest + golf-ball divider + double rule + cream Player/Reset pills.
+    Per owner: keep the full-bleed green surface (no cream band) — "only the word
+    font and logo" mattered. Title hero changed to the tagline "YOUR TOUR STARTS
+    HERE" since the header now carries the brand.
+  - **Renamed everywhere**: page `<title>`, top comment, mailto subject, About
+    toast, share-card title (RUN THE / TOUR), and the copy-text result
+    (RUNTHETOUR …). No "Build a Golfer" brand strings remain (only two
+    lower-case "build a golfer" *verb* phrases in body copy).
+  - **Daily Challenge** button given its own colour — new `.btn.blue` ("blue
+    tees" blue), distinct from the gold primary "Step to the Tee Box".
+  - **Golfer figure** re-drawn closer to the reference render: cleaner
+    follow-through with layered shading on legs/torso, white shoes + white cap
+    with a polo-coloured band, gloved hands high, visible face/ear/jaw. Still
+    colour-customizable (skin/polo/pants), Male/Female (ponytail), lefty mirror.
+    With teal polo + white pants it reads very close to the owner's picture.
+  Verified across header/title/setup-figure (M/F, R/L) and a direct share-card
+  render — zero page errors.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
