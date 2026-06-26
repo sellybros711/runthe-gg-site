@@ -238,6 +238,20 @@ allows Google Fonts, or self-host Anton.*
     to replay its full leaderboard + your rounds.
   Verified end to end with headless Chromium, zero page errors.
 
+- 2026-06-26: Polish round (owner feedback).
+  - **Scroll no longer jumps to top** on same-screen re-renders (e.g. picking
+    customization swatches): `render()` preserves `scrollY` unless the view
+    (screen+overlay+recapEvent) actually changes.
+  - **Reel cleanup**: the "Press spin" placeholder reel is gone; before a spin
+    you just see the Spin button. The reel only appears while spinning / after a
+    reveal.
+  - **Fits one screen**: tightened `.attr`/`.slot`/`.buildhero`/`.screen` sizes
+    and capped the radar width, so all 8 skill choices fit on a phone without
+    scrolling.
+  - **Removed "No empty slots"** scout line (slots always fill under the 2-respin
+    cap, so it was always-on and meaningless).
+  Verified on a 430×780 viewport, zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
