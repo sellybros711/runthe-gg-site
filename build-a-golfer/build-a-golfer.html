@@ -540,11 +540,6 @@ function archetype(p){
   const top=vals.slice().sort((a,b)=>b.v-a.v)[0];
   const a=ARCH[top.k]; return {name:a[0], desc:a[1]};
 }
-function playsLike(p){
-  let best=null, bd=1e18;
-  GOLFERS.forEach(g=>{const d=CATS.reduce((s,c)=>s+(g[c.k]-p[c.k])*(g[c.k]-p[c.k])*c.w,0); if(d<bd){bd=d;best=g;}});
-  return best;
-}
 
 
 
@@ -991,10 +986,10 @@ function scrBuild(){
   add($(`<div class="center"><span class="tag">Your creation</span></div>`));
   add($(`<div style="height:8px"></div>`));
   add(buildHero());
-  const arch=archetype(p), like=playsLike(p);
+  const arch=archetype(p);
   add($(`<div style="text-align:center;margin-top:8px">
     <div style="font-family:var(--display);font-style:italic;font-size:24px;color:var(--gold);line-height:1">${arch.name}</div>
-    <div class="small muted" style="margin-top:5px">${arch.desc} · plays like <b style="color:var(--oncard)">${like.name}</b></div></div>`));
+    <div class="small muted" style="margin-top:5px">${arch.desc}</div></div>`));
   const card=$(`<div class="card-grid" style="margin-top:12px"></div>`);
   let best={v:-1},worst={v:200};
   CATS.forEach(cat=>{
