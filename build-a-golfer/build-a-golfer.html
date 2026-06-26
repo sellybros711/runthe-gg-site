@@ -1790,16 +1790,18 @@ function scrSummary(){
     const chips=got.map(a=>`<span class="tag" style="color:var(--gold);border-color:var(--gold)">${a.e} ${a.t}</span>`).join(' ');
     add($(`<div class="scout" style="margin:4px 0 12px;text-align:center"><b style="color:var(--gold)">Achievement${got.length>1?'s':''} unlocked</b><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center">${chips}</div></div>`));
   }
-  const tiles=$(`<div class="tiles four"></div>`);
-  tiles.appendChild(tile('Earnings',fmt(t.money),true));
-  tiles.appendChild(tile('Earnings rank',moneyRank+' / '+N));
-  tiles.appendChild(tile('Wins',t.wins+''));
-  tiles.appendChild(tile('Majors',t.majors+''));
-  tiles.appendChild(tile('Top 10s',t.top10+''));
-  tiles.appendChild(tile('Best finish',t.best===99?'MC':(t.best===1?'WIN':'T'+t.best)));
-  tiles.appendChild(tile('Tour Points',t.points.toLocaleString()));
-  tiles.appendChild(tile('Tour Rank',fedexRank+' / '+N));
-  add(tiles);
+  // five headline stats: Earnings · Profit (two money tiles) over Tour Rank · Top 10's · Wins
+  const pcol=ec.net>=0?'#35d6a0':'#E14A33';
+  const tilesA=$(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin-bottom:10px"></div>`);
+  tilesA.appendChild(tile('Earnings',fmt(t.money),true));
+  tilesA.appendChild($(`<div class="tile"><div class="k">Profit</div><div class="v" style="color:${pcol}">${fmtSigned(ec.net)}</div></div>`));
+  add(tilesA);
+  const tilesB=$(`<div class="tiles" style="grid-template-columns:repeat(3,1fr);margin-top:0"></div>`);
+  const statTile=(k,v)=>$(`<div class="tile"><div class="k">${k}</div><div class="v" style="font-size:19px;white-space:nowrap">${v}</div></div>`);
+  tilesB.appendChild(statTile('Tour Rank',fedexRank+' / '+N));
+  tilesB.appendChild(statTile("Top 10's",t.top10+''));
+  tilesB.appendChild(statTile('Wins',t.wins+''));
+  add(tilesB);
   // year-over-year skill changes (vs the build you ran last year)
   const ss=(!S.daily && S.career && S.career.skillSeasons)||[];
   if(ss.length>=2){
