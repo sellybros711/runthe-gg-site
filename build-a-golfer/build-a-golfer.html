@@ -411,11 +411,13 @@ function restoreResume(){const info=resumeInfo(); if(!info)return; const r=info.
 /* ---------- Career Mode: persist a multi-season franchise to resume later ---------- */
 function saveCareer(){ if(S.daily||!S.career) return false;
   LS.set('bag_careersave',{year:S.year||1, career:S.career, fieldRoster:S.fieldRoster||null,
+    careerSeed:S.careerSeed, world:S.world||null,
     slots:S.slots, name:S.name, look:S.look, ovr:Math.round(buildPlayer().skill), savedAt:Date.now()}); return true; }
 function careerSaveInfo(){ const r=LS.get('bag_careersave',null); return (r&&r.career)?r:null; }
 function clearCareerSave(){ LS.set('bag_careersave',null); }
 function resumeCareer(){ const r=careerSaveInfo(); if(!r) return; reset();
   S.career=r.career; S.fieldRoster=r.fieldRoster||null; S.slots=r.slots||S.slots;
+  S.careerSeed=(r.careerSeed!=null?r.careerSeed:null); S.world=r.world||null;
   S.name=r.name||''; S.look=Object.assign({},DEFLOOK,r.look||{}); S.year=r.year||1; S.daily=false;
   track('career_resume',{year:S.year}); continueFranchise(); }   // picks up at next year's off-season
 
@@ -763,6 +765,77 @@ function eventOverall(p,ew){ return ew.reduce((s,c)=>s+p[c.k]*c.w,0); }
 const SPINS=10, REPLACEMENT=62;
 const FIELDSIZE=120;   // season field = you + (FIELDSIZE-1) data-grounded golfers (DataGolf spec §3)
 const FIELDPOOL=GOLFERS.filter(g=>g.fld);   // only current/historical (SG-rated) players make a credible field
+/* ============ CAREER MODE — living world: aging, retirement, generated rookies (career spec §1-6) ============ */
+const CW={dist:.11,acc:.12,app:.21,sht:.10,scr:.08,bnk:.06,put:.19,clu:.13};
+const SKK=['dist','acc','app','sht','scr','bnk','put','clu'];
+const ARCS={dist:[.95,23,28,.011,40,.022],acc:[.89,29,35,.004,46,.010],app:[.86,28,34,.006,44,.014],
+  sht:[.88,29,38,.004,47,.010],scr:[.88,29,38,.004,47,.010],bnk:[.88,29,38,.004,47,.010],
+  put:[.89,27,34,.005,45,.012],clu:[.80,34,44,.002,50,.006]};
+const CAREER_START_YEAR=2026, WORLD_TARGET=150;
+function ageArc(s,age){const[fl,ps,pe,d1,d2a,d2]=ARCS[s];
+  if(age<=ps) return clamp(fl+(1-fl)*(age-16)/(ps-16),fl,1);
+  if(age<=pe) return 1;
+  return Math.max(.45, 1 - d1*(Math.min(age,d2a)-pe) - d2*Math.max(0,age-d2a));}
+function skillPotential(g){ if(g._sp) return g._sp; const sp={}; SKK.forEach(s=>{const a=ageArc(s,g.arc_age||32); sp[s]=clamp(Math.round((g[s]||60)/a),(g[s]||60),99);}); g._sp=sp; return sp;}
+function livingOf(g,simYear){const age=simYear-(g.born||1990), sp=skillPotential(g), ls={};
+  SKK.forEach(s=>ls[s]=clamp(Math.round(sp[s]*ageArc(s,age)),40,99));
+  return {age,ls,ov:Math.round(SKK.reduce((a,s)=>a+ls[s]*CW[s],0))};}
+function pRetire(age,lo){let p; if(age<37)p=0; else if(age<=44)p=.01*(age-36)+(lo<74?.06:0);
+  else if(age<=49)p=.10+.06*(age-45)+(lo<76?.10:0); else if(age<=54)p=.40+.10*(age-50); else p=1; return Math.min(1,p);}
+function cgauss(rng,m,s){let u=0,v=0;while(!u)u=rng();while(!v)v=rng();return m+s*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+const NAT_W=[['USA',.34],['England',.08],['Australia',.06],['South Korea',.06],['Japan',.05],['South Africa',.04],['Spain',.03],['Sweden',.03],['Canada',.03],['Ireland',.025],['Germany',.02],['Argentina',.02],['France',.02],['Italy',.015],['Denmark',.015],['Other',.14]];
+const NAT_CODE={USA:'USA',England:'ENG',Australia:'AUS','South Korea':'KOR',Japan:'JPN','South Africa':'RSA',Spain:'ESP',Sweden:'SWE',Canada:'CAN',Ireland:'IRL',Germany:'GER',Argentina:'ARG',France:'FRA',Italy:'ITA',Denmark:'DEN',Other:'INT'};
+const FNAMES={USA:['Cole','Hayden','Brooks','Tanner','Carson','Bryce','Tripp','Mason','Reid','Cooper','Parker','Beau','Grant','Knox','Hudson','Cash','Brody','Jace','Wyatt','Colt','Easton','Brett','Chase','Drew'],England:['Ollie','Harry','Charlie','Reece','Freddie','Tom','Joe','Alfie','Archie','George','Jack','Louie'],Australia:['Kai','Lachlan','Beau','Jett','Cooper','Flynn','Hugo','Max','Oscar','Heath'],'South Korea':['Minjae','Seungwoo','Jihun','Doyoon','Taeyang','Junseo','Hyunwoo','Sangwoo'],Japan:['Riku','Sota','Haruto','Yuki','Ren','Kaito','Yuto','Sora'],'South Africa':['Dewald','Ruan','Jaco','Stefan','Pieter','Wian','Armand'],Spain:['Pablo','Álvaro','Mateo','Hugo','Marcos','Diego','Nico'],Sweden:['Filip','Albin','Hugo','Melvin','Viktor','Elias','Axel'],Canada:['Liam','Owen','Noah','Ethan','Nolan','Mathis'],Ireland:['Cian','Conor','Sean','Eoin','Darragh','Oisin'],Germany:['Jonas','Luca','Finn','Leon','Maxi','Tim'],Argentina:['Tomás','Mateo','Benjamín','Lautaro','Felipe'],France:['Hugo','Louis','Jules','Nathan','Théo'],Italy:['Lorenzo','Matteo','Marco','Davide','Andrea'],Denmark:['Oliver','Magnus','Frederik','Emil','Victor'],Other:['Alex','Daniel','Marco','Adam','Leo','Max','Sam','Niko']};
+const SNAMES={USA:['Whitaker','Sutter','Calloway','Hargrove','Lindquist','Boone','Marsh','Pruitt','Vance','Ellison','Stamper','Roark','Brennan','Kessler','Holt','Mercer','Dalton','Rhodes','Fenwick','Cobb'],England:['Ashworth','Pemberton','Whitlock','Hartley','Bardsley','Cresswell','Fairbanks','Holloway','Radcliffe','Stanton'],Australia:['Calvert','Hueston','Bracken','Donato','Mayberry','Sorrell','Hewson','Carrick'],'South Korea':['Kang','Seo','Yoon','Jung','Hwang','Lim','Noh','Bae'],Japan:['Takeda','Morita','Fujikawa','Nishida','Okamoto','Sakai','Hayashi','Ono'],'South Africa':['Pretorius','Coetzee','Van Wyk','Bekker','Lategan','Nel','Botha','Roux'],Spain:['Cabrera','Otero','Reyes','Castaño','Bermúdez','Gallego','Moya','Vidal'],Sweden:['Ahlberg','Sjöberg','Lindkvist','Norén','Hammar','Forsberg','Ek','Dahl'],Canada:['Tremblay','Gagnon','Beaulieu','Fortin','Leclerc','Caron'],Ireland:['Doyle','Gallagher','Brennan','Kavanagh','Molloy','Hegarty'],Germany:['Brandt','Keller','Vogel','Schreiber','Wagner','Busch'],Argentina:['Romero','Sosa','Ibarra','Acosta','Vega'],France:['Moreau','Lefevre','Girard','Rousseau','Faure'],Italy:['Conti','Ferrari','Greco','Bianchi','Rizzo'],Denmark:['Sørensen','Kjær','Mortensen','Holm','Dahl'],Other:['Novak','Kovač','Silva','Costa','Meyer','Halonen','Brandt']};
+const ARCH_W=[['allround',.30],['bomber',.18],['ballstriker',.18],['putter',.12],['shortgame',.12],['scrambler',.10]];
+const ARCH_SIG={bomber:['dist'],ballstriker:['app','acc'],putter:['put'],shortgame:['sht','scr'],scrambler:['scr','bnk'],allround:[]};
+const ARCH_LABEL={allround:'All-Rounder',bomber:'Bomber',ballstriker:'Ballstriker',putter:'Putter',shortgame:'Short-Game Artist',scrambler:'Scrambler'};
+const ARCH_SIGNAME={allround:'Approach',bomber:'Driving Distance',ballstriker:'Approach',putter:'Putting',shortgame:'Short Game',scrambler:'Scrambling'};
+function wpick(rng,tbl){let r=rng(),a=0;for(const[k,p]of tbl){a+=p;if(r<a)return k;}return tbl[tbl.length-1][0];}
+function genRookie(rng,simYear,used){
+  const nat=wpick(rng,NAT_W), fn=FNAMES[nat]||FNAMES.Other, sn=SNAMES[nat]||SNAMES.Other;
+  let nm,t=0; do{nm=fn[Math.floor(rng()*fn.length)]+' '+sn[Math.floor(rng()*sn.length)];t++;}while(used.has(nm)&&t<60); used.add(nm);
+  const age=18+Math.floor(rng()*5);
+  const tt=rng(); let pot; if(tt<.70)pot=cgauss(rng,80,2.5);else if(tt<.90)pot=cgauss(rng,85,1.5);else if(tt<.98)pot=cgauss(rng,89,1.5);else pot=cgauss(rng,92.5,1.5);
+  pot=clamp(Math.round(pot),70,96);
+  const ar=wpick(rng,ARCH_W), sig=ARCH_SIG[ar], cap={};
+  SKK.forEach(s=>cap[s]=pot+(sig.includes(s)?6+Math.round(rng()*6):0)+Math.round(cgauss(rng,0,2)));
+  cap.clu=Math.max(cap.clu,pot-2+Math.round(rng()*4));
+  let avg=SKK.reduce((a,s)=>a+cap[s]*CW[s],0), sh=pot-avg; SKK.forEach(s=>cap[s]=clamp(Math.round(cap[s]+sh),55,99));
+  const gm=Math.round(cgauss(rng,0,2)), bust=rng()<.12?-(4+Math.round(rng()*2)):0;
+  SKK.forEach(s=>cap[s]=clamp(cap[s]+gm+bust,55,99));
+  const g={name:nm,era:'cur',tier:'rising',nation:NAT_CODE[nat]||'INT',country:(nat==='Other'?'International':nat),
+    born:simYear-age,arc_age:age,majors:0,note:ARCH_LABEL[ar]+' prospect',archetype:ARCH_LABEL[ar],signature:ARCH_SIGNAME[ar],
+    data_source:'generated',fictional:true};
+  SKK.forEach(s=>g[s]=clamp(Math.round(cap[s]*ageArc(s,age)),40,99));
+  g.overall=Math.round(SKK.reduce((a,s)=>a+g[s]*CW[s],0));
+  g._sp={}; SKK.forEach(s=>g._sp[s]=cap[s]);   // realized per-skill ceilings
+  const potOv=Math.round(SKK.reduce((a,s)=>a+cap[s]*CW[s],0));
+  g.potential=potOv; g.rarity=potOv>=92?'Legendary':potOv>=88?'Epic':potOv>=83?'Rare':'Common'; g.skill=g.overall;
+  return g;
+}
+function stampLiving(g,simYear){const l=livingOf(g,simYear); g.lov=l.ov; g.lage=l.age; SKK.forEach(s=>g['l_'+s]=l.ls[s]); return g;}
+function refillWorld(w,rng){let guard=0;
+  const used=new Set(w.active.map(g=>g.name).concat(w.alumni.map(g=>g.name)).concat(GOLFERS.map(g=>g.name)));
+  while(w.active.length<WORLD_TARGET && guard++<500){ const r=genRookie(rng,w.simYear,used); stampLiving(r,w.simYear); w.active.push(r); } }
+function seedWorld(seed){
+  const rng=mulberry32((seed^0x51ed2701)>>>0);
+  const active=GOLFERS.filter(g=>String(g.data_source||'').startsWith('current')||g.born>=2000).map(g=>Object.assign({},g));
+  active.forEach(g=>stampLiving(g,CAREER_START_YEAR));
+  const w={seed, simYear:CAREER_START_YEAR, active, alumni:[]};
+  refillWorld(w,rng); return w;
+}
+function advanceWorld(w){ if(!w) return;
+  const rng=mulberry32(((w.seed^0x9e3779b9)+w.simYear*0x9e3779b1)>>>0);
+  w.simYear++;
+  const keep=[]; w.active.forEach(g=>{const l=livingOf(g,w.simYear); if(rng()<pRetire(l.age,l.ov)){g.retiredYear=w.simYear; w.alumni.push(g);} else {stampLiving(g,w.simYear); keep.push(g);}});
+  w.active=keep; refillWorld(w,rng); }
+function ensureWorld(){ if(S.daily) return null;
+  if(!S.world){ if(S.careerSeed==null) S.careerSeed=(Math.floor(Math.random()*4294967295))>>>0; S.world=seedWorld(S.careerSeed); }
+  return S.world; }
+function worldField(n){ const w=ensureWorld(); if(!w) return null;
+  return w.active.slice().sort((a,b)=>b.lov-a.lov).slice(0,n)
+    .map(g=>{const o={name:g.name,skill:g.lov}; SKK.forEach(s=>o[s]=g['l_'+s]); return o;}); }
 /* golfer customization palettes */
 const SKINS=[
   {id:'light', m:'#f0c6a4', s:'#e0ad84'},
@@ -1535,10 +1608,17 @@ function startSeason(majorsOnly){
   S.schedule=(majorsOnly&&!S.daily)?SCHEDULE.filter(e=>e.major):SCHEDULE.slice(); S.evtIndex=0;
   RNG = S.daily ? mulberry32((S.dailySeed^0x51ed2701)>>>0) : Math.random;
   const me=buildPlayer();
-  // persist the field across franchise years so career earnings accumulate vs the same golfers.
-  // carry all 8 skills so course-fit (§2) can compute an event-effective overall per player.
-  if(!S.fieldRoster) S.fieldRoster=fieldSample(FIELDSIZE-1).map(g=>({name:g.name,dist:g.dist,acc:g.acc,app:g.app,sht:g.sht,scr:g.scr,bnk:g.bnk,put:g.put,clu:g.clu,skill:g.skill}));
-  const field=S.fieldRoster.map(g=>Object.assign({you:false},g));
+  // Field: daily uses the static seeded SG field; career/free-play uses the LIVING WORLD
+  // (aging, retiring, rookie-refilled per year — career spec §4/§7). Each carries all 8 living
+  // skills so course-fit (§2) computes an event-effective overall per player.
+  let roster;
+  if(S.daily){
+    if(!S.fieldRoster) S.fieldRoster=fieldSample(FIELDSIZE-1).map(g=>({name:g.name,dist:g.dist,acc:g.acc,app:g.app,sht:g.sht,scr:g.scr,bnk:g.bnk,put:g.put,clu:g.clu,skill:g.skill}));
+    roster=S.fieldRoster;
+  } else {
+    roster=worldField(FIELDSIZE-1);   // living-world field for the current sim year
+  }
+  const field=roster.map(g=>Object.assign({you:false},g));
   field.push(me);
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0}]))};
   S.curEvt=null;
@@ -2019,6 +2099,7 @@ function scrSummary(){
 }
 function continueFranchise(){
   S.year=(S.year||1)+1;
+  ensureWorld(); advanceWorld(S.world);   // age the living world one year (retire/rookies); spec §2-5
   S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false;
   // off-season tune-up: re-spin up to 3 skills, 2 passes, must change at least one
   S.offseason={changes:0,maxChanges:3,reSpins:2}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
