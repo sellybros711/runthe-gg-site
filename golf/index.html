@@ -1,0 +1,2181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<!-- RunTheTour — solo season · v2 · RunThePitch skin -->
+<title>Run The Tour — Build a Golfer, Run a Pro Season · RunThe.GG</title>
+<meta name="description" content="Spin the wheel, draft one skill from each real golfer to build your own, then run a full pro season — win majors, bank the money, climb the tour. A free RunThe.GG game.">
+<meta name="theme-color" content="#11432f">
+<link rel="canonical" href="https://runthe.gg/golf/">
+<!-- Open Graph / Twitter. Absolute URLs for the runthe.gg/golf deploy; og.png sits beside this file. -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RunThe.GG">
+<meta property="og:url" content="https://runthe.gg/golf/">
+<meta property="og:title" content="Run The Tour">
+<meta property="og:description" content="Build a golfer. Run a pro season. Spin, draft one skill per real golfer, win majors and climb the earnings list.">
+<meta property="og:image" content="https://runthe.gg/golf/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Run The Tour — Build a golfer, run a pro season">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Run The Tour">
+<meta name="twitter:description" content="Build a golfer. Run a pro season. Win majors and climb the earnings list.">
+<meta name="twitter:image" content="https://runthe.gg/golf/og.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2311432f'/%3E%3Cpath d='M24 14v36' stroke='%23e9d8ac' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M24 15h18l-5 6 5 6H24z' fill='%23EBA61F'/%3E%3Cellipse cx='32' cy='52' rx='15' ry='4' fill='none' stroke='%23cda54a' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<!-- RunThe.GG accounts + public leaderboard (same Supabase project as RunThePitch; optional, fails open) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+  :root{
+    --cream:#F4E8D6; --peach:#F7DCCC;
+    --ink:#0C1B2E; --inkmut:#6b6256;
+    --teal:#06A291; --gold:#EBA61F; --gold2:#c79320;
+    --red:#E14A33; --red2:#b8371f;
+    --cardA:#0d2740; --cardB:#0a1a2c;
+    --board:rgba(255,255,255,.035); --oncard:#F4E3C9; --muted:#88a397;
+    --line:rgba(244,227,201,.09);
+    --panel:rgba(255,255,255,.045); --panelb:rgba(244,227,201,.10);
+    --display:'Anton',Impact,'Arial Narrow',sans-serif;
+    --serif:'Cinzel','Times New Roman',Georgia,serif;
+    --body:'Barlow Semi Condensed',system-ui,'Segoe UI',Roboto,sans-serif;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --hgreen:#16432f; --hgold:#cda24a;
+    --pagebg:
+      radial-gradient(1300px 680px at 50% -8%, rgba(74,156,108,.22), transparent 60%),
+      radial-gradient(900px 700px at 50% 120%, rgba(10,60,40,.5), transparent 70%),
+      linear-gradient(180deg,#11432f,#06200f);
+    --pageink:#F4E3C9; --pagemut:#9cbfa8; --pill:rgba(0,0,0,.26); --pillb:rgba(244,227,201,.16);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0; overscroll-behavior-y:none}
+  body{background:var(--pagebg); background-attachment:fixed; color:var(--pageink);
+    font-family:var(--body); -webkit-font-smoothing:antialiased; min-height:100vh; line-height:1.4}
+  #app{max-width:none; margin:0; padding:0 0 36px}
+
+  /* ---- top bar + header (cream Masters-style band) ---- */
+  .head{text-align:center; padding:10px 16px 12px; max-width:780px; margin:0 auto; position:relative; z-index:2}
+  .topbar{display:flex; justify-content:flex-start; align-items:center; margin:0 0 8px}
+  .icobtn{width:38px;height:38px;border-radius:11px;background:var(--pill);border:1px solid var(--pillb);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--oncard);font-size:18px;
+    box-shadow:0 4px 12px -6px rgba(0,0,0,.5)}
+  .crestrow{display:flex; align-items:center; justify-content:center; gap:18px}
+  .crest{width:64px;height:76px;display:block;flex:0 0 auto}
+  .wmblock{min-width:0}
+  .divider{display:flex; align-items:center; gap:12px; margin-bottom:9px}
+  .divider .ln{flex:1; height:1.5px; background:linear-gradient(90deg,transparent,var(--hgold))}
+  .divider .ln.r{background:linear-gradient(90deg,var(--hgold),transparent)}
+  .divider .ball{width:22px;height:22px;flex:0 0 auto}
+  .wordmark{font-family:var(--serif); font-weight:700; font-size:39px; line-height:.86; text-align:center;
+    letter-spacing:.015em; text-transform:uppercase; white-space:nowrap}
+  .wordmark .a{display:block; color:var(--oncard); font-size:.54em; letter-spacing:.2em; margin-bottom:1px}
+  .wordmark .b{display:block; color:var(--hgold); font-size:1.18em; letter-spacing:.06em}
+  .rule{height:4px; margin-top:9px; background:
+    linear-gradient(var(--hgold),var(--hgold)) top/100% 1.5px no-repeat,
+    linear-gradient(rgba(244,227,201,.30),rgba(244,227,201,.30)) bottom/100% 1px no-repeat}
+  .pills{display:flex; gap:14px; justify-content:center; margin-top:16px}
+  .pill{background:var(--pill); border:1px solid var(--pillb); border-radius:999px; padding:9px 22px;
+    font-family:var(--serif); font-weight:600; font-size:15px; color:var(--oncard); cursor:pointer;
+    box-shadow:0 4px 14px -6px rgba(0,0,0,.5); display:inline-flex; align-items:center; gap:9px}
+  .pill svg{width:18px;height:18px;display:block}
+
+  /* ---- the game panel: full-width deep green with a gold top edge ---- */
+  .card{position:relative; z-index:1; width:100%; max-width:none; margin:0; border-radius:0; overflow:visible;
+    background:transparent; box-shadow:none}
+  .cardtop{display:none}
+  .flagstrip{display:flex; gap:6px; padding:8px 10px; background:rgba(0,0,0,.22); overflow:hidden}
+  .flagstrip.bot{border-top:1px solid var(--line)} .flagstrip.top{border-bottom:1px solid var(--line)}
+  .ftrack{display:flex; gap:6px; animation:marq 26s linear infinite}
+  .flagstrip.bot .ftrack{animation-direction:reverse; animation-duration:30s}
+  .ftile{font-size:20px; line-height:1; width:34px; height:26px; border-radius:6px; background:#0a1626;
+    border:1px solid var(--line); display:flex; align-items:center; justify-content:center; flex:0 0 auto}
+  @keyframes marq{to{transform:translateX(-50%)}}
+  .screen{max-width:600px; margin:0 auto; padding:18px 16px 22px; position:relative}
+  .screen.wide{max-width:1140px}
+  .cols{display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start}
+  .col{min-width:0}
+  .setup-cols{grid-template-columns:0.85fr 1fr; max-width:840px; margin:0 auto}
+  @media(max-width:860px){ .cols{grid-template-columns:1fr; gap:16px} .seasoncols .scorecol{order:-1} }
+
+  h1{font-family:var(--display); font-style:normal; font-weight:400; color:var(--oncard);
+    letter-spacing:.01em; line-height:.96; margin:6px 0; text-transform:uppercase; text-shadow:0 2px 18px rgba(0,0,0,.5)}
+  h2{font-family:var(--body); font-weight:800; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:0 0 10px}
+  p.lede{color:#d7e2ea; margin:0 0 16px}
+  .center{text-align:center}
+  .muted{color:var(--muted)} .small{font-size:12.5px}
+  .mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+  .tag{display:inline-block; font:800 10px/1 var(--body); letter-spacing:.18em; text-transform:uppercase;
+    color:var(--teal); border:1px solid var(--line); padding:6px 9px; border-radius:999px}
+
+  /* ---- buttons ---- */
+  .btn{appearance:none; cursor:pointer; display:block; width:100%; text-align:center;
+    font-family:var(--display); font-weight:400; letter-spacing:.03em; text-transform:uppercase;
+    font-size:21px; border-radius:14px; padding:15px 16px; border:0; color:#fff;
+    transition:transform .04s ease, filter .15s ease}
+  .btn .sub{display:block; font-family:var(--body); font-weight:800; font-size:10.5px; letter-spacing:.12em; opacity:.9; margin-top:6px}
+  .btn.red{background:linear-gradient(180deg,#ef5b45,var(--red2)); box-shadow:0 8px 20px -8px rgba(184,55,31,.75), inset 0 1px 0 rgba(255,255,255,.22)}
+  .btn.red:active{transform:translateY(2px)}
+  .btn.gold{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.16)); color:var(--gold); border:1.5px solid var(--gold); box-shadow:0 5px 14px -7px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06)}
+  .btn.teal{background:linear-gradient(180deg,#1ec6a6,#0a7c67); color:#04211c; box-shadow:0 8px 20px -8px rgba(10,107,88,.7), inset 0 1px 0 rgba(255,255,255,.3)}
+  .btn.teal:active{transform:translateY(2px)}
+  .btn.blue{background:linear-gradient(180deg,#4a90d9,#1f5fa8); color:#eaf3ff; box-shadow:0 8px 20px -8px rgba(20,70,140,.75), inset 0 1px 0 rgba(255,255,255,.32)}
+  .btn.blue:active{transform:translateY(2px)}
+  .btn.ghost{background:transparent; color:var(--oncard); border:1px solid var(--line); font-size:18px}
+  .btn:hover{filter:brightness(1.06)}
+  .btn:disabled{opacity:.45; cursor:not-allowed}
+  .btn:focus-visible, button:focus-visible, [tabindex]:focus-visible, input:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+  .mini{display:flex; gap:10px; margin-top:10px}
+  .mini .btn{font-size:14px; padding:12px}
+  .stack>*+*{margin-top:10px}
+
+  /* ---- title scene ---- */
+  .scene{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none}
+  .coursebg{position:absolute; inset:0; width:100%; height:100%; display:block}
+  .sky{position:absolute; inset:0; background:linear-gradient(180deg,#0a2038 0%,#0b2742 40%,#0f3f30 58%,#0b3325 100%)}
+  .glow{position:absolute; top:-14%; width:62%; height:60%;
+    background:radial-gradient(closest-side, rgba(255,242,205,.18), transparent 70%); filter:blur(2px)}
+  .glow.l{left:-14%} .glow.r{right:-14%}
+  .green{position:absolute; left:50%; bottom:-6%; transform:translateX(-50%); width:160%; height:58%;
+    background:radial-gradient(120% 92% at 50% 100%, #257a4f 0%, #14512f 55%, transparent 76%)}
+  .ring{position:absolute; left:50%; bottom:2%; transform:translateX(-50%); border:1px solid rgba(255,255,255,.10); border-radius:50%}
+  .titlewrap{position:relative; z-index:1; max-width:560px; margin:0 auto}
+  .hero{font-family:var(--serif); font-weight:700; font-style:normal; line-height:.96; letter-spacing:.02em; margin:6px 0 4px; text-transform:uppercase; text-shadow:0 3px 22px rgba(0,0,0,.55)}
+  .hero .hr1{color:var(--oncard)} .hero .hr2{color:var(--hgold)}
+  .trophy{width:54px; height:72px; display:block; margin:2px auto 4px; filter:drop-shadow(0 6px 14px rgba(235,166,31,.4))}
+  .scorechip{display:inline-flex; align-items:center; gap:14px; background:rgba(7,18,30,.82);
+    border:1px solid var(--gold); border-radius:12px; padding:9px 16px; margin:6px auto 16px;
+    font-family:var(--mono); font-weight:700; color:var(--oncard)}
+  .scorechip b{color:var(--gold); font-size:18px}
+  .scorechip .lab{font-family:var(--body); font-weight:800; letter-spacing:.12em; font-size:11px; color:var(--muted)}
+  .rollchip{display:inline-block; min-width:230px; background:rgba(7,18,30,.82); border:1px solid var(--gold);
+    border-radius:12px; padding:9px 18px; margin:6px auto 16px; text-align:center}
+  .rolllab{font-family:var(--body); font-weight:800; letter-spacing:.16em; font-size:10px; text-transform:uppercase; color:var(--muted)}
+  .rollval{font-family:var(--display); font-style:italic; font-size:22px; color:var(--gold); margin-top:4px;
+    transition:opacity .18s ease; letter-spacing:.01em}
+  .skillwheel{overflow:hidden; margin-top:7px;
+    -webkit-mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);
+    mask:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+  .skillwheel .track{display:inline-flex; align-items:center; animation:marq 20s linear infinite; will-change:transform}
+  .swchip{font-family:var(--display); font-style:italic; font-size:19px; color:var(--gold); white-space:nowrap; letter-spacing:.01em}
+  .swchip::after{content:'•'; color:var(--pagemut); font-style:normal; margin:0 16px; opacity:.6}
+  .btn.goldfill{background:linear-gradient(180deg,#f9d271,#e9a81e 55%,#c98f12); color:#2a1c06; box-shadow:0 9px 22px -8px rgba(154,110,18,.8), inset 0 1px 0 rgba(255,255,255,.5); text-shadow:0 1px 0 rgba(255,255,255,.25)}
+  .btn.goldfill:active{transform:translateY(2px)}
+
+  /* ---- draft ---- */
+  .draftbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px}
+  .spins{font-family:var(--mono); font-weight:700}
+  .pips{display:flex; gap:5px; margin-top:6px; flex-wrap:wrap}
+  .pip{width:9px;height:9px;border-radius:999px;background:var(--line)} .pip.on{background:var(--gold)}
+  .reel{height:84px; border-radius:16px; border:1px solid var(--panelb);
+    background:radial-gradient(120% 120% at 50% 0%, rgba(255,255,255,.08), rgba(0,0,0,.12)); display:flex; align-items:center;
+    justify-content:center; overflow:hidden; position:relative}
+  .reel .name{font-family:var(--display); font-weight:400; font-size:27px; text-align:center; padding:0 10px; color:var(--oncard); text-transform:uppercase; letter-spacing:.02em}
+  .reel .sub{position:absolute; bottom:7px; font:800 9px/1 var(--body); letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+  .reel .reeltag{position:absolute; top:6px; font:800 9px/1 var(--body); letter-spacing:.2em; color:var(--muted)}
+  .reel.rar-rare{border-color:#4f9fd0} .reel.rar-rare .reeltag{color:#82c1e8}
+  .reel.rar-epic{border-color:#a679e0; box-shadow:0 0 13px rgba(166,121,224,.28) inset} .reel.rar-epic .reeltag{color:#c7a6f2}
+  .reel.rar-legendary{border-color:var(--gold); box-shadow:0 0 18px rgba(235,166,31,.40) inset, 0 0 14px rgba(235,166,31,.30);
+    background:radial-gradient(120% 100% at 50% 0%, #2a2510, #0a1f30)}
+  .reel.rar-legendary .reeltag{color:var(--gold)}
+  .reel.landed{animation:pop .3s ease}
+  @keyframes pop{0%{transform:scale(.97)}55%{transform:scale(1.02)}100%{transform:scale(1)}}
+  .spinning .name{animation:flick .08s steps(1) infinite} @keyframes flick{50%{opacity:.34}}
+  .attrs{display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:10px}
+  .attr{display:flex; align-items:center; gap:9px; background:var(--panel);
+    border:1px solid var(--panelb); border-radius:10px; padding:9px 10px 9px 12px; cursor:pointer; text-align:left;
+    color:var(--oncard); font:inherit; width:100%; box-shadow:0 4px 12px -10px rgba(0,0,0,.6); transition:transform .05s ease, border-color .12s ease}
+  .attr .lab{flex:1; font-weight:600; font-size:12px; color:#cfdbe6}
+  .attr .val{font-family:var(--mono); font-weight:800; font-size:16px; color:var(--gold)}
+  .attr .take{font:800 9px/1 var(--body); letter-spacing:.08em; text-transform:uppercase; color:#04211c;
+    background:linear-gradient(180deg,#f9d271,#e9a81e); border-radius:6px; padding:5px 7px; flex:0 0 auto}
+  .attr:hover:not(:disabled){border-color:var(--gold)}
+  .attr:active:not(:disabled){transform:scale(.985)}
+  .attr:disabled{opacity:.34; cursor:not-allowed} .attr:disabled .take{display:none}
+
+  .buildhero{display:flex; align-items:center; gap:8px; background:var(--panel);
+    border:1px solid var(--panelb); border-radius:16px; padding:11px 10px; margin-bottom:10px;
+    box-shadow:0 10px 26px -16px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.05)}
+  .herofig{display:flex; flex-direction:column; align-items:center; gap:8px; flex:0 0 100px}
+  .golferfig{width:96px; height:96px; display:block; filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
+  .ovrbadge{display:flex; flex-direction:column; align-items:center; background:rgba(0,0,0,.28); border:2px solid var(--gold); border-radius:12px; padding:5px 0; width:74px}
+  .ovrbadge .n{font-family:var(--mono); font-weight:800; font-size:28px; color:var(--gold); line-height:1; transition:color .2s}
+  .ovrbadge .l{font:800 9px/1 var(--body); letter-spacing:.18em; color:var(--muted); margin-top:4px}
+  .radarwrap{flex:1; min-width:0; display:flex; justify-content:center}
+  .radar{width:100%; max-width:236px; height:auto; display:block}
+  .radar text{font-family:var(--body)}
+  .card-grid{display:grid; gap:6px; margin-top:10px}
+  .slot{display:flex; align-items:center; gap:10px; background:var(--board); border:1px solid var(--line);
+    border-radius:10px; padding:7px 11px}
+  .slot .lab{flex:1; font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:#bfe7df}
+  .slot .who{font-size:11.5px; color:var(--oncard); opacity:.85}
+  .slot .v{font-family:var(--mono); font-weight:800; font-size:15px; color:var(--gold); min-width:30px; text-align:right}
+  .slot.empty .v, .slot.empty .lab{color:var(--muted)}
+
+  .ovr{display:flex; align-items:baseline; gap:10px; justify-content:center; margin:4px 0}
+  .ovr .num{font-family:var(--mono); font-weight:800; font-size:52px; color:var(--gold); line-height:1}
+  .ovr .lbl{font:800 11px/1 var(--body); letter-spacing:.2em; text-transform:uppercase; color:var(--muted)}
+  .scout{background:var(--panel); border:1px solid var(--panelb); border-radius:12px; padding:12px 14px; font-size:13px; color:#dfeae2; margin-top:12px}
+  input.name{width:100%; background:#0a2740; border:1px solid var(--line); color:var(--oncard);
+    font:800 16px/1 var(--body); border-radius:11px; padding:13px 14px; margin-top:6px}
+
+  /* ---- leaderboard ---- */
+  .evt-head{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:10px}
+  .evt-head .nm{font-family:var(--display); font-weight:400; font-size:24px; text-transform:uppercase; color:var(--oncard); letter-spacing:.02em}
+  .kx{font:800 10px/1.3 var(--body); letter-spacing:.14em; text-transform:uppercase}
+  .major{color:var(--gold)} .sig{color:var(--teal)} .reg{color:var(--muted)}
+  .board{background:var(--board); border:1px solid var(--line); border-radius:13px; overflow:hidden}
+  .lb{display:grid; grid-template-columns:34px 1fr 56px 62px; gap:8px; align-items:center; padding:9px 12px; font-size:13px; border-top:1px solid rgba(244,227,201,.06)}
+  .lb:first-child{border-top:0}
+  .lb .pos{font-family:var(--mono); color:var(--muted); font-weight:700}
+  .lb .pl{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--oncard)}
+  .lb .sc{font-family:var(--mono); font-weight:800; text-align:right; color:var(--oncard)}
+  .lb .mny{font-family:var(--mono); text-align:right; color:#bfe7df; font-size:12px}
+  .lb.you{background:linear-gradient(90deg, rgba(235,166,31,.22), rgba(235,166,31,.05))}
+  .lb.you .pl{color:var(--gold); font-weight:800}
+  .lb.cut .sc{color:#e07a5f}
+  .sep{height:1px; background:repeating-linear-gradient(90deg,var(--line),var(--line) 6px,transparent 6px,transparent 12px)}
+  .runline{display:flex; justify-content:space-between; font-family:var(--mono); font-size:13px; padding:10px 2px 0; color:var(--oncard)}
+  /* live tournament scorecard */
+  .scorecard{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.20)); border:1px solid var(--panelb);
+    border-radius:16px; padding:14px 14px 16px; box-shadow:0 14px 32px -20px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.05)}
+  .sc-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; gap:10px}
+  .sc-name{font-family:var(--display); font-size:22px; color:var(--oncard); text-transform:uppercase; letter-spacing:.02em; line-height:1}
+  .sc-pos{font-family:var(--mono); font-weight:800; font-size:27px; line-height:1}
+  .sc-topar{font-family:var(--mono); font-weight:800; font-size:15px; margin-top:3px}
+  .rounds{display:flex; gap:8px}
+  .rdcell{flex:1; text-align:center; background:#0a2740; border:1px solid var(--line); border-radius:12px; padding:11px 4px 10px;
+    transition:background .25s ease, border-color .25s ease, transform .25s ease}
+  .rdcell.live{border-color:var(--gold); background:rgba(235,166,31,.14); transform:translateY(-2px); box-shadow:0 6px 16px -10px rgba(235,166,31,.6)}
+  .rdlab{font:800 9px/1 var(--body); letter-spacing:.16em; color:var(--muted)}
+  .rdval{font-family:var(--mono); font-weight:800; font-size:24px; margin-top:7px; color:var(--oncard)}
+  .rdcell.empty .rdval{color:var(--muted); opacity:.5}
+  .sc-status{margin-top:12px; text-align:center; font:800 12px/1.35 var(--body); letter-spacing:.05em; color:var(--teal)}
+
+  .sbar{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line);
+    border:1px solid var(--line); border-radius:13px; overflow:hidden; margin-bottom:14px}
+  .sstat{background:var(--panel); padding:10px 11px}
+  .sstat.wide{grid-column:1 / -1; background:rgba(255,255,255,.06)}
+  .sstat .k{font:800 9.5px/1 var(--body); letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+  .sstat .v{font-family:var(--mono); font-weight:800; font-size:18px; margin-top:5px; color:var(--oncard)}
+  .sstat .v.gold{color:var(--gold); font-size:22px}
+  .screen.major-screen{background:radial-gradient(130% 70% at 50% -8%, rgba(235,166,31,.20), transparent 62%)}
+  .majorbanner{display:flex; align-items:center; justify-content:center; gap:8px;
+    background:linear-gradient(90deg,#5a3d0b,var(--gold),#5a3d0b); color:#1a1206;
+    font-family:var(--display); font-style:italic; font-size:17px; letter-spacing:.05em;
+    padding:9px; border-radius:12px; margin-bottom:12px; text-transform:uppercase;
+    box-shadow:0 0 18px rgba(235,166,31,.35)}
+  .board.major{border-color:var(--gold); box-shadow:0 0 0 1px rgba(235,166,31,.4)}
+
+  .tiles{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0}
+  .tiles.four{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:680px){ .tiles.four{grid-template-columns:1fr 1fr} }
+  .tile{background:var(--panel); border:1px solid var(--panelb); border-radius:12px; padding:12px 14px}
+  .tile .k{font:800 10px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+  .tile .v{font-family:var(--mono); font-weight:800; font-size:23px; margin-top:6px; color:var(--gold)}
+  .tile .v.cream{color:var(--oncard)}
+  .share{background:#0a2740; border:1px dashed var(--line); border-radius:11px; padding:12px 14px; font-family:var(--mono); font-size:12px; color:#d2e1ea; white-space:pre-wrap; margin-top:6px}
+
+  /* ---- overlay (rules) ---- */
+  .ov{position:absolute; inset:0; z-index:5; background:rgba(6,14,24,.93); padding:22px 18px; overflow:auto}
+  .ov h3{font-family:var(--display); font-weight:400; font-size:26px; color:var(--gold); margin:6px 0 12px; text-transform:uppercase}
+  .ov ol{margin:0 0 14px; padding-left:18px; color:#dbe6ee} .ov li{margin:7px 0}
+  .ov .x{position:absolute; top:14px; right:14px}
+
+  /* ---- footer ---- */
+  .foot{max-width:438px; margin:18px auto 0; text-align:center; position:relative; z-index:2}
+  .footpills{display:flex; gap:10px; justify-content:center}
+  .footnote{margin-top:14px; font-weight:700; color:var(--pagemut)} .footnote b{color:var(--teal)}
+  .footlinks{margin-top:8px; color:var(--pagemut); font-size:13px}
+  .footlinks span{display:inline-block; margin:0 2px; padding:8px 6px}
+  .footlinks span:empty{padding:0}
+
+  @media (max-width:480px){ .wordmark{font-size:32px} .crest{width:52px;height:62px} .crestrow{gap:12px} }
+  @media (max-width:380px){ .wordmark{font-size:27px} }
+  @media (max-width:430px){ .attrs{grid-template-columns:1fr} h1{font-size:30px} }
+  @media (prefers-reduced-motion:reduce){ .spinning .name{animation:none} .ftrack{animation:none} .skillwheel .track{animation:none} .btn,.attr,.rdcell{transition:none} }
+</style>
+</head>
+<body>
+
+<div id="app" aria-live="polite"></div>
+
+<script>
+const $=(h)=>{const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.firstChild;};
+const app=document.getElementById('app');
+/* block pull-to-refresh so a stray downward swipe can't reload & wipe an in-progress draft (CSS alone isn't enough on iOS) */
+let _touchY=0;
+document.addEventListener('touchstart',e=>{ if(e.touches.length===1) _touchY=e.touches[0].clientY; },{passive:true});
+document.addEventListener('touchmove',e=>{
+  const atTop=(window.scrollY||document.documentElement.scrollTop||0)<=0;
+  if(atTop && e.touches[0].clientY>_touchY && e.cancelable) e.preventDefault();
+},{passive:false});
+let RT=app;
+let rollTimer=null;
+let seasonTimer=null;
+const add=(el)=>RT.appendChild(el);
+const fmt=(n)=>'$'+Math.round(n).toLocaleString('en-US');
+const fmtSigned=(n)=>(n<0?'−':'')+'$'+Math.round(Math.abs(n)).toLocaleString('en-US');
+const par=(s)=>s===0?'E':(s>0?'+'+s:''+s);
+const ord=(n)=>{const v=n%100; if(v>=11&&v<=13)return n+'th'; return n+({1:'st',2:'nd',3:'rd'}[n%10]||'th');};
+
+/* ---------- persistence / career ---------- */
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
+          set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+/* vendor-neutral analytics hook: pushes a key event to window.dataLayer and fires a
+   CustomEvent. NO third-party script or measurement ID is loaded here — at deploy, wire
+   GA4/GTM/Plausible to dataLayer or the 'rtt:*' events. Key events: game_start, return_visit,
+   draft_started/completed, respin_used, legendary_pulled, season_started/finished,
+   daily_started/completed, result_shared/saved/copied. */
+function track(ev,props){try{(window.dataLayer=window.dataLayer||[]).push(Object.assign({event:'rtt_'+ev},props||{}));
+  window.dispatchEvent(new CustomEvent('rtt:'+ev,{detail:props||{}}));}catch(e){}}
+function career(){return LS.get('bag_career',{builds:0,bestMoney:0,bestNet:null,bestOvr:0,wins:0,majors:0,totalMoney:0,totalNet:0,hof:[],badges:{}});}
+/* expenses: caddie 10% + agent 8% of winnings, ~$20k travel/event, plus ~$2.6M/yr of fixed
+   tour costs (coach, equipment, taxes, team). Fixed cost is prorated by events played so the
+   running in-season net stays sensible. Tuned via Monte Carlo so a weak build can finish red. */
+const COSTS={caddiePct:0.10, agentPct:0.08, travelPerEvent:22000, seasonFixed:2.8e6};
+const SEASON_EVENTS=18;
+function seasonNet(t){const gross=t.money, caddie=gross*COSTS.caddiePct, agent=gross*COSTS.agentPct,
+  travel=t.played*COSTS.travelPerEvent, fixed=COSTS.seasonFixed*(t.played/SEASON_EVENTS),
+  costs=caddie+agent+travel+fixed; return {gross,caddie,agent,travel,fixed,costs,net:gross-costs};}
+/* local achievements — computed from a finished season */
+const ACHS=[
+  {id:'win',  e:'🏆', t:'First Win',        d:'Win any event',                     f:c=>c.wins>=1},
+  {id:'major',e:'⛳', t:'Major Champion',    d:'Win a major championship',          f:c=>c.majorsWon>=1},
+  {id:'slam', e:'👑', t:'Grand Slam',        d:'Win all 4 majors in one season',    f:c=>c.majorsWon>=4},
+  {id:'iron', e:'🪨', t:'Iron Man',          d:'Make every cut in a season',        f:c=>c.played>0&&c.made===c.played},
+  {id:'black',e:'💰', t:'In the Black',      d:'Finish the season in profit',       f:c=>c.net>0},
+  {id:'mil',  e:'💎', t:'Millionaire',       d:'Clear $1,000,000+ net profit in a season', f:c=>c.net>=1e6},
+  {id:'redmil',e:'💸',t:'Seven-Figure Loss', d:'Lose $1,000,000+ in a season',      f:c=>c.net<=-1e6},
+  {id:'rich', e:'🥇', t:'Earnings Leader',   d:'Finish #1 on the season earnings list',f:c=>c.moneyRank===1},
+  {id:'under',e:'🐍', t:'Against the Odds',  d:'Turn a profit with a sub-80 build', f:c=>c.net>0&&c.ovr<80},
+];
+function evalAchievements(ctx){return ACHS.filter(a=>a.f(ctx)).map(a=>a.id);}
+function recordSeason(o){
+  const c=career(); c.badges=c.badges||{};
+  c.builds++; c.wins+=o.wins; c.majors+=o.majorsWon;
+  c.totalMoney=(c.totalMoney||0)+o.money; c.totalNet=(c.totalNet||0)+o.net;
+  if(o.money>c.bestMoney)c.bestMoney=o.money;
+  if(c.bestNet==null||o.net>c.bestNet)c.bestNet=o.net;
+  if(o.ovr>c.bestOvr)c.bestOvr=o.ovr;
+  c.hof.push({name:o.name,ovr:o.ovr,money:o.money,net:o.net,wins:o.wins,majors:o.majorsWon,best:o.best});
+  c.hof.sort((a,b)=>b.net-a.net); c.hof=c.hof.slice(0,5);
+  const earned=evalAchievements(o); const fresh=earned.filter(id=>!c.badges[id]);
+  earned.forEach(id=>c.badges[id]=true);
+  LS.set('bag_career',c); return {career:c,fresh};
+}
+let deferredInstall=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;});
+function installApp(){
+  if(deferredInstall){deferredInstall.prompt();deferredInstall=null;return;}
+  toast('On iPhone: tap Share, then “Add to Home Screen”.');
+}
+
+/* ---------- seeded RNG (daily challenge) ---------- */
+let RNG=Math.random;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function seededShuffle(arr,seed){const r=mulberry32((seed^0x9e3779b9)>>>0);const a=arr.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(r()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function todayKey(){const d=new Date();return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate();}
+function dailyState(){return LS.get('bag_daily',null);}
+function dailyDoneToday(){const dd=dailyState();return !!(dd&&dd.date===todayKey()&&dd.done);}
+function startDaily(){
+  if(dailyDoneToday()){S.overlay='dailydone';render();return;}
+  const seed=todayKey(); reset();
+  S.daily=true; S.dailySeed=seed; S.mode='daily';
+  S.drawRng=mulberry32((seed^0x2545f491)>>>0);   // seeded draw → same rarity sequence for everyone today
+  track('daily_started',{seed});
+  S.screen='setup'; render();
+}
+/* ---------- daily streak (retention) ---------- */
+function yesterdayKey(){const d=new Date();d.setUTCDate(d.getUTCDate()-1);return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate();}
+function bumpStreak(){const ds=LS.get('bag_streak',{current:0,longest:0,last:null}); const t=todayKey();
+  if(ds.last===t)return ds;
+  ds.current=(ds.last===yesterdayKey())?ds.current+1:1; ds.last=t;
+  if(ds.current>ds.longest)ds.longest=ds.current; LS.set('bag_streak',ds); return ds;}
+function streakDisplay(){const ds=LS.get('bag_streak',null); if(!ds||!ds.current)return 0;
+  return (ds.last===todayKey()||ds.last===yesterdayKey())?ds.current:0;}   // 0 if the streak has lapsed
+/* ---------- resume an in-progress free-play golfer across a refresh ---------- */
+function saveResume(){ if(S.daily||!(S.screen==='draft'||S.screen==='build'))return;
+  LS.set('bag_resume',{slots:S.slots,revealed:[...S.revealed],reSpins:S.reSpins,name:S.name,look:S.look,mode:S.mode,year:S.year}); }
+function clearResume(){ LS.set('bag_resume',null); }
+function resumeInfo(){const r=LS.get('bag_resume',null); if(!r||!r.slots)return null;
+  const n=Object.values(r.slots).filter(Boolean).length; return n>0?{n,r}:null; }
+function restoreResume(){const info=resumeInfo(); if(!info)return; const r=info.r; reset();
+  S.slots=r.slots; S.revealed=new Set(r.revealed||[]); S.reSpins=(r.reSpins==null?2:r.reSpins); S.name=r.name||'';
+  S.look=Object.assign({},DEFLOOK,r.look||{}); S.mode=r.mode||'easy'; S.year=r.year||1;
+  S.daily=false; S.drawRng=Math.random; S.current=null;
+  S.screen=(info.n>=8)?'build':'draft'; track('resume',{n:info.n}); render(); }
+
+/* ---------- data ---------- */
+const CATS=[
+  {k:'dist', short:'Driving Distance', w:0.11},
+  {k:'acc',  short:'Driving Accuracy', w:0.12},
+  {k:'app',  short:'Approach',         w:0.21},
+  {k:'sht',  short:'Short Game',       w:0.10},
+  {k:'scr',  short:'Scrambling',       w:0.08},
+  {k:'bnk',  short:'Bunker',           w:0.06},
+  {k:'put',  short:'Putting',          w:0.19},
+  {k:'clu',  short:'Composure',        w:0.13},
+];
+// [name, era, dist,acc,app,sht,scr,bnk,put,clu]
+const ROSTER=[
+  {name:"Tiger Woods",era:"leg",tier:"legend",rarity:"Legendary",nation:"USA",born:1975,majors:15,note:"GOAT, 15 majors",dist:88,acc:88,app:99,sht:96,scr:96,bnk:94,put:95,clu:98,fld:1},
+  {name:"Jack Nicklaus",era:"leg",tier:"legend",rarity:"Legendary",nation:"USA",born:1940,majors:18,note:"18 majors",dist:91,acc:85,app:76,sht:86,scr:87,bnk:85,put:88,clu:98,fld:1},
+  {name:"Ben Hogan",era:"leg",tier:"legend",rarity:"Legendary",nation:"USA",born:1912,majors:9,note:"Ballstriking GOAT",dist:84,acc:92,app:96,sht:85,scr:87,bnk:88,put:80,clu:88},
+  {name:"Sam Snead",era:"leg",tier:"legend",rarity:"Legendary",nation:"USA",born:1912,majors:7,note:"82 wins, smooth",dist:92,acc:86,app:96,sht:84,scr:85,bnk:85,put:81,clu:86},
+  {name:"Arnold Palmer",era:"leg",tier:"legend",rarity:"Legendary",nation:"USA",born:1929,majors:7,note:"The King",dist:92,acc:81,app:58,sht:58,scr:70,bnk:58,put:99,clu:96,fld:1},
+  {name:"Gary Player",era:"leg",tier:"legend",rarity:"Legendary",nation:"RSA",born:1935,majors:9,note:"Bunker GOAT, 9 majors",dist:79,acc:87,app:88,sht:85,scr:91,bnk:96,put:84,clu:88},
+  {name:"Bobby Jones",era:"leg",tier:"legend",rarity:"Legendary",nation:"USA",born:1902,majors:7,note:"Grand Slam amateur",dist:79,acc:88,app:95,sht:85,scr:85,bnk:84,put:92,clu:88},
+  {name:"Walter Hagen",era:"leg",tier:"legend",rarity:"Legendary",nation:"USA",born:1892,majors:11,note:"11 majors, match play",dist:86,acc:88,app:78,sht:87,scr:90,bnk:85,put:88,clu:96},
+  {name:"Gene Sarazen",era:"leg",tier:"legend",rarity:"Legendary",nation:"USA",born:1902,majors:7,note:"Invented sand wedge",dist:88,acc:87,app:91,sht:87,scr:88,bnk:95,put:79,clu:84},
+  {name:"Byron Nelson",era:"leg",tier:"legend",rarity:"Legendary",nation:"USA",born:1912,majors:5,note:"11 straight wins",dist:88,acc:90,app:96,sht:84,scr:87,bnk:86,put:79,clu:86},
+  {name:"Harry Vardon",era:"leg",tier:"legend",rarity:"Legendary",nation:"JEY",born:1870,majors:7,note:"6 Open titles",dist:86,acc:96,app:90,sht:88,scr:88,bnk:85,put:79,clu:86},
+  {name:"Tom Watson",era:"leg",tier:"legend",rarity:"Legendary",nation:"USA",born:1949,majors:8,note:"8 majors, links king",dist:88,acc:86,app:99,sht:64,scr:74,bnk:62,put:97,clu:85,fld:1},
+  {name:"Lee Trevino",era:"leg",tier:"legend",rarity:"Legendary",nation:"USA",born:1939,majors:6,note:"Shotmaker, accuracy",dist:86,acc:95,app:91,sht:86,scr:86,bnk:84,put:78,clu:88},
+  {name:"Seve Ballesteros",era:"leg",tier:"legend",rarity:"Legendary",nation:"ESP",born:1957,majors:5,note:"Short-game magician",dist:82,acc:80,app:84,sht:95,scr:90,bnk:85,put:88,clu:84},
+  {name:"Nick Faldo",era:"leg",tier:"legend",rarity:"Legendary",nation:"ENG",born:1957,majors:6,note:"6 majors, precise",dist:78,acc:90,app:96,sht:88,scr:85,bnk:84,put:86,clu:84},
+  {name:"Greg Norman",era:"leg",tier:"legend",rarity:"Legendary",nation:"AUS",born:1955,majors:2,note:"Shark, 331 weeks #1",dist:95,acc:84,app:90,sht:86,scr:85,bnk:88,put:85,clu:79},
+  {name:"Phil Mickelson",era:"leg",tier:"legend",rarity:"Legendary",nation:"USA",born:1970,majors:6,note:"Flop-shot wizard, 6 majors",dist:76,acc:70,app:74,sht:78,scr:76,bnk:76,put:73,clu:87,fld:1},
+  {name:"Vijay Singh",era:"leg",tier:"legend",rarity:"Epic",nation:"FIJ",born:1963,majors:3,note:"Work ethic, irons",dist:87,acc:80,app:96,sht:91,scr:87,bnk:89,put:77,clu:80,fld:1},
+  {name:"Ernie Els",era:"leg",tier:"legend",rarity:"Epic",nation:"RSA",born:1969,majors:4,note:"Big Easy, 4 majors",dist:88,acc:80,app:91,sht:94,scr:90,bnk:93,put:82,clu:82,fld:1},
+  {name:"Nick Price",era:"leg",tier:"legend",rarity:"Epic",nation:"ZIM",born:1957,majors:3,note:"Early-90s #1",dist:81,acc:87,app:93,sht:82,scr:82,bnk:82,put:72,clu:81},
+  {name:"Raymond Floyd",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1942,majors:4,note:"Steely competitor",dist:74,acc:84,app:84,sht:86,scr:82,bnk:82,put:81,clu:93},
+  {name:"Johnny Miller",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1947,majors:2,note:"Peak iron play",dist:80,acc:88,app:93,sht:84,scr:80,bnk:81,put:73,clu:80},
+  {name:"Tom Kite",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1949,majors:1,note:"Grinder, top earner",dist:74,acc:80,app:93,sht:83,scr:88,bnk:84,put:84,clu:83},
+  {name:"Curtis Strange",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1955,majors:2,note:"Back-to-back US Opens",dist:80,acc:88,app:79,sht:68,scr:72,bnk:67,put:83,clu:83,fld:1},
+  {name:"Hale Irwin",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1945,majors:3,note:"3 US Opens",dist:81,acc:92,app:80,sht:80,scr:83,bnk:83,put:74,clu:86},
+  {name:"Billy Casper",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1931,majors:3,note:"51 wins, putting",dist:73,acc:80,app:84,sht:80,scr:88,bnk:82,put:93,clu:82},
+  {name:"Julius Boros",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1920,majors:3,note:"Oldest major champ",dist:75,acc:83,app:80,sht:93,scr:87,bnk:82,put:81,clu:84},
+  {name:"Peter Thomson",era:"leg",tier:"legend",rarity:"Epic",nation:"AUS",born:1929,majors:5,note:"5 Opens, links",dist:75,acc:93,app:87,sht:83,scr:80,bnk:82,put:80,clu:81},
+  {name:"Bobby Locke",era:"leg",tier:"legend",rarity:"Epic",nation:"RSA",born:1917,majors:4,note:"Putting legend",dist:74,acc:81,app:83,sht:87,scr:81,bnk:84,put:93,clu:83},
+  {name:"Ben Crenshaw",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1952,majors:2,note:"Gentle Ben, putting",dist:84,acc:74,app:73,sht:73,scr:77,bnk:71,put:85,clu:84,fld:1},
+  {name:"Payne Stewart",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1957,majors:3,note:"Stylish, 3 majors",dist:72,acc:88,app:92,sht:84,scr:84,bnk:83,put:84,clu:83},
+  {name:"Davis Love III",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1964,majors:1,note:"Power, major champ",dist:93,acc:80,app:86,sht:82,scr:84,bnk:84,put:73,clu:83},
+  {name:"Fred Couples",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1959,majors:1,note:"Boom Boom",dist:92,acc:82,app:87,sht:83,scr:80,bnk:82,put:72,clu:84},
+  {name:"Sandy Lyle",era:"leg",tier:"legend",rarity:"Rare",nation:"SCO",born:1958,majors:2,note:"Power, 2 majors",dist:88,acc:80,app:83,sht:79,scr:81,bnk:79,put:69,clu:81},
+  {name:"Ian Woosnam",era:"leg",tier:"legend",rarity:"Rare",nation:"WAL",born:1958,majors:1,note:"Welsh power, #1",dist:88,acc:79,app:85,sht:79,scr:78,bnk:77,put:69,clu:78},
+  {name:"Bernhard Langer",era:"leg",tier:"legend",rarity:"Epic",nation:"GER",born:1957,majors:2,note:"Longevity, 2 Masters",dist:84,acc:86,app:92,sht:81,scr:84,bnk:84,put:75,clu:83},
+  {name:"José María Olazábal",era:"leg",tier:"legend",rarity:"Epic",nation:"ESP",born:1966,majors:2,note:"Short-game artist",dist:74,acc:84,app:80,sht:93,scr:82,bnk:88,put:80,clu:83},
+  {name:"Colin Montgomerie",era:"leg",tier:"legend",rarity:"Rare",nation:"SCO",born:1963,majors:0,note:"8x Order of Merit",dist:82,acc:93,app:86,sht:82,scr:80,bnk:84,put:84,clu:73},
+  {name:"Retief Goosen",era:"leg",tier:"legend",rarity:"Epic",nation:"RSA",born:1969,majors:2,note:"Ice-cold, 2 US Opens",dist:72,acc:83,app:83,sht:91,scr:91,bnk:91,put:92,clu:83,fld:1},
+  {name:"Lee Westwood",era:"leg",tier:"legend",rarity:"Rare",nation:"ENG",born:1973,majors:0,note:"Ballstriker, ex-#1",dist:74,acc:80,app:74,sht:76,scr:75,bnk:75,put:74,clu:81,fld:1},
+  {name:"Luke Donald",era:"leg",tier:"legend",rarity:"Epic",nation:"ENG",born:1977,majors:0,note:"Short game, ex-#1",dist:65,acc:78,app:73,sht:85,scr:83,bnk:85,put:78,clu:81,fld:1},
+  {name:"Jim Furyk",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1970,majors:1,note:"Shot 59, consistent",dist:74,acc:93,app:95,sht:87,scr:89,bnk:85,put:94,clu:82,fld:1},
+  {name:"David Duval",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1971,majors:1,note:"Brief #1 peak",dist:88,acc:83,app:93,sht:80,scr:83,bnk:80,put:72,clu:83},
+  {name:"Steve Stricker",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1967,majors:0,note:"Elite putter",dist:75,acc:82,app:88,sht:97,scr:96,bnk:95,put:93,clu:80,fld:1},
+  {name:"Justin Leonard",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1972,majors:1,note:"Clutch, 1999 Ryder",dist:67,acc:78,app:80,sht:78,scr:77,bnk:78,put:88,clu:83},
+  {name:"Mark O'Meara",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1957,majors:2,note:"1998 dual major",dist:69,acc:77,app:88,sht:81,scr:80,bnk:79,put:83,clu:77},
+  {name:"John Daly",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1966,majors:2,note:"Grip it and rip it",dist:88,acc:67,app:82,sht:83,scr:83,bnk:83,put:84,clu:78,fld:1},
+  {name:"Tom Weiskopf",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1942,majors:1,note:"Pure swing",dist:83,acc:78,app:89,sht:79,scr:78,bnk:79,put:68,clu:77},
+  {name:"Lanny Wadkins",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1949,majors:1,note:"Aggressive, Ryder",dist:77,acc:79,app:58,sht:58,scr:59,bnk:58,put:61,clu:88,fld:1},
+  {name:"Larry Nelson",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1947,majors:3,note:"3 majors",dist:70,acc:84,app:88,sht:80,scr:81,bnk:81,put:78,clu:78},
+  {name:"Corey Pavin",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1959,majors:1,note:"Scrappy, 1995 US Open",dist:69,acc:81,app:87,sht:96,scr:94,bnk:95,put:88,clu:80,fld:1},
+  {name:"Loren Roberts",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1955,majors:0,note:"Boss of the Moss",dist:70,acc:77,app:91,sht:85,scr:87,bnk:84,put:91,clu:79,fld:1},
+  {name:"Brad Faxon",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1961,majors:0,note:"Putting maestro",dist:70,acc:79,app:85,sht:83,scr:88,bnk:82,put:98,clu:79,fld:1},
+  {name:"Isao Aoki",era:"leg",tier:"legend",rarity:"Rare",nation:"JPN",born:1942,majors:0,note:"Japanese pioneer",dist:67,acc:79,app:77,sht:85,scr:81,bnk:80,put:88,clu:81},
+  {name:"Tony Jacklin",era:"leg",tier:"legend",rarity:"Rare",nation:"ENG",born:1944,majors:2,note:"Open + US Open",dist:78,acc:83,app:89,sht:78,scr:79,bnk:79,put:67,clu:81},
+  {name:"Hal Sutton",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1958,majors:1,note:"90s stalwart",dist:85,acc:80,app:89,sht:78,scr:79,bnk:80,put:67,clu:80},
+  {name:"Mark Calcavecchia",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1960,majors:1,note:"1989 Open",dist:88,acc:79,app:84,sht:77,scr:78,bnk:77,put:68,clu:81},
+  {name:"Fuzzy Zoeller",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1951,majors:2,note:"Easygoing champ",dist:69,acc:78,app:88,sht:84,scr:81,bnk:77,put:78,clu:79},
+  {name:"Tom Lehman",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1959,majors:1,note:"1996 Open, ex-#1",dist:77,acc:85,app:89,sht:81,scr:81,bnk:77,put:70,clu:77},
+  {name:"David Graham",era:"leg",tier:"legend",rarity:"Rare",nation:"AUS",born:1946,majors:2,note:"Dual major champ",dist:68,acc:88,app:85,sht:78,scr:80,bnk:78,put:81,clu:77},
+  {name:"Gene Littler",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1930,majors:1,note:"Gene the Machine",dist:70,acc:88,app:84,sht:80,scr:77,bnk:78,put:79,clu:78},
+  {name:"Miller Barber",era:"leg",tier:"legend",rarity:"Common",nation:"USA",born:1931,majors:0,note:"Mr. X",dist:76,acc:82,app:86,sht:76,scr:74,bnk:78,put:66,clu:78},
+  {name:"Henrik Stenson",era:"leg",tier:"legend",rarity:"Epic",nation:"SWE",born:1976,majors:1,note:"2016 Open, irons",dist:71,acc:96,app:79,sht:72,scr:69,bnk:72,put:61,clu:83,fld:1},
+  {name:"Ian Poulter",era:"leg",tier:"legend",rarity:"Rare",nation:"ENG",born:1976,majors:0,note:"Ryder Cup hero",dist:67,acc:83,app:74,sht:83,scr:82,bnk:83,put:81,clu:92,fld:1},
+  {name:"Paul Casey",era:"leg",tier:"legend",rarity:"Rare",nation:"ENG",born:1977,majors:0,note:"Ballstriker",dist:78,acc:83,app:85,sht:78,scr:76,bnk:76,put:72,clu:84,fld:1},
+  {name:"Martin Kaymer",era:"leg",tier:"legend",rarity:"Epic",nation:"GER",born:1984,majors:2,note:"2 majors, ex-#1",dist:70,acc:78,app:80,sht:73,scr:75,bnk:72,put:81,clu:88,fld:1},
+  {name:"Graeme McDowell",era:"leg",tier:"legend",rarity:"Rare",nation:"NIR",born:1979,majors:1,note:"2010 US Open",dist:68,acc:83,app:77,sht:72,scr:72,bnk:71,put:73,clu:88,fld:1},
+  {name:"Louis Oosthuizen",era:"leg",tier:"legend",rarity:"Rare",nation:"RSA",born:1982,majors:1,note:"2010 Open, runner-up king",dist:71,acc:90,app:79,sht:78,scr:79,bnk:78,put:81,clu:72,fld:1},
+  {name:"Charl Schwartzel",era:"leg",tier:"legend",rarity:"Rare",nation:"RSA",born:1984,majors:1,note:"2011 Masters",dist:76,acc:77,app:76,sht:82,scr:82,bnk:82,put:82,clu:80,fld:1},
+  {name:"Bubba Watson",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1978,majors:2,note:"2x Masters, longest",dist:83,acc:80,app:80,sht:77,scr:77,bnk:75,put:77,clu:81,fld:1},
+  {name:"Webb Simpson",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1985,majors:1,note:"2012 US Open",dist:79,acc:78,app:78,sht:85,scr:83,bnk:85,put:79,clu:78,fld:1},
+  {name:"Zach Johnson",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1976,majors:2,note:"2 majors, wedges",dist:66,acc:93,app:78,sht:82,scr:83,bnk:82,put:84,clu:81,fld:1},
+  {name:"Stewart Cink",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1973,majors:1,note:"2009 Open",dist:88,acc:83,app:87,sht:88,scr:90,bnk:86,put:93,clu:80,fld:1},
+  {name:"Ángel Cabrera",era:"leg",tier:"legend",rarity:"Rare",nation:"ARG",born:1969,majors:2,note:"2 majors, power",dist:92,acc:84,app:84,sht:71,scr:75,bnk:70,put:83,clu:80,fld:1},
+  {name:"Y.E. Yang",era:"leg",tier:"legend",rarity:"Rare",nation:"KOR",born:1972,majors:1,note:"Beat Tiger at a major",dist:78,acc:81,app:78,sht:79,scr:81,bnk:78,put:85,clu:85,fld:1},
+  {name:"Trevor Immelman",era:"leg",tier:"legend",rarity:"Rare",nation:"RSA",born:1979,majors:1,note:"2008 Masters",dist:67,acc:85,app:92,sht:89,scr:88,bnk:87,put:84,clu:80,fld:1},
+  {name:"Geoff Ogilvy",era:"leg",tier:"legend",rarity:"Rare",nation:"AUS",born:1977,majors:1,note:"2006 US Open",dist:85,acc:79,app:80,sht:90,scr:90,bnk:90,put:89,clu:81,fld:1},
+  {name:"Michael Campbell",era:"leg",tier:"legend",rarity:"Rare",nation:"NZL",born:1969,majors:1,note:"2005 US Open",dist:67,acc:81,app:83,sht:76,scr:80,bnk:74,put:91,clu:85,fld:1},
+  {name:"Darren Clarke",era:"leg",tier:"legend",rarity:"Rare",nation:"NIR",born:1968,majors:1,note:"2011 Open",dist:88,acc:77,app:79,sht:68,scr:74,bnk:67,put:89,clu:80,fld:1},
+  {name:"Thomas Bjørn",era:"leg",tier:"legend",rarity:"Common",nation:"DEN",born:1971,majors:0,note:"Ryder captain",dist:81,acc:85,app:87,sht:86,scr:82,bnk:85,put:74,clu:79,fld:1},
+  {name:"Miguel Ángel Jiménez",era:"leg",tier:"legend",rarity:"Rare",nation:"ESP",born:1964,majors:0,note:"Ageless Mechanic",dist:69,acc:78,app:97,sht:99,scr:95,bnk:99,put:86,clu:79,fld:1},
+  {name:"Roberto De Vicenzo",era:"leg",tier:"legend",rarity:"Rare",nation:"ARG",born:1923,majors:1,note:"1967 Open",dist:84,acc:78,app:88,sht:80,scr:77,bnk:78,put:70,clu:77},
+  {name:"Kel Nagle",era:"leg",tier:"legend",rarity:"Rare",nation:"AUS",born:1920,majors:1,note:"1960 Open",dist:70,acc:85,app:78,sht:80,scr:81,bnk:79,put:88,clu:81},
+  {name:"Bob Charles",era:"leg",tier:"legend",rarity:"Rare",nation:"NZL",born:1936,majors:1,note:"Lefty putting great",dist:70,acc:85,app:80,sht:80,scr:78,bnk:79,put:89,clu:81},
+  {name:"Tony Lema",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1934,majors:1,note:"Champagne Tony",dist:79,acc:80,app:89,sht:79,scr:78,bnk:80,put:67,clu:85},
+  {name:"Doug Sanders",era:"leg",tier:"legend",rarity:"Common",nation:"USA",born:1933,majors:0,note:"Stylist, near-misses",dist:78,acc:79,app:81,sht:89,scr:85,bnk:81,put:79,clu:70},
+  {name:"Dave Stockton",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1941,majors:2,note:"Putting guru",dist:67,acc:77,app:79,sht:84,scr:79,bnk:79,put:89,clu:79},
+  {name:"Ken Venturi",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1931,majors:1,note:"1964 US Open",dist:79,acc:84,app:89,sht:80,scr:77,bnk:81,put:68,clu:81},
+  {name:"Jackie Burke Jr.",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1923,majors:2,note:"1956 dual major",dist:69,acc:80,app:79,sht:80,scr:78,bnk:79,put:88,clu:85},
+  {name:"Cary Middlecoff",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1921,majors:3,note:"3 majors",dist:85,acc:78,app:88,sht:78,scr:80,bnk:79,put:70,clu:80},
+  {name:"Ralph Guldahl",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1911,majors:3,note:"Late-30s dominance",dist:81,acc:83,app:88,sht:81,scr:77,bnk:81,put:69,clu:80},
+  {name:"Jimmy Demaret",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1910,majors:3,note:"3 Masters",dist:67,acc:78,app:88,sht:83,scr:77,bnk:77,put:78,clu:78},
+  {name:"Henry Cotton",era:"leg",tier:"legend",rarity:"Epic",nation:"ENG",born:1907,majors:3,note:"3 Opens",dist:80,acc:88,app:83,sht:78,scr:78,bnk:81,put:68,clu:78},
+  {name:"Walter Travis",era:"leg",tier:"legend",rarity:"Common",nation:"USA",born:1862,majors:0,note:"Putting pioneer",dist:66,acc:76,app:77,sht:80,scr:75,bnk:74,put:86,clu:75},
+  {name:"Willie Anderson",era:"leg",tier:"legend",rarity:"Epic",nation:"SCO",born:1879,majors:4,note:"4 US Opens",dist:70,acc:83,app:77,sht:81,scr:81,bnk:80,put:81,clu:88},
+  {name:"Young Tom Morris",era:"leg",tier:"legend",rarity:"Epic",nation:"SCO",born:1851,majors:4,note:"4 Opens by age 21",dist:68,acc:77,app:81,sht:78,scr:77,bnk:81,put:89,clu:85},
+  {name:"Old Tom Morris",era:"leg",tier:"legend",rarity:"Epic",nation:"SCO",born:1821,majors:4,note:"Father of golf",dist:66,acc:78,app:76,sht:78,scr:81,bnk:76,put:86,clu:77},
+  {name:"Scottie Scheffler",era:"cur",tier:"star",rarity:"Legendary",nation:"USA",born:1996,majors:4,note:"World #1, all-around",dist:86,acc:89,app:98,sht:94,scr:94,bnk:92,put:93,clu:86,fld:1},
+  {name:"Rory McIlroy",era:"cur",tier:"star",rarity:"Legendary",nation:"NIR",born:1989,majors:5,note:"Power + ballstriking",dist:97,acc:75,app:91,sht:86,scr:87,bnk:85,put:89,clu:84,fld:1},
+  {name:"Jon Rahm",era:"cur",tier:"star",rarity:"Legendary",nation:"ESP",born:1994,majors:2,note:"Power + irons, LIV",dist:91,acc:82,app:93,sht:91,scr:89,bnk:91,put:85,clu:87,fld:1},
+  {name:"Collin Morikawa",era:"cur",tier:"star",rarity:"Legendary",nation:"USA",born:1997,majors:2,note:"Elite irons + accuracy",dist:80,acc:92,app:92,sht:84,scr:84,bnk:84,put:84,clu:87,fld:1},
+  {name:"Xander Schauffele",era:"cur",tier:"star",rarity:"Epic",nation:"USA",born:1993,majors:2,note:"Balanced, clutch",dist:90,acc:80,app:93,sht:85,scr:86,bnk:84,put:87,clu:92,fld:1},
+  {name:"Bryson DeChambeau",era:"cur",tier:"star",rarity:"Legendary",nation:"USA",born:1993,majors:2,note:"Longest, LIV",dist:96,acc:77,app:84,sht:78,scr:80,bnk:78,put:84,clu:86,fld:1},
+  {name:"Justin Thomas",era:"cur",tier:"star",rarity:"Epic",nation:"USA",born:1993,majors:2,note:"Irons + clutch",dist:84,acc:78,app:89,sht:94,scr:92,bnk:92,put:88,clu:82,fld:1},
+  {name:"Patrick Cantlay",era:"cur",tier:"star",rarity:"Epic",nation:"USA",born:1992,majors:0,note:"Steady, putting",dist:83,acc:82,app:92,sht:88,scr:86,bnk:88,put:83,clu:80,fld:1},
+  {name:"Viktor Hovland",era:"cur",tier:"star",rarity:"Rare",nation:"NOR",born:1997,majors:0,note:"Elite approach",dist:80,acc:87,app:92,sht:84,scr:84,bnk:82,put:84,clu:84,fld:1},
+  {name:"Hideki Matsuyama",era:"cur",tier:"star",rarity:"Epic",nation:"JPN",born:1992,majors:1,note:"Iron play",dist:80,acc:78,app:88,sht:92,scr:89,bnk:90,put:83,clu:84,fld:1},
+  {name:"Jordan Spieth",era:"cur",tier:"star",rarity:"Legendary",nation:"USA",born:1993,majors:3,note:"Short game + putting",dist:86,acc:81,app:86,sht:86,scr:85,bnk:84,put:83,clu:80,fld:1},
+  {name:"Tommy Fleetwood",era:"cur",tier:"star",rarity:"Rare",nation:"ENG",born:1991,majors:0,note:"Ballstriker",dist:80,acc:94,app:90,sht:91,scr:90,bnk:90,put:89,clu:75,fld:1},
+  {name:"Russell Henley",era:"cur",tier:"star",rarity:"Epic",nation:"USA",born:1989,majors:0,note:"Accurate, complete",dist:72,acc:98,app:89,sht:86,scr:86,bnk:84,put:85,clu:82,fld:1},
+  {name:"Brooks Koepka",era:"cur",tier:"star",rarity:"Legendary",nation:"USA",born:1990,majors:5,note:"Major force, LIV",dist:85,acc:76,app:85,sht:81,scr:80,bnk:79,put:79,clu:95,fld:1},
+  {name:"Wyndham Clark",era:"cur",tier:"star",rarity:"Rare",nation:"USA",born:1993,majors:1,note:"Bomber, 2023 US Open",dist:86,acc:75,app:88,sht:93,scr:92,bnk:93,put:91,clu:81,fld:1},
+  {name:"Sepp Straka",era:"cur",tier:"star",rarity:"Common",nation:"AUT",born:1993,majors:0,note:"Consistent",dist:79,acc:85,app:89,sht:78,scr:79,bnk:78,put:82,clu:77,fld:1},
+  {name:"Justin Rose",era:"cur",tier:"star",rarity:"Epic",nation:"ENG",born:1980,majors:1,note:"Veteran complete",dist:82,acc:83,app:90,sht:83,scr:82,bnk:82,put:81,clu:83,fld:1},
+  {name:"Sahith Theegala",era:"cur",tier:"star",rarity:"Rare",nation:"USA",born:1997,majors:0,note:"Creative short game",dist:84,acc:76,app:86,sht:90,scr:88,bnk:88,put:82,clu:80,fld:1},
+  {name:"Tony Finau",era:"cur",tier:"star",rarity:"Rare",nation:"USA",born:1989,majors:0,note:"Power",dist:86,acc:72,app:83,sht:90,scr:87,bnk:89,put:81,clu:81,fld:1},
+  {name:"Sungjae Im",era:"cur",tier:"star",rarity:"Rare",nation:"KOR",born:1998,majors:0,note:"Grinder, irons",dist:79,acc:84,app:76,sht:94,scr:92,bnk:94,put:87,clu:80,fld:1},
+  {name:"Robert MacIntyre",era:"cur",tier:"star",rarity:"Rare",nation:"SCO",born:1996,majors:0,note:"Rising Scot",dist:83,acc:82,app:81,sht:86,scr:88,bnk:84,put:92,clu:81,fld:1},
+  {name:"Shane Lowry",era:"cur",tier:"star",rarity:"Epic",nation:"IRL",born:1987,majors:1,note:"Short game, links",dist:79,acc:85,app:91,sht:80,scr:80,bnk:79,put:81,clu:81,fld:1},
+  {name:"Sam Burns",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1996,majors:0,note:"Putting",dist:87,acc:79,app:89,sht:85,scr:89,bnk:83,put:97,clu:79,fld:1},
+  {name:"Si Woo Kim",era:"cur",tier:"star",rarity:"Rare",nation:"KOR",born:1995,majors:0,note:"Accurate",dist:78,acc:95,app:92,sht:89,scr:87,bnk:87,put:82,clu:77,fld:1},
+  {name:"Maverick McNealy",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1995,majors:0,note:"Balanced",dist:85,acc:77,app:84,sht:92,scr:93,bnk:90,put:94,clu:77,fld:1},
+  {name:"Keegan Bradley",era:"cur",tier:"star",rarity:"Epic",nation:"USA",born:1986,majors:1,note:"Ryder captain",dist:84,acc:82,app:86,sht:89,scr:87,bnk:89,put:83,clu:80,fld:1},
+  {name:"Corey Conners",era:"cur",tier:"star",rarity:"Common",nation:"CAN",born:1991,majors:0,note:"Ballstriking, weak putter",dist:78,acc:90,app:88,sht:80,scr:79,bnk:79,put:76,clu:81,fld:1},
+  {name:"Harris English",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1989,majors:0,note:"Steady",dist:81,acc:86,app:81,sht:86,scr:89,bnk:84,put:95,clu:80,fld:1},
+  {name:"Aaron Rai",era:"cur",tier:"star",rarity:"Common",nation:"ENG",born:1995,majors:0,note:"Accuracy + complete",dist:72,acc:99,app:90,sht:86,scr:84,bnk:86,put:79,clu:78,fld:1},
+  {name:"J.J. Spaun",era:"cur",tier:"star",rarity:"Rare",nation:"USA",born:1990,majors:1,note:"US Open champ",dist:80,acc:89,app:94,sht:85,scr:82,bnk:83,put:76,clu:77,fld:1},
+  {name:"Joaquin Niemann",era:"cur",tier:"star",rarity:"Rare",nation:"CHI",born:1998,majors:0,note:"Power, LIV",dist:90,acc:79,app:90,sht:82,scr:82,bnk:80,put:82,clu:81,fld:1},
+  {name:"Tyrrell Hatton",era:"cur",tier:"star",rarity:"Rare",nation:"ENG",born:1991,majors:0,note:"Irons, LIV",dist:84,acc:77,app:90,sht:87,scr:86,bnk:85,put:84,clu:75,fld:1},
+  {name:"Adam Scott",era:"cur",tier:"star",rarity:"Epic",nation:"AUS",born:1980,majors:1,note:"Veteran swing",dist:87,acc:79,app:90,sht:82,scr:81,bnk:80,put:78,clu:83,fld:1},
+  {name:"Will Zalatoris",era:"cur",tier:"star",rarity:"Rare",nation:"USA",born:1996,majors:0,note:"Elite irons, putting woes",dist:82,acc:81,app:87,sht:80,scr:78,bnk:80,put:72,clu:83,fld:1},
+  {name:"Cameron Smith",era:"cur",tier:"star",rarity:"Epic",nation:"AUS",born:1993,majors:1,note:"Best short game, LIV",dist:77,acc:68,app:78,sht:97,scr:96,bnk:97,put:94,clu:82,fld:1},
+  {name:"Max Homa",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1990,majors:0,note:"Streaky",dist:83,acc:78,app:80,sht:81,scr:83,bnk:80,put:87,clu:78,fld:1},
+  {name:"Rickie Fowler",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1988,majors:0,note:"Veteran fan favorite",dist:80,acc:86,app:83,sht:81,scr:82,bnk:81,put:84,clu:78,fld:1},
+  {name:"Gary Woodland",era:"cur",tier:"star",rarity:"Rare",nation:"USA",born:1984,majors:1,note:"Power vet",dist:89,acc:81,app:85,sht:73,scr:76,bnk:71,put:84,clu:78,fld:1},
+  {name:"Daniel Berger",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1993,majors:0,note:"Solid",dist:81,acc:86,app:88,sht:73,scr:74,bnk:71,put:77,clu:79,fld:1},
+  {name:"Nick Taylor",era:"cur",tier:"star",rarity:"Common",nation:"CAN",born:1988,majors:0,note:"Clutch putter",dist:75,acc:86,app:84,sht:88,scr:87,bnk:87,put:84,clu:83,fld:1},
+  {name:"Taylor Pendrith",era:"cur",tier:"star",rarity:"Common",nation:"CAN",born:1991,majors:0,note:"Power",dist:88,acc:78,app:83,sht:79,scr:79,bnk:79,put:78,clu:79,fld:1},
+  {name:"J.T. Poston",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1993,majors:0,note:"Long, accurate-ish",dist:77,acc:88,app:86,sht:84,scr:85,bnk:84,put:87,clu:79,fld:1},
+  {name:"Denny McCarthy",era:"cur",tier:"star",rarity:"Rare",nation:"USA",born:1993,majors:0,note:"Best putter on tour",dist:74,acc:78,app:82,sht:85,scr:87,bnk:85,put:92,clu:80,fld:1},
+  {name:"Kurt Kitayama",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1993,majors:0,note:"Power",dist:89,acc:82,app:92,sht:80,scr:80,bnk:79,put:79,clu:81,fld:1},
+  {name:"Patrick Reed",era:"cur",tier:"star",rarity:"Epic",nation:"USA",born:1990,majors:1,note:"Short game + clutch, LIV",dist:77,acc:81,app:90,sht:89,scr:88,bnk:89,put:84,clu:88,fld:1},
+  {name:"Dustin Johnson",era:"cur",tier:"star",rarity:"Epic",nation:"USA",born:1984,majors:2,note:"Power, LIV",dist:86,acc:76,app:81,sht:77,scr:81,bnk:76,put:90,clu:86,fld:1},
+  {name:"Jason Day",era:"cur",tier:"star",rarity:"Epic",nation:"AUS",born:1987,majors:1,note:"All-around vet",dist:79,acc:80,app:78,sht:94,scr:92,bnk:94,put:87,clu:81,fld:1},
+  {name:"Sergio Garcia",era:"cur",tier:"star",rarity:"Epic",nation:"ESP",born:1980,majors:1,note:"Elite irons, LIV",dist:78,acc:87,app:79,sht:84,scr:82,bnk:82,put:77,clu:84,fld:1},
+  {name:"Billy Horschel",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1986,majors:0,note:"Steady",dist:78,acc:77,app:81,sht:77,scr:78,bnk:76,put:82,clu:80,fld:1},
+  {name:"Lucas Glover",era:"cur",tier:"star",rarity:"Rare",nation:"USA",born:1979,majors:1,note:"Veteran",dist:71,acc:94,app:83,sht:79,scr:75,bnk:77,put:67,clu:79,fld:1},
+  {name:"Cam Davis",era:"cur",tier:"star",rarity:"Common",nation:"AUS",born:1995,majors:0,note:"Solid",dist:81,acc:71,app:70,sht:78,scr:78,bnk:78,put:78,clu:79,fld:1},
+  {name:"Tom Hoge",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1989,majors:0,note:"Approach specialist",dist:75,acc:80,app:84,sht:76,scr:75,bnk:74,put:74,clu:77,fld:1},
+  {name:"Brian Harman",era:"cur",tier:"star",rarity:"Rare",nation:"USA",born:1987,majors:1,note:"2023 Open, putting",dist:75,acc:87,app:84,sht:85,scr:85,bnk:84,put:85,clu:83,fld:1},
+  {name:"Emiliano Grillo",era:"cur",tier:"star",rarity:"Common",nation:"ARG",born:1992,majors:0,note:"Veteran",dist:76,acc:92,app:82,sht:76,scr:77,bnk:74,put:78,clu:81,fld:1},
+  {name:"Thomas Detry",era:"cur",tier:"star",rarity:"Common",nation:"BEL",born:1992,majors:0,note:"Ballstriker",dist:85,acc:78,app:85,sht:81,scr:82,bnk:80,put:85,clu:79,fld:1},
+  {name:"Matthieu Pavon",era:"cur",tier:"star",rarity:"Common",nation:"FRA",born:1992,majors:0,note:"Breakout Frenchman",dist:81,acc:82,app:78,sht:77,scr:78,bnk:75,put:81,clu:81,fld:1},
+  {name:"Christiaan Bezuidenhout",era:"cur",tier:"star",rarity:"Common",nation:"RSA",born:1994,majors:0,note:"Putting",dist:70,acc:87,app:85,sht:89,scr:89,bnk:87,put:88,clu:81,fld:1},
+  {name:"Mackenzie Hughes",era:"cur",tier:"star",rarity:"Common",nation:"CAN",born:1990,majors:0,note:"Putting grinder",dist:81,acc:72,app:76,sht:91,scr:90,bnk:89,put:88,clu:80,fld:1},
+  {name:"Adam Hadwin",era:"cur",tier:"star",rarity:"Common",nation:"CAN",born:1987,majors:0,note:"Steady",dist:79,acc:80,app:76,sht:77,scr:78,bnk:76,put:81,clu:78,fld:1},
+  {name:"Seamus Power",era:"cur",tier:"star",rarity:"Common",nation:"IRL",born:1987,majors:0,note:"Solid",dist:76,acc:84,app:77,sht:84,scr:84,bnk:82,put:84,clu:78,fld:1},
+  {name:"Keith Mitchell",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1991,majors:0,note:"Driving machine",dist:88,acc:79,app:86,sht:80,scr:80,bnk:79,put:80,clu:78,fld:1},
+  {name:"Andrew Novak",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1995,majors:0,note:"Breakout",dist:81,acc:82,app:87,sht:84,scr:82,bnk:84,put:77,clu:77,fld:1},
+  {name:"Michael Kim",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1993,majors:0,note:"Irons",dist:78,acc:77,app:84,sht:86,scr:87,bnk:84,put:90,clu:78,fld:1},
+  {name:"Brendon Todd",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1985,majors:0,note:"Accuracy + putting",dist:62,acc:81,app:58,sht:87,scr:88,bnk:86,put:89,clu:78,fld:1},
+  {name:"Alex Noren",era:"cur",tier:"star",rarity:"Rare",nation:"SWE",born:1982,majors:0,note:"Complete vet",dist:73,acc:89,app:83,sht:86,scr:88,bnk:84,put:91,clu:81,fld:1},
+  {name:"Eric Cole",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1988,majors:0,note:"Solid",dist:78,acc:73,app:85,sht:91,scr:92,bnk:89,put:94,clu:81,fld:1},
+  {name:"Beau Hossler",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1995,majors:0,note:"Steady",dist:79,acc:77,app:76,sht:88,scr:88,bnk:86,put:89,clu:81,fld:1},
+  {name:"Erik van Rooyen",era:"cur",tier:"star",rarity:"Common",nation:"RSA",born:1990,majors:0,note:"Power",dist:81,acc:76,app:74,sht:80,scr:81,bnk:80,put:84,clu:80,fld:1},
+  {name:"Talor Gooch",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1991,majors:0,note:"LIV winner",dist:75,acc:86,app:85,sht:83,scr:82,bnk:82,put:79,clu:77,fld:1},
+  {name:"Dean Burmester",era:"cur",tier:"star",rarity:"Common",nation:"RSA",born:1989,majors:0,note:"Power, LIV",dist:93,acc:69,app:82,sht:80,scr:80,bnk:79,put:80,clu:78,fld:1},
+  {name:"Abraham Ancer",era:"cur",tier:"star",rarity:"Rare",nation:"MEX",born:1991,majors:0,note:"Complete, LIV",dist:71,acc:92,app:85,sht:77,scr:79,bnk:76,put:84,clu:77,fld:1},
+  {name:"Branden Grace",era:"cur",tier:"star",rarity:"Common",nation:"RSA",born:1988,majors:0,note:"Veteran, LIV",dist:75,acc:82,app:87,sht:84,scr:83,bnk:82,put:80,clu:78,fld:1},
+  {name:"Marc Leishman",era:"cur",tier:"star",rarity:"Common",nation:"AUS",born:1983,majors:0,note:"Power vet, LIV",dist:77,acc:79,app:85,sht:83,scr:84,bnk:82,put:85,clu:81,fld:1},
+  {name:"Matt Wallace",era:"cur",tier:"star",rarity:"Common",nation:"ENG",born:1990,majors:0,note:"DP World stalwart",dist:80,acc:80,app:85,sht:86,scr:84,bnk:84,put:81,clu:79,fld:1},
+  {name:"Victor Perez",era:"cur",tier:"star",rarity:"Common",nation:"FRA",born:1992,majors:0,note:"DP World",dist:82,acc:85,app:82,sht:76,scr:78,bnk:74,put:82,clu:77,fld:1},
+  {name:"Thorbjørn Olesen",era:"cur",tier:"star",rarity:"Common",nation:"DEN",born:1990,majors:0,note:"DP World veteran",dist:81,acc:80,app:83,sht:81,scr:80,bnk:81,put:79,clu:77,fld:1},
+  {name:"Adrian Meronk",era:"cur",tier:"star",rarity:"Common",nation:"POL",born:1993,majors:0,note:"Power, DP/LIV",dist:84,acc:70,app:73,sht:75,scr:77,bnk:74,put:81,clu:80,fld:1},
+  {name:"Joel Dahmen",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1987,majors:0,note:"Everyman",dist:73,acc:93,app:82,sht:73,scr:72,bnk:71,put:69,clu:79,fld:1},
+  {name:"Carlos Ortiz",era:"cur",tier:"star",rarity:"Common",nation:"MEX",born:1991,majors:0,note:"LIV winner",dist:84,acc:76,app:81,sht:83,scr:81,bnk:83,put:76,clu:81,fld:1},
+  {name:"Anirban Lahiri",era:"cur",tier:"star",rarity:"Common",nation:"IND",born:1987,majors:0,note:"LIV veteran",dist:73,acc:85,app:76,sht:80,scr:78,bnk:78,put:75,clu:79,fld:1},
+  {name:"Ludvig Åberg",era:"cur",tier:"rising",rarity:"Rare",nation:"SWE",born:1999,majors:0,note:"Generational, 26",dist:91,acc:83,app:92,sht:85,scr:86,bnk:84,put:89,clu:82,fld:1},
+  {name:"Akshay Bhatia",era:"cur",tier:"rising",rarity:"Rare",nation:"USA",born:2001,majors:0,note:"Lefty, bunker+putt",dist:80,acc:78,app:87,sht:84,scr:86,bnk:83,put:92,clu:80,fld:1},
+  {name:"Tom Kim",era:"cur",tier:"rising",rarity:"Rare",nation:"KOR",born:2002,majors:0,note:"Scrappy, charismatic",dist:78,acc:84,app:88,sht:88,scr:86,bnk:88,put:83,clu:79,fld:1},
+  {name:"Min Woo Lee",era:"cur",tier:"rising",rarity:"Rare",nation:"AUS",born:1998,majors:0,note:"Power, first tour win",dist:91,acc:79,app:86,sht:90,scr:88,bnk:88,put:84,clu:81,fld:1},
+  {name:"Cameron Young",era:"cur",tier:"star",rarity:"Rare",nation:"USA",born:1997,majors:0,note:"Top-6 SG Total; 2026 Players champ",dist:88,acc:81,app:91,sht:88,scr:87,bnk:86,put:86,clu:88,fld:1},
+  {name:"Ben Griffin",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:1996,majors:0,note:"Breakout 2025",dist:81,acc:81,app:86,sht:94,scr:94,bnk:92,put:93,clu:77,fld:1},
+  {name:"Davis Thompson",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:1999,majors:0,note:"Rising American",dist:83,acc:83,app:83,sht:83,scr:82,bnk:82,put:79,clu:78,fld:1},
+  {name:"Chris Gotterup",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:1999,majors:0,note:"Big hitter, Scottish win",dist:94,acc:71,app:88,sht:82,scr:84,bnk:80,put:89,clu:77,fld:1},
+  {name:"Jake Knapp",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:1994,majors:0,note:"Bomber",dist:92,acc:75,app:84,sht:80,scr:83,bnk:79,put:90,clu:78,fld:1},
+  {name:"Nicolai Højgaard",era:"cur",tier:"rising",rarity:"Common",nation:"DEN",born:2001,majors:0,note:"Danish power",dist:94,acc:69,app:87,sht:82,scr:83,bnk:80,put:84,clu:79,fld:1},
+  {name:"Rasmus Højgaard",era:"cur",tier:"rising",rarity:"Common",nation:"DEN",born:2001,majors:0,note:"Twin, DP World wins",dist:92,acc:69,app:78,sht:77,scr:79,bnk:77,put:84,clu:77,fld:1},
+  {name:"Nick Dunlap",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:2003,majors:0,note:"Won as amateur",dist:78,acc:65,app:81,sht:83,scr:83,bnk:82,put:82,clu:79,fld:1},
+  {name:"Luke Clanton",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:2003,majors:0,note:"Amateur phenom turned pro",dist:82,acc:77,app:81,sht:74,scr:75,bnk:73,put:77,clu:78,fld:1},
+  {name:"Aldrich Potgieter",era:"cur",tier:"rising",rarity:"Common",nation:"RSA",born:2004,majors:0,note:"Longest on tour, 21",dist:99,acc:69,app:81,sht:73,scr:75,bnk:71,put:79,clu:83,fld:1},
+  {name:"Gordon Sargent",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:2003,majors:0,note:"Top amateur, power",dist:93,acc:66,app:63,sht:75,scr:76,bnk:73,put:77,clu:77,fld:1},
+  {name:"Michael Thorbjornsen",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:2002,majors:0,note:"Stanford star",dist:88,acc:81,app:84,sht:83,scr:82,bnk:82,put:79,clu:79,fld:1},
+  {name:"Caleb Surratt",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:2004,majors:0,note:"Power, ex-Tennessee",dist:87,acc:73,app:72,sht:73,scr:77,bnk:72,put:86,clu:78,fld:1},
+  {name:"Jackson Koivun",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:2005,majors:0,note:"Top amateur, Auburn",dist:85,acc:81,app:88,sht:77,scr:81,bnk:81,put:70,clu:79},
+  {name:"Karl Vilips",era:"cur",tier:"rising",rarity:"Common",nation:"AUS",born:2001,majors:0,note:"First-year winner",dist:82,acc:70,app:76,sht:78,scr:80,bnk:76,put:84,clu:78,fld:1},
+  {name:"Hiroshi Tai",era:"cur",tier:"rising",rarity:"Common",nation:"SGP",born:2002,majors:0,note:"Amateur Masters",dist:63,acc:81,app:86,sht:74,scr:77,bnk:78,put:75,clu:76},
+  {name:"Blades Brown",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:2007,majors:0,note:"Teen pro, power",dist:86,acc:77,app:82,sht:76,scr:77,bnk:75,put:65,clu:74},
+  {name:"Miles Russell",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:2008,majors:0,note:"Teen prodigy",dist:65,acc:76,app:81,sht:78,scr:75,bnk:74,put:86,clu:74},
+  {name:"Kris Kim",era:"cur",tier:"rising",rarity:"Common",nation:"KOR",born:2006,majors:0,note:"Teen, DP World",dist:65,acc:81,app:85,sht:75,scr:74,bnk:74,put:76,clu:74},
+  {name:"David Ford",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:2003,majors:0,note:"Top college player",dist:82,acc:88,app:78,sht:74,scr:75,bnk:73,put:77,clu:79,fld:1},
+  {name:"Preston Summerhays",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:2002,majors:0,note:"Amateur standout",dist:63,acc:77,app:85,sht:82,scr:78,bnk:78,put:77,clu:76},
+  {name:"Neal Shipley",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:2000,majors:0,note:"Low am, US Open",dist:84,acc:85,app:77,sht:71,scr:72,bnk:70,put:73,clu:75,fld:1},
+  {name:"Keita Nakajima",era:"cur",tier:"rising",rarity:"Common",nation:"JPN",born:2000,majors:0,note:"Ex-world #1 amateur",dist:81,acc:81,app:80,sht:74,scr:77,bnk:72,put:85,clu:79,fld:1},
+  {name:"Rikuya Hoshino",era:"cur",tier:"rising",rarity:"Common",nation:"JPN",born:1996,majors:0,note:"DP World, Japan",dist:77,acc:80,app:70,sht:75,scr:79,bnk:74,put:87,clu:80,fld:1},
+  {name:"Ryo Hisatsune",era:"cur",tier:"rising",rarity:"Common",nation:"JPN",born:2002,majors:0,note:"DP rookie of year",dist:81,acc:85,app:86,sht:78,scr:78,bnk:77,put:79,clu:81,fld:1},
+  {name:"Austin Eckroat",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:1999,majors:0,note:"Two-time winner",dist:79,acc:81,app:81,sht:72,scr:74,bnk:72,put:80,clu:79,fld:1},
+  {name:"Matt McCarty",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:1997,majors:0,note:"Korn Ferry to wins",dist:77,acc:84,app:82,sht:79,scr:81,bnk:79,put:87,clu:78,fld:1},
+  {name:"Jacob Bridgeman",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:1999,majors:0,note:"Breakout 2026",dist:81,acc:82,app:85,sht:83,scr:85,bnk:82,put:91,clu:80,fld:1},
+  {name:"Kristoffer Reitan",era:"cur",tier:"rising",rarity:"Common",nation:"NOR",born:1997,majors:0,note:"DP World rising",dist:87,acc:82,app:86,sht:78,scr:80,bnk:78,put:83,clu:74,fld:1},
+  {name:"Ryan Gerard",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:1999,majors:0,note:"First win 2026",dist:80,acc:85,app:90,sht:79,scr:81,bnk:79,put:87,clu:78,fld:1},
+  {name:"Pierceson Coody",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:2000,majors:0,note:"Twin, Texas",dist:90,acc:78,app:82,sht:74,scr:78,bnk:74,put:87,clu:80,fld:1},
+  {name:"Alex Smalley",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:1996,majors:0,note:"Steady young American",dist:82,acc:83,app:87,sht:81,scr:82,bnk:79,put:85,clu:79,fld:1},
+  {name:"Mason Andersen",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:1997,majors:0,note:"Korn Ferry grad",dist:86,acc:78,app:63,sht:62,scr:73,bnk:62,put:99,clu:75,fld:1},
+  {name:"Frankie Capan III",era:"cur",tier:"rising",rarity:"Common",nation:"USA",born:1999,majors:0,note:"Shot 58, KFT",dist:77,acc:61,app:64,sht:82,scr:83,bnk:80,put:84,clu:76,fld:1},
+  {name:"Jasper Stubbs",era:"cur",tier:"rising",rarity:"Common",nation:"AUS",born:2003,majors:0,note:"Amateur standout",dist:63,acc:75,app:86,sht:82,scr:77,bnk:76,put:74,clu:78},
+  {name:"Mateo Fernández de Oliveira",era:"cur",tier:"rising",rarity:"Common",nation:"ARG",born:2000,majors:0,note:"Top amateur",dist:85,acc:77,app:80,sht:78,scr:75,bnk:77,put:64,clu:77},
+  {name:"James Braid",era:"leg",tier:"legend",rarity:"Epic",nation:"SCO",born:1870,majors:5,note:"5 Opens, Great Triumvirate",dist:84,acc:68,app:81,sht:79,scr:77,bnk:79,put:88,clu:80},
+  {name:"J.H. Taylor",era:"leg",tier:"legend",rarity:"Epic",nation:"ENG",born:1871,majors:5,note:"5 Opens, Great Triumvirate",dist:70,acc:88,app:83,sht:78,scr:80,bnk:77,put:81,clu:79},
+  {name:"Tommy Armour",era:"leg",tier:"legend",rarity:"Epic",nation:"SCO",born:1894,majors:3,note:"Silver Scot, 3 majors",dist:77,acc:83,app:88,sht:81,scr:80,bnk:78,put:68,clu:78},
+  {name:"Craig Stadler",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1953,majors:1,note:"1982 Masters, the Walrus",dist:70,acc:78,app:75,sht:99,scr:95,bnk:98,put:87,clu:78,fld:1},
+  {name:"Larry Mize",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1958,majors:1,note:"1987 Masters chip-in",dist:67,acc:80,app:74,sht:81,scr:82,bnk:80,put:86,clu:78,fld:1},
+  {name:"Hubert Green",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1946,majors:2,note:"2 majors",dist:77,acc:67,app:78,sht:78,scr:84,bnk:81,put:80,clu:89},
+  {name:"Andy North",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1950,majors:2,note:"2 US Opens",dist:67,acc:78,app:84,sht:77,scr:77,bnk:77,put:79,clu:88},
+  {name:"Paul Azinger",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1960,majors:1,note:"1993 major, Ryder captain",dist:68,acc:80,app:79,sht:88,scr:88,bnk:88,put:88,clu:88,fld:1},
+  {name:"Lee Janzen",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1964,majors:2,note:"2 US Opens",dist:69,acc:78,app:92,sht:88,scr:84,bnk:87,put:76,clu:88,fld:1},
+  {name:"Steve Elkington",era:"leg",tier:"legend",rarity:"Rare",nation:"AUS",born:1962,majors:1,note:"1995 major, pure swing",dist:77,acc:83,app:77,sht:88,scr:87,bnk:86,put:86,clu:81,fld:1},
+  {name:"David Toms",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1967,majors:1,note:"2001 major, wedges + putting",dist:68,acc:78,app:88,sht:86,scr:86,bnk:84,put:86,clu:77,fld:1},
+  {name:"Kenny Perry",era:"leg",tier:"legend",rarity:"Common",nation:"USA",born:1960,majors:0,note:"14 wins, power",dist:88,acc:81,app:92,sht:83,scr:81,bnk:83,put:77,clu:79,fld:1},
+  {name:"Francesco Molinari",era:"leg",tier:"legend",rarity:"Rare",nation:"ITA",born:1982,majors:1,note:"2018 Open, Ryder perfect",dist:75,acc:88,app:84,sht:78,scr:75,bnk:76,put:67,clu:82,fld:1},
+  {name:"Danny Willett",era:"leg",tier:"legend",rarity:"Rare",nation:"ENG",born:1987,majors:1,note:"2016 Masters",dist:74,acc:76,app:72,sht:83,scr:84,bnk:81,put:85,clu:80,fld:1},
+  {name:"Masashi Ozaki",era:"leg",tier:"legend",rarity:"Common",nation:"JPN",born:1947,majors:0,note:"Jumbo, 94 Japan wins",dist:88,acc:77,app:84,sht:79,scr:78,bnk:78,put:69,clu:77},
+  {name:"Ryan Fox",era:"cur",tier:"star",rarity:"Common",nation:"NZL",born:1986,majors:0,note:"Power, multiple 2025 wins",dist:86,acc:72,app:86,sht:83,scr:83,bnk:82,put:82,clu:80,fld:1},
+  {name:"Cameron Champ",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1995,majors:0,note:"Longest, 3-time winner",dist:94,acc:75,app:69,sht:68,scr:70,bnk:68,put:75,clu:77,fld:1},
+  {name:"Byeong Hun An",era:"cur",tier:"star",rarity:"Common",nation:"KOR",born:1991,majors:0,note:"Ballstriker",dist:85,acc:69,app:81,sht:86,scr:82,bnk:84,put:73,clu:78,fld:1},
+  {name:"Stephan Jaeger",era:"cur",tier:"star",rarity:"Common",nation:"GER",born:1989,majors:0,note:"Winner, steady",dist:86,acc:66,app:78,sht:90,scr:88,bnk:88,put:85,clu:80,fld:1},
+  {name:"C.T. Pan",era:"cur",tier:"star",rarity:"Common",nation:"TPE",born:1991,majors:0,note:"Accurate, Olympic bronze",dist:74,acc:86,app:77,sht:86,scr:83,bnk:85,put:76,clu:81,fld:1},
+  {name:"Davis Riley",era:"cur",tier:"star",rarity:"Common",nation:"USA",born:1996,majors:0,note:"Tour winner",dist:81,acc:65,app:69,sht:82,scr:83,bnk:80,put:86,clu:78,fld:1},
+  {name:"David Puig",era:"cur",tier:"rising",rarity:"Common",nation:"ESP",born:2002,majors:0,note:"Young LIV power",dist:93,acc:73,app:78,sht:80,scr:84,bnk:79,put:92,clu:80,fld:1},
+  {name:"Jesper Svensson",era:"cur",tier:"rising",rarity:"Common",nation:"SWE",born:2000,majors:0,note:"DP World winner",dist:91,acc:76,app:76,sht:77,scr:77,bnk:75,put:77,clu:81,fld:1},
+  {name:"Pádraig Harrington",era:"leg",tier:"legend",rarity:"Epic",nation:"IRL",born:1971,majors:3,note:"3 majors, grit",dist:76,acc:73,app:77,sht:81,scr:77,bnk:80,put:69,clu:93,fld:1},
+  {name:"Matt Fitzpatrick",era:"cur",tier:"star",rarity:"Epic",nation:"ENG",born:1994,majors:1,note:"2022 US Open champ",dist:80,acc:86,app:94,sht:97,scr:94,bnk:96,put:86,clu:86,fld:1},
+];
+const GOLFERS=ROSTER.map(g=>{
+  g.skill=CATS.reduce((s,c)=>s+g[c.k]*c.w,0);
+  return g;
+});
+/* ---- Rarity Spin: bucket-weighted pull (client-side for the prototype; mirror of _meta.rarity_pull_rates,
+   move to backend config when the server-authoritative draw is built) ---- */
+const PULL_RATES=[['Legendary',0.05],['Epic',0.25],['Rare',0.35],['Common',0.35]]; // rarest first; sum 1.0
+function buildPool(golfers){const p={Common:[],Rare:[],Epic:[],Legendary:[]}; golfers.forEach(g=>p[g.rarity].push(g)); return p;}
+const RPOOL=buildPool(GOLFERS);
+function rollBucket(rng){const r=rng(); let acc=0; for(const[b,p]of PULL_RATES){acc+=p; if(r<acc)return b;} return 'Common';}
+function drawGolfer(rng,pool,revealed){
+  for(let i=0;i<8;i++){const b=rollBucket(rng); const avail=pool[b].filter(g=>!revealed.has(g.name));
+    if(avail.length){const g=avail[Math.floor(rng()*avail.length)]; revealed.add(g.name); return g;}}
+  const all=Object.values(pool).flat().filter(g=>!revealed.has(g.name)); if(!all.length)return null;
+  const g=all[Math.floor(rng()*all.length)]; revealed.add(g.name); return g;
+}
+
+const SCHEDULE=[
+  ['Kapalua Invitational',20,'sig'],['Phoenix Open',9,'reg'],
+  ['Pebble Beach Pro-Am',20,'sig'],['Bay Hill Invitational',20,'sig'],
+  ['The Players',25,'sig'],['The Masters',21,'major'],
+  ['Hilton Head Classic',9,'reg'],['Charlotte Open',9,'reg'],
+  ['The Championship',19,'major'],['Memorial Tournament',20,'sig'],
+  ['Canadian Open',9,'reg'],['U.S. Open',21.5,'major'],
+  ['Travelers Championship',20,'sig'],['Scottish Open',9,'reg'],
+  ['The Open',17,'major'],['3M Open',8,'reg'],
+  ['Wyndham Championship',8,'reg'],['Tour Championship',25,'finale'],
+].map(e=>({name:e[0],purse:e[1]*1e6,type:e[2],major:e[2]==='major',big:(e[2]==='major'||e[2]==='sig'||e[2]==='finale')}));
+
+const PAYOUT=[.18,.109,.069,.049,.041,.0363,.0338,.0313,.0293,.0273,.0253,.0233,.0215,.0201,.0189,
+  .0177,.0167,.0157,.0149,.0141,.0133,.0125,.0117,.0109,.0101,.0097,.0093,.009,.0087,.0084,.0081,.0078,.0075,.0072,.0069];
+
+/* ---------- sim — constants measured from 246,968 real tour rounds, 2004-2018 (DataGolf spec §1) ---------- */
+function gauss(){let u=0,v=0;while(!u)u=RNG();while(!v)v=RNG();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+// per-round score-to-par = BASE + courseAdj - (overall-80)*0.238 + gauss(0,SIGMA).  overall 80 = tour average.
+// BASE re-bisected for this ~120 field (the eligible pool runs mean ~82 with stars to 95, so BASE is
+// higher than the spec's mean-80 starting values). COURSE_SD = a per-event difficulty draw that models
+// course/weather variance (gives the real winner-score spread). Validated vs the spec's target table.
+const SIM={reg:{base:0.91,sigma:2.80,csd:0.90}, maj:{base:2.74,sigma:2.90,csd:1.45}};
+const SKILLSLOPE=0.238;
+function simRound(eo,clu,{major,finalRd,courseAdj}){
+  const k=major?SIM.maj:SIM.reg;
+  let m=k.base+(courseAdj||0)-(eo-80)*SKILLSLOPE;
+  // composure: the one non-data-grounded knob — a tiny mean nudge on major Sundays only (cap ±0.4 strokes)
+  if(major&&finalRd) m-=clamp((clu-80)*0.02,-0.4,0.4);
+  return m+gauss()*k.sigma;
+}
+/* course fit (§2): skill-weight multipliers, renormalized to 1.0, → event-effective overall.
+   Every scheduled event maps to a real course whose multipliers are MEASURED per-course from DataGolf
+   historical SG (course_fit.json, clamp 0.82-1.40); dist & acc share the course's driving multiplier
+   (the distance-vs-accuracy split is the pending DataGolf course-fit "B" refinement). The four majors
+   are now measured too — each mapped to a canonical recently-measured venue (Augusta fully measured;
+   Oakmont / Valhalla / St Andrews are measured+expert blends from the 2019-26 SG pull). Scottish & 3M
+   Opens have no entry yet -> neutral (eventWeights returns base weights). */
+const COURSEFIT={
+  // --- regular / signature events ---
+  "Kapalua Invitational": {dist:0.923,acc:0.923,app:0.82,sht:0.82,scr:0.82,bnk:0.82,put:0.918,clu:1},  // Plantation Course at Kapalua
+  "Phoenix Open": {dist:1.249,acc:1.249,app:0.82,sht:0.987,scr:0.987,bnk:0.987,put:1.014,clu:1},  // TPC Scottsdale
+  "Pebble Beach Pro-Am": {dist:0.82,acc:0.82,app:1.153,sht:1.137,scr:1.137,bnk:1.137,put:1.088,clu:1},  // Pebble Beach GL
+  "Bay Hill Invitational": {dist:1.173,acc:1.173,app:1.206,sht:0.979,scr:0.979,bnk:0.979,put:0.973,clu:1},  // Bay Hill Club & Lodge
+  "The Players": {dist:1.227,acc:1.227,app:1.257,sht:1.13,scr:1.13,bnk:1.13,put:0.995,clu:1},  // TPC Sawgrass
+  "Hilton Head Classic": {dist:0.993,acc:0.993,app:1.179,sht:1.183,scr:1.183,bnk:1.183,put:0.959,clu:1},  // Harbour Town GL
+  "Charlotte Open": {dist:1.2,acc:1.2,app:0.956,sht:1.062,scr:1.062,bnk:1.062,put:1.09,clu:1},  // Quail Hollow Club
+  "Memorial Tournament": {dist:0.872,acc:0.872,app:1.269,sht:1.298,scr:1.298,bnk:1.298,put:1.102,clu:1},  // Muirfield Village GC
+  "Canadian Open": {dist:1.136,acc:1.136,app:1.221,sht:1.147,scr:1.147,bnk:1.147,put:0.986,clu:1},  // Glen Abbey GC
+  "Travelers Championship": {dist:1.243,acc:1.243,app:0.897,sht:1.046,scr:1.046,bnk:1.046,put:0.987,clu:1},  // TPC River Highlands
+  "Wyndham Championship": {dist:1.054,acc:1.054,app:0.82,sht:0.82,scr:0.82,bnk:0.82,put:0.975,clu:1},  // Sedgefield CC
+  "Tour Championship": {dist:0.82,acc:0.82,app:0.861,sht:0.857,scr:0.857,bnk:0.857,put:0.968,clu:1},  // East Lake GC
+  // --- majors: measured venues (course_fit.json) ---
+  'The Masters':      {dist:1.137,acc:1.137,app:1.141,sht:1.339,scr:1.339,bnk:1.339,put:0.976,clu:1},  // Augusta National GC (fully measured)
+  'The Championship': {dist:1.124,acc:1.124,app:1.215,sht:1.11,scr:1.11,bnk:1.11,put:1.082,clu:1},  // Valhalla GC
+  'U.S. Open':        {dist:1.262,acc:1.262,app:1.191,sht:1.4,scr:1.4,bnk:1.4,put:1.194,clu:1},  // Oakmont CC
+  'The Open':         {dist:1.328,acc:1.328,app:0.85,sht:1.113,scr:1.113,bnk:1.113,put:1.265,clu:1},  // St Andrews (Old Course)
+};
+function eventWeights(evt){
+  const m=COURSEFIT[evt.name]; if(!m) return CATS;                 // default = neutral base weights
+  const raw=CATS.map(c=>({k:c.k,short:c.short,w:c.w*m[c.k]}));
+  const sum=raw.reduce((s,x)=>s+x.w,0);
+  return raw.map(x=>({k:x.k,short:x.short,w:x.w/sum}));            // renormalize to 1.0
+}
+function eventOverall(p,ew){ return ew.reduce((s,c)=>s+p[c.k]*c.w,0); }
+
+/* ---------- state ---------- */
+const SPINS=10, REPLACEMENT=62;
+const FIELDSIZE=120;   // season field = you + (FIELDSIZE-1) data-grounded golfers (DataGolf spec §3)
+const FIELDPOOL=GOLFERS.filter(g=>g.fld);   // only current/historical (SG-rated) players make a credible field
+/* golfer customization palettes */
+const SKINS=[
+  {id:'light', m:'#f0c6a4', s:'#e0ad84'},
+  {id:'tan',   m:'#e8b088', s:'#d99a6c'},
+  {id:'medium',m:'#c98d5e', s:'#b67a4d'},
+  {id:'brown', m:'#9c6b43', s:'#855836'},
+  {id:'deep',  m:'#6f4a2e', s:'#5d3c24'},
+];
+const POLOS=[
+  {id:'teal',  m:'#0FA888', s:'#0c917a'},
+  {id:'navy',  m:'#214a8c', s:'#1a3c72'},
+  {id:'red',   m:'#d23f34', s:'#b1322a'},
+  {id:'gold',  m:'#e6a91f', s:'#c98f12'},
+  {id:'white', m:'#eef0ee', s:'#d7dbd6'},
+  {id:'purple',m:'#6b4bb0', s:'#583c93'},
+  {id:'black', m:'#2b3038', s:'#1f232a'},
+];
+const PANTS=[
+  {id:'stone',a:'#c7bfa8', b:'#bcb39b'},
+  {id:'navy', a:'#2a3550', b:'#222a40'},
+  {id:'grey', a:'#9aa0a8', b:'#878d95'},
+  {id:'white',a:'#ededdf', b:'#deded1'},
+  {id:'black',a:'#262a31', b:'#1d2026'},
+];
+const HAIRS=[
+  {id:'black',     m:'#2b2118', s:'#1b140d'},
+  {id:'brown',     m:'#5a3b25', s:'#412a19'},
+  {id:'darkbrown', m:'#3a2a1c', s:'#281c12'},
+  {id:'blonde',    m:'#c79c54', s:'#a37f3c'},
+  {id:'auburn',    m:'#7e3b22', s:'#5e2c18'},
+  {id:'grey',      m:'#9a958f', s:'#7b766f'},
+];
+const DEFLOOK={skin:'tan',polo:'teal',pants:'stone',hair:'brown',cap:true,lefty:false,gender:'male'};
+let S={};
+function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);S={screen:'title',mode:'easy',revealed:new Set(),drawRng:Math.random,reSpins:2,
+  slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get('bag_name',''),
+  look:Object.assign({},DEFLOOK,LS.get('bag_look',{})),year:1,career:null,
+  schedule:[],evtIndex:0,season:null,curEvt:null,fieldRoster:null,overlay:null,seasonPaused:false,recorded:false,recapEvent:null,
+  autoSim:LS.get('bag_autosim',false),simRate:LS.get('bag_speed',1),daily:false,dailySeed:null,dailyStored:false};}
+reset();
+if(LS.get('bag_dark',false))document.body.classList.add('dark');
+
+const filledCount=()=>CATS.filter(c=>S.slots[c.k]).length;
+function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
+  CATS.forEach(c=>p[c.k]=S.slots[c.k]?S.slots[c.k].value:REPLACEMENT);
+  p.skill=CATS.reduce((s,c)=>s+p[c.k]*c.w,0); return p;}
+
+/* ---------- build identity ---------- */
+function ovrTier(o){
+  if(o>=90) return {c:'#35d6a0', glow:'0 0 14px rgba(53,214,160,.45)', lab:'ELITE'};
+  if(o>=86) return {c:'#EBA61F', glow:'0 0 12px rgba(235,166,31,.40)', lab:'GOLD'};
+  if(o>=82) return {c:'#c7ced8', glow:'none', lab:'SILVER'};
+  return {c:'#cd8e5a', glow:'none', lab:'BRONZE'};
+}
+const ARCH={dist:['The Bomber','Overpowers every course'],acc:['The Marksman','Always in the fairway'],
+  app:['The Surgeon','Throws darts on approach'],sht:['The Magician','Magic around the greens'],
+  scr:['The Escape Artist','Saves par from anywhere'],bnk:['The Sandman','Owns the bunkers'],
+  put:['The Assassin','Deadly on the greens'],clu:['The Closer','Ice in his veins on Sunday']};
+function archetype(p){
+  const vals=CATS.map(c=>({k:c.k,v:p[c.k]}));
+  const mx=Math.max(...vals.map(x=>x.v)), mn=Math.min(...vals.map(x=>x.v));
+  const mean=vals.reduce((s,x)=>s+x.v,0)/vals.length;
+  if(mx-mn<=10 && mean>=84) return {name:'The Complete Player', desc:'No weakness in the bag'};
+  const top=vals.slice().sort((a,b)=>b.v-a.v)[0];
+  const a=ARCH[top.k]; return {name:a[0], desc:a[1]};
+}
+
+
+
+/* ---------- shell ---------- */
+function crestSVG(){return `<svg class="crest" viewBox="0 0 64 76" fill="none">
+  <path d="M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z" fill="#0b2e1f" stroke="#cda24a" stroke-width="2.6"/>
+  <path d="M32 5 L57 14 V40 C57 56 45.5 65 32 70.5 C18.5 65 7 56 7 40 V14 Z" fill="none" stroke="#cda54a" stroke-width="0.8" opacity="0.55"/>
+  <path d="M26 17 v36" stroke="#e9d8ac" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M26 18 h16 l-4 5 4 5 h-16 z" fill="#EBA61F"/>
+  <ellipse cx="32" cy="57" rx="17" ry="5.4" fill="none" stroke="#cda54a" stroke-width="1.6"/>
+  <circle cx="26" cy="57" r="1.7" fill="#0a2a20"/>
+  <circle cx="38" cy="57" r="2.2" fill="#f4ecd9"/></svg>`;}
+function golfballSVG(){return `<svg class="ball" viewBox="0 0 24 24" fill="none">
+  <circle cx="12" cy="12" r="10.5" fill="#f7f3e8" stroke="#cda54a" stroke-width="1"/>
+  <g fill="#cdbf9b"><circle cx="12" cy="8" r="1"/><circle cx="9" cy="11" r="1"/><circle cx="15" cy="11" r="1"/><circle cx="12" cy="14" r="1"/><circle cx="9" cy="15.5" r="1"/><circle cx="15" cy="15.5" r="1"/></g></svg>`;}
+function swingIcon(){return `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="13" cy="4.3" r="2.1"/><path d="M12 6.5 C14 7 15.4 8.4 15 11 L13.4 11.3 C13 9.4 12.4 8.2 12 7.2 Z"/><path d="M13.4 9.5 L20 5.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11.8 9 C10 11 9.5 13.5 11 15.5" stroke="currentColor" stroke-width="2.1" fill="none" stroke-linecap="round"/><path d="M12.4 14 L15.5 20.5" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/><path d="M11.4 14 L8 20.5" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></svg>`;}
+function resetIcon(){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8 A 8.5 8.5 0 1 1 3 12.5"/><path d="M3.2 3.4 V8 H7.8"/></svg>`;}
+function header(){
+  const h=$(`<div class="head"></div>`);
+  const top=$(`<div class="topbar"></div>`);
+  const menu=$(`<button class="icobtn" aria-label="How to play" aria-haspopup="dialog" aria-expanded="${S.overlay==='rules'?'true':'false'}">≡</button>`);
+  menu.onclick=()=>{S.overlay='rules';render();};
+  top.appendChild(menu);
+  h.appendChild(top);
+  h.appendChild($(`<div class="crestrow">${crestSVG()}
+    <div class="wmblock">
+      <div class="divider"><span class="ln"></span>${golfballSVG()}<span class="ln r"></span></div>
+      <div class="wordmark"><span class="a">Run The</span><span class="b">Tour</span></div>
+      <div class="rule"></div>
+    </div></div>`));
+  const pills=$(`<div class="pills"></div>`);
+  const pl=$(`<button class="pill" aria-label="Your record">${swingIcon()} Player</button>`); pl.onclick=()=>{S.overlay='record';render();};
+  pills.appendChild(pl);
+  const rs=$(`<button class="pill">${resetIcon()} Reset</button>`); rs.onclick=()=>{ if(S.screen==='title'){reset();render();} else {S.overlay='confirmReset';render();} };
+  pills.appendChild(rs);
+  h.appendChild(pills);
+  return h;
+}
+function footer(){
+  const f=$(`<div class="foot"></div>`);
+  const fp=$(`<div class="footpills"></div>`);
+  const mail='mailto:sellybros711@gmail.com?subject='+encodeURIComponent('RunTheTour — Questions / Comments');
+  fp.appendChild($(`<a class="pill" href="${mail}" style="text-decoration:none">✉ Questions or Comments</a>`));
+  const a2h=$(`<div class="pill" style="cursor:pointer">▣ Add to Home</div>`); a2h.onclick=installApp;
+  fp.appendChild(a2h);
+  f.appendChild(fp);
+  const links=$(`<div class="footlinks"></div>`);
+  const mk=(t,fn)=>{const s=$(`<span style="cursor:pointer">${t}</span>`); s.onclick=fn; return s;};
+  links.appendChild(mk('Home',()=>{S.overlay=null;S.screen='title';render();}));
+  links.appendChild($(`<span>·</span>`));
+  links.appendChild(mk('About',()=>{S.overlay='about';render();}));
+  links.appendChild($(`<span>·</span>`));
+  links.appendChild(mk('Privacy',()=>{S.overlay='privacy';render();}));
+  links.appendChild($(`<span>·</span>`));
+  links.appendChild($(`<a href="${mail}" style="color:inherit;text-decoration:none;cursor:pointer">Contact</a>`));
+  f.appendChild(links);
+  return f;
+}
+
+let _lastView=null;
+function render(){
+  const savedY=window.scrollY;
+  const view=S.screen+'|'+(S.overlay||'')+'|'+(S.recapEvent==null?'':S.recapEvent);
+  const sameView=(view===_lastView);
+  app.innerHTML='';
+  app.appendChild(header());
+  const card=$(`<main class="card"></main>`);
+  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary'].includes(S.screen)?' wide':''}"></div>`);
+  card.appendChild(screen);
+  app.appendChild(card);
+  app.appendChild(footer());
+  RT=screen;
+  if(S.overlay==='rules') overlayRules(screen);
+  if(S.overlay==='record') overlayRecord(screen);
+  if(S.overlay==='leaderboard') overlayLeaderboard(screen);
+  if(S.overlay==='dailydone') overlayDailyDone(screen);
+  if(S.overlay==='confirmReset') overlayConfirmReset(screen);
+  if(S.overlay==='about') overlayAbout(screen);
+  if(S.overlay==='privacy') overlayPrivacy(screen);
+  ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap})[S.screen]();
+  saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
+  _lastView=view;
+  // keep your place when re-rendering the same view (e.g. picking customization swatches);
+  // only jump to top when the view actually changes.
+  window.scrollTo({top: sameView ? savedY : 0});
+}
+function overlayRules(screen){
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>How to play</h3>
+    <ol>
+      <li>Spin the wheel up to <b>10 times</b>. Each spin lands on a real golfer.</li>
+      <li>Take <b>one</b> of that golfer's eight skills — or skip and spin again. One skill per golfer.</li>
+      <li>Fill all <b>8 slots</b>: distance, accuracy, approach, short game, scrambling, bunker, putting, composure.</li>
+      <li>Every golfer's eight ratings are shown — take their best, or risk a re-spin for someone better.</li>
+      <li>Run your golfer through a full pro season. Spikes win you events; one weak slot loses weekends.</li>
+      <li>Winnings are big — but so are expenses (caddie, agent, travel, ~$2.8M/yr of tour costs). A mediocre build can finish the year in the <b>red</b>.</li>
+      <li>Bank the most prize money and climb the season earnings list against the field.</li>
+    </ol>
+    <h2 style="margin:14px 0 8px">Pull odds each spin</h2>
+    <div class="board" style="margin-bottom:6px">
+      <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="color:var(--gold);font-weight:800">★ Legendary</span><span class="mny mono">5%</span></div>
+      <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="color:#c7a6f2;font-weight:800">◆ Epic</span><span class="mny mono">25%</span></div>
+      <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="color:#82c1e8;font-weight:800">◇ Rare</span><span class="mny mono">35%</span></div>
+      <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="font-weight:800">Common</span><span class="mny mono">35%</span></div>
+    </div>
+    <p class="small muted" style="line-height:1.45;margin:0 0 4px">Rarer golfers tend to have higher peak skills — but take the best rating for an open slot, whoever lands.</p>
+    <button class="btn red">Got it</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  screen.appendChild(ov);
+}
+function overlayRecord(screen){
+  const c=career(); const badges=c.badges||{};
+  const rows=c.hof.length? c.hof.map((h,i)=>`<div class="lb" style="grid-template-columns:28px 1fr 60px 96px">
+      <span class="pos">${i===0?'🏆':i+1}</span><span class="pl">${h.name||'Your Golfer'}</span>
+      <span class="sc" style="color:#bfe7df">OVR ${h.ovr}</span>
+      <span class="mny" style="color:${(h.net??h.money)>=0?'#35d6a0':'#E14A33'}">${fmtSigned(h.net??h.money)}</span></div>`).join('')
+    : `<div class="small muted center" style="padding:20px 8px">No seasons yet — build a golfer and run a season to start your record.</div>`;
+  const earnedCount=ACHS.filter(a=>badges[a.id]).length;
+  const badgeGrid=ACHS.map(a=>{const on=!!badges[a.id]; return `<div style="display:flex;align-items:center;gap:8px;background:#0a2740;border:1px solid var(--line);border-radius:11px;padding:9px 10px;opacity:${on?1:.38}">
+      <span style="font-size:20px;filter:${on?'none':'grayscale(1)'}">${a.e}</span>
+      <span style="min-width:0"><div style="font-weight:800;font-size:12.5px;color:var(--oncard)">${a.t}</div><div class="small muted" style="font-size:10.5px;line-height:1.25">${a.d}</div></span></div>`;}).join('');
+  const acctCard = sbSignedIn()
+    ? `<div><b style="color:var(--gold)">${esc(sbUsername||'Signed in')}</b><div class="small muted" style="margin-top:2px">${sbUsername?'Your seasons post to the global leaderboard.':'Set a username on RunThe.GG to appear on the board.'}</div></div>${sbUsername?'':`<a class="btn gold" href="https://runthe.gg/" target="_blank" rel="noopener" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap;text-decoration:none">RunThe.GG ↗</a>`}`
+    : `<div><b style="color:var(--oncard)">Guest</b><div class="small muted" style="margin-top:2px">Your record lives on this device. Sign in with your RunThe.GG account to sync &amp; hit the global board.</div></div><a class="btn gold" href="https://runthe.gg/" target="_blank" rel="noopener" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap;text-decoration:none">Sign in ↗</a>`;
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Player</h3>
+    <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">${acctCard}</div>
+    <div class="sbar" style="margin-bottom:14px">
+      <div class="sstat wide"><div class="k">Best net profit</div><div class="v" style="color:${(c.bestNet??0)>=0?'#35d6a0':'#E14A33'};font-size:22px">${c.bestNet==null?'—':fmtSigned(c.bestNet)}</div></div>
+      <div class="sstat"><div class="k">Best earned</div><div class="v gold">${fmt(c.bestMoney)}</div></div>
+      <div class="sstat"><div class="k">Builds</div><div class="v">${c.builds}</div></div>
+      <div class="sstat"><div class="k">Best OVR</div><div class="v">${c.bestOvr||'—'}</div></div>
+      <div class="sstat"><div class="k">Wins</div><div class="v">${c.wins}</div></div>
+    </div>
+    <h2 style="margin:0 0 8px">Hall of Fame · your top builds</h2>
+    <div class="board">${rows}</div>
+    <h2 style="margin:16px 0 8px">Achievements · ${earnedCount}/${ACHS.length}</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">${badgeGrid}</div>
+    <div style="height:14px"></div>
+    <button class="btn red">Close</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  screen.appendChild(ov);
+}
+function overlayLeaderboard(screen){
+  if(lbCache===null) lbLoad();                       // async; re-renders when ready
+  const c=career();
+  const tab=S.lbTab||'season';
+  const youName=(c.hof[0]&&c.hof[0].name)||S.name||'You';
+  const lbRowHTML=(pos,name,sub,val,you)=>`<div class="lb ${you?'you':''}" style="grid-template-columns:34px 1fr auto">
+      <span class="pos">${pos===1?'🏆':pos}</span>
+      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</div>${sub?`<div class="small muted" style="font-size:10.5px">${esc(sub)}</div>`:''}</span>
+      <span class="mny" style="color:var(--gold)">${fmt(val)}</span></div>`;
+  const globalOk = lbCache && lbCache.ok;
+  const globalRows = globalOk ? (tab==='season'?lbCache.season:lbCache.career) : [];
+  let board;
+  if(lbCache===null){
+    board=`<div class="small muted center" style="padding:18px 8px">Loading the global board…</div>`;
+  } else if(globalOk && globalRows.length){
+    board=globalRows.map(r=>{
+      const you=sbUser&&r.user_id===sbUser.id;
+      return tab==='season'
+        ? lbRowHTML(r.rank,r.display_name,'OVR '+r.ovr+(r.golfer_name?' · '+r.golfer_name:''),r.season_earnings,you)
+        : lbRowHTML(r.rank,r.display_name,r.seasons+' season'+(r.seasons>1?'s':'')+' · '+r.wins+'W',r.career_earnings,you);
+    }).join('');
+  } else if(globalOk){
+    board=`<div class="small muted center" style="padding:18px 8px">No scores yet — be the first to post one.</div>`;
+  } else {
+    // backend not reachable / migration not applied yet → local fallback
+    if(tab==='season'){
+      board = c.hof.length
+        ? [...c.hof].sort((a,b)=>b.money-a.money).map((h,i)=>lbRowHTML(i+1,h.name||'Your Golfer','OVR '+h.ovr,h.money,true)).join('')
+        : `<div class="small muted center" style="padding:18px 8px">Run a season to post a single-season score.</div>`;
+    } else {
+      board = c.totalMoney>0
+        ? lbRowHTML(1, youName, c.builds+' season'+(c.builds>1?'s':'')+' · '+c.wins+'W', c.totalMoney,true)
+        : `<div class="small muted center" style="padding:18px 8px">Play a season to bank career earnings.</div>`;
+    }
+  }
+  // sign-in banner reflects the shared RunThe.GG session
+  const signCTA=`<a class="btn gold" href="https://runthe.gg/" target="_blank" rel="noopener" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap;text-decoration:none">Sign in ↗</a>`;
+  let banner;
+  if(sbSignedIn() && sbUsername){
+    banner=`<div><b style="color:var(--gold)">Signed in as ${esc(sbUsername)}</b><div class="small muted" style="margin-top:2px">Your finished seasons post to the global board automatically.</div></div>`;
+  } else if(sbSignedIn()){
+    banner=`<div><b style="color:var(--gold)">Pick a username</b><div class="small muted" style="margin-top:2px">Set a username on RunThe.GG to appear on the board.</div></div>${signCTA}`;
+  } else {
+    banner=`<div><b style="color:var(--gold)">Compete on the global board</b><div class="small muted" style="margin-top:2px">Sign in with your RunThe.GG account — finished seasons then post here automatically.${globalOk?'':' Global board is offline right now — showing your own results.'}</div></div>${signCTA}`;
+  }
+  const seg=(id,lab)=>`<button class="btn ${tab===id?'gold':'ghost'} lbtab" data-tab="${id}" style="font-size:12px;padding:8px 12px;width:auto">${lab}</button>`;
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Leaderboard">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>🏆 Leaderboard</h3>
+    <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
+    <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px">${seg('season','Single Season')}${seg('career','Career')}</div>
+    <h2 style="margin:0 0 8px">${tab==='season'?'Single-season earnings':'Career earnings'}</h2>
+    <div class="board">${board}</div>
+    <div style="height:14px"></div>
+    <button class="btn red">Close</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  ov.querySelectorAll('.lbtab').forEach(b=>b.onclick=()=>{S.lbTab=b.dataset.tab;render();});
+  screen.appendChild(ov);
+}
+function overlayConfirmReset(screen){
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Start over?</h3>
+    <p class="lede">This clears your current golfer and season. Your record and Hall of Fame are kept.</p>
+    <button class="btn red">Reset everything</button>
+    <button class="btn ghost cancel" style="margin-top:10px">Cancel</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.cancel').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{clearResume();reset();render();};
+  screen.appendChild(ov);
+}
+function overlayDailyDone(screen){
+  const dd=dailyState(); const r=dd&&dd.result;
+  const body=r?`
+    <p class="lede" style="margin-bottom:12px">You've played today's challenge — a new one drops at midnight UTC.</p>
+    <div class="tiles">
+      <div class="tile"><div class="k">Net profit</div><div class="v" style="color:${r.net>=0?'#35d6a0':'#E14A33'}">${fmtSigned(r.net)}</div></div>
+      <div class="tile"><div class="k">Earnings rank</div><div class="v cream">#${r.moneyRank} / ${r.N}</div></div>
+      <div class="tile"><div class="k">Wins</div><div class="v cream">${r.wins}</div></div>
+      <div class="tile"><div class="k">Best finish</div><div class="v cream">${bestTxt(r.best)}</div></div>
+    </div>
+    <div class="small muted center" style="margin-top:2px">${r.name||'Your Golfer'} · OVR ${r.ovr}</div>`
+   :`<p class="lede">You've already played today. Come back at midnight UTC for a fresh wheel.</p>`;
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Daily Challenge</h3>
+    ${body}
+    <div style="height:14px"></div>
+    <button class="btn red">Close</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  screen.appendChild(ov);
+}
+function overlayAbout(screen){
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="About RunTheTour">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>About</h3>
+    <p class="lede"><b style="color:var(--oncard)">RunTheTour</b> is a free golf game from <b style="color:var(--teal)">RunThe.GG</b> — sibling to RunThePitch. Spin a wheel of real golfers, draft one skill from each to build your own, then run a full pro season and see how you finish.</p>
+    <p class="lede">It's in active development — new features are landing regularly. Got an idea or a bug? We'd love to hear it.</p>
+    <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour — Feedback')}" style="text-decoration:none;display:block">✉ Send Feedback</a>
+    <div style="height:10px"></div>
+    <button class="btn red">Close</button></div>`);
+  ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
+  screen.appendChild(ov);
+}
+function overlayPrivacy(screen){
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Privacy">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Privacy</h3>
+    <p class="lede">RunTheTour is built to be private by default.</p>
+    <ol style="color:#dbe6ee;padding-left:18px">
+      <li><b>Accounts are optional.</b> You can play the whole game without signing in. Signing in (with your RunThe.GG account) is only needed to post to the public leaderboard.</li>
+      <li><b>Your data stays on your device</b> unless you post a score. Your golfer, look, record, and daily streak are saved only in this browser (localStorage).</li>
+      <li><b>If you sign in and finish a season,</b> your username, golfer name, overall, and earnings are sent to our database (Supabase) and shown on the public leaderboard. Nothing is posted while you're a guest.</li>
+      <li><b>Clear it anytime.</b> Use Reset, or clear this site's browser data, to wipe local data. Sign out on RunThe.GG to end your session.</li>
+      <li><b>No ads or third-party trackers</b> are loaded. The only network services are Google Fonts and our own Supabase backend (for accounts + leaderboard).</li>
+    </ol>
+    <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour — Privacy question')}" style="text-decoration:none;display:block">✉ Privacy Question</a>
+    <div style="height:10px"></div>
+    <button class="btn red">Close</button></div>`);
+  ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
+  screen.appendChild(ov);
+}
+
+/* ---------- title (mode select) ---------- */
+function trophySVG(){return `<svg class="trophy" viewBox="0 0 60 80" fill="none">
+  <path d="M16 6 h28 v11 a14 14 0 0 1 -28 0 z" fill="#EBA61F"/>
+  <path d="M16 9 H8 a9 9 0 0 0 9 10" stroke="#EBA61F" stroke-width="3" fill="none"/>
+  <path d="M44 9 H52 a9 9 0 0 1 -9 10" stroke="#EBA61F" stroke-width="3" fill="none"/>
+  <rect x="27" y="30" width="6" height="13" fill="#caa23a"/>
+  <rect x="18" y="43" width="24" height="6" rx="2" fill="#EBA61F"/>
+  <rect x="22" y="49" width="16" height="9" rx="2" fill="#caa23a"/></svg>`;}
+
+function scrTitle(){
+  const scene=$(`<div class="scene"><svg class="coursebg" viewBox="0 0 440 440" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#06182e"/><stop offset="0.5" stop-color="#0b3149"/><stop offset="0.78" stop-color="#1a5b50"/></linearGradient>
+      <radialGradient id="sun" cx="0.64" cy="0.52" r="0.45">
+        <stop offset="0" stop-color="#f6cd74" stop-opacity="0.65"/><stop offset="0.5" stop-color="#EBA61F" stop-opacity="0.16"/><stop offset="1" stop-color="#EBA61F" stop-opacity="0"/></radialGradient>
+      <linearGradient id="topfade" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0a1a2c" stop-opacity="0.5"/><stop offset="0.4" stop-color="#0a1a2c" stop-opacity="0"/></linearGradient>
+      <linearGradient id="botfade" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0a1a2c" stop-opacity="0"/><stop offset="0.85" stop-color="#0a1a2c" stop-opacity="1"/></linearGradient>
+    </defs>
+    <rect x="0" y="0" width="440" height="220" fill="url(#sky)"/>
+    <rect x="0" y="0" width="440" height="220" fill="url(#sun)"/>
+    <path d="M0,202 Q110,168 220,190 T440,182 V220 H0 Z" fill="#0e3f3b"/>
+    <g fill="#0c322e">
+      <ellipse cx="36" cy="194" rx="34" ry="17"/><ellipse cx="92" cy="198" rx="42" ry="15"/>
+      <ellipse cx="356" cy="192" rx="46" ry="18"/><ellipse cx="412" cy="196" rx="34" ry="14"/></g>
+    <path d="M0,216 Q150,190 270,214 T440,210 V440 H0 Z" fill="#1a6b40"/>
+    <path d="M0,262 Q170,234 300,264 T440,258 V440 H0 Z" fill="#218a50"/>
+    <g opacity="0.45" fill="#1b7a45">
+      <path d="M0,290 Q170,266 300,294 T440,288 V322 Q300,328 170,300 T0,324 Z"/>
+      <path d="M0,348 Q170,326 300,354 T440,348 V382 Q300,388 170,360 T0,384 Z"/>
+      <path d="M0,406 Q170,386 300,414 T440,408 V440 H0 Z"/></g>
+    <!-- putting green + flag pushed to the right so the title text stays clear -->
+    <ellipse cx="388" cy="288" rx="64" ry="19" fill="#2ea65f"/>
+    <ellipse cx="388" cy="288" rx="64" ry="19" fill="none" stroke="#38c270" stroke-width="1.4" opacity="0.55"/>
+    <ellipse cx="402" cy="285" rx="3.4" ry="1.6" fill="#06241a"/>
+    <line x1="402" y1="285" x2="402" y2="232" stroke="#F4E3C9" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M402,234 l20,5 -20,6 z" fill="#EBA61F"/>
+    <circle cx="372" cy="292" r="3" fill="#F8F2E6"/>
+    <!-- bunker pushed to the left -->
+    <ellipse cx="50" cy="300" rx="42" ry="12" fill="#efe0c0"/>
+    <ellipse cx="50" cy="300" rx="42" ry="12" fill="none" stroke="#d6c197" stroke-width="1.4"/>
+    <rect x="0" y="0" width="440" height="120" fill="url(#topfade)"/>
+    <rect x="0" y="280" width="440" height="160" fill="url(#botfade)"/>
+  </svg></div>`);
+  add(scene);
+  const w=$(`<div class="titlewrap center"></div>`);
+  w.appendChild($(`<h1 class="hero" style="font-size:40px"><span class="hr1">Your Legend</span> <span class="hr2">Starts Here</span></h1>`));
+  w.appendChild($(`<p class="lede center" style="max-width:320px;margin:8px auto 6px">Build a golfer from the game's greatest skills and run them through a full pro season.</p>`));
+  const swItems=CATS.map(c=>`<span class="swchip">${c.short}</span>`).join('');
+  w.appendChild($(`<div class="center"><div class="rollchip" style="width:320px;max-width:86vw;padding:9px 0 11px;overflow:hidden">
+    <div class="rolllab" style="padding:0 18px">Built from 8 real skills</div>
+    <div class="skillwheel"><div class="track">${swItems}${swItems}</div></div></div></div>`));
+  const c=career();
+  if(c.builds>0){
+    w.appendChild($(`<div class="small muted center" style="margin:-4px 0 12px">Your best: <b style="color:var(--gold)">${fmt(c.bestMoney)}</b> · OVR ${c.bestOvr} · ${c.builds} build${c.builds>1?'s':''}</div>`));
+  }
+  const stack=$(`<div class="stack"></div>`);
+  const ri=resumeInfo();
+  if(ri){
+    const rb=$(`<button class="btn teal">Resume Your Golfer<span class="sub">${ri.n}/8 skills drafted · pick up where you left off</span></button>`);
+    rb.onclick=restoreResume; stack.appendChild(rb);
+  }
+  const go=$(`<button class="btn goldfill">${ri?'Start a New Golfer':'Step to the Tee Box'}<span class="sub">Build your golfer</span></button>`);
+  go.onclick=()=>{S.mode='easy';S.screen='setup';render();};
+  stack.appendChild(go);
+  const done=dailyDoneToday();
+  const daily=$(`<button class="btn ${done?'gold':'blue'}" style="margin-top:10px">${done?'Daily Challenge · Done':'Daily Challenge'}<span class="sub">${done?'View result · new wheel at midnight UTC':'Same wheel for everyone today'}</span></button>`);
+  daily.onclick=startDaily;
+  stack.appendChild(daily);
+  const st=streakDisplay();
+  if(st>0) stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--gold);font-weight:700">🔥 ${st}-day daily streak — keep it alive</div>`));
+  w.appendChild(stack);
+  const mini=$(`<div class="mini"></div>`);
+  const how=$(`<button class="btn gold">How to Play</button>`);
+  const lb=$(`<button class="btn gold">🏆 Leaderboard</button>`);
+  how.onclick=()=>{S.overlay='rules';render();};
+  lb.onclick=()=>{S.overlay='leaderboard';render();};
+  mini.appendChild(how); mini.appendChild(lb);
+  w.appendChild(mini);
+  add(w);
+}
+function startRoll(){
+  clearInterval(rollTimer);
+  let i=0;
+  rollTimer=setInterval(()=>{
+    const el=document.getElementById('rollval');
+    if(!el||!el.isConnected){clearInterval(rollTimer);return;}
+    i=(i+1)%CATS.length;
+    el.style.opacity='0';
+    setTimeout(()=>{ if(el.isConnected){el.textContent=CATS[i].short; el.style.opacity='1';} },180);
+  },1700);
+}
+function toast(msg){
+  const t=$(`<div style="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:30;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4)">${msg}</div>`);
+  document.body.appendChild(t); setTimeout(()=>t.remove(),1800);
+}
+
+/* ---------- setup (create your golfer) ---------- */
+function scrSetup(){
+  add($(`<div class="center"><span class="tag">${S.daily?'Daily Challenge':'New golfer'}</span></div>`));
+  add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Create your golfer</h1>`));
+  add($(`<p class="lede center" style="margin-bottom:8px">Set your look, then spin to build the skills.</p>`));
+  const cols=$(`<div class="cols setup-cols"></div>`);
+  const left=$(`<div class="col center" style="align-self:center"></div>`), right=$(`<div class="col"></div>`);
+  cols.appendChild(left); cols.appendChild(right); add(cols);
+  const f=$(golferSVG()); f.style.width='168px'; f.style.height='168px'; f.style.filter='drop-shadow(0 6px 12px rgba(0,0,0,.4))';
+  const figwrap=$(`<div style="display:flex;justify-content:center"></div>`); figwrap.appendChild(f); left.appendChild(figwrap);
+  right.appendChild($(`<h2 style="margin:0 0 4px">Name</h2>`));
+  const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${S.name}">`);
+  inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name);}; right.appendChild(inp);
+  right.appendChild($(`<div style="height:6px"></div>`));
+  right.appendChild(genderRow());
+  right.appendChild(capRow());
+  right.appendChild(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
+  right.appendChild(swatchRow('Hair',HAIRS,S.look.hair,'hair',o=>o.m));
+  right.appendChild(swatchRow('Shirt',POLOS,S.look.polo,'polo',o=>o.m));
+  right.appendChild($(`<div style="height:14px"></div>`));
+  const go=$(`<button class="btn goldfill">Start Drafting ▸<span class="sub">${S.daily?'Same wheel for everyone today':'Spin to build your golfer'}</span></button>`);
+  go.onclick=()=>{track('draft_started',{daily:S.daily});S.screen='draft';render();}; right.appendChild(go);
+  const back=$(`<button class="btn ghost" style="margin-top:10px">‹ Back</button>`);
+  back.onclick=()=>{reset();S.screen='title';render();}; right.appendChild(back);
+}
+
+/* ---------- draft ---------- */
+let _figN=0;
+function golferSVG(){
+  const L=S.look||DEFLOOK;
+  const sk=SKINS.find(x=>x.id===L.skin)||SKINS[1];
+  const po=POLOS.find(x=>x.id===L.polo)||POLOS[0];
+  const hr=HAIRS.find(x=>x.id===L.hair)||HAIRS[1];
+  const hair=hr.m, hairS=hr.s, capM=po.m, capS=po.s;
+  const female=(L.gender==='female');
+  const cap=(L.cap!==false);
+  const id='f'+(++_figN);
+  return `<svg class="golferfig" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <radialGradient id="bg${id}" cx="50%" cy="36%" r="78%">
+      <stop offset="0" stop-color="#1c5a48"/><stop offset="1" stop-color="#0c2c23"/></radialGradient>
+    <clipPath id="cir${id}"><circle cx="60" cy="60" r="57"/></clipPath>
+  </defs>
+  <circle cx="60" cy="60" r="57" fill="url(#bg${id})"/>
+  <g clip-path="url(#cir${id})">
+    ${female?`<path d="M30,52 C26,74 30,100 40,118 L82,118 C92,100 95,74 90,52 C88,40 80,33 60,33 C40,33 32,40 30,52 Z" fill="${hairS}"/>`:''}
+    <!-- shoulders / polo -->
+    <path d="M16,118 C18,98 30,88 44,84 L76,84 C90,88 102,98 104,118 Z" fill="${po.m}"/>
+    <path d="M44,84 L76,84 C84,86.5 91,90 96,95 C84,90 70,88 60,88 C50,88 36,90 24,95 C29,90 36,86.5 44,84 Z" fill="${po.s}" opacity=".55"/>
+    <!-- collar -->
+    <path d="M50,84 L60,98 L70,84 C66,82 64,81 60,81 C56,81 54,82 50,84 Z" fill="${po.s}"/>
+    <path d="M50,84 L44,90 L52,92 L60,98 Z" fill="${po.m}"/>
+    <path d="M70,84 L76,90 L68,92 L60,98 Z" fill="${po.m}"/>
+    <path d="M50,84 L44,90 L52,92 L60,98 Z" fill="rgba(0,0,0,.12)"/>
+    <!-- neck -->
+    <path d="M52,72 C52,80 53,85 60,86 C67,85 68,80 68,72 Z" fill="${sk.s}"/>
+    <path d="M53,73 C54,79 55,82 60,83 C65,82 66,79 67,73 Z" fill="${sk.m}" opacity=".5"/>
+    <!-- ears -->
+    <ellipse cx="40.5" cy="55" rx="4" ry="6" fill="${sk.m}"/><ellipse cx="40.5" cy="55" rx="2" ry="3.4" fill="${sk.s}"/>
+    <ellipse cx="79.5" cy="55" rx="4" ry="6" fill="${sk.m}"/><ellipse cx="79.5" cy="55" rx="2" ry="3.4" fill="${sk.s}"/>
+    <!-- head / face -->
+    <path d="M42,46 C42,32 50,25 60,25 C70,25 78,32 78,46 C78,60 71,73 60,73 C49,73 42,60 42,46 Z" fill="${sk.m}"/>
+    <path d="M60,25 C70,25 78,32 78,46 C78,60 71,73 60,73 C66,68 69,58 69,46 C69,35 65,29 60,25 Z" fill="${sk.s}" opacity=".55"/>
+    <path d="M50,64 C54,70 56,71 60,71 C64,71 66,70 70,64 C66,69 64,70 60,70 C56,70 54,69 50,64 Z" fill="${sk.s}" opacity=".35"/>
+    ${female?`<path d="M42,47 C40,38 45,27 60,26 C56,30 53,36 52,44 C50,52 49,60 50,66 C45,62 43,55 42,47 Z" fill="${hair}"/>
+    <path d="M78,47 C80,38 75,27 60,26 C64,30 67,36 68,44 C70,52 71,60 70,66 C75,62 77,55 78,47 Z" fill="${hair}"/>`:''}
+    <!-- eyebrows -->
+    <path d="M48,45.6 q4,-1.8 8,-.4" stroke="${hairS}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <path d="M64,45.2 q4,-1.4 8,.4" stroke="${hairS}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    <!-- eyes (almond) -->
+    <path d="M48.7,50 Q52,47.7 55.3,50 Q52,51.7 48.7,50 Z" fill="#fdfdfb"/>
+    <circle cx="52" cy="49.9" r="1.7" fill="#46341f"/><circle cx="52" cy="49.9" r=".85" fill="#15100a"/><circle cx="52.6" cy="49.3" r=".5" fill="#fff" opacity=".85"/>
+    <path d="M48.5,49.8 Q52,47.1 55.5,49.8" stroke="${sk.s}" stroke-width="1" fill="none" stroke-linecap="round" opacity=".7"/>
+    <path d="M64.7,50 Q68,47.7 71.3,50 Q68,51.7 64.7,50 Z" fill="#fdfdfb"/>
+    <circle cx="68" cy="49.9" r="1.7" fill="#46341f"/><circle cx="68" cy="49.9" r=".85" fill="#15100a"/><circle cx="68.6" cy="49.3" r=".5" fill="#fff" opacity=".85"/>
+    <path d="M64.5,49.8 Q68,47.1 71.5,49.8" stroke="${sk.s}" stroke-width="1" fill="none" stroke-linecap="round" opacity=".7"/>
+    <!-- nose -->
+    <path d="M60,51 C59,55 58,57 57.5,58.5 C58.5,59.6 61.5,59.6 62.5,58.5 C62,57 61,55 60,51 Z" fill="${sk.s}" opacity=".5"/>
+    <!-- mouth -->
+    <path d="M54,63.5 Q60,67 66,63.5 Q60,65 54,63.5 Z" fill="#9c5b4c"/>
+    <path d="M54.5,63.2 Q60,65.6 65.5,63.2" stroke="${sk.s}" stroke-width=".8" fill="none" opacity=".5"/>
+    ${cap?`<!-- cap -->
+    <path d="M40,44 C40,28 50,21 60,21 C70,21 80,28 80,44 C74,38 68,35.5 60,35.5 C52,35.5 46,38 40,44 Z" fill="${capM}"/>
+    <path d="M60,21 C70,21 80,28 80,44 C74,38 68,35.5 60,35.5 C62,33 62,26 60,21 Z" fill="${capS}"/>
+    <path d="M40,44 C40,40 41,37 42.5,34 C44,38 46,40.5 48,42 C45,42.4 42.4,43 40,44 Z" fill="${capS}"/>
+    <path d="M38,44 C30,44.5 24,47 22,50.5 C26,53 35,52.5 44,49.5 C46,47 44,45 38,44 Z" fill="${capS}"/>
+    <circle cx="60" cy="21" r="1.4" fill="${capS}"/>`:`<!-- hair (no cap) -->
+    <path d="M41,46 C40,30 49,24 60,24 C71,24 80,30 79,46 C76,40 73,37 73,42 C70,35 64,33 60,33 C56,33 50,35 47,42 C47,37 44,40 41,46 Z" fill="${hair}"/>`}
+  </g>
+  <circle cx="60" cy="60" r="57" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="2"/>
+  <circle cx="60" cy="60" r="55.5" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="1"/>
+</svg>`;}
+function swatchRow(label,opts,curId,key,colorOf){
+  const row=$(`<div style="margin:9px 0"></div>`);
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${label}</div>`));
+  const wrap=$(`<div style="display:flex;gap:9px;flex-wrap:wrap"></div>`);
+  opts.forEach(o=>{
+    const sel=curId===o.id;
+    const sw=$(`<button aria-label="${label} ${o.id}" style="width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${colorOf(o)};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}"></button>`);
+    sw.onclick=()=>{S.look[key]=o.id; LS.set('bag_look',S.look); render();};
+    wrap.appendChild(sw);
+  });
+  row.appendChild(wrap); return row;
+}
+function capRow(){
+  const on=(S.look.cap!==false);
+  const row=$(`<div style="margin:9px 0"></div>`);
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Cap</div>`));
+  const wrap=$(`<div class="mini" style="margin:0"></div>`);
+  const y=$(`<button class="btn ${on?'gold':'ghost'}" style="font-size:14px;padding:10px">Cap on</button>`);
+  const n=$(`<button class="btn ${!on?'gold':'ghost'}" style="font-size:14px;padding:10px">No cap</button>`);
+  y.onclick=()=>{S.look.cap=true;LS.set('bag_look',S.look);render();};
+  n.onclick=()=>{S.look.cap=false;LS.set('bag_look',S.look);render();};
+  wrap.appendChild(y);wrap.appendChild(n);row.appendChild(wrap);return row;
+}
+function genderRow(){
+  const g=S.look.gender||'male';
+  const row=$(`<div style="margin:9px 0"></div>`);
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Golfer</div>`));
+  const wrap=$(`<div class="mini" style="margin:0"></div>`);
+  const m=$(`<button class="btn ${g==='male'?'gold':'ghost'}" style="font-size:14px;padding:10px">Male</button>`);
+  const f=$(`<button class="btn ${g==='female'?'gold':'ghost'}" style="font-size:14px;padding:10px">Female</button>`);
+  m.onclick=()=>{S.look.gender='male';LS.set('bag_look',S.look);render();};
+  f.onclick=()=>{S.look.gender='female';LS.set('bag_look',S.look);render();};
+  wrap.appendChild(m);wrap.appendChild(f);row.appendChild(wrap);return row;
+}
+const RSHORT={dist:'DRV',acc:'ACC',app:'APP',sht:'SHT',scr:'SCR',bnk:'BNK',put:'PUT',clu:'COM'};
+function radarSVG(){
+  const n=CATS.length, cx=120, cy=118, R=84;
+  const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
+  const filled=CATS.map(c=> !!S.slots[c.k]);
+  const ang=i=> (-Math.PI/2)+i*(2*Math.PI/n);
+  const pt=(i,r)=>[cx+Math.cos(ang(i))*r, cy+Math.sin(ang(i))*r];
+  let grid='';
+  [0.25,0.5,0.75,1].forEach(f=>{
+    grid+=`<polygon points="${CATS.map((_,i)=>pt(i,R*f).map(v=>v.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="rgba(244,227,201,.10)" stroke-width="1"/>`;
+  });
+  let axes='', labels='';
+  CATS.forEach((c,i)=>{
+    const [x,y]=pt(i,R);
+    axes+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(244,227,201,.08)"/>`;
+    const [lx,ly]=pt(i,R+15);
+    labels+=`<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" fill="#9fb0bd" font-size="9.5" font-weight="800" text-anchor="middle" dominant-baseline="middle">${RSHORT[c.k]}</text>`;
+  });
+  const base=CATS.map((_,i)=>pt(i,R*(REPLACEMENT/100)).map(v=>v.toFixed(1)).join(',')).join(' ');
+  const data=vals.map((v,i)=>pt(i,R*(v/100)).map(x=>x.toFixed(1)).join(',')).join(' ');
+  const dots=vals.map((v,i)=>{const [x,y]=pt(i,R*(v/100));return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${filled[i]?3:1.8}" fill="${filled[i]?'#EBA61F':'rgba(159,176,189,.5)'}"/>`;}).join('');
+  // the shape grows in as you draft — faint when empty, solid once filled
+  const nFilled=filled.filter(Boolean).length;
+  const fillOp=(0.07+0.27*(nFilled/CATS.length)).toFixed(3);
+  return `<svg class="radar" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+    ${grid}${axes}
+    <polygon points="${base}" fill="none" stroke="rgba(159,176,189,.45)" stroke-dasharray="3 3" stroke-width="1"/>
+    <polygon points="${data}" fill="rgba(6,162,145,${fillOp})" stroke="#06A291" stroke-width="2" stroke-opacity="${(0.45+0.55*(nFilled/CATS.length)).toFixed(2)}"/>
+    ${dots}${labels}</svg>`;
+}
+function buildHero(){
+  const ovr=Math.round(buildPlayer().skill);
+  const t=ovrTier(ovr);
+  return $(`<div class="buildhero">
+    <div class="herofig">${golferSVG()}
+      <div class="ovrbadge" style="border-color:${t.c};box-shadow:${t.glow}"><span class="n" style="color:${t.c}">${ovr}</span><span class="l" style="color:${t.c}">${t.lab}</span></div></div>
+    <div class="radarwrap">${radarSVG()}</div></div>`);
+}
+function scrDraft(){
+  const pips=Array.from({length:8},(_,i)=>`<span class="pip ${i<filledCount()?'on':''}"></span>`).join('');
+  add($(`<div class="draftbar"><div>
+    <h2 style="margin:0">Draft your golfer</h2>
+    <div class="pips">${pips}</div></div>
+    <div class="spins"><span style="color:var(--gold)">${S.reSpins}</span> <span class="muted small">re-spins</span></div></div>`));
+  if(!LS.get('bag_tip_seen',false) && filledCount()===0 && !S.current && !S.spinning){
+    const tip=$(`<div class="scout" style="margin-bottom:12px;border-color:var(--gold)">
+      <b style="color:var(--gold)">How it works</b> — Spinning is free, but you must take <b>one skill</b> from each golfer you keep. You get <b>2 re-spins</b> to pass on someone. Fill all 8 slots to build your golfer.
+      <button class="btn ghost" style="margin-top:10px;font-size:13px;padding:8px">Got it</button></div>`);
+    tip.querySelector('button').onclick=()=>{LS.set('bag_tip_seen',true);render();};
+    add(tip);
+  }
+  if(S.current || S.spinning){
+    const g=S.current;
+    const rar=(g&&!S.spinning)?g.rarity:null;
+    const RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
+    const tag=rar?RTAG[rar]:'';
+    const rarCls=rar?('rar-'+rar.toLowerCase()):'';
+    const sub=g&&!S.spinning?[g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · '):'';
+    add($(`<div class="reel ${S.spinning?'spinning':''} ${rarCls} ${g&&!S.spinning?'landed':''}">
+      ${tag?`<div class="reeltag">${tag}</div>`:''}
+      <div class="name">${g?g.name:'…'}</div>
+      <div class="sub">${sub}</div></div>`));
+  }
+  // two responsive columns: action (reel + picks) | your build (radar + scorecard)
+  const cols=$(`<div class="cols"></div>`);
+  const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
+  cols.appendChild(left); cols.appendChild(right);
+  // move the reel (added above) into the left column if present
+  const reelEl=RT.querySelector('.reel'); if(reelEl) left.appendChild(reelEl);
+  add(cols);
+  if(S.current && !S.spinning){
+    left.appendChild($(`<div class="small muted" style="margin:10px 0 -2px;text-align:center;letter-spacing:.04em">Tap a skill to draft it into your bag</div>`));
+    const grid=$(`<div class="attrs"></div>`);
+    CATS.forEach(cat=>{
+      const filled=!!S.slots[cat.k];
+      const b=$(`<button class="attr" ${filled?'disabled':''} aria-label="${filled?'Already filled: '+cat.short:'Draft '+cat.short+', rated '+S.current[cat.k]}">
+        <span class="lab">${cat.short}</span><span class="val">${S.current[cat.k]}</span>${filled?'':'<span class="take">Take</span>'}</button>`);
+      if(!filled) b.onclick=()=>takeAttr(cat.k);
+      grid.appendChild(b);
+    });
+    left.appendChild(grid);
+    if(S.reSpins>0){
+      const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${S.reSpins} left</button>`);
+      re.onclick=reSpin; left.appendChild(re);
+    } else {
+      left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left — take one of ${S.current.name}'s skills.</div>`));
+    }
+  } else if(!S.spinning){
+    const left2go=8-filledCount();
+    const spin=$(`<button class="btn teal" style="font-size:24px;padding:19px">Spin the Wheel<span class="sub">${filledCount()===0?'Reveal a golfer':left2go+' slot'+(left2go>1?'s':'')+' to fill'}</span></button>`);
+    spin.onclick=spin_; left.appendChild(spin);
+    const how=$(`<button class="btn ghost" style="margin-top:10px;font-size:12px;padding:9px">How to play · pull odds</button>`);
+    how.onclick=()=>{S.overlay='rules';render();};
+    left.appendChild(how);
+  }
+  right.appendChild(buildHero());
+  right.appendChild($(`<h2 style="margin:6px 0 8px">Your scorecard · ${filledCount()}/8</h2>`));
+  const card=$(`<div class="card-grid"></div>`);
+  CATS.forEach(cat=>{
+    const f=S.slots[cat.k];
+    card.appendChild($(`<div class="slot ${f?'':'empty'}">
+      <span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'—'}</span>
+      <span class="v">${f?f.value:'··'}</span></div>`));
+  });
+  right.appendChild(card);
+}
+function golfersLeft(){return GOLFERS.length-S.revealed.size;}
+function reveal(){
+  S.spinning=true; S.current=null; render();
+  const reel=app.querySelector('.reel .name');
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const land=drawGolfer(S.drawRng, RPOOL, S.revealed);   // rarity-weighted bucket pull
+  if(!land){S.spinning=false;render();return;}
+  if(reduce){S.current=land;S.spinning=false;render();rarityFlash(land);return;}
+  let ticks=0, total=16+Math.floor(Math.random()*6);
+  const iv=setInterval(()=>{
+    reel.textContent=GOLFERS[Math.floor(Math.random()*GOLFERS.length)].name;   // cosmetic flicker
+    if(++ticks>=total){clearInterval(iv);S.current=land;S.spinning=false;render();rarityFlash(land);}
+  },72);
+}
+function rarityFlash(g){
+  if(g.rarity==='Legendary'){ toast('★ '+g.name+' — LEGENDARY!'); chime(); track('legendary_pulled',{name:g.name}); }
+  else if(g.rarity==='Epic') toast('◆ '+g.name+' — Epic');
+}
+function spin_(){ if(S.current||golfersLeft()<=0)return; reveal(); }        // fresh reveal for the next slot — free
+function reSpin(){ if(S.reSpins<=0||golfersLeft()<=0)return; S.reSpins--; track('respin_used',{left:S.reSpins}); reveal(); }  // capped at 2
+function endIfDone(){if(filledCount()===8||golfersLeft()<=0)S.screen='build';}
+let _ac=null;
+function chime(){   // soft gold sparkle when a Legendary lands
+  try{
+    _ac=_ac||new (window.AudioContext||window.webkitAudioContext)();
+    const ac=_ac, t=ac.currentTime;
+    [784,1175,1568].forEach((f,i)=>{
+      const o=ac.createOscillator(), g=ac.createGain();
+      o.type='sine'; o.frequency.value=f; o.connect(g); g.connect(ac.destination);
+      const s=t+i*0.07;
+      g.gain.setValueAtTime(0,s); g.gain.linearRampToValueAtTime(0.16,s+0.02); g.gain.exponentialRampToValueAtTime(0.0008,s+0.45);
+      o.start(s); o.stop(s+0.5);
+    });
+  }catch(e){}
+}
+function takeAttr(k){
+  S.slots[k]={golfer:S.current.name,value:S.current[k]};
+  S.current=null; endIfDone();
+  if(S.screen==='build'){ track('draft_completed',{ovr:Math.round(buildPlayer().skill)}); render(); return; }
+  // still drafting — immediately spin the next pick so you never click twice
+  if(golfersLeft()>0){ reveal(); return; }
+  render();
+}
+
+/* ---------- build ---------- */
+function scrBuild(){
+  const p=buildPlayer();
+  add($(`<div class="center"><span class="tag">Your creation</span></div>`));
+  add($(`<div style="height:8px"></div>`));
+  const cols=$(`<div class="cols"></div>`);
+  const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
+  cols.appendChild(left); cols.appendChild(right); add(cols);
+  // LEFT — identity: hero + archetype + scouting note
+  left.appendChild(buildHero());
+  const arch=archetype(p);
+  left.appendChild($(`<div style="text-align:center;margin-top:12px">
+    <div style="font-family:var(--display);font-style:italic;font-size:26px;color:var(--gold);line-height:1">${arch.name}</div>
+    <div class="small muted" style="margin-top:6px">${arch.desc}</div></div>`));
+  let best={v:-1},worst={v:200};
+  CATS.forEach(cat=>{const v=S.slots[cat.k]?S.slots[cat.k].value:REPLACEMENT; if(v>best.v)best={v,c:cat.short}; if(v<worst.v)worst={v,c:cat.short};});
+  const holes=CATS.filter(c=>!S.slots[c.k]).length;
+  let note=`Strength: ${best.c} (${best.v}). Weakness: ${worst.c} (${worst.v}).`;
+  if(holes) note+=` ${holes} slot${holes>1?'s':''} unfilled — they play as a tour journeyman.`;
+  note+=` Your weakest slots are where weekends get lost — the field is full of complete golfers.`;
+  left.appendChild($(`<div class="scout" style="margin-top:14px">${note}</div>`));
+  // RIGHT — scorecard + season pick
+  right.appendChild($(`<h2 style="margin:0 0 8px">Your scorecard</h2>`));
+  const card=$(`<div class="card-grid"></div>`);
+  CATS.forEach(cat=>{const f=S.slots[cat.k]; const v=f?f.value:REPLACEMENT;
+    card.appendChild($(`<div class="slot ${f?'':'empty'}">
+      <span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'no spin — journeyman'}</span>
+      <span class="v">${v}</span></div>`));});
+  right.appendChild(card);
+  right.appendChild($(`<div style="height:16px"></div>`));
+  if(S.daily){
+    right.appendChild($(`<h2 style="margin:0 0 8px">Today's challenge</h2>`));
+    const d=$(`<button class="btn goldfill">Play Daily Season<span class="sub">18 events · same wheel for everyone today</span></button>`);
+    d.onclick=()=>startSeason(false); right.appendChild(d);
+  } else {
+    right.appendChild($(`<h2 style="margin:0 0 8px">Pick your season</h2>`));
+    const full=$(`<button class="btn red">Full Season<span class="sub">18 events · 4 majors</span></button>`);
+    const maj=$(`<button class="btn gold" style="margin-top:10px">Majors Only<span class="sub">The 4 that matter</span></button>`);
+    full.onclick=()=>startSeason(false); maj.onclick=()=>startSeason(true);
+    right.appendChild(full); right.appendChild(maj);
+  }
+}
+function fieldSample(n){
+  // tournament field drawn only from data-grounded (current/historical) players, so positions read true.
+  // daily = deterministic (seeded) so everyone faces the same field; free play = random each season.
+  if(S.daily) return seededShuffle(FIELDPOOL,(S.dailySeed^0x1b873593)>>>0).slice(0,n);
+  const a=FIELDPOOL.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a.slice(0,n);
+}
+function startSeason(majorsOnly){
+  S.schedule=(majorsOnly&&!S.daily)?SCHEDULE.filter(e=>e.major):SCHEDULE.slice(); S.evtIndex=0;
+  RNG = S.daily ? mulberry32((S.dailySeed^0x51ed2701)>>>0) : Math.random;
+  const me=buildPlayer();
+  // persist the field across franchise years so career earnings accumulate vs the same golfers.
+  // carry all 8 skills so course-fit (§2) can compute an event-effective overall per player.
+  if(!S.fieldRoster) S.fieldRoster=fieldSample(FIELDSIZE-1).map(g=>({name:g.name,dist:g.dist,acc:g.acc,app:g.app,sht:g.sht,scr:g.scr,bnk:g.bnk,put:g.put,clu:g.clu,skill:g.skill}));
+  const field=S.fieldRoster.map(g=>Object.assign({you:false},g));
+  field.push(me);
+  S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0}]))};
+  S.curEvt=null;
+  track('season_started',{mode:S.daily?'daily':(majorsOnly?'majors':'full'),ovr:Math.round(me.skill),year:S.year||1});
+  S.screen='season'; render();
+}
+/* ---- live, round-by-round tournament engine ---- */
+const ROUND_DELAY=820, EVENT_PAUSE=1500, DAYS=['THU','FRI','SAT','SUN'];
+function beginEvent(){
+  const evt=S.schedule[S.evtIndex];
+  const ew=eventWeights(evt);                                   // course-fit weights for this event
+  const courseAdj=gauss()*(evt.major?SIM.maj.csd:SIM.reg.csd);  // one course/weather difficulty draw for the week
+  S.curEvt={evt, idx:S.evtIndex, roundsDone:0, done:false, order:null, courseAdj,
+    players:S.season.field.map(p=>({p, eo:eventOverall(p,ew), rounds:[null,null,null,null], total:0, made:true}))};
+  simNextRound();   // play Thursday immediately so the first frame has scores
+}
+function simNextRound(){
+  const ce=S.curEvt; if(!ce||ce.done) return;
+  const r=ce.roundsDone, major=ce.evt.major, finalRd=(r===3);
+  ce.players.forEach(o=>{ if(r>=2 && !o.made) return; const s=simRound(o.eo,o.p.clu,{major,finalRd,courseAdj:ce.courseAdj}); o.rounds[r]=s; o.total+=s; });
+  ce.roundsDone=r+1;
+  if(ce.roundsDone===2){   // 36-hole cut: ~top 65 make the weekend (DataGolf spec §3)
+    const sorted=[...ce.players].sort((a,b)=>a.total-b.total);
+    const cutN=Math.min(65,ce.players.length);
+    const cutScore=sorted[cutN-1].total;
+    ce.players.forEach(o=>o.made=o.total<=cutScore+1e-9);
+  }
+  if(ce.roundsDone>=4) finalizeEvent();
+}
+function finalizeEvent(){
+  const ce=S.curEvt, evt=ce.evt;
+  const made=ce.players.filter(o=>o.made).sort((a,b)=>a.total-b.total);
+  const missed=ce.players.filter(o=>!o.made).sort((a,b)=>a.total-b.total);
+  made.forEach((o,i)=>{o.pos=i+1;o.pct=PAYOUT[i]||0;});
+  missed.forEach(o=>{o.pos='CUT';o.pct=0;});
+  const order=made.concat(missed);
+  const basePts=evt.major?750:evt.big?600:500;
+  order.forEach(o=>{o.money=evt.purse*o.pct; o.points=typeof o.pos==='number'?Math.round(basePts*(o.pct/0.18)):0;
+    o.score=Math.round(o.total); o.r1=o.rounds[0];o.r2=o.rounds[1];o.r3=o.rounds[2];o.r4=o.rounds[3];});
+  order.forEach((o,idx)=>{const t=S.season.totals[o.p.name];
+    t.money+=o.money; t.points+=o.points; t.played++; t.finishSum+=(idx+1);
+    if(o.pos===1){t.wins++; if(evt.major)t.majors++;}
+    if(typeof o.pos==='number'){t.made++; if(o.pos<=10)t.top10++; if(o.pos<t.best)t.best=o.pos;}});
+  S.season.results.push({evt,order}); ce.done=true; ce.order=order;
+}
+function liveOrder(ce){   // current standings mid-event; assigns _pos
+  const sorted=[...ce.players].sort((a,b)=>a.total-b.total);
+  if(ce.roundsDone<2){ sorted.forEach((o,i)=>o._pos=i+1); return sorted; }
+  const made=sorted.filter(o=>o.made), cut=sorted.filter(o=>!o.made);
+  made.forEach((o,i)=>o._pos=i+1); cut.forEach(o=>o._pos='CUT');
+  return made.concat(cut);
+}
+function advanceEvent(){ if(S.evtIndex>=S.schedule.length-1){ S.screen='summary'; } else { S.evtIndex++; S.curEvt=null; } }
+function skipToEnd(){
+  clearTimeout(seasonTimer);
+  while(S.curEvt && !S.curEvt.done) simNextRound();
+  while(S.evtIndex < S.schedule.length-1){ S.evtIndex++; S.curEvt=null; beginEvent(); while(!S.curEvt.done) simNextRound(); }
+  S.screen='summary'; render();
+}
+function liveRow(o,pos,you){
+  const cut=(pos==='CUT'); const sc=cut?'CUT':par(Math.round(o.total)); const mny=(o.money>0)?fmt(o.money):'';
+  return $(`<div class="lb ${you?'you':''} ${cut?'cut':''}">
+    <span class="pos">${pos===1?'🏆':(cut?'–':pos)}</span>
+    <span class="pl">${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
+}
+function scrSeason(){
+  clearTimeout(seasonTimer);
+  if(!S.curEvt || S.curEvt.idx!==S.evtIndex) beginEvent();
+  const ce=S.curEvt, evt=ce.evt;
+  if(evt.major) RT.classList.add('major-screen');
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  // season-to-date standings
+  const t=S.season.totals[S.season.me.name];
+  const avg=t.played?ord(Math.round(t.finishSum/t.played)):'—';
+  const high=t.best===99?'—':ord(t.best);
+  const ec=seasonNet(t); const netCol=ec.net>=0?'#35d6a0':'#E14A33';
+  add($(`<div class="sbar">
+    <div class="sstat wide"><div class="k">Net profit · through ${t.played} event${t.played===1?'':'s'}</div>
+      <div class="v" style="color:${netCol};font-size:22px">${fmtSigned(ec.net)}</div>
+      <div class="k" style="margin-top:3px;text-transform:none;letter-spacing:0">${fmt(ec.gross)} won · −${fmt(ec.costs)} costs</div></div>
+    <div class="sstat"><div class="k">Avg finish</div><div class="v">${avg}</div></div>
+    <div class="sstat"><div class="k">Wins</div><div class="v">${t.wins}</div></div>
+    <div class="sstat"><div class="k">Cuts made</div><div class="v">${t.made}/${t.played}</div></div>
+    <div class="sstat"><div class="k">Best</div><div class="v">${high}</div></div>
+  </div>`));
+  if(evt.major) add($(`<div class="majorbanner">★ Major Championship ★</div>`));
+
+  const typeLbl=evt.major?'<span class="major">Major</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
+  const dayLbl=ce.done?'Final':(ce.roundsDone>=2&&!ce.players.find(o=>o.p.you).made?`After ${DAYS[1]}`:`${DAYS[Math.max(0,ce.roundsDone-1)]} · Round ${Math.min(ce.roundsDone,4)}/4`);
+  const cols=$(`<div class="cols seasoncols"></div>`);
+  const left=$(`<div class="col"></div>`), right=$(`<div class="col scorecol"></div>`);
+  cols.appendChild(left); cols.appendChild(right); add(cols);
+
+  // LEFT — live, re-sorting leaderboard (the event name lives on the scorecard now)
+  left.appendChild($(`<div class="evt-head"><div><div class="nm">Leaderboard</div></div>
+    <div class="kx reg" style="text-align:right">Event ${S.evtIndex+1}/${S.schedule.length}<br><span style="color:var(--gold)">${dayLbl}</span></div></div>`));
+  const ordered=liveOrder(ce);
+  const meLive=ordered.find(o=>o.p.you);
+  const board=$(`<div class="board ${evt.major?'major':''}"></div>`);
+  const top=ordered.slice(0,12); const youOut=!top.includes(meLive);
+  top.forEach(o=>board.appendChild(liveRow(o,o._pos,o.p.you)));
+  if(youOut){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(liveRow(meLive,meLive._pos,true));}
+  left.appendChild(board);
+
+  // RIGHT — prominent live scorecard + controls
+  const myCut=(ce.roundsDone>=2 && !meLive.made);
+  const myPos=meLive._pos;
+  const topar=par(Math.round(meLive.total));
+  const dayCells=DAYS.map((L,i)=>{
+    const done=i<ce.roundsDone, isCut=(myCut&&i>=2), v=meLive.rounds[i];
+    const live=(i===ce.roundsDone-1 && !ce.done);
+    const txt=isCut?'–':(done?par(Math.round(v)):'·');
+    return `<div class="rdcell ${live?'live':''} ${(!done&&!isCut)?'empty':''}"><div class="rdlab">${L}</div><div class="rdval">${txt}</div></div>`;
+  }).join('');
+  let status, money='';
+  if(ce.done){ const o=ce.order.find(x=>x.p.you); status=o.pos==='CUT'?'Missed the cut':(o.pos===1?'🏆 Tournament won!':'Finished '+ord(o.pos)+(o.pos<=10?' · top 10':'')); if(o.money>0) money=`<span style="color:var(--gold)"> · +${fmt(o.money)}</span>`; }
+  else if(myCut){ status='Missed the cut — weekend off'; }
+  else { status=(ce.roundsDone>=4?'Final round':'Round '+ce.roundsDone+' of 4')+' · '+(myPos===1?'Leading':'currently '+ord(myPos)); }
+  right.appendChild($(`<div class="scorecard">
+    <div class="sc-head">
+      <div><div class="sc-name">${evt.name}</div><div class="small muted" style="margin-top:2px">${typeLbl} · ${fmt(evt.purse)} purse</div></div>
+      <div style="text-align:right"><div class="sc-pos" style="color:${myCut?'#e07a5f':(myPos===1?'var(--gold)':'var(--oncard)')}">${myCut?'CUT':ord(myPos)}</div>
+        <div class="sc-topar" style="color:${meLive.total<=0?'#35d6a0':'var(--oncard)'}">${topar}</div></div>
+    </div>
+    <div class="rounds">${dayCells}</div>
+    <div class="sc-status">${status}${money}</div>
+  </div>`));
+
+  // controls
+  const lastEvent=(S.evtIndex>=S.schedule.length-1);
+  const ctrl=$(`<div style="margin-top:12px"></div>`);
+  if(ce.done){
+    if(lastEvent){
+      const fin=$(`<button class="btn goldfill">Season Results ▸</button>`);
+      fin.onclick=()=>{clearTimeout(seasonTimer); S.screen='summary'; render();}; ctrl.appendChild(fin);
+    } else {
+      const nx=$(`<button class="btn red">Next Event ▸<span class="sub">${S.schedule[S.evtIndex+1].name}</span></button>`);
+      nx.onclick=()=>{clearTimeout(seasonTimer); advanceEvent(); render();}; ctrl.appendChild(nx);
+    }
+  } else {
+    ctrl.appendChild($(`<div class="small muted center" style="padding:6px 0">Playing out the tournament…</div>`));
+  }
+  const row=$(`<div class="mini" style="margin-top:10px"></div>`);
+  const auto=$(`<button class="btn ${S.autoSim?'teal':'gold'}">Auto Sim · ${S.autoSim?'On':'Off'}</button>`);
+  auto.onclick=()=>{S.autoSim=!S.autoSim; LS.set('bag_autosim',S.autoSim); track('autosim_toggle',{on:S.autoSim}); render();};
+  const skip=$(`<button class="btn ghost">Skip to End ⏭</button>`);
+  skip.onclick=skipToEnd;
+  row.appendChild(auto); row.appendChild(skip); ctrl.appendChild(row);
+  add(ctrl);   // controls span full width below both columns (stay at the bottom on mobile)
+
+  // scheduling
+  if(reduce){
+    if(!ce.done){ while(!ce.done) simNextRound(); render(); return; }
+    if(S.autoSim){ advanceEvent(); render(); return; }
+  } else if(!ce.done){
+    seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ simNextRound(); render(); } }, ROUND_DELAY);
+  } else if(S.autoSim){
+    seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ advanceEvent(); render(); } }, EVENT_PAUSE);
+  }
+}
+function roundsRow(o){
+  const rd=[o.r1,o.r2,o.r3,o.r4], labs=['Thu','Fri','Sat','Sun'];
+  const cells=rd.map((r,i)=>`<div style="text-align:center;flex:1">
+    <div class="small muted" style="font-size:9px;letter-spacing:.12em">${labs[i].toUpperCase()}</div>
+    <div class="mono" style="font-weight:800;font-size:15px;color:${r==null?'var(--muted)':'var(--oncard)'}">${r==null?'–':par(Math.round(r))}</div></div>`).join('');
+  return $(`<div style="display:flex;gap:6px;background:#0a2740;border:1px solid var(--line);border-radius:11px;padding:8px 10px;margin-top:8px">${cells}</div>`);
+}
+function lbRow(o){
+  const sc=o.pos==='CUT'?'CUT':par(o.score);
+  const mny=o.money>0?fmt(o.money):'—';
+  return $(`<div class="lb ${o.p.you?'you':''} ${o.pos==='CUT'?'cut':''}">
+    <span class="pos">${o.pos===1?'🏆':(o.pos==='CUT'?'–':o.pos)}</span>
+    <span class="pl">${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
+}
+
+/* ---------- share card (canvas image) ---------- */
+const RLABS=['DRV','ACC','APP','SHT','SCR','BNK','PUT','COM'];
+function bestTxt(b){return b===99?'MC':(b===1?'WIN':'T'+b);}
+function drawShareCard(cv,info,vals){
+  const W=560,H=636,ctx=cv.getContext('2d');
+  cv.width=W; cv.height=H;
+  const bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#11432f'); bg.addColorStop(1,'#06200f');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  const sp=ctx.createRadialGradient(W/2,-30,30,W/2,-30,W); sp.addColorStop(0,'rgba(74,156,108,.30)'); sp.addColorStop(1,'rgba(74,156,108,0)');
+  ctx.fillStyle=sp; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#cda24a'; ctx.fillRect(0,0,W,7);
+  ctx.strokeStyle='rgba(205,162,74,.55)'; ctx.lineWidth=2; ctx.strokeRect(11,11,W-22,H-22);
+  ctx.textAlign='center';
+  // title (serif, two-tone) — card starts with the wordmark, then the graph
+  ctx.font='700 32px Cinzel, Georgia, serif';
+  const ta='RUN THE ', tb='TOUR', wa=ctx.measureText(ta).width, wb=ctx.measureText(tb).width, tx=W/2-(wa+wb)/2;
+  ctx.textAlign='left';
+  ctx.fillStyle='#F4E3C9'; ctx.fillText(ta,tx,60);
+  ctx.fillStyle='#e7b84e'; ctx.fillText(tb,tx+wa,60);
+  ctx.textAlign='center';
+  // radar
+  const cx=W/2, cy=212, R=114, n=8;
+  const ang=i=>(-Math.PI/2)+i*(2*Math.PI/n), pt=(i,r)=>[cx+Math.cos(ang(i))*r, cy+Math.sin(ang(i))*r];
+  ctx.strokeStyle='rgba(244,227,201,.14)'; ctx.lineWidth=1;
+  [0.25,0.5,0.75,1].forEach(f=>{ctx.beginPath();for(let i=0;i<n;i++){const[x,y]=pt(i,R*f);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.stroke();});
+  for(let i=0;i<n;i++){const[x,y]=pt(i,R);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();}
+  ctx.beginPath(); vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100));i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.closePath();
+  ctx.fillStyle='rgba(6,162,145,.34)'; ctx.fill(); ctx.strokeStyle='#06A291'; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.fillStyle='#e7b84e'; vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100)); ctx.beginPath(); ctx.arc(x,y,3.6,0,7); ctx.fill();});
+  ctx.fillStyle='#9cbfa8'; ctx.font='700 12px system-ui,sans-serif';
+  RLABS.forEach((L,i)=>{const[x,y]=pt(i,R+17); ctx.fillText(L,x,y+4);});
+  // name (serif, auto-fit)
+  let nm=(info.name||'Your Golfer').toUpperCase(), ns=32;
+  do{ ctx.font='700 '+ns+'px Cinzel, Georgia, serif'; if(ctx.measureText(nm).width<=W-64)break; ns-=2; }while(ns>16);
+  ctx.fillStyle='#F4E3C9'; ctx.fillText(nm,W/2,386);
+  ctx.fillStyle='#9cbfa8'; ctx.font='700 14px system-ui,sans-serif';
+  ctx.fillText(`OVR ${info.ovr}${info.year>1?'  ·  YR '+info.year:''}  ·  ${info.events} EVENTS  ·  ${info.majors} MAJORS`,W/2,408);
+  ctx.fillStyle=info.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 22px Impact,system-ui,sans-serif';
+  ctx.fillText('NET '+fmtSigned(info.net),W/2,442);
+  // stat cells — card ends with the stats
+  const cells=[
+    ['EARNINGS',fmt(info.money),'#e7b84e'],
+    ['EARNINGS RANK',info.moneyRank+' / '+info.N,'#F4E3C9'],
+    ['WINS',info.wins+'','#F4E3C9'],
+    ['MAJORS',info.majorsWon+'','#F4E3C9'],
+  ];
+  const colX=[W*0.28,W*0.72], y0=496, rowH=72;
+  cells.forEach((c,i)=>{
+    const x=colX[i%2], y=y0+Math.floor(i/2)*rowH;
+    ctx.fillStyle='#9cbfa8'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(c[0],x,y);
+    ctx.fillStyle=c[2]; ctx.font='800 26px Impact,system-ui,sans-serif'; ctx.fillText(c[1],x,y+28);
+  });
+}
+function drawCareerCard(cv,info,vals){
+  const W=560,H=636,ctx=cv.getContext('2d');
+  cv.width=W; cv.height=H;
+  const bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#11432f'); bg.addColorStop(1,'#06200f');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  const sp=ctx.createRadialGradient(W/2,-30,30,W/2,-30,W); sp.addColorStop(0,'rgba(74,156,108,.30)'); sp.addColorStop(1,'rgba(74,156,108,0)');
+  ctx.fillStyle=sp; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#cda24a'; ctx.fillRect(0,0,W,7);
+  ctx.strokeStyle='rgba(205,162,74,.55)'; ctx.lineWidth=2; ctx.strokeRect(11,11,W-22,H-22);
+  ctx.textAlign='center';
+  ctx.font='700 32px Cinzel, Georgia, serif';
+  const ta='RUN THE ', tb='TOUR', wa=ctx.measureText(ta).width, wb=ctx.measureText(tb).width, tx=W/2-(wa+wb)/2;
+  ctx.textAlign='left';
+  ctx.fillStyle='#F4E3C9'; ctx.fillText(ta,tx,56);
+  ctx.fillStyle='#e7b84e'; ctx.fillText(tb,tx+wa,56);
+  ctx.textAlign='center';
+  ctx.fillStyle='#e7b84e'; ctx.font='800 13px system-ui,sans-serif';
+  ctx.fillText('· CAREER ·',W/2,78);
+  // radar
+  const cx=W/2, cy=216, R=110, n=8;
+  const ang=i=>(-Math.PI/2)+i*(2*Math.PI/n), pt=(i,r)=>[cx+Math.cos(ang(i))*r, cy+Math.sin(ang(i))*r];
+  ctx.strokeStyle='rgba(244,227,201,.14)'; ctx.lineWidth=1;
+  [0.25,0.5,0.75,1].forEach(f=>{ctx.beginPath();for(let i=0;i<n;i++){const[x,y]=pt(i,R*f);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.stroke();});
+  for(let i=0;i<n;i++){const[x,y]=pt(i,R);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();}
+  ctx.beginPath(); vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100));i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.closePath();
+  ctx.fillStyle='rgba(6,162,145,.34)'; ctx.fill(); ctx.strokeStyle='#06A291'; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.fillStyle='#e7b84e'; vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100)); ctx.beginPath(); ctx.arc(x,y,3.6,0,7); ctx.fill();});
+  ctx.fillStyle='#9cbfa8'; ctx.font='700 12px system-ui,sans-serif';
+  RLABS.forEach((L,i)=>{const[x,y]=pt(i,R+17); ctx.fillText(L,x,y+4);});
+  // name
+  let nm=(info.name||'Your Golfer').toUpperCase(), ns=32;
+  do{ ctx.font='700 '+ns+'px Cinzel, Georgia, serif'; if(ctx.measureText(nm).width<=W-64)break; ns-=2; }while(ns>16);
+  ctx.fillStyle='#F4E3C9'; ctx.fillText(nm,W/2,384);
+  ctx.fillStyle='#9cbfa8'; ctx.font='700 14px system-ui,sans-serif';
+  ctx.fillText(`${info.years} YEAR${info.years>1?'S':''}  ·  OVR ${info.ovr}  ·  EARNINGS RANK ${info.cRank}/${info.cN}`,W/2,406);
+  ctx.fillStyle=info.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 22px Impact,system-ui,sans-serif';
+  ctx.fillText('NET WORTH '+fmtSigned(info.net),W/2,440);
+  const cells=[
+    ['CAREER EARNINGS',fmt(info.money),'#e7b84e'],
+    ['SEASONS',info.years+'','#F4E3C9'],
+    ['CAREER WINS',info.wins+'','#F4E3C9'],
+    ['MAJORS',info.majors+'','#F4E3C9'],
+  ];
+  const colX=[W*0.28,W*0.72], y0=494, rowH=72;
+  cells.forEach((c,i)=>{
+    const x=colX[i%2], y=y0+Math.floor(i/2)*rowH;
+    ctx.fillStyle='#9cbfa8'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(c[0],x,y);
+    ctx.fillStyle=c[2]; ctx.font='800 26px Impact,system-ui,sans-serif'; ctx.fillText(c[1],x,y+28);
+  });
+}
+function shareCard(cv,text,name,suffix){
+  cv.toBlob(async b=>{
+    if(!b){toast('Could not build the image — copy the text instead');return;}
+    const file=new File([b],((name||'golfer').replace(/\s+/g,'-'))+'-'+(suffix||'season')+'.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{await navigator.share({files:[file],text}); return;}catch(e){if(e&&e.name==='AbortError')return;}
+    }
+    const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=file.name; a.click(); URL.revokeObjectURL(u);
+    toast('Card saved — attach it to your post');
+  });
+}
+
+/* ---------- summary ---------- */
+function scrSummary(){
+  const me=S.season.me, t=S.season.totals[me.name];
+  const byMoney=Object.entries(S.season.totals).map(([n,v])=>({n,...v})).sort((a,b)=>b.money-a.money);
+  const byPoints=[...byMoney].sort((a,b)=>b.points-a.points);
+  const moneyRank=byMoney.findIndex(r=>r.n===me.name)+1;
+  const fedexRank=byPoints.findIndex(r=>r.n===me.name)+1;
+  const N=byMoney.length;
+  const ovr=Math.round(me.skill);
+  const ec=seasonNet(t);
+  if(!S.recorded){S.recorded=true;
+    const r=recordSeason({name:me.name,ovr,money:t.money,gross:ec.gross,net:ec.net,wins:t.wins,majorsWon:t.majors,played:t.played,made:t.made,moneyRank,best:t.best}); S.freshBadges=r.fresh;
+    S.career=S.career||{money:0,net:0,wins:0,majors:0,top10:0,best:99,seasons:[],winsList:[]};
+    S.career.winsList=S.career.winsList||[];
+    S.career.money+=t.money; S.career.net+=ec.net; S.career.wins+=t.wins; S.career.majors+=t.majors; S.career.top10+=t.top10;
+    if(t.best<S.career.best)S.career.best=t.best;
+    // record the actual tournaments won this season for the career Wins list
+    S.season.results.forEach(r=>{ const meR=r.order.find(o=>o.p.you); if(meR&&meR.pos===1) S.career.winsList.push({name:r.evt.name,year:S.year||1,major:!!r.evt.major}); });
+    S.career.seasons.push({year:S.year||1,net:ec.net,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank});
+    // snapshot this year's per-skill build so year N+1 can show what changed
+    if(!S.daily){ S.career.skillSeasons=S.career.skillSeasons||[];
+      S.career.skillSeasons.push({year:S.year||1,skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))}); }
+    // accumulate career earnings vs the (persistent) field for the multi-year money list
+    S.career.fieldMoney=S.career.fieldMoney||{};
+    Object.entries(S.season.totals).forEach(([n,v])=>{ S.career.fieldMoney[n]=(S.career.fieldMoney[n]||0)+v.money; });
+    S.summaryTab='season';
+    track('season_finished',{ovr,net:Math.round(ec.net),gross:Math.round(ec.gross),wins:t.wins,majors:t.majors,moneyRank,N,daily:S.daily,year:S.year||1});
+    // post to the public leaderboard (no-op unless signed in + backend live; daily excluded)
+    if(!S.daily) sbSubmitSeason({golfer:me.name,ovr,year:S.year||1,earnings:t.money,net:ec.net,wins:t.wins,majors:t.majors,
+      skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))});
+    clearResume();   // golfer's season is in the books — no longer resumable
+  }
+  if(S.daily&&!S.dailyStored){S.dailyStored=true; bumpStreak(); track('daily_completed',{net:Math.round(ec.net),moneyRank});
+    LS.set('bag_daily',{date:S.dailySeed,done:true,result:{name:me.name,ovr,net:ec.net,money:t.money,moneyRank,N,wins:t.wins,majors:t.majors,best:t.best}});}
+  add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':(S.year>1?('Year '+S.year+' complete'):'Season complete')}</span></div>`));
+  add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
+  add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':('Year '+(S.year||1)+' · ')}${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
+  const netCol=ec.net>=0?'#35d6a0':'#E14A33';
+  add($(`<div class="center" style="margin-bottom:6px">
+    <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Net profit</div>
+    <div class="mono" style="font-weight:800;font-size:38px;color:${netCol};margin-top:4px">${fmtSigned(ec.net)}</div>
+    <div class="small muted" style="margin-top:2px">${fmt(ec.gross)} won · −${fmt(ec.costs)} expenses</div>
+    <div class="small muted" style="margin-top:1px;font-size:11px;opacity:.8">caddie −${fmt(ec.caddie)} · agent −${fmt(ec.agent)} · travel −${fmt(ec.travel)} · tour costs −${fmt(ec.fixed)}</div></div>`));
+  if(S.freshBadges&&S.freshBadges.length){
+    const got=ACHS.filter(a=>S.freshBadges.includes(a.id));
+    const chips=got.map(a=>`<span class="tag" style="color:var(--gold);border-color:var(--gold)">${a.e} ${a.t}</span>`).join(' ');
+    add($(`<div class="scout" style="margin:4px 0 12px;text-align:center"><b style="color:var(--gold)">Achievement${got.length>1?'s':''} unlocked</b><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center">${chips}</div></div>`));
+  }
+  // five headline stats: Earnings · Profit (two money tiles) over Tour Rank · Top 10's · Wins
+  const pcol=ec.net>=0?'#35d6a0':'#E14A33';
+  const tilesA=$(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin-bottom:10px"></div>`);
+  tilesA.appendChild(tile('Earnings',fmt(t.money),true));
+  tilesA.appendChild($(`<div class="tile"><div class="k">Profit</div><div class="v" style="color:${pcol}">${fmtSigned(ec.net)}</div></div>`));
+  add(tilesA);
+  const tilesB=$(`<div class="tiles" style="grid-template-columns:repeat(3,1fr);margin-top:0"></div>`);
+  const statTile=(k,v)=>$(`<div class="tile"><div class="k">${k}</div><div class="v" style="font-size:19px;white-space:nowrap">${v}</div></div>`);
+  tilesB.appendChild(statTile('Tour Rank',fedexRank+' / '+N));
+  tilesB.appendChild(statTile("Top 10's",t.top10+''));
+  tilesB.appendChild(statTile('Wins',t.wins+''));
+  add(tilesB);
+  // year-over-year skill changes (vs the build you ran last year)
+  const ss=(!S.daily && S.career && S.career.skillSeasons)||[];
+  if(ss.length>=2){
+    const cur=ss[ss.length-1].skills, prev=ss[ss.length-2].skills, py=ss[ss.length-2].year;
+    add($(`<h2 class="center" style="margin:14px 0 8px;font-size:15px">Skill changes vs Year ${py}</h2>`));
+    const dt=$(`<div class="tiles four"></div>`);
+    CATS.forEach(c=>{
+      const d=(cur[c.k]||0)-(prev[c.k]||0);
+      const col=d>0?'#35d6a0':(d<0?'#E14A33':'var(--muted)');
+      const txt=d===0?'· 0':(d>0?'▲ +'+d:'▼ '+d);
+      dt.appendChild($(`<div class="tile"><div class="k">${c.short}</div><div class="v" style="color:${col};font-size:18px">${txt}</div></div>`));
+    });
+    add(dt);
+  }
+
+  // two columns: money list / career on the left, share + actions on the right
+  const cols=$(`<div class="cols"></div>`);
+  const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
+  cols.appendChild(left); cols.appendChild(right); add(cols);
+
+  const hasCareer = !S.daily && S.career && S.career.seasons.length>1;
+  const tab = hasCareer ? (S.summaryTab||'season') : 'season';
+  // career standings (cumulative vs the persistent field)
+  const careerList=Object.entries(S.career&&S.career.fieldMoney||{}).map(([n,money])=>({n,money})).sort((a,b)=>b.money-a.money);
+  const cRank=careerList.findIndex(r=>r.n===me.name)+1;
+  if(hasCareer){
+    const head=$(`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:2px 0 8px"></div>`);
+    head.appendChild($(`<h2 style="margin:0">${tab==='career'?`Career earnings list · ${S.career.seasons.length} yrs`:'This season'}</h2>`));
+    const seg=$(`<div class="mini" style="margin:0;width:auto;flex:0 0 auto"></div>`);
+    const t1=$(`<button class="btn ${tab==='season'?'gold':'ghost'}" style="font-size:11px;padding:6px 11px;width:auto">This Season</button>`);
+    const t2=$(`<button class="btn ${tab==='career'?'gold':'ghost'}" style="font-size:11px;padding:6px 11px;width:auto">Career</button>`);
+    t1.onclick=()=>{S.summaryTab='season';render();}; t2.onclick=()=>{S.summaryTab='career';render();};
+    seg.appendChild(t1); seg.appendChild(t2); head.appendChild(seg); left.appendChild(head);
+  } else {
+    left.appendChild($(`<h2 style="margin:2px 0 8px">Season earnings list</h2>`));
+  }
+  const board=$(`<div class="board"></div>`);
+  if(tab==='career'){
+    careerList.slice(0,10).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
+    if(cRank>10){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(careerList[cRank-1],cRank,true));}
+  } else {
+    byMoney.slice(0,10).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
+    if(moneyRank>10){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(byMoney[moneyRank-1],moneyRank,true));}
+  }
+  left.appendChild(board);
+  const recapBtn=$(`<button class="btn gold" style="margin-top:10px">Full Season Recap<span class="sub">Every event, leaderboard by leaderboard</span></button>`);
+  recapBtn.onclick=()=>{S.recapEvent=null; S.screen='recap'; render();}; left.appendChild(recapBtn);
+  if(!S.daily && S.career && S.career.seasons.length>1){
+    const c=S.career, ccol=c.net>=0?'#35d6a0':'#E14A33';
+    left.appendChild($(`<h2 style="margin:16px 0 8px">Career · ${c.seasons.length} years (through Year ${S.year})</h2>`));
+    const ct=$(`<div class="tiles"></div>`);
+    ct.appendChild($(`<div class="tile"><div class="k">Net worth</div><div class="v" style="color:${ccol}">${fmtSigned(c.net)}</div></div>`));
+    ct.appendChild(tile('Career earnings',fmt(c.money),true));
+    ct.appendChild(tile('Career rank',cRank+' / '+careerList.length));
+    ct.appendChild(tile('Career wins',c.wins+''));
+    ct.appendChild(tile('Career majors',c.majors+''));
+    ct.appendChild(tile('Top 10s',c.top10+''));
+    left.appendChild(ct);
+    // Wins — the actual tournaments won across the career
+    const wl=(c.winsList||[]);
+    left.appendChild($(`<h3 style="margin:14px 0 6px;font-size:14px;letter-spacing:.02em">Wins <span class="small muted" style="font-weight:600">· ${wl.length}</span></h3>`));
+    if(wl.length){
+      const wb=$(`<div class="board"></div>`);
+      wl.slice().sort((a,b)=>a.year-b.year).forEach(w=>wb.appendChild($(`<div class="lb" style="grid-template-columns:30px 1fr 54px">
+        <span class="pos" style="color:var(--gold)">${w.major?'★':'🏆'}</span>
+        <span class="pl">${w.name}${w.major?' <span class="small muted">major</span>':''}</span>
+        <span class="mny small muted">Yr ${w.year}</span></div>`)));
+      left.appendChild(wb);
+    } else {
+      left.appendChild($(`<div class="scout small muted" style="margin-top:2px">No tournament wins yet — keep grinding.</div>`));
+    }
+    const yb=$(`<div class="board"></div>`);
+    c.seasons.forEach(s=>yb.appendChild($(`<div class="lb" style="grid-template-columns:46px 1fr 96px">
+      <span class="pos">Yr ${s.year}</span>
+      <span class="pl">${s.wins}W · ${s.majors} maj · best ${bestTxt(s.best)}</span>
+      <span class="mny" style="color:${s.net>=0?'#35d6a0':'#E14A33'}">${fmtSigned(s.net)}</span></div>`)));
+    left.appendChild(yb);
+    // career share card (image + text)
+    const careerShare=`RUNTHETOUR CAREER — ${me.name}\n${c.seasons.length} years · net worth ${fmtSigned(c.net)} · ${fmt(c.money)} earned\n${c.wins}W · ${c.majors} majors · career earnings rank #${cRank}/${careerList.length}\nRunThe.GG`;
+    const careerVals=CATS.map(x=> S.slots[x.k]? S.slots[x.k].value : REPLACEMENT);
+    const ccv=document.createElement('canvas');
+    ccv.style.cssText='width:100%;max-width:300px;display:block;margin:14px auto 4px;border-radius:14px;border:1px solid var(--line)';
+    drawCareerCard(ccv,{name:me.name,ovr,years:c.seasons.length,money:c.money,net:c.net,wins:c.wins,majors:c.majors,cRank,cN:careerList.length},careerVals);
+    left.appendChild(ccv);
+    const crow=$(`<div class="mini" style="margin-top:8px"></div>`);
+    const csave=$(`<button class="btn gold">⤓ Save Card</button>`);
+    const csBtn=$(`<button class="btn gold">↗ Share Career</button>`);
+    csave.onclick=()=>{track('career_saved',{years:c.seasons.length}); ccv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=((me.name||'golfer').replace(/\s+/g,'-'))+'-career.png';a.click();URL.revokeObjectURL(u);});};
+    csBtn.onclick=()=>{track('career_shared',{years:c.seasons.length}); shareCard(ccv,careerShare,me.name,'career');};
+    crow.appendChild(csave); crow.appendChild(csBtn); left.appendChild(crow);
+    const ccopy=$(`<button class="btn ghost" style="margin-top:8px">Copy Career Text</button>`);
+    ccopy.onclick=()=>{navigator.clipboard?.writeText(careerShare); ccopy.textContent='Copied ✓'; setTimeout(()=>ccopy.textContent='Copy Career Text',1400);};
+    left.appendChild(ccopy);
+  }
+
+  const wreath=t.wins>0?` 🏆×${t.wins}`:'';
+  const share=`RUNTHETOUR — ${me.name} (OVR ${ovr})\n${fmt(t.money)} earned · Earnings Rank ${moneyRank}/${N}${wreath}\n${t.wins}W · ${t.majors} majors\nRunThe.GG`;
+  right.appendChild($(`<h2 style="margin:2px 0 8px">Share your season</h2>`));
+  const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
+  const cv=document.createElement('canvas');
+  cv.style.cssText='width:100%;max-width:300px;display:block;margin:0 auto 4px;border-radius:14px;border:1px solid var(--line)';
+  drawShareCard(cv,{name:me.name,ovr,year:S.year||1,events:S.schedule.length,majors:S.schedule.filter(e=>e.major).length,money:t.money,net:ec.net,moneyRank,N,wins:t.wins,majorsWon:t.majors,best:t.best,fedexRank},vals);
+  right.appendChild(cv);
+  const row=$(`<div class="mini" style="margin-top:10px"></div>`);
+  const dl=$(`<button class="btn gold">⤓ Save Card</button>`);
+  const sh=$(`<button class="btn gold">↗ Share</button>`);
+  dl.onclick=()=>{track('result_saved');cv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=((me.name||'golfer').replace(/\s+/g,'-'))+'-season.png';a.click();URL.revokeObjectURL(u);});};
+  sh.onclick=()=>{track('result_shared');shareCard(cv,share,me.name);};
+  row.appendChild(dl); row.appendChild(sh); right.appendChild(row);
+  const cp=$(`<button class="btn ghost" style="margin-top:10px">Copy Text Result</button>`);
+  cp.onclick=()=>{track('result_copied');navigator.clipboard?.writeText(share); cp.textContent='Copied ✓'; setTimeout(()=>cp.textContent='Copy Text Result',1400);};
+  right.appendChild(cp);
+  right.appendChild($(`<div class="sep" style="margin:16px 0"></div>`));
+  if(S.daily){
+    const again=$(`<button class="btn red">Build Another Golfer</button>`);
+    again.onclick=()=>{reset();render();}; right.appendChild(again);
+  } else {
+    const cont=$(`<button class="btn goldfill">Continue to Year ${(S.year||1)+1} ▸<span class="sub">Off-season tune-up, then a new season</span></button>`);
+    cont.onclick=continueFranchise; right.appendChild(cont);
+    const retire=$(`<button class="btn ghost" style="margin-top:10px">Retire — Build New Golfer</button>`);
+    retire.onclick=()=>{reset();render();}; right.appendChild(retire);
+  }
+}
+function continueFranchise(){
+  S.year=(S.year||1)+1;
+  S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false;
+  // off-season tune-up: re-spin up to 3 skills, 2 passes, must change at least one
+  S.offseason={changes:0,maxChanges:3,reSpins:2}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
+  track('offseason_start',{year:S.year});
+  S.screen='offseason'; render();
+}
+function finishOffseason(){ track('offseason_done',{changes:S.offseason.changes}); startSeason(false); }
+function offSpin(){ if(S.current||S.spinning)return; reveal(); }
+function offReSpin(){ if(S.offseason.reSpins<=0)return; S.offseason.reSpins--; track('offseason_respin'); reveal(); }
+function offTake(k){ S.slots[k]={golfer:S.current.name,value:S.current[k]}; S.offseason.changes++; S.current=null; track('offseason_swap',{slot:k}); render(); }
+function scrOffseason(){
+  const os=S.offseason||{changes:0,maxChanges:3,reSpins:2};
+  add($(`<div class="center"><span class="tag">Off-Season · Year ${S.year} prep</span></div>`));
+  add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tune your game</h1>`));
+  add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag — up to <b>3 changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. Keep your bag as-is, or spin to improve it — but once you spin, you must take a skill before moving on.</p>`));
+  const cols=$(`<div class="cols"></div>`);
+  const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
+  cols.appendChild(left); cols.appendChild(right); add(cols);
+  const pips=Array.from({length:os.maxChanges},(_,i)=>`<span class="pip ${i<os.changes?'on':''}"></span>`).join('');
+  left.appendChild($(`<div class="draftbar"><div><h2 style="margin:0">Changes</h2><div class="pips">${pips}</div></div>
+    <div class="spins"><span style="color:var(--gold)">${os.reSpins}</span> <span class="muted small">re-spins</span></div></div>`));
+  if(S.current||S.spinning){
+    const g=S.current; const rar=(g&&!S.spinning)?g.rarity:null;
+    const RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
+    const rarCls=rar?('rar-'+rar.toLowerCase()):''; const tag=rar?RTAG[rar]:'';
+    const sub=g&&!S.spinning?[g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · '):'';
+    left.appendChild($(`<div class="reel ${S.spinning?'spinning':''} ${rarCls} ${g&&!S.spinning?'landed':''}">
+      ${tag?`<div class="reeltag">${tag}</div>`:''}<div class="name">${g?g.name:'…'}</div><div class="sub">${sub}</div></div>`));
+  }
+  if(S.current&&!S.spinning){
+    left.appendChild($(`<div class="small muted" style="margin:10px 0 -2px;text-align:center">Tap a skill to swap it in — green is an upgrade, red a downgrade</div>`));
+    const grid=$(`<div class="attrs"></div>`);
+    CATS.forEach(cat=>{
+      const cur=S.slots[cat.k]?S.slots[cat.k].value:REPLACEMENT; const nv=S.current[cat.k]; const d=nv-cur;
+      const dcol=d>0?'#35d6a0':(d<0?'#e07a5f':'var(--muted)');
+      const bt=$(`<button class="attr" aria-label="Swap ${cat.short} to ${nv}, ${d>=0?'up':'down'} ${Math.abs(d)}">
+        <span class="lab">${cat.short}</span><span class="val">${nv}</span>
+        <span class="take" style="background:none;padding:0 0 0 2px;color:${dcol};font-family:var(--mono);font-weight:800;font-size:13px">${d>0?'▲+':(d<0?'▼':'·')}${d!==0?Math.abs(d):''}</span></button>`);
+      bt.onclick=()=>offTake(cat.k); grid.appendChild(bt);
+    });
+    left.appendChild(grid);
+    if(os.reSpins>0){ const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${os.reSpins} left</button>`); re.onclick=offReSpin; left.appendChild(re); }
+    else left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left — take one of ${S.current.name}'s skills.</div>`));
+  } else if(!S.spinning){
+    if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel</button>`); spin.onclick=offSpin; left.appendChild(spin); }
+    else left.appendChild($(`<div class="small muted center" style="padding:10px 0">All 3 changes used.</div>`));
+    const cont=$(`<button class="btn goldfill" style="margin-top:10px">Start Year ${S.year} ▸<span class="sub">${os.changes>0?'Run the new season':'Keep your bag — run it as-is'}</span></button>`);
+    cont.onclick=finishOffseason;
+    left.appendChild(cont);
+  }
+  right.appendChild(buildHero());
+  right.appendChild($(`<h2 style="margin:6px 0 8px">Your golfer</h2>`));
+  const card=$(`<div class="card-grid"></div>`);
+  CATS.forEach(cat=>{ const f=S.slots[cat.k];
+    card.appendChild($(`<div class="slot ${f?'':'empty'}"><span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'—'}</span><span class="v">${f?f.value:'··'}</span></div>`)); });
+  right.appendChild(card);
+}
+/* ---------- season recap ---------- */
+function scrRecap(){
+  const results=S.season.results;
+  if(S.recapEvent!=null){
+    const {evt,order}=results[S.recapEvent];
+    const me=order.find(o=>o.p.you);
+    const typeLbl=evt.major?'<span class="major">Major</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
+    add($(`<div class="evt-head"><div><div class="nm">${evt.name}</div>
+      <div class="kx">${typeLbl} · ${fmt(evt.purse)} purse</div></div>
+      <div class="kx reg">Event ${S.recapEvent+1}/${results.length}</div></div>`));
+    const board=$(`<div class="board ${evt.major?'major':''}"></div>`);
+    const top=order.slice(0,12);
+    top.forEach(o=>board.appendChild(lbRow(o)));
+    if(!top.includes(me)){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(lbRow(me));}
+    add(board);
+    const result=(me.pos==='CUT')?'Missed cut':(me.pos===1?'WON':'T'+me.pos);
+    add($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b> · ${me.pos==='CUT'?'missed cut':par(me.score)}</span><span style="color:var(--gold)">${me.money>0?'+'+fmt(me.money):'—'}</span></div>`));
+    add(roundsRow(me));
+    const win=order[0];
+    if(me.pos!==1){
+      const gap=(me.pos!=='CUT')?(me.score-win.score):null;
+      add($(`<div class="small muted" style="margin-top:8px;text-align:center">Won by <b style="color:var(--gold)">${win.p.name}</b> at ${par(win.score)}${gap!=null?` · you were ${gap} back`:''}</div>`));
+    } else {
+      add($(`<div class="small" style="margin-top:8px;text-align:center;color:var(--gold);font-weight:800">🏆 Wire-to-wire glory — your week.</div>`));
+    }
+    add($(`<div style="height:14px"></div>`));
+    const nav=$(`<div class="mini" style="margin:0 0 10px"></div>`);
+    const prev=$(`<button class="btn ghost" ${S.recapEvent<=0?'disabled':''}>‹ Prev event</button>`);
+    const next=$(`<button class="btn ghost" ${S.recapEvent>=results.length-1?'disabled':''}>Next event ›</button>`);
+    if(S.recapEvent>0) prev.onclick=()=>{S.recapEvent--;render();};
+    if(S.recapEvent<results.length-1) next.onclick=()=>{S.recapEvent++;render();};
+    nav.appendChild(prev); nav.appendChild(next); add(nav);
+    const back=$(`<button class="btn gold">‹ All events</button>`); back.onclick=()=>{S.recapEvent=null;render();}; add(back);
+    return;
+  }
+  const meS=S.season.me, tot=S.season.totals[meS.name];
+  add($(`<h1 class="center" style="font-size:24px;margin:2px 0 2px">${S.daily?'Daily':'Year '+(S.year||1)} season recap</h1>`));
+  add($(`<p class="lede center" style="margin-bottom:12px">${meS.name} · ${results.length} events · ${results.filter(r=>r.evt.major).length} majors</p>`));
+  // season stat strip
+  const mcs=tot.played-tot.made;
+  const strip=$(`<div class="tiles" style="margin-bottom:14px"></div>`);
+  strip.appendChild(tile('Wins',tot.wins+'',true));
+  strip.appendChild(tile('Majors',tot.majors+''));
+  strip.appendChild(tile('Top 10s',tot.top10+''));
+  strip.appendChild(tile('Cuts made',tot.made+'/'+tot.played));
+  strip.appendChild(tile('Best finish',tot.best===99?'MC':(tot.best===1?'WIN':'T'+tot.best)));
+  strip.appendChild(tile('Earnings',fmt(tot.money),true));
+  add(strip);
+  add($(`<p class="lede center" style="margin:0 0 8px;font-size:12px">Tap any event to replay its leaderboard.</p>`));
+  const board=$(`<div class="board"></div>`);
+  results.forEach((r,i)=>{
+    const me=r.order.find(o=>o.p.you);
+    const won=me.pos===1, cut=me.pos==='CUT';
+    const fin=cut?'MC':(won?'WON':'T'+me.pos);
+    const col=cut?'#e07a5f':(won?'var(--gold)':'var(--oncard)');
+    const typeLbl=r.evt.major?'<span class="major">Major</span>':r.evt.type==='finale'?'<span class="sig">Finale</span>':r.evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
+    const row=$(`<div class="lb" style="grid-template-columns:30px 1fr auto;cursor:pointer;${won?'background:rgba(235,166,31,.10);border-color:rgba(235,166,31,.4)':''}">
+      <span class="pos" style="${won?'color:var(--gold)':''}">${won?'🏆':(r.evt.major?'★':i+1)}</span>
+      <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.evt.name}</div><div class="small muted" style="font-size:10.5px">${typeLbl} · ${fmt(r.evt.purse)}</div></span>
+      <span style="text-align:right;line-height:1.25">
+        <div class="sc" style="color:${col};font-weight:800">${fin}${cut?'':' · '+par(me.score)}</div>
+        <div class="mny small ${me.money>0?'':'muted'}" style="color:${me.money>0?'var(--gold)':''};font-size:11px">${me.money>0?'+'+fmt(me.money):'no cheque'}</div></span></div>`);
+    row.onclick=()=>{S.recapEvent=i;render();};
+    board.appendChild(row);
+  });
+  add(board);
+  add($(`<div style="height:14px"></div>`));
+  const back=$(`<button class="btn red">‹ Back to results</button>`); back.onclick=()=>{S.screen='summary';render();}; add(back);
+}
+function tile(k,v,gold){return $(`<div class="tile"><div class="k">${k}</div><div class="v ${gold?'':'cream'}">${v}</div></div>`);}
+function moneyRow(r,pos,you){return $(`<div class="lb ${you?'you':''}" style="grid-template-columns:34px 1fr 92px">
+  <span class="pos">${pos===1?'🏆':pos}</span><span class="pl">${r.n}</span>
+  <span class="mny" style="color:var(--gold)">${fmt(r.money)}</span></div>`);}
+
+/* ---------- RunThe.GG accounts + public leaderboard (shared-origin Supabase) ----------
+   Optional and fail-open: if supabase-js or the network is unavailable, or the
+   runtour_* migration hasn't been applied yet, every call below no-ops and the
+   leaderboard falls back to local data. Nothing here can break the game. The
+   auth session lives in localStorage under the runthe.gg origin, so a player
+   signed into RunThePitch is the same identity here. */
+const SB_URL='https://jcrrxqfpdelrmvjuihnm.supabase.co';
+const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
+let sb=null, sbUser=null, sbUsername=null, lbCache=null, _pendingSeason=null;
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function sbSignedIn(){ return !!sbUser; }
+function sbInit(){
+  try{
+    if(!(window.supabase&&window.supabase.createClient)) return;
+    sb=window.supabase.createClient(SB_URL,SB_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    sb.auth.onAuthStateChange((_e,session)=>sbApply(session));
+    sb.auth.getSession().then(({data})=>sbApply(data&&data.session)).catch(()=>{});
+  }catch(e){ sb=null; }
+}
+async function sbApply(session){
+  sbUser=(session&&session.user)||null; sbUsername=null;
+  if(sbUser&&sb){
+    try{ const {data}=await sb.from('profiles').select('username').eq('id',sbUser.id).maybeSingle(); sbUsername=(data&&data.username)||null; }catch(e){}
+    if(_pendingSeason){ const s=_pendingSeason; _pendingSeason=null; sbSubmitSeason(s); }
+  }
+  if(S.overlay==='record'||S.overlay==='leaderboard') render();
+}
+async function sbSubmitSeason(s){
+  if(!sb) return;
+  if(!sbUser){ _pendingSeason=s; return; }   // post as soon as they sign in
+  try{
+    await sb.rpc('runtour_submit_season',{p_golfer:s.golfer,p_ovr:s.ovr,p_year:s.year,
+      p_earnings:Math.round(s.earnings),p_net:Math.round(s.net),p_wins:s.wins,p_majors:s.majors,p_skills:s.skills});
+    lbCache=null;   // force a refresh next time the board opens
+  }catch(e){}
+}
+async function lbLoad(){
+  if(!sb){ lbCache={season:[],career:[],ok:false}; if(S.overlay==='leaderboard')render(); return; }
+  try{
+    const [a,b]=await Promise.all([sb.rpc('runtour_season_board',{p_limit:50}),sb.rpc('runtour_career_board',{p_limit:50})]);
+    lbCache={season:(a.data||[]),career:(b.data||[]),ok:!a.error&&!b.error};
+  }catch(e){ lbCache={season:[],career:[],ok:false}; }
+  if(S.overlay==='leaderboard') render();
+}
+sbInit();
+
+track('game_start');
+if(LS.get('bag_seen',false)) track('return_visit'); else LS.set('bag_seen',true);
+render();
+</script>
+</body>
+</html>
