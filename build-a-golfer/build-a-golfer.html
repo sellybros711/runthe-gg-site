@@ -233,6 +233,26 @@ const fmt=(n)=>'$'+Math.round(n).toLocaleString('en-US');
 const par=(s)=>s===0?'E':(s>0?'+'+s:''+s);
 const ord=(n)=>{const v=n%100; if(v>=11&&v<=13)return n+'th'; return n+({1:'st',2:'nd',3:'rd'}[n%10]||'th');};
 
+/* ---------- persistence / career ---------- */
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
+          set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+function career(){return LS.get('bag_career',{builds:0,bestMoney:0,bestOvr:0,wins:0,majors:0,hof:[]});}
+function recordSeason(o){
+  const c=career();
+  c.builds++; c.wins+=o.wins; c.majors+=o.majors;
+  if(o.money>c.bestMoney)c.bestMoney=o.money;
+  if(o.ovr>c.bestOvr)c.bestOvr=o.ovr;
+  c.hof.push({name:o.name,ovr:o.ovr,money:o.money,wins:o.wins,majors:o.majors,best:o.best});
+  c.hof.sort((a,b)=>b.money-a.money); c.hof=c.hof.slice(0,5);
+  LS.set('bag_career',c); return c;
+}
+let deferredInstall=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;});
+function installApp(){
+  if(deferredInstall){deferredInstall.prompt();deferredInstall=null;return;}
+  toast('On iPhone: tap Share, then “Add to Home Screen”.');
+}
+
 /* ---------- data ---------- */
 const CATS=[
   {k:'dist', short:'Driving Distance', w:0.11},
@@ -334,9 +354,10 @@ function simEvent(evt,field){
 const SPINS=10, REPLACEMENT=62;
 let S={};
 function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);S={screen:'title',mode:'easy',pool:GOLFERS.slice(),reSpins:2,
-  slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:'',
-  schedule:[],evtIndex:0,season:null,overlay:null,seasonPaused:false};}
+  slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get('bag_name',''),
+  schedule:[],evtIndex:0,season:null,overlay:null,seasonPaused:false,recorded:false};}
 reset();
+if(LS.get('bag_dark',false))document.body.classList.add('dark');
 
 const filledCount=()=>CATS.filter(c=>S.slots[c.k]).length;
 function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
@@ -359,7 +380,7 @@ function header(){
   const menu=$(`<button class="icobtn" aria-label="How to play">≡</button>`);
   const moon=$(`<button class="icobtn" aria-label="Toggle theme">☾</button>`);
   menu.onclick=()=>{S.overlay='rules';render();};
-  moon.onclick=()=>{document.body.classList.toggle('dark');};
+  moon.onclick=()=>{const d=document.body.classList.toggle('dark');LS.set('bag_dark',d);};
   top.appendChild(menu); top.appendChild(moon);
   h.appendChild(top);
   h.appendChild($(`<div class="lockup">${crestSVG()}
@@ -377,9 +398,19 @@ function footer(){
   const fp=$(`<div class="footpills"></div>`);
   const mail='mailto:sellybros711@gmail.com?subject='+encodeURIComponent('Build a Golfer — Questions / Comments');
   fp.appendChild($(`<a class="pill" href="${mail}" style="text-decoration:none">✉ Questions or Comments</a>`));
-  fp.appendChild($(`<div class="pill">▣ Add to Home</div>`));
+  const a2h=$(`<div class="pill" style="cursor:pointer">▣ Add to Home</div>`); a2h.onclick=installApp;
+  fp.appendChild(a2h);
   f.appendChild(fp);
-  f.appendChild($(`<div class="footlinks"><span>Home</span>·<span>About</span>·<span>Privacy</span>·<span>Contact</span></div>`));
+  const links=$(`<div class="footlinks"></div>`);
+  const mk=(t,fn)=>{const s=$(`<span style="cursor:pointer">${t}</span>`); s.onclick=fn; return s;};
+  links.appendChild(mk('Home',()=>{S.overlay=null;S.screen='title';render();}));
+  links.appendChild($(`<span>·</span>`));
+  links.appendChild(mk('About',()=>toast('Build a Golfer — a RunThe.GG game, in development.')));
+  links.appendChild($(`<span>·</span>`));
+  links.appendChild(mk('Privacy',()=>toast('No accounts, no tracking — your record stays on this device.')));
+  links.appendChild($(`<span>·</span>`));
+  links.appendChild($(`<a href="${mail}" style="color:inherit;text-decoration:none;cursor:pointer">Contact</a>`));
+  f.appendChild(links);
   return f;
 }
 
@@ -393,6 +424,7 @@ function render(){
   app.appendChild(footer());
   RT=screen;
   if(S.overlay==='rules') overlayRules(screen);
+  if(S.overlay==='record') overlayRecord(screen);
   ({title:scrTitle,draft:scrDraft,build:scrBuild,season:scrSeason,summary:scrSummary})[S.screen]();
   window.scrollTo({top:0});
 }
@@ -409,6 +441,31 @@ function overlayRules(screen){
       <li>Bank the most money and climb the season money list against the field.</li>
     </ol>
     <button class="btn red">Got it</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  screen.appendChild(ov);
+}
+function overlayRecord(screen){
+  const c=career();
+  const rows=c.hof.length? c.hof.map((h,i)=>`<div class="lb" style="grid-template-columns:28px 1fr 70px 92px">
+      <span class="pos">${i===0?'🏆':i+1}</span><span class="pl">${h.name||'Your Golfer'}</span>
+      <span class="sc" style="color:#bfe7df">OVR ${h.ovr}</span>
+      <span class="mny" style="color:var(--gold)">${fmt(h.money)}</span></div>`).join('')
+    : `<div class="small muted center" style="padding:20px 8px">No seasons yet — build a golfer and run a season to start your record.</div>`;
+  const ov=$(`<div class="ov">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Your Record</h3>
+    <div class="sbar" style="margin-bottom:14px">
+      <div class="sstat wide"><div class="k">Best season earnings</div><div class="v gold">${fmt(c.bestMoney)}</div></div>
+      <div class="sstat"><div class="k">Builds</div><div class="v">${c.builds}</div></div>
+      <div class="sstat"><div class="k">Best OVR</div><div class="v">${c.bestOvr||'—'}</div></div>
+      <div class="sstat"><div class="k">Career wins</div><div class="v">${c.wins}</div></div>
+      <div class="sstat"><div class="k">Majors</div><div class="v">${c.majors}</div></div>
+    </div>
+    <h2 style="margin:0 0 8px">Hall of Fame · your top earners</h2>
+    <div class="board">${rows}</div>
+    <div style="height:14px"></div>
+    <button class="btn red">Close</button></div>`);
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
   screen.appendChild(ov);
@@ -466,6 +523,10 @@ function scrTitle(){
   w.appendChild($(`<div class="center"><div class="rollchip">
     <div class="rolllab">Built from 8 real skills</div>
     <div class="rollval" id="rollval">${CATS[0].short}</div></div></div>`));
+  const c=career();
+  if(c.builds>0){
+    w.appendChild($(`<div class="small muted center" style="margin:-4px 0 12px">Your best: <b style="color:var(--gold)">${fmt(c.bestMoney)}</b> · OVR ${c.bestOvr} · ${c.builds} build${c.builds>1?'s':''}</div>`));
+  }
   const stack=$(`<div class="stack"></div>`);
   const go=$(`<button class="btn goldfill">Step to the Tee Box<span class="sub">Build your golfer</span></button>`);
   go.onclick=()=>{S.mode='easy';S.screen='draft';render();};
@@ -473,9 +534,9 @@ function scrTitle(){
   w.appendChild(stack);
   const mini=$(`<div class="mini"></div>`);
   const how=$(`<button class="btn gold">⛳ How to Play</button>`);
-  const lb=$(`<button class="btn gold">🏆 Leaderboard</button>`);
+  const lb=$(`<button class="btn gold">🏆 Your Record</button>`);
   how.onclick=()=>{S.overlay='rules';render();};
-  lb.onclick=()=>{toast('Online leaderboard — coming soon');};
+  lb.onclick=()=>{S.overlay='record';render();};
   mini.appendChild(how); mini.appendChild(lb);
   w.appendChild(mini);
   add(w);
@@ -643,7 +704,7 @@ function scrBuild(){
   add($(`<div style="height:14px"></div>`));
   add($(`<h2 style="margin:0 0 4px">Name your golfer</h2>`));
   const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${S.name}">`);
-  inp.oninput=e=>S.name=e.target.value; add(inp);
+  inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name);}; add(inp);
   add($(`<div style="height:14px"></div>`));
   add($(`<h2 style="margin:0 0 8px">Pick your season</h2>`));
   const full=$(`<button class="btn red">Full Season<span class="sub">18 events · 4 majors</span></button>`);
@@ -726,6 +787,68 @@ function lbRow(o){
     <span class="pl">${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
 }
 
+/* ---------- share card (canvas image) ---------- */
+const RLABS=['DRV','ACC','APP','SHT','SCR','BNK','PUT','COM'];
+function bestTxt(b){return b===99?'MC':(b===1?'WIN':'T'+b);}
+function drawShareCard(cv,info,vals){
+  const W=560,H=720,ctx=cv.getContext('2d');
+  cv.width=W; cv.height=H;
+  const bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#0d2740'); bg.addColorStop(1,'#091826');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#EBA61F'; ctx.fillRect(0,0,W,8);
+  ctx.textAlign='center';
+  ctx.fillStyle='#EBA61F'; ctx.font='800 30px Impact,system-ui,sans-serif';
+  ctx.fillText('BUILD A GOLFER',W/2,52);
+  ctx.fillStyle='#06A291'; ctx.font='800 13px system-ui,sans-serif';
+  try{ctx.letterSpacing='3px';}catch(e){}
+  ctx.fillText('A RUNTHE.GG GAME',W/2,74);
+  try{ctx.letterSpacing='0px';}catch(e){}
+  // radar
+  const cx=W/2, cy=222, R=118, n=8;
+  const ang=i=>(-Math.PI/2)+i*(2*Math.PI/n), pt=(i,r)=>[cx+Math.cos(ang(i))*r, cy+Math.sin(ang(i))*r];
+  ctx.strokeStyle='rgba(244,227,201,.12)'; ctx.lineWidth=1;
+  [0.25,0.5,0.75,1].forEach(f=>{ctx.beginPath();for(let i=0;i<n;i++){const[x,y]=pt(i,R*f);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.stroke();});
+  for(let i=0;i<n;i++){const[x,y]=pt(i,R);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();}
+  ctx.beginPath(); vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100));i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.closePath();
+  ctx.fillStyle='rgba(6,162,145,.34)'; ctx.fill(); ctx.strokeStyle='#0FA888'; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.fillStyle='#EBA61F'; vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100)); ctx.beginPath(); ctx.arc(x,y,3.6,0,7); ctx.fill();});
+  ctx.fillStyle='#9fb0bd'; ctx.font='700 12px system-ui,sans-serif';
+  RLABS.forEach((L,i)=>{const[x,y]=pt(i,R+17); ctx.fillText(L,x,y+4);});
+  // name + ovr
+  ctx.fillStyle='#F4E3C9'; ctx.font='800 34px Impact,system-ui,sans-serif';
+  ctx.fillText((info.name||'Your Golfer').toUpperCase(),W/2,400);
+  ctx.fillStyle='#9fb0bd'; ctx.font='700 14px system-ui,sans-serif';
+  ctx.fillText(`OVR ${info.ovr}  ·  ${info.events} EVENTS  ·  ${info.majors} MAJORS`,W/2,424);
+  // stat cells
+  const cells=[
+    ['MONEY WON',fmt(info.money),'#EBA61F'],
+    ['MONEY RANK','#'+info.moneyRank+' / '+info.N,'#F4E3C9'],
+    ['WINS',info.wins+'','#F4E3C9'],
+    ['MAJORS',info.majorsWon+'','#F4E3C9'],
+    ['BEST FINISH',bestTxt(info.best),'#F4E3C9'],
+    ['FEDEX RANK','#'+info.fedexRank+' / '+info.N,'#F4E3C9'],
+  ];
+  const colX=[W*0.28,W*0.72], y0=470, rowH=72;
+  cells.forEach((c,i)=>{
+    const x=colX[i%2], y=y0+Math.floor(i/2)*rowH;
+    ctx.fillStyle='#9fb0bd'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(c[0],x,y);
+    ctx.fillStyle=c[2]; ctx.font='800 26px Impact,system-ui,sans-serif'; ctx.fillText(c[1],x,y+28);
+  });
+  ctx.fillStyle='#EBA61F'; ctx.font='800 16px Impact,system-ui,sans-serif';
+  ctx.fillText('RunThe.GG',W/2,H-26);
+}
+function shareCard(cv,text,name){
+  cv.toBlob(async b=>{
+    if(!b){toast('Could not build the image — copy the text instead');return;}
+    const file=new File([b],((name||'golfer').replace(/\s+/g,'-'))+'-season.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){
+      try{await navigator.share({files:[file],text}); return;}catch(e){if(e&&e.name==='AbortError')return;}
+    }
+    const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=file.name; a.click(); URL.revokeObjectURL(u);
+    toast('Card saved — attach it to your post');
+  });
+}
+
 /* ---------- summary ---------- */
 function scrSummary(){
   const me=S.season.me, t=S.season.totals[me.name];
@@ -734,6 +857,7 @@ function scrSummary(){
   const moneyRank=byMoney.findIndex(r=>r.n===me.name)+1;
   const fedexRank=byPoints.findIndex(r=>r.n===me.name)+1;
   const N=byMoney.length;
+  if(!S.recorded){S.recorded=true; recordSeason({name:me.name,ovr:Math.round(me.skill),money:t.money,wins:t.wins,majors:t.majors,best:t.best});}
   add($(`<div class="center"><span class="tag">Season complete</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
   add($(`<p class="lede center" style="margin-bottom:8px">${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${Math.round(me.skill)}</p>`));
@@ -753,12 +877,22 @@ function scrSummary(){
   if(moneyRank>10){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(byMoney[moneyRank-1],moneyRank,true));}
   add(board);
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
-  const share=`BUILD A GOLFER — ${me.name} (OVR ${Math.round(me.skill)})\n${fmt(t.money)} · #${moneyRank} money${wreath}\n${t.wins}W · ${t.majors} majors · best ${t.best===1?'WIN':'T'+t.best}\nRunThe.GG`;
+  const share=`BUILD A GOLFER — ${me.name} (OVR ${Math.round(me.skill)})\n${fmt(t.money)} · #${moneyRank} money${wreath}\n${t.wins}W · ${t.majors} majors · best ${bestTxt(t.best)}\nRunThe.GG`;
   add($(`<div style="height:14px"></div>`));
-  add($(`<h2 style="margin:0 0 6px">Share card</h2>`));
-  add($(`<div class="share">${share}</div>`));
-  const cp=$(`<button class="btn gold" style="margin-top:10px">Copy Result</button>`);
-  cp.onclick=()=>{navigator.clipboard?.writeText(share); cp.textContent='Copied ✓'; setTimeout(()=>cp.textContent='Copy Result',1400);};
+  add($(`<h2 style="margin:0 0 8px">Share card</h2>`));
+  const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
+  const cv=document.createElement('canvas');
+  cv.style.cssText='width:100%;max-width:300px;display:block;margin:0 auto;border-radius:14px;border:1px solid var(--line)';
+  drawShareCard(cv,{name:me.name,ovr:Math.round(me.skill),events:S.schedule.length,majors:S.schedule.filter(e=>e.major).length,money:t.money,moneyRank,N,wins:t.wins,majorsWon:t.majors,best:t.best,fedexRank},vals);
+  add(cv);
+  const row=$(`<div class="mini" style="margin-top:10px"></div>`);
+  const dl=$(`<button class="btn gold">⤓ Save Card</button>`);
+  const sh=$(`<button class="btn gold">↗ Share</button>`);
+  dl.onclick=()=>cv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=((me.name||'golfer').replace(/\s+/g,'-'))+'-season.png';a.click();URL.revokeObjectURL(u);});
+  sh.onclick=()=>shareCard(cv,share,me.name);
+  row.appendChild(dl); row.appendChild(sh); add(row);
+  const cp=$(`<button class="btn ghost" style="margin-top:10px">Copy Text Result</button>`);
+  cp.onclick=()=>{navigator.clipboard?.writeText(share); cp.textContent='Copied ✓'; setTimeout(()=>cp.textContent='Copy Text Result',1400);};
   add(cp);
   const again=$(`<button class="btn red" style="margin-top:10px">Build Another Golfer</button>`);
   again.onclick=()=>{reset();render();}; add(again);

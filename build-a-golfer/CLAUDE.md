@@ -172,6 +172,25 @@ allows Google Fonts, or self-host Anton.*
   cleaner address-pose silhouette with gradient shirt/trousers, visor, ground
   shadow, and a proper club + ball. Verified, zero page errors.
 
+- 2026-06-26: Optimization pass (benchmarked vs RunThePitch + the build-a-X
+  model). Added an offline replay/engagement layer without crossing the parked
+  items (online/accounts, real SG data, expenses stay parked):
+  - **Local persistence** (localStorage `bag_*`): dark-mode pref, golfer name,
+    and a **career record** (builds played, best season earnings, best OVR,
+    career wins/majors) with a **Hall of Fame** of top-5 builds by earnings.
+  - **Your Record** overlay (replaces the dead "Leaderboard — coming soon"
+    toast) + a "Your best: $X · OVR Y · N builds" line on the title once you've
+    played.
+  - **Visual share card** — a rendered PNG (radar + name + OVR + stat grid +
+    RunThe.GG) with Save / native Share / Copy-text, replacing the plain-text
+    block.
+  - Killed dead-ends: "Add to Home" now fires the PWA install prompt (or iOS
+    instructions); footer Home/About/Privacy/Contact are wired (Contact +
+    Questions → the RunThePitch Gmail).
+  Verified end to end with headless Chromium, zero page errors.
+  Still NOT built (parked, need your go): online leaderboard/accounts, a daily
+  seeded challenge, the expenses/net-profit layer, real Strokes-Gained roster.
+
 ### How to run locally
 Single self-contained file — just open `build-a-golfer.html` in a browser, or
 serve the folder with any static server (e.g. `python3 -m http.server`) and open
