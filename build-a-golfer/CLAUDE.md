@@ -164,6 +164,14 @@ allows Google Fonts, or self-host Anton.*
   (`ERR_CONNECTION_CLOSED`), which falls back to Impact/Arial Narrow as designed.
   Nothing merged to `main`, nothing deployed.
 
+- 2026-06-26: Footer cleanup — removed the dead "Roster Updates" pill and the
+  "@RunTheGreen on X" line (no such roster feed or X account yet); added a
+  "✉ Questions or Comments" pill that opens a mailto to
+  `sellybros711@gmail.com` (the same Gmail RunThePitch routes feedback to).
+  Redrew the draft/build golfer figure (`golferSVG`) — was a crude blob; now a
+  cleaner address-pose silhouette with gradient shirt/trousers, visor, ground
+  shadow, and a proper club + ball. Verified, zero page errors.
+
 ### How to run locally
 Single self-contained file — just open `build-a-golfer.html` in a browser, or
 serve the folder with any static server (e.g. `python3 -m http.server`) and open

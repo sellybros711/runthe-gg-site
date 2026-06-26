@@ -375,10 +375,10 @@ function header(){
 function footer(){
   const f=$(`<div class="foot"></div>`);
   const fp=$(`<div class="footpills"></div>`);
-  fp.appendChild($(`<div class="pill">⚡ Roster Updates</div>`));
+  const mail='mailto:sellybros711@gmail.com?subject='+encodeURIComponent('Build a Golfer — Questions / Comments');
+  fp.appendChild($(`<a class="pill" href="${mail}" style="text-decoration:none">✉ Questions or Comments</a>`));
   fp.appendChild($(`<div class="pill">▣ Add to Home</div>`));
   f.appendChild(fp);
-  f.appendChild($(`<div class="footnote">Follow <b>@RunTheGreen</b> on X for News and Updates</div>`));
   f.appendChild($(`<div class="footlinks"><span>Home</span>·<span>About</span>·<span>Privacy</span>·<span>Contact</span></div>`));
   return f;
 }
@@ -498,16 +498,30 @@ function toast(msg){
 }
 
 /* ---------- draft ---------- */
-function golferSVG(){return `<svg class="golferfig" viewBox="0 0 100 150" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <line x1="6" y1="132" x2="94" y2="132" stroke="rgba(244,227,201,.16)" stroke-width="2"/>
-  <line x1="44" y1="80" x2="19" y2="123" stroke="#F4E3C9" stroke-width="2.4" stroke-linecap="round"/>
-  <circle cx="18" cy="125" r="3.2" fill="#F8F2E6"/>
-  <path d="M64,64 L80,128" stroke="#07605F" stroke-width="9" stroke-linecap="round"/>
-  <path d="M58,66 L56,128" stroke="#06A291" stroke-width="9" stroke-linecap="round"/>
-  <path d="M48,40 C58,42 67,50 66,65 L53,68 C50,56 48,48 48,40 Z" fill="#06A291"/>
-  <path d="M52,46 C50,58 46,71 44,80" stroke="#06A291" stroke-width="7" fill="none" stroke-linecap="round"/>
-  <circle cx="45" cy="34" r="8.5" fill="#0FA888"/>
-  <path d="M36,32 L52,29.5" stroke="#EBA61F" stroke-width="3" stroke-linecap="round"/>
+function golferSVG(){return `<svg class="golferfig" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gf-shirt" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1ccaa6"/><stop offset="1" stop-color="#0a8b76"/></linearGradient>
+    <linearGradient id="gf-pant" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0e655c"/><stop offset="1" stop-color="#063b38"/></linearGradient>
+    <linearGradient id="gf-skin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#17b99a"/><stop offset="1" stop-color="#0c8a73"/></linearGradient>
+  </defs>
+  <ellipse cx="49" cy="142" rx="27" ry="4" fill="rgba(0,0,0,.38)"/>
+  <line x1="43" y1="84" x2="21" y2="132" stroke="#d7dde3" stroke-width="2.6" stroke-linecap="round"/>
+  <circle cx="24" cy="132" r="3.2" fill="#F8F2E6"/>
+  <path d="M46,82 C44,100 41,118 39,134 l8,0 C49,118 51,100 52,84 Z" fill="url(#gf-pant)"/>
+  <path d="M52,82 C55,100 58,118 60,134 l-8,0 C50,118 49,100 48,84 Z" fill="url(#gf-pant)"/>
+  <path d="M38,133 h10 v4 q-6,2 -11,0 z" fill="#0a1626"/>
+  <path d="M51,133 h10 q1,4 -5,5 q-6,0 -6,-1 z" fill="#0a1626"/>
+  <path d="M40,52 C42,48 57,48 59,52 C63,64 61,78 57,84 C50,86 49,86 42,84 C38,78 36,64 40,52 Z" fill="url(#gf-shirt)"/>
+  <path d="M43,55 C36,64 34,76 42,84" stroke="url(#gf-skin)" stroke-width="7.5" fill="none" stroke-linecap="round"/>
+  <path d="M56,55 C52,66 46,78 43,84" stroke="url(#gf-skin)" stroke-width="7.5" fill="none" stroke-linecap="round"/>
+  <circle cx="43" cy="85" r="4.4" fill="#0c8a73"/>
+  <path d="M47,45 h5 v6 h-5 z" fill="#0c8a73"/>
+  <circle cx="49.5" cy="38" r="9" fill="url(#gf-skin)"/>
+  <path d="M40.5,36 a9 9 0 0 1 18 0 v1 h-18 z" fill="#EBA61F"/>
+  <path d="M40.5,37 l-7,-1.5 v3 l7,1 z" fill="#c79320"/>
 </svg>`;}
 const RSHORT={dist:'DRV',acc:'ACC',app:'APP',sht:'SHT',scr:'SCR',bnk:'BNK',put:'PUT',clu:'COM'};
 function radarSVG(){
