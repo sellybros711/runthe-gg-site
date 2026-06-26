@@ -297,6 +297,13 @@ const ord=(n)=>{const v=n%100; if(v>=11&&v<=13)return n+'th'; return n+({1:'st',
 /* ---------- persistence / career ---------- */
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
           set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+/* vendor-neutral analytics hook: pushes a key event to window.dataLayer and fires a
+   CustomEvent. NO third-party script or measurement ID is loaded here — at deploy, wire
+   GA4/GTM/Plausible to dataLayer or the 'rtt:*' events. Key events: game_start, return_visit,
+   draft_started/completed, respin_used, legendary_pulled, season_started/finished,
+   daily_started/completed, result_shared/saved/copied. */
+function track(ev,props){try{(window.dataLayer=window.dataLayer||[]).push(Object.assign({event:'rtt_'+ev},props||{}));
+  window.dispatchEvent(new CustomEvent('rtt:'+ev,{detail:props||{}}));}catch(e){}}
 function career(){return LS.get('bag_career',{builds:0,bestMoney:0,bestNet:null,bestOvr:0,wins:0,majors:0,hof:[],badges:{}});}
 /* expenses: caddie 10% + agent 8% of winnings, ~$20k travel/event, plus ~$2.6M/yr of fixed
    tour costs (coach, equipment, taxes, team). Fixed cost is prorated by events played so the
@@ -349,8 +356,28 @@ function startDaily(){
   const seed=todayKey(); reset();
   S.daily=true; S.dailySeed=seed; S.mode='daily';
   S.drawRng=mulberry32((seed^0x2545f491)>>>0);   // seeded draw → same rarity sequence for everyone today
+  track('daily_started',{seed});
   S.screen='setup'; render();
 }
+/* ---------- daily streak (retention) ---------- */
+function yesterdayKey(){const d=new Date();d.setUTCDate(d.getUTCDate()-1);return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate();}
+function bumpStreak(){const ds=LS.get('bag_streak',{current:0,longest:0,last:null}); const t=todayKey();
+  if(ds.last===t)return ds;
+  ds.current=(ds.last===yesterdayKey())?ds.current+1:1; ds.last=t;
+  if(ds.current>ds.longest)ds.longest=ds.current; LS.set('bag_streak',ds); return ds;}
+function streakDisplay(){const ds=LS.get('bag_streak',null); if(!ds||!ds.current)return 0;
+  return (ds.last===todayKey()||ds.last===yesterdayKey())?ds.current:0;}   // 0 if the streak has lapsed
+/* ---------- resume an in-progress free-play golfer across a refresh ---------- */
+function saveResume(){ if(S.daily||!(S.screen==='draft'||S.screen==='build'))return;
+  LS.set('bag_resume',{slots:S.slots,revealed:[...S.revealed],reSpins:S.reSpins,name:S.name,look:S.look,mode:S.mode,year:S.year}); }
+function clearResume(){ LS.set('bag_resume',null); }
+function resumeInfo(){const r=LS.get('bag_resume',null); if(!r||!r.slots)return null;
+  const n=Object.values(r.slots).filter(Boolean).length; return n>0?{n,r}:null; }
+function restoreResume(){const info=resumeInfo(); if(!info)return; const r=info.r; reset();
+  S.slots=r.slots; S.revealed=new Set(r.revealed||[]); S.reSpins=(r.reSpins==null?2:r.reSpins); S.name=r.name||'';
+  S.look=Object.assign({},DEFLOOK,r.look||{}); S.mode=r.mode||'easy'; S.year=r.year||1;
+  S.daily=false; S.drawRng=Math.random; S.current=null;
+  S.screen=(info.n>=8)?'build':'draft'; track('resume',{n:info.n}); render(); }
 
 /* ---------- data ---------- */
 const CATS=[
@@ -806,6 +833,7 @@ function render(){
   if(S.overlay==='dailydone') overlayDailyDone(screen);
   if(S.overlay==='confirmReset') overlayConfirmReset(screen);
   ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,season:scrSeason,summary:scrSummary,recap:scrRecap})[S.screen]();
+  saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
   _lastView=view;
   // keep your place when re-rendering the same view (e.g. picking customization swatches);
   // only jump to top when the view actually changes.
@@ -869,7 +897,7 @@ function overlayConfirmReset(screen){
     <button class="btn ghost cancel" style="margin-top:10px">Cancel</button></div>`);
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.cancel').onclick=()=>{S.overlay=null;render();};
-  ov.querySelector('.red').onclick=()=>{reset();render();};
+  ov.querySelector('.red').onclick=()=>{clearResume();reset();render();};
   screen.appendChild(ov);
 }
 function overlayDailyDone(screen){
@@ -953,13 +981,20 @@ function scrTitle(){
     w.appendChild($(`<div class="small muted center" style="margin:-4px 0 12px">Your best: <b style="color:var(--gold)">${fmt(c.bestMoney)}</b> · OVR ${c.bestOvr} · ${c.builds} build${c.builds>1?'s':''}</div>`));
   }
   const stack=$(`<div class="stack"></div>`);
-  const go=$(`<button class="btn goldfill">Step to the Tee Box<span class="sub">Build your golfer · free play</span></button>`);
+  const ri=resumeInfo();
+  if(ri){
+    const rb=$(`<button class="btn teal">Resume Your Golfer<span class="sub">${ri.n}/8 skills drafted · pick up where you left off</span></button>`);
+    rb.onclick=restoreResume; stack.appendChild(rb);
+  }
+  const go=$(`<button class="btn goldfill">${ri?'Start a New Golfer':'Step to the Tee Box'}<span class="sub">Build your golfer · free play</span></button>`);
   go.onclick=()=>{S.mode='easy';S.screen='setup';render();};
   stack.appendChild(go);
   const done=dailyDoneToday();
   const daily=$(`<button class="btn ${done?'gold':'blue'}" style="margin-top:10px">${done?'Daily Challenge · Done':'Daily Challenge'}<span class="sub">${done?'View result · new wheel at midnight UTC':'Same wheel for everyone today'}</span></button>`);
   daily.onclick=startDaily;
   stack.appendChild(daily);
+  const st=streakDisplay();
+  if(st>0) stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--gold);font-weight:700">🔥 ${st}-day daily streak — keep it alive</div>`));
   w.appendChild(stack);
   const mini=$(`<div class="mini"></div>`);
   const how=$(`<button class="btn gold">⛳ How to Play</button>`);
@@ -1008,7 +1043,7 @@ function scrSetup(){
   right.appendChild(swatchRow('Trousers',PANTS,S.look.pants,'pants',o=>o.a));
   right.appendChild($(`<div style="height:14px"></div>`));
   const go=$(`<button class="btn goldfill">Start Drafting ▸<span class="sub">${S.daily?'Same wheel for everyone today':'Spin to build your golfer'}</span></button>`);
-  go.onclick=()=>{S.screen='draft';render();}; right.appendChild(go);
+  go.onclick=()=>{track('draft_started',{daily:S.daily});S.screen='draft';render();}; right.appendChild(go);
   const back=$(`<button class="btn ghost" style="margin-top:10px">‹ Back</button>`);
   back.onclick=()=>{reset();S.screen='title';render();}; right.appendChild(back);
 }
@@ -1215,11 +1250,11 @@ function reveal(){
   },72);
 }
 function rarityFlash(g){
-  if(g.rarity==='Legendary'){ toast('★ '+g.name+' — LEGENDARY!'); chime(); }
+  if(g.rarity==='Legendary'){ toast('★ '+g.name+' — LEGENDARY!'); chime(); track('legendary_pulled',{name:g.name}); }
   else if(g.rarity==='Epic') toast('◆ '+g.name+' — Epic');
 }
 function spin_(){ if(S.current||golfersLeft()<=0)return; reveal(); }        // fresh reveal for the next slot — free
-function reSpin(){ if(S.reSpins<=0||golfersLeft()<=0)return; S.reSpins--; reveal(); }  // capped at 2
+function reSpin(){ if(S.reSpins<=0||golfersLeft()<=0)return; S.reSpins--; track('respin_used',{left:S.reSpins}); reveal(); }  // capped at 2
 function endIfDone(){if(filledCount()===8||golfersLeft()<=0)S.screen='build';}
 let _ac=null;
 function chime(){   // soft gold sparkle when a Legendary lands
@@ -1237,7 +1272,9 @@ function chime(){   // soft gold sparkle when a Legendary lands
 }
 function takeAttr(k){
   S.slots[k]={golfer:S.current.name,value:S.current[k]};
-  S.current=null; endIfDone(); render();
+  S.current=null; endIfDone();
+  if(S.screen==='build') track('draft_completed',{ovr:Math.round(buildPlayer().skill)});
+  render();
 }
 
 /* ---------- build ---------- */
@@ -1292,6 +1329,7 @@ function startSeason(majorsOnly){
   const field=fieldSample(FIELDSIZE-1).map(g=>({name:g.name,skill:g.skill,clu:g.clu,you:false}));
   field.push(me);
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0}]))};
+  track('season_started',{mode:S.daily?'daily':(majorsOnly?'majors':'full'),ovr:Math.round(me.skill),year:S.year||1});
   S.screen='season'; render();
 }
 function playEvent(){
@@ -1467,8 +1505,11 @@ function scrSummary(){
     S.career.money+=t.money; S.career.net+=ec.net; S.career.wins+=t.wins; S.career.majors+=t.majors; S.career.top10+=t.top10;
     if(t.best<S.career.best)S.career.best=t.best;
     S.career.seasons.push({year:S.year||1,net:ec.net,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank});
+    track('season_finished',{ovr,net:Math.round(ec.net),gross:Math.round(ec.gross),wins:t.wins,majors:t.majors,moneyRank,N,daily:S.daily,year:S.year||1});
+    clearResume();   // golfer's season is in the books — no longer resumable
   }
-  if(S.daily&&!S.dailyStored){S.dailyStored=true; LS.set('bag_daily',{date:S.dailySeed,done:true,result:{name:me.name,ovr,net:ec.net,money:t.money,moneyRank,N,wins:t.wins,majors:t.majors,best:t.best}});}
+  if(S.daily&&!S.dailyStored){S.dailyStored=true; bumpStreak(); track('daily_completed',{net:Math.round(ec.net),moneyRank});
+    LS.set('bag_daily',{date:S.dailySeed,done:true,result:{name:me.name,ovr,net:ec.net,money:t.money,moneyRank,N,wins:t.wins,majors:t.majors,best:t.best}});}
   add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':(S.year>1?('Year '+S.year+' complete'):'Season complete')}</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
   add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':('Year '+(S.year||1)+' · ')}${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
@@ -1528,11 +1569,11 @@ function scrSummary(){
   const row=$(`<div class="mini" style="margin-top:10px"></div>`);
   const dl=$(`<button class="btn gold">⤓ Save Card</button>`);
   const sh=$(`<button class="btn gold">↗ Share</button>`);
-  dl.onclick=()=>cv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=((me.name||'golfer').replace(/\s+/g,'-'))+'-season.png';a.click();URL.revokeObjectURL(u);});
-  sh.onclick=()=>shareCard(cv,share,me.name);
+  dl.onclick=()=>{track('result_saved');cv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=((me.name||'golfer').replace(/\s+/g,'-'))+'-season.png';a.click();URL.revokeObjectURL(u);});};
+  sh.onclick=()=>{track('result_shared');shareCard(cv,share,me.name);};
   row.appendChild(dl); row.appendChild(sh); add(row);
   const cp=$(`<button class="btn ghost" style="margin-top:10px">Copy Text Result</button>`);
-  cp.onclick=()=>{navigator.clipboard?.writeText(share); cp.textContent='Copied ✓'; setTimeout(()=>cp.textContent='Copy Text Result',1400);};
+  cp.onclick=()=>{track('result_copied');navigator.clipboard?.writeText(share); cp.textContent='Copied ✓'; setTimeout(()=>cp.textContent='Copy Text Result',1400);};
   add(cp);
   add($(`<div style="height:14px"></div>`));
   if(S.daily){
@@ -1596,6 +1637,8 @@ function moneyRow(r,pos,you){return $(`<div class="lb ${you?'you':''}" style="gr
   <span class="pos">${pos===1?'🏆':pos}</span><span class="pl">${r.n}</span>
   <span class="mny" style="color:var(--gold)">${fmt(r.money)}</span></div>`);}
 
+track('game_start');
+if(LS.get('bag_seen',false)) track('return_visit'); else LS.set('bag_seen',true);
 render();
 </script>
 </body>
