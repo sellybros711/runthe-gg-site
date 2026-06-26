@@ -901,6 +901,14 @@ function overlayRules(screen){
       <li>Winnings are big — but so are expenses (caddie, agent, travel, ~$2.8M/yr of tour costs). A mediocre build can finish the year in the <b>red</b>.</li>
       <li>Bank the most money and climb the season money list against the field.</li>
     </ol>
+    <h2 style="margin:14px 0 8px">Pull odds each spin</h2>
+    <div class="board" style="margin-bottom:6px">
+      <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="color:var(--gold);font-weight:800">★ Legendary</span><span class="mny mono">5%</span></div>
+      <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="color:#c7a6f2;font-weight:800">◆ Epic</span><span class="mny mono">25%</span></div>
+      <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="color:#82c1e8;font-weight:800">◇ Rare</span><span class="mny mono">35%</span></div>
+      <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="font-weight:800">Common</span><span class="mny mono">35%</span></div>
+    </div>
+    <p class="small muted" style="line-height:1.45;margin:0 0 4px">Rarer golfers tend to have higher peak skills — but take the best rating for an open slot, whoever lands.</p>
     <button class="btn red">Got it</button></div>`);
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
@@ -1301,12 +1309,9 @@ function scrDraft(){
     const left2go=8-filledCount();
     const spin=$(`<button class="btn teal" style="font-size:24px;padding:19px">⛳ Spin the Wheel<span class="sub">${filledCount()===0?'Reveal a golfer · free':left2go+' slot'+(left2go>1?'s':'')+' to fill · free'}</span></button>`);
     spin.onclick=spin_; left.appendChild(spin);
-    // pull odds — fills the column and makes the gamble legible
-    const odds=[['★ Legendary','5%','var(--gold)'],['◆ Epic','25%','#c7a6f2'],['◇ Rare','35%','#82c1e8'],['Common','35%','var(--pagemut)']];
-    left.appendChild($(`<div class="scout" style="margin-top:12px">
-      <div style="font-weight:800;color:var(--oncard);margin-bottom:6px;font-size:11px;letter-spacing:.1em;text-transform:uppercase">Pull odds each spin</div>
-      ${odds.map(o=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-top:1px solid var(--line)"><span style="color:${o[2]};font-weight:800">${o[0]}</span><span class="mono" style="color:var(--oncard)">${o[1]}</span></div>`).join('')}
-      <div class="small muted" style="margin-top:8px;line-height:1.4">Rarer golfers tend to have higher peak skills — but take the best rating for an open slot, whoever lands.</div></div>`));
+    const how=$(`<button class="btn ghost" style="margin-top:10px;font-size:12px;padding:9px">⛳ How to play · pull odds</button>`);
+    how.onclick=()=>{S.overlay='rules';render();};
+    left.appendChild(how);
   }
   right.appendChild(buildHero());
   right.appendChild($(`<h2 style="margin:6px 0 8px">Your scorecard · ${filledCount()}/8</h2>`));
@@ -1672,9 +1677,12 @@ function scrSummary(){
   const ec=seasonNet(t);
   if(!S.recorded){S.recorded=true;
     const r=recordSeason({name:me.name,ovr,money:t.money,gross:ec.gross,net:ec.net,wins:t.wins,majorsWon:t.majors,played:t.played,made:t.made,moneyRank,best:t.best}); S.freshBadges=r.fresh;
-    S.career=S.career||{money:0,net:0,wins:0,majors:0,top10:0,best:99,seasons:[]};
+    S.career=S.career||{money:0,net:0,wins:0,majors:0,top10:0,best:99,seasons:[],winsList:[]};
+    S.career.winsList=S.career.winsList||[];
     S.career.money+=t.money; S.career.net+=ec.net; S.career.wins+=t.wins; S.career.majors+=t.majors; S.career.top10+=t.top10;
     if(t.best<S.career.best)S.career.best=t.best;
+    // record the actual tournaments won this season for the career Wins list
+    S.season.results.forEach(r=>{ const meR=r.order.find(o=>o.p.you); if(meR&&meR.pos===1) S.career.winsList.push({name:r.evt.name,year:S.year||1,major:!!r.evt.major}); });
     S.career.seasons.push({year:S.year||1,net:ec.net,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank});
     // accumulate career earnings vs the (persistent) field for the multi-year money list
     S.career.fieldMoney=S.career.fieldMoney||{};
@@ -1746,13 +1754,26 @@ function scrSummary(){
     const c=S.career, ccol=c.net>=0?'#35d6a0':'#E14A33';
     left.appendChild($(`<h2 style="margin:16px 0 8px">Career · ${c.seasons.length} years (through Year ${S.year})</h2>`));
     const ct=$(`<div class="tiles"></div>`);
-    ct.appendChild($(`<div class="tile"><div class="k">Career net</div><div class="v" style="color:${ccol}">${fmtSigned(c.net)}</div></div>`));
-    ct.appendChild(tile('Career money',fmt(c.money),true));
+    ct.appendChild($(`<div class="tile"><div class="k">Net worth</div><div class="v" style="color:${ccol}">${fmtSigned(c.net)}</div></div>`));
+    ct.appendChild(tile('Career earnings',fmt(c.money),true));
     ct.appendChild(tile('Career rank',cRank+' / '+careerList.length));
     ct.appendChild(tile('Career wins',c.wins+''));
     ct.appendChild(tile('Career majors',c.majors+''));
-    ct.appendChild(tile('Best finish',bestTxt(c.best)));
+    ct.appendChild(tile('Top 10s',c.top10+''));
     left.appendChild(ct);
+    // Wins — the actual tournaments won across the career
+    const wl=(c.winsList||[]);
+    left.appendChild($(`<h3 style="margin:14px 0 6px;font-size:14px;letter-spacing:.02em">Wins <span class="small muted" style="font-weight:600">· ${wl.length}</span></h3>`));
+    if(wl.length){
+      const wb=$(`<div class="board"></div>`);
+      wl.slice().sort((a,b)=>a.year-b.year).forEach(w=>wb.appendChild($(`<div class="lb" style="grid-template-columns:30px 1fr 54px">
+        <span class="pos" style="color:var(--gold)">${w.major?'★':'🏆'}</span>
+        <span class="pl">${w.name}${w.major?' <span class="small muted">major</span>':''}</span>
+        <span class="mny small muted">Yr ${w.year}</span></div>`)));
+      left.appendChild(wb);
+    } else {
+      left.appendChild($(`<div class="scout small muted" style="margin-top:2px">No tournament wins yet — keep grinding.</div>`));
+    }
     const yb=$(`<div class="board"></div>`);
     c.seasons.forEach(s=>yb.appendChild($(`<div class="lb" style="grid-template-columns:46px 1fr 96px">
       <span class="pos">Yr ${s.year}</span>
@@ -1871,24 +1892,52 @@ function scrRecap(){
     if(!top.includes(me)){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(lbRow(me));}
     add(board);
     const result=(me.pos==='CUT')?'Missed cut':(me.pos===1?'WON':'T'+me.pos);
-    add($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b> · ${par(me.score)}</span><span style="color:var(--gold)">${me.money>0?'+'+fmt(me.money):'—'}</span></div>`));
+    add($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b> · ${me.pos==='CUT'?'missed cut':par(me.score)}</span><span style="color:var(--gold)">${me.money>0?'+'+fmt(me.money):'—'}</span></div>`));
     add(roundsRow(me));
+    const win=order[0];
+    if(me.pos!==1){
+      const gap=(me.pos!=='CUT')?(me.score-win.score):null;
+      add($(`<div class="small muted" style="margin-top:8px;text-align:center">Won by <b style="color:var(--gold)">${win.p.name}</b> at ${par(win.score)}${gap!=null?` · you were ${gap} back`:''}</div>`));
+    } else {
+      add($(`<div class="small" style="margin-top:8px;text-align:center;color:var(--gold);font-weight:800">🏆 Wire-to-wire glory — your week.</div>`));
+    }
     add($(`<div style="height:14px"></div>`));
+    const nav=$(`<div class="mini" style="margin:0 0 10px"></div>`);
+    const prev=$(`<button class="btn ghost" ${S.recapEvent<=0?'disabled':''}>‹ Prev event</button>`);
+    const next=$(`<button class="btn ghost" ${S.recapEvent>=results.length-1?'disabled':''}>Next event ›</button>`);
+    if(S.recapEvent>0) prev.onclick=()=>{S.recapEvent--;render();};
+    if(S.recapEvent<results.length-1) next.onclick=()=>{S.recapEvent++;render();};
+    nav.appendChild(prev); nav.appendChild(next); add(nav);
     const back=$(`<button class="btn gold">‹ All events</button>`); back.onclick=()=>{S.recapEvent=null;render();}; add(back);
     return;
   }
-  add($(`<h1 class="center" style="font-size:24px;margin:2px 0 2px">Season recap</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:12px">Tap any event to replay its leaderboard.</p>`));
+  const meS=S.season.me, tot=S.season.totals[meS.name];
+  add($(`<h1 class="center" style="font-size:24px;margin:2px 0 2px">${S.daily?'Daily':'Year '+(S.year||1)} season recap</h1>`));
+  add($(`<p class="lede center" style="margin-bottom:12px">${meS.name} · ${results.length} events · ${results.filter(r=>r.evt.major).length} majors</p>`));
+  // season stat strip
+  const mcs=tot.played-tot.made;
+  const strip=$(`<div class="tiles" style="margin-bottom:14px"></div>`);
+  strip.appendChild(tile('Wins',tot.wins+'',true));
+  strip.appendChild(tile('Majors',tot.majors+''));
+  strip.appendChild(tile('Top 10s',tot.top10+''));
+  strip.appendChild(tile('Cuts made',tot.made+'/'+tot.played));
+  strip.appendChild(tile('Best finish',tot.best===99?'MC':(tot.best===1?'WIN':'T'+tot.best)));
+  strip.appendChild(tile('Money won',fmt(tot.money),true));
+  add(strip);
+  add($(`<p class="lede center" style="margin:0 0 8px;font-size:12px">Tap any event to replay its leaderboard.</p>`));
   const board=$(`<div class="board"></div>`);
   results.forEach((r,i)=>{
     const me=r.order.find(o=>o.p.you);
-    const fin=me.pos==='CUT'?'MC':(me.pos===1?'WON':'T'+me.pos);
-    const col=me.pos==='CUT'?'#e07a5f':(me.pos===1?'var(--gold)':'var(--oncard)');
-    const row=$(`<div class="lb" style="grid-template-columns:26px 1fr 50px 74px;cursor:pointer">
-      <span class="pos">${r.evt.major?'★':i+1}</span>
-      <span class="pl">${r.evt.name}</span>
-      <span class="sc" style="color:${col}">${fin}</span>
-      <span class="mny">${me.money>0?fmt(me.money):'—'}</span></div>`);
+    const won=me.pos===1, cut=me.pos==='CUT';
+    const fin=cut?'MC':(won?'WON':'T'+me.pos);
+    const col=cut?'#e07a5f':(won?'var(--gold)':'var(--oncard)');
+    const typeLbl=r.evt.major?'<span class="major">Major</span>':r.evt.type==='finale'?'<span class="sig">Finale</span>':r.evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
+    const row=$(`<div class="lb" style="grid-template-columns:30px 1fr auto;cursor:pointer;${won?'background:rgba(235,166,31,.10);border-color:rgba(235,166,31,.4)':''}">
+      <span class="pos" style="${won?'color:var(--gold)':''}">${won?'🏆':(r.evt.major?'★':i+1)}</span>
+      <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.evt.name}</div><div class="small muted" style="font-size:10.5px">${typeLbl} · ${fmt(r.evt.purse)}</div></span>
+      <span style="text-align:right;line-height:1.25">
+        <div class="sc" style="color:${col};font-weight:800">${fin}${cut?'':' · '+par(me.score)}</div>
+        <div class="mny small ${me.money>0?'':'muted'}" style="color:${me.money>0?'var(--gold)':''};font-size:11px">${me.money>0?'+'+fmt(me.money):'no cheque'}</div></span></div>`);
     row.onclick=()=>{S.recapEvent=i;render();};
     board.appendChild(row);
   });
