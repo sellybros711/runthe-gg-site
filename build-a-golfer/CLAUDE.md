@@ -270,6 +270,19 @@ allows Google Fonts, or self-host Anton.*
     speed toggle (`bag_speed`).
   Verified end to end, zero page errors.
 
+- 2026-06-26: Difficulty tuning + draft-safety.
+  - **Field size → 64** (`FIELDSIZE` const). The wheel keeps all 127, but each
+    season now draws a 64-player field from the roster (deterministic for daily
+    via seed, random per season for free play / franchise). Re-balanced: an
+    OVR-90 build now wins ~1/season with ~37% top-10s and ~63% cuts (was ~0.8
+    wins / 15% top-10s vs the full 128 field). Tunable via `FIELDSIZE`.
+  - **Protect the draft**: confirm-before-Reset overlay when mid-game (title
+    screen still resets instantly; record/HOF are preserved either way); and a
+    pull-to-refresh guard (CSS `overscroll-behavior-y:none` + a JS touchmove
+    guard, since CSS alone isn't enough on iOS) so a stray swipe can't reload and
+    wipe an in-progress draft.
+  Verified end to end, zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

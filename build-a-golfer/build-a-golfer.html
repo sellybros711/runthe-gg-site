@@ -27,7 +27,7 @@
     --pageink:#F4E3C9; --pagemut:#9fb0bd; --pill:#0d2436; --pillb:rgba(244,227,201,.16);
   }
   *{box-sizing:border-box}
-  html,body{margin:0}
+  html,body{margin:0; overscroll-behavior-y:none}
   body{background:var(--pagebg); background-attachment:fixed; color:var(--pageink);
     font-family:var(--body); -webkit-font-smoothing:antialiased; min-height:100vh; line-height:1.4}
   #app{max-width:520px; margin:0 auto; padding:14px 14px 40px}
@@ -230,6 +230,13 @@
 <script>
 const $=(h)=>{const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.firstChild;};
 const app=document.getElementById('app');
+/* block pull-to-refresh so a stray downward swipe can't reload & wipe an in-progress draft (CSS alone isn't enough on iOS) */
+let _touchY=0;
+document.addEventListener('touchstart',e=>{ if(e.touches.length===1) _touchY=e.touches[0].clientY; },{passive:true});
+document.addEventListener('touchmove',e=>{
+  const atTop=(window.scrollY||document.documentElement.scrollTop||0)<=0;
+  if(atTop && e.touches[0].clientY>_touchY && e.cancelable) e.preventDefault();
+},{passive:false});
 let RT=app;
 let rollTimer=null;
 let seasonTimer=null;
@@ -482,6 +489,7 @@ function simEvent(evt,field){
 
 /* ---------- state ---------- */
 const SPINS=10, REPLACEMENT=62;
+const FIELDSIZE=64;   // season field = you + (FIELDSIZE-1) golfers sampled from the roster (difficulty knob)
 /* golfer customization palettes */
 const SKINS=[
   {id:'light', m:'#f0c6a4', s:'#e0ad84'},
@@ -565,7 +573,7 @@ function header(){
   h.appendChild($(`<div class="gtype">A RunThe.GG Game</div>`));
   const pills=$(`<div class="pills"></div>`);
   pills.appendChild($(`<div class="pill">🏌️ Player</div>`));
-  const rs=$(`<button class="pill">Reset</button>`); rs.onclick=()=>{reset();render();};
+  const rs=$(`<button class="pill">Reset</button>`); rs.onclick=()=>{ if(S.screen==='title'){reset();render();} else {S.overlay='confirmReset';render();} };
   pills.appendChild(rs);
   h.appendChild(pills);
   return h;
@@ -607,6 +615,7 @@ function render(){
   if(S.overlay==='rules') overlayRules(screen);
   if(S.overlay==='record') overlayRecord(screen);
   if(S.overlay==='dailydone') overlayDailyDone(screen);
+  if(S.overlay==='confirmReset') overlayConfirmReset(screen);
   ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,season:scrSeason,summary:scrSummary,recap:scrRecap})[S.screen]();
   _lastView=view;
   // keep your place when re-rendering the same view (e.g. picking customization swatches);
@@ -659,6 +668,18 @@ function overlayRecord(screen){
     <button class="btn red">Close</button></div>`);
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  screen.appendChild(ov);
+}
+function overlayConfirmReset(screen){
+  const ov=$(`<div class="ov">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Start over?</h3>
+    <p class="lede">This clears your current golfer and season. Your record and Hall of Fame are kept.</p>
+    <button class="btn red">Reset everything</button>
+    <button class="btn ghost cancel" style="margin-top:10px">Cancel</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.cancel').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{reset();render();};
   screen.appendChild(ov);
 }
 function overlayDailyDone(screen){
@@ -1018,11 +1039,18 @@ function scrBuild(){
     add(full); add(maj);
   }
 }
+function fieldSample(n){
+  // pull a tournament-sized field from the full 127-golfer roster.
+  // daily = deterministic (seeded) so everyone faces the same field; free play = random each season.
+  if(S.daily) return seededShuffle(GOLFERS,(S.dailySeed^0x1b873593)>>>0).slice(0,n);
+  const a=GOLFERS.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a.slice(0,n);
+}
 function startSeason(majorsOnly){
   S.schedule=(majorsOnly&&!S.daily)?SCHEDULE.filter(e=>e.major):SCHEDULE.slice(); S.evtIndex=0;
   RNG = S.daily ? mulberry32((S.dailySeed^0x51ed2701)>>>0) : Math.random;
   const me=buildPlayer();
-  const field=GOLFERS.map(g=>({name:g.name,skill:g.skill,clu:g.clu,you:false}));
+  const field=fieldSample(FIELDSIZE-1).map(g=>({name:g.name,skill:g.skill,clu:g.clu,you:false}));
   field.push(me);
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0}]))};
   S.screen='season'; render();
