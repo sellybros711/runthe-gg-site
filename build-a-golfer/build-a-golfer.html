@@ -234,6 +234,21 @@
   .lb.cut .sc{color:#e07a5f}
   .sep{height:1px; background:repeating-linear-gradient(90deg,var(--line),var(--line) 6px,transparent 6px,transparent 12px)}
   .runline{display:flex; justify-content:space-between; font-family:var(--mono); font-size:13px; padding:10px 2px 0; color:var(--oncard)}
+  /* live tournament scorecard */
+  .scorecard{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.20)); border:1px solid var(--panelb);
+    border-radius:16px; padding:14px 14px 16px; box-shadow:0 14px 32px -20px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.05)}
+  .sc-head{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; gap:10px}
+  .sc-name{font-family:var(--display); font-size:22px; color:var(--oncard); text-transform:uppercase; letter-spacing:.02em; line-height:1}
+  .sc-pos{font-family:var(--mono); font-weight:800; font-size:27px; line-height:1}
+  .sc-topar{font-family:var(--mono); font-weight:800; font-size:15px; margin-top:3px}
+  .rounds{display:flex; gap:8px}
+  .rdcell{flex:1; text-align:center; background:#0a2740; border:1px solid var(--line); border-radius:12px; padding:11px 4px 10px;
+    transition:background .25s ease, border-color .25s ease, transform .25s ease}
+  .rdcell.live{border-color:var(--gold); background:rgba(235,166,31,.14); transform:translateY(-2px); box-shadow:0 6px 16px -10px rgba(235,166,31,.6)}
+  .rdlab{font:800 9px/1 var(--body); letter-spacing:.16em; color:var(--muted)}
+  .rdval{font-family:var(--mono); font-weight:800; font-size:24px; margin-top:7px; color:var(--oncard)}
+  .rdcell.empty .rdval{color:var(--muted); opacity:.5}
+  .sc-status{margin-top:12px; text-align:center; font:800 12px/1.35 var(--body); letter-spacing:.05em; color:var(--teal)}
 
   .sbar{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line);
     border:1px solid var(--line); border-radius:13px; overflow:hidden; margin-bottom:14px}
@@ -274,7 +289,7 @@
   @media (max-width:480px){ .wordmark{font-size:32px} .crest{width:52px;height:62px} .crestrow{gap:12px} }
   @media (max-width:380px){ .wordmark{font-size:27px} }
   @media (max-width:430px){ .attrs{grid-template-columns:1fr} h1{font-size:30px} }
-  @media (prefers-reduced-motion:reduce){ .spinning .name{animation:none} .ftrack{animation:none} .skillwheel .track{animation:none} .btn,.attr{transition:none} }
+  @media (prefers-reduced-motion:reduce){ .spinning .name{animation:none} .ftrack{animation:none} .skillwheel .track{animation:none} .btn,.attr,.rdcell{transition:none} }
 </style>
 </head>
 <body>
@@ -733,8 +748,8 @@ let S={};
 function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);S={screen:'title',mode:'easy',revealed:new Set(),drawRng:Math.random,reSpins:2,
   slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get('bag_name',''),
   look:Object.assign({},DEFLOOK,LS.get('bag_look',{})),year:1,career:null,
-  schedule:[],evtIndex:0,season:null,overlay:null,seasonPaused:false,recorded:false,recapEvent:null,
-  simRate:LS.get('bag_speed',1),daily:false,dailySeed:null,dailyStored:false};}
+  schedule:[],evtIndex:0,season:null,curEvt:null,overlay:null,seasonPaused:false,recorded:false,recapEvent:null,
+  autoSim:LS.get('bag_autosim',false),simRate:LS.get('bag_speed',1),daily:false,dailySeed:null,dailyStored:false};}
 reset();
 if(LS.get('bag_dark',false))document.body.classList.add('dark');
 
@@ -1366,78 +1381,162 @@ function startSeason(majorsOnly){
   const field=fieldSample(FIELDSIZE-1).map(g=>({name:g.name,skill:g.skill,clu:g.clu,you:false}));
   field.push(me);
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0}]))};
+  S.curEvt=null;
   track('season_started',{mode:S.daily?'daily':(majorsOnly?'majors':'full'),ovr:Math.round(me.skill),year:S.year||1});
   S.screen='season'; render();
 }
-function playEvent(){
-  const evt=S.schedule[S.evtIndex]; const order=simEvent(evt,S.season.field);
+/* ---- live, round-by-round tournament engine ---- */
+const ROUND_DELAY=820, EVENT_PAUSE=1500, DAYS=['THU','FRI','SAT','SUN'];
+function beginEvent(){
+  const evt=S.schedule[S.evtIndex];
+  S.curEvt={evt, idx:S.evtIndex, roundsDone:0, done:false, order:null,
+    players:S.season.field.map(p=>({p, rounds:[null,null,null,null], total:0, made:true}))};
+  simNextRound();   // play Thursday immediately so the first frame has scores
+}
+function simNextRound(){
+  const ce=S.curEvt; if(!ce||ce.done) return;
+  const r=ce.roundsDone, major=ce.evt.major, finalRd=(r===3);
+  ce.players.forEach(o=>{ if(r>=2 && !o.made) return; const s=simRound(o.p,{major,finalRd}); o.rounds[r]=s; o.total+=s; });
+  ce.roundsDone=r+1;
+  if(ce.roundsDone===2){   // weekend cut after 36 holes
+    const sorted=[...ce.players].sort((a,b)=>a.total-b.total);
+    const cutN=Math.max(22,Math.round(ce.players.length*0.5));
+    const cutScore=sorted[Math.min(cutN-1,sorted.length-1)].total;
+    ce.players.forEach(o=>o.made=o.total<=cutScore+1e-9);
+  }
+  if(ce.roundsDone>=4) finalizeEvent();
+}
+function finalizeEvent(){
+  const ce=S.curEvt, evt=ce.evt;
+  const made=ce.players.filter(o=>o.made).sort((a,b)=>a.total-b.total);
+  const missed=ce.players.filter(o=>!o.made).sort((a,b)=>a.total-b.total);
+  made.forEach((o,i)=>{o.pos=i+1;o.pct=PAYOUT[i]||0;});
+  missed.forEach(o=>{o.pos='CUT';o.pct=0;});
+  const order=made.concat(missed);
+  const basePts=evt.major?750:evt.big?600:500;
+  order.forEach(o=>{o.money=evt.purse*o.pct; o.points=typeof o.pos==='number'?Math.round(basePts*(o.pct/0.18)):0;
+    o.score=Math.round(o.total); o.r1=o.rounds[0];o.r2=o.rounds[1];o.r3=o.rounds[2];o.r4=o.rounds[3];});
   order.forEach((o,idx)=>{const t=S.season.totals[o.p.name];
     t.money+=o.money; t.points+=o.points; t.played++; t.finishSum+=(idx+1);
     if(o.pos===1){t.wins++; if(evt.major)t.majors++;}
     if(typeof o.pos==='number'){t.made++; if(o.pos<=10)t.top10++; if(o.pos<t.best)t.best=o.pos;}});
-  S.season.results.push({evt,order}); S.evtIndex++;
+  S.season.results.push({evt,order}); ce.done=true; ce.order=order;
+}
+function liveOrder(ce){   // current standings mid-event; assigns _pos
+  const sorted=[...ce.players].sort((a,b)=>a.total-b.total);
+  if(ce.roundsDone<2){ sorted.forEach((o,i)=>o._pos=i+1); return sorted; }
+  const made=sorted.filter(o=>o.made), cut=sorted.filter(o=>!o.made);
+  made.forEach((o,i)=>o._pos=i+1); cut.forEach(o=>o._pos='CUT');
+  return made.concat(cut);
+}
+function advanceEvent(){ if(S.evtIndex>=S.schedule.length-1){ S.screen='summary'; } else { S.evtIndex++; S.curEvt=null; } }
+function skipToEnd(){
+  clearTimeout(seasonTimer);
+  while(S.curEvt && !S.curEvt.done) simNextRound();
+  while(S.evtIndex < S.schedule.length-1){ S.evtIndex++; S.curEvt=null; beginEvent(); while(!S.curEvt.done) simNextRound(); }
+  S.screen='summary'; render();
+}
+function liveRow(o,pos,you){
+  const cut=(pos==='CUT'); const sc=cut?'CUT':par(Math.round(o.total)); const mny=(o.money>0)?fmt(o.money):'';
+  return $(`<div class="lb ${you?'you':''} ${cut?'cut':''}">
+    <span class="pos">${pos===1?'🏆':(cut?'–':pos)}</span>
+    <span class="pl">${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
 }
 function scrSeason(){
   clearTimeout(seasonTimer);
-  if(S.evtIndex<S.schedule.length && S.season.results.length===S.evtIndex) playEvent();
-  const last=S.season.results[S.season.results.length-1];
-  const evt=last.evt, order=last.order;
-  const me=order.find(o=>o.p.you); const t=S.season.totals[S.season.me.name];
+  if(!S.curEvt || S.curEvt.idx!==S.evtIndex) beginEvent();
+  const ce=S.curEvt, evt=ce.evt;
   if(evt.major) RT.classList.add('major-screen');
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
 
-  // persistent season standings
+  // season-to-date standings
+  const t=S.season.totals[S.season.me.name];
   const avg=t.played?ord(Math.round(t.finishSum/t.played)):'—';
   const high=t.best===99?'—':ord(t.best);
-  const ec=seasonNet(t);
-  const netCol=ec.net>=0?'#35d6a0':'#E14A33';
+  const ec=seasonNet(t); const netCol=ec.net>=0?'#35d6a0':'#E14A33';
   add($(`<div class="sbar">
-    <div class="sstat wide"><div class="k">Net profit</div>
+    <div class="sstat wide"><div class="k">Net profit · through ${t.played} event${t.played===1?'':'s'}</div>
       <div class="v" style="color:${netCol};font-size:22px">${fmtSigned(ec.net)}</div>
       <div class="k" style="margin-top:3px;text-transform:none;letter-spacing:0">${fmt(ec.gross)} won · −${fmt(ec.costs)} costs</div></div>
     <div class="sstat"><div class="k">Avg finish</div><div class="v">${avg}</div></div>
-    <div class="sstat"><div class="k">Events</div><div class="v">${t.played}</div></div>
+    <div class="sstat"><div class="k">Wins</div><div class="v">${t.wins}</div></div>
     <div class="sstat"><div class="k">Cuts made</div><div class="v">${t.made}/${t.played}</div></div>
     <div class="sstat"><div class="k">Best</div><div class="v">${high}</div></div>
   </div>`));
-
   if(evt.major) add($(`<div class="majorbanner">★ Major Championship ★</div>`));
 
   const cols=$(`<div class="cols"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
   cols.appendChild(left); cols.appendChild(right); add(cols);
 
+  // LEFT — live, re-sorting leaderboard
   const typeLbl=evt.major?'<span class="major">Major</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
+  const dayLbl=ce.done?'Final':(ce.roundsDone>=2&&!ce.players.find(o=>o.p.you).made?`After ${DAYS[1]}`:`${DAYS[Math.max(0,ce.roundsDone-1)]} · Round ${Math.min(ce.roundsDone,4)}/4`);
   left.appendChild($(`<div class="evt-head"><div><div class="nm">${evt.name}</div>
     <div class="kx">${typeLbl} · ${fmt(evt.purse)} purse</div></div>
-    <div class="kx reg">Event ${S.evtIndex}/${S.schedule.length}</div></div>`));
+    <div class="kx reg" style="text-align:right">Event ${S.evtIndex+1}/${S.schedule.length}<br><span style="color:var(--gold)">${dayLbl}</span></div></div>`));
+  const ordered=liveOrder(ce);
+  const meLive=ordered.find(o=>o.p.you);
   const board=$(`<div class="board ${evt.major?'major':''}"></div>`);
-  const top=order.slice(0,12); const youOut=!top.includes(me);
-  top.forEach(o=>board.appendChild(lbRow(o)));
-  if(youOut){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(lbRow(me));}
+  const top=ordered.slice(0,12); const youOut=!top.includes(meLive);
+  top.forEach(o=>board.appendChild(liveRow(o,o._pos,o.p.you)));
+  if(youOut){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(liveRow(meLive,meLive._pos,true));}
   left.appendChild(board);
 
-  const result=(me.pos==='CUT')?'Missed cut':(me.pos===1?'WON':'T'+me.pos+(me.pos<=10?' · top 10':''));
-  right.appendChild($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b> · ${par(me.score)}</span><span style="color:var(--gold)">+${fmt(me.money)}</span></div>`));
-  right.appendChild(roundsRow(me));
-  right.appendChild($(`<div style="height:14px"></div>`));
-  if(S.evtIndex<S.schedule.length){
-    const row=$(`<div class="mini"></div>`);
-    const pause=$(`<button class="btn gold">${S.seasonPaused?'▶ Resume':'⏸ Pause'}</button>`);
-    const speed=$(`<button class="btn gold" style="flex:0 0 58px">${S.simRate}×</button>`);
-    const skip=$(`<button class="btn ghost">Skip ⏭</button>`);
-    pause.onclick=()=>{S.seasonPaused=!S.seasonPaused; render();};
-    speed.onclick=()=>{S.simRate=S.simRate>=2?1:2; LS.set('bag_speed',S.simRate); render();};
-    skip.onclick=()=>{clearTimeout(seasonTimer); while(S.evtIndex<S.schedule.length)playEvent(); S.screen='summary'; render();};
-    row.appendChild(pause); row.appendChild(speed); row.appendChild(skip); right.appendChild(row);
-    if(S.seasonPaused){
-      const nx=$(`<button class="btn red" style="margin-top:10px">Next Event ▸</button>`); nx.onclick=()=>render(); right.appendChild(nx);
+  // RIGHT — prominent live scorecard + controls
+  const myCut=(ce.roundsDone>=2 && !meLive.made);
+  const myPos=meLive._pos;
+  const topar=par(Math.round(meLive.total));
+  const dayCells=DAYS.map((L,i)=>{
+    const done=i<ce.roundsDone, isCut=(myCut&&i>=2), v=meLive.rounds[i];
+    const live=(i===ce.roundsDone-1 && !ce.done);
+    const txt=isCut?'–':(done?par(Math.round(v)):'·');
+    return `<div class="rdcell ${live?'live':''} ${(!done&&!isCut)?'empty':''}"><div class="rdlab">${L}</div><div class="rdval">${txt}</div></div>`;
+  }).join('');
+  let status, money='';
+  if(ce.done){ const o=ce.order.find(x=>x.p.you); status=o.pos==='CUT'?'Missed the cut':(o.pos===1?'🏆 Tournament won!':'Finished '+ord(o.pos)+(o.pos<=10?' · top 10':'')); if(o.money>0) money=`<span style="color:var(--gold)"> · +${fmt(o.money)}</span>`; }
+  else if(myCut){ status='Missed the cut — weekend off'; }
+  else { status=(ce.roundsDone>=4?'Final round':'Round '+ce.roundsDone+' of 4')+' · '+(myPos===1?'Leading':'currently '+ord(myPos)); }
+  right.appendChild($(`<div class="scorecard">
+    <div class="sc-head">
+      <div><div class="sc-name">${meLive.p.name}</div><div class="small muted" style="margin-top:2px">${evt.name}</div></div>
+      <div style="text-align:right"><div class="sc-pos" style="color:${myCut?'#e07a5f':(myPos===1?'var(--gold)':'var(--oncard)')}">${myCut?'CUT':ord(myPos)}</div>
+        <div class="sc-topar" style="color:${meLive.total<=0?'#35d6a0':'var(--oncard)'}">${topar}</div></div>
+    </div>
+    <div class="rounds">${dayCells}</div>
+    <div class="sc-status">${status}${money}</div>
+  </div>`));
+
+  // controls
+  const lastEvent=(S.evtIndex>=S.schedule.length-1);
+  const ctrl=$(`<div style="margin-top:12px"></div>`);
+  if(ce.done){
+    if(lastEvent){
+      const fin=$(`<button class="btn goldfill">Season Results ▸</button>`);
+      fin.onclick=()=>{clearTimeout(seasonTimer); S.screen='summary'; render();}; ctrl.appendChild(fin);
     } else {
-      seasonTimer=setTimeout(()=>{ if(S.screen==='season') render(); }, (evt.major?3600:2600)/S.simRate);
+      const nx=$(`<button class="btn red">Next Event ▸<span class="sub">${S.schedule[S.evtIndex+1].name}</span></button>`);
+      nx.onclick=()=>{clearTimeout(seasonTimer); advanceEvent(); render();}; ctrl.appendChild(nx);
     }
   } else {
-    const fin=$(`<button class="btn red">Season Results ▸</button>`);
-    fin.onclick=()=>{clearTimeout(seasonTimer); S.screen='summary'; render();}; right.appendChild(fin);
-    if(!S.seasonPaused) seasonTimer=setTimeout(()=>{ if(S.screen==='season'){S.screen='summary'; render();} }, (evt.major?3800:2800)/S.simRate);
+    ctrl.appendChild($(`<div class="small muted center" style="padding:6px 0">Playing out the tournament…</div>`));
+  }
+  const row=$(`<div class="mini" style="margin-top:10px"></div>`);
+  const auto=$(`<button class="btn ${S.autoSim?'teal':'gold'}">Auto Sim · ${S.autoSim?'On':'Off'}</button>`);
+  auto.onclick=()=>{S.autoSim=!S.autoSim; LS.set('bag_autosim',S.autoSim); track('autosim_toggle',{on:S.autoSim}); render();};
+  const skip=$(`<button class="btn ghost">Skip to End ⏭</button>`);
+  skip.onclick=skipToEnd;
+  row.appendChild(auto); row.appendChild(skip); ctrl.appendChild(row);
+  right.appendChild(ctrl);
+
+  // scheduling
+  if(reduce){
+    if(!ce.done){ while(!ce.done) simNextRound(); render(); return; }
+    if(S.autoSim){ advanceEvent(); render(); return; }
+  } else if(!ce.done){
+    seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ simNextRound(); render(); } }, ROUND_DELAY);
+  } else if(S.autoSim){
+    seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ advanceEvent(); render(); } }, EVENT_PAUSE);
   }
 }
 function roundsRow(o){
