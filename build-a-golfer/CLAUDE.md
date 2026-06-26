@@ -327,6 +327,22 @@ allows Google Fonts, or self-host Anton.*
   - Smaller/raised header (wordmark 39px, tighter band).
   Verified desktop (1366) + mobile (412), zero page errors.
 
+- 2026-06-26: Full-bleed unification + premium polish (build-a-player.com
+  inspiration: "just a site, not a box" + color/polish).
+  - Collapsed the cream header band + green panel into **one full-bleed deep-green
+    surface** top to bottom (page bg = green with a top spotlight + bottom
+    vignette; `.card` transparent; gold edge removed). Header (crest, serif
+    wordmark — "BUILD A" cream / "GOLFER" gold, divider, double rule, Player/Reset
+    pills) now sits directly on the green. No boxed card. Cream lives on as
+    text/accent, gold accents retained for the Masters classiness.
+  - **Premium depth**: layered soft shadows + inset highlights on buttons
+    (replaced the flat hard offset shadows), richer gold/teal/red gradients,
+    soft shadows on panels, and a background spotlight/vignette for dimension.
+  - Recolored header crest/icons/rule for the green surface.
+  Verified desktop (1366) + mobile (412), zero page errors.
+  NOTE: build-a-player.com itself is Cloudflare-blocked to automated access;
+  matched it from the owner's screenshots.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
