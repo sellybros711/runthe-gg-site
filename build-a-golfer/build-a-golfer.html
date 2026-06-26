@@ -851,6 +851,22 @@ function ensureWorld(){ if(S.daily) return null;
 function worldField(n){ const w=ensureWorld(); if(!w) return null;
   return w.active.slice().sort((a,b)=>b.lov-a.lov).slice(0,n)
     .map(g=>{const o={name:g.name,skill:g.lov}; SKK.forEach(s=>o[s]=g['l_'+s]); return o;}); }
+/* ---- YOUR golfer's bounded career: age, decline from year 15, retirement (spec §3-4) ---- */
+const ENTRY_AGE=22, DECLINE_START_YEAR=15, HARD_RETIRE_AGE=55;
+const DECLINE_RATE={dist:1.8,acc:0.9,app:1.1,sht:0.8,scr:0.8,bnk:0.8,put:0.9,clu:0.4};
+function playerAge(){ return ENTRY_AGE + ((S.year||1)-1); }
+function applyPlayerDecline(){   // erodes your bag once per year from DECLINE_START_YEAR; re-spins offset it
+  if((S.year||1) < DECLINE_START_YEAR) return;
+  const accel = 1 + Math.max(0,(S.year-DECLINE_START_YEAR)-4)*0.12;
+  CATS.forEach(c=>{ const sl=S.slots[c.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[c.k]*accel)); });
+}
+function playerRetires(){   // rolled when you try to continue; uses the age you just finished at
+  const age=playerAge();
+  if(age>=HARD_RETIRE_AGE) return true;
+  const ov=Math.round(buildPlayer().skill);
+  const rng=mulberry32(((((S.careerSeed||1)>>>0)^0x7f4a7c15)+(S.year||1)*0x85ebca77)>>>0);
+  return rng() < pRetire(age, ov);
+}
 /* golfer customization palettes */
 const SKINS=[
   {id:'light', m:'#f0c6a4', s:'#e0ad84'},
@@ -996,7 +1012,7 @@ function render(){
   if(S.overlay==='confirmReset') overlayConfirmReset(screen);
   if(S.overlay==='about') overlayAbout(screen);
   if(S.overlay==='privacy') overlayPrivacy(screen);
-  ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap})[S.screen]();
+  ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd})[S.screen]();
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
   _lastView=view;
   // keep your place when re-rendering the same view (e.g. picking customization swatches);
@@ -1954,6 +1970,7 @@ function scrSummary(){
     track('season_finished',{ovr,net:Math.round(ec.net),gross:Math.round(ec.gross),wins:t.wins,majors:t.majors,moneyRank,N,daily:S.daily,year:S.year||1});
     // post to the public leaderboard (no-op unless signed in + backend live; daily excluded)
     if(!S.daily) sbSubmitSeason({golfer:me.name,ovr,year:S.year||1,earnings:t.money,net:ec.net,wins:t.wins,majors:t.majors,
+      careerId:(S.careerSeed!=null?String(S.careerSeed):null),
       skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))});
     if(!S.daily) saveCareer();   // auto-save the franchise so it can be resumed from home
     clearResume();   // golfer's season is in the books — no longer resumable
@@ -1962,7 +1979,7 @@ function scrSummary(){
     LS.set('bag_daily',{date:S.dailySeed,done:true,result:{name:me.name,ovr,net:ec.net,money:t.money,moneyRank,N,wins:t.wins,majors:t.majors,best:t.best}});}
   add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':(S.year>1?('Career Mode · Year '+S.year+' complete'):'Season complete')}</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':('Year '+(S.year||1)+' · ')}${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
+  add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':('Year '+(S.year||1)+' · Age '+(ENTRY_AGE+((S.year||1)-1))+' · ')}${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
   const netCol=ec.net>=0?'#35d6a0':'#E14A33';
   add($(`<div class="center" style="margin-bottom:6px">
     <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Net profit</div>
@@ -2103,24 +2120,38 @@ function scrSummary(){
     const again=$(`<button class="btn red">Build Another Golfer</button>`);
     again.onclick=()=>{reset();render();}; right.appendChild(again);
   } else {
-    const cont=$(`<button class="btn goldfill">Continue to Year ${(S.year||1)+1} ▸<span class="sub">Career Mode · off-season tune-up, then a new season</span></button>`);
+    const nextAge=ENTRY_AGE+(S.year||1);   // age you'd play next season at
+    const declineSoon=(S.year||1)>=DECLINE_START_YEAR-1;
+    const cont=$(`<button class="btn goldfill">Continue to Year ${(S.year||1)+1} ▸<span class="sub">Career Mode · age ${nextAge}${declineSoon?' · the body is aging':''} · off-season, then a new season</span></button>`);
     cont.onclick=continueFranchise; right.appendChild(cont);
     const save=$(`<button class="btn gold" style="margin-top:10px">Save Career & Exit<span class="sub">Resume your career from the home screen anytime</span></button>`);
     save.onclick=()=>{ if(saveCareer()){ track('career_saved_exit',{year:S.year||1}); toast('Career saved — resume it from the home screen'); reset(); render(); } };
     right.appendChild(save);
-    const retire=$(`<button class="btn ghost" style="margin-top:10px">Retire — Build New Golfer</button>`);
-    retire.onclick=()=>{clearCareerSave();reset();render();}; right.appendChild(retire);
+    const retire=$(`<button class="btn ghost" style="margin-top:10px">Retire — End Career</button>`);
+    retire.onclick=()=>endCareer('chose'); right.appendChild(retire);
   }
 }
 function continueFranchise(){
+  if(playerRetires()){ endCareer('age'); return; }   // your golfer's career is over → ceremony
   S.year=(S.year||1)+1;
   ensureWorld(); advanceWorld(S.world);   // age the living world one year (retire/rookies); spec §2-5
+  applyPlayerDecline();                    // your bag erodes from year 15 (re-spins fight it)
   S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false;
-  // off-season tune-up: re-spin up to 3 skills, 2 passes, must change at least one
+  // off-season tune-up: re-spin to swap fresh skills in (now also to repair age decline)
   S.offseason={changes:0,maxChanges:3,reSpins:2}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
-  track('offseason_start',{year:S.year});
+  track('offseason_start',{year:S.year,age:playerAge()});
   S.screen='offseason'; render();
 }
+function endCareer(reason){
+  saveCareer();   // keep the final state addressable
+  if(S.career){ const c=S.career; S.careerEnd={reason,years:c.seasons.length,age:playerAge(),
+    money:c.money,net:c.net,wins:c.wins,majors:c.majors,top10:c.top10,
+    best: c.seasons.reduce((m,s)=>Math.max(m,s.money),0),
+    bestFin: c.best}; }
+  track('career_ended',{reason,years:(S.career&&S.career.seasons.length)||1,age:playerAge()});
+  S.careerOver=true; S.screen='careerend'; render();
+}
+function newCareer(){ clearCareerSave(); reset(); render(); }
 function finishOffseason(){ track('offseason_done',{changes:S.offseason.changes}); startSeason(false); }
 function offSpin(){ if(S.current||S.spinning)return; reveal(); }
 function offReSpin(){ if(S.offseason.reSpins<=0)return; S.offseason.reSpins--; track('offseason_respin'); reveal(); }
@@ -2241,6 +2272,55 @@ function scrRecap(){
   add($(`<div style="height:14px"></div>`));
   const back=$(`<button class="btn red">‹ Back to results</button>`); back.onclick=()=>{S.screen='summary';render();}; add(back);
 }
+/* ---------- career-end ceremony (bounded career → reset) ---------- */
+function scrCareerEnd(){
+  const c=S.career||{seasons:[],money:0,net:0,wins:0,majors:0,top10:0,best:99,winsList:[]};
+  const e=S.careerEnd||{years:c.seasons.length,age:playerAge(),money:c.money,net:c.net,wins:c.wins,majors:c.majors,best:0,bestFin:c.best};
+  const ccol=c.net>=0?'#35d6a0':'#E14A33';
+  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">${e.reason==='age'?'🏁 A career for the ages':'🏁 Career complete'}</span></div>`));
+  add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${esc(S.name||'Your Golfer')}</h1>`));
+  add($(`<p class="lede center" style="margin-bottom:10px">Retired at age ${e.age} · ${e.years} season${e.years===1?'':'s'} on tour · ${c.majors} major${c.majors===1?'':'s'}</p>`));
+  add($(`<div class="center" style="margin-bottom:8px">
+    <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Career net worth</div>
+    <div class="mono" style="font-weight:800;font-size:38px;color:${ccol};margin-top:4px">${fmtSigned(c.net)}</div>
+    <div class="small muted" style="margin-top:2px">${fmt(c.money)} earned across ${e.years} season${e.years===1?'':'s'}</div></div>`));
+  const tiles=$(`<div class="tiles four"></div>`);
+  tiles.appendChild(tile('Career earnings',fmt(c.money),true));
+  tiles.appendChild(tile('Wins',c.wins+''));
+  tiles.appendChild(tile('Majors',c.majors+''));
+  tiles.appendChild(tile('Top 10s',c.top10+''));
+  tiles.appendChild(tile('Best season',fmt(e.best||0),true));
+  tiles.appendChild(tile('Best finish',c.best===99?'—':(c.best===1?'WIN':'T'+c.best)));
+  tiles.appendChild(tile('Seasons',e.years+''));
+  tiles.appendChild(tile('Retired age',e.age+''));
+  add(tiles);
+  // wins list
+  const wl=(c.winsList||[]);
+  add($(`<h2 class="center" style="margin:14px 0 8px;font-size:15px">${wl.length?('Tournament wins · '+wl.length):'No tournament wins'}</h2>`));
+  if(wl.length){
+    const wb=$(`<div class="board" style="max-width:520px;margin:0 auto"></div>`);
+    wl.slice().sort((a,b)=>a.year-b.year).forEach(w=>wb.appendChild($(`<div class="lb" style="grid-template-columns:30px 1fr 54px">
+      <span class="pos" style="color:var(--gold)">${w.major?'★':'🏆'}</span>
+      <span class="pl">${esc(w.name)}${w.major?' <span class="small muted">major</span>':''}</span>
+      <span class="mny small muted">Yr ${w.year}</span></div>`)));
+    add(wb);
+  }
+  // career share card
+  const careerVals=CATS.map(x=> S.slots[x.k]? S.slots[x.k].value : REPLACEMENT);
+  const cv=document.createElement('canvas'); cv.style.cssText='width:100%;max-width:300px;display:block;margin:16px auto 4px;border-radius:14px;border:1px solid var(--line)';
+  drawCareerCard(cv,{name:S.name||'Your Golfer',ovr:Math.round(buildPlayer().skill),years:e.years,money:c.money,net:c.net,wins:c.wins,majors:c.majors,cRank:0,cN:0},careerVals);
+  add(cv);
+  const share=`RUNTHETOUR CAREER — ${S.name||'Your Golfer'}\nRetired age ${e.age} · ${e.years} seasons · net worth ${fmtSigned(c.net)}\n${c.wins}W · ${c.majors} majors · ${fmt(c.money)} earned\nRunThe.GG`;
+  const row=$(`<div class="mini" style="margin-top:10px;max-width:520px;margin-left:auto;margin-right:auto"></div>`);
+  const sh=$(`<button class="btn gold">↗ Share Career</button>`);
+  sh.onclick=()=>{track('career_end_shared',{years:e.years}); shareCard(cv,share,S.name,'career');};
+  const dl=$(`<button class="btn gold">⤓ Save Card</button>`);
+  dl.onclick=()=>{cv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=((S.name||'golfer').replace(/\s+/g,'-'))+'-career.png';a.click();URL.revokeObjectURL(u);});};
+  row.appendChild(dl); row.appendChild(sh); add(row);
+  add($(`<div class="sep" style="margin:16px auto;max-width:520px"></div>`));
+  const nc=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Start a New Career ▸<span class="sub">A brand-new 2026 universe — fresh story</span></button>`);
+  nc.onclick=newCareer; add(nc);
+}
 function tile(k,v,gold){return $(`<div class="tile"><div class="k">${k}</div><div class="v ${gold?'':'cream'}">${v}</div></div>`);}
 function moneyRow(r,pos,you){return $(`<div class="lb ${you?'you':''}" style="grid-template-columns:34px 1fr 92px">
   <span class="pos">${pos===1?'🏆':pos}</span><span class="pl">${r.n}</span>
@@ -2278,7 +2358,7 @@ async function sbSubmitSeason(s){
   if(!sbUser){ _pendingSeason=s; return; }   // post as soon as they sign in
   try{
     await sb.rpc('runtour_submit_season',{p_golfer:s.golfer,p_ovr:s.ovr,p_year:s.year,
-      p_earnings:Math.round(s.earnings),p_net:Math.round(s.net),p_wins:s.wins,p_majors:s.majors,p_skills:s.skills});
+      p_earnings:Math.round(s.earnings),p_net:Math.round(s.net),p_wins:s.wins,p_majors:s.majors,p_skills:s.skills,p_career_id:s.careerId||null});
     lbCache=null;   // force a refresh next time the board opens
   }catch(e){}
 }

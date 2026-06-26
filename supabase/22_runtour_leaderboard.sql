@@ -32,6 +32,7 @@ create table if not exists public.runtour_scores (
   user_id         uuid not null references auth.users(id) on delete cascade,
   display_name    text not null,
   golfer_name     text not null default 'Your Golfer',
+  career_id       text,                          -- one bounded career = one universe (career_seed)
   ovr             int  not null,
   year            int  not null default 1,
   season_earnings bigint not null,
@@ -41,6 +42,7 @@ create table if not exists public.runtour_scores (
   skills          jsonb,
   created_at      timestamptz not null default now()
 );
+alter table public.runtour_scores add column if not exists career_id text;   -- safe if table pre-existed
 
 create index if not exists runtour_scores_earn_idx on public.runtour_scores (season_earnings desc);
 create index if not exists runtour_scores_user_idx on public.runtour_scores (user_id);
@@ -56,14 +58,15 @@ create policy runtour_scores_public_read on public.runtour_scores for select usi
 -- submit a finished season
 -- ---------------------------------------------------------------------------
 create or replace function public.runtour_submit_season(
-  p_golfer   text,
-  p_ovr      int,
-  p_year     int,
-  p_earnings bigint,
-  p_net      bigint,
-  p_wins     int   default 0,
-  p_majors   int   default 0,
-  p_skills   jsonb default null
+  p_golfer    text,
+  p_ovr       int,
+  p_year      int,
+  p_earnings  bigint,
+  p_net       bigint,
+  p_wins      int   default 0,
+  p_majors    int   default 0,
+  p_skills    jsonb default null,
+  p_career_id text  default null
 ) returns bigint
 language plpgsql security definer set search_path = public as $$
 declare
@@ -86,11 +89,12 @@ begin
     raise exception 'set a username on RunThe.GG first';
   end if;
   insert into public.runtour_scores(
-    user_id, display_name, golfer_name, ovr, year,
+    user_id, display_name, golfer_name, career_id, ovr, year,
     season_earnings, season_net, wins, majors, skills)
   values (
     v_uid, v_name,
     coalesce(nullif(left(regexp_replace(coalesce(p_golfer,''), '[<>&]', '', 'g'), 24), ''), 'Your Golfer'),
+    left(coalesce(p_career_id,''),40),
     v_ovr, v_year,
     v_earn, v_net, greatest(0, coalesce(p_wins, 0)), greatest(0, coalesce(p_majors, 0)), p_skills)
   returning id into v_id;
@@ -120,24 +124,32 @@ $$;
 -- ---------------------------------------------------------------------------
 -- career board: total earnings across all of a player's seasons, top N
 -- ---------------------------------------------------------------------------
+-- Career board = each player's BEST single bounded career (sum within one career_id),
+-- so completed careers are comparable and multiple careers don't merge (spec §4/§7).
+-- Rows with no career_id (legacy/one-off) are each treated as their own career.
 create or replace function public.runtour_career_board(p_limit int default 50)
 returns table(rank int, user_id uuid, display_name text, seasons int,
               career_earnings bigint, career_net bigint, wins int, majors int)
 language sql stable security definer set search_path = public as $$
-  with agg as (
+  with per_career as (
     select s.user_id,
-           max(s.display_name)        as display_name,
-           count(*)::int              as seasons,
+           coalesce(s.career_id, 'legacy:'||s.id::text) as cid,
+           max(s.display_name)            as display_name,
+           count(*)::int                  as seasons,
            sum(s.season_earnings)::bigint as career_earnings,
            sum(s.season_net)::bigint      as career_net,
-           sum(s.wins)::int           as wins,
-           sum(s.majors)::int         as majors
+           sum(s.wins)::int               as wins,
+           sum(s.majors)::int             as majors
     from runtour_scores s
-    group by s.user_id
+    group by s.user_id, coalesce(s.career_id, 'legacy:'||s.id::text)
+  ), best as (
+    select distinct on (user_id) user_id, display_name, seasons, career_earnings, career_net, wins, majors
+    from per_career
+    order by user_id, career_earnings desc
   )
   select (row_number() over (order by career_earnings desc))::int as rank,
          user_id, display_name, seasons, career_earnings, career_net, wins, majors
-  from agg
+  from best
   order by career_earnings desc
   limit greatest(1, least(200, coalesce(p_limit, 50)));
 $$;
@@ -147,4 +159,4 @@ $$;
 -- ---------------------------------------------------------------------------
 grant execute on function public.runtour_season_board(int)  to anon, authenticated;
 grant execute on function public.runtour_career_board(int)  to anon, authenticated;
-grant execute on function public.runtour_submit_season(text,int,int,bigint,bigint,int,int,jsonb) to authenticated;
+grant execute on function public.runtour_submit_season(text,int,int,bigint,bigint,int,int,jsonb,text) to authenticated;
