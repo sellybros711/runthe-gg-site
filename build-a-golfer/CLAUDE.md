@@ -343,6 +343,21 @@ allows Google Fonts, or self-host Anton.*
   NOTE: build-a-player.com itself is Cloudflare-blocked to automated access;
   matched it from the owner's screenshots.
 
+- 2026-06-26: Course-fills-screen, new golfer pose, share-card restyle (owner
+  feedback).
+  - **Title golf course is now full-bleed**: `.scene` is `position:fixed` over
+    the whole viewport (header/content lifted above via z-index) so the dusk
+    course IS the entire background on the title.
+  - **Golfer redrawn** as a side-profile **address stance**: right-handed faces
+    right with a widened stance and the club out front to a ball; left-handed
+    mirrors it (faces left). Proper **golf cap** (brim) instead of the
+    fedora-looking hat. Still driven by the look colours (skin/polo/pants).
+  - Removed the clipboard emoji from "Full Season Recap".
+  - **Share card restyled** to the green/gold Masters look: deep-green bg + gold
+    frame, Cinzel serif title (BUILD A cream / GOLFER gold) and name, teal radar,
+    cream/gold stats, "RunThe.GG" in serif.
+  Verified, zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
