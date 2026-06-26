@@ -750,7 +750,7 @@ let S={};
 function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);S={screen:'title',mode:'easy',revealed:new Set(),drawRng:Math.random,reSpins:2,
   slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get('bag_name',''),
   look:Object.assign({},DEFLOOK,LS.get('bag_look',{})),year:1,career:null,
-  schedule:[],evtIndex:0,season:null,curEvt:null,overlay:null,seasonPaused:false,recorded:false,recapEvent:null,
+  schedule:[],evtIndex:0,season:null,curEvt:null,fieldRoster:null,overlay:null,seasonPaused:false,recorded:false,recapEvent:null,
   autoSim:LS.get('bag_autosim',false),simRate:LS.get('bag_speed',1),daily:false,dailySeed:null,dailyStored:false};}
 reset();
 if(LS.get('bag_dark',false))document.body.classList.add('dark');
@@ -1384,7 +1384,9 @@ function startSeason(majorsOnly){
   S.schedule=(majorsOnly&&!S.daily)?SCHEDULE.filter(e=>e.major):SCHEDULE.slice(); S.evtIndex=0;
   RNG = S.daily ? mulberry32((S.dailySeed^0x51ed2701)>>>0) : Math.random;
   const me=buildPlayer();
-  const field=fieldSample(FIELDSIZE-1).map(g=>({name:g.name,skill:g.skill,clu:g.clu,you:false}));
+  // persist the field across franchise years so career earnings accumulate vs the same golfers
+  if(!S.fieldRoster) S.fieldRoster=fieldSample(FIELDSIZE-1).map(g=>({name:g.name,skill:g.skill,clu:g.clu}));
+  const field=S.fieldRoster.map(g=>({name:g.name,skill:g.skill,clu:g.clu,you:false}));
   field.push(me);
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0}]))};
   S.curEvt=null;
@@ -1641,6 +1643,10 @@ function scrSummary(){
     S.career.money+=t.money; S.career.net+=ec.net; S.career.wins+=t.wins; S.career.majors+=t.majors; S.career.top10+=t.top10;
     if(t.best<S.career.best)S.career.best=t.best;
     S.career.seasons.push({year:S.year||1,net:ec.net,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank});
+    // accumulate career earnings vs the (persistent) field for the multi-year money list
+    S.career.fieldMoney=S.career.fieldMoney||{};
+    Object.entries(S.season.totals).forEach(([n,v])=>{ S.career.fieldMoney[n]=(S.career.fieldMoney[n]||0)+v.money; });
+    S.summaryTab='season';
     track('season_finished',{ovr,net:Math.round(ec.net),gross:Math.round(ec.gross),wins:t.wins,majors:t.majors,moneyRank,N,daily:S.daily,year:S.year||1});
     clearResume();   // golfer's season is in the books — no longer resumable
   }
@@ -1676,21 +1682,43 @@ function scrSummary(){
   const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
   cols.appendChild(left); cols.appendChild(right); add(cols);
 
-  left.appendChild($(`<h2 style="margin:2px 0 8px">Season money list</h2>`));
+  const hasCareer = !S.daily && S.career && S.career.seasons.length>1;
+  const tab = hasCareer ? (S.summaryTab||'season') : 'season';
+  // career standings (cumulative vs the persistent field)
+  const careerList=Object.entries(S.career&&S.career.fieldMoney||{}).map(([n,money])=>({n,money})).sort((a,b)=>b.money-a.money);
+  const cRank=careerList.findIndex(r=>r.n===me.name)+1;
+  if(hasCareer){
+    const head=$(`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:2px 0 8px"></div>`);
+    head.appendChild($(`<h2 style="margin:0">${tab==='career'?`Career money list · ${S.career.seasons.length} yrs`:'This season'}</h2>`));
+    const seg=$(`<div class="mini" style="margin:0;width:auto;flex:0 0 auto"></div>`);
+    const t1=$(`<button class="btn ${tab==='season'?'gold':'ghost'}" style="font-size:11px;padding:6px 11px;width:auto">This Season</button>`);
+    const t2=$(`<button class="btn ${tab==='career'?'gold':'ghost'}" style="font-size:11px;padding:6px 11px;width:auto">Career</button>`);
+    t1.onclick=()=>{S.summaryTab='season';render();}; t2.onclick=()=>{S.summaryTab='career';render();};
+    seg.appendChild(t1); seg.appendChild(t2); head.appendChild(seg); left.appendChild(head);
+  } else {
+    left.appendChild($(`<h2 style="margin:2px 0 8px">Season money list</h2>`));
+  }
   const board=$(`<div class="board"></div>`);
-  byMoney.slice(0,10).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
-  if(moneyRank>10){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(byMoney[moneyRank-1],moneyRank,true));}
+  if(tab==='career'){
+    careerList.slice(0,10).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
+    if(cRank>10){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(careerList[cRank-1],cRank,true));}
+  } else {
+    byMoney.slice(0,10).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
+    if(moneyRank>10){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(byMoney[moneyRank-1],moneyRank,true));}
+  }
   left.appendChild(board);
   const recapBtn=$(`<button class="btn gold" style="margin-top:10px">Full Season Recap<span class="sub">Every event, leaderboard by leaderboard</span></button>`);
   recapBtn.onclick=()=>{S.recapEvent=null; S.screen='recap'; render();}; left.appendChild(recapBtn);
   if(!S.daily && S.career && S.career.seasons.length>1){
     const c=S.career, ccol=c.net>=0?'#35d6a0':'#E14A33';
-    left.appendChild($(`<h2 style="margin:16px 0 8px">Career · ${c.seasons.length} years</h2>`));
+    left.appendChild($(`<h2 style="margin:16px 0 8px">Career · ${c.seasons.length} years (through Year ${S.year})</h2>`));
     const ct=$(`<div class="tiles"></div>`);
     ct.appendChild($(`<div class="tile"><div class="k">Career net</div><div class="v" style="color:${ccol}">${fmtSigned(c.net)}</div></div>`));
     ct.appendChild(tile('Career money',fmt(c.money),true));
+    ct.appendChild(tile('Career rank',cRank+' / '+careerList.length));
     ct.appendChild(tile('Career wins',c.wins+''));
     ct.appendChild(tile('Career majors',c.majors+''));
+    ct.appendChild(tile('Best finish',bestTxt(c.best)));
     left.appendChild(ct);
     const yb=$(`<div class="board"></div>`);
     c.seasons.forEach(s=>yb.appendChild($(`<div class="lb" style="grid-template-columns:46px 1fr 96px">
@@ -1698,6 +1726,12 @@ function scrSummary(){
       <span class="pl">${s.wins}W · ${s.majors} maj · best ${bestTxt(s.best)}</span>
       <span class="mny" style="color:${s.net>=0?'#35d6a0':'#E14A33'}">${fmtSigned(s.net)}</span></div>`)));
     left.appendChild(yb);
+    const careerShare=`RUNTHETOUR CAREER — ${me.name}\n${c.seasons.length} years · ${fmt(c.money)} won · net ${fmtSigned(c.net)}\n${c.wins}W · ${c.majors} majors · career money rank #${cRank}/${careerList.length}\nRunThe.GG`;
+    const csBtn=$(`<button class="btn gold" style="margin-top:10px">↗ Share Career Stats</button>`);
+    csBtn.onclick=()=>{track('career_shared',{years:c.seasons.length});
+      if(navigator.share){navigator.share({text:careerShare}).catch(()=>{});}
+      else {navigator.clipboard?.writeText(careerShare); csBtn.textContent='Career copied ✓'; setTimeout(()=>csBtn.textContent='↗ Share Career Stats',1500);}};
+    left.appendChild(csBtn);
   }
 
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
