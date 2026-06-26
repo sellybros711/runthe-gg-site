@@ -507,6 +507,26 @@ allows Google Fonts, or self-host Anton.*
     §5 weekly `dg_transform.py` auto-refresh. DG_KEY must stay server-side
     (never committed/logged/sent to browser).
 
+- 2026-06-26: UI polish batch (owner screenshots).
+  - **Avatar fix** — redesigned `golferSVG` arm/head block so both arms rise
+    from the shoulders and converge cleanly at the grip (no broken loop/hole),
+    added a white glove + up-turned head, removed the stray chin-shadow blob.
+    Verified male / female / lefty across colorways.
+  - **Career section** — relabelled "Career net" → **Net worth** and
+    "Career money" → **Career earnings**; dropped the Best-finish tile for a
+    Top-10s tile and a new **Wins list** that names the actual tournaments won
+    across the career (accumulated in `S.career.winsList` with year + major
+    flag, populated from `S.season.results` in the record block).
+  - **Pull odds** — removed the open "Pull odds each spin" panel from the draft
+    screen; odds now live in the **How-to-Play** overlay, reached via a new
+    "How to play · pull odds" button on the draft screen.
+  - **Season recap** — added a season stat strip (wins / majors / top 10s /
+    cuts made / best finish / money), gold-highlighted won events with
+    trophies, event type + purse subtitles and to-par results, plus a
+    winner/gap callout and prev/next navigation in the per-event detail.
+  - Verified end to end via a scripted two-year season (`recapcheck.js`): zero
+    page errors, winsList accumulates across years, all screens render.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
