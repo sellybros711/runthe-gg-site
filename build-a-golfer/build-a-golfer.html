@@ -408,6 +408,16 @@ function restoreResume(){const info=resumeInfo(); if(!info)return; const r=info.
   S.look=Object.assign({},DEFLOOK,r.look||{}); S.mode=r.mode||'easy'; S.year=r.year||1;
   S.daily=false; S.drawRng=Math.random; S.current=null;
   S.screen=(info.n>=8)?'build':'draft'; track('resume',{n:info.n}); render(); }
+/* ---------- Career Mode: persist a multi-season franchise to resume later ---------- */
+function saveCareer(){ if(S.daily||!S.career) return false;
+  LS.set('bag_careersave',{year:S.year||1, career:S.career, fieldRoster:S.fieldRoster||null,
+    slots:S.slots, name:S.name, look:S.look, ovr:Math.round(buildPlayer().skill), savedAt:Date.now()}); return true; }
+function careerSaveInfo(){ const r=LS.get('bag_careersave',null); return (r&&r.career)?r:null; }
+function clearCareerSave(){ LS.set('bag_careersave',null); }
+function resumeCareer(){ const r=careerSaveInfo(); if(!r) return; reset();
+  S.career=r.career; S.fieldRoster=r.fieldRoster||null; S.slots=r.slots||S.slots;
+  S.name=r.name||''; S.look=Object.assign({},DEFLOOK,r.look||{}); S.year=r.year||1; S.daily=false;
+  track('career_resume',{year:S.year}); continueFranchise(); }   // picks up at next year's off-season
 
 /* ---------- data ---------- */
 const CATS=[
@@ -1150,11 +1160,16 @@ function scrTitle(){
   }
   const stack=$(`<div class="stack"></div>`);
   const ri=resumeInfo();
+  const cs=careerSaveInfo();
+  if(cs){
+    const cb=$(`<button class="btn teal">Resume Career Mode<span class="sub">Year ${cs.year} done · ${esc(cs.name||'Your Golfer')} · OVR ${cs.ovr} · continue your career</span></button>`);
+    cb.onclick=resumeCareer; stack.appendChild(cb);
+  }
   if(ri){
-    const rb=$(`<button class="btn teal">Resume Your Golfer<span class="sub">${ri.n}/8 skills drafted · pick up where you left off</span></button>`);
+    const rb=$(`<button class="btn ${cs?'gold':'teal'}">Resume Your Golfer<span class="sub">${ri.n}/8 skills drafted · pick up where you left off</span></button>`);
     rb.onclick=restoreResume; stack.appendChild(rb);
   }
-  const go=$(`<button class="btn goldfill">${ri?'Start a New Golfer':'Step to the Tee Box'}<span class="sub">Build your golfer</span></button>`);
+  const go=$(`<button class="btn goldfill">${(ri||cs)?'Start a New Golfer':'Step to the Tee Box'}<span class="sub">Build your golfer</span></button>`);
   go.onclick=()=>{S.mode='easy';S.screen='setup';render();};
   stack.appendChild(go);
   const done=dailyDoneToday();
@@ -1843,11 +1858,12 @@ function scrSummary(){
     // post to the public leaderboard (no-op unless signed in + backend live; daily excluded)
     if(!S.daily) sbSubmitSeason({golfer:me.name,ovr,year:S.year||1,earnings:t.money,net:ec.net,wins:t.wins,majors:t.majors,
       skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))});
+    if(!S.daily) saveCareer();   // auto-save the franchise so it can be resumed from home
     clearResume();   // golfer's season is in the books — no longer resumable
   }
   if(S.daily&&!S.dailyStored){S.dailyStored=true; bumpStreak(); track('daily_completed',{net:Math.round(ec.net),moneyRank});
     LS.set('bag_daily',{date:S.dailySeed,done:true,result:{name:me.name,ovr,net:ec.net,money:t.money,moneyRank,N,wins:t.wins,majors:t.majors,best:t.best}});}
-  add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':(S.year>1?('Year '+S.year+' complete'):'Season complete')}</span></div>`));
+  add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':(S.year>1?('Career Mode · Year '+S.year+' complete'):'Season complete')}</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
   add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':('Year '+(S.year||1)+' · ')}${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
   const netCol=ec.net>=0?'#35d6a0':'#E14A33';
@@ -1990,10 +2006,13 @@ function scrSummary(){
     const again=$(`<button class="btn red">Build Another Golfer</button>`);
     again.onclick=()=>{reset();render();}; right.appendChild(again);
   } else {
-    const cont=$(`<button class="btn goldfill">Continue to Year ${(S.year||1)+1} ▸<span class="sub">Off-season tune-up, then a new season</span></button>`);
+    const cont=$(`<button class="btn goldfill">Continue to Year ${(S.year||1)+1} ▸<span class="sub">Career Mode · off-season tune-up, then a new season</span></button>`);
     cont.onclick=continueFranchise; right.appendChild(cont);
+    const save=$(`<button class="btn gold" style="margin-top:10px">Save Career & Exit<span class="sub">Resume your career from the home screen anytime</span></button>`);
+    save.onclick=()=>{ if(saveCareer()){ track('career_saved_exit',{year:S.year||1}); toast('Career saved — resume it from the home screen'); reset(); render(); } };
+    right.appendChild(save);
     const retire=$(`<button class="btn ghost" style="margin-top:10px">Retire — Build New Golfer</button>`);
-    retire.onclick=()=>{reset();render();}; right.appendChild(retire);
+    retire.onclick=()=>{clearCareerSave();reset();render();}; right.appendChild(retire);
   }
 }
 function continueFranchise(){
@@ -2010,7 +2029,7 @@ function offReSpin(){ if(S.offseason.reSpins<=0)return; S.offseason.reSpins--; t
 function offTake(k){ S.slots[k]={golfer:S.current.name,value:S.current[k]}; S.offseason.changes++; S.current=null; track('offseason_swap',{slot:k}); render(); }
 function scrOffseason(){
   const os=S.offseason||{changes:0,maxChanges:3,reSpins:2};
-  add($(`<div class="center"><span class="tag">Off-Season · Year ${S.year} prep</span></div>`));
+  add($(`<div class="center"><span class="tag">Career Mode · Off-Season · Year ${S.year} prep</span></div>`));
   add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tune your game</h1>`));
   add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag — up to <b>3 changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. Keep your bag as-is, or spin to improve it — but once you spin, you must take a skill before moving on.</p>`));
   const cols=$(`<div class="cols"></div>`);
