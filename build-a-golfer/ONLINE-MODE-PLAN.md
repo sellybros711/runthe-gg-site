@@ -112,6 +112,35 @@ Already-built seams make this small:
 4. Add accounts + streaks (optional, second pass).
 5. Only then consider linking from the live site / a public URL.
 
+## Cross-game achievements / badges (owner request)
+Goal: earn a badge in Build a Golfer, see it on your RunThePitch profile too —
+one unified achievement wall across all RunThe games.
+
+**Why it's parked:** badges currently live only in this device's
+`localStorage` (`bag_career.badges`). "Show in both games" requires (a) the
+shared account/backend above, AND (b) **editing the live RunThePitch app** to
+read/display cross-game badges — a change to the live site, gated on sign-off.
+
+**Recommended design (on the shared Supabase project):**
+- One `achievements` table: `(user_id, game, badge_id, earned_at)` — `game` is
+  `'golf' | 'pitch' | …`, `badge_id` is namespaced (`golf.major`, `pitch.galacticos`).
+- On unlock, each game upserts a row via a `grant_badge(game, badge_id)` RPC
+  (idempotent). Build a Golfer already computes unlocks in `recordSeason()` —
+  just add the RPC call there, keeping the local copy as the offline fallback.
+- A shared `get_badges(user_id)` returns every game's badges; each game renders
+  the full wall (its own + the others), grouped by game with a small game crest.
+- Badge **metadata** (emoji, title, description) can live client-side per game or
+  in a small `badge_defs` table so each game can render the others' badges
+  without hardcoding them.
+- RunThePitch's existing achievements (server-computed via `get_my_stats`) get
+  mirrored into the same table so both systems share one source of truth.
+
+**Two approvals needed (same as the account work):** deploy Build a Golfer, and
+modify the live RunThePitch app to share the profile + badge wall. Safe first
+step: build the achievements table + grant/get RPCs on a **separate** Supabase
+project and prove the Build-a-Golfer side; wire RunThePitch in only on a second,
+explicit approval.
+
 ## Open questions for the owners
 - Primary daily metric: **net profit** (recommended — it's the game's point) vs
   gross money vs FedEx points?
