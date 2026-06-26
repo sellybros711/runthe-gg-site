@@ -637,6 +637,22 @@ allows Google Fonts, or self-host Anton.*
   Spec + status saved to `runthetour-career-spec.md`. Deployed to /golf. Tuning knobs
   (WORLD_TARGET=150, field=top-119, rookies-to-refill) flagged for review.
 
+- 2026-06-26: **Career spec v2 → bounded aging career.** Owner shipped golfers.json
+  with `pot_band` + a revised spec (Career = one bounded life). Built: §2 per-career
+  potential roll (each universe develops young players differently, seeded by
+  career_seed); your golfer now has an **age (entry 22)** and **declines from year 15**
+  (per-skill, accelerating — off-season re-spins repair it; the year-over-year delta
+  strip shows the fade), **retires** (pRetire roll + hard age-55 + voluntary button) →
+  **career-end ceremony** (`scrCareerEnd`: net worth, earnings, wins/majors, best
+  season, win list, share card) → **Start a New Career** = fresh 2026 universe (world
+  reset). Leaderboard reworked for bounded careers: season rows carry `career_id`; the
+  Career board ranks each player's **best single career** (migration `supabase/22`
+  updated — still not applied). Owner decision: drafted 8 stay yours + re-spin upgrades
+  (no grow-into-peak entry); the arc comes from year-15 decline + retirement. Tuning
+  dials: DECLINE_START_YEAR=15, DECLINE_RATE, WORLD_TARGET=150, pot_band widths.
+  Validated headless: stable→decline→retire→ceremony→reset, stat invariants hold, field
+  ~82, zero errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
