@@ -446,6 +446,38 @@ allows Google Fonts, or self-host Anton.*
     (B), a global online leaderboard / accounts (already parked below), real
     privacy page for eventual AdSense, trimming font weights for first paint.
 
+- 2026-06-26 (gameplay + UX batch, CS7–CS15). Big iteration from owner
+  screenshots; all on the dev branch, nothing deployed.
+  - **CS7 title:** flashing skill chip → continuous horizontal scrolling skill
+    wheel; hero "Your Tour" → "Your Legend Starts Here" (no duplicate "Tour").
+  - **CS8 avatar:** redesigned leaner/taller/athletic (smaller head, tapered
+    torso, long legs) so it stops reading "childish" at small sizes. Keeps
+    skin/shirt/trousers/gender(ponytail)/lefty.
+  - **CS9 build screen:** wide 2-column on desktop (identity left, scorecard +
+    season pick right) so it fits one screen; radar enlarged (198→236px).
+  - **CS11 LIVE SEASON (headline):** tournaments now play out round-by-round
+    (Thu/Fri/Sat/Sun) with a re-sorting leaderboard and a prominent live
+    scorecard (position, to-par, day cells, current round highlighted). Default
+    is manual **Next Event**; **Auto Sim** toggle (persisted) auto-continues;
+    **Skip to End** jumps to results. Engine: beginEvent/simNextRound/
+    finalizeEvent/liveOrder; cut applied after Fri. Reduced-motion = instant.
+  - **CS12 share card:** removed "A RUNTHE.GG GAME" subtitle + "RunThe.GG"
+    footer; card = wordmark → radar → name/stats → stat cells.
+  - **CS13 summary:** wide layout, 4-up stat tiles, money list + share side by
+    side; fits ~one desktop screen.
+  - **CS14 off-season:** continuing a franchise year opens a tune-up — spin to
+    swap skills into your bag (green ▲ / red ▼ deltas), up to 3 changes, 2
+    re-spins, must change ≥1 (even if worse).
+  - **CS15 career stats/leaderboards:** franchise field is now **persistent**
+    across years (sampled once), so career earnings accumulate vs the same
+    golfers. Summary money list toggles **This Season** vs **Career**
+    (single-year vs multi-year leaderboard); career section shows the year,
+    career rank, year-by-year, and a **Share Career Stats** button.
+  - **CS10 UX dive:** filled the draft empty state with a Pull-Odds panel +
+    bigger Spin button. Full regression after the batch: rules/record/privacy,
+    full season, recap, offseason→Yr2, majors-only, daily all pass, zero errors.
+  - New analytics events: autosim_toggle, offseason_*, resume, career_shared.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
