@@ -124,7 +124,7 @@
   .spins{font-family:var(--mono); font-weight:700}
   .pips{display:flex; gap:5px; margin-top:6px; flex-wrap:wrap}
   .pip{width:9px;height:9px;border-radius:999px;background:var(--line)} .pip.on{background:var(--gold)}
-  .reel{height:118px; border-radius:16px; border:1px solid var(--line);
+  .reel{height:92px; border-radius:16px; border:1px solid var(--line);
     background:radial-gradient(120% 100% at 50% 0%, #11375a, #0a1f30); display:flex; align-items:center;
     justify-content:center; overflow:hidden; position:relative}
   .reel .name{font-family:var(--display); font-weight:400; font-size:30px; text-align:center; padding:0 10px; color:var(--oncard); text-transform:uppercase; letter-spacing:.02em}
@@ -284,7 +284,7 @@ function startDaily(){
   const seed=todayKey(); reset();
   S.daily=true; S.dailySeed=seed; S.mode='daily';
   S.pool=seededShuffle(GOLFERS,seed);
-  S.screen='draft'; render();
+  S.screen='setup'; render();
 }
 
 /* ---------- data ---------- */
@@ -370,7 +370,7 @@ function simRound(p,{major,finalRd}){
   return base+gauss()*std;
 }
 function simEvent(evt,field){
-  const res=field.map(p=>{const r1=simRound(p,{major:evt.major}),r2=simRound(p,{major:evt.major});return {p,half:r1+r2};});
+  const res=field.map(p=>{const r1=simRound(p,{major:evt.major}),r2=simRound(p,{major:evt.major});return {p,half:r1+r2,r1,r2};});
   res.sort((a,b)=>a.half-b.half);
   const cut=res[Math.min(21,res.length-1)].half;
   res.forEach(o=>{o.made=o.half<=cut+1e-9; if(o.made){o.r3=simRound(o.p,{major:evt.major});o.r4=simRound(o.p,{major:evt.major,finalRd:true});} o.total=o.made?o.half+o.r3+o.r4:o.half;});
@@ -415,7 +415,7 @@ let S={};
 function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);S={screen:'title',mode:'easy',pool:GOLFERS.slice(),reSpins:2,
   slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get('bag_name',''),
   look:Object.assign({},DEFLOOK,LS.get('bag_look',{})),year:1,career:null,
-  schedule:[],evtIndex:0,season:null,overlay:null,seasonPaused:false,recorded:false,
+  schedule:[],evtIndex:0,season:null,overlay:null,seasonPaused:false,recorded:false,recapEvent:null,
   daily:false,dailySeed:null,dailyStored:false};}
 reset();
 if(LS.get('bag_dark',false))document.body.classList.add('dark');
@@ -487,7 +487,7 @@ function render(){
   if(S.overlay==='rules') overlayRules(screen);
   if(S.overlay==='record') overlayRecord(screen);
   if(S.overlay==='dailydone') overlayDailyDone(screen);
-  ({title:scrTitle,draft:scrDraft,build:scrBuild,season:scrSeason,summary:scrSummary})[S.screen]();
+  ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,season:scrSeason,summary:scrSummary,recap:scrRecap})[S.screen]();
   window.scrollTo({top:0});
 }
 function overlayRules(screen){
@@ -619,7 +619,7 @@ function scrTitle(){
   }
   const stack=$(`<div class="stack"></div>`);
   const go=$(`<button class="btn goldfill">Step to the Tee Box<span class="sub">Build your golfer · free play</span></button>`);
-  go.onclick=()=>{S.mode='easy';S.screen='draft';render();};
+  go.onclick=()=>{S.mode='easy';S.screen='setup';render();};
   stack.appendChild(go);
   const done=dailyDoneToday();
   const daily=$(`<button class="btn ${done?'gold':'teal'}" style="margin-top:10px">${done?'📅 Daily — Done ✓':'📅 Daily Challenge'}<span class="sub">${done?'View result · new wheel at midnight UTC':'Same wheel for everyone today'}</span></button>`);
@@ -650,6 +650,29 @@ function startRoll(){
 function toast(msg){
   const t=$(`<div style="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:30;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4)">${msg}</div>`);
   document.body.appendChild(t); setTimeout(()=>t.remove(),1800);
+}
+
+/* ---------- setup (create your golfer) ---------- */
+function scrSetup(){
+  add($(`<div class="center"><span class="tag">${S.daily?'Daily Challenge':'New golfer'}</span></div>`));
+  add($(`<h1 class="center" style="font-size:26px;margin:10px 0 2px">Create your golfer</h1>`));
+  add($(`<p class="lede center" style="margin-bottom:6px">Set your look, then spin to build the skills.</p>`));
+  const figwrap=$(`<div style="display:flex;justify-content:center;margin:2px 0 8px"></div>`);
+  const f=$(golferSVG()); f.style.width='120px'; f.style.height='190px'; f.style.filter='drop-shadow(0 5px 10px rgba(0,0,0,.4))';
+  figwrap.appendChild(f); add(figwrap);
+  add($(`<h2 style="margin:6px 0 4px">Name</h2>`));
+  const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${S.name}">`);
+  inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name);}; add(inp);
+  add($(`<div style="height:8px"></div>`));
+  add(handRow());
+  add(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
+  add(swatchRow('Shirt',POLOS,S.look.polo,'polo',o=>o.m));
+  add(swatchRow('Trousers',PANTS,S.look.pants,'pants',o=>o.a));
+  add($(`<div style="height:16px"></div>`));
+  const go=$(`<button class="btn goldfill">Start Drafting ▸<span class="sub">${S.daily?'Same wheel for everyone today':'Spin to build your golfer'}</span></button>`);
+  go.onclick=()=>{S.screen='draft';render();}; add(go);
+  const back=$(`<button class="btn ghost" style="margin-top:10px">‹ Back</button>`);
+  back.onclick=()=>{reset();S.screen='title';render();}; add(back);
 }
 
 /* ---------- draft ---------- */
@@ -758,7 +781,6 @@ function scrDraft(){
     <h2 style="margin:0">Draft your golfer</h2>
     <div class="pips">${pips}</div></div>
     <div class="spins"><span style="color:var(--gold)">${S.reSpins}</span> <span class="muted small">re-spins</span></div></div>`));
-  add(buildHero());
   add($(`<div class="reel ${S.spinning?'spinning':''}">
     <div class="name">${S.current?S.current.name:'Press spin'}</div>
     <div class="sub">${S.current?(S.current.era==='leg'?'Legend':'Current'):''}</div></div>`));
@@ -782,6 +804,8 @@ function scrDraft(){
     const spin=$(`<button class="btn teal" style="margin-top:14px">Spin the Wheel</button>`);
     spin.onclick=spin_; choice.appendChild(spin);
   }
+  add($(`<div style="height:12px"></div>`));
+  add(buildHero());
   add($(`<div style="height:8px"></div>`));
   add($(`<h2 style="margin:6px 0 8px">Your scorecard · ${filledCount()}/8</h2>`));
   const card=$(`<div class="card-grid"></div>`);
@@ -835,16 +859,6 @@ function scrBuild(){
   note+= holes? ` You left ${holes} slot${holes>1?'s':''} unfilled — they play as a tour journeyman. The field is full of complete golfers, so that hole is where weekends get lost.`
               : ` No empty slots — a complete bag. The only question is how high the ceiling goes.`;
   add($(`<div class="scout">${note}</div>`));
-  add($(`<div style="height:14px"></div>`));
-  add($(`<h2 style="margin:0 0 4px">Name your golfer</h2>`));
-  const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${S.name}">`);
-  inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name);}; add(inp);
-  add($(`<div style="height:14px"></div>`));
-  add($(`<h2 style="margin:0 0 2px">Customize your golfer</h2>`));
-  add(handRow());
-  add(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
-  add(swatchRow('Shirt',POLOS,S.look.polo,'polo',o=>o.m));
-  add(swatchRow('Trousers',PANTS,S.look.pants,'pants',o=>o.a));
   add($(`<div style="height:16px"></div>`));
   if(S.daily){
     add($(`<h2 style="margin:0 0 8px">Today's challenge</h2>`));
@@ -911,6 +925,7 @@ function scrSeason(){
   add(board);
   const result=(me.pos==='CUT')?'Missed cut':(me.pos===1?'WON':'T'+me.pos+(me.pos<=10?' · top 10':''));
   add($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b> · ${par(me.score)}</span><span style="color:var(--gold)">+${fmt(me.money)}</span></div>`));
+  add(roundsRow(me));
   add($(`<div style="height:14px"></div>`));
   if(S.evtIndex<S.schedule.length){
     const row=$(`<div class="mini"></div>`);
@@ -922,13 +937,20 @@ function scrSeason(){
     if(S.seasonPaused){
       const nx=$(`<button class="btn red" style="margin-top:10px">Next Event ▸</button>`); nx.onclick=()=>render(); add(nx);
     } else {
-      seasonTimer=setTimeout(()=>{ if(S.screen==='season') render(); }, evt.major?2400:1600);
+      seasonTimer=setTimeout(()=>{ if(S.screen==='season') render(); }, evt.major?3600:2600);
     }
   } else {
     const fin=$(`<button class="btn red">Season Results ▸</button>`);
     fin.onclick=()=>{clearTimeout(seasonTimer); S.screen='summary'; render();}; add(fin);
-    if(!S.seasonPaused) seasonTimer=setTimeout(()=>{ if(S.screen==='season'){S.screen='summary'; render();} }, evt.major?2600:1900);
+    if(!S.seasonPaused) seasonTimer=setTimeout(()=>{ if(S.screen==='season'){S.screen='summary'; render();} }, evt.major?3800:2800);
   }
+}
+function roundsRow(o){
+  const rd=[o.r1,o.r2,o.r3,o.r4], labs=['Thu','Fri','Sat','Sun'];
+  const cells=rd.map((r,i)=>`<div style="text-align:center;flex:1">
+    <div class="small muted" style="font-size:9px;letter-spacing:.12em">${labs[i].toUpperCase()}</div>
+    <div class="mono" style="font-weight:800;font-size:15px;color:${r==null?'var(--muted)':'var(--oncard)'}">${r==null?'–':par(Math.round(r))}</div></div>`).join('');
+  return $(`<div style="display:flex;gap:6px;background:#0a2740;border:1px solid var(--line);border-radius:11px;padding:8px 10px;margin-top:8px">${cells}</div>`);
 }
 function lbRow(o){
   const sc=o.pos==='CUT'?'CUT':par(o.score);
@@ -1048,6 +1070,8 @@ function scrSummary(){
   byMoney.slice(0,10).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
   if(moneyRank>10){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(byMoney[moneyRank-1],moneyRank,true));}
   add(board);
+  const recapBtn=$(`<button class="btn gold" style="margin-top:10px">📋 Full Season Recap<span class="sub">Every event, leaderboard by leaderboard</span></button>`);
+  recapBtn.onclick=()=>{S.recapEvent=null; S.screen='recap'; render();}; add(recapBtn);
   if(!S.daily && S.career && S.career.seasons.length>1){
     const c=S.career, ccol=c.net>=0?'#35d6a0':'#E14A33';
     add($(`<h2 style="margin:16px 0 8px">Career · ${c.seasons.length} years</h2>`));
@@ -1097,6 +1121,47 @@ function continueFranchise(){
   S.year=(S.year||1)+1;
   S.schedule=[]; S.evtIndex=0; S.season=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false;
   startSeason(false);
+}
+/* ---------- season recap ---------- */
+function scrRecap(){
+  const results=S.season.results;
+  if(S.recapEvent!=null){
+    const {evt,order}=results[S.recapEvent];
+    const me=order.find(o=>o.p.you);
+    const typeLbl=evt.major?'<span class="major">Major</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
+    add($(`<div class="evt-head"><div><div class="nm">${evt.name}</div>
+      <div class="kx">${typeLbl} · ${fmt(evt.purse)} purse</div></div>
+      <div class="kx reg">Event ${S.recapEvent+1}/${results.length}</div></div>`));
+    const board=$(`<div class="board ${evt.major?'major':''}"></div>`);
+    const top=order.slice(0,12);
+    top.forEach(o=>board.appendChild(lbRow(o)));
+    if(!top.includes(me)){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(lbRow(me));}
+    add(board);
+    const result=(me.pos==='CUT')?'Missed cut':(me.pos===1?'WON':'T'+me.pos);
+    add($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b> · ${par(me.score)}</span><span style="color:var(--gold)">${me.money>0?'+'+fmt(me.money):'—'}</span></div>`));
+    add(roundsRow(me));
+    add($(`<div style="height:14px"></div>`));
+    const back=$(`<button class="btn gold">‹ All events</button>`); back.onclick=()=>{S.recapEvent=null;render();}; add(back);
+    return;
+  }
+  add($(`<h1 class="center" style="font-size:24px;margin:2px 0 2px">Season recap</h1>`));
+  add($(`<p class="lede center" style="margin-bottom:12px">Tap any event to replay its leaderboard.</p>`));
+  const board=$(`<div class="board"></div>`);
+  results.forEach((r,i)=>{
+    const me=r.order.find(o=>o.p.you);
+    const fin=me.pos==='CUT'?'MC':(me.pos===1?'WON':'T'+me.pos);
+    const col=me.pos==='CUT'?'#e07a5f':(me.pos===1?'var(--gold)':'var(--oncard)');
+    const row=$(`<div class="lb" style="grid-template-columns:26px 1fr 50px 74px;cursor:pointer">
+      <span class="pos">${r.evt.major?'★':i+1}</span>
+      <span class="pl">${r.evt.name}</span>
+      <span class="sc" style="color:${col}">${fin}</span>
+      <span class="mny">${me.money>0?fmt(me.money):'—'}</span></div>`);
+    row.onclick=()=>{S.recapEvent=i;render();};
+    board.appendChild(row);
+  });
+  add(board);
+  add($(`<div style="height:14px"></div>`));
+  const back=$(`<button class="btn red">‹ Back to results</button>`); back.onclick=()=>{S.screen='summary';render();}; add(back);
 }
 function tile(k,v,gold){return $(`<div class="tile"><div class="k">${k}</div><div class="v ${gold?'':'cream'}">${v}</div></div>`);}
 function moneyRow(r,pos,you){return $(`<div class="lb ${you?'you':''}" style="grid-template-columns:34px 1fr 92px">

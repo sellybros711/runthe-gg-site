@@ -223,6 +223,21 @@ allows Google Fonts, or self-host Anton.*
     pointing at the live project). Safe rollout = separate project first.
   Verified end to end with headless Chromium, zero page errors.
 
+- 2026-06-26: Flow + season-viewing improvements (owner feedback).
+  - **Setup-first**: customization (name, skin, shirt, trousers, handedness)
+    moved to a new pre-draft `scrSetup` screen with a live figure preview —
+    you set your look before you start. Both free play and daily route through
+    it; removed customization from the build screen.
+  - **Compact draft**: the spin reel + attribute tiles now sit above the radar
+    (radar moved below) and the reel is shorter, so you pick without scrolling.
+  - **Round-by-round + slower pacing**: each event shows a Thu/Fri/Sat/Sun
+    mini-scorecard for your golfer; auto-advance slowed to ~2.6s (3.6s majors)
+    so results are readable. (`r1/r2` now stored in `simEvent`.)
+  - **Season recap** (`scrRecap`): a "Full Season Recap" button on the summary
+    opens an event-by-event list (finish + money, majors starred); tap any event
+    to replay its full leaderboard + your rounds.
+  Verified end to end with headless Chromium, zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
