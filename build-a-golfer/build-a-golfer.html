@@ -1,0 +1,758 @@
+<!-- Build a Golfer (RunTheGreen) — solo season · v2 · RunThePitch skin -->
+<title>Build a Golfer · RunThe.GG</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Semi+Condensed:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#F4E8D6; --peach:#F7DCCC;
+    --ink:#0C1B2E; --inkmut:#6b6256;
+    --teal:#0FA888; --gold:#EBA61F; --gold2:#c79320;
+    --red:#E14A33; --red2:#b8371f;
+    --cardA:#0d2740; --cardB:#0a1a2c;
+    --board:#0c3a32; --oncard:#F4E3C9; --muted:#7f95a8;
+    --line:rgba(244,227,201,.13);
+    --display:'Anton',Impact,'Arial Narrow',sans-serif;
+    --body:'Barlow Semi Condensed',system-ui,'Segoe UI',Roboto,sans-serif;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+    --pagebg:
+      radial-gradient(900px 460px at 82% 2%, var(--peach), transparent 58%),
+      radial-gradient(700px 460px at 8% 6%, #f5ecda, transparent 55%),
+      linear-gradient(180deg,#f3ebd9,#eef0e3);
+    --pageink:var(--ink); --pagemut:var(--inkmut); --pill:#fff; --pillb:rgba(0,0,0,.10);
+  }
+  body.dark{
+    --pagebg:radial-gradient(900px 500px at 80% 0%, #0e3b34, transparent 60%), linear-gradient(180deg,#07212f,#06151f);
+    --pageink:#F4E3C9; --pagemut:#9fb0bd; --pill:#0d2436; --pillb:rgba(244,227,201,.16);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--pagebg); background-attachment:fixed; color:var(--pageink);
+    font-family:var(--body); -webkit-font-smoothing:antialiased; min-height:100vh; line-height:1.4}
+  #app{max-width:520px; margin:0 auto; padding:14px 14px 40px}
+
+  /* ---- top bar + header ---- */
+  .topbar{display:flex; justify-content:space-between; align-items:center; margin:2px 2px 8px}
+  .icobtn{width:40px;height:40px;border-radius:12px;background:var(--pill);border:1px solid var(--pillb);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--pageink);font-size:18px;
+    box-shadow:0 1px 2px rgba(0,0,0,.06)}
+  .head{text-align:center; margin-bottom:8px}
+  .lockup{display:flex; align-items:center; justify-content:center; gap:12px}
+  .crest{width:52px;height:62px;display:block}
+  .wordmark{font-family:var(--display); font-style:italic; font-size:40px; line-height:.84;
+    letter-spacing:.005em}
+  .wordmark .a{color:var(--pageink)} .wordmark .b{color:var(--teal)}
+  .gtype{font-family:var(--body); font-weight:800; font-size:13px; letter-spacing:.14em;
+    color:var(--teal); margin-top:8px}
+  .pills{display:flex; gap:8px; justify-content:center; margin-top:12px}
+  .pill{background:var(--pill); border:1px solid var(--pillb); border-radius:999px; padding:8px 14px;
+    font-weight:700; font-size:13px; color:var(--pageink); cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.06)}
+
+  /* ---- the card ---- */
+  .card{position:relative; max-width:438px; margin:14px auto 0; border-radius:28px; overflow:hidden;
+    background:linear-gradient(180deg,var(--cardA),var(--cardB));
+    box-shadow:0 34px 60px -22px rgba(20,40,30,.5);}
+  .cardtop{height:5px; background:linear-gradient(90deg,#b9892a,var(--gold),#b9892a)}
+  .flagstrip{display:flex; gap:6px; padding:8px 10px; background:rgba(0,0,0,.22); overflow:hidden}
+  .flagstrip.bot{border-top:1px solid var(--line)} .flagstrip.top{border-bottom:1px solid var(--line)}
+  .ftrack{display:flex; gap:6px; animation:marq 26s linear infinite}
+  .flagstrip.bot .ftrack{animation-direction:reverse; animation-duration:30s}
+  .ftile{font-size:20px; line-height:1; width:34px; height:26px; border-radius:6px; background:#0a1626;
+    border:1px solid var(--line); display:flex; align-items:center; justify-content:center; flex:0 0 auto}
+  @keyframes marq{to{transform:translateX(-50%)}}
+  .screen{padding:18px 16px 20px; position:relative}
+
+  h1{font-family:var(--display); font-style:normal; font-weight:400; color:var(--oncard);
+    letter-spacing:.01em; line-height:.96; margin:6px 0; text-transform:uppercase; text-shadow:0 2px 18px rgba(0,0,0,.5)}
+  h2{font-family:var(--body); font-weight:800; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:0 0 10px}
+  p.lede{color:#d7e2ea; margin:0 0 16px}
+  .center{text-align:center}
+  .muted{color:var(--muted)} .small{font-size:12.5px}
+  .mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+  .tag{display:inline-block; font:800 10px/1 var(--body); letter-spacing:.18em; text-transform:uppercase;
+    color:var(--teal); border:1px solid var(--line); padding:6px 9px; border-radius:999px}
+
+  /* ---- buttons ---- */
+  .btn{appearance:none; cursor:pointer; display:block; width:100%; text-align:center;
+    font-family:var(--display); font-weight:400; letter-spacing:.03em; text-transform:uppercase;
+    font-size:21px; border-radius:14px; padding:15px 16px; border:0; color:#fff;
+    transition:transform .04s ease, filter .15s ease}
+  .btn .sub{display:block; font-family:var(--body); font-weight:800; font-size:10.5px; letter-spacing:.12em; opacity:.9; margin-top:6px}
+  .btn.red{background:linear-gradient(180deg,var(--red),var(--red2)); box-shadow:0 5px 0 #8f2c19}
+  .btn.red:active{transform:translateY(3px); box-shadow:0 2px 0 #8f2c19}
+  .btn.gold{background:#0a1626; color:var(--gold); border:2px solid var(--gold)}
+  .btn.teal{background:var(--teal); color:#04211c; box-shadow:0 5px 0 #0a6b58}
+  .btn.teal:active{transform:translateY(3px); box-shadow:0 2px 0 #0a6b58}
+  .btn.ghost{background:transparent; color:var(--oncard); border:1px solid var(--line); font-size:18px}
+  .btn:hover{filter:brightness(1.05)}
+  .btn:disabled{opacity:.45; cursor:not-allowed}
+  .btn:focus-visible, button:focus-visible, [tabindex]:focus-visible, input:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+  .mini{display:flex; gap:10px; margin-top:10px}
+  .mini .btn{font-size:14px; padding:12px}
+  .stack>*+*{margin-top:10px}
+
+  /* ---- title scene ---- */
+  .scene{position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none}
+  .coursebg{position:absolute; inset:0; width:100%; height:100%; display:block}
+  .sky{position:absolute; inset:0; background:linear-gradient(180deg,#0a2038 0%,#0b2742 40%,#0f3f30 58%,#0b3325 100%)}
+  .glow{position:absolute; top:-14%; width:62%; height:60%;
+    background:radial-gradient(closest-side, rgba(255,242,205,.18), transparent 70%); filter:blur(2px)}
+  .glow.l{left:-14%} .glow.r{right:-14%}
+  .green{position:absolute; left:50%; bottom:-6%; transform:translateX(-50%); width:160%; height:58%;
+    background:radial-gradient(120% 92% at 50% 100%, #257a4f 0%, #14512f 55%, transparent 76%)}
+  .ring{position:absolute; left:50%; bottom:2%; transform:translateX(-50%); border:1px solid rgba(255,255,255,.10); border-radius:50%}
+  .titlewrap{position:relative; z-index:1}
+  .hero{font-family:var(--display); font-style:italic; line-height:.9; letter-spacing:.01em; margin:4px 0 2px; text-transform:none; text-shadow:0 3px 22px rgba(0,0,0,.55)}
+  .hero .hr1{color:var(--oncard)} .hero .hr2{color:var(--teal)}
+  .trophy{width:54px; height:72px; display:block; margin:2px auto 4px; filter:drop-shadow(0 6px 14px rgba(235,166,31,.4))}
+  .scorechip{display:inline-flex; align-items:center; gap:14px; background:rgba(7,18,30,.82);
+    border:1px solid var(--gold); border-radius:12px; padding:9px 16px; margin:6px auto 16px;
+    font-family:var(--mono); font-weight:700; color:var(--oncard)}
+  .scorechip b{color:var(--gold); font-size:18px}
+  .scorechip .lab{font-family:var(--body); font-weight:800; letter-spacing:.12em; font-size:11px; color:var(--muted)}
+  .rollchip{display:inline-block; min-width:230px; background:rgba(7,18,30,.82); border:1px solid var(--gold);
+    border-radius:12px; padding:9px 18px; margin:6px auto 16px; text-align:center}
+  .rolllab{font-family:var(--body); font-weight:800; letter-spacing:.16em; font-size:10px; text-transform:uppercase; color:var(--muted)}
+  .rollval{font-family:var(--display); font-style:italic; font-size:22px; color:var(--gold); margin-top:4px;
+    transition:opacity .18s ease; letter-spacing:.01em}
+  .btn.goldfill{background:linear-gradient(180deg,#f4b840,var(--gold)); color:#1a1206; box-shadow:0 5px 0 #9a6e12}
+  .btn.goldfill:active{transform:translateY(3px); box-shadow:0 2px 0 #9a6e12}
+
+  /* ---- draft ---- */
+  .draftbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:12px}
+  .spins{font-family:var(--mono); font-weight:700}
+  .pips{display:flex; gap:5px; margin-top:6px; flex-wrap:wrap}
+  .pip{width:9px;height:9px;border-radius:999px;background:var(--line)} .pip.on{background:var(--gold)}
+  .reel{height:118px; border-radius:16px; border:1px solid var(--line);
+    background:radial-gradient(120% 100% at 50% 0%, #11375a, #0a1f30); display:flex; align-items:center;
+    justify-content:center; overflow:hidden; position:relative}
+  .reel .name{font-family:var(--display); font-weight:400; font-size:30px; text-align:center; padding:0 10px; color:var(--oncard); text-transform:uppercase; letter-spacing:.02em}
+  .reel .sub{position:absolute; bottom:10px; font:800 10px/1 var(--body); letter-spacing:.18em; text-transform:uppercase; color:var(--muted)}
+  .spinning .name{animation:flick .08s steps(1) infinite} @keyframes flick{50%{opacity:.34}}
+  .attrs{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px}
+  .attr{display:flex; justify-content:space-between; align-items:center; gap:8px; background:#0a2740;
+    border:1px solid var(--line); border-radius:11px; padding:11px 12px; cursor:pointer; text-align:left;
+    color:var(--oncard); font:inherit; width:100%}
+  .attr .lab{font-weight:600; font-size:12.5px; color:#cfdbe6}
+  .attr .val{font-family:var(--mono); font-weight:800; font-size:17px; color:var(--gold)}
+  .attr:hover:not(:disabled){border-color:var(--gold)} .attr:disabled{opacity:.32; cursor:not-allowed}
+
+  .buildhero{display:flex; align-items:center; gap:8px; background:linear-gradient(180deg,#0c3a32,#0a2740);
+    border:1px solid var(--line); border-radius:16px; padding:12px 10px; margin-bottom:14px}
+  .herofig{display:flex; flex-direction:column; align-items:center; gap:9px; flex:0 0 92px}
+  .golferfig{width:74px; height:118px; display:block; filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
+  .ovrbadge{display:flex; flex-direction:column; align-items:center; background:#0a1626; border:2px solid var(--gold); border-radius:12px; padding:6px 0; width:78px}
+  .ovrbadge .n{font-family:var(--mono); font-weight:800; font-size:30px; color:var(--gold); line-height:1; transition:color .2s}
+  .ovrbadge .l{font:800 9px/1 var(--body); letter-spacing:.18em; color:var(--muted); margin-top:4px}
+  .radarwrap{flex:1; min-width:0}
+  .radar{width:100%; height:auto; display:block}
+  .radar text{font-family:var(--body)}
+  .card-grid{display:grid; gap:7px; margin-top:12px}
+  .slot{display:flex; align-items:center; gap:10px; background:var(--board); border:1px solid var(--line);
+    border-radius:11px; padding:10px 12px}
+  .slot .lab{flex:1; font-size:12px; letter-spacing:.05em; text-transform:uppercase; color:#bfe7df}
+  .slot .who{font-size:12px; color:var(--oncard); opacity:.85}
+  .slot .v{font-family:var(--mono); font-weight:800; font-size:17px; color:var(--gold); min-width:32px; text-align:right}
+  .slot.empty .v, .slot.empty .lab{color:var(--muted)}
+
+  .ovr{display:flex; align-items:baseline; gap:10px; justify-content:center; margin:4px 0}
+  .ovr .num{font-family:var(--mono); font-weight:800; font-size:52px; color:var(--gold); line-height:1}
+  .ovr .lbl{font:800 11px/1 var(--body); letter-spacing:.2em; text-transform:uppercase; color:var(--muted)}
+  .scout{background:#0a2740; border:1px solid var(--line); border-radius:11px; padding:12px 14px; font-size:13px; color:#d2e1ea; margin-top:12px}
+  input.name{width:100%; background:#0a2740; border:1px solid var(--line); color:var(--oncard);
+    font:800 16px/1 var(--body); border-radius:11px; padding:13px 14px; margin-top:6px}
+
+  /* ---- leaderboard ---- */
+  .evt-head{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:10px}
+  .evt-head .nm{font-family:var(--display); font-weight:400; font-size:24px; text-transform:uppercase; color:var(--oncard); letter-spacing:.02em}
+  .kx{font:800 10px/1.3 var(--body); letter-spacing:.14em; text-transform:uppercase}
+  .major{color:var(--gold)} .sig{color:var(--teal)} .reg{color:var(--muted)}
+  .board{background:var(--board); border:1px solid var(--line); border-radius:13px; overflow:hidden}
+  .lb{display:grid; grid-template-columns:34px 1fr 56px 62px; gap:8px; align-items:center; padding:9px 12px; font-size:13px; border-top:1px solid rgba(244,227,201,.06)}
+  .lb:first-child{border-top:0}
+  .lb .pos{font-family:var(--mono); color:var(--muted); font-weight:700}
+  .lb .pl{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--oncard)}
+  .lb .sc{font-family:var(--mono); font-weight:800; text-align:right; color:var(--oncard)}
+  .lb .mny{font-family:var(--mono); text-align:right; color:#bfe7df; font-size:12px}
+  .lb.you{background:linear-gradient(90deg, rgba(235,166,31,.22), rgba(235,166,31,.05))}
+  .lb.you .pl{color:var(--gold); font-weight:800}
+  .lb.cut .sc{color:#e07a5f}
+  .sep{height:1px; background:repeating-linear-gradient(90deg,var(--line),var(--line) 6px,transparent 6px,transparent 12px)}
+  .runline{display:flex; justify-content:space-between; font-family:var(--mono); font-size:13px; padding:10px 2px 0; color:var(--oncard)}
+
+  .sbar{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line);
+    border:1px solid var(--line); border-radius:13px; overflow:hidden; margin-bottom:14px}
+  .sstat{background:#0a2740; padding:10px 11px}
+  .sstat.wide{grid-column:1 / -1; background:linear-gradient(90deg,#0c3a32,#0a2740)}
+  .sstat .k{font:800 9.5px/1 var(--body); letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
+  .sstat .v{font-family:var(--mono); font-weight:800; font-size:18px; margin-top:5px; color:var(--oncard)}
+  .sstat .v.gold{color:var(--gold); font-size:22px}
+  .screen.major-screen{background:radial-gradient(130% 70% at 50% -8%, rgba(235,166,31,.20), transparent 62%)}
+  .majorbanner{display:flex; align-items:center; justify-content:center; gap:8px;
+    background:linear-gradient(90deg,#5a3d0b,var(--gold),#5a3d0b); color:#1a1206;
+    font-family:var(--display); font-style:italic; font-size:17px; letter-spacing:.05em;
+    padding:9px; border-radius:12px; margin-bottom:12px; text-transform:uppercase;
+    box-shadow:0 0 18px rgba(235,166,31,.35)}
+  .board.major{border-color:var(--gold); box-shadow:0 0 0 1px rgba(235,166,31,.4)}
+
+  .tiles{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0}
+  .tile{background:#0a2740; border:1px solid var(--line); border-radius:12px; padding:12px 14px}
+  .tile .k{font:800 10px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+  .tile .v{font-family:var(--mono); font-weight:800; font-size:23px; margin-top:6px; color:var(--gold)}
+  .tile .v.cream{color:var(--oncard)}
+  .share{background:#0a2740; border:1px dashed var(--line); border-radius:11px; padding:12px 14px; font-family:var(--mono); font-size:12px; color:#d2e1ea; white-space:pre-wrap; margin-top:6px}
+
+  /* ---- overlay (rules) ---- */
+  .ov{position:absolute; inset:0; z-index:5; background:rgba(6,14,24,.93); padding:22px 18px; overflow:auto}
+  .ov h3{font-family:var(--display); font-weight:400; font-size:26px; color:var(--gold); margin:6px 0 12px; text-transform:uppercase}
+  .ov ol{margin:0 0 14px; padding-left:18px; color:#dbe6ee} .ov li{margin:7px 0}
+  .ov .x{position:absolute; top:14px; right:14px}
+
+  /* ---- footer ---- */
+  .foot{max-width:438px; margin:18px auto 0; text-align:center}
+  .footpills{display:flex; gap:10px; justify-content:center}
+  .footnote{margin-top:14px; font-weight:700; color:var(--pagemut)} .footnote b{color:var(--teal)}
+  .footlinks{margin-top:8px; color:var(--pagemut); font-size:13px}
+  .footlinks span{margin:0 7px}
+
+  @media (max-width:430px){ .attrs{grid-template-columns:1fr} .wordmark{font-size:34px} h1{font-size:30px} }
+  @media (prefers-reduced-motion:reduce){ .spinning .name{animation:none} .ftrack{animation:none} .btn,.attr{transition:none} }
+</style>
+
+<div id="app" aria-live="polite"></div>
+
+<script>
+const $=(h)=>{const t=document.createElement('template'); t.innerHTML=h.trim(); return t.content.firstChild;};
+const app=document.getElementById('app');
+let RT=app;
+let rollTimer=null;
+let seasonTimer=null;
+const add=(el)=>RT.appendChild(el);
+const fmt=(n)=>'$'+Math.round(n).toLocaleString('en-US');
+const par=(s)=>s===0?'E':(s>0?'+'+s:''+s);
+const ord=(n)=>{const v=n%100; if(v>=11&&v<=13)return n+'th'; return n+({1:'st',2:'nd',3:'rd'}[n%10]||'th');};
+
+/* ---------- data ---------- */
+const CATS=[
+  {k:'dist', short:'Driving Distance', w:0.11},
+  {k:'acc',  short:'Driving Accuracy', w:0.12},
+  {k:'app',  short:'Approach',         w:0.21},
+  {k:'sht',  short:'Short Game',       w:0.10},
+  {k:'scr',  short:'Scrambling',       w:0.08},
+  {k:'bnk',  short:'Bunker',           w:0.06},
+  {k:'put',  short:'Putting',          w:0.19},
+  {k:'clu',  short:'Composure',        w:0.13},
+];
+// [name, era, dist,acc,app,sht,scr,bnk,put,clu]
+const RAW=[
+  ['Scottie Scheffler','cur',90,88,99,90,88,86,80,95],
+  ['Rory McIlroy','cur',98,80,92,82,80,80,82,84],
+  ['Collin Morikawa','cur',82,97,97,80,80,82,78,86],
+  ['Xander Schauffele','cur',88,88,90,86,85,84,86,92],
+  ['Jon Rahm','cur',94,84,93,88,86,84,84,88],
+  ['Patrick Cantlay','cur',86,86,89,85,84,82,90,90],
+  ['Bryson DeChambeau','cur',99,72,86,82,80,80,84,88],
+  ['Jordan Spieth','cur',82,74,84,96,94,88,95,92],
+  ['Viktor Hovland','cur',88,84,94,74,76,76,82,84],
+  ['Justin Thomas','cur',88,80,92,86,85,84,82,88],
+  ['Brooks Koepka','cur',92,82,90,80,82,80,80,96],
+  ['Ludvig Åberg','cur',95,86,92,80,80,80,80,82],
+  ['Cameron Smith','cur',82,80,84,95,95,86,97,88],
+  ['Hideki Matsuyama','cur',86,84,96,84,84,84,78,84],
+  ['Tommy Fleetwood','cur',86,88,92,84,84,82,80,80],
+  ['Tony Finau','cur',94,80,88,82,80,80,78,80],
+  ['Justin Rose','cur',84,86,90,84,84,82,84,86],
+  ['Wyndham Clark','cur',93,78,86,80,80,78,82,82],
+  ['Tiger Woods','leg',92,88,97,95,96,90,96,99],
+  ['Jack Nicklaus','leg',90,86,94,86,88,84,92,98],
+  ['Seve Ballesteros','leg',86,70,84,99,99,97,90,92],
+  ['Phil Mickelson','leg',90,74,88,97,96,95,86,86],
+  ['Ben Hogan','leg',84,98,99,82,82,82,80,94],
+  ['Sam Snead','leg',90,90,92,88,88,86,84,88],
+  ['Arnold Palmer','leg',92,80,88,86,88,82,86,94],
+  ['Gary Player','leg',80,86,86,92,95,99,88,92],
+  ['Nick Faldo','leg',84,94,93,84,86,82,86,92],
+  ['Greg Norman','leg',95,84,93,84,82,82,80,72],
+  ['Tom Watson','leg',86,86,90,94,95,88,88,94],
+  ['Lee Trevino','leg',80,97,92,86,88,84,84,90],
+  ['Vijay Singh','leg',90,84,94,84,84,86,78,82],
+  ['Ernie Els','leg',92,86,92,86,85,84,82,84],
+  ['Bobby Jones','leg',84,90,90,86,86,80,90,96],
+  ['Loren Roberts','leg',78,86,82,84,88,82,98,82],
+  ['Pádraig Harrington','leg',84,80,86,90,92,88,86,92],
+  ['Raymond Floyd','leg',84,84,88,90,90,86,88,94],
+];
+const GOLFERS=RAW.map(r=>{
+  const g={name:r[0],era:r[1],dist:r[2],acc:r[3],app:r[4],sht:r[5],scr:r[6],bnk:r[7],put:r[8],clu:r[9]};
+  g.skill=CATS.reduce((s,c)=>s+g[c.k]*c.w,0);
+  return g;
+});
+
+const SCHEDULE=[
+  ['Kapalua Invitational',20,'sig'],['Phoenix Open',9,'reg'],
+  ['Pebble Beach Pro-Am',20,'sig'],['Bay Hill Invitational',20,'sig'],
+  ['The Players',25,'sig'],['The Masters',21,'major'],
+  ['Hilton Head Classic',9,'reg'],['Charlotte Open',9,'reg'],
+  ['PGA Championship',19,'major'],['Memorial Tournament',20,'sig'],
+  ['Canadian Open',9,'reg'],['U.S. Open',21.5,'major'],
+  ['Travelers Championship',20,'sig'],['Scottish Open',9,'reg'],
+  ['The Open',17,'major'],['3M Open',8,'reg'],
+  ['Wyndham Championship',8,'reg'],['Tour Championship',25,'finale'],
+].map(e=>({name:e[0],purse:e[1]*1e6,type:e[2],major:e[2]==='major',big:(e[2]==='major'||e[2]==='sig'||e[2]==='finale')}));
+
+const PAYOUT=[.18,.109,.069,.049,.041,.0363,.0338,.0313,.0293,.0273,.0253,.0233,.0215,.0201,.0189,
+  .0177,.0167,.0157,.0149,.0141,.0133,.0125,.0117,.0109,.0101,.0097,.0093,.009,.0087,.0084,.0081,.0078,.0075,.0072,.0069];
+
+/* ---------- sim ---------- */
+function gauss(){let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+function simRound(p,{major,finalRd}){
+  let base=(74-p.skill)*0.225;
+  if(major)base+=1.4;
+  let std=clamp(2.4+(90-p.clu)*0.045,1.7,4.2);
+  if(finalRd||major)std*=1.12;
+  if(finalRd)base+=(88-p.clu)*0.045;
+  return base+gauss()*std;
+}
+function simEvent(evt,field){
+  const res=field.map(p=>{const r1=simRound(p,{major:evt.major}),r2=simRound(p,{major:evt.major});return {p,half:r1+r2};});
+  res.sort((a,b)=>a.half-b.half);
+  const cut=res[Math.min(21,res.length-1)].half;
+  res.forEach(o=>{o.made=o.half<=cut+1e-9; if(o.made){o.r3=simRound(o.p,{major:evt.major});o.r4=simRound(o.p,{major:evt.major,finalRd:true});} o.total=o.made?o.half+o.r3+o.r4:o.half;});
+  const made=res.filter(o=>o.made).sort((a,b)=>a.total-b.total);
+  const missed=res.filter(o=>!o.made).sort((a,b)=>a.half-b.half);
+  made.forEach((o,i)=>{o.pos=i+1;o.pct=PAYOUT[i]||0;});
+  missed.forEach(o=>{o.pos='CUT';o.pct=0;});
+  const order=made.concat(missed);
+  const basePts=evt.major?750:evt.big?600:500;
+  order.forEach(o=>{o.money=evt.purse*o.pct; o.points=typeof o.pos==='number'?Math.round(basePts*(o.pct/0.18)):0; o.score=Math.round(o.total);});
+  return order;
+}
+
+/* ---------- state ---------- */
+const SPINS=10, REPLACEMENT=62;
+let S={};
+function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);S={screen:'title',mode:'easy',pool:GOLFERS.slice(),reSpins:2,
+  slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:'',
+  schedule:[],evtIndex:0,season:null,overlay:null,seasonPaused:false};}
+reset();
+
+const filledCount=()=>CATS.filter(c=>S.slots[c.k]).length;
+function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
+  CATS.forEach(c=>p[c.k]=S.slots[c.k]?S.slots[c.k].value:REPLACEMENT);
+  p.skill=CATS.reduce((s,c)=>s+p[c.k]*c.w,0); return p;}
+
+
+
+/* ---------- shell ---------- */
+function crestSVG(){return `<svg class="crest" viewBox="0 0 64 76" fill="none">
+  <path d="M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z" fill="#0c2238" stroke="#0FA888" stroke-width="3"/>
+  <path d="M27 18 v34" stroke="#F4E3C9" stroke-width="3" stroke-linecap="round"/>
+  <path d="M27 19 h17 l-4 5 4 5 h-17 z" fill="#EBA61F"/>
+  <ellipse cx="32" cy="55" rx="18" ry="5.5" fill="none" stroke="#1d6f4f" stroke-width="2"/>
+  <circle cx="37" cy="55" r="2.4" fill="#F4E3C9"/></svg>`;}
+
+function header(){
+  const h=$(`<div class="head"></div>`);
+  const top=$(`<div class="topbar"></div>`);
+  const menu=$(`<button class="icobtn" aria-label="How to play">≡</button>`);
+  const moon=$(`<button class="icobtn" aria-label="Toggle theme">☾</button>`);
+  menu.onclick=()=>{S.overlay='rules';render();};
+  moon.onclick=()=>{document.body.classList.toggle('dark');};
+  top.appendChild(menu); top.appendChild(moon);
+  h.appendChild(top);
+  h.appendChild($(`<div class="lockup">${crestSVG()}
+    <div class="wordmark"><span class="a">Build a</span> <span class="b">Golfer</span></div></div>`));
+  h.appendChild($(`<div class="gtype">A RunThe.GG Game</div>`));
+  const pills=$(`<div class="pills"></div>`);
+  pills.appendChild($(`<div class="pill">🏌️ Player</div>`));
+  const rs=$(`<button class="pill">Reset</button>`); rs.onclick=()=>{reset();render();};
+  pills.appendChild(rs);
+  h.appendChild(pills);
+  return h;
+}
+function footer(){
+  const f=$(`<div class="foot"></div>`);
+  const fp=$(`<div class="footpills"></div>`);
+  fp.appendChild($(`<div class="pill">⚡ Roster Updates</div>`));
+  fp.appendChild($(`<div class="pill">▣ Add to Home</div>`));
+  f.appendChild(fp);
+  f.appendChild($(`<div class="footnote">Follow <b>@RunTheGreen</b> on X for News and Updates</div>`));
+  f.appendChild($(`<div class="footlinks"><span>Home</span>·<span>About</span>·<span>Privacy</span>·<span>Contact</span></div>`));
+  return f;
+}
+
+function render(){
+  app.innerHTML='';
+  app.appendChild(header());
+  const card=$(`<main class="card"><div class="cardtop"></div></main>`);
+  const screen=$(`<div class="screen"></div>`);
+  card.appendChild(screen);
+  app.appendChild(card);
+  app.appendChild(footer());
+  RT=screen;
+  if(S.overlay==='rules') overlayRules(screen);
+  ({title:scrTitle,draft:scrDraft,build:scrBuild,season:scrSeason,summary:scrSummary})[S.screen]();
+  window.scrollTo({top:0});
+}
+function overlayRules(screen){
+  const ov=$(`<div class="ov">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>How to play</h3>
+    <ol>
+      <li>Spin the wheel up to <b>10 times</b>. Each spin lands on a real golfer.</li>
+      <li>Take <b>one</b> of that golfer's eight skills — or skip and spin again. One skill per golfer.</li>
+      <li>Fill all <b>8 slots</b>: distance, accuracy, approach, short game, scrambling, bunker, putting, composure.</li>
+      <li>Every golfer's eight ratings are shown — take their best, or risk a re-spin for someone better.</li>
+      <li>Run your golfer through a full PGA season. Spikes win you events; one weak slot loses weekends.</li>
+      <li>Bank the most money and climb the season money list against the field.</li>
+    </ol>
+    <button class="btn red">Got it</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  screen.appendChild(ov);
+}
+
+/* ---------- title (mode select) ---------- */
+function trophySVG(){return `<svg class="trophy" viewBox="0 0 60 80" fill="none">
+  <path d="M16 6 h28 v11 a14 14 0 0 1 -28 0 z" fill="#EBA61F"/>
+  <path d="M16 9 H8 a9 9 0 0 0 9 10" stroke="#EBA61F" stroke-width="3" fill="none"/>
+  <path d="M44 9 H52 a9 9 0 0 1 -9 10" stroke="#EBA61F" stroke-width="3" fill="none"/>
+  <rect x="27" y="30" width="6" height="13" fill="#caa23a"/>
+  <rect x="18" y="43" width="24" height="6" rx="2" fill="#EBA61F"/>
+  <rect x="22" y="49" width="16" height="9" rx="2" fill="#caa23a"/></svg>`;}
+
+function scrTitle(){
+  const scene=$(`<div class="scene"><svg class="coursebg" viewBox="0 0 440 440" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#06182e"/><stop offset="0.5" stop-color="#0b3149"/><stop offset="0.78" stop-color="#1a5b50"/></linearGradient>
+      <radialGradient id="sun" cx="0.64" cy="0.52" r="0.45">
+        <stop offset="0" stop-color="#f6cd74" stop-opacity="0.65"/><stop offset="0.5" stop-color="#EBA61F" stop-opacity="0.16"/><stop offset="1" stop-color="#EBA61F" stop-opacity="0"/></radialGradient>
+      <linearGradient id="topfade" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0a1a2c" stop-opacity="0.5"/><stop offset="0.4" stop-color="#0a1a2c" stop-opacity="0"/></linearGradient>
+      <linearGradient id="botfade" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#0a1a2c" stop-opacity="0"/><stop offset="0.85" stop-color="#0a1a2c" stop-opacity="1"/></linearGradient>
+    </defs>
+    <rect x="0" y="0" width="440" height="220" fill="url(#sky)"/>
+    <rect x="0" y="0" width="440" height="220" fill="url(#sun)"/>
+    <path d="M0,202 Q110,168 220,190 T440,182 V220 H0 Z" fill="#0e3f3b"/>
+    <g fill="#0c322e">
+      <ellipse cx="36" cy="194" rx="34" ry="17"/><ellipse cx="92" cy="198" rx="42" ry="15"/>
+      <ellipse cx="356" cy="192" rx="46" ry="18"/><ellipse cx="412" cy="196" rx="34" ry="14"/></g>
+    <path d="M0,216 Q150,190 270,214 T440,210 V440 H0 Z" fill="#1a6b40"/>
+    <path d="M0,262 Q170,234 300,264 T440,258 V440 H0 Z" fill="#218a50"/>
+    <g opacity="0.45" fill="#1b7a45">
+      <path d="M0,290 Q170,266 300,294 T440,288 V322 Q300,328 170,300 T0,324 Z"/>
+      <path d="M0,348 Q170,326 300,354 T440,348 V382 Q300,388 170,360 T0,384 Z"/>
+      <path d="M0,406 Q170,386 300,414 T440,408 V440 H0 Z"/></g>
+    <ellipse cx="252" cy="244" rx="74" ry="21" fill="#2ea65f"/>
+    <ellipse cx="252" cy="244" rx="74" ry="21" fill="none" stroke="#38c270" stroke-width="1.4" opacity="0.55"/>
+    <ellipse cx="148" cy="258" rx="36" ry="11" fill="#efe0c0"/>
+    <ellipse cx="148" cy="258" rx="36" ry="11" fill="none" stroke="#d6c197" stroke-width="1.4"/>
+    <ellipse cx="266" cy="241" rx="3.4" ry="1.6" fill="#06241a"/>
+    <line x1="266" y1="241" x2="266" y2="188" stroke="#F4E3C9" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M266,190 l22,6 -22,7 z" fill="#EBA61F"/>
+    <circle cx="234" cy="247" r="3" fill="#F8F2E6"/>
+    <rect x="0" y="0" width="440" height="120" fill="url(#topfade)"/>
+    <rect x="0" y="280" width="440" height="160" fill="url(#botfade)"/>
+  </svg></div>`);
+  add(scene);
+  const w=$(`<div class="titlewrap center"></div>`);
+  w.appendChild($(trophySVG()));
+  w.appendChild($(`<h1 class="hero" style="font-size:46px"><span class="hr1">RunThe</span><span class="hr2">Green</span></h1>`));
+  w.appendChild($(`<p class="lede center" style="max-width:320px;margin:8px auto 6px">Build a golfer from the game's greatest skills and run them through a full PGA season.</p>`));
+  w.appendChild($(`<div class="center"><div class="rollchip">
+    <div class="rolllab">Built from 8 real skills</div>
+    <div class="rollval" id="rollval">${CATS[0].short}</div></div></div>`));
+  const stack=$(`<div class="stack"></div>`);
+  const go=$(`<button class="btn goldfill">Step to the Tee Box<span class="sub">Build your golfer</span></button>`);
+  go.onclick=()=>{S.mode='easy';S.screen='draft';render();};
+  stack.appendChild(go);
+  w.appendChild(stack);
+  const mini=$(`<div class="mini"></div>`);
+  const how=$(`<button class="btn gold">⛳ How to Play</button>`);
+  const lb=$(`<button class="btn gold">🏆 Leaderboard</button>`);
+  how.onclick=()=>{S.overlay='rules';render();};
+  lb.onclick=()=>{toast('Online leaderboard — coming soon');};
+  mini.appendChild(how); mini.appendChild(lb);
+  w.appendChild(mini);
+  add(w);
+  startRoll();
+}
+function startRoll(){
+  clearInterval(rollTimer);
+  let i=0;
+  rollTimer=setInterval(()=>{
+    const el=document.getElementById('rollval');
+    if(!el||!el.isConnected){clearInterval(rollTimer);return;}
+    i=(i+1)%CATS.length;
+    el.style.opacity='0';
+    setTimeout(()=>{ if(el.isConnected){el.textContent=CATS[i].short; el.style.opacity='1';} },180);
+  },1700);
+}
+function toast(msg){
+  const t=$(`<div style="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:30;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4)">${msg}</div>`);
+  document.body.appendChild(t); setTimeout(()=>t.remove(),1800);
+}
+
+/* ---------- draft ---------- */
+function golferSVG(){return `<svg class="golferfig" viewBox="0 0 100 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <line x1="6" y1="132" x2="94" y2="132" stroke="rgba(244,227,201,.16)" stroke-width="2"/>
+  <line x1="44" y1="80" x2="19" y2="123" stroke="#F4E3C9" stroke-width="2.4" stroke-linecap="round"/>
+  <circle cx="18" cy="125" r="3.2" fill="#F8F2E6"/>
+  <path d="M64,64 L80,128" stroke="#07605F" stroke-width="9" stroke-linecap="round"/>
+  <path d="M58,66 L56,128" stroke="#06A291" stroke-width="9" stroke-linecap="round"/>
+  <path d="M48,40 C58,42 67,50 66,65 L53,68 C50,56 48,48 48,40 Z" fill="#06A291"/>
+  <path d="M52,46 C50,58 46,71 44,80" stroke="#06A291" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <circle cx="45" cy="34" r="8.5" fill="#0FA888"/>
+  <path d="M36,32 L52,29.5" stroke="#EBA61F" stroke-width="3" stroke-linecap="round"/>
+</svg>`;}
+const RSHORT={dist:'DRV',acc:'ACC',app:'APP',sht:'SHT',scr:'SCR',bnk:'BNK',put:'PUT',clu:'COM'};
+function radarSVG(){
+  const n=CATS.length, cx=120, cy=118, R=84;
+  const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
+  const filled=CATS.map(c=> !!S.slots[c.k]);
+  const ang=i=> (-Math.PI/2)+i*(2*Math.PI/n);
+  const pt=(i,r)=>[cx+Math.cos(ang(i))*r, cy+Math.sin(ang(i))*r];
+  let grid='';
+  [0.25,0.5,0.75,1].forEach(f=>{
+    grid+=`<polygon points="${CATS.map((_,i)=>pt(i,R*f).map(v=>v.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="rgba(244,227,201,.10)" stroke-width="1"/>`;
+  });
+  let axes='', labels='';
+  CATS.forEach((c,i)=>{
+    const [x,y]=pt(i,R);
+    axes+=`<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(244,227,201,.08)"/>`;
+    const [lx,ly]=pt(i,R+15);
+    labels+=`<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" fill="#9fb0bd" font-size="9.5" font-weight="800" text-anchor="middle" dominant-baseline="middle">${RSHORT[c.k]}</text>`;
+  });
+  const base=CATS.map((_,i)=>pt(i,R*(REPLACEMENT/100)).map(v=>v.toFixed(1)).join(',')).join(' ');
+  const data=vals.map((v,i)=>pt(i,R*(v/100)).map(x=>x.toFixed(1)).join(',')).join(' ');
+  const dots=vals.map((v,i)=>{const [x,y]=pt(i,R*(v/100));return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${filled[i]?3:1.8}" fill="${filled[i]?'#EBA61F':'rgba(159,176,189,.5)'}"/>`;}).join('');
+  return `<svg class="radar" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+    ${grid}${axes}
+    <polygon points="${base}" fill="none" stroke="rgba(159,176,189,.45)" stroke-dasharray="3 3" stroke-width="1"/>
+    <polygon points="${data}" fill="rgba(6,162,145,.32)" stroke="#06A291" stroke-width="2"/>
+    ${dots}${labels}</svg>`;
+}
+function buildHero(){
+  const ovr=Math.round(buildPlayer().skill);
+  return $(`<div class="buildhero">
+    <div class="herofig">${golferSVG()}
+      <div class="ovrbadge"><span class="n">${ovr}</span><span class="l">OVR</span></div></div>
+    <div class="radarwrap">${radarSVG()}</div></div>`);
+}
+function scrDraft(){
+  const pips=Array.from({length:8},(_,i)=>`<span class="pip ${i<filledCount()?'on':''}"></span>`).join('');
+  add($(`<div class="draftbar"><div>
+    <h2 style="margin:0">Draft your golfer</h2>
+    <div class="pips">${pips}</div></div>
+    <div class="spins"><span style="color:var(--gold)">${S.reSpins}</span> <span class="muted small">re-spins</span></div></div>`));
+  add(buildHero());
+  add($(`<div class="reel ${S.spinning?'spinning':''}">
+    <div class="name">${S.current?S.current.name:'Press spin'}</div>
+    <div class="sub">${S.current?(S.current.era==='leg'?'Legend':'Current'):''}</div></div>`));
+  const choice=$(`<div></div>`); add(choice);
+  if(S.current && !S.spinning){
+    const grid=$(`<div class="attrs"></div>`);
+    CATS.forEach(cat=>{
+      const filled=!!S.slots[cat.k];
+      const b=$(`<button class="attr" ${filled?'disabled':''}><span class="lab">${cat.short}</span><span class="val">${S.current[cat.k]}</span></button>`);
+      if(!filled) b.onclick=()=>takeAttr(cat.k);
+      grid.appendChild(b);
+    });
+    choice.appendChild(grid);
+    if(S.reSpins>0){
+      const re=$(`<button class="btn ghost" style="margin-top:10px">Re-spin · ${S.reSpins} left</button>`);
+      re.onclick=reSpin; choice.appendChild(re);
+    } else {
+      choice.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left — take one of ${S.current.name}'s skills.</div>`));
+    }
+  } else if(!S.spinning){
+    const spin=$(`<button class="btn teal" style="margin-top:14px">Spin the Wheel</button>`);
+    spin.onclick=spin_; choice.appendChild(spin);
+  }
+  add($(`<div style="height:8px"></div>`));
+  add($(`<h2 style="margin:6px 0 8px">Your scorecard · ${filledCount()}/8</h2>`));
+  const card=$(`<div class="card-grid"></div>`);
+  CATS.forEach(cat=>{
+    const f=S.slots[cat.k];
+    card.appendChild($(`<div class="slot ${f?'':'empty'}">
+      <span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'—'}</span>
+      <span class="v">${f?f.value:'··'}</span></div>`));
+  });
+  add(card);
+}
+function reveal(){
+  S.spinning=true; S.current=null; render();
+  const reel=app.querySelector('.reel .name');
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const land=S.pool[Math.floor(Math.random()*S.pool.length)];
+  S.pool=S.pool.filter(g=>g!==land);
+  if(reduce){S.current=land;S.spinning=false;render();return;}
+  let ticks=0, total=16+Math.floor(Math.random()*6);
+  const iv=setInterval(()=>{
+    reel.textContent=(S.pool[Math.floor(Math.random()*S.pool.length)]||land).name;
+    if(++ticks>=total){clearInterval(iv);S.current=land;S.spinning=false;render();}
+  },72);
+}
+function spin_(){ if(S.current||S.pool.length===0)return; reveal(); }        // fresh reveal for the next slot — free
+function reSpin(){ if(S.reSpins<=0||S.pool.length===0)return; S.reSpins--; reveal(); }  // capped at 2
+function endIfDone(){if(filledCount()===8||S.pool.length===0)S.screen='build';}
+function takeAttr(k){
+  S.slots[k]={golfer:S.current.name,value:S.current[k]};
+  S.current=null; endIfDone(); render();
+}
+
+/* ---------- build ---------- */
+function scrBuild(){
+  const p=buildPlayer();
+  add($(`<div class="center"><span class="tag">Your creation</span></div>`));
+  add($(`<div style="height:8px"></div>`));
+  add(buildHero());
+  const card=$(`<div class="card-grid" style="margin-top:10px"></div>`);
+  let best={v:-1},worst={v:200};
+  CATS.forEach(cat=>{
+    const f=S.slots[cat.k]; const v=f?f.value:REPLACEMENT;
+    if(v>best.v)best={v,c:cat.short}; if(v<worst.v)worst={v,c:cat.short};
+    card.appendChild($(`<div class="slot ${f?'':'empty'}">
+      <span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'no spin — journeyman'}</span>
+      <span class="v">${v}</span></div>`));
+  });
+  add(card);
+  const holes=CATS.filter(c=>!S.slots[c.k]).length;
+  let note=`Strength: ${best.c} (${best.v}). Weakness: ${worst.c} (${worst.v}).`;
+  note+= holes? ` You left ${holes} slot${holes>1?'s':''} unfilled — they play as a tour journeyman. The field is full of complete golfers, so that hole is where weekends get lost.`
+              : ` No empty slots — a complete bag. The only question is how high the ceiling goes.`;
+  add($(`<div class="scout">${note}</div>`));
+  add($(`<div style="height:14px"></div>`));
+  add($(`<h2 style="margin:0 0 4px">Name your golfer</h2>`));
+  const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${S.name}">`);
+  inp.oninput=e=>S.name=e.target.value; add(inp);
+  add($(`<div style="height:14px"></div>`));
+  add($(`<h2 style="margin:0 0 8px">Pick your season</h2>`));
+  const full=$(`<button class="btn red">Full Season<span class="sub">18 events · 4 majors</span></button>`);
+  const maj=$(`<button class="btn gold" style="margin-top:10px">Majors Only<span class="sub">The 4 that matter</span></button>`);
+  full.onclick=()=>startSeason(false); maj.onclick=()=>startSeason(true);
+  add(full); add(maj);
+}
+function startSeason(majorsOnly){
+  S.schedule=majorsOnly?SCHEDULE.filter(e=>e.major):SCHEDULE.slice(); S.evtIndex=0;
+  const me=buildPlayer();
+  const field=GOLFERS.map(g=>({name:g.name,skill:g.skill,clu:g.clu,you:false}));
+  field.push(me);
+  S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0}]))};
+  S.screen='season'; render();
+}
+function playEvent(){
+  const evt=S.schedule[S.evtIndex]; const order=simEvent(evt,S.season.field);
+  order.forEach((o,idx)=>{const t=S.season.totals[o.p.name];
+    t.money+=o.money; t.points+=o.points; t.played++; t.finishSum+=(idx+1);
+    if(o.pos===1){t.wins++; if(evt.major)t.majors++;}
+    if(typeof o.pos==='number'){t.made++; if(o.pos<=10)t.top10++; if(o.pos<t.best)t.best=o.pos;}});
+  S.season.results.push({evt,order}); S.evtIndex++;
+}
+function scrSeason(){
+  clearTimeout(seasonTimer);
+  if(S.evtIndex<S.schedule.length && S.season.results.length===S.evtIndex) playEvent();
+  const last=S.season.results[S.season.results.length-1];
+  const evt=last.evt, order=last.order;
+  const me=order.find(o=>o.p.you); const t=S.season.totals[S.season.me.name];
+  if(evt.major) RT.classList.add('major-screen');
+
+  // persistent season standings
+  const avg=t.played?ord(Math.round(t.finishSum/t.played)):'—';
+  const high=t.best===99?'—':ord(t.best);
+  add($(`<div class="sbar">
+    <div class="sstat wide"><div class="k">Season earnings</div><div class="v gold">${fmt(t.money)}</div></div>
+    <div class="sstat"><div class="k">Avg finish</div><div class="v">${avg}</div></div>
+    <div class="sstat"><div class="k">Events</div><div class="v">${t.played}</div></div>
+    <div class="sstat"><div class="k">Cuts made</div><div class="v">${t.made}/${t.played}</div></div>
+    <div class="sstat"><div class="k">Best</div><div class="v">${high}</div></div>
+  </div>`));
+
+  if(evt.major) add($(`<div class="majorbanner">★ Major Championship ★</div>`));
+
+  const typeLbl=evt.major?'<span class="major">Major</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
+  add($(`<div class="evt-head"><div><div class="nm">${evt.name}</div>
+    <div class="kx">${typeLbl} · ${fmt(evt.purse)} purse</div></div>
+    <div class="kx reg">Event ${S.evtIndex}/${S.schedule.length}</div></div>`));
+  const board=$(`<div class="board ${evt.major?'major':''}"></div>`);
+  const top=order.slice(0,12); const youOut=!top.includes(me);
+  top.forEach(o=>board.appendChild(lbRow(o)));
+  if(youOut){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(lbRow(me));}
+  add(board);
+  const result=(me.pos==='CUT')?'Missed cut':(me.pos===1?'WON':'T'+me.pos+(me.pos<=10?' · top 10':''));
+  add($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b> · ${par(me.score)}</span><span style="color:var(--gold)">+${fmt(me.money)}</span></div>`));
+  add($(`<div style="height:14px"></div>`));
+  if(S.evtIndex<S.schedule.length){
+    const row=$(`<div class="mini"></div>`);
+    const pause=$(`<button class="btn gold">${S.seasonPaused?'▶ Resume':'⏸ Pause'}</button>`);
+    const skip=$(`<button class="btn ghost">Skip to results ⏭</button>`);
+    pause.onclick=()=>{S.seasonPaused=!S.seasonPaused; render();};
+    skip.onclick=()=>{clearTimeout(seasonTimer); while(S.evtIndex<S.schedule.length)playEvent(); S.screen='summary'; render();};
+    row.appendChild(pause); row.appendChild(skip); add(row);
+    if(S.seasonPaused){
+      const nx=$(`<button class="btn red" style="margin-top:10px">Next Event ▸</button>`); nx.onclick=()=>render(); add(nx);
+    } else {
+      seasonTimer=setTimeout(()=>{ if(S.screen==='season') render(); }, evt.major?2400:1600);
+    }
+  } else {
+    const fin=$(`<button class="btn red">Season Results ▸</button>`);
+    fin.onclick=()=>{clearTimeout(seasonTimer); S.screen='summary'; render();}; add(fin);
+    if(!S.seasonPaused) seasonTimer=setTimeout(()=>{ if(S.screen==='season'){S.screen='summary'; render();} }, evt.major?2600:1900);
+  }
+}
+function lbRow(o){
+  const sc=o.pos==='CUT'?'CUT':par(o.score);
+  const mny=o.money>0?fmt(o.money):'—';
+  return $(`<div class="lb ${o.p.you?'you':''} ${o.pos==='CUT'?'cut':''}">
+    <span class="pos">${o.pos===1?'🏆':(o.pos==='CUT'?'–':o.pos)}</span>
+    <span class="pl">${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
+}
+
+/* ---------- summary ---------- */
+function scrSummary(){
+  const me=S.season.me, t=S.season.totals[me.name];
+  const byMoney=Object.entries(S.season.totals).map(([n,v])=>({n,...v})).sort((a,b)=>b.money-a.money);
+  const byPoints=[...byMoney].sort((a,b)=>b.points-a.points);
+  const moneyRank=byMoney.findIndex(r=>r.n===me.name)+1;
+  const fedexRank=byPoints.findIndex(r=>r.n===me.name)+1;
+  const N=byMoney.length;
+  add($(`<div class="center"><span class="tag">Season complete</span></div>`));
+  add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
+  add($(`<p class="lede center" style="margin-bottom:8px">${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${Math.round(me.skill)}</p>`));
+  const tiles=$(`<div class="tiles"></div>`);
+  tiles.appendChild(tile('Money won',fmt(t.money),true));
+  tiles.appendChild(tile('Money rank',moneyRank+' / '+N));
+  tiles.appendChild(tile('Wins',t.wins+''));
+  tiles.appendChild(tile('Majors',t.majors+''));
+  tiles.appendChild(tile('Top 10s',t.top10+''));
+  tiles.appendChild(tile('Best finish',t.best===99?'MC':(t.best===1?'WIN':'T'+t.best)));
+  tiles.appendChild(tile('FedEx points',t.points.toLocaleString()));
+  tiles.appendChild(tile('FedEx rank',fedexRank+' / '+N));
+  add(tiles);
+  add($(`<h2 style="margin:6px 0 8px">Season money list</h2>`));
+  const board=$(`<div class="board"></div>`);
+  byMoney.slice(0,10).forEach((r,i)=>board.appendChild(moneyRow(r,i+1,r.n===me.name)));
+  if(moneyRank>10){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(moneyRow(byMoney[moneyRank-1],moneyRank,true));}
+  add(board);
+  const wreath=t.wins>0?` 🏆×${t.wins}`:'';
+  const share=`BUILD A GOLFER — ${me.name} (OVR ${Math.round(me.skill)})\n${fmt(t.money)} · #${moneyRank} money${wreath}\n${t.wins}W · ${t.majors} majors · best ${t.best===1?'WIN':'T'+t.best}\nRunThe.GG`;
+  add($(`<div style="height:14px"></div>`));
+  add($(`<h2 style="margin:0 0 6px">Share card</h2>`));
+  add($(`<div class="share">${share}</div>`));
+  const cp=$(`<button class="btn gold" style="margin-top:10px">Copy Result</button>`);
+  cp.onclick=()=>{navigator.clipboard?.writeText(share); cp.textContent='Copied ✓'; setTimeout(()=>cp.textContent='Copy Result',1400);};
+  add(cp);
+  const again=$(`<button class="btn red" style="margin-top:10px">Build Another Golfer</button>`);
+  again.onclick=()=>{reset();render();}; add(again);
+}
+function tile(k,v,gold){return $(`<div class="tile"><div class="k">${k}</div><div class="v ${gold?'':'cream'}">${v}</div></div>`);}
+function moneyRow(r,pos,you){return $(`<div class="lb ${you?'you':''}" style="grid-template-columns:34px 1fr 92px">
+  <span class="pos">${pos===1?'🏆':pos}</span><span class="pl">${r.n}</span>
+  <span class="mny" style="color:var(--gold)">${fmt(r.money)}</span></div>`);}
+
+render();
+</script>

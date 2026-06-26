@@ -155,5 +155,17 @@ allows Google Fonts, or self-host Anton.*
 ## 6. Status log
 
 - 2026-06-26: Branch set up, isolated under `build-a-golfer/`. CLAUDE.md created.
-  Awaiting the canonical `build-a-golfer.html` from the owner (to be committed as
-  the source of truth — no reconstruction). Nothing merged or deployed.
+- 2026-06-26: Canonical `build-a-golfer.html` (v2, RunThePitch skin, 46 KB,
+  single self-contained vanilla-JS file) added from the owner as the source of
+  truth — no reconstruction. Verified locally with headless Chromium: title →
+  draft → spin (8 attrs, live OVR badge) → full 8-slot draft → majors-only
+  season → summary/share card all run end to end with zero page errors. Only
+  console message is Google Fonts failing over the sandboxed network
+  (`ERR_CONNECTION_CLOSED`), which falls back to Impact/Arial Narrow as designed.
+  Nothing merged to `main`, nothing deployed.
+
+### How to run locally
+Single self-contained file — just open `build-a-golfer.html` in a browser, or
+serve the folder with any static server (e.g. `python3 -m http.server`) and open
+it. No build step, no dependencies. Google Fonts (Anton/Barlow) need network; if
+blocked, it falls back to Impact/Arial Narrow — flagged in §3 for self-hosting.
