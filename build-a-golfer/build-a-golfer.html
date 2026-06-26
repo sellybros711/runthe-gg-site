@@ -343,7 +343,8 @@ const ACHS=[
   {id:'slam', e:'👑', t:'Grand Slam',        d:'Win all 4 majors in one season',    f:c=>c.majorsWon>=4},
   {id:'iron', e:'🪨', t:'Iron Man',          d:'Make every cut in a season',        f:c=>c.played>0&&c.made===c.played},
   {id:'black',e:'💰', t:'In the Black',      d:'Finish the season in profit',       f:c=>c.net>0},
-  {id:'mil',  e:'💎', t:'Millionaire',       d:'Earn $1,000,000+ in a season',      f:c=>c.gross>=1e6},
+  {id:'mil',  e:'💎', t:'Millionaire',       d:'Clear $1,000,000+ net profit in a season', f:c=>c.net>=1e6},
+  {id:'redmil',e:'💸',t:'Seven-Figure Loss', d:'Lose $1,000,000+ in a season',      f:c=>c.net<=-1e6},
   {id:'rich', e:'🥇', t:'Money Leader',      d:'Finish #1 on the season money list',f:c=>c.moneyRank===1},
   {id:'under',e:'🐍', t:'Against the Odds',  d:'Turn a profit with a sub-80 build', f:c=>c.net>0&&c.ovr<80},
 ];
@@ -1028,7 +1029,7 @@ function scrTitle(){
   w.appendChild($(`<h1 class="hero" style="font-size:40px"><span class="hr1">Your Legend</span> <span class="hr2">Starts Here</span></h1>`));
   w.appendChild($(`<p class="lede center" style="max-width:320px;margin:8px auto 6px">Build a golfer from the game's greatest skills and run them through a full PGA season.</p>`));
   const swItems=CATS.map(c=>`<span class="swchip">${c.short}</span>`).join('');
-  w.appendChild($(`<div class="center"><div class="rollchip" style="min-width:300px;padding:9px 0 11px;overflow:hidden">
+  w.appendChild($(`<div class="center"><div class="rollchip" style="width:320px;max-width:86vw;padding:9px 0 11px;overflow:hidden">
     <div class="rolllab" style="padding:0 18px">Built from 8 real skills</div>
     <div class="skillwheel"><div class="track">${swItems}${swItems}</div></div></div></div>`));
   const c=career();
