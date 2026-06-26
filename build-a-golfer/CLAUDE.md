@@ -252,6 +252,24 @@ allows Google Fonts, or self-host Anton.*
     cap, so it was always-on and meaningless).
   Verified on a 430×780 viewport, zero page errors.
 
+- 2026-06-26: Real roster (v1) + identity/draft-drama features.
+  - **127-golfer roster** (owner CSV→JSON) inlined as `ROSTER` (63 current + 64
+    legends), each with name/era/nation/note + 8 skills; `_meta` weights match
+    the game's `CATS`. Field is now you + 127; the 36-hole cut scales to ~top
+    half of the field. Balance-tested: winners ~-24 reg / -20 major (on target).
+    NOTE: deeper field = harder to contend (OVR-90 build medians ~27/128). Easy
+    knobs if you want it more winnable: shrink the season field, or a small
+    player edge.
+  - **Build identity**: archetype label (Bomber/Surgeon/Magician/Assassin/Closer
+    /Sandman/Marksman/Escape Artist/Complete Player) + "plays like [real golfer]"
+    (nearest by weighted skill distance over the roster) + OVR badge tiers
+    (bronze/silver/gold/elite with glow).
+  - **Draft drama + onboarding**: reel shows nation + scouting note; a
+    "★ LEGEND / ⭐ ELITE" tag + gold glow + toast when a legend/89+ lands; a
+    one-time "How it works" tip on first draft (`bag_tip_seen`); a 1×/2× season
+    speed toggle (`bag_speed`).
+  Verified end to end, zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

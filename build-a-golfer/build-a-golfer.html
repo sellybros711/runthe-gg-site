@@ -127,8 +127,13 @@
   .reel{height:82px; border-radius:16px; border:1px solid var(--line);
     background:radial-gradient(120% 100% at 50% 0%, #11375a, #0a1f30); display:flex; align-items:center;
     justify-content:center; overflow:hidden; position:relative}
-  .reel .name{font-family:var(--display); font-weight:400; font-size:30px; text-align:center; padding:0 10px; color:var(--oncard); text-transform:uppercase; letter-spacing:.02em}
-  .reel .sub{position:absolute; bottom:10px; font:800 10px/1 var(--body); letter-spacing:.18em; text-transform:uppercase; color:var(--muted)}
+  .reel .name{font-family:var(--display); font-weight:400; font-size:27px; text-align:center; padding:0 10px; color:var(--oncard); text-transform:uppercase; letter-spacing:.02em}
+  .reel .sub{position:absolute; bottom:7px; font:800 9px/1 var(--body); letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+  .reel .reeltag{position:absolute; top:6px; font:800 9px/1 var(--body); letter-spacing:.2em; color:var(--gold)}
+  .reel.elite{border-color:var(--gold); box-shadow:0 0 16px rgba(235,166,31,.32) inset, 0 0 12px rgba(235,166,31,.25);
+    background:radial-gradient(120% 100% at 50% 0%, #1c3a2c, #0a1f30)}
+  .reel.landed{animation:pop .3s ease}
+  @keyframes pop{0%{transform:scale(.97)}55%{transform:scale(1.02)}100%{transform:scale(1)}}
   .spinning .name{animation:flick .08s steps(1) infinite} @keyframes flick{50%{opacity:.34}}
   .attrs{display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:10px}
   .attr{display:flex; justify-content:space-between; align-items:center; gap:8px; background:#0a2740;
@@ -507,7 +512,7 @@ function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);S={screen:'t
   slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get('bag_name',''),
   look:Object.assign({},DEFLOOK,LS.get('bag_look',{})),year:1,career:null,
   schedule:[],evtIndex:0,season:null,overlay:null,seasonPaused:false,recorded:false,recapEvent:null,
-  daily:false,dailySeed:null,dailyStored:false};}
+  simRate:LS.get('bag_speed',1),daily:false,dailySeed:null,dailyStored:false};}
 reset();
 if(LS.get('bag_dark',false))document.body.classList.add('dark');
 
@@ -515,6 +520,31 @@ const filledCount=()=>CATS.filter(c=>S.slots[c.k]).length;
 function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
   CATS.forEach(c=>p[c.k]=S.slots[c.k]?S.slots[c.k].value:REPLACEMENT);
   p.skill=CATS.reduce((s,c)=>s+p[c.k]*c.w,0); return p;}
+
+/* ---------- build identity ---------- */
+function ovrTier(o){
+  if(o>=90) return {c:'#35d6a0', glow:'0 0 14px rgba(53,214,160,.45)', lab:'ELITE'};
+  if(o>=86) return {c:'#EBA61F', glow:'0 0 12px rgba(235,166,31,.40)', lab:'GOLD'};
+  if(o>=82) return {c:'#c7ced8', glow:'none', lab:'SILVER'};
+  return {c:'#cd8e5a', glow:'none', lab:'BRONZE'};
+}
+const ARCH={dist:['The Bomber','Overpowers every course'],acc:['The Marksman','Always in the fairway'],
+  app:['The Surgeon','Throws darts on approach'],sht:['The Magician','Magic around the greens'],
+  scr:['The Escape Artist','Saves par from anywhere'],bnk:['The Sandman','Owns the bunkers'],
+  put:['The Assassin','Deadly on the greens'],clu:['The Closer','Ice in his veins on Sunday']};
+function archetype(p){
+  const vals=CATS.map(c=>({k:c.k,v:p[c.k]}));
+  const mx=Math.max(...vals.map(x=>x.v)), mn=Math.min(...vals.map(x=>x.v));
+  const mean=vals.reduce((s,x)=>s+x.v,0)/vals.length;
+  if(mx-mn<=10 && mean>=84) return {name:'The Complete Player', desc:'No weakness in the bag'};
+  const top=vals.slice().sort((a,b)=>b.v-a.v)[0];
+  const a=ARCH[top.k]; return {name:a[0], desc:a[1]};
+}
+function playsLike(p){
+  let best=null, bd=1e18;
+  GOLFERS.forEach(g=>{const d=CATS.reduce((s,c)=>s+(g[c.k]-p[c.k])*(g[c.k]-p[c.k])*c.w,0); if(d<bd){bd=d;best=g;}});
+  return best;
+}
 
 
 
@@ -868,9 +898,10 @@ function radarSVG(){
 }
 function buildHero(){
   const ovr=Math.round(buildPlayer().skill);
+  const t=ovrTier(ovr);
   return $(`<div class="buildhero">
     <div class="herofig">${golferSVG()}
-      <div class="ovrbadge"><span class="n">${ovr}</span><span class="l">OVR</span></div></div>
+      <div class="ovrbadge" style="border-color:${t.c};box-shadow:${t.glow}"><span class="n" style="color:${t.c}">${ovr}</span><span class="l" style="color:${t.c}">${t.lab}</span></div></div>
     <div class="radarwrap">${radarSVG()}</div></div>`);
 }
 function scrDraft(){
@@ -879,10 +910,22 @@ function scrDraft(){
     <h2 style="margin:0">Draft your golfer</h2>
     <div class="pips">${pips}</div></div>
     <div class="spins"><span style="color:var(--gold)">${S.reSpins}</span> <span class="muted small">re-spins</span></div></div>`));
+  if(!LS.get('bag_tip_seen',false) && filledCount()===0 && !S.current && !S.spinning){
+    const tip=$(`<div class="scout" style="margin-bottom:12px;border-color:var(--gold)">
+      <b style="color:var(--gold)">How it works</b> — Spinning is free, but you must take <b>one skill</b> from each golfer you keep. You get <b>2 re-spins</b> to pass on someone. Fill all 8 slots to build your golfer.
+      <button class="btn ghost" style="margin-top:10px;font-size:13px;padding:8px">Got it</button></div>`);
+    tip.querySelector('button').onclick=()=>{LS.set('bag_tip_seen',true);render();};
+    add(tip);
+  }
   if(S.current || S.spinning){
-    add($(`<div class="reel ${S.spinning?'spinning':''}">
-      <div class="name">${S.current?S.current.name:'…'}</div>
-      <div class="sub">${S.current?(S.current.era==='leg'?'Legend':'Current'):''}</div></div>`));
+    const g=S.current;
+    const elite=g&&!S.spinning&&(g.era==='leg'||Math.round(g.skill)>=89);
+    const tag=elite?(g.era==='leg'?'★ LEGEND':'⭐ ELITE'):'';
+    const sub=g&&!S.spinning?[g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · '):'';
+    add($(`<div class="reel ${S.spinning?'spinning':''} ${elite?'elite':''} ${g&&!S.spinning?'landed':''}">
+      ${tag?`<div class="reeltag">${tag}</div>`:''}
+      <div class="name">${g?g.name:'…'}</div>
+      <div class="sub">${sub}</div></div>`));
   }
   const choice=$(`<div></div>`); add(choice);
   if(S.current && !S.spinning){
@@ -923,12 +966,16 @@ function reveal(){
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const land=S.daily?S.pool[0]:S.pool[Math.floor(Math.random()*S.pool.length)];
   S.pool=S.pool.filter(g=>g!==land);
-  if(reduce){S.current=land;S.spinning=false;render();return;}
+  if(reduce){S.current=land;S.spinning=false;render();eliteFlash(land);return;}
   let ticks=0, total=16+Math.floor(Math.random()*6);
   const iv=setInterval(()=>{
     reel.textContent=(S.pool[Math.floor(Math.random()*S.pool.length)]||land).name;
-    if(++ticks>=total){clearInterval(iv);S.current=land;S.spinning=false;render();}
+    if(++ticks>=total){clearInterval(iv);S.current=land;S.spinning=false;render();eliteFlash(land);}
   },72);
+}
+function eliteFlash(g){
+  if(g.era==='leg') toast('★ '+g.name+' — a legend lands!');
+  else if(Math.round(g.skill)>=89) toast('⭐ '+g.name+' — elite talent!');
 }
 function spin_(){ if(S.current||S.pool.length===0)return; reveal(); }        // fresh reveal for the next slot — free
 function reSpin(){ if(S.reSpins<=0||S.pool.length===0)return; S.reSpins--; reveal(); }  // capped at 2
@@ -944,7 +991,11 @@ function scrBuild(){
   add($(`<div class="center"><span class="tag">Your creation</span></div>`));
   add($(`<div style="height:8px"></div>`));
   add(buildHero());
-  const card=$(`<div class="card-grid" style="margin-top:10px"></div>`);
+  const arch=archetype(p), like=playsLike(p);
+  add($(`<div style="text-align:center;margin-top:8px">
+    <div style="font-family:var(--display);font-style:italic;font-size:24px;color:var(--gold);line-height:1">${arch.name}</div>
+    <div class="small muted" style="margin-top:5px">${arch.desc} · plays like <b style="color:var(--oncard)">${like.name}</b></div></div>`));
+  const card=$(`<div class="card-grid" style="margin-top:12px"></div>`);
   let best={v:-1},worst={v:200};
   CATS.forEach(cat=>{
     const f=S.slots[cat.k]; const v=f?f.value:REPLACEMENT;
@@ -1030,19 +1081,21 @@ function scrSeason(){
   if(S.evtIndex<S.schedule.length){
     const row=$(`<div class="mini"></div>`);
     const pause=$(`<button class="btn gold">${S.seasonPaused?'▶ Resume':'⏸ Pause'}</button>`);
-    const skip=$(`<button class="btn ghost">Skip to results ⏭</button>`);
+    const speed=$(`<button class="btn gold" style="flex:0 0 58px">${S.simRate}×</button>`);
+    const skip=$(`<button class="btn ghost">Skip ⏭</button>`);
     pause.onclick=()=>{S.seasonPaused=!S.seasonPaused; render();};
+    speed.onclick=()=>{S.simRate=S.simRate>=2?1:2; LS.set('bag_speed',S.simRate); render();};
     skip.onclick=()=>{clearTimeout(seasonTimer); while(S.evtIndex<S.schedule.length)playEvent(); S.screen='summary'; render();};
-    row.appendChild(pause); row.appendChild(skip); add(row);
+    row.appendChild(pause); row.appendChild(speed); row.appendChild(skip); add(row);
     if(S.seasonPaused){
       const nx=$(`<button class="btn red" style="margin-top:10px">Next Event ▸</button>`); nx.onclick=()=>render(); add(nx);
     } else {
-      seasonTimer=setTimeout(()=>{ if(S.screen==='season') render(); }, evt.major?3600:2600);
+      seasonTimer=setTimeout(()=>{ if(S.screen==='season') render(); }, (evt.major?3600:2600)/S.simRate);
     }
   } else {
     const fin=$(`<button class="btn red">Season Results ▸</button>`);
     fin.onclick=()=>{clearTimeout(seasonTimer); S.screen='summary'; render();}; add(fin);
-    if(!S.seasonPaused) seasonTimer=setTimeout(()=>{ if(S.screen==='season'){S.screen='summary'; render();} }, evt.major?3800:2800);
+    if(!S.seasonPaused) seasonTimer=setTimeout(()=>{ if(S.screen==='season'){S.screen='summary'; render();} }, (evt.major?3800:2800)/S.simRate);
   }
 }
 function roundsRow(o){
