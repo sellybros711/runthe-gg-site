@@ -604,6 +604,27 @@ allows Google Fonts, or self-host Anton.*
   on `main`. (Internal dev docs — this CLAUDE.md and the DataGolf spec — still
   reference the real PGA Tour data source; those aren't shipped to users.)
 
+- 2026-06-26: **Public leaderboard (online epic, greenlit).** Reuses the existing
+  RunThe.GG Supabase project (`jcrrxqfpdelrmvjuihnm`) and accounts, fully isolated
+  from RunThePitch via `runtour_*` namespacing.
+  - **Backend:** `supabase/22_runtour_leaderboard.sql` — `runtour_scores` table +
+    `runtour_submit_season` / `runtour_season_board` / `runtour_career_board` RPCs,
+    RLS public-read, **username server-attributed from `profiles`** (no client name
+    to forge), **OVR-scaled earnings clamp** (~$400k/overall pt), `golfer_name`
+    angle-bracket-stripped. Reads `profiles` only; never touches drafts/submit_draft/
+    wc_players. **Must be applied manually in the Supabase SQL editor — I have no DB
+    creds and the sandbox can't reach supabase.co (HTTP 000).**
+  - **Client:** loads supabase-js 2.45.4; reuses the shared runthe.gg auth session
+    (a RunThePitch login = same identity); submits each finished non-daily season;
+    Leaderboard overlay reads the global single-season + career boards, escaping all
+    DB strings (stored-XSS defense). **Fails open** — no supabase/network/migration →
+    no-op + local fallback (verified in sandbox, zero errors). Sign-in CTA links to
+    runthe.gg (session carries back). Player card + Privacy copy updated for optional
+    accounts.
+  - **Pending owner step:** apply `supabase/22_*.sql`; then verify live in a browser
+    (sandbox can't reach Supabase). Integrity is launch-grade (name-attributed +
+    clamp); skills+OVR are stored so deterministic-replay can harden it later.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
