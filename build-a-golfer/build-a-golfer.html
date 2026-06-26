@@ -628,29 +628,27 @@ function toast(msg){
 
 /* ---------- draft ---------- */
 function golferSVG(){return `<svg class="golferfig" viewBox="0 0 100 150" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="gf-shirt" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#1ccaa6"/><stop offset="1" stop-color="#0a8b76"/></linearGradient>
-    <linearGradient id="gf-pant" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#0e655c"/><stop offset="1" stop-color="#063b38"/></linearGradient>
-    <linearGradient id="gf-skin" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#17b99a"/><stop offset="1" stop-color="#0c8a73"/></linearGradient>
-  </defs>
-  <ellipse cx="49" cy="142" rx="27" ry="4" fill="rgba(0,0,0,.38)"/>
-  <line x1="43" y1="84" x2="21" y2="132" stroke="#d7dde3" stroke-width="2.6" stroke-linecap="round"/>
-  <circle cx="24" cy="132" r="3.2" fill="#F8F2E6"/>
-  <path d="M46,82 C44,100 41,118 39,134 l8,0 C49,118 51,100 52,84 Z" fill="url(#gf-pant)"/>
-  <path d="M52,82 C55,100 58,118 60,134 l-8,0 C50,118 49,100 48,84 Z" fill="url(#gf-pant)"/>
-  <path d="M38,133 h10 v4 q-6,2 -11,0 z" fill="#0a1626"/>
-  <path d="M51,133 h10 q1,4 -5,5 q-6,0 -6,-1 z" fill="#0a1626"/>
-  <path d="M40,52 C42,48 57,48 59,52 C63,64 61,78 57,84 C50,86 49,86 42,84 C38,78 36,64 40,52 Z" fill="url(#gf-shirt)"/>
-  <path d="M43,55 C36,64 34,76 42,84" stroke="url(#gf-skin)" stroke-width="7.5" fill="none" stroke-linecap="round"/>
-  <path d="M56,55 C52,66 46,78 43,84" stroke="url(#gf-skin)" stroke-width="7.5" fill="none" stroke-linecap="round"/>
-  <circle cx="43" cy="85" r="4.4" fill="#0c8a73"/>
-  <path d="M47,45 h5 v6 h-5 z" fill="#0c8a73"/>
-  <circle cx="49.5" cy="38" r="9" fill="url(#gf-skin)"/>
-  <path d="M40.5,36 a9 9 0 0 1 18 0 v1 h-18 z" fill="#EBA61F"/>
-  <path d="M40.5,37 l-7,-1.5 v3 l7,1 z" fill="#c79320"/>
+  <ellipse cx="51" cy="143" rx="28" ry="3.8" fill="rgba(0,0,0,.4)"/>
+  <!-- club shaft over the shoulder (finish) -->
+  <line x1="42" y1="42" x2="84" y2="16" stroke="#e7ecf0" stroke-width="2.8" stroke-linecap="round"/>
+  <line x1="42" y1="42" x2="49" y2="38" stroke="#EBA61F" stroke-width="3.4" stroke-linecap="round"/>
+  <!-- back (trail) leg + shoe, darker for depth -->
+  <g fill="#0b8c76">
+    <path d="M52,78 C60,94 67,110 70,128 q-4,3 -8,1 C58,114 52,98 47,84 Z"/>
+    <path d="M62,127 l10,3 -1,4.6 -10,-2 z"/>
+  </g>
+  <!-- front body, brand teal -->
+  <g fill="#11bb9b">
+    <path d="M48,78 C46,99 45,118 45,134 q4,2 8,0 C53,118 54,99 55,80 Z"/>
+    <path d="M41,133 h12 v4 q-6.5,2 -13,0 z"/>
+    <path d="M45,49 C50,44 62,45 62,53 C63,64 59,77 53,82 C47,84 44,79 43,72 C42,63 41,55 45,49 Z"/>
+    <path d="M58,55 C50,49 44,46 42,43 q-3,3 -1,6 C45,52 52,56 55,60 Z"/>
+    <circle cx="42" cy="44" r="4.5"/>
+    <circle cx="55" cy="36" r="8.4"/>
+  </g>
+  <!-- gold cap turned to the target -->
+  <path d="M47,33 a8.4 8.4 0 0 1 16.8 0 v1 h-16.8 z" fill="#EBA61F"/>
+  <path d="M47,34 l-8.5,-1.4 v3 l8.5,1 z" fill="#EBA61F"/>
 </svg>`;}
 const RSHORT={dist:'DRV',acc:'ACC',app:'APP',sht:'SHT',scr:'SCR',bnk:'BNK',put:'PUT',clu:'COM'};
 function radarSVG(){
