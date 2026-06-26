@@ -2490,11 +2490,33 @@
   .menu-item svg.mi-fill{fill:currentColor;stroke:none;}
   .menu-sep{height:1px;background:rgba(127,127,127,.22);margin:8px 6px;}
 
-  /* AdSense removed — Google Auto Ads injected a max-z-index mobile anchor /
-     vignette overlay that covered the bottom-anchored game buttons (e.g. START
-     WORLD CUP). Re-add only after Auto Ads (Anchor + Vignette) are turned off in
-     the AdSense dashboard. */
+  /* ============================================================
+     Google AdSense — manual units only (Auto Ads is OFF in the dashboard).
+     Confined to empty space around the game. The mobile strip is a FIXED 50px
+     tall, non-responsive, and clipped (overflow:hidden), so it can NEVER grow
+     up over a game button — that growth was what broke the prior version. */
+  .rtp-ad-rail{ position:fixed; top:50%; transform:translateY(-50%); z-index:50; display:none; }
+  .rtp-ad-left{ left:24px; }
+  .rtp-ad-right{ right:24px; }
+  /* Desktop side rails only — ≥1200px leaves ~156px clear beside the 520px card. */
+  @media (min-width:1200px){ .rtp-ad-rail{ display:block; } }
+
+  .rtp-ad-mobile-bottom{ position:fixed; left:0; right:0; bottom:0; height:50px; z-index:40;
+    display:none; overflow:hidden; text-align:center;
+    background:var(--white); border-top:1px solid rgba(127,127,127,.18); }
+  .rtp-ad-mobile-bottom .adsbygoogle{ display:inline-block; width:320px; height:50px; }
+  @media (max-width:1199px){
+    .rtp-ad-mobile-bottom{ display:block; }    /* mobile bottom anchor only */
+    .rtp-ad-rail{ display:none !important; }     /* never side rails on mobile */
+    body{ padding-bottom:54px; }                 /* reserve the strip so nothing hides behind it */
+  }
+  /* Hide the strip (and reclaim its reserved space) on the full-viewport /
+     sensitive screens: simulation, results/share, draft select, pitch reveal. */
+  body.rtp-hide-ads .rtp-ad-mobile-bottom{ display:none !important; }
+  @media (max-width:1199px){ body.rtp-hide-ads{ padding-bottom:0 !important; } }
 </style>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
+     crossorigin="anonymous"></script>
 <!-- Supabase JS (auth: email/password + Google OAuth, session persistence) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 </head>
@@ -3164,6 +3186,28 @@
 
 </div>
 
+<!-- ===== Google AdSense units (manual; loader in <head>). Placed before the
+     modal overlays so any modal — all z-index ≥ 40 — paints over them. ===== -->
+<div class="rtp-ad-rail rtp-ad-left">
+  <ins class="adsbygoogle"
+       style="display:block;width:160px;height:600px"
+       data-ad-client="ca-pub-5952069078178257"
+       data-ad-slot="1816473106"></ins>
+</div>
+<div class="rtp-ad-rail rtp-ad-right">
+  <ins class="adsbygoogle"
+       style="display:block;width:160px;height:600px"
+       data-ad-client="ca-pub-5952069078178257"
+       data-ad-slot="4576322214"></ins>
+</div>
+<!-- Mobile strip: fixed 320x50, NOT responsive — it cannot grow over a button. -->
+<div class="rtp-ad-mobile-bottom">
+  <ins class="adsbygoogle"
+       style="display:inline-block;width:320px;height:50px"
+       data-ad-client="ca-pub-5952069078178257"
+       data-ad-slot="8100634252"></ins>
+</div>
+
 <div class="sheet-bg" id="sheet-bg">
   <div class="sheet">
     <h3 id="sheet-name"></h3>
@@ -3637,6 +3681,10 @@ function showScreen(name){
   document.body.classList.toggle('home-mode', name==='home');
   document.body.classList.toggle('sim-mode', name==='sim');
   document.body.classList.toggle('profile-mode', name==='profile');
+  // Hide the mobile ad strip on the full-viewport / sensitive screens (sim,
+  // results/share, draft select, pitch reveal). Additive — no game logic touched.
+  document.body.classList.toggle('rtp-hide-ads',
+    name==='sim' || name==='report' || name==='select' || name==='home');
   window.scrollTo({top:0,behavior:'smooth'});
 }
 // Name of the currently-active screen (without the "screen-" prefix).
@@ -11769,6 +11817,19 @@ boot().then(async ()=>{
   if(window.FRIENDLY_LOADING) await resolveCodeChallenge();
   friendlyRouteInitial();
 });
+</script>
+
+<script>
+  // Initialise each AdSense unit exactly once. Fully wrapped so a missing,
+  // blocked, or slow adsbygoogle.js can never throw and break the game.
+  (function(){
+    try{
+      var ads = document.querySelectorAll('.adsbygoogle');
+      for (var i=0;i<ads.length;i++){
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      }
+    }catch(e){}
+  })();
 </script>
 </body>
 </html>
