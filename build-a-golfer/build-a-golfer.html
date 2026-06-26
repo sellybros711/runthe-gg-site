@@ -1459,7 +1459,7 @@ function lbRow(o){
 const RLABS=['DRV','ACC','APP','SHT','SCR','BNK','PUT','COM'];
 function bestTxt(b){return b===99?'MC':(b===1?'WIN':'T'+b);}
 function drawShareCard(cv,info,vals){
-  const W=560,H=720,ctx=cv.getContext('2d');
+  const W=560,H=636,ctx=cv.getContext('2d');
   cv.width=W; cv.height=H;
   const bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#11432f'); bg.addColorStop(1,'#06200f');
   ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
@@ -1468,19 +1468,15 @@ function drawShareCard(cv,info,vals){
   ctx.fillStyle='#cda24a'; ctx.fillRect(0,0,W,7);
   ctx.strokeStyle='rgba(205,162,74,.55)'; ctx.lineWidth=2; ctx.strokeRect(11,11,W-22,H-22);
   ctx.textAlign='center';
-  // title (serif, two-tone)
-  ctx.font='700 30px Cinzel, Georgia, serif';
+  // title (serif, two-tone) — card starts with the wordmark, then the graph
+  ctx.font='700 32px Cinzel, Georgia, serif';
   const ta='RUN THE ', tb='TOUR', wa=ctx.measureText(ta).width, wb=ctx.measureText(tb).width, tx=W/2-(wa+wb)/2;
   ctx.textAlign='left';
-  ctx.fillStyle='#F4E3C9'; ctx.fillText(ta,tx,56);
-  ctx.fillStyle='#e7b84e'; ctx.fillText(tb,tx+wa,56);
+  ctx.fillStyle='#F4E3C9'; ctx.fillText(ta,tx,60);
+  ctx.fillStyle='#e7b84e'; ctx.fillText(tb,tx+wa,60);
   ctx.textAlign='center';
-  ctx.fillStyle='#cda24a'; ctx.font='800 12px system-ui,sans-serif';
-  try{ctx.letterSpacing='3px';}catch(e){}
-  ctx.fillText('A RUNTHE.GG GAME',W/2,78);
-  try{ctx.letterSpacing='0px';}catch(e){}
   // radar
-  const cx=W/2, cy=224, R=116, n=8;
+  const cx=W/2, cy=212, R=114, n=8;
   const ang=i=>(-Math.PI/2)+i*(2*Math.PI/n), pt=(i,r)=>[cx+Math.cos(ang(i))*r, cy+Math.sin(ang(i))*r];
   ctx.strokeStyle='rgba(244,227,201,.14)'; ctx.lineWidth=1;
   [0.25,0.5,0.75,1].forEach(f=>{ctx.beginPath();for(let i=0;i<n;i++){const[x,y]=pt(i,R*f);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.stroke();});
@@ -1493,26 +1489,24 @@ function drawShareCard(cv,info,vals){
   // name (serif, auto-fit)
   let nm=(info.name||'Your Golfer').toUpperCase(), ns=32;
   do{ ctx.font='700 '+ns+'px Cinzel, Georgia, serif'; if(ctx.measureText(nm).width<=W-64)break; ns-=2; }while(ns>16);
-  ctx.fillStyle='#F4E3C9'; ctx.fillText(nm,W/2,394);
+  ctx.fillStyle='#F4E3C9'; ctx.fillText(nm,W/2,386);
   ctx.fillStyle='#9cbfa8'; ctx.font='700 14px system-ui,sans-serif';
-  ctx.fillText(`OVR ${info.ovr}${info.year>1?'  ·  YR '+info.year:''}  ·  ${info.events} EVENTS  ·  ${info.majors} MAJORS`,W/2,416);
+  ctx.fillText(`OVR ${info.ovr}${info.year>1?'  ·  YR '+info.year:''}  ·  ${info.events} EVENTS  ·  ${info.majors} MAJORS`,W/2,408);
   ctx.fillStyle=info.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 22px Impact,system-ui,sans-serif';
-  ctx.fillText('NET '+fmtSigned(info.net),W/2,450);
-  // stat cells
+  ctx.fillText('NET '+fmtSigned(info.net),W/2,442);
+  // stat cells — card ends with the stats
   const cells=[
     ['WINNINGS',fmt(info.money),'#e7b84e'],
     ['MONEY RANK',info.moneyRank+' / '+info.N,'#F4E3C9'],
     ['WINS',info.wins+'','#F4E3C9'],
     ['MAJORS',info.majorsWon+'','#F4E3C9'],
   ];
-  const colX=[W*0.28,W*0.72], y0=506, rowH=80;
+  const colX=[W*0.28,W*0.72], y0=496, rowH=72;
   cells.forEach((c,i)=>{
     const x=colX[i%2], y=y0+Math.floor(i/2)*rowH;
     ctx.fillStyle='#9cbfa8'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(c[0],x,y);
     ctx.fillStyle=c[2]; ctx.font='800 26px Impact,system-ui,sans-serif'; ctx.fillText(c[1],x,y+28);
   });
-  ctx.fillStyle='#cda24a'; ctx.font='700 17px Cinzel, Georgia, serif';
-  ctx.fillText('RunThe.GG',W/2,H-26);
 }
 function shareCard(cv,text,name){
   cv.toBlob(async b=>{
