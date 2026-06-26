@@ -26,6 +26,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
+<!-- RunThe.GG accounts + public leaderboard (same Supabase project as RunThePitch; optional, fails open) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
   :root{
     --cream:#F4E8D6; --peach:#F7DCCC;
@@ -937,12 +939,13 @@ function overlayRecord(screen){
   const badgeGrid=ACHS.map(a=>{const on=!!badges[a.id]; return `<div style="display:flex;align-items:center;gap:8px;background:#0a2740;border:1px solid var(--line);border-radius:11px;padding:9px 10px;opacity:${on?1:.38}">
       <span style="font-size:20px;filter:${on?'none':'grayscale(1)'}">${a.e}</span>
       <span style="min-width:0"><div style="font-weight:800;font-size:12.5px;color:var(--oncard)">${a.t}</div><div class="small muted" style="font-size:10.5px;line-height:1.25">${a.d}</div></span></div>`;}).join('');
+  const acctCard = sbSignedIn()
+    ? `<div><b style="color:var(--gold)">${esc(sbUsername||'Signed in')}</b><div class="small muted" style="margin-top:2px">${sbUsername?'Your seasons post to the global leaderboard.':'Set a username on RunThe.GG to appear on the board.'}</div></div>${sbUsername?'':`<a class="btn gold" href="https://runthe.gg/" target="_blank" rel="noopener" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap;text-decoration:none">RunThe.GG ↗</a>`}`
+    : `<div><b style="color:var(--oncard)">Guest</b><div class="small muted" style="margin-top:2px">Your record lives on this device. Sign in with your RunThe.GG account to sync &amp; hit the global board.</div></div><a class="btn gold" href="https://runthe.gg/" target="_blank" rel="noopener" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap;text-decoration:none">Sign in ↗</a>`;
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Player</h3>
-    <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">
-      <div><b style="color:var(--oncard)">Guest</b><div class="small muted" style="margin-top:2px">Your record lives on this device. Sign in to sync &amp; hit the global board.</div></div>
-      <button class="btn gold acct" disabled style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap;opacity:.6">Sign in · soon</button></div>
+    <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">${acctCard}</div>
     <div class="sbar" style="margin-bottom:14px">
       <div class="sstat wide"><div class="k">Best net profit</div><div class="v" style="color:${(c.bestNet??0)>=0?'#35d6a0':'#E14A33'};font-size:22px">${c.bestNet==null?'—':fmtSigned(c.bestNet)}</div></div>
       <div class="sstat"><div class="k">Best earned</div><div class="v gold">${fmt(c.bestMoney)}</div></div>
@@ -961,30 +964,55 @@ function overlayRecord(screen){
   screen.appendChild(ov);
 }
 function overlayLeaderboard(screen){
+  if(lbCache===null) lbLoad();                       // async; re-renders when ready
   const c=career();
   const tab=S.lbTab||'season';
   const youName=(c.hof[0]&&c.hof[0].name)||S.name||'You';
-  const lbRowHTML=(pos,name,sub,val)=>`<div class="lb ${name===youName?'you':''}" style="grid-template-columns:34px 1fr auto">
+  const lbRowHTML=(pos,name,sub,val,you)=>`<div class="lb ${you?'you':''}" style="grid-template-columns:34px 1fr auto">
       <span class="pos">${pos===1?'🏆':pos}</span>
-      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>${sub?`<div class="small muted" style="font-size:10.5px">${sub}</div>`:''}</span>
+      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</div>${sub?`<div class="small muted" style="font-size:10.5px">${esc(sub)}</div>`:''}</span>
       <span class="mny" style="color:var(--gold)">${fmt(val)}</span></div>`;
+  const globalOk = lbCache && lbCache.ok;
+  const globalRows = globalOk ? (tab==='season'?lbCache.season:lbCache.career) : [];
   let board;
-  if(tab==='season'){
-    board = c.hof.length
-      ? [...c.hof].sort((a,b)=>b.money-a.money).map((h,i)=>lbRowHTML(i+1,h.name||'Your Golfer','OVR '+h.ovr,h.money)).join('')
-      : `<div class="small muted center" style="padding:18px 8px">Run a season to post a single-season earnings score.</div>`;
+  if(lbCache===null){
+    board=`<div class="small muted center" style="padding:18px 8px">Loading the global board…</div>`;
+  } else if(globalOk && globalRows.length){
+    board=globalRows.map(r=>{
+      const you=sbUser&&r.user_id===sbUser.id;
+      return tab==='season'
+        ? lbRowHTML(r.rank,r.display_name,'OVR '+r.ovr+(r.golfer_name?' · '+r.golfer_name:''),r.season_earnings,you)
+        : lbRowHTML(r.rank,r.display_name,r.seasons+' season'+(r.seasons>1?'s':'')+' · '+r.wins+'W',r.career_earnings,you);
+    }).join('');
+  } else if(globalOk){
+    board=`<div class="small muted center" style="padding:18px 8px">No scores yet — be the first to post one.</div>`;
   } else {
-    board = c.totalMoney>0
-      ? lbRowHTML(1, youName, c.builds+' season'+(c.builds>1?'s':'')+' · '+c.wins+'W', c.totalMoney)
-      : `<div class="small muted center" style="padding:18px 8px">Play a season to start banking career earnings.</div>`;
+    // backend not reachable / migration not applied yet → local fallback
+    if(tab==='season'){
+      board = c.hof.length
+        ? [...c.hof].sort((a,b)=>b.money-a.money).map((h,i)=>lbRowHTML(i+1,h.name||'Your Golfer','OVR '+h.ovr,h.money,true)).join('')
+        : `<div class="small muted center" style="padding:18px 8px">Run a season to post a single-season score.</div>`;
+    } else {
+      board = c.totalMoney>0
+        ? lbRowHTML(1, youName, c.builds+' season'+(c.builds>1?'s':'')+' · '+c.wins+'W', c.totalMoney,true)
+        : `<div class="small muted center" style="padding:18px 8px">Play a season to bank career earnings.</div>`;
+    }
+  }
+  // sign-in banner reflects the shared RunThe.GG session
+  const signCTA=`<a class="btn gold" href="https://runthe.gg/" target="_blank" rel="noopener" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap;text-decoration:none">Sign in ↗</a>`;
+  let banner;
+  if(sbSignedIn() && sbUsername){
+    banner=`<div><b style="color:var(--gold)">Signed in as ${esc(sbUsername)}</b><div class="small muted" style="margin-top:2px">Your finished seasons post to the global board automatically.</div></div>`;
+  } else if(sbSignedIn()){
+    banner=`<div><b style="color:var(--gold)">Pick a username</b><div class="small muted" style="margin-top:2px">Set a username on RunThe.GG to appear on the board.</div></div>${signCTA}`;
+  } else {
+    banner=`<div><b style="color:var(--gold)">Compete on the global board</b><div class="small muted" style="margin-top:2px">Sign in with your RunThe.GG account — finished seasons then post here automatically.${globalOk?'':' Global board is offline right now — showing your own results.'}</div></div>${signCTA}`;
   }
   const seg=(id,lab)=>`<button class="btn ${tab===id?'gold':'ghost'} lbtab" data-tab="${id}" style="font-size:12px;padding:8px 12px;width:auto">${lab}</button>`;
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Leaderboard">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>🏆 Leaderboard</h3>
-    <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">
-      <div><b style="color:var(--gold)">Global leaderboards are coming soon</b><div class="small muted" style="margin-top:2px">Sign in with your RunThe.GG account to put your tour on the public board. For now this shows your own results.</div></div>
-      <button class="btn gold" disabled style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap;opacity:.6">Sign in · soon</button></div>
+    <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
     <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px">${seg('season','Single Season')}${seg('career','Career')}</div>
     <h2 style="margin:0 0 8px">${tab==='season'?'Single-season earnings':'Career earnings'}</h2>
     <div class="board">${board}</div>
@@ -1047,10 +1075,11 @@ function overlayPrivacy(screen){
     <h3>Privacy</h3>
     <p class="lede">RunTheTour is built to be private by default.</p>
     <ol style="color:#dbe6ee;padding-left:18px">
-      <li><b>No accounts.</b> There's nothing to sign up for.</li>
-      <li><b>Your data stays on your device.</b> Your golfer, look, record, and daily streak are saved only in this browser (localStorage). We can't see them, and they never leave your device.</li>
-      <li><b>Clear it anytime.</b> Use Reset, or clear this site's browser data, to wipe everything.</li>
-      <li><b>No third-party tracking or ads</b> are loaded in this build. If that ever changes, this page will be updated first and say exactly what's collected.</li>
+      <li><b>Accounts are optional.</b> You can play the whole game without signing in. Signing in (with your RunThe.GG account) is only needed to post to the public leaderboard.</li>
+      <li><b>Your data stays on your device</b> unless you post a score. Your golfer, look, record, and daily streak are saved only in this browser (localStorage).</li>
+      <li><b>If you sign in and finish a season,</b> your username, golfer name, overall, and earnings are sent to our database (Supabase) and shown on the public leaderboard. Nothing is posted while you're a guest.</li>
+      <li><b>Clear it anytime.</b> Use Reset, or clear this site's browser data, to wipe local data. Sign out on RunThe.GG to end your session.</li>
+      <li><b>No ads or third-party trackers</b> are loaded. The only network services are Google Fonts and our own Supabase backend (for accounts + leaderboard).</li>
     </ol>
     <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour — Privacy question')}" style="text-decoration:none;display:block">✉ Privacy Question</a>
     <div style="height:10px"></div>
@@ -1810,6 +1839,9 @@ function scrSummary(){
     Object.entries(S.season.totals).forEach(([n,v])=>{ S.career.fieldMoney[n]=(S.career.fieldMoney[n]||0)+v.money; });
     S.summaryTab='season';
     track('season_finished',{ovr,net:Math.round(ec.net),gross:Math.round(ec.gross),wins:t.wins,majors:t.majors,moneyRank,N,daily:S.daily,year:S.year||1});
+    // post to the public leaderboard (no-op unless signed in + backend live; daily excluded)
+    if(!S.daily) sbSubmitSeason({golfer:me.name,ovr,year:S.year||1,earnings:t.money,net:ec.net,wins:t.wins,majors:t.majors,
+      skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))});
     clearResume();   // golfer's season is in the books — no longer resumable
   }
   if(S.daily&&!S.dailyStored){S.dailyStored=true; bumpStreak(); track('daily_completed',{net:Math.round(ec.net),moneyRank});
@@ -2095,6 +2127,52 @@ function tile(k,v,gold){return $(`<div class="tile"><div class="k">${k}</div><di
 function moneyRow(r,pos,you){return $(`<div class="lb ${you?'you':''}" style="grid-template-columns:34px 1fr 92px">
   <span class="pos">${pos===1?'🏆':pos}</span><span class="pl">${r.n}</span>
   <span class="mny" style="color:var(--gold)">${fmt(r.money)}</span></div>`);}
+
+/* ---------- RunThe.GG accounts + public leaderboard (shared-origin Supabase) ----------
+   Optional and fail-open: if supabase-js or the network is unavailable, or the
+   runtour_* migration hasn't been applied yet, every call below no-ops and the
+   leaderboard falls back to local data. Nothing here can break the game. The
+   auth session lives in localStorage under the runthe.gg origin, so a player
+   signed into RunThePitch is the same identity here. */
+const SB_URL='https://jcrrxqfpdelrmvjuihnm.supabase.co';
+const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
+let sb=null, sbUser=null, sbUsername=null, lbCache=null, _pendingSeason=null;
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function sbSignedIn(){ return !!sbUser; }
+function sbInit(){
+  try{
+    if(!(window.supabase&&window.supabase.createClient)) return;
+    sb=window.supabase.createClient(SB_URL,SB_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+    sb.auth.onAuthStateChange((_e,session)=>sbApply(session));
+    sb.auth.getSession().then(({data})=>sbApply(data&&data.session)).catch(()=>{});
+  }catch(e){ sb=null; }
+}
+async function sbApply(session){
+  sbUser=(session&&session.user)||null; sbUsername=null;
+  if(sbUser&&sb){
+    try{ const {data}=await sb.from('profiles').select('username').eq('id',sbUser.id).maybeSingle(); sbUsername=(data&&data.username)||null; }catch(e){}
+    if(_pendingSeason){ const s=_pendingSeason; _pendingSeason=null; sbSubmitSeason(s); }
+  }
+  if(S.overlay==='record'||S.overlay==='leaderboard') render();
+}
+async function sbSubmitSeason(s){
+  if(!sb) return;
+  if(!sbUser){ _pendingSeason=s; return; }   // post as soon as they sign in
+  try{
+    await sb.rpc('runtour_submit_season',{p_golfer:s.golfer,p_ovr:s.ovr,p_year:s.year,
+      p_earnings:Math.round(s.earnings),p_net:Math.round(s.net),p_wins:s.wins,p_majors:s.majors,p_skills:s.skills});
+    lbCache=null;   // force a refresh next time the board opens
+  }catch(e){}
+}
+async function lbLoad(){
+  if(!sb){ lbCache={season:[],career:[],ok:false}; if(S.overlay==='leaderboard')render(); return; }
+  try{
+    const [a,b]=await Promise.all([sb.rpc('runtour_season_board',{p_limit:50}),sb.rpc('runtour_career_board',{p_limit:50})]);
+    lbCache={season:(a.data||[]),career:(b.data||[]),ok:!a.error&&!b.error};
+  }catch(e){ lbCache={season:[],career:[],ok:false}; }
+  if(S.overlay==='leaderboard') render();
+}
+sbInit();
 
 track('game_start');
 if(LS.get('bag_seen',false)) track('return_visit'); else LS.set('bag_seen',true);
