@@ -358,6 +358,19 @@ allows Google Fonts, or self-host Anton.*
     cream/gold stats, "RunThe.GG" in serif.
   Verified, zero page errors.
 
+- 2026-06-26: Title rename + follow-through golfer + female option + card stats.
+  - **Title**: moved the course green/flag right and bunker left so the hero text
+    is clear; removed the trophy; renamed **RunTheGreen → RunTheTour** and set the
+    hero in the serif (Cinzel) logo style (cream "RUNTHE" / gold "TOUR").
+  - **Golfer figure** redrawn as a **follow-through finish** pose (club high
+    behind, weight forward, head up), still colour-customizable; added a
+    **Male/Female** option (`look.gender`, female has a ponytail) alongside
+    handedness (lefty mirrors the swing). Stylized vector, not a photorealistic
+    match to the reference render.
+  - **Share card** trimmed to 4 stats — **Winnings, Tour Rank, Wins, Majors** —
+    and removed the `#` from ranks.
+  Verified, zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

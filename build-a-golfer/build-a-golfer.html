@@ -1,4 +1,4 @@
-<!-- Build a Golfer (RunTheGreen) — solo season · v2 · RunThePitch skin -->
+<!-- Build a Golfer (RunTheTour) — solo season · v2 · RunThePitch skin -->
 <title>Build a Golfer · RunThe.GG</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -114,8 +114,8 @@
     background:radial-gradient(120% 92% at 50% 100%, #257a4f 0%, #14512f 55%, transparent 76%)}
   .ring{position:absolute; left:50%; bottom:2%; transform:translateX(-50%); border:1px solid rgba(255,255,255,.10); border-radius:50%}
   .titlewrap{position:relative; z-index:1; max-width:560px; margin:0 auto}
-  .hero{font-family:var(--display); font-style:italic; line-height:.9; letter-spacing:.01em; margin:4px 0 2px; text-transform:none; text-shadow:0 3px 22px rgba(0,0,0,.55)}
-  .hero .hr1{color:var(--oncard)} .hero .hr2{color:var(--teal)}
+  .hero{font-family:var(--serif); font-weight:700; font-style:normal; line-height:.96; letter-spacing:.02em; margin:6px 0 4px; text-transform:uppercase; text-shadow:0 3px 22px rgba(0,0,0,.55)}
+  .hero .hr1{color:var(--oncard)} .hero .hr2{color:var(--hgold)}
   .trophy{width:54px; height:72px; display:block; margin:2px auto 4px; filter:drop-shadow(0 6px 14px rgba(235,166,31,.4))}
   .scorechip{display:inline-flex; align-items:center; gap:14px; background:rgba(7,18,30,.82);
     border:1px solid var(--gold); border-radius:12px; padding:9px 16px; margin:6px auto 16px;
@@ -657,7 +657,7 @@ const PANTS=[
   {id:'white',a:'#ededdf', b:'#deded1'},
   {id:'black',a:'#262a31', b:'#1d2026'},
 ];
-const DEFLOOK={skin:'tan',polo:'teal',pants:'stone',lefty:false};
+const DEFLOOK={skin:'tan',polo:'teal',pants:'stone',lefty:false,gender:'male'};
 let S={};
 function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);S={screen:'title',mode:'easy',revealed:new Set(),drawRng:Math.random,reSpins:2,
   slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get('bag_name',''),
@@ -888,21 +888,22 @@ function scrTitle(){
       <path d="M0,290 Q170,266 300,294 T440,288 V322 Q300,328 170,300 T0,324 Z"/>
       <path d="M0,348 Q170,326 300,354 T440,348 V382 Q300,388 170,360 T0,384 Z"/>
       <path d="M0,406 Q170,386 300,414 T440,408 V440 H0 Z"/></g>
-    <ellipse cx="252" cy="244" rx="74" ry="21" fill="#2ea65f"/>
-    <ellipse cx="252" cy="244" rx="74" ry="21" fill="none" stroke="#38c270" stroke-width="1.4" opacity="0.55"/>
-    <ellipse cx="148" cy="258" rx="36" ry="11" fill="#efe0c0"/>
-    <ellipse cx="148" cy="258" rx="36" ry="11" fill="none" stroke="#d6c197" stroke-width="1.4"/>
-    <ellipse cx="266" cy="241" rx="3.4" ry="1.6" fill="#06241a"/>
-    <line x1="266" y1="241" x2="266" y2="188" stroke="#F4E3C9" stroke-width="2.4" stroke-linecap="round"/>
-    <path d="M266,190 l22,6 -22,7 z" fill="#EBA61F"/>
-    <circle cx="234" cy="247" r="3" fill="#F8F2E6"/>
+    <!-- putting green + flag pushed to the right so the title text stays clear -->
+    <ellipse cx="388" cy="288" rx="64" ry="19" fill="#2ea65f"/>
+    <ellipse cx="388" cy="288" rx="64" ry="19" fill="none" stroke="#38c270" stroke-width="1.4" opacity="0.55"/>
+    <ellipse cx="402" cy="285" rx="3.4" ry="1.6" fill="#06241a"/>
+    <line x1="402" y1="285" x2="402" y2="232" stroke="#F4E3C9" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M402,234 l20,5 -20,6 z" fill="#EBA61F"/>
+    <circle cx="372" cy="292" r="3" fill="#F8F2E6"/>
+    <!-- bunker pushed to the left -->
+    <ellipse cx="50" cy="300" rx="42" ry="12" fill="#efe0c0"/>
+    <ellipse cx="50" cy="300" rx="42" ry="12" fill="none" stroke="#d6c197" stroke-width="1.4"/>
     <rect x="0" y="0" width="440" height="120" fill="url(#topfade)"/>
     <rect x="0" y="280" width="440" height="160" fill="url(#botfade)"/>
   </svg></div>`);
   add(scene);
   const w=$(`<div class="titlewrap center"></div>`);
-  w.appendChild($(trophySVG()));
-  w.appendChild($(`<h1 class="hero" style="font-size:46px"><span class="hr1">RunThe</span><span class="hr2">Green</span></h1>`));
+  w.appendChild($(`<h1 class="hero" style="font-size:48px"><span class="hr1">RunThe</span><span class="hr2">Tour</span></h1>`));
   w.appendChild($(`<p class="lede center" style="max-width:320px;margin:8px auto 6px">Build a golfer from the game's greatest skills and run them through a full PGA season.</p>`));
   w.appendChild($(`<div class="center"><div class="rollchip">
     <div class="rolllab">Built from 8 real skills</div>
@@ -960,6 +961,7 @@ function scrSetup(){
   const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${S.name}">`);
   inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name);}; right.appendChild(inp);
   right.appendChild($(`<div style="height:6px"></div>`));
+  right.appendChild(genderRow());
   right.appendChild(handRow());
   right.appendChild(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
   right.appendChild(swatchRow('Shirt',POLOS,S.look.polo,'polo',o=>o.m));
@@ -979,34 +981,35 @@ function golferSVG(){
   const pa=PANTS.find(x=>x.id===L.pants)||PANTS[0];
   const collar=(po.id==='white')?'#cdd1cc':'#f2f1ec';
   const flip=L.lefty?' style="transform:scaleX(-1)"':'';
-  return `<svg class="golferfig"${flip} viewBox="0 0 112 152" xmlns="http://www.w3.org/2000/svg">
-  <ellipse cx="58" cy="144" rx="33" ry="4" fill="rgba(0,0,0,.42)"/>
-  <!-- club + ball out front (right-handed address) -->
-  <line x1="67" y1="92" x2="90" y2="139" stroke="#c8ced4" stroke-width="2.6" stroke-linecap="round"/>
-  <path d="M88,137 l7,1.5 -1,3.4 -7,-1.5 z" fill="#9aa1a8"/>
-  <circle cx="95" cy="140" r="3" fill="#f4ecd9"/>
-  <!-- back leg (far, darker) -->
-  <path d="M50,84 C46,104 41,122 38,137 l7,1 C49,122 54,104 56,86 Z" fill="${pa.b}"/>
-  <path d="M36,136 l-2,4 11,1 1,-4 z" fill="#0a1626"/>
-  <!-- front leg -->
-  <path d="M55,84 C57,104 60,122 62,137 l7,1 C68,122 64,104 61,86 Z" fill="${pa.a}"/>
-  <path d="M60,136 l-1,4 12,1 1,-4 z" fill="#0a1626"/>
+  const female=(L.gender==='female');
+  return `<svg class="golferfig"${flip} viewBox="0 0 124 164" xmlns="http://www.w3.org/2000/svg">
+  <ellipse cx="58" cy="156" rx="32" ry="4.5" fill="rgba(0,0,0,.42)"/>
+  <!-- club finishing high behind, iron head -->
+  <line x1="52" y1="44" x2="104" y2="20" stroke="#1d3b2e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M104,18 q7,-1 9,3 q-2,4 -8,3 z" fill="#2a2a2a"/>
+  <!-- trail leg (back, on toe) -->
+  <path d="M60,88 C66,104 72,116 74,138 q-1,5 -7,5 C64,124 58,108 54,92 Z" fill="${pa.b}"/>
+  <path d="M66,141 l9,1 0,4 -10,-1 z" fill="#f2f1ec"/>
+  <!-- lead leg (front, planted) -->
+  <path d="M50,88 C48,110 46,130 45,148 q4,3 9,1 C55,130 56,110 57,90 Z" fill="${pa.a}"/>
+  <path d="M43,146 h12 v5 q-7,2 -13,0 z" fill="#f2f1ec"/>
   <!-- belt -->
-  <path d="M46,80 L62,82 l-1,5 -16,-2 z" fill="#1c2533"/>
-  <!-- torso polo, leaning toward the ball -->
-  <path d="M44,82 C44,68 48,57 57,54 C64,56 63,70 58,84 Z" fill="${po.m}"/>
-  <!-- lead arm down to the grip -->
-  <path d="M56,57 C60,70 64,82 67,90" stroke="${sk.m}" stroke-width="7" fill="none" stroke-linecap="round"/>
-  <!-- short sleeve -->
-  <path d="M53,55 C49,60 49,66 53,70 l6,-3 C58,61 57,57 58,55 Z" fill="${po.s}"/>
-  <circle cx="67" cy="91" r="4.4" fill="#f2f1ec"/>
-  <!-- neck + head (profile, facing the ball) -->
-  <path d="M57,48 l6,1 -1,6 -6,-1 z" fill="${sk.s}"/>
-  <circle cx="62" cy="41" r="8.6" fill="${sk.m}"/>
+  <path d="M46,84 L62,86 l-1,5 -16,-2 z" fill="#163d2a"/>
+  <!-- torso polo (rotated finish) -->
+  <path d="M44,86 C42,70 46,${female?58:56} 55,52 C64,53 65,68 60,86 Z" fill="${po.m}"/>
+  <!-- arms up to the hands -->
+  <path d="M58,55 C56,49 53,45 51,43" stroke="${sk.m}" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <path d="M50,57 C49,50 50,45 51,43" stroke="${sk.s}" stroke-width="7" fill="none" stroke-linecap="round"/>
+  <circle cx="51" cy="43" r="4.4" fill="#f2f1ec"/>
+  <path d="M55,52 C50,52 47,57 48,63 l7,1 C56,57 56,53 57,52 Z" fill="${po.s}"/>
+  ${female?`<path d="M68,44 C75,49 75,60 70,68 C67,62 66,52 65,46 Z" fill="#5a3b25"/>`:''}
+  <!-- neck + head, looking up to the shot -->
+  <path d="M58,49 l5,2 -2,5 -5,-2 z" fill="${sk.s}"/>
+  <circle cx="62" cy="42" r="8.4" fill="${sk.m}"/>
   <!-- golf cap: crown + forward brim -->
-  <path d="M53,40 C52,29 70,28 71,38 L71,40 Z" fill="#f2f1ec"/>
-  <path d="M70,37 q9,0.5 12,2.5 q0,2.4 -3,2.6 l-9,-1.3 z" fill="#e7e6e0"/>
-  <rect x="53" y="39" width="18" height="2.4" fill="${po.m}" transform="rotate(2 62 40)"/>
+  <path d="M54,41 C53,30 71,30 71,40 L71,42 Z" fill="#f2f1ec"/>
+  <path d="M52,41 q-3,-0.5 -4,1.5 q1,2.4 4,2 l4,-1 z" fill="#e7e6e0"/>
+  <rect x="54" y="40" width="17" height="2.4" fill="${po.m}"/>
 </svg>`;}
 function swatchRow(label,opts,curId,key,colorOf){
   const row=$(`<div style="margin:9px 0"></div>`);
@@ -1029,6 +1032,17 @@ function handRow(){
   r.onclick=()=>{S.look.lefty=false;LS.set('bag_look',S.look);render();};
   l.onclick=()=>{S.look.lefty=true;LS.set('bag_look',S.look);render();};
   wrap.appendChild(r);wrap.appendChild(l);row.appendChild(wrap);return row;
+}
+function genderRow(){
+  const g=S.look.gender||'male';
+  const row=$(`<div style="margin:9px 0"></div>`);
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Golfer</div>`));
+  const wrap=$(`<div class="mini" style="margin:0"></div>`);
+  const m=$(`<button class="btn ${g==='male'?'gold':'ghost'}" style="font-size:14px;padding:10px">Male</button>`);
+  const f=$(`<button class="btn ${g==='female'?'gold':'ghost'}" style="font-size:14px;padding:10px">Female</button>`);
+  m.onclick=()=>{S.look.gender='male';LS.set('bag_look',S.look);render();};
+  f.onclick=()=>{S.look.gender='female';LS.set('bag_look',S.look);render();};
+  wrap.appendChild(m);wrap.appendChild(f);row.appendChild(wrap);return row;
 }
 const RSHORT={dist:'DRV',acc:'ACC',app:'APP',sht:'SHT',scr:'SCR',bnk:'BNK',put:'PUT',clu:'COM'};
 function radarSVG(){
@@ -1352,14 +1366,12 @@ function drawShareCard(cv,info,vals){
   ctx.fillText('NET '+fmtSigned(info.net),W/2,450);
   // stat cells
   const cells=[
-    ['MONEY WON',fmt(info.money),'#e7b84e'],
-    ['MONEY RANK','#'+info.moneyRank+' / '+info.N,'#F4E3C9'],
+    ['WINNINGS',fmt(info.money),'#e7b84e'],
+    ['TOUR RANK',info.fedexRank+' / '+info.N,'#F4E3C9'],
     ['WINS',info.wins+'','#F4E3C9'],
     ['MAJORS',info.majorsWon+'','#F4E3C9'],
-    ['BEST FINISH',bestTxt(info.best),'#F4E3C9'],
-    ['FEDEX RANK','#'+info.fedexRank+' / '+info.N,'#F4E3C9'],
   ];
-  const colX=[W*0.28,W*0.72], y0=488, rowH=66;
+  const colX=[W*0.28,W*0.72], y0=506, rowH=80;
   cells.forEach((c,i)=>{
     const x=colX[i%2], y=y0+Math.floor(i/2)*rowH;
     ctx.fillStyle='#9cbfa8'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(c[0],x,y);
@@ -1445,7 +1457,7 @@ function scrSummary(){
     add(yb);
   }
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
-  const share=`BUILD A GOLFER — ${me.name} (OVR ${Math.round(me.skill)})\n${fmt(t.money)} · #${moneyRank} money${wreath}\n${t.wins}W · ${t.majors} majors · best ${bestTxt(t.best)}\nRunThe.GG`;
+  const share=`BUILD A GOLFER — ${me.name} (OVR ${ovr})\n${fmt(t.money)} won · Tour Rank ${fedexRank}/${N}${wreath}\n${t.wins}W · ${t.majors} majors\nRunThe.GG`;
   add($(`<div style="height:14px"></div>`));
   add($(`<h2 style="margin:0 0 8px">Share card</h2>`));
   const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
