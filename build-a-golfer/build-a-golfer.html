@@ -13,14 +13,14 @@
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/RunTheTour/">
 <meta property="og:title" content="Run The Tour">
-<meta property="og:description" content="Build a golfer. Run a pro season. Spin, draft one skill per real golfer, win majors and climb the money list.">
+<meta property="og:description" content="Build a golfer. Run a pro season. Spin, draft one skill per real golfer, win majors and climb the earnings list.">
 <meta property="og:image" content="https://runthe.gg/RunTheTour/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Run The Tour — Build a golfer, run a pro season">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Tour">
-<meta name="twitter:description" content="Build a golfer. Run a pro season. Win majors and climb the money list.">
+<meta name="twitter:description" content="Build a golfer. Run a pro season. Win majors and climb the earnings list.">
 <meta name="twitter:image" content="https://runthe.gg/RunTheTour/og.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2311432f'/%3E%3Cpath d='M24 14v36' stroke='%23e9d8ac' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M24 15h18l-5 6 5 6H24z' fill='%23EBA61F'/%3E%3Cellipse cx='32' cy='52' rx='15' ry='4' fill='none' stroke='%23cda54a' stroke-width='2'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -348,7 +348,7 @@ const ACHS=[
   {id:'black',e:'💰', t:'In the Black',      d:'Finish the season in profit',       f:c=>c.net>0},
   {id:'mil',  e:'💎', t:'Millionaire',       d:'Clear $1,000,000+ net profit in a season', f:c=>c.net>=1e6},
   {id:'redmil',e:'💸',t:'Seven-Figure Loss', d:'Lose $1,000,000+ in a season',      f:c=>c.net<=-1e6},
-  {id:'rich', e:'🥇', t:'Money Leader',      d:'Finish #1 on the season money list',f:c=>c.moneyRank===1},
+  {id:'rich', e:'🥇', t:'Earnings Leader',   d:'Finish #1 on the season earnings list',f:c=>c.moneyRank===1},
   {id:'under',e:'🐍', t:'Against the Odds',  d:'Turn a profit with a sub-80 build', f:c=>c.net>0&&c.ovr<80},
 ];
 function evalAchievements(ctx){return ACHS.filter(a=>a.f(ctx)).map(a=>a.id);}
@@ -441,7 +441,7 @@ const ROSTER=[
   {name:"Nick Price",era:"leg",tier:"legend",rarity:"Epic",nation:"ZIM",born:1957,majors:3,note:"Early-90s #1",dist:81,acc:87,app:93,sht:82,scr:82,bnk:82,put:72,clu:81},
   {name:"Raymond Floyd",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1942,majors:4,note:"Steely competitor",dist:74,acc:84,app:84,sht:86,scr:82,bnk:82,put:81,clu:93},
   {name:"Johnny Miller",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1947,majors:2,note:"Peak iron play",dist:80,acc:88,app:93,sht:84,scr:80,bnk:81,put:73,clu:80},
-  {name:"Tom Kite",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1949,majors:1,note:"Grinder, money leader",dist:74,acc:80,app:93,sht:83,scr:88,bnk:84,put:84,clu:83},
+  {name:"Tom Kite",era:"leg",tier:"legend",rarity:"Rare",nation:"USA",born:1949,majors:1,note:"Grinder, top earner",dist:74,acc:80,app:93,sht:83,scr:88,bnk:84,put:84,clu:83},
   {name:"Curtis Strange",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1955,majors:2,note:"Back-to-back US Opens",dist:80,acc:88,app:79,sht:68,scr:72,bnk:67,put:83,clu:83,fld:1},
   {name:"Hale Irwin",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1945,majors:3,note:"3 US Opens",dist:81,acc:92,app:80,sht:80,scr:83,bnk:83,put:74,clu:86},
   {name:"Billy Casper",era:"leg",tier:"legend",rarity:"Epic",nation:"USA",born:1931,majors:3,note:"51 wins, putting",dist:73,acc:80,app:84,sht:80,scr:88,bnk:82,put:93,clu:82},
@@ -911,7 +911,7 @@ function overlayRules(screen){
       <li>Every golfer's eight ratings are shown — take their best, or risk a re-spin for someone better.</li>
       <li>Run your golfer through a full pro season. Spikes win you events; one weak slot loses weekends.</li>
       <li>Winnings are big — but so are expenses (caddie, agent, travel, ~$2.8M/yr of tour costs). A mediocre build can finish the year in the <b>red</b>.</li>
-      <li>Bank the most money and climb the season money list against the field.</li>
+      <li>Bank the most prize money and climb the season earnings list against the field.</li>
     </ol>
     <h2 style="margin:14px 0 8px">Pull odds each spin</h2>
     <div class="board" style="margin-bottom:6px">
@@ -975,7 +975,7 @@ function overlayDailyDone(screen){
     <p class="lede" style="margin-bottom:12px">You've played today's challenge — a new one drops at midnight UTC.</p>
     <div class="tiles">
       <div class="tile"><div class="k">Net profit</div><div class="v" style="color:${r.net>=0?'#35d6a0':'#E14A33'}">${fmtSigned(r.net)}</div></div>
-      <div class="tile"><div class="k">Money rank</div><div class="v cream">#${r.moneyRank} / ${r.N}</div></div>
+      <div class="tile"><div class="k">Earnings rank</div><div class="v cream">#${r.moneyRank} / ${r.N}</div></div>
       <div class="tile"><div class="k">Wins</div><div class="v cream">${r.wins}</div></div>
       <div class="tile"><div class="k">Best finish</div><div class="v cream">${bestTxt(r.best)}</div></div>
     </div>
@@ -1671,8 +1671,8 @@ function drawShareCard(cv,info,vals){
   ctx.fillText('NET '+fmtSigned(info.net),W/2,442);
   // stat cells — card ends with the stats
   const cells=[
-    ['WINNINGS',fmt(info.money),'#e7b84e'],
-    ['MONEY RANK',info.moneyRank+' / '+info.N,'#F4E3C9'],
+    ['EARNINGS',fmt(info.money),'#e7b84e'],
+    ['EARNINGS RANK',info.moneyRank+' / '+info.N,'#F4E3C9'],
     ['WINS',info.wins+'','#F4E3C9'],
     ['MAJORS',info.majorsWon+'','#F4E3C9'],
   ];
@@ -1717,7 +1717,7 @@ function drawCareerCard(cv,info,vals){
   do{ ctx.font='700 '+ns+'px Cinzel, Georgia, serif'; if(ctx.measureText(nm).width<=W-64)break; ns-=2; }while(ns>16);
   ctx.fillStyle='#F4E3C9'; ctx.fillText(nm,W/2,384);
   ctx.fillStyle='#9cbfa8'; ctx.font='700 14px system-ui,sans-serif';
-  ctx.fillText(`${info.years} YEAR${info.years>1?'S':''}  ·  OVR ${info.ovr}  ·  MONEY RANK ${info.cRank}/${info.cN}`,W/2,406);
+  ctx.fillText(`${info.years} YEAR${info.years>1?'S':''}  ·  OVR ${info.ovr}  ·  EARNINGS RANK ${info.cRank}/${info.cN}`,W/2,406);
   ctx.fillStyle=info.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 22px Impact,system-ui,sans-serif';
   ctx.fillText('NET WORTH '+fmtSigned(info.net),W/2,440);
   const cells=[
@@ -1791,8 +1791,8 @@ function scrSummary(){
     add($(`<div class="scout" style="margin:4px 0 12px;text-align:center"><b style="color:var(--gold)">Achievement${got.length>1?'s':''} unlocked</b><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center">${chips}</div></div>`));
   }
   const tiles=$(`<div class="tiles four"></div>`);
-  tiles.appendChild(tile('Money won',fmt(t.money),true));
-  tiles.appendChild(tile('Money rank',moneyRank+' / '+N));
+  tiles.appendChild(tile('Earnings',fmt(t.money),true));
+  tiles.appendChild(tile('Earnings rank',moneyRank+' / '+N));
   tiles.appendChild(tile('Wins',t.wins+''));
   tiles.appendChild(tile('Majors',t.majors+''));
   tiles.appendChild(tile('Top 10s',t.top10+''));
@@ -1827,14 +1827,14 @@ function scrSummary(){
   const cRank=careerList.findIndex(r=>r.n===me.name)+1;
   if(hasCareer){
     const head=$(`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin:2px 0 8px"></div>`);
-    head.appendChild($(`<h2 style="margin:0">${tab==='career'?`Career money list · ${S.career.seasons.length} yrs`:'This season'}</h2>`));
+    head.appendChild($(`<h2 style="margin:0">${tab==='career'?`Career earnings list · ${S.career.seasons.length} yrs`:'This season'}</h2>`));
     const seg=$(`<div class="mini" style="margin:0;width:auto;flex:0 0 auto"></div>`);
     const t1=$(`<button class="btn ${tab==='season'?'gold':'ghost'}" style="font-size:11px;padding:6px 11px;width:auto">This Season</button>`);
     const t2=$(`<button class="btn ${tab==='career'?'gold':'ghost'}" style="font-size:11px;padding:6px 11px;width:auto">Career</button>`);
     t1.onclick=()=>{S.summaryTab='season';render();}; t2.onclick=()=>{S.summaryTab='career';render();};
     seg.appendChild(t1); seg.appendChild(t2); head.appendChild(seg); left.appendChild(head);
   } else {
-    left.appendChild($(`<h2 style="margin:2px 0 8px">Season money list</h2>`));
+    left.appendChild($(`<h2 style="margin:2px 0 8px">Season earnings list</h2>`));
   }
   const board=$(`<div class="board"></div>`);
   if(tab==='career'){
@@ -1878,7 +1878,7 @@ function scrSummary(){
       <span class="mny" style="color:${s.net>=0?'#35d6a0':'#E14A33'}">${fmtSigned(s.net)}</span></div>`)));
     left.appendChild(yb);
     // career share card (image + text)
-    const careerShare=`RUNTHETOUR CAREER — ${me.name}\n${c.seasons.length} years · net worth ${fmtSigned(c.net)} · ${fmt(c.money)} earned\n${c.wins}W · ${c.majors} majors · career money rank #${cRank}/${careerList.length}\nRunThe.GG`;
+    const careerShare=`RUNTHETOUR CAREER — ${me.name}\n${c.seasons.length} years · net worth ${fmtSigned(c.net)} · ${fmt(c.money)} earned\n${c.wins}W · ${c.majors} majors · career earnings rank #${cRank}/${careerList.length}\nRunThe.GG`;
     const careerVals=CATS.map(x=> S.slots[x.k]? S.slots[x.k].value : REPLACEMENT);
     const ccv=document.createElement('canvas');
     ccv.style.cssText='width:100%;max-width:300px;display:block;margin:14px auto 4px;border-radius:14px;border:1px solid var(--line)';
@@ -1896,7 +1896,7 @@ function scrSummary(){
   }
 
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
-  const share=`RUNTHETOUR — ${me.name} (OVR ${ovr})\n${fmt(t.money)} won · Money Rank ${moneyRank}/${N}${wreath}\n${t.wins}W · ${t.majors} majors\nRunThe.GG`;
+  const share=`RUNTHETOUR — ${me.name} (OVR ${ovr})\n${fmt(t.money)} earned · Earnings Rank ${moneyRank}/${N}${wreath}\n${t.wins}W · ${t.majors} majors\nRunThe.GG`;
   right.appendChild($(`<h2 style="margin:2px 0 8px">Share your season</h2>`));
   const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
   const cv=document.createElement('canvas');
@@ -2029,7 +2029,7 @@ function scrRecap(){
   strip.appendChild(tile('Top 10s',tot.top10+''));
   strip.appendChild(tile('Cuts made',tot.made+'/'+tot.played));
   strip.appendChild(tile('Best finish',tot.best===99?'MC':(tot.best===1?'WIN':'T'+tot.best)));
-  strip.appendChild(tile('Money won',fmt(tot.money),true));
+  strip.appendChild(tile('Earnings',fmt(tot.money),true));
   add(strip);
   add($(`<p class="lede center" style="margin:0 0 8px;font-size:12px">Tap any event to replay its leaderboard.</p>`));
   const board=$(`<div class="board"></div>`);
