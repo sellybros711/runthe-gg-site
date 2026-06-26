@@ -392,6 +392,24 @@ allows Google Fonts, or self-host Anton.*
   Verified across header/title/setup-figure (M/F, R/L) and a direct share-card
   render — zero page errors.
 
+- 2026-06-26 (roster refresh): Replaced the inlined `ROSTER` (all 241 golfers)
+  with the owner's latest rebalanced ratings (`golfers_2.csv` / `golfers.json`).
+  Regenerated the JS array straight from the CSV via a parser so the values are
+  faithful; kept the existing object schema (name/era/tier/rarity/nation/born/
+  majors/note + 8 skills). The new data is a fuller 0–99 spread — every golfer
+  has a signature spike + a real weakness (archetype methodology). Buckets:
+  Legendary 24 / Epic 52 / Rare 75 / Common 90 (all non-empty, pull rates
+  unchanged at 5/25/35/35). Weighted-OVR range is now 75.5–91.7 (Tiger top at
+  91.7). CSV also carries `archetype`/`signature`/`overall` columns — left OUT
+  of the inline data for now (unused by code; `archetype()` is computed live for
+  the player's build). Easy to surface on the reveal card later if wanted.
+  - **Balance note:** the old roster had a higher rating ceiling; with the new
+    (lower, more realistic) numbers the sampled field is marginally weaker, so a
+    cherry-picked build may win slightly more often. `FIELDSIZE=64` was tuned to
+    the old data — revisit if win rates feel too high after playtesting.
+  Verified: loads clean, all buckets pull, full draft (8 picks) → season runs,
+  zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
