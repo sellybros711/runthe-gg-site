@@ -331,7 +331,7 @@ function career(){return LS.get('bag_career',{builds:0,bestMoney:0,bestNet:null,
 /* expenses: caddie 10% + agent 8% of winnings, ~$20k travel/event, plus ~$2.6M/yr of fixed
    tour costs (coach, equipment, taxes, team). Fixed cost is prorated by events played so the
    running in-season net stays sensible. Tuned via Monte Carlo so a weak build can finish red. */
-const COSTS={caddiePct:0.10, agentPct:0.08, travelPerEvent:20000, seasonFixed:2.6e6};
+const COSTS={caddiePct:0.10, agentPct:0.08, travelPerEvent:22000, seasonFixed:3.6e6};
 const SEASON_EVENTS=18;
 function seasonNet(t){const gross=t.money, caddie=gross*COSTS.caddiePct, agent=gross*COSTS.agentPct,
   travel=t.played*COSTS.travelPerEvent, fixed=COSTS.seasonFixed*(t.played/SEASON_EVENTS),
@@ -695,11 +695,12 @@ const PAYOUT=[.18,.109,.069,.049,.041,.0363,.0338,.0313,.0293,.0273,.0253,.0233,
 function gauss(){let u=0,v=0;while(!u)u=RNG();while(!v)v=RNG();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 function simRound(p,{major,finalRd}){
-  // skill slope (0.27) and tighter variance make wins/majors more skill-earned (less fluky);
-  // tuned via Monte Carlo so an ~OVR-81 build rarely wins a major and an OVR-90 dominates.
-  let base=(74-p.skill)*0.27;
+  // skill slope (0.28) and tight variance make wins/majors skill-earned (less fluky);
+  // tuned via Monte Carlo vs the DataGolf roster so a mediocre build rarely cashes a major
+  // and finishes near break-even, while an OVR-90 build dominates.
+  let base=(74-p.skill)*0.28;
   if(major)base+=1.4;
-  let std=clamp(2.3+(90-p.clu)*0.045,1.6,3.65);
+  let std=clamp(2.3+(90-p.clu)*0.045,1.6,3.6);
   if(finalRd||major)std*=1.08;
   if(finalRd)base+=(88-p.clu)*0.05;
   return base+gauss()*std;
@@ -722,7 +723,7 @@ function simEvent(evt,field){
 
 /* ---------- state ---------- */
 const SPINS=10, REPLACEMENT=62;
-const FIELDSIZE=96;   // season field = you + (FIELDSIZE-1) golfers sampled from the roster (difficulty knob)
+const FIELDSIZE=104;   // season field = you + (FIELDSIZE-1) golfers sampled from the roster (difficulty knob)
 /* golfer customization palettes */
 const SKINS=[
   {id:'light', m:'#f0c6a4', s:'#e0ad84'},
@@ -876,7 +877,7 @@ function overlayRules(screen){
       <li>Fill all <b>8 slots</b>: distance, accuracy, approach, short game, scrambling, bunker, putting, composure.</li>
       <li>Every golfer's eight ratings are shown — take their best, or risk a re-spin for someone better.</li>
       <li>Run your golfer through a full PGA season. Spikes win you events; one weak slot loses weekends.</li>
-      <li>Winnings are big — but so are expenses (caddie, agent, travel, ~$2.6M/yr of tour costs). A weak build can finish the year in the <b>red</b>.</li>
+      <li>Winnings are big — but so are expenses (caddie, agent, travel, ~$3.6M/yr of tour costs). A mediocre build can finish the year in the <b>red</b>.</li>
       <li>Bank the most money and climb the season money list against the field.</li>
     </ol>
     <button class="btn red">Got it</button></div>`);
