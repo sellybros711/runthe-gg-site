@@ -65,7 +65,7 @@
    "legends": "reputation/career-based; no Strokes Gained data exists pre-2004"
   },
   "data_source_note": "dist/acc/app/sht/scr/bnk/put for matched players = DataGolf Strokes Gained skill ratings (2026-06-22) normalized to 0-99 (tour avg=80, elite~96). Composure (clu) and all unmatched/legend players remain manual/reputation. scr=arg+putt blend; bnk derived from arg (no separate sand-save stat in this feed). | Legends tagged 'historical peak' use their best DataGolf-era season for SG skills (app/sht/put, and scr/bnk derived); distance, accuracy, composure remain reputation (historical driving data is sparse, composure has no stat). Pre-2004 peakers kept as reputation.",
-  "career_note": "potential = ceiling overall at peak; arc_age = age the stored skills represent (current players: 2026 age; legends: peak-season age). Career aging: skill_pot_s = stored_s / arc_s(arc_age); skill at sim age = skill_pot_s * arc_s(age). See career spec for arc curves, retirement, and prospect generation."
+  "career_note": "Career mode = single bounded run, ages forward within the run, full reset on retirement. potential is the EXPECTED ceiling (display/arcade); pot_band {lo,hi,exp,boom,bust} is rolled fresh per career from the career_seed so trajectories vary each universe (talent tilts odds, dice stay live). Established players have tight bands; teens swing wide. See runthetour-career-spec.md."
  },
  "golfers": [
   {
@@ -91,7 +91,14 @@
    "country": "United States",
    "data_source": "historical peak 2009 (DataGolf)",
    "arc_age": 34,
-   "potential": 95
+   "potential": 95,
+   "pot_band": {
+    "exp": 95,
+    "lo": 95,
+    "hi": 95,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Jack Nicklaus",
@@ -116,7 +123,14 @@
    "country": "United States",
    "data_source": "historical peak 2004 (DataGolf)",
    "arc_age": 45,
-   "potential": 90
+   "potential": 90,
+   "pot_band": {
+    "exp": 90,
+    "lo": 90,
+    "hi": 90,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Ben Hogan",
@@ -141,7 +155,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 89
+   "potential": 89,
+   "pot_band": {
+    "exp": 89,
+    "lo": 89,
+    "hi": 89,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Sam Snead",
@@ -166,7 +187,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 88,
+    "hi": 88,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Arnold Palmer",
@@ -191,7 +219,14 @@
    "country": "United States",
    "data_source": "historical peak 2004 (DataGolf)",
    "arc_age": 45,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Gary Player",
@@ -216,7 +251,14 @@
    "country": "South Africa",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 87,
+    "hi": 87,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Bobby Jones",
@@ -241,7 +283,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 89
+   "potential": 89,
+   "pot_band": {
+    "exp": 89,
+    "lo": 89,
+    "hi": 89,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Walter Hagen",
@@ -266,7 +315,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 87,
+    "hi": 87,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Gene Sarazen",
@@ -291,7 +347,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 87,
+    "hi": 87,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Byron Nelson",
@@ -316,7 +379,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 88,
+    "hi": 88,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Harry Vardon",
@@ -341,7 +411,14 @@
    "country": "Jersey",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 88,
+    "hi": 88,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Tom Watson",
@@ -366,7 +443,14 @@
    "country": "United States",
    "data_source": "historical peak 2007 (DataGolf)",
    "arc_age": 45,
-   "potential": 89
+   "potential": 89,
+   "pot_band": {
+    "exp": 89,
+    "lo": 89,
+    "hi": 89,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Lee Trevino",
@@ -391,7 +475,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 87,
+    "hi": 87,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Seve Ballesteros",
@@ -416,7 +507,14 @@
    "country": "Spain",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 86,
+    "hi": 86,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Nick Faldo",
@@ -441,7 +539,14 @@
    "country": "England",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 88,
+    "hi": 88,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Greg Norman",
@@ -466,7 +571,14 @@
    "country": "Australia",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 87,
+    "hi": 87,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Phil Mickelson",
@@ -491,7 +603,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 45,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 76,
+    "hi": 82,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Vijay Singh",
@@ -516,7 +635,14 @@
    "country": "Fiji",
    "data_source": "historical peak 2004 (DataGolf)",
    "arc_age": 41,
-   "potential": 89
+   "potential": 89,
+   "pot_band": {
+    "exp": 89,
+    "lo": 89,
+    "hi": 89,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Ernie Els",
@@ -541,7 +667,14 @@
    "country": "South Africa",
    "data_source": "historical peak 2004 (DataGolf)",
    "arc_age": 35,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 88,
+    "hi": 88,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Nick Price",
@@ -566,7 +699,14 @@
    "country": "Zimbabwe",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 83,
+    "hi": 83,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Raymond Floyd",
@@ -591,7 +731,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 84,
+    "hi": 84,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Johnny Miller",
@@ -616,7 +763,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 84,
+    "hi": 84,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Tom Kite",
@@ -641,7 +795,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 85,
+    "hi": 85,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Curtis Strange",
@@ -666,7 +827,14 @@
    "country": "United States",
    "data_source": "historical peak 2004 (DataGolf)",
    "arc_age": 45,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 84,
+    "hi": 84,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Hale Irwin",
@@ -691,7 +859,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 82,
+    "hi": 82,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Billy Casper",
@@ -716,7 +891,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 84,
+    "hi": 84,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Julius Boros",
@@ -741,7 +923,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 83,
+    "hi": 83,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Peter Thomson",
@@ -766,7 +955,14 @@
    "country": "Australia",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 84,
+    "hi": 84,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Bobby Locke",
@@ -791,7 +987,14 @@
    "country": "South Africa",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 85,
+    "hi": 85,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Ben Crenshaw",
@@ -816,7 +1019,14 @@
    "country": "United States",
    "data_source": "historical peak 2006 (DataGolf)",
    "arc_age": 45,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 83,
+    "hi": 83,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Payne Stewart",
@@ -841,7 +1051,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 85,
+    "hi": 85,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Davis Love III",
@@ -866,7 +1083,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 83,
+    "hi": 83,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Fred Couples",
@@ -891,7 +1115,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 83,
+    "hi": 83,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Sandy Lyle",
@@ -916,7 +1147,14 @@
    "country": "Scotland",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Ian Woosnam",
@@ -941,7 +1179,14 @@
    "country": "Wales",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Bernhard Langer",
@@ -966,7 +1211,14 @@
    "country": "Germany",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 84,
+    "hi": 84,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "José María Olazábal",
@@ -991,7 +1243,14 @@
    "country": "Spain",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 83,
+    "hi": 83,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Colin Montgomerie",
@@ -1016,7 +1275,14 @@
    "country": "Scotland",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 84,
+    "hi": 84,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Retief Goosen",
@@ -1041,7 +1307,14 @@
    "country": "South Africa",
    "data_source": "historical peak 2010 (DataGolf)",
    "arc_age": 41,
-   "potential": 89
+   "potential": 89,
+   "pot_band": {
+    "exp": 89,
+    "lo": 89,
+    "hi": 89,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Lee Westwood",
@@ -1066,7 +1339,14 @@
    "country": "England",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 45,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 76,
+    "hi": 82,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Luke Donald",
@@ -1091,7 +1371,14 @@
    "country": "England",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 45,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 77,
+    "hi": 84,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Jim Furyk",
@@ -1116,7 +1403,14 @@
    "country": "United States",
    "data_source": "historical peak 2006 (DataGolf)",
    "arc_age": 36,
-   "potential": 90
+   "potential": 90,
+   "pot_band": {
+    "exp": 90,
+    "lo": 90,
+    "hi": 90,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "David Duval",
@@ -1141,7 +1435,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 84,
+    "hi": 84,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Steve Stricker",
@@ -1166,7 +1467,14 @@
    "country": "United States",
    "data_source": "historical peak 2013 (DataGolf)",
    "arc_age": 45,
-   "potential": 93
+   "potential": 93,
+   "pot_band": {
+    "exp": 93,
+    "lo": 93,
+    "hi": 93,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Justin Leonard",
@@ -1191,7 +1499,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Mark O'Meara",
@@ -1216,7 +1531,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "John Daly",
@@ -1241,7 +1563,14 @@
    "country": "United States",
    "data_source": "historical peak 2004 (DataGolf)",
    "arc_age": 38,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 83,
+    "hi": 83,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Tom Weiskopf",
@@ -1266,7 +1595,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Lanny Wadkins",
@@ -1291,7 +1627,14 @@
    "country": "United States",
    "data_source": "historical peak 2005 (DataGolf)",
    "arc_age": 45,
-   "potential": 71
+   "potential": 71,
+   "pot_band": {
+    "exp": 71,
+    "lo": 71,
+    "hi": 71,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Larry Nelson",
@@ -1316,7 +1659,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Corey Pavin",
@@ -1341,7 +1691,14 @@
    "country": "United States",
    "data_source": "historical peak 2005 (DataGolf)",
    "arc_age": 45,
-   "potential": 91
+   "potential": 91,
+   "pot_band": {
+    "exp": 91,
+    "lo": 91,
+    "hi": 91,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Loren Roberts",
@@ -1366,7 +1723,14 @@
    "country": "United States",
    "data_source": "historical peak 2005 (DataGolf)",
    "arc_age": 45,
-   "potential": 89
+   "potential": 89,
+   "pot_band": {
+    "exp": 89,
+    "lo": 89,
+    "hi": 89,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Brad Faxon",
@@ -1391,7 +1755,14 @@
    "country": "United States",
    "data_source": "historical peak 2005 (DataGolf)",
    "arc_age": 44,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 88,
+    "hi": 88,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Isao Aoki",
@@ -1416,7 +1787,14 @@
    "country": "Japan",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Tony Jacklin",
@@ -1441,7 +1819,14 @@
    "country": "England",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Hal Sutton",
@@ -1466,7 +1851,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Mark Calcavecchia",
@@ -1491,7 +1883,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Fuzzy Zoeller",
@@ -1516,7 +1915,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Tom Lehman",
@@ -1541,7 +1947,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "David Graham",
@@ -1566,7 +1979,14 @@
    "country": "Australia",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Gene Littler",
@@ -1591,7 +2011,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Miller Barber",
@@ -1616,7 +2043,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 78
+   "potential": 78,
+   "pot_band": {
+    "exp": 78,
+    "lo": 78,
+    "hi": 78,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Henrik Stenson",
@@ -1641,7 +2075,14 @@
    "country": "Sweden",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 45,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 75,
+    "hi": 82,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Ian Poulter",
@@ -1666,7 +2107,14 @@
    "country": "England",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 45,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 80,
+    "hi": 87,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Paul Casey",
@@ -1691,7 +2139,14 @@
    "country": "England",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 45,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 79,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Martin Kaymer",
@@ -1716,7 +2171,14 @@
    "country": "Germany",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 42,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 78,
+    "hi": 84,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Graeme McDowell",
@@ -1741,7 +2203,14 @@
    "country": "Northern Ireland",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 45,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 76,
+    "hi": 83,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Louis Oosthuizen",
@@ -1766,7 +2235,14 @@
    "country": "South Africa",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 44,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 79,
+    "hi": 85,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Charl Schwartzel",
@@ -1791,7 +2267,14 @@
    "country": "South Africa",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 42,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 79,
+    "hi": 85,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Bubba Watson",
@@ -1816,7 +2299,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 45,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 79,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Webb Simpson",
@@ -1841,7 +2331,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 41,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 80,
+    "hi": 85,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Zach Johnson",
@@ -1866,7 +2363,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 45,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 81,
+    "hi": 88,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Stewart Cink",
@@ -1891,7 +2395,14 @@
    "country": "United States",
    "data_source": "historical peak 2004 (DataGolf)",
    "arc_age": 31,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 88,
+    "hi": 88,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Ángel Cabrera",
@@ -1916,7 +2427,14 @@
    "country": "Argentina",
    "data_source": "historical peak 2009 (DataGolf)",
    "arc_age": 40,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 84,
+    "hi": 84,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Y.E. Yang",
@@ -1941,7 +2459,14 @@
    "country": "South Korea",
    "data_source": "historical peak 2011 (DataGolf)",
    "arc_age": 39,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 83,
+    "hi": 83,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Trevor Immelman",
@@ -1966,7 +2491,14 @@
    "country": "South Africa",
    "data_source": "historical peak 2006 (DataGolf)",
    "arc_age": 27,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 86,
+    "hi": 86,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Geoff Ogilvy",
@@ -1991,7 +2523,14 @@
    "country": "Australia",
    "data_source": "historical peak 2009 (DataGolf)",
    "arc_age": 32,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 85,
+    "hi": 85,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Michael Campbell",
@@ -2016,7 +2555,14 @@
    "country": "New Zealand",
    "data_source": "historical peak 2006 (DataGolf)",
    "arc_age": 37,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 83,
+    "hi": 83,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Darren Clarke",
@@ -2041,7 +2587,14 @@
    "country": "Northern Ireland",
    "data_source": "historical peak 2004 (DataGolf)",
    "arc_age": 36,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Thomas Bjørn",
@@ -2066,7 +2619,14 @@
    "country": "Denmark",
    "data_source": "historical peak 2004 (DataGolf)",
    "arc_age": 33,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 83,
+    "hi": 83,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Miguel Ángel Jiménez",
@@ -2091,7 +2651,14 @@
    "country": "Spain",
    "data_source": "historical peak 2013 (DataGolf)",
    "arc_age": 45,
-   "potential": 91
+   "potential": 91,
+   "pot_band": {
+    "exp": 91,
+    "lo": 91,
+    "hi": 91,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Roberto De Vicenzo",
@@ -2116,7 +2683,14 @@
    "country": "Argentina",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Kel Nagle",
@@ -2141,7 +2715,14 @@
    "country": "Australia",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Bob Charles",
@@ -2166,7 +2747,14 @@
    "country": "New Zealand",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 82,
+    "hi": 82,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Tony Lema",
@@ -2191,7 +2779,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Doug Sanders",
@@ -2216,7 +2811,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Dave Stockton",
@@ -2241,7 +2843,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Ken Venturi",
@@ -2266,7 +2875,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Jackie Burke Jr.",
@@ -2291,7 +2907,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Cary Middlecoff",
@@ -2316,7 +2939,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Ralph Guldahl",
@@ -2341,7 +2971,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Jimmy Demaret",
@@ -2366,7 +3003,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Henry Cotton",
@@ -2391,7 +3035,14 @@
    "country": "England",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 79
+   "potential": 79,
+   "pot_band": {
+    "exp": 79,
+    "lo": 79,
+    "hi": 79,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Walter Travis",
@@ -2416,7 +3067,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 78
+   "potential": 78,
+   "pot_band": {
+    "exp": 78,
+    "lo": 78,
+    "hi": 78,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Willie Anderson",
@@ -2441,7 +3099,14 @@
    "country": "Scotland",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Young Tom Morris",
@@ -2466,7 +3131,14 @@
    "country": "Scotland",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Old Tom Morris",
@@ -2491,7 +3163,14 @@
    "country": "Scotland",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 78
+   "potential": 78,
+   "pot_band": {
+    "exp": 78,
+    "lo": 78,
+    "hi": 78,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Scottie Scheffler",
@@ -2516,7 +3195,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 30,
-   "potential": 93
+   "potential": 93,
+   "pot_band": {
+    "exp": 93,
+    "lo": 91,
+    "hi": 95,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Rory McIlroy",
@@ -2541,7 +3227,14 @@
    "country": "Northern Ireland",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 37,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 86,
+    "hi": 90,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Jon Rahm",
@@ -2566,7 +3259,14 @@
    "country": "Spain",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 32,
-   "potential": 89
+   "potential": 89,
+   "pot_band": {
+    "exp": 89,
+    "lo": 87,
+    "hi": 91,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Collin Morikawa",
@@ -2591,7 +3291,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 29,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 85,
+    "hi": 89,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Xander Schauffele",
@@ -2616,7 +3323,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 33,
-   "potential": 89
+   "potential": 89,
+   "pot_band": {
+    "exp": 89,
+    "lo": 87,
+    "hi": 91,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Bryson DeChambeau",
@@ -2641,7 +3355,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 33,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 82,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Justin Thomas",
@@ -2666,7 +3387,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 33,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 86,
+    "hi": 90,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Patrick Cantlay",
@@ -2691,7 +3419,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 34,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 84,
+    "hi": 88,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Viktor Hovland",
@@ -2716,7 +3451,14 @@
    "country": "Norway",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 29,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 84,
+    "hi": 88,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Hideki Matsuyama",
@@ -2741,7 +3483,14 @@
    "country": "Japan",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 34,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 84,
+    "hi": 88,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Jordan Spieth",
@@ -2766,7 +3515,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 33,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 83,
+    "hi": 87,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Tommy Fleetwood",
@@ -2791,7 +3547,14 @@
    "country": "England",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 35,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 86,
+    "hi": 90,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Russell Henley",
@@ -2816,7 +3579,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 37,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 85,
+    "hi": 89,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Brooks Koepka",
@@ -2841,7 +3611,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 36,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 82,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Wyndham Clark",
@@ -2866,7 +3643,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 33,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 86,
+    "hi": 90,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Sepp Straka",
@@ -2891,7 +3675,14 @@
    "country": "Austria",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 33,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 81,
+    "hi": 85,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Justin Rose",
@@ -2916,7 +3707,14 @@
    "country": "England",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 45,
-   "potential": 89
+   "potential": 89,
+   "pot_band": {
+    "exp": 89,
+    "lo": 84,
+    "hi": 91,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Sahith Theegala",
@@ -2941,7 +3739,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 29,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 82,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Tony Finau",
@@ -2966,7 +3771,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 37,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 82,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Sungjae Im",
@@ -2991,7 +3803,14 @@
    "country": "South Korea",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 28,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 83,
+    "hi": 87,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Robert MacIntyre",
@@ -3016,7 +3835,14 @@
    "country": "Scotland",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 30,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 83,
+    "hi": 87,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Shane Lowry",
@@ -3041,7 +3867,14 @@
    "country": "Ireland",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 39,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 83,
+    "hi": 87,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Sam Burns",
@@ -3066,7 +3899,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 30,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 86,
+    "hi": 90,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Si Woo Kim",
@@ -3091,7 +3931,14 @@
    "country": "South Korea",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 31,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 85,
+    "hi": 89,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Maverick McNealy",
@@ -3116,7 +3963,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 31,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 85,
+    "hi": 89,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Keegan Bradley",
@@ -3141,7 +3995,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 40,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 85,
+    "hi": 90,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Corey Conners",
@@ -3166,7 +4027,14 @@
    "country": "Canada",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 35,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 81,
+    "hi": 85,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Harris English",
@@ -3191,7 +4059,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 37,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 85,
+    "hi": 89,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Aaron Rai",
@@ -3216,7 +4091,14 @@
    "country": "England",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 31,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 83,
+    "hi": 87,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "J.J. Spaun",
@@ -3241,7 +4123,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 36,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 83,
+    "hi": 87,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Joaquin Niemann",
@@ -3266,7 +4155,14 @@
    "country": "Chile",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 28,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 83,
+    "hi": 87,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Tyrrell Hatton",
@@ -3291,7 +4187,14 @@
    "country": "England",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 35,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 83,
+    "hi": 87,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Adam Scott",
@@ -3316,7 +4219,14 @@
    "country": "Australia",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 45,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 83,
+    "hi": 90,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Will Zalatoris",
@@ -3341,7 +4251,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 30,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 79,
+    "hi": 83,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Cameron Smith",
@@ -3366,7 +4283,14 @@
    "country": "Australia",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 33,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 83,
+    "hi": 87,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Max Homa",
@@ -3391,7 +4315,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 36,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 81,
+    "hi": 85,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Rickie Fowler",
@@ -3416,7 +4347,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 38,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 82,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Gary Woodland",
@@ -3441,7 +4379,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 42,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 81,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Daniel Berger",
@@ -3466,7 +4411,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 33,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 79,
+    "hi": 83,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Nick Taylor",
@@ -3491,7 +4443,14 @@
    "country": "Canada",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 38,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 84,
+    "hi": 88,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Taylor Pendrith",
@@ -3516,7 +4475,14 @@
    "country": "Canada",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 35,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 80,
+    "hi": 84,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "J.T. Poston",
@@ -3541,7 +4507,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 33,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 83,
+    "hi": 87,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Denny McCarthy",
@@ -3566,7 +4539,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 33,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 82,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Kurt Kitayama",
@@ -3591,7 +4571,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 33,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 82,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Patrick Reed",
@@ -3616,7 +4603,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 36,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 85,
+    "hi": 89,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Dustin Johnson",
@@ -3641,7 +4635,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 42,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 83,
+    "hi": 88,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Jason Day",
@@ -3666,7 +4667,14 @@
    "country": "Australia",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 39,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 84,
+    "hi": 88,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Sergio Garcia",
@@ -3691,7 +4699,14 @@
    "country": "Spain",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 45,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 81,
+    "hi": 88,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Billy Horschel",
@@ -3716,7 +4731,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 40,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 79,
+    "hi": 84,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Lucas Glover",
@@ -3741,7 +4763,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 45,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 78,
+    "hi": 85,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Cam Davis",
@@ -3766,7 +4795,14 @@
    "country": "Australia",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 31,
-   "potential": 77
+   "potential": 77,
+   "pot_band": {
+    "exp": 77,
+    "lo": 75,
+    "hi": 79,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Tom Hoge",
@@ -3791,7 +4827,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 37,
-   "potential": 79
+   "potential": 79,
+   "pot_band": {
+    "exp": 79,
+    "lo": 77,
+    "hi": 81,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Brian Harman",
@@ -3816,7 +4859,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 39,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 84,
+    "hi": 88,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Emiliano Grillo",
@@ -3841,7 +4891,14 @@
    "country": "Argentina",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 34,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 79,
+    "hi": 83,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Thomas Detry",
@@ -3866,7 +4923,14 @@
    "country": "Belgium",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 34,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 81,
+    "hi": 85,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Matthieu Pavon",
@@ -3891,7 +4955,14 @@
    "country": "France",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 34,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 78,
+    "hi": 82,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Christiaan Bezuidenhout",
@@ -3916,7 +4987,14 @@
    "country": "South Africa",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 32,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 83,
+    "hi": 87,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Mackenzie Hughes",
@@ -3941,7 +5019,14 @@
    "country": "Canada",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 36,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 82,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Adam Hadwin",
@@ -3966,7 +5051,14 @@
    "country": "Canada",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 39,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 78,
+    "hi": 82,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Seamus Power",
@@ -3991,7 +5083,14 @@
    "country": "Ireland",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 39,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 81,
+    "hi": 85,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Keith Mitchell",
@@ -4016,7 +5115,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 35,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 81,
+    "hi": 85,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Andrew Novak",
@@ -4041,7 +5147,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 31,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 80,
+    "hi": 84,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Michael Kim",
@@ -4066,7 +5179,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 33,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 82,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Brendon Todd",
@@ -4091,7 +5211,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 41,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 77,
+    "hi": 82,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Alex Noren",
@@ -4116,7 +5243,14 @@
    "country": "Sweden",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 44,
-   "potential": 89
+   "potential": 89,
+   "pot_band": {
+    "exp": 89,
+    "lo": 85,
+    "hi": 91,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Eric Cole",
@@ -4141,7 +5275,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 38,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 85,
+    "hi": 89,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Beau Hossler",
@@ -4166,7 +5307,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 31,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 81,
+    "hi": 85,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Erik van Rooyen",
@@ -4191,7 +5339,14 @@
    "country": "South Africa",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 36,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 78,
+    "hi": 82,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Talor Gooch",
@@ -4216,7 +5371,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 35,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 80,
+    "hi": 84,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Dean Burmester",
@@ -4241,7 +5403,14 @@
    "country": "South Africa",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 37,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 80,
+    "hi": 84,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Abraham Ancer",
@@ -4266,7 +5435,14 @@
    "country": "Mexico",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 35,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 80,
+    "hi": 84,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Branden Grace",
@@ -4291,7 +5467,14 @@
    "country": "South Africa",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 38,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 82,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Marc Leishman",
@@ -4316,7 +5499,14 @@
    "country": "Australia",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 43,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 82,
+    "hi": 89,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Matt Wallace",
@@ -4341,7 +5531,14 @@
    "country": "England",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 36,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 82,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Victor Perez",
@@ -4366,7 +5563,14 @@
    "country": "France",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 34,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 79,
+    "hi": 83,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Thorbjørn Olesen",
@@ -4391,7 +5595,14 @@
    "country": "Denmark",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 36,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 80,
+    "hi": 84,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Adrian Meronk",
@@ -4416,7 +5627,14 @@
    "country": "Poland",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 33,
-   "potential": 78
+   "potential": 78,
+   "pot_band": {
+    "exp": 78,
+    "lo": 76,
+    "hi": 80,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Joel Dahmen",
@@ -4441,7 +5659,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 39,
-   "potential": 79
+   "potential": 79,
+   "pot_band": {
+    "exp": 79,
+    "lo": 77,
+    "hi": 81,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Carlos Ortiz",
@@ -4466,7 +5691,14 @@
    "country": "Mexico",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 35,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 79,
+    "hi": 83,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Anirban Lahiri",
@@ -4491,7 +5723,14 @@
    "country": "India",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 39,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 78,
+    "hi": 82,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Ludvig Åberg",
@@ -4516,7 +5755,14 @@
    "country": "Sweden",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 27,
-   "potential": 89
+   "potential": 89,
+   "pot_band": {
+    "exp": 89,
+    "lo": 87,
+    "hi": 91,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Akshay Bhatia",
@@ -4541,7 +5787,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 25,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 84,
+    "hi": 92,
+    "boom": 0.084,
+    "bust": 0.111
+   }
   },
   {
    "name": "Tom Kim",
@@ -4566,7 +5819,14 @@
    "country": "South Korea",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 24,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 83,
+    "hi": 93,
+    "boom": 0.097,
+    "bust": 0.127
+   }
   },
   {
    "name": "Min Woo Lee",
@@ -4591,7 +5851,14 @@
    "country": "Australia",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 28,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 84,
+    "hi": 88,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Cameron Young",
@@ -4616,7 +5883,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 29,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 86,
+    "hi": 90,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Ben Griffin",
@@ -4641,7 +5915,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 30,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 86,
+    "hi": 90,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Davis Thompson",
@@ -4666,7 +5947,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 27,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 81,
+    "hi": 85,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Chris Gotterup",
@@ -4691,7 +5979,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 27,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 84,
+    "hi": 88,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Jake Knapp",
@@ -4716,7 +6011,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 32,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 82,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Nicolai Højgaard",
@@ -4741,7 +6043,14 @@
    "country": "Denmark",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 25,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 82,
+    "hi": 90,
+    "boom": 0.084,
+    "bust": 0.111
+   }
   },
   {
    "name": "Rasmus Højgaard",
@@ -4766,7 +6075,14 @@
    "country": "Denmark",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 25,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 79,
+    "hi": 87,
+    "boom": 0.084,
+    "bust": 0.111
+   }
   },
   {
    "name": "Nick Dunlap",
@@ -4791,7 +6107,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 23,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 78,
+    "hi": 90,
+    "boom": 0.109,
+    "bust": 0.142
+   }
   },
   {
    "name": "Luke Clanton",
@@ -4816,7 +6139,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 23,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 76,
+    "hi": 88,
+    "boom": 0.109,
+    "bust": 0.142
+   }
   },
   {
    "name": "Aldrich Potgieter",
@@ -4841,7 +6171,14 @@
    "country": "South Africa",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 22,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 79,
+    "hi": 93,
+    "boom": 0.121,
+    "bust": 0.158
+   }
   },
   {
    "name": "Gordon Sargent",
@@ -4866,7 +6203,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 23,
-   "potential": 78
+   "potential": 78,
+   "pot_band": {
+    "exp": 78,
+    "lo": 72,
+    "hi": 84,
+    "boom": 0.109,
+    "bust": 0.142
+   }
   },
   {
    "name": "Michael Thorbjornsen",
@@ -4891,7 +6235,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 24,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 81,
+    "hi": 91,
+    "boom": 0.097,
+    "bust": 0.127
+   }
   },
   {
    "name": "Caleb Surratt",
@@ -4916,7 +6267,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 22,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 77,
+    "hi": 91,
+    "boom": 0.121,
+    "bust": 0.158
+   }
   },
   {
    "name": "Jackson Koivun",
@@ -4941,7 +6299,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 21,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 80,
+    "hi": 96,
+    "boom": 0.133,
+    "bust": 0.173
+   }
   },
   {
    "name": "Karl Vilips",
@@ -4966,7 +6331,14 @@
    "country": "Australia",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 25,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 77,
+    "hi": 85,
+    "boom": 0.084,
+    "bust": 0.111
+   }
   },
   {
    "name": "Hiroshi Tai",
@@ -4991,7 +6363,14 @@
    "country": "Singapore",
    "data_source": "reputation",
    "arc_age": 24,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 76,
+    "hi": 86,
+    "boom": 0.097,
+    "bust": 0.127
+   }
   },
   {
    "name": "Blades Brown",
@@ -5016,7 +6395,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 19,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 75,
+    "hi": 95,
+    "boom": 0.158,
+    "bust": 0.204
+   }
   },
   {
    "name": "Miles Russell",
@@ -5041,7 +6427,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 18,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 77,
+    "hi": 99,
+    "boom": 0.17,
+    "bust": 0.22
+   }
   },
   {
    "name": "Kris Kim",
@@ -5066,7 +6459,14 @@
    "country": "South Korea",
    "data_source": "reputation",
    "arc_age": 20,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 76,
+    "hi": 94,
+    "boom": 0.146,
+    "bust": 0.189
+   }
   },
   {
    "name": "David Ford",
@@ -5091,7 +6491,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 23,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 77,
+    "hi": 89,
+    "boom": 0.109,
+    "bust": 0.142
+   }
   },
   {
    "name": "Preston Summerhays",
@@ -5116,7 +6523,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 24,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 76,
+    "hi": 86,
+    "boom": 0.097,
+    "bust": 0.127
+   }
   },
   {
    "name": "Neal Shipley",
@@ -5141,7 +6555,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 26,
-   "potential": 79
+   "potential": 79,
+   "pot_band": {
+    "exp": 79,
+    "lo": 76,
+    "hi": 82,
+    "boom": 0.072,
+    "bust": 0.096
+   }
   },
   {
    "name": "Keita Nakajima",
@@ -5166,7 +6587,14 @@
    "country": "Japan",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 26,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 79,
+    "hi": 85,
+    "boom": 0.072,
+    "bust": 0.096
+   }
   },
   {
    "name": "Rikuya Hoshino",
@@ -5191,7 +6619,14 @@
    "country": "Japan",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 30,
-   "potential": 79
+   "potential": 79,
+   "pot_band": {
+    "exp": 79,
+    "lo": 77,
+    "hi": 81,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Ryo Hisatsune",
@@ -5216,7 +6651,14 @@
    "country": "Japan",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 24,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 80,
+    "hi": 90,
+    "boom": 0.097,
+    "bust": 0.127
+   }
   },
   {
    "name": "Austin Eckroat",
@@ -5241,7 +6683,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 27,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 78,
+    "hi": 82,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Matt McCarty",
@@ -5266,7 +6715,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 29,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 80,
+    "hi": 84,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Jacob Bridgeman",
@@ -5291,7 +6747,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 27,
-   "potential": 86
+   "potential": 86,
+   "pot_band": {
+    "exp": 86,
+    "lo": 84,
+    "hi": 88,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Kristoffer Reitan",
@@ -5316,7 +6779,14 @@
    "country": "Norway",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 29,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 80,
+    "hi": 84,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Ryan Gerard",
@@ -5341,7 +6811,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 27,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 83,
+    "hi": 87,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Pierceson Coody",
@@ -5366,7 +6843,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 26,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 81,
+    "hi": 87,
+    "boom": 0.072,
+    "bust": 0.096
+   }
   },
   {
    "name": "Alex Smalley",
@@ -5391,7 +6875,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 30,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 82,
+    "hi": 86,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Mason Andersen",
@@ -5416,7 +6907,14 @@
    "country": "United States",
    "data_source": "historical peak 2017 (DataGolf)",
    "arc_age": 20,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 82,
+    "hi": 82,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Frankie Capan III",
@@ -5441,7 +6939,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 27,
-   "potential": 76
+   "potential": 76,
+   "pot_band": {
+    "exp": 76,
+    "lo": 74,
+    "hi": 78,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Jasper Stubbs",
@@ -5466,7 +6971,14 @@
    "country": "Australia",
    "data_source": "reputation",
    "arc_age": 23,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 76,
+    "hi": 88,
+    "boom": 0.109,
+    "bust": 0.142
+   }
   },
   {
    "name": "Mateo Fernández de Oliveira",
@@ -5491,7 +7003,14 @@
    "country": "Argentina",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 77
+   "potential": 77,
+   "pot_band": {
+    "exp": 77,
+    "lo": 74,
+    "hi": 80,
+    "boom": 0.072,
+    "bust": 0.096
+   }
   },
   {
    "name": "James Braid",
@@ -5516,7 +7035,14 @@
    "country": "Scotland",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "J.H. Taylor",
@@ -5541,7 +7067,14 @@
    "country": "England",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 81,
+    "hi": 81,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Tommy Armour",
@@ -5566,7 +7099,14 @@
    "country": "Scotland",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Craig Stadler",
@@ -5591,7 +7131,14 @@
    "country": "United States",
    "data_source": "historical peak 2005 (DataGolf)",
    "arc_age": 45,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 87,
+    "hi": 87,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Larry Mize",
@@ -5616,7 +7163,14 @@
    "country": "United States",
    "data_source": "historical peak 2005 (DataGolf)",
    "arc_age": 45,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 83,
+    "hi": 83,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Hubert Green",
@@ -5641,7 +7195,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Andy North",
@@ -5666,7 +7227,14 @@
    "country": "United States",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 80,
+    "hi": 80,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Paul Azinger",
@@ -5691,7 +7259,14 @@
    "country": "United States",
    "data_source": "historical peak 2006 (DataGolf)",
    "arc_age": 45,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 88,
+    "hi": 88,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Lee Janzen",
@@ -5716,7 +7291,14 @@
    "country": "United States",
    "data_source": "historical peak 2004 (DataGolf)",
    "arc_age": 40,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 85,
+    "hi": 85,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Steve Elkington",
@@ -5741,7 +7323,14 @@
    "country": "Australia",
    "data_source": "historical peak 2007 (DataGolf)",
    "arc_age": 45,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 87,
+    "hi": 87,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "David Toms",
@@ -5766,7 +7355,14 @@
    "country": "United States",
    "data_source": "historical peak 2005 (DataGolf)",
    "arc_age": 38,
-   "potential": 84
+   "potential": 84,
+   "pot_band": {
+    "exp": 84,
+    "lo": 84,
+    "hi": 84,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Kenny Perry",
@@ -5791,7 +7387,14 @@
    "country": "United States",
    "data_source": "historical peak 2005 (DataGolf)",
    "arc_age": 45,
-   "potential": 88
+   "potential": 88,
+   "pot_band": {
+    "exp": 88,
+    "lo": 88,
+    "hi": 88,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Francesco Molinari",
@@ -5816,7 +7419,14 @@
    "country": "Italy",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 44,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 78,
+    "hi": 84,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Danny Willett",
@@ -5841,7 +7451,14 @@
    "country": "England",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 39,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 79,
+    "hi": 83,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Masashi Ozaki",
@@ -5866,7 +7483,14 @@
    "country": "Japan",
    "data_source": "reputation",
    "arc_age": 32,
-   "potential": 79
+   "potential": 79,
+   "pot_band": {
+    "exp": 79,
+    "lo": 79,
+    "hi": 79,
+    "boom": 0.0,
+    "bust": 0.0
+   }
   },
   {
    "name": "Ryan Fox",
@@ -5891,7 +7515,14 @@
    "country": "New Zealand",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 40,
-   "potential": 85
+   "potential": 85,
+   "pot_band": {
+    "exp": 85,
+    "lo": 82,
+    "hi": 87,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Cameron Champ",
@@ -5916,7 +7547,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 31,
-   "potential": 75
+   "potential": 75,
+   "pot_band": {
+    "exp": 75,
+    "lo": 73,
+    "hi": 77,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Byeong Hun An",
@@ -5941,7 +7579,14 @@
    "country": "South Korea",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 35,
-   "potential": 80
+   "potential": 80,
+   "pot_band": {
+    "exp": 80,
+    "lo": 78,
+    "hi": 82,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Stephan Jaeger",
@@ -5966,7 +7611,14 @@
    "country": "Germany",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 37,
-   "potential": 83
+   "potential": 83,
+   "pot_band": {
+    "exp": 83,
+    "lo": 81,
+    "hi": 85,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "C.T. Pan",
@@ -5991,7 +7643,14 @@
    "country": "Chinese Taipei",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 35,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 79,
+    "hi": 83,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Davis Riley",
@@ -6016,7 +7675,14 @@
    "country": "United States",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 30,
-   "potential": 78
+   "potential": 78,
+   "pot_band": {
+    "exp": 78,
+    "lo": 76,
+    "hi": 80,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "David Puig",
@@ -6041,7 +7707,14 @@
    "country": "Spain",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 24,
-   "potential": 87
+   "potential": 87,
+   "pot_band": {
+    "exp": 87,
+    "lo": 82,
+    "hi": 92,
+    "boom": 0.097,
+    "bust": 0.127
+   }
   },
   {
    "name": "Jesper Svensson",
@@ -6066,7 +7739,14 @@
    "country": "Sweden",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 26,
-   "potential": 81
+   "potential": 81,
+   "pot_band": {
+    "exp": 81,
+    "lo": 78,
+    "hi": 84,
+    "boom": 0.072,
+    "bust": 0.096
+   }
   },
   {
    "name": "Pádraig Harrington",
@@ -6091,7 +7771,14 @@
    "country": "Ireland",
    "data_source": "current (DataGolf 2026-06-22)",
    "arc_age": 45,
-   "potential": 82
+   "potential": 82,
+   "pot_band": {
+    "exp": 82,
+    "lo": 78,
+    "hi": 84,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   },
   {
    "name": "Matt Fitzpatrick",
@@ -6116,7 +7803,14 @@
    "archetype": "Short-Game Artist",
    "signature": "Short Game",
    "arc_age": 32,
-   "potential": 90
+   "potential": 90,
+   "pot_band": {
+    "exp": 90,
+    "lo": 88,
+    "hi": 92,
+    "boom": 0.06,
+    "bust": 0.08
+   }
   }
  ]
 }
