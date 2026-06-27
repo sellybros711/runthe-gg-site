@@ -2032,27 +2032,75 @@ function simNextRound(){
   }
   if(ce.roundsDone>=4) finalizeEvent();
 }
+// one sudden-death hole — lower is better, high variance so a single hole is genuinely random
+function playoffHole(eo,clu,major){ return gauss()*1.15 - (eo-80)*0.035 + (major?0.1:0); }
+// sudden-death playoff among the players tied for the lead; returns the winner + holes played
+function simPlayoff(contenders,major){
+  let alive=contenders.slice(), hole=0;
+  while(alive.length>1 && hole<25){
+    hole++;
+    alive.forEach(o=>{ o._ph=playoffHole(o.eo,o.p.clu,major); });
+    const best=Math.min(...alive.map(o=>o._ph));
+    const low=alive.filter(o=>o._ph<=best+1e-9);
+    if(low.length<alive.length) alive=low;   // separation → the rest are eliminated
+  }
+  return {winner:alive[0]||contenders[0], holes:Math.max(1,hole)};
+}
+// assign finishing positions with TIES: players on the same FINAL SCORE (the rounded to-par
+// figure the player actually sees) share the position number and split the combined prize
+// money of the slots they occupy (e.g. a 2-way T3 each get (3rd+4th money)/2). The sim uses
+// continuous strokes, so ties are decided on the displayed integer score, not the raw float.
+// `list` must already be sorted ascending by total. `soloFirst` = a playoff already decided
+// 1st, so list[0] takes 1st outright and grouping starts from 2nd.
+function assignTies(list,soloFirst){
+  let i=0;
+  if(soloFirst && list.length){ list[0].pos=1; list[0].tied=false; list[0].pct=(PAYOUT[0]||0); i=1; }
+  while(i<list.length){
+    const s=Math.round(list[i].total);
+    let j=i; while(j+1<list.length && Math.round(list[j+1].total)===s) j++;
+    const n=j-i+1; let pctSum=0; for(let k=i;k<=j;k++) pctSum+=(PAYOUT[k]||0);
+    const each=pctSum/n;
+    for(let k=i;k<=j;k++){ list[k].pos=i+1; list[k].tied=n>1; list[k].pct=each; }
+    i=j+1;
+  }
+}
 function finalizeEvent(){
   const ce=S.curEvt, evt=ce.evt;
   const made=ce.players.filter(o=>o.made).sort((a,b)=>a.total-b.total);
   const missed=ce.players.filter(o=>!o.made).sort((a,b)=>a.total-b.total);
-  made.forEach((o,i)=>{o.pos=i+1;o.pct=PAYOUT[i]||0;});
-  missed.forEach(o=>{o.pos='CUT';o.pct=0;});
+  // a tie for the LEAD (same final score) goes to a sudden-death playoff — golf never co-crowns
+  ce.playoff=null; let solo=false;
+  if(made.length>1){
+    const leadScore=Math.round(made[0].total);
+    const lead=made.filter(o=>Math.round(o.total)===leadScore);
+    if(lead.length>1){
+      const po=simPlayoff(lead,evt.major);
+      made.splice(made.indexOf(po.winner),1); made.unshift(po.winner);   // winner takes 1st outright
+      solo=true;
+      ce.playoff={players:lead.map(o=>o.p.name), winner:po.winner.p.name, holes:po.holes,
+        you:lead.some(o=>o.p.you), youWon:!!po.winner.p.you};
+    }
+  }
+  assignTies(made,solo);
+  missed.forEach(o=>{o.pos='CUT';o.tied=false;o.pct=0;});
   const order=made.concat(missed);
   const basePts=evt.major?750:evt.big?600:500;
   order.forEach(o=>{o.money=evt.purse*o.pct; o.points=typeof o.pos==='number'?Math.round(basePts*(o.pct/0.18)):0;
     o.score=Math.round(o.total); o.r1=o.rounds[0];o.r2=o.rounds[1];o.r3=o.rounds[2];o.r4=o.rounds[3];});
-  order.forEach((o,idx)=>{const t=S.season.totals[o.p.name];
-    t.money+=o.money; t.points+=o.points; t.played++; t.finishSum+=(idx+1);
+  order.forEach(o=>{const t=S.season.totals[o.p.name];
+    t.money+=o.money; t.points+=o.points; t.played++; t.finishSum+=(typeof o.pos==='number'?o.pos:order.length);
     if(o.pos===1){t.wins++; if(evt.major)t.majors++;}
     if(typeof o.pos==='number'){t.made++; if(o.pos<=10)t.top10++; if(o.pos<t.best)t.best=o.pos;}});
-  S.season.results.push({evt,order}); ce.done=true; ce.order=order;
+  S.season.results.push({evt,order,playoff:ce.playoff}); ce.done=true; ce.order=order;
 }
-function liveOrder(ce){   // current standings mid-event; assigns _pos
+function liveOrder(ce){   // current standings mid-event; assigns _pos / _tied (tie-aware)
   const sorted=[...ce.players].sort((a,b)=>a.total-b.total);
-  if(ce.roundsDone<2){ sorted.forEach((o,i)=>o._pos=i+1); return sorted; }
+  const tag=list=>{ let i=0; while(i<list.length){ const s=Math.round(list[i].total); let j=i;
+    while(j+1<list.length && Math.round(list[j+1].total)===s) j++;
+    for(let k=i;k<=j;k++){ list[k]._pos=i+1; list[k]._tied=j>i; } i=j+1; } };
+  if(ce.roundsDone<2){ tag(sorted); return sorted; }
   const made=sorted.filter(o=>o.made), cut=sorted.filter(o=>!o.made);
-  made.forEach((o,i)=>o._pos=i+1); cut.forEach(o=>o._pos='CUT');
+  tag(made); cut.forEach(o=>{o._pos='CUT';o._tied=false;});
   return made.concat(cut);
 }
 function advanceEvent(){ if(S.evtIndex>=S.schedule.length-1){ S.screen='summary'; } else { S.evtIndex++; S.curEvt=null; } }
@@ -2064,8 +2112,9 @@ function skipToEnd(){
 }
 function liveRow(o,pos,you){
   const cut=(pos==='CUT'); const sc=cut?'CUT':par(Math.round(o.total)); const mny=(o.money>0)?fmt(o.money):'';
+  const lab=cut?'–':(pos===1?'🏆':(o._tied?'T'+pos:pos));
   return $(`<div class="lb ${you?'you':''} ${cut?'cut':''}">
-    <span class="pos">${pos===1?'🏆':(cut?'–':pos)}</span>
+    <span class="pos">${lab}</span>
     <span class="pl">${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
 }
 function scrSeason(){
@@ -2119,13 +2168,22 @@ function scrSeason(){
     return `<div class="rdcell ${live?'live':''} ${(!done&&!isCut)?'empty':''}"><div class="rdlab">${L}</div><div class="rdval">${txt}</div></div>`;
   }).join('');
   let status, money='';
-  if(ce.done){ const o=ce.order.find(x=>x.p.you); status=o.pos==='CUT'?'Missed the cut':(o.pos===1?'🏆 Tournament won!':'Finished '+ord(o.pos)+(o.pos<=10?' · top 10':'')); if(o.money>0) money=`<span style="color:var(--gold)"> · +${fmt(o.money)}</span>`; }
+  if(ce.done){ const o=ce.order.find(x=>x.p.you); const po=ce.playoff; const posTxt=o.tied?('T'+o.pos):ord(o.pos);
+    if(o.pos==='CUT') status='Missed the cut';
+    else if(o.pos===1) status=(po&&po.you)?`🏆 Won a ${po.holes}-hole playoff!`:'🏆 Tournament won!';
+    else if(po&&po.you) status=`Lost in a playoff · ${posTxt}`;
+    else status='Finished '+posTxt+(o.pos<=10?' · top 10':'');
+    if(o.money>0) money=`<span style="color:var(--gold)"> · +${fmt(o.money)}</span>`; }
   else if(myCut){ status='Missed the cut — weekend off'; }
-  else { status=(ce.roundsDone>=4?'Final round':'Round '+ce.roundsDone+' of 4')+' · '+(myPos===1?'Leading':'currently '+ord(myPos)); }
+  else { status=(ce.roundsDone>=4?'Final round':'Round '+ce.roundsDone+' of 4')+' · '+(myPos===1?(meLive._tied?'Tied for the lead':'Leading'):'currently '+(meLive._tied?'T'+myPos:ord(myPos))); }
+  const meFin=ce.done?ce.order.find(x=>x.p.you):null;   // finalized position (playoff resolved)
+  const finPos=meFin?meFin.pos:myPos, finTied=meFin?meFin.tied:meLive._tied;
+  const isWin=(finPos===1);
+  const myPosTxt=myCut?'CUT':(finPos==='CUT'?'CUT':(finTied?'T'+finPos:ord(finPos)));
   right.appendChild($(`<div class="scorecard">
     <div class="sc-head">
       <div><div class="sc-name">${evt.name}</div><div class="small muted" style="margin-top:2px">${typeLbl} · ${fmt(evt.purse)} purse</div></div>
-      <div style="text-align:right"><div class="sc-pos" style="color:${myCut?'#e07a5f':(myPos===1?'var(--gold)':'var(--oncard)')}">${myCut?'CUT':ord(myPos)}</div>
+      <div style="text-align:right"><div class="sc-pos" style="color:${myCut?'#e07a5f':(isWin?'var(--gold)':'var(--oncard)')}">${myPosTxt}</div>
         <div class="sc-topar" style="color:${meLive.total<=0?'#35d6a0':'var(--oncard)'}">${topar}</div></div>
     </div>
     <div class="rounds">${dayCells}</div>
@@ -2174,8 +2232,9 @@ function roundsRow(o){
 function lbRow(o){
   const sc=o.pos==='CUT'?'CUT':par(o.score);
   const mny=o.money>0?fmt(o.money):'—';
+  const lab=o.pos==='CUT'?'–':(o.pos===1?'🏆':(o.tied?'T'+o.pos:o.pos));
   return $(`<div class="lb ${o.p.you?'you':''} ${o.pos==='CUT'?'cut':''}">
-    <span class="pos">${o.pos===1?'🏆':(o.pos==='CUT'?'–':o.pos)}</span>
+    <span class="pos">${lab}</span>
     <span class="pl">${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
 }
 
@@ -2629,7 +2688,7 @@ function scrOffseason(){
 function scrRecap(){
   const results=S.season.results;
   if(S.recapEvent!=null){
-    const {evt,order}=results[S.recapEvent];
+    const {evt,order,playoff}=results[S.recapEvent];
     const me=order.find(o=>o.p.you);
     const typeLbl=evt.major?'<span class="major">Major</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
     add($(`<div class="evt-head"><div><div class="nm">${evt.name}</div>
@@ -2640,15 +2699,18 @@ function scrRecap(){
     top.forEach(o=>board.appendChild(lbRow(o)));
     if(!top.includes(me)){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(lbRow(me));}
     add(board);
-    const result=(me.pos==='CUT')?'Missed cut':(me.pos===1?'WON':'T'+me.pos);
+    const result=(me.pos==='CUT')?'Missed cut':(me.pos===1?'WON':(me.tied?'T':'')+me.pos);
     add($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b> · ${me.pos==='CUT'?'missed cut':par(me.score)}</span><span style="color:var(--gold)">${me.money>0?'+'+fmt(me.money):'—'}</span></div>`));
     add(roundsRow(me));
+    if(playoff){
+      add($(`<div class="small" style="margin-top:8px;text-align:center;color:var(--gold)">⛳ ${playoff.holes}-hole playoff: ${esc(playoff.players.join(', '))} — won by <b>${esc(playoff.winner)}</b></div>`));
+    }
     const win=order[0];
     if(me.pos!==1){
       const gap=(me.pos!=='CUT')?(me.score-win.score):null;
       add($(`<div class="small muted" style="margin-top:8px;text-align:center">Won by <b style="color:var(--gold)">${win.p.name}</b> at ${par(win.score)}${gap!=null?` · you were ${gap} back`:''}</div>`));
     } else {
-      add($(`<div class="small" style="margin-top:8px;text-align:center;color:var(--gold);font-weight:800">🏆 Wire-to-wire glory — your week.</div>`));
+      add($(`<div class="small" style="margin-top:8px;text-align:center;color:var(--gold);font-weight:800">🏆 ${playoff&&playoff.you?'Clutch playoff win — your week.':'Wire-to-wire glory — your week.'}</div>`));
     }
     add($(`<div style="height:14px"></div>`));
     const nav=$(`<div class="mini" style="margin:0 0 10px"></div>`);
@@ -2698,7 +2760,7 @@ function scrRecap(){
     results.forEach((r,i)=>{
       const me=r.order.find(o=>o.p.you);
       const won=me.pos===1, cut=me.pos==='CUT';
-      const fin=cut?'MC':(won?'WON':'T'+me.pos);
+      const fin=cut?'MC':(won?'WON':(me.tied?'T':'')+me.pos);
       const col=cut?'#e07a5f':(won?'var(--gold)':'var(--oncard)');
       const typeLbl=r.evt.major?'<span class="major">Major</span>':r.evt.type==='finale'?'<span class="sig">Finale</span>':r.evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
       const row=$(`<div class="lb" style="grid-template-columns:30px 1fr auto;cursor:pointer;${won?'background:rgba(235,166,31,.10);border-color:rgba(235,166,31,.4)':''}">
