@@ -1323,7 +1323,7 @@ function scrSetup(){
   inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name);}; right.appendChild(inp);
   right.appendChild($(`<div style="height:6px"></div>`));
   right.appendChild(genderRow());
-  right.appendChild(capRow());
+  right.appendChild(handRow());
   right.appendChild(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
   right.appendChild(swatchRow('Hair',HAIRS,S.look.hair,'hair',o=>o.m));
   right.appendChild(swatchRow('Shirt',POLOS,S.look.polo,'polo',o=>o.m));
@@ -1435,16 +1435,16 @@ function swatchRow(label,opts,curId,key,colorOf){
   });
   row.appendChild(wrap); return row;
 }
-function capRow(){
-  const on=(S.look.cap!==false);
+function handRow(){
+  const lefty=!!S.look.lefty;
   const row=$(`<div style="margin:9px 0"></div>`);
-  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Cap</div>`));
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Handedness</div>`));
   const wrap=$(`<div class="mini" style="margin:0"></div>`);
-  const y=$(`<button class="btn ${on?'gold':'ghost'}" style="font-size:14px;padding:10px">Cap on</button>`);
-  const n=$(`<button class="btn ${!on?'gold':'ghost'}" style="font-size:14px;padding:10px">No cap</button>`);
-  y.onclick=()=>{S.look.cap=true;LS.set('bag_look',S.look);render();};
-  n.onclick=()=>{S.look.cap=false;LS.set('bag_look',S.look);render();};
-  wrap.appendChild(y);wrap.appendChild(n);row.appendChild(wrap);return row;
+  const r=$(`<button class="btn ${!lefty?'gold':'ghost'}" style="font-size:14px;padding:10px">Right handed</button>`);
+  const l=$(`<button class="btn ${lefty?'gold':'ghost'}" style="font-size:14px;padding:10px">Left handed</button>`);
+  r.onclick=()=>{S.look.lefty=false;LS.set('bag_look',S.look);render();};
+  l.onclick=()=>{S.look.lefty=true;LS.set('bag_look',S.look);render();};
+  wrap.appendChild(r);wrap.appendChild(l);row.appendChild(wrap);return row;
 }
 function genderRow(){
   const g=S.look.gender||'male';
