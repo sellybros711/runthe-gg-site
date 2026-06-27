@@ -808,6 +808,19 @@ allows Google Fonts, or self-host Anton.*
   shot log (S.dailyViewHole) + analytical Strength/Weakness scouting notes (scoutingNote,
   Strokes-Gained framing, varies by build). Verified across courses/situations, zero errors.
   Deployed to /golf.
+- 2026-06-27: **Signature scenarios → varied real decisions (not all "attack/safe").**
+  Rebuilt `dScenario` as a candidate-template library: for each signature hole it
+  assembles every decision that fits the shot type + hazard + conditions — pin-hunt vs
+  fat-of-green, between-clubs (hard X vs smooth Y), carry-the-hazard, longest-club par-3,
+  cliff carry, tee-shot line (driver down the edge vs 3-wood to the fairway), drivable
+  driver-vs-wedge, short-par-4 strategy, go-for-it-in-2, rip-driver-to-reach, long-par-5
+  layup positioning, downhill release, deep-bunker thread, stiff-wind knockdown — plus
+  situational ones (behind/ahead of the tour average late: force it vs stay patient /
+  press vs protect) — then seed-picks one (stable per day/hole, favouring situational
+  ~45% when it applies). Each scenario carries two `opts` with an `agg` flag, so the
+  buttons (red=aggressive, gold=conservative; no "⚡Attack/🛡Safe" wording) map to
+  playDailyHole(agg) regardless of order. Verified variety across courses/types/seeds,
+  zero errors. Deployed to /golf.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
