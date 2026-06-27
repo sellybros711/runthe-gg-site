@@ -705,6 +705,20 @@ allows Google Fonts, or self-host Anton.*
   lowest, record=best, done overlay on 4th, Play-again UI, zero errors. Deployed to
   /golf. (Still local per-device until the Phase-3 backend enforces it globally.)
 
+- 2026-06-27: **Daily round now auto-plays (minimal clicks).** Replaced the
+  click-every-hole / skip-to-end choice with a self-advancing round: holes play
+  themselves ~0.82s apart (so you watch the scorecard + notation fill), pausing ONLY
+  at signature holes for the Attack / Play-Safe decision (the one meaningful input).
+  New: module-level `_dailyTimer` + `scheduleDailyAdvance` (chains `setTimeout` →
+  `playDailyHole(null)`; stops to wait at `nextDailySig()`; auto-runs `finishDailyRound`
+  after hole 18), `clearDailyTimer`, `dailyPause`/`dailyResume`, `S.dailyAuto` (default
+  true, set in `beginDailyRound`). `playDailyHole` schedules the next tick; signature
+  Attack/Safe resume the flow. Controls: ⏸ Pause → manual (Play hole N + ▶ Resume +
+  Mulligan), Skip to result ⏭ (`autoFinishDaily` now fills + goes straight to result).
+  `render()` clears the timer when leaving `dailyround`; timer callbacks guard on
+  screen. Verified headless: 18-hole round completes with only the 3 signature clicks
+  (Augusta 12/13/15), Pause holds, Skip jumps to result, zero errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

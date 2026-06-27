@@ -1225,6 +1225,7 @@ function footer(){
 let _lastView=null;
 function render(){
   const savedY=window.scrollY;
+  if(S.screen!=='dailyround') clearDailyTimer();   // stop daily auto-advance if we left the round
   const view=S.screen+'|'+(S.overlay||'')+'|'+(S.recapEvent==null?'':S.recapEvent)+'|'+(S.recapYear==null?'':S.recapYear);
   const sameView=(view===_lastView);
   app.innerHTML='';
@@ -2994,24 +2995,43 @@ function scrDailyPreview(){
   const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`);
   cr.onclick=()=>{ S.overlay='courserecords'; render(); }; add(cr);
 }
+/* ---- daily round auto-advance: the round plays itself hole-by-hole, pausing only at
+   signature holes for the Attack / Play-Safe decision. Pace ~0.8s/hole so you can watch
+   the card fill; Pause/Resume + Skip available. ---- */
+let _dailyTimer=null;
+const DAILY_PACE=820;
+function clearDailyTimer(){ if(_dailyTimer){clearTimeout(_dailyTimer);_dailyTimer=null;} }
+function nextDailySig(){ const i=S.dailyHoles.length; return DAILY_COURSES[S.dailyCourse].sig.find(s=>s[0]===i+1); }
+function scheduleDailyAdvance(){
+  clearDailyTimer();
+  if(!S.dailyAuto||S.screen!=='dailyround')return;
+  const i=S.dailyHoles.length;
+  if(i>=18){ _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround') finishDailyRound(); }, DAILY_PACE+120); return; }
+  if(nextDailySig())return;   // pause here for the player's shot choice (the one meaningful click)
+  _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround'&&S.dailyAuto) playDailyHole(null); }, DAILY_PACE);
+}
+function dailyPause(){ S.dailyAuto=false; clearDailyTimer(); render(); }
+function dailyResume(){ S.dailyAuto=true; render(); scheduleDailyAdvance(); }
 function beginDailyRound(){
   const p=buildPlayer(); S.dailySkills={}; CATS.forEach(c=>S.dailySkills[c.k]=p[c.k]);
   S.dailyOvr=Math.round(p.skill); S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
+  S.dailyAuto=true; clearDailyTimer();
   track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr});
-  S.screen='dailyround'; render();
+  S.screen='dailyround'; render(); scheduleDailyAdvance();
 }
 function playDailyHole(attack){
   const c=DAILY_COURSES[S.dailyCourse], i=S.dailyHoles.length; if(i>=18)return;
   const h=c.holes[i], a=(attack===true||attack===false)?attack:null;
   const toPar=dSimHole(h[0],h[1],S.dailyDiffs[i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,a,dHoleRng(S.dailySeed,S.dailyCourse,i,0));
   S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a}); render();
+  scheduleDailyAdvance();   // keep the round flowing if auto-play is on
 }
-function autoFinishDaily(){ const c=DAILY_COURSES[S.dailyCourse];
+function autoFinishDaily(){ clearDailyTimer(); S.dailyAuto=false; const c=DAILY_COURSES[S.dailyCourse];
   while(S.dailyHoles.length<18){ const i=S.dailyHoles.length,h=c.holes[i];
     const toPar=dSimHole(h[0],h[1],S.dailyDiffs[i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,null,dHoleRng(S.dailySeed,S.dailyCourse,i,0));
     S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:null}); }
-  render();
+  finishDailyRound();   // straight to the result — fastest path
 }
 function dailyMulligan(){
   if(!S.dailyMullAvail||S.dailyMullUsed||!S.dailyHoles.length)return;
@@ -3052,13 +3072,24 @@ function scrDailyRound(){
     const h=c.holes[i], sig=c.sig.find(s=>s[0]===i+1);
     add($(`<div class="scout" style="max-width:560px;margin:0 auto;text-align:center"><div style="font-weight:800;font-size:16px">Hole ${i+1} · Par ${h[0]} · ${h[1]}y</div>${h[2]?`<div class="small muted">${esc(h[2])}</div>`:''}${sig?`<div class="small" style="color:var(--gold);margin-top:4px">⛳ Signature — ${esc(sig[1])}</div>`:''}</div>`));
     add($(`<div style="height:10px"></div>`));
-    if(sig){ const row=$(`<div class="mini" style="max-width:520px;margin:0 auto;gap:10px"></div>`);
+    if(sig){
+      // signature hole — the one moment that needs your input; auto-play pauses here
+      const row=$(`<div class="mini" style="max-width:520px;margin:0 auto;gap:10px"></div>`);
       const at=$(`<button class="btn red">⚡ Attack</button>`); at.onclick=()=>playDailyHole(true);
       const sf=$(`<button class="btn gold">🛡 Play Safe</button>`); sf.onclick=()=>playDailyHole(false);
       row.appendChild(at); row.appendChild(sf); add(row);
-    } else { const b=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Play hole ${i+1} ▸</button>`); b.onclick=()=>playDailyHole(); add(b); }
-    if(S.dailyMullAvail&&!S.dailyMullUsed&&played.length){ const m=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">↺ Mulligan hole ${played[played.length-1].n}<span class="sub">Re-roll your last hole — one per round (streak reward)</span></button>`); m.onclick=dailyMulligan; add(m); }
-    const af=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Auto-play to the clubhouse ⏭</button>`); af.onclick=autoFinishDaily; add(af);
+      add($(`<div class="small muted center" style="margin-top:8px">Signature hole — pick your shot to play on</div>`));
+    } else if(S.dailyAuto){
+      add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Playing your round…</div>`));
+      const pause=$(`<button class="btn ghost" style="max-width:520px;margin:12px auto 0">⏸ Pause</button>`); pause.onclick=dailyPause; add(pause);
+    } else {
+      const b=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Play hole ${i+1} ▸</button>`); b.onclick=()=>playDailyHole(); add(b);
+      const res=$(`<button class="btn blue" style="max-width:520px;margin:10px auto 0">▶ Resume auto-play</button>`); res.onclick=dailyResume; add(res);
+    }
+    // mulligan (streak reward) only when the round is paused / at a decision — never mid-flow
+    if(S.dailyMullAvail&&!S.dailyMullUsed&&played.length&&(!S.dailyAuto||sig)){ const m=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">↺ Mulligan hole ${played[played.length-1].n}<span class="sub">Re-roll your last hole — one per round (streak reward)</span></button>`); m.onclick=dailyMulligan; add(m); }
+    const af=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Skip to result ⏭</button>`); af.onclick=autoFinishDaily; add(af);
+  } else if(S.dailyAuto){ add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Heading to the clubhouse…</div>`));
   } else { const fin=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">See your round ▸</button>`); fin.onclick=finishDailyRound; add(fin); }
 }
 function scrDailyResult(){
