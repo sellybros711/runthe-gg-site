@@ -767,6 +767,18 @@ allows Google Fonts, or self-host Anton.*
     attempts to go even lower and chase the course record", and the replay button becomes
     "Go lower ▸". Verified headless, zero errors. Deployed to /golf.
 
+- 2026-06-27: **Shot narrative: penalty drops + club selection.** `dShotSeq` now names
+  the club on every full shot (`dClub(yds)`: driver→…→lob wedge; e.g. "8-iron from 168
+  yds to the green"), and injects water/OB **penalty drops** ("Driver — pushed into the
+  water hazard" / "Penalty drop, 309 yds to hole") on blow-up holes — only when there are
+  ≥2 extra long strokes to spend, likelier for loose ball-strikers (prob 0.14+0.52·(1−ballQ)),
+  so penalties explain doubles/triples. Rewrote the long-shot loop as a played/need state
+  machine so a 2-stroke penalty episode keeps the total exact; advance-vs-missed-green is
+  distance-based (>205y must advance) so a re-tee isn't mislabeled a green miss. Each line
+  sentence-cased. Verified: 5760-combo regression 0 mismatches, no bad narration, penalties
+  surface ~13% over a score-heavy test (≈0–1.5/round for weak builds, ~0 for elite), zero
+  errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

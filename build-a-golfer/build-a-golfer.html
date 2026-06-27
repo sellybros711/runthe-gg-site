@@ -2956,6 +2956,7 @@ function dPick(rng,a){ return a[Math.floor(rng()*a.length)]; }
 function dSk(sk,k){ return (sk&&sk[k]!=null)?sk[k]:80; }                    // skill 0-99 (80 = tour avg)
 function dSkQ(v){ return Math.max(0.03,Math.min(0.97,(v-58)/40)); }          // competence 0..1
 function dBallQ(sk){ const a=dSk(sk,'app'),c=dSk(sk,'acc'); return dSkQ(0.55*Math.min(a,c)+0.25*((a+c)/2)+0.20*dSk(sk,'scr')); }
+function dClub(y){ if(y>=278)return'driver'; if(y>=248)return'3-wood'; if(y>=226)return'hybrid'; if(y>=208)return'4-iron'; if(y>=194)return'5-iron'; if(y>=179)return'6-iron'; if(y>=164)return'7-iron'; if(y>=149)return'8-iron'; if(y>=134)return'9-iron'; if(y>=119)return'pitching wedge'; if(y>=95)return'gap wedge'; if(y>=70)return'sand wedge'; return'lob wedge'; }
 function dShotSeq(par,yards,strokes,rng,sk,opts){
   opts=opts||{}; sk=sk||{}; const toPar=strokes-par; const sh=[]; const sides=['left','right','center'];
   // decompose strokes into shots-to-green (greenReach) + putts (P); attribute extras to weak skills
@@ -2967,39 +2968,47 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
   else { P=1; greenReach=strokes-1; }
   const floor=par===3?1:(par===4?1:2);
   greenReach=Math.max(floor,Math.min(strokes-1,greenReach)); P=strokes-greenReach;
-  let dist=yards, ftToHole=null; const regReach=par-2;
-  for(let s=0;s<greenReach;s++){ const last=(s===greenReach-1);
-    if(s===0&&par!==3){
-      const accQ=dSkQ(dSk(sk,'acc')), distQ=dSkQ(dSk(sk,'dist'));
-      let drive=Math.round((par===5?284:266)+distQ*50+rng()*16); if(opts.safe)drive-=Math.round(10+rng()*14);
-      drive=Math.min(drive,yards-20); dist=Math.max(10,yards-drive);
-      const fairway=rng()<(0.26+0.64*accQ);
-      let lie=fairway?'the fairway':dPick(rng, accQ<0.32?['the right rough','the left rough','a fairway bunker','the trees']:['the right rough','the left rough']);
-      if(last){ ftToHole=14+rng()*28; sh.push({d:`Drive ${drive} yds to the green, ${dFeet(ftToHole)} to hole`}); }
-      else sh.push({d:`Drive ${drive} yds to ${lie}, ${Math.round(dist)} yds to hole`});
-    } else if(par===3&&s===0){
-      const appQ=dSkQ(dSk(sk,'app'));
-      if(last){ ftToHole=Math.max(3,(toPar<0?6+rng()*16:(30-18*appQ)+rng()*20)); sh.push({d:`Tee shot to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`}); }
-      else { sh.push({d:`Tee shot ${dPick(rng,appQ<0.4?['into the greenside bunker','into the left rough','long over the green']:['just off the right fringe','into the front collar'])}, ${Math.round(16+rng()*26)} ft to hole`}); dist=22; }
-    } else {
-      const fromYds=Math.round(dist), appQ=dSkQ(dSk(sk,'app'));
-      const isLayup=(dist>70 && s<regReach-1);
-      if(last){
-        if(s>=regReach){ const sgQ=dSkQ(0.5*dSk(sk,'sht')+0.3*dSk(sk,'scr')+0.2*dSk(sk,'bnk'));   // recovery → short game decides proximity
-          ftToHole=Math.max(2,(22-13*sgQ)+rng()*18); sh.push({d:`${dist<35?'Chip':'Pitch'} to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`}); }
-        else { ftToHole=Math.max(2.5,(toPar<0?7+rng()*13:(33-20*appQ)+rng()*18)); sh.push({d:`${fromYds} yds to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`}); }   // approach → approach skill
-      } else if(isLayup){ let adv=Math.max(40,Math.min(dist-30,Math.round(70+rng()*160))); dist=Math.max(26,dist-adv);
-        sh.push({d:`${adv} yds to ${rng()<0.6?'the fairway':'the rough'}, ${Math.round(dist)} yds to hole`});
-      } else { const missLie=dPick(rng,['into the greenside bunker','into the right rough','into the left rough','long over the green','short into the rough']);   // missed green (weak ball-striking)
-        dist=Math.round(16+rng()*22); sh.push({d:`${fromYds} yds — missed the green ${missLie}`}); }
-    }
+  const regReach=par-2;
+  // penalty episode (water/OB) spends 2 long shots: the wayward shot + the drop. Only when there
+  // are >=2 extra long strokes to burn and the build is loose; likelier for weak accuracy/approach.
+  let water=(toPar>=2 && (greenReach-regReach)>=2 && rng() < (0.14+0.52*(1-dBallQ(sk))));
+  let dist=yards, ftToHole=null, played=0; const need=greenReach; const rem=()=>need-played;
+  // TEE SHOT
+  if(par!==3){
+    const accQ=dSkQ(dSk(sk,'acc')), distQ=dSkQ(dSk(sk,'dist'));
+    let drive=Math.round((par===5?284:266)+distQ*50+rng()*16); if(opts.safe)drive-=Math.round(10+rng()*14);
+    drive=Math.min(drive,yards-20); const teeClub=opts.safe?'3-wood':'driver';
+    if(water && rem()>=3 && rng()<0.6){ sh.push({d:`${teeClub} — pushed into the water hazard`}); played++; dist=Math.max(20,yards-Math.round(drive*0.55)); sh.push({d:`penalty drop, ${Math.round(dist)} yds to hole`}); played++; water=false; }
+    else { dist=Math.max(10,yards-drive); const fairway=rng()<(0.26+0.64*accQ);
+      const lie=fairway?'the fairway':dPick(rng, accQ<0.32?['the right rough','the left rough','a fairway bunker','the trees']:['the right rough','the left rough']);
+      if(rem()===1){ ftToHole=14+rng()*28; sh.push({d:`${teeClub} ${drive} yds to the green, ${dFeet(ftToHole)} to hole`}); }
+      else sh.push({d:`${teeClub} ${drive} yds to ${lie}, ${Math.round(dist)} yds to hole`}); played++; }
+  } else {
+    const appQ=dSkQ(dSk(sk,'app'));
+    if(water && rem()>=3){ sh.push({d:`${dClub(yards)} from the tee — into the water hazard`}); played++; dist=Math.round(yards*0.4); sh.push({d:`penalty drop, ${dist} yds to hole`}); played++; water=false; }
+    else if(rem()===1){ ftToHole=Math.max(3,(toPar<0?6+rng()*16:(30-18*appQ)+rng()*20)); sh.push({d:`${dClub(yards)} to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`}); played++; }
+    else { sh.push({d:`${dClub(yards)} ${dPick(rng,appQ<0.4?['into the greenside bunker','into the left rough','long over the green']:['just off the right fringe','into the front collar'])}, ${Math.round(16+rng()*26)} ft to hole`}); played++; dist=22; }
+  }
+  // ADVANCE / APPROACH / RECOVERY shots until on the green
+  while(rem()>0){ const lastLong=(rem()===1), fromYds=Math.round(dist);
+    if(lastLong){
+      if(played>=regReach){ const sgQ=dSkQ(0.5*dSk(sk,'sht')+0.3*dSk(sk,'scr')+0.2*dSk(sk,'bnk'));   // recovery/chip → short game
+        ftToHole=Math.max(2,(22-13*sgQ)+rng()*18); sh.push({d:`${dist<32?'lob wedge':'sand wedge'} to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`}); }
+      else { const appQ=dSkQ(dSk(sk,'app')); ftToHole=Math.max(2.5,(toPar<0?7+rng()*13:(33-20*appQ)+rng()*18)); sh.push({d:`${dClub(fromYds)} from ${fromYds} yds to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`}); }   // approach → approach skill
+      played++;
+    } else if(water && rem()>=3){ sh.push({d:`${dClub(fromYds)} from ${fromYds} yds — into the water hazard`}); played++; dist=Math.max(30,Math.round(fromYds*0.45)); sh.push({d:`penalty drop, ${Math.round(dist)} yds to hole`}); played++; water=false;
+    } else if(dist>205){ let adv=Math.max(40,Math.min(dist-30,Math.round(70+rng()*150))); dist=Math.max(26,dist-adv);   // too far to reach the green — advance
+      sh.push({d:`${dClub(adv)} ${adv} yds to ${rng()<0.6?'the fairway':'the rough'}, ${Math.round(dist)} yds to hole`}); played++;
+    } else { const missLie=dPick(rng,['into the greenside bunker','into the right rough','into the left rough','long over the green','short into the rough']);   // missed green (weak ball-striking)
+      dist=Math.round(16+rng()*22); sh.push({d:`${dClub(fromYds)} from ${fromYds} yds — missed the green ${missLie}`}); played++; }
   }
   if(ftToHole==null)ftToHole=20+rng()*20;
   for(let pi=0;pi<P;pi++){ const lastPutt=(pi===P-1), putQ=dSkQ(dSk(sk,'put'));
     if(lastPutt) sh.push({d:'In the hole',tag:dResultLong(par,toPar)});
     else { const putt=ftToHole, leave=Math.max(0.8,(3.2-2.0*putQ)+rng()*2.4); sh.push({d:`Putt ${dFeet(putt)}, ${dFeet(leave)} to hole`}); ftToHole=leave; }   // weak putter leaves more / misses short
   }
-  sh.forEach((s,i)=>s.n=i+1); return sh;
+  sh.forEach((s,i)=>{ s.n=i+1; s.d=s.d.charAt(0).toUpperCase()+s.d.slice(1); });   // sentence-case each line
+  return sh;
 }
 function dCondLabel(c){ return {calm:'☼ Calm',breezy:'≈ Breezy',windy:'≋ Windy',gusting:'⚑ Gusting'}[c]||c; }
 function dShort(name){ return String(name).split('(')[0].trim(); }
