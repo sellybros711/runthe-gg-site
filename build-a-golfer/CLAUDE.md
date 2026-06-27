@@ -822,6 +822,16 @@ allows Google Fonts, or self-host Anton.*
   playDailyHole(agg) regardless of order. Verified variety across courses/types/seeds,
   zero errors. Deployed to /golf.
 
+- 2026-06-27: **Fixed near-identical scorecards across the 3 daily attempts.** Bug: the
+  per-hole RNG was seeded only by (day ^ course ^ hole), NOT the attempt number, so all 3
+  attempts faced the SAME per-hole luck — with a similar build the cards came out nearly
+  identical (only holes near a scoring threshold flipped). Fix: `dAttSalt(base)` folds
+  `S.dailyAttempt` into every daily hole seed (sim, shots, mulligan, scenario), so each of
+  the 3 attempts plays out differently while staying deterministic + server-verifiable per
+  attempt (attempt# now also stored in the submitted `decisions`). Verified: an identical
+  build across attempts 0/1/2 now differs on 7-12 of 18 holes (was 18/18 identical), zero
+  errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
