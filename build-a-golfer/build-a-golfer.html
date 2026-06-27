@@ -3195,6 +3195,113 @@ function finishDailyRound(){
   if(improved) sbSubmitDaily(best);   // post the new best to the global board (fails open if signed out/offline)
   S.screen='dailyresult'; render();
 }
+/* ---- signature-hole decision scenarios: a course-aware risk/reward dilemma at each
+   signature hole, drawn from the hole's real hazard + your situation vs the tour average ---- */
+const DSIG_HAZ={
+ 'Augusta National':{12:'water-front',13:'water-green',15:'water-front'},
+ 'TPC Sawgrass':{17:'island',16:'water-green',18:'water-l'},
+ 'Pebble Beach Golf Links':{7:'cliff',8:'cliff',18:'water-l'},
+ 'St Andrews Old Course':{17:'bunker',14:'bunker',18:'creek'},
+ 'Oakmont':{3:'bunker',8:'long',17:'drivable'},
+ 'TPC Scottsdale':{16:'stadium',17:'drivable',15:'water-green'},
+ 'Bay Hill':{18:'water-front',6:'water-r',16:'water-green'},
+ 'Harbour Town Golf Links':{18:'wind',17:'wind',14:'bunker'},
+ 'Quail Hollow Club':{18:'creek',17:'water-green',16:'long'},
+ 'Muirfield Village':{18:'creek',16:'water-front',14:'short4'},
+ 'Valhalla':{13:'island',18:'water-green',7:'water-green'},
+ 'TPC River Highlands':{15:'drivable',16:'water-front',17:'water-r'},
+ 'Plantation Course at Kapalua':{18:'wind',7:'wind',17:'long'},
+ 'East Lake Golf Club':{18:'water-green',15:'water-green',9:'long'},
+ 'Glen Abbey':{11:'creek',18:'water-front',13:'water-green'},
+ 'Sedgefield Country Club':{18:'elevated',7:'long',17:'go5'} };
+function dShotType(par,yards){ if(par===3)return 'tee3'; if(par===4)return yards<=325?'drive4':(yards<=378?'short4':'app4'); return yards<=575?'go5':'long5'; }
+function dSitLine(total,av,i){ const holesLeft=18-i; if(holesLeft>5||holesLeft<1)return '';
+  const pace=av*(i/18), diff=Math.round(total-pace);
+  if(diff>=2) return `You're ${diff} off the tour-average pace with ${holesLeft} to play — you need to make something happen.`;
+  if(diff<=-2) return `You're ${-diff} clear of the tour average with ${holesLeft} to play — protect the lead, or press for more?`;
+  return `It's neck-and-neck with the tour average with ${holesLeft} to play — this shot could swing it.`; }
+function dScenario(courseKey,i,total,av){
+  const c=DAILY_COURSES[courseKey], h=c.holes[i], par=h[0], yards=h[1];
+  const holeNum=i+1, haz=(DSIG_HAZ[courseKey]||{})[holeNum]||(par===3?'long':'bunker'), type=dShotType(par,yards);
+  const rng=dHoleRng(S.dailySeed,courseKey,i,0x5c1);
+  const yd = type==='app4'?Math.max(120,Math.min(205,yards-285)) : type==='go5'?Math.max(195,Math.min(255,yards-300)) : type==='long5'?Math.round(85+rng()*25) : yards;
+  let tag,prompt,atk,safe;
+  const pinL=rng()<0.5;
+  if(haz==='island'){
+    tag=`${yd} yds · island green · no bailout`;
+    prompt=`${yd} yards to a green ringed by water — there is no safe miss. The pin is tucked ${pinL?'left':'right'}. Fire straight at it, or aim for the fat center and take your two-putt?`;
+    atk={label:'Attack the flag',sub:'Kick-in birdie if you pure it — a wet double if you flinch'};
+    safe={label:'Aim for the center',sub:'Anywhere dry is a good miss — leave a longer putt'};
+  } else if(haz==='water-front'){
+    tag=`${yd} yds · water fronts the green`;
+    prompt=`${yd} yards, with water guarding the front of the green${par===3?'':' and a pin cut just over it'}. Carry it all the way to the flag, or land it safely on the back half?`;
+    atk={label:'Carry the water',sub:'Stiff it for birdie — short is wet and a likely double'};
+    safe={label:'Play to the back half',sub:'Take the water out of play — two-putt par from there'};
+  } else if(haz==='water-green'){
+    tag=type==='go5'?`${yd} out · go for it in two?`:`${yd} yds · water guards the green`;
+    prompt=type==='go5'
+      ? `${yd} yards to reach in two, but water guards the green. Send it for an eagle look, or lay up to a comfortable wedge?`
+      : `${yd} yards with water lurking by the green and a ${pinL?'left':'right'} pin. Take dead aim, or play to the safe side of the surface?`;
+    atk={label:type==='go5'?'Go for the green':'Take dead aim',sub:type==='go5'?'Eagle/birdie upside — a blow-up if you find the water':'Tight birdie chance — a miss is wet'};
+    safe={label:type==='go5'?'Lay up to your number':'Favor the safe side',sub:type==='go5'?'Wedge in — a stress-free birdie is still on':'Longer putt, but no chance of a drop'};
+  } else if(haz==='water-l'||haz==='water-r'){
+    const side=haz==='water-l'?'left':'right', other=haz==='water-l'?'right':'left';
+    tag=`${yd} yds · water all down the ${side}`;
+    prompt=`${yd} yards with water running the entire ${side} side and the pin tucked ${side}. Challenge it for a short birdie look, or bail to the dry ${other}?`;
+    atk={label:`Challenge the ${side} pin`,sub:`Short birdie putt if it comes off — ${side} is wet`};
+    safe={label:`Favor the ${other} side`,sub:'Longer putt, zero chance of a penalty'};
+  } else if(haz==='cliff'){
+    tag=`${yd} yds · cliff carry`;
+    prompt=`${yd} yards across the cliffs to a green perched on the edge${par===3?', wind swirling':''}. Take it on at the flag, or play to the safe side away from the drop?`;
+    atk={label:'Take it on',sub:'A great look if you hold the green — disaster over the edge'};
+    safe={label:'Play to the safe side',sub:'Keep it dry and on land — settle for par'};
+  } else if(haz==='creek'){
+    tag=type==='drive4'?`${yards} yds · drivable over the burn`:`${yd} yds · creek in play`;
+    prompt=type==='drive4'
+      ? `${yards}-yard hole with a creek guarding the green. Have a go at driving it, or lay back over the trouble for a flip wedge?`
+      : `${yd} yards with a creek crossing in front of the green. Carry it to set up birdie, or lay back to safety?`;
+    atk={label:type==='drive4'?'Go for the green':'Carry the creek',sub:'Eagle/birdie if it carries — a card-wrecker if it doesn’t'};
+    safe={label:'Lay back to safety',sub:'A simple wedge in — take the creek out of play'};
+  } else if(haz==='bunker'){
+    tag=`${yd} yds · deep bunkers guard the green`;
+    prompt=`${yd} yards to a green ringed by deep, penal bunkers${rng()<0.5?', the green running away from you':''}. Attack the flag, or play to the safe portion of the surface?`;
+    atk={label:'Attack the flag',sub:'Birdie look if you’re pure — a brutal up-and-down if you’re not'};
+    safe={label:'Play to the fat side',sub:'Two-putt from the safe area, avoid the sand'};
+  } else if(haz==='drivable'){
+    tag=`${yards} yds · drivable par-4`;
+    prompt=`${yards}-yard drivable par-4. Pull driver and have a go at the green, or lay back for a full wedge into the flag?`;
+    atk={label:'Driver — go for the green',sub:'Eagle/birdie if it finds the putting surface; trouble if it misses'};
+    safe={label:'Lay back to a wedge',sub:'Leave a simple pitch — birdie still very much on'};
+  } else if(haz==='short4'){
+    tag=`short par-4 · ${yards} yds`;
+    prompt=`A short, strategic ${yards}-yard par-4. Take on the green and the trouble around it off the tee, or lay back to your favorite wedge number?`;
+    atk={label:'Take it on off the tee',sub:'A close pitch if it works — short-side trouble if it doesn’t'};
+    safe={label:'Lay back for a full wedge',sub:'Control your number, fire at the flag from the fairway'};
+  } else if(haz==='wind'){
+    tag=`${yd} yds · fully exposed to the wind`;
+    prompt=`${yd} yards, fully exposed with the wind swirling. Flight a controlled shot straight at the flag, or play to the big part of the green and let it ride?`;
+    atk={label:'Flight one at the flag',sub:'Birdie look if you judge it — the wind can punish a miss'};
+    safe={label:'Play the big part of the green',sub:'Take the gust out of it — two-putt par'};
+  } else if(haz==='long'){
+    tag=`${yd} yds · all the club you’ve got`;
+    prompt=`${yd} yards — about as long as this shot gets. Go for the green and try to hold it, or play short and rely on an up-and-down?`;
+    atk={label:'Go for the green',sub:'On in regulation if you flush it — long/left is jail'};
+    safe={label:'Play short and chip up',sub:'Lean on your short game for the par save'};
+  } else if(haz==='elevated'){
+    tag=`${yd} yds · downhill off an elevated tee`;
+    prompt=`A downhill ${par===3?'shot':'approach'} of ${yd} yards. Chase one at the flag and risk the slope feeding it past, or land it safely below the hole?`;
+    atk={label:'Chase it at the flag',sub:'A look at birdie — but the slope can run it long'};
+    safe={label:'Land it below the hole',sub:'Leave an uphill putt — the percentage play'};
+  } else { // go5 (no water) and fallback
+    tag=type==='go5'?`${yd} out · reachable par-5`:`${yd} yds to the flag`;
+    prompt=type==='go5'
+      ? `${yd} yards to reach this par-5 in two. Send it for an eagle look, or lay up and wedge it close for a stress-free birdie?`
+      : `${yd} yards to the flag. Take dead aim for birdie, or play to the middle and take your par?`;
+    atk={label:type==='go5'?'Go for the green':'Take dead aim',sub:type==='go5'?'Eagle chance — but a miss brings bogey into play':'Fire at it — birdie or bust'};
+    safe={label:type==='go5'?'Lay up and wedge it':'Play the middle',sub:type==='go5'?'A simple wedge and a likely birdie':'Two-putt par, no drama'};
+  }
+  return {tag,prompt,atk,safe,sit:dSitLine(total,av,i)};
+}
 function scrDailyRound(){
   const c=DAILY_COURSES[S.dailyCourse], played=S.dailyHoles, total=played.reduce((s,h)=>s+h.toPar,0);
   const i=played.length, done=(i>=18);
@@ -3219,12 +3326,16 @@ function scrDailyRound(){
     add($(`<div class="scout" style="max-width:560px;margin:0 auto;text-align:center"><div style="font-weight:800;font-size:16px">Hole ${i+1} · Par ${h[0]} · ${h[1]}y</div>${h[2]?`<div class="small muted">${esc(h[2])}</div>`:''}${sig?`<div class="small" style="color:var(--gold);margin-top:4px">⛳ Signature — ${esc(sig[1])}</div>`:''}</div>`));
     add($(`<div style="height:10px"></div>`));
     if(sig){
-      // signature hole — the one moment that needs your input; auto-play pauses here
-      const row=$(`<div class="mini" style="max-width:520px;margin:0 auto;gap:10px"></div>`);
-      const at=$(`<button class="btn red">⚡ Attack</button>`); at.onclick=()=>playDailyHole(true);
-      const sf=$(`<button class="btn gold">🛡 Play Safe</button>`); sf.onclick=()=>playDailyHole(false);
-      row.appendChild(at); row.appendChild(sf); add(row);
-      add($(`<div class="small muted center" style="margin-top:8px">Signature hole — pick your shot to play on</div>`));
+      // signature hole — a course-aware risk/reward scenario; auto-play pauses for your call
+      const sc=dScenario(S.dailyCourse,i,total,dTourAvg(c));
+      add($(`<div class="scout" style="max-width:560px;margin:0 auto;text-align:center;border-color:var(--gold)">
+        ${sc.sit?`<div class="small" style="color:#e9a23b;font-weight:800;margin-bottom:7px">${esc(sc.sit)}</div>`:''}
+        <div class="small" style="text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--gold)">${esc(sc.tag)}</div>
+        <div style="font-size:14px;line-height:1.45;margin-top:6px">${esc(sc.prompt)}</div></div>`));
+      add($(`<div style="height:10px"></div>`));
+      const at=$(`<button class="btn red" style="max-width:520px;margin:0 auto">⚡ ${esc(sc.atk.label)}<span class="sub">${esc(sc.atk.sub)}</span></button>`); at.onclick=()=>playDailyHole(true);
+      const sf=$(`<button class="btn gold" style="max-width:520px;margin:10px auto 0">🛡 ${esc(sc.safe.label)}<span class="sub">${esc(sc.safe.sub)}</span></button>`); sf.onclick=()=>playDailyHole(false);
+      add(at); add(sf);
     } else if(S.dailyAuto){
       add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Playing your round…</div>`));
       const pause=$(`<button class="btn ghost" style="max-width:520px;margin:12px auto 0">⏸ Pause</button>`); pause.onclick=dailyPause; add(pause);

@@ -794,6 +794,21 @@ allows Google Fonts, or self-host Anton.*
   Deployed client to /golf. **PENDING OWNER: apply `supabase/24_runtour_daily.sql`** (and
   22/23 if not yet), then verify live in a browser.
 
+- 2026-06-27: **Signature-hole decision scenarios (course-aware risk/reward).** Replaced
+  the generic Attack/Play-Safe prompt with a specific dilemma drawn from the hole's real
+  hazard + your situation. `DSIG_HAZ` tags every signature hole (all 16 courses) with its
+  feature (island / water-front / water-green / water-l|r / cliff / creek / bunker /
+  drivable / short4 / wind / long / elevated / go5); `dScenario(course,i,total,av)` builds
+  a vivid prompt (computed shot distance, pin side, hazard) + tailored Attack/Safe labels
+  & risk subs, and `dSitLine` prepends a pressure line on closing holes ("You're N off the
+  tour-average pace with H to play…" / "N clear … protect or press?"). Wired into
+  scrDailyRound's signature branch (buttons still call playDailyHole(true/false) — mechanic
+  unchanged). Covers the owner's examples: water+pin approaches, behind/ahead-the-average
+  late, and downhill/bunker risk flavor. Also this batch: tap-a-played-hole to view its
+  shot log (S.dailyViewHole) + analytical Strength/Weakness scouting notes (scoutingNote,
+  Strokes-Gained framing, varies by build). Verified across courses/situations, zero errors.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
