@@ -752,6 +752,21 @@ allows Google Fonts, or self-host Anton.*
   signature prompts, zero errors; screenshot matches the inspiration. Deployed to /golf.
   (Helpers: `dFeet`, `dResultLong`, `dPick`, `dShotPanel`.)
 
+- 2026-06-27: **Shot narrative is now golfer-specific + "go lower" after a win.**
+  - `dShotSeq` takes the build's skills and (a) biases every shot's lie/proximity by the
+    relevant rating — low accuracy → tee shots in rough/bunkers/trees, weak approach →
+    missed greens, weak short game → longer chips, weak putting → loose lags/missed
+    short putts — and (b) attributes the strokes lost over par to the build's weakest
+    area (putting vs ball-striking), so the struggle is visible in the play-by-play even
+    though the SCORE is unchanged (engine-fixed). Verified: a weak putter 3-putts ~86%
+    of bogeys, a weak driver/approach misses the green ~81%; elite finds fairways/greens.
+    Helpers `dSk`/`dSkQ`/`dBallQ`; call sites pass `S.dailySkills`. Regression: 4320
+    combos, 0 stroke-count mismatches.
+  - Beating the pro never consumes attempts (already true) — reframed the UX to push it:
+    win banner "🏁 You beat the pro!" + "Challenge cleared — use your N remaining
+    attempts to go even lower and chase the course record", and the replay button becomes
+    "Go lower ▸". Verified headless, zero errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
