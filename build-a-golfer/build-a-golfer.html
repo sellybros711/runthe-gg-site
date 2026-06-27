@@ -1164,8 +1164,8 @@ function resetIcon(){return `<svg viewBox="0 0 24 24" fill="none" stroke="curren
 function header(){
   const h=$(`<div class="head"></div>`);
   const top=$(`<div class="topbar"></div>`);
-  const menu=$(`<button class="icobtn" aria-label="How to play" aria-haspopup="dialog" aria-expanded="${S.overlay==='rules'?'true':'false'}">≡</button>`);
-  menu.onclick=()=>{S.overlay='rules';render();};
+  const menu=$(`<button class="icobtn" aria-label="How to play" aria-expanded="${S.screen==='rules'?'true':'false'}">≡</button>`);
+  menu.onclick=openRules;
   top.appendChild(menu);
   h.appendChild(top);
   h.appendChild($(`<div class="crestrow">${crestSVG()}
@@ -1213,12 +1213,11 @@ function render(){
   app.innerHTML='';
   app.appendChild(header());
   const card=$(`<main class="card"></main>`);
-  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult'].includes(S.screen)?' wide':''}"></div>`);
+  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','rules'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
   app.appendChild(footer());
   RT=screen;
-  if(S.overlay==='rules') overlayRules(screen);
   if(S.overlay==='record') overlayRecord(screen);
   if(S.overlay==='account') overlayAccount(screen);
   if(S.overlay==='leaderboard') overlayLeaderboard(screen);
@@ -1227,7 +1226,7 @@ function render(){
   if(S.overlay==='confirmReset') overlayConfirmReset(screen);
   if(S.overlay==='about') overlayAbout(screen);
   if(S.overlay==='privacy') overlayPrivacy(screen);
-  ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult})[S.screen]();
+  ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult})[S.screen]();
   paintAvatars();   // recolor any avatar canvases just added to the DOM
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
   _lastView=view;
@@ -1235,31 +1234,49 @@ function render(){
   // only jump to top when the view actually changes.
   window.scrollTo({top: sameView ? savedY : 0});
 }
-function overlayRules(screen){
-  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
-    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
-    <h3>How to play</h3>
-    <ol>
-      <li>Build your golfer from <b>8 skills</b> — one taken from each golfer you keep.</li>
-      <li>Each spin reveals a real golfer. Take one of their eight ratings to fill a slot (one skill per golfer).</li>
-      <li>Don't like who landed? Use a <b>re-spin</b> to pass and reveal someone else — you get <b>2 re-spins</b> for the whole draft.</li>
-      <li>Every golfer's ratings are shown, so grab their strongest skill for an open slot.</li>
-      <li>Fill all <b>8 slots</b>: distance, accuracy, approach, short game, scrambling, bunker, putting, composure.</li>
-      <li>Run your golfer through a full pro season — spikes win events; one weak slot loses weekends.</li>
-      <li>Winnings are big, but so are expenses (caddie, agent, travel, ~$2.8M/yr of tour costs) — a mediocre build can finish in the <b>red</b>. Bank the most prize money and climb the season earnings list.</li>
-    </ol>
-    <h2 style="margin:14px 0 8px">Pull odds each spin</h2>
-    <div class="board" style="margin-bottom:6px">
+function openRules(){ if(S.screen==='rules')return; S.rulesReturn=S.screen; S.overlay=null; S.screen='rules'; render(); }
+function scrRules(){
+  const back=()=>{ S.screen=S.rulesReturn||'title'; render(); };
+  const bk=$(`<button class="btn ghost" style="width:auto;padding:7px 13px;font-size:13px;margin:0 0 8px">‹ Back</button>`);
+  bk.onclick=back; add(bk);
+  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">📖 How to play</span></div>`));
+  add($(`<h1 class="center" style="font-size:30px;margin:10px 0 2px">Build a golfer.<br>Run the tour.</h1>`));
+  add($(`<p class="lede center" style="margin:2px 0 16px">Draft a golfer one skill at a time, then run your build through a full pro season — or test it on the daily challenge.</p>`));
+
+  add($(`<h2 class="center" style="margin:8px 0 10px">Career mode</h2>`));
+  const cSteps=[
+    ['🎰','Spin for golfers','Each spin reveals a real golfer. Take one of their eight ratings to fill a slot — one skill per golfer.'],
+    ['🔁','Re-spin twice','Don\'t like who landed? Re-spin to pass and reveal someone else — you get 2 re-spins for the whole draft.'],
+    ['🧱','Fill all 8 skills','Distance, accuracy, approach, short game, scrambling, bunker, putting, composure. Spikes win events; one weak slot loses weekends.'],
+    ['💰','Run a pro season','Bank the most prize money and climb the earnings list. Winnings are big — but caddie, agent and ~$2.8M/yr of tour costs can put a mediocre build in the red.'],
+  ];
+  const cList=$(`<div class="perks" style="max-width:560px;margin:0 auto 18px"></div>`);
+  cSteps.forEach(s=>cList.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
+  add(cList);
+
+  add($(`<h2 class="center" style="margin:8px 0 8px">Pull odds each spin</h2>`));
+  add($(`<div class="board" style="max-width:560px;margin:0 auto 6px">
       <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="color:var(--gold);font-weight:800">★ Legendary</span><span class="mny mono">5%</span></div>
       <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="color:#c7a6f2;font-weight:800">◆ Epic</span><span class="mny mono">25%</span></div>
       <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="color:#82c1e8;font-weight:800">◇ Rare</span><span class="mny mono">35%</span></div>
-      <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="font-weight:800">Common</span><span class="mny mono">35%</span></div>
-    </div>
-    <p class="small muted" style="line-height:1.45;margin:0 0 4px">Rarer golfers tend to have higher peak skills — but take the best rating for an open slot, whoever lands.</p>
-    <button class="btn red">Got it</button></div>`);
-  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
-  ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
-  screen.appendChild(ov);
+      <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="font-weight:800">Common</span><span class="mny mono">35%</span></div></div>`));
+  add($(`<p class="small muted center" style="max-width:560px;margin:0 auto 22px;line-height:1.45">Rarer golfers tend to have higher peak skills — but take the best rating for an open slot, whoever lands.</p>`));
+
+  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge</span></div>`));
+  add($(`<h2 class="center" style="margin:10px 0 4px">One round. One famous course.</h2>`));
+  add($(`<p class="lede center" style="margin:2px 0 14px">A single 18-hole round at a rotating real course — same for everyone, new course at midnight UTC. Human-only: chase the course record.</p>`));
+  const dSteps=[
+    ['⛳','A real course, every day','18 holes at an iconic tour venue — real pars and yardages. The course rotates daily and is the same for every player.'],
+    ['🎯','Draft for the course','The preview shows what skills win there and the day\'s conditions. Spin a golfer built to attack today\'s course.'],
+    ['♟️','Play it your way','Pick a game plan, then choose Attack or Play Safe on the signature holes. Aggressive chases a low number — but it can blow up.'],
+    ['🏆','Claim the course record','Post the lowest round and the course record is yours. Beat the standing record and your name sits on it until someone takes it.'],
+  ];
+  const dList=$(`<div class="perks" style="max-width:560px;margin:0 auto 18px"></div>`);
+  dSteps.forEach(s=>dList.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
+  add(dList);
+
+  const done=$(`<button class="btn red" style="max-width:520px;margin:4px auto 0">Got it</button>`);
+  done.onclick=back; add(done);
 }
 function overlayRecord(screen){
   const c=career(); const badges=c.badges||{};
@@ -1598,7 +1615,7 @@ function scrTitle(){
   const mini=$(`<div class="mini"></div>`);
   const how=$(`<button class="btn gold">How to Play</button>`);
   const lb=$(`<button class="btn gold">🏆 Leaderboard</button>`);
-  how.onclick=()=>{S.overlay='rules';render();};
+  how.onclick=openRules;
   lb.onclick=()=>{S.overlay='leaderboard';render();};
   mini.appendChild(how); mini.appendChild(lb);
   w.appendChild(mini);
@@ -1949,7 +1966,7 @@ function scrDraft(){
     const spin=$(`<button class="btn teal" style="font-size:24px;padding:19px">Spin the Wheel<span class="sub">${filledCount()===0?'Reveal a golfer':left2go+' slot'+(left2go>1?'s':'')+' to fill'}</span></button>`);
     spin.onclick=spin_; left.appendChild(spin);
     const how=$(`<button class="btn ghost" style="margin-top:10px;font-size:12px;padding:9px">How to play · pull odds</button>`);
-    how.onclick=()=>{S.overlay='rules';render();};
+    how.onclick=openRules;
     left.appendChild(how);
   }
   right.appendChild($(`<h2 style="margin:2px 0 8px">Your scorecard · ${filledCount()}/8</h2>`));
@@ -2876,7 +2893,7 @@ function startDailyChallenge(){
   S.drawRng=mulberry32((seed^0x2545f491)>>>0);
   S.dailyCourse=dailyCourseKey(seed); S.dailyCond=dailyConditions(seed,S.dailyCourse); S.dailyPlan='balanced';
   track('daily_started',{seed,course:S.dailyCourse});
-  S.screen='dailyintro'; render();
+  S.screen=LS.get('bag_daily_howto_seen',false)?'dailyprev':'dailyintro'; render();
 }
 function scrDailyIntro(){
   const c=DAILY_COURSES[S.dailyCourse];
@@ -2892,8 +2909,13 @@ function scrDailyIntro(){
   const list=$(`<div class="perks" style="max-width:560px;margin:0 auto 16px"></div>`);
   steps.forEach(s=>list.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
   add(list);
+  const chk=$(`<label class="remember" style="display:flex;align-items:center;justify-content:center;gap:9px;max-width:520px;margin:0 auto 14px;cursor:pointer;color:var(--oncard);font-weight:600">
+    <input type="checkbox" id="daily-gotit" ${LS.get('bag_daily_howto_seen',false)?'checked':''} style="width:17px;height:17px;accent-color:var(--gold);flex:0 0 auto">
+    <span>Got it — don't show this again</span></label>`);
+  chk.querySelector('input').onchange=e=>{ LS.set('bag_daily_howto_seen',e.target.checked); };
+  add(chk);
   const go=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">See today's course ▸<span class="sub">Then draft your golfer</span></button>`);
-  go.onclick=()=>{ S.screen='dailyprev'; render(); }; add(go);
+  go.onclick=()=>{ LS.set('bag_daily_howto_seen',chk.querySelector('input').checked); S.screen='dailyprev'; render(); }; add(go);
   const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`);
   cr.onclick=()=>{ S.overlay='courserecords'; render(); }; add(cr);
 }
