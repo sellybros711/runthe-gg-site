@@ -16,19 +16,19 @@ in. To refresh the art, replace these two files — nothing else changes.
 
 ## How it works
 
-`build-a-golfer.html` contains the recolor engine (search `AV_COLORS` /
+`build-a-golfer.html` contains the recolor engine (search `avClassify` /
 `paintAvatar`). For the selected gender it loads the matching base portrait, then
-re-tints the detected **skin / hair / shirt** regions to the chosen colors while
-keeping the painted highlights. The **teal cap is never recolored**. Results are
-cached per gender·skin·hair·shirt combo, so swatch changes are instant.
+re-tints the detected **skin / hair / shirt / cap** regions to the chosen colors
+while keeping the painted highlights. Results are cached per
+gender·skin·hair·shirt combo, so swatch changes are instant.
 
 - Gender → which base portrait (male / female)
-- Skin / Hair / Shirt → live recolor (target colors in `AV_COLORS`)
-- Cap → always teal (left untouched)
+- Skin / Hair / Shirt → live recolor to the exact wheel-swatch colours
+- Cap → recolored to match the shirt colour
 
-No per-combo files, no 420-image checker — the avatar is generated dynamically.
-The customization tokens (skin-01-fair … shirt-07-charcoal) live on
-`SKINS`/`HAIRS`/`POLOS` (`file:` field) and key into `AV_COLORS`.
+Target colours are the picker swatches themselves — the `m` field of
+`SKINS`/`HAIRS`/`POLOS`. No per-combo files, no 420-image checker — the avatar is
+generated dynamically.
 
 Fallback: if a base image can't load (or the canvas is tainted, e.g. opened via
 `file://`), the app draws its built-in vector bust so nothing breaks.

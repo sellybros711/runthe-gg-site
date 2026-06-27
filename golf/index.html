@@ -1027,13 +1027,13 @@ function overlayRules(screen){
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>How to play</h3>
     <ol>
-      <li>Spin the wheel up to <b>10 times</b>. Each spin lands on a real golfer.</li>
-      <li>Take <b>one</b> of that golfer's eight skills — or skip and spin again. One skill per golfer.</li>
+      <li>Build your golfer from <b>8 skills</b> — one taken from each golfer you keep.</li>
+      <li>Each spin reveals a real golfer. Take one of their eight ratings to fill a slot (one skill per golfer).</li>
+      <li>Don't like who landed? Use a <b>re-spin</b> to pass and reveal someone else — you get <b>2 re-spins</b> for the whole draft.</li>
+      <li>Every golfer's ratings are shown, so grab their strongest skill for an open slot.</li>
       <li>Fill all <b>8 slots</b>: distance, accuracy, approach, short game, scrambling, bunker, putting, composure.</li>
-      <li>Every golfer's eight ratings are shown — take their best, or risk a re-spin for someone better.</li>
-      <li>Run your golfer through a full pro season. Spikes win you events; one weak slot loses weekends.</li>
-      <li>Winnings are big — but so are expenses (caddie, agent, travel, ~$2.8M/yr of tour costs). A mediocre build can finish the year in the <b>red</b>.</li>
-      <li>Bank the most prize money and climb the season earnings list against the field.</li>
+      <li>Run your golfer through a full pro season — spikes win events; one weak slot loses weekends.</li>
+      <li>Winnings are big, but so are expenses (caddie, agent, travel, ~$2.8M/yr of tour costs) — a mediocre build can finish in the <b>red</b>. Bank the most prize money and climb the season earnings list.</li>
     </ol>
     <h2 style="margin:14px 0 8px">Pull odds each spin</h2>
     <div class="board" style="margin-bottom:6px">
@@ -1341,16 +1341,12 @@ function scrSetup(){
 
 /* ---------- avatar (layered canvas recolor) ---------- */
 // Two high-quality painted base portraits (male + female) are recolored live on a
-// <canvas>: skin / hair / shirt pixels are re-tinted from the player's choices
-// while preserving the original painted shading; the teal cap is left untouched.
-// No per-combo PNGs. Base art: public/avatars/golfers/base/{male,female}-base.png
-// (relative → resolves in dev and at /golf). Result is cached per look combo.
+// <canvas>: skin / hair / shirt / cap pixels are re-tinted from the player's
+// choices (the exact wheel-swatch colors) while preserving the painted shading.
+// The cap matches the shirt colour. No per-combo PNGs. Base art:
+// public/avatars/golfers/base/{male,female}-base.png (relative → dev + /golf).
+// Result is cached per look combo.
 const AV_BASE={ male:'public/avatars/golfers/base/male-base.png', female:'public/avatars/golfers/base/female-base.png' };
-const AV_COLORS={
-  skins:{'skin-01-fair':'#f4c9a5','skin-02-light':'#edae79','skin-03-tan':'#c98655','skin-04-medium':'#a7714b','skin-05-deep':'#75482e'},
-  hairs:{'hair-01-black':'#21150f','hair-02-dark-brown':'#3a2418','hair-03-brown':'#4c3324','hair-04-blonde':'#d1a558','hair-05-auburn':'#8f4328','hair-06-gray':'#a4a09a'},
-  shirts:{'shirt-01-teal':'#12b89f','shirt-02-blue':'#315ca8','shirt-03-red':'#e4483e','shirt-04-gold':'#f2b62d','shirt-05-cream':'#f3f0e7','shirt-06-purple':'#7050b5','shirt-07-charcoal':'#2e3540'}
-};
 const _avImg=new Map();      // src -> {img, ready, failed}
 const _avRender=new Map();   // look-key -> recolored 512 offscreen canvas
 function avLoad(src){
@@ -1365,24 +1361,31 @@ function avRgbHsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.m
 function avHslRgb(h,s,l){h/=360;let r=l,g=l,b=l;if(s!==0){const f=(p,q,t)=>{if(t<0)t+=1;if(t>1)t-=1;if(t<1/6)return p+(q-p)*6*t;if(t<1/2)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p;};
   const q=l<.5?l*(1+s):l+s-l*s,p=2*l-q;r=f(p,q,h+1/3);g=f(p,q,h);b=f(p,q,h-1/3);}return{r:Math.round(r*255),g:Math.round(g*255),b:Math.round(b*255)};}
 function avInHue(h,mn,mx){return mn<=mx?(h>=mn&&h<=mx):(h>=mn||h<=mx);}
-function avTint(r,g,b,hex,strength,satB){const s=avRgbHsl(r,g,b);const t=avHexRgb(hex);const th=avRgbHsl(t.r,t.g,t.b);
-  const sl=Math.max(0,Math.min(1,s.l*0.9+th.l*0.1));const ss=Math.max(0,Math.min(1,th.s*satB));const ti=avHslRgb(th.h,ss,sl);
+// lpull = how far to pull the result lightness toward the target (0 = keep the
+// base's exact shading, 1 = take the target's lightness). A little pull lets dark
+// skin/hair actually read dark instead of staying light-toned.
+function avTint(r,g,b,hex,strength,satB,lpull){lpull=(lpull==null)?0.1:lpull;
+  const s=avRgbHsl(r,g,b);const t=avHexRgb(hex);const th=avRgbHsl(t.r,t.g,t.b);
+  const sl=Math.max(0,Math.min(1,s.l*(1-lpull)+th.l*lpull));const ss=Math.max(0,Math.min(1,th.s*satB));const ti=avHslRgb(th.h,ss,sl);
   return{r:Math.round(r*(1-strength)+ti.r*strength),g:Math.round(g*(1-strength)+ti.g*strength),b:Math.round(b*(1-strength)+ti.b*strength)};}
 function avClassify(r,g,b,a,nx,ny){
   if(a<30)return null;const{h,s,l}=avRgbHsl(r,g,b);
   const head=ny>0.17&&ny<0.74&&nx>0.18&&nx<0.82, lower=ny>0.58;
+  // cap: a tight box over the crown/brim so the teal cap recolors to the shirt
+  // colour without catching the dark-green badge background around it.
+  const cap=ny>0.07&&ny<0.36&&nx>0.27&&nx<0.73&&avInHue(h,148,195)&&s>0.26&&l>0.20&&l<0.9;
   const skin=head&&avInHue(h,12,46)&&s>0.2&&l>0.27&&l<0.86;
   const hair=head&&((avInHue(h,12,48)&&s>0.18&&l<0.34)||(s<0.18&&l>0.28&&l<0.72&&ny<0.56));
   // shirt: central lower band only + a saturation/brightness floor so the dark-green
   // badge background in the lower corners is never recolored.
   const shirt=lower&&nx>0.20&&nx<0.80&&avInHue(h,150,195)&&s>0.32&&l>0.24&&l<0.80;
-  if(shirt)return'shirt';if(hair&&!skin)return'hair';if(skin)return'skin';return null;
+  if(cap)return'cap';if(shirt)return'shirt';if(hair&&!skin)return'hair';if(skin)return'skin';return null;
 }
+// targets are the exact wheel-swatch colours (palette .m) so the avatar matches the picker.
 function avLook(L){L=L||DEFLOOK;
-  return{ gender:(L.gender==='female')?'female':'male',
-    skin:(SKINS.find(x=>x.id===L.skin)||SKINS[1]).file,
-    hair:(HAIRS.find(x=>x.id===L.hair)||HAIRS[1]).file,
-    shirt:(POLOS.find(x=>x.id===L.polo)||POLOS[0]).file };
+  const sk=SKINS.find(x=>x.id===L.skin)||SKINS[1], hr=HAIRS.find(x=>x.id===L.hair)||HAIRS[1], po=POLOS.find(x=>x.id===L.polo)||POLOS[0];
+  const g=(L.gender==='female')?'female':'male';
+  return{ gender:g, skinHex:sk.m, hairHex:hr.m, shirtHex:po.m, key:g+'_'+sk.id+'_'+hr.id+'_'+po.id };
 }
 function avBlit(canvas,off){const cx=canvas.getContext('2d');cx.clearRect(0,0,canvas.width,canvas.height);cx.drawImage(off,0,0,canvas.width,canvas.height);}
 function avVectorFallback(canvas){const w=canvas.closest('.avatarfig');if(w)w.innerHTML=golferSVG();}
@@ -1396,16 +1399,18 @@ function avCompute(canvas,key,o){
       const id=octx.getImageData(0,0,512,512),d=id.data;
       for(let i=0;i<d.length;i+=4){const px=i/4,x=px%512,y=(px/512)|0;
         const reg=avClassify(d[i],d[i+1],d[i+2],d[i+3],x/512,y/512); if(!reg)continue;
-        const tg=reg==='skin'?AV_COLORS.skins[o.skin]:reg==='hair'?AV_COLORS.hairs[o.hair]:AV_COLORS.shirts[o.shirt];
-        const st=reg==='skin'?0.66:reg==='hair'?0.82:0.95, sb=reg==='skin'?0.75:reg==='hair'?0.95:1.05;
-        const t=avTint(d[i],d[i+1],d[i+2],tg,st,sb); d[i]=t.r;d[i+1]=t.g;d[i+2]=t.b;}
+        const tg=reg==='skin'?o.skinHex:reg==='hair'?o.hairHex:o.shirtHex;   // shirt + cap → shirt colour
+        const st=reg==='skin'?0.92:reg==='hair'?1.0:reg==='shirt'?0.95:0.92;
+        const sb=reg==='skin'?0.88:reg==='hair'?1.0:1.05;
+        const lp=reg==='skin'?0.30:reg==='hair'?0.22:0.10;
+        const t=avTint(d[i],d[i+1],d[i+2],tg,st,sb,lp); d[i]=t.r;d[i+1]=t.g;d[i+2]=t.b;}
       octx.putImageData(id,0,0); _avRender.set(key,off); avBlit(canvas,off);
     }catch(err){ avVectorFallback(canvas); }   // tainted (file://) or other → vector
   };
   if(e.ready) go(); else { e.img.addEventListener('load',go,{once:true}); e.img.addEventListener('error',()=>avVectorFallback(canvas),{once:true}); }
 }
 function paintAvatar(canvas,look){
-  const o=avLook(look); const key=o.gender+'_'+o.skin+'_'+o.hair+'_'+o.shirt;
+  const o=avLook(look); const key=o.key;
   const cached=_avRender.get(key);
   if(cached){ avBlit(canvas,cached); return; }
   avCompute(canvas,key,o);
@@ -1586,7 +1591,7 @@ function scrDraft(){
     <div class="spins"><span style="color:var(--gold)">${S.reSpins}</span> <span class="muted small">re-spins</span></div></div>`));
   if(!LS.get('bag_tip_seen',false) && filledCount()===0 && !S.current && !S.spinning){
     const tip=$(`<div class="scout" style="margin-bottom:12px;border-color:var(--gold)">
-      <b style="color:var(--gold)">How it works</b> — Spinning is free, but you must take <b>one skill</b> from each golfer you keep. You get <b>2 re-spins</b> to pass on someone. Fill all 8 slots to build your golfer.
+      <b style="color:var(--gold)">How it works</b> — You fill <b>8 skill slots</b>. Each spin reveals a golfer — take one of their ratings for a slot. Don't want them? Use one of your <b>2 re-spins</b> to pass. That's <b>8 picks + 2 re-spins</b>, then your golfer's built.
       <button class="btn ghost" style="margin-top:10px;font-size:13px;padding:8px">Got it</button></div>`);
     tip.querySelector('button').onclick=()=>{LS.set('bag_tip_seen',true);render();};
     add(tip);
