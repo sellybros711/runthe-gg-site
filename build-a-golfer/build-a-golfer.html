@@ -1170,7 +1170,8 @@ function overlayAccount(screen){
     const isUp=mode==='signup';
     box.innerHTML=`${unlockPerks()}<button class="btn gbtn" id="au-google" ${busy?'disabled':''}>${GOOGLE_G}Continue with Google</button>
       <div class="author"><span>or</span></div>
-      ${isUp?`<input class="name" id="au-email" type="email" placeholder="Email" autocomplete="email">`
+      ${isUp?`<input class="name" id="au-user2" maxlength="20" placeholder="Username" autocomplete="username">
+              <input class="name" id="au-email" type="email" placeholder="Email" autocomplete="email" style="margin-top:8px">`
             :`<input class="name" id="au-id" placeholder="Username or email" autocomplete="username">`}
       <input class="name" id="au-pass" type="password" placeholder="Password" autocomplete="${isUp?'new-password':'current-password'}" style="margin-top:8px">
       ${S.acctNote?`<div class="small" style="color:#35d6a0;margin-top:9px">${esc(S.acctNote)}</div>`:''}
@@ -1179,9 +1180,15 @@ function overlayAccount(screen){
       <div class="small muted center" style="margin-top:13px">${isUp?'Already have an account?':'New here?'} <a href="#" id="au-swap" style="color:var(--gold);font-weight:700">${isUp?'Sign in':'Create one'}</a></div>`;
     box.querySelector('#au-google').onclick=()=>go(()=>sbSignInGoogle());
     box.querySelector('#au-go').onclick=async()=>{ const pass=box.querySelector('#au-pass').value;
-      if(isUp){ const email=box.querySelector('#au-email').value; if(!email.trim()||!pass){S.acctErr='Enter an email and password.';render();return;}
+      if(isUp){ const uname=box.querySelector('#au-user2').value.trim(); const email=box.querySelector('#au-email').value;
+        if(!uname){S.acctErr='Pick a username.';render();return;}
+        if(!/^[A-Za-z0-9_]{3,20}$/.test(uname)){S.acctErr='Username: 3–20 letters, numbers or _.';render();return;}
+        if(!email.trim()||!pass){S.acctErr='Enter an email and password.';render();return;}
         if(S.acctBusy)return; S.acctErr='';S.acctNote='';S.acctBusy=true;render();
-        try{ const session=await sbSignUp(email,pass); S.acctBusy=false;
+        try{
+          if(sb){ const {data:avail}=await sb.rpc('username_available',{p_username:uname});
+            if(avail===false){ S.acctBusy=false; S.acctErr='That username is taken — try another.'; render(); return; } }
+          const session=await sbSignUp(email,pass,uname); S.acctBusy=false;
           if(!session && !sbSignedIn()){ S.acctMode='signin'; S.acctNote='Account created — check your email to confirm, then sign in.'; }
           render();
         }catch(e){ S.acctBusy=false; S.acctErr=e.message||'Could not create that account.'; render(); } }
@@ -2708,11 +2715,14 @@ async function sbApply(session){
   render();   // refresh so the header (Sign in ↔ Player) and any open overlay reflect auth state
 }
 /* ---- in-game auth (shared RunThe.GG accounts) ---- */
-async function sbSignUp(email,password){
+async function sbSignUp(email,password,username){
   if(!sb) throw new Error('Accounts are offline right now — try again shortly.');
-  const {data,error}=await sb.auth.signUp({email:String(email).trim(),password});
+  const base=location.origin+location.pathname.replace(/[^/]*\.html?$/i,'');
+  const options={emailRedirectTo:base}; if(username) options.data={username};   // trigger writes it to profiles at sign-up
+  const {data,error}=await sb.auth.signUp({email:String(email).trim(),password,options});
   if(error) throw new Error(error.message||'Could not create that account.');
-  return !!(data&&data.session);   // false → email confirmation is required first
+  if(username) sbUsername=username;   // reflect the chosen handle immediately
+  return !!(data&&data.session);      // false → email confirmation is required first
 }
 async function sbSignInPassword(idOrEmail,password){
   if(!sb) throw new Error('Accounts are offline right now — try again shortly.');
