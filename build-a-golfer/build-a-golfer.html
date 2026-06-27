@@ -420,30 +420,30 @@ const TEE_TIERS=[
 ];
 const BADGES=[
   // Winning
-  {id:'champion', e:'🏆', t:'Champion',          cat:'Winning',     d:'Win tournaments across your tours.',          tiers:[1,10,30,100,300],         get:m=>m.wins},
-  {id:'frontrun', e:'📋', t:'Front Runner',      cat:'Winning',     d:'Finish #1 on the season earnings list.',      tiers:[1,3,10,30,75],            get:m=>m.moneyLeaderSeasons},
+  {id:'champion', e:'🏆', t:'Champion',          cat:'Winning',     d:'Win tournaments across your tours.',          tiers:[3,15,50,150,400],         get:m=>m.wins},
+  {id:'frontrun', e:'📋', t:'Front Runner',      cat:'Winning',     d:'Finish #1 on the season earnings list.',      tiers:[1,3,8,20,45],             get:m=>m.moneyLeaderSeasons},
   // Majors
-  {id:'major',    e:'⛳', t:'Major Champion',     cat:'Majors',      d:'Win major championships.',                    tiers:[1,5,20,60,150],           get:m=>m.majors},
-  {id:'masters',  e:'🟢', t:'Green Jacket',       cat:'Majors',      d:'Win The Masters.',                            tiers:[1,3,8,20,50],             get:m=>m.maj.masters},
-  {id:'wanamaker',e:'🏆', t:'Wanamaker',          cat:'Majors',      d:'Win The Championship.',                       tiers:[1,3,8,20,50],             get:m=>m.maj.champ},
-  {id:'usopen',   e:'🇺🇸', t:'National Open',      cat:'Majors',      d:'Win the U.S. Open.',                          tiers:[1,3,8,20,50],             get:m=>m.maj.usopen},
-  {id:'theopen',  e:'🏺', t:'Claret Jug',         cat:'Majors',      d:'Win The Open.',                               tiers:[1,3,8,20,50],             get:m=>m.maj.open},
+  {id:'major',    e:'⛳', t:'Major Champion',     cat:'Majors',      d:'Win major championships.',                    tiers:[1,6,18,45,110],           get:m=>m.majors},
+  {id:'masters',  e:'🟢', t:'Green Jacket',       cat:'Majors',      d:'Win The Masters.',                            tiers:[1,3,8,20,45],             get:m=>m.maj.masters},
+  {id:'wanamaker',e:'🏆', t:'Wanamaker',          cat:'Majors',      d:'Win The Championship.',                       tiers:[1,3,8,20,45],             get:m=>m.maj.champ},
+  {id:'usopen',   e:'🇺🇸', t:'National Open',      cat:'Majors',      d:'Win the U.S. Open.',                          tiers:[1,3,8,20,45],             get:m=>m.maj.usopen},
+  {id:'theopen',  e:'🏺', t:'Claret Jug',         cat:'Majors',      d:'Win The Open.',                               tiers:[1,3,8,20,45],             get:m=>m.maj.open},
   {id:'cslam',    e:'👑', t:'Career Grand Slam',  cat:'Majors',      d:'Collect all four majors — Black: all four in one career.', tiers:[1,2,3,4,5], get:m=>m.careerSlams>0?5:Math.min(4,m.distinctMajors), fmt:v=>v>=5?'Slam':v+' / 4', noNum:true},
-  {id:'sslam',    e:'🌟', t:'Single-Season Slam', cat:'Majors',      d:'Win all four majors in one season.',          tiers:[1,2,4,8,15],              get:m=>m.slamSeasons},
+  {id:'sslam',    e:'🌟', t:'Single-Season Slam', cat:'Majors',      d:'Win all four majors in one season.',          tiers:[1,2,3,5,8],               get:m=>m.slamSeasons},
   // Consistency
-  {id:'top10',    e:'🎯', t:'Top-Tenner',         cat:'Consistency', d:'Card top-10 finishes.',                       tiers:[10,75,250,750,2000],      get:m=>m.top10},
-  {id:'cuts',     e:'✂️', t:'Cut Maker',          cat:'Consistency', d:'Make the weekend cut.',                       tiers:[25,150,500,1500,4000],    get:m=>m.made},
-  {id:'iron',     e:'🪨', t:'Iron Man',           cat:'Consistency', d:'Play a season making every cut.',             tiers:[1,3,10,30,75],            get:m=>m.ironSeasons},
+  {id:'top10',    e:'🎯', t:'Top-Tenner',         cat:'Consistency', d:'Card top-10 finishes.',                       tiers:[25,150,500,1200,3000],    get:m=>m.top10},
+  {id:'cuts',     e:'✂️', t:'Cut Maker',          cat:'Consistency', d:'Make the weekend cut.',                       tiers:[50,300,900,2200,5500],    get:m=>m.made},
+  {id:'iron',     e:'🪨', t:'Iron Man',           cat:'Consistency', d:'Play a season making every cut.',             tiers:[1,2,5,12,25],             get:m=>m.ironSeasons},
   // Money
-  {id:'money',    e:'💰', t:'Money List',         cat:'Money',       d:'Bank career prize money.',                    tiers:[10e6,50e6,250e6,1e9,5e9], get:m=>m.earnings, fmt:v=>fmtMoneyShort(v)},
-  {id:'roller',   e:'💎', t:'High Roller',        cat:'Money',       d:'Post a huge single-season profit.',           tiers:[1e6,5e6,20e6,60e6,150e6], get:m=>m.bestSeasonNet, fmt:v=>fmtMoneyShort(v)},
-  {id:'black',    e:'📈', t:'In the Black',       cat:'Money',       d:'Finish seasons in profit.',                   tiers:[1,5,20,60,150],           get:m=>m.profitSeasons},
+  {id:'money',    e:'💰', t:'Money List',         cat:'Money',       d:'Bank career prize money.',                    tiers:[25e6,150e6,500e6,1.5e9,4e9], get:m=>m.earnings, fmt:v=>fmtMoneyShort(v)},
+  {id:'roller',   e:'💎', t:'High Roller',        cat:'Money',       d:'Post a huge single-season profit.',           tiers:[1e6,3e6,5e6,8e6,12e6],    get:m=>m.bestSeasonNet, fmt:v=>fmtMoneyShort(v)},
+  {id:'black',    e:'📈', t:'In the Black',       cat:'Money',       d:'Finish seasons in profit.',                   tiers:[3,15,50,150,400],         get:m=>m.profitSeasons},
   // Career
-  {id:'veteran',  e:'🗓️', t:'Veteran',            cat:'Career',      d:'Play tour seasons.',                          tiers:[5,25,100,300,750],        get:m=>m.seasons},
-  {id:'hof',      e:'🏛️', t:'Hall of Famer',       cat:'Career',      d:'Complete full careers.',                      tiers:[1,3,10,30,75],            get:m=>m.careers},
+  {id:'veteran',  e:'🗓️', t:'Veteran',            cat:'Career',      d:'Play tour seasons.',                          tiers:[10,40,120,350,800],       get:m=>m.seasons},
+  {id:'hof',      e:'🏛️', t:'Hall of Famer',       cat:'Career',      d:'Complete full careers.',                      tiers:[1,5,15,40,90],            get:m=>m.careers},
   // Skill
-  {id:'underdog', e:'🐍', t:'Against the Odds',   cat:'Skill',       d:'Turn a profit with a sub-80 build.',          tiers:[1,3,10,30,75],            get:m=>m.underdogSeasons},
-  {id:'maxed',    e:'⚙️', t:'Maxed Out',          cat:'Skill',       d:'Build a higher-overall golfer.',              tiers:[80,85,90,95,99],          get:m=>m.maxOvr, noNum:true},
+  {id:'underdog', e:'🐍', t:'Against the Odds',   cat:'Skill',       d:'Turn a profit with a sub-80 build.',          tiers:[1,3,8,18,40],             get:m=>m.underdogSeasons},
+  {id:'maxed',    e:'⚙️', t:'Maxed Out',          cat:'Skill',       d:'Build a higher-overall golfer.',              tiers:[82,86,90,94,97],          get:m=>m.maxOvr, noNum:true},
 ];
 const BADGE_CATS=['Winning','Majors','Consistency','Money','Career','Skill'];
 const BADGE_TIER_TOTAL=BADGES.reduce((n,b)=>n+b.tiers.length,0);
