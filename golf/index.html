@@ -2636,13 +2636,18 @@ function sbInit(){
 }
 async function sbApply(session){
   sbUser=(session&&session.user)||null; sbUsername=null; sbProfile=null;
+  let oauth=false; try{ if(localStorage.getItem('rtt_oauth_pending')&&sbUser){ oauth=true; localStorage.removeItem('rtt_oauth_pending'); } }catch(e){}
   if(sbUser&&sb){
     try{ const {data}=await sb.from('profiles').select('username').eq('id',sbUser.id).maybeSingle(); sbUsername=(data&&data.username)||null; }catch(e){}
     await sbLoadProfile();
-    if(sbUser) S.acctMode=sbUsername?'profile':'username';   // drop to username picker if none yet
+    S.acctMode=sbUsername?'profile':'username';   // drop to username picker if none yet
     if(_pendingSeason){ const s=_pendingSeason; _pendingSeason=null; sbSubmitSeason(s); }
+    if(oauth){                                    // just came back from Google → confirm on the title screen
+      if(sbUsername) toast('Signed in as '+esc(sbUsername));
+      else { S.overlay='account'; S.acctMode='username'; }
+    }
   }
-  if(S.overlay==='record'||S.overlay==='leaderboard'||S.overlay==='account') render();
+  if(oauth||S.overlay==='record'||S.overlay==='leaderboard'||S.overlay==='account') render();
 }
 /* ---- in-game auth (shared RunThe.GG accounts) ---- */
 async function sbSignUp(email,password){
@@ -2664,8 +2669,10 @@ async function sbSignInPassword(idOrEmail,password){
 }
 async function sbSignInGoogle(){
   if(!sb) throw new Error('Accounts are offline right now — try again shortly.');
-  const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
-  if(error) throw new Error(error.message||'Google sign-in failed.');
+  try{ localStorage.setItem('rtt_oauth_pending','1'); }catch(e){}
+  const base=location.origin+location.pathname.replace(/[^/]*\.html?$/i,'');   // return to the /golf title page
+  const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:base}});
+  if(error){ try{localStorage.removeItem('rtt_oauth_pending');}catch(e){} throw new Error(error.message||'Google sign-in failed.'); }
 }
 async function sbSignOut(){ if(sb){ try{ await sb.auth.signOut(); }catch(e){} } sbUser=null; sbUsername=null; sbProfile=null; lbCache=null; }
 async function sbSetUsername(name){
