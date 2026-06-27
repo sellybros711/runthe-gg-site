@@ -2643,7 +2643,8 @@ function scrOffseason(){
   const cols=$(`<div class="cols"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
   cols.appendChild(left); cols.appendChild(right); add(cols);
-  const pips=Array.from({length:os.maxChanges},(_,i)=>`<span class="pip ${i<os.changes?'on':''}"></span>`).join('');
+  // pips show REMAINING changes — start full, empty out as you use them
+  const pips=Array.from({length:os.maxChanges},(_,i)=>`<span class="pip ${i<(os.maxChanges-os.changes)?'on':''}"></span>`).join('');
   left.appendChild($(`<div class="draftbar"><div><h2 style="margin:0">Changes</h2><div class="pips">${pips}</div></div>
     <div class="spins"><span style="color:var(--gold)">${os.reSpins}</span> <span class="muted small">re-spins</span></div></div>`));
   if(S.current||S.spinning){
