@@ -288,6 +288,11 @@
   .dcell.cur{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset}
   .dcell .dn{font-size:9px; color:var(--muted); font-weight:700; line-height:1}
   .dcell .ds{font-family:var(--mono); font-weight:800; font-size:15px; line-height:1.15}
+  .dcell .ds .smk{display:inline-flex; align-items:center; justify-content:center; min-width:19px; height:19px; padding:0 1px; box-sizing:border-box; line-height:1}
+  .dcell .ds .smk.circle{border:1.6px solid currentColor; border-radius:50%}
+  .dcell .ds .smk.box{border:1.6px solid currentColor; border-radius:3px}
+  .dcell .ds .smk.dcircle{border:1.6px solid currentColor; border-radius:50%; outline:1.6px solid currentColor; outline-offset:1.6px}
+  .dcell .ds .smk.dbox{border:1.6px solid currentColor; border-radius:3px; outline:1.6px solid currentColor; outline-offset:1.6px}
 
   .ovr{display:flex; align-items:baseline; gap:10px; justify-content:center; margin:4px 0}
   .ovr .num{font-family:var(--mono); font-weight:800; font-size:52px; color:var(--gold); line-height:1}
@@ -2901,6 +2906,9 @@ function scrRecap(){
 function dtp(t){ return t===0?'E':(t>0?'+'+t:''+t); }
 function dResultLabel(par,toPar){ return toPar<=-2?'Eagle':toPar===-1?'Birdie':toPar===0?'Par':toPar===1?'Bogey':toPar===2?'Double':'Triple+'; }
 function dScoreCol(toPar){ return toPar<0?'#35d6a0':toPar===0?'var(--oncard)':toPar===1?'#e9a23b':'#E14A33'; }
+// real-scorecard notation: birdie circled, eagle double-circled, bogey boxed, double+ double-boxed, par plain
+function dMarkClass(toPar){ return toPar<=-2?'smk dcircle':toPar===-1?'smk circle':toPar===1?'smk box':toPar>=2?'smk dbox':'smk'; }
+function dCellScore(pl){ return `<span class="${dMarkClass(pl.toPar)}">${pl.par+pl.toPar}</span>`; }
 function dCondLabel(c){ return {calm:'☼ Calm',breezy:'≈ Breezy',windy:'≋ Windy',gusting:'⚑ Gusting'}[c]||c; }
 function dShort(name){ return String(name).split('(')[0].trim(); }
 function startDailyChallenge(){
@@ -3006,7 +3014,7 @@ function scrDailyRound(){
   add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${dtp(total)}</span> <span class="small muted">through ${i}</span></div>`));
   const strip=$(`<div class="dcard" style="max-width:600px;margin:6px auto 0"></div>`);
   for(let k=0;k<18;k++){ const pl=played[k], cur=(k===i&&!done);
-    strip.appendChild($(`<div class="dcell ${cur?'cur':''} ${pl?'done':''}"><div class="dn">${k+1}</div><div class="ds" style="color:${pl?dScoreCol(pl.toPar):'var(--muted)'}">${pl?(pl.par+pl.toPar):'·'}</div></div>`)); }
+    strip.appendChild($(`<div class="dcell ${cur?'cur':''} ${pl?'done':''}"><div class="dn">${k+1}</div><div class="ds" style="color:${pl?dScoreCol(pl.toPar):'var(--muted)'}">${pl?dCellScore(pl):'·'}</div></div>`)); }
   add(strip);
   if(played.length){ const last=played[played.length-1];
     add($(`<div class="scout" style="max-width:560px;margin:12px auto 0;text-align:center"><div class="small muted">Hole ${last.n} · par ${last.par}${last.attack===true?' · ⚡ attacked':last.attack===false?' · 🛡 safe':''}${last.mull?' · ↺ mulligan':''}</div><div style="font-weight:800;font-size:20px;color:${dScoreCol(last.toPar)};margin-top:2px">${last.par+last.toPar} · ${dResultLabel(last.par,last.toPar)}</div></div>`)); }
@@ -3038,7 +3046,7 @@ function scrDailyResult(){
     const grid=$(`<div style="max-width:600px;margin:14px auto 0"></div>`);
     [[0,9,'OUT'],[9,18,'IN']].forEach(([a,b,lab])=>{
       const row=$(`<div class="dcard"></div>`);
-      for(let k=a;k<b;k++){ const pl=S.dailyHoles[k]; row.appendChild($(`<div class="dcell done"><div class="dn">${k+1}</div><div class="ds" style="color:${dScoreCol(pl.toPar)}">${pl.par+pl.toPar}</div></div>`)); }
+      for(let k=a;k<b;k++){ const pl=S.dailyHoles[k]; row.appendChild($(`<div class="dcell done"><div class="dn">${k+1}</div><div class="ds" style="color:${dScoreCol(pl.toPar)}">${dCellScore(pl)}</div></div>`)); }
       grid.appendChild($(`<div class="small muted center" style="letter-spacing:.12em;margin-top:6px">${lab}</div>`)); grid.appendChild(row); });
     add(grid);
   }
