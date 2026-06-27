@@ -1371,7 +1371,7 @@ function overlayAccount(screen){
             :`<input class="name" id="au-id" placeholder="Username or email" autocomplete="username">`}
       <input class="name" id="au-pass" type="password" placeholder="Password" autocomplete="${isUp?'new-password':'current-password'}" style="margin-top:8px">
       <label class="remember" style="display:flex;align-items:center;gap:9px;margin-top:11px;font-size:12.5px;color:var(--oncard);cursor:pointer;text-align:left">
-        <input type="checkbox" id="au-remember" ${rttRemember()?'checked':''} style="width:17px;height:17px;accent-color:var(--gold);flex:0 0 auto">
+        <input type="checkbox" id="au-remember" ${rttRemember()||!localStorage.getItem('rtt_chose_remember')?'checked':''} style="width:17px;height:17px;accent-color:var(--gold);flex:0 0 auto">
         Keep me signed in on this device</label>
       ${S.acctNote?`<div class="small" style="color:#35d6a0;margin-top:9px">${esc(S.acctNote)}</div>`:''}
       ${err?`<div class="autherr">${esc(err)}</div>`:''}
@@ -3146,7 +3146,7 @@ const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 let sb=null, sbUser=null, sbUsername=null, sbProfile=null, lbCache=null, _pendingSeason=null;
 const RTT_AUTH_KEY='sb-runtour-auth';   // RunTheTour's own saved-session key (separate from RunThePitch)
 function rttRemember(){ try{ return localStorage.getItem('rtt_remember')==='1'; }catch(e){ return false; } }
-function setRemember(on){ try{ on?localStorage.setItem('rtt_remember','1'):localStorage.removeItem('rtt_remember'); }catch(e){} }
+function setRemember(on){ try{ localStorage.setItem('rtt_chose_remember','1'); on?localStorage.setItem('rtt_remember','1'):localStorage.removeItem('rtt_remember'); }catch(e){} }
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function sbSignedIn(){ return !!sbUser; }
 function sbEmail(){ return (sbUser&&sbUser.email)||''; }
@@ -3157,13 +3157,20 @@ function sbInit(){
     // we never silently inherit whichever account is logged in over there. Same project /
     // accounts, so signing in here is the same RunThe.GG identity; only the saved-session
     // token is separate.
+    // Capture the OAuth-return signal SYNCHRONOUSLY, before createClient's detectSessionInUrl
+    // cleans the URL and before any auth event can consume the rtt_oauth_pending flag. Without
+    // this the remember-me gate below races sbApply() (which clears the flag) and wrongly signs
+    // a just-returned Google user straight back out — the "toast says signed in, header says
+    // Sign in, repeat" loop seen in the installed PWA.
+    let oauthReturn=false;
+    try{ oauthReturn = !!localStorage.getItem('rtt_oauth_pending')
+      || /[#&?](access_token|code|refresh_token)=/.test((location.hash||'')+(location.search||'')); }catch(e){}
     sb=window.supabase.createClient(SB_URL,SB_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:RTT_AUTH_KEY}});
     // Fresh auth changes (sign-in / sign-out / token refresh) always apply; the INITIAL
     // restored session is handled by getSession() below so we can honor "remember me".
     sb.auth.onAuthStateChange((ev,session)=>{ if(ev==='INITIAL_SESSION') return; sbApply(session); });
     sb.auth.getSession().then(async({data})=>{
       const session=data&&data.session;
-      let oauthReturn=false; try{ oauthReturn=!!localStorage.getItem('rtt_oauth_pending'); }catch(e){}
       if(session && !rttRemember() && !oauthReturn){
         // a saved session is present but the user never opted to stay signed in → start
         // signed out and make them pick an account explicitly.

@@ -653,6 +653,28 @@ allows Google Fonts, or self-host Anton.*
   Validated headless: stable→decline→retire→ceremony→reset, stat invariants hold, field
   ~82, zero errors. Deployed to /golf.
 
+- 2026-06-27: Daily How-to refinements + daily-draft course reminder + **PWA Google
+  sign-in loop fix.**
+  - Daily intro `scrDailyIntro` got a "Got it — don't show again" checkbox
+    (`bag_daily_howto_seen`); `startDailyChallenge` skips straight to the preview once
+    set. Main How-to-Play converted from a pop-up overlay to a full-screen page
+    (`scrRules`, routed via `S.screen='rules'` + Back/Got-it return) and gained a Daily
+    Challenge section so the daily rules stay referenceable.
+  - Daily draft screen now shows a gold reminder banner (course + conditions + the 3
+    skills weighted heaviest, matching the preview's "What wins here") and stars (★ +
+    highlight) the matching skill tiles. Gated on `S.daily`.
+  - **Auth bug (installed PWA, Google sign-in):** on OAuth return, `onAuthStateChange`
+    (SIGNED_IN→`sbApply`) consumed `rtt_oauth_pending` before `getSession`'s remember-me
+    gate read it, so with "Keep me signed in" unchecked the gate saw `oauthReturn=false`
+    and immediately signed the user back out — toast said "Signed in as X" while the
+    header still read "Sign in", looping forever. Fix: capture `oauthReturn`
+    SYNCHRONOUSLY at `sbInit` top from `localStorage` **and the URL**
+    (`access_token|code|refresh_token`) before createClient cleans the URL / any event
+    fires. Also defaulted "Keep me signed in" to checked (records an explicit opt-out via
+    `rtt_chose_remember` so unchecking is respected), matching home-screen-app
+    expectations. Verified headless (checkbox states, regex, parse) zero errors.
+    Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
