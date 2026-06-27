@@ -687,6 +687,24 @@ allows Google Fonts, or self-host Anton.*
   the Phase-3 backend). Verified headless: guest done ≠ Jordan done, streaks
   isolated, zero errors. Deployed to /golf.
 
+- 2026-06-27: **Daily Challenge → 3 attempts/day, best score counts.** Each account
+  may now play the daily up to `DAILY_MAX_ATTEMPTS=3` times/day; the LOWEST round of
+  the day is the one logged to the leaderboard/course record (`recordCourseScore`
+  already keeps the best, called every attempt). New `bag_daily` shape (per-account
+  via `acctKey`): `{date, attempts, best, result}` (+ compact `holes:[{par,toPar}]` on
+  results so the scorecard redraws after reload); helpers `dailyAttempts`/
+  `dailyAttemptsLeft`/`dailyBest`; `dailyDoneToday` now = attempts ≥ max (back-compat:
+  old `{done:true}` counts as 1). `startDailyChallenge` → if attempts remain & already
+  played, shows the result screen with **Play again (N left)**; `beginDailyAttempt`
+  starts a fresh draft and salts ONLY the draft wheel by attempt # (`seed ^ … ^
+  (att+1)*0x9e3779b1`) so each of your 3 plays offers a different draft while the
+  course/conditions/hole-sim stay day-seeded (fair, server-verifiable; everyone's Nth
+  attempt is identical). Result screen shows attempt #, best-of-day, "new personal
+  best!"; title button shows "Daily Challenge · N left" + best; done overlay shows
+  best-of-day + "all 3 attempts used". Verified headless: attempts 1→2→3, best tracks
+  lowest, record=best, done overlay on 4th, Play-again UI, zero errors. Deployed to
+  /golf. (Still local per-device until the Phase-3 backend enforces it globally.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

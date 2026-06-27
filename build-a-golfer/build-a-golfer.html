@@ -542,8 +542,13 @@ function todayKey(){const d=new Date();return d.getUTCFullYear()*10000+(d.getUTC
 // device — otherwise one person's daily "done"/streak bleeds onto every other account that
 // signs in on the same browser. Guests (signed out) share the unscoped key.
 function acctKey(base){ return (typeof sbUser!=='undefined'&&sbUser&&sbUser.id)?base+'@'+sbUser.id:base; }
+const DAILY_MAX_ATTEMPTS=3;   // plays allowed per account per day; best score is the one that counts
 function dailyState(){return LS.get(acctKey('bag_daily'),null);}
-function dailyDoneToday(){const dd=dailyState();return !!(dd&&dd.date===todayKey()&&dd.done);}
+function dailyToday(){const dd=dailyState();return (dd&&dd.date===todayKey())?dd:null;}
+function dailyAttempts(){const dd=dailyToday(); if(!dd)return 0; return dd.attempts!=null?dd.attempts:(dd.done?1:0);}
+function dailyAttemptsLeft(){return Math.max(0,DAILY_MAX_ATTEMPTS-dailyAttempts());}
+function dailyBest(){const dd=dailyToday(); return dd?(dd.best||dd.result||null):null;}
+function dailyDoneToday(){return dailyAttemptsLeft()<=0;}   // "done" = all attempts used
 function startDaily(){
   if(dailyDoneToday()){S.overlay='dailydone';render();return;}
   const seed=todayKey(); reset();
@@ -1496,14 +1501,15 @@ function overlayConfirmReset(screen){
   screen.appendChild(ov);
 }
 function overlayDailyDone(screen){
-  const dd=dailyState(); const r=dd&&dd.result;
+  const r=dailyBest();
   const isRound=r&&r.course&&DAILY_COURSES[r.course];
   const body=isRound?`
-    <p class="lede" style="margin-bottom:12px">You've played today's round at <b>${esc(dShort(DAILY_COURSES[r.course].v))}</b> — a new course drops at midnight UTC.</p>
-    <div class="center" style="margin:4px 0 8px"><span class="mono" style="font-weight:800;font-size:38px;color:${r.total<0?'#35d6a0':r.total===0?'var(--oncard)':'#E14A33'}">${dtp(r.total)}</span> <span class="small muted">(${r.par+r.total} · par ${r.par})</span></div>
+    <p class="lede" style="margin-bottom:12px">You've used all <b>${DAILY_MAX_ATTEMPTS}</b> attempts at <b>${esc(dShort(DAILY_COURSES[r.course].v))}</b> today. Your best round is logged to the leaderboard — a new course drops at midnight UTC.</p>
+    <div class="small muted center" style="text-transform:uppercase;letter-spacing:.12em;font-weight:800;margin-bottom:2px">Best of the day</div>
+    <div class="center" style="margin:0 0 8px"><span class="mono" style="font-weight:800;font-size:38px;color:${r.total<0?'#35d6a0':r.total===0?'var(--oncard)':'#E14A33'}">${dtp(r.total)}</span> <span class="small muted">(${r.par+r.total} · par ${r.par})</span></div>
     ${r.record?`<div class="scout" style="text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">🏆 You hold the course record</b></div>`:''}
     <div class="small muted center" style="margin-top:6px">OVR ${r.ovr} · ${dCondLabel(r.cond)} · streak ${streakDisplay()} 🔥</div>`
-   :`<p class="lede">You've already played today. Come back at midnight UTC for a fresh course.</p>`;
+   :`<p class="lede">You've used all ${DAILY_MAX_ATTEMPTS} attempts today. Come back at midnight UTC for a fresh course.</p>`;
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Daily Challenge</h3>
@@ -1617,8 +1623,12 @@ function scrTitle(){
   const go=$(`<button class="btn goldfill">${(ri||cs)?'Start a New Golfer':'Step to the Tee Box'}<span class="sub">Build your golfer</span></button>`);
   go.onclick=()=>{S.mode='easy';S.screen='setup';render();};
   stack.appendChild(go);
-  const done=dailyDoneToday();
-  const daily=$(`<button class="btn ${done?'gold':'blue'}" style="margin-top:10px">${done?'Daily Challenge · Done':'Daily Challenge'}<span class="sub">${done?'View your round · new course at midnight UTC':'One round at a new famous course every day — chase the course record'}</span></button>`);
+  const dleft=dailyAttemptsLeft(), datt=dailyAttempts(), dbest=dailyBest();
+  let dMain, dSub, dCls;
+  if(datt===0){ dMain='Daily Challenge'; dSub='One round at a new famous course every day — chase the course record'; dCls='blue'; }
+  else if(dleft<=0){ dMain='Daily Challenge · Done'; dSub=`Best ${dtp(dbest.total)} · all ${DAILY_MAX_ATTEMPTS} attempts used · new course at midnight UTC`; dCls='gold'; }
+  else { dMain=`Daily Challenge · ${dleft} left`; dSub=`Best ${dtp(dbest.total)} today — play again to beat it (${DAILY_MAX_ATTEMPTS} tries/day)`; dCls='blue'; }
+  const daily=$(`<button class="btn ${dCls}" style="margin-top:10px">${dMain}<span class="sub">${dSub}</span></button>`);
   daily.onclick=startDailyChallenge;
   stack.appendChild(daily);
   const st=streakDisplay();
@@ -2916,12 +2926,21 @@ function dCellScore(pl){ return `<span class="${dMarkClass(pl.toPar)}">${pl.par+
 function dCondLabel(c){ return {calm:'☼ Calm',breezy:'≈ Breezy',windy:'≋ Windy',gusting:'⚑ Gusting'}[c]||c; }
 function dShort(name){ return String(name).split('(')[0].trim(); }
 function startDailyChallenge(){
-  if(dailyDoneToday()){ S.overlay='dailydone'; render(); return; }
-  const seed=todayKey(); reset();
-  S.daily=true; S.dailySeed=seed; S.mode='daily'; S.dailyMode='round';
-  S.drawRng=mulberry32((seed^0x2545f491)>>>0);
+  if(dailyAttemptsLeft()<=0){ S.overlay='dailydone'; render(); return; }
+  // already played at least once today (attempts remain) → show their best round + Play again
+  if(dailyAttempts()>0){ S.daily=true; S.dailyResult=null; S.screen='dailyresult'; render(); return; }
+  beginDailyAttempt();
+}
+function beginDailyAttempt(){
+  if(dailyAttemptsLeft()<=0){ S.overlay='dailydone'; render(); return; }
+  const seed=todayKey(), att=dailyAttempts(); reset();
+  S.daily=true; S.dailySeed=seed; S.mode='daily'; S.dailyMode='round'; S.dailyAttempt=att;
+  // course/conditions/hole-sim stay seeded by the day (fair, server-verifiable); only the draft
+  // wheel is salted by attempt # so each of your 3 plays offers a fresh draft (still identical
+  // across players for the same attempt number).
+  S.drawRng=mulberry32((seed^0x2545f491^Math.imul(att+1,0x9e3779b1))>>>0);
   S.dailyCourse=dailyCourseKey(seed); S.dailyCond=dailyConditions(seed,S.dailyCourse); S.dailyPlan='balanced';
-  track('daily_started',{seed,course:S.dailyCourse});
+  track('daily_started',{seed,course:S.dailyCourse,attempt:att+1});
   S.screen=LS.get('bag_daily_howto_seen',false)?'dailyprev':'dailyintro'; render();
 }
 function scrDailyIntro(){
@@ -3005,10 +3024,16 @@ function finishDailyRound(){
   if(S.dailyResult)return;
   const total=S.dailyHoles.reduce((s,h)=>s+h.toPar,0), c=DAILY_COURSES[S.dailyCourse];
   const isRec=recordCourseScore(S.dailyCourse,total,S.dailyOvr,sbUsername||S.name||'You');
-  S.dailyResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,record:isRec};
-  bumpStreak();
-  LS.set(acctKey('bag_daily'),{date:S.dailySeed,done:true,mode:'round',result:S.dailyResult});
-  track('daily_completed',{course:S.dailyCourse,total});
+  const holes=S.dailyHoles.map(h=>({par:h.par,toPar:h.toPar}));   // compact — enough to redraw the scorecard
+  S.dailyResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,record:isRec,holes};
+  bumpStreak();   // once-per-day guarded inside
+  // log this attempt; the LOWEST score of the day is the one that counts (leaderboard / course record)
+  const prev=dailyToday(); const attempts=(prev?dailyAttempts():0)+1;
+  let best=prev?(prev.best||prev.result||null):null;
+  const improved=!best||total<best.total; if(improved) best=S.dailyResult;
+  S.dailyAttemptNo=attempts; S.dailyImproved=improved;
+  LS.set(acctKey('bag_daily'),{date:S.dailySeed,attempts,best,result:S.dailyResult});
+  track('daily_completed',{course:S.dailyCourse,total,attempt:attempts,best:best.total});
   S.screen='dailyresult'; render();
 }
 function scrDailyRound(){
@@ -3037,27 +3062,40 @@ function scrDailyRound(){
   } else { const fin=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">See your round ▸</button>`); fin.onclick=finishDailyRound; add(fin); }
 }
 function scrDailyResult(){
-  const r=S.dailyResult||(dailyState()&&dailyState().result); if(!r){ S.screen='title'; return render(); }
+  const best=dailyBest(); const justPlayed=!!S.dailyResult;
+  const r=S.dailyResult||best; if(!r){ S.screen='title'; return render(); }
   const c=DAILY_COURSES[r.course], total=r.total;
-  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge complete</span></div>`));
+  const attempts=dailyAttempts(), left=dailyAttemptsLeft();
+  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge${justPlayed?' complete':''}</span></div>`));
   add($(`<h1 class="center" style="font-size:26px;margin:10px 0 2px">${esc(c.v)}</h1>`));
   add($(`<div class="center" style="margin:6px 0"><span class="mono" style="font-weight:800;font-size:48px;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${dtp(total)}</span></div>`));
-  add($(`<p class="lede center" style="margin:0 0 10px">${c.par+total} on a par ${c.par} · OVR ${r.ovr} · ${dCondLabel(r.cond)}</p>`));
+  add($(`<p class="lede center" style="margin:0 0 8px">${c.par+total} on a par ${c.par} · OVR ${r.ovr} · ${dCondLabel(r.cond)}</p>`));
+  // attempts + best-of-day (the best is what's logged to the leaderboard)
+  const bestTxt = best?`Best today <b style="color:var(--gold)">${dtp(best.total)}</b> (${best.par+best.total})`:'';
+  const newBest = justPlayed && S.dailyImproved && attempts>1;
+  add($(`<div class="small muted center" style="margin:0 0 10px">${justPlayed?`Attempt ${S.dailyAttemptNo||attempts} of ${DAILY_MAX_ATTEMPTS} · `:''}${bestTxt}${newBest?' · <span style="color:#35d6a0;font-weight:800">new personal best!</span>':''}<br>Your best of the day is logged to the leaderboard.</div>`));
   const rec=courseRecords()[r.course];
   if(r.record) add($(`<div class="scout" style="max-width:520px;margin:0 auto;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">🏆 New course record!</b><div class="small muted" style="margin-top:2px">You hold the record at ${esc(dShort(c.v))}.</div></div>`));
   else if(rec) add($(`<div class="scout" style="max-width:520px;margin:0 auto;text-align:center">Course record: <b style="color:var(--gold)">${dtp(rec.toPar)}</b> by ${esc(rec.name)}${rec.toPar<total?` · you were ${total-rec.toPar} back`:''}</div>`));
-  if(S.dailyHoles&&S.dailyHoles.length===18){
+  const holes=(S.dailyHoles&&S.dailyHoles.length===18)?S.dailyHoles:(r.holes&&r.holes.length===18?r.holes:null);
+  if(holes){
     const grid=$(`<div style="max-width:600px;margin:14px auto 0"></div>`);
     [[0,9,'OUT'],[9,18,'IN']].forEach(([a,b,lab])=>{
       const row=$(`<div class="dcard"></div>`);
-      for(let k=a;k<b;k++){ const pl=S.dailyHoles[k]; row.appendChild($(`<div class="dcell done"><div class="dn">${k+1}</div><div class="ds" style="color:${dScoreCol(pl.toPar)}">${dCellScore(pl)}</div></div>`)); }
+      for(let k=a;k<b;k++){ const pl=holes[k]; row.appendChild($(`<div class="dcell done"><div class="dn">${k+1}</div><div class="ds" style="color:${dScoreCol(pl.toPar)}">${dCellScore(pl)}</div></div>`)); }
       grid.appendChild($(`<div class="small muted center" style="letter-spacing:.12em;margin-top:6px">${lab}</div>`)); grid.appendChild(row); });
     add(grid);
   }
   add($(`<div style="height:14px"></div>`));
-  const cr=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Course Records ▸<span class="sub">See every course's record holder</span></button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
+  if(left>0){
+    const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Play again ▸<span class="sub">${left} of ${DAILY_MAX_ATTEMPTS} attempt${left>1?'s':''} left — beat your best</span></button>`);
+    again.onclick=beginDailyAttempt; add(again);
+    const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
+  } else {
+    const cr=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Course Records ▸<span class="sub">See every course's record holder</span></button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
+  }
   const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Back to title</button>`); home.onclick=()=>{S.screen='title';S.daily=false;render();}; add(home);
-  add($(`<p class="small muted center" style="margin-top:12px">A new course drops at midnight UTC · streak ${streakDisplay()} 🔥</p>`));
+  add($(`<p class="small muted center" style="margin-top:12px">${left>0?`${left} attempt${left>1?'s':''} left today · `:''}A new course drops at midnight UTC · streak ${streakDisplay()} 🔥</p>`));
 }
 function overlayCourseRecords(screen){
   const recs=courseRecords(), today=S.dailyCourse||dailyCourseKey(todayKey());
