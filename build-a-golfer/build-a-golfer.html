@@ -202,7 +202,8 @@
   .herofig{display:flex; flex-direction:column; align-items:center; gap:8px; flex:0 0 100px}
   .golferfig{width:96px; height:96px; display:block; filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
   .avatarfig{width:96px; height:96px; display:block; position:relative; filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
-  .avatarfig img, .avatarfig svg{width:100%; height:100%; display:block}
+  .avatarfig img, .avatarfig svg, .avatarfig canvas{width:100%; height:100%; display:block}
+  .avatarfig canvas{border-radius:50%}
   .avatarimg{object-fit:cover; border-radius:50%}
   .ovrbadge{display:flex; flex-direction:column; align-items:center; background:rgba(0,0,0,.28); border:2px solid var(--gold); border-radius:12px; padding:5px 0; width:74px}
   .ovrbadge .n{font-family:var(--mono); font-weight:800; font-size:28px; color:var(--gold); line-height:1; transition:color .2s}
@@ -1016,6 +1017,7 @@ function render(){
   if(S.overlay==='about') overlayAbout(screen);
   if(S.overlay==='privacy') overlayPrivacy(screen);
   ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd})[S.screen]();
+  paintAvatars();   // recolor any avatar canvases just added to the DOM
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
   _lastView=view;
   // keep your place when re-rendering the same view (e.g. picking customization swatches);
@@ -1339,31 +1341,82 @@ function scrSetup(){
   back.onclick=()=>{reset();S.screen='title';render();}; right.appendChild(back);
 }
 
-/* ---------- avatar (raster portrait) ---------- */
-// Final art: 420 capped portraits dropped into AVATAR_BASE as
-// {gender}_{skin}_{hair}_{shirt}.png (see public/avatars/golfers/README.md).
-// Relative path so it resolves both in dev (build-a-golfer/public/avatars/…) and
-// live (/golf/public/avatars/…). Missing combos fall back to a per-gender
-// placeholder, then to the built-in vector bust — never breaks while in progress.
-const AVATAR_BASE='public/avatars/golfers/';
-function avatarSrc(L){
-  const sk=(SKINS.find(x=>x.id===L.skin)||SKINS[1]).file;
-  const hr=(HAIRS.find(x=>x.id===L.hair)||HAIRS[1]).file;
-  const po=(POLOS.find(x=>x.id===L.polo)||POLOS[0]).file;
-  const g=(L.gender==='female')?'female':'male';
-  return `${AVATAR_BASE}${g}_${sk}_${hr}_${po}.png`;
+/* ---------- avatar (layered canvas recolor) ---------- */
+// Two high-quality painted base portraits (male + female) are recolored live on a
+// <canvas>: skin / hair / shirt pixels are re-tinted from the player's choices
+// while preserving the original painted shading; the teal cap is left untouched.
+// No per-combo PNGs. Base art: public/avatars/golfers/base/{male,female}-base.png
+// (relative → resolves in dev and at /golf). Result is cached per look combo.
+const AV_BASE={ male:'public/avatars/golfers/base/male-base.png', female:'public/avatars/golfers/base/female-base.png' };
+const AV_COLORS={
+  skins:{'skin-01-fair':'#f4c9a5','skin-02-light':'#edae79','skin-03-tan':'#c98655','skin-04-medium':'#a7714b','skin-05-deep':'#75482e'},
+  hairs:{'hair-01-black':'#21150f','hair-02-dark-brown':'#3a2418','hair-03-brown':'#4c3324','hair-04-blonde':'#d1a558','hair-05-auburn':'#8f4328','hair-06-gray':'#a4a09a'},
+  shirts:{'shirt-01-teal':'#12b89f','shirt-02-blue':'#315ca8','shirt-03-red':'#e4483e','shirt-04-gold':'#f2b62d','shirt-05-cream':'#f3f0e7','shirt-06-purple':'#7050b5','shirt-07-charcoal':'#2e3540'}
+};
+const _avImg=new Map();      // src -> {img, ready, failed}
+const _avRender=new Map();   // look-key -> recolored 512 offscreen canvas
+function avLoad(src){
+  let e=_avImg.get(src);
+  if(!e){ e={img:new Image(),ready:false,failed:false}; e.img.crossOrigin='anonymous';
+    e.img.onload=()=>{e.ready=true;}; e.img.onerror=()=>{e.failed=true;}; e.img.src=src; _avImg.set(src,e); }
+  return e;
+}
+function avHexRgb(h){h=h.replace('#','');return{r:parseInt(h.slice(0,2),16),g:parseInt(h.slice(2,4),16),b:parseInt(h.slice(4,6),16)};}
+function avRgbHsl(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let h=0,s=0;const l=(mx+mn)/2;
+  if(mx!==mn){const d=mx-mn;s=l>.5?d/(2-mx-mn):d/(mx+mn);switch(mx){case r:h=(g-b)/d+(g<b?6:0);break;case g:h=(b-r)/d+2;break;default:h=(r-g)/d+4;}h*=60;}return{h,s,l};}
+function avHslRgb(h,s,l){h/=360;let r=l,g=l,b=l;if(s!==0){const f=(p,q,t)=>{if(t<0)t+=1;if(t>1)t-=1;if(t<1/6)return p+(q-p)*6*t;if(t<1/2)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p;};
+  const q=l<.5?l*(1+s):l+s-l*s,p=2*l-q;r=f(p,q,h+1/3);g=f(p,q,h);b=f(p,q,h-1/3);}return{r:Math.round(r*255),g:Math.round(g*255),b:Math.round(b*255)};}
+function avInHue(h,mn,mx){return mn<=mx?(h>=mn&&h<=mx):(h>=mn||h<=mx);}
+function avTint(r,g,b,hex,strength,satB){const s=avRgbHsl(r,g,b);const t=avHexRgb(hex);const th=avRgbHsl(t.r,t.g,t.b);
+  const sl=Math.max(0,Math.min(1,s.l*0.9+th.l*0.1));const ss=Math.max(0,Math.min(1,th.s*satB));const ti=avHslRgb(th.h,ss,sl);
+  return{r:Math.round(r*(1-strength)+ti.r*strength),g:Math.round(g*(1-strength)+ti.g*strength),b:Math.round(b*(1-strength)+ti.b*strength)};}
+function avClassify(r,g,b,a,nx,ny){
+  if(a<30)return null;const{h,s,l}=avRgbHsl(r,g,b);
+  const head=ny>0.17&&ny<0.74&&nx>0.18&&nx<0.82, lower=ny>0.58;
+  const skin=head&&avInHue(h,12,46)&&s>0.2&&l>0.27&&l<0.86;
+  const hair=head&&((avInHue(h,12,48)&&s>0.18&&l<0.34)||(s<0.18&&l>0.28&&l<0.72&&ny<0.56));
+  // shirt: central lower band only + a saturation/brightness floor so the dark-green
+  // badge background in the lower corners is never recolored.
+  const shirt=lower&&nx>0.20&&nx<0.80&&avInHue(h,150,195)&&s>0.32&&l>0.24&&l<0.80;
+  if(shirt)return'shirt';if(hair&&!skin)return'hair';if(skin)return'skin';return null;
+}
+function avLook(L){L=L||DEFLOOK;
+  return{ gender:(L.gender==='female')?'female':'male',
+    skin:(SKINS.find(x=>x.id===L.skin)||SKINS[1]).file,
+    hair:(HAIRS.find(x=>x.id===L.hair)||HAIRS[1]).file,
+    shirt:(POLOS.find(x=>x.id===L.polo)||POLOS[0]).file };
+}
+function avBlit(canvas,off){const cx=canvas.getContext('2d');cx.clearRect(0,0,canvas.width,canvas.height);cx.drawImage(off,0,0,canvas.width,canvas.height);}
+function avVectorFallback(canvas){const w=canvas.closest('.avatarfig');if(w)w.innerHTML=golferSVG();}
+function avCompute(canvas,key,o){
+  const e=avLoad(AV_BASE[o.gender]);
+  const go=()=>{ if(e.failed){avVectorFallback(canvas);return;}
+    try{
+      const off=document.createElement('canvas');off.width=512;off.height=512;
+      const octx=off.getContext('2d',{willReadFrequently:true});
+      octx.drawImage(e.img,0,0,512,512);
+      const id=octx.getImageData(0,0,512,512),d=id.data;
+      for(let i=0;i<d.length;i+=4){const px=i/4,x=px%512,y=(px/512)|0;
+        const reg=avClassify(d[i],d[i+1],d[i+2],d[i+3],x/512,y/512); if(!reg)continue;
+        const tg=reg==='skin'?AV_COLORS.skins[o.skin]:reg==='hair'?AV_COLORS.hairs[o.hair]:AV_COLORS.shirts[o.shirt];
+        const st=reg==='skin'?0.66:reg==='hair'?0.82:0.95, sb=reg==='skin'?0.75:reg==='hair'?0.95:1.05;
+        const t=avTint(d[i],d[i+1],d[i+2],tg,st,sb); d[i]=t.r;d[i+1]=t.g;d[i+2]=t.b;}
+      octx.putImageData(id,0,0); _avRender.set(key,off); avBlit(canvas,off);
+    }catch(err){ avVectorFallback(canvas); }   // tainted (file://) or other → vector
+  };
+  if(e.ready) go(); else { e.img.addEventListener('load',go,{once:true}); e.img.addEventListener('error',()=>avVectorFallback(canvas),{once:true}); }
+}
+function paintAvatar(canvas,look){
+  const o=avLook(look); const key=o.gender+'_'+o.skin+'_'+o.hair+'_'+o.shirt;
+  const cached=_avRender.get(key);
+  if(cached){ avBlit(canvas,cached); return; }
+  avCompute(canvas,key,o);
+}
+function paintAvatars(){
+  document.querySelectorAll('canvas.avatarcanvas[data-avatar-pending]').forEach(c=>{ c.removeAttribute('data-avatar-pending'); paintAvatar(c,S.look); });
 }
 function avatarHTML(){
-  const L=S.look||DEFLOOK;
-  const g=(L.gender==='female')?'female':'male';
-  const src=avatarSrc(L), fb=`${AVATAR_BASE}_fallback_${g}.png`;
-  return `<div class="avatarfig"><img class="avatarimg" alt="Your golfer" draggable="false"
-    src="${src}" data-fb="${fb}" onerror="avatarFallback(this)"></div>`;
-}
-function avatarFallback(img){
-  const fb=img.getAttribute('data-fb');
-  if(fb && img.getAttribute('src')!==fb){ img.setAttribute('src',fb); return; } // → per-gender placeholder
-  const w=img.parentNode; if(w){ img.onerror=null; w.innerHTML=golferSVG(); }   // → vector bust (last resort)
+  return `<div class="avatarfig"><canvas class="avatarcanvas" width="512" height="512" data-avatar-pending="1" role="img" aria-label="Your golfer"></canvas></div>`;
 }
 
 /* ---------- draft ---------- */
