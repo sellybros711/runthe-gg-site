@@ -29,6 +29,19 @@ Example: `male_skin-02-light_hair-02-dark-brown_shirt-01-teal.png`
 | | | `hair-06-gray` | `shirt-06-purple` |
 | | | | `shirt-07-charcoal` |
 
+## Tracking the art drop
+
+Run the checklist to see which of the 420 are present / still missing:
+
+```
+node build-a-golfer/avatars/check-avatars.mjs            # summary + per-gender progress
+node build-a-golfer/avatars/check-avatars.mjs --list     # + every missing filename
+node build-a-golfer/avatars/check-avatars.mjs --out missing.txt   # save missing list
+```
+
+It also flags any file whose name doesn't match the 420 token pattern (typos /
+wrong tokens), and exits non-zero until all 420 are present.
+
 ## Fallbacks
 
 If a specific combo file is missing, the app falls back to the per-gender
