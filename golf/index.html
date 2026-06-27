@@ -1343,60 +1343,84 @@ function golferSVG(){
   const female=(L.gender==='female');
   const cap=(L.cap!==false);
   const id='f'+(++_figN);
+  const collarTrim='#e6b53f';   // gold piping
   return `<svg class="golferfig" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <radialGradient id="bg${id}" cx="50%" cy="36%" r="78%">
-      <stop offset="0" stop-color="#1c5a48"/><stop offset="1" stop-color="#0c2c23"/></radialGradient>
+    <radialGradient id="bg${id}" cx="50%" cy="34%" r="80%">
+      <stop offset="0" stop-color="#17463a"/><stop offset="1" stop-color="#0b2820"/></radialGradient>
     <clipPath id="cir${id}"><circle cx="60" cy="60" r="57"/></clipPath>
   </defs>
   <circle cx="60" cy="60" r="57" fill="url(#bg${id})"/>
   <g clip-path="url(#cir${id})">
-    ${female?`<path d="M30,52 C26,74 30,100 40,118 L82,118 C92,100 95,74 90,52 C88,40 80,33 60,33 C40,33 32,40 30,52 Z" fill="${hairS}"/>`:''}
+    <!-- back hair (female) -->
+    ${female?`<path d="M33,50 C27,70 28,96 36,118 L40,118 C36,98 36,78 40,60 C44,44 52,38 60,38 C68,38 76,44 80,60 C84,78 84,98 80,118 L88,118 C95,95 93,68 86,50 C80,36 71,30 60,30 C49,30 39,36 33,50 Z" fill="${hairS}"/>`:''}
     <!-- shoulders / polo -->
-    <path d="M16,118 C18,98 30,88 44,84 L76,84 C90,88 102,98 104,118 Z" fill="${po.m}"/>
-    <path d="M44,84 L76,84 C84,86.5 91,90 96,95 C84,90 70,88 60,88 C50,88 36,90 24,95 C29,90 36,86.5 44,84 Z" fill="${po.s}" opacity=".55"/>
-    <!-- collar -->
-    <path d="M50,84 L60,98 L70,84 C66,82 64,81 60,81 C56,81 54,82 50,84 Z" fill="${po.s}"/>
-    <path d="M50,84 L44,90 L52,92 L60,98 Z" fill="${po.m}"/>
-    <path d="M70,84 L76,90 L68,92 L60,98 Z" fill="${po.m}"/>
-    <path d="M50,84 L44,90 L52,92 L60,98 Z" fill="rgba(0,0,0,.12)"/>
+    <path d="M14,118 C16,99 27,89 42,85 C49,98 71,98 78,85 C93,89 104,99 106,118 Z" fill="${po.m}"/>
+    <path d="M14,118 C16,99 27,89 42,85 C45,90 48,93 50,95 C36,96 24,104 20,118 Z" fill="#000" opacity=".12"/>
+    <path d="M106,118 C104,99 93,89 78,85 C75,90 72,93 70,95 C84,96 96,104 100,118 Z" fill="#fff" opacity=".06"/>
     <!-- neck -->
-    <path d="M52,72 C52,80 53,85 60,86 C67,85 68,80 68,72 Z" fill="${sk.s}"/>
-    <path d="M53,73 C54,79 55,82 60,83 C65,82 66,79 67,73 Z" fill="${sk.m}" opacity=".5"/>
-    <!-- ears -->
-    <ellipse cx="40.5" cy="55" rx="4" ry="6" fill="${sk.m}"/><ellipse cx="40.5" cy="55" rx="2" ry="3.4" fill="${sk.s}"/>
-    <ellipse cx="79.5" cy="55" rx="4" ry="6" fill="${sk.m}"/><ellipse cx="79.5" cy="55" rx="2" ry="3.4" fill="${sk.s}"/>
+    <path d="M51,74 C51,82 52,86 60,87 C68,86 69,82 69,74 Z" fill="${sk.m}"/>
+    <path d="M51,74 C51,80 53,84 60,85 C67,84 69,80 69,74 C66,79 54,79 51,74 Z" fill="${sk.s}" opacity=".55"/>
+    <!-- collar (V) + gold piping -->
+    <path d="M44,84 L60,99 L76,84 C70,81 66,80 60,80 C54,80 50,81 44,84 Z" fill="${po.s}"/>
+    <path d="M44,84 L48,80 L60,93 L72,80 L76,84 L60,99 Z" fill="${po.m}"/>
+    <path d="M48,80 L60,93 L72,80" fill="none" stroke="${collarTrim}" stroke-width="1.1" stroke-linejoin="round"/>
+    <!-- placket + button -->
+    <path d="M58.4,93 L61.6,93 L61.4,108 L58.6,108 Z" fill="${po.s}" opacity=".6"/>
+    <circle cx="60" cy="103" r="1.5" fill="${collarTrim}"/>
+    <!-- ears (small, tucked) -->
+    <path d="M43,55 C40,55 39.5,59 41.5,61.5 C43,63 45,62.5 45.5,60 Z" fill="${sk.m}"/><path d="M43.2,56.5 C41.8,57 41.7,59.4 43,60.6" fill="none" stroke="${sk.s}" stroke-width=".8" opacity=".6"/>
+    <path d="M77,55 C80,55 80.5,59 78.5,61.5 C77,63 75,62.5 74.5,60 Z" fill="${sk.m}"/><path d="M76.8,56.5 C78.2,57 78.3,59.4 77,60.6" fill="none" stroke="${sk.s}" stroke-width=".8" opacity=".6"/>
     <!-- head / face -->
-    <path d="M42,46 C42,32 50,25 60,25 C70,25 78,32 78,46 C78,60 71,73 60,73 C49,73 42,60 42,46 Z" fill="${sk.m}"/>
-    <path d="M60,25 C70,25 78,32 78,46 C78,60 71,73 60,73 C66,68 69,58 69,46 C69,35 65,29 60,25 Z" fill="${sk.s}" opacity=".55"/>
-    <path d="M50,64 C54,70 56,71 60,71 C64,71 66,70 70,64 C66,69 64,70 60,70 C56,70 54,69 50,64 Z" fill="${sk.s}" opacity=".35"/>
-    ${female?`<path d="M42,47 C40,38 45,27 60,26 C56,30 53,36 52,44 C50,52 49,60 50,66 C45,62 43,55 42,47 Z" fill="${hair}"/>
-    <path d="M78,47 C80,38 75,27 60,26 C64,30 67,36 68,44 C70,52 71,60 70,66 C75,62 77,55 78,47 Z" fill="${hair}"/>`:''}
+    <path d="M44,46 C44,34 51,27 60,27 C69,27 76,34 76,46 C76,57 72,66 66,71 C63.5,73 56.5,73 54,71 C48,66 44,57 44,46 Z" fill="${sk.m}"/>
+    <!-- soft side shadow -->
+    <path d="M60,27 C69,27 76,34 76,46 C76,57 72,66 66,71 C64.5,72.2 62.5,72.8 60.5,72.9 C64,69 67,61 67.5,52 C68,43 65,32 60,27 Z" fill="${sk.s}" opacity=".4"/>
+    <!-- jaw/chin soft shade -->
+    <path d="M52,67 C55,71 57,72 60,72 C63,72 65,71 68,67 C65,70 63,71 60,71 C57,71 55,70 52,67 Z" fill="${sk.s}" opacity=".3"/>
+    <!-- front hair framing (female) -->
+    ${female?`<path d="M44,47 C42,37 47,28 60,27.5 C55,31 51,38 50,47 C49,55 49,61 51,67 C46,62 44,55 44,47 Z" fill="${hair}"/>
+    <path d="M76,47 C78,37 73,28 60,27.5 C65,31 69,38 70,47 C71,55 71,61 69,67 C74,62 76,55 76,47 Z" fill="${hair}"/>`:''}
     <!-- eyebrows -->
-    <path d="M48,45.6 q4,-1.8 8,-.4" stroke="${hairS}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-    <path d="M64,45.2 q4,-1.4 8,.4" stroke="${hairS}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    ${female
+      ?`<path d="M49,44.5 q4,-2.2 8.4,-.6" stroke="${hairS}" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+        <path d="M62.6,43.9 q4.4,-1.6 8.4,.6" stroke="${hairS}" stroke-width="1.3" fill="none" stroke-linecap="round"/>`
+      :`<path d="M48.5,44.3 q4.5,-2 9,-.5" stroke="${hairS}" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M62.5,43.8 q4.5,-1.5 9,.7" stroke="${hairS}" stroke-width="2" fill="none" stroke-linecap="round"/>`}
     <!-- eyes (almond) -->
-    <path d="M48.7,50 Q52,47.7 55.3,50 Q52,51.7 48.7,50 Z" fill="#fdfdfb"/>
-    <circle cx="52" cy="49.9" r="1.7" fill="#46341f"/><circle cx="52" cy="49.9" r=".85" fill="#15100a"/><circle cx="52.6" cy="49.3" r=".5" fill="#fff" opacity=".85"/>
-    <path d="M48.5,49.8 Q52,47.1 55.5,49.8" stroke="${sk.s}" stroke-width="1" fill="none" stroke-linecap="round" opacity=".7"/>
-    <path d="M64.7,50 Q68,47.7 71.3,50 Q68,51.7 64.7,50 Z" fill="#fdfdfb"/>
-    <circle cx="68" cy="49.9" r="1.7" fill="#46341f"/><circle cx="68" cy="49.9" r=".85" fill="#15100a"/><circle cx="68.6" cy="49.3" r=".5" fill="#fff" opacity=".85"/>
-    <path d="M64.5,49.8 Q68,47.1 71.5,49.8" stroke="${sk.s}" stroke-width="1" fill="none" stroke-linecap="round" opacity=".7"/>
+    <path d="M49.4,50.4 Q52.6,47.8 55.8,50.2 Q52.6,52.2 49.4,50.4 Z" fill="#fefdfb"/>
+    <circle cx="52.6" cy="50.2" r="1.85" fill="#4a3622"/><circle cx="52.6" cy="50.2" r=".9" fill="#15100a"/><circle cx="53.2" cy="49.5" r=".55" fill="#fff" opacity=".9"/>
+    <path d="M49.1,50 Q52.6,47 56.1,50" stroke="${sk.s}" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".75"/>
+    <path d="M64.2,50.2 Q67.4,47.8 70.6,50.4 Q67.4,52.2 64.2,50.2 Z" fill="#fefdfb"/>
+    <circle cx="67.4" cy="50.2" r="1.85" fill="#4a3622"/><circle cx="67.4" cy="50.2" r=".9" fill="#15100a"/><circle cx="68" cy="49.5" r=".55" fill="#fff" opacity=".9"/>
+    <path d="M63.9,50 Q67.4,47 70.9,50" stroke="${sk.s}" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".75"/>
+    ${female?`<path d="M49,49.8 Q52.6,46.6 56.2,49.9" stroke="#2a1d12" stroke-width=".9" fill="none" stroke-linecap="round"/><path d="M63.8,49.9 Q67.4,46.6 71,49.8" stroke="#2a1d12" stroke-width=".9" fill="none" stroke-linecap="round"/>`:''}
     <!-- nose -->
-    <path d="M60,51 C59,55 58,57 57.5,58.5 C58.5,59.6 61.5,59.6 62.5,58.5 C62,57 61,55 60,51 Z" fill="${sk.s}" opacity=".5"/>
-    <!-- mouth -->
-    <path d="M54,63.5 Q60,67 66,63.5 Q60,65 54,63.5 Z" fill="#9c5b4c"/>
-    <path d="M54.5,63.2 Q60,65.6 65.5,63.2" stroke="${sk.s}" stroke-width=".8" fill="none" opacity=".5"/>
-    ${cap?`<!-- cap -->
-    <path d="M40,44 C40,28 50,21 60,21 C70,21 80,28 80,44 C74,38 68,35.5 60,35.5 C52,35.5 46,38 40,44 Z" fill="${capM}"/>
-    <path d="M60,21 C70,21 80,28 80,44 C74,38 68,35.5 60,35.5 C62,33 62,26 60,21 Z" fill="${capS}"/>
-    <path d="M40,44 C40,40 41,37 42.5,34 C44,38 46,40.5 48,42 C45,42.4 42.4,43 40,44 Z" fill="${capS}"/>
-    <path d="M38,44 C30,44.5 24,47 22,50.5 C26,53 35,52.5 44,49.5 C46,47 44,45 38,44 Z" fill="${capS}"/>
-    <circle cx="60" cy="21" r="1.4" fill="${capS}"/>`:`<!-- hair (no cap) -->
-    <path d="M41,46 C40,30 49,24 60,24 C71,24 80,30 79,46 C76,40 73,37 73,42 C70,35 64,33 60,33 C56,33 50,35 47,42 C47,37 44,40 41,46 Z" fill="${hair}"/>`}
+    <path d="M59.4,51.5 C58.8,55 58,57.5 57.4,59 C58.6,60 61.4,60 62.6,59 C62,57.5 61.2,55 60.6,51.5 Z" fill="${sk.s}" opacity=".4"/>
+    <path d="M57.8,59 q2.2,1.3 4.4,0" stroke="${sk.s}" stroke-width=".7" fill="none" opacity=".5"/>
+    <!-- mouth (soft smile) -->
+    <path d="M54.5,63.6 Q60,67.4 65.5,63.6 Q60,65.4 54.5,63.6 Z" fill="#a35d4d"/>
+    <path d="M54.8,63.4 Q60,66.2 65.2,63.4" stroke="${sk.s}" stroke-width=".8" fill="none" opacity=".55"/>
+    ${female?`<path d="M55.5,65 Q60,66.6 64.5,65" stroke="#c66a78" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".5"/>`:''}
+    <!-- hair on top OR cap -->
+    ${cap?`
+    <!-- cap crown -->
+    <path d="M40,45 C40.5,30 49,23 60,23 C71,23 79.5,30 80,45 C73,39 67,36.5 60,36.5 C53,36.5 47,39 40,45 Z" fill="${capM}"/>
+    <path d="M60,23 C71,23 79.5,30 80,45 C73,39 67,36.5 60,36.5 C62.5,33 62.5,27 60,23 Z" fill="${capS}"/>
+    <path d="M40,45 C40,40 41.5,35.5 44,32 C45.5,37 48,41 51,43.5 C47,43.6 43,44 40,45 Z" fill="${capS}" opacity=".7"/>
+    <path d="M60,23 C57,30 55.5,38 56,45.5" stroke="#000" stroke-width=".7" fill="none" opacity=".12"/>
+    <path d="M60,23 C63,30 64.5,38 64,45.5" stroke="#000" stroke-width=".7" fill="none" opacity=".12"/>
+    <circle cx="60" cy="23.2" r="1.5" fill="${capS}"/>
+    <!-- brim (curved, slightly toward viewer) -->
+    <path d="M37,45.5 C28,45.5 21.5,48.5 19,53 C24,56 35,55.5 46,51.5 C49,49 47,46.5 37,45.5 Z" fill="${capS}"/>
+    <path d="M37,45.5 C28,45.5 21.5,48.5 19,53 C23,54.4 30,54.4 38,52.6 C30,52 24,50 22,47.6 C27,46 33,45.6 37,45.5 Z" fill="#000" opacity=".18"/>
+    <!-- gold mark -->
+    <path d="M67,33 l7,3.6 -7,3.6 Z" fill="#EBA61F"/>`:`
+    <!-- hair, no cap -->
+    <path d="M41,47 C40,31 48.5,23.5 60,23.5 C71.5,23.5 80,31 79,47 C76.5,41 73.5,38 73.5,42.5 C70.5,34.5 65.5,32 60,32 C54.5,32 49.5,34.5 46.5,42.5 C46.5,38 43.5,41 41,47 Z" fill="${hair}"/>
+    <path d="M41,47 C40,31 48.5,23.5 60,23.5 C56,27 52,33 51,42 C50,40 47,40 46.5,42.5 C46.5,38 43.5,41 41,47 Z" fill="${hairS}" opacity=".5"/>`}
   </g>
   <circle cx="60" cy="60" r="57" fill="none" stroke="rgba(0,0,0,.35)" stroke-width="2"/>
-  <circle cx="60" cy="60" r="55.5" fill="none" stroke="rgba(255,255,255,.10)" stroke-width="1"/>
+  <circle cx="60" cy="60" r="55.5" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="1"/>
 </svg>`;}
 function swatchRow(label,opts,curId,key,colorOf){
   const row=$(`<div style="margin:9px 0"></div>`);
