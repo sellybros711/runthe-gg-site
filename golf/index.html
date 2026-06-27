@@ -242,6 +242,13 @@
   .perk .pt{min-width:0}
   .perk .pt b{display:block; color:var(--oncard); font-size:12.5px; font-weight:700; line-height:1.2}
   .perk .pt span{display:block; color:var(--muted); font-size:11px; line-height:1.3; margin-top:1px}
+  .lockwrap{position:relative; margin-top:6px; min-height:120px}
+  .lockblur{filter:blur(4.5px); opacity:.42; pointer-events:none; user-select:none}
+  .lockover{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:11px; text-align:center; padding:12px;
+    background:linear-gradient(180deg, rgba(8,30,24,.12) 0%, rgba(8,30,24,.6) 45%, rgba(8,30,24,.82) 100%)}
+  .lockover .lockmsg b{display:block; color:var(--gold); font-size:14.5px}
+  .lockcta{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:8px;
+    background:var(--panel); border:1px solid rgba(235,166,31,.3); border-radius:12px; padding:11px 13px}
 
   .ovr{display:flex; align-items:baseline; gap:10px; justify-content:center; margin:4px 0}
   .ovr .num{font-family:var(--mono); font-weight:800; font-size:52px; color:var(--gold); line-height:1}
@@ -1197,12 +1204,24 @@ function overlayLeaderboard(screen){
   if(lbCache===null){
     board=`<div class="small muted center" style="padding:18px 8px">Loading the global board…</div>`;
   } else if(globalOk && globalRows.length){
-    board=globalRows.map(r=>{
+    const rowFn=r=>{
       const you=sbUser&&r.user_id===sbUser.id;
       return tab==='season'
         ? lbRowHTML(r.rank,r.display_name,'OVR '+r.ovr+(r.golfer_name?' · '+r.golfer_name:''),r.season_earnings,you)
         : lbRowHTML(r.rank,r.display_name,r.seasons+' season'+(r.seasons>1?'s':'')+' · '+r.wins+'W',r.career_earnings,you);
-    }).join('');
+    };
+    if(sbSignedIn()){
+      board=globalRows.map(rowFn).join('');
+    } else {
+      // guest: show the top few clearly, blur the rest behind a sign-in CTA
+      const top=globalRows.slice(0,5).map(rowFn).join('');
+      const tail=globalRows.slice(5).map(rowFn).join('');
+      board = top + (tail
+        ? `<div class="lockwrap"><div class="lockblur">${tail}</div>
+            <div class="lockover"><div class="lockmsg">🔒 <b>Sign in to see the full board</b><div class="small muted">Post your seasons and claim your rank.</div></div>
+            <div class="mini" style="margin:0;width:auto;gap:8px"><button class="btn gold" id="lb-lock-up" style="width:auto;padding:9px 14px;font-size:12px">Create account</button><button class="btn ghost" id="lb-lock-in" style="width:auto;padding:9px 14px;font-size:12px">Sign in</button></div></div></div>`
+        : `<div class="lockcta"><b style="color:var(--gold)">🔒 Sign in to claim your spot</b><button class="btn gold" id="lb-lock-up" style="width:auto;padding:8px 13px;font-size:12px">Create account</button></div>`);
+    }
   } else if(globalOk){
     board=`<div class="small muted center" style="padding:18px 8px">No scores yet — be the first to post one.</div>`;
   } else {
@@ -1242,6 +1261,8 @@ function overlayLeaderboard(screen){
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
   ov.querySelectorAll('.lbtab').forEach(b=>b.onclick=()=>{S.lbTab=b.dataset.tab;render();});
   const lbSign=ov.querySelector('#lb-signin'); if(lbSign) lbSign.onclick=()=>{S.overlay='account';S.acctMode=sbSignedIn()?'username':'signin';S.acctErr='';render();};
+  const lkIn=ov.querySelector('#lb-lock-in'); if(lkIn) lkIn.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
+  const lkUp=ov.querySelector('#lb-lock-up'); if(lkUp) lkUp.onclick=()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();};
   screen.appendChild(ov);
 }
 function overlayConfirmReset(screen){
@@ -2265,6 +2286,22 @@ function scrSummary(){
     add(dt);
   }
 
+  // guest: nudge to sign up & post this season to the global board (with would-be rank if known)
+  if(!sbSignedIn() && !S.daily){
+    if(lbCache===null) lbLoad();
+    let rankMsg='Post this season to the global leaderboard';
+    if(lbCache && lbCache.ok && lbCache.season){
+      const above=lbCache.season.filter(r=>r.season_earnings>t.money).length;
+      const full=lbCache.season.length>=50;
+      if(!full || above<lbCache.season.length) rankMsg=`You'd rank <b style="color:var(--gold)">#${above+1}</b> on the Single-Season board`;
+    }
+    const gb=$(`<div class="scout" style="border-color:var(--gold);margin:2px 0 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div style="min-width:0"><b style="color:var(--oncard)">🏆 ${rankMsg}</b><div class="small muted" style="margin-top:2px">Create a free account to claim your spot, save your career &amp; unlock achievements.</div></div>
+      <button class="btn goldfill" style="width:auto;padding:10px 16px;flex:0 0 auto" id="sum-signup">Create free account</button></div>`);
+    gb.querySelector('#sum-signup').onclick=()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();};
+    add(gb);
+  }
+
   // two columns: money list / career on the left, share + actions on the right
   const cols=$(`<div class="cols"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
@@ -2731,12 +2768,12 @@ async function sbSubmitSeason(s){
   }catch(e){}
 }
 async function lbLoad(){
-  if(!sb){ lbCache={season:[],career:[],ok:false}; if(S.overlay==='leaderboard')render(); return; }
+  if(!sb){ lbCache={season:[],career:[],ok:false}; render(); return; }
   try{
     const [a,b]=await Promise.all([sb.rpc('runtour_season_board',{p_limit:50}),sb.rpc('runtour_career_board',{p_limit:50})]);
     lbCache={season:(a.data||[]),career:(b.data||[]),ok:!a.error&&!b.error};
   }catch(e){ lbCache={season:[],career:[],ok:false}; }
-  if(S.overlay==='leaderboard') render();
+  render();   // refresh whatever's open (leaderboard board / summary guest-rank teaser)
 }
 sbInit();
 
