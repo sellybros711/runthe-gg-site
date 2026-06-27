@@ -738,6 +738,20 @@ allows Google Fonts, or self-host Anton.*
   win at Oakmont +2, loss at Kapalua -1, zero errors. Deployed to /golf. NEXT (user
   asked): shot-by-shot in-hole simulation.
 
+- 2026-06-27: **Daily round now plays shot-by-shot (PGA "play-by-play" style).** The
+  per-hole SCORE is still the fair, seeded engine result; `dShotSeq(par,yards,strokes,
+  rng,opts)` expands that stroke count into a plausible shot narrative (drive → approach
+  → putts → "In the hole" + result tag), e.g. "Drive 325 yds to left rough, 198 yds to
+  hole" / "Putt 47 ft 8 in., 3 ft 2 in. to hole". Seeded per hole (`dHoleRng(...,0x5407)`)
+  so it's reproducible; regenerated on mulligan. Shot count always equals the score
+  (regression: 2160 combos, 0 mismatches). Each played hole carries `shots`; the round
+  screen renders the just-played hole as a `.shotpanel` with rows that cascade in
+  (`SHOT_STAGGER=130ms` CSS animation; reduced-motion = instant). Auto-advance dwell now
+  scales with shot count (`dailyDwell()`) so each hole's cascade finishes before the next
+  hole. Verified headless: hole panel renders, full auto round completes 18 holes with
+  signature prompts, zero errors; screenshot matches the inspiration. Deployed to /golf.
+  (Helpers: `dFeet`, `dResultLong`, `dPick`, `dShotPanel`.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

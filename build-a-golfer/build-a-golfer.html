@@ -293,6 +293,18 @@
   .dcell .ds .smk.box{border:1.6px solid currentColor; border-radius:3px}
   .dcell .ds .smk.dcircle{border:1.6px solid currentColor; border-radius:50%; outline:1.6px solid currentColor; outline-offset:1.6px}
   .dcell .ds .smk.dbox{border:1.6px solid currentColor; border-radius:3px; outline:1.6px solid currentColor; outline-offset:1.6px}
+  .shotpanel{max-width:560px; margin:8px auto 0; background:var(--panel); border:1px solid var(--panelb); border-radius:13px; padding:10px 14px}
+  .shothd{display:flex; align-items:baseline; gap:11px; border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:2px}
+  .shothd .hn{font-family:var(--display); font-style:italic; font-size:26px; color:var(--oncard); line-height:.9}
+  .shothd .hi{font-size:11px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.07em}
+  .shotrow{display:flex; align-items:center; gap:10px; padding:7px 0; border-top:1px solid rgba(244,227,201,.05); animation:shotIn .3s ease both}
+  .shotrow:first-of-type{border-top:none}
+  .shotrow .sl{flex:0 0 56px; font-size:11px; font-weight:800; color:var(--gold); text-transform:uppercase; letter-spacing:.04em}
+  .shotrow .sd{flex:1; font-size:13.5px; color:#cfdbe6; line-height:1.3}
+  .shotrow.hole .sd{font-weight:800; color:var(--oncard)}
+  .shotrow .stag{flex:0 0 auto; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; border:1.4px solid currentColor; border-radius:999px; padding:2px 9px}
+  @keyframes shotIn{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion:reduce){ .shotrow{animation:none} }
 
   .ovr{display:flex; align-items:baseline; gap:10px; justify-content:center; margin:4px 0}
   .ovr .num{font-family:var(--mono); font-weight:800; font-size:52px; color:var(--gold); line-height:1}
@@ -2933,6 +2945,45 @@ function dScoreCol(toPar){ return toPar<0?'#35d6a0':toPar===0?'var(--oncard)':to
 // real-scorecard notation: birdie circled, eagle double-circled, bogey boxed, double+ double-boxed, par plain
 function dMarkClass(toPar){ return toPar<=-2?'smk dcircle':toPar===-1?'smk circle':toPar===1?'smk box':toPar>=2?'smk dbox':'smk'; }
 function dCellScore(pl){ return `<span class="${dMarkClass(pl.toPar)}">${pl.par+pl.toPar}</span>`; }
+function dResultLong(par,toPar){ return toPar<=-3?'Albatross':toPar===-2?'Eagle':toPar===-1?'Birdie':toPar===0?'Par':toPar===1?'Bogey':toPar===2?'Double Bogey':'Triple Bogey+'; }
+function dFeet(ft){ let f=Math.floor(ft),inch=Math.round((ft-f)*12); if(inch>=12){f++;inch=0;} return f+' ft '+inch+' in.'; }
+function dPick(rng,a){ return a[Math.floor(rng()*a.length)]; }
+// Expand a known stroke count into a plausible shot-by-shot narrative (PGA play-by-play style).
+// The SCORE is already fixed by the engine; this is just realistic flavor, seeded per hole.
+function dShotSeq(par,yards,strokes,rng,opts){
+  opts=opts||{}; const toPar=strokes-par; const sh=[];
+  let P; if(toPar<0)P=(rng()<0.78?1:2); else if(toPar===0)P=(rng()<0.8?2:1); else P=(rng()<0.55?2:(rng()<0.78?1:3));
+  const reachFloor=par===3?1:(par===4?1:2); P=Math.max(1,Math.min(3,P));
+  let greenReach=strokes-P; if(greenReach<reachFloor){greenReach=reachFloor;P=strokes-greenReach;} if(P<1){P=1;greenReach=strokes-1;}
+  const sides=['left','right','center']; let dist=yards, ftToHole=null;
+  for(let s=0;s<greenReach;s++){ const last=(s===greenReach-1);
+    if(s===0&&par!==3){
+      let drive=Math.round(par===5?(292+rng()*40):(272+rng()*42)); if(opts.safe)drive-=Math.round(12+rng()*16);
+      drive=Math.min(drive,yards-20); let lie=rng()<0.62?'fairway':(rng()<0.5?'right rough':'left rough'); if(opts.attack&&rng()<0.3)lie=rng()<0.5?'fairway bunker':'right rough';
+      dist=Math.max(10,yards-drive);
+      if(last){ ftToHole=18+rng()*34; sh.push({d:`Drive ${drive} yds to the green, ${dFeet(ftToHole)} to hole`}); }
+      else sh.push({d:`Drive ${drive} yds to ${lie}, ${Math.round(dist)} yds to hole`});
+    } else if(par===3&&s===0){
+      if(last){ ftToHole=(toPar<0?7+rng()*22:13+rng()*32); sh.push({d:`Tee shot to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`}); }
+      else { sh.push({d:`Tee shot to ${dPick(rng,['greenside bunker','left rough','right fringe','front collar'])}, ${Math.round(18+rng()*30)} ft to hole`}); dist=22; }
+    } else {
+      if(last){ const fromYds=Math.round(dist); ftToHole=(toPar<0?6+rng()*20:14+rng()*34);
+        sh.push({d:`${fromYds} yds to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`});
+      } else {
+        if(dist<=70){ const leaveY=Math.max(12,Math.round(dist-(14+rng()*22)));
+          sh.push({d:`Pitch to ${dPick(rng,['fairway','left rough','greenside bunker','right rough'])}, ${leaveY} yds to hole`}); dist=leaveY;
+        } else { let adv=Math.max(40,Math.min(dist-30,Math.round(60+rng()*180))); dist=Math.max(24,dist-adv);
+          sh.push({d:`${adv} yds to ${rng()<0.6?'fairway':(rng()<0.5?'right rough':'left rough')}, ${Math.round(dist)} yds to hole`}); }
+      }
+    }
+  }
+  if(ftToHole==null)ftToHole=20+rng()*20;
+  for(let pi=0;pi<P;pi++){ const lastPutt=(pi===P-1);
+    if(lastPutt) sh.push({d:'In the hole',tag:dResultLong(par,toPar)});
+    else { const putt=ftToHole, leave=(pi===P-2)?(1.2+rng()*2.6):(3+rng()*5); sh.push({d:`Putt ${dFeet(putt)}, ${dFeet(leave)} to hole`}); ftToHole=leave; }
+  }
+  sh.forEach((s,i)=>s.n=i+1); return sh;
+}
 function dCondLabel(c){ return {calm:'☼ Calm',breezy:'≈ Breezy',windy:'≋ Windy',gusting:'⚑ Gusting'}[c]||c; }
 function dShort(name){ return String(name).split('(')[0].trim(); }
 function startDailyChallenge(){
@@ -3014,16 +3065,23 @@ function scrDailyPreview(){
    signature holes for the Attack / Play-Safe decision. Pace ~0.8s/hole so you can watch
    the card fill; Pause/Resume + Skip available. ---- */
 let _dailyTimer=null;
-const DAILY_PACE=820;
+const SHOT_STAGGER=130;   // ms between shot rows (matches the CSS cascade)
 function clearDailyTimer(){ if(_dailyTimer){clearTimeout(_dailyTimer);_dailyTimer=null;} }
 function nextDailySig(){ const i=S.dailyHoles.length; return DAILY_COURSES[S.dailyCourse].sig.find(s=>s[0]===i+1); }
+// dwell long enough for the just-played hole's shot-by-shot cascade to finish, then a beat to read it
+function dailyDwell(){ const p=S.dailyHoles; const n=p.length?((p[p.length-1].shots||[]).length):0; return 460 + n*SHOT_STAGGER + 280; }
+function dShotPanel(h){
+  const el=$(`<div class="shotpanel"><div class="shothd"><span class="hn">${h.n}</span><span class="hi">Par ${h.par} · ${h.yards}y${h.attack===true?' · ⚡ attacked':h.attack===false?' · 🛡 safe':''}${h.mull?' · ↺ mulligan':''}</span></div></div>`);
+  (h.shots||[]).forEach((s,idx)=>{ el.appendChild($(`<div class="shotrow${s.tag?' hole':''}" style="animation-delay:${(idx*SHOT_STAGGER/1000).toFixed(2)}s"><span class="sl">Shot ${s.n}</span><span class="sd">${esc(s.d)}</span>${s.tag?`<span class="stag" style="color:${dScoreCol(h.toPar)}">${esc(s.tag)}</span>`:''}</div>`)); });
+  return el;
+}
 function scheduleDailyAdvance(){
   clearDailyTimer();
   if(!S.dailyAuto||S.screen!=='dailyround')return;
   const i=S.dailyHoles.length;
-  if(i>=18){ _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround') finishDailyRound(); }, DAILY_PACE+120); return; }
+  if(i>=18){ _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround') finishDailyRound(); }, dailyDwell()); return; }
   if(nextDailySig())return;   // pause here for the player's shot choice (the one meaningful click)
-  _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround'&&S.dailyAuto) playDailyHole(null); }, DAILY_PACE);
+  _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround'&&S.dailyAuto) playDailyHole(null); }, dailyDwell());
 }
 function dailyPause(){ S.dailyAuto=false; clearDailyTimer(); render(); }
 function dailyResume(){ S.dailyAuto=true; render(); scheduleDailyAdvance(); }
@@ -3039,13 +3097,13 @@ function playDailyHole(attack){
   const c=DAILY_COURSES[S.dailyCourse], i=S.dailyHoles.length; if(i>=18)return;
   const h=c.holes[i], a=(attack===true||attack===false)?attack:null;
   const toPar=dSimHole(h[0],h[1],S.dailyDiffs[i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,a,dHoleRng(S.dailySeed,S.dailyCourse,i,0));
-  S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a}); render();
+  S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,0x5407),{safe:a===false,attack:a===true})}); render();
   scheduleDailyAdvance();   // keep the round flowing if auto-play is on
 }
 function autoFinishDaily(){ clearDailyTimer(); S.dailyAuto=false; const c=DAILY_COURSES[S.dailyCourse];
   while(S.dailyHoles.length<18){ const i=S.dailyHoles.length,h=c.holes[i];
     const toPar=dSimHole(h[0],h[1],S.dailyDiffs[i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,null,dHoleRng(S.dailySeed,S.dailyCourse,i,0));
-    S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:null}); }
+    S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:null,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,0x5407),{})}); }
   finishDailyRound();   // straight to the result — fastest path
 }
 function dailyMulligan(){
@@ -3053,6 +3111,7 @@ function dailyMulligan(){
   const last=S.dailyHoles[S.dailyHoles.length-1], c=DAILY_COURSES[S.dailyCourse];
   const alt=dSimHole(last.par,last.yards,S.dailyDiffs[last.i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,last.attack,dHoleRng(S.dailySeed,S.dailyCourse,last.i,0x4d2));
   if(alt<last.toPar) last.toPar=alt;
+  last.shots=dShotSeq(last.par,last.yards,last.par+last.toPar,dHoleRng(S.dailySeed,S.dailyCourse,last.i,0x5408),{safe:last.attack===false,attack:last.attack===true});
   last.mull=true; S.dailyMullUsed=true; track('daily_mulligan'); render();
 }
 function finishDailyRound(){
@@ -3083,8 +3142,7 @@ function scrDailyRound(){
   for(let k=0;k<18;k++){ const pl=played[k], cur=(k===i&&!done);
     strip.appendChild($(`<div class="dcell ${cur?'cur':''} ${pl?'done':''}"><div class="dn">${k+1}</div><div class="ds" style="color:${pl?dScoreCol(pl.toPar):'var(--muted)'}">${pl?dCellScore(pl):'·'}</div></div>`)); }
   add(strip);
-  if(played.length){ const last=played[played.length-1];
-    add($(`<div class="scout" style="max-width:560px;margin:12px auto 0;text-align:center"><div class="small muted">Hole ${last.n} · par ${last.par}${last.attack===true?' · ⚡ attacked':last.attack===false?' · 🛡 safe':''}${last.mull?' · ↺ mulligan':''}</div><div style="font-weight:800;font-size:20px;color:${dScoreCol(last.toPar)};margin-top:2px">${last.par+last.toPar} · ${dResultLabel(last.par,last.toPar)}</div></div>`)); }
+  if(played.length){ add(dShotPanel(played[played.length-1])); }
   add($(`<div style="height:10px"></div>`));
   if(!done){
     const h=c.holes[i], sig=c.sig.find(s=>s[0]===i+1);
