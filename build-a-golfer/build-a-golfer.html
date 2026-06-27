@@ -1405,17 +1405,17 @@ function golferSVG(){
     ${female?`<path d="M55.5,65 Q60,66.6 64.5,65" stroke="#c66a78" stroke-width="1.1" fill="none" stroke-linecap="round" opacity=".5"/>`:''}
     <!-- hair on top OR cap -->
     ${cap?`
-    <!-- cap crown (structured, front-facing) -->
-    <path d="M39,44 C39.5,29 48,22 60,22 C72,22 80.5,29 81,44 C73,38.5 67,36 60,36 C53,36 47,38.5 39,44 Z" fill="${capM}"/>
-    <path d="M60,22 C72,22 80.5,29 81,44 C73,38.5 67,36 60,36 C62.5,32 62.5,26 60,22 Z" fill="${capS}"/>
-    <path d="M60,22 C57,29 56,37 56.5,44.5" stroke="#000" stroke-width=".6" fill="none" opacity=".1"/>
-    <path d="M60,22 C63,29 64,37 63.5,44.5" stroke="#000" stroke-width=".6" fill="none" opacity=".1"/>
-    <circle cx="60" cy="22.2" r="1.5" fill="${capS}"/>
-    <!-- brim: symmetric forward visor centered over the face -->
-    <path d="M38,43.5 Q60,47 82,43.5 Q78,54 60,55 Q42,54 38,43.5 Z" fill="${capS}"/>
-    <path d="M38,43.5 Q60,47 82,43.5 Q77,50.5 60,51 Q43,50.5 38,43.5 Z" fill="#000" opacity=".18"/>
+    <!-- cap crown (structured, front-facing, sits high) -->
+    <path d="M40,40 C40,25 48,18 60,18 C72,18 80,25 80,40 C72,34.5 66,32 60,32 C54,32 48,34.5 40,40 Z" fill="${capM}"/>
+    <path d="M60,18 C72,18 80,25 80,40 C72,34.5 66,32 60,32 C62.5,28 62.5,22 60,18 Z" fill="${capS}"/>
+    <path d="M60,18 C57,25 56,32 56.5,39" stroke="#000" stroke-width=".6" fill="none" opacity=".1"/>
+    <path d="M60,18 C63,25 64,32 63.5,39" stroke="#000" stroke-width=".6" fill="none" opacity=".1"/>
+    <circle cx="60" cy="18.4" r="1.4" fill="${capS}"/>
+    <!-- brim: shallow forward visor sitting at the brow, eyes clear below -->
+    <path d="M39,39 Q60,42 81,39 Q76,43 60,43.6 Q44,43 39,39 Z" fill="${capS}"/>
+    <path d="M39,39 Q60,42 81,39 Q75,41.5 60,42 Q45,41.5 39,39 Z" fill="#000" opacity=".15"/>
     <!-- gold mark -->
-    <path d="M66.5,31.5 l7.5,3.8 -7.5,3.8 Z" fill="#EBA61F"/>`:`
+    <path d="M66.5,26 l7,3.5 -7,3.5 Z" fill="#EBA61F"/>`:`
     <!-- hair, no cap -->
     <path d="M41,47 C40,31 48.5,23.5 60,23.5 C71.5,23.5 80,31 79,47 C76.5,41 73.5,38 73.5,42.5 C70.5,34.5 65.5,32 60,32 C54.5,32 49.5,34.5 46.5,42.5 C46.5,38 43.5,41 41,47 Z" fill="${hair}"/>
     <path d="M41,47 C40,31 48.5,23.5 60,23.5 C56,27 52,33 51,42 C50,40 47,40 46.5,42.5 C46.5,38 43.5,41 41,47 Z" fill="${hairS}" opacity=".5"/>`}
