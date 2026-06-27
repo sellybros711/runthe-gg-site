@@ -1282,12 +1282,16 @@ function overlayAccount(screen){
               <input class="name" id="au-email" type="email" placeholder="Email" autocomplete="email" style="margin-top:8px">`
             :`<input class="name" id="au-id" placeholder="Username or email" autocomplete="username">`}
       <input class="name" id="au-pass" type="password" placeholder="Password" autocomplete="${isUp?'new-password':'current-password'}" style="margin-top:8px">
+      <label class="remember" style="display:flex;align-items:center;gap:9px;margin-top:11px;font-size:12.5px;color:var(--oncard);cursor:pointer;text-align:left">
+        <input type="checkbox" id="au-remember" ${rttRemember()?'checked':''} style="width:17px;height:17px;accent-color:var(--gold);flex:0 0 auto">
+        Keep me signed in on this device</label>
       ${S.acctNote?`<div class="small" style="color:#35d6a0;margin-top:9px">${esc(S.acctNote)}</div>`:''}
       ${err?`<div class="autherr">${esc(err)}</div>`:''}
       <button class="btn goldfill" id="au-go" style="margin-top:10px" ${busy?'disabled':''}>${busy?'…':(isUp?'Create account':'Sign in')}</button>
       <div class="small muted center" style="margin-top:13px">${isUp?'Already have an account?':'New here?'} <a href="#" id="au-swap" style="color:var(--gold);font-weight:700">${isUp?'Sign in':'Create one'}</a></div>`;
-    box.querySelector('#au-google').onclick=()=>go(()=>sbSignInGoogle());
+    box.querySelector('#au-google').onclick=()=>{ setRemember(box.querySelector('#au-remember')&&box.querySelector('#au-remember').checked); go(()=>sbSignInGoogle()); };
     box.querySelector('#au-go').onclick=async()=>{ const pass=box.querySelector('#au-pass').value;
+      setRemember(box.querySelector('#au-remember')&&box.querySelector('#au-remember').checked);
       if(isUp){ const uname=box.querySelector('#au-user2').value.trim(); const email=box.querySelector('#au-email').value;
         if(!uname){S.acctErr='Pick a username.';render();return;}
         if(!/^[A-Za-z0-9_]{3,20}$/.test(uname)){S.acctErr='Username: 3–20 letters, numbers or _.';render();return;}
@@ -2810,15 +2814,32 @@ function moneyRow(r,pos,you){return $(`<div class="lb ${you?'you':''}" style="gr
 const SB_URL='https://jcrrxqfpdelrmvjuihnm.supabase.co';
 const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
 let sb=null, sbUser=null, sbUsername=null, sbProfile=null, lbCache=null, _pendingSeason=null;
+const RTT_AUTH_KEY='sb-runtour-auth';   // RunTheTour's own saved-session key (separate from RunThePitch)
+function rttRemember(){ try{ return localStorage.getItem('rtt_remember')==='1'; }catch(e){ return false; } }
+function setRemember(on){ try{ on?localStorage.setItem('rtt_remember','1'):localStorage.removeItem('rtt_remember'); }catch(e){} }
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function sbSignedIn(){ return !!sbUser; }
 function sbEmail(){ return (sbUser&&sbUser.email)||''; }
 function sbInit(){
   try{
     if(!(window.supabase&&window.supabase.createClient)) return;
-    sb=window.supabase.createClient(SB_URL,SB_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
-    sb.auth.onAuthStateChange((_e,session)=>sbApply(session));
-    sb.auth.getSession().then(({data})=>sbApply(data&&data.session)).catch(()=>{});
+    // Dedicated session store for RunTheTour — independent of RunThePitch's session so
+    // we never silently inherit whichever account is logged in over there. Same project /
+    // accounts, so signing in here is the same RunThe.GG identity; only the saved-session
+    // token is separate.
+    sb=window.supabase.createClient(SB_URL,SB_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:RTT_AUTH_KEY}});
+    // Fresh auth changes (sign-in / sign-out / token refresh) always apply; the INITIAL
+    // restored session is handled by getSession() below so we can honor "remember me".
+    sb.auth.onAuthStateChange((ev,session)=>{ if(ev==='INITIAL_SESSION') return; sbApply(session); });
+    sb.auth.getSession().then(async({data})=>{
+      const session=data&&data.session;
+      let oauthReturn=false; try{ oauthReturn=!!localStorage.getItem('rtt_oauth_pending'); }catch(e){}
+      if(session && !rttRemember() && !oauthReturn){
+        // a saved session is present but the user never opted to stay signed in → start
+        // signed out and make them pick an account explicitly.
+        await sbSignOut(); sbApply(null);
+      } else { sbApply(session); }
+    }).catch(()=>{});
   }catch(e){ sb=null; }
 }
 async function sbApply(session){
@@ -2868,9 +2889,10 @@ async function sbSignOut(){
   // scope:'local' clears THIS browser's session without a network revoke that can
   // fail and leave the token behind (which would auto-sign you back in on reload).
   if(sb){ try{ await sb.auth.signOut({scope:'local'}); }catch(e){ try{ await sb.auth.signOut(); }catch(_){} } }
-  // belt & suspenders: purge any persisted supabase auth token so nothing re-adopts it
-  try{ Object.keys(localStorage).forEach(k=>{ if(/^sb-.*-auth-token$/.test(k)) localStorage.removeItem(k); }); }catch(e){}
-  try{ localStorage.removeItem('rtt_oauth_pending'); }catch(e){}
+  // purge RunTheTour's own saved session + remember flag so nothing re-adopts it on reload.
+  // (RunThePitch's separate session key is left untouched.)
+  try{ localStorage.removeItem(RTT_AUTH_KEY); localStorage.removeItem('rtt_oauth_pending'); }catch(e){}
+  setRemember(false);
   sbUser=null; sbUsername=null; sbProfile=null; lbCache=null; _pendingSeason=null;
 }
 async function sbSetUsername(name){
