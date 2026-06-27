@@ -3154,9 +3154,13 @@ function beginDailyRound(){
   track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr});
   S.screen='dailyround'; render(); scheduleDailyAdvance();
 }
-// fold the attempt number into every per-hole seed so each of your 3 attempts plays out
-// differently (still deterministic + server-verifiable per attempt — not just per build).
-function dAttSalt(base){ return (((base||0) ^ Math.imul((S.dailyAttempt||0)+1, 0x85ebca77)) >>> 0); }
+// A hash of the drafted build so each lineup gets its OWN per-hole luck. Without this every
+// build shares the same gaussian draw on each hole (seed = day^course^hole), so different
+// lineups score nearly identically — the build only nudges the mean. Folding the build (and
+// attempt) into the seed gives each round independent shot-execution variance while staying
+// fully deterministic + server-verifiable (the server re-sims from the stored skills).
+function dBuildSeed(){ if(!S.dailySkills) return 0; let h=2166136261>>>0; for(const c of CATS){ h^=(S.dailySkills[c.k]|0); h=Math.imul(h,16777619); } return h>>>0; }
+function dAttSalt(base){ return (((base||0) ^ Math.imul((S.dailyAttempt||0)+1, 0x85ebca77) ^ dBuildSeed()) >>> 0); }
 function playDailyHole(attack){
   const c=DAILY_COURSES[S.dailyCourse], i=S.dailyHoles.length; if(i>=18)return;
   const h=c.holes[i], a=(attack===true||attack===false)?attack:null;
