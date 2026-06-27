@@ -2864,7 +2864,9 @@ async function sbSignUp(email,password,username){
   const options={emailRedirectTo:base}; if(username) options.data={username};   // trigger writes it to profiles at sign-up
   const {data,error}=await sb.auth.signUp({email:String(email).trim(),password,options});
   if(error) throw new Error(error.message||'Could not create that account.');
-  if(username) sbUsername=username;   // reflect the chosen handle immediately
+  if(data&&data.session){ await sbApply(data.session);   // instant sign-up → refresh the header now
+    if(username && !sbUsername){ sbUsername=username; S.acctMode='profile'; render(); } }   // keep the chosen handle if the profile row lags the trigger
+  else if(username){ sbUsername=username; }
   return !!(data&&data.session);      // false → email confirmation is required first
 }
 async function sbSignInPassword(idOrEmail,password){
@@ -2875,8 +2877,9 @@ async function sbSignInPassword(idOrEmail,password){
     if(error||!data) throw new Error('No account with that username.');
     email=data;
   }
-  const {error}=await sb.auth.signInWithPassword({email,password});
+  const {data,error}=await sb.auth.signInWithPassword({email,password});
   if(error) throw new Error(/invalid/i.test(error.message||'')?'Wrong email/username or password.':(error.message||'Sign-in failed.'));
+  await sbApply(data&&data.session);   // load username + refresh the header now (don't rely on the auth-change event)
 }
 async function sbSignInGoogle(){
   if(!sb) throw new Error('Accounts are offline right now — try again shortly.');
