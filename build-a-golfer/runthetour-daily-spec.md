@@ -146,3 +146,6 @@ short venues (Oakmont) read mid-pack. Drop in a real DataGolf course scoring-dif
 
 **Tuned constants (in CFG):** SCORE_SHIFT −0.06, SLOPE_H 0.019, SHAPE_SCALE 1.5, FIT_POWER 4.0,
 LATENT_S 0.92, COURSE_DIFF_SCALE 0.045, PLAN/COND/TH/AGG_FIT_BONUS as in the file.
+
+## Phase 2 — COMPLETE: daily flow UI (local)
+Inlined DAILY_COURSES (16 real courses) + the calibrated engine into build-a-golfer.html. New flow: title Daily button → scrDailyPreview (course card, what-wins-here, conditions, signature holes, standing course record, game-plan dial) → career-mode draft (scrSetup+draft) → scrBuild Tee-off → scrDailyRound (hole-by-hole, color-coded scorecard strip, signature Attack/Play-Safe prompts, streak mulligan, auto-play) → scrDailyResult (to-par, record claim, OUT/IN scorecard) + overlayCourseRecords (all 16, record holders). Deterministic course rotation (cycles all 16) + seeded conditions. One-play-per-day via bag_daily. Local course records in bag_courserecords. Replaces the old season-style daily. Verified end-to-end headless (preview→draft→18 holes→result→records) + non-daily regression, zero JS errors. Backend (Phase 3) not wired yet.
