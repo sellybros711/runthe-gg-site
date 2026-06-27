@@ -719,6 +719,25 @@ allows Google Fonts, or self-host Anton.*
   screen. Verified headless: 18-hole round completes with only the 3 signature clicks
   (Augusta 12/13/15), Pause holds, Skip jumps to result, zero errors. Deployed to /golf.
 
+- 2026-06-27: **Daily objective = "beat the tour average" + in-depth course
+  descriptions.** Each of the 16 courses gained (a) a much longer, in-depth blurb
+  (~500-600 chars: architect/history, the test, signature stretch, what wins) and
+  (b) two numbers: `avg` = the venue's real PGA field scoring average vs par (the
+  benchmark to beat — Oakmont +4.5 … Kapalua -2.0), and `cdiff` = a Monte-Carlo
+  calibrated course-difficulty constant. `dCourseDiff` now returns `cdiff` (fallback
+  to the old length-per-par heuristic), so an average tour pro (OVR 80) shoots each
+  venue's real average — verified via inversion harness (scratchpad invert.cjs):
+  win80 ≈ 43-56% everywhere, a drafted ~86 build wins ~61-73%, weak ~78 ~38-50%.
+  This fixed the flagged "difficulty is length-only" limitation (Oakmont was mid-pack)
+  AND makes "beat the average" a uniform, meaningful objective. UI: preview shows a
+  gold "Your target · beat the tour average" card; round screen shows the target +
+  ahead/behind pace; result headline is 🏁 beat / short with margin; `won` (= best
+  total < avg) stored in result; title button + done overlay reflect beaten/short.
+  The averages are realistic estimates (DataGolf still network-blocked) and live in
+  the course data — easy to tweak. Verified headless: parse, 16/16 have avg+cdiff,
+  win at Oakmont +2, loss at Kapalua -1, zero errors. Deployed to /golf. NEXT (user
+  asked): shot-by-shot in-hole simulation.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
