@@ -1213,7 +1213,7 @@ function render(){
   app.innerHTML='';
   app.appendChild(header());
   const card=$(`<main class="card"></main>`);
-  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary','dailyprev','dailyround','dailyresult'].includes(S.screen)?' wide':''}"></div>`);
+  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
   app.appendChild(footer());
@@ -1227,7 +1227,7 @@ function render(){
   if(S.overlay==='confirmReset') overlayConfirmReset(screen);
   if(S.overlay==='about') overlayAbout(screen);
   if(S.overlay==='privacy') overlayPrivacy(screen);
-  ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult})[S.screen]();
+  ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult})[S.screen]();
   paintAvatars();   // recolor any avatar canvases just added to the DOM
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
   _lastView=view;
@@ -1589,7 +1589,7 @@ function scrTitle(){
   go.onclick=()=>{S.mode='easy';S.screen='setup';render();};
   stack.appendChild(go);
   const done=dailyDoneToday();
-  const daily=$(`<button class="btn ${done?'gold':'blue'}" style="margin-top:10px">${done?'Daily Challenge · Done':'Daily Challenge'}<span class="sub">${done?'View result · new wheel at midnight UTC':'Same wheel for everyone today'}</span></button>`);
+  const daily=$(`<button class="btn ${done?'gold':'blue'}" style="margin-top:10px">${done?'Daily Challenge · Done':'Daily Challenge'}<span class="sub">${done?'View your round · new course at midnight UTC':'One round at a new famous course every day — chase the course record'}</span></button>`);
   daily.onclick=startDailyChallenge;
   stack.appendChild(daily);
   const st=streakDisplay();
@@ -1640,7 +1640,7 @@ function scrSetup(){
   right.appendChild(swatchRow('Hair',HAIRS,S.look.hair,'hair',o=>o.m));
   right.appendChild(swatchRow('Shirt',POLOS,S.look.polo,'polo',o=>o.m));
   right.appendChild($(`<div style="height:14px"></div>`));
-  const go=$(`<button class="btn goldfill">Start Drafting ▸<span class="sub">${S.daily?'Same wheel for everyone today':'Spin to build your golfer'}</span></button>`);
+  const go=$(`<button class="btn goldfill">Start Drafting ▸<span class="sub">${S.daily?'Build a golfer for today\'s course':'Spin to build your golfer'}</span></button>`);
   go.onclick=()=>{track('draft_started',{daily:S.daily});S.screen='draft';render();}; right.appendChild(go);
   const back=$(`<button class="btn ghost" style="margin-top:10px">‹ Back</button>`);
   back.onclick=()=>{reset();S.screen='title';render();}; right.appendChild(back);
@@ -2876,7 +2876,26 @@ function startDailyChallenge(){
   S.drawRng=mulberry32((seed^0x2545f491)>>>0);
   S.dailyCourse=dailyCourseKey(seed); S.dailyCond=dailyConditions(seed,S.dailyCourse); S.dailyPlan='balanced';
   track('daily_started',{seed,course:S.dailyCourse});
-  S.screen='dailyprev'; render();
+  S.screen='dailyintro'; render();
+}
+function scrDailyIntro(){
+  const c=DAILY_COURSES[S.dailyCourse];
+  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge · how to play</span></div>`));
+  add($(`<h1 class="center" style="font-size:30px;margin:10px 0 2px">One round.<br>One famous course.</h1>`));
+  add($(`<p class="lede center" style="margin:2px 0 14px">Today you're playing <b style="color:var(--gold)">${esc(dShort(c.v))}</b>. Post the lowest round and the course record is yours.</p>`));
+  const steps=[
+    ['⛳','A real course, every day','18 holes at an iconic tour venue — real pars and yardages. A new course rotates in at midnight UTC.'],
+    ['🎯','Draft for the course','The preview shows what skills win here and today\'s conditions. Spin a golfer built to attack this course.'],
+    ['♟️','Play it your way','Pick a game plan, then choose Attack or Play Safe on the signature holes. Aggressive chases a low number — but it can blow up.'],
+    ['🏆','Claim the course record','Your score is posted to the course. Beat the standing record and your name sits on it until someone takes it.'],
+  ];
+  const list=$(`<div class="perks" style="max-width:560px;margin:0 auto 16px"></div>`);
+  steps.forEach(s=>list.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
+  add(list);
+  const go=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">See today's course ▸<span class="sub">Then draft your golfer</span></button>`);
+  go.onclick=()=>{ S.screen='dailyprev'; render(); }; add(go);
+  const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`);
+  cr.onclick=()=>{ S.overlay='courserecords'; render(); }; add(cr);
 }
 function scrDailyPreview(){
   const key=S.dailyCourse, c=DAILY_COURSES[key], rec=courseRecords()[key];
