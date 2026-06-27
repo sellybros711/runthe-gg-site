@@ -118,3 +118,31 @@ badges later (records held, sub-65 round, streak length).
 ## 10. Open knobs (flagged for tuning)
 SLOPE, baseSigma, per-par hole-weight blends, course difficulty constants, plan/condition
 multipliers, outcome thresholds, OVR score-floor clamp, mulligan streak requirement.
+
+## Phase 1 — COMPLETE: calibrated hole-by-hole engine
+`daily-engine.js` (+ `daily-engine.calibrate.js` Monte-Carlo harness). Standalone/headless
+now; ported inline into the HTML in Phase 2. Anchored to the season model so daily scores
+feel consistent with career mode.
+
+**Model:** per hole → archetype (par+length) picks a skill-weight template, tilted by the
+course `fit` (sharpened, `FIT_POWER`) + daily conditions → effective skill → latent
+`mu = shift + holeShape + courseDiff − (eff−80)·SLOPE_H + plan + cond (− aggFit)` →
+`z = mu + N(0, LATENT_S·planSd·condSd)` → bucketed to eagle/birdie/par/bogey/double/triple by
+fixed `TH` thresholds set from real PGA hole-scoring frequencies. RNG seeded by
+(day ^ courseHash ^ hole) only → fair & server-verifiable.
+
+**Calibration (Monte Carlo, balanced/breezy unless noted):**
+- Score by OVR: 80 → +0.4, 86 → −1.0, 90 → −1.8, 92 → −2.2; ~0.22 strokes/OVR pt (≈ season 0.238). Round sd ~3.1–3.3.
+- Outcomes/round: eagle 0.07, birdie 3.9, par 11.5, bogey 2.1, double 0.34, triple+ 0.11 (realistic).
+- Fit reward (equal OVR 86): course-matched −1.5 vs mismatched −0.4 → ~1.1 strokes for reading the course.
+- Strategy (OVR-88 fitting build, Augusta): conservative −0.2 (sd 2.5) / balanced −0.8 (sd 3.0) /
+  aggressive −0.9 (sd 3.8, best −11) — aggressive = same mean, higher ceiling + blow-up risk.
+  Mismatched bomber aggressive: +4.3 (p90 +10) — punished. A real game-plan decision.
+- Conditions (Augusta, OVR 86): calm −0.6 / breezy +0.2 / windy +1.8 / gusting +3.5, rising variance.
+- Course difficulty spread ~5 strokes: River Highlands / Pebble easiest, Valhalla / Quail / East Lake hardest.
+
+**Known limitation (flagged):** course difficulty is derived from length-per-par only, so brutal-but-
+short venues (Oakmont) read mid-pack. Drop in a real DataGolf course scoring-difficulty figure later to fix.
+
+**Tuned constants (in CFG):** SCORE_SHIFT −0.06, SLOPE_H 0.019, SHAPE_SCALE 1.5, FIT_POWER 4.0,
+LATENT_S 0.92, COURSE_DIFF_SCALE 0.045, PLAN/COND/TH/AGG_FIT_BONUS as in the file.
