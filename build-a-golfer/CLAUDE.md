@@ -675,6 +675,18 @@ allows Google Fonts, or self-host Anton.*
     expectations. Verified headless (checkbox states, regex, parse) zero errors.
     Deployed to /golf.
 
+- 2026-06-27: **Daily completion + streak now per-account.** Bug: `bag_daily`
+  (daily done/result) and `bag_streak` were stored device-global in localStorage,
+  keyed only by the UTC day — so whoever played the daily on a browser marked it
+  "done" for EVERY account that later signed in there (reported: signed into
+  Jordan's account, saw "Daily Challenge · Done" + a streak he never earned). Fix:
+  `acctKey(base)` suffixes the key with the signed-in user id (`base@<uid>`) when
+  signed in, guests keep the unscoped key; routed `dailyState`/the two `bag_daily`
+  writes + `bumpStreak`/`streakDisplay` through it. Each account now has its own
+  one-play-per-day + streak on the device (true global one-per-day still waits on
+  the Phase-3 backend). Verified headless: guest done ≠ Jordan done, streaks
+  isolated, zero errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
