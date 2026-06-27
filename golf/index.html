@@ -250,6 +250,28 @@
   .lockcta{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:8px;
     background:var(--panel); border:1px solid rgba(235,166,31,.3); border-radius:12px; padding:11px 13px}
 
+  /* tee-tier badges */
+  .bcat{font:800 10.5px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--gold); margin:16px 0 8px}
+  .bgrid{display:grid; grid-template-columns:1fr 1fr; gap:9px}
+  @media(min-width:560px){ .bgrid{grid-template-columns:1fr 1fr 1fr} }
+  .bcard{position:relative; background:var(--panel); border:1px solid var(--panelb); border-radius:14px; padding:13px 9px 11px; text-align:center; overflow:hidden}
+  .bcard.locked{opacity:.6}
+  .bcard.maxed{border-color:rgba(235,166,31,.5); box-shadow:0 0 0 1px rgba(235,166,31,.25) inset}
+  .teemedal{width:54px; height:54px; margin:0 auto 7px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    border:3px solid var(--tc); background:radial-gradient(circle at 38% 32%, rgba(255,255,255,.16), rgba(0,0,0,.28)); box-shadow:0 3px 9px rgba(0,0,0,.4)}
+  .bcard.locked .teemedal{border-color:#46586a; filter:grayscale(.85) brightness(.8)}
+  .teeglyph{font-size:24px; line-height:1}
+  .bname{font-weight:800; font-size:12.5px; color:var(--oncard); line-height:1.12}
+  .bdesc{font-size:10px; color:var(--muted); line-height:1.3; margin:3px 2px 7px; min-height:26px}
+  .btier{font:800 8.5px/1 var(--body); letter-spacing:.6px; text-transform:uppercase; color:#8aa0ad}
+  .bcard.maxed .btier{color:var(--gold)}
+  .bprog{font-family:var(--mono); font-weight:800; font-size:15px; color:var(--oncard); margin-top:3px}
+  .bbar{height:5px; border-radius:4px; background:rgba(255,255,255,.12); overflow:hidden; margin-top:7px}
+  .bbar span{display:block; height:100%; border-radius:4px; transition:width .5s cubic-bezier(.2,.7,.2,1)}
+  .btees{display:flex; gap:4px; justify-content:center; margin-top:8px}
+  .btees i{width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,.13); border:1px solid rgba(255,255,255,.14)}
+  .btees i.on{border-color:rgba(255,255,255,.35)}
+
   .ovr{display:flex; align-items:baseline; gap:10px; justify-content:center; margin:4px 0}
   .ovr .num{font-family:var(--mono); font-weight:800; font-size:52px; color:var(--gold); line-height:1}
   .ovr .lbl{font:800 11px/1 var(--body); letter-spacing:.2em; text-transform:uppercase; color:var(--muted)}
@@ -376,19 +398,85 @@ const SEASON_EVENTS=18;
 function seasonNet(t){const gross=t.money, caddie=gross*COSTS.caddiePct, agent=gross*COSTS.agentPct,
   travel=t.played*COSTS.travelPerEvent, fixed=COSTS.seasonFixed*(t.played/SEASON_EVENTS),
   costs=caddie+agent+travel+fixed; return {gross,caddie,agent,travel,fixed,costs,net:gross-costs};}
-/* local achievements — computed from a finished season */
-const ACHS=[
-  {id:'win',  e:'🏆', t:'First Win',        d:'Win any event',                     f:c=>c.wins>=1},
-  {id:'major',e:'⛳', t:'Major Champion',    d:'Win a major championship',          f:c=>c.majorsWon>=1},
-  {id:'slam', e:'👑', t:'Grand Slam',        d:'Win all 4 majors in one season',    f:c=>c.majorsWon>=4},
-  {id:'iron', e:'🪨', t:'Iron Man',          d:'Make every cut in a season',        f:c=>c.played>0&&c.made===c.played},
-  {id:'black',e:'💰', t:'In the Black',      d:'Finish the season in profit',       f:c=>c.net>0},
-  {id:'mil',  e:'💎', t:'Millionaire',       d:'Clear $1,000,000+ net profit in a season', f:c=>c.net>=1e6},
-  {id:'redmil',e:'💸',t:'Seven-Figure Loss', d:'Lose $1,000,000+ in a season',      f:c=>c.net<=-1e6},
-  {id:'rich', e:'🥇', t:'Earnings Leader',   d:'Finish #1 on the season earnings list',f:c=>c.moneyRank===1},
-  {id:'under',e:'🐍', t:'Against the Odds',  d:'Turn a profit with a sub-80 build', f:c=>c.net>0&&c.ovr<80},
+/* ---- Tee-tier badge system (lifetime — builds up across every season & career) ----
+   Five tiers, named for the tees on a real scorecard, forward → tips:
+   Red → Gold → White → Blue → Black (championship). Each badge has up to 5
+   thresholds; crossing one promotes you to that tee. Metrics accumulate in
+   bag_career.lt and never reset between careers. */
+const MAJOR_KEYS={'The Masters':'masters','The Championship':'champ','U.S. Open':'usopen','The Open':'open'};
+const TEE_TIERS=[
+  {key:'red',  name:'Red Tees',   c:'#D23B36'},
+  {key:'gold', name:'Gold Tees',  c:'#D7A328'},
+  {key:'white',name:'White Tees', c:'#E9ECEF'},
+  {key:'blue', name:'Blue Tees',  c:'#2E78D6'},
+  {key:'black',name:'Black Tees', c:'#171A1F'},
 ];
-function evalAchievements(ctx){return ACHS.filter(a=>a.f(ctx)).map(a=>a.id);}
+const BADGES=[
+  // Winning
+  {id:'champion', e:'🏆', t:'Champion',          cat:'Winning',     d:'Win tournaments across your tours.',          tiers:[1,10,30,100,300],         get:m=>m.wins},
+  {id:'frontrun', e:'📋', t:'Front Runner',      cat:'Winning',     d:'Finish #1 on the season earnings list.',      tiers:[1,3,10,30,75],            get:m=>m.moneyLeaderSeasons},
+  // Majors
+  {id:'major',    e:'⛳', t:'Major Champion',     cat:'Majors',      d:'Win major championships.',                    tiers:[1,5,20,60,150],           get:m=>m.majors},
+  {id:'masters',  e:'🟢', t:'Green Jacket',       cat:'Majors',      d:'Win The Masters.',                            tiers:[1,3,8,20,50],             get:m=>m.maj.masters},
+  {id:'wanamaker',e:'🏆', t:'Wanamaker',          cat:'Majors',      d:'Win The Championship.',                       tiers:[1,3,8,20,50],             get:m=>m.maj.champ},
+  {id:'usopen',   e:'🇺🇸', t:'National Open',      cat:'Majors',      d:'Win the U.S. Open.',                          tiers:[1,3,8,20,50],             get:m=>m.maj.usopen},
+  {id:'theopen',  e:'🏺', t:'Claret Jug',         cat:'Majors',      d:'Win The Open.',                               tiers:[1,3,8,20,50],             get:m=>m.maj.open},
+  {id:'cslam',    e:'👑', t:'Career Grand Slam',  cat:'Majors',      d:'Collect all four majors — Black: all four in one career.', tiers:[1,2,3,4,5], get:m=>m.careerSlams>0?5:Math.min(4,m.distinctMajors), fmt:v=>v>=5?'Slam':v+' / 4', noNum:true},
+  {id:'sslam',    e:'🌟', t:'Single-Season Slam', cat:'Majors',      d:'Win all four majors in one season.',          tiers:[1,2,4,8,15],              get:m=>m.slamSeasons},
+  // Consistency
+  {id:'top10',    e:'🎯', t:'Top-Tenner',         cat:'Consistency', d:'Card top-10 finishes.',                       tiers:[10,75,250,750,2000],      get:m=>m.top10},
+  {id:'cuts',     e:'✂️', t:'Cut Maker',          cat:'Consistency', d:'Make the weekend cut.',                       tiers:[25,150,500,1500,4000],    get:m=>m.made},
+  {id:'iron',     e:'🪨', t:'Iron Man',           cat:'Consistency', d:'Play a season making every cut.',             tiers:[1,3,10,30,75],            get:m=>m.ironSeasons},
+  // Money
+  {id:'money',    e:'💰', t:'Money List',         cat:'Money',       d:'Bank career prize money.',                    tiers:[10e6,50e6,250e6,1e9,5e9], get:m=>m.earnings, fmt:v=>fmtMoneyShort(v)},
+  {id:'roller',   e:'💎', t:'High Roller',        cat:'Money',       d:'Post a huge single-season profit.',           tiers:[1e6,5e6,20e6,60e6,150e6], get:m=>m.bestSeasonNet, fmt:v=>fmtMoneyShort(v)},
+  {id:'black',    e:'📈', t:'In the Black',       cat:'Money',       d:'Finish seasons in profit.',                   tiers:[1,5,20,60,150],           get:m=>m.profitSeasons},
+  // Career
+  {id:'veteran',  e:'🗓️', t:'Veteran',            cat:'Career',      d:'Play tour seasons.',                          tiers:[5,25,100,300,750],        get:m=>m.seasons},
+  {id:'hof',      e:'🏛️', t:'Hall of Famer',       cat:'Career',      d:'Complete full careers.',                      tiers:[1,3,10,30,75],            get:m=>m.careers},
+  // Skill
+  {id:'underdog', e:'🐍', t:'Against the Odds',   cat:'Skill',       d:'Turn a profit with a sub-80 build.',          tiers:[1,3,10,30,75],            get:m=>m.underdogSeasons},
+  {id:'maxed',    e:'⚙️', t:'Maxed Out',          cat:'Skill',       d:'Build a higher-overall golfer.',              tiers:[80,85,90,95,99],          get:m=>m.maxOvr, noNum:true},
+];
+const BADGE_CATS=['Winning','Majors','Consistency','Money','Career','Skill'];
+const BADGE_TIER_TOTAL=BADGES.reduce((n,b)=>n+b.tiers.length,0);
+function fmtMoneyShort(n){ n=Math.round(n);
+  if(Math.abs(n)>=1e9) return '$'+(n/1e9).toFixed(n%1e9?1:0).replace(/\.0$/,'')+'B';
+  if(Math.abs(n)>=1e6) return '$'+(n/1e6).toFixed(n%1e6?1:0).replace(/\.0$/,'')+'M';
+  if(Math.abs(n)>=1e3) return '$'+Math.round(n/1e3)+'k';
+  return '$'+n; }
+function ltDefault(){return {seasons:0,careers:0,wins:0,majors:0,top10:0,made:0,played:0,earnings:0,net:0,
+  bestSeasonNet:0,profitSeasons:0,ironSeasons:0,moneyLeaderSeasons:0,slamSeasons:0,underdogSeasons:0,
+  maxOvr:0,distinctMajors:0,careerSlams:0,maj:{masters:0,champ:0,usopen:0,open:0}};}
+function badgeMetrics(c){ const lt=Object.assign(ltDefault(),(c||career()).lt||{});
+  lt.maj=Object.assign({masters:0,champ:0,usopen:0,open:0},lt.maj||{}); return lt; }
+function badgeLevel(b,m){ const v=b.get(m); let lv=0; b.tiers.forEach(t=>{if(v>=t)lv++;}); return lv; }
+function badgeCount(c){ const m=badgeMetrics(c); return BADGES.reduce((n,b)=>n+badgeLevel(b,m),0); }
+// recompute every badge against the stored baseline; return freshly-earned tiers (caller persists c)
+function _badgeFresh(c){ c.btier=c.btier||{}; const m=badgeMetrics(c); const fresh=[];
+  BADGES.forEach(b=>{ const lv=badgeLevel(b,m); const prev=c.btier[b.id]||0;
+    for(let k=prev+1;k<=lv;k++) fresh.push({id:b.id,t:b.t,e:b.e,tier:k,tierName:TEE_TIERS[k-1].name,maxed:k>=b.tiers.length});
+    if(lv>prev)c.btier[b.id]=lv; });
+  return fresh; }
+function teeMedal(e,lvl){ const col=lvl>0?TEE_TIERS[lvl-1].c:'#46586a';
+  return `<div class="teemedal" style="--tc:${col}"><span class="teeglyph">${e}</span></div>`; }
+function badgeCard(b,m){ const v=b.get(m); const lvl=badgeLevel(b,m); const max=lvl>=b.tiers.length;
+  const next=max?null:b.tiers[lvl]; const prev=lvl>0?b.tiers[lvl-1]:0;
+  const frac=max?1:Math.max(0,Math.min(1,(v-prev)/((next-prev)||1)));
+  const f=b.fmt||(x=>''+Math.round(x));
+  const tierLabel=max?'Black · Max':(lvl>0?TEE_TIERS[lvl-1].name:'Locked');
+  const prog=b.noNum?(max?f(v):(lvl>0?f(v):'Locked')):(max?f(v):f(v)+' / '+f(next));
+  const col=lvl>0?TEE_TIERS[lvl-1].c:'#3a4a55';
+  const tees=TEE_TIERS.map((tt,i)=>`<i class="${i<lvl?'on':''}" style="${i<lvl?('background:'+tt.c):''}" title="${tt.name}"></i>`).join('');
+  return `<div class="bcard${lvl===0?' locked':''}${max?' maxed':''}">
+    ${teeMedal(b.e,lvl)}
+    <div class="bname">${b.t}</div>
+    <div class="bdesc">${b.d}</div>
+    <div class="btier" style="${lvl>0?('color:'+col):''}">${tierLabel}</div>
+    <div class="bprog">${prog}</div>
+    <div class="bbar"><span style="width:${Math.round(frac*100)}%;background:${col}"></span></div>
+    <div class="btees">${tees}</div>
+  </div>`; }
 function recordSeason(o){
   const c=career(); c.badges=c.badges||{};
   c.builds++; c.wins+=o.wins; c.majors+=o.majorsWon;
@@ -398,9 +486,23 @@ function recordSeason(o){
   if(o.ovr>c.bestOvr)c.bestOvr=o.ovr;
   c.hof.push({name:o.name,ovr:o.ovr,money:o.money,net:o.net,wins:o.wins,majors:o.majorsWon,best:o.best});
   c.hof.sort((a,b)=>b.net-a.net); c.hof=c.hof.slice(0,5);
-  const earned=evalAchievements(o); const fresh=earned.filter(id=>!c.badges[id]);
-  earned.forEach(id=>c.badges[id]=true);
-  LS.set('bag_career',c); return {career:c,fresh};
+  // ---- lifetime badge metrics ----
+  const lt=c.lt=Object.assign(ltDefault(),c.lt||{}); lt.maj=Object.assign({masters:0,champ:0,usopen:0,open:0},lt.maj||{});
+  lt.seasons++; lt.wins+=o.wins; lt.majors+=o.majorsWon; lt.top10+=(o.top10||0); lt.made+=o.made; lt.played+=o.played;
+  lt.earnings+=o.gross; lt.net+=o.net;
+  if(o.net>lt.bestSeasonNet)lt.bestSeasonNet=o.net;
+  if(o.net>0)lt.profitSeasons++;
+  if(o.played>0&&o.made===o.played)lt.ironSeasons++;
+  if(o.moneyRank===1)lt.moneyLeaderSeasons++;
+  if(o.net>0&&o.ovr<80)lt.underdogSeasons++;
+  if(o.ovr>lt.maxOvr)lt.maxOvr=o.ovr;
+  let distinctThis=0;
+  Object.keys(o.majorWins||{}).forEach(name=>{ const k=MAJOR_KEYS[name]; if(k&&o.majorWins[name]>0){ lt.maj[k]+=o.majorWins[name]; distinctThis++; } });
+  if(distinctThis>=4)lt.slamSeasons++;
+  lt.distinctMajors=['masters','champ','usopen','open'].filter(k=>lt.maj[k]>0).length;
+  const fresh=_badgeFresh(c);
+  LS.set('bag_career',c); sbSyncStats();
+  return {career:c,fresh};
 }
 let deferredInstall=null;
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;});
@@ -1091,10 +1193,9 @@ function overlayRecord(screen){
       <span class="sc" style="color:#bfe7df">OVR ${h.ovr}</span>
       <span class="mny" style="color:${(h.net??h.money)>=0?'#35d6a0':'#E14A33'}">${fmtSigned(h.net??h.money)}</span></div>`).join('')
     : `<div class="small muted center" style="padding:20px 8px">No seasons yet — build a golfer and run a season to start your record.</div>`;
-  const earnedCount=ACHS.filter(a=>badges[a.id]).length;
-  const badgeGrid=ACHS.map(a=>{const on=!!badges[a.id]; return `<div style="display:flex;align-items:center;gap:8px;background:#0a2740;border:1px solid var(--line);border-radius:11px;padding:9px 10px;opacity:${on?1:.38}">
-      <span style="font-size:20px;filter:${on?'none':'grayscale(1)'}">${a.e}</span>
-      <span style="min-width:0"><div style="font-weight:800;font-size:12.5px;color:var(--oncard)">${a.t}</div><div class="small muted" style="font-size:10.5px;line-height:1.25">${a.d}</div></span></div>`;}).join('');
+  const bm=badgeMetrics(c); const earnedCount=badgeCount(c);
+  const badgeGrid=BADGE_CATS.map(cat=>{ const list=BADGES.filter(b=>b.cat===cat); if(!list.length) return '';
+    return `<div class="bcat">${cat}</div><div class="bgrid">${list.map(b=>badgeCard(b,bm)).join('')}</div>`; }).join('');
   const acctCard = !sbSignedIn()
     ? `<div><b style="color:var(--oncard)">Playing as guest</b><div class="small muted" style="margin-top:2px">Sign in to sync your record and post to the global leaderboards.</div></div>
        <div class="mini" style="margin:0;width:auto;flex:0 0 auto;gap:8px"><button class="btn ghost" id="rec-signin" style="width:auto;padding:8px 12px;font-size:12px">Sign in</button><button class="btn gold" id="rec-signup" style="width:auto;padding:8px 12px;font-size:12px">Create account</button></div>`
@@ -1119,8 +1220,10 @@ function overlayRecord(screen){
     ${careersHTML}
     <h2 style="margin:16px 0 8px">Hall of Fame · your top builds</h2>
     <div class="board">${rows}</div>
-    <h2 style="margin:16px 0 8px">Achievements · ${earnedCount}/${ACHS.length}</h2>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">${badgeGrid}</div>
+    <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:18px 0 2px">
+      <h2 style="margin:0">Tee Badges</h2><span class="small" style="color:var(--gold);font-weight:800">${earnedCount} / ${BADGE_TIER_TOTAL} tees</span></div>
+    <div class="small muted" style="margin-bottom:2px">Earn tees on every badge — <span style="color:${TEE_TIERS[0].c}">Red</span> → <span style="color:${TEE_TIERS[1].c}">Gold</span> → White → <span style="color:${TEE_TIERS[3].c}">Blue</span> → Black (championship).</div>
+    ${badgeGrid}
     <div style="height:14px"></div>
     <button class="btn red">Close</button></div>`);
   const wire=(id,fn)=>{ const bb=ov.querySelector(id); if(bb) bb.onclick=fn; };
@@ -1138,7 +1241,7 @@ function unlockPerks(){
   const p=[
     ['🏆','Global leaderboards','Climb the Single-Season &amp; Career Earnings boards'],
     ['☁️','Saved &amp; synced','Your careers and record follow you on any device'],
-    ['🎖️','Achievements &amp; Hall of Fame','Earn badges and showcase your best builds'],
+    ['🎖️','Tee badges &amp; Hall of Fame','Climb Red → Black tees and showcase your best builds'],
     ['⛳','Your player profile','Your golfer, stats and best careers in one place'],
   ];
   return `<div class="perkhd">Free account unlocks</div><div class="perks">${p.map(x=>`<div class="perk"><span class="pic">${x[0]}</span><span class="pt"><b>${x[1]}</b><span>${x[2]}</span></span></div>`).join('')}</div>`;
@@ -2191,7 +2294,9 @@ function scrSummary(){
   const ovr=Math.round(me.skill);
   const ec=seasonNet(t);
   if(!S.recorded){S.recorded=true;
-    const r=recordSeason({name:me.name,ovr,money:t.money,gross:ec.gross,net:ec.net,wins:t.wins,majorsWon:t.majors,played:t.played,made:t.made,moneyRank,best:t.best}); S.freshBadges=r.fresh;
+    const majorWins={};
+    S.season.results.forEach(r=>{ if(!r.evt.major)return; const meR=r.order.find(o=>o.p.you); if(meR&&meR.pos===1) majorWins[r.evt.name]=(majorWins[r.evt.name]||0)+1; });
+    const r=recordSeason({name:me.name,ovr,money:t.money,gross:ec.gross,net:ec.net,wins:t.wins,majorsWon:t.majors,played:t.played,made:t.made,top10:t.top10,moneyRank,best:t.best,majorWins}); S.freshBadges=r.fresh;
     S.career=S.career||{money:0,net:0,wins:0,majors:0,top10:0,best:99,seasons:[],winsList:[]};
     S.career.winsList=S.career.winsList||[];
     S.career.money+=t.money; S.career.net+=ec.net; S.career.wins+=t.wins; S.career.majors+=t.majors; S.career.top10+=t.top10;
@@ -2250,9 +2355,9 @@ function scrSummary(){
   }
   add(expWrap);
   if(S.freshBadges&&S.freshBadges.length){
-    const got=ACHS.filter(a=>S.freshBadges.includes(a.id));
-    const chips=got.map(a=>`<span class="tag" style="color:var(--gold);border-color:var(--gold)">${a.e} ${a.t}</span>`).join(' ');
-    add($(`<div class="scout" style="margin:4px 0 12px;text-align:center"><b style="color:var(--gold)">Achievement${got.length>1?'s':''} unlocked</b><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center">${chips}</div></div>`));
+    const got=S.freshBadges;
+    const chips=got.map(f=>{const col=TEE_TIERS[f.tier-1].c; return `<span class="tag" style="color:${col};border-color:${col}">${f.e} ${f.t} · ${f.tierName}</span>`;}).join(' ');
+    add($(`<div class="scout" style="margin:4px 0 12px;text-align:center"><b style="color:var(--gold)">Tee promotion${got.length>1?'s':''} earned</b><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center">${chips}</div></div>`));
   }
   // five headline stats: Earnings · Profit (two money tiles) over Tour Rank · Top 10's · Wins
   const pcol=ec.net>=0?'#35d6a0':'#E14A33';
@@ -2445,6 +2550,13 @@ function endCareer(reason){
     money:c.money,net:c.net,wins:c.wins,majors:c.majors,top10:c.top10,
     best: c.seasons.reduce((m,s)=>Math.max(m,s.money),0),
     bestFin: c.best}; }
+  // ---- lifetime career-completion badges (Hall of Famer + the Career Grand Slam black tee) ----
+  try{ const cc=career(); cc.lt=Object.assign(ltDefault(),cc.lt||{}); cc.lt.maj=Object.assign({masters:0,champ:0,usopen:0,open:0},cc.lt.maj||{});
+    cc.lt.careers++;
+    const ms=(S.career&&S.career.majorStats)||{};
+    if(['The Masters','The Championship','U.S. Open','The Open'].every(n=>ms[n]&&ms[n].wins>0)) cc.lt.careerSlams++;
+    S.careerFreshBadges=_badgeFresh(cc); LS.set('bag_career',cc); sbSyncStats();
+  }catch(e){ S.careerFreshBadges=null; }
   track('career_ended',{reason,years:(S.career&&S.career.seasons.length)||1});
   S.careerOver=true; S.screen='careerend'; render();
 }
@@ -2662,6 +2774,10 @@ function scrCareerEnd(){
   const cv=document.createElement('canvas'); cv.style.cssText='width:100%;max-width:300px;display:block;margin:16px auto 4px;border-radius:14px;border:1px solid var(--line)';
   drawCareerCard(cv,{name:S.name||'Your Golfer',ovr:Math.round(buildPlayer().skill),years:e.years,money:c.money,net:c.net,wins:c.wins,majors:c.majors,cRank:0,cN:0},careerVals);
   add(cv);
+  if(S.careerFreshBadges&&S.careerFreshBadges.length){
+    const chips=S.careerFreshBadges.map(f=>{const col=TEE_TIERS[f.tier-1].c; return `<span class="tag" style="color:${col};border-color:${col}">${f.e} ${f.t} · ${f.tierName}</span>`;}).join(' ');
+    add($(`<div class="scout" style="max-width:520px;margin:6px auto 0;text-align:center"><b style="color:var(--gold)">Tee promotion${S.careerFreshBadges.length>1?'s':''} this career</b><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center">${chips}</div></div>`));
+  }
   const share=`RUNTHETOUR CAREER — ${S.name||'Your Golfer'}\n${e.years} seasons on tour · net worth ${fmtSigned(c.net)}\n${c.wins}W · ${c.majors} majors · ${fmt(c.money)} earned\nRunThe.GG`;
   const row=$(`<div class="mini" style="margin-top:10px;max-width:520px;margin-left:auto;margin-right:auto"></div>`);
   const sh=$(`<button class="btn gold">↗ Share Career</button>`);
@@ -2753,6 +2869,7 @@ async function sbSetUsername(name){
 }
 async function sbLoadProfile(){
   if(!sb||!sbUser){ sbProfile=null; return; }
+  sbPullStats();   // adopt synced badge progress (fail-open)
   try{
     const {data}=await sb.from('runtour_scores')
       .select('season_earnings,season_net,career_id,wins,majors,ovr,year,golfer_name').eq('user_id',sbUser.id);
@@ -2768,6 +2885,22 @@ async function sbLoadProfile(){
       wins:rows.reduce((s,r)=>s+(r.wins||0),0), majors:rows.reduce((s,r)=>s+(r.majors||0),0) };
   }catch(e){ sbProfile=null; }
 }
+// push the lifetime badge metrics + tee count to the profile so badges follow the account.
+// Best-effort & fail-open: no backend / not signed in / migration not applied → silent no-op.
+let _statsSyncT=null;
+function sbSyncStats(){ if(!sb||!sbUser) return;
+  clearTimeout(_statsSyncT);
+  _statsSyncT=setTimeout(async()=>{ try{ const c=career();
+    await sb.rpc('runtour_save_stats',{p_lt:c.lt||{},p_btier:c.btier||{},p_badges:badgeCount(c)});
+  }catch(e){} },800); }
+// on sign-in, adopt the server's lifetime stats when they represent more progress than this device
+async function sbPullStats(){ if(!sb||!sbUser) return;
+  try{ const {data,error}=await sb.rpc('runtour_my_stats'); if(error||!data) return;
+    const srv=Array.isArray(data)?data[0]:data; if(!srv||!srv.lt) return;
+    const c=career(); const localN=badgeCount(c); const srvN=srv.badges||0;
+    if(srvN>localN){ c.lt=srv.lt; c.btier=srv.btier||{}; LS.set('bag_career',c); }
+    else if(localN>srvN){ sbSyncStats(); }   // this device is ahead → push it up
+  }catch(e){} }
 async function sbSubmitSeason(s){
   if(!sb) return;
   if(!sbUser){ _pendingSeason=s; return; }   // post as soon as they sign in
