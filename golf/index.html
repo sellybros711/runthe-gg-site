@@ -22,7 +22,14 @@
 <meta name="twitter:title" content="Run The Tour">
 <meta name="twitter:description" content="Build a golfer. Run a pro season. Win majors and climb the earnings list.">
 <meta name="twitter:image" content="https://runthe.gg/golf/og.png">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2311432f'/%3E%3Cpath d='M24 14v36' stroke='%23e9d8ac' stroke-width='4' stroke-linecap='round'/%3E%3Cpath d='M24 15h18l-5 6 5 6H24z' fill='%23EBA61F'/%3E%3Cellipse cx='32' cy='52' rx='15' ry='4' fill='none' stroke='%23cda54a' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 76'%3E%3Cpath d='M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z' fill='%2311432f' stroke='%23cda24a' stroke-width='3'/%3E%3Cpath d='M26 17 v36' stroke='%23e9d8ac' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M26 18 h16 l-4 5 4 5 h-16 z' fill='%23EBA61F'/%3E%3Cellipse cx='32' cy='57' rx='17' ry='5.4' fill='none' stroke='%23cda54a' stroke-width='1.6'/%3E%3Ccircle cx='38' cy='57' r='2.2' fill='%23f4ecd9'/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Run The Tour">
+<meta name="application-name" content="Run The Tour">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
@@ -1230,7 +1237,7 @@ function overlayRecord(screen){
   wire('#rec-signin',()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();});
   wire('#rec-signup',()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();});
   wire('#rec-setuser',()=>{S.overlay='account';S.acctMode='username';S.acctErr='';render();});
-  wire('#rec-signout',async()=>{ await sbSignOut(); render(); });
+  wire('#rec-signout',async()=>{ await sbSignOut(); S.overlay=null; S.screen='title'; render(); toast('Signed out'); });
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
   screen.appendChild(ov);
@@ -2857,7 +2864,15 @@ async function sbSignInGoogle(){
   const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:base}});
   if(error){ try{localStorage.removeItem('rtt_oauth_pending');}catch(e){} throw new Error(error.message||'Google sign-in failed.'); }
 }
-async function sbSignOut(){ if(sb){ try{ await sb.auth.signOut(); }catch(e){} } sbUser=null; sbUsername=null; sbProfile=null; lbCache=null; }
+async function sbSignOut(){
+  // scope:'local' clears THIS browser's session without a network revoke that can
+  // fail and leave the token behind (which would auto-sign you back in on reload).
+  if(sb){ try{ await sb.auth.signOut({scope:'local'}); }catch(e){ try{ await sb.auth.signOut(); }catch(_){} } }
+  // belt & suspenders: purge any persisted supabase auth token so nothing re-adopts it
+  try{ Object.keys(localStorage).forEach(k=>{ if(/^sb-.*-auth-token$/.test(k)) localStorage.removeItem(k); }); }catch(e){}
+  try{ localStorage.removeItem('rtt_oauth_pending'); }catch(e){}
+  sbUser=null; sbUsername=null; sbProfile=null; lbCache=null; _pendingSeason=null;
+}
 async function sbSetUsername(name){
   if(!sb||!sbUser) throw new Error('Sign in first.');
   name=String(name).trim();
