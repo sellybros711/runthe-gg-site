@@ -225,6 +225,7 @@
   .slot .lab{flex:1; font-size:11.5px; letter-spacing:.05em; text-transform:uppercase; color:#bfe7df}
   .slot .who{font-size:11.5px; color:var(--oncard); opacity:.85}
   .slot .v{font-family:var(--mono); font-weight:800; font-size:15px; color:var(--gold); min-width:30px; text-align:right}
+  .slot .slotdec{font-family:var(--mono); font-weight:800; font-size:12px; color:#e07a5f; flex:0 0 auto; letter-spacing:-.02em}
   .slot.empty .v, .slot.empty .lab{color:var(--muted)}
 
   .ovr{display:flex; align-items:baseline; gap:10px; justify-content:center; margin:4px 0}
@@ -2295,10 +2296,13 @@ function continueFranchise(){
   if(playerRetires()){ endCareer('age'); return; }   // your golfer's career is over → ceremony
   S.year=(S.year||1)+1;
   ensureWorld(); advanceWorld(S.world);   // age the living world one year (retire/rookies); spec §2-5
+  const _pre=Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:null]));
   applyPlayerDecline();                    // your bag erodes from year 15 (re-spins fight it)
+  // record what each skill dropped this off-season so the tune-up screen can show it
+  const _decline={}; CATS.forEach(c=>{ const sl=S.slots[c.k]; if(sl&&_pre[c.k]!=null){ const d=sl.value-_pre[c.k]; if(d<0) _decline[c.k]=d; } });
   S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false;
   // off-season tune-up: re-spin to swap fresh skills in (now also to repair age decline)
-  S.offseason={changes:0,maxChanges:3,reSpins:2}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
+  S.offseason={changes:0,maxChanges:3,reSpins:2,decline:_decline}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
   track('offseason_start',{year:S.year});
   S.screen='offseason'; render();
 }
@@ -2315,7 +2319,7 @@ function newCareer(){ clearCareerSave(); reset(); render(); }
 function finishOffseason(){ track('offseason_done',{changes:S.offseason.changes}); startSeason(false); }
 function offSpin(){ if(S.current||S.spinning)return; reveal(); }
 function offReSpin(){ if(S.offseason.reSpins<=0)return; S.offseason.reSpins--; track('offseason_respin'); reveal(); }
-function offTake(k){ S.slots[k]={golfer:S.current.name,value:S.current[k]}; S.offseason.changes++; S.current=null; track('offseason_swap',{slot:k}); render(); }
+function offTake(k){ S.slots[k]={golfer:S.current.name,value:S.current[k]}; S.offseason.changes++; if(S.offseason.decline) delete S.offseason.decline[k]; S.current=null; track('offseason_swap',{slot:k}); render(); }
 function scrOffseason(){
   const os=S.offseason||{changes:0,maxChanges:3,reSpins:2};
   add($(`<div class="center"><span class="tag">Career Mode · Off-Season · Year ${S.year} prep</span></div>`));
@@ -2357,10 +2361,12 @@ function scrOffseason(){
     left.appendChild(cont);
   }
   right.appendChild(buildHero());
+  const decl=os.decline||{}; const nDec=Object.keys(decl).length;
   right.appendChild($(`<h2 style="margin:6px 0 8px">Your golfer</h2>`));
+  if(nDec) right.appendChild($(`<div class="small" style="margin:-4px 0 8px;color:#e07a5f">▼ Age cost you ground this off-season — the red numbers show what each skill dropped. Re-spin to repair them.</div>`));
   const card=$(`<div class="card-grid"></div>`);
-  CATS.forEach(cat=>{ const f=S.slots[cat.k];
-    card.appendChild($(`<div class="slot ${f?'':'empty'}"><span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'—'}</span><span class="v">${f?f.value:'··'}</span></div>`)); });
+  CATS.forEach(cat=>{ const f=S.slots[cat.k]; const d=decl[cat.k]||0;
+    card.appendChild($(`<div class="slot ${f?'':'empty'}"><span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'—'}</span>${d<0?`<span class="slotdec">▼ ${Math.abs(d)}</span>`:''}<span class="v">${f?f.value:'··'}</span></div>`)); });
   right.appendChild(card);
 }
 /* ---------- season recap ---------- */
