@@ -201,6 +201,9 @@
     box-shadow:0 10px 26px -16px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.05)}
   .herofig{display:flex; flex-direction:column; align-items:center; gap:8px; flex:0 0 100px}
   .golferfig{width:96px; height:96px; display:block; filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
+  .avatarfig{width:96px; height:96px; display:block; position:relative; filter:drop-shadow(0 4px 8px rgba(0,0,0,.4))}
+  .avatarfig img, .avatarfig svg{width:100%; height:100%; display:block}
+  .avatarimg{object-fit:cover; border-radius:50%}
   .ovrbadge{display:flex; flex-direction:column; align-items:center; background:rgba(0,0,0,.28); border:2px solid var(--gold); border-radius:12px; padding:5px 0; width:74px}
   .ovrbadge .n{font-family:var(--mono); font-weight:800; font-size:28px; color:var(--gold); line-height:1; transition:color .2s}
   .ovrbadge .l{font:800 9px/1 var(--body); letter-spacing:.18em; color:var(--muted); margin-top:4px}
@@ -866,21 +869,23 @@ function applyPlayerDecline(){   // erodes your bag once per year from DECLINE_S
 }
 function playerRetires(){ return (S.year||1) >= CAREER_MAX_YEARS; }   // forced at the 40-year shelf life
 /* golfer customization palettes */
+// `file` = canonical avatar-art filename token (see avatars/golfers/README.md).
+// Skins map by lightness order to the 5 art tones (game ids kept for save compat).
 const SKINS=[
-  {id:'light', m:'#f0c6a4', s:'#e0ad84'},
-  {id:'tan',   m:'#e8b088', s:'#d99a6c'},
-  {id:'medium',m:'#c98d5e', s:'#b67a4d'},
-  {id:'brown', m:'#9c6b43', s:'#855836'},
-  {id:'deep',  m:'#6f4a2e', s:'#5d3c24'},
+  {id:'light', m:'#f0c6a4', s:'#e0ad84', file:'skin-01-fair'},
+  {id:'tan',   m:'#e8b088', s:'#d99a6c', file:'skin-02-light'},
+  {id:'medium',m:'#c98d5e', s:'#b67a4d', file:'skin-03-tan'},
+  {id:'brown', m:'#9c6b43', s:'#855836', file:'skin-04-medium'},
+  {id:'deep',  m:'#6f4a2e', s:'#5d3c24', file:'skin-05-deep'},
 ];
 const POLOS=[
-  {id:'teal',  m:'#0FA888', s:'#0c917a'},
-  {id:'navy',  m:'#214a8c', s:'#1a3c72'},
-  {id:'red',   m:'#d23f34', s:'#b1322a'},
-  {id:'gold',  m:'#e6a91f', s:'#c98f12'},
-  {id:'white', m:'#eef0ee', s:'#d7dbd6'},
-  {id:'purple',m:'#6b4bb0', s:'#583c93'},
-  {id:'black', m:'#2b3038', s:'#1f232a'},
+  {id:'teal',  m:'#0FA888', s:'#0c917a', file:'shirt-01-teal'},
+  {id:'navy',  m:'#214a8c', s:'#1a3c72', file:'shirt-02-blue'},
+  {id:'red',   m:'#d23f34', s:'#b1322a', file:'shirt-03-red'},
+  {id:'gold',  m:'#e6a91f', s:'#c98f12', file:'shirt-04-gold'},
+  {id:'white', m:'#eef0ee', s:'#d7dbd6', file:'shirt-05-cream'},
+  {id:'purple',m:'#6b4bb0', s:'#583c93', file:'shirt-06-purple'},
+  {id:'black', m:'#2b3038', s:'#1f232a', file:'shirt-07-charcoal'},
 ];
 const PANTS=[
   {id:'stone',a:'#c7bfa8', b:'#bcb39b'},
@@ -890,12 +895,12 @@ const PANTS=[
   {id:'black',a:'#262a31', b:'#1d2026'},
 ];
 const HAIRS=[
-  {id:'black',     m:'#2b2118', s:'#1b140d'},
-  {id:'brown',     m:'#5a3b25', s:'#412a19'},
-  {id:'darkbrown', m:'#3a2a1c', s:'#281c12'},
-  {id:'blonde',    m:'#c79c54', s:'#a37f3c'},
-  {id:'auburn',    m:'#7e3b22', s:'#5e2c18'},
-  {id:'grey',      m:'#9a958f', s:'#7b766f'},
+  {id:'black',     m:'#2b2118', s:'#1b140d', file:'hair-01-black'},
+  {id:'brown',     m:'#5a3b25', s:'#412a19', file:'hair-03-brown'},
+  {id:'darkbrown', m:'#3a2a1c', s:'#281c12', file:'hair-02-dark-brown'},
+  {id:'blonde',    m:'#c79c54', s:'#a37f3c', file:'hair-04-blonde'},
+  {id:'auburn',    m:'#7e3b22', s:'#5e2c18', file:'hair-05-auburn'},
+  {id:'grey',      m:'#9a958f', s:'#7b766f', file:'hair-06-gray'},
 ];
 const DEFLOOK={skin:'tan',polo:'teal',pants:'stone',hair:'brown',cap:true,lefty:false,gender:'male'};
 let S={};
@@ -1316,7 +1321,7 @@ function scrSetup(){
   const cols=$(`<div class="cols setup-cols"></div>`);
   const left=$(`<div class="col center" style="align-self:center"></div>`), right=$(`<div class="col"></div>`);
   cols.appendChild(left); cols.appendChild(right); add(cols);
-  const f=$(golferSVG()); f.style.width='168px'; f.style.height='168px'; f.style.filter='drop-shadow(0 6px 12px rgba(0,0,0,.4))';
+  const f=$(avatarHTML()); f.style.width='168px'; f.style.height='168px'; f.style.filter='drop-shadow(0 6px 12px rgba(0,0,0,.4))';
   const figwrap=$(`<div style="display:flex;justify-content:center"></div>`); figwrap.appendChild(f); left.appendChild(figwrap);
   right.appendChild($(`<h2 style="margin:0 0 4px">Name</h2>`));
   const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${S.name}">`);
@@ -1332,6 +1337,33 @@ function scrSetup(){
   go.onclick=()=>{track('draft_started',{daily:S.daily});S.screen='draft';render();}; right.appendChild(go);
   const back=$(`<button class="btn ghost" style="margin-top:10px">‹ Back</button>`);
   back.onclick=()=>{reset();S.screen='title';render();}; right.appendChild(back);
+}
+
+/* ---------- avatar (raster portrait) ---------- */
+// Final art: 420 capped portraits dropped into AVATAR_BASE as
+// {gender}_{skin}_{hair}_{shirt}.png (see avatars/golfers/README.md). Relative
+// path so it resolves both in dev (build-a-golfer/avatars/…) and live
+// (/golf/avatars/…). Missing combos fall back to a per-gender placeholder, then
+// to the built-in vector bust — so it never breaks while the set is produced.
+const AVATAR_BASE='avatars/golfers/';
+function avatarSrc(L){
+  const sk=(SKINS.find(x=>x.id===L.skin)||SKINS[1]).file;
+  const hr=(HAIRS.find(x=>x.id===L.hair)||HAIRS[1]).file;
+  const po=(POLOS.find(x=>x.id===L.polo)||POLOS[0]).file;
+  const g=(L.gender==='female')?'female':'male';
+  return `${AVATAR_BASE}${g}_${sk}_${hr}_${po}.png`;
+}
+function avatarHTML(){
+  const L=S.look||DEFLOOK;
+  const g=(L.gender==='female')?'female':'male';
+  const src=avatarSrc(L), fb=`${AVATAR_BASE}_fallback_${g}.png`;
+  return `<div class="avatarfig"><img class="avatarimg" alt="Your golfer" draggable="false"
+    src="${src}" data-fb="${fb}" onerror="avatarFallback(this)"></div>`;
+}
+function avatarFallback(img){
+  const fb=img.getAttribute('data-fb');
+  if(fb && img.getAttribute('src')!==fb){ img.setAttribute('src',fb); return; } // → per-gender placeholder
+  const w=img.parentNode; if(w){ img.onerror=null; w.innerHTML=golferSVG(); }   // → vector bust (last resort)
 }
 
 /* ---------- draft ---------- */
@@ -1491,7 +1523,7 @@ function buildHero(){
   const ovr=Math.round(buildPlayer().skill);
   const t=ovrTier(ovr);
   return $(`<div class="buildhero">
-    <div class="herofig">${golferSVG()}
+    <div class="herofig">${avatarHTML()}
       <div class="ovrbadge" style="border-color:${t.c};box-shadow:${t.glow}"><span class="n" style="color:${t.c}">${ovr}</span><span class="l" style="color:${t.c}">${t.lab}</span></div></div>
     <div class="radarwrap">${radarSVG()}</div></div>`);
 }
