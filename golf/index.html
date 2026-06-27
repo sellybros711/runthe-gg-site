@@ -203,6 +203,9 @@
   .attr:hover:not(:disabled){border-color:var(--gold)}
   .attr:active:not(:disabled){transform:scale(.985)}
   .attr:disabled{opacity:.34; cursor:not-allowed} .attr:disabled .take{display:none}
+  .attr.keyhole{border-color:var(--gold); background:linear-gradient(180deg,rgba(235,166,31,.16),rgba(235,166,31,.05))}
+  .attr.keyhole .lab{color:#f3e7c8}
+  .attr .keystar{flex:0 0 auto; color:var(--gold); font-size:12px; line-height:1; margin-right:-3px}
 
   .buildhero{display:flex; align-items:center; gap:20px; justify-content:center;
     background:linear-gradient(157deg, rgba(22,62,51,.66), rgba(8,30,24,.74));
@@ -1924,6 +1927,18 @@ function scrDraft(){
     tip.querySelector('button').onclick=()=>{LS.set('bag_tip_seen',true);render();};
     add(tip);
   }
+  if(S.daily && DAILY_COURSES[S.dailyCourse]){
+    const c=DAILY_COURSES[S.dailyCourse];
+    const topTags=dCourseSkillTop(c,3).map(x=>`<span class="tag" style="font-size:12px;color:var(--gold);border-color:var(--gold)">★ ${x.short}</span>`).join(' ');
+    const planNote={conservative:'You\'re playing it Safe — steady wins.',balanced:'Balanced plan — a complete build holds up.',aggressive:'You\'re Aggressive — these strengths fuel the low number (and protect against blow-ups).'}[S.dailyPlan]||'';
+    add($(`<div class="scout" style="margin-bottom:12px;border-color:var(--gold)">
+      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;justify-content:space-between">
+        <b style="color:var(--gold)">⛳ Drafting for ${esc(dShort(c.v))}</b>
+        <span class="small muted">${dCondLabel(S.dailyCond)} · Par ${c.par}</span></div>
+      <div style="margin-top:9px"><span class="small muted" style="text-transform:uppercase;letter-spacing:.1em;font-weight:800">Focus your build on</span>
+        <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">${topTags}</div></div>
+      <div class="small muted" style="margin-top:9px;line-height:1.4">These skills are weighted heaviest here — golfers strong in them score best. ${planNote} Look for the ★ on the skill tiles.</div></div>`));
+  }
   add(buildHero());   // full-width player card on top so both columns below carry content
   if(S.current || S.spinning){
     const g=S.current;
@@ -1947,10 +1962,12 @@ function scrDraft(){
   if(S.current && !S.spinning){
     left.appendChild($(`<div class="small muted" style="margin:10px 0 -2px;text-align:center;letter-spacing:.04em">Tap a skill to draft it into your bag</div>`));
     const grid=$(`<div class="attrs"></div>`);
+    const dailyKeys=(S.daily && DAILY_COURSES[S.dailyCourse])?new Set(dCourseSkillTop(DAILY_COURSES[S.dailyCourse],3).map(x=>x.k)):null;
     CATS.forEach(cat=>{
       const filled=!!S.slots[cat.k];
-      const b=$(`<button class="attr" ${filled?'disabled':''} aria-label="${filled?'Already filled: '+cat.short:'Draft '+cat.short+', rated '+S.current[cat.k]}">
-        <span class="lab">${cat.short}</span><span class="val">${S.current[cat.k]}</span>${filled?'':'<span class="take">Take</span>'}</button>`);
+      const key=dailyKeys&&dailyKeys.has(cat.k);
+      const b=$(`<button class="attr${key?' keyhole':''}" ${filled?'disabled':''} aria-label="${filled?'Already filled: '+cat.short:'Draft '+cat.short+', rated '+S.current[cat.k]+(key?' — key skill for today\'s course':'')}">
+        ${key?'<span class="keystar" aria-hidden="true">★</span>':''}<span class="lab">${cat.short}</span><span class="val">${S.current[cat.k]}</span>${filled?'':'<span class="take">Take</span>'}</button>`);
       if(!filled) b.onclick=()=>takeAttr(cat.k);
       grid.appendChild(b);
     });
