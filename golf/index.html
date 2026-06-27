@@ -286,6 +286,8 @@
   .dcard{display:grid; grid-template-columns:repeat(9,1fr); gap:4px}
   .dcell{background:var(--panel); border:1px solid var(--panelb); border-radius:7px; padding:5px 0 4px; text-align:center}
   .dcell.cur{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset}
+  .dcell.sel{border-color:var(--teal); box-shadow:0 0 0 1px var(--teal) inset}
+  .dcell.done{transition:transform .05s ease} .dcell.done:active{transform:scale(.94)}
   .dcell .dn{font-size:9px; color:var(--muted); font-weight:700; line-height:1}
   .dcell .ds{font-family:var(--mono); font-weight:800; font-size:15px; line-height:1.15}
   .dcell .ds .smk{display:inline-flex; align-items:center; justify-content:center; min-width:19px; height:19px; padding:0 1px; box-sizing:border-box; line-height:1}
@@ -1179,6 +1181,45 @@ function archetype(p){
   if(mx-mn<=10 && mean>=84) return {name:'The Complete Player', desc:'No weakness in the bag'};
   const top=vals.slice().sort((a,b)=>b.v-a.v)[0];
   const a=ARCH[top.k]; return {name:a[0], desc:a[1]};
+}
+// scouting report in golf-analytics terms — varies by the build's actual strength/weakness + ratings
+const SK_AREA={dist:'driving distance',acc:'driving accuracy',app:'approach play',sht:'short game',scr:'scrambling',bnk:'bunker play',put:'putting',clu:'composure'};
+const SK_GAIN={
+  dist:'overpowers the par 5s with serious Strokes Gained off the tee',
+  acc:'finds fairway after fairway and attacks from the short grass',
+  app:'stuffs irons tight for elite Strokes Gained: approach',
+  sht:'gets up-and-down from anywhere like a wizard around the greens',
+  scr:'a tour-leading scrambling rate that turns misses into pars',
+  bnk:'a sand-save percentage rivals would envy',
+  put:'rolls in everything inside 15 feet for top-tier Strokes Gained: putting',
+  clu:'a stone-cold closer when the pressure peaks' };
+const SK_LEAK={
+  dist:'leaves long irons in where rivals are flipping wedges',
+  acc:'sprays it off the tee and bleeds strokes from the rough and trees',
+  app:'misses too many greens for negative Strokes Gained: approach',
+  sht:'turns greenside misses into dropped shots',
+  scr:'a missed green is too often a missed par',
+  bnk:'lets bunkers become genuine hazards',
+  put:'leaves makeable putts on the lip as Strokes Gained: putting runs cold',
+  clu:'gives shots back down the stretch' };
+function scoutingNote(p){
+  let best={v:-1},worst={v:200};
+  CATS.forEach(cat=>{const v=p[cat.k]; if(v>best.v)best={v,k:cat.k,c:cat.short}; if(v<worst.v)worst={v,k:cat.k,c:cat.short};});
+  const holes=CATS.filter(c=>!S.slots[c.k]).length;
+  const strQ = best.v>=90?'World-class':best.v>=85?'Elite':best.v>=80?'Strong':'A modest bag whose best gear is';
+  const wkQ  = worst.v<65?'A glaring hole in their':worst.v<74?'A real soft spot in their':worst.v<82?'A slight dip in their':'Only a minor wobble in their';
+  const strC = best.v>=80 ? SK_GAIN[best.k] : 'their most reliable club, around tour average';
+  const wkC  = worst.v>=82 ? 'still comfortably tour-level, just the one club not quite elite' : SK_LEAK[worst.k];
+  let note=`<b style="color:var(--oncard)">Strength · ${best.c} (${best.v})</b>: ${strQ} ${SK_AREA[best.k]} — ${strC}. `
+         +`<b style="color:var(--oncard)">Weakness · ${worst.c} (${worst.v})</b>: ${wkQ} ${SK_AREA[worst.k]} — ${wkC}.`;
+  if(holes) note+=` ${holes} slot${holes>1?'s':''} unfilled — those play as a tour journeyman.`;
+  let read;
+  if(worst.v>=85) read='A remarkably complete bag — no number for the field to attack.';
+  else if(best.v-worst.v>=20) read='A boom-or-bust profile: it can go very low when the course rewards that strength, but the soft spot bites when it doesn’t.';
+  else if(worst.v<68) read='That weakness will leak real strokes against a field of complete players — fit it to the right courses.';
+  else if(worst.v<78) read='Solid across the board, but the weak link keeps it a notch below the pure ball-strikers.';
+  else read='A well-rounded game without one standout gear — steady more than spectacular.';
+  return note+` ${read}`;
 }
 
 
@@ -2095,13 +2136,7 @@ function scrBuild(){
   left.appendChild($(`<div style="text-align:center;margin-top:12px">
     <div style="font-family:var(--display);font-style:italic;font-size:26px;color:var(--gold);line-height:1">${arch.name}</div>
     <div class="small muted" style="margin-top:6px">${arch.desc}</div></div>`));
-  let best={v:-1},worst={v:200};
-  CATS.forEach(cat=>{const v=S.slots[cat.k]?S.slots[cat.k].value:REPLACEMENT; if(v>best.v)best={v,c:cat.short}; if(v<worst.v)worst={v,c:cat.short};});
-  const holes=CATS.filter(c=>!S.slots[c.k]).length;
-  let note=`Strength: ${best.c} (${best.v}). Weakness: ${worst.c} (${worst.v}).`;
-  if(holes) note+=` ${holes} slot${holes>1?'s':''} unfilled — they play as a tour journeyman.`;
-  note+=` Your weakest slots are where weekends get lost — the field is full of complete golfers.`;
-  left.appendChild($(`<div class="scout" style="margin-top:14px">${note}</div>`));
+  left.appendChild($(`<div class="scout" style="margin-top:14px">${scoutingNote(p)}</div>`));
   // RIGHT — scorecard + season pick
   right.appendChild($(`<h2 style="margin:0 0 8px">Your scorecard</h2>`));
   const card=$(`<div class="card-grid"></div>`);
@@ -3110,12 +3145,12 @@ function scheduleDailyAdvance(){
   _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround'&&S.dailyAuto) playDailyHole(null); }, dailyDwell());
 }
 function dailyPause(){ S.dailyAuto=false; clearDailyTimer(); render(); }
-function dailyResume(){ S.dailyAuto=true; render(); scheduleDailyAdvance(); }
+function dailyResume(){ S.dailyAuto=true; S.dailyViewHole=null; render(); scheduleDailyAdvance(); }
 function beginDailyRound(){
   const p=buildPlayer(); S.dailySkills={}; CATS.forEach(c=>S.dailySkills[c.k]=p[c.k]);
   S.dailyOvr=Math.round(p.skill); S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
-  S.dailyAuto=true; clearDailyTimer();
+  S.dailyAuto=true; S.dailyViewHole=null; clearDailyTimer();
   track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr});
   S.screen='dailyround'; render(); scheduleDailyAdvance();
 }
@@ -3123,7 +3158,8 @@ function playDailyHole(attack){
   const c=DAILY_COURSES[S.dailyCourse], i=S.dailyHoles.length; if(i>=18)return;
   const h=c.holes[i], a=(attack===true||attack===false)?attack:null;
   const toPar=dSimHole(h[0],h[1],S.dailyDiffs[i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,a,dHoleRng(S.dailySeed,S.dailyCourse,i,0));
-  S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,0x5407),S.dailySkills,{safe:a===false,attack:a===true})}); render();
+  S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,0x5407),S.dailySkills,{safe:a===false,attack:a===true})});
+  S.dailyViewHole=null; render();   // snap the shot log back to the hole just played
   scheduleDailyAdvance();   // keep the round flowing if auto-play is on
 }
 function autoFinishDaily(){ clearDailyTimer(); S.dailyAuto=false; const c=DAILY_COURSES[S.dailyCourse];
@@ -3166,11 +3202,17 @@ function scrDailyRound(){
   add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${dtp(total)}</span> <span class="small muted">through ${i}</span></div>`));
   const av=dTourAvg(c); const beating=(i>0)&&(total < av*(i/18));
   add($(`<div class="center small" style="margin:0 0 4px;color:${i===0?'var(--muted)':(beating?'#35d6a0':'#e9a23b')};font-weight:700">Tour average ${dAvgTxt(av)} — beat it to win${i>0?` · ${beating?'ahead of pace ✓':'behind pace'}`:''}</div>`));
+  const vh=(S.dailyViewHole!=null && S.dailyViewHole<played.length)?S.dailyViewHole:played.length-1;   // which hole's shot log is shown
   const strip=$(`<div class="dcard" style="max-width:600px;margin:6px auto 0"></div>`);
   for(let k=0;k<18;k++){ const pl=played[k], cur=(k===i&&!done);
-    strip.appendChild($(`<div class="dcell ${cur?'cur':''} ${pl?'done':''}"><div class="dn">${k+1}</div><div class="ds" style="color:${pl?dScoreCol(pl.toPar):'var(--muted)'}">${pl?dCellScore(pl):'·'}</div></div>`)); }
+    const cell=$(`<div class="dcell ${cur?'cur':''} ${pl?'done':''} ${(pl&&k===vh&&played.length>1)?'sel':''}"><div class="dn">${k+1}</div><div class="ds" style="color:${pl?dScoreCol(pl.toPar):'var(--muted)'}">${pl?dCellScore(pl):'·'}</div></div>`);
+    if(pl){ cell.style.cursor='pointer'; cell.setAttribute('role','button'); cell.setAttribute('aria-label',`Hole ${k+1} shot log`); cell.onclick=()=>{ S.dailyViewHole=(S.dailyViewHole===k)?null:k; render(); }; }
+    strip.appendChild(cell); }
   add(strip);
-  if(played.length){ add(dShotPanel(played[played.length-1])); }
+  if(played.length>1) add($(`<div class="center small muted" style="margin:5px 0 0;font-size:11px">Tap any played hole to replay its shot log</div>`));
+  if(played.length){ add(dShotPanel(played[vh]));
+    if(vh!==played.length-1){ const bk=$(`<button class="btn ghost" style="max-width:520px;margin:8px auto 0;font-size:12px;padding:8px">↩ Back to the latest hole</button>`); bk.onclick=()=>{ S.dailyViewHole=null; render(); }; add(bk); }
+  }
   add($(`<div style="height:10px"></div>`));
   if(!done){
     const h=c.holes[i], sig=c.sig.find(s=>s[0]===i+1);
