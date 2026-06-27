@@ -2037,8 +2037,26 @@ function scrSummary(){
   add($(`<div class="center" style="margin-bottom:6px">
     <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Net profit</div>
     <div class="mono" style="font-weight:800;font-size:38px;color:${netCol};margin-top:4px">${fmtSigned(ec.net)}</div>
-    <div class="small muted" style="margin-top:2px">${fmt(ec.gross)} won · −${fmt(ec.costs)} expenses</div>
-    <div class="small muted" style="margin-top:1px;font-size:11px;opacity:.8">caddie −${fmt(ec.caddie)} · agent −${fmt(ec.agent)} · travel −${fmt(ec.travel)} · tour costs −${fmt(ec.fixed)}</div></div>`));
+    <div class="small muted" style="margin-top:2px">${fmt(ec.gross)} won · −${fmt(ec.costs)} expenses</div></div>`));
+  // expandable itemized expense sheet (caddie / agent / travel / tour overhead)
+  const expWrap=$(`<div class="center" style="margin:0 0 8px"></div>`);
+  const expBtn=$(`<button class="btn ghost" style="width:auto;font-size:11px;padding:6px 13px">${S.showExpenses?'Hide expense breakdown ▴':'See expense breakdown ▾'}</button>`);
+  expBtn.onclick=()=>{S.showExpenses=!S.showExpenses;render();};
+  expWrap.appendChild(expBtn);
+  if(S.showExpenses){
+    const row=(k,v,col,strong)=>`<div style="display:flex;justify-content:space-between;gap:14px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.06)"><span class="small ${strong?'':'muted'}" style="text-align:left${strong?';font-weight:800':''}">${k}</span><span class="mono" style="color:${col};white-space:nowrap${strong?';font-weight:800':''}">${v}</span></div>`;
+    const items=[
+      row('Prize money won','+'+fmt(ec.gross),'#35d6a0'),
+      row('Caddie · 10% of winnings','−'+fmt(ec.caddie),'#E14A33'),
+      row('Agent · 8% of winnings','−'+fmt(ec.agent),'#E14A33'),
+      row(`Travel · ${t.played} event${t.played===1?'':'s'} × $22k`,'−'+fmt(ec.travel),'#E14A33'),
+      row('Tour overhead · coach, equipment, taxes, team','−'+fmt(ec.fixed),'#E14A33'),
+      row('Total expenses','−'+fmt(ec.costs),'#E14A33',true),
+      `<div style="display:flex;justify-content:space-between;gap:14px;padding:8px 2px 2px"><span class="small" style="font-weight:800">Net profit</span><span class="mono" style="color:${netCol};font-weight:800">${fmtSigned(ec.net)}</span></div>`
+    ].join('');
+    expWrap.appendChild($(`<div class="scout" style="max-width:460px;margin:8px auto 0;text-align:left">${items}</div>`));
+  }
+  add(expWrap);
   if(S.freshBadges&&S.freshBadges.length){
     const got=ACHS.filter(a=>S.freshBadges.includes(a.id));
     const chips=got.map(a=>`<span class="tag" style="color:var(--gold);border-color:var(--gold)">${a.e} ${a.t}</span>`).join(' ');
@@ -2050,23 +2068,35 @@ function scrSummary(){
   tilesA.appendChild(tile('Earnings',fmt(t.money),true));
   tilesA.appendChild($(`<div class="tile"><div class="k">Profit</div><div class="v" style="color:${pcol}">${fmtSigned(ec.net)}</div></div>`));
   add(tilesA);
-  const tilesB=$(`<div class="tiles" style="grid-template-columns:repeat(3,1fr);margin-top:0"></div>`);
+  const tilesB=$(`<div class="tiles" style="grid-template-columns:repeat(4,1fr);margin-top:0"></div>`);
   const statTile=(k,v)=>$(`<div class="tile"><div class="k">${k}</div><div class="v" style="font-size:19px;white-space:nowrap">${v}</div></div>`);
   tilesB.appendChild(statTile('Tour Rank',fedexRank+' / '+N));
   tilesB.appendChild(statTile("Top 10's",t.top10+''));
   tilesB.appendChild(statTile('Wins',t.wins+''));
+  tilesB.appendChild(statTile('Majors',t.majors+''));
   add(tilesB);
-  // year-over-year skill changes (vs the build you ran last year)
+  // the actual tournaments won this season (majors flagged in gold)
+  const wonThisSeason=[];
+  (S.season.results||[]).forEach(r=>{ const meR=r.order&&r.order.find(o=>o.p&&o.p.you); if(meR&&meR.pos===1) wonThisSeason.push({name:r.evt.name,major:!!r.evt.major}); });
+  if(wonThisSeason.length){
+    add($(`<h2 class="center" style="margin:14px 0 8px;font-size:15px">Tournaments won this season</h2>`));
+    const wrap=$(`<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:4px"></div>`);
+    wonThisSeason.forEach(w=>wrap.appendChild($(`<span class="tag" style="font-size:12px;padding:7px 12px;${w.major?'color:var(--gold);border-color:var(--gold)':''}">🏆 ${w.name}${w.major?' · MAJOR':''}</span>`)));
+    add(wrap);
+  }
+  // year-over-year skill changes — only once decline kicks in (Year 16+), since
+  // before that nothing moves and every tile would read 0. Shows the new rating
+  // with the change (e.g. red −1) beside it.
   const ss=(!S.daily && S.career && S.career.skillSeasons)||[];
-  if(ss.length>=2){
+  if(ss.length>=2 && (S.year||1) > DECLINE_START_YEAR){
     const cur=ss[ss.length-1].skills, prev=ss[ss.length-2].skills, py=ss[ss.length-2].year;
     add($(`<h2 class="center" style="margin:14px 0 8px;font-size:15px">Skill changes vs Year ${py}</h2>`));
     const dt=$(`<div class="tiles four"></div>`);
     CATS.forEach(c=>{
-      const d=(cur[c.k]||0)-(prev[c.k]||0);
-      const col=d>0?'#35d6a0':(d<0?'#E14A33':'var(--muted)');
-      const txt=d===0?'· 0':(d>0?'▲ +'+d:'▼ '+d);
-      dt.appendChild($(`<div class="tile"><div class="k">${c.short}</div><div class="v" style="color:${col};font-size:18px">${txt}</div></div>`));
+      const nv=cur[c.k]||0, d=nv-(prev[c.k]||0);
+      const dcol=d>0?'#35d6a0':(d<0?'#E14A33':'var(--muted)');
+      const dtxt=d===0?'·0':(d>0?'+'+d:'−'+Math.abs(d));
+      dt.appendChild($(`<div class="tile"><div class="k">${c.short}</div><div class="v" style="font-size:20px">${nv} <span style="color:${dcol};font-size:13px;font-weight:700">${dtxt}</span></div></div>`));
     });
     add(dt);
   }
