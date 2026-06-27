@@ -1,1 +1,4 @@
 node_modules/
+
+# avatar checker output (regenerable via check-avatars.mjs --out)
+missing.txt
