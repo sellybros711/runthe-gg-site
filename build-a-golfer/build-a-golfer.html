@@ -229,6 +229,14 @@
   .slot .v{font-family:var(--mono); font-weight:800; font-size:15px; color:var(--gold); min-width:30px; text-align:right}
   .slot .slotdec{font-family:var(--mono); font-weight:800; font-size:12px; color:#e07a5f; flex:0 0 auto; letter-spacing:-.02em}
   .slot.empty .v, .slot.empty .lab{color:var(--muted)}
+  .authbox{max-width:360px; margin:2px auto 0}
+  .autherr{color:#e98a72; font-size:13px; font-weight:600; margin-top:9px}
+  .author{display:flex; align-items:center; gap:10px; margin:13px 0}
+  .author:before, .author:after{content:''; flex:1; height:1px; background:rgba(244,227,201,.16)}
+  .author span{color:var(--muted); font-size:10.5px; letter-spacing:.16em; text-transform:uppercase}
+  .gbtn{display:flex; align-items:center; justify-content:center; gap:9px; background:#fff; color:#1f1f1f; border:none; font-weight:700}
+  .gbtn svg{width:17px; height:17px; flex:0 0 auto}
+  .profhdr .avatarfig{width:84px; height:84px}
 
   .ovr{display:flex; align-items:baseline; gap:10px; justify-content:center; margin:4px 0}
   .ovr .num{font-family:var(--mono); font-weight:800; font-size:52px; color:var(--gold); line-height:1}
@@ -1022,6 +1030,7 @@ function render(){
   RT=screen;
   if(S.overlay==='rules') overlayRules(screen);
   if(S.overlay==='record') overlayRecord(screen);
+  if(S.overlay==='account') overlayAccount(screen);
   if(S.overlay==='leaderboard') overlayLeaderboard(screen);
   if(S.overlay==='dailydone') overlayDailyDone(screen);
   if(S.overlay==='confirmReset') overlayConfirmReset(screen);
@@ -1072,12 +1081,19 @@ function overlayRecord(screen){
   const badgeGrid=ACHS.map(a=>{const on=!!badges[a.id]; return `<div style="display:flex;align-items:center;gap:8px;background:#0a2740;border:1px solid var(--line);border-radius:11px;padding:9px 10px;opacity:${on?1:.38}">
       <span style="font-size:20px;filter:${on?'none':'grayscale(1)'}">${a.e}</span>
       <span style="min-width:0"><div style="font-weight:800;font-size:12.5px;color:var(--oncard)">${a.t}</div><div class="small muted" style="font-size:10.5px;line-height:1.25">${a.d}</div></span></div>`;}).join('');
-  const acctCard = sbSignedIn()
-    ? `<div><b style="color:var(--gold)">${esc(sbUsername||'Signed in')}</b><div class="small muted" style="margin-top:2px">${sbUsername?'Your seasons post to the global leaderboard.':'Set a username on RunThe.GG to appear on the board.'}</div></div>${sbUsername?'':`<a class="btn gold" href="https://runthe.gg/" target="_blank" rel="noopener" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap;text-decoration:none">RunThe.GG ↗</a>`}`
-    : `<div><b style="color:var(--oncard)">Guest</b><div class="small muted" style="margin-top:2px">Your record lives on this device. Sign in with your RunThe.GG account to sync &amp; hit the global board.</div></div><a class="btn gold" href="https://runthe.gg/" target="_blank" rel="noopener" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap;text-decoration:none">Sign in ↗</a>`;
+  const acctCard = !sbSignedIn()
+    ? `<div><b style="color:var(--oncard)">Playing as guest</b><div class="small muted" style="margin-top:2px">Sign in to sync your record and post to the global leaderboards.</div></div>
+       <div class="mini" style="margin:0;width:auto;flex:0 0 auto;gap:8px"><button class="btn ghost" id="rec-signin" style="width:auto;padding:8px 12px;font-size:12px">Sign in</button><button class="btn gold" id="rec-signup" style="width:auto;padding:8px 12px;font-size:12px">Create account</button></div>`
+    : (sbUsername
+      ? `<div><b style="color:var(--gold)">${esc(sbUsername)}</b><div class="small muted" style="margin-top:2px">Signed in · finished seasons post to the global board.</div></div><button class="btn ghost" id="rec-signout" style="width:auto;padding:8px 12px;font-size:12px">Sign out</button>`
+      : `<div><b style="color:var(--gold)">Almost there</b><div class="small muted" style="margin-top:2px">Pick a username to appear on the leaderboards.</div></div><button class="btn gold" id="rec-setuser" style="width:auto;padding:8px 12px;font-size:12px">Pick username</button>`);
+  const careersHTML=(sbProfile&&sbProfile.careers&&sbProfile.careers.length)
+    ? `<h2 style="margin:16px 0 8px">Your best careers</h2><div class="board">${sbProfile.careers.slice(0,3).map((cc,i)=>`<div class="lb" style="grid-template-columns:28px 1fr auto"><span class="pos">${i===0?'🏆':i+1}</span><span class="pl">${cc.seasons} season${cc.seasons>1?'s':''} · ${cc.wins}W · ${cc.majors} major${cc.majors===1?'':'s'}</span><span class="mny" style="color:var(--gold)">${fmt(cc.earn)}</span></div>`).join('')}</div>`
+    : '';
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Player</h3>
+    <div class="profhdr" style="display:flex;flex-direction:column;align-items:center;gap:6px;margin:0 0 12px">${avatarHTML()}<div style="font-family:var(--serif);font-weight:700;font-size:18px;color:var(--oncard)">${esc(sbUsername||S.name||'Your Golfer')}</div>${(sbSignedIn()&&sbUsername)?'<div class="small muted" style="margin-top:-2px">RunThe.GG member</div>':''}</div>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">${acctCard}</div>
     <div class="sbar" style="margin-bottom:14px">
       <div class="sstat wide"><div class="k">Best net profit</div><div class="v" style="color:${(c.bestNet??0)>=0?'#35d6a0':'#E14A33'};font-size:22px">${c.bestNet==null?'—':fmtSigned(c.bestNet)}</div></div>
@@ -1086,14 +1102,67 @@ function overlayRecord(screen){
       <div class="sstat"><div class="k">Best OVR</div><div class="v">${c.bestOvr||'—'}</div></div>
       <div class="sstat"><div class="k">Wins</div><div class="v">${c.wins}</div></div>
     </div>
-    <h2 style="margin:0 0 8px">Hall of Fame · your top builds</h2>
+    ${careersHTML}
+    <h2 style="margin:16px 0 8px">Hall of Fame · your top builds</h2>
     <div class="board">${rows}</div>
     <h2 style="margin:16px 0 8px">Achievements · ${earnedCount}/${ACHS.length}</h2>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">${badgeGrid}</div>
     <div style="height:14px"></div>
     <button class="btn red">Close</button></div>`);
+  const wire=(id,fn)=>{ const bb=ov.querySelector(id); if(bb) bb.onclick=fn; };
+  wire('#rec-signin',()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();});
+  wire('#rec-signup',()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();});
+  wire('#rec-setuser',()=>{S.overlay='account';S.acctMode='username';S.acctErr='';render();});
+  wire('#rec-signout',async()=>{ await sbSignOut(); render(); });
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  screen.appendChild(ov);
+}
+const GOOGLE_G=`<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.4 5.4 2.5 13.3l7.8 6.1C12.2 13.2 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8C43.9 38 46.5 31.8 46.5 24.5z"/><path fill="#FBBC05" d="M10.3 19.4l-7.8-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.5 10.7l7.8-6.1c-.5-1.4-.8-2.9-.8-4.6s.3-3.2.8-4.6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.7 2.3-7.7 2.3-6.4 0-11.8-3.7-13.7-8.9l-7.8 6.1C6.4 42.6 14.6 48 24 48z"/></svg>`;
+function overlayAccount(screen){
+  // signed in + has a username → the profile lives on the Player overlay
+  if(sbSignedIn() && sbUsername && S.acctMode!=='username'){ S.overlay='record'; render(); return; }
+  const mode = sbSignedIn() ? 'username' : (S.acctMode==='signup'?'signup':'signin');
+  const err=S.acctErr||''; const busy=!!S.acctBusy;
+  const title=mode==='username'?'Pick a username':(mode==='signup'?'Create your account':'Sign in');
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Account">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>${title}</h3><div class="authbox"></div></div>`);
+  const box=ov.querySelector('.authbox');
+  const go=async(fn)=>{ if(S.acctBusy)return; S.acctErr=''; S.acctBusy=true; render();
+    try{ await fn(); }catch(e){ S.acctBusy=false; S.acctErr=e.message||'Something went wrong.'; render(); return; }
+    S.acctBusy=false; if(sbSignedIn()&&sbUsername) S.overlay='record'; render(); };
+  if(mode==='username'){
+    box.innerHTML=`<p class="lede" style="margin:0 0 10px;text-align:left">Choose how you'll show up on the leaderboards — 3–20 letters or numbers.</p>
+      <input class="name" id="au-user" maxlength="20" placeholder="e.g. BirdieKing" autocomplete="off">
+      ${err?`<div class="autherr">${esc(err)}</div>`:''}
+      <button class="btn goldfill" id="au-set" style="margin-top:10px" ${busy?'disabled':''}>${busy?'Saving…':'Save username'}</button>
+      <button class="btn ghost" id="au-out" style="margin-top:8px">Sign out</button>`;
+    box.querySelector('#au-set').onclick=()=>{ const v=box.querySelector('#au-user').value; if(!v.trim()){S.acctErr='Enter a username.';render();return;} go(()=>sbSetUsername(v)); };
+    box.querySelector('#au-out').onclick=()=>go(()=>sbSignOut());
+  } else {
+    const isUp=mode==='signup';
+    box.innerHTML=`<button class="btn gbtn" id="au-google" ${busy?'disabled':''}>${GOOGLE_G}Continue with Google</button>
+      <div class="author"><span>or</span></div>
+      ${isUp?`<input class="name" id="au-email" type="email" placeholder="Email" autocomplete="email">`
+            :`<input class="name" id="au-id" placeholder="Username or email" autocomplete="username">`}
+      <input class="name" id="au-pass" type="password" placeholder="Password" autocomplete="${isUp?'new-password':'current-password'}" style="margin-top:8px">
+      ${S.acctNote?`<div class="small" style="color:#35d6a0;margin-top:9px">${esc(S.acctNote)}</div>`:''}
+      ${err?`<div class="autherr">${esc(err)}</div>`:''}
+      <button class="btn goldfill" id="au-go" style="margin-top:10px" ${busy?'disabled':''}>${busy?'…':(isUp?'Create account':'Sign in')}</button>
+      <div class="small muted center" style="margin-top:13px">${isUp?'Already have an account?':'New here?'} <a href="#" id="au-swap" style="color:var(--gold);font-weight:700">${isUp?'Sign in':'Create one'}</a></div>`;
+    box.querySelector('#au-google').onclick=()=>go(()=>sbSignInGoogle());
+    box.querySelector('#au-go').onclick=async()=>{ const pass=box.querySelector('#au-pass').value;
+      if(isUp){ const email=box.querySelector('#au-email').value; if(!email.trim()||!pass){S.acctErr='Enter an email and password.';render();return;}
+        if(S.acctBusy)return; S.acctErr='';S.acctNote='';S.acctBusy=true;render();
+        try{ const session=await sbSignUp(email,pass); S.acctBusy=false;
+          if(!session && !sbSignedIn()){ S.acctMode='signin'; S.acctNote='Account created — check your email to confirm, then sign in.'; }
+          render();
+        }catch(e){ S.acctBusy=false; S.acctErr=e.message||'Could not create that account.'; render(); } }
+      else { const id=box.querySelector('#au-id').value; if(!id.trim()||!pass){S.acctErr='Enter your login and password.';render();return;} go(()=>sbSignInPassword(id,pass)); } };
+    box.querySelector('#au-swap').onclick=(e)=>{ e.preventDefault(); S.acctMode=isUp?'signin':'signup'; S.acctErr=''; S.acctNote=''; render(); };
+  }
+  ov.querySelector('.x').onclick=()=>{ S.overlay=null; S.acctErr=''; S.acctNote=''; render(); };
   screen.appendChild(ov);
 }
 function overlayLeaderboard(screen){
@@ -1131,15 +1200,15 @@ function overlayLeaderboard(screen){
         : `<div class="small muted center" style="padding:18px 8px">Play a season to bank career earnings.</div>`;
     }
   }
-  // sign-in banner reflects the shared RunThe.GG session
-  const signCTA=`<a class="btn gold" href="https://runthe.gg/" target="_blank" rel="noopener" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap;text-decoration:none">Sign in ↗</a>`;
+  // sign-in banner reflects the shared RunThe.GG session — opens the in-game account flow
+  const signCTA=`<button class="btn gold" id="lb-signin" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap">Sign in</button>`;
   let banner;
   if(sbSignedIn() && sbUsername){
     banner=`<div><b style="color:var(--gold)">Signed in as ${esc(sbUsername)}</b><div class="small muted" style="margin-top:2px">Your finished seasons post to the global board automatically.</div></div>`;
   } else if(sbSignedIn()){
-    banner=`<div><b style="color:var(--gold)">Pick a username</b><div class="small muted" style="margin-top:2px">Set a username on RunThe.GG to appear on the board.</div></div>${signCTA}`;
+    banner=`<div><b style="color:var(--gold)">Pick a username</b><div class="small muted" style="margin-top:2px">Set a username to appear on the board.</div></div>${signCTA}`;
   } else {
-    banner=`<div><b style="color:var(--gold)">Compete on the global board</b><div class="small muted" style="margin-top:2px">Sign in with your RunThe.GG account — finished seasons then post here automatically.${globalOk?'':' Global board is offline right now — showing your own results.'}</div></div>${signCTA}`;
+    banner=`<div><b style="color:var(--gold)">Compete on the global board</b><div class="small muted" style="margin-top:2px">Sign in or create a free RunThe.GG account — finished seasons then post here automatically.${globalOk?'':' Global board is offline right now — showing your own results.'}</div></div>${signCTA}`;
   }
   const seg=(id,lab)=>`<button class="btn ${tab===id?'gold':'ghost'} lbtab" data-tab="${id}" style="font-size:12px;padding:8px 12px;width:auto">${lab}</button>`;
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Leaderboard">
@@ -1155,6 +1224,7 @@ function overlayLeaderboard(screen){
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
   ov.querySelectorAll('.lbtab').forEach(b=>b.onclick=()=>{S.lbTab=b.dataset.tab;render();});
+  const lbSign=ov.querySelector('#lb-signin'); if(lbSign) lbSign.onclick=()=>{S.overlay='account';S.acctMode=sbSignedIn()?'username':'signin';S.acctErr='';render();};
   screen.appendChild(ov);
 }
 function overlayConfirmReset(screen){
@@ -2555,7 +2625,7 @@ function moneyRow(r,pos,you){return $(`<div class="lb ${you?'you':''}" style="gr
    signed into RunThePitch is the same identity here. */
 const SB_URL='https://jcrrxqfpdelrmvjuihnm.supabase.co';
 const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
-let sb=null, sbUser=null, sbUsername=null, lbCache=null, _pendingSeason=null;
+let sb=null, sbUser=null, sbUsername=null, sbProfile=null, lbCache=null, _pendingSeason=null;
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function sbSignedIn(){ return !!sbUser; }
 function sbInit(){
@@ -2567,12 +2637,65 @@ function sbInit(){
   }catch(e){ sb=null; }
 }
 async function sbApply(session){
-  sbUser=(session&&session.user)||null; sbUsername=null;
+  sbUser=(session&&session.user)||null; sbUsername=null; sbProfile=null;
   if(sbUser&&sb){
     try{ const {data}=await sb.from('profiles').select('username').eq('id',sbUser.id).maybeSingle(); sbUsername=(data&&data.username)||null; }catch(e){}
+    await sbLoadProfile();
+    if(sbUser) S.acctMode=sbUsername?'profile':'username';   // drop to username picker if none yet
     if(_pendingSeason){ const s=_pendingSeason; _pendingSeason=null; sbSubmitSeason(s); }
   }
-  if(S.overlay==='record'||S.overlay==='leaderboard') render();
+  if(S.overlay==='record'||S.overlay==='leaderboard'||S.overlay==='account') render();
+}
+/* ---- in-game auth (shared RunThe.GG accounts) ---- */
+async function sbSignUp(email,password){
+  if(!sb) throw new Error('Accounts are offline right now — try again shortly.');
+  const {data,error}=await sb.auth.signUp({email:String(email).trim(),password});
+  if(error) throw new Error(error.message||'Could not create that account.');
+  return !!(data&&data.session);   // false → email confirmation is required first
+}
+async function sbSignInPassword(idOrEmail,password){
+  if(!sb) throw new Error('Accounts are offline right now — try again shortly.');
+  let email=String(idOrEmail).trim();
+  if(email && email.indexOf('@')<0){                       // a username → resolve its email
+    const {data,error}=await sb.rpc('email_for_username',{p_username:email});
+    if(error||!data) throw new Error('No account with that username.');
+    email=data;
+  }
+  const {error}=await sb.auth.signInWithPassword({email,password});
+  if(error) throw new Error(/invalid/i.test(error.message||'')?'Wrong email/username or password.':(error.message||'Sign-in failed.'));
+}
+async function sbSignInGoogle(){
+  if(!sb) throw new Error('Accounts are offline right now — try again shortly.');
+  const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname}});
+  if(error) throw new Error(error.message||'Google sign-in failed.');
+}
+async function sbSignOut(){ if(sb){ try{ await sb.auth.signOut(); }catch(e){} } sbUser=null; sbUsername=null; sbProfile=null; lbCache=null; }
+async function sbSetUsername(name){
+  if(!sb||!sbUser) throw new Error('Sign in first.');
+  name=String(name).trim();
+  const {data:ok,error:e1}=await sb.rpc('username_available',{p_username:name});
+  if(e1) throw new Error('That username isn’t allowed — try 3–20 letters/numbers.');
+  if(ok===false) throw new Error('That username is taken.');
+  const {error}=await sb.rpc('set_username',{p_username:name});
+  if(error) throw new Error(error.message||'Could not set that username.');
+  sbUsername=name;
+}
+async function sbLoadProfile(){
+  if(!sb||!sbUser){ sbProfile=null; return; }
+  try{
+    const {data}=await sb.from('runtour_scores')
+      .select('season_earnings,season_net,career_id,wins,majors,ovr,year,golfer_name').eq('user_id',sbUser.id);
+    const rows=data||[];
+    const bestSeason=rows.reduce((m,r)=>(!m||r.season_earnings>m.season_earnings)?r:m,null);
+    const byCareer={};
+    rows.forEach(r=>{ const k=r.career_id||('solo:'+r.year+':'+r.ovr);
+      const c=byCareer[k]||(byCareer[k]={earn:0,wins:0,majors:0,seasons:0,golfer:r.golfer_name});
+      c.earn+=r.season_earnings||0; c.wins+=r.wins||0; c.majors+=r.majors||0; c.seasons++; });
+    const careers=Object.values(byCareer).sort((a,b)=>b.earn-a.earn);
+    sbProfile={ seasons:rows.length, bestSeason, careers,
+      totalEarn:rows.reduce((s,r)=>s+(r.season_earnings||0),0),
+      wins:rows.reduce((s,r)=>s+(r.wins||0),0), majors:rows.reduce((s,r)=>s+(r.majors||0),0) };
+  }catch(e){ sbProfile=null; }
 }
 async function sbSubmitSeason(s){
   if(!sb) return;
