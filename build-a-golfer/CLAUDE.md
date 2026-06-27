@@ -847,6 +847,20 @@ allows Google Fonts, or self-host Anton.*
   archetype+course avg — real DataGolf hole-scoring data could refine that later (needs DG_KEY
   + server side), or approximate via hole-archetype variance. Deployed to /golf.
 
+- 2026-06-27: **Per-hole variance pass — risk holes play dramatically, standard holes
+  steady.** Added `DCFG.VAR` (variance multiplier by archetype): p4m 0.88 / p3s 0.95 /
+  p3m 0.98 / p5l 1.00 / p5m 1.08 / p4l 1.12 / p3l 1.14 / p5r 1.24 / p4d 1.30. `dSimHole`
+  multiplies sd by `VAR[dArch(par,yards)]`. Net overall SD held at ~2.94 (LATENT_S back to
+  0.92 — the profile is variance-neutral, just redistributed). Result: a mid par-4 is 71%
+  par (almost no drama); a drivable par-4 / reachable par-5 / long par-3 spread BOTH tails
+  (eagle 1-2% + birdie ~25% AND double 3-4% + triple 1-2%) — hole CHARACTER now drives the
+  outcome shape. Re-derived per-course `cdiff` (Monte-Carlo inversion) so OVR-80 still
+  centers on each tour average — verified dead-on (Augusta 1.80, Oakmont 4.50, Kapalua
+  -1.99, etc.); win80 ~44-56%, win86 ~62-73%. Lineups still diverge 9/18. Deployed to /golf.
+  DATAGOLF: NOT needed for this — archetype variance covers it. Real per-hole DG scoring
+  distributions (the exact birdie/par/bogey/double rate of each specific hole) would only be
+  a fidelity refinement; drop-in ready (course difficulty is already a per-course constant).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
