@@ -2948,39 +2948,56 @@ function dCellScore(pl){ return `<span class="${dMarkClass(pl.toPar)}">${pl.par+
 function dResultLong(par,toPar){ return toPar<=-3?'Albatross':toPar===-2?'Eagle':toPar===-1?'Birdie':toPar===0?'Par':toPar===1?'Bogey':toPar===2?'Double Bogey':'Triple Bogey+'; }
 function dFeet(ft){ let f=Math.floor(ft),inch=Math.round((ft-f)*12); if(inch>=12){f++;inch=0;} return f+' ft '+inch+' in.'; }
 function dPick(rng,a){ return a[Math.floor(rng()*a.length)]; }
-// Expand a known stroke count into a plausible shot-by-shot narrative (PGA play-by-play style).
-// The SCORE is already fixed by the engine; this is just realistic flavor, seeded per hole.
-function dShotSeq(par,yards,strokes,rng,opts){
-  opts=opts||{}; const toPar=strokes-par; const sh=[];
-  let P; if(toPar<0)P=(rng()<0.78?1:2); else if(toPar===0)P=(rng()<0.8?2:1); else P=(rng()<0.55?2:(rng()<0.78?1:3));
-  const reachFloor=par===3?1:(par===4?1:2); P=Math.max(1,Math.min(3,P));
-  let greenReach=strokes-P; if(greenReach<reachFloor){greenReach=reachFloor;P=strokes-greenReach;} if(P<1){P=1;greenReach=strokes-1;}
-  const sides=['left','right','center']; let dist=yards, ftToHole=null;
+// Expand a known stroke count into a plausible shot-by-shot narrative (PGA play-by-play style),
+// SPECIFIC TO THE GOLFER: each shot's lie/proximity is biased by the relevant skill, and the
+// strokes lost over par are attributed to the build's weakest area — so a low-accuracy golfer is
+// visibly in the rough, a weak ball-striker misses greens, a poor putter three-putts. The SCORE
+// itself is already fixed by the engine; this only narrates how those strokes happened.
+function dSk(sk,k){ return (sk&&sk[k]!=null)?sk[k]:80; }                    // skill 0-99 (80 = tour avg)
+function dSkQ(v){ return Math.max(0.03,Math.min(0.97,(v-58)/40)); }          // competence 0..1
+function dBallQ(sk){ const a=dSk(sk,'app'),c=dSk(sk,'acc'); return dSkQ(0.55*Math.min(a,c)+0.25*((a+c)/2)+0.20*dSk(sk,'scr')); }
+function dShotSeq(par,yards,strokes,rng,sk,opts){
+  opts=opts||{}; sk=sk||{}; const toPar=strokes-par; const sh=[]; const sides=['left','right','center'];
+  // decompose strokes into shots-to-green (greenReach) + putts (P); attribute extras to weak skills
+  let greenReach,P;
+  if(toPar>0){ const extra=toPar; let wPutt=Math.pow(1-dSkQ(dSk(sk,'put')),1.5), wBall=Math.pow(1-dBallQ(sk),1.5)+0.04; let pe=0,be=0;
+    for(let k=0;k<extra;k++){ if((rng()*(wPutt+wBall)<wPutt)&&pe<2)pe++; else be++; }
+    greenReach=(par-2)+be; P=2+pe;
+  } else if(toPar===0){ const scr=Math.max(0,Math.min(0.5,0.08+0.34*dSkQ(dSk(sk,'scr'))-0.20*dSkQ(dSk(sk,'app')))); if(rng()<scr){greenReach=(par-2)+1;P=1;} else {greenReach=par-2;P=2;} }
+  else { P=1; greenReach=strokes-1; }
+  const floor=par===3?1:(par===4?1:2);
+  greenReach=Math.max(floor,Math.min(strokes-1,greenReach)); P=strokes-greenReach;
+  let dist=yards, ftToHole=null; const regReach=par-2;
   for(let s=0;s<greenReach;s++){ const last=(s===greenReach-1);
     if(s===0&&par!==3){
-      let drive=Math.round(par===5?(292+rng()*40):(272+rng()*42)); if(opts.safe)drive-=Math.round(12+rng()*16);
-      drive=Math.min(drive,yards-20); let lie=rng()<0.62?'fairway':(rng()<0.5?'right rough':'left rough'); if(opts.attack&&rng()<0.3)lie=rng()<0.5?'fairway bunker':'right rough';
-      dist=Math.max(10,yards-drive);
-      if(last){ ftToHole=18+rng()*34; sh.push({d:`Drive ${drive} yds to the green, ${dFeet(ftToHole)} to hole`}); }
+      const accQ=dSkQ(dSk(sk,'acc')), distQ=dSkQ(dSk(sk,'dist'));
+      let drive=Math.round((par===5?284:266)+distQ*50+rng()*16); if(opts.safe)drive-=Math.round(10+rng()*14);
+      drive=Math.min(drive,yards-20); dist=Math.max(10,yards-drive);
+      const fairway=rng()<(0.26+0.64*accQ);
+      let lie=fairway?'the fairway':dPick(rng, accQ<0.32?['the right rough','the left rough','a fairway bunker','the trees']:['the right rough','the left rough']);
+      if(last){ ftToHole=14+rng()*28; sh.push({d:`Drive ${drive} yds to the green, ${dFeet(ftToHole)} to hole`}); }
       else sh.push({d:`Drive ${drive} yds to ${lie}, ${Math.round(dist)} yds to hole`});
     } else if(par===3&&s===0){
-      if(last){ ftToHole=(toPar<0?7+rng()*22:13+rng()*32); sh.push({d:`Tee shot to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`}); }
-      else { sh.push({d:`Tee shot to ${dPick(rng,['greenside bunker','left rough','right fringe','front collar'])}, ${Math.round(18+rng()*30)} ft to hole`}); dist=22; }
+      const appQ=dSkQ(dSk(sk,'app'));
+      if(last){ ftToHole=Math.max(3,(toPar<0?6+rng()*16:(30-18*appQ)+rng()*20)); sh.push({d:`Tee shot to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`}); }
+      else { sh.push({d:`Tee shot ${dPick(rng,appQ<0.4?['into the greenside bunker','into the left rough','long over the green']:['just off the right fringe','into the front collar'])}, ${Math.round(16+rng()*26)} ft to hole`}); dist=22; }
     } else {
-      if(last){ const fromYds=Math.round(dist); ftToHole=(toPar<0?6+rng()*20:14+rng()*34);
-        sh.push({d:`${fromYds} yds to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`});
-      } else {
-        if(dist<=70){ const leaveY=Math.max(12,Math.round(dist-(14+rng()*22)));
-          sh.push({d:`Pitch to ${dPick(rng,['fairway','left rough','greenside bunker','right rough'])}, ${leaveY} yds to hole`}); dist=leaveY;
-        } else { let adv=Math.max(40,Math.min(dist-30,Math.round(60+rng()*180))); dist=Math.max(24,dist-adv);
-          sh.push({d:`${adv} yds to ${rng()<0.6?'fairway':(rng()<0.5?'right rough':'left rough')}, ${Math.round(dist)} yds to hole`}); }
-      }
+      const fromYds=Math.round(dist), appQ=dSkQ(dSk(sk,'app'));
+      const isLayup=(dist>70 && s<regReach-1);
+      if(last){
+        if(s>=regReach){ const sgQ=dSkQ(0.5*dSk(sk,'sht')+0.3*dSk(sk,'scr')+0.2*dSk(sk,'bnk'));   // recovery → short game decides proximity
+          ftToHole=Math.max(2,(22-13*sgQ)+rng()*18); sh.push({d:`${dist<35?'Chip':'Pitch'} to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`}); }
+        else { ftToHole=Math.max(2.5,(toPar<0?7+rng()*13:(33-20*appQ)+rng()*18)); sh.push({d:`${fromYds} yds to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`}); }   // approach → approach skill
+      } else if(isLayup){ let adv=Math.max(40,Math.min(dist-30,Math.round(70+rng()*160))); dist=Math.max(26,dist-adv);
+        sh.push({d:`${adv} yds to ${rng()<0.6?'the fairway':'the rough'}, ${Math.round(dist)} yds to hole`});
+      } else { const missLie=dPick(rng,['into the greenside bunker','into the right rough','into the left rough','long over the green','short into the rough']);   // missed green (weak ball-striking)
+        dist=Math.round(16+rng()*22); sh.push({d:`${fromYds} yds — missed the green ${missLie}`}); }
     }
   }
   if(ftToHole==null)ftToHole=20+rng()*20;
-  for(let pi=0;pi<P;pi++){ const lastPutt=(pi===P-1);
+  for(let pi=0;pi<P;pi++){ const lastPutt=(pi===P-1), putQ=dSkQ(dSk(sk,'put'));
     if(lastPutt) sh.push({d:'In the hole',tag:dResultLong(par,toPar)});
-    else { const putt=ftToHole, leave=(pi===P-2)?(1.2+rng()*2.6):(3+rng()*5); sh.push({d:`Putt ${dFeet(putt)}, ${dFeet(leave)} to hole`}); ftToHole=leave; }
+    else { const putt=ftToHole, leave=Math.max(0.8,(3.2-2.0*putQ)+rng()*2.4); sh.push({d:`Putt ${dFeet(putt)}, ${dFeet(leave)} to hole`}); ftToHole=leave; }   // weak putter leaves more / misses short
   }
   sh.forEach((s,i)=>s.n=i+1); return sh;
 }
@@ -3097,13 +3114,13 @@ function playDailyHole(attack){
   const c=DAILY_COURSES[S.dailyCourse], i=S.dailyHoles.length; if(i>=18)return;
   const h=c.holes[i], a=(attack===true||attack===false)?attack:null;
   const toPar=dSimHole(h[0],h[1],S.dailyDiffs[i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,a,dHoleRng(S.dailySeed,S.dailyCourse,i,0));
-  S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,0x5407),{safe:a===false,attack:a===true})}); render();
+  S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,0x5407),S.dailySkills,{safe:a===false,attack:a===true})}); render();
   scheduleDailyAdvance();   // keep the round flowing if auto-play is on
 }
 function autoFinishDaily(){ clearDailyTimer(); S.dailyAuto=false; const c=DAILY_COURSES[S.dailyCourse];
   while(S.dailyHoles.length<18){ const i=S.dailyHoles.length,h=c.holes[i];
     const toPar=dSimHole(h[0],h[1],S.dailyDiffs[i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,null,dHoleRng(S.dailySeed,S.dailyCourse,i,0));
-    S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:null,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,0x5407),{})}); }
+    S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:null,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,0x5407),S.dailySkills,{})}); }
   finishDailyRound();   // straight to the result — fastest path
 }
 function dailyMulligan(){
@@ -3111,7 +3128,7 @@ function dailyMulligan(){
   const last=S.dailyHoles[S.dailyHoles.length-1], c=DAILY_COURSES[S.dailyCourse];
   const alt=dSimHole(last.par,last.yards,S.dailyDiffs[last.i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,last.attack,dHoleRng(S.dailySeed,S.dailyCourse,last.i,0x4d2));
   if(alt<last.toPar) last.toPar=alt;
-  last.shots=dShotSeq(last.par,last.yards,last.par+last.toPar,dHoleRng(S.dailySeed,S.dailyCourse,last.i,0x5408),{safe:last.attack===false,attack:last.attack===true});
+  last.shots=dShotSeq(last.par,last.yards,last.par+last.toPar,dHoleRng(S.dailySeed,S.dailyCourse,last.i,0x5408),S.dailySkills,{safe:last.attack===false,attack:last.attack===true});
   last.mull=true; S.dailyMullUsed=true; track('daily_mulligan'); render();
 }
 function finishDailyRound(){
@@ -3180,8 +3197,9 @@ function scrDailyResult(){
   // headline: did you beat the tour average? (the main objective). best-of-day decides the day.
   const av=(r.avg!=null?r.avg:dTourAvg(c)); const bestT=best?best.total:total; const wonDay=bestT<av; const margin=Math.abs((av-total));
   add($(`<div class="scout" style="max-width:520px;margin:0 auto 4px;text-align:center;border-color:${wonDay?'#35d6a0':'var(--gold)'}">
-    ${wonDay?`<b style="color:#35d6a0;font-size:17px">🏁 You beat the tour average!</b>`:`<b style="color:var(--oncard);font-size:16px">Short of the tour average</b>`}
-    <div class="small muted" style="margin-top:3px">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}${(best&&best.total!==total)?` · best today ${dtp(best.total)} ${wonDay?'(winner)':''}`:''}</div></div>`));
+    ${wonDay?`<b style="color:#35d6a0;font-size:17px">🏁 You beat the pro!</b>`:`<b style="color:var(--oncard);font-size:16px">Short of the tour average</b>`}
+    <div class="small muted" style="margin-top:3px">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}${(best&&best.total!==total)?` · best today ${dtp(best.total)} ${wonDay?'(winner)':''}`:''}</div>
+    ${(wonDay&&left>0)?`<div class="small" style="margin-top:5px;color:#35d6a0;font-weight:700">Challenge cleared — use your ${left} remaining attempt${left>1?'s':''} to go even lower and chase the course record.</div>`:''}</div>`));
   // attempts + best-of-day (the best is what's logged to the leaderboard)
   const bestTxt = best?`Best today <b style="color:var(--gold)">${dtp(best.total)}</b> (${best.par+best.total})`:'';
   const newBest = justPlayed && S.dailyImproved && attempts>1;
@@ -3200,7 +3218,7 @@ function scrDailyResult(){
   }
   add($(`<div style="height:14px"></div>`));
   if(left>0){
-    const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Play again ▸<span class="sub">${left} of ${DAILY_MAX_ATTEMPTS} attempt${left>1?'s':''} left — beat your best</span></button>`);
+    const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">${wonDay?'Go lower ▸':'Play again ▸'}<span class="sub">${wonDay?`Pro beaten — chase a lower score (${left} left)`:`${left} of ${DAILY_MAX_ATTEMPTS} attempt${left>1?'s':''} left — beat the tour average`}</span></button>`);
     again.onclick=beginDailyAttempt; add(again);
     const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
   } else {
