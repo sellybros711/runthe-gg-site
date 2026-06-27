@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Avatar asset checklist for RunTheTour.
 // Lists which of the 420 capped golfer portraits are present / still missing in
-// avatars/golfers/, using the canonical filename tokens (see golfers/README.md).
+// public/avatars/golfers/, using the canonical filename tokens (see that
+// folder's README.md).
 //
 // Usage (from anywhere):
 //   node build-a-golfer/avatars/check-avatars.mjs            # summary
@@ -25,7 +26,7 @@ const flag = (name) => args.includes(name);
 const opt  = (name) => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : null; };
 
 const here = dirname(fileURLToPath(import.meta.url));
-const dir  = opt('--dir') || join(here, 'golfers');
+const dir  = opt('--dir') || join(here, '..', 'public', 'avatars', 'golfers');
 
 // Every expected filename (420 total).
 const expected = [];

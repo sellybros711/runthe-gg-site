@@ -869,7 +869,7 @@ function applyPlayerDecline(){   // erodes your bag once per year from DECLINE_S
 }
 function playerRetires(){ return (S.year||1) >= CAREER_MAX_YEARS; }   // forced at the 40-year shelf life
 /* golfer customization palettes */
-// `file` = canonical avatar-art filename token (see avatars/golfers/README.md).
+// `file` = canonical avatar-art filename token (see public/avatars/golfers/README.md).
 // Skins map by lightness order to the 5 art tones (game ids kept for save compat).
 const SKINS=[
   {id:'light', m:'#f0c6a4', s:'#e0ad84', file:'skin-01-fair'},
@@ -1341,11 +1341,11 @@ function scrSetup(){
 
 /* ---------- avatar (raster portrait) ---------- */
 // Final art: 420 capped portraits dropped into AVATAR_BASE as
-// {gender}_{skin}_{hair}_{shirt}.png (see avatars/golfers/README.md). Relative
-// path so it resolves both in dev (build-a-golfer/avatars/…) and live
-// (/golf/avatars/…). Missing combos fall back to a per-gender placeholder, then
-// to the built-in vector bust — so it never breaks while the set is produced.
-const AVATAR_BASE='avatars/golfers/';
+// {gender}_{skin}_{hair}_{shirt}.png (see public/avatars/golfers/README.md).
+// Relative path so it resolves both in dev (build-a-golfer/public/avatars/…) and
+// live (/golf/public/avatars/…). Missing combos fall back to a per-gender
+// placeholder, then to the built-in vector bust — never breaks while in progress.
+const AVATAR_BASE='public/avatars/golfers/';
 function avatarSrc(L){
   const sk=(SKINS.find(x=>x.id===L.skin)||SKINS[1]).file;
   const hr=(HAIRS.find(x=>x.id===L.hair)||HAIRS[1]).file;
