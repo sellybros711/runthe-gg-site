@@ -985,7 +985,9 @@ function header(){
       <div class="rule"></div>
     </div></div>`));
   const pills=$(`<div class="pills"></div>`);
-  const pl=$(`<button class="pill" aria-label="Your record">${swingIcon()} Player</button>`); pl.onclick=()=>{S.overlay='record';render();};
+  const signedIn=sbSignedIn();
+  const pl=$(`<button class="pill" aria-label="${signedIn?'Your profile':'Sign in'}">${swingIcon()} ${signedIn?'Player':'Sign in'}</button>`);
+  pl.onclick=()=>{ if(sbSignedIn()){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} render(); };
   pills.appendChild(pl);
   const rs=$(`<button class="pill">${resetIcon()} Reset</button>`); rs.onclick=()=>{ if(S.screen==='title'){reset();render();} else {S.overlay='confirmReset';render();} };
   pills.appendChild(rs);
@@ -2647,7 +2649,7 @@ async function sbApply(session){
       else { S.overlay='account'; S.acctMode='username'; }
     }
   }
-  if(oauth||S.overlay==='record'||S.overlay==='leaderboard'||S.overlay==='account') render();
+  render();   // refresh so the header (Sign in ↔ Player) and any open overlay reflect auth state
 }
 /* ---- in-game auth (shared RunThe.GG accounts) ---- */
 async function sbSignUp(email,password){
