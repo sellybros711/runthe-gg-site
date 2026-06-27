@@ -998,7 +998,7 @@ function footer(){
 let _lastView=null;
 function render(){
   const savedY=window.scrollY;
-  const view=S.screen+'|'+(S.overlay||'')+'|'+(S.recapEvent==null?'':S.recapEvent);
+  const view=S.screen+'|'+(S.overlay||'')+'|'+(S.recapEvent==null?'':S.recapEvent)+'|'+(S.recapYear==null?'':S.recapYear);
   const sameView=(view===_lastView);
   app.innerHTML='';
   app.appendChild(header());
@@ -2012,7 +2012,13 @@ function scrSummary(){
     if(t.best<S.career.best)S.career.best=t.best;
     // record the actual tournaments won this season for the career Wins list
     S.season.results.forEach(r=>{ const meR=r.order.find(o=>o.p.you); if(meR&&meR.pos===1) S.career.winsList.push({name:r.evt.name,year:S.year||1,major:!!r.evt.major}); });
-    S.career.seasons.push({year:S.year||1,net:ec.net,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank});
+    // per-major career record (played / wins / top10 / best finish) for the career recap
+    S.career.majorStats=S.career.majorStats||{};
+    S.season.results.forEach(r=>{ if(!r.evt.major) return; const meR=r.order.find(o=>o.p.you); if(!meR) return;
+      const ms=S.career.majorStats[r.evt.name]||(S.career.majorStats[r.evt.name]={played:0,wins:0,top10:0,best:99});
+      ms.played++; const fin=(meR.pos==='CUT')?99:meR.pos;
+      if(meR.pos===1) ms.wins++; if(fin<=10) ms.top10++; if(fin<ms.best) ms.best=fin; });
+    S.career.seasons.push({year:S.year||1,net:ec.net,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank,top10:t.top10,played:t.played,made:t.made});
     // snapshot this year's per-skill build so year N+1 can show what changed
     if(!S.daily){ S.career.skillSeasons=S.career.skillSeasons||[];
       S.career.skillSeasons.push({year:S.year||1,skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))}); }
@@ -2132,7 +2138,7 @@ function scrSummary(){
   }
   left.appendChild(board);
   const recapBtn=$(`<button class="btn gold" style="margin-top:10px">Full Season Recap<span class="sub">Every event, leaderboard by leaderboard</span></button>`);
-  recapBtn.onclick=()=>{S.recapEvent=null; S.screen='recap'; render();}; left.appendChild(recapBtn);
+  recapBtn.onclick=()=>{S.recapEvent=null; S.recapYear=S.year||1; S.screen='recap'; render();}; left.appendChild(recapBtn);
   if(!S.daily && S.career && S.career.seasons.length>1){
     const c=S.career, ccol=c.net>=0?'#35d6a0':'#E14A33';
     left.appendChild($(`<h2 style="margin:16px 0 8px">Career · ${c.seasons.length} years (through Year ${S.year})</h2>`));
@@ -2143,10 +2149,13 @@ function scrSummary(){
     ct.appendChild(tile('Career wins',c.wins+''));
     ct.appendChild(tile('Career majors',c.majors+''));
     ct.appendChild(tile('Top 10s',c.top10+''));
+    const bestS=(c.seasons||[]).reduce((m,s)=>(!m||s.money>m.money)?s:m,null);
+    if(bestS) ct.appendChild($(`<div class="tile"><div class="k">Season high</div><div class="v cream" style="font-size:17px">${fmt(bestS.money)}</div><div class="small muted" style="font-size:10px;margin-top:2px">Year ${bestS.year}</div></div>`));
     left.appendChild(ct);
     // Wins — the actual tournaments won across the career
     const wl=(c.winsList||[]);
-    left.appendChild($(`<h3 style="margin:14px 0 6px;font-size:14px;letter-spacing:.02em">Wins <span class="small muted" style="font-weight:600">· ${wl.length}</span></h3>`));
+    const majWins=wl.filter(w=>w.major).length;
+    left.appendChild($(`<h3 style="margin:14px 0 6px;font-size:14px;letter-spacing:.02em">Wins <span class="small muted" style="font-weight:600">· ${wl.length}${majWins?` · ${majWins} major${majWins>1?'s':''}`:''}</span></h3>`));
     if(wl.length){
       const wb=$(`<div class="board"></div>`);
       wl.slice().sort((a,b)=>a.year-b.year).forEach(w=>wb.appendChild($(`<div class="lb" style="grid-template-columns:30px 1fr 54px">
@@ -2322,36 +2331,74 @@ function scrRecap(){
     return;
   }
   const meS=S.season.me, tot=S.season.totals[meS.name];
-  add($(`<h1 class="center" style="font-size:24px;margin:2px 0 2px">${S.daily?'Daily':'Year '+(S.year||1)} season recap</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:12px">${meS.name} · ${results.length} events · ${results.filter(r=>r.evt.major).length} majors</p>`));
-  // season stat strip
-  const mcs=tot.played-tot.made;
-  const strip=$(`<div class="tiles" style="margin-bottom:14px"></div>`);
-  strip.appendChild(tile('Wins',tot.wins+'',true));
-  strip.appendChild(tile('Majors',tot.majors+''));
-  strip.appendChild(tile('Top 10s',tot.top10+''));
-  strip.appendChild(tile('Cuts made',tot.made+'/'+tot.played));
-  strip.appendChild(tile('Best finish',tot.best===99?'MC':(tot.best===1?'WIN':'T'+tot.best)));
-  strip.appendChild(tile('Earnings',fmt(tot.money),true));
-  add(strip);
-  add($(`<p class="lede center" style="margin:0 0 8px;font-size:12px">Tap any event to replay its leaderboard.</p>`));
-  const board=$(`<div class="board"></div>`);
-  results.forEach((r,i)=>{
-    const me=r.order.find(o=>o.p.you);
-    const won=me.pos===1, cut=me.pos==='CUT';
-    const fin=cut?'MC':(won?'WON':'T'+me.pos);
-    const col=cut?'#e07a5f':(won?'var(--gold)':'var(--oncard)');
-    const typeLbl=r.evt.major?'<span class="major">Major</span>':r.evt.type==='finale'?'<span class="sig">Finale</span>':r.evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
-    const row=$(`<div class="lb" style="grid-template-columns:30px 1fr auto;cursor:pointer;${won?'background:rgba(235,166,31,.10);border-color:rgba(235,166,31,.4)':''}">
-      <span class="pos" style="${won?'color:var(--gold)':''}">${won?'🏆':(r.evt.major?'★':i+1)}</span>
-      <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.evt.name}</div><div class="small muted" style="font-size:10.5px">${typeLbl} · ${fmt(r.evt.purse)}</div></span>
-      <span style="text-align:right;line-height:1.25">
-        <div class="sc" style="color:${col};font-weight:800">${fin}${cut?'':' · '+par(me.score)}</div>
-        <div class="mny small ${me.money>0?'':'muted'}" style="color:${me.money>0?'var(--gold)':''};font-size:11px">${me.money>0?'+'+fmt(me.money):'no cheque'}</div></span></div>`);
-    row.onclick=()=>{S.recapEvent=i;render();};
-    board.appendChild(row);
-  });
-  add(board);
+  const curYear=S.year||1;
+  const isCareer=!S.daily && S.career && S.career.seasons && S.career.seasons.length>1;
+  let viewYear=(S.recapYear!=null)?S.recapYear:curYear;
+  if(viewYear>curYear||viewYear<1) viewYear=curYear;
+  add($(`<h1 class="center" style="font-size:24px;margin:2px 0 2px">${S.daily?'Daily':'Year '+viewYear} season recap</h1>`));
+  // career mode: best single season + a selector to look back at past seasons
+  if(isCareer){
+    const bestS=S.career.seasons.reduce((m,s)=>(!m||s.money>m.money)?s:m,null);
+    if(bestS) add($(`<div class="scout" style="max-width:460px;margin:0 auto 12px;text-align:center">
+      <div style="font:800 10.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Season high · best single season</div>
+      <div class="mono cream" style="font-weight:800;font-size:24px;margin-top:4px">${fmt(bestS.money)}</div>
+      <div class="small muted" style="margin-top:2px">Year ${bestS.year} · ${bestS.wins}W · ${bestS.majors} major${bestS.majors===1?'':'s'} · best ${bestTxt(bestS.best)}</div></div>`));
+    const sel=$(`<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:12px"></div>`);
+    for(let y=1;y<=curYear;y++){
+      const on=(y===viewYear);
+      const chip=$(`<button class="btn ${on?'gold':'ghost'}" style="width:auto;font-size:11px;padding:6px 11px">Yr ${y}${y===curYear?' · now':''}</button>`);
+      chip.onclick=()=>{S.recapYear=y;S.recapEvent=null;render();};
+      sel.appendChild(chip);
+    }
+    add(sel);
+  }
+  if(viewYear===curYear){
+    // current season — full recap with tappable event leaderboards
+    add($(`<p class="lede center" style="margin-bottom:12px">${meS.name} · ${results.length} events · ${results.filter(r=>r.evt.major).length} majors</p>`));
+    const strip=$(`<div class="tiles" style="margin-bottom:14px"></div>`);
+    strip.appendChild(tile('Wins',tot.wins+'',true));
+    strip.appendChild(tile('Majors',tot.majors+''));
+    strip.appendChild(tile('Top 10s',tot.top10+''));
+    strip.appendChild(tile('Cuts made',tot.made+'/'+tot.played));
+    strip.appendChild(tile('Best finish',tot.best===99?'MC':(tot.best===1?'WIN':'T'+tot.best)));
+    strip.appendChild(tile('Earnings',fmt(tot.money),true));
+    add(strip);
+    add($(`<p class="lede center" style="margin:0 0 8px;font-size:12px">Tap any event to replay its leaderboard.</p>`));
+    const board=$(`<div class="board"></div>`);
+    results.forEach((r,i)=>{
+      const me=r.order.find(o=>o.p.you);
+      const won=me.pos===1, cut=me.pos==='CUT';
+      const fin=cut?'MC':(won?'WON':'T'+me.pos);
+      const col=cut?'#e07a5f':(won?'var(--gold)':'var(--oncard)');
+      const typeLbl=r.evt.major?'<span class="major">Major</span>':r.evt.type==='finale'?'<span class="sig">Finale</span>':r.evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
+      const row=$(`<div class="lb" style="grid-template-columns:30px 1fr auto;cursor:pointer;${won?'background:rgba(235,166,31,.10);border-color:rgba(235,166,31,.4)':''}">
+        <span class="pos" style="${won?'color:var(--gold)':''}">${won?'🏆':(r.evt.major?'★':i+1)}</span>
+        <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.evt.name}</div><div class="small muted" style="font-size:10.5px">${typeLbl} · ${fmt(r.evt.purse)}</div></span>
+        <span style="text-align:right;line-height:1.25">
+          <div class="sc" style="color:${col};font-weight:800">${fin}${cut?'':' · '+par(me.score)}</div>
+          <div class="mny small ${me.money>0?'':'muted'}" style="color:${me.money>0?'var(--gold)':''};font-size:11px">${me.money>0?'+'+fmt(me.money):'no cheque'}</div></span></div>`);
+      row.onclick=()=>{S.recapEvent=i;render();};
+      board.appendChild(row);
+    });
+    add(board);
+  } else {
+    // past season — stat-level recap (full event leaderboards aren't stored)
+    const s=S.career.seasons[viewYear-1]||{};
+    const strip=$(`<div class="tiles" style="margin-bottom:12px"></div>`);
+    strip.appendChild(tile('Wins',(s.wins||0)+'',true));
+    strip.appendChild(tile('Majors',(s.majors||0)+''));
+    strip.appendChild(tile('Top 10s',s.top10!=null?s.top10+'':'—'));
+    strip.appendChild(tile('Cuts made',(s.made!=null&&s.played!=null)?(s.made+'/'+s.played):'—'));
+    strip.appendChild(tile('Best finish',s.best!=null?bestTxt(s.best):'—'));
+    strip.appendChild(tile('Earnings',fmt(s.money||0),true));
+    add(strip);
+    const ncol=(s.net||0)>=0?'#35d6a0':'#E14A33';
+    const strip2=$(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin-bottom:8px"></div>`);
+    strip2.appendChild($(`<div class="tile"><div class="k">Net profit</div><div class="v" style="color:${ncol}">${fmtSigned(s.net||0)}</div></div>`));
+    strip2.appendChild(tile('Tour rank',s.rank?(s.rank+''):'—'));
+    add(strip2);
+    add($(`<p class="lede center" style="margin:6px 0 8px;font-size:12px">Event-by-event replay is available for your current season.</p>`));
+  }
   add($(`<div style="height:14px"></div>`));
   const back=$(`<button class="btn red">‹ Back to results</button>`); back.onclick=()=>{S.screen='summary';render();}; add(back);
 }
@@ -2374,10 +2421,24 @@ function scrCareerEnd(){
   tiles.appendChild(tile('Majors',c.majors+''));
   tiles.appendChild(tile('Top 10s',c.top10+''));
   tiles.appendChild(tile('Best season',fmt(e.best||0),true));
-  tiles.appendChild(tile('Best finish',c.best===99?'—':(c.best===1?'WIN':'T'+c.best)));
   tiles.appendChild(tile('Seasons',e.years+''));
-  tiles.appendChild(tile('Shelf life',e.years+' / '+CAREER_MAX_YEARS));
   add(tiles);
+  // career record at the 4 major championships
+  const MAJORS=['The Masters','The Championship','U.S. Open','The Open'];
+  const mstats=c.majorStats||{};
+  const winsByName={}; (c.winsList||[]).forEach(w=>{ if(w.major) winsByName[w.name]=(winsByName[w.name]||0)+1; });
+  add($(`<h2 class="center" style="margin:16px 0 8px;font-size:15px">Major championships</h2>`));
+  const mb=$(`<div class="board" style="max-width:520px;margin:0 auto"></div>`);
+  MAJORS.forEach(nm=>{
+    const m=mstats[nm];
+    const wins=m?m.wins:(winsByName[nm]||0);
+    const sub=m?[m.played+' played',m.top10+' top-10',(m.best!=null&&m.best!==99?'best '+bestTxt(m.best):null)].filter(Boolean).join(' · '):'—';
+    mb.appendChild($(`<div class="lb" style="grid-template-columns:24px 1fr auto">
+      <span class="pos" style="color:${wins>0?'var(--gold)':'var(--muted)'}">${wins>0?'★':'·'}</span>
+      <span class="pl" style="min-width:0"><div style="font-weight:700">${nm}</div><div class="small muted" style="font-size:10.5px">${sub}</div></span>
+      <span style="text-align:right"><div class="sc cream" style="font-weight:800">${wins} ${wins===1?'win':'wins'}</div></span></div>`));
+  });
+  add(mb);
   // wins list
   const wl=(c.winsList||[]);
   add($(`<h2 class="center" style="margin:14px 0 8px;font-size:15px">${wl.length?('Tournament wins · '+wl.length):'No tournament wins'}</h2>`));
