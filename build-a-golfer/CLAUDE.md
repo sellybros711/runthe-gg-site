@@ -779,6 +779,21 @@ allows Google Fonts, or self-host Anton.*
   surface ~13% over a score-heavy test (≈0–1.5/round for weak builds, ~0 for elite), zero
   errors. Deployed to /golf.
 
+- 2026-06-27: **Daily Challenge Phase 3 — backend (global board + course records).**
+  `supabase/24_runtour_daily.sql` (mirrors 22/23; owner applies in the SQL editor — sandbox
+  can't reach supabase.co). Table `runtour_daily_scores` unique (user_id, day), upsert keeps
+  the LOWER to_par (= best of the 3 attempts); `runtour_submit_daily` (SECURITY DEFINER,
+  username from `profiles`, to_par clamped to an OVR-scaled floor); reads
+  `runtour_daily_board(day)` (today's global board), `runtour_course_records()` (all-time
+  holder per course), `runtour_my_daily(day)`. RLS public-read, writes via definer only;
+  stores ovr+skills+decisions for a future deterministic re-sim. Client (fails open):
+  `sbSubmitDaily` posts the new best after each improving attempt (queued in `_pendingDaily`
+  until sign-in); Course Records overlay now shows Today's global board (`dbLoad`) + all-time
+  records (`crLoad`, merged into local so the preview shows the true global record). Caches
+  `crCache`/`dbCache` cleared on submit/sign-out. Verified offline end-to-end, zero errors.
+  Deployed client to /golf. **PENDING OWNER: apply `supabase/24_runtour_daily.sql`** (and
+  22/23 if not yet), then verify live in a browser.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

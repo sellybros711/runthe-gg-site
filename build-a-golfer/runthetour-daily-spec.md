@@ -149,3 +149,21 @@ LATENT_S 0.92, COURSE_DIFF_SCALE 0.045, PLAN/COND/TH/AGG_FIT_BONUS as in the fil
 
 ## Phase 2 — COMPLETE: daily flow UI (local)
 Inlined DAILY_COURSES (16 real courses) + the calibrated engine into build-a-golfer.html. New flow: title Daily button → scrDailyPreview (course card, what-wins-here, conditions, signature holes, standing course record, game-plan dial) → career-mode draft (scrSetup+draft) → scrBuild Tee-off → scrDailyRound (hole-by-hole, color-coded scorecard strip, signature Attack/Play-Safe prompts, streak mulligan, auto-play) → scrDailyResult (to-par, record claim, OUT/IN scorecard) + overlayCourseRecords (all 16, record holders). Deterministic course rotation (cycles all 16) + seeded conditions. One-play-per-day via bag_daily. Local course records in bag_courserecords. Replaces the old season-style daily. Verified end-to-end headless (preview→draft→18 holes→result→records) + non-daily regression, zero JS errors. Backend (Phase 3) not wired yet.
+
+## Phase 3 — COMPLETE (code): daily backend + global board + course records
+`supabase/24_runtour_daily.sql` (owner applies in the Supabase SQL editor — sandbox can't reach
+supabase.co). Table `runtour_daily_scores` (unique (user_id, day); upsert keeps the LOWER to_par =
+best of your 3 attempts), `runtour_submit_daily(...)` (SECURITY DEFINER; username from `profiles`;
+to_par clamped to an OVR-scaled floor ≈ -0.6/ovr-pt below par so no impossible round), plus reads
+`runtour_daily_board(day)` (today's global leaderboard, lowest to-par), `runtour_course_records()`
+(all-time record holder per course), `runtour_my_daily(day)`. RLS public-read; writes only via the
+definer fn. Stores ovr + skills + decisions so a deterministic re-sim (the hole RNG is seeded only
+by day^course^hole) can harden it later without a schema change. Namespaced `runtour_*`, separate
+from RunThePitch and the old `12_daily_challenge`.
+
+Client (fails open — no sb / network / migration → local-only, no crash): submits the new best after
+each improving attempt (`sbSubmitDaily`, queued via `_pendingDaily` until sign-in); the Course
+Records overlay now shows **Today's global board** (`dbLoad`) + **all-time course records**
+(`crLoad`, merged into the local store so the preview shows the true global record). Verified offline
+end-to-end (finish round, records overlay, all main overlays) zero errors. **Pending owner step:**
+apply `supabase/24_*.sql`, then verify live in a browser (sandbox can't reach Supabase).

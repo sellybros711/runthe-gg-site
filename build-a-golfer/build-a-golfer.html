@@ -3146,7 +3146,8 @@ function finishDailyRound(){
   const isRec=recordCourseScore(S.dailyCourse,total,S.dailyOvr,sbUsername||S.name||'You');
   const holes=S.dailyHoles.map(h=>({par:h.par,toPar:h.toPar}));   // compact — enough to redraw the scorecard
   const avg=dTourAvg(c), won=total<avg;   // beat the real tour scoring average = won the day
-  S.dailyResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,record:isRec,holes,avg,won};
+  const decisions={plan:S.dailyPlan,attacks:S.dailyHoles.filter(h=>h.attack!=null).map(h=>({n:h.n,a:h.attack}))};
+  S.dailyResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,record:isRec,holes,avg,won,day:S.dailySeed,skills:S.dailySkills,decisions};
   bumpStreak();   // once-per-day guarded inside
   // log this attempt; the LOWEST score of the day is the one that counts (leaderboard / course record)
   const prev=dailyToday(); const attempts=(prev?dailyAttempts():0)+1;
@@ -3155,6 +3156,7 @@ function finishDailyRound(){
   S.dailyAttemptNo=attempts; S.dailyImproved=improved;
   LS.set(acctKey('bag_daily'),{date:S.dailySeed,attempts,best,result:S.dailyResult});
   track('daily_completed',{course:S.dailyCourse,total,attempt:attempts,best:best.total,won,avg});
+  if(improved) sbSubmitDaily(best);   // post the new best to the global board (fails open if signed out/offline)
   S.screen='dailyresult'; render();
 }
 function scrDailyRound(){
@@ -3237,15 +3239,36 @@ function scrDailyResult(){
   add($(`<p class="small muted center" style="margin-top:12px">${left>0?`${left} attempt${left>1?'s':''} left today · `:''}A new course drops at midnight UTC · streak ${streakDisplay()} 🔥</p>`));
 }
 function overlayCourseRecords(screen){
-  const recs=courseRecords(), today=S.dailyCourse||dailyCourseKey(todayKey());
+  const today=S.dailyCourse||dailyCourseKey(todayKey());
+  const todaySeed=S.dailySeed||todayKey();
+  if(sb){ if(crCache===null) crLoad(); if(dbCache===null||dbCache.day!==todaySeed) dbLoad(todaySeed); }   // async, re-renders
+  const recs=courseRecords();   // local store, already merged with global by crLoad
+  const online=!!(crCache&&crCache.ok);
+  // today's global board
+  let boardHTML='';
+  if(sb){
+    if(dbCache===null||dbCache.day!==todaySeed){ boardHTML='<div class="small muted center" style="padding:14px 8px">Loading today’s board…</div>'; }
+    else if(dbCache.ok && dbCache.rows.length){
+      boardHTML=`<div class="board">`+dbCache.rows.slice(0,20).map(r=>`<div class="lb ${(sbUser&&r.user_id===sbUser.id)?'you':''}" style="grid-template-columns:30px 1fr auto">
+        <span class="pos">${r.rank===1?'🏆':r.rank}</span>
+        <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.display_name)}</div><div class="small muted" style="font-size:10px">OVR ${r.ovr}${r.won?' · <span style="color:#35d6a0">beat the pro</span>':''}</div></span>
+        <span class="sc" style="color:var(--gold);font-weight:800;text-align:right">${dtp(r.to_par)}</span></div>`).join('')+`</div>`;
+    } else if(dbCache.ok){ boardHTML='<div class="small muted center" style="padding:14px 8px">No rounds posted yet today — be the first.</div>'; }
+    else { boardHTML='<div class="small muted center" style="padding:10px 8px">Today’s online board is unavailable right now.</div>'; }
+  } else { boardHTML='<div class="small muted center" style="padding:10px 8px">Sign in on RunThe.GG to see the global daily board.</div>'; }
+  // all-time course records
   const rows=DAILY_KEYS.map(k=>{ const c=DAILY_COURSES[k], rec=recs[k], isToday=(k===today);
     return `<div class="lb ${isToday?'you':''}" style="grid-template-columns:1fr auto">
       <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(dShort(c.v))}${isToday?' · <span style="color:var(--gold)">today</span>':''}</div><div class="small muted" style="font-size:10.5px">Par ${c.par} · ${esc(c.loc)}</div></span>
-      <span style="text-align:right">${rec?`<div class="sc" style="color:var(--gold);font-weight:800">${dtp(rec.toPar)}</div><div class="small muted" style="font-size:10px">${esc(rec.name)}</div>`:'<div class="small muted">unclaimed</div>'}</span></div>`; }).join('');
+      <span style="text-align:right">${rec?`<div class="sc" style="color:var(--gold);font-weight:800">${dtp(rec.toPar)}</div><div class="small muted" style="font-size:10px">${esc(rec.name||'You')}</div>`:'<div class="small muted">unclaimed</div>'}</span></div>`; }).join('');
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Course Records</h3>
-    <p class="lede" style="margin:0 0 10px">The lowest round ever posted at each course. Beat one to put your name on it.</p>
+    <h2 style="margin:2px 0 8px">Today · ${esc(dShort(DAILY_COURSES[today].v))}</h2>
+    <p class="lede" style="margin:0 0 8px;font-size:12.5px">The global leaderboard for today’s course. Lowest round wins the day.</p>
+    ${boardHTML}
+    <h2 style="margin:16px 0 8px">All-time course records${online?'':' <span class="small muted" style="font-weight:400">(local)</span>'}</h2>
+    <p class="lede" style="margin:0 0 10px;font-size:12.5px">The lowest round ever posted at each course. Beat one to put your name on it.</p>
     <div class="board">${rows}</div><div style="height:12px"></div><button class="btn red">Close</button></div>`);
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
@@ -3333,6 +3356,7 @@ function moneyRow(r,pos,you){return $(`<div class="lb ${you?'you':''}" style="gr
 const SB_URL='https://jcrrxqfpdelrmvjuihnm.supabase.co';
 const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
 let sb=null, sbUser=null, sbUsername=null, sbProfile=null, lbCache=null, _pendingSeason=null;
+let _pendingDaily=null, crCache=null, dbCache=null;   // daily-challenge backend (Phase 3)
 const RTT_AUTH_KEY='sb-runtour-auth';   // RunTheTour's own saved-session key (separate from RunThePitch)
 function rttRemember(){ try{ return localStorage.getItem('rtt_remember')==='1'; }catch(e){ return false; } }
 function setRemember(on){ try{ localStorage.setItem('rtt_chose_remember','1'); on?localStorage.setItem('rtt_remember','1'):localStorage.removeItem('rtt_remember'); }catch(e){} }
@@ -3376,6 +3400,7 @@ async function sbApply(session){
     await sbLoadProfile();
     S.acctMode=sbUsername?'profile':'username';   // drop to username picker if none yet
     if(_pendingSeason){ const s=_pendingSeason; _pendingSeason=null; sbSubmitSeason(s); }
+    if(_pendingDaily){ const d=_pendingDaily; _pendingDaily=null; sbSubmitDaily(d); }
     if(oauth){                                    // just came back from Google → confirm on the title screen
       if(sbUsername) toast('Signed in as '+esc(sbUsername));
       else { S.overlay='account'; S.acctMode='username'; }
@@ -3423,6 +3448,7 @@ async function sbSignOut(){
   try{ localStorage.removeItem(RTT_AUTH_KEY); localStorage.removeItem('rtt_oauth_pending'); }catch(e){}
   setRemember(false);
   sbUser=null; sbUsername=null; sbProfile=null; lbCache=null; _pendingSeason=null;
+  _pendingDaily=null; crCache=null; dbCache=null;
 }
 async function sbSetUsername(name){
   if(!sb||!sbUser) throw new Error('Sign in first.');
@@ -3484,6 +3510,35 @@ async function lbLoad(){
     lbCache={season:(a.data||[]),career:(b.data||[]),ok:!a.error&&!b.error};
   }catch(e){ lbCache={season:[],career:[],ok:false}; }
   render();   // refresh whatever's open (leaderboard board / summary guest-rank teaser)
+}
+/* ---- Daily Challenge backend (Phase 3): submit best round + global board/records. Fails open. ---- */
+async function sbSubmitDaily(b){
+  if(!sb || !b) return;
+  if(!sbUser){ _pendingDaily=b; return; }            // post as soon as they sign in
+  try{
+    await sb.rpc('runtour_submit_daily',{p_day:b.day,p_course:b.course,p_to_par:b.total,p_ovr:b.ovr,
+      p_won:!!b.won,p_golfer:(S.name||'Your Golfer'),p_skills:b.skills||null,p_decisions:b.decisions||null});
+    crCache=null; dbCache=null;                        // refresh records/board next open
+  }catch(e){}
+}
+async function crLoad(){
+  if(!sb){ crCache={recs:{},ok:false}; render(); return; }
+  try{ const {data,error}=await sb.rpc('runtour_course_records');
+    const recs={}; (data||[]).forEach(r=>{ recs[r.course_key]={toPar:r.to_par,name:r.display_name,ovr:r.ovr,day:r.day,mine:(sbUser&&r.user_id===sbUser.id),global:true}; });
+    crCache={recs,ok:!error};
+    // adopt the true global record locally so the preview / records page show it everywhere
+    if(!error){ const loc=courseRecords(); let changed=false;
+      for(const k in recs){ if(!loc[k] || recs[k].toPar<loc[k].toPar){ loc[k]={toPar:recs[k].toPar,ovr:recs[k].ovr,name:recs[k].name,mine:recs[k].mine,date:recs[k].day,global:true}; changed=true; } }
+      if(changed) LS.set('bag_courserecords',loc); }
+  }catch(e){ crCache={recs:{},ok:false}; }
+  render();
+}
+async function dbLoad(day){
+  if(!sb){ dbCache={day,rows:[],ok:false}; render(); return; }
+  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:50});
+    dbCache={day,rows:(data||[]),ok:!error};
+  }catch(e){ dbCache={day,rows:[],ok:false}; }
+  render();
 }
 sbInit();
 
