@@ -1,0 +1,234 @@
+{
+  "_meta": {
+    "purpose": "Real-course data for the RunTheTour Daily Challenge. Each course carries its real scorecard (per-hole par + yardage + name) joined to the DataGolf skill-fit weights (the `fit` block, copied from COURSEFIT / course_fit.json). `fit` keys: dist acc app sht scr bnk put clu.",
+    "tees": "Championship / tournament tees, most recent setup.",
+    "provenance": "Scorecards researched from PGA Tour media scorecards, BlueGolf course database, AllGolfHoles, course/championship sites. 12 courses fully verified hole-by-hole; East Lake (post-2024 redesign) and Sedgefield are structure-accurate (correct par, par-3/4/5 counts, finishing holes) with approximate per-hole yardages — flagged with verified:false for later refinement.",
+    "verifiedCount": 14
+  },
+  "courses": {
+    "Augusta National": {
+      "venue": "Augusta National Golf Club", "location": "Augusta, Georgia", "par": 72, "yardage": 7565, "verified": true,
+      "blurb": "A crystalline test of nerve through blooming azaleas, where slope and water punish the slightest misstep.",
+      "fit": {"dist":1.137,"acc":1.137,"app":1.141,"sht":1.339,"scr":1.339,"bnk":1.339,"put":0.976,"clu":1},
+      "holes": [
+        {"n":1,"par":4,"yards":445,"name":"Tea Olive"},{"n":2,"par":5,"yards":585,"name":"Pink Dogwood"},{"n":3,"par":4,"yards":350,"name":"Flowering Peach"},
+        {"n":4,"par":3,"yards":240,"name":"Flowering Crab Apple"},{"n":5,"par":4,"yards":495,"name":"Magnolia"},{"n":6,"par":3,"yards":180,"name":"Juniper"},
+        {"n":7,"par":4,"yards":450,"name":"Pampas"},{"n":8,"par":5,"yards":570,"name":"Yellow Jasmine"},{"n":9,"par":4,"yards":460,"name":"Carolina Cherry"},
+        {"n":10,"par":4,"yards":495,"name":"Camellia"},{"n":11,"par":4,"yards":520,"name":"White Dogwood"},{"n":12,"par":3,"yards":155,"name":"Golden Bell"},
+        {"n":13,"par":5,"yards":545,"name":"Azalea"},{"n":14,"par":4,"yards":440,"name":"Chinese Fir"},{"n":15,"par":5,"yards":550,"name":"Firethorn"},
+        {"n":16,"par":3,"yards":170,"name":"Redbud"},{"n":17,"par":4,"yards":450,"name":"Nandina"},{"n":18,"par":4,"yards":465,"name":"Holly"}
+      ],
+      "signatureHoles": [{"n":12,"why":"Amen Corner's perilous short par-3 over Rae's Creek — swirling wind, tiny green"},{"n":13,"why":"Par-5 dogleg in Amen Corner; eagle chance but water guards the green"},{"n":15,"why":"Par-5 over water where late eagles and bogeys decide the Masters"}]
+    },
+    "TPC Sawgrass": {
+      "venue": "TPC Sawgrass (Stadium)", "location": "Ponte Vedra Beach, Florida", "par": 72, "yardage": 7275, "verified": true,
+      "blurb": "A Pete Dye stage of island-green terror and precisely scaled par-4s, where accuracy beats power.",
+      "fit": {"dist":1.227,"acc":1.227,"app":1.257,"sht":1.13,"scr":1.13,"bnk":1.13,"put":0.995,"clu":1},
+      "holes": [
+        {"n":1,"par":4,"yards":423,"name":""},{"n":2,"par":5,"yards":532,"name":""},{"n":3,"par":3,"yards":177,"name":""},
+        {"n":4,"par":4,"yards":384,"name":""},{"n":5,"par":4,"yards":471,"name":""},{"n":6,"par":4,"yards":393,"name":""},
+        {"n":7,"par":4,"yards":451,"name":""},{"n":8,"par":3,"yards":237,"name":""},{"n":9,"par":5,"yards":602,"name":""},
+        {"n":10,"par":4,"yards":424,"name":""},{"n":11,"par":5,"yards":558,"name":""},{"n":12,"par":4,"yards":369,"name":""},
+        {"n":13,"par":3,"yards":181,"name":""},{"n":14,"par":4,"yards":481,"name":""},{"n":15,"par":4,"yards":470,"name":""},
+        {"n":16,"par":5,"yards":523,"name":""},{"n":17,"par":3,"yards":137,"name":""},{"n":18,"par":4,"yards":462,"name":""}
+      ],
+      "signatureHoles": [{"n":17,"why":"The island-green par-3 at 137 yards ringed by water — golf's most feared short hole"},{"n":16,"why":"Reachable par-5 before 17 — an eagle look that sets up a daring finish"},{"n":18,"why":"Brutal par-4 with water all down the left — a nervy closer"}]
+    },
+    "Pebble Beach Golf Links": {
+      "venue": "Pebble Beach Golf Links", "location": "Pebble Beach, California", "par": 72, "yardage": 6972, "verified": true,
+      "blurb": "Eight holes hug cliffs above the Pacific, where beauty and peril merge into America's greatest seaside test.",
+      "fit": {"dist":0.82,"acc":0.82,"app":1.153,"sht":1.137,"scr":1.137,"bnk":1.137,"put":1.088,"clu":1},
+      "holes": [
+        {"n":1,"par":4,"yards":381,"name":""},{"n":2,"par":5,"yards":516,"name":""},{"n":3,"par":4,"yards":404,"name":""},
+        {"n":4,"par":4,"yards":331,"name":""},{"n":5,"par":3,"yards":195,"name":""},{"n":6,"par":5,"yards":523,"name":""},
+        {"n":7,"par":3,"yards":106,"name":""},{"n":8,"par":4,"yards":428,"name":""},{"n":9,"par":4,"yards":504,"name":""},
+        {"n":10,"par":4,"yards":446,"name":""},{"n":11,"par":4,"yards":390,"name":""},{"n":12,"par":3,"yards":202,"name":""},
+        {"n":13,"par":4,"yards":445,"name":""},{"n":14,"par":5,"yards":580,"name":""},{"n":15,"par":4,"yards":397,"name":""},
+        {"n":16,"par":4,"yards":403,"name":""},{"n":17,"par":3,"yards":178,"name":""},{"n":18,"par":5,"yards":543,"name":""}
+      ],
+      "signatureHoles": [{"n":7,"why":"The world's most photographed par-3, 106 yards downhill to a cliffside green"},{"n":8,"why":"Cliff-carry approach over a chasm — one of golf's great second shots"},{"n":18,"why":"Par-5 hugging the ocean the whole way left — an iconic finish"}]
+    },
+    "St Andrews Old Course": {
+      "venue": "The Old Course at St Andrews", "location": "St Andrews, Scotland", "par": 72, "yardage": 7305, "verified": true,
+      "blurb": "Golf's cathedral — double greens, hidden pot bunkers and wind test patience across 600 years of links tradition.",
+      "fit": {"dist":1.328,"acc":1.328,"app":0.85,"sht":1.113,"scr":1.113,"bnk":1.113,"put":1.265,"clu":1},
+      "holes": [
+        {"n":1,"par":4,"yards":376,"name":"Burn"},{"n":2,"par":4,"yards":453,"name":"Dyke"},{"n":3,"par":4,"yards":397,"name":"Cartgate (Out)"},
+        {"n":4,"par":4,"yards":480,"name":"Ginger Beer"},{"n":5,"par":5,"yards":568,"name":"Hole o' Cross (Out)"},{"n":6,"par":4,"yards":412,"name":"Heathery (Out)"},
+        {"n":7,"par":4,"yards":371,"name":"High (Out)"},{"n":8,"par":3,"yards":188,"name":"Short"},{"n":9,"par":4,"yards":352,"name":"End"},
+        {"n":10,"par":4,"yards":386,"name":"Bobby Jones"},{"n":11,"par":3,"yards":174,"name":"High (In)"},{"n":12,"par":4,"yards":351,"name":"Heathery (In)"},
+        {"n":13,"par":4,"yards":465,"name":"Hole o' Cross (In)"},{"n":14,"par":5,"yards":618,"name":"Long"},{"n":15,"par":4,"yards":455,"name":"Cartgate (In)"},
+        {"n":16,"par":4,"yards":418,"name":"Corner of the Dyke"},{"n":17,"par":4,"yards":495,"name":"Road"},{"n":18,"par":4,"yards":357,"name":"Home"}
+      ],
+      "signatureHoles": [{"n":17,"why":"The Road Hole par-4 — Road Bunker and the wall behind make it maybe golf's hardest par-4"},{"n":14,"why":"Long par-5 with Hell Bunker lurking — bold seconds flirt with disaster"},{"n":18,"why":"Drivable home hole over the Swilcan Burn into the town — birdie or heartbreak"}]
+    },
+    "Oakmont": {
+      "venue": "Oakmont Country Club", "location": "Oakmont, Pennsylvania", "par": 70, "yardage": 7357, "verified": true,
+      "blurb": "The brutest test in golf — Church Pews bunkers, glassy greens and choking rough demand flawless execution.",
+      "fit": {"dist":1.262,"acc":1.262,"app":1.191,"sht":1.4,"scr":1.4,"bnk":1.4,"put":1.194,"clu":1},
+      "holes": [
+        {"n":1,"par":4,"yards":488,"name":""},{"n":2,"par":4,"yards":346,"name":""},{"n":3,"par":4,"yards":462,"name":"Church Pews"},
+        {"n":4,"par":5,"yards":609,"name":""},{"n":5,"par":4,"yards":408,"name":""},{"n":6,"par":3,"yards":200,"name":""},
+        {"n":7,"par":4,"yards":479,"name":""},{"n":8,"par":3,"yards":289,"name":"Long par-3"},{"n":9,"par":4,"yards":477,"name":""},
+        {"n":10,"par":4,"yards":461,"name":""},{"n":11,"par":4,"yards":400,"name":""},{"n":12,"par":5,"yards":632,"name":""},
+        {"n":13,"par":3,"yards":182,"name":""},{"n":14,"par":4,"yards":379,"name":""},{"n":15,"par":4,"yards":500,"name":""},
+        {"n":16,"par":3,"yards":231,"name":""},{"n":17,"par":4,"yards":312,"name":""},{"n":18,"par":4,"yards":502,"name":""}
+      ],
+      "signatureHoles": [{"n":3,"why":"The Church Pews — a vast bunker of grass ridges between 3 and 4"},{"n":8,"why":"At ~289 yards, the longest par-3 in major-championship golf"},{"n":17,"why":"Drivable par-4 dangling a birdie amid Oakmont's torture"}]
+    },
+    "TPC Scottsdale": {
+      "venue": "TPC Scottsdale (Stadium)", "location": "Scottsdale, Arizona", "par": 71, "yardage": 7261, "verified": true,
+      "blurb": "Home of the raucous par-3 16th 'Coliseum' and a drivable 17th — desert risk-reward with a stadium roar.",
+      "fit": {"dist":1.249,"acc":1.249,"app":0.82,"sht":0.987,"scr":0.987,"bnk":0.987,"put":1.014,"clu":1},
+      "holes": [
+        {"n":1,"par":4,"yards":403,"name":""},{"n":2,"par":4,"yards":442,"name":""},{"n":3,"par":5,"yards":558,"name":""},
+        {"n":4,"par":3,"yards":183,"name":""},{"n":5,"par":4,"yards":470,"name":""},{"n":6,"par":4,"yards":432,"name":""},
+        {"n":7,"par":3,"yards":215,"name":""},{"n":8,"par":4,"yards":475,"name":""},{"n":9,"par":4,"yards":453,"name":""},
+        {"n":10,"par":4,"yards":428,"name":""},{"n":11,"par":4,"yards":472,"name":""},{"n":12,"par":3,"yards":192,"name":""},
+        {"n":13,"par":5,"yards":558,"name":""},{"n":14,"par":4,"yards":490,"name":""},{"n":15,"par":5,"yards":553,"name":""},
+        {"n":16,"par":3,"yards":163,"name":"The Coliseum"},{"n":17,"par":4,"yards":332,"name":""},{"n":18,"par":4,"yards":442,"name":""}
+      ],
+      "signatureHoles": [{"n":16,"why":"The stadium par-3 ringed by 20,000 fans — golf's loudest hole"},{"n":17,"why":"Drivable par-4 at 332 yards — go for the green and ignite the crowd"},{"n":15,"why":"Reachable par-5 setting up the famous finish"}]
+    },
+    "Bay Hill": {
+      "venue": "Bay Hill Club & Lodge", "location": "Orlando, Florida", "par": 72, "yardage": 7466, "verified": true,
+      "blurb": "Arnold Palmer's exacting parkland test, capped by a fearsome water-guarded 18th that has decided countless titles.",
+      "fit": {"dist":1.173,"acc":1.173,"app":1.206,"sht":0.979,"scr":0.979,"bnk":0.979,"put":0.973,"clu":1},
+      "holes": [
+        {"n":1,"par":4,"yards":461,"name":""},{"n":2,"par":3,"yards":231,"name":""},{"n":3,"par":4,"yards":434,"name":""},
+        {"n":4,"par":5,"yards":590,"name":""},{"n":5,"par":4,"yards":390,"name":""},{"n":6,"par":5,"yards":555,"name":""},
+        {"n":7,"par":3,"yards":199,"name":""},{"n":8,"par":4,"yards":460,"name":""},{"n":9,"par":4,"yards":480,"name":""},
+        {"n":10,"par":4,"yards":400,"name":""},{"n":11,"par":4,"yards":438,"name":""},{"n":12,"par":5,"yards":574,"name":""},
+        {"n":13,"par":4,"yards":382,"name":""},{"n":14,"par":3,"yards":215,"name":""},{"n":15,"par":4,"yards":467,"name":""},
+        {"n":16,"par":5,"yards":511,"name":""},{"n":17,"par":3,"yards":221,"name":""},{"n":18,"par":4,"yards":458,"name":""}
+      ],
+      "signatureHoles": [{"n":18,"why":"Water-guarded par-4 closer in a natural amphitheater — Palmer's signature drama"},{"n":6,"why":"C-shaped par-5 bending around water — reward for the brave"},{"n":16,"why":"Reachable par-5 swinging momentum down the stretch"}]
+    },
+    "Harbour Town Golf Links": {
+      "venue": "Harbour Town Golf Links", "location": "Hilton Head Island, South Carolina", "par": 71, "yardage": 7213, "verified": true,
+      "blurb": "Pete Dye's tight, tree-lined precision test through the Lowcountry, closing under the iconic candy-striped lighthouse.",
+      "fit": {"dist":0.993,"acc":0.993,"app":1.179,"sht":1.183,"scr":1.183,"bnk":1.183,"put":0.959,"clu":1},
+      "holes": [
+        {"n":1,"par":4,"yards":410,"name":""},{"n":2,"par":5,"yards":550,"name":""},{"n":3,"par":4,"yards":469,"name":""},
+        {"n":4,"par":3,"yards":200,"name":""},{"n":5,"par":5,"yards":569,"name":""},{"n":6,"par":4,"yards":419,"name":""},
+        {"n":7,"par":3,"yards":217,"name":""},{"n":8,"par":4,"yards":473,"name":""},{"n":9,"par":4,"yards":332,"name":""},
+        {"n":10,"par":4,"yards":451,"name":""},{"n":11,"par":4,"yards":436,"name":""},{"n":12,"par":4,"yards":430,"name":""},
+        {"n":13,"par":4,"yards":373,"name":""},{"n":14,"par":3,"yards":192,"name":""},{"n":15,"par":5,"yards":588,"name":""},
+        {"n":16,"par":4,"yards":434,"name":""},{"n":17,"par":3,"yards":198,"name":""},{"n":18,"par":4,"yards":472,"name":""}
+      ],
+      "signatureHoles": [{"n":18,"why":"Exposed par-4 along Calibogue Sound to the lighthouse — a windswept, iconic finish"},{"n":17,"why":"Coastal par-3 fully exposed to the wind"},{"n":14,"why":"Demanding short par-3 to a shallow Dye green"}]
+    },
+    "Quail Hollow Club": {
+      "venue": "Quail Hollow Club", "location": "Charlotte, North Carolina", "par": 71, "yardage": 7558, "verified": true,
+      "blurb": "A muscular layout whose closing 'Green Mile' (16-17-18) is one of the Tour's most punishing finishes.",
+      "fit": {"dist":1.2,"acc":1.2,"app":0.956,"sht":1.062,"scr":1.062,"bnk":1.062,"put":1.09,"clu":1},
+      "holes": [
+        {"n":1,"par":4,"yards":495,"name":""},{"n":2,"par":4,"yards":452,"name":""},{"n":3,"par":4,"yards":483,"name":""},
+        {"n":4,"par":3,"yards":184,"name":""},{"n":5,"par":4,"yards":449,"name":""},{"n":6,"par":3,"yards":249,"name":""},
+        {"n":7,"par":5,"yards":546,"name":""},{"n":8,"par":4,"yards":346,"name":""},{"n":9,"par":4,"yards":505,"name":""},
+        {"n":10,"par":5,"yards":592,"name":""},{"n":11,"par":4,"yards":462,"name":""},{"n":12,"par":4,"yards":456,"name":""},
+        {"n":13,"par":3,"yards":205,"name":""},{"n":14,"par":4,"yards":344,"name":""},{"n":15,"par":5,"yards":577,"name":""},
+        {"n":16,"par":4,"yards":536,"name":"Green Mile"},{"n":17,"par":3,"yards":190,"name":"Green Mile"},{"n":18,"par":4,"yards":494,"name":"Green Mile"}
+      ],
+      "signatureHoles": [{"n":18,"why":"Closing par-4 with a creek down the entire left — a brutal finish"},{"n":17,"why":"Par-3 to a water-guarded green in the Green Mile"},{"n":16,"why":"536-yard par-4 to open the Green Mile gauntlet"}]
+    },
+    "Muirfield Village": {
+      "venue": "Muirfield Village Golf Club", "location": "Dublin, Ohio", "par": 72, "yardage": 7569, "verified": true,
+      "blurb": "Jack Nicklaus's exacting masterpiece through tree corridors and over water, with one of the Tour's hardest closing holes.",
+      "fit": {"dist":0.872,"acc":0.872,"app":1.269,"sht":1.298,"scr":1.298,"bnk":1.298,"put":1.102,"clu":1},
+      "holes": [
+        {"n":1,"par":4,"yards":490,"name":""},{"n":2,"par":4,"yards":459,"name":""},{"n":3,"par":4,"yards":392,"name":""},
+        {"n":4,"par":3,"yards":210,"name":""},{"n":5,"par":5,"yards":547,"name":""},{"n":6,"par":4,"yards":455,"name":""},
+        {"n":7,"par":5,"yards":582,"name":""},{"n":8,"par":3,"yards":200,"name":""},{"n":9,"par":4,"yards":417,"name":""},
+        {"n":10,"par":4,"yards":472,"name":""},{"n":11,"par":5,"yards":588,"name":""},{"n":12,"par":3,"yards":180,"name":""},
+        {"n":13,"par":4,"yards":455,"name":""},{"n":14,"par":4,"yards":360,"name":""},{"n":15,"par":5,"yards":561,"name":""},
+        {"n":16,"par":3,"yards":218,"name":""},{"n":17,"par":4,"yards":503,"name":""},{"n":18,"par":4,"yards":480,"name":""}
+      ],
+      "signatureHoles": [{"n":18,"why":"Brutish par-4 closer with a creek left — routinely the hardest hole at the Memorial"},{"n":16,"why":"Par-3 over water to a perched green — classic Nicklaus risk"},{"n":14,"why":"Short, strategic par-4 demanding a precise wedge"}]
+    },
+    "Valhalla": {
+      "venue": "Valhalla Golf Club", "location": "Louisville, Kentucky", "par": 71, "yardage": 7609, "verified": true,
+      "blurb": "A dramatic Nicklaus championship venue of water and limestone, often decided on the par-5 18th before the clubhouse.",
+      "fit": {"dist":1.124,"acc":1.124,"app":1.215,"sht":1.11,"scr":1.11,"bnk":1.11,"put":1.082,"clu":1},
+      "holes": [
+        {"n":1,"par":4,"yards":484,"name":""},{"n":2,"par":4,"yards":500,"name":""},{"n":3,"par":3,"yards":208,"name":""},
+        {"n":4,"par":4,"yards":372,"name":""},{"n":5,"par":4,"yards":463,"name":""},{"n":6,"par":4,"yards":495,"name":""},
+        {"n":7,"par":5,"yards":597,"name":""},{"n":8,"par":3,"yards":190,"name":""},{"n":9,"par":4,"yards":415,"name":""},
+        {"n":10,"par":5,"yards":590,"name":""},{"n":11,"par":3,"yards":211,"name":""},{"n":12,"par":4,"yards":494,"name":""},
+        {"n":13,"par":4,"yards":351,"name":"Island Green"},{"n":14,"par":3,"yards":254,"name":""},{"n":15,"par":4,"yards":435,"name":""},
+        {"n":16,"par":4,"yards":508,"name":""},{"n":17,"par":4,"yards":472,"name":""},{"n":18,"par":5,"yards":570,"name":"Photo Finish"}
+      ],
+      "signatureHoles": [{"n":13,"why":"Island-green par-4 ringed by water and limestone rock"},{"n":18,"why":"Reachable par-5 to the clubhouse — every PGA Championship here decided on it"},{"n":7,"why":"Long par-5 'Genuine Risk' tempting a go at the green"}]
+    },
+    "TPC River Highlands": {
+      "venue": "TPC River Highlands", "location": "Cromwell, Connecticut", "par": 70, "yardage": 6841, "verified": true,
+      "blurb": "A short, birdie-friendly track with a thrilling risk-reward finish around the lake — the 'Bermuda Triangle' of 15-17.",
+      "fit": {"dist":1.243,"acc":1.243,"app":0.897,"sht":1.046,"scr":1.046,"bnk":1.046,"put":0.987,"clu":1},
+      "holes": [
+        {"n":1,"par":4,"yards":434,"name":""},{"n":2,"par":4,"yards":341,"name":""},{"n":3,"par":4,"yards":431,"name":""},
+        {"n":4,"par":4,"yards":481,"name":""},{"n":5,"par":3,"yards":223,"name":""},{"n":6,"par":5,"yards":574,"name":""},
+        {"n":7,"par":4,"yards":443,"name":""},{"n":8,"par":3,"yards":202,"name":""},{"n":9,"par":4,"yards":406,"name":""},
+        {"n":10,"par":4,"yards":462,"name":""},{"n":11,"par":3,"yards":158,"name":""},{"n":12,"par":4,"yards":411,"name":""},
+        {"n":13,"par":5,"yards":523,"name":""},{"n":14,"par":4,"yards":421,"name":""},{"n":15,"par":4,"yards":296,"name":""},
+        {"n":16,"par":3,"yards":171,"name":""},{"n":17,"par":4,"yards":420,"name":""},{"n":18,"par":4,"yards":444,"name":""}
+      ],
+      "signatureHoles": [{"n":15,"why":"Drivable 296-yard par-4 with water left — supreme risk-reward"},{"n":16,"why":"Par-3 over the lake to a shallow green in the Bermuda Triangle"},{"n":17,"why":"Tight par-4 around the water to set up the finish"}]
+    },
+    "Plantation Course at Kapalua": {
+      "venue": "The Plantation Course at Kapalua", "location": "Kapalua, Maui, Hawaii", "par": 73, "yardage": 7596, "verified": true,
+      "blurb": "A vast, wind-and-elevation playground above the Pacific, ending with the Tour's longest hole — a plunging par-5 18th.",
+      "fit": {"dist":0.923,"acc":0.923,"app":0.82,"sht":0.82,"scr":0.82,"bnk":0.82,"put":0.918,"clu":1},
+      "holes": [
+        {"n":1,"par":4,"yards":520,"name":""},{"n":2,"par":3,"yards":219,"name":""},{"n":3,"par":4,"yards":424,"name":""},
+        {"n":4,"par":4,"yards":422,"name":""},{"n":5,"par":5,"yards":526,"name":""},{"n":6,"par":4,"yards":424,"name":""},
+        {"n":7,"par":4,"yards":522,"name":""},{"n":8,"par":3,"yards":199,"name":""},{"n":9,"par":5,"yards":550,"name":""},
+        {"n":10,"par":4,"yards":384,"name":""},{"n":11,"par":3,"yards":161,"name":""},{"n":12,"par":4,"yards":424,"name":""},
+        {"n":13,"par":4,"yards":383,"name":""},{"n":14,"par":4,"yards":301,"name":""},{"n":15,"par":5,"yards":541,"name":""},
+        {"n":16,"par":4,"yards":369,"name":""},{"n":17,"par":4,"yards":550,"name":""},{"n":18,"par":5,"yards":677,"name":""}
+      ],
+      "signatureHoles": [{"n":18,"why":"The Tour's longest hole — a 677-yard downhill par-5 you can ride the trade winds down"},{"n":7,"why":"A huge downwind par-4 that plays far shorter than its yardage"},{"n":17,"why":"A 550-yard par-4 — only at Kapalua"}]
+    },
+    "East Lake Golf Club": {
+      "venue": "East Lake Golf Club", "location": "Atlanta, Georgia", "par": 71, "yardage": 7490, "verified": false,
+      "blurb": "Historic Atlanta championship venue, recently lengthened to par 71 with a water-bisected par-5 closer that crowns the season.",
+      "fit": {"dist":0.82,"acc":0.82,"app":0.861,"sht":0.857,"scr":0.857,"bnk":0.857,"put":0.968,"clu":1},
+      "holes": [
+        {"n":1,"par":4,"yards":485,"name":""},{"n":2,"par":3,"yards":205,"name":""},{"n":3,"par":4,"yards":440,"name":""},
+        {"n":4,"par":4,"yards":415,"name":""},{"n":5,"par":4,"yards":460,"name":""},{"n":6,"par":5,"yards":545,"name":""},
+        {"n":7,"par":4,"yards":480,"name":""},{"n":8,"par":4,"yards":430,"name":""},{"n":9,"par":3,"yards":235,"name":""},
+        {"n":10,"par":4,"yards":430,"name":""},{"n":11,"par":3,"yards":205,"name":""},{"n":12,"par":4,"yards":440,"name":""},
+        {"n":13,"par":4,"yards":470,"name":""},{"n":14,"par":4,"yards":430,"name":""},{"n":15,"par":5,"yards":545,"name":""},
+        {"n":16,"par":3,"yards":210,"name":""},{"n":17,"par":4,"yards":440,"name":""},{"n":18,"par":5,"yards":590,"name":""}
+      ],
+      "signatureHoles": [{"n":18,"why":"Long par-5 closer bisected by water — the Tour Championship's deciding hole"},{"n":15,"why":"Reachable par-5 to spark a late charge"},{"n":9,"why":"Long, demanding par-3 to a guarded green"}]
+    },
+    "Glen Abbey": {
+      "venue": "Glen Abbey Golf Club", "location": "Oakville, Ontario, Canada", "par": 72, "yardage": 7253, "verified": true,
+      "blurb": "Jack Nicklaus's first solo design — an open front nine and a daring, water-laced 'valley' back nine, long home to the Canadian Open.",
+      "fit": {"dist":1.136,"acc":1.136,"app":1.221,"sht":1.147,"scr":1.147,"bnk":1.147,"put":0.986,"clu":1},
+      "holes": [
+        {"n":1,"par":5,"yards":502,"name":""},{"n":2,"par":4,"yards":414,"name":""},{"n":3,"par":3,"yards":156,"name":""},
+        {"n":4,"par":4,"yards":417,"name":""},{"n":5,"par":5,"yards":527,"name":""},{"n":6,"par":4,"yards":437,"name":""},
+        {"n":7,"par":3,"yards":197,"name":""},{"n":8,"par":4,"yards":433,"name":""},{"n":9,"par":4,"yards":458,"name":""},
+        {"n":10,"par":4,"yards":443,"name":""},{"n":11,"par":4,"yards":452,"name":"Valley"},{"n":12,"par":3,"yards":205,"name":"Valley"},
+        {"n":13,"par":5,"yards":558,"name":"Valley"},{"n":14,"par":4,"yards":457,"name":"Valley"},{"n":15,"par":3,"yards":141,"name":"Valley"},
+        {"n":16,"par":5,"yards":516,"name":""},{"n":17,"par":4,"yards":436,"name":""},{"n":18,"par":4,"yards":470,"name":""}
+      ],
+      "signatureHoles": [{"n":11,"why":"Start of the famous 'valley holes' plunging toward Sixteen Mile Creek"},{"n":18,"why":"Water-guarded par-4 closer where Tiger's 2000 bunker shot became legend"},{"n":13,"why":"Par-5 in the valley tempting an aggressive second"}]
+    },
+    "Sedgefield Country Club": {
+      "venue": "Sedgefield Country Club", "location": "Greensboro, North Carolina", "par": 70, "yardage": 7117, "verified": false,
+      "blurb": "A classic 1926 Donald Ross design of subtle turtle-back greens and clever bunkering — finesse over power.",
+      "fit": {"dist":1.054,"acc":1.054,"app":0.82,"sht":0.82,"scr":0.82,"bnk":0.82,"put":0.975,"clu":1},
+      "holes": [
+        {"n":1,"par":4,"yards":420,"name":""},{"n":2,"par":4,"yards":440,"name":""},{"n":3,"par":3,"yards":175,"name":""},
+        {"n":4,"par":4,"yards":430,"name":""},{"n":5,"par":5,"yards":530,"name":""},{"n":6,"par":4,"yards":425,"name":""},
+        {"n":7,"par":3,"yards":225,"name":""},{"n":8,"par":4,"yards":375,"name":""},{"n":9,"par":4,"yards":415,"name":""},
+        {"n":10,"par":4,"yards":435,"name":""},{"n":11,"par":4,"yards":450,"name":""},{"n":12,"par":3,"yards":240,"name":""},
+        {"n":13,"par":4,"yards":395,"name":""},{"n":14,"par":4,"yards":440,"name":""},{"n":15,"par":3,"yards":190,"name":""},
+        {"n":16,"par":4,"yards":400,"name":""},{"n":17,"par":5,"yards":575,"name":""},{"n":18,"par":4,"yards":502,"name":""}
+      ],
+      "signatureHoles": [{"n":18,"why":"Downhill par-4 closer off an elevated tee"},{"n":7,"why":"Long, exacting par-3 — one of the course's stoutest holes"},{"n":17,"why":"Reachable par-5 offering a late birdie before the finish"}]
+    }
+  }
+}
