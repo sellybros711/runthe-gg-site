@@ -832,6 +832,21 @@ allows Google Fonts, or self-host Anton.*
   build across attempts 0/1/2 now differs on 7-12 of 18 holes (was 18/18 identical), zero
   errors. Deployed to /golf.
 
+- 2026-06-27: **Per-build independent luck (different lineups now play differently).**
+  Deeper root cause behind the "identical scorecards": the per-hole gaussian was seeded by
+  (day^course^hole) only, so EVERY build shared the same luck draw on each hole — the build
+  only nudged the mean (~hundredths/hole), so even 3 different lineups (bomber/putter/
+  balanced, OVR 84–88) scored 17–18/18 identical. Fix: `dBuildSeed()` hashes the 8 drafted
+  skills into the hole seed (folded into `dAttSalt` alongside attempt). Now each lineup gets
+  its own shot-execution variance — 3 different builds differ on 8–12/18 holes — while skill
+  still drives the mean (OVR92 −2.4 / 86 −1.0 / 74 +1.8 avg) and it stays deterministic +
+  server-verifiable (re-sim from stored skills+attempt). Round SD ~2.86 (real PGA ~2.8–3.1).
+  Tradeoff accepted: we drop the "everyone faces identical luck" property (which was what made
+  builds barely matter) for realism; best-of-3 still mitigates luck. NOTE: per-HOLE difficulty/
+  variance fidelity (which holes are birdie vs disaster holes) is still derived from length+
+  archetype+course avg — real DataGolf hole-scoring data could refine that later (needs DG_KEY
+  + server side), or approximate via hole-archetype variance. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
