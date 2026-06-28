@@ -1040,6 +1040,12 @@ allows Google Fonts, or self-host Anton.*
   Deployed to /golf. NOT done (offered, await go-ahead): training-points off-season model,
   build-shape/course-fit weighting, fatigue/schedule strategy, clutch-in-majors.
 
+- 2026-06-28: **Reverted the off-season soft-cap** (owner: "remove the soft cap, keep it how it
+  was"). `offCap` removed; `offTake` + the off-season grid + copy restored to the original behavior
+  — a swapped skill applies the rolled value in full again. KEPT the rest of the difficulty pass
+  (DECLINE_START_YEAR=10 age-modeled decline; generational phenoms 94-97) since only the soft cap
+  was called out. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
