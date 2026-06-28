@@ -1159,6 +1159,27 @@ allows Google Fonts, or self-host Anton.*
     Trophy Room line, all three banner states, attempts depletion, not-live tease, no console errors).
     Deployed to /golf.
 
+- #5 Pick-a-rival + real-player progression (owner approved; engine redirect)
+  • **Real players rise, not generated ones (owner direction):** the world already rolled each developing
+    player's universe potential (`applyCareerRoll`/`rollPotential` via `pot_band`), but real young players'
+    bands capped them ~91-92 while generated rookies could roll 94-97 — so fake players topped the field.
+    Fixed by (a) a **youth-boom** in `applyCareerRoll`: REAL players age ≤28 get a widened boom tail
+    (hi +2..+8 toward 97, boom +0.11) so different real prospects break out in different seeds; and (b)
+    **capping generated rookies** at ~92 lov (mostly 75-85) so they fill the field as role players but never
+    stand above the real stars. Verified across seeds: 7-8 of every top-8 are real players, generated cap
+    ~88 lov, and the breakout cast varies each sim (Åberg tops one seed, Koivun/Ford/Surratt/Bhatia/
+    Potgieter others) — Bhatia's career potential ranges 85→92 by seed, Åberg 87→93.
+  • **Pick-a-rival (#5):** choose a tour player in your tier (`rivalCandidates` from the living `worldField`
+    within ±6 OVR — now mostly real rising stars) in the off-season (`scrOffseason`) or first-season build
+    (`scrBuild`). Rival lives on `S.career.rival` (or `S.pendingRival` pre-career, carried over at year-1
+    record). Finishing a season ahead of them on the money list (`rivalSeasonResult`) earns a tee-tiered
+    **Rivalry badge** (`lt.rivalWins`, fed via `recordSeason({rivalBeat})`), unlocks the **Rivalry Crimson**
+    shirt at 3 wins, and surfaces a head-to-head card + a Dispatch headline note on the summary. Retired
+    rivals are detected (`rivalActive`) and you're re-prompted. Verified end-to-end (candidates are real,
+    pick→carry, H2H beat/loss, badge increment, dispatch note, card, off-season picker).
+  • Also hardened `seasonHeadlines` (guard `big`/`m` undefined) so a win/major with no derived event row
+    can't throw.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -524,6 +524,7 @@ const BADGES=[
   {id:'hof',      e:'🏛️', t:'Hall of Famer',       cat:'Career',      d:'Complete full careers.',                      tiers:[1,5,15,40,90],            get:m=>m.careers},
   // Skill
   {id:'underdog', e:'🐍', t:'Against the Odds',   cat:'Skill',       d:'Turn a profit with a sub-80 build.',          tiers:[1,3,8,18,40],             get:m=>m.underdogSeasons},
+  {id:'rival',    e:'⚔️', t:'Rivalry',             cat:'Skill',       d:'Finish a season ahead of your chosen rival.', tiers:[1,3,8,18,40],             get:m=>m.rivalWins},
   {id:'maxed',    e:'⚙️', t:'Maxed Out',          cat:'Skill',       d:'Build a higher-overall golfer.',              tiers:[82,86,90,94,97],          get:m=>m.maxOvr, noNum:true},
 ];
 const BADGE_CATS=['Winning','Majors','Consistency','Money','Career','Skill'];
@@ -533,7 +534,7 @@ function fmtMoneyShort(n){ n=Math.round(n);
   if(Math.abs(n)>=1e6) return '$'+(n/1e6).toFixed(n%1e6?1:0).replace(/\.0$/,'')+'M';
   if(Math.abs(n)>=1e3) return '$'+Math.round(n/1e3)+'k';
   return '$'+n; }
-function ltDefault(){return {seasons:0,careers:0,wins:0,majors:0,top10:0,made:0,played:0,earnings:0,net:0,
+function ltDefault(){return {seasons:0,careers:0,wins:0,majors:0,top10:0,made:0,played:0,earnings:0,net:0,rivalWins:0,
   bestSeasonNet:0,profitSeasons:0,ironSeasons:0,moneyLeaderSeasons:0,slamSeasons:0,underdogSeasons:0,
   maxOvr:0,distinctMajors:0,careerSlams:0,maj:{masters:0,champ:0,usopen:0,open:0}};}
 function badgeMetrics(c){ const lt=Object.assign(ltDefault(),(c||career()).lt||{});
@@ -587,6 +588,7 @@ const COSMETIC_SHIRTS=[
   {id:'slamcrim',   m:'#b81d3a', s:'#8f1530', name:'Grand Slam Crimson', req:m=>m.distinctMajors>=4||m.careerSlams>0, reqText:'Win all four majors in a career'},
   {id:'legendonyx', m:'#15171d', s:'#0b0d11', name:'Legend Onyx',        req:m=>m.majors>=6,                        reqText:'Win 6 major championships'},
   {id:'spotlight',  m:'#16b5a6', s:'#0e8d82', name:'Spotlight Teal',      req:()=>spotWins()>=1,                     reqText:'Win a Monthly Spotlight event'},
+  {id:'rivalcrim',  m:'#c0392b', s:'#992d22', name:'Rivalry Crimson',     req:m=>m.rivalWins>=3,                     reqText:'Beat your rival in 3 seasons'},
 ];
 function allShirts(){ return POLOS.concat(COSMETIC_SHIRTS); }   // base colours + special unlockables
 function findShirt(id){ return allShirts().find(x=>x.id===id)||POLOS[0]; }
@@ -641,6 +643,7 @@ function recordSeason(o){
   if(o.played>0&&o.made===o.played)lt.ironSeasons++;
   if(o.moneyRank===1)lt.moneyLeaderSeasons++;
   if(o.net>0&&o.ovr<80)lt.underdogSeasons++;
+  if(o.rivalBeat)lt.rivalWins=(lt.rivalWins||0)+1;
   if(o.ovr>lt.maxOvr)lt.maxOvr=o.ovr;
   let distinctThis=0;
   Object.keys(o.majorWins||{}).forEach(name=>{ const k=MAJOR_KEYS[name]; if(k&&o.majorWins[name]>0){ lt.maj[k]+=o.majorWins[name]; distinctThis++; } });
@@ -1278,10 +1281,11 @@ function genRookie(rng,simYear,used){
   const nat=wpick(rng,NAT_W), fn=FNAMES[nat]||FNAMES.Other, sn=SNAMES[nat]||SNAMES.Other;
   let nm,t=0; do{nm=fn[Math.floor(rng()*fn.length)]+' '+sn[Math.floor(rng()*sn.length)];t++;}while(used.has(nm)&&t<60); used.add(nm);
   const age=18+Math.floor(rng()*5);
-  // the rare top tail is a GENERATIONAL talent (94-97) who ascends over years to contest #1 —
-  // keeps the world's ceiling rising so the player can't just arrive at the top and stay forever
-  const tt=rng(); let pot; if(tt<.70)pot=cgauss(rng,80,2.5);else if(tt<.90)pot=cgauss(rng,85,1.5);else if(tt<.98)pot=cgauss(rng,89,1.5);else pot=cgauss(rng,95,1.6);
-  pot=clamp(Math.round(pot),70,97);
+  // Generated rookies fill out the field as role players / journeymen — they should NOT stand above the
+  // real stars (the user wants REAL young players to be the ones who ascend). So cap their ceiling ~92:
+  // mostly 75-85, a rare prospect reaches the high 80s / low 90s, but the elite tier stays real.
+  const tt=rng(); let pot; if(tt<.72)pot=cgauss(rng,78,2.5);else if(tt<.92)pot=cgauss(rng,82,1.8);else if(tt<.99)pot=cgauss(rng,86,1.6);else pot=cgauss(rng,89,1.5);
+  pot=clamp(Math.round(pot),70,92);
   const ar=wpick(rng,ARCH_W), sig=ARCH_SIG[ar], cap={};
   SKK.forEach(s=>cap[s]=pot+(sig.includes(s)?6+Math.round(rng()*6):0)+Math.round(cgauss(rng,0,2)));
   cap.clu=Math.max(cap.clu,pot-2+Math.round(rng()*4));
@@ -1307,7 +1311,13 @@ function rollPotential(b,rng){
 }
 function applyCareerRoll(g,rng){
   const base={}; SKK.forEach(s=>{const a=ageArc(s,g.arc_age||32); base[s]=clamp(Math.round((g[s]||60)/a),(g[s]||60),99);});
-  const b=g.pot_band;
+  let b=g.pot_band;
+  // Youth upside: young, still-developing REAL players get a wider boom tail so that DIFFERENT real
+  // prospects break out in different universes (a young stud can roll into the mid-90s and contest #1).
+  // Generated rookies (g.fictional) are excluded — they fill the field but shouldn't top it.
+  if(b && !g.fictional){ const age=CAREER_START_YEAR-(g.born||1994);
+    if(age<=28){ const upside=clamp(Math.round((30-age)*0.9),2,8);
+      b={exp:b.exp, lo:b.lo, hi:clamp(b.hi+upside,b.hi,97), boom:clamp((b.boom||0)+0.11,0,0.22), bust:b.bust}; } }
   if(!b||b.hi===b.lo){ g._sp=base; g.career_potential=g.potential||Math.round(SKK.reduce((a,s)=>a+base[s]*CW[s],0)); return; }
   const baseOv=SKK.reduce((a,s)=>a+base[s]*CW[s],0), rolled=rollPotential(b,rng), scale=baseOv>0?rolled/baseOv:1;
   const sp={}; SKK.forEach(s=>sp[s]=clamp(Math.round(base[s]*scale),40,99));
@@ -1338,6 +1348,64 @@ function ensureWorld(){ if(S.daily) return null;
 function worldField(n){ const w=ensureWorld(); if(!w) return null;
   return w.active.slice().sort((a,b)=>b.lov-a.lov).slice(0,n)
     .map(g=>{const o={name:g.name,skill:g.lov}; SKK.forEach(s=>o[s]=g['l_'+s]); return o;}); }
+/* ---- Pick-a-rival (#5): choose a tour player in your tier; finishing a season ahead of them on the
+   money list wins the rivalry (Rivalry tee + cosmetic + a season-story callout). The rival lives on the
+   franchise (S.career.rival), or on S.pendingRival before the career object exists (year 1). ---- */
+function getRival(){ return (S.career&&S.career.rival)||S.pendingRival||null; }
+function setRival(r){ if(S.career){ S.career.rival=r; saveCareer(); } else { S.pendingRival=r; } track('rival_picked',{name:r.name,ovr:r.ovr}); }
+function clearRival(){ if(S.career) S.career.rival=null; S.pendingRival=null; }
+function rivalActive(name){ const w=S.world; if(!w) return true; return w.active.some(g=>g.name===name); }
+function rivalCandidates(){ const f=worldField(FIELDSIZE-1)||[]; const myOvr=Math.round(buildPlayer().skill), meName=S.name||'Your Golfer';
+  const pool=f.filter(p=>p.name!==meName);
+  let band=pool.filter(p=>Math.abs(p.skill-myOvr)<=6);
+  if(band.length<3) band=pool.slice();
+  return band.sort((a,b)=>Math.abs(a.skill-myOvr)-Math.abs(b.skill-myOvr)).slice(0,4).map(p=>({name:p.name,ovr:Math.round(p.skill)})); }
+function rivalSeasonResult(){ const rv=getRival(); if(!rv||!S.season||!S.season.totals) return null;
+  const totals=S.season.totals, meName=S.season.me.name, mine=totals[meName], theirs=totals[rv.name];
+  if(!mine) return null;
+  if(!theirs) return {status:'absent', name:rv.name};
+  const byMoney=Object.entries(totals).map(([n,v])=>({n,money:v.money})).sort((a,b)=>b.money-a.money);
+  const myRank=byMoney.findIndex(r=>r.n===meName)+1, rvRank=byMoney.findIndex(r=>r.n===rv.name)+1;
+  return {status:'h2h', name:rv.name, beat:mine.money>theirs.money, myRank, rvRank,
+    myMoney:mine.money, rvMoney:theirs.money, myWins:mine.wins, rvWins:theirs.wins}; }
+// shared picker card (off-season + first-season build). Returns a wired DOM node.
+function rivalPickerNode(){
+  const rv=getRival();
+  const box=$(`<div class="scout" style="max-width:560px;margin:12px auto 0;text-align:left;border-color:rgba(235,166,31,.4)"></div>`);
+  box.appendChild($(`<div style="letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:11px;margin-bottom:6px">⚔️ Your Rival</div>`));
+  if(rv && rivalActive(rv.name)){
+    const lt=badgeMetrics(); const rw=lt.rivalWins||0;
+    box.appendChild($(`<div class="small" style="color:var(--oncard)">You're chasing <b style="color:var(--gold)">${esc(rv.name)}</b> · OVR ${rv.ovr}. Finish a season ahead of them on the money list to win the rivalry — earns a <b>Rivalry tee</b> and a callout in your season story.${rw>0?` <span class="muted">Rivalries won: ${rw}.</span>`:''}</div>`));
+    const ch=$(`<button class="btn ghost" style="margin-top:8px;font-size:12px;padding:8px 12px;width:auto">Choose a different rival</button>`);
+    ch.onclick=()=>{ clearRival(); render(); }; box.appendChild(ch);
+    return box;
+  }
+  if(rv && !rivalActive(rv.name)){
+    box.appendChild($(`<div class="small" style="color:#e9a23b;margin-bottom:8px"><b>${esc(rv.name)}</b> has retired — that rivalry is over. Pick a new rival to chase.</div>`));
+    clearRival();
+  } else {
+    box.appendChild($(`<div class="small muted" style="margin-bottom:8px">Pick a rival in your tier. Beat them over a full season for a Rivalry tee + an exclusive shirt — and bragging rights in your season recap. (Optional.)</div>`));
+  }
+  const cands=rivalCandidates();
+  if(!cands.length){ box.appendChild($(`<div class="small muted">No suitable rivals in the field right now.</div>`)); return box; }
+  const grid=$(`<div style="display:flex;flex-direction:column;gap:7px"></div>`);
+  cands.forEach(cd=>{ const b=$(`<button class="btn ghost" style="display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:10px 13px"><span>${esc(cd.name)}</span><span class="small muted">OVR ${cd.ovr}</span></button>`);
+    b.onclick=()=>{ setRival(cd); render(); }; grid.appendChild(b); });
+  box.appendChild(grid);
+  return box;
+}
+// season-summary rivalry card from this season's head-to-head outcome
+function rivalCardHTML(rr){ if(!rr) return '';
+  if(rr.status==='absent') return `<div class="scout" style="max-width:520px;margin:8px auto 14px;text-align:center"><div style="letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;margin-bottom:5px">⚔️ Rivalry</div><div class="small muted">Your rival <b style="color:var(--oncard)">${esc(rr.name)}</b> didn't make the field this season — no head-to-head this year.</div></div>`;
+  const beat=rr.beat, col=beat?'#35d6a0':'#e9a23b';
+  return `<div class="scout" style="max-width:520px;margin:8px auto 14px;border-color:${col}">
+    <div style="letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;margin-bottom:7px;text-align:center">⚔️ Rivalry${beat?' won':''}</div>
+    <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">
+      <div style="text-align:right"><div style="font-weight:800;color:${beat?col:'var(--oncard)'}">You</div><div class="small muted">#${rr.myRank} · ${fmt(rr.myMoney)}</div></div>
+      <div style="font-weight:800;color:var(--muted)">vs</div>
+      <div style="text-align:left"><div style="font-weight:800;color:${beat?'var(--oncard)':col}">${esc(rr.name)}</div><div class="small muted">#${rr.rvRank} · ${fmt(rr.rvMoney)}</div></div></div>
+    <div class="small center" style="margin-top:8px;color:${col};font-weight:700">${beat?'You finished the season ahead of your rival. 🏅 Rivalry tee earned.':`${esc(rr.name)} edged you this season — get them next year.`}</div></div>`;
+}
 /* ---- YOUR golfer's bounded career (40-year shelf life). Decline is AGE- and FORM-based, not a
    flat year cutoff: a rookie starts ~22 and peaks through the mid-30s with NO decline; only after
    do skills fade — LATER if you keep performing ("play young"), SOONER if you slump. Power
@@ -2477,6 +2545,7 @@ function scrBuild(){
     const maj=$(`<button class="btn gold" style="margin-top:10px">Majors Only<span class="sub">The 4 that matter</span></button>`);
     full.onclick=()=>startSeason(false); maj.onclick=()=>startSeason(true);
     right.appendChild(full); right.appendChild(maj);
+    right.appendChild(rivalPickerNode());   // first-season rival pick (optional)
   }
 }
 function fieldSample(n){
@@ -3028,9 +3097,9 @@ function seasonHeadlines(x){
   if(distinctMajors>=4) lead={icon:'👑',head:'GRAND SLAM SEASON',sub:'All four majors in a single year — a season for the history books.'};
   else if(moneyRank===1 && t.wins>=1) lead={icon:'🏆',head:'TOUR CHAMPION',sub:`Topped the money list at ${fmt(t.money)} — the undisputed player of the year.`};
   else if(t.majors>=2) lead={icon:'⛳',head:`${t.majors}-MAJOR YEAR`,sub:`A multi-major season — ${majorWins.map(f=>f.name).join(' & ')}.`};
-  else if(t.majors===1){ const m=majorWins[0]; lead={icon:'⛳',head:cmBefore===0?'MAIDEN MAJOR':'MAJOR CHAMPION',sub:`${cmBefore===0?'First career major':'Another major'} — captured ${m.name}.`}; }
+  else if(t.majors===1){ const m=majorWins[0]||{name:'a major'}; lead={icon:'⛳',head:cmBefore===0?'MAIDEN MAJOR':'MAJOR CHAMPION',sub:`${cmBefore===0?'First career major':'Another major'} — captured ${m.name}.`}; }
   else if(t.wins>=3) lead={icon:'🔥',head:`${t.wins}-WIN SEASON`,sub:`A dominant year with ${t.wins} titles${moneyRank<=3?` and a top-${moneyRank} money finish`:''}.`};
-  else if(t.wins>=1){ const big=wins.slice().sort((a,b)=>b.money-a.money)[0]; lead={icon:'🏆',head:cwBefore===0?'BREAKTHROUGH WIN':(t.wins===1?'WINNER':`${t.wins} WINS`),sub:`${cwBefore===0?'First career title':'Back in the winner’s circle'} at ${big.name}.`}; }
+  else if(t.wins>=1){ const big=wins.slice().sort((a,b)=>b.money-a.money)[0]||{name:'the tour'}; lead={icon:'🏆',head:cwBefore===0?'BREAKTHROUGH WIN':(t.wins===1?'WINNER':`${t.wins} WINS`),sub:`${cwBefore===0?'First career title':'Back in the winner’s circle'} at ${big.name}.`}; }
   else if(seconds>=1||top5>=1) lead={icon:'🎯',head:'KNOCKING ON THE DOOR',sub:`${seconds?`${seconds} runner-up${seconds>1?'s':''}`:`${top5} top-5${top5>1?'s':''}`} but no win yet — the breakthrough is close.`};
   else lead={icon:'📈',head:year===1?'ROOKIE SEASON':'GRINDING SEASON',sub:bestFin===99?'Missed the cut in every start — back to the range to rebuild.':`Best finish ${fp(bestFin)} — building toward the breakthrough.`};
   // ---- supporting notes ----
@@ -3045,6 +3114,11 @@ function seasonHeadlines(x){
   if(prev && prev.rank && moneyRank && (prev.rank-moneyRank)>=3) notes.push({icon:'⬆️',text:`Climbed from #${prev.rank} to #${moneyRank} on the money list.`});
   if(ec.net>0 && seasons.length>1){ const bestPrevNet=Math.max(0,...seasons.slice(0,-1).map(s=>s.net||0)); if(ec.net>bestPrevNet) notes.push({icon:'💎',text:`Career-best profit: ${fmtSigned(ec.net)}.`}); }
   if(year===1 && lead.head!=='ROOKIE SEASON') notes.push({icon:'🌱',text:'Rookie season in the books.'});
+  // rivalry — surfaced near the top so it survives the 4-note cap
+  const rr=S.rivalOutcome;
+  if(rr&&rr.status==='h2h') notes.unshift(rr.beat
+    ?{icon:'⚔️',text:`Finished ahead of rival ${rr.name} — you #${rr.myRank}, ${rr.name} #${rr.rvRank}.`}
+    :{icon:'⚔️',text:`Rival ${rr.name} edged you (#${rr.rvRank} to your #${rr.myRank}) — next year.`});
   return {lead,notes:notes.slice(0,4),year};
 }
 function headlinesHTML(h){
@@ -3070,8 +3144,13 @@ function scrSummary(){
   if(!S.recorded){S.recorded=true;
     const majorWins={};
     S.season.results.forEach(r=>{ if(!r.evt.major)return; const meR=r.order.find(o=>o.p.you); if(meR&&meR.pos===1) majorWins[r.evt.name]=(majorWins[r.evt.name]||0)+1; });
-    const r=recordSeason({name:me.name,ovr,money:t.money,gross:ec.gross,net:ec.net,wins:t.wins,majorsWon:t.majors,played:t.played,made:t.made,top10:t.top10,moneyRank,best:t.best,majorWins}); S.freshBadges=r.fresh;
+    // rivalry: this season's head-to-head vs the chosen rival (counts a Rivalry tee only when you finish ahead)
+    const rr=(!S.daily)?rivalSeasonResult():null; S.rivalOutcome=rr;
+    const rivalBeat=!!(rr&&rr.status==='h2h'&&rr.beat);
+    if(rr) track('rival_season',{name:rr.name,status:rr.status,beat:rivalBeat});
+    const r=recordSeason({name:me.name,ovr,money:t.money,gross:ec.gross,net:ec.net,wins:t.wins,majorsWon:t.majors,played:t.played,made:t.made,top10:t.top10,moneyRank,best:t.best,majorWins,rivalBeat}); S.freshBadges=r.fresh;
     S.career=S.career||{money:0,net:0,wins:0,majors:0,top10:0,best:99,seasons:[],winsList:[]};
+    if(S.pendingRival && !S.career.rival){ S.career.rival=S.pendingRival; S.pendingRival=null; }   // carry the year-1 pick onto the franchise
     S.career.winsList=S.career.winsList||[];
     S.career.money+=t.money; S.career.net+=ec.net; S.career.wins+=t.wins; S.career.majors+=t.majors; S.career.top10+=t.top10;
     if(t.best<S.career.best)S.career.best=t.best;
@@ -3145,6 +3224,7 @@ function scrSummary(){
   tilesB.appendChild(statTile('Majors',t.majors+''));
   add(tilesB);
   if(HL) add($(headlinesHTML(HL)));
+  if(S.rivalOutcome) add($(rivalCardHTML(S.rivalOutcome)));
   // the actual tournaments won this season (majors flagged in gold)
   const wonThisSeason=[];
   (S.season.results||[]).forEach(r=>{ const meR=r.order&&r.order.find(o=>o.p&&o.p.you); if(meR&&meR.pos===1) wonThisSeason.push({name:r.evt.name,major:!!r.evt.major}); });
@@ -3381,6 +3461,7 @@ function scrOffseason(){
   CATS.forEach(cat=>{ const f=S.slots[cat.k]; const d=decl[cat.k]||0;
     card.appendChild($(`<div class="slot ${f?'':'empty'}"><span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'—'}</span>${d<0?`<span class="slotdec">▼ ${Math.abs(d)}</span>`:''}<span class="v">${f?f.value:'··'}</span></div>`)); });
   right.appendChild(card);
+  add(rivalPickerNode());   // pick/confirm your rival for the coming season
 }
 /* ---------- season recap ---------- */
 function scrRecap(){
