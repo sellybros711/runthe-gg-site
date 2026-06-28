@@ -995,6 +995,24 @@ allows Google Fonts, or self-host Anton.*
   better? → runthe.gg/golf"). Verified via Playwright (2-yr career summary: only 1 canvas now,
   no Share-Career button, unlock note present, Share-my-season present, no errors). Deployed.
 
+- 2026-06-28: **Win celebrations (tournament + major).** Owner: winning didn't feel rewarding —
+  it just rolled to the next event. Added a full-screen, skippable celebration that fires the
+  moment you finish 1st (once per event via `ce._celebrated`), pausing auto-advance until
+  dismissed; it drives the hand-off (Continue/tap → advanceEvent if auto, else the normal
+  Next/Results button). **Tournament win (~2s, auto-continues):** opaque green "stage", a gold
+  trophy that springs in (CSS), "CHAMPION" + event, the cheque counting up. NO confetti (per
+  owner). **Major win (bigger, waits for Continue so Share is reachable):** dark spotlight stage,
+  a **custom-drawn SVG trophy per major** (green jacket = Masters, Claret Jug = The Open,
+  Wanamaker = PGA/'The Championship', gold cup w/ red-white-blue = U.S. Open), themed kicker +
+  accent, two-corner **confetti cannons** (gold + the major's accent), "MAJOR CHAMPION", "Nth
+  career major" tally (guarded ≥1), haptic buzz, and a **Share win** button → a branded major
+  win card (drawMajorWinCard) + caption via shareCard. Pure vanilla: rAF confetti (auto-stops),
+  CSS keyframes, reduced-motion safe (no particles/animation, still shows + dismissible).
+  Trigger lives in scrSeason scheduling; helpers (trophy SVGs, confettiRun, celebrateWin,
+  drawMajorWinCard, shareMajorWin) above scrSeason. Verified via Playwright (regular: no
+  confetti/no Share; all 4 majors render distinct trophies + confetti + Share; cheque counts up;
+  Continue/tap dismiss; share card art; no console errors). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

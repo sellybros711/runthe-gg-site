@@ -141,6 +141,30 @@
   .ordiv{display:flex; align-items:center; gap:10px; max-width:520px; margin:10px auto; color:var(--muted); font-weight:800; font-size:11px; letter-spacing:.16em; text-transform:uppercase}
   .ordiv::before,.ordiv::after{content:""; flex:1; height:1px; background:var(--line)}
   .btn:hover{filter:brightness(1.06)}
+  /* ---- win celebration ---- */
+  .celebrate{position:fixed; inset:0; z-index:60; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:28px 24px; overflow:hidden; cursor:pointer;
+    background:radial-gradient(120% 80% at 50% 30%, #134a32, #04120b 78%); animation:celebFade .3s ease both}
+  .celebrate.major{background:radial-gradient(100% 72% at 50% 34%, #16331f, #03100a 72%)}
+  .celebrate canvas.confetti{position:absolute; inset:0; width:100%; height:100%; pointer-events:none}
+  .celebrate .spot{position:absolute; left:50%; top:32%; transform:translate(-50%,-50%); width:560px; height:560px; max-width:130vw; max-height:74vh;
+    background:radial-gradient(circle, rgba(235,166,31,.26), transparent 60%); pointer-events:none; animation:celebSpot 1.1s ease both}
+  .celeb-trophy{position:relative; width:120px; height:138px; filter:drop-shadow(0 12px 26px rgba(0,0,0,.55)); animation:celebPop .6s cubic-bezier(.22,1.4,.38,1) both}
+  .celebrate.major .celeb-trophy{width:150px; height:168px}
+  .celeb-kicker{position:relative; margin-top:16px; font:800 12px/1.3 var(--body); letter-spacing:.3em; text-transform:uppercase; color:var(--gold); animation:celebRise .5s .12s ease both}
+  .celeb-title{position:relative; font-family:var(--display); font-weight:400; text-transform:uppercase; color:var(--oncard);
+    font-size:40px; line-height:.95; margin-top:7px; letter-spacing:.02em; animation:celebRise .5s .18s ease both}
+  .celebrate.major .celeb-title{font-size:46px; color:#f9d271}
+  .celeb-sub{position:relative; margin-top:9px; font-size:15px; color:#dfeae2; max-width:440px; animation:celebRise .5s .24s ease both}
+  .celeb-cheque{position:relative; margin-top:10px; font-family:var(--mono); font-weight:800; font-size:27px; color:#35d6a0; animation:celebRise .5s .3s ease both}
+  .celeb-tally{position:relative; margin-top:6px; font:800 12px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--gold); animation:celebRise .5s .36s ease both}
+  .celeb-actions{position:relative; margin-top:24px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center; animation:celebRise .5s .44s ease both}
+  .celeb-actions .btn{width:auto; padding:12px 22px}
+  @keyframes celebFade{from{opacity:0}to{opacity:1}}
+  @keyframes celebPop{0%{opacity:0;transform:scale(.3) translateY(34px)}60%{opacity:1}100%{opacity:1;transform:scale(1) translateY(0)}}
+  @keyframes celebRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes celebSpot{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+  @media (prefers-reduced-motion:reduce){ .celebrate,.celeb-trophy,.celeb-kicker,.celeb-title,.celeb-sub,.celeb-cheque,.celeb-tally,.celeb-actions,.celebrate .spot{animation-duration:.01ms} }
   .btn:disabled{opacity:.45; cursor:not-allowed}
   .btn:focus-visible, button:focus-visible, [tabindex]:focus-visible, input:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   .mini{display:flex; gap:10px; margin-top:10px}
@@ -2407,6 +2431,137 @@ function liveRow(o,pos,you,done){
     <span class="pos">${lab}</span>
     <span class="pl">${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
 }
+/* ---------- win celebration (tournament + major) ---------- */
+function trophyGold(id){ return `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f9d271"/><stop offset="1" stop-color="#c98f12"/></linearGradient>`; }
+function trophySilver(id){ return `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef2f5"/><stop offset="1" stop-color="#aab3bd"/></linearGradient>`; }
+function winTrophySVG(){ return `<svg viewBox="0 0 100 116" width="100%" height="100%">
+  <defs>${trophyGold('wg')}</defs>
+  <path d="M22 26 C4 26 6 58 30 58" stroke="url(#wg)" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M78 26 C96 26 94 58 70 58" stroke="url(#wg)" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M24 20 H76 V40 C76 60 64 74 50 74 C36 74 24 60 24 40 Z" fill="url(#wg)"/>
+  <path d="M34 24 H66 V38 C66 52 58 62 50 62 C42 62 34 52 34 38 Z" fill="#ffffff" opacity=".12"/>
+  <rect x="45" y="74" width="10" height="16" fill="url(#wg)"/>
+  <rect x="33" y="90" width="34" height="8" rx="2" fill="url(#wg)"/>
+  <rect x="26" y="98" width="48" height="11" rx="3" fill="url(#wg)"/></svg>`; }
+function claretJugSVG(){ return `<svg viewBox="0 0 100 116" width="100%" height="100%">
+  <defs>${trophySilver('cj')}</defs>
+  <rect x="30" y="100" width="40" height="9" rx="2" fill="url(#cj)"/>
+  <rect x="41" y="86" width="18" height="15" fill="url(#cj)"/>
+  <path d="M33 52 C33 80 67 80 67 52 C67 45 60 41 50 41 C40 41 33 45 33 52 Z" fill="url(#cj)"/>
+  <path d="M67 48 C82 48 82 68 64 66" stroke="url(#cj)" stroke-width="4" fill="none" stroke-linecap="round"/>
+  <rect x="44" y="24" width="12" height="18" fill="url(#cj)"/>
+  <ellipse cx="50" cy="23" rx="13" ry="4" fill="url(#cj)"/>
+  <rect x="48" y="12" width="4" height="9" fill="url(#cj)"/>
+  <circle cx="50" cy="9" r="3.4" fill="url(#cj)"/></svg>`; }
+function wanamakerSVG(){ return `<svg viewBox="0 0 100 116" width="100%" height="100%">
+  <defs>${trophySilver('wm')}</defs>
+  <path d="M26 44 C2 42 6 82 32 73" stroke="url(#wm)" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M74 44 C98 42 94 82 68 73" stroke="url(#wm)" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <path d="M24 42 H76 V54 C76 72 64 82 50 82 C36 82 24 72 24 54 Z" fill="url(#wm)"/>
+  <path d="M30 42 Q50 28 70 42 Z" fill="url(#wm)"/>
+  <rect x="47" y="20" width="6" height="9" fill="url(#wm)"/><circle cx="50" cy="18" r="3.2" fill="url(#wm)"/>
+  <rect x="45" y="82" width="10" height="12" fill="url(#wm)"/>
+  <rect x="32" y="94" width="36" height="8" rx="2" fill="url(#wm)"/>
+  <rect x="26" y="102" width="48" height="10" rx="3" fill="url(#wm)"/></svg>`; }
+function greenJacketSVG(){ return `<svg viewBox="0 0 100 116" width="100%" height="100%">
+  <defs><linearGradient id="gj" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2aa35c"/><stop offset="1" stop-color="#0f5e34"/></linearGradient></defs>
+  <path d="M50 24 L30 20 L15 40 L24 49 L24 100 L76 100 L76 49 L85 40 L70 20 Z" fill="url(#gj)" stroke="#0a3d22" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M50 24 L34 29 L49 72 Z" fill="#1f9650" stroke="#0a3d22" stroke-width="1.5"/>
+  <path d="M50 24 L66 29 L51 72 Z" fill="#1f9650" stroke="#0a3d22" stroke-width="1.5"/>
+  <path d="M49 72 L50 50 L51 72 Z" fill="#0a3d22"/>
+  <circle cx="50" cy="78" r="2.4" fill="#f9d271"/><circle cx="50" cy="89" r="2.4" fill="#f9d271"/></svg>`; }
+function usOpenTrophySVG(){ return `<svg viewBox="0 0 100 116" width="100%" height="100%">
+  <defs>${trophyGold('uo')}</defs>
+  <path d="M22 26 C4 26 6 58 30 58" stroke="url(#uo)" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M78 26 C96 26 94 58 70 58" stroke="url(#uo)" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <path d="M24 20 H76 V40 C76 60 64 74 50 74 C36 74 24 60 24 40 Z" fill="url(#uo)"/>
+  <rect x="24" y="20" width="52" height="5" fill="#3a6fb0"/>
+  <rect x="45" y="74" width="10" height="16" fill="url(#uo)"/>
+  <rect x="33" y="90" width="34" height="8" rx="2" fill="url(#uo)"/>
+  <rect x="26" y="98" width="48" height="11" rx="3" fill="#3a6fb0"/></svg>`; }
+function majorTheme(name){
+  if(/Masters/i.test(name)) return {label:'The Masters · Green Jacket', accent:'#1f8f4e', svg:greenJacketSVG};
+  if(/U\.?S\.? Open/i.test(name)) return {label:'U.S. Open Champion', accent:'#3a6fb0', svg:usOpenTrophySVG};
+  if(/^The Open$|Open Championship/i.test(name)) return {label:'The Open · Claret Jug', accent:'#d8c38a', svg:claretJugSVG};
+  if(/Championship/i.test(name)) return {label:'PGA · Wanamaker Trophy', accent:'#cfd3d8', svg:wanamakerSVG};
+  return {label:'Major Championship', accent:'#EBA61F', svg:winTrophySVG};
+}
+// lightweight rAF confetti — one center burst (wins) or two corner cannons (majors); auto-stops
+function confettiRun(canvas, opts){
+  const ctx=canvas.getContext('2d'); let W=canvas.clientWidth||window.innerWidth, H=canvas.clientHeight||window.innerHeight;
+  const dpr=Math.min(2,window.devicePixelRatio||1); canvas.width=W*dpr; canvas.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0);
+  const cols=opts.colors, P=[];
+  const add=(x,y,ang,spd)=>{ const a=ang+(Math.random()-.5)*0.7, s=spd*(0.6+Math.random()*0.8);
+    P.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,g:0.12+Math.random()*0.06,rot:Math.random()*6.28,vr:(Math.random()-.5)*0.34,
+      w:5+Math.random()*6,h:7+Math.random()*8,col:cols[Math.floor(Math.random()*cols.length)],life:0,max:80+Math.random()*70}); };
+  if(opts.mode==='cannons'){ const n=opts.count/2; for(let i=0;i<n;i++){ add(6,H+4,-Math.PI*0.42,15+Math.random()*7); add(W-6,H+4,-Math.PI*0.58,15+Math.random()*7); } }
+  else { const cx=W/2, cy=H*0.34; for(let i=0;i<opts.count;i++) add(cx,cy,-Math.PI/2+(Math.random()-.5)*Math.PI*1.5,6+Math.random()*10); }
+  let raf, stopped=false, t=0;
+  (function frame(){ t++; ctx.clearRect(0,0,W,H);
+    for(let i=P.length-1;i>=0;i--){ const p=P[i]; p.vy+=p.g; p.x+=p.vx; p.y+=p.vy; p.vx*=0.99; p.rot+=p.vr; p.life++;
+      const al=p.life>p.max?Math.max(0,1-(p.life-p.max)/30):1;
+      if(p.y>H+24||al<=0){ P.splice(i,1); continue; }
+      ctx.save(); ctx.globalAlpha=al; ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.col; ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); ctx.restore(); }
+    if(!stopped && (P.length||t<8)) raf=requestAnimationFrame(frame);
+  })();
+  return ()=>{ stopped=true; cancelAnimationFrame(raf); };
+}
+function drawMajorWinCard(cv, info){
+  const W=600,H=760; cv.width=W; cv.height=H; const x=cv.getContext('2d');
+  const g=x.createLinearGradient(0,0,0,H); g.addColorStop(0,'#114a32'); g.addColorStop(1,'#06180f'); x.fillStyle=g; x.fillRect(0,0,W,H);
+  x.strokeStyle=info.accent||'#EBA61F'; x.lineWidth=4; x.strokeRect(13,13,W-26,H-26);
+  x.textAlign='center';
+  x.fillStyle='#F4E3C9'; x.font='600 26px Georgia, serif'; x.fillText('RUN THE', W/2, 72);
+  x.fillStyle='#EBA61F'; x.font='700 54px Georgia, serif'; x.fillText('TOUR', W/2, 124);
+  x.font='130px serif'; x.fillText('🏆', W/2, 286);
+  x.fillStyle='#f9d271'; x.font='800 40px Arial, sans-serif'; x.fillText('MAJOR CHAMPION', W/2, 358);
+  x.fillStyle='#dfeae2'; x.font='600 26px Georgia, serif'; x.fillText(info.evt, W/2, 398);
+  x.fillStyle='#F4E3C9'; x.font='700 44px Georgia, serif'; x.fillText(info.name, W/2, 474);
+  x.fillStyle='#9cbfa8'; x.font='700 20px Arial, sans-serif'; x.fillText('OVR '+info.ovr+'   ·   Year '+info.year, W/2, 508);
+  x.fillStyle='#35d6a0'; x.font='800 30px Arial, sans-serif'; x.fillText('Winning score '+info.score, W/2, 566);
+  x.fillStyle='#9cbfa8'; x.font='700 22px Arial, sans-serif'; x.fillText('build your golfer → runthe.gg/golf', W/2, H-48);
+}
+function shareMajorWin(evt,o){
+  const me=S.season.me; const cv=document.createElement('canvas');
+  drawMajorWinCard(cv,{name:me.name, ovr:Math.round(me.skill), evt:evt.name, score:par(o&&o.score!=null?o.score:0), year:S.year||1, accent:majorTheme(evt.name).accent});
+  const cap=`🏆 MAJOR CHAMPION — ${me.name}\nWon ${evt.name}${o&&o.score!=null?` at ${par(o.score)}`:''}\nRunTheTour · build your golfer → runthe.gg/golf`;
+  track('major_win_shared',{event:evt.name}); shareCard(cv,cap,me.name,'major-win');
+}
+let _celebStop=null;
+function celebrateWin(evt, o, opts){
+  opts=opts||{}; const major=!!evt.major, reduce=!!opts.reduce, me=S.season.me;
+  const theme=major?majorTheme(evt.name):{accent:'#EBA61F', svg:winTrophySVG, label:'Tournament Won'};
+  const win=document.createElement('div'); win.className='celebrate'+(major?' major':'');
+  if(major) win.appendChild($(`<div class="spot"></div>`));
+  const cv=document.createElement('canvas'); cv.className='confetti'; win.appendChild(cv);
+  win.appendChild($(`<div class="celeb-trophy">${theme.svg()}</div>`));
+  win.appendChild($(`<div class="celeb-kicker">${esc(major?theme.label:'Tournament Won')}</div>`));
+  win.appendChild($(`<div class="celeb-title">${major?'Major Champion':'Champion'}</div>`));
+  win.appendChild($(`<div class="celeb-sub">${esc(me.name)} · ${esc(evt.name)}${o&&o.score!=null?` · ${par(o.score)}`:''}</div>`));
+  const cheque=$(`<div class="celeb-cheque">+$0</div>`); win.appendChild(cheque);
+  if(major){ const cm=Math.max(1,((S.career&&S.career.majors)||0)+((S.season.totals[me.name]&&S.season.totals[me.name].majors)||0));
+    win.appendChild($(`<div class="celeb-tally">${ord(cm)} career major</div>`)); }
+  const actions=$(`<div class="celeb-actions"></div>`);
+  const cont=$(`<button class="btn goldfill">Continue ▸</button>`); actions.appendChild(cont);
+  if(major){ const sh=$(`<button class="btn gold">↗ Share win</button>`); sh.onclick=e=>{e.stopPropagation(); shareMajorWin(evt,o);}; actions.appendChild(sh); }
+  win.appendChild(actions);
+  document.body.appendChild(win);
+  try{ if(major && !reduce && navigator.vibrate) navigator.vibrate([0,35,40,55]); }catch(_){}
+  track(major?'major_won':'tournament_won',{event:evt.name});
+  const target=(o&&o.money)||0;
+  if(reduce){ cheque.textContent='+'+fmt(target); }
+  else { const dur=820,t0=performance.now(); (function cu(now){ const k=Math.min(1,(now-t0)/dur);
+    cheque.textContent='+'+fmt(Math.round(target*(1-Math.pow(1-k,3)))); if(k<1) requestAnimationFrame(cu); })(t0); }
+  if(major && !reduce){ const colors=['#EBA61F','#f9d271','#ffffff',theme.accent];   // confetti = majors only
+    _celebStop=confettiRun(cv,{count:170, colors, mode:'cannons'}); }
+  let done=false;
+  function finish(){ if(done)return; done=true; if(_celebStop){_celebStop();_celebStop=null;} win.remove();
+    if(opts.auto) advanceEvent(); render(); }
+  cont.onclick=e=>{ e.stopPropagation(); finish(); };
+  win.onclick=finish;
+  if(!major && !reduce) setTimeout(finish, 2200);          // wins auto-continue; majors wait (Share reachable)
+  else if(!major && reduce && opts.auto) setTimeout(finish, 900);
+}
 function scrSeason(){
   clearTimeout(seasonTimer);
   if(!S.curEvt || S.curEvt.idx!==S.evtIndex) beginEvent();
@@ -2509,6 +2664,13 @@ function scrSeason(){
   skip.onclick=skipToEnd;
   row.appendChild(auto); row.appendChild(skip); ctrl.appendChild(row);
   add(ctrl);   // controls span full width below both columns (stay at the bottom on mobile)
+
+  // a win earns a celebration before moving on (once per event); it drives what happens next
+  if(ce.done && isWin && !ce._celebrated){
+    ce._celebrated=true; clearTimeout(seasonTimer);
+    celebrateWin(evt, ce.order.find(x=>x.p.you), {auto:S.autoSim, lastEvent, reduce});
+    return;
+  }
 
   // scheduling
   if(reduce){
