@@ -3122,12 +3122,15 @@ function celebrateWin(evt, o, opts){
   // Auto Sim on → no buttons, the celebration just plays and advances on its own (incl. majors).
   // Manual → Continue (+ Share on majors) and wait for the tap so the Share button stays reachable.
   const autoAdv=!!opts.auto;
-  let done=false;
-  function finish(){ if(done)return; done=true; if(_celebStop){_celebStop();_celebStop=null;} win.remove(); advanceEvent(); render(); }
+  let done=false, celebTimer=null;
+  function finish(){ if(done)return; done=true; if(celebTimer){clearTimeout(celebTimer);celebTimer=null;} if(_celebStop){_celebStop();_celebStop=null;} win.remove(); advanceEvent(); render(); }
+  // Manual mode still offers Continue (+ Share on majors) for anyone who wants to linger/brag — but the
+  // celebration ALSO auto-advances on its own, so "just watch it go" needs no clicks. Tapping Share cancels
+  // the auto-advance so you never lose the chance to post a major.
   if(!autoAdv){
     const actions=$(`<div class="celeb-actions"></div>`);
     const cont=$(`<button class="btn goldfill">Continue ▸</button>`); cont.onclick=e=>{ e.stopPropagation(); finish(); }; actions.appendChild(cont);
-    if(major){ const sh=$(`<button class="btn gold">↗ Share win</button>`); sh.onclick=e=>{e.stopPropagation(); shareMajorWin(evt,o);}; actions.appendChild(sh); }
+    if(major){ const sh=$(`<button class="btn gold">↗ Share win</button>`); sh.onclick=e=>{ e.stopPropagation(); if(celebTimer){clearTimeout(celebTimer);celebTimer=null;} shareMajorWin(evt,o); }; actions.appendChild(sh); }
     win.appendChild(actions);
   }
   document.body.appendChild(win);
@@ -3140,8 +3143,8 @@ function celebrateWin(evt, o, opts){
   if(major && !reduce){ const colors=['#EBA61F','#f9d271','#ffffff',theme.accent];   // confetti = majors only
     _celebStop=confettiRun(cv,{count:170, colors, mode:'cannons'}); }
   win.onclick=finish;   // tap anywhere advances (skip)
-  if(autoAdv) setTimeout(finish, major?2600:2000);   // Auto Sim: play briefly, then advance (majors a touch longer)
-  else if(!major) setTimeout(finish, 2000);          // manual + regular: auto-advance after 2s; manual major waits for Continue
+  // auto-advance in EVERY mode now; majors get a longer, generous dwell so the moment lands before moving on
+  celebTimer=setTimeout(finish, autoAdv ? (major?2600:2000) : (major?4800:2000));
 }
 function scrSeason(){
   clearTimeout(seasonTimer);
