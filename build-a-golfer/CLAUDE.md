@@ -921,6 +921,19 @@ allows Google Fonts, or self-host Anton.*
     .blurbmore`. Verified via Playwright (collapsed→0 rows + result tag + legend; expand→rows +
     pref saved; legend/blurb toggles persist; no errors). Deployed to /golf.
 
+- 2026-06-28: **PWA safe-area fix + global course records everywhere.** (1) Tester on an
+  installed iOS Home-Screen PWA couldn't tap the ≡ menu — it sat under the translucent status
+  bar (we use `viewport-fit=cover` + `black-translucent`, so the web view extends under the
+  notch). Added safe-area insets: `.head` top padding now `calc(10px + env(safe-area-inset-top,
+  0px))`; `#app` padded by `env(safe-area-inset-left/right/bottom)` too (landscape notch + home
+  indicator). Degrades to the old look in normal browsers (insets=0 → 10px, verified). (2)
+  Owner applied `24_runtour_daily.sql` (success) and wanted course records global. The pipeline
+  already existed (`crLoad()` → `runtour_course_records` RPC → merges the global record + holder
+  into the local store; the records overlay shows it), but the record shown on the daily
+  PREVIEW and RESULT screens read the local store, which only got the global merge after opening
+  the overlay once. Added a proactive `if(sb && crCache===null) crLoad();` to both screens so
+  the course-record box is global everywhere, not just in the overlay. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
