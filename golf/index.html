@@ -352,6 +352,10 @@
     border:1px solid var(--line); border-radius:13px; overflow:hidden; margin-bottom:14px}
   .sstat{background:var(--panel); padding:10px 11px}
   .sstat.wide{grid-column:1 / -1; background:rgba(255,255,255,.06)}
+  .sstat.w3{grid-column:1 / 4; background:rgba(255,255,255,.06)}
+  .sstat.rankcell{background:rgba(235,166,31,.10)}
+  .authspin{width:13px;height:13px;border-radius:50%;border:2px solid rgba(235,166,31,.35);border-top-color:var(--gold);display:inline-block;animation:authspin .7s linear infinite}
+  @keyframes authspin{to{transform:rotate(360deg)}}
   .sstat .k{font:800 9.5px/1 var(--body); letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
   .sstat .v{font-family:var(--mono); font-weight:800; font-size:18px; margin-top:5px; color:var(--oncard)}
   .sstat .v.gold{color:var(--gold); font-size:22px}
@@ -1298,6 +1302,12 @@ function render(){
   card.appendChild(screen);
   app.appendChild(card);
   app.appendChild(footer());
+  // returning from a Google redirect, the token exchange + profile fetch take a few network
+  // round-trips. Show a visible "finishing" pill so the wait reads as in-progress instead of
+  // "sign-in is broken" (otherwise the confirmation can land mid-sim and feel like a bug).
+  if(S.authPending){
+    app.appendChild($(`<div style="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:30;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4);display:flex;align-items:center;gap:9px"><span class="authspin"></span>Finishing Google sign-in…</div>`));
+  }
   RT=screen;
   if(S.overlay==='record') overlayRecord(screen);
   if(S.overlay==='account') overlayAccount(screen);
@@ -2310,10 +2320,18 @@ function scrSeason(){
   const avg=t.played?ord(Math.round(t.finishSum/t.played)):'—';
   const high=t.best===99?'—':ord(t.best);
   const ec=seasonNet(t); const netCol=ec.net>=0?'#35d6a0':'#E14A33';
+  // live Tour Rank — where you sit on the season points list (FedEx-style), updated each event
+  const byPts=Object.entries(S.season.totals).map(([n,v])=>({n,points:v.points})).sort((a,b)=>b.points-a.points);
+  const tourRank=byPts.findIndex(r=>r.n===S.season.me.name)+1;
+  const NP=byPts.length;
+  const rankTxt=t.played?('#'+tourRank):'—';
   add($(`<div class="sbar">
-    <div class="sstat wide"><div class="k">Net profit · through ${t.played} event${t.played===1?'':'s'}</div>
+    <div class="sstat w3"><div class="k">Net profit · through ${t.played} event${t.played===1?'':'s'}</div>
       <div class="v" style="color:${netCol};font-size:22px">${fmtSigned(ec.net)}</div>
       <div class="k" style="margin-top:3px;text-transform:none;letter-spacing:0">${fmt(ec.gross)} won · −${fmt(ec.costs)} costs</div></div>
+    <div class="sstat rankcell"><div class="k">Tour Rank</div>
+      <div class="v gold" style="font-size:22px">${rankTxt}</div>
+      <div class="k" style="margin-top:3px;text-transform:none;letter-spacing:0">${t.played?('of '+NP):'season points'}</div></div>
     <div class="sstat"><div class="k">Avg finish</div><div class="v">${avg}</div></div>
     <div class="sstat"><div class="k">Wins</div><div class="v">${t.wins}</div></div>
     <div class="sstat"><div class="k">Cuts made</div><div class="v">${t.made}/${t.played}</div></div>
@@ -3559,6 +3577,9 @@ function sbInit(){
     let oauthReturn=false;
     try{ oauthReturn = !!localStorage.getItem('rtt_oauth_pending')
       || /[#&?](access_token|code|refresh_token)=/.test((location.hash||'')+(location.search||'')); }catch(e){}
+    // show the "finishing sign-in" pill immediately on return; clears in sbApply (or times out)
+    if(oauthReturn){ S.authPending=true;
+      setTimeout(()=>{ if(S.authPending){ S.authPending=false; if(!sbSignedIn()) toast('Google sign-in is taking a while — check your connection.'); render(); } }, 15000); }
     sb=window.supabase.createClient(SB_URL,SB_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:RTT_AUTH_KEY}});
     // Fresh auth changes (sign-in / sign-out / token refresh) always apply; the INITIAL
     // restored session is handled by getSession() below so we can honor "remember me".
@@ -3574,6 +3595,7 @@ function sbInit(){
   }catch(e){ sb=null; }
 }
 async function sbApply(session){
+  S.authPending=false;   // OAuth round-trip resolved (success or not) — drop the "finishing" pill
   sbUser=(session&&session.user)||null; sbUsername=null; sbProfile=null;
   let oauth=false; try{ if(localStorage.getItem('rtt_oauth_pending')&&sbUser){ oauth=true; localStorage.removeItem('rtt_oauth_pending'); } }catch(e){}
   if(sbUser&&sb){
