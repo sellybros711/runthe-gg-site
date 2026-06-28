@@ -2103,8 +2103,8 @@ function overlayLeaderboard(screen){
     const rowFn=r=>{
       const you=sbUser&&r.user_id===sbUser.id;
       return tab==='season'
-        ? lbRowHTML(r.rank,r.display_name,'OVR '+r.ovr+(r.golfer_name?' · '+r.golfer_name:''),r.season_earnings,you)
-        : lbRowHTML(r.rank,r.display_name,r.seasons+' season'+(r.seasons>1?'s':'')+' · '+r.wins+'W',r.career_earnings,you);
+        ? lbRowHTML(r.rank,r.display_name,(r.golfer_name?r.golfer_name+' · ':'')+'OVR '+r.ovr+(r.year?' · Yr '+r.year:''),r.season_earnings,you)
+        : lbRowHTML(r.rank,r.display_name,(r.golfer_name?r.golfer_name+' · ':'')+r.seasons+' season'+(r.seasons>1?'s':'')+' · '+r.wins+'W',r.career_earnings,you);
     };
     if(sbSignedIn()){
       board=globalRows.map(rowFn).join('');
@@ -2149,7 +2149,7 @@ function overlayLeaderboard(screen){
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
     <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px">${seg('season','Single Season')}${seg('career','Career')}</div>
     <h2 style="margin:0 0 2px">${tab==='season'?'Single Season Earnings':'Career Earnings'}</h2>
-    <div class="small muted" style="margin:0 0 8px">${tab==='season'?'Highest earnings in one season':'Career Mode total — updates after every season'}</div>
+    <div class="small muted" style="margin:0 0 8px">${tab==='season'?'Every season ranked — your best single-season earnings':'Every career sim ranked by total earnings'}</div>
     <div class="board">${board}</div>
     <div style="height:14px"></div>
     <button class="btn red">Close</button></div>`);
@@ -4817,7 +4817,7 @@ async function sbSubmitSeason(s){
 async function lbLoad(){
   if(!sb){ lbCache={season:[],career:[],ok:false}; render(); return; }
   try{
-    const [a,b]=await Promise.all([sb.rpc('runtour_season_board',{p_limit:50}),sb.rpc('runtour_career_board',{p_limit:50})]);
+    const [a,b]=await Promise.all([sb.rpc('runtour_season_board',{p_limit:100}),sb.rpc('runtour_career_board',{p_limit:100})]);
     lbCache={season:(a.data||[]),career:(b.data||[]),ok:!a.error&&!b.error};
   }catch(e){ lbCache={season:[],career:[],ok:false}; }
   render();   // refresh whatever's open (leaderboard board / summary guest-rank teaser)
