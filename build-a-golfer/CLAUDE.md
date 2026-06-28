@@ -1281,8 +1281,11 @@ allows Google Fonts, or self-host Anton.*
   Journeyman 2/0, Tour Pro 3/0, Contender 3/1, Star 3/1, Champion 3/2, Legend 3/2, Icon 3/3, G.O.A.T. 3/3
   (changes capped at 3 so you can't rebuild the whole bag). `repPerk()` drives `continueFranchise`'s
   `S.offseason.maxChanges/reSpins`. The off-season screen shows a "🏅 {rank} perk · N changes · M re-spins ·
-  reach {nextRank} for +X" banner (a climb nudge). NOTE: this intentionally nerfs the early game vs the old
-  flat 3+2 — it's the progression hook; aging decline (where changes matter) only bites ~year 12+.
+  reach {nextRank} for +X" banner (a climb nudge). REVISED to BASELINE+BONUS (owner): Amateur 2ch/1rs floor →
+  3ch/5rs at Icon/G.O.A.T. (changes capped 3). Nobody starts handicapped; climbing adds re-spins on top.
+  Part of the agreed Tour Rep reward concept: prestige (rank on profile + leaderboard, rank-gated
+  titles/cosmetics, tier-up moment) = backbone; convenience (re-spins, future season mulligan) additive;
+  power (changes) small/capped. Prestige pieces NOT yet built — awaiting owner go on sequencing.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
