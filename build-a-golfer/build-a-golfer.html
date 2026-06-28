@@ -1162,8 +1162,10 @@ function genRookie(rng,simYear,used){
   const nat=wpick(rng,NAT_W), fn=FNAMES[nat]||FNAMES.Other, sn=SNAMES[nat]||SNAMES.Other;
   let nm,t=0; do{nm=fn[Math.floor(rng()*fn.length)]+' '+sn[Math.floor(rng()*sn.length)];t++;}while(used.has(nm)&&t<60); used.add(nm);
   const age=18+Math.floor(rng()*5);
-  const tt=rng(); let pot; if(tt<.70)pot=cgauss(rng,80,2.5);else if(tt<.90)pot=cgauss(rng,85,1.5);else if(tt<.98)pot=cgauss(rng,89,1.5);else pot=cgauss(rng,92.5,1.5);
-  pot=clamp(Math.round(pot),70,96);
+  // the rare top tail is a GENERATIONAL talent (94-97) who ascends over years to contest #1 —
+  // keeps the world's ceiling rising so the player can't just arrive at the top and stay forever
+  const tt=rng(); let pot; if(tt<.70)pot=cgauss(rng,80,2.5);else if(tt<.90)pot=cgauss(rng,85,1.5);else if(tt<.98)pot=cgauss(rng,89,1.5);else pot=cgauss(rng,95,1.6);
+  pot=clamp(Math.round(pot),70,97);
   const ar=wpick(rng,ARCH_W), sig=ARCH_SIG[ar], cap={};
   SKK.forEach(s=>cap[s]=pot+(sig.includes(s)?6+Math.round(rng()*6):0)+Math.round(cgauss(rng,0,2)));
   cap.clu=Math.max(cap.clu,pot-2+Math.round(rng()*4));
@@ -1222,8 +1224,9 @@ function worldField(n){ const w=ensureWorld(); if(!w) return null;
     .map(g=>{const o={name:g.name,skill:g.lov}; SKK.forEach(s=>o[s]=g['l_'+s]); return o;}); }
 /* ---- YOUR golfer's bounded career: measured in YEARS PLAYED (not age). 40-year shelf life;
    decline from year 15. The FIELD (real + generated) is the one gated by real age. ---- */
-const DECLINE_START_YEAR=15, CAREER_MAX_YEARS=40, FIELD_RETIRE_AGE=55;
-const DECLINE_RATE={dist:1.8,acc:0.9,app:1.1,sht:0.8,scr:0.8,bnk:0.8,put:0.9,clu:0.4};
+const DECLINE_START_YEAR=10, CAREER_MAX_YEARS=40, FIELD_RETIRE_AGE=55;
+// power fades first (distance), finesse/experience hold up — so late career you adapt your build
+const DECLINE_RATE={dist:1.9,acc:1.0,app:1.0,sht:0.7,scr:0.7,bnk:0.7,put:0.6,clu:0.2};
 function applyPlayerDecline(){   // erodes your bag once per year from DECLINE_START_YEAR; re-spins offset it
   if((S.year||1) < DECLINE_START_YEAR) return;
   const accel = 1 + Math.max(0,(S.year-DECLINE_START_YEAR)-4)*0.12;
@@ -3081,12 +3084,24 @@ function newCareer(){ clearCareerSave(); reset(); render(); }
 function finishOffseason(){ track('offseason_done',{changes:S.offseason.changes}); startSeason(false); }
 function offSpin(){ if(S.current||S.spinning)return; reveal(); }
 function offReSpin(){ if(S.offseason.reSpins<=0)return; S.offseason.reSpins--; track('offseason_respin'); reveal(); }
-function offTake(k){ S.slots[k]={golfer:S.current.name,value:S.current[k]}; S.offseason.changes++; if(S.offseason.decline) delete S.offseason.decline[k]; S.current=null; track('offseason_swap',{slot:k}); render(); }
+// Diminishing returns on year-to-year upgrades: raising a low skill is easy, but climbing into
+// the elite range is a grind (84-90 gains count half, 90+ a quarter). Downgrades apply in full.
+// This is what stops a career from reaching "best in the world" in three seasons.
+function offCap(cur, rolled){
+  if(rolled<=cur) return rolled;                 // taking a lower skill is your call — applies fully
+  const segs=[[0,84,1],[84,90,0.5],[90,99,0.25]]; let pos=cur, gain=0;
+  for(const [lo,hi,m] of segs){ if(pos>=rolled) break; if(rolled<=lo||pos>=hi) continue;
+    const inSeg=Math.min(rolled,hi)-Math.max(pos,lo); if(inSeg>0){ gain+=inSeg*m; pos=Math.min(rolled,hi); } }
+  return Math.round(cur+gain);
+}
+function offTake(k){ const cur=S.slots[k]?S.slots[k].value:REPLACEMENT;
+  S.slots[k]={golfer:S.current.name,value:offCap(cur,S.current[k])}; S.offseason.changes++;
+  if(S.offseason.decline) delete S.offseason.decline[k]; S.current=null; track('offseason_swap',{slot:k}); render(); }
 function scrOffseason(){
   const os=S.offseason||{changes:0,maxChanges:3,reSpins:2};
   add($(`<div class="center"><span class="tag">Career Mode · Off-Season · Year ${S.year} prep</span></div>`));
   add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tune your game</h1>`));
-  add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag — up to <b>3 changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. Keep your bag as-is, or spin to improve it — but once you spin, you must take a skill before moving on.</p>`));
+  add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag — up to <b>${os.maxChanges} changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. Elite skills are hard to raise — gains shrink the closer a rating climbs toward the 90s, so pick your spots. Once you spin, you must take a skill before moving on.</p>`));
   const cols=$(`<div class="cols"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
   cols.appendChild(left); cols.appendChild(right); add(cols);
@@ -3106,7 +3121,7 @@ function scrOffseason(){
     left.appendChild($(`<div class="small muted" style="margin:10px 0 -2px;text-align:center">Tap a skill to swap it in — green is an upgrade, red a downgrade</div>`));
     const grid=$(`<div class="attrs"></div>`);
     CATS.forEach(cat=>{
-      const cur=S.slots[cat.k]?S.slots[cat.k].value:REPLACEMENT; const nv=S.current[cat.k]; const d=nv-cur;
+      const cur=S.slots[cat.k]?S.slots[cat.k].value:REPLACEMENT; const nv=offCap(cur,S.current[cat.k]); const d=nv-cur;
       const dcol=d>0?'#35d6a0':(d<0?'#e07a5f':'var(--muted)');
       const bt=$(`<button class="attr" aria-label="Swap ${cat.short} to ${nv}, ${d>=0?'up':'down'} ${Math.abs(d)}">
         <span class="lab">${cat.short}</span><span class="val">${nv}</span>
@@ -3118,7 +3133,7 @@ function scrOffseason(){
     else left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left — take one of ${S.current.name}'s skills.</div>`));
   } else if(!S.spinning){
     if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel</button>`); spin.onclick=offSpin; left.appendChild(spin); }
-    else left.appendChild($(`<div class="small muted center" style="padding:10px 0">All 3 changes used.</div>`));
+    else left.appendChild($(`<div class="small muted center" style="padding:10px 0">All ${os.maxChanges} changes used.</div>`));
     const cont=$(`<button class="btn goldfill" style="margin-top:10px">Start Year ${S.year} ▸<span class="sub">${os.changes>0?'Run the new season':'Keep your bag — run it as-is'}</span></button>`);
     cont.onclick=finishOffseason;
     left.appendChild(cont);

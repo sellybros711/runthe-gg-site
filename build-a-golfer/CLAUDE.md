@@ -1020,6 +1020,26 @@ allows Google Fonts, or self-host Anton.*
   reachable). Verified via Playwright (regular w/ autoSim off advances idx+1 after 2s; major
   doesn't auto-advance, Continue advances). Deployed to /golf.
 
+- 2026-06-28: **Career difficulty pass — slower climb to #1, more strategy.** Owner: reaches
+  "best in the world" within ~3 years every time; wants year-to-year upgrades harder + more
+  skill/strategy. Diagnosis: off-season was a one-way ratchet (3 changes + 2 re-spins, only-take-
+  upgrades, see all 8 skills → cherry-pick), no decline till yr15, field ceiling can't rise, and
+  OVR slope (0.238/pt) makes a small edge dominant. Shipped the recommended "a little harder"
+  bundle (AskUserQuestion tool was erroring; went with the flagged recommendation, all tunable):
+  • **Diminishing high-OVR upgrades (core fix):** new `offCap(cur,rolled)` — gains below 84 apply
+    full, 84-90 at half, 90+ at quarter (downgrades apply fully). `offTake` + the off-season grid
+    use it, so a Legendary pull lifts an 80 slot to ~88 and an 89 slot only to ~91 (+2). Early
+    development stays quick; the last stretch to elite is a multi-year grind. Copy updated.
+  • **Earlier, age-modeled decline:** `DECLINE_START_YEAR` 15→10; rates retuned so power fades
+    first (dist 1.9) while finesse/experience hold (put 0.6, clu 0.2) — a real prime window, and
+    late career you adapt your build.
+  • **Generational phenoms:** genRookie rare tail (2%) now ~94-97 potential (clamp 97), so the
+    world's top keeps rising and #1 stays contested (you can be overtaken). ~1.3% of rookies 94+.
+  Kept 3 changes / 2 re-spins (didn't over-nerf). Verified via Playwright (offCap curve, swap
+  applies capped value, decline yr=10, phenom rate, off-season renders clean, no errors).
+  Deployed to /golf. NOT done (offered, await go-ahead): training-points off-season model,
+  build-shape/course-fit weighting, fatigue/schedule strategy, clutch-in-majors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
