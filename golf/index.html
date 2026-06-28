@@ -902,10 +902,10 @@ function drawGolfer(rng,pool,revealed){
   const g=all[Math.floor(rng()*all.length)]; revealed.add(g.name); return g;
 }
 
-// Season schedule = permanent ANCHORS (the 4 majors, The Players, marquee signature events,
-// the playoffs + finale) that recur every year, PLUS a ROTATING slate drawn from REG_POOL so a
-// career doesn't replay the same smaller tournaments each season. `wk` is the week-of-season slot
-// that orders everything chronologically (Jan → Tour Championship) once anchors + picks are merged.
+// Season schedule (20 events) = permanent ANCHORS (the 4 majors, The Players, the marquee
+// signature events, the two FedEx playoffs + the Tour Championship finale) that recur every year,
+// PLUS a ROTATING slate drawn from REG_POOL so a career doesn't replay the same smaller
+// tournaments each season. `wk` orders everything chronologically (Jan → Tour Championship).
 const mkEvt=e=>({name:e[0],purse:e[1]*1e6,type:e[2],wk:e[3],major:e[2]==='major',big:(e[2]==='major'||e[2]==='sig'||e[2]==='finale')});
 const ANCHORS=[
   ['Kapalua Invitational',20,'sig',1],
@@ -944,7 +944,7 @@ const REG_POOL=[
   ['3M Open',8.1,'reg',29],
   ['Wyndham Championship',8.1,'reg',30],
 ].map(mkEvt);
-const REG_PER_SEASON=11, REG_STRIDE=5;   // 11 rotating events/season; STRIDE<count → ~45% turnover year to year
+const REG_PER_SEASON=7, REG_STRIDE=4;   // 13 anchors + 7 rotating = 20 events/season; ~4 of 7 small events swap each year
 // default slate (daily / fallback): anchors + the first rotating window, in calendar order
 const SCHEDULE=ANCHORS.concat(REG_POOL.slice(0,REG_PER_SEASON)).map(e=>({...e})).sort((a,b)=>a.wk-b.wk);
 function majorsSchedule(){ return ANCHORS.filter(e=>e.major).map(e=>({...e})).sort((a,b)=>a.wk-b.wk); }
@@ -999,6 +999,25 @@ const COURSEFIT={
   "Travelers Championship": {dist:1.243,acc:1.243,app:0.897,sht:1.046,scr:1.046,bnk:1.046,put:0.987,clu:1},  // TPC River Highlands
   "Wyndham Championship": {dist:1.054,acc:1.054,app:0.82,sht:0.82,scr:0.82,bnk:0.82,put:0.975,clu:1},  // Sedgefield CC
   "Tour Championship": {dist:0.82,acc:0.82,app:0.861,sht:0.857,scr:0.857,bnk:0.857,put:0.968,clu:1},  // East Lake GC
+  // --- FedEx Cup playoffs ---
+  "FedEx St. Jude Championship": {dist:1.12,acc:1.12,app:1.2,sht:1.1,scr:1.1,bnk:1.1,put:1.05,clu:1},  // TPC Southwind — tight, water, accuracy + approach
+  "BMW Championship":            {dist:1.18,acc:1.18,app:1.18,sht:1.1,scr:1.1,bnk:1.1,put:1.05,clu:1},  // rotating big-test venues — long, all-around
+  // --- rotating regular-tour venues: each given the character of its real host course ---
+  "Sony Open":              {dist:0.95,acc:0.95,app:1.15,sht:1.05,scr:1.05,bnk:1.05,put:1.18,clu:1},  // Waialae CC — tight, short, wedges + putting
+  "The American Express":   {dist:1.0,acc:1.0,app:1.0,sht:0.95,scr:0.95,bnk:0.95,put:1.18,clu:1},     // PGA West / La Quinta — birdie-fest, hot putter
+  "Farmers Insurance Open": {dist:1.25,acc:1.25,app:1.22,sht:1.05,scr:1.05,bnk:1.05,put:1.0,clu:1},   // Torrey Pines South — long, brutish ball-striking
+  "Genesis Invitational":   {dist:1.1,acc:1.1,app:1.27,sht:1.18,scr:1.18,bnk:1.18,put:1.0,clu:1},     // Riviera CC — elite ball-striking, kikuyu short game
+  "Mexico Open":            {dist:1.1,acc:1.1,app:1.0,sht:0.95,scr:0.95,bnk:0.95,put:1.12,clu:1},     // Vidanta Vallarta — scoring, length helps
+  "Cognizant Classic":      {dist:1.12,acc:1.12,app:1.22,sht:1.1,scr:1.1,bnk:1.1,put:1.0,clu:1},      // PGA National (Bear Trap) — water, wind, accuracy
+  "Valspar Championship":   {dist:1.1,acc:1.1,app:1.22,sht:1.12,scr:1.12,bnk:1.12,put:1.08,clu:1},    // Innisbrook Copperhead — tight, small fast greens
+  "Houston Open":           {dist:1.2,acc:1.2,app:1.18,sht:1.05,scr:1.05,bnk:1.05,put:1.0,clu:1},     // Memorial Park — long, demanding ball-striking
+  "Texas Open":             {dist:1.15,acc:1.15,app:1.15,sht:1.18,scr:1.18,bnk:1.18,put:1.0,clu:1},   // TPC San Antonio Oaks — windy, scrambling
+  "Zurich Team Classic":    {dist:1.1,acc:1.1,app:1.0,sht:0.95,scr:0.95,bnk:0.95,put:1.1,clu:1},      // TPC Louisiana — water, low scoring
+  "Charles Schwab Challenge":{dist:0.98,acc:0.98,app:1.27,sht:1.12,scr:1.12,bnk:1.12,put:1.05,clu:1}, // Colonial — short, precise irons (Hogan's Alley)
+  "Rocket Mortgage Classic":{dist:1.05,acc:1.05,app:1.0,sht:0.95,scr:0.95,bnk:0.95,put:1.18,clu:1},   // Detroit GC — birdie-fest, putting
+  "John Deere Classic":     {dist:0.95,acc:0.95,app:1.05,sht:1.05,scr:1.05,bnk:1.05,put:1.22,clu:1},  // TPC Deere Run — low scoring, hot putter
+  "Scottish Open":          {dist:1.15,acc:1.15,app:1.1,sht:1.15,scr:1.15,bnk:1.15,put:1.08,clu:1},   // links — wind, flight control, all-around
+  "3M Open":                {dist:1.12,acc:1.12,app:1.0,sht:1.0,scr:1.0,bnk:1.0,put:1.12,clu:1},      // TPC Twin Cities — long with water, birdies
   // --- majors: measured venues (course_fit.json) ---
   'The Masters':      {dist:1.137,acc:1.137,app:1.141,sht:1.339,scr:1.339,bnk:1.339,put:0.976,clu:1},  // Augusta National GC (fully measured)
   'The Championship': {dist:1.124,acc:1.124,app:1.215,sht:1.11,scr:1.11,bnk:1.11,put:1.082,clu:1},  // Valhalla GC
