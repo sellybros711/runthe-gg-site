@@ -470,6 +470,15 @@ const ord=(n)=>{const v=n%100; if(v>=11&&v<=13)return n+'th'; return n+({1:'st',
 /* ---------- persistence / career ---------- */
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
           set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
+/* One-time data reset (clean slate for the achievements relaunch). Bump RESET_EPOCH to wipe every
+   client's local game data (all bag_* keys: careers, daily, streaks, achievements, look) on next load.
+   Auth sessions (sb-* keys) are left intact so signed-in players stay signed in. The cloud tables are
+   reset separately via supabase/25_runtour_reset.sql. */
+const RESET_EPOCH=2;
+(function resetData(){ try{ if(LS.get('bag_reset_epoch',0)===RESET_EPOCH) return;
+  const kill=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&/^bag_/.test(k)&&k!=='bag_reset_epoch') kill.push(k); }
+  kill.forEach(k=>localStorage.removeItem(k)); localStorage.setItem('bag_reset_epoch',JSON.stringify(RESET_EPOCH));
+}catch(e){} })();
 /* vendor-neutral analytics hook: pushes a key event to window.dataLayer and fires a
    CustomEvent. NO third-party script or measurement ID is loaded here — at deploy, wire
    GA4/GTM/Plausible to dataLayer or the 'rtt:*' events. Key events: game_start, return_visit,
@@ -630,7 +639,7 @@ function trophyCabinetHTML(m){
    bag (`achMetrics`): lifetime career stats (lt), daily stats, spotlight/rival wins, and SITUATIONAL flags
    captured at the moment they happen (playoff wins, wire-to-wire, comebacks, low rounds, etc., in bag_ach).
    Completing achievements awards POINTS → a named Tour Rep rank (the "keep playing" hook) and unlocks. */
-const ACH_CATS=['Getting Started','Winning','Majors','Clutch','Consistency','The Money','Career & Legacy','Daily Challenge','Rivalry & Spotlight','The Build'];
+const ACH_CATS=['Getting Started','Winning','Majors','Clutch','Records & Streaks','Consistency','The Money','Career & Legacy','Daily Challenge','Daily Mastery','Rivalry & Spotlight','The Build','The Draft'];
 // tiered-achievement helper: one metric, several thresholds
 function aT(idb,cat,key,defs){ return defs.map(([g,nm,d,p])=>({id:idb+'_'+g,cat,name:nm,desc:d,goal:g,pts:p,get:m=>m[key]||0})); }
 const ACH=[].concat(
@@ -730,7 +739,53 @@ const ACH=[].concat(
    {id:'dbt_365',cat:'Daily Challenge',name:'Beat the Pro 365',desc:'Beat the pro 365 times.',              goal:365,pts:150,get:m=>m.dailyBeat},
    {id:'dst_365',cat:'Daily Challenge',name:'Year-Long Streak',desc:'Reach a 365-day play streak.',         goal:365,pts:150,get:m=>m.streakBest},
    {id:'rv_25',  cat:'Rivalry & Spotlight',name:'Career Nemesis',desc:'Beat rivals 25 times.',             goal:25,pts:150,get:m=>m.rivalWins},
-   {id:'sp_24',  cat:'Rivalry & Spotlight',name:'Spotlight Fixture',desc:'Win 24 Monthly Spotlights.',     goal:24,pts:150,get:m=>m.spotWins}]
+   {id:'rv_high',cat:'Rivalry & Spotlight',name:'Giant Slayer', desc:'Finish a season ahead of a rival rated higher than you.',goal:1,pts:35,get:m=>m.rivalUpset},
+   {id:'sp_24',  cat:'Rivalry & Spotlight',name:'Spotlight Fixture',desc:'Win 24 Monthly Spotlights.',     goal:24,pts:150,get:m=>m.spotWins}],
+  // ================= EXPANSION: virtually everything achievable =================
+  // ---- Getting Started (meta) ----
+  [{id:'gs_acct', cat:'Getting Started',name:'Signed & Sealed', desc:'Create or sign in to a RunThe.GG account.', goal:1,pts:10,get:m=>m.onAccount},
+   {id:'gs_title',cat:'Getting Started',name:'Dressed for Success',desc:'Equip a player title.',                 goal:1,pts:10,get:m=>m.titleSet},
+   {id:'gs_finale',cat:'Getting Started',name:'Made It to the End',desc:'Reach the season finale.',              goal:1,pts:10,get:m=>m.played}],
+  // ---- Winning ----
+  [{id:'win_finale',cat:'Winning',name:'Tour Championship', desc:'Win the season finale.',                  goal:1,pts:60, get:m=>m.wonFinale},
+   {id:'win_players',cat:'Winning',name:'The Fifth Major',  desc:'Win The Players Championship.',           goal:1,pts:50, get:m=>m.wonPlayers},
+   {id:'win_sig',   cat:'Winning',name:'Signature Win',     desc:'Win a signature event.',                  goal:1,pts:35, get:m=>m.wonSignature}],
+  // ---- Majors ----
+  [{id:'maj_50',  cat:'Majors',name:'Major Immortal',       desc:'Win 50 career majors.',                  goal:50,pts:150,get:m=>m.majors},
+   {id:'maj_triple',cat:'Majors',name:'Triple Major Year',  desc:'Win 3 majors in a single season.',       goal:3,pts:100,get:m=>m.majorsInSeasonMax},
+   {id:'maj_2nd', cat:'Majors',name:'Major Heartbreak',     desc:'Finish runner-up in a major.',           goal:1,pts:20, get:m=>m.majorRunnerUp}],
+  // ---- Records & Streaks ----
+  [{id:'rs_w3',  cat:'Records & Streaks',name:'Three-Peat',  desc:'Win 3 tournaments in a row.',            goal:3,pts:50, get:m=>m.winStreakMax},
+   {id:'rs_w5',  cat:'Records & Streaks',name:'On Fire',     desc:'Win 5 tournaments in a row.',            goal:5,pts:100,get:m=>m.winStreakMax},
+   {id:'rs_c20', cat:'Records & Streaks',name:'Steady Eddie',desc:'Make 20 cuts in a row.',                goal:20,pts:35, get:m=>m.cutStreakMax},
+   {id:'rs_c50', cat:'Records & Streaks',name:'Always Around',desc:'Make 50 cuts in a row.',               goal:50,pts:75, get:m=>m.cutStreakMax},
+   {id:'rs_c100',cat:'Records & Streaks',name:'Cut-Proof',   desc:'Make 100 cuts in a row.',               goal:100,pts:150,get:m=>m.cutStreakMax},
+   {id:'rs_m12', cat:'Records & Streaks',name:'Statement Win',desc:'Win a tournament by 12+ strokes.',     goal:12,pts:150,get:m=>m.winMargin},
+   {id:'rs_pl',  cat:'Records & Streaks',name:'Bridesmaid',  desc:'Lose in a sudden-death playoff.',        goal:1,pts:15, get:m=>m.playoffLosses},
+   {id:'rs_money2',cat:'Records & Streaks',name:'Runner-Up Blues',desc:'Finish 2nd on the season money list.',goal:1,pts:20,get:m=>m.moneyRunnerUp}],
+  // ---- Consistency ----
+  [{id:'con_t10k',cat:'Consistency',name:'Top-10 Titan',    desc:'Card 1500 career top-10s.',             goal:1500,pts:150,get:m=>m.top10}],
+  // ---- The Money ----
+  [{id:'mon_net50', cat:'The Money',name:'Comfortable',     desc:'Reach $50M career net worth.',           goal:50e6,pts:35, get:m=>m.net},
+   {id:'mon_net250',cat:'The Money',name:'Seriously Rich',  desc:'Reach $250M career net worth.',          goal:250e6,pts:100,get:m=>m.net}],
+  // ---- Career & Legacy ----
+  [{id:'leg_p100',cat:'Career & Legacy',name:'Centurion of Starts',desc:'Play 100 career tournaments.',    goal:100,pts:35, get:m=>m.played},
+   {id:'leg_p500',cat:'Career & Legacy',name:'Tour Workhorse',desc:'Play 500 career tournaments.',         goal:500,pts:100,get:m=>m.played}],
+  // ---- Daily Mastery ----
+  aT('dme','Daily Mastery','dailyEagles',[[1,'Eagle Eye','Make an eagle in the Daily Challenge.',15],[25,'Eagle Hunter','Make 25 daily eagles.',50],[100,'Eagle Machine','Make 100 daily eagles.',100]]),
+  [{id:'dm_alb', cat:'Daily Mastery',name:'Albatross!',     desc:'Make an albatross (double eagle) in the Daily.',goal:1,pts:75,get:m=>m.dailyAlbatross},
+   {id:'dm_bf',  cat:'Daily Mastery',name:'Flawless',       desc:'Card a bogey-free daily round.',         goal:1,pts:35, get:m=>m.dailyBogeyFree},
+   {id:'dm_l8',  cat:'Daily Mastery',name:'Daily Low',      desc:'Shoot 8-under or better in a daily round.',goal:1,pts:35,get:m=>m.dailyLow8},
+   {id:'dm_l10', cat:'Daily Mastery',name:'Daily Domination',desc:'Shoot 10-under or better in a daily round.',goal:1,pts:60,get:m=>m.dailyLow10},
+   {id:'dm_rec1',cat:'Daily Mastery',name:'Record Holder',  desc:'Set a course record in the Daily.',      goal:1,pts:50, get:m=>m.dailyRecords},
+   {id:'dm_rec10',cat:'Daily Mastery',name:'Record Collector',desc:'Set 10 daily course records.',         goal:10,pts:100,get:m=>m.dailyRecords},
+   {id:'dm_c10', cat:'Daily Mastery',name:'Globetrotter',   desc:'Play 10 different daily courses.',        goal:10,pts:50, get:m=>m.distinctDailyCourses},
+   {id:'dm_call',cat:'Daily Mastery',name:'Played Them All', desc:'Play all 16 courses in the daily rotation.',goal:16,pts:100,get:m=>m.distinctDailyCourses}],
+  // ---- The Draft / Build ----
+  [{id:'dr_leg', cat:'The Draft',name:"Legend's Touch",     desc:'Draft a skill from a Legendary golfer.', goal:1,pts:35, get:m=>m.legendaryDrafted},
+   {id:'dr_99',  cat:'The Draft',name:'Perfect Attribute',  desc:'Carry a 99-rated skill into a season.',  goal:1,pts:60, get:m=>m.maxSkill99},
+   {id:'dr_spec',cat:'The Draft',name:'Specialist',         desc:'Carry a 95+ rated skill.',               goal:1,pts:35, get:m=>m.maxSingle95},
+   {id:'dr_team',cat:'The Draft',name:'Dream Team',         desc:'Build a bag with 8 skills from 8 different golfers.',goal:1,pts:50,get:m=>m.allEight}]
 );
 const ACH_BY_CAT=ACH_CATS.map(c=>({cat:c, list:ACH.filter(a=>a.cat===c)}));
 const ACH_TOTAL=ACH.length, ACH_TOTAL_PTS=ACH.reduce((s,a)=>s+a.pts,0);
@@ -745,12 +800,28 @@ function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const 
     slamSeasons:lt.slamSeasons, underdogSeasons:lt.underdogSeasons, careers:lt.careers, seasons:lt.seasons,
     maxOvr:lt.maxOvr, distinctMajors:lt.distinctMajors, careerSlams:lt.careerSlams, rivalWins:lt.rivalWins||0,
     mastersWins:lt.maj.masters, pgaWins:lt.maj.champ, usopenWins:lt.maj.usopen, openWins:lt.maj.open,
-    dailyPlayed:ds.played||0, dailyBeat:ds.beat||0, streakBest:sk.longest||0, spotWins:spotWins() }); }
+    dailyPlayed:ds.played||0, dailyBeat:ds.beat||0, streakBest:sk.longest||0, spotWins:spotWins(),
+    onAccount:(typeof sbSignedIn==='function'&&sbSignedIn())?1:0,
+    titleSet:(S.look&&S.look.title&&S.look.title!=='none')?1:0,
+    distinctDailyCourses:Object.keys(f.dcourses||{}).length }); }
+// per-round daily feats (eagles, bogey-free, low rounds, course records, courses seen) → achievement flags
+function captureDailyFeats(holes,total,courseKey,isRec){ const st=achState(), f=st.flags;
+  let eag=0,alb=0,bf=true; (holes||[]).forEach(h=>{ if(h.toPar<=-2)eag++; if(h.toPar<=-3)alb++; if(h.toPar>0)bf=false; });
+  f.dailyEagles=(f.dailyEagles||0)+eag; f.dailyAlbatross=(f.dailyAlbatross||0)+alb;
+  if(bf&&(holes||[]).length===18)f.dailyBogeyFree=1; if(total<=-8)f.dailyLow8=1; if(total<=-10)f.dailyLow10=1;
+  if(isRec)f.dailyRecords=(f.dailyRecords||0)+1;
+  if(courseKey){ f.dcourses=f.dcourses||{}; f.dcourses[courseKey]=1; }
+  LS.set(acctKey('bag_ach'),st); }
 function achDone(id){ return !!achState().unlocked[id]; }
 function achPoints(){ return achState().pts||0; }
 function achCount(){ const u=achState().unlocked; return Object.keys(u).length; }
-function repTier(pts){ pts=pts==null?achPoints():pts; let t=REP_TIERS[0],nx=null; for(let i=0;i<REP_TIERS.length;i++){ if(pts>=REP_TIERS[i].at){t=REP_TIERS[i]; nx=REP_TIERS[i+1]||null;} } return {tier:t, next:nx}; }
-function repPerkReSpins(){ const n=repTier().tier.name; return (n==='Legend'||n==='Icon')?2:(n==='Champion'||n==='Star'||n==='Contender')?1:0; }
+const GOAT_TIER={name:'G.O.A.T.', at:ACH_TOTAL_PTS};   // the apex rank — every achievement complete
+function repTier(pts){ pts=pts==null?achPoints():pts;
+  if(achCount()>=ACH_TOTAL) return {tier:GOAT_TIER, next:null};   // 100% complete → G.O.A.T.
+  let t=REP_TIERS[0],nx=null; for(let i=0;i<REP_TIERS.length;i++){ if(pts>=REP_TIERS[i].at){t=REP_TIERS[i]; nx=REP_TIERS[i+1]||null;} }
+  if(!nx) nx=GOAT_TIER;   // Icon's next goal is the G.O.A.T. (full completion)
+  return {tier:t, next:nx}; }
+function repPerkReSpins(){ const n=repTier().tier.name; return (n==='Legend'||n==='Icon'||n==='G.O.A.T.')?2:(n==='Champion'||n==='Star'||n==='Contender')?1:0; }
 // situational-flag recorder: inc (add), max (keep largest), set (boolean/flag)
 function recordAchEvent(ev){ const s=achState(); const f=s.flags;
   if(ev.inc) for(const k in ev.inc) f[k]=(f[k]||0)+ev.inc[k];
@@ -770,16 +841,16 @@ function achEarnedHTML(list){ if(!list||!list.length) return '';
 function achToast(fresh){ if(!fresh||!fresh.length)return; const a=fresh[0];
   toast(`🏅 Achievement: ${a.name}${fresh.length>1?` (+${fresh.length-1} more)`:''}`); }
 // Tour Rep header — rank + points + progress bar to the next rank (the profile's headline reward)
-function repHeaderHTML(){ const pts=achPoints(), r=repTier(pts), done=achCount();
+function repHeaderHTML(){ const pts=achPoints(), r=repTier(pts), done=achCount(), goat=(r.tier.name==='G.O.A.T.');
   const lo=r.tier.at, hi=r.next?r.next.at:ACH_TOTAL_PTS, frac=hi>lo?Math.max(0,Math.min(1,(pts-lo)/(hi-lo))):1;
-  return `<div class="scout" style="max-width:520px;margin:0 auto 12px;border-color:var(--gold)">
+  return `<div class="scout" style="max-width:520px;margin:0 auto 12px;border-color:${goat?'#f6cd74':'var(--gold)'}${goat?';background:linear-gradient(180deg,rgba(235,166,31,.14),rgba(235,166,31,.04))':''}">
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
       <div><div class="small muted" style="letter-spacing:.14em;text-transform:uppercase;font-size:10px">Tour Rep</div>
-        <div style="font-family:var(--serif);font-weight:800;font-size:22px;color:var(--gold);line-height:1.05">${r.tier.name}</div></div>
+        <div style="font-family:var(--serif);font-weight:800;font-size:${goat?24:22}px;color:var(--gold);line-height:1.05">${goat?'🐐 ':''}${r.tier.name}</div></div>
       <div style="text-align:right"><div style="font-weight:800;font-size:18px;color:var(--oncard)">${pts} pts</div>
         <div class="small muted">${done}/${ACH_TOTAL} done</div></div></div>
     <div style="margin-top:9px;height:8px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden"><span style="display:block;height:100%;width:${Math.round(frac*100)}%;background:linear-gradient(90deg,#e6a91f,#f6cd74)"></span></div>
-    <div class="small muted center" style="margin-top:5px">${r.next?`${hi-pts} pts to <b style="color:var(--gold)">${r.next.name}</b>`:'Maxed — an Icon of the tour'}</div></div>`; }
+    <div class="small muted center" style="margin-top:5px">${goat?'<b style="color:#f6cd74">Every achievement complete — you are the Greatest Of All Time.</b>':(r.next?`${hi-pts} pts to <b style="color:var(--gold)">${r.next.name}</b>${r.next.name==='G.O.A.T.'?' (complete every achievement)':''}`:'')}</div></div>`; }
 // collapsible achievement checklist by category (checkbox fills on completion; progress bar while in progress)
 function achListHTML(){ const m=achMetrics(), u=achState().unlocked, open=S.achOpen||{};
   return ACH_BY_CAT.map(({cat,list})=>{ const got=list.filter(a=>u[a.id]).length, isOpen=!!open[cat];
@@ -1420,6 +1491,7 @@ function recordCourseScore(courseKey,toPar,ovr,name){ const r=courseRecords(); c
 
 const FIELDSIZE=120;   // season field = you + (FIELDSIZE-1) data-grounded golfers (DataGolf spec §3)
 const FIELDPOOL=GOLFERS.filter(g=>g.fld);   // only current/historical (SG-rated) players make a credible field
+const GOLFER_RARITY=Object.fromEntries(GOLFERS.map(g=>[g.name,g.rarity]));   // draft-card rarity by name (for achievements)
 /* ============ CAREER MODE — living world: aging, retirement, generated rookies (career spec §1-6) ============ */
 const CW={dist:.11,acc:.12,app:.21,sht:.10,scr:.08,bnk:.06,put:.19,clu:.13};
 const SKK=['dist','acc','app','sht','scr','bnk','put','clu'];
@@ -1866,6 +1938,7 @@ function scrRules(){
   done.onclick=back; add(done);
 }
 function overlayRecord(screen){
+  evaluateAch();   // retroactively credit anything already earned so the checklist + Tour Rep are current
   const c=career(); const badges=c.badges||{};
   const rows=c.hof.length? c.hof.map((h,i)=>`<div class="lb" style="grid-template-columns:28px 1fr 60px 96px">
       <span class="pos">${i===0?'🏆':i+1}</span><span class="pl">${h.name||'Your Golfer'}</span>
@@ -2842,7 +2915,17 @@ function finalizeEvent(){
     if(you){ const ev={inc:{},max:{},set:{}};
       const myR=you.rounds.filter(r=>r!=null);
       if(myR.length) ev.max.lowRoundDepth=Math.max(0,-Math.min(...myR));   // deepest under-par round
+      // win / made-cut streaks (need reset logic → direct flag math)
+      { const stk=achState(), fk=stk.flags; const madeCut=(typeof you.pos==='number');
+        fk.curCutStreak=madeCut?((fk.curCutStreak||0)+1):0; fk.cutStreakMax=Math.max(fk.cutStreakMax||0,fk.curCutStreak);
+        fk.curWinStreak=(you.pos===1)?((fk.curWinStreak||0)+1):0; fk.winStreakMax=Math.max(fk.winStreakMax||0,fk.curWinStreak);
+        LS.set(acctKey('bag_ach'),stk); }
+      if(evt.major && you.pos===2) ev.set.majorRunnerUp=1;                  // so-close situational
+      if(ce.playoff&&ce.playoff.you&&!ce.playoff.youWon) ev.inc.playoffLosses=1;
       if(you.pos===1){
+        if(/Tour Championship|Finale/i.test(evt.name)||evt.type==='finale') ev.set.wonFinale=1;
+        if(/Players/i.test(evt.name)) ev.set.wonPlayers=1;
+        if(evt.big) ev.set.wonSignature=1;
         const cum=(k)=>{ let s=0; for(let i=0;i<=k;i++) s+=(you.rounds[i]||0); return s; };
         const lead=(k)=>{ let best=Infinity; ce.players.forEach(o=>{ let s=0,ok=true; for(let i=0;i<=k;i++){ if(o.rounds[i]==null){ok=false;break;} s+=o.rounds[i]; } if(ok)best=Math.min(best,s); }); return best; };
         // margin over the runner-up
@@ -3389,6 +3472,7 @@ function scrSummary(){
     // rivalry: this season's head-to-head vs the chosen rival (counts a Rivalry tee only when you finish ahead)
     const rr=(!S.daily)?rivalSeasonResult():null; S.rivalOutcome=rr;
     const rivalBeat=!!(rr&&rr.status==='h2h'&&rr.beat);
+    if(rivalBeat){ const rv=getRival(); if(rv&&rv.ovr>ovr) recordAchEvent({set:{rivalUpset:1}}); }
     if(rr) track('rival_season',{name:rr.name,status:rr.status,beat:rivalBeat});
     const r=recordSeason({name:me.name,ovr,money:t.money,gross:ec.gross,net:ec.net,wins:t.wins,majorsWon:t.majors,played:t.played,made:t.made,top10:t.top10,moneyRank,best:t.best,majorWins,rivalBeat}); S.freshBadges=r.fresh;
     S.career=S.career||{money:0,net:0,wins:0,majors:0,top10:0,best:99,seasons:[],winsList:[]};
@@ -3416,6 +3500,14 @@ function scrSummary(){
       const cRank=cList.findIndex(x=>x.n===me.name)+1;
       const sev={max:{seasonWinsMax:t.wins, majorsInSeasonMax:t.majors, seasonEarnMax:t.money, top10InSeasonMax:t.top10}, set:{}};
       if(cRank===1 && S.career.seasons.length>=2) sev.set.worldNo1=1;
+      if(moneyRank===2) sev.set.moneyRunnerUp=1;
+      // draft / build flags from this season's bag
+      const slots=CATS.map(cc=>S.slots[cc.k]).filter(Boolean);
+      if(slots.some(s=>s.value>=99)) sev.set.maxSkill99=1;
+      if(slots.some(s=>s.value>=95)) sev.set.maxSingle95=1;
+      const gnames=slots.map(s=>s.golfer);
+      if(gnames.length===8 && new Set(gnames).size===8) sev.set.allEight=1;
+      if(gnames.some(g=>GOLFER_RARITY[g]==='Legendary')) sev.set.legendaryDrafted=1;
       recordAchEvent(sev);
       const fresh=evaluateAch(); if(fresh.length) S.freshAch=(S.freshAch||[]).concat(fresh);
     }
@@ -4089,6 +4181,7 @@ function finishSpotlightRound(){
   S.spotResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,holes,avg,won,firstWin,best:rec.best,attemptNo:rec.attempts,mk:sp.mk};
   S.dailyResult=S.spotResult;   // lets the shared scorecard-grid path treat this as "just played"
   track('spotlight_completed',{mk:sp.mk,total,won,attempt:rec.attempts});
+  captureDailyFeats(S.dailyHoles,total,sp.key,false);
   achToast(evaluateAch());
   S.screen='dailyresult'; render();
 }
@@ -4157,6 +4250,7 @@ function finishDailyRound(){
   LS.set(acctKey('bag_daily'),{date:S.dailySeed,attempts,best,result:S.dailyResult});
   track('daily_completed',{course:S.dailyCourse,total,attempt:attempts,best:best.total,won,avg});
   if(improved) sbSubmitDaily(best);   // post the new best to the global board (fails open if signed out/offline)
+  captureDailyFeats(S.dailyHoles,total,S.dailyCourse,isRec);
   achToast(evaluateAch());
   S.screen='dailyresult'; render();
 }
