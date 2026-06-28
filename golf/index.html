@@ -2544,10 +2544,17 @@ function celebrateWin(evt, o, opts){
   const cheque=$(`<div class="celeb-cheque">+$0</div>`); win.appendChild(cheque);
   if(major){ const cm=Math.max(1,((S.career&&S.career.majors)||0)+((S.season.totals[me.name]&&S.season.totals[me.name].majors)||0));
     win.appendChild($(`<div class="celeb-tally">${ord(cm)} career major</div>`)); }
-  const actions=$(`<div class="celeb-actions"></div>`);
-  const cont=$(`<button class="btn goldfill">Continue ▸</button>`); actions.appendChild(cont);
-  if(major){ const sh=$(`<button class="btn gold">↗ Share win</button>`); sh.onclick=e=>{e.stopPropagation(); shareMajorWin(evt,o);}; actions.appendChild(sh); }
-  win.appendChild(actions);
+  // Auto Sim on → no buttons, the celebration just plays and advances on its own (incl. majors).
+  // Manual → Continue (+ Share on majors) and wait for the tap so the Share button stays reachable.
+  const autoAdv=!!opts.auto;
+  let done=false;
+  function finish(){ if(done)return; done=true; if(_celebStop){_celebStop();_celebStop=null;} win.remove(); advanceEvent(); render(); }
+  if(!autoAdv){
+    const actions=$(`<div class="celeb-actions"></div>`);
+    const cont=$(`<button class="btn goldfill">Continue ▸</button>`); cont.onclick=e=>{ e.stopPropagation(); finish(); }; actions.appendChild(cont);
+    if(major){ const sh=$(`<button class="btn gold">↗ Share win</button>`); sh.onclick=e=>{e.stopPropagation(); shareMajorWin(evt,o);}; actions.appendChild(sh); }
+    win.appendChild(actions);
+  }
   document.body.appendChild(win);
   try{ if(major && !reduce && navigator.vibrate) navigator.vibrate([0,35,40,55]); }catch(_){}
   track(major?'major_won':'tournament_won',{event:evt.name});
@@ -2557,11 +2564,9 @@ function celebrateWin(evt, o, opts){
     cheque.textContent='+'+fmt(Math.round(target*(1-Math.pow(1-k,3)))); if(k<1) requestAnimationFrame(cu); })(t0); }
   if(major && !reduce){ const colors=['#EBA61F','#f9d271','#ffffff',theme.accent];   // confetti = majors only
     _celebStop=confettiRun(cv,{count:170, colors, mode:'cannons'}); }
-  let done=false;
-  function finish(){ if(done)return; done=true; if(_celebStop){_celebStop();_celebStop=null;} win.remove(); advanceEvent(); render(); }
-  cont.onclick=e=>{ e.stopPropagation(); finish(); };
-  win.onclick=finish;
-  if(!major) setTimeout(finish, 2000);   // normal win: auto-advance after 2s; majors wait for Continue (so Share stays reachable)
+  win.onclick=finish;   // tap anywhere advances (skip)
+  if(autoAdv) setTimeout(finish, major?2600:2000);   // Auto Sim: play briefly, then advance (majors a touch longer)
+  else if(!major) setTimeout(finish, 2000);          // manual + regular: auto-advance after 2s; manual major waits for Continue
 }
 function scrSeason(){
   clearTimeout(seasonTimer);
