@@ -824,10 +824,10 @@ function repTier(pts){ pts=pts==null?achPoints():pts;
   if(!nx) nx=GOAT_TIER;   // Icon's next goal is the G.O.A.T. (full completion)
   return {tier:t, next:nx}; }
 // Tour Rep perk: off-season CHANGES + RE-SPINS as a BASELINE + BONUS (never a handicap). Everyone starts
-// generous (2 changes + 1 re-spin); climbing ranks ADDS on top, capped at 3 changes so you can't rebuild
-// the whole bag — extra flexibility comes from more re-spins (better luck per change).
+// generous (2 changes + 1 re-spin); climbing ADDS on top up to the MAX of 3 changes + 3 re-spins (reached
+// at Contender). Higher ranks beyond that are rewarded by prestige, not more perks.
 const REP_PERKS={ 'Amateur':[2,1], 'Journeyman':[2,2], 'Tour Pro':[3,2], 'Contender':[3,3], 'Star':[3,3],
-  'Champion':[3,4], 'Legend':[3,4], 'Icon':[3,5], 'G.O.A.T.':[3,5] };
+  'Champion':[3,3], 'Legend':[3,3], 'Icon':[3,3], 'G.O.A.T.':[3,3] };
 function repPerk(){ const p=REP_PERKS[repTier().tier.name]||[3,2]; return {changes:p[0], reSpins:p[1]}; }
 function repPerk2(name){ const p=REP_PERKS[name]||[3,2]; return {changes:p[0], reSpins:p[1]}; }   // for the next-rank teaser
 // situational-flag recorder: inc (add), max (keep largest), set (boolean/flag)
