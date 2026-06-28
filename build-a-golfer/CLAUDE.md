@@ -1234,9 +1234,13 @@ allows Google Fonts, or self-host Anton.*
   `celebratePlayoff` done() no longer shows a Celebrate/Continue button — after the hole-by-hole reveal it
   ALWAYS auto-advances (win → win celebration; loss → next event) after a short pause (~1.3s win / 1.9s
   loss; 20ms in reduced motion), regardless of the Auto-Sim toggle. Tapping anywhere skips ahead faster;
-  finish() is guarded (fin flag) so a tap + the timer can't double-advance. NOTE: a MAJOR-win celebration
-  still shows a Continue button when Auto-Sim is OFF (prior owner design); offer to auto-advance that too
-  if asked.
+  finish() is guarded (fin flag) so a tap + the timer can't double-advance.
+- Celebrations auto-advance in EVERY mode (owner: "some people just want to watch it go")
+  `celebrateWin` now always sets a `celebTimer` to advance on its own — Auto-Sim dwell major 2600/reg 2000ms;
+  manual dwell major 4800/reg 2000ms (majors linger longer so the trophy lands). Manual mode still renders
+  Continue + (on majors) Share for anyone who wants to brag/savor; tapping **Share cancels the auto-advance**
+  so you never lose the chance to post a major. Tap anywhere = skip. Auto-Sim is now purely a SPEED choice,
+  never a "do I have to click" choice.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
