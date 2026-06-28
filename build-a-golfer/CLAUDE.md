@@ -1139,6 +1139,26 @@ allows Google Fonts, or self-host Anton.*
     and protects future loaders. Verified: summary renders exactly once (recap/dispatch counts =1), title/
     Trophy Room/leaderboard/setup all still render, no console errors. Deployed to /golf.
 
+- #11 Monthly Spotlight — special 1-day events (owner approved)
+  • A **special event once a month**, deterministic per calendar month: `monthlySpotlightFor(Y,M)` seeds a
+    marquee course (`seededShuffle(DAILY_KEYS)`), forces tough weather (windy/gusting), and fixes the ONE
+    UTC date it's live (`liveDayKey`, day-of-month 1..24). `spotlightLiveToday()`/`nextSpotlight()` drive it.
+  • **Title surfacing:** when live today, a pulsing gold CTA (`.spotlive`) with three states — "Today only"
+    (unplayed) → "Won ✓ / best X · go lower" (played, attempts left) → "Won/Complete · see result" (done).
+    When not live, a muted "Next Monthly Spotlight: <course> · <date>" tease.
+  • **Self-contained flow:** reuses the entire daily draft→build→round pipeline via `S.daily=true` + a new
+    `S.special` flag — only branching at start (`startSpotlight`/`beginSpotlightAttempt`), finish
+    (`finishDailyRound` → `finishSpotlightRound`), and result (`scrDailyResult` → `scrSpotlightResult`).
+    Own storage (`bag_special`: {wins, played, months:{mk:{attempts,best,won}}}), own 2 attempts, and it
+    NEVER touches the daily streak / daily board / course records. `S.special` is cleared on the normal
+    daily entry + on "Back to title" so it can't leak.
+  • **Rewards:** beating the pro logs a Spotlight win (counted once/month), shown in the Trophy Room cabinet
+    ("⭐ Spotlights N") + a dedicated result record card; first win unlocks an exclusive **Spotlight Teal**
+    shirt (new `COSMETIC_SHIRTS` entry gated on `spotWins()>=1`) — ties #11 into the #8 cosmetics.
+  • Verified via Playwright (live banner, start→preview themed, winning finish, firstWin + cosmetic unlock,
+    Trophy Room line, all three banner states, attempts depletion, not-live tease, no console errors).
+    Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
