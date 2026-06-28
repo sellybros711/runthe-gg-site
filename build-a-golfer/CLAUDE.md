@@ -1282,7 +1282,8 @@ allows Google Fonts, or self-host Anton.*
   (changes capped at 3 so you can't rebuild the whole bag). `repPerk()` drives `continueFranchise`'s
   `S.offseason.maxChanges/reSpins`. The off-season screen shows a "🏅 {rank} perk · N changes · M re-spins ·
   reach {nextRank} for +X" banner (a climb nudge). REVISED to BASELINE+BONUS (owner): Amateur 2ch/1rs floor →
-  3ch/5rs at Icon/G.O.A.T. (changes capped 3). Nobody starts handicapped; climbing adds re-spins on top.
+  MAX 3ch/3rs (reached at Contender; owner cap). Nobody starts handicapped; ranks above Contender are
+  rewarded by prestige, not more perks.
   Part of the agreed Tour Rep reward concept: prestige (rank on profile + leaderboard, rank-gated
   titles/cosmetics, tier-up moment) = backbone; convenience (re-spins, future season mulligan) additive;
   power (changes) small/capped. Prestige pieces NOT yet built — awaiting owner go on sequencing.
