@@ -886,6 +886,23 @@ allows Google Fonts, or self-host Anton.*
   the /rounds feed is round-level, not hole-by-hole — so that remains a future fidelity
   refinement only.)
 
+- 2026-06-28: **Live Tour Rank on the season stat bubble + Google sign-in feedback.**
+  (1) Tester asked for a live FedEx-style Tour Rank "top right of the stat bubble, right of
+  the red money." Added a `Tour Rank` cell to the `.sbar` on the live season screen
+  (scrSeason): net-profit tile now spans 3 cols (`.sstat.w3`), a gold `.sstat.rankcell` sits
+  in the 4th (top-right) showing `#rank / of N`. Rank = your position on the season **points**
+  list (same accumulator the summary's FedEx rank uses — `S.season.totals[*].points`, added
+  per event at finalize), so it updates live every event; shows `—` before event 1.
+  (2) Google sign-in "took a while, popped up mid-sim" — after the OAuth redirect the token
+  exchange + profile fetch take several network round-trips, so the page looked signed-out and
+  the confirmation landed mid-gameplay (felt broken). Added `S.authPending`: set synchronously
+  in sbInit when an OAuth return is detected, cleared in sbApply (15s safety timeout). Renders
+  a persistent "Finishing Google sign-in…" pill (spinner) so the wait reads as in-progress.
+  Pure UI; no auth-logic change. Verified via Playwright (season sbar renders Tour Rank, pill
+  shows, no console errors). Deployed to /golf.
+  STILL OPEN (tester feedback): "too complicated / overwhelmed with text / visually too much"
+  for a non-golfer — needs a scoping decision before a simplification pass (which mode, how far).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
