@@ -1046,6 +1046,12 @@ allows Google Fonts, or self-host Anton.*
   (DECLINE_START_YEAR=10 age-modeled decline; generational phenoms 94-97) since only the soft cap
   was called out. Deployed to /golf.
 
+- 2026-06-28: **Major celebration respects Auto Sim.** With Auto Sim ON, the major win popup now
+  shows NO buttons (no Continue/Share) and auto-advances (~2.6s) instead of blocking on Continue.
+  With Auto Sim OFF it's unchanged (Continue + Share, waits for the tap so Share stays reachable).
+  `celebrateWin` gates the actions block + timeout on `opts.auto`. Verified via Playwright (major
+  +auto: no buttons, advances; major manual: buttons present, waits). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
