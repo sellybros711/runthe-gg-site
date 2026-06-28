@@ -3086,12 +3086,14 @@ function celebratePlayoff(ce, opts){
   const cleanup=()=>{ if(_poTimer){clearTimeout(_poTimer);_poTimer=null;} stage.remove(); };
   function finish(){ if(fin)return; fin=true; cleanup(); if(youWon){ render(); } else { advanceEvent(); render(); } }  // win → render() lets celebrateWin fire
   function done(){
-    // always auto-advance after the result — no click required (tap anywhere to skip ahead faster)
-    actions.innerHTML = (youWon
+    actions.innerHTML = youWon
       ? `<div style="font-family:var(--serif);color:#35d6a0;font-weight:800;font-size:26px">🏆 You won the playoff!</div>`
-      : `<div style="font-family:var(--serif);color:#fff;font-weight:800;font-size:23px">So close — lost in the playoff</div><div class="small" style="color:#cfe6d8;margin-top:2px">${esc(po.winner)} took it on the ${ord(po.holes)} extra hole.</div>`)
-      + `<div class="small" style="color:#9fb6a8;margin-top:10px">tap to continue</div>`;
-    _poTimer=setTimeout(finish, opts.reduce?20:(youWon?1300:1900));
+      : `<div style="font-family:var(--serif);color:#fff;font-weight:800;font-size:23px">So close — lost in the playoff</div><div class="small" style="color:#cfe6d8;margin-top:2px">${esc(po.winner)} took it on the ${ord(po.holes)} extra hole.</div>`;
+    // A WIN always flows on into the single win celebration (which is where it waits/auto-advances per
+    // Auto Sim) — no separate click. A LOSS has no celebration after, so Auto Sim OFF waits for the player.
+    if(youWon){ _poTimer=setTimeout(finish, opts.reduce?20:1100); }
+    else if(opts.auto||opts.reduce){ _poTimer=setTimeout(finish, opts.reduce?20:1700); }
+    else { const b=document.createElement('button'); b.className='btn goldfill'; b.style.cssText='max-width:320px;margin:14px auto 0'; b.textContent='Continue ▸'; b.onclick=e=>{e.stopPropagation();finish();}; actions.appendChild(b); }
   }
   function revealNext(){
     if(i>=log.length){ done(); return; }
@@ -3124,9 +3126,7 @@ function celebrateWin(evt, o, opts){
   const autoAdv=!!opts.auto;
   let done=false, celebTimer=null;
   function finish(){ if(done)return; done=true; if(celebTimer){clearTimeout(celebTimer);celebTimer=null;} if(_celebStop){_celebStop();_celebStop=null;} win.remove(); advanceEvent(); render(); }
-  // Manual mode still offers Continue (+ Share on majors) for anyone who wants to linger/brag — but the
-  // celebration ALSO auto-advances on its own, so "just watch it go" needs no clicks. Tapping Share cancels
-  // the auto-advance so you never lose the chance to post a major.
+  // Manual mode (Auto Sim off) → the player paces it: majors show Continue (+ Share) and wait for the tap.
   if(!autoAdv){
     const actions=$(`<div class="celeb-actions"></div>`);
     const cont=$(`<button class="btn goldfill">Continue ▸</button>`); cont.onclick=e=>{ e.stopPropagation(); finish(); }; actions.appendChild(cont);
@@ -3143,8 +3143,10 @@ function celebrateWin(evt, o, opts){
   if(major && !reduce){ const colors=['#EBA61F','#f9d271','#ffffff',theme.accent];   // confetti = majors only
     _celebStop=confettiRun(cv,{count:170, colors, mode:'cannons'}); }
   win.onclick=finish;   // tap anywhere advances (skip)
-  // auto-advance in EVERY mode now; majors get a longer, generous dwell so the moment lands before moving on
-  celebTimer=setTimeout(finish, autoAdv ? (major?2600:2000) : (major?4800:2000));
+  // Auto Sim ON → hands-off, auto-advance (majors a touch longer). Auto Sim OFF → the player is pacing it
+  // themselves: a regular win still ticks on after 2s, but a MAJOR waits for them to Continue (and Share).
+  if(autoAdv) celebTimer=setTimeout(finish, major?2600:2000);
+  else if(!major) celebTimer=setTimeout(finish, 2000);
 }
 function scrSeason(){
   clearTimeout(seasonTimer);

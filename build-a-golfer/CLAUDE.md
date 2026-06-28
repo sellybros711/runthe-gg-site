@@ -1235,12 +1235,14 @@ allows Google Fonts, or self-host Anton.*
   ALWAYS auto-advances (win → win celebration; loss → next event) after a short pause (~1.3s win / 1.9s
   loss; 20ms in reduced motion), regardless of the Auto-Sim toggle. Tapping anywhere skips ahead faster;
   finish() is guarded (fin flag) so a tap + the timer can't double-advance.
-- Celebrations auto-advance in EVERY mode (owner: "some people just want to watch it go")
-  `celebrateWin` now always sets a `celebTimer` to advance on its own — Auto-Sim dwell major 2600/reg 2000ms;
-  manual dwell major 4800/reg 2000ms (majors linger longer so the trophy lands). Manual mode still renders
-  Continue + (on majors) Share for anyone who wants to brag/savor; tapping **Share cancels the auto-advance**
-  so you never lose the chance to post a major. Tap anywhere = skip. Auto-Sim is now purely a SPEED choice,
-  never a "do I have to click" choice.
+- Celebration pacing model = Auto Sim toggle (owner correction: Auto Sim OFF means the player WANTS to pace/watch)
+  • Auto Sim ON → fully hands-off: events, normal wins (2s), majors (2.6s), playoffs all auto-advance.
+  • Auto Sim OFF → the player drives: events wait for "Next event"; a normal win still ticks on after 2s
+    (owner's earlier ask), but a MAJOR waits for Continue (+ Share); a playoff LOSS waits for Continue.
+  • Playoff double-click avoided: a playoff WIN always auto-flows (~1.1s) into the SINGLE win celebration —
+    which is the one wait/auto point (per Auto Sim). So a major playoff win = exactly one Continue, never two.
+  `celebrateWin`: autoAdv→timer(major2600/reg2000); else→timer only for non-majors(2000), majors wait.
+  `celebratePlayoff` done(): win→auto-flow; loss→(auto||reduce)?timer:Continue button.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
