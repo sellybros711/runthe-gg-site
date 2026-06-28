@@ -1087,6 +1087,21 @@ allows Google Fonts, or self-host Anton.*
   monthly 1-day special events (#11), pick-a-rival (#5, incentive TBD), Clubs/teams (#10, needs
   backend), push notifications (#2, needs service worker + push backend/cron — owner setup).
 
+- Daily streak → "days played" + Wordle-style lifetime record (owner revision)
+  Owner changed the streak rule and added a Wordle-style record:
+  • **Streak is now "days played":** `bumpStreak` is called from `finishDailyRound` on every completion
+    (win or lose), once per day (guarded by `ds.last===t`). Freezes still bridge a missed day. Result
+    line reads "🔥 N-day streak — see you tomorrow to keep it going"; removed the "beat the average to
+    keep your streak" nudge.
+  • **Lifetime daily record (tie = loss):** new `dailyStats()`/`bumpDailyStats(won)` track total days
+    Played and how often you Beat the pro — ONE play + ONE beat counted per calendar day (a later
+    attempt can flip a day to a win). `won` is strict `total<avg`, so a tie counts as a loss.
+    `dailyWinPct()` for the win rate. Result screen shows a 4-stat card: Played · Beat the pro · Win
+    rate · Best streak, with a nudge to use remaining attempts to add a win.
+  • All share links now carry `https://` so they render as clickable links (daily share, major-win
+    caption, season share, career-end share). Verified via Playwright (per-day counting, tie=loss,
+    record card renders, no console errors).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
