@@ -2555,12 +2555,10 @@ function celebrateWin(evt, o, opts){
   if(major && !reduce){ const colors=['#EBA61F','#f9d271','#ffffff',theme.accent];   // confetti = majors only
     _celebStop=confettiRun(cv,{count:170, colors, mode:'cannons'}); }
   let done=false;
-  function finish(){ if(done)return; done=true; if(_celebStop){_celebStop();_celebStop=null;} win.remove();
-    if(opts.auto) advanceEvent(); render(); }
+  function finish(){ if(done)return; done=true; if(_celebStop){_celebStop();_celebStop=null;} win.remove(); advanceEvent(); render(); }
   cont.onclick=e=>{ e.stopPropagation(); finish(); };
   win.onclick=finish;
-  if(!major && !reduce) setTimeout(finish, 2200);          // wins auto-continue; majors wait (Share reachable)
-  else if(!major && reduce && opts.auto) setTimeout(finish, 900);
+  if(!major) setTimeout(finish, 2000);   // normal win: auto-advance after 2s; majors wait for Continue (so Share stays reachable)
 }
 function scrSeason(){
   clearTimeout(seasonTimer);

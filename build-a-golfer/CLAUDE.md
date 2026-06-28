@@ -1013,6 +1013,13 @@ allows Google Fonts, or self-host Anton.*
   confetti/no Share; all 4 majors render distinct trophies + confetti + Share; cheque counts up;
   Continue/tap dismiss; share card art; no console errors). Deployed to /golf.
 
+- 2026-06-28: **Normal win auto-advances after 2s.** Tweaked the celebration: a tournament win
+  now always advances to the next event ~2s after the celebration (was: only advanced when Auto
+  Sim was on; otherwise it dismissed to the Next-Event button). `finish()` always calls
+  advanceEvent now; Continue/tap advance too. Majors still wait for Continue (so Share stays
+  reachable). Verified via Playwright (regular w/ autoSim off advances idx+1 after 2s; major
+  doesn't auto-advance, Continue advances). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
