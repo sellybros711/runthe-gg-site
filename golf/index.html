@@ -169,6 +169,9 @@
   .btn:focus-visible, button:focus-visible, [tabindex]:focus-visible, input:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   .mini{display:flex; gap:10px; margin-top:10px}
   .mini .btn{font-size:14px; padding:12px}
+  .spotlive{position:relative; animation:spotpulse 2.4s ease-in-out infinite}
+  @keyframes spotpulse{0%,100%{box-shadow:0 0 0 0 rgba(235,166,31,.0)}50%{box-shadow:0 0 0 4px rgba(235,166,31,.16)}}
+  @media (prefers-reduced-motion:reduce){.spotlive{animation:none}}
   .stack>*+*{margin-top:10px}
 
   /* ---- title scene ---- */
@@ -583,6 +586,7 @@ const COSMETIC_SHIRTS=[
   {id:'mastersgrn', m:'#1f7a44', s:'#155a31', name:'Masters Green',      req:m=>m.maj.masters>=1,                   reqText:'Win The Masters'},
   {id:'slamcrim',   m:'#b81d3a', s:'#8f1530', name:'Grand Slam Crimson', req:m=>m.distinctMajors>=4||m.careerSlams>0, reqText:'Win all four majors in a career'},
   {id:'legendonyx', m:'#15171d', s:'#0b0d11', name:'Legend Onyx',        req:m=>m.majors>=6,                        reqText:'Win 6 major championships'},
+  {id:'spotlight',  m:'#16b5a6', s:'#0e8d82', name:'Spotlight Teal',      req:()=>spotWins()>=1,                     reqText:'Win a Monthly Spotlight event'},
 ];
 function allShirts(){ return POLOS.concat(COSMETIC_SHIRTS); }   // base colours + special unlockables
 function findShirt(id){ return allShirts().find(x=>x.id===id)||POLOS[0]; }
@@ -617,7 +621,7 @@ function trophyCabinetHTML(m){
   return `<div class="scout" style="max-width:520px;margin:0 auto 14px">
     <div class="small muted center" style="letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Trophy cabinet</div>
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;align-items:end">${cells}</div>
-    <div class="center small muted" style="margin-top:9px">Tour wins <b style="color:var(--gold)">${m.wins||0}</b> · Majors <b style="color:var(--gold)">${m.majors||0}</b></div></div>`;
+    <div class="center small muted" style="margin-top:9px">Tour wins <b style="color:var(--gold)">${m.wins||0}</b> · Majors <b style="color:var(--gold)">${m.majors||0}</b>${spotWins()>0?` · ⭐ Spotlights <b style="color:#16b5a6">${spotWins()}</b>`:''}</div></div>`;
 }
 function recordSeason(o){
   const c=career(); c.badges=c.badges||{};
@@ -1208,6 +1212,31 @@ function dailyCourseKey(dayKey){ const dn=dDayNumber(dayKey); const cycle=Math.f
 const DCOND_NAMES=['calm','breezy','windy','gusting'];
 function dailyConditions(dayKey,courseKey){ const r=mulberry32((dDayNumber(dayKey)^dHash(courseKey)^0x5bd1e995)>>>0)();
   return r<0.27?'calm':r<0.72?'breezy':r<0.92?'windy':'gusting'; }
+/* ---------- Monthly Spotlight (#11): a special 1-day event, once a month ----------
+   Deterministic per calendar month (marquee course + tough conditions + the one UTC date it's live),
+   surfaced on the title screen. Self-contained: its own storage (bag_special), its own attempts, and it
+   NEVER touches the daily streak / daily board. Beating the pro logs a Spotlight win + unlocks a shirt. */
+const SPOT_MAX_ATTEMPTS=2;
+const MONTH_NAMES=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function _spotHash(mk){ let h=(mk^0x53504f54)>>>0; h=Math.imul(h^(h>>>15),2246822519); h=Math.imul(h^(h>>>13),3266489917); return (h^(h>>>16))>>>0; }
+function _ymd(dayKey){ return {Y:Math.floor(dayKey/10000), M:Math.floor(dayKey/100)%100, D:dayKey%100}; }
+function monthlySpotlightFor(Y,M){ const mk=Y*100+M, h=_spotHash(mk);
+  const key=seededShuffle(DAILY_KEYS,h)[0];
+  const cond=(h&1)?'gusting':'windy';                  // a Spotlight is always a tough-weather test
+  const dom=1+(h%24);                                  // the live date lands 1..24 (valid every month)
+  return {mk,Y,M,key,cond,dom,liveDayKey:Y*10000+M*100+dom,month:MONTH_NAMES[M-1],name:`${MONTH_NAMES[M-1]} Spotlight`}; }
+function monthlySpotlight(dayKey){ const d=_ymd(dayKey||todayKey()); return monthlySpotlightFor(d.Y,d.M); }
+function spotlightLiveToday(){ return monthlySpotlight(todayKey()).liveDayKey===todayKey(); }
+function spotState(){ const s=LS.get(acctKey('bag_special'),{wins:0,played:0,months:{}}); s.months=s.months||{}; return s; }
+function spotWins(){ return spotState().wins||0; }
+function spotMonthRec(mk){ return spotState().months[mk]||null; }
+function spotAttempts(mk){ const r=spotMonthRec(mk); return r?(r.attempts||0):0; }
+function spotAttemptsLeft(mk){ return Math.max(0,SPOT_MAX_ATTEMPTS-spotAttempts(mk)); }
+function spotDoneThisMonth(){ return spotAttemptsLeft(monthlySpotlight(todayKey()).mk)<=0; }
+function nextSpotlight(){ const t=todayKey(), cur=monthlySpotlight(t);
+  if(cur.liveDayKey>=t) return cur;                    // still upcoming (or today) this month
+  let Y=cur.Y, M=cur.M+1; if(M>12){M=1;Y++;} return monthlySpotlightFor(Y,M); }
+function fmtDayKey(k){ const d=_ymd(k); return MONTH_NAMES[d.M-1].slice(0,3)+' '+d.D; }
 function dCourseSkillTop(c,n){ return CATS.filter(x=>x.k!=='clu').sort((a,b)=>c.fit[b.k]-c.fit[a.k]).slice(0,n||3); }
 /* ---- local course records (Phase 2 — replaced/augmented by the backend in Phase 3) ---- */
 function courseRecords(){ return LS.get('bag_courserecords',{}); }
@@ -1948,6 +1977,23 @@ function scrTitle(){
   stack.appendChild(daily);
   const st=streakDisplay(), fz=streakFreezes();
   if(st>0) stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--gold);font-weight:700">🔥 ${st}-day daily streak — keep it alive${fz>0?` · ❄️ ${fz} freeze${fz>1?'s':''}`:''}</div>`));
+  // Monthly Spotlight (#11): a special 1-day event — surfaced with urgency only on the day it's live
+  if(spotlightLiveToday()){
+    const sp=monthlySpotlight(todayKey()), sc=DAILY_COURSES[sp.key];
+    const att=spotAttempts(sp.mk), left=spotAttemptsLeft(sp.mk), rec=spotMonthRec(sp.mk), won=rec&&rec.won;
+    let sb2;
+    if(att===0){
+      sb2=$(`<button class="btn goldfill spotlive" style="margin-top:12px">⭐ ${esc(sp.month)} Spotlight — Today only<span class="sub">${esc(dShort(sc.v))} · ${dCondLabel(sp.cond)} · beat the pro in a special event</span></button>`);
+    } else if(left>0){
+      sb2=$(`<button class="btn gold spotlive" style="margin-top:12px">⭐ ${esc(sp.month)} Spotlight · ${won?'Won ✓':'best '+dtp(rec.best)}<span class="sub">${esc(dShort(sc.v))} · ${won?'go lower':'beat the pro'} · ${left} attempt${left>1?'s':''} left today</span></button>`);
+    } else {
+      sb2=$(`<button class="btn gold spotlive" style="margin-top:12px">⭐ ${esc(sp.month)} Spotlight · ${won?'Won ✓':'Complete'}<span class="sub">${esc(dShort(sc.v))} · ${won?'you beat the pro':'best '+dtp(rec.best)} · see your result</span></button>`);
+    }
+    sb2.onclick=startSpotlight; stack.appendChild(sb2);
+  } else {
+    const ns=nextSpotlight();
+    stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--muted)">⭐ Next Monthly Spotlight: <b style="color:var(--gold)">${esc(dShort(DAILY_COURSES[ns.key].v))}</b> · ${fmtDayKey(ns.liveDayKey)}</div>`));
+  }
   w.appendChild(stack);
   const mini=$(`<div class="mini"></div>`);
   const how=$(`<button class="btn gold">How to Play</button>`);
@@ -1981,7 +2027,7 @@ function toast(msg){
 
 /* ---------- setup (create your golfer) ---------- */
 function scrSetup(){
-  add($(`<div class="center"><span class="tag">${S.daily?'Daily Challenge':'New golfer'}</span></div>`));
+  add($(`<div class="center"><span class="tag"${S.special?' style="color:#ffd76a;border-color:#ffd76a"':''}>${S.special?'⭐ Monthly Spotlight':(S.daily?'Daily Challenge':'New golfer')}</span></div>`));
   add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Create your golfer</h1>`));
   add($(`<p class="lede center" style="margin-bottom:8px">Set your look, then spin to build the skills.</p>`));
   const cols=$(`<div class="cols setup-cols"></div>`);
@@ -3521,6 +3567,7 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
 function dCondLabel(c){ return {calm:'☼ Calm',breezy:'≈ Breezy',windy:'≋ Windy',gusting:'⚑ Gusting'}[c]||c; }
 function dShort(name){ return String(name).split('(')[0].trim(); }
 function startDailyChallenge(){
+  S.special=false;   // entering the regular daily — never treat it as a Spotlight
   if(dailyAttemptsLeft()<=0){ S.overlay='dailydone'; render(); return; }
   // already played at least once today (attempts remain) → show their best round + Play again
   if(dailyAttempts()>0){ S.daily=true; S.dailyResult=null; S.screen='dailyresult'; render(); return; }
@@ -3565,7 +3612,7 @@ function scrDailyIntro(){
 function scrDailyPreview(){
   if(sb && crCache===null) crLoad();   // pull global course records so the record box is global, not just local
   const key=S.dailyCourse, c=DAILY_COURSES[key], rec=courseRecords()[key];
-  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge · today's course</span></div>`));
+  add($(`<div class="center"><span class="tag" style="color:${S.special?'#ffd76a':'var(--gold)'};border-color:${S.special?'#ffd76a':'var(--gold)'}">${S.special?'⭐ Monthly Spotlight · special event':'⛳ Daily Challenge · today\'s course'}</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:10px 0 2px">${esc(c.v)}</h1>`));
   add($(`<p class="lede center" style="margin:0 0 10px">${esc(c.loc)} · Par ${c.par} · ${c.yd.toLocaleString()} yds · ${dCondLabel(S.dailyCond)}</p>`));
   // keep the flavor but don't lead with a wall of prose — one line, "Read more" for the rest
@@ -3676,7 +3723,88 @@ function dailyMulligan(){
   last.shots=dShotSeq(last.par,last.yards,last.par+last.toPar,dHoleRng(S.dailySeed,S.dailyCourse,last.i,dAttSalt(0x5408)),S.dailySkills,{safe:last.attack===false,attack:last.attack===true});
   last.mull=true; S.dailyMullUsed=true; track('daily_mulligan'); render();
 }
+/* ---- Monthly Spotlight flow: reuses the whole daily draft→build→round pipeline (S.daily=true),
+   only branching at start, finish, and the result screen via the S.special flag. ---- */
+function startSpotlight(){
+  if(!spotlightLiveToday()) return;
+  const sp=monthlySpotlight(todayKey());
+  if(spotAttempts(sp.mk)>0){ S.special=true; S.spotCfg=sp; S.spotResult=null; S.screen='dailyresult'; render(); return; }  // already played → show best + replay
+  beginSpotlightAttempt();
+}
+function beginSpotlightAttempt(){
+  const sp=monthlySpotlight(todayKey()); if(!spotlightLiveToday()) return;
+  if(spotAttemptsLeft(sp.mk)<=0){ S.special=true; S.spotCfg=sp; S.spotResult=null; S.screen='dailyresult'; render(); return; }
+  const att=spotAttempts(sp.mk); reset();
+  S.daily=true; S.special=true; S.spotCfg=sp; S.mode='daily'; S.dailyMode='round';
+  S.dailySeed=sp.liveDayKey; S.dailyAttempt=att;
+  S.drawRng=mulberry32((sp.liveDayKey^0x53504f54^Math.imul(att+1,0x9e3779b1))>>>0);
+  S.dailyCourse=sp.key; S.dailyCond=sp.cond; S.dailyPlan='balanced';
+  track('spotlight_started',{mk:sp.mk,course:sp.key,attempt:att+1});
+  S.screen='dailyprev'; render();
+}
+function finishSpotlightRound(){
+  if(S.spotResult)return;
+  const total=S.dailyHoles.reduce((s,h)=>s+h.toPar,0), c=DAILY_COURSES[S.dailyCourse];
+  const holes=S.dailyHoles.map(h=>({par:h.par,toPar:h.toPar}));
+  const avg=dTourAvg(c), won=total<avg;
+  const sp=S.spotCfg||monthlySpotlight(todayKey());
+  const st=spotState(); const rec=st.months[sp.mk]||(st.months[sp.mk]={attempts:0,best:null,won:false});
+  if(rec.attempts===0) st.played=(st.played||0)+1;     // count one Spotlight played per month
+  rec.attempts++;
+  const improved=(rec.best==null||total<rec.best); if(improved) rec.best=total;
+  const firstWin=won&&!rec.won; if(won) rec.won=true; if(firstWin) st.wins=(st.wins||0)+1;
+  LS.set(acctKey('bag_special'),st);
+  S.spotResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,holes,avg,won,firstWin,best:rec.best,attemptNo:rec.attempts,mk:sp.mk};
+  S.dailyResult=S.spotResult;   // lets the shared scorecard-grid path treat this as "just played"
+  track('spotlight_completed',{mk:sp.mk,total,won,attempt:rec.attempts});
+  S.screen='dailyresult'; render();
+}
+function spotlightShareText(r,sp){ const c=DAILY_COURSES[r.course];
+  return `⭐ RunTheTour ${sp.month} Spotlight — ${dShort(c.v)}\n${dtp(r.total)} on par ${c.par}${r.won?' · beat the pro ✓':''}\nA special 1-day event. Can you beat it? https://runthe.gg/golf`; }
+function scrSpotlightResult(){
+  const sp=S.spotCfg||monthlySpotlight(todayKey()), mk=sp.mk;
+  const justPlayed=!!S.spotResult, rec=spotMonthRec(mk);
+  const r=S.spotResult||(rec&&rec.best!=null?{course:sp.key,total:rec.best,par:DAILY_COURSES[sp.key].par,ovr:'—',cond:sp.cond,holes:null,avg:dTourAvg(DAILY_COURSES[sp.key]),won:rec.won}:null);
+  if(!r){ S.special=false; S.screen='title'; return render(); }
+  const c=DAILY_COURSES[r.course], total=r.total, left=spotAttemptsLeft(mk);
+  const av=r.avg!=null?r.avg:dTourAvg(c); const bestT=(rec&&rec.best!=null)?rec.best:total; const wonEvent=bestT<av; const margin=Math.abs(av-total);
+  add($(`<div class="center"><span class="tag" style="color:#ffd76a;border-color:#ffd76a;background:rgba(235,166,31,.12)">⭐ ${sp.month} Spotlight${justPlayed?' complete':''}</span></div>`));
+  add($(`<h1 class="center" style="font-size:26px;margin:10px 0 2px">${esc(c.v)}</h1>`));
+  add($(`<div class="center" style="margin:6px 0"><span class="mono" style="font-weight:800;font-size:48px;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${dtp(total)}</span></div>`));
+  add($(`<p class="lede center" style="margin:0 0 8px">${c.par+total} on a par ${c.par} · OVR ${r.ovr} · ${dCondLabel(r.cond)} · special event</p>`));
+  add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:${wonEvent?'#35d6a0':'#ffd76a'}">
+    ${wonEvent?`<b style="color:#35d6a0;font-size:17px">🏁 You beat the pro!</b>`:`<b style="color:var(--oncard);font-size:16px">Short of the tour average</b>`}
+    <div class="small muted" style="margin-top:3px">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here in these conditions${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}${(rec&&rec.best!=null&&rec.best!==total)?` · best ${dtp(rec.best)} ${wonEvent?'(winner)':''}`:''}</div></div>`));
+  if(justPlayed&&S.spotResult&&S.spotResult.firstWin){
+    add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#16b5a6"><b style="color:#16b5a6">⭐ Spotlight win!</b> <span class="small muted">Unlocked the <b style="color:#16b5a6">Spotlight Teal</b> shirt — equip it in the customizer.</span></div>`));
+  }
+  // lifetime Spotlight record
+  { const wins=spotWins(), played=spotState().played||0;
+    add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px"><div class="small muted center" style="letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Spotlight record</div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;text-align:center">
+        <div><div style="font-weight:800;font-size:20px;color:#35d6a0">${wins}</div><div class="small muted" style="font-size:10px">Events won</div></div>
+        <div><div style="font-weight:800;font-size:20px;color:var(--oncard)">${played}</div><div class="small muted" style="font-size:10px">Events played</div></div>
+      </div>${(justPlayed&&!wonEvent&&left>0)?`<div class="small center" style="margin-top:6px;color:#e9a23b;font-weight:700">One attempt left — beat the pro to claim the win.</div>`:''}</div>`)); }
+  const holes=(S.dailyHoles&&S.dailyHoles.length===18)?S.dailyHoles:(r.holes&&r.holes.length===18?r.holes:null);
+  if(holes){
+    const grid=$(`<div style="max-width:600px;margin:14px auto 0"></div>`);
+    [[0,9,'OUT'],[9,18,'IN']].forEach(([a,b,lab])=>{ const row=$(`<div class="dcard"></div>`);
+      for(let k=a;k<b;k++){ const pl=holes[k]; row.appendChild($(`<div class="dcell done"><div class="dn">${k+1}</div><div class="ds" style="color:${dScoreCol(pl.toPar)}">${dCellScore(pl)}</div></div>`)); }
+      grid.appendChild($(`<div class="small muted center" style="letter-spacing:.12em;margin-top:6px">${lab}</div>`)); grid.appendChild(row); });
+    add(grid);
+  }
+  const shr=$(`<button class="btn goldfill" style="max-width:520px;margin:14px auto 0">↗ Share your result<span class="sub">Brag about the special event</span></button>`);
+  shr.onclick=()=>{ track('spotlight_shared'); shareText(spotlightShareText(rec&&rec.best!=null?{course:r.course,total:rec.best,won:wonEvent}:r,sp)); }; add(shr);
+  add($(`<div style="height:10px"></div>`));
+  if(left>0){
+    const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">${wonEvent?'Go lower ▸':'Play again ▸'}<span class="sub">${wonEvent?`Pro beaten — chase a lower score (${left} left)`:`${left} of ${SPOT_MAX_ATTEMPTS} attempt${left>1?'s':''} left — beat the tour average`}</span></button>`);
+    again.onclick=beginSpotlightAttempt; add(again);
+  }
+  const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Back to title</button>`); home.onclick=()=>{S.special=false;S.daily=false;S.screen='title';render();}; add(home);
+  add($(`<p class="small muted center" style="margin-top:12px">A special 1-day event · the next Spotlight drops next month.</p>`));
+}
 function finishDailyRound(){
+  if(S.special) return finishSpotlightRound();
   if(S.dailyResult)return;
   const total=S.dailyHoles.reduce((s,h)=>s+h.toPar,0), c=DAILY_COURSES[S.dailyCourse];
   const isRec=recordCourseScore(S.dailyCourse,total,S.dailyOvr,sbUsername||S.name||'You');
@@ -3887,6 +4015,7 @@ function scrDailyRound(){
   } else { const fin=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">See your round ▸</button>`); fin.onclick=finishDailyRound; add(fin); }
 }
 function scrDailyResult(){
+  if(S.special) return scrSpotlightResult();
   if(sb && crCache===null) crLoad();   // ensure the course-record comparison reflects the global record
   const _ds2=S.dailySeed||todayKey();
   if(sb && (dbCache===null||dbCache.day!==_ds2)) dbLoad(_ds2);   // today's board → percentile (fails open)
