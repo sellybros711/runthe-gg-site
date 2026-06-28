@@ -1102,6 +1102,26 @@ allows Google Fonts, or self-host Anton.*
     caption, season share, career-end share). Verified via Playwright (per-day counting, tie=loss,
     record card renders, no console errors).
 
+- #8 Cosmetics + #9 Profile/Trophy Room (owner approved, built together)
+  • **Trophy Room (#9):** the old "Player" overlay (`overlayRecord`) is now the **Trophy Room** — reachable
+    by everyone from a new title-screen "🏅 Trophy Room" button (`mini2`), and still from the signed-in pill.
+    New **trophy cabinet** (`trophyCabinetHTML`, `TROPHY_CABINET`) shows the four major trophies (reusing the
+    custom win-celebration SVGs — greenJacket/wanamaker/usOpen/claretJug) with lifetime counts from `lt.maj`;
+    won majors render in colour, unwon are dimmed/greyscale. Tour-wins + majors line underneath. Header now
+    shows the **equipped title** under the name. Existing account card, lifetime stat bar, Hall of Fame, and
+    Tee Badges all remain below.
+  • **Cosmetics (#8):** all DERIVED from lifetime badge metrics (no extra persistence — unlocked iff `req()`
+    passes), equipped choices live in `bag_look`.
+    – **Special shirt colours** (`COSMETIC_SHIRTS`: Champion Gold, Major Purple, Masters Green, Grand Slam
+      Crimson, Legend Onyx) gated behind wins/majors. They only need m/s hex — the avatar recolours a hex,
+      so no art assets. New `shirtRow()` in setup shows base POLOS + cosmetics; locked ones are dimmed with a
+      🔒 and tapping toasts the requirement. `avLook`/`golferSVG` resolve shirts via `findShirt`/`allShirts`.
+    – **Equippable player titles** (`TITLES`: Tour Pro→Hall of Famer) earned from the lifetime record; picked
+      via chips in the Trophy Room (`equippedTitle`/`titleUnlocked`), shown under the name. Locked chips dimmed.
+  Verified via Playwright (seeded-stats Trophy Room with cabinet/cosmetics/titles, guest empty-state, setup
+  shirt gating, title-screen button — all render, no console errors). Deployed to /golf.
+  Possible follow-up: surface the equipped title on share cards / season summary.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

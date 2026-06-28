@@ -573,6 +573,52 @@ function badgeCard(b,m){ const v=b.get(m); const lvl=badgeLevel(b,m); const max=
     <div class="bbar"><span style="width:${Math.round(frac*100)}%;background:${col}"></span></div>
     <div class="btees">${tees}</div>
   </div>`; }
+/* ---------- cosmetics (#8): unlockable shirt colours + equippable titles, earned via lifetime badges ----------
+   Unlocks are DERIVED from lifetime badge metrics (never reset), so nothing extra is persisted: an item is
+   unlocked iff its req() passes. Equipped choices live in bag_look (title) / the shirt id. Special shirts only
+   need m/s hex — the avatar recolours from a hex, so no art assets are required. */
+const COSMETIC_SHIRTS=[
+  {id:'champgold',  m:'#f0b21e', s:'#cf9410', name:'Champion Gold',      req:m=>m.wins>=3,                          reqText:'Win 3 tournaments'},
+  {id:'majorpurple',m:'#7a48c2', s:'#5d3597', name:'Major Purple',       req:m=>m.majors>=1,                        reqText:'Win a major championship'},
+  {id:'mastersgrn', m:'#1f7a44', s:'#155a31', name:'Masters Green',      req:m=>m.maj.masters>=1,                   reqText:'Win The Masters'},
+  {id:'slamcrim',   m:'#b81d3a', s:'#8f1530', name:'Grand Slam Crimson', req:m=>m.distinctMajors>=4||m.careerSlams>0, reqText:'Win all four majors in a career'},
+  {id:'legendonyx', m:'#15171d', s:'#0b0d11', name:'Legend Onyx',        req:m=>m.majors>=6,                        reqText:'Win 6 major championships'},
+];
+function allShirts(){ return POLOS.concat(COSMETIC_SHIRTS); }   // base colours + special unlockables
+function findShirt(id){ return allShirts().find(x=>x.id===id)||POLOS[0]; }
+function cosmeticShirtUnlocked(id,m){ const cs=COSMETIC_SHIRTS.find(x=>x.id===id); return cs?!!cs.req(m||badgeMetrics()):true; }
+// equippable player titles — earned from your lifetime record, shown under your name + in the Trophy Room
+const TITLES=[
+  {id:'none',  name:'Tour Pro',          req:()=>true},
+  {id:'winner',name:'Tour Winner',       req:m=>m.wins>=1},
+  {id:'money', name:'Money Leader',      req:m=>m.moneyLeaderSeasons>=1},
+  {id:'vet',   name:'Tour Veteran',      req:m=>m.seasons>=10},
+  {id:'major', name:'Major Champion',    req:m=>m.majors>=1},
+  {id:'green', name:'Masters Champion',  req:m=>m.maj.masters>=1},
+  {id:'slam',  name:'Grand Slam Winner', req:m=>m.distinctMajors>=4||m.careerSlams>0},
+  {id:'hof',   name:'Hall of Famer',     req:m=>m.careers>=1},
+];
+function titleUnlocked(id,m){ const t=TITLES.find(x=>x.id===id); return t?!!t.req(m||badgeMetrics()):false; }
+function equippedTitle(){ const m=badgeMetrics(); const id=(S.look&&S.look.title)||'none';
+  const t=TITLES.find(x=>x.id===id&&titleUnlocked(x.id,m)); return (t?t.name:'Tour Pro'); }
+// the four major trophies, for the Trophy Room cabinet (lifetime counts from lt.maj)
+const TROPHY_CABINET=[
+  {k:'masters',name:'The Masters',  svg:greenJacketSVG,  short:'Green Jacket'},
+  {k:'champ',  name:'The Championship', svg:wanamakerSVG, short:'Wanamaker'},
+  {k:'usopen', name:'U.S. Open',    svg:usOpenTrophySVG, short:'U.S. Open'},
+  {k:'open',   name:'The Open',     svg:claretJugSVG,    short:'Claret Jug'},
+];
+function trophyCabinetHTML(m){
+  const cells=TROPHY_CABINET.map(t=>{ const n=(m.maj&&m.maj[t.k])||0; const won=n>0;
+    return `<div style="text-align:center;opacity:${won?1:0.34}">
+      <div style="height:62px;display:flex;align-items:flex-end;justify-content:center;filter:${won?'drop-shadow(0 3px 6px rgba(0,0,0,.45))':'grayscale(1) brightness(0.7)'}">${t.svg()}</div>
+      <div class="small" style="margin-top:2px;font-weight:800;color:${won?'var(--gold)':'var(--muted)'}">${won?'×'+n:'—'}</div>
+      <div class="small muted" style="font-size:9.5px;line-height:1.15">${t.short}</div></div>`; }).join('');
+  return `<div class="scout" style="max-width:520px;margin:0 auto 14px">
+    <div class="small muted center" style="letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Trophy cabinet</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;align-items:end">${cells}</div>
+    <div class="center small muted" style="margin-top:9px">Tour wins <b style="color:var(--gold)">${m.wins||0}</b> · Majors <b style="color:var(--gold)">${m.majors||0}</b></div></div>`;
+}
 function recordSeason(o){
   const c=career(); c.badges=c.badges||{};
   c.builds++; c.wins+=o.wins; c.majors+=o.majorsWon;
@@ -1562,10 +1608,19 @@ function overlayRecord(screen){
   const careersHTML=(sbProfile&&sbProfile.careers&&sbProfile.careers.length)
     ? `<h2 style="margin:16px 0 8px">Your best careers</h2><div class="board">${sbProfile.careers.slice(0,3).map((cc,i)=>`<div class="lb" style="grid-template-columns:28px 1fr auto"><span class="pos">${i===0?'🏆':i+1}</span><span class="pl">${cc.seasons} season${cc.seasons>1?'s':''} · ${cc.wins}W · ${cc.majors} major${cc.majors===1?'':'s'}</span><span class="mny" style="color:var(--gold)">${fmt(cc.earn)}</span></div>`).join('')}</div>`
     : '';
+  // ---- Trophy Room: major-trophy cabinet + equippable title (#9) ----
+  const cabinet=trophyCabinetHTML(bm);
+  const curTitle=(S.look&&S.look.title)||'none';
+  const titleChips=TITLES.map(t=>{ const open=titleUnlocked(t.id,bm); const on=(curTitle===t.id)&&open;
+    return `<button class="tchip" data-title="${t.id}" ${open?'':'disabled aria-disabled="true"'} style="font:inherit;font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;cursor:${open?'pointer':'default'};border:1px solid ${on?'var(--gold)':'rgba(244,227,201,.22)'};background:${on?'rgba(235,166,31,.16)':'transparent'};color:${open?(on?'var(--gold)':'var(--oncard)'):'var(--muted)'};opacity:${open?1:0.55}">${open?'':'🔒 '}${esc(t.name)}</button>`; }).join('');
+  const titleSection=`<h2 style="margin:18px 0 6px">Player title</h2>
+    <div class="small muted" style="margin-bottom:8px">Equip a title you've earned — it shows under your name.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:7px">${titleChips}</div>`;
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
-    <h3>Player</h3>
-    <div class="profhdr" style="display:flex;flex-direction:column;align-items:center;gap:6px;margin:0 0 12px">${avatarHTML()}<div style="font-family:var(--serif);font-weight:700;font-size:18px;color:var(--oncard)">${esc(sbUsername||S.name||'Your Golfer')}</div>${(sbSignedIn()&&sbUsername)?'<div class="small muted" style="margin-top:-2px">RunThe.GG member</div>':''}</div>
+    <h3>Trophy Room</h3>
+    <div class="profhdr" style="display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 12px">${avatarHTML()}<div style="font-family:var(--serif);font-weight:700;font-size:18px;color:var(--oncard)">${esc(sbUsername||S.name||'Your Golfer')}</div><div class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(equippedTitle())}</div>${(sbSignedIn()&&sbUsername)?'<div class="small muted" style="margin-top:0">RunThe.GG member</div>':''}</div>
+    ${cabinet}
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">${acctCard}</div>
     <div class="sbar" style="margin-bottom:14px">
       <div class="sstat wide"><div class="k">Best net profit</div><div class="v" style="color:${(c.bestNet??0)>=0?'#35d6a0':'#E14A33'};font-size:22px">${c.bestNet==null?'—':fmtSigned(c.bestNet)}</div></div>
@@ -1575,6 +1630,7 @@ function overlayRecord(screen){
       <div class="sstat"><div class="k">Wins</div><div class="v">${c.wins}</div></div>
     </div>
     ${careersHTML}
+    ${titleSection}
     <h2 style="margin:16px 0 8px">Hall of Fame · your top builds</h2>
     <div class="board">${rows}</div>
     <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:18px 0 2px">
@@ -1588,6 +1644,7 @@ function overlayRecord(screen){
   wire('#rec-signup',()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();});
   wire('#rec-setuser',()=>{S.overlay='account';S.acctMode='username';S.acctErr='';render();});
   wire('#rec-signout',async()=>{ await sbSignOut(); S.overlay=null; S.screen='title'; render(); toast('Signed out'); });
+  ov.querySelectorAll('.tchip[data-title]').forEach(b=>{ if(b.disabled)return; b.onclick=()=>{ S.look.title=b.dataset.title; LS.set('bag_look',S.look); render(); }; });
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
   screen.appendChild(ov);
@@ -1891,6 +1948,11 @@ function scrTitle(){
   lb.onclick=()=>{S.overlay='leaderboard';render();};
   mini.appendChild(how); mini.appendChild(lb);
   w.appendChild(mini);
+  const mini2=$(`<div class="mini"></div>`);
+  const tr=$(`<button class="btn gold">🏅 Trophy Room</button>`);
+  tr.onclick=()=>{S.overlay='record';render();};
+  mini2.appendChild(tr);
+  w.appendChild(mini2);
   add(w);
 }
 function startRoll(){
@@ -1927,7 +1989,7 @@ function scrSetup(){
   right.appendChild(handRow());
   right.appendChild(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
   right.appendChild(swatchRow('Hair',HAIRS,S.look.hair,'hair',o=>o.m));
-  right.appendChild(swatchRow('Shirt',POLOS,S.look.polo,'polo',o=>o.m));
+  right.appendChild(shirtRow());
   right.appendChild($(`<div style="height:14px"></div>`));
   const go=$(`<button class="btn goldfill">Start Drafting ▸<span class="sub">${S.daily?'Build a golfer for today\'s course':'Spin to build your golfer'}</span></button>`);
   go.onclick=()=>{track('draft_started',{daily:S.daily});S.screen='draft';render();}; right.appendChild(go);
@@ -1979,7 +2041,7 @@ function avClassify(r,g,b,a,nx,ny){
 }
 // targets are the exact wheel-swatch colours (palette .m) so the avatar matches the picker.
 function avLook(L){L=L||DEFLOOK;
-  const sk=SKINS.find(x=>x.id===L.skin)||SKINS[1], hr=HAIRS.find(x=>x.id===L.hair)||HAIRS[1], po=POLOS.find(x=>x.id===L.polo)||POLOS[0];
+  const sk=SKINS.find(x=>x.id===L.skin)||SKINS[1], hr=HAIRS.find(x=>x.id===L.hair)||HAIRS[1], po=findShirt(L.polo);
   const g=(L.gender==='female')?'female':'male';
   return{ gender:g, skinHex:sk.m, hairHex:hr.m, shirtHex:po.m, key:g+'_'+sk.id+'_'+hr.id+'_'+po.id };
 }
@@ -2023,7 +2085,7 @@ let _figN=0;
 function golferSVG(){
   const L=S.look||DEFLOOK;
   const sk=SKINS.find(x=>x.id===L.skin)||SKINS[1];
-  const po=POLOS.find(x=>x.id===L.polo)||POLOS[0];
+  const po=findShirt(L.polo);
   const hr=HAIRS.find(x=>x.id===L.hair)||HAIRS[1];
   const hair=hr.m, hairS=hr.s, capM=po.m, capS=po.s;
   const female=(L.gender==='female');
@@ -2118,6 +2180,23 @@ function swatchRow(label,opts,curId,key,colorOf){
     wrap.appendChild(sw);
   });
   row.appendChild(wrap); return row;
+}
+// shirt picker with unlockable cosmetic colours (locked ones show 🔒 + the requirement)
+function shirtRow(){
+  const m=badgeMetrics();
+  const row=$(`<div style="margin:9px 0"></div>`);
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Shirt</div>`));
+  const wrap=$(`<div style="display:flex;gap:9px;flex-wrap:wrap"></div>`);
+  POLOS.forEach(o=>{ const sel=S.look.polo===o.id;
+    const sw=$(`<button aria-label="Shirt ${o.id}" style="width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.m};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}"></button>`);
+    sw.onclick=()=>{S.look.polo=o.id; LS.set('bag_look',S.look); render();}; wrap.appendChild(sw); });
+  COSMETIC_SHIRTS.forEach(o=>{ const sel=S.look.polo===o.id; const open=!!o.req(m);
+    const sw=$(`<button aria-label="Shirt ${o.name}${open?'':' (locked)'}" title="${esc(o.name)}${open?'':' — '+esc(o.reqText)}" style="position:relative;width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.m};cursor:pointer;padding:0;opacity:${open?'1':'0.4'};box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}">${open?'':'<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px">🔒</span>'}</button>`);
+    sw.onclick=()=>{ if(!o.req(m)){ toast('🔒 '+o.name+' — '+o.reqText); return; } S.look.polo=o.id; LS.set('bag_look',S.look); render(); };
+    wrap.appendChild(sw); });
+  row.appendChild(wrap);
+  if(COSMETIC_SHIRTS.some(o=>!o.req(m))) row.appendChild($(`<div class="small muted" style="margin-top:5px;font-size:10.5px">🔒 Special colours unlock as you win — see the Trophy Room.</div>`));
+  return row;
 }
 function handRow(){
   const lefty=!!S.look.lefty;
