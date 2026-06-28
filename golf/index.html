@@ -902,17 +902,62 @@ function drawGolfer(rng,pool,revealed){
   const g=all[Math.floor(rng()*all.length)]; revealed.add(g.name); return g;
 }
 
-const SCHEDULE=[
-  ['Kapalua Invitational',20,'sig'],['Phoenix Open',9,'reg'],
-  ['Pebble Beach Pro-Am',20,'sig'],['Bay Hill Invitational',20,'sig'],
-  ['The Players',25,'sig'],['The Masters',21,'major'],
-  ['Hilton Head Classic',9,'reg'],['Charlotte Open',9,'reg'],
-  ['The Championship',19,'major'],['Memorial Tournament',20,'sig'],
-  ['Canadian Open',9,'reg'],['U.S. Open',21.5,'major'],
-  ['Travelers Championship',20,'sig'],['Scottish Open',9,'reg'],
-  ['The Open',17,'major'],['3M Open',8,'reg'],
-  ['Wyndham Championship',8,'reg'],['Tour Championship',25,'finale'],
-].map(e=>({name:e[0],purse:e[1]*1e6,type:e[2],major:e[2]==='major',big:(e[2]==='major'||e[2]==='sig'||e[2]==='finale')}));
+// Season schedule = permanent ANCHORS (the 4 majors, The Players, marquee signature events,
+// the playoffs + finale) that recur every year, PLUS a ROTATING slate drawn from REG_POOL so a
+// career doesn't replay the same smaller tournaments each season. `wk` is the week-of-season slot
+// that orders everything chronologically (Jan → Tour Championship) once anchors + picks are merged.
+const mkEvt=e=>({name:e[0],purse:e[1]*1e6,type:e[2],wk:e[3],major:e[2]==='major',big:(e[2]==='major'||e[2]==='sig'||e[2]==='finale')});
+const ANCHORS=[
+  ['Kapalua Invitational',20,'sig',1],
+  ['Pebble Beach Pro-Am',20,'sig',6],
+  ['Bay Hill Invitational',20,'sig',10],
+  ['The Players',25,'sig',11],
+  ['The Masters',21,'major',15],
+  ['The Championship',19,'major',19],
+  ['Memorial Tournament',20,'sig',21],
+  ['U.S. Open',21.5,'major',23],
+  ['Travelers Championship',20,'sig',24],
+  ['The Open',17,'major',28],
+  ['FedEx St. Jude Championship',20,'sig',31],
+  ['BMW Championship',20,'sig',32],
+  ['Tour Championship',25,'finale',33],
+].map(mkEvt);
+const REG_POOL=[
+  ['Sony Open',8.3,'reg',2],
+  ['The American Express',8.4,'reg',3],
+  ['Farmers Insurance Open',9.3,'reg',4],
+  ['Phoenix Open',9.2,'reg',5],
+  ['Genesis Invitational',9.5,'reg',7],
+  ['Mexico Open',8.1,'reg',8],
+  ['Cognizant Classic',8.4,'reg',9],
+  ['Valspar Championship',8.7,'reg',12],
+  ['Houston Open',9.5,'reg',13],
+  ['Texas Open',9.2,'reg',14],
+  ['Hilton Head Classic',9,'reg',16],
+  ['Zurich Team Classic',9,'reg',17],
+  ['Charlotte Open',9.5,'reg',18],
+  ['Charles Schwab Challenge',9.1,'reg',20],
+  ['Canadian Open',9.4,'reg',22],
+  ['Rocket Mortgage Classic',9.2,'reg',25],
+  ['John Deere Classic',8,'reg',26],
+  ['Scottish Open',9,'reg',27],
+  ['3M Open',8.1,'reg',29],
+  ['Wyndham Championship',8.1,'reg',30],
+].map(mkEvt);
+const REG_PER_SEASON=11, REG_STRIDE=5;   // 11 rotating events/season; STRIDE<count → ~45% turnover year to year
+// default slate (daily / fallback): anchors + the first rotating window, in calendar order
+const SCHEDULE=ANCHORS.concat(REG_POOL.slice(0,REG_PER_SEASON)).map(e=>({...e})).sort((a,b)=>a.wk-b.wk);
+function majorsSchedule(){ return ANCHORS.filter(e=>e.major).map(e=>({...e})).sort((a,b)=>a.wk-b.wk); }
+// the schedule for a given career-year: anchors + a rotating window of the regular pool. Seeded by
+// the career so it's stable within a save (resume-safe) but a different slate each year, and each
+// career gets its own ordering. Walks a fixed stride through a per-career shuffle of the pool.
+function seasonSchedule(year,seed){
+  const shuffled=seededShuffle(REG_POOL,((seed!=null?seed:0)^0x5eed1e)>>>0);
+  const N=shuffled.length, M=Math.min(REG_PER_SEASON,N);
+  const off=((((year||1)-1)*REG_STRIDE)%N+N)%N;
+  const picks=[]; for(let k=0;k<M;k++) picks.push(shuffled[(off+k)%N]);
+  return ANCHORS.concat(picks).map(e=>({...e})).sort((a,b)=>a.wk-b.wk);
+}
 
 const PAYOUT=[.18,.109,.069,.049,.041,.0363,.0338,.0313,.0293,.0273,.0253,.0233,.0215,.0201,.0189,
   .0177,.0167,.0157,.0149,.0141,.0133,.0125,.0117,.0109,.0101,.0097,.0093,.009,.0087,.0084,.0081,.0078,.0075,.0072,.0069];
@@ -2209,7 +2254,12 @@ function fieldSample(n){
   return a.slice(0,n);
 }
 function startSeason(majorsOnly){
-  S.schedule=(majorsOnly&&!S.daily)?SCHEDULE.filter(e=>e.major):SCHEDULE.slice(); S.evtIndex=0;
+  // ensure a per-career seed exists before building the schedule so the rotating slate is stable
+  // within a save (resume-safe) — ensureWorld() also sets this, but the schedule is built first.
+  if(!S.daily && S.careerSeed==null) S.careerSeed=(Math.floor(Math.random()*4294967295))>>>0;
+  S.schedule = S.daily ? SCHEDULE.map(e=>({...e}))
+             : (majorsOnly ? majorsSchedule() : seasonSchedule(S.year||1, S.careerSeed));
+  S.evtIndex=0;
   RNG = S.daily ? mulberry32((S.dailySeed^0x51ed2701)>>>0) : Math.random;
   const me=buildPlayer();
   // Field: daily uses the static seeded SG field; career/free-play uses the LIVING WORLD
