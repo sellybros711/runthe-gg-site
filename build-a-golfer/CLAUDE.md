@@ -1288,6 +1288,21 @@ allows Google Fonts, or self-host Anton.*
   titles/cosmetics, tier-up moment) = backbone; convenience (re-spins, future season mulligan) additive;
   power (changes) small/capped. Prestige pieces NOT yet built — awaiting owner go on sequencing.
 
+- Tour Rep PRESTIGE rewards (owner: prestige is the backbone of the reward concept)
+  • **Tier-up moment:** `evaluateAch` now detects a rank PROMOTION (crossing into a higher rank) via
+    `repTierFor(pts,count)` + `repRankIndex`; stashes `S.freshRep={from,to}`. Shown as a gold "Tour Rep
+    promotion — you're now a {rank}!" card on the season summary + career-end (`repUpHTML`), and as a toast
+    on daily/spotlight rank-ups (`achToast`). Reset each season start with `S.freshAch`.
+  • **Rank on the leaderboard:** `supabase/27_runtour_rep.sql` (owner must run) — adds `rep_pts` to
+    runtour_scores, `runtour_submit_season` now takes `p_rep_pts` (client passes `achPoints()`), and both
+    boards return the player's best `rep_pts` per row. Client maps pts→rank via `repTierName` and shows a
+    gold "· {rank}" badge beside the name (Amateur hidden, G.O.A.T. gets 🐐). Defensive: no badge before the
+    migration is applied.
+  • **Rank-gated titles:** added equippable prestige titles to `TITLES` — Contender / Tour Star / Tour
+    Legend / Tour Icon / 🐐 G.O.A.T. — unlocked by reaching that Tour Rep rank (req reads `repTier()`).
+  Verified: rank-up fires + card/toast; titles unlock by rank; leaderboard badges render (Legend / Star /
+  G.O.A.T., Amateur hidden); no console errors. Owner must run `27_runtour_rep.sql` for the board badges.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
