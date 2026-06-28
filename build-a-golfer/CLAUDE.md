@@ -955,21 +955,25 @@ allows Google Fonts, or self-host Anton.*
     different kinds of actions). Verified via Playwright (overlay covers viewport + body locks +
     unlocks; sig order [7,17,18]; 2 choice buttons + ordiv; no errors). Deployed to /golf.
 
-- 2026-06-28: **Rotating tour schedule (more events + yearly variety).** Owner wanted more
-  tour events and a slate that rotates year to year so a career doesn't replay the same smaller
-  tournaments. Replaced the flat 18-event `SCHEDULE` with: `ANCHORS` (13 — the 4 majors, The
-  Players, the marquee signatures Kapalua/Pebble/Bay Hill/Memorial/Travelers, the playoffs
-  FedEx St. Jude + BMW, and the Tour Championship finale) that recur EVERY year, plus `REG_POOL`
-  (20 regular events). `seasonSchedule(year, careerSeed)` returns anchors + a rotating window of
-  `REG_PER_SEASON=11` regulars (walks a `REG_STRIDE=5` stride through a per-career shuffle of the
-  pool), merged and sorted by a new `wk` calendar slot. Result: 24 events/season (was 18), 4
-  majors always, ~45% of the regular slate turns over each year (6 carry, 5 swap), the full pool
-  cycles across a career. Seeded by `careerSeed` so it's deterministic within a save (resume-safe)
-  and unique per career; new event names fall back to neutral course-fit (eventWeights already
-  handles unknowns), anchors keep their measured fits. `startSeason` now builds via
-  seasonSchedule (majors-only mode → `majorsSchedule()`; daily/fallback → default `SCHEDULE`).
-  Verified via Playwright (24 events, anchors present every year, regs rotate, chronological,
-  deterministic same-seed, careers differ, season runs clean). Deployed to /golf.
+- 2026-06-28: **Rotating tour schedule + a personality for every course.** Owner wanted a
+  schedule that rotates year to year so a career doesn't replay the same smaller tournaments,
+  then settled on **20 events/season**: keep 13 CORE events + rotate 7. Replaced the flat
+  18-event `SCHEDULE` with `ANCHORS` (13 — 4 majors, The Players, the marquee signatures
+  Kapalua/Pebble/Bay Hill/Memorial/Travelers, the FedEx playoffs St. Jude + BMW, and the Tour
+  Championship finale) that recur EVERY year, plus `REG_POOL` (20 regular events).
+  `seasonSchedule(year, careerSeed)` = anchors + a rotating window of `REG_PER_SEASON=7` regulars
+  (walks a `REG_STRIDE=4` stride through a per-career shuffle), merged + sorted by a new `wk`
+  calendar slot. Result: 20 events, 4 majors always, ~4 of the 7 small events swap each year
+  (3 carry → realistic turnover), pool cycles across a career. Seeded by `careerSeed` →
+  deterministic within a save (resume-safe), unique per career. `startSeason` builds via
+  seasonSchedule (majors-only → `majorsSchedule()`; daily/fallback → default `SCHEDULE`).
+  **Every venue now has a course personality:** added COURSEFIT entries for all rotating
+  regulars + both playoffs (Torrey/Riviera/Colonial/Innisbrook/PGA National/Waialae/etc.),
+  using the established {driving, approach, shortgame, putt} multiplier scheme so builds play to
+  type (e.g. a bomber rates highest at long Farmers, a precise iron player at Colonial). Anchors
+  keep their measured major/signature fits; zero events fall back to neutral now. Verified via
+  Playwright (20 events, 13 anchors, 4 majors/yr, regs rotate ~57%, every event has a fit,
+  deterministic same-seed, personalities shift effective overall, season runs clean). Deployed.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
