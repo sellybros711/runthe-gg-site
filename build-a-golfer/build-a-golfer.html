@@ -823,7 +823,12 @@ function repTier(pts){ pts=pts==null?achPoints():pts;
   let t=REP_TIERS[0],nx=null; for(let i=0;i<REP_TIERS.length;i++){ if(pts>=REP_TIERS[i].at){t=REP_TIERS[i]; nx=REP_TIERS[i+1]||null;} }
   if(!nx) nx=GOAT_TIER;   // Icon's next goal is the G.O.A.T. (full completion)
   return {tier:t, next:nx}; }
-function repPerkReSpins(){ const n=repTier().tier.name; return (n==='Legend'||n==='Icon'||n==='G.O.A.T.')?2:(n==='Champion'||n==='Star'||n==='Contender')?1:0; }
+// Tour Rep perk: off-season skill CHANGES + RE-SPINS scale with your rank (a tangible "keep climbing" reward).
+// 1→2→3 changes up the ranks, then re-spins stack on top — capped at 3 changes so you can't rebuild the whole bag.
+const REP_PERKS={ 'Amateur':[1,0], 'Journeyman':[2,0], 'Tour Pro':[3,0], 'Contender':[3,1], 'Star':[3,1],
+  'Champion':[3,2], 'Legend':[3,2], 'Icon':[3,3], 'G.O.A.T.':[3,3] };
+function repPerk(){ const p=REP_PERKS[repTier().tier.name]||[3,2]; return {changes:p[0], reSpins:p[1]}; }
+function repPerk2(name){ const p=REP_PERKS[name]||[3,2]; return {changes:p[0], reSpins:p[1]}; }   // for the next-rank teaser
 // situational-flag recorder: inc (add), max (keep largest), set (boolean/flag)
 function recordAchEvent(ev){ const s=achState(); const f=s.flags;
   if(ev.inc) for(const k in ev.inc) f[k]=(f[k]||0)+ev.inc[k];
@@ -3761,7 +3766,7 @@ function continueFranchise(){
   const _decline={}; CATS.forEach(c=>{ const sl=S.slots[c.k]; if(sl&&_pre[c.k]!=null){ const d=sl.value-_pre[c.k]; if(d<0) _decline[c.k]=d; } });
   S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false;
   // off-season tune-up: re-spin to swap fresh skills in (now also to repair age decline)
-  S.offseason={changes:0,maxChanges:3,reSpins:2+repPerkReSpins(),decline:_decline}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
+  const _perk=repPerk(); S.offseason={changes:0,maxChanges:_perk.changes,reSpins:_perk.reSpins,decline:_decline}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
   track('offseason_start',{year:S.year});
   S.screen='offseason'; render();
 }
@@ -3792,6 +3797,11 @@ function scrOffseason(){
   add($(`<div class="center"><span class="tag">Career Mode · Off-Season · Year ${S.year} prep</span></div>`));
   add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tune your game</h1>`));
   add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag — up to <b>${os.maxChanges} changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. Keep your bag as-is, or spin to improve it — but once you spin, you must take a skill before moving on.</p>`));
+  // Tour Rep perk banner — shows what your rank grants + what the next rank unlocks (a "keep climbing" nudge)
+  { const r=repTier(), cur=repPerk(); let teaser='';
+    if(r.next){ const np=repPerk2(r.next.name); const dc=np.changes-cur.changes, dr=np.reSpins-cur.reSpins;
+      if(dc>0||dr>0) teaser=` · reach <b style="color:var(--gold)">${esc(r.next.name)}</b> for ${[dc>0?`+${dc} change${dc>1?'s':''}`:'',dr>0?`+${dr} re-spin${dr>1?'s':''}`:''].filter(Boolean).join(' & ')}`; }
+    add($(`<div class="scout small" style="max-width:560px;margin:0 auto 8px;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">${r.tier.name==='G.O.A.T.'?'🐐 ':'🏅 '}${esc(r.tier.name)} perk</b> <span class="muted">${cur.changes} change${cur.changes>1?'s':''} · ${cur.reSpins} re-spin${cur.reSpins===1?'':'s'} this off-season${teaser}</span></div>`)); }
   // age/form status — decline is performance-based: stay sharp by winning, fade if you slump
   const declined=os.decline && Object.keys(os.decline).length;
   if(declined) add($(`<div class="scout small" style="max-width:560px;margin:0 auto 6px;text-align:center;border-color:#e07a5f"><b style="color:#e9a23b">Age is catching up.</b> <span class="muted">Power fades first — repair a slot with a spin, or lean into your short game. Strong seasons slow the decline.</span></div>`));

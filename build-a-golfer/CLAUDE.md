@@ -1276,6 +1276,14 @@ allows Google Fonts, or self-host Anton.*
   repeat entries are distinguishable; fetch limit 50→100; defensive (works before & after the SQL). Verified
   a single user renders multiple season + career rows, no console errors.
 
+- Off-season perks scale with Tour Rep rank (owner reward idea)
+  Replaced flat off-season (3 changes + 2 re-spins for all) with `REP_PERKS` by rank: Amateur 1ch/0rs,
+  Journeyman 2/0, Tour Pro 3/0, Contender 3/1, Star 3/1, Champion 3/2, Legend 3/2, Icon 3/3, G.O.A.T. 3/3
+  (changes capped at 3 so you can't rebuild the whole bag). `repPerk()` drives `continueFranchise`'s
+  `S.offseason.maxChanges/reSpins`. The off-season screen shows a "🏅 {rank} perk · N changes · M re-spins ·
+  reach {nextRank} for +X" banner (a climb nudge). NOTE: this intentionally nerfs the early game vs the old
+  flat 3+2 — it's the progression hook; aging decline (where changes matter) only bites ~year 12+.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
