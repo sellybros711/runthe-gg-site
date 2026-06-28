@@ -934,6 +934,27 @@ allows Google Fonts, or self-host Anton.*
   the overlay once. Added a proactive `if(sb && crCache===null) crLoad();` to both screens so
   the course-record box is global everywhere, not just in the overlay. Deployed to /golf.
 
+- 2026-06-28: **Full-screen overlays + smooth scrolling + 2 tester quick-fixes.** Tester:
+  leaderboard popup was an awkward floating card and scrolling felt stuck/janky in places.
+  • **Overlays are now full-screen.** Root cause of the floating look: `.ov` was
+    `position:absolute` inside `.card` (z-index:1), which sits BELOW `.head` (z-index:2), so
+    the header bled over it. Fixed: `.ov` → `position:fixed; inset:0; z-index:40`, opaque brand
+    bg (`var(--pagebg)`), safe-area padding, centered 600px content column on desktop, own
+    momentum scroll (`-webkit-overflow-scrolling:touch; overscroll-behavior:contain`). Also
+    moved the overlay mount point from `screen` → `app` (top level) in render() so its z-index
+    actually wins over the header/footer. `body.ovopen{overflow:hidden}` locks the page behind.
+  • **Scroll jank fix.** Removed `background-attachment:fixed` from body (forces a full-screen
+    repaint every scroll frame → mobile stutter); replaced with a COMPOSITED `body::before`
+    fixed backdrop (same gradient, no repaint cost). render() now preserves the overlay's own
+    scrollTop across async re-renders (e.g. leaderboard/records board loading) so it no longer
+    jumps to top.
+  • **Jordo quick-fixes:** (a) signature-holes list on the preview is now sorted first→last by
+    hole number (`[...c.sig].sort((a,b)=>a[0]-b[0])`) — was showing 18/7/17. (b) the Attack/Safe
+    decision buttons now read as one choice: both use a single neutral `.btn.choice` style with
+    an "or" divider between them and a ⚡/🛡 marker (were red vs gold, which looked like
+    different kinds of actions). Verified via Playwright (overlay covers viewport + body locks +
+    unlocks; sig order [7,17,18]; 2 choice buttons + ordiv; no errors). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
