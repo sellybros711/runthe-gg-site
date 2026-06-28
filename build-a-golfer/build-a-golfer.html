@@ -305,6 +305,12 @@
   .shotrow .sd{flex:1; font-size:13.5px; color:#cfdbe6; line-height:1.3}
   .shotrow.hole .sd{font-weight:800; color:var(--oncard)}
   .shotrow .stag{flex:0 0 auto; font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; border:1.4px solid currentColor; border-radius:999px; padding:2px 9px}
+  .shothd .restag{margin-left:auto; flex:0 0 auto; font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; border:1.4px solid currentColor; border-radius:999px; padding:2px 10px}
+  .shotsum{padding:9px 0 2px; font-size:13.5px; color:#cfdbe6}
+  .shottoggle{display:block; width:100%; margin-top:8px; background:transparent; border:1px dashed var(--line); color:var(--gold); border-radius:9px; padding:8px; font-weight:800; font-size:12px; letter-spacing:.03em; cursor:pointer}
+  .shottoggle:hover{background:rgba(235,166,31,.06)}
+  .legendx,.blurbmore{background:transparent; border:1px solid var(--line); color:var(--gold); border-radius:8px; padding:4px 10px; font-weight:800; font-size:11px; cursor:pointer; white-space:nowrap}
+  .blurbmore{padding:1px 7px; margin-left:4px}
   @keyframes shotIn{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
   @media (prefers-reduced-motion:reduce){ .shotrow{animation:none} }
 
@@ -3115,7 +3121,13 @@ function scrDailyPreview(){
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge · today's course</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:10px 0 2px">${esc(c.v)}</h1>`));
   add($(`<p class="lede center" style="margin:0 0 10px">${esc(c.loc)} · Par ${c.par} · ${c.yd.toLocaleString()} yds · ${dCondLabel(S.dailyCond)}</p>`));
-  add($(`<div class="scout" style="max-width:560px;margin:0 auto">${esc(c.blurb)}</div>`));
+  // keep the flavor but don't lead with a wall of prose — one line, "Read more" for the rest
+  const firstSentence=c.blurb.split('. ')[0].replace(/\.$/,'')+'.';
+  const hasMore=c.blurb.length>firstSentence.length+2;
+  const open=!!S.dailyBlurbOpen;
+  const blurb=$(`<div class="scout" style="max-width:560px;margin:0 auto">${esc(open||!hasMore?c.blurb:firstSentence)}${hasMore?`<button class="blurbmore">${open?'Less':'Read more'}</button>`:''}</div>`);
+  const bm=blurb.querySelector('.blurbmore'); if(bm) bm.onclick=()=>{ S.dailyBlurbOpen=!open; render(); };
+  add(blurb);
   const top=dCourseSkillTop(c,3).map(x=>`<span class="tag" style="font-size:12px">${x.short}</span>`).join(' ');
   add($(`<div class="center" style="margin:14px 0 4px"><div class="small muted" style="letter-spacing:.14em;text-transform:uppercase;font-weight:800">What wins here</div><div style="margin-top:8px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">${top}</div></div>`));
   // the main objective: beat the real tour scoring average for this venue
@@ -3131,7 +3143,7 @@ function scrDailyPreview(){
   c.sig.forEach(s=>{ const h=c.holes[s[0]-1]; sig.appendChild($(`<div class="lb" style="grid-template-columns:34px 1fr"><span class="pos" style="color:var(--gold)">${s[0]}</span><span class="pl" style="min-width:0"><div style="font-weight:700">Par ${h[0]} · ${h[1]}y${h[2]?' · '+esc(h[2]):''}</div><div class="small muted" style="font-size:10.5px;line-height:1.3">${esc(s[1])}</div></span></div>`)); });
   add(sig);
   add($(`<h2 class="center" style="margin:18px 0 6px;font-size:15px">Your game plan</h2>`));
-  add($(`<p class="lede center" style="font-size:12px;margin:0 auto 8px;max-width:520px">Aggressive chases a low number but blows up if your build doesn't fit. You still choose shot-by-shot on signature holes.</p>`));
+  add($(`<p class="lede center" style="font-size:12px;margin:0 auto 8px;max-width:520px">Pick how boldly to play. You'll still make the big calls on the signature holes.</p>`));
   const dial=$(`<div class="mini" style="max-width:520px;margin:0 auto;gap:8px"></div>`);
   [['conservative','🛡 Safe'],['balanced','⚖ Balanced'],['aggressive','⚡ Aggressive']].forEach(([k,lab])=>{
     const on=S.dailyPlan===k; const b=$(`<button class="btn ${on?'goldfill':'ghost'}" style="font-size:13px">${lab}</button>`);
@@ -3151,10 +3163,23 @@ const SHOT_STAGGER=130;   // ms between shot rows (matches the CSS cascade)
 function clearDailyTimer(){ if(_dailyTimer){clearTimeout(_dailyTimer);_dailyTimer=null;} }
 function nextDailySig(){ const i=S.dailyHoles.length; return DAILY_COURSES[S.dailyCourse].sig.find(s=>s[0]===i+1); }
 // dwell long enough for the just-played hole's shot-by-shot cascade to finish, then a beat to read it
-function dailyDwell(){ const p=S.dailyHoles; const n=p.length?((p[p.length-1].shots||[]).length):0; return 460 + n*SHOT_STAGGER + 280; }
+function dailyDwell(){ if(!dShotDetail()) return 720;   // simple view: no cascade to wait on — keep it snappy
+  const p=S.dailyHoles; const n=p.length?((p[p.length-1].shots||[]).length):0; return 460 + n*SHOT_STAGGER + 280; }
+// shot-by-shot is opt-in: by default we show just the hole result (one clean line) so the
+// round isn't a wall of golf jargon. Tap to expand the full play-by-play; the choice sticks.
+function dShotDetail(){ return LS.get('bag_daily_shotdetail',false); }
 function dShotPanel(h){
-  const el=$(`<div class="shotpanel"><div class="shothd"><span class="hn">${h.n}</span><span class="hi">Par ${h.par} · ${h.yards}y${h.attack===true?' · ⚡ attacked':h.attack===false?' · 🛡 safe':''}${h.mull?' · ↺ mulligan':''}</span></div></div>`);
-  (h.shots||[]).forEach((s,idx)=>{ el.appendChild($(`<div class="shotrow${s.tag?' hole':''}" style="animation-delay:${(idx*SHOT_STAGGER/1000).toFixed(2)}s"><span class="sl">Shot ${s.n}</span><span class="sd">${esc(s.d)}</span>${s.tag?`<span class="stag" style="color:${dScoreCol(h.toPar)}">${esc(s.tag)}</span>`:''}</div>`)); });
+  const detail=dShotDetail();
+  const meta=`Par ${h.par} · ${h.yards}y${h.attack===true?' · ⚡ attacked':h.attack===false?' · 🛡 safe':''}${h.mull?' · ↺ mulligan':''}`;
+  const restag=detail?'':`<span class="restag" style="color:${dScoreCol(h.toPar)}">${esc(dResultLong(h.par,h.toPar))}</span>`;
+  const el=$(`<div class="shotpanel"><div class="shothd"><span class="hn">${h.n}</span><span class="hi">${meta}</span>${restag}</div></div>`);
+  if(detail){
+    (h.shots||[]).forEach((s,idx)=>{ el.appendChild($(`<div class="shotrow${s.tag?' hole':''}" style="animation-delay:${(idx*SHOT_STAGGER/1000).toFixed(2)}s"><span class="sl">Shot ${s.n}</span><span class="sd">${esc(s.d)}</span>${s.tag?`<span class="stag" style="color:${dScoreCol(h.toPar)}">${esc(s.tag)}</span>`:''}</div>`)); });
+    const t=$(`<button class="shottoggle">▴ Hide shot-by-shot</button>`); t.onclick=()=>{ LS.set('bag_daily_shotdetail',false); render(); }; el.appendChild(t);
+  } else {
+    const n=(h.shots||[]).length;
+    const t=$(`<button class="shottoggle">▾ Shot-by-shot (${n} shot${n===1?'':'s'})</button>`); t.onclick=()=>{ LS.set('bag_daily_shotdetail',true); render(); }; el.appendChild(t);
+  }
   return el;
 }
 function scheduleDailyAdvance(){
@@ -3350,6 +3375,17 @@ function dScenario(courseKey,i,total,av){
   const chosen = (sitC.length && rng()<0.45) ? sitC[Math.floor(rng()*sitC.length)] : T[Math.floor(rng()*T.length)];
   return {tag:chosen.tag, prompt:chosen.prompt, opts:chosen.opts, sit:chosen.sit?'':dSitLine(total,av,i)};
 }
+// one-time plain-language primer for non-golfers — dismissible, then it never shows again
+function dLegend(){
+  if(LS.get('bag_daily_legend_seen',false)) return null;
+  const el=$(`<div class="scout" style="max-width:600px;margin:8px auto 0;text-align:left;border-color:var(--gold)">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <b style="font-size:13px">New to golf?</b>
+      <button class="legendx" aria-label="Dismiss this tip">Got it ✓</button></div>
+    <div class="small muted" style="margin-top:6px;line-height:1.5">Your score is shown <b>against par</b> — the number a pro is expected to take. <b style="color:#35d6a0">−2</b> means 2 under (great), <b>E</b> is even, <b style="color:#e9a23b">+3</b> is 3 over. <b>Lower wins.</b> On the card, holes under par are circled and over par are boxed.</div></div>`);
+  el.querySelector('.legendx').onclick=()=>{ LS.set('bag_daily_legend_seen',true); render(); };
+  return el;
+}
 function scrDailyRound(){
   const c=DAILY_COURSES[S.dailyCourse], played=S.dailyHoles, total=played.reduce((s,h)=>s+h.toPar,0);
   const i=played.length, done=(i>=18);
@@ -3357,6 +3393,7 @@ function scrDailyRound(){
   add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${dtp(total)}</span> <span class="small muted">through ${i}</span></div>`));
   const av=dTourAvg(c); const beating=(i>0)&&(total < av*(i/18));
   add($(`<div class="center small" style="margin:0 0 4px;color:${i===0?'var(--muted)':(beating?'#35d6a0':'#e9a23b')};font-weight:700">Tour average ${dAvgTxt(av)} — beat it to win${i>0?` · ${beating?'ahead of pace ✓':'behind pace'}`:''}</div>`));
+  const lg=dLegend(); if(lg) add(lg);
   const vh=(S.dailyViewHole!=null && S.dailyViewHole<played.length)?S.dailyViewHole:played.length-1;   // which hole's shot log is shown
   const strip=$(`<div class="dcard" style="max-width:600px;margin:6px auto 0"></div>`);
   for(let k=0;k<18;k++){ const pl=played[k], cur=(k===i&&!done);

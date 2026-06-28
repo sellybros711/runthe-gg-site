@@ -903,6 +903,24 @@ allows Google Fonts, or self-host Anton.*
   STILL OPEN (tester feedback): "too complicated / overwhelmed with text / visually too much"
   for a non-golfer — needs a scoping decision before a simplification pass (which mode, how far).
 
+- 2026-06-28: **Daily Challenge — declutter + plain-language for non-golfers.** Tester
+  feedback: a non-golfer ("Gelch") was "overwhelmed with text," "had no idea what it was
+  saying," "too complicated for the average user." Owner chose: focus **Daily Challenge**,
+  do **both** (explain jargon + trim clutter). Changes:
+  • **Shot-by-shot now opt-in (biggest trim).** `dShotPanel` defaults to a single result line
+    (e.g. "PAR") with a `▾ Shot-by-shot (N shots)` expander instead of dumping 3-5 jargon-heavy
+    play-by-play rows per hole. Pref persists (`bag_daily_shotdetail`); `▴ Hide` collapses
+    again. `dailyDwell` shortened to a flat 720ms in simple mode (no cascade to wait on) so
+    auto-play feels snappier. The play-by-play is preserved in full for fans, just behind a tap.
+  • **Plain-language scoring primer (explain).** `dLegend()` adds a one-time, dismissible
+    "New to golf?" card on the round screen: explains score-vs-par (−/E/+, lower wins) and the
+    circle=under / box=over card notation. Persists `bag_daily_legend_seen`.
+  • **Preview trimmed.** Long course blurb collapses to its first sentence + `Read more`
+    (`S.dailyBlurbOpen`); game-plan copy shortened ("Pick how boldly to play. You'll still make
+    the big calls on the signature holes."). CSS: `.restag/.shotsum/.shottoggle/.legendx/
+    .blurbmore`. Verified via Playwright (collapsed→0 rows + result tag + legend; expand→rows +
+    pref saved; legend/blurb toggles persist; no errors). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
