@@ -1244,6 +1244,21 @@ allows Google Fonts, or self-host Anton.*
   `celebrateWin`: autoAdv→timer(major2600/reg2000); else→timer only for non-majors(2000), majors wait.
   `celebratePlayoff` done(): win→auto-flow; loss→(auto||reduce)?timer:Continue button.
 
+- Achievement-card one-line layout + mid-season save (owner)
+  • **`achEarnedHTML` rebuilt:** each unlocked achievement is now ONE row — 🏅 name + green points on the left,
+    description on the right (small/muted, right-aligned, `white-space:nowrap` + ellipsis), stacked one per
+    line. No more centered flex-wrap forcing things onto multiple lines.
+  • **Auto-save is now explicit + mid-season save:** season-end already called `saveCareer()` (kept) — added
+    a green "✓ Progress auto-saved" line on the summary and renamed the manual button to "Exit to Home"
+    (already saved). NEW `saveMidSeasonAndExit()` snapshots the in-progress season (schedule, evtIndex,
+    season.results/totals/field/me, freshAch) into `bag_careersave.mid` via `saveCareer({mid})`; a "Save &
+    Exit" button on the sim screen (career only) lets you stop mid-season. `resumeCareer` branches on
+    `r.mid`: restores the season state and re-enters `screen:'season'` exactly where you left off (the
+    current in-progress event re-sims, since it hadn't been recorded). The title "Resume Career Mode" sub
+    shows "mid-season (event N)" when applicable. The next full save (season end) writes without `mid`,
+    clearing the mid-season checkpoint. Verified: 4-event mid-save → resume restores results/evtIndex/money
+    exactly; one-line ach rows; no console errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

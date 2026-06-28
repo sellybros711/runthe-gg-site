@@ -835,8 +835,11 @@ function evaluateAch(){ const s=achState(); const m=achMetrics(); const fresh=[]
   return fresh; }
 // celebratory list of just-unlocked achievements (shown on the summary / career-end)
 function achEarnedHTML(list){ if(!list||!list.length) return '';
-  const rows=list.map(a=>`<div style="display:flex;gap:9px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:7px"><span class="tag" style="color:#ffd76a;border-color:#ffd76a">🏅 ${esc(a.name)}</span><span class="small muted">${esc(a.desc)} · +${a.pts} pts</span></div>`).join('');
-  return `<div class="scout" style="margin:4px auto 12px;max-width:520px;text-align:center;border-color:#ffd76a"><b style="color:var(--gold)">Achievement${list.length>1?'s':''} unlocked</b>${rows}</div>`; }
+  // one achievement per row: name (with points) on the LEFT, description on the RIGHT — single line, no wrap
+  const rows=list.map(a=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 2px;border-top:1px solid rgba(255,255,255,.07)">
+    <span style="display:flex;align-items:baseline;gap:7px;flex:0 0 auto;white-space:nowrap"><b style="color:#ffd76a">🏅 ${esc(a.name)}</b><span class="small" style="color:#35d6a0;font-weight:800">+${a.pts}</span></span>
+    <span class="small muted" style="flex:1 1 auto;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(a.desc.replace(/\.$/,''))}</span></div>`).join('');
+  return `<div class="scout" style="margin:4px auto 12px;max-width:520px;border-color:#ffd76a"><b style="color:var(--gold);display:block;text-align:center;margin-bottom:2px">Achievement${list.length>1?'s':''} unlocked</b>${rows}</div>`; }
 // brief toast for an achievement unlocked at a single moment (daily / spotlight)
 function achToast(fresh){ if(!fresh||!fresh.length)return; const a=fresh[0];
   toast(`🏅 Achievement: ${a.name}${fresh.length>1?` (+${fresh.length-1} more)`:''}`); }
@@ -976,17 +979,33 @@ function restoreResume(){const info=resumeInfo(); if(!info)return; const r=info.
   S.daily=false; S.drawRng=Math.random; S.current=null;
   S.screen=(info.n>=8)?'build':'draft'; track('resume',{n:info.n}); render(); }
 /* ---------- Career Mode: persist a multi-season franchise to resume later ---------- */
-function saveCareer(){ if(S.daily||!S.career) return false;
-  LS.set('bag_careersave',{year:S.year||1, career:S.career, fieldRoster:S.fieldRoster||null,
+function saveCareer(extra){ if(S.daily||!S.career) return false;
+  LS.set('bag_careersave',Object.assign({year:S.year||1, career:S.career, fieldRoster:S.fieldRoster||null,
     careerSeed:S.careerSeed, world:S.world||null,
-    slots:S.slots, name:S.name, look:S.look, ovr:Math.round(buildPlayer().skill), savedAt:Date.now()}); return true; }
+    slots:S.slots, name:S.name, look:S.look, ovr:Math.round(buildPlayer().skill), savedAt:Date.now()}, extra||{})); return true; }
 function careerSaveInfo(){ const r=LS.get('bag_careersave',null); return (r&&r.career)?r:null; }
 function clearCareerSave(){ LS.set('bag_careersave',null); }
+// mid-season "Save & Exit" — checkpoints the in-progress season (completed events + standings) so you can
+// resume EXACTLY where you left off; the current event re-sims on resume (it hadn't been recorded yet).
+function saveMidSeasonAndExit(){
+  if(!S.career || S.daily || !S.season){ clearTimeout(seasonTimer); reset(); render(); return; }
+  // ensure S.career reflects this year before snapshotting (career object is created at the first summary)
+  saveCareer({ mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
+    season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me } } });
+  track('career_mid_save',{year:S.year,evt:S.evtIndex});
+  clearTimeout(seasonTimer); reset(); render(); toast('Career saved — resume from the home screen');
+}
 function resumeCareer(){ const r=careerSaveInfo(); if(!r) return; reset();
   S.career=r.career; S.fieldRoster=r.fieldRoster||null; S.slots=r.slots||S.slots;
   S.careerSeed=(r.careerSeed!=null?r.careerSeed:null); S.world=r.world||null;
   S.name=r.name||''; S.look=Object.assign({},DEFLOOK,r.look||{}); S.year=r.year||1; S.daily=false;
-  track('career_resume',{year:S.year}); continueFranchise(); }   // picks up at next year's off-season
+  if(r.mid && r.mid.season){   // resume INTO the in-progress season (mid-season save)
+    ensureWorld(); RNG=Math.random;
+    S.schedule=r.mid.schedule||[]; S.evtIndex=r.mid.evtIndex||0; S.season=r.mid.season; S.freshAch=r.mid.freshAch||[];
+    S.curEvt=null; S.recorded=false; S.autoSim=LS.get('bag_autosim',false);
+    track('career_resume',{year:S.year,mid:true}); S.screen='season'; render(); return;
+  }
+  track('career_resume',{year:S.year}); continueFranchise(); }   // otherwise pick up at next year's off-season
 
 /* ---------- data ---------- */
 const CATS=[
@@ -2266,7 +2285,11 @@ function scrTitle(){
   const ri=resumeInfo();
   const cs=careerSaveInfo();
   if(cs){
-    const cb=$(`<button class="btn teal">Resume Career Mode<span class="sub">Year ${cs.year} done · ${esc(cs.name||'Your Golfer')} · OVR ${cs.ovr} · continue your career</span></button>`);
+    const mid=cs.mid&&cs.mid.season;
+    const sub=mid
+      ? `Year ${cs.year} · mid-season (event ${(cs.mid.evtIndex||0)+1}) · ${esc(cs.name||'Your Golfer')} · pick up where you left off`
+      : `Year ${cs.year} done · ${esc(cs.name||'Your Golfer')} · OVR ${cs.ovr} · continue your career`;
+    const cb=$(`<button class="btn teal">Resume Career Mode<span class="sub">${sub}</span></button>`);
     cb.onclick=resumeCareer; stack.appendChild(cb);
   }
   if(ri){
@@ -3249,6 +3272,10 @@ function scrSeason(){
   const skip=$(`<button class="btn ghost">Skip to End ⏭</button>`);
   skip.onclick=skipToEnd;
   row.appendChild(auto); row.appendChild(skip); ctrl.appendChild(row);
+  if(!S.daily){   // career: let the player stop mid-season and resume exactly here
+    const se=$(`<button class="btn ghost" style="margin-top:10px;font-size:13px">Save &amp; Exit<span class="sub">Stop now — resume this season from the home screen</span></button>`);
+    se.onclick=saveMidSeasonAndExit; ctrl.appendChild(se);
+  }
   add(ctrl);   // controls span full width below both columns (stay at the bottom on mobile)
 
   // if YOU are in a sudden-death playoff, watch it resolve hole-by-hole before anything else
@@ -3712,10 +3739,11 @@ function scrSummary(){
   } else {
     const lastYear=(S.year||1)>=CAREER_MAX_YEARS;
     const declining=pastPeak();
+    right.appendChild($(`<div class="small center" style="margin:0 0 10px;color:#35d6a0;font-weight:700">✓ Progress auto-saved — your career is checkpointed at the home screen</div>`));
     const cont=$(`<button class="btn goldfill">${lastYear?'Finish Career ▸':'Continue to Year '+((S.year||1)+1)+' ▸'}<span class="sub">${lastYear?('Year '+CAREER_MAX_YEARS+' was your last — career ceremony'):('Career Mode · year '+((S.year||1)+1)+' of '+CAREER_MAX_YEARS+(declining?' · skills are declining (re-spin to repair)':'')+' · off-season, then a new season')}</span></button>`);
     cont.onclick=continueFranchise; right.appendChild(cont);
-    const save=$(`<button class="btn gold" style="margin-top:10px">Save Career & Exit<span class="sub">Resume your career from the home screen anytime</span></button>`);
-    save.onclick=()=>{ if(saveCareer()){ track('career_saved_exit',{year:S.year||1}); toast('Career saved — resume it from the home screen'); reset(); render(); } };
+    const save=$(`<button class="btn gold" style="margin-top:10px">Exit to Home<span class="sub">Already saved — come back and resume anytime</span></button>`);
+    save.onclick=()=>{ saveCareer(); track('career_saved_exit',{year:S.year||1}); reset(); render(); };
     right.appendChild(save);
     const retire=$(`<button class="btn ghost" style="margin-top:10px">Retire — End Career</button>`);
     retire.onclick=()=>endCareer('chose'); right.appendChild(retire);
