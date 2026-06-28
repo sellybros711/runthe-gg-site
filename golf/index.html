@@ -1222,15 +1222,28 @@ function ensureWorld(){ if(S.daily) return null;
 function worldField(n){ const w=ensureWorld(); if(!w) return null;
   return w.active.slice().sort((a,b)=>b.lov-a.lov).slice(0,n)
     .map(g=>{const o={name:g.name,skill:g.lov}; SKK.forEach(s=>o[s]=g['l_'+s]); return o;}); }
-/* ---- YOUR golfer's bounded career: measured in YEARS PLAYED (not age). 40-year shelf life;
-   decline from year 15. The FIELD (real + generated) is the one gated by real age. ---- */
-const DECLINE_START_YEAR=10, CAREER_MAX_YEARS=40, FIELD_RETIRE_AGE=55;
-// power fades first (distance), finesse/experience hold up — so late career you adapt your build
+/* ---- YOUR golfer's bounded career (40-year shelf life). Decline is AGE- and FORM-based, not a
+   flat year cutoff: a rookie starts ~22 and peaks through the mid-30s with NO decline; only after
+   do skills fade — LATER if you keep performing ("play young"), SOONER if you slump. Power
+   (distance) fades first, touch/experience last. The FIELD ages by its own real age. ---- */
+const START_AGE=22, PEAK_END_AGE=34, CAREER_MAX_YEARS=40, FIELD_RETIRE_AGE=55;
 const DECLINE_RATE={dist:1.9,acc:1.0,app:1.0,sht:0.7,scr:0.7,bnk:0.7,put:0.6,clu:0.2};
-function applyPlayerDecline(){   // erodes your bag once per year from DECLINE_START_YEAR; re-spins offset it
-  if((S.year||1) < DECLINE_START_YEAR) return;
-  const accel = 1 + Math.max(0,(S.year-DECLINE_START_YEAR)-4)*0.12;
-  CATS.forEach(c=>{ const sl=S.slots[c.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[c.k]*accel)); });
+function playerAge(){ return START_AGE + ((S.year||1)-1); }
+// how the season just finished went vs the field: -1 (poor) .. +1 (dominant). Wins/majors keep you sharp.
+function seasonForm(s){ if(!s) return 0; const N=FIELDSIZE||120;
+  const rank=s.rank||Math.round(N*0.6), rankScore=1-(rank-1)/Math.max(1,N-1);
+  return clamp((rankScore-0.5)/0.5 + (s.wins||0)*0.25 + (s.majors||0)*0.35, -1, 1); }
+// competitive age = real age minus a "prime bank" earned by sustained good play (a great career can
+// stay at peak into the early 40s; a slump ages you faster). Bank is persisted on the career.
+function effAge(){ return playerAge() - ((S.career&&S.career.primeBank)||0); }
+function pastPeak(){ return effAge() > PEAK_END_AGE; }
+function applyPlayerDecline(){   // once per off-season; scaled by how far past your peak you are
+  const c=S.career; if(!c) return;
+  const last=(c.seasons&&c.seasons[c.seasons.length-1])||null;
+  c.primeBank=clamp((c.primeBank||0)+seasonForm(last), -2, 6);   // win → defy age; slump → age faster
+  const sev=effAge()-PEAK_END_AGE; if(sev<=0) return;            // still in your prime — nothing fades
+  const ramp=Math.min(1.8, sev/6);                              // barely anything mid-30s, steeper into the 40s
+  CATS.forEach(cat=>{ const sl=S.slots[cat.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[cat.k]*ramp)); });
 }
 function playerRetires(){ return (S.year||1) >= CAREER_MAX_YEARS; }   // forced at the 40-year shelf life
 /* golfer customization palettes */
@@ -2921,7 +2934,7 @@ function scrSummary(){
   // before that nothing moves and every tile would read 0. Shows the new rating
   // with the change (e.g. red −1) beside it.
   const ss=(!S.daily && S.career && S.career.skillSeasons)||[];
-  if(ss.length>=2 && (S.year||1) > DECLINE_START_YEAR){
+  if(ss.length>=2 && pastPeak()){
     const cur=ss[ss.length-1].skills, prev=ss[ss.length-2].skills, py=ss[ss.length-2].year;
     add($(`<h2 class="center" style="margin:14px 0 8px;font-size:15px">Skill changes vs Year ${py}</h2>`));
     const dt=$(`<div class="tiles four"></div>`);
@@ -3045,7 +3058,7 @@ function scrSummary(){
     again.onclick=()=>{reset();render();}; right.appendChild(again);
   } else {
     const lastYear=(S.year||1)>=CAREER_MAX_YEARS;
-    const declining=(S.year||1)>=DECLINE_START_YEAR;
+    const declining=pastPeak();
     const cont=$(`<button class="btn goldfill">${lastYear?'Finish Career ▸':'Continue to Year '+((S.year||1)+1)+' ▸'}<span class="sub">${lastYear?('Year '+CAREER_MAX_YEARS+' was your last — career ceremony'):('Career Mode · year '+((S.year||1)+1)+' of '+CAREER_MAX_YEARS+(declining?' · skills are declining (re-spin to repair)':'')+' · off-season, then a new season')}</span></button>`);
     cont.onclick=continueFranchise; right.appendChild(cont);
     const save=$(`<button class="btn gold" style="margin-top:10px">Save Career & Exit<span class="sub">Resume your career from the home screen anytime</span></button>`);
@@ -3095,6 +3108,10 @@ function scrOffseason(){
   add($(`<div class="center"><span class="tag">Career Mode · Off-Season · Year ${S.year} prep</span></div>`));
   add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tune your game</h1>`));
   add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag — up to <b>${os.maxChanges} changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. Keep your bag as-is, or spin to improve it — but once you spin, you must take a skill before moving on.</p>`));
+  // age/form status — decline is performance-based: stay sharp by winning, fade if you slump
+  const declined=os.decline && Object.keys(os.decline).length;
+  if(declined) add($(`<div class="scout small" style="max-width:560px;margin:0 auto 6px;text-align:center;border-color:#e07a5f"><b style="color:#e9a23b">Age is catching up.</b> <span class="muted">Power fades first — repair a slot with a spin, or lean into your short game. Strong seasons slow the decline.</span></div>`));
+  else add($(`<div class="scout small muted" style="max-width:560px;margin:0 auto 6px;text-align:center">In your prime — no age decline this year. Keep performing to stretch it into your late career.</div>`));
   const cols=$(`<div class="cols"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
   cols.appendChild(left); cols.appendChild(right); add(cols);
