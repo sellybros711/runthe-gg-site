@@ -3084,24 +3084,12 @@ function newCareer(){ clearCareerSave(); reset(); render(); }
 function finishOffseason(){ track('offseason_done',{changes:S.offseason.changes}); startSeason(false); }
 function offSpin(){ if(S.current||S.spinning)return; reveal(); }
 function offReSpin(){ if(S.offseason.reSpins<=0)return; S.offseason.reSpins--; track('offseason_respin'); reveal(); }
-// Diminishing returns on year-to-year upgrades: raising a low skill is easy, but climbing into
-// the elite range is a grind (84-90 gains count half, 90+ a quarter). Downgrades apply in full.
-// This is what stops a career from reaching "best in the world" in three seasons.
-function offCap(cur, rolled){
-  if(rolled<=cur) return rolled;                 // taking a lower skill is your call — applies fully
-  const segs=[[0,84,1],[84,90,0.5],[90,99,0.25]]; let pos=cur, gain=0;
-  for(const [lo,hi,m] of segs){ if(pos>=rolled) break; if(rolled<=lo||pos>=hi) continue;
-    const inSeg=Math.min(rolled,hi)-Math.max(pos,lo); if(inSeg>0){ gain+=inSeg*m; pos=Math.min(rolled,hi); } }
-  return Math.round(cur+gain);
-}
-function offTake(k){ const cur=S.slots[k]?S.slots[k].value:REPLACEMENT;
-  S.slots[k]={golfer:S.current.name,value:offCap(cur,S.current[k])}; S.offseason.changes++;
-  if(S.offseason.decline) delete S.offseason.decline[k]; S.current=null; track('offseason_swap',{slot:k}); render(); }
+function offTake(k){ S.slots[k]={golfer:S.current.name,value:S.current[k]}; S.offseason.changes++; if(S.offseason.decline) delete S.offseason.decline[k]; S.current=null; track('offseason_swap',{slot:k}); render(); }
 function scrOffseason(){
   const os=S.offseason||{changes:0,maxChanges:3,reSpins:2};
   add($(`<div class="center"><span class="tag">Career Mode · Off-Season · Year ${S.year} prep</span></div>`));
   add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tune your game</h1>`));
-  add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag — up to <b>${os.maxChanges} changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. Elite skills are hard to raise — gains shrink the closer a rating climbs toward the 90s, so pick your spots. Once you spin, you must take a skill before moving on.</p>`));
+  add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag — up to <b>${os.maxChanges} changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. Keep your bag as-is, or spin to improve it — but once you spin, you must take a skill before moving on.</p>`));
   const cols=$(`<div class="cols"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
   cols.appendChild(left); cols.appendChild(right); add(cols);
@@ -3121,7 +3109,7 @@ function scrOffseason(){
     left.appendChild($(`<div class="small muted" style="margin:10px 0 -2px;text-align:center">Tap a skill to swap it in — green is an upgrade, red a downgrade</div>`));
     const grid=$(`<div class="attrs"></div>`);
     CATS.forEach(cat=>{
-      const cur=S.slots[cat.k]?S.slots[cat.k].value:REPLACEMENT; const nv=offCap(cur,S.current[cat.k]); const d=nv-cur;
+      const cur=S.slots[cat.k]?S.slots[cat.k].value:REPLACEMENT; const nv=S.current[cat.k]; const d=nv-cur;
       const dcol=d>0?'#35d6a0':(d<0?'#e07a5f':'var(--muted)');
       const bt=$(`<button class="attr" aria-label="Swap ${cat.short} to ${nv}, ${d>=0?'up':'down'} ${Math.abs(d)}">
         <span class="lab">${cat.short}</span><span class="val">${nv}</span>
