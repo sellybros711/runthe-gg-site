@@ -1122,6 +1122,23 @@ allows Google Fonts, or self-host Anton.*
   shirt gating, title-screen button — all render, no console errors). Deployed to /golf.
   Possible follow-up: surface the equipped title on share cards / season summary.
 
+- #6 Season headlines — "RunTheTour Dispatch" (owner approved)
+  • `seasonHeadlines(x)` derives a newspaper-style recap of the year from this season's actual events
+    (per-event finishes/money/majors from `S.season.results`) + career context: a prioritised **LEAD**
+    headline (Grand Slam › Tour Champion › multi-major › maiden/career major › multi-win › breakthrough
+    win › knocking-on-the-door › rookie/grinding) plus up to 4 supporting **notes** (money-list finish,
+    made-every-cut, top-10 machine, runner-up heartbreak, biggest payday, climbed the money list,
+    career-best profit, rookie season). `headlinesHTML` renders a masthead card (uppercase "RunTheTour
+    Dispatch · Year N", serif lead, icon bullets) shown on the season summary after the stat tiles.
+    The lead headline is also woven into the **season share text** for more newspaper-y virality.
+  • **Fixed a pre-existing re-entrancy bug surfaced while testing this:** async loaders (`lbLoad`/`crLoad`/
+    `dbLoad`) call `render()` to refresh, and when Supabase is unavailable they do so SYNCHRONOUSLY from
+    inside a screen fn — re-entering `render()` mid-build, wiping `#app`, and leaving the original call
+    appending a second copy (visible as a doubled summary for guests with no backend). Added a re-entrancy
+    guard to `render()` (`_rendering` flag → defer with `setTimeout(render,0)`), which fixes it globally
+    and protects future loaders. Verified: summary renders exactly once (recap/dispatch counts =1), title/
+    Trophy Room/leaderboard/setup all still render, no console errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
