@@ -1265,6 +1265,17 @@ allows Google Fonts, or self-host Anton.*
   (e.g. 3) → every device wipes its bag_* once on next load; owner also runs `supabase/25_runtour_reset.sql`
   for the cloud side. Verified a pre-seeded career survives a load with reset disabled.
 
+- Leaderboard: every season & every career is its own entry (owner: was 1-per-user)
+  Both boards used `distinct on (user_id)` → one best entry per player. Owner wants every season AND every
+  career sim ranked (a player can appear many times; see the best of all sims, plus all careers whether
+  completed/reset/abandoned early). `supabase/26_runtour_board_all_entries.sql` (owner must run): drops +
+  recreates `runtour_season_board` (every posted season row, ranked; +year) and `runtour_career_board`
+  (every career_id group, no user-dedup; +golfer_name). No data migration — seasons were always stored
+  individually with their career_id; reset/abandoned careers keep their posted seasons so they stay ranked.
+  Client (deployed): leaderboard rows now show golfer + "Yr N" (season) / golfer + seasons + W (career) so
+  repeat entries are distinguishable; fetch limit 50→100; defensive (works before & after the SQL). Verified
+  a single user renders multiple season + career rows, no console errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
