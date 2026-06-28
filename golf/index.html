@@ -470,12 +470,14 @@ const ord=(n)=>{const v=n%100; if(v>=11&&v<=13)return n+'th'; return n+({1:'st',
 /* ---------- persistence / career ---------- */
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v);}catch(e){return d;}},
           set(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}};
-/* One-time data reset (clean slate for the achievements relaunch). Bump RESET_EPOCH to wipe every
-   client's local game data (all bag_* keys: careers, daily, streaks, achievements, look) on next load.
-   Auth sessions (sb-* keys) are left intact so signed-in players stay signed in. The cloud tables are
-   reset separately via supabase/25_runtour_reset.sql. */
+/* One-time data reset (clean slate for launch). HELD until launch: RESET_ENABLED is false so NOTHING is
+   wiped while testing — your current career is safe. AT LAUNCH: set RESET_ENABLED=true AND bump RESET_EPOCH
+   (e.g. to 3) — every device then wipes its local game data (all bag_* keys: careers, daily, streaks,
+   achievements, look) ONCE on next load. Auth sessions (sb-* keys) stay intact. Cloud tables are reset
+   separately via supabase/25_runtour_reset.sql. */
 const RESET_EPOCH=2;
-(function resetData(){ try{ if(LS.get('bag_reset_epoch',0)===RESET_EPOCH) return;
+const RESET_ENABLED=false;   // ← flip to true at launch (with a fresh RESET_EPOCH) to wipe everyone once
+(function resetData(){ if(!RESET_ENABLED) return; try{ if(LS.get('bag_reset_epoch',0)===RESET_EPOCH) return;
   const kill=[]; for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(k&&/^bag_/.test(k)&&k!=='bag_reset_epoch') kill.push(k); }
   kill.forEach(k=>localStorage.removeItem(k)); localStorage.setItem('bag_reset_epoch',JSON.stringify(RESET_EPOCH));
 }catch(e){} })();
