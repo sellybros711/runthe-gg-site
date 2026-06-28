@@ -1209,6 +1209,27 @@ allows Google Fonts, or self-host Anton.*
   Room renders Tour Rep + dropdowns + checkboxes; playoff sequence reveals + win/loss; full season runs
   clean; no console errors). Deployed to /golf.
 
+- Achievements v2: bug fix + huge expansion + G.O.A.T. + data reset (owner-requested)
+  • **Bug fixed (rank not updating / bars not matching boxes):** achievements only evaluated at gameplay
+    moments, so a pre-existing career's earned feats were never credited when you just OPENED the Trophy
+    Room — full progress bars but empty checkboxes + 0 rep. Fix: `overlayRecord` now calls `evaluateAch()`
+    on open, retroactively crediting anything already earned. (Verified: 0→18 unlocked / 0→430 pts on open.)
+  • **Expanded to 146 achievements / 13 categories / 9380 pts** (was 108). New categories: Records & Streaks,
+    Daily Mastery, The Draft. New SITUATIONAL/fun ones with new flag captures: win/cut streaks
+    (`winStreakMax`/`cutStreakMax`), Tour Championship / Players / signature wins, lose-a-playoff
+    (Bridesmaid), major runner-up, money runner-up, daily eagles/albatross/bogey-free/low-round/course-
+    records/distinct-courses (`captureDailyFeats`), draft a Legendary skill / 99-skill / 8-from-8 (Dream
+    Team), Giant Slayer (beat a higher-rated rival), plus meta (signed in, equipped a title). Live metrics
+    (onAccount/titleSet/distinctDailyCourses) computed in `achMetrics`.
+  • **G.O.A.T. rank:** apex Tour Rep tier above Icon, awarded ONLY at 100% completion (`achCount===ACH_TOTAL`).
+    Shown with 🐐 + a celebratory header. Perk: max re-spins.
+  • **Data reset (clean slate for relaunch):** client — `RESET_EPOCH=2`; on load, if `bag_reset_epoch`
+    mismatches, all `bag_*` localStorage keys are wiped once (auth sb-* keys preserved). Cloud — owner runs
+    `supabase/25_runtour_reset.sql` (truncates runtour_scores/stats/daily_scores only, via to_regclass guards).
+  Verified via Playwright (146 ach / no dup ids / all valid; retroactive credit; new feats unlock; G.O.A.T.
+  at 100%; new categories render; no console errors). `supabase/verify_runtour.sql` also committed (schema
+  check the owner used). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
