@@ -1066,6 +1066,27 @@ allows Google Fonts, or self-host Anton.*
   catching up — power fades first…"). primeBank persists on S.career (save/resume safe; old saves
   default 0). Deployed to /golf.
 
+- 2026-06-28: **Engagement pass v1 (free-tier retention) — share + streak rule + badge hints.**
+  From the deep-analysis list, owner picked specific items (and rejected others), so this shipped:
+  • **Wordle-style daily share (#1):** `dailyShareText` builds an emoji scorecard (🟦eagle 🟩birdie
+    ⬜par 🟨bogey 🟥dbl+, 9/line) + course, score, beat-the-pro ✓, 🔥streak, and a runthe.gg/golf
+    CTA; `shareText()` uses navigator.share→clipboard. Prominent "Share your result" button on the
+    daily result. **Percentile** ("Better than X% of today's N players") from the live daily board
+    (dbCache, fails open).
+  • **Streak now requires BEATING the tour average (#2):** `bumpStreak` is only called on a win
+    (in any of the 3 attempts); a non-win day doesn't advance it. **Streak freezes** bridge one
+    missed day (earned at the 7/30/100-day milestones); milestone recognition on the result.
+    Title shows ❄️ freeze count; result nudges "beat the average to keep your streak."
+  • **Badge next-tier hints (#3, replaces a separate Goals panel):** `_badgeFresh` now computes the
+    next tee's requirement; new `badgeEarnedHTML` shows "earned · next {Tier} at {N}" on the season
+    summary + career-end. Tells you exactly what the next badge level needs.
+  Trialed then REMOVED per owner direction: standalone Goals panel, Weekly Daily Cup (#4), and the
+  XP/Level glue (owner doesn't want daily↔career linked, #7). Verified via Playwright (win advances
+  streak, loss doesn't; share grid; percentile; badge hint; no console errors). Deployed to /golf.
+  QUEUED next (owner approved): season headlines (#6), cosmetics (#8) + Profile/Trophy Room (#9),
+  monthly 1-day special events (#11), pick-a-rival (#5, incentive TBD), Clubs/teams (#10, needs
+  backend), push notifications (#2, needs service worker + push backend/cron — owner setup).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -539,10 +539,21 @@ function badgeLevel(b,m){ const v=b.get(m); let lv=0; b.tiers.forEach(t=>{if(v>=
 function badgeCount(c){ const m=badgeMetrics(c); return BADGES.reduce((n,b)=>n+badgeLevel(b,m),0); }
 // recompute every badge against the stored baseline; return freshly-earned tiers (caller persists c)
 function _badgeFresh(c){ c.btier=c.btier||{}; const m=badgeMetrics(c); const fresh=[];
-  BADGES.forEach(b=>{ const lv=badgeLevel(b,m); const prev=c.btier[b.id]||0;
-    for(let k=prev+1;k<=lv;k++) fresh.push({id:b.id,t:b.t,e:b.e,tier:k,tierName:TEE_TIERS[k-1].name,maxed:k>=b.tiers.length});
+  BADGES.forEach(b=>{ const lv=badgeLevel(b,m); const prev=c.btier[b.id]||0; const fmt=b.fmt||(x=>''+Math.round(x));
+    for(let k=prev+1;k<=lv;k++){ const f={id:b.id,t:b.t,e:b.e,tier:k,tierName:TEE_TIERS[k-1].name,maxed:k>=b.tiers.length};
+      if(k<b.tiers.length){ f.nextName=TEE_TIERS[k].name; f.nextReq=fmt(b.tiers[k]); f.nextDesc=b.d; }   // what the NEXT tee needs
+      fresh.push(f); }
     if(lv>prev)c.btier[b.id]=lv; });
   return fresh; }
+// earned-badge display that ALSO tells you what the next tee tier needs (so badges set the next goal)
+function badgeEarnedHTML(got){
+  const rows=got.map(f=>{ const col=TEE_TIERS[f.tier-1].c;
+    const nxt=f.maxed?`<span class="small" style="color:#f9d271">Max tier — Black tee</span>`
+      :(f.nextReq!=null?`<span class="small muted">next ${esc(f.nextName)} at ${esc(String(f.nextReq))}</span>`:'');
+    return `<div style="display:flex;gap:9px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:7px">
+      <span class="tag" style="color:${col};border-color:${col}">${f.e} ${esc(f.t)} · ${f.tierName}</span>${nxt}</div>`; }).join('');
+  return `<div class="scout" style="margin:4px auto 12px;max-width:520px;text-align:center"><b style="color:var(--gold)">Tee promotion${got.length>1?'s':''} earned</b>${rows}</div>`;
+}
 function teeMedal(e,lvl){ const col=lvl>0?TEE_TIERS[lvl-1].c:'#46586a';
   return `<div class="teemedal" style="--tc:${col}"><span class="teeglyph">${e}</span></div>`; }
 function badgeCard(b,m){ const v=b.get(m); const lvl=badgeLevel(b,m); const max=lvl>=b.tiers.length;
@@ -620,14 +631,34 @@ function startDaily(){
   track('daily_started',{seed});
   S.screen='setup'; render();
 }
-/* ---------- daily streak (retention) ---------- */
+/* ---------- daily streak (retention) — beat the tour average to keep it; freezes bridge a miss ----------
+   A day only counts toward the streak if you BEAT the tour average in one of your attempts (bumpStreak
+   is called from finishDailyRound only on a win). A "freeze" (earned at milestones) covers one missed day. */
 function yesterdayKey(){const d=new Date();d.setUTCDate(d.getUTCDate()-1);return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate();}
-function bumpStreak(){const ds=LS.get(acctKey('bag_streak'),{current:0,longest:0,last:null}); const t=todayKey();
+function twoDaysAgoKey(){const d=new Date();d.setUTCDate(d.getUTCDate()-2);return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate();}
+const STREAK_MILES=[3,7,14,30,60,100];                       // milestone lengths (recognition; freeze at 7/30/100)
+function streakFreezes(){ const ds=LS.get(acctKey('bag_streak'),{}); return ds.freezes||0; }
+function bumpStreak(){const ds=LS.get(acctKey('bag_streak'),{current:0,longest:0,last:null,freezes:0,miles:{}}); const t=todayKey();
   if(ds.last===t)return ds;
-  ds.current=(ds.last===yesterdayKey())?ds.current+1:1; ds.last=t;
-  if(ds.current>ds.longest)ds.longest=ds.current; LS.set(acctKey('bag_streak'),ds); return ds;}
+  ds.freezes=ds.freezes||0; ds.miles=ds.miles||{}; ds._usedFreeze=false; ds._gotFreeze=false; ds._mile=0;
+  if(ds.last===yesterdayKey()) ds.current=(ds.current||0)+1;                       // beat the average on consecutive days
+  else if(ds.last===twoDaysAgoKey() && ds.freezes>0){ ds.freezes--; ds.current=(ds.current||0)+1; ds._usedFreeze=true; }  // a freeze bridges one missed day
+  else ds.current=1;
+  ds.last=t; if(ds.current>ds.longest)ds.longest=ds.current;
+  const m=ds.current;
+  if(STREAK_MILES.includes(m) && !ds.miles[m]){ ds.miles[m]=1; ds._mile=m;
+    if(m===7||m===30||m===100){ ds.freezes=(ds.freezes||0)+1; ds._gotFreeze=true; } }   // earn a freeze at big milestones
+  LS.set(acctKey('bag_streak'),ds); return ds;}
 function streakDisplay(){const ds=LS.get(acctKey('bag_streak'),null); if(!ds||!ds.current)return 0;
-  return (ds.last===todayKey()||ds.last===yesterdayKey())?ds.current:0;}   // 0 if the streak has lapsed
+  return (ds.last===todayKey()||ds.last===yesterdayKey()||(ds.last===twoDaysAgoKey()&&(ds.freezes||0)>0))?ds.current:0;}
+async function shareText(text){ try{ if(navigator.share){ await navigator.share({text}); return; } }catch(e){ if(e&&e.name==='AbortError')return; }
+  try{ await navigator.clipboard.writeText(text); toast('Copied — paste it anywhere'); }catch(_){ toast('Could not copy'); } }
+// Wordle-style emoji result for the daily — a paste-anywhere viral hook
+function dailyShareText(r){ const c=DAILY_COURSES[r.course]; const holes=r.holes||[];
+  const emo=t=> t<=-2?'🟦':t===-1?'🟩':t===0?'⬜':t===1?'🟨':'🟥';   // eagle+ blue · birdie green · par white · bogey yellow · dbl+ red
+  let grid=''; holes.forEach((h,i)=>{ grid+=emo(h.toPar); if(i===8)grid+='\n'; });
+  const av=r.avg!=null?r.avg:dTourAvg(c), won=r.total<av, st=streakDisplay();
+  return `⛳ RunTheTour Daily — ${dShort(c.v)}\n${dtp(r.total)} on par ${c.par}${won?' · beat the pro ✓':''}${st>0?` · 🔥${st}`:''}\n${grid}\nThink you can beat it? runthe.gg/golf`; }
 /* ---------- resume an in-progress free-play golfer across a refresh ---------- */
 function saveResume(){ if(S.daily||!(S.screen==='draft'||S.screen==='build'))return;
   LS.set('bag_resume',{slots:S.slots,revealed:[...S.revealed],reSpins:S.reSpins,name:S.name,look:S.look,mode:S.mode,year:S.year}); }
@@ -1840,8 +1871,8 @@ function scrTitle(){
   const daily=$(`<button class="btn ${dCls}" style="margin-top:10px">${dMain}<span class="sub">${dSub}</span></button>`);
   daily.onclick=startDailyChallenge;
   stack.appendChild(daily);
-  const st=streakDisplay();
-  if(st>0) stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--gold);font-weight:700">🔥 ${st}-day daily streak — keep it alive</div>`));
+  const st=streakDisplay(), fz=streakFreezes();
+  if(st>0) stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--gold);font-weight:700">🔥 ${st}-day daily streak — keep it alive${fz>0?` · ❄️ ${fz} freeze${fz>1?'s':''}`:''}</div>`));
   w.appendChild(stack);
   const mini=$(`<div class="mini"></div>`);
   const how=$(`<button class="btn gold">How to Play</button>`);
@@ -2903,11 +2934,7 @@ function scrSummary(){
     expWrap.appendChild($(`<div class="scout" style="max-width:460px;margin:8px auto 0;text-align:left">${items}</div>`));
   }
   add(expWrap);
-  if(S.freshBadges&&S.freshBadges.length){
-    const got=S.freshBadges;
-    const chips=got.map(f=>{const col=TEE_TIERS[f.tier-1].c; return `<span class="tag" style="color:${col};border-color:${col}">${f.e} ${f.t} · ${f.tierName}</span>`;}).join(' ');
-    add($(`<div class="scout" style="margin:4px 0 12px;text-align:center"><b style="color:var(--gold)">Tee promotion${got.length>1?'s':''} earned</b><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center">${chips}</div></div>`));
-  }
+  if(S.freshBadges&&S.freshBadges.length){ add($(badgeEarnedHTML(S.freshBadges))); }
   // five headline stats: Earnings · Profit (two money tiles) over Tour Rank · Top 10's · Wins
   const pcol=ec.net>=0?'#35d6a0':'#E14A33';
   const tilesA=$(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin-bottom:10px"></div>`);
@@ -3505,7 +3532,9 @@ function finishDailyRound(){
   const avg=dTourAvg(c), won=total<avg;   // beat the real tour scoring average = won the day
   const decisions={plan:S.dailyPlan,att:(S.dailyAttempt||0),attacks:S.dailyHoles.filter(h=>h.attack!=null).map(h=>({n:h.n,a:h.attack}))};
   S.dailyResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,record:isRec,holes,avg,won,day:S.dailySeed,skills:S.dailySkills,decisions};
-  bumpStreak();   // once-per-day guarded inside
+  // streak only advances if you BEAT the tour average (in any of the day's attempts)
+  if(won){ const _ds=bumpStreak(); S.dailyStreakInfo={won:true, mile:_ds._mile||0, gotFreeze:!!_ds._gotFreeze, usedFreeze:!!_ds._usedFreeze, current:_ds.current, freezes:_ds.freezes||0}; }
+  else { S.dailyStreakInfo={won:false, current:streakDisplay(), freezes:streakFreezes()}; }
   // log this attempt; the LOWEST score of the day is the one that counts (leaderboard / course record)
   const prev=dailyToday(); const attempts=(prev?dailyAttempts():0)+1;
   let best=prev?(prev.best||prev.result||null):null;
@@ -3706,6 +3735,8 @@ function scrDailyRound(){
 }
 function scrDailyResult(){
   if(sb && crCache===null) crLoad();   // ensure the course-record comparison reflects the global record
+  const _ds2=S.dailySeed||todayKey();
+  if(sb && (dbCache===null||dbCache.day!==_ds2)) dbLoad(_ds2);   // today's board → percentile (fails open)
   const best=dailyBest(); const justPlayed=!!S.dailyResult;
   const r=S.dailyResult||best; if(!r){ S.screen='title'; return render(); }
   const c=DAILY_COURSES[r.course], total=r.total;
@@ -3724,6 +3755,17 @@ function scrDailyResult(){
   const bestTxt = best?`Best today <b style="color:var(--gold)">${dtp(best.total)}</b> (${best.par+best.total})`:'';
   const newBest = justPlayed && S.dailyImproved && attempts>1;
   add($(`<div class="small muted center" style="margin:0 0 10px">${justPlayed?`Attempt ${S.dailyAttemptNo||attempts} of ${DAILY_MAX_ATTEMPTS} · `:''}${bestTxt}${newBest?' · <span style="color:#35d6a0;font-weight:800">new personal best!</span>':''}<br>Your best of the day is logged to the leaderboard.</div>`));
+  // percentile vs today's global board (when enough rounds posted)
+  if(dbCache && dbCache.ok && dbCache.day===_ds2 && dbCache.rows.length>=5){
+    const mine=best?best.total:total, beat=dbCache.rows.filter(x=>x.to_par>mine).length, pct=Math.round(100*beat/dbCache.rows.length);
+    add($(`<div class="center" style="margin:-4px 0 10px;font-weight:800;color:var(--gold)">Better than ${pct}% of today's ${dbCache.rows.length} players</div>`));
+  }
+  // streak feedback — you only extend the streak by beating the tour average
+  const si=justPlayed?S.dailyStreakInfo:null;
+  if(si&&si.won&&si.mile) add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">🔥 ${si.mile}-day streak!</b>${si.gotFreeze?' <span class="small muted">earned a ❄️ streak freeze</span>':''}</div>`));
+  else if(si&&si.won&&si.usedFreeze) add($(`<div class="scout small" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#7ec8ff"><b style="color:#7ec8ff">❄️ Streak freeze used</b> <span class="muted">— your ${si.current}-day streak survived a missed day.</span></div>`));
+  else if(si&&si.won) add($(`<div class="small center" style="margin:0 0 8px;color:var(--gold);font-weight:700">🔥 ${streakDisplay()}-day streak — you beat the pro and kept it alive</div>`));
+  else if(si&&!si.won&&left>0) add($(`<div class="small center" style="margin:0 0 8px;color:#e9a23b;font-weight:700">Beat the tour average in one of your ${left} remaining attempt${left>1?'s':''} to keep your streak alive.</div>`));
   const rec=courseRecords()[r.course];
   if(r.record) add($(`<div class="scout" style="max-width:520px;margin:0 auto;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">🏆 New course record!</b><div class="small muted" style="margin-top:2px">You hold the record at ${esc(dShort(c.v))}.</div></div>`));
   else if(rec) add($(`<div class="scout" style="max-width:520px;margin:0 auto;text-align:center">Course record: <b style="color:var(--gold)">${dtp(rec.toPar)}</b> by ${esc(rec.name)}${rec.toPar<total?` · you were ${total-rec.toPar} back`:''}</div>`));
@@ -3736,7 +3778,11 @@ function scrDailyResult(){
       grid.appendChild($(`<div class="small muted center" style="letter-spacing:.12em;margin-top:6px">${lab}</div>`)); grid.appendChild(row); });
     add(grid);
   }
-  add($(`<div style="height:14px"></div>`));
+  // viral hook: Wordle-style emoji result, ready to paste anywhere
+  const shareR=best||r;
+  const shr=$(`<button class="btn goldfill" style="max-width:520px;margin:14px auto 0">↗ Share your result<span class="sub">Emoji scorecard — challenge a friend</span></button>`);
+  shr.onclick=()=>{ track('daily_result_shared'); shareText(dailyShareText(shareR)); }; add(shr);
+  add($(`<div style="height:10px"></div>`));
   if(left>0){
     const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">${wonDay?'Go lower ▸':'Play again ▸'}<span class="sub">${wonDay?`Pro beaten — chase a lower score (${left} left)`:`${left} of ${DAILY_MAX_ATTEMPTS} attempt${left>1?'s':''} left — beat the tour average`}</span></button>`);
     again.onclick=beginDailyAttempt; add(again);
@@ -3836,10 +3882,7 @@ function scrCareerEnd(){
   const cv=document.createElement('canvas'); cv.style.cssText='width:100%;max-width:300px;display:block;margin:16px auto 4px;border-radius:14px;border:1px solid var(--line)';
   drawCareerCard(cv,{name:S.name||'Your Golfer',ovr:Math.round(buildPlayer().skill),years:e.years,money:c.money,net:c.net,wins:c.wins,majors:c.majors,cRank:0,cN:0},careerVals);
   add(cv);
-  if(S.careerFreshBadges&&S.careerFreshBadges.length){
-    const chips=S.careerFreshBadges.map(f=>{const col=TEE_TIERS[f.tier-1].c; return `<span class="tag" style="color:${col};border-color:${col}">${f.e} ${f.t} · ${f.tierName}</span>`;}).join(' ');
-    add($(`<div class="scout" style="max-width:520px;margin:6px auto 0;text-align:center"><b style="color:var(--gold)">Tee promotion${S.careerFreshBadges.length>1?'s':''} this career</b><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;justify-content:center">${chips}</div></div>`));
-  }
+  if(S.careerFreshBadges&&S.careerFreshBadges.length){ add($(badgeEarnedHTML(S.careerFreshBadges))); }
   const share=`RUNTHETOUR CAREER — ${S.name||'Your Golfer'}\n${e.years} seasons on tour · net worth ${fmtSigned(c.net)}\n${c.wins}W · ${c.majors} majors · ${fmt(c.money)} earned\nRunThe.GG`;
   const row=$(`<div class="mini" style="margin-top:10px;max-width:520px;margin-left:auto;margin-right:auto"></div>`);
   const sh=$(`<button class="btn gold">↗ Share Career</button>`);
