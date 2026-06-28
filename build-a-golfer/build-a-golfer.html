@@ -3082,15 +3082,16 @@ function celebratePlayoff(ce, opts){
     <div class="po-actions" style="margin-top:16px"></div></div>`;
   document.body.appendChild(stage);
   const holesEl=stage.querySelector('.po-holes'), actions=stage.querySelector('.po-actions');
-  let i=0;
+  let i=0, fin=false;
   const cleanup=()=>{ if(_poTimer){clearTimeout(_poTimer);_poTimer=null;} stage.remove(); };
-  function finish(){ cleanup(); if(youWon){ render(); } else { advanceEvent(); render(); } }  // win → render() lets celebrateWin fire
+  function finish(){ if(fin)return; fin=true; cleanup(); if(youWon){ render(); } else { advanceEvent(); render(); } }  // win → render() lets celebrateWin fire
   function done(){
-    actions.innerHTML = youWon
+    // always auto-advance after the result — no click required (tap anywhere to skip ahead faster)
+    actions.innerHTML = (youWon
       ? `<div style="font-family:var(--serif);color:#35d6a0;font-weight:800;font-size:26px">🏆 You won the playoff!</div>`
-      : `<div style="font-family:var(--serif);color:#fff;font-weight:800;font-size:23px">So close — lost in the playoff</div><div class="small" style="color:#cfe6d8;margin-top:2px">${esc(po.winner)} took it on the ${ord(po.holes)} extra hole.</div>`;
-    if(opts.auto||opts.reduce){ _poTimer=setTimeout(finish, youWon?900:1500); }
-    else { const b=document.createElement('button'); b.className='btn goldfill'; b.style.cssText='max-width:320px;margin:12px auto 0'; b.textContent=youWon?'Celebrate ▸':'Continue ▸'; b.onclick=finish; actions.appendChild(b); }
+      : `<div style="font-family:var(--serif);color:#fff;font-weight:800;font-size:23px">So close — lost in the playoff</div><div class="small" style="color:#cfe6d8;margin-top:2px">${esc(po.winner)} took it on the ${ord(po.holes)} extra hole.</div>`)
+      + `<div class="small" style="color:#9fb6a8;margin-top:10px">tap to continue</div>`;
+    _poTimer=setTimeout(finish, opts.reduce?20:(youWon?1300:1900));
   }
   function revealNext(){
     if(i>=log.length){ done(); return; }
@@ -3102,7 +3103,7 @@ function celebratePlayoff(ce, opts){
     holesEl.appendChild(card); holesEl.scrollTop=holesEl.scrollHeight;
     _poTimer=setTimeout(revealNext, opts.reduce?10:(opts.auto?720:1150));
   }
-  stage.onclick=(e)=>{ if(e.target===stage && i>=log.length) finish(); };
+  stage.onclick=()=>finish();   // tap anywhere to skip ahead (otherwise it auto-advances)
   revealNext();
 }
 function celebrateWin(evt, o, opts){

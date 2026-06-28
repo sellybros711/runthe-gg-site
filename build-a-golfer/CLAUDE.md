@@ -1230,6 +1230,14 @@ allows Google Fonts, or self-host Anton.*
   at 100%; new categories render; no console errors). `supabase/verify_runtour.sql` also committed (schema
   check the owner used). Deployed to /golf.
 
+- Playoff auto-advance (owner: no click during the sim)
+  `celebratePlayoff` done() no longer shows a Celebrate/Continue button — after the hole-by-hole reveal it
+  ALWAYS auto-advances (win → win celebration; loss → next event) after a short pause (~1.3s win / 1.9s
+  loss; 20ms in reduced motion), regardless of the Auto-Sim toggle. Tapping anywhere skips ahead faster;
+  finish() is guarded (fin flag) so a tap + the timer can't double-advance. NOTE: a MAJOR-win celebration
+  still shows a Continue button when Auto-Sim is OFF (prior owner design); offer to auto-advance that too
+  if asked.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
