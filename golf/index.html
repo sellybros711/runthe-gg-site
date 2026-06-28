@@ -2399,9 +2399,10 @@ function skipToEnd(){
   while(S.evtIndex < S.schedule.length-1){ S.evtIndex++; S.curEvt=null; beginEvent(); while(!S.curEvt.done) simNextRound(); }
   S.screen='summary'; render();
 }
-function liveRow(o,pos,you){
+function liveRow(o,pos,you,done){
   const cut=(pos==='CUT'); const sc=cut?'CUT':par(Math.round(o.total)); const mny=(o.money>0)?fmt(o.money):'';
-  const lab=cut?'–':(pos===1?'🏆':(o._tied?'T'+pos:pos));
+  // the trophy is only for the WINNER once the tournament is final — mid-round the leader is just 1 / T1
+  const lab=cut?'–':((pos===1&&done&&!o._tied)?'🏆':(o._tied?'T'+pos:pos));
   return $(`<div class="lb ${you?'you':''} ${cut?'cut':''}">
     <span class="pos">${lab}</span>
     <span class="pl">${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
@@ -2450,8 +2451,8 @@ function scrSeason(){
   const meLive=ordered.find(o=>o.p.you);
   const board=$(`<div class="board ${evt.major?'major':''}"></div>`);
   const top=ordered.slice(0,12); const youOut=!top.includes(meLive);
-  top.forEach(o=>board.appendChild(liveRow(o,o._pos,o.p.you)));
-  if(youOut){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(liveRow(meLive,meLive._pos,true));}
+  top.forEach(o=>board.appendChild(liveRow(o,o._pos,o.p.you,ce.done)));
+  if(youOut){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(liveRow(meLive,meLive._pos,true,ce.done));}
   left.appendChild(board);
 
   // RIGHT — prominent live scorecard + controls
