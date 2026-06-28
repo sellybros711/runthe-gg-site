@@ -1052,6 +1052,20 @@ allows Google Fonts, or self-host Anton.*
   `celebrateWin` gates the actions block + timeout on `opts.auto`. Verified via Playwright (major
   +auto: no buttons, advances; major manual: buttons present, waits). Deployed to /golf.
 
+- 2026-06-28: **Performance-based aging (replaces the flat year-N decline).** Owner: year-10
+  decline is unrealistic — pros peak in their 30s, sometimes early 40s; wants it age- AND
+  performance-driven. Rebuilt `applyPlayerDecline`: career-year → age (`START_AGE=22`,
+  age=22+(year-1)); NO decline through `PEAK_END_AGE=34`. Each off-season computes `seasonForm`
+  (earnings rank vs field, centered so mid-pack≈0, +wins/majors → −1..+1) and banks it into
+  `S.career.primeBank` (clamped −2..+6) = a "play young" buffer. `effAge = age − primeBank`;
+  decline only past 34, ramping `min(1.8, (effAge−34)/6)` (subtle mid-30s, steeper into 40s),
+  power (dist 1.9) fading first, touch/composure (put 0.6/clu 0.2) last. Verified (90-bag sim):
+  dominant career declines ~age 42 (dist 90 at 40), average ~37 (86 at 40), slump ~34 (78 at 40);
+  putting barely moves. `DECLINE_START_YEAR` removed; UI "declining" hints + skill-delta section
+  now use `pastPeak()`; off-season shows a prime/age status line ("In your prime…" vs "Age is
+  catching up — power fades first…"). primeBank persists on S.career (save/resume safe; old saves
+  default 0). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
