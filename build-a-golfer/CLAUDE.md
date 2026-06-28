@@ -983,6 +983,18 @@ allows Google Fonts, or self-host Anton.*
   Verified via Playwright unit test of liveRow (mid solo→1, mid tied→T1, final solo→🏆, final
   tie→T1). Deployed to /golf.
 
+- 2026-06-28: **Season-results share cleanup (career card → career end only).** The per-season
+  summary showed TWO share cards (a full Career card with Save/Share Career/Copy Career Text AND
+  the Season card) — cluttered. Removed the career share card + its three buttons from scrSummary
+  (kept the career STATS: net worth, rank, wins list, year-by-year); added a one-line note that
+  the shareable career card unlocks at career end. Career sharing already lives on scrCareerEnd
+  (unchanged). Reworked the "Share your season" block for conversion: a hook line ("Post your card
+  and dare a friend to beat your number."), a single prominent goldfill **↗ Share my season** CTA
+  (with "Card + caption, ready to post"), Save card + Copy text demoted to secondary ghost buttons
+  side by side, bigger card (320px). Punchier share caption with a play CTA ("Think you can build
+  better? → runthe.gg/golf"). Verified via Playwright (2-yr career summary: only 1 canvas now,
+  no Share-Career button, unlock note present, Share-my-season present, no errors). Deployed.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

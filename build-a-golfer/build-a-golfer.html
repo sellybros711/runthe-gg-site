@@ -2847,41 +2847,30 @@ function scrSummary(){
       <span class="pl">${s.wins}W · ${s.majors} maj · best ${bestTxt(s.best)}</span>
       <span class="mny" style="color:${s.net>=0?'#35d6a0':'#E14A33'}">${fmtSigned(s.net)}</span></div>`)));
     left.appendChild(yb);
-    // career share card (image + text)
-    const careerShare=`RUNTHETOUR CAREER — ${me.name}\n${c.seasons.length} years · net worth ${fmtSigned(c.net)} · ${fmt(c.money)} earned\n${c.wins}W · ${c.majors} majors · career earnings rank #${cRank}/${careerList.length}\nRunThe.GG`;
-    const careerVals=CATS.map(x=> S.slots[x.k]? S.slots[x.k].value : REPLACEMENT);
-    const ccv=document.createElement('canvas');
-    ccv.style.cssText='width:100%;max-width:300px;display:block;margin:14px auto 4px;border-radius:14px;border:1px solid var(--line)';
-    drawCareerCard(ccv,{name:me.name,ovr,years:c.seasons.length,money:c.money,net:c.net,wins:c.wins,majors:c.majors,cRank,cN:careerList.length},careerVals);
-    left.appendChild(ccv);
-    const crow=$(`<div class="mini" style="margin-top:8px"></div>`);
-    const csave=$(`<button class="btn gold">⤓ Save Card</button>`);
-    const csBtn=$(`<button class="btn gold">↗ Share Career</button>`);
-    csave.onclick=()=>{track('career_saved',{years:c.seasons.length}); ccv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=((me.name||'golfer').replace(/\s+/g,'-'))+'-career.png';a.click();URL.revokeObjectURL(u);});};
-    csBtn.onclick=()=>{track('career_shared',{years:c.seasons.length}); shareCard(ccv,careerShare,me.name,'career');};
-    crow.appendChild(csave); crow.appendChild(csBtn); left.appendChild(crow);
-    const ccopy=$(`<button class="btn ghost" style="margin-top:8px">Copy Career Text</button>`);
-    ccopy.onclick=()=>{navigator.clipboard?.writeText(careerShare); ccopy.textContent='Copied ✓'; setTimeout(()=>ccopy.textContent='Copy Career Text',1400);};
-    left.appendChild(ccopy);
+    // the career share CARD lives only on the end-of-career ceremony now — here we just point to it
+    left.appendChild($(`<div class="scout small muted" style="margin-top:12px;text-align:center">Your shareable career card unlocks when you finish your career.</div>`));
   }
 
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
-  const share=`RUNTHETOUR — ${me.name} (OVR ${ovr})\n${fmt(t.money)} earned · Earnings Rank ${moneyRank}/${N}${wreath}\n${t.wins}W · ${t.majors} majors\nRunThe.GG`;
-  right.appendChild($(`<h2 style="margin:2px 0 8px">Share your season</h2>`));
+  const finTxt=(t.wins>0?`${t.wins} win${t.wins>1?'s':''}`:`best ${bestTxt(t.best)}`);
+  const share=`⛳ RUNTHETOUR — ${me.name} (OVR ${ovr})\nYear ${S.year||1}: ${fmt(t.money)} earned · #${moneyRank} of ${N}${wreath}\n${t.wins}W · ${t.majors} major${t.majors===1?'':'s'} · ${finTxt}\nThink you can build better? → runthe.gg/golf`;
+  right.appendChild($(`<h2 style="margin:2px 0 2px">Share your season</h2>`));
+  right.appendChild($(`<p class="small muted" style="margin:0 0 10px">Post your card and dare a friend to beat your number.</p>`));
   const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
   const cv=document.createElement('canvas');
-  cv.style.cssText='width:100%;max-width:300px;display:block;margin:0 auto 4px;border-radius:14px;border:1px solid var(--line)';
+  cv.style.cssText='width:100%;max-width:320px;display:block;margin:0 auto 4px;border-radius:14px;border:1px solid var(--line)';
   drawShareCard(cv,{name:me.name,ovr,year:S.year||1,events:S.schedule.length,majors:S.schedule.filter(e=>e.major).length,money:t.money,net:ec.net,moneyRank,N,wins:t.wins,majorsWon:t.majors,best:t.best,fedexRank},vals);
   right.appendChild(cv);
-  const row=$(`<div class="mini" style="margin-top:10px"></div>`);
-  const dl=$(`<button class="btn gold">⤓ Save Card</button>`);
-  const sh=$(`<button class="btn gold">↗ Share</button>`);
-  dl.onclick=()=>{track('result_saved');cv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=((me.name||'golfer').replace(/\s+/g,'-'))+'-season.png';a.click();URL.revokeObjectURL(u);});};
+  // primary CTA = Share (bold); Save + Copy are secondary
+  const sh=$(`<button class="btn goldfill" style="margin-top:10px">↗ Share my season<span class="sub">Card + caption, ready to post</span></button>`);
   sh.onclick=()=>{track('result_shared');shareCard(cv,share,me.name);};
-  row.appendChild(dl); row.appendChild(sh); right.appendChild(row);
-  const cp=$(`<button class="btn ghost" style="margin-top:10px">Copy Text Result</button>`);
-  cp.onclick=()=>{track('result_copied');navigator.clipboard?.writeText(share); cp.textContent='Copied ✓'; setTimeout(()=>cp.textContent='Copy Text Result',1400);};
-  right.appendChild(cp);
+  right.appendChild(sh);
+  const row=$(`<div class="mini" style="margin-top:8px"></div>`);
+  const dl=$(`<button class="btn ghost">⤓ Save card</button>`);
+  const cp=$(`<button class="btn ghost">Copy text</button>`);
+  dl.onclick=()=>{track('result_saved');cv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=((me.name||'golfer').replace(/\s+/g,'-'))+'-season.png';a.click();URL.revokeObjectURL(u);});};
+  cp.onclick=()=>{track('result_copied');navigator.clipboard?.writeText(share); cp.textContent='Copied ✓'; setTimeout(()=>cp.textContent='Copy text',1400);};
+  row.appendChild(dl); row.appendChild(cp); right.appendChild(row);
   right.appendChild($(`<div class="sep" style="margin:16px 0"></div>`));
   if(S.daily){
     const again=$(`<button class="btn red">Build Another Golfer</button>`);
