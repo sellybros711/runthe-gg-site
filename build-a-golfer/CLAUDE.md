@@ -975,6 +975,14 @@ allows Google Fonts, or self-host Anton.*
   Playwright (20 events, 13 anchors, 4 majors/yr, regs rotate ~57%, every event has a fit,
   deterministic same-seed, personalities shift effective overall, season runs clean). Deployed.
 
+- 2026-06-28: **Trophy only on the final leaderboard.** Tester: mid-round the live leaderboard
+  showed 🏆 next to the leader(s) (e.g. two players tied -6 in round 3 both had trophies). Fixed
+  `liveRow(o,pos,you,done)` — it now takes the event's `done` flag and shows 🏆 only for a SOLO
+  winner once the tournament is final; mid-round the leader is just `1` / `T1`, and a final
+  playoff tie shows `T1` (never a double trophy). One-line change + pass `ce.done` from scrSeason.
+  Verified via Playwright unit test of liveRow (mid solo→1, mid tied→T1, final solo→🏆, final
+  tie→T1). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
