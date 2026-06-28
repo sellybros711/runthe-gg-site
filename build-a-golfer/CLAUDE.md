@@ -1180,6 +1180,35 @@ allows Google Fonts, or self-host Anton.*
   • Also hardened `seasonHeadlines` (guard `big`/`m` undefined) so a win/major with no derived event row
     can't throw.
 
+- Profile revamp: Achievements/Milestones + Tour Rep + watchable playoffs (owner-requested)
+  Owner disliked the tee-badge system; replaced it with an extensive NBA-2K-style Achievements system.
+  • **Catalog:** ~108 achievements (`ACH`) across 10 categories (`ACH_CATS`): Getting Started, Winning,
+    Majors, Clutch, Consistency, The Money, Career & Legacy, Daily Challenge, Rivalry & Spotlight, The
+    Build. Each has get(m)>=goal + points. Includes SITUATIONAL ones, not just success: win in a playoff,
+    win a major in a playoff, wire-to-wire, Sunday charge (trail 4+ after R3), win by 5/8/10, shoot a
+    7/9/11-under round, four under-par rounds, rookie win/major, back-to-back.
+  • **Engine:** `achMetrics()` merges lifetime `lt` + daily stats + spotlight/rival wins + situational
+    flags. Flags captured at the moment they happen via `recordAchEvent({inc/max/set})` — in `finalizeEvent`
+    (playoff/wire/comeback/margin/low-round/four-under/rookie/back-to-back), the season record block
+    (seasonWinsMax/majorsInSeasonMax/seasonEarnMax/top10InSeasonMax/worldNo1), `setRival`, and the share
+    helpers. `evaluateAch()` runs at season end, daily/spotlight finish, rival pick, share, and career end;
+    persists unlocks (`bag_ach`) + points, returns freshly-completed for the summary card / toast.
+  • **Reward (Tour Rep):** points → a named rank (Amateur→Journeyman→Tour Pro→Contender→Star→Champion→
+    Legend→Icon, thresholds auto-scaled to total points ~7035). Shown on the profile with a big progress
+    bar (`repHeaderHTML`). Perk: +1/+2 off-season re-spins at higher ranks (`repPerkReSpins`). Cosmetic
+    shirts/titles still unlock off the same metrics.
+  • **Trophy Room UI:** replaced the Tee Badges grid with `achListHTML` — collapsible category dropdowns
+    (S.achOpen toggles), each row a fillable ✓ checkbox + name + desc + points, with an in-progress bar for
+    partials. Category headers show n/total completed.
+  • **Watchable playoffs (#):** `simPlayoff` now records a per-hole log; when YOUR golfer is in a playoff,
+    `celebratePlayoff` plays a full-screen 'SUDDEN-DEATH PLAYOFF' reveal hole-by-hole (you ★-highlighted,
+    eliminations shown) before the win celebration (win) or a heartbreak Continue (loss). Auto-sim/reduced
+    motion auto-advance; manual gets a Continue button.
+  Old badge defs (BADGES/teeMedal/badgeCard/badgeEarnedHTML) remain defined but unused in UI. Verified via
+  Playwright (catalog integrity: 108 ach / 7035 pts / no dup ids; situational unlock correctness; Trophy
+  Room renders Tour Rep + dropdowns + checkboxes; playoff sequence reveals + win/loss; full season runs
+  clean; no console errors). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
