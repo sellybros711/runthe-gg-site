@@ -1502,7 +1502,14 @@ function footer(){
 }
 
 let _lastView=null;
+let _rendering=false;
 function render(){
+  // Re-entrancy guard: some async loaders (lbLoad/crLoad/dbLoad) call render() to refresh, and when
+  // Supabase isn't available they do so SYNCHRONOUSLY from inside a screen fn — which would re-enter
+  // render() mid-build, wipe #app, and leave the original call appending a second copy. Defer instead.
+  if(_rendering){ setTimeout(render,0); return; }
+  _rendering=true;
+  try{
   const savedY=window.scrollY;
   const prevOv=app.querySelector('.ov'); const savedOvY=prevOv?prevOv.scrollTop:0;   // keep overlay scroll across async re-renders
   if(S.screen!=='dailyround') clearDailyTimer();   // stop daily auto-advance if we left the round
@@ -1544,6 +1551,7 @@ function render(){
   const nowOv=app.querySelector('.ov');
   if(nowOv && sameView) nowOv.scrollTop=savedOvY;   // restore the overlay's own scroll position
   window.scrollTo({top: sameView ? savedY : 0});
+  } finally { _rendering=false; }
 }
 function openRules(){ if(S.screen==='rules')return; S.rulesReturn=S.screen; S.overlay=null; S.screen='rules'; render(); }
 function scrRules(){
@@ -2952,6 +2960,57 @@ function shareCard(cv,text,name,suffix){
   });
 }
 
+/* ---------- season headlines (#6): a newspaper-style recap of the year's story ----------
+   Derives a LEAD headline + a few supporting notes from this season's actual events
+   (finishes, wins, majors, money rank) and the career context. Pure read of S.season/S.career. */
+function seasonHeadlines(x){
+  const {t,moneyRank,N,ec}=x, year=x.year, results=(S.season&&S.season.results)||[];
+  const fin=results.map(r=>{ const me=r.order&&r.order.find(o=>o.p&&o.p.you); if(!me)return null;
+    const pos=(me.pos==='CUT')?99:me.pos; return {name:r.evt.name,major:!!r.evt.major,pos,money:me.money||0}; }).filter(Boolean);
+  const wins=fin.filter(f=>f.pos===1), majorWins=wins.filter(f=>f.major);
+  const seconds=fin.filter(f=>f.pos===2).length, top5=fin.filter(f=>f.pos<=5).length, top10=fin.filter(f=>f.pos<=10).length;
+  const playedN=fin.length, missed=fin.filter(f=>f.pos===99).length, made=playedN-missed;
+  const bestFin=fin.reduce((m,f)=>Math.min(m,f.pos),99);
+  const bigPay=fin.slice().sort((a,b)=>b.money-a.money)[0];
+  const distinctMajors=new Set(majorWins.map(f=>f.name)).size;
+  const c=S.career||{}, seasons=(c.seasons||[]);
+  const cwBefore=(c.wins||0)-t.wins, cmBefore=(c.majors||0)-t.majors;
+  const prev=seasons.length>=2?seasons[seasons.length-2]:null;   // this season is already pushed
+  const fp=n=>n===99?'a missed cut':ord(n);
+  // ---- LEAD ----
+  let lead;
+  if(distinctMajors>=4) lead={icon:'👑',head:'GRAND SLAM SEASON',sub:'All four majors in a single year — a season for the history books.'};
+  else if(moneyRank===1 && t.wins>=1) lead={icon:'🏆',head:'TOUR CHAMPION',sub:`Topped the money list at ${fmt(t.money)} — the undisputed player of the year.`};
+  else if(t.majors>=2) lead={icon:'⛳',head:`${t.majors}-MAJOR YEAR`,sub:`A multi-major season — ${majorWins.map(f=>f.name).join(' & ')}.`};
+  else if(t.majors===1){ const m=majorWins[0]; lead={icon:'⛳',head:cmBefore===0?'MAIDEN MAJOR':'MAJOR CHAMPION',sub:`${cmBefore===0?'First career major':'Another major'} — captured ${m.name}.`}; }
+  else if(t.wins>=3) lead={icon:'🔥',head:`${t.wins}-WIN SEASON`,sub:`A dominant year with ${t.wins} titles${moneyRank<=3?` and a top-${moneyRank} money finish`:''}.`};
+  else if(t.wins>=1){ const big=wins.slice().sort((a,b)=>b.money-a.money)[0]; lead={icon:'🏆',head:cwBefore===0?'BREAKTHROUGH WIN':(t.wins===1?'WINNER':`${t.wins} WINS`),sub:`${cwBefore===0?'First career title':'Back in the winner’s circle'} at ${big.name}.`}; }
+  else if(seconds>=1||top5>=1) lead={icon:'🎯',head:'KNOCKING ON THE DOOR',sub:`${seconds?`${seconds} runner-up${seconds>1?'s':''}`:`${top5} top-5${top5>1?'s':''}`} but no win yet — the breakthrough is close.`};
+  else lead={icon:'📈',head:year===1?'ROOKIE SEASON':'GRINDING SEASON',sub:bestFin===99?'Missed the cut in every start — back to the range to rebuild.':`Best finish ${fp(bestFin)} — building toward the breakthrough.`};
+  // ---- supporting notes ----
+  const notes=[];
+  if(moneyRank===1 && lead.head!=='TOUR CHAMPION') notes.push({icon:'📋',text:'Led the tour in earnings — money-list champion.'});
+  else if(moneyRank>=2 && moneyRank<=5) notes.push({icon:'📋',text:`Finished #${moneyRank} of ${N} on the money list (${fmt(t.money)}).`});
+  if(playedN>0 && missed===0) notes.push({icon:'🪨',text:`Made every cut — ${made} for ${made} on the season.`});
+  if(top10>=8) notes.push({icon:'🎯',text:`${top10} top-10 finishes — Mr. Consistency.`});
+  if(seconds>=2 && t.wins===0) notes.push({icon:'😤',text:`${seconds} runner-up finishes — so close, so often.`});
+  if(majorWins.length && t.majors===1 && lead.head!=='MAIDEN MAJOR' && lead.head!=='MAJOR CHAMPION') notes.push({icon:'⛳',text:`Won a major: ${majorWins[0].name}.`});
+  if(bigPay && bigPay.money>0 && t.wins===0) notes.push({icon:'💰',text:`Biggest week: ${fmt(bigPay.money)} for ${fp(bigPay.pos)} at ${bigPay.name}.`});
+  if(prev && prev.rank && moneyRank && (prev.rank-moneyRank)>=3) notes.push({icon:'⬆️',text:`Climbed from #${prev.rank} to #${moneyRank} on the money list.`});
+  if(ec.net>0 && seasons.length>1){ const bestPrevNet=Math.max(0,...seasons.slice(0,-1).map(s=>s.net||0)); if(ec.net>bestPrevNet) notes.push({icon:'💎',text:`Career-best profit: ${fmtSigned(ec.net)}.`}); }
+  if(year===1 && lead.head!=='ROOKIE SEASON') notes.push({icon:'🌱',text:'Rookie season in the books.'});
+  return {lead,notes:notes.slice(0,4),year};
+}
+function headlinesHTML(h){
+  const notes=h.notes.map(n=>`<div style="display:flex;gap:9px;align-items:flex-start;margin-top:7px"><span style="font-size:15px;line-height:1.2;flex:0 0 auto">${n.icon}</span><span class="small" style="color:var(--oncard);line-height:1.35;text-align:left">${n.text}</span></div>`).join('');
+  return `<div class="scout" style="max-width:520px;margin:8px auto 14px;text-align:left;border-color:rgba(235,166,31,.4)">
+    <div style="letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;border-bottom:1px solid rgba(235,166,31,.25);padding-bottom:6px;margin-bottom:10px;display:flex;justify-content:space-between"><span>RunTheTour Dispatch</span><span style="color:var(--muted)">Year ${h.year}</span></div>
+    <div style="display:flex;gap:11px;align-items:center">
+      <div style="font-size:30px;flex:0 0 auto">${h.lead.icon}</div>
+      <div style="min-width:0;font-family:var(--serif);font-weight:800;font-size:20px;line-height:1.08;color:var(--oncard)">${h.lead.head}</div></div>
+    <div class="small" style="margin-top:7px;color:var(--oncard);line-height:1.4">${h.lead.sub}</div>
+    ${notes}</div>`;
+}
 /* ---------- summary ---------- */
 function scrSummary(){
   const me=S.season.me, t=S.season.totals[me.name];
@@ -3024,6 +3083,8 @@ function scrSummary(){
   }
   add(expWrap);
   if(S.freshBadges&&S.freshBadges.length){ add($(badgeEarnedHTML(S.freshBadges))); }
+  // season headlines (#6): newspaper-style recap of the year's story
+  const HL=(!S.daily)?seasonHeadlines({t,moneyRank,N,ec,year:S.year||1}):null;
   // five headline stats: Earnings · Profit (two money tiles) over Tour Rank · Top 10's · Wins
   const pcol=ec.net>=0?'#35d6a0':'#E14A33';
   const tilesA=$(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin-bottom:10px"></div>`);
@@ -3037,6 +3098,7 @@ function scrSummary(){
   tilesB.appendChild(statTile('Wins',t.wins+''));
   tilesB.appendChild(statTile('Majors',t.majors+''));
   add(tilesB);
+  if(HL) add($(headlinesHTML(HL)));
   // the actual tournaments won this season (majors flagged in gold)
   const wonThisSeason=[];
   (S.season.results||[]).forEach(r=>{ const meR=r.order&&r.order.find(o=>o.p&&o.p.you); if(meR&&meR.pos===1) wonThisSeason.push({name:r.evt.name,major:!!r.evt.major}); });
@@ -3150,7 +3212,8 @@ function scrSummary(){
 
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
   const finTxt=(t.wins>0?`${t.wins} win${t.wins>1?'s':''}`:`best ${bestTxt(t.best)}`);
-  const share=`⛳ RUNTHETOUR — ${me.name} (OVR ${ovr})\nYear ${S.year||1}: ${fmt(t.money)} earned · #${moneyRank} of ${N}${wreath}\n${t.wins}W · ${t.majors} major${t.majors===1?'':'s'} · ${finTxt}\nThink you can build better? → https://runthe.gg/golf`;
+  const headLine=HL?`${HL.lead.icon} ${HL.lead.head} — `:'';
+  const share=`⛳ RUNTHETOUR — ${me.name} (OVR ${ovr})\n${headLine}Year ${S.year||1}: ${fmt(t.money)} earned · #${moneyRank} of ${N}${wreath}\n${t.wins}W · ${t.majors} major${t.majors===1?'':'s'} · ${finTxt}\nThink you can build better? → https://runthe.gg/golf`;
   right.appendChild($(`<h2 style="margin:2px 0 2px">Share your season</h2>`));
   right.appendChild($(`<p class="small muted" style="margin:0 0 10px">Post your card and dare a friend to beat your number.</p>`));
   const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
