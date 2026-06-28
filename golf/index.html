@@ -60,10 +60,12 @@
   html,body{margin:0; overscroll-behavior-y:none}
   body{background:var(--pagebg); background-attachment:fixed; color:var(--pageink);
     font-family:var(--body); -webkit-font-smoothing:antialiased; min-height:100vh; line-height:1.4}
-  #app{max-width:none; margin:0; padding:0 0 36px}
+  #app{max-width:none; margin:0; padding:0 env(safe-area-inset-right, 0px) calc(36px + env(safe-area-inset-bottom, 0px)) env(safe-area-inset-left, 0px)}
 
   /* ---- top bar + header (cream Masters-style band) ---- */
-  .head{text-align:center; padding:10px 16px 12px; max-width:780px; margin:0 auto; position:relative; z-index:2}
+  /* installed-PWA safe areas: the translucent iOS status bar overlays the web view, so pad the
+     header by the top inset (otherwise the ≡ menu sits under the clock and can't be tapped). */
+  .head{text-align:center; padding:calc(10px + env(safe-area-inset-top, 0px)) 16px 12px; max-width:780px; margin:0 auto; position:relative; z-index:2}
   .topbar{display:flex; justify-content:flex-start; align-items:center; margin:0 0 8px}
   .icobtn{width:38px;height:38px;border-radius:11px;background:var(--pill);border:1px solid var(--pillb);
     display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--oncard);font-size:18px;
@@ -3117,6 +3119,7 @@ function scrDailyIntro(){
   cr.onclick=()=>{ S.overlay='courserecords'; render(); }; add(cr);
 }
 function scrDailyPreview(){
+  if(sb && crCache===null) crLoad();   // pull global course records so the record box is global, not just local
   const key=S.dailyCourse, c=DAILY_COURSES[key], rec=courseRecords()[key];
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge · today's course</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:10px 0 2px">${esc(c.v)}</h1>`));
@@ -3433,6 +3436,7 @@ function scrDailyRound(){
   } else { const fin=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">See your round ▸</button>`); fin.onclick=finishDailyRound; add(fin); }
 }
 function scrDailyResult(){
+  if(sb && crCache===null) crLoad();   // ensure the course-record comparison reflects the global record
   const best=dailyBest(); const justPlayed=!!S.dailyResult;
   const r=S.dailyResult||best; if(!r){ S.screen='title'; return render(); }
   const c=DAILY_COURSES[r.course], total=r.total;
