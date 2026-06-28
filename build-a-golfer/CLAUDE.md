@@ -1259,6 +1259,12 @@ allows Google Fonts, or self-host Anton.*
     clearing the mid-season checkpoint. Verified: 4-event mid-save → resume restores results/evtIndex/money
     exactly; one-line ach rows; no console errors.
 
+- Data reset HELD until launch (owner)
+  The local auto-wipe (RESET_EPOCH) is now gated behind `RESET_ENABLED=false`, so NOTHING is wiped while
+  testing — the owner's current career is safe. AT LAUNCH: set `RESET_ENABLED=true` AND bump `RESET_EPOCH`
+  (e.g. 3) → every device wipes its bag_* once on next load; owner also runs `supabase/25_runtour_reset.sql`
+  for the cloud side. Verified a pre-seeded career survives a load with reset disabled.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
