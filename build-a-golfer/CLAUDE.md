@@ -861,6 +861,31 @@ allows Google Fonts, or self-host Anton.*
   distributions (the exact birdie/par/bogey/double rate of each specific hole) would only be
   a fidelity refinement; drop-in ready (course difficulty is already a per-course constant).
 
+- 2026-06-28: **Real DataGolf benchmarks + distribution-shape calibration.** Owner ran a
+  5-year (2021-25) historical-raw-data pull (event-list → /rounds, round-level aggregates)
+  and supplied the JSON. Replaced the ESTIMATED `avg` (tour scoring average vs par) on the
+  12 courses we have real data for with the measured figures (round-weighted where DataGolf
+  split a venue across labels — TPC Sawgrass Stadium, TPC Scottsdale, Bay Hill, Quail Hollow
+  each merged): Augusta +1.8→+1.41, Sawgrass +0.6→+0.27, Pebble -0.4→-1.27, Oakmont
+  +4.5→+4.18, Scottsdale -1.0→-0.89, Bay Hill +1.2→+0.99, Harbour Town -0.3→-0.91, Quail
+  Hollow +1.0→+0.96, Muirfield +1.4→+1.26, Valhalla -0.5→-0.43, East Lake -0.2→-1.82,
+  Sedgefield -1.0→-0.85. 4 courses had no data in the pull (no Travelers/Sentry/St Andrews
+  event matched) so their estimates are kept: St Andrews +0.3, River Highlands -1.5, Kapalua
+  -2.0, Glen Abbey -1.0. Then **reshaped `DCFG.TH`** to fix a systematic shape bias the real
+  outcome buckets exposed (sim had too many pars, too few bogeys, too many doubles — a
+  "par-or-disaster" feel): par 0.856→0.78, bogey 1.68→1.95, double 2.20→2.55, eagle
+  -2.65→-2.70 (widens the bogey band, pushes the double/triple tail out). Grid-searched 5
+  candidates vs the real distribution; winner cut per-course distribution error from 1.56 to
+  0.67. Re-derived every `cdiff` (Monte-Carlo inversion, 40k rounds/course) so an OVR-80
+  balanced pro still centers on each venue's real average — verified dead-on (Augusta 1.40,
+  Oakmont 4.18, Pebble -1.27, East Lake -1.80...). Final end-to-end check vs DataGolf's
+  eagle/birdie/par/bogey/double rates: aggregate sim [0.10,3.54,10.97,2.98,0.41] vs real
+  [0.09,3.49,11.01,2.98,0.43] — bogeys and blow-ups now realistic on every course. Pure
+  data/threshold change, no structural JS. Deployed to /golf. (DG_KEY stays server-side; the
+  supplied JSON carries no key. Per-individual-hole difficulty is still archetype-derived —
+  the /rounds feed is round-level, not hole-by-hole — so that remains a future fidelity
+  refinement only.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
