@@ -374,6 +374,22 @@
   .lb.you .pl{color:var(--gold); font-weight:800}
   .lb.cut .sc{color:#e07a5f}
   .sep{height:1px; background:repeating-linear-gradient(90deg,var(--line),var(--line) 6px,transparent 6px,transparent 12px)}
+  /* collapsible career groups (native <details>, no re-render needed) */
+  .acc{border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:7px; background:var(--board)}
+  .acc.flat{background:transparent}
+  .accsum{list-style:none; cursor:pointer; display:flex; align-items:center; gap:9px; padding:11px 14px; font-size:13.5px; color:var(--oncard); user-select:none}
+  .accsum::-webkit-details-marker{display:none}
+  .accsum.nochev{cursor:default}
+  .acc .chev{transition:transform .15s ease; color:var(--gold); font-size:11px; flex:0 0 auto; width:10px; text-align:center}
+  .acc .chev.dim{color:var(--muted)}
+  .acc[open] .chev{transform:rotate(90deg)}
+  .acc .yrtag{flex:0 0 auto; font-family:var(--mono); color:var(--muted); font-weight:700; min-width:48px}
+  .acc .acctitle{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:800}
+  .acc .acctitle.thin{font-weight:600}
+  .accmeta{margin-left:auto; font-family:var(--mono); color:var(--muted); font-size:12.5px; white-space:nowrap}
+  .accbody{border-top:1px solid var(--line); padding:3px 0}
+  .accbody .lb{border-top:1px solid rgba(244,227,201,.05)}
+  .accbody .lb:first-child{border-top:0}
   .runline{display:flex; justify-content:space-between; font-family:var(--mono); font-size:13px; padding:10px 2px 0; color:var(--oncard)}
   /* live tournament scorecard */
   .scorecard{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.20)); border:1px solid var(--panelb);
@@ -3793,26 +3809,14 @@ function scrSummary(){
     const bestS=(c.seasons||[]).reduce((m,s)=>(!m||s.money>m.money)?s:m,null);
     if(bestS) ct.appendChild($(`<div class="tile"><div class="k">Season high</div><div class="v cream" style="font-size:17px">${fmt(bestS.money)}</div><div class="small muted" style="font-size:10px;margin-top:2px">Year ${bestS.year}</div></div>`));
     left.appendChild(ct);
-    // Wins — the actual tournaments won across the career
+    // Wins + seasons — grouped into dropdowns so a long career stays readable
     const wl=(c.winsList||[]);
     const majWins=wl.filter(w=>w.major).length;
-    left.appendChild($(`<h3 style="margin:14px 0 6px;font-size:14px;letter-spacing:.02em">Wins <span class="small muted" style="font-weight:600">· ${wl.length}${majWins?` · ${majWins} major${majWins>1?'s':''}`:''}</span></h3>`));
-    if(wl.length){
-      const wb=$(`<div class="board"></div>`);
-      wl.slice().sort((a,b)=>a.year-b.year).forEach(w=>wb.appendChild($(`<div class="lb" style="grid-template-columns:30px 1fr 54px">
-        <span class="pos" style="color:var(--gold)">${w.major?'★':'🏆'}</span>
-        <span class="pl">${w.name}${w.major?' <span class="small muted">major</span>':''}</span>
-        <span class="mny small muted">Yr ${w.year}</span></div>`)));
-      left.appendChild(wb);
-    } else {
-      left.appendChild($(`<div class="scout small muted" style="margin-top:2px">No tournament wins yet — keep grinding.</div>`));
-    }
-    const yb=$(`<div class="board"></div>`);
-    c.seasons.forEach(s=>yb.appendChild($(`<div class="lb" style="grid-template-columns:46px 1fr 96px">
-      <span class="pos">Yr ${s.year}</span>
-      <span class="pl">${s.wins}W · ${s.majors} maj · best ${bestTxt(s.best)}</span>
-      <span class="mny" style="color:${s.net>=0?'#35d6a0':'#E14A33'}">${fmtSigned(s.net)}</span></div>`)));
-    left.appendChild(yb);
+    left.appendChild($(`<h3 style="margin:16px 0 7px;font-size:14px;letter-spacing:.02em">Wins <span class="small muted" style="font-weight:600">· ${wl.length}${majWins?` · ${majWins} major${majWins>1?'s':''}`:''}</span></h3>`));
+    if(!wl.length) left.appendChild($(`<div class="scout small muted" style="margin-top:2px">No tournament wins yet — keep grinding.</div>`));
+    else if(majWins) left.appendChild($(careerMajorsHTML(c)));
+    left.appendChild($(`<h3 style="margin:16px 0 7px;font-size:14px;letter-spacing:.02em">Season by season <span class="small muted" style="font-weight:600">· ${c.seasons.length} yrs · tap a year for its wins</span></h3>`));
+    left.appendChild($(`<div>${careerSeasonsHTML(c)}</div>`));
     // the career share CARD lives only on the end-of-career ceremony now — here we just point to it
     left.appendChild($(`<div class="scout small muted" style="margin-top:12px;text-align:center">Your shareable career card unlocks when you finish your career.</div>`));
   }
@@ -4695,6 +4699,35 @@ function overlayCourseRecords(screen){
   screen.appendChild(ov);
 }
 /* ---------- career-end ceremony (bounded career → reset) ---------- */
+/* ---- career win/season displays, grouped into collapsible dropdowns so a long career stays readable ---- */
+const MAJOR_NAMES=['The Masters','The Championship','U.S. Open','The Open'];
+// majors grouped by championship (× count + the years won), in a dropdown — your prestige cabinet at a glance
+function careerMajorsHTML(c){
+  const majors=(c.winsList||[]).filter(w=>w.major);
+  if(!majors.length) return '';
+  const byName={}; majors.forEach(w=>{ (byName[w.name]=byName[w.name]||[]).push(w.year); });
+  const order=MAJOR_NAMES.filter(n=>byName[n]).concat(Object.keys(byName).filter(n=>!MAJOR_NAMES.includes(n)));
+  const rows=order.map(nm=>{ const yrs=byName[nm].slice().sort((a,b)=>a-b);
+    return `<div class="lb" style="grid-template-columns:1fr auto;padding:9px 14px">
+      <span class="pl"><span style="color:var(--gold)">★</span> ${esc(nm)}${byName[nm].length>1?` <span class="small muted">×${byName[nm].length}</span>`:''}</span>
+      <span class="mny small muted">Yr ${yrs.join(', ')}</span></div>`; }).join('');
+  return `<details class="acc" open><summary class="accsum"><span class="chev">▸</span><span class="acctitle">🏆 Majors</span><span class="accmeta">${majors.length} won</span></summary><div class="accbody">${rows}</div></details>`;
+}
+// season-by-season accordion: each year is a row (record + net); years with wins expand to the trophies
+function careerSeasonsHTML(c){
+  const winsByYear={}; (c.winsList||[]).forEach(w=>{ (winsByYear[w.year]=winsByYear[w.year]||[]).push(w); });
+  return (c.seasons||[]).slice().sort((a,b)=>a.year-b.year).map(s=>{
+    const wins=(winsByYear[s.year]||[]).slice().sort((a,b)=>(b.major?1:0)-(a.major?1:0));
+    const netCol=s.net>=0?'#35d6a0':'#E14A33';
+    const line=`${s.wins}W · ${s.majors} maj · best ${bestTxt(s.best)}`;
+    const meta=`<span style="color:${netCol}">${fmtSigned(s.net)}</span>`;
+    if(wins.length){
+      const body=wins.map(w=>`<div class="lb" style="grid-template-columns:30px 1fr;padding:8px 14px"><span class="pos" style="color:var(--gold)">${w.major?'★':'🏆'}</span><span class="pl">${esc(w.name)}${w.major?' <span class="small muted">major</span>':''}</span></div>`).join('');
+      return `<details class="acc"><summary class="accsum"><span class="chev">▸</span><span class="yrtag">Yr ${s.year}</span><span class="acctitle thin">${line}</span><span class="accmeta">${meta}</span></summary><div class="accbody">${body}</div></details>`;
+    }
+    return `<div class="acc flat"><div class="accsum nochev"><span class="chev dim">·</span><span class="yrtag">Yr ${s.year}</span><span class="acctitle thin">${line}</span><span class="accmeta">${meta}</span></div></div>`;
+  }).join('');
+}
 function scrCareerEnd(){
   const c=S.career||{seasons:[],money:0,net:0,wins:0,majors:0,top10:0,best:99,winsList:[]};
   const e=S.careerEnd||{years:c.seasons.length,money:c.money,net:c.net,wins:c.wins,majors:c.majors,best:c.seasons.reduce((m,s)=>Math.max(m,s.money),0),bestFin:c.best};
@@ -4731,16 +4764,14 @@ function scrCareerEnd(){
       <span style="text-align:right"><div class="sc cream" style="font-weight:800">${wins} ${wins===1?'win':'wins'}</div></span></div>`));
   });
   add(mb);
-  // wins list
+  // wins + seasons — one row per year, tap to reveal that year's trophies (keeps a 40-yr career readable)
   const wl=(c.winsList||[]);
-  add($(`<h2 class="center" style="margin:14px 0 8px;font-size:15px">${wl.length?('Tournament wins · '+wl.length):'No tournament wins'}</h2>`));
+  add($(`<h2 class="center" style="margin:16px 0 8px;font-size:15px">${wl.length?('Tournament wins · '+wl.length):'No tournament wins'}</h2>`));
   if(wl.length){
-    const wb=$(`<div class="board" style="max-width:520px;margin:0 auto"></div>`);
-    wl.slice().sort((a,b)=>a.year-b.year).forEach(w=>wb.appendChild($(`<div class="lb" style="grid-template-columns:30px 1fr 54px">
-      <span class="pos" style="color:var(--gold)">${w.major?'★':'🏆'}</span>
-      <span class="pl">${esc(w.name)}${w.major?' <span class="small muted">major</span>':''}</span>
-      <span class="mny small muted">Yr ${w.year}</span></div>`)));
-    add(wb);
+    const wrap=$(`<div style="max-width:520px;margin:0 auto"></div>`);
+    wrap.appendChild($(`<div class="small muted center" style="margin:-2px 0 8px">${c.seasons.length} seasons · tap a year for its wins</div>`));
+    wrap.appendChild($(`<div>${careerSeasonsHTML(c)}</div>`));
+    add(wrap);
   }
   // career share card
   const careerVals=CATS.map(x=> S.slots[x.k]? S.slots[x.k].value : REPLACEMENT);
