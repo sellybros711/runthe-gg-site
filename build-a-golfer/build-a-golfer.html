@@ -1650,19 +1650,30 @@ function getRival(){ return (S.career&&S.career.rival)||S.pendingRival||null; }
 function setRival(r){ if(S.career){ S.career.rival=r; saveCareer(); } else { S.pendingRival=r; } recordAchEvent({set:{rivalPicked:1}}); evaluateAch(); track('rival_picked',{name:r.name,ovr:r.ovr}); }
 function clearRival(){ if(S.career) S.career.rival=null; S.pendingRival=null; }
 function rivalActive(name){ const w=S.world; if(!w) return true; return w.active.some(g=>g.name===name); }
-function rivalCandidates(){ const f=worldField(FIELDSIZE-1)||[]; const myOvr=Math.round(buildPlayer().skill), meName=S.name||'Your Golfer';
-  const pool=f.filter(p=>p.name!==meName);
-  let band=pool.filter(p=>Math.abs(p.skill-myOvr)<=6);
-  if(band.length<3) band=pool.slice();
-  return band.sort((a,b)=>Math.abs(a.skill-myOvr)-Math.abs(b.skill-myOvr)).slice(0,4).map(p=>({name:p.name,ovr:Math.round(p.skill)})); }
-function rivalSeasonResult(){ const rv=getRival(); if(!rv||!S.season||!S.season.totals) return null;
-  const totals=S.season.totals, meName=S.season.me.name, mine=totals[meName], theirs=totals[rv.name];
-  if(!mine) return null;
-  if(!theirs) return {status:'absent', name:rv.name};
+// rivals are matched on the imbalance-aware OVR (true level) within a TIGHT band, so your rival is a
+// genuine peer — not a top-world player you happen to share a flat-average number with.
+function rivalCandidates(){ const f=worldField(FIELDSIZE-1)||[]; const meName=S.name||'Your Golfer';
+  const myOvr=Math.round(buildPlayer().skill);   // already imbalance-aware
+  const pool=f.filter(p=>p.name!==meName).map(p=>({name:p.name, ovr:Math.round(ovrFromSkills(p))}));
+  let band=pool.filter(p=>Math.abs(p.ovr-myOvr)<=3);
+  if(band.length<4) band=pool.filter(p=>Math.abs(p.ovr-myOvr)<=6);
+  if(band.length<4) band=pool.slice();
+  return band.sort((a,b)=>Math.abs(a.ovr-myOvr)-Math.abs(b.ovr-myOvr)).slice(0,4); }
+// rivalry = a SEASON-LONG head-to-head: who finished ahead in more of the events you both played. Robust
+// to single-event variance, and a far better story than one money-list comparison. Money kept for the card.
+function rivalSeasonResult(){ const rv=getRival(); if(!rv||!S.season||!S.season.results) return null;
+  const totals=S.season.totals, meName=S.season.me.name;
+  let meAhead=0, rvAhead=0, both=0;
+  S.season.results.forEach(r=>{ const me=r.order&&r.order.find(o=>o.p&&o.p.you);
+    const them=r.order&&r.order.find(o=>o.p&&o.p.name===rv.name);
+    if(!me||!them) return; const mp=(me.pos==='CUT')?999:me.pos, tp=(them.pos==='CUT')?999:them.pos;
+    if(mp===tp) return; both++; if(mp<tp) meAhead++; else rvAhead++; });
+  if(both===0 || !totals[rv.name]) return {status:'absent', name:rv.name};
+  const mine=totals[meName], theirs=totals[rv.name];
   const byMoney=Object.entries(totals).map(([n,v])=>({n,money:v.money})).sort((a,b)=>b.money-a.money);
   const myRank=byMoney.findIndex(r=>r.n===meName)+1, rvRank=byMoney.findIndex(r=>r.n===rv.name)+1;
-  return {status:'h2h', name:rv.name, beat:mine.money>theirs.money, myRank, rvRank,
-    myMoney:mine.money, rvMoney:theirs.money, myWins:mine.wins, rvWins:theirs.wins}; }
+  return {status:'h2h', name:rv.name, beat:meAhead>rvAhead, meAhead, rvAhead, both,
+    myRank, rvRank, myMoney:mine.money, rvMoney:theirs.money, myWins:mine.wins, rvWins:theirs.wins}; }
 // shared picker card (off-season + first-season build). Returns a wired DOM node.
 function rivalPickerNode(){
   const rv=getRival();
@@ -1670,7 +1681,7 @@ function rivalPickerNode(){
   box.appendChild($(`<div style="letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:11px;margin-bottom:6px">⚔️ Your Rival</div>`));
   if(rv && rivalActive(rv.name)){
     const lt=badgeMetrics(); const rw=lt.rivalWins||0;
-    box.appendChild($(`<div class="small" style="color:var(--oncard)">You're chasing <b style="color:var(--gold)">${esc(rv.name)}</b> · OVR ${rv.ovr}. Finish a season ahead of them on the money list to win the rivalry — earns a <b>Rivalry tee</b> and a callout in your season story.${rw>0?` <span class="muted">Rivalries won: ${rw}.</span>`:''}</div>`));
+    box.appendChild($(`<div class="small" style="color:var(--oncard)">You're chasing <b style="color:var(--gold)">${esc(rv.name)}</b> · OVR ${rv.ovr}. Beat them head-to-head over the season — finish ahead in more events than they do — to win the rivalry and earn a <b>Rivalry tee</b> + a callout in your season story.${rw>0?` <span class="muted">Rivalries won: ${rw}.</span>`:''}</div>`));
     const ch=$(`<button class="btn ghost" style="margin-top:8px;font-size:12px;padding:8px 12px;width:auto">Choose a different rival</button>`);
     ch.onclick=()=>{ clearRival(); render(); }; box.appendChild(ch);
     return box;
@@ -1692,14 +1703,15 @@ function rivalPickerNode(){
 // season-summary rivalry card from this season's head-to-head outcome
 function rivalCardHTML(rr){ if(!rr) return '';
   if(rr.status==='absent') return `<div class="scout" style="max-width:520px;margin:8px auto 14px;text-align:center"><div style="letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;margin-bottom:5px">⚔️ Rivalry</div><div class="small muted">Your rival <b style="color:var(--oncard)">${esc(rr.name)}</b> didn't make the field this season — no head-to-head this year.</div></div>`;
-  const beat=rr.beat, col=beat?'#35d6a0':'#e9a23b';
+  const beat=rr.beat, tie=rr.meAhead===rr.rvAhead, col=beat?'#35d6a0':(tie?'var(--gold)':'#e9a23b');
   return `<div class="scout" style="max-width:520px;margin:8px auto 14px;border-color:${col}">
-    <div style="letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;margin-bottom:7px;text-align:center">⚔️ Rivalry${beat?' won':''}</div>
+    <div style="letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;margin-bottom:7px;text-align:center">⚔️ Rivalry${beat?' won':''} · head-to-head</div>
     <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center">
       <div style="text-align:right"><div style="font-weight:800;color:${beat?col:'var(--oncard)'}">You</div><div class="small muted">#${rr.myRank} · ${fmt(rr.myMoney)}</div></div>
-      <div style="font-weight:800;color:var(--muted)">vs</div>
+      <div style="font-weight:900;font-size:20px;color:var(--oncard)">${rr.meAhead}<span style="color:var(--muted);font-size:14px"> – </span>${rr.rvAhead}</div>
       <div style="text-align:left"><div style="font-weight:800;color:${beat?'var(--oncard)':col}">${esc(rr.name)}</div><div class="small muted">#${rr.rvRank} · ${fmt(rr.rvMoney)}</div></div></div>
-    <div class="small center" style="margin-top:8px;color:${col};font-weight:700">${beat?'You finished the season ahead of your rival. 🏅 Rivalry tee earned.':`${esc(rr.name)} edged you this season — get them next year.`}</div></div>`;
+    <div class="small center" style="margin-top:7px;color:var(--muted)">finished ahead of your rival in ${rr.meAhead} of ${rr.both} shared events</div>
+    <div class="small center" style="margin-top:5px;color:${col};font-weight:700">${beat?'You won the season series. 🏅 Rivalry tee earned.':(tie?`Dead even — you split the series ${rr.meAhead}–${rr.rvAhead}.`:`${esc(rr.name)} took the series — get them next year.`)}</div></div>`;
 }
 /* ---- YOUR golfer's bounded career (40-year shelf life). Decline is AGE- and FORM-based, not a
    flat year cutoff: a rookie starts ~22 and peaks through the mid-30s with NO decline; only after
@@ -1770,9 +1782,24 @@ reset();
 if(LS.get('bag_dark',false))document.body.classList.add('dark');
 
 const filledCount=()=>CATS.filter(c=>S.slots[c.k]).length;
+/* Imbalance-aware OVERALL — for DISPLAY + matchmaking only. The sim itself reads raw per-skill values
+   (eventOverall), so a player's actual finishes are unchanged. A flat weighted average overrates a
+   lopsided "cherry-picked" bag (it ignores the volatility that weak links cause), which then gets matched
+   against true elites. (1) penalise weak links (downside spread) so the number reflects how the build
+   PLAYS; (4) gently stretch the top so the world's best read elite. */
+const OVR_IMBALANCE_K=0.85, OVR_PIVOT=82, OVR_GAIN=1.35;
+function ovrFromSkills(sk){
+  const vals=CATS.map(c=>(sk[c.k]!=null?sk[c.k]:REPLACEMENT));
+  const wmean=CATS.reduce((s,c,i)=>s+vals[i]*c.w,0);                 // weighted mean (as before)
+  const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
+  const below=vals.filter(v=>v<mean).map(v=>mean-v);                 // downside deviation — weak links hurt
+  const dd=below.length?Math.sqrt(below.reduce((a,b)=>a+b*b,0)/vals.length):0;
+  let o=wmean - OVR_IMBALANCE_K*dd;
+  if(o>OVR_PIVOT) o=OVR_PIVOT+(o-OVR_PIVOT)*OVR_GAIN;                // stretch the elite top
+  return Math.max(40, Math.min(99, o)); }
 function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
   CATS.forEach(c=>p[c.k]=S.slots[c.k]?S.slots[c.k].value:REPLACEMENT);
-  p.skill=CATS.reduce((s,c)=>s+p[c.k]*c.w,0); return p;}
+  p.skill=ovrFromSkills(p); return p;}
 
 /* ---------- build identity ---------- */
 function ovrTier(o){
@@ -3509,8 +3536,8 @@ function seasonHeadlines(x){
   // rivalry — surfaced near the top so it survives the 4-note cap
   const rr=S.rivalOutcome;
   if(rr&&rr.status==='h2h') notes.unshift(rr.beat
-    ?{icon:'⚔️',text:`Finished ahead of rival ${rr.name} — you #${rr.myRank}, ${rr.name} #${rr.rvRank}.`}
-    :{icon:'⚔️',text:`Rival ${rr.name} edged you (#${rr.rvRank} to your #${rr.myRank}) — next year.`});
+    ?{icon:'⚔️',text:`Won the rivalry series vs ${rr.name}, ${rr.meAhead}–${rr.rvAhead}.`}
+    :{icon:'⚔️',text:`${rr.name} took the rivalry series, ${rr.rvAhead}–${rr.meAhead} — next year.`});
   return {lead,notes:notes.slice(0,4),year};
 }
 function headlinesHTML(h){

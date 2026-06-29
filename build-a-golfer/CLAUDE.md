@@ -1303,6 +1303,22 @@ allows Google Fonts, or self-host Anton.*
   Verified: rank-up fires + card/toast; titles unlock by rank; leaderboard badges render (Legend / Star /
   G.O.A.T., Amateur hidden); no console errors. Owner must run `27_runtour_rep.sql` for the board badges.
 
+- Imbalance-aware OVERALL + season-long rivalry (owner: "top players at 86? + I outperformed my rival by a lot")
+  Two real bugs in the screenshots. (1+4) **OVR was a flat weighted average**, which OVER-rated a lopsided
+  cherry-picked bag (loads put/clu, dumps scr/bnk) — it read ~85 and got matched against true elites, while
+  genuine world-#1s read only ~86. New `ovrFromSkills(sk)` keeps the weighted mean but **subtracts a
+  downside-deviation penalty** (weak links below your own mean hurt, `OVR_IMBALANCE_K=0.85`) and **stretches
+  the elite top** above `OVR_PIVOT=82` by `OVR_GAIN=1.35`. DISPLAY/matchmaking only — the sim still reads raw
+  per-skill values (`eventOverall`), so actual finishes are unchanged. `buildPlayer` uses it. Verified (seed
+  12345): the screenshot's lopsided bag 84.8→**80.6**; a clean balanced 86 build stays 86.4; Scheffler→92,
+  top-5 86–88, field span 69–92 (genuine elites now read elite, cherry-picked builds read honest).
+  (2) **Rival matching** now uses `ovrFromSkills` for both sides within a TIGHT ±3 band (widen to ±6, then
+  any, if <4 candidates) — the lopsided 81 player now gets true peers (Aaron Rai/Bezuidenhout/Cole/Kitayama
+  at 81), not Rory/Morikawa at 86. (3) **Rivalry is now a SEASON-LONG head-to-head** (`rivalSeasonResult`):
+  beat = you finished ahead of your rival in MORE of the events you both played (`meAhead>rvAhead`, cuts on
+  both = tie/skip), robust to single-event variance. Card shows the `meAhead–rvAhead` record + money ranks;
+  season headlines + picker copy updated to match. Did NOT touch season variance (owner declined #5).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
