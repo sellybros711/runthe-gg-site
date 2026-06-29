@@ -1349,6 +1349,17 @@ allows Google Fonts, or self-host Anton.*
   (incl. next-gen generated players) with zero errors; all 5 display states render clean. "Got Beef" ach +
   the Rivalry tee/wins untouched (now keyed off the emergent rival). Supersedes the manual pick-a-rival note.
 
+- Career recap regrouped into dropdowns (owner: "really hard to read… group them and do drop downs")
+  The career tab had two long flat lists — a 45-row Wins list and a 16-row season list, both year-indexed and
+  hard to scan. Replaced with collapsible groups (native `<details>` accordions, `.acc` CSS, no re-render):
+  (1) **🏆 Majors** dropdown (open by default) — majors grouped by championship with ×count + the years won
+  (`careerMajorsHTML`); (2) **Season by season** accordion (`careerSeasonsHTML`) — one row per year showing
+  record + net; years with wins get a ▸ chevron and expand to that year's trophies (majors ★, others 🏆),
+  win-less years are flat non-expandable rows. The standalone 45-row Wins list is gone — wins now live nested
+  under their year. Applied to BOTH the in-career summary "Career" tab and the end-of-career ceremony (which
+  keeps its played/top-10/best Major Championships board above the accordion). Verified visually + zero
+  console errors. Helpers are shared/hoisted; `MAJOR_NAMES` constant added.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
