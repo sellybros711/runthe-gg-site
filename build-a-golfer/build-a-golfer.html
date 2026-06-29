@@ -733,6 +733,7 @@ const ACH=[].concat(
   [{id:'rv_1', cat:'Rivalry & Spotlight',name:'Upper Hand', desc:'Finish a season ahead of your rival.',       goal:1,pts:35, get:m=>m.rivalWins},
    {id:'rv_3', cat:'Rivalry & Spotlight',name:'Nemesis',    desc:'Beat your rival in 3 seasons.',              goal:3,pts:60, get:m=>m.rivalWins},
    {id:'rv_10',cat:'Rivalry & Spotlight',name:'Owned',      desc:'Beat rivals 10 times.',                      goal:10,pts:100,get:m=>m.rivalWins},
+   {id:'rv_out',cat:'Rivalry & Spotlight',name:'Left Them Behind',desc:'Outgrow a rival and move up a level.',  goal:1,pts:40, get:m=>m.rivalsOutgrown},
    {id:'sp_1', cat:'Rivalry & Spotlight',name:'Spotlight Star',desc:'Win a Monthly Spotlight event.',          goal:1,pts:35, get:m=>m.spotWins},
    {id:'sp_3', cat:'Rivalry & Spotlight',name:'In the Lights',desc:'Win 3 Monthly Spotlights.',               goal:3,pts:60, get:m=>m.spotWins},
    {id:'sp_12',cat:'Rivalry & Spotlight',name:'Year in the Sun',desc:'Win 12 Monthly Spotlights.',            goal:12,pts:100,get:m=>m.spotWins}],
@@ -767,6 +768,7 @@ const ACH=[].concat(
    {id:'dst_365',cat:'Daily Challenge',name:'Year-Long Streak',desc:'Reach a 365-day play streak.',         goal:365,pts:150,get:m=>m.streakBest},
    {id:'rv_25',  cat:'Rivalry & Spotlight',name:'Career Nemesis',desc:'Beat rivals 25 times.',             goal:25,pts:150,get:m=>m.rivalWins},
    {id:'rv_high',cat:'Rivalry & Spotlight',name:'Giant Slayer', desc:'Finish a season ahead of a rival rated higher than you.',goal:1,pts:35,get:m=>m.rivalUpset},
+   {id:'rv_out3',cat:'Rivalry & Spotlight',name:'Always Climbing',desc:'Outgrow 3 rivals.',                   goal:3,pts:90, get:m=>m.rivalsOutgrown},
    {id:'sp_24',  cat:'Rivalry & Spotlight',name:'Spotlight Fixture',desc:'Win 24 Monthly Spotlights.',     goal:24,pts:150,get:m=>m.spotWins}],
   // ================= EXPANSION: virtually everything achievable =================
   // ---- Getting Started (meta) ----
@@ -1675,6 +1677,12 @@ function worldField(n){ const w=ensureWorld(); if(!w) return null;
    (S.career.rival). It carries a career-long record; if your rival retires you get a farewell and a new
    one can emerge later. Beating your nemesis over a season earns the Rivalry tee + a season-story callout. */
 const RIVAL_MIN_SEASONS=3, RIVAL_MIN_EV=30, RIVAL_NEAR=6;
+// your nemesis is a current PEER: matched within this OVR band of you. Kept tighter than the outgrow gap
+// below, so a rival you've just graduated past (≥ gap below you) can't be immediately re-picked.
+const RIVAL_BAND=5;
+// "outgrowing" a rivalry: graduate it once you've BOTH opened a clear OVR gap AND won the last N season
+// series — a stale blowout ends, your history with them is kept, and a fresh peer-level nemesis emerges.
+const RIVAL_OUTGROW_GAP=6, RIVAL_OUTGROW_STREAK=2;
 function getRival(){ return (S.career&&S.career.rival)||null; }
 function rivalActive(name){ const w=S.world; if(!w) return true; return w.active.some(g=>g.name===name); }
 // accumulate this season's per-opponent head-to-head into S.career.h2h (the data that picks your rival)
@@ -1696,19 +1704,42 @@ function accrueH2H(){
 // a good rival = battled you a lot AND closely AND with a contested record (near 50/50 is the best story)
 function rivalScore(h){ const tot=(h.meAhead+h.themAhead)||1; const balance=1-Math.abs(h.meAhead-h.themAhead)/tot;
   return h.near*(0.6+0.4*balance); }
-// after RIVAL_MIN_SEASONS, crown the highest-scoring still-active opponent as your emergent rival
+// after RIVAL_MIN_SEASONS, crown the highest-scoring still-active opponent WITHIN YOUR OVR BAND as your rival
 function maybeFormRival(){
   if(S.daily||!S.career||S.career.rival) return false;
   if((S.career.seasons?S.career.seasons.length:0) < RIVAL_MIN_SEASONS) return false;
+  const myOvr=Math.round(buildPlayer().skill);
   const H=S.career.h2h||{}; let best=null, bestSc=0;
   Object.entries(H).forEach(([nm,h])=>{ if(h.ev<RIVAL_MIN_EV||!rivalActive(nm)) return;
+    if(h.ovr!=null && Math.abs(h.ovr-myOvr)>RIVAL_BAND) return;       // must be a current peer (not someone you've outclassed)
     const sc=rivalScore(h); if(sc>bestSc){ bestSc=sc; best={name:nm,h}; } });
   if(!best) return false;
-  S.career.rival={name:best.name, ovr:best.h.ovr||80, sinceYear:S.year||1, seasonsWon:0, seasonsLost:0, emergent:true};
+  S.career.rival={name:best.name, ovr:best.h.ovr||80, sinceYear:S.year||1, seasonsWon:0, seasonsLost:0, seriesStreak:0, emergent:true};
   S.freshRival={name:best.name, ovr:best.h.ovr||80, near:best.h.near, ev:best.h.ev,
     meAhead:best.h.meAhead, themAhead:best.h.themAhead};
   recordAchEvent({set:{rivalPicked:1}}); evaluateAch();
   track('rival_emerged',{name:best.name,ovr:best.h.ovr,near:best.h.near,ev:best.h.ev});
+  return true;
+}
+// graduate a rivalry you've clearly outgrown: a sustained OVR gap + a winning series streak. One-directional
+// (only when YOU pull ahead — if your rival ascends past you, you keep chasing). Banks the record to history.
+function maybeOutgrowRival(){
+  if(S.daily||!S.career||!S.career.rival) return false;
+  const rv=S.career.rival;
+  if((rv.seriesStreak||0) < RIVAL_OUTGROW_STREAK) return false;        // must have won the last N season series
+  const myOvr=Math.round(buildPlayer().skill);
+  const rvP=(S.season&&S.season.field||[]).find(p=>p.name===rv.name);
+  const rvOvr=Math.round(rvP?ovrFromSkills(rvP):(rv.ovr||80));
+  if(myOvr-rvOvr < RIVAL_OUTGROW_GAP) return false;                    // must have opened a clear OVR gap over them
+  const h=(S.career.h2h&&S.career.h2h[rv.name])||{meAhead:0,themAhead:0,ev:0};
+  S.career.pastRivals=(S.career.pastRivals||[]);
+  S.career.pastRivals.push({name:rv.name, meAhead:h.meAhead||0, themAhead:h.themAhead||0,
+    seasonsWon:rv.seasonsWon||0, seasonsLost:rv.seasonsLost||0, fromYear:rv.sinceYear||1, toYear:S.year||1, reason:'outgrew'});
+  S.freshRivalOutgrown={name:rv.name, myOvr, rvOvr, meAhead:h.meAhead||0, themAhead:h.themAhead||0,
+    seasonsWon:rv.seasonsWon||0, seasonsLost:rv.seasonsLost||0, years:(S.year||1)-(rv.sinceYear||1)+1};
+  S.career.rival=null;
+  recordAchEvent({inc:{rivalsOutgrown:1}}); evaluateAch();
+  track('rival_outgrown',{name:rv.name,myOvr,rvOvr});
   return true;
 }
 // off-season reconcile: if your rival has retired off the tour, say goodbye and free the slot
@@ -1752,6 +1783,12 @@ function rivalStatusNode(){
     const seasons=(S.career&&S.career.seasons&&S.career.seasons.length)||0;
     box.appendChild($(`<div class="small muted">${seasons<RIVAL_MIN_SEASONS?`No rival yet — keep competing. After a few seasons, the player who battles you closest will emerge as your nemesis. No picking required.`:`No clear rival has emerged yet. Stay in the mix with players near your level and one will surface.`}</div>`));
   }
+  // past rivalries — the nemeses you've outgrown or outlasted, kept for the record
+  const past=(S.career&&S.career.pastRivals)||[];
+  if(past.length){
+    const rows=past.slice().reverse().map(p=>`<div class="small" style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;color:var(--muted)"><span>${p.reason==='outgrew'?'✓':'·'} <b style="color:var(--oncard);font-weight:700">${esc(p.name)}</b> <span style="font-size:11px">Yr ${p.fromYear}–${p.toYear}</span></span><span style="white-space:nowrap">${p.meAhead}–${p.themAhead} H2H</span></div>`).join('');
+    box.appendChild($(`<div style="margin-top:9px;border-top:1px solid var(--line);padding-top:8px"><div class="small" style="color:var(--muted);font-weight:700;letter-spacing:.04em;margin-bottom:3px">Past rivalries</div>${rows}</div>`));
+  }
   return box;
 }
 // season-summary card announcing a newly-emerged rival
@@ -1761,6 +1798,13 @@ function rivalFormedHTML(fr){ if(!fr) return '';
     <div style="letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;margin-bottom:7px">⚔️ A Rivalry Is Born</div>
     <div style="font-weight:800;color:var(--oncard);font-size:17px">${esc(fr.name)} <span class="small muted">· OVR ${fr.ovr}</span></div>
     <div class="small" style="margin-top:6px;color:var(--oncard)">After a few seasons trading blows, <b>${esc(fr.name)}</b> has emerged as your nemesis — you've finished right beside each other <b>${fr.near}</b> times${tot?`, and you're <b>${fr.meAhead}–${fr.themAhead}</b> head-to-head so far`:''}. The rivalry starts now.</div></div>`;
+}
+// season-summary card when you've OUTGROWN a rival — a triumph, with the record they leave behind
+function rivalOutgrownHTML(fr){ if(!fr) return '';
+  return `<div class="scout" style="max-width:520px;margin:8px auto 14px;border-color:#35d6a0;text-align:center">
+    <div style="letter-spacing:.12em;text-transform:uppercase;color:#35d6a0;font-weight:800;font-size:10px;margin-bottom:7px">✓ Rivalry Outgrown</div>
+    <div style="font-weight:800;color:var(--oncard);font-size:16px">You've left ${esc(fr.name)} behind</div>
+    <div class="small" style="margin-top:6px;color:var(--oncard)">${fr.years>1?`${fr.years} years`:'A run'} of beating ${esc(fr.name)} (career H2H <b>${fr.meAhead}–${fr.themAhead}</b>, series <b>${fr.seasonsWon}–${fr.seasonsLost}</b>) — and now <b>OVR ${fr.myOvr}</b> to their ${fr.rvOvr}. You've simply moved up a level. A new rival will rise to meet you.</div></div>`;
 }
 // season-summary rivalry card from this season's head-to-head outcome
 function rivalCardHTML(rr){ if(!rr) return '';
@@ -2965,7 +3009,7 @@ function startSeason(majorsOnly){
   const field=roster.map(g=>Object.assign({you:false},g));
   field.push(me);
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0}]))};
-  S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null;   // unlocked during THIS season (shown on the summary)
+  S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null;   // unlocked during THIS season (shown on the summary)
   S.curEvt=null;
   track('season_started',{mode:S.daily?'daily':(majorsOnly?'majors':'full'),ovr:Math.round(me.skill),year:S.year||1});
   S.screen='season'; render();
@@ -3634,7 +3678,9 @@ function scrSummary(){
     S.career=S.career||{money:0,net:0,wins:0,majors:0,top10:0,best:99,seasons:[],winsList:[]};
     // emergent rivalry: bank this season's series result vs your current nemesis (before accruing/forming)
     if(!S.daily){ const rvNow=S.career.rival;
-      if(rvNow && rr && rr.status==='h2h'){ if(rr.beat) rvNow.seasonsWon=(rvNow.seasonsWon||0)+1; else if(rr.rvAhead>rr.meAhead) rvNow.seasonsLost=(rvNow.seasonsLost||0)+1; } }
+      if(rvNow && rr && rr.status==='h2h'){
+        if(rr.beat){ rvNow.seasonsWon=(rvNow.seasonsWon||0)+1; rvNow.seriesStreak=(rvNow.seriesStreak||0)+1; }
+        else if(rr.rvAhead>rr.meAhead){ rvNow.seasonsLost=(rvNow.seasonsLost||0)+1; rvNow.seriesStreak=0; } } }
     S.career.winsList=S.career.winsList||[];
     S.career.money+=t.money; S.career.net+=ec.net; S.career.wins+=t.wins; S.career.majors+=t.majors; S.career.top10+=t.top10;
     if(t.best<S.career.best)S.career.best=t.best;
@@ -3653,8 +3699,8 @@ function scrSummary(){
     // accumulate career earnings vs the (persistent) field for the multi-year money list
     S.career.fieldMoney=S.career.fieldMoney||{};
     Object.entries(S.season.totals).forEach(([n,v])=>{ S.career.fieldMoney[n]=(S.career.fieldMoney[n]||0)+v.money; });
-    // emergent rivalry: tally head-to-head, then (once you've played a few seasons) crown a nemesis
-    if(!S.daily){ accrueH2H(); maybeFormRival(); }   // maybeFormRival sets S.career.rival + S.freshRival
+    // emergent rivalry: tally head-to-head, graduate a rivalry you've outgrown, then crown a fresh nemesis
+    if(!S.daily){ accrueH2H(); maybeOutgrowRival(); maybeFormRival(); }   // sets S.career.rival + S.freshRival/freshRivalOutgrown
     // ---- season-level achievement flags + evaluation (lt is now updated by recordSeason) ----
     if(!S.daily){ const cList=Object.entries(S.career.fieldMoney).map(([n,money])=>({n,money})).sort((a,b)=>b.money-a.money);
       const cRank=cList.findIndex(x=>x.n===me.name)+1;
@@ -3727,6 +3773,7 @@ function scrSummary(){
   tilesB.appendChild(statTile('Majors',t.majors+''));
   add(tilesB);
   if(HL) add($(headlinesHTML(HL)));
+  if(S.freshRivalOutgrown) add($(rivalOutgrownHTML(S.freshRivalOutgrown)));
   if(S.freshRival) add($(rivalFormedHTML(S.freshRival)));
   if(S.rivalOutcome) add($(rivalCardHTML(S.rivalOutcome)));
   // the actual tournaments won this season (majors flagged in gold)

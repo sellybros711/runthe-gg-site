@@ -1385,6 +1385,20 @@ allows Google Fonts, or self-host Anton.*
   screenshot build 90→**92**; the earlier 92-98 build still **95**; lopsided exploit **81**; a brutal cherry-pick
   (four 99s, rest 60) reads **69**; all-99 → 99; balanced 86; Scheffler **91**, field span 74–91. No errors.
 
+- Outgrowing a rivalry (owner: "should you move onto a new rival once your overall increases?")
+  A rivalry can now GRADUATE when you've clearly left a rival behind — gated on BOTH a sustained OVR gap
+  (`RIVAL_OUTGROW_GAP=6`) AND a winning season-series streak (`RIVAL_OUTGROW_STREAK=2`), so a *close* rivalry
+  runs your whole career and only a stale, one-sided one ends. One-directional per owner: only when YOU pull
+  ahead — if a rival ascends past you, you keep chasing (no graduation). `maybeOutgrowRival()` (runs after the
+  series tally, before `maybeFormRival`) banks the full record to `S.career.pastRivals` (kept, not deleted),
+  shows a green "✓ Rivalry Outgrown" triumph card on the summary (`rivalOutgrownHTML`), and a fresh PEER-level
+  nemesis emerges. Key fix: the peer-match band (`RIVAL_BAND` 7→**5**) is now tighter than the outgrow gap (6)
+  so a just-graduated rival (≥6 below you) can't be immediately re-picked. `rivalStatusNode` gained a "Past
+  rivalries" ledger; two achievements added (Left Them Behind / Always Climbing, keyed off `rivalsOutgrown`).
+  Verified with a 20-season engine MC: a contested rivalry lasted 12 yrs (rival even led the series early) and
+  only graduated at gap 6 + streak, banking a tight 141–134; replacements were always genuine peers, never the
+  outgrown player; `pastRivals` records correct; both cards render clean; no errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
