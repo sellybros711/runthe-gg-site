@@ -1360,6 +1360,20 @@ allows Google Fonts, or self-host Anton.*
   keeps its played/top-10/best Major Championships board above the accordion). Verified visually + zero
   console errors. Helpers are shared/hoisted; `MAJOR_NAMES` constant added.
 
+- OVR overshoot fix + field aging parity (owner: "98 too high for these stats" + "real players regress too fast")
+  (1) **OVR stretch retuned.** The elite-spread in `ovrFromSkills` (`OVR_PIVOT` 82→**86**, `OVR_GAIN` 1.35→**1.15**)
+  was pushing a top-heavy build's OVR ABOVE almost all its own stats — a 93/98/96/94/92/97/94/93 bag (weighted
+  mean ~94.6) read **98**. Now it reads **95**, sitting at its mean (only the 96/97/98 stats exceed it), which
+  reads honestly. Verified: lopsided 81 unchanged, balanced ~85-86, Scheffler still the clear field #1 at 90.
+  (2) **Field ages like the user now.** The CPU arc regressed ~2× faster than the player and retired in the 40s
+  while the same-age user dominated. Fixed to mirror the user's curve: `ARCS` distance peak-end 28→**34** (flat
+  prime through 34 like the user's `PEAK_END_AGE`), all decline slopes ~halved, `ageArc` floor .45→**.58**;
+  `pRetire` onset 37→**41** and the climb gentled (competitive into the early 50s, forced out ~58 vs the old 55).
+  Verified over an 18-year sim: a star loses ~6 OVR across ages 30→50 (was ~10); **Scheffler is still a top-4
+  player at age 48** (88 OVR) instead of fading/retiring; ~29/57 of the original star cohort survive to Yr19 (was
+  ~13); field stays ~56% young/generated so youth breakouts + turnover are intact. `FIELD_RETIRE_AGE` (55) left
+  as-is — it only gates the 2026 starting field, so no 57-yos seed in. No console errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

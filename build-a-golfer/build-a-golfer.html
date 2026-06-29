@@ -1567,21 +1567,25 @@ const GOLFER_RARITY=Object.fromEntries(GOLFERS.map(g=>[g.name,g.rarity]));   // 
 /* ============ CAREER MODE — living world: aging, retirement, generated rookies (career spec §1-6) ============ */
 const CW={dist:.11,acc:.12,app:.21,sht:.10,scr:.08,bnk:.06,put:.19,clu:.13};
 const SKK=['dist','acc','app','sht','scr','bnk','put','clu'];
-const ARCS={dist:[.95,23,28,.011,40,.022],acc:[.89,29,35,.004,46,.010],app:[.86,28,34,.006,44,.014],
-  sht:[.88,29,38,.004,47,.010],scr:[.88,29,38,.004,47,.010],bnk:[.88,29,38,.004,47,.010],
-  put:[.89,27,34,.005,45,.012],clu:[.80,34,44,.002,50,.006]};
+// Field aging mirrors the USER'S arc (flat prime through ~34, then a gentle fade) so real stars don't
+// regress faster than the player does. Distance peaks to 34 (was 28); decline slopes ~halved; floor lifted
+// in ageArc. [floor, peak-start, peak-end, decline/yr to knee, knee-age, decline/yr after knee].
+const ARCS={dist:[.95,23,34,.006,42,.013],acc:[.89,29,35,.0025,46,.007],app:[.86,28,35,.004,44,.009],
+  sht:[.88,29,38,.0025,47,.007],scr:[.88,29,38,.0025,47,.007],bnk:[.88,29,38,.0025,47,.007],
+  put:[.89,27,35,.003,45,.008],clu:[.80,34,44,.0015,50,.004]};
 const CAREER_START_YEAR=2026, WORLD_TARGET=150;
 function ageArc(s,age){const[fl,ps,pe,d1,d2a,d2]=ARCS[s];
   if(age<=ps) return clamp(fl+(1-fl)*(age-16)/(ps-16),fl,1);
   if(age<=pe) return 1;
-  return Math.max(.45, 1 - d1*(Math.min(age,d2a)-pe) - d2*Math.max(0,age-d2a));}
+  return Math.max(.58, 1 - d1*(Math.min(age,d2a)-pe) - d2*Math.max(0,age-d2a));}
 function skillPotential(g){ if(g._sp) return g._sp; const sp={}; SKK.forEach(s=>{const a=ageArc(s,g.arc_age||32); sp[s]=clamp(Math.round((g[s]||60)/a),(g[s]||60),99);}); g._sp=sp; return sp;}
 function livingOf(g,simYear){const age=simYear-(g.born||1990), sp=skillPotential(g), ls={};
   SKK.forEach(s=>ls[s]=clamp(Math.round(sp[s]*ageArc(s,age)),40,99));
   return {age,ls,ov:Math.round(SKK.reduce((a,s)=>a+ls[s]*CW[s],0))};}
-function pRetire(age,lo){let p; if(age<37)p=0; else if(age<=44)p=.01*(age-36)+(lo<74?.06:0);
-  /* softened 50-54 band so aging stars hang on closer to the age-55 cap (~3-4 final seasons) */
-  else if(age<=49)p=.10+.06*(age-45)+(lo<76?.10:0); else if(age<=54)p=.16+.10*(age-50); else p=1; return Math.min(1,p);}
+// Retirement onset pushed to 41 and the climb gentled so real careers run as long as the user's (competitive
+// into the early 50s, forced out by ~58) instead of fading out in the 40s while the same-age player dominates.
+function pRetire(age,lo){let p; if(age<41)p=0; else if(age<=48)p=.008*(age-40)+(lo<74?.05:0);
+  else if(age<=55)p=.064+.045*(age-48)+(lo<76?.08:0); else if(age<=57)p=.38+.14*(age-55); else p=1; return Math.min(1,p);}
 function cgauss(rng,m,s){let u=0,v=0;while(!u)u=rng();while(!v)v=rng();return m+s*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
 const NAT_W=[['USA',.34],['England',.08],['Australia',.06],['South Korea',.06],['Japan',.05],['South Africa',.04],['Spain',.03],['Sweden',.03],['Canada',.03],['Ireland',.025],['Germany',.02],['Argentina',.02],['France',.02],['Italy',.015],['Denmark',.015],['Other',.14]];
 const NAT_CODE={USA:'USA',England:'ENG',Australia:'AUS','South Korea':'KOR',Japan:'JPN','South Africa':'RSA',Spain:'ESP',Sweden:'SWE',Canada:'CAN',Ireland:'IRL',Germany:'GER',Argentina:'ARG',France:'FRA',Italy:'ITA',Denmark:'DEN',Other:'INT'};
@@ -1842,7 +1846,7 @@ const filledCount=()=>CATS.filter(c=>S.slots[c.k]).length;
    lopsided "cherry-picked" bag (it ignores the volatility that weak links cause), which then gets matched
    against true elites. (1) penalise weak links (downside spread) so the number reflects how the build
    PLAYS; (4) gently stretch the top so the world's best read elite. */
-const OVR_IMBALANCE_K=0.85, OVR_PIVOT=82, OVR_GAIN=1.35;
+const OVR_IMBALANCE_K=0.85, OVR_PIVOT=86, OVR_GAIN=1.15;
 function ovrFromSkills(sk){
   const vals=CATS.map(c=>(sk[c.k]!=null?sk[c.k]:REPLACEMENT));
   const wmean=CATS.reduce((s,c,i)=>s+vals[i]*c.w,0);                 // weighted mean (as before)
