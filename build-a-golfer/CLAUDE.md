@@ -1399,6 +1399,17 @@ allows Google Fonts, or self-host Anton.*
   only graduated at gap 6 + streak, banking a tight 141–134; replacements were always genuine peers, never the
   outgrown player; `pastRivals` records correct; both cards render clean; no errors.
 
+- Live Tour Rep meter on the season summary (owner: "show the player their live tour rep… move from old to new")
+  When you unlock achievements at season's end, a new `repProgressNode(oldPts,newPts)` animates your Tour Rep
+  counting up from the old total to the new one (ease-out, ~1.4s), with the bar filling in real time and
+  FLOWING THROUGH any rank-up (each frame re-resolves `repTier(cur)`, so the bar tops out, the tier label
+  flips, and it keeps filling in the next tier). Shows a green "+N" gain ticker, the tier name, pts, and "X
+  pts to <next>". `oldPts = achPoints() − Σ(S.freshAch.pts)`. Placed right after the "Achievements unlocked"
+  list (before the rank-up promotion card). Animates once per screen via `S._repAnimShown` (reset in
+  startSeason + endCareer; re-renders show the settled state). Also on the career-end ceremony (animated when
+  career-completion achievements unlock, else a static `repHeaderHTML` of the final standing). Verified: count
+  + bar animate old→new and cross a Tour Pro→Contender boundary cleanly; no console errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
