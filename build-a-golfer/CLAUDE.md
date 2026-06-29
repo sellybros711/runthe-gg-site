@@ -1399,16 +1399,18 @@ allows Google Fonts, or self-host Anton.*
   only graduated at gap 6 + streak, banking a tight 141–134; replacements were always genuine peers, never the
   outgrown player; `pastRivals` records correct; both cards render clean; no errors.
 
-- Live Tour Rep meter on the season summary (owner: "show the player their live tour rep… move from old to new")
-  When you unlock achievements at season's end, a new `repProgressNode(oldPts,newPts)` animates your Tour Rep
-  counting up from the old total to the new one (ease-out, ~1.4s), with the bar filling in real time and
-  FLOWING THROUGH any rank-up (each frame re-resolves `repTier(cur)`, so the bar tops out, the tier label
-  flips, and it keeps filling in the next tier). Shows a green "+N" gain ticker, the tier name, pts, and "X
-  pts to <next>". `oldPts = achPoints() − Σ(S.freshAch.pts)`. Placed right after the "Achievements unlocked"
-  list (before the rank-up promotion card). Animates once per screen via `S._repAnimShown` (reset in
-  startSeason + endCareer; re-renders show the settled state). Also on the career-end ceremony (animated when
-  career-completion achievements unlock, else a static `repHeaderHTML` of the final standing). Verified: count
-  + bar animate old→new and cross a Tour Pro→Contender boundary cleanly; no console errors.
+- Live Tour Rep meter + one-by-one achievement reveal (owner: "show live tour rep… move old→new"; then "show
+  the achievements unlocked, under the status bar, in a list, revealing one by one"; "only come up if an
+  achievement is unlocked")
+  `seasonRepNode(oldPts, list)`: the Tour Rep STATUS BAR sits on top; the just-unlocked achievements reveal
+  ONE BY ONE underneath (each fades/slides in ~`STEP` apart, STEP scales 320–680ms with count), and as each
+  row pops in the meter climbs by THAT achievement's points (ease-out tween, flowing through any rank-up —
+  the bar tops out, the tier flips, it keeps filling). Green "+N" ticker, tier, pts, "X pts to <next>".
+  `oldPts = achPoints() − Σ(fresh.pts)`. Plays once per screen via `S._repAnimShown` (reset in startSeason +
+  endCareer; re-renders settle). Shown ONLY when achievements unlocked — season summary gates on
+  `S.freshAch.length`, career-end on `S.careerFreshAch.length` (no static fallback). Replaces the old
+  `achEarnedHTML`+`repProgressNode` pair at both spots. Verified: 4-achievement reveal staggers correctly,
+  rep climbs in sync (+46 mid → +155 settled), nothing renders without an unlock; no console errors.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,

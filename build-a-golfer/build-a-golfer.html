@@ -911,31 +911,48 @@ function repHeaderHTML(){ const pts=achPoints(), r=repTier(pts), done=achCount()
 // LIVE Tour Rep meter for the season summary / career-end: counts pts from old→new and fills the bar in
 // real time, flowing through any rank-up so the player watches their progress climb. Animates once per
 // screen (re-renders show the final state); shown when you unlocked achievements that moment.
-function repProgressNode(oldPts, newPts){
-  const gain=Math.max(0, newPts-oldPts), done=achCount();
-  const box=$(`<div class="scout" style="max-width:520px;margin:4px auto 12px;border-color:var(--gold)"></div>`);
-  box.innerHTML=`
+// Tour Rep status bar on TOP, then the just-unlocked achievements revealed ONE BY ONE underneath — and as
+// each one pops in, the rep meter climbs by that achievement's points (flowing through any rank-up). Plays
+// once per screen (re-renders show the settled state).
+function seasonRepNode(oldPts, list){
+  const newPts=achPoints(), gain=Math.max(0,newPts-oldPts), done=achCount();
+  const wrap=$(`<div style="max-width:520px;margin:4px auto 12px"></div>`);
+  // --- the status bar ---
+  const meter=$(`<div class="scout" style="margin:0 auto 8px;border-color:var(--gold)"></div>`);
+  meter.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
       <div><div class="small muted" style="letter-spacing:.14em;text-transform:uppercase;font-size:10px">Tour Rep${gain>0?` · <span class="rep-gain" style="color:#35d6a0;font-weight:800">+0</span>`:''}</div>
         <div class="rep-tier" style="font-family:var(--serif);font-weight:800;font-size:22px;color:var(--gold);line-height:1.05">—</div></div>
       <div style="text-align:right"><div class="rep-pts" style="font-family:var(--mono);font-weight:800;font-size:18px;color:var(--oncard)">${oldPts} pts</div>
-        <div class="small muted rep-done">${done}/${ACH_TOTAL} done</div></div></div>
+        <div class="small muted">${done}/${ACH_TOTAL} done</div></div></div>
     <div style="margin-top:9px;height:9px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden"><span class="rep-bar" style="display:block;height:100%;width:0%;background:linear-gradient(90deg,#e6a91f,#f6cd74)"></span></div>
     <div class="small muted center rep-foot" style="margin-top:5px"></div>`;
-  const tierEl=box.querySelector('.rep-tier'), ptsEl=box.querySelector('.rep-pts'), barEl=box.querySelector('.rep-bar'),
-        footEl=box.querySelector('.rep-foot'), gainEl=box.querySelector('.rep-gain');
-  function paint(cur){ const r=repTier(cur), goat=(r.tier.name==='G.O.A.T.');
+  wrap.appendChild(meter);
+  const tierEl=meter.querySelector('.rep-tier'), ptsEl=meter.querySelector('.rep-pts'), barEl=meter.querySelector('.rep-bar'),
+        footEl=meter.querySelector('.rep-foot'), gainEl=meter.querySelector('.rep-gain');
+  function paint(cur){ const r=repTier(cur), goat=(r.tier.name==='G.O.A.T.'), c=Math.round(cur);
     const lo=r.tier.at, hi=r.next?r.next.at:ACH_TOTAL_PTS, frac=hi>lo?Math.max(0,Math.min(1,(cur-lo)/(hi-lo))):1;
-    tierEl.textContent=(goat?'🐐 ':'')+r.tier.name; ptsEl.textContent=cur+' pts'; barEl.style.width=Math.round(frac*100)+'%';
-    if(gainEl) gainEl.textContent='+'+(cur-oldPts);
-    footEl.innerHTML=goat?'<b style="color:#f6cd74">Every achievement complete.</b>':(r.next?`${hi-cur} pts to <b style="color:var(--gold)">${esc(r.next.name)}</b>`:''); }
-  if(S._repAnimShown || gain<=0){ paint(newPts); return box; }   // already played, or nothing gained → static
+    tierEl.textContent=(goat?'🐐 ':'')+r.tier.name; ptsEl.textContent=c+' pts'; barEl.style.width=(frac*100).toFixed(1)+'%';
+    if(gainEl) gainEl.textContent='+'+(c-oldPts);
+    footEl.innerHTML=goat?'<b style="color:#f6cd74">Every achievement complete.</b>':(r.next?`${hi-c} pts to <b style="color:var(--gold)">${esc(r.next.name)}</b>`:''); }
+  // --- the unlocked-achievement list, revealed one at a time ---
+  const listBox=$(`<div class="scout" style="margin:0 auto;border-color:#ffd76a"><b style="color:var(--gold);display:block;text-align:center;margin-bottom:2px">Achievement${list.length>1?'s':''} unlocked</b></div>`);
+  wrap.appendChild(listBox);
+  const rows=list.map(a=>{ const row=$(`<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 2px;border-top:1px solid rgba(255,255,255,.07);opacity:0;transform:translateY(7px);transition:opacity .32s ease,transform .32s ease">
+    <span style="display:flex;align-items:baseline;gap:7px;flex:0 0 auto;white-space:nowrap"><b style="color:#ffd76a">🏅 ${esc(a.name)}</b><span class="small" style="color:#35d6a0;font-weight:800">+${a.pts}</span></span>
+    <span class="small muted" style="flex:1 1 auto;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(a.desc.replace(/\.$/,''))}</span></div>`);
+    listBox.appendChild(row); return row; });
+  const show=row=>{ row.style.opacity='1'; row.style.transform='none'; };
+  if(S._repAnimShown || gain<=0 || !list.length){ paint(newPts); rows.forEach(show); return wrap; }   // already played → settled
   S._repAnimShown=true; paint(oldPts);
-  const DUR=1400, now=()=>((typeof performance!=='undefined'&&performance.now)?performance.now():Date.now()), t0=now();
-  (function frame(){ const t=Math.min(1,(now()-t0)/DUR), e=1-Math.pow(1-t,3);   // ease-out cubic
-    paint(Math.round(oldPts+(newPts-oldPts)*e));
-    if(t<1) requestAnimationFrame(frame); else paint(newPts); })();
-  return box;
+  const N=list.length, STEP=Math.min(680,Math.max(320,Math.round(3800/N))), TWEEN=Math.min(560,STEP-60);
+  const now=()=>((typeof performance!=='undefined'&&performance.now)?performance.now():Date.now());
+  function tween(from,to){ const t0=now(); (function fr(){ const t=Math.min(1,(now()-t0)/TWEEN), e=1-Math.pow(1-t,3);
+    paint(from+(to-from)*e); if(t<1) requestAnimationFrame(fr); else paint(to); })(); }
+  let cum=oldPts;
+  list.forEach((a,i)=>setTimeout(()=>{ show(rows[i]); const to=cum+(a.pts||0); tween(cum,to); cum=to;
+    if(i===N-1) setTimeout(()=>paint(newPts), TWEEN+40); }, i*STEP));
+  return wrap;
 }
 // collapsible achievement checklist by category (checkbox fills on completion; progress bar while in progress)
 function achListHTML(){ const m=achMetrics(), u=achState().unlocked, open=S.achOpen||{};
@@ -3785,9 +3802,8 @@ function scrSummary(){
   }
   add(expWrap);
   if(S.freshAch&&S.freshAch.length){
-    add($(achEarnedHTML(S.freshAch)));
-    const gained=S.freshAch.reduce((s,a)=>s+(a.pts||0),0), np=achPoints();
-    add(repProgressNode(np-gained, np));   // live Tour Rep meter — counts up from old → new
+    const gained=S.freshAch.reduce((s,a)=>s+(a.pts||0),0);
+    add(seasonRepNode(achPoints()-gained, S.freshAch));   // status bar on top → achievements reveal one by one, rep climbs in sync
   }
   if(S.freshRep){ add($(repUpHTML(S.freshRep))); }
   // season headlines (#6): newspaper-style recap of the year's story
@@ -4866,11 +4882,10 @@ function scrCareerEnd(){
   const cv=document.createElement('canvas'); cv.style.cssText='width:100%;max-width:300px;display:block;margin:16px auto 4px;border-radius:14px;border:1px solid var(--line)';
   drawCareerCard(cv,{name:S.name||'Your Golfer',ovr:Math.round(buildPlayer().skill),years:e.years,money:c.money,net:c.net,wins:c.wins,majors:c.majors,cRank:0,cN:0},careerVals);
   add(cv);
-  if(S.careerFreshAch&&S.careerFreshAch.length){
-    add($(achEarnedHTML(S.careerFreshAch)));
-    const gained=S.careerFreshAch.reduce((s,a)=>s+(a.pts||0),0), np=achPoints();
-    add(repProgressNode(np-gained, np));
-  } else { add($(repHeaderHTML())); }   // no fresh ach → show the static career-long Tour Rep standing
+  if(S.careerFreshAch&&S.careerFreshAch.length){   // only when achievements unlocked — never otherwise
+    const gained=S.careerFreshAch.reduce((s,a)=>s+(a.pts||0),0);
+    add(seasonRepNode(achPoints()-gained, S.careerFreshAch));
+  }
   if(S.freshRep){ add($(repUpHTML(S.freshRep))); }
   const share=`RUNTHETOUR CAREER — ${S.name||'Your Golfer'}\n${e.years} seasons on tour · net worth ${fmtSigned(c.net)}\n${c.wins}W · ${c.majors} majors · ${fmt(c.money)} earned\nhttps://runthe.gg/golf`;
   const row=$(`<div class="mini" style="margin-top:10px;max-width:520px;margin-left:auto;margin-right:auto"></div>`);
