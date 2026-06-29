@@ -1374,6 +1374,17 @@ allows Google Fonts, or self-host Anton.*
   ~13); field stays ~56% young/generated so youth breakouts + turnover are intact. `FIELD_RETIRE_AGE` (55) left
   as-is — it only gates the 2026 starting field, so no 57-yos seed in. No console errors.
 
+- OVR formula simplified to weighted-mean + deadband penalty (owner: a 92/98/88/94/94/89/92/88 build "too low" at 90)
+  The penalty-then-stretch model mis-served the upper-mid: a strong build with one heavier-weighted stat a
+  few points lower (here approach 88, weight .21) got docked below its weighted mean (read 90 vs mean 91.5),
+  while the elite "stretch" over-rewarded the very top. Replaced with: **OVR = weighted mean − K·max(0, dd −
+  DEADBAND)** (`OVR_IMBALANCE_K` 0.85→**1.37**, new `OVR_DEADBAND=2.2`, `OVR_PIVOT`/`OVR_GAIN` removed). A `dd`
+  (downside-deviation) deadband lets any normal/strong build read at its true average; only sizeable spread —
+  the cherry-pick exploit (dump cheap categories to max the expensive ones) — gets penalised, and harder than
+  before (K up). No stretch, so a build never reads above its own weighted average → intuitive. Verified: the
+  screenshot build 90→**92**; the earlier 92-98 build still **95**; lopsided exploit **81**; a brutal cherry-pick
+  (four 99s, rest 60) reads **69**; all-99 → 99; balanced 86; Scheffler **91**, field span 74–91. No errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
