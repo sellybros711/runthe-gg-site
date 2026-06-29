@@ -855,11 +855,11 @@ function repTierFor(pts, count){
   return {tier:t, next:nx}; }
 function repTier(pts){ pts=pts==null?achPoints():pts; return repTierFor(pts, achCount()); }
 function repTierName(pts){ return repTierFor(pts, pts>=ACH_TOTAL_PTS?ACH_TOTAL:0).tier.name; }   // pts-only (e.g. other players on the board)
-// Tour Rep perk: off-season CHANGES + RE-SPINS as a BASELINE + BONUS (never a handicap). Everyone starts
-// generous (2 changes + 1 re-spin); climbing ADDS on top up to the MAX of 3 changes + 3 re-spins (reached
-// at Contender). Higher ranks beyond that are rewarded by prestige, not more perks.
-const REP_PERKS={ 'Amateur':[2,1], 'Journeyman':[2,2], 'Tour Pro':[3,2], 'Contender':[3,3], 'Star':[3,3],
-  'Champion':[3,3], 'Legend':[3,3], 'Icon':[3,3], 'G.O.A.T.':[3,3] };
+// Tour Rep perk: off-season CHANGES + RE-SPINS. A long, steady climb — almost every rank-up grants a
+// change or a re-spin — from a modest floor (1 change + 1 re-spin) up to the MAX of 3 changes + 3 re-spins,
+// reached at Legend (rank 7 of 9). Icon / G.O.A.T. are rewarded by prestige, not more perks. [changes, re-spins]
+const REP_PERKS={ 'Amateur':[1,1], 'Journeyman':[2,1], 'Tour Pro':[2,2], 'Contender':[2,2], 'Star':[3,2],
+  'Champion':[3,2], 'Legend':[3,3], 'Icon':[3,3], 'G.O.A.T.':[3,3] };
 function repPerk(){ const p=REP_PERKS[repTier().tier.name]||[3,2]; return {changes:p[0], reSpins:p[1]}; }
 function repPerk2(name){ const p=REP_PERKS[name]||[3,2]; return {changes:p[0], reSpins:p[1]}; }   // for the next-rank teaser
 // situational-flag recorder: inc (add), max (keep largest), set (boolean/flag)

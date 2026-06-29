@@ -1412,6 +1412,15 @@ allows Google Fonts, or self-host Anton.*
   `achEarnedHTML`+`repProgressNode` pair at both spots. Verified: 4-achievement reveal staggers correctly,
   rep climbs in sync (+46 mid → +155 settled), nothing renders without an unlock; no console errors.
 
+- Off-season perk progression spread out (owner: "spread it out more… longer progression but the max 3 and 3")
+  The old `REP_PERKS` maxed at 3 changes + 3 re-spins by CONTENDER (rank 4 of 9), so the top 5 ranks were all
+  identical — no reason to climb. Re-tuned to a long, steady climb (floor lowered to 1 change + 1 re-spin):
+  Amateur 1/1 → Journeyman 2/1 → Tour Pro 2/2 → Contender 2/2 → Star 3/2 → Champion 3/2 → **Legend 3/3** →
+  Icon 3/3 → G.O.A.T. 3/3. Same max (3/3) but it's now reached at Legend (rank 7) with most rank-ups granting
+  a change or a re-spin along the way; Icon/G.O.A.T. stay prestige-only. The off-season teaser already handles
+  flat (perk-less) rank-ups (shows the rank's perk, no "+N" line). Verified the table reads correctly; the
+  perk floor is gentler for brand-new accounts (1/1 vs the old 2/1) by design, to make room for the climb.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
