@@ -1845,19 +1845,19 @@ if(LS.get('bag_dark',false))document.body.classList.add('dark');
 
 const filledCount=()=>CATS.filter(c=>S.slots[c.k]).length;
 /* Imbalance-aware OVERALL — for DISPLAY + matchmaking only. The sim itself reads raw per-skill values
-   (eventOverall), so a player's actual finishes are unchanged. A flat weighted average overrates a
-   lopsided "cherry-picked" bag (it ignores the volatility that weak links cause), which then gets matched
-   against true elites. (1) penalise weak links (downside spread) so the number reflects how the build
-   PLAYS; (4) gently stretch the top so the world's best read elite. */
-const OVR_IMBALANCE_K=0.85, OVR_PIVOT=86, OVR_GAIN=1.15;
+   (eventOverall), so a player's actual finishes are unchanged. The OVR is your WEIGHTED MEAN, minus a
+   penalty that ONLY bites for genuinely lopsided "cherry-picked" bags (cheap categories dumped to max the
+   expensive ones). A `dd` deadband lets a normal strong build — even one with a heavier-weighted stat a few
+   points lower — read at its true average; only sizeable downside spread (the exploit) gets docked. No
+   elite "stretch": a build never reads above its own weighted average, so the number stays intuitive. */
+const OVR_IMBALANCE_K=1.37, OVR_DEADBAND=2.2;
 function ovrFromSkills(sk){
   const vals=CATS.map(c=>(sk[c.k]!=null?sk[c.k]:REPLACEMENT));
-  const wmean=CATS.reduce((s,c,i)=>s+vals[i]*c.w,0);                 // weighted mean (as before)
+  const wmean=CATS.reduce((s,c,i)=>s+vals[i]*c.w,0);                 // weighted mean
   const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
-  const below=vals.filter(v=>v<mean).map(v=>mean-v);                 // downside deviation — weak links hurt
+  const below=vals.filter(v=>v<mean).map(v=>mean-v);                 // downside deviation — weak links
   const dd=below.length?Math.sqrt(below.reduce((a,b)=>a+b*b,0)/vals.length):0;
-  let o=wmean - OVR_IMBALANCE_K*dd;
-  if(o>OVR_PIVOT) o=OVR_PIVOT+(o-OVR_PIVOT)*OVR_GAIN;                // stretch the elite top
+  const o=wmean - OVR_IMBALANCE_K*Math.max(0, dd-OVR_DEADBAND);      // only cherry-picked spread is penalised
   return Math.max(40, Math.min(99, o)); }
 function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
   CATS.forEach(c=>p[c.k]=S.slots[c.k]?S.slots[c.k].value:REPLACEMENT);
