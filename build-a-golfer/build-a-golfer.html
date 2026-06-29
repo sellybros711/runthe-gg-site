@@ -380,9 +380,12 @@
   .accsum{list-style:none; cursor:pointer; display:flex; align-items:center; gap:9px; padding:11px 14px; font-size:13.5px; color:var(--oncard); user-select:none}
   .accsum::-webkit-details-marker{display:none}
   .accsum.nochev{cursor:default}
-  .acc .chev{transition:transform .15s ease; color:var(--gold); font-size:11px; flex:0 0 auto; width:10px; text-align:center}
-  .acc .chev.dim{color:var(--muted)}
-  .acc[open] .chev{transform:rotate(90deg)}
+  .acc .chev{transition:transform .15s ease, background .15s ease; color:var(--gold); font-size:15px; font-weight:900; line-height:1;
+    flex:0 0 auto; width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center;
+    border-radius:8px; background:rgba(235,166,31,.16); border:1px solid rgba(235,166,31,.42)}
+  .acc .chev.dim{color:var(--muted); font-size:13px; background:transparent; border-color:transparent}
+  .acc[open] .chev{transform:rotate(90deg); background:rgba(235,166,31,.28); border-color:var(--gold)}
+  .accsum:hover .chev:not(.dim){background:rgba(235,166,31,.26)}
   .acc .yrtag{flex:0 0 auto; font-family:var(--mono); color:var(--muted); font-weight:700; min-width:48px}
   .acc .acctitle{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:800}
   .acc .acctitle.thin{font-weight:600}
