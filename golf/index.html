@@ -1381,7 +1381,11 @@ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 // BASE re-bisected for this ~120 field (the eligible pool runs mean ~82 with stars to 95, so BASE is
 // higher than the spec's mean-80 starting values). COURSE_SD = a per-event difficulty draw that models
 // course/weather variance (gives the real winner-score spread). Validated vs the spec's target table.
-const SIM={reg:{base:0.91,sigma:2.80,csd:0.90}, maj:{base:2.74,sigma:2.90,csd:1.45}};
+// sigma = per-player per-round noise (the one lever that drives finish-position variance; csd is a
+// field-wide weekly draw that cancels in the standings). Trimmed ~16% from the DataGolf baseline
+// (2.80/2.90) to tighten season-to-season swings so a clearly better build tracks its skill more
+// reliably, while keeping enough randomness for upsets/youth breakouts. base & csd unchanged.
+const SIM={reg:{base:0.91,sigma:2.35,csd:0.90}, maj:{base:2.74,sigma:2.45,csd:1.45}};
 const SKILLSLOPE=0.238;
 function simRound(eo,clu,{major,finalRd,courseAdj}){
   const k=major?SIM.maj:SIM.reg;
