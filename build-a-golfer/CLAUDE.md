@@ -1331,6 +1331,24 @@ allows Google Fonts, or self-host Anton.*
   clamps at 99; the real-world #1 (Scheffler) computes to ~92 by design, leaving 92→99 headroom for an
   all-time created build. Knob lives at the `SIM` const; drop to 2.30/2.40 for slightly tighter.
 
+- Emergent rivalry — replaces the manual pick-a-rival (owner: "I like the emergent version… analyze who
+  would be a good rival after a few years and then assign them")
+  Ripped out the manual picker (`rivalPickerNode`/`rivalCandidates`/`setRival`/`clearRival`/`S.pendingRival`).
+  The game now WATCHES your career: `accrueH2H()` tallies, per opponent, every event you both played —
+  events, who finished ahead, the position gap, and "near" finishes (within `RIVAL_NEAR=6` spots) — into
+  `S.career.h2h` (pruned after 5 idle years to stay bounded over a 40y career). After `RIVAL_MIN_SEASONS=3`,
+  `maybeFormRival()` crowns the highest-scoring still-active opponent as your nemesis (`rivalScore = near *
+  (0.6+0.4*balance)`, where balance favours a contested ~50/50 record + `RIVAL_MIN_EV=30` so it's someone
+  you've genuinely battled). It sets `S.career.rival` + `S.freshRival` → a gold "⚔️ A Rivalry Is Born" card
+  on that season's summary. From then on `rivalSeasonResult()` drives the season head-to-head card (unchanged)
+  and banks a season-series W/L on the rival; the rival's OVR refreshes each off-season. `reconcileRival()`
+  (off-season, after `advanceWorld`) detects a rival who's aged off the tour → farewell on the tune-up screen
+  (`rivalStatusNode`, read-only) + frees the slot so a new nemesis can emerge. Verified with a faithful
+  multi-season engine MC: rival emerges Y3 across seeds as a genuine close peer (e.g. Matt Wallace 81 @ 23–24
+  H2H, Niemann 84 @ 24–24, Ryan Gerard 81 @ 27–21); a 40-year run cycles form→persist→age→retire→re-emerge
+  (incl. next-gen generated players) with zero errors; all 5 display states render clean. "Got Beef" ach +
+  the Rivalry tee/wins untouched (now keyed off the emergent rival). Supersedes the manual pick-a-rival note.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
