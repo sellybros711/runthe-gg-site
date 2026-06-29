@@ -1319,6 +1319,18 @@ allows Google Fonts, or self-host Anton.*
   both = tie/skip), robust to single-event variance. Card shows the `meAhead–rvAhead` record + money ranks;
   season headlines + picker copy updated to match. Did NOT touch season variance (owner declined #5).
 
+- Reduced season variance (#5) (owner: "let's run #5")
+  The sim's per-player per-round noise (`SIM.reg.sigma`/`SIM.maj.sigma`) was trimmed ~16% from the
+  DataGolf baseline 2.80/2.90 → **2.35/2.45**. `sigma` is the ONLY term that drives finish-position
+  variance — `csd`/`courseAdj` is a field-wide weekly draw that cancels in the standings, and `base`/
+  `SKILLSLOPE` (0.238, DataGolf-measured) were left untouched. Faithful season Monte Carlo (400 seasons,
+  seed 12345, real engine via `beginEvent`/`simNextRound`): a strong OVR-90 build's money-rank IQR 11→8,
+  p10–p90 2–23→3–19, season win-rate .55→.60; a mid 86 build IQR 24→19; the lopsided 81 build's p90 64→60.
+  Medians barely move — the wild tails compress, so a clearly-better build tracks its skill more reliably
+  while upsets/youth-breakouts still happen. NOTE on the OVR ceiling: there is no 92 cap — `ovrFromSkills`
+  clamps at 99; the real-world #1 (Scheffler) computes to ~92 by design, leaving 92→99 headroom for an
+  all-time created build. Knob lives at the `SIM` const; drop to 2.30/2.40 for slightly tighter.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
