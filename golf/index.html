@@ -1118,11 +1118,13 @@ function todayKey(){const d=new Date();return d.getUTCFullYear()*10000+(d.getUTC
 // device — otherwise one person's daily "done"/streak bleeds onto every other account that
 // signs in on the same browser. Guests (signed out) share the unscoped key.
 function acctKey(base){ return (typeof sbUser!=='undefined'&&sbUser&&sbUser.id)?base+'@'+sbUser.id:base; }
-const DAILY_MAX_ATTEMPTS=3;   // plays allowed per account per day; best score is the one that counts
+const DAILY_MAX_ATTEMPTS=3;   // plays allowed per ACCOUNT per day; best score is the one that counts
+const GUEST_DAILY_ATTEMPTS=1; // guests get a single attempt (per browser), then must sign in for more
+function dailyMaxAttempts(){ return sbSignedIn()?DAILY_MAX_ATTEMPTS:GUEST_DAILY_ATTEMPTS; }
 function dailyState(){return LS.get(acctKey('bag_daily'),null);}
 function dailyToday(){const dd=dailyState();return (dd&&dd.date===todayKey())?dd:null;}
 function dailyAttempts(){const dd=dailyToday(); if(!dd)return 0; return dd.attempts!=null?dd.attempts:(dd.done?1:0);}
-function dailyAttemptsLeft(){return Math.max(0,DAILY_MAX_ATTEMPTS-dailyAttempts());}
+function dailyAttemptsLeft(){return Math.max(0,dailyMaxAttempts()-dailyAttempts());}
 function dailyBest(){const dd=dailyToday(); return dd?(dd.best||dd.result||null):null;}
 function dailyDoneToday(){return dailyAttemptsLeft()<=0;}   // "done" = all attempts used
 function startDaily(){
@@ -2683,6 +2685,8 @@ function unlockPerks(){
   return `<div class="perkhd">Free account unlocks</div><div class="perks">${p.map(x=>`<div class="perk"><span class="pic">${x[0]}</span><span class="pt"><b>${x[1]}</b><span>${x[2]}</span></span></div>`).join('')}</div>`;
 }
 function overlayAccount(screen){
+  // signing in to claim a daily round → run the claim and drop back to the result screen, not the profile
+  if(S._dailyClaimFlow && sbSignedIn()){ maybeClaimDaily(); S._dailyClaimFlow=false; S.overlay=null; S.screen='dailyresult'; render(); return; }
   // signed in + has a username → the profile lives on the Player overlay
   if(sbSignedIn() && sbUsername && S.acctMode!=='username'){ S.overlay='record'; render(); return; }
   const mode = sbSignedIn() ? 'username' : (S.acctMode==='signup'?'signup':'signin');
@@ -2694,7 +2698,10 @@ function overlayAccount(screen){
   const box=ov.querySelector('.authbox');
   const go=async(fn)=>{ if(S.acctBusy)return; S.acctErr=''; S.acctBusy=true; render();
     try{ await fn(); }catch(e){ S.acctBusy=false; S.acctErr=e.message||'Something went wrong.'; render(); return; }
-    S.acctBusy=false; if(sbSignedIn()&&sbUsername) S.overlay='record'; render(); };
+    S.acctBusy=false;
+    if(S._dailyClaimFlow && sbSignedIn()){ maybeClaimDaily(); S._dailyClaimFlow=false; S.overlay=null; S.screen='dailyresult'; }
+    else if(sbSignedIn()&&sbUsername) S.overlay='record';
+    render(); };
   if(mode==='username'){
     box.innerHTML=`<p class="lede" style="margin:0 0 10px;text-align:left">Choose how you'll show up on the leaderboards, 3–20 letters or numbers.</p>
       <input class="name" id="au-user" maxlength="20" placeholder="e.g. BirdieKing" autocomplete="off">
@@ -2994,7 +3001,7 @@ function scrTitle(){
   let dMain, dSub, dCls;
   if(datt===0){ dMain='Daily Challenge'; dSub='Beat the tour average at a new famous course every day'; dCls='blue'; }
   else if(dleft<=0){ dMain=`Daily Challenge · ${dwon?'Beaten ✓':'Done'}`; dSub=`Best ${dtp(dbest.total)}${dwon?', you beat the tour average':' · came up short of the tour average'} · new course at midnight UTC`; dCls='gold'; }
-  else { dMain=`Daily Challenge · ${dleft} left`; dSub=`Best ${dtp(dbest.total)} · ${dwon?'tour average beaten ✓, go lower':'beat the tour average to win'} (${DAILY_MAX_ATTEMPTS} tries/day)`; dCls='blue'; }
+  else { dMain=`Daily Challenge · ${dleft} left`; dSub=`Best ${dtp(dbest.total)} · ${dwon?'tour average beaten ✓, go lower':'beat the tour average to win'} (${dailyMaxAttempts()} tr${dailyMaxAttempts()===1?'y':'ies'}/day)`; dCls='blue'; }
   const daily=$(`<button class="btn ${dCls}" style="margin-top:10px">${dMain}<span class="sub">${dSub}</span></button>`);
   daily.onclick=startDailyChallenge;
   stack.appendChild(daily);
@@ -5345,9 +5352,9 @@ function dCondLabel(c){ return {calm:'☼ Calm',breezy:'≈ Breezy',windy:'≋ W
 function dShort(name){ return String(name).split('(')[0].trim(); }
 function startDailyChallenge(){
   S.special=false;   // entering the regular daily — never treat it as a Spotlight
+  // already played today → show their best round + the right CTA (Play again, or Sign in for guests / out of attempts)
+  if(dailyAttempts()>0){ S.daily=true; S.dailyResult=null; S.dailyClaimMsg=null; S.screen='dailyresult'; render(); return; }
   if(dailyAttemptsLeft()<=0){ S.overlay='dailydone'; render(); return; }
-  // already played at least once today (attempts remain) → show their best round + Play again
-  if(dailyAttempts()>0){ S.daily=true; S.dailyResult=null; S.screen='dailyresult'; render(); return; }
   beginDailyAttempt();
 }
 function beginDailyAttempt(){
@@ -5610,7 +5617,9 @@ function finishDailyRound(){
   if(S.special) return finishSpotlightRound();
   if(S.dailyResult)return;
   const total=S.dailyHoles.reduce((s,h)=>s+h.toPar,0), c=DAILY_COURSES[S.dailyCourse];
-  const isRec=recordCourseScore(S.dailyCourse,total,S.dailyOvr,sbUsername||S.name||'You');
+  const signedIn=sbSignedIn();
+  // guests can't claim a course record or post to the global board — they sign in to log the score
+  const isRec=signedIn?recordCourseScore(S.dailyCourse,total,S.dailyOvr,sbUsername||S.name||'You'):false;
   const holes=S.dailyHoles.map(h=>({par:h.par,toPar:h.toPar}));   // compact — enough to redraw the scorecard
   const avg=dTourAvg(c), won=total<avg;   // beat the real tour scoring average = won the day
   const decisions={plan:S.dailyPlan,att:(S.dailyAttempt||0),attacks:S.dailyHoles.filter(h=>h.attack!=null).map(h=>({n:h.n,a:h.attack}))};
@@ -5625,11 +5634,40 @@ function finishDailyRound(){
   const improved=!best||total<best.total; if(improved) best=S.dailyResult;
   S.dailyAttemptNo=attempts; S.dailyImproved=improved;
   LS.set(acctKey('bag_daily'),{date:S.dailySeed,attempts,best,result:S.dailyResult});
-  track('daily_completed',{course:S.dailyCourse,total,attempt:attempts,best:best.total,won,avg});
-  if(improved) sbSubmitDaily(best);   // post the new best to the global board (fails open if signed out/offline)
+  track('daily_completed',{course:S.dailyCourse,total,attempt:attempts,best:best.total,won,avg,guest:!signedIn});
+  if(improved && signedIn) sbSubmitDaily(best);   // only accounts post to the board; guests post on sign-in (gated by attempts)
+  // remember this guest round so signing in from the result screen logs it to the account (consuming an attempt)
+  S._claimDaily = signedIn ? null : S.dailyResult;
+  S.dailyClaimMsg=null;
   captureDailyFeats(S.dailyHoles,total,S.dailyCourse,isRec);
   S._repAnimShown=false; S.dailyFreshAch=evaluateAch();   // show the Tour Rep meter + reveal on the result page
   S.screen='dailyresult'; render();
+}
+// When a guest signs in (or creates an account) with a just-played daily round waiting, log that round
+// to the account: it counts as ONE of the account's daily attempts, may set a course record, and posts to
+// the global board. If the account is already out of attempts today, it can't be submitted. Runs once
+// (clears S._claimDaily). Returns true if it handled a pending claim.
+function maybeClaimDaily(){
+  if(!S._claimDaily || !sbSignedIn()) return false;
+  const r=S._claimDaily;
+  if(!r || r.day!==todayKey()){ S._claimDaily=null; return false; }   // only today's round is claimable
+  S._claimDaily=null;
+  if(dailyAttemptsLeft()<=0){
+    S.dailyClaimMsg={ok:false, used:dailyAttempts(), max:dailyMaxAttempts()};
+    toast("Out of attempts today — score not submitted");
+    return true;
+  }
+  const prev=dailyToday(); const attempts=(prev?dailyAttempts():0)+1;
+  let best=prev?(prev.best||prev.result||null):null;
+  const improved=!best||r.total<best.total; if(improved) best=r;
+  const isRec=recordCourseScore(r.course,r.total,r.ovr,sbUsername||S.name||'You'); r.record=isRec;
+  LS.set(acctKey('bag_daily'),{date:r.day,attempts,best,result:r});
+  S.dailyAttemptNo=attempts; S.dailyImproved=improved; S.dailyResult=r;
+  bumpStreak(); bumpDailyStats(!!r.won);                   // the round now counts on the account's daily record
+  if(improved) sbSubmitDaily(best);                        // post to the global board / course records
+  S.dailyClaimMsg={ok:true, attempt:attempts, max:dailyMaxAttempts(), total:r.total, record:isRec, improved};
+  toast('✓ Score saved to your account'+(isRec?' · course record!':''));
+  return true;
 }
 /* ---- signature-hole decision scenarios: a course-aware risk/reward dilemma at each
    signature hole, drawn from the hole's real hazard + your situation vs the tour average ---- */
@@ -5851,6 +5889,16 @@ function scrDailyResult(){
     ${wonDay?`<b style="color:#35d6a0;font-size:17px">🏁 You beat the pro!</b>`:`<b style="color:var(--oncard);font-size:16px">Short of the tour average</b>`}
     <div class="small muted" style="margin-top:3px">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}${(best&&best.total!==total)?` · best today ${dtp(best.total)} ${wonDay?'(winner)':''}`:''}</div>
     ${(wonDay&&left>0)?`<div class="small" style="margin-top:5px;color:#35d6a0;font-weight:700">Challenge cleared. Use your ${left} remaining attempt${left>1?'s':''} to go even lower and chase the course record.</div>`:''}</div>`));
+  // result of logging a guest round to a just-signed-in account (saved, or out of attempts)
+  if(S.dailyClaimMsg){ const m=S.dailyClaimMsg;
+    add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:${m.ok?'#35d6a0':'#E14A33'}">
+      ${m.ok?`<b style="color:#35d6a0">✓ Saved to your account</b><div class="small muted" style="margin-top:3px">Logged as attempt ${m.attempt} of ${m.max}${m.record?' · 🏆 course record!':''}.</div>`
+            :`<b style="color:#E14A33">Couldn't submit this score</b><div class="small muted" style="margin-top:3px">This account is out of daily attempts (${m.used}/${m.max} used today). A new course drops at midnight UTC.</div>`}</div>`)); }
+  // guests: one attempt, no course records — sign in to log this score and unlock more attempts
+  if(!sbSignedIn()){
+    add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:var(--gold);background:rgba(235,166,31,.06)">
+      <b style="color:var(--gold)">Save this score to your account</b>
+      <div class="small muted" style="margin-top:3px">Guests get ${GUEST_DAILY_ATTEMPTS} attempt a day and can't hold course records. Sign in to log this round, unlock ${DAILY_MAX_ATTEMPTS} attempts a day, and chase the record.</div></div>`)); }
   // reassurance: an attempt that didn't beat your best of the day still keeps your best — swing freely
   if(justPlayed && (S.dailyAttemptNo||attempts)>1 && !S.dailyImproved){
     add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#7ec8ff">
@@ -5865,7 +5913,7 @@ function scrDailyResult(){
   // attempts + best-of-day (the best is what's logged to the leaderboard)
   const bestTxt = best?`Best today <b style="color:var(--gold)">${dtp(best.total)}</b> (${best.par+best.total})`:'';
   const newBest = justPlayed && S.dailyImproved && attempts>1;
-  add($(`<div class="small muted center" style="margin:0 0 10px">${justPlayed?`Attempt ${S.dailyAttemptNo||attempts} of ${DAILY_MAX_ATTEMPTS} · `:''}${bestTxt}${newBest?' · <span style="color:#35d6a0;font-weight:800">new personal best!</span>':''}<br>Your best of the day is logged to the leaderboard.</div>`));
+  add($(`<div class="small muted center" style="margin:0 0 10px">${justPlayed?`Attempt ${S.dailyAttemptNo||attempts} of ${dailyMaxAttempts()} · `:''}${bestTxt}${newBest?' · <span style="color:#35d6a0;font-weight:800">new personal best!</span>':''}<br>${sbSignedIn()?'Your best of the day is logged to the leaderboard.':'Sign in to log your best to the leaderboard.'}</div>`));
   // percentile vs today's global board (when enough rounds posted)
   if(dbCache && dbCache.ok && dbCache.day===_ds2 && dbCache.rows.length>=5){
     const mine=best?best.total:total, beat=dbCache.rows.filter(x=>x.to_par>mine).length, pct=Math.round(100*beat/dbCache.rows.length);
@@ -5903,14 +5951,19 @@ function scrDailyResult(){
   const shr=$(`<button class="btn goldfill" style="max-width:520px;margin:14px auto 0">↗ Share your result<span class="sub">Emoji scorecard, challenge a friend</span></button>`);
   shr.onclick=()=>{ track('daily_result_shared'); shareText(dailyShareText(shareR)); }; add(shr);
   add($(`<div style="height:10px"></div>`));
-  if(left>0){
-    const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">${wonDay?'Go lower ▸':'Play again ▸'}<span class="sub">${wonDay?`Pro beaten, chase a lower score (${left} left)`:`${left} of ${DAILY_MAX_ATTEMPTS} attempt${left>1?'s':''} left, beat the tour average`}</span></button>`);
+  if(!sbSignedIn()){
+    // guest: primary action is signing in (which logs this score and unlocks more attempts)
+    const si=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">🔐 Sign in to save this score ▸<span class="sub">Log it to your account &amp; unlock ${DAILY_MAX_ATTEMPTS} attempts a day</span></button>`);
+    si.onclick=()=>{ S._dailyClaimFlow=true; S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); }; add(si);
+    const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
+  } else if(left>0){
+    const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">${wonDay?'Go lower ▸':'Play again ▸'}<span class="sub">${wonDay?`Pro beaten, chase a lower score (${left} left)`:`${left} of ${dailyMaxAttempts()} attempt${left>1?'s':''} left, beat the tour average`}</span></button>`);
     again.onclick=beginDailyAttempt; add(again);
     const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
   } else {
     const cr=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Course Records ▸<span class="sub">See every course's record holder</span></button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
   }
-  const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Back to title</button>`); home.onclick=()=>{S.screen='title';S.daily=false;render();}; add(home);
+  const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Back to title</button>`); home.onclick=()=>{S._claimDaily=null;S._dailyClaimFlow=false;S.dailyClaimMsg=null;S.screen='title';S.daily=false;render();}; add(home);
   add($(`<p class="small muted center" style="margin-top:12px">${left>0?`${left} attempt${left>1?'s':''} left today · `:''}A new course drops at midnight UTC · streak ${streakDisplay()} 🔥</p>`));
 }
 function overlayCourseRecords(screen){
@@ -6107,7 +6160,9 @@ async function sbApply(session){
     await sbLoadProfile();
     S.acctMode=sbUsername?'profile':'username';   // drop to username picker if none yet
     flushPendingSeasons();   // post every season queued while signed out / offline
-    if(_pendingDaily){ const d=_pendingDaily; _pendingDaily=null; sbSubmitDaily(d); }
+    maybeClaimDaily();        // log a guest-played daily round to the account (consumes one of its attempts)
+    if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
+    if(_pendingDaily){ _pendingDaily=null; }   // legacy guest stash is no longer auto-posted (claim flow gates it)
     if(oauth){                                    // just came back from Google → confirm on the title screen
       if(sbUsername) toast('Signed in as '+esc(sbUsername));
       else { S.overlay='account'; S.acctMode='username'; }
