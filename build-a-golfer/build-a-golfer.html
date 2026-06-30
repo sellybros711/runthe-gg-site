@@ -810,7 +810,7 @@ const ACH=[].concat(
    {id:'gs_title',cat:'Getting Started',name:'Dressed for Success',desc:'Equip a player title.',                 goal:1,pts:10,get:m=>m.titleSet},
    {id:'gs_finale',cat:'Getting Started',name:'Made It to the End',desc:'Reach the season finale.',              goal:1,pts:10,get:m=>m.played}],
   // ---- Winning ----
-  [{id:'win_finale',cat:'Winning',name:'Tour Championship', desc:'Win the season finale.',                  goal:1,pts:60, get:m=>m.wonFinale},
+  [{id:'win_finale',cat:'Winning',name:'Cup Champion', desc:'Win the Tour Championship and lift the Cup.',                  goal:1,pts:60, get:m=>m.wonFinale},
    {id:'win_players',cat:'Winning',name:'The Fifth Major',  desc:'Win The Players Championship.',           goal:1,pts:50, get:m=>m.wonPlayers},
    {id:'win_sig',   cat:'Winning',name:'Signature Win',     desc:'Win a signature event.',                  goal:1,pts:35, get:m=>m.wonSignature}],
   // ---- Majors ----
@@ -1420,7 +1420,17 @@ function drawGolfer(rng,pool,revealed){
 // signature events, the two FedEx playoffs + the Tour Championship finale) that recur every year,
 // PLUS a ROTATING slate drawn from REG_POOL so a career doesn't replay the same smaller
 // tournaments each season. `wk` orders everything chronologically (Jan → Tour Championship).
-const mkEvt=e=>({name:e[0],purse:e[1]*1e6,type:e[2],wk:e[3],major:e[2]==='major',big:(e[2]==='major'||e[2]==='sig'||e[2]==='finale')});
+// FedEx-style playoffs: the last 3 events cut the field by season points (70 → 50 → 30, no cut), and the
+// finale uses staggered "Starting Strokes" (the points leader tees off at -10). cap = field size by points.
+const PLAYOFF_EV={
+  'FedEx St. Jude Championship':{cap:70,stage:1},
+  'BMW Championship':           {cap:50,stage:2},
+  'Tour Championship':          {cap:30,stage:3,stagger:true},
+};
+// East Lake starting strokes by points seed (1st=-10 … 30th=even)
+const STAGGER=[-10,-8,-7,-6,-5,-4,-4,-3,-3,-3,-2,-2,-2,-2,-2,-1,-1,-1,-1,-1,0,0,0,0,0,0,0,0,0,0];
+const mkEvt=e=>{ const o={name:e[0],purse:e[1]*1e6,type:e[2],wk:e[3],major:e[2]==='major',big:(e[2]==='major'||e[2]==='sig'||e[2]==='finale')};
+  const p=PLAYOFF_EV[e[0]]; if(p){ o.playoff=true; o.cap=p.cap; o.stage=p.stage; o.noCut=true; o.stagger=!!p.stagger; } return o; };
 const ANCHORS=[
   ['Kapalua Invitational',20,'sig',1],
   ['Pebble Beach Pro-Am',20,'sig',6],
@@ -3150,8 +3160,14 @@ function beginEvent(){
   const evt=S.schedule[S.evtIndex];
   const ew=eventWeights(evt);                                   // course-fit weights for this event
   const courseAdj=gauss()*(evt.major?SIM.maj.csd:SIM.reg.csd);  // one course/weather difficulty draw for the week
-  S.curEvt={evt, idx:S.evtIndex, roundsDone:0, done:false, order:null, courseAdj,
-    players:S.season.field.map(p=>({p, eo:eventOverall(p,ew), rounds:[null,null,null,null], total:0, made:true}))};
+  // FedEx playoffs: only the top-`cap` players by season points tee it up; the finale staggers starting strokes.
+  let field=S.season.field, stagger=null;
+  if(evt.playoff){
+    field=[...S.season.field].sort((a,b)=>(S.season.totals[b.name].points||0)-(S.season.totals[a.name].points||0)).slice(0,evt.cap);
+    if(evt.stagger){ stagger={}; field.forEach((p,i)=>{ stagger[p.name]=STAGGER[Math.min(i,STAGGER.length-1)]; }); }
+  }
+  S.curEvt={evt, idx:S.evtIndex, roundsDone:0, done:false, order:null, courseAdj, stagger:!!stagger,
+    players:field.map(p=>({p, eo:eventOverall(p,ew), rounds:[null,null,null,null], total:stagger?stagger[p.name]:0, start:stagger?stagger[p.name]:0, made:true}))};
   simNextRound();   // play Thursday immediately so the first frame has scores
 }
 function simNextRound(){
@@ -3159,7 +3175,7 @@ function simNextRound(){
   const r=ce.roundsDone, major=ce.evt.major, finalRd=(r===3);
   ce.players.forEach(o=>{ if(r>=2 && !o.made) return; const s=simRound(o.eo,o.p.clu,{major,finalRd,courseAdj:ce.courseAdj}); o.rounds[r]=s; o.total+=s; });
   ce.roundsDone=r+1;
-  if(ce.roundsDone===2){   // 36-hole cut: ~top 65 make the weekend (DataGolf spec §3)
+  if(ce.roundsDone===2 && !ce.evt.noCut){   // 36-hole cut: ~top 65 make the weekend (DataGolf spec §3); playoff events have no cut
     const sorted=[...ce.players].sort((a,b)=>a.total-b.total);
     const cutN=Math.min(65,ce.players.length);
     const cutScore=sorted[cutN-1].total;
@@ -3265,6 +3281,8 @@ function finalizeEvent(){
       const fresh=evaluateAch(); if(fresh.length){ S.freshAch=(S.freshAch||[]).concat(fresh); }
     }
   }
+  // the staggered finale crowns the season-long Cup champion (East Lake winner = FedExCup champ)
+  if(ce.stagger && order.length){ S.season.cupChampion=order[0].p.name; S.season.cupYouWon=!!order[0].p.you; }
   S.season.results.push({evt,order,playoff:ce.playoff}); ce.done=true; ce.order=order;
 }
 function liveOrder(ce){   // current standings mid-event; assigns _pos / _tied (tie-aware)
@@ -3281,7 +3299,10 @@ function advanceEvent(){ if(S.evtIndex>=S.schedule.length-1){ S.screen='summary'
 function skipToEnd(){
   clearTimeout(seasonTimer);
   while(S.curEvt && !S.curEvt.done) simNextRound();
-  while(S.evtIndex < S.schedule.length-1){ S.evtIndex++; S.curEvt=null; beginEvent(); while(!S.curEvt.done) simNextRound(); }
+  while(S.evtIndex < S.schedule.length-1){ S.evtIndex++; S.curEvt=null;
+    const evt=S.schedule[S.evtIndex];
+    if(evt.playoff && !S.daily && !S.season.eliminated){ const mr=pointsRank(S.season.me.name); if(mr>evt.cap) S.season.eliminated={stage:evt.stage,rank:mr,event:evt.name,cap:evt.cap}; }
+    beginEvent(); while(!S.curEvt.done) simNextRound(); }
   S.screen='summary'; render();
 }
 function liveRow(o,pos,you,done){
@@ -3468,8 +3489,67 @@ function celebrateWin(evt, o, opts){
   if(autoAdv) celebTimer=setTimeout(finish, major?2600:2000);
   else if(!major) celebTimer=setTimeout(finish, 2000);
 }
+// where the player sits on the season points list (1 = leader)
+function pointsRank(name){
+  return Object.entries(S.season.totals).map(([n,v])=>({n,p:v.points})).sort((a,b)=>b.p-a.p).findIndex(r=>r.n===name)+1;
+}
+// simulate the rest of the schedule with no UI (used when the player is eliminated from the
+// playoffs but the world still needs to crown a Cup champion)
+function finishSeasonHeadless(){
+  while(true){
+    S.curEvt=null; beginEvent(); while(S.curEvt && !S.curEvt.done) simNextRound();
+    if(S.evtIndex>=S.schedule.length-1) break;
+    S.evtIndex++;
+  }
+}
+// live "Race to the Cup" strip: your points rank vs the next cut line (top 70 → 50 → 30 → the Cup)
+function raceToCupNode(byPts, evt){
+  const meName=S.season.me.name;
+  const rank=byPts.findIndex(r=>r.n===meName)+1;
+  const myPts=Math.round((byPts.find(r=>r.n===meName)||{}).points||0);
+  const fmtP=n=>Math.round(n).toLocaleString();
+  let gate=0, verb='', into='';
+  if(!evt.playoff){ gate=70; verb='reach the FedEx Playoffs'; into='FedEx St. Jude Championship'; }
+  else if(evt.stage===1){ gate=50; verb='advance to the BMW Championship'; into='BMW Championship'; }
+  else if(evt.stage===2){ gate=30; verb='advance to East Lake'; into='Tour Championship'; }
+  const finale=(gate===0);
+  let detail, inside=true, line=gate;
+  if(finale){ detail='You made the 30-man finale. Win the Tour Championship to lift the Cup.'; }
+  else {
+    inside=rank<=gate; const lineP=Math.round((byPts[gate-1]||{points:0}).points||0);
+    if(inside){ const cu=gate-rank; detail=cu>0?`Inside the top ${gate} with ${cu} spot${cu===1?'':'s'} to spare. Hold to ${verb}.`:`On the bubble at #${gate}. Hold your spot to ${verb}.`; }
+    else { detail=`${rank-gate} spot${rank-gate===1?'':'s'} outside the top ${gate} (about ${fmtP(lineP-myPts)} pts back). Climb to ${verb}.`; }
+  }
+  const NP=byPts.length;
+  const fillPct=finale?100:Math.max(3,Math.min(100,100*(1-(rank-1)/Math.max(1,NP-1))));
+  const linePct=finale?0:Math.max(0,Math.min(100,100*(1-(gate-1)/Math.max(1,NP-1))));
+  const col=finale?'var(--gold)':(inside?'#35d6a0':'#E14A33');
+  const wrap=$(`<div class="race2cup" style="background:#0a2740;border:1px solid var(--line);border-radius:13px;padding:11px 13px;margin:0 0 12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+      <div style="min-width:0"><div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">${finale?'🏆 The Cup is on the line':'Race to the Cup'}</div>
+        <div class="small" style="margin-top:3px;color:var(--oncard)">${detail}</div></div>
+      <div style="text-align:right;flex:0 0 auto"><div class="mono" style="font-weight:800;font-size:20px;color:${col}">#${rank}</div>
+        <div class="small muted" style="margin-top:1px">${fmtP(myPts)} pts</div></div>
+    </div>
+    <div style="position:relative;height:8px;border-radius:5px;background:#06223a;margin-top:9px;overflow:hidden">
+      <div style="position:absolute;left:0;top:0;bottom:0;width:${fillPct}%;background:${col};opacity:.85;border-radius:5px"></div>
+      ${finale?'':`<div title="Top ${gate} line" style="position:absolute;left:${linePct}%;top:-2px;bottom:-2px;width:2px;background:#f9d271;box-shadow:0 0 4px #f9d271"></div>`}
+    </div>
+  </div>`);
+  return wrap;
+}
 function scrSeason(){
   clearTimeout(seasonTimer);
+  // FedEx playoffs: if you didn't qualify for this stage's field, your season is over.
+  // Finish the playoffs headlessly (so a Cup champion is still crowned) and jump to the summary.
+  const up=S.schedule[S.evtIndex];
+  if(up && up.playoff && !S.daily && !S.season.eliminated){
+    const mr=pointsRank(S.season.me.name);
+    if(mr>up.cap){
+      S.season.eliminated={stage:up.stage, rank:mr, event:up.name, cap:up.cap};
+      finishSeasonHeadless(); clearTimeout(seasonTimer); S.screen='summary'; render(); return;
+    }
+  }
   if(!S.curEvt || S.curEvt.idx!==S.evtIndex) beginEvent();
   const ce=S.curEvt, evt=ce.evt;
   if(evt.major) RT.classList.add('major-screen');
@@ -3498,8 +3578,9 @@ function scrSeason(){
     <div class="sstat"><div class="k">Best</div><div class="v">${high}</div></div>
   </div>`));
   if(evt.major) add($(`<div class="majorbanner">★ Major Championship ★</div>`));
+  if(!S.daily && t.played) add(raceToCupNode(byPts, evt));
 
-  const typeLbl=evt.major?'<span class="major">Major</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
+  const typeLbl=evt.major?'<span class="major">Major</span>':evt.stagger?'<span class="sig">🏆 Cup Finale · top 30</span>':evt.playoff?`<span class="sig">Playoff · top ${evt.cap}</span>`:evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
   const dayLbl=ce.done?'Final':(ce.roundsDone>=2&&!ce.players.find(o=>o.p.you).made?`After ${DAYS[1]}`:`${DAYS[Math.max(0,ce.roundsDone-1)]} · Round ${Math.min(ce.roundsDone,4)}/4`);
   const cols=$(`<div class="cols seasoncols"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col scorecol"></div>`);
@@ -3859,6 +3940,26 @@ function scrSummary(){
   if(S.daily&&!S.dailyStored){S.dailyStored=true; bumpStreak(); track('daily_completed',{net:Math.round(ec.net),moneyRank});
     LS.set(acctKey('bag_daily'),{date:S.dailySeed,done:true,result:{name:me.name,ovr,net:ec.net,money:t.money,moneyRank,N,wins:t.wins,majors:t.majors,best:t.best}});}
   add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':(S.year>1?('Career Mode · Year '+S.year+' complete'):'Season complete')}</span></div>`));
+  // Race to the Cup outcome — champion, eliminated, or finished the season in the standings
+  if(!S.daily){
+    const el=S.season.eliminated, champ=S.season.cupChampion;
+    if(S.season.cupYouWon){
+      add($(`<div class="center" style="margin:10px 0 2px"><div style="display:inline-block;background:linear-gradient(180deg,#1c5638,#0c2e1d);border:1px solid var(--gold);border-radius:14px;padding:13px 20px">
+        <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">FedEx Cup</div>
+        <div style="font:800 22px/1.1 var(--body);color:var(--gold);margin-top:6px">🏆 You are the Cup Champion</div>
+        <div class="small muted" style="margin-top:4px">Won the Tour Championship at East Lake · ${fedexRank===1?'led the Race wire-to-wire':'#'+fedexRank+' seed surged to the title'}</div></div></div>`));
+    } else if(el){
+      add($(`<div class="center" style="margin:10px 0 2px"><div style="display:inline-block;background:#0a2740;border:1px solid #E14A33;border-radius:14px;padding:12px 18px">
+        <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:#E14A33">Playoffs · eliminated</div>
+        <div style="font:800 17px/1.15 var(--body);color:var(--oncard);margin-top:6px">Bounced at the ${esc(el.event)}</div>
+        <div class="small muted" style="margin-top:4px">Finished #${el.rank} in the Race to the Cup${champ?` · ${esc(champ)} took the Cup`:''}</div></div></div>`));
+    } else if(champ){
+      add($(`<div class="center" style="margin:10px 0 2px"><div style="display:inline-block;background:#0a2740;border:1px solid var(--line);border-radius:14px;padding:12px 18px">
+        <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">Race to the Cup</div>
+        <div style="font:800 17px/1.15 var(--body);color:var(--oncard);margin-top:6px">#${fedexRank} in the final standings</div>
+        <div class="small muted" style="margin-top:4px">🏆 ${esc(champ)} won the Cup at East Lake</div></div></div>`));
+    }
+  }
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
   add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS+' · ')}${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
   const netCol=ec.net>=0?'#35d6a0':'#E14A33';

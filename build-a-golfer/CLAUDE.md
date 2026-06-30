@@ -1481,6 +1481,23 @@ allows Google Fonts, or self-host Anton.*
   cache key. `patternRow` picker chips (locks + toast req) for Shirt + Hat. Verified all 8 render clipped on
   shirt & cap, picker shows locks, no errors. Customization feature COMPLETE (colors+hats pt1, patterns pt2).
 
+- PGA realism pt1 — Race to the Cup + real FedEx playoffs — DONE. The last 3 schedule anchors are now a
+  true playoff: `PLAYOFF_EV` tags FedEx St. Jude (cap 70, stage 1), BMW (cap 50, stage 2), Tour Championship
+  (cap 30, stage 3, staggered). `mkEvt` stamps `{playoff,cap,stage,noCut,stagger}`. `beginEvent` reduces the
+  field to the top-`cap` players by season points; the finale seeds staggered Starting Strokes from `STAGGER`
+  [-10..0] onto each qualifier's starting `total` (points leader tees off -10, East Lake style). `simNextRound`
+  skips the 36-hole cut on `noCut` events (playoff events play all 4 rounds, no cut). Elimination: a scrSeason
+  guard (mirrored in skipToEnd) detects when the player's points rank > the stage cap, sets
+  `S.season.eliminated`, and `finishSeasonHeadless()` sims the rest so a Cup champ is still crowned, then jumps
+  to the summary. The staggered finale winner = `S.season.cupChampion` (East Lake winner = Cup champ);
+  `cupYouWon` flags a player title. UI: live `raceToCupNode` strip on the season screen (rank vs the next cut
+  line 70->50->30->Cup, cushion/back, progress bar w/ gold cut-line marker); playoff `typeLbl` ("Playoff top N",
+  "Cup Finale top 30"); summary banner (Cup Champion / eliminated-at-stage / final-standings). Renamed
+  `win_finale` achievement to "Cup Champion". Verified via Monte Carlo (field 70/50/30, no cut, stagger -10..0,
+  elite make/win Cup, weak eliminated at stage 1 w/ champ crowned) + UI smoke test (live frame, Cup summary,
+  eliminated path all render, zero page errors). NEXT in roadmap: World Ranking (OWGR) + Tour Card/relegation,
+  then season awards (POY/ROY), Olympics, Ryder/Presidents Cup match-play.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
