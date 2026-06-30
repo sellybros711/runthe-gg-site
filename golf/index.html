@@ -2779,6 +2779,13 @@ function overlayLeaderboard(screen){
   const lbRep=r=>{ const rp=(r&&r.rep_pts!=null)?repTierName(r.rep_pts):null; return (rp&&rp!=='Amateur')?(rp==='G.O.A.T.'?'🐐 G.O.A.T.':rp):null; };
   const globalOk = view && view.ok;
   const globalRows = globalOk ? view.rows : [];
+  // guest sign-in prompt shown inside the board — rendered in EVERY state (full / empty / local-fallback)
+  // so a signed-out player always gets it on every tab, not just when the global board has rows.
+  const guestBoardCTA = !sbSignedIn() ? `<div class="lockcta" style="text-align:center;padding:18px 12px;margin-top:10px">
+      <div style="font-size:22px;line-height:1">🔒</div>
+      <b style="color:var(--gold);display:block;margin-top:5px">Sign in to see the full board</b>
+      <div class="small muted" style="margin:3px auto 11px;max-width:320px">Post your seasons and careers to claim your rank on the global leaderboard.</div>
+      <div style="display:flex;gap:8px;justify-content:center"><button class="btn gold" id="lb-lock-up" style="width:auto;padding:9px 14px;font-size:12px">Create account</button><button class="btn ghost" id="lb-lock-in" style="width:auto;padding:9px 14px;font-size:12px">Sign in</button></div></div>` : '';
   let board;
   if(!view || view.loading){
     board=`<div class="small muted center" style="padding:18px 8px">Loading the global board…</div>`;
@@ -2804,7 +2811,7 @@ function overlayLeaderboard(screen){
         : `<div class="lockcta"><b style="color:var(--gold)">🔒 Sign in to claim your spot</b><button class="btn gold" id="lb-lock-up" style="width:auto;padding:8px 13px;font-size:12px">Create account</button></div>`);
     }
   } else if(globalOk){
-    board=`<div class="small muted center" style="padding:18px 8px">No scores yet, be the first to post one.</div>`;
+    board=`<div class="small muted center" style="padding:18px 8px">No scores yet, be the first to post one.</div>`+guestBoardCTA;
   } else {
     // backend not reachable / migration not applied yet → local fallback (earnings only)
     if(tab==='season'){
@@ -2816,6 +2823,7 @@ function overlayLeaderboard(screen){
         ? lbRowHTML(1, youName, c.builds+' season'+(c.builds>1?'s':'')+' · '+(c.wins||0)+' win'+((c.wins||0)===1?'':'s'), `<span style="color:var(--gold)">${fmt(c.totalMoney)}</span>`,true)
         : `<div class="small muted center" style="padding:18px 8px">Play a season to bank career earnings.</div>`;
     }
+    board += guestBoardCTA;   // signed-out players still get the sign-in prompt in local-fallback mode
   }
   // sign-in banner reflects the shared RunThe.GG session — opens the in-game account flow
   const signCTA=`<button class="btn gold" id="lb-signin" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap">Sign in</button>`;
