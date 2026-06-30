@@ -571,7 +571,7 @@ function fmtMoneyShort(n){ n=Math.round(n);
 function ltDefault(){return {seasons:0,careers:0,wins:0,majors:0,top10:0,made:0,played:0,earnings:0,net:0,rivalWins:0,
   bestSeasonNet:0,profitSeasons:0,ironSeasons:0,moneyLeaderSeasons:0,slamSeasons:0,underdogSeasons:0,
   poySeasons:0,roySeasons:0,scoringSeasons:0,no1Seasons:0,weeksAtNo1:0,
-  olyGold:0,olySilver:0,olyBronze:0,
+  olyGold:0,olySilver:0,olyBronze:0,fedexCups:0,
   cupApps:0,cupWins:0,cupPoints:0,cupMatchWins:0,cupBest:0,cupCaptain:0,cupCaptainWins:0,
   maxOvr:0,distinctMajors:0,careerSlams:0,maj:{masters:0,champ:0,usopen:0,open:0}};}
 function badgeMetrics(c){ const lt=Object.assign(ltDefault(),(c||career()).lt||{});
@@ -691,16 +691,48 @@ const TROPHY_CABINET=[
   {k:'usopen', name:'U.S. Open',    svg:usOpenTrophySVG, short:'U.S. Open'},
   {k:'open',   name:'The Open',     svg:claretJugSVG,    short:'Claret Jug'},
 ];
+// one round medallion chip — emoji badge + count + label, dimmed when never earned (an aspirational slot)
+function trophyChip(emoji,label,n,col){
+  const won=n>0;
+  return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:58px;opacity:${won?1:0.34}">
+    <div style="width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:21px;background:${won?'radial-gradient(circle at 50% 32%,rgba(255,255,255,.14),rgba(0,0,0,.22))':'rgba(255,255,255,.03)'};border:1.5px solid ${won?col:'rgba(255,255,255,.13)'};box-shadow:${won?'0 2px 7px rgba(0,0,0,.4)':'none'};filter:${won?'none':'grayscale(1) opacity(.85)'}">${emoji}</div>
+    <div class="small" style="font-weight:800;color:${won?col:'var(--muted)'};font-size:11px;line-height:1">${won?'×'+n:'&ndash;'}</div>
+    <div class="small muted" style="font-size:8.5px;line-height:1.1;text-align:center">${label}</div></div>`;
+}
+function trophyShelf(title, chipsHTML){
+  return `<div style="margin-top:13px">
+    <div class="small muted" style="letter-spacing:.1em;text-transform:uppercase;font-size:9.5px;margin-bottom:8px;display:flex;align-items:center;gap:8px"><span>${title}</span><span style="flex:1;height:1px;background:rgba(255,255,255,.08)"></span></div>
+    <div style="display:flex;flex-wrap:wrap;gap:9px;justify-content:center">${chipsHTML}</div></div>`;
+}
 function trophyCabinetHTML(m){
-  const cells=TROPHY_CABINET.map(t=>{ const n=(m.maj&&m.maj[t.k])||0; const won=n>0;
+  // Shelf 1 — the four major trophies (full SVG art), dimmed until won
+  const majorCells=TROPHY_CABINET.map(t=>{ const n=(m.maj&&m.maj[t.k])||0; const won=n>0;
     return `<div style="text-align:center;opacity:${won?1:0.34}">
-      <div style="height:62px;display:flex;align-items:flex-end;justify-content:center;filter:${won?'drop-shadow(0 3px 6px rgba(0,0,0,.45))':'grayscale(1) brightness(0.7)'}">${t.svg()}</div>
-      <div class="small" style="margin-top:2px;font-weight:800;color:${won?'var(--gold)':'var(--muted)'}">${won?'×'+n:', '}</div>
+      <div style="height:58px;display:flex;align-items:flex-end;justify-content:center;filter:${won?'drop-shadow(0 3px 6px rgba(0,0,0,.45))':'grayscale(1) brightness(0.7)'}">${t.svg()}</div>
+      <div class="small" style="margin-top:2px;font-weight:800;color:${won?'var(--gold)':'var(--muted)'}">${won?'×'+n:'&ndash;'}</div>
       <div class="small muted" style="font-size:9.5px;line-height:1.15">${t.short}</div></div>`; }).join('');
-  return `<div class="scout" style="max-width:520px;margin:0 auto 14px">
-    <div class="small muted center" style="letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Trophy cabinet</div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;align-items:end">${cells}</div>
-    <div class="center small muted" style="margin-top:9px">Tour wins <b style="color:var(--gold)">${m.wins||0}</b> · Majors <b style="color:var(--gold)">${m.majors||0}</b>${spotWins()>0?` · ⭐ Spotlights <b style="color:#16b5a6">${spotWins()}</b>`:''}</div></div>`;
+  // Shelf 2 — Olympic medals + the big team / season-long trophies
+  const medals=trophyChip('🥇','Olympic Gold',m.olyGold||0,'#f4cf5b')
+    +trophyChip('🥈','Olympic Silver',m.olySilver||0,'#cbd2da')
+    +trophyChip('🥉','Olympic Bronze',m.olyBronze||0,'#cd8e5a')
+    +trophyChip('🏆','FedEx Cup',m.fedexCups||0,'var(--gold)')
+    +trophyChip('🏌','Team Cups',m.cupWins||0,'#7ec8ff')
+    +trophyChip('🎖','Captaincies',m.cupCaptain||0,'#e3b94f');
+  // Shelf 3 — season honours / awards
+  const honours=trophyChip('👑','Player of Year',m.poySeasons||0,'var(--gold)')
+    +trophyChip('🌟','Rookie of Year',m.roySeasons||0,'#9fe0c0')
+    +trophyChip('💰','Money Title',m.moneyLeaderSeasons||0,'#35d6a0')
+    +trophyChip('🎯','Scoring Title',m.scoringSeasons||0,'#7ec8ff')
+    +trophyChip('🌍','World No. 1',m.no1Seasons||0,'#f4cf5b');
+  return `<div class="scout" style="max-width:520px;margin:0 auto 14px;padding:13px 14px 15px">
+    <div class="center" style="font:800 12px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">🏆 Trophy Case</div>
+    <div style="margin-top:11px">
+      <div class="small muted" style="letter-spacing:.1em;text-transform:uppercase;font-size:9.5px;margin-bottom:8px;display:flex;align-items:center;gap:8px"><span>Major Championships</span><span style="flex:1;height:1px;background:rgba(255,255,255,.08)"></span></div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;align-items:end">${majorCells}</div>
+    </div>
+    ${trophyShelf('Medals &amp; Cups', medals)}
+    ${trophyShelf('Season Honours', honours)}
+    <div class="center small muted" style="margin-top:14px;padding-top:11px;border-top:1px solid rgba(255,255,255,.07)">Tour wins <b style="color:var(--gold)">${m.wins||0}</b> · Majors <b style="color:var(--gold)">${m.majors||0}</b>${(m.cupApps||0)>0?` · Cup apps <b style="color:#7ec8ff">${m.cupApps}</b>`:''}${spotWins()>0?` · ⭐ Spotlights <b style="color:#16b5a6">${spotWins()}</b>`:''}</div></div>`;
 }
 /* ================= ACHIEVEMENTS / MILESTONES (revamped profile) =================
    An extensive, categorised checklist. Each achievement has a get(m)>=goal test against a merged metric
@@ -4673,6 +4705,9 @@ function scrSummary(){
         if(aw.no1.you)S.career.awards.no1++;
         S.career.medals=S.career.medals||{gold:0,silver:0,bronze:0};
         if(med)S.career.medals[med]++; } }
+    // FedEx Cup title — lifetime counter for the Trophy Case (no prior running tally existed)
+    if(!S.daily && S.season.cupYouWon){ const c=career(), lt=(c.lt=Object.assign(ltDefault(),c.lt||{}));
+      lt.fedexCups=(lt.fedexCups||0)+1; LS.set('bag_career',c); S.career.fedexCups=(S.career.fedexCups||0)+1; }
     // emergent rivalry: tally head-to-head, graduate a rivalry you've outgrown, then crown a fresh nemesis
     if(!S.daily){ accrueH2H(); maybeOutgrowRival(); maybeFormRival(); }   // sets S.career.rival + S.freshRival/freshRivalOutgrown
     // ---- season-level achievement flags + evaluation (lt is now updated by recordSeason) ----
