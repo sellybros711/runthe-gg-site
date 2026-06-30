@@ -1694,6 +1694,21 @@ allows Google Fonts, or self-host Anton.*
   auto defaults off, shots reveal ~0.75s apart, card cell stays "·" until holed then shows the score, and the
   auto-play path still flows hole-to-hole. Zero page errors.
 
+- **CS49 — Guest daily limits + sign-in claim.** Guests now get **1** daily attempt (`GUEST_DAILY_ATTEMPTS`,
+  vs `DAILY_MAX_ATTEMPTS=3` for accounts) via new `dailyMaxAttempts()` feeding `dailyAttemptsLeft()`. Guests
+  **cannot claim a course record** (`finishDailyRound` only calls `recordCourseScore`/`sbSubmitDaily` when
+  `sbSignedIn()`), and the result screen shows a "Save this score to your account" banner + a primary
+  "🔐 Sign in to save this score" CTA (sets `S._dailyClaimFlow`). A guest's just-played round is stashed in
+  `S._claimDaily`; on sign-in/sign-up `maybeClaimDaily()` (called from `sbApply`, `overlayAccount`, and the
+  auth `go`) logs it to the account — **consuming one of the account's attempts**, allowing a course record,
+  and posting to the board — or, if the account is out of attempts, shows "Couldn't submit this score
+  (X/3 used today)". `S.dailyClaimMsg` renders the outcome banner + a toast. The claim-flow guards keep the
+  user on the daily result screen (not the Trophy Room) after signing in. `startDailyChallenge` now routes
+  an already-played day to the result screen (with the right CTA). Home-button + "Attempt X of N" copy use
+  `dailyMaxAttempts()`. Verified all three flows in Playwright (guest 1-attempt/no-record/CTA; claim consumes
+  1 of 3; out-of-attempts blocks). NOTE: the 1-attempt cap is enforced per-browser via localStorage — true
+  per-IP enforcement would need a server/edge-function check (no anon IP tracking exists in the SQL backend).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
