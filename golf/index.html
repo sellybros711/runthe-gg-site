@@ -4270,8 +4270,18 @@ function scrTeamCup(){
     row.innerHTML = cupRosterCol(T.rosterA, T.codeA, T.nameA, T.mySide==='A') + cupRosterCol(T.rosterB, T.codeB, T.nameB, T.mySide==='B');
     add(row);
     const ctrl=$(`<div style="max-width:560px;margin:14px auto 0"></div>`);
-    const b=$(`<button class="btn goldfill">Watch the ${esc(T.short)} ▸</button>`); b.onclick=()=>{ T._introSeen=true; render(); };
-    ctrl.appendChild(b); add(ctrl);
+    // if you're not on the team (and not captaining) you aren't involved — jump straight to the result
+    const involved = T.playerSelected || T.captain;
+    if(involved){
+      const b=$(`<button class="btn goldfill">Watch the ${esc(T.short)} ▸</button>`); b.onclick=()=>{ T._introSeen=true; render(); };
+      ctrl.appendChild(b);
+    } else {
+      const total=T.sessions.reduce((n,s)=>n+s.matches.length,0);
+      const b=$(`<button class="btn goldfill">See the Result ▸<span class="sub">You're not involved this week</span></button>`);
+      b.onclick=()=>{ T._introSeen=true; S.teamMatchN=total; render(); };
+      ctrl.appendChild(b);
+    }
+    add(ctrl);
     return;
   }
   // reveal the matches ONE AT A TIME (more suspense). Flat list across all 5 sessions.
