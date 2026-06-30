@@ -1578,6 +1578,28 @@ allows Google Fonts, or self-host Anton.*
   a gold-tie sudden-death playoff now returns to the podium afterward (celebratePlayoff finish renders on any
   Olympic finish, win or lose). Verified: podium renders with 3 columns + confetti + Continue, no errors.
 
+- PGA realism pt5 — Ryder Cup / Presidents Cup (team match play) — DONE. One team event per year closes the
+  season (wk38): Ryder Cup in odd years (USA vs Europe), Presidents Cup in even years (USA vs International);
+  added to seasonSchedule only when your nationality is on a team (`playerInTeamEvent`). You play USA every
+  year if American, Europe only in Ryder years, International only in Presidents years. `EURO_NATS` set +
+  `eligibleForTeam`. `selectTeam(region,me)` picks the top 12 by OWGR (+ you as a captain's pick if you'd
+  miss the cut). Match-play engine: `holeScore(eo)` (integer per-hole, ties halve the hole), foursomes share
+  one ball (avg eo), fourball takes the better ball (min), singles 1v1; `simMatch` runs 18 holes -> AS / "3&2"
+  / "2 up". 28 points over 5 sessions (D1/D2 foursomes+fourball, D3 singles), first to 14.5; `simTeamEvent`
+  returns full session/match data + your W-L-H record. KEY BALANCE: the USA roster is far deeper, so on raw
+  skill it always won — compress the squad-gap by 65% (`adj=(avgA-avgB)*0.325` shifted both ways) + high
+  match-play sigma (1.18) so the underdog is live; verified ~46/46/8 USA/Euro/tie over 400 sims, avg margin
+  ~4 pts, a strong player nets ~2.7 of 5. UI: dedicated `scrTeamCup` (routed from scrSeason on `evt.teamcup`):
+  USA-vs-team scoreboard with your side gold-bordered + running score, reveal one session at a time (Play Day
+  button / Auto Sim / Skip to Result), match rows with the winner bright + your match gold-highlighted +
+  flags + "3&2" labels, final result banner + confetti when your team wins. `finalizeTeamCup` banks
+  `S.season.teamCup` + `S.career.cup` + lt counters (cupApps/cupWins/cupPoints/cupMatchWins/cupBest); summary
+  callout; 6 new Cup achievements (debut, win, 5 wins, 25 pts, perfect 5-0 week) in the Olympics category.
+  finishSeasonHeadless + skipToEnd both handle the team cup (skip / stop-and-play, never sim it as stroke).
+  Verified via MC (28 pts, records sum, eligibility, win distribution) + UI e2e (scoreboard, session reveal,
+  result banner, confetti, summary callout, achievements, career stats, zero page errors). ROADMAP COMPLETE
+  (Race to the Cup, OWGR + Tour Card, ranking-gated entry, season awards, Olympics + podium, team cups all shipped).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -572,6 +572,7 @@ function ltDefault(){return {seasons:0,careers:0,wins:0,majors:0,top10:0,made:0,
   bestSeasonNet:0,profitSeasons:0,ironSeasons:0,moneyLeaderSeasons:0,slamSeasons:0,underdogSeasons:0,
   poySeasons:0,roySeasons:0,scoringSeasons:0,no1Seasons:0,weeksAtNo1:0,
   olyGold:0,olySilver:0,olyBronze:0,
+  cupApps:0,cupWins:0,cupPoints:0,cupMatchWins:0,cupBest:0,
   maxOvr:0,distinctMajors:0,careerSlams:0,maj:{masters:0,champ:0,usopen:0,open:0}};}
 function badgeMetrics(c){ const lt=Object.assign(ltDefault(),(c||career()).lt||{});
   lt.maj=Object.assign({masters:0,champ:0,usopen:0,open:0},lt.maj||{}); return lt; }
@@ -739,7 +740,12 @@ const ACH=[].concat(
   [{id:'oly_g',  cat:'Olympics',name:'Olympic Gold',     desc:'Win the Olympic gold medal.',               goal:1,pts:80, get:m=>m.olyGold},
    {id:'oly_med',cat:'Olympics',name:'On the Podium',    desc:'Win any Olympic medal.',                    goal:1,pts:40, get:m=>m.olyMedals},
    {id:'oly_g2', cat:'Olympics',name:'Back-to-Back Gold',desc:'Win 2 Olympic gold medals.',                goal:2,pts:120,get:m=>m.olyGold},
-   {id:'oly_set',cat:'Olympics',name:'Full Set',         desc:'Win gold, silver and bronze across your career.',goal:3,pts:100,get:m=>(m.olyGold>0?1:0)+(m.olySilver>0?1:0)+(m.olyBronze>0?1:0)}],
+   {id:'oly_set',cat:'Olympics',name:'Full Set',         desc:'Win gold, silver and bronze across your career.',goal:3,pts:100,get:m=>(m.olyGold>0?1:0)+(m.olySilver>0?1:0)+(m.olyBronze>0?1:0)},
+   {id:'cup_app',cat:'Olympics',name:'Cup Debut',        desc:'Make a Ryder/Presidents Cup team.',          goal:1,pts:35, get:m=>m.cupApps},
+   {id:'cup_win',cat:'Olympics',name:'Cup Champion',     desc:'Be on the winning Ryder/Presidents Cup team.',goal:1,pts:60, get:m=>m.cupWins},
+   {id:'cup_w5', cat:'Olympics',name:'Cup Legend',       desc:'Win 5 Ryder/Presidents Cups.',               goal:5,pts:100,get:m=>m.cupWins},
+   {id:'cup_pts',cat:'Olympics',name:'Team Talisman',    desc:'Bank 25 career Cup points.',                 goal:25,pts:80, get:m=>m.cupPoints},
+   {id:'cup_5pt',cat:'Olympics',name:'Perfect Week',     desc:'Win all 5 of your matches in one Cup.',       goal:5,pts:90, get:m=>m.cupBest}],
   // ---- Majors ----
   [{id:'maj_masters',cat:'Majors',name:'Green Jacket',    desc:'Win The Masters.',                             goal:1,pts:40, get:m=>m.mastersWins},
    {id:'maj_pga',    cat:'Majors',name:'Wanamaker',       desc:'Win The Championship.',                        goal:1,pts:40, get:m=>m.pgaWins},
@@ -883,6 +889,7 @@ function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const 
     poySeasons:lt.poySeasons||0, roySeasons:lt.roySeasons||0, scoringSeasons:lt.scoringSeasons||0,
     no1Seasons:lt.no1Seasons||0, weeksAtNo1:lt.weeksAtNo1||0,
     olyGold:lt.olyGold||0, olySilver:lt.olySilver||0, olyBronze:lt.olyBronze||0, olyMedals:(lt.olyGold||0)+(lt.olySilver||0)+(lt.olyBronze||0),
+    cupApps:lt.cupApps||0, cupWins:lt.cupWins||0, cupPoints:lt.cupPoints||0, cupMatchWins:lt.cupMatchWins||0, cupBest:lt.cupBest||0,
     slamSeasons:lt.slamSeasons, underdogSeasons:lt.underdogSeasons, careers:lt.careers, seasons:lt.seasons,
     maxOvr:lt.maxOvr, distinctMajors:lt.distinctMajors, careerSlams:lt.careerSlams, rivalWins:lt.rivalWins||0,
     mastersWins:lt.maj.masters, pgaWins:lt.maj.champ, usopenWins:lt.maj.usopen, openWins:lt.maj.open,
@@ -1521,6 +1528,9 @@ function seasonSchedule(year,seed){
   const picks=[]; for(let k=0;k<M;k++) picks.push(shuffled[(off+k)%N]);
   let list=ANCHORS.concat(picks);
   if(isOlympicYear(year)) list=list.concat([OLYMPICS_EVT]);
+  // the year's team event (Ryder/Presidents) closes the season — only if your nationality is on a team
+  if(!S.daily && playerInTeamEvent(year)){ const te=teamEventForYear(year);
+    list=list.concat([{name:te.short, type:'teamcup', wk:38, teamcup:true, teamType:te.type, major:false, big:false, purse:0, noCut:true}]); }
   return list.map(e=>({...e})).sort((a,b)=>a.wk-b.wk);
 }
 
@@ -1963,6 +1973,88 @@ function computeAwards(){
     scoring: scoring?{name:scoring, you:scoring===meName, avg:avgOf(scoring)}:null,
     no1:{name:top?top.name:'—', you:!!(top&&top.you)},
   };
+}
+/* ===== Ryder Cup / Presidents Cup — team match play =====
+   One team event per year (Ryder in odd years = USA vs Europe, Presidents in even years = USA vs
+   International). You play only if your nationality fits one of that year's two teams. 28 points over 5
+   sessions (Day1/Day2 foursomes+fourball, Day3 singles), first to 14.5. Match play: per-hole integer
+   score, lower wins the hole, ties halve it. */
+const EURO_NATS=new Set(['ENG','SCO','NIR','IRL','WAL','ESP','SWE','NOR','GER','FRA','ITA','DEN','BEL','AUT','POL','JEY']);
+function eligibleForTeam(nat,region){ return region==='USA'?nat==='USA':region==='EUR'?EURO_NATS.has(nat):(nat!=='USA'&&!EURO_NATS.has(nat)); }
+function teamEventForYear(year){ return ((year||1)%2===1)
+  ? {type:'ryder',regionB:'EUR',nameA:'United States',nameB:'Europe',short:'Ryder Cup',codeA:'USA',codeB:'EUR'}
+  : {type:'presidents',regionB:'INTL',nameA:'United States',nameB:'International',short:'Presidents Cup',codeA:'USA',codeB:'INT'}; }
+function playerInTeamEvent(year){ const te=teamEventForYear(year), nat=playerNation(); return nat==='USA'||eligibleForTeam(nat,te.regionB); }
+// a 12-man team selected by OWGR from a region (+ guarantee YOU as a captain's pick if it's your team)
+function selectTeam(region, me){
+  const w=ensureWorld(), L=worldRanking(), natByName={};
+  w.active.forEach(g=>natByName[g.name]=g.nation||'INT');
+  const team=[];
+  for(const x of L){ if(team.length>=12) break;
+    const nat=x.you?playerNation():(natByName[x.name]||'INT');
+    if(!eligibleForTeam(nat,region)) continue;
+    if(x.you) team.push(Object.assign({}, me, {you:true, eo:Math.round(me.skill), nat}));
+    else { const g=w.active.find(a=>a.name===x.name); if(g) team.push({name:g.name, eo:Math.round(g.lov), nat, you:false}); }
+  }
+  if(eligibleForTeam(playerNation(),region) && !team.some(p=>p.you)){
+    const slot=Math.min(11,team.length); team[slot]=Object.assign({}, me, {you:true, eo:Math.round(me.skill), nat:playerNation(), pick:true}); }
+  return team.slice(0,12);
+}
+// per-hole integer score (lower=better); foursomes share one ball, fourball takes the better ball.
+// Sigma kept high so match play stays volatile (anyone can win 18 holes) — the underdog wins often.
+function holeScore(eo){ return Math.round(gauss()*1.18 - (eo-80)*0.05); }
+function matchScoreFn(format, pair){
+  if(format==='singles') return ()=>holeScore(pair[0].eo);
+  if(format==='fourball') return ()=>Math.min(holeScore(pair[0].eo), holeScore(pair[1].eo));
+  const eo=(pair[0].eo+pair[1].eo)/2; return ()=>holeScore(eo);
+}
+function simMatch(format, pairA, pairB){
+  const fa=matchScoreFn(format,pairA), fb=matchScoreFn(format,pairB);
+  let up=0, hole=0;
+  for(hole=1; hole<=18; hole++){ const a=fa(), b=fb(); if(a<b)up++; else if(b<a)up--; if(Math.abs(up)>18-hole) break; }
+  if(up===0) return {res:'half', label:'AS', a:pairA, b:pairB};
+  const m=Math.abs(up), label=(hole>=18)?`${m} up`:`${m}&${18-hole}`;
+  return {res:up>0?'A':'B', label, a:pairA, b:pairB};
+}
+function pairs8(team){   // top 8 by skill into 4 pairs, with YOU forced into the eight
+  const s=[...team].sort((a,b)=>b.eo-a.eo); const mi=s.findIndex(p=>p.you);
+  if(mi>=8){ const me=s.splice(mi,1)[0]; s.splice(7,0,me); }
+  const e=s.slice(0,8); return [[e[0],e[1]],[e[2],e[3]],[e[4],e[5]],[e[6],e[7]]];
+}
+function teamNm(p){ return p.you?(S.name||'You'):p.name; }
+function simTeamEvent(){
+  const year=S.year||1, te=teamEventForYear(year);
+  const mb=buildPlayer(), me={name:S.name||'You', you:true, skill:mb.skill, nation:playerNation()};
+  const teamA=selectTeam('USA', me), teamB=selectTeam(te.regionB, me);
+  const playerSide = teamA.some(p=>p.you)?'A':teamB.some(p=>p.you)?'B':null;
+  // The USA roster has far more depth, so on raw skill it would always win. Real team events are tight —
+  // compress the squad-depth gap (team chemistry, partisan crowd, match-play randomness) so the underdog
+  // is genuinely live. Closes ~65% of the average-skill gap between the two sides.
+  const avg=t=>t.reduce((s,p)=>s+p.eo,0)/Math.max(1,t.length);
+  const adj=(avg(teamA)-avg(teamB))*0.325;
+  teamA.forEach(p=>p.eo-=adj); teamB.forEach(p=>p.eo+=adj);
+  let ptA=0, ptB=0; const sessions=[], rec={w:0,l:0,h:0};
+  const SESS=[['Foursomes',1,'foursomes'],['Fourball',1,'fourball'],['Foursomes',2,'foursomes'],['Fourball',2,'fourball'],['Singles',3,'singles']];
+  for(const [title,day,fmt] of SESS){
+    const matches=[];
+    if(fmt==='singles'){ const sa=[...teamA].sort((a,b)=>b.eo-a.eo), sb=[...teamB].sort((a,b)=>b.eo-a.eo);
+      for(let i=0;i<12;i++) matches.push(simMatch('singles',[sa[i]],[sb[i]])); }
+    else { const pa=pairs8(teamA), pb=pairs8(teamB); for(let i=0;i<4;i++) matches.push(simMatch(fmt,pa[i],pb[i])); }
+    const rows=matches.map(mt=>{
+      if(mt.res==='A')ptA++; else if(mt.res==='B')ptB++; else {ptA+=0.5;ptB+=0.5;}
+      const youIn=mt.a.some(p=>p.you)||mt.b.some(p=>p.you); let youWin=null;
+      if(youIn){ const onA=mt.a.some(p=>p.you);
+        if(mt.res==='half'){rec.h++;youWin='half';} else if((mt.res==='A')===onA){rec.w++;youWin='win';} else {rec.l++;youWin='loss';} }
+      return {format:fmt, a:mt.a.map(p=>({nm:teamNm(p),nat:p.nation||p.nat,you:!!p.you})), b:mt.b.map(p=>({nm:teamNm(p),nat:p.nation||p.nat,you:!!p.you})),
+        res:mt.res, label:mt.label, you:youIn, youWin};
+    });
+    sessions.push({title, day, fmt, matches:rows});
+  }
+  const winner = ptA>ptB?'A':ptB>ptA?'B':'tie';
+  return {type:te.type, short:te.short, nameA:te.nameA, nameB:te.nameB, codeA:te.codeA, codeB:te.codeB,
+    sessions, ptA, ptB, winner, playerSide, playerPlayed:!!playerSide,
+    playerRec:{w:rec.w,l:rec.l,h:rec.h,pts:rec.w+rec.h*0.5},
+    playerWon: !!(playerSide && winner!=='tie' && winner===playerSide), retained: winner==='tie'};
 }
 /* ---- Emergent rivalry: no manual pick. The game tallies your head-to-head vs every field player and,
    after a few seasons, crowns the recurring peer who keeps finishing right beside you as your nemesis
@@ -3360,7 +3452,7 @@ function startSeason(majorsOnly){
   const field=roster.map(g=>Object.assign({you:false},g));
   field.push(me);
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0,toPar:0,rounds:0}]))};
-  S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null;
+  S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamRevealed=0;
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false;   // unlocked during THIS season (shown on the summary)
   S.curEvt=null;
   track('season_started',{mode:S.daily?'daily':(majorsOnly?'majors':'full'),ovr:Math.round(me.skill),year:S.year||1});
@@ -3532,6 +3624,7 @@ function skipToEnd(){
   while(S.curEvt && !S.curEvt.done) simNextRound();
   while(S.evtIndex < S.schedule.length-1){ S.evtIndex++; S.curEvt=null;
     const evt=S.schedule[S.evtIndex];
+    if(evt.teamcup){ render(); return; }   // stop at the team cup so you still play it out
     if(evt.playoff && !S.daily && !S.season.eliminated){ const mr=pointsRank(S.season.me.name); if(mr>evt.cap) S.season.eliminated={stage:evt.stage,rank:mr,event:evt.name,cap:evt.cap}; }
     beginEvent(); while(!S.curEvt.done) simNextRound(); }
   S.screen='summary'; render();
@@ -3789,10 +3882,120 @@ function pointsRank(name){
 // playoffs but the world still needs to crown a Cup champion)
 function finishSeasonHeadless(){
   while(true){
-    S.curEvt=null; beginEvent(); while(S.curEvt && !S.curEvt.done) simNextRound();
+    const evt=S.schedule[S.evtIndex];
+    if(!(evt&&evt.teamcup)){ S.curEvt=null; beginEvent(); while(S.curEvt && !S.curEvt.done) simNextRound(); }   // team cup has no stroke-play sim
     if(S.evtIndex>=S.schedule.length-1) break;
     S.evtIndex++;
   }
+}
+/* ---------- Ryder/Presidents Cup screen: reveal the 5 sessions, running team score ---------- */
+function ptTxt(n){ const w=Math.floor(n), h=(n-w)>=0.5; return (w||h)?((w?w:'')+(h?'½':'')):'0'; }
+function cupMatchRow(m){
+  const aWon=m.res==='A', bWon=m.res==='B';
+  const side=(arr,won)=>arr.map(p=>`<span style="${p.you?'color:var(--gold);font-weight:800':(won?'color:#fff;font-weight:700':'color:#9fb0bf')}">${natFlag(p.nat)} ${esc(p.nm)}</span>`).join('<br>');
+  const mid = m.res==='half'
+    ? `<span style="color:#c9b25a;font-weight:800;font-size:12px">HALVED</span>`
+    : `<span style="color:#35d6a0;font-weight:800">${esc(m.label)}</span>`;
+  return `<div style="display:flex;align-items:center;gap:8px;padding:8px 9px;border-bottom:1px solid rgba(255,255,255,.06)${m.you?';background:rgba(235,166,31,.10);border-left:3px solid var(--gold)':''}">
+    <div style="flex:1;min-width:0;text-align:left;font-size:12.5px;line-height:1.3;${aWon?'':'opacity:.7'}">${side(m.a,aWon)}</div>
+    <div style="flex:0 0 auto;width:62px;text-align:center">${mid}</div>
+    <div style="flex:1;min-width:0;text-align:right;font-size:12.5px;line-height:1.3;${bWon?'':'opacity:.7'}">${side(m.b,bWon)}</div>
+  </div>`;
+}
+function scrTeamCup(){
+  clearTimeout(seasonTimer);
+  if(!S.curTeam || S.curTeam._idx!==S.evtIndex){ S.curTeam=simTeamEvent(); S.curTeam._idx=S.evtIndex; S.teamRevealed=0; }
+  const T=S.curTeam, reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const ryder=T.type==='ryder';
+  RT.classList.add('major-screen');
+  // running score through the revealed sessions
+  let ra=0, rb=0;
+  for(let s=0;s<S.teamRevealed;s++){ T.sessions[s].matches.forEach(m=>{ if(m.res==='A')ra++; else if(m.res==='B')rb++; else {ra+=0.5;rb+=0.5;} }); }
+  const allDone=S.teamRevealed>=T.sessions.length;
+  const aCol='#3d6fb5', bCol=ryder?'#1f8f5a':'#6f74c4';
+  const youA=T.playerSide==='A';
+  // header / scoreboard
+  add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:#ffd76a;border-color:#ffd76a">🏆 ${esc(T.short)} · ${esc((S.look&&S.look.country)||'')}</span></div>`));
+  add($(`<div style="display:flex;align-items:stretch;justify-content:center;gap:0;margin:12px auto 6px;max-width:520px">
+    <div style="flex:1;text-align:center;background:linear-gradient(180deg,${aCol},rgba(0,0,0,.25));border-radius:12px 0 0 12px;padding:12px 8px;border:1px solid var(--line);${youA?'box-shadow:inset 0 0 0 2px var(--gold)':''}">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#dce8ff">${natFlag(T.codeA)} ${esc(T.nameA)}${youA?' · YOU':''}</div>
+      <div class="mono" style="font-weight:800;font-size:40px;color:#fff;margin-top:6px">${ptTxt(ra)}</div></div>
+    <div style="flex:0 0 auto;display:flex;align-items:center;padding:0 8px;background:#06223a;border-top:1px solid var(--line);border-bottom:1px solid var(--line)"><span class="small muted">vs</span></div>
+    <div style="flex:1;text-align:center;background:linear-gradient(180deg,${bCol},rgba(0,0,0,.25));border-radius:0 12px 12px 0;padding:12px 8px;border:1px solid var(--line);${!youA?'box-shadow:inset 0 0 0 2px var(--gold)':''}">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#e6e8ff">${natFlag(T.codeB)} ${esc(T.nameB)}${!youA?' · YOU':''}</div>
+      <div class="mono" style="font-weight:800;font-size:40px;color:#fff;margin-top:6px">${ptTxt(rb)}</div></div>
+  </div>`));
+  add($(`<div class="small muted center" style="margin-bottom:12px">First to 14½ wins · 28 points${allDone?'':` · ${S.teamRevealed} of 5 sessions`}</div>`));
+
+  // final result banner
+  if(allDone){
+    const won=T.playerWon, tie=T.retained, winName=T.winner==='A'?T.nameA:T.nameB;
+    const col=won?'var(--gold)':tie?'#c9b25a':'#9fb0bf';
+    add($(`<div class="center" style="margin:0 0 14px"><div style="display:inline-block;background:linear-gradient(180deg,#15331f,#0a2740);border:1px solid ${col};border-radius:14px;padding:13px 20px">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${col}">${esc(T.short)} · Final</div>
+      <div style="font:800 21px/1.15 var(--body);color:${col};margin-top:6px">${tie?`${esc(winName)} retain the Cup`:`${esc(winName)} win the ${esc(T.short)}`}</div>
+      <div class="small muted" style="margin-top:4px">${T.playerPlayed?`Your record: ${T.playerRec.w}-${T.playerRec.l}-${T.playerRec.h} · ${ptTxt(T.playerRec.pts)} point${T.playerRec.pts===1?'':'s'}${won?' · 🏆 champions':''}`:''}</div></div></div>`));
+  }
+
+  // revealed session cards
+  for(let s=0;s<S.teamRevealed;s++){
+    const sess=T.sessions[s]; let sa=0,sb=0; sess.matches.forEach(m=>{ if(m.res==='A')sa++; else if(m.res==='B')sb++; else {sa+=0.5;sb+=0.5;} });
+    const isNew=(s===S.teamRevealed-1);
+    const card=$(`<div style="max-width:560px;margin:0 auto 12px;background:#0a2740;border:1px solid var(--line);border-radius:13px;overflow:hidden${isNew&&!reduce?';animation:celebRise .45s ease both':''}"></div>`);
+    card.appendChild($(`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)">Day ${sess.day} · ${esc(sess.title)}</div>
+      <div class="mono" style="font-weight:800;color:#fff">${ptTxt(sa)} – ${ptTxt(sb)}</div></div>`));
+    const body=$(`<div></div>`); body.innerHTML=sess.matches.map(cupMatchRow).join(''); card.appendChild(body);
+    add(card);
+  }
+
+  // controls
+  const ctrl=$(`<div style="max-width:560px;margin:6px auto 0"></div>`);
+  if(!allDone){
+    const nextSess=T.sessions[S.teamRevealed];
+    const b=$(`<button class="btn red">Play Day ${nextSess.day} · ${esc(nextSess.title)} ▸</button>`);
+    b.onclick=()=>{ clearTimeout(seasonTimer); S.teamRevealed++; render(); };
+    ctrl.appendChild(b);
+    const row=$(`<div class="mini" style="margin-top:10px"></div>`);
+    const auto=$(`<button class="btn ${S.autoSim?'teal':'gold'}">Auto Sim · ${S.autoSim?'On':'Off'}</button>`);
+    auto.onclick=()=>{S.autoSim=!S.autoSim; LS.set('bag_autosim',S.autoSim); render();};
+    const skip=$(`<button class="btn ghost">Skip to Result ⏭</button>`);
+    skip.onclick=()=>{ clearTimeout(seasonTimer); S.teamRevealed=T.sessions.length; render(); };
+    row.appendChild(auto); row.appendChild(skip); ctrl.appendChild(row);
+  } else {
+    const last=(S.evtIndex>=S.schedule.length-1);
+    const b=$(`<button class="btn goldfill">${last?'Season Results ▸':'Continue ▸'}</button>`);
+    b.onclick=()=>{ clearTimeout(seasonTimer); finalizeTeamCup(); if(last){ S.screen='summary'; } else { advanceEvent(); } render(); };
+    ctrl.appendChild(b);
+  }
+  add(ctrl);
+
+  // confetti when YOUR team has just clinched it
+  if(allDone && T.playerWon && !T._confetti && !reduce){ T._confetti=true;
+    const cv=document.createElement('canvas'); cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:55'; document.body.appendChild(cv);
+    const stop=confettiRun(cv,{count:150, colors:['#EBA61F','#f9d271','#ffffff',youA?aCol:bCol], mode:'cannons'});
+    setTimeout(()=>{ stop&&stop(); cv.remove(); }, 2600);
+  }
+  // auto-sim: reveal the next session on a timer
+  if(!allDone && S.autoSim && !reduce){ seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ S.teamRevealed++; render(); } }, 1500); }
+  else if(!allDone && reduce){ S.teamRevealed=T.sessions.length; render(); }
+}
+// bank the team-cup result into the season + career when leaving the screen
+function finalizeTeamCup(){
+  const T=S.curTeam; if(!T||T._banked) return; T._banked=true;
+  S.season.teamCup={short:T.short, type:T.type, winner:T.winner, nameA:T.nameA, nameB:T.nameB,
+    playerSide:T.playerSide, playerWon:T.playerWon, retained:T.retained, playerRec:T.playerRec, ptA:T.ptA, ptB:T.ptB};
+  if(!S.daily && T.playerPlayed){
+    S.career.cup=S.career.cup||{apps:0,won:0,w:0,l:0,h:0,pts:0};
+    const c=S.career.cup; c.apps++; if(T.playerWon)c.won++; c.w+=T.playerRec.w; c.l+=T.playerRec.l; c.h+=T.playerRec.h; c.pts+=T.playerRec.pts;
+    // lifetime achievement counters
+    const cc=career(), lt=(cc.lt=Object.assign(ltDefault(),cc.lt||{}));
+    lt.cupApps=(lt.cupApps||0)+1; if(T.playerWon)lt.cupWins=(lt.cupWins||0)+1;
+    lt.cupPoints=(lt.cupPoints||0)+T.playerRec.pts; lt.cupMatchWins=(lt.cupMatchWins||0)+T.playerRec.w;
+    lt.cupBest=Math.max(lt.cupBest||0, T.playerRec.w);
+    LS.set('bag_career',cc);
+  }
+  track('teamcup_done',{type:T.type, won:T.playerWon, pts:T.playerRec.pts});
 }
 // live "Race to the Cup" strip: your points rank vs the next cut line (top 70 → 50 → 30 → the Cup)
 function raceToCupNode(byPts, evt){
@@ -3832,6 +4035,9 @@ function raceToCupNode(byPts, evt){
 }
 function scrSeason(){
   clearTimeout(seasonTimer);
+  // Ryder/Presidents Cup weeks route to their own match-play screen
+  const cur=S.schedule[S.evtIndex];
+  if(cur && cur.teamcup && !S.daily){ scrTeamCup(); return; }
   // FedEx playoffs: if you didn't qualify for this stage's field, your season is over.
   // Finish the playoffs headlessly (so a Cup champion is still crowned) and jump to the summary.
   const up=S.schedule[S.evtIndex];
@@ -4392,6 +4598,15 @@ function scrSummary(){
         <span style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">Olympic Games</span>
         <span class="small" style="margin-left:8px;color:var(--oncard)">🥇 ${natFlag(gold.nat)} ${esc(gold.name)} took gold</span></div></div>`));
     }
+  }
+  // ---- Ryder/Presidents Cup callout ----
+  if(!S.daily && S.season.teamCup && S.season.teamCup.playerSide){
+    const T=S.season.teamCup, won=T.playerWon, tie=T.retained, col=won?'var(--gold)':tie?'#c9b25a':'#9fb0bf';
+    const winName=T.winner==='A'?T.nameA:T.nameB, mine=T.playerSide==='A'?T.nameA:T.nameB;
+    add($(`<div class="center" style="margin:8px 0 12px"><div style="display:inline-block;background:linear-gradient(180deg,#15331f,#0a2740);border:1px solid ${col};border-radius:14px;padding:12px 20px">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${col}">${esc(T.short)} · ${esc(mine)}</div>
+      <div style="font:800 19px/1.15 var(--body);color:${col};margin-top:6px">${won?'🏆 '+esc(winName)+' win the Cup':tie?esc(winName)+' retain the Cup':esc(winName)+' win the Cup'}</div>
+      <div class="small muted" style="margin-top:4px">Your record: ${T.playerRec.w}-${T.playerRec.l}-${T.playerRec.h} · ${ptTxt(T.playerRec.pts)} point${T.playerRec.pts===1?'':'s'}</div></div></div>`));
   }
   if(HL) add($(headlinesHTML(HL)));
   if(S.freshRivalOutgrown) add($(rivalOutgrownHTML(S.freshRivalOutgrown)));
