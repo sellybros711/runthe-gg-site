@@ -3657,7 +3657,7 @@ function celebratePlayoff(ce, opts){
   const holesEl=stage.querySelector('.po-holes'), actions=stage.querySelector('.po-actions');
   let i=0, fin=false;
   const cleanup=()=>{ if(_poTimer){clearTimeout(_poTimer);_poTimer=null;} stage.remove(); };
-  function finish(){ if(fin)return; fin=true; cleanup(); if(youWon){ render(); } else { advanceEvent(); render(); } }  // win → render() lets celebrateWin fire
+  function finish(){ if(fin)return; fin=true; cleanup(); if(youWon||evt.olympics){ render(); } else { advanceEvent(); render(); } }  // win (or any Olympic finish) → render() lets the win/podium celebration fire
   function done(){
     actions.innerHTML = youWon
       ? `<div style="font-family:var(--serif);color:#35d6a0;font-weight:800;font-size:26px">🏆 You won the playoff!</div>`
@@ -3720,6 +3720,66 @@ function celebrateWin(evt, o, opts){
   // themselves: a regular win still ticks on after 2s, but a MAJOR waits for them to Continue (and Share).
   if(autoAdv) celebTimer=setTimeout(finish, major?2600:2000);
   else if(!major) celebTimer=setTimeout(finish, 2000);
+}
+/* ---- Olympic medal ceremony: reveal the podium bronze → silver → gold, in order ---- */
+function celebrateOlympicPodium(ce, opts){
+  opts=opts||{}; const reduce=!!opts.reduce, auto=!!opts.auto;
+  const top3=ce.order.slice(0,3);
+  if(top3.length<3){ advanceEvent(); render(); return; }
+  // M indexed by finish: [gold, silver, bronze]
+  const M=[
+    {o:top3[0], emoji:'🥇', col:'#f4cf5b', glow:'rgba(244,207,91,.55)', h:150, lab:'GOLD',   nm:'Gold'},
+    {o:top3[1], emoji:'🥈', col:'#cbd2da', glow:'rgba(203,210,218,.45)', h:114, lab:'SILVER', nm:'Silver'},
+    {o:top3[2], emoji:'🥉', col:'#cd8e5a', glow:'rgba(205,142,90,.45)', h:84,  lab:'BRONZE', nm:'Bronze'},
+  ];
+  const youMedal=top3.findIndex(o=>o.p.you), myCountry=esc((S.look&&S.look.country)||'your country');
+  const stage=document.createElement('div'); stage.className='celebrate major';
+  const cv=document.createElement('canvas'); cv.className='confetti'; stage.appendChild(cv);
+  const wrap=$(`<div style="position:relative;z-index:2;width:min(620px,94vw);text-align:center"></div>`);
+  wrap.appendChild($(`<div class="celeb-kicker" style="color:#ffd76a;margin-top:0">🏅 Olympic Games · Medal Ceremony</div>`));
+  wrap.appendChild($(`<div class="celeb-title" style="font-size:30px;margin-top:6px">The Podium</div>`));
+  const sub=$(`<div class="celeb-sub" style="min-height:22px;margin-top:8px">&nbsp;</div>`); wrap.appendChild(sub);
+  const podium=$(`<div style="display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-top:18px"></div>`);
+  const colEls={};
+  [M[1],M[0],M[2]].forEach(m=>{   // display order: silver, gold, bronze
+    const o=m.o, you=o.p.you;
+    const col=$(`<div style="flex:0 0 auto;width:31%;max-width:168px;opacity:.16;transition:opacity .5s"></div>`);
+    col.innerHTML=`
+      <div class="pod-card" style="opacity:0;transform:translateY(14px);transition:opacity .5s,transform .5s;background:rgba(0,0,0,.32);border:1px solid ${m.col};border-radius:12px;padding:9px 6px;margin-bottom:8px">
+        <div style="font-size:26px;line-height:1">${m.emoji}</div>
+        <div style="margin-top:4px;font-weight:800;color:${you?'#ffd76a':'#fff'};font-size:13px;line-height:1.25">${o.p.nation?natFlag(o.p.nation)+' ':''}${esc(o.p.name)}</div>
+        ${you?'<div style="font-size:10px;letter-spacing:.16em;color:#ffd76a;font-weight:800;margin-top:1px">★ YOU</div>':''}
+        <div class="small" style="color:#cfe6d8;margin-top:2px">${par(o.score)}</div>
+      </div>
+      <div style="height:${m.h}px;border-radius:8px 8px 0 0;background:linear-gradient(180deg,${m.col},rgba(0,0,0,.32));display:flex;align-items:flex-start;justify-content:center;padding-top:7px;box-shadow:0 0 22px ${m.glow}">
+        <span style="font-family:var(--display);font-size:30px;color:rgba(0,0,0,.5);font-weight:800">${M.indexOf(m)+1}</span>
+      </div>`;
+    podium.appendChild(col); colEls[m.lab]=col;
+  });
+  wrap.appendChild(podium);
+  const actions=$(`<div class="celeb-actions" style="margin-top:20px"></div>`); wrap.appendChild(actions);
+  stage.appendChild(wrap); document.body.appendChild(stage);
+
+  let done=false, timer=null, i=0; const seq=[M[2],M[1],M[0]];   // reveal bronze → silver → gold
+  function finish(){ if(done)return; done=true; if(timer)clearTimeout(timer); if(_celebStop){_celebStop();_celebStop=null;} stage.remove(); advanceEvent(); render(); }
+  function reveal(m,isGold){
+    const col=colEls[m.lab]; col.style.opacity='1';
+    const card=col.querySelector('.pod-card'); card.style.opacity='1'; card.style.transform='translateY(0)';
+    sub.innerHTML = m.o.p.you ? `<span style="color:#ffd76a;font-weight:800">${m.emoji} You take ${m.nm} for ${myCountry}!</span>`
+      : `${m.emoji} ${m.nm}: ${esc(m.o.p.name)}`;
+    if(isGold && !reduce){ _celebStop=confettiRun(cv,{count:170, colors:['#f4cf5b','#ffffff','#ffd76a','#cbd2da'], mode:'cannons'}); }
+    try{ if(m.o.p.you && !reduce && navigator.vibrate) navigator.vibrate(40); }catch(_){}
+  }
+  function endCeremony(){
+    sub.innerHTML = youMedal>=0
+      ? `<span style="color:#ffd76a;font-weight:800">${['🥇 Olympic GOLD','🥈 Olympic Silver','🥉 Olympic Bronze'][youMedal]} for ${myCountry}</span>`
+      : `<span style="color:#cfe6d8">🥇 ${esc(M[0].o.p.name)} wins gold for ${esc(M[0].o.p.country||M[0].o.p.nation||'')}</span>`;
+    if(auto||reduce){ timer=setTimeout(finish, reduce?20:2400); }
+    else { const b=$(`<button class="btn goldfill">Continue ▸</button>`); b.onclick=e=>{e.stopPropagation();finish();}; actions.appendChild(b); }
+  }
+  function step(){ if(i>=seq.length){ endCeremony(); return; } reveal(seq[i], i===seq.length-1); i++; timer=setTimeout(step, reduce?20:1350); }
+  stage.onclick=()=>{ if(i<seq.length){ if(timer)clearTimeout(timer); while(i<seq.length){ reveal(seq[i], i===seq.length-1); i++; } endCeremony(); } else finish(); };
+  step();
 }
 // where the player sits on the season points list (1 = leader)
 function pointsRank(name){
@@ -3903,6 +3963,12 @@ function scrSeason(){
   if(ce.done && ce.playoff && ce.playoff.you && !ce._playoffShown){
     ce._playoffShown=true; clearTimeout(seasonTimer);
     celebratePlayoff(ce, {auto:S.autoSim, reduce, lastEvent});
+    return;
+  }
+  // Olympics: the medal ceremony (podium reveal) is the event-end celebration, in place of a normal win
+  if(ce.done && evt.olympics && !ce._podiumShown){
+    ce._podiumShown=true; ce._celebrated=true; clearTimeout(seasonTimer);
+    celebrateOlympicPodium(ce, {auto:S.autoSim, reduce, lastEvent});
     return;
   }
   // a win earns a celebration before moving on (once per event); it drives what happens next
