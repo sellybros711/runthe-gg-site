@@ -1837,6 +1837,37 @@ allows Google Fonts, or self-host Anton.*
   renders cleanly at both the large celebration size and the small trophy-case size, `majorTheme('The
   Masters')` still wires to it, zero page errors.
 
+- **CS60 — Public-launch prep: DataGolf attribution, disclaimer, golf-specific privacy/terms,
+  username profanity filter.** Owner requested a launch-readiness review, then asked to implement the four
+  flagged gaps in order:
+  1. **DataGolf attribution + "not affiliated" disclaimer.** Added a persistent footer line on the title
+     screen ("Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any
+     player.") linking to the new Privacy/Terms pages, plus a fuller credits block at the bottom of the How
+     to Play screen with the same attribution + disclaimer and a link to datagolf.com.
+  2. **Golf-specific Privacy Policy + Terms of Use.** New standalone pages `build-a-golfer/privacy.html` and
+     `build-a-golfer/terms.html`, styled to match Run The Tour's own dark-green/gold identity (not the
+     RunThePitch cream theme the root `privacy.html` uses, which doesn't mention golf, OAuth, Supabase, or
+     DataGolf at all). Privacy covers: guest vs. account data, Google/Supabase as processors, the
+     username→email lookup RPC (`email_for_username`, disclosed as auth-only/never public), DataGolf as a
+     stats source, local storage usage, children, deletion requests, contact. Terms covers: not-affiliated
+     disclaimer (PGA Tour/Masters/Ryder Cup/Olympics/DataGolf/any player), entertainment-only / no real-money
+     mechanics, account conduct (offensive usernames may be removed), no warranty, contact. Linked from the
+     title-screen footer and How-to-Play; deploy copies them to `golf/privacy.html` / `golf/terms.html`
+     alongside `index.html`.
+  3. (Folded into #1 — the disclaimer and attribution were combined into one footer/credits treatment rather
+     than two separate UI additions.)
+  4. **Username profanity filter.** New `supabase/29_username_filter.sql` redefines `username_ok()` (the
+     single gate used by `username_available`, `set_username`, and the OAuth `handle_new_user` trigger) to
+     reject a blocklist of common profanity/slurs, normalizing case/underscores/basic leetspeak digits first
+     so trivial evasions don't slip through. No client change needed — the existing signup/rename flows
+     already surface a generic "that username is taken/not allowed" message when `username_available`
+     returns false, so a blocked name fails the same way a taken one does (no need to leak why). Documented
+     the known Scunthorpe-problem tradeoff (substring blocklist can rarely false-positive on an innocuous
+     name) directly in the migration. **ACTION: run `supabase/29_username_filter.sql`** in the Supabase SQL
+     editor — client-side has nothing to deploy for this one beyond the already-shipped HTML.
+  Verified: title screen and rules screen render the new footer/credits with working links, zero page
+  errors; privacy.html/terms.html render standalone with the golf theme and cross-link correctly.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

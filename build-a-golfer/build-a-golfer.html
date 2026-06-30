@@ -2493,6 +2493,8 @@ function footer(){
   links.appendChild($(`<span>·</span>`));
   links.appendChild(mk('Privacy',()=>{S.overlay='privacy';render();}));
   links.appendChild($(`<span>·</span>`));
+  links.appendChild(mk('Terms',()=>{S.overlay='terms';render();}));
+  links.appendChild($(`<span>·</span>`));
   links.appendChild($(`<a href="${mail}" style="color:inherit;text-decoration:none;cursor:pointer">Contact</a>`));
   f.appendChild(links);
   return f;
@@ -2537,6 +2539,7 @@ function render(){
   if(S.overlay==='confirmReset') overlayConfirmReset(app);
   if(S.overlay==='about') overlayAbout(app);
   if(S.overlay==='privacy') overlayPrivacy(app);
+  if(S.overlay==='terms') overlayTerms(app);
   ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult})[S.screen]();
   paintAvatars();   // recolor any avatar canvases just added to the DOM
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
@@ -2590,6 +2593,9 @@ function scrRules(){
   const dList=$(`<div class="perks" style="max-width:560px;margin:0 auto 18px"></div>`);
   dSteps.forEach(s=>dList.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
   add(dList);
+
+  add($(`<div style="max-width:560px;margin:4px auto 18px;padding:13px 15px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)">
+    <div class="small muted" style="line-height:1.5">Real golfer skill ratings are derived from <a href="https://datagolf.com" target="_blank" rel="noopener" style="color:var(--gold);font-weight:700">DataGolf</a> data. Run The Tour is an independent fan project — not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, or any player or organization shown in the game. All results are simulated for entertainment only.</div></div>`));
 
   const done=$(`<button class="btn red" style="max-width:520px;margin:4px auto 0">Got it</button>`);
   done.onclick=back; add(done);
@@ -2935,6 +2941,7 @@ function overlayAbout(screen){
     <h3>About</h3>
     <p class="lede"><b style="color:var(--oncard)">RunTheTour</b> is a free golf game from <b style="color:var(--teal)">RunThe.GG</b>, sibling to RunThePitch. Spin a wheel of real golfers, draft one skill from each to build your own, then run a full pro season and see how you finish.</p>
     <p class="lede">It's in active development, new features are landing regularly. Got an idea or a bug? We'd love to hear it.</p>
+    <p class="small muted" style="line-height:1.5">Real golfer skill ratings are derived from <a href="https://datagolf.com" target="_blank" rel="noopener" style="color:var(--gold);font-weight:700">DataGolf</a> data. RunTheTour is an independent fan project, not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, or any player or organization shown in the game. All results are simulated for entertainment only.</p>
     <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour, Feedback')}" style="text-decoration:none;display:block">✉ Send Feedback</a>
     <div style="height:10px"></div>
     <button class="btn red">Close</button></div>`);
@@ -2947,14 +2954,38 @@ function overlayPrivacy(screen){
     <h3>Privacy</h3>
     <p class="lede">RunTheTour is built to be private by default.</p>
     <ol style="color:#dbe6ee;padding-left:18px">
-      <li><b>Accounts are optional.</b> You can play the whole game without signing in. Signing in (with your RunThe.GG account) is only needed to post to the public leaderboard.</li>
+      <li><b>Accounts are optional.</b> You can play the whole game without signing in. Signing in is only needed to post to the public leaderboard.</li>
       <li><b>Your data stays on your device</b> unless you post a score. Your golfer, look, record, and daily streak are saved only in this browser (localStorage).</li>
-      <li><b>If you sign in and finish a season,</b> your username, golfer name, overall, and earnings are sent to our database (Supabase) and shown on the public leaderboard. Nothing is posted while you're a guest.</li>
-      <li><b>Clear it anytime.</b> Use Reset, or clear this site's browser data, to wipe local data. Sign out on RunThe.GG to end your session.</li>
+      <li><b>Creating an account</b> stores the email + username you provide, or, with "Sign in with Google," the email Google shares with us. Sign-in is handled by our database provider, Supabase, and by Google. We don't sell your personal information.</li>
+      <li><b>If you sign in and finish a season,</b> your username, golfer name, overall, and earnings are sent to our database (Supabase) and shown on the public leaderboard. Your email is never shown publicly — signing in with a username instead of email looks up the matching account internally, it's never exposed to other players.</li>
+      <li><b>Player ratings</b> are built from public statistics, including data from DataGolf — performance data about public figures, not personal data about you.</li>
+      <li><b>Clear it anytime.</b> Use Reset, or clear this site's browser data, to wipe local data. Email us to delete your account and all associated data.</li>
       <li><b>No ads or third-party trackers</b> are loaded. The only network services are Google Fonts and our own Supabase backend (for accounts + leaderboard).</li>
+      <li><b>Not directed to children under 13;</b> we don't knowingly collect personal information from them.</li>
     </ol>
     <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour, Privacy question')}" style="text-decoration:none;display:block">✉ Privacy Question</a>
     <div style="height:10px"></div>
+    <a class="small muted center" href="privacy.html" target="_blank" rel="noopener" style="display:block;text-decoration:none">Full Privacy Policy ↗</a>
+    <div style="height:6px"></div>
+    <button class="btn red">Close</button></div>`);
+  ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
+  screen.appendChild(ov);
+}
+function overlayTerms(screen){
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Terms">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Terms</h3>
+    <p class="lede">RunTheTour is a free, fan-made golf simulation game. By playing, creating an account, or appearing on the leaderboard, you agree to these terms.</p>
+    <ol style="color:#dbe6ee;padding-left:18px">
+      <li><b>Not affiliated with any real organization.</b> RunTheTour is an independent, unofficial fan project — not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, the Masters / Augusta National, the Olympics, the Ryder Cup, the Presidents Cup, or any golfer or organization named in the game. Real player names and public statistics build fictional, simulated golfers; all results are entirely fictional.</li>
+      <li><b>Entertainment only, no real money.</b> In-game currency, prize money, and rankings have no real-world value and aren't a form of gambling or wagering.</li>
+      <li><b>Your account.</b> Choose a username that isn't offensive, impersonating, or misleading. We reserve the right to rename, suspend, or remove accounts, leaderboard entries, or usernames that violate this, or that we determine were used to abuse or manipulate the leaderboard.</li>
+      <li><b>No warranty.</b> RunTheTour is provided "as is," in active development, without warranties of any kind — we don't guarantee the game, leaderboard, or your saved progress will always be available or error-free.</li>
+    </ol>
+    <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour, Terms question')}" style="text-decoration:none;display:block">✉ Ask a Question</a>
+    <div style="height:10px"></div>
+    <a class="small muted center" href="terms.html" target="_blank" rel="noopener" style="display:block;text-decoration:none">Full Terms of Use ↗</a>
+    <div style="height:6px"></div>
     <button class="btn red">Close</button></div>`);
   ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
   screen.appendChild(ov);
@@ -3075,6 +3106,8 @@ function scrTitle(){
   tr.onclick=()=>{S.overlay='record';render();};
   mini2.appendChild(tr);
   w.appendChild(mini2);
+  const credit=$(`<div class="small muted center" style="margin-top:18px;line-height:1.6;opacity:.75">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
+  w.appendChild(credit);
   add(w);
 }
 function startRoll(){
