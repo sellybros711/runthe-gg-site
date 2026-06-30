@@ -1652,6 +1652,26 @@ allows Google Fonts, or self-host Anton.*
   valid. Summary guest-rank teaser reads `lbCache['season:earnings']`. Verified: each sort triggers a fresh
   by-stat fetch and the value column updates; zero page errors. ACTION: run supabase/28_runtour_sort.sql.
 
+- **CS45 — Playoff selection as timed bottom pop-up (no click-gate on Auto Sim).** The FedEx playoff
+  selection announcement ("you made it / just missed") used to be a full-screen card that required a tap
+  before EACH of the final 3 events — even with Auto Sim ON, breaking the hands-off flow. Now, with Auto Sim
+  ON, a playoff stage announces itself via `selectionPopup(evt)` — a timed bottom pop-up (like the toasts
+  elsewhere, centred via `left/right:0;margin:0 auto` so the `celebRise` transform doesn't fight it) — and
+  scrSeason auto-acknowledges (`_annAck[idx]=true`) and falls straight through into the event/elimination
+  underneath. Auto Sim OFF keeps the full-screen `scrSelectionScreen` that waits for a tap. Olympics keep
+  their full-screen set-piece. Shared copy extracted into `selectionInfo(evt)`. Verified both paths in
+  Playwright (pop-up + no full-screen card on Auto ON; full-screen card + no auto-ack on Auto OFF).
+
+- **CS46 — Trophy Case redesign (new trophies + medals).** Reworked `trophyCabinetHTML(m)` into a three-shelf
+  Trophy Case: (1) Major Championships — the four major-trophy SVGs; (2) Medals & Cups — Olympic
+  Gold/Silver/Bronze, FedEx Cup, Team Cups (Ryder/Presidents wins), Captaincies; (3) Season Honours — Player
+  of the Year, Rookie of the Year, Money Title, Scoring Title, World No. 1. New `trophyChip(emoji,label,n,col)`
+  renders colour-coded round medallions; empty/unearned slots dim to an aspirational en-dash. Footer shows
+  Tour wins / Majors / Cup apps / Spotlights. Added a lifetime `fedexCups` counter (in `ltDefault`,
+  incremented in the once-only summary record block when `S.season.cupYouWon`) since no running FedEx tally
+  existed; all other chips read existing lifetime counters. Verified populated + empty states in Playwright
+  (zero page errors; dimmed slots and counts render correctly).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
