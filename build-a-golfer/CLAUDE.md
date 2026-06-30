@@ -1435,6 +1435,20 @@ allows Google Fonts, or self-host Anton.*
   STILL TODO from the same feedback: scouting blurb second-person ("your bunker play"); remove em-dashes from
   copy (reword naturally, ~206 visible instances).
 
+- Avatar region-mask system — SUPERSEDES the heuristic re-tint (Jordo: "masking issues, neck + behind the
+  hat"; owner picked Option A "region masks", + a stopgap). The guess-the-pixel `avClassify` kept bleeding
+  (hat-teal vs background-green vs shirt-teal are too close — purple smear behind the hat). Replaced with
+  AUTHORED STENCIL MASKS: one flat-colour PNG per base (`{male,female}-base-mask.png` in
+  public/avatars/golfers/base/ AND golf/...) where skin=red, hair=green, shirt=blue, cap=yellow, bg=black.
+  Generated offline by a Playwright segmentation script (scratchpad/seg*.mjs): flood-fill the background out
+  from border+interior seeds FIRST (so it can never recolor), then a face-oval + radius clip + gender-aware
+  long-hair rule to separate regions. `avCompute` now reads the mask (`avMaskRegion` = dominant channel) for
+  pixel-perfect recolor; `avClassify` remains a fallback if a mask 404s. Verified clean across skin tones,
+  hair colors, every shirt color, and the female base — no hat/sleeve/neck bleed, background untouched.
+  Stopgap (raised cap lightness floor) shipped first. NOTE: still one shared face per gender; cap:false still
+  not honored by the PNG (cap baked into art). NEXT (owner idea): PATTERN SHIRTS as unlockables — now easy:
+  draw a pattern clipped to the shirt-mask region. Em-dash reword (visible copy, ~185) still pending too.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
