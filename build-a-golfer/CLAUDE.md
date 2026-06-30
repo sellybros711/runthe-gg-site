@@ -1600,6 +1600,20 @@ allows Google Fonts, or self-host Anton.*
   result banner, confetti, summary callout, achievements, career stats, zero page errors). ROADMAP COMPLETE
   (Race to the Cup, OWGR + Tour Card, ranking-gated entry, season awards, Olympics + podium, team cups all shipped).
 
+- PGA realism pt6a — Selection announcements (made/missed, right before the event) — DONE. Cup team
+  selection is now MERIT-based: `cupPool(region,me)` (OWGR-ordered eligible pool incl. you), `selectTeam`
+  returns {team(top12), pool, meIdx, selected} with a captain's pick only on the bubble (`CUP_BUBBLE=16`),
+  so you can genuinely MISS a cup (a weak Aussie at #43 in country misses). `simTeamEvent` now exposes
+  mySide (your country's side), playerSelected, meRank, rosterA/rosterB, mineWon. scrTeamCup gained an
+  INTRO phase (`T._introSeen`): "🎉 You've made Team X!" (merit / captain's pick + your country rank) or
+  "So close, you just missed Team X" + encouragement, with BOTH 12-man rosters (you ★, flags), then "Watch
+  the Cup". Scoreboard highlight + final banner + confetti now follow your COUNTRY (mySide/mineWon) so a fan
+  still celebrates. New `scrSelectionScreen(evt)` shows a "You're in the Playoffs! / Through to the BMW! /
+  You made it to East Lake!" or "Just missed / your run ends here" card before each FedEx playoff stage, and
+  "You qualified for the Olympics! / Not in the field" before the Olympics — wired in scrSeason via
+  `S.season._annAck`. Positive, encouraging copy on every miss. Verified (merit miss, intro selected/missed,
+  playoff + Olympics cards render, zero errors).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
