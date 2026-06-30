@@ -97,6 +97,10 @@
   .card{position:relative; z-index:1; width:100%; max-width:none; margin:0; border-radius:0; overflow:visible;
     background:transparent; box-shadow:none}
   .cardtop{display:none}
+  .flag-ico{display:inline-block;width:1.5em;height:1.0em;border-radius:3px;background-size:cover;background-position:center;
+    background-repeat:no-repeat;background-color:#e9e4d8;border:1px solid rgba(0,0,0,.22);box-shadow:0 1px 2px rgba(0,0,0,.22);
+    vertical-align:-0.12em;flex:0 0 auto}
+  .flag-none{background-image:repeating-linear-gradient(45deg,#cfc8ba 0 5px,#bdb6a7 5px 10px)}
   .flagstrip{display:flex; gap:6px; padding:8px 10px; background:rgba(0,0,0,.22); overflow:hidden}
   .flagstrip.bot{border-top:1px solid var(--line)} .flagstrip.top{border-bottom:1px solid var(--line)}
   .ftrack{display:flex; gap:6px; animation:marq 26s linear infinite}
@@ -1508,7 +1512,7 @@ function majorsSchedule(){ return ANCHORS.filter(e=>e.major).map(e=>({...e})).so
 // career gets its own ordering. Walks a fixed stride through a per-career shuffle of the pool.
 // the men's Olympic golf tournament runs every 4 years (2028, 2032, ...): 72 holes, no cut, ~60 players
 // with a max of 4 per country, and gold/silver/bronze medals instead of prize money.
-function isOlympicYear(year){ return (2025+(year||1))%4===0; }
+function isOlympicYear(year){ return (year||1)%4===0; }   // every 4 years, first in year 4 (then 8, 12, ...)
 const OLYMPICS_EVT={name:'Olympic Games',type:'olympics',wk:30,olympics:true,noCut:true,major:false,big:true,purse:0};
 function seasonSchedule(year,seed){
   const shuffled=seededShuffle(REG_POOL,((seed!=null?seed:0)^0x5eed1e)>>>0);
@@ -1729,6 +1733,13 @@ const COUNTRIES=[['United States','USA'],['England','ENG'],['Scotland','SCO'],['
   .map(([n,c])=>({n,c}));
 const COUNTRY_CODE=Object.fromEntries(COUNTRIES.map(x=>[x.n,x.c]));
 function playerNation(){ return COUNTRY_CODE[(S.look&&S.look.country)||'United States']||'USA'; }
+// flat-flag chips (flagcdn.com, same as RunThePitch): 3-letter golf nation code → ISO flag slug
+const NAT_FLAG={USA:'us',ENG:'gb-eng',SCO:'gb-sct',NIR:'gb-nir',WAL:'gb-wls',IRL:'ie',AUS:'au',NZL:'nz',
+  KOR:'kr',JPN:'jp',TPE:'tw',SGP:'sg',IND:'in',RSA:'za',ZIM:'zw',FIJ:'fj',ESP:'es',SWE:'se',NOR:'no',
+  DEN:'dk',GER:'de',FRA:'fr',ITA:'it',BEL:'be',AUT:'at',POL:'pl',JEY:'je',CAN:'ca',MEX:'mx',ARG:'ar',CHI:'cl'};
+function natFlagUrl(code,w){ const iso=NAT_FLAG[code]; return iso?`https://flagcdn.com/w${w||40}/${iso}.png`:null; }
+function natFlag(code,cls){ const url=natFlagUrl(code,40);
+  return `<span class="flag-ico${cls?' '+cls:''}${url?'':' flag-none'}"${url?` style="background-image:url('${url}')"`:''} role="img" aria-label="${esc(code||'')}"></span>`; }
 const FNAMES={USA:['Cole','Hayden','Brooks','Tanner','Carson','Bryce','Tripp','Mason','Reid','Cooper','Parker','Beau','Grant','Knox','Hudson','Cash','Brody','Jace','Wyatt','Colt','Easton','Brett','Chase','Drew','Brock','Hunter','Maddox','Gage','Tate','Ryder','Walker','Bo','Crew','Lane','Sawyer','Boone','Dawson','Camden','Bennett','Holden','Rhett','Jett','Pierce','Cade','Trent','Kade','Brooks','Spencer','Garrett','Weston'],England:['Ollie','Harry','Charlie','Reece','Freddie','Tom','Joe','Alfie','Archie','George','Jack','Louie','Henry','Sam','Will','Toby','Max','Ben','Leo','Jacob','Theo','Finlay','Rory','Callum'],Australia:['Kai','Lachlan','Beau','Jett','Cooper','Flynn','Hugo','Max','Oscar','Heath','Jasper','Ryder','Hudson','Lincoln','Cody','Blake','Mason','Riley'],'South Korea':['Minjae','Seungwoo','Jihun','Doyoon','Taeyang','Junseo','Hyunwoo','Sangwoo','Jiho','Woojin','Hajun','Eunwoo','Siwoo','Junho'],Japan:['Riku','Sota','Haruto','Yuki','Ren','Kaito','Yuto','Sora','Hiroto','Yuma','Asahi','Kenta','Daiki','Shota'],'South Africa':['Dewald','Ruan','Jaco','Stefan','Pieter','Wian','Armand','Hendrik','Cobus','Dawid','Tiaan','Morne'],Spain:['Pablo','Álvaro','Mateo','Hugo','Marcos','Diego','Nico','Sergio','Adrián','Iker','Gonzalo','Martín'],Sweden:['Filip','Albin','Hugo','Melvin','Viktor','Elias','Axel','Oskar','Gustav','William','Liam','Noah'],Canada:['Liam','Owen','Noah','Ethan','Nolan','Mathis','Tyler','Brayden','Carter','Logan','Hayden','Cole'],Ireland:['Cian','Conor','Sean','Eoin','Darragh','Oisin','Liam','Fionn','Cormac','Niall','Padraig','Ronan'],Germany:['Jonas','Luca','Finn','Leon','Maxi','Tim','Lukas','Niklas','Felix','Paul','Jan','Moritz'],Argentina:['Tomás','Mateo','Benjamín','Lautaro','Felipe','Santiago','Joaquín','Bruno','Ignacio'],France:['Hugo','Louis','Jules','Nathan','Théo','Lucas','Adrien','Romain','Clément','Antoine'],Italy:['Lorenzo','Matteo','Marco','Davide','Andrea','Francesco','Riccardo','Tommaso','Edoardo'],Denmark:['Oliver','Magnus','Frederik','Emil','Victor','Noah','William','Lucas','Oscar'],Other:['Alex','Daniel','Marco','Adam','Leo','Max','Sam','Niko','Tomas','David','Lucas','Mikkel','Andre','Stefan','Karel','Janne']};
 const SNAMES={USA:['Whitaker','Sutter','Calloway','Hargrove','Lindquist','Boone','Marsh','Pruitt','Vance','Ellison','Stamper','Roark','Brennan','Kessler','Holt','Mercer','Dalton','Rhodes','Fenwick','Cobb','Hollis','Ashby','Crane','Tucker','Brock','Lawson','Driscoll','Maddox','Whitfield','Sealy','Granger','Holloway','Bridges','Pruett','Vaughn','Carver','Steele','Hatcher','Conway','Beckett'],England:['Ashworth','Pemberton','Whitlock','Hartley','Bardsley','Cresswell','Fairbanks','Holloway','Radcliffe','Stanton','Marsden','Ellery','Hawthorne','Pickering','Sutcliffe','Thornbury','Whitmore','Ackroyd'],Australia:['Calvert','Hueston','Bracken','Donato','Mayberry','Sorrell','Hewson','Carrick','Maddern','Sheldon','Blakely','Trembath','Hollis','Forsythe'],'South Korea':['Kang','Seo','Yoon','Jung','Hwang','Lim','Noh','Bae','Shin','Moon','Yang','Oh','Cho','Han'],Japan:['Takeda','Morita','Fujikawa','Nishida','Okamoto','Sakai','Hayashi','Ono','Maeda','Kobayashi','Tanaka','Ishii','Matsuda','Hara'],'South Africa':['Pretorius','Coetzee','Van Wyk','Bekker','Lategan','Nel','Botha','Roux','Venter','Du Toit','Steyn','Kruger'],Spain:['Cabrera','Otero','Reyes','Castaño','Bermúdez','Gallego','Moya','Vidal','Serrano','Ortega','Lozano','Marín'],Sweden:['Ahlberg','Sjöberg','Lindkvist','Norén','Hammar','Forsberg','Ek','Dahl','Bergström','Lund','Holmberg','Sandberg'],Canada:['Tremblay','Gagnon','Beaulieu','Fortin','Leclerc','Caron','Pelletier','Bergeron','Cormier','Lavoie'],Ireland:['Doyle','Gallagher','Brennan','Kavanagh','Molloy','Hegarty','Fitzgerald','Donnelly','Mulligan','Cassidy'],Germany:['Brandt','Keller','Vogel','Schreiber','Wagner','Busch','Hofmann','Albrecht','Krause','Stein'],Argentina:['Romero','Sosa','Ibarra','Acosta','Vega','Molina','Quiroga','Paredes','Herrera'],France:['Moreau','Lefevre','Girard','Rousseau','Faure','Mercier','Blanc','Garnier','Brunet'],Italy:['Conti','Ferrari','Greco','Bianchi','Rizzo','Marino','Costa','Gallo','Ferrara'],Denmark:['Sørensen','Kjær','Mortensen','Holm','Dahl','Nygaard','Lassen','Krogh','Vinther'],Other:['Novak','Kovač','Silva','Costa','Meyer','Halonen','Brandt','Virtanen','Nowak','Horak','Bauer','Vos']};
 const ARCH_W=[['allround',.30],['bomber',.18],['ballstriker',.18],['putter',.12],['shortgame',.12],['scrambler',.10]];
@@ -3525,13 +3536,14 @@ function skipToEnd(){
     beginEvent(); while(!S.curEvt.done) simNextRound(); }
   S.screen='summary'; render();
 }
-function liveRow(o,pos,you,done){
+function liveRow(o,pos,you,done,flag){
   const cut=(pos==='CUT'); const sc=cut?'CUT':par(Math.round(o.total)); const mny=(o.money>0)?fmt(o.money):'';
   // the trophy is only for the WINNER once the tournament is final — mid-round the leader is just 1 / T1
   const lab=cut?'–':((pos===1&&done&&!o._tied)?'🏆':(o._tied?'T'+pos:pos));
+  const fl=(flag&&o.p.nation)?natFlag(o.p.nation)+' ':'';
   return $(`<div class="lb ${you?'you':''} ${cut?'cut':''}">
     <span class="pos">${lab}</span>
-    <span class="pl">${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
+    <span class="pl">${fl}${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
 }
 /* ---------- win celebration (tournament + major) ---------- */
 function trophyGold(id){ return `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f9d271"/><stop offset="1" stop-color="#c98f12"/></linearGradient>`; }
@@ -3820,9 +3832,10 @@ function scrSeason(){
   const ordered=liveOrder(ce);
   const meLive=ordered.find(o=>o.p.you);
   const board=$(`<div class="board ${evt.major?'major':''}"></div>`);
+  const flag=!!evt.olympics;   // show country flags on the Olympic leaderboard
   const top=ordered.slice(0,12); const youOut=!top.includes(meLive);
-  top.forEach(o=>board.appendChild(liveRow(o,o._pos,o.p.you,ce.done)));
-  if(youOut){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(liveRow(meLive,meLive._pos,true,ce.done));}
+  top.forEach(o=>board.appendChild(liveRow(o,o._pos,o.p.you,ce.done,flag)));
+  if(youOut){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(liveRow(meLive,meLive._pos,true,ce.done,flag));}
   left.appendChild(board);
 
   // RIGHT — prominent live scorecard + controls
@@ -4311,7 +4324,7 @@ function scrSummary(){
     } else {
       add($(`<div class="center" style="margin:6px 0 12px"><div class="scout" style="display:inline-block;padding:10px 16px">
         <span style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">Olympic Games</span>
-        <span class="small" style="margin-left:8px;color:var(--oncard)">🥇 ${esc(gold.name)} (${esc(gold.nat)}) took gold</span></div></div>`));
+        <span class="small" style="margin-left:8px;color:var(--oncard)">🥇 ${natFlag(gold.nat)} ${esc(gold.name)} took gold</span></div></div>`));
     }
   }
   if(HL) add($(headlinesHTML(HL)));
