@@ -1679,6 +1679,21 @@ allows Google Fonts, or self-host Anton.*
   `lbStatVal` Wins column shows "15 win/wins" (pluralised) instead of "15W", and the career sub-line + offline
   fallback spell out " win(s)" too. Verified in Playwright (no rep chip, rep tier beside names, "N wins").
 
+- **CS48 — Daily Challenge: auto-play OFF by default + shot-by-shot reveal.** `beginDailyRound` now sets
+  `S.dailyAuto=false` (you tee off each hole yourself) and `S.dailyRevealN=null`. When a hole is played,
+  `playDailyHole` sets `S.dailyRevealN=1` and calls the new `startShotReveal()`, which reveals the hole's
+  shots one at a time every `SHOT_REVEAL_MS=750`ms; only when the last shot lands (ball holed) does the
+  score hit the scorecard and the round advance (`scheduleDailyAdvance`). `scrDailyRound` withholds the
+  in-flight hole from the running total ("through N"), the big to-par number, AND its scorecard cell (shows
+  "·" until holed), and shows a "⛳ Hole N · shot X of Y…" indicator with a "Skip to this hole's result"
+  button instead of the next-hole controls while revealing (the indicator reads just "⛳ Shot N…", no
+  "of Y"). `dShotPanel(h, reveal)` gained a live-reveal
+  mode (slices to the revealed shots, only the newest row animates, result tag appears on holing).
+  `dailyPause` lands the ball (snaps reveal to full); `clearDailyTimer` clears the shot timer too. The
+  reveal runs regardless of auto-play (auto only governs advancing to the next hole). Verified in Playwright:
+  auto defaults off, shots reveal ~0.75s apart, card cell stays "·" until holed then shows the score, and the
+  auto-play path still flows hole-to-hole. Zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
