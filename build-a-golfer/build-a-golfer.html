@@ -2629,8 +2629,10 @@ function avTint(r,g,b,hex,strength,satB,lpull){lpull=(lpull==null)?0.1:lpull;
 function avClassify(r,g,b,a,nx,ny){
   if(a<30)return null;const{h,s,l}=avRgbHsl(r,g,b);
   const head=ny>0.17&&ny<0.74&&nx>0.18&&nx<0.82, lower=ny>0.55;
-  // cap: a box over the crown/brim so the teal cap recolors to the shirt colour
-  const cap=ny>0.07&&ny<0.36&&nx>0.25&&nx<0.75&&avInHue(h,146,200)&&s>0.22&&l>0.18&&l<0.92;
+  // cap: a box over the crown/brim. The hard floor is LIGHTNESS — the teal cap sits well
+  // above l 0.30 while the dark-green badge background behind it sits ~0.13-0.20, so a high
+  // l floor keeps the background out (it was bleeding purple behind the hat before).
+  const cap=ny>0.08&&ny<0.34&&nx>0.27&&nx<0.73&&avInHue(h,150,196)&&s>0.30&&l>0.31&&l<0.92;
   // FACE OVAL: pixels inside it are skin; the dark head pixels OUTSIDE it (top fringe,
   // temples, sideburns) are hair. This stops the hairline being painted skin-tone.
   const fr=((nx-0.50)/0.175)**2+((ny-0.435)/0.185)**2, inFace=fr<=1;
