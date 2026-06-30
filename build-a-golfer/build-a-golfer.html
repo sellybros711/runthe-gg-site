@@ -3203,6 +3203,14 @@ function avMaskRegion(r,g,b){ if(r<45&&g<45&&b<45) return null;
   if(g>=r&&g>=b&&g>110) return 'hair';
   if(r>=g&&r>=b&&r>110) return 'skin';
   return null; }
+// eyebrows are baked into the HAIR region of the mask, but they shouldn't take the (now light) hair colour.
+// Keep them a fixed natural brow. Brow/eye band = mid-face, away from the temples/sideburns.
+const BROW_HEX='#34281b';
+function avIsBrow(nx,ny){ return ny>0.275 && ny<0.42 && nx>0.30 && nx<0.70; }   // eyebrow band (measured from the mask)
+// shirt/cap pull: mid colours keep their painted shading (0.12); black & white need a much stronger pull
+// toward the target or they stay base-toned teal/grey instead of reading black/white.
+function avKitLp(hex){ const c=avHexRgb(hex), l=avRgbHsl(c.r,c.g,c.b).l, d=Math.abs(l-0.5);
+  return d<0.22 ? 0.12 : 0.12 + Math.min(1,(d-0.22)/0.13)*0.74; }   // → ~0.86 at pure black/white
 function avCompute(canvas,key,o){
   const e=avLoad(AV_BASE[o.gender]), mk=avLoad(AV_MASK[o.gender]);
   const go=()=>{ if(e.failed){avVectorFallback(canvas);return;}
@@ -3218,6 +3226,7 @@ function avCompute(canvas,key,o){
       const _hr=avHexRgb(o.hairHex), hairTl=avRgbHsl(_hr.r,_hr.g,_hr.b).l;
       const skinLp=Math.min(0.92, 0.44+(1-skinTl)*0.58);   // darker skin → stronger pull toward dark
       const hairLp=Math.min(0.88, 0.42+hairTl*0.55);       // lighter hair → stronger pull toward light
+      const shirtLp=avKitLp(o.shirtHex), capLp=avKitLp(o.hatHex);   // black/white kit reads correctly
       let m=null;
       if(mk.ready){ const mc=document.createElement('canvas');mc.width=512;mc.height=512;
         const mx=mc.getContext('2d',{willReadFrequently:true}); mx.drawImage(mk.img,0,0,512,512); m=mx.getImageData(0,0,512,512).data; }
@@ -3225,12 +3234,15 @@ function avCompute(canvas,key,o){
         if(m){ reg=avMaskRegion(m[i],m[i+1],m[i+2]); }                                  // authored stencil (preferred)
         else { const px=i/4; reg=avClassify(d[i],d[i+1],d[i+2],d[i+3],(px%512)/512,((px/512)|0)/512); }   // heuristic fallback
         if(!reg)continue;
-        const tg=reg==='skin'?o.skinHex:reg==='hair'?o.hairHex:reg==='cap'?o.hatHex:o.shirtHex;   // cap → hat colour
-        const st=reg==='skin'?0.95:reg==='hair'?1.0:reg==='shirt'?0.96:0.92;
-        const sb=reg==='skin'?0.92:reg==='hair'?1.05:1.05;
-        // lpull: pull result lightness toward the target so DARK skin reads dark and
-        // LIGHT hair (blonde/grey) reads light, instead of staying the base's mid-brown.
-        const lp=reg==='skin'?skinLp:reg==='hair'?hairLp:0.12;
+        let tg, st, sb, lp;
+        if(reg==='skin'){ tg=o.skinHex; st=0.95; sb=0.92; lp=skinLp; }
+        else if(reg==='hair'){
+          const px=i>>2, nx=(px&511)/512, ny=(px>>9)/512;
+          if(avIsBrow(nx,ny)){ tg=BROW_HEX; st=0.90; sb=0.85; lp=0.42; }   // eyebrows stay fixed, don't follow hair
+          else { tg=o.hairHex; st=1.0; sb=1.05; lp=hairLp; }
+        }
+        else if(reg==='cap'){ tg=o.hatHex; st=0.92; sb=1.05; lp=capLp; }
+        else { tg=o.shirtHex; st=0.96; sb=1.05; lp=shirtLp; }
         const t=avTint(d[i],d[i+1],d[i+2],tg,st,sb,lp); let rr=t.r,gg=t.g,bb=t.b;
         // pattern overlay: a tonal accent clipped to the shirt (shirtPat) / cap (hatPat) region
         const pat=reg==='shirt'?o.shirtPat:reg==='cap'?o.hatPat:'none';

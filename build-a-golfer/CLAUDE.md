@@ -1788,6 +1788,18 @@ allows Google Fonts, or self-host Anton.*
   `sbApply()` resolves in ~8ms (not blocked), pill cleared, signed-in immediately, profile fills in after.
   Remaining sign-in latency is just the OAuth token exchange (Supabase-side), not app blocking.
 
+- **CS56 — Avatar masking fixes: eyebrows stop following hair colour + black/white kit renders.** Two recolor
+  bugs surfaced after the light-hair tuning (CS51): (1) eyebrows are baked into the HAIR region of the mask,
+  so light hair (blonde/platinum/grey) turned the brows garish bright. Added `avIsBrow(nx,ny)` (band ny
+  0.275–0.42, nx 0.30–0.70 — measured from the mask: central hair pixels cluster at ny 0.30–0.40) → those
+  pixels tint to a fixed `BROW_HEX` (#34281b) instead of the hair colour, so brows stay a natural dark brow
+  regardless of hair. The band excludes the temples/side hair, so female long hair still recolours. (2)
+  black (#20242b) & white (#eef0ee) shirts/caps stayed base-teal because shirt/cap used a flat lpull 0.12;
+  added `avKitLp(hex)` — keeps 0.12 for mid colours but ramps to ~0.86 for near-black/near-white so they
+  actually read black/white (skin/hair keep their own per-target lpull). Per-pixel tint block refactored to
+  branch cleanly per region. Verified on male + female across blonde/platinum/grey hair and black/white kit
+  (brows dark, hair correct, kit correct, mids unchanged); zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
