@@ -611,14 +611,16 @@ function badgeCard(b,m){ const v=b.get(m); const lvl=badgeLevel(b,m); const max=
    Unlocks are DERIVED from lifetime badge metrics (never reset), so nothing extra is persisted: an item is
    unlocked iff its req() passes. Equipped choices live in bag_look (title) / the shirt id. Special shirts only
    need m/s hex — the avatar recolours from a hex, so no art assets are required. */
+// UNLOCKABLE colours — each a DISTINCT hue (never a shade of a basic) tied to real golf lore. Shared by
+// shirt + hat. Unlocks are derived from lifetime metrics + Tour Rep, so nothing extra is persisted.
 const COSMETIC_SHIRTS=[
-  {id:'champgold',  m:'#f0b21e', s:'#cf9410', name:'Champion Gold',      req:m=>m.wins>=3,                          reqText:'Win 3 tournaments'},
-  {id:'majorpurple',m:'#7a48c2', s:'#5d3597', name:'Major Purple',       req:m=>m.majors>=1,                        reqText:'Win a major championship'},
-  {id:'mastersgrn', m:'#1f7a44', s:'#155a31', name:'Masters Green',      req:m=>m.maj.masters>=1,                   reqText:'Win The Masters'},
-  {id:'slamcrim',   m:'#b81d3a', s:'#8f1530', name:'Grand Slam Crimson', req:m=>m.distinctMajors>=4||m.careerSlams>0, reqText:'Win all four majors in a career'},
-  {id:'legendonyx', m:'#15171d', s:'#0b0d11', name:'Legend Onyx',        req:m=>m.majors>=6,                        reqText:'Win 6 major championships'},
-  {id:'spotlight',  m:'#16b5a6', s:'#0e8d82', name:'Spotlight Teal',      req:()=>spotWins()>=1,                     reqText:'Win a Monthly Spotlight event'},
-  {id:'rivalcrim',  m:'#c0392b', s:'#992d22', name:'Rivalry Crimson',     req:m=>m.rivalWins>=3,                     reqText:'Beat your rival in 3 seasons'},
+  {id:'red',        m:'#d2342e', s:'#a82822', name:'Sunday Red',     req:m=>m.wins>=10,        reqText:"Win 10 tournaments — Tiger's Sunday red"},
+  {id:'mastersgrn', m:'#1f7a44', s:'#155a31', name:'Masters Green',  req:m=>m.maj.masters>=1,  reqText:'Win The Masters — the green jacket'},
+  {id:'orange',     m:'#e8702a', s:'#c25a1e', name:'Sunday Orange',  req:m=>m.top10>=10,       reqText:"Record 10 top-10 finishes — Fowler's orange"},
+  {id:'pink',       m:'#e0589b', s:'#bd4480', name:'Poulter Pink',   req:m=>m.rivalWins>=3,    reqText:"Beat your rival in 3 seasons — Poulter's pink"},
+  {id:'hogangrey',  m:'#6b7682', s:'#545d67', name:'Hogan Grey',     req:m=>m.majors>=3,       reqText:'Win 3 major championships — Hogan grey'},
+  {id:'bronze',     m:'#b5763a', s:'#92602e', name:'Bronze',         req:m=>m.wins>=3,         reqText:'Win 3 tournaments'},
+  {id:'linkssky',   m:'#38a8d8', s:'#2c87ad', name:'Links Sky',      req:()=>repAtLeast('Star'), reqText:'Reach Tour Rep: Star'},
 ];
 function allShirts(){ return POLOS.concat(COSMETIC_SHIRTS); }   // base colours + special unlockables
 function findShirt(id){ return allShirts().find(x=>x.id===id)||POLOS[0]; }
@@ -854,6 +856,7 @@ function repTierFor(pts, count){
   if(!nx) nx=GOAT_TIER;
   return {tier:t, next:nx}; }
 function repTier(pts){ pts=pts==null?achPoints():pts; return repTierFor(pts, achCount()); }
+function repAtLeast(name){ return repRankIndex(repTier().tier.name) >= repRankIndex(name); }   // for rep-gated cosmetics
 function repTierName(pts){ return repTierFor(pts, pts>=ACH_TOTAL_PTS?ACH_TOTAL:0).tier.name; }   // pts-only (e.g. other players on the board)
 // Tour Rep perk: off-season CHANGES + RE-SPINS. A long, steady climb — almost every rank-up grants a
 // change or a re-spin — from a modest floor (1 change + 1 re-spin) up to the MAX of 3 changes + 3 re-spins,
@@ -1899,14 +1902,15 @@ const SKINS=[
   {id:'brown', m:'#9c6b43', s:'#855836', file:'skin-04-medium'},
   {id:'deep',  m:'#6f4a2e', s:'#5d3c24', file:'skin-05-deep'},
 ];
+// BASIC colours (free, shared by shirt + hat). All distinct — no two close shades, and no red/green
+// (red is Tiger's Sunday colour and green is the Masters jacket, both reserved as unlocks below).
 const POLOS=[
-  {id:'teal',  m:'#0FA888', s:'#0c917a', file:'shirt-01-teal'},
-  {id:'navy',  m:'#214a8c', s:'#1a3c72', file:'shirt-02-blue'},
-  {id:'red',   m:'#d23f34', s:'#b1322a', file:'shirt-03-red'},
-  {id:'gold',  m:'#e6a91f', s:'#c98f12', file:'shirt-04-gold'},
-  {id:'white', m:'#eef0ee', s:'#d7dbd6', file:'shirt-05-cream'},
-  {id:'purple',m:'#6b4bb0', s:'#583c93', file:'shirt-06-purple'},
-  {id:'black', m:'#2b3038', s:'#1f232a', file:'shirt-07-charcoal'},
+  {id:'teal',  m:'#0FA888', s:'#0c917a'},
+  {id:'navy',  m:'#214a8c', s:'#1a3c72'},
+  {id:'gold',  m:'#e6a91f', s:'#c98f12'},
+  {id:'white', m:'#eef0ee', s:'#d7dbd6'},
+  {id:'purple',m:'#6b4bb0', s:'#583c93'},
+  {id:'black', m:'#20242b', s:'#16191f'},
 ];
 const PANTS=[
   {id:'stone',a:'#c7bfa8', b:'#bcb39b'},
@@ -2589,7 +2593,8 @@ function scrSetup(){
   right.appendChild(handRow());
   right.appendChild(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
   right.appendChild(swatchRow('Hair',HAIRS,S.look.hair,'hair',o=>o.m));
-  right.appendChild(shirtRow());
+  right.appendChild(colorRow('Shirt','polo',S.look.polo));
+  right.appendChild(colorRow('Hat','hat',S.look.hat||S.look.polo));
   right.appendChild($(`<div style="height:14px"></div>`));
   const go=$(`<button class="btn goldfill">Start Drafting ▸<span class="sub">${S.daily?'Build a golfer for today\'s course':'Spin to build your golfer'}</span></button>`);
   go.onclick=()=>{track('draft_started',{daily:S.daily});S.screen='draft';render();}; right.appendChild(go);
@@ -2647,8 +2652,9 @@ function avClassify(r,g,b,a,nx,ny){
 // targets are the exact wheel-swatch colours (palette .m) so the avatar matches the picker.
 function avLook(L){L=L||DEFLOOK;
   const sk=SKINS.find(x=>x.id===L.skin)||SKINS[1], hr=HAIRS.find(x=>x.id===L.hair)||HAIRS[1], po=findShirt(L.polo);
+  const ht=findShirt(L.hat||L.polo);   // hat colour (own choice; falls back to shirt colour for old saves)
   const g=(L.gender==='female')?'female':'male';
-  return{ gender:g, skinHex:sk.m, hairHex:hr.m, shirtHex:po.m, key:g+'_'+sk.id+'_'+hr.id+'_'+po.id };
+  return{ gender:g, skinHex:sk.m, hairHex:hr.m, shirtHex:po.m, hatHex:ht.m, key:g+'_'+sk.id+'_'+hr.id+'_'+po.id+'_'+(L.hat||po.id) };
 }
 function avBlit(canvas,off){const cx=canvas.getContext('2d');cx.clearRect(0,0,canvas.width,canvas.height);cx.drawImage(off,0,0,canvas.width,canvas.height);}
 function avVectorFallback(canvas){const w=canvas.closest('.avatarfig');if(w)w.innerHTML=golferSVG();}
@@ -2677,7 +2683,7 @@ function avCompute(canvas,key,o){
         if(m){ reg=avMaskRegion(m[i],m[i+1],m[i+2]); }                                  // authored stencil (preferred)
         else { const px=i/4; reg=avClassify(d[i],d[i+1],d[i+2],d[i+3],(px%512)/512,((px/512)|0)/512); }   // heuristic fallback
         if(!reg)continue;
-        const tg=reg==='skin'?o.skinHex:reg==='hair'?o.hairHex:o.shirtHex;   // shirt + cap → shirt colour
+        const tg=reg==='skin'?o.skinHex:reg==='hair'?o.hairHex:reg==='cap'?o.hatHex:o.shirtHex;   // cap → hat colour
         const st=reg==='skin'?0.95:reg==='hair'?1.0:reg==='shirt'?0.96:0.92;
         const sb=reg==='skin'?0.92:reg==='hair'?1.05:1.05;
         // lpull: pull result lightness toward the target so DARK skin reads dark and
@@ -2803,21 +2809,22 @@ function swatchRow(label,opts,curId,key,colorOf){
   });
   row.appendChild(wrap); return row;
 }
-// shirt picker with unlockable cosmetic colours (locked ones show 🔒 + the requirement)
-function shirtRow(){
+// colour picker (shirt or hat) with unlockable cosmetic colours (locked ones show 🔒 + the requirement).
+// `cur` is the currently-equipped id (hat falls back to the shirt colour for old saves).
+function colorRow(label,key,cur){
   const m=badgeMetrics();
   const row=$(`<div style="margin:9px 0"></div>`);
-  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Shirt</div>`));
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${label}</div>`));
   const wrap=$(`<div style="display:flex;gap:9px;flex-wrap:wrap"></div>`);
-  POLOS.forEach(o=>{ const sel=S.look.polo===o.id;
-    const sw=$(`<button aria-label="Shirt ${o.id}" style="width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.m};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}"></button>`);
-    sw.onclick=()=>{S.look.polo=o.id; LS.set('bag_look',S.look); render();}; wrap.appendChild(sw); });
-  COSMETIC_SHIRTS.forEach(o=>{ const sel=S.look.polo===o.id; const open=!!o.req(m);
-    const sw=$(`<button aria-label="Shirt ${o.name}${open?'':' (locked)'}" title="${esc(o.name)}${open?'':', '+esc(o.reqText)}" style="position:relative;width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.m};cursor:pointer;padding:0;opacity:${open?'1':'0.4'};box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}">${open?'':'<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px">🔒</span>'}</button>`);
-    sw.onclick=()=>{ if(!o.req(m)){ toast('🔒 '+o.name+', '+o.reqText); return; } S.look.polo=o.id; LS.set('bag_look',S.look); render(); };
+  POLOS.forEach(o=>{ const sel=cur===o.id;
+    const sw=$(`<button aria-label="${label} ${o.id}" style="width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.m};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}"></button>`);
+    sw.onclick=()=>{S.look[key]=o.id; LS.set('bag_look',S.look); render();}; wrap.appendChild(sw); });
+  COSMETIC_SHIRTS.forEach(o=>{ const sel=cur===o.id; const open=!!o.req(m);
+    const sw=$(`<button aria-label="${label} ${o.name}${open?'':' (locked)'}" title="${esc(o.name)}${open?'':' · '+esc(o.reqText)}" style="position:relative;width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.m};cursor:pointer;padding:0;opacity:${open?'1':'0.4'};box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}">${open?'':'<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px">🔒</span>'}</button>`);
+    sw.onclick=()=>{ if(!o.req(m)){ toast('🔒 '+o.name+' · '+o.reqText); return; } S.look[key]=o.id; LS.set('bag_look',S.look); render(); };
     wrap.appendChild(sw); });
   row.appendChild(wrap);
-  if(COSMETIC_SHIRTS.some(o=>!o.req(m))) row.appendChild($(`<div class="small muted" style="margin-top:5px;font-size:10.5px">🔒 Special colours unlock as you win, see the Trophy Room.</div>`));
+  if(COSMETIC_SHIRTS.some(o=>!o.req(m))) row.appendChild($(`<div class="small muted" style="margin-top:5px;font-size:10.5px">🔒 Tap a locked colour to see how to unlock it.</div>`));
   return row;
 }
 function handRow(){
