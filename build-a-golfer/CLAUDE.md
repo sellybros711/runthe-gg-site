@@ -1449,6 +1449,16 @@ allows Google Fonts, or self-host Anton.*
   not honored by the PNG (cap baked into art). NEXT (owner idea): PATTERN SHIRTS as unlockables — now easy:
   draw a pattern clipped to the shirt-mask region. Em-dash reword (visible copy, ~185) still pending too.
 
+- Em-dashes removed from all visible copy (Jordo) — DONE. A string-literal-aware char-scanner (Python,
+  scratchpad) replaced em-dashes ONLY inside '...'/"..."/`...` literals (default comma; absorbing spaces),
+  leaving `//` and `/* */` comments and score en-dashes (9–5) untouched. Nested template literals + the HTML
+  <title> were fixed by hand, and clear sentence-breaks (toasts, rival/GOAT cards) upgraded comma→period so
+  nothing reads as a comma splice. ~185 visible instances cleared; remaining em-dashes are comments only.
+  Scouting blurb was already de-em-dashed in the second-person pass. Verified: page loads clean, sampled copy
+  (course blurbs, rival card) reads naturally.
+  NEXT (owner): back to player customization — PATTERN SHIRTS as unlockables (clip a pattern to the shirt-mask
+  region now that the region-mask system is in).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
