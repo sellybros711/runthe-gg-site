@@ -1530,6 +1530,22 @@ allows Google Fonts, or self-host Anton.*
   (opposite-field screen, full gated season -> summary, playoff elimination, zero page errors). Tunable:
   ENTRY_CAP {major:100,sig:50}, OPPO purse/basePts, exemption windows.
 
+- PGA realism pt3 — Season awards — DONE. End-of-season honours computed in `computeAwards()` (after the
+  OWGR update so year-end World No.1 is settled): Player of the Year (poyScore = wins*6 + majors*10 + Cup*15
+  + points/1000 + top10*0.4, max over the field), Money Title (money leader), Scoring Title (lowest to-par
+  per round, `SCOR_MIN=30` rounds to qualify - new `t.toPar`/`t.rounds` accumulators in finalizeEvent +
+  simHeadlessEvent + totals init, summed from per-round to-par so the finale's stagger doesn't distort it),
+  Rookie of the Year (best debutant who competed - rookies = world players with `debutYear===w.simYear`,
+  tagged in genRookie, + you in year 1; falls back to the top debutant by lov if none made the 120-field),
+  and year-end World No. 1 (worldRanking()[0]). Stored in `S.seasonAwards`; summary renders a "Season Awards
+  · you won N" card (winners listed, your wins gold + YOU badge). New lt counters poySeasons/roySeasons/
+  scoringSeasons/no1Seasons/weeksAtNo1 (money title reuses moneyLeaderSeasons) surfaced in achMetrics; new
+  "Season Awards" achievement category (ACH_CATS) with 8 achievements (POY x1/x3, ROY, Scoring x1/x5, World
+  No.1 x1/x3, 50 weeks at No.1). Career tally in `S.career.awards`. Verified via MC (elite sweeps all 5, mid
+  wins only ROY in yr1, ROY fallback names a debutant when none qualify) + UI e2e (awards populated,
+  achievements unlock, lt counters increment, Season Awards card renders, zero page errors). NEXT in roadmap:
+  Olympics (stroke play + medals + country caps), then Ryder/Presidents Cup match-play.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
