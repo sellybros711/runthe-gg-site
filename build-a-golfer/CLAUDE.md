@@ -1753,6 +1753,20 @@ allows Google Fonts, or self-host Anton.*
   `python3 dg_transform.py` (review report) → `python3 dg_transform.py --write --html build-a-golfer.html`
   → deploy. Constants (OVR_SLOPE/SHAPE) may want a small tune after eyeballing the first real report.
 
+- **CS53 — Re-rating APPLIED from the real 2026-06-22 DataGolf feed.** Owner supplied the raw
+  `skill-ratings` CSV (437 players). Ran `dg_transform.py` on it → **136 current players re-rated** in both
+  golfers.json and the embedded HTML ROSTER; legends + 9 unmatched young amateurs untouched. Three script
+  fixes were needed for the real feed: (1) **CSV input** (`--input *.csv`); (2) DataGolf reports driving as
+  a **delta vs average** — `driving_dist` = yards ± avg (McIlroy +21), `driving_acc` = fairway-rate fraction
+  ± avg (±0.12) — so driving now maps from the delta (anchor 0→80) not absolute yards/%; (3) **Nordic name
+  transliteration** (ø→o, æ→ae, å→a…) so "Højgaard"/"Olesen" match the feed's ASCII spelling. Result fixes
+  the exact complaint — **Cam Young 89 > McNealy 87** (sg_total 1.72 vs 1.33), Scheffler 95 (clear #1), Rory
+  91, Xander 90; declining vets fall (Cam Smith→81, Poulter/Donald→75/72, Brendon Todd→69), bombers/elite
+  rise (Rory/Bryson +4). Distribution: star/rising overalls 69-95, mean 82.5, only 6 ≥90 (realistic). Smoke
+  test: ROSTER parses (242), all skills numeric, overall stays consistent with the 8 boxes (max drift 0.50 =
+  rounding), draft renders with zero JS errors. NOTE: the raw DataGolf CSV is NOT committed (3rd-party data /
+  licensing) — re-supply it to re-run. data_source dated to the feed (2026-06-22), not the run day.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

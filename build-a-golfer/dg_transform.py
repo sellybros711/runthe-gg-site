@@ -52,9 +52,12 @@ TOUR_AVG  = 80.0          # SG 0 maps here (tour average)
 OVR_SLOPE = 5.2           # overall rating points per stroke of sg_total (Scheffler ~+2.7 -> ~94)
 SHAPE = {"app": 13.0, "put": 15.0, "arg": 16.0}   # rating points per SG, for category shape only
 CLAMP_LO, CLAMP_HI = 55, 99
-# driving comes as raw yards / accuracy %, not SG — anchored to the documented scale in golfers.json
-DIST_AVG_YDS, DIST_SLOPE = 299.0, 0.95     # 299y avg=80; ~+0.95 rating/yard
-ACC_AVG_PCT,  ACC_SLOPE  = 61.0, 1.15      # 61% avg=80; +1.15 rating/pct
+# DataGolf reports driving as a skill RELATIVE to tour average: driving_dist = yards vs avg (e.g. McIlroy
+# +21), driving_acc = fraction of fairways vs avg (e.g. +0.059 = +5.9 pts). Anchor delta 0 -> 80.
+DIST_SLOPE = 0.90      # rating points per yard of driving distance above/below average
+ACC_SLOPE  = 1.20      # rating points per percentage-point of fairways hit above/below average
+DIST_AVG_YDS = 299.0   # only used if a feed ever reports ABSOLUTE yards instead of a delta
+ACC_ABS_AVG  = 61.0    # only used if a feed ever reports ABSOLUTE accuracy %
 SG_CATS = ("dist", "acc", "app", "sht", "scr", "bnk", "put")   # everything the feed drives (not clu)
 # composure has no SG signal — keep whatever the roster already has
 PRESERVE_FIELDS = ("clu",)
@@ -65,12 +68,16 @@ ALIASES = {
     # "matsuyama hideki": "hideki matsuyama",   # example; most resolve automatically
 }
 
+# letters NFKD can't decompose to ASCII (Nordic etc.) — the feed writes them ASCII, the roster doesn't
+_TRANSLIT = str.maketrans({"ø": "o", "Ø": "o", "æ": "ae", "Æ": "ae", "å": "a", "Å": "a",
+                           "ß": "ss", "ł": "l", "Ł": "l", "đ": "d", "Đ": "d", "ð": "d", "þ": "th"})
 def norm_name(n: str) -> str:
-    """Normalize a player name for matching. Handles DataGolf 'Last, First', accents, suffixes."""
+    """Normalize a player name for matching. Handles DataGolf 'Last, First', accents/Nordic, suffixes."""
     n = (n or "").strip()
     if "," in n:
         last, first = n.split(",", 1)
         n = first.strip() + " " + last.strip()
+    n = n.translate(_TRANSLIT)
     n = unicodedata.normalize("NFKD", n).encode("ascii", "ignore").decode()
     n = n.lower()
     n = re.sub(r"\b(jr|sr|ii|iii|iv|v)\b", " ", n)
@@ -158,9 +165,14 @@ def main():
     ap.add_argument("--html", help="ALSO patch the embedded ROSTER in this HTML (e.g. build-a-golfer.html)")
     args = ap.parse_args()
 
-    feed = json.load(open(args.input)) if args.input else fetch_feed()
-    rows = players_from_feed(feed)
-    last_updated = (feed.get("last_updated") if isinstance(feed, dict) else None) or "unknown"
+    if args.input and args.input.lower().endswith(".csv"):
+        import csv as _csv
+        rows = list(_csv.DictReader(open(args.input, newline="", encoding="utf-8")))
+        last_updated = (rows[0].get("last_updated") if rows else None) or "unknown"
+    else:
+        feed = json.load(open(args.input)) if args.input else fetch_feed()
+        rows = players_from_feed(feed)
+        last_updated = (feed.get("last_updated") if isinstance(feed, dict) else None) or "unknown"
 
     # index the feed by normalized name
     feed_by_name = {}
@@ -186,7 +198,7 @@ def main():
         sg_putt = getf(row, "sg_putt", "putt")
         sg_arg  = getf(row, "sg_arg", "arg")
         sg_tot  = getf(row, "sg_total", "total")
-        dist_y  = getf(row, "driving_dist", "dist", "ott_dist")
+        dist_v  = getf(row, "driving_dist", "dist", "ott_dist")
         acc_v   = getf(row, "driving_acc", "acc", "ott_acc")
         raw = {}
         if sg_app  is not None: raw["app"] = TOUR_AVG + sg_app  * SHAPE["app"]
@@ -195,11 +207,12 @@ def main():
         if "sht" in raw:   # scrambling = around-green + putting; bunker derived from short game (no split in feed)
             raw["scr"] = (0.60*raw["sht"] + 0.40*raw["put"]) if "put" in raw else raw["sht"]
             raw["bnk"] = 0.70*raw["sht"] + 0.30*raw.get("scr", raw["sht"])
-        if dist_y is not None and dist_y > 150:                 # raw yards
-            raw["dist"] = TOUR_AVG + (dist_y - DIST_AVG_YDS) * DIST_SLOPE
-        if acc_v is not None:
-            pct = acc_v*100 if acc_v <= 1.5 else acc_v          # fraction → pct
-            raw["acc"] = TOUR_AVG + (pct - ACC_AVG_PCT) * ACC_SLOPE
+        if dist_v is not None:                                  # yards vs avg (delta); guard for absolute yards
+            dist_delta = (dist_v - DIST_AVG_YDS) if dist_v > 150 else dist_v
+            raw["dist"] = TOUR_AVG + dist_delta * DIST_SLOPE
+        if acc_v is not None:                                   # fairway-rate vs avg (fraction); guard for absolute %
+            acc_pts = (acc_v - ACC_ABS_AVG) if acc_v > 1.5 else acc_v * 100
+            raw["acc"] = TOUR_AVG + acc_pts * ACC_SLOPE
         cats = [k for k in SG_CATS if k in raw]
         if not cats:
             return None, None
@@ -216,7 +229,10 @@ def main():
         return {k: clampi(raw[k] + shift) for k in cats}, target
 
     matched, unmatched_roster, changes = [], [], []
-    today = datetime.date.today().isoformat()
+    # date the ratings to the FEED, not the run day (the data is as-of last_updated)
+    today = (last_updated or "").split(" ")[0]
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", today):
+        today = datetime.date.today().isoformat()
 
     for p in golfers:
         row = feed_by_name.get(norm_name(p["name"]))
