@@ -6215,10 +6215,10 @@ async function sbApply(session){
   sbUser=(session&&session.user)||null; sbUsername=null; sbProfile=null;
   let oauth=false; try{ if(localStorage.getItem('rtt_oauth_pending')&&sbUser){ oauth=true; localStorage.removeItem('rtt_oauth_pending'); } }catch(e){}
   if(sbUser&&sb){
+    // small, fast query — needed to decide signed-in vs username-picker
     try{ const {data}=await sb.from('profiles').select('username').eq('id',sbUser.id).maybeSingle(); sbUsername=(data&&data.username)||null; }catch(e){}
-    await sbLoadProfile();
     S.acctMode=sbUsername?'profile':'username';   // drop to username picker if none yet
-    flushPendingSeasons();   // post every season queued while signed out / offline
+    flushPendingSeasons();   // post every season queued while signed out / offline (fire-and-forget)
     migrateLegacyCareerSave();   // claim a pre-scoping career for this account, drop the unscoped copy
     maybeClaimDaily();        // log a guest-played daily round to the account (consumes one of its attempts)
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -6227,6 +6227,9 @@ async function sbApply(session){
       if(sbUsername) toast('Signed in as '+esc(sbUsername));
       else { S.overlay='account'; S.acctMode='username'; }
     }
+    render();   // header/state now reflect sign-in — drop the "Finishing…" pill immediately, don't block on the
+    sbLoadProfile().then(()=>render());   // heavy careers/stats fetch (every posted season) — load in the background
+    return;
   }
   render();   // refresh so the header (Sign in ↔ Player) and any open overlay reflect auth state
 }

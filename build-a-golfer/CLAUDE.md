@@ -1779,6 +1779,15 @@ allows Google Fonts, or self-host Anton.*
   migrated, resume shows; sign-out → gated again; other account → isolated. (Lifetime record `bag_career`
   HoF/Tour-Rep display is a separate key, still local + cloud-synced — not part of this fix.)
 
+- **CS55 — Sign-in no longer hangs ~10s on the "Finishing Google sign-in…" pill.** `sbApply` set
+  `authPending=false` up top but only `render()`ed (dropping the pill) AFTER `await`ing the heavy
+  `sbLoadProfile()` — which fetches EVERY `runtour_scores` row for the account (owner has 41 builds → many
+  rows), slow on mobile. Now sbApply renders right after the small/fast username query (pill gone + header
+  signed-in), and runs the heavy careers/stats fetch in the background (`sbLoadProfile().then(render)`),
+  refreshing the Trophy Room when it lands. Verified in Playwright with a stubbed 1500ms profile load:
+  `sbApply()` resolves in ~8ms (not blocked), pill cleared, signed-in immediately, profile fills in after.
+  Remaining sign-in latency is just the OAuth token exchange (Supabase-side), not app blocking.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
