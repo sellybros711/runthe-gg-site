@@ -3959,8 +3959,9 @@ function cupMatchRow(m, anim){
   </div>`;
 }
 // pre-event selection announcement for the FedEx playoffs and the Olympics (the cup has its own intro)
-function scrSelectionScreen(evt){
-  clearTimeout(seasonTimer); RT.classList.add('major-screen');
+// Shared copy for the playoff / Olympic selection moment — used by both the full-screen card
+// (Auto Sim OFF) and the timed bottom pop-up (Auto Sim ON).
+function selectionInfo(evt){
   const meName=S.season.me.name, country=esc((S.look&&S.look.country)||'your country');
   let tag, made, title, sub;
   if(evt.playoff){
@@ -3979,6 +3980,21 @@ function scrSelectionScreen(evt){
       ? `You are one of the 60 teeing it up for ${country}. Go and win a medal for the nation.`
       : `Outside the 60-player field for ${country} this cycle (max 4 per country). Keep climbing the World Ranking and you will be on the plane in four years. You will play a Tour stop this week instead.`;
   }
+  return {tag, made, title, sub};
+}
+// Timed bottom pop-up version of the selection announcement — appears, reads, fades, no click needed.
+function selectionPopup(evt){
+  const info=selectionInfo(evt), col=info.made?'var(--gold)':'#e9a23b';
+  const t=$(`<div style="position:fixed;left:0;right:0;bottom:22px;margin:0 auto;z-index:30;width:min(440px,92vw);box-sizing:border-box;background:linear-gradient(180deg,${info.made?'#15331f':'#0a2740'},#0a1626);color:var(--oncard);border:1px solid ${col};border-radius:12px;padding:13px 16px;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:celebRise .35s ease both">
+    <div style="font:800 10px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:${col};margin-bottom:5px">${info.made?'🎉 ':''}${esc(info.tag)} · Selection</div>
+    <div style="font:800 17px/1.2 var(--body);color:${col}">${info.made?'🏆 ':''}${info.title}</div>
+    <div class="small muted" style="margin-top:4px">${info.sub}</div></div>`);
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.transition='opacity .45s ease'; t.style.opacity='0'; setTimeout(()=>{ if(t.parentNode) t.remove(); },450); }, 3300);
+}
+function scrSelectionScreen(evt){
+  clearTimeout(seasonTimer); RT.classList.add('major-screen');
+  const {tag, made, title, sub}=selectionInfo(evt);
   add($(`<div class="center" style="margin-top:8px"><span class="tag" style="color:#ffd76a;border-color:#ffd76a">${made?'🎉 ':''}${tag} · Selection</span></div>`));
   const col=made?'var(--gold)':'#e9a23b';
   add($(`<div class="center" style="margin:18px 0 8px"><div style="display:inline-block;background:linear-gradient(180deg,${made?'#15331f':'#0a2740'},#0a2740);border:1px solid ${col};border-radius:16px;padding:20px 24px;max-width:92vw">
@@ -4235,9 +4251,17 @@ function scrSeason(){
   // Ryder/Presidents Cup weeks route to their own match-play screen
   const cur=S.schedule[S.evtIndex];
   if(cur && cur.teamcup && !S.daily){ scrTeamCup(); return; }
-  // pre-event selection announcement (playoffs / Olympics) — "you made it / just missed", shown once
+  // pre-event selection announcement (playoffs / Olympics) — "you made it / just missed", shown once.
+  // With Auto Sim ON, a playoff stage announces itself as a timed bottom pop-up and rolls straight on
+  // (no click to progress through the final 3 events). Auto Sim OFF, or the Olympics set-piece, keeps
+  // the full-screen card that waits for a tap.
   if(!S.daily){ if(!S.season._annAck) S.season._annAck={};
-    if(cur && (cur.playoff||cur.olympics) && !S.season._annAck[S.evtIndex]){ scrSelectionScreen(cur); return; } }
+    if(cur && (cur.playoff||cur.olympics) && !S.season._annAck[S.evtIndex]){
+      if(cur.playoff && S.autoSim){
+        S.season._annAck[S.evtIndex]=true;   // auto-acknowledged; the pop-up is just a heads-up
+        selectionPopup(cur);                 // falls through to render the event (or elimination) underneath
+      } else { scrSelectionScreen(cur); return; }
+    } }
   // FedEx playoffs: if you didn't qualify for this stage's field, your season is over.
   // Finish the playoffs headlessly (so a Cup champion is still crowned) and jump to the summary.
   const up=S.schedule[S.evtIndex];
