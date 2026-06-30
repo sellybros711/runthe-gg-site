@@ -1510,8 +1510,25 @@ allows Google Fonts, or self-host Anton.*
   with year-over-year movement (▲/▼ vs `S.career.lastWorldRank`, stored in `S.worldRankMove`) + the Tour Card
   status line. Verified via 10-yr Monte Carlo (elite build holds #1, mid-80s pro hovers ~#40-70 card-secure,
   weak build correctly near the bottom card-lost) + UI smoke test (season bar + summary banner render, World
-  #14 ▲10, zero page errors). NEXT (deploy 2): ranking-gated entry - signature events invite top-50 OWGR,
-  majors top-70 + reigning major champs; non-qualifiers play an opposite-field event (real gate + fallback).
+  #14 ▲10, zero page errors).
+
+- PGA realism pt2b — Ranking-gated entry (real gate + opposite-field fallback) — DONE (deploy 2 of 2).
+  `mkEvt` now tags limited-field events: majors `limited,entryCap=ENTRY_CAP.major(100)`, signature events
+  (type sig, not The Players) `entryCap=ENTRY_CAP.sig(50)`. `beginEvent` splits the season field via
+  `splitField(field,evt)` -> {marquee (top entryCap by OWGR, +you if exempt), oppo, youIn}; you watch the
+  tier you qualify for and the OTHER tier is run by `simHeadlessEvent` (no UI/no S.curEvt/no results push -
+  just banks money+points into S.season.totals) so standings + OWGR stay whole. Miss the cut -> you play an
+  opposite-field event (`makeOppoEvt`: Barracuda/Barbasol/etc., $4M purse, basePts 360, `oppo:true`). Personal
+  exemptions (`playerExempt`): 5-yr major-champ exemption into majors, 2-yr winner's exemption into signature
+  events (any win -> back into the big events for 2 years - the escape hatch off the fringe). UI: opposite-
+  field red banner ("Outside the OWGR cut for the {marquee}... win to bank points and climb"), `typeLbl`
+  shows "Signature · top 50" / "Opposite-field", and the Next Event button uses `playerEvtName` to show the
+  event you'll actually tee up. finalizeEvent basePts adds the `oppo?360` tier. Verified: MC (signature
+  marquee=50/oppo=70, majors=100/oppo=20, elite plays all marquees, #89 mid plays majors but opposite-field
+  for signatures, #151 weak opposite-field throughout, winner's-exemption #94 gets into signatures, field
+  partition sums to 120) + 10-yr OWGR stability (mid pro oscillates around the top-50 cut, no NaN) + UI smoke
+  (opposite-field screen, full gated season -> summary, playoff elimination, zero page errors). Tunable:
+  ENTRY_CAP {major:100,sig:50}, OPPO purse/basePts, exemption windows.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
