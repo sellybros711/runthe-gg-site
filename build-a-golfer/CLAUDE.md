@@ -1459,6 +1459,20 @@ allows Google Fonts, or self-host Anton.*
   NEXT (owner): back to player customization — PATTERN SHIRTS as unlockables (clip a pattern to the shirt-mask
   region now that the region-mask system is in).
 
+- Player customization pt1 — de-duped colors + hat color + golf-lore unlocks (owner). The old COSMETIC_SHIRTS
+  were near-duplicates of free basics (spotlight-teal≈teal, rivalry/slam-crimson≈red, champ-gold≈gold,
+  major-purple≈purple, legend-onyx≈black) — exactly the "teal/red locked but a close variation selectable"
+  problem. Fixed: BASICS (free, shirt+hat) = 6 distinct solids with NO red/green (red=Tiger's Sunday, green=
+  Masters jacket — reserved). New COSMETIC_SHIRTS = 7 DISTINCT hues, each golf-lore-themed: Sunday Red (win 10),
+  Masters Green (win The Masters), Sunday Orange (10 top-10s), Poulter Pink (rivalWins≥3), Hogan Grey (3 majors),
+  Bronze (3 wins), Links Sky (`repAtLeast('Star')`). Added independent HAT colour: `avLook` returns `hatHex`
+  (falls back to shirt for old saves; in cache key), avCompute tints the cap region to `hatHex` (the mask
+  already had a separate cap region). Generalized shirtRow→`colorRow(label,key,cur)`, used for Shirt + Hat
+  rows. `repAtLeast(name)` helper added. id 'red' reused so old red saves still resolve. Verified: hat≠shirt
+  colors render, setup screen shows both rows with 🔒 locks, no errors. PHASE 2 (next): PATTERNS as unlockables
+  (pinstripe/polka/argyle/colorblock/gingham/houndstooth/chevron/tartan), clipped to shirt/cap mask region,
+  golf-lore gated (Argyle=Payne Stewart/win US Open, Tartan=win The Open, etc.) + hat patterns + picker rows.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
