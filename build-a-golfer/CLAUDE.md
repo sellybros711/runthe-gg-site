@@ -1709,6 +1709,15 @@ allows Google Fonts, or self-host Anton.*
   1 of 3; out-of-attempts blocks). NOTE: the 1-attempt cap is enforced per-browser via localStorage — true
   per-IP enforcement would need a server/edge-function check (no anon IP tracking exists in the SQL backend).
 
+- **CS50 — Guest leaderboard sign-in CTA in every board state.** The in-board "🔒 Sign in to see the full
+  board" lock CTA previously rendered ONLY in the `globalOk && globalRows.length` branch of
+  `overlayLeaderboard`. So if a tab's board returned **no global rows** or fell back to **local mode** (RPC
+  error / offline), a guest saw the board with no sign-in prompt — which is what happened on Single Season
+  (Career had global rows so its CTA showed; Season did not). Added a shared `guestBoardCTA` (Create account
+  + Sign in, gated on `!sbSignedIn()`) and now append it in the "no scores yet" branch and the local-fallback
+  branch (both season + career), so a signed-out player always gets the prompt on every tab. Verified in
+  Playwright across all three states (local-fallback, empty, full) on both tabs.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
