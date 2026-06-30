@@ -1767,6 +1767,18 @@ allows Google Fonts, or self-host Anton.*
   rounding), draft renders with zero JS errors. NOTE: the raw DataGolf CSV is NOT committed (3rd-party data /
   licensing) — re-supply it to re-run. data_source dated to the feed (2026-06-22), not the run day.
 
+- **CS54 — Saved careers are account-scoped + sign-in-gated (guest leak fix).** Bug: the career franchise
+  was saved under a plain, unscoped LS key (`bag_careersave`) and `careerSaveInfo()` had no auth check, so a
+  guest on the same browser saw a signed-in user's "Resume Career Mode" and could continue it. Fix: career
+  save/resume now require `sbSignedIn()` and use `acctKey('bag_careersave')` (namespaced by user id), so a
+  guest can't see or save a career and different accounts are isolated. `migrateLegacyCareerSave()` (called
+  from `sbApply` on sign-in) claims a pre-scoping unscoped career for the first account to sign in (if it has
+  none) and deletes the unscoped copy so no guest/other account can reach it. `saveMidSeasonAndExit` now
+  toasts "Sign in to save & resume your career" instead of a false "Career saved" when a guest exits.
+  Verified in Playwright: guest → careerSaveInfo null / no resume button / saveCareer false; sign-in →
+  migrated, resume shows; sign-out → gated again; other account → isolated. (Lifetime record `bag_career`
+  HoF/Tour-Rep display is a separate key, still local + cloud-synced — not part of this fix.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
