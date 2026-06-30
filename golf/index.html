@@ -3894,12 +3894,26 @@ function wanamakerSVG(){ return `<svg viewBox="0 0 100 116" width="100%" height=
   <rect x="32" y="94" width="36" height="8" rx="2" fill="url(#wm)"/>
   <rect x="26" y="102" width="48" height="10" rx="3" fill="url(#wm)"/></svg>`; }
 function greenJacketSVG(){ return `<svg viewBox="0 0 100 116" width="100%" height="100%">
-  <defs><linearGradient id="gj" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2aa35c"/><stop offset="1" stop-color="#0f5e34"/></linearGradient></defs>
-  <path d="M50 24 L30 20 L15 40 L24 49 L24 100 L76 100 L76 49 L85 40 L70 20 Z" fill="url(#gj)" stroke="#0a3d22" stroke-width="2" stroke-linejoin="round"/>
-  <path d="M50 24 L34 29 L49 72 Z" fill="#1f9650" stroke="#0a3d22" stroke-width="1.5"/>
-  <path d="M50 24 L66 29 L51 72 Z" fill="#1f9650" stroke="#0a3d22" stroke-width="1.5"/>
-  <path d="M49 72 L50 50 L51 72 Z" fill="#0a3d22"/>
-  <circle cx="50" cy="78" r="2.4" fill="#f9d271"/><circle cx="50" cy="89" r="2.4" fill="#f9d271"/></svg>`; }
+  <defs>
+    <linearGradient id="gj" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2aa35c"/><stop offset="1" stop-color="#0f5e34"/></linearGradient>
+    <linearGradient id="gjl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#33b466"/><stop offset="1" stop-color="#13733e"/></linearGradient>
+  </defs>
+  <!-- jacket body: broad rounded shoulders, sleeves hang at the sides, shallow open hem -->
+  <path d="M44 32 C34 30 22 33 15 44 L20 106 L46 106 L50 91 L54 106 L80 106 L85 44 C78 33 66 30 56 32 L50 41 Z" fill="url(#gj)" stroke="#0a3d22" stroke-width="2" stroke-linejoin="round"/>
+  <!-- sleeve seams: arms hang at the sides -->
+  <path d="M27 36 L30 103" fill="none" stroke="#0a3d22" stroke-width="1.4" opacity="0.5"/>
+  <path d="M73 36 L70 103" fill="none" stroke="#0a3d22" stroke-width="1.4" opacity="0.5"/>
+  <!-- collar band behind the neck -->
+  <path d="M43 32 L50 27 L57 32 L52 39 L50 35 L48 39 Z" fill="#0c5430" stroke="#0a3d22" stroke-width="1"/>
+  <!-- notched lapels -->
+  <path d="M44 32 L50 41 L50 74 L35 56 L37 37 Z" fill="url(#gjl)" stroke="#0a3d22" stroke-width="1.6" stroke-linejoin="round"/>
+  <path d="M56 32 L50 41 L50 74 L65 56 L63 37 Z" fill="url(#gjl)" stroke="#0a3d22" stroke-width="1.6" stroke-linejoin="round"/>
+  <!-- shirt/tie gap showing between the open fronts -->
+  <path d="M50 41 L46 52 L50 64 L54 52 Z" fill="#0a3d22"/>
+  <!-- fastening button -->
+  <circle cx="50" cy="72" r="2.7" fill="#f9d271" stroke="#0a3d22" stroke-width="0.7"/>
+  <!-- breast pocket -->
+  <rect x="58" y="58" width="9" height="2.6" rx="1.2" fill="#0c5430"/></svg>`; }
 function usOpenTrophySVG(){ return `<svg viewBox="0 0 100 116" width="100%" height="100%">
   <defs>${trophyGold('uo')}</defs>
   <path d="M22 26 C4 26 6 58 30 58" stroke="url(#uo)" stroke-width="6" fill="none" stroke-linecap="round"/>
