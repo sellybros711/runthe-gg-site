@@ -1421,6 +1421,20 @@ allows Google Fonts, or self-host Anton.*
   flat (perk-less) rank-ups (shows the rank's perk, no "+N" line). Verified the table reads correctly; the
   perk floor is gentler for brand-new accounts (1/1 vs the old 2/1) by design, to make room for the climb.
 
+- Avatar re-tint fixes (Jordo feedback: "colors don't change much, hair color is wrong, all shirts have teal
+  sleeves"). Owner chose to FIX the re-tint (not switch to vector / not remove). Root causes found in
+  `avClassify`/`avCompute` (the canvas re-tint of the single base PNG): (1) **teal sleeves** — shirt region was
+  gated `nx>0.20&&nx<0.80` (central torso only), so the edge sleeves never recolored; widened to nx 0.05–0.95
+  and rely on a brightness/sat floor (`l>0.21`) to keep the dark-green badge background out. (2) **hair wrong**
+  — hair & skin hue ranges overlapped and ties resolved to skin, painting the hairline skin-tone; added a
+  FACE-OVAL test (`((nx-.5)/.175)²+((ny-.435)/.185)²<=1` = skin) so dark head pixels OUTSIDE the oval are hair.
+  (3) **colors muted** — raised `lpull` (skin .30→.48, hair .22→.50) so dark skin reads dark and blonde/grey
+  hair reads light instead of base mid-brown; small sat/strength bumps. Verified visually across skin tones,
+  hair colors, white/gold/black polos (sleeves included) and the female base — background preserved, no leak.
+  NOTE: still ONE shared face (re-tint can't make distinct faces; that'd need new art) — owner accepted.
+  STILL TODO from the same feedback: scouting blurb second-person ("your bunker play"); remove em-dashes from
+  copy (reword naturally, ~206 visible instances).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

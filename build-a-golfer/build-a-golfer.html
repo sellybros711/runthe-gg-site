@@ -2628,16 +2628,19 @@ function avTint(r,g,b,hex,strength,satB,lpull){lpull=(lpull==null)?0.1:lpull;
   return{r:Math.round(r*(1-strength)+ti.r*strength),g:Math.round(g*(1-strength)+ti.g*strength),b:Math.round(b*(1-strength)+ti.b*strength)};}
 function avClassify(r,g,b,a,nx,ny){
   if(a<30)return null;const{h,s,l}=avRgbHsl(r,g,b);
-  const head=ny>0.17&&ny<0.74&&nx>0.18&&nx<0.82, lower=ny>0.58;
-  // cap: a tight box over the crown/brim so the teal cap recolors to the shirt
-  // colour without catching the dark-green badge background around it.
-  const cap=ny>0.07&&ny<0.36&&nx>0.27&&nx<0.73&&avInHue(h,148,195)&&s>0.26&&l>0.20&&l<0.9;
-  const skin=head&&avInHue(h,12,46)&&s>0.2&&l>0.27&&l<0.86;
-  const hair=head&&((avInHue(h,12,48)&&s>0.18&&l<0.34)||(s<0.18&&l>0.28&&l<0.72&&ny<0.56));
-  // shirt: central lower band only + a saturation/brightness floor so the dark-green
-  // badge background in the lower corners is never recolored.
-  const shirt=lower&&nx>0.20&&nx<0.80&&avInHue(h,150,195)&&s>0.32&&l>0.24&&l<0.80;
-  if(cap)return'cap';if(shirt)return'shirt';if(hair&&!skin)return'hair';if(skin)return'skin';return null;
+  const head=ny>0.17&&ny<0.74&&nx>0.18&&nx<0.82, lower=ny>0.55;
+  // cap: a box over the crown/brim so the teal cap recolors to the shirt colour
+  const cap=ny>0.07&&ny<0.36&&nx>0.25&&nx<0.75&&avInHue(h,146,200)&&s>0.22&&l>0.18&&l<0.92;
+  // FACE OVAL: pixels inside it are skin; the dark head pixels OUTSIDE it (top fringe,
+  // temples, sideburns) are hair. This stops the hairline being painted skin-tone.
+  const fr=((nx-0.50)/0.175)**2+((ny-0.435)/0.185)**2, inFace=fr<=1;
+  const hairDark=avInHue(h,6,54)&&s>0.10&&l<0.42;            // brown/auburn hair, any shade
+  const hair=head&&!cap&&!inFace&&(hairDark||(s<0.22&&l<0.60&&ny<0.50));
+  const skin=head&&!cap&&avInHue(h,6,48)&&s>0.16&&l>0.20&&l<0.90&&(inFace||l>0.42);
+  // shirt: the WHOLE polo incl. sleeves out to the edges; the dark badge background is
+  // kept out by the brightness/saturation floor (it sits below l 0.26), not by position.
+  const shirt=lower&&nx>0.05&&nx<0.95&&avInHue(h,150,202)&&s>0.24&&l>0.21&&l<0.86;
+  if(cap)return'cap';if(shirt)return'shirt';if(hair)return'hair';if(skin)return'skin';return null;
 }
 // targets are the exact wheel-swatch colours (palette .m) so the avatar matches the picker.
 function avLook(L){L=L||DEFLOOK;
@@ -2658,9 +2661,11 @@ function avCompute(canvas,key,o){
       for(let i=0;i<d.length;i+=4){const px=i/4,x=px%512,y=(px/512)|0;
         const reg=avClassify(d[i],d[i+1],d[i+2],d[i+3],x/512,y/512); if(!reg)continue;
         const tg=reg==='skin'?o.skinHex:reg==='hair'?o.hairHex:o.shirtHex;   // shirt + cap → shirt colour
-        const st=reg==='skin'?0.92:reg==='hair'?1.0:reg==='shirt'?0.95:0.92;
-        const sb=reg==='skin'?0.88:reg==='hair'?1.0:1.05;
-        const lp=reg==='skin'?0.30:reg==='hair'?0.22:0.10;
+        const st=reg==='skin'?0.95:reg==='hair'?1.0:reg==='shirt'?0.96:0.92;
+        const sb=reg==='skin'?0.92:reg==='hair'?1.05:1.05;
+        // lpull: pull result lightness toward the target so DARK skin reads dark and
+        // LIGHT hair (blonde/grey) reads light, instead of staying the base's mid-brown.
+        const lp=reg==='skin'?0.48:reg==='hair'?0.50:0.12;
         const t=avTint(d[i],d[i+1],d[i+2],tg,st,sb,lp); d[i]=t.r;d[i+1]=t.g;d[i+2]=t.b;}
       octx.putImageData(id,0,0); _avRender.set(key,off); avBlit(canvas,off);
     }catch(err){ avVectorFallback(canvas); }   // tainted (file://) or other → vector
