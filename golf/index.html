@@ -1185,22 +1185,37 @@ function restoreResume(){const info=resumeInfo(); if(!info)return; const r=info.
   S.look=Object.assign({},DEFLOOK,r.look||{}); S.mode=r.mode||'easy'; S.year=r.year||1;
   S.daily=false; S.drawRng=Math.random; S.current=null;
   S.screen=(info.n>=8)?'build':'draft'; track('resume',{n:info.n}); render(); }
-/* ---------- Career Mode: persist a multi-season franchise to resume later ---------- */
-function saveCareer(extra){ if(S.daily||!S.career) return false;
-  LS.set('bag_careersave',Object.assign({year:S.year||1, career:S.career, fieldRoster:S.fieldRoster||null,
+/* ---------- Career Mode: persist a multi-season franchise to resume later ----------
+   A saved career belongs to the signed-in ACCOUNT (key namespaced by user id), and saving/resuming a
+   career requires being signed in — so a guest can never see or continue another account's career. */
+function saveCareer(extra){ if(S.daily||!S.career||!sbSignedIn()) return false;   // careers are an account feature
+  LS.set(acctKey('bag_careersave'),Object.assign({year:S.year||1, career:S.career, fieldRoster:S.fieldRoster||null,
     careerSeed:S.careerSeed, world:S.world||null,
     slots:S.slots, name:S.name, look:S.look, ovr:Math.round(buildPlayer().skill), savedAt:Date.now()}, extra||{})); return true; }
-function careerSaveInfo(){ const r=LS.get('bag_careersave',null); return (r&&r.career)?r:null; }
-function clearCareerSave(){ LS.set('bag_careersave',null); }
+function careerSaveInfo(){ if(!sbSignedIn()) return null; const r=LS.get(acctKey('bag_careersave'),null); return (r&&r.career)?r:null; }
+function clearCareerSave(){ LS.set(acctKey('bag_careersave'),null); }
+// one-time: an in-progress career saved before careers were account-scoped lives under the old unscoped
+// key. On sign-in, claim it for this account (if it has none yet) and remove the unscoped copy so no
+// guest / other account on this browser can reach it.
+function migrateLegacyCareerSave(){
+  if(!sbSignedIn()) return;
+  const legacy=LS.get('bag_careersave',null);
+  if(legacy && legacy.career){
+    const cur=LS.get(acctKey('bag_careersave'),null);
+    if(!(cur&&cur.career)) LS.set(acctKey('bag_careersave'), legacy);
+  }
+  if(legacy!=null) LS.set('bag_careersave', null);
+}
 // mid-season "Save & Exit" — checkpoints the in-progress season (completed events + standings) so you can
 // resume EXACTLY where you left off; the current event re-sims on resume (it hadn't been recorded yet).
 function saveMidSeasonAndExit(){
   if(!S.career || S.daily || !S.season){ clearTimeout(seasonTimer); reset(); render(); return; }
   // ensure S.career reflects this year before snapshotting (career object is created at the first summary)
-  saveCareer({ mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
+  const saved=saveCareer({ mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
     season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me } } });
-  track('career_mid_save',{year:S.year,evt:S.evtIndex});
-  clearTimeout(seasonTimer); reset(); render(); toast('Career saved. Resume from the home screen');
+  track('career_mid_save',{year:S.year,evt:S.evtIndex,saved});
+  clearTimeout(seasonTimer); reset(); render();
+  toast(saved?'Career saved. Resume from the home screen':'Sign in to save & resume your career');
 }
 function resumeCareer(){ const r=careerSaveInfo(); if(!r) return; reset();
   S.career=r.career; S.fieldRoster=r.fieldRoster||null; S.slots=r.slots||S.slots;
@@ -6204,6 +6219,7 @@ async function sbApply(session){
     await sbLoadProfile();
     S.acctMode=sbUsername?'profile':'username';   // drop to username picker if none yet
     flushPendingSeasons();   // post every season queued while signed out / offline
+    migrateLegacyCareerSave();   // claim a pre-scoping career for this account, drop the unscoped copy
     maybeClaimDaily();        // log a guest-played daily round to the account (consumes one of its attempts)
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
     if(_pendingDaily){ _pendingDaily=null; }   // legacy guest stash is no longer auto-posted (claim flow gates it)
