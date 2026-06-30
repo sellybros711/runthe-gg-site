@@ -2657,27 +2657,48 @@ function overlayAccount(screen){
   ov.querySelector('.x').onclick=()=>{ S.overlay=null; S.acctErr=''; S.acctNote=''; render(); };
   screen.appendChild(ov);
 }
+// leaderboard sort categories per tab: [key, label]. A player can top many different boards.
+const LB_SORTS={
+  season:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['ovr','OVR'],['rep','Tour Rep']],
+  career:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['seasons','Seasons'],['rep','Tour Rep']],
+};
+function lbSortValid(tab,sort){ return (LB_SORTS[tab]||[]).some(s=>s[0]===sort); }
+function lbSortLabel(tab,sort){ const f=(LB_SORTS[tab]||[]).find(s=>s[0]===sort); return f?f[1]:'Earnings'; }
+function lbStatVal(r,tab,sort){   // the right-hand value column for the chosen sort
+  switch(sort){
+    case 'net': { const v=(tab==='career'?r.career_net:r.season_net)||0; return `<span style="color:${v>=0?'#35d6a0':'#E14A33'}">${fmtSigned(v)}</span>`; }
+    case 'wins': return `<span style="color:var(--gold)">${r.wins||0}W</span>`;
+    case 'majors': return `<span style="color:var(--gold)">${r.majors||0} maj</span>`;
+    case 'ovr': return `<span style="color:var(--gold)">OVR ${r.ovr||'—'}</span>`;
+    case 'seasons': return `<span style="color:var(--gold)">${r.seasons||0} szn</span>`;
+    case 'rep': { const rp=r.rep_pts!=null?repTierName(r.rep_pts):null; return `<span style="color:var(--gold);font-size:12px">${esc(rp||'—')}</span>`; }
+    default: return `<span style="color:var(--gold)">${fmt(tab==='career'?r.career_earnings:r.season_earnings)}</span>`;
+  }
+}
 function overlayLeaderboard(screen){
-  if(lbCache===null) lbLoad();                       // async; re-renders when ready
   const c=career();
   const tab=S.lbTab||'season';
+  let sort=S.lbSort||'earnings'; if(!lbSortValid(tab,sort)){ sort='earnings'; S.lbSort='earnings'; }
+  const key=tab+':'+sort, view=lbCache[key];
+  if(!view) lbLoad(tab,sort);                          // fetch this (tab, sort) board; re-renders when ready
   const youName=(c.hof[0]&&c.hof[0].name)||S.name||'You';
-  const lbRowHTML=(pos,name,sub,val,you,rep)=>`<div class="lb ${you?'you':''}" style="grid-template-columns:34px 1fr auto">
+  const lbRowHTML=(pos,name,sub,valHTML,you,rep)=>`<div class="lb ${you?'you':''}" style="grid-template-columns:34px 1fr auto">
       <span class="pos">${pos===1?'🏆':pos}</span>
       <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}${rep?` <span style="color:var(--gold);font-weight:700;font-size:10px">· ${esc(rep)}</span>`:''}</div>${sub?`<div class="small muted" style="font-size:10.5px">${esc(sub)}</div>`:''}</span>
-      <span class="mny" style="color:var(--gold)">${fmt(val)}</span></div>`;
+      <span class="mny" style="white-space:nowrap">${valHTML}</span></div>`;
   const lbRep=r=>{ const rp=(r&&r.rep_pts!=null)?repTierName(r.rep_pts):null; return (rp&&rp!=='Amateur')?(rp==='G.O.A.T.'?'🐐 G.O.A.T.':rp):null; };
-  const globalOk = lbCache && lbCache.ok;
-  const globalRows = globalOk ? (tab==='season'?lbCache.season:lbCache.career) : [];
+  const globalOk = view && view.ok;
+  const globalRows = globalOk ? view.rows : [];
   let board;
-  if(lbCache===null){
+  if(!view || view.loading){
     board=`<div class="small muted center" style="padding:18px 8px">Loading the global board…</div>`;
   } else if(globalOk && globalRows.length){
     const rowFn=r=>{
-      const you=sbUser&&r.user_id===sbUser.id;
-      return tab==='season'
-        ? lbRowHTML(r.rank,r.display_name,(r.golfer_name?r.golfer_name+' · ':'')+'OVR '+r.ovr+(r.year?' · Yr '+r.year:''),r.season_earnings,you,lbRep(r))
-        : lbRowHTML(r.rank,r.display_name,(r.golfer_name?r.golfer_name+' · ':'')+r.seasons+' season'+(r.seasons>1?'s':'')+' · '+r.wins+'W',r.career_earnings,you,lbRep(r));
+      const you=sbUser&&r.user_id===sbUser.id, v=lbStatVal(r,tab,sort);
+      const sub = tab==='season'
+        ? (r.golfer_name?r.golfer_name+' · ':'')+'OVR '+r.ovr+(r.year?' · Yr '+r.year:'')+(sort!=='earnings'?' · '+fmt(r.season_earnings):'')
+        : (r.golfer_name?r.golfer_name+' · ':'')+r.seasons+' szn · '+r.wins+'W'+(sort!=='earnings'?' · '+fmt(r.career_earnings):'');
+      return lbRowHTML(r.rank,r.display_name,sub,v,you,lbRep(r));
     };
     if(sbSignedIn()){
       board=globalRows.map(rowFn).join('');
@@ -2694,14 +2715,14 @@ function overlayLeaderboard(screen){
   } else if(globalOk){
     board=`<div class="small muted center" style="padding:18px 8px">No scores yet, be the first to post one.</div>`;
   } else {
-    // backend not reachable / migration not applied yet → local fallback
+    // backend not reachable / migration not applied yet → local fallback (earnings only)
     if(tab==='season'){
       board = c.hof.length
-        ? [...c.hof].sort((a,b)=>b.money-a.money).map((h,i)=>lbRowHTML(i+1,h.name||'Your Golfer','OVR '+h.ovr,h.money,true)).join('')
+        ? [...c.hof].sort((a,b)=>b.money-a.money).map((h,i)=>lbRowHTML(i+1,h.name||'Your Golfer','OVR '+h.ovr,`<span style="color:var(--gold)">${fmt(h.money)}</span>`,true)).join('')
         : `<div class="small muted center" style="padding:18px 8px">Run a season to post a single-season score.</div>`;
     } else {
       board = c.totalMoney>0
-        ? lbRowHTML(1, youName, c.builds+' season'+(c.builds>1?'s':'')+' · '+c.wins+'W', c.totalMoney,true)
+        ? lbRowHTML(1, youName, c.builds+' season'+(c.builds>1?'s':'')+' · '+c.wins+'W', `<span style="color:var(--gold)">${fmt(c.totalMoney)}</span>`,true)
         : `<div class="small muted center" style="padding:18px 8px">Play a season to bank career earnings.</div>`;
     }
   }
@@ -2716,19 +2737,25 @@ function overlayLeaderboard(screen){
     banner=`<div><b style="color:var(--gold)">Compete on the global board</b><div class="small muted" style="margin-top:2px">Sign in or create a free RunThe.GG account, finished seasons then post here automatically.${globalOk?'':' Global board is offline right now, showing your own results.'}</div></div>${signCTA}`;
   }
   const seg=(id,lab)=>`<button class="btn ${tab===id?'gold':'ghost'} lbtab" data-tab="${id}" style="font-size:12px;padding:8px 12px;width:auto">${lab}</button>`;
+  const sortSeg=(k,lab)=>`<button class="btn ${sort===k?'gold':'ghost'} lbsort" data-sort="${k}" style="font-size:11px;padding:6px 11px;width:auto">${lab}</button>`;
+  const sortChips=(LB_SORTS[tab]||[]).map(s=>sortSeg(s[0],s[1])).join('');
+  const lbl=lbSortLabel(tab,sort);
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Leaderboard">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>🏆 Leaderboard</h3>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
-    <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px">${seg('season','Single Season')}${seg('career','Career')}</div>
-    <h2 style="margin:0 0 2px">${tab==='season'?'Single Season Earnings':'Career Earnings'}</h2>
-    <div class="small muted" style="margin:0 0 8px">${tab==='season'?'Every season ranked, your best single-season earnings':'Every career sim ranked by total earnings'}</div>
+    <div class="mini" style="margin:0 0 8px;width:auto;display:flex;gap:8px">${seg('season','Single Season')}${seg('career','Career')}</div>
+    <div class="small muted" style="margin:0 0 4px;letter-spacing:.08em;text-transform:uppercase;font-size:10px">Sort by</div>
+    <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:6px;flex-wrap:wrap">${sortChips}</div>
+    <h2 style="margin:0 0 2px">${tab==='season'?'Single Season':'Career'} · ${esc(lbl)}</h2>
+    <div class="small muted" style="margin:0 0 8px">${tab==='season'?'Every posted season':'Every career sim'} ranked by ${esc(lbl.toLowerCase())}</div>
     <div class="board">${board}</div>
     <div style="height:14px"></div>
     <button class="btn red">Close</button></div>`);
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
   ov.querySelectorAll('.lbtab').forEach(b=>b.onclick=()=>{S.lbTab=b.dataset.tab;render();});
+  ov.querySelectorAll('.lbsort').forEach(b=>b.onclick=()=>{S.lbSort=b.dataset.sort;render();});
   const lbSign=ov.querySelector('#lb-signin'); if(lbSign) lbSign.onclick=()=>{S.overlay='account';S.acctMode=sbSignedIn()?'username':'signin';S.acctErr='';render();};
   const lkIn=ov.querySelector('#lb-lock-in'); if(lkIn) lkIn.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
   const lkUp=ov.querySelector('#lb-lock-up'); if(lkUp) lkUp.onclick=()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();};
@@ -4809,12 +4836,13 @@ function scrSummary(){
 
   // guest: nudge to sign up & post this season to the global board (with would-be rank if known)
   if(!sbSignedIn() && !S.daily){
-    if(lbCache===null) lbLoad();
+    if(!lbCache['season:earnings']) lbLoad('season','earnings');
     let rankMsg='Post this season to the global leaderboard';
-    if(lbCache && lbCache.ok && lbCache.season){
-      const above=lbCache.season.filter(r=>r.season_earnings>t.money).length;
-      const full=lbCache.season.length>=50;
-      if(!full || above<lbCache.season.length) rankMsg=`You'd rank <b style="color:var(--gold)">#${above+1}</b> on the Single-Season board`;
+    const _sb=lbCache['season:earnings'];
+    if(_sb && _sb.ok && _sb.rows){
+      const above=_sb.rows.filter(r=>r.season_earnings>t.money).length;
+      const full=_sb.rows.length>=50;
+      if(!full || above<_sb.rows.length) rankMsg=`You'd rank <b style="color:var(--gold)">#${above+1}</b> on the Single-Season board`;
     }
     const gb=$(`<div class="scout" style="border-color:var(--gold);margin:2px 0 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div style="min-width:0"><b style="color:var(--oncard)">🏆 ${rankMsg}</b><div class="small muted" style="margin-top:2px">Create a free account to claim your spot, save your career &amp; unlock achievements.</div></div>
@@ -5878,7 +5906,7 @@ function moneyRow(r,pos,you){return $(`<div class="lb ${you?'you':''}" style="gr
    signed into RunThePitch is the same identity here. */
 const SB_URL='https://jcrrxqfpdelrmvjuihnm.supabase.co';
 const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
-let sb=null, sbUser=null, sbUsername=null, sbProfile=null, lbCache=null, _pendingSeason=null;
+let sb=null, sbUser=null, sbUsername=null, sbProfile=null, lbCache={}, _pendingSeason=null;
 let _pendingDaily=null, crCache=null, dbCache=null;   // daily-challenge backend (Phase 3)
 const RTT_AUTH_KEY='sb-runtour-auth';   // RunTheTour's own saved-session key (separate from RunThePitch)
 function rttRemember(){ try{ return localStorage.getItem('rtt_remember')==='1'; }catch(e){ return false; } }
@@ -5974,7 +6002,7 @@ async function sbSignOut(){
   // (RunThePitch's separate session key is left untouched.)
   try{ localStorage.removeItem(RTT_AUTH_KEY); localStorage.removeItem('rtt_oauth_pending'); }catch(e){}
   setRemember(false);
-  sbUser=null; sbUsername=null; sbProfile=null; lbCache=null; _pendingSeason=null;
+  sbUser=null; sbUsername=null; sbProfile=null; lbCache={}; _pendingSeason=null;
   _pendingDaily=null; crCache=null; dbCache=null;
 }
 async function sbSetUsername(name){
@@ -6040,7 +6068,7 @@ async function flushPendingSeasons(){
     }catch(e){ keep.push(s); }                // failed (offline/error) → keep to retry later
   }
   savePendingSeasons(keep);
-  if(posted){ lbCache=null; }                 // something posted → refresh the board next open
+  if(posted){ lbCache={}; }                 // something posted → refresh the board next open
 }
 async function sbSubmitSeason(s){
   // ALWAYS durably enqueue the finished season (so it is never lost), then try to flush the queue
@@ -6048,13 +6076,20 @@ async function sbSubmitSeason(s){
   const q=loadPendingSeasons(); q.push(s); savePendingSeasons(q);
   await flushPendingSeasons();
 }
-async function lbLoad(){
-  if(!sb){ lbCache={season:[],career:[],ok:false}; render(); return; }
+// fetch ONE board for the given (tab, sort) into lbCache[`${tab}:${sort}`]. Falls back to the legacy
+// (no p_sort) call so the board still loads before migration 28 is applied.
+async function lbLoad(tab,sort){
+  tab=tab||'season'; sort=sort||'earnings'; const k=tab+':'+sort;
+  if(lbCache[k] && lbCache[k].loading) return;          // already fetching
+  if(!sb){ lbCache[k]={rows:[],ok:false}; render(); return; }
+  lbCache[k]={loading:true};
   try{
-    const [a,b]=await Promise.all([sb.rpc('runtour_season_board',{p_limit:100}),sb.rpc('runtour_career_board',{p_limit:100})]);
-    lbCache={season:(a.data||[]),career:(b.data||[]),ok:!a.error&&!b.error};
-  }catch(e){ lbCache={season:[],career:[],ok:false}; }
-  render();   // refresh whatever's open (leaderboard board / summary guest-rank teaser)
+    const fn=(tab==='career')?'runtour_career_board':'runtour_season_board';
+    let r=await sb.rpc(fn,{p_limit:200,p_sort:sort});
+    if(r.error){ r=await sb.rpc(fn,{p_limit:200}); }     // legacy DB without p_sort → earnings order
+    lbCache[k]={rows:(r.data||[]),ok:!r.error};
+  }catch(e){ lbCache[k]={rows:[],ok:false}; }
+  render();   // refresh whatever's open
 }
 /* ---- Daily Challenge backend (Phase 3): submit best round + global board/records. Fails open. ---- */
 async function sbSubmitDaily(b){
