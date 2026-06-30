@@ -1563,7 +1563,12 @@ allows Google Fonts, or self-host Anton.*
   new "Olympics" achievement category (gold, any-medal, 2x gold, full set). Verified via MC (field 60, caps
   respected, country-cap lets thin nations in, medals assigned, non-olympic years skip) + UI e2e (setup
   selector, live Olympic screen, gold medal -> summary banner + achievements + career medals, zero page
-  errors). NEXT in roadmap: Ryder/Presidents Cup match-play (foursomes/fourballs/singles + team selection).
+  errors). Cadence: Olympics now runs every 4 years starting YEAR 4 (`isOlympicYear`=year%4===0 -> yrs 4,8,12,
+  ...) per owner request (was the calendar-aligned year 3). Country flags: flat flagcdn.com chips (same source
+  as RunThePitch) via `NAT_FLAG` (3-letter golf code -> ISO slug, covers every roster nation), `natFlagUrl`/
+  `natFlag` helpers + `.flag-ico`/`.flag-none` CSS; shown next to player names on the Olympic leaderboard
+  (`liveRow` takes a `flag` arg, passed when evt.olympics) and in the summary "took gold" line. NEXT in
+  roadmap: Ryder/Presidents Cup match-play (foursomes/fourballs/singles + team selection).
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
