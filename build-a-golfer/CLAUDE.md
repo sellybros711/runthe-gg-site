@@ -1473,6 +1473,14 @@ allows Google Fonts, or self-host Anton.*
   (pinstripe/polka/argyle/colorblock/gingham/houndstooth/chevron/tartan), clipped to shirt/cap mask region,
   golf-lore gated (Argyle=Payne Stewart/win US Open, Tartan=win The Open, etc.) + hat patterns + picker rows.
 
+- Player customization pt2 — unlockable PATTERNS (shirt + hat) — DONE. 8 golf-lore patterns in `PATTERNS`
+  drawn as a tonal overlay clipped to the shirt/cap mask region (follows shading, zero bleed): Pinstripe
+  (rep Contender), Polka (spotlight), Gingham (5 seasons), Argyle (win US Open - Payne Stewart), Tartan (win
+  The Open), Houndstooth (rep Legend), Chevron (rep Icon), Colorblock (5 wins). `patFactor(id,x,y)`->0..1 mask;
+  `avCompute` blends accent over shirt pixels (o.shirtPat) + cap pixels (o.hatPat); independent; in avLook
+  cache key. `patternRow` picker chips (locks + toast req) for Shirt + Hat. Verified all 8 render clipped on
+  shirt & cap, picker shows locks, no errors. Customization feature COMPLETE (colors+hats pt1, patterns pt2).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
