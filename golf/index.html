@@ -3757,8 +3757,8 @@ function celebratePlayoff(ce, opts){
       : `<div style="font-family:var(--serif);color:#fff;font-weight:800;font-size:23px">So close, lost in the playoff</div><div class="small" style="color:#cfe6d8;margin-top:2px">${esc(po.winner)} took it on the ${ord(po.holes)} extra hole.</div>`;
     // A WIN always flows on into the single win celebration (which is where it waits/auto-advances per
     // Auto Sim) — no separate click. A LOSS has no celebration after, so Auto Sim OFF waits for the player.
-    if(youWon){ _poTimer=setTimeout(finish, opts.reduce?20:1100); }
-    else if(opts.auto||opts.reduce){ _poTimer=setTimeout(finish, opts.reduce?20:1700); }
+    if(youWon){ _poTimer=setTimeout(finish, opts.reduce?20:2000); }
+    else if(opts.auto||opts.reduce){ _poTimer=setTimeout(finish, opts.reduce?20:2600); }
     else { const b=document.createElement('button'); b.className='btn goldfill'; b.style.cssText='max-width:320px;margin:14px auto 0'; b.textContent='Continue ▸'; b.onclick=e=>{e.stopPropagation();finish();}; actions.appendChild(b); }
   }
   function revealNext(){
@@ -3769,7 +3769,7 @@ function celebratePlayoff(ce, opts){
     card.innerHTML=`<div class="small" style="letter-spacing:.12em;text-transform:uppercase;color:#ffd76a;font-weight:800;margin-bottom:5px">Playoff hole ${h.hole}</div>`+
       h.scores.map(s=>`<div style="display:flex;justify-content:space-between;gap:10px;padding:2px 0;color:${s.you?'#ffd76a':'#dfeee6'};font-weight:${s.you?800:600}"><span>${s.you?'★ ':''}${esc(s.name)}</span><span>${esc(s.label)}${s.advances?'':' <span style="color:#e07a5f">· out</span>'}</span></div>`).join('');
     holesEl.appendChild(card); holesEl.scrollTop=holesEl.scrollHeight;
-    _poTimer=setTimeout(revealNext, opts.reduce?10:(opts.auto?720:1150));
+    _poTimer=setTimeout(revealNext, opts.reduce?10:(opts.auto?1500:1900));
   }
   stage.onclick=()=>finish();   // tap anywhere to skip ahead (otherwise it auto-advances)
   revealNext();
@@ -3977,7 +3977,7 @@ function scrTeamCup(){
     setTimeout(()=>{ stop&&stop(); cv.remove(); }, 2600);
   }
   // auto-sim: reveal the next session on a timer
-  if(!allDone && S.autoSim && !reduce){ seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ S.teamRevealed++; render(); } }, 1500); }
+  if(!allDone && S.autoSim && !reduce){ seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ S.teamRevealed++; render(); } }, 3000); }
   else if(!allDone && reduce){ S.teamRevealed=T.sessions.length; render(); }
 }
 // bank the team-cup result into the season + career when leaving the screen
@@ -4189,7 +4189,7 @@ function scrSeason(){
     if(!ce.done){ while(!ce.done) simNextRound(); render(); return; }
     if(S.autoSim){ advanceEvent(); render(); return; }
   } else if(!ce.done){
-    seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ simNextRound(); render(); } }, ROUND_DELAY);
+    seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ simNextRound(); render(); } }, evt.olympics?ROUND_DELAY*2:ROUND_DELAY);   // the Olympics play out at half speed for drama
   } else if(S.autoSim){
     seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ advanceEvent(); render(); } }, EVENT_PAUSE);
   }
@@ -5292,7 +5292,7 @@ function finishDailyRound(){
   track('daily_completed',{course:S.dailyCourse,total,attempt:attempts,best:best.total,won,avg});
   if(improved) sbSubmitDaily(best);   // post the new best to the global board (fails open if signed out/offline)
   captureDailyFeats(S.dailyHoles,total,S.dailyCourse,isRec);
-  achToast(evaluateAch());
+  S._repAnimShown=false; S.dailyFreshAch=evaluateAch();   // show the Tour Rep meter + reveal on the result page
   S.screen='dailyresult'; render();
 }
 /* ---- signature-hole decision scenarios: a course-aware risk/reward dilemma at each
@@ -5502,6 +5502,17 @@ function scrDailyResult(){
     ${wonDay?`<b style="color:#35d6a0;font-size:17px">🏁 You beat the pro!</b>`:`<b style="color:var(--oncard);font-size:16px">Short of the tour average</b>`}
     <div class="small muted" style="margin-top:3px">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}${(best&&best.total!==total)?` · best today ${dtp(best.total)} ${wonDay?'(winner)':''}`:''}</div>
     ${(wonDay&&left>0)?`<div class="small" style="margin-top:5px;color:#35d6a0;font-weight:700">Challenge cleared. Use your ${left} remaining attempt${left>1?'s':''} to go even lower and chase the course record.</div>`:''}</div>`));
+  // reassurance: an attempt that didn't beat your best of the day still keeps your best — swing freely
+  if(justPlayed && (S.dailyAttemptNo||attempts)>1 && !S.dailyImproved){
+    add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#7ec8ff">
+      <b style="color:#7ec8ff">Your best score is safe</b>
+      <div class="small muted" style="margin-top:3px">This attempt (${dtp(total)}) didn't beat your best of <b style="color:var(--gold)">${dtp(bestT)}</b>, and that's totally fine, only your best round of the day counts${wonDay?" (you've already beaten the pro)":""}. Swing freely and try again.</div></div>`));
+  }
+  // Tour Rep meter + achievements unlocked this round (revealed one by one), same as the season summary
+  if(justPlayed && S.dailyFreshAch && S.dailyFreshAch.length){
+    const gained=S.dailyFreshAch.reduce((s,a)=>s+(a.pts||0),0);
+    add(seasonRepNode(achPoints()-gained, S.dailyFreshAch));
+  }
   // attempts + best-of-day (the best is what's logged to the leaderboard)
   const bestTxt = best?`Best today <b style="color:var(--gold)">${dtp(best.total)}</b> (${best.par+best.total})`:'';
   const newBest = justPlayed && S.dailyImproved && attempts>1;
