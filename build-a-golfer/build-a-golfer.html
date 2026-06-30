@@ -2679,6 +2679,7 @@ function overlayLeaderboard(screen){
   const c=career();
   const tab=S.lbTab||'season';
   let sort=S.lbSort||'earnings'; if(!lbSortValid(tab,sort)){ sort='earnings'; S.lbSort='earnings'; }
+  const dir=S.lbDir||'desc';   // 'desc' = high→low / best→worst (default); 'asc' flips it
   const key=tab+':'+sort, view=lbCache[key];
   if(!view) lbLoad(tab,sort);                          // fetch this (tab, sort) board; re-renders when ready
   const youName=(c.hof[0]&&c.hof[0].name)||S.name||'You';
@@ -2700,12 +2701,13 @@ function overlayLeaderboard(screen){
         : (r.golfer_name?r.golfer_name+' · ':'')+r.seasons+' szn · '+r.wins+'W'+(sort!=='earnings'?' · '+fmt(r.career_earnings):'');
       return lbRowHTML(r.rank,r.display_name,sub,v,you,lbRep(r));
     };
+    const rows=(dir==='asc')?globalRows.slice().reverse():globalRows;   // toggle high→low / low→high
     if(sbSignedIn()){
-      board=globalRows.map(rowFn).join('');
+      board=rows.map(rowFn).join('');
     } else {
       // guest: show the top few clearly, blur the rest behind a sign-in CTA
-      const top=globalRows.slice(0,5).map(rowFn).join('');
-      const tail=globalRows.slice(5).map(rowFn).join('');
+      const top=rows.slice(0,5).map(rowFn).join('');
+      const tail=rows.slice(5).map(rowFn).join('');
       board = top + (tail
         ? `<div class="lockwrap"><div class="lockblur">${tail}</div>
             <div class="lockover"><div class="lockmsg">🔒 <b>Sign in to see the full board</b><div class="small muted">Post your seasons and claim your rank.</div></div>
@@ -2747,15 +2749,19 @@ function overlayLeaderboard(screen){
     <div class="mini" style="margin:0 0 8px;width:auto;display:flex;gap:8px">${seg('season','Single Season')}${seg('career','Career')}</div>
     <div class="small muted" style="margin:0 0 4px;letter-spacing:.08em;text-transform:uppercase;font-size:10px">Sort by</div>
     <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:6px;flex-wrap:wrap">${sortChips}</div>
-    <h2 style="margin:0 0 2px">${tab==='season'?'Single Season':'Career'} · ${esc(lbl)}</h2>
-    <div class="small muted" style="margin:0 0 8px">${tab==='season'?'Every posted season':'Every career sim'} ranked by ${esc(lbl.toLowerCase())}</div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 0 8px">
+      <div style="min-width:0"><h2 style="margin:0 0 2px">${tab==='season'?'Single Season':'Career'} · ${esc(lbl)}</h2>
+        <div class="small muted" style="margin:0">${tab==='season'?'Every posted season':'Every career sim'} ranked by ${esc(lbl.toLowerCase())}</div></div>
+      <button class="btn ghost lbdir" style="width:auto;flex:0 0 auto;padding:7px 10px;font-size:11px;white-space:nowrap" title="${dir==='desc'?'Showing best first, tap to flip':'Showing worst first, tap to flip'}">${dir==='desc'?'▼ High–Low':'▲ Low–High'}</button>
+    </div>
     <div class="board">${board}</div>
     <div style="height:14px"></div>
     <button class="btn red">Close</button></div>`);
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
-  ov.querySelectorAll('.lbtab').forEach(b=>b.onclick=()=>{S.lbTab=b.dataset.tab;render();});
-  ov.querySelectorAll('.lbsort').forEach(b=>b.onclick=()=>{S.lbSort=b.dataset.sort;render();});
+  ov.querySelectorAll('.lbtab').forEach(b=>b.onclick=()=>{S.lbTab=b.dataset.tab;S.lbDir='desc';render();});   // reset to high→low on tab change
+  ov.querySelectorAll('.lbsort').forEach(b=>b.onclick=()=>{S.lbSort=b.dataset.sort;S.lbDir='desc';render();});   // reset to high→low on new category
+  ov.querySelectorAll('.lbdir').forEach(b=>b.onclick=()=>{S.lbDir=(S.lbDir==='asc'?'desc':'asc');render();});
   const lbSign=ov.querySelector('#lb-signin'); if(lbSign) lbSign.onclick=()=>{S.overlay='account';S.acctMode=sbSignedIn()?'username':'signin';S.acctErr='';render();};
   const lkIn=ov.querySelector('#lb-lock-in'); if(lkIn) lkIn.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
   const lkUp=ov.querySelector('#lb-lock-up'); if(lkUp) lkUp.onclick=()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();};
