@@ -625,6 +625,38 @@ const COSMETIC_SHIRTS=[
 function allShirts(){ return POLOS.concat(COSMETIC_SHIRTS); }   // base colours + special unlockables
 function findShirt(id){ return allShirts().find(x=>x.id===id)||POLOS[0]; }
 function cosmeticShirtUnlocked(id,m){ const cs=COSMETIC_SHIRTS.find(x=>x.id===id); return cs?!!cs.req(m||badgeMetrics()):true; }
+// ---- unlockable PATTERNS (shirt + hat). Drawn as a tonal overlay clipped to the mask region, so they
+// follow the painted fabric shading. Each is golf-lore themed (no camo). tone/depth set the accent. ----
+const PATTERNS=[
+  {id:'none',       name:'Solid',       req:()=>true,                 reqText:''},
+  {id:'pinstripe',  name:'Pinstripe',   tone:'light', depth:0.55, req:()=>repAtLeast('Contender'), reqText:'Reach Tour Rep: Contender'},
+  {id:'polka',      name:'Polka Dot',   tone:'light', depth:0.50, req:()=>spotWins()>=1,           reqText:'Win a Monthly Spotlight'},
+  {id:'gingham',    name:'Gingham',     tone:'dark',  depth:0.45, req:m=>m.seasons>=5,             reqText:'Play 5 full seasons'},
+  {id:'argyle',     name:'Argyle',      tone:'dark',  depth:0.55, req:m=>m.maj.usopen>=1,          reqText:"Win the U.S. Open — Payne Stewart's argyle"},
+  {id:'tartan',     name:'Tartan',      tone:'dark',  depth:0.50, req:m=>m.maj.open>=1,            reqText:'Win The Open — links tartan'},
+  {id:'houndstooth',name:'Houndstooth', tone:'dark',  depth:0.60, req:()=>repAtLeast('Legend'),    reqText:'Reach Tour Rep: Legend'},
+  {id:'chevron',    name:'Chevron',     tone:'dark',  depth:0.45, req:()=>repAtLeast('Icon'),      reqText:'Reach Tour Rep: Icon'},
+  {id:'colorblock', name:'Colorblock',  tone:'dark',  depth:0.70, req:m=>m.wins>=5,                reqText:'Win 5 tournaments'},
+];
+function findPattern(id){ return PATTERNS.find(p=>p.id===id)||PATTERNS[0]; }
+function patternUnlocked(id,m){ const p=PATTERNS.find(x=>x.id===id); return p?!!p.req(m||badgeMetrics()):true; }
+// pattern mask value in [0,1] at pixel (x,y) — 0 = base colour, 1 = full accent
+function patFactor(id,x,y){
+  switch(id){
+    case 'pinstripe':{ const P=18; return ((x%P+P)%P)<4?1:0; }
+    case 'polka':{ const G=40,dx=((x%G+G)%G)-20,dy=((y%G+G)%G)-20; return (dx*dx+dy*dy<64)?1:0; }
+    case 'gingham':{ const P=22,W=10; const hx=((x%P+P)%P)<W, hy=((y%P+P)%P)<W; return (hx&&hy)?1:((hx||hy)?0.45:0); }
+    case 'chevron':{ const P=26,A=13; const tw=Math.abs(((x%(2*A))+2*A)%(2*A)-A); return (((y+tw)%P+P)%P)<P*0.5?1:0; }
+    case 'argyle':{ const D=52; const a=((x+y)%D+D)%D, b=((x-y)%D+D)%D; const da=Math.min(a,D-a), db=Math.min(b,D-b);
+      if(da<1.6||db<1.6) return 1; return (da+db<D*0.42)?0.8:0; }
+    case 'tartan':{ const band=t=>{const p=((t%48)+48)%48; return p<18?0.3:(p<22?0.0:(p<26?0.6:(p<28?1:0.12)));}; return Math.min(1,band(x)+band(y)*0.85); }
+    case 'houndstooth':{ const T=22; let a=((x%T)+T)%T, b=((y%T)+T)%T, h=T/2;
+      if(a<h&&b<h) return 1; if(a>=h&&b>=h) return 0;
+      if(a<h&&b>=h) return (a>(b-h))?1:0; return ((a-h)<b)?1:0; }
+    case 'colorblock':{ return ((((x+y)%240)+240)%240)<120?0:1; }
+    default: return 0;
+  }
+}
 // equippable player titles — earned from your lifetime record, shown under your name + in the Trophy Room
 const TITLES=[
   {id:'none',  name:'Tour Pro',          req:()=>true},
@@ -2594,7 +2626,9 @@ function scrSetup(){
   right.appendChild(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
   right.appendChild(swatchRow('Hair',HAIRS,S.look.hair,'hair',o=>o.m));
   right.appendChild(colorRow('Shirt','polo',S.look.polo));
+  right.appendChild(patternRow('Shirt pattern','shirtPat',S.look.shirtPat||'none'));
   right.appendChild(colorRow('Hat','hat',S.look.hat||S.look.polo));
+  right.appendChild(patternRow('Hat pattern','hatPat',S.look.hatPat||'none'));
   right.appendChild($(`<div style="height:14px"></div>`));
   const go=$(`<button class="btn goldfill">Start Drafting ▸<span class="sub">${S.daily?'Build a golfer for today\'s course':'Spin to build your golfer'}</span></button>`);
   go.onclick=()=>{track('draft_started',{daily:S.daily});S.screen='draft';render();}; right.appendChild(go);
@@ -2654,7 +2688,9 @@ function avLook(L){L=L||DEFLOOK;
   const sk=SKINS.find(x=>x.id===L.skin)||SKINS[1], hr=HAIRS.find(x=>x.id===L.hair)||HAIRS[1], po=findShirt(L.polo);
   const ht=findShirt(L.hat||L.polo);   // hat colour (own choice; falls back to shirt colour for old saves)
   const g=(L.gender==='female')?'female':'male';
-  return{ gender:g, skinHex:sk.m, hairHex:hr.m, shirtHex:po.m, hatHex:ht.m, key:g+'_'+sk.id+'_'+hr.id+'_'+po.id+'_'+(L.hat||po.id) };
+  const sp=L.shirtPat||'none', hp=L.hatPat||'none';
+  return{ gender:g, skinHex:sk.m, hairHex:hr.m, shirtHex:po.m, hatHex:ht.m, shirtPat:sp, hatPat:hp,
+    key:g+'_'+sk.id+'_'+hr.id+'_'+po.id+'_'+(L.hat||po.id)+'_'+sp+'_'+hp };
 }
 function avBlit(canvas,off){const cx=canvas.getContext('2d');cx.clearRect(0,0,canvas.width,canvas.height);cx.drawImage(off,0,0,canvas.width,canvas.height);}
 function avVectorFallback(canvas){const w=canvas.closest('.avatarfig');if(w)w.innerHTML=golferSVG();}
@@ -2689,7 +2725,14 @@ function avCompute(canvas,key,o){
         // lpull: pull result lightness toward the target so DARK skin reads dark and
         // LIGHT hair (blonde/grey) reads light, instead of staying the base's mid-brown.
         const lp=reg==='skin'?0.48:reg==='hair'?0.50:0.12;
-        const t=avTint(d[i],d[i+1],d[i+2],tg,st,sb,lp); d[i]=t.r;d[i+1]=t.g;d[i+2]=t.b;}
+        const t=avTint(d[i],d[i+1],d[i+2],tg,st,sb,lp); let rr=t.r,gg=t.g,bb=t.b;
+        // pattern overlay: a tonal accent clipped to the shirt (shirtPat) / cap (hatPat) region
+        const pat=reg==='shirt'?o.shirtPat:reg==='cap'?o.hatPat:'none';
+        if(pat&&pat!=='none'){ const px=i>>2, pf=patFactor(pat,px&511,px>>9);
+          if(pf>0){ const ps=findPattern(pat), dep=ps.depth*pf;
+            if(ps.tone==='light'){ rr+=(255-rr)*dep; gg+=(255-gg)*dep; bb+=(255-bb)*dep; }
+            else { rr*=1-dep; gg*=1-dep; bb*=1-dep; } } }
+        d[i]=rr;d[i+1]=gg;d[i+2]=bb;}
       octx.putImageData(id,0,0); _avRender.set(key,off); avBlit(canvas,off);
     }catch(err){ avVectorFallback(canvas); }   // tainted (file://) or other → vector
   };
@@ -2826,6 +2869,18 @@ function colorRow(label,key,cur){
   row.appendChild(wrap);
   if(COSMETIC_SHIRTS.some(o=>!o.req(m))) row.appendChild($(`<div class="small muted" style="margin-top:5px;font-size:10.5px">🔒 Tap a locked colour to see how to unlock it.</div>`));
   return row;
+}
+// pattern picker (shirt or hat) — labelled chips, locked ones show 🔒 + toast the requirement.
+function patternRow(label,key,cur){
+  const m=badgeMetrics();
+  const row=$(`<div style="margin:9px 0"></div>`);
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${label}</div>`));
+  const wrap=$(`<div style="display:flex;gap:6px;flex-wrap:wrap"></div>`);
+  PATTERNS.forEach(p=>{ const sel=cur===p.id, open=(p.id==='none')||!!p.req(m);
+    const chip=$(`<button title="${esc(p.name)}${open?'':' · '+esc(p.reqText)}" style="font:700 11px var(--body);padding:6px 10px;border-radius:999px;cursor:pointer;background:${sel?'rgba(235,166,31,.14)':'transparent'};border:1px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};color:${sel?'var(--gold)':(open?'var(--oncard)':'var(--muted)')};opacity:${open?1:0.65}">${open?'':'🔒 '}${esc(p.name)}</button>`);
+    chip.onclick=()=>{ if(!open){ toast('🔒 '+p.name+' · '+p.reqText); return; } S.look[key]=p.id; LS.set('bag_look',S.look); render(); };
+    wrap.appendChild(chip); });
+  row.appendChild(wrap); return row;
 }
 function handRow(){
   const lefty=!!S.look.lefty;
