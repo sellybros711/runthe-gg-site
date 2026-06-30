@@ -1868,6 +1868,29 @@ allows Google Fonts, or self-host Anton.*
   Verified: title screen and rules screen render the new footer/credits with working links, zero page
   errors; privacy.html/terms.html render standalone with the golf theme and cross-link correctly.
 
+- **CS61 — Reposition as a 40-year career simulation, not a "season" game.** Owner: "I want to be selling
+  the game as a career simulation up to 40 years, instead of saying sim a season... we need to really sell
+  this product." The career engine already supports a full 40-year arc (`CAREER_MAX_YEARS=40`: aging, decline,
+  retirement, World Ranking, FedEx Cup playoffs, season awards, Ryder/Presidents Cup with captaincy, Olympic
+  medals, rivalries, a trophy case) but none of that depth was reflected in any user-facing copy — the title
+  screen, How to Play, About, and all meta tags described it only as "run a pro season." Rewrote every
+  marketing-facing surface to lead with the career arc and name the marquee events:
+  - `<title>`, meta description, OG/Twitter title+description+image:alt all rewritten around "a 40-year
+    career simulation" instead of "run a pro season."
+  - `manifest.webmanifest` description updated to match (app-name fields left alone, no room for a tagline).
+  - Title screen: new gold `⛳ 40-Year Career Simulation` badge under the hero, rewritten lede ("live out
+    their career, up to 40 years on tour... chase majors, the Ryder Cup and Olympic medals, and retire a
+    legend"), and the primary CTA subtext now reads "Build your golfer, start their career."
+  - How to Play: rewrote the intro lede, renamed the "Career mode" section header to "Career Mode · Up to 40
+    Years," and added a 5th step card, "Live a full career, not just a season," that's the first place in
+    the whole app's copy to actually name the Ryder Cup, the Presidents Cup, Olympic medals, the World
+    Ranking, and rivalries as things you'll experience.
+  - About overlay: rewritten to lead with "a free 40-year golf career simulation" and the same marquee-event
+    list.
+  Verified end to end in Playwright: all four surfaces (meta tags, title screen, rules screen, about overlay)
+  carry the new copy, screenshots confirm clean layout (badge doesn't crowd the hero, 5-step list reads
+  fine), zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
