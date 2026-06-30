@@ -1800,6 +1800,20 @@ allows Google Fonts, or self-host Anton.*
   branch cleanly per region. Verified on male + female across blonde/platinum/grey hair and black/white kit
   (brows dark, hair correct, kit correct, mids unchanged); zero page errors.
 
+- **CS57 — Mid-season progress auto-saves (refresh / go-home resume).** Bug (user-reported): a signed-in
+  player who refreshed or went home mid-season lost the whole golfer/season — mid-season state only saved on
+  the explicit "Save & Exit" button, and in YEAR 1 the career object doesn't exist until the first summary so
+  even that path could miss. Fix: new `autoSaveSeason()` checkpoints the in-progress season (schedule,
+  evtIndex, results, totals, field, me, slots, look, name) into the account-scoped `bag_careersave` at clean
+  event boundaries — in `startSeason` (captures the freshly-built golfer at event 0) and in `advanceEvent`
+  (after each completed event). `saveCareer` relaxed to not require `S.career` (saves `career:S.career||null`
+  so year-1 works), and `careerSaveInfo` now treats a save with an in-progress `mid.season` as resumable even
+  without a finished-year franchise. The in-progress event re-sims on resume (it isn't recorded yet); the
+  summary's plain `saveCareer()` clears the mid checkpoint when a year completes. Signed-in only (consistent
+  with CS54 account-scoping); guests get no save. Verified in Playwright: guest no-save; year-1 checkpoint
+  saves with null career; checkpoint advances per event; reset()+resumeCareer() restores the same golfer at
+  the right event with all completed events; other accounts isolated. Zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -1188,11 +1188,19 @@ function restoreResume(){const info=resumeInfo(); if(!info)return; const r=info.
 /* ---------- Career Mode: persist a multi-season franchise to resume later ----------
    A saved career belongs to the signed-in ACCOUNT (key namespaced by user id), and saving/resuming a
    career requires being signed in — so a guest can never see or continue another account's career. */
-function saveCareer(extra){ if(S.daily||!S.career||!sbSignedIn()) return false;   // careers are an account feature
-  LS.set(acctKey('bag_careersave'),Object.assign({year:S.year||1, career:S.career, fieldRoster:S.fieldRoster||null,
+function saveCareer(extra){ if(S.daily||!sbSignedIn()) return false;   // careers are an account feature (career obj may be null in yr-1)
+  LS.set(acctKey('bag_careersave'),Object.assign({year:S.year||1, career:S.career||null, fieldRoster:S.fieldRoster||null,
     careerSeed:S.careerSeed, world:S.world||null,
     slots:S.slots, name:S.name, look:S.look, ovr:Math.round(buildPlayer().skill), savedAt:Date.now()}, extra||{})); return true; }
-function careerSaveInfo(){ if(!sbSignedIn()) return null; const r=LS.get(acctKey('bag_careersave'),null); return (r&&r.career)?r:null; }
+// resumable if it has a finished-year franchise OR an in-progress season checkpoint (covers year-1 mid-season)
+function careerSaveInfo(){ if(!sbSignedIn()) return null; const r=LS.get(acctKey('bag_careersave'),null); return (r&&(r.career||(r.mid&&r.mid.season)))?r:null; }
+// auto-checkpoint the in-progress season at a clean event boundary so a refresh / going home resumes here.
+// Signed-in only (careers are account-scoped); the in-progress event re-sims on resume (it isn't recorded yet).
+function autoSaveSeason(){
+  if(S.daily || !S.season || S.screen!=='season' || !sbSignedIn()) return;
+  saveCareer({ mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
+    season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me } } });
+}
 function clearCareerSave(){ LS.set(acctKey('bag_careersave'),null); }
 // one-time: an in-progress career saved before careers were account-scoped lives under the old unscoped
 // key. On sign-in, claim it for this account (if it has none yet) and remove the unscoped copy so no
@@ -3671,7 +3679,7 @@ function startSeason(majorsOnly){
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false;   // unlocked during THIS season (shown on the summary)
   S.curEvt=null;
   track('season_started',{mode:S.daily?'daily':(majorsOnly?'majors':'full'),ovr:Math.round(me.skill),year:S.year||1});
-  S.screen='season'; render();
+  S.screen='season'; autoSaveSeason(); render();   // checkpoint the freshly-built golfer right away
 }
 /* ---- live, round-by-round tournament engine ---- */
 const ROUND_DELAY=820, EVENT_PAUSE=1500, DAYS=['THU','FRI','SAT','SUN'];
@@ -3833,7 +3841,7 @@ function liveOrder(ce){   // current standings mid-event; assigns _pos / _tied (
   tag(made); cut.forEach(o=>{o._pos='CUT';o._tied=false;});
   return made.concat(cut);
 }
-function advanceEvent(){ if(S.evtIndex>=S.schedule.length-1){ S.screen='summary'; } else { S.evtIndex++; S.curEvt=null; } }
+function advanceEvent(){ if(S.evtIndex>=S.schedule.length-1){ S.screen='summary'; } else { S.evtIndex++; S.curEvt=null; autoSaveSeason(); } }
 function skipToEnd(){
   clearTimeout(seasonTimer);
   while(S.curEvt && !S.curEvt.done) simNextRound();
