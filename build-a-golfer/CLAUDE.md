@@ -1569,6 +1569,14 @@ allows Google Fonts, or self-host Anton.*
   `natFlag` helpers + `.flag-ico`/`.flag-none` CSS; shown next to player names on the Olympic leaderboard
   (`liveRow` takes a `flag` arg, passed when evt.olympics) and in the summary "took gold" line. NEXT in
   roadmap: Ryder/Presidents Cup match-play (foursomes/fourballs/singles + team selection).
+- Olympic podium ceremony — DONE. `celebrateOlympicPodium(ce,opts)` (a `.celebrate` overlay like
+  celebrateWin) reveals the medals in order bronze -> silver -> gold on a 3-block podium (silver left, gold
+  center-tallest, bronze right), each block lighting up with its medallion + flag chip + name + score as it's
+  revealed; gold reveal fires the cannon confetti. Your medal row is highlighted gold with a "★ YOU" tag and
+  the sub-line reads "You take Gold for {country}". Auto Sim auto-advances through it; manual shows Continue;
+  tap-to-skip reveals all. Triggered in scrSeason for `evt.olympics` (before the generic win celebration);
+  a gold-tie sudden-death playoff now returns to the podium afterward (celebratePlayoff finish renders on any
+  Olympic finish, win or lose). Verified: podium renders with 3 columns + confetti + Continue, no errors.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
