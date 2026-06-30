@@ -1827,6 +1827,16 @@ allows Google Fonts, or self-host Anton.*
   the result banner and no "match N of M" reveal; made→"Watch the…" begins reveal at teamMatchN=0 with no
   premature result. Zero page errors.
 
+- **CS59 — Masters "Green Jacket" graphic redrawn as a blazer (was a T-shirt).** The Masters
+  major-champion icon (`greenJacketSVG`, used on the champion celebration screen and in the trophy case)
+  read as a tee — short cap sleeves poking out, a closed crew/V-neck, two centered buttons. Redrawn as a
+  proper sport coat: broad rounded shoulders with sleeves hanging at the sides (no cap-sleeve nubs), notched
+  lapels, a dark shirt/tie gap between the open fronts, a single fastening button at the waist, a breast
+  pocket, and a shallow open hem vent (not a deep split that read as legs). Same gradient `gj` plus a lighter
+  `gjl` for the lapels; viewBox unchanged so all call sites scale identically. Verified the live function
+  renders cleanly at both the large celebration size and the small trophy-case size, `majorTheme('The
+  Masters')` still wires to it, zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
