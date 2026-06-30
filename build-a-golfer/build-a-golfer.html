@@ -2286,12 +2286,17 @@ function playerRetires(){ return (S.year||1) >= CAREER_MAX_YEARS; }   // forced 
 /* golfer customization palettes */
 // `file` = canonical avatar-art filename token (see public/avatars/golfers/README.md).
 // Skins map by lightness order to the 5 art tones (game ids kept for save compat).
+// 8 realistic skin tones, fair → deep ebony (covers the full range). `m` is the live tint, `s` a darker
+// shade for the SVG fallback. Existing save ids (light/tan/medium/brown/deep) are preserved.
 const SKINS=[
-  {id:'light', m:'#f0c6a4', s:'#e0ad84', file:'skin-01-fair'},
-  {id:'tan',   m:'#e8b088', s:'#d99a6c', file:'skin-02-light'},
-  {id:'medium',m:'#c98d5e', s:'#b67a4d', file:'skin-03-tan'},
-  {id:'brown', m:'#9c6b43', s:'#855836', file:'skin-04-medium'},
-  {id:'deep',  m:'#6f4a2e', s:'#5d3c24', file:'skin-05-deep'},
+  {id:'porcelain',m:'#f4d4ba', s:'#e6c0a2'},
+  {id:'light',    m:'#eec096', s:'#dba87c'},
+  {id:'tan',      m:'#dca572', s:'#c68e5b'},
+  {id:'medium',   m:'#c0844f', s:'#a87044'},
+  {id:'tawny',    m:'#9e6840', s:'#875634'},
+  {id:'brown',    m:'#794e30', s:'#643f27'},
+  {id:'deep',     m:'#523524', s:'#41291b'},
+  {id:'ebony',    m:'#36231a', s:'#281913'},
 ];
 // BASIC colours (free, shared by shirt + hat). All distinct — no two close shades, and no red/green
 // (red is Tiger's Sunday colour and green is the Masters jacket, both reserved as unlocks below).
@@ -2310,13 +2315,15 @@ const PANTS=[
   {id:'white',a:'#ededdf', b:'#deded1'},
   {id:'black',a:'#262a31', b:'#1d2026'},
 ];
+// hair shades, dark → light, each tuned to read distinctly on the painted sideburns/fringe
 const HAIRS=[
-  {id:'black',     m:'#2b2118', s:'#1b140d', file:'hair-01-black'},
-  {id:'brown',     m:'#5a3b25', s:'#412a19', file:'hair-03-brown'},
-  {id:'darkbrown', m:'#3a2a1c', s:'#281c12', file:'hair-02-dark-brown'},
-  {id:'blonde',    m:'#c79c54', s:'#a37f3c', file:'hair-04-blonde'},
-  {id:'auburn',    m:'#7e3b22', s:'#5e2c18', file:'hair-05-auburn'},
-  {id:'grey',      m:'#9a958f', s:'#7b766f', file:'hair-06-gray'},
+  {id:'black',     m:'#1c150f', s:'#100b07'},
+  {id:'darkbrown', m:'#3a2a1c', s:'#281c12'},
+  {id:'brown',     m:'#5f3e26', s:'#46301d'},
+  {id:'auburn',    m:'#823a1f', s:'#5e2c18'},
+  {id:'blonde',    m:'#cda35c', s:'#ab8543'},
+  {id:'platinum',  m:'#e4ca9b', s:'#c7ab78'},
+  {id:'grey',      m:'#b3ada4', s:'#928c83'},
 ];
 const DEFLOOK={skin:'tan',polo:'teal',pants:'stone',hair:'brown',cap:true,lefty:false,gender:'male',country:'United States'};
 let S={};
@@ -3064,31 +3071,52 @@ function toast(msg){
 }
 
 /* ---------- setup (create your golfer) ---------- */
+// a labelled section header with a divider rule — groups the form so it doesn't read as a wall of controls
+function setupHeader(label){ return $(`<div style="display:flex;align-items:center;gap:10px;margin:17px 0 3px"><span style="letter-spacing:.12em;text-transform:uppercase;font-size:10.5px;font-weight:800;color:#9fb4ab">${esc(label)}</span><span style="flex:1;height:1px;background:rgba(255,255,255,.08)"></span></div>`); }
 function scrSetup(){
+  const guest=!sbSignedIn();
   add($(`<div class="center"><span class="tag"${S.special?' style="color:#ffd76a;border-color:#ffd76a"':''}>${S.special?'⭐ Monthly Spotlight':(S.daily?'Daily Challenge':'New golfer')}</span></div>`));
-  add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Create your golfer</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:8px">Set your look, then spin to build the skills.</p>`));
+  add($(`<h1 class="center" style="font-size:25px;margin:8px 0 2px">Create your golfer</h1>`));
+  add($(`<p class="lede center" style="margin-bottom:10px">Choose your look${guest?'':', name and kit'}, then spin to build the skills.</p>`));
   const cols=$(`<div class="cols setup-cols"></div>`);
-  const left=$(`<div class="col center" style="align-self:center"></div>`), right=$(`<div class="col"></div>`);
+  const left=$(`<div class="col center"></div>`), right=$(`<div class="col"></div>`);
   cols.appendChild(left); cols.appendChild(right); add(cols);
-  const f=$(avatarHTML()); f.style.width='168px'; f.style.height='168px'; f.style.filter='drop-shadow(0 6px 12px rgba(0,0,0,.4))';
-  const figwrap=$(`<div style="display:flex;justify-content:center"></div>`); figwrap.appendChild(f); left.appendChild(figwrap);
-  right.appendChild($(`<h2 style="margin:0 0 4px">Name</h2>`));
-  const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${S.name}">`);
-  inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name);}; right.appendChild(inp);
-  right.appendChild($(`<div style="height:6px"></div>`));
-  right.appendChild(countryRow());
+  // avatar preview — large, sticky so it stays visible while you scroll the options
+  const f=$(avatarHTML()); f.style.width='184px'; f.style.height='184px'; f.style.filter='drop-shadow(0 7px 16px rgba(0,0,0,.45))';
+  const figwrap=$(`<div style="display:flex;justify-content:center;position:sticky;top:8px"></div>`); figwrap.appendChild(f); left.appendChild(figwrap);
+
+  // ---- Appearance (available to everyone) ----
+  right.appendChild(setupHeader('Appearance'));
   right.appendChild(genderRow());
-  right.appendChild(handRow());
   right.appendChild(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
   right.appendChild(swatchRow('Hair',HAIRS,S.look.hair,'hair',o=>o.m));
-  right.appendChild(colorRow('Shirt','polo',S.look.polo));
-  right.appendChild(patternRow('Shirt pattern','shirtPat',S.look.shirtPat||'none'));
-  right.appendChild(colorRow('Hat','hat',S.look.hat||S.look.polo));
-  right.appendChild(patternRow('Hat pattern','hatPat',S.look.hatPat||'none'));
-  right.appendChild($(`<div style="height:14px"></div>`));
-  const go=$(`<button class="btn goldfill">Start Drafting ▸<span class="sub">${S.daily?'Build a golfer for today\'s course':'Spin to build your golfer'}</span></button>`);
-  go.onclick=()=>{track('draft_started',{daily:S.daily});S.screen='draft';render();}; right.appendChild(go);
+
+  if(guest){
+    // ---- guests: limited to gender/skin/hair; everything else is an account perk (the conversion nudge) ----
+    const lock=$(`<div style="margin-top:16px;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(235,166,31,.08),rgba(10,22,38,.25));padding:15px 15px 14px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:18px">🔒</span><b style="color:var(--gold);font-size:14.5px">Unlock the full locker room</b></div>
+      <div class="small muted" style="margin-bottom:12px;line-height:1.5">A free account lets you <b style="color:var(--oncard)">name your golfer</b>, fly your <b style="color:var(--oncard)">country's flag</b>, play <b style="color:var(--oncard)">left-handed</b>, and pick your <b style="color:var(--oncard)">shirt, hat colours &amp; patterns</b> — plus it saves your career and posts you to the global leaderboards.</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn goldfill" id="setup-signup" style="width:auto;flex:1 1 160px;padding:11px">Create free account ▸</button><button class="btn ghost" id="setup-signin" style="width:auto;flex:0 0 auto;padding:11px 18px">Sign in</button></div></div>`);
+    lock.querySelector('#setup-signup').onclick=()=>{ track('setup_signup_click'); S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); };
+    lock.querySelector('#setup-signin').onclick=()=>{ S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); };
+    right.appendChild(lock);
+  } else {
+    // ---- signed-in: full customization, grouped into tidy sections ----
+    right.appendChild(setupHeader('Name'));
+    const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${esc(S.name||'')}">`);
+    inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name);}; right.appendChild(inp);
+    right.appendChild(setupHeader('Country & handedness'));
+    right.appendChild(countryRow());
+    right.appendChild(handRow());
+    right.appendChild(setupHeader('Kit'));
+    right.appendChild(colorRow('Shirt','polo',S.look.polo));
+    right.appendChild(patternRow('Shirt pattern','shirtPat',S.look.shirtPat||'none'));
+    right.appendChild(colorRow('Hat','hat',S.look.hat||S.look.polo));
+    right.appendChild(patternRow('Hat pattern','hatPat',S.look.hatPat||'none'));
+  }
+
+  const go=$(`<button class="btn goldfill" style="margin-top:16px">Start Drafting ▸<span class="sub">${S.daily?'Build a golfer for today\'s course':'Spin to build your golfer'}</span></button>`);
+  go.onclick=()=>{ if(guest && !(S.name||'').trim()) S.name='Your Golfer'; track('draft_started',{daily:S.daily,guest}); S.screen='draft'; render(); }; right.appendChild(go);
   const back=$(`<button class="btn ghost" style="margin-top:10px">‹ Back</button>`);
   back.onclick=()=>{reset();S.screen='title';render();}; right.appendChild(back);
 }
@@ -3169,6 +3197,12 @@ function avCompute(canvas,key,o){
       const octx=off.getContext('2d',{willReadFrequently:true});
       octx.drawImage(e.img,0,0,512,512);
       const id=octx.getImageData(0,0,512,512),d=id.data;
+      // per-target lightness pull: dark SKIN must read dark (base art is mid-toned), and light HAIR
+      // (blonde/grey) must read light against the dark painted sideburns. Scale the pull by the target.
+      const _sk=avHexRgb(o.skinHex), skinTl=avRgbHsl(_sk.r,_sk.g,_sk.b).l;
+      const _hr=avHexRgb(o.hairHex), hairTl=avRgbHsl(_hr.r,_hr.g,_hr.b).l;
+      const skinLp=Math.min(0.92, 0.44+(1-skinTl)*0.58);   // darker skin → stronger pull toward dark
+      const hairLp=Math.min(0.88, 0.42+hairTl*0.55);       // lighter hair → stronger pull toward light
       let m=null;
       if(mk.ready){ const mc=document.createElement('canvas');mc.width=512;mc.height=512;
         const mx=mc.getContext('2d',{willReadFrequently:true}); mx.drawImage(mk.img,0,0,512,512); m=mx.getImageData(0,0,512,512).data; }
@@ -3181,7 +3215,7 @@ function avCompute(canvas,key,o){
         const sb=reg==='skin'?0.92:reg==='hair'?1.05:1.05;
         // lpull: pull result lightness toward the target so DARK skin reads dark and
         // LIGHT hair (blonde/grey) reads light, instead of staying the base's mid-brown.
-        const lp=reg==='skin'?0.48:reg==='hair'?0.50:0.12;
+        const lp=reg==='skin'?skinLp:reg==='hair'?hairLp:0.12;
         const t=avTint(d[i],d[i+1],d[i+2],tg,st,sb,lp); let rr=t.r,gg=t.g,bb=t.b;
         // pattern overlay: a tonal accent clipped to the shirt (shirtPat) / cap (hatPat) region
         const pat=reg==='shirt'?o.shirtPat:reg==='cap'?o.hatPat:'none';
@@ -3299,11 +3333,13 @@ function golferSVG(){
 </svg>`;}
 function swatchRow(label,opts,curId,key,colorOf){
   const row=$(`<div style="margin:9px 0"></div>`);
-  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${label}</div>`));
-  const wrap=$(`<div style="display:flex;gap:9px;flex-wrap:wrap"></div>`);
+  row.appendChild($(`<div class="small muted" style="margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${label}</div>`));
+  const wrap=$(`<div style="display:flex;gap:10px;flex-wrap:wrap"></div>`);
   opts.forEach(o=>{
-    const sel=curId===o.id;
-    const sw=$(`<button aria-label="${label} ${o.id}" style="width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${colorOf(o)};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}"></button>`);
+    const sel=curId===o.id, col=colorOf(o);
+    // check colour adapts to the swatch lightness so it stays legible on light AND dark tones
+    const rgb=avHexRgb(col), lum=(0.299*rgb.r+0.587*rgb.g+0.114*rgb.b)/255;
+    const sw=$(`<button aria-label="${label} ${o.id}" title="${esc(o.id)}" style="position:relative;width:34px;height:34px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.20)'};background:${col};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 3px rgba(235,166,31,.30)':'none'};transition:transform .08s">${sel?`<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:${lum>0.55?'#1a1208':'#fff'}">✓</span>`:''}</button>`);
     sw.onclick=()=>{S.look[key]=o.id; LS.set('bag_look',S.look); render();};
     wrap.appendChild(sw);
   });
@@ -3361,7 +3397,7 @@ function countryRow(){
 function genderRow(){
   const g=S.look.gender||'male';
   const row=$(`<div style="margin:9px 0"></div>`);
-  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Golfer</div>`));
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Gender</div>`));
   const wrap=$(`<div class="mini" style="margin:0"></div>`);
   const m=$(`<button class="btn ${g==='male'?'gold':'ghost'}" style="font-size:14px;padding:10px">Male</button>`);
   const f=$(`<button class="btn ${g==='female'?'gold':'ghost'}" style="font-size:14px;padding:10px">Female</button>`);

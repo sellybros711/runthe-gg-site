@@ -1718,6 +1718,20 @@ allows Google Fonts, or self-host Anton.*
   branch (both season + career), so a signed-out player always gets the prompt on every tab. Verified in
   Playwright across all three states (local-fallback, empty, full) on both tabs.
 
+- **CS51 — Create-your-golfer redesign: guest gating + skin/hair upgrade.** `scrSetup` rebuilt and
+  decluttered: a big sticky avatar preview, then sections grouped under `setupHeader()` rules
+  (Appearance / Name / Country & handedness / Kit) instead of a flat 10-control dump. **Guests** can only
+  set **gender, skin tone and hair** — name, country, handedness, shirt/hat colours & patterns are replaced
+  by a single gold "🔒 Unlock the full locker room" card (Create free account + Sign in) that names exactly
+  what an account unlocks (the conversion nudge). Signed-in users get the full set. Start Drafting defaults a
+  guest's name to "Your Golfer". **Skin** expanded from 5 → **8 realistic tones** (porcelain→ebony, with
+  genuinely dark deep/ebony shades; old ids light/tan/medium/brown/deep preserved). **Hair** refined to 7
+  (added platinum; reordered dark→light, retuned hexes). Avatar recolour now uses a **per-target `lpull`**
+  (`skinLp`/`hairLp` in `avCompute`) so dark skin actually reads dark and light hair (blonde/platinum/grey)
+  reads light against the painted sideburns — previously the darkest skin looked medium-tan and hair shades
+  were nearly identical. `swatchRow` swatches enlarged with a luminance-adaptive ✓ on the selected tone.
+  Verified guest vs signed-in rendering + a full skin/hair matrix in Playwright (zero page errors).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
