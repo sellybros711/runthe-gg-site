@@ -1975,40 +1975,40 @@ function archetype(p){
 // scouting report in golf-analytics terms — varies by the build's actual strength/weakness + ratings
 const SK_AREA={dist:'driving distance',acc:'driving accuracy',app:'approach play',sht:'short game',scr:'scrambling',bnk:'bunker play',put:'putting',clu:'composure'};
 const SK_GAIN={
-  dist:'overpowers the par 5s with serious Strokes Gained off the tee',
-  acc:'finds fairway after fairway and attacks from the short grass',
-  app:'stuffs irons tight for elite Strokes Gained: approach',
-  sht:'gets up-and-down from anywhere like a wizard around the greens',
-  scr:'a tour-leading scrambling rate that turns misses into pars',
-  bnk:'a sand-save percentage rivals would envy',
-  put:'rolls in everything inside 15 feet for top-tier Strokes Gained: putting',
-  clu:'a stone-cold closer when the pressure peaks' };
+  dist:'you overpower the par 5s with serious Strokes Gained off the tee',
+  acc:'you find fairway after fairway and attack from the short grass',
+  app:'you stuff irons tight for elite Strokes Gained: approach',
+  sht:'you get up-and-down from anywhere like a wizard around the greens',
+  scr:'you scramble at a tour-leading rate, turning misses into pars',
+  bnk:'you post a sand-save percentage rivals would envy',
+  put:'you roll in everything inside 15 feet for top-tier Strokes Gained: putting',
+  clu:"you're a stone-cold closer when the pressure peaks" };
 const SK_LEAK={
-  dist:'leaves long irons in where rivals are flipping wedges',
-  acc:'sprays it off the tee and bleeds strokes from the rough and trees',
-  app:'misses too many greens for negative Strokes Gained: approach',
-  sht:'turns greenside misses into dropped shots',
-  scr:'a missed green is too often a missed par',
-  bnk:'lets bunkers become genuine hazards',
-  put:'leaves makeable putts on the lip as Strokes Gained: putting runs cold',
-  clu:'gives shots back down the stretch' };
+  dist:'you leave long irons in where rivals are flipping wedges',
+  acc:'you spray it off the tee and bleed strokes from the rough and trees',
+  app:'you miss too many greens for negative Strokes Gained: approach',
+  sht:'you turn greenside misses into dropped shots',
+  scr:'you turn too many missed greens into missed pars',
+  bnk:'you let bunkers become genuine hazards',
+  put:'you leave makeable putts on the lip as your Strokes Gained: putting runs cold',
+  clu:'you give shots back down the stretch' };
 function scoutingNote(p){
   let best={v:-1},worst={v:200};
   CATS.forEach(cat=>{const v=p[cat.k]; if(v>best.v)best={v,k:cat.k,c:cat.short}; if(v<worst.v)worst={v,k:cat.k,c:cat.short};});
   const holes=CATS.filter(c=>!S.slots[c.k]).length;
-  const strQ = best.v>=90?'World-class':best.v>=85?'Elite':best.v>=80?'Strong':'A modest bag whose best gear is';
-  const wkQ  = worst.v<65?'A glaring hole in their':worst.v<74?'A real soft spot in their':worst.v<82?'A slight dip in their':'Only a minor wobble in their';
-  const strC = best.v>=80 ? SK_GAIN[best.k] : 'their most reliable club, around tour average';
+  const strQ = best.v>=90?'World-class':best.v>=85?'Elite':best.v>=80?'Strong':'Your steadiest gear is your';
+  const wkQ  = worst.v<65?'A glaring hole in your':worst.v<74?'A real soft spot in your':worst.v<82?'A slight dip in your':'Only a minor wobble in your';
+  const strC = best.v>=80 ? SK_GAIN[best.k] : 'it sits around tour average, your most reliable club';
   const wkC  = worst.v>=82 ? 'still comfortably tour-level, just the one club not quite elite' : SK_LEAK[worst.k];
-  let note=`<b style="color:var(--oncard)">Strength · ${best.c} (${best.v})</b>: ${strQ} ${SK_AREA[best.k]} — ${strC}. `
-         +`<b style="color:var(--oncard)">Weakness · ${worst.c} (${worst.v})</b>: ${wkQ} ${SK_AREA[worst.k]} — ${wkC}.`;
-  if(holes) note+=` ${holes} slot${holes>1?'s':''} unfilled — those play as a tour journeyman.`;
+  let note=`<b style="color:var(--oncard)">Strength · ${best.c} (${best.v})</b>: ${strQ} ${SK_AREA[best.k]}: ${strC}. `
+         +`<b style="color:var(--oncard)">Weakness · ${worst.c} (${worst.v})</b>: ${wkQ} ${SK_AREA[worst.k]}: ${wkC}.`;
+  if(holes) note+=` ${holes} slot${holes>1?'s':''} unfilled, and those play as a tour journeyman.`;
   let read;
-  if(worst.v>=85) read='A remarkably complete bag — no number for the field to attack.';
-  else if(best.v-worst.v>=20) read='A boom-or-bust profile: it can go very low when the course rewards that strength, but the soft spot bites when it doesn’t.';
-  else if(worst.v<68) read='That weakness will leak real strokes against a field of complete players — fit it to the right courses.';
-  else if(worst.v<78) read='Solid across the board, but the weak link keeps it a notch below the pure ball-strikers.';
-  else read='A well-rounded game without one standout gear — steady more than spectacular.';
+  if(worst.v>=85) read='Your game is remarkably complete: no number for the field to attack.';
+  else if(best.v-worst.v>=20) read='A boom-or-bust profile: you can go very low when the course rewards that strength, but the soft spot bites when it doesn’t.';
+  else if(worst.v<68) read='That weakness will leak real strokes against a field of complete players, so fit your schedule to the courses that hide it.';
+  else if(worst.v<78) read='Solid across the board, but that weak link keeps you a notch below the pure ball-strikers.';
+  else read='A well-rounded game without one standout gear: steady more than spectacular.';
   return note+` ${read}`;
 }
 
