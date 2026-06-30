@@ -2740,16 +2740,16 @@ function overlayAccount(screen){
   screen.appendChild(ov);
 }
 // leaderboard sort categories per tab: [key, label]. A player can top many different boards.
-const LB_SORTS={
-  season:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['ovr','OVR'],['rep','Tour Rep']],
-  career:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['seasons','Seasons'],['rep','Tour Rep']],
+const LB_SORTS={   // Tour Rep is no longer a sort category — the rep rank shows next to each name instead
+  season:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['ovr','OVR']],
+  career:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['seasons','Seasons']],
 };
 function lbSortValid(tab,sort){ return (LB_SORTS[tab]||[]).some(s=>s[0]===sort); }
 function lbSortLabel(tab,sort){ const f=(LB_SORTS[tab]||[]).find(s=>s[0]===sort); return f?f[1]:'Earnings'; }
 function lbStatVal(r,tab,sort){   // the right-hand value column for the chosen sort
   switch(sort){
     case 'net': { const v=(tab==='career'?r.career_net:r.season_net)||0; return `<span style="color:${v>=0?'#35d6a0':'#E14A33'}">${fmtSigned(v)}</span>`; }
-    case 'wins': return `<span style="color:var(--gold)">${r.wins||0}W</span>`;
+    case 'wins': { const w=r.wins||0; return `<span style="color:var(--gold)">${w} win${w===1?'':'s'}</span>`; }
     case 'majors': return `<span style="color:var(--gold)">${r.majors||0} maj</span>`;
     case 'ovr': return `<span style="color:var(--gold)">OVR ${r.ovr||'—'}</span>`;
     case 'seasons': return `<span style="color:var(--gold)">${r.seasons||0} szn</span>`;
@@ -2780,7 +2780,7 @@ function overlayLeaderboard(screen){
       const you=sbUser&&r.user_id===sbUser.id, v=lbStatVal(r,tab,sort);
       const sub = tab==='season'
         ? (r.golfer_name?r.golfer_name+' · ':'')+'OVR '+r.ovr+(r.year?' · Yr '+r.year:'')+(sort!=='earnings'?' · '+fmt(r.season_earnings):'')
-        : (r.golfer_name?r.golfer_name+' · ':'')+r.seasons+' szn · '+r.wins+'W'+(sort!=='earnings'?' · '+fmt(r.career_earnings):'');
+        : (r.golfer_name?r.golfer_name+' · ':'')+r.seasons+' szn · '+(r.wins||0)+' win'+((r.wins||0)===1?'':'s')+(sort!=='earnings'?' · '+fmt(r.career_earnings):'');
       return lbRowHTML(r.rank,r.display_name,sub,v,you,lbRep(r));
     };
     const rows=(dir==='asc')?globalRows.slice().reverse():globalRows;   // toggle high→low / low→high
@@ -2806,7 +2806,7 @@ function overlayLeaderboard(screen){
         : `<div class="small muted center" style="padding:18px 8px">Run a season to post a single-season score.</div>`;
     } else {
       board = c.totalMoney>0
-        ? lbRowHTML(1, youName, c.builds+' season'+(c.builds>1?'s':'')+' · '+c.wins+'W', `<span style="color:var(--gold)">${fmt(c.totalMoney)}</span>`,true)
+        ? lbRowHTML(1, youName, c.builds+' season'+(c.builds>1?'s':'')+' · '+(c.wins||0)+' win'+((c.wins||0)===1?'':'s'), `<span style="color:var(--gold)">${fmt(c.totalMoney)}</span>`,true)
         : `<div class="small muted center" style="padding:18px 8px">Play a season to bank career earnings.</div>`;
     }
   }
