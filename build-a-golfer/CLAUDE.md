@@ -1672,6 +1672,13 @@ allows Google Fonts, or self-host Anton.*
   existed; all other chips read existing lifetime counters. Verified populated + empty states in Playwright
   (zero page errors; dimmed slots and counts render correctly).
 
+- **CS47 — Leaderboard tweaks.** Removed **Tour Rep** as a sort category (`LB_SORTS` no longer lists
+  `['rep',…]` on either board; persisted `S.lbSort==='rep'` falls back to earnings via the existing
+  `lbSortValid` guard). The Tour Rep rank still renders next to every player's name (via `lbRep()` → the gold
+  "· Star/Legend/…" chip), so it lives by the name rather than as its own ranking. Wins now read in full —
+  `lbStatVal` Wins column shows "15 win/wins" (pluralised) instead of "15W", and the career sub-line + offline
+  fallback spell out " win(s)" too. Verified in Playwright (no rep chip, rep tier beside names, "N wins").
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
