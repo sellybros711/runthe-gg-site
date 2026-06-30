@@ -1814,6 +1814,19 @@ allows Google Fonts, or self-host Anton.*
   saves with null career; checkpoint advances per event; reset()+resumeCareer() restores the same golfer at
   the right event with all completed events; other accounts isolated. Zero page errors.
 
+- **CS58 — Skip the team-cup sim when you're not involved.** Request: "If you miss the Ryder cup,
+  Presidents, or Olympics, I don't want the user to sit through the simulation. It should go right to the
+  result after the selection screen because the player is not involved." Fix: in `scrTeamCup`'s pre-match
+  intro phase, compute `involved = T.playerSelected || T.captain`. If involved, the button still reads
+  "Watch the {cup} ▸" and starts the match-by-match reveal as before. If NOT involved (missed the team, not
+  captaining), the button reads "See the Result ▸ · You're not involved this week" and sets
+  `S.teamMatchN` to the total match count so the screen lands directly on the final scoreboard/banner — no
+  28-match watch-through. Olympics needs no change: `beginEvent` already routes a non-qualifier to play a
+  same-week tour stop (John Deere Classic) as a real competitor earning money/points, so they're never made
+  to sit through the Olympic sim. Verified in Playwright: missed→"See the Result" jumps to teamMatchN=28 with
+  the result banner and no "match N of M" reveal; made→"Watch the…" begins reveal at teamMatchN=0 with no
+  premature result. Zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
