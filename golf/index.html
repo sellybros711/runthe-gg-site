@@ -566,6 +566,7 @@ function fmtMoneyShort(n){ n=Math.round(n);
   return '$'+n; }
 function ltDefault(){return {seasons:0,careers:0,wins:0,majors:0,top10:0,made:0,played:0,earnings:0,net:0,rivalWins:0,
   bestSeasonNet:0,profitSeasons:0,ironSeasons:0,moneyLeaderSeasons:0,slamSeasons:0,underdogSeasons:0,
+  poySeasons:0,roySeasons:0,scoringSeasons:0,no1Seasons:0,weeksAtNo1:0,
   maxOvr:0,distinctMajors:0,careerSlams:0,maj:{masters:0,champ:0,usopen:0,open:0}};}
 function badgeMetrics(c){ const lt=Object.assign(ltDefault(),(c||career()).lt||{});
   lt.maj=Object.assign({masters:0,champ:0,usopen:0,open:0},lt.maj||{}); return lt; }
@@ -700,7 +701,7 @@ function trophyCabinetHTML(m){
    bag (`achMetrics`): lifetime career stats (lt), daily stats, spotlight/rival wins, and SITUATIONAL flags
    captured at the moment they happen (playoff wins, wire-to-wire, comebacks, low rounds, etc., in bag_ach).
    Completing achievements awards POINTS → a named Tour Rep rank (the "keep playing" hook) and unlocks. */
-const ACH_CATS=['Getting Started','Winning','Majors','Clutch','Records & Streaks','Consistency','The Money','Career & Legacy','Daily Challenge','Daily Mastery','Rivalry & Spotlight','The Build','The Draft'];
+const ACH_CATS=['Getting Started','Winning','Season Awards','Majors','Clutch','Records & Streaks','Consistency','The Money','Career & Legacy','Daily Challenge','Daily Mastery','Rivalry & Spotlight','The Build','The Draft'];
 // tiered-achievement helper: one metric, several thresholds
 function aT(idb,cat,key,defs){ return defs.map(([g,nm,d,p])=>({id:idb+'_'+g,cat,name:nm,desc:d,goal:g,pts:p,get:m=>m[key]||0})); }
 const ACH=[].concat(
@@ -720,6 +721,15 @@ const ACH=[].concat(
    {id:'win_b2b',cat:'Winning',name:'Back-to-Back',       desc:'Win two tournaments in a row.',                goal:1,pts:35, get:m=>m.backToBack},
    {id:'win_poy',cat:'Winning',name:'Top of the List',    desc:'Finish #1 on the season money list.',          goal:1,pts:35, get:m=>m.moneyLeaderSeasons},
    {id:'win_poy3',cat:'Winning',name:'Money Magnet',      desc:'Lead the money list in 3 seasons.',            goal:3,pts:60, get:m=>m.moneyLeaderSeasons}],
+  // ---- Season Awards ----
+  [{id:'aw_poy',  cat:'Season Awards',name:'Player of the Year',  desc:'Win Player of the Year.',                 goal:1,pts:60, get:m=>m.poySeasons},
+   {id:'aw_poy3', cat:'Season Awards',name:'Best in the World',   desc:'Win Player of the Year 3 times.',          goal:3,pts:100,get:m=>m.poySeasons},
+   {id:'aw_roy',  cat:'Season Awards',name:'Rookie of the Year',  desc:'Win Rookie of the Year.',                  goal:1,pts:40, get:m=>m.roySeasons},
+   {id:'aw_scor', cat:'Season Awards',name:'Scoring Title',       desc:'Lead the Tour in scoring average.',        goal:1,pts:50, get:m=>m.scoringSeasons},
+   {id:'aw_scor5',cat:'Season Awards',name:'Mr. Low Score',       desc:'Win 5 scoring titles.',                    goal:5,pts:100,get:m=>m.scoringSeasons},
+   {id:'aw_no1',  cat:'Season Awards',name:'World No. 1',         desc:'Finish a season ranked World No. 1.',      goal:1,pts:75, get:m=>m.no1Seasons},
+   {id:'aw_no1_3',cat:'Season Awards',name:'Reign at the Top',    desc:'Finish 3 seasons ranked World No. 1.',     goal:3,pts:120,get:m=>m.no1Seasons},
+   {id:'aw_wk52', cat:'Season Awards',name:'A Year at No. 1',     desc:'Spend 50+ weeks ranked World No. 1.',      goal:50,pts:100,get:m=>m.weeksAtNo1}],
   // ---- Majors ----
   [{id:'maj_masters',cat:'Majors',name:'Green Jacket',    desc:'Win The Masters.',                             goal:1,pts:40, get:m=>m.mastersWins},
    {id:'maj_pga',    cat:'Majors',name:'Wanamaker',       desc:'Win The Championship.',                        goal:1,pts:40, get:m=>m.pgaWins},
@@ -860,6 +870,8 @@ function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const 
   return Object.assign({}, f, {
     wins:lt.wins, majors:lt.majors, top10:lt.top10, made:lt.made, played:lt.played, earnings:lt.earnings, net:lt.net,
     profitSeasons:lt.profitSeasons, ironSeasons:lt.ironSeasons, moneyLeaderSeasons:lt.moneyLeaderSeasons,
+    poySeasons:lt.poySeasons||0, roySeasons:lt.roySeasons||0, scoringSeasons:lt.scoringSeasons||0,
+    no1Seasons:lt.no1Seasons||0, weeksAtNo1:lt.weeksAtNo1||0,
     slamSeasons:lt.slamSeasons, underdogSeasons:lt.underdogSeasons, careers:lt.careers, seasons:lt.seasons,
     maxOvr:lt.maxOvr, distinctMajors:lt.distinctMajors, careerSlams:lt.careerSlams, rivalWins:lt.rivalWins||0,
     mastersWins:lt.maj.masters, pgaWins:lt.maj.champ, usopenWins:lt.maj.usopen, openWins:lt.maj.open,
@@ -1021,6 +1033,11 @@ function recordSeason(o){
   if(o.net>0)lt.profitSeasons++;
   if(o.played>0&&o.made===o.played)lt.ironSeasons++;
   if(o.moneyRank===1)lt.moneyLeaderSeasons++;
+  if(o.poyWon)lt.poySeasons=(lt.poySeasons||0)+1;
+  if(o.royWon)lt.roySeasons=(lt.roySeasons||0)+1;
+  if(o.scoringWon)lt.scoringSeasons=(lt.scoringSeasons||0)+1;
+  if(o.no1Won)lt.no1Seasons=(lt.no1Seasons||0)+1;
+  if(o.weeksAtNo1)lt.weeksAtNo1=(lt.weeksAtNo1||0)+o.weeksAtNo1;
   if(o.net>0&&o.ovr<80)lt.underdogSeasons++;
   if(o.rivalBeat)lt.rivalWins=(lt.rivalWins||0)+1;
   if(o.ovr>lt.maxOvr)lt.maxOvr=o.ovr;
@@ -1716,7 +1733,7 @@ function genRookie(rng,simYear,used){
   SKK.forEach(s=>cap[s]=clamp(cap[s]+gm+bust,55,99));
   const g={name:nm,era:'cur',tier:'rising',nation:NAT_CODE[nat]||'INT',country:(nat==='Other'?'International':nat),
     born:simYear-age,arc_age:age,majors:0,note:ARCH_LABEL[ar]+' prospect',archetype:ARCH_LABEL[ar],signature:ARCH_SIGNAME[ar],
-    data_source:'generated',fictional:true};
+    data_source:'generated',fictional:true,debutYear:simYear};
   SKK.forEach(s=>g[s]=clamp(Math.round(cap[s]*ageArc(s,age)),40,99));
   g.overall=Math.round(SKK.reduce((a,s)=>a+g[s]*CW[s],0));
   g._sp={}; SKK.forEach(s=>g._sp[s]=cap[s]);   // realized per-skill ceilings
@@ -1855,8 +1872,38 @@ function simHeadlessEvent(evt, players){
   order.forEach(o=>{ o.money=evt.purse*(o.pct||0); o.points=typeof o.pos==='number'?Math.round(basePts*((o.pct||0)/0.18)):0;
     const t=S.season.totals[o.p.name]; if(!t) return;
     t.money+=o.money; t.points+=o.points; t.played++; t.finishSum+=(typeof o.pos==='number'?o.pos:order.length);
+    const rr=o.rounds.filter(r=>r!=null); t.toPar=(t.toPar||0)+rr.reduce((a,b)=>a+b,0); t.rounds=(t.rounds||0)+rr.length;
     if(o.pos===1){t.wins++; if(evt.major)t.majors++;}
     if(typeof o.pos==='number'){t.made++; if(o.pos<=10)t.top10++; if(o.pos<t.best)t.best=o.pos;} });
+}
+/* ---- Season awards: Player of the Year, Rookie of the Year, money title, scoring title, year-end World #1.
+   Computed at season end AFTER the OWGR update. Returns {poy,roy,money,scoring,no1}, each {name,you,...}. */
+function computeAwards(){
+  if(!S.season) return null;
+  const tot=S.season.totals, meName=S.season.me.name, names=Object.keys(tot), cup=S.season.cupChampion;
+  // POY weighting: wins + majors carry it, with the Cup + points + top-10s as tiebreakers
+  const poyScore=n=>{ const v=tot[n]; return v.wins*6 + v.majors*10 + (n===cup?15:0) + (v.points||0)/1000 + (v.top10||0)*0.4; };
+  const best=(pool,score)=> pool.reduce((a,n)=> score(n)>score(a)?n:a, pool[0]);
+  const poy=best(names, poyScore), money=best(names, n=>tot[n].money);
+  // scoring title — lowest to-par-per-round, a minimum number of rounds to qualify (like the Vardon Trophy)
+  const SCOR_MIN=30, avgOf=n=>tot[n].toPar/Math.max(1,tot[n].rounds);
+  const elig=names.filter(n=>(tot[n].rounds||0)>=SCOR_MIN);
+  const scoring=elig.length? elig.reduce((a,n)=> avgOf(n)<avgOf(a)?n:a, elig[0]) : null;
+  // rookie of the year — rookies = world debutants this sim year (+ you in your first season)
+  const w=S.world, sy=w?w.simYear:null;
+  const isRookie=n=>{ if(n===meName) return (S.year||1)===1; const g=w&&w.active.find(x=>x.name===n); return !!(g&&g.debutYear===sy); };
+  const rookies=names.filter(isRookie);
+  let royName=null;
+  if(rookies.length) royName=best(rookies, poyScore);                                   // best debutant who actually competed
+  else if(w){ const deb=w.active.filter(g=>g.debutYear===sy).sort((a,bb)=>(bb.lov||0)-(a.lov||0))[0]; royName=deb?deb.name:null; }   // else the top rookie by skill
+  const top=worldRanking()[0];
+  return {
+    poy:{name:poy, you:poy===meName},
+    roy: royName?{name:royName, you:royName===meName}:null,
+    money:{name:money, you:money===meName, amount:tot[money].money},
+    scoring: scoring?{name:scoring, you:scoring===meName, avg:avgOf(scoring)}:null,
+    no1:{name:top?top.name:'—', you:!!(top&&top.you)},
+  };
 }
 /* ---- Emergent rivalry: no manual pick. The game tallies your head-to-head vs every field player and,
    after a few seasons, crowns the recurring peer who keeps finishing right beside you as your nemesis
@@ -3243,7 +3290,8 @@ function startSeason(majorsOnly){
   }
   const field=roster.map(g=>Object.assign({you:false},g));
   field.push(me);
-  S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0}]))};
+  S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0,toPar:0,rounds:0}]))};
+  S.seasonAwards=null;
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false;   // unlocked during THIS season (shown on the summary)
   S.curEvt=null;
   track('season_started',{mode:S.daily?'daily':(majorsOnly?'majors':'full'),ovr:Math.round(me.skill),year:S.year||1});
@@ -3344,6 +3392,7 @@ function finalizeEvent(){
     o.score=Math.round(o.total); o.r1=o.rounds[0];o.r2=o.rounds[1];o.r3=o.rounds[2];o.r4=o.rounds[3];});
   order.forEach(o=>{const t=S.season.totals[o.p.name];
     t.money+=o.money; t.points+=o.points; t.played++; t.finishSum+=(typeof o.pos==='number'?o.pos:order.length);
+    const rr=o.rounds.filter(r=>r!=null); t.toPar=(t.toPar||0)+rr.reduce((a,b)=>a+b,0); t.rounds=(t.rounds||0)+rr.length;
     if(o.pos===1){t.wins++; if(evt.major)t.majors++;}
     if(typeof o.pos==='number'){t.made++; if(o.pos<=10)t.top10++; if(o.pos<t.best)t.best=o.pos;}});
   // ---- situational achievement flags from this event ----
@@ -4024,6 +4073,19 @@ function scrSummary(){
       updateWorldRanking(); const newWR=myWorldRank();
       S.worldRankMove={prev:prevWR, now:newWR, size:worldRankSize()}; S.career.lastWorldRank=newWR;
       S.career.cardStatus=cardStatus(newWR).key; }
+    // ---- Season awards (after the OWGR update so year-end World No.1 is settled) ----
+    if(!S.daily){ const aw=computeAwards(); S.seasonAwards=aw;
+      if(aw){ const c=career(), lt=(c.lt=Object.assign(ltDefault(),c.lt||{}));   // money title already tracked via moneyLeaderSeasons
+        if(aw.poy.you) lt.poySeasons=(lt.poySeasons||0)+1;
+        if(aw.roy&&aw.roy.you) lt.roySeasons=(lt.roySeasons||0)+1;
+        if(aw.scoring&&aw.scoring.you) lt.scoringSeasons=(lt.scoringSeasons||0)+1;
+        if(aw.no1.you){ lt.no1Seasons=(lt.no1Seasons||0)+1; lt.weeksAtNo1=(lt.weeksAtNo1||0)+(S.schedule?S.schedule.length:20); }
+        LS.set('bag_career',c);
+        // career tallies (for the recap)
+        S.career.awards=S.career.awards||{poy:0,roy:0,money:0,scoring:0,no1:0};
+        if(aw.poy.you)S.career.awards.poy++; if(aw.roy&&aw.roy.you)S.career.awards.roy++;
+        if(aw.money.you)S.career.awards.money++; if(aw.scoring&&aw.scoring.you)S.career.awards.scoring++;
+        if(aw.no1.you)S.career.awards.no1++; } }
     // emergent rivalry: tally head-to-head, graduate a rivalry you've outgrown, then crown a fresh nemesis
     if(!S.daily){ accrueH2H(); maybeOutgrowRival(); maybeFormRival(); }   // sets S.career.rival + S.freshRival/freshRivalOutgrown
     // ---- season-level achievement flags + evaluation (lt is now updated by recordSeason) ----
@@ -4135,6 +4197,29 @@ function scrSummary(){
       </div>
       <div style="text-align:right;flex:0 0 auto"><div class="small muted">of ${m.size}</div></div>
     </div>`));
+  }
+  // ---- Season Awards ----
+  if(!S.daily && S.seasonAwards){
+    const aw=S.seasonAwards;
+    const scoreTxt=aw.scoring?((aw.scoring.avg<=0?'−':'+')+Math.abs(aw.scoring.avg).toFixed(2)+' per round'):'';
+    const items=[
+      ['Player of the Year', aw.poy, ''],
+      ['Money Title', aw.money, aw.money?fmt(aw.money.amount):''],
+      ['Scoring Title', aw.scoring, scoreTxt],
+      ['Rookie of the Year', aw.roy, ''],
+      ['World No. 1', aw.no1, ''],
+    ].filter(x=>x[1]);
+    const won=items.filter(x=>x[1].you).length;
+    add($(`<h2 class="center" style="margin:14px 0 8px;font-size:15px">Season Awards${won?` · <span style="color:var(--gold)">you won ${won}</span>`:''}</h2>`));
+    const wrap=$(`<div class="scout" style="padding:2px 12px;margin-bottom:6px"></div>`);
+    items.forEach(([label,a,sub],i)=>{
+      const you=a.you, br=i<items.length-1?'border-bottom:1px solid rgba(255,255,255,.06)':'';
+      wrap.appendChild($(`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 2px;${br}">
+        <span class="small" style="color:var(--muted);flex:0 0 auto">${label}</span>
+        <span style="text-align:right;min-width:0"><span style="font-weight:800;color:${you?'var(--gold)':'var(--oncard)'}">${esc(a.name)}</span>${you?' <span class="tag" style="font-size:9px;padding:1px 6px;color:var(--gold);border-color:var(--gold)">YOU</span>':''}${sub?`<div class="small muted" style="margin-top:1px">${sub}</div>`:''}</span>
+      </div>`));
+    });
+    add(wrap);
   }
   if(HL) add($(headlinesHTML(HL)));
   if(S.freshRivalOutgrown) add($(rivalOutgrownHTML(S.freshRivalOutgrown)));
