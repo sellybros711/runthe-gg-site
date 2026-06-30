@@ -1630,6 +1630,17 @@ allows Google Fonts, or self-host Anton.*
   Verified: captain offer->picks(12 cands,pick 6)->12-man team->captain mode, one-match reveal, winner arrows,
   captain result banner, zero page errors.
 
+- Leaderboard reliability — durable season-submission queue — DONE. Every completed season is now
+  guaranteed to reach the public board. Replaced the old single-slot `_pendingSeason` (which lost all but
+  the last season when signed out) with a persistent localStorage queue `bag_pending_seasons` (cap 200):
+  `sbSubmitSeason` always enqueues the season (capturing rep at completion time via `s.repPts=achPoints()`)
+  then `flushPendingSeasons()` posts the whole queue whenever signed in + online, removing only the rows that
+  succeed and KEEPING any that fail (offline/RPC error) to retry. Flush triggers: every new season, on
+  sign-in (`sbApply`), on app init (via sbApply), and on the window `online` event. Verified: 3 seasons
+  queued while signed out then all flush on sign-in; an offline submit is retained then posts when back
+  online; zero page errors. (At-least-once delivery; a duplicate row is only possible on a rare
+  response-lost-after-server-commit timeout.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
