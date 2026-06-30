@@ -1732,6 +1732,27 @@ allows Google Fonts, or self-host Anton.*
   were nearly identical. `swatchRow` swatches enlarged with a luminance-adaptive ✓ on the selected tone.
   Verified guest vs signed-in rendering + a full skin/hair matrix in Playwright (zero page errors).
 
+- **CS52 — Player re-rating pipeline (`dg_transform.py`), sg_total-anchored.** Friends flagged that a
+  higher-SG ball-striker (Cam Young) didn't out-rate a short-game/putter type (McNealy). Root cause: the
+  2026-06-22 normalization rated each category to its OWN σ — around-the-green SG has a tiny spread, so a
+  small edge there blew up into elite short/scr/bnk boxes, and OVERALL stopped tracking true total skill.
+  New method (built + verified, NOT yet run on live data — no DG_KEY and feeds.datagolf.com is blocked by
+  this env's network policy): **OVERALL is anchored to DataGolf `sg_total`** (overall = 80 + sg_total·5.2;
+  Scheffler ≈94, tour-avg 0 → 80), and **per-category shape** comes from each category's own SG (a great
+  putter still shows great putting) via fixed slopes (app 13 / put 15 / arg 16 rating-per-SG), then all 7
+  SG-driven boxes are uniformly shifted (6-iter, clamp-aware) so their weighted average hits the anchored
+  overall. driving dist/acc from raw yards/%; scr=0.6·sht+0.4·putt, bnk=0.7·sht+0.3·scr (feed has no
+  split); clu (composure) preserved (no SG stat). The script: reads `DG_KEY` from env (never logged), pulls
+  `preds/skill-ratings`, matches by name (handles DataGolf "Last, First" + accents/suffixes + ALIASES),
+  re-rates matched current players, recomputes overall, writes golfers.json (+ .bak) AND patches the
+  embedded `const ROSTER=[…]` in build-a-golfer.html (the game embeds the roster, doesn't fetch the json) —
+  touching ONLY re-rated lines so the diff stays minimal. Dry-run prints a match/biggest-moves report;
+  `--input feed.json` runs offline; `--write`/`--html` apply. Verified end-to-end against a realistic mock
+  feed: Cam Young 90 > McNealy 87, Scheffler 94 = #1, 242 roster lines stay valid, then files restored.
+  **TO ACTUALLY RUN:** set `DG_KEY` + allow `feeds.datagolf.com` in the env network policy, then
+  `python3 dg_transform.py` (review report) → `python3 dg_transform.py --write --html build-a-golfer.html`
+  → deploy. Constants (OVR_SLOPE/SHAPE) may want a small tune after eyeballing the first real report.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
