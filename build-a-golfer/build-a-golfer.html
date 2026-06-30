@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <!-- RunTheTour — solo season · v2 · RunThePitch skin -->
-<title>Run The Tour — Build a Golfer, Run a Pro Season · RunThe.GG</title>
-<meta name="description" content="Spin the wheel, draft one skill from each real golfer to build your own, then run a full pro season — win majors, bank the money, climb the tour. A free RunThe.GG game.">
+<title>Run The Tour · Build a Golfer, Run a Pro Season · RunThe.GG</title>
+<meta name="description" content="Spin the wheel, draft one skill from each real golfer to build your own, then run a full pro season, win majors, bank the money, climb the tour. A free RunThe.GG game.">
 <meta name="theme-color" content="#11432f">
 <link rel="canonical" href="https://runthe.gg/golf/">
 <!-- Open Graph / Twitter. Absolute URLs for the runthe.gg/golf deploy; og.png sits beside this file. -->
@@ -17,7 +17,7 @@
 <meta property="og:image" content="https://runthe.gg/golf/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Run The Tour — Build a golfer, run a pro season">
+<meta property="og:image:alt" content="Run The Tour, Build a golfer, run a pro season">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Tour">
 <meta name="twitter:description" content="Build a golfer. Run a pro season. Win majors and climb the earnings list.">
@@ -539,7 +539,7 @@ const BADGES=[
   {id:'wanamaker',e:'🏆', t:'Wanamaker',          cat:'Majors',      d:'Win The Championship.',                       tiers:[1,3,8,20,45],             get:m=>m.maj.champ},
   {id:'usopen',   e:'🇺🇸', t:'National Open',      cat:'Majors',      d:'Win the U.S. Open.',                          tiers:[1,3,8,20,45],             get:m=>m.maj.usopen},
   {id:'theopen',  e:'🏺', t:'Claret Jug',         cat:'Majors',      d:'Win The Open.',                               tiers:[1,3,8,20,45],             get:m=>m.maj.open},
-  {id:'cslam',    e:'👑', t:'Career Grand Slam',  cat:'Majors',      d:'Collect all four majors — Black: all four in one career.', tiers:[1,2,3,4,5], get:m=>m.careerSlams>0?5:Math.min(4,m.distinctMajors), fmt:v=>v>=5?'Slam':v+' / 4', noNum:true},
+  {id:'cslam',    e:'👑', t:'Career Grand Slam',  cat:'Majors',      d:'Collect all four majors, Black: all four in one career.', tiers:[1,2,3,4,5], get:m=>m.careerSlams>0?5:Math.min(4,m.distinctMajors), fmt:v=>v>=5?'Slam':v+' / 4', noNum:true},
   {id:'sslam',    e:'🌟', t:'Single-Season Slam', cat:'Majors',      d:'Win all four majors in one season.',          tiers:[1,2,3,5,8],               get:m=>m.slamSeasons},
   // Consistency
   {id:'top10',    e:'🎯', t:'Top-Tenner',         cat:'Consistency', d:'Card top-10 finishes.',                       tiers:[25,150,500,1200,3000],    get:m=>m.top10},
@@ -582,7 +582,7 @@ function _badgeFresh(c){ c.btier=c.btier||{}; const m=badgeMetrics(c); const fre
 // earned-badge display that ALSO tells you what the next tee tier needs (so badges set the next goal)
 function badgeEarnedHTML(got){
   const rows=got.map(f=>{ const col=TEE_TIERS[f.tier-1].c;
-    const nxt=f.maxed?`<span class="small" style="color:#f9d271">Max tier — Black tee</span>`
+    const nxt=f.maxed?`<span class="small" style="color:#f9d271">Max tier, Black tee</span>`
       :(f.nextReq!=null?`<span class="small muted">next ${esc(f.nextName)} at ${esc(String(f.nextReq))}</span>`:'');
     return `<div style="display:flex;gap:9px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:7px">
       <span class="tag" style="color:${col};border-color:${col}">${f.e} ${esc(f.t)} · ${f.tierName}</span>${nxt}</div>`; }).join('');
@@ -654,7 +654,7 @@ function trophyCabinetHTML(m){
   const cells=TROPHY_CABINET.map(t=>{ const n=(m.maj&&m.maj[t.k])||0; const won=n>0;
     return `<div style="text-align:center;opacity:${won?1:0.34}">
       <div style="height:62px;display:flex;align-items:flex-end;justify-content:center;filter:${won?'drop-shadow(0 3px 6px rgba(0,0,0,.45))':'grayscale(1) brightness(0.7)'}">${t.svg()}</div>
-      <div class="small" style="margin-top:2px;font-weight:800;color:${won?'var(--gold)':'var(--muted)'}">${won?'×'+n:'—'}</div>
+      <div class="small" style="margin-top:2px;font-weight:800;color:${won?'var(--gold)':'var(--muted)'}">${won?'×'+n:', '}</div>
       <div class="small muted" style="font-size:9.5px;line-height:1.15">${t.short}</div></div>`; }).join('');
   return `<div class="scout" style="max-width:520px;margin:0 auto 14px">
     <div class="small muted center" style="letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Trophy cabinet</div>
@@ -884,7 +884,7 @@ function repUpHTML(r){ if(!r) return ''; const goat=r.to==='G.O.A.T.';
   return `<div class="scout" style="margin:4px auto 12px;max-width:520px;text-align:center;border-color:#f6cd74;background:linear-gradient(180deg,rgba(235,166,31,.16),rgba(235,166,31,.03))">
     <div class="small" style="letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:800">Tour Rep promotion</div>
     <div style="font-family:var(--serif);font-weight:800;font-size:24px;color:var(--gold);margin:4px 0 1px">${goat?'🐐 ':'🏅 '}You're now ${goat?'the ':'a '}${esc(r.to)}!</div>
-    <div class="small muted">Climbed from ${esc(r.from)}${goat?' — every achievement complete.':'. Keep playing to reach the next rank.'}</div></div>`; }
+    <div class="small muted">Climbed from ${esc(r.from)}${goat?', every achievement complete.':'. Keep playing to reach the next rank.'}</div></div>`; }
 // celebratory list of just-unlocked achievements (shown on the summary / career-end)
 function achEarnedHTML(list){ if(!list||!list.length) return '';
   // one achievement per row: name (with points) on the LEFT, description on the RIGHT — single line, no wrap
@@ -894,7 +894,7 @@ function achEarnedHTML(list){ if(!list||!list.length) return '';
   return `<div class="scout" style="margin:4px auto 12px;max-width:520px;border-color:#ffd76a"><b style="color:var(--gold);display:block;text-align:center;margin-bottom:2px">Achievement${list.length>1?'s':''} unlocked</b>${rows}</div>`; }
 // brief toast for an achievement / rank-up at a single moment (daily / spotlight)
 function achToast(fresh){
-  if(S.freshRep){ const goat=S.freshRep.to==='G.O.A.T.'; toast(`${goat?'🐐':'🏅'} Tour Rep up — you're now ${goat?'the ':'a '}${S.freshRep.to}!`); S.freshRep=null; return; }
+  if(S.freshRep){ const goat=S.freshRep.to==='G.O.A.T.'; toast(`${goat?'🐐':'🏅'} Tour Rep up! You're now ${goat?'the ':'a '}${S.freshRep.to}!`); S.freshRep=null; return; }
   if(!fresh||!fresh.length)return; const a=fresh[0];
   toast(`🏅 Achievement: ${a.name}${fresh.length>1?` (+${fresh.length-1} more)`:''}`); }
 // Tour Rep header — rank + points + progress bar to the next rank (the profile's headline reward)
@@ -907,7 +907,7 @@ function repHeaderHTML(){ const pts=achPoints(), r=repTier(pts), done=achCount()
       <div style="text-align:right"><div style="font-weight:800;font-size:18px;color:var(--oncard)">${pts} pts</div>
         <div class="small muted">${done}/${ACH_TOTAL} done</div></div></div>
     <div style="margin-top:9px;height:8px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden"><span style="display:block;height:100%;width:${Math.round(frac*100)}%;background:linear-gradient(90deg,#e6a91f,#f6cd74)"></span></div>
-    <div class="small muted center" style="margin-top:5px">${goat?'<b style="color:#f6cd74">Every achievement complete — you are the Greatest Of All Time.</b>':(r.next?`${hi-pts} pts to <b style="color:var(--gold)">${r.next.name}</b>${r.next.name==='G.O.A.T.'?' (complete every achievement)':''}`:'')}</div></div>`; }
+    <div class="small muted center" style="margin-top:5px">${goat?'<b style="color:#f6cd74">Every achievement complete. You are the Greatest Of All Time.</b>':(r.next?`${hi-pts} pts to <b style="color:var(--gold)">${r.next.name}</b>${r.next.name==='G.O.A.T.'?' (complete every achievement)':''}`:'')}</div></div>`; }
 // LIVE Tour Rep meter for the season summary / career-end: counts pts from old→new and fills the bar in
 // real time, flowing through any rank-up so the player watches their progress climb. Animates once per
 // screen (re-renders show the final state); shown when you unlocked achievements that moment.
@@ -922,7 +922,7 @@ function seasonRepNode(oldPts, list){
   meter.innerHTML=`
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
       <div><div class="small muted" style="letter-spacing:.14em;text-transform:uppercase;font-size:10px">Tour Rep${gain>0?` · <span class="rep-gain" style="color:#35d6a0;font-weight:800">+0</span>`:''}</div>
-        <div class="rep-tier" style="font-family:var(--serif);font-weight:800;font-size:22px;color:var(--gold);line-height:1.05">—</div></div>
+        <div class="rep-tier" style="font-family:var(--serif);font-weight:800;font-size:22px;color:var(--gold);line-height:1.05">, </div></div>
       <div style="text-align:right"><div class="rep-pts" style="font-family:var(--mono);font-weight:800;font-size:18px;color:var(--oncard)">${oldPts} pts</div>
         <div class="small muted">${done}/${ACH_TOTAL} done</div></div></div>
     <div style="margin-top:9px;height:9px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden"><span class="rep-bar" style="display:block;height:100%;width:0%;background:linear-gradient(90deg,#e6a91f,#f6cd74)"></span></div>
@@ -1060,13 +1060,13 @@ function bumpDailyStats(won){ const t=todayKey(); const st=dailyStats();
 function dailyWinPct(){ const st=dailyStats(); return st.played?Math.round(100*st.beat/st.played):0; }
 async function shareText(text){ recordAchEvent({set:{shared:1}}); evaluateAch();
   try{ if(navigator.share){ await navigator.share({text}); return; } }catch(e){ if(e&&e.name==='AbortError')return; }
-  try{ await navigator.clipboard.writeText(text); toast('Copied — paste it anywhere'); }catch(_){ toast('Could not copy'); } }
+  try{ await navigator.clipboard.writeText(text); toast('Copied! Paste it anywhere'); }catch(_){ toast('Could not copy'); } }
 // Wordle-style emoji result for the daily — a paste-anywhere viral hook
 function dailyShareText(r){ const c=DAILY_COURSES[r.course]; const holes=r.holes||[];
   const emo=t=> t<=-2?'🟦':t===-1?'🟩':t===0?'⬜':t===1?'🟨':'🟥';   // eagle+ blue · birdie green · par white · bogey yellow · dbl+ red
   let grid=''; holes.forEach((h,i)=>{ grid+=emo(h.toPar); if(i===8)grid+='\n'; });
   const av=r.avg!=null?r.avg:dTourAvg(c), won=r.total<av, st=streakDisplay();
-  return `⛳ RunTheTour Daily — ${dShort(c.v)}\n${dtp(r.total)} on par ${c.par}${won?' · beat the pro ✓':''}${st>0?` · 🔥${st}`:''}\n${grid}\nThink you can beat it? https://runthe.gg/golf`; }
+  return `⛳ RunTheTour Daily, ${dShort(c.v)}\n${dtp(r.total)} on par ${c.par}${won?' · beat the pro ✓':''}${st>0?` · 🔥${st}`:''}\n${grid}\nThink you can beat it? https://runthe.gg/golf`; }
 /* ---------- resume an in-progress free-play golfer across a refresh ---------- */
 function saveResume(){ if(S.daily||!(S.screen==='draft'||S.screen==='build'))return;
   LS.set('bag_resume',{slots:S.slots,revealed:[...S.revealed],reSpins:S.reSpins,name:S.name,look:S.look,mode:S.mode,year:S.year}); }
@@ -1093,7 +1093,7 @@ function saveMidSeasonAndExit(){
   saveCareer({ mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
     season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me } } });
   track('career_mid_save',{year:S.year,evt:S.evtIndex});
-  clearTimeout(seasonTimer); reset(); render(); toast('Career saved — resume from the home screen');
+  clearTimeout(seasonTimer); reset(); render(); toast('Career saved. Resume from the home screen');
 }
 function resumeCareer(){ const r=careerSaveInfo(); if(!r) return; reset();
   S.career=r.career; S.fieldRoster=r.fieldRoster||null; S.slots=r.slots||S.slots;
@@ -1517,7 +1517,7 @@ function eventOverall(p,ew){ return ew.reduce((s,c)=>s+p[c.k]*c.w,0); }
 
 /* ---------- state ---------- */
 const SPINS=10, REPLACEMENT=62;
-const DAILY_COURSES={"Augusta National":{"v":"Augusta National Golf Club","loc":"Augusta, Georgia","par":72,"yd":7565,"ver":true,"blurb":"Bobby Jones and Alister MacKenzie's 1933 masterpiece, carved from a former nursery and ablaze with azaleas and dogwood every April. The fairways look generous, but the real defense is the greens — vast, glassy and pitched so severely that the wrong angle turns a birdie putt into a three-putt. Amen Corner (11-12-13) is the soul of the place, where Rae's Creek has drowned countless contenders, while the reachable par-5s reward bold, towering iron play. Pinpoint approach control and a deft touch around firm, fall-away surfaces win here far more than raw length.","avg":1.41,"cdiff":0.06,"fit":{"dist":1.137,"acc":1.137,"app":1.141,"sht":1.339,"scr":1.339,"bnk":1.339,"put":0.976,"clu":1},"sig":[[12,"Amen Corner's perilous short par-3 over Rae's Creek — swirling wind, tiny green"],[13,"Par-5 dogleg in Amen Corner; eagle chance but water guards the green"],[15,"Par-5 over water where late eagles and bogeys decide the Masters"]],"holes":[[4,445,"Tea Olive"],[5,585,"Pink Dogwood"],[4,350,"Flowering Peach"],[3,240,"Flowering Crab Apple"],[4,495,"Magnolia"],[3,180,"Juniper"],[4,450,"Pampas"],[5,570,"Yellow Jasmine"],[4,460,"Carolina Cherry"],[4,495,"Camellia"],[4,520,"White Dogwood"],[3,155,"Golden Bell"],[5,545,"Azalea"],[4,440,"Chinese Fir"],[5,550,"Firethorn"],[3,170,"Redbud"],[4,450,"Nandina"],[4,465,"Holly"]]},"TPC Sawgrass":{"v":"TPC Sawgrass (Stadium)","loc":"Ponte Vedra Beach, Florida","par":72,"yd":7275,"ver":true,"blurb":"Pete Dye's 1980 stadium-golf manifesto, built on Florida swampland and framed by railroad ties, sharp mounding and water that lurks on nearly every hole. It is a shotmaker's puzzle where position trumps power and the par-4s are scaled to demand exact angles off the tee. The closing trio is famous the world over, none more than the 17th — a tiny island green where the Players is routinely won or lost in a single swing. Accuracy, nerve and a sharp wedge game beat brute strength every time.","avg":0.27,"cdiff":-0.037,"fit":{"dist":1.227,"acc":1.227,"app":1.257,"sht":1.13,"scr":1.13,"bnk":1.13,"put":0.995,"clu":1},"sig":[[17,"The island-green par-3 at 137 yards ringed by water — golf's most feared short hole"],[16,"Reachable par-5 before 17 — an eagle look that sets up a daring finish"],[18,"Brutal par-4 with water all down the left — a nervy closer"]],"holes":[[4,423,""],[5,532,""],[3,177,""],[4,384,""],[4,471,""],[4,393,""],[4,451,""],[3,237,""],[5,602,""],[4,424,""],[5,558,""],[4,369,""],[3,181,""],[4,481,""],[4,470,""],[5,523,""],[3,137,""],[4,462,""]]},"Pebble Beach Golf Links":{"v":"Pebble Beach Golf Links","loc":"Pebble Beach, California","par":72,"yd":6972,"ver":true,"blurb":"Perched on the Monterey Peninsula since 1919, Pebble pairs jaw-dropping Pacific cliffs with the smallest greens in championship golf. Eight holes run along the ocean, where the wind off Carmel Bay turns short irons into guesswork and the postage-stamp 7th can need anything from a flick wedge to a punched mid-iron. The cliffside 8th, 9th and 10th form one of the hardest three-hole stretches in golf, and the par-5 18th along the seawall is the most photographed finishing hole in the game. Precise approach play and a steady touch on tiny targets matter far more than distance here.","avg":-1.27,"cdiff":-0.169,"fit":{"dist":0.82,"acc":0.82,"app":1.153,"sht":1.137,"scr":1.137,"bnk":1.137,"put":1.088,"clu":1},"sig":[[7,"The world's most photographed par-3, 106 yards downhill to a cliffside green"],[8,"Cliff-carry approach over a chasm — one of golf's great second shots"],[18,"Par-5 hugging the ocean the whole way left — an iconic finish"]],"holes":[[4,381,""],[5,516,""],[4,404,""],[4,331,""],[3,195,""],[5,523,""],[3,106,""],[4,428,""],[4,504,""],[4,446,""],[4,390,""],[3,202,""],[4,445,""],[5,580,""],[4,397,""],[4,403,""],[3,178,""],[5,543,""]]},"St Andrews Old Course":{"v":"The Old Course at St Andrews","loc":"St Andrews, Scotland","par":72,"yd":7305,"ver":true,"blurb":"The Home of Golf, played over the same linksland for some 600 years and shaped by nature more than any architect. Seven enormous double greens, blind tee shots and over a hundred ravenous pot bunkers — Hell Bunker, the Beardies, the Road Hole bunker — reward local knowledge and punish the careless. With no wind it can be torn apart; when it howls off the North Sea it becomes a brutal exam of flight control and creativity. The 17th Road Hole is the most fearsome par-4 in golf, while the wide 1st and 18th share the iconic Swilcan Bridge.","avg":0.3,"cdiff":-0.022,"fit":{"dist":1.328,"acc":1.328,"app":0.85,"sht":1.113,"scr":1.113,"bnk":1.113,"put":1.265,"clu":1},"sig":[[17,"The Road Hole par-4 — Road Bunker and the wall behind make it maybe golf's hardest par-4"],[14,"Long par-5 with Hell Bunker lurking — bold seconds flirt with disaster"],[18,"Drivable home hole over the Swilcan Burn into the town — birdie or heartbreak"]],"holes":[[4,376,"Burn"],[4,453,"Dyke"],[4,397,"Cartgate (Out)"],[4,480,"Ginger Beer"],[5,568,"Hole o' Cross (Out)"],[4,412,"Heathery (Out)"],[4,371,"High (Out)"],[3,188,"Short"],[4,352,"End"],[4,386,"Bobby Jones"],[3,174,"High (In)"],[4,351,"Heathery (In)"],[4,465,"Hole o' Cross (In)"],[5,618,"Long"],[4,455,"Cartgate (In)"],[4,418,"Corner of the Dyke"],[4,495,"Road"],[4,357,"Home"]]},"Oakmont":{"v":"Oakmont Country Club","loc":"Oakmont, Pennsylvania","par":70,"yd":7357,"ver":true,"blurb":"Founded in 1903 by Henry Fownes on the belief that a shot poorly played should be a shot irrevocably lost, Oakmont is widely regarded as the hardest course in America. Its greens are the fastest in championship golf — lightning-quick and tilted — while the Church Pews bunker between the 3rd and 4th and over 175 other traps swallow anything offline. The rough is punishing, the fairways pinched, and par is a genuinely great score on nearly every hole. Only flawless ball-striking and ice-cold putting survive; this is by far the sternest test in the rotation.","avg":4.18,"cdiff":0.291,"fit":{"dist":1.262,"acc":1.262,"app":1.191,"sht":1.4,"scr":1.4,"bnk":1.4,"put":1.194,"clu":1},"sig":[[3,"The Church Pews — a vast bunker of grass ridges between 3 and 4"],[8,"At ~289 yards, the longest par-3 in major-championship golf"],[17,"Drivable par-4 dangling a birdie amid Oakmont's torture"]],"holes":[[4,488,""],[4,346,""],[4,462,"Church Pews"],[5,609,""],[4,408,""],[3,200,""],[4,479,""],[3,289,"Long par-3"],[4,477,""],[4,461,""],[4,400,""],[5,632,""],[3,182,""],[4,379,""],[4,500,""],[3,231,""],[4,312,""],[4,502,""]]},"TPC Scottsdale":{"v":"TPC Scottsdale (Stadium)","loc":"Scottsdale, Arizona","par":71,"yd":7261,"ver":true,"blurb":"A Tom Weiskopf and Jay Morrish desert design that hosts the rowdiest week in golf at the WM Phoenix Open. Generous landing areas and soft, receptive greens make it a birdie-fest where the elite go deep into red figures. The signature 16th is a fully enclosed stadium par-3 where thousands of fans roar or jeer every tee shot, and the drivable 17th tempts players to take on the water for an eagle look. Aggressive distance and confident wedge play are rewarded — this is a week to chase a low number.","avg":-0.89,"cdiff":-0.144,"fit":{"dist":1.249,"acc":1.249,"app":0.82,"sht":0.987,"scr":0.987,"bnk":0.987,"put":1.014,"clu":1},"sig":[[16,"The stadium par-3 ringed by 20,000 fans — golf's loudest hole"],[17,"Drivable par-4 at 332 yards — go for the green and ignite the crowd"],[15,"Reachable par-5 setting up the famous finish"]],"holes":[[4,403,""],[4,442,""],[5,558,""],[3,183,""],[4,470,""],[4,432,""],[3,215,""],[4,475,""],[4,453,""],[4,428,""],[4,472,""],[3,192,""],[5,558,""],[4,490,""],[5,553,""],[3,163,"The Coliseum"],[4,332,""],[4,442,""]]},"Bay Hill":{"v":"Bay Hill Club & Lodge","loc":"Orlando, Florida","par":72,"yd":7466,"ver":true,"blurb":"Arnold Palmer's beloved Orlando home, a long, muscular parkland layout he reshaped to demand power and precision in equal measure. Water, deep bunkering and thick Bermuda rough guard firm greens, and the wind off the lakes can flip a round in an afternoon. The closing stretch is one of the Tour's toughest, capped by the par-4 18th — a forced carry over water to a rock-walled green that has decided countless Arnold Palmer Invitationals. Long, accurate iron play and the courage to attack guarded pins separate the field.","avg":0.99,"cdiff":0.022,"fit":{"dist":1.173,"acc":1.173,"app":1.206,"sht":0.979,"scr":0.979,"bnk":0.979,"put":0.973,"clu":1},"sig":[[18,"Water-guarded par-4 closer in a natural amphitheater — Palmer's signature drama"],[6,"C-shaped par-5 bending around water — reward for the brave"],[16,"Reachable par-5 swinging momentum down the stretch"]],"holes":[[4,461,""],[3,231,""],[4,434,""],[5,590,""],[4,390,""],[5,555,""],[3,199,""],[4,460,""],[4,480,""],[4,400,""],[4,438,""],[5,574,""],[4,382,""],[3,215,""],[4,467,""],[5,511,""],[3,221,""],[4,458,""]]},"Harbour Town Golf Links":{"v":"Harbour Town Golf Links","loc":"Hilton Head Island, South Carolina","par":71,"yd":7213,"ver":true,"blurb":"A 1969 Pete Dye design, shaped with Jack Nicklaus consulting, threaded through live oaks and Spanish moss on Hilton Head Island. Short by modern standards, it is all about control — narrow, tree-lined corridors and small greens reward the surgeon over the bomber and make driver a liability on many holes. The finish opens dramatically to Calibogue Sound, ending beneath the candy-striped lighthouse at the wind-exposed par-4 18th. Shot-shaping, accuracy off the tee and crisp wedges win here; raw length is almost a disadvantage.","avg":-0.91,"cdiff":-0.14,"fit":{"dist":0.993,"acc":0.993,"app":1.179,"sht":1.183,"scr":1.183,"bnk":1.183,"put":0.959,"clu":1},"sig":[[18,"Exposed par-4 along Calibogue Sound to the lighthouse — a windswept, iconic finish"],[17,"Coastal par-3 fully exposed to the wind"],[14,"Demanding short par-3 to a shallow Dye green"]],"holes":[[4,410,""],[5,550,""],[4,469,""],[3,200,""],[5,569,""],[4,419,""],[3,217,""],[4,473,""],[4,332,""],[4,451,""],[4,436,""],[4,430,""],[4,373,""],[3,192,""],[5,588,""],[4,434,""],[3,198,""],[4,472,""]]},"Quail Hollow Club":{"v":"Quail Hollow Club","loc":"Charlotte, North Carolina","par":71,"yd":7558,"ver":true,"blurb":"A George Cobb course later toughened by Tom Fazio into one of the Tour's most demanding parkland tests, set among the creeks and hardwoods of Charlotte. It rewards length but punishes the wayward, with water and deep bunkers framing large, rolling Bermuda greens. The finish — the fearsome 'Green Mile' of 16, 17 and 18 — is among the hardest closing stretches in golf, with water down the left of two long par-4s and a brutal par-3 in between. Power off the tee paired with elite long-iron approach play is the winning formula.","avg":0.96,"cdiff":0.021,"fit":{"dist":1.2,"acc":1.2,"app":0.956,"sht":1.062,"scr":1.062,"bnk":1.062,"put":1.09,"clu":1},"sig":[[18,"Closing par-4 with a creek down the entire left — a brutal finish"],[17,"Par-3 to a water-guarded green in the Green Mile"],[16,"536-yard par-4 to open the Green Mile gauntlet"]],"holes":[[4,495,""],[4,452,""],[4,483,""],[3,184,""],[4,449,""],[3,249,""],[5,546,""],[4,346,""],[4,505,""],[5,592,""],[4,462,""],[4,456,""],[3,205,""],[4,344,""],[5,577,""],[4,536,"Green Mile"],[3,190,"Green Mile"],[4,494,"Green Mile"]]},"Muirfield Village":{"v":"Muirfield Village Golf Club","loc":"Dublin, Ohio","par":72,"yd":7569,"ver":true,"blurb":"Jack Nicklaus's exacting masterpiece, designed and obsessively refined as his answer to Augusta in the Ohio countryside. Tree-lined corridors, water in play on a dozen holes and lightning, severely contoured greens make it one of the most precise tests on Tour. Position off the tee is everything, and the demanding closing holes — especially the long, water-guarded 18th — routinely deliver drama at the Memorial. Total ball-striking, distance control and a confident putter are required to go low here.","avg":1.26,"cdiff":0.05,"fit":{"dist":0.872,"acc":0.872,"app":1.269,"sht":1.298,"scr":1.298,"bnk":1.298,"put":1.102,"clu":1},"sig":[[18,"Brutish par-4 closer with a creek left — routinely the hardest hole at the Memorial"],[16,"Par-3 over water to a perched green — classic Nicklaus risk"],[14,"Short, strategic par-4 demanding a precise wedge"]],"holes":[[4,490,""],[4,459,""],[4,392,""],[3,210,""],[5,547,""],[4,455,""],[5,582,""],[3,200,""],[4,417,""],[4,472,""],[5,588,""],[3,180,""],[4,455,""],[4,360,""],[5,561,""],[3,218,""],[4,503,""],[4,480,""]]},"Valhalla":{"v":"Valhalla Golf Club","loc":"Louisville, Kentucky","par":71,"yd":7609,"ver":true,"blurb":"A bold Jack Nicklaus championship design in Kentucky, laid over rolling bluegrass and limestone with water in play across both nines. The front nine rewards aggression while the back demands precision, and the greens are large and boldly contoured. It has staged some of the PGA Championship's most memorable finishes, often decided at the reachable par-5 18th where eagle and disaster sit side by side. Big hitting that can carry the hazards, backed by sharp iron play, sets up a low number.","avg":-0.43,"cdiff":-0.102,"fit":{"dist":1.124,"acc":1.124,"app":1.215,"sht":1.11,"scr":1.11,"bnk":1.11,"put":1.082,"clu":1},"sig":[[13,"Island-green par-4 ringed by water and limestone rock"],[18,"Reachable par-5 to the clubhouse — every PGA Championship here decided on it"],[7,"Long par-5 'Genuine Risk' tempting a go at the green"]],"holes":[[4,484,""],[4,500,""],[3,208,""],[4,372,""],[4,463,""],[4,495,""],[5,597,""],[3,190,""],[4,415,""],[5,590,""],[3,211,""],[4,494,""],[4,351,"Island Green"],[3,254,""],[4,435,""],[4,508,""],[4,472,""],[5,570,"Photo Finish"]]},"TPC River Highlands":{"v":"TPC River Highlands","loc":"Cromwell, Connecticut","par":70,"yd":6841,"ver":true,"blurb":"A compact, thrilling Pete Dye and Bobby Weed design in Connecticut that yields some of the lowest scoring on the entire Tour. There is little rough and the par-70 layout invites birdies, but the risk-reward finish keeps everyone honest. The 'Bermuda Triangle' of 15, 16 and 17 — a drivable par-4 and short holes carved around the lake — can swing the Travelers in a matter of minutes. Aggressive wedge play, hot putting and the nerve to attack the water are the keys to a deep red number.","avg":-1.5,"cdiff":-0.192,"fit":{"dist":1.243,"acc":1.243,"app":0.897,"sht":1.046,"scr":1.046,"bnk":1.046,"put":0.987,"clu":1},"sig":[[15,"Drivable 296-yard par-4 with water left — supreme risk-reward"],[16,"Par-3 over the lake to a shallow green in the Bermuda Triangle"],[17,"Tight par-4 around the water to set up the finish"]],"holes":[[4,434,""],[4,341,""],[4,431,""],[4,481,""],[3,223,""],[5,574,""],[4,443,""],[3,202,""],[4,406,""],[4,462,""],[3,158,""],[4,411,""],[5,523,""],[4,421,""],[4,296,""],[3,171,""],[4,420,""],[4,444,""]]},"Plantation Course at Kapalua":{"v":"The Plantation Course at Kapalua","loc":"Kapalua, Maui, Hawaii","par":73,"yd":7596,"ver":true,"blurb":"A vast, sweeping Coore-Crenshaw design tumbling down a Maui hillside above the Pacific, the par-73 home of the season-opening Sentry. Enormous fairways and huge elevation changes let the elite field bomb it and feed approaches off the slopes, sending winning totals deep into the 30s under par. Trade winds whip across the exposed ridges, demanding players flight the ball and use the contours. It closes with the Tour's longest hole — a plunging par-5 18th reachable downwind — making distance and imagination the dominant skills.","avg":-2,"cdiff":-0.24,"fit":{"dist":0.923,"acc":0.923,"app":0.82,"sht":0.82,"scr":0.82,"bnk":0.82,"put":0.918,"clu":1},"sig":[[18,"The Tour's longest hole — a 677-yard downhill par-5 you can ride the trade winds down"],[7,"A huge downwind par-4 that plays far shorter than its yardage"],[17,"A 550-yard par-4 — only at Kapalua"]],"holes":[[4,520,""],[3,219,""],[4,424,""],[4,422,""],[5,526,""],[4,424,""],[4,522,""],[3,199,""],[5,550,""],[4,384,""],[3,161,""],[4,424,""],[4,383,""],[4,301,""],[5,541,""],[4,369,""],[4,550,""],[5,677,""]]},"East Lake Golf Club":{"v":"East Lake Golf Club","loc":"Atlanta, Georgia","par":71,"yd":7490,"ver":false,"blurb":"Bobby Jones's historic Atlanta home club, recently restored toward its 1949 Donald Ross character and lengthened for the Tour Championship finale. Tree-lined and stoutly bunkered, it now plays as a stern par 71 with firm greens and a water-bisected par-5 closer that crowns the FedEx Cup. The redesign added real teeth, rewarding long, controlled iron play and punishing loose approaches. Complete, well-rounded golf — not one standout skill — tends to lift the season's final trophy here.","avg":-1.82,"cdiff":-0.223,"fit":{"dist":0.82,"acc":0.82,"app":0.861,"sht":0.857,"scr":0.857,"bnk":0.857,"put":0.968,"clu":1},"sig":[[18,"Long par-5 closer bisected by water — the Tour Championship's deciding hole"],[15,"Reachable par-5 to spark a late charge"],[9,"Long, demanding par-3 to a guarded green"]],"holes":[[4,485,""],[3,205,""],[4,440,""],[4,415,""],[4,460,""],[5,545,""],[4,480,""],[4,430,""],[3,235,""],[4,430,""],[3,205,""],[4,440,""],[4,470,""],[4,430,""],[5,545,""],[3,210,""],[4,440,""],[5,590,""]]},"Glen Abbey":{"v":"Glen Abbey Golf Club","loc":"Oakville, Ontario, Canada","par":72,"yd":7253,"ver":true,"blurb":"Jack Nicklaus's first solo design, a 1976 layout in the Ontario woods that hosted the Canadian Open more than two dozen times. An open, reachable front nine gives way to a daring 'valley' back nine where Sixteen Mile Creek snakes through the closing holes. The par-5 18th, its green guarded by water, has produced legendary finishes — none greater than Tiger's 6-iron from the fairway bunker in 2000. Reachable par-5s and a willingness to take on the creek make it a scorable but dramatic test.","avg":-1,"cdiff":-0.142,"fit":{"dist":1.136,"acc":1.136,"app":1.221,"sht":1.147,"scr":1.147,"bnk":1.147,"put":0.986,"clu":1},"sig":[[11,"Start of the famous 'valley holes' plunging toward Sixteen Mile Creek"],[18,"Water-guarded par-4 closer where Tiger's 2000 bunker shot became legend"],[13,"Par-5 in the valley tempting an aggressive second"]],"holes":[[5,502,""],[4,414,""],[3,156,""],[4,417,""],[5,527,""],[4,437,""],[3,197,""],[4,433,""],[4,458,""],[4,443,""],[4,452,"Valley"],[3,205,"Valley"],[5,558,"Valley"],[4,457,"Valley"],[3,141,"Valley"],[5,516,""],[4,436,""],[4,470,""]]},"Sedgefield Country Club":{"v":"Sedgefield Country Club","loc":"Greensboro, North Carolina","par":70,"yd":7117,"ver":false,"blurb":"A classic 1926 Donald Ross design in Greensboro, lovingly restored to its original character as the home of the Wyndham Championship. There is no water in play; the defense is all in the details — subtle turtle-back greens that repel imprecise approaches, clever bunkering and tree-lined parkland framing. It favors finesse, angles and a deft touch over raw power, exactly the way Ross intended. Accurate iron play to the right portions of the greens, and a sharp short game when you miss, are how scores tumble here.","avg":-0.85,"cdiff":-0.129,"fit":{"dist":1.054,"acc":1.054,"app":0.82,"sht":0.82,"scr":0.82,"bnk":0.82,"put":0.975,"clu":1},"sig":[[18,"Downhill par-4 closer off an elevated tee"],[7,"Long, exacting par-3 — one of the course's stoutest holes"],[17,"Reachable par-5 offering a late birdie before the finish"]],"holes":[[4,420,""],[4,440,""],[3,175,""],[4,430,""],[5,530,""],[4,425,""],[3,225,""],[4,375,""],[4,415,""],[4,435,""],[4,450,""],[3,240,""],[4,395,""],[4,440,""],[3,190,""],[4,400,""],[5,575,""],[4,502,""]]}};
+const DAILY_COURSES={"Augusta National":{"v":"Augusta National Golf Club","loc":"Augusta, Georgia","par":72,"yd":7565,"ver":true,"blurb":"Bobby Jones and Alister MacKenzie's 1933 masterpiece, carved from a former nursery and ablaze with azaleas and dogwood every April. The fairways look generous, but the real defense is the greens, vast, glassy and pitched so severely that the wrong angle turns a birdie putt into a three-putt. Amen Corner (11-12-13) is the soul of the place, where Rae's Creek has drowned countless contenders, while the reachable par-5s reward bold, towering iron play. Pinpoint approach control and a deft touch around firm, fall-away surfaces win here far more than raw length.","avg":1.41,"cdiff":0.06,"fit":{"dist":1.137,"acc":1.137,"app":1.141,"sht":1.339,"scr":1.339,"bnk":1.339,"put":0.976,"clu":1},"sig":[[12,"Amen Corner's perilous short par-3 over Rae's Creek, swirling wind, tiny green"],[13,"Par-5 dogleg in Amen Corner; eagle chance but water guards the green"],[15,"Par-5 over water where late eagles and bogeys decide the Masters"]],"holes":[[4,445,"Tea Olive"],[5,585,"Pink Dogwood"],[4,350,"Flowering Peach"],[3,240,"Flowering Crab Apple"],[4,495,"Magnolia"],[3,180,"Juniper"],[4,450,"Pampas"],[5,570,"Yellow Jasmine"],[4,460,"Carolina Cherry"],[4,495,"Camellia"],[4,520,"White Dogwood"],[3,155,"Golden Bell"],[5,545,"Azalea"],[4,440,"Chinese Fir"],[5,550,"Firethorn"],[3,170,"Redbud"],[4,450,"Nandina"],[4,465,"Holly"]]},"TPC Sawgrass":{"v":"TPC Sawgrass (Stadium)","loc":"Ponte Vedra Beach, Florida","par":72,"yd":7275,"ver":true,"blurb":"Pete Dye's 1980 stadium-golf manifesto, built on Florida swampland and framed by railroad ties, sharp mounding and water that lurks on nearly every hole. It is a shotmaker's puzzle where position trumps power and the par-4s are scaled to demand exact angles off the tee. The closing trio is famous the world over, none more than the 17th, a tiny island green where the Players is routinely won or lost in a single swing. Accuracy, nerve and a sharp wedge game beat brute strength every time.","avg":0.27,"cdiff":-0.037,"fit":{"dist":1.227,"acc":1.227,"app":1.257,"sht":1.13,"scr":1.13,"bnk":1.13,"put":0.995,"clu":1},"sig":[[17,"The island-green par-3 at 137 yards ringed by water, golf's most feared short hole"],[16,"Reachable par-5 before 17, an eagle look that sets up a daring finish"],[18,"Brutal par-4 with water all down the left, a nervy closer"]],"holes":[[4,423,""],[5,532,""],[3,177,""],[4,384,""],[4,471,""],[4,393,""],[4,451,""],[3,237,""],[5,602,""],[4,424,""],[5,558,""],[4,369,""],[3,181,""],[4,481,""],[4,470,""],[5,523,""],[3,137,""],[4,462,""]]},"Pebble Beach Golf Links":{"v":"Pebble Beach Golf Links","loc":"Pebble Beach, California","par":72,"yd":6972,"ver":true,"blurb":"Perched on the Monterey Peninsula since 1919, Pebble pairs jaw-dropping Pacific cliffs with the smallest greens in championship golf. Eight holes run along the ocean, where the wind off Carmel Bay turns short irons into guesswork and the postage-stamp 7th can need anything from a flick wedge to a punched mid-iron. The cliffside 8th, 9th and 10th form one of the hardest three-hole stretches in golf, and the par-5 18th along the seawall is the most photographed finishing hole in the game. Precise approach play and a steady touch on tiny targets matter far more than distance here.","avg":-1.27,"cdiff":-0.169,"fit":{"dist":0.82,"acc":0.82,"app":1.153,"sht":1.137,"scr":1.137,"bnk":1.137,"put":1.088,"clu":1},"sig":[[7,"The world's most photographed par-3, 106 yards downhill to a cliffside green"],[8,"Cliff-carry approach over a chasm, one of golf's great second shots"],[18,"Par-5 hugging the ocean the whole way left, an iconic finish"]],"holes":[[4,381,""],[5,516,""],[4,404,""],[4,331,""],[3,195,""],[5,523,""],[3,106,""],[4,428,""],[4,504,""],[4,446,""],[4,390,""],[3,202,""],[4,445,""],[5,580,""],[4,397,""],[4,403,""],[3,178,""],[5,543,""]]},"St Andrews Old Course":{"v":"The Old Course at St Andrews","loc":"St Andrews, Scotland","par":72,"yd":7305,"ver":true,"blurb":"The Home of Golf, played over the same linksland for some 600 years and shaped by nature more than any architect. Seven enormous double greens, blind tee shots and over a hundred ravenous pot bunkers, Hell Bunker, the Beardies, the Road Hole bunker, reward local knowledge and punish the careless. With no wind it can be torn apart; when it howls off the North Sea it becomes a brutal exam of flight control and creativity. The 17th Road Hole is the most fearsome par-4 in golf, while the wide 1st and 18th share the iconic Swilcan Bridge.","avg":0.3,"cdiff":-0.022,"fit":{"dist":1.328,"acc":1.328,"app":0.85,"sht":1.113,"scr":1.113,"bnk":1.113,"put":1.265,"clu":1},"sig":[[17,"The Road Hole par-4, Road Bunker and the wall behind make it maybe golf's hardest par-4"],[14,"Long par-5 with Hell Bunker lurking, bold seconds flirt with disaster"],[18,"Drivable home hole over the Swilcan Burn into the town, birdie or heartbreak"]],"holes":[[4,376,"Burn"],[4,453,"Dyke"],[4,397,"Cartgate (Out)"],[4,480,"Ginger Beer"],[5,568,"Hole o' Cross (Out)"],[4,412,"Heathery (Out)"],[4,371,"High (Out)"],[3,188,"Short"],[4,352,"End"],[4,386,"Bobby Jones"],[3,174,"High (In)"],[4,351,"Heathery (In)"],[4,465,"Hole o' Cross (In)"],[5,618,"Long"],[4,455,"Cartgate (In)"],[4,418,"Corner of the Dyke"],[4,495,"Road"],[4,357,"Home"]]},"Oakmont":{"v":"Oakmont Country Club","loc":"Oakmont, Pennsylvania","par":70,"yd":7357,"ver":true,"blurb":"Founded in 1903 by Henry Fownes on the belief that a shot poorly played should be a shot irrevocably lost, Oakmont is widely regarded as the hardest course in America. Its greens are the fastest in championship golf, lightning-quick and tilted, while the Church Pews bunker between the 3rd and 4th and over 175 other traps swallow anything offline. The rough is punishing, the fairways pinched, and par is a genuinely great score on nearly every hole. Only flawless ball-striking and ice-cold putting survive; this is by far the sternest test in the rotation.","avg":4.18,"cdiff":0.291,"fit":{"dist":1.262,"acc":1.262,"app":1.191,"sht":1.4,"scr":1.4,"bnk":1.4,"put":1.194,"clu":1},"sig":[[3,"The Church Pews, a vast bunker of grass ridges between 3 and 4"],[8,"At ~289 yards, the longest par-3 in major-championship golf"],[17,"Drivable par-4 dangling a birdie amid Oakmont's torture"]],"holes":[[4,488,""],[4,346,""],[4,462,"Church Pews"],[5,609,""],[4,408,""],[3,200,""],[4,479,""],[3,289,"Long par-3"],[4,477,""],[4,461,""],[4,400,""],[5,632,""],[3,182,""],[4,379,""],[4,500,""],[3,231,""],[4,312,""],[4,502,""]]},"TPC Scottsdale":{"v":"TPC Scottsdale (Stadium)","loc":"Scottsdale, Arizona","par":71,"yd":7261,"ver":true,"blurb":"A Tom Weiskopf and Jay Morrish desert design that hosts the rowdiest week in golf at the WM Phoenix Open. Generous landing areas and soft, receptive greens make it a birdie-fest where the elite go deep into red figures. The signature 16th is a fully enclosed stadium par-3 where thousands of fans roar or jeer every tee shot, and the drivable 17th tempts players to take on the water for an eagle look. Aggressive distance and confident wedge play are rewarded, this is a week to chase a low number.","avg":-0.89,"cdiff":-0.144,"fit":{"dist":1.249,"acc":1.249,"app":0.82,"sht":0.987,"scr":0.987,"bnk":0.987,"put":1.014,"clu":1},"sig":[[16,"The stadium par-3 ringed by 20,000 fans, golf's loudest hole"],[17,"Drivable par-4 at 332 yards, go for the green and ignite the crowd"],[15,"Reachable par-5 setting up the famous finish"]],"holes":[[4,403,""],[4,442,""],[5,558,""],[3,183,""],[4,470,""],[4,432,""],[3,215,""],[4,475,""],[4,453,""],[4,428,""],[4,472,""],[3,192,""],[5,558,""],[4,490,""],[5,553,""],[3,163,"The Coliseum"],[4,332,""],[4,442,""]]},"Bay Hill":{"v":"Bay Hill Club & Lodge","loc":"Orlando, Florida","par":72,"yd":7466,"ver":true,"blurb":"Arnold Palmer's beloved Orlando home, a long, muscular parkland layout he reshaped to demand power and precision in equal measure. Water, deep bunkering and thick Bermuda rough guard firm greens, and the wind off the lakes can flip a round in an afternoon. The closing stretch is one of the Tour's toughest, capped by the par-4 18th, a forced carry over water to a rock-walled green that has decided countless Arnold Palmer Invitationals. Long, accurate iron play and the courage to attack guarded pins separate the field.","avg":0.99,"cdiff":0.022,"fit":{"dist":1.173,"acc":1.173,"app":1.206,"sht":0.979,"scr":0.979,"bnk":0.979,"put":0.973,"clu":1},"sig":[[18,"Water-guarded par-4 closer in a natural amphitheater, Palmer's signature drama"],[6,"C-shaped par-5 bending around water, reward for the brave"],[16,"Reachable par-5 swinging momentum down the stretch"]],"holes":[[4,461,""],[3,231,""],[4,434,""],[5,590,""],[4,390,""],[5,555,""],[3,199,""],[4,460,""],[4,480,""],[4,400,""],[4,438,""],[5,574,""],[4,382,""],[3,215,""],[4,467,""],[5,511,""],[3,221,""],[4,458,""]]},"Harbour Town Golf Links":{"v":"Harbour Town Golf Links","loc":"Hilton Head Island, South Carolina","par":71,"yd":7213,"ver":true,"blurb":"A 1969 Pete Dye design, shaped with Jack Nicklaus consulting, threaded through live oaks and Spanish moss on Hilton Head Island. Short by modern standards, it is all about control, narrow, tree-lined corridors and small greens reward the surgeon over the bomber and make driver a liability on many holes. The finish opens dramatically to Calibogue Sound, ending beneath the candy-striped lighthouse at the wind-exposed par-4 18th. Shot-shaping, accuracy off the tee and crisp wedges win here; raw length is almost a disadvantage.","avg":-0.91,"cdiff":-0.14,"fit":{"dist":0.993,"acc":0.993,"app":1.179,"sht":1.183,"scr":1.183,"bnk":1.183,"put":0.959,"clu":1},"sig":[[18,"Exposed par-4 along Calibogue Sound to the lighthouse, a windswept, iconic finish"],[17,"Coastal par-3 fully exposed to the wind"],[14,"Demanding short par-3 to a shallow Dye green"]],"holes":[[4,410,""],[5,550,""],[4,469,""],[3,200,""],[5,569,""],[4,419,""],[3,217,""],[4,473,""],[4,332,""],[4,451,""],[4,436,""],[4,430,""],[4,373,""],[3,192,""],[5,588,""],[4,434,""],[3,198,""],[4,472,""]]},"Quail Hollow Club":{"v":"Quail Hollow Club","loc":"Charlotte, North Carolina","par":71,"yd":7558,"ver":true,"blurb":"A George Cobb course later toughened by Tom Fazio into one of the Tour's most demanding parkland tests, set among the creeks and hardwoods of Charlotte. It rewards length but punishes the wayward, with water and deep bunkers framing large, rolling Bermuda greens. The finish, the fearsome 'Green Mile' of 16, 17 and 18, is among the hardest closing stretches in golf, with water down the left of two long par-4s and a brutal par-3 in between. Power off the tee paired with elite long-iron approach play is the winning formula.","avg":0.96,"cdiff":0.021,"fit":{"dist":1.2,"acc":1.2,"app":0.956,"sht":1.062,"scr":1.062,"bnk":1.062,"put":1.09,"clu":1},"sig":[[18,"Closing par-4 with a creek down the entire left, a brutal finish"],[17,"Par-3 to a water-guarded green in the Green Mile"],[16,"536-yard par-4 to open the Green Mile gauntlet"]],"holes":[[4,495,""],[4,452,""],[4,483,""],[3,184,""],[4,449,""],[3,249,""],[5,546,""],[4,346,""],[4,505,""],[5,592,""],[4,462,""],[4,456,""],[3,205,""],[4,344,""],[5,577,""],[4,536,"Green Mile"],[3,190,"Green Mile"],[4,494,"Green Mile"]]},"Muirfield Village":{"v":"Muirfield Village Golf Club","loc":"Dublin, Ohio","par":72,"yd":7569,"ver":true,"blurb":"Jack Nicklaus's exacting masterpiece, designed and obsessively refined as his answer to Augusta in the Ohio countryside. Tree-lined corridors, water in play on a dozen holes and lightning, severely contoured greens make it one of the most precise tests on Tour. Position off the tee is everything, and the demanding closing holes, especially the long, water-guarded 18th, routinely deliver drama at the Memorial. Total ball-striking, distance control and a confident putter are required to go low here.","avg":1.26,"cdiff":0.05,"fit":{"dist":0.872,"acc":0.872,"app":1.269,"sht":1.298,"scr":1.298,"bnk":1.298,"put":1.102,"clu":1},"sig":[[18,"Brutish par-4 closer with a creek left, routinely the hardest hole at the Memorial"],[16,"Par-3 over water to a perched green, classic Nicklaus risk"],[14,"Short, strategic par-4 demanding a precise wedge"]],"holes":[[4,490,""],[4,459,""],[4,392,""],[3,210,""],[5,547,""],[4,455,""],[5,582,""],[3,200,""],[4,417,""],[4,472,""],[5,588,""],[3,180,""],[4,455,""],[4,360,""],[5,561,""],[3,218,""],[4,503,""],[4,480,""]]},"Valhalla":{"v":"Valhalla Golf Club","loc":"Louisville, Kentucky","par":71,"yd":7609,"ver":true,"blurb":"A bold Jack Nicklaus championship design in Kentucky, laid over rolling bluegrass and limestone with water in play across both nines. The front nine rewards aggression while the back demands precision, and the greens are large and boldly contoured. It has staged some of the PGA Championship's most memorable finishes, often decided at the reachable par-5 18th where eagle and disaster sit side by side. Big hitting that can carry the hazards, backed by sharp iron play, sets up a low number.","avg":-0.43,"cdiff":-0.102,"fit":{"dist":1.124,"acc":1.124,"app":1.215,"sht":1.11,"scr":1.11,"bnk":1.11,"put":1.082,"clu":1},"sig":[[13,"Island-green par-4 ringed by water and limestone rock"],[18,"Reachable par-5 to the clubhouse, every PGA Championship here decided on it"],[7,"Long par-5 'Genuine Risk' tempting a go at the green"]],"holes":[[4,484,""],[4,500,""],[3,208,""],[4,372,""],[4,463,""],[4,495,""],[5,597,""],[3,190,""],[4,415,""],[5,590,""],[3,211,""],[4,494,""],[4,351,"Island Green"],[3,254,""],[4,435,""],[4,508,""],[4,472,""],[5,570,"Photo Finish"]]},"TPC River Highlands":{"v":"TPC River Highlands","loc":"Cromwell, Connecticut","par":70,"yd":6841,"ver":true,"blurb":"A compact, thrilling Pete Dye and Bobby Weed design in Connecticut that yields some of the lowest scoring on the entire Tour. There is little rough and the par-70 layout invites birdies, but the risk-reward finish keeps everyone honest. The 'Bermuda Triangle' of 15, 16 and 17, a drivable par-4 and short holes carved around the lake, can swing the Travelers in a matter of minutes. Aggressive wedge play, hot putting and the nerve to attack the water are the keys to a deep red number.","avg":-1.5,"cdiff":-0.192,"fit":{"dist":1.243,"acc":1.243,"app":0.897,"sht":1.046,"scr":1.046,"bnk":1.046,"put":0.987,"clu":1},"sig":[[15,"Drivable 296-yard par-4 with water left, supreme risk-reward"],[16,"Par-3 over the lake to a shallow green in the Bermuda Triangle"],[17,"Tight par-4 around the water to set up the finish"]],"holes":[[4,434,""],[4,341,""],[4,431,""],[4,481,""],[3,223,""],[5,574,""],[4,443,""],[3,202,""],[4,406,""],[4,462,""],[3,158,""],[4,411,""],[5,523,""],[4,421,""],[4,296,""],[3,171,""],[4,420,""],[4,444,""]]},"Plantation Course at Kapalua":{"v":"The Plantation Course at Kapalua","loc":"Kapalua, Maui, Hawaii","par":73,"yd":7596,"ver":true,"blurb":"A vast, sweeping Coore-Crenshaw design tumbling down a Maui hillside above the Pacific, the par-73 home of the season-opening Sentry. Enormous fairways and huge elevation changes let the elite field bomb it and feed approaches off the slopes, sending winning totals deep into the 30s under par. Trade winds whip across the exposed ridges, demanding players flight the ball and use the contours. It closes with the Tour's longest hole, a plunging par-5 18th reachable downwind, making distance and imagination the dominant skills.","avg":-2,"cdiff":-0.24,"fit":{"dist":0.923,"acc":0.923,"app":0.82,"sht":0.82,"scr":0.82,"bnk":0.82,"put":0.918,"clu":1},"sig":[[18,"The Tour's longest hole, a 677-yard downhill par-5 you can ride the trade winds down"],[7,"A huge downwind par-4 that plays far shorter than its yardage"],[17,"A 550-yard par-4, only at Kapalua"]],"holes":[[4,520,""],[3,219,""],[4,424,""],[4,422,""],[5,526,""],[4,424,""],[4,522,""],[3,199,""],[5,550,""],[4,384,""],[3,161,""],[4,424,""],[4,383,""],[4,301,""],[5,541,""],[4,369,""],[4,550,""],[5,677,""]]},"East Lake Golf Club":{"v":"East Lake Golf Club","loc":"Atlanta, Georgia","par":71,"yd":7490,"ver":false,"blurb":"Bobby Jones's historic Atlanta home club, recently restored toward its 1949 Donald Ross character and lengthened for the Tour Championship finale. Tree-lined and stoutly bunkered, it now plays as a stern par 71 with firm greens and a water-bisected par-5 closer that crowns the FedEx Cup. The redesign added real teeth, rewarding long, controlled iron play and punishing loose approaches. Complete, well-rounded golf, not one standout skill, tends to lift the season's final trophy here.","avg":-1.82,"cdiff":-0.223,"fit":{"dist":0.82,"acc":0.82,"app":0.861,"sht":0.857,"scr":0.857,"bnk":0.857,"put":0.968,"clu":1},"sig":[[18,"Long par-5 closer bisected by water, the Tour Championship's deciding hole"],[15,"Reachable par-5 to spark a late charge"],[9,"Long, demanding par-3 to a guarded green"]],"holes":[[4,485,""],[3,205,""],[4,440,""],[4,415,""],[4,460,""],[5,545,""],[4,480,""],[4,430,""],[3,235,""],[4,430,""],[3,205,""],[4,440,""],[4,470,""],[4,430,""],[5,545,""],[3,210,""],[4,440,""],[5,590,""]]},"Glen Abbey":{"v":"Glen Abbey Golf Club","loc":"Oakville, Ontario, Canada","par":72,"yd":7253,"ver":true,"blurb":"Jack Nicklaus's first solo design, a 1976 layout in the Ontario woods that hosted the Canadian Open more than two dozen times. An open, reachable front nine gives way to a daring 'valley' back nine where Sixteen Mile Creek snakes through the closing holes. The par-5 18th, its green guarded by water, has produced legendary finishes, none greater than Tiger's 6-iron from the fairway bunker in 2000. Reachable par-5s and a willingness to take on the creek make it a scorable but dramatic test.","avg":-1,"cdiff":-0.142,"fit":{"dist":1.136,"acc":1.136,"app":1.221,"sht":1.147,"scr":1.147,"bnk":1.147,"put":0.986,"clu":1},"sig":[[11,"Start of the famous 'valley holes' plunging toward Sixteen Mile Creek"],[18,"Water-guarded par-4 closer where Tiger's 2000 bunker shot became legend"],[13,"Par-5 in the valley tempting an aggressive second"]],"holes":[[5,502,""],[4,414,""],[3,156,""],[4,417,""],[5,527,""],[4,437,""],[3,197,""],[4,433,""],[4,458,""],[4,443,""],[4,452,"Valley"],[3,205,"Valley"],[5,558,"Valley"],[4,457,"Valley"],[3,141,"Valley"],[5,516,""],[4,436,""],[4,470,""]]},"Sedgefield Country Club":{"v":"Sedgefield Country Club","loc":"Greensboro, North Carolina","par":70,"yd":7117,"ver":false,"blurb":"A classic 1926 Donald Ross design in Greensboro, lovingly restored to its original character as the home of the Wyndham Championship. There is no water in play; the defense is all in the details, subtle turtle-back greens that repel imprecise approaches, clever bunkering and tree-lined parkland framing. It favors finesse, angles and a deft touch over raw power, exactly the way Ross intended. Accurate iron play to the right portions of the greens, and a sharp short game when you miss, are how scores tumble here.","avg":-0.85,"cdiff":-0.129,"fit":{"dist":1.054,"acc":1.054,"app":0.82,"sht":0.82,"scr":0.82,"bnk":0.82,"put":0.975,"clu":1},"sig":[[18,"Downhill par-4 closer off an elevated tee"],[7,"Long, exacting par-3, one of the course's stoutest holes"],[17,"Reachable par-5 offering a late birdie before the finish"]],"holes":[[4,420,""],[4,440,""],[3,175,""],[4,430,""],[5,530,""],[4,425,""],[3,225,""],[4,375,""],[4,415,""],[4,435,""],[4,450,""],[3,240,""],[4,395,""],[4,440,""],[3,190,""],[4,400,""],[5,575,""],[4,502,""]]}};
 /* ============ DAILY CHALLENGE — one round at a real course (runthetour-daily-spec) ============ */
 const DAILY_KEYS=Object.keys(DAILY_COURSES);
 const DAILY_MEAN_YPP=DAILY_KEYS.reduce((s,k)=>s+DAILY_COURSES[k].yd/DAILY_COURSES[k].par,0)/DAILY_KEYS.length;
@@ -1820,16 +1820,16 @@ function rivalStatusNode(){
   box.appendChild($(`<div style="letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:11px;margin-bottom:6px">⚔️ Your Rival</div>`));
   const fr=S.freshRivalRetired;
   if(fr){ const tot=fr.meAhead+fr.themAhead, mine=fr.meAhead>fr.themAhead;
-    box.appendChild($(`<div class="small" style="color:#e9a23b;margin-bottom:8px"><b>${esc(fr.name)}</b> has retired — your rivalry is in the books${tot?` at <b style="color:var(--oncard)">${fr.meAhead}–${fr.themAhead}</b> head-to-head${(fr.seasonsWon+fr.seasonsLost)?`, ${fr.seasonsWon}–${fr.seasonsLost} in season series`:''}`:''}. ${tot?(mine?'You came out on top. ':(fr.meAhead<fr.themAhead?'They had your number. ':'Dead even. ')):''}A new rival can emerge as you keep competing.</div>`)); }
+    box.appendChild($(`<div class="small" style="color:#e9a23b;margin-bottom:8px"><b>${esc(fr.name)}</b> has retired, your rivalry is in the books${tot?` at <b style="color:var(--oncard)">${fr.meAhead}–${fr.themAhead}</b> head-to-head${(fr.seasonsWon+fr.seasonsLost)?`, ${fr.seasonsWon}–${fr.seasonsLost} in season series`:''}`:''}. ${tot?(mine?'You came out on top. ':(fr.meAhead<fr.themAhead?'They had your number. ':'Dead even. ')):''}A new rival can emerge as you keep competing.</div>`)); }
   const rv=getRival();
   if(rv){ const h=(S.career&&S.career.h2h&&S.career.h2h[rv.name])||{meAhead:0,themAhead:0,ev:0};
     const tot=h.meAhead+h.themAhead;
     box.appendChild($(`<div class="small" style="color:var(--oncard)">Your nemesis is <b style="color:var(--gold)">${esc(rv.name)}</b> · OVR ${rv.ovr}. ${tot?`You're ahead in <b>${h.meAhead}</b> of <b>${tot}</b> career meetings`:'Your battle starts this season'}${(rv.seasonsWon+rv.seasonsLost)?` · season series <b>${rv.seasonsWon}–${rv.seasonsLost}</b>`:''}. Finish the season ahead of them to win the year and earn a <b>Rivalry tee</b>.</div>`));
   } else if(!fr){
     const seasons=(S.career&&S.career.seasons&&S.career.seasons.length)||0;
-    box.appendChild($(`<div class="small muted">${seasons<RIVAL_MIN_SEASONS?`No rival yet — keep competing. After a few seasons, the player who battles you closest will emerge as your nemesis. No picking required.`:`No clear rival has emerged yet. Stay in the mix with players near your level and one will surface.`}</div>`));
+    box.appendChild($(`<div class="small muted">${seasons<RIVAL_MIN_SEASONS?`No rival yet, keep competing. After a few seasons, the player who battles you closest will emerge as your nemesis. No picking required.`:`No clear rival has emerged yet. Stay in the mix with players near your level and one will surface.`}</div>`));
   }
-  // past rivalries — the nemeses you've outgrown or outlasted, kept for the record
+  // past rivalries, the nemeses you've outgrown or outlasted, kept for the record
   const past=(S.career&&S.career.pastRivals)||[];
   if(past.length){
     const rows=past.slice().reverse().map(p=>`<div class="small" style="display:flex;justify-content:space-between;gap:10px;padding:3px 0;color:var(--muted)"><span>${p.reason==='outgrew'?'✓':'·'} <b style="color:var(--oncard);font-weight:700">${esc(p.name)}</b> <span style="font-size:11px">Yr ${p.fromYear}–${p.toYear}</span></span><span style="white-space:nowrap">${p.meAhead}–${p.themAhead} H2H</span></div>`).join('');
@@ -1843,18 +1843,18 @@ function rivalFormedHTML(fr){ if(!fr) return '';
   return `<div class="scout" style="max-width:520px;margin:8px auto 14px;border-color:var(--gold);text-align:center">
     <div style="letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;margin-bottom:7px">⚔️ A Rivalry Is Born</div>
     <div style="font-weight:800;color:var(--oncard);font-size:17px">${esc(fr.name)} <span class="small muted">· OVR ${fr.ovr}</span></div>
-    <div class="small" style="margin-top:6px;color:var(--oncard)">After a few seasons trading blows, <b>${esc(fr.name)}</b> has emerged as your nemesis — you've finished right beside each other <b>${fr.near}</b> times${tot?`, and you're <b>${fr.meAhead}–${fr.themAhead}</b> head-to-head so far`:''}. The rivalry starts now.</div></div>`;
+    <div class="small" style="margin-top:6px;color:var(--oncard)">After a few seasons trading blows, <b>${esc(fr.name)}</b> has emerged as your nemesis. You've finished right beside each other <b>${fr.near}</b> times${tot?`, and you're <b>${fr.meAhead}–${fr.themAhead}</b> head-to-head so far`:''}. The rivalry starts now.</div></div>`;
 }
 // season-summary card when you've OUTGROWN a rival — a triumph, with the record they leave behind
 function rivalOutgrownHTML(fr){ if(!fr) return '';
   return `<div class="scout" style="max-width:520px;margin:8px auto 14px;border-color:#35d6a0;text-align:center">
     <div style="letter-spacing:.12em;text-transform:uppercase;color:#35d6a0;font-weight:800;font-size:10px;margin-bottom:7px">✓ Rivalry Outgrown</div>
     <div style="font-weight:800;color:var(--oncard);font-size:16px">You've left ${esc(fr.name)} behind</div>
-    <div class="small" style="margin-top:6px;color:var(--oncard)">${fr.years>1?`${fr.years} years`:'A run'} of beating ${esc(fr.name)} (career H2H <b>${fr.meAhead}–${fr.themAhead}</b>, series <b>${fr.seasonsWon}–${fr.seasonsLost}</b>) — and now <b>OVR ${fr.myOvr}</b> to their ${fr.rvOvr}. You've simply moved up a level. A new rival will rise to meet you.</div></div>`;
+    <div class="small" style="margin-top:6px;color:var(--oncard)">${fr.years>1?`${fr.years} years`:'A run'} of beating ${esc(fr.name)} (career H2H <b>${fr.meAhead}–${fr.themAhead}</b>, series <b>${fr.seasonsWon}–${fr.seasonsLost}</b>), and now <b>OVR ${fr.myOvr}</b> to their ${fr.rvOvr}. You've simply moved up a level. A new rival will rise to meet you.</div></div>`;
 }
 // season-summary rivalry card from this season's head-to-head outcome
 function rivalCardHTML(rr){ if(!rr) return '';
-  if(rr.status==='absent') return `<div class="scout" style="max-width:520px;margin:8px auto 14px;text-align:center"><div style="letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;margin-bottom:5px">⚔️ Rivalry</div><div class="small muted">Your rival <b style="color:var(--oncard)">${esc(rr.name)}</b> didn't make the field this season — no head-to-head this year.</div></div>`;
+  if(rr.status==='absent') return `<div class="scout" style="max-width:520px;margin:8px auto 14px;text-align:center"><div style="letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;margin-bottom:5px">⚔️ Rivalry</div><div class="small muted">Your rival <b style="color:var(--oncard)">${esc(rr.name)}</b> didn't make the field this season, no head-to-head this year.</div></div>`;
   const beat=rr.beat, tie=rr.meAhead===rr.rvAhead, col=beat?'#35d6a0':(tie?'var(--gold)':'#e9a23b');
   return `<div class="scout" style="max-width:520px;margin:8px auto 14px;border-color:${col}">
     <div style="letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;margin-bottom:7px;text-align:center">⚔️ Rivalry${beat?' won':''} · head-to-head</div>
@@ -1863,7 +1863,7 @@ function rivalCardHTML(rr){ if(!rr) return '';
       <div style="font-weight:900;font-size:20px;color:var(--oncard)">${rr.meAhead}<span style="color:var(--muted);font-size:14px"> – </span>${rr.rvAhead}</div>
       <div style="text-align:left"><div style="font-weight:800;color:${beat?'var(--oncard)':col}">${esc(rr.name)}</div><div class="small muted">#${rr.rvRank} · ${fmt(rr.rvMoney)}</div></div></div>
     <div class="small center" style="margin-top:7px;color:var(--muted)">finished ahead of your rival in ${rr.meAhead} of ${rr.both} shared events</div>
-    <div class="small center" style="margin-top:5px;color:${col};font-weight:700">${beat?'You won the season series. 🏅 Rivalry tee earned.':(tie?`Dead even — you split the series ${rr.meAhead}–${rr.rvAhead}.`:`${esc(rr.name)} took the series — get them next year.`)}</div></div>`;
+    <div class="small center" style="margin-top:5px;color:${col};font-weight:700">${beat?'You won the season series. 🏅 Rivalry tee earned.':(tie?`Dead even, you split the series ${rr.meAhead}–${rr.rvAhead}.`:`${esc(rr.name)} took the series. Get them next year.`)}</div></div>`;
 }
 /* ---- YOUR golfer's bounded career (40-year shelf life). Decline is AGE- and FORM-based, not a
    flat year cutoff: a rookie starts ~22 and peaks through the mid-30s with NO decline; only after
@@ -2054,7 +2054,7 @@ function header(){
 function footer(){
   const f=$(`<div class="foot"></div>`);
   const fp=$(`<div class="footpills"></div>`);
-  const mail='mailto:sellybros711@gmail.com?subject='+encodeURIComponent('RunTheTour — Questions / Comments');
+  const mail='mailto:sellybros711@gmail.com?subject='+encodeURIComponent('RunTheTour, Questions / Comments');
   fp.appendChild($(`<a class="pill" href="${mail}" style="text-decoration:none">✉ Questions or Comments</a>`));
   const a2h=$(`<div class="pill" style="cursor:pointer">▣ Add to Home</div>`); a2h.onclick=installApp;
   fp.appendChild(a2h);
@@ -2131,14 +2131,14 @@ function scrRules(){
   bk.onclick=back; add(bk);
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">📖 How to play</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:10px 0 2px">Build a golfer.<br>Run the tour.</h1>`));
-  add($(`<p class="lede center" style="margin:2px 0 16px">Draft a golfer one skill at a time, then run your build through a full pro season — or test it on the daily challenge.</p>`));
+  add($(`<p class="lede center" style="margin:2px 0 16px">Draft a golfer one skill at a time, then run your build through a full pro season, or test it on the daily challenge.</p>`));
 
   add($(`<h2 class="center" style="margin:8px 0 10px">Career mode</h2>`));
   const cSteps=[
-    ['🎰','Spin for golfers','Each spin reveals a real golfer. Take one of their eight ratings to fill a slot — one skill per golfer.'],
-    ['🔁','Re-spin twice','Don\'t like who landed? Re-spin to pass and reveal someone else — you get 2 re-spins for the whole draft.'],
+    ['🎰','Spin for golfers','Each spin reveals a real golfer. Take one of their eight ratings to fill a slot, one skill per golfer.'],
+    ['🔁','Re-spin twice','Don\'t like who landed? Re-spin to pass and reveal someone else, you get 2 re-spins for the whole draft.'],
     ['🧱','Fill all 8 skills','Distance, accuracy, approach, short game, scrambling, bunker, putting, composure. Spikes win events; one weak slot loses weekends.'],
-    ['💰','Run a pro season','Bank the most prize money and climb the earnings list. Winnings are big — but caddie, agent and ~$2.8M/yr of tour costs can put a mediocre build in the red.'],
+    ['💰','Run a pro season','Bank the most prize money and climb the earnings list. Winnings are big, but caddie, agent and ~$2.8M/yr of tour costs can put a mediocre build in the red.'],
   ];
   const cList=$(`<div class="perks" style="max-width:560px;margin:0 auto 18px"></div>`);
   cSteps.forEach(s=>cList.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
@@ -2150,15 +2150,15 @@ function scrRules(){
       <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="color:#c7a6f2;font-weight:800">◆ Epic</span><span class="mny mono">25%</span></div>
       <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="color:#82c1e8;font-weight:800">◇ Rare</span><span class="mny mono">35%</span></div>
       <div class="lb" style="grid-template-columns:1fr 64px"><span class="pl" style="font-weight:800">Common</span><span class="mny mono">35%</span></div></div>`));
-  add($(`<p class="small muted center" style="max-width:560px;margin:0 auto 22px;line-height:1.45">Rarer golfers tend to have higher peak skills — but take the best rating for an open slot, whoever lands.</p>`));
+  add($(`<p class="small muted center" style="max-width:560px;margin:0 auto 22px;line-height:1.45">Rarer golfers tend to have higher peak skills, but take the best rating for an open slot, whoever lands.</p>`));
 
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge</span></div>`));
   add($(`<h2 class="center" style="margin:10px 0 4px">One round. One famous course.</h2>`));
-  add($(`<p class="lede center" style="margin:2px 0 14px">A single 18-hole round at a rotating real course — same for everyone, new course at midnight UTC. Human-only: chase the course record.</p>`));
+  add($(`<p class="lede center" style="margin:2px 0 14px">A single 18-hole round at a rotating real course, same for everyone, new course at midnight UTC. Human-only: chase the course record.</p>`));
   const dSteps=[
-    ['⛳','A real course, every day','18 holes at an iconic tour venue — real pars and yardages. The course rotates daily and is the same for every player.'],
+    ['⛳','A real course, every day','18 holes at an iconic tour venue, real pars and yardages. The course rotates daily and is the same for every player.'],
     ['🎯','Draft for the course','The preview shows what skills win there and the day\'s conditions. Spin a golfer built to attack today\'s course.'],
-    ['♟️','Play it your way','Pick a game plan, then choose Attack or Play Safe on the signature holes. Aggressive chases a low number — but it can blow up.'],
+    ['♟️','Play it your way','Pick a game plan, then choose Attack or Play Safe on the signature holes. Aggressive chases a low number, but it can blow up.'],
     ['🏆','Claim the course record','Post the lowest round and the course record is yours. Beat the standing record and your name sits on it until someone takes it.'],
   ];
   const dList=$(`<div class="perks" style="max-width:560px;margin:0 auto 18px"></div>`);
@@ -2175,7 +2175,7 @@ function overlayRecord(screen){
       <span class="pos">${i===0?'🏆':i+1}</span><span class="pl">${h.name||'Your Golfer'}</span>
       <span class="sc" style="color:#bfe7df">OVR ${h.ovr}</span>
       <span class="mny" style="color:${(h.net??h.money)>=0?'#35d6a0':'#E14A33'}">${fmtSigned(h.net??h.money)}</span></div>`).join('')
-    : `<div class="small muted center" style="padding:20px 8px">No seasons yet — build a golfer and run a season to start your record.</div>`;
+    : `<div class="small muted center" style="padding:20px 8px">No seasons yet, build a golfer and run a season to start your record.</div>`;
   const bm=badgeMetrics(c);   // still feeds the trophy cabinet + title unlocks
   const acctCard = !sbSignedIn()
     ? `<div><b style="color:var(--oncard)">Playing as guest</b><div class="small muted" style="margin-top:2px">Sign in to sync your record and post to the global leaderboards.</div></div>
@@ -2192,7 +2192,7 @@ function overlayRecord(screen){
   const titleChips=TITLES.map(t=>{ const open=titleUnlocked(t.id,bm); const on=(curTitle===t.id)&&open;
     return `<button class="tchip" data-title="${t.id}" ${open?'':'disabled aria-disabled="true"'} style="font:inherit;font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;cursor:${open?'pointer':'default'};border:1px solid ${on?'var(--gold)':'rgba(244,227,201,.22)'};background:${on?'rgba(235,166,31,.16)':'transparent'};color:${open?(on?'var(--gold)':'var(--oncard)'):'var(--muted)'};opacity:${open?1:0.55}">${open?'':'🔒 '}${esc(t.name)}</button>`; }).join('');
   const titleSection=`<h2 style="margin:18px 0 6px">Player title</h2>
-    <div class="small muted" style="margin-bottom:8px">Equip a title you've earned — it shows under your name.</div>
+    <div class="small muted" style="margin-bottom:8px">Equip a title you've earned, it shows under your name.</div>
     <div style="display:flex;flex-wrap:wrap;gap:7px">${titleChips}</div>`;
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
@@ -2201,10 +2201,10 @@ function overlayRecord(screen){
     ${cabinet}
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">${acctCard}</div>
     <div class="sbar" style="margin-bottom:14px">
-      <div class="sstat wide"><div class="k">Best net profit</div><div class="v" style="color:${(c.bestNet??0)>=0?'#35d6a0':'#E14A33'};font-size:22px">${c.bestNet==null?'—':fmtSigned(c.bestNet)}</div></div>
+      <div class="sstat wide"><div class="k">Best net profit</div><div class="v" style="color:${(c.bestNet??0)>=0?'#35d6a0':'#E14A33'};font-size:22px">${c.bestNet==null?', ':fmtSigned(c.bestNet)}</div></div>
       <div class="sstat"><div class="k">Best earned</div><div class="v gold">${fmt(c.bestMoney)}</div></div>
       <div class="sstat"><div class="k">Builds</div><div class="v">${c.builds}</div></div>
-      <div class="sstat"><div class="k">Best OVR</div><div class="v">${c.bestOvr||'—'}</div></div>
+      <div class="sstat"><div class="k">Best OVR</div><div class="v">${c.bestOvr||', '}</div></div>
       <div class="sstat"><div class="k">Wins</div><div class="v">${c.wins}</div></div>
     </div>
     ${careersHTML}
@@ -2252,7 +2252,7 @@ function overlayAccount(screen){
     try{ await fn(); }catch(e){ S.acctBusy=false; S.acctErr=e.message||'Something went wrong.'; render(); return; }
     S.acctBusy=false; if(sbSignedIn()&&sbUsername) S.overlay='record'; render(); };
   if(mode==='username'){
-    box.innerHTML=`<p class="lede" style="margin:0 0 10px;text-align:left">Choose how you'll show up on the leaderboards — 3–20 letters or numbers.</p>
+    box.innerHTML=`<p class="lede" style="margin:0 0 10px;text-align:left">Choose how you'll show up on the leaderboards, 3–20 letters or numbers.</p>
       <input class="name" id="au-user" maxlength="20" placeholder="e.g. BirdieKing" autocomplete="off">
       ${err?`<div class="autherr">${esc(err)}</div>`:''}
       <button class="btn goldfill" id="au-set" style="margin-top:10px" ${busy?'disabled':''}>${busy?'Saving…':'Save username'}</button>
@@ -2284,9 +2284,9 @@ function overlayAccount(screen){
         if(S.acctBusy)return; S.acctErr='';S.acctNote='';S.acctBusy=true;render();
         try{
           if(sb){ const {data:avail}=await sb.rpc('username_available',{p_username:uname});
-            if(avail===false){ S.acctBusy=false; S.acctErr='That username is taken — try another.'; render(); return; } }
+            if(avail===false){ S.acctBusy=false; S.acctErr='That username is taken, try another.'; render(); return; } }
           const session=await sbSignUp(email,pass,uname); S.acctBusy=false;
-          if(!session && !sbSignedIn()){ S.acctMode='signin'; S.acctNote='Account created — check your email to confirm, then sign in.'; }
+          if(!session && !sbSignedIn()){ S.acctMode='signin'; S.acctNote='Account created, check your email to confirm, then sign in.'; }
           render();
         }catch(e){ S.acctBusy=false; S.acctErr=e.message||'Could not create that account.'; render(); } }
       else { const id=box.querySelector('#au-id').value; if(!id.trim()||!pass){S.acctErr='Enter your login and password.';render();return;} go(()=>sbSignInPassword(id,pass)); } };
@@ -2330,7 +2330,7 @@ function overlayLeaderboard(screen){
         : `<div class="lockcta"><b style="color:var(--gold)">🔒 Sign in to claim your spot</b><button class="btn gold" id="lb-lock-up" style="width:auto;padding:8px 13px;font-size:12px">Create account</button></div>`);
     }
   } else if(globalOk){
-    board=`<div class="small muted center" style="padding:18px 8px">No scores yet — be the first to post one.</div>`;
+    board=`<div class="small muted center" style="padding:18px 8px">No scores yet, be the first to post one.</div>`;
   } else {
     // backend not reachable / migration not applied yet → local fallback
     if(tab==='season'){
@@ -2351,7 +2351,7 @@ function overlayLeaderboard(screen){
   } else if(sbSignedIn()){
     banner=`<div><b style="color:var(--gold)">Pick a username</b><div class="small muted" style="margin-top:2px">Set a username to appear on the board.</div></div>${signCTA}`;
   } else {
-    banner=`<div><b style="color:var(--gold)">Compete on the global board</b><div class="small muted" style="margin-top:2px">Sign in or create a free RunThe.GG account — finished seasons then post here automatically.${globalOk?'':' Global board is offline right now — showing your own results.'}</div></div>${signCTA}`;
+    banner=`<div><b style="color:var(--gold)">Compete on the global board</b><div class="small muted" style="margin-top:2px">Sign in or create a free RunThe.GG account, finished seasons then post here automatically.${globalOk?'':' Global board is offline right now, showing your own results.'}</div></div>${signCTA}`;
   }
   const seg=(id,lab)=>`<button class="btn ${tab===id?'gold':'ghost'} lbtab" data-tab="${id}" style="font-size:12px;padding:8px 12px;width:auto">${lab}</button>`;
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Leaderboard">
@@ -2360,7 +2360,7 @@ function overlayLeaderboard(screen){
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
     <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px">${seg('season','Single Season')}${seg('career','Career')}</div>
     <h2 style="margin:0 0 2px">${tab==='season'?'Single Season Earnings':'Career Earnings'}</h2>
-    <div class="small muted" style="margin:0 0 8px">${tab==='season'?'Every season ranked — your best single-season earnings':'Every career sim ranked by total earnings'}</div>
+    <div class="small muted" style="margin:0 0 8px">${tab==='season'?'Every season ranked, your best single-season earnings':'Every career sim ranked by total earnings'}</div>
     <div class="board">${board}</div>
     <div style="height:14px"></div>
     <button class="btn red">Close</button></div>`);
@@ -2388,10 +2388,10 @@ function overlayDailyDone(screen){
   const r=dailyBest();
   const isRound=r&&r.course&&DAILY_COURSES[r.course];
   const body=isRound?`
-    <p class="lede" style="margin-bottom:12px">You've used all <b>${DAILY_MAX_ATTEMPTS}</b> attempts at <b>${esc(dShort(DAILY_COURSES[r.course].v))}</b> today. Your best round is logged to the leaderboard — a new course drops at midnight UTC.</p>
+    <p class="lede" style="margin-bottom:12px">You've used all <b>${DAILY_MAX_ATTEMPTS}</b> attempts at <b>${esc(dShort(DAILY_COURSES[r.course].v))}</b> today. Your best round is logged to the leaderboard, a new course drops at midnight UTC.</p>
     <div class="small muted center" style="text-transform:uppercase;letter-spacing:.12em;font-weight:800;margin-bottom:2px">Best of the day</div>
     <div class="center" style="margin:0 0 8px"><span class="mono" style="font-weight:800;font-size:38px;color:${r.total<0?'#35d6a0':r.total===0?'var(--oncard)':'#E14A33'}">${dtp(r.total)}</span> <span class="small muted">(${r.par+r.total} · par ${r.par})</span></div>
-    ${(r.avg!=null)?(r.total<r.avg?`<div class="scout" style="text-align:center;border-color:#35d6a0"><b style="color:#35d6a0">🏁 You beat the tour average (${dAvgTxt(r.avg)})</b></div>`:`<div class="scout" style="text-align:center"><span class="small muted">Tour average ${dAvgTxt(r.avg)} — you came up ${(r.total-r.avg).toFixed(1)} short</span></div>`):''}
+    ${(r.avg!=null)?(r.total<r.avg?`<div class="scout" style="text-align:center;border-color:#35d6a0"><b style="color:#35d6a0">🏁 You beat the tour average (${dAvgTxt(r.avg)})</b></div>`:`<div class="scout" style="text-align:center"><span class="small muted">Tour average ${dAvgTxt(r.avg)}, you came up ${(r.total-r.avg).toFixed(1)} short</span></div>`):''}
     ${r.record?`<div class="scout" style="text-align:center;border-color:var(--gold);margin-top:6px"><b style="color:var(--gold)">🏆 You hold the course record</b></div>`:''}
     <div class="small muted center" style="margin-top:6px">OVR ${r.ovr} · ${dCondLabel(r.cond)} · streak ${streakDisplay()} 🔥</div>`
    :`<p class="lede">You've used all ${DAILY_MAX_ATTEMPTS} attempts today. Come back at midnight UTC for a fresh course.</p>`;
@@ -2411,9 +2411,9 @@ function overlayAbout(screen){
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="About RunTheTour">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>About</h3>
-    <p class="lede"><b style="color:var(--oncard)">RunTheTour</b> is a free golf game from <b style="color:var(--teal)">RunThe.GG</b> — sibling to RunThePitch. Spin a wheel of real golfers, draft one skill from each to build your own, then run a full pro season and see how you finish.</p>
-    <p class="lede">It's in active development — new features are landing regularly. Got an idea or a bug? We'd love to hear it.</p>
-    <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour — Feedback')}" style="text-decoration:none;display:block">✉ Send Feedback</a>
+    <p class="lede"><b style="color:var(--oncard)">RunTheTour</b> is a free golf game from <b style="color:var(--teal)">RunThe.GG</b>, sibling to RunThePitch. Spin a wheel of real golfers, draft one skill from each to build your own, then run a full pro season and see how you finish.</p>
+    <p class="lede">It's in active development, new features are landing regularly. Got an idea or a bug? We'd love to hear it.</p>
+    <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour, Feedback')}" style="text-decoration:none;display:block">✉ Send Feedback</a>
     <div style="height:10px"></div>
     <button class="btn red">Close</button></div>`);
   ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
@@ -2431,7 +2431,7 @@ function overlayPrivacy(screen){
       <li><b>Clear it anytime.</b> Use Reset, or clear this site's browser data, to wipe local data. Sign out on RunThe.GG to end your session.</li>
       <li><b>No ads or third-party trackers</b> are loaded. The only network services are Google Fonts and our own Supabase backend (for accounts + leaderboard).</li>
     </ol>
-    <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour — Privacy question')}" style="text-decoration:none;display:block">✉ Privacy Question</a>
+    <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour, Privacy question')}" style="text-decoration:none;display:block">✉ Privacy Question</a>
     <div style="height:10px"></div>
     <button class="btn red">Close</button></div>`);
   ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
@@ -2516,20 +2516,20 @@ function scrTitle(){
   const dwon=dbest&&dbest.avg!=null&&dbest.total<dbest.avg;
   let dMain, dSub, dCls;
   if(datt===0){ dMain='Daily Challenge'; dSub='Beat the tour average at a new famous course every day'; dCls='blue'; }
-  else if(dleft<=0){ dMain=`Daily Challenge · ${dwon?'Beaten ✓':'Done'}`; dSub=`Best ${dtp(dbest.total)}${dwon?' — you beat the tour average':' · came up short of the tour average'} · new course at midnight UTC`; dCls='gold'; }
-  else { dMain=`Daily Challenge · ${dleft} left`; dSub=`Best ${dtp(dbest.total)} · ${dwon?'tour average beaten ✓ — go lower':'beat the tour average to win'} (${DAILY_MAX_ATTEMPTS} tries/day)`; dCls='blue'; }
+  else if(dleft<=0){ dMain=`Daily Challenge · ${dwon?'Beaten ✓':'Done'}`; dSub=`Best ${dtp(dbest.total)}${dwon?', you beat the tour average':' · came up short of the tour average'} · new course at midnight UTC`; dCls='gold'; }
+  else { dMain=`Daily Challenge · ${dleft} left`; dSub=`Best ${dtp(dbest.total)} · ${dwon?'tour average beaten ✓, go lower':'beat the tour average to win'} (${DAILY_MAX_ATTEMPTS} tries/day)`; dCls='blue'; }
   const daily=$(`<button class="btn ${dCls}" style="margin-top:10px">${dMain}<span class="sub">${dSub}</span></button>`);
   daily.onclick=startDailyChallenge;
   stack.appendChild(daily);
   const st=streakDisplay(), fz=streakFreezes();
-  if(st>0) stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--gold);font-weight:700">🔥 ${st}-day daily streak — keep it alive${fz>0?` · ❄️ ${fz} freeze${fz>1?'s':''}`:''}</div>`));
+  if(st>0) stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--gold);font-weight:700">🔥 ${st}-day daily streak, keep it alive${fz>0?` · ❄️ ${fz} freeze${fz>1?'s':''}`:''}</div>`));
   // Monthly Spotlight (#11): a special 1-day event — surfaced with urgency only on the day it's live
   if(spotlightLiveToday()){
     const sp=monthlySpotlight(todayKey()), sc=DAILY_COURSES[sp.key];
     const att=spotAttempts(sp.mk), left=spotAttemptsLeft(sp.mk), rec=spotMonthRec(sp.mk), won=rec&&rec.won;
     let sb2;
     if(att===0){
-      sb2=$(`<button class="btn goldfill spotlive" style="margin-top:12px">⭐ ${esc(sp.month)} Spotlight — Today only<span class="sub">${esc(dShort(sc.v))} · ${dCondLabel(sp.cond)} · beat the pro in a special event</span></button>`);
+      sb2=$(`<button class="btn goldfill spotlive" style="margin-top:12px">⭐ ${esc(sp.month)} Spotlight, Today only<span class="sub">${esc(dShort(sc.v))} · ${dCondLabel(sp.cond)} · beat the pro in a special event</span></button>`);
     } else if(left>0){
       sb2=$(`<button class="btn gold spotlive" style="margin-top:12px">⭐ ${esc(sp.month)} Spotlight · ${won?'Won ✓':'best '+dtp(rec.best)}<span class="sub">${esc(dShort(sc.v))} · ${won?'go lower':'beat the pro'} · ${left} attempt${left>1?'s':''} left today</span></button>`);
     } else {
@@ -2813,11 +2813,11 @@ function shirtRow(){
     const sw=$(`<button aria-label="Shirt ${o.id}" style="width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.m};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}"></button>`);
     sw.onclick=()=>{S.look.polo=o.id; LS.set('bag_look',S.look); render();}; wrap.appendChild(sw); });
   COSMETIC_SHIRTS.forEach(o=>{ const sel=S.look.polo===o.id; const open=!!o.req(m);
-    const sw=$(`<button aria-label="Shirt ${o.name}${open?'':' (locked)'}" title="${esc(o.name)}${open?'':' — '+esc(o.reqText)}" style="position:relative;width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.m};cursor:pointer;padding:0;opacity:${open?'1':'0.4'};box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}">${open?'':'<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px">🔒</span>'}</button>`);
-    sw.onclick=()=>{ if(!o.req(m)){ toast('🔒 '+o.name+' — '+o.reqText); return; } S.look.polo=o.id; LS.set('bag_look',S.look); render(); };
+    const sw=$(`<button aria-label="Shirt ${o.name}${open?'':' (locked)'}" title="${esc(o.name)}${open?'':', '+esc(o.reqText)}" style="position:relative;width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.m};cursor:pointer;padding:0;opacity:${open?'1':'0.4'};box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}">${open?'':'<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px">🔒</span>'}</button>`);
+    sw.onclick=()=>{ if(!o.req(m)){ toast('🔒 '+o.name+', '+o.reqText); return; } S.look.polo=o.id; LS.set('bag_look',S.look); render(); };
     wrap.appendChild(sw); });
   row.appendChild(wrap);
-  if(COSMETIC_SHIRTS.some(o=>!o.req(m))) row.appendChild($(`<div class="small muted" style="margin-top:5px;font-size:10.5px">🔒 Special colours unlock as you win — see the Trophy Room.</div>`));
+  if(COSMETIC_SHIRTS.some(o=>!o.req(m))) row.appendChild($(`<div class="small muted" style="margin-top:5px;font-size:10.5px">🔒 Special colours unlock as you win, see the Trophy Room.</div>`));
   return row;
 }
 function handRow(){
@@ -2892,7 +2892,7 @@ function scrDraft(){
     <div class="spins"><span style="color:var(--gold)">${S.reSpins}</span> <span class="muted small">re-spins</span></div></div>`));
   if(!LS.get('bag_tip_seen',false) && filledCount()===0 && !S.current && !S.spinning){
     const tip=$(`<div class="scout" style="margin-bottom:12px;border-color:var(--gold)">
-      <b style="color:var(--gold)">How it works</b> — You fill <b>8 skill slots</b>. Each spin reveals a golfer — take one of their ratings for a slot. Don't want them? Use one of your <b>2 re-spins</b> to pass. That's <b>8 picks + 2 re-spins</b>, then your golfer's built.
+      <b style="color:var(--gold)">How it works</b>, You fill <b>8 skill slots</b>. Each spin reveals a golfer, take one of their ratings for a slot. Don't want them? Use one of your <b>2 re-spins</b> to pass. That's <b>8 picks + 2 re-spins</b>, then your golfer's built.
       <button class="btn ghost" style="margin-top:10px;font-size:13px;padding:8px">Got it</button></div>`);
     tip.querySelector('button').onclick=()=>{LS.set('bag_tip_seen',true);render();};
     add(tip);
@@ -2900,14 +2900,14 @@ function scrDraft(){
   if(S.daily && DAILY_COURSES[S.dailyCourse]){
     const c=DAILY_COURSES[S.dailyCourse];
     const topTags=dCourseSkillTop(c,3).map(x=>`<span class="tag" style="font-size:12px;color:var(--gold);border-color:var(--gold)">★ ${x.short}</span>`).join(' ');
-    const planNote={conservative:'You\'re playing it Safe — steady wins.',balanced:'Balanced plan — a complete build holds up.',aggressive:'You\'re Aggressive — these strengths fuel the low number (and protect against blow-ups).'}[S.dailyPlan]||'';
+    const planNote={conservative:'You\'re playing it Safe, steady wins.',balanced:'Balanced plan, a complete build holds up.',aggressive:'You\'re Aggressive, these strengths fuel the low number (and protect against blow-ups).'}[S.dailyPlan]||'';
     add($(`<div class="scout" style="margin-bottom:12px;border-color:var(--gold)">
       <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;justify-content:space-between">
         <b style="color:var(--gold)">⛳ Drafting for ${esc(dShort(c.v))}</b>
         <span class="small muted">${dCondLabel(S.dailyCond)} · Par ${c.par}</span></div>
       <div style="margin-top:9px"><span class="small muted" style="text-transform:uppercase;letter-spacing:.1em;font-weight:800">Focus your build on</span>
         <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">${topTags}</div></div>
-      <div class="small muted" style="margin-top:9px;line-height:1.4">These skills are weighted heaviest here — golfers strong in them score best. ${planNote} Look for the ★ on the skill tiles.</div></div>`));
+      <div class="small muted" style="margin-top:9px;line-height:1.4">These skills are weighted heaviest here, golfers strong in them score best. ${planNote} Look for the ★ on the skill tiles.</div></div>`));
   }
   add(buildHero());   // full-width player card on top so both columns below carry content
   if(S.current || S.spinning){
@@ -2936,7 +2936,7 @@ function scrDraft(){
     CATS.forEach(cat=>{
       const filled=!!S.slots[cat.k];
       const key=dailyKeys&&dailyKeys.has(cat.k);
-      const b=$(`<button class="attr${key?' keyhole':''}" ${filled?'disabled':''} aria-label="${filled?'Already filled: '+cat.short:'Draft '+cat.short+', rated '+S.current[cat.k]+(key?' — key skill for today\'s course':'')}">
+      const b=$(`<button class="attr${key?' keyhole':''}" ${filled?'disabled':''} aria-label="${filled?'Already filled: '+cat.short:'Draft '+cat.short+', rated '+S.current[cat.k]+(key?', key skill for today\'s course':'')}">
         ${key?'<span class="keystar" aria-hidden="true">★</span>':''}<span class="lab">${cat.short}</span><span class="val">${S.current[cat.k]}</span>${filled?'':'<span class="take">Take</span>'}</button>`);
       if(!filled) b.onclick=()=>takeAttr(cat.k);
       grid.appendChild(b);
@@ -2946,7 +2946,7 @@ function scrDraft(){
       const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${S.reSpins} left</button>`);
       re.onclick=reSpin; left.appendChild(re);
     } else {
-      left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left — take one of ${S.current.name}'s skills.</div>`));
+      left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left, take one of ${S.current.name}'s skills.</div>`));
     }
   } else if(!S.spinning){
     const left2go=8-filledCount();
@@ -2961,7 +2961,7 @@ function scrDraft(){
   CATS.forEach(cat=>{
     const f=S.slots[cat.k];
     card.appendChild($(`<div class="slot ${f?'':'empty'}">
-      <span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'—'}</span>
+      <span class="lab">${cat.short}</span><span class="who">${f?f.golfer:', '}</span>
       <span class="v">${f?f.value:'··'}</span></div>`));
   });
   right.appendChild(card);
@@ -2981,8 +2981,8 @@ function reveal(){
   },72);
 }
 function rarityFlash(g){
-  if(g.rarity==='Legendary'){ toast('★ '+g.name+' — LEGENDARY!'); chime(); track('legendary_pulled',{name:g.name}); }
-  else if(g.rarity==='Epic') toast('◆ '+g.name+' — Epic');
+  if(g.rarity==='Legendary'){ toast('★ '+g.name+', LEGENDARY!'); chime(); track('legendary_pulled',{name:g.name}); }
+  else if(g.rarity==='Epic') toast('◆ '+g.name+', Epic');
 }
 function spin_(){ if(S.current||golfersLeft()<=0)return; reveal(); }        // fresh reveal for the next slot — free
 function reSpin(){ if(S.reSpins<=0||golfersLeft()<=0)return; S.reSpins--; track('respin_used',{left:S.reSpins}); reveal(); }  // capped at 2
@@ -3030,7 +3030,7 @@ function scrBuild(){
   const card=$(`<div class="card-grid"></div>`);
   CATS.forEach(cat=>{const f=S.slots[cat.k]; const v=f?f.value:REPLACEMENT;
     card.appendChild($(`<div class="slot ${f?'':'empty'}">
-      <span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'no spin — journeyman'}</span>
+      <span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'no spin, journeyman'}</span>
       <span class="v">${v}</span></div>`));});
   right.appendChild(card);
   right.appendChild($(`<div style="height:16px"></div>`));
@@ -3045,7 +3045,7 @@ function scrBuild(){
     const maj=$(`<button class="btn gold" style="margin-top:10px">Majors Only<span class="sub">The 4 that matter</span></button>`);
     full.onclick=()=>startSeason(false); maj.onclick=()=>startSeason(true);
     right.appendChild(full); right.appendChild(maj);
-    right.appendChild($(`<div class="small muted" style="margin-top:16px;text-align:center;line-height:1.5">⚔️ Rivalries form on their own — battle the field for a few seasons and the player who keeps finishing beside you becomes your nemesis.</div>`));
+    right.appendChild($(`<div class="small muted" style="margin-top:16px;text-align:center;line-height:1.5">⚔️ Rivalries form on their own, battle the field for a few seasons and the player who keeps finishing beside you becomes your nemesis.</div>`));
   }
 }
 function fieldSample(n){
@@ -3323,7 +3323,7 @@ function drawMajorWinCard(cv, info){
 function shareMajorWin(evt,o){
   const me=S.season.me; const cv=document.createElement('canvas');
   drawMajorWinCard(cv,{name:me.name, ovr:Math.round(me.skill), evt:evt.name, score:par(o&&o.score!=null?o.score:0), year:S.year||1, accent:majorTheme(evt.name).accent});
-  const cap=`🏆 MAJOR CHAMPION — ${me.name}\nWon ${evt.name}${o&&o.score!=null?` at ${par(o.score)}`:''}\nRunTheTour · build your golfer → https://runthe.gg/golf`;
+  const cap=`🏆 MAJOR CHAMPION, ${me.name}\nWon ${evt.name}${o&&o.score!=null?` at ${par(o.score)}`:''}\nRunTheTour · build your golfer → https://runthe.gg/golf`;
   track('major_win_shared',{event:evt.name}); shareCard(cv,cap,me.name,'major-win');
 }
 let _celebStop=null;
@@ -3335,7 +3335,7 @@ function celebratePlayoff(ce, opts){
   stage.innerHTML=`<div style="position:relative;z-index:2;width:min(560px,92vw);text-align:center">
     <div class="celeb-kicker" style="letter-spacing:.2em;text-transform:uppercase;color:#ffd76a;font-weight:800;font-size:13px">${esc(evt.name)}</div>
     <div class="celeb-title" style="font-family:var(--serif);font-weight:800;color:#fff;font-size:30px;margin:6px 0 2px">SUDDEN-DEATH PLAYOFF</div>
-    <div class="small" style="color:#cfe6d8;margin-bottom:14px">${po.players.length} tied — win a hole to take the title</div>
+    <div class="small" style="color:#cfe6d8;margin-bottom:14px">${po.players.length} tied, win a hole to take the title</div>
     <div class="po-holes" style="display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto"></div>
     <div class="po-actions" style="margin-top:16px"></div></div>`;
   document.body.appendChild(stage);
@@ -3346,7 +3346,7 @@ function celebratePlayoff(ce, opts){
   function done(){
     actions.innerHTML = youWon
       ? `<div style="font-family:var(--serif);color:#35d6a0;font-weight:800;font-size:26px">🏆 You won the playoff!</div>`
-      : `<div style="font-family:var(--serif);color:#fff;font-weight:800;font-size:23px">So close — lost in the playoff</div><div class="small" style="color:#cfe6d8;margin-top:2px">${esc(po.winner)} took it on the ${ord(po.holes)} extra hole.</div>`;
+      : `<div style="font-family:var(--serif);color:#fff;font-weight:800;font-size:23px">So close, lost in the playoff</div><div class="small" style="color:#cfe6d8;margin-top:2px">${esc(po.winner)} took it on the ${ord(po.holes)} extra hole.</div>`;
     // A WIN always flows on into the single win celebration (which is where it waits/auto-advances per
     // Auto Sim) — no separate click. A LOSS has no celebration after, so Auto Sim OFF waits for the player.
     if(youWon){ _poTimer=setTimeout(finish, opts.reduce?20:1100); }
@@ -3415,14 +3415,14 @@ function scrSeason(){
 
   // season-to-date standings
   const t=S.season.totals[S.season.me.name];
-  const avg=t.played?ord(Math.round(t.finishSum/t.played)):'—';
-  const high=t.best===99?'—':ord(t.best);
+  const avg=t.played?ord(Math.round(t.finishSum/t.played)):', ';
+  const high=t.best===99?', ':ord(t.best);
   const ec=seasonNet(t); const netCol=ec.net>=0?'#35d6a0':'#E14A33';
   // live Tour Rank — where you sit on the season points list (FedEx-style), updated each event
   const byPts=Object.entries(S.season.totals).map(([n,v])=>({n,points:v.points})).sort((a,b)=>b.points-a.points);
   const tourRank=byPts.findIndex(r=>r.n===S.season.me.name)+1;
   const NP=byPts.length;
-  const rankTxt=t.played?('#'+tourRank):'—';
+  const rankTxt=t.played?('#'+tourRank):', ';
   add($(`<div class="sbar">
     <div class="sstat w3"><div class="k">Net profit · through ${t.played} event${t.played===1?'':'s'}</div>
       <div class="v" style="color:${netCol};font-size:22px">${fmtSigned(ec.net)}</div>
@@ -3471,7 +3471,7 @@ function scrSeason(){
     else if(po&&po.you) status=`Lost in a playoff · ${posTxt}`;
     else status='Finished '+posTxt+(o.pos<=10?' · top 10':'');
     if(o.money>0) money=`<span style="color:var(--gold)"> · +${fmt(o.money)}</span>`; }
-  else if(myCut){ status='Missed the cut — weekend off'; }
+  else if(myCut){ status='Missed the cut, weekend off'; }
   else { status=(ce.roundsDone>=4?'Final round':'Round '+ce.roundsDone+' of 4')+' · '+(myPos===1?(meLive._tied?'Tied for the lead':'Leading'):'currently '+(meLive._tied?'T'+myPos:ord(myPos))); }
   const meFin=ce.done?ce.order.find(x=>x.p.you):null;   // finalized position (playoff resolved)
   const finPos=meFin?meFin.pos:myPos, finTied=meFin?meFin.tied:meLive._tied;
@@ -3508,7 +3508,7 @@ function scrSeason(){
   skip.onclick=skipToEnd;
   row.appendChild(auto); row.appendChild(skip); ctrl.appendChild(row);
   if(!S.daily){   // career: let the player stop mid-season and resume exactly here
-    const se=$(`<button class="btn ghost" style="margin-top:10px;font-size:13px">Save &amp; Exit<span class="sub">Stop now — resume this season from the home screen</span></button>`);
+    const se=$(`<button class="btn ghost" style="margin-top:10px;font-size:13px">Save &amp; Exit<span class="sub">Stop now, resume this season from the home screen</span></button>`);
     se.onclick=saveMidSeasonAndExit; ctrl.appendChild(se);
   }
   add(ctrl);   // controls span full width below both columns (stay at the bottom on mobile)
@@ -3545,7 +3545,7 @@ function roundsRow(o){
 }
 function lbRow(o){
   const sc=o.pos==='CUT'?'CUT':par(o.score);
-  const mny=o.money>0?fmt(o.money):'—';
+  const mny=o.money>0?fmt(o.money):', ';
   const lab=o.pos==='CUT'?'–':(o.pos===1?'🏆':(o.tied?'T'+o.pos:o.pos));
   return $(`<div class="lb ${o.p.you?'you':''} ${o.pos==='CUT'?'cut':''}">
     <span class="pos">${lab}</span>
@@ -3658,13 +3658,13 @@ function drawCareerCard(cv,info,vals){
 function shareCard(cv,text,name,suffix){
   recordAchEvent({set:{shared:1}}); evaluateAch();
   cv.toBlob(async b=>{
-    if(!b){toast('Could not build the image — copy the text instead');return;}
+    if(!b){toast('Could not build the image, copy the text instead');return;}
     const file=new File([b],((name||'golfer').replace(/\s+/g,'-'))+'-'+(suffix||'season')+'.png',{type:'image/png'});
     if(navigator.canShare&&navigator.canShare({files:[file]})){
       try{await navigator.share({files:[file],text}); return;}catch(e){if(e&&e.name==='AbortError')return;}
     }
     const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=file.name; a.click(); URL.revokeObjectURL(u);
-    toast('Card saved — attach it to your post');
+    toast('Card saved. Attach it to your post');
   });
 }
 
@@ -3687,21 +3687,21 @@ function seasonHeadlines(x){
   const fp=n=>n===99?'a missed cut':ord(n);
   // ---- LEAD ----
   let lead;
-  if(distinctMajors>=4) lead={icon:'👑',head:'GRAND SLAM SEASON',sub:'All four majors in a single year — a season for the history books.'};
-  else if(moneyRank===1 && t.wins>=1) lead={icon:'🏆',head:'TOUR CHAMPION',sub:`Topped the money list at ${fmt(t.money)} — the undisputed player of the year.`};
-  else if(t.majors>=2) lead={icon:'⛳',head:`${t.majors}-MAJOR YEAR`,sub:`A multi-major season — ${majorWins.map(f=>f.name).join(' & ')}.`};
-  else if(t.majors===1){ const m=majorWins[0]||{name:'a major'}; lead={icon:'⛳',head:cmBefore===0?'MAIDEN MAJOR':'MAJOR CHAMPION',sub:`${cmBefore===0?'First career major':'Another major'} — captured ${m.name}.`}; }
+  if(distinctMajors>=4) lead={icon:'👑',head:'GRAND SLAM SEASON',sub:'All four majors in a single year, a season for the history books.'};
+  else if(moneyRank===1 && t.wins>=1) lead={icon:'🏆',head:'TOUR CHAMPION',sub:`Topped the money list at ${fmt(t.money)}, the undisputed player of the year.`};
+  else if(t.majors>=2) lead={icon:'⛳',head:`${t.majors}-MAJOR YEAR`,sub:`A multi-major season, ${majorWins.map(f=>f.name).join(' & ')}.`};
+  else if(t.majors===1){ const m=majorWins[0]||{name:'a major'}; lead={icon:'⛳',head:cmBefore===0?'MAIDEN MAJOR':'MAJOR CHAMPION',sub:`${cmBefore===0?'First career major':'Another major'}, captured ${m.name}.`}; }
   else if(t.wins>=3) lead={icon:'🔥',head:`${t.wins}-WIN SEASON`,sub:`A dominant year with ${t.wins} titles${moneyRank<=3?` and a top-${moneyRank} money finish`:''}.`};
   else if(t.wins>=1){ const big=wins.slice().sort((a,b)=>b.money-a.money)[0]||{name:'the tour'}; lead={icon:'🏆',head:cwBefore===0?'BREAKTHROUGH WIN':(t.wins===1?'WINNER':`${t.wins} WINS`),sub:`${cwBefore===0?'First career title':'Back in the winner’s circle'} at ${big.name}.`}; }
-  else if(seconds>=1||top5>=1) lead={icon:'🎯',head:'KNOCKING ON THE DOOR',sub:`${seconds?`${seconds} runner-up${seconds>1?'s':''}`:`${top5} top-5${top5>1?'s':''}`} but no win yet — the breakthrough is close.`};
-  else lead={icon:'📈',head:year===1?'ROOKIE SEASON':'GRINDING SEASON',sub:bestFin===99?'Missed the cut in every start — back to the range to rebuild.':`Best finish ${fp(bestFin)} — building toward the breakthrough.`};
+  else if(seconds>=1||top5>=1) lead={icon:'🎯',head:'KNOCKING ON THE DOOR',sub:`${seconds?`${seconds} runner-up${seconds>1?'s':''}`:`${top5} top-5${top5>1?'s':''}`} but no win yet, the breakthrough is close.`};
+  else lead={icon:'📈',head:year===1?'ROOKIE SEASON':'GRINDING SEASON',sub:bestFin===99?'Missed the cut in every start, back to the range to rebuild.':`Best finish ${fp(bestFin)}, building toward the breakthrough.`};
   // ---- supporting notes ----
   const notes=[];
-  if(moneyRank===1 && lead.head!=='TOUR CHAMPION') notes.push({icon:'📋',text:'Led the tour in earnings — money-list champion.'});
+  if(moneyRank===1 && lead.head!=='TOUR CHAMPION') notes.push({icon:'📋',text:'Led the tour in earnings, money-list champion.'});
   else if(moneyRank>=2 && moneyRank<=5) notes.push({icon:'📋',text:`Finished #${moneyRank} of ${N} on the money list (${fmt(t.money)}).`});
-  if(playedN>0 && missed===0) notes.push({icon:'🪨',text:`Made every cut — ${made} for ${made} on the season.`});
-  if(top10>=8) notes.push({icon:'🎯',text:`${top10} top-10 finishes — Mr. Consistency.`});
-  if(seconds>=2 && t.wins===0) notes.push({icon:'😤',text:`${seconds} runner-up finishes — so close, so often.`});
+  if(playedN>0 && missed===0) notes.push({icon:'🪨',text:`Made every cut, ${made} for ${made} on the season.`});
+  if(top10>=8) notes.push({icon:'🎯',text:`${top10} top-10 finishes, Mr. Consistency.`});
+  if(seconds>=2 && t.wins===0) notes.push({icon:'😤',text:`${seconds} runner-up finishes, so close, so often.`});
   if(majorWins.length && t.majors===1 && lead.head!=='MAIDEN MAJOR' && lead.head!=='MAJOR CHAMPION') notes.push({icon:'⛳',text:`Won a major: ${majorWins[0].name}.`});
   if(bigPay && bigPay.money>0 && t.wins===0) notes.push({icon:'💰',text:`Biggest week: ${fmt(bigPay.money)} for ${fp(bigPay.pos)} at ${bigPay.name}.`});
   if(prev && prev.rank && moneyRank && (prev.rank-moneyRank)>=3) notes.push({icon:'⬆️',text:`Climbed from #${prev.rank} to #${moneyRank} on the money list.`});
@@ -3711,7 +3711,7 @@ function seasonHeadlines(x){
   const rr=S.rivalOutcome;
   if(rr&&rr.status==='h2h') notes.unshift(rr.beat
     ?{icon:'⚔️',text:`Won the rivalry series vs ${rr.name}, ${rr.meAhead}–${rr.rvAhead}.`}
-    :{icon:'⚔️',text:`${rr.name} took the rivalry series, ${rr.rvAhead}–${rr.meAhead} — next year.`});
+    :{icon:'⚔️',text:`${rr.name} took the rivalry series ${rr.rvAhead}–${rr.meAhead}. Get them next year.`});
   return {lead,notes:notes.slice(0,4),year};
 }
 function headlinesHTML(h){
@@ -3938,7 +3938,7 @@ function scrSummary(){
     const wl=(c.winsList||[]);
     const majWins=wl.filter(w=>w.major).length;
     left.appendChild($(`<h3 style="margin:16px 0 7px;font-size:14px;letter-spacing:.02em">Wins <span class="small muted" style="font-weight:600">· ${wl.length}${majWins?` · ${majWins} major${majWins>1?'s':''}`:''}</span></h3>`));
-    if(!wl.length) left.appendChild($(`<div class="scout small muted" style="margin-top:2px">No tournament wins yet — keep grinding.</div>`));
+    if(!wl.length) left.appendChild($(`<div class="scout small muted" style="margin-top:2px">No tournament wins yet, keep grinding.</div>`));
     else if(majWins) left.appendChild($(careerMajorsHTML(c)));
     left.appendChild($(`<h3 style="margin:16px 0 7px;font-size:14px;letter-spacing:.02em">Season by season <span class="small muted" style="font-weight:600">· ${c.seasons.length} yrs · tap a year for its wins</span></h3>`));
     left.appendChild($(`<div>${careerSeasonsHTML(c)}</div>`));
@@ -3948,8 +3948,8 @@ function scrSummary(){
 
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
   const finTxt=(t.wins>0?`${t.wins} win${t.wins>1?'s':''}`:`best ${bestTxt(t.best)}`);
-  const headLine=HL?`${HL.lead.icon} ${HL.lead.head} — `:'';
-  const share=`⛳ RUNTHETOUR — ${me.name} (OVR ${ovr})\n${headLine}Year ${S.year||1}: ${fmt(t.money)} earned · #${moneyRank} of ${N}${wreath}\n${t.wins}W · ${t.majors} major${t.majors===1?'':'s'} · ${finTxt}\nThink you can build better? → https://runthe.gg/golf`;
+  const headLine=HL?`${HL.lead.icon} ${HL.lead.head}, `:'';
+  const share=`⛳ RUNTHETOUR, ${me.name} (OVR ${ovr})\n${headLine}Year ${S.year||1}: ${fmt(t.money)} earned · #${moneyRank} of ${N}${wreath}\n${t.wins}W · ${t.majors} major${t.majors===1?'':'s'} · ${finTxt}\nThink you can build better? → https://runthe.gg/golf`;
   right.appendChild($(`<h2 style="margin:2px 0 2px">Share your season</h2>`));
   right.appendChild($(`<p class="small muted" style="margin:0 0 10px">Post your card and dare a friend to beat your number.</p>`));
   const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
@@ -3974,13 +3974,13 @@ function scrSummary(){
   } else {
     const lastYear=(S.year||1)>=CAREER_MAX_YEARS;
     const declining=pastPeak();
-    right.appendChild($(`<div class="small center" style="margin:0 0 10px;color:#35d6a0;font-weight:700">✓ Progress auto-saved — your career is checkpointed at the home screen</div>`));
-    const cont=$(`<button class="btn goldfill">${lastYear?'Finish Career ▸':'Continue to Year '+((S.year||1)+1)+' ▸'}<span class="sub">${lastYear?('Year '+CAREER_MAX_YEARS+' was your last — career ceremony'):('Career Mode · year '+((S.year||1)+1)+' of '+CAREER_MAX_YEARS+(declining?' · skills are declining (re-spin to repair)':'')+' · off-season, then a new season')}</span></button>`);
+    right.appendChild($(`<div class="small center" style="margin:0 0 10px;color:#35d6a0;font-weight:700">✓ Progress auto-saved, your career is checkpointed at the home screen</div>`));
+    const cont=$(`<button class="btn goldfill">${lastYear?'Finish Career ▸':'Continue to Year '+((S.year||1)+1)+' ▸'}<span class="sub">${lastYear?('Year '+CAREER_MAX_YEARS+' was your last, career ceremony'):('Career Mode · year '+((S.year||1)+1)+' of '+CAREER_MAX_YEARS+(declining?' · skills are declining (re-spin to repair)':'')+' · off-season, then a new season')}</span></button>`);
     cont.onclick=continueFranchise; right.appendChild(cont);
-    const save=$(`<button class="btn gold" style="margin-top:10px">Exit to Home<span class="sub">Already saved — come back and resume anytime</span></button>`);
+    const save=$(`<button class="btn gold" style="margin-top:10px">Exit to Home<span class="sub">Already saved, come back and resume anytime</span></button>`);
     save.onclick=()=>{ saveCareer(); track('career_saved_exit',{year:S.year||1}); reset(); render(); };
     right.appendChild(save);
-    const retire=$(`<button class="btn ghost" style="margin-top:10px">Retire — End Career</button>`);
+    const retire=$(`<button class="btn ghost" style="margin-top:10px">Retire, End Career</button>`);
     retire.onclick=()=>endCareer('chose'); right.appendChild(retire);
   }
 }
@@ -4026,7 +4026,7 @@ function scrOffseason(){
   const os=S.offseason||{changes:0,maxChanges:3,reSpins:2};
   add($(`<div class="center"><span class="tag">Career Mode · Off-Season · Year ${S.year} prep</span></div>`));
   add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tune your game</h1>`));
-  add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag — up to <b>${os.maxChanges} changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. Keep your bag as-is, or spin to improve it — but once you spin, you must take a skill before moving on.</p>`));
+  add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag, up to <b>${os.maxChanges} changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. Keep your bag as-is, or spin to improve it, but once you spin, you must take a skill before moving on.</p>`));
   // Tour Rep perk banner — shows what your rank grants + what the next rank unlocks (a "keep climbing" nudge)
   { const r=repTier(), cur=repPerk(); let teaser='';
     if(r.next){ const np=repPerk2(r.next.name); const dc=np.changes-cur.changes, dr=np.reSpins-cur.reSpins;
@@ -4034,8 +4034,8 @@ function scrOffseason(){
     add($(`<div class="scout small" style="max-width:560px;margin:0 auto 8px;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">${r.tier.name==='G.O.A.T.'?'🐐 ':'🏅 '}${esc(r.tier.name)} perk</b> <span class="muted">${cur.changes} change${cur.changes>1?'s':''} · ${cur.reSpins} re-spin${cur.reSpins===1?'':'s'} this off-season${teaser}</span></div>`)); }
   // age/form status — decline is performance-based: stay sharp by winning, fade if you slump
   const declined=os.decline && Object.keys(os.decline).length;
-  if(declined) add($(`<div class="scout small" style="max-width:560px;margin:0 auto 6px;text-align:center;border-color:#e07a5f"><b style="color:#e9a23b">Age is catching up.</b> <span class="muted">Power fades first — repair a slot with a spin, or lean into your short game. Strong seasons slow the decline.</span></div>`));
-  else add($(`<div class="scout small muted" style="max-width:560px;margin:0 auto 6px;text-align:center">In your prime — no age decline this year. Keep performing to stretch it into your late career.</div>`));
+  if(declined) add($(`<div class="scout small" style="max-width:560px;margin:0 auto 6px;text-align:center;border-color:#e07a5f"><b style="color:#e9a23b">Age is catching up.</b> <span class="muted">Power fades first, repair a slot with a spin, or lean into your short game. Strong seasons slow the decline.</span></div>`));
+  else add($(`<div class="scout small muted" style="max-width:560px;margin:0 auto 6px;text-align:center">In your prime, no age decline this year. Keep performing to stretch it into your late career.</div>`));
   const cols=$(`<div class="cols"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
   cols.appendChild(left); cols.appendChild(right); add(cols);
@@ -4052,7 +4052,7 @@ function scrOffseason(){
       ${tag?`<div class="reeltag">${tag}</div>`:''}<div class="name">${g?g.name:'…'}</div><div class="sub">${sub}</div></div>`));
   }
   if(S.current&&!S.spinning){
-    left.appendChild($(`<div class="small muted" style="margin:10px 0 -2px;text-align:center">Tap a skill to swap it in — green is an upgrade, red a downgrade</div>`));
+    left.appendChild($(`<div class="small muted" style="margin:10px 0 -2px;text-align:center">Tap a skill to swap it in, green is an upgrade, red a downgrade</div>`));
     const grid=$(`<div class="attrs"></div>`);
     CATS.forEach(cat=>{
       const cur=S.slots[cat.k]?S.slots[cat.k].value:REPLACEMENT; const nv=S.current[cat.k]; const d=nv-cur;
@@ -4064,21 +4064,21 @@ function scrOffseason(){
     });
     left.appendChild(grid);
     if(os.reSpins>0){ const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${os.reSpins} left</button>`); re.onclick=offReSpin; left.appendChild(re); }
-    else left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left — take one of ${S.current.name}'s skills.</div>`));
+    else left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left, take one of ${S.current.name}'s skills.</div>`));
   } else if(!S.spinning){
     if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel</button>`); spin.onclick=offSpin; left.appendChild(spin); }
     else left.appendChild($(`<div class="small muted center" style="padding:10px 0">All ${os.maxChanges} changes used.</div>`));
-    const cont=$(`<button class="btn goldfill" style="margin-top:10px">Start Year ${S.year} ▸<span class="sub">${os.changes>0?'Run the new season':'Keep your bag — run it as-is'}</span></button>`);
+    const cont=$(`<button class="btn goldfill" style="margin-top:10px">Start Year ${S.year} ▸<span class="sub">${os.changes>0?'Run the new season':'Keep your bag, run it as-is'}</span></button>`);
     cont.onclick=finishOffseason;
     left.appendChild(cont);
   }
   right.appendChild(buildHero());
   const decl=os.decline||{}; const nDec=Object.keys(decl).length;
   right.appendChild($(`<h2 style="margin:6px 0 8px">Your golfer</h2>`));
-  if(nDec) right.appendChild($(`<div class="small" style="margin:-4px 0 8px;color:#e07a5f">▼ Age cost you ground this off-season — the red numbers show what each skill dropped. Re-spin to repair them.</div>`));
+  if(nDec) right.appendChild($(`<div class="small" style="margin:-4px 0 8px;color:#e07a5f">▼ Age cost you ground this off-season, the red numbers show what each skill dropped. Re-spin to repair them.</div>`));
   const card=$(`<div class="card-grid"></div>`);
   CATS.forEach(cat=>{ const f=S.slots[cat.k]; const d=decl[cat.k]||0;
-    card.appendChild($(`<div class="slot ${f?'':'empty'}"><span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'—'}</span>${d<0?`<span class="slotdec">▼ ${Math.abs(d)}</span>`:''}<span class="v">${f?f.value:'··'}</span></div>`)); });
+    card.appendChild($(`<div class="slot ${f?'':'empty'}"><span class="lab">${cat.short}</span><span class="who">${f?f.golfer:', '}</span>${d<0?`<span class="slotdec">▼ ${Math.abs(d)}</span>`:''}<span class="v">${f?f.value:'··'}</span></div>`)); });
   right.appendChild(card);
   add(rivalStatusNode());   // emergent nemesis status (read-only)
 }
@@ -4098,17 +4098,17 @@ function scrRecap(){
     if(!top.includes(me)){board.appendChild($(`<div class="sep"></div>`)); board.appendChild(lbRow(me));}
     add(board);
     const result=(me.pos==='CUT')?'Missed cut':(me.pos===1?'WON':(me.tied?'T':'')+me.pos);
-    add($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b> · ${me.pos==='CUT'?'missed cut':par(me.score)}</span><span style="color:var(--gold)">${me.money>0?'+'+fmt(me.money):'—'}</span></div>`));
+    add($(`<div class="runline"><span>${me.p.name}: <b style="color:var(--oncard)">${result}</b> · ${me.pos==='CUT'?'missed cut':par(me.score)}</span><span style="color:var(--gold)">${me.money>0?'+'+fmt(me.money):', '}</span></div>`));
     add(roundsRow(me));
     if(playoff){
-      add($(`<div class="small" style="margin-top:8px;text-align:center;color:var(--gold)">⛳ ${playoff.holes}-hole playoff: ${esc(playoff.players.join(', '))} — won by <b>${esc(playoff.winner)}</b></div>`));
+      add($(`<div class="small" style="margin-top:8px;text-align:center;color:var(--gold)">⛳ ${playoff.holes}-hole playoff: ${esc(playoff.players.join(', '))}, won by <b>${esc(playoff.winner)}</b></div>`));
     }
     const win=order[0];
     if(me.pos!==1){
       const gap=(me.pos!=='CUT')?(me.score-win.score):null;
       add($(`<div class="small muted" style="margin-top:8px;text-align:center">Won by <b style="color:var(--gold)">${win.p.name}</b> at ${par(win.score)}${gap!=null?` · you were ${gap} back`:''}</div>`));
     } else {
-      add($(`<div class="small" style="margin-top:8px;text-align:center;color:var(--gold);font-weight:800">🏆 ${playoff&&playoff.you?'Clutch playoff win — your week.':'Wire-to-wire glory — your week.'}</div>`));
+      add($(`<div class="small" style="margin-top:8px;text-align:center;color:var(--gold);font-weight:800">🏆 ${playoff&&playoff.you?'Clutch playoff win, your week.':'Wire-to-wire glory, your week.'}</div>`));
     }
     add($(`<div style="height:14px"></div>`));
     const nav=$(`<div class="mini" style="margin:0 0 10px"></div>`);
@@ -4177,15 +4177,15 @@ function scrRecap(){
     const strip=$(`<div class="tiles" style="margin-bottom:12px"></div>`);
     strip.appendChild(tile('Wins',(s.wins||0)+'',true));
     strip.appendChild(tile('Majors',(s.majors||0)+''));
-    strip.appendChild(tile('Top 10s',s.top10!=null?s.top10+'':'—'));
-    strip.appendChild(tile('Cuts made',(s.made!=null&&s.played!=null)?(s.made+'/'+s.played):'—'));
-    strip.appendChild(tile('Best finish',s.best!=null?bestTxt(s.best):'—'));
+    strip.appendChild(tile('Top 10s',s.top10!=null?s.top10+'':', '));
+    strip.appendChild(tile('Cuts made',(s.made!=null&&s.played!=null)?(s.made+'/'+s.played):', '));
+    strip.appendChild(tile('Best finish',s.best!=null?bestTxt(s.best):', '));
     strip.appendChild(tile('Earnings',fmt(s.money||0),true));
     add(strip);
     const ncol=(s.net||0)>=0?'#35d6a0':'#E14A33';
     const strip2=$(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin-bottom:8px"></div>`);
     strip2.appendChild($(`<div class="tile"><div class="k">Net profit</div><div class="v" style="color:${ncol}">${fmtSigned(s.net||0)}</div></div>`));
-    strip2.appendChild(tile('Tour rank',s.rank?(s.rank+''):'—'));
+    strip2.appendChild(tile('Tour rank',s.rank?(s.rank+''):', '));
     add(strip2);
     add($(`<p class="lede center" style="margin:6px 0 8px;font-size:12px">Event-by-event replay is available for your current season.</p>`));
   }
@@ -4232,14 +4232,14 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
     const accQ=dSkQ(dSk(sk,'acc')), distQ=dSkQ(dSk(sk,'dist'));
     let drive=Math.round((par===5?284:266)+distQ*50+rng()*16); if(opts.safe)drive-=Math.round(10+rng()*14);
     drive=Math.min(drive,yards-20); const teeClub=opts.safe?'3-wood':'driver';
-    if(water && rem()>=3 && rng()<0.6){ sh.push({d:`${teeClub} — pushed into the water hazard`}); played++; dist=Math.max(20,yards-Math.round(drive*0.55)); sh.push({d:`penalty drop, ${Math.round(dist)} yds to hole`}); played++; water=false; }
+    if(water && rem()>=3 && rng()<0.6){ sh.push({d:`${teeClub}, pushed into the water hazard`}); played++; dist=Math.max(20,yards-Math.round(drive*0.55)); sh.push({d:`penalty drop, ${Math.round(dist)} yds to hole`}); played++; water=false; }
     else { dist=Math.max(10,yards-drive); const fairway=rng()<(0.26+0.64*accQ);
       const lie=fairway?'the fairway':dPick(rng, accQ<0.32?['the right rough','the left rough','a fairway bunker','the trees']:['the right rough','the left rough']);
       if(rem()===1){ ftToHole=14+rng()*28; sh.push({d:`${teeClub} ${drive} yds to the green, ${dFeet(ftToHole)} to hole`}); }
       else sh.push({d:`${teeClub} ${drive} yds to ${lie}, ${Math.round(dist)} yds to hole`}); played++; }
   } else {
     const appQ=dSkQ(dSk(sk,'app'));
-    if(water && rem()>=3){ sh.push({d:`${dClub(yards)} from the tee — into the water hazard`}); played++; dist=Math.round(yards*0.4); sh.push({d:`penalty drop, ${dist} yds to hole`}); played++; water=false; }
+    if(water && rem()>=3){ sh.push({d:`${dClub(yards)} from the tee, into the water hazard`}); played++; dist=Math.round(yards*0.4); sh.push({d:`penalty drop, ${dist} yds to hole`}); played++; water=false; }
     else if(rem()===1){ ftToHole=Math.max(3,(toPar<0?6+rng()*16:(30-18*appQ)+rng()*20)); sh.push({d:`${dClub(yards)} to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`}); played++; }
     else { sh.push({d:`${dClub(yards)} ${dPick(rng,appQ<0.4?['into the greenside bunker','into the left rough','long over the green']:['just off the right fringe','into the front collar'])}, ${Math.round(16+rng()*26)} ft to hole`}); played++; dist=22; }
   }
@@ -4250,11 +4250,11 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
         ftToHole=Math.max(2,(22-13*sgQ)+rng()*18); sh.push({d:`${dist<32?'lob wedge':'sand wedge'} to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`}); }
       else { const appQ=dSkQ(dSk(sk,'app')); ftToHole=Math.max(2.5,(toPar<0?7+rng()*13:(33-20*appQ)+rng()*18)); sh.push({d:`${dClub(fromYds)} from ${fromYds} yds to ${dPick(rng,sides)} green, ${dFeet(ftToHole)} to hole`}); }   // approach → approach skill
       played++;
-    } else if(water && rem()>=3){ sh.push({d:`${dClub(fromYds)} from ${fromYds} yds — into the water hazard`}); played++; dist=Math.max(30,Math.round(fromYds*0.45)); sh.push({d:`penalty drop, ${Math.round(dist)} yds to hole`}); played++; water=false;
+    } else if(water && rem()>=3){ sh.push({d:`${dClub(fromYds)} from ${fromYds} yds, into the water hazard`}); played++; dist=Math.max(30,Math.round(fromYds*0.45)); sh.push({d:`penalty drop, ${Math.round(dist)} yds to hole`}); played++; water=false;
     } else if(dist>205){ let adv=Math.max(40,Math.min(dist-30,Math.round(70+rng()*150))); dist=Math.max(26,dist-adv);   // too far to reach the green — advance
       sh.push({d:`${dClub(adv)} ${adv} yds to ${rng()<0.6?'the fairway':'the rough'}, ${Math.round(dist)} yds to hole`}); played++;
     } else { const missLie=dPick(rng,['into the greenside bunker','into the right rough','into the left rough','long over the green','short into the rough']);   // missed green (weak ball-striking)
-      dist=Math.round(16+rng()*22); sh.push({d:`${dClub(fromYds)} from ${fromYds} yds — missed the green ${missLie}`}); played++; }
+      dist=Math.round(16+rng()*22); sh.push({d:`${dClub(fromYds)} from ${fromYds} yds, missed the green ${missLie}`}); played++; }
   }
   if(ftToHole==null)ftToHole=20+rng()*20;
   for(let pi=0;pi<P;pi++){ const lastPutt=(pi===P-1), putQ=dSkQ(dSk(sk,'put'));
@@ -4291,9 +4291,9 @@ function scrDailyIntro(){
   add($(`<h1 class="center" style="font-size:30px;margin:10px 0 2px">One round.<br>One famous course.</h1>`));
   add($(`<p class="lede center" style="margin:2px 0 14px">Today you're playing <b style="color:var(--gold)">${esc(dShort(c.v))}</b>. Post the lowest round and the course record is yours.</p>`));
   const steps=[
-    ['⛳','A real course, every day','18 holes at an iconic tour venue — real pars and yardages. A new course rotates in at midnight UTC.'],
+    ['⛳','A real course, every day','18 holes at an iconic tour venue, real pars and yardages. A new course rotates in at midnight UTC.'],
     ['🎯','Draft for the course','The preview shows what skills win here and today\'s conditions. Spin a golfer built to attack this course.'],
-    ['♟️','Play it your way','Pick a game plan, then choose Attack or Play Safe on the signature holes. Aggressive chases a low number — but it can blow up.'],
+    ['♟️','Play it your way','Pick a game plan, then choose Attack or Play Safe on the signature holes. Aggressive chases a low number, but it can blow up.'],
     ['🏆','Claim the course record','Your score is posted to the course. Beat the standing record and your name sits on it until someone takes it.'],
   ];
   const list=$(`<div class="perks" style="max-width:560px;margin:0 auto 16px"></div>`);
@@ -4301,7 +4301,7 @@ function scrDailyIntro(){
   add(list);
   const chk=$(`<label class="remember" style="display:flex;align-items:center;justify-content:center;gap:9px;max-width:520px;margin:0 auto 14px;cursor:pointer;color:var(--oncard);font-weight:600">
     <input type="checkbox" id="daily-gotit" ${LS.get('bag_daily_howto_seen',false)?'checked':''} style="width:17px;height:17px;accent-color:var(--gold);flex:0 0 auto">
-    <span>Got it — don't show this again</span></label>`);
+    <span>Got it, don't show this again</span></label>`);
   chk.querySelector('input').onchange=e=>{ LS.set('bag_daily_howto_seen',e.target.checked); };
   add(chk);
   const go=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">See today's course ▸<span class="sub">Then draft your golfer</span></button>`);
@@ -4330,7 +4330,7 @@ function scrDailyPreview(){
     <div class="small muted" style="text-transform:uppercase;letter-spacing:.12em;font-weight:800">Your target · beat the tour average</div>
     <div style="margin-top:4px"><span class="mono" style="font-weight:800;font-size:30px;color:var(--gold)">${dAvgTxt(av)}</span> <span class="small muted">(${(c.par+av).toFixed(1)} on a par ${c.par})</span></div>
     <div class="small muted" style="margin-top:3px">What real tour pros average here. Post a lower round to win the day.</div></div>`));
-  const recTxt=rec?`<b style="color:var(--gold)">${dtp(rec.toPar)} (${c.par+rec.toPar})</b> by ${esc(rec.name)}`:`<b style="color:var(--gold)">Unclaimed</b> — be the first to set it`;
+  const recTxt=rec?`<b style="color:var(--gold)">${dtp(rec.toPar)} (${c.par+rec.toPar})</b> by ${esc(rec.name)}`:`<b style="color:var(--gold)">Unclaimed</b>, be the first to set it`;
   add($(`<div class="scout" style="max-width:560px;margin:12px auto 0;text-align:center"><div class="small muted" style="text-transform:uppercase;letter-spacing:.12em;font-weight:800">Course record</div><div style="margin-top:4px">${recTxt}</div></div>`));
   add($(`<h2 class="center" style="margin:16px 0 8px;font-size:15px">Signature holes</h2>`));
   const sig=$(`<div class="board" style="max-width:560px;margin:0 auto"></div>`);
@@ -4462,11 +4462,11 @@ function finishSpotlightRound(){
   S.screen='dailyresult'; render();
 }
 function spotlightShareText(r,sp){ const c=DAILY_COURSES[r.course];
-  return `⭐ RunTheTour ${sp.month} Spotlight — ${dShort(c.v)}\n${dtp(r.total)} on par ${c.par}${r.won?' · beat the pro ✓':''}\nA special 1-day event. Can you beat it? https://runthe.gg/golf`; }
+  return `⭐ RunTheTour ${sp.month} Spotlight, ${dShort(c.v)}\n${dtp(r.total)} on par ${c.par}${r.won?' · beat the pro ✓':''}\nA special 1-day event. Can you beat it? https://runthe.gg/golf`; }
 function scrSpotlightResult(){
   const sp=S.spotCfg||monthlySpotlight(todayKey()), mk=sp.mk;
   const justPlayed=!!S.spotResult, rec=spotMonthRec(mk);
-  const r=S.spotResult||(rec&&rec.best!=null?{course:sp.key,total:rec.best,par:DAILY_COURSES[sp.key].par,ovr:'—',cond:sp.cond,holes:null,avg:dTourAvg(DAILY_COURSES[sp.key]),won:rec.won}:null);
+  const r=S.spotResult||(rec&&rec.best!=null?{course:sp.key,total:rec.best,par:DAILY_COURSES[sp.key].par,ovr:', ',cond:sp.cond,holes:null,avg:dTourAvg(DAILY_COURSES[sp.key]),won:rec.won}:null);
   if(!r){ S.special=false; S.screen='title'; return render(); }
   const c=DAILY_COURSES[r.course], total=r.total, left=spotAttemptsLeft(mk);
   const av=r.avg!=null?r.avg:dTourAvg(c); const bestT=(rec&&rec.best!=null)?rec.best:total; const wonEvent=bestT<av; const margin=Math.abs(av-total);
@@ -4478,7 +4478,7 @@ function scrSpotlightResult(){
     ${wonEvent?`<b style="color:#35d6a0;font-size:17px">🏁 You beat the pro!</b>`:`<b style="color:var(--oncard);font-size:16px">Short of the tour average</b>`}
     <div class="small muted" style="margin-top:3px">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here in these conditions${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}${(rec&&rec.best!=null&&rec.best!==total)?` · best ${dtp(rec.best)} ${wonEvent?'(winner)':''}`:''}</div></div>`));
   if(justPlayed&&S.spotResult&&S.spotResult.firstWin){
-    add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#16b5a6"><b style="color:#16b5a6">⭐ Spotlight win!</b> <span class="small muted">Unlocked the <b style="color:#16b5a6">Spotlight Teal</b> shirt — equip it in the customizer.</span></div>`));
+    add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#16b5a6"><b style="color:#16b5a6">⭐ Spotlight win!</b> <span class="small muted">Unlocked the <b style="color:#16b5a6">Spotlight Teal</b> shirt, equip it in the customizer.</span></div>`));
   }
   // lifetime Spotlight record
   { const wins=spotWins(), played=spotState().played||0;
@@ -4486,7 +4486,7 @@ function scrSpotlightResult(){
       <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;text-align:center">
         <div><div style="font-weight:800;font-size:20px;color:#35d6a0">${wins}</div><div class="small muted" style="font-size:10px">Events won</div></div>
         <div><div style="font-weight:800;font-size:20px;color:var(--oncard)">${played}</div><div class="small muted" style="font-size:10px">Events played</div></div>
-      </div>${(justPlayed&&!wonEvent&&left>0)?`<div class="small center" style="margin-top:6px;color:#e9a23b;font-weight:700">One attempt left — beat the pro to claim the win.</div>`:''}</div>`)); }
+      </div>${(justPlayed&&!wonEvent&&left>0)?`<div class="small center" style="margin-top:6px;color:#e9a23b;font-weight:700">One attempt left. Beat the pro to claim the win.</div>`:''}</div>`)); }
   const holes=(S.dailyHoles&&S.dailyHoles.length===18)?S.dailyHoles:(r.holes&&r.holes.length===18?r.holes:null);
   if(holes){
     const grid=$(`<div style="max-width:600px;margin:14px auto 0"></div>`);
@@ -4499,7 +4499,7 @@ function scrSpotlightResult(){
   shr.onclick=()=>{ track('spotlight_shared'); shareText(spotlightShareText(rec&&rec.best!=null?{course:r.course,total:rec.best,won:wonEvent}:r,sp)); }; add(shr);
   add($(`<div style="height:10px"></div>`));
   if(left>0){
-    const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">${wonEvent?'Go lower ▸':'Play again ▸'}<span class="sub">${wonEvent?`Pro beaten — chase a lower score (${left} left)`:`${left} of ${SPOT_MAX_ATTEMPTS} attempt${left>1?'s':''} left — beat the tour average`}</span></button>`);
+    const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">${wonEvent?'Go lower ▸':'Play again ▸'}<span class="sub">${wonEvent?`Pro beaten, chase a lower score (${left} left)`:`${left} of ${SPOT_MAX_ATTEMPTS} attempt${left>1?'s':''} left, beat the tour average`}</span></button>`);
     again.onclick=beginSpotlightAttempt; add(again);
   }
   const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Back to title</button>`); home.onclick=()=>{S.special=false;S.daily=false;S.screen='title';render();}; add(home);
@@ -4552,9 +4552,9 @@ const DSIG_HAZ={
 function dShotType(par,yards){ if(par===3)return 'tee3'; if(par===4)return yards<=325?'drive4':(yards<=378?'short4':'app4'); return yards<=575?'go5':'long5'; }
 function dSitLine(total,av,i){ const holesLeft=18-i; if(holesLeft>5||holesLeft<1)return '';
   const pace=av*(i/18), diff=Math.round(total-pace);
-  if(diff>=2) return `You're ${diff} off the tour-average pace with ${holesLeft} to play — you need to make something happen.`;
-  if(diff<=-2) return `You're ${-diff} clear of the tour average with ${holesLeft} to play — protect the lead, or press for more?`;
-  return `It's neck-and-neck with the tour average with ${holesLeft} to play — this shot could swing it.`; }
+  if(diff>=2) return `You're ${diff} off the tour-average pace with ${holesLeft} to play, you need to make something happen.`;
+  if(diff<=-2) return `You're ${-diff} clear of the tour average with ${holesLeft} to play, protect the lead, or press for more?`;
+  return `It's neck-and-neck with the tour average with ${holesLeft} to play, this shot could swing it.`; }
 function dScenario(courseKey,i,total,av){
   const c=DAILY_COURSES[courseKey], h=c.holes[i], par=h[0], yards=h[1];
   const haz=(DSIG_HAZ[courseKey]||{})[i+1]||(par===3?'long':'bunker'), type=dShotType(par,yards);
@@ -4570,84 +4570,84 @@ function dScenario(courseKey,i,total,av){
   if(type==='tee3'||type==='app4'){
     T.push(S2(`${yd} yds · pin ${side}`,
       `${yd} yards in, pin cut ${side}${wet?` behind ${hazWord}`:haz==='bunker'?' over a bunker':''}. Hunt the flag or play the percentages?`,
-      `Fire at the ${side} pin`, wet?'Birdie look — short-side it and you’re wet':'A close birdie look — but it’s short-sided',
+      `Fire at the ${side} pin`, wet?'Birdie look, short-side it and you’re wet':'A close birdie look, but it’s short-sided',
       'Aim for the fat of the green', 'Two-putt par, no chance of a big number'));
     T.push(S2(`${yd} yds · between clubs`,
       `${yd} yards and you’re right between clubs${windy?', the wind gusting':''}. Which one do you trust?`,
-      `Hard ${dClub(Math.max(60,yd-12))}`, 'Squeeze the shorter club for the number — easy to fly it long',
+      `Hard ${dClub(Math.max(60,yd-12))}`, 'Squeeze the shorter club for the number, easy to fly it long',
       `Smooth ${dClub(yd+12)}`, 'More club, easy swing, settle for the middle'));
   }
   if((type==='tee3') && wet)
     T.push(S2(`${yd} yds · ${hazWord} to carry`,
       `${yd} yards with ${hazWord} guarding the front. Carry it all the way, or land it safely on the green and take par?`,
-      'Carry it to the flag', 'Stiff it — but short finds the water',
+      'Carry it to the flag', 'Stiff it, but short finds the water',
       'Take the safe line on', 'Anywhere dry is a good miss'));
   if(type==='tee3' && (haz==='long'||yards>=215))
     T.push(S2(`${yd} yds · longest club in the bag`,
-      `${yd} yards — about as long as a par-3 gets. Try to hold the green, or play short and lean on the up-and-down?`,
-      'Go for the green', 'On in reg if you flush it — long is dead',
+      `${yd} yards, about as long as a par-3 gets. Try to hold the green, or play short and lean on the up-and-down?`,
+      'Go for the green', 'On in reg if you flush it, long is dead',
       'Lay it short, chip up', 'Trust the short game for par'));
   if(haz==='cliff')
     T.push(S2(`${yd} yds · cliff carry`,
       `${yd} yards across the cliff’s edge, wind swirling off the water. Take dead aim, or play to the safe side away from the drop?`,
-      'Take it on at the flag', 'A great look if it holds — gone if it leaks',
+      'Take it on at the flag', 'A great look if it holds, gone if it leaks',
       'Bail to the safe side', 'Keep it on dry land, settle for par'));
   if(type==='app4'||type==='short4')
     T.push(S2(`tee shot · ${yards} yds`,
       `Off the tee: the aggressive line flirts with ${hazWord} but opens up the green; the safe side leaves a longer, awkward approach. How do you play it?`,
-      `Driver down the ${side} edge`, `Best angle in — but ${hazWord} is right there`,
+      `Driver down the ${side} edge`, `Best angle in, but ${hazWord} is right there`,
       '3-wood to the fat of the fairway', 'Longer in, but safely in play'));
   if(type==='drive4')
     T.push(S2(`${yards} yds · drivable`,
       `${yards}-yard drivable par-4. Have a go at the green off the tee, or lay back to a full wedge?`,
-      'Driver at the green', 'Eagle/birdie if it finds the surface — trouble if it misses',
+      'Driver at the green', 'Eagle/birdie if it finds the surface, trouble if it misses',
       'Lay back to a wedge', 'A simple pitch in, birdie still on'));
   if(type==='short4')
     T.push(S2(`short par-4 · ${yards} yds`,
       `Short, strategic par-4. Take on the green-side trouble off the tee, or lay back to your favourite wedge number?`,
-      'Take it on off the tee', 'A close pitch if it works — short-side trouble if not',
+      'Take it on off the tee', 'A close pitch if it works, short-side trouble if not',
       'Lay back for a full wedge', 'Control your number from the fairway'));
   if(type==='go5'){
     T.push(S2(`${yd} out · go for it in two?`,
       `${yd} yards to get home in two${wet?`, ${hazWord} guarding the green`:''}. Send it, or lay up to a comfortable wedge?`,
-      'Go for the green', wet?'Eagle look — a blow-up if you find the water':'Eagle look — bogey in play on a miss',
-      'Lay up to your number', 'Wedge in — a stress-free birdie still on'));
+      'Go for the green', wet?'Eagle look, a blow-up if you find the water':'Eagle look, bogey in play on a miss',
+      'Lay up to your number', 'Wedge in, a stress-free birdie still on'));
     T.push(S2(`tee shot · reaching in two`,
-      `To get home in two you’ve got to rip driver and bring ${hazWord} into play off the tee — or position it and lay up. How aggressive off the tee?`,
-      'Rip driver to get home', 'Sets up the eagle — but the drive has to be perfect',
+      `To get home in two you’ve got to rip driver and bring ${hazWord} into play off the tee, or position it and lay up. How aggressive off the tee?`,
+      'Rip driver to get home', 'Sets up the eagle, but the drive has to be perfect',
       'Position it, then lay up', 'Takes the big number out of play'));
   }
   if(type==='long5')
     T.push(S2(`layup · ${yards} yds`,
-      `Too long to reach — it’s a layup. Chase it down near ${hazWord} for a short pitch, or lay back to a stock 100-yard wedge?`,
-      `Push the layup near ${hazWord}`, 'Shortest pitch in — but it flirts with the hazard',
+      `Too long to reach, it’s a layup. Chase it down near ${hazWord} for a short pitch, or lay back to a stock 100-yard wedge?`,
+      `Push the layup near ${hazWord}`, 'Shortest pitch in, but it flirts with the hazard',
       'Lay back to a full wedge', 'Stock number, trouble out of play'));
   if(haz==='elevated')
     T.push(S2(`${yd} yds · downhill`,
-      `A downhill shot of ${yd} yards — the slope releases anything near the flag. Chase one in, or land it below the hole?`,
-      'Chase it at the flag', 'A look at birdie — but the slope can run it long',
+      `A downhill shot of ${yd} yards, the slope releases anything near the flag. Chase one in, or land it below the hole?`,
+      'Chase it at the flag', 'A look at birdie, but the slope can run it long',
       'Land it below the hole', 'Uphill putt, the percentage play'));
   if(haz==='bunker')
     T.push(S2(`${yd} yds · deep bunkers`,
       `${yd} yards to a green ringed by deep bunkers, the surface running away. Thread it at the flag, or play to the open side?`,
-      'Thread it at the flag', 'Birdie if pured — a brutal sand save if not',
+      'Thread it at the flag', 'Birdie if pured, a brutal sand save if not',
       'Play to the open side', 'Two-putt from the safe area'));
   if(haz==='wind'||(windy&&(type==='tee3'||type==='app4')))
     T.push(S2(`${yd} yds · in a stiff wind`,
       `${yd} yards, fully exposed with the wind whipping. Flight a knockdown to take the wind out of it, or ride a stock shot at the flag?`,
-      'Ride a stock shot at it', 'A great look if the wind holds off — at its mercy if not',
+      'Ride a stock shot at it', 'A great look if the wind holds off, at its mercy if not',
       'Knockdown to the middle', 'Flight it low, take the gust out, two-putt par'));
   // ---------- situational decisions (late, behind/ahead of the tour average) ----------
   const holesLeft=18-i, pace=av*(i/18), diff=Math.round(total-pace);
   if(holesLeft<=5 && diff>=2)
     T.push(S2(`${diff} off the pace · ${holesLeft} to play`,
-      `You’re ${diff} off the tour-average pace with ${holesLeft} to play — you need a birdie. Force the issue now, or stay patient and let it come to you?`,
-      'Force it — go hunt the birdie', 'You need to make a move — but a miss could end it',
+      `You’re ${diff} off the tour-average pace with ${holesLeft} to play, you need a birdie. Force the issue now, or stay patient and let it come to you?`,
+      'Force it, go hunt the birdie', 'You need to make a move, but a miss could end it',
       'Stay patient, make your par', 'Keep the card clean and hope they come back', true));
   if(holesLeft<=5 && diff<=-2)
     T.push(S2(`${-diff} clear · ${holesLeft} to play`,
       `You’re ${-diff} clear of the tour average with ${holesLeft} left. Protect the lead, or keep the foot down?`,
-      'Keep pressing — extend it', 'Bury it now — but a loose one lets them back in',
+      'Keep pressing, extend it', 'Bury it now, but a loose one lets them back in',
       'Play the percentages', 'Two-putt pars close this out', true));
   if(!T.length)
     T.push(S2(`${yd} yds to the flag`, `${yd} yards in. Take dead aim for birdie, or play to the middle and take par?`,
@@ -4664,7 +4664,7 @@ function dLegend(){
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
       <b style="font-size:13px">New to golf?</b>
       <button class="legendx" aria-label="Dismiss this tip">Got it ✓</button></div>
-    <div class="small muted" style="margin-top:6px;line-height:1.5">Your score is shown <b>against par</b> — the number a pro is expected to take. <b style="color:#35d6a0">−2</b> means 2 under (great), <b>E</b> is even, <b style="color:#e9a23b">+3</b> is 3 over. <b>Lower wins.</b> On the card, holes under par are circled and over par are boxed.</div></div>`);
+    <div class="small muted" style="margin-top:6px;line-height:1.5">Your score is shown <b>against par</b>, the number a pro is expected to take. <b style="color:#35d6a0">−2</b> means 2 under (great), <b>E</b> is even, <b style="color:#e9a23b">+3</b> is 3 over. <b>Lower wins.</b> On the card, holes under par are circled and over par are boxed.</div></div>`);
   el.querySelector('.legendx').onclick=()=>{ LS.set('bag_daily_legend_seen',true); render(); };
   return el;
 }
@@ -4674,7 +4674,7 @@ function scrDailyRound(){
   add($(`<div class="center"><span class="tag">${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)} · ${S.dailyPlan}</span></div>`));
   add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${dtp(total)}</span> <span class="small muted">through ${i}</span></div>`));
   const av=dTourAvg(c); const beating=(i>0)&&(total < av*(i/18));
-  add($(`<div class="center small" style="margin:0 0 4px;color:${i===0?'var(--muted)':(beating?'#35d6a0':'#e9a23b')};font-weight:700">Tour average ${dAvgTxt(av)} — beat it to win${i>0?` · ${beating?'ahead of pace ✓':'behind pace'}`:''}</div>`));
+  add($(`<div class="center small" style="margin:0 0 4px;color:${i===0?'var(--muted)':(beating?'#35d6a0':'#e9a23b')};font-weight:700">Tour average ${dAvgTxt(av)}, beat it to win${i>0?` · ${beating?'ahead of pace ✓':'behind pace'}`:''}</div>`));
   const lg=dLegend(); if(lg) add(lg);
   const vh=(S.dailyViewHole!=null && S.dailyViewHole<played.length)?S.dailyViewHole:played.length-1;   // which hole's shot log is shown
   const strip=$(`<div class="dcard" style="max-width:600px;margin:6px auto 0"></div>`);
@@ -4690,7 +4690,7 @@ function scrDailyRound(){
   add($(`<div style="height:10px"></div>`));
   if(!done){
     const h=c.holes[i], sig=c.sig.find(s=>s[0]===i+1);
-    add($(`<div class="scout" style="max-width:560px;margin:0 auto;text-align:center"><div style="font-weight:800;font-size:16px">Hole ${i+1} · Par ${h[0]} · ${h[1]}y</div>${h[2]?`<div class="small muted">${esc(h[2])}</div>`:''}${sig?`<div class="small" style="color:var(--gold);margin-top:4px">⛳ Signature — ${esc(sig[1])}</div>`:''}</div>`));
+    add($(`<div class="scout" style="max-width:560px;margin:0 auto;text-align:center"><div style="font-weight:800;font-size:16px">Hole ${i+1} · Par ${h[0]} · ${h[1]}y</div>${h[2]?`<div class="small muted">${esc(h[2])}</div>`:''}${sig?`<div class="small" style="color:var(--gold);margin-top:4px">⛳ Signature: ${esc(sig[1])}</div>`:''}</div>`));
     add($(`<div style="height:10px"></div>`));
     if(sig){
       // signature hole — a course-aware risk/reward scenario; auto-play pauses for your call
@@ -4713,7 +4713,7 @@ function scrDailyRound(){
       const res=$(`<button class="btn blue" style="max-width:520px;margin:10px auto 0">▶ Resume auto-play</button>`); res.onclick=dailyResume; add(res);
     }
     // mulligan (streak reward) only when the round is paused / at a decision — never mid-flow
-    if(S.dailyMullAvail&&!S.dailyMullUsed&&played.length&&(!S.dailyAuto||sig)){ const m=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">↺ Mulligan hole ${played[played.length-1].n}<span class="sub">Re-roll your last hole — one per round (streak reward)</span></button>`); m.onclick=dailyMulligan; add(m); }
+    if(S.dailyMullAvail&&!S.dailyMullUsed&&played.length&&(!S.dailyAuto||sig)){ const m=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">↺ Mulligan hole ${played[played.length-1].n}<span class="sub">Re-roll your last hole, one per round (streak reward)</span></button>`); m.onclick=dailyMulligan; add(m); }
     const af=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Skip to result ⏭</button>`); af.onclick=autoFinishDaily; add(af);
   } else if(S.dailyAuto){ add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Heading to the clubhouse…</div>`));
   } else { const fin=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">See your round ▸</button>`); fin.onclick=finishDailyRound; add(fin); }
@@ -4736,7 +4736,7 @@ function scrDailyResult(){
   add($(`<div class="scout" style="max-width:520px;margin:0 auto 4px;text-align:center;border-color:${wonDay?'#35d6a0':'var(--gold)'}">
     ${wonDay?`<b style="color:#35d6a0;font-size:17px">🏁 You beat the pro!</b>`:`<b style="color:var(--oncard);font-size:16px">Short of the tour average</b>`}
     <div class="small muted" style="margin-top:3px">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}${(best&&best.total!==total)?` · best today ${dtp(best.total)} ${wonDay?'(winner)':''}`:''}</div>
-    ${(wonDay&&left>0)?`<div class="small" style="margin-top:5px;color:#35d6a0;font-weight:700">Challenge cleared — use your ${left} remaining attempt${left>1?'s':''} to go even lower and chase the course record.</div>`:''}</div>`));
+    ${(wonDay&&left>0)?`<div class="small" style="margin-top:5px;color:#35d6a0;font-weight:700">Challenge cleared. Use your ${left} remaining attempt${left>1?'s':''} to go even lower and chase the course record.</div>`:''}</div>`));
   // attempts + best-of-day (the best is what's logged to the leaderboard)
   const bestTxt = best?`Best today <b style="color:var(--gold)">${dtp(best.total)}</b> (${best.par+best.total})`:'';
   const newBest = justPlayed && S.dailyImproved && attempts>1;
@@ -4749,8 +4749,8 @@ function scrDailyResult(){
   // streak feedback — a "days played" streak (advances on completion, win or lose)
   const si=justPlayed?S.dailyStreakInfo:null;
   if(si&&si.mile) add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">🔥 ${si.mile}-day streak!</b>${si.gotFreeze?' <span class="small muted">earned a ❄️ streak freeze</span>':''}</div>`));
-  else if(si&&si.usedFreeze) add($(`<div class="scout small" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#7ec8ff"><b style="color:#7ec8ff">❄️ Streak freeze used</b> <span class="muted">— your ${si.current}-day streak survived a missed day.</span></div>`));
-  else if(si) add($(`<div class="small center" style="margin:0 0 8px;color:var(--gold);font-weight:700">🔥 ${streakDisplay()}-day streak — see you tomorrow to keep it going</div>`));
+  else if(si&&si.usedFreeze) add($(`<div class="scout small" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#7ec8ff"><b style="color:#7ec8ff">❄️ Streak freeze used</b> <span class="muted">, your ${si.current}-day streak survived a missed day.</span></div>`));
+  else if(si) add($(`<div class="small center" style="margin:0 0 8px;color:var(--gold);font-weight:700">🔥 ${streakDisplay()}-day streak, see you tomorrow to keep it going</div>`));
   // Wordle-style lifetime record: total days played + how often you beat the pro (a tie counts as a loss)
   { const st=dailyStats(); if(st.played>0){ const pct=dailyWinPct(); const ds=LS.get(acctKey('bag_streak'),{}); const best=ds.longest||streakDisplay();
     add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px"><div class="small muted center" style="letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Your daily record</div>
@@ -4775,11 +4775,11 @@ function scrDailyResult(){
   }
   // viral hook: Wordle-style emoji result, ready to paste anywhere
   const shareR=best||r;
-  const shr=$(`<button class="btn goldfill" style="max-width:520px;margin:14px auto 0">↗ Share your result<span class="sub">Emoji scorecard — challenge a friend</span></button>`);
+  const shr=$(`<button class="btn goldfill" style="max-width:520px;margin:14px auto 0">↗ Share your result<span class="sub">Emoji scorecard, challenge a friend</span></button>`);
   shr.onclick=()=>{ track('daily_result_shared'); shareText(dailyShareText(shareR)); }; add(shr);
   add($(`<div style="height:10px"></div>`));
   if(left>0){
-    const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">${wonDay?'Go lower ▸':'Play again ▸'}<span class="sub">${wonDay?`Pro beaten — chase a lower score (${left} left)`:`${left} of ${DAILY_MAX_ATTEMPTS} attempt${left>1?'s':''} left — beat the tour average`}</span></button>`);
+    const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">${wonDay?'Go lower ▸':'Play again ▸'}<span class="sub">${wonDay?`Pro beaten, chase a lower score (${left} left)`:`${left} of ${DAILY_MAX_ATTEMPTS} attempt${left>1?'s':''} left, beat the tour average`}</span></button>`);
     again.onclick=beginDailyAttempt; add(again);
     const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
   } else {
@@ -4803,7 +4803,7 @@ function overlayCourseRecords(screen){
         <span class="pos">${r.rank===1?'🏆':r.rank}</span>
         <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.display_name)}</div><div class="small muted" style="font-size:10px">OVR ${r.ovr}${r.won?' · <span style="color:#35d6a0">beat the pro</span>':''}</div></span>
         <span class="sc" style="color:var(--gold);font-weight:800;text-align:right">${dtp(r.to_par)}</span></div>`).join('')+`</div>`;
-    } else if(dbCache.ok){ boardHTML='<div class="small muted center" style="padding:14px 8px">No rounds posted yet today — be the first.</div>'; }
+    } else if(dbCache.ok){ boardHTML='<div class="small muted center" style="padding:14px 8px">No rounds posted yet today, be the first.</div>'; }
     else { boardHTML='<div class="small muted center" style="padding:10px 8px">Today’s online board is unavailable right now.</div>'; }
   } else { boardHTML='<div class="small muted center" style="padding:10px 8px">Sign in on RunThe.GG to see the global daily board.</div>'; }
   // all-time course records
@@ -4859,7 +4859,7 @@ function scrCareerEnd(){
   const e=S.careerEnd||{years:c.seasons.length,money:c.money,net:c.net,wins:c.wins,majors:c.majors,best:c.seasons.reduce((m,s)=>Math.max(m,s.money),0),bestFin:c.best};
   const ccol=c.net>=0?'#35d6a0':'#E14A33';
   const full=(e.years>=CAREER_MAX_YEARS);
-  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">${full?'🏁 A full career — hung up the clubs':'🏁 Career complete'}</span></div>`));
+  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">${full?'🏁 A full career, hung up the clubs':'🏁 Career complete'}</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${esc(S.name||'Your Golfer')}</h1>`));
   add($(`<p class="lede center" style="margin-bottom:10px">${e.years} season${e.years===1?'':'s'} on tour · ${c.wins} win${c.wins===1?'':'s'} · ${c.majors} major${c.majors===1?'':'s'}</p>`));
   add($(`<div class="center" style="margin-bottom:8px">
@@ -4883,7 +4883,7 @@ function scrCareerEnd(){
   MAJORS.forEach(nm=>{
     const m=mstats[nm];
     const wins=m?m.wins:(winsByName[nm]||0);
-    const sub=m?[m.played+' played',m.top10+' top-10',(m.best!=null&&m.best!==99?'best '+bestTxt(m.best):null)].filter(Boolean).join(' · '):'—';
+    const sub=m?[m.played+' played',m.top10+' top-10',(m.best!=null&&m.best!==99?'best '+bestTxt(m.best):null)].filter(Boolean).join(' · '):', ';
     mb.appendChild($(`<div class="lb" style="grid-template-columns:24px 1fr auto">
       <span class="pos" style="color:${wins>0?'var(--gold)':'var(--muted)'}">${wins>0?'★':'·'}</span>
       <span class="pl" style="min-width:0"><div style="font-weight:700">${nm}</div><div class="small muted" style="font-size:10.5px">${sub}</div></span>
@@ -4909,7 +4909,7 @@ function scrCareerEnd(){
     add(seasonRepNode(achPoints()-gained, S.careerFreshAch));
   }
   if(S.freshRep){ add($(repUpHTML(S.freshRep))); }
-  const share=`RUNTHETOUR CAREER — ${S.name||'Your Golfer'}\n${e.years} seasons on tour · net worth ${fmtSigned(c.net)}\n${c.wins}W · ${c.majors} majors · ${fmt(c.money)} earned\nhttps://runthe.gg/golf`;
+  const share=`RUNTHETOUR CAREER, ${S.name||'Your Golfer'}\n${e.years} seasons on tour · net worth ${fmtSigned(c.net)}\n${c.wins}W · ${c.majors} majors · ${fmt(c.money)} earned\nhttps://runthe.gg/golf`;
   const row=$(`<div class="mini" style="margin-top:10px;max-width:520px;margin-left:auto;margin-right:auto"></div>`);
   const sh=$(`<button class="btn gold">↗ Share Career</button>`);
   sh.onclick=()=>{track('career_end_shared',{years:e.years}); shareCard(cv,share,S.name,'career');};
@@ -4917,7 +4917,7 @@ function scrCareerEnd(){
   dl.onclick=()=>{cv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=((S.name||'golfer').replace(/\s+/g,'-'))+'-career.png';a.click();URL.revokeObjectURL(u);});};
   row.appendChild(dl); row.appendChild(sh); add(row);
   add($(`<div class="sep" style="margin:16px auto;max-width:520px"></div>`));
-  const nc=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Start a New Career ▸<span class="sub">A brand-new 2026 universe — fresh story</span></button>`);
+  const nc=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Start a New Career ▸<span class="sub">A brand-new 2026 universe, fresh story</span></button>`);
   nc.onclick=newCareer; add(nc);
 }
 function tile(k,v,gold){return $(`<div class="tile"><div class="k">${k}</div><div class="v ${gold?'':'cream'}">${v}</div></div>`);}
@@ -4944,7 +4944,7 @@ function sbEmail(){ return (sbUser&&sbUser.email)||''; }
 function sbInit(){
   try{
     if(!(window.supabase&&window.supabase.createClient)) return;
-    // Dedicated session store for RunTheTour — independent of RunThePitch's session so
+    // Dedicated session store for RunTheTour, independent of RunThePitch's session so
     // we never silently inherit whichever account is logged in over there. Same project /
     // accounts, so signing in here is the same RunThe.GG identity; only the saved-session
     // token is separate.
@@ -4958,7 +4958,7 @@ function sbInit(){
       || /[#&?](access_token|code|refresh_token)=/.test((location.hash||'')+(location.search||'')); }catch(e){}
     // show the "finishing sign-in" pill immediately on return; clears in sbApply (or times out)
     if(oauthReturn){ S.authPending=true;
-      setTimeout(()=>{ if(S.authPending){ S.authPending=false; if(!sbSignedIn()) toast('Google sign-in is taking a while — check your connection.'); render(); } }, 15000); }
+      setTimeout(()=>{ if(S.authPending){ S.authPending=false; if(!sbSignedIn()) toast('Google sign-in is taking a while, check your connection.'); render(); } }, 15000); }
     sb=window.supabase.createClient(SB_URL,SB_ANON,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,storageKey:RTT_AUTH_KEY}});
     // Fresh auth changes (sign-in / sign-out / token refresh) always apply; the INITIAL
     // restored session is handled by getSession() below so we can honor "remember me".
@@ -4992,7 +4992,7 @@ async function sbApply(session){
 }
 /* ---- in-game auth (shared RunThe.GG accounts) ---- */
 async function sbSignUp(email,password,username){
-  if(!sb) throw new Error('Accounts are offline right now — try again shortly.');
+  if(!sb) throw new Error('Accounts are offline right now, try again shortly.');
   const base=location.origin+location.pathname.replace(/[^/]*\.html?$/i,'');
   const options={emailRedirectTo:base}; if(username) options.data={username};   // trigger writes it to profiles at sign-up
   const {data,error}=await sb.auth.signUp({email:String(email).trim(),password,options});
@@ -5003,7 +5003,7 @@ async function sbSignUp(email,password,username){
   return !!(data&&data.session);      // false → email confirmation is required first
 }
 async function sbSignInPassword(idOrEmail,password){
-  if(!sb) throw new Error('Accounts are offline right now — try again shortly.');
+  if(!sb) throw new Error('Accounts are offline right now, try again shortly.');
   let email=String(idOrEmail).trim();
   if(email && email.indexOf('@')<0){                       // a username → resolve its email
     const {data,error}=await sb.rpc('email_for_username',{p_username:email});
@@ -5015,7 +5015,7 @@ async function sbSignInPassword(idOrEmail,password){
   await sbApply(data&&data.session);   // load username + refresh the header now (don't rely on the auth-change event)
 }
 async function sbSignInGoogle(){
-  if(!sb) throw new Error('Accounts are offline right now — try again shortly.');
+  if(!sb) throw new Error('Accounts are offline right now, try again shortly.');
   try{ localStorage.setItem('rtt_oauth_pending','1'); }catch(e){}
   const base=location.origin+location.pathname.replace(/[^/]*\.html?$/i,'');   // return to the /golf title page
   const {error}=await sb.auth.signInWithOAuth({provider:'google',options:{redirectTo:base}});
@@ -5036,7 +5036,7 @@ async function sbSetUsername(name){
   if(!sb||!sbUser) throw new Error('Sign in first.');
   name=String(name).trim();
   const {data:ok,error:e1}=await sb.rpc('username_available',{p_username:name});
-  if(e1) throw new Error('That username isn’t allowed — try 3–20 letters/numbers.');
+  if(e1) throw new Error('That username isn’t allowed, try 3–20 letters/numbers.');
   if(ok===false) throw new Error('That username is taken.');
   const {error}=await sb.rpc('set_username',{p_username:name});
   if(error) throw new Error(error.message||'Could not set that username.');
