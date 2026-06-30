@@ -1546,6 +1546,25 @@ allows Google Fonts, or self-host Anton.*
   achievements unlock, lt counters increment, Season Awards card renders, zero page errors). NEXT in roadmap:
   Olympics (stroke play + medals + country caps), then Ryder/Presidents Cup match-play.
 
+- PGA realism pt4 — Olympics — DONE. Player nationality: `COUNTRIES` list (19 golf nations incl. the home
+  countries + International), `S.look.country` (default United States, persisted with look), a country `<select>`
+  in scrSetup (`countryRow`), buildPlayer sets `p.country`/`p.nation` via `playerNation()`. The men's Olympic
+  golf tournament runs every 4 sim years (`isOlympicYear` = (2025+year)%4===0 -> 2028, 2032, ...), inserted at
+  wk 30 by seasonSchedule (`OLYMPICS_EVT`: 72 holes, no cut, $0 purse, big:true so it carries OWGR points but
+  no money). Field = `olympicField()`: top 60 by OWGR with a max of 4 per country (a thin-nation player can
+  qualify where a higher-ranked American is capped out - verified a World #71 JPN player makes it). beginEvent
+  Olympics branch: if you qualify you play the 60-man field; if not, `simOlympicsHeadless` runs the Games (still
+  crowning medalists) and you play a same-week tour stop (John Deere) vs the non-Olympians. finalizeEvent
+  assigns gold/silver/bronze from the top 3 of the order (a tie for gold is played off by the existing
+  sudden-death code); guarded the totals loop with `if(!t) return` since the OWGR-picked field can include
+  players outside the 120-man season totals. `S.season.olympicMedals`/`olympicMyMedal`; summary shows a gold/
+  silver/bronze medal banner (or "X took gold" if you didn't medal); live screen labels it "🏅 Olympic Games"
+  and the scorecard reads "🥇 Olympic GOLD!". Career `S.career.medals` + lt counters olyGold/Silver/Bronze +
+  new "Olympics" achievement category (gold, any-medal, 2x gold, full set). Verified via MC (field 60, caps
+  respected, country-cap lets thin nations in, medals assigned, non-olympic years skip) + UI e2e (setup
+  selector, live Olympic screen, gold medal -> summary banner + achievements + career medals, zero page
+  errors). NEXT in roadmap: Ryder/Presidents Cup match-play (foursomes/fourballs/singles + team selection).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

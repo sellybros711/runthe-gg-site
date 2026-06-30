@@ -567,6 +567,7 @@ function fmtMoneyShort(n){ n=Math.round(n);
 function ltDefault(){return {seasons:0,careers:0,wins:0,majors:0,top10:0,made:0,played:0,earnings:0,net:0,rivalWins:0,
   bestSeasonNet:0,profitSeasons:0,ironSeasons:0,moneyLeaderSeasons:0,slamSeasons:0,underdogSeasons:0,
   poySeasons:0,roySeasons:0,scoringSeasons:0,no1Seasons:0,weeksAtNo1:0,
+  olyGold:0,olySilver:0,olyBronze:0,
   maxOvr:0,distinctMajors:0,careerSlams:0,maj:{masters:0,champ:0,usopen:0,open:0}};}
 function badgeMetrics(c){ const lt=Object.assign(ltDefault(),(c||career()).lt||{});
   lt.maj=Object.assign({masters:0,champ:0,usopen:0,open:0},lt.maj||{}); return lt; }
@@ -701,7 +702,7 @@ function trophyCabinetHTML(m){
    bag (`achMetrics`): lifetime career stats (lt), daily stats, spotlight/rival wins, and SITUATIONAL flags
    captured at the moment they happen (playoff wins, wire-to-wire, comebacks, low rounds, etc., in bag_ach).
    Completing achievements awards POINTS → a named Tour Rep rank (the "keep playing" hook) and unlocks. */
-const ACH_CATS=['Getting Started','Winning','Season Awards','Majors','Clutch','Records & Streaks','Consistency','The Money','Career & Legacy','Daily Challenge','Daily Mastery','Rivalry & Spotlight','The Build','The Draft'];
+const ACH_CATS=['Getting Started','Winning','Season Awards','Olympics','Majors','Clutch','Records & Streaks','Consistency','The Money','Career & Legacy','Daily Challenge','Daily Mastery','Rivalry & Spotlight','The Build','The Draft'];
 // tiered-achievement helper: one metric, several thresholds
 function aT(idb,cat,key,defs){ return defs.map(([g,nm,d,p])=>({id:idb+'_'+g,cat,name:nm,desc:d,goal:g,pts:p,get:m=>m[key]||0})); }
 const ACH=[].concat(
@@ -730,6 +731,11 @@ const ACH=[].concat(
    {id:'aw_no1',  cat:'Season Awards',name:'World No. 1',         desc:'Finish a season ranked World No. 1.',      goal:1,pts:75, get:m=>m.no1Seasons},
    {id:'aw_no1_3',cat:'Season Awards',name:'Reign at the Top',    desc:'Finish 3 seasons ranked World No. 1.',     goal:3,pts:120,get:m=>m.no1Seasons},
    {id:'aw_wk52', cat:'Season Awards',name:'A Year at No. 1',     desc:'Spend 50+ weeks ranked World No. 1.',      goal:50,pts:100,get:m=>m.weeksAtNo1}],
+  // ---- Olympics ----
+  [{id:'oly_g',  cat:'Olympics',name:'Olympic Gold',     desc:'Win the Olympic gold medal.',               goal:1,pts:80, get:m=>m.olyGold},
+   {id:'oly_med',cat:'Olympics',name:'On the Podium',    desc:'Win any Olympic medal.',                    goal:1,pts:40, get:m=>m.olyMedals},
+   {id:'oly_g2', cat:'Olympics',name:'Back-to-Back Gold',desc:'Win 2 Olympic gold medals.',                goal:2,pts:120,get:m=>m.olyGold},
+   {id:'oly_set',cat:'Olympics',name:'Full Set',         desc:'Win gold, silver and bronze across your career.',goal:3,pts:100,get:m=>(m.olyGold>0?1:0)+(m.olySilver>0?1:0)+(m.olyBronze>0?1:0)}],
   // ---- Majors ----
   [{id:'maj_masters',cat:'Majors',name:'Green Jacket',    desc:'Win The Masters.',                             goal:1,pts:40, get:m=>m.mastersWins},
    {id:'maj_pga',    cat:'Majors',name:'Wanamaker',       desc:'Win The Championship.',                        goal:1,pts:40, get:m=>m.pgaWins},
@@ -872,6 +878,7 @@ function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const 
     profitSeasons:lt.profitSeasons, ironSeasons:lt.ironSeasons, moneyLeaderSeasons:lt.moneyLeaderSeasons,
     poySeasons:lt.poySeasons||0, roySeasons:lt.roySeasons||0, scoringSeasons:lt.scoringSeasons||0,
     no1Seasons:lt.no1Seasons||0, weeksAtNo1:lt.weeksAtNo1||0,
+    olyGold:lt.olyGold||0, olySilver:lt.olySilver||0, olyBronze:lt.olyBronze||0, olyMedals:(lt.olyGold||0)+(lt.olySilver||0)+(lt.olyBronze||0),
     slamSeasons:lt.slamSeasons, underdogSeasons:lt.underdogSeasons, careers:lt.careers, seasons:lt.seasons,
     maxOvr:lt.maxOvr, distinctMajors:lt.distinctMajors, careerSlams:lt.careerSlams, rivalWins:lt.rivalWins||0,
     mastersWins:lt.maj.masters, pgaWins:lt.maj.champ, usopenWins:lt.maj.usopen, openWins:lt.maj.open,
@@ -1499,12 +1506,18 @@ function majorsSchedule(){ return ANCHORS.filter(e=>e.major).map(e=>({...e})).so
 // the schedule for a given career-year: anchors + a rotating window of the regular pool. Seeded by
 // the career so it's stable within a save (resume-safe) but a different slate each year, and each
 // career gets its own ordering. Walks a fixed stride through a per-career shuffle of the pool.
+// the men's Olympic golf tournament runs every 4 years (2028, 2032, ...): 72 holes, no cut, ~60 players
+// with a max of 4 per country, and gold/silver/bronze medals instead of prize money.
+function isOlympicYear(year){ return (2025+(year||1))%4===0; }
+const OLYMPICS_EVT={name:'Olympic Games',type:'olympics',wk:30,olympics:true,noCut:true,major:false,big:true,purse:0};
 function seasonSchedule(year,seed){
   const shuffled=seededShuffle(REG_POOL,((seed!=null?seed:0)^0x5eed1e)>>>0);
   const N=shuffled.length, M=Math.min(REG_PER_SEASON,N);
   const off=((((year||1)-1)*REG_STRIDE)%N+N)%N;
   const picks=[]; for(let k=0;k<M;k++) picks.push(shuffled[(off+k)%N]);
-  return ANCHORS.concat(picks).map(e=>({...e})).sort((a,b)=>a.wk-b.wk);
+  let list=ANCHORS.concat(picks);
+  if(isOlympicYear(year)) list=list.concat([OLYMPICS_EVT]);
+  return list.map(e=>({...e})).sort((a,b)=>a.wk-b.wk);
 }
 
 const PAYOUT=[.18,.109,.069,.049,.041,.0363,.0338,.0313,.0293,.0273,.0253,.0233,.0215,.0201,.0189,
@@ -1709,6 +1722,13 @@ function pRetire(age,lo){let p; if(age<41)p=0; else if(age<=48)p=.008*(age-40)+(
 function cgauss(rng,m,s){let u=0,v=0;while(!u)u=rng();while(!v)v=rng();return m+s*Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
 const NAT_W=[['USA',.34],['England',.08],['Australia',.06],['South Korea',.06],['Japan',.05],['South Africa',.04],['Spain',.03],['Sweden',.03],['Canada',.03],['Ireland',.025],['Germany',.02],['Argentina',.02],['France',.02],['Italy',.015],['Denmark',.015],['Other',.14]];
 const NAT_CODE={USA:'USA',England:'ENG',Australia:'AUS','South Korea':'KOR',Japan:'JPN','South Africa':'RSA',Spain:'ESP',Sweden:'SWE',Canada:'CAN',Ireland:'IRL',Germany:'GER',Argentina:'ARG',France:'FRA',Italy:'ITA',Denmark:'DEN',Other:'INT'};
+// selectable nationalities for YOUR golfer (Olympic country, flag code). Real golf nations incl. the home countries.
+const COUNTRIES=[['United States','USA'],['England','ENG'],['Scotland','SCO'],['Northern Ireland','NIR'],['Ireland','IRL'],
+  ['Australia','AUS'],['South Korea','KOR'],['Japan','JPN'],['South Africa','RSA'],['Spain','ESP'],['Sweden','SWE'],['Norway','NOR'],
+  ['Canada','CAN'],['Germany','GER'],['France','FRA'],['Italy','ITA'],['Argentina','ARG'],['Denmark','DEN'],['International','INT']]
+  .map(([n,c])=>({n,c}));
+const COUNTRY_CODE=Object.fromEntries(COUNTRIES.map(x=>[x.n,x.c]));
+function playerNation(){ return COUNTRY_CODE[(S.look&&S.look.country)||'United States']||'USA'; }
 const FNAMES={USA:['Cole','Hayden','Brooks','Tanner','Carson','Bryce','Tripp','Mason','Reid','Cooper','Parker','Beau','Grant','Knox','Hudson','Cash','Brody','Jace','Wyatt','Colt','Easton','Brett','Chase','Drew','Brock','Hunter','Maddox','Gage','Tate','Ryder','Walker','Bo','Crew','Lane','Sawyer','Boone','Dawson','Camden','Bennett','Holden','Rhett','Jett','Pierce','Cade','Trent','Kade','Brooks','Spencer','Garrett','Weston'],England:['Ollie','Harry','Charlie','Reece','Freddie','Tom','Joe','Alfie','Archie','George','Jack','Louie','Henry','Sam','Will','Toby','Max','Ben','Leo','Jacob','Theo','Finlay','Rory','Callum'],Australia:['Kai','Lachlan','Beau','Jett','Cooper','Flynn','Hugo','Max','Oscar','Heath','Jasper','Ryder','Hudson','Lincoln','Cody','Blake','Mason','Riley'],'South Korea':['Minjae','Seungwoo','Jihun','Doyoon','Taeyang','Junseo','Hyunwoo','Sangwoo','Jiho','Woojin','Hajun','Eunwoo','Siwoo','Junho'],Japan:['Riku','Sota','Haruto','Yuki','Ren','Kaito','Yuto','Sora','Hiroto','Yuma','Asahi','Kenta','Daiki','Shota'],'South Africa':['Dewald','Ruan','Jaco','Stefan','Pieter','Wian','Armand','Hendrik','Cobus','Dawid','Tiaan','Morne'],Spain:['Pablo','Álvaro','Mateo','Hugo','Marcos','Diego','Nico','Sergio','Adrián','Iker','Gonzalo','Martín'],Sweden:['Filip','Albin','Hugo','Melvin','Viktor','Elias','Axel','Oskar','Gustav','William','Liam','Noah'],Canada:['Liam','Owen','Noah','Ethan','Nolan','Mathis','Tyler','Brayden','Carter','Logan','Hayden','Cole'],Ireland:['Cian','Conor','Sean','Eoin','Darragh','Oisin','Liam','Fionn','Cormac','Niall','Padraig','Ronan'],Germany:['Jonas','Luca','Finn','Leon','Maxi','Tim','Lukas','Niklas','Felix','Paul','Jan','Moritz'],Argentina:['Tomás','Mateo','Benjamín','Lautaro','Felipe','Santiago','Joaquín','Bruno','Ignacio'],France:['Hugo','Louis','Jules','Nathan','Théo','Lucas','Adrien','Romain','Clément','Antoine'],Italy:['Lorenzo','Matteo','Marco','Davide','Andrea','Francesco','Riccardo','Tommaso','Edoardo'],Denmark:['Oliver','Magnus','Frederik','Emil','Victor','Noah','William','Lucas','Oscar'],Other:['Alex','Daniel','Marco','Adam','Leo','Max','Sam','Niko','Tomas','David','Lucas','Mikkel','Andre','Stefan','Karel','Janne']};
 const SNAMES={USA:['Whitaker','Sutter','Calloway','Hargrove','Lindquist','Boone','Marsh','Pruitt','Vance','Ellison','Stamper','Roark','Brennan','Kessler','Holt','Mercer','Dalton','Rhodes','Fenwick','Cobb','Hollis','Ashby','Crane','Tucker','Brock','Lawson','Driscoll','Maddox','Whitfield','Sealy','Granger','Holloway','Bridges','Pruett','Vaughn','Carver','Steele','Hatcher','Conway','Beckett'],England:['Ashworth','Pemberton','Whitlock','Hartley','Bardsley','Cresswell','Fairbanks','Holloway','Radcliffe','Stanton','Marsden','Ellery','Hawthorne','Pickering','Sutcliffe','Thornbury','Whitmore','Ackroyd'],Australia:['Calvert','Hueston','Bracken','Donato','Mayberry','Sorrell','Hewson','Carrick','Maddern','Sheldon','Blakely','Trembath','Hollis','Forsythe'],'South Korea':['Kang','Seo','Yoon','Jung','Hwang','Lim','Noh','Bae','Shin','Moon','Yang','Oh','Cho','Han'],Japan:['Takeda','Morita','Fujikawa','Nishida','Okamoto','Sakai','Hayashi','Ono','Maeda','Kobayashi','Tanaka','Ishii','Matsuda','Hara'],'South Africa':['Pretorius','Coetzee','Van Wyk','Bekker','Lategan','Nel','Botha','Roux','Venter','Du Toit','Steyn','Kruger'],Spain:['Cabrera','Otero','Reyes','Castaño','Bermúdez','Gallego','Moya','Vidal','Serrano','Ortega','Lozano','Marín'],Sweden:['Ahlberg','Sjöberg','Lindkvist','Norén','Hammar','Forsberg','Ek','Dahl','Bergström','Lund','Holmberg','Sandberg'],Canada:['Tremblay','Gagnon','Beaulieu','Fortin','Leclerc','Caron','Pelletier','Bergeron','Cormier','Lavoie'],Ireland:['Doyle','Gallagher','Brennan','Kavanagh','Molloy','Hegarty','Fitzgerald','Donnelly','Mulligan','Cassidy'],Germany:['Brandt','Keller','Vogel','Schreiber','Wagner','Busch','Hofmann','Albrecht','Krause','Stein'],Argentina:['Romero','Sosa','Ibarra','Acosta','Vega','Molina','Quiroga','Paredes','Herrera'],France:['Moreau','Lefevre','Girard','Rousseau','Faure','Mercier','Blanc','Garnier','Brunet'],Italy:['Conti','Ferrari','Greco','Bianchi','Rizzo','Marino','Costa','Gallo','Ferrara'],Denmark:['Sørensen','Kjær','Mortensen','Holm','Dahl','Nygaard','Lassen','Krogh','Vinther'],Other:['Novak','Kovač','Silva','Costa','Meyer','Halonen','Brandt','Virtanen','Nowak','Horak','Bauer','Vos']};
 const ARCH_W=[['allround',.30],['bomber',.18],['ballstriker',.18],['putter',.12],['shortgame',.12],['scrambler',.10]];
@@ -1875,6 +1895,34 @@ function simHeadlessEvent(evt, players){
     const rr=o.rounds.filter(r=>r!=null); t.toPar=(t.toPar||0)+rr.reduce((a,b)=>a+b,0); t.rounds=(t.rounds||0)+rr.length;
     if(o.pos===1){t.wins++; if(evt.major)t.majors++;}
     if(typeof o.pos==='number'){t.made++; if(o.pos<=10)t.top10++; if(o.pos<t.best)t.best=o.pos;} });
+  return order;
+}
+/* ---- Olympic Games: every 4 years, a 60-player no-cut field chosen by OWGR with a max of 4 per country,
+   gold/silver/bronze instead of prize money. olympicField() picks the capped field; olympicPlayers() maps
+   them to playable golfers; simOlympicsHeadless() runs it for the world when you don't qualify. ---- */
+const OLY_FIELD=60, OLY_CAP=4;
+function olympicField(){
+  const w=ensureWorld(); if(!w) return [];
+  const L=worldRanking(), natByName={};
+  w.active.forEach(g=>natByName[g.name]=g.nation||'INT');
+  const cnt={}, sel=[];
+  for(const x of L){ if(sel.length>=OLY_FIELD) break;
+    const nat=x.you?playerNation():(natByName[x.name]||'INT');
+    if((cnt[nat]||0)>=OLY_CAP) continue;
+    cnt[nat]=(cnt[nat]||0)+1; sel.push({name:x.name, nat, you:!!x.you}); }
+  return sel;
+}
+function olympicPlayers(me){
+  const w=ensureWorld();
+  return olympicField().map(s=>{
+    if(s.you) return me;
+    const g=w&&w.active.find(x=>x.name===s.name); if(!g) return null;
+    const o={name:g.name, skill:g.lov, nation:g.nation||'INT', country:g.country||'', you:false};
+    SKK.forEach(k=>o[k]=g['l_'+k]); return o; }).filter(Boolean);
+}
+function simOlympicsHeadless(players){
+  const order=simHeadlessEvent(OLYMPICS_EVT, players);
+  if(order && order.length>=3) S.season.olympicMedals=order.slice(0,3).map(o=>({name:o.p.name, nat:o.p.nation||'INT', you:!!o.p.you}));
 }
 /* ---- Season awards: Player of the Year, Rookie of the Year, money title, scoring title, year-end World #1.
    Computed at season end AFTER the OWGR update. Returns {poy,roy,money,scoring,no1}, each {name,you,...}. */
@@ -2111,7 +2159,7 @@ const HAIRS=[
   {id:'auburn',    m:'#7e3b22', s:'#5e2c18', file:'hair-05-auburn'},
   {id:'grey',      m:'#9a958f', s:'#7b766f', file:'hair-06-gray'},
 ];
-const DEFLOOK={skin:'tan',polo:'teal',pants:'stone',hair:'brown',cap:true,lefty:false,gender:'male'};
+const DEFLOOK={skin:'tan',polo:'teal',pants:'stone',hair:'brown',cap:true,lefty:false,gender:'male',country:'United States'};
 let S={};
 function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);S={screen:'title',mode:'easy',revealed:new Set(),drawRng:Math.random,reSpins:2,
   slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get('bag_name',''),
@@ -2139,6 +2187,7 @@ function ovrFromSkills(sk){
   return Math.max(40, Math.min(99, o)); }
 function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
   CATS.forEach(c=>p[c.k]=S.slots[c.k]?S.slots[c.k].value:REPLACEMENT);
+  p.country=(S.look&&S.look.country)||'United States'; p.nation=playerNation();
   p.skill=ovrFromSkills(p); return p;}
 
 /* ---------- build identity ---------- */
@@ -2773,6 +2822,7 @@ function scrSetup(){
   const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${S.name}">`);
   inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name);}; right.appendChild(inp);
   right.appendChild($(`<div style="height:6px"></div>`));
+  right.appendChild(countryRow());
   right.appendChild(genderRow());
   right.appendChild(handRow());
   right.appendChild(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
@@ -3045,6 +3095,14 @@ function handRow(){
   l.onclick=()=>{S.look.lefty=true;LS.set('bag_look',S.look);render();};
   wrap.appendChild(r);wrap.appendChild(l);row.appendChild(wrap);return row;
 }
+function countryRow(){
+  const cur=(S.look&&S.look.country)||'United States';
+  const row=$(`<div style="margin:9px 0"></div>`);
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Country · for the Olympics</div>`));
+  const sel=$(`<select class="name" style="width:100%;cursor:pointer">${COUNTRIES.map(c=>`<option value="${esc(c.n)}"${c.n===cur?' selected':''}>${esc(c.n)} (${c.c})</option>`).join('')}</select>`);
+  sel.onchange=e=>{ S.look.country=e.target.value; LS.set('bag_look',S.look); render(); };
+  row.appendChild(sel); return row;
+}
 function genderRow(){
   const g=S.look.gender||'male';
   const row=$(`<div style="margin:9px 0"></div>`);
@@ -3291,7 +3349,7 @@ function startSeason(majorsOnly){
   const field=roster.map(g=>Object.assign({you:false},g));
   field.push(me);
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0,toPar:0,rounds:0}]))};
-  S.seasonAwards=null;
+  S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null;
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false;   // unlocked during THIS season (shown on the summary)
   S.curEvt=null;
   track('season_started',{mode:S.daily?'daily':(majorsOnly?'majors':'full'),ovr:Math.round(me.skill),year:S.year||1});
@@ -3306,6 +3364,13 @@ function beginEvent(){
     // FedEx playoffs: only the top-`cap` players by season points tee it up; the finale staggers starting strokes.
     field=[...S.season.field].sort((a,b)=>(S.season.totals[b.name].points||0)-(S.season.totals[a.name].points||0)).slice(0,evt.cap);
     if(evt.stagger){ stagger={}; field.forEach((p,i)=>{ stagger[p.name]=STAGGER[Math.min(i,STAGGER.length-1)]; }); }
+  } else if(evt.olympics && !S.daily){
+    // Olympics: country-capped 60-player field by OWGR. If you don't qualify you play a same-week tour stop
+    // while the Olympics runs headlessly (still crowning medalists).
+    const meP=S.season.field.find(p=>p.you), oly=olympicPlayers(meP);
+    if(oly.some(p=>p.you)){ field=oly; }
+    else { simOlympicsHeadless(oly); evt={name:'John Deere Classic',type:'reg',wk:evt.wk,purse:8*1e6,regfill:true,major:false,big:false};
+      field=S.season.field.filter(p=>!oly.some(o=>o.name===p.name)); }
   } else if(evt.limited && !S.daily){
     // OWGR-gated signature/major: split into marquee + opposite-field, sim the tier you DON'T play headlessly.
     const sp=splitField(S.season.field, evt), oppoEvt=makeOppoEvt(evt);
@@ -3390,11 +3455,17 @@ function finalizeEvent(){
   const basePts=evt.major?750:evt.big?600:(evt.oppo?360:500);
   order.forEach(o=>{o.money=evt.purse*o.pct; o.points=typeof o.pos==='number'?Math.round(basePts*(o.pct/0.18)):0;
     o.score=Math.round(o.total); o.r1=o.rounds[0];o.r2=o.rounds[1];o.r3=o.rounds[2];o.r4=o.rounds[3];});
-  order.forEach(o=>{const t=S.season.totals[o.p.name];
+  order.forEach(o=>{const t=S.season.totals[o.p.name]; if(!t) return;   // Olympic field can include players outside the 120-man season totals
     t.money+=o.money; t.points+=o.points; t.played++; t.finishSum+=(typeof o.pos==='number'?o.pos:order.length);
     const rr=o.rounds.filter(r=>r!=null); t.toPar=(t.toPar||0)+rr.reduce((a,b)=>a+b,0); t.rounds=(t.rounds||0)+rr.length;
     if(o.pos===1){t.wins++; if(evt.major)t.majors++;}
     if(typeof o.pos==='number'){t.made++; if(o.pos<=10)t.top10++; if(o.pos<t.best)t.best=o.pos;}});
+  // ---- Olympic medals: top 3 of the order take gold / silver / bronze (a tie for gold was already played off) ----
+  if(evt.olympics){
+    S.season.olympicMedals=order.slice(0,3).map(o=>({name:o.p.name, nat:o.p.nation||'INT', you:!!o.p.you}));
+    const you=order.find(o=>o.p.you), place=you?order.indexOf(you):-1;
+    S.season.olympicMyMedal=(place>=0&&place<3)?['gold','silver','bronze'][place]:null;
+  }
   // ---- situational achievement flags from this event ----
   if(!S.daily){ const you=order.find(o=>o.p.you);
     if(you){ const ev={inc:{},max:{},set:{}};
@@ -3737,7 +3808,7 @@ function scrSeason(){
     <div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#E14A33">Opposite-field event</div>
     <div class="small" style="margin-top:4px;color:var(--oncard)">Outside the OWGR cut for the ${esc(evt.against)} this week. Win here to bank points and climb toward the elite fields.</div></div>`));
 
-  const typeLbl=evt.major?'<span class="major">Major</span>':evt.stagger?'<span class="sig">🏆 Cup Finale · top 30</span>':evt.playoff?`<span class="sig">Playoff · top ${evt.cap}</span>`:evt.oppo?'<span class="reg">Opposite-field</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?`<span class="sig">Signature · top ${evt.entryCap||50}</span>`:'<span class="reg">Tour event</span>';
+  const typeLbl=evt.olympics?'<span class="major">🏅 Olympic Games</span>':evt.major?'<span class="major">Major</span>':evt.stagger?'<span class="sig">🏆 Cup Finale · top 30</span>':evt.playoff?`<span class="sig">Playoff · top ${evt.cap}</span>`:evt.oppo?'<span class="reg">Opposite-field</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?`<span class="sig">Signature · top ${evt.entryCap||50}</span>`:'<span class="reg">Tour event</span>';
   const dayLbl=ce.done?'Final':(ce.roundsDone>=2&&!ce.players.find(o=>o.p.you).made?`After ${DAYS[1]}`:`${DAYS[Math.max(0,ce.roundsDone-1)]} · Round ${Math.min(ce.roundsDone,4)}/4`);
   const cols=$(`<div class="cols seasoncols"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col scorecol"></div>`);
@@ -3766,10 +3837,12 @@ function scrSeason(){
   }).join('');
   let status, money='';
   if(ce.done){ const o=ce.order.find(x=>x.p.you); const po=ce.playoff; const posTxt=o.tied?('T'+o.pos):ord(o.pos);
+    const medal=evt.olympics?({1:'🥇 Olympic GOLD!',2:'🥈 Olympic Silver',3:'🥉 Olympic Bronze'})[o.pos]:null;
     if(o.pos==='CUT') status='Missed the cut';
+    else if(medal) status=medal;
     else if(o.pos===1) status=(po&&po.you)?`🏆 Won a ${po.holes}-hole playoff!`:'🏆 Tournament won!';
     else if(po&&po.you) status=`Lost in a playoff · ${posTxt}`;
-    else status='Finished '+posTxt+(o.pos<=10?' · top 10':'');
+    else status=(evt.olympics?'Finished '+posTxt:'Finished '+posTxt+(o.pos<=10?' · top 10':''));
     if(o.money>0) money=`<span style="color:var(--gold)"> · +${fmt(o.money)}</span>`; }
   else if(myCut){ status='Missed the cut, weekend off'; }
   else { status=(ce.roundsDone>=4?'Final round':'Round '+ce.roundsDone+' of 4')+' · '+(myPos===1?(meLive._tied?'Tied for the lead':'Leading'):'currently '+(meLive._tied?'T'+myPos:ord(myPos))); }
@@ -4080,12 +4153,17 @@ function scrSummary(){
         if(aw.roy&&aw.roy.you) lt.roySeasons=(lt.roySeasons||0)+1;
         if(aw.scoring&&aw.scoring.you) lt.scoringSeasons=(lt.scoringSeasons||0)+1;
         if(aw.no1.you){ lt.no1Seasons=(lt.no1Seasons||0)+1; lt.weeksAtNo1=(lt.weeksAtNo1||0)+(S.schedule?S.schedule.length:20); }
+        // Olympic medal (won during this season's Games)
+        const med=S.season.olympicMyMedal;
+        if(med){ lt['oly'+med.charAt(0).toUpperCase()+med.slice(1)]=(lt['oly'+med.charAt(0).toUpperCase()+med.slice(1)]||0)+1; }
         LS.set('bag_career',c);
         // career tallies (for the recap)
         S.career.awards=S.career.awards||{poy:0,roy:0,money:0,scoring:0,no1:0};
         if(aw.poy.you)S.career.awards.poy++; if(aw.roy&&aw.roy.you)S.career.awards.roy++;
         if(aw.money.you)S.career.awards.money++; if(aw.scoring&&aw.scoring.you)S.career.awards.scoring++;
-        if(aw.no1.you)S.career.awards.no1++; } }
+        if(aw.no1.you)S.career.awards.no1++;
+        S.career.medals=S.career.medals||{gold:0,silver:0,bronze:0};
+        if(med)S.career.medals[med]++; } }
     // emergent rivalry: tally head-to-head, graduate a rivalry you've outgrown, then crown a fresh nemesis
     if(!S.daily){ accrueH2H(); maybeOutgrowRival(); maybeFormRival(); }   // sets S.career.rival + S.freshRival/freshRivalOutgrown
     // ---- season-level achievement flags + evaluation (lt is now updated by recordSeason) ----
@@ -4220,6 +4298,21 @@ function scrSummary(){
       </div>`));
     });
     add(wrap);
+  }
+  // ---- Olympic medal callout (Olympic years only) ----
+  if(!S.daily && S.season.olympicMedals){
+    const med=S.season.olympicMyMedal, M={gold:['🥇','Olympic GOLD Medal','var(--gold)'],silver:['🥈','Olympic Silver Medal','#c7ced8'],bronze:['🥉','Olympic Bronze Medal','#cd8e5a']};
+    const gold=S.season.olympicMedals[0];
+    if(med){ const m=M[med];
+      add($(`<div class="center" style="margin:8px 0 12px"><div style="display:inline-block;background:linear-gradient(180deg,#1c3a56,#0a2740);border:1px solid ${m[2]};border-radius:14px;padding:13px 22px">
+        <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${m[2]}">Olympic Games</div>
+        <div style="font:800 22px/1.1 var(--body);color:${m[2]};margin-top:6px">${m[0]} ${m[1]}</div>
+        <div class="small muted" style="margin-top:4px">You medalled for ${esc((S.look&&S.look.country)||'your country')}</div></div></div>`));
+    } else {
+      add($(`<div class="center" style="margin:6px 0 12px"><div class="scout" style="display:inline-block;padding:10px 16px">
+        <span style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">Olympic Games</span>
+        <span class="small" style="margin-left:8px;color:var(--oncard)">🥇 ${esc(gold.name)} (${esc(gold.nat)}) took gold</span></div></div>`));
+    }
   }
   if(HL) add($(headlinesHTML(HL)));
   if(S.freshRivalOutgrown) add($(rivalOutgrownHTML(S.freshRivalOutgrown)));
