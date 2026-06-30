@@ -5926,7 +5926,7 @@ async function sbApply(session){
     try{ const {data}=await sb.from('profiles').select('username').eq('id',sbUser.id).maybeSingle(); sbUsername=(data&&data.username)||null; }catch(e){}
     await sbLoadProfile();
     S.acctMode=sbUsername?'profile':'username';   // drop to username picker if none yet
-    if(_pendingSeason){ const s=_pendingSeason; _pendingSeason=null; sbSubmitSeason(s); }
+    flushPendingSeasons();   // post every season queued while signed out / offline
     if(_pendingDaily){ const d=_pendingDaily; _pendingDaily=null; sbSubmitDaily(d); }
     if(oauth){                                    // just came back from Google → confirm on the title screen
       if(sbUsername) toast('Signed in as '+esc(sbUsername));
@@ -6021,14 +6021,32 @@ async function sbPullStats(){ if(!sb||!sbUser) return;
     if(srvN>localN){ c.lt=srv.lt; c.btier=srv.btier||{}; LS.set('bag_career',c); }
     else if(localN>srvN){ sbSyncStats(); }   // this device is ahead → push it up
   }catch(e){} }
+// Durable submission queue so EVERY completed season reaches the leaderboard — it survives being
+// signed out, offline, RPC failures and app restarts (stored in localStorage, flushed whenever
+// signed in + online). Replaces the old single-slot _pendingSeason (which lost all but the last).
+const PENDING_SEASONS_KEY='bag_pending_seasons';
+function loadPendingSeasons(){ const a=LS.get(PENDING_SEASONS_KEY,[]); return Array.isArray(a)?a:[]; }
+function savePendingSeasons(a){ LS.set(PENDING_SEASONS_KEY, a.slice(-200)); }   // cap keeps storage bounded
+async function flushPendingSeasons(){
+  if(!sb || !sbUser) return;                 // can only post signed in; retried on the next trigger
+  const q=loadPendingSeasons(); if(!q.length) return;
+  const keep=[]; let posted=0;
+  for(const s of q){
+    try{
+      await sb.rpc('runtour_submit_season',{p_golfer:s.golfer,p_ovr:s.ovr,p_year:s.year,
+        p_earnings:Math.round(s.earnings||0),p_net:Math.round(s.net||0),p_wins:s.wins,p_majors:s.majors,
+        p_skills:s.skills,p_career_id:s.careerId||null,p_rep_pts:(s.repPts!=null?s.repPts:achPoints())});
+      posted++;
+    }catch(e){ keep.push(s); }                // failed (offline/error) → keep to retry later
+  }
+  savePendingSeasons(keep);
+  if(posted){ lbCache=null; }                 // something posted → refresh the board next open
+}
 async function sbSubmitSeason(s){
-  if(!sb) return;
-  if(!sbUser){ _pendingSeason=s; return; }   // post as soon as they sign in
-  try{
-    await sb.rpc('runtour_submit_season',{p_golfer:s.golfer,p_ovr:s.ovr,p_year:s.year,
-      p_earnings:Math.round(s.earnings),p_net:Math.round(s.net),p_wins:s.wins,p_majors:s.majors,p_skills:s.skills,p_career_id:s.careerId||null,p_rep_pts:achPoints()});
-    lbCache=null;   // force a refresh next time the board opens
-  }catch(e){}
+  // ALWAYS durably enqueue the finished season (so it is never lost), then try to flush the queue
+  if(s.repPts==null) s.repPts=achPoints();    // capture rep at completion time, not at flush time
+  const q=loadPendingSeasons(); q.push(s); savePendingSeasons(q);
+  await flushPendingSeasons();
 }
 async function lbLoad(){
   if(!sb){ lbCache={season:[],career:[],ok:false}; render(); return; }
@@ -6068,6 +6086,7 @@ async function dbLoad(day){
   render();
 }
 sbInit();
+try{ window.addEventListener('online', ()=>flushPendingSeasons()); }catch(e){}   // retry any unsubmitted seasons when back online
 
 track('game_start');
 if(LS.get('bag_seen',false)) track('return_visit'); else LS.set('bag_seen',true);
