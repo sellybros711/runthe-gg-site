@@ -2652,16 +2652,31 @@ function avLook(L){L=L||DEFLOOK;
 }
 function avBlit(canvas,off){const cx=canvas.getContext('2d');cx.clearRect(0,0,canvas.width,canvas.height);cx.drawImage(off,0,0,canvas.width,canvas.height);}
 function avVectorFallback(canvas){const w=canvas.closest('.avatarfig');if(w)w.innerHTML=golferSVG();}
+// authored region masks (flat-colour stencils baked from the base art) → pixel-perfect recolour, no guessing.
+const AV_MASK={ male:'public/avatars/golfers/base/male-base-mask.png', female:'public/avatars/golfers/base/female-base-mask.png' };
+// map a mask pixel to its region by dominant channel: skin=red, hair=green, shirt=blue, cap=yellow, else none.
+function avMaskRegion(r,g,b){ if(r<45&&g<45&&b<45) return null;
+  if(r>175&&g>160&&b<135) return 'cap';
+  if(b>=r&&b>=g&&b>110) return 'shirt';
+  if(g>=r&&g>=b&&g>110) return 'hair';
+  if(r>=g&&r>=b&&r>110) return 'skin';
+  return null; }
 function avCompute(canvas,key,o){
-  const e=avLoad(AV_BASE[o.gender]);
+  const e=avLoad(AV_BASE[o.gender]), mk=avLoad(AV_MASK[o.gender]);
   const go=()=>{ if(e.failed){avVectorFallback(canvas);return;}
+    if(!mk.ready && !mk.failed){ mk.img.addEventListener('load',go,{once:true}); mk.img.addEventListener('error',go,{once:true}); return; }   // wait for the stencil
     try{
       const off=document.createElement('canvas');off.width=512;off.height=512;
       const octx=off.getContext('2d',{willReadFrequently:true});
       octx.drawImage(e.img,0,0,512,512);
       const id=octx.getImageData(0,0,512,512),d=id.data;
-      for(let i=0;i<d.length;i+=4){const px=i/4,x=px%512,y=(px/512)|0;
-        const reg=avClassify(d[i],d[i+1],d[i+2],d[i+3],x/512,y/512); if(!reg)continue;
+      let m=null;
+      if(mk.ready){ const mc=document.createElement('canvas');mc.width=512;mc.height=512;
+        const mx=mc.getContext('2d',{willReadFrequently:true}); mx.drawImage(mk.img,0,0,512,512); m=mx.getImageData(0,0,512,512).data; }
+      for(let i=0;i<d.length;i+=4){ let reg;
+        if(m){ reg=avMaskRegion(m[i],m[i+1],m[i+2]); }                                  // authored stencil (preferred)
+        else { const px=i/4; reg=avClassify(d[i],d[i+1],d[i+2],d[i+3],(px%512)/512,((px/512)|0)/512); }   // heuristic fallback
+        if(!reg)continue;
         const tg=reg==='skin'?o.skinHex:reg==='hair'?o.hairHex:o.shirtHex;   // shirt + cap → shirt colour
         const st=reg==='skin'?0.95:reg==='hair'?1.0:reg==='shirt'?0.96:0.92;
         const sb=reg==='skin'?0.92:reg==='hair'?1.05:1.05;
