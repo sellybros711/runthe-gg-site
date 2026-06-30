@@ -1641,6 +1641,17 @@ allows Google Fonts, or self-host Anton.*
   online; zero page errors. (At-least-once delivery; a duplicate row is only possible on a rare
   response-lost-after-server-commit timeout.)
 
+- Leaderboard — sort by any stat category — DONE (needs SQL `28_runtour_sort.sql`). Both boards can now be
+  ranked by Earnings / Profit / Wins / Majors / OVR (season) or Seasons (career) / Tour Rep, so one player can
+  top many boards. SQL 28 adds a `p_sort` param to `runtour_season_board`/`runtour_career_board` (orders by the
+  chosen stat so the true top-N is fetched, earnings+id tiebreakers) and the season board now returns wins +
+  majors. Client: `lbCache` is now a map keyed by `tab:sort`; `lbLoad(tab,sort)` fetches the active board with
+  a legacy fallback (retries without p_sort if 28 isn't applied yet → board still loads, earnings order); a
+  "SORT BY" chip row (`LB_SORTS`) drives `S.lbSort`; `lbStatVal` renders the right-hand value per stat (11W,
+  3 maj, OVR 96, rep tier, +/- profit) with earnings kept in the sub-line; sort persists across tabs when
+  valid. Summary guest-rank teaser reads `lbCache['season:earnings']`. Verified: each sort triggers a fresh
+  by-stat fetch and the value column updates; zero page errors. ACTION: run supabase/28_runtour_sort.sql.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
