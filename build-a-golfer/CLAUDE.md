@@ -1614,6 +1614,22 @@ allows Google Fonts, or self-host Anton.*
   `S.season._annAck`. Positive, encouraging copy on every miss. Verified (merit miss, intro selected/missed,
   playoff + Olympics cards render, zero errors).
 
+- PGA realism pt6b — Cup captaincy + cup-UI polish — DONE. CAPTAINCY: late-career (`captainEligible`:
+  years 36-40, >=7 career cup appearances, nationality on a team) you're OFFERED the captaincy of your
+  nation's cup as a non-playing role. scrTeamCup now has phases (`S.cupChoice`/`S.cupPickTeam`/`S.cupPicks`):
+  `scrCaptainOffer` (Accept / Decline-play-one-more) -> `scrCaptainPicks` (6 auto-qualifiers shown locked +
+  pick 6 of the next 12 candidates, OVR hints, toggle chips, "Send out your team") -> sim with
+  `simTeamEvent({captainSide,captainTeam})` (you're not in it, playerSide null) -> watch. Years rationalized to
+  one Ryder (yr37) + one Presidents (yr40) cadence-wise but eligible across 36-40 per owner. Result banner +
+  summary callout handle captain ("You captained them to glory!"); finalizeTeamCup banks
+  `S.career.cup.captained/captainWins` + lt cupCaptain/cupCaptainWins; 2 new achievements (The Captaincy,
+  Winning Captain). CUP-UI POLISH (owner requests): selection-screen button "Tee it up"->"Tee off"; each
+  matchup row now shows a ◀/▶ arrow pointing to the winning side (no arrow on HALVED); the cup reveals ONE
+  MATCH AT A TIME (`S.teamMatchN` over a flat 28-match list, "Next match" button, 1100ms auto-sim per match,
+  newest row animates, session cards show only revealed matches with an n/total counter) for more suspense.
+  Verified: captain offer->picks(12 cands,pick 6)->12-man team->captain mode, one-match reveal, winner arrows,
+  captain result banner, zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

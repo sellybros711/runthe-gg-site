@@ -572,7 +572,7 @@ function ltDefault(){return {seasons:0,careers:0,wins:0,majors:0,top10:0,made:0,
   bestSeasonNet:0,profitSeasons:0,ironSeasons:0,moneyLeaderSeasons:0,slamSeasons:0,underdogSeasons:0,
   poySeasons:0,roySeasons:0,scoringSeasons:0,no1Seasons:0,weeksAtNo1:0,
   olyGold:0,olySilver:0,olyBronze:0,
-  cupApps:0,cupWins:0,cupPoints:0,cupMatchWins:0,cupBest:0,
+  cupApps:0,cupWins:0,cupPoints:0,cupMatchWins:0,cupBest:0,cupCaptain:0,cupCaptainWins:0,
   maxOvr:0,distinctMajors:0,careerSlams:0,maj:{masters:0,champ:0,usopen:0,open:0}};}
 function badgeMetrics(c){ const lt=Object.assign(ltDefault(),(c||career()).lt||{});
   lt.maj=Object.assign({masters:0,champ:0,usopen:0,open:0},lt.maj||{}); return lt; }
@@ -745,7 +745,9 @@ const ACH=[].concat(
    {id:'cup_win',cat:'Olympics',name:'Cup Champion',     desc:'Be on the winning Ryder/Presidents Cup team.',goal:1,pts:60, get:m=>m.cupWins},
    {id:'cup_w5', cat:'Olympics',name:'Cup Legend',       desc:'Win 5 Ryder/Presidents Cups.',               goal:5,pts:100,get:m=>m.cupWins},
    {id:'cup_pts',cat:'Olympics',name:'Team Talisman',    desc:'Bank 25 career Cup points.',                 goal:25,pts:80, get:m=>m.cupPoints},
-   {id:'cup_5pt',cat:'Olympics',name:'Perfect Week',     desc:'Win all 5 of your matches in one Cup.',       goal:5,pts:90, get:m=>m.cupBest}],
+   {id:'cup_5pt',cat:'Olympics',name:'Perfect Week',     desc:'Win all 5 of your matches in one Cup.',       goal:5,pts:90, get:m=>m.cupBest},
+   {id:'cup_cap',cat:'Olympics',name:'The Captaincy',    desc:'Captain a Ryder or Presidents Cup team.',     goal:1,pts:50, get:m=>m.cupCaptain},
+   {id:'cup_capw',cat:'Olympics',name:'Winning Captain', desc:'Captain your team to a Cup win.',             goal:1,pts:80, get:m=>m.cupCaptainWins}],
   // ---- Majors ----
   [{id:'maj_masters',cat:'Majors',name:'Green Jacket',    desc:'Win The Masters.',                             goal:1,pts:40, get:m=>m.mastersWins},
    {id:'maj_pga',    cat:'Majors',name:'Wanamaker',       desc:'Win The Championship.',                        goal:1,pts:40, get:m=>m.pgaWins},
@@ -890,6 +892,7 @@ function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const 
     no1Seasons:lt.no1Seasons||0, weeksAtNo1:lt.weeksAtNo1||0,
     olyGold:lt.olyGold||0, olySilver:lt.olySilver||0, olyBronze:lt.olyBronze||0, olyMedals:(lt.olyGold||0)+(lt.olySilver||0)+(lt.olyBronze||0),
     cupApps:lt.cupApps||0, cupWins:lt.cupWins||0, cupPoints:lt.cupPoints||0, cupMatchWins:lt.cupMatchWins||0, cupBest:lt.cupBest||0,
+    cupCaptain:lt.cupCaptain||0, cupCaptainWins:lt.cupCaptainWins||0,
     slamSeasons:lt.slamSeasons, underdogSeasons:lt.underdogSeasons, careers:lt.careers, seasons:lt.seasons,
     maxOvr:lt.maxOvr, distinctMajors:lt.distinctMajors, careerSlams:lt.careerSlams, rivalWins:lt.rivalWins||0,
     mastersWins:lt.maj.masters, pgaWins:lt.maj.champ, usopenWins:lt.maj.usopen, openWins:lt.maj.open,
@@ -3471,7 +3474,7 @@ function startSeason(majorsOnly){
   const field=roster.map(g=>Object.assign({you:false},g));
   field.push(me);
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0,toPar:0,rounds:0}]))};
-  S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamRevealed=0;
+  S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0;
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false;   // unlocked during THIS season (shown on the summary)
   S.curEvt=null;
   track('season_started',{mode:S.daily?'daily':(majorsOnly?'majors':'full'),ovr:Math.round(me.skill),year:S.year||1});
@@ -3909,15 +3912,16 @@ function finishSeasonHeadless(){
 }
 /* ---------- Ryder/Presidents Cup screen: reveal the 5 sessions, running team score ---------- */
 function ptTxt(n){ const w=Math.floor(n), h=(n-w)>=0.5; return (w||h)?((w?w:'')+(h?'½':'')):'0'; }
-function cupMatchRow(m){
+function cupMatchRow(m, anim){
   const aWon=m.res==='A', bWon=m.res==='B';
   const side=(arr,won)=>arr.map(p=>`<span style="${p.you?'color:var(--gold);font-weight:800':(won?'color:#fff;font-weight:700':'color:#9fb0bf')}">${natFlag(p.nat)} ${esc(p.nm)}</span>`).join('<br>');
+  // arrow points toward the winning side; halved matches show no arrow
   const mid = m.res==='half'
     ? `<span style="color:#c9b25a;font-weight:800;font-size:12px">HALVED</span>`
-    : `<span style="color:#35d6a0;font-weight:800">${esc(m.label)}</span>`;
-  return `<div style="display:flex;align-items:center;gap:8px;padding:8px 9px;border-bottom:1px solid rgba(255,255,255,.06)${m.you?';background:rgba(235,166,31,.10);border-left:3px solid var(--gold)':''}">
+    : `<span style="color:#35d6a0;font-weight:800;white-space:nowrap">${aWon?'◀ ':''}${esc(m.label)}${bWon?' ▶':''}</span>`;
+  return `<div style="display:flex;align-items:center;gap:8px;padding:8px 9px;border-bottom:1px solid rgba(255,255,255,.06)${m.you?';background:rgba(235,166,31,.10);border-left:3px solid var(--gold)':''}${anim?';animation:celebRise .4s ease both':''}">
     <div style="flex:1;min-width:0;text-align:left;font-size:12.5px;line-height:1.3;${aWon?'':'opacity:.7'}">${side(m.a,aWon)}</div>
-    <div style="flex:0 0 auto;width:62px;text-align:center">${mid}</div>
+    <div style="flex:0 0 auto;width:74px;text-align:center">${mid}</div>
     <div style="flex:1;min-width:0;text-align:right;font-size:12.5px;line-height:1.3;${bWon?'':'opacity:.7'}">${side(m.b,bWon)}</div>
   </div>`;
 }
@@ -3948,7 +3952,7 @@ function scrSelectionScreen(evt){
     <div style="font:800 25px/1.15 var(--body);color:${col}">${made?'🏆 ':''}${title}</div>
     <div class="small muted" style="margin:9px auto 0;max-width:400px">${sub}</div></div></div>`));
   const ctrl=$(`<div style="max-width:520px;margin:18px auto 0"></div>`);
-  const b=$(`<button class="btn goldfill">${made?'Tee it up ▸':'Continue ▸'}</button>`);
+  const b=$(`<button class="btn goldfill">${made?'Tee off ▸':'Continue ▸'}</button>`);
   b.onclick=()=>{ S.season._annAck[S.evtIndex]=true; render(); };
   ctrl.appendChild(b); add(ctrl);
 }
@@ -3959,9 +3963,75 @@ function cupRosterCol(roster, code, name, mine){
       <span class="small muted" style="width:13px;flex:0 0 auto;text-align:right">${i+1}</span>${natFlag(p.nat)}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.nm)}${p.pick?' <span class="small" style="color:#7ec8ff">(pick)</span>':''}${p.you?' ★':''}</span></div>`).join('')}
   </div>`;
 }
+/* ---- Cup captaincy: late career (years 36-40), if you've made >=7 cup appearances, you may CAPTAIN your
+   nation's cup instead of playing — a non-playing role where you choose the 6 captain's picks. ---- */
+const CAPTAIN_MIN_APPS=7;
+function captainEligible(){
+  if(S.daily) return false; const y=S.year||1;
+  if(y<36||y>CAREER_MAX_YEARS) return false;
+  if(((S.career&&S.career.cup&&S.career.cup.apps)||0) < CAPTAIN_MIN_APPS) return false;
+  return playerInTeamEvent(y);
+}
+function myCupSide(){ return playerNation()==='USA'?'A':'B'; }
+function captainPool(){   // the eligible squad for YOUR side, you excluded (captains don't play)
+  const te=teamEventForYear(S.year||1), region=playerNation()==='USA'?'USA':te.regionB;
+  const mb=buildPlayer(), me={name:S.name||'You',you:true,skill:mb.skill,nation:playerNation()};
+  return cupPool(region, me).filter(p=>!p.you);
+}
+function scrCaptainOffer(){
+  clearTimeout(seasonTimer); RT.classList.add('major-screen');
+  const te=teamEventForYear(S.year||1), mineA=myCupSide()==='A';
+  const myName=(mineA?te.nameA:te.nameB).replace('United States','USA');
+  const apps=(S.career&&S.career.cup&&S.career.cup.apps)||0;
+  add($(`<div class="center" style="margin-top:8px"><span class="tag" style="color:#ffd76a;border-color:#ffd76a">🎖️ ${esc(te.short)} · Captaincy</span></div>`));
+  add($(`<div class="center" style="margin:18px 0 8px"><div style="display:inline-block;background:linear-gradient(180deg,#15331f,#0a2740);border:1px solid var(--gold);border-radius:16px;padding:20px 24px;max-width:92vw">
+    <div style="font:800 23px/1.15 var(--body);color:var(--gold)">🎖️ You've been offered the captaincy</div>
+    <div class="small muted" style="margin:9px auto 0;max-width:400px">After ${apps} cup appearances, Team ${esc(myName)} want YOU to lead them. Take the armband and pick the team, or lace them up one more time as a player.</div></div></div>`));
+  const ctrl=$(`<div style="max-width:520px;margin:16px auto 0"></div>`);
+  const a=$(`<button class="btn goldfill">🎖️ Accept the captaincy<span class="sub">Choose your squad, then lead them from the sideline</span></button>`);
+  a.onclick=()=>{ S.cupChoice='captain'; S.cupPicks=[]; render(); };
+  const b=$(`<button class="btn ghost" style="margin-top:10px">Decline, play one more<span class="sub">Make the team on merit and play your own matches</span></button>`);
+  b.onclick=()=>{ S.cupChoice='play'; render(); };
+  ctrl.appendChild(a); ctrl.appendChild(b); add(ctrl);
+}
+function scrCaptainPicks(){
+  clearTimeout(seasonTimer); RT.classList.add('major-screen');
+  const te=teamEventForYear(S.year||1), mineA=myCupSide()==='A';
+  const myName=(mineA?te.nameA:te.nameB).replace('United States','USA');
+  const pool=captainPool(), auto=pool.slice(0,6), cands=pool.slice(6,18);   // 6 auto-qualify, pick 6 of the next 12
+  const picks=(S.cupPicks=S.cupPicks||[]);
+  add($(`<div class="center" style="margin-top:6px"><span class="tag" style="color:#ffd76a;border-color:#ffd76a">🎖️ Captain · Team ${esc(myName)}</span></div>`));
+  add($(`<h2 class="center" style="margin:10px 0 2px;font-size:19px">Pick your team</h2>`));
+  add($(`<p class="small muted center" style="margin:0 0 12px">6 qualified automatically. Choose ${6-picks.length} more captain's pick${6-picks.length===1?'':'s'}.</p>`));
+  const autoBox=$(`<div class="scout" style="max-width:520px;margin:0 auto 12px;padding:9px 13px"><div class="small muted" style="text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Automatic qualifiers (top 6)</div>${auto.map((p,i)=>`<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:13px;color:#cfe0ee"><span class="small muted" style="width:14px">${i+1}</span>${natFlag(p.nat)} ${esc(p.name)}<span class="small muted" style="margin-left:auto">OVR ${p.eo}</span></div>`).join('')}</div>`);
+  add(autoBox);
+  add($(`<div class="small center" style="margin:2px 0 8px;color:var(--gold);font-weight:800">Captain's picks · ${picks.length}/6</div>`));
+  const list=$(`<div style="max-width:520px;margin:0 auto"></div>`);
+  cands.forEach(p=>{ const on=picks.includes(p.name);
+    const row=$(`<button class="btn ${on?'gold':'ghost'}" style="text-align:left;display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:10px 12px">
+      <span style="flex:0 0 auto;font-weight:800">${on?'✓':'+'}</span>${natFlag(p.nat)}<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.name)}</span><span class="small muted">OVR ${p.eo}</span></button>`);
+    row.onclick=()=>{ const i=picks.indexOf(p.name); if(i>=0)picks.splice(i,1); else if(picks.length<6)picks.push(p.name); render(); };
+    list.appendChild(row); });
+  add(list);
+  const ctrl=$(`<div style="max-width:520px;margin:10px auto 0"></div>`);
+  const done=picks.length===6;
+  const c=$(`<button class="btn ${done?'goldfill':'ghost'}"${done?'':' disabled style="opacity:.55"'}>Send out your team ▸<span class="sub">${done?'Lock in the 12 and watch them go':`Pick ${6-picks.length} more`}</span></button>`);
+  if(done) c.onclick=()=>{ const chosen=cands.filter(p=>picks.includes(p.name)); S.cupPickTeam=auto.concat(chosen).map(p=>Object.assign({},p)); render(); };
+  ctrl.appendChild(c); add(ctrl);
+}
 function scrTeamCup(){
   clearTimeout(seasonTimer);
-  if(!S.curTeam || S.curTeam._idx!==S.evtIndex){ S.curTeam=simTeamEvent(); S.curTeam._idx=S.evtIndex; S.teamRevealed=0; }
+  if(S._cupIdx!==S.evtIndex){ S._cupIdx=S.evtIndex; S.curTeam=null; S.teamMatchN=0; S.cupChoice=null; S.cupPickTeam=null; S.cupPicks=null; }
+  // PHASE 1 — captaincy offer (eligible late-career veterans choose to captain or play on)
+  if(captainEligible() && !S.cupChoice){ scrCaptainOffer(); return; }
+  // PHASE 2 — make your captain's picks
+  if(S.cupChoice==='captain' && !S.cupPickTeam){ scrCaptainPicks(); return; }
+  // PHASE 3 — sim + watch (using your captain team if you took the armband)
+  if(!S.curTeam || S.curTeam._idx!==S.evtIndex){
+    S.curTeam = (S.cupChoice==='captain' && S.cupPickTeam) ? simTeamEvent({captainSide:myCupSide(), captainTeam:S.cupPickTeam}) : simTeamEvent();
+    S.curTeam._idx=S.evtIndex; S.teamMatchN=0;
+    if(S.cupChoice==='captain') S.curTeam._introSeen=true;   // the pick screen was your intro
+  }
   const T=S.curTeam, reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const ryder=T.type==='ryder';
   RT.classList.add('major-screen');
@@ -3987,10 +4057,13 @@ function scrTeamCup(){
     ctrl.appendChild(b); add(ctrl);
     return;
   }
-  // running score through the revealed sessions
+  // reveal the matches ONE AT A TIME (more suspense). Flat list across all 5 sessions.
+  const flat=[]; T.sessions.forEach((sess,si)=>sess.matches.forEach((m,mi)=>flat.push({m,si,mi,sess})));
+  const TOTAL=flat.length; if(S.teamMatchN==null) S.teamMatchN=0;
+  const matchN=Math.min(S.teamMatchN, TOTAL);
   let ra=0, rb=0;
-  for(let s=0;s<S.teamRevealed;s++){ T.sessions[s].matches.forEach(m=>{ if(m.res==='A')ra++; else if(m.res==='B')rb++; else {ra+=0.5;rb+=0.5;} }); }
-  const allDone=S.teamRevealed>=T.sessions.length;
+  for(let k=0;k<matchN;k++){ const r=flat[k].m.res; if(r==='A')ra++; else if(r==='B')rb++; else {ra+=0.5;rb+=0.5;} }
+  const allDone=matchN>=TOTAL;
   const aCol='#3d6fb5', bCol=ryder?'#1f8f5a':'#6f74c4';
   const youA=T.mySide==='A';   // highlight the side your country plays for (you may be a player, captain, or just a fan)
   // header / scoreboard
@@ -4004,13 +4077,14 @@ function scrTeamCup(){
       <div style="font:800 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#e6e8ff">${natFlag(T.codeB)} ${esc(T.nameB)}${!youA?' · YOU':''}</div>
       <div class="mono" style="font-weight:800;font-size:40px;color:#fff;margin-top:6px">${ptTxt(rb)}</div></div>
   </div>`));
-  add($(`<div class="small muted center" style="margin-bottom:12px">First to 14½ wins · 28 points${allDone?'':` · ${S.teamRevealed} of 5 sessions`}</div>`));
+  add($(`<div class="small muted center" style="margin-bottom:12px">First to 14½ wins · 28 points${allDone?'':` · match ${matchN} of ${TOTAL}`}</div>`));
 
   // final result banner — celebrate when YOUR COUNTRY wins, whether you played, captained, or watched
   if(allDone){
     const mineWon=T.mineWon, tie=T.retained, winName=T.winner==='A'?T.nameA:T.nameB;
     const col=mineWon?'var(--gold)':tie?'#c9b25a':'#9fb0bf';
-    const sub = T.playerPlayed ? `Your record: ${T.playerRec.w}-${T.playerRec.l}-${T.playerRec.h} · ${ptTxt(T.playerRec.pts)} point${T.playerRec.pts===1?'':'s'}${T.playerWon?' · 🏆 champions':''}`
+    const sub = T.captain ? (mineWon?'🎖️🏆 You captained them to glory!':tie?'You captained them to a tie, the Cup is retained':"A tough week in the captain's chair, they came up just short")
+      : T.playerPlayed ? `Your record: ${T.playerRec.w}-${T.playerRec.l}-${T.playerRec.h} · ${ptTxt(T.playerRec.pts)} point${T.playerRec.pts===1?'':'s'}${T.playerWon?' · 🏆 champions':''}`
       : (mineWon?'🏆 Your nation are champions, you cheered them home':tie?'Your nation retain the Cup':'Your nation came up short this time, next time');
     add($(`<div class="center" style="margin:0 0 14px"><div style="display:inline-block;background:linear-gradient(180deg,#15331f,#0a2740);border:1px solid ${col};border-radius:14px;padding:13px 20px">
       <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${col}">${esc(T.short)} · Final</div>
@@ -4018,30 +4092,34 @@ function scrTeamCup(){
       <div class="small muted" style="margin-top:4px">${sub}</div></div></div>`));
   }
 
-  // revealed session cards
-  for(let s=0;s<S.teamRevealed;s++){
-    const sess=T.sessions[s]; let sa=0,sb=0; sess.matches.forEach(m=>{ if(m.res==='A')sa++; else if(m.res==='B')sb++; else {sa+=0.5;sb+=0.5;} });
-    const isNew=(s===S.teamRevealed-1);
-    const card=$(`<div style="max-width:560px;margin:0 auto 12px;background:#0a2740;border:1px solid var(--line);border-radius:13px;overflow:hidden${isNew&&!reduce?';animation:celebRise .45s ease both':''}"></div>`);
+  // session cards — show each session that has at least one revealed match, with only its revealed matches
+  let acc=0;
+  T.sessions.forEach((sess)=>{
+    const start=acc, end=acc+sess.matches.length; acc=end;
+    const revN=Math.max(0, Math.min(matchN,end)-start); if(revN<=0) return;
+    const rev=sess.matches.slice(0,revN);
+    let sa=0,sb=0; rev.forEach(m=>{ if(m.res==='A')sa++; else if(m.res==='B')sb++; else {sa+=0.5;sb+=0.5;} });
+    const complete=revN===sess.matches.length, newestHere=(matchN-1>=start && matchN-1<end);
+    const card=$(`<div style="max-width:560px;margin:0 auto 12px;background:#0a2740;border:1px solid var(--line);border-radius:13px;overflow:hidden"></div>`);
     card.appendChild($(`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
-      <div style="font:800 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)">Day ${sess.day} · ${esc(sess.title)}</div>
+      <div style="font:800 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)">Day ${sess.day} · ${esc(sess.title)}${complete?'':` <span class="muted" style="font-weight:600">${revN}/${sess.matches.length}</span>`}</div>
       <div class="mono" style="font-weight:800;color:#fff">${ptTxt(sa)} – ${ptTxt(sb)}</div></div>`));
-    const body=$(`<div></div>`); body.innerHTML=sess.matches.map(cupMatchRow).join(''); card.appendChild(body);
+    const body=$(`<div></div>`); body.innerHTML=rev.map((m,i)=>cupMatchRow(m, newestHere && i===revN-1 && !reduce)).join(''); card.appendChild(body);
     add(card);
-  }
+  });
 
   // controls
   const ctrl=$(`<div style="max-width:560px;margin:6px auto 0"></div>`);
   if(!allDone){
-    const nextSess=T.sessions[S.teamRevealed];
-    const b=$(`<button class="btn red">Play Day ${nextSess.day} · ${esc(nextSess.title)} ▸</button>`);
-    b.onclick=()=>{ clearTimeout(seasonTimer); S.teamRevealed++; render(); };
+    const next=flat[matchN];
+    const b=$(`<button class="btn red">Next match ▸<span class="sub">Day ${next.sess.day} · ${esc(next.sess.title)} · match ${next.mi+1}</span></button>`);
+    b.onclick=()=>{ clearTimeout(seasonTimer); S.teamMatchN=matchN+1; render(); };
     ctrl.appendChild(b);
     const row=$(`<div class="mini" style="margin-top:10px"></div>`);
     const auto=$(`<button class="btn ${S.autoSim?'teal':'gold'}">Auto Sim · ${S.autoSim?'On':'Off'}</button>`);
     auto.onclick=()=>{S.autoSim=!S.autoSim; LS.set('bag_autosim',S.autoSim); render();};
     const skip=$(`<button class="btn ghost">Skip to Result ⏭</button>`);
-    skip.onclick=()=>{ clearTimeout(seasonTimer); S.teamRevealed=T.sessions.length; render(); };
+    skip.onclick=()=>{ clearTimeout(seasonTimer); S.teamMatchN=TOTAL; render(); };
     row.appendChild(auto); row.appendChild(skip); ctrl.appendChild(row);
   } else {
     const last=(S.evtIndex>=S.schedule.length-1);
@@ -4057,26 +4135,31 @@ function scrTeamCup(){
     const stop=confettiRun(cv,{count:150, colors:['#EBA61F','#f9d271','#ffffff',youA?aCol:bCol], mode:'cannons'});
     setTimeout(()=>{ stop&&stop(); cv.remove(); }, 2600);
   }
-  // auto-sim: reveal the next session on a timer
-  if(!allDone && S.autoSim && !reduce){ seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ S.teamRevealed++; render(); } }, 3000); }
-  else if(!allDone && reduce){ S.teamRevealed=T.sessions.length; render(); }
+  // auto-sim: reveal the next match on a timer (one at a time for suspense)
+  if(!allDone && S.autoSim && !reduce){ seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ S.teamMatchN=matchN+1; render(); } }, 1100); }
+  else if(!allDone && reduce){ S.teamMatchN=TOTAL; render(); }
 }
 // bank the team-cup result into the season + career when leaving the screen
 function finalizeTeamCup(){
   const T=S.curTeam; if(!T||T._banked) return; T._banked=true;
   S.season.teamCup={short:T.short, type:T.type, winner:T.winner, nameA:T.nameA, nameB:T.nameB,
-    playerSide:T.playerSide, playerWon:T.playerWon, retained:T.retained, playerRec:T.playerRec, ptA:T.ptA, ptB:T.ptB};
-  if(!S.daily && T.playerPlayed){
-    S.career.cup=S.career.cup||{apps:0,won:0,w:0,l:0,h:0,pts:0};
-    const c=S.career.cup; c.apps++; if(T.playerWon)c.won++; c.w+=T.playerRec.w; c.l+=T.playerRec.l; c.h+=T.playerRec.h; c.pts+=T.playerRec.pts;
-    // lifetime achievement counters
-    const cc=career(), lt=(cc.lt=Object.assign(ltDefault(),cc.lt||{}));
-    lt.cupApps=(lt.cupApps||0)+1; if(T.playerWon)lt.cupWins=(lt.cupWins||0)+1;
-    lt.cupPoints=(lt.cupPoints||0)+T.playerRec.pts; lt.cupMatchWins=(lt.cupMatchWins||0)+T.playerRec.w;
-    lt.cupBest=Math.max(lt.cupBest||0, T.playerRec.w);
+    playerSide:T.playerSide, playerWon:T.playerWon, retained:T.retained, playerRec:T.playerRec, ptA:T.ptA, ptB:T.ptB,
+    captain:T.captain, mySide:T.mySide, mineWon:T.mineWon};
+  if(!S.daily && (T.playerPlayed || T.captain)){
+    S.career.cup=S.career.cup||{apps:0,won:0,w:0,l:0,h:0,pts:0,captained:0,captainWins:0};
+    const c=S.career.cup; const cc=career(), lt=(cc.lt=Object.assign(ltDefault(),cc.lt||{}));
+    if(T.captain){
+      c.captained=(c.captained||0)+1; if(T.mineWon)c.captainWins=(c.captainWins||0)+1;
+      lt.cupCaptain=(lt.cupCaptain||0)+1; if(T.mineWon)lt.cupCaptainWins=(lt.cupCaptainWins||0)+1;
+    } else {
+      c.apps++; if(T.playerWon)c.won++; c.w+=T.playerRec.w; c.l+=T.playerRec.l; c.h+=T.playerRec.h; c.pts+=T.playerRec.pts;
+      lt.cupApps=(lt.cupApps||0)+1; if(T.playerWon)lt.cupWins=(lt.cupWins||0)+1;
+      lt.cupPoints=(lt.cupPoints||0)+T.playerRec.pts; lt.cupMatchWins=(lt.cupMatchWins||0)+T.playerRec.w;
+      lt.cupBest=Math.max(lt.cupBest||0, T.playerRec.w);
+    }
     LS.set('bag_career',cc);
   }
-  track('teamcup_done',{type:T.type, won:T.playerWon, pts:T.playerRec.pts});
+  track('teamcup_done',{type:T.type, won:T.playerWon, captain:T.captain, pts:T.playerRec.pts});
 }
 // live "Race to the Cup" strip: your points rank vs the next cut line (top 70 → 50 → 30 → the Cup)
 function raceToCupNode(byPts, evt){
@@ -4684,13 +4767,15 @@ function scrSummary(){
     }
   }
   // ---- Ryder/Presidents Cup callout ----
-  if(!S.daily && S.season.teamCup && S.season.teamCup.playerSide){
-    const T=S.season.teamCup, won=T.playerWon, tie=T.retained, col=won?'var(--gold)':tie?'#c9b25a':'#9fb0bf';
-    const winName=T.winner==='A'?T.nameA:T.nameB, mine=T.playerSide==='A'?T.nameA:T.nameB;
+  if(!S.daily && S.season.teamCup && (S.season.teamCup.playerSide || S.season.teamCup.captain)){
+    const T=S.season.teamCup, mineWon=T.mineWon, tie=T.retained, col=mineWon?'var(--gold)':tie?'#c9b25a':'#9fb0bf';
+    const winName=T.winner==='A'?T.nameA:T.nameB, mine=(T.captain?T.mySide:T.playerSide)==='A'?T.nameA:T.nameB;
+    const sub=T.captain?(mineWon?'🎖️ You captained them to the Cup':tie?'You captained them to a retained Cup':'Captained, fell just short')
+      :`Your record: ${T.playerRec.w}-${T.playerRec.l}-${T.playerRec.h} · ${ptTxt(T.playerRec.pts)} point${T.playerRec.pts===1?'':'s'}`;
     add($(`<div class="center" style="margin:8px 0 12px"><div style="display:inline-block;background:linear-gradient(180deg,#15331f,#0a2740);border:1px solid ${col};border-radius:14px;padding:12px 20px">
-      <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${col}">${esc(T.short)} · ${esc(mine)}</div>
-      <div style="font:800 19px/1.15 var(--body);color:${col};margin-top:6px">${won?'🏆 '+esc(winName)+' win the Cup':tie?esc(winName)+' retain the Cup':esc(winName)+' win the Cup'}</div>
-      <div class="small muted" style="margin-top:4px">Your record: ${T.playerRec.w}-${T.playerRec.l}-${T.playerRec.h} · ${ptTxt(T.playerRec.pts)} point${T.playerRec.pts===1?'':'s'}</div></div></div>`));
+      <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${col}">${esc(T.short)} · ${esc(mine)}${T.captain?' · Captain':''}</div>
+      <div style="font:800 19px/1.15 var(--body);color:${col};margin-top:6px">${tie?esc(winName)+' retain the Cup':(mineWon?'🏆 ':'')+esc(winName)+' win the Cup'}</div>
+      <div class="small muted" style="margin-top:4px">${sub}</div></div></div>`));
   }
   if(HL) add($(headlinesHTML(HL)));
   if(S.freshRivalOutgrown) add($(rivalOutgrownHTML(S.freshRivalOutgrown)));
