@@ -1763,6 +1763,52 @@ function ensureWorld(){ if(S.daily) return null;
 function worldField(n){ const w=ensureWorld(); if(!w) return null;
   return w.active.slice().sort((a,b)=>b.lov-a.lov).slice(0,n)
     .map(g=>{const o={name:g.name,skill:g.lov}; SKK.forEach(s=>o[s]=g['l_'+s]); return o;}); }
+/* ---- Official World Golf Ranking (OWGR) ----
+   A rolling, decaying, results-based world ranking. Every player carries `rankPts`: world players
+   in S.world.rankPts (persisted with the world), YOU in S.career.rankPts. Seeded from skill so the
+   very first season already has a sensible pecking order, then each season decays the prior total and
+   adds the Tour points earned that year (≈ a two-year rolling window). World Rank = sort everyone
+   (the active world + you) by rankPts. Drives the marquee "World #N" stat and (deploy 2) elite-event
+   entry: signature events invite the top OWGR, majors the top OWGR + reigning major champions. */
+const OWGR_DECAY=0.55;                                  // last year keeps 55% weight (≈ a 2-yr window)
+const OWGR_FLOOR=0.4;                                   // ratings never decay below 40% of the skill seed
+function owgrSeed(lov){ return Math.max(0,(lov-52))*120; }   // skill-based starting points (≈ a season's Tour points)
+function myOvrNow(){ try{ return Math.round(buildPlayer().skill); }catch(_){ return 70; } }
+function hasBuild(){ return !S.daily && S.slots && CATS.some(c=>S.slots[c.k]); }
+function myRankPts(){ return (S.career&&S.career.rankPts!=null)?S.career.rankPts:owgrSeed(myOvrNow()); }
+// full ranking list best→worst: [{name,pts,lov,you}], defaulting any unseeded active player from skill
+function worldRanking(){
+  const w=ensureWorld(); if(!w) return [];
+  const rp=(w.rankPts=w.rankPts||{});
+  const list=w.active.map(g=>({name:g.name, pts:(rp[g.name]!=null?rp[g.name]:owgrSeed(g.lov)), lov:g.lov, you:false}));
+  if(hasBuild()) list.push({name:S.name||'Your Golfer', pts:myRankPts(), lov:myOvrNow(), you:true});
+  list.sort((a,b)=>b.pts-a.pts);
+  return list;
+}
+function myWorldRank(){ const L=worldRanking(); const i=L.findIndex(x=>x.you); return i<0?L.length:i+1; }
+function worldRankSize(){ return worldRanking().length; }
+function worldRankOfName(name){ const L=worldRanking(); const i=L.findIndex(x=>x.name===name && !x.you); return i<0?L.length:i+1; }
+// Tour Card line: finish inside the top CARD_LINE in the world to keep a full card for next season
+const CARD_LINE=100;
+function cardStatus(rank){ rank=rank||myWorldRank();
+  if(rank<=CARD_LINE-15) return {key:'secure', rank, col:'#35d6a0', label:'Tour Card secured', note:`Comfortably inside the top ${CARD_LINE}`};
+  if(rank<=CARD_LINE)     return {key:'bubble', rank, col:'#EBA61F', label:'Tour Card held · on the bubble', note:`Stay inside the top ${CARD_LINE} to keep your card`};
+  return {key:'lost', rank, col:'#E14A33', label:'Lost your Tour Card', note:`Outside the top ${CARD_LINE} · limited status next season`};
+}
+// end-of-season ranking update: decay everyone, add the year's Tour points (run BEFORE advanceWorld ages the world)
+function updateWorldRanking(){
+  if(S.daily||!S.season) return; const w=ensureWorld(); if(!w) return;
+  const rp=(w.rankPts=w.rankPts||{}), tot=S.season.totals, meName=S.season.me.name;
+  const activeNames=new Set(w.active.map(g=>g.name)), lovOf={};
+  Object.keys(rp).forEach(n=>{ if(!activeNames.has(n)) delete rp[n]; });   // drop players who've left the tour
+  w.active.forEach(g=>{ lovOf[g.name]=g.lov; if(rp[g.name]==null) rp[g.name]=owgrSeed(g.lov); });   // seed new rookies from skill
+  Object.keys(rp).forEach(n=>{ rp[n]*=OWGR_DECAY; });                          // decay the trailing window
+  Object.entries(tot).forEach(([n,v])=>{ if(n===meName) return; if(rp[n]!=null) rp[n]+=(v.points||0); });
+  // skill floor: ratings settle at a skill-appropriate baseline rather than decaying toward zero
+  Object.keys(rp).forEach(n=>{ const fl=owgrSeed(lovOf[n]!=null?lovOf[n]:60)*OWGR_FLOOR; if(rp[n]<fl) rp[n]=fl; });
+  if(S.career){ const earned=((tot[meName]&&tot[meName].points)||0);
+    S.career.rankPts=Math.max(myRankPts()*OWGR_DECAY+earned, owgrSeed(myOvrNow())*OWGR_FLOOR); }
+}
 /* ---- Emergent rivalry: no manual pick. The game tallies your head-to-head vs every field player and,
    after a few seasons, crowns the recurring peer who keeps finishing right beside you as your nemesis
    (S.career.rival). It carries a career-long record; if your rival retires you get a farewell and a new
@@ -3565,17 +3611,21 @@ function scrSeason(){
   const tourRank=byPts.findIndex(r=>r.n===S.season.me.name)+1;
   const NP=byPts.length;
   const rankTxt=t.played?('#'+tourRank):', ';
+  // World Rank (OWGR) — career-long rolling ranking, stable across the season
+  const wr=!S.daily?myWorldRank():0, wrN=!S.daily?worldRankSize():0;
   add($(`<div class="sbar">
     <div class="sstat w3"><div class="k">Net profit · through ${t.played} event${t.played===1?'':'s'}</div>
       <div class="v" style="color:${netCol};font-size:22px">${fmtSigned(ec.net)}</div>
       <div class="k" style="margin-top:3px;text-transform:none;letter-spacing:0">${fmt(ec.gross)} won · −${fmt(ec.costs)} costs</div></div>
+    ${!S.daily?`<div class="sstat rankcell"><div class="k">World Rank</div>
+      <div class="v gold" style="font-size:22px">#${wr}</div>
+      <div class="k" style="margin-top:3px;text-transform:none;letter-spacing:0">of ${wrN} · OWGR</div></div>`:''}
     <div class="sstat rankcell"><div class="k">Tour Rank</div>
       <div class="v gold" style="font-size:22px">${rankTxt}</div>
       <div class="k" style="margin-top:3px;text-transform:none;letter-spacing:0">${t.played?('of '+NP):'season points'}</div></div>
     <div class="sstat"><div class="k">Avg finish</div><div class="v">${avg}</div></div>
     <div class="sstat"><div class="k">Wins</div><div class="v">${t.wins}</div></div>
     <div class="sstat"><div class="k">Cuts made</div><div class="v">${t.made}/${t.played}</div></div>
-    <div class="sstat"><div class="k">Best</div><div class="v">${high}</div></div>
   </div>`));
   if(evt.major) add($(`<div class="majorbanner">★ Major Championship ★</div>`));
   if(!S.daily && t.played) add(raceToCupNode(byPts, evt));
@@ -3910,6 +3960,12 @@ function scrSummary(){
     // accumulate career earnings vs the (persistent) field for the multi-year money list
     S.career.fieldMoney=S.career.fieldMoney||{};
     Object.entries(S.season.totals).forEach(([n,v])=>{ S.career.fieldMoney[n]=(S.career.fieldMoney[n]||0)+v.money; });
+    // Official World Golf Ranking: decay the trailing window + bank this season's Tour points, then
+    // snapshot the new world rank (and the prior one for the year-over-year movement on the summary).
+    if(!S.daily){ const prevWR=(S.career.lastWorldRank!=null?S.career.lastWorldRank:myWorldRank());
+      updateWorldRanking(); const newWR=myWorldRank();
+      S.worldRankMove={prev:prevWR, now:newWR, size:worldRankSize()}; S.career.lastWorldRank=newWR;
+      S.career.cardStatus=cardStatus(newWR).key; }
     // emergent rivalry: tally head-to-head, graduate a rivalry you've outgrown, then crown a fresh nemesis
     if(!S.daily){ accrueH2H(); maybeOutgrowRival(); maybeFormRival(); }   // sets S.career.rival + S.freshRival/freshRivalOutgrown
     // ---- season-level achievement flags + evaluation (lt is now updated by recordSeason) ----
@@ -4006,6 +4062,22 @@ function scrSummary(){
   tilesB.appendChild(statTile('Wins',t.wins+''));
   tilesB.appendChild(statTile('Majors',t.majors+''));
   add(tilesB);
+  // Official World Ranking + Tour Card status — the season's headline standing, with year-over-year movement
+  if(!S.daily && S.worldRankMove){
+    const m=S.worldRankMove, cs=cardStatus(m.now), dlt=m.prev-m.now;   // dlt>0 = climbed (lower number is better)
+    const firstYr=(S.career&&S.career.seasons.length<=1);
+    const moveTxt=firstYr?'New entry':(dlt>0?`▲ ${dlt}`:dlt<0?`▼ ${Math.abs(dlt)}`:'— level');
+    const moveCol=firstYr?'var(--gold)':(dlt>0?'#35d6a0':dlt<0?'#E14A33':'var(--muted)');
+    add($(`<div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin:8px 0 12px;border-color:${cs.col}">
+      <div style="min-width:0">
+        <div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">Official World Ranking</div>
+        <div style="font:800 26px/1 var(--body);color:var(--oncard);margin-top:6px">World #${m.now} <span style="font-size:13px;color:${moveCol};font-weight:700">${moveTxt}</span></div>
+        <div class="small" style="margin-top:5px;color:${cs.col};font-weight:700">${cs.label}</div>
+        <div class="small muted" style="margin-top:1px">${cs.note}</div>
+      </div>
+      <div style="text-align:right;flex:0 0 auto"><div class="small muted">of ${m.size}</div></div>
+    </div>`));
+  }
   if(HL) add($(headlinesHTML(HL)));
   if(S.freshRivalOutgrown) add($(rivalOutgrownHTML(S.freshRivalOutgrown)));
   if(S.freshRival) add($(rivalFormedHTML(S.freshRival)));

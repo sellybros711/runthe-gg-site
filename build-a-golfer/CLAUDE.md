@@ -1498,6 +1498,21 @@ allows Google Fonts, or self-host Anton.*
   eliminated path all render, zero page errors). NEXT in roadmap: World Ranking (OWGR) + Tour Card/relegation,
   then season awards (POY/ROY), Olympics, Ryder/Presidents Cup match-play.
 
+- PGA realism pt2a — Official World Golf Ranking (OWGR) + Tour Card — DONE (deploy 1 of 2). A rolling,
+  decaying, results-based world ranking. Every player carries `rankPts`: world players in `S.world.rankPts`
+  (persisted), YOU in `S.career.rankPts`. `owgrSeed(lov)=(lov-52)*120` seeds from skill so year 1 already has
+  a sensible order; `updateWorldRanking()` (run at season-record time, BEFORE advanceWorld) prunes retired
+  names, seeds new rookies, decays everyone by `OWGR_DECAY=0.55` (≈2-yr window), adds the year's Tour points,
+  and applies a skill floor (`OWGR_FLOOR=0.4` of seed) so a non-scorer settles at a skill baseline instead of
+  decaying to zero. `worldRanking()` sorts active world + you by rankPts; `myWorldRank()`/`worldRankSize()`.
+  Tour Card: `CARD_LINE=100`, `cardStatus(rank)` -> secure (≤85) / bubble (≤100) / lost (>100). Display: live
+  "World Rank #N of NN · OWGR" stat in the season bar (replaced Best); summary "Official World Ranking" banner
+  with year-over-year movement (▲/▼ vs `S.career.lastWorldRank`, stored in `S.worldRankMove`) + the Tour Card
+  status line. Verified via 10-yr Monte Carlo (elite build holds #1, mid-80s pro hovers ~#40-70 card-secure,
+  weak build correctly near the bottom card-lost) + UI smoke test (season bar + summary banner render, World
+  #14 ▲10, zero page errors). NEXT (deploy 2): ranking-gated entry - signature events invite top-50 OWGR,
+  majors top-70 + reigning major champs; non-qualifiers play an opposite-field event (real gate + fallback).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
