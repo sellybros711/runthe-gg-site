@@ -2562,7 +2562,57 @@ function scrRules(){
   const done=$(`<button class="btn red" style="max-width:520px;margin:4px auto 0">Got it</button>`);
   done.onclick=back; add(done);
 }
+// Guests get an intriguing PREVIEW of the Trophy Room — what an account unlocks, with a sign-in CTA —
+// instead of a local-only record. The aspirational (mostly-dimmed) Trophy Case doubles as the teaser.
+function overlayRecordGuest(screen){
+  evaluateAch();
+  const c=career(); const bm=badgeMetrics(c);
+  const cabinet=trophyCabinetHTML(bm);
+  const built=c.builds||0, wins=bm.wins||0, seasons=bm.seasons||0;
+  const hasProgress=(built>0||seasons>0||wins>0);
+  const feat=(icon,title,desc)=>`<div style="display:flex;gap:11px;align-items:flex-start;padding:11px 1px">
+    <div style="font-size:21px;flex:0 0 auto;width:30px;text-align:center;line-height:1.2">${icon}</div>
+    <div style="min-width:0"><div style="font-weight:800;color:var(--oncard);font-size:14px">${title}</div>
+      <div class="small muted" style="margin-top:2px;line-height:1.35">${desc}</div></div></div>`;
+  const progressLine=hasProgress
+    ? `<div class="scout" style="max-width:520px;margin:0 auto 4px;border-color:var(--gold);background:rgba(235,166,31,.07);text-align:center;padding:12px 14px">
+        <div style="font-weight:800;color:var(--gold);font-size:13px">You're already playing as a guest${seasons?` &middot; ${seasons} season${seasons===1?'':'s'} in`:''}</div>
+        <div class="small muted" style="margin-top:3px">Your golfers and trophies live only on this device right now. Create a free account to lock them in before they're gone.</div></div>`
+    : '';
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Trophy Room preview">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Trophy Room</h3>
+    <div class="profhdr" style="display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 14px">${avatarHTML()}<div style="font-family:var(--serif);font-weight:700;font-size:18px;color:var(--oncard)">${esc(S.name||'Your Golfer')}</div><div class="tag" style="color:var(--gold);border-color:var(--gold)">Tour Pro &middot; Guest</div></div>
+    <div style="position:relative;overflow:hidden;border-radius:16px;border:1px solid var(--gold);background:linear-gradient(160deg,#16331f,#0a2740 58%,#0a1626);padding:20px 18px;margin:0 auto 14px;max-width:520px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.4)">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">✨ Your Trophy Room awaits</div>
+      <div style="font-family:var(--serif);font-weight:800;font-size:24px;color:#fff;margin:9px 0 7px;line-height:1.12">Win it all.<br>Keep it forever.</div>
+      <div class="small muted" style="max-width:380px;margin:0 auto;line-height:1.4">Majors, Olympic medals, the FedEx Cup, the Ryder Cup &mdash; every trophy you earn is saved to your free account, your titles equipped, your career ranked against the world.</div>
+      <button class="btn goldfill" id="rec-signup" style="margin:15px auto 0;max-width:320px">🏆 Create your free account ▸</button>
+      <button class="btn ghost" id="rec-signin" style="margin:8px auto 0;max-width:320px">I already have one &middot; Sign in</button>
+    </div>
+    <div class="scout" style="max-width:520px;margin:0 auto 14px;padding:6px 15px 8px">
+      <div class="small muted center" style="letter-spacing:.12em;text-transform:uppercase;margin:9px 0 2px;font-size:10px">What you'll unlock</div>
+      ${feat('🏆','Your Trophy Case','Every major, Olympic medal, Cup and captaincy on permanent display &mdash; with the player titles you earn equipped under your name.')}
+      ${feat('🏅','100+ Achievements &amp; Tour Rep','Tick off milestones across your whole career and climb the Tour Rep ranks from Rookie all the way to 🐐 G.O.A.T.')}
+      ${feat('🌍','Global leaderboards','Post every finished season and career, then rank against the world by earnings, wins, majors, scoring and more.')}
+      ${feat('☁️','Saved &amp; synced everywhere','Your careers, trophies and record follow you on any device &mdash; never lose a season again.')}
+    </div>
+    <div class="small muted center" style="margin:0 auto 9px;max-width:480px">A peek at the silverware &mdash; light up every slot by winning it on tour:</div>
+    ${cabinet}
+    ${progressLine}
+    <button class="btn goldfill" id="rec-signup2" style="max-width:520px;margin:6px auto 0">🏆 Start your Trophy Room ▸<span class="sub">Free account &middot; takes 20 seconds</span></button>
+    <div style="height:14px"></div>
+    <button class="btn red">Close</button></div>`);
+  const wire=(id,fn)=>{ const bb=ov.querySelector(id); if(bb) bb.onclick=fn; };
+  wire('#rec-signin',()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();});
+  wire('#rec-signup',()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();});
+  wire('#rec-signup2',()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();});
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  screen.appendChild(ov);
+}
 function overlayRecord(screen){
+  if(!sbSignedIn()){ overlayRecordGuest(screen); return; }   // guests see the unlock preview, not a local record
   evaluateAch();   // retroactively credit anything already earned so the checklist + Tour Rep are current
   const c=career(); const badges=c.badges||{};
   const rows=c.hof.length? c.hof.map((h,i)=>`<div class="lb" style="grid-template-columns:28px 1fr 60px 96px">
