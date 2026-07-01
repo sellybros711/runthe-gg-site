@@ -151,7 +151,7 @@
   }
   .display{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.5px;text-transform:uppercase;}
   button{font-family:inherit;cursor:pointer;}
-  .app{max-width:520px;margin:0 auto;padding:18px 16px 48px;}
+  .app{max-width:640px;margin:0 auto;padding:18px 16px 48px;}
 
   /* site-wide navigation footer (additive; sits at natural bottom of every screen) */
   .site-footer{margin-top:40px;padding:20px 0 8px;text-align:center;
@@ -460,12 +460,17 @@
   }
 
   /* ---------- start screen ---------- */
+  /* Full-bleed landing scene (no bordered "sticker" box) — the stadium art fills
+     edge-to-edge and blends straight into the page, matching the borderless,
+     full-width treatment used on RunTheTour. A negative side margin lets it
+     escape .app's padding to reach the true viewport edge on wider screens;
+     top corners are squared since it now runs flush under the masthead. */
   .hero{
     position:relative;overflow:hidden;text-align:center;
-    border:3px solid var(--ink);border-radius:20px;background:#0b1324;
+    margin:0 -16px;border-radius:0 0 20px 20px;background:#0b1324;
     padding:26px 20px 20px;
-    box-shadow:var(--shadow), inset 0 0 0 2px rgba(244,180,19,.5);
   }
+  @media (min-width:673px){ .hero{ margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw); } }
   /* gold top-accent stripe framing the card */
   .hero::before{content:"";position:absolute;top:0;left:0;right:0;height:6px;z-index:5;
     background:linear-gradient(90deg,#9C6C18,#F4B413 32%,#FCEFA8 50%,#F4B413 68%,#9C6C18);}
@@ -641,6 +646,9 @@
     box-shadow:none;cursor:not-allowed;}
 
   .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;transition:opacity .18s ease;}
+  /* the wider .app column leaves room for a 3rd column instead of stretching
+     each 2-up card awkwardly wide */
+  @media (min-width:520px){ .grid{grid-template-columns:repeat(3,1fr);} }
   .pcard{
     position:relative;
     border:2.5px solid var(--ink);border-radius:10px;background:var(--white);
@@ -2311,8 +2319,7 @@
   html.dark .mode-card.quick .mc-headline{ color:#6c9cf0; }
   html.dark .lineup-meta .lu-ov.green,
   html.dark .res-squad-row .r-ov.green{ color:#3ad17a; }
-  /* keep these prominent borders black in dark mode (not cream) */
-  html.dark .hero{ border-color:#000; }
+  /* keep this prominent border black in dark mode (not cream) */
   html.dark .btn.red{ border-color:#000; }
 
   /* ---------- masthead logo (theme-swapped) + theme toggle ---------- */
