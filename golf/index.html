@@ -1603,7 +1603,16 @@ const REG_POOL=[
 const REG_PER_SEASON=7, REG_STRIDE=4;   // 13 anchors + 7 rotating = 20 events/season; ~4 of 7 small events swap each year
 // default slate (daily / fallback): anchors + the first rotating window, in calendar order
 const SCHEDULE=ANCHORS.concat(REG_POOL.slice(0,REG_PER_SEASON)).map(e=>({...e})).sort((a,b)=>a.wk-b.wk);
-function majorsSchedule(){ return ANCHORS.filter(e=>e.major).map(e=>({...e})).sort((a,b)=>a.wk-b.wk); }
+// Purse inflation: real PGA Tour purses have grown substantially year over year — this keeps a long
+// career's or circuit's prize money feeling current instead of a flat number frozen at year-1 levels for
+// 30-40 seasons, and gives record earnings a real "when" attached to them. Deliberately modest (not the
+// real tour's own ~7-9%/yr over the last two decades) so the anti-forgery earnings ceiling in Supabase
+// (see CLAUDE.md CS78 / supabase/34_runtour_purse_inflation_cap.sql) only needs a bounded bump to keep
+// covering a genuine late-career season. Not applied to the Daily Challenge (single-round, no career year).
+const PURSE_INFLATION=0.032;
+function purseMult(year){ return Math.pow(1+PURSE_INFLATION, Math.max(0,(year||1)-1)); }
+function inflatePurses(list,year){ const m=purseMult(year); return list.map(e=>({...e, purse:(e.purse||0)*m})); }
+function majorsSchedule(){ return inflatePurses(ANCHORS.filter(e=>e.major),S.year||1).sort((a,b)=>a.wk-b.wk); }
 // the schedule for a given career-year: anchors + a rotating window of the regular pool. Seeded by
 // the career so it's stable within a save (resume-safe) but a different slate each year, and each
 // career gets its own ordering. Walks a fixed stride through a per-career shuffle of the pool.
@@ -1621,7 +1630,7 @@ function seasonSchedule(year,seed){
   // the year's team event (Ryder/Presidents) closes the season — only if your nationality is on a team
   if(!S.daily && playerInTeamEvent(year)){ const te=teamEventForYear(year);
     list=list.concat([{name:te.short, type:'teamcup', wk:38, teamcup:true, teamType:te.type, major:false, big:false, purse:0, noCut:true}]); }
-  return list.map(e=>({...e})).sort((a,b)=>a.wk-b.wk);
+  return inflatePurses(list,year).sort((a,b)=>a.wk-b.wk);
 }
 
 /* ---- The Legend Circuit: an optional post-career epilogue for a signed-in 50+ retiree, facing off
@@ -1678,7 +1687,8 @@ function circuitSchedule(seed){
   const picks=shuffled.slice(0, Math.min(7, shuffled.length));
   const guestEvts=guestMajorExemptions().map(name=>({name, purse:GUEST_MAJOR_PURSE[name], type:'major',
     wk:GUEST_MAJOR_WK[name], major:true, big:true, guestMajor:true}));
-  return CIRCUIT_MAJORS.concat(picks).concat(guestEvts).concat(CIRCUIT_PLAYOFFS).map(e=>({...e})).sort((a,b)=>a.wk-b.wk);
+  const list=CIRCUIT_MAJORS.concat(picks).concat(guestEvts).concat(CIRCUIT_PLAYOFFS);
+  return inflatePurses(list,S.year||1).sort((a,b)=>a.wk-b.wk);
 }
 // the field for a past-champion return to an actual tour major: today's LIVING, active tour (not the
 // circuit's own retired alumni) — the legend is a guest in the current tour's ecosystem for this one week.
@@ -1710,16 +1720,38 @@ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 // higher than the spec's mean-80 starting values). COURSE_SD = a per-event difficulty draw that models
 // course/weather variance (gives the real winner-score spread). Validated vs the spec's target table.
 // sigma = per-player per-round noise (the one lever that drives finish-position variance; csd is a
-// field-wide weekly draw that cancels in the standings). Trimmed ~16% from the DataGolf baseline
-// (2.80/2.90) to tighten season-to-season swings so a clearly better build tracks its skill more
-// reliably, while keeping enough randomness for upsets/youth breakouts. base & csd unchanged.
-const SIM={reg:{base:0.91,sigma:2.35,csd:0.90}, maj:{base:2.74,sigma:2.45,csd:1.45}};
+// field-wide weekly draw that cancels in the standings). RESTORED to the real DataGolf-measured baseline
+// (2.80/2.90) — a previous pass had trimmed this ~16% to tighten season-to-season swings, but that made a
+// clearly-better build's per-event win probability far higher than any real career (see CLAUDE.md CS78):
+// real legends peak around a 15-20% major win rate in their absolute prime, not 25%+ routinely. base & csd
+// unchanged (those track the winning-score calibration, a separate concern from win-rate realism).
+const SIM={reg:{base:0.91,sigma:2.80,csd:0.90}, maj:{base:2.74,sigma:2.90,csd:1.45}};
 const SKILLSLOPE=0.238;
-function simRound(eo,clu,{major,finalRd,courseAdj}){
+// Diminishing returns above the field's realistic ceiling (~92 OVR is close to the best NPCs a maxed
+// build ever faces) — real strokes-gained data shows the very best players in the world separate from
+// mid-pack tour pros by roughly a stroke a round, not four or five, so a 99-build's edge over a 92-build
+// should be a fraction of a 92-build's edge over an 80-build, not the same fixed per-point rate all the
+// way up. Below the knee, nothing changes — every previously-calibrated realistic build (60-92 OVR) sees
+// the exact same edge as before.
+const SKILL_KNEE=92, SKILL_KNEE_COMPRESS=0.45;
+function skillEdge(eo){ const capped=Math.min(eo,SKILL_KNEE)-80, extra=Math.max(0,eo-SKILL_KNEE)*SKILL_KNEE_COMPRESS; return (capped+extra)*SKILLSLOPE; }
+// Composure under real pressure — majors AND big/signature/playoff finales, final round only. Beyond the
+// existing small mean nudge (±0.4 strokes), low composure now carries a real CHOKE RISK: a chance of a
+// one-round blowup (a genuine collapse, not just a slightly worse average). Deliberately asymmetric, not
+// a symmetric variance widening — an earlier version of this tried "low composure = wider spread both
+// ways," but that gives an underdog MORE win equity in a big single-elimination-style field (wider variance
+// helps whoever's behind), which is backwards from the ask: low composure should make majors harder, full
+// stop, not just more chaotic. High composure (80+) carries no choke risk at all — cool under pressure,
+// not just lucky.
+const CHOKE_RATE=0.008, CHOKE_CAP=0.30, CHOKE_STROKES=3.2;
+function simRound(eo,clu,{major,big,finalRd,courseAdj}){
   const k=major?SIM.maj:SIM.reg;
-  let m=k.base+(courseAdj||0)-(eo-80)*SKILLSLOPE;
-  // composure: the one non-data-grounded knob — a tiny mean nudge on major Sundays only (cap ±0.4 strokes)
-  if(major&&finalRd) m-=clamp((clu-80)*0.02,-0.4,0.4);
+  let m=k.base+(courseAdj||0)-skillEdge(eo);
+  const pressure=(major||big)&&finalRd;
+  if(pressure){
+    m-=clamp((clu-80)*0.02,-0.4,0.4);
+    if(RNG()<clamp((80-clu)*CHOKE_RATE,0,CHOKE_CAP)) m+=CHOKE_STROKES;   // the choke moment itself
+  }
   return m+gauss()*k.sigma;
 }
 /* course fit (§2): skill-weight multipliers, renormalized to 1.0, → event-effective overall.
@@ -2097,7 +2129,7 @@ function simHeadlessEvent(evt, players){
   const ew=eventWeights(evt), courseAdj=gauss()*(evt.major?SIM.maj.csd:SIM.reg.csd);
   const ps=players.map(p=>({p, eo:eventOverall(p,ew), total:0, made:true, rounds:[null,null,null,null]}));
   for(let r=0;r<4;r++){ const finalRd=(r===3);
-    ps.forEach(o=>{ if(r>=2 && !o.made) return; const s=simRound(o.eo,o.p.clu,{major:evt.major,finalRd,courseAdj}); o.rounds[r]=s; o.total+=s; });
+    ps.forEach(o=>{ if(r>=2 && !o.made) return; const s=simRound(o.eo,o.p.clu,{major:evt.major,big:evt.big,finalRd,courseAdj}); o.rounds[r]=s; o.total+=s; });
     if(r===1 && !evt.noCut){ const sorted=[...ps].sort((a,b)=>a.total-b.total); const cutN=Math.min(65,ps.length); const cs=sorted[cutN-1].total; ps.forEach(o=>o.made=o.total<=cs+1e-9); }
   }
   const made=ps.filter(o=>o.made).sort((a,b)=>a.total-b.total), missed=ps.filter(o=>!o.made);
@@ -3990,8 +4022,8 @@ function beginEvent(){
 }
 function simNextRound(){
   const ce=S.curEvt; if(!ce||ce.done) return;
-  const r=ce.roundsDone, major=ce.evt.major, finalRd=(r===3);
-  ce.players.forEach(o=>{ if(r>=2 && !o.made) return; const s=simRound(o.eo,o.p.clu,{major,finalRd,courseAdj:ce.courseAdj}); o.rounds[r]=s; o.total+=s; });
+  const r=ce.roundsDone, major=ce.evt.major, big=ce.evt.big, finalRd=(r===3);
+  ce.players.forEach(o=>{ if(r>=2 && !o.made) return; const s=simRound(o.eo,o.p.clu,{major,big,finalRd,courseAdj:ce.courseAdj}); o.rounds[r]=s; o.total+=s; });
   ce.roundsDone=r+1;
   if(ce.roundsDone===2 && !ce.evt.noCut){   // 36-hole cut: ~top 65 make the weekend (DataGolf spec §3); playoff events have no cut
     const sorted=[...ce.players].sort((a,b)=>a.total-b.total);
