@@ -1948,6 +1948,60 @@ allows Google Fonts, or self-host Anton.*
   Andrews, Quail Hollow, East Lake, Glen Abbey, Sedgefield) — flagged as a harmless, out-of-scope discrepancy
   that predates this change, not touched here.
 
+- **CS63 — Legend Tokens: play a Daily Challenge round as a retired 40-year career's peak build.**
+  Implements idea #1 from the CS62 discussion (owner confirmed via AskUserQuestion: career-achievement gate
+  over raw OVR; peak-career state, not retirement-year decline; a separate Legend leaderboard tier; one
+  token per qualifying career). Full pipeline, all client-side except the new SQL migration:
+  - **Peak-build tracking** (`scrSummary`, right after `S.career.seasons.push`): every season, if this
+    year's `ovr` beats `S.career.peakOvr`, snapshot the full 8-skill profile (`S.career.peakSkills`, from
+    `S.season.me`, not just the scalar overall), plus `peakName`/`peakLook`/`peakYear`. This is what a token
+    freezes — the golfer at their best moment, not however they looked in a declined final season.
+  - **Qualification bar** (`legendQualifies`/`legendQualifyReason`): Career Grand Slam (win all 4 majors) OR
+    5+ career majors OR 3x Player of the Year, checked against the CURRENT career's own tracked stats
+    (`S.career.majorStats`/`S.career.majors`/`S.career.awards.poy` — per-run counters, not the lifetime `lt`
+    totals, so an old career's accomplishments can't qualify a new mediocre one).
+  - **Minting** (`mintLegendToken`, called from `endCareer` only when `reason==='age'` — the forced
+    year-40 retirement path, never `'chose'`/early retirement, matching "completes a 40-year sim"
+    literally): banks a token `{name, ovr, skills, look, reason, years, used:false}` under
+    `acctKey('bag_legend_tokens')`. Signed-in only (career mode already requires an account, CS54).
+    Celebrated on the career-end ceremony screen with a gold banner naming the golfer, peak OVR, and which
+    bar it cleared.
+  - **Spending it** (`scrDailyPreview` → `beginDailyRoundWithLegend`): unused tokens show as cards ("Play
+    as Legend ▸") alongside the normal "Draft your golfer" button. Picking one skips setup/draft/build
+    entirely — `S.dailySkills` loads straight from the frozen snapshot, `S.name`/`S.look` swap to the
+    legend's identity for the round. Uses one of the day's 3 attempts, same as a normal round (not a bonus
+    4th, per the discussion). The token is consumed in `finishDailyRound` on completion — win or lose, but
+    never for an abandoned/backed-out attempt (nothing marks it used until the round actually finishes).
+  - **Separate Legend tier**: `is_legend` threaded through `S.dailyResult`, local course records
+    (`recordCourseScore` now takes an `isLegend` flag and writes to a distinct `bag_courserecords_legend`
+    bucket instead of the human `bag_courserecords`), and the Supabase submission
+    (`supabase/30_runtour_legend.sql` — **ACTION: owner needs to run this** — adds `is_legend boolean` to
+    `runtour_daily_scores` and a `p_legend` filter param to `runtour_submit_daily`/`runtour_daily_board`/
+    `runtour_course_records`, mirroring the `p_sort` pattern from `28_runtour_sort.sql`; fully backward
+    compatible, defaults false everywhere so existing callers see exactly the human board they always have).
+    `overlayCourseRecords` gained a Human/Legend tab toggle covering both today's board and all-time
+    records; the Legend tab lazy-loads (`crLoadLegend`/`dbLoadLegend`) only when actually opened. Known,
+    documented limitation: `is_legend` is client-declared (same pragmatic posture as the rest of this
+    table) — the server has no visibility into career-completion state to verify the claim, only the score
+    itself is still server-recomputed/clamped as before.
+  - Trophy Room (`overlayRecord`) gained a compact Legend Tokens strip (`legendTokensHTML`) showing ready
+    tokens + a lifetime count, only rendering at all once a player has earned one.
+  - How to Play gained a 5th Daily Challenge step explaining the mechanic.
+  Verified extensively in Playwright: qualifying 40-year career (Grand Slam) mints a token with the correct
+  peak snapshot; a non-qualifying career and a qualifying-but-voluntarily-early-retired career both mint
+  nothing; the Daily preview shows/hides the token card correctly; clicking "Play as Legend" skips straight
+  to `dailyround` with frozen skills and no draft; finishing the round tags `isLegend=true`, consumes the
+  token, and writes to the legend-only local course record (not the human one); Trophy Room and the
+  Human/Legend course-record toggle render correctly (a template-literal bug where `$()` — which returns
+  only `firstChild` — silently dropped a sibling `<button class="btn red">Close</button>`, breaking the
+  overlay's close handler, was caught by this same test pass and fixed); a normal token-free draft round and
+  a signed-out guest's Trophy Room were re-verified unaffected (regression pass). SQL migration validated
+  end-to-end against a real local Postgres instance (stubbed `auth`/`profiles`): clean apply after
+  `24_runtour_daily.sql`, a human and a legend submission on the same course stay on separate
+  boards/records despite the legend score being better, a later legend submission from the SAME user
+  correctly flips their single best-of-day row's `is_legend`, and a worse subsequent submission is
+  correctly rejected (existing anti-cheat upsert guard intact).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

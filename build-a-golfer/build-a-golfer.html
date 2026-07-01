@@ -1787,8 +1787,13 @@ function fmtDayKey(k){ const d=_ymd(k); return MONTH_NAMES[d.M-1].slice(0,3)+' '
 function dCourseSkillTop(c,n){ return CATS.filter(x=>x.k!=='clu').sort((a,b)=>c.fit[b.k]-c.fit[a.k]).slice(0,n||3); }
 /* ---- local course records (Phase 2 — replaced/augmented by the backend in Phase 3) ---- */
 function courseRecords(){ return LS.get('bag_courserecords',{}); }
-function recordCourseScore(courseKey,toPar,ovr,name){ const r=courseRecords(); const cur=r[courseKey];
-  if(!cur || toPar<cur.toPar){ r[courseKey]={toPar,ovr,name:name||'You',mine:true,date:todayKey()}; LS.set('bag_courserecords',r); return true; }
+// Legend-run course records are tracked in a SEPARATE bucket/board — a maxed 40-year peak build
+// shouldn't just steamroll every freshly-drafted golfer's shot at a human course record.
+function courseRecordsLegend(){ return LS.get('bag_courserecords_legend',{}); }
+function recordCourseScore(courseKey,toPar,ovr,name,isLegend){
+  const key=isLegend?'bag_courserecords_legend':'bag_courserecords';
+  const r=isLegend?courseRecordsLegend():courseRecords(); const cur=r[courseKey];
+  if(!cur || toPar<cur.toPar){ r[courseKey]={toPar,ovr,name:name||'You',mine:true,date:todayKey()}; LS.set(key,r); return true; }
   return false; }
 
 const FIELDSIZE=120;   // season field = you + (FIELDSIZE-1) data-grounded golfers (DataGolf spec §3)
@@ -2613,6 +2618,7 @@ function scrRules(){
     ['🎯','Draft for the course','The preview shows what skills win there and the day\'s conditions. Spin a golfer built to attack today\'s course.'],
     ['♟️','Play it your way','Pick a game plan, then choose Attack or Play Safe on the signature holes. Aggressive chases a low number, but it can blow up.'],
     ['🏆','Claim the course record','Post the lowest round and the course record is yours. Beat the standing record and your name sits on it until someone takes it.'],
+    ['🎖️','Play a Legend Token','Finish a full 40-year career at an elite level (a Career Grand Slam, 5+ majors, or 3x Player of the Year) and bank a one-time entry as that career\'s peak build. Legend rounds have their own leaderboard and course records.'],
   ];
   const dList=$(`<div class="perks" style="max-width:560px;margin:0 auto 18px"></div>`);
   dSteps.forEach(s=>dList.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
@@ -2705,6 +2711,7 @@ function overlayRecord(screen){
     <h3>Trophy Room</h3>
     <div class="profhdr" style="display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 12px">${avatarHTML()}<div style="font-family:var(--serif);font-weight:700;font-size:18px;color:var(--oncard)">${esc(sbUsername||S.name||'Your Golfer')}</div><div class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(equippedTitle())}</div>${(sbSignedIn()&&sbUsername)?'<div class="small muted" style="margin-top:0">RunThe.GG member</div>':''}</div>
     ${cabinet}
+    ${legendTokensHTML()}
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">${acctCard}</div>
     <div class="sbar" style="margin-bottom:14px">
       <div class="sstat wide"><div class="k">Best net profit</div><div class="v" style="color:${(c.bestNet??0)>=0?'#35d6a0':'#E14A33'};font-size:22px">${c.bestNet==null?', ':fmtSigned(c.bestNet)}</div></div>
@@ -4893,6 +4900,14 @@ function scrSummary(){
       ms.played++; const fin=(meR.pos==='CUT')?99:meR.pos;
       if(meR.pos===1) ms.wins++; if(fin<=10) ms.top10++; if(fin<ms.best) ms.best=fin; });
     S.career.seasons.push({year:S.year||1,net:ec.net,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank,top10:t.top10,played:t.played,made:t.made});
+    // track this career's PEAK build (full 8-skill snapshot, not just the overall number) — this is
+    // the golfer a Legend Token freezes and hands back to you in the Daily Challenge if this career
+    // goes on to qualify (see endCareer). Compared against ovr so a later decline year can't overwrite it.
+    if(!S.daily && (S.career.peakOvr==null || ovr>S.career.peakOvr)){
+      S.career.peakOvr=ovr; S.career.peakYear=S.year||1; S.career.peakName=me.name;
+      S.career.peakSkills=Object.fromEntries(CATS.map(c=>[c.k, me[c.k]]));
+      S.career.peakLook=S.look?JSON.parse(JSON.stringify(S.look)):null;
+    }
     // snapshot this year's per-skill build so year N+1 can show what changed
     if(!S.daily){ S.career.skillSeasons=S.career.skillSeasons||[];
       S.career.skillSeasons.push({year:S.year||1,skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))}); }
@@ -5244,9 +5259,63 @@ function continueFranchise(){
   track('offseason_start',{year:S.year});
   S.screen='offseason'; render();
 }
+/* ---- Legend Tokens: finish the full 40-year career at an elite level and bank a one-time Daily
+   Challenge entry using that career's PEAK build (see the peak-tracking in scrSummary above), instead
+   of drafting fresh. Deliberately gated on genuine accomplishment (not just a high OVR) so it rewards
+   playing well, not min-maxing the spin wheel. One token per qualifying completed career — run another
+   full career, earn another. Signed-in only (career mode itself already requires an account, CS54). ---- */
+const LEGEND_MAJORS_BAR=5, LEGEND_POY_BAR=3;
+function legendQualifies(c){
+  if(!c) return false;
+  const ms=c.majorStats||{};
+  const slam=['The Masters','The Championship','U.S. Open','The Open'].every(n=>ms[n]&&ms[n].wins>0);
+  const majors5=(c.majors||0)>=LEGEND_MAJORS_BAR;
+  const poy3=(c.awards&&c.awards.poy||0)>=LEGEND_POY_BAR;
+  return slam||majors5||poy3;
+}
+function legendQualifyReason(c){
+  const ms=(c&&c.majorStats)||{};
+  if(['The Masters','The Championship','U.S. Open','The Open'].every(n=>ms[n]&&ms[n].wins>0)) return 'Career Grand Slam';
+  if((c.majors||0)>=LEGEND_MAJORS_BAR) return c.majors+' career majors';
+  if((c.awards&&c.awards.poy||0)>=LEGEND_POY_BAR) return c.awards.poy+'x Player of the Year';
+  return '';
+}
+function legendTokens(){ return LS.get(acctKey('bag_legend_tokens'),[]); }
+function legendTokensUnused(){ return legendTokens().filter(t=>!t.used); }
+// Trophy Room strip — shows unused tokens (spend them from the Daily Challenge preview screen) and,
+// once at least one has been earned, a small lifetime tally. Renders nothing for a player who's never
+// finished a qualifying career, so it doesn't clutter the Trophy Room for most players.
+function legendTokensHTML(){
+  const all=legendTokens(); if(!all.length) return '';
+  const unused=all.filter(t=>!t.used);
+  const rows=unused.slice(0,3).map(t=>`<div class="lb" style="grid-template-columns:1fr auto">
+    <span class="pl" style="min-width:0"><div style="font-weight:700">${esc(t.name)} · OVR ${t.ovr}</div><div class="small muted" style="font-size:10.5px">${esc(t.reason)}</div></span>
+    <span class="small" style="color:var(--gold);font-weight:800;align-self:center">Ready</span></div>`).join('');
+  return `<div style="margin-bottom:14px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:15px">🏆</span><b style="color:var(--gold);font-size:13.5px">Legend Tokens</b><span class="small muted">${unused.length} ready · ${all.length} earned lifetime</span></div>
+    ${unused.length?`<div class="board">${rows}</div><div class="small muted" style="margin-top:6px">Spend one from the Daily Challenge preview screen.</div>`
+      :`<div class="small muted">All spent, finish another full 40-year career at an elite level to earn another.</div>`}</div>`;
+}
+// mints a token from the just-finished career's PEAK build — only when the full 40 years were played
+// (reason 'age', the forced-retirement path) and the career cleared the qualification bar.
+function mintLegendToken(){
+  if(S.daily || !sbSignedIn() || !S.career || !S.career.peakSkills) return null;
+  if(!legendQualifies(S.career)) return null;
+  const token={
+    id: 'lt'+Math.floor(Math.random()*1e9)+'_'+(S.career.seasons?S.career.seasons.length:0),
+    name: S.career.peakName||S.name||'Your Golfer',
+    ovr: S.career.peakOvr, skills: S.career.peakSkills, look: S.career.peakLook,
+    peakYear: S.career.peakYear, years: S.career.seasons.length,
+    reason: legendQualifyReason(S.career), used: false,
+  };
+  const tokens=legendTokens(); tokens.push(token); LS.set(acctKey('bag_legend_tokens'),tokens);
+  track('legend_token_earned',{ovr:token.ovr,reason:token.reason,years:token.years});
+  return token;
+}
 function endCareer(reason){
   S._repAnimShown=false;   // let the Tour Rep meter animate once on the career-end ceremony
   saveCareer();   // keep the final state addressable
+  S.freshLegendToken = (reason==='age') ? mintLegendToken() : null;   // full 40 years only
   if(S.career){ const c=S.career; S.careerEnd={reason,years:c.seasons.length,
     money:c.money,net:c.net,wins:c.wins,majors:c.majors,top10:c.top10,
     best: c.seasons.reduce((m,s)=>Math.max(m,s.money),0),
@@ -5593,6 +5662,24 @@ function scrDailyPreview(){
   go.onclick=()=>{ S.screen='setup'; render(); }; add(go);
   const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`);
   cr.onclick=()=>{ S.overlay='courserecords'; render(); }; add(cr);
+  // Legend Tokens: a signed-in player who's finished a qualifying full 40-year career can skip the
+  // draft and play this round as that career's peak build, one-time, instead of a fresh spin.
+  if(!S.special){ const toks=legendTokensUnused();
+    if(toks.length){
+      toks.sort((a,b)=>b.ovr-a.ovr);
+      const wrap=$(`<div style="max-width:520px;margin:14px auto 0;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(235,166,31,.08),rgba(10,22,38,.25));padding:14px 15px"></div>`);
+      wrap.appendChild($(`<div style="display:flex;align-items:center;gap:7px;margin-bottom:9px"><span style="font-size:16px">🏆</span><b style="color:var(--gold);font-size:13.5px">Legend Token${toks.length>1?'s':''} available</b></div>`));
+      toks.forEach(tok=>{
+        const row=$(`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(235,166,31,.15)"></div>`);
+        row.appendChild($(`<div style="min-width:0"><div style="font-weight:800;color:var(--oncard)">${esc(tok.name)} · OVR ${tok.ovr}</div><div class="small muted" style="margin-top:1px">${esc(tok.reason)} · ${tok.years}-year career</div></div>`));
+        const use=$(`<button class="btn gold" style="width:auto;flex:0 0 auto;padding:9px 14px;font-size:12.5px">Play as Legend ▸</button>`);
+        use.onclick=()=>{ track('legend_token_used',{ovr:tok.ovr}); beginDailyRoundWithLegend(tok); }; row.appendChild(use);
+        wrap.appendChild(row);
+      });
+      wrap.appendChild($(`<div class="small muted" style="margin-top:9px;line-height:1.4">Uses one of today's attempts and this token, still consumed even if you don't beat the tour average.</div>`));
+      add(wrap);
+    }
+  }
 }
 /* ---- daily round auto-advance: the round plays itself hole-by-hole, pausing only at
    signature holes for the Attack / Play-Safe decision. Pace ~0.8s/hole so you can watch
@@ -5659,7 +5746,21 @@ function beginDailyRound(){
   S.dailyOvr=Math.round(p.skill); S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
   S.dailyAuto=false; S.dailyViewHole=null; S.dailyRevealN=null; clearDailyTimer();   // auto-play defaults OFF — you tee off each hole
+  S.dailyLegend=null;
   track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr});
+  S.screen='dailyround'; render(); scheduleDailyAdvance();
+}
+// Legend Token path: skip the draft entirely and play with a retired career's frozen PEAK build.
+// Token isn't marked used yet — that happens on submission (finishDailyRound), so backing out or
+// abandoning the round doesn't burn it.
+function beginDailyRoundWithLegend(token){
+  S.dailySkills=Object.assign({},token.skills); S.dailyOvr=token.ovr;
+  S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
+  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
+  S.dailyAuto=false; S.dailyViewHole=null; S.dailyRevealN=null; clearDailyTimer();
+  S.dailyLegend={id:token.id, name:token.name, look:token.look};
+  S.name=token.name; if(token.look) S.look=Object.assign({},token.look);
+  track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr,legend:true});
   S.screen='dailyround'; render(); scheduleDailyAdvance();
 }
 // A hash of the drafted build so each lineup gets its OWN per-hole luck. Without this every
@@ -5774,17 +5875,24 @@ function scrSpotlightResult(){
   const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Back to title</button>`); home.onclick=()=>{S.special=false;S.daily=false;S.screen='title';render();}; add(home);
   add($(`<p class="small muted center" style="margin-top:12px">A special 1-day event · the next Spotlight drops next month.</p>`));
 }
+// marks a Legend Token spent (round complete, win or lose) — called once from finishDailyRound
+function consumeLegendToken(id){
+  if(!id) return; const tokens=legendTokens(); const t=tokens.find(x=>x.id===id);
+  if(t && !t.used){ t.used=true; LS.set(acctKey('bag_legend_tokens'),tokens); }
+}
 function finishDailyRound(){
   if(S.special) return finishSpotlightRound();
   if(S.dailyResult)return;
   const total=S.dailyHoles.reduce((s,h)=>s+h.toPar,0), c=DAILY_COURSES[S.dailyCourse];
   const signedIn=sbSignedIn();
+  const isLegend=!!S.dailyLegend;
   // guests can't claim a course record or post to the global board — they sign in to log the score
-  const isRec=signedIn?recordCourseScore(S.dailyCourse,total,S.dailyOvr,sbUsername||S.name||'You'):false;
+  const isRec=signedIn?recordCourseScore(S.dailyCourse,total,S.dailyOvr,sbUsername||S.name||'You',isLegend):false;
   const holes=S.dailyHoles.map(h=>({par:h.par,toPar:h.toPar}));   // compact — enough to redraw the scorecard
   const avg=dTourAvg(c), won=total<avg;   // beat the real tour scoring average = won the day
   const decisions={plan:S.dailyPlan,att:(S.dailyAttempt||0),attacks:S.dailyHoles.filter(h=>h.attack!=null).map(h=>({n:h.n,a:h.attack}))};
-  S.dailyResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,record:isRec,holes,avg,won,day:S.dailySeed,skills:S.dailySkills,decisions};
+  S.dailyResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,record:isRec,holes,avg,won,day:S.dailySeed,skills:S.dailySkills,decisions,isLegend,legendName:isLegend?S.dailyLegend.name:null};
+  if(isLegend) consumeLegendToken(S.dailyLegend.id);   // spent on completion, win or lose — never wasted on an abandoned round
   // "days played" streak: advances once per day on completion (win or lose). Beating the pro feeds the
   // lifetime record instead (tie counts as a loss — `won` is strict total<avg, decided by best of the day).
   const _ds=bumpStreak(); const _st=bumpDailyStats(won);
@@ -5795,7 +5903,7 @@ function finishDailyRound(){
   const improved=!best||total<best.total; if(improved) best=S.dailyResult;
   S.dailyAttemptNo=attempts; S.dailyImproved=improved;
   LS.set(acctKey('bag_daily'),{date:S.dailySeed,attempts,best,result:S.dailyResult});
-  track('daily_completed',{course:S.dailyCourse,total,attempt:attempts,best:best.total,won,avg,guest:!signedIn});
+  track('daily_completed',{course:S.dailyCourse,total,attempt:attempts,best:best.total,won,avg,guest:!signedIn,legend:isLegend});
   if(improved && signedIn) sbSubmitDaily(best);   // only accounts post to the board; guests post on sign-in (gated by attempts)
   // remember this guest round so signing in from the result screen logs it to the account (consuming an attempt)
   S._claimDaily = signedIn ? null : S.dailyResult;
@@ -6041,6 +6149,7 @@ function scrDailyResult(){
   const c=DAILY_COURSES[r.course], total=r.total;
   const attempts=dailyAttempts(), left=dailyAttemptsLeft();
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge${justPlayed?' complete':''}</span></div>`));
+  if(r.isLegend) add($(`<div class="center" style="margin-top:4px"><span class="tag" style="color:#ffd76a;border-color:#ffd76a">🏆 Played as Legend · ${esc(r.legendName||'')}</span></div>`));
   add($(`<h1 class="center" style="font-size:26px;margin:10px 0 2px">${esc(c.v)}</h1>`));
   add($(`<div class="center" style="margin:6px 0"><span class="mono" style="font-weight:800;font-size:48px;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${dtp(total)}</span></div>`));
   add($(`<p class="lede center" style="margin:0 0 8px">${c.par+total} on a par ${c.par} · OVR ${r.ovr} · ${dCondLabel(r.cond)}</p>`));
@@ -6130,19 +6239,26 @@ function scrDailyResult(){
 function overlayCourseRecords(screen){
   const today=S.dailyCourse||dailyCourseKey(todayKey());
   const todaySeed=S.dailySeed||todayKey();
-  if(sb){ if(crCache===null) crLoad(); if(dbCache===null||dbCache.day!==todaySeed) dbLoad(todaySeed); }   // async, re-renders
-  const recs=courseRecords();   // local store, already merged with global by crLoad
-  const online=!!(crCache&&crCache.ok);
+  const tab=S.crTab==='legend'?'legend':'human';
+  if(sb){
+    if(crCache===null) crLoad(); if(dbCache===null||dbCache.day!==todaySeed) dbLoad(todaySeed);
+    // Legend boards are only fetched once the player actually opens that tab (most never will)
+    if(tab==='legend'){ if(crCacheLegend===null) crLoadLegend(); if(dbCacheLegend===null||dbCacheLegend.day!==todaySeed) dbLoadLegend(todaySeed); }
+  }
+  const boardCache = tab==='legend' ? dbCacheLegend : dbCache;
+  const recs = tab==='legend' ? courseRecordsLegend() : courseRecords();   // local store, merged with global by crLoad
+  const crc = tab==='legend' ? crCacheLegend : crCache;
+  const online=!!(crc&&crc.ok);
   // today's global board
   let boardHTML='';
   if(sb){
-    if(dbCache===null||dbCache.day!==todaySeed){ boardHTML='<div class="small muted center" style="padding:14px 8px">Loading today’s board…</div>'; }
-    else if(dbCache.ok && dbCache.rows.length){
-      boardHTML=`<div class="board">`+dbCache.rows.slice(0,20).map(r=>`<div class="lb ${(sbUser&&r.user_id===sbUser.id)?'you':''}" style="grid-template-columns:30px 1fr auto">
+    if(boardCache===null||boardCache.day!==todaySeed){ boardHTML='<div class="small muted center" style="padding:14px 8px">Loading today’s board…</div>'; }
+    else if(boardCache.ok && boardCache.rows.length){
+      boardHTML=`<div class="board">`+boardCache.rows.slice(0,20).map(r=>`<div class="lb ${(sbUser&&r.user_id===sbUser.id)?'you':''}" style="grid-template-columns:30px 1fr auto">
         <span class="pos">${r.rank===1?'🏆':r.rank}</span>
         <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.display_name)}</div><div class="small muted" style="font-size:10px">OVR ${r.ovr}${r.won?' · <span style="color:#35d6a0">beat the pro</span>':''}</div></span>
         <span class="sc" style="color:var(--gold);font-weight:800;text-align:right">${dtp(r.to_par)}</span></div>`).join('')+`</div>`;
-    } else if(dbCache.ok){ boardHTML='<div class="small muted center" style="padding:14px 8px">No rounds posted yet today, be the first.</div>'; }
+    } else if(boardCache.ok){ boardHTML=`<div class="small muted center" style="padding:14px 8px">${tab==='legend'?'No legend rounds posted yet today.':'No rounds posted yet today, be the first.'}</div>`; }
     else { boardHTML='<div class="small muted center" style="padding:10px 8px">Today’s online board is unavailable right now.</div>'; }
   } else { boardHTML='<div class="small muted center" style="padding:10px 8px">Sign in on RunThe.GG to see the global daily board.</div>'; }
   // all-time course records
@@ -6150,15 +6266,24 @@ function overlayCourseRecords(screen){
     return `<div class="lb ${isToday?'you':''}" style="grid-template-columns:1fr auto">
       <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(dShort(c.v))}${isToday?' · <span style="color:var(--gold)">today</span>':''}</div><div class="small muted" style="font-size:10.5px">Par ${c.par} · ${esc(c.loc)}</div></span>
       <span style="text-align:right">${rec?`<div class="sc" style="color:var(--gold);font-weight:800">${dtp(rec.toPar)}</div><div class="small muted" style="font-size:10px">${esc(rec.name||'You')}</div>`:'<div class="small muted">unclaimed</div>'}</span></div>`; }).join('');
+  const tabs=$(`<div class="mini" style="margin-bottom:2px"></div>`);
+  const humanTab=$(`<button class="btn ${tab==='human'?'goldfill':'ghost'}" style="font-size:12.5px">Human</button>`);
+  const legendTab=$(`<button class="btn ${tab==='legend'?'goldfill':'ghost'}" style="font-size:12.5px">🏆 Legend</button>`);
+  humanTab.onclick=()=>{S.crTab='human';render();}; legendTab.onclick=()=>{S.crTab='legend';render();};
+  tabs.appendChild(humanTab); tabs.appendChild(legendTab);
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
-    <h3>Course Records</h3>
-    <h2 style="margin:2px 0 8px">Today · ${esc(dShort(DAILY_COURSES[today].v))}</h2>
-    <p class="lede" style="margin:0 0 8px;font-size:12.5px">The global leaderboard for today’s course. Lowest round wins the day.</p>
-    ${boardHTML}
-    <h2 style="margin:16px 0 8px">All-time course records${online?'':' <span class="small muted" style="font-weight:400">(local)</span>'}</h2>
-    <p class="lede" style="margin:0 0 10px;font-size:12.5px">The lowest round ever posted at each course. Beat one to put your name on it.</p>
-    <div class="board">${rows}</div><div style="height:12px"></div><button class="btn red">Close</button></div>`);
+    <h3>Course Records</h3></div>`);
+  ov.appendChild(tabs);
+  if(tab==='legend') ov.appendChild($(`<p class="small muted center" style="margin:8px 0 0">Rounds played with a retired career's peak build via a Legend Token, kept separate from everyday drafted golfers.</p>`));
+  ov.appendChild($(`<div><h2 style="margin:12px 0 8px">Today · ${esc(dShort(DAILY_COURSES[today].v))}</h2>
+    <p class="lede" style="margin:0 0 8px;font-size:12.5px">${tab==='legend'?'The global leaderboard for legend-token rounds at today’s course.':'The global leaderboard for today’s course. Lowest round wins the day.'}</p></div>`));
+  const boardWrap=$(`<div></div>`); boardWrap.innerHTML=boardHTML; ov.appendChild(boardWrap);
+  ov.appendChild($(`<div><h2 style="margin:16px 0 8px">All-time ${tab==='legend'?'legend ':''}course records${online?'':' <span class="small muted" style="font-weight:400">(local)</span>'}</h2>
+    <p class="lede" style="margin:0 0 10px;font-size:12.5px">The lowest round ever posted at each course. Beat one to put your name on it.</p></div>`));
+  const recWrap=$(`<div class="board"></div>`); recWrap.innerHTML=rows; ov.appendChild(recWrap);
+  ov.appendChild($(`<div style="height:12px"></div>`));
+  ov.appendChild($(`<button class="btn red">Close</button>`));
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
   screen.appendChild(ov);
@@ -6201,6 +6326,12 @@ function scrCareerEnd(){
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">${full?'🏁 A full career, hung up the clubs':'🏁 Career complete'}</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${esc(S.name||'Your Golfer')}</h1>`));
   add($(`<p class="lede center" style="margin-bottom:10px">${e.years} season${e.years===1?'':'s'} on tour · ${c.wins} win${c.wins===1?'':'s'} · ${c.majors} major${c.majors===1?'':'s'}</p>`));
+  if(S.freshLegendToken){ const lt=S.freshLegendToken;
+    add($(`<div class="center" style="margin:0 0 16px"><div style="display:inline-block;background:linear-gradient(180deg,#3a2a0f,#0a1626);border:1px solid var(--gold);border-radius:14px;padding:16px 22px;max-width:92vw;box-shadow:0 0 24px rgba(235,166,31,.25)">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">🏆 Legend Token Earned</div>
+      <div style="font:800 20px/1.2 var(--body);color:var(--oncard);margin-top:7px">${esc(lt.name)} · OVR ${lt.ovr} at their peak</div>
+      <div class="small muted" style="margin-top:5px;max-width:400px">${esc(lt.reason)} across ${lt.years} seasons earns a one-time Daily Challenge entry, spin your legend into a future daily round instead of drafting fresh.</div></div></div>`));
+  }
   add($(`<div class="center" style="margin-bottom:8px">
     <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Career net worth</div>
     <div class="mono" style="font-weight:800;font-size:38px;color:${ccol};margin-top:4px">${fmtSigned(c.net)}</div>
@@ -6274,6 +6405,7 @@ const SB_URL='https://jcrrxqfpdelrmvjuihnm.supabase.co';
 const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
 let sb=null, sbUser=null, sbUsername=null, sbProfile=null, lbCache={}, _pendingSeason=null;
 let _pendingDaily=null, crCache=null, dbCache=null;   // daily-challenge backend (Phase 3)
+let crCacheLegend=null, dbCacheLegend=null;   // Legend-tier course records / board (separate from the human ones above)
 const RTT_AUTH_KEY='sb-runtour-auth';   // RunTheTour's own saved-session key (separate from RunThePitch)
 function rttRemember(){ try{ return localStorage.getItem('rtt_remember')==='1'; }catch(e){ return false; } }
 function setRemember(on){ try{ localStorage.setItem('rtt_chose_remember','1'); on?localStorage.setItem('rtt_remember','1'):localStorage.removeItem('rtt_remember'); }catch(e){} }
@@ -6469,9 +6601,17 @@ async function sbSubmitDaily(b){
   if(!sbUser){ _pendingDaily=b; return; }            // post as soon as they sign in
   try{
     await sb.rpc('runtour_submit_daily',{p_day:b.day,p_course:b.course,p_to_par:b.total,p_ovr:b.ovr,
+      p_won:!!b.won,p_golfer:(S.name||'Your Golfer'),p_skills:b.skills||null,p_decisions:b.decisions||null,
+      p_is_legend:!!b.isLegend});
+    crCache=null; dbCache=null; crCacheLegend=null; dbCacheLegend=null;   // refresh records/board next open
+  }catch(e){
+    // p_is_legend isn't recognized until supabase/30_runtour_legend.sql is applied — retry without it
+    // so a non-legend submission still goes through even before the owner runs that migration.
+    if(!b.isLegend) return;
+    try{ await sb.rpc('runtour_submit_daily',{p_day:b.day,p_course:b.course,p_to_par:b.total,p_ovr:b.ovr,
       p_won:!!b.won,p_golfer:(S.name||'Your Golfer'),p_skills:b.skills||null,p_decisions:b.decisions||null});
-    crCache=null; dbCache=null;                        // refresh records/board next open
-  }catch(e){}
+      crCache=null; dbCache=null; }catch(e2){}
+  }
 }
 async function crLoad(){
   if(!sb){ crCache={recs:{},ok:false}; render(); return; }
@@ -6485,11 +6625,32 @@ async function crLoad(){
   }catch(e){ crCache={recs:{},ok:false}; }
   render();
 }
+// Legend-tier course records — a separate board so retired-legend peak builds don't just own every
+// freshly-drafted golfer's shot at a human record. Fails open (empty, ok:false) until the owner runs
+// supabase/30_runtour_legend.sql — the RPC call below simply errors until then, caught below.
+async function crLoadLegend(){
+  if(!sb){ crCacheLegend={recs:{},ok:false}; render(); return; }
+  try{ const {data,error}=await sb.rpc('runtour_course_records',{p_legend:true});
+    const recs={}; (data||[]).forEach(r=>{ recs[r.course_key]={toPar:r.to_par,name:r.display_name,ovr:r.ovr,day:r.day,mine:(sbUser&&r.user_id===sbUser.id),global:true}; });
+    crCacheLegend={recs,ok:!error};
+    if(!error){ const loc=courseRecordsLegend(); let changed=false;
+      for(const k in recs){ if(!loc[k] || recs[k].toPar<loc[k].toPar){ loc[k]={toPar:recs[k].toPar,ovr:recs[k].ovr,name:recs[k].name,mine:recs[k].mine,date:recs[k].day,global:true}; changed=true; } }
+      if(changed) LS.set('bag_courserecords_legend',loc); }
+  }catch(e){ crCacheLegend={recs:{},ok:false}; }
+  render();
+}
 async function dbLoad(day){
   if(!sb){ dbCache={day,rows:[],ok:false}; render(); return; }
   try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:50});
     dbCache={day,rows:(data||[]),ok:!error};
   }catch(e){ dbCache={day,rows:[],ok:false}; }
+  render();
+}
+async function dbLoadLegend(day){
+  if(!sb){ dbCacheLegend={day,rows:[],ok:false}; render(); return; }
+  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:50,p_legend:true});
+    dbCacheLegend={day,rows:(data||[]),ok:!error};
+  }catch(e){ dbCacheLegend={day,rows:[],ok:false}; }
   render();
 }
 sbInit();
