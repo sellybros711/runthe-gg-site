@@ -515,7 +515,22 @@ const RESET_ENABLED=false;   // ← flip to true at launch (with a fresh RESET_E
    daily_started/completed, result_shared/saved/copied. */
 function track(ev,props){try{(window.dataLayer=window.dataLayer||[]).push(Object.assign({event:'rtt_'+ev},props||{}));
   window.dispatchEvent(new CustomEvent('rtt:'+ev,{detail:props||{}}));}catch(e){}}
-function career(){return LS.get('bag_career',{builds:0,bestMoney:0,bestNet:null,bestOvr:0,wins:0,majors:0,totalMoney:0,totalNet:0,hof:[],badges:{}});}
+// Lifetime stats/badges — ACCOUNT-scoped (acctKey degrades to the plain 'bag_career' key for a signed-out
+// guest, same as bag_streak/bag_daily/etc., so guest behavior is unchanged). Previously this read/wrote
+// the bare 'bag_career' key directly regardless of sign-in state, so two different accounts sharing one
+// browser would silently share (and corrupt) each other's lifetime badge progress. Always go through
+// saveCareerLifetime() to write it — never LS.set('bag_career', ...) directly — so every write stays in
+// sync with whichever key career() is currently reading from.
+function career(){return LS.get(acctKey('bag_career'),{builds:0,bestMoney:0,bestNet:null,bestOvr:0,wins:0,majors:0,totalMoney:0,totalNet:0,hof:[],badges:{}});}
+function saveCareerLifetime(c){ LS.set(acctKey('bag_career'),c); }
+// one-time: adopt this browser's pre-existing (unscoped) lifetime stats into the signed-in account's own
+// slot, the first time that slot is empty — mirrors migrateLegacyCareerSave()'s approach for career saves.
+// Never deletes the unscoped copy (a signed-out guest on this same browser should still see it).
+function migrateLegacyLifetimeStats(){
+  if(!sbSignedIn()) return;
+  const legacy=LS.get('bag_career',null);
+  if(legacy && !LS.get(acctKey('bag_career'),null)) saveCareerLifetime(legacy);
+}
 /* expenses: caddie 10% + agent 8% of winnings, ~$20k travel/event, plus ~$2.6M/yr of fixed
    tour costs (coach, equipment, taxes, team). Fixed cost is prorated by events played so the
    running in-season net stays sensible. Tuned via Monte Carlo so a weak build can finish red. */
@@ -986,7 +1001,7 @@ function evaluateAch(){ const s=achState(); const m=achMetrics(); const fresh=[]
   if(fresh.length){
     const afterRank=repTierFor(s.pts, Object.keys(s.unlocked).length).tier.name;
     if(repRankIndex(afterRank)>repRankIndex(beforeRank)){ S.freshRep={from:beforeRank,to:afterRank}; track('rep_up',{to:afterRank}); }
-    LS.set(acctKey('bag_ach'),s); sbSyncStats&&sbSyncStats(); track('ach_unlocked',{n:fresh.length,ids:fresh.map(a=>a.id).join(',')});
+    LS.set(acctKey('bag_ach'),s); sbSyncStats&&sbSyncStats(); cloudPush(); track('ach_unlocked',{n:fresh.length,ids:fresh.map(a=>a.id).join(',')});
   }
   return fresh; }
 // big celebratory Tour Rep promotion card (shown on the summary / career-end when you rank up)
@@ -1109,7 +1124,7 @@ function recordSeason(o){
   if(distinctThis>=4)lt.slamSeasons++;
   lt.distinctMajors=['masters','champ','usopen','open'].filter(k=>lt.maj[k]>0).length;
   const fresh=_badgeFresh(c);
-  LS.set('bag_career',c); sbSyncStats();
+  saveCareerLifetime(c); sbSyncStats();
   return {career:c,fresh};
 }
 let deferredInstall=null;
@@ -1163,7 +1178,7 @@ function bumpStreak(){const ds=LS.get(acctKey('bag_streak'),{current:0,longest:0
   const m=ds.current;
   if(STREAK_MILES.includes(m) && !ds.miles[m]){ ds.miles[m]=1; ds._mile=m;
     if(m===7||m===30||m===100){ ds.freezes=(ds.freezes||0)+1; ds._gotFreeze=true; } }   // earn a freeze at big milestones
-  LS.set(acctKey('bag_streak'),ds); return ds;}
+  LS.set(acctKey('bag_streak'),ds); cloudPush(); return ds;}
 function streakDisplay(){const ds=LS.get(acctKey('bag_streak'),null); if(!ds||!ds.current)return 0;
   return (ds.last===todayKey()||ds.last===yesterdayKey()||(ds.last===twoDaysAgoKey()&&(ds.freezes||0)>0))?ds.current:0;}
 /* ---------- lifetime daily record (Wordle-style) — total days played vs how often you beat the pro ----------
@@ -1173,7 +1188,7 @@ function dailyStats(){ const st=LS.get(acctKey('bag_dailystats'),{played:0,beat:
 function bumpDailyStats(won){ const t=todayKey(); const st=dailyStats();
   if(st.lastDay!==t){ st.played=(st.played||0)+1; st.lastDay=t; }            // each calendar day counts once
   if(won && !st.wonDays[t]){ st.beat=(st.beat||0)+1; st.wonDays[t]=1; }      // a later attempt can flip a day to a win
-  LS.set(acctKey('bag_dailystats'),st); return st; }
+  LS.set(acctKey('bag_dailystats'),st); cloudPush(); return st; }
 function dailyWinPct(){ const st=dailyStats(); return st.played?Math.round(100*st.beat/st.played):0; }
 async function shareText(text){ recordAchEvent({set:{shared:1}}); evaluateAch();
   try{ if(navigator.share){ await navigator.share({text}); return; } }catch(e){ if(e&&e.name==='AbortError')return; }
@@ -1206,7 +1221,8 @@ function saveCareer(extra){ if(S.daily||!sbSignedIn()) return false;   // career
     // during the circuit's own first season, so a call site that forgot circuitMode/circuitCareer would
     // otherwise silently overwrite it back to false and strand the player's circuit progress.
     circuitMode:S.circuitMode||false, circuitStartYear:(S.circuitStartYear!=null?S.circuitStartYear:null), circuitCareer:S.circuitCareer||null,
-    slots:S.slots, name:S.name, look:S.look, ovr:Math.round(buildPlayer().skill), savedAt:Date.now()}, extra||{})); return true; }
+    slots:S.slots, name:S.name, look:S.look, ovr:Math.round(buildPlayer().skill), savedAt:Date.now()}, extra||{}));
+  cloudPush(); return true; }
 // resumable if it has a finished-year franchise OR an in-progress season checkpoint (covers year-1 mid-season)
 function careerSaveInfo(){ if(!sbSignedIn()) return null; const r=LS.get(acctKey('bag_careersave'),null); return (r&&(r.career||(r.mid&&r.mid.season)))?r:null; }
 // auto-checkpoint the in-progress season at a clean event boundary so a refresh / going home resumes here.
@@ -1216,7 +1232,7 @@ function autoSaveSeason(){
   saveCareer({ mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
     season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me } } });
 }
-function clearCareerSave(){ LS.set(acctKey('bag_careersave'),null); }
+function clearCareerSave(){ LS.set(acctKey('bag_careersave'),null); cloudPush(); }
 // one-time: an in-progress career saved before careers were account-scoped lives under the old unscoped
 // key. On sign-in, claim it for this account (if it has none yet) and remove the unscoped copy so no
 // guest / other account on this browser can reach it.
@@ -4798,7 +4814,7 @@ function finalizeTeamCup(){
       lt.cupPoints=(lt.cupPoints||0)+T.playerRec.pts; lt.cupMatchWins=(lt.cupMatchWins||0)+T.playerRec.w;
       lt.cupBest=Math.max(lt.cupBest||0, T.playerRec.w);
     }
-    LS.set('bag_career',cc);
+    saveCareerLifetime(cc);
   }
   track('teamcup_done',{type:T.type, won:T.playerWon, captain:T.captain, pts:T.playerRec.pts});
 }
@@ -5273,7 +5289,7 @@ function scrSummary(){
         // Olympic medal (won during this season's Games)
         const med=S.season.olympicMyMedal;
         if(med){ lt['oly'+med.charAt(0).toUpperCase()+med.slice(1)]=(lt['oly'+med.charAt(0).toUpperCase()+med.slice(1)]||0)+1; }
-        LS.set('bag_career',c);
+        saveCareerLifetime(c);
         // career tallies (for the recap)
         S.career.awards=S.career.awards||{poy:0,roy:0,money:0,scoring:0,no1:0};
         if(aw.poy.you)S.career.awards.poy++; if(aw.roy&&aw.roy.you)S.career.awards.roy++;
@@ -5283,7 +5299,7 @@ function scrSummary(){
         if(med)S.career.medals[med]++; } }
     // FedEx Cup title — lifetime counter for the Trophy Case (no prior running tally existed)
     if(!S.daily && S.season.cupYouWon){ const c=career(), lt=(c.lt=Object.assign(ltDefault(),c.lt||{}));
-      lt.fedexCups=(lt.fedexCups||0)+1; LS.set('bag_career',c); S.career.fedexCups=(S.career.fedexCups||0)+1; }
+      lt.fedexCups=(lt.fedexCups||0)+1; saveCareerLifetime(c); S.career.fedexCups=(S.career.fedexCups||0)+1; }
     // emergent rivalry: tally head-to-head, graduate a rivalry you've outgrown, then crown a fresh nemesis
     if(!S.daily){ accrueH2H(); maybeOutgrowRival(); maybeFormRival(); }   // sets S.career.rival + S.freshRival/freshRivalOutgrown
     // ---- season-level achievement flags + evaluation (lt is now updated by recordSeason) ----
@@ -5698,7 +5714,7 @@ function mintLegendToken(){
     peakYear: S.career.peakYear, years: S.career.seasons.length,
     reason: legendQualifyReason(S.career), used: false,
   };
-  const tokens=legendTokens(); tokens.push(token); LS.set(acctKey('bag_legend_tokens'),tokens);
+  const tokens=legendTokens(); tokens.push(token); LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush();
   track('legend_token_earned',{ovr:token.ovr,reason:token.reason,years:token.years});
   return token;
 }
@@ -5714,7 +5730,7 @@ function endCareer(reason){
     cc.lt.careers++;
     const ms=(S.career&&S.career.majorStats)||{};
     if(['The Masters','The Championship','U.S. Open','The Open'].every(n=>ms[n]&&ms[n].wins>0)) cc.lt.careerSlams++;
-    _badgeFresh(cc); LS.set('bag_career',cc); sbSyncStats();
+    _badgeFresh(cc); saveCareerLifetime(cc); sbSyncStats();
   }catch(e){}
   S.careerFreshAch=evaluateAch();   // career-completion achievements (Full Circle, Hall of Fame…)
   track('career_ended',{reason,years:(S.career&&S.career.seasons.length)||1});
@@ -5750,7 +5766,7 @@ function mintCircuitLegendToken(){
     peakYear: (src&&src.peakYear)||S.year||1, years: (S.circuitCareer&&S.circuitCareer.seasons)?S.circuitCareer.seasons.length:0,
     reason: 'Completed the Legend Circuit', used: false,
   };
-  const tokens=legendTokens(); tokens.push(token); LS.set(acctKey('bag_legend_tokens'),tokens);
+  const tokens=legendTokens(); tokens.push(token); LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush();
   track('legend_token_earned',{ovr:token.ovr,reason:token.reason,years:token.years,circuit:true});
   return token;
 }
@@ -6305,7 +6321,7 @@ function finishSpotlightRound(){
   rec.attempts++;
   const improved=(rec.best==null||total<rec.best); if(improved) rec.best=total;
   const firstWin=won&&!rec.won; if(won) rec.won=true; if(firstWin) st.wins=(st.wins||0)+1;
-  LS.set(acctKey('bag_special'),st);
+  LS.set(acctKey('bag_special'),st); cloudPush();
   S.spotResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,holes,avg,won,firstWin,best:rec.best,attemptNo:rec.attempts,mk:sp.mk};
   S.dailyResult=S.spotResult;   // lets the shared scorecard-grid path treat this as "just played"
   track('spotlight_completed',{mk:sp.mk,total,won,attempt:rec.attempts});
@@ -6360,7 +6376,7 @@ function scrSpotlightResult(){
 // marks a Legend Token spent (round complete, win or lose) — called once from finishDailyRound
 function consumeLegendToken(id){
   if(!id) return; const tokens=legendTokens(); const t=tokens.find(x=>x.id===id);
-  if(t && !t.used){ t.used=true; LS.set(acctKey('bag_legend_tokens'),tokens); }
+  if(t && !t.used){ t.used=true; LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush(); }
 }
 function finishDailyRound(){
   if(S.special) return finishSpotlightRound();
@@ -7049,11 +7065,13 @@ async function sbApply(session){
     S.acctMode=sbUsername?'profile':'username';   // drop to username picker if none yet
     flushPendingSeasons();   // post every season queued while signed out / offline (fire-and-forget)
     migrateLegacyCareerSave();   // claim a pre-scoping career for this account, drop the unscoped copy
+    migrateLegacyLifetimeStats();   // claim this browser's pre-scoping lifetime badges/stats, once
     maybeClaimDaily();        // log a guest-played daily round to the account (consumes one of its attempts)
     // refresh course records + today's attempt count from the server RIGHT on sign-in, not just whenever
     // the player happens to open the records overlay — otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
+    cloudPull();   // pull + merge the full profile bundle (career save, tokens, streak, stats, achievements)
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
     if(_pendingDaily){ _pendingDaily=null; }   // legacy guest stash is no longer auto-posted (claim flow gates it)
     if(oauth){                                    // just came back from Google → confirm on the title screen
@@ -7149,9 +7167,100 @@ async function sbPullStats(){ if(!sb||!sbUser) return;
   try{ const {data,error}=await sb.rpc('runtour_my_stats'); if(error||!data) return;
     const srv=Array.isArray(data)?data[0]:data; if(!srv||!srv.lt) return;
     const c=career(); const localN=badgeCount(c); const srvN=srv.badges||0;
-    if(srvN>localN){ c.lt=srv.lt; c.btier=srv.btier||{}; LS.set('bag_career',c); }
+    if(srvN>localN){ c.lt=srv.lt; c.btier=srv.btier||{}; saveCareerLifetime(c); }
     else if(localN>srvN){ sbSyncStats(); }   // this device is ahead → push it up
   }catch(e){} }
+/* ---------- cloud save: career saves, Legend Tokens, streak, daily stats, achievements, Spotlight ----------
+   Generalizes the sbSyncStats()/sbPullStats() idea above (which only ever covered lifetime badges/tee-
+   tiers) to everything else that used to live ONLY in this browser's localStorage — so "my profile" looks
+   the same signed into the same account on any browser/device, not just this one. Deliberately does NOT
+   include bag_career (lifetime badges) — that already has its own working sync path just above; adding a
+   second, competing sync mechanism for the same key would be how these things get corrupted, not fixed.
+   Also deliberately excludes device/UI preferences (autosim, dark mode, etc.) — those aren't "your
+   profile," they're this browser's settings.
+   Merge strategy is intentionally NEVER destructive: every field except the career save itself is merged
+   with "can only grow" semantics (union / max), so a merge can add or preserve progress but never erase
+   something already earned on either side. The career save is the one genuinely single-slot piece (you
+   can't average two different mid-season states together) — it uses its own `savedAt` stamp, newer wins;
+   worst case that ever rewinds ONE device to its last-synced checkpoint, never erases a whole career. */
+function cloudBundle(){
+  return {
+    careersave: LS.get(acctKey('bag_careersave'), null),
+    legendTokens: legendTokens(),
+    streak: LS.get(acctKey('bag_streak'), null),
+    dailystats: LS.get(acctKey('bag_dailystats'), null),
+    ach: LS.get(acctKey('bag_ach'), null),
+    special: LS.get(acctKey('bag_special'), null),
+  };
+}
+function mergeCareerSave(local, server){
+  if(!server) return local; if(!local) return server;
+  return ((server.savedAt||0)>(local.savedAt||0)) ? server : local;
+}
+function mergeLegendTokens(local, server){
+  local=local||[]; server=server||[];
+  const byId={};
+  local.forEach(t=>{ if(t&&t.id) byId[t.id]=Object.assign({},t); });
+  server.forEach(t=>{ if(!t||!t.id) return; const cur=byId[t.id]; if(!cur) byId[t.id]=Object.assign({},t); else cur.used=!!(cur.used||t.used); });
+  return Object.values(byId);
+}
+function mergeStreak(local, server){
+  if(!server) return local; if(!local) return server;
+  if((server.last||0)>(local.last||0)) return server;
+  if((local.last||0)>(server.last||0)) return local;
+  return Object.assign({},local,{current:Math.max(local.current||0,server.current||0), longest:Math.max(local.longest||0,server.longest||0),
+    freezes:Math.max(local.freezes||0,server.freezes||0), miles:Object.assign({},server.miles,local.miles)});
+}
+function mergeDailyStats(local, server){
+  if(!server) return local; if(!local) return server;
+  return { played:Math.max(local.played||0,server.played||0), beat:Math.max(local.beat||0,server.beat||0),
+    lastDay:Math.max(local.lastDay||0,server.lastDay||0), wonDays:Object.assign({},server.wonDays,local.wonDays) };
+}
+function mergeAch(local, server){
+  if(!server) return local; if(!local) return server;
+  return { unlocked:Object.assign({},server.unlocked,local.unlocked), flags:Object.assign({},server.flags,local.flags), pts:Math.max(local.pts||0,server.pts||0) };
+}
+function mergeSpecial(local, server){
+  if(!server) return local; if(!local) return server;
+  return { wins:Math.max(local.wins||0,server.wins||0), played:Math.max(local.played||0,server.played||0), months:Object.assign({},server.months,local.months) };
+}
+let _cloudPushT=null, _cloudSyncing=false;
+// debounced push of the full profile bundle — call this from every place one of the bundled pieces
+// changes; harmless/no-op when signed out or offline (fails open, same posture as the rest of the backend).
+function cloudPush(){
+  if(!sb || !sbSignedIn()) return;
+  clearTimeout(_cloudPushT);
+  _cloudPushT=setTimeout(async()=>{
+    try{
+      const {error}=await sb.rpc('runtour_cloud_save_push',{p_data:cloudBundle(), p_client_ts:Date.now()});
+      if(error) console.warn('[RunTheTour] cloud save push failed:', error.message);
+    }catch(e){ console.warn('[RunTheTour] cloud save push failed:', e); }
+  }, 1200);
+}
+// pulls the server's copy on sign-in and merges it into local state (see the merge functions above),
+// then pushes the merged result back up so every device converges to the same combined state. Fails
+// open on any error — local state simply stands unchanged until the next successful pull.
+async function cloudPull(){
+  if(!sb || !sbSignedIn() || _cloudSyncing) return;
+  _cloudSyncing=true;
+  try{
+    const {data,error}=await sb.rpc('runtour_cloud_save_pull');
+    if(error) return;
+    const row=Array.isArray(data)?data[0]:data;
+    const server=row&&row.data;
+    if(!server || typeof server!=='object' || !Object.keys(server).length){ cloudPush(); return; }   // nothing saved yet — seed it
+    const mergedCareersave=mergeCareerSave(LS.get(acctKey('bag_careersave'),null), server.careersave);
+    if(mergedCareersave) LS.set(acctKey('bag_careersave'), mergedCareersave);
+    LS.set(acctKey('bag_legend_tokens'), mergeLegendTokens(legendTokens(), server.legendTokens));
+    LS.set(acctKey('bag_streak'), mergeStreak(LS.get(acctKey('bag_streak'),null), server.streak));
+    LS.set(acctKey('bag_dailystats'), mergeDailyStats(LS.get(acctKey('bag_dailystats'),null), server.dailystats));
+    LS.set(acctKey('bag_ach'), mergeAch(LS.get(acctKey('bag_ach'),null), server.ach));
+    LS.set(acctKey('bag_special'), mergeSpecial(LS.get(acctKey('bag_special'),null), server.special));
+    cloudPush();
+    render();
+  }catch(e){ /* fail open — local state stands until the next pull */ }
+  finally{ _cloudSyncing=false; }
+}
 // Durable submission queue so EVERY completed season reaches the leaderboard — it survives being
 // signed out, offline, RPC failures and app restarts (stored in localStorage, flushed whenever
 // signed in + online). Replaces the old single-slot _pendingSeason (which lost all but the last).
