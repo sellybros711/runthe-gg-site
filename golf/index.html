@@ -4,23 +4,23 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <!-- RunTheTour — solo season · v2 · RunThePitch skin -->
-<title>Run The Tour · A 40-Year Golf Career Simulation · RunThe.GG</title>
-<meta name="description" content="Draft one skill from each of golf's greatest, build your own player, then live their career, up to 40 years on tour. Chase majors, the Ryder Cup, the Presidents Cup and Olympic medals, climb the World Ranking, and watch your golfer rise, peak and retire a legend. A free RunThe.GG game.">
+<title>Run The Tour · A 30-Year Golf Career Simulation · RunThe.GG</title>
+<meta name="description" content="Draft one skill from each of golf's greatest, build your own player, then live their career, up to 30 years on tour. Chase majors, the Ryder Cup, the Presidents Cup and Olympic medals, climb the World Ranking, and watch your golfer rise, peak and retire a legend. A free RunThe.GG game.">
 <meta name="theme-color" content="#11432f">
 <link rel="canonical" href="https://runthe.gg/golf/">
 <!-- Open Graph / Twitter. Absolute URLs for the runthe.gg/golf deploy; og.png sits beside this file. -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/golf/">
-<meta property="og:title" content="Run The Tour — A 40-Year Career Simulation">
-<meta property="og:description" content="Build a golfer, then live their career. Up to 40 years on tour: majors, the Ryder Cup, the Olympics, and a legacy on the leaderboard.">
+<meta property="og:title" content="Run The Tour — A 30-Year Career Simulation">
+<meta property="og:description" content="Build a golfer, then live their career. Up to 30 years on tour: majors, the Ryder Cup, the Olympics, and a legacy on the leaderboard.">
 <meta property="og:image" content="https://runthe.gg/golf/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Run The Tour, a 40-year golf career simulation">
+<meta property="og:image:alt" content="Run The Tour, a 30-year golf career simulation">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Run The Tour — A 40-Year Career Simulation">
-<meta name="twitter:description" content="Build a golfer, then live their career. Up to 40 years on tour: majors, the Ryder Cup, the Olympics, and a legacy on the leaderboard.">
+<meta name="twitter:title" content="Run The Tour — A 30-Year Career Simulation">
+<meta name="twitter:description" content="Build a golfer, then live their career. Up to 30 years on tour: majors, the Ryder Cup, the Olympics, and a legacy on the leaderboard.">
 <meta name="twitter:image" content="https://runthe.gg/golf/og.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 76'%3E%3Cpath d='M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z' fill='%2311432f' stroke='%23cda24a' stroke-width='3'/%3E%3Cpath d='M26 17 v36' stroke='%23e9d8ac' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M26 18 h16 l-4 5 4 5 h-16 z' fill='%23EBA61F'/%3E%3Cellipse cx='32' cy='57' rx='17' ry='5.4' fill='none' stroke='%23cda54a' stroke-width='1.6'/%3E%3Ccircle cx='38' cy='57' r='2.2' fill='%23f4ecd9'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -819,7 +819,7 @@ const ACH=[].concat(
    {id:'mon_big',   cat:'The Money',name:'Banner Year',    desc:'Earn $10M+ in a single season.',              goal:10e6,pts:50, get:m=>m.seasonEarnMax},
    {id:'mon_under', cat:'The Money',name:'Against the Odds',desc:'Turn a profit with a sub-80 OVR build.',     goal:1,pts:50, get:m=>m.underdogSeasons}],
   // ---- Career & Legacy ----
-  aT('sea','Career & Legacy','seasons',[[5,'Veteran','Play 5 tour seasons.',20],[10,'Established','Play 10 tour seasons.',35],[20,'Tour Lifer','Play 20 tour seasons.',60],[40,'Forty-Year Man','Play a full 40-season career.',100]]),
+  aT('sea','Career & Legacy','seasons',[[5,'Veteran','Play 5 tour seasons.',20],[10,'Established','Play 10 tour seasons.',35],[20,'Tour Lifer','Play 20 tour seasons.',60],[40,'Forty-Year Man','Play 40 tour seasons, across any number of careers.',100]]),
   [{id:'leg_w1', cat:'Career & Legacy',name:'World Number One',desc:'Finish a season #1 on the career money list.',goal:1,pts:75, get:m=>m.worldNo1},
    {id:'leg_hof',cat:'Career & Legacy',name:'Hall of Fame', desc:'Complete 5 full careers.',                   goal:5,pts:75, get:m=>m.careers},
    {id:'leg_cap',cat:'Career & Legacy',name:'Icon',         desc:'Complete 15 full careers.',                  goal:15,pts:100,get:m=>m.careers}],
@@ -1800,7 +1800,7 @@ function fmtDayKey(k){ const d=_ymd(k); return MONTH_NAMES[d.M-1].slice(0,3)+' '
 function dCourseSkillTop(c,n){ return CATS.filter(x=>x.k!=='clu').sort((a,b)=>c.fit[b.k]-c.fit[a.k]).slice(0,n||3); }
 /* ---- local course records (Phase 2 — replaced/augmented by the backend in Phase 3) ---- */
 function courseRecords(){ return LS.get('bag_courserecords',{}); }
-// Legend-run course records are tracked in a SEPARATE bucket/board — a maxed 40-year peak build
+// Legend-run course records are tracked in a SEPARATE bucket/board — a maxed 30-year peak build
 // shouldn't just steamroll every freshly-drafted golfer's shot at a human course record.
 function courseRecordsLegend(){ return LS.get('bag_courserecords_legend',{}); }
 function recordCourseScore(courseKey,toPar,ovr,name,isLegend){
@@ -2201,7 +2201,7 @@ function accrueH2H(){
       h.ev++; const gap=Math.abs(mp-tp); h.gapSum+=gap; if(gap<=RIVAL_NEAR) h.near++;
       if(mp<tp) h.meAhead++; else if(tp<mp) h.themAhead++;
       if(ovrOf[o.p.name]!=null) h.ovr=ovrOf[o.p.name]; h.lastYear=yr; }); });
-  // keep the map bounded across a 40-year career: forget players gone 5+ years who aren't your rival
+  // keep the map bounded across a 30-year career: forget players gone 5+ years who aren't your rival
   const rv=S.career.rival&&S.career.rival.name;
   Object.keys(H).forEach(nm=>{ if(nm!==rv && (yr-(H[nm].lastYear||yr))>=5) delete H[nm]; });
 }
@@ -2323,12 +2323,13 @@ function rivalCardHTML(rr){ if(!rr) return '';
     <div class="small center" style="margin-top:7px;color:var(--muted)">finished ahead of your rival in ${rr.meAhead} of ${rr.both} shared events</div>
     <div class="small center" style="margin-top:5px;color:${col};font-weight:700">${beat?'You won the season series. 🏅 Rivalry tee earned.':(tie?`Dead even, you split the series ${rr.meAhead}–${rr.rvAhead}.`:`${esc(rr.name)} took the series. Get them next year.`)}</div></div>`;
 }
-/* ---- YOUR golfer's bounded career (40-year shelf life). Decline is AGE- and FORM-based, not a
+/* ---- YOUR golfer's bounded career (30-year shelf life). Decline is AGE- and FORM-based, not a
    flat year cutoff: a rookie starts ~22 and peaks through year 14 (age 35) with NO decline; only
    after does regression begin — LATER if you keep performing ("play young"), SOONER if you slump —
-   and it keeps compounding deeper into the career instead of leveling off. Power (distance) fades
-   first, touch/experience last. The FIELD ages by its own real age. ---- */
-const START_AGE=22, PEAK_END_AGE=35, CAREER_MAX_YEARS=40, FIELD_RETIRE_AGE=55;
+   and it keeps compounding deeper into the career instead of leveling off (max ramp lands right
+   around year 29, so nothing plateaus early). Power (distance) fades first, touch/experience last.
+   The FIELD ages by its own real age. ---- */
+const START_AGE=22, PEAK_END_AGE=35, CAREER_MAX_YEARS=30, FIELD_RETIRE_AGE=55;
 const DECLINE_RATE={dist:2.1,acc:1.15,app:1.15,sht:0.8,scr:0.8,bnk:0.8,put:0.7,clu:0.25};
 function playerAge(){ return START_AGE + ((S.year||1)-1); }
 // how the season just finished went vs the field: -1 (poor) .. +1 (dominant). Wins/majors keep you sharp.
@@ -2349,7 +2350,7 @@ function applyPlayerDecline(){   // once per off-season; scaled by how far past 
   const ramp=Math.min(2.5, sev/6);                              // barely anything at first, keeps steepening for years
   CATS.forEach(cat=>{ const sl=S.slots[cat.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[cat.k]*ramp)); });
 }
-function playerRetires(){ return (S.year||1) >= CAREER_MAX_YEARS; }   // forced at the 40-year shelf life
+function playerRetires(){ return (S.year||1) >= CAREER_MAX_YEARS; }   // forced at the 30-year shelf life
 /* golfer customization palettes */
 // `file` = canonical avatar-art filename token (see public/avatars/golfers/README.md).
 // Skins map by lightness order to the 5 art tones (game ids kept for save compat).
@@ -2649,15 +2650,15 @@ function scrRules(){
   bk.onclick=back; add(bk);
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">📖 How to play</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:10px 0 2px">Build a golfer.<br>Run the tour.</h1>`));
-  add($(`<p class="lede center" style="margin:2px 0 16px">Draft a golfer one skill at a time, then live out their career, up to 40 years on tour, or test your build on the daily challenge.</p>`));
+  add($(`<p class="lede center" style="margin:2px 0 16px">Draft a golfer one skill at a time, then live out their career, up to 30 years on tour, or test your build on the daily challenge.</p>`));
 
-  add($(`<h2 class="center" style="margin:8px 0 10px">Career Mode · Up to 40 Years</h2>`));
+  add($(`<h2 class="center" style="margin:8px 0 10px">Career Mode · Up to 30 Years</h2>`));
   const cSteps=[
     ['🎰','Spin for golfers','Each spin reveals a real golfer. Take one of their eight ratings to fill a slot, one skill per golfer.'],
     ['🔁','Re-spin twice','Don\'t like who landed? Re-spin to pass and reveal someone else, you get 2 re-spins for the whole draft.'],
     ['🧱','Fill all 8 skills','Distance, accuracy, approach, short game, scrambling, bunker, putting, composure. Spikes win events; one weak slot loses weekends.'],
     ['💰','Run a pro season','Bank the most prize money and climb the earnings list. Winnings are big, but caddie, agent and ~$2.8M/yr of tour costs can put a mediocre build in the red.'],
-    ['📈','Live a full career, not just a season','Your golfer ages, peaks and eventually declines across up to 40 seasons. Chase majors, the Ryder Cup, the Presidents Cup and Olympic medals, climb the World Ranking, build a rivalry, and retire a legend with a trophy case to show for it.'],
+    ['📈','Live a full career, not just a season','Your golfer ages, peaks and eventually declines across up to 30 seasons. Chase majors, the Ryder Cup, the Presidents Cup and Olympic medals, climb the World Ranking, build a rivalry, and retire a legend with a trophy case to show for it.'],
   ];
   const cList=$(`<div class="perks" style="max-width:560px;margin:0 auto 18px"></div>`);
   cSteps.forEach(s=>cList.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
@@ -2679,7 +2680,7 @@ function scrRules(){
     ['🎯','Draft for the course','The preview shows what skills win there and the day\'s conditions. Spin a golfer built to attack today\'s course.'],
     ['♟️','Play it your way','Pick a game plan, then choose Attack or Play Safe on the signature holes. Aggressive chases a low number, but it can blow up.'],
     ['🏆','Claim the course record','Post the lowest round and the course record is yours. Beat the standing record and your name sits on it until someone takes it.'],
-    ['🎖️','Play a Legend Token','Finish a full 40-year career at an elite level (a Career Grand Slam, 5+ majors, or 3x Player of the Year) and bank a one-time entry as that career\'s peak build. Legend rounds have their own leaderboard and course records.'],
+    ['🎖️','Play a Legend Token','Finish a full 30-year career at an elite level (a Career Grand Slam, 5+ majors, or 3x Player of the Year) and bank a one-time entry as that career\'s peak build. Legend rounds have their own leaderboard and course records.'],
   ];
   const dList=$(`<div class="perks" style="max-width:560px;margin:0 auto 18px"></div>`);
   dSteps.forEach(s=>dList.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
@@ -3072,7 +3073,7 @@ function overlayAbout(screen){
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="About RunTheTour">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>About</h3>
-    <p class="lede"><b style="color:var(--oncard)">RunTheTour</b> is a free 40-year golf career simulation from <b style="color:var(--teal)">RunThe.GG</b>. Spin a wheel of real golfers, draft one skill from each to build your own, then live out their career: majors, the Ryder Cup, the Presidents Cup, Olympic medals, and a World Ranking climb across up to 40 seasons.</p>
+    <p class="lede"><b style="color:var(--oncard)">RunTheTour</b> is a free 30-year golf career simulation from <b style="color:var(--teal)">RunThe.GG</b>. Spin a wheel of real golfers, draft one skill from each to build your own, then live out their career: majors, the Ryder Cup, the Presidents Cup, Olympic medals, and a World Ranking climb across up to 30 seasons.</p>
     <p class="lede">It's in active development, new features are landing regularly. Got an idea or a bug? We'd love to hear it.</p>
     <div class="scout">
       <b style="color:var(--teal)">More from RunThe.GG</b>
@@ -3179,8 +3180,8 @@ function scrTitle(){
   w.appendChild($(`<div class="herotag center">A RunThe.GG Game</div>`));
   w.appendChild($(`<h1 class="hero" style="font-size:clamp(34px,8.5vw,52px)"><span class="hr1">Your Golfer.</span><br><span class="hr2">Your Tour.</span></h1>`));
   w.appendChild($(`<div class="herorule" aria-hidden="true"><span></span><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.6" fill="none" stroke="#EBA61F" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1.5" fill="#EBA61F"/></svg><span></span></div>`));
-  w.appendChild($(`<div class="center" style="margin:10px 0 2px"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ 40-Year Career Simulation</span></div>`));
-  w.appendChild($(`<p class="lede center" style="max-width:360px;margin:10px auto 8px">Draft one skill from each of golf's greatest, build your own player, then live out their career, up to 40 years on tour. Chase majors, the Ryder Cup and Olympic medals, and retire a legend.</p>`));
+  w.appendChild($(`<div class="center" style="margin:10px 0 2px"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ 30-Year Career Simulation</span></div>`));
+  w.appendChild($(`<p class="lede center" style="max-width:360px;margin:10px auto 8px">Draft one skill from each of golf's greatest, build your own player, then live out their career, up to 30 years on tour. Chase majors, the Ryder Cup and Olympic medals, and retire a legend.</p>`));
   const c=career();
   if(c.builds>0){
     w.appendChild($(`<div class="small muted center" style="margin:-4px 0 12px">Your best: <b style="color:var(--gold)">${fmt(c.bestMoney)}</b> · OVR ${c.bestOvr} · ${c.builds} build${c.builds>1?'s':''}</div>`));
@@ -4370,12 +4371,12 @@ function cupRosterCol(roster, code, name, mine){
       <span class="small muted" style="width:13px;flex:0 0 auto;text-align:right">${i+1}</span>${natFlag(p.nat)}<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(p.nm)}${p.pick?' <span class="small" style="color:#7ec8ff">(pick)</span>':''}${p.you?' ★':''}</span></div>`).join('')}
   </div>`;
 }
-/* ---- Cup captaincy: late career (years 36-40), if you've made >=7 cup appearances, you may CAPTAIN your
+/* ---- Cup captaincy: late career (years 26-30), if you've made >=7 cup appearances, you may CAPTAIN your
    nation's cup instead of playing — a non-playing role where you choose the 6 captain's picks. ---- */
 const CAPTAIN_MIN_APPS=7;
 function captainEligible(){
   if(S.daily) return false; const y=S.year||1;
-  if(y<36||y>CAREER_MAX_YEARS) return false;
+  if(y<26||y>CAREER_MAX_YEARS) return false;
   if(((S.career&&S.career.cup&&S.career.cup.apps)||0) < CAPTAIN_MIN_APPS) return false;
   return playerInTeamEvent(y);
 }
@@ -5372,7 +5373,7 @@ function continueFranchise(){
   track('offseason_start',{year:S.year});
   S.screen='offseason'; render();
 }
-/* ---- Legend Tokens: finish the full 40-year career at an elite level and bank a one-time Daily
+/* ---- Legend Tokens: finish the full 30-year career at an elite level and bank a one-time Daily
    Challenge entry using that career's PEAK build (see the peak-tracking in scrSummary above), instead
    of drafting fresh. Deliberately gated on genuine accomplishment (not just a high OVR) so it rewards
    playing well, not min-maxing the spin wheel. One token per qualifying completed career — run another
@@ -5407,9 +5408,9 @@ function legendTokensHTML(){
   return `<div style="margin-bottom:14px">
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:15px">🏆</span><b style="color:var(--gold);font-size:13.5px">Legend Tokens</b><span class="small muted">${unused.length} ready · ${all.length} earned lifetime</span></div>
     ${unused.length?`<div class="board">${rows}</div><div class="small muted" style="margin-top:6px">Spend one from the Daily Challenge preview screen.</div>`
-      :`<div class="small muted">All spent, finish another full 40-year career at an elite level to earn another.</div>`}</div>`;
+      :`<div class="small muted">All spent, finish another full 30-year career at an elite level to earn another.</div>`}</div>`;
 }
-// mints a token from the just-finished career's PEAK build — only when the full 40 years were played
+// mints a token from the just-finished career's PEAK build — only when the full 30 years were played
 // (reason 'age', the forced-retirement path) and the career cleared the qualification bar.
 function mintLegendToken(){
   if(S.daily || !sbSignedIn() || !S.career || !S.career.peakSkills) return null;
@@ -5427,7 +5428,7 @@ function mintLegendToken(){
 }
 function endCareer(reason){
   S._repAnimShown=false;   // let the Tour Rep meter animate once on the career-end ceremony
-  S.freshLegendToken = (reason==='age') ? mintLegendToken() : null;   // full 40 years only
+  S.freshLegendToken = (reason==='age') ? mintLegendToken() : null;   // full 30 years only
   if(S.career){ const c=S.career; S.careerEnd={reason,years:c.seasons.length,
     money:c.money,net:c.net,wins:c.wins,majors:c.majors,top10:c.top10,
     best: c.seasons.reduce((m,s)=>Math.max(m,s.money),0),
@@ -5781,7 +5782,7 @@ function scrDailyPreview(){
   go.onclick=()=>{ S.screen='setup'; render(); }; add(go);
   const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`);
   cr.onclick=()=>{ S.overlay='courserecords'; render(); }; add(cr);
-  // Legend Tokens: a signed-in player who's finished a qualifying full 40-year career can skip the
+  // Legend Tokens: a signed-in player who's finished a qualifying full 30-year career can skip the
   // draft and play this round as that career's peak build, one-time, instead of a fresh spin.
   if(!S.special){ const toks=legendTokensUnused();
     if(toks.length){
@@ -6505,7 +6506,7 @@ function scrCareerEnd(){
       <span style="text-align:right"><div class="sc cream" style="font-weight:800">${wins} ${wins===1?'win':'wins'}</div></span></div>`));
   });
   add(mb);
-  // wins + seasons — one row per year, tap to reveal that year's trophies (keeps a 40-yr career readable)
+  // wins + seasons — one row per year, tap to reveal that year's trophies (keeps a 30-yr career readable)
   const wl=(c.winsList||[]);
   add($(`<h2 class="center" style="margin:16px 0 8px;font-size:15px">${wl.length?('Tournament wins · '+wl.length):'No tournament wins'}</h2>`));
   if(wl.length){
