@@ -2002,6 +2002,34 @@ allows Google Fonts, or self-host Anton.*
   correctly flips their single best-of-day row's `is_legend`, and a worse subsequent submission is
   correctly rejected (existing anti-cheat upsert guard intact).
 
+- **CS64 — Working ≡ menu + guest course-record copy fix.** Owner ran `30_runtour_legend.sql` (confirmed:
+  "success, no rows returned" — clean apply, no data to migrate yet). Two bugs reported:
+  1. **Guest "Course record" copy was misleading.** On the Daily Challenge preview screen, a guest with no
+     record set saw "Unclaimed, be the first to set it" — implying they could claim it, when guests can't
+     post scores at all (CS49). Fixed: `scrDailyPreview`'s course-record line now checks `sbSignedIn()` and
+     shows "Sign in to post your score" for guests, keeping the original "Unclaimed, be the first to set
+     it" only for signed-in players who genuinely can claim it.
+  2. **The top-left ≡ icon wasn't a menu.** It was hardcoded to `openRules` — tapping the hamburger icon
+     just jumped straight to How to Play, with `aria-label="How to play"` admitting as much. Everything
+     else (Leaderboard, Trophy Room, Course Records) was only reachable from the title screen's own
+     buttons, so there was no way to reach them mid-draft or mid-season without navigating all the way back.
+     Built a real menu: `overlayMenu` (new `S.overlay==='menu'`, same `.ov` overlay pattern as every other
+     overlay in the app) grouped into three sections — **Play** (Home, How to Play, Leaderboard, Trophy
+     Room, Course Records), **Account** (Sign in / your username + email, or Trophy Room shortcut if
+     already signed in; Reset), **About** (About, Privacy, Terms, Contact, Add to Home Screen) — each row
+     an icon + label + one-line description via a new `menuRow()` helper. The ≡ button now opens this
+     overlay from any screen; picking an item always resolves relative to whatever screen you were on
+     (e.g. opening Trophy Room mid-draft leaves you on the draft screen underneath once you close it — nothing
+     is lost, it's just an overlay). `aria-label`/`aria-expanded` updated to reflect the real menu state.
+  Verified in Playwright: clicking ≡ opens the Menu overlay (not Rules) from the title screen; every row's
+  label/sub-copy is correct; clicking "How to Play" from inside the menu still lands on the rules screen
+  with the overlay closed; opening the menu from `draft` (mid-progress) and picking Trophy Room leaves
+  `S.screen==='draft'` intact underneath; guest vs. signed-in menu content differs correctly (Sign In row
+  vs. username/email); `openRules()` still works when called directly elsewhere in the app; the footer nav
+  and Close-button dismissal are unaffected. Guest course-record copy verified both ways (guest sees "Sign
+  in to post your score", signed-in sees the original "Unclaimed" copy) with a full-page screenshot. Zero
+  page errors throughout.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
