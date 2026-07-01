@@ -1541,11 +1541,11 @@
     padding:18px;background:rgba(0,0,0,.6);}
   .profile-bg.show{display:flex;animation:fade .2s ease;}
   /* card is a fixed-height flex column: header stays put, body scrolls */
-  .profile-card{position:relative;background:var(--white);border:3px solid var(--ink);border-radius:18px;
+  .profile-card{position:relative;background:var(--white);border:1.5px solid var(--border-soft);border-radius:18px;
     box-shadow:var(--shadow);width:100%;max-width:480px;max-height:90vh;overflow:hidden;
     display:flex;flex-direction:column;}
   .profile-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;
-    border:2px solid var(--ink);background:var(--white);font-weight:900;font-size:15px;line-height:1;cursor:pointer;z-index:2;}
+    border:1.5px solid var(--border-soft);background:var(--white);font-weight:900;font-size:15px;line-height:1;cursor:pointer;z-index:2;}
   /* fixed header */
   .profile-header{flex:0 0 auto;padding:20px 20px 12px;border-bottom:2px solid #eee;}
   /* scrollable body: ~70vh cap, momentum scroll on iOS */
@@ -1745,7 +1745,7 @@
     color:var(--gold);margin:16px 0 8px;}
   .entry-flag-row{display:flex;gap:8px;overflow-x:auto;padding:4px 2px;-webkit-overflow-scrolling:touch;}
   .entry-flag-row::-webkit-scrollbar{display:none;}
-  .entry-flag-opt{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:2.5px solid #555;
+  .entry-flag-opt{flex:0 0 auto;width:38px;height:38px;border-radius:50%;border:1.5px solid rgba(255,255,255,.25);
     background-size:cover;background-position:center;background-color:#333;cursor:pointer;padding:0;
     transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;}
   .entry-flag-opt.sel{border-color:var(--gold);transform:scale(1.12);box-shadow:0 0 0 2px var(--gold);}
