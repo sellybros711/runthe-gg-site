@@ -1891,6 +1891,63 @@ allows Google Fonts, or self-host Anton.*
   carry the new copy, screenshots confirm clean layout (badge doesn't crowd the hero, 5-step list reads
   fine), zero page errors.
 
+- **CS62 — Daily Challenge: 23 new real courses (16 → 39), researched and calibrated.** Owner pitched two
+  ideas for the Daily Challenge: (1) let a signed-in player who completes a 40-year career and hits an elite
+  bar use that retired golfer for a one-time Daily Challenge attempt, and (2) add a lot more courses. We
+  discussed design forks for #1 via AskUserQuestion (owner picked: career-achievement gate — Grand Slam / 5+
+  majors / 3+ POY — over raw OVR; use the golfer's peak-career OVR, not their declined retirement-year state;
+  a separate "Legend" leaderboard tier so maxed golfers don't just own every human-drafted course record; one
+  token per qualifying career, not a lifetime-one-shot) but **#1 is still unimplemented** — only #2 shipped
+  this round, after the owner said "you can pick but do research and choose courses people will want to
+  play." **What shipped:** `DAILY_KEYS.length` 16 → 39. Picked 24 candidates (later 23 after dropping two
+  weak picks — see below) prioritizing recognizable venues: 12 U.S. major-championship courses (Pinehurst
+  No. 2, Winged Foot, Bethpage Black, Whistling Straits, Shinnecock Hills, Southern Hills, Kiawah Island
+  Ocean, Olympic Club, Baltusrol, The Country Club, Merion, Oakland Hills), 4 Open Championship links venues
+  (Royal Troon, Carnoustie, Royal Portrush, Turnberry), and 7 iconic regular PGA Tour stops (Riviera, Torrey
+  Pines South, Innisbrook Copperhead, Waialae, Colonial, Firestone South, TPC Southwind). Sourced from the
+  110 courses `course_fit.json` already has measured DataGolf skill-fit multipliers for — far more venues
+  than were wired into the rotation. Two swaps during research: dropped the originally-picked **TPC Boston**
+  after a research pass found it hasn't hosted a PGA Tour event since 2020 (replaced with **TPC Southwind**,
+  the actual current FedEx St. Jude Championship / first FedEx Cup Playoffs venue) and dropped
+  **Congressional** entirely after its research came back too thin to trust (most holes unconfirmed, one
+  outright-fabricated hole nickname the research agent itself flagged and refused to use) rather than ship
+  weak data.
+  Per-course data (par/yardage/18-hole scorecard/blurb/signature holes/real tour scoring average) came from a
+  large parallel web-research fan-out (many agents, several spawning their own sub-agents to verify
+  conflicting scorecards against multiple sources), matching the existing `courses.json` convention of
+  flagging `verified:false` on anything not confirmed against one authoritative scorecard — which is most of
+  it, since almost every primary scorecard site (Wikipedia, BlueGolf, official club/tour sites) 403'd direct
+  fetches in this environment, so data is search-snippet-triangulated and cross-checked rather than
+  single-source-verified. `avg` (the real-world tour scoring average vs. par — the "beat the tour average"
+  target) is a directly-sourced figure where research agents found one (e.g. Turnberry 2009 +2.59 from
+  DataGolf, Royal Portrush 2019 +1.175 from Golf Channel, TPC Southwind 2025 -0.88 from PGA Tour coverage)
+  and a reasoned estimate elsewhere, always flagged as such by the research.
+  **cdiff calibration**: existing courses' `avg`/`cdiff` pairs don't hit the documented "OVR-80 flat build
+  averages the real scoring average" target exactly when checked against the live engine (e.g. Augusta's
+  stored cdiff=0.06 actually simulates to a mean of ~1.1, not the displayed avg of 1.41) — a pre-existing,
+  accepted gap, not something this pass introduced. Rather than hand-guess cdiff for 23 new courses, built a
+  Monte Carlo calibration harness that calls the browser's own live `dSimHole`/`dBaseDiffs` functions via
+  Playwright (not a hand-reimplementation — an earlier from-scratch JS port showed a systematic ~0.3 offset
+  from the real engine, so calibration runs directly against the shipped code to eliminate transcription
+  risk) and two-point-interpolates + one Newton-refines to find the cdiff where a flat-80 balanced/breezy
+  build's simulated mean matches each course's researched avg — validated to match target avg within ~0.005
+  across all 23 new courses.
+  `DAILY_COURSES` entries follow the existing schema exactly (`v`, `loc`, `par`, `yd`, `ver`, `blurb`, `avg`,
+  `cdiff`, `fit`, `sig`, `holes`); `courses.json` (the source-of-truth doc file) updated in parallel with the
+  same 23 entries for consistency. No code changes needed beyond the data itself — `DAILY_KEYS`,
+  `dailyCourseKey`'s rotation-cycle math, and `DAILY_MEAN_YPP` are all already derived dynamically from
+  `Object.keys(DAILY_COURSES).length`, so the 16-day reshuffle cycle became a 39-day cycle automatically.
+  Verified: embedded script parses (`node --check`) after the object-literal splice (first attempt
+  double-closed the `DAILY_COURSES` object and broke parsing — caught immediately, fixed); `DAILY_KEYS.length
+  === 39`; every new course's `holes` sums to its stated `par`/`yd`; `dSimHole`/`dBaseDiffs` run cleanly on
+  5 sampled new courses; `dailyCourseKey` cycles through the full 39-course pool over 60 simulated days with
+  no crash; a full 18-hole round played end-to-end on Whistling Straits via `autoFinishDaily()` reached
+  `dailyresult` with a sane score; Playwright screenshots of the Daily Challenge preview screen on Kiawah
+  Island and Merion confirm blurb/skill-tags/target-average/signature-holes all render correctly. Zero page
+  errors. The 5 *pre-existing* courses' `par`/`yd` fields don't sum exactly to their `holes` arrays (St
+  Andrews, Quail Hollow, East Lake, Glen Abbey, Sedgefield) — flagged as a harmless, out-of-scope discrepancy
+  that predates this change, not touched here.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
