@@ -1229,7 +1229,8 @@ function saveMidSeasonAndExit(){
   clearTimeout(seasonTimer); reset(); render();
   toast(saved?'Career saved. Resume from the home screen':'Sign in to save & resume your career');
 }
-function resumeCareer(){ const r=careerSaveInfo(); if(!r) return; reset();
+function resumeCareer(){ const r=careerSaveInfo(); if(!r || r.ended) return;   // an ended career is never resumable — see viewEndedCareer()
+  reset();
   S.career=r.career; S.fieldRoster=r.fieldRoster||null; S.slots=r.slots||S.slots;
   S.careerSeed=(r.careerSeed!=null?r.careerSeed:null); S.world=r.world||null;
   S.name=r.name||''; S.look=Object.assign({},DEFLOOK,r.look||{}); S.year=r.year||1; S.daily=false;
@@ -1240,6 +1241,14 @@ function resumeCareer(){ const r=careerSaveInfo(); if(!r) return; reset();
     track('career_resume',{year:S.year,mid:true}); S.screen='season'; render(); return;
   }
   track('career_resume',{year:S.year}); continueFranchise(); }   // otherwise pick up at next year's off-season
+// A retired/ended career (endCareer()) is kept addressable so an accidental refresh mid-ceremony
+// doesn't lose it, but it must never be played on from here — just redisplay the same ceremony screen.
+function viewEndedCareer(){ const r=careerSaveInfo(); if(!r || !r.ended) return; reset();
+  S.career=r.career; S.name=r.name||''; S.look=Object.assign({},DEFLOOK,r.look||{}); S.year=r.year||1;
+  S.slots=r.slots||S.slots; S.daily=false;
+  S.careerEnd=r.careerEnd||null; S.freshLegendToken=r.freshLegendToken||null; S.careerOver=true;
+  track('career_ceremony_reviewed',{year:S.year});
+  S.screen='careerend'; render(); }
 
 /* ---------- data ---------- */
 const CATS=[
@@ -3179,7 +3188,12 @@ function scrTitle(){
   const stack=$(`<div class="stack"></div>`);
   const ri=resumeInfo();
   const cs=careerSaveInfo();
-  if(cs){
+  if(cs && cs.ended){
+    // a retired/completed career — never resumable, just lets them revisit the ceremony they just saw
+    const yrs=(cs.careerEnd&&cs.careerEnd.years)||cs.year;
+    const cb=$(`<button class="btn teal">View Career Ceremony<span class="sub">${yrs} season${yrs===1?'':'s'} · ${esc(cs.name||'Your Golfer')} · career complete</span></button>`);
+    cb.onclick=viewEndedCareer; stack.appendChild(cb);
+  } else if(cs){
     const mid=cs.mid&&cs.mid.season;
     const sub=mid
       ? `Year ${cs.year} · mid-season (event ${(cs.mid.evtIndex||0)+1}) · ${esc(cs.name||'Your Golfer')} · pick up where you left off`
@@ -5413,7 +5427,6 @@ function mintLegendToken(){
 }
 function endCareer(reason){
   S._repAnimShown=false;   // let the Tour Rep meter animate once on the career-end ceremony
-  saveCareer();   // keep the final state addressable
   S.freshLegendToken = (reason==='age') ? mintLegendToken() : null;   // full 40 years only
   if(S.career){ const c=S.career; S.careerEnd={reason,years:c.seasons.length,
     money:c.money,net:c.net,wins:c.wins,majors:c.majors,top10:c.top10,
@@ -5428,7 +5441,13 @@ function endCareer(reason){
   }catch(e){}
   S.careerFreshAch=evaluateAch();   // career-completion achievements (Full Circle, Hall of Fame…)
   track('career_ended',{reason,years:(S.career&&S.career.seasons.length)||1});
-  S.careerOver=true; S.screen='careerend'; render();
+  S.careerOver=true; S.screen='careerend';
+  // keep the final state addressable (so an accidental refresh mid-ceremony doesn't lose it) but
+  // flagged `ended` — an ended career must NEVER be treated as resumable (continueFranchise() would
+  // happily start the next season on a career the player just retired from). The title screen's
+  // "Resume Career Mode" branches on this flag into a non-playing "View Career Ceremony" button instead.
+  saveCareer({ended:true, careerEnd:S.careerEnd, freshLegendToken:S.freshLegendToken});
+  render();
 }
 function newCareer(){ clearCareerSave(); reset(); render(); }
 function finishOffseason(){ track('offseason_done',{changes:S.offseason.changes}); startSeason(false); }
@@ -6005,12 +6024,37 @@ function finishDailyRound(){
   LS.set(acctKey('bag_daily'),{date:S.dailySeed,attempts,best,result:S.dailyResult});
   track('daily_completed',{course:S.dailyCourse,total,attempt:attempts,best:best.total,won,avg,guest:!signedIn,legend:isLegend});
   if(improved && signedIn) sbSubmitDaily(best);   // only accounts post to the board; guests post on sign-in (gated by attempts)
+  if(signedIn) verifyDailyRecord(S.dailyCourse, isLegend);   // correct the optimistic "record!" guess against the server
   // remember this guest round so signing in from the result screen logs it to the account (consuming an attempt)
   S._claimDaily = signedIn ? null : S.dailyResult;
   S.dailyClaimMsg=null;
   captureDailyFeats(S.dailyHoles,total,S.dailyCourse,isRec);
   S._repAnimShown=false; S.dailyFreshAch=evaluateAch();   // show the Tour Rep meter + reveal on the result page
   S.screen='dailyresult'; render();
+}
+// The "you hold the course record" flag above is an OPTIMISTIC guess from recordCourseScore(), which
+// only compares against this device's local course-record cache — it can be stale if another player's
+// better score already exists on the server (or lands moments later) but hasn't been merged locally yet.
+// Re-fetch the authoritative record right after submitting and correct the flag/UI if the guess was
+// wrong — fixes "it says I have the record but someone shot a lower score."
+async function verifyDailyRecord(courseKey, isLegend){
+  if(!sb || !sbUser) return;
+  await (isLegend ? crLoadLegend() : crLoad());   // refetch + self-heal the local course-record cache
+  const rec=(isLegend?courseRecordsLegend():courseRecords())[courseKey];
+  const trulyMine=!!(rec && rec.mine);
+  let changed=false;
+  if(S.dailyResult && S.dailyResult.course===courseKey && !!S.dailyResult.isLegend===!!isLegend && S.dailyResult.record!==trulyMine){
+    S.dailyResult.record=trulyMine; changed=true;
+    const today=dailyToday();
+    if(today){
+      if(today.result && today.result.course===courseKey) today.result.record=trulyMine;
+      if(today.best && today.best.course===courseKey) today.best.record=trulyMine;
+      LS.set(acctKey('bag_daily'), today);
+    }
+  }
+  // the "logged a guest round to your account" banner also claims a record — guest claims are never legend
+  if(!isLegend && S.dailyClaimMsg && S.dailyClaimMsg.record!==trulyMine){ S.dailyClaimMsg.record=trulyMine; changed=true; }
+  if(changed) render();
 }
 // When a guest signs in (or creates an account) with a just-played daily round waiting, log that round
 // to the account: it counts as ONE of the account's daily attempts, may set a course record, and posts to
@@ -6034,6 +6078,7 @@ function maybeClaimDaily(){
   S.dailyAttemptNo=attempts; S.dailyImproved=improved; S.dailyResult=r;
   bumpStreak(); bumpDailyStats(!!r.won);                   // the round now counts on the account's daily record
   if(improved) sbSubmitDaily(best);                        // post to the global board / course records
+  verifyDailyRecord(r.course, false);                      // correct the optimistic "record!" guess against the server
   S.dailyClaimMsg={ok:true, attempt:attempts, max:dailyMaxAttempts(), total:r.total, record:isRec, improved};
   toast('✓ Score saved to your account'+(isRec?' · course record!':''));
   return true;

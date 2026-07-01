@@ -2190,6 +2190,49 @@ allows Google Fonts, or self-host Anton.*
   not local device data — validated the migration file against a local Postgres instance (runs clean on an
   empty DB, re-run is a no-op).
 
+- **CS72 — Fixed: falsely claiming the Daily Challenge course record.** Owner reported "it says I have the
+  course record on today's course daily challenge but someone shot a lower score." Root cause:
+  `recordCourseScore()` (called from `finishDailyRound()`/`maybeClaimDaily()`) only ever compares a
+  finished round against THIS DEVICE's local `bag_courserecords` cache — never the live server state. That
+  cache is only refreshed by `crLoad()`, which is triggered on the Daily Challenge preview/result screens,
+  but there's an inherent race: if another player's better score already exists on the server (or lands
+  moments later) and this device's local cache hasn't caught up yet, `recordCourseScore()` optimistically
+  (and wrongly) declares a new record. Added `verifyDailyRecord(courseKey, isLegend)`: called right after
+  `sbSubmitDaily()` in both `finishDailyRound()` and `maybeClaimDaily()`, it re-fetches the authoritative
+  course record (`crLoad()`/`crLoadLegend()`, which already self-heals the local cache when the fetched
+  value is better) and corrects `S.dailyResult.record` — plus the persisted `bag_daily.result`/`.best`
+  entries and the "logged a guest round to your account" claim banner — if the optimistic local guess
+  turns out to be wrong, then re-renders.
+  Verified in Playwright with a stubbed `sb.rpc` simulating exactly this race (stale empty local cache,
+  optimistic local "record!", then a fake server response showing another player's lower score): confirmed
+  the flag flips from `true` to `false` and the local course-record cache self-heals to the correct global
+  holder; confirmed a GENUINE record holder is left alone (flag stays `true`, no false negative). Full
+  regression suite still green.
+
+- **CS73 — Fixed: a retired/ended career could still be "resumed."** Owner reported "when I retired, and
+  then went home, it let me resume from the last season" — also flagged (screenshots) that seasons/careers
+  still weren't reaching the public leaderboard even after CS71's fix; see the reply in this session for
+  the leaderboard follow-up (those screenshots turned out to be the in-game LOCAL season/career money-list
+  screens on the summary recap, not the actual global Leaderboard overlay — asked the owner to check the
+  Trophy icon specifically and the browser console for the new `[RunTheTour] season submit failed...` log
+  line from CS71, since that will show the real server-side rejection reason if one is still occurring).
+  Root cause of the retirement bug: `endCareer()` (fired on both forced 40-year retirement AND voluntary
+  early "Retire, End Career") called `saveCareer()` to "keep the final state addressable" — intentional,
+  so an accidental refresh mid-ceremony doesn't lose the recap — but nothing distinguished that save from
+  a genuine in-progress career. The title screen's "Resume Career Mode" button unconditionally called
+  `resumeCareer()` → `continueFranchise()` on ANY save with career data, including one from a career the
+  player had just explicitly ended, happily starting the next season on a "retired" golfer.
+  Fixed: `endCareer()` now saves with an `ended:true` flag (plus `careerEnd`/`freshLegendToken` so the
+  ceremony can be faithfully redisplayed). The title screen branches on this flag: an ended save shows
+  "View Career Ceremony" (routes to a new `viewEndedCareer()` that redisplays the `careerend` screen with
+  zero chance of advancing the season) instead of "Resume Career Mode". `resumeCareer()` itself also now
+  refuses (`if(!r || r.ended) return;`) as a defense-in-depth backstop in case it's ever reached another way.
+  Verified in Playwright: a voluntary early retirement (year 20 of a 40-year career) persists `ended:true`;
+  the title screen shows "View Career Ceremony" (not "Resume Career Mode"); clicking it redisplays the
+  ceremony with the year unchanged (does NOT advance to year 21); calling `resumeCareer()` directly on the
+  ended save is confirmed a no-op; a genuine in-progress mid-season save is confirmed unaffected — still
+  shows "Resume Career Mode" and correctly resumes into the season screen. Full regression suite still green.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
