@@ -459,7 +459,7 @@
 
   /* ---- footer ---- */
   .foot{max-width:438px; margin:18px auto 0; text-align:center; position:relative; z-index:2}
-  .footpills{display:flex; gap:10px; justify-content:center}
+  .footpills{display:flex; flex-wrap:wrap; gap:10px 10px; row-gap:8px; justify-content:center}
   .footnote{margin-top:14px; font-weight:700; color:var(--pagemut)} .footnote b{color:var(--teal)}
   .footlinks{margin-top:8px; color:var(--pagemut); font-size:13px}
   .footlinks span{display:inline-block; margin:0 2px; padding:8px 6px}
@@ -2559,6 +2559,7 @@ function footer(){
   fp.appendChild($(`<a class="pill" href="${mail}" style="text-decoration:none">✉ Questions or Comments</a>`));
   const a2h=$(`<div class="pill" style="cursor:pointer">▣ Add to Home</div>`); a2h.onclick=installApp;
   fp.appendChild(a2h);
+  fp.appendChild($(`<a class="pill" href="/" target="_blank" rel="noopener" style="text-decoration:none;border-color:var(--teal);color:var(--teal)">↗ Try RunThePitch</a>`));
   f.appendChild(fp);
   const links=$(`<div class="footlinks"></div>`);
   const mk=(t,fn)=>{const s=$(`<span style="cursor:pointer">${t}</span>`); s.onclick=fn; return s;};
@@ -2796,6 +2797,7 @@ function unlockPerks(){
     ['☁️','Saved &amp; synced','Your careers and record follow you on any device'],
     ['🏅','Achievements &amp; Tour Rep','Tick off 100+ milestones and climb the Tour Rep ranks'],
     ['⛳','Your player profile','Your golfer, stats and best careers in one place'],
+    ['🌐','One account, every game','Also plays RunThePitch, with more RunThe.GG games on the way'],
   ];
   return `<div class="perkhd">Free account unlocks</div><div class="perks">${p.map(x=>`<div class="perk"><span class="pic">${x[0]}</span><span class="pt"><b>${x[1]}</b><span>${x[2]}</span></span></div>`).join('')}</div>`;
 }
@@ -3058,9 +3060,13 @@ function overlayAbout(screen){
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="About RunTheTour">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>About</h3>
-    <p class="lede"><b style="color:var(--oncard)">RunTheTour</b> is a free 40-year golf career simulation from <b style="color:var(--teal)">RunThe.GG</b>, sibling to RunThePitch. Spin a wheel of real golfers, draft one skill from each to build your own, then live out their career: majors, the Ryder Cup, the Presidents Cup, Olympic medals, and a World Ranking climb across up to 40 seasons.</p>
+    <p class="lede"><b style="color:var(--oncard)">RunTheTour</b> is a free 40-year golf career simulation from <b style="color:var(--teal)">RunThe.GG</b>. Spin a wheel of real golfers, draft one skill from each to build your own, then live out their career: majors, the Ryder Cup, the Presidents Cup, Olympic medals, and a World Ranking climb across up to 40 seasons.</p>
     <p class="lede">It's in active development, new features are landing regularly. Got an idea or a bug? We'd love to hear it.</p>
-    <p class="small muted" style="line-height:1.5">Real golfer skill ratings are derived from <a href="https://datagolf.com" target="_blank" rel="noopener" style="color:var(--gold);font-weight:700">DataGolf</a> data. RunTheTour is an independent fan project, not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, or any player or organization shown in the game. All results are simulated for entertainment only.</p>
+    <div class="scout">
+      <b style="color:var(--teal)">More from RunThe.GG</b>
+      <div class="small muted" style="margin-top:5px;line-height:1.5">RunTheTour is one of a growing family of free games from RunThe.GG, all under one account. Also try <a href="/" target="_blank" rel="noopener" style="color:var(--teal);font-weight:700">RunThePitch ↗</a>, build a World Cup squad from real players — with more games on the way.</div>
+    </div>
+    <p class="small muted" style="line-height:1.5;margin-top:12px">Real golfer skill ratings are derived from <a href="https://datagolf.com" target="_blank" rel="noopener" style="color:var(--gold);font-weight:700">DataGolf</a> data. RunTheTour is an independent fan project, not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, or any player or organization shown in the game. All results are simulated for entertainment only.</p>
     <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour, Feedback')}" style="text-decoration:none;display:block">✉ Send Feedback</a>
     <div style="height:10px"></div>
     <button class="btn red">Close</button></div>`);
