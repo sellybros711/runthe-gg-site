@@ -2092,6 +2092,32 @@ allows Google Fonts, or self-host Anton.*
   the pinned header; full existing regression suite (menu, guest course-record copy, leaderboard archetype,
   footer nav) still green, zero page errors throughout.
 
+- **CS68 — RunThe.GG cross-promotion (RunThePitch interconnectivity, golf side).** Owner wants the two
+  RunThe.GG games to reference each other: account-creation copy should tell people RunThe.GG is a broader
+  platform with more games coming, plus a persistent small ad/link to the other game. Discussed the plan
+  first (static footer pill, approved). Implemented on RunTheTour:
+  1. **Sign-up perks panel** (`unlockPerks()`): added a 5th perk — 🌐 "One account, every game — Also plays
+     RunThePitch, with more RunThe.GG games on the way" — alongside the existing leaderboard/sync/achievements
+     perks, so a new signup sees this is a platform account, not a single-game one.
+  2. **Footer pill** (`footer()`, renders on every screen via `render()`, not just title): a third pill next
+     to the existing "Questions or Comments" / "Add to Home" pills — `↗ Try RunThePitch`, teal-accented to
+     read as "the other game" rather than a utility action, links to `/` (root domain = RunThePitch's
+     deploy) in a new tab (so an in-progress golf career/draft is never lost). `.footpills` got
+     `flex-wrap` so the third pill wraps to its own row on narrow phones instead of overflowing.
+  3. **About overlay**: new "More from RunThe.GG" `.scout` callout box (replacing the old one-line "sibling
+     to RunThePitch" mention buried in the intro paragraph) explicitly framing RunTheTour as one of a
+     *growing family* of RunThe.GG games under one account, with a RunThePitch link and a "more games on
+     the way" note.
+  Verified in Playwright: footer pill present with correct `href="/"`, `target="_blank"`, `rel="noopener"`
+  on both the title screen and a non-title screen (draft) confirming it's truly global; sign-up perks list
+  includes the new platform-account perk; About overlay renders the new callout box with a working
+  RunThePitch link. Full existing regression suite (menu, guest course-record copy, leaderboard archetype,
+  cup sticky scoreboard, footer nav) still green, zero page errors.
+  **Follow-up (not part of this change):** wrote a prompt for a separate chat session to mirror this on the
+  RunThePitch side (its own sign-up copy, footer pill linking to `/golf`, About-page blurb) — RunThePitch's
+  root `index.html`/`gameLogic.js` are out of scope for direct edits in this session per standing
+  instructions, so that work has to happen in its own session against that codebase.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
