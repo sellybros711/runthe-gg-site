@@ -251,7 +251,7 @@
   .shr-opt{ display:flex; flex-direction:column; align-items:center; gap:4px;
     background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .shr-opt .si{ width:100%; aspect-ratio:2.1/1; border-radius:13px; display:flex; align-items:center; justify-content:center;
-    border:2.5px solid var(--ink); box-shadow:0 8px 18px rgba(var(--shadow-rgb),.28); transition:transform .08s ease, box-shadow .08s ease; }
+    border:none; box-shadow:0 8px 18px rgba(var(--shadow-rgb),.28); transition:transform .08s ease, box-shadow .08s ease; }
   .shr-opt:active .si{ transform:translate(4px,4px); box-shadow:0 0 0 var(--shadow-col); }
   .shr-opt .si svg{ height:60%; width:auto; fill:#fff; }
   .shr-opt .sl{ font-size:10px; font-weight:800; color:var(--ink); letter-spacing:.3px; }
@@ -753,7 +753,7 @@
   .flip-back .brk{font-weight:700;font-size:8px;color:#9a8d80;letter-spacing:.3px;margin-top:2px;line-height:1;}
   .ov.hi{color:var(--teal);} .ov.mid{color:var(--gold);} .ov.lo{color:var(--red);}
 
-  .scorecard{border:3px solid var(--ink);border-radius:22px;background:var(--white);box-shadow:var(--shadow);
+  .scorecard{border:1.5px solid var(--border-soft);border-radius:22px;background:var(--white);box-shadow:var(--shadow);
     padding:22px 18px;text-align:center;opacity:0;transform:scale(.9);transition:opacity .5s ease, transform .5s cubic-bezier(.3,1.4,.5,1);}
   .scorecard.show{opacity:1;transform:none;}
   .scorecard .emoji{font-size:54px;line-height:1;}
@@ -780,11 +780,11 @@
   .info-card p{font-weight:600;font-size:13.5px;line-height:1.5;color:var(--ink);margin:0 0 16px;}
 
   /* ---------- report ---------- */
-  .report-box{border:3px solid var(--ink);border-radius:18px;background:var(--fill-ink);color:#fff;
+  .report-box{border:1.5px solid rgba(255,255,255,.14);border-radius:18px;background:var(--fill-ink);color:#fff;
     padding:18px;font-family:'Archivo';font-weight:600;white-space:pre-wrap;line-height:1.6;font-size:14px;box-shadow:var(--shadow);}
   .report-box .grid-emoji{font-size:24px;letter-spacing:6px;}
   .copied-toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);
-    background:var(--teal);color:#fff;font-weight:900;padding:12px 22px;border-radius:999px;border:3px solid var(--ink);
+    background:var(--teal);color:#fff;font-weight:900;padding:12px 22px;border-radius:999px;border:none;
     box-shadow:var(--shadow-sm);opacity:0;transition:all .3s ease;z-index:60;text-transform:uppercase;letter-spacing:1px;font-size:13px;pointer-events:none;}
   .copied-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
@@ -968,7 +968,7 @@
   /* how the spun nation finished that World Cup — top-right pill of the header */
   .finish-badge{margin-left:auto;flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;
     font-weight:900;font-size:11px;letter-spacing:.3px;padding:5px 10px;border-radius:999px;
-    border:2px solid var(--ink);background:var(--white);color:var(--ink);white-space:nowrap;box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);}
+    border:1.5px solid var(--border-soft);background:var(--white);color:var(--ink);white-space:nowrap;box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);}
   .finish-badge.champion{background:var(--gold);color:var(--ink);}
   .finish-badge.runner_up{background:#C0C0C0;color:var(--ink);}
   .finish-badge.third{background:#CD7F32;color:#fff;}
@@ -1609,12 +1609,12 @@
   /* end-of-run re-draft hook (tailored "fix it" framing above the re-draft button) */
   .res-redraft{margin-top:16px;}
   .res-redraft-hook{text-align:center;font-weight:700;font-size:13px;line-height:1.4;
-    color:var(--ink);background:#fbf4e6;border:2px solid var(--ink);border-radius:12px;
-    padding:9px 12px;box-shadow:2px 2px 0 rgba(0,0,0,.18);}
+    color:var(--ink);background:#fbf4e6;border:1.5px solid var(--border-soft);border-radius:12px;
+    padding:9px 12px;box-shadow:0 4px 10px rgba(var(--shadow-rgb),.20);}
   .res-redraft-hook b{color:var(--ink);}
   /* podium indicator: a top-3 all-time finish gets a big celebratory banner */
   .res-rank.podium{display:flex;flex-direction:column;align-items:center;gap:3px;text-transform:none;
-    letter-spacing:0;border:2.5px solid var(--ink);border-radius:16px;padding:12px 20px;margin:4px auto 10px;
+    letter-spacing:0;border:1.5px solid var(--border-soft);border-radius:16px;padding:12px 20px;margin:4px auto 10px;
     box-shadow:0 8px 18px rgba(var(--shadow-rgb),.28);animation:podiumPop .5s cubic-bezier(.18,.89,.32,1.28) both;}
   .res-rank.podium .podtrophy{width:48px;height:56px;filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));}
   .res-rank.podium .podium-place{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:27px;
@@ -1671,7 +1671,7 @@
     background:rgba(11,19,36,.72);padding:18px;}
   .lineup-bg.show{display:flex;animation:fade .2s ease;}
   .lineup-card{position:relative;width:100%;max-width:430px;max-height:88vh;overflow-y:auto;
-    background:var(--paper);border:3px solid var(--ink);border-radius:18px;box-shadow:var(--shadow);
+    background:var(--paper);border:1.5px solid var(--border-soft);border-radius:18px;box-shadow:var(--shadow);
     padding:20px 16px 18px;}
   .lineup-head{text-align:center;margin:2px 0 14px;}
   .lineup-name{font-family:'Anton',Impact,sans-serif;font-size:24px;line-height:1.1;color:var(--ink);
@@ -2049,7 +2049,7 @@
   .share-bg{position:fixed;inset:0;z-index:85;display:none;align-items:flex-end;justify-content:center;
     background:rgba(22,18,15,.55);}
   .share-bg.show{display:flex;animation:fade .2s ease;}
-  .share-sheet{background:var(--white);border:3px solid var(--ink);border-radius:22px 22px 0 0;
+  .share-sheet{background:var(--white);border:1.5px solid var(--border-soft);border-radius:22px 22px 0 0;
     width:100%;max-width:560px;padding:14px 0 calc(14px + env(safe-area-inset-bottom));box-shadow:0 -8px 20px -6px rgba(var(--shadow-rgb),.28);}
   /* one horizontal, scrollable line of options */
   .share-row{display:flex;flex-wrap:nowrap;gap:14px;overflow-x:auto;padding:2px 16px 6px;
@@ -2084,7 +2084,7 @@
   .res-message{font-weight:700;font-size:14px;line-height:1.45;margin:12px auto 0;max-width:340px;color:var(--ink);}
   .res-section{font-weight:900;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;}
   .res-bio-hint{font-weight:700;font-size:11px;color:#9a8d80;margin:-2px 0 8px;text-align:right;}
-  .res-recap-row,.res-squad-row{display:flex;align-items:center;gap:10px;border:2px solid var(--ink);border-radius:12px;
+  .res-recap-row,.res-squad-row{display:flex;align-items:center;gap:10px;border:1.5px solid var(--border-soft);border-radius:12px;
     background:var(--white);padding:9px 12px;margin-bottom:8px;box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);font-weight:700;font-size:13px;}
   .res-recap-row .r-round{font-weight:900;min-width:92px;flex:0 0 auto;}
   .res-recap-row .r-mid{flex:1 1 auto;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px;}
@@ -2206,7 +2206,7 @@
   .mode-card .mc-sub{font-weight:900;font-size:12px;letter-spacing:.5px;margin-bottom:6px;opacity:.85;}
   /* retro inline-SVG card icons (replace the old emoji) */
   .mode-card .mc-icon{display:flex;align-items:center;justify-content:center;height:48px;}
-  .mc-ico-svg{width:46px;height:46px;display:block;filter:drop-shadow(2px 2px 0 rgba(22,18,15,.18));}
+  .mc-ico-svg{width:46px;height:46px;display:block;filter:drop-shadow(0 3px 4px rgba(22,18,15,.22));}
   /* inline trophy/medal graphic that sits like an emoji within a run of text */
   .ico-em{height:1.05em;width:auto;display:inline-block;vertical-align:-.18em;}
   /* keep the position abbreviations together on one line */
