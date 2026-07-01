@@ -521,8 +521,14 @@ function career(){return LS.get('bag_career',{builds:0,bestMoney:0,bestNet:null,
    running in-season net stays sensible. Tuned via Monte Carlo so a weak build can finish red. */
 const COSTS={caddiePct:0.10, agentPct:0.08, travelPerEvent:22000, seasonFixed:2.8e6};
 const SEASON_EVENTS=18;
+// Legend Circuit purses run ~1/8 the regular tour's (real Champions Tour scale, see CS76 research),
+// but a percentage-of-earnings cost (caddie/agent) already scales down with them automatically — only
+// the FLAT costs (travel, season overhead) need their own scaled-down figures, or every circuit season
+// would show a guaranteed heavy loss regardless of how well you actually played.
+const CIRCUIT_COSTS={travelPerEvent:8000, seasonFixed:0.5e6};
 function seasonNet(t){const gross=t.money, caddie=gross*COSTS.caddiePct, agent=gross*COSTS.agentPct,
-  travel=t.played*COSTS.travelPerEvent, fixed=COSTS.seasonFixed*(t.played/SEASON_EVENTS),
+  cc=S.circuitMode?CIRCUIT_COSTS:COSTS,
+  travel=t.played*cc.travelPerEvent, fixed=cc.seasonFixed*(t.played/SEASON_EVENTS),
   costs=caddie+agent+travel+fixed; return {gross,caddie,agent,travel,fixed,costs,net:gross-costs};}
 /* ---- Tee-tier badge system (lifetime — builds up across every season & career) ----
    Five tiers, named for the tees on a real scorecard, forward → tips:
@@ -1195,6 +1201,11 @@ function restoreResume(){const info=resumeInfo(); if(!info)return; const r=info.
 function saveCareer(extra){ if(S.daily||!sbSignedIn()) return false;   // careers are an account feature (career obj may be null in yr-1)
   LS.set(acctKey('bag_careersave'),Object.assign({year:S.year||1, career:S.career||null, fieldRoster:S.fieldRoster||null,
     careerSeed:S.careerSeed, world:S.world||null,
+    // circuit fields are always part of the base snapshot (not just when a call site remembers to pass
+    // them in `extra`) — every saveCareer() call happens mid-flight, including a mid-season autosave
+    // during the circuit's own first season, so a call site that forgot circuitMode/circuitCareer would
+    // otherwise silently overwrite it back to false and strand the player's circuit progress.
+    circuitMode:S.circuitMode||false, circuitStartYear:(S.circuitStartYear!=null?S.circuitStartYear:null), circuitCareer:S.circuitCareer||null,
     slots:S.slots, name:S.name, look:S.look, ovr:Math.round(buildPlayer().skill), savedAt:Date.now()}, extra||{})); return true; }
 // resumable if it has a finished-year franchise OR an in-progress season checkpoint (covers year-1 mid-season)
 function careerSaveInfo(){ if(!sbSignedIn()) return null; const r=LS.get(acctKey('bag_careersave'),null); return (r&&(r.career||(r.mid&&r.mid.season)))?r:null; }
@@ -1233,6 +1244,7 @@ function resumeCareer(){ const r=careerSaveInfo(); if(!r || r.ended) return;   /
   reset();
   S.career=r.career; S.fieldRoster=r.fieldRoster||null; S.slots=r.slots||S.slots;
   S.careerSeed=(r.careerSeed!=null?r.careerSeed:null); S.world=r.world||null;
+  S.circuitMode=r.circuitMode||false; S.circuitStartYear=(r.circuitStartYear!=null?r.circuitStartYear:null); S.circuitCareer=r.circuitCareer||null;
   S.name=r.name||''; S.look=Object.assign({},DEFLOOK,r.look||{}); S.year=r.year||1; S.daily=false;
   if(r.mid && r.mid.season){   // resume INTO the in-progress season (mid-season save)
     ensureWorld(); RNG=Math.random;
@@ -1245,8 +1257,13 @@ function resumeCareer(){ const r=careerSaveInfo(); if(!r || r.ended) return;   /
 // doesn't lose it, but it must never be played on from here — just redisplay the same ceremony screen.
 function viewEndedCareer(){ const r=careerSaveInfo(); if(!r || !r.ended) return; reset();
   S.career=r.career; S.name=r.name||''; S.look=Object.assign({},DEFLOOK,r.look||{}); S.year=r.year||1;
-  S.slots=r.slots||S.slots; S.daily=false;
-  S.careerEnd=r.careerEnd||null; S.freshLegendToken=r.freshLegendToken||null; S.careerOver=true;
+  S.slots=r.slots||S.slots; S.daily=false; S.careerOver=true;
+  if(r.circuitEnded){   // Legend Circuit finale reviewed instead of the regular 30-year ceremony
+    S.circuitCareer=r.circuitCareer||null; S.circuitEnd=r.circuitEnd||null; S.freshLegendToken=r.freshLegendToken||null;
+    track('circuit_ceremony_reviewed',{year:S.year});
+    S.screen='circuitend'; render(); return;
+  }
+  S.careerEnd=r.careerEnd||null; S.freshLegendToken=r.freshLegendToken||null;
   track('career_ceremony_reviewed',{year:S.year});
   S.screen='careerend'; render(); }
 
@@ -1605,6 +1622,54 @@ function seasonSchedule(year,seed){
   if(!S.daily && playerInTeamEvent(year)){ const te=teamEventForYear(year);
     list=list.concat([{name:te.short, type:'teamcup', wk:38, teamcup:true, teamType:te.type, major:false, big:false, purse:0, noCut:true}]); }
   return list.map(e=>({...e})).sort((a,b)=>a.wk-b.wk);
+}
+
+/* ---- The Legend Circuit: an optional post-career epilogue for a signed-in 50+ retiree, facing off
+   against golfers who've themselves aged out of the regular tour. Modeled on the real PGA Tour
+   Champions: age-50 eligibility, the 5 real senior majors, a smaller ~78-man field, and a season-ending
+   points race modeled on the real Charles Schwab Cup (a 3-event playoff that narrows the field each
+   stage). Reuses the EXACT SAME 4-round/cut event-simulation engine as the regular tour, unchanged —
+   real Champions Tour events are mostly 54-hole/no-cut, but touching the shared round-simulation engine
+   (used by every other feature in the game) for that one authenticity detail wasn't worth the risk;
+   see CLAUDE.md CS76. Bounded at 12 seasons — an epilogue, not another 30-year grind. ---- */
+const CIRCUIT_MIN_AGE=50, CIRCUIT_MAX_YEARS=12, CIRCUIT_FIELDSIZE=78;
+// the 5 real PGA Tour Champions majors, with their real (approximate, current-era) purses — all no-cut
+// for simplicity (2 of the 5 real majors already are; the other 3 use a 36-hole cut in real life).
+const CIRCUIT_MAJORS=[
+  ['Regions Tradition',2.6,1],
+  ['Senior PGA Championship',3.0,9],
+  ['U.S. Senior Open',4.0,13],
+  ['Senior Players Championship',3.5,18],
+  ['Senior Open Championship',2.85,23],
+].map(e=>({name:e[0],purse:e[1]*1e6,type:'major',wk:e[2],major:true,big:true,noCut:true}));
+// regular circuit stops — real-scale purses (~$2-2.5M, matching the researched Champions Tour norm,
+// roughly a tenth of the regular tour's). A rotating slate, same spirit as REG_POOL/seasonSchedule.
+const CIRCUIT_REG=[
+  ['Cologuard Classic',3],['Chubb Classic',3],['Hoag Classic',3],['Rapiscan Systems Classic',2.1],
+  ['Mitsubishi Electric Classic',2.1],['Insperity Invitational',2.2],['Regions Charity Classic',2.1],
+  ['Ally Challenge',2.4],['Boeing Classic',2.2],['Ascension Charity Classic',2.2],
+].map((e,i)=>({name:e[0],purse:e[1]*1e6,type:'reg',wk:4+i*2,major:false,big:false,noCut:true}));
+// season-ending points race, modeled on the real Charles Schwab Cup: 3-event playoff narrowing the
+// field each stage (cap sizes scaled proportionally to our smaller CIRCUIT_FIELDSIZE vs. the real
+// tour's ~150-man membership pool feeding 72→54→36).
+const CIRCUIT_PLAYOFFS=[
+  {name:'Charles Schwab Cup Playoffs I',   purse:2.5e6, cap:55, stage:1},
+  {name:'Charles Schwab Cup Playoffs II',  purse:2.5e6, cap:40, stage:2},
+  {name:'Charles Schwab Cup Championship', purse:3.0e6, cap:25, stage:3, stagger:true},
+].map((e,i)=>({...e,type:'sig',wk:28+i*2,major:false,big:true,playoff:true,noCut:true}));
+function circuitSchedule(seed){
+  const shuffled=seededShuffle(CIRCUIT_REG,((seed!=null?seed:0)^0x1e6a1d)>>>0);
+  const picks=shuffled.slice(0, Math.min(7, shuffled.length));
+  return CIRCUIT_MAJORS.concat(picks).concat(CIRCUIT_PLAYOFFS).map(e=>({...e})).sort((a,b)=>a.wk-b.wk);
+}
+// the field: golfers who've themselves retired from the regular tour, at their CURRENT living rating —
+// they keep aging/declining after retirement too, computed fresh via livingOf() rather than the stale
+// rating they were stamped with at the moment they retired.
+function legendField(n){
+  const w=ensureWorld(); if(!w || !w.alumni.length) return [];
+  return w.alumni.slice(-Math.max(n*3, 150))
+    .map(g=>{ const l=livingOf(g,w.simYear); const o={name:g.name, skill:l.ov, nation:g.nation}; SKK.forEach(s=>o[s]=l.ls[s]); return o; })
+    .sort((a,b)=>b.skill-a.skill).slice(0,n);
 }
 
 const PAYOUT=[.18,.109,.069,.049,.041,.0363,.0338,.0313,.0293,.0273,.0253,.0233,.0215,.0201,.0189,
@@ -2630,7 +2695,7 @@ function render(){
   if(S.overlay==='privacy') overlayPrivacy(app);
   if(S.overlay==='terms') overlayTerms(app);
   if(S.overlay==='menu') overlayMenu(app);
-  ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult})[S.screen]();
+  ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult})[S.screen]();
   paintAvatars();   // recolor any avatar canvases just added to the DOM
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
   _lastView=view;
@@ -3191,15 +3256,17 @@ function scrTitle(){
   const cs=careerSaveInfo();
   if(cs && cs.ended){
     // a retired/completed career — never resumable, just lets them revisit the ceremony they just saw
-    const yrs=(cs.careerEnd&&cs.careerEnd.years)||cs.year;
-    const cb=$(`<button class="btn teal">View Career Ceremony<span class="sub">${yrs} season${yrs===1?'':'s'} · ${esc(cs.name||'Your Golfer')} · career complete</span></button>`);
+    const circuit=!!cs.circuitEnded;
+    const yrs=circuit?((cs.circuitEnd&&cs.circuitEnd.years)||0):((cs.careerEnd&&cs.careerEnd.years)||cs.year);
+    const cb=$(`<button class="btn teal">View ${circuit?'Legend Circuit':'Career'} Ceremony<span class="sub">${yrs} season${yrs===1?'':'s'} · ${esc(cs.name||'Your Golfer')} · ${circuit?'circuit':'career'} complete</span></button>`);
     cb.onclick=viewEndedCareer; stack.appendChild(cb);
   } else if(cs){
     const mid=cs.mid&&cs.mid.season;
+    const circuit=!!cs.circuitMode;
     const sub=mid
       ? `Year ${cs.year} · mid-season (event ${(cs.mid.evtIndex||0)+1}) · ${esc(cs.name||'Your Golfer')} · pick up where you left off`
-      : `Year ${cs.year} done · ${esc(cs.name||'Your Golfer')} · OVR ${cs.ovr} · continue your career`;
-    const cb=$(`<button class="btn teal">Resume Career Mode<span class="sub">${sub}</span></button>`);
+      : `Year ${cs.year} done · ${esc(cs.name||'Your Golfer')} · OVR ${cs.ovr} · continue your ${circuit?'circuit':'career'}`;
+    const cb=$(`<button class="btn teal">Resume ${circuit?'Legend Circuit':'Career Mode'}<span class="sub">${sub}</span></button>`);
     cb.onclick=resumeCareer; stack.appendChild(cb);
   }
   if(ri){
@@ -3835,17 +3902,21 @@ function startSeason(majorsOnly){
   // within a save (resume-safe) — ensureWorld() also sets this, but the schedule is built first.
   if(!S.daily && S.careerSeed==null) S.careerSeed=(Math.floor(Math.random()*4294967295))>>>0;
   S.schedule = S.daily ? SCHEDULE.map(e=>({...e}))
+             : S.circuitMode ? circuitSchedule(S.careerSeed)
              : (majorsOnly ? majorsSchedule() : seasonSchedule(S.year||1, S.careerSeed));
   S.evtIndex=0;
   RNG = S.daily ? mulberry32((S.dailySeed^0x51ed2701)>>>0) : Math.random;
   const me=buildPlayer();
   // Field: daily uses the static seeded SG field; career/free-play uses the LIVING WORLD
-  // (aging, retiring, rookie-refilled per year — career spec §4/§7). Each carries all 8 living
-  // skills so course-fit (§2) computes an event-effective overall per player.
+  // (aging, retiring, rookie-refilled per year — career spec §4/§7); the Legend Circuit draws instead
+  // from golfers who've themselves retired from that world. Each carries all 8 living skills so
+  // course-fit (§2) computes an event-effective overall per player.
   let roster;
   if(S.daily){
     if(!S.fieldRoster) S.fieldRoster=fieldSample(FIELDSIZE-1).map(g=>({name:g.name,dist:g.dist,acc:g.acc,app:g.app,sht:g.sht,scr:g.scr,bnk:g.bnk,put:g.put,clu:g.clu,skill:g.skill}));
     roster=S.fieldRoster;
+  } else if(S.circuitMode){
+    roster=legendField(CIRCUIT_FIELDSIZE-1);
   } else {
     roster=worldField(FIELDSIZE-1);   // living-world field for the current sim year
   }
@@ -4324,10 +4395,13 @@ function selectionInfo(evt){
   const meName=S.season.me.name, country=esc((S.look&&S.look.country)||'your country');
   let tag, made, title, sub;
   if(evt.playoff){
-    const rank=pointsRank(meName); made=rank<=evt.cap; tag='FedEx Cup Playoffs';
+    const rank=pointsRank(meName); made=rank<=evt.cap;
+    tag=S.circuitMode?'Schwab Cup Playoffs':'FedEx Cup Playoffs';
     if(made){
-      title = evt.stage===1?"You're in the Playoffs!" : evt.stage===2?'Through to the BMW Championship!' : 'You made it to East Lake!';
-      sub = `#${rank} in the FedEx Cup standings, inside the top ${evt.cap}. ${evt.stagger?'Just 30 left, with a staggered start, this one is for the Cup itself.':'Keep climbing, the field shrinks again next week.'}`;
+      title = S.circuitMode
+        ? (evt.stage===1?"You're in the Playoffs!" : evt.stage===2?'Through to Playoffs II!' : 'You made the Schwab Cup Championship!')
+        : (evt.stage===1?"You're in the Playoffs!" : evt.stage===2?'Through to the BMW Championship!' : 'You made it to East Lake!');
+      sub = `#${rank} in the ${S.circuitMode?'Schwab Cup':'FedEx Cup'} standings, inside the top ${evt.cap}. ${evt.stagger?`Just ${evt.cap} left, with a staggered start, this one is for the Cup itself.`:'Keep climbing, the field shrinks again next week.'}`;
     } else {
       title = evt.stage===1?'Just missed the Playoffs' : 'Your playoff run ends here';
       sub = `#${rank} in the standings, agonisingly outside the top ${evt.cap}. That is a season to be proud of, build on it and you will be deep in this hunt next year.`;
@@ -4588,12 +4662,18 @@ function raceToCupNode(byPts, evt){
   const myPts=Math.round((byPts.find(r=>r.n===meName)||{}).points||0);
   const fmtP=n=>Math.round(n).toLocaleString();
   let gate=0, verb='', into='';
-  if(!evt.playoff){ gate=70; verb='reach the FedEx Playoffs'; into='FedEx St. Jude Championship'; }
-  else if(evt.stage===1){ gate=50; verb='advance to the BMW Championship'; into='BMW Championship'; }
-  else if(evt.stage===2){ gate=30; verb='advance to East Lake'; into='Tour Championship'; }
+  if(S.circuitMode){
+    if(!evt.playoff){ gate=CIRCUIT_PLAYOFFS[0].cap; verb='reach the Schwab Cup Playoffs'; into=CIRCUIT_PLAYOFFS[0].name; }
+    else if(evt.stage===1){ gate=CIRCUIT_PLAYOFFS[1].cap; verb='advance to Playoffs II'; into=CIRCUIT_PLAYOFFS[1].name; }
+    else if(evt.stage===2){ gate=CIRCUIT_PLAYOFFS[2].cap; verb='advance to the Championship'; into=CIRCUIT_PLAYOFFS[2].name; }
+  } else {
+    if(!evt.playoff){ gate=70; verb='reach the FedEx Playoffs'; into='FedEx St. Jude Championship'; }
+    else if(evt.stage===1){ gate=50; verb='advance to the BMW Championship'; into='BMW Championship'; }
+    else if(evt.stage===2){ gate=30; verb='advance to East Lake'; into='Tour Championship'; }
+  }
   const finale=(gate===0);
   let detail, inside=true, line=gate;
-  if(finale){ detail='You made the 30-man finale. Win the Tour Championship to lift the Cup.'; }
+  if(finale){ detail=S.circuitMode?'You made the finale. Win the Schwab Cup Championship to lift the Cup.':'You made the 30-man finale. Win the Tour Championship to lift the Cup.'; }
   else {
     inside=rank<=gate; const lineP=Math.round((byPts[gate-1]||{points:0}).points||0);
     if(inside){ const cu=gate-rank; detail=cu>0?`Inside the top ${gate} with ${cu} spot${cu===1?'':'s'} to spare. Hold to ${verb}.`:`On the bubble at #${gate}. Hold your spot to ${verb}.`; }
@@ -4605,7 +4685,7 @@ function raceToCupNode(byPts, evt){
   const col=finale?'var(--gold)':(inside?'#35d6a0':'#E14A33');
   const wrap=$(`<div class="race2cup" style="background:#0a2740;border:1px solid var(--line);border-radius:13px;padding:11px 13px;margin:0 0 12px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-      <div style="min-width:0"><div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">${finale?'🏆 The Cup is on the line':'Race to the Cup'}</div>
+      <div style="min-width:0"><div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">${finale?'🏆 The Cup is on the line':(S.circuitMode?'Race to the Schwab Cup':'Race to the Cup')}</div>
         <div class="small" style="margin-top:3px;color:var(--oncard)">${detail}</div></div>
       <div style="text-align:right;flex:0 0 auto"><div class="mono" style="font-weight:800;font-size:20px;color:${col}">#${rank}</div>
         <div class="small muted" style="margin-top:1px">${fmtP(myPts)} pts</div></div>
@@ -4681,7 +4761,7 @@ function scrSeason(){
     <div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#E14A33">Opposite-field event</div>
     <div class="small" style="margin-top:4px;color:var(--oncard)">Outside the OWGR cut for the ${esc(evt.against)} this week. Win here to bank points and climb toward the elite fields.</div></div>`));
 
-  const typeLbl=evt.olympics?'<span class="major">🏅 Olympic Games</span>':evt.major?'<span class="major">Major</span>':evt.stagger?'<span class="sig">🏆 Cup Finale · top 30</span>':evt.playoff?`<span class="sig">Playoff · top ${evt.cap}</span>`:evt.oppo?'<span class="reg">Opposite-field</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?`<span class="sig">Signature · top ${evt.entryCap||50}</span>`:'<span class="reg">Tour event</span>';
+  const typeLbl=evt.olympics?'<span class="major">🏅 Olympic Games</span>':evt.major?'<span class="major">Major</span>':evt.stagger?`<span class="sig">🏆 Cup Finale · top ${evt.cap}</span>`:evt.playoff?`<span class="sig">Playoff · top ${evt.cap}</span>`:evt.oppo?'<span class="reg">Opposite-field</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?`<span class="sig">Signature · top ${evt.entryCap||50}</span>`:'<span class="reg">Tour event</span>';
   const dayLbl=ce.done?'Final':(ce.roundsDone>=2&&!ce.players.find(o=>o.p.you).made?`After ${DAYS[1]}`:`${DAYS[Math.max(0,ce.roundsDone-1)]} · Round ${Math.min(ce.roundsDone,4)}/4`);
   const cols=$(`<div class="cols seasoncols"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col scorecol"></div>`);
@@ -4988,6 +5068,7 @@ function scrSummary(){
   const ovr=Math.round(me.skill);
   const ec=seasonNet(t);
   if(!S.recorded){S.recorded=true;
+    if(!S.circuitMode){
     const majorWins={};
     S.season.results.forEach(r=>{ if(!r.evt.major)return; const meR=r.order.find(o=>o.p.you); if(meR&&meR.pos===1) majorWins[r.evt.name]=(majorWins[r.evt.name]||0)+1; });
     // rivalry: this season's head-to-head vs the chosen rival (counts a Rivalry tee only when you finish ahead)
@@ -5073,40 +5154,59 @@ function scrSummary(){
       recordAchEvent(sev);
       const fresh=evaluateAch(); if(fresh.length) S.freshAch=(S.freshAch||[]).concat(fresh);
     }
-    S.summaryTab='season';
-    track('season_finished',{ovr,net:Math.round(ec.net),gross:Math.round(ec.gross),wins:t.wins,majors:t.majors,moneyRank,N,daily:S.daily,year:S.year||1});
     // post to the public leaderboard (no-op unless signed in + backend live; daily excluded)
     if(!S.daily) sbSubmitSeason({golfer:me.name,ovr,year:S.year||1,earnings:t.money,net:ec.net,wins:t.wins,majors:t.majors,
       careerId:(S.careerSeed!=null?String(S.careerSeed):null),
       skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))});
-    if(!S.daily) saveCareer();   // auto-save the franchise so it can be resumed from home
+    } else {
+      // Legend Circuit seasons: much simpler bookkeeping in its OWN S.circuitCareer object — the
+      // regular career's achievements/rivalry/world-ranking/season-awards/public-leaderboard are all
+      // scoped to the 30-year career and deliberately untouched here, so a circuit epilogue can never
+      // corrupt or double-count those lifetime stats. The circuit gets its own small recap + a Legend
+      // Token on completion (see endCircuit()) instead.
+      const cc=(S.circuitCareer=S.circuitCareer||{money:0,net:0,wins:0,majors:0,top10:0,best:99,seasons:[],winsList:[],majorStats:{}});
+      cc.money+=t.money; cc.net+=ec.net; cc.wins+=t.wins; cc.majors+=t.majors; cc.top10+=t.top10;
+      if(t.best<cc.best) cc.best=t.best;
+      S.season.results.forEach(r=>{ const meR=r.order.find(o=>o.p.you); if(meR&&meR.pos===1) cc.winsList.push({name:r.evt.name,year:S.year||1,major:!!r.evt.major}); });
+      S.season.results.forEach(r=>{ if(!r.evt.major) return; const meR=r.order.find(o=>o.p.you); if(!meR) return;
+        const ms=cc.majorStats[r.evt.name]||(cc.majorStats[r.evt.name]={played:0,wins:0,top10:0,best:99});
+        ms.played++; const fin=(meR.pos==='CUT')?99:meR.pos;
+        if(meR.pos===1) ms.wins++; if(fin<=10) ms.top10++; if(fin<ms.best) ms.best=fin; });
+      cc.seasons.push({year:S.year||1,net:ec.net,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank,top10:t.top10,played:t.played,made:t.made});
+      track('circuit_season_finished',{ovr,net:Math.round(ec.net),wins:t.wins,majors:t.majors,year:S.year||1});
+    }
+    S.summaryTab='season';
+    track('season_finished',{ovr,net:Math.round(ec.net),gross:Math.round(ec.gross),wins:t.wins,majors:t.majors,moneyRank,N,daily:S.daily,year:S.year||1});
+    if(!S.daily) saveCareer({circuitMode:S.circuitMode||false, circuitStartYear:S.circuitStartYear, circuitCareer:S.circuitCareer});   // auto-save the franchise so it can be resumed from home
     clearResume();   // golfer's season is in the books — no longer resumable
   }
   if(S.daily&&!S.dailyStored){S.dailyStored=true; bumpStreak(); track('daily_completed',{net:Math.round(ec.net),moneyRank});
     LS.set(acctKey('bag_daily'),{date:S.dailySeed,done:true,result:{name:me.name,ovr,net:ec.net,money:t.money,moneyRank,N,wins:t.wins,majors:t.majors,best:t.best}});}
-  add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':(S.year>1?('Career Mode · Year '+S.year+' complete'):'Season complete')}</span></div>`));
+  const circuitYear=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):(S.year||1);
+  add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':(S.circuitMode?('Legend Circuit · Year '+circuitYear+' complete'):(S.year>1?('Career Mode · Year '+S.year+' complete'):'Season complete'))}</span></div>`));
   // Race to the Cup outcome — champion, eliminated, or finished the season in the standings
   if(!S.daily){
     const el=S.season.eliminated, champ=S.season.cupChampion;
+    const cupName=S.circuitMode?'Schwab Cup':'FedEx Cup', finaleName=S.circuitMode?'Schwab Cup Championship':'Tour Championship at East Lake';
     if(S.season.cupYouWon){
       add($(`<div class="center" style="margin:10px 0 2px"><div style="display:inline-block;background:linear-gradient(180deg,#1c5638,#0c2e1d);border:1px solid var(--gold);border-radius:14px;padding:13px 20px">
-        <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">FedEx Cup</div>
+        <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">${cupName}</div>
         <div style="font:800 22px/1.1 var(--body);color:var(--gold);margin-top:6px">🏆 You are the Cup Champion</div>
-        <div class="small muted" style="margin-top:4px">Won the Tour Championship at East Lake · ${fedexRank===1?'led the Race wire-to-wire':'#'+fedexRank+' seed surged to the title'}</div></div></div>`));
+        <div class="small muted" style="margin-top:4px">Won the ${finaleName} · ${fedexRank===1?'led the Race wire-to-wire':'#'+fedexRank+' seed surged to the title'}</div></div></div>`));
     } else if(el){
       add($(`<div class="center" style="margin:10px 0 2px"><div style="display:inline-block;background:#0a2740;border:1px solid #E14A33;border-radius:14px;padding:12px 18px">
         <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:#E14A33">Playoffs · eliminated</div>
         <div style="font:800 17px/1.15 var(--body);color:var(--oncard);margin-top:6px">Bounced at the ${esc(el.event)}</div>
-        <div class="small muted" style="margin-top:4px">Finished #${el.rank} in the Race to the Cup${champ?` · ${esc(champ)} took the Cup`:''}</div></div></div>`));
+        <div class="small muted" style="margin-top:4px">Finished #${el.rank} in the Race to the ${S.circuitMode?'Schwab Cup':'Cup'}${champ?` · ${esc(champ)} took the Cup`:''}</div></div></div>`));
     } else if(champ){
       add($(`<div class="center" style="margin:10px 0 2px"><div style="display:inline-block;background:#0a2740;border:1px solid var(--line);border-radius:14px;padding:12px 18px">
-        <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">Race to the Cup</div>
+        <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">Race to the ${S.circuitMode?'Schwab Cup':'Cup'}</div>
         <div style="font:800 17px/1.15 var(--body);color:var(--oncard);margin-top:6px">#${fedexRank} in the final standings</div>
-        <div class="small muted" style="margin-top:4px">🏆 ${esc(champ)} won the Cup at East Lake</div></div></div>`));
+        <div class="small muted" style="margin-top:4px">🏆 ${esc(champ)} won the ${finaleName}</div></div></div>`));
     }
   }
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS+' · ')}${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
+  add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':(S.circuitMode?('Year '+circuitYear+' of '+CIRCUIT_MAX_YEARS+' · '):('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS+' · '))}${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
   const netCol=ec.net>=0?'#35d6a0':'#E14A33';
   add($(`<div class="center" style="margin-bottom:6px">
     <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Net profit</div>
@@ -5346,20 +5446,27 @@ function scrSummary(){
     const again=$(`<button class="btn red">Build Another Golfer</button>`);
     again.onclick=()=>{reset();render();}; right.appendChild(again);
   } else {
-    const lastYear=(S.year||1)>=CAREER_MAX_YEARS;
+    const lastYear=S.circuitMode?circuitOver():((S.year||1)>=CAREER_MAX_YEARS);
     const declining=pastPeak();
+    const circuitYear2=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):null;
     right.appendChild($(`<div class="small center" style="margin:0 0 10px;color:#35d6a0;font-weight:700">✓ Progress auto-saved, your career is checkpointed at the home screen</div>`));
-    const cont=$(`<button class="btn goldfill">${lastYear?'Finish Career ▸':'Continue to Year '+((S.year||1)+1)+' ▸'}<span class="sub">${lastYear?('Year '+CAREER_MAX_YEARS+' was your last, career ceremony'):('Career Mode · year '+((S.year||1)+1)+' of '+CAREER_MAX_YEARS+(declining?' · skills are declining (re-spin to repair)':'')+' · off-season, then a new season')}</span></button>`);
+    const cont=$(`<button class="btn goldfill">${lastYear?(S.circuitMode?'Finish Legend Circuit ▸':'Finish Career ▸'):'Continue to Year '+((S.year||1)+1)+' ▸'}<span class="sub">${lastYear
+      ? (S.circuitMode?('Year '+CIRCUIT_MAX_YEARS+' was your last, circuit ceremony'):('Year '+CAREER_MAX_YEARS+' was your last, career ceremony'))
+      : (S.circuitMode?('Legend Circuit · year '+(circuitYear2+1)+' of '+CIRCUIT_MAX_YEARS+(declining?' · skills are declining (re-spin to repair)':'')+' · off-season, then a new season')
+        :('Career Mode · year '+((S.year||1)+1)+' of '+CAREER_MAX_YEARS+(declining?' · skills are declining (re-spin to repair)':'')+' · off-season, then a new season'))}</span></button>`);
     cont.onclick=continueFranchise; right.appendChild(cont);
     const save=$(`<button class="btn gold" style="margin-top:10px">Exit to Home<span class="sub">Already saved, come back and resume anytime</span></button>`);
     save.onclick=()=>{ saveCareer(); track('career_saved_exit',{year:S.year||1}); reset(); render(); };
     right.appendChild(save);
-    const retire=$(`<button class="btn ghost" style="margin-top:10px">Retire, End Career</button>`);
-    retire.onclick=()=>endCareer('chose'); right.appendChild(retire);
+    const retire=$(`<button class="btn ghost" style="margin-top:10px">${S.circuitMode?'End Circuit Now':'Retire, End Career'}</button>`);
+    retire.onclick=()=>{ S.circuitMode?endCircuit():endCareer('chose'); }; right.appendChild(retire);
   }
 }
+// how many Legend Circuit seasons have been played, relative to whichever year the circuit began
+function circuitOver(){ return S.circuitMode && S.circuitStartYear!=null && ((S.year||1)-S.circuitStartYear+1)>=CIRCUIT_MAX_YEARS; }
 function continueFranchise(){
-  if(playerRetires()){ endCareer('age'); return; }   // your golfer's career is over → ceremony
+  if(S.circuitMode){ if(circuitOver()){ endCircuit(); return; } }
+  else if(playerRetires()){ endCareer('age'); return; }   // your golfer's career is over → ceremony
   S.year=(S.year||1)+1;
   ensureWorld(); advanceWorld(S.world);   // age the living world one year (retire/rookies); spec §2-5
   S.freshRivalRetired=null; reconcileRival();   // farewell a rival who's aged off the tour; refresh OVR
@@ -5432,7 +5539,7 @@ function endCareer(reason){
   if(S.career){ const c=S.career; S.careerEnd={reason,years:c.seasons.length,
     money:c.money,net:c.net,wins:c.wins,majors:c.majors,top10:c.top10,
     best: c.seasons.reduce((m,s)=>Math.max(m,s.money),0),
-    bestFin: c.best}; }
+    bestFin: c.best, age:playerAge()}; }   // age at retirement — gates Legend Circuit eligibility (50+)
   // ---- lifetime career-completion badges (Hall of Famer + the Career Grand Slam black tee) ----
   try{ const cc=career(); cc.lt=Object.assign(ltDefault(),cc.lt||{}); cc.lt.maj=Object.assign({masters:0,champ:0,usopen:0,open:0},cc.lt.maj||{});
     cc.lt.careers++;
@@ -5450,6 +5557,46 @@ function endCareer(reason){
   saveCareer({ended:true, careerEnd:S.careerEnd, freshLegendToken:S.freshLegendToken});
   render();
 }
+/* ---- Legend Circuit finale: an UNCONDITIONAL Legend Token — every signed-in player who completes
+   the circuit banks one, win or lose, regardless of how they did. The challenge itself (facing a
+   lifetime of retired OWGR #1s at age 50+) is the accomplishment, unlike mintLegendToken()'s
+   elite-performance gate for the regular 30-year career. Frozen from the build the player carried
+   across the whole circuit (circuit seasons don't track a separate peak build). ---- */
+function mintCircuitLegendToken(){
+  if(S.daily || !sbSignedIn()) return null;
+  const token={
+    id: 'lt'+Math.floor(Math.random()*1e9)+'_circuit',
+    name: S.name||'Your Golfer',
+    ovr: Math.round(buildPlayer().skill),
+    skills: Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT])),
+    look: S.look?JSON.parse(JSON.stringify(S.look)):null,
+    peakYear: S.year||1, years: (S.circuitCareer&&S.circuitCareer.seasons)?S.circuitCareer.seasons.length:0,
+    reason: 'Completed the Legend Circuit', used: false,
+  };
+  const tokens=legendTokens(); tokens.push(token); LS.set(acctKey('bag_legend_tokens'),tokens);
+  track('legend_token_earned',{ovr:token.ovr,reason:token.reason,years:token.years,circuit:true});
+  return token;
+}
+function endCircuit(){
+  S._repAnimShown=false;
+  S.freshLegendToken=mintCircuitLegendToken();
+  const cc=S.circuitCareer=S.circuitCareer||{money:0,net:0,wins:0,majors:0,top10:0,best:99,seasons:[],winsList:[],majorStats:{}};
+  S.circuitEnd={years:cc.seasons.length, money:cc.money, net:cc.net, wins:cc.wins, majors:cc.majors, top10:cc.top10,
+    best: cc.seasons.reduce((m,s)=>Math.max(m,s.money),0), bestFin: cc.best, age:playerAge()};
+  track('circuit_ended',{years:S.circuitEnd.years,wins:cc.wins,majors:cc.majors,net:Math.round(cc.net)});
+  S.circuitMode=false; S.careerOver=true; S.screen='circuitend';
+  saveCareer({ended:true, circuitEnded:true, circuitEnd:S.circuitEnd, circuitCareer:cc, freshLegendToken:S.freshLegendToken});
+  render();
+}
+// Legend Circuit entry — from the regular career-end ceremony, age 50+, signed in only. Keeps S.career
+// (the just-finished 30-year career) frozen and untouched; circuit seasons write to S.circuitCareer instead.
+function startCircuit(){
+  if(!S.careerEnd || S.careerEnd.age<CIRCUIT_MIN_AGE || !sbSignedIn()) return;
+  S.circuitMode=true; S.careerOver=false; S.freshLegendToken=null;
+  S.circuitStartYear=(S.year||1)+1;   // matches continueFranchise()'s own increment, right below
+  track('circuit_start',{age:S.careerEnd.age});
+  continueFranchise();   // ages the world one more year and drops into the familiar off-season tune-up
+}
 function newCareer(){ clearCareerSave(); reset(); render(); }
 function finishOffseason(){ track('offseason_done',{changes:S.offseason.changes}); startSeason(false); }
 function offSpin(){ if(S.current||S.spinning)return; reveal(); }
@@ -5457,7 +5604,8 @@ function offReSpin(){ if(S.offseason.reSpins<=0)return; S.offseason.reSpins--; t
 function offTake(k){ S.slots[k]={golfer:S.current.name,value:S.current[k]}; S.offseason.changes++; if(S.offseason.decline) delete S.offseason.decline[k]; S.current=null; track('offseason_swap',{slot:k}); render(); }
 function scrOffseason(){
   const os=S.offseason||{changes:0,maxChanges:3,reSpins:2};
-  add($(`<div class="center"><span class="tag">Career Mode · Off-Season · Year ${S.year} prep</span></div>`));
+  const circuitYear3=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):null;
+  add($(`<div class="center"><span class="tag">${S.circuitMode?('Legend Circuit · Off-Season · Year '+circuitYear3+' prep'):('Career Mode · Off-Season · Year '+S.year+' prep')}</span></div>`));
   add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tune your game</h1>`));
   add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag, up to <b>${os.maxChanges} changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. Keep your bag as-is, or spin to improve it, but once you spin, you must take a skill before moving on.</p>`));
   // Tour Rep perk banner — shows what your rank grants + what the next rank unlocks (a "keep climbing" nudge)
@@ -5501,7 +5649,7 @@ function scrOffseason(){
   } else if(!S.spinning){
     if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel</button>`); spin.onclick=offSpin; left.appendChild(spin); }
     else left.appendChild($(`<div class="small muted center" style="padding:10px 0">All ${os.maxChanges} changes used.</div>`));
-    const cont=$(`<button class="btn goldfill" style="margin-top:10px">Start Year ${S.year} ▸<span class="sub">${os.changes>0?'Run the new season':'Keep your bag, run it as-is'}</span></button>`);
+    const cont=$(`<button class="btn goldfill" style="margin-top:10px">Start Year ${S.circuitMode?circuitYear3:S.year} ▸<span class="sub">${os.changes>0?'Run the new season':'Keep your bag, run it as-is'}</span></button>`);
     cont.onclick=finishOffseason;
     left.appendChild(cont);
   }
@@ -6531,6 +6679,75 @@ function scrCareerEnd(){
   sh.onclick=()=>{track('career_end_shared',{years:e.years}); shareCard(cv,share,S.name,'career');};
   const dl=$(`<button class="btn gold">⤓ Save Card</button>`);
   dl.onclick=()=>{cv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=((S.name||'golfer').replace(/\s+/g,'-'))+'-career.png';a.click();URL.revokeObjectURL(u);});};
+  row.appendChild(dl); row.appendChild(sh); add(row);
+  add($(`<div class="sep" style="margin:16px auto;max-width:520px"></div>`));
+  if(e.age>=CIRCUIT_MIN_AGE && sbSignedIn()){
+    const jc=$(`<button class="btn teal" style="max-width:520px;margin:0 auto 10px">Join the Legend Circuit ▸<span class="sub">Face off against every retired legend on tour, at age ${e.age}</span></button>`);
+    jc.onclick=startCircuit; add(jc);
+  }
+  const nc=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Start a New Career ▸<span class="sub">A brand-new 2026 universe, fresh story</span></button>`);
+  nc.onclick=newCareer; add(nc);
+}
+// Legend Circuit finale ceremony — parallel to scrCareerEnd() but reads S.circuitCareer/S.circuitEnd
+// instead of S.career/S.careerEnd, so the just-finished 30-year career's own stats are never touched.
+function scrCircuitEnd(){
+  const c=S.circuitCareer||{seasons:[],money:0,net:0,wins:0,majors:0,top10:0,best:99,winsList:[],majorStats:{}};
+  const e=S.circuitEnd||{years:c.seasons.length,money:c.money,net:c.net,wins:c.wins,majors:c.majors,best:c.seasons.reduce((m,s)=>Math.max(m,s.money),0),bestFin:c.best};
+  const ccol=c.net>=0?'#35d6a0':'#E14A33';
+  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">🏁 Legend Circuit complete</span></div>`));
+  add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${esc(S.name||'Your Golfer')}</h1>`));
+  add($(`<p class="lede center" style="margin-bottom:10px">${e.years} season${e.years===1?'':'s'} on the Legend Circuit · ${c.wins} win${c.wins===1?'':'s'} · ${c.majors} major${c.majors===1?'':'s'}</p>`));
+  if(S.freshLegendToken){ const lt=S.freshLegendToken;
+    add($(`<div class="center" style="margin:0 0 16px"><div style="display:inline-block;background:linear-gradient(180deg,#3a2a0f,#0a1626);border:1px solid var(--gold);border-radius:14px;padding:16px 22px;max-width:92vw;box-shadow:0 0 24px rgba(235,166,31,.25)">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">🏆 Legend Token Earned</div>
+      <div style="font:800 20px/1.2 var(--body);color:var(--oncard)">${esc(lt.name)} · OVR ${lt.ovr}</div>
+      <div class="small muted" style="margin-top:5px;max-width:400px">Completing the Legend Circuit earns a one-time Daily Challenge entry, spin your legend into a future daily round instead of drafting fresh.</div></div></div>`));
+  }
+  add($(`<div class="center" style="margin-bottom:8px">
+    <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Circuit net worth</div>
+    <div class="mono" style="font-weight:800;font-size:38px;color:${ccol};margin-top:4px">${fmtSigned(c.net)}</div>
+    <div class="small muted" style="margin-top:2px">${fmt(c.money)} earned across ${e.years} season${e.years===1?'':'s'}</div></div>`));
+  const tiles=$(`<div class="tiles four"></div>`);
+  tiles.appendChild(tile('Circuit earnings',fmt(c.money),true));
+  tiles.appendChild(tile('Wins',c.wins+''));
+  tiles.appendChild(tile('Majors',c.majors+''));
+  tiles.appendChild(tile('Top 10s',c.top10+''));
+  tiles.appendChild(tile('Best season',fmt(e.best||0),true));
+  tiles.appendChild(tile('Seasons',e.years+''));
+  add(tiles);
+  // record at the 5 Legend Circuit majors
+  const mstats=c.majorStats||{};
+  const winsByName={}; (c.winsList||[]).forEach(w=>{ if(w.major) winsByName[w.name]=(winsByName[w.name]||0)+1; });
+  add($(`<h2 class="center" style="margin:16px 0 8px;font-size:15px">Circuit majors</h2>`));
+  const mb=$(`<div class="board" style="max-width:520px;margin:0 auto"></div>`);
+  CIRCUIT_MAJORS.forEach(cm=>{
+    const nm=cm.name, m=mstats[nm];
+    const wins=m?m.wins:(winsByName[nm]||0);
+    const sub=m?[m.played+' played',m.top10+' top-10',(m.best!=null&&m.best!==99?'best '+bestTxt(m.best):null)].filter(Boolean).join(' · '):', ';
+    mb.appendChild($(`<div class="lb" style="grid-template-columns:24px 1fr auto">
+      <span class="pos" style="color:${wins>0?'var(--gold)':'var(--muted)'}">${wins>0?'★':'·'}</span>
+      <span class="pl" style="min-width:0"><div style="font-weight:700">${nm}</div><div class="small muted" style="font-size:10.5px">${sub}</div></span>
+      <span style="text-align:right"><div class="sc cream" style="font-weight:800">${wins} ${wins===1?'win':'wins'}</div></span></div>`));
+  });
+  add(mb);
+  const wl=(c.winsList||[]);
+  add($(`<h2 class="center" style="margin:16px 0 8px;font-size:15px">${wl.length?('Tournament wins · '+wl.length):'No tournament wins'}</h2>`));
+  if(wl.length){
+    const wrap=$(`<div style="max-width:520px;margin:0 auto"></div>`);
+    wrap.appendChild($(`<div class="small muted center" style="margin:-2px 0 8px">${c.seasons.length} seasons · tap a year for its wins</div>`));
+    wrap.appendChild($(`<div>${careerSeasonsHTML(c)}</div>`));
+    add(wrap);
+  }
+  const share=`RUNTHETOUR LEGEND CIRCUIT, ${S.name||'Your Golfer'}\n${e.years} seasons on the Legend Circuit · net worth ${fmtSigned(c.net)}\n${c.wins}W · ${c.majors} majors · ${fmt(c.money)} earned\nhttps://runthe.gg/golf`;
+  const careerVals=CATS.map(x=> S.slots[x.k]? S.slots[x.k].value : REPLACEMENT);
+  const cv=document.createElement('canvas'); cv.style.cssText='width:100%;max-width:300px;display:block;margin:16px auto 4px;border-radius:14px;border:1px solid var(--line)';
+  drawCareerCard(cv,{name:S.name||'Your Golfer',ovr:Math.round(buildPlayer().skill),years:e.years,money:c.money,net:c.net,wins:c.wins,majors:c.majors,cRank:0,cN:0},careerVals);
+  add(cv);
+  const row=$(`<div class="mini" style="margin-top:10px;max-width:520px;margin-left:auto;margin-right:auto"></div>`);
+  const sh=$(`<button class="btn gold">↗ Share Circuit</button>`);
+  sh.onclick=()=>{track('circuit_end_shared',{years:e.years}); shareCard(cv,share,S.name,'circuit');};
+  const dl=$(`<button class="btn gold">⤓ Save Card</button>`);
+  dl.onclick=()=>{cv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=((S.name||'golfer').replace(/\s+/g,'-'))+'-circuit.png';a.click();URL.revokeObjectURL(u);});};
   row.appendChild(dl); row.appendChild(sh); add(row);
   add($(`<div class="sep" style="margin:16px auto;max-width:520px"></div>`));
   const nc=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Start a New Career ▸<span class="sub">A brand-new 2026 universe, fresh story</span></button>`);

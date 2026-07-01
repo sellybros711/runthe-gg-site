@@ -2293,6 +2293,56 @@ allows Google Fonts, or self-host Anton.*
   at any age via the existing `livingOf()` function — the Senior Tour field ("face off against all the
   retired players") can likely be built directly from that existing data instead of a new tracking system.
 
+- **CS76 — Phase 2: The Legend Circuit (senior-tour epilogue).** Built the Phase 2 plan approved above, with
+  two changes the owner asked for mid-build: an unconditional Legend Token on completion (no elite-performance
+  gate, unlike the regular career's token), and the name **"The Legend Circuit"** instead of "Senior Tour" —
+  flagged to the owner that "Senior Tour"/"Legends Tour" are themselves real trademarks (the LPGA's own senior
+  circuit is literally called "Legends Tour"); owner approved "Circuit."
+  New constants/schedule: `CIRCUIT_MIN_AGE=50, CIRCUIT_MAX_YEARS=12, CIRCUIT_FIELDSIZE=78`; `CIRCUIT_MAJORS`
+  (the 5 real PGA Tour Champions majors — Regions Tradition, Senior PGA, U.S. Senior Open, Senior Players/Kaulig,
+  Senior Open Championship — with real-scale purses), `CIRCUIT_REG` (10 real regular-circuit stops, 7 rotate in
+  per season via `seededShuffle`), `CIRCUIT_PLAYOFFS` (a 3-event Charles Schwab Cup-style points race, cap sizes
+  scaled to our 78-man field vs. the real tour's ~150). Deliberately reuses the exact same hardcoded 4-round/cut
+  simulation engine as the regular tour, unchanged, rather than risk generalizing shared code used by every other
+  feature just to get real Champions Tour's 54-hole/no-cut format exactly right.
+  Field: `legendField(n)` draws from `S.world.alumni` (golfers who've retired from the *regular* tour's living
+  world), computing each one's CURRENT living rating via `livingOf(g, w.simYear)` rather than the stale rating
+  they retired with — so a legend's build keeps aging/declining through the circuit years too, same as the
+  regular tour's `worldField()`.
+  Bookkeeping is fully split from the regular career: circuit seasons write to a new `S.circuitCareer` object
+  (own money/wins/majors/seasons/winsList/majorStats), never touching `S.career` — so the just-finished 30-year
+  career's lifetime stats, achievements, rivalry, World Ranking, season awards, and public-leaderboard posts are
+  provably untouched by anything that happens in the circuit epilogue. `endCircuit()` mints the unconditional
+  Legend Token, builds `S.circuitEnd`, and routes to a new `circuitend` ceremony screen (`scrCircuitEnd()`,
+  parallel to `scrCareerEnd()`). Save/resume: `saveCareer()` now always persists `circuitMode`/`circuitStartYear`/
+  `circuitCareer` as base fields (not just when a call site remembers to pass them), since a mid-season autosave
+  during the circuit's own first season would otherwise silently drop back to `circuitMode:false` and strand
+  progress; `resumeCareer()`/`viewEndedCareer()`/title-screen branching all updated to route circuit-in-progress
+  and circuit-ended saves correctly ("Resume Legend Circuit" / "View Legend Circuit Ceremony").
+  Also fixed two bugs found while wiring this up: the "Retire, End Career" button on the season-summary screen
+  always called the regular `endCareer()` even mid-circuit (would have wrongly re-finalized the already-frozen
+  30-year career instead of ending the circuit) — now branches on `S.circuitMode`; and circuit seasons were
+  inheriting the regular tour's flat travel/overhead costs (`COSTS.travelPerEvent`/`seasonFixed`) against
+  purses scaled ~1/8th the regular tour's real-world size, which manufactured a guaranteed heavy net loss
+  every circuit season regardless of performance — added scaled-down `CIRCUIT_COSTS` so a legend's net worth
+  reflects how they actually played, not just gameplay-engine plumbing.
+  Cup/playoff UI text branded per mode (`FedEx Cup`→`Schwab Cup`, `Tour Championship at East Lake`→`Schwab Cup
+  Championship`, etc.) in the selection-announcement, race-strip, and summary screens, without touching the
+  regular tour's own copy or mechanics.
+  Verified in Playwright end-to-end: synthesized an elite, Grand Slam-qualifying 30-year career (retiring at
+  age 51, past the real 50+ threshold) with a properly-aged 30-year living world (so `w.alumni` has genuine
+  retirees, not an empty fresh-reset world); confirmed the Join button appears, the regular career's stats
+  freeze the instant the circuit starts, the field is exactly 78 real retirees with full 8-skill builds, the
+  5 circuit majors are correctly named, a full 12-season playthrough correctly ends via `endCircuit()` (not
+  early/late), the ceremony shows the unconditional Legend Token banner, the token lands in the account's
+  Legend Token bag, and a page reload correctly resumes into "View Legend Circuit Ceremony" →
+  `viewEndedCareer()` → the `circuitend` screen. Full existing regression suite (final/menu, guest daily
+  gating, FedEx playoffs/cup Monte Carlo, Legend Token mint gating, career-mode account gating, off-season
+  decline banners, mid-season save/resume, retirement/ceremony gating) still green, zero page errors — one
+  pre-existing unrelated fixture artifact in `test_retire_resume.mjs` (an empty synthetic `totals:{}` object
+  throws after its own assertions already passed) confirmed not a regression, same root cause documented
+  before this session's compaction.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
