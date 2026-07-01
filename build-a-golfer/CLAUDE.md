@@ -2735,6 +2735,31 @@ allows Google Fonts, or self-host Anton.*
   regression suite (final/menu, daily-challenge, bag_career scoping, CS83 leaderboard, CS84 render safety
   net + sticky avatar) still green.
 
+- **CS86 — overlay crashes were still invisible, and the safety net didn't show the actual error.**
+  Owner sent two screenshots: opening the Trophy Room showed the exact same blank-middle symptom CS84
+  was supposed to fix, and starting a new golfer showed the CS84 fallback card, but with no way to tell
+  either of us what actually broke. Root cause of the Trophy Room gap: CS84 only wrapped the SCREEN
+  dispatch call (`scrTitle`/`scrSetup`/etc.) in try/catch — the block of `if(S.overlay===...) overlay***(app)`
+  calls for Trophy Room/account/leaderboard/etc. runs earlier in `render()` and was never wrapped at all,
+  so `overlayRecord()` throwing (opening the Trophy Room) reproduced the identical silent-blank failure
+  the previous fix was supposed to have already closed off.
+  Fixed by wrapping that overlay-dispatch block in its own try/catch too: on error it now closes the
+  broken overlay (`S.overlay=null`, strip any stray `.ov` node) and shows a small toast at the bottom
+  with the actual overlay name + `err.message`, instead of leaving nothing. Also added the same real
+  error text (not just a generic "something went wrong") to the screen-level fallback card from CS84 —
+  the point of catching these is to make them diagnosable, and a generic message told neither the player
+  nor us anything useful. Both fallbacks now put the exact JS error message on screen, so a screenshot
+  alone is enough to root-cause a future crash without needing analytics access or the owner's console.
+  Have not yet identified the underlying data-shape bug causing the crash on THIS specific long-lived
+  test account (career/Trophy Room screens touch career()/badges/achievements/Legend Tokens/HOF — a much
+  richer, longer history than any fresh test account exercises) — this only ensures it's now visible and
+  recoverable rather than a silent dead end, and gives us the real error text next time it fires.
+  Verified in Playwright: stubbing `overlayRecord`/`scrSetup` to throw confirms the overlay crash now
+  closes gracefully with the real error message in a toast (header/footer/screen all intact underneath),
+  and the screen crash's fallback card shows the real error text too. Full regression suite (final/menu,
+  daily-challenge, bag_career scoping, CS83 leaderboard, CS84 render safety net, CS85 reset flow) still
+  green.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

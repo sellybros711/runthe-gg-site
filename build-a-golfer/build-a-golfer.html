@@ -2846,19 +2846,34 @@ function render(){
   // overlays attach to #app (top level), NOT the screen — the screen lives inside .card
   // (z-index:1) which sits BELOW .head (z-index:2), so an overlay nested there would render
   // under the header. At app level its z-index:40 covers the whole page cleanly.
-  if(S.overlay==='record') overlayRecord(app);
-  if(S.overlay==='account') overlayAccount(app);
-  if(S.overlay==='leaderboard') overlayLeaderboard(app);
-  if(S.overlay==='dailydone') overlayDailyDone(app);
-  if(S.overlay==='courserecords') overlayCourseRecords(app);
-  if(S.overlay==='confirmReset') overlayConfirmReset(app);
-  if(S.overlay==='about') overlayAbout(app);
-  if(S.overlay==='privacy') overlayPrivacy(app);
-  if(S.overlay==='terms') overlayTerms(app);
-  if(S.overlay==='menu') overlayMenu(app);
+  // Wrapped the same way as the screen dispatch below: an overlay fn throwing (e.g. opening the
+  // Trophy Room) used to leave NOTHING visible and no error anywhere, since this ran before that
+  // catch existed at all — closing the broken overlay + surfacing the real error message here
+  // instead turns a silent blank page into something the player (and we) can actually act on.
+  try{
+    if(S.overlay==='record') overlayRecord(app);
+    if(S.overlay==='account') overlayAccount(app);
+    if(S.overlay==='leaderboard') overlayLeaderboard(app);
+    if(S.overlay==='dailydone') overlayDailyDone(app);
+    if(S.overlay==='courserecords') overlayCourseRecords(app);
+    if(S.overlay==='confirmReset') overlayConfirmReset(app);
+    if(S.overlay==='about') overlayAbout(app);
+    if(S.overlay==='privacy') overlayPrivacy(app);
+    if(S.overlay==='terms') overlayTerms(app);
+    if(S.overlay==='menu') overlayMenu(app);
+  }catch(err){
+    console.error('[RunTheTour] overlay render failed:', S.overlay, err);
+    try{ track('screen_render_error',{overlay:S.overlay,message:(err&&err.message)||String(err)}); }catch(e){}
+    const broken=S.overlay; S.overlay=null;
+    const stray=app.querySelector('.ov'); if(stray) stray.remove();
+    app.appendChild($(`<div style="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:45;max-width:90vw;background:#0a1626;color:var(--oncard);border:1px solid #E14A33;border-radius:10px;padding:11px 16px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
+      <b style="color:#E14A33">That popped up broke, closed it.</b>
+      <div class="small muted" style="margin-top:3px;word-break:break-word">${esc(broken)}: ${esc((err&&err.message)||String(err))}</div></div>`));
+  }
   // A screen fn throwing used to leave the header/footer up but the middle of the page totally
   // blank with no error shown anywhere — this catch turns that into a recoverable "Back to Title"
-  // card instead, and logs what broke so a recurrence is diagnosable from analytics.
+  // card instead (showing the real error message so a recurrence is diagnosable straight from a
+  // screenshot, not just from analytics we might never see).
   try{
     ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult})[S.screen]();
   }catch(err){
@@ -2868,6 +2883,7 @@ function render(){
     const fb=$(`<div class="center" style="padding:40px 16px">
       <span class="tag" style="color:#E14A33;border-color:#E14A33">Something went wrong</span>
       <p class="lede center" style="margin:14px 0 18px">This screen hit a snag loading. Your saved progress is untouched, try heading back to the title screen.</p>
+      <p class="small muted center" style="margin:0 0 18px;word-break:break-word">${esc(S.screen)}: ${esc((err&&err.message)||String(err))}</p>
       <button class="btn goldfill" id="rerr-home">Back to Title</button></div>`);
     const hb=fb.querySelector('#rerr-home'); hb.onclick=()=>{ S.overlay=null; S.screen='title'; render(); };
     screen.appendChild(fb);
