@@ -1837,6 +1837,79 @@ const DAILY_COURSES={"Augusta National":{"v":"Augusta National Golf Club","loc":
 /* ============ DAILY CHALLENGE — one round at a real course (runthetour-daily-spec) ============ */
 const DAILY_KEYS=Object.keys(DAILY_COURSES);
 const DAILY_MEAN_YPP=DAILY_KEYS.reduce((s,k)=>s+DAILY_COURSES[k].yd/DAILY_COURSES[k].par,0)/DAILY_KEYS.length;
+/* ---- tournament → real venue + location, shown as a subtitle under the tournament name during season
+   play (§ requested). Reuses DAILY_COURSES wherever a tournament already maps to one of those fully-
+   written-up venues (kept as ONE canonical course per tournament here, matching the fixed COURSEFIT
+   entry already used for simulation — the Daily Challenge's rotating pool draws from the same courses
+   independently). The remaining tournaments (mostly smaller regular-tour stops, and every Legend Circuit
+   event) get a standalone {v,loc} entry — current-era real hosts where the event doesn't rotate much in
+   real life; a few Champions Tour stops rotate host courses year to year in reality, so treat these as
+   representative rather than a claim of a single permanent home. */
+const EVENT_COURSE={
+  // --- regular tour: reuse the matching DAILY_COURSES entry ---
+  'Kapalua Invitational':      DAILY_COURSES['Plantation Course at Kapalua'],
+  'Pebble Beach Pro-Am':       DAILY_COURSES['Pebble Beach Golf Links'],
+  'Bay Hill Invitational':     DAILY_COURSES['Bay Hill'],
+  'The Players':               DAILY_COURSES['TPC Sawgrass'],
+  'The Masters':                DAILY_COURSES['Augusta National'],
+  'The Championship':          DAILY_COURSES['Valhalla'],
+  'Memorial Tournament':       DAILY_COURSES['Muirfield Village'],
+  'U.S. Open':                  DAILY_COURSES['Oakmont'],
+  'Travelers Championship':    DAILY_COURSES['TPC River Highlands'],
+  'The Open':                   DAILY_COURSES['St Andrews Old Course'],
+  'FedEx St. Jude Championship': DAILY_COURSES['TPC Southwind'],
+  'Tour Championship':         DAILY_COURSES['East Lake Golf Club'],
+  'Sony Open':                  DAILY_COURSES['Waialae Country Club'],
+  'Farmers Insurance Open':    DAILY_COURSES['Torrey Pines South'],
+  'Phoenix Open':               DAILY_COURSES['TPC Scottsdale'],
+  'Genesis Invitational':      DAILY_COURSES['Riviera Country Club'],
+  'Valspar Championship':      DAILY_COURSES['Innisbrook Copperhead'],
+  'Hilton Head Classic':       DAILY_COURSES['Harbour Town Golf Links'],
+  'Charlotte Open':             DAILY_COURSES['Quail Hollow Club'],
+  'Charles Schwab Challenge':  DAILY_COURSES['Colonial Country Club'],
+  'Canadian Open':              DAILY_COURSES['Glen Abbey'],
+  'Wyndham Championship':      DAILY_COURSES['Sedgefield Country Club'],
+  // --- regular tour: no matching Daily Challenge venue, standalone entry ---
+  'BMW Championship':          {v:'Caves Valley Golf Club', loc:'Owings Mills, Maryland'},
+  'The American Express':      {v:'PGA West (Stadium Course)', loc:'La Quinta, California'},
+  'Mexico Open':                {v:'Vidanta Vallarta', loc:'Puerto Vallarta, Mexico'},
+  'Cognizant Classic':          {v:'PGA National Resort (Champion Course)', loc:'Palm Beach Gardens, Florida'},
+  'Houston Open':               {v:'Memorial Park Golf Course', loc:'Houston, Texas'},
+  'Texas Open':                  {v:'TPC San Antonio (Oaks Course)', loc:'San Antonio, Texas'},
+  'Zurich Team Classic':        {v:'TPC Louisiana', loc:'Avondale, Louisiana'},
+  'Rocket Mortgage Classic':    {v:'Detroit Golf Club', loc:'Detroit, Michigan'},
+  'John Deere Classic':         {v:'TPC Deere Run', loc:'Silvis, Illinois'},
+  'Scottish Open':              {v:'The Renaissance Club', loc:'North Berwick, Scotland'},
+  '3M Open':                     {v:'TPC Twin Cities', loc:'Blaine, Minnesota'},
+  // --- Legend Circuit majors: reuse DAILY_COURSES where the real senior major shares a Daily venue ---
+  'Regions Tradition':               {v:'Greystone Golf & Country Club', loc:'Birmingham, Alabama'},
+  'Senior PGA Championship':         {v:'Harbor Shores Resort', loc:'Benton Harbor, Michigan'},
+  'U.S. Senior Open':                {v:'The Broadmoor (East Course)', loc:'Colorado Springs, Colorado'},
+  'Senior Players Championship':    DAILY_COURSES['Firestone South'],
+  'Senior Open Championship':       DAILY_COURSES['Carnoustie'],
+  // --- Legend Circuit regular stops (real Champions Tour hosts) ---
+  'Cologuard Classic':          {v:'Omni Tucson National Resort', loc:'Tucson, Arizona'},
+  'Chubb Classic':               {v:'Talis Park Golf Club', loc:'Naples, Florida'},
+  'Hoag Classic':                 {v:'Newport Beach Country Club', loc:'Newport Beach, California'},
+  'Rapiscan Systems Classic':    {v:'Big Cedar Lodge (Ozarks National)', loc:'Ridgedale, Missouri'},
+  'Mitsubishi Electric Classic': {v:'TPC Sugarloaf', loc:'Duluth, Georgia'},
+  'Insperity Invitational':      {v:'The Woodlands Country Club', loc:'The Woodlands, Texas'},
+  'Regions Charity Classic':     {v:'Greystone Golf & Country Club', loc:'Birmingham, Alabama'},
+  'Ally Challenge':               {v:'Warwick Hills Golf & Country Club', loc:'Grand Blanc, Michigan'},
+  'Boeing Classic':               {v:'The Club at Snoqualmie Ridge', loc:'Snoqualmie, Washington'},
+  'Ascension Charity Classic':   {v:'Norwood Hills Country Club', loc:'St. Louis, Missouri'},
+  // --- Legend Circuit season-ending points race ---
+  'Charles Schwab Cup Playoffs I':    {v:'Philadelphia Cricket Club (Wissahickon Course)', loc:'Flourtown, Pennsylvania'},
+  'Charles Schwab Cup Playoffs II':   {v:'Prestonwood Country Club', loc:'Cary, North Carolina'},
+  'Charles Schwab Cup Championship':  {v:'Phoenix Country Club', loc:'Phoenix, Arizona'},
+};
+// {venue, location} for a scheduled event's real course, or null if unmapped (Olympics/team-cup weeks,
+// or any future event added without an entry) — callers must handle the no-subtitle case.
+function eventCourse(evt){
+  if(!evt) return null;
+  const c=EVENT_COURSE[evt.name]; if(!c) return null;
+  return {v:c.v, loc:c.loc};
+}
 const DCFG={ SCORE_SHIFT:-0.06, SLOPE_H:0.019, COURSE_DIFF_SCALE:0.045, COURSE_DIFF_CLAMP:0.22, SHAPE_SCALE:1.5,
   FIT_POWER:4.0, LATENT_S:0.92, TH:{eagle:-2.70,birdie:-0.90,par:0.78,bogey:1.95,double:2.55},
   // per-hole variance by archetype: most holes tighten (more pars), risk holes spread BOTH tails
@@ -4873,9 +4946,10 @@ function scrSeason(){
   const finPos=meFin?meFin.pos:myPos, finTied=meFin?meFin.tied:meLive._tied;
   const isWin=(finPos===1);
   const myPosTxt=myCut?'CUT':(finPos==='CUT'?'CUT':(finTied?'T'+finPos:ord(finPos)));
+  const venue=eventCourse(evt);
   right.appendChild($(`<div class="scorecard">
     <div class="sc-head">
-      <div><div class="sc-name">${evt.name}</div><div class="small muted" style="margin-top:2px">${typeLbl} · ${fmt(evt.purse)} purse</div></div>
+      <div><div class="sc-name">${evt.name}</div><div class="small muted" style="margin-top:2px">${typeLbl} · ${fmt(evt.purse)} purse</div>${venue?`<div class="small muted" style="margin-top:1px">📍 ${esc(venue.v)} · ${esc(venue.loc)}</div>`:''}</div>
       <div style="text-align:right"><div class="sc-pos" style="color:${myCut?'#e07a5f':(isWin?'var(--gold)':'var(--oncard)')}">${myPosTxt}</div>
         <div class="sc-topar" style="color:${meLive.total<=0?'#35d6a0':'var(--oncard)'}">${topar}</div></div>
     </div>
@@ -5768,8 +5842,9 @@ function scrRecap(){
     const {evt,order,playoff}=results[S.recapEvent];
     const me=order.find(o=>o.p.you);
     const typeLbl=evt.major?'<span class="major">Major</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
+    const recapVenue=eventCourse(evt);
     add($(`<div class="evt-head"><div><div class="nm">${evt.name}</div>
-      <div class="kx">${typeLbl} · ${fmt(evt.purse)} purse</div></div>
+      <div class="kx">${typeLbl} · ${fmt(evt.purse)} purse</div>${recapVenue?`<div class="kx" style="text-transform:none;letter-spacing:0">📍 ${esc(recapVenue.v)} · ${esc(recapVenue.loc)}</div>`:''}</div>
       <div class="kx reg">Event ${S.recapEvent+1}/${results.length}</div></div>`));
     const board=$(`<div class="board ${evt.major?'major':''}"></div>`);
     const top=order.slice(0,12);
