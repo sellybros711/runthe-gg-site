@@ -592,7 +592,7 @@
   .roundbar{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 16px;}
   .roundbar .label{font-weight:900;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;}
   .dots{display:flex;gap:6px;}
-  .dot{width:14px;height:14px;border:2.5px solid var(--ink);border-radius:50%;background:var(--white);}
+  .dot{width:14px;height:14px;border:1.5px solid var(--border-soft);border-radius:50%;background:var(--white);}
   .dot.done{background:var(--teal);}
   .dot.active{background:var(--gold);transform:scale(1.18);}
 
@@ -715,12 +715,12 @@
   /* slot picker sheet */
   .sheet-bg{position:fixed;inset:0;background:rgba(22,18,15,.55);display:none;z-index:40;align-items:flex-end;justify-content:center;}
   .sheet-bg.show{display:flex;animation:fade .2s ease;}
-  .sheet{background:var(--white);border:3px solid var(--ink);border-top-left-radius:22px;border-top-right-radius:22px;
+  .sheet{background:var(--white);border:1.5px solid var(--border-soft);border-top-left-radius:22px;border-top-right-radius:22px;
     width:100%;max-width:520px;padding:18px 16px 26px;box-shadow:0 -8px 20px -6px rgba(var(--shadow-rgb),.28);}
   .sheet h3{font-family:'Anton';font-size:22px;margin:0 0 2px;}
   .sheet .sub{font-weight:700;font-size:12px;color:var(--muted);margin-bottom:14px;}
   .slot-opts{display:grid;gap:10px;}
-  .slot-opt{display:flex;align-items:center;justify-content:space-between;border:3px solid var(--ink);
+  .slot-opt{display:flex;align-items:center;justify-content:space-between;border:2px solid var(--border-soft);
     border-radius:14px;padding:13px 16px;background:var(--paper);font-weight:900;font-size:16px;text-transform:uppercase;letter-spacing:1px;}
   .slot-opt:active{transform:translate(2px,2px);}
   .slot-opt .tag{font-size:11px;font-weight:800;color:#fff;background:var(--fill-ink);padding:3px 8px;border-radius:6px;letter-spacing:.5px;}
@@ -1033,7 +1033,7 @@
   .sim-card{
     max-height:100%;
     display:flex; flex-direction:column;
-    border:3px solid var(--ink); border-radius:16px; background:var(--white);
+    border:1.5px solid var(--border-soft); border-radius:16px; background:var(--white);
     box-shadow:var(--shadow-sm); padding:16px; margin:0; overflow:hidden;
     animation:fade .3s ease both;
   }
@@ -1098,7 +1098,7 @@
   }
   /* both lineups shown under the live match log (friendly match) */
   /* live, accumulating box score inside the match card */
-  .live-box{margin:10px 0 4px;border:2px solid var(--ink);border-radius:12px;background:#0F1424;
+  .live-box{margin:10px 0 4px;border:1.5px solid rgba(255,255,255,.14);border-radius:12px;background:#0F1424;
     padding:8px 10px;box-shadow:var(--shadow-sm);}
   .live-box .lbx-head{display:flex;align-items:center;justify-content:space-between;
     margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid rgba(255,255,255,.14);}
@@ -1147,7 +1147,7 @@
   #boxscores-list .bsm-match .lbx-ptable .lbx-rc{color:#E5402A;}
   /* box-scores modal (all matches, one scroll) */
   #boxscores-list{display:flex;flex-direction:column;gap:12px;}
-  .bsm-match{border:2px solid var(--ink);border-radius:12px;background:#0F1424;padding:10px 12px;}
+  .bsm-match{border:1.5px solid rgba(255,255,255,.14);border-radius:12px;background:#0F1424;padding:10px 12px;}
   .bsm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;}
   .bsm-top .bsm-round{font-family:'Anton',Impact,sans-serif;font-size:14px;color:var(--gold);text-transform:uppercase;}
   .bsm-top .bsm-score{font-family:'Anton',Impact,sans-serif;font-size:18px;color:#fff;}
@@ -1242,7 +1242,7 @@
   @media (max-width:359px){ .sim-final.sim-champion{font-size:25px;} }
   .penalty-dots{display:flex; gap:6px; justify-content:center; margin:8px 0; flex-wrap:wrap;}
   .pen-dot{
-    width:16px; height:16px; border-radius:50%; border:2px solid var(--ink);
+    width:16px; height:16px; border-radius:50%; border:1.5px solid var(--border-soft);
     background:var(--white); transition:background 0.2s ease;
   }
   .pen-dot.scored{background:var(--teal);}
@@ -1262,7 +1262,7 @@
   .pen-dots-row .pen-dot.missed{background:none;color:var(--red);}
   @keyframes penPop{from{transform:scale(.4);opacity:0;}to{transform:scale(1);opacity:1;}}
   .sim-summary{
-    border:3px solid var(--ink); border-radius:16px; background:var(--fill-ink);
+    border:1.5px solid rgba(255,255,255,.14); border-radius:16px; background:var(--fill-ink);
     color:#f0e8d8; padding:16px; margin-bottom:14px; animation:fade 0.4s ease both;
     box-shadow:var(--shadow);
   }
@@ -1363,7 +1363,7 @@
      shrinks/scrolls and the card never overflows. */
   .mp-inline{
     flex:0 0 auto; margin:0 0 12px; padding:9px 13px; text-align:center;
-    border:2.5px solid var(--ink); border-radius:13px;
+    border:none; border-radius:13px;
     background:var(--teal); color:#fff; box-shadow:var(--shadow-sm);
     opacity:0; transform:translateY(-8px);
     transition:opacity .35s ease, transform .35s ease;
