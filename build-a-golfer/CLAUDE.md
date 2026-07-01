@@ -2233,6 +2233,29 @@ allows Google Fonts, or self-host Anton.*
   ended save is confirmed a no-op; a genuine in-progress mid-season save is confirmed unaffected — still
   shows "Resume Career Mode" and correctly resumes into the season screen. Full regression suite still green.
 
+- **CS74 — Fixed: the leaderboard clamping many different seasons to identical earnings.** Owner: "Only a
+  few people have played. How does everyone have the same score. There should be infinite possibilities."
+  (screenshot showed the Single Season board with $39,200,000 repeated 3 times and $38,800,000 repeated
+  ~9 times across several different players and years). Root-caused this to `runtour_submit_season`'s
+  anti-forgery earnings ceiling: `v_cap := v_ovr * 400000`. That's EXACTLY $39,200,000 at OVR 98 and
+  EXACTLY $38,800,000 at OVR 97 — a precise match. The comment introducing that cap (22_runtour_leaderboard.sql)
+  assumed "real seasons land far below this," which turned out to be false: computed the schedule's true
+  structural ceiling (13 anchor events + the 7 highest-purse rotating events ≈ $334M total purse, ×18% for
+  a clean win) — winning literally every event of the season tops out at only ~$60.1M, well above the
+  OVR-98 cap of $39.2M. Any strong build (OVR 95+) having a genuinely great sim season (several wins + high
+  finishes) routinely exceeded the cap and got clipped down to the exact same ceiling every time — flattening
+  what should be widely varied results into a wall of identical numbers, and since career earnings are just
+  a sum of these per-season figures, the Career board inherited the same collision problem.
+  Wrote `supabase/33_runtour_earnings_cap.sql` (owner-run): raises the per-OVR-point multiplier from
+  400,000 to 900,000. At OVR 67+ this alone already clears the true ~$60.1M structural maximum with margin
+  to spare (OVR 99 → $89.1M cap), so a legitimately-simulated season is never clamped, while an obviously
+  forged submission (e.g. a low-OVR account claiming an enormous season) is still rejected.
+  Verified end-to-end against a local Postgres instance: a genuinely great $45.5M OVR-98 season (which the
+  OLD cap would have clamped to exactly $39.2M) now posts untouched; a forged $200M season on a weak OVR-60
+  build is still correctly clamped down (to $54M under the new formula). No client-side change was needed —
+  earnings are computed purely by the simulation and submitted as-is; the cap lives only in this one SQL
+  function.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
