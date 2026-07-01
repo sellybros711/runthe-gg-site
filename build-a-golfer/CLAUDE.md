@@ -2075,6 +2075,23 @@ allows Google Fonts, or self-host Anton.*
   raw row HTML confirmed no double-escaping/broken markup. Full existing regression suite (menu, guest
   course-record copy, footer nav, archetype distribution) still green, zero page errors throughout.
 
+- **CS67 — Sticky Ryder/Presidents Cup scoreboard.** Owner: "can the scoreboard for the presidents cup
+  and ryder cup be fixed to the top as you scroll through?" `scrTeamCup()`'s running score header (tag +
+  the two-team point box + "First to 14½ wins" line) used to be plain in-flow content, so once several
+  session cards' worth of matches were revealed the score scrolled off screen along with everything else —
+  annoying mid-Cup when you want to keep an eye on the score while scrolling through match results. Wrapped
+  that header in a new `.cupsticky` block (`position:sticky; top:0`, solid page-matching background,
+  bottom border + shadow for separation, safe-area-aware top padding for notched phones) so it now pins to
+  the top of the viewport while the match session cards scroll underneath it. The score/"match N of 28"
+  text inside it already re-renders live as matches are revealed, so the pinned header stays current
+  throughout. Everything below it (final-result banner, session cards, Next match/Auto Sim/Skip controls)
+  is unaffected — only the header itself is sticky.
+  Verified in Playwright: `.cupsticky` computes to `position:sticky;top:0px`; after scrolling 600px and to
+  the very bottom of a 6-session-card board it stays pinned at the top of the viewport the whole time;
+  clicking "Next match" and "Skip to Result" both correctly update the live score/match-count text inside
+  the pinned header; full existing regression suite (menu, guest course-record copy, leaderboard archetype,
+  footer nav) still green, zero page errors throughout.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

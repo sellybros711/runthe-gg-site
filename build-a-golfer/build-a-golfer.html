@@ -110,6 +110,10 @@
   @keyframes marq{to{transform:translateX(-50%)}}
   .screen{max-width:600px; margin:0 auto; padding:18px 16px 22px; position:relative}
   .screen.wide{max-width:1140px}
+  /* Ryder/Presidents Cup running scoreboard — pinned to the top of the viewport while the
+     match-by-match session cards below it scroll, so the score never leaves view. */
+  .cupsticky{position:sticky; top:0; z-index:6; margin:0 -16px 4px; padding:calc(8px + env(safe-area-inset-top, 0px)) 16px 6px;
+    background:#06200f; border-bottom:1px solid var(--line); box-shadow:0 8px 14px -10px rgba(0,0,0,.55)}
   .cols{display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start}
   .col{min-width:0}
   .setup-cols{grid-template-columns:0.85fr 1fr; max-width:840px; margin:0 auto}
@@ -4456,18 +4460,20 @@ function scrTeamCup(){
   const allDone=matchN>=TOTAL;
   const aCol='#3d6fb5', bCol=ryder?'#1f8f5a':'#6f74c4';
   const youA=T.mySide==='A';   // highlight the side your country plays for (you may be a player, captain, or just a fan)
-  // header / scoreboard
-  add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:#ffd76a;border-color:#ffd76a">🏆 ${esc(T.short)} · ${esc((S.look&&S.look.country)||'')}</span></div>`));
-  add($(`<div style="display:flex;align-items:stretch;justify-content:center;gap:0;margin:12px auto 6px;max-width:520px">
-    <div style="flex:1;text-align:center;background:linear-gradient(180deg,${aCol},rgba(0,0,0,.25));border-radius:12px 0 0 12px;padding:12px 8px;border:1px solid var(--line);${youA?'box-shadow:inset 0 0 0 2px var(--gold)':''}">
+  // header / scoreboard — pinned to the top of the viewport as the match cards below scroll
+  const scoreboard=$(`<div class="cupsticky"></div>`);
+  scoreboard.innerHTML=`<div class="center"><span class="tag" style="color:#ffd76a;border-color:#ffd76a">🏆 ${esc(T.short)} · ${esc((S.look&&S.look.country)||'')}</span></div>
+  <div style="display:flex;align-items:stretch;justify-content:center;gap:0;margin:10px auto 4px;max-width:520px">
+    <div style="flex:1;text-align:center;background:linear-gradient(180deg,${aCol},rgba(0,0,0,.25));border-radius:12px 0 0 12px;padding:10px 8px;border:1px solid var(--line);${youA?'box-shadow:inset 0 0 0 2px var(--gold)':''}">
       <div style="font:800 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#dce8ff">${natFlag(T.codeA)} ${esc(T.nameA)}${youA?' · YOU':''}</div>
-      <div class="mono" style="font-weight:800;font-size:40px;color:#fff;margin-top:6px">${ptTxt(ra)}</div></div>
+      <div class="mono" style="font-weight:800;font-size:36px;color:#fff;margin-top:4px">${ptTxt(ra)}</div></div>
     <div style="flex:0 0 auto;display:flex;align-items:center;padding:0 8px;background:#06223a;border-top:1px solid var(--line);border-bottom:1px solid var(--line)"><span class="small muted">vs</span></div>
-    <div style="flex:1;text-align:center;background:linear-gradient(180deg,${bCol},rgba(0,0,0,.25));border-radius:0 12px 12px 0;padding:12px 8px;border:1px solid var(--line);${!youA?'box-shadow:inset 0 0 0 2px var(--gold)':''}">
+    <div style="flex:1;text-align:center;background:linear-gradient(180deg,${bCol},rgba(0,0,0,.25));border-radius:0 12px 12px 0;padding:10px 8px;border:1px solid var(--line);${!youA?'box-shadow:inset 0 0 0 2px var(--gold)':''}">
       <div style="font:800 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#e6e8ff">${natFlag(T.codeB)} ${esc(T.nameB)}${!youA?' · YOU':''}</div>
-      <div class="mono" style="font-weight:800;font-size:40px;color:#fff;margin-top:6px">${ptTxt(rb)}</div></div>
-  </div>`));
-  add($(`<div class="small muted center" style="margin-bottom:12px">First to 14½ wins · 28 points${allDone?'':` · match ${matchN} of ${TOTAL}`}</div>`));
+      <div class="mono" style="font-weight:800;font-size:36px;color:#fff;margin-top:4px">${ptTxt(rb)}</div></div>
+  </div>
+  <div class="small muted center">First to 14½ wins · 28 points${allDone?'':` · match ${matchN} of ${TOTAL}`}</div>`;
+  add(scoreboard);
 
   // final result banner — celebrate when YOUR COUNTRY wins, whether you played, captained, or watched
   if(allDone){
