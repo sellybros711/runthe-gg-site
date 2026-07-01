@@ -2256,6 +2256,43 @@ allows Google Fonts, or self-host Anton.*
   earnings are computed purely by the simulation and submitted as-is; the cap lives only in this one SQL
   function.
 
+- **CS75 — Phase 1: shorten career from 40 to 30 years.** Owner got feedback that a 40-year career is too
+  long, wants 30 instead, plus a future Senior Tour epilogue (Phase 2, planned but not yet implemented —
+  see below). Researched the real PGA Tour Champions first for Phase 2 accuracy, then did a full codebase
+  inventory of every place the game assumed 40 years, before touching anything (owner explicitly asked to
+  plan first, implement after confirmation).
+  Changes: `CAREER_MAX_YEARS` 40→30 (the single constant driving forced retirement); captaincy's late-career
+  window shifted from years 36-40 to 26-30 (same "last 5 years" framing, just rescaled); ~16 UI/marketing
+  strings updated (meta tags, title screen hero tag, About, How to Play, Legend Token copy, career-end
+  ceremony comments) from "40-year"/"up to 40" to "30-year"/"up to 30"; the "Forty-Year Man" achievement
+  kept its name AND its goal of 40 (confirmed via code trace that `m.seasons` is a LIFETIME accumulator
+  across every career ever played, not a single-career counter — the sibling "Veteran" badge's tiers go up
+  to 800, way beyond any one career), but its description was corrected from "Play a full 40-season career"
+  (now literally impossible in one career) to "Play 40 tour seasons, across any number of careers."
+  Nothing else needed to change: the age/decline curve is entirely age-based (not year-count-based), and a
+  happy accident from this session's earlier CS70 decline retune means its ramp already reaches maximum
+  intensity right around year 29 — so the 30-year cap and the recently-steepened decline curve now fit
+  together with zero wasted plateau years, no further rebalancing needed. The World Ranking's 2-year rolling
+  decay window and the Legend Token qualification logic (Career Grand Slam / 5+ majors / 3x POY) are also
+  both independent of career length and needed no changes.
+  Notable side effect: at `START_AGE=22`, a full 30-year career now ends at age 51 — almost exactly PGA
+  Tour Champions' real age-50 eligibility threshold, setting up the planned Senior Tour epilogue naturally.
+  Verified in Playwright: `playerRetires()` now flips at year 30 (not 29); captain eligibility now spans
+  years 26-30 (was 36-40); decline still starts at year 15 (age-based, correctly unaffected by the cap
+  change); title screen / How to Play / About screen / meta tags all show "30" with zero remaining "40"
+  references (confirmed via a repo-wide grep after the edits); a full 30-year career-end ceremony correctly
+  shows "A full career, hung up the clubs" and mints a Legend Token for a qualifying build. Full existing
+  regression suite (menu, guest course-record copy, leaderboard archetype, cup sticky scoreboard,
+  cross-promo footer pill, season-submit fix, retirement/resume fix, course-record verification fix) still
+  green, zero page errors.
+  **Phase 2 (Senior Tour) is planned but NOT implemented yet** — full plan (real PGA Tour Champions facts:
+  age-50 eligibility, 54-hole/no-cut regular events vs. 72-hole majors, the 5 real senior majors, ~78-player
+  fields, Charles Schwab Cup points-race/playoff structure) was written up and given to the owner for
+  approval; awaiting go-ahead to build it. Key architectural finding for whoever builds it: the game's
+  living-world NPC system already retires golfers into an `alumni` list and can compute any golfer's rating
+  at any age via the existing `livingOf()` function — the Senior Tour field ("face off against all the
+  retired players") can likely be built directly from that existing data instead of a new tracking system.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
