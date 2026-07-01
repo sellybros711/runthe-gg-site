@@ -2436,6 +2436,53 @@ allows Google Fonts, or self-host Anton.*
   Circuit playthrough, past-champion exemptions) still green, zero page errors — same pre-existing unrelated
   fixture artifact in `test_retire_resume.mjs` as every prior session.
 
+- **CS79 — Legend Circuit bug reports (join placement, token build, frozen stats display).** Owner played a
+  full 42-year run and flagged three things, with screenshots: the Legend Circuit option wasn't visible on
+  the year-30 result page itself (only after clicking through to the ceremony); the Legend Token minted from
+  a declined OVR 71 build instead of "the best version of my player from the entire 42 year career"; and the
+  "Skill changes vs Year 29" tile showed the EXACT SAME numbers on two different circuit seasons years apart
+  — with a sharper worry underneath it: "I purposely let myself drop to a 70 overall and was still winning
+  everything... players' overalls, stats, and archetype should directly impact their performance."
+  Investigated that last one empirically before assuming a simulation bug. Confirmed via Playwright: the
+  frozen display WAS a real, confirmed bug (`S.career.skillSeasons` only gets pushed to inside the
+  `if(!S.circuitMode)` branch of `scrSummary()`, so once the circuit starts it never gets a new entry —
+  every circuit season's "vs Year 29" tile was reading the same two stale year-29/year-30 snapshots forever).
+  But a direct test of the actual simulation told a different story: built a career, ran it into the circuit,
+  fast-forwarded until the player's TRUE `buildPlayer().skill` (not the frozen display) had genuinely declined
+  to OVR 61, then simulated that season for real — result: 0 wins, 0 top-10s, $409K earned, rank #59 of 78,
+  while the field's actual leaders earned $13-14M. The simulation punishes low OVR correctly; the frozen
+  display was very likely why it didn't look that way in play (if your own screen always shows the same
+  "current" skill numbers no matter how many years pass, of course it looks like decline "isn't working").
+  Also separately confirmed the circuit's alumni field composition is a reasonable design, not a bug: `legendField()`
+  ranks by CURRENT age-declined rating, so the field's median (~70-73 OVR) and top tier (~79-86) stay fairly
+  stable across all 12 circuit years — not because nobody ages, but because freshly-retired golfers
+  continuously replenish the pool as older alumni decay toward their floor, the same "new blood keeps the
+  membership honest" dynamic the real Champions Tour has, rather than one static cohort all aging together.
+  Fixes:
+  1. **Frozen skill-changes display**: circuit seasons now push their own snapshots to a new
+     `S.circuitCareer.skillSeasons` array (mirroring the regular career's, but never touching it — same
+     never-corrupt-the-frozen-career-stats principle as everything else in the circuit), and the summary
+     screen's "Skill changes vs Year N" tile reads from whichever source matches the current mode. Verified:
+     the label now correctly advances (year 32 → "vs Year 31", year 33 → "vs Year 32", ...) instead of
+     reading "vs Year 29" for all 12 seasons.
+  2. **Legend Token now uses the best-EVER build across the full 42-year arc**: `mintCircuitLegendToken()`
+     compares the regular career's own peak (`S.career.peakOvr`, frozen since circuit start) against a NEW
+     peak tracked for the circuit itself (`S.circuitCareer.peakOvr`, same peak-tracking pattern added
+     alongside the skillSeasons fix) and mints from whichever era was genuinely stronger — almost always the
+     regular career's peak, since decline only deepens further into the circuit, but the circuit's own peak
+     is tracked properly in case an early circuit season briefly out-earned something. Verified with a
+     synthetic OVR-95-career-peak vs. OVR-60-circuit-peak case: the token correctly used the OVR-95 build.
+  3. **"Join the Legend Circuit" now also lives on the year-30 season-summary (result) page itself**, not
+     just the separate post-ceremony screen — a new button appears right under "Retire, End Career" whenever
+     it's the final season and the player is 50+, and finalizes the career (identically to clicking "Finish
+     Career ▸") before dropping straight into the circuit's own off-season, skipping the intermediate
+     ceremony frame entirely (synchronous re-render, no flash). The original path (Finish Career ▸ → ceremony
+     screen → Join the Legend Circuit ▸) still works too, for players who want to see their career recap
+     first.
+  Full regression suite (final/menu, guest daily gating, Legend Token gating, off-season decline, mid-season
+  save/resume, retirement gating, the full Legend Circuit playthrough, past-champion exemptions) still
+  green, zero page errors — same pre-existing unrelated fixture artifact in `test_retire_resume.mjs`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

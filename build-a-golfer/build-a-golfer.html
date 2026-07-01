@@ -5242,6 +5242,18 @@ function scrSummary(){
         ms.played++; const fin=(meR.pos==='CUT')?99:meR.pos;
         if(meR.pos===1) ms.wins++; if(fin<=10) ms.top10++; if(fin<ms.best) ms.best=fin; });
       cc.seasons.push({year:S.year||1,net:ec.net,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank,top10:t.top10,played:t.played,made:t.made});
+      // peak build across the CIRCUIT itself (rarely tops the regular career's own peak, given decline only
+      // deepens after year 30, but tracked the same way so mintCircuitLegendToken() can pick whichever of
+      // the two eras was genuinely the player's best-ever build across the full 42-year arc).
+      if(cc.peakOvr==null || ovr>cc.peakOvr){
+        cc.peakOvr=ovr; cc.peakYear=S.year||1; cc.peakName=me.name;
+        cc.peakSkills=Object.fromEntries(CATS.map(c=>[c.k, me[c.k]]));
+        cc.peakLook=S.look?JSON.parse(JSON.stringify(S.look)):null;
+      }
+      // per-season skill snapshot so the summary's "skill changes" tile can show real year-over-year
+      // deltas throughout the circuit too, instead of freezing at the regular career's last entry.
+      cc.skillSeasons=cc.skillSeasons||[];
+      cc.skillSeasons.push({year:S.year||1,skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))});
       track('circuit_season_finished',{ovr,net:Math.round(ec.net),wins:t.wins,majors:t.majors,year:S.year||1});
     }
     S.summaryTab='season';
@@ -5400,8 +5412,10 @@ function scrSummary(){
   }
   // year-over-year skill changes — only once decline kicks in (Year 15+), since
   // before that nothing moves and every tile would read 0. Shows the new rating
-  // with the change (e.g. red −1) beside it.
-  const ss=(!S.daily && S.career && S.career.skillSeasons)||[];
+  // with the change (e.g. red −1) beside it. Circuit seasons read their OWN skillSeasons
+  // (tracked separately, see the circuit bookkeeping above) — otherwise this froze at
+  // the regular career's last entry (year 30) for the entire 12-season circuit.
+  const ss=(!S.daily && (S.circuitMode ? (S.circuitCareer&&S.circuitCareer.skillSeasons) : (S.career&&S.career.skillSeasons)))||[];
   if(ss.length>=2 && pastPeak()){
     const cur=ss[ss.length-1].skills, prev=ss[ss.length-2].skills, py=ss[ss.length-2].year;
     add($(`<h2 class="center" style="margin:14px 0 8px;font-size:15px">Skill changes vs Year ${py}</h2>`));
@@ -5529,6 +5543,13 @@ function scrSummary(){
     right.appendChild(save);
     const retire=$(`<button class="btn ghost" style="margin-top:10px">${S.circuitMode?'End Circuit Now':'Retire, End Career'}</button>`);
     retire.onclick=()=>{ S.circuitMode?endCircuit():endCareer('chose'); }; right.appendChild(retire);
+    // right on the year-30 result page itself (not just the separate ceremony screen after "Finish
+    // Career ▸") — finalizes the just-completed career exactly as "Finish Career" does, then drops
+    // straight into the circuit's own off-season instead of lingering on the ceremony first.
+    if(lastYear && !S.circuitMode && playerAge()>=CIRCUIT_MIN_AGE && sbSignedIn()){
+      const joinCircuit=$(`<button class="btn teal" style="margin-top:10px">Join the Legend Circuit ▸<span class="sub">Face off against every retired legend on tour, at age ${playerAge()}</span></button>`);
+      joinCircuit.onclick=()=>{ endCareer('age'); startCircuit(); }; right.appendChild(joinCircuit);
+    }
   }
 }
 // how many Legend Circuit seasons have been played, relative to whichever year the circuit began
@@ -5633,13 +5654,21 @@ function endCareer(reason){
    across the whole circuit (circuit seasons don't track a separate peak build). ---- */
 function mintCircuitLegendToken(){
   if(S.daily || !sbSignedIn()) return null;
+  // the best build across the WHOLE 42-year arc, not just wherever decline left the player at the
+  // moment the circuit ended — compare the regular 30-year career's own peak (frozen since circuit
+  // start) against any peak reached during the circuit itself (rare, since decline only deepens past
+  // year 30, but tracked the same way in scrSummary's circuit branch), and use whichever is higher.
+  const careerPeak=(S.career&&S.career.peakOvr!=null)?S.career.peakOvr:-1;
+  const circuitPeak=(S.circuitCareer&&S.circuitCareer.peakOvr!=null)?S.circuitCareer.peakOvr:-1;
+  const src=(careerPeak>=circuitPeak)?S.career:S.circuitCareer;
+  const fallbackSkills=Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]));
   const token={
     id: 'lt'+Math.floor(Math.random()*1e9)+'_circuit',
-    name: S.name||'Your Golfer',
-    ovr: Math.round(buildPlayer().skill),
-    skills: Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT])),
-    look: S.look?JSON.parse(JSON.stringify(S.look)):null,
-    peakYear: S.year||1, years: (S.circuitCareer&&S.circuitCareer.seasons)?S.circuitCareer.seasons.length:0,
+    name: (src&&src.peakName)||S.name||'Your Golfer',
+    ovr: (src&&src.peakOvr!=null)?src.peakOvr:Math.round(buildPlayer().skill),
+    skills: (src&&src.peakSkills)||fallbackSkills,
+    look: (src&&src.peakLook)||(S.look?JSON.parse(JSON.stringify(S.look)):null),
+    peakYear: (src&&src.peakYear)||S.year||1, years: (S.circuitCareer&&S.circuitCareer.seasons)?S.circuitCareer.seasons.length:0,
     reason: 'Completed the Legend Circuit', used: false,
   };
   const tokens=legendTokens(); tokens.push(token); LS.set(acctKey('bag_legend_tokens'),tokens);
