@@ -246,7 +246,7 @@
   /* ---------- share popup (reuses the lineup-bg shell) ---------- */
   /* Make the preview prominent; keep tiles short so it all fits the fixed height. */
   .share-preview{ display:block; max-width:100%; width:auto; height:auto; max-height:46vh;
-    margin:2px auto 6px; border-radius:14px; border:2px solid var(--ink); background:#0b1324; }
+    margin:2px auto 6px; border-radius:14px; border:1.5px solid var(--border-soft); background:#0b1324; }
   .share-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin:2px 0 8px; }
   .shr-opt{ display:flex; flex-direction:column; align-items:center; gap:4px;
     background:none; border:none; padding:0; cursor:pointer; -webkit-tap-highlight-color:transparent; }
@@ -267,7 +267,7 @@
   .coming-soon{position:absolute;top:-10px;left:50%;transform:translateX(-50%);z-index:3;
     background:var(--gold);color:var(--ink);font-size:9px;font-weight:900;letter-spacing:.5px;
     text-transform:uppercase;white-space:nowrap;padding:2px 8px;border-radius:8px;
-    border:2px solid var(--ink);box-shadow:0 2px 5px rgba(var(--shadow-rgb),.20);}
+    border:none;box-shadow:0 2px 5px rgba(var(--shadow-rgb),.20);}
   /* keep the bold label on a single line with a touch of breathing room */
   .home-cta-row .btn-label{font-size:16px;letter-spacing:.5px;white-space:nowrap;}
   /* unbolded subtext beneath each button label */
@@ -357,7 +357,7 @@
     font-weight:900;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);
     padding:9px 4px;transition:background .15s,color .15s;-webkit-tap-highlight-color:transparent;
     display:flex;align-items:center;justify-content:center;gap:5px;}
-  .roster-tab:first-child{border-right:2px solid var(--ink);}
+  .roster-tab:first-child{border-right:1.5px solid var(--border-soft);}
   .roster-tab.active{background:var(--fill-ink);color:#fff;}
   .ru-tab-icon{width:15px;height:15px;flex:0 0 auto;}
   .ru-icon-bolt{width:11px;height:16px;vertical-align:middle;margin-right:6px;position:relative;top:-1px;}
@@ -450,7 +450,7 @@
   .btn.small{width:auto;font-size:12px;letter-spacing:.5px;padding:8px 16px;border-radius:10px;box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);}
 
   .pill{
-    display:inline-block;border:2.5px solid var(--ink);border-radius:999px;
+    display:inline-block;border:1.5px solid var(--border-soft);border-radius:999px;
     padding:4px 12px;font-weight:900;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;
     background:var(--white);
   }
@@ -467,7 +467,7 @@
   .masthead .edition{
     display:inline-block;background:linear-gradient(180deg,#FCEFA8,#F4B413);color:var(--ink);
     font-weight:900;font-size:11.5px;letter-spacing:3px;padding:5px 14px;border-radius:9px;text-transform:uppercase;
-    border:2px solid var(--ink);box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);
+    border:none;box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);
   }
 
   /* ---------- start screen ---------- */
@@ -550,7 +550,7 @@
   .rule .n{flex:0 0 30px;width:30px;height:30px;border-radius:50%;
     background:linear-gradient(180deg,#FCEFA8,#F4B413);color:var(--ink);
     display:grid;place-items:center;font-weight:900;font-size:15px;
-    border:2px solid var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.5);}
+    border:none;box-shadow:0 3px 8px rgba(0,0,0,.4);}
   /* flag cards — scrollable row with subtle labels underneath */
   /* marquee lanes scrolling in opposite directions (one above trophy, one below button) */
   .flag-marquee{position:relative;z-index:2;display:flex;overflow:hidden;padding:2px 0;
@@ -583,7 +583,7 @@
   .ball-svg{width:62px;height:62px;display:inline-block;}
   /* reel + reveal use a larger flat flag */
   .reel-flag{width:96px;height:64px;border-radius:9px;background-size:cover;background-position:center;
-    border:2.5px solid var(--ink);box-shadow:0 3px 7px rgba(0,0,0,.28);}
+    border:1.5px solid var(--border-soft);box-shadow:0 3px 7px rgba(0,0,0,.28);}
   .reel-block.year .reel-item .reel-flag{display:none;}
   .flip-flag{width:44px;height:30px;border-radius:5px;background-size:cover;background-position:center;
     border:1.5px solid rgba(255,255,255,.7);box-shadow:0 2px 4px rgba(0,0,0,.4);}
@@ -765,7 +765,7 @@
   .metric{display:inline-flex;align-items:center;gap:3px;}
   .metric b{font-weight:900;color:var(--ink);}
   .infobtn{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;
-    border:2px solid var(--ink);background:var(--white);color:var(--ink);padding:0;
+    border:1.5px solid var(--border-soft);background:var(--white);color:var(--ink);padding:0;
     font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:700;font-size:11px;line-height:1;
     vertical-align:middle;cursor:pointer;}
   .infobtn:active{transform:translateY(1px);}
@@ -796,7 +796,7 @@
   .full-shape .shape-form{font-family:'Anton',Impact,sans-serif;font-size:15px;color:var(--ink);
     letter-spacing:1px;align-self:center;margin-right:2px;}
   .full-shape .shape-chip{font-weight:900;font-size:11px;letter-spacing:.5px;color:#fff;
-    border-radius:7px;padding:3px 8px;border:2px solid var(--ink);box-shadow:0 2px 5px rgba(var(--shadow-rgb),.20);}
+    border-radius:7px;padding:3px 8px;border:none;box-shadow:0 2px 5px rgba(var(--shadow-rgb),.20);}
   .full-shape .shape-chip.DEF{background:var(--pos-def);}
   .full-shape .shape-chip.MID{background:var(--pos-mid);}
   .full-shape .shape-chip.FWD{background:var(--pos-fwd);}
@@ -1121,7 +1121,7 @@
   .bsm-panel{display:none;} .bsm-panel.active{display:block;}
   /* tournament totals section */
   .bsm-totals-hdr{font-weight:900;font-size:10px;letter-spacing:.8px;text-transform:uppercase;
-    color:var(--ink);margin:14px 0 5px;border-top:2px solid var(--ink);padding-top:10px;}
+    color:var(--ink);margin:14px 0 5px;border-top:1.5px solid var(--border-soft);padding-top:10px;}
   /* tournament totals table sits on the light page bg — override to dark ink */
   #boxscores-list .lbx-ptable{color:var(--ink);}
   #boxscores-list .lbx-ptable th{color:#6b5e52;}
@@ -1565,7 +1565,7 @@
   .profile-details li .dv{font-weight:800;text-align:right;}
   .profile-section-label{font-weight:900;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:16px 0 6px;}
   .profile-table{width:100%;border-collapse:collapse;font-size:12px;}
-  .profile-table th{text-align:left;font-weight:900;color:var(--muted);padding:4px 6px;border-bottom:2px solid var(--ink);
+  .profile-table th{text-align:left;font-weight:900;color:var(--muted);padding:4px 6px;border-bottom:1.5px solid var(--border-soft);
     font-size:10px;text-transform:uppercase;letter-spacing:.4px;}
   .profile-table td{padding:5px 6px;border-bottom:1px solid #eee;font-weight:600;}
   .profile-table tr.is-drafted td{background:rgba(244,180,19,.20);font-weight:800;}
@@ -1769,7 +1769,7 @@
     cursor:pointer;margin-top:14px;font-family:inherit;}
   .entry-toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%) translateY(20px);
     background:var(--teal);color:#fff;font-weight:900;font-size:13px;padding:12px 22px;
-    border:3px solid var(--ink);border-radius:999px;box-shadow:var(--shadow-sm);text-transform:uppercase;
+    border:none;border-radius:999px;box-shadow:var(--shadow-sm);text-transform:uppercase;
     letter-spacing:1px;z-index:120;opacity:0;transition:all .3s ease;pointer-events:none;}
   .entry-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
@@ -2060,7 +2060,7 @@
     text-align:center;color:var(--ink);cursor:pointer;}
   .share-opt:active{transform:scale(.92);}
   .share-opt .ico{width:54px;height:54px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    background:var(--paper);border:2px solid var(--ink);box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);}
+    background:var(--paper);border:1.5px solid var(--border-soft);box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);}
   .share-opt .ico svg{display:block;width:28px;height:28px;}
 
   /* ---------- rating feedback ---------- */
@@ -2179,7 +2179,7 @@
 
   /* mode pill (draft header + results) */
   .mode-pill{flex:0 0 auto;font-weight:900;font-size:11px;letter-spacing:1px;text-transform:uppercase;
-    padding:4px 10px;border-radius:999px;border:2px solid var(--ink);color:#fff;box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);
+    padding:4px 10px;border-radius:999px;border:none;color:#fff;box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);
     white-space:nowrap;}
   .mode-pill.easy{background:var(--teal);}
   .mode-pill.hard{background:var(--red);}
@@ -2233,7 +2233,7 @@
   /* filled position badges in the formation description — same colours as the cards */
   .fm-pos-badge{display:inline-block;font-weight:900;font-size:13px;letter-spacing:.5px;
     color:#fff;border-radius:6px;padding:3px 8px;margin:3px 2px;vertical-align:middle;
-    border:2px solid var(--ink);box-shadow:0 3px 7px rgba(var(--shadow-rgb),.22);}
+    border:none;box-shadow:0 3px 7px rgba(var(--shadow-rgb),.22);}
   .fm-pos-badge.GK{background:var(--pos-gk);color:var(--ink);}
   .fm-pos-badge.DEF{background:var(--pos-def);}
   .fm-pos-badge.MID{background:var(--pos-mid);}
