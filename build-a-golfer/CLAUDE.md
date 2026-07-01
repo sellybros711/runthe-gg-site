@@ -2118,6 +2118,12 @@ allows Google Fonts, or self-host Anton.*
   root `index.html`/`gameLogic.js` are out of scope for direct edits in this session per standing
   instructions, so that work has to happen in its own session against that codebase.
 
+- **CS69 — Footer cross-promo pill hook line.** Owner: "can we make the pill have a little message like
+  'Love soccer?' before the current message." Quick follow-up to CS68's `↗ Try RunThePitch` footer pill —
+  added a lighter/italic "Love soccer?" hook before the bold CTA, so the pill now reads `↗ Love soccer? Try
+  RunThePitch`. Verified in Playwright (pill text/href/target unchanged otherwise) and visually via
+  screenshot; full regression suite still green.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
