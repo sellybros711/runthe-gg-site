@@ -1657,10 +1657,37 @@ const CIRCUIT_PLAYOFFS=[
   {name:'Charles Schwab Cup Playoffs II',  purse:2.5e6, cap:40, stage:2},
   {name:'Charles Schwab Cup Championship', purse:3.0e6, cap:25, stage:3, stagger:true},
 ].map((e,i)=>({...e,type:'sig',wk:28+i*2,major:false,big:true,playoff:true,noCut:true}));
+// ---- Past-champion exemptions into the REGULAR tour's own majors, during the Legend Circuit ----
+// Modeled on each major's real current-era past-champion policy: the Masters grants a true lifetime
+// invitation; The Open exempts past champions through age 60; the PGA Championship ("The Championship"
+// in-game) exempts winners for 5 years (its old lifetime exemption was rescinded in 2016); the U.S. Open
+// has never had a past-champions exemption category at all, so a U.S. Open win grants nothing here.
+const GUEST_MAJOR_WK={'The Masters':15,'The Championship':19,'U.S. Open':24,'The Open':27};
+const GUEST_MAJOR_PURSE={'The Masters':22e6,'The Championship':18.5e6,'U.S. Open':21.5e6,'The Open':17e6};
+function guestMajorExemptions(){
+  if(!S.career || !S.career.winsList) return [];
+  const lastWinYear={}; S.career.winsList.forEach(w=>{ if(w.major) lastWinYear[w.name]=Math.max(lastWinYear[w.name]||0, w.year); });
+  const age=playerAge(), yr=S.year||1, out=[];
+  if(lastWinYear['The Masters']!=null) out.push('The Masters');                                             // lifetime
+  if(lastWinYear['The Open']!=null && age<=60) out.push('The Open');                                        // through age 60
+  if(lastWinYear['The Championship']!=null && (yr-lastWinYear['The Championship'])<=5) out.push('The Championship'); // 5-year exemption
+  return out;
+}
 function circuitSchedule(seed){
   const shuffled=seededShuffle(CIRCUIT_REG,((seed!=null?seed:0)^0x1e6a1d)>>>0);
   const picks=shuffled.slice(0, Math.min(7, shuffled.length));
-  return CIRCUIT_MAJORS.concat(picks).concat(CIRCUIT_PLAYOFFS).map(e=>({...e})).sort((a,b)=>a.wk-b.wk);
+  const guestEvts=guestMajorExemptions().map(name=>({name, purse:GUEST_MAJOR_PURSE[name], type:'major',
+    wk:GUEST_MAJOR_WK[name], major:true, big:true, guestMajor:true}));
+  return CIRCUIT_MAJORS.concat(picks).concat(guestEvts).concat(CIRCUIT_PLAYOFFS).map(e=>({...e})).sort((a,b)=>a.wk-b.wk);
+}
+// the field for a past-champion return to an actual tour major: today's LIVING, active tour (not the
+// circuit's own retired alumni) — the legend is a guest in the current tour's ecosystem for this one week.
+function buildGuestMajorField(){
+  const w=ensureWorld(); if(!w) return S.season.field;
+  const roster=w.active.slice().sort((a,b)=>b.lov-a.lov).slice(0,99)
+    .map(g=>{const o={name:g.name,skill:g.lov,nation:g.nation}; SKK.forEach(s=>o[s]=g['l_'+s]); return o;});
+  const me=S.season.field.find(p=>p.you);
+  return roster.map(g=>Object.assign({you:false},g)).concat(me?[me]:[]);
 }
 // the field: golfers who've themselves retired from the regular tour, at their CURRENT living rating —
 // they keep aging/declining after retirement too, computed fresh via livingOf() rather than the stale
@@ -3950,6 +3977,10 @@ function beginEvent(){
     const sp=splitField(S.season.field, evt), oppoEvt=makeOppoEvt(evt);
     if(sp.youIn){ simHeadlessEvent(oppoEvt, sp.oppo); field=sp.marquee; }
     else { simHeadlessEvent(evt, sp.marquee); field=sp.oppo; evt=oppoEvt; }
+  } else if(evt.guestMajor && !S.daily){
+    // Past-champion return to an actual tour major, mid-Legend-Circuit: guaranteed entry (an exemption,
+    // not a qualification), against today's active tour rather than the circuit's own retired field.
+    field=buildGuestMajorField();
   }
   const ew=eventWeights(evt);                                   // course-fit weights for the event you're playing
   const courseAdj=gauss()*(evt.major?SIM.maj.csd:SIM.reg.csd);  // one course/weather difficulty draw for the week
@@ -4406,6 +4437,12 @@ function selectionInfo(evt){
       title = evt.stage===1?'Just missed the Playoffs' : 'Your playoff run ends here';
       sub = `#${rank} in the standings, agonisingly outside the top ${evt.cap}. That is a season to be proud of, build on it and you will be deep in this hunt next year.`;
     }
+  } else if(evt.guestMajor){
+    tag='Past Champion'; made=true; title=`Welcome back to ${evt.name}`;
+    const reason = evt.name==='The Masters' ? 'a lifetime past-champion invitation'
+      : evt.name==='The Open' ? 'your past-champion exemption'
+      : 'your 5-year past-champion exemption';
+    sub = `You're off the Legend Circuit this week, ${reason} gets you back into the field against today's tour.`;
   } else { // olympics
     const sel=olympicField(); made=sel.some(s=>s.you); tag='Olympic Games';
     title = made?'You qualified for the Olympics!' : 'Not in the Olympic field this time';
@@ -4707,7 +4744,7 @@ function scrSeason(){
   // (no click to progress through the final 3 events). Auto Sim OFF, or the Olympics set-piece, keeps
   // the full-screen card that waits for a tap.
   if(!S.daily){ if(!S.season._annAck) S.season._annAck={};
-    if(cur && (cur.playoff||cur.olympics) && !S.season._annAck[S.evtIndex]){
+    if(cur && (cur.playoff||cur.olympics||cur.guestMajor) && !S.season._annAck[S.evtIndex]){
       if(cur.playoff && S.autoSim){
         S.season._annAck[S.evtIndex]=true;   // auto-acknowledged; the pop-up is just a heads-up
         selectionPopup(cur);                 // falls through to render the event (or elimination) underneath
@@ -4761,7 +4798,7 @@ function scrSeason(){
     <div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#E14A33">Opposite-field event</div>
     <div class="small" style="margin-top:4px;color:var(--oncard)">Outside the OWGR cut for the ${esc(evt.against)} this week. Win here to bank points and climb toward the elite fields.</div></div>`));
 
-  const typeLbl=evt.olympics?'<span class="major">🏅 Olympic Games</span>':evt.major?'<span class="major">Major</span>':evt.stagger?`<span class="sig">🏆 Cup Finale · top ${evt.cap}</span>`:evt.playoff?`<span class="sig">Playoff · top ${evt.cap}</span>`:evt.oppo?'<span class="reg">Opposite-field</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?`<span class="sig">Signature · top ${evt.entryCap||50}</span>`:'<span class="reg">Tour event</span>';
+  const typeLbl=evt.olympics?'<span class="major">🏅 Olympic Games</span>':evt.guestMajor?'<span class="major">🎖️ Past Champion</span>':evt.major?'<span class="major">Major</span>':evt.stagger?`<span class="sig">🏆 Cup Finale · top ${evt.cap}</span>`:evt.playoff?`<span class="sig">Playoff · top ${evt.cap}</span>`:evt.oppo?'<span class="reg">Opposite-field</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?`<span class="sig">Signature · top ${evt.entryCap||50}</span>`:'<span class="reg">Tour event</span>';
   const dayLbl=ce.done?'Final':(ce.roundsDone>=2&&!ce.players.find(o=>o.p.you).made?`After ${DAYS[1]}`:`${DAYS[Math.max(0,ce.roundsDone-1)]} · Round ${Math.min(ce.roundsDone,4)}/4`);
   const cols=$(`<div class="cols seasoncols"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col scorecol"></div>`);
@@ -6730,6 +6767,23 @@ function scrCircuitEnd(){
       <span style="text-align:right"><div class="sc cream" style="font-weight:800">${wins} ${wins===1?'win':'wins'}</div></span></div>`));
   });
   add(mb);
+  // past-champion guest appearances back in the REGULAR tour's own majors (Masters lifetime invite, Open
+  // through age 60, PGA Championship 5-year exemption) — a separate board so they don't blend into the
+  // circuit's own 5 majors above.
+  const pcNames=MAJOR_NAMES.filter(n=>mstats[n]);
+  if(pcNames.length){
+    add($(`<h2 class="center" style="margin:16px 0 8px;font-size:15px">🎖️ Past-champion appearances</h2>`));
+    const pb=$(`<div class="board" style="max-width:520px;margin:0 auto"></div>`);
+    pcNames.forEach(nm=>{
+      const m=mstats[nm], wins=m.wins;
+      const sub=[m.played+' played',m.top10+' top-10',(m.best!=null&&m.best!==99?'best '+bestTxt(m.best):null)].filter(Boolean).join(' · ');
+      pb.appendChild($(`<div class="lb" style="grid-template-columns:24px 1fr auto">
+        <span class="pos" style="color:${wins>0?'var(--gold)':'var(--muted)'}">${wins>0?'★':'·'}</span>
+        <span class="pl" style="min-width:0"><div style="font-weight:700">${nm}</div><div class="small muted" style="font-size:10.5px">${sub}</div></span>
+        <span style="text-align:right"><div class="sc cream" style="font-weight:800">${wins} ${wins===1?'win':'wins'}</div></span></div>`));
+    });
+    add(pb);
+  }
   const wl=(c.winsList||[]);
   add($(`<h2 class="center" style="margin:16px 0 8px;font-size:15px">${wl.length?('Tournament wins · '+wl.length):'No tournament wins'}</h2>`));
   if(wl.length){
