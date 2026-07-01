@@ -2662,6 +2662,46 @@ allows Google Fonts, or self-host Anton.*
   guest daily claim flow, the bag_career scoping fix, the CS81 attempt-cap cross-device test, the CS82
   cloud-save cross-device test) still green, zero page errors anywhere.
 
+- **CS84 — render() safety net + sticky-avatar fix on the setup screen.**
+  Owner reported the title screen going essentially blank after CS83 shipped: header (menu, logo,
+  signed-in username pill, Reset) and footer both rendered, but the entire middle of the page — hero
+  text, resume/daily-challenge/leaderboard buttons, everything `scrTitle()` normally builds — was gone,
+  with no visible error. Root cause of the SYMPTOM (not necessarily what threw): `render()` appends
+  `header()`, an empty `.screen` div, and `footer()` to the DOM FIRST, then calls the current screen's
+  render function (`scrTitle()`, etc.) to populate that empty div — and that call was wrapped in only a
+  `try/finally`, no `catch`. Any exception thrown inside a screen function propagated straight out of
+  `render()` uncaught: header/footer stayed up (already in the DOM before the throw), the screen div
+  stayed empty (never populated), and nothing told the player or the console clearly what happened.
+  Reproduced the exact failure signature in Playwright (stub `scrTitle` to throw, confirm header/footer
+  survive while the middle goes blank) and fixed it by wrapping the screen-dispatch call in its own
+  `try/catch`: on error it now logs to the console + `track('screen_render_error', {screen, message})`
+  for future diagnosis, and renders a "Something went wrong · Back to Title" card into the screen div
+  instead of leaving it empty — so a future render bug degrades to a recoverable message, never a silent
+  blank page. Could not pin down the exact original trigger without the owner's actual account/save data
+  reproducing it locally; this doesn't fix an unknown root cause, but ensures it's never silently blank
+  again and gives real telemetry (screen name + error message) if it recurs.
+  Separately, owner asked for the golfer avatar preview on the setup screen to stay visible ("stay at
+  the top") while scrolling through the customization options below it — it has `position:sticky` but
+  never actually worked. Two compounding CSS bugs: (1) `.cols{align-items:start}` meant the avatar's own
+  column box was only ever as tall as the avatar itself (not stretched to match the taller customization
+  column), so the sticky child had no room to travel and just scrolled away with the rest of the row;
+  (2) the `@media(max-width:860px)` mobile layout collapses `.cols` to a single column, which — because
+  CSS Grid auto-places single-column items into separate implicit rows — breaks the row-sharing trick
+  entirely, since the avatar's column is now alone in its own content-sized row with nothing to stretch
+  into. Fixed with `.setup-cols{align-items:stretch}` for desktop (gives the sticky avatar real travel
+  room within its row) and, for mobile, `.setup-cols{display:block} .setup-cols>.col{display:contents}`
+  — unwrapping both column divs so the avatar and every customization control become direct siblings in
+  one genuinely tall shared block, the same pattern the existing Ryder/Presidents Cup running scoreboard
+  (`.cupsticky`) already relies on (a plain, unwrapped sticky element, not one isolated inside a
+  short grid cell). Gave the avatar wrapper an opaque backdrop + bottom border (previously invisible,
+  since it only mattered once actually pinned) so the customization list scrolling underneath it doesn't
+  show through the avatar's transparent corners once it's stuck. Verified in Playwright at both a phone
+  viewport (guest + signed-in) and a desktop viewport: the avatar's `top` offset changes from its normal
+  in-flow position to a pinned `8px` after scrolling, in all three cases, with zero page errors; confirmed
+  visually via screenshots that the desktop two-column layout is unaffected and the mobile pinned avatar
+  has a clean opaque backdrop instead of scrolled content bleeding through it. Full regression suite
+  (final/menu, daily-challenge tests, bag_career scoping, the CS83 guest-leaderboard tests) still green.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

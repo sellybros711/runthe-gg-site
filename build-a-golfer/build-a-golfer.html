@@ -116,8 +116,19 @@
     background:#06200f; border-bottom:1px solid var(--line); box-shadow:0 8px 14px -10px rgba(0,0,0,.55)}
   .cols{display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start}
   .col{min-width:0}
-  .setup-cols{grid-template-columns:0.85fr 1fr; max-width:840px; margin:0 auto}
-  @media(max-width:860px){ .cols{grid-template-columns:1fr; gap:16px} .seasoncols .scorecol{order:-1} }
+  /* align-items:stretch (overriding .cols' :start) so the avatar column's own box spans the full
+     row height, matching the (taller) customization column — without this, a position:sticky child
+     has no room to travel and just scrolls away with the rest of the row instead of staying put. */
+  .setup-cols{grid-template-columns:0.85fr 1fr; max-width:840px; margin:0 auto; align-items:stretch}
+  @media(max-width:860px){
+    .cols{grid-template-columns:1fr; gap:16px} .seasoncols .scorecol{order:-1}
+    /* Stacked single-column layout breaks the row-sharing trick above (each column becomes its own
+       separate, content-height row, so the sticky avatar has nothing to stretch into). display:contents
+       unwraps the two column divs so the avatar + every customization control become direct siblings
+       in one shared, genuinely tall block — giving the sticky avatar real room to stay pinned near the
+       top while the (now single-column) form scrolls beneath it. */
+    .setup-cols{display:block} .setup-cols>.col{display:contents}
+  }
 
   h1{font-family:var(--display); font-style:normal; font-weight:400; color:var(--oncard);
     letter-spacing:.01em; line-height:.96; margin:6px 0; text-transform:uppercase; text-shadow:0 2px 18px rgba(0,0,0,.5)}
@@ -2843,7 +2854,22 @@ function render(){
   if(S.overlay==='privacy') overlayPrivacy(app);
   if(S.overlay==='terms') overlayTerms(app);
   if(S.overlay==='menu') overlayMenu(app);
-  ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult})[S.screen]();
+  // A screen fn throwing used to leave the header/footer up but the middle of the page totally
+  // blank with no error shown anywhere — this catch turns that into a recoverable "Back to Title"
+  // card instead, and logs what broke so a recurrence is diagnosable from analytics.
+  try{
+    ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult})[S.screen]();
+  }catch(err){
+    console.error('[RunTheTour] screen render failed:', S.screen, err);
+    try{ track('screen_render_error',{screen:S.screen,message:(err&&err.message)||String(err)}); }catch(e){}
+    screen.innerHTML='';
+    const fb=$(`<div class="center" style="padding:40px 16px">
+      <span class="tag" style="color:#E14A33;border-color:#E14A33">Something went wrong</span>
+      <p class="lede center" style="margin:14px 0 18px">This screen hit a snag loading. Your saved progress is untouched, try heading back to the title screen.</p>
+      <button class="btn goldfill" id="rerr-home">Back to Title</button></div>`);
+    const hb=fb.querySelector('#rerr-home'); hb.onclick=()=>{ S.overlay=null; S.screen='title'; render(); };
+    screen.appendChild(fb);
+  }
   paintAvatars();   // recolor any avatar canvases just added to the DOM
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
   _lastView=view;
@@ -3501,9 +3527,11 @@ function scrSetup(){
   const cols=$(`<div class="cols setup-cols"></div>`);
   const left=$(`<div class="col center"></div>`), right=$(`<div class="col"></div>`);
   cols.appendChild(left); cols.appendChild(right); add(cols);
-  // avatar preview — large, sticky so it stays visible while you scroll the options
+  // avatar preview — large, sticky so it stays visible while you scroll the options. A solid
+  // backdrop is needed once it's pinned (see the .setup-cols CSS) since the customization list
+  // scrolls up underneath it — without one, the swatches/rows behind would show through.
   const f=$(avatarHTML()); f.style.width='184px'; f.style.height='184px'; f.style.filter='drop-shadow(0 7px 16px rgba(0,0,0,.45))';
-  const figwrap=$(`<div style="display:flex;justify-content:center;position:sticky;top:8px"></div>`); figwrap.appendChild(f); left.appendChild(figwrap);
+  const figwrap=$(`<div style="display:flex;justify-content:center;position:sticky;top:8px;z-index:3;padding:10px 0 14px;margin:0 -16px;background:#06200f;border-bottom:1px solid var(--line)"></div>`); figwrap.appendChild(f); left.appendChild(figwrap);
 
   // ---- Appearance (available to everyone) ----
   right.appendChild(setupHeader('Appearance'));
