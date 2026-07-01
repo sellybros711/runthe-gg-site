@@ -2418,13 +2418,56 @@ const ARCH={dist:['The Bomber','Overpowers every course'],acc:['The Marksman','A
   app:['The Surgeon','Throws darts on approach'],sht:['The Magician','Magic around the greens'],
   scr:['The Escape Artist','Saves par from anywhere'],bnk:['The Sandman','Owns the bunkers'],
   put:['The Assassin','Deadly on the greens'],clu:['The Closer','Ice in his veins on Sunday']};
+// dual-threat combo archetypes — when two skills are close together and both clearly ahead of the rest
+const ARCH_PAIR={
+  dist_acc:['The Total Package','Bombs it dead straight off every tee'],
+  dist_app:['The Aerial Assault','Overpowers courses and stuffs the flag'],
+  dist_sht:['The Highlight Reel','Huge off the tee, pure magic around the greens'],
+  dist_scr:['Bomb and Gouge','Sends it deep and scrambles out of anything'],
+  dist_bnk:['The Beach Bomber','Overpowers the course and owns the sand'],
+  dist_put:['Grip It and Rip It','Long off the tee, deadly once he’s on the green'],
+  dist_clu:['The Sunday Bomber','Overpowers courses and never blinks on the back nine'],
+  acc_app:['The Precision Player','Fairways and darts, round after round'],
+  acc_sht:['The Tactician','Plots his way around with a deadly short game'],
+  acc_scr:['The Grinder','Finds fairways and scrambles his way to red numbers'],
+  acc_bnk:['The Strategist','Plays it safe off the tee, deadly if he finds the sand'],
+  acc_put:['The Metronome','Steady off the tee, lights-out on the greens'],
+  acc_clu:['The Steady Hand','Rock-solid accuracy with nerves of steel'],
+  app_sht:['The Craftsman','Darts on approach, magic around the greens'],
+  app_scr:['The Iron Man','Elite approach play and a scrambler’s heart'],
+  app_bnk:['The Sniper','Pinpoint approach play, deadly from the sand'],
+  app_put:['The Executioner','Precise into the greens, lethal once he’s on them'],
+  app_clu:['The Money Player','Throws darts on approach when the pressure’s highest'],
+  sht_scr:['The Houdini','Magic around the greens, escapes from anywhere'],
+  sht_bnk:['The Wizard','A short game savant who owns every bunker'],
+  sht_put:['The Short Game Savant','Greenside genius from thirty yards and in'],
+  sht_clu:['The Clutch Wizard','Magic around the greens when it matters most'],
+  scr_bnk:['The Recovery Artist','Turns trouble and sand into up-and-down pars'],
+  scr_put:['The Up-and-Down King','Scrambles for par then buries the putt'],
+  scr_clu:['The Fighter','Scrambles for everything and delivers under pressure'],
+  bnk_put:['The Silky Touch','Deadly from the sand and lights-out on the greens'],
+  bnk_clu:['The Cool Customer','Ice-cold from the bunker when it counts most'],
+  put_clu:['Mr. Sunday','Deadly on the greens and never blinks on the back nine']
+};
+function pairKey(a,b){
+  const order=CATS.map(c=>c.k);
+  return order.indexOf(a)<order.indexOf(b) ? a+'_'+b : b+'_'+a;
+}
 function archetype(p){
   const vals=CATS.map(c=>({k:c.k,v:p[c.k]}));
   const mx=Math.max(...vals.map(x=>x.v)), mn=Math.min(...vals.map(x=>x.v));
   const mean=vals.reduce((s,x)=>s+x.v,0)/vals.length;
-  if(mx-mn<=10 && mean>=84) return {name:'The Complete Player', desc:'No weakness in the bag'};
-  const top=vals.slice().sort((a,b)=>b.v-a.v)[0];
-  const a=ARCH[top.k]; return {name:a[0], desc:a[1]};
+  if(mx-mn<=10){
+    if(mean>=84) return {name:'The Complete Player', desc:'No weakness in the bag'};
+    return {name:'The Journeyman', desc:'Steady across the board, no real holes'};
+  }
+  const sorted=vals.slice().sort((a,b)=>b.v-a.v);
+  const top1=sorted[0], top2=sorted[1];
+  if(top1.v-top2.v<=6){
+    const pair=ARCH_PAIR[pairKey(top1.k,top2.k)];
+    if(pair) return {name:pair[0], desc:pair[1]};
+  }
+  const a=ARCH[top1.k]; return {name:a[0], desc:a[1]};
 }
 // scouting report in golf-analytics terms — varies by the build's actual strength/weakness + ratings
 const SK_AREA={dist:'driving distance',acc:'driving accuracy',app:'approach play',sht:'short game',scr:'scrambling',bnk:'bunker play',put:'putting',clu:'composure'};
