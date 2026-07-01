@@ -6665,11 +6665,16 @@ async function flushPendingSeasons(){
   const keep=[]; let posted=0;
   for(const s of q){
     try{
-      await sb.rpc('runtour_submit_season',{p_golfer:s.golfer,p_ovr:s.ovr,p_year:s.year,
+      // supabase-js RESOLVES (doesn't throw) on a Postgres/PostgREST error — e.g. the RPC's own
+      // `raise exception` for "set a username first" comes back as {error}, not a rejection. The old
+      // code never checked `error` here, so a rejected submission was silently counted as posted and
+      // dropped from this retry queue forever — the exact bug behind seasons vanishing without a trace.
+      const {error}=await sb.rpc('runtour_submit_season',{p_golfer:s.golfer,p_ovr:s.ovr,p_year:s.year,
         p_earnings:Math.round(s.earnings||0),p_net:Math.round(s.net||0),p_wins:s.wins,p_majors:s.majors,
         p_skills:s.skills,p_career_id:s.careerId||null,p_rep_pts:(s.repPts!=null?s.repPts:achPoints())});
+      if(error) throw error;
       posted++;
-    }catch(e){ keep.push(s); }                // failed (offline/error) → keep to retry later
+    }catch(e){ console.error('[RunTheTour] season submit failed, keeping for retry:', (e&&e.message)||e, s); keep.push(s); }
   }
   savePendingSeasons(keep);
   if(posted){ lbCache={}; }                 // something posted → refresh the board next open
@@ -6700,17 +6705,24 @@ async function sbSubmitDaily(b){
   if(!sb || !b) return;
   if(!sbUser){ _pendingDaily=b; return; }            // post as soon as they sign in
   try{
-    await sb.rpc('runtour_submit_daily',{p_day:b.day,p_course:b.course,p_to_par:b.total,p_ovr:b.ovr,
+    // same fix as flushPendingSeasons: supabase-js resolves (doesn't throw) on a Postgres error, so
+    // this MUST be checked explicitly — otherwise a rejected submission (bad param, RLS, etc.) looks
+    // identical to a successful one and the round is silently never posted.
+    const {error}=await sb.rpc('runtour_submit_daily',{p_day:b.day,p_course:b.course,p_to_par:b.total,p_ovr:b.ovr,
       p_won:!!b.won,p_golfer:(S.name||'Your Golfer'),p_skills:b.skills||null,p_decisions:b.decisions||null,
       p_is_legend:!!b.isLegend});
+    if(error) throw error;
     crCache=null; dbCache=null; crCacheLegend=null; dbCacheLegend=null;   // refresh records/board next open
   }catch(e){
     // p_is_legend isn't recognized until supabase/30_runtour_legend.sql is applied — retry without it
     // so a non-legend submission still goes through even before the owner runs that migration.
-    if(!b.isLegend) return;
-    try{ await sb.rpc('runtour_submit_daily',{p_day:b.day,p_course:b.course,p_to_par:b.total,p_ovr:b.ovr,
-      p_won:!!b.won,p_golfer:(S.name||'Your Golfer'),p_skills:b.skills||null,p_decisions:b.decisions||null});
-      crCache=null; dbCache=null; }catch(e2){}
+    if(!b.isLegend){ console.error('[RunTheTour] daily submit failed:', (e&&e.message)||e, b); return; }
+    try{
+      const {error:error2}=await sb.rpc('runtour_submit_daily',{p_day:b.day,p_course:b.course,p_to_par:b.total,p_ovr:b.ovr,
+        p_won:!!b.won,p_golfer:(S.name||'Your Golfer'),p_skills:b.skills||null,p_decisions:b.decisions||null});
+      if(error2) throw error2;
+      crCache=null; dbCache=null;
+    }catch(e2){ console.error('[RunTheTour] daily submit failed (legend fallback too):', (e2&&e2.message)||e2, b); }
   }
 }
 async function crLoad(){

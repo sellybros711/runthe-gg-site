@@ -2157,6 +2157,39 @@ allows Google Fonts, or self-host Anton.*
   regression suite (menu, guest course-record copy, leaderboard archetype, cup sticky scoreboard, cross-promo
   footer pill, footer nav) still green, zero page errors.
 
+- **CS71 — Fixed: completed seasons silently failing to post to the leaderboard (+ launch reset
+  migration).** Owner reported "I have just finished a few seasons that should be at the top but don't
+  see them" and asked to fix that before clearing the leaderboard for public launch. Root-caused a real
+  bug in `flushPendingSeasons()` (the
+  durable season-submission queue) and `sbSubmitDaily()`: both called `await sb.rpc(...)` inside a
+  try/catch but never inspected the RESOLVED result's `error` field. supabase-js does **not** throw on a
+  Postgres/PostgREST error (e.g. the RPC's own `raise exception 'set a username on RunThe.GG first'`) —
+  it resolves to `{data:null, error:{...}}`. Every OTHER `sb.rpc()` call in the file correctly destructures
+  and checks `{data,error}` (confirmed by grep — `lbLoad`, `set_username`, `runtour_my_stats`, etc. all do
+  this); these two didn't. Practical effect: any rejected submission (bad/missing username, RLS, a
+  malformed param) looked byte-for-byte identical to a successful one — the code incremented `posted++`,
+  removed the item from `bag_pending_seasons`, and it was gone. No error ever surfaced, nothing was ever
+  retried, and the data was unrecoverable client-side once that happened. This is almost certainly what
+  the owner hit. Fixed both functions to `const {error}=await sb.rpc(...); if(error) throw error;` so a
+  rejected submission now correctly falls into the existing catch/retry/keep-queued path instead of being
+  silently discarded, and both now `console.error` the failure (with the real Postgres error message) so a
+  future recurrence is actually debuggable instead of invisible.
+  Verified in Playwright by stubbing `sb.rpc` to return a resolved `{error}` (simulating the exact
+  supabase-js behavior a real Postgres exception produces, not a thrown error): confirmed the season now
+  stays queued for retry instead of being dropped; confirmed a later successful retry still correctly
+  clears the queue (no regression to the happy path); confirmed a genuine network-level throw is still
+  caught the same as before; confirmed the same fix on `sbSubmitDaily` no longer swallows a rejected daily
+  submission silently. Full existing regression suite still green.
+  Also wrote `supabase/32_runtour_launch_reset.sql` (mirrors the existing `25_runtour_reset.sql` pattern —
+  truncates `runtour_scores`/`runtour_stats`/`runtour_daily_scores`, the tables backing the leaderboard/
+  stats/daily-challenge history) for the owner to run themselves once they've confirmed a freshly-completed
+  season now actually posts with this fix live — wiping first and then discovering the submit path was
+  still broken would just leave an empty board with no way to tell. Deliberately does NOT touch the
+  client's `RESET_ENABLED`/`RESET_EPOCH` local-device wipe (a much bigger, separate lever that would erase
+  every player's own in-progress local career/save) since the owner only asked to clear the leaderboard,
+  not local device data — validated the migration file against a local Postgres instance (runs clean on an
+  empty DB, re-run is a no-op).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
