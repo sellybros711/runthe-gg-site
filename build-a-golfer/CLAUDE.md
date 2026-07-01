@@ -2483,6 +2483,33 @@ allows Google Fonts, or self-host Anton.*
   save/resume, retirement gating, the full Legend Circuit playthrough, past-champion exemptions) still
   green, zero page errors — same pre-existing unrelated fixture artifact in `test_retire_resume.mjs`.
 
+- **CS80 — Sim-logic audit + course/venue subtitle in season play.** Owner asked for two things: confirm
+  player stats and the course being played both genuinely drive simulated results, and show the real course
+  + location as a subtitle under the tournament name during season play.
+  Audit (empirical, not just a code read): re-verified skill still drives outcomes (an OVR 61 build finished
+  dead last with 0 wins in a real simulated season, matching the CS79 finding) and specifically tested
+  whether course fit reorders outcomes, not just skill — built matched-ish-OVR archetypes (a bomber, a
+  short-game wizard, a ball-striker, a putting specialist) and compared their event-adjusted overall across
+  6 real courses with very different `COURSEFIT` profiles. Confirmed course fit is real and independent of
+  raw skill: the ball-striker and bomber builds swap places in the ranking depending on the course (bomber
+  ahead at Augusta/Kapalua/Oakmont/St Andrews, ball-striker ahead at Muirfield Village/Waialae) — a genuine
+  rank reversal driven purely by course character, not overall quality. Both mechanisms check out; no bug
+  found or fixed here.
+  Feature: added `EVENT_COURSE`, a tournament-name → {venue, location} map covering all 51 scheduled events
+  (regular tour + every Legend Circuit event), reusing the already-written-up `DAILY_COURSES` entries
+  wherever a tournament maps to one of those venues (Augusta National for The Masters, Oakmont for the U.S.
+  Open, etc. — matching the SAME course already used for that event's `COURSEFIT` weights, so the subtitle
+  is never mismatched from what's actually being simulated), with standalone entries for events that don't
+  have a Daily Challenge counterpart (11 smaller regular-tour stops, plus all 18 Legend Circuit events — real
+  current-era Champions Tour hosts, noted as representative since some of those rotate host courses year to
+  year in reality). `eventCourse(evt)` looks it up with a graceful `null` fallback (synthetic opposite-field
+  events, or anything unmapped, simply show no subtitle rather than breaking). Wired into the live season
+  scorecard header and the season recap detail view: "📍 Venue Name · City, State" under the tournament name.
+  Verified every one of the 51 scheduled tournament names resolves to a course (zero gaps), screenshotted the
+  live season screen at The Masters showing "📍 Augusta National Golf Club · Augusta, Georgia" correctly
+  under the tournament name and next to the live leaderboard. Full regression suite still green, zero page
+  errors — same pre-existing unrelated fixture artifact in `test_retire_resume.mjs`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
