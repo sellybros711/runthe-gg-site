@@ -3214,7 +3214,7 @@ function overlayDailyDone(screen){
     <div class="center" style="margin:0 0 8px"><span class="mono" style="font-weight:800;font-size:38px;color:${r.total<0?'#35d6a0':r.total===0?'var(--oncard)':'#E14A33'}">${dtp(r.total)}</span> <span class="small muted">(${r.par+r.total} · par ${r.par})</span></div>
     ${(r.avg!=null)?(r.total<r.avg?`<div class="scout" style="text-align:center;border-color:#35d6a0"><b style="color:#35d6a0">🏁 You beat the tour average (${dAvgTxt(r.avg)})</b></div>`:`<div class="scout" style="text-align:center"><span class="small muted">Tour average ${dAvgTxt(r.avg)}, you came up ${(r.total-r.avg).toFixed(1)} short</span></div>`):''}
     ${r.record?`<div class="scout" style="text-align:center;border-color:var(--gold);margin-top:6px"><b style="color:var(--gold)">🏆 You hold the course record</b></div>`:''}
-    <div class="small muted center" style="margin-top:6px">OVR ${r.ovr} · ${dCondLabel(r.cond)} · streak ${streakDisplay()} 🔥</div>`
+    <div class="small muted center" style="margin-top:6px">OVR ${r.ovr}${r.cond?' · '+dCondLabel(r.cond):''} · streak ${streakDisplay()} 🔥</div>`
    :`<p class="lede">You've used all ${DAILY_MAX_ATTEMPTS} attempts today. Come back at midnight UTC for a fresh course.</p>`;
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
@@ -3336,6 +3336,7 @@ function trophySVG(){return `<svg class="trophy" viewBox="0 0 60 80" fill="none"
   <rect x="22" y="49" width="16" height="9" rx="2" fill="#caa23a"/></svg>`;}
 
 function scrTitle(){
+  reconcileDailyAttempts();   // self-heal "attempts left" against the server before it's even displayed below
   const scene=$(`<div class="scene"><svg class="coursebg" viewBox="0 0 440 440" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
     <defs>
       <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
@@ -3410,10 +3411,14 @@ function scrTitle(){
   stack.appendChild(go);
   const dleft=dailyAttemptsLeft(), datt=dailyAttempts(), dbest=dailyBest();
   const dwon=dbest&&dbest.avg!=null&&dbest.total<dbest.avg;
+  // dbest can legitimately be null even with attempts used up — e.g. a server-side attempt count just
+  // self-healed on a browser that never locally recorded a result (see reconcileDailyAttempts()) — so
+  // every branch below must tolerate it instead of assuming "attempts used" implies "we know the score."
+  const bestTxt = dbest ? `Best ${dtp(dbest.total)}` : `Best on this device: not yet known`;
   let dMain, dSub, dCls;
   if(datt===0){ dMain='Daily Challenge'; dSub='Beat the tour average at a new famous course every day'; dCls='blue'; }
-  else if(dleft<=0){ dMain=`Daily Challenge · ${dwon?'Beaten ✓':'Done'}`; dSub=`Best ${dtp(dbest.total)}${dwon?', you beat the tour average':' · came up short of the tour average'} · new course at midnight UTC`; dCls='gold'; }
-  else { dMain=`Daily Challenge · ${dleft} left`; dSub=`Best ${dtp(dbest.total)} · ${dwon?'tour average beaten ✓, go lower':'beat the tour average to win'} (${dailyMaxAttempts()} tr${dailyMaxAttempts()===1?'y':'ies'}/day)`; dCls='blue'; }
+  else if(dleft<=0){ dMain=`Daily Challenge · ${dwon?'Beaten ✓':'Done'}`; dSub=`${bestTxt}${dbest?(dwon?', you beat the tour average':' · came up short of the tour average'):''} · new course at midnight UTC`; dCls='gold'; }
+  else { dMain=`Daily Challenge · ${dleft} left`; dSub=`${bestTxt} · ${dwon?'tour average beaten ✓, go lower':'beat the tour average to win'} (${dailyMaxAttempts()} tr${dailyMaxAttempts()===1?'y':'ies'}/day)`; dCls='blue'; }
   const daily=$(`<button class="btn ${dCls}" style="margin-top:10px">${dMain}<span class="sub">${dSub}</span></button>`);
   daily.onclick=startDailyChallenge;
   stack.appendChild(daily);
@@ -6027,9 +6032,45 @@ function startDailyChallenge(){
   if(dailyAttemptsLeft()<=0){ S.overlay='dailydone'; render(); return; }
   beginDailyAttempt();
 }
-function beginDailyAttempt(){
+async function beginDailyAttempt(){
   if(dailyAttemptsLeft()<=0){ S.overlay='dailydone'; render(); return; }
-  const seed=todayKey(), att=dailyAttempts(); reset();
+  if(S._dailyStarting) return; S._dailyStarting=true;
+  const seed=todayKey();
+  // Signed-in players' 3-a-day cap is enforced by the ACCOUNT server-side, not just this browser's
+  // localStorage counter — otherwise signing into the same account on another browser/device (or just
+  // clearing storage) resets the local counter and grants effectively unlimited retries. This is the
+  // authoritative gate: an explicit "no attempts left" from the server always blocks play regardless of
+  // what the local counter believes. Fails OPEN only on a genuine network/RPC problem (offline, sb not
+  // loaded, migration not yet applied) — matching the fail-open posture of the rest of the online
+  // backend — so a connectivity hiccup can't strand a legitimate player mid-attempt.
+  if(sb && sbSignedIn()){
+    try{
+      const {data,error}=await sb.rpc('runtour_daily_attempt_start',{p_day:seed,p_max:DAILY_MAX_ATTEMPTS});
+      if(error){
+        if(/no attempts left/i.test(error.message||'')){
+          // self-heal the local counter to the cap RIGHT NOW too, not just on the next reconcileDailyAttempts()
+          // pass — otherwise the title screen briefly still claims attempts are available after this exact
+          // block. Also backfill the actual best score if this device never locally recorded one (e.g. the
+          // attempts were used on a different device) so the "done for today" screens show a real score
+          // instead of a blank/placeholder.
+          const cur=dailyState(); const st=(cur&&cur.date===seed)?cur:{date:seed,attempts:0};
+          st.date=seed; st.attempts=DAILY_MAX_ATTEMPTS;
+          if(!st.best){ const b=await fetchServerDailyBest(seed); if(b) st.best=b; }
+          LS.set(acctKey('bag_daily'),st);
+          S._dailyStarting=false; S.overlay='dailydone'; render(); return;
+        }
+        console.warn('[RunTheTour] daily-attempt server check failed, falling back to the local gate:', error.message);
+      } else if(typeof data==='number'){
+        // reconcile the local counter to the server's authoritative count — self-heals a stale/behind
+        // local cache (e.g. attempts already used on another device today)
+        const cur=dailyState(); const st=(cur&&cur.date===seed)?cur:{date:seed,attempts:0};
+        st.date=seed; st.attempts=Math.max(st.attempts||0,data); LS.set(acctKey('bag_daily'),st);
+      }
+    }catch(e){ console.warn('[RunTheTour] daily-attempt server check failed, falling back to the local gate:', e); }
+  }
+  S._dailyStarting=false;
+  if(dailyAttemptsLeft()<=0){ S.overlay='dailydone'; render(); return; }   // re-check post-reconciliation
+  const att=dailyAttempts(); reset();
   S.daily=true; S.dailySeed=seed; S.mode='daily'; S.dailyMode='round'; S.dailyAttempt=att;
   // course/conditions/hole-sim stay seeded by the day (fair, server-verifiable); only the draft
   // wheel is salted by attempt # so each of your 3 plays offers a fresh draft (still identical
@@ -6959,6 +7000,7 @@ const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 let sb=null, sbUser=null, sbUsername=null, sbProfile=null, lbCache={}, _pendingSeason=null;
 let _pendingDaily=null, crCache=null, dbCache=null;   // daily-challenge backend (Phase 3)
 let crCacheLegend=null, dbCacheLegend=null;   // Legend-tier course records / board (separate from the human ones above)
+let dailyAttemptsCheckedDay=null;   // guards reconcileDailyAttempts() to once per day per session
 const RTT_AUTH_KEY='sb-runtour-auth';   // RunTheTour's own saved-session key (separate from RunThePitch)
 function rttRemember(){ try{ return localStorage.getItem('rtt_remember')==='1'; }catch(e){ return false; } }
 function setRemember(on){ try{ localStorage.setItem('rtt_chose_remember','1'); on?localStorage.setItem('rtt_remember','1'):localStorage.removeItem('rtt_remember'); }catch(e){} }
@@ -7008,6 +7050,10 @@ async function sbApply(session){
     flushPendingSeasons();   // post every season queued while signed out / offline (fire-and-forget)
     migrateLegacyCareerSave();   // claim a pre-scoping career for this account, drop the unscoped copy
     maybeClaimDaily();        // log a guest-played daily round to the account (consumes one of its attempts)
+    // refresh course records + today's attempt count from the server RIGHT on sign-in, not just whenever
+    // the player happens to open the records overlay — otherwise a signed-in session on a fresh browser
+    // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
+    crCache=null; crLoad(); reconcileDailyAttempts();
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
     if(_pendingDaily){ _pendingDaily=null; }   // legacy guest stash is no longer auto-posted (claim flow gates it)
     if(oauth){                                    // just came back from Google → confirm on the title screen
@@ -7177,6 +7223,36 @@ async function sbSubmitDaily(b){
       crCache=null; dbCache=null;
     }catch(e2){ console.error('[RunTheTour] daily submit failed (legend fallback too):', (e2&&e2.message)||e2, b); }
   }
+}
+// self-heals the LOCAL "attempts used today" counter against the server's authoritative count — so a
+// player who used attempts on another device sees the correct "X left" here too, not just at the moment
+// beginDailyAttempt() enforces the real gate. Runs once per day per session (title screen load).
+// fetches THIS account's actual best round for a day from the server (runtour_my_daily, defined in
+// 24_runtour_daily.sql but never previously called from the client) — used to backfill a real score
+// display when a device's local cache learns "attempts used" from the server without ever having
+// locally recorded what that score actually was (e.g. the device that used them was a different one).
+async function fetchServerDailyBest(day){
+  if(!sb) return null;
+  try{
+    const {data,error}=await sb.rpc('runtour_my_daily',{p_day:day});
+    if(error || !data || !data.length) return null;
+    const row=data[0], c=DAILY_COURSES[row.course_key]; if(!c) return null;
+    return {course:row.course_key, total:row.to_par, ovr:row.ovr, par:c.par, avg:c.avg, cond:null, record:null};
+  }catch(e){ return null; }
+}
+async function reconcileDailyAttempts(){
+  if(!sb || !sbSignedIn() || S.daily) return;
+  const seed=todayKey(); if(dailyAttemptsCheckedDay===seed) return; dailyAttemptsCheckedDay=seed;
+  try{
+    const {data,error}=await sb.rpc('runtour_daily_attempts_used',{p_day:seed});
+    if(error || typeof data!=='number') return;
+    const cur=dailyState(); const st=(cur&&cur.date===seed)?cur:{date:seed,attempts:0};
+    if(data>(st.attempts||0)){
+      st.date=seed; st.attempts=data;
+      if(!st.best){ const b=await fetchServerDailyBest(seed); if(b) st.best=b; }
+      LS.set(acctKey('bag_daily'),st); render();
+    }
+  }catch(e){ /* fail open — local count stands until the next check */ }
 }
 async function crLoad(){
   if(!sb){ crCache={recs:{},ok:false}; render(); return; }

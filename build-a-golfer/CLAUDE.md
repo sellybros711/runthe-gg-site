@@ -2510,6 +2510,53 @@ allows Google Fonts, or self-host Anton.*
   under the tournament name and next to the live leaderboard. Full regression suite still green, zero page
   errors — same pre-existing unrelated fixture artifact in `test_retire_resume.mjs`.
 
+- **CS81 — server-enforced Daily Challenge attempt cap (closes a cross-device retry exploit).** Owner
+  report: signed into the same account on a second browser and course records looked empty there. Traced
+  the real issue further than the symptom: the Daily Challenge's "3 attempts a day" cap was 100%
+  client-side — a localStorage counter (`bag_daily`) that a fresh browser/device (or just clearing
+  storage) resets, even while signed into the same account, giving effectively unlimited retries despite
+  accounts genuinely being server-based (Supabase auth). Course records themselves were a smaller, related
+  gap: the global record board IS already server-verified (`runtour_course_records`), but only ever
+  refreshed lazily whenever the player happened to open that specific overlay, not proactively on sign-in.
+  Fixes:
+  1. **New migration `35_runtour_daily_attempts.sql`**: a dedicated `runtour_daily_attempts(user_id, day,
+     attempts)` table plus an atomic `runtour_daily_attempt_start(day, max)` function — an
+     `INSERT ... ON CONFLICT DO UPDATE ... WHERE attempts < max` guard that Postgres row-locks during the
+     check-and-increment, so two devices racing for the same account's last attempt of the day can't both
+     win it. Verified with a real concurrency test: 10 simultaneous claim requests fired at once against an
+     account already at 2/3 used — exactly 1 succeeded, the other 9 correctly rejected, final count never
+     exceeded 3. Also added `runtour_daily_attempts_used(day)` (read-only, for display) and rediscovered
+     `runtour_my_daily(day)` already existed in `24_runtour_daily.sql` from Phase 3 but had never actually
+     been called from the client.
+  2. **`beginDailyAttempt()` is now the authoritative, server-checked gate** for signed-in players: before
+     letting a round start, it calls `runtour_daily_attempt_start()`; an explicit "no attempts left" from
+     the server blocks play regardless of what the local counter believes, while a genuine network/RPC
+     failure fails OPEN (falls back to the local gate) so connectivity hiccups can't stand a legitimate
+     player. Guests are untouched (their single attempt was always meant to be per-browser, not
+     account-protected).
+  3. **Local "attempts left" now self-heals from the server** in three places: a new
+     `reconcileDailyAttempts()` runs once per day per session on the title screen and right on sign-in
+     (alongside the other post-sign-in refreshes), and `beginDailyAttempt()`'s own rejection path
+     immediately syncs the local counter too, rather than waiting for the next reconcile pass. Course
+     records now also force-refresh (`crCache=null; crLoad()`) right on sign-in instead of waiting for the
+     player to open the records overlay.
+  4. **Found and fixed a latent crash** the self-heal work exposed: `scrTitle()` assumed "attempts used up"
+     always meant "we know the score" (`dailyBest()` non-null) — true in the old local-only world, but not
+     once a device can learn "0 attempts left" from the server without ever having locally recorded a
+     result. Added a null-safe fallback ("Best on this device: not yet known") and, better, backfill the
+     REAL score via `runtour_my_daily()` (`fetchServerDailyBest()`) whenever the self-heal fires and no
+     local best is known, so the title screen and "done for today" screens show the account's actual
+     score, not a placeholder.
+  Verified end-to-end in Playwright with two separate browser contexts (isolated localStorage each, same
+  stubbed account) sharing one fake server-state object: "Browser A" used all 3 attempts and got blocked on
+  the 4th; "Browser B", with a completely fresh localStorage, showed the (wrong) optimistic "3 left" before
+  any check — but the moment it tried to actually start a round, the server call correctly rejected it, the
+  local counter immediately self-healed to 0 left, and (in a follow-up check) the real backfilled score
+  rendered correctly on both the title screen and the "done" overlay with zero page errors. Full regression
+  suite (final/menu, existing daily-challenge tests, guest daily claim flow, Legend Token gating, off-season
+  decline, mid-season save/resume, retirement gating, Legend Circuit playthrough, past-champion exemptions)
+  still green — same pre-existing unrelated fixture artifact in `test_retire_resume.mjs`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
