@@ -2343,6 +2343,45 @@ allows Google Fonts, or self-host Anton.*
   throws after its own assertions already passed) confirmed not a regression, same root cause documented
   before this session's compaction.
 
+- **CS77 — Past-champion major exemptions during the Legend Circuit.** Owner's ask: real major champions get
+  invited back to play their major for life (the Masters is the famous example), so a Legend Circuit player
+  who won a major during their 30-year career should be able to guest back into the ACTUAL tour major itself,
+  not just its Legend Circuit counterpart — researched whether this holds for the other 3 majors before
+  building it, since the owner asked to only add it where real precedent exists.
+  Findings (current-era rules, not historical): **The Masters** grants past champions a true lifetime
+  invitation — the only one of the 4 with no expiration. **The Open Championship** exempts past champions
+  only through age 60 (after which some become ceremonial honorary starters, not full competitors). The
+  **PGA Championship** ("The Championship" in-game) used to be lifetime too, but the PGA of America rescinded
+  that in 2016 — it's now a 5-year exemption from the win. The **U.S. Open** has never had a past-champions
+  exemption category at all, at any point — so a U.S. Open win grants nothing here, which is itself the
+  accurate answer.
+  Implementation: `guestMajorExemptions()` reads the frozen `S.career.winsList` (untouched since the regular
+  career ended) and checks each rule against the current absolute year/age; `circuitSchedule()` now folds any
+  currently-active exemptions in as extra `guestMajor:true` events using the real major's own name, purse, and
+  calendar slot (`GUEST_MAJOR_WK`/`GUEST_MAJOR_PURSE`, chosen to land in the same weeks as the regular tour's
+  own majors without colliding with the circuit's own 5-major/3-playoff `wk` values). `beginEvent()` gained a
+  `guestMajor` branch that swaps in `buildGuestMajorField()` — the CURRENT active tour roster (`S.world.active`,
+  which keeps evolving every circuit year since `advanceWorld()` already runs unconditionally) plus the player
+  — instead of the circuit's own 78 retired alumni, so a past-champion appearance is genuinely played against
+  today's tour, not other legends. Reused the existing "foreign field member without a totals entry is
+  gracefully skipped" pattern already established for the Olympics field, rather than restructuring the
+  season's totals dict, so no changes were needed to the core stat-bookkeeping path. A win here counts toward
+  the circuit career's overall major tally (same as any circuit major) and shows on a new "Past-champion
+  appearances" board on the circuit-end ceremony, kept separate from the circuit's own 5 majors board.
+  Added a "Past Champion" selection announcement (guaranteed entry, framed as an exemption rather than a
+  qualification, unlike the Olympics/playoff selection moments) and a distinct "🎖️ Past Champion" event tag
+  during play.
+  Verified in Playwright: a synthetic career with a Masters win (yr20), Championship win (yr26), and Open win
+  (yr28) but no U.S. Open win — walked all 12 circuit years and confirmed Masters stays exempt every year,
+  Championship disappears the year after its 5-year window closes (present at +5 years, gone at +6), Open
+  disappears once age exceeds 60, and U.S. Open never appears; confirmed the scheduled event carries the real
+  major's name/week; confirmed the live field is the CURRENT active tour (zero overlap with the circuit's own
+  alumni field) and correctly includes the player; confirmed a win there lands in `circuitCareer.majorStats`
+  and shows on the new ceremony board. Full regression suite (final/menu, guest daily gating, FedEx
+  playoffs/cup Monte Carlo, Legend Token gating, off-season decline, mid-season save/resume, retirement
+  gating, the full Legend Circuit playthrough from CS76) still green, zero page errors — same pre-existing
+  unrelated fixture artifact in `test_retire_resume.mjs` as before.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
