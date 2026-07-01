@@ -2702,6 +2702,39 @@ allows Google Fonts, or self-host Anton.*
   has a clean opaque backdrop instead of scrolled content bleeding through it. Full regression suite
   (final/menu, daily-challenge tests, bag_career scoping, the CS83 guest-leaderboard tests) still green.
 
+- **CS85 — Reset actually retires the saved career + clearer confirmation copy.**
+  Owner: "I don't think the reset button is working properly... make sure they know they are starting a
+  new career and retiring their current one. Remind them that all of their career stats and achievements
+  are safe. After confirming the reset, it should bring them home and resume should not be an option."
+  Two real bugs, not just wording: (1) the confirm dialog's "Reset everything" button only called
+  `clearResume()` (the never-saved in-progress DRAFT) + `reset()` (in-memory state) — it never called
+  `clearCareerSave()`, so an actual saved career FRANCHISE (`bag_careersave` — the thing "Resume Career
+  Mode" reads from) was completely untouched. Confirming reset looked like it did nothing, because
+  "Resume Career Mode" was still sitting right there on the title screen afterward. (2) both entry points
+  (the header's Reset pill and the ≡ menu's Reset row) silently reset with NO confirmation at all whenever
+  you happened to already be on the title screen — meaning the one moment you're most likely to tap
+  Reset (from the title screen itself) was exactly the moment it skipped the warning entirely.
+  Fixed both: the confirm handler now also calls `clearCareerSave()`, so a retired career can never
+  reappear as "Resume Career Mode"; both entry points now always open the confirmation, regardless of
+  which screen you're on. Rewrote the dialog copy to say explicitly what's happening — adaptive on
+  whether there's actually anything to retire (`careerSaveInfo()||resumeInfo()`): with an active
+  career/golfer it reads "Retire your golfer & start over? This retires your current golfer and career
+  in progress — once you start over there's no way back to them. Your lifetime stats, achievements, and
+  Hall of Fame are always safe, they carry over untouched." (button: "Retire & Start New Career"); with
+  nothing active it's the softer "Start over? / Start Fresh" (doesn't falsely claim to be "retiring" a
+  career that doesn't exist). Lifetime stats (`career()`/badges/tee-tiers), achievements, and Hall of
+  Fame are a genuinely separate storage key from the career franchise and were never touched by this —
+  confirmed unaffected by both the code (clearCareerSave/clearResume only ever write `bag_careersave`/
+  `bag_resume`) and a Playwright test that seeds lifetime builds/HOF/achievement unlocks alongside an
+  active saved career, resets, and checks all three survive intact.
+  Verified in Playwright: tapping the header Reset pill FROM the title screen (previously silent) now
+  opens the confirm dialog with the correct adaptive copy; Cancel touches nothing; confirming clears both
+  `careerSaveInfo()` and `resumeInfo()`, lands back on the title screen, and the title screen's own text
+  no longer contains "Resume" anywhere; lifetime builds/HOF/achievement points all survive unchanged; the
+  guest/nothing-active path shows the softer copy; the ≡ menu's Reset row opens the same dialog. Full
+  regression suite (final/menu, daily-challenge, bag_career scoping, CS83 leaderboard, CS84 render safety
+  net + sticky avatar) still green.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
