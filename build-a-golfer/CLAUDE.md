@@ -2610,6 +2610,58 @@ allows Google Fonts, or self-host Anton.*
   exemptions, the bag_career scoping fix, the CS81 cross-device attempt-cap test) still green — same
   pre-existing unrelated fixture artifact in `test_retire_resume.mjs`.
 
+- **CS83 — leaderboard enhancements: season-rank message, guest posting, locked guest name box.**
+  Owner's ask, in three parts: (a) on the season summary screen, show how the just-finished season ranked
+  amongst every season ever posted, plus a Leaderboard button; (b) let guests (signed-out players) post to
+  the public leaderboard too — anonymized as "Anonymous" / "Guest Player" rather than any real identity;
+  (c) lock the golfer name box for guests during setup with a "sign in to add a name" message.
+  Guest posting was a real gap, not just a missing feature: `flushPendingSeasons()` durably queues every
+  finished season in localStorage so nothing is ever lost, but explicitly required `sb && sbUser` before
+  attempting to post — a signed-out player's season sat in that queue forever. New migration
+  `37_runtour_guest_leaderboard.sql` makes `runtour_scores.user_id` nullable, adds an `is_guest` flag (with
+  a check constraint — `is_guest OR user_id IS NOT NULL` — so a null identity can only ever occur on a row
+  explicitly marked as a guest post, not by accident), and adds `runtour_submit_season_guest()`: an
+  anon-callable function that takes NO identity from the client at all. `display_name`/`golfer_name` are
+  hardcoded to `'Anonymous'`/`'Guest Player'` inside the function body — there's no client parameter for
+  either, so a guest can't spoof a real name even by hand-crafting the RPC call. Reuses the exact same
+  OVR-scaled earnings cap as the signed-in path (`v_ovr * 2,000,000`, from 34_runtour_purse_inflation_cap.sql)
+  so the anti-forgery guarantee is identical either way. Confirmed both `runtour_season_board` and
+  `runtour_career_board` need no changes for the null `user_id` — they were already changed in
+  26_runtour_board_all_entries.sql to show every row with no per-user dedup, so a guest's rows show up as
+  their own independent entries automatically, same as any other row.
+  Residual trade-off, called out rather than solved: an unauthenticated RPC is inherently more spammable
+  than the signed-in one (no account to rate-limit against). The earnings cap is the only guard; if this
+  attracts abuse in practice, a per-IP/edge-function throttle can be layered on later without another
+  schema change.
+  New `runtour_season_rank(p_earnings)` RPC answers "how many seasons all-time out-earned this one, and how
+  many seasons exist in total" against the RAW table (every season ever posted) — deliberately NOT the
+  per-user "best season" framing, since the ask was "amongst all seasons," not "amongst all players." Ties
+  share a rank. Client fetches it once per finished season (`loadSeasonRank()`, chained after the season-post
+  attempt settles) and renders a small card + "🏆 View Leaderboard" button near the top of `scrSummary()`
+  once it resolves — fails open (nothing renders) if the backend's unreachable, same style as the rest of
+  the leaderboard UI. `flushPendingSeasons()` now branches on `!sbUser`: guests post through the new guest
+  RPC, signed-in players through the existing one — unaffected either way.
+  Guest name lock: `scrSetup()` already replaced the whole customization section with an account-upsell
+  card for guests (from an earlier session), which functionally prevented naming but didn't look like a
+  literal locked input. Added a genuinely disabled `<input class="name" disabled>` plus the requested
+  "🔒 Sign in to your RunThe.gg account to add a name." caption ahead of that existing upsell card, so the
+  UI now matches what was asked for literally, not just functionally.
+  Verified the SQL locally against real Postgres before shipping: seeded two signed-in users' seasons plus
+  two guest posts (one with a forged nine-figure earnings figure) — the cap correctly clamped the forged
+  guest post to the same ceiling a signed-in forgery would hit; both boards listed all 4 rows as independent
+  entries (no null-`user_id` collapse); `runtour_season_rank` returned the exactly-correct rank/total for a
+  mid-pack score, the top score, and a hypothetical unbeatable score; the guest-identity check constraint
+  correctly rejected a null-`user_id`/non-guest row; and RLS correctly still blocks the `anon` role from
+  writing to `runtour_scores` directly (every path still has to go through a `SECURITY DEFINER` function).
+  Verified the client in Playwright: a guest's finished season posts through the guest RPC only (never the
+  signed-in one), lands anonymized end-to-end, and correctly renders the rank message + working Leaderboard
+  button; a signed-in player's season still posts through the original path with their real name/username,
+  never touching the guest RPC; the guest setup screen shows a genuinely disabled name input with the
+  sign-in message; the leaderboard overlay itself renders a mix of real and anonymized rows correctly
+  alongside the existing sign-in CTA. Full existing regression suite (final/menu, daily-challenge tests,
+  guest daily claim flow, the bag_career scoping fix, the CS81 attempt-cap cross-device test, the CS82
+  cloud-save cross-device test) still green, zero page errors anywhere.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
