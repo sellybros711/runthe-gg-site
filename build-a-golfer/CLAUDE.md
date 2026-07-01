@@ -2124,6 +2124,39 @@ allows Google Fonts, or self-host Anton.*
   RunThePitch`. Verified in Playwright (pill text/href/target unchanged otherwise) and visually via
   screenshot; full regression suite still green.
 
+- **CS70 — Steeper career decline, anchored to year 15.** Owner: "people are being able to sustain a really
+  high overall for a really long time. I think the regression should start in year 15 and should
+  increasingly get harder from there. lets make it a little harder." The player's age/form decline system
+  (`applyPlayerDecline()`, CS37) technically already started around year 14 for an average-performing
+  player, but the "prime bank" mechanic (rewards sustained winning by delaying decline onset, up to +6
+  effective years) let any consistently strong player — exactly the ones a real player notices staying
+  elite — flatline at their drafted OVR clear through year 20-24, then the decline ramp itself capped out
+  at 1.8 around year 25 and never got any harder after that. Combined, a good career could realistically
+  hold a near-peak OVR for two-thirds of the 40-year run. Retuned three levers in `applyPlayerDecline()`/
+  `effAge()`/`PEAK_END_AGE`:
+  1. `PEAK_END_AGE` 34→35, so decline can first tick as early as age 36 (year 15) for a neutral-form player
+     — exactly the anchor point requested.
+  2. Prime-bank cap (the "play young" reward for winning) 6→3: elite, constantly-winning careers still get
+     rewarded with a later onset, but now bounded to ~year 18-20 instead of being pushed out to year 25+.
+  3. Decline ramp cap 1.8→2.5 (same initial slope, so early-decline feel near year 15 is unchanged) and,
+     since the cap is reached later (bigger cap ÷ same slope), the ramp keeps climbing — i.e. genuinely
+     "increasingly harder" — for a much longer stretch of the career instead of flattening out by the
+     mid-to-late 20s.
+  4. `DECLINE_RATE` per skill bumped ~10-15% across the board (dist 1.9→2.1, acc/app 1.0→1.15, sht/scr/bnk
+     0.7→0.8, put 0.6→0.7, clu 0.2→0.25) for the "a little harder" ask on top of the structural changes.
+  Modeled the tuning with a standalone Node simulation before touching the file (average-form, max-prime-bank
+  elite, and min-prime-bank struggling trajectories from year 1-40), then re-verified the exact same numbers
+  by calling the real in-browser `applyPlayerDecline()`/`effAge()` functions directly via Playwright — the
+  struggling-form trajectory matched the standalone sim row-for-row (year 25: OVR 71.1, year 30: 60.5, year
+  40: 50.7 in both). Result: a neutral-form career's OVR now starts fading at year 15 as requested (was
+  flat to ~year 14 before, negligible change there), an elite max-bank career now visibly declines by
+  year 20 instead of staying pegged at its drafted OVR through year 24, and by year 40 a strong career's
+  OVR lands ~10 points lower than before (63.9→53.9) — "a little harder," not a cliff. Also fixed a stale
+  "Year 16+" UI comment to "Year 15+" to match. Verified in Playwright: the off-season "Age is catching up"
+  vs "In your prime" banners correctly flip at the right years with the new constants, full existing
+  regression suite (menu, guest course-record copy, leaderboard archetype, cup sticky scoreboard, cross-promo
+  footer pill, footer nav) still green, zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

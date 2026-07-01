@@ -2315,26 +2315,29 @@ function rivalCardHTML(rr){ if(!rr) return '';
     <div class="small center" style="margin-top:5px;color:${col};font-weight:700">${beat?'You won the season series. 🏅 Rivalry tee earned.':(tie?`Dead even, you split the series ${rr.meAhead}–${rr.rvAhead}.`:`${esc(rr.name)} took the series. Get them next year.`)}</div></div>`;
 }
 /* ---- YOUR golfer's bounded career (40-year shelf life). Decline is AGE- and FORM-based, not a
-   flat year cutoff: a rookie starts ~22 and peaks through the mid-30s with NO decline; only after
-   do skills fade — LATER if you keep performing ("play young"), SOONER if you slump. Power
-   (distance) fades first, touch/experience last. The FIELD ages by its own real age. ---- */
-const START_AGE=22, PEAK_END_AGE=34, CAREER_MAX_YEARS=40, FIELD_RETIRE_AGE=55;
-const DECLINE_RATE={dist:1.9,acc:1.0,app:1.0,sht:0.7,scr:0.7,bnk:0.7,put:0.6,clu:0.2};
+   flat year cutoff: a rookie starts ~22 and peaks through year 14 (age 35) with NO decline; only
+   after does regression begin — LATER if you keep performing ("play young"), SOONER if you slump —
+   and it keeps compounding deeper into the career instead of leveling off. Power (distance) fades
+   first, touch/experience last. The FIELD ages by its own real age. ---- */
+const START_AGE=22, PEAK_END_AGE=35, CAREER_MAX_YEARS=40, FIELD_RETIRE_AGE=55;
+const DECLINE_RATE={dist:2.1,acc:1.15,app:1.15,sht:0.8,scr:0.8,bnk:0.8,put:0.7,clu:0.25};
 function playerAge(){ return START_AGE + ((S.year||1)-1); }
 // how the season just finished went vs the field: -1 (poor) .. +1 (dominant). Wins/majors keep you sharp.
 function seasonForm(s){ if(!s) return 0; const N=FIELDSIZE||120;
   const rank=s.rank||Math.round(N*0.6), rankScore=1-(rank-1)/Math.max(1,N-1);
   return clamp((rankScore-0.5)/0.5 + (s.wins||0)*0.25 + (s.majors||0)*0.35, -1, 1); }
 // competitive age = real age minus a "prime bank" earned by sustained good play (a great career can
-// stay at peak into the early 40s; a slump ages you faster). Bank is persisted on the career.
+// stay sharp a few years longer; a slump ages you faster). Capped at +3 so even a dominant career
+// can't push regression off indefinitely — it starts around year 15 and only shifts by a few years
+// either way. Bank is persisted on the career.
 function effAge(){ return playerAge() - ((S.career&&S.career.primeBank)||0); }
 function pastPeak(){ return effAge() > PEAK_END_AGE; }
 function applyPlayerDecline(){   // once per off-season; scaled by how far past your peak you are
   const c=S.career; if(!c) return;
   const last=(c.seasons&&c.seasons[c.seasons.length-1])||null;
-  c.primeBank=clamp((c.primeBank||0)+seasonForm(last), -2, 6);   // win → defy age; slump → age faster
+  c.primeBank=clamp((c.primeBank||0)+seasonForm(last), -2, 3);   // win → defy age; slump → age faster
   const sev=effAge()-PEAK_END_AGE; if(sev<=0) return;            // still in your prime — nothing fades
-  const ramp=Math.min(1.8, sev/6);                              // barely anything mid-30s, steeper into the 40s
+  const ramp=Math.min(2.5, sev/6);                              // barely anything at first, keeps steepening for years
   CATS.forEach(cat=>{ const sl=S.slots[cat.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[cat.k]*ramp)); });
 }
 function playerRetires(){ return (S.year||1) >= CAREER_MAX_YEARS; }   // forced at the 40-year shelf life
@@ -5211,7 +5214,7 @@ function scrSummary(){
     wonThisSeason.forEach(w=>wrap.appendChild($(`<span class="tag" style="font-size:12px;padding:7px 12px;${w.major?'color:var(--gold);border-color:var(--gold)':''}">🏆 ${w.name}${w.major?' · MAJOR':''}</span>`)));
     add(wrap);
   }
-  // year-over-year skill changes — only once decline kicks in (Year 16+), since
+  // year-over-year skill changes — only once decline kicks in (Year 15+), since
   // before that nothing moves and every tile would read 0. Shows the new rating
   // with the change (e.g. red −1) beside it.
   const ss=(!S.daily && S.career && S.career.skillSeasons)||[];
