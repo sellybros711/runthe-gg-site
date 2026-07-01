@@ -2903,9 +2903,11 @@ function overlayLeaderboard(screen){
   } else if(globalOk && globalRows.length){
     const rowFn=r=>{
       const you=sbUser&&r.user_id===sbUser.id, v=lbStatVal(r,tab,sort);
+      const arch=(r.skills && CATS.every(c=>typeof r.skills[c.k]==='number')) ? archetype(r.skills) : null;
+      const golferPart=r.golfer_name ? r.golfer_name+(arch?' · '+arch.name:'')+' · ' : '';
       const sub = tab==='season'
-        ? (r.golfer_name?r.golfer_name+' · ':'')+'OVR '+r.ovr+(r.year?' · Yr '+r.year:'')+(sort!=='earnings'?' · '+fmt(r.season_earnings):'')
-        : (r.golfer_name?r.golfer_name+' · ':'')+r.seasons+' szn · '+(r.wins||0)+' win'+((r.wins||0)===1?'':'s')+(sort!=='earnings'?' · '+fmt(r.career_earnings):'');
+        ? golferPart+'OVR '+r.ovr+(r.year?' · Yr '+r.year:'')+(sort!=='earnings'?' · '+fmt(r.season_earnings):'')
+        : golferPart+r.seasons+' szn · '+(r.wins||0)+' win'+((r.wins||0)===1?'':'s')+(sort!=='earnings'?' · '+fmt(r.career_earnings):'');
       return lbRowHTML(r.rank,r.display_name,sub,v,you,lbRep(r));
     };
     const rows=(dir==='asc')?globalRows.slice().reverse():globalRows;   // toggle high→low / low→high

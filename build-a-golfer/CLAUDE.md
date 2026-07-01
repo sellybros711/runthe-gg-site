@@ -2053,6 +2053,28 @@ allows Google Fonts, or self-host Anton.*
   Build screen renders the new names/descriptions in the existing gold-italic style; full regression suite
   (menu, guest course-record copy, footer nav) still green with zero page errors.
 
+- **CS66 — Archetype shown on the Leaderboard.** Owner: "can we add the players archetype to the
+  leaderboard bubbles next to the golfers name under the username?" The Single Season / Career Leaderboard
+  overlay (`overlayLeaderboard`) already showed a row's username on top and the golfer's name in a "sub"
+  line underneath (e.g. `Big Bertha · OVR 91 · Yr 2`), but had no archetype — `archetype(p)` (CS65) was only
+  ever called once, right after a draft, and the global board's RPCs never returned the `skills` jsonb each
+  season already stores in `runtour_scores` (captured since 22_runtour_leaderboard.sql, just never selected
+  by the board functions). New migration `supabase/31_runtour_archetype.sql` adds `skills` to both
+  `runtour_season_board` and `runtour_career_board`'s return shape (career board picks the skills from the
+  same season `golfer_name` already comes from — the most recent one in that career), same p_sort/ranking/
+  limits otherwise untouched. Client: `overlayLeaderboard`'s `rowFn` now computes `archetype(r.skills)` (when
+  a row has a full 8-key skills object — legacy rows with null skills just fall back to the old plain
+  golfer-name line, no crash) and inserts the archetype name between the golfer's name and the OVR/season
+  stats, e.g. `Big Bertha · The Bomber · OVR 91 · Yr 2`.
+  Verified the migration end-to-end against a local Postgres instance (stubbed auth/profiles, applied
+  10→22→26→27→28→31 in order): both board RPCs return the right per-row `skills`, and the career board
+  correctly resolves to the latest season's skills matching its `golfer_name`. Client-side: mocked global
+  board rows (one full-skills row, one legacy null-skills row, one signed-in "you" row) — full-skills rows
+  show the correct archetype next to the golfer name on both Single Season and Career tabs (including a
+  two-skill combo archetype), the null-skills row falls back cleanly with no archetype and no error, and the
+  raw row HTML confirmed no double-escaping/broken markup. Full existing regression suite (menu, guest
+  course-record copy, footer nav, archetype distribution) still green, zero page errors throughout.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
