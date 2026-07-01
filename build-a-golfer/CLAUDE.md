@@ -2382,6 +2382,60 @@ allows Google Fonts, or self-host Anton.*
   gating, the full Legend Circuit playthrough from CS76) still green, zero page errors — same pre-existing
   unrelated fixture artifact in `test_retire_resume.mjs` as before.
 
+- **CS78 — Win-rate realism, composure choke risk, purse inflation.** Owner's feedback: winning tournaments
+  and majors felt too easy, players were racking up far more wins/majors than anyone has in real life, and
+  low composure should make majors and big competitions genuinely harder, not just a flat stroke tax. Also
+  asked for year-over-year purse inflation so a long career keeps feeling current. Investigated before
+  touching anything: the math showed a maxed (OVR 99) build's per-major win probability was ~29% under the
+  existing tuning — real legends peak around 15-20% in their absolute PRIME, and a typical Hall-of-Famer's
+  career average is closer to 3-6%. Root cause: skill converted to a strictly linear 0.238 strokes/OVR-point
+  mean advantage with round-to-round variance (sigma) that had been deliberately trimmed ~16% below the real
+  DataGolf-measured baseline in an earlier pass specifically "so a clearly better build tracks its skill more
+  reliably" — exactly the thing now flagged as unrealistic.
+  Three changes, all in `simRound()`/schedule-builders, verified with a pure-math Monte Carlo (old vs. new)
+  before touching the live code, then re-verified against the real in-file functions:
+  1. **Sigma restored** to the actual measured baseline (`SIM.reg.sigma` 2.35→2.80, `SIM.maj.sigma` 2.45→2.90)
+     — reverting the earlier trim rather than inventing a new number.
+  2. **Diminishing returns above OVR 92** (`SKILL_KNEE=92, SKILL_KNEE_COMPRESS=0.45`, via new `skillEdge()`):
+     real strokes-gained data shows the very best players separate from mid-pack tour pros by roughly a
+     stroke a round, not four or five, so a 99-build's edge over a 92-build is now a fraction of a 92-build's
+     edge over an 80-build. Every realistic build 60-92 OVR sees the exact same edge as before — this only
+     compresses the top of the curve, where a player build can exceed anything the NPC field ever reaches.
+  3. **Composure choke risk** (`CHOKE_RATE=0.008, CHOKE_CAP=0.30, CHOKE_STROKES=3.2`), on top of the existing
+     small mean nudge, for majors AND big/signature/playoff-finale final rounds: low composure now carries a
+     real probability of a one-round blowup (+3.2 strokes), capped at 30% around clu≤42.5, zero at clu≥80.
+     First attempt was a SYMMETRIC variance widening (wider spread both ways for low composure) — Monte
+     Carlo caught that this actually made low-composure builds win slightly MORE often (wider variance
+     helps whoever's behind in a "best-score-wins" field, a real statistical effect, just backwards from the
+     ask), so it was replaced with this asymmetric, choke-only-ever-hurts model before shipping.
+  4. **Purse inflation** (`PURSE_INFLATION=0.032`, `purseMult(year)`/`inflatePurses()`): a ~3.2%/yr compounding
+     multiplier applied in `seasonSchedule()`, `majorsSchedule()`, and `circuitSchedule()` (including the
+     Legend Circuit's own past-champion guest-major purses) — deliberately more modest than the real tour's
+     ~7-9%/yr over the last two decades, chosen so the anti-forgery earnings ceiling only needed a bounded
+     bump rather than an open-ended one.
+  Wrote `supabase/34_runtour_purse_inflation_cap.sql` (owner-run): purse inflation raises the true theoretical
+  max season from ~$59.6M (year 1) to ~$147.4M by year 30 (x2.49 inflation) — well past the existing
+  `v_ovr*900000` ceiling (caps at $89.1M for OVR 99), which would start wrongly clamping genuine late-career
+  seasons around year 15 onward, the exact bug the original cap fixed just re-appearing later in a career.
+  Raised the multiplier to 2,000,000 (OVR 99 → $198M, ~34% headroom over the year-30 ceiling). The Legend
+  Circuit doesn't submit to this leaderboard at all (a CS76 scope decision) so its own further-inflated
+  purses (up to ~x3.6 by circuit year 12) never interact with this cap.
+  Verified: a pure-math Monte Carlo (20k-30k trials/scenario) against a realistic ~120-player field showed
+  a maxed (OVR 99) build's major win rate dropping from ~29% to ~11.6% — still a dominant, record-worthy
+  rate, just no longer a near-certainty — while weaker/realistic builds (OVR 85-92) saw a *slight* win-rate
+  increase (wider variance creates more upsets for everyone, a real and desired side effect); composure now
+  shows a clean, monotonic effect at every skill tier (e.g. at OVR 95, clu 40→99 raises major win rate from
+  ~5.1% to ~8.0%); re-ran the same Monte Carlo against the actual in-file `simRound()` via Playwright and got
+  matching results. A full simulated 30-year career with a strong (OVR ~93) build landed at 63 wins / 9
+  majors — the same neighborhood as the greatest real careers ever (Nicklaus: 73 wins/18 majors, Tiger: 82
+  wins/15 majors, both over similar ~25-30 year spans), not blowing past them. The new SQL cap was verified
+  against a local Postgres instance: a genuine $120M OVR-99/year-30 season posts untouched, the exact
+  theoretical max ($147,362,464) posts untouched, and a forged $500M OVR-55 claim still gets correctly
+  clamped (to $110M). Full regression suite (final/menu, guest daily gating, FedEx playoffs/cup Monte Carlo,
+  Legend Token gating, off-season decline, mid-season save/resume, retirement gating, the full Legend
+  Circuit playthrough, past-champion exemptions) still green, zero page errors — same pre-existing unrelated
+  fixture artifact in `test_retire_resume.mjs` as every prior session.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
