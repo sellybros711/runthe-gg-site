@@ -2030,6 +2030,29 @@ allows Google Fonts, or self-host Anton.*
   in to post your score", signed-in sees the original "Unclaimed" copy) with a full-page screenshot. Zero
   page errors throughout.
 
+- **CS65 — Expanded draft archetypes (9 → 38 outcomes).** Owner: "can we expand on the archetypes when a
+  user drafts a golfer? i want there to be more options." The post-draft identity reveal on `scrBuild()`
+  (`archetype(p)`) previously had only 9 possible outcomes: 8 single-skill specialists (Bomber/Marksman/
+  Surgeon/Magician/Escape Artist/Sandman/Assassin/Closer, one per CATS skill) plus one balanced-elite case
+  ("The Complete Player"). Expanded to 38 total:
+  1. **28 new two-skill "dual-threat" combo archetypes** (`ARCH_PAIR`, one per unordered pair of the 8
+     skills — e.g. dist+acc="The Total Package", dist+scr="Bomb and Gouge", put+clu="Mr. Sunday",
+     app+put="The Executioner") — triggered when the top two skills are within 6 points of each other and
+     both clearly ahead of the field, via a new `pairKey(a,b)` canonicalizer keyed on CATS order.
+  2. **Split the old single balanced case into two**: kept "The Complete Player" for balanced-and-elite
+     (mx-mn≤10, mean≥84), added "The Journeyman" ("Steady across the board, no real holes") for
+     balanced-but-not-elite builds, so a mediocre-but-even draft gets its own identity instead of just
+     falling through to whichever skill happened to be nominally highest.
+  3. Kept all 8 original single-skill archetypes unchanged, now used only when one skill clearly dominates
+     (gap >6 over the 2nd-highest, or no close pair entry found).
+  Verified: all 28 `ARCH_PAIR` entries reachable and correctly keyed; edge cases (all-equal-elite,
+  all-equal-low, pure single-skill dominance, close pairs, 3-way-close ties) all resolve correctly; 5000
+  random skill draws produced 36 distinct outcomes with zero crashes and zero undefined names (the
+  remaining 2 — Complete Player/Journeyman — are rare under independent-uniform sampling since they need
+  all 8 skills within a 10-point band, confirmed separately via the edge cases); visual check on the real
+  Build screen renders the new names/descriptions in the existing gold-italic style; full regression suite
+  (menu, guest course-record copy, footer nav) still green with zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
