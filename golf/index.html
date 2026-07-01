@@ -2784,7 +2784,9 @@ function header(){
   const pl=$(`<button class="pill" aria-label="${signedIn?'Your profile':'Sign in'}">${swingIcon()} ${signedIn?esc(sbUsername||'Player'):'Sign in'}</button>`);
   pl.onclick=()=>{ if(sbSignedIn()){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} render(); };
   pills.appendChild(pl);
-  const rs=$(`<button class="pill">${resetIcon()} Reset</button>`); rs.onclick=()=>{ if(S.screen==='title'){reset();render();} else {S.overlay='confirmReset';render();} };
+  // Always confirm — this retires a saved career, not just the in-progress screen, so it must never
+  // fire silently just because you happened to already be on the title screen.
+  const rs=$(`<button class="pill">${resetIcon()} Reset</button>`); rs.onclick=()=>{ S.overlay='confirmReset'; render(); };
   pills.appendChild(rs);
   h.appendChild(pills);
   return h;
@@ -3236,15 +3238,30 @@ function overlayLeaderboard(screen){
   screen.appendChild(ov);
 }
 function overlayConfirmReset(screen){
+  // Reset used to only clear the in-progress DRAFT (bag_resume), never the actual saved career
+  // franchise (bag_careersave) — so confirming it still left "Resume Career Mode" sitting right there
+  // on the title screen afterward, looking like the button hadn't done anything. It now genuinely
+  // retires whatever golfer/career is active, same as reaching the end of a career normally would.
+  const hasActive=!!(careerSaveInfo()||resumeInfo());
+  const title=hasActive?'Retire your golfer & start over?':'Start over?';
+  const body=hasActive
+    ? `This retires your current golfer and career in progress — once you start over there's no way back to them. Your lifetime stats, achievements, and Hall of Fame are always safe, they carry over untouched.`
+    : `This starts you fresh from the title screen. Your lifetime stats, achievements, and Hall of Fame are always safe, they carry over untouched.`;
+  const btnLabel=hasActive?'Retire & Start New Career':'Start Fresh';
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
-    <h3>Start over?</h3>
-    <p class="lede">This clears your current golfer and season. Your record and Hall of Fame are kept.</p>
-    <button class="btn red">Reset everything</button>
+    <h3>${title}</h3>
+    <p class="lede">${body}</p>
+    <button class="btn red">${btnLabel}</button>
     <button class="btn ghost cancel" style="margin-top:10px">Cancel</button></div>`);
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.cancel').onclick=()=>{S.overlay=null;render();};
-  ov.querySelector('.red').onclick=()=>{clearResume();reset();render();};
+  ov.querySelector('.red').onclick=()=>{
+    clearCareerSave();   // retires the saved franchise so "Resume Career Mode" can never reappear
+    clearResume();       // drops any in-progress (never-saved) draft golfer too
+    reset();             // fresh S — also lands on the title screen
+    render();
+  };
   screen.appendChild(ov);
 }
 function overlayDailyDone(screen){
@@ -3293,7 +3310,7 @@ function overlayMenu(screen){
   const acct=$(`<div style="margin-bottom:16px"></div>`);
   acct.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Account</div>`));
   acct.appendChild(menuRow(signedIn?'👤':'🔑',signedIn?(sbUsername||'Your account'):'Sign in',signedIn?(sbEmail()||'Signed in'):'Save your career & post to the leaderboards',go(()=>{ if(signedIn){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} })));
-  acct.appendChild(menuRow('↺','Reset','Start over from the title screen',go(()=>{ if(S.screen==='title'){reset();} else {S.overlay='confirmReset';} })));
+  acct.appendChild(menuRow('↺','Reset','Retire your current golfer & start over',go(()=>{S.overlay='confirmReset';})));
   ov.appendChild(acct);
   const info=$(`<div style="margin-bottom:6px"></div>`);
   info.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">About</div>`));
