@@ -2559,7 +2559,7 @@ function footer(){
   fp.appendChild($(`<a class="pill" href="${mail}" style="text-decoration:none">✉ Questions or Comments</a>`));
   const a2h=$(`<div class="pill" style="cursor:pointer">▣ Add to Home</div>`); a2h.onclick=installApp;
   fp.appendChild(a2h);
-  fp.appendChild($(`<a class="pill" href="/" target="_blank" rel="noopener" style="text-decoration:none;border-color:var(--teal);color:var(--teal)">↗ Try RunThePitch</a>`));
+  fp.appendChild($(`<a class="pill" href="/" target="_blank" rel="noopener" style="text-decoration:none;border-color:var(--teal);color:var(--teal)">↗ <span style="font-style:italic;opacity:.8">Love soccer?</span> Try RunThePitch</a>`));
   f.appendChild(fp);
   const links=$(`<div class="footlinks"></div>`);
   const mk=(t,fn)=>{const s=$(`<span style="cursor:pointer">${t}</span>`); s.onclick=fn; return s;};
