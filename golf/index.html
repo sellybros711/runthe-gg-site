@@ -3513,7 +3513,11 @@ function scrSetup(){
 
   if(guest){
     // ---- guests: limited to gender/skin/hair; everything else is an account perk (the conversion nudge) ----
-    const lock=$(`<div style="margin-top:16px;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(235,166,31,.08),rgba(10,22,38,.25));padding:15px 15px 14px">
+    right.appendChild(setupHeader('Name'));
+    const nameLock=$(`<div style="position:relative"><input class="name" disabled placeholder="Your Golfer" style="opacity:.45;cursor:not-allowed"></div>`);
+    right.appendChild(nameLock);
+    right.appendChild($(`<div class="small muted" style="margin:5px 0 14px 2px">🔒 Sign in to your RunThe.gg account to add a name.</div>`));
+    const lock=$(`<div style="margin-top:2px;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(235,166,31,.08),rgba(10,22,38,.25));padding:15px 15px 14px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:18px">🔒</span><b style="color:var(--gold);font-size:14.5px">Unlock the full locker room</b></div>
       <div class="small muted" style="margin-bottom:12px;line-height:1.5">A free account lets you <b style="color:var(--oncard)">name your golfer</b>, fly your <b style="color:var(--oncard)">country's flag</b>, play <b style="color:var(--oncard)">left-handed</b>, and pick your <b style="color:var(--oncard)">shirt, hat colours &amp; patterns</b> — plus it saves your career and posts you to the global leaderboards.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn goldfill" id="setup-signup" style="width:auto;flex:1 1 160px;padding:11px">Create free account ▸</button><button class="btn ghost" id="setup-signin" style="width:auto;flex:0 0 auto;padding:11px 18px">Sign in</button></div></div>`);
@@ -4076,7 +4080,7 @@ function startSeason(majorsOnly){
   const field=roster.map(g=>Object.assign({you:false},g));
   field.push(me);
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0,toPar:0,rounds:0}]))};
-  S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0;
+  S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0; S.seasonRank=null;
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false;   // unlocked during THIS season (shown on the summary)
   S.curEvt=null;
   track('season_started',{mode:S.daily?'daily':(majorsOnly?'majors':'full'),ovr:Math.round(me.skill),year:S.year||1});
@@ -5318,10 +5322,11 @@ function scrSummary(){
       recordAchEvent(sev);
       const fresh=evaluateAch(); if(fresh.length) S.freshAch=(S.freshAch||[]).concat(fresh);
     }
-    // post to the public leaderboard (no-op unless signed in + backend live; daily excluded)
+    // post to the public leaderboard (guests post anonymized; no-op only if the backend's offline)
     if(!S.daily) sbSubmitSeason({golfer:me.name,ovr,year:S.year||1,earnings:t.money,net:ec.net,wins:t.wins,majors:t.majors,
       careerId:(S.careerSeed!=null?String(S.careerSeed):null),
-      skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))});
+      skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))})
+      .then(()=>loadSeasonRank(t.money));   // fetch "ranked #N of M all-time" once the post attempt settles
     } else {
       // Legend Circuit seasons: much simpler bookkeeping in its OWN S.circuitCareer object — the
       // regular career's achievements/rivalry/world-ranking/season-awards/public-leaderboard are all
@@ -5360,6 +5365,18 @@ function scrSummary(){
     LS.set(acctKey('bag_daily'),{date:S.dailySeed,done:true,result:{name:me.name,ovr,net:ec.net,money:t.money,moneyRank,N,wins:t.wins,majors:t.majors,best:t.best}});}
   const circuitYear=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):(S.year||1);
   add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':(S.circuitMode?('Legend Circuit · Year '+circuitYear+' complete'):(S.year>1?('Career Mode · Year '+S.year+' complete'):'Season complete'))}</span></div>`));
+  // "how did my season rank amongst every season ever posted" — resolves async (see loadSeasonRank);
+  // simply omitted until it lands (or if the backend never answers), same fail-open style as elsewhere.
+  if(!S.daily && !S.circuitMode && S.seasonRank){
+    const sr=S.seasonRank;
+    const rankNode=add($(`<div class="center" style="margin:10px 0 2px">
+      <div class="scout" style="display:inline-block;padding:12px 18px">
+        <div class="small muted" style="letter-spacing:.1em;text-transform:uppercase;font-weight:800">All-time leaderboard</div>
+        <div style="font:800 16px/1.3 var(--body);color:var(--gold);margin-top:5px">Your season ranked #${Number(sr.rank).toLocaleString()} of ${Number(sr.total).toLocaleString()} all-time</div>
+        <button class="btn gold lb-open" style="width:auto;margin-top:9px;padding:9px 16px;font-size:12px">🏆 View Leaderboard</button>
+      </div></div>`));
+    rankNode.querySelector('.lb-open').onclick=()=>{S.overlay='leaderboard';render();};
+  }
   // Race to the Cup outcome — champion, eliminated, or finished the season in the standings
   if(!S.daily){
     const el=S.season.eliminated, champ=S.season.cupChampion;
@@ -5659,7 +5676,7 @@ function continueFranchise(){
   applyPlayerDecline();                    // your bag erodes from year 15 (re-spins fight it)
   // record what each skill dropped this off-season so the tune-up screen can show it
   const _decline={}; CATS.forEach(c=>{ const sl=S.slots[c.k]; if(sl&&_pre[c.k]!=null){ const d=sl.value-_pre[c.k]; if(d<0) _decline[c.k]=d; } });
-  S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false;
+  S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false; S.seasonRank=null;
   // off-season tune-up: re-spin to swap fresh skills in (now also to repair age decline)
   const _perk=repPerk(); S.offseason={changes:0,maxChanges:_perk.changes,reSpins:_perk.reSpins,decline:_decline}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
   track('offseason_start',{year:S.year});
@@ -7268,18 +7285,27 @@ const PENDING_SEASONS_KEY='bag_pending_seasons';
 function loadPendingSeasons(){ const a=LS.get(PENDING_SEASONS_KEY,[]); return Array.isArray(a)?a:[]; }
 function savePendingSeasons(a){ LS.set(PENDING_SEASONS_KEY, a.slice(-200)); }   // cap keeps storage bounded
 async function flushPendingSeasons(){
-  if(!sb || !sbUser) return;                 // can only post signed in; retried on the next trigger
+  if(!sb) return;                             // no backend at all; retried on the next trigger
   const q=loadPendingSeasons(); if(!q.length) return;
   const keep=[]; let posted=0;
+  const guest=!sbUser;                        // signed-out seasons post anonymized, not held forever
   for(const s of q){
     try{
       // supabase-js RESOLVES (doesn't throw) on a Postgres/PostgREST error — e.g. the RPC's own
       // `raise exception` for "set a username first" comes back as {error}, not a rejection. The old
       // code never checked `error` here, so a rejected submission was silently counted as posted and
       // dropped from this retry queue forever — the exact bug behind seasons vanishing without a trace.
-      const {error}=await sb.rpc('runtour_submit_season',{p_golfer:s.golfer,p_ovr:s.ovr,p_year:s.year,
-        p_earnings:Math.round(s.earnings||0),p_net:Math.round(s.net||0),p_wins:s.wins,p_majors:s.majors,
-        p_skills:s.skills,p_career_id:s.careerId||null,p_rep_pts:(s.repPts!=null?s.repPts:achPoints())});
+      let error;
+      if(guest){
+        // no identity is sent at all — the server hardcodes 'Anonymous' / 'Guest Player' regardless
+        ({error}=await sb.rpc('runtour_submit_season_guest',{p_ovr:s.ovr,p_year:s.year,
+          p_earnings:Math.round(s.earnings||0),p_net:Math.round(s.net||0),p_wins:s.wins,p_majors:s.majors,
+          p_skills:s.skills,p_career_id:s.careerId||null}));
+      } else {
+        ({error}=await sb.rpc('runtour_submit_season',{p_golfer:s.golfer,p_ovr:s.ovr,p_year:s.year,
+          p_earnings:Math.round(s.earnings||0),p_net:Math.round(s.net||0),p_wins:s.wins,p_majors:s.majors,
+          p_skills:s.skills,p_career_id:s.careerId||null,p_rep_pts:(s.repPts!=null?s.repPts:achPoints())}));
+      }
       if(error) throw error;
       posted++;
     }catch(e){ console.error('[RunTheTour] season submit failed, keeping for retry:', (e&&e.message)||e, s); keep.push(s); }
@@ -7292,6 +7318,18 @@ async function sbSubmitSeason(s){
   if(s.repPts==null) s.repPts=achPoints();    // capture rep at completion time, not at flush time
   const q=loadPendingSeasons(); q.push(s); savePendingSeasons(q);
   await flushPendingSeasons();
+}
+// "how highly did my season rank amongst every season ever posted" — fetched once per finished
+// season (from scrSummary, chained after sbSubmitSeason so the just-posted row is usually already
+// counted) and cached on S.seasonRank; renders a card + Leaderboard button once it resolves.
+async function loadSeasonRank(earnings){
+  if(!sb) return;
+  try{
+    const {data,error}=await sb.rpc('runtour_season_rank',{p_earnings:Math.round(earnings||0)});
+    if(error || !data || !data.length) return;
+    S.seasonRank=data[0];
+    render();
+  }catch(e){ /* fail open — the summary just shows no rank message */ }
 }
 // fetch ONE board for the given (tab, sort) into lbCache[`${tab}:${sort}`]. Falls back to the legacy
 // (no p_sort) call so the board still loads before migration 28 is applied.
