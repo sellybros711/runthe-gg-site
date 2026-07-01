@@ -2760,6 +2760,48 @@ allows Google Fonts, or self-host Anton.*
   daily-challenge, bag_career scoping, CS83 leaderboard, CS84 render safety net, CS85 reset flow) still
   green.
 
+- **CS87 — root cause found: `null is not an object (evaluating 's.months')` crashing setup + Trophy Room.**
+  CS86's error-surfacing paid off immediately: the owner's next two screenshots showed the exact same
+  message on both crash sites — `setup: null is not an object (evaluating 's.months')` and
+  `record: null is not an object (evaluating 's.months')`. That line only exists in `spotState()`
+  (`const s=LS.get(acctKey('bag_special'),{...}); s.months=s.months||{};`), reached from the setup
+  screen's kit-pattern unlock check (`spotWins()>=1` gates the Polka Dot pattern) and from the Trophy
+  Room's `badgeMetrics()`/trophy-cabinet build (same unlock check feeds the cabinet).
+  Root cause: `LS.get(k,d)` only substitutes its default `d` when the localStorage key is missing
+  entirely — `v==null` — not when the key EXISTS but its parsed value is JS `null`. Every one of
+  `mergeStreak`/`mergeDailyStats`/`mergeAch`/`mergeSpecial` (CS82's cloud-sync merge functions) had
+  `if(!server) return local;` as their first line — so for an account that had never touched
+  streaks/daily-challenge-stats/achievements/Monthly-Spotlight from ANY device (both `local` and the
+  pulled `server` value are `null`), the merge returned `local`, i.e. `null` — and `cloudPull()` then
+  did `LS.set(acctKey('bag_special'), null)`, writing the literal string `"null"` into that key
+  forever after. From that point, `spotState()`'s `LS.get(...)` call returned real JS `null` (not its
+  default), and `s.months=...` on a null `s` threw — reproducing on every future load, in every place
+  that ever calls `spotState()`/`spotWins()` (kit unlock checks, Trophy Room's Spotlight badge line,
+  achMetrics()). The exact same "both sides empty → returns null → gets written to localStorage →
+  poisons every future unguarded read" pattern also existed for `bag_streak` (`streakFreezes()`,
+  `bumpStreak()`, `achMetrics()`'s `sk` var) and `bag_ach`/`bag_dailystats` (`achState()`, `dailyStats()`)
+  — this owner's account happened to hit it via Spotlight specifically, but it was a live landmine
+  under three other features too, just not yet triggered for this account.
+  Fixed at both ends: `mergeStreak`/`mergeDailyStats`/`mergeAch`/`mergeSpecial` now fall back to their
+  reader's own empty-shape default (`{current:0,longest:0,...}` etc.) instead of a bare `local` that
+  could itself be null, so `cloudPull()` can never write a literal `null` into any of these four keys
+  again. And — defense in depth, since the fix above only stops FUTURE writes, not whatever's already
+  sitting in this (or any other affected) account's `localStorage` right now — every reader that
+  touches one of these keys (`spotState`, `achState`, `dailyStats`, `streakFreezes`, `bumpStreak`,
+  `achMetrics`'s `sk`) now also coalesces a null `LS.get()` result to the same default before touching
+  a sub-property, so an already-poisoned key silently self-heals the next time any of these run — no
+  explicit migration needed. (`mergeCareerSave` was deliberately left alone: its `null` is a legitimate,
+  already-guarded "no career saved yet" sentinel every consumer already null-checks, unlike these four.)
+  Verified in Playwright: with `bag_special`/`bag_ach`/`bag_dailystats`/`bag_streak` all pre-poisoned to
+  the literal string `"null"` (reproducing exactly what a stale account would have), every one of
+  `spotState()`/`achState()`/`dailyStats()`/`streakFreezes()`/`bumpStreak()`/`achMetrics()` now returns
+  a safe default instead of throwing; the setup screen and Trophy Room both render cleanly with a
+  poisoned `bag_special`, matching the owner's exact repro; and a simulated `cloudPull()` for a
+  brand-new account with nothing local and nothing on the "server" for any of these four keys no longer
+  writes literal `null` into any of them. Full regression suite (final/menu, daily-challenge, bag_career
+  scoping, cloud-save cross-device, CS83 leaderboard, CS84/86 render safety nets, CS85 reset flow) still
+  green.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -951,8 +951,11 @@ const ACH_TOTAL=ACH.length, ACH_TOTAL_PTS=ACH.reduce((s,a)=>s+a.pts,0);
 // Tour Rep ranks scale to the total points available (thresholds as % of all points)
 const REP_TIERS=[['Amateur',0],['Journeyman',.06],['Tour Pro',.15],['Contender',.28],['Star',.45],['Champion',.62],['Legend',.80],['Icon',.96]]
   .map(([name,f])=>({name, at:Math.round(f*ACH_TOTAL_PTS)}));
-function achState(){ const s=LS.get(acctKey('bag_ach'),{unlocked:{},flags:{},pts:0}); s.unlocked=s.unlocked||{}; s.flags=s.flags||{}; return s; }
-function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const ds=dailyStats(); const sk=LS.get(acctKey('bag_streak'),{});
+// LS.get's default only applies when the key is missing entirely — a key whose stored value is the
+// literal `null` (see mergeAch/mergeStreak/etc. below) comes back as null, not the default, so every
+// reader here also needs its own `||{...}` fallback before touching a sub-property.
+function achState(){ const s=LS.get(acctKey('bag_ach'),{unlocked:{},flags:{},pts:0})||{unlocked:{},flags:{},pts:0}; s.unlocked=s.unlocked||{}; s.flags=s.flags||{}; return s; }
+function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const ds=dailyStats(); const sk=LS.get(acctKey('bag_streak'),{})||{};
   return Object.assign({}, f, {
     wins:lt.wins, majors:lt.majors, top10:lt.top10, made:lt.made, played:lt.played, earnings:lt.earnings, net:lt.net,
     profitSeasons:lt.profitSeasons, ironSeasons:lt.ironSeasons, moneyLeaderSeasons:lt.moneyLeaderSeasons,
@@ -1178,8 +1181,8 @@ function startDaily(){
 function yesterdayKey(){const d=new Date();d.setUTCDate(d.getUTCDate()-1);return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate();}
 function twoDaysAgoKey(){const d=new Date();d.setUTCDate(d.getUTCDate()-2);return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate();}
 const STREAK_MILES=[3,7,14,30,60,100];                       // milestone lengths (recognition; freeze at 7/30/100)
-function streakFreezes(){ const ds=LS.get(acctKey('bag_streak'),{}); return ds.freezes||0; }
-function bumpStreak(){const ds=LS.get(acctKey('bag_streak'),{current:0,longest:0,last:null,freezes:0,miles:{}}); const t=todayKey();
+function streakFreezes(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.freezes||0; }
+function bumpStreak(){const ds=LS.get(acctKey('bag_streak'),{current:0,longest:0,last:null,freezes:0,miles:{}})||{current:0,longest:0,last:null,freezes:0,miles:{}}; const t=todayKey();
   if(ds.last===t)return ds;
   ds.freezes=ds.freezes||0; ds.miles=ds.miles||{}; ds._usedFreeze=false; ds._gotFreeze=false; ds._mile=0;
   if(ds.last===yesterdayKey()) ds.current=(ds.current||0)+1;                       // played on consecutive days
@@ -1195,7 +1198,7 @@ function streakDisplay(){const ds=LS.get(acctKey('bag_streak'),null); if(!ds||!d
 /* ---------- lifetime daily record (Wordle-style) — total days played vs how often you beat the pro ----------
    Counts ONE play per day (first completion) and ONE "beat the pro" per day. A tie counts as a loss, so
    "beat" requires strictly bettering the tour average (won = total < avg, decided by your best of the day). */
-function dailyStats(){ const st=LS.get(acctKey('bag_dailystats'),{played:0,beat:0,lastDay:null,wonDays:{}}); st.wonDays=st.wonDays||{}; return st; }
+function dailyStats(){ const st=LS.get(acctKey('bag_dailystats'),{played:0,beat:0,lastDay:null,wonDays:{}})||{played:0,beat:0,lastDay:null,wonDays:{}}; st.wonDays=st.wonDays||{}; return st; }
 function bumpDailyStats(won){ const t=todayKey(); const st=dailyStats();
   if(st.lastDay!==t){ st.played=(st.played||0)+1; st.lastDay=t; }            // each calendar day counts once
   if(won && !st.wonDays[t]){ st.beat=(st.beat||0)+1; st.wonDays[t]=1; }      // a later attempt can flip a day to a win
@@ -2011,7 +2014,7 @@ function monthlySpotlightFor(Y,M){ const mk=Y*100+M, h=_spotHash(mk);
   return {mk,Y,M,key,cond,dom,liveDayKey:Y*10000+M*100+dom,month:MONTH_NAMES[M-1],name:`${MONTH_NAMES[M-1]} Spotlight`}; }
 function monthlySpotlight(dayKey){ const d=_ymd(dayKey||todayKey()); return monthlySpotlightFor(d.Y,d.M); }
 function spotlightLiveToday(){ return monthlySpotlight(todayKey()).liveDayKey===todayKey(); }
-function spotState(){ const s=LS.get(acctKey('bag_special'),{wins:0,played:0,months:{}}); s.months=s.months||{}; return s; }
+function spotState(){ const s=LS.get(acctKey('bag_special'),{wins:0,played:0,months:{}})||{wins:0,played:0,months:{}}; s.months=s.months||{}; return s; }
 function spotWins(){ return spotState().wins||0; }
 function spotMonthRec(mk){ return spotState().months[mk]||null; }
 function spotAttempts(mk){ const r=spotMonthRec(mk); return r?(r.attempts||0):0; }
@@ -7282,24 +7285,34 @@ function mergeLegendTokens(local, server){
   server.forEach(t=>{ if(!t||!t.id) return; const cur=byId[t.id]; if(!cur) byId[t.id]=Object.assign({},t); else cur.used=!!(cur.used||t.used); });
   return Object.values(byId);
 }
+// These four (unlike mergeCareerSave, whose null IS a meaningful "no career saved yet" that every
+// consumer already null-checks) back readers that immediately do `x.someProp` with no guard on `x`
+// itself — `if(!server) return local` returning a null `local` (both sides genuinely empty, e.g. an
+// account that's never touched streaks/daily/achievements/Spotlight from ANY device) used to write a
+// literal `null` into that key via the LS.set() this feeds, poisoning every future read of it. Falling
+// back to the same empty-shape default their reader functions use closes that off at the source.
 function mergeStreak(local, server){
-  if(!server) return local; if(!local) return server;
+  const empty={current:0,longest:0,last:null,freezes:0,miles:{}};
+  if(!server) return local||empty; if(!local) return server;
   if((server.last||0)>(local.last||0)) return server;
   if((local.last||0)>(server.last||0)) return local;
   return Object.assign({},local,{current:Math.max(local.current||0,server.current||0), longest:Math.max(local.longest||0,server.longest||0),
     freezes:Math.max(local.freezes||0,server.freezes||0), miles:Object.assign({},server.miles,local.miles)});
 }
 function mergeDailyStats(local, server){
-  if(!server) return local; if(!local) return server;
+  const empty={played:0,beat:0,lastDay:null,wonDays:{}};
+  if(!server) return local||empty; if(!local) return server;
   return { played:Math.max(local.played||0,server.played||0), beat:Math.max(local.beat||0,server.beat||0),
     lastDay:Math.max(local.lastDay||0,server.lastDay||0), wonDays:Object.assign({},server.wonDays,local.wonDays) };
 }
 function mergeAch(local, server){
-  if(!server) return local; if(!local) return server;
+  const empty={unlocked:{},flags:{},pts:0};
+  if(!server) return local||empty; if(!local) return server;
   return { unlocked:Object.assign({},server.unlocked,local.unlocked), flags:Object.assign({},server.flags,local.flags), pts:Math.max(local.pts||0,server.pts||0) };
 }
 function mergeSpecial(local, server){
-  if(!server) return local; if(!local) return server;
+  const empty={wins:0,played:0,months:{}};
+  if(!server) return local||empty; if(!local) return server;
   return { wins:Math.max(local.wins||0,server.wins||0), played:Math.max(local.played||0,server.played||0), months:Object.assign({},server.months,local.months) };
 }
 let _cloudPushT=null, _cloudSyncing=false;
