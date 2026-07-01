@@ -2485,8 +2485,8 @@ function resetIcon(){return `<svg viewBox="0 0 24 24" fill="none" stroke="curren
 function header(){
   const h=$(`<div class="head"></div>`);
   const top=$(`<div class="topbar"></div>`);
-  const menu=$(`<button class="icobtn" aria-label="How to play" aria-expanded="${S.screen==='rules'?'true':'false'}">≡</button>`);
-  menu.onclick=openRules;
+  const menu=$(`<button class="icobtn" aria-label="Menu" aria-expanded="${S.overlay==='menu'?'true':'false'}">≡</button>`);
+  menu.onclick=()=>{ S.overlay='menu'; render(); };
   top.appendChild(menu);
   h.appendChild(top);
   h.appendChild($(`<div class="crestrow">${crestSVG()}
@@ -2568,6 +2568,7 @@ function render(){
   if(S.overlay==='about') overlayAbout(app);
   if(S.overlay==='privacy') overlayPrivacy(app);
   if(S.overlay==='terms') overlayTerms(app);
+  if(S.overlay==='menu') overlayMenu(app);
   ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult})[S.screen]();
   paintAvatars();   // recolor any avatar canvases just added to the DOM
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
@@ -2962,6 +2963,44 @@ function overlayDailyDone(screen){
     <button class="btn gold" id="dd-records" style="margin-bottom:8px">Course Records</button>
     <button class="btn red">Close</button></div>`);
   const rb=ov.querySelector('#dd-records'); if(rb) rb.onclick=()=>{S.overlay='courserecords';render();};
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  screen.appendChild(ov);
+}
+// top-left ≡ menu: real navigation, reachable from every screen without losing your place (it's just
+// an overlay — closing it, or picking an item, always returns/goes to that screen's normal state).
+function menuRow(icon,label,sub,fn){
+  const row=$(`<button class="btn ghost" style="display:flex;align-items:center;gap:12px;text-align:left;padding:11px 13px;margin-bottom:7px"><span style="font-size:19px;flex:0 0 auto;width:24px;text-align:center">${icon}</span><span style="flex:1;min-width:0"><span style="display:block;font-weight:800;font-size:14px;color:var(--oncard)">${esc(label)}</span>${sub?`<span style="display:block;font-size:11.5px;color:var(--muted);margin-top:1px;font-weight:600">${esc(sub)}</span>`:''}</span><span style="color:var(--muted);flex:0 0 auto">›</span></button>`);
+  row.onclick=fn; return row;
+}
+function overlayMenu(screen){
+  const signedIn=sbSignedIn();
+  const go=(fn)=>()=>{ S.overlay=null; fn(); render(); };
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Menu">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Menu</h3></div>`);
+  const play=$(`<div style="margin-bottom:16px"></div>`);
+  play.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Play</div>`));
+  play.appendChild(menuRow('🏠','Home','Title screen',go(()=>{S.screen='title';})));
+  play.appendChild(menuRow('📖','How to Play','Career mode & daily challenge',go(openRules)));
+  play.appendChild(menuRow('🏆','Leaderboard','Season & career rankings',go(()=>{S.overlay='leaderboard';})));
+  play.appendChild(menuRow('🏅','Trophy Room',signedIn?'Your badges, titles & Legend Tokens':'Sign in to unlock your record',go(()=>{S.overlay='record';})));
+  play.appendChild(menuRow('⛳','Course Records','Today\'s board & all-time bests',go(()=>{S.overlay='courserecords';})));
+  ov.appendChild(play);
+  const acct=$(`<div style="margin-bottom:16px"></div>`);
+  acct.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Account</div>`));
+  acct.appendChild(menuRow(signedIn?'👤':'🔑',signedIn?(sbUsername||'Your account'):'Sign in',signedIn?(sbEmail()||'Signed in'):'Save your career & post to the leaderboards',go(()=>{ if(signedIn){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} })));
+  acct.appendChild(menuRow('↺','Reset','Start over from the title screen',go(()=>{ if(S.screen==='title'){reset();} else {S.overlay='confirmReset';} })));
+  ov.appendChild(acct);
+  const info=$(`<div style="margin-bottom:6px"></div>`);
+  info.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">About</div>`));
+  info.appendChild(menuRow('ℹ️','About','Who\'s behind Run The Tour',go(()=>{S.overlay='about';})));
+  info.appendChild(menuRow('🔒','Privacy','What we collect, and why',go(()=>{S.overlay='privacy';})));
+  info.appendChild(menuRow('📜','Terms','Terms of use',go(()=>{S.overlay='terms';})));
+  info.appendChild(menuRow('✉️','Contact','Questions or feedback',()=>{ location.href='mailto:sellybros711@gmail.com?subject='+encodeURIComponent('RunTheTour, Questions / Comments'); }));
+  info.appendChild(menuRow('▣','Add to Home Screen','Install as an app',()=>{ S.overlay=null; render(); installApp(); }));
+  ov.appendChild(info);
+  ov.appendChild($(`<button class="btn red">Close</button>`));
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
   screen.appendChild(ov);
@@ -5644,7 +5683,8 @@ function scrDailyPreview(){
     <div class="small muted" style="text-transform:uppercase;letter-spacing:.12em;font-weight:800">Your target · beat the tour average</div>
     <div style="margin-top:4px"><span class="mono" style="font-weight:800;font-size:30px;color:var(--gold)">${dAvgTxt(av)}</span> <span class="small muted">(${(c.par+av).toFixed(1)} on a par ${c.par})</span></div>
     <div class="small muted" style="margin-top:3px">What real tour pros average here. Post a lower round to win the day.</div></div>`));
-  const recTxt=rec?`<b style="color:var(--gold)">${dtp(rec.toPar)} (${c.par+rec.toPar})</b> by ${esc(rec.name)}`:`<b style="color:var(--gold)">Unclaimed</b>, be the first to set it`;
+  const recTxt=rec?`<b style="color:var(--gold)">${dtp(rec.toPar)} (${c.par+rec.toPar})</b> by ${esc(rec.name)}`
+    :(sbSignedIn()?`<b style="color:var(--gold)">Unclaimed</b>, be the first to set it`:`<b style="color:var(--gold)">Sign in</b> to post your score`);
   add($(`<div class="scout" style="max-width:560px;margin:12px auto 0;text-align:center"><div class="small muted" style="text-transform:uppercase;letter-spacing:.12em;font-weight:800">Course record</div><div style="margin-top:4px">${recTxt}</div></div>`));
   add($(`<h2 class="center" style="margin:16px 0 8px;font-size:15px">Signature holes</h2>`));
   const sig=$(`<div class="board" style="max-width:560px;margin:0 auto"></div>`);
