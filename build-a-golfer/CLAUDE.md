@@ -2557,6 +2557,59 @@ allows Google Fonts, or self-host Anton.*
   decline, mid-season save/resume, retirement gating, Legend Circuit playthrough, past-champion exemptions)
   still green — same pre-existing unrelated fixture artifact in `test_retire_resume.mjs`.
 
+- **CS82 — full profile cloud save (career saves, Legend Tokens, streak, daily stats, achievements,
+  Spotlight).** Follow-up to CS81 (daily-attempt cap): "this should apply to everything... your profile
+  should look the same everywhere no matter what browser you are in. Saved careers, stats, etc." Owner
+  explicitly asked for caution given the size of the change and the real cost of getting it wrong (a career
+  save represents up to 42 years of progress).
+  Found a genuine, adjacent bug while scoping this: `career()` (lifetime badges/tee-tiers/build stats) read
+  and wrote the bare `'bag_career'` localStorage key directly, with NO account scoping at all — unlike
+  `bag_careersave`/`bag_streak`/`bag_daily`/etc., which were already scoped via `acctKey()`. Two different
+  accounts signed into the same browser would silently share (and overwrite) each other's lifetime stats.
+  Fixed first, in isolation, before touching anything else: `career()` now reads via `acctKey('bag_career')`
+  (which degrades to the old bare key for a signed-out guest, so guest behavior is provably unchanged), all
+  6 call sites that used to write `LS.set('bag_career', ...)` directly now go through one `saveCareerLifetime()`
+  setter, and a `migrateLegacyLifetimeStats()` (mirroring the existing `migrateLegacyCareerSave()` pattern)
+  adopts this browser's pre-existing data into the newly-scoped slot the first time it's empty — every
+  currently-signed-in player's own stats carry over untouched, only the previously-unguarded sharing is
+  closed. Verified with 5 scenarios (guest unchanged, two accounts no longer share/corrupt each other,
+  switching back restores the right account's own data untouched, migration adopts-once and doesn't
+  re-corrupt on repeat calls, migration never overwrites an account that already has its own data) plus a
+  live badge/trophy-room spot-check — all passed before moving on.
+  New migration `36_runtour_cloud_save.sql`: one JSONB blob per account (`runtour_cloud_save`), pushed via
+  an atomic, timestamp-guarded `runtour_cloud_save_push(data, client_ts)` (same "only write if actually
+  newer" pattern as 24/35 — `on conflict do update ... where client_ts >= existing`) and read via
+  `runtour_cloud_save_pull()`. Verified under real concurrency: 10 simultaneous pushes at different
+  timestamps, arriving in scrambled order, always converge on the single highest timestamp regardless of
+  arrival order — never a lost update, never a stale one winning a race.
+  Client-side merge is deliberately NOT a blind whole-bundle overwrite — each field merges with "can only
+  grow" semantics so a sync can add or preserve progress but never erase something already earned on either
+  side: Legend Tokens union by id (a token marked "used" on either device stays used, never un-spent);
+  streak/daily-stats/achievements/Spotlight take the max of every counter and union any map fields. The one
+  genuinely single-slot piece — the career save itself — uses its own existing `savedAt` stamp, newer wins;
+  worst case that ever rewinds one device to its last-synced checkpoint, never silently erases a whole
+  career. Deliberately excludes `bag_career` (already has its own working sync via `sbSyncStats`/
+  `sbPullStats` from an earlier session — added a second competing sync path for the same key would be how
+  this gets corrupted, not fixed) and device/UI preferences (autosim, dark mode, etc. — not "your profile").
+  Pull-and-merge runs once on sign-in (`cloudPull()`, alongside the other post-sign-in refreshes); a
+  debounced `cloudPush()` (1.2s, same pattern as the existing badge sync) fires from every meaningful
+  mutation point — season/career save, Legend Token earn/spend, streak bump, daily stats update,
+  achievement unlock, Spotlight result — so a burst of activity (e.g. a whole simulated season) collapses
+  into a single network call instead of one per event.
+  Verified end-to-end in Playwright with two isolated browser contexts sharing one fake server-state
+  object: Device A builds progress and pushes; Device B (completely fresh localStorage, same account)
+  correctly ADOPTS it on sign-in. Device B then earns a second, different Legend Token and pushes; Device A
+  pulling again correctly shows BOTH tokens (merged, not overwritten). Device A marks a token "used" locally
+  then pulls — the merge correctly refuses to un-spend it. Device A saves a genuinely newer career (higher
+  `savedAt`) and Device B's next pull correctly adopts it over its own older one. A broken/throwing RPC
+  leaves local state completely unchanged (fail-open, no crash). A full simulated 42-year career + Legend
+  Circuit playthrough with cloud sync active produced exactly one actual network push (the debounce
+  correctly collapsing dozens of trigger points from a fast headless run), zero page errors. Full existing
+  regression suite (final/menu, daily-challenge tests, guest daily claim flow, Legend Token gating,
+  off-season decline, mid-season save/resume, retirement gating, Legend Circuit playthrough, past-champion
+  exemptions, the bag_career scoping fix, the CS81 cross-device attempt-cap test) still green — same
+  pre-existing unrelated fixture artifact in `test_retire_resume.mjs`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
