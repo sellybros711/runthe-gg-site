@@ -9,10 +9,10 @@
 <meta name="theme-color" content="#0a1626" />
 <link rel="canonical" href="https://runthe.gg/" />
 
-<!-- Favicons -->
-<link rel="icon" href="/assets/runthepitch-favicon_48.png" sizes="any" />
-<link rel="icon" type="image/png" sizes="32x32" href="/assets/runthepitch-favicon_32.png" />
-<link rel="apple-touch-icon" sizes="180x180" href="/assets/runthepitch-apple-touch-icon_180.png" />
+<!-- Favicons — RunThe.GG emblem -->
+<link rel="icon" href="/assets/runthegames-emblem_48.png?v=1" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/runthegames-emblem_32.png?v=1" />
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/runthegames-emblem_180.png?v=1" />
 <link rel="manifest" href="/manifest.json" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -24,12 +24,12 @@
 <meta property="og:url" content="https://runthe.gg/" />
 <meta property="og:title" content="RunThe.GG — Free Online Games" />
 <meta property="og:description" content="Build a World Cup squad in RunThePitch, or live a 30-year golf career in RunTheTour. Free, no download, one account." />
-<meta property="og:image" content="https://runthe.gg/assets/runthepitch-og-image_1200x630.png?v=5" />
+<meta property="og:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png?v=1" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:site" content="@RunThePitch" />
+<meta name="twitter:site" content="@RunTheGG" />
 <meta name="twitter:title" content="RunThe.GG — Free Online Games" />
 <meta name="twitter:description" content="Free sports games from RunThe.GG. RunThePitch (World Cup) and RunTheTour (golf). One account, play them all." />
-<meta name="twitter:image" content="https://runthe.gg/assets/runthepitch-og-image_1200x630.png?v=5" />
+<meta name="twitter:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png?v=1" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -57,13 +57,10 @@
   .wrap{max-width:640px;margin:0 auto;padding:calc(30px + env(safe-area-inset-top,0px)) 18px 46px;}
 
   /* ---- masthead / wordmark ---- */
-  .brand{text-align:center;margin:8px 0 6px;}
-  .kicker{font-weight:800;letter-spacing:.34em;font-size:11px;text-transform:uppercase;color:var(--teal);}
-  .logo{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.02em;line-height:.9;
-    text-transform:uppercase;margin:8px 0 0;font-size:clamp(46px,13vw,74px);
-    text-shadow:0 4px 26px rgba(0,0,0,.5);}
-  .logo .run{color:var(--ink);} .logo .the{color:var(--ink);opacity:.62;} .logo .gg{color:var(--gold);}
-  .rule{display:flex;align-items:center;justify-content:center;gap:12px;margin:14px auto 0;max-width:260px;color:var(--gold);}
+  .brand{text-align:center;margin:2px 0 6px;}
+  .wordmark{display:block;width:100%;max-width:600px;height:auto;margin:0 auto;
+    filter:drop-shadow(0 6px 30px rgba(0,0,0,.45));}
+  .rule{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px auto 0;max-width:260px;color:var(--gold);}
   .rule .ln{height:2px;flex:1;background:linear-gradient(90deg,transparent,rgba(244,180,19,.6));}
   .rule .ln.r{background:linear-gradient(270deg,transparent,rgba(244,180,19,.6));}
   .tag{text-align:center;color:var(--mut);font-weight:600;margin:16px auto 4px;max-width:440px;line-height:1.5;font-size:15px;}
@@ -116,8 +113,7 @@
 <body>
   <div class="wrap">
     <header class="brand">
-      <div class="kicker">Free Online Games</div>
-      <h1 class="logo"><span class="run">Run</span><span class="the">The</span><span class="gg">.GG</span></h1>
+      <h1 style="margin:0;"><img class="wordmark" src="/assets/runthegames-wordmark.png?v=1" alt="Run The Games — RunThe.GG" width="2172" height="724" /></h1>
       <div class="rule"><span class="ln"></span>
         <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="none" stroke="#F4B413" stroke-width="1.2"/><circle cx="6" cy="6" r="1.6" fill="#F4B413"/></svg>
         <span class="ln r"></span></div>
@@ -152,7 +148,7 @@
     <div class="note">🎮 <b>More games on the way.</b> RunThe.GG is a growing home for quick, free sports games — one free account works across all of them.</div>
 
     <footer class="foot">
-      <span class="follow"><a href="https://x.com/RunThePitch" target="_blank" rel="noopener noreferrer">Follow <b>@RunThePitch</b> on X for news &amp; updates</a></span>
+      <span class="follow"><a href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">Follow <b>@RunTheGG</b> on X for news &amp; updates</a></span>
       <a href="/about.html">About</a><span class="sep">·</span>
       <a href="/privacy.html">Privacy</a><span class="sep">·</span>
       <a href="/contact.html">Contact</a>
