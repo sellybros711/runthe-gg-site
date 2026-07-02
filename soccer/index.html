@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 <script>
-  // Theme (light/dark) — apply BEFORE any CSS/paint to avoid a flash. Light is
+  // Theme (light/dark), apply BEFORE any CSS/paint to avoid a flash. Light is
   // the default; we only add the class when the user has chosen dark.
   (function(){
     try{ if(localStorage.getItem('rtp-theme')==='dark'){ document.documentElement.classList.add('dark'); } }catch(e){}
   })();
 </script>
 <script>
-  // Friendly mode parameter — must run first, before any library, any
+  // Friendly mode parameter, must run first, before any library, any
   // DOMContentLoaded, or the large bottom script. Capturing the raw param here
   // guarantees the incoming-challenge signal survives even if a later script
   // throws before the routing code runs (the cause of recipients landing on the
@@ -22,13 +22,13 @@
         window.__FRIENDLY_RAW = fp;       // raw param, stored before anything can clear it
         window.__FRIENDLY_INCOMING = true;
       }
-      // Short Supabase challenge code (?c=ABC123) — the new, link-safe transport.
+      // Short Supabase challenge code (?c=ABC123), the new, link-safe transport.
       const cc = urlParams.get('c');
       if (cc) {
         window.__CHALLENGE_CODE = cc;
         window.__FRIENDLY_INCOMING = true;
       }
-      // Watch-the-match link (?w=ABC123) — Player A watches Player B's result.
+      // Watch-the-match link (?w=ABC123), Player A watches Player B's result.
       const wc = urlParams.get('w');
       if (wc) {
         window.__WATCH_CODE = wc;
@@ -70,7 +70,7 @@
 <meta property="og:image:type" content="image/png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
-<meta property="og:image:alt" content="RunThePitch World Cup Game — Spin. Pick. Conquer." />
+<meta property="og:image:alt" content="RunThePitch World Cup Game, Spin. Pick. Conquer." />
 
 <!-- Twitter / X -->
 <!-- NOTE: X/Twitter aggressively caches link previews. After deploying a new
@@ -84,7 +84,7 @@
 <meta name="twitter:title" content="RunThePitch: World Cup Game" />
 <meta name="twitter:description" content="Spin. Pick. Conquer. Build your dream World Cup squad and simulate your run to glory." />
 <meta name="twitter:image" content="https://runthe.gg/assets/runthepitch-og-image_1200x630.png?v=5" />
-<meta name="twitter:image:alt" content="RunThePitch World Cup Game — Spin. Pick. Conquer." />
+<meta name="twitter:image:alt" content="RunThePitch World Cup Game, Spin. Pick. Conquer." />
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -105,13 +105,13 @@
     --line:#16120F;
     --ink-rgb:22,18,15; /* --ink as r,g,b, for thin translucent "golf-style" borders */
     --border-soft:rgba(var(--ink-rgb),.16);
-    /* position colors — single source of truth */
+    /* position colors, single source of truth */
     --pos-gk:#F4B413;   /* yellow / gold */
     --pos-def:#2A4B9B;  /* blue */
     --pos-mid:#1F9E57;  /* green */
     --pos-fwd:#E5402A;  /* red */
     --pos-flex:#5B6470; /* neutral until resolved (then inherits MID/FWD) */
-    --shadow-col:#16120F; /* sticker drop-shadow colour — stays dark in both themes */
+    --shadow-col:#16120F; /* sticker drop-shadow colour, stays dark in both themes */
     --shadow-rgb:22,18,15; /* same colour as --shadow-col, as r,g,b for alpha-blended shadows */
     /* Soft, blurred ambient shadows (golf-style) instead of the old hard offset
        "cartoon sticker" shadow. Same variable names/usage sites everywhere. */
@@ -176,7 +176,7 @@
   .footer-btn:hover{border-color:#bcb6a8;color:var(--ink);}
   .footer-btn:active{transform:translate(1px,1px);}
   .footer-btn .tl-ico{height:13px;width:auto;flex:0 0 auto;color:currentColor;}
-  /* cross-promo pill (links to RunTheTour) — teal accent instead of the neutral
+  /* cross-promo pill (links to RunTheTour), teal accent instead of the neutral
      gray used by the utility buttons, so it reads as "a different game" and
      not just another site action. */
   .footer-btn.footer-btn-cross{border-color:var(--teal);color:var(--teal);}
@@ -212,7 +212,7 @@
   .screen.active{display:block;}
   @keyframes fade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
 
-  /* Borderless filled pill + soft shadow (golf's primary-button treatment) —
+  /* Borderless filled pill + soft shadow (golf's primary-button treatment) -
      the coloured fill and shadow carry the "tappable" cue instead of a thick
      black outline. .btn.ghost (white/pale fills) gets a thin border back below,
      since it needs an edge to read against a similarly light page background. */
@@ -295,7 +295,7 @@
     text-transform:uppercase;opacity:.92;white-space:nowrap;}
   .home-secondary{position:relative;z-index:2;display:flex;flex-wrap:wrap;justify-content:center;
     align-items:stretch;gap:10px;max-width:440px;margin:14px auto 0;}
-  /* secondary buttons: outlined/ghost pills — clearly buttons, but quieter than
+  /* secondary buttons: outlined/ghost pills, clearly buttons, but quieter than
      the solid primary CTA above them */
   .home-2nd{cursor:pointer;color:#F5C518;font-family:inherit;font-weight:800;font-size:12.5px;
     letter-spacing:.5px;text-transform:uppercase;white-space:nowrap;
@@ -477,7 +477,7 @@
   }
 
   /* ---------- start screen ---------- */
-  /* Full-bleed landing scene (no bordered "sticker" box) — the stadium art fills
+  /* Full-bleed landing scene (no bordered "sticker" box), the stadium art fills
      edge-to-edge and blends straight into the page, matching the borderless,
      full-width treatment used on RunTheTour. A negative side margin lets it
      escape .app's padding to reach the true viewport edge on wider screens;
@@ -557,7 +557,7 @@
     background:linear-gradient(180deg,#FCEFA8,#F4B413);color:var(--ink);
     display:grid;place-items:center;font-weight:900;font-size:15px;
     border:none;box-shadow:0 3px 8px rgba(0,0,0,.4);}
-  /* flag cards — scrollable row with subtle labels underneath */
+  /* flag cards, scrollable row with subtle labels underneath */
   /* marquee lanes scrolling in opposite directions (one above trophy, one below button) */
   .flag-marquee{position:relative;z-index:2;display:flex;overflow:hidden;padding:2px 0;
     -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 9%,#000 91%,transparent 100%);
@@ -671,7 +671,7 @@
     border:1.5px solid var(--border-soft);border-radius:10px;background:var(--white);
     padding:5px 7px 7px;box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);transition:transform .1s ease, box-shadow .1s ease;
     text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:1px;
-    min-height:60px;            /* uniform height — sized so 2-line names fit too */
+    min-height:60px;            /* uniform height, sized so 2-line names fit too */
   }
   .pcard:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--shadow-col);}
   .pcard:disabled{opacity:.34;filter:grayscale(.7);box-shadow:none;}
@@ -698,7 +698,7 @@
      flow (not absolute) so two-pill awards grow the card instead of overlapping
      the name. */
   .pcard .pbottom{display:flex;align-items:flex-end;gap:6px;margin-top:auto;}
-  /* age at tournament — muted, sits in the bottom-right of the awards row */
+  /* age at tournament, muted, sits in the bottom-right of the awards row */
   .pcard .age-badge{align-self:flex-end;font-weight:900;font-size:11px;color:#9a8d80;
     letter-spacing:.2px;line-height:1;white-space:nowrap;flex:0 0 auto;}
   .pcard .age-badge .age-u{font-size:8px;font-weight:800;margin-left:1px;opacity:.85;}
@@ -730,7 +730,7 @@
     border-radius:14px;padding:13px 16px;background:var(--paper);font-weight:900;font-size:16px;text-transform:uppercase;letter-spacing:1px;}
   .slot-opt:active{transform:translate(2px,2px);}
   .slot-opt .tag{font-size:11px;font-weight:800;color:#fff;background:var(--fill-ink);padding:3px 8px;border-radius:6px;letter-spacing:.5px;}
-  /* position colour scheme — consistent with the pitch */
+  /* position colour scheme, consistent with the pitch */
   .slot-opt.GK{border-color:var(--pos-gk);}   .slot-opt.GK .tag{background:var(--pos-gk);color:var(--ink);}
   .slot-opt.DEF{border-color:var(--pos-def);}  .slot-opt.DEF .tag{background:var(--pos-def);}
   .slot-opt.MID{border-color:var(--pos-mid);}  .slot-opt.MID .tag{background:var(--pos-mid);}
@@ -847,7 +847,7 @@
   .pitch-wrap.full .psl-corner.tr{top:-4px;right:-4px;}
   .pitch-wrap.full .psl-corner.br{bottom:-4px;right:-4px;}
   .pitch-wrap.full .psl-corner.bl{bottom:-4px;left:-4px;}
-  /* year + overall badge below each filled circle — laid out horizontally
+  /* year + overall badge below each filled circle, laid out horizontally
      (year on the left, overall on the right) in every game mode */
   .psl-badge{
     position:absolute;top:calc(100% + 3px);left:50%;transform:translateX(-50%);
@@ -924,7 +924,7 @@
   #ps-fwd{color:var(--pos-fwd);}
   #ps-flex{color:var(--pos-flex);}
 
-  /* base slot positions — DEF pair (lower third) and FWD+FLEX pair (upper third)
+  /* base slot positions, DEF pair (lower third) and FWD+FLEX pair (upper third)
      are positioned identically (30% / 70%) so they mirror each other. */
   #ps-gk{left:50%;top:87%;}
   #ps-def1{left:30%;top:70%;}
@@ -955,7 +955,7 @@
   body.sel-mode .app{padding-top:12px;padding-bottom:12px;}
   #screen-select.active{display:flex;flex-direction:column;height:calc(100svh - 24px);}
 
-  /* ---------- compact "Your Starting VI" — fits one screen, no scroll ---------- */
+  /* ---------- compact "Your Starting VI", fits one screen, no scroll ---------- */
   body.home-mode .masthead{display:none;}
   body.home-mode .app{padding-top:12px;padding-bottom:12px;}
   #screen-home.active{display:flex;flex-direction:column;align-items:stretch;
@@ -971,7 +971,7 @@
   .sel-top{flex:0 0 auto;display:flex;align-items:center;gap:8px;margin-bottom:8px;}
   .sel-top .sel-flag{font-size:26px;}
   .sel-title{font-family:'Anton',Impact,sans-serif;font-size:22px;line-height:1;text-transform:uppercase;}
-  /* how the spun nation finished that World Cup — top-right pill of the header */
+  /* how the spun nation finished that World Cup, top-right pill of the header */
   .finish-badge{margin-left:auto;flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;
     font-weight:900;font-size:11px;letter-spacing:.3px;padding:5px 10px;border-radius:999px;
     border:1.5px solid var(--border-soft);background:var(--white);color:var(--ink);white-space:nowrap;box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);}
@@ -986,7 +986,7 @@
   .sel-respins{flex:0 0 auto;display:flex;gap:8px;margin:0 0 8px;}
   .sel-respins .rebtn{flex:1 1 auto;text-align:center;padding:9px 8px;font-size:12px;}
 
-  /* mini team preview — same behaviour as the lineup circles, in a row */
+  /* mini team preview, same behaviour as the lineup circles, in a row */
   .mini-pitch{flex:0 0 auto;display:flex;align-items:flex-start;gap:6px;margin-bottom:9px;}
   .mslot{position:relative;flex:1 1 0;min-width:0;aspect-ratio:1;border-radius:50%;overflow:hidden;
     display:grid;place-items:center;text-align:center;}
@@ -1008,12 +1008,12 @@
   .center{text-align:center;}
 
   /* ---------- world cup simulation ---------- */
-  /* ===== Horizontal match carousel — presentation only, sim logic unchanged =====
+  /* ===== Horizontal match carousel, presentation only, sim logic unchanged =====
      Each match is one full-width slide that fills the stage. Advancing swipes the
      current match off to the left while the next swipes in from the right. The page
      never scrolls vertically; a long goal feed scrolls inside its own box. */
   /* the stage fills the space below the masthead via a pure flex chain (see the
-     body.sim-mode rules) — no fixed heights, so the match is always centred */
+     body.sim-mode rules), no fixed heights, so the match is always centred */
   .sim-wrap{
     max-width:520px; width:100%; margin:0 auto;
     position:relative; overflow:hidden;
@@ -1035,7 +1035,7 @@
     padding:8px 16px;
   }
   /* the visible box shrinks to fit its content, stays centred, and only grows up
-     to the stage height (the maximum) — then the feed scrolls inside it */
+     to the stage height (the maximum), then the feed scrolls inside it */
   .sim-card{
     max-height:100%;
     display:flex; flex-direction:column;
@@ -1128,7 +1128,7 @@
   /* tournament totals section */
   .bsm-totals-hdr{font-weight:900;font-size:10px;letter-spacing:.8px;text-transform:uppercase;
     color:var(--ink);margin:14px 0 5px;border-top:1.5px solid var(--border-soft);padding-top:10px;}
-  /* tournament totals table sits on the light page bg — override to dark ink */
+  /* tournament totals table sits on the light page bg, override to dark ink */
   #boxscores-list .lbx-ptable{color:var(--ink);}
   #boxscores-list .lbx-ptable th{color:#6b5e52;}
   #boxscores-list .lbx-ptable td{color:var(--ink);}
@@ -1209,7 +1209,7 @@
     overflow:hidden; border:1.5px solid var(--ink);
   }
   .match-clock-fill{height:100%; background:var(--teal); width:0%; transition:width linear, background .3s ease; border-radius:2px;}
-  /* CHANGE 2 — slow-motion tension cue: warm the bar toward amber/gold */
+  /* CHANGE 2, slow-motion tension cue: warm the bar toward amber/gold */
   .match-clock-fill.slowmo{ background:#F5A623; }
   .goal-event{font-size:13px; font-weight:700; margin:4px 0; animation:fade 0.25s ease both;}
   .card-event-yellow{color:#b8860b; font-size:12px; font-weight:700; opacity:.9;}
@@ -1222,7 +1222,7 @@
     margin:10px 0 6px; letter-spacing:1px;
   }
   /* big retro WIN / ELIMINATED stamp: condensed Anton, ink outline + a single
-     slight drop-shadow (one layer renders in one pass — avoids the partial-shadow
+     slight drop-shadow (one layer renders in one pass, avoids the partial-shadow
      glitch the stacked shadow caused) */
   .sim-result-win,.sim-result-loss{
     font-family:'Anton',Impact,sans-serif; font-weight:400;
@@ -1363,7 +1363,7 @@
     font-weight:700; font-size:14px; line-height:1.4;
     color:var(--ink); margin:8px 0 16px;
   }
-  /* Inline win verbiage — shown ABOVE the box score inside the match slide,
+  /* Inline win verbiage, shown ABOVE the box score inside the match slide,
      replacing the blocking popup + Continue button for non-final wins. As a
      direct .sim-card child it is flex:0 0 auto, so the box score below just
      shrinks/scrolls and the card never overflows. */
@@ -1429,7 +1429,7 @@
     font-family:'Courier New',ui-monospace,monospace;font-size:18px;letter-spacing:.5px;
     display:flex;align-items:center;justify-content:center;}
   .sb-time.et{color:#F5C518;}
-  /* CHANGE 2 — slow-motion tension cue: gently pulse the clock readout */
+  /* CHANGE 2, slow-motion tension cue: gently pulse the clock readout */
   .sb-time.slowmo{animation:sbTimePulse 1s ease-in-out infinite;}
   @keyframes sbTimePulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
   .sb-team{display:flex;align-items:center;gap:8px;padding:0 12px;flex:1 1 0;min-width:0;}
@@ -1507,7 +1507,7 @@
   .reveal-team-label{font-weight:900;font-size:13px;letter-spacing:3px;color:#fff;}
   /* leadership/awards count-up + combine */
   /* baseline alignment puts the × on the same baseline as the digits, so it sits
-     optically centred between the two figures (as in running maths text) — this
+     optically centred between the two figures (as in running maths text), this
      holds throughout the count-up regardless of the digits' changing values */
   .reveal-combine{display:flex;align-items:baseline;justify-content:center;gap:14px;
     transition:opacity .45s ease, transform .5s cubic-bezier(.5,0,.5,1);}
@@ -1715,7 +1715,7 @@
     padding:18px;background:rgba(0,0,0,.66);}
   .entry-bg.show{display:flex;animation:fade .2s ease;}
   /* view-only mode (opened from the home screen): show just the board, hide the
-     name/flag submission UI. No leaderboard behaviour changes — only visibility. */
+     name/flag submission UI. No leaderboard behaviour changes, only visibility. */
   .entry-bg.view-only .entry-sub,
   .entry-bg.view-only .entry-badges,
   .entry-bg.view-only .entry-name-row,
@@ -1885,24 +1885,24 @@
     -webkit-background-clip:text;background-clip:text;
     color:transparent;-webkit-text-fill-color:transparent;
     animation:diamondShimmer 6.4s linear infinite;}
-  /* Bronze — warm copper with a bright burnish */
+  /* Bronze, warm copper with a bright burnish */
   .nt-bronze{
     background-image:linear-gradient(100deg,#7a481f 0%,#C77B3A 16%,#F6CE98 32%,#C77B3A 48%,#7a481f 64%,#E0A064 82%,#C77B3A 100%);
     filter:drop-shadow(0 1px 1px rgba(0,0,0,.45));}
-  /* Silver — bright chrome */
+  /* Silver, bright chrome */
   .nt-silver{
     background-image:linear-gradient(100deg,#7f868d 0%,#CFD3D8 16%,#ffffff 32%,#CFD3D8 48%,#7f868d 64%,#eef1f4 82%,#CFD3D8 100%);
     filter:drop-shadow(0 1px 1px rgba(0,0,0,.4));}
-  /* Gold — molten gold with a hot highlight */
+  /* Gold, molten gold with a hot highlight */
   .nt-gold{
     background-image:linear-gradient(100deg,#9a6c12 0%,#F4C430 16%,#FFF7C2 32%,#F4C430 48%,#9a6c12 64%,#FFE680 82%,#F4C430 100%);
     filter:drop-shadow(0 1px 1px rgba(0,0,0,.4));}
-  /* Legend — shimmering diamond (icy gradient sweeping across), the fastest sheen */
+  /* Legend, shimmering diamond (icy gradient sweeping across), the fastest sheen */
   .nt-legend{
     background-image:linear-gradient(100deg,#9fd8ff 0%,#ffffff 18%,#cdeeff 32%,#8fd0ff 46%,#ffffff 60%,#bfe9ff 74%,#ffffff 88%,#9fd8ff 100%);
     filter:drop-shadow(0 0 2px rgba(150,220,255,.65));
     animation-duration:4.8s;}
-  /* GOAT — the ultimate: holographic gold (gold base with prismatic glints) + glow */
+  /* GOAT, the ultimate: holographic gold (gold base with prismatic glints) + glow */
   .nt-goat{
     background-image:linear-gradient(100deg,#FFD24A 0%,#FFFFFF 12%,#FFE680 25%,#9FE0FF 39%,#FFFFFF 53%,#FFC0E6 66%,#FFF2A0 80%,#FFD24A 100%);
     filter:drop-shadow(0 0 3px rgba(255,205,90,.8));
@@ -1949,7 +1949,7 @@
   .td-grid>div{display:flex;flex-direction:column;gap:1px;}
   .td-k{font-size:8.5px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:#8a8a8a;}
   .td-v{font-weight:800;font-size:13px;color:#fff;}
-  /* dark, compact roster rows (profile) — names ellipsize so they always fit */
+  /* dark, compact roster rows (profile), names ellipsize so they always fit */
   .td-roster{display:flex;flex-direction:column;gap:5px;}
   .tdr-row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:8px;
     background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);}
@@ -1962,7 +1962,7 @@
   .tdr-ov{flex:0 0 auto;font-family:'Anton',Impact,sans-serif;font-size:14px;color:var(--gold);
     min-width:24px;text-align:right;}
 
-  /* legends collection — collapsible rarity groups */
+  /* legends collection, collapsible rarity groups */
   .legends-groups{display:flex;flex-direction:column;gap:9px;}
   .legend-group{border:1px solid rgba(255,255,255,.12);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.03);}
   .lg-head{width:100%;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);
@@ -1994,7 +1994,7 @@
   .legends-empty{grid-column:1/-1;text-align:center;color:#9a9a9a;font-size:12px;padding:18px;}
   body.profile-mode .masthead,body.profile-mode .acct-bar{display:none;}
   /* profile hides the masthead, so reserve room up top for the fixed menu (left)
-     + theme (right) buttons — the Back button must not sit under the menu button */
+     + theme (right) buttons, the Back button must not sit under the menu button */
   body.profile-mode .app{padding-top:54px;}
   .acct-flag-save{display:block;width:100%;padding:11px 18px;margin-top:14px;}
 
@@ -2110,7 +2110,7 @@
     display:flex;flex-direction:column;align-items:center;line-height:1;}
   .res-squad-row .r-ov-lbl{font-family:'Archivo',system-ui,sans-serif;font-size:8px;font-weight:900;
     letter-spacing:.5px;color:var(--muted);margin-bottom:1px;}
-  /* overall tier colours — match the draft reveal (top tier green); legible on white */
+  /* overall tier colours, match the draft reveal (top tier green); legible on white */
   .res-squad-row .r-ov.red{color:var(--red);}
   .res-squad-row .r-ov.orange{color:var(--orange);}
   .res-squad-row .r-ov.gold{color:var(--gold);}
@@ -2199,7 +2199,7 @@
   .pcard .ovr.MID{color:var(--pos-mid);} .pcard .ovr.FWD{color:var(--pos-fwd);}
   .pcard .statline.caps{color:#9a8d80;font-size:9px;}
 
-  /* ---------- draft-type select (Quick vs Full) — reuses .mode-* styling ---------- */
+  /* ---------- draft-type select (Quick vs Full), reuses .mode-* styling ---------- */
   #screen-draft-type.active{display:flex;flex-direction:column;}
   .mode-card.quick{border-color:var(--blue);background:rgba(42,75,155,.06);}
   .mode-card.quick .mc-label,.mode-card.quick .mc-headline{color:var(--blue);}
@@ -2236,7 +2236,7 @@
   .fm-req{font-weight:900;font-size:15px;color:var(--muted-2);letter-spacing:.3px;margin-top:16px;margin-bottom:24px;min-height:20px;
     opacity:0;transition:opacity .4s ease;}
   .fm-req.show{opacity:1;}
-  /* filled position badges in the formation description — same colours as the cards */
+  /* filled position badges in the formation description, same colours as the cards */
   .fm-pos-badge{display:inline-block;font-weight:900;font-size:13px;letter-spacing:.5px;
     color:#fff;border-radius:6px;padding:3px 8px;margin:3px 2px;vertical-align:middle;
     border:none;box-shadow:0 3px 7px rgba(var(--shadow-rgb),.22);}
@@ -2247,7 +2247,7 @@
   #btn-formation-go{max-width:340px;opacity:0;transition:opacity .4s ease;}
   #btn-formation-go.show{opacity:1;}
 
-  /* ---------- Full Draft (11) pitch — smaller circles so 5-wide rows fit 390px ---------- */
+  /* ---------- Full Draft (11) pitch, smaller circles so 5-wide rows fit 390px ---------- */
   .pitch-wrap.full .pslot{width:16.5%;}
   .pitch-wrap.full .pslot .psl-label{font-size:12px;}
   .pitch-wrap.full .pslot .psl-ov{font-size:18px;}
@@ -2261,7 +2261,7 @@
   .reveal-overlay.full .rv-name{font-size:13px;}
   .reveal-overlay.full .rv-ov{font-size:24px;}
 
-  /* ============ DARK MODE — focused overrides ============ */
+  /* ============ DARK MODE, focused overrides ============ */
   /* Elements painted on a constant GOLD/coloured background must keep DARK text
      even in dark mode (the cream --ink would be unreadable on gold). */
   html.dark .btn,
@@ -2292,7 +2292,7 @@
   html.dark .res-redraft-hook{ background:#14223A; }
   /* dr-rank pill caption contrast */
   html.dark .dr-rank .drp-cap{ color:var(--muted); }
-  /* spinner reel viewports use white gradients — darken them */
+  /* spinner reel viewports use white gradients, darken them */
   html.dark .reel-vp,html.dark .fm-reel-vp{ background:linear-gradient(var(--paper),#0a1322); }
   html.dark .reel-vp::before,html.dark .fm-reel-vp::before{ background:linear-gradient(#0a1322,rgba(10,19,34,0)); }
   html.dark .reel-vp::after,html.dark .fm-reel-vp::after{ background:linear-gradient(rgba(10,19,34,0),#0a1322); }
@@ -2313,7 +2313,7 @@
   /* footer/divider hairlines that were tuned for cream */
   html.dark .footer-btn,html.dark .acct-bar-btn{ border-color:rgba(255,255,255,.18); }
   html.dark .daily-intro-rules li{ border-bottom-color:rgba(255,255,255,.12); }
-  /* tournament-totals table sits in a card that darkens — brighten its accents */
+  /* tournament-totals table sits in a card that darkens, brighten its accents */
   html.dark #boxscores-list .lbx-ptable th{ color:rgba(255,255,255,.5); }
   html.dark #boxscores-list .lbx-ptable td.lbx-ppos.GK{ color:#F4B413; }
   html.dark #boxscores-list .lbx-ptable td.lbx-ppos.DEF{ color:#4ade80; }
@@ -2324,7 +2324,7 @@
   html.dark #boxscores-list .lbx-ptable .lbx-rc{ color:#E5402A; }
   html.dark .bsm-totals-hdr{ border-top-color:rgba(255,255,255,.2); }
   /* position-coloured TEXT (OVR numbers, year reels, labels) is too dark on
-     navy — lighten it in dark mode; solid badges/circles keep their colours */
+     navy, lighten it in dark mode; solid badges/circles keep their colours */
   html.dark .pcard .ovr.DEF{ color:#6c9cf0; }
   html.dark .pcard .ovr.MID{ color:#3ad17a; }
   html.dark .reel-item .yr,
@@ -2513,19 +2513,19 @@
   .menu-sep{height:1px;background:rgba(127,127,127,.22);margin:8px 6px;}
 
   /* ============================================================
-     Google AdSense — manual units only (Auto Ads is OFF in the dashboard).
+     Google AdSense, manual units only (Auto Ads is OFF in the dashboard).
      Confined to empty space around the game. The mobile strip is a FIXED 50px
      tall, non-responsive, and clipped (overflow:hidden), so it can NEVER grow
-     up over a game button — that growth was what broke the prior version. */
+     up over a game button, that growth was what broke the prior version. */
   .rtp-ad-rail{ position:fixed; top:50%; transform:translateY(-50%); z-index:50; display:none; }
   .rtp-ad-left{ left:24px; }
   .rtp-ad-right{ right:24px; }
-  /* Desktop side rails only — ≥1200px leaves ~156px clear beside the 520px card. */
+  /* Desktop side rails only, ≥1200px leaves ~156px clear beside the 520px card. */
   @media (min-width:1200px){ .rtp-ad-rail{ display:block; } }
 
   .rtp-ad-mobile-bottom{ position:fixed; left:0; right:0; bottom:0; height:50px; z-index:40;
     display:none; overflow:hidden; text-align:center; background:transparent; }
-  /* Frame the strip ONLY once a real ad has filled it — so before AdSense serves
+  /* Frame the strip ONLY once a real ad has filled it, so before AdSense serves
      (or when it returns no ad) the empty container is invisible, not a placeholder
      bar. Progressive enhancement: browsers without :has just show the ad itself. */
   .rtp-ad-mobile-bottom:has(ins[data-ad-status="filled"]){
@@ -2620,7 +2620,7 @@
     drawer.querySelectorAll('.menu-item[data-act]').forEach(function(el){
       el.addEventListener('click', function(){ act(el.dataset.act); });
     });
-    // plain <a> menu items (About/Privacy/Contact) just navigate — close first.
+    // plain <a> menu items (About/Privacy/Contact) just navigate, close first.
     drawer.querySelectorAll('a.menu-item').forEach(function(el){ el.addEventListener('click', closeMenu); });
     document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeMenu(); });
   })();
@@ -2636,7 +2636,7 @@
        Makes the value of an account explicit (leaderboard + stats are sign-in only). -->
   <div class="acct-bar" id="acct-bar">
     <div class="fa-guest" id="fa-guest">
-      <span class="fa-lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px"><rect x="5" y="11" width="14" height="9.5" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><b>Free account</b> — climb the global leaderboard, earn badges &amp; track your stats &amp; streaks, across every RunThe.GG game</span>
+      <span class="fa-lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align:-2px;margin-right:5px"><rect x="5" y="11" width="14" height="9.5" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><b>Free account</b>, climb the global leaderboard, earn badges &amp; track your stats &amp; streaks, across every RunThe.GG game</span>
       <button id="btn-account" type="button" class="acct-bar-btn primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style="vertical-align:-3px;margin-right:6px"><circle cx="12" cy="8" r="4.2"/><path d="M3.6 20c0-4.2 3.8-6.4 8.4-6.4s8.4 2.2 8.4 6.4z"/></svg>Sign In / Sign Up</button>
     </div>
     <div class="fa-user" id="fa-user" style="display:none;">
@@ -2801,9 +2801,9 @@
       <p class="hero-sub">Draft a squad of World Cup legends and simulate your run to the trophy.</p>
 
       <!-- 3-second micro-demo (replaces the wall of rules): a spin locks a random
-           nation + year, then a player card flips in — "that's it, your turn." -->
+           nation + year, then a player card flips in, "that's it, your turn." -->
       <div class="home-demo" id="home-demo" aria-hidden="true">
-        <!-- scene 1: draft — a spin locks a nation+year, a player card flips in -->
+        <!-- scene 1: draft, a spin locks a nation+year, a player card flips in -->
         <div class="hd-scene" id="hd-scene-draft">
           <div class="hd-stage">
             <div class="hd-chip" id="hd-chip"><span class="hd-flag" id="hd-flag"></span><span class="hd-yr" id="hd-yr">1970</span></div>
@@ -2815,7 +2815,7 @@
             </div>
           </div>
         </div>
-        <!-- scene 2: simulate — a knockout match score ticks, then the result -->
+        <!-- scene 2: simulate, a knockout match score ticks, then the result -->
         <div class="hd-scene" id="hd-scene-sim" hidden>
           <div class="hd-match">
             <span class="hd-side hd-you">YOU</span>
@@ -2864,13 +2864,13 @@
     </div>
 
     <ul class="daily-intro-rules">
-      <li><b>Same for everyone.</b> The theme and the nation/year spins are fixed for the day — your score is all about who you pick.</li>
+      <li><b>Same for everyone.</b> The theme and the nation/year spins are fixed for the day, your score is all about who you pick.</li>
       <li><b>Draft a full Starting XI</b> using only teams that fit today’s theme, then take them through the World Cup.</li>
       <li><b>A new challenge daily</b> at midnight UTC. Play every day to build a streak.</li>
     </ul>
 
     <div class="daily-intro-warn">
-      You get <b>one attempt that counts.</b> Replay as much as you like to practice — but only your <b>first completed run</b> is ranked on the daily leaderboard and counts toward your streak.
+      You get <b>one attempt that counts.</b> Replay as much as you like to practice, but only your <b>first completed run</b> is ranked on the daily leaderboard and counts toward your streak.
     </div>
 
     <div class="stack" style="margin-top:18px;">
@@ -2953,7 +2953,7 @@
       </div>
     </div>
 
-    <!-- Single live description — changes with the combination of both sliders -->
+    <!-- Single live description, changes with the combination of both sliders -->
     <div class="setup-info" id="setup-info">
       <div class="si-combo" id="setup-combo"></div>
       <div class="si-desc"  id="setup-desc"></div>
@@ -3164,9 +3164,9 @@
   <section id="screen-challenge-landing" class="screen">
     <div class="fr-wrap">
       <div class="fr-title">YOU'VE BEEN CHALLENGED! ⚔️</div>
-      <div class="fr-desc"><b id="cl-from"></b>A friend has built their World Cup dream squad and wants to face you in a <b>HEAD-TO-HEAD MATCH</b>.<br><br>Draft your own squad from World Cup history. Once you're done, the match plays out live — goal by goal.<br><br>Think you can beat them? 🔥</div>
+      <div class="fr-desc"><b id="cl-from"></b>A friend has built their World Cup dream squad and wants to face you in a <b>HEAD-TO-HEAD MATCH</b>.<br><br>Draft your own squad from World Cup history. Once you're done, the match plays out live, goal by goal.<br><br>Think you can beat them? 🔥</div>
       <ul class="fr-lineup" id="cl-mystery"></ul>
-      <div class="fr-muted" style="margin-top:0;margin-bottom:6px">Their squad is a mystery — out-draft them.</div>
+      <div class="fr-muted" style="margin-top:0;margin-bottom:6px">Their squad is a mystery, out-draft them.</div>
       <div class="fr-sub" id="cl-mode-note" style="font-size:14px;margin-bottom:14px"></div>
       <input id="fr-name-opponent" class="fr-name-input" maxlength="16" placeholder="Your name (for your team)" autocomplete="off" />
       <div class="fr-flag-label">Pick your flag</div>
@@ -3214,7 +3214,7 @@
 </div>
 
 <!-- ===== Google AdSense units (manual; loader in <head>). Placed before the
-     modal overlays so any modal — all z-index ≥ 40 — paints over them. ===== -->
+     modal overlays so any modal, all z-index ≥ 40, paints over them. ===== -->
 <div class="rtp-ad-rail rtp-ad-left">
   <ins class="adsbygoogle"
        style="display:block;width:160px;height:600px"
@@ -3227,7 +3227,7 @@
        data-ad-client="ca-pub-5952069078178257"
        data-ad-slot="4576322214"></ins>
 </div>
-<!-- Mobile strip: fixed 320x50, NOT responsive — it cannot grow over a button. -->
+<!-- Mobile strip: fixed 320x50, NOT responsive, it cannot grow over a button. -->
 <div class="rtp-ad-mobile-bottom">
   <ins class="adsbygoogle"
        style="display:inline-block;width:320px;height:50px"
@@ -3299,7 +3299,7 @@
     <div class="entry-auth-cta" id="entry-auth-cta">
       <div class="eac-lock"><b>Save this run to your profile!</b><br>You’re on the leaderboard as Anonymous. Create a free account and this draft counts toward your stats, badges &amp; rank.</div>
       <button class="entry-submit eac-btn" id="entry-auth-btn">Sign In / Sign Up</button>
-      <div class="eac-guest-note">No account? Your score still counts — it just stays anonymous.</div>
+      <div class="eac-guest-note">No account? Your score still counts, it just stays anonymous.</div>
     </div>
     <!-- signed-in: auto-saved confirmation -->
     <div class="entry-saved-as" id="entry-saved-as"></div>
@@ -3325,8 +3325,8 @@
       </div>
     </div>
     <div class="entry-lb-list" id="lb-list"></div>
-    <div class="entry-error" id="entry-error">Couldn’t save — please try again.</div>
-    <button class="entry-skip" id="entry-skip">Skip — stay anonymous</button>
+    <div class="entry-error" id="entry-error">Couldn’t save, please try again.</div>
+    <button class="entry-skip" id="entry-skip">Skip, stay anonymous</button>
   </div>
 </div>
 <div class="entry-toast" id="entry-toast">Added to leaderboard!</div>
@@ -3385,7 +3385,7 @@
 
     <!-- after sign-up with email confirmation on -->
     <div id="acct-confirm" style="display:none;">
-      <p class="acct-confirm-msg">✉️ <b>Check your email</b><br>We sent a confirmation link to <b id="acct-confirm-email"></b>. Click it to activate your account, then come back and sign in.<br><br><b>Don’t see it?</b> Check your spam or junk folder — confirmation emails sometimes land there.</p>
+      <p class="acct-confirm-msg">✉️ <b>Check your email</b><br>We sent a confirmation link to <b id="acct-confirm-email"></b>. Click it to activate your account, then come back and sign in.<br><br><b>Don’t see it?</b> Check your spam or junk folder, confirmation emails sometimes land there.</p>
       <p class="acct-note">Still nothing? Wait a minute and try again.</p>
     </div>
 
@@ -3544,7 +3544,7 @@ const FLAG_CODES = {
 };
 
 // Inline SVG flags for defunct nations flagcdn has no code for. Use double
-// quotes only — encodeURIComponent turns them into %22 so the resulting data
+// quotes only, encodeURIComponent turns them into %22 so the resulting data
 // URI is safe inside url('…').
 const FLAG_SVG = {
   "Soviet Union": `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20"><rect width="30" height="20" fill="#CE1126"/><text x="6.5" y="5.4" font-size="3.6" fill="#FFD83B" text-anchor="middle" font-family="sans-serif">★</text><text x="6.5" y="10" font-size="5.2" fill="#FFD83B" text-anchor="middle" font-family="sans-serif">☭</text></svg>`,
@@ -3598,8 +3598,8 @@ const SLOT_LABELS = {GK:"Goalkeeper",DEF:"Defender",MID:"Midfielder",FWD:"Forwar
 let gs = null;
 let allCountries = [];
 let selectedPlayer = null; // for slot sheet
-let gameMode = null; // 'easy' or 'hard' — chosen on the difficulty screen
-let draftType = 'quick'; // 'quick' (6-man) or 'full' (11-man) — chosen on the draft-type screen
+let gameMode = null; // 'easy' or 'hard', chosen on the difficulty screen
+let draftType = 'quick'; // 'quick' (6-man) or 'full' (11-man), chosen on the draft-type screen
 let pendingFormation = null; // formation chosen on the reveal screen, before the game state exists
 
 // ---------- iOS pull-to-refresh guard ----------
@@ -3607,7 +3607,7 @@ let pendingFormation = null; // formation chosen on the reveal screen, before th
 // reloads the page and wipes an in-progress draft. This cancels the gesture: on a
 // downward, mostly-vertical drag where the relevant scroll container is already at
 // the top, we preventDefault so the browser can't treat it as "pull to refresh".
-// Normal scrolling — and inner scrollers that aren't at their top — are untouched.
+// Normal scrolling, and inner scrollers that aren't at their top, are untouched.
 (function preventPullToRefresh(){
   let startY = 0, startX = 0;
   const scroller = (el)=>{
@@ -3657,7 +3657,7 @@ function fullShapeReadout(){
   }).join('');
 }
 
-// (legacy) Full Team Draft formations — retained only for reference; the flex
+// (legacy) Full Team Draft formations, retained only for reference; the flex
 // builder above replaces the formation spin-wheel.
 const FORMATIONS = [
   { name:'4-4-2', def:4, mid:4, fwd:2 },
@@ -3709,7 +3709,7 @@ function showScreen(name){
   document.body.classList.toggle('sim-mode', name==='sim');
   document.body.classList.toggle('profile-mode', name==='profile');
   // Hide the mobile ad strip on the full-viewport / sensitive screens (sim,
-  // results/share, draft select, pitch reveal). Additive — no game logic touched.
+  // results/share, draft select, pitch reveal). Additive, no game logic touched.
   document.body.classList.toggle('rtp-hide-ads',
     name==='sim' || name==='report' || name==='select' || name==='home');
   window.scrollTo({top:0,behavior:'smooth'});
@@ -3725,7 +3725,7 @@ let profileReturnScreen='start';
 // ---------- boot ----------
 // Fetch a JSON array of players from `url`; returns null on any failure.
 // Bump on every player-data swap. A STABLE version (not Date.now()) lets the
-// browser/CDN cache the dataset between visits — returning players load instantly
+// browser/CDN cache the dataset between visits, returning players load instantly
 // instead of re-downloading the whole file every time.
 const DATA_VERSION = '0.0.36';
 
@@ -3763,7 +3763,7 @@ async function boot(){
   // file:// fallback (fetch blocked when opened directly via file://).
   if(!players || !players.length){
     players = await loadEmbeddedPlayers();
-    if(players && players.length) fetchErr = new Error('fetch unavailable — used embedded file:// wrapper (players_all.js)');
+    if(players && players.length) fetchErr = new Error('fetch unavailable, used embedded file:// wrapper (players_all.js)');
   }
 
   if(!players || !players.length){
@@ -3924,7 +3924,7 @@ function startHomeDemo(){
 
 // Warm the browser cache with every nation's flag (both sizes used in the UI)
 // so a freshly-shown flag never paints blank-white while its remote image is
-// still loading — the cause of the occasional white flag on the spin reel.
+// still loading, the cause of the occasional white flag on the spin reel.
 function preloadFlags(){
   const seen = new Set();
   allCountries.forEach(c => {
@@ -4051,7 +4051,7 @@ function spinStrip(strip, rowH, duration){
   });
 }
 
-// animation only — spins both reels and shows the landed result
+// animation only, spins both reels and shows the landed result
 async function doSpinAnim(country, year){
   $('landed-name').innerHTML='';
   $('reel-country').innerHTML='';         // country stays blank during the year spin
@@ -4155,7 +4155,7 @@ function eligibleSlotsFor(player){
 
 function updateRespinButtons(){
   // One full re-spin per game (re-rolls both nation and year). Same in all modes.
-  // Stays visible after use — just greys out (disabled) instead of disappearing.
+  // Stays visible after use, just greys out (disabled) instead of disappearing.
   const left = gs.respins.full;
   const btn=$('btn-respin-full');
   btn.textContent = left>0 ? `↻ Re-spin (${left})` : '↻ Re-spin used';
@@ -4189,7 +4189,7 @@ function fullOpenCounts(){
 }
 // Build the dynamic .pslot circles for the LIVE shape. The 3 FLEX slots are
 // distributed across the three outfield lines (so the empty board reads as a
-// 4-3-3: DEF 3+FLEX, MID 2+FLEX, FWD 2+FLEX) — no separate FLEX line. Purely
+// 4-3-3: DEF 3+FLEX, MID 2+FLEX, FWD 2+FLEX), no separate FLEX line. Purely
 // cosmetic; the draft logic/cap is unchanged. Total is always 11.
 const FULL_BAND_TOP = { FWD:24, MID:50, DEF:73, GK:88 };  /* GK nudged up from 90 so its year+overall badge clears the pitch's bottom edge */
 function buildFullPitch(){
@@ -4203,7 +4203,7 @@ function buildFullPitch(){
   gs.picks.forEach(p=>{ if(filled[p.slot]) filled[p.slot].push(p.player); });
 
   // Distribute the remaining (unresolved) FLEX circles onto whichever outfield
-  // line currently has the FEWEST players — never onto a line already at its cap —
+  // line currently has the FEWEST players, never onto a line already at its cap -
   // so a spare FLEX fills the emptiest line instead of crowding a full one.
   const flexLine={DEF:0,MID:0,FWD:0};
   {
@@ -4303,7 +4303,7 @@ function pitchPicks(){
   return {res, flexPos};
 }
 
-const PSL_MAX_FONT=16; // px — matches the .psl-label CSS size
+const PSL_MAX_FONT=16; // px, matches the .psl-label CSS size
 // Shrink a surname's font until it fits on one line inside the circle.
 function fitLabel(el, sel='.psl-label', max=PSL_MAX_FONT, minF=8){
   const lbl=el.querySelector(sel);
@@ -4344,7 +4344,7 @@ function setPitchSlot(id, player, color, emptyLabel, noPop){
     let badge=el.querySelector('.psl-badge');
     if(!badge){ badge=document.createElement('div'); badge.className='psl-badge'; el.appendChild(badge); }
     badge.innerHTML=`<span class="psl-badge-year">${player.year}</span><span class="psl-badge-ov ${ovTier(player.overall)}">${player.overall}</span>`;
-    // captain + award corner badges — captain always top-left, awards clockwise: TR, BR, BL
+    // captain + award corner badges, captain always top-left, awards clockwise: TR, BR, BL
     el.querySelectorAll('.psl-corner').forEach(c=>c.remove());
     const corners=['tl','tr','br','bl'];
     let ci=0;
@@ -4520,7 +4520,7 @@ function runPitchReveal(done){
 
 function showPitchResult(){
   const r=gs.result;
-  // Only the team rating is shown here — the tournament outcome is NOT predicted;
+  // Only the team rating is shown here, the tournament outcome is NOT predicted;
   // it's decided by the simulation the user launches next.
   const box=$('pitch-result'); box.classList.add('show');
   const el=$('pr-score-val'), target=r.teamOverall, dur=900, start=Date.now();
@@ -4580,7 +4580,7 @@ const TOURNAMENT_RESULTS = {
   round16:      { label:'Round of 16',      cls:''          },
   group:        { label:'Group stage',      cls:''          },
 };
-// Selection-page badge labels — phrased to describe THE TEAM's finish
+// Selection-page badge labels, phrased to describe THE TEAM's finish
 // (e.g. "Quarter-finalist" rather than "Quarter-finals").
 const FINISH_LABELS = {
   champion:     { label:'🏆 Champion',        cls:'champion'  },
@@ -4678,14 +4678,14 @@ function cardBottomRight(p, taken){
 }
 
 function statLine(p){
-  // During selection only show factual stats (caps, goals). Ratings —
-  // overall, career_baseline, wc_performance — stay HIDDEN until the post-draft
+  // During selection only show factual stats (caps, goals). Ratings -
+  // overall, career_baseline, wc_performance, stay HIDDEN until the post-draft
   // reveal; they're backend numbers and showing them would spoil the draft.
-  const d = v => (v===null || v===undefined) ? '—' : v;
+  const d = v => (v===null || v===undefined) ? '-' : v;
   const has = v => v!==null && v!==undefined;
   const seg = [];
 
-  // caps is core for every position — always show (dash if unknown).
+  // caps is core for every position, always show (dash if unknown).
   seg.push(`${d(p.appearances)} caps`);
   // goals only when we actually have a value (null = unknown, e.g. 2026).
   if(has(p.goals)) seg.push(`${p.goals} G`);
@@ -4694,11 +4694,11 @@ function statLine(p){
 }
 
 // Mode-dependent body of a player card.
-// EASY: position-coloured OVR. HARD: nothing — no OVR and no stats (blind pick).
+// EASY: position-coloured OVR. HARD: nothing, no OVR and no stats (blind pick).
 function cardStatBlock(p){
   if(gameMode==='hard') return '';
   // easy mode (default)
-  const ov = p.wc_overall ?? p.overall ?? '—';
+  const ov = p.wc_overall ?? p.overall ?? '-';
   return `<div class="ovr ${p.position}">${ov}<small>OVR</small></div>`;
 }
 
@@ -4709,7 +4709,7 @@ function renderGrid(squad){
   const available = p => eligibleSlotsFor(p).length>0 && !pickedIds.has(p.player_id);
   // sort: available first, then grouped by position. EASY orders each position by
   // overall (high→low); HARD is a blind pick, so it orders each position
-  // alphabetically by surname instead — no rating hint from the ordering.
+  // alphabetically by surname instead, no rating hint from the ordering.
   const order={FWD:0,MID:1,DEF:2,GK:3};   // forwards first → goalkeeper last (matches the lineup)
   const ov = p => (p.wc_overall ?? p.overall ?? 0);  // the value shown on the card
   const hard = gameMode==='hard';
@@ -4781,8 +4781,8 @@ function assign(player, slot){
     $('btn-go-spin').style.display='none';
     $('btn-start-wc').style.display='none';
     updatePitch();   // fills the six circles with surnames on the pitch
-    // Friendly opponent goes straight into the match. Everyone else — solo AND
-    // the friendly CHALLENGER — gets the team-overall reveal first (the
+    // Friendly opponent goes straight into the match. Everyone else, solo AND
+    // the friendly CHALLENGER, gets the team-overall reveal first (the
     // challenger then proceeds to the share screen via btn-reveal-go).
     if(friendlyMode && friendlyRole==='opponent'){
       setTimeout(friendlyOnDraftComplete, 700);
@@ -4826,18 +4826,18 @@ function getLeadershipBonus(picks){
 }
 
 // Fold the leadership/awards multiplier into gs.result so the OFFICIAL team
-// overall (base × multiplier) is the single number used everywhere downstream —
+// overall (base × multiplier) is the single number used everywhere downstream -
 // leaderboard, simulation, results, share text/images, friendly links. The base
 // and multiplier are preserved separately for the reveal animation only. Idempotent.
 function applyLeadershipBonus(){
   if(!gs || !gs.result || gs.result._bonusApplied) return;
   const base = gs.result.teamOverall;
   const { multiplier, breakdown } = getLeadershipBonus(gs.result.scoredPicks||gs.picks||[]);
-  const official = Math.round(base * multiplier * 10)/10;   // uncapped — can exceed 100
+  const official = Math.round(base * multiplier * 10)/10;   // uncapped, can exceed 100
   gs.result.baseTeamOverall     = base;
   gs.result.leadershipMultiplier= multiplier;
   gs.result.leadershipBreakdown = breakdown;
-  gs.result.teamOverall         = official;   // official number — used everywhere downstream
+  gs.result.teamOverall         = official;   // official number, used everywhere downstream
   gs.result._bonusApplied       = true;
 }
 
@@ -4855,7 +4855,7 @@ function orderPicksForDisplay(picks, slotOrder){
   return out.concat(pool);
 }
 
-// Move the FLEX pick next to its real position group — a flex-midfielder sits
+// Move the FLEX pick next to its real position group, a flex-midfielder sits
 // with the midfielders, a flex-forward with the forwards (inserted right after
 // the dedicated slot of that position). Used on the results screen + share image
 // so the squad reads true-to-position. No-op when there's no FLEX (e.g. full draft).
@@ -4901,7 +4901,7 @@ function countUp(el, target, dur, colorEl, decimals){
     if(t>=1){ el.textContent=fmt(target); applyTierClass(colorEl, target); clearInterval(iv); }
   },22);
 }
-// Ease-out (cubic) count up — fast start, slowing at the end. Always shows
+// Ease-out (cubic) count up, fast start, slowing at the end. Always shows
 // `decimals` places; fires onDone when it lands.
 function countUpEase(el, target, dur, decimals, colorEl, onDone){
   const start=Date.now();
@@ -4919,7 +4919,7 @@ function countUpEase(el, target, dur, decimals, colorEl, onDone){
 function awardLabel(a){
   return String(a).replace(/[_-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
 }
-// Retro captain badge for the bonus breakdown — bold ink "C" on a gold rounded
+// Retro captain badge for the bonus breakdown, bold ink "C" on a gold rounded
 // square, matching the .cap-c patch from the selection cards.
 function lbCaptainBadge(){ return '<span class="lb-cap">C</span>'; }
 // Retro gold trophy icons for each award. Boot and ball get bespoke graphics;
@@ -4979,7 +4979,7 @@ function runRevealOverlay(){
   go.textContent = (friendlyMode && friendlyRole==='challenger') ? 'CONTINUE →' : 'START WORLD CUP';
 
   ov.classList.toggle('full', isFullDraft());
-  // Reveal in pitch order — attackers first (top) down to the keeper last. Each
+  // Reveal in pitch order, attackers first (top) down to the keeper last. Each
   // pick is placed by position, and the FLEX always reveals with the forwards
   // (right after the dedicated FWD), whatever position the flex player plays.
   const POS_RANK={FWD:0,MID:1,DEF:2,GK:3};
@@ -5005,7 +5005,7 @@ function runRevealOverlay(){
       row.classList.add('show');
       const ovEl=row.querySelector('.rv-ov-num');
       countUp(ovEl, +ovEl.dataset.ov, 520, row.querySelector('.rv-ov')); // colour shifts as it counts
-    }, 300 + i*450);                          // slower reveal — 0.45s apart
+    }, 300 + i*450);                          // slower reveal, 0.45s apart
   });
 
   const afterAll = 300 + rows.length*450 + 400;
@@ -5014,7 +5014,7 @@ function runRevealOverlay(){
   const official= gs.result.teamOverall;
   const bd      = gs.result.leadershipBreakdown || [];
 
-  // STEP 1-2 — show base × multiplier side by side, both count up over 1.2s.
+  // STEP 1-2, show base × multiplier side by side, both count up over 1.2s.
   // Base counts 0→base (tier colour); the multiplier counts 1.000→mult (3 decimals).
   setTimeout(()=>{
     team.style.display='';
@@ -5028,7 +5028,7 @@ function runRevealOverlay(){
     },22);
   }, afterAll);
 
-  // STEP 3 — the players that CAUSE the multiplier populate at the bottom WHILE
+  // STEP 3, the players that CAUSE the multiplier populate at the bottom WHILE
   // the multiplier number counts up, so the number and its contributors appear
   // together rather than one after the other (skip if no bonus).
   const breakdownStart = afterAll + 250;
@@ -5037,14 +5037,14 @@ function runRevealOverlay(){
       const line=document.createElement('div'); line.className='rc-bd-line';
       const icon = b.type==='captain' ? lbCaptainBadge() : lbAwardIcon(b.award);
       const what = b.type==='captain' ? 'Captain' : awardLabel(b.award);
-      line.innerHTML=`${icon}<span>${b.name} — ${what} ×${b.value.toFixed(3)}</span>`;
+      line.innerHTML=`${icon}<span>${b.name}, ${what} ×${b.value.toFixed(3)}</span>`;
       $('rc-breakdown').appendChild(line);
       setTimeout(()=>line.classList.add('show'), 20);
     }, breakdownStart + i*350);
   });
   const breakdownEnd = breakdownStart + (bd.length>0 ? bd.length*350 : 0);
 
-  // STEP 4 — merge into the official overall once BOTH the count-up and the
+  // STEP 4, merge into the official overall once BOTH the count-up and the
   // breakdown have finished (whichever lands later), plus a beat to read it.
   const mergeAt = Math.max(breakdownEnd, afterAll + 1700) + 1400;
   setTimeout(()=>{
@@ -5066,7 +5066,7 @@ function runRevealOverlay(){
     }, 620);
   }, mergeAt);
 
-  // STEP 5 — 0.8s after the official number lands, show the GO button
+  // STEP 5, 0.8s after the official number lands, show the GO button
   setTimeout(()=>{
     go.style.display='';
     setTimeout(()=>go.classList.add('show'), 20);
@@ -5112,7 +5112,7 @@ function recordDraftRank(overall, progress){
 // ---------- global leaderboard (Supabase) ----------
 // Paste your Supabase project URL and PUBLIC anon key below. The anon key is
 // safe to ship in client code: anon can only SELECT the table. All writes go
-// through SECURITY DEFINER functions — submit_draft() inserts (clamping values)
+// through SECURITY DEFINER functions, submit_draft() inserts (clamping values)
 // and set_draft_name() names a freshly-created, still-unnamed row once. anon has
 // no direct INSERT/UPDATE/DELETE. Until these are filled in, the game falls back
 // to the per-device board above.
@@ -5122,11 +5122,11 @@ const SUPABASE_READY = /^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(SUPABASE_URL)
   && SUPABASE_ANON_KEY && SUPABASE_ANON_KEY.indexOf('YOUR-')!==0;
 
 // ============================================================================
-// Accounts / auth (Supabase)  —  Phase A
+// Accounts / auth (Supabase) ,  Phase A
 // ============================================================================
 // A signed-in account is REQUIRED to post a score to the global leaderboard and
 // (later) to record stats, streaks and collectible icons. Guests can still PLAY
-// and BROWSE the board — their drafts simply aren't written. See
+// and BROWSE the board, their drafts simply aren't written. See
 // supabase/10_accounts.sql for the server side (profiles, RLS, submit_draft v10).
 let sbClient      = null;   // supabase-js client (auth + rpc)
 let authUser      = null;   // current auth.users (null = guest)
@@ -5214,7 +5214,7 @@ async function loadProfile(){
       .select('username,flag,current_streak,longest_streak,badges')
       .eq('id', authUser.id).maybeSingle();
     authProfile = data || null;
-  }catch(e){ /* leave null — UI still works, just without a username */ }
+  }catch(e){ /* leave null, UI still works, just without a username */ }
 }
 
 function sbHeaders(extra){
@@ -5234,14 +5234,14 @@ function sbHeaders(extra){
 // already created as a guest (no duplicate insert). Uses set_draft_entry by id.
 async function claimAnonymousDraft(){
   let id = gs && gs.result && gs.result._lbId;
-  // The anon insert may still be in flight — wait briefly for its row id.
+  // The anon insert may still be in flight, wait briefly for its row id.
   for(let i=0;i<25 && id==null && SUPABASE_READY;i++){
     await new Promise(r=>setTimeout(r,200));
     id = gs && gs.result && gs.result._lbId;
   }
   if(!SUPABASE_READY || id==null) return false;
   // Take OWNERSHIP of the anonymous row created this run so the draft counts
-  // toward the now-signed-in player's profile (stats, badges, top drafts) — not
+  // toward the now-signed-in player's profile (stats, badges, top drafts), not
   // just their name on the board. claim_draft() stamps user_id + name + flag.
   try{
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/claim_draft`, {
@@ -5273,7 +5273,7 @@ async function claimPendingDraftId(){
       try{ localStorage.removeItem('rtp_pending_draft'); }catch(e){}
       if(typeof refreshMyBadges==='function'){ try{ await refreshMyBadges(); }catch(e){} }
     }
-  }catch(e){ /* claim_draft not deployed yet, or offline — leave pending */ }
+  }catch(e){ /* claim_draft not deployed yet, or offline, leave pending */ }
 }
 
 async function maybeSubmitPendingDraft(){
@@ -5368,7 +5368,7 @@ function setAcctTab(tab){
   const sub=$('acct-submit'); if(sub) sub.textContent = acctTab==='signup' ? 'Create account' : 'Sign in';
   const note=$('acct-note');
   if(note) note.textContent = acctTab==='signup'
-    ? 'Free account — save your scores to the global leaderboard, track your stats, and earn icons. One account works across every RunThe.GG game — this same login also plays RunTheTour, a 40-year golf career sim, with more games on the way.'
+    ? 'Free account, save your scores to the global leaderboard, track your stats, and earn icons. One account works across every RunThe.GG game, this same login also plays RunTheTour, a 40-year golf career sim, with more games on the way.'
     : 'Sign in to save your scores to the leaderboard and pick up your stats.';
   acctError('');
 }
@@ -5428,7 +5428,7 @@ function renderProfileStats(){
   const tiles=[
     ['Drafts', s.games||0],
     ['World Cups', s.wins||0],
-    ['Best OVR', (s.best_overall!=null && +s.best_overall>0) ? (+s.best_overall).toFixed(1) : '—'],
+    ['Best OVR', (s.best_overall!=null && +s.best_overall>0) ? (+s.best_overall).toFixed(1) : '-'],
     ['Current Streak', s.current_streak||0],
     ['Best Streak', s.longest_streak||0],
     ['Legends', s.legends||0]
@@ -5444,7 +5444,7 @@ function renderProfileStats(){
 let myAch = null;   // { confedBreadth, decadeBreadth, underdog_progress }
 const ACH_TIER_COLORS = ['#6a6a6a','#C77B3A','#BFC4C9','#E8C25A','#7FE0FF']; // locked,bronze,silver,gold,platinum
 const ACH_ROMAN = ['','I','II','III','IV'];
-function roundName(p){ const M={0:'Group',1:'R32',2:'R16',3:'QF',4:'SF',5:'Final',6:'Champion'}; return M[p]!=null?M[p]:'—'; }
+function roundName(p){ const M={0:'Group',1:'R32',2:'R16',3:'QF',4:'SF',5:'Final',6:'Champion'}; return M[p]!=null?M[p]:'-'; }
 const ACHIEVEMENTS = [
   { id:'draftsman',    name:'Draftsman',    desc:'Finish drafts to climb the tiers.',                       tiers:[50,100,200,500], get:m=>m.games,          fmt:v=>v },
   { id:'worldbeater',  name:'World Beater', desc:'Win the World Cup with your drafted squad.',              tiers:[1,10,50],        get:m=>m.wins,           fmt:v=>v },
@@ -5581,7 +5581,7 @@ async function loadMyTopDrafts(){
 function renderTopDrafts(){
   const host=$('topdrafts'); if(!host) return;
   if(!myTopDrafts){ host.innerHTML='<div class="acct-stat-loading">Loading…</div>'; return; }
-  if(!myTopDrafts.length){ host.innerHTML='<div class="legends-empty">No drafts yet — play a game to fill this out!</div>'; return; }
+  if(!myTopDrafts.length){ host.innerHTML='<div class="legends-empty">No drafts yet, play a game to fill this out!</div>'; return; }
   host.innerHTML=myTopDrafts.map((d,i)=>{
     const open=!!topOpen[i], dt=(d.draft_type==='full')?'Full':'Quick', mode=(d.mode==='hard')?'Hard':'Easy';
     return `<div class="td-row${open?' open':''}">
@@ -5639,7 +5639,7 @@ function renderLegends(){
     const items = isCollected ? legs.filter(l=>col.has(l.id)) : legs.filter(l=>l.rar===tier);
     const tgot = items.reduce((n,l)=>n+(col.has(l.id)?1:0),0);
     const open = !!legendsOpen[tier];
-    const cards = items.map(l=>legendCardHtml(l, col.has(l.id))).join('') || '<div class="legends-empty">None yet — draft some legends!</div>';
+    const cards = items.map(l=>legendCardHtml(l, col.has(l.id))).join('') || '<div class="legends-empty">None yet, draft some legends!</div>';
     const count = isCollected ? `${items.length}` : `${tgot} / ${items.length}`;
     return `<div class="legend-group r-${tier}${open?' open':''}">
       <button type="button" class="lg-head" data-tier="${tier}">
@@ -5673,7 +5673,7 @@ function achLevel(achId, m){ const a=achById(achId); if(!a) return 0; const v=a.
 function totalBadges(m){ return ACHIEVEMENTS.reduce((n,a)=>n+achLevel(a.id,m),0); }
 
 // ---- Name tier: auto-derived from achievement badges completed (0..23) ----
-// Bronze 0% · Silver 25% · Gold 50% · Legend 75%. No equipping — it climbs as
+// Bronze 0% · Silver 25% · Gold 50% · Legend 75%. No equipping, it climbs as
 // you complete achievements, and colours your name on the profile + leaderboard.
 const NAME_TIERS=[
   {id:'bronze',name:'Bronze',cls:'nt-bronze'},
@@ -5685,7 +5685,7 @@ const NAME_TIERS=[
 const BRONZE_MIN=5;   // fewer than this many badges → unranked (normal text)
 function tierFromBadges(b){
   b=+b||0;
-  if(b>=ACH_TOTAL_BADGES) return NAME_TIERS[4];   // GOAT — 100% of all badges
+  if(b>=ACH_TOTAL_BADGES) return NAME_TIERS[4];   // GOAT, 100% of all badges
   if(b<BRONZE_MIN) return null;                   // below Bronze → no tier styling
   return NAME_TIERS[Math.min(3, Math.floor((b*4)/ACH_TOTAL_BADGES))];
 }
@@ -5707,7 +5707,7 @@ function renderNameTier(){
   applyTierColor(d, tier);
   const tt=$('prof-title'); if(!tt) return;
   let nameTag, next, nextAt;
-  if(!tier){                                   // unranked — fewer than BRONZE_MIN badges
+  if(!tier){                                   // unranked, fewer than BRONZE_MIN badges
     nameTag='<b>Unranked</b>';
     next=NAME_TIERS[0]; nextAt=BRONZE_MIN;      // next step is Bronze
   } else {
@@ -5739,7 +5739,7 @@ function renderAchievements(){
                          : (maxed?1:Math.max(0,Math.min(1,(val-prev)/((next-prev)||1))));
     const tierLabel = maxed?'Max':(level>0?('Tier '+ACH_ROMAN[level]):'Locked');
     let progNum;
-    if(a.round) progNum = maxed ? 'Champion' : (val>=0 ? a.fmt(val) : '—');
+    if(a.round) progNum = maxed ? 'Champion' : (val>=0 ? a.fmt(val) : '-');
     else        progNum = maxed ? `${a.fmt(val)}` : `${a.fmt(val)} / ${a.fmt(next)}`;
     return `<div class="ach-card${level===0?' locked':''}${maxed?' maxed':''}">
       <div class="ach-badge">${achBadgeSvg(a.id, level)}</div>
@@ -5831,7 +5831,7 @@ function renderAchPopCard(key){
   const nx=$('ach-pop-next');
   if(nx){
     if(maxed){
-      nx.innerHTML='You’ve maxed out <b>'+escapeHtml(a.name)+'</b> — every tier earned!';
+      nx.innerHTML='You’ve maxed out <b>'+escapeHtml(a.name)+'</b>, every tier earned!';
     } else if(a.round){
       nx.innerHTML='Next up: reach the <b>'+escapeHtml(roundName(a.tiers[idx+1]))+'</b>';
     } else {
@@ -5864,7 +5864,7 @@ function withTimeout(thenable, ms, label){
   return Promise.race([
     Promise.resolve(thenable),
     new Promise((_,reject)=>setTimeout(
-      ()=>reject(new Error((label||'Request')+' timed out — check your connection or try again in a moment.')), ms))
+      ()=>reject(new Error((label||'Request')+' timed out, check your connection or try again in a moment.')), ms))
   ]);
 }
 
@@ -5896,7 +5896,7 @@ async function acctSubmit(){
       const { data:avail, error:e0 } = await withTimeout(
         sbClient.rpc('username_available',{ p_username: uname }), 15000, 'Sign-up');
       if(e0) throw e0;
-      if(!avail) throw new Error('That username is taken — try another.');
+      if(!avail) throw new Error('That username is taken, try another.');
       const { data, error } = await withTimeout(sbClient.auth.signUp({
         email, password: pass,
         options:{ data:{ username: uname }, emailRedirectTo: location.origin }
@@ -5942,7 +5942,7 @@ function startChangeUsername(){
   const err=$('acct-error2'); if(err) err.classList.remove('show');
 }
 
-// "Forgot your password?" — email a reset link to the address in the field.
+// "Forgot your password?", email a reset link to the address in the field.
 async function acctForgotPassword(){
   if(!sbClient){ acctError('Accounts are unavailable right now.'); return; }
   let email;
@@ -5954,7 +5954,7 @@ async function acctForgotPassword(){
     const { error } = await sbClient.auth.resetPasswordForEmail(email, { redirectTo: location.origin });
     if(error) throw error;
     acctError('');
-    showToast('Reset link sent — check your email');
+    showToast('Reset link sent, check your email');
   }catch(e){ acctError((e&&e.message)||'Could not send reset email.'); }
 }
 
@@ -5981,7 +5981,7 @@ async function acctSetNewPassword(){
   }catch(e){ if(err){ err.textContent=(e&&e.message)||'Could not update password.'; err.classList.add('show'); } }
 }
 
-// First-time username prompt — shown right after a sign-up that gives us no
+// First-time username prompt, shown right after a sign-up that gives us no
 // username of its own (e.g. Google OAuth), so the player always sets a name.
 // Also used to force legacy "Anonymous" accounts to choose a real name.
 function isAnonName(n){ return String(n||'').trim().toLowerCase()==='anonymous'; }
@@ -5993,7 +5993,7 @@ function showUsernamePrompt(opts){
   const skip=$('unp-skip'); if(skip) skip.style.display = force ? 'none' : '';   // forced → no opt-out
   const sub=$('unp-sub-text');
   if(sub) sub.textContent = force
-    ? '“Anonymous” is reserved — please choose a username to use on the leaderboards.'
+    ? '“Anonymous” is reserved, please choose a username to use on the leaderboards.'
     : 'This is the name shown on the leaderboards & your profile. You can change it later.';
   bg.classList.add('show');
   setTimeout(()=>{ try{ if(inp) inp.focus(); }catch(e){} }, 80);
@@ -6089,7 +6089,7 @@ async function fetchAllTimeTotal(draftTypeVal){
 // Insert this draft into the global table, then rank it among ALL drafts.
 // Ranking matches the local rule: higher overall, ties broken by further progress.
 // Insert this draft into the global table (for board membership + naming).
-// anon has no direct INSERT — only the submit_draft() function can write.
+// anon has no direct INSERT, only the submit_draft() function can write.
 // Returns the new row id. Throws if the insert didn't go through.
 async function submitDraftRow(overall, progress, meta){
   const draftTypeVal = (meta && meta.draftType) || 'quick';
@@ -6104,12 +6104,12 @@ async function submitDraftRow(overall, progress, meta){
   });
 
   // PREFERRED (anti-forgery): send the drafted player IDs and let the hardened
-  // submit_draft() RECOMPUTE the score server-side from wc_players — the browser
+  // submit_draft() RECOMPUTE the score server-side from wc_players, the browser
   // number (p_overall) is never trusted. See supabase/03_harden_submit_draft.sql.
   const ids = (gs && Array.isArray(gs.picks))
     ? gs.picks.map(p => String(p.player.player_id)) : null;
   // parallel slot labels (GK/DEF/MID/FWD/FLEX) so the leaderboard lineup popup
-  // can show each player's actual slot — display-only, never used for scoring.
+  // can show each player's actual slot, display-only, never used for scoring.
   const slots = (gs && Array.isArray(gs.picks))
     ? gs.picks.map(p => String(p.slot || p.player.position || '')) : null;
   if(ids && ids.length){
@@ -6140,7 +6140,7 @@ async function submitDraftRow(overall, progress, meta){
 
 // Rank this draft among ALL drafts ever played, purely by team overall (ties
 // broken by further tournament progress). This is the AUTHORITATIVE ranking and
-// is computed directly from the global board — it does NOT depend on this
+// is computed directly from the global board, it does NOT depend on this
 // draft's own insert succeeding, so an insert hiccup can never collapse the rank
 // to the tiny per-device board (which used to show e.g. "3 of 671").
 async function fetchGlobalRank(overall, progress, draftTypeVal){
@@ -6149,13 +6149,13 @@ async function fetchGlobalRank(overall, progress, draftTypeVal){
   // response so a failed count can't silently read 0 and rank everyone #1.
   // NOTE: requires the DB migration making `overall` numeric(5,1); against the old
   // integer column a decimal filter is rejected (HTTP 400) and rank falls back.
-  // Ranking is per draft_type — a Full Draft is ranked only against other Full
+  // Ranking is per draft_type, a Full Draft is ranked only against other Full
   // drafts (and Quick only against Quick + legacy). Falls back to all drafts if
   // the column isn't present yet.
   const ov = (+overall).toFixed(1);
   const orFilter = encodeURIComponent(`(overall.gt.${ov},and(overall.eq.${ov},progress.gt.${progress}))`);
   const dt = dtFilter(draftTypeVal);
-  // Kick off the all-time total in parallel — it's independent of the rank query,
+  // Kick off the all-time total in parallel, it's independent of the rank query,
   // so the two count(*)s run concurrently instead of back-to-back.
   const totalP = fetchAllTimeTotal(draftTypeVal);
   // Rank against EVERY draft that beats this one (named or anonymous), so the rank
@@ -6174,13 +6174,13 @@ async function fetchGlobalRank(overall, progress, draftTypeVal){
   const rank = better + 1;
   // The total is read in a separate query, so a freshly-inserted draft may not be
   // reflected in it yet (replication lag). Never let the count fall below this
-  // draft's own rank — that would render an impossible "ranks N+1 of N".
+  // draft's own rank, that would render an impossible "ranks N+1 of N".
   const total = Math.max(await totalP, rank);
   return { rank, total };
 }
 
 // Rank this draft within ONE specific board: a given mode (easy/hard) and time
-// window (all/week/day). Top-10 qualification is per board — a draft can miss the
+// window (all/week/day). Top-10 qualification is per board, a draft can miss the
 // all-time-across-both-modes Top 10 (e.g. an 87 ranked 42nd overall) yet still
 // crack the hard-mode board, the weekly board, or today's board. Returns the
 // 1-based rank within that board (count of strictly-better drafts + 1).
@@ -6211,7 +6211,7 @@ function dtFilter(dt){ return (dt==='quick'||dt==='full') ? `&draft_type=eq.${dt
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 // Short round/result tag for a leaderboard row. progress is the reliable signal
-// (6 = champion, 5 = lost final) — the result text doesn't always say "champion",
+// (6 = champion, 5 = lost final), the result text doesn't always say "champion",
 // which made winners show "Final" just like runners-up.
 function lbMetaLabel(row){
   const p=Number(row.progress);
@@ -6239,7 +6239,7 @@ async function fetchTopDrafts(limit, opts){
   filt+=dtFilter(opts.draftType);
   const cut=lbCutoffISO(opts.window);
   if(cut) filt+=`&created_at=gte.${encodeURIComponent(cut)}`;
-  // Every draft is listed — guests appear as "Anonymous" (rendered client-side).
+  // Every draft is listed, guests appear as "Anonymous" (rendered client-side).
   const order='&order=overall.desc,progress.desc,created_at.asc&limit='+limit;
   // Prefer the richest select (flag + lineup); fall back step by step if a
   // column isn't present yet so the board always loads.
@@ -6327,7 +6327,7 @@ function renderLeaderboardRows(rows, highlightId){
   rows = rows||[];
   lbCurrentRows = rows;
   const list=$('lb-list');
-  if(!rows.length){ list.innerHTML='<div class="lb-empty">No drafts yet — play one to get on the board!</div>'; return; }
+  if(!rows.length){ list.innerHTML='<div class="lb-empty">No drafts yet, play one to get on the board!</div>'; return; }
   list.innerHTML = rows.map((row,i)=>{
     const you = highlightId!=null && row.id===highlightId;
     const nm  = cleanDisplayName((row.name && String(row.name).trim()) ? row.name : 'Anonymous');
@@ -6356,7 +6356,7 @@ function playerById(id){
   }
   return (PLAYERS_BY_ID && PLAYERS_BY_ID[String(id)]) || null;
 }
-function luOv(p){ return p.wc_overall ?? p.overall ?? p.skill_rating ?? '—'; }
+function luOv(p){ return p.wc_overall ?? p.overall ?? p.skill_rating ?? '-'; }
 
 // Expand a leaderboard row into the squad that produced it, styled like the
 // results-screen player rows.
@@ -6444,14 +6444,14 @@ async function refreshLeaderboardList(highlightId){
 // podium banner; everything else gets the plain one-line rank.
 function renderRankLine(el, rank, total){
   // Rank/total are computed within this draft's own board (quick vs full), so name
-  // the type in the copy — display only, no leaderboard behaviour changes.
+  // the type in the copy, display only, no leaderboard behaviour changes.
   const dtLabel = (gs && gs.draftType==='full') ? 'Full Draft' : 'Quick Draft';
   if(rank<=3 && total>0){
     const place=['1st','2nd','3rd'][rank-1];
     el.className='res-rank podium '+MEDAL_TIERS[rank-1];
     el.innerHTML = metalTrophySvg(rank,'podtrophy')
       + `<span class="podium-place">#${rank} All-Time</span>`
-      + `<span class="podium-sub">${place} of ${total} ${dtLabel}s — incredible!</span>`;
+      + `<span class="podium-sub">${place} of ${total} ${dtLabel}s, incredible!</span>`;
   }else{
     el.className='res-rank';
     el.innerHTML = `🏅 This draft ranks <b>${rank}</b> of <b>${total}</b> all-time ${dtLabel}s`;
@@ -6459,7 +6459,7 @@ function renderRankLine(el, rank, total){
 }
 
 // ============================================================================
-//  DAILY CHALLENGE  —  one themed Full draft per day, same for everyone
+//  DAILY CHALLENGE ,  one themed Full draft per day, same for everyone
 // ============================================================================
 // The theme + spin sequence are derived deterministically from the UTC date, so
 // every player faces the identical draft. Unlimited replays, first attempt
@@ -6468,22 +6468,22 @@ function renderRankLine(el, rank, total){
 
 // Confederation of each nation in the dataset (for confederation themes).
 const CONFED = {
-  // CONMEBOL — South America
+  // CONMEBOL, South America
   Argentina:'CONMEBOL',Bolivia:'CONMEBOL',Brazil:'CONMEBOL',Chile:'CONMEBOL',Colombia:'CONMEBOL',
   Ecuador:'CONMEBOL',Paraguay:'CONMEBOL',Peru:'CONMEBOL',Uruguay:'CONMEBOL',
-  // CAF — Africa
+  // CAF, Africa
   Algeria:'CAF',Angola:'CAF',Cameroon:'CAF','Cape Verde':'CAF','DR Congo':'CAF',Egypt:'CAF',Ghana:'CAF',
   'Ivory Coast':'CAF',Morocco:'CAF',Nigeria:'CAF',Senegal:'CAF','South Africa':'CAF',Togo:'CAF',
   Tunisia:'CAF',Zaire:'CAF',
-  // AFC — Asia/Australia
+  // AFC, Asia/Australia
   Australia:'AFC','China PR':'AFC',Iran:'AFC',Iraq:'AFC',Israel:'AFC',Japan:'AFC',Jordan:'AFC',
   Kuwait:'AFC','North Korea':'AFC',Qatar:'AFC','Saudi Arabia':'AFC','South Korea':'AFC',
   'United Arab Emirates':'AFC',Uzbekistan:'AFC',
-  // CONCACAF — North/Central America & Caribbean
+  // CONCACAF, North/Central America & Caribbean
   Canada:'CONCACAF','Costa Rica':'CONCACAF',Curaçao:'CONCACAF','El Salvador':'CONCACAF',Haiti:'CONCACAF',
   Honduras:'CONCACAF',Jamaica:'CONCACAF',Mexico:'CONCACAF',Panama:'CONCACAF','Trinidad and Tobago':'CONCACAF',
   'United States':'CONCACAF',
-  // OFC — Oceania
+  // OFC, Oceania
   'New Zealand':'OFC'
   // everything else defaults to UEFA below
 };
@@ -6737,8 +6737,8 @@ async function openDailyBoard(view){
   const t=todaysTheme();
   const tl=$('daily-theme-line');
   if(tl) tl.innerHTML = streak
-    ? 'Longest <b>active streaks</b> — play every day to climb.'
-    : `<b>${escapeHtml(t.name)}</b> — ${escapeHtml(t.blurb)}`;
+    ? 'Longest <b>active streaks</b>, play every day to climb.'
+    : `<b>${escapeHtml(t.name)}</b>, ${escapeHtml(t.blurb)}`;
   // toggle active state
   const seg=$('daily-seg');
   if(seg) seg.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.dv===dailyBoardView));
@@ -6770,7 +6770,7 @@ async function openDailyBoard(view){
 // Streak leaderboard rows (rank · flag+name · best · current streak with a flame).
 function renderStreakList(rows){
   const list=$('daily-list'); if(!list) return;
-  if(!rows.length){ list.innerHTML='<div class="lb-empty">No active streaks yet — play today to start one!</div>'; return; }
+  if(!rows.length){ list.innerHTML='<div class="lb-empty">No active streaks yet, play today to start one!</div>'; return; }
   const myName=(authProfile&&authProfile.username)||'';
   list.innerHTML=rows.map((row,i)=>{
     const nm=cleanDisplayName((row.username&&String(row.username).trim())?row.username:'Anonymous');
@@ -6791,7 +6791,7 @@ function renderStreakList(rows){
 }
 function renderDailyList(rows){
   const list=$('daily-list'); if(!list) return;
-  if(!rows.length){ list.innerHTML='<div class="lb-empty">No entries yet — be the first today!</div>'; return; }
+  if(!rows.length){ list.innerHTML='<div class="lb-empty">No entries yet, be the first today!</div>'; return; }
   const myId = gs && gs.result && gs.result._lbId;
   list.innerHTML=rows.map((row,i)=>{
     const you=(myId!=null && row.id===myId);
@@ -6817,7 +6817,7 @@ function renderDailyList(rows){
 async function fillRankBadge(overall, progress){
   const el = $('res-rank-line'); if(!el) return;
   if(gs && gs.daily) return fillDailyRankBadge(overall, progress); // daily → its own board
-  if(gs.result._lb){ // already computed (e.g. re-render) — just show it
+  if(gs.result._lb){ // already computed (e.g. re-render), just show it
     renderRankLine(el, gs.result._lb.rank, gs.result._lb.total);
     return;
   }
@@ -6828,10 +6828,10 @@ async function fillRankBadge(overall, progress){
   if(SUPABASE_READY){
     try{
       // Add this draft to the global board (for naming + id) for EVERYONE. Guests
-      // are recorded anonymously — submit_draft() inserts a nameless row when
-      // auth.uid() is null — and the entry modal then prompts them to sign in to
+      // are recorded anonymously, submit_draft() inserts a nameless row when
+      // auth.uid() is null, and the entry modal then prompts them to sign in to
       // put their name on it. Signed-in users are auto-attributed server-side.
-      // Tolerate an insert hiccup — the rank below is computed independently.
+      // Tolerate an insert hiccup, the rank below is computed independently.
       let id = null;
       try{
         id = await submitDraftRow(overall, progress, {
@@ -6887,7 +6887,7 @@ function weakestLine(){
   return worst ? { line:worst, label:META[worst].label, fix:META[worst].fix, avg:wAvg } : null;
 }
 
-// Surface a specific, beatable gap ("0.6 OVR off the all-time Top 10") — the
+// Surface a specific, beatable gap ("0.6 OVR off the all-time Top 10"), the
 // strongest "go again" trigger. Skips podium finishers (already celebrated).
 async function fillNearMiss(rank, overall){
   const el=$('res-nearmiss'); if(!el || rank<=3) return;
@@ -6905,8 +6905,8 @@ async function fillNearMiss(rank, overall){
   if(thresh==null) return;
   const gap = thresh - overall;
   let msg;
-  if(gap>0 && gap<=8)  msg = `So close — <b>${gap.toFixed(1)} OVR</b> off the all-time ${tier}. Re-draft to break in?`;
-  else if(gap<=0)      msg = `Right on the all-time ${tier} cut line — one better pick gets you in.`;
+  if(gap>0 && gap<=8)  msg = `So close, <b>${gap.toFixed(1)} OVR</b> off the all-time ${tier}. Re-draft to break in?`;
+  else if(gap<=0)      msg = `Right on the all-time ${tier} cut line, one better pick gets you in.`;
   else return;         // too far to be a credible nudge
   el.innerHTML='🎯 '+msg;
   el.hidden=false;
@@ -6924,7 +6924,7 @@ function goToResults(){
     'Quarter-final':'Quarter-finals','Semi-final':'Semi-finals','Final':'Final'};
   const champ = sim && !sim.eliminated && sim.furthestRound==='Final';
 
-  // tournament progress for ranking — how far the team advanced
+  // tournament progress for ranking, how far the team advanced
   // (0=group … 4=lost final, 5=champion).
   const ROUND_PROGRESS={'Group Stage':0,'Round of 32':1,'Round of 16':2,'Quarter-final':3,'Semi-final':4,'Final':5};
   const progress = champ ? 6 : (sim ? (ROUND_PROGRESS[sim.furthestRound] ?? 0) : 0);
@@ -6968,13 +6968,13 @@ function goToResults(){
     if(!hookEl||!againBtn) return;
     if(champ){
       hookEl.innerHTML='🏆 <b>World Cup won.</b> Can you go back-to-back?';
-      againBtn.textContent='Re-draft — defend your title →';
+      againBtn.textContent='Re-draft, defend your title →';
       return;
     }
     const weak=weakestLine();
     if(weak){
       hookEl.innerHTML=`Out in the <b>${roundName}</b>. Weakest line: <b>${weak.label}</b> (${Math.round(weak.avg)} OVR avg).`;
-      againBtn.textContent=`Re-draft — fix your ${weak.fix} →`;
+      againBtn.textContent=`Re-draft, fix your ${weak.fix} →`;
     }else{
       hookEl.innerHTML=`Out in the <b>${roundName}</b>. Run it back?`;
       againBtn.textContent='Re-draft →';
@@ -7054,8 +7054,8 @@ function openProfile(p){
   const target=normName(p.name);
   const all=(window.PLAYERS||[]).filter(x=>normName(x.name)===target)
     .sort((a,b)=>(a.year-b.year) || a.country.localeCompare(b.country));
-  const ovOf = x => (x.wc_overall ?? x.skill_rating ?? x.overall ?? '—');
-  const dash = v => (v==null ? '—' : v);
+  const ovOf = x => (x.wc_overall ?? x.skill_rating ?? x.overall ?? '-');
+  const dash = v => (v==null ? '-' : v);
   // a stat tile, only when the value is present (nulls omitted entirely)
   const tile = (label,val)=> val==null ? '' :
     `<div class="profile-stat"><div class="k">${label}</div><div class="v">${val}</div></div>`;
@@ -7082,13 +7082,13 @@ function openProfile(p){
   // ── scrollable body ──
   let html='';
 
-  // tournament info for the drafted year — result badge only
-  html+=`<div class="profile-section-label">${p.year} ${p.country} — Tournament</div>`;
+  // tournament info for the drafted year, result badge only
+  html+=`<div class="profile-section-label">${p.year} ${p.country}, Tournament</div>`;
   if(fin) html+=`<div class="profile-tags"><span class="finish-badge${fin.cls?' '+fin.cls:''}">${emToSvg(fin.label)}</span></div>`;
   // Rating tiles (Overall / Skill / Squad Strength / WC Performance) removed for
-  // now — bringing them back once the data is solid.
+  // now, bringing them back once the data is solid.
 
-  // player details — every non-null field, never a dash for missing data
+  // player details, every non-null field, never a dash for missing data
   const details=[
     detail('Age at tournament', p.age_at_tournament),
     detail('Birth year', p.birth_year),
@@ -7098,7 +7098,7 @@ function openProfile(p){
   ].join('');
   if(details) html+=`<div class="profile-section-label">Player Details</div><ul class="profile-details">${details}</ul>`;
 
-  // career World Cup history — one row per tournament: Year | Apps | Goals | Overall
+  // career World Cup history, one row per tournament: Year | Apps | Goals | Overall
   html+=`<div class="profile-section-label">Career World Cup History</div>
     <table class="profile-table"><thead><tr>
       <th>Year</th><th>Apps</th><th>Overall</th>
@@ -7123,14 +7123,14 @@ function closeProfile(){ $('profile-bg').classList.remove('show'); }
 // ============================================================
 //  REPORT SCREEN
 // ============================================================
-// Share-card text (CHANGE 1) — short, SEO-first, exactly four lines. Every result
+// Share-card text (CHANGE 1), short, SEO-first, exactly four lines. Every result
 // tier leads with "World Cup" for search optimisation:
 //   [result message]
 //   [score]
 //   Tap the link to draft your squad ⚽
 //   https://runthe.gg
 // The first three lines (shareTextCore) are the navigator.share() text; the
-// clipboard fallback copies the whole block — link included — since that's what
+// clipboard fallback copies the whole block, link included, since that's what
 // people paste into a tweet.
 const SHARE_HOME = 'https://runthe.gg';
 
@@ -7161,12 +7161,12 @@ function shareLeadScorer(){
 // and passed as the share-sheet url on mobile.
 const SHARE_HASHTAGS = '#RunThePitch #WorldCup #FIFA';
 function shareTextCore(){
-  const rating=(gs.result && gs.result.teamOverall!=null) ? (+gs.result.teamOverall).toFixed(1) : '—';
+  const rating=(gs.result && gs.result.teamOverall!=null) ? (+gs.result.teamOverall).toFixed(1) : '-';
   return `${shareFirstSentence()}. `
        + `Mode: ${shareModeLabel()}. Team Rating: ${rating}. Lead Goalscorer: ${shareLeadScorer()}. Try to beat me! `
        + SHARE_HASHTAGS;
 }
-// Full four-line block including the link — for clipboard + the on-screen box.
+// Full four-line block including the link, for clipboard + the on-screen box.
 function reportText(){
   return `${shareTextCore()}\n${SHARE_HOME}`;
 }
@@ -7184,7 +7184,7 @@ function showToast(msg){ const t=$('toast'); if(msg) t.textContent=msg; t.classL
 // Renders a 1080×1350 (Instagram 4:5, also fine on X) PNG containing the drafted
 // VI with overalls plus a brief simulation recap, in the game's brand style.
 // Purpose-built on a canvas (no html2canvas dependency) so it always contains the
-// roster — the old path only snapshotted the recap box.
+// roster, the old path only snapshotted the recap box.
 const SHARE_TROPHY_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 92"><defs>
   <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".35" stop-color="#E8C25A"/><stop offset=".7" stop-color="#C18F22"/><stop offset="1" stop-color="#8A5E12"/></linearGradient>
   <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F6DC82"/><stop offset="1" stop-color="#9C6C18"/></linearGradient>
@@ -7229,7 +7229,7 @@ function shareEliminatedRound(r){
   return (r && map[r.furthestRound]) || 'Group Stage';
 }
 // Y at which the roster starts on the share canvas. MUST mirror the y-advances in
-// the header drawing in buildShareCanvas — used to size the canvas so the 11-man
+// the header drawing in buildShareCanvas, used to size the canvas so the 11-man
 // bubbles get a consistent height no matter the outcome (trophy / recap length).
 function shareHeaderHeight(isChamp, isElim, recapCount){
   let y=200;
@@ -7276,7 +7276,7 @@ async function buildShareCanvas(){
   stripe.addColorStop(0,'#9C6C18'); stripe.addColorStop(.32,'#F4B413'); stripe.addColorStop(.5,'#FCEFA8'); stripe.addColorStop(.68,'#F4B413'); stripe.addColorStop(1,'#9C6C18');
   x.fillStyle=stripe; x.fillRect(0,0,W,12);
 
-  // header — wordmark + edition pill
+  // header, wordmark + edition pill
   x.textAlign='center'; x.textBaseline='alphabetic';
   x.font='400 60px Anton';
   const seg=[['RUN',cream],['THE','#138A6B'],['PITCH',cream]];
@@ -7319,7 +7319,7 @@ async function buildShareCanvas(){
   x.save(); x.shadowColor='rgba(244,180,19,.3)'; x.shadowBlur=16;
   const headingLabel = isElim ? shareEliminatedRound(simResult) : (oc.label||'');
   x.fillText(headingLabel.toUpperCase(), CX, y+56); x.restore(); y+=86;
-  // team overall — styled exactly like the post-draft TEAM OVERALL reveal
+  // team overall, styled exactly like the post-draft TEAM OVERALL reveal
   // screen: a large tier-coloured number (green ≥90, gold ≥80, orange ≥70,
   // else red) with a spaced "TEAM OVERALL" label beneath, to one decimal.
   const teamOv = gs.result.teamOverall;
@@ -7365,7 +7365,7 @@ async function buildShareCanvas(){
   x.fillText('YOUR STARTING VI', 64, y+8);
   x.fillStyle='rgba(255,255,255,.18)'; x.fillRect(300, y, W-64-300, 2); y+=26;
 
-  // roster rows (white cards) — attackers-first (FWD → GK) to match the results page
+  // roster rows (white cards), attackers-first (FWD → GK) to match the results page
   const picks=groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, draftSlotOrder())).reverse();
   const gap=ROW_GAP, mX=60, rW=W-2*mX;
   const rowH=fullRoster ? ROW_H : Math.min(96, Math.floor((H-110-y)/picks.length)-12);
@@ -7388,7 +7388,7 @@ async function buildShareCanvas(){
     rrect('',x,bx,by,bw,bh,9); x.fillStyle=bc; x.fill();
     x.fillStyle = bc===PITCH_COLORS.GK ? ink : '#fff';
     x.font='900 22px Archivo'; x.textAlign='center'; x.fillText(pick.slot, bx+bw/2, cy+8); x.textAlign='left';
-    // overall (right) — caption + number anchored to the card body (ry/rowH) so
+    // overall (right), caption + number anchored to the card body (ry/rowH) so
     // the "OVR" label always sits INSIDE the white card, just above the number,
     // and scales with the row height (previously it floated above the card edge).
     const ov=p.overall; const ovc=ovColor(ov);
@@ -7396,7 +7396,7 @@ async function buildShareCanvas(){
     const ovrFont=Math.max(11, Math.round(rowH*0.17));
     const numFont=Math.round(rowH*0.46);
     // Bulletproof OVR stack: drawn with textBaseline='top' so the number ALWAYS
-    // starts below the label's box plus a fixed gap — they can never overlap at any
+    // starts below the label's box plus a fixed gap, they can never overlap at any
     // row height. The two-line block is vertically centred in the card.
     const ovrGap=4;
     const topY=cy-(ovrFont+ovrGap+numFont)/2;
@@ -7438,7 +7438,7 @@ async function buildShareCanvas(){
       x.fillText('C', ccx, ccy+1); x.textAlign='left'; x.textBaseline='alphabetic';
       cursorX=ccx+r;   // right edge of the captain badge
     }
-    // award icons — same gold symbols as the team-overall reveal screen, placed
+    // award icons, same gold symbols as the team-overall reveal screen, placed
     // after the name (or after the captain badge if they're also a captain)
     if(aw.length){
       let ax=cursorX+10;
@@ -7525,7 +7525,7 @@ function shareToX(){
 async function copyReport(){
   // Put the message AND the link together in `text` with no separate `url`. When
   // both text and url are passed, some targets (notably X/Twitter on desktop) keep
-  // only the url and drop the message — combining them guarantees both are shared.
+  // only the url and drop the message, combining them guarantees both are shared.
   const text=reportText();   // message + runthe.gg link
   if(navigator.share){
     try{
@@ -7611,7 +7611,7 @@ async function buildSimpleShareCanvas(){
     x.fillText(shareEliminatedRound(r).toUpperCase(), CX, 286); x.restore();
   }
 
-  // team overall — tier-coloured number + spaced label, like the reveal screen
+  // team overall, tier-coloured number + spaced label, like the reveal screen
   const teamOv = gs.result.teamOverall;
   const over100 = teamOv >= 100;
   const teamColor = over100 ? '#F4B413' : (teamOv>=90?'#4ade80':teamOv>=80?'#F4B413':teamOv>=70?'#F47B20':'#E5402A');
@@ -7627,7 +7627,7 @@ async function buildSimpleShareCanvas(){
   for(const ch of tlbl){ x.fillText(ch, tlx, 406); tlx+=x.measureText(ch).width+tsp; }
   x.textAlign='left';
 
-  // roster rows (white cards) — same style as the results page
+  // roster rows (white cards), same style as the results page
   const mX=60, rW=W-2*mX;
   const flagImgs=await Promise.all(picks.map(pk=>{ const u=flagImg(pk.player.country,160); return u?loadImg(u,true):Promise.resolve(null); }));
   const awardImgs=await Promise.all(picks.map(pk=>Promise.all(awardList(pk.player).map(a=>loadImg(awardIconUri(a))))));
@@ -7726,10 +7726,10 @@ function closeSharePopup(){ const bg=$('share-bg'); if(bg) bg.classList.remove('
 const SETUP_DRAFT_LABEL = { quick:'Quick Draft', full:'Full Team' };
 const SETUP_MODE_LABEL  = { easy:'Easy', hard:'Hard' };
 const SETUP_COMBOS = {
-  quick_easy:'6 fast rounds — GK, DEF, DEF, MID, FWD, FLEX. Overall ratings stay visible, so you can chase the strongest lineup possible.',
-  quick_hard:'6 fast rounds — GK, DEF, DEF, MID, FWD, FLEX. Ratings are hidden, so you draft on name and gut alone. A quick test of your ball knowledge.',
-  full_easy:'A full starting XI across 11 rounds — the players you draft decide your formation (1 GK, 3 DEF, 2 MID, 2 FWD, plus 3 FLEX slots that can be any outfield position: DEF, MID or FWD). Overall ratings stay visible to help you build the ultimate team.',
-  full_hard:'A full starting XI across 11 rounds — the players you draft decide your formation (1 GK, 3 DEF, 2 MID, 2 FWD, plus 3 FLEX slots that can be any outfield position: DEF, MID or FWD). Ratings are hidden — pure ball knowledge, no safety net. The ultimate test.',
+  quick_easy:'6 fast rounds, GK, DEF, DEF, MID, FWD, FLEX. Overall ratings stay visible, so you can chase the strongest lineup possible.',
+  quick_hard:'6 fast rounds, GK, DEF, DEF, MID, FWD, FLEX. Ratings are hidden, so you draft on name and gut alone. A quick test of your ball knowledge.',
+  full_easy:'A full starting XI across 11 rounds, the players you draft decide your formation (1 GK, 3 DEF, 2 MID, 2 FWD, plus 3 FLEX slots that can be any outfield position: DEF, MID or FWD). Overall ratings stay visible to help you build the ultimate team.',
+  full_hard:'A full starting XI across 11 rounds, the players you draft decide your formation (1 GK, 3 DEF, 2 MID, 2 FWD, plus 3 FLEX slots that can be any outfield position: DEF, MID or FWD). Ratings are hidden, pure ball knowledge, no safety net. The ultimate test.',
 };
 
 // Repaint the single live description from the current draftType + gameMode combo.
@@ -7898,7 +7898,7 @@ function showFormationReveal(){
   strip.style.transition='transform 2600ms cubic-bezier(.12,.62,.2,1)';
   strip.style.transform=`translateY(${-(targetIndex*rowH)}px)`;
   const settle=()=>{
-    // formation number already shows in the reel — only reveal the description line
+    // formation number already shows in the reel, only reveal the description line
     req.innerHTML=formationReqLine(target); setTimeout(()=>req.classList.add('show'),250);
     setTimeout(()=>go.classList.add('show'),550);
   };
@@ -7928,7 +7928,7 @@ $('sheet-bg').addEventListener('click',e=>{ if(e.target===$('sheet-bg')) closeSh
 const INFO_CONTENT = {
   chemistry: {
     title: 'Team Chemistry',
-    text: 'How well your best players match your team’s identity. Your FLEX pick sets that identity — a midfielder makes you Balanced (goalkeeper & defense count for more), a forward makes you Attacking (the front line counts for more). Chemistry is high when the positions your identity rewards are also your strongest, and it nudges your final score up or down by a few points.'
+    text: 'How well your best players match your team’s identity. Your FLEX pick sets that identity, a midfielder makes you Balanced (goalkeeper & defense count for more), a forward makes you Attacking (the front line counts for more). Chemistry is high when the positions your identity rewards are also your strongest, and it nudges your final score up or down by a few points.'
   },
   identity: {
     title: 'Team Identity',
@@ -7971,8 +7971,8 @@ $('lb-seg-drafttype').addEventListener('click',e=>{ const b=e.target.closest('bu
 // ---------- add-to-leaderboard entry modal (every results page) ----------
 // Fixed ordered list of flag options. Each name maps through the SAME flag image
 // system used everywhere else in the game (flagImg / FLAG_CODES).
-// Every flag the game can draw — all FLAG_CODES nations plus the defunct-nation
-// SVGs — so users can pick any of them. Deduped by the actual flag image (so the
+// Every flag the game can draw, all FLAG_CODES nations plus the defunct-nation
+// SVGs, so users can pick any of them. Deduped by the actual flag image (so the
 // same flag never appears twice, e.g. USA/United States, Germany/West Germany),
 // USA first as the default, then alphabetical.
 const ENTRY_FLAGS = (() => {
@@ -8005,7 +8005,7 @@ function updateEntrySubmit(){
 }
 // View-only leaderboard, opened from the home screen. Reuses the exact same
 // board (same toggles, same data, same rendering) but hides the score-entry UI,
-// so nothing about how the leaderboard works changes — it's just viewable.
+// so nothing about how the leaderboard works changes, it's just viewable.
 function openLeaderboardView(){
   const eb=$('entry-bg');
   eb.classList.remove('guest','signed');
@@ -8106,9 +8106,9 @@ async function commitEntryNaming(name, flag){
   }
 }
 // ---------- name moderation ----------
-// Keeps profanity and slurs off the leaderboard. The input is normalised first —
+// Keeps profanity and slurs off the leaderboard. The input is normalised first -
 // lower-cased, accents stripped, common leetspeak mapped back to letters, and all
-// non-letters removed — so evasions like "f.u.c.k", "n1gg4" or "$hit" still match.
+// non-letters removed, so evasions like "f.u.c.k", "n1gg4" or "$hit" still match.
 // Matching is substring-based on the collapsed string and deliberately errs toward
 // over-blocking (a blocked player just picks another name); edit BANNED_TERMS to tune.
 const BANNED_TERMS = [
@@ -8122,7 +8122,7 @@ const BANNED_TERMS = [
   'retard','golliwog','wog','redskin','gyppo','zipperhead','slanteye','rapist',
   // sexual-pun handles and offensive name references
   'mehoff','meoff','georgefloyd',
-  // reserved placeholder name — guests show as "Anonymous", so no one may take it
+  // reserved placeholder name, guests show as "Anonymous", so no one may take it
   'anonymous',
 ];
 function normalizeForFilter(s){
@@ -8155,7 +8155,7 @@ async function submitEntry(){
   // Moderation: reject profanity/slurs and keep the modal open with a prompt.
   if(isBannedName(name)){
     const err=$('entry-error');
-    err.textContent='That name isn’t allowed — please choose another.';
+    err.textContent='That name isn’t allowed, please choose another.';
     err.classList.add('show');
     return;
   }
@@ -8176,7 +8176,7 @@ async function submitEntry(){
   if(!ok){
     // keep the modal open so the player can try again
     btn.classList.remove('saving'); btn.disabled=false; btn.textContent='Save';
-    err.textContent='Couldn’t save — please try again.';
+    err.textContent='Couldn’t save, please try again.';
     err.classList.add('show');
     return;
   }
@@ -8223,7 +8223,7 @@ $('entry-submit').addEventListener('click', submitEntry);
     const rk=document.getElementById('td-rank-'+i);
     if(rk && !rk.dataset.filled){ rk.dataset.filled='1';
       try{ const {rank,total}=await fetchGlobalRank(+d.overall,+d.progress,d.draft_type); rk.textContent=`#${rank.toLocaleString()} of ${total.toLocaleString()}`; }
-      catch(err){ rk.dataset.filled=''; rk.textContent='—'; }
+      catch(err){ rk.dataset.filled=''; rk.textContent='-'; }
     }
   });
   on('entry-auth-btn','click',openAccountModal);   // CTA inside the entry modal
@@ -8310,12 +8310,12 @@ async function submitRatingForm(){
         method:'POST',
         headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
         body:JSON.stringify({
-          _subject:'RunThePitch — Rating feedback',
-          player_name:name, country:country||'—', year:year||'—',
-          suggested_overall:ovr||'—', explanation:note||'—'
+          _subject:'RunThePitch, Rating feedback',
+          player_name:name, country:country||'-', year:year||'-',
+          suggested_overall:ovr||'-', explanation:note||'-'
         })
       });
-      if(res.ok){ btn.disabled=false; btn.textContent=label; closeRatingForm(); showToast('Thanks — feedback sent ✓'); return; }
+      if(res.ok){ btn.disabled=false; btn.textContent=label; closeRatingForm(); showToast('Thanks, feedback sent ✓'); return; }
     }catch(e){ /* network issue → fall through to mailto */ }
     btn.disabled=false; btn.textContent=label;
   }
@@ -8323,11 +8323,11 @@ async function submitRatingForm(){
   // 2) Fallback: open the mail app pre-addressed to us.
   const body=
     `Player name: ${name}\n`+
-    `Country: ${country||'—'}\n`+
-    `Year: ${year||'—'}\n`+
-    `Suggested overall: ${ovr||'—'}\n\n`+
-    `Explanation:\n${note||'—'}`;
-  window.location.href=`mailto:${RATING_FEEDBACK_EMAIL}?subject=${encodeURIComponent('RunThePitch — Rating feedback')}&body=${encodeURIComponent(body)}`;
+    `Country: ${country||'-'}\n`+
+    `Year: ${year||'-'}\n`+
+    `Suggested overall: ${ovr||'-'}\n\n`+
+    `Explanation:\n${note||'-'}`;
+  window.location.href=`mailto:${RATING_FEEDBACK_EMAIL}?subject=${encodeURIComponent('RunThePitch, Rating feedback')}&body=${encodeURIComponent(body)}`;
   closeRatingForm();
 }
 $('rate-link-select').addEventListener('click',()=>{
@@ -8346,13 +8346,13 @@ $('profile-bg').addEventListener('click',e=>{ if(e.target===$('profile-bg')) clo
 // ============================================================
 //
 //  Title-win rate by overall (testWinThreshold, escalating opponent ladder,
-//  current model — sigmoid 0.20, sub-86 penalty, elite boost, 0.94 cap):
+//  current model, sigmoid 0.20, sub-86 penalty, elite boost, 0.94 cap):
 //    OVR 84: ~0.02%   OVR 85: ~0.1%   (a true longshot below 86)
 //    OVR 86: ~3.6%    OVR 88: ~13%    OVR 90: ~27%
 //    OVR 92: ~50%     OVR 95: ~64%    OVR 99: ~73%
 //  Squad ratings can exceed 100, so the model is defined continuously past 99;
 //  with the live (gap-scaled) win cap the top end keeps creeping up slowly
-//  (OVR 99 ~81%, 102 ~83%, 106 ~84.5%) but never becomes a sure thing — even a
+//  (OVR 99 ~81%, 102 ~83%, 106 ~84.5%) but never becomes a sure thing, even a
 //  100+ squad can be upset, and over a 6-game run that caps the title rate.
 //  The curve keeps weak squads near-hopeless and only elite squads contending;
 //  it was tuned to make winning it all a little harder at every overall, with
@@ -8367,7 +8367,7 @@ $('profile-bg').addEventListener('click',e=>{ if(e.target===$('profile-bg')) clo
 // ------------------------------------------------------------
 function winProbability(userOverall, opponentOverall){
   const diff = userOverall - opponentOverall;
-  // Steeper sigmoid (0.20) so rating gaps bite hard in the knockouts — a low-80s
+  // Steeper sigmoid (0.20) so rating gaps bite hard in the knockouts, a low-80s
   // squad facing a 90+ Final opponent is a heavy underdog, making a title run
   // for a weak team almost impossible.
   return 1 / (1 + Math.exp(-diff * 0.20));
@@ -8376,7 +8376,7 @@ function expectedGoals(teamOverall){
   return (teamOverall / 100) * 1.8;
 }
 
-// Per-match win penalty for weaker squads. 86+ is penalty-free here — the 86-90
+// Per-match win penalty for weaker squads. 86+ is penalty-free here, the 86-90
 // band is now shaped by the knockout form ramp in eliteBoost (which dips below
 // 1.0 at 86 and rises to the elite floor at 91). Below 86 keeps an aggressive,
 // continuous penalty so sub-86 squads stay near-hopeless (85 ≈ 0%).
@@ -8387,7 +8387,7 @@ function belowThresholdPenalty(userTeamOverall){
   return 0.64 * Math.pow(0.80, 86 - userTeamOverall);
 }
 
-// CHANGE 2 — early-knockout penalty for weak squads. Applies ONLY to teams 84
+// CHANGE 2, early-knockout penalty for weak squads. Applies ONLY to teams 84
 // and below, and ONLY in the first two knockout rounds (roundIndex 0 and 1), so
 // a side that sneaks out of the group frequently exits in the Round of 32/16
 // rather than routinely reaching the quarters. Teams 85+ are unaffected.
@@ -8398,7 +8398,7 @@ function earlyRoundPenalty(userTeamOverall, roundIndex){
   return 0.82 * Math.pow(0.93, deficit);
 }
 
-// Knockout form multiplier — a piecewise ramp from 86 to 99, compounding across
+// Knockout form multiplier, a piecewise ramp from 86 to 99, compounding across
 // the knockout rounds. Calibrated against the live opponent pool (with the
 // gap-scaled win cap in simulateMatch active) to the target win-rate curve:
 //   86 ≈ 2%, 87 ≈ 5%, 88 ≈ 9%, 89 ≈ 15%, 90 ≈ 19%, 91 ≈ 28%, 92 ≈ 40%,
@@ -8421,10 +8421,10 @@ function eliteBoost(userTeamOverall){
   return b * 0.97;
 }
 
-// CHANGE 1 — scoreline variance that scales with the strength gap. The stronger
+// CHANGE 1, scoreline variance that scales with the strength gap. The stronger
 // team gets a higher variance ceiling (blowouts become possible when the gap is
 // large); the weaker team's ceiling shrinks as the gap grows. Win probability is
-// untouched — this only shapes the MARGIN, not who wins.
+// untouched, this only shapes the MARGIN, not who wins.
 function getRandomFactor(isStrongerTeam, gap){
   if(isStrongerTeam){
     const ceiling = 1.2 + (gap / 100) * 2.0;
@@ -8435,14 +8435,14 @@ function getRandomFactor(isStrongerTeam, gap){
   }
 }
 
-// Average overall of a squad — same approach used for the user's team.
+// Average overall of a squad, same approach used for the user's team.
 function simTeamOverall(squad){
   if(!squad || !squad.length) return 0;
   const sum = squad.reduce((a,p)=>a+(p.overall||0),0);
   return Math.round(sum/squad.length);
 }
 
-// CHANGE 4 — derive an attack/defense split for an opponent from its real
+// CHANGE 4, derive an attack/defense split for an opponent from its real
 // squad roster (positions + ratings), blended 50/50 with team_overall so squads
 // with thin positional data stay sane.
 function getOpponentPositionalRatings(squad, teamOverall){
@@ -8468,7 +8468,7 @@ function buildOpponentPool(excludeCountry, excludeYear){
   G.getAllCountries().forEach(country=>{
     G.getYearsForCountry(country).forEach(year=>{
       if(country===excludeCountry && year===excludeYear) return;
-      // 2026 squads have no team_overall and no tournament history — they can't
+      // 2026 squads have no team_overall and no tournament history, they can't
       // calibrate opponent difficulty, so they never enter the opponent pool.
       if(year===2026) return;
       const squad=G.getSquad(country,year);
@@ -8505,7 +8505,7 @@ function drawOpponent(pool, difficulty){
   return pool.splice(pick,1)[0];
 }
 
-// CHANGE 5 — strictly enforced opponent pools per knockout round.
+// CHANGE 5, strictly enforced opponent pools per knockout round.
 // Each round draws from a team_overall band, preferring squads whose historical
 // tournament_result fits the round; a wider band is the fallback. The Final is
 // special: opponents must always be elite (team_overall >= 90).
@@ -8537,7 +8537,7 @@ function drawOpponentForRound(pool, round){
     if(!candidates.length && cfg.fallback) candidates = inBand(cfg.fallback[0], cfg.fallback[1]);
   }
 
-  // The Final opponent must always be elite — never fall back below 90.
+  // The Final opponent must always be elite, never fall back below 90.
   if(!candidates.length && round==='Final'){
     const all = pool.map((o,i)=>i);
     const elite = all.filter(i=>pool[i].teamOverall>=90);
@@ -8551,7 +8551,7 @@ function drawOpponentForRound(pool, round){
   return pool.splice(pick,1)[0];
 }
 
-// CHANGE 4 — stricter group-stage gate. A 75-overall squad now clears the
+// CHANGE 4, stricter group-stage gate. A 75-overall squad now clears the
 // group only ~60% of the time; this is the first hard wall for a weak side.
 function groupStageAdvance(teamOverall){
   // 86+ almost always advances
@@ -8584,7 +8584,7 @@ function simGroupMatchResult(userOverall, oppOverall){
 }
 
 // Group stage: play three matchdays, then decide advancement via the strength
-// gate groupStageAdvance (CHANGE 3) — 86+ almost always go through, sub-80 sides
+// gate groupStageAdvance (CHANGE 3), 86+ almost always go through, sub-80 sides
 // exit far more often. The shown matchday record is then reconciled to the
 // outcome so the displayed results never contradict the verdict (no "won every
 // game" yet eliminated, and no winless side sneaking through).
@@ -8614,13 +8614,13 @@ function simulateGroupStage(userOverall, pool){
 
   // Reconcile the record with the verdict so the shown results stay plausible.
   if(advanced){
-    // A side that advanced should not look winless — give it at least one win.
+    // A side that advanced should not look winless, give it at least one win.
     if(w===0 && matchdays.length){
       const md = matchdays.find(m=>m.res==='D') || matchdays.find(m=>m.res==='L') || matchdays[0];
       setRes(md,'W'); tally();
     }
   } else {
-    // An eliminated side should not look dominant — knock any 2nd/3rd win down.
+    // An eliminated side should not look dominant, knock any 2nd/3rd win down.
     while(w>1){
       const md = matchdays.find(m=>m.res==='W');
       setRes(md,'L'); tally();
@@ -8645,7 +8645,7 @@ const OG_WEIGHTS     = { DEF:1.0, GK:0.5, MID:0.25, FWD:0.1 };
 // (e.g. 90 vs 60 ≈ 3.4× before the position weight) rather than just ~1.5×.
 const SCORER_OVERALL_POW = 3;
 
-// Weighted scorer pick — higher overall = more likely to score, scaled by a
+// Weighted scorer pick, higher overall = more likely to score, scaled by a
 // position weight so goalkeepers don't score and defenders rarely do.
 function simPickScorer(squad, weights){
   if(!squad.length) return { name:'Unknown', country:'' };
@@ -8658,7 +8658,7 @@ function simPickScorer(squad, weights){
   return squad[squad.length-1];
 }
 
-// CHANGE 4 — unique, conflict-free minute assignment for goal events.
+// CHANGE 4, unique, conflict-free minute assignment for goal events.
 //   Type 1: no two events in a match share the same minute.
 //   Type 2: the same player's goals are at least 3 minutes apart.
 // Regulation goals fall in 1..90, extra-time goals in 91..120. `usedMinutes`
@@ -8694,7 +8694,7 @@ function simMakeGoalEvent(beneficiary, userSquad, opponent, extraTime, usedMinut
   return { minute, scorer:scorer.name, scorerId:scorer.player_id, scorerCountry:scorer.country, team:beneficiary, isOG };
 }
 
-// CHANGE 3 — attack/defense ratings derived from the user's ACTUAL drafted
+// CHANGE 3, attack/defense ratings derived from the user's ACTUAL drafted
 // players. The FLEX slot's position decides the team's identity: a FWD flex is
 // ATTACKING (flex = second striker), a MID flex is BALANCED (flex = second mid).
 function getUserPositionalRatings(picks){
@@ -8743,7 +8743,7 @@ function getUserPositionalRatings(picks){
   return { attack, defense, identity };
 }
 
-// CHANGE 5 — Poisson sampler for natural football score distributions (lots of
+// CHANGE 5, Poisson sampler for natural football score distributions (lots of
 // 0s/1s/2s, the occasional 4 or 5).
 function samplePoisson(lambda){
   const L = Math.exp(-lambda);
@@ -8752,10 +8752,10 @@ function samplePoisson(lambda){
   return k - 1;
 }
 
-// CHANGE 5 — scoreline driven by positional attack vs defense, sampled with
+// CHANGE 5, scoreline driven by positional attack vs defense, sampled with
 // Poisson for variety. 1.35 is the baseline xG for evenly matched sides; the
 // identity multipliers make attacking squads live in open games and balanced
-// squads grind out low-scoring wins. Returns goal COUNTS only — the winner is
+// squads grind out low-scoring wins. Returns goal COUNTS only, the winner is
 // still enforced afterward by the calibrated probability engine.
 function generateScoreline(userRatings, oppRatings, identity){
   let userXG = 1.35 * Math.pow(1.06, (userRatings.attack - oppRatings.defense) / 2);
@@ -8789,8 +8789,8 @@ function simulateMatch(userSquad, userOverall, opponent, roundIndex, userRatings
   const early    = earlyRoundPenalty(userOverall, roundIndex);
   let finalProb  = baseProb * penalty * boost * early;
   // Win-probability cap scales with how badly you outclass the opponent. A close
-  // match stays at 0.95 (even a 99 squad can be upset), but a heavy favourite —
-  // e.g. an elite side meeting a weak early-round opponent — earns a higher
+  // match stays at 0.95 (even a 99 squad can be upset), but a heavy favourite -
+  // e.g. an elite side meeting a weak early-round opponent, earns a higher
   // ceiling (up to 0.99). This makes stronger squads markedly safer in the early
   // rounds (where mismatches are largest) and far less safe deep in the bracket,
   // so higher overalls go farther and rarely suffer early upsets.
@@ -8819,7 +8819,7 @@ function simulateMatch(userSquad, userOverall, opponent, roundIndex, userRatings
 
   let extraTime=false, penalties=false, penaltyWinner=null, etGoalTeam=null;
 
-  // CHANGE 3 — only when level after 90: extra time, then penalties.
+  // CHANGE 3, only when level after 90: extra time, then penalties.
   if(userGoals === opponentGoals){
     extraTime = true;
     if(Math.random() < 0.58){
@@ -8845,7 +8845,7 @@ function simulateMatch(userSquad, userOverall, opponent, roundIndex, userRatings
   }
 
   // Build goal events; the ET-scoring side's last goal is flagged as extra-time.
-  // CHANGE 4 — per-match minute trackers guarantee unique minutes and ≥3-minute
+  // CHANGE 4, per-match minute trackers guarantee unique minutes and ≥3-minute
   // gaps between a single player's goals.
   const usedMinutes = new Set();
   const scorerMinutes = {};
@@ -8881,8 +8881,8 @@ function generateCardEvents(picks, box, isQuickDraft){
   const outfield = picks.filter(pk=>pk.player.position!=='GK');
   if(!outfield.length) return [];
 
-  // Card likelihood by position — defenders foul most, midfielders next, forwards
-  // rarely — scaled down for better players (higher overall = more disciplined).
+  // Card likelihood by position, defenders foul most, midfielders next, forwards
+  // rarely, scaled down for better players (higher overall = more disciplined).
   // Cards are drawn fresh each match (Math.random, not a squad seed) so over a
   // tournament they land on DIFFERENT players in line with these weights rather
   // than always the same one. Totals are unchanged.
@@ -8912,7 +8912,7 @@ function generateCardEvents(picks, box, isQuickDraft){
     usedCardMins.add(m); return m;
   };
 
-  // Yellow cards — weighted, WITHOUT replacement so a single match's yellows land
+  // Yellow cards, weighted, WITHOUT replacement so a single match's yellows land
   // on distinct players (spread across the match, 5'–88').
   const ycPool=weighted.slice();
   for(let i=0;i<Math.min(totalYC,ycPool.length);i++){
@@ -8987,7 +8987,7 @@ function simulateTournament(userSquad, userOverall, playerPool, userRatings){
   return result;
 }
 
-// CHANGE 6 — temporary console validation: 1000 runs per overall, logging the
+// CHANGE 6, temporary console validation: 1000 runs per overall, logging the
 // share of complete World Cup wins (group + five knockout rounds, win/loss
 // driven purely by the sigmoid against an escalating opponent ladder).
 function testWinThreshold(){
@@ -9021,7 +9021,7 @@ function testWinThreshold(){
 }
 testWinThreshold();
 
-// CHANGE 6 — Test B: scoreline variety. Evenly matched (84/84) should spread
+// CHANGE 6, Test B: scoreline variety. Evenly matched (84/84) should spread
 // across many results with no single score dominating; a mismatch should
 // produce frequent blowouts.
 function testScorelines(){
@@ -9094,7 +9094,7 @@ function simSkipToResult(){
   // fast-forward proceeds through it (terminal popups navigate to results).
   const btn = document.querySelector('.match-popup-overlay #mp-next-btn, .match-popup-overlay #mp-results-btn');
   if(btn) btn.click();
-  // Inline (non-final win) banners have no button — advance them directly.
+  // Inline (non-final win) banners have no button, advance them directly.
   if(simResolveCurrentPopup) simResolveCurrentPopup();
 }
 
@@ -9112,7 +9112,7 @@ function simThreatLabel(ov){
 }
 
 // ---- canonical tournament outcome, derived ONLY from what happened ----
-// No number emojis — a plain text finish plus a unique encouraging message.
+// No number emojis, a plain text finish plus a unique encouraging message.
 // The message is picked at random from a pool per outcome, and some variants
 // weave in the Man of the Tournament's name so each result feels personal.
 function simOutcome(r){
@@ -9132,34 +9132,34 @@ function simOutcome(r){
 
   if(!r.eliminated && r.furthestRound==='Final'){
     return { label:'World Cup Winners', emoji:'🏆', message: pick([
-      'Champions of the world — you drafted a squad for the ages!',
+      'Champions of the world, you drafted a squad for the ages!',
       `${motRef}This squad wrote history. World Cup winners!`,
       'From the first whistle to the final, this team was unstoppable. Pure class.',
       `The trophy is yours. ${motRef}What a run!`,
       'You built a team, you ran the pitch, you won the World Cup. Legendary.',
-      'Every draft pick led to this. World champions — soak it in.',
+      'Every draft pick led to this. World champions, soak it in.',
     ]) };
   }
   switch(r.furthestRound){
     case 'Final': return { label:'Runners-up', emoji:'🥈', message: pick([
-      'So close to glory — the final was one game too far. Run it back and lift the trophy!',
+      'So close to glory, the final was one game too far. Run it back and lift the trophy!',
       `Runners-up at the World Cup. ${motRef}Agonizingly close. One more run.`,
       'The final slipped away, but reaching it is no small thing. Draft again and finish the job.',
-      `Silver isn't gold. ${motRef}You know what to do — spin and come back stronger.`,
+      `Silver isn't gold. ${motRef}You know what to do, spin and come back stronger.`,
       'You made the World Cup final. That is elite. Now imagine lifting the trophy.',
     ]) };
     case 'Semi-final': return { label:'Semi-Finalists', emoji:'', message: pick([
-      'A top-four finish — just one game from the final. Spin again and go all the way!',
+      'A top-four finish, just one game from the final. Spin again and go all the way!',
       `The semi-final is where the dream ended. ${motRef}So close. Spin it back.`,
-      'Four teams left and you were one of them. A serious squad — push further next time.',
+      'Four teams left and you were one of them. A serious squad, push further next time.',
       `Semi-final heartbreak. ${motRef}Draft sharper and make the final.`,
       'You were 90 minutes from the final. Build that squad again and do not stop.',
     ]) };
     case 'Quarter-final': return { label:'Quarter-Finalists', emoji:'', message: pick([
       'A strong run to the last eight. Draft sharper next time and push for more!',
-      `Quarter-final exit — you reached the business end. ${motRef}So close.`,
+      `Quarter-final exit, you reached the business end. ${motRef}So close.`,
       'The last eight. Not many teams get this far. Come back and go deeper.',
-      'A World Cup quarter-finalist — a squad to be proud of. Now go one further.',
+      'A World Cup quarter-finalist, a squad to be proud of. Now go one further.',
       `${motRef}The quarter-final was the end of the road, but it was a good one. Spin again.`,
     ]) };
     case 'Round of 16': return { label:'Round of 16', emoji:'', message: pick([
@@ -9173,14 +9173,14 @@ function simOutcome(r){
       'Knocked out in the last thirty-two. Dust yourself off, spin again, and go deeper!',
       `First knockout round exit. ${motRef}Not enough to build momentum.`,
       'Out at the first knockout hurdle. Draft a tighter squad and get past it.',
-      'The round of 32 was a step too far this time. Spin again — the quarters are waiting.',
+      'The round of 32 was a step too far this time. Spin again, the quarters are waiting.',
     ]) };
     default: return { label:'Group Stage Exit', emoji:'', message: pick([
-      'Out in the group stage — every champion starts somewhere. Build a new squad and try again!',
+      'Out in the group stage, every champion starts somewhere. Build a new squad and try again!',
       `Group stage exit. ${motRef}The tournament barely started. Spin and come back stronger.`,
       'This squad could not escape the groups. Draft smarter and reach the knockouts.',
-      'A tough group ended the run early. Even World Cup winners have failed to qualify before — this is your rebuild.',
-      'Not every spin produces a winner — but every winner started with a spin. Go again.',
+      'A tough group ended the run early. Even World Cup winners have failed to qualify before, this is your rebuild.',
+      'Not every spin produces a winner, but every winner started with a spin. Go again.',
     ]) };
   }
 }
@@ -9204,7 +9204,7 @@ function simFlavourPlayer(squad, opts={}){
 const shortNm = n => { const a=n.split(' '); return a.length>1?a[a.length-1]:n; };
 
 // one line of colour about a player, varied each call. The scoreline is passed
-// in so the line never contradicts it — e.g. no "clean sheet" after conceding,
+// in so the line never contradicts it, e.g. no "clean sheet" after conceding,
 // no "bagged a brace" without two goals.
 function simPlayerLine(squad, userGoals, opponentGoals){
   const gk = squad.find(p=>p.position==='GK');
@@ -9229,14 +9229,14 @@ function simPlayerLine(squad, userGoals, opponentGoals){
   const losing  = conceded!=null && conceded>scored;
   const tight   = conceded!=null && Math.abs(scored-conceded)<=1;
   const lines=[
-    // score-dependent lines — only offered when the scoreline supports them
+    // score-dependent lines, only offered when the scoreline supports them
     ...(scored>=3 ? [
-      `${nm(att)} was unplayable — a hat-trick performance from start to finish.`,
+      `${nm(att)} was unplayable, a hat-trick performance from start to finish.`,
     ] : []),
     ...(scored>=2 ? [
       `${nm(att)} bagged a brace to ease the nerves.`,
       `${nm(att)} and ${nm(att2)} combined for a masterclass going forward.`,
-      `${nm(att)} was clinical — two chances taken without hesitation.`,
+      `${nm(att)} was clinical, two chances taken without hesitation.`,
     ] : []),
     ...(scored>=1 ? [
       `${nm(att)} curled in a beauty from the edge of the box.`,
@@ -9259,16 +9259,16 @@ function simPlayerLine(squad, userGoals, opponentGoals){
     ...(conceded===0
       ? [
           gk ? `${nm(gk)} kept a commanding clean sheet.` : `A disciplined back line kept it tight.`,
-          `${nm(def)} was immense at the back — watertight all game.`,
+          `${nm(def)} was immense at the back, watertight all game.`,
         ]
       : [
           gk ? `${nm(gk)} was beaten but pulled off crucial stops to stay in it.` : `The back line dug in despite conceding.`,
           `${nm(def)} was tested repeatedly but did not crack.`,
         ]),
-    // score-agnostic colour — always safe
+    // score-agnostic colour, always safe
     `${nm(mid)} pulled every string in midfield.`,
     `${nm(mid)} dictated the tempo from deep, always finding space.`,
-    `${nm(mid)} covered every blade of grass — a complete midfield display.`,
+    `${nm(mid)} covered every blade of grass, a complete midfield display.`,
     `${nm(mid)} led the press and won the ball back relentlessly.`,
     `${nm(def)} was a wall at the back all game.`,
     `${nm(def)} read every danger before it became a threat.`,
@@ -9277,7 +9277,7 @@ function simPlayerLine(squad, userGoals, opponentGoals){
     `${nm(att)} ran the channels ragged and kept the defense guessing.`,
     `${nm(att)} held up play brilliantly and brought others into the game.`,
     `Super-sub ${nm(att)} changed the game off the bench.`,
-    `Set pieces were a weapon today — ${nm(def)} a danger on every ball.`,
+    `Set pieces were a weapon today, ${nm(def)} a danger on every ball.`,
   ];
   // never return an empty/blank line: filter any that collapsed to whitespace
   const usable = lines.filter(l => typeof l==='string' && l.trim().length);
@@ -9287,9 +9287,9 @@ function simPlayerLine(squad, userGoals, opponentGoals){
 const GROUP_WIN_LINES=[
   'Topped the group with a game to spare.',
   'Cruised through as group winners.',
-  'Through in style — maximum points.',
+  'Through in style, maximum points.',
   'Powered out of the group unbeaten.',
-  'Group winners — took control early and never let go.',
+  'Group winners, took control early and never let go.',
   'Dominated the group from start to finish. A statement run.',
   'Six points in the bag before the final whistle. Ruthless.',
   'A message to the rest of the tournament: this squad means business.',
@@ -9300,22 +9300,22 @@ const GROUP_SCRAPE_LINES=[
   'Survived a scare to grab a knockout spot.',
   'Held their nerve after dropping points.',
   'Through, but it was far from comfortable.',
-  'Scraped into the knockouts on goal difference — but they made it.',
+  'Scraped into the knockouts on goal difference, but they made it.',
   'A rollercoaster group ends in qualification. The hard part starts now.',
   'Dropped points but found a way through. Character over comfort.',
-  'A must-win final group game — and they delivered.',
+  'A must-win final group game, and they delivered.',
 ];
 const GROUP_UNBEATEN_LINES=[
-  'Through unbeaten — no losses in the group.',
+  'Through unbeaten, no losses in the group.',
   'Qualified without tasting defeat.',
-  'Solid and steady — advanced unbeaten.',
+  'Solid and steady, advanced unbeaten.',
   'Three group games, no defeats. A confident platform for the knockouts.',
-  'Unbeaten in the group — a clean slate heading into the knockout stage.',
+  'Unbeaten in the group, a clean slate heading into the knockout stage.',
 ];
 const GROUP_OUT_LINES=[
-  'A shock early exit — out in the group stage.',
+  'A shock early exit, out in the group stage.',
   'Couldn’t find a way through. Group stage elimination.',
-  'Dreams dashed early — eliminated in the groups.',
+  'Dreams dashed early, eliminated in the groups.',
   'A campaign to forget. Out before the knockouts.',
   'The group stage exposed the gaps. Back to the drawing board.',
   'Eliminated before the knockouts. Every great squad starts with a loss.',
@@ -9333,18 +9333,18 @@ const GROUP_QUALIFY_LINES=[
   'Out of the group and into the knockouts. Business time.',
   'Survived the group stage. Time to make noise.',
   'Group stage cleared. The bracket opens up.',
-  'Into the knockouts — this squad earned it.',
+  'Into the knockouts, this squad earned it.',
   'Qualified in style. The Round of 32 awaits.',
 ];
 const GROUP_QUALIFY_PERFECT_LINES=[
   'Perfect group stage. Maximum points. A statement.',
   'Three wins from three. This squad means business.',
   'Dominated the group. The rest of the field is on notice.',
-  'Flawless group stage — nine points, top of the table.',
+  'Flawless group stage, nine points, top of the table.',
   'Swept through the group. Momentum is everything.',
 ];
 const GROUP_QUALIFY_UNBEATEN_LINES=[
-  'Unbeaten in the group — a clean slate for the knockouts.',
+  'Unbeaten in the group, a clean slate for the knockouts.',
   'No defeats in the group. A solid foundation.',
   'Through unbeaten. Character and quality on show.',
   'Qualified without losing once. Build on that.',
@@ -9369,7 +9369,7 @@ const GROUP_ELIM_LINES=[
   'The dream dies in the group stage. Rebuild and go again.',
 ];
 
-// Result-NEUTRAL advance lines — safe to show after any win (blowout or squeak),
+// Result-NEUTRAL advance lines, safe to show after any win (blowout or squeak),
 // because they say nothing about how the match actually went. Tone-specific
 // lines (nervy/scrappy/dominant) live in the margin buckets in knockoutResultMsg.
 const KNOCKOUT_WIN_LINES=[
@@ -9377,22 +9377,22 @@ const KNOCKOUT_WIN_LINES=[
   'That\'s what this squad was built for.',
   'Another round, another notch on the belt.',
   'The tournament takes notice.',
-  'Into the next round — and this squad believes.',
+  'Into the next round, and this squad believes.',
   'One step closer. Don\'t stop now.',
   'They came, they fought, they advanced.',
   'This squad has something. It\'s hard to stop.',
   'Keep the faith. Keep winning.',
-  'Survive and advance — that\'s the whole game.',
+  'Survive and advance, that\'s the whole game.',
   'Book another flight: they\'re not going home yet.',
   'The doubters are getting quieter by the round.',
 ];
 const KNOCKOUT_WIN_PENS_LINES=[
-  'Penalties are a lottery — and they won it.',
+  'Penalties are a lottery, and they won it.',
   'Ice in their veins. Through on pens.',
   'The shootout belonged to them.',
   'Nerve-wracking. Brilliant. Advanced.',
   'Every kick a heartbeat. They held on.',
-  'Penalties decided it — and they didn\'t blink.',
+  'Penalties decided it, and they didn\'t blink.',
   'Saved their best for the shootout.',
 ];
 const KNOCKOUT_LOSS_LINES=[
@@ -9409,20 +9409,20 @@ const KNOCKOUT_LOSS_LINES=[
   'Heads high. They made it further than most.',
   'Cup football is brutal. They found out.',
   'That\'s the last whistle. End of the road.',
-  'A valiant effort — not enough today.',
+  'A valiant effort, not enough today.',
 ];
 const KNOCKOUT_LOSS_PENS_LINES=[
   'Penalty heartbreak. So cruel.',
   'It came down to spot kicks. They lost.',
   'Eliminated on pens. The cruelest way to go.',
-  'A shootout lottery — and they drew the short straw.',
+  'A shootout lottery, and they drew the short straw.',
   'Penalties ended it. The squad deserved more.',
   'Out on penalties. Football can be devastating.',
 ];
 
 // Builds a knockout result line that's unique to THIS match: the scoreline,
 // margin, opponent, penalties/extra-time, the squad's standout scorer, and
-// whether they were underdogs or favourites — then falls back to the varied
+// whether they were underdogs or favourites, then falls back to the varied
 // static pools so no two runs feel the same.
 function knockoutResultMsg(opts){
   const m = opts.match;
@@ -9452,73 +9452,73 @@ function knockoutResultMsg(opts){
   const pool=[];
   if(opts.won){
     if(pens){
-      pool.push(`${opp} beaten on penalties — ice in the veins.`,
+      pool.push(`${opp} beaten on penalties, ice in the veins.`,
                 `A shootout for the ages. ${opp} sent home.`,
                 `${us}–${them}, then nerve from twelve yards. Through.`,
-                `Every kick a heartbeat — and ${opp} blinked first.`,
+                `Every kick a heartbeat, and ${opp} blinked first.`,
                 `They turned the shootout into ${opp}'s worst nightmare.`,
-                `120 minutes couldn't separate them — twelve yards could. Past ${opp}.`,
+                `120 minutes couldn't separate them, twelve yards could. Past ${opp}.`,
                 ...KNOCKOUT_WIN_PENS_LINES);
     } else if(margin>=3){
       pool.push(`${score}. ${opp} dismantled.`,
                 `A statement. ${opp} swept aside ${score}.`,
-                `Ruthless — ${opp} never stood a chance.`,
+                `Ruthless, ${opp} never stood a chance.`,
                 `${score} and this squad is sending a message.`,
                 `${opp} put to the sword. Total control.`,
                 `Somebody go check on ${opp}. That was ${score}.`,
                 `${score}?! ${opp} will be seeing that one in their sleep.`,
-                `They didn't just beat ${opp} — they left a mark. ${score}.`);
+                `They didn't just beat ${opp}, they left a mark. ${score}.`);
     } else if(margin===2){
       pool.push(`A composed ${score} win over ${opp}.`,
                 `${opp} dispatched ${score}. Job done.`,
-                `Two clear goals — ${opp} couldn't live with them.`,
+                `Two clear goals, ${opp} couldn't live with them.`,
                 `${score}. Comfortable when it counted.`,
                 `Two-goal cushion, zero panic. ${opp} handled.`);
     } else { // 1-goal
       pool.push(`${score}. They edged out ${opp}.`,
-                `By the finest margin — ${opp} beaten ${score}.`,
+                `By the finest margin, ${opp} beaten ${score}.`,
                 `${et?'Extra-time drama':'A nervy finish'}, but past ${opp} ${score}.`,
-                `One goal in it — and it was theirs. ${opp} beaten ${score}.`,
+                `One goal in it, and it was theirs. ${opp} beaten ${score}.`,
                 `Squeaked past ${opp} ${score}. Through is through.`,
-                `One goal, ninety minutes of heart attacks — worth it. ${score}.`,
+                `One goal, ninety minutes of heart attacks, worth it. ${score}.`,
                 `Don't ask about style points. ${opp} are out, ${score}.`,
                 `A nervy win, but a win is a win.`,
                 `Not pretty. Don't care. ${opp} beaten ${score}.`,
-                `Grit over glamour — past ${opp} ${score}.`);
+                `Grit over glamour, past ${opp} ${score}.`);
     }
-    if(cleanSheet) pool.push(`Clean sheet, job done — ${opp} kept off the board.`, `Not a single goal for ${opp}. The back line stood tall.`);
-    if(goalFest) pool.push(`A ${us}–${them} slugfest — ${opp} traded punches and lost.`, `Forget defending — this one was a ${us}–${them} track meet, and they won it.`);
-    if(starG>=3) pool.push(`Hat-trick hero ${who} fires them past ${opp}!`, `${who} with THREE — ${opp} had no answer.`, `Somebody get ${who} the matchball. Hat-trick.`);
+    if(cleanSheet) pool.push(`Clean sheet, job done, ${opp} kept off the board.`, `Not a single goal for ${opp}. The back line stood tall.`);
+    if(goalFest) pool.push(`A ${us}–${them} slugfest, ${opp} traded punches and lost.`, `Forget defending, this one was a ${us}–${them} track meet, and they won it.`);
+    if(starG>=3) pool.push(`Hat-trick hero ${who} fires them past ${opp}!`, `${who} with THREE, ${opp} had no answer.`, `Somebody get ${who} the matchball. Hat-trick.`);
     else if(starG===2) pool.push(`${who}'s brace sinks ${opp}.`, `Two from ${who}, and ${opp} are out.`);
-    if(underdog) pool.push(`Giant-killers! ${opp} (${oppOv} OVR) stunned.`, `The underdogs roll on — ${opp} never saw it coming.`, `On paper they had no business winning. Lucky it's played on grass.`);
+    if(underdog) pool.push(`Giant-killers! ${opp} (${oppOv} OVR) stunned.`, `The underdogs roll on, ${opp} never saw it coming.`, `On paper they had no business winning. Lucky it's played on grass.`);
     if(favourite && margin>=2) pool.push(`Business as usual. ${opp} brushed aside.`);
-    if(round==='Semi-final') pool.push(`Into the FINAL — ${opp} beaten when it mattered most.`, `One game from glory. ${opp} couldn't stop them.`);
+    if(round==='Semi-final') pool.push(`Into the FINAL, ${opp} beaten when it mattered most.`, `One game from glory. ${opp} couldn't stop them.`);
     else if(round==='Quarter-final') pool.push(`Into the semis! ${opp} sent packing.`);
     pool.push(...KNOCKOUT_WIN_LINES);
   } else {
     if(pens){
       pool.push(`${us}–${them}, then penalty heartbreak against ${opp}.`,
-                `So cruel — out to ${opp} from the spot.`,
+                `So cruel, out to ${opp} from the spot.`,
                 `120 minutes for nothing. ${opp} win the lottery.`,
                 ...KNOCKOUT_LOSS_PENS_LINES);
     } else if(margin>=3){
       pool.push(`Outclassed. ${opp} ran out ${score} winners.`,
-                `${opp} were simply too strong — a chastening ${score}.`,
+                `${opp} were simply too strong, a chastening ${score}.`,
                 `Blown away by ${opp}, ${score}.`,
                 `This one got ugly. ${opp} cruise, ${score}.`);
     } else if(margin<=1){
       pool.push(`Heartbreak. ${opp} edged it ${score}.`,
                 `By a single goal, ${opp} end the dream.`,
-                `${et?'Extra-time agony':'An agonising finish'} — ${opp} go through ${score}.`,
+                `${et?'Extra-time agony':'An agonising finish'}, ${opp} go through ${score}.`,
                 `So close against ${opp}. Out ${score}.`,
                 `One goal. One. That's the part that stings. ${opp} ${score}.`);
     } else {
       pool.push(`${opp} had a touch too much, winning ${score}.`,
                 `The run ends against ${opp}, ${score}.`);
     }
-    if(us===0 && !pens) pool.push(`Couldn't buy a goal — ${opp} keep it clean and advance.`, `Blanked. ${opp} do just enough, ${score}.`);
-    if(underdog) pool.push(`No shame in it — ${opp} (${oppOv} OVR) were the stronger side.`, `They punched above their weight, but ${opp} prevailed.`);
-    if(favourite) pool.push(`A shock. ${opp} pull off the upset.`, `The favourites fall — ${opp} stun them.`, `That's why they play the games — ${opp} stun the favourites.`);
+    if(us===0 && !pens) pool.push(`Couldn't buy a goal, ${opp} keep it clean and advance.`, `Blanked. ${opp} do just enough, ${score}.`);
+    if(underdog) pool.push(`No shame in it, ${opp} (${oppOv} OVR) were the stronger side.`, `They punched above their weight, but ${opp} prevailed.`);
+    if(favourite) pool.push(`A shock. ${opp} pull off the upset.`, `The favourites fall, ${opp} stun them.`, `That's why they play the games, ${opp} stun the favourites.`);
     pool.push(...KNOCKOUT_LOSS_LINES);
   }
   return pickOne(pool);
@@ -9545,7 +9545,7 @@ function showMatchResultPopup(opts){
     // NON-FINAL WIN: no blocking popup, no Continue button. Drop the result
     // verbiage right above the current slide's box score, then let the sim loop
     // slide horizontally to the next game when this resolves. (Eliminations and
-    // the championship still use the modal below — they go to the results page.)
+    // the championship still use the modal below, they go to the results page.)
     if(opts.won && !opts.isFinal){
       const isGroupStage = opts.currentRound === 'Group Stage';
       const stamp   = isGroupStage ? 'QUALIFIED' : 'ADVANCED';
@@ -9586,7 +9586,7 @@ function showMatchResultPopup(opts){
 
     // Auto-advance after 2.5s on every popup EXCEPT the championship win, which
     // lingers until tapped so the moment can be savoured. The Continue button is
-    // always present and advances early. This timer is FIXED — the 1×/2× speed
+    // always present and advances early. This timer is FIXED, the 1×/2× speed
     // toggle only changes the on-pitch simulation pace, not the popup dwell time.
     const autoAdvance = !(opts.won && opts.isFinal);
     const POPUP_AUTO_MS = 2500;
@@ -9598,7 +9598,7 @@ function showMatchResultPopup(opts){
       msgLine=pickOne(['World Cup winners. History made.','The greatest prize in football. Yours.','From the draft to the trophy. Unbelievable.','Champions of the world. Nothing more to say.']);
     } else if(opts.won){
       stamp=isGroupStage?'QUALIFIED':'ADVANCED'; popupCls='win';
-      // The next-round line is dropped — the bracket animation already shows it.
+      // The next-round line is dropped, the bracket animation already shows it.
       msgLine=opts.gsPopupMsg||knockoutResultMsg(opts);
     } else {
       stamp='ELIMINATED'; popupCls='loss';
@@ -9635,7 +9635,7 @@ function showMatchResultPopup(opts){
       startAutoBar(ms);
     } else {
       // Tap-to-continue + auto-advance. The button is wired up FRONT (not after the
-      // bracket animation) so a tap — or the toolbar's Skip — is never dropped while
+      // bracket animation) so a tap, or the toolbar's Skip, is never dropped while
       // the bracket fills in. Between-round wins auto-advance after 2.5s; the
       // championship win (isFinal) waits for a tap.
       let done=false;
@@ -9701,14 +9701,14 @@ function simScheduleGoal(box, e, delay){
   }, Math.max(0,delay));
 }
 
-// CHANGE 5 — a shootout ends the moment one team has mathematically clinched it.
+// CHANGE 5, a shootout ends the moment one team has mathematically clinched it.
 // Returns 'a' (user), 'b' (opponent), or null (continue). Only valid for the
 // standard 5-kick phase; sudden death is resolved separately.
 function shootoutOver(aScored, aMissed, bScored, bMissed, totalKicks){
   const aRemaining = totalKicks - aScored - aMissed;
   const bRemaining = totalKicks - bScored - bMissed;
-  if(aScored > bScored + bRemaining) return 'a';   // A has won — B cannot catch up
-  if(bScored > aScored + aRemaining) return 'b';   // B has won — A cannot catch up
+  if(aScored > bScored + bRemaining) return 'a';   // A has won, B cannot catch up
+  if(bScored > aScored + aRemaining) return 'b';   // B has won, A cannot catch up
   if(aRemaining === 0 && bRemaining === 0){         // all kicks taken
     if(aScored > bScored) return 'a';
     if(bScored > aScored) return 'b';
@@ -9716,10 +9716,10 @@ function shootoutOver(aScored, aMissed, bScored, bMissed, totalKicks){
   return null;                                       // shootout continues
 }
 
-// CHANGE 5/6 — a realistic shootout: 75% base conversion, early termination once
+// CHANGE 5/6, a realistic shootout: 75% base conversion, early termination once
 // the result is mathematically decided, and sudden death when level after five.
 // The winner is predetermined by the sigmoid (penaltyWinner), so we reject-sample
-// shootouts until the natural outcome matches it — this keeps win probability
+// shootouts until the natural outcome matches it, this keeps win probability
 // exactly while producing varied scorelines (3-1, 4-2, 5-4, …) and never
 // animating kicks past the clinching moment.
 function simSimulateShootout(){
@@ -9742,7 +9742,7 @@ function simSimulateShootout(){
   return {seq, win:null}; // exhausted sudden death without separation
 }
 
-// CHANGE 3 — penalty reveal pacing: starts comfortable (1.0s) and ramps to a
+// CHANGE 3, penalty reveal pacing: starts comfortable (1.0s) and ramps to a
 // tenser 1.5s by the 10th kick, holding there for deep sudden death.
 const PEN_START_DELAY = 1000;  // first kick: 1.0s
 const PEN_END_DELAY   = 1500;  // ramps to 1.5s
@@ -9794,7 +9794,7 @@ async function simAnimatePenalties(card, m, opts){
   // shootout the player who simulated it saw); otherwise generate a fresh one.
   const seq = (opts.penSeq && opts.penSeq.length) ? opts.penSeq : simBuildPenaltySeq(m.penaltyWinner);
   const score={user:0,opponent:0};
-  // CHANGE 3 — reveals ramp from 1.0s to 1.5s apart as the shootout goes deeper,
+  // CHANGE 3, reveals ramp from 1.0s to 1.5s apart as the shootout goes deeper,
   // building tension (and staying at 1.5s through any long sudden death). seq is
   // already trimmed to the clinching kick, so early-termination is untouched.
   let kickNumber=0;
@@ -9813,7 +9813,7 @@ async function simAnimatePenalties(card, m, opts){
   await (opts.wait||simSleep)(300*0.8);
 }
 
-// ===== live match scoreboard (visual only — reflects the simulated state) =====
+// ===== live match scoreboard (visual only, reflects the simulated state) =====
 // "Your team" has no nation, so it uses a white football icon (not a flag/emoji).
 const SB_BALL = `<svg class="sb-ball" viewBox="0 0 24 24" aria-hidden="true">`+
   `<circle cx="12" cy="12" r="11" fill="#0c1322" stroke="#fff" stroke-width="1.6"/>`+
@@ -9821,7 +9821,7 @@ const SB_BALL = `<svg class="sb-ball" viewBox="0 0 24 24" aria-hidden="true">`+
   `<g stroke="#fff" stroke-width="1.05" fill="none"><path d="M3.4 12.7l3.3 1.1"/><path d="M20.6 12.7l-3.3 1.1"/><path d="M9.3 20.1l1.1-3.2"/><path d="M14.7 20.1l-1.1-3.2"/></g></svg>`;
 
 // Build a scoreboard element. Opponent flag uses the existing flagChip() system.
-// FIFA/IOC three-letter codes for every nation in the dataset — used on the
+// FIFA/IOC three-letter codes for every nation in the dataset, used on the
 // live scoreboard so the opponent label is short and never truncates.
 const COUNTRY_CODE3 = {
   "Algeria":"ALG","Angola":"ANG","Argentina":"ARG","Australia":"AUS","Austria":"AUT",
@@ -9861,7 +9861,7 @@ function makeScoreboard(opp, opts={}){
         <span class="sb-team-label">${youLabel}</span>
       </div>
       <div class="sb-score">
-        <span class="sb-score-user">${opts.userGoals??0}</span><span class="sb-dash">—</span><span class="sb-score-opp">${opts.oppGoals??0}</span>
+        <span class="sb-score-user">${opts.userGoals??0}</span><span class="sb-dash">-</span><span class="sb-score-opp">${opts.oppGoals??0}</span>
       </div>
       <div class="sb-team sb-team-opp">
         <span class="sb-team-label sb-opp-label">${oppLabel}</span>
@@ -9888,7 +9888,7 @@ function sbScheduleScore(wrap, e, delay){
 // Plausible, VARIED match stats that reflect the actual result. Shots on target
 // are anchored to the goals scored (you can't score more than you put on target),
 // saves to the opponent's on-target shots, possession to ratings + the scoreline
-// — all with per-game randomness so no two games look the same. Computed ONCE per
+//, all with per-game randomness so no two games look the same. Computed ONCE per
 // match and cached on the match object so the live panel and the box-scores view
 // always agree. 'u' = your side, 'o' = opponent.
 function computeMatchStats(uOv, oOv, uGoals, oGoals){
@@ -9928,7 +9928,7 @@ function matchBox(obj, uOv, oOv, uG, oG){
 // live panel matches the figures the result image shows).
 function boxFromResult(R){
   const g=(o)=> o ? {u:o.opponent, o:o.challenger} : {u:0,o:0};
-  // yellows/reds may be absent on older stored friendly results — default to 0
+  // yellows/reds may be absent on older stored friendly results, default to 0
   // so the live box never reads .u off an undefined stat.
   return { poss:g(R.possession), shots:g(R.shots), sot:g(R.shotsOnTarget),
            corners:g(R.corners), fouls:g(R.fouls), tackles:g(R.tackles), saves:g(R.saves),
@@ -9966,7 +9966,7 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
     return (s^h)|0;
   }, 0);
 
-  // SEPARATE seeded RNGs per stat category — scoring a goal must never shift the
+  // SEPARATE seeded RNGs per stat category, scoring a goal must never shift the
   // shot/foul sequence.  Each category gets its own LCG starting from a different
   // offset so their sequences are independent.
   const shotRng  = _seededRng((seed ^ 0x9e3779b9)|0);
@@ -9976,7 +9976,7 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
   const asstRng  = _seededRng((seed ^ 0x2c91dca5)|0);
 
   // When called mid-match (liveGoals !== null), scale shots/fouls/saves by the
-  // fraction of total goals seen so far — prevents stats showing at kickoff and
+  // fraction of total goals seen so far, prevents stats showing at kickoff and
   // keeps them growing naturally. At full time (liveGoals === null) use 100%.
   const isMidMatch = liveGoals !== null;
   // timeProgress: explicit 0-1 clock fraction passed by the live animation so
@@ -10020,7 +10020,7 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
     const w = FOUL_W[pk.player.position]||0.05;
     return w * (0.5 + foulRng()*0.5);
   });
-  // Tackle weight scales UP with rating — better players win more tackles.
+  // Tackle weight scales UP with rating, better players win more tackles.
   const playerTackleW = picks.map(pk=>{
     const w = TACKLE_W[pk.player.position]||0;
     return w * ratingMult(pk) * (0.5 + tackRng()*0.5);
@@ -10028,11 +10028,11 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
   // Stable per-player card priority (used for tie-breaking quota distribution)
   const cardPrio = picks.map(()=>cardRng());
 
-  // Proportional floor allocation — guarantees stats never decrease as totals grow.
+  // Proportional floor allocation, guarantees stats never decrease as totals grow.
   // floor(fraction * total) is monotonically non-decreasing in total for any fixed fraction≥0.
   // Highest-averages (D'Hondt) apportionment: distributes EXACTLY `total` whole
   // units across `weights`, so the per-player rows always sum to the team total.
-  // It is house-monotone — raising `total` never lowers anyone's share, so live
+  // It is house-monotone, raising `total` never lowers anyone's share, so live
   // stats only ever grow. `caps` optionally limits each player (used so SoT ≤ shots).
   function allocExact(weights, total, caps){
     const n=weights.length, alloc=new Array(n).fill(0);
@@ -10128,7 +10128,7 @@ function simPlayerStats(picks, box, goalEvents, liveGoals, {hideCards=false, car
 
 function playerStatsTableHtml(rows, {cardTotals=false}={}){
   // Show the Saves column whenever a keeper is in the lineup (not only once saves
-  // have been recorded), so every stat column is present — and empty — from kickoff.
+  // have been recorded), so every stat column is present, and empty, from kickoff.
   const isGK = rows.some(r=>r.pos==='GK');
   const cols = isGK
     ? ['G','A','Sh','SoT','Sv','Tk','F','YC','RC']
@@ -10143,16 +10143,16 @@ function playerStatsTableHtml(rows, {cardTotals=false}={}){
     const tds = cells.map((v,i)=>{
       const col=cols[i];
       if(col==='YC'){
-        if(cardTotals) return `<td class="lbx-yc">${v>0?v:'—'}</td>`;
-        return `<td class="lbx-yc">${v>0?'<span class="card-ico yc"></span>':'—'}</td>`;
+        if(cardTotals) return `<td class="lbx-yc">${v>0?v:'-'}</td>`;
+        return `<td class="lbx-yc">${v>0?'<span class="card-ico yc"></span>':'-'}</td>`;
       }
       if(col==='RC'){
-        if(cardTotals) return `<td class="lbx-rc">${v>0?v:'—'}</td>`;
-        return `<td class="lbx-rc">${v>0?'<span class="card-ico rc"></span>':'—'}</td>`;
+        if(cardTotals) return `<td class="lbx-rc">${v>0?v:'-'}</td>`;
+        return `<td class="lbx-rc">${v>0?'<span class="card-ico rc"></span>':'-'}</td>`;
       }
       let cls='';
       if(col==='G'&&v>0) cls=' class="lbx-goal"';
-      return `<td${cls}>${v>0?v:'—'}</td>`;
+      return `<td${cls}>${v>0?v:'-'}</td>`;
     }).join('');
     const lastName=r.name.split(' ').pop();
     return `<tr><td class="lbx-pname" title="${escapeHtml(r.name)}">${escapeHtml(lastName)}</td><td class="lbx-ppos ${r.pos}">${r.pos}</td>${tds}</tr>`;
@@ -10191,7 +10191,7 @@ function markLead(uEl, oEl, uVal, oVal, lowerIsBetter){
   if(uWins){ uEl.classList.add('lead'); oEl.classList.add('trail'); }
   else if(oWins){ oEl.classList.add('lead'); uEl.classList.add('trail'); }
 }
-// frac 0..1 — counting stats accumulate, possession eases from 50/50 to final.
+// frac 0..1, counting stats accumulate, possession eases from 50/50 to final.
 // opts.picks + opts.goalEvents: player panel updates live on goals and settles at FT.
 function updateLiveBox(el, stats, frac, opts){
   if(!el||!stats) return;
@@ -10331,9 +10331,9 @@ function closeBoxScores(){ $('boxscores-bg').classList.remove('show'); }
 // ---- 2026 roster updates (home-screen popup) ----
 // DISPLAY-ONLY list of players upgraded for their 2026 World Cup form. Add one
 // entry per upgrade; `note` is optional. Actual ratings live in players_all.json
-// — this list just highlights what changed.
+//, this list just highlights what changed.
 //   { name:'Lionel Messi', country:'Argentina', old:96, new:97, note:'2 goals vs ___' }
-// Upgrade tracking is now fully automatic — no manual arrays needed.
+// Upgrade tracking is now fully automatic, no manual arrays needed.
 // To record an upgrade: in the CSV set pre_wc_overall=<old rating>, bump wc_overall,
 // and optionally set wc_note and is_community_request=1. Then re-run convertData.js.
 
@@ -10417,11 +10417,11 @@ async function openRosterUpdates(){
 function closeRosterUpdates(){ $('roster-bg').classList.remove('show'); }
 
 
-// CHANGE 1 — dynamic slow-motion. Returns the speed the clock should advance at
+// CHANGE 1, dynamic slow-motion. Returns the speed the clock should advance at
 // for the given moment: 2.5× slower in the closing minutes of a close game
 // (regulation 65–90 or extra time 95–120, margin ≤ 1), normal otherwise.
 // The score passed in is the LIVE running score at that simulated minute, so the
-// effect reacts as goals are revealed — a goal that widens the margin past 1
+// effect reacts as goals are revealed, a goal that widens the margin past 1
 // returns play to normal speed for the rest.
 function getSpeedMultiplier(simMinute, userScore, oppScore, isExtraTime){
   const margin = Math.abs(userScore - oppScore);
@@ -10438,7 +10438,7 @@ const SLOWMO_EASE_MS = 300; // ease speed changes over ~0.3s rather than snappin
 // so the score stays locked to the clock even when slow-motion stretches a
 // window. The advance rate is scaled by getSpeedMultiplier, eased over ~0.3s,
 // and a slow window adds a gentle scoreboard pulse + warm bar tint (CHANGE 2).
-// (setInterval is used over rAF so it still advances — and always resolves —
+// (setInterval is used over rAF so it still advances, and always resolves -
 //  even when the tab is backgrounded; rAF pauses while hidden.)
 function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
   opts = opts || {};
@@ -10475,7 +10475,7 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
   };
   return new Promise(resolve=>{
     const gold=fromMin>90;
-    setSlow(false);              // slow-motion removed — clock runs at a steady rate
+    setSlow(false);              // slow-motion removed, clock runs at a steady rate
     // Skip-to-result: fire every remaining event and jump the bar to full now.
     if(simSkip){
       fill.style.width=toPct+'%';
@@ -10489,7 +10489,7 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
     }
     let p=0, last=performance.now();
     const tick=()=>{
-      if(simSkip){               // Skip pressed mid-clock — finish this phase instantly.
+      if(simSkip){               // Skip pressed mid-clock, finish this phase instantly.
         clearInterval(iv); fill.style.width=toPct+'%'; revealUpTo(toMin, 0);
         if(opts.onProgress) opts.onProgress(1); setSlow(false); return resolve();
       }
@@ -10514,7 +10514,7 @@ function sbDriveClock(fill, wrap, fromPct, toPct, fromMin, toMin, dur, opts){
   });
 }
 
-// Celebratory confetti dropping from the top of the screen — fired when the user
+// Celebratory confetti dropping from the top of the screen, fired when the user
 // wins the final. Self-contained canvas overlay that cleans itself up.
 function simChampionConfetti(){
   const c=document.createElement('canvas');
@@ -10548,7 +10548,7 @@ function simChampionConfetti(){
 }
 
 // Build the match card's static content (round, opponent, scoreboard at 0–0)
-// BEFORE it swipes in, so the box arrives fully sized — no empty-box flash.
+// BEFORE it swipes in, so the box arrives fully sized, no empty-box flash.
 function buildMatchCard(card, m){
   const opp=m.opponent;
   card.className='sim-card';
@@ -10559,7 +10559,7 @@ function buildMatchCard(card, m){
     <div class="match-clock-bar"><div class="match-clock-fill"></div></div>
     <div class="sim-goals"></div>
     <div class="sim-final" style="display:none"></div>`;
-  // live broadcast scoreboard, pinned to the top — visible from the moment it swipes in
+  // live broadcast scoreboard, pinned to the top, visible from the moment it swipes in
   const sb=makeScoreboard(opp);
   card.insertBefore(sb, card.firstChild);
   sb.classList.add('show');
@@ -10607,7 +10607,7 @@ async function playMatchAnimation(m, card, isFinal, opts){
   }
   const allCardEvents = m.cardEvents || [];
 
-  // Live event trackers — grow as goals/cards fire during the animation. The live
+  // Live event trackers, grow as goals/cards fire during the animation. The live
   // box reads these so the TEAM tab and the per-player rows are built from the SAME
   // state every frame and can never disagree.
   const goalsSeenSoFar = [];
@@ -10664,20 +10664,20 @@ async function playMatchAnimation(m, card, isFinal, opts){
   const cardEv2  = allCardEvents.filter(e=>e.minute>45 && e.minute<=90);
   const cardEvEt = allCardEvents.filter(e=>e.minute>90);
 
-  // FIRST HALF — 0' → 45'
+  // FIRST HALF, 0' → 45'
   await sbDriveClock(fill, sb, 0, pct45, 0, 45, firstDur,
     {events:firstEv, cardEvents:cardEv1, score:liveScore, goalsBox, onProgress:op(0, F.fh), onGoal, onCard});
-  // FIRST-HALF STOPPAGE — 45+1 … 45+N
+  // FIRST-HALF STOPPAGE, 45+1 … 45+N
   await sbDriveClock(fill, sb, pct45, pct45, 45, 45+firstStop, firstStopDur,
     {score:liveScore, stoppageBase:45, onProgress:op(F.fh, F.fs), onGoal, onCard});
 
-  // HALF TIME — brief pause
+  // HALF TIME, brief pause
   sbSetTime(sb, 'HT', false);
   const htLabel=document.createElement('div'); htLabel.className='sim-et-label'; htLabel.textContent='HALF TIME';
   goalsBox.appendChild(htLabel); simScrollEnd(htLabel);
   await wait(htPause);
 
-  // SECOND HALF — 46' → 90'
+  // SECOND HALF, 46' → 90'
   await sbDriveClock(fill, sb, pct45, baseWidth, 45, 90, secondDur,
     {events:secondEv, cardEvents:cardEv2, score:liveScore, goalsBox, onProgress:op(F.fs, F.sh), onGoal, onCard});
 
@@ -10730,7 +10730,7 @@ function buildSummaryCard(){
     </div>`;
   }).join('');
 
-  const mot = r.manOfTournament ? r.manOfTournament.player : '—';
+  const mot = r.manOfTournament ? r.manOfTournament.player : '-';
 
   // Build tournament totals player stats table
   const allMatchStats = [
@@ -10791,13 +10791,13 @@ function showSimSummary(skipButton){
   const r=simResult;
   const content=$('sim-content');
 
-  // single source of truth — push the outcome onto gs.result so the results
+  // single source of truth, push the outcome onto gs.result so the results
   // page and the shareable report show the SAME outcome the sim just produced.
   const oc = simOutcome(r);
   gs.result.resultLabel = oc.label;
   gs.result.resultEmoji = oc.emoji;
 
-  // Knockout eliminations show the results button in the popup — only add the
+  // Knockout eliminations show the results button in the popup, only add the
   // inline button for group-stage exits (skipButton not set).
   if(skipButton) return;
   setTimeout(()=>{
@@ -10856,7 +10856,7 @@ async function runSimulationScreen(){
     const col = res==='W'?'var(--teal)':(res==='L'?'var(--red)':'var(--muted)');
     const row=document.createElement('div');
     row.className='goal-event';
-    row.innerHTML=`<b>MD${i+1}</b> vs ${flagChip(o.country)} ${o.country} ${o.year} — <b>${us}–${them}</b> `+
+    row.innerHTML=`<b>MD${i+1}</b> vs ${flagChip(o.country)} ${o.country} ${o.year}, <b>${us}–${them}</b> `+
       `<span style="color:${col};font-weight:900">${res}</span><br>`+
       `<span style="opacity:.78;font-weight:600">${simPlayerLine(userSquad, us, them)}</span>`;
     // Generate goal events for this group stage matchday (scorers, assists, minutes)
@@ -10910,7 +10910,7 @@ async function runSimulationScreen(){
   for(let i=0;i<simResult.matches.length;i++){
     const m = simResult.matches[i];
     const card=simNewSlide();
-    buildMatchCard(card, m);       // fill the box BEFORE it swipes in — no empty-box flash
+    buildMatchCard(card, m);       // fill the box BEFORE it swipes in, no empty-box flash
     simSwipeTo(simSlideIndex+1);   // swipe the already-filled match box in from the right
     const kbWait = simDelay;       // honours the live speed toggle + skip-to-result
     await kbWait(350);             // let the swipe land
@@ -10939,7 +10939,7 @@ async function runSimulationScreen(){
     });
     if(won && isFinal){
       // championship: the popup's CONTINUE TO RESULTS button advances straight to
-      // the results page — no auto timer / intermediate screen.
+      // the results page, no auto timer / intermediate screen.
       goToResults();
       return;
     }
@@ -10956,7 +10956,7 @@ async function runSimulationScreen(){
 }
 
 // ============================================================
-//  FRIENDLY MODE  (additive — does not touch Solo Draft)
+//  FRIENDLY MODE  (additive, does not touch Solo Draft)
 // ============================================================
 // A player drafts a squad, gets a share link encoding their lineup, and a friend
 // opens that link, drafts their own squad, and a single match is simulated with
@@ -11024,7 +11024,7 @@ async function friendlyShareWatch(url){
     try{ await navigator.share(shareData); return; }catch(e){ if(e&&e.name==='AbortError') return; }
   }
   try{ await navigator.clipboard.writeText(url); }catch(e){ await copyToClipboard(url); }
-  showToast('Watch link copied — send it to your friend ⚽');
+  showToast('Watch link copied, send it to your friend ⚽');
 }
 
 // Player A opens a ?w= link: replay B's match from A's perspective, then results.
@@ -11208,7 +11208,7 @@ function startFriendly(){
   // Anyone can open the Friendly setup; the BUILD button is gated for guests.
   friendlyReset();
   friendlyMode=true; friendlyRole='challenger';
-  gameMode='easy';                 // overalls visible — keeps Friendly accessible
+  gameMode='easy';                 // overalls visible, keeps Friendly accessible
   // fresh sliders + name + flag each time the intro is opened
   const sd=$('fr-seg-draft'); if(sd) sd.dataset.active='quick';
   const sm=$('fr-seg-mode');  if(sm) sm.dataset.active='easy';
@@ -11226,7 +11226,7 @@ function friendlyOnDraftComplete(){
 
 async function showChallengeReady(){
   const lineup=friendlyLineupObject('challenger');
-  // compact lineup preview (no overalls — keeps it competitive for the friend)
+  // compact lineup preview (no overalls, keeps it competitive for the friend)
   const ul=$('cr-lineup'); ul.innerHTML='';
   lineup.picks.forEach(p=>{
     const li=document.createElement('li');
@@ -11240,7 +11240,7 @@ async function showChallengeReady(){
   showScreen('challenge-ready');
   // Generate the share link: store the lineup in Supabase and hand out a short
   // ?c=CODE link (survives every messaging app). We NEVER fall back to the
-  // legacy long ?friendly= link here — a giant base64 URL must never be shared.
+  // legacy long ?friendly= link here, a giant base64 URL must never be shared.
   // On total failure we surface an error and let the buttons re-try generation.
   await generateChallengeLink();
 }
@@ -11262,7 +11262,7 @@ async function generateChallengeLink(){
     shareBtn._url=url; copyBtn._url=url;
     shareBtn.disabled=false; copyBtn.disabled=false;
   }else{
-    // Couldn't reach the link service. Don't share anything broken — let the
+    // Couldn't reach the link service. Don't share anything broken, let the
     // user tap to retry rather than send a giant fallback link.
     linkEl.value="Couldn't create your link. Tap Share to try again.";
     shareBtn._url=null; copyBtn._url=null; shareBtn._retry=true;
@@ -11282,7 +11282,7 @@ async function friendlyShareLink(url){
     try{ await navigator.share(shareData); return; }
     catch(e){ if(e && e.name==='AbortError') return; }
   }
-  // Fallback: copy ONLY the clean URL — never the title/text block.
+  // Fallback: copy ONLY the clean URL, never the title/text block.
   try{ await navigator.clipboard.writeText(url); }
   catch(e){ await copyToClipboard(url); }
   showToast('Challenge link copied! Send it to your friend 🔥');
@@ -11352,7 +11352,7 @@ function showChallengeLanding(data){
   friendlyMode=true; friendlyRole='opponent';
   gameMode='easy';
   const isFull = data.draftType==='full';
-  // MYSTERY teaser — generic formation slots sized to the locked draft, names "???"
+  // MYSTERY teaser, generic formation slots sized to the locked draft, names "???"
   const slots = isFull
     ? ['FWD','FWD','FWD','MID','MID','MID','DEF','DEF','DEF','DEF','GK']
     : ['FWD','MID','DEF','DEF','GK','FLEX'];
@@ -11369,11 +11369,11 @@ function showChallengeLanding(data){
   const isHard = data.gameMode==='hard';
   const noteEl=$('cl-mode-note');
   if(noteEl) noteEl.textContent =
-    (isFull ? 'Full Team match — draft your starting XI' : 'Quick match — draft your starting VI')
+    (isFull ? 'Full Team match, draft your starting XI' : 'Quick match, draft your starting VI')
     + (isHard ? ' · Hard Mode (ratings hidden)' : ' · Easy Mode (ratings visible)');
   const noEl=$('fr-name-opponent'); if(noEl) noEl.value='';
   friendlyMyFlag='USA'; buildFriendlyFlagRow('fr-flag-opponent');
-  // Opponent overall is hidden now — keep it a mystery until the match.
+  // Opponent overall is hidden now, keep it a mystery until the match.
   const fromEl=$('cl-from');
   if(fromEl) fromEl.textContent = (data.name && String(data.name).trim())
     ? `${String(data.name).trim()} has challenged you! `
@@ -11382,7 +11382,7 @@ function showChallengeLanding(data){
 }
 
 // Build the friendly match card (mirrors buildMatchCard, but it's a head-to-head
-// between two NAMED squads — no real opponent nation).
+// between two NAMED squads, no real opponent nation).
 function buildFriendlyMatchCard(card, m, labels){
   card.className='sim-card';
   // both rosters, shown under the live match log for the duration of the match
@@ -11440,7 +11440,7 @@ async function playFriendlyMatchAnimation(m, labels){
   const winnerShort = won ? labels.youShort : labels.friendShort;
   const stamp = `${winnerShort} WINS${m.penalties?' (PENS)':''}`;
   let penScore=null;
-  // Friendlies are the longer, detailed experience — capped at ~45s: two full
+  // Friendlies are the longer, detailed experience, capped at ~45s: two full
   // halves + halftime + stoppage, plus extra time / penalties only when tied.
   await playMatchAnimation(m, card, false, {
     winText:stamp, loseText:stamp,
@@ -11547,12 +11547,12 @@ async function runFriendlyMatch(){
     if(penScore.seq) friendlyLastMatch.penSeq = penScore.seq;   // exact shootout for the watch link
   }
   await showFriendlyResult(friendlyMatchResult);
-  // Result image is generated — only now is it safe to clear challenger data.
+  // Result image is generated, only now is it safe to clear challenger data.
   window.CHALLENGER_DATA = null;
   window.FRIENDLY_INCOMING = false;
 }
 
-// ---- CHANGE 7 — Supabase friendly counter (fails silently) ----
+// ---- CHANGE 7, Supabase friendly counter (fails silently) ----
 // Table: friendly_stats { id int pk =1, total_played int default 0, last_played timestamp }
 // -- To check total friendlies played:
 // -- SELECT total_played FROM friendly_stats WHERE id = 1;
@@ -11599,7 +11599,7 @@ async function buildFriendlyResultCanvas(R){
     x.lineWidth=1.4; x.strokeStyle='rgba(255,255,255,.35)'; rrect('',x,fx,fy,fw,fh,4); x.stroke();
   };
 
-  // SECTION 1 — header
+  // SECTION 1, header
   x.fillStyle='#0A0F1E'; x.fillRect(0,0,Wc,80);
   x.textAlign='center';
   x.fillStyle='#F4B413'; x.font='900 20px Archivo';
@@ -11608,7 +11608,7 @@ async function buildFriendlyResultCanvas(R){
   x.fillText('FRIENDLIES', Wc/2, 56);
   x.fillStyle='#F4B413'; x.fillRect(40,72,Wc-80,2);
 
-  // SECTION 2 — scoreline (chosen flag on top, player name below; no overalls)
+  // SECTION 2, scoreline (chosen flag on top, player name below; no overalls)
   x.fillStyle='#0A0F1E'; x.fillRect(0,80,Wc,120);
   const sfw=46, sfh=31, sfy=96;
   drawFlag(ownerYouImg,    75-sfw/2,      sfy, sfw, sfh);
@@ -11631,15 +11631,15 @@ async function buildFriendlyResultCanvas(R){
     x.fillText(`Penalties ${R.penScore.user}–${R.penScore.opp}`, Wc/2, 197);
   }
 
-  // SECTION 3 — box score (expanded)
+  // SECTION 3, box score (expanded)
   const boxY=200, boxH=212;
   x.fillStyle='#F8F5F0'; x.fillRect(0,boxY,Wc,boxH);
   const rows=[
     ['Possession', R.possession.opponent+'%', R.possession.challenger+'%'],
     ['Shots', R.shots.opponent, R.shots.challenger],
-    ['Shots on Target', (R.shotsOnTarget?R.shotsOnTarget.opponent:'—'), (R.shotsOnTarget?R.shotsOnTarget.challenger:'—')],
-    ['Corners', (R.corners?R.corners.opponent:'—'), (R.corners?R.corners.challenger:'—')],
-    ['Fouls', (R.fouls?R.fouls.opponent:'—'), (R.fouls?R.fouls.challenger:'—')],
+    ['Shots on Target', (R.shotsOnTarget?R.shotsOnTarget.opponent:'-'), (R.shotsOnTarget?R.shotsOnTarget.challenger:'-')],
+    ['Corners', (R.corners?R.corners.opponent:'-'), (R.corners?R.corners.challenger:'-')],
+    ['Fouls', (R.fouls?R.fouls.opponent:'-'), (R.fouls?R.fouls.challenger:'-')],
     ['Saves', R.saves.opponent, R.saves.challenger]
   ];
   x.font='800 11px Archivo';
@@ -11661,7 +11661,7 @@ async function buildFriendlyResultCanvas(R){
     x.fillStyle='var(--muted-2)'; x.font='700 11px Archivo'; x.fillText(r[0],Wc/2,ry+18);
   });
 
-  // SECTION 4 — goal events
+  // SECTION 4, goal events
   const goY=412;
   x.fillStyle='#FFFFFF'; x.fillRect(0,goY,Wc,92);
   x.textAlign='left'; x.font='700 12px Archivo'; x.fillStyle='#16120F';
@@ -11669,7 +11669,7 @@ async function buildFriendlyResultCanvas(R){
              ...R.challengerGoals.map(g=>({...g,team:friendShort}))].sort((a,b)=>a.minute-b.minute);
   if(!all.length){
     x.textAlign='center'; x.fillStyle='var(--muted-2)'; x.font='800 14px Archivo';
-    x.fillText('0–0 — Goalless draw', Wc/2, goY+50);
+    x.fillText('0–0, Goalless draw', Wc/2, goY+50);
   } else {
     const shown=all.slice(0,5);
     shown.forEach((g,i)=>{
@@ -11679,7 +11679,7 @@ async function buildFriendlyResultCanvas(R){
     if(all.length>5){ x.fillStyle='#9a8f80'; x.fillText(`+${all.length-5} more`, 20, goY+18+5*14); }
   }
 
-  // SECTION 5 — both lineups (rows + fonts compact for a full XI)
+  // SECTION 5, both lineups (rows + fonts compact for a full XI)
   x.fillStyle='#0F1424'; x.fillRect(0,lnY,Wc,lnH);
   x.textAlign='center'; x.font='900 11px Archivo'; x.fillStyle='#F4B413';
   x.fillText(fit(R.youTeam||'YOUR SQUAD',172), Wc*0.25, lnY+20);
@@ -11717,14 +11717,14 @@ async function buildFriendlyResultCanvas(R){
   drawCol(R.opponentSquad, Wc*0.25, youFlags);
   drawCol(R.challengerSquad, Wc*0.75, friendFlags);
 
-  // SECTION 6 — man of the match
+  // SECTION 6, man of the match
   x.fillStyle='#F4B413'; x.fillRect(0,momY,Wc,60);
   x.fillStyle='#16120F'; x.textAlign='center'; x.font='900 14px Archivo';
   let mtxt=`MAN OF THE MATCH ⭐ ${surnameOf(R.manOfMatch.name)} (${R.manOfMatch.team})`;
   while(x.measureText(mtxt).width>Wc-24 && mtxt.length>10){ mtxt=mtxt.slice(0,-2); }
   x.fillText(mtxt, Wc/2, momY+36);
 
-  // SECTION 7 — footer
+  // SECTION 7, footer
   x.fillStyle='#0A0F1E'; x.fillRect(0,footY,Wc,32);
   x.fillStyle='rgba(255,255,255,.6)'; x.font='700 11px Archivo'; x.textAlign='center';
   x.fillText('RunThe.gg', Wc/2, footY+20);
@@ -11787,7 +11787,7 @@ $('cr-share').addEventListener('click', ()=>{
   friendlyShareLink($('cr-share')._url);
 });
 $('cr-copy').addEventListener('click', async ()=>{
-  // Copy ONLY the clean URL — never any title/text block.
+  // Copy ONLY the clean URL, never any title/text block.
   const url=$('cr-copy')._url;
   if(!url) return;
   try{ await navigator.clipboard.writeText(url); }
@@ -11814,7 +11814,7 @@ $('fr-send-result').addEventListener('click', async ()=>{
     // reveal a copyable box (some share sheets are awkward) + confirm
     const box=$('fr-watch-link'), copy=$('fr-watch-copy');
     box.value=url; box.style.display=''; copy.style.display=''; copy._url=url;
-    showToast('Watch link ready — send it to your friend ⚽');
+    showToast('Watch link ready, send it to your friend ⚽');
     await friendlyShareWatch(url);
   }
   catch(e){ showToast('Could not create the watch link'); }
