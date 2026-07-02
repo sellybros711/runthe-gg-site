@@ -91,7 +91,8 @@
   .tile img{width:100%;height:100%;object-fit:contain;padding:6px;}
   .meta{min-width:0;flex:1;}
   .meta .nm{font-weight:900;font-size:19px;line-height:1.1;letter-spacing:.01em;}
-  .meta .nm .em{color:var(--gold);}
+  /* game name follows the banner format: Run=coral, The=white, name=teal */
+  .meta .nm .r{color:var(--gold);} .meta .nm .t{color:var(--ink);} .meta .nm .g{color:var(--teal);}
   .meta .sub{color:var(--mut);font-size:13px;margin-top:3px;line-height:1.35;}
   .meta .chips{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap;}
   .chip{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
@@ -129,6 +130,7 @@
   .acct .perk{font-size:11px;font-weight:800;letter-spacing:.03em;color:#cfe0f0;
     background:rgba(255,255,255,.05);border:1px solid var(--line);padding:4px 9px;border-radius:999px;}
   .acct .perk b{color:var(--gold);font-weight:800;}
+  .acct .perk .amp{color:#fff;} .acct .perk .tl{color:var(--teal);}
   .acct .a-cta{display:flex;gap:10px;flex-wrap:wrap;margin:15px 0 0;}
   .btn{appearance:none;border:0;cursor:pointer;font-family:inherit;font-weight:800;font-size:14px;
     border-radius:12px;padding:12px 18px;text-decoration:none;display:inline-flex;align-items:center;
@@ -215,7 +217,7 @@
       <div class="rule"><span class="ln"></span>
         <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="none" stroke="#EF4E50" stroke-width="1.2"/><circle cx="6" cy="6" r="1.6" fill="#EF4E50"/></svg>
         <span class="ln r"></span></div>
-      <p class="tag">Pick a game and play instantly. No download, no catch.</p>
+      <p class="tag">Pick a game and play instantly. No download necessary.</p>
     </header>
 
     <!-- Account panel: signed-out CTA is the default so it shows even if the
@@ -224,7 +226,7 @@
       <h2 class="a-hd">One <span class="t">account.</span> Every <span class="g">game.</span></h2>
       <p class="a-sub">Create a free account to start earning in-game rewards: trophies, streaks, leaderboard rank and saves that follow you into every RunThe.GG game.</p>
       <div class="perks">
-        <span class="perk">🏆 <b>Trophies</b> &amp; badges</span>
+        <span class="perk">🏆 <b>Trophies</b> <span class="amp">&amp;</span> <span class="tl">badges</span></span>
         <span class="perk">📈 Leaderboard rank</span>
         <span class="perk">🔥 Daily streaks</span>
         <span class="perk">☁️ Saves across devices</span>
@@ -237,24 +239,24 @@
 
     <div class="seclab">Choose a game</div>
     <main class="games">
-      <a class="game soccer" href="/soccer/">
-        <span class="accent"></span>
-        <span class="tile"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="RunThePitch crest" width="66" height="66" loading="lazy" /></span>
-        <span class="meta">
-          <span class="nm">Run<span class="em">The</span>Pitch</span>
-          <span class="sub">Spin a nation &amp; year, draft a legend each round, build your dream XI, then simulate your World Cup run.</span>
-          <span class="chips"><span class="chip">⚽ World Cup</span><span class="chip">Squad Builder</span></span>
-        </span>
-        <span class="go">›</span>
-      </a>
-
       <a class="game golf" href="/golf/">
         <span class="accent"></span>
         <span class="tile"><img src="/golf/icon-192.png" alt="RunTheTour crest" width="66" height="66" loading="lazy" /></span>
         <span class="meta">
-          <span class="nm">Run<span class="em">The</span>Tour</span>
+          <span class="nm"><span class="r">Run</span><span class="t">The</span><span class="g">Tour</span></span>
           <span class="sub">Draft one skill from golf's greatest, build your player, then live a 30-year career: majors, the Ryder Cup, the Olympics.</span>
           <span class="chips"><span class="chip">⛳ Golf Career</span><span class="chip">Daily Challenge</span></span>
+        </span>
+        <span class="go">›</span>
+      </a>
+
+      <a class="game soccer" href="/soccer/">
+        <span class="accent"></span>
+        <span class="tile"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="RunThePitch crest" width="66" height="66" loading="lazy" /></span>
+        <span class="meta">
+          <span class="nm"><span class="r">Run</span><span class="t">The</span><span class="g">Pitch</span></span>
+          <span class="sub">Spin a nation &amp; year, draft a legend each round, build your dream XI, then simulate your World Cup run.</span>
+          <span class="chips"><span class="chip">⚽ World Cup</span><span class="chip">Squad Builder</span></span>
         </span>
         <span class="go">›</span>
       </a>
@@ -375,7 +377,7 @@
       el.innerHTML=
         '<h2 class="a-hd">One <span class="t">account.</span> Every <span class="g">game.</span></h2>'+
         '<p class="a-sub">Create a free account to start earning in-game rewards: trophies, streaks, leaderboard rank and saves that follow you into every RunThe.GG game.</p>'+
-        '<div class="perks"><span class="perk">🏆 <b>Trophies</b> &amp; badges</span><span class="perk">📈 Leaderboard rank</span><span class="perk">🔥 Daily streaks</span><span class="perk">☁️ Saves across devices</span></div>'+
+        '<div class="perks"><span class="perk">🏆 <b>Trophies</b> <span class="amp">&amp;</span> <span class="tl">badges</span></span><span class="perk">📈 Leaderboard rank</span><span class="perk">🔥 Daily streaks</span><span class="perk">☁️ Saves across devices</span></div>'+
         '<div class="a-cta"><button class="btn gold flex1" id="acct-signup">Create free account</button><button class="btn ghost flexa" id="acct-signin">Sign in</button></div>';
       $('acct-signup').onclick=function(){ openModal('signup'); };
       $('acct-signin').onclick=function(){ openModal('signin'); };
