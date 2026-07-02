@@ -3022,6 +3022,37 @@ allows Google Fonts, or self-host Anton.*
   HoF to the correct reconstructed values, preserves `lt.wins=285`, and a second pass with a
   legitimately-higher local Builds/Best OVR (99) confirms grow-only never reduces them; zero page errors.
 
+- **CS97 — career build-record stats are now truly server-based (cross-device/cross-context).** Follow-up
+  to CS96: the owner reported that opening RunTheTour from the LANDING PAGE (Safari) showed the zeroed
+  career stats, while opening it from the previously-installed HOME-SCREEN app showed the real stats, on the
+  SAME account (CSel8). Diagnosed the mechanism: `/RunTheTour/` is just a redirect to `/golf/`, so both
+  entry points load the identical page — but on iOS a Home-Screen web app runs in a SEPARATE localStorage
+  partition from Safari. The build-record fields in `bag_career` (Builds / Best earned / Best OVR / Best net
+  / Wins / Majors / totals / Hall of Fame) were the one career stat with NO server sync at all (CS82's cloud
+  bundle explicitly excluded `bag_career`, and sbSyncStats/sbPullStats only ever synced the lifetime
+  `lt`/`btier`/`badges` sub-objects) — so they lived only in whichever browser storage they were earned in.
+  That's exactly why the same account showed different stats depending on which context opened it, and it's
+  what the owner (correctly) asked to fix: "the stats need to be server based attached to the account, not
+  browser based."
+  Fix: added `bag_career` to the CS82 cloud-save bundle (`runtour_cloud_save`, a per-account JSONB blob — no
+  SQL change, the new `career` key just rides along). New `mergeCareerLifetime(local, server)` merges ONLY
+  the build-record fields + Hall of Fame, GROW-ONLY (max/union), and deliberately PRESERVES local
+  `lt`/`btier`/`badges` untouched — so the cloud path and the existing sbSyncStats/sbPullStats path are
+  disjoint and can't fight over the same data (the exact corruption risk the old exclusion comment worried
+  about). `cloudPull()` now restores the build-record fields on sign-in; `saveCareerLifetime()` fires a
+  debounced `cloudPush()` on every write, so any device with real stats uploads them and every other device
+  (Safari, the Home-Screen app, a new phone) converges to the same numbers. Combined with CS96 (which
+  reconstructs from posted-season history), a signed-in account now heals its build-record stats from
+  whichever source has them — the cloud blob or the leaderboard rows — and keeps them in sync everywhere.
+  Recovery path for the owner: open the Home-Screen app (which holds the real stats) once so it pushes them
+  up, then the landing/Safari view pulls them down. No service worker exists on `/golf/`, so both contexts
+  pick up the new code on next open (no stale cache to clear).
+  Verified in Playwright with two isolated browser contexts sharing one fake cloud blob: Device A (real
+  stats) pushes; Device B (fresh, zeroed `bag_career` with `lt` intact, reproducing the reported screenshot)
+  pulls and restores all build-record fields + HoF while its local `lt`/`btier` stay untouched; a Device C
+  with a legitimately-higher local Builds/Best OVR confirms grow-only never reduces them (and a lower local
+  field is raised to the cloud value); zero page errors. CS96's server-reconstruction test still green.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -537,7 +537,7 @@ function track(ev,props){try{(window.dataLayer=window.dataLayer||[]).push(Object
 // saveCareerLifetime() to write it, never LS.set('bag_career', ...) directly, so every write stays in
 // sync with whichever key career() is currently reading from.
 function career(){return LS.get(acctKey('bag_career'),{builds:0,bestMoney:0,bestNet:null,bestOvr:0,wins:0,majors:0,totalMoney:0,totalNet:0,hof:[],badges:{}});}
-function saveCareerLifetime(c){ LS.set(acctKey('bag_career'),c); }
+function saveCareerLifetime(c){ LS.set(acctKey('bag_career'),c); if(typeof cloudPush==='function') cloudPush(); }   // push build-record fields to the account (debounced; no-op signed out)
 // one-time: adopt this browser's pre-existing (unscoped) lifetime stats into the signed-in account's own
 // slot, the first time that slot is empty, mirrors migrateLegacyCareerSave()'s approach for career saves.
 // Never deletes the unscoped copy (a signed-out guest on this same browser should still see it).
@@ -7455,11 +7455,17 @@ async function sbPullStats(){ if(!sb||!sbUser) return;
 /* ---------- cloud save: career saves, Legend Tokens, streak, daily stats, achievements, Spotlight ----------
    Generalizes the sbSyncStats()/sbPullStats() idea above (which only ever covered lifetime badges/tee-
    tiers) to everything else that used to live ONLY in this browser's localStorage, so "my profile" looks
-   the same signed into the same account on any browser/device, not just this one. Deliberately does NOT
-   include bag_career (lifetime badges), that already has its own working sync path just above; adding a
-   second, competing sync mechanism for the same key would be how these things get corrupted, not fixed.
-   Also deliberately excludes device/UI preferences (autosim, dark mode, etc.), those aren't "your
-   profile," they're this browser's settings.
+   the same signed into the same account on any browser/device, not just this one. This is especially
+   important on iOS, where a Home-Screen web app runs in a SEPARATE storage sandbox from Safari, so the
+   same account can otherwise show different stats depending on which one you open it from.
+   bag_career IS now included (the build-record fields: Builds / Best earned / Best OVR / Best net / Wins /
+   Hall of Fame), because those were the ONE career stat with no server sync at all, which is exactly why
+   they could show up on one browser and be zero on another for the same account. The existing sbSyncStats/
+   sbPullStats path still owns the lifetime `lt`/`btier`/`badges` sub-objects; the cloud merge here touches
+   ONLY the build-record fields + Hall of Fame (grow-only, and it never overwrites local lt/btier/badges),
+   so the two sync mechanisms are disjoint and can't fight over the same data. Still deliberately excludes
+   device/UI preferences (autosim, dark mode, etc.), those aren't "your profile," they're this browser's
+   settings.
    Merge strategy is intentionally NEVER destructive: every field except the career save itself is merged
    with "can only grow" semantics (union / max), so a merge can add or preserve progress but never erase
    something already earned on either side. The career save is the one genuinely single-slot piece (you
@@ -7467,6 +7473,7 @@ async function sbPullStats(){ if(!sb||!sbUser) return;
    worst case that ever rewinds ONE device to its last-synced checkpoint, never erases a whole career. */
 function cloudBundle(){
   return {
+    career: LS.get(acctKey('bag_career'), null),   // build-record fields (Builds/Best*/Wins/HoF); lt owned by sbSyncStats
     careersave: LS.get(acctKey('bag_careersave'), null),
     legendTokens: legendTokens(),
     streak: LS.get(acctKey('bag_streak'), null),
@@ -7474,6 +7481,25 @@ function cloudBundle(){
     ach: LS.get(acctKey('bag_ach'), null),
     special: LS.get(acctKey('bag_special'), null),
   };
+}
+// Grow-only merge of the bag_career build-record fields (Builds / Best earned / Best OVR / Best net / Wins /
+// Majors / totals / Hall of Fame). Preserves LOCAL lt/btier/badges untouched (those are synced by the
+// separate sbSyncStats/sbPullStats path), so the two mechanisms never fight. Can only ever raise or restore
+// a value, never lower one that's legitimately higher on this device.
+function mergeCareerLifetime(local, server){
+  const base={builds:0,bestMoney:0,bestNet:null,bestOvr:0,wins:0,majors:0,totalMoney:0,totalNet:0,hof:[],badges:{}};
+  if(!local||typeof local!=='object') local=Object.assign({},base);
+  if(!server||typeof server!=='object') return local;
+  const out=Object.assign({},local);   // keep local lt/btier/badges as-is
+  ['builds','bestMoney','bestOvr','wins','majors','totalMoney','totalNet'].forEach(k=>{ out[k]=Math.max(local[k]||0, server[k]||0); });
+  const bnL=(local.bestNet==null)?-Infinity:local.bestNet, bnS=(server.bestNet==null)?-Infinity:server.bestNet, bn=Math.max(bnL,bnS);
+  if(bn>-Infinity) out.bestNet=bn;
+  const seen=new Set(), hof=[];
+  [...(local.hof||[]),...(server.hof||[])].sort((a,b)=>(b.net||0)-(a.net||0)).forEach(h=>{
+    const k=(h.name||'')+':'+(h.ovr||0)+':'+(h.net||0)+':'+(h.money||0);
+    if(!seen.has(k)){ seen.add(k); hof.push(h); } });
+  out.hof=hof.slice(0,5);
+  return out;
 }
 function mergeCareerSave(local, server){
   if(!server) return local; if(!local) return server;
@@ -7541,6 +7567,7 @@ async function cloudPull(){
     const row=Array.isArray(data)?data[0]:data;
     const server=row&&row.data;
     if(!server || typeof server!=='object' || !Object.keys(server).length){ cloudPush(); return; }   // nothing saved yet, seed it
+    LS.set(acctKey('bag_career'), mergeCareerLifetime(career(), server.career));   // restore build-record fields cross-device
     const mergedCareersave=mergeCareerSave(LS.get(acctKey('bag_careersave'),null), server.careersave);
     if(mergedCareersave) LS.set(acctKey('bag_careersave'), mergedCareersave);
     LS.set(acctKey('bag_legend_tokens'), mergeLegendTokens(legendTokens(), server.legendTokens));
