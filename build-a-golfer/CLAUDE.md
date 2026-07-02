@@ -3217,6 +3217,38 @@ allows Google Fonts, or self-host Anton.*
   all convert to `svg.ic` with no leftover glyph, and an enlarged icon sheet confirms the `$` and the three
   new arrows render correctly; zero page errors.
 
+- **CS105 — Resume lands on the EXACT page you left, not the start of next season.** Owner: "If a player
+  exits their game on a season results page, and then resumes the game, it brings them to the start of next
+  season. I want it to bring them to the page that they exited on, no matter the page." Root cause: the career
+  save recorded the golfer + world but NOT which screen the player was on. `resumeCareer()` only distinguished
+  a mid-season checkpoint (`r.mid.season` → resume into the season) from "everything else," and everything else
+  ran `continueFranchise()` — which advances the year, ages the world, applies decline, and drops into the NEXT
+  season's off-season. So exiting on the season **results** page (`scrSummary`, where the just-finished season
+  is saved via `saveCareer()` with no `mid`) resumed a full year ahead, skipping the results entirely.
+  Fix: every career save now tags a `resumeScreen` and snapshots exactly what that screen needs to redraw
+  without re-running its one-time record logic. Three screens are handled explicitly (a legacy save with no
+  tag falls back to the old `continueFranchise()` behaviour, so nothing breaks):
+  • **`summary` (season results)** — new `summaryResumeExtra()` stores `resumeScreen:'summary'`, `recorded:true`,
+    and a `snap` of the full completed `S.season` (field/results/totals/me + eliminated/cup/olympic/teamCup),
+    the schedule, and every one-time display card (`seasonRank`, `worldRankMove`, `seasonAwards`, `freshAch`,
+    `freshRep`, `rivalOutcome`, `freshRival`/`freshRivalOutgrown`, `freshBadges`, `summaryTab`). Written by the
+    season-end record block AND the "Exit to Home" button. On resume, `recorded=true` is restored so the record
+    block never re-runs (no double-counting of career stats), and the results page renders identically.
+  • **`offseason` (tune-up)** — `continueFranchise()` now saves `offseasonResumeExtra()` right after it advances
+    the world / applies decline / builds the off-season, and `offTake()`/`offReSpin()` re-save so mid-tune-up
+    swaps and used re-spins persist. On resume the player lands back in the off-season at the correct (already
+    advanced) year with their swaps intact, instead of re-running `continueFranchise()` into a year further on.
+  • **`season` (mid-season)** — `autoSaveSeason()`/`saveMidSeasonAndExit()` now also stamp `resumeScreen:'season'`
+    alongside the existing `mid` snapshot (behaviour unchanged; the tag just makes the branch explicit and lets
+    a stale summary/off-season tag be overwritten cleanly, since every save rewrites the whole blob).
+  `careerSaveInfo()` treats a summary/offseason-tagged save as resumable, and the title-screen "Resume Career
+  Mode" subtitle now reads "Year N results · back to your season results" or "Year N off-season · tune your
+  game" so the button says where it'll drop you. Verified in Playwright: exiting on the results page resumes
+  ONTO the results page (year unchanged, `recorded=true`, full season restored) and the summary re-renders
+  completely (name, net profit, share card, Continue-to-next-year button) with zero page errors; the off-season
+  path resumes into the off-season at the advanced year; mid-season resume still lands in the season at the
+  right event; and a legacy save with no `resumeScreen` still falls through to the next-off-season behaviour.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
