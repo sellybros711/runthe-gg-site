@@ -1,0 +1,16 @@
+{
+  "name": "RunThePitch — World Cup Game",
+  "short_name": "RunThePitch",
+  "description": "Spin a random nation & year, draft a legend each round, build your dream XI, then simulate a World Cup.",
+  "start_url": "/soccer/",
+  "scope": "/soccer/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FBF4E6",
+  "theme_color": "#01122A",
+  "icons": [
+    { "src": "/assets/runthepitch-apple-touch-icon_180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/runthepitch-app-icon_512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/runthepitch-app-icon_1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
+  ]
+}

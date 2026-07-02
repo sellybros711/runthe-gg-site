@@ -2885,7 +2885,7 @@ function footer(){
   fp.appendChild($(`<a class="pill" href="${mail}" style="text-decoration:none">✉ Questions or Comments</a>`));
   const a2h=$(`<div class="pill" style="cursor:pointer">▣ Add to Home</div>`); a2h.onclick=installApp;
   fp.appendChild(a2h);
-  fp.appendChild($(`<a class="pill" href="/" target="_blank" rel="noopener" style="text-decoration:none;border-color:var(--teal);color:var(--teal)">↗ <span style="font-style:italic;opacity:.8">Love soccer?</span> Try RunThePitch</a>`));
+  fp.appendChild($(`<a class="pill" href="/soccer/" target="_blank" rel="noopener" style="text-decoration:none;border-color:var(--teal);color:var(--teal)">↗ <span style="font-style:italic;opacity:.8">Love soccer?</span> Try RunThePitch</a>`));
   f.appendChild(fp);
   const links=$(`<div class="footlinks"></div>`);
   const mk=(t,fn)=>{const s=$(`<span style="cursor:pointer">${t}</span>`); s.onclick=fn; return s;};
@@ -3436,7 +3436,7 @@ function overlayAbout(screen){
     <p class="lede">It's in active development, new features are landing regularly. Got an idea or a bug? We'd love to hear it.</p>
     <div class="scout">
       <b style="color:var(--teal)">More from RunThe.GG</b>
-      <div class="small muted" style="margin-top:5px;line-height:1.5">RunTheTour is one of a growing family of free games from RunThe.GG, all under one account. Also try <a href="/" target="_blank" rel="noopener" style="color:var(--teal);font-weight:700">RunThePitch ↗</a>, build a World Cup squad from real players — with more games on the way.</div>
+      <div class="small muted" style="margin-top:5px;line-height:1.5">RunTheTour is one of a growing family of free games from RunThe.GG, all under one account. Also try <a href="/soccer/" target="_blank" rel="noopener" style="color:var(--teal);font-weight:700">RunThePitch ↗</a>, build a World Cup squad from real players — with more games on the way.</div>
     </div>
     <p class="small muted" style="line-height:1.5;margin-top:12px">Real golfer skill ratings are derived from <a href="https://datagolf.com" target="_blank" rel="noopener" style="color:var(--gold);font-weight:700">DataGolf</a> data. RunTheTour is an independent fan project, not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, or any player or organization shown in the game. All results are simulated for entertainment only.</p>
     <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour, Feedback')}" style="text-decoration:none;display:block">✉ Send Feedback</a>
