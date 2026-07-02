@@ -4715,6 +4715,15 @@ function finishSeasonHeadless(){
   }
 }
 /* ---------- Ryder/Presidents Cup screen: reveal the 5 sessions, running team score ---------- */
+// Each cup gets its own visual identity so it's obvious AT A GLANCE which one is being played:
+// Ryder Cup = navy & gold (USA in red vs Europe in EU blue); Presidents Cup = charcoal & silver
+// (USA in blue vs International in bronze). Used by the intro tag, the sticky scoreboard wordmark,
+// and the two team score panels.
+const CUP_THEME={
+  ryder:      { bg:'linear-gradient(180deg,#132f52,#0a1d33)', border:'#e8c15a', accent:'#f2d27c', vs:'USA vs Europe',        emoji:'🇺🇸🇪🇺', aCol:'#a33d3d', bCol:'#2b4c9b' },
+  presidents: { bg:'linear-gradient(180deg,#26231d,#141311)', border:'#c8ccd4', accent:'#e8ebf0', vs:'USA vs International', emoji:'🇺🇸🌍',  aCol:'#3d6fb5', bCol:'#57492a' },
+};
+function cupTheme(type){ return CUP_THEME[type]||CUP_THEME.ryder; }
 function ptTxt(n){ const w=Math.floor(n), h=(n-w)>=0.5; return (w||h)?((w?w:'')+(h?'½':'')):'0'; }
 function cupMatchRow(m, anim){
   const aWon=m.res==='A', bWon=m.res==='B';
@@ -4812,7 +4821,8 @@ function scrCaptainOffer(){
   const te=teamEventForYear(S.year||1), mineA=myCupSide()==='A';
   const myName=(mineA?te.nameA:te.nameB).replace('United States','USA');
   const apps=(S.career&&S.career.cup&&S.career.cup.apps)||0;
-  add($(`<div class="center" style="margin-top:8px"><span class="tag" style="color:#ffd76a;border-color:#ffd76a">🎖️ ${esc(te.short)} · Captaincy</span></div>`));
+  const thO=cupTheme(te.type);
+  add($(`<div class="center" style="margin-top:8px"><span class="tag" style="color:${thO.accent};border-color:${thO.border};background:${thO.bg}">${thO.emoji} ${esc(te.short)} · Captaincy</span></div>`));
   add($(`<div class="center" style="margin:18px 0 8px"><div style="display:inline-block;background:linear-gradient(180deg,#15331f,#0a2740);border:1px solid var(--gold);border-radius:16px;padding:20px 24px;max-width:92vw">
     <div style="font:800 23px/1.15 var(--body);color:var(--gold)">🎖️ You've been offered the captaincy</div>
     <div class="small muted" style="margin:9px auto 0;max-width:400px">After ${apps} cup appearances, Team ${esc(myName)} want YOU to lead them. Take the armband and pick the team, or lace them up one more time as a player.</div></div></div>`));
@@ -4867,7 +4877,8 @@ function scrTeamCup(){
   // ---- selection announcement (made / missed the team), with both rosters, before the matches ----
   if(!T._introSeen){
     const mineA=T.mySide==='A', myName=(mineA?T.nameA:T.nameB), usaShort=n=>n.replace('United States','USA');
-    add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:#ffd76a;border-color:#ffd76a">🏆 ${esc(T.short)} · Team Selection</span></div>`));
+    const th=cupTheme(T.type);
+    add($(`<div class="center" style="margin-top:2px"><span class="tag" style="color:${th.accent};border-color:${th.border};background:${th.bg}">${th.emoji} ${esc(T.short)} · ${th.vs} · Team Selection</span></div>`));
     if(T.playerSelected){
       const meRow=(mineA?T.rosterA:T.rosterB).find(p=>p.you);
       add($(`<div class="center" style="margin:12px 0 6px"><div style="display:inline-block;background:linear-gradient(180deg,#15331f,#0a2740);border:1px solid var(--gold);border-radius:14px;padding:14px 22px;max-width:92vw">
@@ -4903,18 +4914,26 @@ function scrTeamCup(){
   let ra=0, rb=0;
   for(let k=0;k<matchN;k++){ const r=flat[k].m.res; if(r==='A')ra++; else if(r==='B')rb++; else {ra+=0.5;rb+=0.5;} }
   const allDone=matchN>=TOTAL;
-  const aCol='#3d6fb5', bCol=ryder?'#1f8f5a':'#6f74c4';
-  const youA=T.mySide==='A';   // highlight the side your country plays for (you may be a player, captain, or just a fan)
-  // header / scoreboard — pinned to the top of the viewport as the match cards below scroll
+  const th=cupTheme(T.type), aCol=th.aCol, bCol=th.bCol;
+  const youA=T.mySide==='A';   // the side your country plays for (you may be a player, captain, or just a fan)
+  // "YOU" only belongs on the board when you're actually IN the event (playing or captaining) — a fan
+  // watching from home isn't on either team, so their side just gets the subtle gold ring, no label.
+  const involved=T.playerSelected||T.captain;
+  const youTag=involved?' · YOU':'';
+  // header / scoreboard — pinned to the top of the viewport as the match cards below scroll.
+  // The wordmark carries each cup's own identity (colors + matchup) so which cup this is reads instantly.
   const scoreboard=$(`<div class="cupsticky"></div>`);
-  scoreboard.innerHTML=`<div class="center"><span class="tag" style="color:#ffd76a;border-color:#ffd76a">🏆 ${esc(T.short)} · ${esc((S.look&&S.look.country)||'')}</span></div>
+  scoreboard.innerHTML=`<div class="center"><div style="display:inline-block;background:${th.bg};border:1px solid ${th.border};border-radius:12px;padding:7px 18px 8px">
+    <div style="font-family:var(--display);font-size:21px;letter-spacing:.05em;line-height:1;text-transform:uppercase;color:${th.accent}">${th.emoji} ${esc(T.short)}</div>
+    <div style="font:700 9.5px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${th.accent};opacity:.8;margin-top:4px">${th.vs}${involved?' · YOU’RE '+(T.captain?'CAPTAINING':'PLAYING'):''}</div>
+  </div></div>
   <div style="display:flex;align-items:stretch;justify-content:center;gap:0;margin:10px auto 4px;max-width:520px">
     <div style="flex:1;text-align:center;background:linear-gradient(180deg,${aCol},rgba(0,0,0,.25));border-radius:12px 0 0 12px;padding:10px 8px;border:1px solid var(--line);${youA?'box-shadow:inset 0 0 0 2px var(--gold)':''}">
-      <div style="font:800 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#dce8ff">${natFlag(T.codeA)} ${esc(T.nameA)}${youA?' · YOU':''}</div>
+      <div style="font:800 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#dce8ff">${natFlag(T.codeA)} ${esc(T.nameA)}${youA?youTag:''}</div>
       <div class="mono" style="font-weight:800;font-size:36px;color:#fff;margin-top:4px">${ptTxt(ra)}</div></div>
     <div style="flex:0 0 auto;display:flex;align-items:center;padding:0 8px;background:#06223a;border-top:1px solid var(--line);border-bottom:1px solid var(--line)"><span class="small muted">vs</span></div>
     <div style="flex:1;text-align:center;background:linear-gradient(180deg,${bCol},rgba(0,0,0,.25));border-radius:0 12px 12px 0;padding:10px 8px;border:1px solid var(--line);${!youA?'box-shadow:inset 0 0 0 2px var(--gold)':''}">
-      <div style="font:800 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#e6e8ff">${natFlag(T.codeB)} ${esc(T.nameB)}${!youA?' · YOU':''}</div>
+      <div style="font:800 11px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:#e6e8ff">${natFlag(T.codeB)} ${esc(T.nameB)}${!youA?youTag:''}</div>
       <div class="mono" style="font-weight:800;font-size:36px;color:#fff;margin-top:4px">${ptTxt(rb)}</div></div>
   </div>
   <div class="small muted center">First to 14½ wins · 28 points${allDone?'':` · match ${matchN} of ${TOTAL}`}</div>`;
@@ -5008,23 +5027,29 @@ function raceToCupNode(byPts, evt){
   const rank=byPts.findIndex(r=>r.n===meName)+1;
   const myPts=Math.round((byPts.find(r=>r.n===meName)||{}).points||0);
   const fmtP=n=>Math.round(n).toLocaleString();
-  let gate=0, verb='', into='';
+  // `noun` = what the top-N actually qualify FOR, named explicitly so the strip always reads as a
+  // complete sentence: "Only the top 70 qualify for the FedEx Cup Playoffs. You're #12 — safely in."
+  let gate=0, noun='';
   if(S.circuitMode){
-    if(!evt.playoff){ gate=CIRCUIT_PLAYOFFS[0].cap; verb='reach the Schwab Cup Playoffs'; into=CIRCUIT_PLAYOFFS[0].name; }
-    else if(evt.stage===1){ gate=CIRCUIT_PLAYOFFS[1].cap; verb='advance to Playoffs II'; into=CIRCUIT_PLAYOFFS[1].name; }
-    else if(evt.stage===2){ gate=CIRCUIT_PLAYOFFS[2].cap; verb='advance to the Championship'; into=CIRCUIT_PLAYOFFS[2].name; }
+    if(!evt.playoff){ gate=CIRCUIT_PLAYOFFS[0].cap; noun='the Schwab Cup Playoffs'; }
+    else if(evt.stage===1){ gate=CIRCUIT_PLAYOFFS[1].cap; noun='the '+CIRCUIT_PLAYOFFS[1].name; }
+    else if(evt.stage===2){ gate=CIRCUIT_PLAYOFFS[2].cap; noun='the '+CIRCUIT_PLAYOFFS[2].name; }
   } else {
-    if(!evt.playoff){ gate=70; verb='reach the FedEx Playoffs'; into='FedEx St. Jude Championship'; }
-    else if(evt.stage===1){ gate=50; verb='advance to the BMW Championship'; into='BMW Championship'; }
-    else if(evt.stage===2){ gate=30; verb='advance to East Lake'; into='Tour Championship'; }
+    if(!evt.playoff){ gate=70; noun='the FedEx Cup Playoffs'; }
+    else if(evt.stage===1){ gate=50; noun='the BMW Championship'; }
+    else if(evt.stage===2){ gate=30; noun='the Tour Championship at East Lake'; }
   }
   const finale=(gate===0);
   let detail, inside=true, line=gate;
   if(finale){ detail=S.circuitMode?'You made the finale. Win the Schwab Cup Championship to lift the Cup.':'You made the 30-man finale. Win the Tour Championship to lift the Cup.'; }
   else {
     inside=rank<=gate; const lineP=Math.round((byPts[gate-1]||{points:0}).points||0);
-    if(inside){ const cu=gate-rank; detail=cu>0?`Inside the top ${gate} with ${cu} spot${cu===1?'':'s'} to spare. Hold to ${verb}.`:`On the bubble at #${gate}. Hold your spot to ${verb}.`; }
-    else { detail=`${rank-gate} spot${rank-gate===1?'':'s'} outside the top ${gate} (about ${fmtP(lineP-myPts)} pts back). Climb to ${verb}.`; }
+    if(inside){ const cu=gate-rank;
+      detail=cu>0
+        ? `Only the top ${gate} qualify for ${noun}. You're #${rank} — safely inside, ${cu} spot${cu===1?'':'s'} above the cut line.`
+        : `Only the top ${gate} qualify for ${noun}. You're #${rank} — the very last qualifying spot. One bad week drops you out.`;
+    }
+    else detail=`Only the top ${gate} qualify for ${noun}. You're #${rank} — ${rank-gate} spot${rank-gate===1?'':'s'} below the cut line (about ${fmtP(lineP-myPts)} pts behind #${gate}). Earn points to climb in.`;
   }
   const NP=byPts.length;
   const fillPct=finale?100:Math.max(3,Math.min(100,100*(1-(rank-1)/Math.max(1,NP-1))));
