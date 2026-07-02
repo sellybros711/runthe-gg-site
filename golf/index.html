@@ -3242,9 +3242,26 @@ function overlayLeaderboard(screen){
   const c=career();
   const tab=S.lbTab||'season';
   let sort=S.lbSort||'earnings'; if(!lbSortValid(tab,sort)){ sort='earnings'; S.lbSort='earnings'; }
-  const dir=S.lbDir||'desc';   // 'desc' = high→low / best→worst (default); 'asc' flips it
-  const key=tab+':'+sort, view=lbCache[key];
-  if(!view) lbLoad(tab,sort);                          // fetch this (tab, sort) board; re-renders when ready
+  const dir=S.lbDir||'desc';   // 'desc' = high→low / best→worst (default); 'asc' = true bottom N (low→high)
+  // Low→High fetches a SEPARATE ascending board (the genuinely lowest rows in the DB), not a reversed
+  // top-200. If the p_dir param isn't live yet (migration 38 not applied), fall back to reversing the
+  // top-200 desc board so the toggle still does something.
+  let view, dirRows;
+  if(dir==='asc'){
+    const kAsc=tab+':'+sort+':asc'; let vAsc=lbCache[kAsc];
+    if(!vAsc){ lbLoad(tab,sort,'asc'); vAsc=lbCache[kAsc]; }
+    if(vAsc && vAsc.ok && !vAsc.legacyDir){ view=vAsc; dirRows=vAsc.rows; }     // true bottom N, worst-first
+    else if(vAsc && vAsc.loading){ view=vAsc; dirRows=[]; }
+    else {                                                                       // pre-migration fallback
+      const kDesc=tab+':'+sort; let vDesc=lbCache[kDesc];
+      if(!vDesc){ lbLoad(tab,sort,'desc'); vDesc=lbCache[kDesc]; }
+      view=vDesc; dirRows=(vDesc && vDesc.ok)?vDesc.rows.slice().reverse():[];
+    }
+  }else{
+    const kDesc=tab+':'+sort; let vDesc=lbCache[kDesc];
+    if(!vDesc){ lbLoad(tab,sort,'desc'); vDesc=lbCache[kDesc]; }
+    view=vDesc; dirRows=(vDesc && vDesc.ok)?vDesc.rows:[];
+  }
   const youName=(c.hof[0]&&c.hof[0].name)||S.name||'You';
   const lbRowHTML=(pos,name,sub,valHTML,you,rep)=>`<div class="lb ${you?'you':''}" style="grid-template-columns:34px 1fr auto">
       <span class="pos">${pos===1?'🏆':pos}</span>
@@ -3252,7 +3269,7 @@ function overlayLeaderboard(screen){
       <span class="mny" style="white-space:nowrap">${valHTML}</span></div>`;
   const lbRep=r=>{ const rp=(r&&r.rep_pts!=null)?repTierName(r.rep_pts):null; return (rp&&rp!=='Amateur')?(rp==='G.O.A.T.'?'🐐 G.O.A.T.':rp):null; };
   const globalOk = view && view.ok;
-  const globalRows = globalOk ? view.rows : [];
+  const globalRows = globalOk ? dirRows : [];   // dirRows is already in display order (top N, or true bottom N)
   // guest sign-in prompt shown inside the board, rendered in EVERY state (full / empty / local-fallback)
   // so a signed-out player always gets it on every tab, not just when the global board has rows.
   const guestBoardCTA = !sbSignedIn() ? `<div class="lockcta" style="text-align:center;padding:18px 12px;margin-top:10px">
@@ -3273,7 +3290,7 @@ function overlayLeaderboard(screen){
         : golferPart+r.seasons+' szn · '+(r.wins||0)+' win'+((r.wins||0)===1?'':'s')+(sort!=='earnings'?' · '+fmt(r.career_earnings):'');
       return lbRowHTML(r.rank,r.display_name,sub,v,you,lbRep(r));
     };
-    const rows=(dir==='asc')?globalRows.slice().reverse():globalRows;   // toggle high→low / low→high
+    const rows=globalRows;   // already ordered by the server (top N desc, or true bottom N asc)
     if(sbSignedIn()){
       board=rows.map(rowFn).join('');
     } else {
@@ -3324,7 +3341,7 @@ function overlayLeaderboard(screen){
     <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:6px;flex-wrap:wrap">${sortChips}</div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 0 8px">
       <div style="min-width:0"><h2 style="margin:0 0 2px">${tab==='season'?'Single Season':'Career'} · ${esc(lbl)}</h2>
-        <div class="small muted" style="margin:0">${tab==='season'?'Every posted season':'Every career sim'} ranked by ${esc(lbl.toLowerCase())}</div></div>
+        <div class="small muted" style="margin:0">${tab==='season'?'Every posted season':'Every career sim'} ranked by ${esc(lbl.toLowerCase())}${dir==='asc'?' · the lowest in the database':''}</div></div>
       <button class="btn ghost lbdir" style="width:auto;flex:0 0 auto;padding:7px 10px;font-size:11px;white-space:nowrap" title="${dir==='desc'?'Showing best first, tap to flip':'Showing worst first, tap to flip'}">${dir==='desc'?'▼ High–Low':'▲ Low–High'}</button>
     </div>
     <div class="board">${board}</div>
@@ -7561,16 +7578,21 @@ async function loadSeasonRank(earnings){
 }
 // fetch ONE board for the given (tab, sort) into lbCache[`${tab}:${sort}`]. Falls back to the legacy
 // (no p_sort) call so the board still loads before migration 28 is applied.
-async function lbLoad(tab,sort){
-  tab=tab||'season'; sort=sort||'earnings'; const k=tab+':'+sort;
+async function lbLoad(tab,sort,dir){
+  tab=tab||'season'; sort=sort||'earnings'; dir=(dir==='asc')?'asc':'desc';
+  // desc (top N) keeps the legacy key so other readers (e.g. the summary rank teaser) keep working;
+  // asc (true bottom N) gets its own key so both can be cached at once.
+  const k=(dir==='asc')?(tab+':'+sort+':asc'):(tab+':'+sort);
   if(lbCache[k] && lbCache[k].loading) return;          // already fetching
   if(!sb){ lbCache[k]={rows:[],ok:false}; render(); return; }
   lbCache[k]={loading:true};
   try{
     const fn=(tab==='career')?'runtour_career_board':'runtour_season_board';
-    let r=await sb.rpc(fn,{p_limit:200,p_sort:sort});
+    let legacyDir=false;
+    let r=await sb.rpc(fn,{p_limit:200,p_sort:sort,p_dir:dir});
+    if(r.error){ legacyDir=true; r=await sb.rpc(fn,{p_limit:200,p_sort:sort}); }  // DB without p_dir → top-N only
     if(r.error){ r=await sb.rpc(fn,{p_limit:200}); }     // legacy DB without p_sort → earnings order
-    lbCache[k]={rows:(r.data||[]),ok:!r.error};
+    lbCache[k]={rows:(r.data||[]),ok:!r.error,legacyDir:legacyDir};
   }catch(e){ lbCache[k]={rows:[],ok:false}; }
   render();   // refresh whatever's open
 }
