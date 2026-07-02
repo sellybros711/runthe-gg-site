@@ -553,7 +553,7 @@ const ICONS={
   target:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="1.8"/>',
   checkered:'<path d="M6 3v18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M7 4h10v8H7z" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M7 4h2.5v2H7zM12 4h2.5v2H12zM9.5 6h2.5v2H9.5zM14.5 6h2.5v2h-2.5zM7 8h2.5v2H7zM12 8h2.5v2H12zM9.5 10h2.5v2H9.5zM14.5 10h2.5v2h-2.5z"/>',
   mail:'<rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4 7l8 6 8-6" fill="none" stroke="currentColor" stroke-width="1.7"/>',
-  money:'<path d="M6 8c0-2 2.5-3 6-3s6 1 6 3-2.5 3-6 3-6 1-6 3 2.5 3 6 3 6-1 6-3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 3.5v17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>',
+  money:'<path d="M16 8.2C15.2 6.8 13.7 6 12 6c-2.2 0-3.8 1.1-3.8 2.7 0 1.5 1.2 2.3 3.8 2.8 2.6.5 4 1.4 4 3.1 0 1.6-1.7 2.6-4 2.6-1.8 0-3.4-.7-4.2-2M12 3.6v16.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>',
   clipboard:'<rect x="5" y="4" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="9" y="2.5" width="6" height="3.2" rx="1"/><path d="M8 11h8M8 14h8M8 17h5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
   crown:'<path d="M4 8l3 4 5-6 5 6 3-4-1.5 11H5.5z"/><rect x="5" y="19" width="14" height="2"/>',
   chartup:'<path d="M4 20V4M4 20h16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M7 15l4-4 3 2 5-6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 7h4v4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>',
@@ -590,7 +590,10 @@ const ICONS={
   pennant:'<path d="M6 3v18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M7 4c4 0 6 2 10 1-2 3-2 3 0 6-4-1-6 1-10 1z"/>',
   scales:'<path d="M12 3v18M5 21h14" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4 7h16M8 5.5l-4 8h8zM16 5.5l-4 8h8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>',
   circleGreen:'<circle cx="12" cy="12" r="8" fill="#1f7a44"/>',
-  swap:'<path d="M7 7h11M15 4l3 3-3 3M17 17H6M9 14l-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>'
+  swap:'<path d="M7 7h11M15 4l3 3-3 3M17 17H6M9 14l-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+  arrowUp:'<path d="M12 20V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  arrowUR:'<path d="M7 17 17 7M8 7h9v9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  arrowLeft:'<path d="M11 6l-6 6 6 6M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
 };
 function ic(name,o){ o=o||{}; const inner=ICONS[name]; if(!inner) return '';
   const sz=o.size||'1em';
@@ -599,7 +602,8 @@ function ic(name,o){ o=o||{}; const inner=ICONS[name]; if(!inner) return '';
    touch the hundreds of emoji spots individually and data-field emojis (badge.e, headline.icon, …) convert
    for free. Copy-to-clipboard share text never passes through here, so it keeps its emoji (SVG can't live in
    plain text). Only replaces emoji in TEXT runs, never inside a tag/attribute. Kept as text on purpose:
-   arrows (→ ← ↗ ↺ ↩), ✓, ✕, ★, country flags, and the daily-share colour squares. */
+   plain text arrows (→ ← ↺), ✓, ✕, ★, country flags, and the daily-share colour squares. The
+   emoji-presentation arrows (⬆ ↗ ↩) that iOS renders as coloured boxes ARE mapped to themed icons. */
 const EMOJI_MAP={
   '🏆':'trophy','⛳':'flag','📍':'pin','🔒':'lock','🔐':'lockkey','🔑':'key','🏅':'medal','🎖':'ribbon',
   '⚔':'swords','🐐':'goat','🥇':'medalGold','🥈':'medalSilver','🥉':'medalBronze','🔥':'fire','🎯':'target',
@@ -607,7 +611,8 @@ const EMOJI_MAP={
   '❄':'snow','🎉':'party','🛡':'shield','⚡':'bolt','🌟':'sparkle','✨':'sparkle','🪨':'rock','💎':'gem',
   '📖':'book','📜':'scroll','♟':'pawn','☁':'cloud','🎒':'bag','🟢':'circleGreen','🏺':'jug','✂':'scissors',
   '🗓':'calendar','🏛':'building','🐍':'snake','⚙':'gear','🏌':'golfer','🎰':'slot','🔁':'repeat','🧱':'brick',
-  '🏠':'home','👤':'user','😤':'grit','🌱':'sprout','☼':'sun','⚑':'pennant','⚖':'scales'
+  '🏠':'home','👤':'user','😤':'grit','🌱':'sprout','☼':'sun','⚑':'pennant','⚖':'scales',
+  '⬆':'arrowUp','↗':'arrowUR','↩':'arrowLeft'
 };
 const EMOJI_RE=new RegExp('(?:'+Object.keys(EMOJI_MAP).map(e=>e.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')️?','g');
 function emojifyIcons(h){ if(h==null) return h; h=String(h);
