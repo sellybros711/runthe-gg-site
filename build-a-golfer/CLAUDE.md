@@ -3170,6 +3170,18 @@ allows Google Fonts, or self-host Anton.*
   page errors. NOTE for the user: fully close & reopen iOS Chrome (and the Home-Screen app) to load the new
   code, since iOS caches the HTML.
 
+- **CS102 — "null" shown next to OVR on the daily result (server-backfilled best).** Owner screenshot:
+  the Daily Challenge result read "Par 70 · OVR 80 · null". The trailing segment is the weather/conditions
+  label. When the result comes from `fetchServerDailyBest()` (the CS81 path that backfills a best score whose
+  attempts were used on another device), it stored `cond: null`; `scrDailyResult` rendered `· ${dCondLabel(r.cond)}`
+  and `dCondLabel(null)` fell through its `|| c` fallback to return `null`, which interpolated as the literal
+  text "null". Fixed three ways: (1) `fetchServerDailyBest` now reconstructs the REAL conditions
+  deterministically (`dailyConditions(day, course_key)` — conditions are a pure function of day+course) instead
+  of null, so the actual weather shows; (2) `dCondLabel` returns '' for null/unknown input instead of echoing
+  it; (3) the result + spotlight-result lines guard the separator (`${dCondLabel(r.cond)?' · '+…:''}`) so no
+  dangling "· " ever appears. Verified in Playwright: a null-cond best renders "Par 72 · OVR 80" with no
+  "null"/dangling separator, a real cond shows its label (≋ Windy), dCondLabel(null/unknown)→'', zero errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
