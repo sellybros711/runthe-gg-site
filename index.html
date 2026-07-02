@@ -6,13 +6,13 @@
 <title>RunThe.GG: Free Online Games</title>
 <meta name="title" content="RunThe.GG: Free Online Games" />
 <meta name="description" content="Free, no-download sports games from RunThe.GG. Build a World Cup squad in RunThePitch, or live a 30-year golf career in RunTheTour. One account, play them all." />
-<meta name="theme-color" content="#0a1626" />
+<meta name="theme-color" content="#06182e" />
 <link rel="canonical" href="https://runthe.gg/" />
 
 <!-- Favicons: RunThe.GG emblem -->
-<link rel="icon" href="/assets/runthegames-emblem_48.png?v=1" sizes="any" />
-<link rel="icon" type="image/png" sizes="32x32" href="/assets/runthegames-emblem_32.png?v=1" />
-<link rel="apple-touch-icon" sizes="180x180" href="/assets/runthegames-emblem_180.png?v=1" />
+<link rel="icon" href="/assets/runthegames-emblem_48.png?v=2" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/runthegames-emblem_32.png?v=2" />
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/runthegames-emblem_180.png?v=2" />
 <link rel="manifest" href="/manifest.json" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
@@ -24,12 +24,12 @@
 <meta property="og:url" content="https://runthe.gg/" />
 <meta property="og:title" content="RunThe.GG: Free Online Games" />
 <meta property="og:description" content="Build a World Cup squad in RunThePitch, or live a 30-year golf career in RunTheTour. Free, no download, one account." />
-<meta property="og:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png?v=1" />
+<meta property="og:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png?v=2" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:site" content="@RunTheGG" />
 <meta name="twitter:title" content="RunThe.GG: Free Online Games" />
 <meta name="twitter:description" content="Free sports games from RunThe.GG. RunThePitch (World Cup) and RunTheTour (golf). One account, play them all." />
-<meta name="twitter:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png?v=1" />
+<meta name="twitter:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png?v=2" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -45,7 +45,7 @@
 <style>
   :root{
     --bg:#0a1626; --bg2:#0e2036; --card:#122a44; --cardb:#1e3d5c;
-    --ink:#eaf1f8; --mut:#93a7bd; --gold:#F4B413; --teal:#22b39a; --line:rgba(255,255,255,.08);
+    --ink:#eaf1f8; --mut:#93a7bd; --gold:#EF4E50; --teal:#35C4CD; --line:rgba(255,255,255,.08);
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
@@ -53,8 +53,8 @@
     font-family:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
     color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased;
     background:
-      radial-gradient(1100px 520px at 50% -8%, rgba(34,179,154,.16), transparent 60%),
-      radial-gradient(900px 460px at 88% 4%, rgba(244,180,19,.10), transparent 55%),
+      radial-gradient(1100px 520px at 50% -8%, rgba(53,196,205,.16), transparent 60%),
+      radial-gradient(900px 460px at 88% 4%, rgba(239,78,80,.12), transparent 55%),
       linear-gradient(180deg,#0b1a2c 0%, var(--bg) 46%, #081120 100%);
     background-attachment:fixed;
   }
@@ -65,8 +65,8 @@
   .wordmark{display:block;width:100%;max-width:600px;height:auto;margin:0 auto;
     filter:drop-shadow(0 6px 30px rgba(0,0,0,.45));}
   .rule{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px auto 0;max-width:260px;color:var(--gold);}
-  .rule .ln{height:2px;flex:1;background:linear-gradient(90deg,transparent,rgba(244,180,19,.6));}
-  .rule .ln.r{background:linear-gradient(270deg,transparent,rgba(244,180,19,.6));}
+  .rule .ln{height:2px;flex:1;background:linear-gradient(90deg,transparent,rgba(239,78,80,.6));}
+  .rule .ln.r{background:linear-gradient(270deg,transparent,rgba(239,78,80,.6));}
   .tag{text-align:center;color:var(--mut);font-weight:600;margin:16px auto 4px;max-width:440px;line-height:1.5;font-size:15px;}
 
   /* ---- section label ---- */
@@ -98,7 +98,7 @@
   .game.golf .chip{color:#f3dca0;background:rgba(235,166,31,.14);border-color:rgba(235,166,31,.32);}
   .go{flex:0 0 auto;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--ink);font-size:18px;font-weight:800;}
-  .game:hover .go{background:var(--gold);border-color:var(--gold);color:#1a1206;}
+  .game:hover .go{background:var(--gold);border-color:var(--gold);color:#fff;}
 
   /* ---- account note ---- */
   .note{margin-top:22px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;
@@ -116,8 +116,8 @@
   /* ---- account panel (one account, every game) ---- */
   .acct{margin:20px 0 4px;border-radius:18px;padding:18px 18px 17px;position:relative;overflow:hidden;
     background:
-      radial-gradient(420px 200px at 12% -30%, rgba(34,179,154,.18), transparent 70%),
-      radial-gradient(420px 200px at 100% 130%, rgba(244,180,19,.14), transparent 70%),
+      radial-gradient(420px 200px at 12% -30%, rgba(53,196,205,.18), transparent 70%),
+      radial-gradient(420px 200px at 100% 130%, rgba(239,78,80,.16), transparent 70%),
       linear-gradient(180deg,#12233b,#0e1d31);
     border:1px solid var(--cardb);}
   .acct .a-hd{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.01em;
@@ -133,7 +133,7 @@
     border-radius:12px;padding:12px 18px;text-decoration:none;display:inline-flex;align-items:center;
     justify-content:center;gap:8px;transition:transform .1s ease,filter .1s ease,background .1s ease;line-height:1;}
   .btn:active{transform:translateY(1px);}
-  .btn.gold{background:linear-gradient(180deg,#F7C43a,#EBA61F);color:#1a1206;box-shadow:0 8px 22px -12px rgba(244,180,19,.9);}
+  .btn.gold{background:linear-gradient(180deg,#FF5F60,#E7433F);color:#fff;box-shadow:0 8px 22px -12px rgba(239,78,80,.9);}
   .btn.gold:hover{filter:brightness(1.05);}
   .btn.ghost{background:rgba(255,255,255,.06);color:var(--ink);border:1px solid var(--cardb);}
   .btn.ghost:hover{border-color:var(--gold);}
@@ -148,7 +148,7 @@
   .acct .who .hi .u{color:var(--gold);}
   .acct .who .lo{color:var(--mut);font-size:12.5px;margin-top:2px;line-height:1.45;}
   .avatar{flex:0 0 auto;width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    background:linear-gradient(180deg,#22b39a,#0e7a67);color:#04150f;font-weight:900;font-size:19px;border:1px solid rgba(255,255,255,.15);}
+    background:linear-gradient(180deg,#35C4CD,#1c8d97);color:#04241f;font-weight:900;font-size:19px;border:1px solid rgba(255,255,255,.15);}
 
   /* ---- auth modal ---- */
   .modal{position:fixed;inset:0;z-index:60;display:flex;align-items:flex-start;justify-content:center;
@@ -192,7 +192,7 @@
   .steps{display:grid;gap:10px;margin:0 0 6px;}
   .step{display:flex;gap:12px;align-items:flex-start;background:rgba(255,255,255,.03);
     border:1px solid var(--line);border-radius:13px;padding:12px 14px;}
-  .step .n{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:var(--gold);color:#1a1206;
+  .step .n{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:var(--gold);color:#fff;
     font-weight:900;font-size:13px;display:flex;align-items:center;justify-content:center;}
   .step .tx{font-size:13.5px;line-height:1.5;color:var(--mut);}
   .step .tx b{color:var(--ink);font-weight:800;}
@@ -210,9 +210,9 @@
 <body>
   <div class="wrap">
     <header class="brand">
-      <h1 style="margin:0;"><img class="wordmark" src="/assets/runthegames-wordmark.png?v=1" alt="Run The Games" width="2172" height="724" /></h1>
+      <h1 style="margin:0;"><img class="wordmark" src="/assets/runthegames-wordmark.png?v=2" alt="Run The Games" width="2172" height="724" /></h1>
       <div class="rule"><span class="ln"></span>
-        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="none" stroke="#F4B413" stroke-width="1.2"/><circle cx="6" cy="6" r="1.6" fill="#F4B413"/></svg>
+        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="none" stroke="#EF4E50" stroke-width="1.2"/><circle cx="6" cy="6" r="1.6" fill="#EF4E50"/></svg>
         <span class="ln r"></span></div>
       <p class="tag">Pick a game and play instantly. No download, no catch.</p>
     </header>
