@@ -3119,6 +3119,31 @@ allows Google Fonts, or self-host Anton.*
   Legend Tokens, saved career, streak, daily stats, Spotlight, course records, AND now identity/appearance)
   is account-attached and consistent on any browser or device; only genuine per-device settings stay local.
 
+- **CS100 — Daily Challenge "button does nothing / stuck" (signed-in, some browsers/networks) fixed.**
+  Owner: the Daily Challenge wasn't functioning in Chrome ("button does nothing / stuck"), works on their
+  iOS. Reproduced the whole daily flow in headless Chromium (Blink = Chrome's engine) across guest,
+  signed-in, full 18-hole round (both the timed shot-reveal AND skip paths), re-entry, and
+  attempts-exhausted, all clean. The freeze wasn't a render crash (the CS84/86 catcher would surface those
+  as a visible card); it was the signed-in **daily-start gate**. `beginDailyAttempt()` sets a
+  `S._dailyStarting` latch, then `await`s the server attempt-check RPC (`runtour_daily_attempt_start`, the
+  CS81 cross-device cap). If that request stalls/hangs (slow network, a stuck fetch/preflight — plausible on
+  the owner's Chrome; their iOS home-screen app likely runs cached pre-CS81 code with no such gate), the
+  `await` never returns, the latch is never cleared, and every later click of the Daily Challenge button
+  hits `if(S._dailyStarting) return;` and silently does nothing — a permanent freeze.
+  Fix (two guarantees so the button can NEVER be frozen by the network): (1) every server call in the gate
+  (`runtour_daily_attempt_start` and the `fetchServerDailyBest` backfill) is raced against a 4s timeout via
+  a `withTimeout` helper that resolves to `{v}`/`{e}`/`{timeout}` and never hangs — a stalled request falls
+  OPEN to the local gate (the game's standard fail-open posture) instead of freezing; (2) the
+  `_dailyStarting` latch is cleared in a `finally`, so no path (early return, unexpected throw, timeout) can
+  leave it stuck true. On a healthy connection the RPC resolves in <500ms so nothing changes; only a genuine
+  stall now degrades gracefully (≤4s, then plays) instead of bricking the button. `finishDailyRound` was
+  audited too and is safe — it renders the result synchronously and fires submit/verify as fire-and-forget,
+  so "See your round" can't hang.
+  Verified in Playwright (Chromium): a deliberately never-resolving `runtour_daily_attempt_start` now falls
+  open to the preview in ~4.0s with the latch cleared (button responsive), instead of freezing forever; and
+  full regressions — signed-in fast-RPC round + re-entry, signed-in attempts-exhausted → done overlay, and
+  guest full 18-hole round — all still complete with zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
