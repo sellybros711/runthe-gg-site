@@ -1340,12 +1340,27 @@ function saveCareer(extra){ if(S.daily||!sbSignedIn()) return false;   // career
     slots:S.slots, name:S.name, look:S.look, ovr:Math.round(buildPlayer().skill), savedAt:Date.now()}, extra||{}));
   cloudPush(); return true; }
 // resumable if it has a finished-year franchise OR an in-progress season checkpoint (covers year-1 mid-season)
-function careerSaveInfo(){ if(!sbSignedIn()) return null; const r=LS.get(acctKey('bag_careersave'),null); return (r&&(r.career||(r.mid&&r.mid.season)))?r:null; }
+function careerSaveInfo(){ if(!sbSignedIn()) return null; const r=LS.get(acctKey('bag_careersave'),null);
+  return (r&&(r.career||(r.mid&&r.mid.season)||r.resumeScreen==='summary'||r.resumeScreen==='offseason'))?r:null; }
+// Resume to the EXACT page the player left on. saveCareer() records the golfer + world; these `extra`
+// payloads additionally tag which SCREEN to reopen and snapshot whatever that screen needs to redraw
+// without re-running its one-time record logic. resumeCareer() branches on resumeScreen; a legacy save
+// with no resumeScreen falls back to the mid/continue logic. Every career save overwrites the whole blob
+// (saveCareer builds a fresh object each call), so a stale screen tag can never leak into the next save.
+function summaryResumeExtra(){   // season results page: the full completed season + its one-time display cards
+  return { resumeScreen:'summary', recorded:true, snap:{
+    season:S.season, schedule:S.schedule, evtIndex:S.evtIndex,
+    seasonRank:S.seasonRank||null, worldRankMove:S.worldRankMove||null, seasonAwards:S.seasonAwards||null,
+    freshBadges:S.freshBadges||null, freshAch:S.freshAch||[], freshRep:S.freshRep||null,
+    rivalOutcome:S.rivalOutcome||null, freshRival:S.freshRival||null, freshRivalOutgrown:S.freshRivalOutgrown||null,
+    summaryTab:S.summaryTab||'season' } };
+}
+function offseasonResumeExtra(){ return { resumeScreen:'offseason', offseason:S.offseason||null }; }
 // auto-checkpoint the in-progress season at a clean event boundary so a refresh / going home resumes here.
 // Signed-in only (careers are account-scoped); the in-progress event re-sims on resume (it isn't recorded yet).
 function autoSaveSeason(){
   if(S.daily || !S.season || S.screen!=='season' || !sbSignedIn()) return;
-  saveCareer({ mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
+  saveCareer({ resumeScreen:'season', mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
     season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me } } });
 }
 function clearCareerSave(){ LS.set(acctKey('bag_careersave'),null); cloudPush(); }
@@ -1366,7 +1381,7 @@ function migrateLegacyCareerSave(){
 function saveMidSeasonAndExit(){
   if(!S.career || S.daily || !S.season){ clearTimeout(seasonTimer); reset(); render(); return; }
   // ensure S.career reflects this year before snapshotting (career object is created at the first summary)
-  const saved=saveCareer({ mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
+  const saved=saveCareer({ resumeScreen:'season', mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
     season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me } } });
   track('career_mid_save',{year:S.year,evt:S.evtIndex,saved});
   clearTimeout(seasonTimer); reset(); render();
@@ -1378,13 +1393,31 @@ function resumeCareer(){ const r=careerSaveInfo(); if(!r || r.ended) return;   /
   S.careerSeed=(r.careerSeed!=null?r.careerSeed:null); S.world=r.world||null;
   S.circuitMode=r.circuitMode||false; S.circuitStartYear=(r.circuitStartYear!=null?r.circuitStartYear:null); S.circuitCareer=r.circuitCareer||null;
   S.name=r.name||''; S.look=Object.assign({},DEFLOOK,r.look||{}); S.year=r.year||1; S.daily=false;
+  if(r.resumeScreen==='summary' && r.snap && r.snap.season){   // resume ONTO the season results page
+    ensureWorld(); RNG=Math.random;
+    const sn=r.snap;
+    S.season=sn.season; S.schedule=sn.schedule||[]; S.evtIndex=sn.evtIndex||0;
+    S.recorded=true;   // the season is already in the books, don't re-run the record block (would double-count)
+    S.summaryTab=sn.summaryTab||'season';
+    S.seasonRank=sn.seasonRank||null; S.worldRankMove=sn.worldRankMove||null; S.seasonAwards=sn.seasonAwards||null;
+    S.freshBadges=sn.freshBadges||null; S.freshAch=sn.freshAch||[]; S.freshRep=sn.freshRep||null;
+    S.rivalOutcome=sn.rivalOutcome||null; S.freshRival=sn.freshRival||null; S.freshRivalOutgrown=sn.freshRivalOutgrown||null;
+    S.autoSim=LS.get('bag_autosim',false);
+    track('career_resume',{year:S.year,at:'summary'}); S.screen='summary'; render(); return;
+  }
+  if(r.resumeScreen==='offseason' && r.offseason){   // resume INTO the off-season tune-up (world already advanced)
+    ensureWorld(); RNG=Math.random;
+    S.offseason=r.offseason; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
+    S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.autoSim=LS.get('bag_autosim',false);
+    track('career_resume',{year:S.year,at:'offseason'}); S.screen='offseason'; render(); return;
+  }
   if(r.mid && r.mid.season){   // resume INTO the in-progress season (mid-season save)
     ensureWorld(); RNG=Math.random;
     S.schedule=r.mid.schedule||[]; S.evtIndex=r.mid.evtIndex||0; S.season=r.mid.season; S.freshAch=r.mid.freshAch||[];
     S.curEvt=null; S.recorded=false; S.autoSim=LS.get('bag_autosim',false);
     track('career_resume',{year:S.year,mid:true}); S.screen='season'; render(); return;
   }
-  track('career_resume',{year:S.year}); continueFranchise(); }   // otherwise pick up at next year's off-season
+  track('career_resume',{year:S.year}); continueFranchise(); }   // legacy save with no screen tag: pick up at next off-season
 // A retired/ended career (endCareer()) is kept addressable so an accidental refresh mid-ceremony
 // doesn't lose it, but it must never be played on from here, just redisplay the same ceremony screen.
 function viewEndedCareer(){ const r=careerSaveInfo(); if(!r || !r.ended) return; reset();
@@ -3670,9 +3703,14 @@ function scrTitle(){
   } else if(cs){
     const mid=cs.mid&&cs.mid.season;
     const circuit=!!cs.circuitMode;
-    const sub=mid
-      ? `Year ${cs.year} · mid-season (event ${(cs.mid.evtIndex||0)+1}) · ${esc(cs.name||'Your Golfer')} · pick up where you left off`
-      : `Year ${cs.year} done · ${esc(cs.name||'Your Golfer')} · OVR ${cs.ovr} · continue your ${circuit?'circuit':'career'}`;
+    const who=esc(cs.name||'Your Golfer');
+    const sub=cs.resumeScreen==='summary'
+      ? `Year ${cs.year} results · ${who} · back to your season results`
+      : cs.resumeScreen==='offseason'
+      ? `Year ${cs.year} off-season · ${who} · tune your game, then run the season`
+      : mid
+      ? `Year ${cs.year} · mid-season (event ${(cs.mid.evtIndex||0)+1}) · ${who} · pick up where you left off`
+      : `Year ${cs.year} done · ${who} · OVR ${cs.ovr} · continue your ${circuit?'circuit':'career'}`;
     const cb=$(`<button class="btn teal">Resume ${circuit?'Legend Circuit':'Career Mode'}<span class="sub">${sub}</span></button>`);
     cb.onclick=resumeCareer; stack.appendChild(cb);
   }
@@ -5693,7 +5731,7 @@ function scrSummary(){
     }
     S.summaryTab='season';
     track('season_finished',{ovr,net:Math.round(ec.net),gross:Math.round(ec.gross),wins:t.wins,majors:t.majors,moneyRank,N,daily:S.daily,year:S.year||1});
-    if(!S.daily) saveCareer({circuitMode:S.circuitMode||false, circuitStartYear:S.circuitStartYear, circuitCareer:S.circuitCareer});   // auto-save the franchise so it can be resumed from home
+    if(!S.daily) saveCareer(summaryResumeExtra());   // auto-save the franchise so a refresh/return resumes RIGHT here on the results page (not next season)
     clearResume();   // golfer's season is in the books, no longer resumable
   }
   if(S.daily&&!S.dailyStored){S.dailyStored=true; bumpStreak(); track('daily_completed',{net:Math.round(ec.net),moneyRank});
@@ -5986,7 +6024,7 @@ function scrSummary(){
         :('Career Mode · year '+((S.year||1)+1)+' of '+CAREER_MAX_YEARS+(declining?' · skills are declining (re-spin to repair)':'')+' · off-season, then a new season'))}</span></button>`);
     cont.onclick=continueFranchise; right.appendChild(cont);
     const save=$(`<button class="btn gold" style="margin-top:10px">Exit to Home<span class="sub">Already saved, come back and resume anytime</span></button>`);
-    save.onclick=()=>{ saveCareer(); track('career_saved_exit',{year:S.year||1}); reset(); render(); };
+    save.onclick=()=>{ saveCareer(summaryResumeExtra()); track('career_saved_exit',{year:S.year||1}); reset(); render(); };
     right.appendChild(save);
     const retire=$(`<button class="btn ghost" style="margin-top:10px">${S.circuitMode?'End Circuit Now':'Retire, End Career'}</button>`);
     retire.onclick=()=>{ S.circuitMode?endCircuit():endCareer('chose'); }; right.appendChild(retire);
@@ -6015,6 +6053,7 @@ function continueFranchise(){
   // off-season tune-up: re-spin to swap fresh skills in (now also to repair age decline)
   const _perk=repPerk(); S.offseason={changes:0,maxChanges:_perk.changes,reSpins:_perk.reSpins,decline:_decline}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
   track('offseason_start',{year:S.year});
+  saveCareer(offseasonResumeExtra());   // checkpoint the off-season (world advanced, decline applied) so a refresh resumes HERE, not the prior results page
   S.screen='offseason'; render();
 }
 /* ---- Legend Tokens: finish the full 30-year career at an elite level and bank a one-time Daily
@@ -6145,8 +6184,8 @@ function startCircuit(){
 function newCareer(){ clearCareerSave(); reset(); render(); }
 function finishOffseason(){ track('offseason_done',{changes:S.offseason.changes}); startSeason(false); }
 function offSpin(){ if(S.current||S.spinning)return; reveal(); }
-function offReSpin(){ if(S.offseason.reSpins<=0)return; S.offseason.reSpins--; track('offseason_respin'); reveal(); }
-function offTake(k){ S.slots[k]={golfer:S.current.name,value:S.current[k]}; S.offseason.changes++; if(S.offseason.decline) delete S.offseason.decline[k]; S.current=null; track('offseason_swap',{slot:k}); render(); }
+function offReSpin(){ if(S.offseason.reSpins<=0)return; S.offseason.reSpins--; track('offseason_respin'); saveCareer(offseasonResumeExtra()); reveal(); }
+function offTake(k){ S.slots[k]={golfer:S.current.name,value:S.current[k]}; S.offseason.changes++; if(S.offseason.decline) delete S.offseason.decline[k]; S.current=null; track('offseason_swap',{slot:k}); saveCareer(offseasonResumeExtra()); render(); }
 function scrOffseason(){
   const os=S.offseason||{changes:0,maxChanges:3,reSpins:2};
   const circuitYear3=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):null;
