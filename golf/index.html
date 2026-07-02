@@ -552,7 +552,7 @@ const SEASON_EVENTS=18;
 // the FLAT costs (travel, season overhead) need their own scaled-down figures, or every circuit season
 // would show a guaranteed heavy loss regardless of how well you actually played.
 const CIRCUIT_COSTS={travelPerEvent:8000, seasonFixed:0.5e6};
-function seasonNet(t){const gross=t.money, caddie=gross*COSTS.caddiePct, agent=gross*COSTS.agentPct,
+function seasonNet(t){const gross=t.money, caddie=gross*caddieFeePct(), agent=gross*COSTS.agentPct,
   cc=S.circuitMode?CIRCUIT_COSTS:COSTS,
   travel=t.played*cc.travelPerEvent, fixed=cc.seasonFixed*(t.played/SEASON_EVENTS),
   costs=caddie+agent+travel+fixed; return {gross,caddie,agent,travel,fixed,costs,net:gross-costs};}
@@ -2620,7 +2620,78 @@ const HAIRS=[
   {id:'platinum',  m:'#e4ca9b', s:'#c7ab78'},
   {id:'grey',      m:'#b3ada4', s:'#928c83'},
 ];
-const DEFLOOK={skin:'tan',polo:'teal',pants:'stone',hair:'brown',cap:true,lefty:false,gender:'male',country:'United States'};
+const DEFLOOK={skin:'tan',polo:'teal',pants:'stone',hair:'brown',cap:true,lefty:false,gender:'male',country:'United States',caddie:''};
+// ---------- Legendary Caddies ----------
+// Pick a real, storied caddie to loop for your golfer; each grants a small, on-theme edge. They unlock
+// as you climb the Tour Rep ladder (the humble local loopers first, the legendary bagmen at the top),
+// a few per rank-up. `base` deltas are baked into your ratings in buildPlayer (so they show in your OVR
+// and radar); `major`/`venue` deltas are situational bonuses applied to your event-effective overall in
+// career play (majors / a specific host course); `fee` overrides the 10% caddie cut in seasonNet.
+// Composure carries the "steady/calm" caddies since it already governs the pressure/choke model — no
+// separate variance lever needed. Tier 1 = most prestigious (unlocks last); tier 8 = unlocked from the start.
+const CADDIE_TIER_RANK={1:'Icon',2:'Legend',3:'Champion',4:'Star',5:'Contender',6:'Tour Pro',7:'Journeyman',8:'Amateur'};
+const CADDIES=[
+  // ---- Tier 1 · Legendary (unlock at Icon) ----
+  {id:'bones-mackay', name:'Jim "Bones" Mackay', tier:1, link:'Phil Mickelson', power:{base:{app:2}}, desc:'+2 Approach', flavor:'25 years of meticulous course prep and pinpoint wedge yardages on Phil\'s bag.'},
+  {id:'steve-williams', name:'Steve Williams', tier:1, link:'Tiger Woods, Adam Scott', power:{base:{clu:1}, major:{app:1,clu:1}}, desc:'+1 Composure · +1 Approach & Composure in majors', flavor:'The most major wins of any caddie in history (14) — ice-cold when it matters most.'},
+  {id:'fluff-cowan', name:'Mike "Fluff" Cowan', tier:1, link:'Tiger Woods, Jim Furyk', power:{base:{clu:2,put:1}}, desc:'+2 Composure · +1 Putting', flavor:'An unshakeable, laid-back presence that steadies every golfer he works for.'},
+  {id:'fanny-sunesson', name:'Fanny Sunesson', tier:1, link:'Nick Faldo', power:{base:{acc:2}, major:{app:1}}, desc:'+2 Accuracy · +1 Approach in majors', flavor:'Razor-precise yardages that anchored Nick Faldo\'s run as the best player in the world.'},
+  {id:'angelo-argea', name:'Angelo Argea', tier:1, link:'Jack Nicklaus', power:{base:{clu:1,dist:1}, major:{clu:1}}, desc:'+1 Composure, +1 Distance · +1 Composure in majors', flavor:'Twenty years of confidence and calm that freed Jack Nicklaus to swing away.'},
+  // ---- Tier 2 · Hall of Fame (unlock at Legend) ----
+  {id:'carl-jackson', name:'Carl Jackson', tier:2, link:'Ben Crenshaw', power:{base:{put:1}, venue:{names:['The Masters'], d:{put:2}}}, desc:'+1 Putting · +2 Putting at The Masters', flavor:'Ben Crenshaw\'s Masters caddie for four decades — a legendary Augusta green-reader.'},
+  {id:'bruce-edwards', name:'Bruce Edwards', tier:2, link:'Tom Watson', power:{base:{clu:2,app:1}}, desc:'+2 Composure · +1 Approach', flavor:'Tom Watson\'s loyal man for three decades — the steadiest presence ever to carry a bag.'},
+  {id:'jp-fitzgerald', name:'J.P. Fitzgerald', tier:2, link:'Rory McIlroy', power:{base:{dist:1,app:1}}, desc:'+1 Distance, +1 Approach', flavor:'Guided Rory McIlroy\'s power game through four majors and the climb to World No. 1.'},
+  {id:'joe-lacava', name:'Joe LaCava', tier:2, link:'Fred Couples, Tiger Woods', power:{base:{clu:1,scr:1}}, desc:'+1 Composure, +1 Scrambling', flavor:'Calm, steady trouble-management for some of the biggest names in the game.'},
+  {id:'herman-mitchell', name:'Herman Mitchell', tier:2, link:'Lee Trevino', power:{base:{acc:2}}, desc:'+2 Accuracy', flavor:'Nineteen fiery years and six majors on the bag of shotmaker Lee Trevino.'},
+  {id:'terry-mcnamara', name:'Terry McNamara', tier:2, link:'Annika Sorenstam', power:{base:{app:1,put:1}}, desc:'+1 Approach, +1 Putting', flavor:'On the bag through Annika Sorenstam\'s most dominant stretch — 48 wins in six years.'},
+  // ---- Tier 3 · Major Champion (unlock at Champion) ----
+  {id:'alfie-fyles', name:'Alfie Fyles', tier:3, link:'Tom Watson (Open)', power:{base:{app:1}, venue:{names:['The Open'], d:{app:1,clu:1}}}, desc:'+1 Approach · +1 Approach & Composure at The Open', flavor:'Talked Watson into the winning club on the last hole of the 1977 Duel in the Sun.'},
+  {id:'willie-peterson', name:'Willie Peterson', tier:3, link:'Jack Nicklaus (Masters)', power:{base:{put:1}, venue:{names:['The Masters'], d:{put:1,clu:1}}}, desc:'+1 Putting · +1 Putting & Composure at The Masters', flavor:'On the bag for five of Jack\'s six Masters wins — famous for his leap on the 16th.'},
+  {id:'tip-anderson', name:'James "Tip" Anderson', tier:3, link:'Arnold Palmer (Open)', power:{base:{acc:1}, venue:{names:['The Open'], d:{acc:1,sht:1}}}, desc:'+1 Accuracy · +1 Accuracy & Short Game at The Open', flavor:'A St Andrews original whose local knowledge won Arnold Palmer two Open Championships.'},
+  {id:'willie-aitchison', name:'Willie Aitchison', tier:3, link:'Roberto De Vicenzo, Tom Watson', power:{base:{clu:2}}, desc:'+2 Composure', flavor:'Steadied a nerve-rattled De Vicenzo to beat Nicklaus at the 1967 Open.'},
+  {id:'rabbit-dyer', name:'Alfred "Rabbit" Dyer', tier:3, link:'Gary Player', power:{base:{bnk:1,clu:1}}, desc:'+1 Bunker, +1 Composure', flavor:'Gary Player\'s man for 18 years — the game\'s greatest bunker player.'},
+  // ---- Tier 4 · Tour Veteran (unlock at Star) ----
+  {id:'pete-bender', name:'Pete Bender', tier:4, link:'Greg Norman, Ian Baker-Finch', power:{base:{acc:1}, venue:{names:['The Open'], d:{sht:1}}}, desc:'+1 Accuracy · +1 Short Game at The Open', flavor:'A 45-year veteran with Open wins alongside Norman and Baker-Finch.'},
+  {id:'mike-martinez', name:'Mike Martinez', tier:4, link:'Johnny Miller, Tom Lehman', power:{base:{app:1,put:1}}, desc:'+1 Approach, +1 Putting', flavor:'On the bag for Johnny Miller\'s historic 63 and Tom Lehman\'s Open win.'},
+  {id:'pappy-stokes', name:'William "Pappy" Stokes', tier:4, link:'Ben Hogan +3 more', power:{base:{app:1}, venue:{names:['The Masters'], d:{app:1,put:1}}}, desc:'+1 Approach · +1 Approach & Putting at The Masters', flavor:'Won five Masters for four different players — a feat no caddie has matched.'},
+  {id:'steve-hulka', name:'Steve Hulka', tier:4, link:'150+ players since 1972', power:{fee:0.09}, desc:'Caddie fee 10% → 9% (keep more winnings)', flavor:'The ultimate journeyman — 150+ bags carried, and he knows the business cold.'},
+  // ---- Tier 5 · Colorful Character (unlock at Contender) ----
+  {id:'two-shot-lynch', name:'Lee "Two Shot" Lynch', tier:5, link:'Al Geiberger\'s 59', power:{base:{clu:2,dist:-1}}, desc:'+2 Composure, −1 Distance', flavor:'So relentlessly conservative it cost you aggression — but you never beat yourself.'},
+  {id:'golf-ball-hull', name:'Dolphus "Golf Ball" Hull', tier:5, link:'Raymond Floyd', power:{base:{clu:1}, major:{clu:1}}, desc:'+1 Composure · +1 Composure in majors', flavor:'Fired six times, rehired seven — and four majors won amid the chaos.'},
+  {id:'killer-foy', name:'Sam "Killer" Foy', tier:5, link:'Hale Irwin', power:{base:{scr:1,clu:1}}, desc:'+1 Scrambling, +1 Composure', flavor:'A former boxer turned caddie who grinds out every hole.'},
+  {id:'last-call-lance', name:'Lance "Last Call" Ten Broeck', tier:5, link:'Various; a tour pro himself', power:{base:{clu:1}}, desc:'+1 Composure', flavor:'Everyone\'s friend — keeps you loose and enjoying the walk.'},
+  // ---- Tier 6 · Historic (unlock at Tour Pro) ----
+  {id:'freddie-bennett', name:'Freddie Bennett', tier:6, link:'Augusta caddiemaster', power:{base:{app:1}, venue:{names:['The Masters'], d:{app:1}}}, desc:'+1 Approach · +1 Approach at The Masters', flavor:'Augusta National\'s longtime caddiemaster, who mentored generations of loopers.'},
+  {id:'eddie-lowery', name:'Eddie Lowery', tier:6, link:'Francis Ouimet (1913)', power:{base:{clu:1,scr:1}}, desc:'+1 Composure, +1 Scrambling', flavor:'The ten-year-old who believed amateur Francis Ouimet to the greatest upset in golf.'},
+  {id:'iron-man', name:'"Iron Man"', tier:6, link:'Arnold Palmer (Masters)', power:{base:{acc:1}, venue:{names:['The Masters'], d:{acc:1}}}, desc:'+1 Accuracy · +1 Accuracy at The Masters', flavor:'The steady Augusta counterweight to all four of Palmer\'s go-for-broke Masters wins.'},
+  // ---- Tier 7 · Deep Lore (unlock at Journeyman) ----
+  {id:'snipes-nipper', name:'Ernest "Snipes" Nipper', tier:7, link:'Augusta caddie lineage', power:{base:{sht:1}, venue:{names:['The Masters'], d:{sht:1}}}, desc:'+1 Short Game · +1 Short Game at The Masters', flavor:'A fondly remembered Augusta local looper from the club-caddie era.'},
+  {id:'bubba-beard', name:'Jerry "Bubba" Beard', tier:7, link:'Augusta caddie lineage', power:{base:{put:1}, venue:{names:['The Masters'], d:{put:1}}}, desc:'+1 Putting · +1 Putting at The Masters', flavor:'Part of the deep bench of Augusta caddies who could read the grain by feel.'},
+  // ---- Tier 8 · Legacy (unlocked from the start) ----
+  {id:'shorty-mac', name:'Matthew "Shorty Mac" Palmer', tier:8, link:'Augusta caddie lineage', power:{base:{bnk:1}, venue:{names:['The Masters'], d:{bnk:1}}}, desc:'+1 Bunker · +1 Bunker at The Masters', flavor:'A name passed down in Augusta lore — knew every inch of the course by feel.'},
+  {id:'stovepipe', name:'"Stovepipe"', tier:8, link:'Augusta caddie lineage', power:{base:{scr:1}, venue:{names:['The Masters'], d:{scr:1}}}, desc:'+1 Scrambling · +1 Scrambling at The Masters', flavor:'One of the great nickname-only Augusta loopers of the old caddie era.'},
+];
+const CADDIE_BY_ID=Object.fromEntries(CADDIES.map(c=>[c.id,c]));
+function caddieUnlocked(cad){ if(!cad) return false; return repRankIndex(repTier().tier.name) >= (8-cad.tier); }
+// the caddie you have equipped, but ONLY if it's a real, currently-unlocked one (a saved pick that's
+// since become locked, or an unknown id, safely resolves to "no caddie").
+function equippedCaddie(){ const c=CADDIE_BY_ID[(S.look&&S.look.caddie)||'']; return (c && caddieUnlocked(c))?c:null; }
+function unlockedCaddies(){ return CADDIES.filter(caddieUnlocked); }
+// count how many caddies unlock at the NEXT rep rank up (for the "3 more unlock at Star" nudge)
+function nextCaddieUnlock(){
+  const cur=repRankIndex(repTier().tier.name);
+  for(let idx=cur+1; idx<=7; idx++){ const t=8-idx; const n=CADDIES.filter(c=>c.tier===t).length; if(n) return {rank:REP_ORDER[idx], count:n}; }
+  return null;
+}
+// situational (major / host-course) bonus to your event-effective overall, weighted the same way
+// eventOverall weights each skill for that course. Base deltas are already baked into your ratings.
+function caddieEventEo(ew, evtName, isMajor){
+  const cad=equippedCaddie(); if(!cad) return 0; const p=cad.power; const d={};
+  if(isMajor && p.major) for(const k in p.major) d[k]=(d[k]||0)+p.major[k];
+  if(p.venue && p.venue.names.includes(evtName)) for(const k in p.venue.d) d[k]=(d[k]||0)+p.venue.d[k];
+  return ew.reduce((s,c)=> s + (d[c.k]||0)*c.w, 0);
+}
+function caddieFeePct(){ const cad=equippedCaddie(); return (cad && cad.power.fee!=null)?cad.power.fee:COSTS.caddiePct; }
 let S={};
 function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);S={screen:'title',mode:'easy',revealed:new Set(),drawRng:Math.random,reSpins:2,
   slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get('bag_name',''),
@@ -2648,6 +2719,11 @@ function ovrFromSkills(sk){
   return Math.max(40, Math.min(99, o)); }
 function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
   CATS.forEach(c=>p[c.k]=S.slots[c.k]?S.slots[c.k].value:REPLACEMENT);
+  // caddie: bake the always-on part of your caddie's power into your ratings so it shows in OVR + radar
+  // (situational major/venue bonuses are added to your event overall in the sim, not here). Clamped so a
+  // boost can't push a rating out of range or a -1 (Two Shot Lynch) below the floor.
+  const cad=equippedCaddie();
+  if(cad && cad.power.base){ for(const k in cad.power.base){ if(p[k]!=null) p[k]=Math.max(40,Math.min(99, p[k]+cad.power.base[k])); } p._caddie=cad.id; }
   p.country=(S.look&&S.look.country)||'United States'; p.nation=playerNation();
   p.skill=ovrFromSkills(p); return p;}
 
@@ -3596,6 +3672,8 @@ function scrSetup(){
     right.appendChild(setupHeader('Country & handedness'));
     right.appendChild(countryRow());
     right.appendChild(handRow());
+    right.appendChild(setupHeader('Caddie'));
+    right.appendChild(caddieRow());
     right.appendChild(setupHeader('Kit'));
     right.appendChild(colorRow('Shirt','polo',S.look.polo));
     right.appendChild(patternRow('Shirt pattern','shirtPat',S.look.shirtPat||'none'));
@@ -3894,6 +3972,34 @@ function countryRow(){
   sel.onchange=e=>{ S.look.country=e.target.value; LS.set('bag_look',S.look); render(); };
   row.appendChild(sel); return row;
 }
+// caddie picker — a dropdown of the caddies you've unlocked (grouped by Tour Rep rank), each granting a
+// small on-theme edge, plus a live line describing the equipped caddie's power and a nudge toward the next
+// unlock. Kept to one <select> so 30+ caddies never feel overwhelming.
+function caddieRow(){
+  const cur=(S.look&&S.look.caddie)||'';
+  const unlocked=unlockedCaddies();
+  const row=$(`<div style="margin:9px 0"></div>`);
+  // group unlocked caddies by the rank they unlock at (prestige order: best first)
+  const byTier={}; unlocked.forEach(c=>{ (byTier[c.tier]=byTier[c.tier]||[]).push(c); });
+  const groups=Object.keys(byTier).sort((a,b)=>a-b).map(t=>
+    `<optgroup label="${esc(CADDIE_TIER_RANK[t])} tier">`+
+      byTier[t].map(c=>`<option value="${esc(c.id)}"${c.id===cur?' selected':''}>${esc(c.name)} — ${esc(c.desc)}</option>`).join('')+
+    `</optgroup>`).join('');
+  const sel=$(`<select class="name" style="width:100%;cursor:pointer"><option value=""${cur===''?' selected':''}>No caddie</option>${groups}</select>`);
+  sel.onchange=e=>{ S.look.caddie=e.target.value; LS.set('bag_look',S.look); track('caddie_pick',{id:e.target.value||'none'}); render(); };
+  row.appendChild(sel);
+  const cad=equippedCaddie();
+  if(cad){
+    row.appendChild($(`<div class="scout" style="margin-top:8px;padding:10px 12px">
+      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span style="font-size:15px">🎒</span><b style="color:var(--gold);font-size:13px">${esc(cad.name)}</b><span class="tag" style="font-size:9px;padding:2px 7px;color:var(--gold);border-color:var(--gold)">${esc(cad.desc)}</span></div>
+      <div class="small muted" style="margin-top:5px;line-height:1.45">${esc(cad.flavor)}</div></div>`));
+  } else {
+    row.appendChild($(`<div class="small muted" style="margin-top:6px;line-height:1.45">Pick a legendary looper for a small, on-theme edge on your golfer.</div>`));
+  }
+  const nxt=nextCaddieUnlock();
+  if(nxt) row.appendChild($(`<div class="small" style="margin-top:6px;color:var(--teal);font-weight:600">🔒 ${nxt.count} more caddie${nxt.count>1?'s':''} unlock at ${esc(nxt.rank)} — climb your Tour Rep.</div>`));
+  return row;
+}
 function genderRow(){
   const g=S.look.gender||'male';
   const row=$(`<div style="margin:9px 0"></div>`);
@@ -4088,6 +4194,12 @@ function scrBuild(){
     <div style="font-family:var(--display);font-style:italic;font-size:26px;color:var(--gold);line-height:1">${arch.name}</div>
     <div class="small muted" style="margin-top:6px">${arch.desc}</div></div>`));
   left.appendChild($(`<div class="scout" style="margin-top:14px">${scoutingNote(p)}</div>`));
+  // caddie on the bag — the equipped looper + their edge, shown alongside your golfer
+  const cad=equippedCaddie();
+  if(cad) left.appendChild($(`<div class="scout" style="margin-top:10px;display:flex;align-items:center;gap:10px">
+    <span style="font-size:20px;flex:0 0 auto">🎒</span>
+    <div style="min-width:0"><div style="font-weight:800;color:var(--oncard);font-size:13.5px">${esc(cad.name)}<span class="small muted" style="font-weight:600"> on the bag</span></div>
+    <div class="small" style="color:var(--gold);font-weight:700;margin-top:1px">${esc(cad.desc)}</div></div></div>`));
   // RIGHT — scorecard + season pick
   right.appendChild($(`<h2 style="margin:0 0 8px">Your scorecard</h2>`));
   const card=$(`<div class="card-grid"></div>`);
@@ -4179,7 +4291,7 @@ function beginEvent(){
   const ew=eventWeights(evt);                                   // course-fit weights for the event you're playing
   const courseAdj=gauss()*(evt.major?SIM.maj.csd:SIM.reg.csd);  // one course/weather difficulty draw for the week
   S.curEvt={evt, idx:S.evtIndex, roundsDone:0, done:false, order:null, courseAdj, stagger:!!stagger,
-    players:field.map(p=>({p, eo:eventOverall(p,ew), rounds:[null,null,null,null], total:stagger?stagger[p.name]:0, start:stagger?stagger[p.name]:0, made:true}))};
+    players:field.map(p=>({p, eo:eventOverall(p,ew)+(p.you?caddieEventEo(ew,evt.name,evt.major):0), rounds:[null,null,null,null], total:stagger?stagger[p.name]:0, start:stagger?stagger[p.name]:0, made:true}))};
   simNextRound();   // play Thursday immediately so the first frame has scores
 }
 function simNextRound(){
@@ -5478,7 +5590,7 @@ function scrSummary(){
     const row=(k,v,col,strong)=>`<div style="display:flex;justify-content:space-between;gap:14px;padding:7px 2px;border-bottom:1px solid rgba(255,255,255,.06)"><span class="small ${strong?'':'muted'}" style="text-align:left${strong?';font-weight:800':''}">${k}</span><span class="mono" style="color:${col};white-space:nowrap${strong?';font-weight:800':''}">${v}</span></div>`;
     const items=[
       row('Prize money won','+'+fmt(ec.gross),'#35d6a0'),
-      row('Caddie · 10% of winnings','−'+fmt(ec.caddie),'#E14A33'),
+      row('Caddie · '+Math.round(caddieFeePct()*100)+'% of winnings','−'+fmt(ec.caddie),'#E14A33'),
       row('Agent · 8% of winnings','−'+fmt(ec.agent),'#E14A33'),
       row(`Travel · ${t.played} event${t.played===1?'':'s'} × $22k`,'−'+fmt(ec.travel),'#E14A33'),
       row('Tour overhead · coach, equipment, taxes, team','−'+fmt(ec.fixed),'#E14A33'),
