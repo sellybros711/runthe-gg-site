@@ -2889,7 +2889,7 @@ function footer(){
   f.appendChild(fp);
   const links=$(`<div class="footlinks"></div>`);
   const mk=(t,fn)=>{const s=$(`<span style="cursor:pointer">${t}</span>`); s.onclick=fn; return s;};
-  links.appendChild(mk('Home',()=>{S.overlay=null;S.screen='title';render();}));
+  links.appendChild($(`<a href="/" style="color:inherit;text-decoration:none;cursor:pointer">Home</a>`));
   links.appendChild($(`<span>·</span>`));
   links.appendChild(mk('About',()=>{S.overlay='about';render();}));
   links.appendChild($(`<span>·</span>`));

@@ -3,110 +3,82 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>About: RunThe.gg</title>
-  <meta name="description" content="RunThe.gg makes quick, free, browser-based sports games you can play the moment you land. Meet the team behind RunThePitch, the World Cup Game.">
+  <title>About: RunThe.GG</title>
+  <meta name="description" content="RunThe.GG is home to Run The Games: free, data driven sports simulations you play right in your browser. One free account, no download.">
+  <meta name="theme-color" content="#06182e">
+  <link rel="icon" href="/assets/runthegames-icon_48.png?v=3" sizes="any">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/runthegames-icon_180.png?v=3">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;900&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --ink:#16120F; --paper:#FBF4E6; --white:#FFFFFF;
-      --red:#E5402A; --orange:#F47B20; --gold:#F4B413; --teal:#138A6B; --blue:#2A4B9B;
-    }
+    :root{--bg:#0a1626;--card:#122a44;--cardb:#1e3d5c;--ink:#eaf1f8;--mut:#93a7bd;--coral:#EF4E50;--teal:#35C4CD;--line:rgba(255,255,255,.08);}
     *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
     html,body{margin:0;padding:0;}
-    body{
-      font-family:'Archivo',system-ui,-apple-system,sans-serif;line-height:1.6;color:var(--ink);
+    body{font-family:'Archivo',system-ui,-apple-system,sans-serif;line-height:1.6;color:var(--ink);
       min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;
       background:
-        radial-gradient(circle at 12% 10%, rgba(244,180,19,.18), transparent 42%),
-        radial-gradient(circle at 88% 0%, rgba(229,64,42,.14), transparent 40%),
-        radial-gradient(circle at 50% 120%, rgba(19,138,107,.18), transparent 55%),
-        var(--paper);
-    }
+        radial-gradient(1100px 520px at 50% -8%, rgba(53,196,205,.16), transparent 60%),
+        radial-gradient(900px 460px at 88% 4%, rgba(239,78,80,.12), transparent 55%),
+        linear-gradient(180deg,#0b1a2c 0%, var(--bg) 46%, #081120 100%);
+      background-attachment:fixed;}
     .wrap{max-width:680px;margin:0 auto;padding:26px 18px 56px;}
-    .display{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.5px;text-transform:uppercase;}
-
-    /* masthead */
-    .masthead{text-align:center;margin:6px 0 22px;}
-    .masthead a{text-decoration:none;color:inherit;display:block;}
-    .masthead .kicker{font-weight:900;letter-spacing:3px;font-size:11px;color:var(--red);text-transform:uppercase;}
-    .masthead .logo{font-size:30px;line-height:.95;margin:2px 0 6px;}
-    .masthead .logo-badge{display:inline-block;background:none;border-radius:0;padding:0;margin:6px 0 8px;line-height:0;box-shadow:none;}
-    .masthead .logo-badge img{display:block;height:clamp(54px,15vw,78px);width:auto;}
-    .masthead .logo .pitch{color:var(--teal);}
-    .masthead .edition{display:inline-block;background:linear-gradient(180deg,#FCEFA8,#F4B413);color:var(--ink);
-      font-weight:900;font-size:11.5px;letter-spacing:3px;padding:5px 14px;border-radius:9px;text-transform:uppercase;
-      border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);}
-
-    /* content card */
-    .card{background:var(--white);border:3px solid var(--ink);border-radius:16px;
-      box-shadow:6px 6px 0 var(--ink);padding:26px 24px 30px;}
-    .page-title{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;
+    .mast{text-align:center;margin:4px 0 22px;}
+    .mast img{display:block;width:100%;max-width:440px;height:auto;margin:0 auto;filter:drop-shadow(0 6px 26px rgba(0,0,0,.45));}
+    .card{background:linear-gradient(180deg,var(--card),#0f2338);border:1px solid var(--cardb);border-radius:18px;padding:24px 22px 28px;}
+    h1{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:.02em;
       font-size:clamp(30px,8.5vw,46px);line-height:1;margin:0 0 6px;}
-    .page-title .accent{color:var(--red);}
-    .subtitle{font-weight:900;color:var(--teal);text-transform:uppercase;letter-spacing:2px;font-size:11.5px;margin:0 0 18px;}
-    .card p{margin:0 0 14px;font-size:15.5px;color:#2a241f;}
-    .card strong{color:var(--ink);font-weight:800;}
-    .card a{color:var(--teal);font-weight:700;text-decoration:none;border-bottom:2px solid rgba(19,138,107,.32);}
-    .card a:hover{border-bottom-color:var(--teal);}
-
-    /* play CTA, scoped under .card a so it beats the generic link colour */
-    .play-row{margin-top:26px;text-align:center;}
-    .card a.cta{display:inline-block;background:var(--red);color:#fff;font-weight:900;text-transform:uppercase;
-      letter-spacing:.6px;font-size:15px;padding:13px 26px;border-radius:11px;border:3px solid var(--ink);
-      box-shadow:5px 5px 0 var(--ink);text-decoration:none;}
-    .card a.cta:hover{filter:brightness(1.04);border-color:var(--ink);}
-    .card a.cta:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink);}
-
-    /* footer */
-    .site-footer{margin-top:30px;text-align:center;font-size:12.5px;color:#9a9387;}
-    .site-footer a{color:#6b6358;text-decoration:none;font-weight:700;}
-    .site-footer a:hover{color:var(--ink);text-decoration:underline;}
-    .site-footer a.here{color:var(--ink);}
-    .site-footer .sep{margin:0 7px;color:#c9c2b4;}
+    h1 .a{color:var(--coral);}
+    .sub{font-weight:900;color:var(--teal);text-transform:uppercase;letter-spacing:2px;font-size:11.5px;margin:0 0 18px;}
+    .card p{margin:0 0 14px;font-size:15px;color:var(--mut);}
+    .card p b,.card strong{color:var(--ink);font-weight:800;}
+    .card a{color:var(--teal);font-weight:700;text-decoration:none;}
+    .card a:hover{text-decoration:underline;}
+    .play-row{margin-top:24px;text-align:center;}
+    .cta{display:inline-block;background:linear-gradient(180deg,#FF5F60,#E7433F);color:#fff;font-weight:800;
+      text-transform:uppercase;letter-spacing:.5px;font-size:15px;padding:13px 26px;border-radius:12px;
+      text-decoration:none;box-shadow:0 8px 22px -12px rgba(239,78,80,.9);}
+    .cta:hover{filter:brightness(1.05);}
+    .foot{margin-top:28px;text-align:center;font-size:12.5px;color:#6f829a;}
+    .foot a{color:#9db2c8;text-decoration:none;font-weight:700;}
+    .foot a:hover{color:var(--ink);}
+    .foot a.here{color:var(--ink);}
+    .foot .sep{margin:0 7px;color:#3c4c60;}
   </style>
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
        crossorigin="anonymous"></script>
 </head>
 <body>
   <div class="wrap">
-    <div class="masthead">
-      <a href="index.html">
-        <div class="kicker">★ RunThe.gg presents ★</div>
-        <span class="logo-badge"><img src="/assets/runthepitch-logo-full_navytext_filled-shield_transparent.png" alt="RunThePitch" width="1983" height="793" /></span>
-      </a>
-      <span class="edition">World Cup Game</span>
-    </div>
+    <div class="mast"><a href="/"><img src="/assets/runthegames-wordmark.png?v=2" alt="Run The Games" width="2172" height="724" /></a></div>
 
     <main class="card">
-      <h1 class="page-title display">About <span class="accent">RunThe.gg</span></h1>
-      <p class="subtitle">Quick, free, browser sports games</p>
+      <h1>About <span class="a">RunThe.GG</span></h1>
+      <p class="sub">Run The Games: data driven simulations</p>
 
-      <p>RunThe.gg is home to quick, free, browser-based sports games you can play
-         the moment you land, no downloads, no fuss. Just open the page and play.</p>
+      <p>RunThe.GG is home to <b>Run The Games</b>: quick, free, data driven sports
+         simulations you play right in your browser. There is nothing to download and
+         nothing to install. Open the page and play in seconds on your phone, tablet
+         or computer.</p>
 
-      <p>Our first game is <strong>RunThePitch: World Cup Game</strong>: spin a
-         nation and a year, draft your squad from real World Cup rosters, then take
-         them all the way to the final. Climb the global leaderboard, take on the
-         themed Daily Challenge, or send a Friendly to a mate.</p>
+      <p>Every game is built on real statistics and real match logic, so results feel
+         earned, not random. Make <b>one free account</b> and your trophies, streaks,
+         saves and leaderboard rank follow you across every game on the site.</p>
 
-      <p><strong>More from RunThe.gg:</strong> RunThePitch is one of a growing
-         family of free RunThe.gg games, and one account works across all of
-         them. Try <a href="/golf" target="_blank" rel="noopener">RunTheTour</a>,
-         our 40-year golf career sim, same login, new sport.</p>
+      <p><b>The games:</b> <a href="/golf">RunTheTour</a>, a 30 year golf career
+         simulation, and <a href="/soccer/">RunThePitch</a>, a World Cup squad
+         builder. More free sports games are on the way, all under the same login.</p>
 
-      <p>We're two brothers who love sports and love building games. RunThe.gg is
-         our project to make simple games and share them with anyone who wants to
-         play. More games are on the way.</p>
+      <p>We're two brothers who love sports and love building games. RunThe.GG is our
+         project to make simple games and share them with anyone who wants to play.</p>
 
       <div class="play-row">
-        <a class="cta" href="index.html">Play the game</a>
+        <a class="cta" href="/">Browse the games</a>
       </div>
     </main>
 
-    <footer class="site-footer">
-      <a href="index.html">Home</a><span class="sep">·</span>
+    <footer class="foot">
+      <a href="/">Home</a><span class="sep">·</span>
       <a href="about.html" class="here">About</a><span class="sep">·</span>
       <a href="privacy.html">Privacy</a><span class="sep">·</span>
       <a href="contact.html">Contact</a>

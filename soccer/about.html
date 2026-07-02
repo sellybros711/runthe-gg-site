@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>About: RunThePitch</title>
+  <meta name="description" content="RunThePitch is a free, browser-based World Cup game from RunThe.GG. Spin a nation and a year, draft your squad, and take them to the final.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --ink:#16120F; --paper:#FBF4E6; --white:#FFFFFF;
+      --red:#E5402A; --orange:#F47B20; --gold:#F4B413; --teal:#138A6B; --blue:#2A4B9B;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    html,body{margin:0;padding:0;}
+    body{
+      font-family:'Archivo',system-ui,-apple-system,sans-serif;line-height:1.6;color:var(--ink);
+      min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(244,180,19,.18), transparent 42%),
+        radial-gradient(circle at 88% 0%, rgba(229,64,42,.14), transparent 40%),
+        radial-gradient(circle at 50% 120%, rgba(19,138,107,.18), transparent 55%),
+        var(--paper);
+    }
+    .wrap{max-width:680px;margin:0 auto;padding:26px 18px 56px;}
+    .display{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.5px;text-transform:uppercase;}
+
+    /* masthead */
+    .masthead{text-align:center;margin:6px 0 22px;}
+    .masthead a{text-decoration:none;color:inherit;display:block;}
+    .masthead .kicker{font-weight:900;letter-spacing:3px;font-size:11px;color:var(--red);text-transform:uppercase;}
+    .masthead .logo{font-size:30px;line-height:.95;margin:2px 0 6px;}
+    .masthead .logo-badge{display:inline-block;background:none;border-radius:0;padding:0;margin:6px 0 8px;line-height:0;box-shadow:none;}
+    .masthead .logo-badge img{display:block;height:clamp(54px,15vw,78px);width:auto;}
+    .masthead .logo .pitch{color:var(--teal);}
+    .masthead .edition{display:inline-block;background:linear-gradient(180deg,#FCEFA8,#F4B413);color:var(--ink);
+      font-weight:900;font-size:11.5px;letter-spacing:3px;padding:5px 14px;border-radius:9px;text-transform:uppercase;
+      border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);}
+
+    /* content card */
+    .card{background:var(--white);border:3px solid var(--ink);border-radius:16px;
+      box-shadow:6px 6px 0 var(--ink);padding:26px 24px 30px;}
+    .page-title{font-family:'Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase;
+      font-size:clamp(30px,8.5vw,46px);line-height:1;margin:0 0 6px;}
+    .page-title .accent{color:var(--red);}
+    .subtitle{font-weight:900;color:var(--teal);text-transform:uppercase;letter-spacing:2px;font-size:11.5px;margin:0 0 18px;}
+    .card p{margin:0 0 14px;font-size:15.5px;color:#2a241f;}
+    .card strong{color:var(--ink);font-weight:800;}
+    .card a{color:var(--teal);font-weight:700;text-decoration:none;border-bottom:2px solid rgba(19,138,107,.32);}
+    .card a:hover{border-bottom-color:var(--teal);}
+
+    /* play CTA, scoped under .card a so it beats the generic link colour */
+    .play-row{margin-top:26px;text-align:center;}
+    .card a.cta{display:inline-block;background:var(--red);color:#fff;font-weight:900;text-transform:uppercase;
+      letter-spacing:.6px;font-size:15px;padding:13px 26px;border-radius:11px;border:3px solid var(--ink);
+      box-shadow:5px 5px 0 var(--ink);text-decoration:none;}
+    .card a.cta:hover{filter:brightness(1.04);border-color:var(--ink);}
+    .card a.cta:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink);}
+
+    /* footer */
+    .site-footer{margin-top:30px;text-align:center;font-size:12.5px;color:#9a9387;}
+    .site-footer a{color:#6b6358;text-decoration:none;font-weight:700;}
+    .site-footer a:hover{color:var(--ink);text-decoration:underline;}
+    .site-footer a.here{color:var(--ink);}
+    .site-footer .sep{margin:0 7px;color:#c9c2b4;}
+  </style>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257"
+       crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="masthead">
+      <a href="/soccer/">
+        <div class="kicker">★ RunThe.gg presents ★</div>
+        <span class="logo-badge"><img src="/assets/runthepitch-logo-full_navytext_filled-shield_transparent.png" alt="RunThePitch" width="1983" height="793" /></span>
+      </a>
+      <span class="edition">World Cup Game</span>
+    </div>
+
+    <main class="card">
+      <h1 class="page-title display">About <span class="accent">RunThePitch</span></h1>
+      <p class="subtitle">The free World Cup game</p>
+
+      <p>RunThePitch is a quick, free, browser-based World Cup game. There is nothing
+         to download, just open the page and play.</p>
+
+      <p><strong>Spin a nation and a year</strong>, draft your squad from real World
+         Cup rosters, then take them all the way to the final. Climb the global
+         leaderboard, take on the themed Daily Challenge, or send a Friendly to a mate.</p>
+
+      <p><strong>More from RunThe.GG:</strong> RunThePitch is one of a growing family
+         of free RunThe.GG games, and one account works across all of them. Try
+         <a href="/golf" target="_blank" rel="noopener">RunTheTour</a>, our golf
+         career sim, same login, new sport.</p>
+
+      <p>We're two brothers who love sports and love building games. RunThe.GG is our
+         project to make simple games and share them with anyone who wants to play.
+         More games are on the way.</p>
+
+      <div class="play-row">
+        <a class="cta" href="/soccer/">Play RunThePitch</a>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <a href="/">Home</a><span class="sep">·</span>
+      <a href="about.html" class="here">About</a><span class="sep">·</span>
+      <a href="privacy.html">Privacy</a><span class="sep">·</span>
+      <a href="contact.html">Contact</a>
+    </footer>
+  </div>
+</body>
+</html>
