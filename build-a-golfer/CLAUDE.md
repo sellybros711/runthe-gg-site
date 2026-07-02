@@ -3144,6 +3144,32 @@ allows Google Fonts, or self-host Anton.*
   full regressions — signed-in fast-RPC round + re-entry, signed-in attempts-exhausted → done overlay, and
   guest full 18-hole round — all still complete with zero page errors.
 
+- **CS101 — Daily Challenge freeze, real root cause: the SIGNED-IN start awaited the server before changing
+  screens (UI-first fix).** Follow-up to CS100 (which was necessary but insufficient). Owner clarified the
+  exact repro: iPhone, the daily button works as a GUEST but stops working once LOGGED IN; fine in iOS
+  Safari, broken in iOS Chrome (both WebKit — so NOT a JS-engine bug, it's environmental: guest-vs-signed-in
+  and this browser's connection to Supabase). That pinpoints it: `beginDailyAttempt()` was `async` and, when
+  signed in, `await`ed the CS81 server attempt-check (`runtour_daily_attempt_start`) BEFORE switching
+  screens. A guest skips that gate entirely (synchronous → instant), which is why guests never saw it. When
+  signed in, if that request stalls on the given browser/network, the screen never changes and the button
+  "does nothing." CS100's 4s timeout bounded the hang but still meant a multi-second dead button, and could
+  still feel broken.
+  Fix (definitive): made the daily start **UI-first** — `beginDailyAttempt()` is now synchronous, sets up
+  the round and renders the preview/intro IMMEDIATELY on tap (guest and signed-in alike, so the button always
+  responds instantly on every browser), and the account's 3-a-day cap is enforced in the BACKGROUND by a new
+  `enforceDailyAttempt(seed)` (timeout-guarded, fail-open). The cap still holds: an over-cap player is bounced
+  to the "done" overlay a moment after the preview appears (verified: preview at ~50ms, bounce after the
+  server responds), and score submission / course records remain separately server-gated, so nothing is
+  exploitable. Also guarded `scrDailyResult` against an unknown/stale `DAILY_COURSES[r.course]` (returns to
+  title instead of white-screening) as belt-and-suspenders for any malformed stored daily result. The
+  Monthly Spotlight start (`beginSpotlightAttempt`) was audited and is already fully synchronous.
+  Verified in Playwright (Chromium): with a NEVER-resolving server RPC the preview still shows in <400ms and
+  stays playable (fail-open) — the exact "logged-in freeze" is gone; with a realistically-delayed "no
+  attempts" response the preview shows instantly then correctly bounces to the done overlay; and full
+  regressions — signed-in fast-RPC round + re-entry, guest full 18-hole round — complete clean with zero
+  page errors. NOTE for the user: fully close & reopen iOS Chrome (and the Home-Screen app) to load the new
+  code, since iOS caches the HTML.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
