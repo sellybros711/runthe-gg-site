@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>RunThe.GG: Free Online Games</title>
-<meta name="title" content="RunThe.GG: Free Online Games" />
-<meta name="description" content="Free, no-download sports games from RunThe.GG. Build a World Cup squad in RunThePitch, or live a 30-year golf career in RunTheTour. One account, play them all." />
+<title>Run The Games: Data Driven Simulations</title>
+<meta name="title" content="Run The Games: Data Driven Simulations" />
+<meta name="description" content="Run The Games on RunThe.GG: free, data driven sports simulations you play right in your browser. Build a World Cup squad in RunThePitch or live a 30 year golf career in RunTheTour. One free account, no download." />
 <meta name="theme-color" content="#06182e" />
 <link rel="canonical" href="https://runthe.gg/" />
 
@@ -23,14 +23,19 @@
 <meta property="og:type" content="website" />
 <meta property="og:site_name" content="RunThe.GG" />
 <meta property="og:url" content="https://runthe.gg/" />
-<meta property="og:title" content="RunThe.GG: Free Online Games" />
-<meta property="og:description" content="Build a World Cup squad in RunThePitch, or live a 30-year golf career in RunTheTour. Free, no download, one account." />
+<meta property="og:title" content="Run The Games: Data Driven Simulations" />
+<meta property="og:description" content="Free, data driven sports simulations you play right in your browser. Build a World Cup squad in RunThePitch or live a 30 year golf career in RunTheTour. One free account, no download." />
 <meta property="og:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png?v=2" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:site" content="@RunTheGG" />
-<meta name="twitter:title" content="RunThe.GG: Free Online Games" />
-<meta name="twitter:description" content="Free sports games from RunThe.GG. RunThePitch (World Cup) and RunTheTour (golf). One account, play them all." />
+<meta name="twitter:title" content="Run The Games: Data Driven Simulations" />
+<meta name="twitter:description" content="Free, data driven sports simulations on RunThe.GG. RunThePitch (World Cup) and RunTheTour (golf). One free account, no download." />
 <meta name="twitter:image" content="https://runthe.gg/assets/runthegames-og_1200x630.png?v=2" />
+
+<!-- Structured data: tell search engines the brand is "Run The Games" (RunThe.GG) -->
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"Run The Games","alternateName":"RunThe.GG","url":"https://runthe.gg/","description":"Free, data driven sports simulations you play right in your browser. RunThePitch (World Cup) and RunTheTour (golf), one free account, no download."}
+</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -208,6 +213,23 @@
   .faq details[open] summary:after{content:"–";}
   .faq p{margin:0 0 14px;font-size:13.5px;}
   .faq a{color:var(--teal);font-weight:700;}
+
+  /* ---- add to home screen: button + instructions ---- */
+  .installrow{display:flex;justify-content:center;margin:16px 0 2px;}
+  .installrow .btn{width:auto;padding:12px 20px;}
+  #ins-native{width:100%;margin:0 0 14px;}
+  .ins-lead{color:var(--mut);font-size:13px;line-height:1.5;margin:0 0 14px;}
+  .ins-card{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;padding:14px 15px;margin:0 0 11px;}
+  .ins-card.me{border-color:rgba(53,196,205,.55);background:rgba(53,196,205,.07);}
+  .ins-card h3{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.02em;text-transform:uppercase;
+    font-size:15px;margin:0;color:var(--ink);display:flex;align-items:center;gap:9px;}
+  .ins-card .badge{font-family:'Archivo',sans-serif;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+    color:#04241f;background:var(--teal);padding:3px 7px;border-radius:999px;margin-left:auto;}
+  .ins-card ol{margin:11px 0 0;padding-left:20px;color:var(--mut);font-size:13.5px;line-height:1.55;}
+  .ins-card ol li{margin:0 0 6px;}
+  .ins-card ol li b{color:var(--ink);}
+  .ins-card .hint{color:#7d8fa6;font-size:12.5px;line-height:1.5;margin:10px 0 0;}
+  .shr{display:inline-flex;vertical-align:-4px;}
 </style>
 </head>
 <body>
@@ -262,6 +284,10 @@
       </a>
     </main>
 
+    <div class="installrow">
+      <button class="btn ghost" id="install-btn" type="button">📲 Add to Home Screen</button>
+    </div>
+
     <div class="note">🎮 <b>More games on the way.</b> RunThe.GG is a growing home for quick, free sports games. One free account works across all of them.</div>
 
     <section class="content">
@@ -281,6 +307,7 @@
 
       <h3>Frequently asked questions</h3>
       <div class="faq">
+        <details><summary>Is there an app?</summary><p>There is no app to download. RunThe.GG runs right in your browser. If you would like it to open like an app from your Home Screen, you can <a href="#" id="faq-install">add it to your Home Screen</a> in a couple of taps, no App Store required.</p></details>
         <details><summary>Is RunThe.GG free to play?</summary><p>Yes. Every game on RunThe.GG is completely free. We keep the site free by showing ads, and we never charge you to play.</p></details>
         <details><summary>Do I need to download anything?</summary><p>No. All of our games run right in your web browser on both desktop and mobile. There is no app to install and no sign-up wall before you can play.</p></details>
         <details><summary>Do I need an account?</summary><p>No, you can play as a guest. A free account is optional and simply saves your progress and unlocks trophies, daily streaks and leaderboard rank that carry across every RunThe.GG game.</p></details>
@@ -306,6 +333,113 @@
       <div id="m-body"></div>
     </div>
   </div>
+
+  <!-- Add to Home Screen instructions modal -->
+  <div class="modal" id="install" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="i-title">
+      <button class="x" id="i-close" aria-label="Close">✕</button>
+      <h2 id="i-title">Add to Home Screen</h2>
+      <p class="lede">Install RunThe.GG so it opens full screen from your Home Screen, just like an app. It is free and takes a couple of taps. There is no App Store or Play Store download.</p>
+      <div id="i-body"></div>
+    </div>
+  </div>
+
+<script>
+/* ---------- Add to Home Screen (PWA install) ---------- */
+(function(){
+  "use strict";
+  var deferred=null;                 // captured beforeinstallprompt (Chromium)
+  var installed=false;
+  function standalone(){ try{ return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true; }catch(e){ return false; } }
+  window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); deferred=e; });
+  window.addEventListener('appinstalled',function(){ installed=true; deferred=null; var m=document.getElementById('install'); if(m) m.hidden=true; });
+
+  // Share icon (iOS) glyph
+  var SHARE='<svg class="shr" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#35C4CD" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4"/><path d="M8 8l4-4 4 4"/><path d="M5 12v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>';
+  var DOTS='<b>⋮</b>', PLUS='⊕';
+
+  function detect(){
+    var ua=navigator.userAgent||'';
+    var iOS=/iphone|ipad|ipod/i.test(ua) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+    var android=/android/i.test(ua);
+    var edge=/edg/i.test(ua);
+    var chrome=(/chrome|crios/i.test(ua) && !edge) || /brave/i.test(ua);
+    var firefox=/firefox|fxios/i.test(ua);
+    var safari=/safari/i.test(ua) && !/chrome|crios|fxios|android/i.test(ua);
+    var inApp=/fbav|fban|instagram|line|micromessenger|snapchat|twitter/i.test(ua);
+    return { iOS:iOS, android:android, desktop:!iOS && !android, safari:safari, chrome:chrome, edge:edge, firefox:firefox, inApp:inApp };
+  }
+
+  // instruction card builders
+  function card(key,title,steps,hint,me){
+    var lis=steps.map(function(s){ return '<li>'+s+'</li>'; }).join('');
+    return '<div class="ins-card'+(me?' me':'')+'"><h3>'+title+(me?'<span class="badge">Your device</span>':'')+'</h3><ol>'+lis+'</ol>'+(hint?'<p class="hint">'+hint+'</p>':'')+'</div>';
+  }
+  var IOS=card('ios','📱 iPhone &amp; iPad',[
+      'Open <b>runthe.gg</b> in <b>Safari</b> (this does not work in Chrome or other browsers on iPhone).',
+      'Tap the <b>Share</b> button '+SHARE+' at the bottom (or top) of Safari.',
+      'Scroll down and tap <b>Add to Home Screen</b>.',
+      'Tap <b>Add</b> in the top corner. The RunThe.GG icon now sits on your Home Screen.'
+    ],'Using Chrome on your iPhone? Tap the '+DOTS+' menu and choose "Open in Safari" first, then follow the steps above.');
+  var ANDROID=card('android','🤖 Android',[
+      'Open <b>runthe.gg</b> in <b>Chrome</b>.',
+      'Tap the '+DOTS+' menu in the top right.',
+      'Tap <b>Add to Home screen</b> (it may say <b>Install app</b>).',
+      'Tap <b>Add</b> or <b>Install</b> to confirm.'
+    ],'If a "Add RunThe.GG to Home screen" banner pops up, you can just tap that instead.');
+  var DESKTOP=card('desktop','💻 Computer (Chrome or Edge)',[
+      'Open <b>runthe.gg</b> in <b>Chrome</b> or <b>Edge</b>.',
+      'Click the install icon ('+PLUS+' / a small monitor) at the right of the address bar.',
+      'Or open the '+DOTS+' menu and choose <b>Install RunThe.GG</b> (Edge: <b>Apps → Install this site as an app</b>).',
+      'Click <b>Install</b>. It opens in its own window and you can pin it to your taskbar or dock.'
+    ],'On Safari (Mac), use File → Add to Dock. Firefox does not support installing web apps, so use Chrome or Edge for this.');
+
+  function render(){
+    var d=detect(), b=document.getElementById('i-body'); if(!b) return;
+    if(standalone()||installed){
+      b.innerHTML='<div class="ins-card me"><h3>✅ You are all set</h3><p class="hint" style="margin-top:8px">RunThe.GG is already installed on this device. Look for the icon on your Home Screen or in your app list.</p></div>';
+      return;
+    }
+    var html='';
+    // native one-tap install where the browser supports it (Android Chrome / desktop Chromium)
+    if(deferred){ html+='<button class="btn gold" id="ins-native" type="button">⚡ Install now</button>'
+      +'<p class="ins-lead">Your browser can install RunThe.GG in one tap. Prefer to do it by hand? Steps for every device are below.</p>'; }
+    else { html+='<p class="ins-lead">Pick your device below. The whole thing takes about ten seconds.</p>'; }
+    // user's platform first, flagged "Your device"; then the other two
+    html += (d.iOS?card('ios','📱 iPhone &amp; iPad',IOS_STEPS,IOS_HINT,true):'')
+          + (d.android?card('android','🤖 Android',AND_STEPS,AND_HINT,true):'')
+          + (d.desktop?card('desktop','💻 Computer (Chrome or Edge)',DESK_STEPS,DESK_HINT,true):'');
+    // then the other two without the badge
+    if(!d.iOS) html+=IOS;
+    if(!d.android) html+=ANDROID;
+    if(!d.desktop) html+=DESKTOP;
+    if(d.inApp) html='<div class="ins-card"><p class="hint" style="margin-top:0">You are viewing this inside another app. For the reliable install, open <b>runthe.gg</b> in your normal browser (Safari on iPhone, Chrome on Android) first.</p></div>'+html;
+    b.innerHTML=html;
+    var nb=document.getElementById('ins-native');
+    if(nb) nb.onclick=function(){ if(!deferred) return; deferred.prompt(); deferred.userChoice.then(function(){ deferred=null; }); };
+  }
+  // step arrays reused so the "Your device" card matches the generic ones
+  var IOS_STEPS=['Open <b>runthe.gg</b> in <b>Safari</b> (this does not work in Chrome or other browsers on iPhone).','Tap the <b>Share</b> button '+SHARE+' at the bottom (or top) of Safari.','Scroll down and tap <b>Add to Home Screen</b>.','Tap <b>Add</b> in the top corner. The RunThe.GG icon now sits on your Home Screen.'];
+  var IOS_HINT='Using Chrome on your iPhone? Tap the '+DOTS+' menu and choose "Open in Safari" first, then follow the steps above.';
+  var AND_STEPS=['Open <b>runthe.gg</b> in <b>Chrome</b>.','Tap the '+DOTS+' menu in the top right.','Tap <b>Add to Home screen</b> (it may say <b>Install app</b>).','Tap <b>Add</b> or <b>Install</b> to confirm.'];
+  var AND_HINT='If a "Add RunThe.GG to Home screen" banner pops up, you can just tap that instead.';
+  var DESK_STEPS=['Open <b>runthe.gg</b> in <b>Chrome</b> or <b>Edge</b>.','Click the install icon ('+PLUS+' / a small monitor) at the right of the address bar.','Or open the '+DOTS+' menu and choose <b>Install RunThe.GG</b> (Edge: <b>Apps → Install this site as an app</b>).','Click <b>Install</b>. It opens in its own window and you can pin it to your taskbar or dock.'];
+  var DESK_HINT='On Safari (Mac), use File → Add to Dock. Firefox does not support installing web apps, so use Chrome or Edge for this.';
+
+  function open(){ render(); var m=document.getElementById('install'); if(m) m.hidden=false; }
+  function close(){ var m=document.getElementById('install'); if(m) m.hidden=true; }
+  function wire(){
+    var btn=document.getElementById('install-btn'); if(btn) btn.onclick=open;
+    var fq=document.getElementById('faq-install'); if(fq) fq.onclick=function(e){ e.preventDefault(); open(); };
+    var x=document.getElementById('i-close'); if(x) x.onclick=close;
+    var m=document.getElementById('install'); if(m) m.addEventListener('click',function(e){ if(e.target===m) close(); });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ var mm=document.getElementById('install'); if(mm && !mm.hidden) close(); } });
+    // hide the standalone button once already installed
+    if(standalone()){ var ir=document.querySelector('.installrow'); if(ir) ir.style.display='none'; }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',wire); else wire();
+})();
+</script>
 
 <script>
 (function(){
