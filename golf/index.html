@@ -6305,58 +6305,15 @@ function startDailyChallenge(){
   if(dailyAttemptsLeft()<=0){ S.overlay='dailydone'; render(); return; }
   beginDailyAttempt();
 }
-async function beginDailyAttempt(){
+// UI-FIRST: tapping Daily Challenge must ALWAYS change the screen immediately, on every browser/network.
+// The earlier version `await`ed the server attempt-check BEFORE switching screens, so on a browser/network
+// where that request stalled (e.g. iOS Chrome vs. iOS Safari, same WebKit engine but a flaky connection),
+// the button appeared to "do nothing". Now we render the preview synchronously and enforce the account's
+// 3-a-day cap in the BACKGROUND (enforceDailyAttempt) — it still bounces an over-cap player to the "done"
+// overlay within a moment, and score submission / records are separately server-gated, so the cap holds.
+function beginDailyAttempt(){
   if(dailyAttemptsLeft()<=0){ S.overlay='dailydone'; render(); return; }
-  if(S._dailyStarting) return; S._dailyStarting=true;
   const seed=todayKey();
-  // Signed-in players' 3-a-day cap is enforced by the ACCOUNT server-side, not just this browser's
-  // localStorage counter, otherwise signing into the same account on another browser/device (or just
-  // clearing storage) resets the local counter and grants effectively unlimited retries. This is the
-  // authoritative gate: an explicit "no attempts left" from the server always blocks play regardless of
-  // what the local counter believes. Fails OPEN only on a genuine network/RPC problem (offline, sb not
-  // loaded, migration not yet applied), matching the fail-open posture of the rest of the online
-  // backend, so a connectivity hiccup can't strand a legitimate player mid-attempt.
-  // CRITICAL robustness: the server attempt-gate must NEVER be able to freeze the Daily Challenge button.
-  // Two guarantees: (1) every server call is raced against a timeout, so a slow/stalled/hung request
-  // (seen on some browsers/networks) falls open to the local gate instead of hanging forever; (2) the
-  // `_dailyStarting` latch is cleared in a `finally`, so no code path can leave it stuck true (which would
-  // make the button silently do nothing on every later click). withTimeout resolves to {v} on success,
-  // {e} on error, or {timeout:true} if it takes too long, never rejects, never hangs.
-  const withTimeout=(promise,ms)=>Promise.race([
-    Promise.resolve(promise).then(v=>({v}),e=>({e})),
-    new Promise(r=>setTimeout(()=>r({timeout:true}),ms))
-  ]);
-  try{
-    if(sb && sbSignedIn()){
-      const res=await withTimeout(sb.rpc('runtour_daily_attempt_start',{p_day:seed,p_max:DAILY_MAX_ATTEMPTS}), 4000);
-      if(res.timeout){ console.warn('[RunTheTour] daily-attempt server check timed out, falling back to the local gate'); }
-      else if(res.e){ console.warn('[RunTheTour] daily-attempt server check failed, falling back to the local gate:', res.e); }
-      else {
-        const {data,error}=res.v||{};
-        if(error){
-          if(/no attempts left/i.test(error.message||'')){
-            // self-heal the local counter to the cap RIGHT NOW too, not just on the next reconcileDailyAttempts()
-            // pass, otherwise the title screen briefly still claims attempts are available after this exact
-            // block. Also backfill the actual best score if this device never locally recorded one (e.g. the
-            // attempts were used on a different device) so the "done for today" screens show a real score.
-            const cur=dailyState(); const st=(cur&&cur.date===seed)?cur:{date:seed,attempts:0};
-            st.date=seed; st.attempts=DAILY_MAX_ATTEMPTS;
-            if(!st.best){ const b=await withTimeout(fetchServerDailyBest(seed),4000); if(b&&b.v) st.best=b.v; }
-            LS.set(acctKey('bag_daily'),st);
-            S.overlay='dailydone'; render(); return;
-          }
-          console.warn('[RunTheTour] daily-attempt server check failed, falling back to the local gate:', error.message);
-        } else if(typeof data==='number'){
-          // reconcile the local counter to the server's authoritative count, self-heals a stale/behind
-          // local cache (e.g. attempts already used on another device today)
-          const cur=dailyState(); const st=(cur&&cur.date===seed)?cur:{date:seed,attempts:0};
-          st.date=seed; st.attempts=Math.max(st.attempts||0,data); LS.set(acctKey('bag_daily'),st);
-        }
-      }
-    }
-  }catch(e){ console.warn('[RunTheTour] daily-attempt server check failed, falling back to the local gate:', e); }
-  finally{ S._dailyStarting=false; }   // ALWAYS clear the latch, even on an early return / unexpected throw
-  if(dailyAttemptsLeft()<=0){ S.overlay='dailydone'; render(); return; }   // re-check post-reconciliation
   const att=dailyAttempts(); reset();
   S.daily=true; S.dailySeed=seed; S.mode='daily'; S.dailyMode='round'; S.dailyAttempt=att;
   // course/conditions/hole-sim stay seeded by the day (fair, server-verifiable); only the draft
@@ -6365,7 +6322,43 @@ async function beginDailyAttempt(){
   S.drawRng=mulberry32((seed^0x2545f491^Math.imul(att+1,0x9e3779b1))>>>0);
   S.dailyCourse=dailyCourseKey(seed); S.dailyCond=dailyConditions(seed,S.dailyCourse); S.dailyPlan='balanced';
   track('daily_started',{seed,course:S.dailyCourse,attempt:att+1});
-  S.screen=LS.get('bag_daily_howto_seen',false)?'dailyprev':'dailyintro'; render();
+  S.screen=LS.get('bag_daily_howto_seen',false)?'dailyprev':'dailyintro'; render();   // INSTANT, never "does nothing"
+  enforceDailyAttempt(seed);   // background: confirm the account isn't over its daily cap (fail-open, timeout-guarded)
+}
+// Signed-in players' 3-a-day cap is enforced by the ACCOUNT server-side, not just this browser's localStorage
+// counter (otherwise signing into the same account on another browser/device, or clearing storage, would reset
+// the counter and grant unlimited retries). Runs AFTER the preview is already showing, so it can never freeze
+// the button. Fails OPEN on any network/RPC problem (offline, sb not loaded, migration not applied, timeout),
+// matching the rest of the online backend; only an explicit "no attempts left" bounces the player out.
+async function enforceDailyAttempt(seed){
+  if(!sb || !sbSignedIn()) return;
+  const withTimeout=(promise,ms)=>Promise.race([
+    Promise.resolve(promise).then(v=>({v}),e=>({e})),
+    new Promise(r=>setTimeout(()=>r({timeout:true}),ms))
+  ]);
+  try{
+    const res=await withTimeout(sb.rpc('runtour_daily_attempt_start',{p_day:seed,p_max:DAILY_MAX_ATTEMPTS}), 6000);
+    if(res.timeout || res.e){ return; }   // fail open, local gate stands
+    const {data,error}=res.v||{};
+    if(error){
+      if(/no attempts left/i.test(error.message||'')){
+        const cur=dailyState(); const st=(cur&&cur.date===seed)?cur:{date:seed,attempts:0};
+        st.date=seed; st.attempts=DAILY_MAX_ATTEMPTS;
+        if(!st.best){ const b=await withTimeout(fetchServerDailyBest(seed),6000); if(b&&b.v) st.best=b.v; }
+        LS.set(acctKey('bag_daily'),st);
+        // bounce to the done overlay ONLY if they're still in the pre-round flow (haven't finished a round yet),
+        // so we never yank someone out mid-result. They genuinely used all attempts (likely on another device).
+        if(S.daily && !S.dailyResult && ['dailyintro','dailyprev','setup','draft','build','dailyround'].includes(S.screen)){
+          S.daily=false; S.overlay='dailydone'; S.screen='title'; render();
+        }
+      }
+      return;   // any other error: fail open
+    }
+    if(typeof data==='number'){   // reconcile the local counter up to the server's authoritative count
+      const cur=dailyState(); const st=(cur&&cur.date===seed)?cur:{date:seed,attempts:0};
+      st.date=seed; st.attempts=Math.max(st.attempts||0,data); LS.set(acctKey('bag_daily'),st);
+    }
+  }catch(e){ /* fail open, local gate stands until the next check */ }
 }
 function scrDailyIntro(){
   const c=DAILY_COURSES[S.dailyCourse];
@@ -6942,7 +6935,8 @@ function scrDailyResult(){
   if(sb && (dbCache===null||dbCache.day!==_ds2)) dbLoad(_ds2);   // today's board → percentile (fails open)
   const best=dailyBest(); const justPlayed=!!S.dailyResult;
   const r=S.dailyResult||best; if(!r){ S.screen='title'; return render(); }
-  const c=DAILY_COURSES[r.course], total=r.total;
+  const c=DAILY_COURSES[r.course]; if(!c){ S.dailyResult=null; S.screen='title'; return render(); }   // unknown course (stale data) → don't white-screen
+  const total=r.total;
   const attempts=dailyAttempts(), left=dailyAttemptsLeft();
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge${justPlayed?' complete':''}</span></div>`));
   if(r.isLegend) add($(`<div class="center" style="margin-top:4px"><span class="tag" style="color:#ffd76a;border-color:#ffd76a">🏆 Played as Legend · ${esc(r.legendName||'')}</span></div>`));
