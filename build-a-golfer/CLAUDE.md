@@ -3083,6 +3083,42 @@ allows Google Fonts, or self-host Anton.*
   BETTER than the cloud's confirms grow-only never worsens it; zero page errors. CS97 career-sync and CS96
   reconstruction tests still green.
 
+- **CS99 — whole-game "is everything server-synced?" audit + last gap (golfer identity) closed.** Owner:
+  "analyze the whole game and make sure everything is server synced, this problem is really major." Did a
+  full inventory of every localStorage key the game uses and classified each:
+  • **Already server-synced** (cloud-save bundle, CS82/97/98): bag_career (build records), bag_courserecords
+    + bag_courserecords_legend, bag_careersave, bag_legend_tokens, bag_streak, bag_dailystats, bag_ach,
+    bag_special — plus lifetime lt/btier/badges via sbSyncStats/sbPullStats.
+  • **Already server-authoritative** (CS81): bag_daily (today's attempts enforced by the runtour_daily_attempts
+    table; best backfilled from runtour_daily_scores via fetchServerDailyBest on sign-in). Not duplicated in
+    the bundle.
+  • **The one real remaining gap — your golfer's IDENTITY:** bag_look (appearance: skin/hair/kit + patterns/
+    caddie/country/gender/handedness + equipped title) and bag_name (golfer name) were device-local, so the
+    same account could show a different-looking golfer / name across Safari vs the iOS Home-Screen app, same
+    as the career-stats and course-records bugs. **Now synced.**
+  • **Deliberately NOT synced (correctly device-local):** bag_autosim, bag_dark, bag_speed, the tip/seen
+    flags (bag_tip_seen/bag_seen/bag_daily_howto_seen/bag_daily_shotdetail/bag_daily_legend_seen),
+    bag_resume (in-progress DRAFT snapshot — a mid-draft shouldn't teleport between devices), bag_reset_epoch
+    (internal), bag_pending_seasons (the OUTBOUND submission queue — device-local by design, flushes TO the
+    server), and the rtt_* auth-flow flags. These are browser settings / transient / outbound, not "profile."
+  Identity fix: unlike the stat stores (monotonic → grow-only), appearance is a CHOICE, so it merges
+  **last-write-wins** by a stamped edit time. New `saveLook()` central setter stamps `S.look._ts=Date.now()`,
+  writes bag_look, and fires the debounced cloudPush; all 11 scattered `LS.set('bag_look',S.look)` call sites
+  (swatches, patterns, caddie, country, handedness, gender, equipped title) now route through it, and the
+  name input stamps identity too so a name change also syncs. bag_look + bag_name added to cloudBundle;
+  cloudPull adopts the server's identity only when its `_ts` is newer than local (so a device you just
+  customized on isn't overwritten by an older cloud copy), updating the live S.look/S.name too. Unlock gating
+  is unaffected — equipped caddie/title/cosmetics still resolve against the account's synced lt/ach, so a
+  synced "equipped" choice the other device hasn't unlocked simply falls back, no exploit.
+  Verified in Playwright with isolated contexts + a shared fake cloud blob: Device A customizes
+  appearance/kit/caddie/country/gender/handedness/title + name and pushes; Device B (fresh defaults) pulls
+  and adopts the whole identity incl. the equipped title and name; a Device C that customized MORE RECENTLY
+  keeps its own identity (LWW, older cloud copy doesn't clobber it); a live setup-screen smoke test confirms
+  real swatches invoke saveLook and stamp the timestamp with zero page errors. CS96/97/98 tests still green.
+  Net result: every piece of a player's PROFILE (career build records, lifetime stats, achievements/Tour Rep,
+  Legend Tokens, saved career, streak, daily stats, Spotlight, course records, AND now identity/appearance)
+  is account-attached and consistent on any browser or device; only genuine per-device settings stay local.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

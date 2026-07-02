@@ -538,6 +538,11 @@ function track(ev,props){try{(window.dataLayer=window.dataLayer||[]).push(Object
 // sync with whichever key career() is currently reading from.
 function career(){return LS.get(acctKey('bag_career'),{builds:0,bestMoney:0,bestNet:null,bestOvr:0,wins:0,majors:0,totalMoney:0,totalNet:0,hof:[],badges:{}});}
 function saveCareerLifetime(c){ LS.set(acctKey('bag_career'),c); if(typeof cloudPush==='function') cloudPush(); }   // push build-record fields to the account (debounced; no-op signed out)
+// Your golfer's identity/appearance (name + look: skin/hair/kit/patterns/caddie/country/gender/handedness +
+// equipped title). Stamped with a last-edited time so the cloud sync can pick the most-recently-customized
+// version across devices (last-write-wins), then pushed to the account. Central setter so every look change
+// stays timestamped + synced; call this instead of LS.set('bag_look', ...) directly.
+function saveLook(){ try{ S.look._ts=Date.now(); }catch(e){} LS.set('bag_look', S.look); if(typeof cloudPush==='function') cloudPush(); }
 // one-time: adopt this browser's pre-existing (unscoped) lifetime stats into the signed-in account's own
 // slot, the first time that slot is empty, mirrors migrateLegacyCareerSave()'s approach for career saves.
 // Never deletes the unscoped copy (a signed-out guest on this same browser should still see it).
@@ -3141,7 +3146,7 @@ function overlayRecord(screen){
   wire('#rec-signup',()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();});
   wire('#rec-setuser',()=>{S.overlay='account';S.acctMode='username';S.acctErr='';render();});
   wire('#rec-signout',async()=>{ await sbSignOut(); S.overlay=null; S.screen='title'; render(); toast('Signed out'); });
-  ov.querySelectorAll('.tchip[data-title]').forEach(b=>{ if(b.disabled)return; b.onclick=()=>{ S.look.title=b.dataset.title; LS.set('bag_look',S.look); render(); }; });
+  ov.querySelectorAll('.tchip[data-title]').forEach(b=>{ if(b.disabled)return; b.onclick=()=>{ S.look.title=b.dataset.title; saveLook(); render(); }; });
   ov.querySelectorAll('.achcat[data-cat]').forEach(b=>{ b.onclick=()=>{ S.achOpen=S.achOpen||{}; const c=b.dataset.cat; S.achOpen[c]=!S.achOpen[c]; render(); }; });
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
@@ -3694,7 +3699,7 @@ function scrSetup(){
     // ---- signed-in: full customization, grouped into tidy sections ----
     right.appendChild(setupHeader('Name'));
     const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${esc(S.name||'')}">`);
-    inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name);}; right.appendChild(inp);
+    inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name); saveLook();}; right.appendChild(inp);   // stamp + sync identity (name rides with look)
     right.appendChild(setupHeader('Country & handedness'));
     right.appendChild(countryRow());
     right.appendChild(handRow());
@@ -3944,7 +3949,7 @@ function swatchRow(label,opts,curId,key,colorOf){
     // check colour adapts to the swatch lightness so it stays legible on light AND dark tones
     const rgb=avHexRgb(col), lum=(0.299*rgb.r+0.587*rgb.g+0.114*rgb.b)/255;
     const sw=$(`<button aria-label="${label} ${o.id}" title="${esc(o.id)}" style="position:relative;width:34px;height:34px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.20)'};background:${col};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 3px rgba(235,166,31,.30)':'none'};transition:transform .08s">${sel?`<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:${lum>0.55?'#1a1208':'#fff'}">✓</span>`:''}</button>`);
-    sw.onclick=()=>{S.look[key]=o.id; LS.set('bag_look',S.look); render();};
+    sw.onclick=()=>{S.look[key]=o.id; saveLook(); render();};
     wrap.appendChild(sw);
   });
   row.appendChild(wrap); return row;
@@ -3958,10 +3963,10 @@ function colorRow(label,key,cur){
   const wrap=$(`<div style="display:flex;gap:9px;flex-wrap:wrap"></div>`);
   POLOS.forEach(o=>{ const sel=cur===o.id;
     const sw=$(`<button aria-label="${label} ${o.id}" style="width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.m};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}"></button>`);
-    sw.onclick=()=>{S.look[key]=o.id; LS.set('bag_look',S.look); render();}; wrap.appendChild(sw); });
+    sw.onclick=()=>{S.look[key]=o.id; saveLook(); render();}; wrap.appendChild(sw); });
   COSMETIC_SHIRTS.forEach(o=>{ const sel=cur===o.id; const open=!!o.req(m);
     const sw=$(`<button aria-label="${label} ${o.name}${open?'':' (locked)'}" title="${esc(o.name)}${open?'':' · '+esc(o.reqText)}" style="position:relative;width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.m};cursor:pointer;padding:0;opacity:${open?'1':'0.4'};box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}">${open?'':'<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px">🔒</span>'}</button>`);
-    sw.onclick=()=>{ if(!o.req(m)){ toast('🔒 '+o.name+' · '+o.reqText); return; } S.look[key]=o.id; LS.set('bag_look',S.look); render(); };
+    sw.onclick=()=>{ if(!o.req(m)){ toast('🔒 '+o.name+' · '+o.reqText); return; } S.look[key]=o.id; saveLook(); render(); };
     wrap.appendChild(sw); });
   row.appendChild(wrap);
   if(COSMETIC_SHIRTS.some(o=>!o.req(m))) row.appendChild($(`<div class="small muted" style="margin-top:5px;font-size:10.5px">🔒 Tap a locked colour to see how to unlock it.</div>`));
@@ -3975,7 +3980,7 @@ function patternRow(label,key,cur){
   const wrap=$(`<div style="display:flex;gap:6px;flex-wrap:wrap"></div>`);
   PATTERNS.forEach(p=>{ const sel=cur===p.id, open=(p.id==='none')||!!p.req(m);
     const chip=$(`<button title="${esc(p.name)}${open?'':' · '+esc(p.reqText)}" style="font:700 11px var(--body);padding:6px 10px;border-radius:999px;cursor:pointer;background:${sel?'rgba(235,166,31,.14)':'transparent'};border:1px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};color:${sel?'var(--gold)':(open?'var(--oncard)':'var(--muted)')};opacity:${open?1:0.65}">${open?'':'🔒 '}${esc(p.name)}</button>`);
-    chip.onclick=()=>{ if(!open){ toast('🔒 '+p.name+' · '+p.reqText); return; } S.look[key]=p.id; LS.set('bag_look',S.look); render(); };
+    chip.onclick=()=>{ if(!open){ toast('🔒 '+p.name+' · '+p.reqText); return; } S.look[key]=p.id; saveLook(); render(); };
     wrap.appendChild(chip); });
   row.appendChild(wrap); return row;
 }
@@ -3986,8 +3991,8 @@ function handRow(){
   const wrap=$(`<div class="mini" style="margin:0"></div>`);
   const r=$(`<button class="btn ${!lefty?'gold':'ghost'}" style="font-size:14px;padding:10px">Right handed</button>`);
   const l=$(`<button class="btn ${lefty?'gold':'ghost'}" style="font-size:14px;padding:10px">Left handed</button>`);
-  r.onclick=()=>{S.look.lefty=false;LS.set('bag_look',S.look);render();};
-  l.onclick=()=>{S.look.lefty=true;LS.set('bag_look',S.look);render();};
+  r.onclick=()=>{S.look.lefty=false;saveLook();render();};
+  l.onclick=()=>{S.look.lefty=true;saveLook();render();};
   wrap.appendChild(r);wrap.appendChild(l);row.appendChild(wrap);return row;
 }
 function countryRow(){
@@ -3995,7 +4000,7 @@ function countryRow(){
   const row=$(`<div style="margin:9px 0"></div>`);
   row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Country · for the Olympics</div>`));
   const sel=$(`<select class="name" style="width:100%;cursor:pointer">${COUNTRIES.map(c=>`<option value="${esc(c.n)}"${c.n===cur?' selected':''}>${esc(c.n)} (${c.c})</option>`).join('')}</select>`);
-  sel.onchange=e=>{ S.look.country=e.target.value; LS.set('bag_look',S.look); render(); };
+  sel.onchange=e=>{ S.look.country=e.target.value; saveLook(); render(); };
   row.appendChild(sel); return row;
 }
 // caddie picker, a dropdown of the caddies you've unlocked (grouped by Tour Rep rank), each granting a
@@ -4012,7 +4017,7 @@ function caddieRow(){
       byTier[t].map(c=>`<option value="${esc(c.id)}"${c.id===cur?' selected':''}>${esc(c.name)}, ${esc(c.desc)}</option>`).join('')+
     `</optgroup>`).join('');
   const sel=$(`<select class="name" style="width:100%;cursor:pointer"><option value=""${cur===''?' selected':''}>No caddie</option>${groups}</select>`);
-  sel.onchange=e=>{ S.look.caddie=e.target.value; LS.set('bag_look',S.look); track('caddie_pick',{id:e.target.value||'none'}); render(); };
+  sel.onchange=e=>{ S.look.caddie=e.target.value; saveLook(); track('caddie_pick',{id:e.target.value||'none'}); render(); };
   row.appendChild(sel);
   const cad=equippedCaddie();
   if(cad){
@@ -4033,8 +4038,8 @@ function genderRow(){
   const wrap=$(`<div class="mini" style="margin:0"></div>`);
   const m=$(`<button class="btn ${g==='male'?'gold':'ghost'}" style="font-size:14px;padding:10px">Male</button>`);
   const f=$(`<button class="btn ${g==='female'?'gold':'ghost'}" style="font-size:14px;padding:10px">Female</button>`);
-  m.onclick=()=>{S.look.gender='male';LS.set('bag_look',S.look);render();};
-  f.onclick=()=>{S.look.gender='female';LS.set('bag_look',S.look);render();};
+  m.onclick=()=>{S.look.gender='male';saveLook();render();};
+  f.onclick=()=>{S.look.gender='female';saveLook();render();};
   wrap.appendChild(m);wrap.appendChild(f);row.appendChild(wrap);return row;
 }
 const RSHORT={dist:'DRV',acc:'ACC',app:'APP',sht:'SHT',scr:'SCR',bnk:'BNK',put:'PUT',clu:'COM'};
@@ -7467,9 +7472,14 @@ async function sbPullStats(){ if(!sb||!sbUser) return;
    survived only in whichever browser set them (e.g. an iOS Home-Screen app) and read "unclaimed" elsewhere. The existing sbSyncStats/
    sbPullStats path still owns the lifetime `lt`/`btier`/`badges` sub-objects; the cloud merge here touches
    ONLY the build-record fields + Hall of Fame (grow-only, and it never overwrites local lt/btier/badges),
-   so the two sync mechanisms are disjoint and can't fight over the same data. Still deliberately excludes
-   device/UI preferences (autosim, dark mode, etc.), those aren't "your profile," they're this browser's
-   settings.
+   so the two sync mechanisms are disjoint and can't fight over the same data. Also includes your golfer's
+   identity (bag_look = appearance / equipped kit + patterns / caddie / country / handedness / equipped
+   title, and bag_name), merged last-write-wins by a stamped edit time (appearance is a choice, not a
+   monotonic counter, so grow-only doesn't apply). Still deliberately excludes device/UI preferences
+   (autosim, dark mode, tip-seen flags, the in-progress-draft snapshot, the outbound submission queue),
+   those aren't "your profile," they're this browser's settings. bag_daily (today's attempts/best) is
+   already server-authoritative via the CS81 daily-attempts table + fetchServerDailyBest, so it isn't
+   duplicated here.
    Merge strategy is intentionally NEVER destructive: every field except the career save itself is merged
    with "can only grow" semantics (union / max), so a merge can add or preserve progress but never erase
    something already earned on either side. The career save is the one genuinely single-slot piece (you
@@ -7478,6 +7488,8 @@ async function sbPullStats(){ if(!sb||!sbUser) return;
 function cloudBundle(){
   return {
     career: LS.get(acctKey('bag_career'), null),   // build-record fields (Builds/Best*/Wins/HoF); lt owned by sbSyncStats
+    look: LS.get('bag_look', null),                // golfer identity/appearance + equipped title (last-write-wins by _ts)
+    name: LS.get('bag_name', null),                // golfer name (rides with look's timestamp)
     courseRecords: courseRecords(),                // your all-time course records (device store; kept in sync cross-device)
     courseRecordsLegend: courseRecordsLegend(),
     careersave: LS.get(acctKey('bag_careersave'), null),
@@ -7588,6 +7600,11 @@ async function cloudPull(){
     LS.set('bag_courserecords', mergeCourseRecords(courseRecords(), server.courseRecords));           // restore course records cross-device
     LS.set('bag_courserecords_legend', mergeCourseRecords(courseRecordsLegend(), server.courseRecordsLegend));
     crCache=null; crCacheLegend=null;   // force the records overlay to re-read the freshly-merged local store
+    // identity (look + name): last-write-wins by the look's _ts, so the most-recently-customized device wins
+    { const sv=server.look, lv=LS.get('bag_look',null);
+      if(sv && typeof sv==='object' && (sv._ts||0) > ((lv&&lv._ts)||0)){
+        LS.set('bag_look', sv); if(server.name!=null) LS.set('bag_name', server.name);
+        try{ if(S&&S.look) S.look=Object.assign({},DEFLOOK,sv); if(server.name!=null) S.name=server.name; }catch(e){} } }
     const mergedCareersave=mergeCareerSave(LS.get(acctKey('bag_careersave'),null), server.careersave);
     if(mergedCareersave) LS.set(acctKey('bag_careersave'), mergedCareersave);
     LS.set(acctKey('bag_legend_tokens'), mergeLegendTokens(legendTokens(), server.legendTokens));
