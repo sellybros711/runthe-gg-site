@@ -2864,6 +2864,25 @@ allows Google Fonts, or self-host Anton.*
   qualify, while the same calls work once signed in. Full regression suite (final/menu, daily, reset flow,
   caddies) still green.
 
+- **CS90 — all round scores shown as total strokes with to-par in parentheses ("64 (−8)").**
+  Owner's ask (with a Course Records screenshot showing bare "+7"/"−8" scores): "I want all scores to be
+  displayed with the total strokes and then the strokes gained in parentheses. E.g. '64(-8)'."
+  Added `dTot(toPar, par)` next to `dtp()` — renders `"{par+toPar} ({dtp})"`, falling back to the bare
+  to-par only when the call site genuinely doesn't know the course par. Converted every round-score
+  display: Course Records overlay (today's global board + all-time course records), the daily result
+  headline (was a huge "−8" with "62 on a par 70" underneath — now "62 (−8)" with "Par 70 · OVR · wind"
+  under it), best-today lines, the "your best is safe" reassurance card, the course-record line, the
+  "done for today" overlay, the title screen's Daily Challenge button ("Best 62 (−8)"), the Monthly
+  Spotlight title buttons/result screen, the daily preview's tour-average target ("70.4 (+0.4)") and
+  record line, the LIVE in-round ticker (running strokes so far + to-par, e.g. "31 (−4) through 9" —
+  strokes computed from the pars of holes actually completed), and both share texts (daily + Spotlight).
+  The one deliberate exception: tour-average comparisons that use fractional to-par ("beat it by 1.4")
+  keep their existing decimal form — a fractional stroke total would read strangely.
+  Verified in Playwright: dTot unit cases (64 (−8) / 72 (E) / 77 (+7) / bare fallback), the Course
+  Records overlay's today-board row ("77 (+7)") and all-time record row ("64 (−8)"), and the daily
+  result headline ("62 (−8)" on par 70) all render the new format with zero page errors; full regression
+  suite (final/menu, daily, caddies, guest-rep gating) still green.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
