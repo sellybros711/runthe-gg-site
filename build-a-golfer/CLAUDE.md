@@ -2949,6 +2949,23 @@ allows Google Fonts, or self-host Anton.*
   Verified in Playwright: privacy overlay shows the ad disclosure/opt-outs/consent note, stale claims
   gone, ads tag present in head, zero page errors; full regression green.
 
+- **CS94 — site restructure: RunThePitch → /soccer/, new RunThe.GG homepage (golf cross-links repointed).**
+  Owner turned runthe.gg into a multi-game hub: the bare domain is now a RunThe.GG game-chooser homepage
+  (neutral parent branding — dark navy/gold/teal card list, Coolmath-style, its own CSS wordmark), with
+  the soccer game (RunThePitch) moved from the root to `/soccer/` and the golf game staying at `/golf/`.
+  Done on `main` (structural, outside the golf game): `soccer/index.html` is the RunThePitch game with
+  ONLY path refs rewritten to absolute (gameLogic.js / data/ / about-privacy-contact.html) + its own
+  `/soccer/` manifest; gameLogic.js, data/, assets/ stayed at root untouched (verified the soccer game
+  boots at /soccer/ with zero 404s/errors and loads player data). `/challenge/` and `/watch/` launcher
+  redirects retargeted from `/` to `/soccer/` (friend challenges/watch links keep working); added
+  `/pitch/` → `/soccer/`. Root `index.html` replaced with the chooser + root `manifest.json` is now the
+  hub; AdSense tag carried onto the homepage.
+  The only golf-game-source change (this file's repo): the two "Try RunThePitch / Love soccer?"
+  cross-promo links in `build-a-golfer.html` (footer pill + About overlay) now point to `/soccer/` instead
+  of `/` (which is now the hub, not the soccer game). Deployed golf/index.html mirrors it. No gameplay
+  logic changed. Verified end-to-end in Playwright (homepage cards → /soccer/ + /golf/, soccer boots at
+  /soccer/, challenge/watch/pitch redirect into the game) plus mobile+desktop screenshots of the homepage.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
