@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F6D66B"/>
+      <stop offset="0.5" stop-color="#EBB63A"/>
+      <stop offset="1" stop-color="#C88C1E"/>
+    </linearGradient>
+    <linearGradient id="goldH" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#C88C1E"/>
+      <stop offset="0.5" stop-color="#F6D66B"/>
+      <stop offset="1" stop-color="#C88C1E"/>
+    </linearGradient>
+  </defs>
+
+  <!-- shield: cream outer -->
+  <path d="M 120 112 Q 120 90 142 90 L 370 90 Q 392 90 392 112 L 392 288 Q 392 380 256 440 Q 120 380 120 288 Z"
+        fill="none" stroke="#FBF4E6" stroke-width="16" stroke-linejoin="round"/>
+  <!-- shield: teal inner -->
+  <path d="M 148 122 Q 148 108 162 108 L 350 108 Q 364 108 364 122 L 364 284 Q 364 356 256 410 Q 148 356 148 284 Z"
+        fill="none" stroke="#14A38C" stroke-width="9" stroke-linejoin="round"/>
+
+  <!-- trophy -->
+  <g>
+    <!-- handles -->
+    <path d="M 214 176 Q 176 176 178 210 Q 180 236 214 236" fill="none" stroke="url(#gold)" stroke-width="11" stroke-linecap="round"/>
+    <path d="M 298 176 Q 336 176 334 210 Q 332 236 298 236" fill="none" stroke="url(#gold)" stroke-width="11" stroke-linecap="round"/>
+    <!-- cup bowl -->
+    <path d="M 206 164 L 306 164 L 300 214 Q 256 262 212 214 Z" fill="url(#gold)"/>
+    <!-- rim -->
+    <rect x="200" y="156" width="112" height="16" rx="6" fill="url(#goldH)"/>
+    <!-- star on cup -->
+    <path d="M 256 182 l 6 12 13 2 -9.5 9 2.5 13 -12 -6.5 -12 6.5 2.5 -13 -9.5 -9 13 -2 z" fill="#FBF4E6" opacity="0.9"/>
+    <!-- stem -->
+    <path d="M 248 258 L 264 258 L 268 288 L 244 288 Z" fill="url(#gold)"/>
+    <!-- base tiers -->
+    <rect x="228" y="288" width="56" height="12" rx="3" fill="url(#goldH)"/>
+    <rect x="214" y="302" width="84" height="16" rx="4" fill="#14A38C"/>
+    <rect x="206" y="320" width="100" height="12" rx="4" fill="url(#goldH)"/>
+  </g>
+
+  <!-- play triangle (games mark) -->
+  <path d="M 240 356 L 240 392 L 276 374 Z" fill="#FBF4E6"/>
+</svg>
