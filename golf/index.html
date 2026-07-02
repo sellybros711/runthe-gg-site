@@ -6296,7 +6296,7 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
   sh.forEach((s,i)=>{ s.n=i+1; s.d=s.d.charAt(0).toUpperCase()+s.d.slice(1); });   // sentence-case each line
   return sh;
 }
-function dCondLabel(c){ return {calm:'☼ Calm',breezy:'≈ Breezy',windy:'≋ Windy',gusting:'⚑ Gusting'}[c]||c; }
+function dCondLabel(c){ if(!c) return ''; return {calm:'☼ Calm',breezy:'≈ Breezy',windy:'≋ Windy',gusting:'⚑ Gusting'}[c]||''; }
 function dShort(name){ return String(name).split('(')[0].trim(); }
 function startDailyChallenge(){
   S.special=false;   // entering the regular daily, never treat it as a Spotlight
@@ -6605,7 +6605,7 @@ function scrSpotlightResult(){
   add($(`<div class="center"><span class="tag" style="color:#ffd76a;border-color:#ffd76a;background:rgba(235,166,31,.12)">⭐ ${sp.month} Spotlight${justPlayed?' complete':''}</span></div>`));
   add($(`<h1 class="center" style="font-size:26px;margin:10px 0 2px">${esc(c.v)}</h1>`));
   add($(`<div class="center" style="margin:6px 0"><span class="mono" style="font-weight:800;font-size:44px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${dTot(total, c.par)}</span></div>`));
-  add($(`<p class="lede center" style="margin:0 0 8px">Par ${c.par} · OVR ${r.ovr} · ${dCondLabel(r.cond)} · special event</p>`));
+  add($(`<p class="lede center" style="margin:0 0 8px">Par ${c.par} · OVR ${r.ovr}${dCondLabel(r.cond)?' · '+dCondLabel(r.cond):''} · special event</p>`));
   add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:${wonEvent?'#35d6a0':'#ffd76a'}">
     ${wonEvent?`<b style="color:#35d6a0;font-size:17px">🏁 You beat the pro!</b>`:`<b style="color:var(--oncard);font-size:16px">Short of the tour average</b>`}
     <div class="small muted" style="margin-top:3px">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here in these conditions${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}${(rec&&rec.best!=null&&rec.best!==total)?` · best ${dTot(rec.best, c.par)} ${wonEvent?'(winner)':''}`:''}</div></div>`));
@@ -6942,7 +6942,7 @@ function scrDailyResult(){
   if(r.isLegend) add($(`<div class="center" style="margin-top:4px"><span class="tag" style="color:#ffd76a;border-color:#ffd76a">🏆 Played as Legend · ${esc(r.legendName||'')}</span></div>`));
   add($(`<h1 class="center" style="font-size:26px;margin:10px 0 2px">${esc(c.v)}</h1>`));
   add($(`<div class="center" style="margin:6px 0"><span class="mono" style="font-weight:800;font-size:44px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${dTot(total, c.par)}</span></div>`));
-  add($(`<p class="lede center" style="margin:0 0 8px">Par ${c.par} · OVR ${r.ovr} · ${dCondLabel(r.cond)}</p>`));
+  add($(`<p class="lede center" style="margin:0 0 8px">Par ${c.par} · OVR ${r.ovr}${dCondLabel(r.cond)?' · '+dCondLabel(r.cond):''}</p>`));
   // headline: did you beat the tour average? (the main objective). best-of-day decides the day.
   const av=(r.avg!=null?r.avg:dTourAvg(c)); const bestT=best?best.total:total; const wonDay=bestT<av; const margin=Math.abs((av-total));
   add($(`<div class="scout" style="max-width:520px;margin:0 auto 4px;text-align:center;border-color:${wonDay?'#35d6a0':'var(--gold)'}">
@@ -7736,7 +7736,10 @@ async function fetchServerDailyBest(day){
     const {data,error}=await sb.rpc('runtour_my_daily',{p_day:day});
     if(error || !data || !data.length) return null;
     const row=data[0], c=DAILY_COURSES[row.course_key]; if(!c) return null;
-    return {course:row.course_key, total:row.to_par, ovr:row.ovr, par:c.par, avg:c.avg, cond:null, record:null};
+    // conditions are deterministic from the day + course, so reconstruct the real weather rather than
+    // storing null (which used to render as the literal text "null · " on the result screen).
+    const cond=dailyConditions(day, row.course_key);
+    return {course:row.course_key, total:row.to_par, ovr:row.ovr, par:c.par, avg:c.avg, cond, record:null};
   }catch(e){ return null; }
 }
 async function reconcileDailyAttempts(){
