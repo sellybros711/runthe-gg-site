@@ -2802,6 +2802,49 @@ allows Google Fonts, or self-host Anton.*
   scoping, cloud-save cross-device, CS83 leaderboard, CS84/86 render safety nets, CS85 reset flow) still
   green.
 
+- **CS88 — Legendary Caddies: 31 real caddies, each with a small on-theme power, unlocked by Tour Rep.**
+  Owner's ask: implement caddies as a pick in player customization (a dropdown under handedness, "so it's
+  not overwhelming"), each granting a slight, sensible edge; unlock a few at each progression tier; make it
+  something players get excited about. Supplied a JSON of 31 real caddies in 8 prestige tiers ("remove the
+  tier names in the code" → tie unlocks to the game's own progression instead).
+  Mapping: the game already has an 8-rank Tour Rep ladder (Amateur→Journeyman→Tour Pro→Contender→Star→
+  Champion→Legend→Icon) — a perfect 1:1 with the 8 caddie tiers. The humble local loopers (JSON tier 8)
+  unlock at Amateur (from the start); the legendary bagmen (tier 1: Bones, Steve Williams, Fluff, Fanny,
+  Argea) unlock at Icon — so climbing rep is the chase. `caddieUnlocked` = repRankIndex ≥ 8−tier; 2–6
+  unlock per rank-up (5/6/5/4/4/3/2/2 across the tiers).
+  Powers (`CADDIES` table): each caddie has a `base` (always-on skill deltas, baked into your ratings in
+  buildPlayer so they show in your OVR + radar — owner chose visible), and some have situational levers:
+  `major` (extra deltas at the 4 majors), `venue` (extra deltas at a specific host event — e.g. Carl
+  Jackson +2 Putting at The Masters, Alfie Fyles +Approach/Composure at The Open), or `fee` (Steve Hulka
+  drops the 10% caddie cut to 9% — a money perk, wired through seasonNet). Every one maps to the caddie's
+  real story; magnitudes are deliberately slight (a +2 to a top-weighted stat ≈ +0.42 OVR, a few tenths of
+  a stroke over a season). "Steady/calm" caddies express it through Composure (which already governs the
+  pressure/choke model, so no new variance lever) and one fun tradeoff (Lee "Two Shot" Lynch: +2 Composure,
+  −1 Distance). Flavor touch: every obscure Augusta National looper (the low tiers you unlock first) is a
+  Masters specialist — small everywhere, extra at Augusta — giving the humble start a real identity.
+  Situational deltas are folded into your event-effective overall (`caddieEventEo`, weighted by the same
+  course-fit weights eventOverall uses) for the human player only, so the field is unaffected. Powers apply
+  in Career/Season AND the Daily (base deltas flow through buildPlayer, which the daily also uses — owner
+  chose "everywhere"); the venue/major specials naturally light up when you actually play that major in a
+  career.
+  UI: `caddieRow()` — one grouped `<select>` (unlocked caddies only, grouped by the rank they unlock at) +
+  "No caddie", a live power card (name · effect · flavor) for the equipped looper, and a teal nudge ("N more
+  caddies unlock at Star — climb your Tour Rep"). Sits under handedness in the signed-in customization block,
+  so it's naturally a member feature (guests see the existing locker-room upsell; unlocks need rep anyway).
+  Selection persists in S.look.caddie (device-local like other look prefs; unlock status derives from the
+  cloud-synced rep). A saved pick that isn't currently unlocked safely resolves to "no caddie"
+  (`equippedCaddie` gates on `caddieUnlocked`). Also shows the equipped caddie as a chip on the "meet your
+  golfer" build screen, and the expense sheet's caddie-fee line now reflects the real % (9% with Hulka).
+  Verified in Playwright: 31 unique caddies with correct per-tier counts; unlock gating correct across the
+  whole ladder (Amateur → only the 2 tier-8 loopers + "2 more at Journeyman"; Icon → all 31); buildPlayer
+  bakes base deltas visibly (Bones +2 Approach → +0.42 OVR; Lynch +2 Composure/−1 Distance) and clamps; a
+  locked pick is ignored (Amateur can't equip a tier-1 caddie); situational eo bonuses fire only at the
+  matching major/venue (Carl Jackson +Putting at The Masters, 0 at The Open); Hulka's fee cut (10%→9%); the
+  setup dropdown renders with the right options + power card for a signed-in player and is absent for guests;
+  a full 18-event season plays through to the summary with a caddie equipped with zero page errors. Full
+  regression suite (final/menu, setup, daily, reset flow, null-poison fix, CS83 leaderboard, bag_career
+  scoping) still green.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
