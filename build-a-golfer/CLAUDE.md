@@ -2925,6 +2925,30 @@ allows Google Fonts, or self-host Anton.*
   green AND Distance "79 ▼" red), no caddie (all plain), and the 99-clamp case (no highlight);
   screenshot confirms the look on a real build with Killer Foy; caddie suite + full regression green.
 
+- **CS93 — AdSense compliance (Google Publisher Policies) + ads enabled on the golf game.**
+  Owner: comply with https://support.google.com/adsense/answer/10502938 so ads can go on the site.
+  Audit found the root RunThePitch pages already carried the AdSense loader + units
+  (ca-pub-5952069078178257) and root privacy.html already had the required advertising-cookie
+  disclosure with opt-out links. Gaps: (1) no /ads.txt at the domain root ("Earnings at risk"
+  warning + spoofing exposure); (2) the golf game had no AdSense tag; (3) the golf game's in-game
+  Privacy overlay and golf/privacy.html both contained claims that ads would make FALSE ("No ads or
+  third-party trackers are loaded" / "does not currently run advertising") — under Google's Required
+  content policy the privacy policy shown to users of ad-serving pages must disclose third-party
+  advertising cookies + opt-outs, and under basic accuracy it can't lie; both were also stale on
+  cloud save (CS82: "your data stays on your device") and guest leaderboard posting (CS83).
+  Changes: added the AdSense loader to the golf game's <head>; rewrote the in-game Privacy overlay
+  (guest = local + anonymized leaderboard posts; signed-in = profile syncs via Supabase; NEW
+  Advertising item disclosing third-party/Google ad cookies based on prior visits, opt-out links to
+  Google Ads Settings + aboutads.info, and the EEA/UK/CH consent message); created /ads.txt on main
+  (`google.com, pub-5952069078178257, DIRECT, f08c47fec0942fa0`); updated golf/privacy.html on main
+  the same way (Advertising section replacing "does not currently run advertising", guest wording).
+  Consent (EU User Consent Policy + US states): handled by Google's certified CMP ("Privacy &
+  messaging" in the AdSense dashboard) which serves with the ads tag — owner must create + publish a
+  GDPR message and a US states message there; no site code needed. Owner also reminded: never click
+  your own ads, never encourage clicks, keep ad density reasonable when placing manual units.
+  Verified in Playwright: privacy overlay shows the ad disclosure/opt-outs/consent note, stale claims
+  gone, ads tag present in head, zero page errors; full regression green.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

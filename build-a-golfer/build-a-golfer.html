@@ -35,6 +35,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
 <!-- RunThe.GG accounts + public leaderboard (same Supabase project as RunThePitch; optional, fails open) -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<!-- Google AdSense (same publisher as the rest of runthe.gg). Consent for EEA/UK/CH + US states is
+     handled by Google's certified "Privacy & messaging" CMP, configured in the AdSense dashboard and
+     served automatically with this tag — no extra consent code needed on the page. -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
 <style>
   :root{
     --cream:#F4E8D6; --peach:#F7DCCC;
@@ -3445,15 +3449,15 @@ function overlayPrivacy(screen){
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Privacy">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Privacy</h3>
-    <p class="lede">RunTheTour is built to be private by default.</p>
+    <p class="lede">Here's plainly what RunTheTour stores, where, and why.</p>
     <ol style="color:#dbe6ee;padding-left:18px">
-      <li><b>Accounts are optional.</b> You can play the whole game without signing in. Signing in is only needed to post to the public leaderboard.</li>
-      <li><b>Your data stays on your device</b> unless you post a score. Your golfer, look, record, and daily streak are saved only in this browser (localStorage).</li>
+      <li><b>Accounts are optional.</b> You can play the whole game without signing in.</li>
+      <li><b>As a guest, your identity stays on your device.</b> Your golfer, look, record, and daily streak live only in this browser (localStorage). Finished seasons are posted to the public leaderboard <b>anonymously</b> — shown as "Anonymous / Guest Player," never anything that identifies you.</li>
       <li><b>Creating an account</b> stores the email + username you provide, or, with "Sign in with Google," the email Google shares with us. Sign-in is handled by our database provider, Supabase, and by Google. We don't sell your personal information.</li>
-      <li><b>If you sign in and finish a season,</b> your username, golfer name, overall, and earnings are sent to our database (Supabase) and shown on the public leaderboard. Your email is never shown publicly — signing in with a username instead of email looks up the matching account internally, it's never exposed to other players.</li>
+      <li><b>Signed in, your profile syncs.</b> Your career save, trophies, streaks and stats are saved to your account (Supabase) so they follow you across devices. Finished seasons post to the public leaderboard under your username and golfer name. Your email is never shown publicly.</li>
+      <li><b>Advertising.</b> We show ads (Google AdSense) to keep the game free. Third-party vendors, including Google, use advertising cookies to serve ads based on your prior visits to this and other websites. You can opt out of personalized ads at <a href="https://adssettings.google.com" target="_blank" rel="noopener" style="color:var(--gold)">Google Ads Settings</a> or <a href="https://www.aboutads.info" target="_blank" rel="noopener" style="color:var(--gold)">aboutads.info</a>. In the EEA, UK and Switzerland, a consent message lets you choose before any ad cookies are set.</li>
       <li><b>Player ratings</b> are built from public statistics, including data from DataGolf — performance data about public figures, not personal data about you.</li>
       <li><b>Clear it anytime.</b> Use Reset, or clear this site's browser data, to wipe local data. Email us to delete your account and all associated data.</li>
-      <li><b>No ads or third-party trackers</b> are loaded. The only network services are Google Fonts and our own Supabase backend (for accounts + leaderboard).</li>
       <li><b>Not directed to children under 13;</b> we don't knowingly collect personal information from them.</li>
     </ol>
     <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour, Privacy question')}" style="text-decoration:none;display:block">✉ Privacy Question</a>
