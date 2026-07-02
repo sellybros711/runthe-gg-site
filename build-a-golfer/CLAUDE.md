@@ -3182,6 +3182,30 @@ allows Google Fonts, or self-host Anton.*
   dangling "· " ever appears. Verified in Playwright: a null-cond best renders "Par 72 · OVR 80" with no
   "null"/dangling separator, a real cond shows its label (≋ Windy), dCondLabel(null/unknown)→'', zero errors.
 
+- **CS103 — replaced UI emoji with themed inline-SVG icons.** Owner: "I really don't like the use of emojis
+  on this game. Can we replace all emojis with themed icons?" Inventoried ~45 distinct colourful pictographs
+  across ~200 spots (🏆 alone ×54, plus ⛳🏅🎖🥇🥈🥉🔥🎯💰👑❄⚔🐐🛡⚡ etc.). Built a custom icon system:
+  `ICONS` (a ~55-entry map of minimal 24×24 SVG paths in the gold/green theme, drawn in `currentColor` so each
+  icon inherits the themed colour of the text it sits in — medals/jacket bake their own metal colours) +
+  `ic(name)` helper + a `.ic` CSS class (1em, baseline-aligned).
+  Key architectural decision to avoid touching ~200 sites individually (and to auto-handle emoji stored in
+  DATA fields like `badge.e`/`headline.icon` which would break `${}` interpolation if edited in place):
+  convert emoji → icon at the DOM-render LAYER. `emojifyIcons(html)` maps each known emoji to its icon SVG,
+  replacing only in TEXT runs (never inside a tag/attribute, via a `/<[^>]*>|[^<]+/` split), and it's applied
+  inside `$()` (the universal DOM builder) so every rendered node converts for free. The handful of direct
+  `.innerHTML=` sites that bypass `$()` (win/playoff celebration, Olympic podium, Ryder/Presidents cup
+  scoreboard, course-records boards) were routed through `emojifyIcons()` too, one `.textContent=` (Tour Rep
+  tier's 🐐) was switched to `ic('goat')`, and the one canvas share-card 🏆 was replaced with a vector
+  `canvasTrophy()` (SVG can't draw to canvas). Deliberately KEPT: clean typographic glyphs that don't read as
+  emoji (arrows → ← ↗ ↺ ↩, ✓, ✕, ★), country flags (real teams, image-based), and — critically — emoji in
+  COPY-TO-CLIPBOARD share text (the Wordle-style 🟦🟩 scorecard + captions), since SVG icons can't exist in
+  plain text; that text never passes through `$()`/emojifyIcons so it's untouched.
+  Verified in Playwright: 0 leftover mapped emoji across title / menu / rules / leaderboard / course-records /
+  setup / trophy-room / daily-result, plus the exact screenshot case (season "Dispatch" headlines 🎯💰🌱 →
+  icons) and the Olympic podium (🥇🥈🥉 → icons); share text still contains its emoji (⛳…); a full 18-hole
+  daily round regresses clean (the `$()` change didn't break rendering); screenshots of the Trophy Room and
+  Daily Result confirm the icons render sharp and themed with correct inline alignment. Zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
