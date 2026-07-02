@@ -4204,13 +4204,18 @@ function scrBuild(){
     <span style="font-size:20px;flex:0 0 auto">🎒</span>
     <div style="min-width:0"><div style="font-weight:800;color:var(--oncard);font-size:13.5px">${esc(cad.name)}<span class="small muted" style="font-weight:600"> on the bag</span></div>
     <div class="small" style="color:var(--gold);font-weight:700;margin-top:1px">${esc(cad.desc)}</div></div></div>`));
-  // RIGHT — scorecard + season pick
+  // RIGHT — scorecard + season pick. Ratings your caddie boosts show the BOOSTED number in green with
+  // a ▲ (p from buildPlayer already has the caddie's base deltas baked in; the raw slot value is what
+  // you drafted, so the difference IS the caddie effect — incl. red ▼ for Two Shot Lynch's −1 tradeoff).
   right.appendChild($(`<h2 style="margin:0 0 8px">Your scorecard</h2>`));
   const card=$(`<div class="card-grid"></div>`);
-  CATS.forEach(cat=>{const f=S.slots[cat.k]; const v=f?f.value:REPLACEMENT;
+  CATS.forEach(cat=>{const f=S.slots[cat.k]; const raw=f?f.value:REPLACEMENT; const bv=p[cat.k], d=bv-raw;
+    const vHTML = d>0 ? `<span class="v" style="color:#35d6a0" title="${esc(cad?cad.name:'Caddie')} boost">${bv}<span style="font-size:12px"> ▲</span></span>`
+      : d<0 ? `<span class="v" style="color:#E14A33" title="${esc(cad?cad.name:'Caddie')} tradeoff">${bv}<span style="font-size:12px"> ▼</span></span>`
+      : `<span class="v">${bv}</span>`;
     card.appendChild($(`<div class="slot ${f?'':'empty'}">
       <span class="lab">${cat.short}</span><span class="who">${f?f.golfer:'no spin, journeyman'}</span>
-      <span class="v">${v}</span></div>`));});
+      ${vHTML}</div>`));});
   right.appendChild(card);
   right.appendChild($(`<div style="height:16px"></div>`));
   if(S.daily){

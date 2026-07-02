@@ -2910,6 +2910,21 @@ allows Google Fonts, or self-host Anton.*
   at #12/#70/#91. Pre-existing cup tests (match-by-match reveal, skip-to-result, sticky scoreboard
   pinning) and the full regression suite all still green, zero page errors.
 
+- **CS92 — caddie boosts shown ON the scorecard numbers (green + ▲).**
+  Owner (with a build-screen screenshot): "I want it to show the caddie boost on the actual overall
+  numbers affected by making the number green and adding an upwards facing triangle next to it." The
+  build screen's "Your scorecard" previously showed the RAW drafted slot values, so an equipped caddie's
+  effect was only visible in the "on the bag" chip's text, never on the numbers themselves.
+  The scorecard now renders each rating from `buildPlayer()` (which already has the caddie's base deltas
+  baked in) instead of the raw slot value: a boosted rating shows the BOOSTED number in green with a ▲
+  (e.g. Killer Foy → Scrambling "85 ▲", Composure "88 ▲"), a caddie tradeoff shows red with a ▼ (Two
+  Shot Lynch's −1 Distance → "79 ▼"), untouched ratings stay gold and plain. The delta is computed as
+  boosted-minus-raw, so a boost that clamps at 99 correctly shows no false highlight, and no-caddie
+  builds are pixel-identical to before. Tooltip on the number names the caddie.
+  Verified in Playwright: Bones (+2 Approach → "82 ▲" green, others plain), Lynch (Composure "82 ▲"
+  green AND Distance "79 ▼" red), no caddie (all plain), and the 99-clamp case (no highlight);
+  screenshot confirms the look on a real build with Killer Foy; caddie suite + full regression green.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
