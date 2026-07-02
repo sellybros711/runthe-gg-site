@@ -2041,7 +2041,8 @@ function courseRecordsLegend(){ return LS.get('bag_courserecords_legend',{}); }
 function recordCourseScore(courseKey,toPar,ovr,name,isLegend){
   const key=isLegend?'bag_courserecords_legend':'bag_courserecords';
   const r=isLegend?courseRecordsLegend():courseRecords(); const cur=r[courseKey];
-  if(!cur || toPar<cur.toPar){ r[courseKey]={toPar,ovr,name:name||'You',mine:true,date:todayKey()}; LS.set(key,r); return true; }
+  if(!cur || toPar<cur.toPar){ r[courseKey]={toPar,ovr,name:name||'You',mine:true,date:todayKey()}; LS.set(key,r);
+    if(typeof cloudPush==='function') cloudPush(); return true; }   // sync the new record to the account (cross-device)
   return false; }
 
 const FIELDSIZE=120;   // season field = you + (FIELDSIZE-1) data-grounded golfers (DataGolf spec §3)
@@ -7460,7 +7461,10 @@ async function sbPullStats(){ if(!sb||!sbUser) return;
    same account can otherwise show different stats depending on which one you open it from.
    bag_career IS now included (the build-record fields: Builds / Best earned / Best OVR / Best net / Wins /
    Hall of Fame), because those were the ONE career stat with no server sync at all, which is exactly why
-   they could show up on one browser and be zero on another for the same account. The existing sbSyncStats/
+   they could show up on one browser and be zero on another for the same account. bag_courserecords (+ the
+   legend bucket) are included for the same reason: the all-time Course Records screen reads the DEVICE's
+   local record store (topped up from the global board by crLoad), so records set before the launch reset
+   survived only in whichever browser set them (e.g. an iOS Home-Screen app) and read "unclaimed" elsewhere. The existing sbSyncStats/
    sbPullStats path still owns the lifetime `lt`/`btier`/`badges` sub-objects; the cloud merge here touches
    ONLY the build-record fields + Hall of Fame (grow-only, and it never overwrites local lt/btier/badges),
    so the two sync mechanisms are disjoint and can't fight over the same data. Still deliberately excludes
@@ -7474,6 +7478,8 @@ async function sbPullStats(){ if(!sb||!sbUser) return;
 function cloudBundle(){
   return {
     career: LS.get(acctKey('bag_career'), null),   // build-record fields (Builds/Best*/Wins/HoF); lt owned by sbSyncStats
+    courseRecords: courseRecords(),                // your all-time course records (device store; kept in sync cross-device)
+    courseRecordsLegend: courseRecordsLegend(),
     careersave: LS.get(acctKey('bag_careersave'), null),
     legendTokens: legendTokens(),
     streak: LS.get(acctKey('bag_streak'), null),
@@ -7481,6 +7487,17 @@ function cloudBundle(){
     ach: LS.get(acctKey('bag_ach'), null),
     special: LS.get(acctKey('bag_special'), null),
   };
+}
+// Grow-only merge of a course-records map: for each course, the LOWER round (to-par) wins, so a merge can
+// only ever restore or improve a record, never erase or worsen one held on either device. Used to keep the
+// same account's all-time records identical across Safari, an iOS Home-Screen app, and any other device.
+function mergeCourseRecords(local, server){
+  const out=(local&&typeof local==='object')?Object.assign({},local):{};
+  if(server&&typeof server==='object'){
+    for(const k in server){ const s=server[k]; if(s&&typeof s.toPar==='number'){
+      const l=out[k]; if(!l || typeof l.toPar!=='number' || s.toPar<l.toPar) out[k]=s; } }
+  }
+  return out;
 }
 // Grow-only merge of the bag_career build-record fields (Builds / Best earned / Best OVR / Best net / Wins /
 // Majors / totals / Hall of Fame). Preserves LOCAL lt/btier/badges untouched (those are synced by the
@@ -7568,6 +7585,9 @@ async function cloudPull(){
     const server=row&&row.data;
     if(!server || typeof server!=='object' || !Object.keys(server).length){ cloudPush(); return; }   // nothing saved yet, seed it
     LS.set(acctKey('bag_career'), mergeCareerLifetime(career(), server.career));   // restore build-record fields cross-device
+    LS.set('bag_courserecords', mergeCourseRecords(courseRecords(), server.courseRecords));           // restore course records cross-device
+    LS.set('bag_courserecords_legend', mergeCourseRecords(courseRecordsLegend(), server.courseRecordsLegend));
+    crCache=null; crCacheLegend=null;   // force the records overlay to re-read the freshly-merged local store
     const mergedCareersave=mergeCareerSave(LS.get(acctKey('bag_careersave'),null), server.careersave);
     if(mergedCareersave) LS.set(acctKey('bag_careersave'), mergedCareersave);
     LS.set(acctKey('bag_legend_tokens'), mergeLegendTokens(legendTokens(), server.legendTokens));
