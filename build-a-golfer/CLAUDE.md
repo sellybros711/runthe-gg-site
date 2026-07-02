@@ -2987,6 +2987,41 @@ allows Google Fonts, or self-host Anton.*
   and the legacy path correctly reverses the top-200; golf/index.html re-verified booting clean, zero page
   errors. **ACTION: run `supabase/38_runtour_board_dir.sql`.** Deployed client to /golf.
 
+- **CS96 — career build-record stats self-heal from the server (fixes the "career stats reset" report).**
+  Owner: "why did my career stats reset but nothing else? Is it because I changed my username? This
+  shouldn't happen when a username is changed or ever." The Trophy Room showed Builds/Best Earned/Best
+  OVR/Best Net/Wins/Hall of Fame all zeroed, while Tour wins 285 · Majors 57, achievements, Tour Rep, and
+  Legend Tokens were intact. Root-caused the split: those two groups live in different storage. The
+  lifetime `lt` totals, achievements (`bag_ach`), Tour Rep, and Legend Tokens are all SERVER-SYNCED
+  (`runtour_save_stats`/`runtour_my_stats` + the CS82 cloud bundle), so a cleared/re-keyed local slot
+  refills them. But the build-record fields inside `bag_career` (`builds`/`bestMoney`/`bestNet`/`bestOvr`/
+  `wins`/`majors`/`totalMoney`/`totalNet`/`hof`) were the ONE career stat NEVER uploaded — they only ever
+  lived in this browser's account-scoped `bag_career@<uid>` slot. When a sign-in/profile re-pull read that
+  slot back empty (`sbPullStats` does `const c=career(); c.lt=srv.lt; saveCareerLifetime(c)` — if `career()`
+  momentarily returns its all-zeros default, it persists zeros for the build fields while merging in the
+  real server `lt`), the result is exactly the observed split: lifetime totals survive, build records show
+  0. The username change wasn't causal (a rename never changes the account id the slot is keyed by, so it
+  can't reset stats on its own) but it IS a sign-in/profile event, i.e. the kind of moment that triggers
+  the re-pull that surfaced the gap. Confirmed `RESET_ENABLED=false` so the local launch-wipe is NOT the
+  cause.
+  Fix: **the build-record fields now reconstruct from the account's authoritative posted-season history.**
+  Every non-daily season a player ever submitted lives in `runtour_scores`; `sbLoadProfile()` already
+  fetches all of them, so new `reconcileCareerFromServer(rows)` (called at the end of that fetch, i.e. on
+  every sign-in) rebuilds Builds (= season count), Wins/Majors (= sums), Best Earned/Best OVR/Best Net (=
+  maxes), Total Money/Net (= sums), and the Hall of Fame (top builds by net) from those rows. It's GROW-ONLY
+  (max/union): it can only ever restore or raise a value, never reduce one that's legitimately higher
+  locally (e.g. offline/daily seasons that were never posted), and it never touches `lt`. Because it runs on
+  every sign-in AND after `sbPullStats` within the same load, even if the local slot is zeroed again by any
+  future re-key event, it self-heals immediately — satisfying "shouldn't happen ... ever." This also
+  RECOVERS the owner's stats: signing in re-derives them from their own posted-season history on the server
+  (the same seasons that already show on the leaderboard). Caveat surfaced honestly: seasons that were never
+  submitted to the server (played fully offline, or as a guest) can't be reconstructed this way — but the
+  vast majority of a real career's seasons post to the board, so the recovered figures should closely match.
+  Verified in Playwright against the real in-file function: seeding a zeroed `bag_career` (with `lt` intact,
+  reproducing the exact symptom) plus a set of server season rows restores Builds/Wins/Majors/Best*/Total*/
+  HoF to the correct reconstructed values, preserves `lt.wins=285`, and a second pass with a
+  legitimately-higher local Builds/Best OVR (99) confirms grow-only never reduces them; zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

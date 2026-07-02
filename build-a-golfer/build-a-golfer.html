@@ -7404,7 +7404,37 @@ async function sbLoadProfile(){
     sbProfile={ seasons:rows.length, bestSeason, careers,
       totalEarn:rows.reduce((s,r)=>s+(r.season_earnings||0),0),
       wins:rows.reduce((s,r)=>s+(r.wins||0),0), majors:rows.reduce((s,r)=>s+(r.majors||0),0) };
+    reconcileCareerFromServer(rows);   // heal build-record fields (Builds/Best OVR/HoF/…) from posted seasons
   }catch(e){ sbProfile=null; }
+}
+/* Rebuild the build-record fields of bag_career (Builds / Best earned / Best OVR / Best net / Wins /
+   Hall of Fame) from the account's authoritative posted-season history on the server. Unlike the lifetime
+   `lt` totals, these build-record fields were historically NEVER uploaded, so if the local (account-scoped)
+   career slot is ever read back empty during a sign-in/re-key event, sbPullStats used to re-save it with
+   only the server `lt` merged in, leaving the build fields showing zeros while Tour wins/Majors survived
+   (see the reported reset). Every non-daily season the player ever submitted lives in runtour_scores, so we
+   can reconstruct these fields from it. GROW-ONLY (max/union) so it can only ever restore or raise a value,
+   never reduce one that's legitimately higher locally (e.g. offline/daily seasons that weren't posted). This
+   runs on every sign-in, so even if the local slot is zeroed again by any future event, it self-heals. */
+function reconcileCareerFromServer(rows){
+  if(!sbSignedIn()||!rows||!rows.length) return;
+  const c=career(); let changed=false;
+  const raise=(k,v)=>{ if(v>(c[k]||0)){ c[k]=v; changed=true; } };
+  raise('builds', rows.length);
+  raise('wins',   rows.reduce((s,r)=>s+(r.wins||0),0));
+  raise('majors', rows.reduce((s,r)=>s+(r.majors||0),0));
+  raise('bestMoney', rows.reduce((m,r)=>Math.max(m,r.season_earnings||0),0));
+  raise('bestOvr',   rows.reduce((m,r)=>Math.max(m,r.ovr||0),0));
+  raise('totalMoney',rows.reduce((s,r)=>s+(r.season_earnings||0),0));
+  raise('totalNet',  rows.reduce((s,r)=>s+(r.season_net||0),0));
+  const bn=rows.reduce((m,r)=>(r.season_net==null?m:Math.max(m,r.season_net)), -Infinity);
+  if(bn>-Infinity && (c.bestNet==null || bn>c.bestNet)){ c.bestNet=bn; changed=true; }
+  // Hall of Fame = top builds by net; rebuild from the server history whenever the local one is thinner.
+  const hof=rows.map(r=>({name:r.golfer_name||'Your Golfer',ovr:r.ovr||0,money:r.season_earnings||0,
+      net:r.season_net||0,wins:r.wins||0,majors:r.majors||0,best:0}))
+    .sort((a,b)=>(b.net||0)-(a.net||0)).slice(0,5);
+  if((c.hof||[]).length < hof.length){ c.hof=hof; changed=true; }
+  if(changed){ saveCareerLifetime(c); if(S.overlay==='record') render(); }
 }
 // push the lifetime badge metrics + tee count to the profile so badges follow the account.
 // Best-effort & fail-open: no backend / not signed in / migration not applied → silent no-op.
