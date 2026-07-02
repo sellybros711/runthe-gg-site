@@ -3053,6 +3053,36 @@ allows Google Fonts, or self-host Anton.*
   with a legitimately-higher local Builds/Best OVR confirms grow-only never reduces them (and a lower local
   field is raised to the cloud value); zero page errors. CS96's server-reconstruction test still green.
 
+- **CS98 — course records sync to the account too (same cross-device fix as CS97).** Owner: same problem as
+  the career stats, now for the all-time Course Records screen — the old records show when opening RunTheTour
+  from the iOS Home-Screen app but read "unclaimed" from the landing page (Safari), same account. Root cause:
+  the all-time Course Records overlay displays the DEVICE's local `bag_courserecords` store (a bare,
+  device-global key), which `crLoad()` only tops up from the CURRENT global board (`runtour_course_records`).
+  The owner's older records were wiped from the server by the launch-reset TRUNCATE earlier this session, so
+  they now survive ONLY in whichever browser's local store set them (the Home-Screen app) and read
+  "unclaimed" anywhere the local store is fresh (Safari). Same class of bug as CS97 (build-record stats):
+  a record with no durable per-account home shows up on one browser and not another.
+  Fix: added `bag_courserecords` + `bag_courserecords_legend` to the CS82 cloud-save bundle with a new
+  grow-only `mergeCourseRecords(local, server)` — per course, the LOWER round (to-par) wins, so a merge can
+  only ever restore or improve a record, never erase or worsen one held on either side. `cloudPull()` merges
+  them on sign-in (and clears `crCache`/`crCacheLegend` so the overlay re-reads the freshly-merged store);
+  `recordCourseScore()` fires a debounced `cloudPush()` whenever a new personal record is set. So the
+  Home-Screen app uploads the old records to the account, every other device pulls them, and the all-time
+  Course Records screen is identical everywhere for that account. Recovery for the owner is the same as CS97:
+  open the Home-Screen app once (it pushes the surviving records up), then the landing/Safari view pulls them.
+  Scope note (told the owner): this makes records consistent across a given ACCOUNT's own devices. It does not
+  by itself re-insert the owner's launch-wiped records back into the GLOBAL board for OTHER players to see —
+  the local store lacks the ovr/skills/decisions payload `runtour_submit_daily` needs to re-verify a round,
+  so re-globalizing the wiped records would need a separate, owner-run data restore (still the parked "restore
+  old course records" task). `crLoad`'s existing merge already keeps any genuinely-lower global record
+  showing, so nothing regresses.
+  Verified in Playwright with two isolated browser contexts sharing one fake account cloud blob: Device A
+  (Home-Screen, old records) pushes; Device B (fresh Safari whose local store only had the thin post-reset
+  global board) pulls and shows Coby Selly's old Augusta/Pebble/Oakmont records + the legend record, while a
+  server-only Bay Hill record it didn't have is preserved (not erased); a Device C whose local record is
+  BETTER than the cloud's confirms grow-only never worsens it; zero page errors. CS97 career-sync and CS96
+  reconstruction tests still green.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
