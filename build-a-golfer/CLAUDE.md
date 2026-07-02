@@ -2883,6 +2883,33 @@ allows Google Fonts, or self-host Anton.*
   result headline ("62 (−8)" on par 70) all render the new format with zero page errors; full regression
   suite (final/menu, daily, caddies, guest-rep gating) still green.
 
+- **CS91 — distinct Ryder/Presidents Cup identities, no "YOU" for spectators, clearer race-strip copy.**
+  Owner's three asks: (a) the Ryder Cup and Presidents Cup looked near-identical — not clear which is
+  being played at first glance; (b) the cup scoreboard said "· YOU" on your nation's side even when you
+  weren't on the team (just a fan watching); (c) the "stay in the top 70 to qualify" live strip during
+  the season sim needed clearer language.
+  (a) Added `CUP_THEME`/`cupTheme(type)` — each cup now has its own visual identity used by the intro
+  tag, the captaincy-offer tag, and (most importantly) the sticky scoreboard, which swaps its small
+  generic "🏆 Ryder Cup" pill for a proper branded wordmark: Ryder Cup = navy & gold banner, 🇺🇸🇪🇺,
+  "USA VS EUROPE" strap, USA panel in red vs Europe in EU blue; Presidents Cup = charcoal & silver
+  banner, 🇺🇸🌍, "USA VS INTERNATIONAL" strap, USA in blue vs International in bronze. The two screens
+  are now unmistakable at a glance (screenshot-verified side by side).
+  (b) `involved = T.playerSelected || T.captain` now gates the label: only an actual participant gets
+  "· YOU" on their team panel — plus a new strap line in the wordmark ("· YOU'RE PLAYING" / "· YOU'RE
+  CAPTAINING"). A spectator keeps the subtle gold ring marking their nation's side (rooting interest)
+  but no "YOU" anywhere, since they're not on either team.
+  (c) `raceToCupNode`'s copy rewritten around an explicit noun for what the top-N qualify FOR, so every
+  state reads as a complete, self-explanatory sentence: inside → "Only the top 70 qualify for the FedEx
+  Cup Playoffs. You're #12 — safely inside, 58 spots above the cut line."; exactly on the line → "…
+  You're #70 — the very last qualifying spot. One bad week drops you out."; outside → "… You're #91 —
+  21 spots below the cut line (about 105 pts behind #70). Earn points to climb in." Same treatment for
+  all three playoff gates (70/50/30) and the Legend Circuit's Schwab gates (55/40/25).
+  Verified in Playwright by driving `scrTeamCup` directly with fixture teams: fan view shows the right
+  matchup strap and theme colors for each cup with NO "YOU" anywhere; player view shows "· YOU" +
+  "YOU'RE PLAYING"; captain view shows "YOU'RE CAPTAINING"; race strip produces the three new sentences
+  at #12/#70/#91. Pre-existing cup tests (match-by-match reveal, skip-to-result, sticky scoreboard
+  pinning) and the full regression suite all still green, zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
