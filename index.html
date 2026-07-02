@@ -181,6 +181,30 @@
     font-size:12.5px;line-height:1.45;border-radius:10px;padding:9px 11px;margin-top:12px;}
   .sheet .fine{color:#6f829a;font-size:11px;line-height:1.5;margin-top:14px;text-align:center;}
   .sheet .fine a{color:#9db2c8;}
+
+  /* ---- content sections (about / how it works / faq) ---- */
+  .content{margin:30px 0 0;}
+  .content h3{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.02em;text-transform:uppercase;
+    font-size:19px;margin:26px 0 10px;color:var(--ink);}
+  .content h3:first-child{margin-top:6px;}
+  .content p{color:var(--mut);font-size:14px;line-height:1.65;margin:0 0 12px;}
+  .content p b{color:#cfe0f0;}
+  .steps{display:grid;gap:10px;margin:0 0 6px;}
+  .step{display:flex;gap:12px;align-items:flex-start;background:rgba(255,255,255,.03);
+    border:1px solid var(--line);border-radius:13px;padding:12px 14px;}
+  .step .n{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:var(--gold);color:#1a1206;
+    font-weight:900;font-size:13px;display:flex;align-items:center;justify-content:center;}
+  .step .tx{font-size:13.5px;line-height:1.5;color:var(--mut);}
+  .step .tx b{color:var(--ink);font-weight:800;}
+  .faq details{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:13px;
+    padding:0 14px;margin:0 0 9px;overflow:hidden;}
+  .faq summary{cursor:pointer;list-style:none;padding:13px 0;font-weight:800;font-size:14px;color:var(--ink);
+    display:flex;justify-content:space-between;align-items:center;gap:10px;}
+  .faq summary::-webkit-details-marker{display:none;}
+  .faq summary:after{content:"+";color:var(--gold);font-size:20px;font-weight:800;line-height:1;flex:0 0 auto;}
+  .faq details[open] summary:after{content:"–";}
+  .faq p{margin:0 0 14px;font-size:13.5px;}
+  .faq a{color:var(--teal);font-weight:700;}
 </style>
 </head>
 <body>
@@ -236,6 +260,31 @@
     </main>
 
     <div class="note">🎮 <b>More games on the way.</b> RunThe.GG is a growing home for quick, free sports games. One free account works across all of them.</div>
+
+    <section class="content">
+      <h3>What is RunThe.GG?</h3>
+      <p>RunThe.GG is a free collection of quick, browser-based sports games you can play the moment the page loads. There is nothing to download and nothing to install. Pick a game, jump straight in, and play in seconds on your phone, tablet or computer. Make one free account and your trophies, streaks, saves and leaderboard rank follow you across every game on the site.</p>
+
+      <h3>How it works</h3>
+      <div class="steps">
+        <div class="step"><span class="n">1</span><span class="tx"><b>Choose a game.</b> Start with RunThePitch or RunTheTour above. New sports games are added over time.</span></div>
+        <div class="step"><span class="n">2</span><span class="tx"><b>Play instantly.</b> Everything runs in your browser. No app store, no install, no waiting around.</span></div>
+        <div class="step"><span class="n">3</span><span class="tx"><b>Earn rewards.</b> Sign in once to save your progress and climb the global leaderboards across every game.</span></div>
+      </div>
+
+      <h3>The games</h3>
+      <p><b>RunThePitch</b> is a World Cup squad builder. Spin a nation and a year, draft a legendary player each round, assemble your dream eleven, then simulate your run through the tournament and see how far your side goes.</p>
+      <p><b>RunTheTour</b> is a 30-year golf career simulation. Draft one signature skill from the greats, build your golfer, then play season after season chasing majors, the Ryder Cup and Olympic gold as your player rises, peaks and retires.</p>
+
+      <h3>Frequently asked questions</h3>
+      <div class="faq">
+        <details><summary>Is RunThe.GG free to play?</summary><p>Yes. Every game on RunThe.GG is completely free. We keep the site free by showing ads, and we never charge you to play.</p></details>
+        <details><summary>Do I need to download anything?</summary><p>No. All of our games run right in your web browser on both desktop and mobile. There is no app to install and no sign-up wall before you can play.</p></details>
+        <details><summary>Do I need an account?</summary><p>No, you can play as a guest. A free account is optional and simply saves your progress and unlocks trophies, daily streaks and leaderboard rank that carry across every RunThe.GG game.</p></details>
+        <details><summary>Are there ads?</summary><p>Yes. RunThe.GG shows ads so the games can stay free to play. You can manage personalized advertising any time in your <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer">Google Ads Settings</a>, and our <a href="/privacy.html">Privacy Policy</a> explains what we collect and why.</p></details>
+        <details><summary>What games can I play right now?</summary><p>Today you can play RunThePitch (a World Cup game) and RunTheTour (a golf career game), with more free sports games in development.</p></details>
+      </div>
+    </section>
 
     <footer class="foot">
       <span class="follow"><a href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">Follow <b>@RunTheGG</b> on X for news &amp; updates</a></span>
