@@ -1,0 +1,1904 @@
+{
+ "_note": "Per-course skill multipliers measured from DataGolf historical SG (spread-ratio of each SG category vs tour-wide, gain 2.3, clamp 0.82-1.35). dist & acc share the measured DRIVING multiplier; the distance-vs-accuracy split is a DataGolf course-fit (B) refinement - see driving_split:B and dist_tilt_hint. clu always 1.0. Apply: reweight skills by mult, renormalize to 1.0, feed event-effective overall to sim. Courses not listed (thin/new) -> 1.0 or DataGolf pull. Major venues (source=expert) are reputation-based per-venue character; they will be replaced by measured fit when 2019-2026 SG is pulled. Recent major venues (2019-26) flipped from expert to measured where SG sample sufficed; remaining majors keep expert character as floor.",
+ "courses": {
+  "CC at Mirasol (Sunset)": {
+   "rounds": 425,
+   "mult": {
+    "dist": 1.29,
+    "acc": 1.29,
+    "app": 1.068,
+    "sht": 1.35,
+    "scr": 1.35,
+    "bnk": 1.35,
+    "put": 1.272,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "PGA National (Champion)": {
+   "rounds": 5196,
+   "mult": {
+    "dist": 1.002,
+    "acc": 1.002,
+    "app": 1.276,
+    "sht": 0.978,
+    "scr": 0.978,
+    "bnk": 0.978,
+    "put": 0.964,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.36,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "TPC Sawgrass": {
+   "rounds": 6567,
+   "mult": {
+    "dist": 1.227,
+    "acc": 1.227,
+    "app": 1.257,
+    "sht": 1.13,
+    "scr": 1.13,
+    "bnk": 1.13,
+    "put": 0.995,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.37,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Harbour Town GL": {
+   "rounds": 6204,
+   "mult": {
+    "dist": 0.993,
+    "acc": 0.993,
+    "app": 1.179,
+    "sht": 1.183,
+    "scr": 1.183,
+    "bnk": 1.183,
+    "put": 0.959,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.39,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Forest Oaks CC": {
+   "rounds": 1311,
+   "mult": {
+    "dist": 1.035,
+    "acc": 1.035,
+    "app": 0.82,
+    "sht": 0.848,
+    "scr": 0.848,
+    "bnk": 0.848,
+    "put": 0.968,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Sedgefield CC": {
+   "rounds": 5047,
+   "mult": {
+    "dist": 1.054,
+    "acc": 1.054,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.975,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.36,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Plantation Course at Kapalua": {
+   "rounds": 1709,
+   "mult": {
+    "dist": 0.923,
+    "acc": 0.923,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.918,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.6,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "TPC Four Seasons Resort": {
+   "rounds": 5537,
+   "mult": {
+    "dist": 1.35,
+    "acc": 1.35,
+    "app": 0.894,
+    "sht": 1.042,
+    "scr": 1.042,
+    "bnk": 1.042,
+    "put": 0.979,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.41,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Trinity Forest Golf Club": {
+   "rounds": 460,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.945,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.45,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "PGA West (Palmer)": {
+   "rounds": 1933,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.033,
+    "sht": 0.946,
+    "scr": 0.946,
+    "bnk": 0.946,
+    "put": 0.987,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.24,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "The Classic Club": {
+   "rounds": 609,
+   "mult": {
+    "dist": 1.255,
+    "acc": 1.255,
+    "app": 1.053,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.004,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "PGA WEST TPC Stadium Course": {
+   "rounds": 225,
+   "mult": {
+    "dist": 1.237,
+    "acc": 1.237,
+    "app": 1.277,
+    "sht": 0.98,
+    "scr": 0.98,
+    "bnk": 0.98,
+    "put": 0.999,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.38,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "Stadium Course": {
+   "rounds": 465,
+   "mult": {
+    "dist": 1.038,
+    "acc": 1.038,
+    "app": 1.278,
+    "sht": 0.958,
+    "scr": 0.958,
+    "bnk": 0.958,
+    "put": 0.82,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.35,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "Redstone GC (Fall Creek)": {
+   "rounds": 910,
+   "mult": {
+    "dist": 0.903,
+    "acc": 0.903,
+    "app": 0.872,
+    "sht": 0.951,
+    "scr": 0.951,
+    "bnk": 0.951,
+    "put": 0.923,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Redstone GC (Tournament)": {
+   "rounds": 3541,
+   "mult": {
+    "dist": 1.35,
+    "acc": 1.35,
+    "app": 1.04,
+    "sht": 0.923,
+    "scr": 0.923,
+    "bnk": 0.923,
+    "put": 0.945,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "GC of Houston": {
+   "rounds": 2189,
+   "mult": {
+    "dist": 1.35,
+    "acc": 1.35,
+    "app": 0.835,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.93,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.27,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Colonial CC": {
+   "rounds": 5464,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.043,
+    "sht": 0.871,
+    "scr": 0.871,
+    "bnk": 0.871,
+    "put": 0.996,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.37,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Muirfield Village GC": {
+   "rounds": 5678,
+   "mult": {
+    "dist": 0.872,
+    "acc": 0.872,
+    "app": 1.269,
+    "sht": 1.298,
+    "scr": 1.298,
+    "bnk": 1.298,
+    "put": 1.102,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.32,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "TPC Southwind": {
+   "rounds": 6849,
+   "mult": {
+    "dist": 1.112,
+    "acc": 1.112,
+    "app": 1.27,
+    "sht": 1.073,
+    "scr": 1.073,
+    "bnk": 1.073,
+    "put": 0.948,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.47,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Erin Hills": {
+   "rounds": 0,
+   "mult": {
+    "dist": 1.3,
+    "acc": 0.9,
+    "app": 1.2,
+    "sht": 1.0,
+    "scr": 1.0,
+    "bnk": 1.0,
+    "put": 1.0,
+    "clu": 1.0
+   },
+   "driving_split": "set",
+   "dist_tilt_hint": null,
+   "confidence": "reputation",
+   "source": "expert (venue character)",
+   "major": "U.S. Open"
+  },
+  "Shinnecock Hills GC": {
+   "rounds": 454,
+   "mult": {
+    "dist": 0.909,
+    "acc": 0.909,
+    "app": 1.075,
+    "sht": 1.218,
+    "scr": 1.218,
+    "bnk": 1.218,
+    "put": 1.126,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.41,
+   "confidence": "medium",
+   "source": "measured+expert blend (DataGolf 2019-26)",
+   "major": "U.S. Open"
+  },
+  "Westchester CC": {
+   "rounds": 1819,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 1.35,
+    "scr": 1.35,
+    "bnk": 1.35,
+    "put": 1.182,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Ridgewood CC": {
+   "rounds": 1588,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 0.955,
+    "scr": 0.955,
+    "bnk": 0.955,
+    "put": 1.034,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.47,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Liberty National GC": {
+   "rounds": 787,
+   "mult": {
+    "dist": 1.266,
+    "acc": 1.266,
+    "app": 1.142,
+    "sht": 1.088,
+    "scr": 1.088,
+    "bnk": 1.088,
+    "put": 0.986,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Plainfield CC": {
+   "rounds": 696,
+   "mult": {
+    "dist": 0.944,
+    "acc": 0.944,
+    "app": 0.918,
+    "sht": 0.835,
+    "scr": 0.835,
+    "bnk": 0.835,
+    "put": 0.999,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.52,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Bethpage State Park (Black)": {
+   "rounds": 788,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.967,
+    "sht": 0.946,
+    "scr": 0.946,
+    "bnk": 0.946,
+    "put": 1.04,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.55,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Glen Oaks Club": {
+   "rounds": 379,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 0.995,
+    "scr": 0.995,
+    "bnk": 0.995,
+    "put": 0.971,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.57,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "Cog Hill G&CC": {
+   "rounds": 2491,
+   "mult": {
+    "dist": 0.903,
+    "acc": 0.903,
+    "app": 1.041,
+    "sht": 0.996,
+    "scr": 0.996,
+    "bnk": 0.996,
+    "put": 0.969,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Bellerive CC": {
+   "rounds": 744,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.995,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.941,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.49,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Crooked Stick GC": {
+   "rounds": 555,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.94,
+    "sht": 0.965,
+    "scr": 0.965,
+    "bnk": 0.965,
+    "put": 0.898,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.44,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "Conway Farms GC": {
+   "rounds": 832,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.979,
+    "sht": 0.988,
+    "scr": 0.988,
+    "bnk": 0.988,
+    "put": 0.906,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.29,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Cherry Hills CC": {
+   "rounds": 269,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.958,
+    "sht": 0.909,
+    "scr": 0.909,
+    "bnk": 0.909,
+    "put": 0.82,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "Aronimink GC": {
+   "rounds": 476,
+   "mult": {
+    "dist": 0.864,
+    "acc": 0.864,
+    "app": 1.071,
+    "sht": 1.108,
+    "scr": 1.108,
+    "bnk": 1.108,
+    "put": 1.047,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.57,
+   "confidence": "medium",
+   "source": "measured+expert blend (DataGolf 2019-26)",
+   "major": "PGA Championship"
+  },
+  "TPC Scottsdale": {
+   "rounds": 6153,
+   "mult": {
+    "dist": 1.249,
+    "acc": 1.249,
+    "app": 0.82,
+    "sht": 0.987,
+    "scr": 0.987,
+    "bnk": 0.987,
+    "put": 1.014,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.3,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "TPC Deere Run": {
+   "rounds": 6839,
+   "mult": {
+    "dist": 0.925,
+    "acc": 0.925,
+    "app": 0.938,
+    "sht": 0.832,
+    "scr": 0.832,
+    "bnk": 0.832,
+    "put": 0.958,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.45,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Glen Abbey GC": {
+   "rounds": 3666,
+   "mult": {
+    "dist": 1.136,
+    "acc": 1.136,
+    "app": 1.221,
+    "sht": 1.147,
+    "scr": 1.147,
+    "bnk": 1.147,
+    "put": 0.986,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.44,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Shaughnessy G&CC": {
+   "rounds": 915,
+   "mult": {
+    "dist": 1.285,
+    "acc": 1.285,
+    "app": 1.035,
+    "sht": 1.167,
+    "scr": 1.167,
+    "bnk": 1.167,
+    "put": 1.014,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Hamilton G&CC": {
+   "rounds": 929,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 0.906,
+    "scr": 0.906,
+    "bnk": 0.906,
+    "put": 1.016,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Angus Glen GC (North)": {
+   "rounds": 462,
+   "mult": {
+    "dist": 1.324,
+    "acc": 1.324,
+    "app": 0.952,
+    "sht": 0.875,
+    "scr": 0.875,
+    "bnk": 0.875,
+    "put": 0.972,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "St. George's G&CC": {
+   "rounds": 462,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.921,
+    "sht": 0.851,
+    "scr": 0.851,
+    "bnk": 0.851,
+    "put": 1.019,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "Royal Montreal GC (Blue)": {
+   "rounds": 455,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.955,
+    "sht": 0.956,
+    "scr": 0.956,
+    "bnk": 0.956,
+    "put": 0.882,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "Valhalla GC": {
+   "rounds": 465,
+   "mult": {
+    "dist": 1.124,
+    "acc": 1.124,
+    "app": 1.215,
+    "sht": 1.11,
+    "scr": 1.11,
+    "bnk": 1.11,
+    "put": 1.082,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.56,
+   "confidence": "medium",
+   "source": "measured+expert blend (DataGolf 2019-26)",
+   "major": "PGA Championship"
+  },
+  "Whistling Straits": {
+   "rounds": 464,
+   "mult": {
+    "dist": 0.981,
+    "acc": 0.981,
+    "app": 1.123,
+    "sht": 1.35,
+    "scr": 1.35,
+    "bnk": 1.35,
+    "put": 1.111,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.52,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "Baltusrol GC": {
+   "rounds": 484,
+   "mult": {
+    "dist": 0.859,
+    "acc": 0.859,
+    "app": 0.914,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.873,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.39,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "Quail Hollow-PGA Championship": {
+   "rounds": 459,
+   "mult": {
+    "dist": 1.35,
+    "acc": 1.35,
+    "app": 1.103,
+    "sht": 1.35,
+    "scr": 1.35,
+    "bnk": 1.35,
+    "put": 1.049,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.57,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "TPC River Highlands": {
+   "rounds": 6911,
+   "mult": {
+    "dist": 1.243,
+    "acc": 1.243,
+    "app": 0.897,
+    "sht": 1.046,
+    "scr": 1.046,
+    "bnk": 1.046,
+    "put": 0.987,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.33,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Torrey Pines GC (South)": {
+   "rounds": 4568,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.008,
+    "sht": 1.081,
+    "scr": 1.081,
+    "bnk": 1.081,
+    "put": 1.069,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.47,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "LaCantera GC (Resort)": {
+   "rounds": 2594,
+   "mult": {
+    "dist": 1.312,
+    "acc": 1.312,
+    "app": 0.937,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.024,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "TPC San Antonio": {
+   "rounds": 1794,
+   "mult": {
+    "dist": 1.104,
+    "acc": 1.104,
+    "app": 1.046,
+    "sht": 1.253,
+    "scr": 1.253,
+    "bnk": 1.253,
+    "put": 0.942,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "JW Marriott TPC San Antonio": {
+   "rounds": 862,
+   "mult": {
+    "dist": 0.955,
+    "acc": 0.955,
+    "app": 0.987,
+    "sht": 1.35,
+    "scr": 1.35,
+    "bnk": 1.35,
+    "put": 1.018,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.34,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "TPC San Antonio - AT&T Oaks": {
+   "rounds": 1381,
+   "mult": {
+    "dist": 1.088,
+    "acc": 1.088,
+    "app": 0.92,
+    "sht": 1.198,
+    "scr": 1.198,
+    "bnk": 1.198,
+    "put": 0.926,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.31,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Grayhawk GC (Raptor)": {
+   "rounds": 1237,
+   "mult": {
+    "dist": 0.916,
+    "acc": 0.916,
+    "app": 0.973,
+    "sht": 0.984,
+    "scr": 0.984,
+    "bnk": 0.984,
+    "put": 0.985,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "CordeValle GC": {
+   "rounds": 1637,
+   "mult": {
+    "dist": 1.063,
+    "acc": 1.063,
+    "app": 0.919,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.135,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Silverado CC (North)": {
+   "rounds": 877,
+   "mult": {
+    "dist": 0.86,
+    "acc": 0.86,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.994,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.43,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Silverado Resort and Spa North": {
+   "rounds": 1312,
+   "mult": {
+    "dist": 0.891,
+    "acc": 0.891,
+    "app": 0.842,
+    "sht": 0.978,
+    "scr": 0.978,
+    "bnk": 0.978,
+    "put": 1.009,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.39,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "TPC Summerlin": {
+   "rounds": 5762,
+   "mult": {
+    "dist": 0.853,
+    "acc": 0.853,
+    "app": 0.967,
+    "sht": 1.062,
+    "scr": 1.062,
+    "bnk": 1.062,
+    "put": 1.047,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.4,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Congressional CC (Blue)": {
+   "rounds": 2668,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.038,
+    "sht": 0.96,
+    "scr": 0.96,
+    "bnk": 0.96,
+    "put": 1.062,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.53,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Robert Trent Jones GC": {
+   "rounds": 390,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.123,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.075,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.4,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "TPC Potomac at Avenel Farm": {
+   "rounds": 770,
+   "mult": {
+    "dist": 1.35,
+    "acc": 1.35,
+    "app": 1.059,
+    "sht": 1.043,
+    "scr": 1.043,
+    "bnk": 1.043,
+    "put": 0.82,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.43,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Mount Juliet": {
+   "rounds": 272,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.937,
+    "sht": 0.892,
+    "scr": 0.892,
+    "bnk": 0.892,
+    "put": 1.08,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "Harding Park GC": {
+   "rounds": 280,
+   "mult": {
+    "dist": 1.036,
+    "acc": 1.036,
+    "app": 0.82,
+    "sht": 1.198,
+    "scr": 1.198,
+    "bnk": 1.198,
+    "put": 1.069,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "The Grove": {
+   "rounds": 242,
+   "mult": {
+    "dist": 1.016,
+    "acc": 1.016,
+    "app": 0.82,
+    "sht": 0.872,
+    "scr": 0.872,
+    "bnk": 0.872,
+    "put": 1.066,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "Doral Golf Resort and Spa": {
+   "rounds": 921,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.018,
+    "sht": 1.119,
+    "scr": 1.119,
+    "bnk": 1.119,
+    "put": 0.953,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "TPC Blue Monster at Doral": {
+   "rounds": 1089,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.08,
+    "sht": 1.005,
+    "scr": 1.005,
+    "bnk": 1.005,
+    "put": 0.895,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Trump National Doral": {
+   "rounds": 824,
+   "mult": {
+    "dist": 1.35,
+    "acc": 1.35,
+    "app": 1.224,
+    "sht": 1.171,
+    "scr": 1.171,
+    "bnk": 1.171,
+    "put": 0.848,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.44,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Club de Golf Chapultepec": {
+   "rounds": 560,
+   "mult": {
+    "dist": 1.229,
+    "acc": 1.229,
+    "app": 1.078,
+    "sht": 1.048,
+    "scr": 1.048,
+    "bnk": 1.048,
+    "put": 1.057,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.46,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "Westin Innisbrook (Copperhead)": {
+   "rounds": 1205,
+   "mult": {
+    "dist": 0.83,
+    "acc": 0.83,
+    "app": 0.966,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.023,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Innisbrook Resort (Copperhead)": {
+   "rounds": 5251,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.949,
+    "sht": 0.948,
+    "scr": 0.948,
+    "bnk": 0.948,
+    "put": 0.949,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.34,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Firestone CC (South)": {
+   "rounds": 4508,
+   "mult": {
+    "dist": 0.862,
+    "acc": 0.862,
+    "app": 0.987,
+    "sht": 0.974,
+    "scr": 0.974,
+    "bnk": 0.974,
+    "put": 1.008,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.57,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Quail Hollow Club": {
+   "rounds": 6461,
+   "mult": {
+    "dist": 1.2,
+    "acc": 1.2,
+    "app": 0.956,
+    "sht": 1.062,
+    "scr": 1.062,
+    "bnk": 1.062,
+    "put": 1.09,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.44,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Eagle Point Golf Club": {
+   "rounds": 461,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 1.03,
+    "scr": 1.03,
+    "bnk": 1.03,
+    "put": 1.053,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.46,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "The Old White Course": {
+   "rounds": 472,
+   "mult": {
+    "dist": 1.217,
+    "acc": 1.217,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.038,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "The Old White TPC": {
+   "rounds": 3240,
+   "mult": {
+    "dist": 1.169,
+    "acc": 1.169,
+    "app": 0.82,
+    "sht": 0.896,
+    "scr": 0.896,
+    "bnk": 0.896,
+    "put": 0.988,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.38,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Sea Island Resort (Seaside)": {
+   "rounds": 2987,
+   "mult": {
+    "dist": 1.151,
+    "acc": 1.151,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.912,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.25,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Sea Island GC (Seaside)": {
+   "rounds": 311,
+   "mult": {
+    "dist": 1.03,
+    "acc": 1.03,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.961,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.26,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "Pebble Beach GL": {
+   "rounds": 3406,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.153,
+    "sht": 1.137,
+    "scr": 1.137,
+    "bnk": 1.137,
+    "put": 1.088,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.27,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "TPC Boston": {
+   "rounds": 5595,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.068,
+    "sht": 1.029,
+    "scr": 1.029,
+    "bnk": 1.029,
+    "put": 0.973,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.34,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "RTJ Trail (Grand National)": {
+   "rounds": 1251,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.199,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.945,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.49,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Keene Trace Golf Club": {
+   "rounds": 402,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.16,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.039,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.53,
+   "confidence": "low",
+   "source": "measured (DataGolf SG)"
+  },
+  "Annandale GC": {
+   "rounds": 3694,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.021,
+    "sht": 0.86,
+    "scr": 0.86,
+    "bnk": 0.86,
+    "put": 1.026,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": null,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "CC of Jackson": {
+   "rounds": 2041,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 0.884,
+    "scr": 0.884,
+    "bnk": 0.884,
+    "put": 1.027,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.47,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Waialae CC": {
+   "rounds": 6551,
+   "mult": {
+    "dist": 1.044,
+    "acc": 1.044,
+    "app": 0.82,
+    "sht": 0.87,
+    "scr": 0.87,
+    "bnk": 0.87,
+    "put": 0.968,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.57,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "East Lake GC": {
+   "rounds": 1767,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.861,
+    "sht": 0.857,
+    "scr": 0.857,
+    "bnk": 0.857,
+    "put": 0.968,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.31,
+   "confidence": "medium",
+   "source": "measured (DataGolf SG)"
+  },
+  "Riviera CC": {
+   "rounds": 6381,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.844,
+    "sht": 1.251,
+    "scr": 1.251,
+    "bnk": 1.251,
+    "put": 1.069,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.49,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Bay Hill Club & Lodge": {
+   "rounds": 5805,
+   "mult": {
+    "dist": 1.173,
+    "acc": 1.173,
+    "app": 1.206,
+    "sht": 0.979,
+    "scr": 0.979,
+    "bnk": 0.979,
+    "put": 0.973,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.4,
+   "confidence": "high",
+   "source": "measured (DataGolf SG)"
+  },
+  "Augusta National GC": {
+   "rounds": 1726,
+   "mult": {
+    "dist": 1.137,
+    "acc": 1.137,
+    "app": 1.141,
+    "sht": 1.339,
+    "scr": 1.339,
+    "bnk": 1.339,
+    "put": 0.976,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.51,
+   "confidence": "high",
+   "source": "measured (DataGolf 2019-26)",
+   "major": "Masters"
+  },
+  "Oakmont CC": {
+   "rounds": 444,
+   "mult": {
+    "dist": 1.262,
+    "acc": 1.262,
+    "app": 1.191,
+    "sht": 1.4,
+    "scr": 1.4,
+    "bnk": 1.4,
+    "put": 1.194,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.41,
+   "confidence": "medium",
+   "source": "measured+expert blend (DataGolf 2019-26)",
+   "major": "U.S. Open"
+  },
+  "Pinehurst No. 2": {
+   "rounds": 460,
+   "mult": {
+    "dist": 0.879,
+    "acc": 0.879,
+    "app": 0.976,
+    "sht": 1.4,
+    "scr": 1.4,
+    "bnk": 1.4,
+    "put": 1.107,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.32,
+   "confidence": "medium",
+   "source": "measured+expert blend (DataGolf 2019-26)",
+   "major": "U.S. Open"
+  },
+  "Winged Foot GC (West)": {
+   "rounds": 409,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.214,
+    "sht": 1.344,
+    "scr": 1.344,
+    "bnk": 1.344,
+    "put": 1.226,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.75,
+   "confidence": "medium",
+   "source": "measured+expert blend (DataGolf 2019-26)",
+   "major": "U.S. Open"
+  },
+  "Los Angeles CC (North)": {
+   "rounds": 442,
+   "mult": {
+    "dist": 1.066,
+    "acc": 1.066,
+    "app": 1.197,
+    "sht": 1.101,
+    "scr": 1.101,
+    "bnk": 1.101,
+    "put": 1.087,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.45,
+   "confidence": "medium",
+   "source": "measured+expert blend (DataGolf 2019-26)",
+   "major": "U.S. Open"
+  },
+  "The Country Club (Brookline)": {
+   "rounds": 440,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 1.184,
+    "sht": 1.339,
+    "scr": 1.339,
+    "bnk": 1.339,
+    "put": 1.062,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.34,
+   "confidence": "medium",
+   "source": "measured+expert blend (DataGolf 2019-26)",
+   "major": "U.S. Open"
+  },
+  "Merion GC (East)": {
+   "rounds": 0,
+   "mult": {
+    "dist": 0.82,
+    "acc": 1.3,
+    "app": 1.25,
+    "sht": 1.15,
+    "scr": 1.15,
+    "bnk": 1.05,
+    "put": 1.15,
+    "clu": 1.0
+   },
+   "driving_split": "set",
+   "dist_tilt_hint": null,
+   "confidence": "reputation",
+   "source": "expert (venue character)",
+   "major": "U.S. Open"
+  },
+  "Oakland Hills CC (South)": {
+   "rounds": 0,
+   "mult": {
+    "dist": 0.95,
+    "acc": 1.3,
+    "app": 1.25,
+    "sht": 1.15,
+    "scr": 1.15,
+    "bnk": 1.05,
+    "put": 1.05,
+    "clu": 1.0
+   },
+   "driving_split": "set",
+   "dist_tilt_hint": null,
+   "confidence": "reputation",
+   "source": "expert (venue character)",
+   "major": "U.S. Open"
+  },
+  "Oak Hill CC (East)": {
+   "rounds": 464,
+   "mult": {
+    "dist": 1.179,
+    "acc": 1.179,
+    "app": 1.105,
+    "sht": 1.146,
+    "scr": 1.146,
+    "bnk": 1.146,
+    "put": 1.018,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.39,
+   "confidence": "medium",
+   "source": "measured+expert blend (DataGolf 2019-26)",
+   "major": "PGA Championship"
+  },
+  "Southern Hills CC": {
+   "rounds": 469,
+   "mult": {
+    "dist": 1.027,
+    "acc": 1.027,
+    "app": 1.199,
+    "sht": 1.203,
+    "scr": 1.203,
+    "bnk": 1.203,
+    "put": 1.118,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.56,
+   "confidence": "medium",
+   "source": "measured+expert blend (DataGolf 2019-26)",
+   "major": "PGA Championship"
+  },
+  "Kiawah Island (Ocean)": {
+   "rounds": 472,
+   "mult": {
+    "dist": 1.361,
+    "acc": 1.361,
+    "app": 1.283,
+    "sht": 1.4,
+    "scr": 1.4,
+    "bnk": 1.4,
+    "put": 1.038,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.45,
+   "confidence": "medium",
+   "source": "measured+expert blend (DataGolf 2019-26)",
+   "major": "PGA Championship"
+  },
+  "Baltusrol GC (Lower)": {
+   "rounds": 0,
+   "mult": {
+    "dist": 1.15,
+    "acc": 1.05,
+    "app": 1.2,
+    "sht": 1.0,
+    "scr": 1.0,
+    "bnk": 1.0,
+    "put": 1.05,
+    "clu": 1.0
+   },
+   "driving_split": "set",
+   "dist_tilt_hint": null,
+   "confidence": "reputation",
+   "source": "expert (venue character)",
+   "major": "PGA Championship"
+  },
+  "Olympic Club (Lake)": {
+   "rounds": 0,
+   "mult": {
+    "dist": 0.9,
+    "acc": 1.3,
+    "app": 1.2,
+    "sht": 1.15,
+    "scr": 1.15,
+    "bnk": 1.05,
+    "put": 1.05,
+    "clu": 1.0
+   },
+   "driving_split": "set",
+   "dist_tilt_hint": null,
+   "confidence": "reputation",
+   "source": "expert (venue character)",
+   "major": "PGA Championship"
+  },
+  "St Andrews (Old Course)": {
+   "rounds": 478,
+   "mult": {
+    "dist": 1.328,
+    "acc": 1.328,
+    "app": 0.85,
+    "sht": 1.113,
+    "scr": 1.113,
+    "bnk": 1.113,
+    "put": 1.265,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.49,
+   "confidence": "medium",
+   "source": "measured+expert blend (DataGolf 2019-26)",
+   "major": "The Open"
+  },
+  "Royal Portrush (Dunluce)": {
+   "rounds": 452,
+   "mult": {
+    "dist": 1.244,
+    "acc": 1.244,
+    "app": 1.057,
+    "sht": 1.127,
+    "scr": 1.127,
+    "bnk": 1.127,
+    "put": 1.016,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.47,
+   "confidence": "medium",
+   "source": "measured+expert blend (DataGolf 2019-26)",
+   "major": "The Open"
+  },
+  "Royal Liverpool (Hoylake)": {
+   "rounds": 464,
+   "mult": {
+    "dist": 1.232,
+    "acc": 1.232,
+    "app": 1.052,
+    "sht": 1.323,
+    "scr": 1.323,
+    "bnk": 1.323,
+    "put": 0.981,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.32,
+   "confidence": "medium",
+   "source": "measured+expert blend (DataGolf 2019-26)",
+   "major": "The Open"
+  },
+  "Royal Troon (Old)": {
+   "rounds": 470,
+   "mult": {
+    "dist": 1.4,
+    "acc": 1.4,
+    "app": 1.175,
+    "sht": 1.226,
+    "scr": 1.226,
+    "bnk": 1.226,
+    "put": 0.971,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.3,
+   "confidence": "medium",
+   "source": "measured+expert blend (DataGolf 2019-26)",
+   "major": "The Open"
+  },
+  "Royal St Georges GC": {
+   "rounds": 0,
+   "mult": {
+    "dist": 1.0,
+    "acc": 1.1,
+    "app": 1.15,
+    "sht": 1.25,
+    "scr": 1.3,
+    "bnk": 1.2,
+    "put": 1.05,
+    "clu": 1.0
+   },
+   "driving_split": "set",
+   "dist_tilt_hint": null,
+   "confidence": "reputation",
+   "source": "expert (venue character)",
+   "major": "The Open"
+  },
+  "Carnoustie (Championship)": {
+   "rounds": 0,
+   "mult": {
+    "dist": 0.95,
+    "acc": 1.25,
+    "app": 1.2,
+    "sht": 1.2,
+    "scr": 1.25,
+    "bnk": 1.15,
+    "put": 1.05,
+    "clu": 1.0
+   },
+   "driving_split": "set",
+   "dist_tilt_hint": null,
+   "confidence": "reputation",
+   "source": "expert (venue character)",
+   "major": "The Open"
+  },
+  "Muirfield (Scotland)": {
+   "rounds": 0,
+   "mult": {
+    "dist": 1.0,
+    "acc": 1.2,
+    "app": 1.2,
+    "sht": 1.15,
+    "scr": 1.2,
+    "bnk": 1.2,
+    "put": 1.05,
+    "clu": 1.0
+   },
+   "driving_split": "set",
+   "dist_tilt_hint": null,
+   "confidence": "reputation",
+   "source": "expert (venue character)",
+   "major": "The Open"
+  },
+  "Royal Birkdale GC": {
+   "rounds": 0,
+   "mult": {
+    "dist": 1.05,
+    "acc": 1.1,
+    "app": 1.2,
+    "sht": 1.2,
+    "scr": 1.2,
+    "bnk": 1.15,
+    "put": 1.05,
+    "clu": 1.0
+   },
+   "driving_split": "set",
+   "dist_tilt_hint": null,
+   "confidence": "reputation",
+   "source": "expert (venue character)",
+   "major": "The Open"
+  },
+  "Royal Lytham & St Annes": {
+   "rounds": 0,
+   "mult": {
+    "dist": 0.95,
+    "acc": 1.2,
+    "app": 1.15,
+    "sht": 1.2,
+    "scr": 1.2,
+    "bnk": 1.3,
+    "put": 1.05,
+    "clu": 1.0
+   },
+   "driving_split": "set",
+   "dist_tilt_hint": null,
+   "confidence": "reputation",
+   "source": "expert (venue character)",
+   "major": "The Open"
+  },
+  "Turnberry (Ailsa)": {
+   "rounds": 0,
+   "mult": {
+    "dist": 1.05,
+    "acc": 1.1,
+    "app": 1.2,
+    "sht": 1.2,
+    "scr": 1.25,
+    "bnk": 1.15,
+    "put": 1.05,
+    "clu": 1.0
+   },
+   "driving_split": "set",
+   "dist_tilt_hint": null,
+   "confidence": "reputation",
+   "source": "expert (venue character)",
+   "major": "The Open"
+  },
+  "Medinah CC (No. 3)": {
+   "rounds": 276,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.89,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 0.857,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.54,
+   "confidence": "low",
+   "source": "measured (DataGolf 2019-26)",
+   "major": "playoff/major venue"
+  },
+  "Olympia Fields (North)": {
+   "rounds": 197,
+   "mult": {
+    "dist": 0.82,
+    "acc": 0.82,
+    "app": 0.82,
+    "sht": 0.82,
+    "scr": 0.82,
+    "bnk": 0.82,
+    "put": 1.036,
+    "clu": 1.0
+   },
+   "driving_split": "B",
+   "dist_tilt_hint": 0.32,
+   "confidence": "low",
+   "source": "measured (DataGolf 2019-26)",
+   "major": "playoff/major venue"
+  }
+ }
+}

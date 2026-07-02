@@ -1,0 +1,31 @@
+{
+  "name": "Run The Tour",
+  "short_name": "Run The Tour",
+  "description": "Build a golfer and live their career — up to 40 years on tour. Majors, the Ryder Cup, the Olympics, and a legacy on the leaderboard.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#11432f",
+  "theme_color": "#11432f",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
