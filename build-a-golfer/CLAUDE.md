@@ -2966,6 +2966,27 @@ allows Google Fonts, or self-host Anton.*
   logic changed. Verified end-to-end in Playwright (homepage cards → /soccer/ + /golf/, soccer boots at
   /soccer/, challenge/watch/pitch redirect into the game) plus mobile+desktop screenshots of the homepage.
 
+- **CS95 — leaderboard "Low → High" now shows the TRUE bottom N (top 200 AND bottom 200).**
+  Owner: "when we sort from low to high, does it truly show the lowest in the database? I essentially want
+  a top 200 and bottom 200." It did not — the board RPC only ever returned the top `p_limit` rows ordered
+  by the chosen stat (desc), and the client faked low→high by `.reverse()`-ing that same fetched slice, so
+  low→high showed the lowest of the TOP 200 (e.g. rank 200 counting down), never the genuinely worst rows.
+  Fix — new migration `supabase/38_runtour_board_dir.sql` (owner-run) adds a `p_dir` param to both
+  `runtour_season_board`/`runtour_career_board`: it computes each row's rank over EVERY posted row
+  (rank() by the sorted stat desc, as before), then orders the output by `-rank` when `p_dir='asc'` so it
+  returns the true bottom N, worst-first, each carrying its real global rank (the single worst season shows
+  rank = total count, not a misleading "1"). Backward compatible: `p_dir` defaults to 'desc' (identical to
+  today) and, because it's a defaulted 3rd arg, existing 2-arg callers still resolve to it unchanged.
+  Client (`lbLoad`/`overlayLeaderboard`): low→high now fetches a SEPARATE ascending board cached under its
+  own `tab:sort:asc` key (desc keeps the legacy `tab:sort` key so the summary rank-teaser reader is
+  untouched) and displays it as-is instead of reversing the top-200. Graceful pre-migration fallback: if the
+  `p_dir` call errors (migration 38 not applied yet), it flags `legacyDir` and the overlay falls back to
+  reversing the desc top-200 — so the toggle still does the old thing until the SQL lands. Subtitle gains
+  "· the lowest in the database" on the asc view. Verified in Playwright by seeding both boards: high→low
+  shows the top (best first), low→high shows the true bottom board (worst first, real ranks, no top rows),
+  and the legacy path correctly reverses the top-200; golf/index.html re-verified booting clean, zero page
+  errors. **ACTION: run `supabase/38_runtour_board_dir.sql`.** Deployed client to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
