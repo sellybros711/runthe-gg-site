@@ -3206,6 +3206,17 @@ allows Google Fonts, or self-host Anton.*
   daily round regresses clean (the `$()` change didn't break rendering); screenshots of the Trophy Room and
   Daily Result confirm the icons render sharp and themed with correct inline alignment. Zero page errors.
 
+- **CS104 — themed the emoji-presentation arrows + fixed the backwards `$` icon.** Two follow-ups to CS103
+  from owner screenshots. (1) A few arrows (⬆ ↗ ↩) that headless Chromium rendered as plain text actually
+  render as COLOURED emoji boxes on iOS (e.g. the blue ⬆️ in the season Dispatch "climbed the money list"
+  note, and the ↗ on every Share button + the RunThePitch cross-promo pill). Added themed `arrowUp` /
+  `arrowUR` (up-right, for share/external) / `arrowLeft` (for the "back to latest hole" ↩) SVG icons and
+  mapped ⬆/↗/↩ in EMOJI_MAP so they convert like the rest; plain text arrows (→ ← ↺) and ✓/✕/★ stay as
+  text. (2) The `money` (Money Title) icon's dollar-sign path was malformed — it drew a wavy ∩∪ line that
+  read as a backwards `$`. Rewrote it as a proper S-curve + vertical bar. Verified in Playwright: ↗/⬆️/↩
+  all convert to `svg.ic` with no leftover glyph, and an enlarged icon sheet confirms the `$` and the three
+  new arrows render correctly; zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
