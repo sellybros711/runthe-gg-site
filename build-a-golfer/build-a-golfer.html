@@ -1002,14 +1002,18 @@ const REP_PERKS={ 'Amateur':[1,1], 'Journeyman':[2,1], 'Tour Pro':[2,2], 'Conten
 function repPerk(){ const p=REP_PERKS[repTier().tier.name]||[3,2]; return {changes:p[0], reSpins:p[1]}; }
 function repPerk2(name){ const p=REP_PERKS[name]||[3,2]; return {changes:p[0], reSpins:p[1]}; }   // for the next-rank teaser
 // situational-flag recorder: inc (add), max (keep largest), set (boolean/flag)
-function recordAchEvent(ev){ const s=achState(); const f=s.flags;
+// Achievements + Tour Rep are a signed-in (RunThe.GG account) feature — guests never earn, accrue, or
+// see them (the Trophy Room / leaderboard are already gated too). Both entry points below no-op for a
+// guest, so every downstream surface (season summary, daily result, career-end, toasts) naturally shows
+// nothing without each having to check sign-in itself.
+function recordAchEvent(ev){ if(!sbSignedIn()) return; const s=achState(); const f=s.flags;
   if(ev.inc) for(const k in ev.inc) f[k]=(f[k]||0)+ev.inc[k];
   if(ev.max) for(const k in ev.max) f[k]=Math.max(f[k]||0, ev.max[k]);
   if(ev.set) for(const k in ev.set) f[k]=ev.set[k];
   LS.set(acctKey('bag_ach'),s); }
 // check every achievement against current metrics; persist + return the newly-completed ones.
 // Also detects a Tour Rep PROMOTION (crossing into a higher rank) and stashes it on S.freshRep.
-function evaluateAch(){ const s=achState(); const m=achMetrics(); const fresh=[];
+function evaluateAch(){ if(!sbSignedIn()) return []; const s=achState(); const m=achMetrics(); const fresh=[];
   const beforeRank=repTierFor(s.pts||0, Object.keys(s.unlocked).length).tier.name;
   ACH.forEach(a=>{ if(!s.unlocked[a.id] && a.get(m)>=a.goal){ s.unlocked[a.id]=todayKey(); s.pts=(s.pts||0)+a.pts; fresh.push(a); } });
   if(fresh.length){
@@ -5600,11 +5604,11 @@ function scrSummary(){
     expWrap.appendChild($(`<div class="scout" style="max-width:460px;margin:8px auto 0;text-align:left">${items}</div>`));
   }
   add(expWrap);
-  if(S.freshAch&&S.freshAch.length){
+  if(sbSignedIn() && S.freshAch&&S.freshAch.length){   // Tour Rep / achievements are a signed-in feature — never shown to guests
     const gained=S.freshAch.reduce((s,a)=>s+(a.pts||0),0);
     add(seasonRepNode(achPoints()-gained, S.freshAch));   // status bar on top → achievements reveal one by one, rep climbs in sync
   }
-  if(S.freshRep){ add($(repUpHTML(S.freshRep))); }
+  if(sbSignedIn() && S.freshRep){ add($(repUpHTML(S.freshRep))); }
   // season headlines (#6): newspaper-style recap of the year's story
   const HL=(!S.daily)?seasonHeadlines({t,moneyRank,N,ec,year:S.year||1}):null;
   // five headline stats: Earnings · Profit (two money tiles) over Tour Rank · Top 10's · Wins

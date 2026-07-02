@@ -2845,6 +2845,25 @@ allows Google Fonts, or self-host Anton.*
   regression suite (final/menu, setup, daily, reset flow, null-poison fix, CS83 leaderboard, bag_career
   scoping) still green.
 
+- **CS89 — Tour Rep / achievements must never surface for guests.**
+  Owner reported a signed-OUT player seeing a full "Tour Rep · STAR · 6065 pts" bar and an "Achievements
+  unlocked" block on the season summary. Achievements/Tour Rep are a signed-in (RunThe.GG account) feature —
+  the Trophy Room and leaderboard already gate guests, but the season summary (and, by the same code,
+  the daily-result and career-end screens + rank-up toasts) still ran the achievement engine and rendered
+  its rewards for anyone.
+  Fixed at the source rather than per-surface: `recordAchEvent()` now no-ops and `evaluateAch()` returns
+  `[]` when `!sbSignedIn()`, so a guest never accrues rep/achievements and every downstream surface
+  (which all key off `S.freshAch`/`S.freshRep`/`achPoints()`) naturally shows nothing without each needing
+  its own sign-in check. Added a belt-and-suspenders `sbSignedIn()` guard on the two summary display lines
+  too. Signed-in behavior is completely unchanged (the guard passes). Any stale guest points already in
+  localStorage are left untouched (could be the signed-out state of a previously-signed-in account on a
+  shared browser) — they simply never surface now.
+  Verified in Playwright: a guest season summary shows no Tour Rep bar, no "Achievements unlocked", and no
+  rep-promotion card, while a signed-in summary still shows all of it; and at the engine level a guest's
+  `evaluateAch()`/`recordAchEvent()` are no-ops (fresh count 0, points stay 0) even when a metric would
+  qualify, while the same calls work once signed in. Full regression suite (final/menu, daily, reset flow,
+  caddies) still green.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
