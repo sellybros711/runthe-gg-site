@@ -1122,7 +1122,8 @@
   /* ---------- minigame: order-by-stat (spatial / logic) ---------- */
   function mgOrder(t){
     var target = sortedLabels(t);
-    S.ord={ target:target, placed:[] };
+    var val={}; t.items.forEach(function(it){ val[it.label]=it.value; });
+    S.ord={ target:target, placed:[], val:val };
     renderOrder(t);
   }
   function sortedLabels(t){
@@ -1157,7 +1158,8 @@
     if(S.play.done || S.ord.placed.indexOf(label)>=0) return;
     var nextCorrect = S.ord.target[S.ord.placed.length];
     var el=document.querySelector('.oitem[data-l="'+label.replace(/"/g,'')+'"]');
-    if(label===nextCorrect){
+    // accept exact match OR a tie (equal stat value) so tied cities aren't unfair
+    if(label===nextCorrect || S.ord.val[label]===S.ord.val[nextCorrect]){
       S.ord.placed.push(label);
       // update the tapped row IN PLACE (no full re-render → no dropped taps)
       if(el){ el.classList.add('placed'); var num=el.querySelector('.num'); if(num){ num.textContent=S.ord.placed.length; num.classList.add('on'); } }
@@ -1234,53 +1236,56 @@
   }
 
   /* ---------- minigame: Whack-A-Landmark (reflex) ---------- */
+  // grid built ONCE; cells update via textContent so taps are never dropped mid-render
   function mgWhack(t){
     S.wk={ hits:0, need:5, cells:[null,null,null,null,null,null,null,null,null], timer:null };
-    renderWhack(t);
-    S.wk.timer=setInterval(function(){ tickWhack(t); }, 820); tickWhack(t);
-  }
-  function renderWhack(t){
-    if(!$('mg')) return;
-    var cells=S.wk.cells.map(function(c,i){ return '<div class="seqtile wkc" data-i="'+i+'">'+(c||'')+'</div>'; }).join('');
-    $('mg').innerHTML='<div class="seqstatus">Hits <b>'+S.wk.hits+'</b>/'+S.wk.need+'</div>'
+    var cells=''; for(var i=0;i<9;i++){ cells+='<div class="seqtile wkc" data-i="'+i+'"></div>'; }
+    $('mg').innerHTML='<div class="seqstatus" id="wkst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div class="seqgrid" style="max-width:260px;margin:8px auto 0">'+cells+'</div>';
     each('.wkc', function(b){ b.onclick=function(){ whackTap(t, +b.getAttribute('data-i')); }; });
+    wkStatus(); S.wk.timer=setInterval(function(){ tickWhack(t); }, 820); tickWhack(t);
   }
+  function wkStatus(){ var e=$('wkst'); if(e) e.innerHTML='Hits <b>'+S.wk.hits+'</b>/'+S.wk.need; }
+  function wkCell(i){ return document.querySelector('.wkc[data-i="'+i+'"]'); }
+  function wkPaint(){ for(var i=0;i<9;i++){ var el=wkCell(i); if(el) el.textContent=S.wk.cells[i]||''; } }
   function tickWhack(t){
-    if(S.play.done || !$('mg')){ clearInterval(S.wk.timer); return; }
+    if(S.play.done || !$('wkst')){ clearInterval(S.wk.timer); return; }
     var cells=[null,null,null,null,null,null,null,null,null];
     var idx=shuffle([0,1,2,3,4,5,6,7,8]);
     cells[idx[0]]=t.target;
     var nd=2+Math.floor(Math.random()*2);
     for(var k=1;k<=nd;k++){ cells[idx[k]]=t.decoys[(k-1)%t.decoys.length]; }
-    S.wk.cells=cells; renderWhack(t);
+    S.wk.cells=cells; wkPaint();
   }
   function whackTap(t,i){
     if(S.play.done) return;
     var c=S.wk.cells[i]; if(!c) return;
-    if(c===t.target){ S.wk.hits++; S.wk.cells[i]=null;
+    if(c===t.target){ S.wk.hits++; S.wk.cells[i]=null; var el=wkCell(i); if(el) el.textContent=''; wkStatus();
       if(S.wk.hits>=S.wk.need){ S.play.done=true; clearInterval(S.wk.timer); finishTask(); return; }
-      renderWhack(t);
-    } else { S.play.misses++; showMiss(); S.wk.cells[i]=null; renderWhack(t); }
+    } else { S.play.misses++; showMiss(); S.wk.cells[i]=null; var el2=wkCell(i); if(el2) el2.textContent=''; }
   }
 
   /* ---------- minigame: Quick Tap (reflex) ---------- */
-  function mgTargetTap(t){ S.tt={ hits:0, need:6 }; renderTT(t); }
-  function renderTT(t){
-    var x=10+Math.floor(Math.random()*80), y=12+Math.floor(Math.random()*70);
-    $('mg').innerHTML='<div class="seqstatus">Hits <b>'+S.tt.hits+'</b>/'+S.tt.need+'</div>'
+  // box + target built ONCE; hits just move the existing target (no rebuild → a
+  // fast follow-up tap can't accidentally land on the background as a miss)
+  function mgTargetTap(t){
+    S.tt={ hits:0, need:6 };
+    $('mg').innerHTML='<div class="seqstatus" id="ttst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div id="ttbox" style="position:relative;height:210px;border-radius:16px;border:1px solid var(--cardb);background:rgba(255,255,255,.04);overflow:hidden">'
-      + '<div id="ttgt" style="position:absolute;left:'+x+'%;top:'+y+'%;font-size:42px;cursor:pointer;transform:translate(-50%,-50%);transition:left .05s,top .05s">'+t.target+'</div></div>';
+      + '<div id="ttgt" style="position:absolute;font-size:42px;cursor:pointer;transform:translate(-50%,-50%);transition:left .06s,top .06s">'+t.target+'</div></div>';
     $('ttgt').onclick=function(ev){ if(ev.stopPropagation)ev.stopPropagation(); ttHit(t); };
     $('ttbox').onclick=function(){ if(S.play.done) return; S.play.misses++; showMiss(); };
+    ttStatus(); ttMove();
   }
+  function ttStatus(){ var e=$('ttst'); if(e) e.innerHTML='Hits <b>'+S.tt.hits+'</b>/'+S.tt.need; }
+  function ttMove(){ var g=$('ttgt'); if(g){ g.style.left=(10+Math.floor(Math.random()*80))+'%'; g.style.top=(12+Math.floor(Math.random()*70))+'%'; } }
   function ttHit(t){
     if(S.play.done) return;
-    S.tt.hits++;
+    S.tt.hits++; ttStatus();
     if(S.tt.hits>=S.tt.need){ S.play.done=true; finishTask(); return; }
-    renderTT(t);
+    ttMove();
   }
 
   /* ---------- minigame: Find It On The Map (spatial, distance-scored) ---------- */
