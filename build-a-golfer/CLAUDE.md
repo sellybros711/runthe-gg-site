@@ -3249,6 +3249,57 @@ allows Google Fonts, or self-host Anton.*
   path resumes into the off-season at the advanced year; mid-season resume still lands in the season at the
   right event; and a legacy save with no `resumeScreen` still falls through to the next-off-season behaviour.
 
+- **CS106 — Global-launch readiness batch (owner: "make sure it's ready to market worldwide… don't change
+  anything about the function of the games themselves").** Ran a 5-lens audit (backend/scale, client/perf,
+  SEO/analytics, legal/compliance, hosting) via parallel subagents + direct checks, reconciled every finding
+  against the LIVE `main` branch (several SEO "problems" were feature-branch artifacts — `/golf/`, the hub,
+  `og.png`, `ads.txt` all exist and are correct on main), then implemented the code/infra fixes that are in
+  our control. **Strictly no gameplay/sim/screen-logic changes** — loading, analytics, compliance, and infra
+  only. Shipped:
+  - **Front-paint fix (was the worst first-impression risk).** The Supabase CDN `<script>` was parser-blocking
+    with no `defer` — measured ~13 s blank screen when the CDN was slow/unreachable. Added `defer`; since the
+    inline app script calls `sbInit()` during parse (when `window.supabase` may not exist yet), guarded it:
+    `if(window.supabase&&window.supabase.createClient) sbInit(); else addEventListener('DOMContentLoaded', sbInit)`
+    (deferred scripts run before DOMContentLoaded, so accounts/leaderboard still initialize — verified in
+    Playwright that `sb` is ready with the script present, and the page still renders offline-safe without it).
+    Also made the Google Fonts stylesheet non-blocking (`media="print" onload="this.media='all'"` + `<noscript>`
+    fallback); the existing fallback stacks + `display=swap` mean text is always visible.
+  - **GA4 analytics scaffold + `track()` forward.** Added an inert-until-configured gtag scaffold
+    (`window.GA_ID='G-XXXXXXXXXX'`) to golf, the hub, and soccer. While it's the placeholder it makes **no**
+    network call and defines no `gtag` (verified). The golf `track()` (58 existing events) now forwards to
+    `gtag('event', …)` when configured. **ACTION (owner): set `GA_ID` to your real GA4 Measurement ID in all
+    three files to activate** — nothing else needed; acquisition/retention/conversion then flow to GA4, and
+    you can mark `game_start`/`sim_complete` as conversions for ad optimization. (An untracked launch wastes
+    ad spend — this was the #1 marketing blocker.)
+  - **`robots.txt` + `sitemap.xml`** added at the domain root on `main` (hub, golf, soccer, legal pages) so a
+    brand-new domain indexes cleanly.
+  - **"Olympics" → generic rename (trademark scrub).** The IOC has statutory protection over "Olympic(s)"
+    that a disclaimer doesn't cure. Renamed all **user-facing** text: the event "Olympic Games" → **"The
+    Games"**, medals shown as plain Gold/Silver/Bronze Medal, meta/OG/About/How-to copy → "international
+    medals", the not-affiliated disclaimer de-listed "the Olympics", the country label → "for the Games", and
+    the podium/selection/summary/live-screen labels. **Deliberately left every code identifier and comment**
+    (`evt.olympics`, `olympicMedals`, `OLYMPICS_EVT`, `isOlympicYear`, `olympicField`, achievement `id`s, etc.)
+    so save data, achievements, and logic are byte-for-byte unaffected — only display strings changed. Also
+    left **"The Olympic Club"** (a real U.S. Open golf course in the daily-course data) as-is: it's a factual
+    real venue name, not the Games/IOC brand.
+  - **`supabase/39_runtour_launch_hardening.sql`** (owner-run): (1) profanity-sanitize the public
+    `golfer_name` — new `runtour_clean_name()` (reuses the 29 blocklist, no username-format rule so spaces are
+    fine) that falls back to "Your Golfer" on a blocked name rather than rejecting the season; wired into
+    `runtour_submit_season` (guests are already hardcoded "Guest Player"). (2) Clamp `wins`/`majors` to 40/10
+    per season (a real season can't exceed ~24 events / ~5 majors) in both the signed-in and guest submit RPCs
+    — kills the forged `wins:1e6` board-takeover. (3) Add indexes for the board sort columns
+    (net/wins/majors/ovr/rep) + `(user_id, career_id)` for the career-board grouping. Validated end-to-end
+    against a local Postgres: clean names kept, profanity/leetspeak/spaced-evasion sanitized, forged
+    wins/majors clamped, legit seasons untouched, all 6 indexes create, idempotent on re-run. **ACTION: run
+    `supabase/39_runtour_launch_hardening.sql`.**
+  - **Documented owner-only launch blockers** (can't be closed in code): confirm the AdSense **CMP is
+    Published** for EEA/UK + US states before EU ad traffic; front the domain with **Cloudflare (free)** —
+    GitHub Pages has a 100 GB/mo soft cap and prohibits high-traffic/commercial hosting; add an **age gate**
+    (COPPA/GDPR-K) with accounts + personalized ads; and have counsel glance at the remaining trademark list
+    (Ryder/Presidents Cup, Masters/Augusta). Also flagged (not yet done): privacy/terms GDPR/CCPA gaps, i18n
+    (English-only/USD), a11y (no `alt` text; a few pill buttons keyboard-unreachable), a service worker for a
+    real update path, and per-request board caching/materialization for very large scale.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

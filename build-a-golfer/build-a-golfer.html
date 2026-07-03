@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <!-- RunTheTour, solo season · v2 · RunThePitch skin -->
 <title>Run The Tour · A 30-Year Golf Career Simulation · RunThe.GG</title>
-<meta name="description" content="Draft one skill from each of golf's greatest, build your own player, then live their career, up to 30 years on tour. Chase majors, the Ryder Cup, the Presidents Cup and Olympic medals, climb the World Ranking, and watch your golfer rise, peak and retire a legend. A free RunThe.GG game.">
+<meta name="description" content="Draft one skill from each of golf's greatest, build your own player, then live their career, up to 30 years on tour. Chase majors, the Ryder Cup, the Presidents Cup and international medals, climb the World Ranking, and watch your golfer rise, peak and retire a legend. A free RunThe.GG game.">
 <meta name="theme-color" content="#11432f">
 <link rel="canonical" href="https://runthe.gg/golf/">
 <!-- Open Graph / Twitter. Absolute URLs for the runthe.gg/golf deploy; og.png sits beside this file. -->
@@ -13,14 +13,14 @@
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/golf/">
 <meta property="og:title" content="Run The Tour, A 30-Year Career Simulation">
-<meta property="og:description" content="Build a golfer, then live their career. Up to 30 years on tour: majors, the Ryder Cup, the Olympics, and a legacy on the leaderboard.">
+<meta property="og:description" content="Build a golfer, then live their career. Up to 30 years on tour: majors, the Ryder Cup, the Games, and a legacy on the leaderboard.">
 <meta property="og:image" content="https://runthe.gg/golf/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Run The Tour, a 30-year golf career simulation">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Tour, A 30-Year Career Simulation">
-<meta name="twitter:description" content="Build a golfer, then live their career. Up to 30 years on tour: majors, the Ryder Cup, the Olympics, and a legacy on the leaderboard.">
+<meta name="twitter:description" content="Build a golfer, then live their career. Up to 30 years on tour: majors, the Ryder Cup, the Games, and a legacy on the leaderboard.">
 <meta name="twitter:image" content="https://runthe.gg/golf/og.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 76'%3E%3Cpath d='M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z' fill='%2311432f' stroke='%23cda24a' stroke-width='3'/%3E%3Cpath d='M26 17 v36' stroke='%23e9d8ac' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M26 18 h16 l-4 5 4 5 h-16 z' fill='%23EBA61F'/%3E%3Cellipse cx='32' cy='57' rx='17' ry='5.4' fill='none' stroke='%23cda54a' stroke-width='1.6'/%3E%3Ccircle cx='38' cy='57' r='2.2' fill='%23f4ecd9'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -32,13 +32,30 @@
 <meta name="application-name" content="Run The Tour">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet">
-<!-- RunThe.GG accounts + public leaderboard (same Supabase project as RunThePitch; optional, fails open) -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<!-- Fonts load NON-BLOCKING (print-media swap) so a slow/blocked Google Fonts CDN can't hold up first
+     paint. Fallback stacks + display=swap mean text is always visible; the web fonts just upgrade in
+     when they arrive. <noscript> keeps them for no-JS clients. -->
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Cinzel:wght@600;700&display=swap" rel="stylesheet"></noscript>
+<!-- RunThe.GG accounts + public leaderboard (same Supabase project as RunThePitch; optional, fails open).
+     `defer`ed so a slow/blocked CDN can't parser-block first paint; sbInit() waits for it (see end of script). -->
+<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <!-- Google AdSense (same publisher as the rest of runthe.gg). Consent for EEA/UK/CH + US states is
      handled by Google's certified "Privacy & messaging" CMP, configured in the AdSense dashboard and
      served automatically with this tag, no extra consent code needed on the page. -->
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+<!-- Analytics (GA4). Set GA_ID to your Measurement ID (G-XXXXXXXXXX) to activate. While it's the
+     placeholder it stays fully INERT (no gtag.js request, no cookies) so nothing ships broken. Once a
+     real ID is set, gtag.js loads and the game's existing track() events forward automatically. -->
+<script>
+window.GA_ID='G-XXXXXXXXXX';
+(function(){var id=window.GA_ID; if(!id||id.indexOf('G-')!==0||/X{4,}/.test(id)) return;
+  window.dataLayer=window.dataLayer||[]; window.gtag=function(){dataLayer.push(arguments);};
+  gtag('js',new Date()); gtag('config',id);
+  var s=document.createElement('script'); s.async=true;
+  s.src='https://www.googletagmanager.com/gtag/js?id='+encodeURIComponent(id);
+  document.head.appendChild(s);})();
+</script>
 <style>
   :root{
     --cream:#F4E8D6; --peach:#F7DCCC;
@@ -530,7 +547,8 @@ const RESET_ENABLED=false;   // ← flip to true at launch (with a fresh RESET_E
    draft_started/completed, respin_used, legendary_pulled, season_started/finished,
    daily_started/completed, result_shared/saved/copied. */
 function track(ev,props){try{(window.dataLayer=window.dataLayer||[]).push(Object.assign({event:'rtt_'+ev},props||{}));
-  window.dispatchEvent(new CustomEvent('rtt:'+ev,{detail:props||{}}));}catch(e){}}
+  window.dispatchEvent(new CustomEvent('rtt:'+ev,{detail:props||{}}));
+  if(typeof window.gtag==='function') window.gtag('event',ev,props||{});}catch(e){}}   // forward to GA4 when configured (inert otherwise)
 /* ============ Themed inline-SVG icons (replace emoji in the UI) ============
    Minimal line/fill icons on a 24x24 grid, drawn in `currentColor` so each one inherits the themed colour
    of the text it sits in (gold/cream/teal), except metals (medals/jacket) which bake their own colour.
@@ -846,9 +864,9 @@ function trophyCabinetHTML(m){
       <div class="small" style="margin-top:2px;font-weight:800;color:${won?'var(--gold)':'var(--muted)'}">${won?'×'+n:'&ndash;'}</div>
       <div class="small muted" style="font-size:9.5px;line-height:1.15">${t.short}</div></div>`; }).join('');
   // Shelf 2, Olympic medals + the big team / season-long trophies
-  const medals=trophyChip('🥇','Olympic Gold',m.olyGold||0,'#f4cf5b')
-    +trophyChip('🥈','Olympic Silver',m.olySilver||0,'#cbd2da')
-    +trophyChip('🥉','Olympic Bronze',m.olyBronze||0,'#cd8e5a')
+  const medals=trophyChip('🥇','Games Gold',m.olyGold||0,'#f4cf5b')
+    +trophyChip('🥈','Games Silver',m.olySilver||0,'#cbd2da')
+    +trophyChip('🥉','Games Bronze',m.olyBronze||0,'#cd8e5a')
     +trophyChip('🏆','FedEx Cup',m.fedexCups||0,'var(--gold)')
     +trophyChip('🏌','Team Cups',m.cupWins||0,'#7ec8ff')
     +trophyChip('🎖','Captaincies',m.cupCaptain||0,'#e3b94f');
@@ -873,7 +891,7 @@ function trophyCabinetHTML(m){
    bag (`achMetrics`): lifetime career stats (lt), daily stats, spotlight/rival wins, and SITUATIONAL flags
    captured at the moment they happen (playoff wins, wire-to-wire, comebacks, low rounds, etc., in bag_ach).
    Completing achievements awards POINTS → a named Tour Rep rank (the "keep playing" hook) and unlocks. */
-const ACH_CATS=['Getting Started','Winning','Season Awards','Olympics','Majors','Clutch','Records & Streaks','Consistency','The Money','Career & Legacy','Daily Challenge','Daily Mastery','Rivalry & Spotlight','The Build','The Draft'];
+const ACH_CATS=['Getting Started','Winning','Season Awards','International','Majors','Clutch','Records & Streaks','Consistency','The Money','Career & Legacy','Daily Challenge','Daily Mastery','Rivalry & Spotlight','The Build','The Draft'];
 // tiered-achievement helper: one metric, several thresholds
 function aT(idb,cat,key,defs){ return defs.map(([g,nm,d,p])=>({id:idb+'_'+g,cat,name:nm,desc:d,goal:g,pts:p,get:m=>m[key]||0})); }
 const ACH=[].concat(
@@ -903,17 +921,17 @@ const ACH=[].concat(
    {id:'aw_no1_3',cat:'Season Awards',name:'Reign at the Top',    desc:'Finish 3 seasons ranked World No. 1.',     goal:3,pts:120,get:m=>m.no1Seasons},
    {id:'aw_wk52', cat:'Season Awards',name:'A Year at No. 1',     desc:'Spend 50+ weeks ranked World No. 1.',      goal:50,pts:100,get:m=>m.weeksAtNo1}],
   // ---- Olympics ----
-  [{id:'oly_g',  cat:'Olympics',name:'Olympic Gold',     desc:'Win the Olympic gold medal.',               goal:1,pts:80, get:m=>m.olyGold},
-   {id:'oly_med',cat:'Olympics',name:'On the Podium',    desc:'Win any Olympic medal.',                    goal:1,pts:40, get:m=>m.olyMedals},
-   {id:'oly_g2', cat:'Olympics',name:'Back-to-Back Gold',desc:'Win 2 Olympic gold medals.',                goal:2,pts:120,get:m=>m.olyGold},
-   {id:'oly_set',cat:'Olympics',name:'Full Set',         desc:'Win gold, silver and bronze across your career.',goal:3,pts:100,get:m=>(m.olyGold>0?1:0)+(m.olySilver>0?1:0)+(m.olyBronze>0?1:0)},
-   {id:'cup_app',cat:'Olympics',name:'Cup Debut',        desc:'Make a Ryder/Presidents Cup team.',          goal:1,pts:35, get:m=>m.cupApps},
-   {id:'cup_win',cat:'Olympics',name:'Cup Champion',     desc:'Be on the winning Ryder/Presidents Cup team.',goal:1,pts:60, get:m=>m.cupWins},
-   {id:'cup_w5', cat:'Olympics',name:'Cup Legend',       desc:'Win 5 Ryder/Presidents Cups.',               goal:5,pts:100,get:m=>m.cupWins},
-   {id:'cup_pts',cat:'Olympics',name:'Team Talisman',    desc:'Bank 25 career Cup points.',                 goal:25,pts:80, get:m=>m.cupPoints},
-   {id:'cup_5pt',cat:'Olympics',name:'Perfect Week',     desc:'Win all 5 of your matches in one Cup.',       goal:5,pts:90, get:m=>m.cupBest},
-   {id:'cup_cap',cat:'Olympics',name:'The Captaincy',    desc:'Captain a Ryder or Presidents Cup team.',     goal:1,pts:50, get:m=>m.cupCaptain},
-   {id:'cup_capw',cat:'Olympics',name:'Winning Captain', desc:'Captain your team to a Cup win.',             goal:1,pts:80, get:m=>m.cupCaptainWins}],
+  [{id:'oly_g',  cat:'International',name:'Games Gold',       desc:'Win the gold medal at the Games.',          goal:1,pts:80, get:m=>m.olyGold},
+   {id:'oly_med',cat:'International',name:'On the Podium',    desc:'Win any medal at the Games.',               goal:1,pts:40, get:m=>m.olyMedals},
+   {id:'oly_g2', cat:'International',name:'Back-to-Back Gold',desc:'Win 2 gold medals at the Games.',           goal:2,pts:120,get:m=>m.olyGold},
+   {id:'oly_set',cat:'International',name:'Full Set',         desc:'Win gold, silver and bronze across your career.',goal:3,pts:100,get:m=>(m.olyGold>0?1:0)+(m.olySilver>0?1:0)+(m.olyBronze>0?1:0)},
+   {id:'cup_app',cat:'International',name:'Cup Debut',        desc:'Make a Ryder/Presidents Cup team.',          goal:1,pts:35, get:m=>m.cupApps},
+   {id:'cup_win',cat:'International',name:'Cup Champion',     desc:'Be on the winning Ryder/Presidents Cup team.',goal:1,pts:60, get:m=>m.cupWins},
+   {id:'cup_w5', cat:'International',name:'Cup Legend',       desc:'Win 5 Ryder/Presidents Cups.',               goal:5,pts:100,get:m=>m.cupWins},
+   {id:'cup_pts',cat:'International',name:'Team Talisman',    desc:'Bank 25 career Cup points.',                 goal:25,pts:80, get:m=>m.cupPoints},
+   {id:'cup_5pt',cat:'International',name:'Perfect Week',     desc:'Win all 5 of your matches in one Cup.',       goal:5,pts:90, get:m=>m.cupBest},
+   {id:'cup_cap',cat:'International',name:'The Captaincy',    desc:'Captain a Ryder or Presidents Cup team.',     goal:1,pts:50, get:m=>m.cupCaptain},
+   {id:'cup_capw',cat:'International',name:'Winning Captain', desc:'Captain your team to a Cup win.',             goal:1,pts:80, get:m=>m.cupCaptainWins}],
   // ---- Majors ----
   [{id:'maj_masters',cat:'Majors',name:'Green Jacket',    desc:'Win The Masters.',                             goal:1,pts:40, get:m=>m.mastersWins},
    {id:'maj_pga',    cat:'Majors',name:'Wanamaker',       desc:'Win The Championship.',                        goal:1,pts:40, get:m=>m.pgaWins},
@@ -1681,7 +1699,7 @@ const ROSTER=[
   {"name":"Cameron Champ","era":"cur","tier":"star","rarity":"Common","nation":"USA","country":"United States","born":1995,"majors":0,"archetype":"Bomber","signature":"Driving Distance","data_source":"current (DataGolf 2026-06-22)","arc_age":31,"potential":75,"overall":76,"pot_band":{"exp":75,"lo":73,"hi":77,"boom":0.06,"bust":0.08},"dist":94,"acc":75,"app":70,"sht":73,"scr":74,"bnk":73,"put":75,"clu":77,"note":"Longest, 3-time winner"},
   {"name":"Byeong Hun An","era":"cur","tier":"star","rarity":"Common","nation":"KOR","country":"South Korea","born":1991,"majors":0,"archetype":"Short-Game Artist","signature":"Short Game","data_source":"current (DataGolf 2026-06-22)","arc_age":35,"potential":80,"overall":80,"pot_band":{"exp":80,"lo":78,"hi":82,"boom":0.06,"bust":0.08},"dist":87,"acc":73,"app":82,"sht":83,"scr":81,"bnk":83,"put":77,"clu":78,"note":"Ballstriker"},
   {"name":"Stephan Jaeger","era":"cur","tier":"star","rarity":"Common","nation":"GER","country":"Germany","born":1989,"majors":0,"archetype":"Short-Game Artist","signature":"Short Game","data_source":"current (DataGolf 2026-06-22)","arc_age":37,"potential":83,"overall":80,"pot_band":{"exp":83,"lo":81,"hi":85,"boom":0.06,"bust":0.08},"dist":86,"acc":69,"app":77,"sht":84,"scr":83,"bnk":84,"put":82,"clu":80,"note":"Winner, steady"},
-  {"name":"C.T. Pan","era":"cur","tier":"star","rarity":"Common","nation":"TPE","country":"Chinese Taipei","born":1991,"majors":0,"archetype":"Marksman","signature":"Driving Accuracy","data_source":"current (DataGolf 2026-06-22)","arc_age":35,"potential":81,"overall":78,"pot_band":{"exp":81,"lo":79,"hi":83,"boom":0.06,"bust":0.08},"dist":72,"acc":83,"app":76,"sht":81,"scr":79,"bnk":80,"put":76,"clu":81,"note":"Accurate, Olympic bronze"},
+  {"name":"C.T. Pan","era":"cur","tier":"star","rarity":"Common","nation":"TPE","country":"Chinese Taipei","born":1991,"majors":0,"archetype":"Marksman","signature":"Driving Accuracy","data_source":"current (DataGolf 2026-06-22)","arc_age":35,"potential":81,"overall":78,"pot_band":{"exp":81,"lo":79,"hi":83,"boom":0.06,"bust":0.08},"dist":72,"acc":83,"app":76,"sht":81,"scr":79,"bnk":80,"put":76,"clu":81,"note":"Accurate, international bronze"},
   {"name":"Davis Riley","era":"cur","tier":"star","rarity":"Common","nation":"USA","country":"United States","born":1996,"majors":0,"archetype":"Putter","signature":"Putting","data_source":"current (DataGolf 2026-06-22)","arc_age":30,"potential":78,"overall":74,"pot_band":{"exp":78,"lo":76,"hi":80,"boom":0.06,"bust":0.08},"dist":77,"acc":65,"app":68,"sht":77,"scr":78,"bnk":77,"put":80,"clu":78,"note":"PGA winner"},
   {"name":"David Puig","era":"cur","tier":"rising","rarity":"Common","nation":"ESP","country":"Spain","born":2002,"majors":0,"archetype":"Bomber","signature":"Driving Distance","data_source":"current (DataGolf 2026-06-22)","arc_age":24,"potential":87,"overall":85,"pot_band":{"exp":87,"lo":82,"hi":92,"boom":0.097,"bust":0.127},"dist":97,"acc":77,"app":81,"sht":83,"scr":85,"bnk":84,"put":90,"clu":80,"note":"Young LIV power"},
   {"name":"Jesper Svensson","era":"cur","tier":"rising","rarity":"Common","nation":"SWE","country":"Sweden","born":2000,"majors":0,"archetype":"Bomber","signature":"Driving Distance","data_source":"current (DataGolf 2026-06-22)","arc_age":26,"potential":81,"overall":80,"pot_band":{"exp":81,"lo":78,"hi":84,"boom":0.072,"bust":0.096},"dist":93,"acc":77,"app":77,"sht":79,"scr":79,"bnk":79,"put":79,"clu":81,"note":"DP World winner"},
@@ -1784,7 +1802,7 @@ function majorsSchedule(){ return inflatePurses(ANCHORS.filter(e=>e.major),S.yea
 // the men's Olympic golf tournament runs every 4 years (2028, 2032, ...): 72 holes, no cut, ~60 players
 // with a max of 4 per country, and gold/silver/bronze medals instead of prize money.
 function isOlympicYear(year){ return (year||1)%4===0; }   // every 4 years, first in year 4 (then 8, 12, ...)
-const OLYMPICS_EVT={name:'Olympic Games',type:'olympics',wk:30,olympics:true,noCut:true,major:false,big:true,purse:0};
+const OLYMPICS_EVT={name:'The Games',type:'olympics',wk:30,olympics:true,noCut:true,major:false,big:true,purse:0};
 function seasonSchedule(year,seed){
   const shuffled=seededShuffle(REG_POOL,((seed!=null?seed:0)^0x5eed1e)>>>0);
   const N=shuffled.length, M=Math.min(REG_PER_SEASON,N);
@@ -3130,7 +3148,7 @@ function scrRules(){
     ['🔁','Re-spin twice','Don\'t like who landed? Re-spin to pass and reveal someone else, you get 2 re-spins for the whole draft.'],
     ['🧱','Fill all 8 skills','Distance, accuracy, approach, short game, scrambling, bunker, putting, composure. Spikes win events; one weak slot loses weekends.'],
     ['💰','Run a pro season','Bank the most prize money and climb the earnings list. Winnings are big, but caddie, agent and ~$2.8M/yr of tour costs can put a mediocre build in the red.'],
-    ['📈','Live a full career, not just a season','Your golfer ages, peaks and eventually declines across up to 30 seasons. Chase majors, the Ryder Cup, the Presidents Cup and Olympic medals, climb the World Ranking, build a rivalry, and retire a legend with a trophy case to show for it.'],
+    ['📈','Live a full career, not just a season','Your golfer ages, peaks and eventually declines across up to 30 seasons. Chase majors, the Ryder Cup, the Presidents Cup and international medals, climb the World Ranking, build a rivalry, and retire a legend with a trophy case to show for it.'],
   ];
   const cList=$(`<div class="perks" style="max-width:560px;margin:0 auto 18px"></div>`);
   cSteps.forEach(s=>cList.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
@@ -3188,13 +3206,13 @@ function overlayRecordGuest(screen){
     <div style="position:relative;overflow:hidden;border-radius:16px;border:1px solid var(--gold);background:linear-gradient(160deg,#16331f,#0a2740 58%,#0a1626);padding:20px 18px;margin:0 auto 14px;max-width:520px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.4)">
       <div style="font:800 11px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">✨ Your Trophy Room awaits</div>
       <div style="font-family:var(--serif);font-weight:800;font-size:24px;color:#fff;margin:9px 0 7px;line-height:1.12">Win it all.<br>Keep it forever.</div>
-      <div class="small muted" style="max-width:380px;margin:0 auto;line-height:1.4">Majors, Olympic medals, the FedEx Cup, the Ryder Cup &mdash; every trophy you earn is saved to your free account, your titles equipped, your career ranked against the world.</div>
+      <div class="small muted" style="max-width:380px;margin:0 auto;line-height:1.4">Majors, international medals, the FedEx Cup, the Ryder Cup &mdash; every trophy you earn is saved to your free account, your titles equipped, your career ranked against the world.</div>
       <button class="btn goldfill" id="rec-signup" style="margin:15px auto 0;max-width:320px">🏆 Create your free account ▸</button>
       <button class="btn ghost" id="rec-signin" style="margin:8px auto 0;max-width:320px">I already have one &middot; Sign in</button>
     </div>
     <div class="scout" style="max-width:520px;margin:0 auto 14px;padding:6px 15px 8px">
       <div class="small muted center" style="letter-spacing:.12em;text-transform:uppercase;margin:9px 0 2px;font-size:10px">What you'll unlock</div>
-      ${feat('🏆','Your Trophy Case','Every major, Olympic medal, Cup and captaincy on permanent display &mdash; with the player titles you earn equipped under your name.')}
+      ${feat('🏆','Your Trophy Case','Every major, international medal, Cup and captaincy on permanent display &mdash; with the player titles you earn equipped under your name.')}
       ${feat('🏅','100+ Achievements &amp; Tour Rep','Tick off milestones across your whole career and climb the Tour Rep ranks from Rookie all the way to 🐐 G.O.A.T.')}
       ${feat('🌍','Global leaderboards','Post every finished season and career, then rank against the world by earnings, wins, majors, scoring and more.')}
       ${feat('☁️','Saved &amp; synced everywhere','Your careers, trophies and record follow you on any device &mdash; never lose a season again.')}
@@ -3577,7 +3595,7 @@ function overlayAbout(screen){
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="About RunTheTour">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>About</h3>
-    <p class="lede"><b style="color:var(--oncard)">RunTheTour</b> is a free 30-year golf career simulation from <b style="color:var(--teal)">RunThe.GG</b>. Spin a wheel of real golfers, draft one skill from each to build your own, then live out their career: majors, the Ryder Cup, the Presidents Cup, Olympic medals, and a World Ranking climb across up to 30 seasons.</p>
+    <p class="lede"><b style="color:var(--oncard)">RunTheTour</b> is a free 30-year golf career simulation from <b style="color:var(--teal)">RunThe.GG</b>. Spin a wheel of real golfers, draft one skill from each to build your own, then live out their career: majors, the Ryder Cup, the Presidents Cup, international medals, and a World Ranking climb across up to 30 seasons.</p>
     <p class="lede">It's in active development, new features are landing regularly. Got an idea or a bug? We'd love to hear it.</p>
     <div class="scout">
       <b style="color:var(--teal)">More from RunThe.GG</b>
@@ -3619,7 +3637,7 @@ function overlayTerms(screen){
     <h3>Terms</h3>
     <p class="lede">RunTheTour is a free, fan-made golf simulation game. By playing, creating an account, or appearing on the leaderboard, you agree to these terms.</p>
     <ol style="color:#dbe6ee;padding-left:18px">
-      <li><b>Not affiliated with any real organization.</b> RunTheTour is an independent, unofficial fan project, not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, the Masters / Augusta National, the Olympics, the Ryder Cup, the Presidents Cup, or any golfer or organization named in the game. Real player names and public statistics build fictional, simulated golfers; all results are entirely fictional.</li>
+      <li><b>Not affiliated with any real organization.</b> RunTheTour is an independent, unofficial fan project, not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, the Masters / Augusta National, the Ryder Cup, the Presidents Cup, or any golfer, event, or organization named in the game. Real player names and public statistics build fictional, simulated golfers; all results are entirely fictional.</li>
       <li><b>Entertainment only, no real money.</b> In-game currency, prize money, and rankings have no real-world value and aren't a form of gambling or wagering.</li>
       <li><b>Your account.</b> Choose a username that isn't offensive, impersonating, or misleading. We reserve the right to rename, suspend, or remove accounts, leaderboard entries, or usernames that violate this, or that we determine were used to abuse or manipulate the leaderboard.</li>
       <li><b>No warranty.</b> RunTheTour is provided "as is," in active development, without warranties of any kind, we don't guarantee the game, leaderboard, or your saved progress will always be available or error-free.</li>
@@ -3686,7 +3704,7 @@ function scrTitle(){
   w.appendChild($(`<h1 class="hero" style="font-size:clamp(34px,8.5vw,52px)"><span class="hr1">Your Golfer.</span><br><span class="hr2">Your Tour.</span></h1>`));
   w.appendChild($(`<div class="herorule" aria-hidden="true"><span></span><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.6" fill="none" stroke="#EBA61F" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1.5" fill="#EBA61F"/></svg><span></span></div>`));
   w.appendChild($(`<div class="center" style="margin:10px 0 2px"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ 30-Year Career Simulation</span></div>`));
-  w.appendChild($(`<p class="lede center" style="max-width:360px;margin:10px auto 8px">Draft one skill from each of golf's greatest, build your own player, then live out their career, up to 30 years on tour. Chase majors, the Ryder Cup and Olympic medals, and retire a legend.</p>`));
+  w.appendChild($(`<p class="lede center" style="max-width:360px;margin:10px auto 8px">Draft one skill from each of golf's greatest, build your own player, then live out their career, up to 30 years on tour. Chase majors, the Ryder Cup and international medals, and retire a legend.</p>`));
   const c=career();
   if(c.builds>0){
     w.appendChild($(`<div class="small muted center" style="margin:-4px 0 12px">Your best: <b style="color:var(--gold)">${fmt(c.bestMoney)}</b> · OVR ${c.bestOvr} · ${c.builds} build${c.builds>1?'s':''}</div>`));
@@ -4125,7 +4143,7 @@ function handRow(){
 function countryRow(){
   const cur=(S.look&&S.look.country)||'United States';
   const row=$(`<div style="margin:9px 0"></div>`);
-  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Country · for the Olympics</div>`));
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Country · for the Games</div>`));
   const sel=$(`<select class="name" style="width:100%;cursor:pointer">${COUNTRIES.map(c=>`<option value="${esc(c.n)}"${c.n===cur?' selected':''}>${esc(c.n)} (${c.c})</option>`).join('')}</select>`);
   sel.onchange=e=>{ S.look.country=e.target.value; saveLook(); render(); };
   row.appendChild(sel); return row;
@@ -4822,7 +4840,7 @@ function celebrateOlympicPodium(ce, opts){
   const stage=document.createElement('div'); stage.className='celebrate major';
   const cv=document.createElement('canvas'); cv.className='confetti'; stage.appendChild(cv);
   const wrap=$(`<div style="position:relative;z-index:2;width:min(620px,94vw);text-align:center"></div>`);
-  wrap.appendChild($(`<div class="celeb-kicker" style="color:#ffd76a;margin-top:0">🏅 Olympic Games · Medal Ceremony</div>`));
+  wrap.appendChild($(`<div class="celeb-kicker" style="color:#ffd76a;margin-top:0">🏅 The Games · Medal Ceremony</div>`));
   wrap.appendChild($(`<div class="celeb-title" style="font-size:30px;margin-top:6px">The Podium</div>`));
   const sub=$(`<div class="celeb-sub" style="min-height:22px;margin-top:8px">&nbsp;</div>`); wrap.appendChild(sub);
   const podium=$(`<div style="display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-top:18px"></div>`);
@@ -4858,7 +4876,7 @@ function celebrateOlympicPodium(ce, opts){
   }
   function endCeremony(){
     sub.innerHTML = emojifyIcons(youMedal>=0
-      ? `<span style="color:#ffd76a;font-weight:800">${['🥇 Olympic GOLD','🥈 Olympic Silver','🥉 Olympic Bronze'][youMedal]} for ${myCountry}</span>`
+      ? `<span style="color:#ffd76a;font-weight:800">${['🥇 GOLD MEDAL','🥈 SILVER MEDAL','🥉 BRONZE MEDAL'][youMedal]} for ${myCountry}</span>`
       : `<span style="color:#cfe6d8">🥇 ${esc(M[0].o.p.name)} wins gold for ${esc(M[0].o.p.country||M[0].o.p.nation||'')}</span>`);
     if(auto||reduce){ timer=setTimeout(finish, reduce?20:2400); }
     else { const b=$(`<button class="btn goldfill">Continue ▸</button>`); b.onclick=e=>{e.stopPropagation();finish();}; actions.appendChild(b); }
@@ -4930,8 +4948,8 @@ function selectionInfo(evt){
       : 'your 5-year past-champion exemption';
     sub = `You're off the Legend Circuit this week, ${reason} gets you back into the field against today's tour.`;
   } else { // olympics
-    const sel=olympicField(); made=sel.some(s=>s.you); tag='Olympic Games';
-    title = made?'You qualified for the Olympics!' : 'Not in the Olympic field this time';
+    const sel=olympicField(); made=sel.some(s=>s.you); tag='The Games';
+    title = made?'You qualified for the Games!' : 'Not in the field this time';
     sub = made
       ? `You are one of the 60 teeing it up for ${country}. Go and win a medal for the nation.`
       : `Outside the 60-player field for ${country} this cycle (max 4 per country). Keep climbing the World Ranking and you will be on the plane in four years. You will play a Tour stop this week instead.`;
@@ -5301,7 +5319,7 @@ function scrSeason(){
     <div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#E14A33">Opposite-field event</div>
     <div class="small" style="margin-top:4px;color:var(--oncard)">Outside the OWGR cut for the ${esc(evt.against)} this week. Win here to bank points and climb toward the elite fields.</div></div>`));
 
-  const typeLbl=evt.olympics?'<span class="major">🏅 Olympic Games</span>':evt.guestMajor?'<span class="major">🎖️ Past Champion</span>':evt.major?'<span class="major">Major</span>':evt.stagger?`<span class="sig">🏆 Cup Finale · top ${evt.cap}</span>`:evt.playoff?`<span class="sig">Playoff · top ${evt.cap}</span>`:evt.oppo?'<span class="reg">Opposite-field</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?`<span class="sig">Signature · top ${evt.entryCap||50}</span>`:'<span class="reg">Tour event</span>';
+  const typeLbl=evt.olympics?'<span class="major">🏅 The Games</span>':evt.guestMajor?'<span class="major">🎖️ Past Champion</span>':evt.major?'<span class="major">Major</span>':evt.stagger?`<span class="sig">🏆 Cup Finale · top ${evt.cap}</span>`:evt.playoff?`<span class="sig">Playoff · top ${evt.cap}</span>`:evt.oppo?'<span class="reg">Opposite-field</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?`<span class="sig">Signature · top ${evt.entryCap||50}</span>`:'<span class="reg">Tour event</span>';
   const dayLbl=ce.done?'Final':(ce.roundsDone>=2&&!ce.players.find(o=>o.p.you).made?`After ${DAYS[1]}`:`${DAYS[Math.max(0,ce.roundsDone-1)]} · Round ${Math.min(ce.roundsDone,4)}/4`);
   const cols=$(`<div class="cols seasoncols"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col scorecol"></div>`);
@@ -5331,7 +5349,7 @@ function scrSeason(){
   }).join('');
   let status, money='';
   if(ce.done){ const o=ce.order.find(x=>x.p.you); const po=ce.playoff; const posTxt=o.tied?('T'+o.pos):ord(o.pos);
-    const medal=evt.olympics?({1:'🥇 Olympic GOLD!',2:'🥈 Olympic Silver',3:'🥉 Olympic Bronze'})[o.pos]:null;
+    const medal=evt.olympics?({1:'🥇 GOLD MEDAL!',2:'🥈 Silver Medal',3:'🥉 Bronze Medal'})[o.pos]:null;
     if(o.pos==='CUT') status='Missed the cut';
     else if(medal) status=medal;
     else if(o.pos===1) status=(po&&po.you)?`🏆 Won a ${po.holes}-hole playoff!`:'🏆 Tournament won!';
@@ -5858,16 +5876,16 @@ function scrSummary(){
   }
   // ---- Olympic medal callout (Olympic years only) ----
   if(!S.daily && S.season.olympicMedals){
-    const med=S.season.olympicMyMedal, M={gold:['🥇','Olympic GOLD Medal','var(--gold)'],silver:['🥈','Olympic Silver Medal','#c7ced8'],bronze:['🥉','Olympic Bronze Medal','#cd8e5a']};
+    const med=S.season.olympicMyMedal, M={gold:['🥇','GOLD Medal','var(--gold)'],silver:['🥈','Silver Medal','#c7ced8'],bronze:['🥉','Bronze Medal','#cd8e5a']};
     const gold=S.season.olympicMedals[0];
     if(med){ const m=M[med];
       add($(`<div class="center" style="margin:8px 0 12px"><div style="display:inline-block;background:linear-gradient(180deg,#1c3a56,#0a2740);border:1px solid ${m[2]};border-radius:14px;padding:13px 22px">
-        <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${m[2]}">Olympic Games</div>
+        <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${m[2]}">The Games</div>
         <div style="font:800 22px/1.1 var(--body);color:${m[2]};margin-top:6px">${m[0]} ${m[1]}</div>
         <div class="small muted" style="margin-top:4px">You medalled for ${esc((S.look&&S.look.country)||'your country')}</div></div></div>`));
     } else {
       add($(`<div class="center" style="margin:6px 0 12px"><div class="scout" style="display:inline-block;padding:10px 16px">
-        <span style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">Olympic Games</span>
+        <span style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">The Games</span>
         <span class="small" style="margin-left:8px;color:var(--oncard)">🥇 ${natFlag(gold.nat)} ${esc(gold.name)} took gold</span></div></div>`));
     }
   }
@@ -7933,7 +7951,12 @@ async function dbLoadLegend(day){
   }catch(e){ dbCacheLegend={day,rows:[],ok:false}; }
   render();
 }
-sbInit();
+// The Supabase CDN script is now `defer`ed, so window.supabase may not exist yet at this point in the
+// (non-deferred) inline script. Deferred external scripts run AFTER parsing but BEFORE DOMContentLoaded,
+// so if it isn't ready, wait for DOMContentLoaded to run sbInit — accounts/leaderboard still initialize,
+// just a few ms later. Nothing else depends on `sb` synchronously (the initial render() below is offline-safe).
+if(window.supabase && window.supabase.createClient){ sbInit(); }
+else { window.addEventListener('DOMContentLoaded', sbInit); }
 try{ window.addEventListener('online', ()=>flushPendingSeasons()); }catch(e){}   // retry any unsubmitted seasons when back online
 
 track('game_start');
