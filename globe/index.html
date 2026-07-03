@@ -489,6 +489,7 @@
           .catch(function(){ renderAcct(); });
       }
       renderAcct();
+      maybeDuoResume();   // refresh-safe: rejoin an in-progress two-devices race
     }
     sb.auth.onAuthStateChange(function(ev,session){ if(ev==='INITIAL_SESSION') return; apply(session); });
     sb.auth.getSession().then(function(r){ apply(r.data && r.data.session); }).catch(function(){});
@@ -508,8 +509,8 @@
   function render(){
     if(S.screen==='home')      return renderHome();
     if(S.screen==='setup')     return renderSetup();
-    if(S.screen==='online')    return renderOnlineMenu();
-    if(S.screen==='lobby')     return renderLobby();
+    if(S.screen==='online')    return renderDuoMenu();
+    if(S.screen==='lobby')     return renderDuoLobby();
     if(S.screen==='trophies')  return renderTrophies();
     if(S.screen==='stage')     return renderStage();
     renderHome();
@@ -566,7 +567,7 @@
       + foot();
     var m1=$('mode-solo'); if(m1) m1.onclick=function(){ S.coop=null; S.screen='setup'; render(); };
     var m2=$('mode-duo_same'); if(m2) m2.onclick=function(){ S.coop={ same:true }; S.screen='setup'; render(); };
-    var m3=$('mode-duo_two'); if(m3) m3.onclick=function(){ S.screen='online'; render(); };
+    var m3=$('mode-duo_two'); if(m3) m3.onclick=function(){ S.coop=null; S.screen='online'; render(); };
     var tr=$('trophies'); if(tr) tr.onclick=function(){ S.screen='trophies'; render(); };
     renderAcct();
   }
@@ -797,7 +798,7 @@
     var reflex = pool.filter(function(t){ return REFLEX_KINDS[taskKind(t)]; });
     // Split Path most stages (always on the Final): one brain + one reflex when
     // possible (GDD §5), and never two of the same game type.
-    var wantSplit = isFinal() || Math.random() < 0.6;
+    var wantSplit = isFinal() || onlineActive() || Math.random() < 0.6;   // duo (two-devices) is always Split Path — each partner takes a different one
     if(wantSplit && pool.length>=2){
       var a,b;
       if(brain.length && reflex.length){ a=pick(fresh(brain)); b=pick(fresh(reflex)); }
@@ -815,11 +816,11 @@
 
   function renderStage(){
     if(S.phase==='draw')       return viewDraw();
-    if(S.phase==='choice')     return viewChoice();
+    if(S.phase==='choice')     return onlineActive()?duoViewChoice():viewChoice();
     if(S.phase==='play')       return viewPlay();
     if(S.phase==='checkpoint') return viewCheckpoint();
-    if(S.phase==='leaderboard')return viewLeaderboard();
-    if(S.phase==='grounded')   return viewGrounded();
+    if(S.phase==='leaderboard')return onlineActive()?duoViewLeaderboard():viewLeaderboard();
+    if(S.phase==='grounded')   return onlineActive()?duoSpectate():viewGrounded();
   }
 
   function hud(){
@@ -880,7 +881,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('.taskcard'), function(b){
       b.onclick=function(){
         S.chosen=S.offered[+b.getAttribute('data-i')];
-        if(onlineActive()) onlineBeginPlay(); else { S.phase='play'; renderStage(); }
+        S.phase='play'; renderStage();
       };
     });
     if($('skip')) $('skip').onclick=useSkipPass;
@@ -1458,7 +1459,7 @@
   function clampP(skill){ var p=(skill-0.8)*0.45; return Math.max(0, Math.min(0.55, p)); }
 
   function resolveRound(playerRaw, playerMisses, skipped, preGhosts){
-    if(onlineActive()){ return onlineSubmit(playerRaw, playerMisses); }   // server-authoritative path
+    if(onlineActive()){ return duoSubmit(playerRaw, playerMisses); }   // two-devices duo: post my time, combine on the leaderboard
     var pen = PENALTY[(S.chosen&&S.chosen.cat) || 'trivia'];
     var playerEff = skipped ? playerRaw : (playerRaw + playerMisses*pen);
     S.lastResult = { raw:playerRaw, misses:playerMisses, eff:playerEff, skipped:!!skipped, pen:pen };
@@ -1504,7 +1505,7 @@
         + '<button class="btn globe" id="lb" style="margin-top:16px">See the leaderboard ›</button>'
       + '</div>' + foot();
     $('lb').onclick=function(){
-      if(onlineActive()) onlineShowLeaderboard(); else { S.phase='leaderboard'; renderStage(); }
+      if(onlineActive()) duoShowLeaderboard(); else { S.phase='leaderboard'; renderStage(); }
     };
     renderAcct();
   }
@@ -1641,13 +1642,17 @@
   startRace = function(){ S._recorded=false; _startRace(); };
 
   /* ======================================================================
-     ONLINE MULTIPLAYER (Beta) — GDD §3/§7-9
-     A race is a lobby of up to 11 teams reached by a short code. Each signed-in
-     human is a team; empty slots fill with AI ghosts at start. Per round the
-     HOST draws one shared destination; every client plays its own task; the
-     Checkpoint time is computed SERVER-SIDE (globe_checkpoint) so timing is
-     authoritative (§9). Live lobby + leaderboard come over Supabase realtime.
-     Requires supabase/41_globe_online.sql applied to the backend.
+     TWO-DEVICES DUO (Beta) — host-less, deterministic — GDD §3/§6-9
+     Two players pair into ONE team via a short code. The duo shares a SEED, so
+     BOTH devices run the exact same race locally: identical country order,
+     finish line, AI opponent field and eliminations. There is no "host of the
+     game" and the field always finishes, because every device computes the same
+     outcome. Each Stage BOTH partners play — and they're forced onto DIFFERENT
+     challenges (one each of the two Split-Path options), so they can't both grab
+     the fast one. The team's Stage time is the two partners' effective times
+     ADDED together. Each device posts its own time; realtime pushes the
+     partner's. Refresh-safe: the pairing is stored and the whole race is rebuilt
+     from the seed + posted times. Requires supabase/43_globe_duo.sql.
      ====================================================================== */
   function onlineActive(){ return !!(S.online && S.online.active); }
   function finishById(id){ for(var i=0;i<FINISH.length;i++){ if(FINISH[i].id===id) return FINISH[i]; } return null; }
@@ -1660,295 +1665,379 @@
   }
   function rpc(fn, args){ return sb.rpc(fn, args); }
 
-  /* ---- online menu: sign-in gate, then create / join ---- */
-  function renderOnlineMenu(){
+  /* ---- duo entry: pair with a partner (the race is always "already there") ---- */
+  function renderDuoMenu(){
     var back='<button class="btn ghost sm" id="oback" style="flex:0 0 auto;margin-top:14px">‹ Home</button>';
     if(!sbReady()){
-      app.innerHTML = topbar() + '<div class="card center"><h2>Online is offline</h2>'
+      app.innerHTML = topbar() + '<div class="card center"><h2>Team Race is offline</h2>'
         + '<p class="lede">Couldn\'t reach the account service. Check your connection and reload.</p>'+back+'</div>' + foot();
       $('oback').onclick=function(){ S.screen='home'; render(); }; return;
     }
     if(!acct.user){
       app.innerHTML = topbar() + '<div class="card center">'
-        + '<div style="font-size:44px">🔐</div><h2 style="margin-top:6px">Sign in to race online</h2>'
-        + '<p class="lede">Online races use your free RunThe.GG account so your team is yours. '
+        + '<div style="font-size:44px">🔐</div><h2 style="margin-top:6px">Sign in to team up</h2>'
+        + '<p class="lede">Two-device team races use your free RunThe.GG account so your team is yours. '
         + 'Sign in on the home site, then come back here.</p>'
         + '<a class="btn globe" href="/" style="margin-top:14px">Go to RunThe.GG to sign in</a>'+back+'</div>' + foot();
       $('oback').onclick=function(){ S.screen='home'; render(); }; renderAcct(); return;
     }
+    var sess=duoLoadSess();
+    var resume = sess ? '<div class="card"><h3 style="font-size:15px;margin-bottom:6px">Resume your race</h3>'
+        + '<p class="muted" style="font-size:12.5px;margin:0 0 10px">You have a team race in progress — code <b style="color:var(--globe)">'+esc(sess.code)+'</b>.</p>'
+        + '<button class="btn globe" id="oresume">Rejoin race ›</button>'
+        + '<button class="btn ghost sm" id="odrop" style="margin-top:8px">Forget it</button></div>' : '';
     app.innerHTML = topbar()
       + '<div class="card"><h2 style="font-size:22px">Team Race · Two Devices <span style="font-size:12px;color:var(--globe)">Beta</span></h2>'
-        + '<p class="lede">Create a room and share the code with your partner, or join theirs — then you race the field together from separate devices.</p>'
-        + '<div style="margin-top:14px"><label class="fld" for="otn">Your team name</label>'
-        + '<input type="text" id="otn" maxlength="18" placeholder="'+esc(acct.username||'Your Team')+'" value="'+esc(S.teamName||acct.username||'')+'" /></div>'
-        + '<button class="btn globe" id="ocreate" style="margin-top:12px">Create a race</button>'
+        + '<p class="lede">You and a partner race the field <b>as one team</b> from separate devices. Every Stage you both play — and your times add together. Start a team and share the code, or join your partner\'s.</p>'
+        + '<div style="margin-top:14px"><label class="fld" for="otn">Team name</label>'
+        + '<input type="text" id="otn" maxlength="18" placeholder="'+esc(acct.username?acct.username+' & co':'Our Team')+'" value="'+esc(S.teamName||'')+'" /></div>'
+        + '<button class="btn globe" id="ocreate" style="margin-top:12px">Start a team</button>'
         + '<div class="or" style="display:flex;align-items:center;gap:10px;color:var(--mut);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin:16px 0 6px"><span style="height:1px;flex:1;background:var(--line)"></span>OR<span style="height:1px;flex:1;background:var(--line)"></span></div>'
-        + '<label class="fld" for="ojoin">Join with a code</label>'
+        + '<label class="fld" for="ojoin">Join your partner\'s code</label>'
         + '<input type="text" id="ojoin" maxlength="5" placeholder="ABC12" style="text-transform:uppercase" />'
-        + '<button class="btn ghost" id="ojoinbtn" style="margin-top:12px">Join race</button>'
+        + '<button class="btn ghost" id="ojoinbtn" style="margin-top:12px">Join team</button>'
       + '</div>'
+      + resume
       + '<button class="btn ghost sm" id="oback" style="width:auto">‹ Home</button>' + foot();
     $('oback').onclick=function(){ S.screen='home'; render(); };
-    function myName(){ return ($('otn').value||'').trim().slice(0,18) || acct.username || 'Your Team'; }
+    if($('oresume')) $('oresume').onclick=function(){ _duoResumeTried=false; maybeDuoResume(true); };
+    if($('odrop')) $('odrop').onclick=function(){ duoClearSess(); renderDuoMenu(); };
+    function myName(){ return ($('otn').value||'').trim().slice(0,18); }
     $('ocreate').onclick=function(){
-      S.teamName=myName(); var b=$('ocreate'); b.disabled=true; b.textContent='Creating…';
-      rpc('create_globe_lobby',{p_team_name:S.teamName, p_flag:'🧭', p_mode:'team'}).then(function(r){
-        if(r.error){ toast(r.error.message||'Could not create race'); b.disabled=false; b.textContent='Create a race'; return; }
-        enterLobby(r.data.lobby_id, r.data.code, null, true);
-      });
+      var nm=myName(); S.teamName=nm; var b=$('ocreate'); b.disabled=true; b.textContent='Starting…';
+      rpc('create_globe_duo',{p_name:nm||'Our Team'}).then(function(r){
+        if(r.error){ toast((r.error&&r.error.message)||'Could not start'); b.disabled=false; b.textContent='Start a team'; return; }
+        enterDuo(r.data);
+      }).catch(function(){ toast('Could not start'); b.disabled=false; b.textContent='Start a team'; });
     };
     $('ojoinbtn').onclick=function(){
       var code=($('ojoin').value||'').trim().toUpperCase();
-      if(code.length<4){ toast('Enter the 5-letter race code'); return; }
-      S.teamName=myName(); var b=$('ojoinbtn'); b.disabled=true; b.textContent='Joining…';
-      rpc('join_globe_lobby',{p_code:code, p_team_name:S.teamName, p_flag:'🧭'}).then(function(r){
-        if(r.error){ toast(r.error.message||'Could not join'); b.disabled=false; b.textContent='Join race'; return; }
-        enterLobby(r.data.lobby_id, code, r.data.team_id, false);
-      });
+      if(code.length<4){ toast('Enter your partner\'s 5-letter code'); return; }
+      var b=$('ojoinbtn'); b.disabled=true; b.textContent='Joining…';
+      rpc('join_globe_duo',{p_code:code}).then(function(r){
+        if(r.error){ toast((r.error&&r.error.message)||'Could not join'); b.disabled=false; b.textContent='Join team'; return; }
+        enterDuo(r.data);
+      }).catch(function(){ toast('Could not join'); b.disabled=false; b.textContent='Join team'; });
     };
     renderAcct();
   }
 
-  /* ---- lobby + realtime ---- */
-  function enterLobby(lobbyId, code, teamId, isHost){
-    S.online = { active:true, lobbyId:lobbyId, code:code, teamId:teamId, isHost:isHost,
-                 lobby:null, used:{}, lastRound:0, view:'lobby', channel:null, recorded:false };
-    S.screen='lobby';
-    app.innerHTML = topbar() + '<div class="card center"><h2>Loading lobby…</h2></div>' + foot();
-    refreshLobby(); subscribeLobby();
+  /* ---- deterministic RNG shared by both devices (same seed → same race) ---- */
+  function _mulberry32(a){ return function(){ a|=0; a=(a+0x6D2B79F5)|0; var t=Math.imul(a^(a>>>15),1|a); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
+  function duoRng(round, salt){ var s=((S.online.seed>>>0) ^ Math.imul((round+1)>>>0,2654435761>>>0) ^ Math.imul((salt+1)>>>0,40503>>>0))>>>0; return _mulberry32(s); }
+  // run existing Math.random-based generators (shuffle/pick/genTasks) off a seeded
+  // stream so both devices build the identical field / countries / challenges.
+  function withRng(gen, fn){ var o=Math.random; Math.random=gen; try{ return fn(); } finally{ Math.random=o; } }
+
+  /* ---- duo session persistence (refresh-safe) ---- */
+  function duoSave(){ try{ if(S.online&&S.online.duoId) localStorage.setItem('rtg_duo', JSON.stringify({ duoId:S.online.duoId, code:S.online.code, seed:S.online.seed, slot:S.online.slot })); }catch(e){} }
+  function duoLoadSess(){ try{ return JSON.parse(localStorage.getItem('rtg_duo')||'null'); }catch(e){ return null; } }
+  function duoClearSess(){ try{ localStorage.removeItem('rtg_duo'); }catch(e){} }
+
+  function enterDuo(json){
+    S.online = { active:true, duoId:json.id, code:json.code, seed:Number(json.seed), slot:0,
+                 teamName:json.name, partnerName:null, times:{}, memberCount:0, view:'lobby',
+                 channel:null, poll:null, status:json.status, started:false };
+    duoIngest(json);
+    if(acct.user && S.online._slotByUser && S.online._slotByUser[acct.user.id]!=null) S.online.slot=S.online._slotByUser[acct.user.id];
+    S.teamName=json.name; S.screen='lobby'; duoSave(); duoSubscribe(); renderDuoLobby();
   }
-  function subscribeLobby(){
-    if(!sb || S.online.channel) return;
-    var id=S.online.lobbyId;
+
+  function duoSubscribe(){
+    if(!sb || !S.online || S.online.channel) return;
+    var id=S.online.duoId;
     try{
-      var ch=sb.channel('rtg_'+id);
-      ['globe_lobbies','globe_teams','globe_stage'].forEach(function(tbl){
-        var filter = (tbl==='globe_lobbies'?'id=eq.':'lobby_id=eq.')+id;
-        ch.on('postgres_changes',{event:'*',schema:'public',table:tbl,filter:filter}, function(){ refreshLobby(); });
+      var ch=sb.channel('rtgduo_'+id);
+      ['globe_duo_members','globe_duo_times'].forEach(function(tbl){
+        ch.on('postgres_changes',{event:'*',schema:'public',table:tbl,filter:'duo_id=eq.'+id}, function(){ duoRefresh(); });
       });
       ch.subscribe(); S.online.channel=ch;
     }catch(e){ /* realtime optional; polling fallback below */ }
-    // lightweight polling fallback in case realtime isn't enabled
-    S.online.poll = setInterval(function(){ if(onlineActive()) refreshLobby(); else clearInterval(S.online.poll); }, 3500);
+    S.online.poll=setInterval(function(){ if(onlineActive()) duoRefresh(); else clearInterval(S.online.poll); }, 3500);
   }
-  function leaveOnline(){
+  function duoLeave(){
     if(!S.online) return;
     try{ if(S.online.channel) sb.removeChannel(S.online.channel); }catch(e){}
     if(S.online.poll) clearInterval(S.online.poll);
     S.online=null;
   }
-  function refreshLobby(){
+  function duoRefresh(){
     if(!onlineActive()) return;
-    rpc('get_globe_lobby',{p_lobby:S.online.lobbyId}).then(function(r){
-      if(!onlineActive()||r.error||!r.data) return;
-      S.online.lobby=r.data; resolveMyTeam(); onLobbyUpdate();
-    });
+    rpc('get_globe_duo',{p_duo:S.online.duoId}).then(function(r){
+      if(!onlineActive()||!r||r.error||!r.data) return; duoIngest(r.data);
+    }).catch(function(){});
   }
-  function resolveMyTeam(){
-    var L=S.online.lobby; if(!L) return;
-    if(acct.user) S.online.isHost = (L.host===acct.user.id);
-    if(!S.online.teamId && acct.user){
-      (L.teams||[]).forEach(function(t){ if(t.captain===acct.user.id||t.partner===acct.user.id) S.online.teamId=t.id; });
-    }
+  // fold a server duo blob into local state (members + both partners' times)
+  function duoIngest(json){
+    if(!json||!S.online) return;
+    S.online.teamName=json.name||S.online.teamName;
+    S.online.status=json.status;
+    var map={}; (json.members||[]).forEach(function(m){ map[m.user_id]=m.slot; });
+    S.online._slotByUser=map;
+    var me=acct.user&&acct.user.id;
+    (json.members||[]).forEach(function(m){ if(m.user_id!==me) S.online.partnerName=m.name; });
+    S.online.memberCount=(json.members||[]).length;
+    var tm={}; (json.times||[]).forEach(function(t){ var slot=map[t.user_id]; if(slot==null) return; (tm[t.round]=tm[t.round]||{})[slot]=t.effective_ms; });
+    // never regress a locally-known time (mine, just submitted, before the roundtrip)
+    var loc=S.online.times||{}; Object.keys(loc).forEach(function(r){ var d=loc[r]||{}; tm[r]=tm[r]||{}; if(d[0]!=null&&tm[r][0]==null) tm[r][0]=d[0]; if(d[1]!=null&&tm[r][1]==null) tm[r][1]=d[1]; });
+    S.online.times=tm;
+    duoOnUpdate();
   }
-  // map the lobby's teams into the S.teams shape hud()/viewDraw expect
-  function syncTeamsFromLobby(){
-    var L=S.online.lobby;
-    S.teams=(L.teams||[]).map(function(t){
-      return { id:t.id, name:t.name, flag:t.flag, isGhost:t.is_ghost, startedAsGhost:t.started_as_ghost,
-               alive:t.alive, eff:null, isYou:(t.id===S.online.teamId) };
-    });
-    S.round=L.round;
-  }
-  function onLobbyUpdate(){
-    var L=S.online.lobby; if(!L) return;
-    if(L.status==='open'){
-      // only re-render the lobby when the roster actually changes — otherwise the
-      // 3.5s poll rebuilds the DOM every tick and the card re-animates (flicker).
-      if(S.online.view==='lobby'){
-        var sig=(L.teams||[]).map(function(t){return t.id+':'+t.name;}).join('|')+'#'+L.code;
-        if(sig!==S.online._sig){ S.online._sig=sig; renderLobby(); }
-      }
+  // re-render only when something the current screen shows actually changed (no flicker)
+  function duoOnUpdate(){
+    if(!onlineActive()) return;
+    if(S.online.view==='lobby'){
+      var sig='n'+S.online.memberCount+':'+(S.online.partnerName||'');
+      if(sig!==S.online._sig){ S.online._sig=sig; renderDuoLobby(); }
       return;
     }
-    if(L.status==='done'){ onlineFinish(); return; }
-    // racing
-    if(L.round !== S.online.lastRound){       // new stage drawn (start or advance)
-      S.online.lastRound=L.round; onlineDrawStage(); return;
-    }
-    if(S.online.view==='leaderboard'){
-      var s2=(L.stage||[]).map(function(x){return x.team_id+':'+(x.submitted?1:0)+':'+(x.effective_ms||'');}).join('|')+'#'+L.round;
-      if(s2!==S.online._sig2){ S.online._sig2=s2; renderOnlineLeaderboard(); }   // re-render only on real change
+    if(S.screen==='stage' && S.phase==='leaderboard'){
+      var tt=S.online.times[S.round]||{};
+      var s2=(tt[0]!=null?tt[0]:'-')+'/'+(tt[1]!=null?tt[1]:'-')+'#'+S.round;
+      if(s2!==S.online._sig2){ S.online._sig2=s2; renderStage(); }
     }
   }
 
-  function renderLobby(){
-    var L=S.online.lobby; if(!L){ return; }
-    var teams=(L.teams||[]);
-    var rows=teams.map(function(t){
-      var you=(t.id===S.online.teamId);
-      return '<div class="lbrow'+(you?' you':'')+'"><span class="p">'+t.flag+'</span>'
-        +'<span class="nm">'+esc(t.name)+''+(you?' <span style="color:var(--globe);font-size:11px">you</span>':'')+'</span>'
-        +'<span class="tm" style="color:var(--mut);font-size:12px">'+(t.captain===L.host?'host':'ready')+'</span></div>';
-    }).join('');
-    var ctrl;
-    if(S.online.isHost){
-      ctrl='<button class="btn globe" id="ostart" style="margin-top:14px">Start the race 🌍 ('+teams.length+' human'+(teams.length===1?'':'s')+')</button>'
-        +'<p class="muted" style="font-size:12px;text-align:center;margin-top:8px">Empty slots (up to 11) fill with AI when you start.</p>';
-    } else {
-      ctrl='<p class="muted" style="text-align:center;margin-top:14px">⏳ Waiting for the host to start…</p>';
-    }
+  function renderDuoLobby(){
+    if(!S.online){ return; }
+    S.online.view='lobby';
+    var two=S.online.memberCount>=2;
+    var meName=acct.username||'You';
+    var rows='<div class="lbrow you"><span class="p">🧭</span><span class="nm">'+esc(meName)+' <span style="color:var(--globe);font-size:11px">you</span></span><span class="tm" style="color:var(--mut);font-size:12px">ready</span></div>'
+      + (two
+          ? '<div class="lbrow"><span class="p">🧭</span><span class="nm">'+esc(S.online.partnerName||'Partner')+'</span><span class="tm" style="color:var(--mut);font-size:12px">ready</span></div>'
+          : '<div class="lbrow"><span class="p">⏳</span><span class="nm" style="color:var(--mut)">Waiting for your partner…</span><span class="tm"></span></div>');
+    var ctrl = two
+      ? '<button class="btn globe" id="ostart" style="margin-top:14px">Start racing 🌍</button>'
+        + '<p class="muted" style="font-size:12px;text-align:center;margin-top:8px">You face a field of '+FIELD_SIZE+' teams. Each Stage you both play a different challenge — your times add up.</p>'
+      : '<p class="muted" style="text-align:center;margin-top:14px">Send your partner the code above. When they join, you can start.</p>';
     app.innerHTML = topbar()
-      + '<div class="card center"><div class="muted" style="font-size:12px;letter-spacing:.1em;text-transform:uppercase">Share this race code</div>'
-        + '<div style="font-family:\'Anton\',sans-serif;font-size:46px;letter-spacing:.14em;color:var(--globe);margin:4px 0 2px">'+esc(L.code)+'</div>'
+      + '<div class="card center"><div class="muted" style="font-size:12px;letter-spacing:.1em;text-transform:uppercase">Your team code</div>'
+        + '<div style="font-family:\'Anton\',sans-serif;font-size:46px;letter-spacing:.14em;color:var(--globe);margin:4px 0 2px">'+esc(S.online.code)+'</div>'
+        + '<div class="muted" style="font-size:12.5px">'+esc(S.online.teamName||'Our Team')+'</div>'
       + '</div>'
-      + '<div class="card"><h3 style="font-size:15px;margin-bottom:10px">Teams in the lobby</h3><div class="lb">'+rows+'</div>'+ctrl+'</div>'
+      + '<div class="card"><h3 style="font-size:15px;margin-bottom:10px">Your team</h3><div class="lb">'+rows+'</div>'+ctrl+'</div>'
       + '<button class="btn ghost sm" id="oleave" style="width:auto">‹ Leave</button>' + foot();
-    if($('ostart')) $('ostart').onclick=onlineStart;
-    $('oleave').onclick=function(){ leaveOnline(); S.screen='home'; render(); };
+    if($('ostart')) $('ostart').onclick=duoStart;
+    $('oleave').onclick=function(){ duoClearSess(); duoLeave(); S.screen='home'; render(); };
     renderAcct();
   }
 
-  function onlineStart(){
-    var b=$('ostart'); if(b){ b.disabled=true; b.textContent='Starting…'; }
-    var c=pick(COUNTRIES).id; S.online.used={}; S.online.used[c]=1;
-    var fl=pick(FINISH).id;
-    rpc('start_globe_race',{p_lobby:S.online.lobbyId, p_country_id:c, p_finish_line_id:fl}).then(function(r){
-      if(r.error){ toast(r.error.message||'Could not start'); if(b){b.disabled=false;b.textContent='Start the race 🌍';} return; }
-      S.online.lobby=r.data; resolveMyTeam(); onLobbyUpdate();
+  /* ---- deterministic field + stage (identical on both devices) ---- */
+  function duoBuildField(){
+    var gen=duoRng(0,101);
+    var skills=[]; for(var i=0;i<GHOSTS.length;i++){ skills.push(0.92 + (i*(1.75-0.92)/(GHOSTS.length-1))); }
+    skills=withRng(gen, function(){ return shuffle(skills); });
+    var teams=[{ id:'you', name:S.online.teamName||'Our Team', flag:'🧭', isGhost:false, startedAsGhost:false, skill:1, alive:true, eff:0 }];
+    for(var g=0; g<GHOSTS.length; g++){ teams.push({ id:'g'+g, name:GHOSTS[g].n, flag:GHOSTS[g].f, isGhost:true, startedAsGhost:true, skill:skills[g], alive:true, eff:0 }); }
+    S.teams=teams;
+  }
+  function duoCountryFor(round){ var gen=duoRng(0,103); var order=withRng(gen, function(){ return shuffle(COUNTRIES); }); return order[(round-1)%order.length]; }
+  function duoRebuild(){ S.online.finishLine=withRng(duoRng(0,102), function(){ return pick(FINISH); }); S.finishLine=S.online.finishLine; duoBuildField(); }
+  function duoSetStage(round){
+    S.round=round;
+    if(round>=ROUNDS){ var fl=S.online.finishLine; S.dest={ name:fl.city, region:fl.region, flag:fl.flag, final:true, landmark:fl.landmark, country: fl.country?countryById(fl.country):null }; }
+    else { var c=duoCountryFor(round); S.dest={ name:c.name, region:c.region, flag:c.flag, final:false, country:c }; var st=statsDefault(); st.countries[c.id]=1; saveStats(st); }
+    // build the Split-Path pair off the seeded stream with recent-kind filtering
+    // neutralised, so both devices produce the identical two challenges.
+    var savedRecent=S.recentKinds; S.recentKinds=[];
+    withRng(duoRng(round,1), function(){ buildChallenge(); });
+    S.recentKinds=savedRecent;
+    if(!S.offered || S.offered.length<2) S.offered=[S.offered&&S.offered[0], S.offered&&S.offered[0]].filter(Boolean);
+  }
+  // which of the two challenges is MINE this Stage (partner always gets the other)
+  function duoMyTaskIndex(){ return (S.round + S.online.slot) % 2; }
+  // a ghost TEAM plays both Split-Path challenges and its Stage time is the sum,
+  // exactly like the human team — so the fields are directly comparable.
+  function duoGhostTimes(round, offered, aliveGhosts){
+    return withRng(duoRng(round,9), function(){
+      return aliveGhosts.map(function(t){
+        var eff=0;
+        offered.forEach(function(task){
+          var kind=taskKind(task), base=BASE[kind]||8, pen=PENALTY[task.cat]||12;
+          var misses=(Math.random()<clampP(t.skill))?1:0; if(Math.random()<clampP(t.skill)*0.4) misses++;
+          eff += base*t.skill*rnd(0.9,1.12) + misses*pen;
+        });
+        return { team:t, eff:eff };
+      });
     });
   }
+  function duoStampRound(round){
+    var tt=S.online.times[round]||{}; var teamEff=((tt[0]||0)+(tt[1]||0))/1000;
+    var aliveGhosts=S.teams.filter(function(t){ return t.alive&&t.isGhost; });
+    var ghosts=duoGhostTimes(round, S.offered, aliveGhosts);
+    S.teams.forEach(function(t){ if(t.alive&&!t.isGhost) t.eff=teamEff; });
+    ghosts.forEach(function(g){ g.team.eff=g.eff; });
+  }
+  function duoRank(){ return S.teams.filter(function(t){ return t.alive; }).slice().sort(function(a,b){ return (a.eff-b.eff) || (a.id<b.id?-1:1); }); }
+  function duoCompletedRounds(){ var r=0; for(var k=1;k<=ROUNDS;k++){ var tt=S.online.times[k]; if(tt&&tt[0]!=null&&tt[1]!=null) r=k; else break; } return r; }
 
-  /* ---- online race loop (reuses the offline minigame renderers) ---- */
-  function onlineDrawStage(){
-    var L=S.online.lobby; syncTeamsFromLobby();
-    if(L.round>=9){
-      var fl=finishById(L.finish_line_id)||pick(FINISH);
-      S.finishLine=fl;
-      S.dest={ name:fl.city, region:fl.region, flag:fl.flag, final:true, landmark:fl.landmark,
-               country: fl.country?countryById(fl.country):null };
-    } else {
-      var c=countryById(L.country_id)||pick(COUNTRIES);
-      S.dest={ name:c.name, region:c.region, flag:c.flag, final:false, country:c };
-      var st=statsDefault(); st.countries[c.id]=1; saveStats(st);
+  /* ---- duo race flow ---- */
+  function duoStart(){
+    S._recorded=false; duoRebuild(); S.online.started=true; S.online.view='race';
+    S.screen='stage'; duoSetStage(1); S.phase='draw'; renderStage(); duoSave();
+  }
+  function duoViewChoice(){
+    var mine=duoMyTaskIndex();
+    var html=topbar()+hud()+'<div class="card">'
+      + '<div class="stagetype">🍴 Split Path — you and your partner each take one</div>'
+      + '<div class="choice">';
+    S.offered.forEach(function(t,i){
+      var refl=!!REFLEX_KINDS[taskKind(t)];
+      if(i===mine){
+        html+='<button class="taskcard" data-i="'+i+'"><div class="ct"><span class="catchip '+(refl?'reflex':'')+'">'+esc(taskLabel(t))+'</span><span class="pen">miss +'+PENALTY[t.cat]+'s</span></div>'
+          +'<div class="pr">'+esc(taskBlurb(t))+'</div>'
+          +'<div style="color:var(--globe);font-weight:800;font-size:12px;margin-top:8px">▶ Your challenge — tap to play</div></button>';
+      } else {
+        html+='<div class="taskcard" style="opacity:.55;cursor:default"><div class="ct"><span class="catchip '+(refl?'reflex':'')+'">'+esc(taskLabel(t))+'</span><span class="pen">miss +'+PENALTY[t.cat]+'s</span></div>'
+          +'<div class="pr">'+esc(taskBlurb(t))+'</div>'
+          +'<div style="color:var(--mut);font-weight:800;font-size:12px;margin-top:8px">🔒 '+esc(S.online.partnerName||'Your partner')+'\'s challenge</div></div>';
+      }
+    });
+    html+='</div><p class="muted" style="font-size:12px;text-align:center;margin-top:8px">Your team\'s Stage time is <b>both challenges added together</b> — so you can\'t both grab the quick one.</p></div>'+foot();
+    app.innerHTML=html;
+    var mb=document.querySelector('.taskcard[data-i="'+mine+'"]');
+    if(mb) mb.onclick=function(){ S.chosen=S.offered[mine]; S.phase='play'; renderStage(); };
+    renderAcct();
+  }
+  function duoSubmit(raw, misses){
+    var cat=S.chosen.cat, pen=PENALTY[cat];
+    var effSec=raw+misses*pen, effMs=Math.round(effSec*1000);
+    S.lastResult={ raw:raw, misses:misses, eff:effSec, pen:pen, skipped:false };
+    var st=statsDefault(); st.stagesPlayed++; if(misses===0) st.perfectStages++;
+    var k=taskKind(S.chosen||{}); if(k!=='reaction'&&k!=='sequence'&&(!st.fastestStage||raw<st.fastestStage)) st.fastestStage=raw; saveStats(st);
+    (S.online.times[S.round]=S.online.times[S.round]||{})[S.online.slot]=effMs;   // remember mine immediately
+    S.phase='checkpoint'; renderStage();
+    rpc('post_globe_duo_time',{p_duo:S.online.duoId, p_round:S.round, p_ms:effMs}).then(function(r){ if(onlineActive()&&r&&r.data) duoIngest(r.data); }).catch(function(){});
+  }
+  function duoShowLeaderboard(){ S.online.view='race'; S.phase='leaderboard'; S.online._sig2=null; duoRefresh(); renderStage(); }
+
+  function duoViewLeaderboard(){
+    var tt=S.online.times[S.round]||{};
+    if(tt[0]==null||tt[1]==null){   // still waiting on a partner's time
+      var mineIn=tt[S.online.slot]!=null;
+      app.innerHTML = topbar() + hud()
+        + '<div class="card center"><h3 style="font-size:15px;letter-spacing:.1em;color:var(--teal)">✅ Checkpoint · Stage '+S.round+'</h3>'
+        + '<div class="bigtime" style="margin-top:8px">'+(mineIn?fmtTime(tt[S.online.slot]/1000):'—')+'<span class="u">s</span></div>'
+        + '<div class="muted" style="font-size:12px;margin-top:4px">'+(mineIn?'your time is in':'')+'</div>'
+        + '<p class="lede" style="text-align:center;margin-top:14px">⏳ Waiting for <b>'+esc(S.online.partnerName||'your partner')+'</b> to finish their challenge…</p>'
+        + '</div>' + foot();
+      renderAcct(); return;
     }
-    buildChallenge();
-    S.phase='draw'; S.online.view='draw'; renderStage();
-  }
-  function onlineBeginPlay(){
-    S.online.view='play';
-    rpc('globe_stage_start',{p_lobby:S.online.lobbyId, p_round:S.round, p_category:S.chosen.cat}).then(function(r){
-      if(r.error){ toast(r.error.message||'Could not start stage'); return; }
-      S.phase='play'; renderStage();   // viewPlay runs the minigame; server has stamped the start
+    duoStampRound(S.round);
+    var teamEff=(tt[0]+tt[1])/1000;
+    var ranked=duoRank();
+    var final=(S.round>=ROUNDS);
+    var groundedTeam=ranked[ranked.length-1];
+    var youRank=ranked.findIndex(function(t){ return t.id==='you'; })+1;
+    var rowsHtml='';
+    ranked.forEach(function(t,i){
+      var out=(!final && t===groundedTeam), win=(final && i===0), you=(t.id==='you');
+      rowsHtml += '<div class="lbrow'+(you?' you':'')+(out?' out':'')+(win?' win':'')+'">'
+        + '<span class="p">'+(win?'🏆':(i+1))+'</span>'
+        + '<span class="nm">'+esc(t.name)+(you?' <span style="color:var(--globe);font-size:11px">you</span>':'')+'</span>'
+        + '<span class="tm">'+fmtTime(t.eff)+'s'+(out?' · Grounded':'')+'</span></div>';
     });
-  }
-  function onlineSubmit(raw, misses){
-    S.online.view='checkpoint';
-    var cat=S.chosen.cat;
-    rpc('globe_checkpoint',{p_lobby:S.online.lobbyId, p_round:S.round, p_misses:misses, p_category:cat}).then(function(r){
-      if(r.error){ toast(r.error.message||'Checkpoint failed'); return; }
-      var d=r.data||{};
-      var effMs = d.effective_ms!=null ? d.effective_ms : (raw*1000 + misses*PENALTY[cat]*1000);
-      var rawMs = d.raw_ms!=null ? d.raw_ms : raw*1000;
-      S.lastResult={ raw:rawMs/1000, misses:(d.misses!=null?d.misses:misses), eff:effMs/1000, pen:PENALTY[cat], skipped:false };
-      var st=statsDefault(); st.stagesPlayed++; if((d.misses!=null?d.misses:misses)===0) st.perfectStages++; saveStats(st);
-      S.phase='checkpoint'; renderStage();
-    });
-  }
-  function onlineShowLeaderboard(){ S.online.view='leaderboard'; refreshLobby(); renderOnlineLeaderboard(); }
-
-  function renderOnlineLeaderboard(){
-    var L=S.online.lobby; if(!L) return;
-    var stageById={}; (L.stage||[]).forEach(function(s){ stageById[s.team_id]=s; });
-    var alive=(L.teams||[]).filter(function(t){ return t.alive; });
-    var submitted=alive.filter(function(t){ var s=stageById[t.id]; return s&&s.submitted; });
-    // rank submitted teams by effective time; unsubmitted shown as still racing
-    var ranked=submitted.slice().sort(function(a,b){ return stageById[a.id].effective_ms-stageById[b.id].effective_ms; });
-    var racing=alive.filter(function(t){ var s=stageById[t.id]; return !(s&&s.submitted); });
-    var final=(L.round>=9);
-    var rowsHtml=ranked.map(function(t,i){
-      var eff=stageById[t.id].effective_ms/1000;
-      var win=(final&&i===0), you=(t.id===S.online.teamId);
-      var last=(!final && i===ranked.length-1 && racing.length===0);   // provisional slowest
-      return '<div class="lbrow'+(you?' you':'')+(win?' win':'')+(last?' out':'')+'">'
-        +'<span class="p">'+(win?'🏆':(i+1))+'</span>'
-        +'<span class="nm">'+esc(t.name)+''+'</span>'
-        +'<span class="tm">'+fmtTime(eff)+'s'+(last?' · slowest':'')+'</span></div>';
-    }).join('');
-    var racingHtml=racing.map(function(t){
-      return '<div class="lbrow"><span class="p">•</span><span class="nm">'+esc(t.name)+''+'</span>'
-        +'<span class="tm" style="color:var(--mut)">racing…</span></div>';
-    }).join('');
-
-    var allIn=(racing.length===0);
-    var ctrl;
-    if(final && allIn){
-      // host closes the race → advance_globe_round sets the lobby status='done',
-      // which pushes every client (incl. the host) to the result via realtime.
-      ctrl = S.online.isHost
-        ? '<button class="btn globe" id="ofin" style="margin-top:14px">Crown the winner 🏁</button>'
-        : '<p class="muted" style="text-align:center;margin-top:12px">⏳ Waiting for the host to finish the race…</p>';
-    } else if(S.online.isHost){
-      ctrl = allIn
-        ? '<button class="btn globe" id="oadv" style="margin-top:14px">'+(L.round>=8?'To the Final ›':'Next Stage ›')+'</button>'
-        : '<p class="muted" style="text-align:center;margin-top:12px">Waiting for '+racing.length+' team'+(racing.length===1?'':'s')+' to check in…</p>';
+    var banner;
+    if(final){
+      var youWon=ranked[0].id==='you';
+      banner = youWon
+        ? '<div class="banner win"><h2>🏆 Your team wins RunTheGlobe!</h2><p>First across the finish at '+esc(S.dest.landmark||S.dest.name)+' with a combined '+fmtTime(teamEff)+'s.</p></div>'
+        : '<div class="banner grounded"><h2>So close.</h2><p>Your team finished #'+youRank+' in the Final. '+esc(ranked[0].name)+' took the race.</p></div>';
+    } else if(groundedTeam.id==='you'){
+      banner = '<div class="banner grounded"><h2>✈️ Your team is Grounded</h2><p>Slowest at '+esc(S.dest.name)+' (combined '+fmtTime(teamEff)+'s). Your race ends here.</p></div>';
     } else {
-      ctrl = allIn
-        ? '<p class="muted" style="text-align:center;margin-top:12px">⏳ Waiting for the host to advance…</p>'
-        : '<p class="muted" style="text-align:center;margin-top:12px">'+submitted.length+'/'+alive.length+' teams checked in…</p>';
+      banner = '<div class="banner safe"><h2>You advance ›</h2><p>#'+youRank+' of '+ranked.length+' at '+esc(S.dest.name)+' with a combined '+fmtTime(teamEff)+'s. '+esc(groundedTeam.name)+' is Grounded.</p></div>';
     }
     app.innerHTML = topbar() + hud()
-      + '<div class="card"><h3 style="font-size:15px;margin-bottom:10px">'+esc(S.dest?S.dest.name:'Checkpoint')+' — Stage '+L.round+'</h3>'
-        + '<div class="lb">'+rowsHtml+racingHtml+'</div>'+ctrl+'</div>' + foot();
-    if($('oadv')) $('oadv').onclick=onlineAdvance;
-    if($('ofin')) $('ofin').onclick=onlineAdvance;   // Final: advance sets status='done' → all clients transition
+      + '<div class="card">'+banner
+      + '<div class="breakdown" style="justify-content:center"><span>'+esc(acct.username||'You')+' <b>'+fmtTime(tt[S.online.slot]/1000)+'s</b></span>'
+        + '<span>'+esc(S.online.partnerName||'Partner')+' <b>'+fmtTime(tt[1-S.online.slot]/1000)+'s</b></span>'
+        + '<span>Team <b>'+fmtTime(teamEff)+'s</b></span></div>'
+      + '<div class="lb">'+rowsHtml+'</div><div id="lbbtns"></div></div>' + foot();
+    var btns=$('lbbtns');
+    if(final){
+      var youWon2=ranked[0].id==='you'; sfx(youWon2?'win':'lose'); recordRaceEnd(ranked); duoClearSess();
+      btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn ghost" id="share">📋 Share</button><button class="btn globe" id="again">New team race 🌍</button></div>';
+      $('home').onclick=function(){ duoLeave(); S.screen='home'; render(); };
+      $('again').onclick=function(){ duoLeave(); S.screen='online'; render(); };
+      $('share').onclick=function(){ shareResult(youWon2 ? ('🌍 My partner and I just WON a team race in RunTheGlobe! Play at runthe.gg/globe') : ('🌍 My team finished #'+youRank+' in a RunTheGlobe team race. Race us at runthe.gg/globe')); };
+    } else if(groundedTeam.id==='you'){
+      sfx('lose'); recordRaceEnd(ranked); duoClearSess();
+      btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Return home</button><button class="btn globe" id="watch">Watch the rest ▶</button></div>';
+      $('home').onclick=function(){ duoLeave(); S.screen='home'; render(); };
+      $('watch').onclick=function(){ groundAndAdvance(groundedTeam); duoSpectate(); };
+    } else {
+      btns.innerHTML='<button class="btn globe" id="next" style="margin-top:14px">Next Stage ›</button>';
+      $('next').onclick=function(){ groundAndAdvance(groundedTeam); duoSetStage(S.round+1); S.phase='draw'; S.online._sig2=null; renderStage(); duoSave(); };
+    }
     renderAcct();
   }
-  function onlineAdvance(){
-    var b=$('oadv'); if(b){ b.disabled=true; b.textContent='…'; }
-    var next='';
-    if(S.online.lobby.round < 8){   // drawing a normal country for the next stage
-      var pool=COUNTRIES.filter(function(c){ return !S.online.used[c.id]; });
-      if(!pool.length){ S.online.used={}; pool=COUNTRIES.slice(); }
-      var c=pick(pool); S.online.used[c.id]=1; next=c.id;
-    } // round 8 → advancing into the Final (round 9) uses the finish line, no country needed
-    rpc('advance_globe_round',{p_lobby:S.online.lobbyId, p_next_country_id:next}).then(function(r){
-      if(r.error){ toast(r.error.message||'Could not advance'); if(b){b.disabled=false;b.textContent='Next Stage ›';} return; }
-      S.online.lobby=r.data; resolveMyTeam(); onLobbyUpdate();
-    });
-  }
-  function onlineFinish(){
-    S.online.view='done';
-    var L=S.online.lobby; var stageById={}; (L.stage||[]).forEach(function(s){ stageById[s.team_id]=s; });
-    var finalists=(L.teams||[]).filter(function(t){ return t.alive; });
-    var ranked=finalists.slice().sort(function(a,b){
-      var ea=(stageById[a.id]||{}).effective_ms||9e9, eb=(stageById[b.id]||{}).effective_ms||9e9; return ea-eb;
-    });
-    var youRank=ranked.findIndex(function(t){ return t.id===S.online.teamId; })+1;
-    var youWon=ranked.length&&ranked[0].id===S.online.teamId;
-    // record locally (same tallies as offline)
-    if(!S.online.recorded){ S.online.recorded=true; var st=statsDefault(); var before=badgeTiers(st); st.races++;
-      if(youRank){ if(!st.bestPlace||youRank<st.bestPlace) st.bestPlace=youRank; if(youWon) st.wins++; if(youRank<=3) st.top3++; }
-      if(youWon){ st.winStreak=(st.winStreak||0)+1; if(st.winStreak>st.longestStreak) st.longestStreak=st.winStreak; } else { st.winStreak=0; }
-      saveStats(st); announceNewBadges(before); }
-    var rows=ranked.map(function(t,i){
-      var eff=((stageById[t.id]||{}).effective_ms||0)/1000, you=(t.id===S.online.teamId);
-      return '<div class="lbrow'+(you?' you':'')+(i===0?' win':'')+'"><span class="p">'+(i===0?'🏆':(i+1))+'</span>'
-        +'<span class="nm">'+esc(t.name)+''+'</span>'
-        +'<span class="tm">'+fmtTime(eff)+'s</span></div>';
-    }).join('');
-    var banner = youWon
-      ? '<div class="banner win"><h2>🏆 You win RunTheGlobe!</h2><p>First across the finish at '+esc((S.finishLine&&S.finishLine.landmark)||'the finish line')+'.</p></div>'
-      : '<div class="banner"><h2 style="color:var(--globe)">🏁 Race complete</h2><p>You finished #'+(youRank||'-')+'. '+esc(ranked.length?ranked[0].name:'')+' took the race.</p></div>';
-    sfx(youWon?'win':'lose');
-    app.innerHTML = topbar() + '<div class="card">'+banner+'<div class="lb">'+rows+'</div>'
-      + '<div class="btnrow"><button class="btn ghost" id="ohome">Home</button><button class="btn ghost" id="oshare">📋 Share</button><button class="btn globe" id="onew">New race</button></div></div>' + foot();
-    $('ohome').onclick=function(){ leaveOnline(); S.screen='home'; render(); };
-    $('onew').onclick=function(){ leaveOnline(); S.screen='online'; render(); };
-    $('oshare').onclick=function(){ shareResult(youWon
-      ? ('🌍 I just WON an online RunTheGlobe race at '+((S.finishLine&&S.finishLine.city)||'the Final')+'! Play at runthe.gg/globe')
-      : ('🌍 I finished #'+(youRank||'-')+' in an online RunTheGlobe race. Race me at runthe.gg/globe')); };
+
+  function duoSpectate(){
+    // team Grounded — deterministically finish the field for a quick summary
+    while(S.round<ROUNDS && S.teams.filter(function(t){return t.alive;}).length>3){
+      S.round++;
+      var ag=S.teams.filter(function(t){return t.alive&&t.isGhost;});
+      var res=withRng(duoRng(S.round,9), function(){ return ag.map(function(t){ return {team:t, eff: BASE.mcq*t.skill*rnd(0.9,1.12)}; }); });
+      res.sort(function(a,b){ return (a.eff-b.eff)||(a.team.id<b.team.id?-1:1); });
+      var slow=res[res.length-1]; if(slow) slow.team.alive=false;
+    }
+    S.round=ROUNDS;
+    var last3=S.teams.filter(function(t){return t.alive;});
+    var fin=withRng(duoRng(999,9), function(){ return last3.map(function(t){ return {team:t, eff: BASE.mcq*t.skill*rnd(0.9,1.12)}; }); });
+    fin.sort(function(a,b){ return (a.eff-b.eff)||(a.team.id<b.team.id?-1:1); });
+    var rows=fin.map(function(x,i){ return '<div class="lbrow'+(i===0?' win':'')+'"><span class="p">'+(i===0?'🏆':(i+1))+'</span><span class="nm">'+esc(x.team.name)+'</span><span class="tm">'+fmtTime(x.eff)+'s</span></div>'; }).join('');
+    app.innerHTML = topbar()
+      + '<div class="card"><div class="banner"><h2 style="color:var(--globe)">🏁 The Final · '+esc(S.online.finishLine.city)+'</h2>'
+      + '<p>Your team was Grounded, but here\'s how the race finished at '+esc(S.online.finishLine.landmark)+'.</p></div>'
+      + '<div class="lb">'+rows+'</div>'
+      + '<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn globe" id="again">New team race 🌍</button></div></div>' + foot();
+    $('home').onclick=function(){ duoLeave(); S.screen='home'; render(); };
+    $('again').onclick=function(){ duoLeave(); S.screen='online'; render(); };
     renderAcct();
+  }
+
+  /* ---- resume an in-progress duo from the seed + posted times (refresh-safe) ---- */
+  var _duoResumeTried=false;
+  function maybeDuoResume(force){
+    if(_duoResumeTried && !force) return;
+    var sess=duoLoadSess(); if(!sess||!acct.user||!sb) return;
+    _duoResumeTried=true;
+    rpc('get_globe_duo',{p_duo:sess.duoId}).then(function(r){
+      if(!r||r.error||!r.data){ if(r&&r.error) duoClearSess(); return; }
+      S.online={ active:true, duoId:r.data.id, code:r.data.code, seed:Number(r.data.seed), slot:sess.slot,
+                 teamName:r.data.name, partnerName:null, times:{}, memberCount:0, view:'race',
+                 channel:null, poll:null, status:r.data.status, started:true };
+      duoIngest(r.data);
+      if(S.online._slotByUser[acct.user.id]!=null) S.online.slot=S.online._slotByUser[acct.user.id];
+      duoSubscribe(); duoResume();
+    }).catch(function(){});
+  }
+  function duoResume(){
+    duoRebuild();
+    var completed=duoCompletedRounds();
+    var status='racing', groundedRound=0;
+    for(var r=1;r<=completed;r++){
+      duoSetStage(r); duoStampRound(r);
+      var ranked=duoRank();
+      if(r<ROUNDS){ var last=ranked[ranked.length-1]; if(last.id==='you'){ status='grounded'; groundedRound=r; break; } last.alive=false; }
+      else { status='final'; }
+    }
+    S._recorded=false; S.screen='stage'; S.online.view='race';
+    if(status==='grounded'){
+      S.round=groundedRound; duoSetStage(groundedRound); duoStampRound(groundedRound);
+      recordRaceEnd(duoRank());
+      var you=S.teams.filter(function(t){return t.id==='you';})[0]; if(you) groundAndAdvance(you);
+      duoSpectate(); return;
+    }
+    if(status==='final'){ S.round=ROUNDS; duoSetStage(ROUNDS); S.phase='leaderboard'; S.online._sig2=null; renderStage(); return; }
+    var cur=completed+1; if(cur>ROUNDS) cur=ROUNDS;
+    duoSetStage(cur);
+    var tt=S.online.times[cur]||{};
+    if(tt[S.online.slot]!=null){ S.phase='leaderboard'; S.online._sig2=null; renderStage(); return; }   // I've played, waiting
+    if(cur===1 && S.online.memberCount<2 && tt[0]==null && tt[1]==null){ S.online.view='lobby'; S.screen='lobby'; renderDuoLobby(); return; }
+    S.phase='draw'; renderStage();
   }
 
   /* --------------------------------------------------------------- bootstrap */
