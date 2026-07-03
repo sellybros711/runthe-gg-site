@@ -1762,13 +1762,24 @@
   }
   function onLobbyUpdate(){
     var L=S.online.lobby; if(!L) return;
-    if(L.status==='open'){ if(S.online.view==='lobby') renderLobby(); return; }
+    if(L.status==='open'){
+      // only re-render the lobby when the roster actually changes — otherwise the
+      // 3.5s poll rebuilds the DOM every tick and the card re-animates (flicker).
+      if(S.online.view==='lobby'){
+        var sig=(L.teams||[]).map(function(t){return t.id+':'+t.name;}).join('|')+'#'+L.code;
+        if(sig!==S.online._sig){ S.online._sig=sig; renderLobby(); }
+      }
+      return;
+    }
     if(L.status==='done'){ onlineFinish(); return; }
     // racing
     if(L.round !== S.online.lastRound){       // new stage drawn (start or advance)
       S.online.lastRound=L.round; onlineDrawStage(); return;
     }
-    if(S.online.view==='leaderboard') renderOnlineLeaderboard();   // live standings refresh
+    if(S.online.view==='leaderboard'){
+      var s2=(L.stage||[]).map(function(x){return x.team_id+':'+(x.submitted?1:0)+':'+(x.effective_ms||'');}).join('|')+'#'+L.round;
+      if(s2!==S.online._sig2){ S.online._sig2=s2; renderOnlineLeaderboard(); }   // re-render only on real change
+    }
   }
 
   function renderLobby(){
