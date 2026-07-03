@@ -8039,13 +8039,13 @@ const H2H_BOTS_ENABLED=true;
 const H2H_BOT_WAIT_MIN=4000, H2H_BOT_WAIT_MAX=6500;   // wait for a real human before AI starts trickling in
 // realistic, human-looking handles (first names / initials / nicknames / casual numbers), NOT golf puns,
 // so a filled-in opponent doesn't read as a bot. Kept in sync with supabase/44_h2h_seed_board.sql.
-const H2H_BOT_NAMES=['mike_42','jenna23','tom_h','kevin09','jmarshall','adembski','rgarcia','s_kelly','coledawg','marcus_b',
+const H2H_BOT_NAMES=['mike42','jenna23','tomh','kevin09','jmarshall','adembski','rgarcia','skelly','coledawg','marcusb',
   'thewill','dannyboy','cjw','ajp23','sullyy','murph','gonzo','hutch','bez','SarahK',
-  'MattL','DangerDave','liam_o','nora_p','priya_s','diego88','yuki_t','omar_h','big_tuna','chrisp',
-  'benji','natek','andyg','tsmith','jklein','mo_r','vik','hollyb','sammyc','rico',
-  'leo_m','dpatel','kbryant','gina_v','frankie','tonyd','jaylen','mgreer','ash_w','colby7',
-  'ryanm','zach_l','willc','ellie_r','jt09','brandon_k','nina','pauly','hendo','robw',
-  'alexd','maxs','tomo','jess_h','danielk','greg_p','oscar_','marco','tyler_j','jodes'];
+  'MattL','DangerDave','liamo','norah','priyas','diego88','yukit','omarh','bigtuna','chrisp',
+  'benji','natek','andyg','tsmith','jklein','moryan','vik','hollyb','sammyc','rico',
+  'leo23','dpatel','kbryant','ginav','frankie','tonyd','jaylen','mgreer','ashw','colby7',
+  'ryanm','zachl','willc','ellier','jt09','brandonk','nina','pauly','hendo','robw',
+  'alexd','maxs','tomo','jessh','danielk','gregp','oscarb','marco','tylerj','jodes'];
 function h2hShuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i];a[i]=a[j];a[j]=t; } return a; }
 function h2hPickBotNames(n){ const pool=H2H_BOT_NAMES.slice(), out=[]; for(let i=0;i<n&&pool.length;i++) out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]); return out; }
 function h2hBotSkills(){
