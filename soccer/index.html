@@ -11527,7 +11527,13 @@ async function sbRpc(fn, params){
 // Flag-gated — turn OFF once there's a real player base, and this MUST be off
 // before any real-money/wagering feature.
 const ONLINE_BOTS_ENABLED = true;
-const ONLINE_BOT_WAIT_MIN = 5200, ONLINE_BOT_WAIT_MAX = 9000; // ms before Online Friendly backfills
+const ONLINE_BOT_WAIT_MIN = 5200, ONLINE_BOT_WAIT_MAX = 9000; // ms before an EMPTY lobby backfills
+// Longer wait used whenever a real opponent IS present (joined and/or mid-
+// draft) but has gone stalled/inactive — give a slow-but-real person a fair
+// window before we give up and convert their slot to a bot. Matches the
+// server-side 20s floor in soccer_h2h_take_over_stalled with headroom so the
+// client's own timer is what actually fires the call in the common case.
+const STALL_WAIT_MIN = 30000, STALL_WAIT_MAX = 40000;
 const ONLINE_BOT_NAMES = [
   'PitchKing','StrikerX22','GoalMachine','TikiTakaTom','FutbolFanatic','TheGaffer',
   'MidfieldMaestro','CleanSheetKid','NetBuster','BoxToBox','WingWizard','ElCapitan',
@@ -11739,23 +11745,33 @@ async function h2hPoll(){
 
   h2hRenderLobby(st);
 
-  // arm the bot backfill once MY draft is in and I'm the host of an empty
-  // PUBLIC lobby — never for a private match, you're waiting on a specific
-  // friend there, not a stranger.
-  if(h2hRole==='host' && h2hIsPublic && st.guest==null && st.host_picks && !h2hBotTimer){
-    const wait = ONLINE_BOT_WAIT_MIN + Math.random()*(ONLINE_BOT_WAIT_MAX-ONLINE_BOT_WAIT_MIN);
-    h2hBotTimer = setTimeout(h2hMaybeBackfillBot, wait);
+  // arm stalled-opponent recovery once MY draft is in and the other side
+  // hasn't finished theirs. Nobody-ever-joined-yet (host, guest still null)
+  // gets the original short wait — there's truly no one there to lose. Every
+  // other case — a real opponent joined (or exists, for a guest's host) but
+  // hasn't finished drafting — gets a longer, fairer wait so a slow-but-real
+  // person isn't cut off. A still-empty PRIVATE lobby never arms at all:
+  // that link was sent to one specific friend, so keep waiting for them.
+  if(h2hMyPicksSubmitted(st) && !h2hOppPicksSubmitted(st) && !h2hBotTimer){
+    const nobodyJoinedYet = (h2hRole==='host' && st.guest==null);
+    if(!(nobodyJoinedYet && !h2hIsPublic)){
+      const wait = nobodyJoinedYet
+        ? ONLINE_BOT_WAIT_MIN + Math.random()*(ONLINE_BOT_WAIT_MAX-ONLINE_BOT_WAIT_MIN)
+        : STALL_WAIT_MIN + Math.random()*(STALL_WAIT_MAX-STALL_WAIT_MIN);
+      h2hBotTimer = setTimeout(h2hMaybeTakeOverStalled, wait);
+    }
   }
 }
 
-async function h2hMaybeBackfillBot(){
+async function h2hMaybeTakeOverStalled(){
   h2hBotTimer = null;
-  if(!ONLINE_BOTS_ENABLED || !h2hMatchId || h2hRole!=='host') return;
+  if(!ONLINE_BOTS_ENABLED || !h2hMatchId) return;
   let st;
   try{ st = await sbRpc('soccer_h2h_state', { p_match_id: h2hMatchId }); }catch(e){ return; }
-  if(!st || st.guest!=null || st.status!=='open' || !st.host_picks) return; // someone joined, or state moved on
+  if(!st || st.status==='done' || st.status==='void' || st.status==='abandoned') return;
+  if(!h2hMyPicksSubmitted(st) || h2hOppPicksSubmitted(st)) return; // state moved on since we armed
   h2hStopAll();
-  await h2hRunBotMatch(st);
+  await h2hRunTakeOverMatch(st);
 }
 
 function h2hRenderLobby(st){
@@ -11886,39 +11902,54 @@ async function h2hRunMatch(st){
   await h2hPlayAndShow(m, st, iAmGuest);
 }
 
-async function h2hRunBotMatch(st){
-  const hostSquad = h2hHydrateSquad(st.host_picks);
+// Takes over WHICHEVER side stalled — could be the host (if I'm the guest
+// and the host never showed up/never drafted) or the guest (the original
+// case: I'm the host and the guest slot is empty or stuck mid-draft). My own
+// squad is always simulateMatch's canonical "user" side here, regardless of
+// my literal host/guest role, so the result is already in "me" terms — see
+// the skipPerspective flag on h2hPlayAndShow below.
+async function h2hRunTakeOverMatch(st){
+  const iAmGuest = h2hRole==='guest';
+  const mySquad = h2hHydrateSquad(iAmGuest ? st.guest_picks : st.host_picks);
+  const myOverall = iAmGuest ? st.guest_overall : st.host_overall;
   const bot = onlineBotSquad();
   // Fallback identity in case the RPC below fails — the persistent identity
   // it returns (one of soccer_bots' fixed roster, with an accumulating W/L
   // record) is what actually gets shown once it comes back.
   let botName = onlineBotName(), botFlag = onlineBotFlag();
 
-  const m = simulateMatch(hostSquad, st.host_overall,
+  const m = simulateMatch(mySquad, myOverall,
     { country:'ONLINE', year:'', teamOverall: bot.overall, squad: bot.squad });
 
   try{
-    const rec = await sbRpc('soccer_h2h_record_bot_match', {
-      p_match_id: st.id, p_host_goals: m.userGoals, p_guest_goals: m.opponentGoals,
-      p_winner: m.winner==='user' ? 'host' : 'guest'
+    const rec = await sbRpc('soccer_h2h_take_over_stalled', {
+      p_match_id: st.id, p_my_goals: m.userGoals, p_opp_goals: m.opponentGoals,
+      p_i_won: m.winner==='user'
     });
-    if(rec && rec.guest_name){ botName = rec.guest_name; botFlag = rec.guest_flag || botFlag; }
+    if(rec && rec.bot_name){ botName = rec.bot_name; botFlag = rec.bot_flag || botFlag; }
   }catch(e){ /* best-effort leaderboard record; the match still plays out locally */ }
 
-  const stForDisplay = Object.assign({}, st, { guest_name:botName, guest_flag:botFlag, guest_is_bot:true });
-  await h2hPlayAndShow(m, stForDisplay, false, bot.squad);
+  const stForDisplay = iAmGuest
+    ? Object.assign({}, st, { host_name:botName, host_flag:botFlag, host_is_bot:true })
+    : Object.assign({}, st, { guest_name:botName, guest_flag:botFlag, guest_is_bot:true });
+  await h2hPlayAndShow(m, stForDisplay, iAmGuest, bot.squad, { skipPerspective:true, oppOverallOverride: bot.overall });
 }
 
-async function h2hPlayAndShow(m, st, iAmGuest, guestSquadOverride){
-  const mForMe = h2hPerspective(m, iAmGuest);
+async function h2hPlayAndShow(m, st, iAmGuest, oppSquadOverride, opts){
+  opts = opts || {};
+  // m is already computed in "me"/"them" terms for the take-over path (my
+  // own squad is always simulateMatch's canonical user side there), so it
+  // must NOT be re-swapped. The two-real-players path always computes host-
+  // first, so it still needs the perspective swap whenever I'm the guest.
+  const mForMe = opts.skipPerspective ? m : h2hPerspective(m, iAmGuest);
   const myOverall  = iAmGuest ? st.guest_overall : st.host_overall;
-  const oppOverall = iAmGuest ? st.host_overall  : st.guest_overall;
+  const oppOverall = opts.oppOverallOverride != null ? opts.oppOverallOverride : (iAmGuest ? st.host_overall : st.guest_overall);
   const myName  = h2hMyName();
   const oppName = (iAmGuest ? st.host_name : st.guest_name) || 'Opponent';
   const myFlag  = (authProfile && authProfile.flag) || 'USA';
   const oppFlag = (iAmGuest ? st.host_flag : st.guest_flag) || 'USA';
   const mySquad  = h2hHydrateSquad(iAmGuest ? st.guest_picks : st.host_picks);
-  const oppSquad = guestSquadOverride || h2hHydrateSquad(iAmGuest ? st.host_picks : st.guest_picks);
+  const oppSquad = oppSquadOverride || h2hHydrateSquad(iAmGuest ? st.host_picks : st.guest_picks);
 
   const box = computeMatchStats(myOverall, oppOverall, mForMe.userGoals, mForMe.opponentGoals);
   const normSquad = arr => arr.map(p=>({ slot:p.slot, name:p.name, overall:p.overall, position:p.position, country:p.country, year:p.year }));
