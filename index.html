@@ -143,14 +143,18 @@
   .badge-mode{background:rgba(255,255,255,.05);border:1px solid var(--line);color:#cfe0f0;}
   .game.golf .badge-mode{color:#f3dca0;background:rgba(235,166,31,.12);border-color:rgba(235,166,31,.34);}
   .game.soccer .badge-mode{color:#bfe9df;background:rgba(53,196,205,.12);border-color:rgba(53,196,205,.34);}
+  /* keep the Solo + H2H pair together so they wrap to the next line as a unit */
+  .g-title .nm .modes{display:inline-flex;gap:9px;flex:0 0 auto;}
 
   .g-chips{display:flex;gap:7px;flex-wrap:wrap;padding:12px 17px 0;}
   .chip{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
     color:#bfe9df;background:rgba(53,196,205,.13);border:1px solid rgba(53,196,205,.3);padding:4px 9px;border-radius:999px;}
   .game.golf .chip{color:#f3dca0;background:rgba(235,166,31,.13);border-color:rgba(235,166,31,.32);}
 
-  /* RunThePitch online promo strip — puts the multiplayer modes front and centre */
-  .online-strip{margin:13px 17px 0;padding:11px 13px;border-radius:13px;
+  /* RunThePitch online promo strip — puts the multiplayer modes front and centre.
+     display:block is required: this <span> holds block-level (flex) children, and
+     leaving it inline makes the browser split the box and paint stray border slivers. */
+  .online-strip{display:block;margin:13px 17px 0;padding:11px 13px;border-radius:13px;
     background:rgba(60,232,184,.08);border:1px solid rgba(60,232,184,.28);}
   .online-strip .ol-hd{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:900;
     letter-spacing:.1em;text-transform:uppercase;color:#7ff0d0;}
@@ -363,7 +367,7 @@ window.GA_ID='G-L29P5MRWKE';
         <span class="g-head">
           <span class="crest"><img src="/golf/icon-192.png" alt="RunTheTour crest" width="76" height="76" loading="lazy" /></span>
           <span class="g-title">
-            <span class="nm"><span><span class="r">Run</span><span class="t">The</span><span class="g">Tour</span></span><span class="badge-new">New</span><span class="badge-mode">Solo</span><span class="badge-mode">H2H</span></span>
+            <span class="nm"><span><span class="r">Run</span><span class="t">The</span><span class="g">Tour</span></span><span class="badge-new">New</span><span class="modes"><span class="badge-mode">Solo</span><span class="badge-mode">H2H</span></span></span>
           </span>
         </span>
         <span class="g-desc">Draft one skill from golf's greatest, build your player, then live a 30-year career: majors, the Ryder Cup, the Olympics.</span>
@@ -376,7 +380,7 @@ window.GA_ID='G-L29P5MRWKE';
         <span class="g-head">
           <span class="crest"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="RunThePitch crest" width="76" height="76" loading="lazy" /></span>
           <span class="g-title">
-            <span class="nm"><span><span class="r">Run</span><span class="t">The</span><span class="g">Pitch</span></span><span class="badge-mode">Solo</span><span class="badge-mode">H2H</span></span>
+            <span class="nm"><span><span class="r">Run</span><span class="t">The</span><span class="g">Pitch</span></span><span class="modes"><span class="badge-mode">Solo</span><span class="badge-mode">H2H</span></span></span>
           </span>
         </span>
         <span class="g-desc">Spin a nation &amp; year, draft a legend each round, build your dream XI, then simulate your World Cup run.</span>
