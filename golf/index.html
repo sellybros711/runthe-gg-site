@@ -3069,7 +3069,7 @@ function render(){
   app.innerHTML='';
   app.appendChild(header());
   const card=$(`<main class="card"></main>`);
-  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','rules','h2hhome','h2hlobby','h2hdraft','h2hwatch','h2hresult','h2hboard'].includes(S.screen)?' wide':''}"></div>`);
+  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','rules','h2hhome','h2hlobby','h2hdraft','h2hpreview','h2hwatch','h2hresult','h2hboard'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
   app.appendChild(footer());
@@ -3112,7 +3112,7 @@ function render(){
   // card instead (showing the real error message so a recurrence is diagnosable straight from a
   // screenshot, not just from analytics we might never see).
   try{
-    ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult,h2hhome:scrH2HHome,h2hlobby:scrH2HLobby,h2hdraft:scrH2HDraft,h2hwatch:scrH2HWatch,h2hresult:scrH2HResult,h2hboard:scrH2HBoard})[S.screen]();
+    ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult,h2hhome:scrH2HHome,h2hlobby:scrH2HLobby,h2hdraft:scrH2HDraft,h2hpreview:scrH2HPreview,h2hwatch:scrH2HWatch,h2hresult:scrH2HResult,h2hboard:scrH2HBoard})[S.screen]();
   }catch(err){
     console.error('[RunTheTour] screen render failed:', S.screen, err);
     try{ track('screen_render_error',{screen:S.screen,message:(err&&err.message)||String(err)}); }catch(e){}
@@ -8065,7 +8065,7 @@ function h2hOnState(st){
   const me=S.h2h.players.find(p=>p.user_id===h2hUid());
   if(me){ S.h2h.mySlot=me.slot; S.h2h.myWheel=me.wheel_seed; S.h2h.myTeam=me.team; }
   if(st.status==='drafting' && !S.h2h.drafting){ h2hBeginDraft(); return; }
-  if(st.status==='live' && !S.h2h.watching){ h2hBeginWatch(); return; }
+  if(st.status==='live' && !S.h2h.watching && !S.h2h.previewed){ h2hEnterPreview(); return; }
   if(st.status==='done' && S.screen!=='h2hresult' && S.screen!=='h2hwatch'){ S.screen='h2hresult'; render(); return; }
   if(st.status==='void' && S.screen!=='h2hresult'){ S.h2h.void=true; S.screen='h2hresult'; render(); return; }
   if(S.screen==='h2hlobby') render();
@@ -8120,15 +8120,25 @@ function h2hBuildUnits(){
   const one=(sk,i)=>h2hHoleScore(sk,course,key,diffs,cond,seed,i);
   if(!h2hMode(mode).teams){
     return ps.slice().sort((a,b)=>a.slot-b.slot).map(p=>({kind:'slot', id:p.slot, label:p.username, members:[p],
-      holeScore:i=>one(p.draft.skills,i)}));
+      dispSkills:p.draft.skills, holeScore:i=>one(p.draft.skills,i)}));
   }
   const teams={}; ps.forEach(p=>{ const t=(p.team==null?0:p.team); (teams[t]=teams[t]||[]).push(p); });
   return Object.keys(teams).sort().map(tk=>{ const mem=teams[tk], ti=+tk, label=mem.map(p=>p.username).join(' & ');
-    if(mode==='bestball') return {kind:'team', id:ti, label, members:mem,
+    // per-skill max of the partners: the combined golfer for Scramble; a "team best" strength line for the preview
+    const maxSk={}; for(const c of CATS) maxSk[c.k]=Math.max.apply(null, mem.map(p=>p.draft.skills[c.k]|0));
+    if(mode==='bestball') return {kind:'team', id:ti, label, members:mem, dispSkills:maxSk,
       holeScore:i=>Math.min.apply(null, mem.map(p=>one(p.draft.skills,i)))};
-    const combined={}; for(const c of CATS) combined[c.k]=Math.max.apply(null, mem.map(p=>p.draft.skills[c.k]|0));
-    return {kind:'team', id:ti, label, members:mem, combined, holeScore:i=>one(combined,i)};
+    return {kind:'team', id:ti, label, members:mem, combined:maxSk, dispSkills:maxSk, holeScore:i=>one(maxSk,i)};
   });
+}
+// matchup overview: after everyone's drafted (status live), size up the field before teeing off.
+function h2hEnterPreview(){
+  if(!h2hAllDrafted()) return;   // drafts not all revealed yet, wait for the next poll
+  S.h2h.previewed=true;
+  S.h2h.units=h2hBuildUnits();   // gives each unit dispSkills for the comparison (no winner computed yet)
+  S.h2h.myUnit=S.h2h.units.find(u=>u.members.some(p=>p.user_id===h2hUid()));
+  track('h2h_preview',{mode:S.h2h.mode});
+  S.screen='h2hpreview'; render();
 }
 const H2H_SHOT_MS=620, H2H_HOLE_DWELL=880;   // shot-by-shot pacing (mirrors the daily's feel)
 // build the shot-by-shot round for the golfer YOU watch: your own drafted golfer, or (in scramble)
@@ -8338,6 +8348,41 @@ function h2hUnitRow(u, tp, opts){
   return `<div style="display:flex;align-items:center;justify-content:space-between;padding:${big?'13px 16px':'11px 14px'};border-radius:12px;border:1px solid ${win?'var(--gold)':mine?'rgba(235,166,31,.5)':'var(--line)'};background:${win?'rgba(235,166,31,.10)':'rgba(255,255,255,.02)'}">
     <span><span style="font-weight:800;font-size:${big?16:15}px">${rank?`<span class="mono muted" style="margin-right:7px">${rank}</span>`:''}${win?'🏆 ':''}${nm}${mine&&u.kind!=='team'?' <span class="small" style="color:var(--gold)">· you</span>':''}</span>${mem}</span>
     <span class="mono" style="font-size:${big?22:20}px;font-weight:800;color:${h2hTpColor(tp)}">${h2hTpTxt(tp)}</span></div>`;
+}
+function scrH2HPreview(){
+  const m=h2hMode(S.h2h.mode);
+  if(!S.h2h.course){ S.h2h.course=DAILY_COURSES[h2hCourseKey(S.h2h.seed)]; S.h2h.cond=h2hCondName(S.h2h.seed); }
+  const course=S.h2h.course, units=S.h2h.units, n=units.length;
+  h2hBack('','‹ Leave match', h2hLeave);
+  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">Matchup · ${esc(m.label)}</span></div>`));
+  add($(`<h1 class="center" style="font-size:24px;margin:9px 0 2px">Tale of the tape</h1>`));
+  add($(`<p class="lede center" style="max-width:440px;margin:6px auto 4px">${esc(dShort(course.v))} · ${dCondLabel(S.h2h.cond)} · ${S.h2h.holes} holes. ${m.teams?'Best of each skill is highlighted per team.':'Lowest total wins.'}</p>`));
+  const ovrs=units.map(u=>Math.round(ovrFromSkills(u.dispSkills)));
+  const maxOvr=Math.max.apply(null,ovrs);
+  const wrap=$(`<div style="overflow-x:auto;margin:12px 0 4px"></div>`);
+  const grid=$(`<div style="display:grid;grid-template-columns:minmax(40px,auto) repeat(${n},minmax(66px,1fr));gap:5px;min-width:${86+n*72}px;max-width:660px;margin:0 auto"></div>`);
+  wrap.appendChild(grid); add(wrap);
+  // header: name / (members or archetype)
+  grid.appendChild($(`<div></div>`));
+  units.forEach((u,ix)=>{ const mine=u.members.some(p=>p.user_id===h2hUid());
+    const nm=u.kind==='team'?`Team ${(u.id|0)+1}`:esc(u.label);
+    const sub=u.kind==='team'?esc(u.members.map(p=>p.username).join(' & ')):esc(archetype(u.dispSkills).name);
+    grid.appendChild($(`<div style="text-align:center;padding:7px 5px;border-radius:9px;border:1px solid ${mine?'var(--gold)':'var(--line)'};background:${mine?'rgba(235,166,31,.08)':'rgba(255,255,255,.02)'}">
+      <div style="font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nm}${mine?' <span class="small" style="color:var(--gold)">you</span>':''}</div>
+      <div class="small muted" style="margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px">${sub}</div></div>`));
+  });
+  // OVR row
+  grid.appendChild($(`<div style="display:flex;align-items:center;font-weight:800;font-size:12px;color:var(--gold)">OVR</div>`));
+  ovrs.forEach(v=>{ const hi=v===maxOvr; grid.appendChild($(`<div style="text-align:center;font-weight:800;font-size:18px;color:${hi?'var(--gold)':'var(--oncard)'}">${v}</div>`)); });
+  // skill rows, max highlighted
+  CATS.forEach(c=>{ const vals=units.map(u=>u.dispSkills[c.k]|0), mx=Math.max.apply(null,vals);
+    grid.appendChild($(`<div style="display:flex;align-items:center;font-size:11px;color:#9fb4ab">${RSHORT[c.k]}</div>`));
+    vals.forEach(v=>{ const hi=v===mx; grid.appendChild($(`<div style="text-align:center;font-variant-numeric:tabular-nums;font-weight:${hi?800:600};color:${hi?'var(--gold)':'var(--oncard)'}">${v}</div>`)); });
+  });
+  if(m.id==='scramble') add($(`<p class="small muted center" style="max-width:440px;margin:8px auto 0">Each team plays one combined golfer, the best of each partner's skills (shown above).</p>`));
+  else if(m.id==='bestball') add($(`<p class="small muted center" style="max-width:440px;margin:8px auto 0">Best Ball counts your team's better ball each hole. Values above are each team's best per skill.</p>`));
+  const start=$(`<button class="btn goldfill" style="max-width:320px;margin:18px auto 0">Start the round ▸<span class="sub">Watch it play out shot by shot</span></button>`);
+  start.onclick=h2hBeginWatch; add(start);
 }
 function scrH2HWatch(){
   const holes=S.h2h.holes, done=S.h2h.watchDone;
