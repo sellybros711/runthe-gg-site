@@ -11465,12 +11465,12 @@ const ONLINE_BOT_FLAGS = ['USA','BRA','ARG','GER','FRA','ESP','ENG','POR','NED',
 function onlineBotName(){ return ONLINE_BOT_NAMES[Math.floor(Math.random()*ONLINE_BOT_NAMES.length)]; }
 function onlineBotFlag(){ return ONLINE_BOT_FLAGS[Math.floor(Math.random()*ONLINE_BOT_FLAGS.length)]; }
 
-// Draw a believable 6-man bot squad from the real loaded dataset (window.PLAYERS),
-// position-balanced (GK/DEF/DEF/MID/FWD/FLEX), within a randomized overall band
-// so bot strength varies match to match rather than always the same tier.
-// Mirrors _soccer_wc_bot_squad's approach so both online modes' bots feel the
-// same. Returns squad objects ready for simulateMatch (matches
-// friendlySquadFromPicks's output shape) plus the picks needed for display.
+// Draw a believable full 11-man bot squad (matches FULL_OPEN_SLOTS: GK, 3 DEF,
+// 2 MID, 2 FWD, 3 FLEX) from the real loaded dataset (window.PLAYERS), within a
+// randomized overall band so bot strength varies match to match rather than
+// always the same tier. Mirrors _soccer_wc_bot_squad's approach so both online
+// modes' bots feel the same. Returns squad objects ready for simulateMatch
+// (matches friendlySquadFromPicks's output shape) plus the picks for display.
 function onlineBotSquad(){
   const all = window.PLAYERS || [];
   const lo = 60 + Math.random()*15;
@@ -11489,25 +11489,24 @@ function onlineBotSquad(){
   const used = new Set();
   const takeAndMark = (pool, n) => { const got = pick(pool, n, used); got.forEach(p=>used.add(p.player_id)); return got; };
 
-  let gk = takeAndMark(inBand('GK'), 1);
-  let def = takeAndMark(inBand('DEF'), 2);
-  let mid = takeAndMark(inBand('MID'), 1);
-  let fwd = takeAndMark(inBand('FWD'), 1);
-  let flex = takeAndMark(anyInBand, 1);
+  let gk  = takeAndMark(inBand('GK'), 1);
+  let def = takeAndMark(inBand('DEF'), 3);
+  let mid = takeAndMark(inBand('MID'), 2);
+  let fwd = takeAndMark(inBand('FWD'), 2);
+  let flex = takeAndMark(anyInBand, 3);
   // Widen to the full dataset if the tight overall band came up short (rare,
   // e.g. very few GKs in that exact window).
   const need = (arr, n) => arr.length < n;
   if(need(gk,1))  gk  = gk.concat(takeAndMark(all.filter(p=>p.position==='GK'), 1-gk.length));
-  if(need(def,2)) def = def.concat(takeAndMark(all.filter(p=>p.position==='DEF'), 2-def.length));
-  if(need(mid,1)) mid = mid.concat(takeAndMark(all.filter(p=>p.position==='MID'), 1-mid.length));
-  if(need(fwd,1)) fwd = fwd.concat(takeAndMark(all.filter(p=>p.position==='FWD'), 1-fwd.length));
-  if(need(flex,1))flex= flex.concat(takeAndMark(all, 1-flex.length));
+  if(need(def,3)) def = def.concat(takeAndMark(all.filter(p=>p.position==='DEF'), 3-def.length));
+  if(need(mid,2)) mid = mid.concat(takeAndMark(all.filter(p=>p.position==='MID'), 2-mid.length));
+  if(need(fwd,2)) fwd = fwd.concat(takeAndMark(all.filter(p=>p.position==='FWD'), 2-fwd.length));
+  if(need(flex,3))flex= flex.concat(takeAndMark(all, 3-flex.length));
 
-  const slots = ['GK','DEF','DEF','MID','FWD','FLEX'];
   const drafted = [...gk, ...def, ...mid, ...fwd, ...flex];
   const squad = drafted.map((p,i)=>({
     player_id: p.player_id, name: p.name, country: p.country, year: p.year,
-    position: p.position, overall: p.wc_overall, is_captain:false, slot: slots[i]
+    position: p.position, overall: p.wc_overall, is_captain:false, slot: FULL_OPEN_SLOTS[i]
   }));
   const overall = Math.round(squad.reduce((s,p)=>s+(p.overall||0),0)/squad.length);
   return { squad, overall };
@@ -11532,6 +11531,13 @@ async function refreshOnlinePoolStatus(){
     const st = await sbRpc('soccer_wc_pool_state', {});
     el.textContent = (st && st.season_id) ? `${st.count}/48 joined right now` : 'A new pool is opening…';
   }catch(e){ el.textContent = 'Pool status unavailable'; }
+  // Reflect an already-in-progress entry so the CTA doesn't silently force a
+  // second draft on top of a spot the player already locked in.
+  try{
+    const entry = await sbRpc('soccer_wc_my_entry', {});
+    const btn = $('online-go-wc');
+    if(btn) btn.textContent = (entry && entry.season_id && entry.status!=='done') ? 'RETURN TO POOL →' : 'JOIN THE POOL →';
+  }catch(e){ /* not signed in yet, or no entry — leave the default label */ }
 }
 
 // ============================================================================
@@ -11672,13 +11678,20 @@ async function h2hCancelLobby(){
 
 function h2hBeginDraft(){
   onlineMode='h2h';
-  gameMode='easy'; draftType='quick';
-  gs = G.createGameState();
+  gameMode='easy'; draftType='full';
+  gs = G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS, respins:{ full:2 } });
   goToHome();
 }
 
+// Full 11-man roster in FULL_OPEN_SLOTS order (GK/DEF DEF DEF/MID MID/FWD FWD/
+// FLEX FLEX FLEX). groupFlexByPosition only handles a single FLEX slot, so it
+// only applies to the old 6-man quick-draft shape, never here.
+function onlineExtractPicks(){
+  return orderPicksForDisplay(gs.result.scoredPicks, FULL_OPEN_SLOTS);
+}
+
 async function h2hOnDraftComplete(){
-  const picks = groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, ['FWD','MID','DEF','DEF','GK','FLEX']));
+  const picks = onlineExtractPicks();
   const ids = picks.map(pk=>String(pk.player.player_id));
   const slots = picks.map(pk=>pk.slot);
   showScreen('h2h-lobby');
@@ -11823,19 +11836,40 @@ function h2hRenderBoard(rows){
 const WC_STAGE_LABELS = { r32:'Round of 32', r16:'Round of 16', qf:'Quarter-Final', sf:'Semi-Final', final:'Final' };
 const WC_STAGE_ORDER = ['r32','r16','qf','sf','final'];
 
-function wcBeginDraft(){
+// Tapping "join the pool" should NOT force a fresh draft if the player already
+// has a squad locked into the currently-open (not yet resolved) pool — that
+// was the bug: "return home, your spot is saved" had no way back in, so it
+// just silently drafted (and joined) a SECOND entry. Resume the wait screen
+// instead whenever an active entry exists.
+async function wcBeginDraft(){
   if(!requireAccount('Sign in to join the Online World Cup pool.')) return;
+  try{
+    const entry = await sbRpc('soccer_wc_my_entry', {});
+    if(entry && entry.season_id && entry.status !== 'done'){
+      wcResumeWaiting();
+      return;
+    }
+  }catch(e){ /* no existing entry (or lookup failed) — fall through to a fresh draft */ }
   onlineMode='wc';
-  gameMode='easy'; draftType='quick';
-  gs = G.createGameState();
+  gameMode='easy'; draftType='full';
+  gs = G.createGameState({ draftType:'full', openSlots:FULL_OPEN_SLOTS, respins:{ full:2 } });
   goToHome();
+}
+
+function wcResumeWaiting(){
+  showScreen('wc-waiting');
+  $('wc-waiting-status').textContent = 'Resuming your spot in the pool…';
+  $('wc-waiting-fill').style.width='0%';
+  if(wcPollTimer) clearInterval(wcPollTimer);
+  wcPollTimer = setInterval(wcPoll, 4000);
+  wcPoll();
 }
 
 async function wcOnDraftComplete(){
   showScreen('wc-waiting');
   $('wc-waiting-status').textContent = 'Locking in your squad…';
   $('wc-waiting-fill').style.width='0%';
-  const picks = groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, ['FWD','MID','DEF','DEF','GK','FLEX']));
+  const picks = onlineExtractPicks();
   const ids = picks.map(pk=>String(pk.player.player_id));
   const slots = picks.map(pk=>pk.slot);
   try{
