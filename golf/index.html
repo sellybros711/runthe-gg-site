@@ -1327,6 +1327,15 @@ function startDaily(){
    tracked separately as a Wordle-style lifetime record (dailyStats), where a tie counts as a loss. */
 function yesterdayKey(){const d=new Date();d.setUTCDate(d.getUTCDate()-1);return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate();}
 function twoDaysAgoKey(){const d=new Date();d.setUTCDate(d.getUTCDate()-2);return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate();}
+// countdown to the next Daily Challenge course (rotates at UTC midnight, same boundary as todayKey)
+function dNextResetMs(){ const n=Date.now(); const d=new Date(n); return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()+1)-n; }
+function _cd2(x){ return String(x).padStart(2,'0'); }
+function fmtCdClock(ms){ if(ms<0)ms=0; let s=Math.floor(ms/1000); const h=Math.floor(s/3600); s-=h*3600; const m=Math.floor(s/60); return _cd2(h)+':'+_cd2(m)+':'+_cd2(s-m*60); }
+function fmtCdHM(ms){ if(ms<0)ms=0; const s=Math.floor(ms/1000), h=Math.floor(s/3600), m=Math.floor((s%3600)/60); return h>0?(h+'h '+m+'m'):(m+'m '+_cd2(s%60)+'s'); }
+// an inline, live-ticking countdown span (updated once a second by tickCountdowns); style: 'clock' | 'hm'
+function dCd(style){ const ms=dNextResetMs(); return `<span class="dc-val" data-cd="${style==='hm'?'hm':'clock'}" style="font-variant-numeric:tabular-nums;font-weight:800">${style==='hm'?fmtCdHM(ms):fmtCdClock(ms)}</span>`; }
+function tickCountdowns(){ const els=document.querySelectorAll('.dc-val'); if(!els.length) return; const ms=dNextResetMs();
+  els.forEach(e=>{ e.textContent = e.getAttribute('data-cd')==='hm'?fmtCdHM(ms):fmtCdClock(ms); }); }
 const STREAK_MILES=[3,7,14,30,60,100];                       // milestone lengths (recognition; freeze at 7/30/100)
 function streakFreezes(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.freezes||0; }
 function bumpStreak(){const ds=LS.get(acctKey('bag_streak'),{current:0,longest:0,last:null,freezes:0,miles:{}})||{current:0,longest:0,last:null,freezes:0,miles:{}}; const t=todayKey();
@@ -3595,7 +3604,8 @@ function overlayDailyDone(screen){
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Daily Challenge</h3>
     ${body}
-    <div style="height:14px"></div>
+    <div class="center" style="margin:12px 0 2px"><span class="small muted">New course in </span><span style="color:var(--gold);font-weight:800;font-size:18px">${dCd('clock')}</span></div>
+    <div style="height:12px"></div>
     <button class="btn gold" id="dd-records" style="margin-bottom:8px">Course Records</button>
     <button class="btn red">Close</button></div>`);
   const rb=ov.querySelector('#dd-records'); if(rb) rb.onclick=()=>{S.overlay='courserecords';render();};
@@ -3802,6 +3812,8 @@ function scrTitle(){
   const daily=$(`<button class="btn ${dCls}" style="margin-top:10px">${dMain}<span class="sub">${dSub}</span></button>`);
   daily.onclick=startDailyChallenge;
   stack.appendChild(daily);
+  // live countdown to the next daily course — creates "play today before it changes" urgency
+  stack.appendChild($(`<div class="small center" style="margin-top:8px;color:var(--muted)">New course in <span style="color:var(--gold)">${dCd('clock')}</span></div>`));
   const st=streakDisplay(), fz=streakFreezes();
   if(st>0) stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--gold);font-weight:700">🔥 ${st}-day daily streak, keep it alive${fz>0?` · ❄️ ${fz} freeze${fz>1?'s':''}`:''}</div>`));
   // Monthly Spotlight (#11): a special 1-day event, surfaced with urgency only on the day it's live
@@ -6603,7 +6615,8 @@ function scrDailyPreview(){
   const key=S.dailyCourse, c=DAILY_COURSES[key], rec=courseRecords()[key];
   add($(`<div class="center"><span class="tag" style="color:${S.special?'#ffd76a':'var(--gold)'};border-color:${S.special?'#ffd76a':'var(--gold)'}">${S.special?'⭐ Monthly Spotlight · special event':'⛳ Daily Challenge · today\'s course'}</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:10px 0 2px">${esc(c.v)}</h1>`));
-  add($(`<p class="lede center" style="margin:0 0 10px">${esc(c.loc)} · Par ${c.par} · ${c.yd.toLocaleString()} yds · ${dCondLabel(S.dailyCond)}</p>`));
+  add($(`<p class="lede center" style="margin:0 0 6px">${esc(c.loc)} · Par ${c.par} · ${c.yd.toLocaleString()} yds · ${dCondLabel(S.dailyCond)}</p>`));
+  if(!S.special) add($(`<div class="small center" style="margin:0 0 10px;color:var(--muted)">Playable for <span style="color:var(--gold);font-weight:800">${dCd('clock')}</span>, then a new course rotates in</div>`));
   // keep the flavor but don't lead with a wall of prose, one line, "Read more" for the rest
   const firstSentence=c.blurb.split('. ')[0].replace(/\.$/,'')+'.';
   const hasMore=c.blurb.length>firstSentence.length+2;
@@ -8721,6 +8734,7 @@ if('serviceWorker' in navigator){ try{ window.addEventListener('load',()=>{ navi
 track('game_start');
 if(LS.get('bag_seen',false)) track('return_visit'); else LS.set('bag_seen',true);
 render();
+try{ setInterval(tickCountdowns, 1000); }catch(e){}   // live "next daily course in …" countdowns
 try{ h2hCheckLink(); }catch(e){}   // arrived via an invite link (?h2h=CODE)? stash it + join (prompting sign-in)
 </script>
 </body>
