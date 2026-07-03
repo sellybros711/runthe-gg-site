@@ -6555,6 +6555,26 @@ function todaysTheme(){ return THEMES[((utcDayIndex()%THEMES.length)+THEMES.leng
 function hashStr(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
 function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 
+// ---- Online-match determinism -----------------------------------------------
+// Every outcome-affecting sim call (simulateMatch/computeMatchStats/etc.) reads
+// Math.random() directly. For an online match, two independent clients must
+// compute the IDENTICAL result from nothing but a shared seed — so instead of
+// forking parallel copies of the sim, temporarily point Math.random at a seeded
+// stream for the duration of one synchronous computation, then restore it.
+// Callers MUST pass a canonical (host-squad, guest-squad) argument order that
+// is the same on every client (e.g. by lobby-creator id) — simulateMatch's
+// per-side multipliers (belowThresholdPenalty/eliteBoost/earlyRoundPenalty)
+// are NOT symmetric under swapping "user" and "opponent", so if each client
+// plugged in "myself" as userSquad the two sides could each compute themselves
+// the winner. Only ever wrap synchronous work (no await inside `fn`).
+function withSeededRandom(seed, fn){
+  const rng = mulberry32(hashStr(String(seed)));
+  const orig = Math.random;
+  Math.random = rng;
+  try { return fn(); }
+  finally { Math.random = orig; }
+}
+
 // Distinct nation-years (country+year) matching a theme, sorted canonically so
 // the seeded shuffle is identical everywhere.
 function dailyPoolForTheme(theme){
@@ -11211,6 +11231,100 @@ function friendlySquadFromPicks(picks){
     player_id: p.playerId, name: p.playerName, country: p.country, year: p.year,
     position: p.position, overall: p.wc_overall, is_captain:false, slot:p.slot
   }));
+}
+
+// ============================================================================
+//  ONLINE MULTIPLAYER  —  Online Friendly (1v1) + Online World Cup (48-pool)
+// ============================================================================
+// Generic Supabase RPC caller (mirrors sbCreateChallenge/sbFetchChallenge's
+// fetch pattern). Throws on a non-2xx response or a Postgres RAISE EXCEPTION
+// (surfaced by PostgREST as a 4xx with a `message` field) so callers can show
+// the real reason ("that match is no longer open", etc.) instead of a generic
+// failure.
+async function sbRpc(fn, params){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method:'POST', headers: sbHeaders(), body: JSON.stringify(params||{})
+  });
+  let data = null;
+  try{ data = await res.json(); }catch(e){ /* empty body is fine for void RPCs */ }
+  if(!res.ok){
+    const msg = (data && (data.message||data.error||data.hint)) || `${fn} failed (${res.status})`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+// ---- undisclosed AI backfill --------------------------------------------
+// Keeps Online Friendly's queue and the World Cup pool feeling alive before a
+// real player base exists. NEVER surfaced as "AI"/"bot" anywhere in the UI —
+// bots draft real players from the same dataset a human would, so a bot
+// opponent's squad looks exactly like a real draft.
+// Flag-gated — turn OFF once there's a real player base, and this MUST be off
+// before any real-money/wagering feature.
+const ONLINE_BOTS_ENABLED = true;
+const ONLINE_BOT_WAIT_MIN = 5200, ONLINE_BOT_WAIT_MAX = 9000; // ms before Online Friendly backfills
+const ONLINE_BOT_NAMES = [
+  'PitchKing','StrikerX22','GoalMachine','TikiTakaTom','FutbolFanatic','TheGaffer',
+  'MidfieldMaestro','CleanSheetKid','NetBuster','BoxToBox','WingWizard','ElCapitan',
+  'TouchlineTerror','FreeKickFred','LastManStanding','OffsideOllie','CounterAttack',
+  'FullTimeWhistle','SixYardSam','CrossbarChris','VolleyVic','NutmegNate','CaptainArmband',
+  'DerbyDayDan','StoppageTimeHero','HatTrickHana','CornerKickKid','PenaltyPro','SweeperKeeper',
+  'TotalFootball','GegenpressGus','LaLigaLuis','SerieAFan','BundesligaBen','PremGoals',
+  'TifoTerry','UltrasUnited','MatchdayMel','LoneStriker9','TheFalseNine','InvertedWinger',
+  'BoxOfficeBaller','ClinicalFinisher','ManOfTheMatch','TrebleChaser','TrophyHunter7',
+  'PitchInvader','GroupStageGrinder','KnockoutKid','ExtraTimeEddie'
+];
+const ONLINE_BOT_FLAGS = ['USA','BRA','ARG','GER','FRA','ESP','ENG','POR','NED','ITA',
+  'MEX','JPN','KOR','MAR','SEN','NGA','HRV','BEL','URY','COL'];
+function onlineBotName(){ return ONLINE_BOT_NAMES[Math.floor(Math.random()*ONLINE_BOT_NAMES.length)]; }
+function onlineBotFlag(){ return ONLINE_BOT_FLAGS[Math.floor(Math.random()*ONLINE_BOT_FLAGS.length)]; }
+
+// Draw a believable 6-man bot squad from the real loaded dataset (window.PLAYERS),
+// position-balanced (GK/DEF/DEF/MID/FWD/FLEX), within a randomized overall band
+// so bot strength varies match to match rather than always the same tier.
+// Mirrors _soccer_wc_bot_squad's approach so both online modes' bots feel the
+// same. Returns squad objects ready for simulateMatch (matches
+// friendlySquadFromPicks's output shape) plus the picks needed for display.
+function onlineBotSquad(){
+  const all = window.PLAYERS || [];
+  const lo = 60 + Math.random()*15;
+  const hi = lo + 15 + Math.random()*10;
+  const inBand = pos => all.filter(p=>p.position===pos && p.wc_overall>=lo && p.wc_overall<=hi);
+  const anyInBand = all.filter(p=>p.wc_overall>=lo && p.wc_overall<=hi);
+  const pick = (pool, n, used) => {
+    const avail = pool.filter(p=>!used.has(p.player_id));
+    const out = [];
+    for(let i=0;i<n && avail.length;i++){
+      const idx = Math.floor(Math.random()*avail.length);
+      out.push(avail.splice(idx,1)[0]);
+    }
+    return out;
+  };
+  const used = new Set();
+  const takeAndMark = (pool, n) => { const got = pick(pool, n, used); got.forEach(p=>used.add(p.player_id)); return got; };
+
+  let gk = takeAndMark(inBand('GK'), 1);
+  let def = takeAndMark(inBand('DEF'), 2);
+  let mid = takeAndMark(inBand('MID'), 1);
+  let fwd = takeAndMark(inBand('FWD'), 1);
+  let flex = takeAndMark(anyInBand, 1);
+  // Widen to the full dataset if the tight overall band came up short (rare,
+  // e.g. very few GKs in that exact window).
+  const need = (arr, n) => arr.length < n;
+  if(need(gk,1))  gk  = gk.concat(takeAndMark(all.filter(p=>p.position==='GK'), 1-gk.length));
+  if(need(def,2)) def = def.concat(takeAndMark(all.filter(p=>p.position==='DEF'), 2-def.length));
+  if(need(mid,1)) mid = mid.concat(takeAndMark(all.filter(p=>p.position==='MID'), 1-mid.length));
+  if(need(fwd,1)) fwd = fwd.concat(takeAndMark(all.filter(p=>p.position==='FWD'), 1-fwd.length));
+  if(need(flex,1))flex= flex.concat(takeAndMark(all, 1-flex.length));
+
+  const slots = ['GK','DEF','DEF','MID','FWD','FLEX'];
+  const drafted = [...gk, ...def, ...mid, ...fwd, ...flex];
+  const squad = drafted.map((p,i)=>({
+    player_id: p.player_id, name: p.name, country: p.country, year: p.year,
+    position: p.position, overall: p.wc_overall, is_captain:false, slot: slots[i]
+  }));
+  const overall = Math.round(squad.reduce((s,p)=>s+(p.overall||0),0)/squad.length);
+  return { squad, overall };
 }
 
 // ---- entry: tapping FRIENDLY on the home screen ----
