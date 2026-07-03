@@ -1131,5 +1131,1301 @@
         reflex: [{ cat: "reflex", type: "reflex", prompt: "Tap when the fiord beacon flashes green" }],
       },
     },
+    /* ------------------------------------------------------------- Finland */
+    {
+      id: "FI", name: "Finland", region: "Europe", flag: "🇫🇮", capital: "Helsinki", ll: [60.2, 24.9],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "What is the capital of Finland?", options: ["Oslo", "Stockholm", "Helsinki", "Tallinn"], a: 2 },
+          { cat: "trivia", type: "brain", q: "Finland is often called the Land of a Thousand what?", options: ["Rivers", "Lakes", "Mountains", "Islands"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Finland?", options: ["Krona", "Euro", "Markka", "Ruble"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "SAUNA", hint: "Finnish steam bath" },
+          { cat: "word", type: "brain", answer: "HELSINKI", hint: "Finland's capital city" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "€45 at €0.9 = $1 is how many US dollars?", options: ["$40", "$45", "$50", "$55"], a: 2 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Rovaniemi", value: 66.5 }, { label: "Oulu", value: 65.0 }, { label: "Tampere", value: 61.5 }, { label: "Helsinki", value: 60.2 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the sauna sequence", tiles: ["🧖", "🌲", "❄️", "🦌", "🏒"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React when the sauna timer signal fires" }],
+      },
+    },
+    /* ------------------------------------------------------------- Denmark */
+    {
+      id: "DK", name: "Denmark", region: "Europe", flag: "🇩🇰", capital: "Copenhagen", ll: [55.7, 12.6],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The Little Mermaid statue sits in the harbour of which capital?", options: ["Oslo", "Stockholm", "Copenhagen", "Amsterdam"], a: 2 },
+          { cat: "trivia", type: "brain", q: "The LEGO toy brick was invented in which country?", options: ["Sweden", "Germany", "Denmark", "Netherlands"], a: 2 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Denmark?", options: ["Euro", "Krone", "Krona", "Zloty"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "VIKING", hint: "Seafaring Norse raider of old" },
+          { cat: "word", type: "brain", answer: "LEGO", hint: "Danish plastic building brick" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "kr140 at kr7 = $1 is how many US dollars?", options: ["$10", "$20", "$70", "$140"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Aalborg", value: 57.0 }, { label: "Aarhus", value: 56.2 }, { label: "Copenhagen", value: 55.7 }, { label: "Odense", value: 55.4 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the harbour sequence", tiles: ["⚓", "🧜‍♀️", "🚲", "🧱", "🍺"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the harbour signal" }],
+      },
+    },
+    /* ------------------------------------------------------------- Belgium */
+    {
+      id: "BE", name: "Belgium", region: "Europe", flag: "🇧🇪", capital: "Brussels", ll: [50.8, 4.4],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The Atomium monument is located in which capital?", options: ["Amsterdam", "Brussels", "Paris", "Berlin"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Belgium is world-famous for producing which sweet treat?", options: ["Chocolate", "Marzipan", "Nougat", "Fudge"], a: 0 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Belgium?", options: ["Franc", "Euro", "Guilder", "Mark"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "WAFFLE", hint: "Belgian griddled batter treat" },
+          { cat: "word", type: "brain", answer: "TINTIN", hint: "Famous Belgian comic reporter" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "€36 at €0.9 = $1 is how many US dollars?", options: ["$32", "$36", "$40", "$44"], a: 2 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Antwerp", value: 51.2 }, { label: "Ghent", value: 51.0 }, { label: "Brussels", value: 50.8 }, { label: "Charleroi", value: 50.4 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the waffle sequence", tiles: ["🧇", "🍫", "🍟", "🍺", "🎨"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React when the comic-strip signal fires" }],
+      },
+    },
+    /* ------------------------------------------------------------- Austria */
+    {
+      id: "AT", name: "Austria", region: "Europe", flag: "🇦🇹", capital: "Vienna", ll: [48.2, 16.4],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "What is the capital of Austria?", options: ["Munich", "Vienna", "Zurich", "Prague"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Composer Mozart was born in which country?", options: ["Germany", "Austria", "Switzerland", "Italy"], a: 1 },
+          { cat: "trivia", type: "brain", q: "The Schönbrunn Palace is a landmark of which capital?", options: ["Berlin", "Budapest", "Vienna", "Prague"], a: 2 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "VIENNA", hint: "Austria's capital city" },
+          { cat: "word", type: "brain", answer: "STRUDEL", hint: "Rolled Austrian pastry" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "€24 at €0.8 = $1 is how many US dollars?", options: ["$24", "$30", "$36", "$48"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Linz", value: 48.3 }, { label: "Vienna", value: 48.2 }, { label: "Innsbruck", value: 47.3 }, { label: "Graz", value: 47.1 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the alpine sequence", tiles: ["🎻", "🏔️", "🥨", "🏰", "☕"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the opera-house signal" }],
+      },
+    },
+    /* ------------------------------------------------------------- Czechia */
+    {
+      id: "CZ", name: "Czechia", region: "Europe", flag: "🇨🇿", capital: "Prague", ll: [50.1, 14.4],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The medieval Charles Bridge crosses the river in which capital?", options: ["Vienna", "Prague", "Budapest", "Warsaw"], a: 1 },
+          { cat: "trivia", type: "brain", q: "The Pilsner style of beer originated in which country?", options: ["Germany", "Belgium", "Czechia", "Austria"], a: 2 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Czechia?", options: ["Euro", "Zloty", "Koruna", "Forint"], a: 2 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "PRAGUE", hint: "Czechia's capital city" },
+          { cat: "word", type: "brain", answer: "PILSNER", hint: "Pale lager born in Bohemia" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "Kč240 at Kč24 = $1 is how many US dollars?", options: ["$5", "$10", "$24", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Liberec", value: 50.8 }, { label: "Prague", value: 50.1 }, { label: "Ostrava", value: 49.8 }, { label: "Brno", value: 49.2 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the castle sequence", tiles: ["🏰", "🍺", "🕰️", "🌉", "🎭"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React when the clock-tower signal fires" }],
+      },
+    },
+    /* ------------------------------------------------------------- Hungary */
+    {
+      id: "HU", name: "Hungary", region: "Europe", flag: "🇭🇺", capital: "Budapest", ll: [47.5, 19.0],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The river Danube divides which capital into Buda and Pest?", options: ["Vienna", "Belgrade", "Budapest", "Bratislava"], a: 2 },
+          { cat: "trivia", type: "brain", q: "Goulash is a traditional stew from which country?", options: ["Poland", "Hungary", "Romania", "Austria"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Hungary?", options: ["Euro", "Forint", "Leu", "Koruna"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "GOULASH", hint: "Hungarian paprika stew" },
+          { cat: "word", type: "brain", answer: "BUDAPEST", hint: "Hungary's capital city" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "Ft3000 at Ft300 = $1 is how many US dollars?", options: ["$3", "$10", "$30", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Miskolc", value: 48.1 }, { label: "Debrecen", value: 47.6 }, { label: "Budapest", value: 47.5 }, { label: "Szeged", value: 46.3 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the thermal-bath sequence", tiles: ["♨️", "🌉", "🌶️", "🍲", "🎻"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the riverboat signal" }],
+      },
+    },
+    /* ------------------------------------------------------------- Romania */
+    {
+      id: "RO", name: "Romania", region: "Europe", flag: "🇷🇴", capital: "Bucharest", ll: [44.4, 26.1],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The region of Transylvania, linked to Dracula legends, is in which country?", options: ["Hungary", "Romania", "Bulgaria", "Serbia"], a: 1 },
+          { cat: "trivia", type: "brain", q: "The Carpathian Mountains stretch across which country?", options: ["Romania", "Greece", "Portugal", "Ireland"], a: 0 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Romania?", options: ["Lev", "Leu", "Euro", "Dinar"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "DRACULA", hint: "Transylvanian vampire count" },
+          { cat: "word", type: "brain", answer: "CASTLE", hint: "Bran fortress tourists visit" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "lei45 at lei4.5 = $1 is how many US dollars?", options: ["$4", "$10", "$45", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Iași", value: 47.2 }, { label: "Cluj-Napoca", value: 46.8 }, { label: "Timișoara", value: 45.8 }, { label: "Bucharest", value: 44.4 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the castle sequence", tiles: ["🏰", "🦇", "🏔️", "🐺", "🌲"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React when the castle beacon fires" }],
+      },
+    },
+    /* ------------------------------------------------------------- Ukraine */
+    {
+      id: "UA", name: "Ukraine", region: "Europe", flag: "🇺🇦", capital: "Kyiv", ll: [50.5, 30.5],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "What is the capital of Ukraine?", options: ["Minsk", "Kyiv", "Warsaw", "Chisinau"], a: 1 },
+          { cat: "trivia", type: "brain", q: "The 1986 Chernobyl nuclear disaster occurred in which country?", options: ["Russia", "Belarus", "Ukraine", "Poland"], a: 2 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Ukraine?", options: ["Ruble", "Hryvnia", "Zloty", "Leu"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "KYIV", hint: "Ukraine's capital city" },
+          { cat: "word", type: "brain", answer: "BORSCHT", hint: "Beetroot soup of the region" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "₴400 at ₴40 = $1 is how many US dollars?", options: ["$4", "$10", "$40", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Kyiv", value: 50.5 }, { label: "Kharkiv", value: 50.0 }, { label: "Lviv", value: 49.8 }, { label: "Odesa", value: 46.5 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the wheat-field sequence", tiles: ["🌻", "🌾", "⛪", "🕊️", "🟦"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the harvest signal" }],
+      },
+    },
+    /* ------------------------------------------------------------- Croatia */
+    {
+      id: "HR", name: "Croatia", region: "Europe", flag: "🇭🇷", capital: "Zagreb", ll: [45.8, 16.0],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The walled coastal city of Dubrovnik is in which country?", options: ["Italy", "Croatia", "Greece", "Montenegro"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Croatia has a long coastline along which sea?", options: ["Baltic Sea", "Adriatic Sea", "Black Sea", "Aegean Sea"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Croatia?", options: ["Split", "Zagreb", "Rijeka", "Zadar"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "ZAGREB", hint: "Croatia's capital city" },
+          { cat: "word", type: "brain", answer: "ADRIATIC", hint: "Sea along Croatia's coast" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "€18 at €0.9 = $1 is how many US dollars?", options: ["$16", "$18", "$20", "$22"], a: 2 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Zagreb", value: 45.8 }, { label: "Rijeka", value: 45.3 }, { label: "Split", value: 43.5 }, { label: "Dubrovnik", value: 42.6 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the coastal sequence", tiles: ["🏰", "⛵", "🌊", "🐬", "🏝️"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React when the lighthouse signal fires" }],
+      },
+    },
+    /* ------------------------------------------------------------- Iceland */
+    {
+      id: "IS", name: "Iceland", region: "Europe", flag: "🇮🇸", capital: "Reykjavik", ll: [64.1, -21.9],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "What is the capital of Iceland?", options: ["Oslo", "Reykjavik", "Nuuk", "Bergen"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Iceland is famous for volcanoes and which spouting hot-water jets?", options: ["Waterfalls", "Geysers", "Fjords", "Glaciers"], a: 1 },
+          { cat: "trivia", type: "brain", q: "The Blue Lagoon geothermal spa is a landmark of which country?", options: ["Norway", "Iceland", "Finland", "Greenland"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "GEYSER", hint: "Spouting hot spring" },
+          { cat: "word", type: "brain", answer: "VOLCANO", hint: "Erupting mountain, common here" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "kr1400 at kr140 = $1 is how many US dollars?", options: ["$5", "$10", "$14", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Akureyri", value: 65.7 }, { label: "Reykjavik", value: 64.1 }, { label: "Keflavik", value: 64.0 }, { label: "Vik", value: 63.4 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the volcanic sequence", tiles: ["🌋", "♨️", "🧊", "🐋", "🌌"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the geyser signal" }],
+      },
+    },
+    /* ------------------------------------------------------------ Slovakia */
+    {
+      id: "SK", name: "Slovakia", region: "Europe", flag: "🇸🇰", capital: "Bratislava", ll: [48.1, 17.1],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "What is the capital of Slovakia?", options: ["Prague", "Vienna", "Bratislava", "Budapest"], a: 2 },
+          { cat: "trivia", type: "brain", q: "The High Tatras mountain range lies in Slovakia and which neighbour?", options: ["Poland", "Austria", "Ukraine", "Germany"], a: 0 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Slovakia?", options: ["Koruna", "Euro", "Forint", "Zloty"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "DANUBE", hint: "River through Bratislava" },
+          { cat: "word", type: "brain", answer: "CASTLE", hint: "Bratislava's hilltop fortress" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "€35 at €0.7 = $1 is how many US dollars?", options: ["$35", "$42", "$50", "$70"], a: 2 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Žilina", value: 49.2 }, { label: "Prešov", value: 49.0 }, { label: "Košice", value: 48.7 }, { label: "Bratislava", value: 48.1 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the mountain sequence", tiles: ["🏔️", "🏰", "🌲", "🐻", "🌉"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React when the mountain beacon fires" }],
+      },
+    },
+    /* ------------------------------------------------------------ Bulgaria */
+    {
+      id: "BG", name: "Bulgaria", region: "Europe", flag: "🇧🇬", capital: "Sofia", ll: [42.7, 23.3],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Bulgaria is a leading world producer of oil from which flower?", options: ["Lavender", "Rose", "Jasmine", "Tulip"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Bulgaria?", options: ["Sofia", "Plovdiv", "Varna", "Burgas"], a: 0 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Bulgaria?", options: ["Leu", "Lev", "Euro", "Dinar"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "SOFIA", hint: "Bulgaria's capital city" },
+          { cat: "word", type: "brain", answer: "YOGURT", hint: "Cultured dairy staple here" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "лв20 at лв2 = $1 is how many US dollars?", options: ["$2", "$10", "$20", "$40"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Ruse", value: 43.9 }, { label: "Varna", value: 43.2 }, { label: "Sofia", value: 42.7 }, { label: "Plovdiv", value: 42.2 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the rose sequence", tiles: ["🌹", "🏔️", "🏖️", "⛪", "🍶"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the seaside signal" }],
+      },
+    },
+    /* -------------------------------------------------------------- Serbia */
+    {
+      id: "RS", name: "Serbia", region: "Europe", flag: "🇷🇸", capital: "Belgrade", ll: [44.8, 20.5],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "What is the capital of Serbia?", options: ["Zagreb", "Belgrade", "Sarajevo", "Skopje"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Serbia was formerly the largest republic of which country?", options: ["Czechoslovakia", "Yugoslavia", "USSR", "Austria-Hungary"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Serbia?", options: ["Dinar", "Euro", "Lev", "Kuna"], a: 0 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "BELGRADE", hint: "Serbia's capital city" },
+          { cat: "word", type: "brain", answer: "DANUBE", hint: "River meeting the Sava here" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "din1200 at din120 = $1 is how many US dollars?", options: ["$5", "$10", "$12", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Subotica", value: 46.1 }, { label: "Novi Sad", value: 45.3 }, { label: "Belgrade", value: 44.8 }, { label: "Niš", value: 43.3 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the fortress sequence", tiles: ["🏰", "🌉", "🎶", "🍇", "⛪"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React when the fortress signal fires" }],
+      },
+    },
+    /* ------------------------------------------------------------ Malaysia */
+    {
+      id: "MY", name: "Malaysia", region: "Asia", flag: "🇲🇾", capital: "Kuala Lumpur", ll: [3.1, 101.7],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The Petronas Twin Towers are a landmark of which capital?", options: ["Jakarta", "Bangkok", "Kuala Lumpur", "Singapore"], a: 2 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Malaysia?", options: ["Baht", "Ringgit", "Rupiah", "Peso"], a: 1 },
+          { cat: "trivia", type: "brain", q: "The island of Borneo, shared by Malaysia, is famous for which great ape?", options: ["Gorilla", "Chimpanzee", "Orangutan", "Gibbon"], a: 2 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "BORNEO", hint: "Rainforest island Malaysia shares" },
+          { cat: "word", type: "brain", answer: "RINGGIT", hint: "Malaysia's currency" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "RM40 at RM4 = $1 is how many US dollars?", options: ["$4", "$10", "$40", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "George Town", value: 5.4 }, { label: "Ipoh", value: 4.6 }, { label: "Kuala Lumpur", value: 3.1 }, { label: "Johor Bahru", value: 1.5 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the rainforest sequence", tiles: ["🌴", "🦧", "🏙️", "🌺", "🍜"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the skyline signal" }],
+      },
+    },
+    /* ------------------------------------------------------------ Pakistan */
+    {
+      id: "PK", name: "Pakistan", region: "Asia", flag: "🇵🇰", capital: "Islamabad", ll: [33.7, 73.0],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "What is the capital of Pakistan?", options: ["Karachi", "Lahore", "Islamabad", "Peshawar"], a: 2 },
+          { cat: "trivia", type: "brain", q: "K2, the world's second-highest mountain, lies on the border of Pakistan and which country?", options: ["India", "China", "Afghanistan", "Nepal"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Pakistan?", options: ["Rupee", "Taka", "Rial", "Afghani"], a: 0 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "LAHORE", hint: "Pakistan's cultural capital city" },
+          { cat: "word", type: "brain", answer: "INDUS", hint: "Great river of Pakistan" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "Rs2800 at Rs280 = $1 is how many US dollars?", options: ["$10", "$28", "$100", "$280"], a: 0 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Peshawar", value: 34.0 }, { label: "Islamabad", value: 33.7 }, { label: "Lahore", value: 31.5 }, { label: "Karachi", value: 24.9 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the mountain sequence", tiles: ["🏔️", "🕌", "🏏", "🐫", "🌙"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the mountain-pass signal" }],
+      },
+    },
+    /* ---------------------------------------------------------- Bangladesh */
+    {
+      id: "BD", name: "Bangladesh", region: "Asia", flag: "🇧🇩", capital: "Dhaka", ll: [23.8, 90.4],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "What is the capital of Bangladesh?", options: ["Kolkata", "Dhaka", "Chittagong", "Khulna"], a: 1 },
+          { cat: "trivia", type: "brain", q: "The Sundarbans mangrove forest of Bangladesh is home to which big cat?", options: ["Lion", "Leopard", "Bengal Tiger", "Jaguar"], a: 2 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Bangladesh?", options: ["Rupee", "Taka", "Kyat", "Rupiah"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "DHAKA", hint: "Bangladesh's capital city" },
+          { cat: "word", type: "brain", answer: "BENGAL", hint: "Region and bay to the south" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "Tk1100 at Tk110 = $1 is how many US dollars?", options: ["$10", "$11", "$100", "$110"], a: 0 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Rangpur", value: 25.7 }, { label: "Rajshahi", value: 24.4 }, { label: "Dhaka", value: 23.8 }, { label: "Chittagong", value: 22.3 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the delta sequence", tiles: ["🐅", "🚣", "🌊", "🍛", "🛕"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the river-delta signal" }],
+      },
+    },
+    /* ----------------------------------------------------------- Sri Lanka */
+    {
+      id: "LK", name: "Sri Lanka", region: "Asia", flag: "🇱🇰", capital: "Colombo", ll: [6.9, 79.9],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Sri Lanka is one of the world's largest exporters of which drink?", options: ["Coffee", "Tea", "Cocoa", "Wine"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Sri Lanka was formerly known by which name?", options: ["Burma", "Ceylon", "Siam", "Malaya"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Sri Lanka?", options: ["Rupee", "Taka", "Rupiah", "Baht"], a: 0 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "CEYLON", hint: "Old name for Sri Lanka" },
+          { cat: "word", type: "brain", answer: "COLOMBO", hint: "Sri Lanka's largest city" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "Rs600 at Rs300 = $1 is how many US dollars?", options: ["$2", "$3", "$6", "$60"], a: 0 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Jaffna", value: 9.7 }, { label: "Kandy", value: 7.3 }, { label: "Colombo", value: 6.9 }, { label: "Galle", value: 6.0 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the tea-garden sequence", tiles: ["🍵", "🐘", "🌴", "🏝️", "🪷"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the harbour signal" }],
+      },
+    },
+    /* ------------------------------------------------------------ Cambodia */
+    {
+      id: "KH", name: "Cambodia", region: "Asia", flag: "🇰🇭", capital: "Phnom Penh", ll: [11.6, 104.9],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The vast temple complex of Angkor Wat is located in which country?", options: ["Thailand", "Cambodia", "Vietnam", "Laos"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Cambodia?", options: ["Siem Reap", "Phnom Penh", "Battambang", "Vientiane"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Cambodia?", options: ["Baht", "Riel", "Dong", "Kip"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "ANGKOR", hint: "Ancient temple city here" },
+          { cat: "word", type: "brain", answer: "KHMER", hint: "Cambodia's people and language" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "៛40000 at ៛4000 = $1 is how many US dollars?", options: ["$4", "$10", "$40", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Siem Reap", value: 13.4 }, { label: "Battambang", value: 13.1 }, { label: "Phnom Penh", value: 11.6 }, { label: "Sihanoukville", value: 10.6 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the temple sequence", tiles: ["🛕", "🌾", "🚣", "🐒", "🌴"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the temple-gate signal" }],
+      },
+    },
+    /* ------------------------------------------------------------- Myanmar */
+    {
+      id: "MM", name: "Myanmar", region: "Asia", flag: "🇲🇲", capital: "Naypyidaw", ll: [19.8, 96.1],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Myanmar was formerly known by which name?", options: ["Siam", "Burma", "Malaya", "Ceylon"], a: 1 },
+          { cat: "trivia", type: "brain", q: "The golden Shwedagon Pagoda towers over which city?", options: ["Bangkok", "Yangon", "Hanoi", "Vientiane"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Myanmar?", options: ["Baht", "Kyat", "Dong", "Riel"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "YANGON", hint: "Myanmar's largest city" },
+          { cat: "word", type: "brain", answer: "PAGODA", hint: "Tiered Buddhist tower" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "K21000 at K2100 = $1 is how many US dollars?", options: ["$10", "$21", "$100", "$210"], a: 0 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Mandalay", value: 22.0 }, { label: "Naypyidaw", value: 19.8 }, { label: "Bago", value: 17.3 }, { label: "Yangon", value: 16.8 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the pagoda sequence", tiles: ["🛕", "🌾", "🐘", "🎈", "🌅"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the pagoda signal" }],
+      },
+    },
+    /* ---------------------------------------------------------- Kazakhstan */
+    {
+      id: "KZ", name: "Kazakhstan", region: "Asia", flag: "🇰🇿", capital: "Astana", ll: [51.2, 71.4],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "What is the capital of Kazakhstan?", options: ["Almaty", "Astana", "Tashkent", "Bishkek"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Kazakhstan is the world's largest country that is fully what?", options: ["Desert", "Landlocked", "Arctic", "Tropical"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Kazakhstan?", options: ["Ruble", "Tenge", "Som", "Manat"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "ASTANA", hint: "Kazakhstan's capital city" },
+          { cat: "word", type: "brain", answer: "STEPPE", hint: "Vast grassland plain here" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "₸4500 at ₸450 = $1 is how many US dollars?", options: ["$4", "$10", "$45", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Astana", value: 51.2 }, { label: "Karaganda", value: 49.8 }, { label: "Almaty", value: 43.2 }, { label: "Shymkent", value: 42.3 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the steppe sequence", tiles: ["🐎", "🦅", "🏙️", "🌾", "🚀"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the launch-pad signal" }],
+      },
+    },
+    /* ---------------------------------------------------------- Uzbekistan */
+    {
+      id: "UZ", name: "Uzbekistan", region: "Asia", flag: "🇺🇿", capital: "Tashkent", ll: [41.3, 69.2],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The Silk Road city of Samarkand is located in which country?", options: ["Iran", "Uzbekistan", "Turkmenistan", "Afghanistan"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Uzbekistan?", options: ["Samarkand", "Bukhara", "Tashkent", "Khiva"], a: 2 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Uzbekistan?", options: ["Tenge", "Som", "Manat", "Rial"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "SAMARKAND", hint: "Ancient Silk Road city here" },
+          { cat: "word", type: "brain", answer: "TASHKENT", hint: "Uzbekistan's capital city" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "120,000 so'm at 12,000 = $1 is how many US dollars?", options: ["$10", "$12", "$100", "$120"], a: 0 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Tashkent", value: 41.3 }, { label: "Bukhara", value: 39.8 }, { label: "Samarkand", value: 39.7 }, { label: "Termez", value: 37.2 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the Silk Road sequence", tiles: ["🕌", "🐫", "🧵", "🍶", "🌇"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the bazaar signal" }],
+      },
+    },
+    /* ---------------------------------------------------------------- Iran */
+    {
+      id: "IR", name: "Iran", region: "Asia", flag: "🇮🇷", capital: "Tehran", ll: [35.7, 51.4],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Iran was historically known by which name?", options: ["Persia", "Mesopotamia", "Anatolia", "Arabia"], a: 0 },
+          { cat: "trivia", type: "brain", q: "The ancient ruins of Persepolis are located in which country?", options: ["Iraq", "Iran", "Turkey", "Syria"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Iran?", options: ["Dinar", "Rial", "Lira", "Dirham"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "PERSIA", hint: "Historic name for Iran" },
+          { cat: "word", type: "brain", answer: "TEHRAN", hint: "Iran's capital city" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "500,000 rials at 50,000 = $1 is how many US dollars?", options: ["$1", "$5", "$10", "$100"], a: 2 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Tabriz", value: 38.1 }, { label: "Tehran", value: 35.7 }, { label: "Isfahan", value: 32.7 }, { label: "Shiraz", value: 29.6 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the Persian sequence", tiles: ["🕌", "🐆", "🌹", "🍶", "🏺"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the palace-gate signal" }],
+      },
+    },
+    /* ---------------------------------------------------------------- Iraq */
+    {
+      id: "IQ", name: "Iraq", region: "Asia", flag: "🇮🇶", capital: "Baghdad", ll: [33.3, 44.4],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Iraq covers ancient Mesopotamia, the land between the Tigris and which river?", options: ["Nile", "Euphrates", "Jordan", "Indus"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Iraq?", options: ["Basra", "Mosul", "Baghdad", "Kirkuk"], a: 2 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Iraq?", options: ["Dinar", "Rial", "Lira", "Riyal"], a: 0 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "BAGHDAD", hint: "Iraq's capital city" },
+          { cat: "word", type: "brain", answer: "TIGRIS", hint: "River through Baghdad" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "ID13000 at ID1300 = $1 is how many US dollars?", options: ["$10", "$13", "$100", "$130"], a: 0 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Mosul", value: 36.3 }, { label: "Kirkuk", value: 35.5 }, { label: "Baghdad", value: 33.3 }, { label: "Basra", value: 30.5 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the ancient-river sequence", tiles: ["🏛️", "🌊", "🐪", "🕌", "📜"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the river signal" }],
+      },
+    },
+    /* -------------------------------------------------------------- Taiwan */
+    {
+      id: "TW", name: "Taiwan", region: "Asia", flag: "🇹🇼", capital: "Taipei", ll: [25.0, 121.5],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The Taipei 101 skyscraper is a landmark of which territory?", options: ["Hong Kong", "Taiwan", "Singapore", "Macau"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Taiwan was historically known to Europeans by which name?", options: ["Formosa", "Ceylon", "Cathay", "Siam"], a: 0 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Taiwan?", options: ["Kaohsiung", "Taichung", "Taipei", "Tainan"], a: 2 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "TAIPEI", hint: "Taiwan's capital city" },
+          { cat: "word", type: "brain", answer: "FORMOSA", hint: "Old European name for Taiwan" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "NT$320 at NT$32 = $1 is how many US dollars?", options: ["$3", "$10", "$32", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Taipei", value: 25.0 }, { label: "Taichung", value: 24.1 }, { label: "Tainan", value: 23.0 }, { label: "Kaohsiung", value: 22.6 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the night-market sequence", tiles: ["🏙️", "🥟", "🧋", "🏮", "⛩️"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the market-stall signal" }],
+      },
+    },
+    /* ---------------------------------------------------------- Azerbaijan */
+    {
+      id: "AZ", name: "Azerbaijan", region: "Asia", flag: "🇦🇿", capital: "Baku", ll: [40.4, 49.9],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The capital Baku sits on the shore of which sea?", options: ["Black Sea", "Caspian Sea", "Aral Sea", "Red Sea"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Azerbaijan is nicknamed the Land of what, due to its natural gas flames?", options: ["Ice", "Fire", "Silk", "Gold"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Azerbaijan?", options: ["Manat", "Tenge", "Som", "Lari"], a: 0 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "BAKU", hint: "Azerbaijan's capital city" },
+          { cat: "word", type: "brain", answer: "CASPIAN", hint: "Sea on Azerbaijan's coast" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "₼17 at ₼1.7 = $1 is how many US dollars?", options: ["$7", "$10", "$17", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Ganja", value: 40.7 }, { label: "Sumqayit", value: 40.6 }, { label: "Baku", value: 40.4 }, { label: "Lankaran", value: 38.8 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the flame-tower sequence", tiles: ["🔥", "🛢️", "🌊", "🕌", "🏙️"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the flame-tower signal" }],
+      },
+    },
+    /* ------------------------------------------------------------- Georgia */
+    {
+      id: "GE", name: "Georgia", region: "Asia", flag: "🇬🇪", capital: "Tbilisi", ll: [41.7, 44.8],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Georgia is cited as one of the oldest regions in the world to produce which drink?", options: ["Beer", "Wine", "Whisky", "Coffee"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Georgia?", options: ["Batumi", "Kutaisi", "Tbilisi", "Yerevan"], a: 2 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Georgia?", options: ["Manat", "Lari", "Dram", "Ruble"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "TBILISI", hint: "Georgia's capital city" },
+          { cat: "word", type: "brain", answer: "CAUCASUS", hint: "Mountain range across Georgia" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "₾27 at ₾2.7 = $1 is how many US dollars?", options: ["$7", "$10", "$27", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Kutaisi", value: 42.3 }, { label: "Tbilisi", value: 41.7 }, { label: "Batumi", value: 41.6 }, { label: "Rustavi", value: 41.5 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the vineyard sequence", tiles: ["🍇", "🍷", "🏔️", "⛪", "🌊"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the vineyard signal" }],
+      },
+    },
+    /* --------------------------------------------------------------- Qatar */
+    {
+      id: "QA", name: "Qatar", region: "Middle East", flag: "🇶🇦", capital: "Doha", ll: [25.3, 51.5],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Which country hosted the 2022 FIFA World Cup?", options: ["UAE", "Qatar", "Saudi Arabia", "Kuwait"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Qatar?", options: ["Dubai", "Doha", "Manama", "Muscat"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Qatar?", options: ["Dinar", "Riyal", "Dirham", "Rial"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "DOHA", hint: "Qatar's capital city" },
+          { cat: "word", type: "brain", answer: "QATAR", hint: "This Gulf peninsula nation" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "QR36 at QR3.6 = $1 is how many US dollars?", options: ["$3", "$10", "$36", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Al Ruwais", value: 26.1 }, { label: "Al Khor", value: 25.7 }, { label: "Doha", value: 25.3 }, { label: "Al Wakrah", value: 25.2 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the desert sequence", tiles: ["🏙️", "🐫", "⚽", "🏜️", "🛢️"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the stadium signal" }],
+      },
+    },
+    /* -------------------------------------------------------------- Kuwait */
+    {
+      id: "KW", name: "Kuwait", region: "Middle East", flag: "🇰🇼", capital: "Kuwait City", ll: [29.4, 48.0],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "What is the capital of Kuwait?", options: ["Doha", "Manama", "Kuwait City", "Riyadh"], a: 2 },
+          { cat: "trivia", type: "brain", q: "Kuwait's wealth is built largely on exporting which resource?", options: ["Gold", "Oil", "Diamonds", "Copper"], a: 1 },
+          { cat: "trivia", type: "brain", q: "The Kuwaiti dinar is often cited as the world's highest-valued unit of what?", options: ["Currency", "Weight", "Distance", "Time"], a: 0 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "KUWAIT", hint: "This oil-rich Gulf nation" },
+          { cat: "word", type: "brain", answer: "DINAR", hint: "Kuwait's high-valued currency" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "With KD1 ≈ $3.25, about how many dollars is KD4?", options: ["$4", "$7", "$13", "$40"], a: 2 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Kuwait City", value: 29.4 }, { label: "Ahmadi", value: 29.1 }, { label: "Wafra", value: 28.6 }, { label: "Nuwaiseeb", value: 28.4 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the oilfield sequence", tiles: ["🛢️", "🏙️", "🐫", "🌊", "🕌"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the oil-derrick signal" }],
+      },
+    },
+    /* -------------------------------------------------------------- Jordan */
+    {
+      id: "JO", name: "Jordan", region: "Middle East", flag: "🇯🇴", capital: "Amman", ll: [31.9, 35.9],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The ancient rock-carved city of Petra is a famous landmark of which country?", options: ["Egypt", "Jordan", "Israel", "Syria"], a: 1 },
+          { cat: "trivia", type: "brain", q: "The Dead Sea, the lowest point on land, borders Jordan and which country?", options: ["Egypt", "Israel", "Lebanon", "Iraq"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Jordan?", options: ["Dinar", "Pound", "Shekel", "Lira"], a: 0 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "PETRA", hint: "Rose-red rock-carved city" },
+          { cat: "word", type: "brain", answer: "AMMAN", hint: "Jordan's capital city" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "With JD1 ≈ $1.4, about how many dollars is JD10?", options: ["$10", "$14", "$70", "$140"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Irbid", value: 32.6 }, { label: "Amman", value: 31.9 }, { label: "Karak", value: 31.2 }, { label: "Aqaba", value: 29.5 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the desert-canyon sequence", tiles: ["🏜️", "🐫", "🏛️", "🧂", "⛺"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the canyon signal" }],
+      },
+    },
+    /* ------------------------------------------------------------- Lebanon */
+    {
+      id: "LB", name: "Lebanon", region: "Middle East", flag: "🇱🇧", capital: "Beirut", ll: [33.9, 35.5],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The national flag of Lebanon features which tree?", options: ["Palm", "Cedar", "Olive", "Oak"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Lebanon?", options: ["Tripoli", "Beirut", "Sidon", "Byblos"], a: 1 },
+          { cat: "trivia", type: "brain", q: "The Roman temple ruins at Baalbek are located in which country?", options: ["Syria", "Lebanon", "Jordan", "Turkey"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "BEIRUT", hint: "Lebanon's capital city" },
+          { cat: "word", type: "brain", answer: "CEDAR", hint: "Tree on the Lebanese flag" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "With $1 ≈ 90,000 Lebanese pounds, 180,000 pounds is how many dollars?", options: ["$1", "$2", "$9", "$18"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Tripoli", value: 34.4 }, { label: "Byblos", value: 34.1 }, { label: "Beirut", value: 33.9 }, { label: "Tyre", value: 33.3 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the cedar sequence", tiles: ["🌲", "🏛️", "🌊", "🍋", "⛰️"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the harbourfront signal" }],
+      },
+    },
+    /* ---------------------------------------------------------------- Oman */
+    {
+      id: "OM", name: "Oman", region: "Middle East", flag: "🇴🇲", capital: "Muscat", ll: [23.6, 58.4],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Oman is historically famous for producing which fragrant resin?", options: ["Frankincense", "Amber", "Camphor", "Myrrh"], a: 0 },
+          { cat: "trivia", type: "brain", q: "Oman is ruled by a leader holding which title?", options: ["King", "Emir", "Sultan", "Sheikh"], a: 2 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Oman?", options: ["Muscat", "Salalah", "Nizwa", "Sohar"], a: 0 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "MUSCAT", hint: "Oman's capital city" },
+          { cat: "word", type: "brain", answer: "OMAN", hint: "This Arabian sultanate" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "With OR1 ≈ $2.6, about how many dollars is OR5?", options: ["$5", "$8", "$13", "$26"], a: 2 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Sohar", value: 24.4 }, { label: "Muscat", value: 23.6 }, { label: "Nizwa", value: 22.9 }, { label: "Salalah", value: 17.0 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the frankincense sequence", tiles: ["🕌", "🐫", "🏜️", "🌊", "🪔"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the harbour fort signal" }],
+      },
+    },
+    /* --------------------------------------------------------------- Ghana */
+    {
+      id: "GH", name: "Ghana", region: "Africa", flag: "🇬🇭", capital: "Accra", ll: [5.6, -0.2],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Ghana was formerly a British colony known by which name?", options: ["Ivory Coast", "Gold Coast", "Slave Coast", "Grain Coast"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Ghana is one of the world's top producers of which crop, used to make chocolate?", options: ["Coffee", "Cocoa", "Sugar", "Vanilla"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Ghana?", options: ["Naira", "Cedi", "Franc", "Rand"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "ACCRA", hint: "Ghana's capital city" },
+          { cat: "word", type: "brain", answer: "COCOA", hint: "Bean grown for chocolate here" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "₵120 at ₵12 = $1 is how many US dollars?", options: ["$10", "$12", "$100", "$120"], a: 0 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Tamale", value: 9.4 }, { label: "Kumasi", value: 6.7 }, { label: "Accra", value: 5.6 }, { label: "Takoradi", value: 4.9 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the cocoa sequence", tiles: ["🍫", "🥁", "🌊", "⚽", "🪘"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the coastal-fort signal" }],
+      },
+    },
+    /* ------------------------------------------------------- Côte d'Ivoire */
+    {
+      id: "CI", name: "Côte d'Ivoire", region: "Africa", flag: "🇨🇮", capital: "Yamoussoukro", ll: [6.8, -5.3],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Côte d'Ivoire is the world's largest producer of which crop?", options: ["Coffee", "Cocoa", "Rubber", "Cotton"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Abidjan, the largest city of Côte d'Ivoire, lies on the coast of which body of water?", options: ["Red Sea", "Atlantic Ocean", "Indian Ocean", "Mediterranean Sea"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Côte d'Ivoire?", options: ["Naira", "CFA Franc", "Cedi", "Dirham"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "ABIDJAN", hint: "Largest city of Côte d'Ivoire" },
+          { cat: "word", type: "brain", answer: "COCOA", hint: "Top export crop here" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "CFA6000 at CFA600 = $1 is how many US dollars?", options: ["$6", "$10", "$60", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Korhogo", value: 9.5 }, { label: "Bouaké", value: 7.7 }, { label: "Yamoussoukro", value: 6.8 }, { label: "Abidjan", value: 5.4 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the cocoa-coast sequence", tiles: ["🍫", "🌴", "⚽", "🥁", "🌊"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the lagoon signal" }],
+      },
+    },
+    /* ------------------------------------------------------------- Senegal */
+    {
+      id: "SN", name: "Senegal", region: "Africa", flag: "🇸🇳", capital: "Dakar", ll: [14.7, -17.5],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Dakar sits near the westernmost point of which continent?", options: ["Europe", "Africa", "Asia", "South America"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Senegal?", options: ["Bamako", "Dakar", "Conakry", "Banjul"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Senegal?", options: ["CFA Franc", "Naira", "Cedi", "Dirham"], a: 0 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "DAKAR", hint: "Senegal's capital city" },
+          { cat: "word", type: "brain", answer: "SENEGAL", hint: "This West African nation" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "CFA3000 at CFA600 = $1 is how many US dollars?", options: ["$3", "$5", "$30", "$50"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Saint-Louis", value: 16.0 }, { label: "Touba", value: 14.9 }, { label: "Dakar", value: 14.7 }, { label: "Ziguinchor", value: 12.6 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the coastal sequence", tiles: ["🥜", "🌊", "🥁", "🛶", "🏝️"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the harbour signal" }],
+      },
+    },
+    /* ------------------------------------------------------------- Algeria */
+    {
+      id: "DZ", name: "Algeria", region: "Africa", flag: "🇩🇿", capital: "Algiers", ll: [36.8, 3.1],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Algeria is the largest country by area on which continent?", options: ["Asia", "Africa", "Europe", "South America"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Most of southern Algeria is covered by which desert?", options: ["Kalahari", "Sahara", "Gobi", "Namib"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Algeria?", options: ["Dirham", "Dinar", "Franc", "Pound"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "ALGIERS", hint: "Algeria's capital city" },
+          { cat: "word", type: "brain", answer: "SAHARA", hint: "Vast desert in the south" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "DA1350 at DA135 = $1 is how many US dollars?", options: ["$10", "$13", "$100", "$135"], a: 0 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Algiers", value: 36.8 }, { label: "Constantine", value: 36.4 }, { label: "Oran", value: 35.7 }, { label: "Tamanrasset", value: 22.8 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the Sahara sequence", tiles: ["🏜️", "🐫", "🕌", "🛢️", "🌊"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the desert-outpost signal" }],
+      },
+    },
+    /* ------------------------------------------------------------- Tunisia */
+    {
+      id: "TN", name: "Tunisia", region: "Africa", flag: "🇹🇳", capital: "Tunis", ll: [36.8, 10.2],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The ruins of the ancient city of Carthage lie near the capital of which country?", options: ["Libya", "Tunisia", "Algeria", "Morocco"], a: 1 },
+          { cat: "trivia", type: "brain", q: "This North African nation's capital and largest city is which of these?", options: ["Sfax", "Sousse", "Tunis", "Bizerte"], a: 2 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Tunisia?", options: ["Dirham", "Dinar", "Franc", "Lira"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "TUNIS", hint: "Tunisia's capital city" },
+          { cat: "word", type: "brain", answer: "CARTHAGE", hint: "Ancient city near Tunis" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "DT30 at DT3 = $1 is how many US dollars?", options: ["$3", "$10", "$30", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Bizerte", value: 37.3 }, { label: "Tunis", value: 36.8 }, { label: "Sousse", value: 35.8 }, { label: "Sfax", value: 34.7 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the medina sequence", tiles: ["🕌", "🫒", "🏜️", "🌊", "🏺"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the medina-gate signal" }],
+      },
+    },
+    /* -------------------------------------------------------------- Uganda */
+    {
+      id: "UG", name: "Uganda", region: "Africa", flag: "🇺🇬", capital: "Kampala", ll: [0.3, 32.6],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Uganda borders Lake Victoria, from which flows the source of which great river?", options: ["Congo", "Nile", "Zambezi", "Niger"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Uganda is a famous destination for trekking to see which endangered animal?", options: ["Mountain Gorilla", "Panda", "Orangutan", "Polar Bear"], a: 0 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Uganda?", options: ["Rand", "Shilling", "Cedi", "Naira"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "KAMPALA", hint: "Uganda's capital city" },
+          { cat: "word", type: "brain", answer: "GORILLA", hint: "Ape trekked to see here" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "USh37000 at USh3700 = $1 is how many US dollars?", options: ["$10", "$37", "$100", "$370"], a: 0 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Gulu", value: 2.8 }, { label: "Kampala", value: 0.3 }, { label: "Entebbe", value: 0.1 }, { label: "Mbarara", value: -0.6 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the safari sequence", tiles: ["🦍", "🌊", "🌍", "🐘", "🌿"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the lakeside signal" }],
+      },
+    },
+    /* ------------------------------------------------------------ Zimbabwe */
+    {
+      id: "ZW", name: "Zimbabwe", region: "Africa", flag: "🇿🇼", capital: "Harare", ll: [-17.8, 31.0],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Victoria Falls, one of the world's largest waterfalls, lies on the border of Zimbabwe and which country?", options: ["Zambia", "Botswana", "Mozambique", "South Africa"], a: 0 },
+          { cat: "trivia", type: "brain", q: "Victoria Falls is formed by which river?", options: ["Nile", "Zambezi", "Limpopo", "Congo"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Zimbabwe?", options: ["Bulawayo", "Harare", "Mutare", "Gweru"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "HARARE", hint: "Zimbabwe's capital city" },
+          { cat: "word", type: "brain", answer: "ZAMBEZI", hint: "River of Victoria Falls" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "If a falls tour costs $45 and you pay with a $100 note, how much change?", options: ["$45", "$55", "$65", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Harare", value: -17.8 }, { label: "Mutare", value: -19.0 }, { label: "Gweru", value: -19.5 }, { label: "Bulawayo", value: -20.2 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the waterfall sequence", tiles: ["💦", "🌊", "🐘", "🪨", "🌈"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the waterfall signal" }],
+      },
+    },
+    /* ---------------------------------------------------------- Mozambique */
+    {
+      id: "MZ", name: "Mozambique", region: "Africa", flag: "🇲🇿", capital: "Maputo", ll: [-25.9, 32.6],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Mozambique's official language is which European language?", options: ["French", "Portuguese", "Spanish", "English"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Mozambique has a long coastline on which ocean?", options: ["Atlantic", "Indian", "Pacific", "Southern"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Mozambique?", options: ["Rand", "Metical", "Kwanza", "Escudo"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "MAPUTO", hint: "Mozambique's capital city" },
+          { cat: "word", type: "brain", answer: "METICAL", hint: "Mozambique's currency" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "MT640 at MT64 = $1 is how many US dollars?", options: ["$6", "$10", "$64", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Pemba", value: -13.0 }, { label: "Nampula", value: -15.1 }, { label: "Beira", value: -19.8 }, { label: "Maputo", value: -26.0 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the coastal sequence", tiles: ["🦐", "🌊", "🏝️", "🐠", "🌴"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the seaside signal" }],
+      },
+    },
+    /* ---------------------------------------------------------- Madagascar */
+    {
+      id: "MG", name: "Madagascar", region: "Africa", flag: "🇲🇬", capital: "Antananarivo", ll: [-18.9, 47.5],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Madagascar is world-famous as the only natural home of which primate?", options: ["Lemur", "Gorilla", "Orangutan", "Baboon"], a: 0 },
+          { cat: "trivia", type: "brain", q: "Madagascar is a large island in which ocean?", options: ["Atlantic", "Indian", "Pacific", "Arctic"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Madagascar?", options: ["Ariary", "Rand", "Franc", "Shilling"], a: 0 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "LEMUR", hint: "Primate unique to this island" },
+          { cat: "word", type: "brain", answer: "BAOBAB", hint: "Thick-trunked tree here" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "Ar45000 at Ar4500 = $1 is how many US dollars?", options: ["$10", "$45", "$100", "$450"], a: 0 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Antsiranana", value: -12.3 }, { label: "Mahajanga", value: -15.7 }, { label: "Antananarivo", value: -18.9 }, { label: "Toliara", value: -23.4 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the rainforest sequence", tiles: ["🦎", "🌴", "🐒", "🦋", "🌺"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the rainforest signal" }],
+      },
+    },
+    /* ------------------------------------------------------------ Cameroon */
+    {
+      id: "CM", name: "Cameroon", region: "Africa", flag: "🇨🇲", capital: "Yaoundé", ll: [3.9, 11.5],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Cameroon's national football team is nicknamed the Indomitable what?", options: ["Eagles", "Lions", "Elephants", "Stars"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Cameroon?", options: ["Douala", "Yaoundé", "Bamenda", "Garoua"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Cameroon?", options: ["Naira", "CFA Franc", "Cedi", "Rand"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "YAOUNDE", hint: "Cameroon's capital city" },
+          { cat: "word", type: "brain", answer: "DOUALA", hint: "Cameroon's largest port city" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "CFA1800 at CFA600 = $1 is how many US dollars?", options: ["$3", "$6", "$18", "$30"], a: 0 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Maroua", value: 10.6 }, { label: "Garoua", value: 9.3 }, { label: "Douala", value: 4.1 }, { label: "Yaoundé", value: 3.9 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the safari sequence", tiles: ["🦁", "⚽", "🌋", "🌴", "🥁"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the pitch-side signal" }],
+      },
+    },
+    /* -------------------------------------------------------------- Angola */
+    {
+      id: "AO", name: "Angola", region: "Africa", flag: "🇦🇴", capital: "Luanda", ll: [-8.8, 13.2],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Angola's official language is which European language?", options: ["French", "Portuguese", "Spanish", "English"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Angola?", options: ["Metical", "Kwanza", "Rand", "Escudo"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Angola's economy relies heavily on oil and which precious gemstones?", options: ["Emeralds", "Diamonds", "Rubies", "Sapphires"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "LUANDA", hint: "Angola's capital city" },
+          { cat: "word", type: "brain", answer: "KWANZA", hint: "Angola's currency" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "Kz8300 at Kz830 = $1 is how many US dollars?", options: ["$10", "$83", "$100", "$830"], a: 0 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Luanda", value: -8.8 }, { label: "Huambo", value: -12.8 }, { label: "Lubango", value: -14.9 }, { label: "Namibe", value: -15.2 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the coastal sequence", tiles: ["🛢️", "💎", "🌊", "🥁", "🌴"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the harbour signal" }],
+      },
+    },
+    /* ----------------------------------------------------------- Guatemala */
+    {
+      id: "GT", name: "Guatemala", region: "North America", flag: "🇬🇹", capital: "Guatemala City", ll: [14.6, -90.5],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The ancient Maya pyramids of Tikal are located in which country?", options: ["Mexico", "Guatemala", "Honduras", "Belize"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Guatemala's currency is named after which national bird?", options: ["Toucan", "Quetzal", "Macaw", "Condor"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Guatemala?", options: ["Antigua", "Quetzaltenango", "Guatemala City", "Cobán"], a: 2 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "TIKAL", hint: "Great Maya ruin here" },
+          { cat: "word", type: "brain", answer: "QUETZAL", hint: "National bird and currency" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "Q75 at Q7.5 = $1 is how many US dollars?", options: ["$7", "$10", "$75", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Cobán", value: 15.5 }, { label: "Quetzaltenango", value: 14.8 }, { label: "Guatemala City", value: 14.6 }, { label: "Escuintla", value: 14.3 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the Mayan sequence", tiles: ["🛕", "🌋", "🦜", "🌽", "🥑"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the temple-step signal" }],
+      },
+    },
+    /* ---------------------------------------------------------- Costa Rica */
+    {
+      id: "CR", name: "Costa Rica", region: "North America", flag: "🇨🇷", capital: "San José", ll: [9.9, -84.1],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Costa Rica is notable for having abolished which national institution in 1948?", options: ["Its Army", "Its Currency", "Its Parliament", "Its Taxes"], a: 0 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Costa Rica?", options: ["Liberia", "San José", "Cartago", "Limón"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Costa Rica?", options: ["Peso", "Colón", "Quetzal", "Balboa"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "COLON", hint: "Costa Rica's currency" },
+          { cat: "word", type: "brain", answer: "TOUCAN", hint: "Big-billed rainforest bird" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "₡5000 at ₡500 = $1 is how many US dollars?", options: ["$5", "$10", "$50", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Liberia", value: 10.6 }, { label: "La Fortuna", value: 10.5 }, { label: "San José", value: 9.9 }, { label: "Golfito", value: 8.6 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the rainforest sequence", tiles: ["🦥", "🌴", "🦜", "🌋", "☕"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the canopy signal" }],
+      },
+    },
+    /* -------------------------------------------------------------- Panama */
+    {
+      id: "PA", name: "Panama", region: "North America", flag: "🇵🇦", capital: "Panama City", ll: [9.0, -79.5],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The Panama Canal connects the Atlantic Ocean to which other ocean?", options: ["Indian", "Pacific", "Arctic", "Southern"], a: 1 },
+          { cat: "trivia", type: "brain", q: "The Panama Canal was built to save ships from sailing around which continent?", options: ["Africa", "South America", "Australia", "Antarctica"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency, alongside the US dollar, is used in Panama?", options: ["Colón", "Balboa", "Quetzal", "Peso"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "BALBOA", hint: "Panama's local currency" },
+          { cat: "word", type: "brain", answer: "PANAMA", hint: "This canal-crossed nation" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "A ship pays an $80 toll and hands over $200. How much change?", options: ["$100", "$120", "$180", "$200"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Colón", value: 9.4 }, { label: "Panama City", value: 9.0 }, { label: "David", value: 8.4 }, { label: "Santiago", value: 8.1 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the canal sequence", tiles: ["🚢", "🌊", "⚓", "🌴", "🦜"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the lock-gate signal" }],
+      },
+    },
+    /* -------------------------------------------------- Dominican Republic */
+    {
+      id: "DO", name: "Dominican Republic", region: "North America", flag: "🇩🇴", capital: "Santo Domingo", ll: [18.5, -69.9],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The Dominican Republic shares the island of Hispaniola with which country?", options: ["Cuba", "Haiti", "Jamaica", "Puerto Rico"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which sport is hugely popular and a major export of talent in the Dominican Republic?", options: ["Cricket", "Baseball", "Rugby", "Ice Hockey"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in the Dominican Republic?", options: ["Peso", "Balboa", "Colón", "Gourde"], a: 0 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "BASEBALL", hint: "Beloved national sport here" },
+          { cat: "word", type: "brain", answer: "MERENGUE", hint: "Lively Dominican dance music" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "RD$600 at RD$60 = $1 is how many US dollars?", options: ["$6", "$10", "$60", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Puerto Plata", value: 19.8 }, { label: "Santiago", value: 19.5 }, { label: "La Vega", value: 19.2 }, { label: "Santo Domingo", value: 18.5 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the Caribbean sequence", tiles: ["⚾", "🏝️", "🌴", "🥁", "🌊"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the beachfront signal" }],
+      },
+    },
+    /* ------------------------------------------------------------- Jamaica */
+    {
+      id: "JM", name: "Jamaica", region: "North America", flag: "🇯🇲", capital: "Kingston", ll: [18.0, -76.8],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Jamaica is the birthplace of which music genre, made famous by Bob Marley?", options: ["Reggae", "Salsa", "Calypso", "Samba"], a: 0 },
+          { cat: "trivia", type: "brain", q: "Sprinter Usain Bolt, the fastest man ever, is from which country?", options: ["Trinidad", "Jamaica", "Bahamas", "Barbados"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Jamaica?", options: ["Montego Bay", "Kingston", "Ocho Rios", "Spanish Town"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "REGGAE", hint: "Music genre born in Jamaica" },
+          { cat: "word", type: "brain", answer: "KINGSTON", hint: "Jamaica's capital city" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "J$1500 at J$150 = $1 is how many US dollars?", options: ["$10", "$15", "$100", "$150"], a: 0 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Montego Bay", value: 18.5 }, { label: "Ocho Rios", value: 18.4 }, { label: "Mandeville", value: 18.0 }, { label: "Kingston", value: 17.9 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the reggae sequence", tiles: ["🎵", "🏝️", "🌴", "🥁", "☕"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the beach-party signal" }],
+      },
+    },
+    /* ------------------------------------------------------------- Ecuador */
+    {
+      id: "EC", name: "Ecuador", region: "South America", flag: "🇪🇨", capital: "Quito", ll: [-0.2, -78.5],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The Galápagos Islands, famed for unique wildlife, belong to which country?", options: ["Peru", "Ecuador", "Chile", "Colombia"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Ecuador takes its name from its location on which imaginary line?", options: ["Equator", "Prime Meridian", "Tropic of Cancer", "Arctic Circle"], a: 0 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Ecuador?", options: ["Sol", "US Dollar", "Peso", "Sucre"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "QUITO", hint: "Ecuador's capital city" },
+          { cat: "word", type: "brain", answer: "GALAPAGOS", hint: "Wildlife islands off Ecuador" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "Ecuador uses US dollars. A hat costs $12 and you pay $20 — how much change?", options: ["$6", "$8", "$10", "$12"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Ibarra", value: 0.4 }, { label: "Quito", value: -0.2 }, { label: "Guayaquil", value: -2.2 }, { label: "Cuenca", value: -2.9 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the Galápagos sequence", tiles: ["🐢", "🦎", "🌋", "🐧", "🏝️"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the equator-line signal" }],
+      },
+    },
+    /* ------------------------------------------------------------- Bolivia */
+    {
+      id: "BO", name: "Bolivia", region: "South America", flag: "🇧🇴", capital: "La Paz", ll: [-16.5, -68.1],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "The Salar de Uyuni, the world's largest salt flat, is located in which country?", options: ["Chile", "Bolivia", "Peru", "Argentina"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Bolivia shares Lake Titicaca, a high-altitude lake, with which country?", options: ["Peru", "Chile", "Brazil", "Ecuador"], a: 0 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Bolivia?", options: ["Sol", "Boliviano", "Peso", "Guaraní"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "ANDES", hint: "Mountain range across Bolivia" },
+          { cat: "word", type: "brain", answer: "TITICACA", hint: "High lake shared with Peru" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "Bs70 at Bs7 = $1 is how many US dollars?", options: ["$7", "$10", "$70", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "La Paz", value: -16.5 }, { label: "Cochabamba", value: -17.4 }, { label: "Sucre", value: -19.0 }, { label: "Potosí", value: -19.6 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the salt-flat sequence", tiles: ["🧂", "🏔️", "🦙", "🌄", "🛖"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the salt-flat signal" }],
+      },
+    },
+    /* ------------------------------------------------------------- Uruguay */
+    {
+      id: "UY", name: "Uruguay", region: "South America", flag: "🇺🇾", capital: "Montevideo", ll: [-34.9, -56.2],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Uruguay hosted and won the very first FIFA World Cup in which decade?", options: ["1910s", "1930s", "1950s", "1970s"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Uruguay?", options: ["Salto", "Montevideo", "Paysandú", "Colonia"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Uruguay?", options: ["Guaraní", "Peso", "Real", "Sol"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "URUGUAY", hint: "This South American nation" },
+          { cat: "word", type: "brain", answer: "ASADO", hint: "Grilled beef feast here" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "$U450 at $U45 = $1 is how many US dollars?", options: ["$10", "$45", "$100", "$450"], a: 0 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Salto", value: -31.4 }, { label: "Paysandú", value: -32.3 }, { label: "Montevideo", value: -34.9 }, { label: "Punta del Este", value: -35.0 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the football sequence", tiles: ["⚽", "🥩", "🧉", "🌊", "🐎"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the pitch signal" }],
+      },
+    },
+    /* ------------------------------------------------------------ Paraguay */
+    {
+      id: "PY", name: "Paraguay", region: "South America", flag: "🇵🇾", capital: "Asunción", ll: [-25.3, -57.6],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Paraguay's currency shares its name with which indigenous language spoken there?", options: ["Quechua", "Guaraní", "Aymara", "Mapuche"], a: 1 },
+          { cat: "trivia", type: "brain", q: "The huge Itaipú hydroelectric dam is shared by Paraguay and which country?", options: ["Argentina", "Brazil", "Bolivia", "Uruguay"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Paraguay?", options: ["Encarnación", "Asunción", "Concepción", "Ciudad del Este"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "GUARANI", hint: "Language and currency here" },
+          { cat: "word", type: "brain", answer: "ASUNCION", hint: "Paraguay's capital city" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "₲70000 at ₲7000 = $1 is how many US dollars?", options: ["$7", "$10", "$70", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Concepción", value: -23.4 }, { label: "Asunción", value: -25.3 }, { label: "Ciudad del Este", value: -25.5 }, { label: "Encarnación", value: -27.3 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the river sequence", tiles: ["🌊", "⚡", "🌿", "🧉", "🐆"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the riverbank signal" }],
+      },
+    },
+    /* ----------------------------------------------------------- Venezuela */
+    {
+      id: "VE", name: "Venezuela", region: "South America", flag: "🇻🇪", capital: "Caracas", ll: [10.5, -66.9],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Angel Falls, the world's highest uninterrupted waterfall, is located in which country?", options: ["Brazil", "Venezuela", "Colombia", "Guyana"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Venezuela holds some of the world's largest reserves of which resource?", options: ["Gold", "Oil", "Coal", "Uranium"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Venezuela?", options: ["Sol", "Bolívar", "Peso", "Real"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "CARACAS", hint: "Venezuela's capital city" },
+          { cat: "word", type: "brain", answer: "ORINOCO", hint: "Major Venezuelan river" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "Bs130 at Bs13 = $1 is how many US dollars?", options: ["$10", "$13", "$100", "$130"], a: 0 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Maracaibo", value: 10.7 }, { label: "Caracas", value: 10.5 }, { label: "Valencia", value: 10.2 }, { label: "Ciudad Bolívar", value: 8.1 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the waterfall sequence", tiles: ["💦", "🌊", "🛢️", "🏞️", "🦜"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the cascade signal" }],
+      },
+    },
+    /* ---------------------------------------------------------------- Fiji */
+    {
+      id: "FJ", name: "Fiji", region: "Oceania", flag: "🇫🇯", capital: "Suva", ll: [-18.1, 178.4],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Fiji is an island nation located in which ocean?", options: ["Atlantic", "Pacific", "Indian", "Arctic"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Fiji is world-renowned for its national team in which sport?", options: ["Cricket", "Rugby", "Basketball", "Cycling"], a: 1 },
+          { cat: "trivia", type: "brain", q: "What is the capital of Fiji?", options: ["Nadi", "Suva", "Lautoka", "Labasa"], a: 1 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "SUVA", hint: "Fiji's capital city" },
+          { cat: "word", type: "brain", answer: "FIJI", hint: "This Pacific island nation" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "FJ$22 at FJ$2.2 = $1 is how many US dollars?", options: ["$2", "$10", "$22", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Labasa", value: -16.4 }, { label: "Lautoka", value: -17.6 }, { label: "Nadi", value: -17.8 }, { label: "Suva", value: -18.1 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the island sequence", tiles: ["🏝️", "🌊", "🐠", "🥥", "🏉"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the reef signal" }],
+      },
+    },
+    /* --------------------------------------------------- Papua New Guinea */
+    {
+      id: "PG", name: "Papua New Guinea", region: "Oceania", flag: "🇵🇬", capital: "Port Moresby", ll: [-9.5, 147.2],
+      tasks: {
+        trivia: [
+          { cat: "trivia", type: "brain", q: "Papua New Guinea is famous for having the world's greatest diversity of what?", options: ["Volcanoes", "Languages", "Deserts", "Glaciers"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Papua New Guinea shares the island of New Guinea with which country?", options: ["Australia", "Indonesia", "Philippines", "Malaysia"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Which currency is used in Papua New Guinea?", options: ["Kina", "Dollar", "Peso", "Vatu"], a: 0 },
+        ],
+        word: [
+          { cat: "word", type: "brain", answer: "KINA", hint: "Papua New Guinea's currency" },
+          { cat: "word", type: "brain", answer: "MORESBY", hint: "Part of the capital's name" },
+        ],
+        math: [
+          { cat: "math", type: "brain", q: "K30 at K3 = $1 is how many US dollars?", options: ["$3", "$10", "$30", "$100"], a: 1 },
+        ],
+        spatial: [
+          { cat: "spatial", type: "brain", q: "Order these cities north → south", dir: "north", unit: "",
+            items: [{ label: "Wewak", value: -3.6 }, { label: "Madang", value: -5.2 }, { label: "Lae", value: -6.7 }, { label: "Port Moresby", value: -9.5 }] },
+        ],
+        memory: [{ cat: "memory", type: "reflex", prompt: "Memorise the rainforest sequence", tiles: ["🐦", "🌴", "🌺", "🥥", "🌊"] }],
+        reflex: [{ cat: "reflex", type: "reflex", prompt: "React at the highland signal" }],
+      },
+    },
   ];
 })();
