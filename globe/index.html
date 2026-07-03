@@ -287,6 +287,10 @@
   // pin-drop) if the token/SDK/imagery are unavailable — it can never break a race.
   // NOTE: needs live testing with a real token; untested against Mapillary so far.
   var MAPILLARY_TOKEN = 'MLY|28596352536621799|108d6154fbd03cc2b4bdbb06b9aac963';
+  // TEMPORARY testing aid: force the first stage of every race to be a Street
+  // Scout (in a dense-coverage city) so it's easy to reach. Set back to false to
+  // restore normal random selection once Street Scout is confirmed working.
+  var FORCE_STREET_FIRST = true;
 
   var PENALTY = { trivia:15, math:15, memory:12, spatial:12, reflex:10, word:12, dragdrop:12, audio:15, duo:8 };
 
@@ -503,7 +507,10 @@
     } else {
       var pool = COUNTRIES.filter(function(c){ return !S.usedCountries[c.id]; });
       if(!pool.length){ S.usedCountries={}; pool=COUNTRIES.slice(); }
-      var c = pick(pool); S.usedCountries[c.id]=1;
+      var c = pick(pool);
+      // TEMP (Street Scout testing): force stage 1 to a dense-coverage city so imagery loads
+      if(FORCE_STREET_FIRST && streetEnabled() && S.round===1){ c = countryById('FR') || c; }
+      S.usedCountries[c.id]=1;
       S.dest = { name:c.name, region:c.region, flag:c.flag, final:false, country:c };
       var st=statsDefault(); st.countries[c.id]=1; saveStats(st);
     }
@@ -586,6 +593,15 @@
   }
 
   function buildChallenge(){
+    // TEMP (Street Scout testing): force the very first stage of a race to be a
+    // Street Scout so it's easy to reach. Flip FORCE_STREET_FIRST back to false
+    // (near MAPILLARY_TOKEN) to restore fully random selection.
+    if(FORCE_STREET_FIRST && streetEnabled() && !onlineActive() && S.round===1 && !isFinal()){
+      var fc = S.dest.country || pick(COUNTRIES);
+      S.stageType='solo';
+      S.offered=[{ kind:'streetscout', cat:'spatial', type:'brain', q:'Street Scout: explore a real street near '+fc.name, ll:fc.ll, name:fc.name }];
+      S.chosen=null; return;
+    }
     var pool = taskPool();
     var recent = S.recentKinds || [];
     function fresh(list){ var f=list.filter(function(t){ return recent.indexOf(taskKind(t))<0; }); return f.length?f:list; }
