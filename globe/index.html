@@ -286,7 +286,7 @@
   // the Mapillary viewer only when chosen and fails open (falls back to the map
   // pin-drop) if the token/SDK/imagery are unavailable — it can never break a race.
   // NOTE: needs live testing with a real token; untested against Mapillary so far.
-  var MAPILLARY_TOKEN = '';
+  var MAPILLARY_TOKEN = 'MLY|28596352536621799|108d6154fbd03cc2b4bdbb06b9aac963';
 
   var PENALTY = { trivia:15, math:15, memory:12, spatial:12, reflex:10, word:12, dragdrop:12, audio:15, duo:8 };
 
@@ -1117,24 +1117,30 @@
   function loadMapillary(cb){
     if(_mly===2) return cb(true);
     if(_mly===3) return cb(false);
+    var done=false; function fin(ok){ if(done) return; done=true; _mly=ok?2:3; cb(ok); }
     try{
       var css=document.createElement('link'); css.rel='stylesheet';
       css.href='https://cdn.jsdelivr.net/npm/mapillary-js@4.1.2/dist/mapillary.css'; document.head.appendChild(css);
       var s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/mapillary-js@4.1.2/dist/mapillary.js';
-      s.onload=function(){ _mly=2; cb(true); }; s.onerror=function(){ _mly=3; cb(false); };
+      s.onload=function(){ fin(!!(window.mapillary&&window.mapillary.Viewer)); }; s.onerror=function(){ fin(false); };
       _mly=1; document.head.appendChild(s);
-    }catch(e){ _mly=3; cb(false); }
+      setTimeout(function(){ fin(false); }, 8000);   // watchdog: never hang
+    }catch(e){ fin(false); }
   }
   function mapillaryNearby(ll, cb){
     var d=0.4, bbox=[ll[1]-d, ll[0]-d, ll[1]+d, ll[0]+d].join(',');
     var url='https://graph.mapillary.com/images?access_token='+encodeURIComponent(MAPILLARY_TOKEN)
       +'&bbox='+bbox+'&limit=10&fields=id,computed_geometry';
-    fetch(url).then(function(r){ return r.json(); }).then(function(j){
-      var arr=(j&&j.data)||[]; if(!arr.length) return cb(null);
-      var im=arr[Math.floor(Math.random()*arr.length)];
-      var g=im.computed_geometry && im.computed_geometry.coordinates;   // [lng,lat]
-      cb({ id:im.id, ll:[ g?g[1]:ll[0], g?g[0]:ll[1] ] });
-    }).catch(function(){ cb(null); });
+    var done=false; function fin(v){ if(done) return; done=true; cb(v); }
+    setTimeout(function(){ fin(null); }, 8000);   // watchdog: never hang
+    try{
+      fetch(url).then(function(r){ return r.json(); }).then(function(j){
+        var arr=(j&&j.data)||[]; if(!arr.length) return fin(null);
+        var im=arr[Math.floor(Math.random()*arr.length)];
+        var g=im.computed_geometry && im.computed_geometry.coordinates;   // [lng,lat]
+        fin({ id:im.id, ll:[ g?g[1]:ll[0], g?g[0]:ll[1] ] });
+      }).catch(function(){ fin(null); });
+    }catch(e){ fin(null); }
   }
   function mgStreetScout(t){
     $('mg').innerHTML='<div class="prompt" style="text-align:center">🛰️ Finding a street to scout…</div>';
@@ -1144,7 +1150,8 @@
         if(!loc) return mgMapFind(t);
         $('mg').innerHTML='<div class="prompt" style="text-align:center;font-size:15px">Look around this street — then pin where in the world you are.</div>'
           + '<div id="pano" style="width:100%;height:250px;border-radius:12px;overflow:hidden;border:1px solid var(--cardb);background:#000"></div>'
-          + '<button class="btn globe" id="ssguess" style="margin-top:12px">📍 Make my guess ›</button>';
+          + '<div style="text-align:center;font-size:10.5px;color:var(--mut);margin-top:5px">Street imagery © <a href="https://www.mapillary.com" target="_blank" rel="noopener" style="color:var(--mut)">Mapillary</a> contributors, CC BY-SA</div>'
+          + '<button class="btn globe" id="ssguess" style="margin-top:10px">📍 Make my guess ›</button>';
         try{
           S.ssViewer=new window.mapillary.Viewer({ accessToken:MAPILLARY_TOKEN, container:'pano', imageId:loc.id });
         }catch(e){ return mgMapFind(t); }
