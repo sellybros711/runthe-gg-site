@@ -440,7 +440,7 @@
     { id:'sharp', name:'Sharpshooter', icon:'🎯', metric:function(s){return s.perfectStages;}, unit:'flawless stages',
       tiers:[{n:10,l:'Bronze'},{n:50,l:'Silver'},{n:150,l:'Gold'}] },
     { id:'speed', name:'Speed Demon', icon:'⚡', metric:function(s){return s.fastestStage?Math.max(0, 6-s.fastestStage):0;}, unit:'',
-      hide:true, tiers:[{n:1,l:'Bronze'},{n:2.5,l:'Silver'},{n:3.5,l:'Gold'}] },   // fastest < 5s / 3.5s / 2.5s
+      tiers:[{n:1,l:'Bronze'},{n:2.5,l:'Silver'},{n:3.5,l:'Gold'}] },   // fastest < 5s / 3.5s / 2.5s
     { id:'decathlete', name:'Decathlete', icon:'🎮', metric:function(s){return kindsCount();}, unit:'game types',
       tiers:[{n:5,l:'Bronze'},{n:10,l:'Silver'},{n:14,l:'Gold'}] },
     { id:'streak', name:'On A Roll', icon:'🔥', metric:function(s){return s.longestStreak;}, unit:'win streak',
@@ -617,7 +617,7 @@
       + '<div class="card">'
         + '<h1 style="font-size:24px">Name your team</h1>'
         + '<p class="lede">You\'ll race '+(FIELD_SIZE-1)+' AI ghost teams through '+ROUNDS+' Stages. '
-          + 'One team is Grounded each Stage — don\'t be last.</p>'
+          + 'The slowest team is Grounded each Stage until the 3-team Final — don\'t be last.</p>'
         + '<div style="margin-top:16px"><label class="fld" for="tn">Team name</label>'
         + '<input type="text" id="tn" maxlength="18" placeholder="Your Team" value="'+esc(S.teamName||'')+'" /></div>'
         + '<div class="btnrow">'
@@ -732,11 +732,16 @@
       tf.push({ s:'The capital of '+x.name+' is '+cap+'.', t:!lie });
     });
     g.push({ kind:'truefalse', cat:'trivia', type:'brain', q:'True or false — tap fast!', items:tf });
-    // Higher or Lower — which city is farther north (uses a spatial task's items)
+    // Higher or Lower — compare two cities. ONLY from a DIRECTIONAL spatial task
+    // (lat/long), where the question and scoring are unambiguous. Stat-ordered
+    // tasks (population/size/etc.) are skipped so we never ask "farther north"
+    // about a non-latitude value.
     var sp=(c.tasks.spatial&&c.tasks.spatial[0]);
-    if(sp && sp.items && sp.items.length>=2){
-      g.push({ kind:'higherlower', cat:'math', type:'brain', q:'Which is farther NORTH?',
-               items:sp.items.slice(), rounds:Math.min(4,sp.items.length-1>2?3:2) });
+    var HLQ={ north:'Which is farther NORTH?', south:'Which is farther SOUTH?',
+              west:'Which is farther WEST?', east:'Which is farther EAST?' };
+    if(sp && sp.items && sp.items.length>=2 && HLQ[sp.dir]){
+      g.push({ kind:'higherlower', cat:'math', type:'brain', q:HLQ[sp.dir], dir:sp.dir,
+               items:sp.items.slice(), rounds:Math.min(3, sp.items.length-1) });
     }
     // Memory Match — pairs from the country's memory tiles
     var tiles=(c.tasks.memory&&c.tasks.memory[0]&&c.tasks.memory[0].tiles)||['🌍','🧭','✈️','🗺️'];
@@ -1059,12 +1064,15 @@
      theme): tap on the TEAL "GO" signal, but HOLD on the CORAL "STOP". Measures
      reaction time on GO; misses for false starts, tapping STOP, or being too slow. */
   function mgReaction(t){
-    S.rx={ rep:0, reps:5, sum:0, state:'idle', armAt:0, msg:'', sub:'', to:null };
+    // completion requires a fixed number of GO reps; STOP signals are traps that
+    // do NOT advance completion — so the score always reflects real reaction time
+    // (no "all-STOP draw = ~1s" exploit).
+    S.rx={ go:0, need:5, sum:0, state:'idle', armAt:0, msg:'', sub:'', to:null };
     stopTimer();   // reaction measures its own summed reaction time, not wall clock
     renderReaction(t);
   }
   function renderReaction(t){
-    var reps=''; for(var i=0;i<S.rx.reps;i++){ reps+='<div class="rep'+(i<S.rx.rep?' done':'')+'"></div>'; }
+    var reps=''; for(var i=0;i<S.rx.need;i++){ reps+='<div class="rep'+(i<S.rx.go?' done':'')+'"></div>'; }
     var st=S.rx.state, cls, big, sm;
     if(st==='idle'){ cls='idle'; big='Ready?'; sm='Tap to start — then tap on 🟢 GO, but never on 🛑 STOP.'; }
     else if(st==='wait'){ cls='wait'; big='Wait…'; sm='Watch for the signal.'; }
@@ -1083,36 +1091,32 @@
   }
   function reactSignal(t){
     if(S.play.done) return;
-    var isGo = Math.random() > 0.34;   // ~2 in 3 are GO
+    var isGo = Math.random() > 0.4;   // ~60% GO
     S.rx.state = isGo?'go':'stop'; S.rx.armAt=performance.now(); renderReaction(t); rxClear();
-    if(isGo) S.rx.to=setTimeout(function(){ if(S.rx.state==='go'&&!S.play.done) reactMiss(t,'Too slow!','+1 miss',true); }, 1300);
-    else     S.rx.to=setTimeout(function(){ if(S.rx.state==='stop'&&!S.play.done) reactGood(t,null); }, 950);
+    if(isGo) S.rx.to=setTimeout(function(){ if(S.rx.state==='go'&&!S.play.done) reactResolve(t,'slow'); }, 1300);
+    else     S.rx.to=setTimeout(function(){ if(S.rx.state==='stop'&&!S.play.done) reactResolve(t,'held'); }, 950);
   }
   function reactTap(t){
     if(S.play.done) return;
     var s=S.rx.state;
     if(s==='idle'){ reactBegin(t); return; }
     if(s==='fb') return;                                   // feedback auto-advances
-    if(s==='wait'){ rxClear(); reactMiss(t,'Too soon!','+1 miss — wait for it',false); return; }
-    if(s==='go'){ rxClear(); var rt=performance.now()-S.rx.armAt; S.rx.sum+=rt; reactGood(t,rt); return; }
-    if(s==='stop'){ rxClear(); reactMiss(t,'That was STOP!','+1 miss',true); return; }
+    if(s==='wait'){ rxClear(); reactResolve(t,'early'); return; }
+    if(s==='go'){ rxClear(); reactResolve(t,'go', performance.now()-S.rx.armAt); return; }
+    if(s==='stop'){ rxClear(); reactResolve(t,'stopTap'); return; }
   }
-  function reactGood(t,rt){
-    S.rx.rep++; S.rx.state='fb'; S.rx.msg = rt!=null ? (Math.round(rt)+' ms ⚡') : 'Held ✓'; S.rx.sub='Nice.';
-    renderReaction(t); reactNext(t);
-  }
-  function reactMiss(t,msg,sub,advance){
-    S.play.misses++; showMiss(); if(advance) S.rx.rep++;
-    S.rx.state='fb'; S.rx.msg=msg; S.rx.sub=sub; renderReaction(t);
+  // outcomes: go (tapped GO) / slow (missed GO) count a GO rep; held/stopTap/early do not
+  function reactResolve(t, kind, rt){
     rxClear();
-    if(advance) reactNext(t);
-    else S.rx.to=setTimeout(function(){ if(!S.play.done) reactBegin(t); }, 800);   // retry same rep
-  }
-  function reactNext(t){
-    rxClear();
-    if(S.rx.rep>=S.rx.reps){
+    if(kind==='go'){ S.rx.sum+=rt; S.rx.go++; sfx('correct'); S.rx.msg=Math.round(rt)+' ms ⚡'; S.rx.sub='Nice.'; }
+    else if(kind==='slow'){ S.rx.sum+=1300; S.rx.go++; S.play.misses++; showMiss(); S.rx.msg='Too slow!'; S.rx.sub='+1 miss'; }
+    else if(kind==='held'){ S.rx.msg='Held ✓'; S.rx.sub='Good hold.'; }
+    else if(kind==='stopTap'){ S.play.misses++; showMiss(); S.rx.msg='That was STOP!'; S.rx.sub='+1 miss'; }
+    else /* early */{ S.play.misses++; showMiss(); S.rx.msg='Too soon!'; S.rx.sub='+1 miss — wait for it'; }
+    S.rx.state='fb'; renderReaction(t);
+    if(S.rx.go>=S.rx.need){
       S.play.done=true;
-      var raw = 1.0 + S.rx.sum/1000;   // overhead + summed reaction time
+      var raw = 0.8 + S.rx.sum/1000;   // small overhead + summed reaction time (incl. slow penalties)
       S.rx.to=setTimeout(function(){ resolveRound(raw, S.play.misses, false); }, 650);
     } else {
       S.rx.to=setTimeout(function(){ if(!S.play.done) reactBegin(t); }, 750);
@@ -1200,7 +1204,11 @@
   }
   function hlAns(t,i){
     if(S.play.done) return;
-    var p=S.hl.pair; if(p[i].value < p[1-i].value){ S.play.misses++; showMiss(); }   // "farther north" = higher value
+    // north/east => higher value wins; south/west => lower value wins. Ties ok.
+    var lowerWins = (t.dir==='south' || t.dir==='west');
+    var p=S.hl.pair, mine=p[i].value, other=p[1-i].value;
+    var ok = (mine===other) || (lowerWins ? mine<=other : mine>=other);
+    if(ok) sfx('tap'); else { S.play.misses++; showMiss(); }
     S.hl.round++;
     if(S.hl.round>=S.hl.rounds){ S.play.done=true; finishTask(); } else renderHL(t);
   }
@@ -1320,9 +1328,11 @@
     $('wmap').addEventListener('click', function(ev){ mapGuess(ev, targetLL); });
   }
   function mapGuess(ev, targetLL){
-    if(S.play.done) return; S.play.done=true; stopTimer();
+    if(S.play.done) return;
+    var svg=$('wmap'); if(!svg) return;
+    S.play.done=true; stopTimer();
     var raw=(performance.now()-S.play.start)/1000;
-    var svg=$('wmap'), b=svg.getBoundingClientRect();
+    var b=svg.getBoundingClientRect();
     var vx=(ev.clientX-b.left)/b.width*360, vy=(ev.clientY-b.top)/b.height*180;
     var gLng=vx-180, gLat=90-vy, d=haversine(gLat,gLng,targetLL[0],targetLL[1]);
     var miss = d<600?0 : d<1800?1 : d<4500?2 : d<9000?3 : 4;
@@ -1442,7 +1452,10 @@
     // retention metrics (badges)
     var st=statsDefault(); st.stagesPlayed++;
     if(!skipped){
-      if(!st.fastestStage || playerRaw<st.fastestStage) st.fastestStage=playerRaw;
+      // fastest-stage only counts real wall-clock games; reaction/sequence report
+      // a synthetic time (summed reaction / input-only) that isn't comparable.
+      var k=taskKind(S.chosen||{});
+      if(k!=='reaction' && k!=='sequence' && (!st.fastestStage || playerRaw<st.fastestStage)) st.fastestStage=playerRaw;
       if(playerMisses===0) st.perfectStages++;
     }
     saveStats(st);
@@ -1530,10 +1543,12 @@
           : ('🌍 I finished #'+youRank+' of '+FIELD_SIZE+' in RunTheGlobe\'s Final at '+S.dest.name+'. Can you do better? runthe.gg/globe'));
       };
     } else if(groundedTeam.id==='you'){
+      sfx('lose');
+      recordRaceEnd(ranked);   // record now (idempotent) so an abandon still counts
       // GDD §10: binary Grounded choice — watch live, or return home. No reward for watching.
       btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Return home</button><button class="btn globe" id="watch">Watch the rest ▶</button></div>';
-      $('home').onclick=function(){ recordRaceEnd(ranked); S.screen='home'; render(); };
-      $('watch').onclick=function(){ recordRaceEnd(ranked); S.phase='grounded'; S.spectating=true; groundAndAdvance(groundedTeam); render(); };
+      $('home').onclick=function(){ S.screen='home'; render(); };
+      $('watch').onclick=function(){ S.phase='grounded'; S.spectating=true; groundAndAdvance(groundedTeam); render(); };
     } else {
       btns.innerHTML='<button class="btn globe" id="next" style="margin-top:14px">Next Stage ›</button>';
       $('next').onclick=function(){ groundAndAdvance(groundedTeam); S.round++; drawStage(); };
@@ -1838,7 +1853,11 @@
     var allIn=(racing.length===0);
     var ctrl;
     if(final && allIn){
-      ctrl='<button class="btn globe" id="ofin" style="margin-top:14px">See the result 🏁</button>';
+      // host closes the race → advance_globe_round sets the lobby status='done',
+      // which pushes every client (incl. the host) to the result via realtime.
+      ctrl = S.online.isHost
+        ? '<button class="btn globe" id="ofin" style="margin-top:14px">Crown the winner 🏁</button>'
+        : '<p class="muted" style="text-align:center;margin-top:12px">⏳ Waiting for the host to finish the race…</p>';
     } else if(S.online.isHost){
       ctrl = allIn
         ? '<button class="btn globe" id="oadv" style="margin-top:14px">'+(L.round>=8?'To the Final ›':'Next Stage ›')+'</button>'
@@ -1852,7 +1871,7 @@
       + '<div class="card"><h3 style="font-size:15px;margin-bottom:10px">'+esc(S.dest?S.dest.name:'Checkpoint')+' — Stage '+L.round+'</h3>'
         + '<div class="lb">'+rowsHtml+racingHtml+'</div>'+ctrl+'</div>' + foot();
     if($('oadv')) $('oadv').onclick=onlineAdvance;
-    if($('ofin')) $('ofin').onclick=function(){ onlineFinish(); };
+    if($('ofin')) $('ofin').onclick=onlineAdvance;   // Final: advance sets status='done' → all clients transition
     renderAcct();
   }
   function onlineAdvance(){
