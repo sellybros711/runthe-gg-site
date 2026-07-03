@@ -136,10 +136,13 @@
   .game.golf .g-title .nm .g{color:#F2C14E;}
   .game.soccer .g-title .nm .g{color:var(--teal);}
   .g-desc{display:block;color:#b9c9db;font-size:13.5px;line-height:1.5;padding:11px 17px 0;}
-  .badge-new,.badge-online{font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;
+  .badge-new,.badge-mode{font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;
     padding:4px 9px;border-radius:999px;flex:0 0 auto;line-height:1;}
   .badge-new{color:#04241f;background:linear-gradient(180deg,#F2C14E,#E7A21C);box-shadow:0 2px 8px -2px rgba(235,166,31,.7);}
-  .badge-online{color:#04231d;background:linear-gradient(180deg,#3DD8BC,#17A891);box-shadow:0 2px 8px -2px rgba(53,196,205,.7);}
+  /* mode pills (Solo / H2H): outline style so they read as info, not a call-out */
+  .badge-mode{background:rgba(255,255,255,.05);border:1px solid var(--line);color:#cfe0f0;}
+  .game.golf .badge-mode{color:#f3dca0;background:rgba(235,166,31,.12);border-color:rgba(235,166,31,.34);}
+  .game.soccer .badge-mode{color:#bfe9df;background:rgba(53,196,205,.12);border-color:rgba(53,196,205,.34);}
 
   .g-chips{display:flex;gap:7px;flex-wrap:wrap;padding:12px 17px 0;}
   .chip{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
@@ -360,7 +363,7 @@ window.GA_ID='G-L29P5MRWKE';
         <span class="g-head">
           <span class="crest"><img src="/golf/icon-192.png" alt="RunTheTour crest" width="76" height="76" loading="lazy" /></span>
           <span class="g-title">
-            <span class="nm"><span><span class="r">Run</span><span class="t">The</span><span class="g">Tour</span></span><span class="badge-new">New</span></span>
+            <span class="nm"><span><span class="r">Run</span><span class="t">The</span><span class="g">Tour</span></span><span class="badge-new">New</span><span class="badge-mode">Solo</span><span class="badge-mode">H2H</span></span>
           </span>
         </span>
         <span class="g-desc">Draft one skill from golf's greatest, build your player, then live a 30-year career: majors, the Ryder Cup, the Olympics.</span>
@@ -373,7 +376,7 @@ window.GA_ID='G-L29P5MRWKE';
         <span class="g-head">
           <span class="crest"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="RunThePitch crest" width="76" height="76" loading="lazy" /></span>
           <span class="g-title">
-            <span class="nm"><span><span class="r">Run</span><span class="t">The</span><span class="g">Pitch</span></span><span class="badge-online">⚡ Multiplayer</span></span>
+            <span class="nm"><span><span class="r">Run</span><span class="t">The</span><span class="g">Pitch</span></span><span class="badge-mode">Solo</span><span class="badge-mode">H2H</span></span>
           </span>
         </span>
         <span class="g-desc">Spin a nation &amp; year, draft a legend each round, build your dream XI, then simulate your World Cup run.</span>
