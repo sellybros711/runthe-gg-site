@@ -1,0 +1,5 @@
+# RunThe.GG — allow everything, point crawlers at the sitemap.
+User-agent: *
+Allow: /
+
+Sitemap: https://runthe.gg/sitemap.xml
