@@ -133,6 +133,8 @@
   .dest .fl{font-size:64px;line-height:1;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5));}
   .dest .cn{font-family:'Anton',sans-serif;font-size:34px;margin-top:8px;letter-spacing:.02em;}
   .dest .rg{color:var(--mut);font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:4px;}
+  .coopturn{text-align:center;background:rgba(58,160,255,.1);border:1px solid rgba(58,160,255,.35);border-radius:12px;
+    padding:9px 12px;margin:0 0 12px;font-size:13.5px;color:#bfe0ff;}
   .dest .final-badge{display:inline-block;margin-top:10px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
     color:#2a1c00;background:linear-gradient(180deg,#ffd766,#EBA61F);padding:5px 11px;border-radius:999px;}
 
@@ -534,11 +536,11 @@
           + ROUNDS + ' Stages to win the Final.</p>'
       + '</div>'
       + '<div class="card">'
-        + '<h3 style="font-size:16px;margin-bottom:12px">Choose a mode</h3>'
-        + modeRow('offline_solo','🏃','Offline Solo','Race the AI ghost field solo. No opponents online, no account needed.','Playable',false)
-        + modeRow('online_race','🌐','Online Race','Race real players in a shared lobby by code. Empty slots fill with AI.','Beta',false)
-        + modeRow('offline_coop','👥','Local Co-op','Two players, one device. Pass-and-play the same task bank.','Soon',true)
-        + modeRow('online_solo','🎲','Online Solo','Auto-paired with another solo racer to form a team.','Soon',true)
+        + '<h3 style="font-size:16px;margin-bottom:4px">How do you want to play?</h3>'
+        + '<p class="muted" style="font-size:12.5px;margin:0 0 12px">You race a field of 11 teams either way — pick who\'s on <b>your</b> team.</p>'
+        + modeRow('solo','🏃','Solo Race','Race the field on your own — you take every challenge.','',false)
+        + modeRow('duo_same','👥','Team Race · Same Screen','You and a partner, one device, one team. Take turns each Stage.','',false)
+        + modeRow('duo_two','🌐','Team Race · Two Devices','You and a partner on separate devices, same team.','Beta',false)
       + '</div>'
       + '<div class="card">'
         + '<h3 style="font-size:16px;margin-bottom:12px">Your record</h3>'
@@ -562,8 +564,9 @@
         + '</div>'
       + '</div>'
       + foot();
-    var m=$('mode-offline_solo'); if(m) m.onclick=function(){ S.screen='setup'; render(); };
-    var mo=$('mode-online_race'); if(mo) mo.onclick=function(){ S.screen='online'; render(); };
+    var m1=$('mode-solo'); if(m1) m1.onclick=function(){ S.coop=null; S.screen='setup'; render(); };
+    var m2=$('mode-duo_same'); if(m2) m2.onclick=function(){ S.coop={ same:true }; S.screen='setup'; render(); };
+    var m3=$('mode-duo_two'); if(m3) m3.onclick=function(){ S.screen='online'; render(); };
     var tr=$('trophies'); if(tr) tr.onclick=function(){ S.screen='trophies'; render(); };
     renderAcct();
   }
@@ -613,13 +616,22 @@
 
   /* ----------------------------------------------------------------- setup */
   function renderSetup(){
+    var duo = !!(S.coop && S.coop.same);
+    var duoFields = duo
+      ? '<div style="margin-top:14px"><label class="fld" for="p1">Player 1</label>'
+        + '<input type="text" id="p1" maxlength="14" placeholder="Player 1" value="'+esc((S.coop&&S.coop.p1)||'')+'" /></div>'
+        + '<div style="margin-top:10px"><label class="fld" for="p2">Player 2</label>'
+        + '<input type="text" id="p2" maxlength="14" placeholder="Player 2" value="'+esc((S.coop&&S.coop.p2)||'')+'" /></div>'
+      : '';
     app.innerHTML = topbar()
       + '<div class="card">'
-        + '<h1 style="font-size:24px">Name your team</h1>'
-        + '<p class="lede">You\'ll race '+(FIELD_SIZE-1)+' AI ghost teams through '+ROUNDS+' Stages. '
-          + 'The slowest team is Grounded each Stage until the 3-team Final — don\'t be last.</p>'
+        + '<h1 style="font-size:24px">'+(duo?'Name your duo':'Name your team')+'</h1>'
+        + '<p class="lede">'+(duo?'Two of you, one screen, one team':'You')+' vs a field of '+FIELD_SIZE+' teams through '+ROUNDS+' Stages. '
+          + 'The slowest team is Grounded each Stage until the 3-team Final — don\'t be last.'
+          + (duo?' You\'ll take turns — the game says who\'s up each Stage.':'')+'</p>'
         + '<div style="margin-top:16px"><label class="fld" for="tn">Team name</label>'
-        + '<input type="text" id="tn" maxlength="18" placeholder="Your Team" value="'+esc(S.teamName||'')+'" /></div>'
+        + '<input type="text" id="tn" maxlength="18" placeholder="'+(duo?'Our Team':'Your Team')+'" value="'+esc(S.teamName||'')+'" /></div>'
+        + duoFields
         + '<div class="btnrow">'
           + '<button class="btn ghost sm" id="back" style="flex:0 0 auto">‹ Back</button>'
           + '<button class="btn globe" id="go">Start the race 🌍</button>'
@@ -627,8 +639,12 @@
       + '</div>' + foot();
     $('back').onclick=function(){ S.screen='home'; render(); };
     $('go').onclick=function(){
-      var v=($('tn').value||'').trim().slice(0,18) || 'Your Team';
-      S.teamName=v; startRace();
+      S.teamName=($('tn').value||'').trim().slice(0,18) || (duo?'Our Team':'Your Team');
+      if(duo){
+        S.coop.p1=($('p1').value||'').trim().slice(0,14) || 'Player 1';
+        S.coop.p2=($('p2').value||'').trim().slice(0,14) || 'Player 2';
+      }
+      startRace();
     };
     renderAcct();
   }
@@ -657,6 +673,8 @@
 
   function aliveTeams(){ return S.teams.filter(function(t){ return t.alive; }); }
   function isFinal(){ return S.round === ROUNDS; }
+  // same-screen duo: whose turn this Stage (alternates by round). null when solo.
+  function coopTurn(){ if(!(S.coop&&S.coop.same)) return null; return (S.round%2===1)?S.coop.p1:S.coop.p2; }
 
   function drawStage(){
     // GDD per-round loop step 1: destination draw (same country for everyone).
@@ -831,6 +849,7 @@
           + (d.final ? 'The last '+aliveTeams().length+' teams race to the finish. Fastest effective time wins the whole race.'
                      : 'All '+aliveTeams().length+' remaining teams draw the same destination.')
         + '</p>'
+        + (coopTurn() ? '<div class="coopturn">👤 <b>'+esc(coopTurn())+'</b>, you\'re up this Stage — hand over the device</div>' : '')
         + '<button class="btn globe" id="rev" style="margin-top:6px">Reveal the challenge ›</button>'
       + '</div>' + foot();
     $('rev').onclick=function(){ S.phase='choice'; renderStage(); };
@@ -886,7 +905,7 @@
     S.play = { start: performance.now(), misses:0, done:false };
     app.innerHTML = topbar() + hud()
       + '<div class="card">'
-        + '<div class="game-hd"><span class="cat">'+esc(taskLabel(t))+'</span>'
+        + '<div class="game-hd"><span class="cat">'+esc(taskLabel(t))+(coopTurn()?' · 👤 '+esc(coopTurn()):'')+'</span>'
         + '<span class="timer" id="tmr">0.0</span></div>'
         + '<div id="mg"></div>'
         + '<div class="missline" id="miss"></div>'
@@ -1506,7 +1525,7 @@
       var place = win?'🏆':(i+1);
       rowsHtml += '<div class="'+cls+'">'
         + '<span class="p">'+place+'</span>'
-        + '<span class="nm">'+esc(t.name)+(t.isGhost?' <span class="ai">AI</span>':'')+'</span>'
+        + '<span class="nm">'+esc(t.name)+''+'</span>'
         + '<span class="tm">'+fmtTime(t.eff)+'s'+(out?' · Grounded':'')+'</span></div>';
     });
 
@@ -1576,7 +1595,7 @@
     var rows='';
     res.forEach(function(x,i){
       rows+='<div class="lbrow'+(i===0?' win':'')+'"><span class="p">'+(i===0?'🏆':(i+1))+'</span>'
-        + '<span class="nm">'+esc(x.team.name)+' <span class="ai">AI</span></span>'
+        + '<span class="nm">'+esc(x.team.name)+'</span>'
         + '<span class="tm">'+fmtTime(x.eff)+'s</span></div>';
     });
     app.innerHTML = topbar()
@@ -1658,8 +1677,8 @@
       $('oback').onclick=function(){ S.screen='home'; render(); }; renderAcct(); return;
     }
     app.innerHTML = topbar()
-      + '<div class="card"><h2 style="font-size:22px">Online Race <span style="font-size:12px;color:var(--globe)">Beta</span></h2>'
-        + '<p class="lede">Start a race and share the code, or join a friend\'s. Up to 11 teams; empty slots fill with AI.</p>'
+      + '<div class="card"><h2 style="font-size:22px">Team Race · Two Devices <span style="font-size:12px;color:var(--globe)">Beta</span></h2>'
+        + '<p class="lede">Create a room and share the code with your partner, or join theirs — then you race the field together from separate devices.</p>'
         + '<div style="margin-top:14px"><label class="fld" for="otn">Your team name</label>'
         + '<input type="text" id="otn" maxlength="18" placeholder="'+esc(acct.username||'Your Team')+'" value="'+esc(S.teamName||acct.username||'')+'" /></div>'
         + '<button class="btn globe" id="ocreate" style="margin-top:12px">Create a race</button>'
@@ -1758,7 +1777,7 @@
     var rows=teams.map(function(t){
       var you=(t.id===S.online.teamId);
       return '<div class="lbrow'+(you?' you':'')+'"><span class="p">'+t.flag+'</span>'
-        +'<span class="nm">'+esc(t.name)+(t.is_ghost?' <span class="ai">AI</span>':'')+(you?' <span style="color:var(--globe);font-size:11px">you</span>':'')+'</span>'
+        +'<span class="nm">'+esc(t.name)+''+(you?' <span style="color:var(--globe);font-size:11px">you</span>':'')+'</span>'
         +'<span class="tm" style="color:var(--mut);font-size:12px">'+(t.captain===L.host?'host':'ready')+'</span></div>';
     }).join('');
     var ctrl;
@@ -1842,11 +1861,11 @@
       var last=(!final && i===ranked.length-1 && racing.length===0);   // provisional slowest
       return '<div class="lbrow'+(you?' you':'')+(win?' win':'')+(last?' out':'')+'">'
         +'<span class="p">'+(win?'🏆':(i+1))+'</span>'
-        +'<span class="nm">'+esc(t.name)+(t.is_ghost?' <span class="ai">AI</span>':'')+'</span>'
+        +'<span class="nm">'+esc(t.name)+''+'</span>'
         +'<span class="tm">'+fmtTime(eff)+'s'+(last?' · slowest':'')+'</span></div>';
     }).join('');
     var racingHtml=racing.map(function(t){
-      return '<div class="lbrow"><span class="p">•</span><span class="nm">'+esc(t.name)+(t.is_ghost?' <span class="ai">AI</span>':'')+'</span>'
+      return '<div class="lbrow"><span class="p">•</span><span class="nm">'+esc(t.name)+''+'</span>'
         +'<span class="tm" style="color:var(--mut)">racing…</span></div>';
     }).join('');
 
@@ -1904,7 +1923,7 @@
     var rows=ranked.map(function(t,i){
       var eff=((stageById[t.id]||{}).effective_ms||0)/1000, you=(t.id===S.online.teamId);
       return '<div class="lbrow'+(you?' you':'')+(i===0?' win':'')+'"><span class="p">'+(i===0?'🏆':(i+1))+'</span>'
-        +'<span class="nm">'+esc(t.name)+(t.is_ghost?' <span class="ai">AI</span>':'')+'</span>'
+        +'<span class="nm">'+esc(t.name)+''+'</span>'
         +'<span class="tm">'+fmtTime(eff)+'s</span></div>';
     }).join('');
     var banner = youWon
