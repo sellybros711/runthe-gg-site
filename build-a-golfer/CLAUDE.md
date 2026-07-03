@@ -3404,6 +3404,40 @@ allows Google Fonts, or self-host Anton.*
     legality is only lightly sanity-checked (full wheel-replay / edge-function re-sim is Phase 2/3); the
     result is trusted via 2-client consensus, not yet server-re-simulated.
 
+- **CS116 — Online multiplayer Phase 2: 4-player foursomes (Best Ball / Scramble / Free-for-All).**
+  Owner: "ready for Phase 2." No new SQL — migration 41's schema was already built for it (capacity 4,
+  `team` column, `_h2h_begin_if_full` random 2/2 split, `h2h_report` handling `kind:'team'` vs `kind:'slot'`,
+  per-mode `h2h_records`/`h2h_board`). This was a pure CLIENT generalization from "me vs opponent" to N
+  players / teams, all in the self-contained H2H module (still does not touch career/daily logic).
+  - **Modes** (`H2H_MODES`): 1v1 (2p) · Best Ball (2v2, random teams) · Scramble (2v2, random teams) ·
+    Free-for-All (4p). Home screen gained a 2×2 mode picker (mode + 9/18 length), Quick Match / Play with
+    friends / join-by-code all mode-aware, and a "Leaderboards" button.
+  - **Unit-based scoring engine** (the core refactor): a "unit" is a competing entity — a single player
+    (1v1/ffa, `kind:'slot'`) or a 2-player team (bestball/scramble, `kind:'team'`). `h2hBuildUnits()` builds
+    them from the revealed drafts and gives each a `holeScore(i)` closure: **Best Ball** = the team's *better
+    ball* each hole (`Math.min` of the two partners' seeded hole scores); **Scramble** = ONE combined golfer
+    whose every skill = `Math.max` of the two partners, run through the same seeded sim; **1v1/FFA** = each
+    player's own card. `h2hResolve()` picks the low total across all units and, on a tie, runs a
+    deterministic sudden-death playoff among *all* units tied for the lead (works for 2- or 4-way ties). The
+    winner is reported as `{win: unit.id, kind}` — team index for team modes, slot for slot modes — matching
+    what `h2h_report` expects, so both partners on a winning team get the W and everyone else the L.
+  - **Screens generalized**: lobby shows the full roster filling in with team badges once assigned (N/cap,
+    "Team 1/2"); the watch screen ranks all units live (2 team rows or 4 player rows) with running to-par,
+    a members line under each team, playoff holes, and a you-win/lose banner; the result screen shows the
+    final standings; the leaderboard screen gained mode tabs (1v1 / Best Ball / Scramble / FFA), each
+    reading its own `h2h_board(mode)`.
+  - **Verified in Playwright** with a 4-player-capable mock server (auto-plays the other 1 or 3 seats,
+    assigns 2/2 teams, consensus-reports): one real client played a full match in every mode —
+    home→lobby→draft→live→watch→resolve→report→result — with the right unit counts (2 teams for
+    bestball/scramble, 4 players for ffa), correct win-kind, per-mode board populating, and the
+    disagreement→void path. A separate deterministic math check confirmed Best Ball team totals equal the
+    sum of per-hole better balls, Scramble's combined golfer is the exact per-skill max (and its total
+    matches a hand-computed run), and FFA's winner is the lowest individual. Existing career draft + Daily
+    Challenge regress clean; zero page errors throughout.
+  - Deployed to /golf (verbatim copy). Backend needed nothing new — migration 41 already covers Phase 2.
+    Phase 3 remains: Supabase Realtime (replace polling), ELO/tiers/seasons, rivalry cards, emotes/spectate,
+    partner-coordinated drafting, currency/wagering.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

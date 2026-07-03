@@ -1,6 +1,7 @@
 # RunTheTour — Online Multiplayer Spec (Head-to-Head + Foursomes)
 
-Status: **approved design, Phase 1 in progress.** Owner-confirmed decisions below.
+Status: **Phase 1 (1v1) + Phase 2 (foursomes) shipped & deployed.** Phase 3 (Realtime, ELO,
+wagering) remains. Owner-confirmed decisions below.
 
 ## Concept
 Real-time multiplayer where each player drafts their own golfer and everyone watches
