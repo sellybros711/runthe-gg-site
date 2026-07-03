@@ -184,9 +184,11 @@
   /* reaction */
   .reactbox{height:190px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;
     cursor:pointer;user-select:none;text-align:center;transition:background .05s;border:1px solid var(--cardb);}
-  .reactbox.wait{background:linear-gradient(180deg,#3a1414,#2a0e0e);}
-  .reactbox.go{background:linear-gradient(180deg,#0f7a4f,#0a5f3e);}
+  .reactbox.wait{background:linear-gradient(180deg,#14273f,#0e1d31);}
+  .reactbox.go{background:linear-gradient(180deg,#2fd0b0,#12836b);}      /* teal GO — on theme */
+  .reactbox.stop{background:linear-gradient(180deg,#F26D6E,#c1332f);}    /* coral STOP — on theme */
   .reactbox.idle{background:rgba(255,255,255,.04);}
+  .reactbox.fb{background:linear-gradient(180deg,#122a44,#0f2338);}
   .reactbox .big{font-family:'Anton',sans-serif;font-size:28px;}
   .reactbox .sm{font-size:13px;color:rgba(255,255,255,.85);margin-top:6px;}
   .reps{display:flex;gap:6px;justify-content:center;margin-bottom:12px;}
@@ -238,6 +240,24 @@
   .stat{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:12px 8px;text-align:center;}
   .stat .v{font-family:'Anton',sans-serif;font-size:24px;color:var(--globe);}
   .stat .k{font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);margin-top:3px;}
+
+  /* how-to steps */
+  .steps{display:grid;gap:9px;}
+  .step{display:flex;gap:11px;align-items:flex-start;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:11px 13px;}
+  .step .n{flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:var(--globe);color:#fff;font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;}
+  .step .tx{font-size:13px;line-height:1.5;color:var(--mut);} .step .tx b{color:var(--ink);}
+
+  /* trophy room */
+  .badges-list{display:grid;gap:10px;}
+  .badge-row{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:13px;padding:11px 13px;opacity:.62;}
+  .badge-row.earned{opacity:1;border-color:rgba(58,160,255,.35);background:rgba(58,160,255,.06);}
+  .badge-ic{flex:0 0 auto;width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:23px;background:#0a1b2e;border:1px solid var(--line);}
+  .badge-meta{flex:1;min-width:0;}
+  .badge-nm{font-weight:800;font-size:14px;}
+  .badge-tier{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#2a1c00;background:linear-gradient(180deg,#ffd766,#EBA61F);padding:2px 7px;border-radius:999px;margin-left:6px;}
+  .badge-bar{height:6px;border-radius:3px;background:rgba(255,255,255,.1);margin:7px 0 4px;overflow:hidden;}
+  .badge-bar span{display:block;height:100%;background:linear-gradient(90deg,var(--globe),var(--teal));}
+  .badge-prog{font-size:11.5px;color:var(--mut);font-weight:700;}
 
   .skiprow{display:flex;align-items:center;gap:10px;background:rgba(235,166,31,.08);border:1px solid rgba(235,166,31,.3);
     border-radius:12px;padding:11px 13px;margin-top:12px;}
@@ -349,13 +369,62 @@
     var s=loadStats();
     s.races=s.races||0; s.wins=s.wins||0; s.top3=s.top3||0; s.countries=s.countries||{};
     s.bestPlace=s.bestPlace||0; s.fastestStage=s.fastestStage||0; s.groundFree=s.groundFree||0;
+    // retention metrics (GDD §14)
+    s.perfectStages=s.perfectStages||0; s.stagesPlayed=s.stagesPlayed||0;
+    s.kinds=s.kinds||{}; s.winStreak=s.winStreak||0; s.longestStreak=s.longestStreak||0;
+    s.badgeSeen=s.badgeSeen||0;   // total badge tiers the player has already been shown
     return s;
   }
   function visitedCount(){ var s=statsDefault(); return Object.keys(s.countries||{}).length; }
-  /* Records hook (GDD §14): badges/progression should plug into the shared
-     RunThe.GG profiles/badges schema (server-computed tiers, see supabase/*.sql)
-     rather than invent a parallel one. Kept local-only in this preview build;
-     the tallies above map cleanly onto that schema when the online layer lands. */
+  function kindsCount(){ var s=statsDefault(); return Object.keys(s.kinds||{}).length; }
+  /* Records hook (GDD §14): badges/progression are local-first here. They're
+     shaped to map onto the shared RunThe.GG profiles/badges schema (server-
+     computed tiers, see supabase/*.sql) — wire them in when the account/online
+     layer goes live rather than inventing a parallel server system. */
+
+  /* ------------------------------------------------------- badges (GDD §14) */
+  // Each achievement has ordered tiers (threshold, label). Total "badges" = sum
+  // of tiers reached across all achievements — same shape as RunThePitch.
+  var BADGES = [
+    { id:'globetrotter', name:'Globetrotter', icon:'🌍', metric:function(s){return visitedCount();}, unit:'countries',
+      tiers:[{n:5,l:'Bronze'},{n:15,l:'Silver'},{n:30,l:'Gold'},{n:46,l:'Platinum'}] },
+    { id:'racer', name:'Frequent Flyer', icon:'🎟️', metric:function(s){return s.races;}, unit:'races',
+      tiers:[{n:5,l:'Bronze'},{n:25,l:'Silver'},{n:75,l:'Gold'},{n:150,l:'Platinum'}] },
+    { id:'champion', name:'Champion', icon:'🏆', metric:function(s){return s.wins;}, unit:'wins',
+      tiers:[{n:1,l:'Bronze'},{n:5,l:'Silver'},{n:15,l:'Gold'},{n:40,l:'Platinum'}] },
+    { id:'podium', name:'Podium Regular', icon:'🥉', metric:function(s){return s.top3;}, unit:'top-3s',
+      tiers:[{n:3,l:'Bronze'},{n:10,l:'Silver'},{n:30,l:'Gold'}] },
+    { id:'sharp', name:'Sharpshooter', icon:'🎯', metric:function(s){return s.perfectStages;}, unit:'flawless stages',
+      tiers:[{n:10,l:'Bronze'},{n:50,l:'Silver'},{n:150,l:'Gold'}] },
+    { id:'speed', name:'Speed Demon', icon:'⚡', metric:function(s){return s.fastestStage?Math.max(0, 6-s.fastestStage):0;}, unit:'',
+      hide:true, tiers:[{n:1,l:'Bronze'},{n:2.5,l:'Silver'},{n:3.5,l:'Gold'}] },   // fastest < 5s / 3.5s / 2.5s
+    { id:'decathlete', name:'Decathlete', icon:'🎮', metric:function(s){return kindsCount();}, unit:'game types',
+      tiers:[{n:5,l:'Bronze'},{n:10,l:'Silver'},{n:14,l:'Gold'}] },
+    { id:'streak', name:'On A Roll', icon:'🔥', metric:function(s){return s.longestStreak;}, unit:'win streak',
+      tiers:[{n:2,l:'Bronze'},{n:3,l:'Silver'},{n:5,l:'Gold'}] },
+    { id:'survivor', name:'Marathoner', icon:'🧭', metric:function(s){return s.stagesPlayed;}, unit:'stages',
+      tiers:[{n:20,l:'Bronze'},{n:100,l:'Silver'},{n:300,l:'Gold'}] },
+  ];
+  function tierReached(b, s){ var v=b.metric(s), n=0; for(var i=0;i<b.tiers.length;i++){ if(v>=b.tiers[i].n) n=i+1; } return n; }
+  function totalBadges(s){ s=s||statsDefault(); var t=0; BADGES.forEach(function(b){ t+=tierReached(b,s); }); return t; }
+  function badgeTiers(s){ return BADGES.map(function(b){ return tierReached(b,s); }); }
+  // compare pre-race tiers to current, toast any newly-earned tiers, stash for UI
+  function announceNewBadges(beforeTiers){
+    var s=statsDefault(), earned=[];
+    BADGES.forEach(function(b,i){
+      var now=tierReached(b,s), was=beforeTiers[i]||0;
+      for(var tr=was+1; tr<=now; tr++){ earned.push({ icon:b.icon, name:b.name, tier:b.tiers[tr-1].l }); }
+    });
+    s.badgeSeen=totalBadges(s); saveStats(s);
+    if(earned.length){
+      var msg = earned.length===1
+        ? ('🎉 New badge: '+earned[0].icon+' '+earned[0].name+' — '+earned[0].tier)
+        : ('🎉 '+earned.length+' new badges unlocked! See the Trophy Room.');
+      if(typeof toast==='function') toast(msg);
+    }
+    S.newBadges=earned;
+    return earned;
+  }
 
   /* --------------------------------------------------------- account bridge */
   var SB_URL='https://jcrrxqfpdelrmvjuihnm.supabase.co';
@@ -396,6 +465,7 @@
     if(S.screen==='setup')     return renderSetup();
     if(S.screen==='online')    return renderOnlineMenu();
     if(S.screen==='lobby')     return renderLobby();
+    if(S.screen==='trophies')  return renderTrophies();
     if(S.screen==='stage')     return renderStage();
     renderHome();
   }
@@ -434,12 +504,54 @@
           + statTile(st.top3,'Top 3')
           + statTile(visitedCount(),'Countries')
           + statTile(st.bestPlace?('#'+st.bestPlace):'—','Best finish')
-          + statTile(st.fastestStage?fmtTime(st.fastestStage)+'s':'—','Fastest stage')
+          + statTile(totalBadges(st),'Badges')
+        + '</div>'
+        + '<button class="btn ghost" id="trophies" style="margin-top:12px">🏆 Trophy Room</button>'
+      + '</div>'
+      + '<div class="card">'
+        + '<h3 style="font-size:16px;margin-bottom:12px">How to play</h3>'
+        + '<div class="steps">'
+          + step(1,'Draw a destination','Every Stage sends the whole field to the same random country.')
+          + step(2,'Beat the clock','Play a quick challenge — trivia, memory, reflex, maps and more. Slips add penalty seconds.')
+          + step(3,'Check in at the Checkpoint','Your effective time = your time + penalties. Teams rank fastest to slowest.')
+          + step(4,'Don\'t finish last','The slowest team each Stage is Grounded. Outlast the field across '+ROUNDS+' Stages to win the Final.')
         + '</div>'
       + '</div>'
       + foot();
     var m=$('mode-offline_solo'); if(m) m.onclick=function(){ S.screen='setup'; render(); };
     var mo=$('mode-online_race'); if(mo) mo.onclick=function(){ S.screen='online'; render(); };
+    var tr=$('trophies'); if(tr) tr.onclick=function(){ S.screen='trophies'; render(); };
+    renderAcct();
+  }
+  function step(n,t,d){ return '<div class="step"><span class="n">'+n+'</span><span class="tx"><b>'+esc(t)+'</b> — '+esc(d)+'</span></div>'; }
+
+  /* --------------------------------------------------------- trophy room */
+  function renderTrophies(){
+    var s=statsDefault();
+    var rows=BADGES.map(function(b){
+      var tier=tierReached(b,s), v=b.metric(s), next=b.tiers[tier], earned=tier>0;
+      var prog, progText;
+      if(b.id==='speed'){
+        progText = s.fastestStage ? ('Best stage: '+fmtTime(s.fastestStage)+'s') : 'No stages yet';
+        prog = next ? Math.min(1, v/next.n) : 1;
+      } else {
+        var goal = next ? next.n : b.tiers[b.tiers.length-1].n;
+        progText = next ? (v+' / '+goal+(b.unit?(' '+b.unit):'')) : ('Maxed · '+v+(b.unit?(' '+b.unit):''));
+        prog = next ? Math.min(1, v/goal) : 1;
+      }
+      return '<div class="badge-row'+(earned?' earned':'')+'">'
+        + '<div class="badge-ic">'+b.icon+'</div>'
+        + '<div class="badge-meta"><div class="badge-nm">'+esc(b.name)+(earned?(' <span class="badge-tier">'+esc(b.tiers[tier-1].l)+'</span>'):'')+'</div>'
+        + '<div class="badge-bar"><span style="width:'+Math.round(prog*100)+'%"></span></div>'
+        + '<div class="badge-prog">'+progText+'</div></div></div>';
+    }).join('');
+    app.innerHTML = topbar()
+      + '<div class="card"><h1 style="font-size:24px">🏆 Trophy Room</h1>'
+        + '<p class="lede"><b style="color:var(--globe)">'+totalBadges(s)+'</b> badges earned across '+BADGES.length+' achievements. Keep racing to level them up.</p>'
+        + '<div class="badges-list" style="margin-top:14px">'+rows+'</div>'
+        + '<button class="btn ghost sm" id="tback" style="width:auto;margin-top:16px">‹ Back</button>'
+      + '</div>' + foot();
+    $('tback').onclick=function(){ S.screen='home'; render(); };
     renderAcct();
   }
   function modeRow(id,ic,name,desc,tag,soon){
@@ -480,7 +592,9 @@
   /* =============================================================== THE RACE */
   function startRace(){
     // build the field: player + (FIELD_SIZE-1) lobby-fill ghosts (GDD §8).
-    var skills = []; for(var i=0;i<GHOSTS.length;i++){ skills.push(0.78 + (i*(1.55-0.78)/(GHOSTS.length-1))); }
+    // ghost pace spread: a few sharp ghosts, several beatable ones. Skewed a
+    // touch slower than before so a competent player has a fair, winnable field.
+    var skills = []; for(var i=0;i<GHOSTS.length;i++){ skills.push(0.92 + (i*(1.75-0.92)/(GHOSTS.length-1))); }
     skills = shuffle(skills);
     var teams = [{ id:'you', name:S.teamName, flag:'🧭', isGhost:false, startedAsGhost:false, skill:1, alive:true, eff:0 }];
     for(var g=0; g<GHOSTS.length; g++){
@@ -704,7 +818,7 @@
       case 'mcq':      return t.q;
       case 'scramble': return 'Unscramble the word — '+t.hint;
       case 'sequence': return t.prompt+' — repeat it back';
-      case 'reaction': return t.prompt;
+      case 'reaction': return 'Signal Sprint — tap on GO, hold on STOP';
       case 'order':    return t.q;
       default:         return t.q || t.prompt || 'Complete the task';
     }
@@ -714,6 +828,7 @@
   function viewPlay(){
     var t=S.chosen, kind=taskKind(t);
     noteKind(kind);   // remember for cross-stage variety
+    var _sk=statsDefault(); _sk.kinds[kind]=1; saveStats(_sk);   // track game types played (badges)
     S.play = { start: performance.now(), misses:0, done:false };
     app.innerHTML = topbar() + hud()
       + '<div class="card">'
@@ -872,46 +987,68 @@
   }
 
   /* ---------- minigame: reaction window (reflex) ---------- */
+  /* Signal Sprint — a Go/No-Go reflex test (deeper than plain "tap green" and on
+     theme): tap on the TEAL "GO" signal, but HOLD on the CORAL "STOP". Measures
+     reaction time on GO; misses for false starts, tapping STOP, or being too slow. */
   function mgReaction(t){
-    var REPS=4;
-    S.rx={ rep:0, reps:REPS, sum:0, state:'idle', armAt:0 };
-    stopTimer();   // reaction measures its own summed reaction time
+    S.rx={ rep:0, reps:5, sum:0, state:'idle', armAt:0, msg:'', sub:'', to:null };
+    stopTimer();   // reaction measures its own summed reaction time, not wall clock
     renderReaction(t);
   }
   function renderReaction(t){
     var reps=''; for(var i=0;i<S.rx.reps;i++){ reps+='<div class="rep'+(i<S.rx.rep?' done':'')+'"></div>'; }
-    var cls, big, sm;
-    if(S.rx.state==='idle'){ cls='idle'; big='Ready?'; sm='Tap to start — then tap the instant it turns GREEN.'; }
-    else if(S.rx.state==='wait'){ cls='wait'; big='Wait…'; sm='Not yet — tap early and it counts as a miss.'; }
-    else if(S.rx.state==='go'){ cls='go'; big='TAP!'; sm='Now!'; }
-    else if(S.rx.state==='early'){ cls='wait'; big='Too soon!'; sm='+1 miss — tap to try this rep again.'; }
-    $('mg').innerHTML='<div class="prompt">'+esc(t.prompt)+'</div>'
+    var st=S.rx.state, cls, big, sm;
+    if(st==='idle'){ cls='idle'; big='Ready?'; sm='Tap to start — then tap on 🟢 GO, but never on 🛑 STOP.'; }
+    else if(st==='wait'){ cls='wait'; big='Wait…'; sm='Watch for the signal.'; }
+    else if(st==='go'){ cls='go'; big='GO — TAP!'; sm='Now!'; }
+    else if(st==='stop'){ cls='stop'; big='🛑 STOP'; sm="Don't tap!"; }
+    else { cls='fb'; big=S.rx.msg; sm=S.rx.sub; }
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">Signal Sprint — tap on GO, hold on STOP</div>'
       + '<div class="reps">'+reps+'</div>'
       + '<div class="reactbox '+cls+'" id="rbox"><div class="big">'+big+'</div><div class="sm">'+sm+'</div></div>';
     $('rbox').onclick=function(){ reactTap(t); };
   }
+  function rxClear(){ if(S.rx.to){ clearTimeout(S.rx.to); S.rx.to=null; } }
+  function reactBegin(t){
+    S.rx.state='wait'; renderReaction(t); rxClear();
+    S.rx.to=setTimeout(function(){ reactSignal(t); }, rnd(800,2000));
+  }
+  function reactSignal(t){
+    if(S.play.done) return;
+    var isGo = Math.random() > 0.34;   // ~2 in 3 are GO
+    S.rx.state = isGo?'go':'stop'; S.rx.armAt=performance.now(); renderReaction(t); rxClear();
+    if(isGo) S.rx.to=setTimeout(function(){ if(S.rx.state==='go'&&!S.play.done) reactMiss(t,'Too slow!','+1 miss',true); }, 1300);
+    else     S.rx.to=setTimeout(function(){ if(S.rx.state==='stop'&&!S.play.done) reactGood(t,null); }, 950);
+  }
   function reactTap(t){
     if(S.play.done) return;
     var s=S.rx.state;
-    if(s==='idle' || s==='early'){ armReaction(t); return; }
-    if(s==='wait'){ S.rx.state='early'; S.play.misses++; showMiss(); if(S.rxTimeout)clearTimeout(S.rxTimeout); renderReaction(t); return; }
-    if(s==='go'){
-      var rt=performance.now()-S.rx.armAt; S.rx.sum+=rt; S.rx.rep++;
-      if(S.rx.rep>=S.rx.reps){
-        S.play.done=true; stopTimer();
-        // raw seconds = a small fixed overhead + summed reaction time
-        var raw = 1.2 + S.rx.sum/1000;
-        resolveRound(raw, S.play.misses, false);
-      } else { S.rx.state='idle'; renderReaction(t); }
-    }
+    if(s==='idle'){ reactBegin(t); return; }
+    if(s==='fb') return;                                   // feedback auto-advances
+    if(s==='wait'){ rxClear(); reactMiss(t,'Too soon!','+1 miss — wait for it',false); return; }
+    if(s==='go'){ rxClear(); var rt=performance.now()-S.rx.armAt; S.rx.sum+=rt; reactGood(t,rt); return; }
+    if(s==='stop'){ rxClear(); reactMiss(t,'That was STOP!','+1 miss',true); return; }
   }
-  function armReaction(t){
-    S.rx.state='wait'; renderReaction(t);
-    var delay = rnd(900, 2200);
-    S.rxTimeout=setTimeout(function(){
-      if(S.play.done) return;
-      S.rx.state='go'; S.rx.armAt=performance.now(); renderReaction(t);
-    }, delay);
+  function reactGood(t,rt){
+    S.rx.rep++; S.rx.state='fb'; S.rx.msg = rt!=null ? (Math.round(rt)+' ms ⚡') : 'Held ✓'; S.rx.sub='Nice.';
+    renderReaction(t); reactNext(t);
+  }
+  function reactMiss(t,msg,sub,advance){
+    S.play.misses++; showMiss(); if(advance) S.rx.rep++;
+    S.rx.state='fb'; S.rx.msg=msg; S.rx.sub=sub; renderReaction(t);
+    rxClear();
+    if(advance) reactNext(t);
+    else S.rx.to=setTimeout(function(){ if(!S.play.done) reactBegin(t); }, 800);   // retry same rep
+  }
+  function reactNext(t){
+    rxClear();
+    if(S.rx.rep>=S.rx.reps){
+      S.play.done=true;
+      var raw = 1.0 + S.rx.sum/1000;   // overhead + summed reaction time
+      S.rx.to=setTimeout(function(){ resolveRound(raw, S.play.misses, false); }, 650);
+    } else {
+      S.rx.to=setTimeout(function(){ if(!S.play.done) reactBegin(t); }, 750);
+    }
   }
 
   /* ---------- minigame: order-by-stat (spatial / logic) ---------- */
@@ -1229,8 +1366,13 @@
     S.teams.forEach(function(t){ if(t.alive) t.eff = t.isGhost ? null : playerEff; });
     ghosts.forEach(function(g){ g.team.eff = g.eff; });
 
-    // track fastest personal stage (non-skipped)
-    if(!skipped){ var st=statsDefault(); if(!st.fastestStage || playerRaw<st.fastestStage){ st.fastestStage=playerRaw; saveStats(st); } }
+    // retention metrics (badges)
+    var st=statsDefault(); st.stagesPlayed++;
+    if(!skipped){
+      if(!st.fastestStage || playerRaw<st.fastestStage) st.fastestStage=playerRaw;
+      if(playerMisses===0) st.perfectStages++;
+    }
+    saveStats(st);
 
     S.phase='checkpoint';
     renderStage();
@@ -1364,18 +1506,20 @@
   function recordRaceEnd(ranked){
     if(S._recorded) return; S._recorded=true;
     var st=statsDefault();
+    var before=badgeTiers(st);
     st.races++;
     var youRank = ranked.findIndex(function(t){ return t.id==='you'; }) + 1;
-    // If the player was Grounded mid-race, their finishing place = teams that
-    // outlasted them + 1 is already reflected by leaving them out of `ranked`;
-    // use the count still alive + this ranking to approximate placement.
-    var place;
-    if(isFinal()){ place = youRank; }
-    else { place = aliveTeams().length; }   // player was slowest of those still in
+    var won = isFinal() && ranked[0] && ranked[0].id==='you';
+    // finishing place: on the Final it's the rank; if Grounded mid-race it's the
+    // number still in the race at that stage (the player was slowest of them).
+    var place = isFinal() ? youRank : aliveTeams().length;
     if(!st.bestPlace || place<st.bestPlace) st.bestPlace=place;
-    if(isFinal() && ranked[0].id==='you'){ st.wins++; }
-    if(isFinal() && youRank<=3){ st.top3++; }
+    if(won) st.wins++;
+    if(isFinal() && youRank<=3) st.top3++;
+    if(won){ st.winStreak=(st.winStreak||0)+1; if(st.winStreak>st.longestStreak) st.longestStreak=st.winStreak; }
+    else { st.winStreak=0; }
     saveStats(st);
+    announceNewBadges(before);
   }
   // reset the per-race guard whenever a new race starts
   var _startRace = startRace;
@@ -1581,6 +1725,7 @@
       var effMs = d.effective_ms!=null ? d.effective_ms : (raw*1000 + misses*PENALTY[cat]*1000);
       var rawMs = d.raw_ms!=null ? d.raw_ms : raw*1000;
       S.lastResult={ raw:rawMs/1000, misses:(d.misses!=null?d.misses:misses), eff:effMs/1000, pen:PENALTY[cat], skipped:false };
+      var st=statsDefault(); st.stagesPlayed++; if((d.misses!=null?d.misses:misses)===0) st.perfectStages++; saveStats(st);
       S.phase='checkpoint'; renderStage();
     });
   }
@@ -1652,8 +1797,10 @@
     var youRank=ranked.findIndex(function(t){ return t.id===S.online.teamId; })+1;
     var youWon=ranked.length&&ranked[0].id===S.online.teamId;
     // record locally (same tallies as offline)
-    if(!S.online.recorded){ S.online.recorded=true; var st=statsDefault(); st.races++;
-      if(youRank){ if(!st.bestPlace||youRank<st.bestPlace) st.bestPlace=youRank; if(youWon) st.wins++; if(youRank<=3) st.top3++; } saveStats(st); }
+    if(!S.online.recorded){ S.online.recorded=true; var st=statsDefault(); var before=badgeTiers(st); st.races++;
+      if(youRank){ if(!st.bestPlace||youRank<st.bestPlace) st.bestPlace=youRank; if(youWon) st.wins++; if(youRank<=3) st.top3++; }
+      if(youWon){ st.winStreak=(st.winStreak||0)+1; if(st.winStreak>st.longestStreak) st.longestStreak=st.winStreak; } else { st.winStreak=0; }
+      saveStats(st); announceNewBadges(before); }
     var rows=ranked.map(function(t,i){
       var eff=((stageById[t.id]||{}).effective_ms||0)/1000, you=(t.id===S.online.teamId);
       return '<div class="lbrow'+(you?' you':'')+(i===0?' win':'')+'"><span class="p">'+(i===0?'🏆':(i+1))+'</span>'
