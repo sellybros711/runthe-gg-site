@@ -7532,6 +7532,7 @@ async function sbApply(session){
     }
     render();   // header/state now reflect sign-in, drop the "Finishing…" pill immediately, don't block on the
     sbLoadProfile().then(()=>render());   // heavy careers/stats fetch (every posted season), load in the background
+    h2hTryPendingJoin();   // if they arrived via an invite link, join that match now that they're signed in
     return;
   }
   render();   // refresh so the header (Sign in ↔ Player) and any open overlay reflect auth state
@@ -8003,7 +8004,7 @@ function h2hCap(id){ return h2hMode(id).cap; }
    there's a real player base, and MUST be off before any real-money/wagering feature.
    Quick Match only; private "Play with friends" rooms stay human-only. ---- */
 const H2H_BOTS_ENABLED=true;
-const H2H_BOT_WAIT_MIN=5200, H2H_BOT_WAIT_MAX=9000;   // wait for a real human before filling with AI
+const H2H_BOT_WAIT_MIN=4000, H2H_BOT_WAIT_MAX=6500;   // wait for a real human before AI starts trickling in
 const H2H_BOT_NAMES=['TeeTimeTom','birdiebandit','SandSaveSam','fairway_frank','putt_pirate','GreenJacket23',
   'ClutchGolfer','j_muller','kev_23','ChipInCharlie','the_scrambler','MulliganMike','EagleEyeEd','bogeyfree',
   'RyderRyan','LinksLegend','driverdan','wedge_wizard','SundayRed','par_machine','flaghunter','GrindItOut',
@@ -8041,16 +8042,82 @@ function h2hConvertToBots(){
 function h2hStartBotMatch(){
   const mode=S.h2h.mode, cap=h2hCap(mode);
   const seed=(S.h2h.courseKey?h2hSeedForCourse(S.h2h.courseKey):null) || Math.floor(Math.random()*2147482000);
-  const me={user_id:h2hUid(), username:(sbUsername||'You'), bot:false, submitted:false, draft:null};
-  const players=[me, ...h2hMakeBots(cap-1)];
-  players.forEach((p,i)=>{ p.slot=i; p.team=null; });
-  if(h2hMode(mode).teams){ const order=h2hShuffle(players.map(p=>p.slot)); order.forEach((sl,i)=>{ players[sl].team = i<2?0:1; }); }
-  Object.assign(S.h2h,{bots:true, matchId:null, seed, players, mySlot:0, myTeam:me.team,
-    myWheel:Math.floor(Math.random()*2147482000), status:'drafting', searching:false,
-    previewed:false, watching:false, drafting:false, submitted:false});
+  const me={user_id:h2hUid(), username:(sbUsername||'You'), bot:false, submitted:false, draft:null, slot:0, team:null};
+  Object.assign(S.h2h,{bots:true, matchId:null, seed, players:[me], mySlot:0, myTeam:null,
+    myWheel:Math.floor(Math.random()*2147482000), status:'lobby', searching:false,
+    previewed:false, watching:false, drafting:false, submitted:false, _botPool:h2hMakeBots(cap-1)});
   track('h2h_bot_match',{mode});
-  S.screen='h2hlobby'; render();   // brief "in the lobby" beat, then the human drafts
-  setTimeout(()=>{ if(S.h2h&&S.h2h.bots&&S.screen==='h2hlobby'&&!S.h2h.drafting) h2hBeginDraft(); }, 1100);
+  S.screen='h2hlobby'; render();
+  // trickle the opponents in one at a time so the lobby fills like real players joining
+  const first=(cap>2?1600:1400)+Math.random()*1600;
+  S.h2h._botTimer=setTimeout(h2hTrickleBot, first);
+}
+function h2hTrickleBot(){
+  if(!S.h2h||!S.h2h.bots) return;
+  const cap=h2hCap(S.h2h.mode);
+  if(S.h2h.players.length<cap && S.h2h._botPool && S.h2h._botPool.length){
+    const bot=S.h2h._botPool.shift(); bot.slot=S.h2h.players.length; S.h2h.players.push(bot); render();
+  }
+  if(S.h2h.players.length>=cap){ h2hBotLobbyFull(); return; }
+  S.h2h._botTimer=setTimeout(h2hTrickleBot, 2200+Math.random()*3200);   // next player joins in a few seconds
+}
+function h2hBotLobbyFull(){
+  const mode=S.h2h.mode;
+  if(h2hMode(mode).teams){ const order=h2hShuffle(S.h2h.players.map(p=>p.slot)); order.forEach((sl,i)=>{ S.h2h.players[sl].team=i<2?0:1; }); }
+  S.h2h.myTeam=(S.h2h.players.find(p=>p.slot===0)||{}).team; S.h2h.status='drafting'; render();
+  h2hNotifyReady('Your match is ready','Your opponents are in — tap to draft your golfer.');
+  S.h2h._botTimer=setTimeout(()=>{ if(S.h2h&&S.h2h.bots&&S.screen==='h2hlobby'&&!S.h2h.drafting) h2hBeginDraft(); }, 1100);
+}
+/* ---- "match ready" alerts: in-app banner always + a browser notification if you've tabbed away ---- */
+function h2hBanner(title, body){
+  const el=$(`<div id="h2hbanner" style="position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:50;max-width:92vw;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:12px;padding:12px 16px;box-shadow:0 10px 30px rgba(0,0,0,.5);cursor:pointer">
+    <div style="font-weight:800;color:var(--gold)">${esc(title)}</div><div class="small" style="margin-top:2px">${esc(body||'')}</div></div>`);
+  const old=document.getElementById('h2hbanner'); if(old) old.remove();
+  el.onclick=()=>el.remove(); document.body.appendChild(el); setTimeout(()=>{ if(el.isConnected) el.remove(); }, 6000);
+}
+function h2hNotifyReady(title, body){
+  h2hBanner(title, body);
+  try{ if('Notification' in window && Notification.permission==='granted' && document.hidden){
+    const n=new Notification(title,{body:body||'', tag:'rtt-h2h-ready', icon:'icon-192.png'});
+    n.onclick=()=>{ try{ window.focus(); }catch(e){} n.close(); };
+  }}catch(e){}
+}
+function h2hNotifyHidden(title, body){   // only alert when the player has tabbed away
+  if(!document.hidden) return;
+  h2hBanner(title, body);
+  try{ if('Notification' in window && Notification.permission==='granted'){
+    const n=new Notification(title,{body:body||'', tag:'rtt-h2h-ready', icon:'icon-192.png'}); n.onclick=()=>{ try{ window.focus(); }catch(e){} n.close(); };
+  }}catch(e){}
+}
+function h2hAskNotify(){ try{ if('Notification' in window && Notification.permission==='default') Notification.requestPermission().then(()=>render()); }catch(e){} }
+/* ---- invite / deep links ---- */
+function h2hShareLink(){ return location.origin + location.pathname + '?h2h=' + encodeURIComponent(S.h2h.code||''); }
+function h2hInvite(){
+  if(!S.h2h||!S.h2h.code) return;
+  const url=h2hShareLink(), text=`Join my Run The Tour match — tap to play me. Code ${S.h2h.code}`;
+  if(navigator.share){ navigator.share({title:'Run The Tour', text, url}).then(()=>{},()=>{}); }
+  else { try{ navigator.clipboard.writeText(url); toast('Invite link copied'); }catch(e){ toast(url); } }
+  track('h2h_invite');
+}
+// parse ?h2h=CODE (or #h2h=CODE) on load, stash it, and try to join (prompting sign-in if needed)
+function h2hCheckLink(){
+  let code=null;
+  try{ const u=new URL(location.href); code=u.searchParams.get('h2h'); }catch(e){}
+  if(!code){ const m=/[#&?]h2h=([A-Za-z0-9]+)/.exec(location.hash||''); if(m) code=m[1]; }
+  if(!code) return;
+  code=code.trim().toUpperCase().slice(0,6);
+  try{ localStorage.setItem('rtt_h2h_pending', code); }catch(e){}
+  try{ history.replaceState(null,'',location.pathname); }catch(e){}   // clean URL so a refresh doesn't re-trigger
+  h2hTryPendingJoin(0);
+}
+function h2hTryPendingJoin(n){
+  n=n||0; let code=null; try{ code=localStorage.getItem('rtt_h2h_pending'); }catch(e){}
+  if(!code) return;
+  if(!sb){ if(n<10) setTimeout(()=>h2hTryPendingJoin(n+1), 1200); return; }   // wait for the Supabase client
+  if(!sbSignedIn()){ S.overlay='account'; render(); toast('Sign in to join your friend\'s match'); return; }   // sbApply will retry after sign-in
+  try{ localStorage.removeItem('rtt_h2h_pending'); }catch(e){}
+  h2hClearTimers(); S.h2h={mode:'1v1', holes:9, status:'lobby'}; S.overlay=null; S.screen='h2hlobby'; render();
+  h2hJoin(code);
 }
 async function h2hRecordBotMatch(){
   const won=h2hIWon();
@@ -8143,7 +8210,7 @@ function h2hOnState(st){
   const me=S.h2h.players.find(p=>p.user_id===h2hUid());
   if(me){ S.h2h.mySlot=me.slot; S.h2h.myWheel=me.wheel_seed; S.h2h.myTeam=me.team; }
   if(st.status!=='lobby') h2hClearBotTimer();   // a real human filled the match, don't backfill with AI
-  if(st.status==='drafting' && !S.h2h.drafting){ h2hBeginDraft(); return; }
+  if(st.status==='drafting' && !S.h2h.drafting){ h2hNotifyReady('Your match is ready','An opponent joined — draft your golfer.'); h2hBeginDraft(); return; }
   if(st.status==='live' && !S.h2h.watching && !S.h2h.previewed){ h2hEnterPreview(); return; }
   if(st.status==='done' && S.screen!=='h2hresult' && S.screen!=='h2hwatch'){ S.screen='h2hresult'; render(); return; }
   if(st.status==='void' && S.screen!=='h2hresult'){ S.h2h.void=true; S.screen='h2hresult'; render(); return; }
@@ -8224,6 +8291,7 @@ function h2hEnterPreview(){
   S.h2h.units=h2hBuildUnits();   // gives each unit dispSkills for the comparison (no winner computed yet)
   S.h2h.myUnit=S.h2h.units.find(u=>u.members.some(p=>p.user_id===h2hUid()));
   track('h2h_preview',{mode:S.h2h.mode});
+  h2hNotifyHidden('The round is starting','Everyone\'s drafted — the matchup is ready.');
   S.screen='h2hpreview'; render();
 }
 const H2H_SHOT_MS=620, H2H_HOLE_DWELL=880;   // shot-by-shot pacing (mirrors the daily's feel)
@@ -8355,27 +8423,38 @@ function scrH2HHome(){
   if(jb) jb.onclick=()=>h2hJoin(ci&&ci.value);
   if(ci) ci.onkeydown=e=>{ if(e.key==='Enter') h2hJoin(ci.value); };
 }
+function h2hNotifyBtn(){   // "notify me when it's ready" — only while we can still ask
+  if(!('Notification' in window) || Notification.permission!=='default') return null;
+  const b=$(`<button class="btn ghost" style="max-width:280px;margin:10px auto 0">🔔 Notify me when it's ready<span class="sub">Get an alert even if you leave this tab</span></button>`);
+  b.onclick=h2hAskNotify; return b;
+}
 function scrH2HLobby(){
   const submitted=S.h2h.submitted, m=h2hMode(S.h2h.mode), cap=m.cap;
   const players=S.h2h.players||[], n=players.length, need=cap-n;
   h2hBack('','‹ Leave match', h2hLeave);
   if(S.h2h.searching){
-    add($(`<div class="center" style="padding:40px 0"><span class="authspin" style="width:26px;height:26px"></span>
+    add($(`<div class="center" style="padding:34px 0 6px"><span class="authspin" style="width:26px;height:26px"></span>
       <h1 class="center" style="font-size:24px;margin:18px 0 4px">Finding ${cap>2?'players':'an opponent'}…</h1>
       <p class="lede center">Grouping you into the next ${m.label} · ${S.h2h.holes}-hole match.</p></div>`));
+    const nb=h2hNotifyBtn(); if(nb) add(nb);
     return;
   }
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(m.label)} · ${S.h2h.holes} holes</span></div>`));
   if(submitted){
     add($(`<h1 class="center" style="font-size:24px;margin:14px 0 4px">Draft submitted ✓</h1>`));
     add($(`<p class="lede center">Waiting for ${cap>2?'the other players':'your opponent'} to finish drafting…</p>`));
+    const nb=h2hNotifyBtn(); if(nb) add(nb);
   } else {
     add($(`<h1 class="center" style="font-size:24px;margin:14px 0 4px">${need>0?`Waiting for ${need} more player${need>1?'s':''}…`:'Match ready'}</h1>`));
     if(S.h2h.code){
-      add($(`<p class="lede center" style="margin:6px 0 4px">Share this code${cap>2?` (need ${cap} players total)`:''}:</p>`));
+      add($(`<p class="lede center" style="margin:6px 0 4px">Invite a friend${cap>2?`s (need ${cap} players)`:''} with the code or a link:</p>`));
       add($(`<div class="center" style="margin:6px 0"><span style="display:inline-block;font-family:var(--mono,monospace);font-size:34px;font-weight:800;letter-spacing:.28em;color:var(--gold);background:rgba(235,166,31,.08);border:1px solid var(--gold);border-radius:12px;padding:12px 22px">${esc(S.h2h.code)}</span></div>`));
-      const cp=$(`<button class="btn ghost" style="max-width:220px;margin:4px auto 0">Copy code</button>`);
-      cp.onclick=()=>{ try{ navigator.clipboard.writeText(S.h2h.code); toast('Code copied'); }catch(e){} }; add(cp);
+      const btns=$(`<div class="mini" style="justify-content:center;gap:8px;margin-top:6px"></div>`);
+      const inv=$(`<button class="btn teal" style="width:auto;padding:9px 16px">${navigator.share?'Invite friends':'Copy invite link'}</button>`); inv.onclick=h2hInvite;
+      const cp=$(`<button class="btn ghost" style="width:auto;padding:9px 16px">Copy code</button>`);
+      cp.onclick=()=>{ try{ navigator.clipboard.writeText(S.h2h.code); toast('Code copied'); }catch(e){} };
+      btns.appendChild(inv); btns.appendChild(cp); add(btns);
+      const nb=h2hNotifyBtn(); if(nb) add(nb);
     }
   }
   // roster
@@ -8603,6 +8682,7 @@ if('serviceWorker' in navigator){ try{ window.addEventListener('load',()=>{ navi
 track('game_start');
 if(LS.get('bag_seen',false)) track('return_visit'); else LS.set('bag_seen',true);
 render();
+try{ h2hCheckLink(); }catch(e){}   // arrived via an invite link (?h2h=CODE)? stash it + join (prompting sign-in)
 </script>
 </body>
 </html>
