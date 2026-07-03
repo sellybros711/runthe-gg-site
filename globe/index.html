@@ -804,51 +804,52 @@
     }
   }
 
-  /* ---------- minigame: memory sequence (repeat it back) ---------- */
+  /* ---------- minigame: memory sequence (repeat it back) ----------
+     The grid is built ONCE and tile elements stay put; taps only toggle classes
+     and update the counter. (Rebuilding the grid on every tap dropped taps that
+     landed mid-render — the "button won't click" bug.) */
   function mgSequence(t){
     var pal=t.tiles.slice();
     var len = Math.min(pal.length, 3 + Math.floor(S.round/3));   // grows slightly with stage
     var seq=[]; for(var i=0;i<len;i++){ seq.push(Math.floor(Math.random()*pal.length)); }
     S.seq={ pal:pal, seq:seq, input:[], playing:true };
-    // pause the running timer during the reveal; timer counts the INPUT phase only
-    stopTimer();
-    renderSequence(t,-1);
+    stopTimer();   // timer counts the INPUT phase only
+    var tiles='';
+    pal.forEach(function(em,i){ tiles+='<div class="seqtile" data-i="'+i+'">'+em+'</div>'; });
+    $('mg').innerHTML='<div class="prompt">'+esc(t.prompt)+'</div>'
+      + '<div class="seqstatus" id="seqst">👀 Watch the sequence…</div><div class="seqgrid">'+tiles+'</div>';
+    // bind once; taps no-op while playing
+    Array.prototype.forEach.call(document.querySelectorAll('.seqtile'), function(b){
+      b.onclick=function(){ seqTap(t, +b.getAttribute('data-i'), b); };
+    });
     playSequence(t,0);
   }
-  function renderSequence(t,litIdx){
-    var tiles='';
-    S.seq.pal.forEach(function(em,i){ tiles+='<div class="seqtile'+(i===litIdx?' lit':'')+'" data-i="'+i+'">'+em+'</div>'; });
-    var status = S.seq.playing ? '👀 Watch the sequence…' : 'Repeat it: <b>'+S.seq.input.length+'</b>/'+S.seq.seq.length;
-    $('mg').innerHTML='<div class="prompt">'+esc(t.prompt)+'</div>'
-      + '<div class="seqstatus">'+status+'</div><div class="seqgrid">'+tiles+'</div>';
-    if(!S.seq.playing){
-      Array.prototype.forEach.call(document.querySelectorAll('.seqtile'), function(b){
-        b.onclick=function(){ seqTap(t, +b.getAttribute('data-i'), b); };
-      });
-    }
-  }
+  function seqStatus(){ var e=$('seqst'); if(e) e.innerHTML = S.seq.playing ? '👀 Watch the sequence…' : 'Repeat it: <b>'+S.seq.input.length+'</b>/'+S.seq.seq.length; }
+  function seqTile(i){ return document.querySelector('.seqtile[data-i="'+i+'"]'); }
   function playSequence(t,k){
+    if(!$('mg')) return;
     if(k>=S.seq.seq.length){
-      S.seq.playing=false; renderSequence(t,-1);
+      S.seq.playing=false; seqStatus();
       S.play.start=performance.now(); startTimer();   // start timing the input phase
       return;
     }
-    var idx=S.seq.seq[k];
-    renderSequence(t,idx);
-    setTimeout(function(){ renderSequence(t,-1);
-      setTimeout(function(){ playSequence(t,k+1); }, 200);
-    }, 620);
+    var el=seqTile(S.seq.seq[k]); if(el) el.classList.add('lit');
+    setTimeout(function(){ if(el) el.classList.remove('lit');
+      setTimeout(function(){ playSequence(t,k+1); }, 220);
+    }, 600);
   }
   function seqTap(t,i,el){
     if(S.play.done||S.seq.playing) return;
-    var pos=S.seq.input.length, want=S.seq.seq[pos];
+    var want=S.seq.seq[S.seq.input.length];
     if(i===want){
-      S.seq.input.push(i); el.classList.add('tap'); setTimeout(function(){ el.classList.remove('tap'); },160);
-      if(S.seq.input.length===S.seq.seq.length){ S.play.done=true; setTimeout(finishTask,200); }
-      else renderSequence(t,-1);
+      S.seq.input.push(i);
+      el.classList.add('tap'); setTimeout(function(){ if(el) el.classList.remove('tap'); },180);
+      seqStatus();
+      if(S.seq.input.length===S.seq.seq.length){ S.play.done=true; setTimeout(finishTask,220); }
     } else {
       S.play.misses++; showMiss(); S.seq.input=[];   // reset input on a wrong tile
-      renderSequence(t,-1);
+      el.style.background='rgba(255,107,107,.35)'; setTimeout(function(){ if(el) el.style.background=''; },320);
+      seqStatus();
     }
   }
 
@@ -932,14 +933,14 @@
   function orderTap(t,label){
     if(S.play.done || S.ord.placed.indexOf(label)>=0) return;
     var nextCorrect = S.ord.target[S.ord.placed.length];
+    var el=document.querySelector('.oitem[data-l="'+label.replace(/"/g,'')+'"]');
     if(label===nextCorrect){
       S.ord.placed.push(label);
-      if(S.ord.placed.length===S.ord.target.length){ S.play.done=true; renderOrder(t); setTimeout(finishTask,220); }
-      else renderOrder(t);
+      // update the tapped row IN PLACE (no full re-render → no dropped taps)
+      if(el){ el.classList.add('placed'); var num=el.querySelector('.num'); if(num){ num.textContent=S.ord.placed.length; num.classList.add('on'); } }
+      if(S.ord.placed.length===S.ord.target.length){ S.play.done=true; setTimeout(finishTask,220); }
     } else {
       S.play.misses++; showMiss();
-      // brief flash on the tapped (wrong) item
-      var el=document.querySelector('.oitem[data-l="'+label.replace(/"/g,'')+'"]');
       if(el){ el.style.borderColor='var(--bad)'; setTimeout(function(){ if(el) el.style.borderColor=''; },300); }
     }
   }
