@@ -8201,7 +8201,9 @@ async function h2hTick(){
   _h2hPoll=null;
   if(!S.h2h||!S.h2h.matchId||!String(S.screen).startsWith('h2h')) return;
   try{ const {data,error}=await sb.rpc('h2h_state',{p_match_id:S.h2h.matchId}); if(!error&&data) h2hOnState(data); }catch(e){}
-  if(S.h2h&&S.h2h.matchId&&String(S.screen).startsWith('h2h')) _h2hPoll=setTimeout(h2hTick,2000);
+  // keep polling only while the match is unresolved; once done/void there's nothing left to poll
+  // (this also stops a stale poll from yanking you off the leaderboard after a match — see below)
+  if(S.h2h&&S.h2h.matchId&&String(S.screen).startsWith('h2h')&&S.h2h.status!=='done'&&S.h2h.status!=='void') _h2hPoll=setTimeout(h2hTick,2000);
 }
 function h2hOnState(st){
   if(!S.h2h) return;
@@ -8212,8 +8214,10 @@ function h2hOnState(st){
   if(st.status!=='lobby') h2hClearBotTimer();   // a real human filled the match, don't backfill with AI
   if(st.status==='drafting' && !S.h2h.drafting){ h2hNotifyReady('Your match is ready','An opponent joined — draft your golfer.'); h2hBeginDraft(); return; }
   if(st.status==='live' && !S.h2h.watching && !S.h2h.previewed){ h2hEnterPreview(); return; }
-  if(st.status==='done' && S.screen!=='h2hresult' && S.screen!=='h2hwatch'){ S.screen='h2hresult'; render(); return; }
-  if(st.status==='void' && S.screen!=='h2hresult'){ S.h2h.void=true; S.screen='h2hresult'; render(); return; }
+  // capture the resolved result but NEVER yank the player off the leaderboard (or anywhere they
+  // deliberately navigated) — only auto-advance to the result from within the active match flow.
+  if(st.status==='done' && S.screen!=='h2hresult' && S.screen!=='h2hwatch' && S.screen!=='h2hboard'){ S.screen='h2hresult'; render(); return; }
+  if(st.status==='void' && S.screen!=='h2hresult' && S.screen!=='h2hboard'){ S.h2h.void=true; S.screen='h2hresult'; render(); return; }
   if(S.screen==='h2hlobby') render();
 }
 
