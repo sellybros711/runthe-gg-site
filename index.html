@@ -622,7 +622,7 @@ window.GA_ID='G-L29P5MRWKE';
     needSb();
     var email=idOrEmail;
     var pre = email.indexOf('@')<0
-      ? sb.rpc('email_for_username',{p_username:email}).then(function(r){ if(r.error||!r.data) throw new Error('No account with that username.'); email=r.data; })
+      ? sb.rpc('email_for_login',{p_username:email, p_password:password}).then(function(r){ if(r.error||!r.data) throw new Error('Wrong username or password.'); email=r.data; })
       : Promise.resolve();
     return pre.then(function(){ return sb.auth.signInWithPassword({ email:email, password:password }); })
       .then(function(res){ if(res.error) throw new Error(/invalid/i.test(res.error.message||'')?'Wrong email/username or password.':(res.error.message||'Sign-in failed.')); return applySession(res.data&&res.data.session); });

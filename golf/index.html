@@ -7541,9 +7541,9 @@ async function sbSignUp(email,password,username){
 async function sbSignInPassword(idOrEmail,password){
   if(!sb) throw new Error('Accounts are offline right now, try again shortly.');
   let email=String(idOrEmail).trim();
-  if(email && email.indexOf('@')<0){                       // a username → resolve its email
-    const {data,error}=await sb.rpc('email_for_username',{p_username:email});
-    if(error||!data) throw new Error('No account with that username.');
+  if(email && email.indexOf('@')<0){                       // a username → resolve its email (password-verified server-side; emails aren't harvestable)
+    const {data,error}=await sb.rpc('email_for_login',{p_username:email, p_password:password});
+    if(error||!data) throw new Error('Wrong username or password.');
     email=data;
   }
   const {data,error}=await sb.auth.signInWithPassword({email,password});

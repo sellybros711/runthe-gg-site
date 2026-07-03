@@ -5880,14 +5880,14 @@ function withTimeout(thenable, ms, label){
 
 // Accept an email OR a username on sign-in: a username is resolved to its
 // account email (Supabase signs in by email).
-async function resolveLoginEmail(loginId){
+async function resolveLoginEmail(loginId, password){
   loginId=String(loginId||'').trim();
   if(!loginId) throw new Error('Enter your email or username.');
   if(loginId.includes('@')) return loginId;
   if(!sbClient) return loginId;
   const { data, error } = await withTimeout(
-    sbClient.rpc('email_for_username', { p_username: loginId }), 15000, 'Sign-in');
-  if(error || !data) throw new Error('No account found with that username.');
+    sbClient.rpc('email_for_login', { p_username: loginId, p_password: password }), 15000, 'Sign-in');
+  if(error || !data) throw new Error('Wrong username or password.');
   return data;
 }
 
@@ -5915,7 +5915,7 @@ async function acctSubmit(){
       if(!data.session){ showConfirmPane(email); }   // email confirmation ON
       else { loginNav=true; closeAccountModal(); }    // signed in immediately → profile
     }else{
-      const loginEmail = await resolveLoginEmail(email);   // email or username
+      const loginEmail = await resolveLoginEmail(email, pass);   // email or username
       const { error } = await withTimeout(
         sbClient.auth.signInWithPassword({ email: loginEmail, password: pass }), 15000, 'Sign-in');
       if(error) throw error;
