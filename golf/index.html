@@ -5614,7 +5614,7 @@ function seasonHeadlines(x){
   const notes=[];
   if(moneyRank===1 && lead.head!=='TOUR CHAMPION') notes.push({icon:'📋',text:'Led the tour in earnings, money-list champion.'});
   else if(moneyRank>=2 && moneyRank<=5) notes.push({icon:'📋',text:`Finished #${moneyRank} of ${N} on the money list (${fmt(t.money)}).`});
-  if(playedN>0 && missed===0) notes.push({icon:'🪨',text:`Made every cut, ${made} for ${made} on the season.`});
+  if(playedN>0 && missed===0) notes.push({icon:'🛡',text:`Made every cut, ${made} for ${made} on the season.`});
   if(top10>=8) notes.push({icon:'🎯',text:`${top10} top-10 finishes, Mr. Consistency.`});
   if(seconds>=2 && t.wins===0) notes.push({icon:'😤',text:`${seconds} runner-up finishes, so close, so often.`});
   if(majorWins.length && t.majors===1 && lead.head!=='MAIDEN MAJOR' && lead.head!=='MAJOR CHAMPION') notes.push({icon:'⛳',text:`Won a major: ${majorWins[0].name}.`});
@@ -7448,7 +7448,7 @@ function scrCircuitEnd(){
 }
 function tile(k,v,gold){return $(`<div class="tile"><div class="k">${k}</div><div class="v ${gold?'':'cream'}">${v}</div></div>`);}
 function moneyRow(r,pos,you){return $(`<div class="lb ${you?'you':''}" style="grid-template-columns:34px 1fr 92px">
-  <span class="pos">${pos===1?'🏆':pos}</span><span class="pl">${r.n}</span>
+  <span class="pos">${pos===1?'<span style="color:var(--gold);font-size:1.4em;line-height:1">🏆</span>':pos}</span><span class="pl">${r.n}</span>
   <span class="mny" style="color:var(--gold)">${fmt(r.money)}</span></div>`);}
 
 /* ---------- RunThe.GG accounts + public leaderboard (shared-origin Supabase) ----------
