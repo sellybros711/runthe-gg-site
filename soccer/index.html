@@ -11539,8 +11539,12 @@ const ONLINE_BOT_NAMES = [
   'BoxOfficeBaller','ClinicalFinisher','ManOfTheMatch','TrebleChaser','TrophyHunter7',
   'PitchInvader','GroupStageGrinder','KnockoutKid','ExtraTimeEddie'
 ];
-const ONLINE_BOT_FLAGS = ['USA','BRA','ARG','GER','FRA','ESP','ENG','POR','NED','ITA',
-  'MEX','JPN','KOR','MAR','SEN','NGA','HRV','BEL','URY','COL'];
+// FLAG_CODES is keyed by full country names (or the literal 'USA') — NOT
+// 3-letter ISO codes — so these must match those exact keys or flagChip()
+// renders a blank/gray placeholder.
+const ONLINE_BOT_FLAGS = ['USA','Brazil','Argentina','Germany','France','Spain','England',
+  'Portugal','Netherlands','Italy','Mexico','Japan','South Korea','Morocco','Senegal',
+  'Nigeria','Croatia','Belgium','Uruguay','Colombia'];
 function onlineBotName(){ return ONLINE_BOT_NAMES[Math.floor(Math.random()*ONLINE_BOT_NAMES.length)]; }
 function onlineBotFlag(){ return ONLINE_BOT_FLAGS[Math.floor(Math.random()*ONLINE_BOT_FLAGS.length)]; }
 
@@ -11885,16 +11889,20 @@ async function h2hRunMatch(st){
 async function h2hRunBotMatch(st){
   const hostSquad = h2hHydrateSquad(st.host_picks);
   const bot = onlineBotSquad();
-  const botName = onlineBotName(), botFlag = onlineBotFlag();
+  // Fallback identity in case the RPC below fails — the persistent identity
+  // it returns (one of soccer_bots' fixed roster, with an accumulating W/L
+  // record) is what actually gets shown once it comes back.
+  let botName = onlineBotName(), botFlag = onlineBotFlag();
 
   const m = simulateMatch(hostSquad, st.host_overall,
     { country:'ONLINE', year:'', teamOverall: bot.overall, squad: bot.squad });
 
   try{
-    await sbRpc('soccer_h2h_record_bot_match', {
+    const rec = await sbRpc('soccer_h2h_record_bot_match', {
       p_match_id: st.id, p_host_goals: m.userGoals, p_guest_goals: m.opponentGoals,
-      p_winner: m.winner==='user' ? 'host' : 'guest', p_bot_name: botName, p_bot_flag: botFlag
+      p_winner: m.winner==='user' ? 'host' : 'guest'
     });
+    if(rec && rec.guest_name){ botName = rec.guest_name; botFlag = rec.guest_flag || botFlag; }
   }catch(e){ /* best-effort leaderboard record; the match still plays out locally */ }
 
   const stForDisplay = Object.assign({}, st, { guest_name:botName, guest_flag:botFlag, guest_is_bot:true });
