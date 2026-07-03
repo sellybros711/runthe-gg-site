@@ -3599,6 +3599,35 @@ allows Google Fonts, or self-host Anton.*
   the title `.dc-val` renders and decrements across a 1.4s wait (ticking), the preview + done-state title
   both render the span, zero page errors. Deployed to /golf.
 
+- **CS129 — "sweaty" live season sim: slower pace + smooth motion + highlighted moments (NOT deployed —
+  awaiting owner confirm on default pace).** Tester feedback (screenshot): "the results are way too fast.
+  Hard to read/catch up. Needs to be slower to feel the sweat and actually ingest it all." The season
+  played a full 4-round tournament in ~3.3s (`ROUND_DELAY=820ms`×4) then auto-advanced, and every round the
+  leaderboard was rebuilt from scratch so rows TELEPORTED to new standings. (The Daily Challenge + online
+  H2H watch already play shot-by-shot, so the season was the gap.) All changes are presentation/pacing only
+  — the deterministic sim math is untouched; reduced-motion users get the info without the animations.
+  • **Pacing + control.** Replaced `ROUND_DELAY`/`EVENT_PAUSE` with a `PACE` map + `paceMs()`: chill
+    {r:2200,e:3200} / normal {1300,2000} / fast {650,1100}. New ⏱ Pace button (in the season controls)
+    cycles chill→normal→fast, persisted `bag_pace`, `S.simPace` defaults to **chill** (slow/readable). The
+    Games still run ×1.5. Auto Sim + Skip to End unchanged.
+  • **FLIP leaderboard glide.** `liveRow` now carries `data-nm`; module `_lbRects` captures each named row's
+    top-within-board each render, and a 2×rAF pass in scrSeason animates every row from its previous slot to
+    its new one (`transform` translateY → 0, .6s ease) with a green (`lb-flash-up`) / red (`lb-flash-dn`)
+    box-shadow flash on movers. Guards: skips when the board isn't connected (a newer render won) and under
+    reduced-motion; rows new to the top-12 fade in. Reset per event in `beginEvent`.
+  • **To-par count-up.** The big scorecard to-par (`#scTopar`) tweens from the previous value to the new one
+    (~560ms ease-out via rAF + `par()` formatting) with a `.tick` pop, instead of snapping. `_prevScTotal`
+    reset per event.
+  • **Per-round "moment" callout.** A teal chip under the scorecard, rebuilt once per completed round (gated
+    on `ce._momentRD` so control-click re-renders don't re-pop): day · your round score (colored) · places
+    gained/lost vs last round (`▲6 · T3` / `▼1 · T28`), plus `✓ Made the cut` on Friday, `🏆 Winner` at the
+    finish, and `Missed the cut`. Tracks `ce._momentPrevPos` for the movement delta. Plus a dashed "Cut +N"
+    line drawn into the board when the cut falls within the visible top-12.
+  Verified in Playwright driving a real career season: pace defaults chill, rounds advance at ~2.2s, the
+  moment refreshes THU→FRI→SAT with correct movement, FLIP transforms apply on re-sort, the pace button
+  cycles chill/normal/fast, Skip to End still works, zero page errors. Screenshot confirms the layout.
+  **PENDING: owner to confirm keep Chill as the default (vs Normal) before deploying to /golf.**
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
