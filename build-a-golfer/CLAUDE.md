@@ -3458,6 +3458,24 @@ allows Google Fonts, or self-host Anton.*
     disagreement→void path is unaffected. Daily Challenge (shares `dShotSeq`/`dShotPanel`) + career draft
     regress clean; zero page errors. Screenshot confirms the two-column shot-by-shot watch. Deployed to /golf.
 
+- **CS118 — H2H pre-round matchup overview ("Tale of the Tape").** Owner: "a matchup overview before the
+  round started, where you can see your golfer vs the opponent(s)" (explicitly NOT tiers/ELO yet). New
+  `h2hpreview` screen inserted between "all drafts in" (status live) and the shot-by-shot watch: `h2hOnState`
+  now routes live→`h2hEnterPreview()` (builds the units for display, no winner computed/spoiled) instead of
+  straight to the watch; the watch begins only when you tap **Start the round ▸**. Since each client watches
+  its own deterministic round, no coordination is needed — you can study the tape as long as you like.
+  - `scrH2HPreview`: a comparison table — a column per competitor (player, or "Team N" with the partners
+    named), rows = OVR + all 8 skills, the leader in each row highlighted gold, your column ringed. Header
+    shows each golfer's archetype (slot units) or partner names (teams). Course/conditions/holes up top.
+  - Each unit carries a `dispSkills` (added to `h2hBuildUnits`): the player's own skills, or for team modes
+    the per-skill max of the partners — which is literally the Scramble combined golfer, and a fair "team
+    best per skill" strength line for Best Ball (noted in copy). Grid is `overflow-x:auto` and tuned so all
+    four FFA columns fit a 430px phone.
+  - Verified in Playwright across 1v1/Best Ball/Scramble/FFA: the preview appears with the right unit count,
+    OVR + skills render, Start advances to the watch, and the full chain (preview→watch→resolve→report→
+    result) still completes with the board populating and the void path intact. Screenshots confirm the
+    1v1 two-column and 4-player FFA layouts. Daily + career regress clean; zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
