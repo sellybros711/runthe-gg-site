@@ -307,6 +307,33 @@
   .home-2nd:active{transform:translateY(1px);}
   .home-2nd .tl-ico{height:15px;width:auto;flex:0 0 auto;}
 
+  /* ===== Play Online: promoted to a main home-screen feature =====
+     Deliberately teal, not red (Solo) or gold-bordered (Daily) — the same
+     accent used throughout the Online screens themselves, so the colour
+     alone tells you "this is the online stuff" before you even read it. */
+  .online-home-block{position:relative;z-index:2;width:100%;max-width:460px;margin:14px auto 0;}
+  .online-home-label{display:flex;align-items:center;justify-content:center;gap:7px;
+    color:#5FE8D2;font-weight:900;font-size:11.5px;letter-spacing:1.5px;text-transform:uppercase;
+    margin-bottom:8px;text-shadow:0 1px 3px rgba(0,0,0,.4);}
+  .online-home-dot{width:7px;height:7px;border-radius:50%;background:#3ce8b8;
+    box-shadow:0 0 0 0 rgba(60,232,184,.6);animation:onlineDotPulse 2s ease-out infinite;}
+  @keyframes onlineDotPulse{
+    0%{box-shadow:0 0 0 0 rgba(60,232,184,.55);}
+    70%{box-shadow:0 0 0 7px rgba(60,232,184,0);}
+    100%{box-shadow:0 0 0 0 rgba(60,232,184,0);}
+  }
+  .online-home-badge{background:#3ce8b8;color:#06251e;font-size:9px;font-weight:900;
+    letter-spacing:.5px;border-radius:7px;padding:2px 7px;}
+  .online-home-row{display:flex;gap:8px;}
+  .online-home-btn{flex:1 1 0;background:rgba(6,20,26,.72);color:#fff;
+    border:2px solid var(--teal);flex-direction:column;gap:2px;line-height:1.15;
+    padding:12px 8px;box-shadow:0 6px 16px rgba(0,0,0,.35);}
+  .online-home-btn .btn-label{font-size:15px;letter-spacing:.3px;white-space:nowrap;color:#fff;}
+  .online-home-btn .btn-sub{font-weight:400;font-size:8.5px;letter-spacing:.2px;
+    text-transform:uppercase;opacity:.92;white-space:nowrap;color:#bdf3ea;}
+  .online-home-btn:hover{filter:brightness(1.12);}
+  @media (max-width:360px){ .online-home-row{flex-direction:column;} }
+
   /* micro-demo: two looping scenes (draft → simulate) + a varying caption */
   .home-demo{position:relative;z-index:2;margin:15px auto 17px;max-width:340px;
     display:flex;flex-direction:column;align-items:center;gap:9px;perspective:600px;}
@@ -2651,9 +2678,8 @@ window.GA_ID='G-L29P5MRWKE';
       <button class="menu-item" type="button" data-act="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8M5 10v10h5v-6h4v6h5V10"/></svg> Main Menu</button>
       <button class="menu-item" type="button" data-act="profile"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-6 8-6s8 2 8 6"/></svg> Profile</button>
       <button class="menu-item" type="button" data-act="leaderboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0z"/><path d="M6 5H3v1.5a3 3 0 0 0 3 3M18 5h3v1.5a3 3 0 0 1-3 3M12 14v3M8.5 20h7l-1-3h-5z"/></svg> Leaderboard</button>
-      <button class="menu-item" type="button" data-act="daily"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><path d="M12 12.5l1 2 2 .3-1.5 1.5.4 2.2-1.9-1-1.9 1 .4-2.2L9 14.8l2-.3z" class="mi-fill"/></svg> Daily Challenge</button>
-      <button class="menu-item" type="button" data-act="friendly"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" y1="19" x2="19" y2="13"/><line x1="16" y1="16" x2="20" y2="20"/><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"/><line x1="5" y1="14" x2="9" y2="18"/><line x1="7" y1="17" x2="4" y2="20"/></svg> Friendlies</button>
       <button class="menu-item" type="button" data-act="online"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 4 6 4 9s-1.5 6.3-4 9c-2.5-2.7-4-6-4-9s1.5-6.3 4-9z"/></svg> Online</button>
+      <button class="menu-item" type="button" data-act="daily"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><path d="M12 12.5l1 2 2 .3-1.5 1.5.4 2.2-1.9-1-1.9 1 .4-2.2L9 14.8l2-.3z" class="mi-fill"/></svg> Daily Challenge</button>
       <button class="menu-item" type="button" data-act="roster"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="13,2 4,14 11,14 9,22 18,10 11,10" class="mi-fill"/></svg> Roster Updates</button>
       <button class="menu-item" type="button" data-act="feedback"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z"/><path d="M8 9h8M8 12.5h5"/></svg> Feedback</button>
       <button class="menu-item" type="button" data-act="a2hs"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4"/><line x1="10.4" y1="4.6" x2="13.6" y2="4.6"/><circle cx="12" cy="18.8" r=".9" class="mi-fill"/></svg> Add to Home</button>
@@ -2685,7 +2711,6 @@ window.GA_ID='G-L29P5MRWKE';
         case 'profile': call(openProfilePage); break;
         case 'leaderboard': call(openLeaderboardView); break;
         case 'daily': call(openDailyIntro); break;
-        case 'friendly': call(startFriendly); break;
         case 'online': call(typeof openOnlineHub==='function'?openOnlineHub:null); break;
         case 'roster': call(openRosterUpdates); break;
         case 'feedback': call(function(){ openRatingForm({}); }); break;
@@ -2919,9 +2944,24 @@ window.GA_ID='G-L29P5MRWKE';
       </button>
       <button id="btn-daily-board" type="button" class="daily-board-link" style="display:none">View today’s leaderboard ›</button>
 
+      <!-- PLAY ONLINE: promoted to a main, clearly-differentiated feature (teal,
+           not red/gold, ties visually to the Online screens themselves) -->
+      <div class="online-home-block">
+        <div class="online-home-label"><span class="online-home-dot"></span>PLAY ONLINE <span class="online-home-badge">NEW</span></div>
+        <div class="online-home-row">
+          <button id="home-btn-h2h" type="button" class="btn online-home-btn" disabled>
+            <span class="btn-label">Online Friendly</span>
+            <span class="btn-sub">1v1 · live match</span>
+          </button>
+          <button id="home-btn-wc" type="button" class="btn online-home-btn" disabled>
+            <span class="btn-label">World Cup Pool</span>
+            <span class="btn-sub">48 players · full tournament</span>
+          </button>
+        </div>
+      </div>
+
       <!-- secondary actions, demoted to small links -->
       <div class="home-secondary">
-        <button id="btn-friendly" type="button" class="home-2nd"><svg class="tl-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" y1="19" x2="19" y2="13"/><line x1="16" y1="16" x2="20" y2="20"/><line x1="19" y1="21" x2="21" y2="19"/><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"/><line x1="5" y1="14" x2="9" y2="18"/><line x1="7" y1="17" x2="4" y2="20"/><line x1="3" y1="19" x2="5" y2="21"/></svg> Friendlies</button>
         <button id="btn-home-leaderboard" type="button" class="home-2nd"><svg class="tl-ico" viewBox="0 0 24 28" aria-hidden="true"><defs><linearGradient id="tlTrophy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".5" stop-color="#E8C25A"/><stop offset="1" stop-color="#8A5E12"/></linearGradient></defs><path d="M5 4 C2.5 4 2.5 9 5.6 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M19 4 C21.5 4 21.5 9 18.4 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M6 3 H18 V8 C18 13 14.5 15 12 15 C9.5 15 6 13 6 8 Z" fill="url(#tlTrophy)" stroke="#00000033" stroke-width=".6"/><rect x="11" y="15" width="2" height="4" fill="url(#tlTrophy)"/><rect x="8" y="19" width="8" height="2" rx="1" fill="url(#tlTrophy)"/><rect x="6.5" y="21" width="11" height="2.6" rx="1.3" fill="url(#tlTrophy)" stroke="#00000022" stroke-width=".5"/></svg> Leaderboard</button>
       </div>
       <!-- flag lane (scrolls right) below the kickoff button -->
@@ -3997,12 +4037,13 @@ async function boot(){
   b.disabled = false;
   const bLabel = b.querySelector('.btn-label');
   if(bLabel) bLabel.textContent = 'START WORLD CUP'; else b.textContent = 'START WORLD CUP';
-  const bf = $('btn-friendly');
-  if(bf) bf.disabled = false;   // Friendly mode is live (Supabase short-link transport)
   const bd = $('btn-daily');
   if(bd){ bd.style.display=''; }   // Daily Challenge is live
   const bdb = $('btn-daily-board');
   if(bdb){ bdb.style.display=''; } // "view today's board" link
+  // Online modes need the same loaded player dataset as everything else.
+  const bh2h = $('home-btn-h2h'); if(bh2h) bh2h.disabled = false;
+  const bwc  = $('home-btn-wc');  if(bwc)  bwc.disabled  = false;
   updateDailyButton();             // show today's theme + status
   refreshDailyStatus();            // (async) pull played/streak if signed in
   startFlagMarquee();
@@ -12553,7 +12594,8 @@ async function friendlyShareResult(){
 }
 
 // ---- wiring ----
-$('btn-friendly').addEventListener('click', startFriendly);
+$('home-btn-h2h').addEventListener('click', openH2HIntro);
+$('home-btn-wc').addEventListener('click', wcBeginDraft);
 $('btn-friendly-build').addEventListener('click', ()=>{
   if(!requireAccount('Create a free account or sign in to set up a Friendly challenge.')) return;
   friendlyMyName=($('fr-name-challenger').value||'').trim();
