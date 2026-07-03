@@ -455,6 +455,73 @@
   .btn.gated:active{transform:none;box-shadow:none;}
   .btn.small{width:auto;font-size:12px;letter-spacing:.5px;padding:8px 16px;border-radius:10px;box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);}
 
+  /* ---------- Online multiplayer (Online Friendly + Online World Cup) ---------- */
+  .fr-wrap.wide{max-width:640px;}
+  .online-card{background:var(--white);border:1.5px solid var(--border-soft);border-radius:16px;
+    padding:20px 18px;margin-bottom:18px;box-shadow:var(--shadow-sm);text-align:center;}
+  .online-card-badge{display:inline-block;background:var(--teal);color:#fff;font-weight:900;font-size:11px;
+    letter-spacing:1px;text-transform:uppercase;border-radius:999px;padding:4px 12px;margin-bottom:10px;}
+  .online-card-title{font-family:'Anton',Impact,sans-serif;font-size:24px;text-transform:uppercase;color:var(--ink);margin-bottom:6px;}
+  .online-card-desc{font-weight:600;color:var(--muted-2);font-size:14px;line-height:1.5;margin-bottom:16px;}
+  .online-card-link{background:none;border:none;color:var(--teal);font-weight:800;font-size:13px;
+    text-decoration:underline;margin-top:12px;padding:6px;cursor:pointer;}
+  .online-pool-status{font-weight:800;color:var(--muted-2);font-size:13px;margin-bottom:12px;}
+  .online-pool-status.big{font-size:16px;color:var(--ink);margin:18px 0 10px;}
+  .online-divider{font-weight:900;font-size:11px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;}
+  .online-join-row{display:flex;gap:8px;max-width:300px;margin:0 auto;align-items:stretch;}
+  .online-join-row .fr-name-input{margin:0;flex:1;min-width:0;}
+  .online-join-row .btn{width:auto;flex:0 0 auto;}
+  .wc-progress-track{width:100%;max-width:340px;height:10px;border-radius:999px;background:var(--border-soft);
+    margin:0 auto 22px;overflow:hidden;}
+  .wc-progress-fill{height:100%;background:var(--teal);border-radius:999px;transition:width .4s ease;width:0%;}
+  .online-score-banner{font-family:'Anton',Impact,sans-serif;font-size:30px;text-transform:uppercase;
+    color:var(--ink);margin:6px 0 10px;line-height:1.1;}
+  .online-score-banner .ok{color:var(--pos-mid);}
+  .online-score-banner .no{color:var(--red);}
+  .online-spinner{width:34px;height:34px;border-radius:50%;border:3px solid var(--border-soft);
+    border-top-color:var(--teal);margin:14px auto;animation:online-spin 0.9s linear infinite;}
+  @keyframes online-spin{to{transform:rotate(360deg);}}
+  .online-code-box{font-family:'Anton',Impact,sans-serif;font-size:38px;letter-spacing:6px;color:var(--ink);
+    background:var(--white);border:1.5px dashed var(--border-soft);border-radius:14px;padding:14px 10px;
+    margin:0 auto 14px;max-width:280px;box-shadow:var(--shadow-sm);}
+  .online-vs-row{display:flex;align-items:center;justify-content:center;gap:18px;margin:18px 0 22px;}
+  .online-vs-side{flex:1;min-width:0;text-align:center;}
+  .online-vs-name{font-weight:900;font-size:15px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .online-vs-tag{font-weight:700;font-size:11px;color:var(--muted);margin-top:2px;}
+  .online-vs-mid{font-family:'Anton',Impact,sans-serif;font-size:20px;color:var(--muted);flex:0 0 auto;}
+  .online-board-list{margin-bottom:18px;}
+  .online-board-row{display:flex;align-items:center;gap:10px;background:var(--white);
+    border:1.5px solid var(--border-soft);border-radius:12px;padding:10px 14px;margin-bottom:7px;box-shadow:var(--shadow-sm);}
+  .online-board-row.you{outline:2px solid var(--gold);}
+  .online-board-rank{flex:0 0 26px;font-family:'Anton',Impact,sans-serif;font-size:17px;color:var(--muted);text-align:center;}
+  .online-board-name{flex:1;min-width:0;font-weight:800;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .online-board-meta{flex:0 0 auto;font-weight:800;font-size:13px;color:var(--muted-2);text-align:right;}
+  .online-empty{font-weight:700;color:var(--muted);font-size:14px;padding:20px 0;}
+  /* World Cup bracket view */
+  .wc-group-block{background:var(--white);border:1.5px solid var(--border-soft);border-radius:12px;
+    padding:10px 12px;margin-bottom:10px;text-align:left;}
+  .wc-group-block.mine{outline:2px solid var(--gold);}
+  .wc-group-head{display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-weight:900;font-size:13px;color:var(--ink);}
+  .wc-group-head .chev{color:var(--muted);transition:transform .15s;}
+  .wc-group-block.open .wc-group-head .chev{transform:rotate(90deg);}
+  .wc-group-rows{display:none;margin-top:8px;}
+  .wc-group-block.open .wc-group-rows{display:block;}
+  .wc-group-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px;font-weight:700;color:var(--muted-2);border-top:1px solid var(--border-soft);}
+  .wc-group-row:first-child{border-top:none;}
+  .wc-group-row.advanced{color:var(--ink);}
+  .wc-group-row.mine{color:var(--teal);}
+  .wc-group-row .g-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .wc-group-row .g-stat{flex:0 0 auto;font-family:monospace;font-size:12px;}
+  .wc-round-title{font-weight:900;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);
+    margin:20px 0 8px;text-align:left;}
+  .wc-match-row{display:flex;align-items:center;gap:10px;background:var(--white);border:1.5px solid var(--border-soft);
+    border-radius:10px;padding:8px 12px;margin-bottom:6px;font-size:13px;font-weight:700;}
+  .wc-match-row.mine{outline:2px solid var(--gold);}
+  .wc-match-side{flex:1;min-width:0;display:flex;justify-content:space-between;gap:6px;color:var(--muted-2);}
+  .wc-match-side .m-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .wc-match-side.won{color:var(--ink);font-weight:900;}
+  .wc-match-vs{flex:0 0 auto;font-size:11px;color:var(--muted);font-weight:900;}
+
   .pill{
     display:inline-block;border:1.5px solid var(--border-soft);border-radius:999px;
     padding:4px 12px;font-weight:900;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;
@@ -2586,6 +2653,7 @@ window.GA_ID='G-L29P5MRWKE';
       <button class="menu-item" type="button" data-act="leaderboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0z"/><path d="M6 5H3v1.5a3 3 0 0 0 3 3M18 5h3v1.5a3 3 0 0 1-3 3M12 14v3M8.5 20h7l-1-3h-5z"/></svg> Leaderboard</button>
       <button class="menu-item" type="button" data-act="daily"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><path d="M12 12.5l1 2 2 .3-1.5 1.5.4 2.2-1.9-1-1.9 1 .4-2.2L9 14.8l2-.3z" class="mi-fill"/></svg> Daily Challenge</button>
       <button class="menu-item" type="button" data-act="friendly"><svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5"/><line x1="13" y1="19" x2="19" y2="13"/><line x1="16" y1="16" x2="20" y2="20"/><polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5"/><line x1="5" y1="14" x2="9" y2="18"/><line x1="7" y1="17" x2="4" y2="20"/></svg> Friendlies</button>
+      <button class="menu-item" type="button" data-act="online"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 4 6 4 9s-1.5 6.3-4 9c-2.5-2.7-4-6-4-9s1.5-6.3 4-9z"/></svg> Online</button>
       <button class="menu-item" type="button" data-act="roster"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="13,2 4,14 11,14 9,22 18,10 11,10" class="mi-fill"/></svg> Roster Updates</button>
       <button class="menu-item" type="button" data-act="feedback"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z"/><path d="M8 9h8M8 12.5h5"/></svg> Feedback</button>
       <button class="menu-item" type="button" data-act="a2hs"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4"/><line x1="10.4" y1="4.6" x2="13.6" y2="4.6"/><circle cx="12" cy="18.8" r=".9" class="mi-fill"/></svg> Add to Home</button>
@@ -2618,6 +2686,7 @@ window.GA_ID='G-L29P5MRWKE';
         case 'leaderboard': call(openLeaderboardView); break;
         case 'daily': call(openDailyIntro); break;
         case 'friendly': call(startFriendly); break;
+        case 'online': call(typeof openOnlineHub==='function'?openOnlineHub:null); break;
         case 'roster': call(openRosterUpdates); break;
         case 'feedback': call(function(){ openRatingForm({}); }); break;
         case 'a2hs': { var b=document.getElementById('btn-add-home'); if(b){ b.click(); } else { call(typeof showA2HS==='function'?showA2HS:null); } break; }
@@ -3207,6 +3276,114 @@ window.GA_ID='G-L29P5MRWKE';
       <button id="fr-new-friendly" class="btn green">NEW FRIENDLY</button>
       <div style="height:10px"></div>
       <button id="fr-again" class="btn red big">HOME MENU</button>
+    </div>
+  </section>
+
+  <!-- ===== ONLINE: hub (mode picker) ===== -->
+  <section id="screen-online-hub" class="screen">
+    <div class="fr-wrap">
+      <div class="fr-title">ONLINE</div>
+      <div class="fr-sub">Play live against real opponents</div>
+      <div class="online-card" id="online-card-h2h">
+        <div class="online-card-badge">1v1</div>
+        <div class="online-card-title">Online Friendly</div>
+        <div class="online-card-desc">Draft a squad, get matched instantly, and watch the match play out live. Win to climb the leaderboard.</div>
+        <button class="btn red big" id="online-go-h2h">PLAY ONLINE FRIENDLY →</button>
+        <button class="online-card-link" id="online-board-h2h">View Leaderboard</button>
+      </div>
+      <div class="online-card" id="online-card-wc">
+        <div class="online-card-badge">48-PLAYER POOL</div>
+        <div class="online-card-title">Online World Cup</div>
+        <div class="online-card-desc">Join the pool with your squad. Once it fills, 48 entrants are split into groups and a full World Cup plays out, group stage to Final.</div>
+        <div class="online-pool-status" id="online-pool-status">Loading pool…</div>
+        <button class="btn red big" id="online-go-wc">JOIN THE POOL →</button>
+        <button class="online-card-link" id="online-board-wc">View Leaderboard</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ONLINE FRIENDLY: intro ===== -->
+  <section id="screen-h2h-intro" class="screen">
+    <div class="fr-wrap">
+      <div class="fr-title">ONLINE FRIENDLY</div>
+      <div class="fr-desc">Quick Match pairs you with the next available opponent. Private Match lets you invite a specific friend by code.</div>
+      <button id="h2h-quick-btn" class="btn red big">⚡ QUICK MATCH</button>
+      <div style="height:18px"></div>
+      <div class="online-divider">OR PLAY A FRIEND</div>
+      <button id="h2h-create-private-btn" class="btn ghost">CREATE PRIVATE MATCH</button>
+      <div style="height:12px"></div>
+      <div class="online-join-row">
+        <input id="h2h-join-code-input" class="fr-name-input" maxlength="5" placeholder="Enter code" autocomplete="off" style="text-transform:uppercase" />
+        <button id="h2h-join-code-btn" class="btn teal">JOIN</button>
+      </div>
+      <div class="fr-muted" id="h2h-intro-error"></div>
+    </div>
+  </section>
+
+  <!-- ===== ONLINE FRIENDLY: lobby (waiting / draft / result all render here) ===== -->
+  <section id="screen-h2h-lobby" class="screen">
+    <div class="fr-wrap">
+      <div class="fr-title" id="h2h-lobby-title">ONLINE FRIENDLY</div>
+      <div id="h2h-lobby-body"></div>
+    </div>
+  </section>
+
+  <!-- ===== ONLINE FRIENDLY: result ===== -->
+  <section id="screen-h2h-result" class="screen">
+    <div class="fr-wrap">
+      <div class="fr-title" id="h2h-result-title">RESULT</div>
+      <div class="online-score-banner" id="h2h-result-score"></div>
+      <div class="fr-sub" id="h2h-result-note"></div>
+      <button id="h2h-result-rematch" class="btn green big">PLAY AGAIN</button>
+      <div style="height:10px"></div>
+      <button id="h2h-result-board" class="btn ghost">VIEW LEADERBOARD</button>
+      <div style="height:10px"></div>
+      <button id="h2h-result-home" class="btn red big">HOME MENU</button>
+    </div>
+  </section>
+
+  <!-- ===== ONLINE FRIENDLY: leaderboard ===== -->
+  <section id="screen-h2h-board" class="screen">
+    <div class="fr-wrap">
+      <div class="fr-title">ONLINE FRIENDLY BOARD</div>
+      <div class="fr-sub">Win / loss record</div>
+      <div class="online-board-list" id="h2h-board-list"></div>
+      <button id="h2h-board-back" class="btn red big">BACK</button>
+    </div>
+  </section>
+
+  <!-- ===== ONLINE WORLD CUP: waiting in the pool ===== -->
+  <section id="screen-wc-waiting" class="screen">
+    <div class="fr-wrap">
+      <div class="fr-title">YOU'RE IN THE POOL ⚽</div>
+      <div class="fr-desc">Once the pool fills (or the clock runs out) your group is drawn and the whole tournament plays out automatically. Come back any time, your run will be waiting.</div>
+      <div class="online-pool-status big" id="wc-waiting-status">Loading…</div>
+      <div class="wc-progress-track"><div class="wc-progress-fill" id="wc-waiting-fill"></div></div>
+      <button id="wc-waiting-home" class="btn ghost">BACK TO HOME MENU</button>
+    </div>
+  </section>
+
+  <!-- ===== ONLINE WORLD CUP: bracket / result ===== -->
+  <section id="screen-wc-bracket" class="screen">
+    <div class="fr-wrap wide">
+      <div class="fr-title">ONLINE WORLD CUP</div>
+      <div class="online-score-banner" id="wc-result-banner"></div>
+      <div id="wc-bracket-content"></div>
+      <button id="wc-bracket-again" class="btn green big">JOIN A NEW POOL</button>
+      <div style="height:10px"></div>
+      <button id="wc-bracket-board" class="btn ghost">VIEW LEADERBOARD</button>
+      <div style="height:10px"></div>
+      <button id="wc-bracket-home" class="btn red big">HOME MENU</button>
+    </div>
+  </section>
+
+  <!-- ===== ONLINE WORLD CUP: leaderboard ===== -->
+  <section id="screen-wc-board" class="screen">
+    <div class="fr-wrap">
+      <div class="fr-title">WORLD CUP BOARD</div>
+      <div class="fr-sub">Titles won</div>
+      <div class="online-board-list" id="wc-board-list"></div>
+      <button id="wc-board-back" class="btn red big">BACK</button>
     </div>
   </section>
 
@@ -6555,6 +6732,26 @@ function todaysTheme(){ return THEMES[((utcDayIndex()%THEMES.length)+THEMES.leng
 function hashStr(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
 function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 
+// ---- Online-match determinism -----------------------------------------------
+// Every outcome-affecting sim call (simulateMatch/computeMatchStats/etc.) reads
+// Math.random() directly. For an online match, two independent clients must
+// compute the IDENTICAL result from nothing but a shared seed — so instead of
+// forking parallel copies of the sim, temporarily point Math.random at a seeded
+// stream for the duration of one synchronous computation, then restore it.
+// Callers MUST pass a canonical (host-squad, guest-squad) argument order that
+// is the same on every client (e.g. by lobby-creator id) — simulateMatch's
+// per-side multipliers (belowThresholdPenalty/eliteBoost/earlyRoundPenalty)
+// are NOT symmetric under swapping "user" and "opponent", so if each client
+// plugged in "myself" as userSquad the two sides could each compute themselves
+// the winner. Only ever wrap synchronous work (no await inside `fn`).
+function withSeededRandom(seed, fn){
+  const rng = mulberry32(hashStr(String(seed)));
+  const orig = Math.random;
+  Math.random = rng;
+  try { return fn(); }
+  finally { Math.random = orig; }
+}
+
 // Distinct nation-years (country+year) matching a theme, sorted canonically so
 // the seeded shuffle is identical everywhere.
 function dailyPoolForTheme(theme){
@@ -7965,8 +8162,11 @@ $('btn-again').addEventListener('click',newGame);
 $('btn-reveal-go').addEventListener('click',()=>{
   $('btn-reveal-go').disabled=true;
   $('reveal-overlay').classList.remove('show');
-  // Friendly challenger: reveal → share screen. Everyone else → World Cup sim.
+  // Friendly challenger: reveal → share screen. Online modes → their own
+  // post-draft flow. Everyone else → World Cup sim.
   if(friendlyMode && friendlyRole==='challenger'){ showChallengeReady(); }
+  else if(onlineMode==='h2h'){ h2hOnDraftComplete(); }
+  else if(onlineMode==='wc'){ wcOnDraftComplete(); }
   else { runSimulationScreen(); }
 });
 
@@ -11187,6 +11387,12 @@ function friendlyReset(){
   friendlyMode=false; friendlyRole=null; challengerData=null; friendlyMatchResult=null;
   friendlyMyName=''; friendlyLastMatch=null;
   draftType='quick'; pendingFormation=null; // Friendly is always the 6-man draft (for now)
+  // Any fresh entry into a draft (solo, Friendly, or here) must also drop a
+  // stale online-mode flag, otherwise a player who backs out of an Online
+  // Friendly/World Cup draft mid-flow could have their NEXT solo draft
+  // mistakenly routed to submit_draft/soccer_h2h/soccer_wc on completion.
+  if(typeof h2hStopAll==='function') h2hStopAll();
+  onlineMode=null;
 }
 
 // Build the encoded lineup object from the just-completed draft (gs.result).
@@ -11211,6 +11417,539 @@ function friendlySquadFromPicks(picks){
     player_id: p.playerId, name: p.playerName, country: p.country, year: p.year,
     position: p.position, overall: p.wc_overall, is_captain:false, slot:p.slot
   }));
+}
+
+// ============================================================================
+//  ONLINE MULTIPLAYER  —  Online Friendly (1v1) + Online World Cup (48-pool)
+// ============================================================================
+// Generic Supabase RPC caller (mirrors sbCreateChallenge/sbFetchChallenge's
+// fetch pattern). Throws on a non-2xx response or a Postgres RAISE EXCEPTION
+// (surfaced by PostgREST as a 4xx with a `message` field) so callers can show
+// the real reason ("that match is no longer open", etc.) instead of a generic
+// failure.
+async function sbRpc(fn, params){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method:'POST', headers: sbHeaders(), body: JSON.stringify(params||{})
+  });
+  let data = null;
+  try{ data = await res.json(); }catch(e){ /* empty body is fine for void RPCs */ }
+  if(!res.ok){
+    const msg = (data && (data.message||data.error||data.hint)) || `${fn} failed (${res.status})`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+// ---- undisclosed AI backfill --------------------------------------------
+// Keeps Online Friendly's queue and the World Cup pool feeling alive before a
+// real player base exists. NEVER surfaced as "AI"/"bot" anywhere in the UI —
+// bots draft real players from the same dataset a human would, so a bot
+// opponent's squad looks exactly like a real draft.
+// Flag-gated — turn OFF once there's a real player base, and this MUST be off
+// before any real-money/wagering feature.
+const ONLINE_BOTS_ENABLED = true;
+const ONLINE_BOT_WAIT_MIN = 5200, ONLINE_BOT_WAIT_MAX = 9000; // ms before Online Friendly backfills
+const ONLINE_BOT_NAMES = [
+  'PitchKing','StrikerX22','GoalMachine','TikiTakaTom','FutbolFanatic','TheGaffer',
+  'MidfieldMaestro','CleanSheetKid','NetBuster','BoxToBox','WingWizard','ElCapitan',
+  'TouchlineTerror','FreeKickFred','LastManStanding','OffsideOllie','CounterAttack',
+  'FullTimeWhistle','SixYardSam','CrossbarChris','VolleyVic','NutmegNate','CaptainArmband',
+  'DerbyDayDan','StoppageTimeHero','HatTrickHana','CornerKickKid','PenaltyPro','SweeperKeeper',
+  'TotalFootball','GegenpressGus','LaLigaLuis','SerieAFan','BundesligaBen','PremGoals',
+  'TifoTerry','UltrasUnited','MatchdayMel','LoneStriker9','TheFalseNine','InvertedWinger',
+  'BoxOfficeBaller','ClinicalFinisher','ManOfTheMatch','TrebleChaser','TrophyHunter7',
+  'PitchInvader','GroupStageGrinder','KnockoutKid','ExtraTimeEddie'
+];
+const ONLINE_BOT_FLAGS = ['USA','BRA','ARG','GER','FRA','ESP','ENG','POR','NED','ITA',
+  'MEX','JPN','KOR','MAR','SEN','NGA','HRV','BEL','URY','COL'];
+function onlineBotName(){ return ONLINE_BOT_NAMES[Math.floor(Math.random()*ONLINE_BOT_NAMES.length)]; }
+function onlineBotFlag(){ return ONLINE_BOT_FLAGS[Math.floor(Math.random()*ONLINE_BOT_FLAGS.length)]; }
+
+// Draw a believable 6-man bot squad from the real loaded dataset (window.PLAYERS),
+// position-balanced (GK/DEF/DEF/MID/FWD/FLEX), within a randomized overall band
+// so bot strength varies match to match rather than always the same tier.
+// Mirrors _soccer_wc_bot_squad's approach so both online modes' bots feel the
+// same. Returns squad objects ready for simulateMatch (matches
+// friendlySquadFromPicks's output shape) plus the picks needed for display.
+function onlineBotSquad(){
+  const all = window.PLAYERS || [];
+  const lo = 60 + Math.random()*15;
+  const hi = lo + 15 + Math.random()*10;
+  const inBand = pos => all.filter(p=>p.position===pos && p.wc_overall>=lo && p.wc_overall<=hi);
+  const anyInBand = all.filter(p=>p.wc_overall>=lo && p.wc_overall<=hi);
+  const pick = (pool, n, used) => {
+    const avail = pool.filter(p=>!used.has(p.player_id));
+    const out = [];
+    for(let i=0;i<n && avail.length;i++){
+      const idx = Math.floor(Math.random()*avail.length);
+      out.push(avail.splice(idx,1)[0]);
+    }
+    return out;
+  };
+  const used = new Set();
+  const takeAndMark = (pool, n) => { const got = pick(pool, n, used); got.forEach(p=>used.add(p.player_id)); return got; };
+
+  let gk = takeAndMark(inBand('GK'), 1);
+  let def = takeAndMark(inBand('DEF'), 2);
+  let mid = takeAndMark(inBand('MID'), 1);
+  let fwd = takeAndMark(inBand('FWD'), 1);
+  let flex = takeAndMark(anyInBand, 1);
+  // Widen to the full dataset if the tight overall band came up short (rare,
+  // e.g. very few GKs in that exact window).
+  const need = (arr, n) => arr.length < n;
+  if(need(gk,1))  gk  = gk.concat(takeAndMark(all.filter(p=>p.position==='GK'), 1-gk.length));
+  if(need(def,2)) def = def.concat(takeAndMark(all.filter(p=>p.position==='DEF'), 2-def.length));
+  if(need(mid,1)) mid = mid.concat(takeAndMark(all.filter(p=>p.position==='MID'), 1-mid.length));
+  if(need(fwd,1)) fwd = fwd.concat(takeAndMark(all.filter(p=>p.position==='FWD'), 1-fwd.length));
+  if(need(flex,1))flex= flex.concat(takeAndMark(all, 1-flex.length));
+
+  const slots = ['GK','DEF','DEF','MID','FWD','FLEX'];
+  const drafted = [...gk, ...def, ...mid, ...fwd, ...flex];
+  const squad = drafted.map((p,i)=>({
+    player_id: p.player_id, name: p.name, country: p.country, year: p.year,
+    position: p.position, overall: p.wc_overall, is_captain:false, slot: slots[i]
+  }));
+  const overall = Math.round(squad.reduce((s,p)=>s+(p.overall||0),0)/squad.length);
+  return { squad, overall };
+}
+
+// ---- shared online state ----
+let onlineMode   = null;   // null | 'h2h' | 'wc' — which online flow the in-progress draft belongs to
+let h2hMatchId   = null;
+let h2hRole      = null;   // 'host' | 'guest'
+let h2hIsPublic  = true;
+let h2hPollTimer = null;
+let h2hBotTimer  = null;
+let wcPollTimer  = null;
+
+function openOnlineHub(){
+  showScreen('online-hub');
+  refreshOnlinePoolStatus();
+}
+async function refreshOnlinePoolStatus(){
+  const el = $('online-pool-status'); if(!el) return;
+  try{
+    const st = await sbRpc('soccer_wc_pool_state', {});
+    el.textContent = (st && st.season_id) ? `${st.count}/48 joined right now` : 'A new pool is opening…';
+  }catch(e){ el.textContent = 'Pool status unavailable'; }
+}
+
+// ============================================================================
+//  ONLINE FRIENDLY (1v1)
+// ============================================================================
+function openH2HIntro(){
+  if(!requireAccount('Sign in to play Online Friendly.')) return;
+  h2hIntroError('');
+  const inp=$('h2h-join-code-input'); if(inp) inp.value='';
+  showScreen('h2h-intro');
+}
+function h2hIntroError(msg){ const e=$('h2h-intro-error'); if(e) e.textContent = msg||''; }
+
+function h2hStopAll(){
+  if(h2hPollTimer){ clearInterval(h2hPollTimer); h2hPollTimer=null; }
+  if(h2hBotTimer){ clearTimeout(h2hBotTimer); h2hBotTimer=null; }
+}
+
+async function h2hQuickMatch(){
+  if(!requireAccount('Sign in to play Online Friendly.')) return;
+  h2hStopAll();
+  try{
+    const r = await sbRpc('soccer_h2h_quick', {});
+    h2hEnterLobby(r.match_id, r.role, true);
+  }catch(e){ h2hIntroError(e.message); showScreen('h2h-intro'); }
+}
+async function h2hCreatePrivate(){
+  h2hStopAll();
+  try{
+    const r = await sbRpc('soccer_h2h_create', { p_public: false });
+    h2hEnterLobby(r.match_id, r.role, false);
+  }catch(e){ h2hIntroError(e.message); }
+}
+async function h2hJoinByCode(){
+  const code = (($('h2h-join-code-input')||{}).value||'').trim();
+  if(!code){ h2hIntroError('Enter a code first.'); return; }
+  h2hStopAll();
+  try{
+    const r = await sbRpc('soccer_h2h_join', { p_code: code });
+    h2hEnterLobby(r.match_id, r.role, false);
+  }catch(e){ h2hIntroError(e.message); }
+}
+
+function h2hEnterLobby(matchId, role, isPublic){
+  h2hMatchId=matchId; h2hRole=role; h2hIsPublic=isPublic;
+  showScreen('h2h-lobby');
+  h2hPoll();
+  h2hPollTimer = setInterval(h2hPoll, 1600);
+}
+
+function h2hMyName(){ return authUsername() || 'You'; }
+function h2hOpponentName(st){ return h2hRole==='host' ? st.guest_name : st.host_name; }
+function h2hMyPicksSubmitted(st){ return h2hRole==='host' ? !!st.host_picks : !!st.guest_picks; }
+function h2hOppPicksSubmitted(st){ return h2hRole==='host' ? !!st.guest_picks : !!st.host_picks; }
+
+async function h2hPoll(){
+  if(!h2hMatchId) return;
+  let st;
+  try{ st = await sbRpc('soccer_h2h_state', { p_match_id: h2hMatchId }); }
+  catch(e){ return; } // transient network hiccup, just try again next tick
+  if(!st) return;
+
+  if(st.status==='ready'){ h2hStopAll(); await h2hRunMatch(st); return; }
+  if(st.status==='void' || st.status==='abandoned'){ h2hStopAll(); return; }
+
+  h2hRenderLobby(st);
+
+  // arm the bot backfill once MY draft is in and I'm the host of an empty
+  // PUBLIC lobby — never for a private match, you're waiting on a specific
+  // friend there, not a stranger.
+  if(h2hRole==='host' && h2hIsPublic && st.guest==null && st.host_picks && !h2hBotTimer){
+    const wait = ONLINE_BOT_WAIT_MIN + Math.random()*(ONLINE_BOT_WAIT_MAX-ONLINE_BOT_WAIT_MIN);
+    h2hBotTimer = setTimeout(h2hMaybeBackfillBot, wait);
+  }
+}
+
+async function h2hMaybeBackfillBot(){
+  h2hBotTimer = null;
+  if(!ONLINE_BOTS_ENABLED || !h2hMatchId || h2hRole!=='host') return;
+  let st;
+  try{ st = await sbRpc('soccer_h2h_state', { p_match_id: h2hMatchId }); }catch(e){ return; }
+  if(!st || st.guest!=null || st.status!=='open' || !st.host_picks) return; // someone joined, or state moved on
+  h2hStopAll();
+  await h2hRunBotMatch(st);
+}
+
+function h2hRenderLobby(st){
+  const body = $('h2h-lobby-body'); if(!body) return;
+  const oppJoined = (st.guest!=null) || !!st.guest_is_bot;
+  const oppName = h2hOpponentName(st);
+  let html = '';
+
+  if(!h2hIsPublic && h2hRole==='host' && st.guest==null){
+    html += `<div class="online-code-box">${escapeHtml(st.code)}</div>`+
+            `<button class="btn teal" id="h2h-share-code" style="margin-bottom:16px">SHARE CODE</button>`;
+  }
+
+  html += `<div class="online-vs-row">
+      <div class="online-vs-side"><div class="online-vs-name">${escapeHtml(h2hMyName())}</div><div class="online-vs-tag">YOU</div></div>
+      <div class="online-vs-mid">VS</div>
+      <div class="online-vs-side"><div class="online-vs-name">${oppJoined && oppName ? escapeHtml(oppName) : '?'}</div><div class="online-vs-tag">${oppJoined?'OPPONENT':'WAITING…'}</div></div>
+    </div>`;
+
+  if(!h2hMyPicksSubmitted(st)){
+    html += `<button class="btn green big" id="h2h-build-btn">BUILD MY SQUAD →</button>`;
+  } else if(!h2hOppPicksSubmitted(st)){
+    html += `<div class="online-spinner"></div><div class="fr-muted">Squad locked in. Waiting for your opponent to finish drafting…</div>`;
+  } else {
+    html += `<div class="online-spinner"></div><div class="fr-muted">Kicking off the match…</div>`;
+  }
+
+  html += `<div style="height:16px"></div><button class="btn ghost" id="h2h-lobby-cancel">CANCEL</button>`;
+  body.innerHTML = html;
+
+  const buildBtn=$('h2h-build-btn'); if(buildBtn) buildBtn.addEventListener('click', h2hBeginDraft);
+  const shareBtn=$('h2h-share-code'); if(shareBtn) shareBtn.addEventListener('click', ()=>h2hShareCode(st.code));
+  const cancelBtn=$('h2h-lobby-cancel'); if(cancelBtn) cancelBtn.addEventListener('click', h2hCancelLobby);
+}
+
+async function h2hShareCode(code){
+  const url = `${window.location.origin}/soccer/?h2h=${encodeURIComponent(code)}`;
+  const shareData = { title:'RunThePitch: Online Friendly', text:`Join my Online Friendly match — code ${code}`, url };
+  if(navigator.canShare && navigator.canShare(shareData)){
+    try{ await navigator.share(shareData); return; }catch(e){ if(e && e.name==='AbortError') return; }
+  }
+  try{ await navigator.clipboard.writeText(url); }catch(e){ await copyToClipboard(url); }
+  showToast('Match link copied!');
+}
+
+async function h2hCancelLobby(){
+  h2hStopAll();
+  const mid = h2hMatchId;
+  h2hMatchId=null; h2hRole=null;
+  if(mid){ try{ await sbRpc('soccer_h2h_abandon', { p_match_id: mid }); }catch(e){} }
+  showScreen('online-hub');
+  refreshOnlinePoolStatus();
+}
+
+function h2hBeginDraft(){
+  onlineMode='h2h';
+  gameMode='easy'; draftType='quick';
+  gs = G.createGameState();
+  goToHome();
+}
+
+async function h2hOnDraftComplete(){
+  const picks = groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, ['FWD','MID','DEF','DEF','GK','FLEX']));
+  const ids = picks.map(pk=>String(pk.player.player_id));
+  const slots = picks.map(pk=>pk.slot);
+  showScreen('h2h-lobby');
+  $('h2h-lobby-body').innerHTML = '<div class="online-spinner"></div><div class="fr-muted">Locking in your squad…</div>';
+  try{
+    const st = await sbRpc('soccer_h2h_submit_draft', { p_match_id: h2hMatchId, p_player_ids: ids, p_slots: slots });
+    if(st.status==='ready'){ h2hStopAll(); await h2hRunMatch(st); return; }
+    h2hRenderLobby(st);
+    if(!h2hPollTimer) h2hPollTimer = setInterval(h2hPoll, 1600);
+  }catch(e){
+    $('h2h-lobby-body').innerHTML = `<div class="fr-muted">Couldn't submit your squad: ${escapeHtml(e.message)}</div>`+
+      `<button class="btn ghost" id="h2h-retry-submit" style="margin-top:12px">RETRY</button>`;
+    const retry=$('h2h-retry-submit'); if(retry) retry.addEventListener('click', h2hOnDraftComplete);
+  }
+}
+
+// Re-orient a canonically-computed (host=user, guest=opponent) match result to
+// whichever side I actually am, so "user"/"opponent" always mean "me"/"them"
+// for display purposes. Reporting must still use the ORIGINAL, un-swapped
+// values (see h2hRunMatch) so both clients report identical host/guest terms.
+function h2hPerspective(m, iAmGuest){
+  if(!iAmGuest) return m;
+  return Object.assign({}, m, {
+    userGoals: m.opponentGoals, opponentGoals: m.userGoals,
+    winner: m.winner==='user' ? 'opponent' : (m.winner==='opponent' ? 'user' : m.winner),
+    penaltyWinner: m.penaltyWinner==='user' ? 'opponent' : (m.penaltyWinner==='opponent' ? 'user' : m.penaltyWinner),
+    goalEvents: (m.goalEvents||[]).map(e=>Object.assign({}, e, { team: e.team==='user' ? 'opponent' : 'user' }))
+  });
+}
+
+// Rehydrate a stored {id,slot} pick list back into full squad objects from the
+// locally-loaded player dataset (same lookup the leaderboard uses).
+function h2hHydrateSquad(picksMinimal){
+  return (picksMinimal||[]).map(p=>{
+    const pl = playerById(p.id) || {};
+    return { player_id:p.id, name:pl.name||'Unknown', country:pl.country, year:pl.year,
+             position:pl.position, overall:pl.wc_overall, is_captain:false, slot:p.slot };
+  });
+}
+
+async function h2hRunMatch(st){
+  const hostSquad  = h2hHydrateSquad(st.host_picks);
+  const guestSquad = h2hHydrateSquad(st.guest_picks);
+  const iAmGuest = h2hRole==='guest';
+
+  // Both clients run this EXACT call (host squad always first) so the shared
+  // seed (the match id) produces a bit-identical result on both devices.
+  const m = withSeededRandom(st.id, ()=> simulateMatch(hostSquad, st.host_overall,
+    { country:'ONLINE', year:'', teamOverall: st.guest_overall, squad: guestSquad }));
+
+  try{
+    await sbRpc('soccer_h2h_report', {
+      p_match_id: st.id, p_host_goals: m.userGoals, p_guest_goals: m.opponentGoals,
+      p_winner: m.winner==='user' ? 'host' : 'guest'
+    });
+  }catch(e){ /* the other side's report still finalizes the match either way */ }
+
+  await h2hPlayAndShow(m, st, iAmGuest);
+}
+
+async function h2hRunBotMatch(st){
+  const hostSquad = h2hHydrateSquad(st.host_picks);
+  const bot = onlineBotSquad();
+  const botName = onlineBotName(), botFlag = onlineBotFlag();
+
+  const m = simulateMatch(hostSquad, st.host_overall,
+    { country:'ONLINE', year:'', teamOverall: bot.overall, squad: bot.squad });
+
+  try{
+    await sbRpc('soccer_h2h_record_bot_match', {
+      p_match_id: st.id, p_host_goals: m.userGoals, p_guest_goals: m.opponentGoals,
+      p_winner: m.winner==='user' ? 'host' : 'guest', p_bot_name: botName, p_bot_flag: botFlag
+    });
+  }catch(e){ /* best-effort leaderboard record; the match still plays out locally */ }
+
+  const stForDisplay = Object.assign({}, st, { guest_name:botName, guest_flag:botFlag, guest_is_bot:true });
+  await h2hPlayAndShow(m, stForDisplay, false, bot.squad);
+}
+
+async function h2hPlayAndShow(m, st, iAmGuest, guestSquadOverride){
+  const mForMe = h2hPerspective(m, iAmGuest);
+  const myOverall  = iAmGuest ? st.guest_overall : st.host_overall;
+  const oppOverall = iAmGuest ? st.host_overall  : st.guest_overall;
+  const myName  = h2hMyName();
+  const oppName = (iAmGuest ? st.host_name : st.guest_name) || 'Opponent';
+  const myFlag  = (authProfile && authProfile.flag) || 'USA';
+  const oppFlag = (iAmGuest ? st.host_flag : st.guest_flag) || 'USA';
+  const mySquad  = h2hHydrateSquad(iAmGuest ? st.guest_picks : st.host_picks);
+  const oppSquad = guestSquadOverride || h2hHydrateSquad(iAmGuest ? st.host_picks : st.guest_picks);
+
+  const box = computeMatchStats(myOverall, oppOverall, mForMe.userGoals, mForMe.opponentGoals);
+  const normSquad = arr => arr.map(p=>({ slot:p.slot, name:p.name, overall:p.overall, position:p.position, country:p.country, year:p.year }));
+
+  await playFriendlyMatchAnimation(mForMe, {
+    youShort: myName.toUpperCase(), friendShort: oppName.toUpperCase(),
+    youFlag: myFlag, friendFlag: oppFlag,
+    youSquad: normSquad(mySquad), friendSquad: normSquad(oppSquad),
+    boxStats: box
+  });
+
+  h2hShowResult(mForMe, oppName);
+}
+
+function h2hShowResult(mForMe, oppName){
+  const won = mForMe.winner==='user';
+  $('h2h-result-title').textContent = won ? 'VICTORY! 🔥' : 'DEFEAT';
+  $('h2h-result-score').innerHTML = `<span class="${won?'ok':'no'}">${mForMe.userGoals} - ${mForMe.opponentGoals}</span>`;
+  $('h2h-result-note').textContent = won
+    ? `You beat ${oppName}${mForMe.penalties?' on penalties':''}!`
+    : `${oppName} got the better of you${mForMe.penalties?' on penalties':''}. Run it back?`;
+  showScreen('h2h-result');
+  h2hMatchId=null; h2hRole=null;
+}
+
+async function openH2HBoard(){
+  showScreen('h2h-board');
+  const list=$('h2h-board-list'); list.innerHTML='<div class="online-spinner"></div>';
+  try{
+    const rows = await sbRpc('soccer_h2h_board', { p_limit:50 });
+    h2hRenderBoard(rows||[]);
+  }catch(e){ list.innerHTML='<div class="online-empty">Couldn\'t load the leaderboard.</div>'; }
+}
+function h2hRenderBoard(rows){
+  const list=$('h2h-board-list');
+  if(!rows.length){ list.innerHTML='<div class="online-empty">No matches recorded yet, be the first!</div>'; return; }
+  const myName = authUsername();
+  list.innerHTML = rows.map((r,i)=>{
+    const you = myName && r.username===myName;
+    const winPct = (r.wins+r.losses)>0 ? Math.round(r.wins/(r.wins+r.losses)*100) : 0;
+    const streak = r.streak>=3 ? ` 🔥${r.streak}` : '';
+    return `<div class="online-board-row${you?' you':''}">
+      <span class="online-board-rank">${i+1}</span>
+      <span class="online-board-name">${flagChip(r.flag)} ${escapeHtml(r.username||'Anonymous')}</span>
+      <span class="online-board-meta">${r.wins}-${r.losses} (${winPct}%)${streak}</span>
+    </div>`;
+  }).join('');
+}
+
+// ============================================================================
+//  ONLINE WORLD CUP (48-player pool)
+// ============================================================================
+const WC_STAGE_LABELS = { r32:'Round of 32', r16:'Round of 16', qf:'Quarter-Final', sf:'Semi-Final', final:'Final' };
+const WC_STAGE_ORDER = ['r32','r16','qf','sf','final'];
+
+function wcBeginDraft(){
+  if(!requireAccount('Sign in to join the Online World Cup pool.')) return;
+  onlineMode='wc';
+  gameMode='easy'; draftType='quick';
+  gs = G.createGameState();
+  goToHome();
+}
+
+async function wcOnDraftComplete(){
+  showScreen('wc-waiting');
+  $('wc-waiting-status').textContent = 'Locking in your squad…';
+  $('wc-waiting-fill').style.width='0%';
+  const picks = groupFlexByPosition(orderPicksForDisplay(gs.result.scoredPicks, ['FWD','MID','DEF','DEF','GK','FLEX']));
+  const ids = picks.map(pk=>String(pk.player.player_id));
+  const slots = picks.map(pk=>pk.slot);
+  try{
+    await sbRpc('soccer_wc_join', { p_player_ids: ids, p_slots: slots });
+    if(wcPollTimer) clearInterval(wcPollTimer);
+    wcPollTimer = setInterval(wcPoll, 4000);
+    wcPoll();
+  }catch(e){
+    $('wc-waiting-status').textContent = `Couldn't join the pool: ${e.message}`;
+  }
+}
+
+async function wcPoll(){
+  try{
+    const entry = await sbRpc('soccer_wc_my_entry', {});
+    if(entry && entry.status==='done'){
+      clearInterval(wcPollTimer); wcPollTimer=null;
+      await wcShowBracket(entry.season_id, entry.entrant_id);
+      return;
+    }
+    const pool = await sbRpc('soccer_wc_pool_state', {});
+    const count = (pool && pool.count) || 0;
+    $('wc-waiting-status').textContent = `${count}/48 joined`;
+    $('wc-waiting-fill').style.width = Math.min(100, Math.round(count/48*100))+'%';
+  }catch(e){ /* transient hiccup, keep polling */ }
+}
+
+async function wcShowBracket(seasonId, myEntrantId){
+  showScreen('wc-bracket');
+  $('wc-bracket-content').innerHTML = '<div class="online-spinner"></div>';
+  let data;
+  try{ data = await sbRpc('soccer_wc_bracket', { p_season_id: seasonId }); }
+  catch(e){ $('wc-bracket-content').innerHTML='<div class="online-empty">Couldn\'t load the bracket.</div>'; return; }
+  wcRenderBracket(data, myEntrantId);
+}
+
+function wcRenderBracket(data, myEntrantId){
+  const entrants = data.entrants || [];
+  const matches = data.matches || [];
+  const byId = {}; entrants.forEach(e=>byId[e.id]=e);
+  const me = myEntrantId ? byId[myEntrantId] : null;
+
+  const banner = $('wc-result-banner');
+  if(me){
+    const label = me.eliminated_round==='champion' ? 'YOU WON THE WORLD CUP! 🏆'
+      : me.eliminated_round==='final' ? 'RUNNER-UP — lost the Final'
+      : me.eliminated_round==='group' ? 'Eliminated in the Group Stage'
+      : `Eliminated in the ${WC_STAGE_LABELS[me.eliminated_round]||me.eliminated_round||''}`;
+    banner.innerHTML = `<span class="${me.eliminated_round==='champion'?'ok':''}">${label}</span>`;
+  } else { banner.innerHTML=''; }
+
+  const groups = {};
+  entrants.forEach(e=>{ (groups[e.group_no]=groups[e.group_no]||[]).push(e); });
+  const groupNos = Object.keys(groups).map(Number).sort((a,b)=>a-b);
+  const myGroupNo = me ? me.group_no : null;
+
+  let html = '<div class="wc-round-title">Groups</div>';
+  groupNos.forEach(gn=>{
+    const rows = groups[gn].slice().sort((a,b)=>(a.group_rank||9)-(b.group_rank||9));
+    const isMine = gn===myGroupNo;
+    html += `<div class="wc-group-block${isMine?' mine open':''}" data-g="${gn}">`+
+      `<div class="wc-group-head"><span>Group ${gn+1}${isMine?' (yours)':''}</span><span class="chev">›</span></div>`+
+      `<div class="wc-group-rows">`;
+    rows.forEach(r=>{
+      html += `<div class="wc-group-row${r.advanced?' advanced':''}${r.id===myEntrantId?' mine':''}">`+
+        `<span class="g-nm">${flagChip(r.flag)} ${escapeHtml(r.name)}</span>`+
+        `<span class="g-stat">${r.pts}pts (${r.gf}-${r.ga})</span></div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  WC_STAGE_ORDER.forEach(stage=>{
+    const stageMatches = matches.filter(m=>m.stage===stage);
+    if(!stageMatches.length) return;
+    html += `<div class="wc-round-title">${WC_STAGE_LABELS[stage]}</div>`;
+    stageMatches.forEach(m=>{
+      const a=byId[m.entrant_a], b=byId[m.entrant_b];
+      if(!a || !b) return;
+      const mine = m.entrant_a===myEntrantId || m.entrant_b===myEntrantId;
+      const aWon = m.winner_entrant_id===m.entrant_a;
+      html += `<div class="wc-match-row${mine?' mine':''}">`+
+        `<span class="wc-match-side${aWon?' won':''}"><span class="m-nm">${flagChip(a.flag)} ${escapeHtml(a.name)}</span><span>${m.goals_a}</span></span>`+
+        `<span class="wc-match-vs">v</span>`+
+        `<span class="wc-match-side${!aWon?' won':''}"><span class="m-nm">${flagChip(b.flag)} ${escapeHtml(b.name)}</span><span>${m.goals_b}</span></span>`+
+        `</div>`;
+    });
+  });
+
+  $('wc-bracket-content').innerHTML = html;
+  $('wc-bracket-content').querySelectorAll('.wc-group-head').forEach(h=>{
+    h.addEventListener('click', ()=>{ h.closest('.wc-group-block').classList.toggle('open'); });
+  });
+}
+
+async function openWCBoard(){
+  showScreen('wc-board');
+  const list=$('wc-board-list'); list.innerHTML='<div class="online-spinner"></div>';
+  try{
+    const rows = await sbRpc('soccer_wc_board', { p_limit:50 });
+    wcRenderBoard(rows||[]);
+  }catch(e){ list.innerHTML='<div class="online-empty">Couldn\'t load the leaderboard.</div>'; }
+}
+function wcRenderBoard(rows){
+  const list=$('wc-board-list');
+  if(!rows.length){ list.innerHTML='<div class="online-empty">No champions crowned yet, be the first!</div>'; return; }
+  const myName = authUsername();
+  list.innerHTML = rows.map((r,i)=>{
+    const you = myName && r.username===myName;
+    return `<div class="online-board-row${you?' you':''}">
+      <span class="online-board-rank">${i+1}</span>
+      <span class="online-board-name">${flagChip(r.flag)} ${escapeHtml(r.username||'Anonymous')}</span>
+      <span class="online-board-meta">🏆${r.titles} · ${r.played} played</span>
+    </div>`;
+  }).join('');
 }
 
 // ---- entry: tapping FRIENDLY on the home screen ----
@@ -11836,6 +12575,27 @@ $('fr-watch-copy').addEventListener('click', async ()=>{
   catch(e){ await copyToClipboard(url); }
   showToast('Watch link copied! Send it to your friend ⚽');
 });
+
+// ---- Online multiplayer wiring ----
+$('online-go-h2h').addEventListener('click', openH2HIntro);
+$('online-board-h2h').addEventListener('click', openH2HBoard);
+$('online-go-wc').addEventListener('click', wcBeginDraft);
+$('online-board-wc').addEventListener('click', openWCBoard);
+
+$('h2h-quick-btn').addEventListener('click', h2hQuickMatch);
+$('h2h-create-private-btn').addEventListener('click', h2hCreatePrivate);
+$('h2h-join-code-btn').addEventListener('click', h2hJoinByCode);
+
+$('h2h-result-rematch').addEventListener('click', h2hQuickMatch);
+$('h2h-result-board').addEventListener('click', openH2HBoard);
+$('h2h-result-home').addEventListener('click', ()=>{ showScreen('start'); });
+$('h2h-board-back').addEventListener('click', openOnlineHub);
+
+$('wc-waiting-home').addEventListener('click', ()=>{ if(wcPollTimer){ clearInterval(wcPollTimer); wcPollTimer=null; } showScreen('start'); });
+$('wc-bracket-again').addEventListener('click', wcBeginDraft);
+$('wc-bracket-board').addEventListener('click', openWCBoard);
+$('wc-bracket-home').addEventListener('click', ()=>{ showScreen('start'); });
+$('wc-board-back').addEventListener('click', openOnlineHub);
 
 // Route the initial screen based on the parsed friendly flags. Runs BEFORE the
 // default home screen can paint, so the home screen never flashes for an
