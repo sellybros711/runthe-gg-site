@@ -34,6 +34,11 @@
         window.__WATCH_CODE = wc;
         window.__FRIENDLY_INCOMING = true;
       }
+      // Online Friendly private-match invite (?h2h=CODE).
+      const h2hCode = urlParams.get('h2h');
+      if (h2hCode) { window.__H2H_CODE = h2hCode; }
+      // Online World Cup pool invite (?wcinvite=1).
+      if (urlParams.get('wcinvite')) { window.__WC_INVITE = true; }
     } catch(e) {
       console.error('Friendly param read:', e);
     }
@@ -548,6 +553,23 @@
   .wc-match-side .m-nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .wc-match-side.won{color:var(--ink);font-weight:900;}
   .wc-match-vs{flex:0 0 auto;font-size:11px;color:var(--muted);font-weight:900;}
+
+  /* "your World Cup is ready" banner — fixed to the top, persists until
+     tapped/dismissed (a transient toast isn't enough for something the
+     player needs to act on after coming back to the app). */
+  .wc-ready-banner{position:fixed;top:-100px;left:12px;right:12px;z-index:9000;
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;
+    background:var(--fill-ink);color:#fff;border:2px solid var(--teal);border-radius:14px;
+    padding:12px 14px;box-shadow:0 10px 26px rgba(0,0,0,.35);
+    transition:top .35s cubic-bezier(.34,1.4,.64,1);max-width:460px;margin:0 auto;}
+  .wc-ready-banner.show{top:12px;}
+  .wc-ready-banner .wcrb-text{font-weight:900;font-size:14px;}
+  .wc-ready-banner .wcrb-go{background:var(--teal);color:#06251e;border:none;font-weight:900;
+    font-size:12px;letter-spacing:.3px;text-transform:uppercase;border-radius:9px;
+    padding:8px 14px;cursor:pointer;}
+  .wc-ready-banner .wcrb-close{background:none;border:none;color:#fff;opacity:.7;
+    font-size:14px;cursor:pointer;padding:4px 6px;}
+  .wc-ready-banner .wcrb-close:hover{opacity:1;}
 
   .pill{
     display:inline-block;border:1.5px solid var(--border-soft);border-radius:999px;
@@ -3399,7 +3421,10 @@ window.GA_ID='G-L29P5MRWKE';
       <div class="fr-desc">Once the pool fills (or the clock runs out) your group is drawn and the whole tournament plays out automatically. Come back any time, your run will be waiting.</div>
       <div class="online-pool-status big" id="wc-waiting-status">Loading…</div>
       <div class="wc-progress-track"><div class="wc-progress-fill" id="wc-waiting-fill"></div></div>
+      <button type="button" id="wc-notify-toggle" class="online-card-link">🔔 Notify me when ready</button>
       <button id="wc-waiting-home" class="btn ghost">BACK TO HOME MENU</button>
+      <div style="height:10px"></div>
+      <button type="button" id="wc-invite-btn" class="btn teal">INVITE FRIENDS →</button>
     </div>
   </section>
 
@@ -5391,6 +5416,8 @@ async function applySession(session){
   else { authProfile = null; myStats = null; myAch = null; myCollected = null; myTopDrafts = null; }
   syncAuthUI();
   if(typeof refreshDailyStatus==='function') refreshDailyStatus(); // daily played/streak
+  if(authUser){ if(typeof wcCheckPendingOnLoad==='function') wcCheckPendingOnLoad(); }
+  else { if(typeof stopWcNotifyWatcher==='function') stopWcNotifyWatcher(); }
   // A genuine login (email sign-in, or a returning Google redirect) → land on the
   // Profile page so players discover it (new users also get the pick-a-username
   // prompt there). A session merely *restored* on page load does NOT trigger it.
@@ -5406,10 +5433,21 @@ async function applySession(session){
     const eb=$('entry-bg');
     if(authUser && eb && eb.classList.contains('show') && eb.classList.contains('view-only')) openLeaderboardView();
   }
+  // An invite link (?wcinvite=/?h2h=CODE) opened while signed out stashes
+  // itself here; the moment we know who's signed in (fresh sign-in OR a
+  // session restore that finished a beat after we first checked), resume it
+  // instead of the normal post-login profile redirect.
+  let pendingInvite=false;
+  if(authUser && window.__PENDING_ONLINE_INVITE){
+    pendingInvite=true;
+    const inv=window.__PENDING_ONLINE_INVITE; window.__PENDING_ONLINE_INVITE=null;
+    if(typeof closeAccountModal==='function') closeAccountModal();
+    if(typeof runOnlineInvite==='function') runOnlineInvite(inv);
+  }
   // ...but in that case keep them on their result; otherwise show the profile.
   const rev=document.getElementById('screen-reveal');
   const onReveal=!!(rev && rev.classList.contains('active'));
-  if(justLoggedIn && !onReveal) openProfilePage();
+  if(justLoggedIn && !onReveal && !pendingInvite) openProfilePage();
   // Username prompts: a legacy "Anonymous" account is forced to rename whenever
   // signed in; a fresh sign-in with no username at all (e.g. Google) is prompted
   // (skippable). Anonymous takes priority.
@@ -11581,6 +11619,57 @@ async function refreshOnlinePoolStatus(){
   }catch(e){ /* not signed in yet, or no entry — leave the default label */ }
 }
 
+// ---- Online invite links (?wcinvite=1, ?h2h=CODE) --------------------------
+// A single global pool, so a World Cup invite needs no code — the link just
+// has to land the recipient straight in the "join the pool" flow. Signing in
+// is required (online play always is); if they aren't signed in yet, the
+// invite is remembered and resumed the moment they finish signing in.
+async function wcShareInvite(){
+  const url = `${window.location.origin}/soccer/?wcinvite=1`;
+  const shareData = { title:'RunThePitch: Online World Cup', text:'Join my Online World Cup pool — draft your squad and see who wins it all.', url };
+  if(navigator.canShare && navigator.canShare(shareData)){
+    try{ await navigator.share(shareData); return; }catch(e){ if(e && e.name==='AbortError') return; }
+  }
+  try{ await navigator.clipboard.writeText(url); }catch(e){ await copyToClipboard(url); }
+  showToast('Invite link copied! Send it to your friends ⚽');
+}
+
+// Consumed once, right after boot: routes an incoming ?wcinvite=/?h2h= link.
+// If the player isn't signed in yet, the invite is stashed and resumed from
+// applySession() the moment sign-in completes (covers both "just signed in"
+// and "session was already restored a beat after we checked").
+function routeInitialOnlineInvite(){
+  if(window.__WC_INVITE){
+    window.__WC_INVITE=false;
+    return armOnlineInvite({type:'wc'}, 'Sign in to join the World Cup pool your friend invited you to.');
+  }
+  if(window.__H2H_CODE){
+    const code=window.__H2H_CODE; window.__H2H_CODE=null;
+    return armOnlineInvite({type:'h2h', code}, 'Sign in to join the Online Friendly match your friend invited you to.');
+  }
+  return false;
+}
+function armOnlineInvite(invite, signInReason){
+  try{ window.history.replaceState({}, document.title, window.location.pathname); }catch(e){}
+  if(!isSignedIn()){
+    window.__PENDING_ONLINE_INVITE = invite;
+    openAccountModal();
+    const note=$('acct-note'); if(note) note.textContent = signInReason;
+    return true;
+  }
+  runOnlineInvite(invite);
+  return true;
+}
+async function runOnlineInvite(invite){
+  if(invite.type==='wc'){ wcBeginDraft(); return; }
+  if(invite.type==='h2h'){
+    try{
+      const r = await sbRpc('soccer_h2h_join', { p_code: invite.code });
+      h2hEnterLobby(r.match_id, r.role, false);
+    }catch(e){ showToast(e.message || "Couldn't join that match"); showScreen('start'); }
+  }
+}
+
 // ============================================================================
 //  ONLINE FRIENDLY (1v1)
 // ============================================================================
@@ -11906,6 +11995,8 @@ function wcResumeWaiting(){
   if(wcPollTimer) clearInterval(wcPollTimer);
   wcPollTimer = setInterval(wcPoll, 4000);
   wcPoll();
+  startWcNotifyWatcher();
+  wcSyncNotifyToggleLabel();
 }
 
 async function wcOnDraftComplete(){
@@ -11920,6 +12011,8 @@ async function wcOnDraftComplete(){
     if(wcPollTimer) clearInterval(wcPollTimer);
     wcPollTimer = setInterval(wcPoll, 4000);
     wcPoll();
+    startWcNotifyWatcher();   // keeps watching even if the player leaves this screen
+    wcSyncNotifyToggleLabel();
   }catch(e){
     $('wc-waiting-status').textContent = `Couldn't join the pool: ${e.message}`;
   }
@@ -11930,6 +12023,8 @@ async function wcPoll(){
     const entry = await sbRpc('soccer_wc_my_entry', {});
     if(entry && entry.status==='done'){
       clearInterval(wcPollTimer); wcPollTimer=null;
+      wcMarkNotified(entry.entrant_id);   // already seeing it live, no need for the banner too
+      stopWcNotifyWatcher();
       await wcShowBracket(entry.season_id, entry.entrant_id);
       return;
     }
@@ -12027,6 +12122,123 @@ function wcRenderBoard(rows){
       <span class="online-board-meta">🏆${r.titles} · ${r.played} played</span>
     </div>`;
   }).join('');
+}
+
+// ============================================================================
+//  ONLINE WORLD CUP — "your run is ready" notification
+// ============================================================================
+// Runs independently of whichever screen is active (the wc-waiting screen's
+// own 4s poll only exists while that screen is open — once a player leaves
+// to do something else, or closes and reopens the app later, this is what
+// tells them to come back). Deliberately low-frequency: only runs at all
+// while the player actually has a pool entry to watch, so someone who's never
+// touched World Cup never pays for this poll.
+let wcNotifyPollTimer = null;
+
+function wcNotifiedKey(entrantId){ return 'rtp_wc_notified_'+entrantId; }
+function wcAlreadyNotified(entrantId){
+  try{ return localStorage.getItem(wcNotifiedKey(entrantId))==='1'; }catch(e){ return false; }
+}
+function wcMarkNotified(entrantId){
+  try{ localStorage.setItem(wcNotifiedKey(entrantId), '1'); }catch(e){}
+}
+
+function startWcNotifyWatcher(){
+  if(wcNotifyPollTimer) return;   // already running
+  wcNotifyPollTimer = setInterval(wcNotifyCheck, 20000);
+}
+function stopWcNotifyWatcher(){
+  if(wcNotifyPollTimer){ clearInterval(wcNotifyPollTimer); wcNotifyPollTimer=null; }
+}
+
+// Called once right after sign-in / on page load: if the player already has a
+// pool entry, either resume watching it (still waiting) or fire the "ready"
+// banner right away (finished while they were away/offline).
+async function wcCheckPendingOnLoad(){
+  if(!isSignedIn()) return;
+  try{
+    const entry = await sbRpc('soccer_wc_my_entry', {});
+    if(!entry || !entry.entrant_id) return;   // never played World Cup online — nothing to watch
+    if(entry.status==='done'){
+      if(!wcAlreadyNotified(entry.entrant_id)) wcAnnounceReady(entry.season_id, entry.entrant_id);
+    } else {
+      startWcNotifyWatcher();
+    }
+  }catch(e){ /* not signed in yet, or transient — try again on the next trigger */ }
+}
+
+async function wcNotifyCheck(){
+  if(!isSignedIn()) return;
+  // The wc-waiting/bracket screens already handle their own transition live;
+  // don't double-announce over them.
+  const onWaiting = document.getElementById('screen-wc-waiting').classList.contains('active');
+  const onBracket = document.getElementById('screen-wc-bracket').classList.contains('active');
+  if(onWaiting || onBracket) return;
+  try{
+    const entry = await sbRpc('soccer_wc_my_entry', {});
+    if(!entry || !entry.entrant_id){ stopWcNotifyWatcher(); return; }
+    if(entry.status==='done'){
+      stopWcNotifyWatcher();
+      if(!wcAlreadyNotified(entry.entrant_id)) wcAnnounceReady(entry.season_id, entry.entrant_id);
+    }
+  }catch(e){ /* transient network hiccup, keep watching */ }
+}
+
+function wcAnnounceReady(seasonId, entrantId){
+  wcMarkNotified(entrantId);
+  showWcReadyBanner(seasonId, entrantId);
+  wcNotifyBrowser();
+}
+
+// Persistent (not auto-dismissing) in-app banner — a toast that vanishes in
+// 1.6s isn't enough for something the player needs to act on when they get
+// back to the app.
+function showWcReadyBanner(seasonId, entrantId){
+  let el = document.getElementById('wc-ready-banner');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'wc-ready-banner';
+    el.className = 'wc-ready-banner';
+    document.body.appendChild(el);
+  }
+  el.innerHTML =
+    `<span class="wcrb-text">🏆 Your World Cup is ready!</span>`+
+    `<button type="button" class="wcrb-go">VIEW RESULTS →</button>`+
+    `<button type="button" class="wcrb-close" aria-label="Dismiss">✕</button>`;
+  requestAnimationFrame(()=>el.classList.add('show'));
+  el.querySelector('.wcrb-go').addEventListener('click', ()=>{
+    el.classList.remove('show');
+    wcShowBracket(seasonId, entrantId);
+  });
+  el.querySelector('.wcrb-close').addEventListener('click', ()=>{ el.classList.remove('show'); });
+}
+
+// Opt-in only — never prompted proactively (that requires a user gesture
+// anyway). See the "🔔 Notify me" button on the waiting screen.
+function wcNotifyBrowser(){
+  try{
+    if(typeof Notification==='undefined' || Notification.permission!=='granted') return;
+    const n = new Notification('Your World Cup is ready!', {
+      body: "Tap to see how your run finished.", tag:'rtp-wc-ready'
+    });
+    n.onclick = ()=>{ try{ window.focus(); }catch(e){} n.close(); };
+  }catch(e){ /* Notification not supported in this browser — banner still shows */ }
+}
+
+// Explicit opt-in button on the waiting screen (browsers require a user
+// gesture to prompt for notification permission).
+function wcSyncNotifyToggleLabel(){
+  const btn=$('wc-notify-toggle'); if(!btn) return;
+  const supported = typeof Notification!=='undefined';
+  btn.style.display = supported ? '' : 'none';
+  if(supported) btn.textContent = Notification.permission==='granted' ? '🔔 Notifications on' : '🔔 Notify me when ready';
+}
+async function wcRequestNotifyPermission(){
+  try{
+    if(typeof Notification==='undefined') return;
+    if(Notification.permission==='default') await Notification.requestPermission();
+    wcSyncNotifyToggleLabel();
+  }catch(e){}
 }
 
 // ---- entry: tapping FRIENDLY on the home screen ----
@@ -12671,6 +12883,8 @@ $('h2h-result-home').addEventListener('click', ()=>{ showScreen('start'); });
 $('h2h-board-back').addEventListener('click', openOnlineHub);
 
 $('wc-waiting-home').addEventListener('click', ()=>{ if(wcPollTimer){ clearInterval(wcPollTimer); wcPollTimer=null; } showScreen('start'); });
+$('wc-notify-toggle').addEventListener('click', wcRequestNotifyPermission);
+$('wc-invite-btn').addEventListener('click', wcShareInvite);
 $('wc-bracket-again').addEventListener('click', wcBeginDraft);
 $('wc-bracket-board').addEventListener('click', openWCBoard);
 $('wc-bracket-home').addEventListener('click', ()=>{ showScreen('start'); });
@@ -12705,7 +12919,8 @@ boot().then(async ()=>{
     return friendlyRouteInitial();   // expired / unavailable
   }
   if(window.FRIENDLY_LOADING) await resolveCodeChallenge();
-  friendlyRouteInitial();
+  const routedFriendly = friendlyRouteInitial();
+  if(!routedFriendly && typeof routeInitialOnlineInvite==='function') routeInitialOnlineInvite();
 });
 </script>
 
