@@ -7998,8 +7998,69 @@ const H2H_MODES=[
 ];
 function h2hMode(id){ return H2H_MODES.find(m=>m.id===id)||H2H_MODES[0]; }
 function h2hCap(id){ return h2hMode(id).cap; }
+/* ---- AI backfill (early-development cold-start): Quick Match fills with believable bots
+   when no human is available, so players always get a game. Flag-gated — turn OFF once
+   there's a real player base, and MUST be off before any real-money/wagering feature.
+   Quick Match only; private "Play with friends" rooms stay human-only. ---- */
+const H2H_BOTS_ENABLED=true;
+const H2H_BOT_WAIT_MIN=5200, H2H_BOT_WAIT_MAX=9000;   // wait for a real human before filling with AI
+const H2H_BOT_NAMES=['TeeTimeTom','birdiebandit','SandSaveSam','fairway_frank','putt_pirate','GreenJacket23',
+  'ClutchGolfer','j_muller','kev_23','ChipInCharlie','the_scrambler','MulliganMike','EagleEyeEd','bogeyfree',
+  'RyderRyan','LinksLegend','driverdan','wedge_wizard','SundayRed','par_machine','flaghunter','GrindItOut',
+  'ColinP','marcusb','tour_grinder','ShotgunShane','bunkerbeast','FringeBenefit','albatross_al','dimpledup',
+  'RangeRat','lag_putter','holeout_hank','ScottieS_fan','nate_golf','QuietEyeQ','tempo_tim','DoubleBogeyDon',
+  'greenreader','fadeorfdraw','ProV1Pete','yardagebook','swingoil','CartPathCarl','the_closer_','MoneyList',
+  'up_and_down','stinger_','FrostDelay','wgtwarrior','bergyy','lefty_lucas','TigerLine','shankopotamus',
+  'gimme_putt','OB_left','downhill_lie','pin_seeker','ace_maker','scratchgolfer7','wire_to_wire','the_turn',
+  'backnine_','soft_hands','FlopShotFlynn','danny_v','shotmaker','LowAmateur','texas_wedge','coldtopped'];
+function h2hShuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i];a[i]=a[j];a[j]=t; } return a; }
+function h2hPickBotNames(n){ const pool=H2H_BOT_NAMES.slice(), out=[]; for(let i=0;i<n&&pool.length;i++) out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]); return out; }
+function h2hBotSkills(){
+  const base=70+Math.floor(Math.random()*17), s={};   // spread across a believable 70..86 base
+  CATS.forEach(c=>{ s[c.k]=Math.max(52,Math.min(96, Math.round(base+(Math.random()*2-1)*9))); });
+  const spikes=1+Math.floor(Math.random()*2);         // 1-2 spikes so bots read like drafted golfers
+  for(let i=0;i<spikes;i++){ const k=CATS[Math.floor(Math.random()*CATS.length)].k; s[k]=Math.min(97, s[k]+5+Math.floor(Math.random()*8)); }
+  return s;
+}
+function h2hBotLook(){ const p=a=>a[Math.floor(Math.random()*a.length)];
+  return {skin:p(['light','tan','medium','brown','deep']), hair:p(['black','brown','blonde','grey']), shirt:p(['teal','navy','white','gold','black']), gender:p(['m','f'])}; }
+function h2hMakeBots(n){ return h2hPickBotNames(n).map(nm=>({user_id:'bot:'+nm, username:nm, bot:true, submitted:false, draft:{skills:h2hBotSkills(), look:h2hBotLook()}})); }
+// arm/clear the "no human showed up → fill with AI" timer for a Quick Match
+function h2hArmBotFill(){ if(!H2H_BOTS_ENABLED||!S.h2h) return; h2hClearBotTimer();
+  const wait=H2H_BOT_WAIT_MIN+Math.random()*(H2H_BOT_WAIT_MAX-H2H_BOT_WAIT_MIN);
+  S.h2h._botTimer=setTimeout(()=>{ if(S.h2h) S.h2h._botTimer=null; h2hConvertToBots(); }, wait); }
+function h2hClearBotTimer(){ if(typeof S!=='undefined'&&S.h2h&&S.h2h._botTimer){ clearTimeout(S.h2h._botTimer); S.h2h._botTimer=null; } }
+function h2hConvertToBots(){
+  if(!S.h2h||!S.h2h.quick||S.h2h.bots) return;
+  if(S.h2h.status&&S.h2h.status!=='lobby') return;                 // a real human already filled it
+  if((S.h2h.players||[]).length>=h2hCap(S.h2h.mode)) return;
+  h2hClearBotTimer();
+  if(S.h2h.matchId&&sb){ try{ sb.rpc('h2h_abandon',{p_match_id:S.h2h.matchId}).then(()=>{},()=>{}); }catch(e){} }
+  h2hStartBotMatch();
+}
+function h2hStartBotMatch(){
+  const mode=S.h2h.mode, cap=h2hCap(mode);
+  const seed=(S.h2h.courseKey?h2hSeedForCourse(S.h2h.courseKey):null) || Math.floor(Math.random()*2147482000);
+  const me={user_id:h2hUid(), username:(sbUsername||'You'), bot:false, submitted:false, draft:null};
+  const players=[me, ...h2hMakeBots(cap-1)];
+  players.forEach((p,i)=>{ p.slot=i; p.team=null; });
+  if(h2hMode(mode).teams){ const order=h2hShuffle(players.map(p=>p.slot)); order.forEach((sl,i)=>{ players[sl].team = i<2?0:1; }); }
+  Object.assign(S.h2h,{bots:true, matchId:null, seed, players, mySlot:0, myTeam:me.team,
+    myWheel:Math.floor(Math.random()*2147482000), status:'drafting', searching:false,
+    previewed:false, watching:false, drafting:false, submitted:false});
+  track('h2h_bot_match',{mode});
+  S.screen='h2hlobby'; render();   // brief "in the lobby" beat, then the human drafts
+  setTimeout(()=>{ if(S.h2h&&S.h2h.bots&&S.screen==='h2hlobby'&&!S.h2h.drafting) h2hBeginDraft(); }, 1100);
+}
+async function h2hRecordBotMatch(){
+  const won=h2hIWon();
+  const bots=S.h2h.players.filter(p=>p.bot).map(p=>{ const u=S.h2h.units.find(x=>x.members.some(mm=>mm.user_id===p.user_id));
+    return {username:p.username, won: !!(u&&u.id===S.h2h.winVal)}; });
+  S.h2h.result={win:S.h2h.winVal, kind:S.h2h.winKind}; S.h2h.status='done';
+  try{ await sb.rpc('h2h_record_bot_match',{p_mode:S.h2h.mode, p_won:won, p_bots:bots}); }catch(e){}
+}
 let _h2hPoll=null, _h2hWatchTimer=null;
-function h2hClearTimers(){ if(_h2hPoll){clearTimeout(_h2hPoll);_h2hPoll=null;} if(_h2hWatchTimer){clearTimeout(_h2hWatchTimer);_h2hWatchTimer=null;} }
+function h2hClearTimers(){ if(_h2hPoll){clearTimeout(_h2hPoll);_h2hPoll=null;} if(_h2hWatchTimer){clearTimeout(_h2hWatchTimer);_h2hWatchTimer=null;} h2hClearBotTimer(); }
 function h2hUid(){ return sbUser&&sbUser.id; }
 function h2hErr(e){ const m=(e&&e.message)||String(e||''); toast(esc(m.replace(/^.*:\s*/,'')||'Something went wrong')); }
 // entry point (title button / menu): needs a signed-in account with a username
@@ -8059,7 +8120,10 @@ async function h2hJoin(code){
 async function h2hQuick(){
   S.h2h.searching=true; S.screen='h2hlobby'; S.h2h.quick=true; render();
   try{ const {data,error}=await sb.rpc('h2h_quick',{p_mode:S.h2h.mode,p_holes:S.h2h.holes}); if(error) throw error;
-    S.h2h.matchId=data; S.h2h.status='lobby'; S.h2h.searching=false; track('h2h_quick',{holes:S.h2h.holes}); h2hGoLobby();
+    S.h2h.matchId=data; S.h2h.status='lobby'; track('h2h_quick',{holes:S.h2h.holes});
+    if(H2H_BOTS_ENABLED){   // keep "finding an opponent…" up; poll for a real human, else fill with AI
+      S.h2h.searching=true; S.screen='h2hlobby'; render(); h2hEnsurePoll(); h2hArmBotFill();
+    } else { S.h2h.searching=false; h2hGoLobby(); }
   }catch(e){ S.h2h.searching=false; render(); h2hErr(e); }
 }
 function h2hGoLobby(){ S.screen='h2hlobby'; render(); h2hEnsurePoll(); }
@@ -8078,6 +8142,7 @@ function h2hOnState(st){
   S.h2h.holes=st.holes; S.h2h.mode=st.mode; S.h2h.code=st.join_code||S.h2h.code; S.h2h.result=st.result;
   const me=S.h2h.players.find(p=>p.user_id===h2hUid());
   if(me){ S.h2h.mySlot=me.slot; S.h2h.myWheel=me.wheel_seed; S.h2h.myTeam=me.team; }
+  if(st.status!=='lobby') h2hClearBotTimer();   // a real human filled the match, don't backfill with AI
   if(st.status==='drafting' && !S.h2h.drafting){ h2hBeginDraft(); return; }
   if(st.status==='live' && !S.h2h.watching && !S.h2h.previewed){ h2hEnterPreview(); return; }
   if(st.status==='done' && S.screen!=='h2hresult' && S.screen!=='h2hwatch'){ S.screen='h2hresult'; render(); return; }
@@ -8113,6 +8178,13 @@ function h2hTake(k){ if(!S.h2h.current) return; S.h2h.slots[k]={golfer:S.h2h.cur
 }
 async function h2hSubmitDraft(){
   if(h2hFilled()<8){ toast('Fill all 8 skills first'); return; }
+  if(S.h2h.bots){   // AI-filled match: submit locally, then a short "waiting" beat before the matchup
+    const meP=S.h2h.players.find(p=>p.slot===0);
+    meP.draft={skills:h2hSkills(), look:S.look||{}}; meP.submitted=true; S.h2h.submitted=true;
+    track('h2h_draft_submit',{ovr:h2hOvr(),bots:true}); S.screen='h2hlobby'; render();
+    setTimeout(()=>{ if(S.h2h&&S.h2h.bots&&!S.h2h.previewed&&!S.h2h.watching){ S.h2h.players.forEach(p=>p.submitted=true); h2hEnterPreview(); } }, 1300+Math.random()*1100);
+    return;
+  }
   S.h2h.submitting=true; render();
   try{ const {data,error}=await sb.rpc('h2h_submit_draft',{p_match_id:S.h2h.matchId,p_skills:h2hSkills(),p_look:S.look||{}});
     if(error) throw error; S.h2h.submitted=true; S.h2h.submitting=false;
@@ -8224,7 +8296,9 @@ function h2hWatchStep(){
 }
 function h2hWatchSkip(){ if(_h2hWatchTimer){clearTimeout(_h2hWatchTimer);_h2hWatchTimer=null;}
   S.h2h.wHole=S.h2h.holes; S.h2h.poN=(S.h2h.playoff?S.h2h.playoff.length:0); S.h2h.watchDone=true; render(); h2hFinishWatch(); }
-function h2hFinishWatch(){ if(S.h2h.reported) return; S.h2h.reported=true; h2hReport(); }
+function h2hFinishWatch(){ if(S.h2h.reported) return; S.h2h.reported=true;
+  if(S.h2h.bots){ h2hRecordBotMatch(); return; }
+  h2hReport(); }
 async function h2hReport(){
   try{ const {data,error}=await sb.rpc('h2h_report',{p_match_id:S.h2h.matchId,p_result:{win:S.h2h.winVal,kind:S.h2h.winKind}});
     if(error) throw error;

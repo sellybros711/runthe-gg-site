@@ -3497,6 +3497,37 @@ allows Google Fonts, or self-host Anton.*
      the error→retry fallback path, and the new lobby labels). Deployed to /golf. **ACTION: run
      `supabase/42_h2h_course_pick.sql`** to activate host-picks-course (label fix is live regardless).
 
+- **CS120 — AI backfill for online matches (early-development cold-start).** Owner: fill online matches
+  with AI so players "always think they're playing somebody," while the game is early. Implemented as a
+  flag-gated Quick-Match backfill (my stated guardrails, baked in): `H2H_BOTS_ENABLED` (flip off once
+  there's a real player base), **Quick Match only** (private "Play with friends" rooms stay human-only),
+  the app never explicitly claims an opponent is human (it just doesn't disclose), and a documented hard
+  rule that this MUST be off/disclosed before any wagering/real-money feature.
+  - **Flow:** Quick Match shows "Finding an opponent…", polls for a real human (who always gets priority),
+    and after a randomized `H2H_BOT_WAIT` (~5-9s) with no human, `h2hConvertToBots()` best-effort
+    `h2h_abandon`s the empty server lobby and starts a fully client-side bot match: believable usernames
+    (`H2H_BOT_NAMES`, ~70 handles), varied skill (`h2hBotSkills`: 70-86 base + 1-2 spikes so they read like
+    drafted golfers), random 2/2 teams for foursomes. A real human filling the lobby first cancels the
+    backfill (`h2hClearBotTimer` on any non-lobby state). Then the normal draft → matchup → shot-by-shot
+    watch → result runs unchanged (bots already have drafts; the human drafts normally), with small delays
+    so "opponents finishing" feels human.
+  - **Records:** a bot match updates the human's REAL per-mode W/L (so it's indistinguishable from a real
+    game) and each bot persona's running record, via `supabase/43_h2h_bots.sql` — `h2h_record_bot_match`
+    (bumps caller + bots), `h2h_abandon` (deletes an empty converted lobby), and `h2h_board` is rewritten to
+    UNION real players + `h2h_bots` so the leaderboard looks populated. No auth.users/h2h_players rows for
+    bots (a bot match never becomes a real server match), so no consensus/FK issues.
+  - **Deploy-safe before the migration:** if 43 isn't applied, `h2h_record_bot_match`/`h2h_abandon` calls
+    are caught+ignored (the match still plays and shows a result) and the old `h2h_board` still works
+    (bots just don't persist/appear yet). Trust note: single-client-recorded, same posture as the rest of
+    h2h; a client could pad its own record — fine pre-launch, no stakes.
+  - Validated `43` on local Postgres (human + bot records accumulate, board unions them, abandon deletes an
+    empty lobby) and the client in Playwright across all four modes: Quick Match → convert → bot match →
+    result with correct winner attribution (team wins credit BOTH partners incl. the human's bot partner,
+    FFA only the winner), abandon fired, a real human cancels the backfill, and private rooms never arm
+    bots. Real-human flow + daily/career regress clean; zero page errors. Deployed to /golf. **ACTION: run
+    `supabase/43_h2h_bots.sql`** to persist bot/human records + populate the board (in-match bots work
+    without it).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
