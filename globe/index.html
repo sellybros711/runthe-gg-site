@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>RunTheGlobe — Globe-Trotting Race (Preview Build)</title>
+
+<!-- PREVIEW / BACKGROUND BUILD: this game is not released yet. Keep it out of
+     search until it ships, and it is intentionally NOT linked from the homepage
+     or listed in sitemap.xml. -->
+<meta name="robots" content="noindex,nofollow" />
+<meta name="description" content="RunTheGlobe: a globe-trotting drafting and trivia race. Draw a country each stage, beat the clock, check in, and don't finish last — or you're Grounded. Part of RunThe.GG." />
+<meta name="theme-color" content="#06182e" />
+
+<link rel="icon" href="/assets/runthegames-icon_48.png?v=3" sizes="any" />
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/runthegames-icon_32.png?v=3" />
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/runthegames-icon_180.png?v=3" />
+<link rel="manifest" href="/globe/manifest.webmanifest" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="RunTheGlobe" />
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Archivo:wght@500;600;700;800;900&display=swap" rel="stylesheet" />
+
+<!-- Google AdSense (same publisher tag as the rest of RunThe.GG; Auto ads).
+     Left in place so the preview matches the live monetization pattern (GDD §15). -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5952069078178257" crossorigin="anonymous"></script>
+
+<!-- RunThe.GG shared account session (same Supabase project as the other games;
+     the session lives in localStorage on this origin, so a player signed in on
+     runthe.gg is the same identity here). Fail-open: the game is fully playable
+     with no account and no network. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+
+<style>
+  :root{
+    --bg:#0a1626; --bg2:#0e2036; --card:#122a44; --cardb:#1e3d5c;
+    --ink:#eaf1f8; --mut:#93a7bd; --gold:#EF4E50; --teal:#35C4CD;
+    --globe:#3AA0FF; --emer:#22b39a; --amber:#EBA61F;
+    --line:rgba(255,255,255,.08); --ok:#35d6a0; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(1100px 520px at 50% -8%, rgba(58,160,255,.16), transparent 60%),
+      radial-gradient(900px 460px at 88% 4%, rgba(53,196,205,.12), transparent 55%),
+      linear-gradient(180deg,#0b1a2c 0%, var(--bg) 46%, #081120 100%);
+    background-attachment:fixed;
+  }
+  .wrap{max-width:620px;margin:0 auto;padding:calc(14px + env(safe-area-inset-top,0px)) 16px 42px;}
+
+  /* preview ribbon */
+  .preview{background:linear-gradient(90deg,rgba(235,166,31,.16),rgba(239,78,80,.16));
+    border:1px solid rgba(235,166,31,.35);color:#f3dca0;border-radius:12px;
+    font-size:11.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+    padding:7px 12px;text-align:center;margin-bottom:14px;}
+
+  /* topbar */
+  .topbar{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit;min-width:0;}
+  .globemark{width:38px;height:38px;flex:0 0 auto;border-radius:11px;display:flex;align-items:center;justify-content:center;
+    font-size:22px;background:radial-gradient(circle at 35% 30%,rgba(58,160,255,.5),rgba(34,179,154,.35));
+    border:1px solid var(--cardb);}
+  .wm{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.01em;font-size:22px;line-height:1;white-space:nowrap;}
+  .wm .r{color:var(--gold);} .wm .t{color:var(--ink);} .wm .g{color:var(--teal);}
+  .acct{margin-left:auto;text-align:right;font-size:12px;line-height:1.3;flex:0 0 auto;}
+  .acct .u{color:var(--globe);font-weight:800;}
+  .acct .lo{color:var(--mut);}
+  .acct a{color:var(--teal);text-decoration:none;font-weight:700;}
+  .acct a:hover{text-decoration:underline;}
+
+  h1,h2,h3{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.02em;text-transform:uppercase;margin:0;}
+
+  .card{background:linear-gradient(180deg,var(--card),#0f2338);border:1px solid var(--cardb);
+    border-radius:18px;padding:18px;margin-bottom:14px;position:relative;overflow:hidden;}
+  .card.center{text-align:center;}
+  .lede{color:var(--mut);font-size:14px;line-height:1.6;margin:8px 0 0;}
+  .muted{color:var(--mut);}
+
+  .btn{appearance:none;border:0;cursor:pointer;font-family:inherit;font-weight:800;font-size:15px;
+    border-radius:12px;padding:13px 18px;text-decoration:none;display:inline-flex;align-items:center;
+    justify-content:center;gap:8px;transition:transform .1s ease,filter .1s ease;line-height:1;width:100%;}
+  .btn:active{transform:translateY(1px);}
+  .btn.gold{background:linear-gradient(180deg,#FF5F60,#E7433F);color:#fff;box-shadow:0 8px 22px -12px rgba(239,78,80,.9);}
+  .btn.globe{background:linear-gradient(180deg,#4FB0FF,#2478d6);color:#fff;box-shadow:0 8px 22px -12px rgba(58,160,255,.9);}
+  .btn.ghost{background:rgba(255,255,255,.06);color:var(--ink);border:1px solid var(--cardb);}
+  .btn.ghost:hover{border-color:var(--globe);}
+  .btn.sm{width:auto;padding:9px 14px;font-size:13px;}
+  .btn[disabled]{opacity:.45;cursor:default;filter:grayscale(.3);}
+  .btnrow{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+  .btnrow .btn{flex:1 1 auto;}
+
+  /* mode list */
+  .mode{display:flex;align-items:center;gap:14px;width:100%;text-align:left;margin-bottom:11px;
+    background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:15px;padding:14px 15px;
+    cursor:pointer;transition:border-color .12s ease,transform .12s ease;}
+  .mode:hover:not(.soon){border-color:var(--globe);transform:translateY(-1px);}
+  .mode.soon{opacity:.6;cursor:default;}
+  .mode .ic{flex:0 0 auto;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    font-size:22px;background:#0a1b2e;border:1px solid var(--line);}
+  .mode .mm{min-width:0;flex:1;}
+  .mode .mn{font-weight:900;font-size:15.5px;}
+  .mode .md{color:var(--mut);font-size:12.5px;margin-top:2px;line-height:1.4;}
+  .tag{font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:999px;
+    background:rgba(58,160,255,.16);color:#bfe0ff;border:1px solid rgba(58,160,255,.3);flex:0 0 auto;}
+  .tag.soon{background:rgba(255,255,255,.06);color:var(--mut);border-color:var(--line);}
+
+  input[type=text]{width:100%;background:#0a1626;border:1px solid var(--cardb);border-radius:11px;color:var(--ink);
+    font-family:inherit;font-size:15px;padding:12px 13px;outline:none;}
+  input[type=text]:focus{border-color:var(--globe);}
+  label.fld{display:block;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--mut);margin:0 0 7px;}
+
+  /* HUD */
+  .hud{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
+  .pips{display:flex;gap:5px;flex:1;min-width:0;flex-wrap:wrap;}
+  .pip{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.12);flex:0 0 auto;}
+  .pip.done{background:var(--globe);} .pip.now{background:var(--gold);box-shadow:0 0 0 3px rgba(239,78,80,.25);}
+  .pip.final{background:var(--amber);}
+  .remain{font-size:12px;font-weight:800;color:var(--mut);white-space:nowrap;}
+  .remain b{color:var(--ink);}
+
+  /* destination reveal */
+  .dest{text-align:center;padding:6px 0 2px;}
+  .dest .fl{font-size:64px;line-height:1;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5));}
+  .dest .cn{font-family:'Anton',sans-serif;font-size:34px;margin-top:8px;letter-spacing:.02em;}
+  .dest .rg{color:var(--mut);font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-top:4px;}
+  .dest .final-badge{display:inline-block;margin-top:10px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+    color:#2a1c00;background:linear-gradient(180deg,#ffd766,#EBA61F);padding:5px 11px;border-radius:999px;}
+
+  /* task choice */
+  .stagetype{text-align:center;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin:2px 0 12px;}
+  .choice{display:grid;gap:12px;}
+  .taskcard{text-align:left;background:rgba(255,255,255,.03);border:1px solid var(--cardb);border-radius:15px;
+    padding:15px;cursor:pointer;transition:border-color .12s,transform .12s;}
+  .taskcard:hover{border-color:var(--globe);transform:translateY(-1px);}
+  .taskcard .ct{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+  .catchip{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;
+    background:rgba(58,160,255,.14);color:#bfe0ff;border:1px solid rgba(58,160,255,.3);}
+  .catchip.reflex{background:rgba(239,78,80,.14);color:#ffc2be;border-color:rgba(239,78,80,.32);}
+  .catchip.hybrid{background:rgba(235,166,31,.14);color:#f3dca0;border-color:rgba(235,166,31,.32);}
+  .taskcard .pen{margin-left:auto;font-size:11px;color:var(--mut);font-weight:700;}
+  .taskcard .pr{font-size:14px;color:var(--ink);font-weight:700;line-height:1.4;}
+
+  /* minigame */
+  .game-hd{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .game-hd .cat{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--teal);}
+  .timer{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:900;font-size:18px;color:var(--ink);
+    background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:5px 10px;}
+  .prompt{font-size:17px;font-weight:800;line-height:1.4;margin-bottom:14px;}
+  .opts{display:grid;gap:10px;}
+  .opt{text-align:left;background:rgba(255,255,255,.04);border:1px solid var(--cardb);border-radius:12px;
+    padding:14px 15px;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;transition:border-color .1s,background .1s;}
+  .opt:hover{border-color:var(--globe);}
+  .opt.right{border-color:var(--ok);background:rgba(53,214,160,.12);}
+  .opt.wrong{border-color:var(--bad);background:rgba(255,107,107,.12);}
+
+  .missline{font-size:12.5px;color:var(--mut);margin-top:12px;text-align:center;}
+  .missline b{color:var(--bad);}
+
+  /* scramble */
+  .slot{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;min-height:52px;margin-bottom:14px;}
+  .tileslot{width:40px;height:48px;border:2px dashed var(--cardb);border-radius:9px;display:flex;align-items:center;justify-content:center;
+    font-weight:900;font-size:22px;color:var(--ink);background:rgba(0,0,0,.15);}
+  .tileslot.filled{border-style:solid;border-color:var(--globe);background:rgba(58,160,255,.12);}
+  .bank{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:10px;}
+  .ltile{width:44px;height:50px;border:1px solid var(--cardb);border-radius:10px;display:flex;align-items:center;justify-content:center;
+    font-weight:900;font-size:22px;color:var(--ink);background:rgba(255,255,255,.05);cursor:pointer;transition:transform .08s,opacity .1s;}
+  .ltile:hover{transform:translateY(-2px);border-color:var(--globe);}
+  .ltile.used{opacity:.25;pointer-events:none;}
+
+  /* sequence / memory */
+  .seqgrid{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:8px 0 14px;}
+  .seqtile{width:62px;height:62px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:30px;
+    background:rgba(255,255,255,.05);border:1px solid var(--cardb);cursor:pointer;transition:transform .1s,background .1s,box-shadow .1s;}
+  .seqtile.lit{background:rgba(58,160,255,.35);box-shadow:0 0 0 4px rgba(58,160,255,.25);transform:scale(1.08);}
+  .seqtile.tap{background:rgba(53,214,160,.25);}
+  .seqstatus{text-align:center;font-size:13px;font-weight:700;color:var(--mut);margin-bottom:10px;}
+
+  /* reaction */
+  .reactbox{height:190px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    cursor:pointer;user-select:none;text-align:center;transition:background .05s;border:1px solid var(--cardb);}
+  .reactbox.wait{background:linear-gradient(180deg,#3a1414,#2a0e0e);}
+  .reactbox.go{background:linear-gradient(180deg,#0f7a4f,#0a5f3e);}
+  .reactbox.idle{background:rgba(255,255,255,.04);}
+  .reactbox .big{font-family:'Anton',sans-serif;font-size:28px;}
+  .reactbox .sm{font-size:13px;color:rgba(255,255,255,.85);margin-top:6px;}
+  .reps{display:flex;gap:6px;justify-content:center;margin-bottom:12px;}
+  .rep{width:26px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);}
+  .rep.done{background:var(--ok);}
+
+  /* order */
+  .orderwrap{display:grid;gap:9px;margin-bottom:6px;}
+  .oitem{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);border:1px solid var(--cardb);
+    border-radius:12px;padding:13px 14px;cursor:pointer;font-weight:700;transition:border-color .1s,background .1s;}
+  .oitem:hover{border-color:var(--globe);}
+  .oitem.placed{opacity:.4;pointer-events:none;border-color:var(--ok);}
+  .oitem .num{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:900;flex:0 0 auto;}
+  .oitem .num.on{background:var(--globe);color:#fff;}
+  .ohint{font-size:12.5px;color:var(--mut);text-align:center;margin-bottom:12px;}
+
+  /* checkpoint / result */
+  .bigtime{font-family:'Anton',sans-serif;font-size:46px;text-align:center;letter-spacing:.02em;}
+  .bigtime .u{font-size:22px;color:var(--mut);}
+  .breakdown{display:flex;justify-content:center;gap:18px;margin-top:6px;color:var(--mut);font-size:13px;font-weight:700;}
+  .breakdown b{color:var(--ink);}
+
+  /* leaderboard */
+  .lb{display:grid;grid-template-columns:30px 1fr auto;gap:0;border-radius:12px;overflow:hidden;border:1px solid var(--line);}
+  .lbrow{display:contents;}
+  .lbrow>span{padding:11px 12px;background:rgba(255,255,255,.02);border-bottom:1px solid var(--line);display:flex;align-items:center;}
+  .lbrow:last-child>span{border-bottom:0;}
+  .lbrow .p{font-weight:900;color:var(--mut);justify-content:center;}
+  .lbrow .nm{font-weight:700;gap:7px;}
+  .lbrow .nm .ai{font-size:9.5px;font-weight:800;letter-spacing:.05em;color:var(--mut);background:rgba(255,255,255,.07);
+    border:1px solid var(--line);padding:1px 5px;border-radius:5px;}
+  .lbrow .tm{font-variant-numeric:tabular-nums;font-weight:800;justify-content:flex-end;white-space:nowrap;}
+  .lbrow.you>span{background:rgba(58,160,255,.12);}
+  .lbrow.you .nm{color:#bfe0ff;}
+  .lbrow.out>span{background:rgba(239,78,80,.1);}
+  .lbrow.out .tm{color:var(--gold);}
+  .lbrow.win .p{color:var(--amber);}
+
+  .banner{border-radius:14px;padding:15px;text-align:center;margin-bottom:14px;}
+  .banner.safe{background:rgba(53,214,160,.1);border:1px solid rgba(53,214,160,.35);}
+  .banner.grounded{background:rgba(239,78,80,.12);border:1px solid rgba(239,78,80,.4);}
+  .banner.win{background:linear-gradient(180deg,rgba(235,166,31,.18),rgba(239,78,80,.12));border:1px solid rgba(235,166,31,.4);}
+  .banner h2{font-size:24px;} .banner p{margin:6px 0 0;color:var(--mut);font-size:13.5px;line-height:1.5;}
+  .banner.grounded h2{color:var(--gold);} .banner.win h2{color:var(--amber);}
+
+  /* records */
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  .stat{background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:12px 8px;text-align:center;}
+  .stat .v{font-family:'Anton',sans-serif;font-size:24px;color:var(--globe);}
+  .stat .k{font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);margin-top:3px;}
+
+  .skiprow{display:flex;align-items:center;gap:10px;background:rgba(235,166,31,.08);border:1px solid rgba(235,166,31,.3);
+    border-radius:12px;padding:11px 13px;margin-top:12px;}
+  .skiprow .sx{font-size:12.5px;color:#f3dca0;line-height:1.4;flex:1;}
+  .skiprow .sx b{color:#ffd766;}
+
+  .foot{margin-top:26px;text-align:center;color:#6f829a;font-size:12px;line-height:1.8;}
+  .foot a{color:#9db2c8;text-decoration:none;font-weight:700;}
+  .foot a:hover{color:var(--ink);}
+  .foot .sep{margin:0 6px;color:#3c4c60;}
+</style>
+</head>
+<body>
+  <div class="wrap" id="app"><!-- rendered by JS --></div>
+
+<!-- data banks (loaded before the engine) -->
+<script src="/globe/data/countries.js"></script>
+<script src="/globe/data/finish_lines.js"></script>
+
+<script>
+"use strict";
+(function(){
+/* ==========================================================================
+   RunTheGlobe — Offline Solo engine (GDD v1)
+   Playable MVP: the full per-round race loop for one human vs a ghost field.
+   No backend dependency (GDD §7 "fastest to ship"). Online / duo modes are
+   scaffolded on the home screen but not yet wired.
+   ========================================================================== */
+
+  var COUNTRIES = window.GLOBE_COUNTRIES || [];
+  var FINISH = window.GLOBE_FINISH_LINES || [];
+
+  /* ---- IP-safe terminology (GDD §2) is used throughout the UI strings ----
+     Checkpoint / Split Path / Solo Call / Skip Pass / Grounded / Stage ---- */
+
+  var FIELD_SIZE = 11;   // GDD §3: 11 teams max per lobby
+  var ROUNDS     = 9;    // GDD §3: 9 stages, Round 9 = the Final (top 3)
+
+  // Miss penalty by scoring category (GDD §4). word/dragdrop/audio are not in
+  // the §4 table (which lists the 5 scoring categories); mapped to sensible
+  // defaults here and flagged in README as pending design sign-off.
+  var PENALTY = { trivia:15, math:15, memory:12, spatial:12, reflex:10, word:12, dragdrop:12, audio:15, duo:8 };
+
+  // task category -> interactive minigame kind
+  var KIND = { trivia:'mcq', math:'mcq', spatial:'order', memory:'sequence', reflex:'reaction', word:'scramble' };
+  var CAT_LABEL = { trivia:'Trivia', math:'Math / Logic', spatial:'Spatial / Map', memory:'Memory',
+                    reflex:'Reflex / Timing', word:'Word / Language' };
+  // rough expected completion (seconds) for an average player per kind — used
+  // ONLY to pace the AI ghost field. The human always competes on real time.
+  var BASE = { mcq:6.5, scramble:13, sequence:8, reaction:3.4, order:14 };
+
+  var GHOSTS = [
+    {n:'Team Fox',   f:'🦊'}, {n:'Team Wolf',  f:'🐺'}, {n:'Team Hawk',  f:'🦅'},
+    {n:'Team Puma',  f:'🐆'}, {n:'Team Bear',  f:'🐻'}, {n:'Team Otter', f:'🦦'},
+    {n:'Team Lynx',  f:'🐈'}, {n:'Team Raven', f:'🐦‍⬛'}, {n:'Team Bison', f:'🦬'},
+    {n:'Team Cobra', f:'🐍'}
+  ];
+
+  var app = document.getElementById('app');
+  var S = {};   // active session state
+
+  /* ------------------------------------------------------------- utilities */
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function rnd(a,b){ return a + Math.random()*(b-a); }
+  function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i];a[i]=a[j];a[j]=t; } return a; }
+  function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+  function fmtTime(sec){ return (Math.round(sec*10)/10).toFixed(1); }
+  function median(arr){ var s=arr.slice().sort(function(x,y){return x-y;}); var m=Math.floor(s.length/2);
+    return s.length%2 ? s[m] : (s[m-1]+s[m])/2; }
+
+  /* ------------------------------------------------------- local records */
+  function loadStats(){
+    try{ return JSON.parse(localStorage.getItem('rtg_stats')||'{}')||{}; }catch(e){ return {}; }
+  }
+  function saveStats(s){ try{ localStorage.setItem('rtg_stats', JSON.stringify(s)); }catch(e){} }
+  function statsDefault(){
+    var s=loadStats();
+    s.races=s.races||0; s.wins=s.wins||0; s.top3=s.top3||0; s.countries=s.countries||{};
+    s.bestPlace=s.bestPlace||0; s.fastestStage=s.fastestStage||0; s.groundFree=s.groundFree||0;
+    return s;
+  }
+  function visitedCount(){ var s=statsDefault(); return Object.keys(s.countries||{}).length; }
+  /* Records hook (GDD §14): badges/progression should plug into the shared
+     RunThe.GG profiles/badges schema (server-computed tiers, see supabase/*.sql)
+     rather than invent a parallel one. Kept local-only in this preview build;
+     the tallies above map cleanly onto that schema when the online layer lands. */
+
+  /* --------------------------------------------------------- account bridge */
+  var SB_URL='https://jcrrxqfpdelrmvjuihnm.supabase.co';
+  var SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
+  var acct = { user:null, username:null };
+  var sb = null;   // module-scope supabase client (used by the online layer too)
+  function sbReady(){ return !!sb; }
+  function initAccount(){
+    if(!(window.supabase && window.supabase.createClient)) return;   // fail-open
+    try{ sb = window.supabase.createClient(SB_URL, SB_ANON, { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true } }); }
+    catch(e){ sb=null; return; }
+    function apply(session){
+      acct.user = (session && session.user) || null; acct.username=null;
+      if(acct.user){
+        sb.from('profiles').select('username').eq('id',acct.user.id).maybeSingle()
+          .then(function(r){ acct.username=(r.data&&r.data.username)||null; renderAcct(); })
+          .catch(function(){ renderAcct(); });
+      }
+      renderAcct();
+    }
+    sb.auth.onAuthStateChange(function(ev,session){ if(ev==='INITIAL_SESSION') return; apply(session); });
+    sb.auth.getSession().then(function(r){ apply(r.data && r.data.session); }).catch(function(){});
+  }
+  function renderAcct(){
+    var e=$('acct'); if(!e) return;
+    if(acct.user){
+      e.innerHTML = acct.username
+        ? 'Signed in as <span class="u">'+esc(acct.username)+'</span>'
+        : '<span class="lo">Signed in</span> · <a href="/">set username</a>';
+    } else {
+      e.innerHTML = '<span class="lo">Guest</span> · <a href="/">Sign in</a>';
+    }
+  }
+
+  /* ================================================================ SCREENS */
+  function render(){
+    if(S.screen==='home')      return renderHome();
+    if(S.screen==='setup')     return renderSetup();
+    if(S.screen==='online')    return renderOnlineMenu();
+    if(S.screen==='lobby')     return renderLobby();
+    if(S.screen==='stage')     return renderStage();
+    renderHome();
+  }
+
+  function topbar(){
+    return '<div class="topbar">'
+      + '<a class="brand" href="/globe/"><span class="globemark">🌍</span>'
+      + '<span class="wm"><span class="r">Run</span><span class="t">The</span><span class="g">Globe</span></span></a>'
+      + '<span class="acct" id="acct"></span></div>';
+  }
+
+  /* ------------------------------------------------------------------ home */
+  function renderHome(){
+    var st = statsDefault();
+    app.innerHTML = topbar()
+      + '<div class="preview">🛠️ Preview build · not yet released</div>'
+      + '<div class="card center">'
+        + '<div style="font-size:52px;line-height:1">🌍</div>'
+        + '<h1 style="font-size:30px;margin-top:6px">The Race Around The World</h1>'
+        + '<p class="lede">Draw a country each Stage, beat the clock on a Split Path or Solo Call, then check in. '
+          + 'Finish last and you\'re <b style="color:var(--gold)">Grounded</b>. Outlast the field across '
+          + ROUNDS + ' Stages to win the Final.</p>'
+      + '</div>'
+      + '<div class="card">'
+        + '<h3 style="font-size:16px;margin-bottom:12px">Choose a mode</h3>'
+        + modeRow('offline_solo','🏃','Offline Solo','Race the AI ghost field solo. No opponents online, no account needed.','Playable',false)
+        + modeRow('online_race','🌐','Online Race','Race real players in a shared lobby by code. Empty slots fill with AI.','Beta',false)
+        + modeRow('offline_coop','👥','Local Co-op','Two players, one device. Pass-and-play the same task bank.','Soon',true)
+        + modeRow('online_solo','🎲','Online Solo','Auto-paired with another solo racer to form a team.','Soon',true)
+      + '</div>'
+      + '<div class="card">'
+        + '<h3 style="font-size:16px;margin-bottom:12px">Your record</h3>'
+        + '<div class="stats">'
+          + statTile(st.races,'Races')
+          + statTile(st.wins,'Wins')
+          + statTile(st.top3,'Top 3')
+          + statTile(visitedCount(),'Countries')
+          + statTile(st.bestPlace?('#'+st.bestPlace):'—','Best finish')
+          + statTile(st.fastestStage?fmtTime(st.fastestStage)+'s':'—','Fastest stage')
+        + '</div>'
+      + '</div>'
+      + foot();
+    var m=$('mode-offline_solo'); if(m) m.onclick=function(){ S.screen='setup'; render(); };
+    var mo=$('mode-online_race'); if(mo) mo.onclick=function(){ S.screen='online'; render(); };
+    renderAcct();
+  }
+  function modeRow(id,ic,name,desc,tag,soon){
+    return '<div class="mode'+(soon?' soon':'')+'" id="mode-'+id+'">'
+      + '<span class="ic">'+ic+'</span>'
+      + '<span class="mm"><span class="mn">'+name+'</span><span class="md">'+desc+'</span></span>'
+      + '<span class="tag'+(soon?' soon':'')+'">'+tag+'</span></div>';
+  }
+  function statTile(v,k){ return '<div class="stat"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>'; }
+  function foot(){
+    return '<div class="foot"><a href="/globe/">RunTheGlobe</a> · part of '
+      + '<a href="/">RunThe.GG</a><span class="sep">·</span>'
+      + '<a href="/privacy.html">Privacy</a></div>';
+  }
+
+  /* ----------------------------------------------------------------- setup */
+  function renderSetup(){
+    app.innerHTML = topbar()
+      + '<div class="card">'
+        + '<h1 style="font-size:24px">Name your team</h1>'
+        + '<p class="lede">You\'ll race '+(FIELD_SIZE-1)+' AI ghost teams through '+ROUNDS+' Stages. '
+          + 'One team is Grounded each Stage — don\'t be last.</p>'
+        + '<div style="margin-top:16px"><label class="fld" for="tn">Team name</label>'
+        + '<input type="text" id="tn" maxlength="18" placeholder="Your Team" value="'+esc(S.teamName||'')+'" /></div>'
+        + '<div class="btnrow">'
+          + '<button class="btn ghost sm" id="back" style="flex:0 0 auto">‹ Back</button>'
+          + '<button class="btn globe" id="go">Start the race 🌍</button>'
+        + '</div>'
+      + '</div>' + foot();
+    $('back').onclick=function(){ S.screen='home'; render(); };
+    $('go').onclick=function(){
+      var v=($('tn').value||'').trim().slice(0,18) || 'Your Team';
+      S.teamName=v; startRace();
+    };
+    renderAcct();
+  }
+
+  /* =============================================================== THE RACE */
+  function startRace(){
+    // build the field: player + (FIELD_SIZE-1) lobby-fill ghosts (GDD §8).
+    var skills = []; for(var i=0;i<GHOSTS.length;i++){ skills.push(0.78 + (i*(1.55-0.78)/(GHOSTS.length-1))); }
+    skills = shuffle(skills);
+    var teams = [{ id:'you', name:S.teamName, flag:'🧭', isGhost:false, startedAsGhost:false, skill:1, alive:true, eff:0 }];
+    for(var g=0; g<GHOSTS.length; g++){
+      teams.push({ id:'g'+g, name:GHOSTS[g].n, flag:GHOSTS[g].f, isGhost:true, startedAsGhost:true,
+                   skill:skills[g], alive:true, eff:0 });
+    }
+    S.teams = teams;
+    S.round = 1;
+    S.usedCountries = {};
+    S.skipUsed = false;
+    S.spectating = false;
+    S.finishLine = pick(FINISH);   // GDD §11: the Final's location, locked at race start
+    S.screen='stage';
+    drawStage();
+  }
+
+  function aliveTeams(){ return S.teams.filter(function(t){ return t.alive; }); }
+  function isFinal(){ return S.round === ROUNDS; }
+
+  function drawStage(){
+    // GDD per-round loop step 1: destination draw (same country for everyone).
+    if(isFinal()){
+      var fl = S.finishLine;
+      S.dest = { name:fl.city, region:fl.region, flag:fl.flag, final:true, landmark:fl.landmark,
+                 country: fl.country ? countryById(fl.country) : null };
+    } else {
+      var pool = COUNTRIES.filter(function(c){ return !S.usedCountries[c.id]; });
+      if(!pool.length){ S.usedCountries={}; pool=COUNTRIES.slice(); }
+      var c = pick(pool); S.usedCountries[c.id]=1;
+      S.dest = { name:c.name, region:c.region, flag:c.flag, final:false, country:c };
+      var st=statsDefault(); st.countries[c.id]=1; saveStats(st);
+    }
+    // build the challenge: Split Path (choose 1 of 2) or Solo Call (1 assigned). GDD §5-6.
+    buildChallenge();
+    S.phase='draw';
+    renderStage();
+  }
+
+  function countryById(id){ for(var i=0;i<COUNTRIES.length;i++){ if(COUNTRIES[i].id===id) return COUNTRIES[i]; } return null; }
+
+  function taskPool(){
+    // gather playable tasks for the destination's country (Final may borrow a
+    // linked country's bank, else fall back to a random country's bank).
+    var c = S.dest.country || pick(COUNTRIES);
+    var out=[];
+    Object.keys(c.tasks||{}).forEach(function(cat){
+      if(!KIND[cat]) return;   // only categories with a wired minigame
+      (c.tasks[cat]||[]).forEach(function(t){ out.push(t); });
+    });
+    return shuffle(out);
+  }
+
+  function buildChallenge(){
+    var pool = taskPool();
+    // Split Path when we can offer a real choice; ~55% of stages, always on the Final.
+    var wantSplit = isFinal() || Math.random() < 0.55;
+    if(wantSplit && pool.length>=2){
+      // pairing preference (GDD §5): one "brain" + one "reflex/feel" task.
+      var brain  = pool.filter(function(t){ return t.type==='brain'; });
+      var reflex = pool.filter(function(t){ return t.type==='reflex' || t.type==='hybrid'; });
+      var a,b;
+      if(brain.length && reflex.length){ a=pick(brain); b=pick(reflex); }
+      else { a=pool[0]; b=pool[1]; }   // fallback: two brain / two reflex
+      S.stageType='split'; S.offered=[a,b];
+    } else {
+      S.stageType='solo'; S.offered=[pool[0] || pick(taskPool())];
+    }
+    S.chosen=null;
+  }
+
+  function renderStage(){
+    if(S.phase==='draw')       return viewDraw();
+    if(S.phase==='choice')     return viewChoice();
+    if(S.phase==='play')       return viewPlay();
+    if(S.phase==='checkpoint') return viewCheckpoint();
+    if(S.phase==='leaderboard')return viewLeaderboard();
+    if(S.phase==='grounded')   return viewGrounded();
+  }
+
+  function hud(){
+    var pips='';
+    for(var r=1;r<=ROUNDS;r++){
+      var cls = r<S.round?'done':(r===S.round?'now':'');
+      if(r===ROUNDS && cls!=='now') cls+=' final';
+      pips += '<span class="pip '+cls+'"></span>';
+    }
+    var alive = aliveTeams().length;
+    return '<div class="hud"><div class="pips">'+pips+'</div>'
+      + '<div class="remain">Stage <b>'+S.round+'</b>/'+ROUNDS+' · <b>'+alive+'</b> left</div></div>';
+  }
+
+  /* --- phase: destination draw --- */
+  function viewDraw(){
+    var d=S.dest;
+    app.innerHTML = topbar() + hud()
+      + '<div class="card">'
+        + '<div class="dest">'
+          + '<div class="fl">'+d.flag+'</div>'
+          + '<div class="cn">'+esc(d.name)+'</div>'
+          + '<div class="rg">'+esc(d.region)+'</div>'
+          + (d.final?'<div><span class="final-badge">🏁 The Final · '+esc(d.landmark||'the finish line')+'</span></div>':'')
+        + '</div>'
+        + '<p class="lede" style="text-align:center">'
+          + (d.final ? 'The last '+aliveTeams().length+' teams race to the finish. Fastest effective time wins the whole race.'
+                     : 'All '+aliveTeams().length+' remaining teams draw the same destination.')
+        + '</p>'
+        + '<button class="btn globe" id="rev" style="margin-top:6px">Reveal the challenge ›</button>'
+      + '</div>' + foot();
+    $('rev').onclick=function(){ S.phase='choice'; renderStage(); };
+    renderAcct();
+  }
+
+  /* --- phase: challenge choice (Split Path / Solo Call) --- */
+  function viewChoice(){
+    var html = topbar() + hud() + '<div class="card">'
+      + '<div class="stagetype">'+(S.stageType==='split'?'🍴 Split Path — choose your task':'📢 Solo Call — one task, no choice')+'</div>'
+      + '<div class="choice">';
+    S.offered.forEach(function(t,i){
+      var kind=KIND[t.cat], typ=t.type;
+      html += '<button class="taskcard" data-i="'+i+'">'
+        + '<div class="ct"><span class="catchip '+(typ==='reflex'?'reflex':(typ==='hybrid'?'hybrid':''))+'">'+esc(CAT_LABEL[t.cat]||t.cat)+'</span>'
+        + '<span class="pen">miss +'+PENALTY[t.cat]+'s</span></div>'
+        + '<div class="pr">'+esc(taskBlurb(t))+'</div></button>';
+    });
+    html += '</div>';
+    // Skip Pass (GDD §2 — Fast Forward analog): once per race, take the field median
+    // time. Offline only — online timing is server-authoritative.
+    if(!S.skipUsed && !isFinal() && !onlineActive()){
+      html += '<div class="skiprow"><div class="sx"><b>⏩ Skip Pass</b> — skip this task once per race and check in at the field\'s median time. Safe, but you won\'t gain ground.</div>'
+        + '<button class="btn ghost sm" id="skip" style="flex:0 0 auto">Use</button></div>';
+    }
+    html += '</div>' + foot();
+    app.innerHTML = html;
+    Array.prototype.forEach.call(document.querySelectorAll('.taskcard'), function(b){
+      b.onclick=function(){
+        S.chosen=S.offered[+b.getAttribute('data-i')];
+        if(onlineActive()) onlineBeginPlay(); else { S.phase='play'; renderStage(); }
+      };
+    });
+    if($('skip')) $('skip').onclick=useSkipPass;
+    renderAcct();
+  }
+  function taskBlurb(t){
+    switch(KIND[t.cat]){
+      case 'mcq':      return t.q;
+      case 'scramble': return 'Unscramble the word — '+t.hint;
+      case 'sequence': return t.prompt+' — repeat it back';
+      case 'reaction': return t.prompt;
+      case 'order':    return t.q;
+      default:         return t.prompt||'Complete the task';
+    }
+  }
+
+  /* --- phase: play (the minigame) --- */
+  function viewPlay(){
+    var t=S.chosen, kind=KIND[t.cat];
+    S.play = { start: performance.now(), misses:0, done:false };
+    app.innerHTML = topbar() + hud()
+      + '<div class="card">'
+        + '<div class="game-hd"><span class="cat">'+esc(CAT_LABEL[t.cat]||t.cat)+'</span>'
+        + '<span class="timer" id="tmr">0.0</span></div>'
+        + '<div id="mg"></div>'
+        + '<div class="missline" id="miss"></div>'
+      + '</div>' + foot();
+    startTimer();
+    if(kind==='mcq')      mgMcq(t);
+    else if(kind==='scramble') mgScramble(t);
+    else if(kind==='sequence') mgSequence(t);
+    else if(kind==='reaction') mgReaction(t);
+    else if(kind==='order')    mgOrder(t);
+    else finishTask();   // safety
+    renderAcct();
+  }
+  function startTimer(){
+    stopTimer();
+    S.timerId = setInterval(function(){
+      var e=$('tmr'); if(!e){ stopTimer(); return; }
+      e.textContent = fmtTime((performance.now()-S.play.start)/1000);
+    }, 100);
+  }
+  function stopTimer(){ if(S.timerId){ clearInterval(S.timerId); S.timerId=null; } }
+  function showMiss(){
+    var e=$('miss'); if(!e) return;
+    e.innerHTML = S.play.misses ? 'Misses: <b>'+S.play.misses+'</b> (+'+(S.play.misses*PENALTY[S.chosen.cat])+'s)' : '';
+  }
+  function finishTask(){
+    stopTimer();
+    var raw = (performance.now()-S.play.start)/1000;
+    resolveRound(raw, S.play.misses, false);
+  }
+
+  /* ---------- minigame: multiple choice (trivia / math) ---------- */
+  function mgMcq(t){
+    var order = shuffle(t.options.map(function(o,i){ return {o:o,i:i}; }));
+    var html='<div class="prompt">'+esc(t.q)+'</div><div class="opts">';
+    order.forEach(function(x,j){ html += '<button class="opt" data-i="'+x.i+'" data-j="'+j+'">'+esc(x.o)+'</button>'; });
+    html+='</div>'; $('mg').innerHTML=html;
+    Array.prototype.forEach.call(document.querySelectorAll('.opt'), function(b){
+      b.onclick=function(){
+        if(S.play.done) return;
+        var correct = (+b.getAttribute('data-i'))===t.a;
+        if(correct){ b.classList.add('right'); S.play.done=true; setTimeout(finishTask,220); }
+        else{ b.classList.add('wrong'); b.disabled=true; S.play.misses++; showMiss(); }
+      };
+    });
+  }
+
+  /* ---------- minigame: unscramble (word) ---------- */
+  function mgScramble(t){
+    var answer=t.answer.toUpperCase();
+    var letters=shuffle(answer.split(''));
+    // guarantee it isn't already solved
+    if(letters.join('')===answer && answer.length>1){ var x=letters[0];letters[0]=letters[1];letters[1]=x; }
+    S.scr={ built:[], letters:letters, used:[] };
+    renderScramble(t);
+  }
+  function renderScramble(t){
+    var answer=t.answer.toUpperCase();
+    var slots='';
+    for(var i=0;i<answer.length;i++){ var ch=S.scr.built[i]; slots+='<div class="tileslot'+(ch?' filled':'')+'">'+(ch?esc(ch):'')+'</div>'; }
+    var bank='';
+    S.scr.letters.forEach(function(l,i){ bank+='<div class="ltile'+(S.scr.used[i]?' used':'')+'" data-i="'+i+'">'+esc(l)+'</div>'; });
+    $('mg').innerHTML = '<div class="prompt">Unscramble · <span style="color:var(--mut);font-weight:600">'+esc(t.hint)+'</span></div>'
+      + '<div class="slot">'+slots+'</div><div class="bank">'+bank+'</div>'
+      + '<button class="btn ghost sm" id="undo" style="width:auto;margin:0 auto;display:block">⌫ Undo</button>';
+    Array.prototype.forEach.call(document.querySelectorAll('.ltile'), function(b){
+      b.onclick=function(){
+        if(S.play.done) return;
+        var i=+b.getAttribute('data-i'); if(S.scr.used[i]) return;
+        S.scr.used[i]=1; S.scr.built.push({i:i,ch:S.scr.letters[i]});
+        checkScramble(t);
+      };
+    });
+    $('undo').onclick=function(){
+      if(S.play.done||!S.scr.built.length) return;
+      var last=S.scr.built.pop(); S.scr.used[last.i]=0; renderScramble(t);
+    };
+    // normalize built to chars for slot rendering
+  }
+  function builtStr(){ return S.scr.built.map(function(x){return x.ch;}).join(''); }
+  function checkScramble(t){
+    var answer=t.answer.toUpperCase();
+    // re-render with the new letter placed
+    var slots='';
+    for(var i=0;i<answer.length;i++){ var e=S.scr.built[i]; slots+='<div class="tileslot'+(e?' filled':'')+'">'+(e?esc(e.ch):'')+'</div>'; }
+    var slotEl=document.querySelector('.slot'); if(slotEl) slotEl.innerHTML=slots;
+    var bankEls=document.querySelectorAll('.ltile');
+    S.scr.built.forEach(function(x){ if(bankEls[x.i]) bankEls[x.i].classList.add('used'); });
+    if(S.scr.built.length===answer.length){
+      if(builtStr()===answer){ S.play.done=true; setTimeout(finishTask,200); }
+      else{ S.play.misses++; showMiss();
+        // clear the wrong attempt
+        S.scr.built=[]; S.scr.used=[]; setTimeout(function(){ if(!S.play.done) renderScramble(t); },350); }
+    }
+  }
+
+  /* ---------- minigame: memory sequence (repeat it back) ---------- */
+  function mgSequence(t){
+    var pal=t.tiles.slice();
+    var len = Math.min(pal.length, 3 + Math.floor(S.round/3));   // grows slightly with stage
+    var seq=[]; for(var i=0;i<len;i++){ seq.push(Math.floor(Math.random()*pal.length)); }
+    S.seq={ pal:pal, seq:seq, input:[], playing:true };
+    // pause the running timer during the reveal; timer counts the INPUT phase only
+    stopTimer();
+    renderSequence(t,-1);
+    playSequence(t,0);
+  }
+  function renderSequence(t,litIdx){
+    var tiles='';
+    S.seq.pal.forEach(function(em,i){ tiles+='<div class="seqtile'+(i===litIdx?' lit':'')+'" data-i="'+i+'">'+em+'</div>'; });
+    var status = S.seq.playing ? '👀 Watch the sequence…' : 'Repeat it: <b>'+S.seq.input.length+'</b>/'+S.seq.seq.length;
+    $('mg').innerHTML='<div class="prompt">'+esc(t.prompt)+'</div>'
+      + '<div class="seqstatus">'+status+'</div><div class="seqgrid">'+tiles+'</div>';
+    if(!S.seq.playing){
+      Array.prototype.forEach.call(document.querySelectorAll('.seqtile'), function(b){
+        b.onclick=function(){ seqTap(t, +b.getAttribute('data-i'), b); };
+      });
+    }
+  }
+  function playSequence(t,k){
+    if(k>=S.seq.seq.length){
+      S.seq.playing=false; renderSequence(t,-1);
+      S.play.start=performance.now(); startTimer();   // start timing the input phase
+      return;
+    }
+    var idx=S.seq.seq[k];
+    renderSequence(t,idx);
+    setTimeout(function(){ renderSequence(t,-1);
+      setTimeout(function(){ playSequence(t,k+1); }, 200);
+    }, 620);
+  }
+  function seqTap(t,i,el){
+    if(S.play.done||S.seq.playing) return;
+    var pos=S.seq.input.length, want=S.seq.seq[pos];
+    if(i===want){
+      S.seq.input.push(i); el.classList.add('tap'); setTimeout(function(){ el.classList.remove('tap'); },160);
+      if(S.seq.input.length===S.seq.seq.length){ S.play.done=true; setTimeout(finishTask,200); }
+      else renderSequence(t,-1);
+    } else {
+      S.play.misses++; showMiss(); S.seq.input=[];   // reset input on a wrong tile
+      renderSequence(t,-1);
+    }
+  }
+
+  /* ---------- minigame: reaction window (reflex) ---------- */
+  function mgReaction(t){
+    var REPS=4;
+    S.rx={ rep:0, reps:REPS, sum:0, state:'idle', armAt:0 };
+    stopTimer();   // reaction measures its own summed reaction time
+    renderReaction(t);
+  }
+  function renderReaction(t){
+    var reps=''; for(var i=0;i<S.rx.reps;i++){ reps+='<div class="rep'+(i<S.rx.rep?' done':'')+'"></div>'; }
+    var cls, big, sm;
+    if(S.rx.state==='idle'){ cls='idle'; big='Ready?'; sm='Tap to start — then tap the instant it turns GREEN.'; }
+    else if(S.rx.state==='wait'){ cls='wait'; big='Wait…'; sm='Not yet — tap early and it counts as a miss.'; }
+    else if(S.rx.state==='go'){ cls='go'; big='TAP!'; sm='Now!'; }
+    else if(S.rx.state==='early'){ cls='wait'; big='Too soon!'; sm='+1 miss — tap to try this rep again.'; }
+    $('mg').innerHTML='<div class="prompt">'+esc(t.prompt)+'</div>'
+      + '<div class="reps">'+reps+'</div>'
+      + '<div class="reactbox '+cls+'" id="rbox"><div class="big">'+big+'</div><div class="sm">'+sm+'</div></div>';
+    $('rbox').onclick=function(){ reactTap(t); };
+  }
+  function reactTap(t){
+    if(S.play.done) return;
+    var s=S.rx.state;
+    if(s==='idle' || s==='early'){ armReaction(t); return; }
+    if(s==='wait'){ S.rx.state='early'; S.play.misses++; showMiss(); if(S.rxTimeout)clearTimeout(S.rxTimeout); renderReaction(t); return; }
+    if(s==='go'){
+      var rt=performance.now()-S.rx.armAt; S.rx.sum+=rt; S.rx.rep++;
+      if(S.rx.rep>=S.rx.reps){
+        S.play.done=true; stopTimer();
+        // raw seconds = a small fixed overhead + summed reaction time
+        var raw = 1.2 + S.rx.sum/1000;
+        resolveRound(raw, S.play.misses, false);
+      } else { S.rx.state='idle'; renderReaction(t); }
+    }
+  }
+  function armReaction(t){
+    S.rx.state='wait'; renderReaction(t);
+    var delay = rnd(900, 2200);
+    S.rxTimeout=setTimeout(function(){
+      if(S.play.done) return;
+      S.rx.state='go'; S.rx.armAt=performance.now(); renderReaction(t);
+    }, delay);
+  }
+
+  /* ---------- minigame: order-by-stat (spatial / logic) ---------- */
+  function mgOrder(t){
+    var target = sortedLabels(t);
+    S.ord={ target:target, placed:[] };
+    renderOrder(t);
+  }
+  function sortedLabels(t){
+    var dir=t.dir, items=t.items.slice();
+    var asc = (dir==='asc'||dir==='south'||dir==='west');   // ascending value = first
+    items.sort(function(a,b){ return asc ? a.value-b.value : b.value-a.value; });
+    return items.map(function(x){ return x.label; });
+  }
+  function dirHint(t){
+    var map={ north:'northernmost → southernmost', south:'southernmost → northernmost',
+      west:'westernmost → easternmost', east:'easternmost → westernmost',
+      asc:'smallest → largest', desc:'largest → smallest' };
+    return map[t.dir] || 'in order';
+  }
+  function renderOrder(t){
+    var rows='';
+    shuffleStable(t.items).forEach(function(it){
+      var pos=S.ord.placed.indexOf(it.label);
+      rows += '<div class="oitem'+(pos>=0?' placed':'')+'" data-l="'+esc(it.label)+'">'
+        + '<span class="num'+(pos>=0?' on':'')+'">'+(pos>=0?(pos+1):'')+'</span>'
+        + '<span>'+esc(it.label)+'</span></div>';
+    });
+    $('mg').innerHTML='<div class="prompt">'+esc(t.q)+'</div>'
+      + '<div class="ohint">Tap in order: <b style="color:var(--globe)">'+dirHint(t)+'</b></div>'
+      + '<div class="orderwrap">'+rows+'</div>';
+    Array.prototype.forEach.call(document.querySelectorAll('.oitem'), function(b){
+      b.onclick=function(){ orderTap(t, b.getAttribute('data-l')); };
+    });
+  }
+  function shuffleStable(items){ if(!S.ord._shuf){ S.ord._shuf=shuffle(items); } return S.ord._shuf; }
+  function orderTap(t,label){
+    if(S.play.done || S.ord.placed.indexOf(label)>=0) return;
+    var nextCorrect = S.ord.target[S.ord.placed.length];
+    if(label===nextCorrect){
+      S.ord.placed.push(label);
+      if(S.ord.placed.length===S.ord.target.length){ S.play.done=true; renderOrder(t); setTimeout(finishTask,220); }
+      else renderOrder(t);
+    } else {
+      S.play.misses++; showMiss();
+      // brief flash on the tapped (wrong) item
+      var el=document.querySelector('.oitem[data-l="'+label.replace(/"/g,'')+'"]');
+      if(el){ el.style.borderColor='var(--bad)'; setTimeout(function(){ if(el) el.style.borderColor=''; },300); }
+    }
+  }
+
+  /* -------------------------------------------------- Skip Pass (field median) */
+  function useSkipPass(){
+    S.skipUsed=true;
+    var ghosts = simulateGhosts();       // pace the field first
+    var med = median(ghosts.map(function(x){ return x.eff; }));
+    resolveRound(med, 0, true, ghosts);  // player checks in at the median
+  }
+
+  /* --------------------------------------------------------- round resolve */
+  // GDD §4/§8: player's effective time is real; the AI ghost field is paced by
+  // per-team skill and this stage's task kind, with fresh per-stage noise. As
+  // weaker ghosts are Grounded, the surviving field is naturally faster — the
+  // difficulty ramps without a hand-tuned curve.
+  function simulateGhosts(){
+    var kind = KIND[(S.chosen&&S.chosen.cat) || 'trivia'] || 'mcq';
+    var base = BASE[kind] || 8;
+    var pen  = PENALTY[(S.chosen&&S.chosen.cat) || 'trivia'];
+    return aliveTeams().filter(function(t){ return t.isGhost; }).map(function(t){
+      var misses = (Math.random() < clampP(t.skill)) ? 1 : 0;
+      if(Math.random() < clampP(t.skill)*0.4) misses++;
+      var eff = base * t.skill * rnd(0.9,1.12) + misses*pen;
+      return { team:t, eff:eff };
+    });
+  }
+  function clampP(skill){ var p=(skill-0.8)*0.45; return Math.max(0, Math.min(0.55, p)); }
+
+  function resolveRound(playerRaw, playerMisses, skipped, preGhosts){
+    if(onlineActive()){ return onlineSubmit(playerRaw, playerMisses); }   // server-authoritative path
+    var pen = PENALTY[(S.chosen&&S.chosen.cat) || 'trivia'];
+    var playerEff = skipped ? playerRaw : (playerRaw + playerMisses*pen);
+    S.lastResult = { raw:playerRaw, misses:playerMisses, eff:playerEff, skipped:!!skipped, pen:pen };
+
+    var ghosts = preGhosts || simulateGhosts();
+    // stamp this round's effective time onto every alive team
+    S.teams.forEach(function(t){ if(t.alive) t.eff = t.isGhost ? null : playerEff; });
+    ghosts.forEach(function(g){ g.team.eff = g.eff; });
+
+    // track fastest personal stage (non-skipped)
+    if(!skipped){ var st=statsDefault(); if(!st.fastestStage || playerRaw<st.fastestStage){ st.fastestStage=playerRaw; saveStats(st); } }
+
+    S.phase='checkpoint';
+    renderStage();
+  }
+
+  /* --- phase: checkpoint (lock the time) --- */
+  function viewCheckpoint(){
+    var r=S.lastResult;
+    var body;
+    if(r.skipped){
+      body = '<p class="lede" style="text-align:center">⏩ <b>Skip Pass used.</b> You checked in at the field\'s median time.</p>';
+    } else {
+      body = '<div class="breakdown"><span>Raw <b>'+fmtTime(r.raw)+'s</b></span>'
+        + '<span>Misses <b>'+r.misses+'</b></span>'
+        + '<span>Penalty <b>+'+(r.misses*r.pen)+'s</b></span></div>';
+    }
+    app.innerHTML = topbar() + hud()
+      + '<div class="card center">'
+        + '<h3 style="font-size:15px;letter-spacing:.1em;color:var(--teal)">✅ Checkpoint</h3>'
+        + '<div class="bigtime" style="margin-top:8px">'+fmtTime(r.eff)+'<span class="u">s</span></div>'
+        + '<div class="muted" style="font-size:12px;margin-top:4px">your effective time</div>'
+        + body
+        + '<button class="btn globe" id="lb" style="margin-top:16px">See the leaderboard ›</button>'
+      + '</div>' + foot();
+    $('lb').onclick=function(){
+      if(onlineActive()) onlineShowLeaderboard(); else { S.phase='leaderboard'; renderStage(); }
+    };
+    renderAcct();
+  }
+
+  /* --- phase: leaderboard + grounding --- */
+  function viewLeaderboard(){
+    var ranked = aliveTeams().slice().sort(function(a,b){ return a.eff-b.eff; });
+    var final = isFinal();
+    // determine who is Grounded this stage (slowest), or the winner on the Final
+    var groundedTeam = ranked[ranked.length-1];
+    var youRank = ranked.findIndex(function(t){ return t.id==='you'; }) + 1;
+
+    var rowsHtml='';
+    ranked.forEach(function(t,i){
+      var out = (!final && t===groundedTeam);
+      var win = (final && i===0);
+      var cls='lbrow'+(t.id==='you'?' you':'')+(out?' out':'')+(win?' win':'');
+      var place = win?'🏆':(i+1);
+      rowsHtml += '<div class="'+cls+'">'
+        + '<span class="p">'+place+'</span>'
+        + '<span class="nm">'+esc(t.name)+(t.isGhost?' <span class="ai">AI</span>':'')+'</span>'
+        + '<span class="tm">'+fmtTime(t.eff)+'s'+(out?' · Grounded':'')+'</span></div>';
+    });
+
+    var banner;
+    if(final){
+      var youWon = ranked[0].id==='you';
+      banner = youWon
+        ? '<div class="banner win"><h2>🏆 You win RunTheGlobe!</h2><p>First across the finish at '+esc(S.dest.landmark||S.dest.name)+'. The whole race is yours.</p></div>'
+        : '<div class="banner grounded"><h2>So close.</h2><p>You finished #'+youRank+' in the Final at '+esc(S.dest.name)+'. '+esc(ranked[0].name)+' took the race.</p></div>';
+    } else if(groundedTeam.id==='you'){
+      banner = '<div class="banner grounded"><h2>✈️ You\'ve been Grounded</h2><p>Slowest at '+esc(S.dest.name)+' this Stage. Your race ends here.</p></div>';
+    } else {
+      banner = '<div class="banner safe"><h2>You advance ›</h2><p>#'+youRank+' of '+ranked.length+' at '+esc(S.dest.name)+'. '+esc(groundedTeam.name)+' is Grounded.</p></div>';
+    }
+
+    app.innerHTML = topbar() + hud()
+      + '<div class="card">'
+        + banner
+        + '<div class="lb">'+rowsHtml+'</div>'
+        + '<div id="lbbtns"></div>'
+      + '</div>' + foot();
+
+    var btns=$('lbbtns');
+    if(final){
+      recordRaceEnd(ranked);
+      btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn globe" id="again">Race again 🌍</button></div>';
+      $('home').onclick=function(){ S.screen='home'; render(); };
+      $('again').onclick=function(){ S.screen='setup'; render(); };
+    } else if(groundedTeam.id==='you'){
+      // GDD §10: binary Grounded choice — watch live, or return home. No reward for watching.
+      btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Return home</button><button class="btn globe" id="watch">Watch the rest ▶</button></div>';
+      $('home').onclick=function(){ recordRaceEnd(ranked); S.screen='home'; render(); };
+      $('watch').onclick=function(){ recordRaceEnd(ranked); S.phase='grounded'; S.spectating=true; groundAndAdvance(groundedTeam); render(); };
+    } else {
+      btns.innerHTML='<button class="btn globe" id="next" style="margin-top:14px">Next Stage ›</button>';
+      $('next').onclick=function(){ groundAndAdvance(groundedTeam); S.round++; drawStage(); };
+    }
+    renderAcct();
+  }
+
+  function groundAndAdvance(team){ team.alive=false; team.grounded=true; }
+
+  /* --- phase: spectate (player Grounded, watching the field finish) --- */
+  function viewGrounded(){
+    // auto-simulate the remaining stages among the ghost field, quick summary.
+    while(S.round < ROUNDS && aliveTeams().length > 3){
+      S.round++;
+      simSpectatorStage();
+    }
+    // Final among the last 3
+    S.round = ROUNDS;
+    var last3 = aliveTeams().slice();
+    // pace a final and rank
+    var kind='mcq', base=BASE.mcq;
+    var res = last3.map(function(t){ return { team:t, eff: base*t.skill*rnd(0.9,1.12) }; });
+    res.sort(function(a,b){ return a.eff-b.eff; });
+
+    var rows='';
+    res.forEach(function(x,i){
+      rows+='<div class="lbrow'+(i===0?' win':'')+'"><span class="p">'+(i===0?'🏆':(i+1))+'</span>'
+        + '<span class="nm">'+esc(x.team.name)+' <span class="ai">AI</span></span>'
+        + '<span class="tm">'+fmtTime(x.eff)+'s</span></div>';
+    });
+    app.innerHTML = topbar()
+      + '<div class="card">'
+        + '<div class="banner"><h2 style="color:var(--globe)">🏁 The Final · '+esc(S.finishLine.city)+'</h2>'
+        + '<p>You were Grounded, but here\'s how the race finished at '+esc(S.finishLine.landmark)+'.</p></div>'
+        + '<div class="lb">'+rows+'</div>'
+        + '<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn globe" id="again">Race again 🌍</button></div>'
+      + '</div>' + foot();
+    $('home').onclick=function(){ S.screen='home'; render(); };
+    $('again').onclick=function(){ S.screen='setup'; render(); };
+    renderAcct();
+  }
+  function simSpectatorStage(){
+    var ghosts=aliveTeams().filter(function(t){return t.isGhost;});
+    var base=BASE.mcq;
+    var res=ghosts.map(function(t){ return {team:t, eff: base*t.skill*rnd(0.9,1.12)}; });
+    res.sort(function(a,b){ return a.eff-b.eff; });
+    var slow=res[res.length-1]; if(slow) slow.team.alive=false;
+  }
+
+  /* --------------------------------------------------------- record a race */
+  function recordRaceEnd(ranked){
+    if(S._recorded) return; S._recorded=true;
+    var st=statsDefault();
+    st.races++;
+    var youRank = ranked.findIndex(function(t){ return t.id==='you'; }) + 1;
+    // If the player was Grounded mid-race, their finishing place = teams that
+    // outlasted them + 1 is already reflected by leaving them out of `ranked`;
+    // use the count still alive + this ranking to approximate placement.
+    var place;
+    if(isFinal()){ place = youRank; }
+    else { place = aliveTeams().length; }   // player was slowest of those still in
+    if(!st.bestPlace || place<st.bestPlace) st.bestPlace=place;
+    if(isFinal() && ranked[0].id==='you'){ st.wins++; }
+    if(isFinal() && youRank<=3){ st.top3++; }
+    saveStats(st);
+  }
+  // reset the per-race guard whenever a new race starts
+  var _startRace = startRace;
+  startRace = function(){ S._recorded=false; _startRace(); };
+
+  /* ======================================================================
+     ONLINE MULTIPLAYER (Beta) — GDD §3/§7-9
+     A race is a lobby of up to 11 teams reached by a short code. Each signed-in
+     human is a team; empty slots fill with AI ghosts at start. Per round the
+     HOST draws one shared destination; every client plays its own task; the
+     Checkpoint time is computed SERVER-SIDE (globe_checkpoint) so timing is
+     authoritative (§9). Live lobby + leaderboard come over Supabase realtime.
+     Requires supabase/41_globe_online.sql applied to the backend.
+     ====================================================================== */
+  function onlineActive(){ return !!(S.online && S.online.active); }
+  function finishById(id){ for(var i=0;i<FINISH.length;i++){ if(FINISH[i].id===id) return FINISH[i]; } return null; }
+  function toast(msg){
+    var t=document.createElement('div'); t.textContent=msg;
+    t.style.cssText='position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99;'
+      +'background:#122a44;border:1px solid var(--cardb);color:var(--ink);font-weight:700;font-size:13px;'
+      +'padding:11px 16px;border-radius:12px;box-shadow:0 10px 30px -10px rgba(0,0,0,.7);max-width:90%;text-align:center;';
+    document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3200);
+  }
+  function rpc(fn, args){ return sb.rpc(fn, args); }
+
+  /* ---- online menu: sign-in gate, then create / join ---- */
+  function renderOnlineMenu(){
+    var back='<button class="btn ghost sm" id="oback" style="flex:0 0 auto;margin-top:14px">‹ Home</button>';
+    if(!sbReady()){
+      app.innerHTML = topbar() + '<div class="card center"><h2>Online is offline</h2>'
+        + '<p class="lede">Couldn\'t reach the account service. Check your connection and reload.</p>'+back+'</div>' + foot();
+      $('oback').onclick=function(){ S.screen='home'; render(); }; return;
+    }
+    if(!acct.user){
+      app.innerHTML = topbar() + '<div class="card center">'
+        + '<div style="font-size:44px">🔐</div><h2 style="margin-top:6px">Sign in to race online</h2>'
+        + '<p class="lede">Online races use your free RunThe.GG account so your team is yours. '
+        + 'Sign in on the home site, then come back here.</p>'
+        + '<a class="btn globe" href="/" style="margin-top:14px">Go to RunThe.GG to sign in</a>'+back+'</div>' + foot();
+      $('oback').onclick=function(){ S.screen='home'; render(); }; renderAcct(); return;
+    }
+    app.innerHTML = topbar()
+      + '<div class="card"><h2 style="font-size:22px">Online Race <span style="font-size:12px;color:var(--globe)">Beta</span></h2>'
+        + '<p class="lede">Start a race and share the code, or join a friend\'s. Up to 11 teams; empty slots fill with AI.</p>'
+        + '<div style="margin-top:14px"><label class="fld" for="otn">Your team name</label>'
+        + '<input type="text" id="otn" maxlength="18" placeholder="'+esc(acct.username||'Your Team')+'" value="'+esc(S.teamName||acct.username||'')+'" /></div>'
+        + '<button class="btn globe" id="ocreate" style="margin-top:12px">Create a race</button>'
+        + '<div class="or" style="display:flex;align-items:center;gap:10px;color:var(--mut);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin:16px 0 6px"><span style="height:1px;flex:1;background:var(--line)"></span>OR<span style="height:1px;flex:1;background:var(--line)"></span></div>'
+        + '<label class="fld" for="ojoin">Join with a code</label>'
+        + '<input type="text" id="ojoin" maxlength="5" placeholder="ABC12" style="text-transform:uppercase" />'
+        + '<button class="btn ghost" id="ojoinbtn" style="margin-top:12px">Join race</button>'
+      + '</div>'
+      + '<button class="btn ghost sm" id="oback" style="width:auto">‹ Home</button>' + foot();
+    $('oback').onclick=function(){ S.screen='home'; render(); };
+    function myName(){ return ($('otn').value||'').trim().slice(0,18) || acct.username || 'Your Team'; }
+    $('ocreate').onclick=function(){
+      S.teamName=myName(); var b=$('ocreate'); b.disabled=true; b.textContent='Creating…';
+      rpc('create_globe_lobby',{p_team_name:S.teamName, p_flag:'🧭', p_mode:'team'}).then(function(r){
+        if(r.error){ toast(r.error.message||'Could not create race'); b.disabled=false; b.textContent='Create a race'; return; }
+        enterLobby(r.data.lobby_id, r.data.code, null, true);
+      });
+    };
+    $('ojoinbtn').onclick=function(){
+      var code=($('ojoin').value||'').trim().toUpperCase();
+      if(code.length<4){ toast('Enter the 5-letter race code'); return; }
+      S.teamName=myName(); var b=$('ojoinbtn'); b.disabled=true; b.textContent='Joining…';
+      rpc('join_globe_lobby',{p_code:code, p_team_name:S.teamName, p_flag:'🧭'}).then(function(r){
+        if(r.error){ toast(r.error.message||'Could not join'); b.disabled=false; b.textContent='Join race'; return; }
+        enterLobby(r.data.lobby_id, code, r.data.team_id, false);
+      });
+    };
+    renderAcct();
+  }
+
+  /* ---- lobby + realtime ---- */
+  function enterLobby(lobbyId, code, teamId, isHost){
+    S.online = { active:true, lobbyId:lobbyId, code:code, teamId:teamId, isHost:isHost,
+                 lobby:null, used:{}, lastRound:0, view:'lobby', channel:null, recorded:false };
+    S.screen='lobby';
+    app.innerHTML = topbar() + '<div class="card center"><h2>Loading lobby…</h2></div>' + foot();
+    refreshLobby(); subscribeLobby();
+  }
+  function subscribeLobby(){
+    if(!sb || S.online.channel) return;
+    var id=S.online.lobbyId;
+    try{
+      var ch=sb.channel('rtg_'+id);
+      ['globe_lobbies','globe_teams','globe_stage'].forEach(function(tbl){
+        var filter = (tbl==='globe_lobbies'?'id=eq.':'lobby_id=eq.')+id;
+        ch.on('postgres_changes',{event:'*',schema:'public',table:tbl,filter:filter}, function(){ refreshLobby(); });
+      });
+      ch.subscribe(); S.online.channel=ch;
+    }catch(e){ /* realtime optional; polling fallback below */ }
+    // lightweight polling fallback in case realtime isn't enabled
+    S.online.poll = setInterval(function(){ if(onlineActive()) refreshLobby(); else clearInterval(S.online.poll); }, 3500);
+  }
+  function leaveOnline(){
+    if(!S.online) return;
+    try{ if(S.online.channel) sb.removeChannel(S.online.channel); }catch(e){}
+    if(S.online.poll) clearInterval(S.online.poll);
+    S.online=null;
+  }
+  function refreshLobby(){
+    if(!onlineActive()) return;
+    rpc('get_globe_lobby',{p_lobby:S.online.lobbyId}).then(function(r){
+      if(!onlineActive()||r.error||!r.data) return;
+      S.online.lobby=r.data; resolveMyTeam(); onLobbyUpdate();
+    });
+  }
+  function resolveMyTeam(){
+    var L=S.online.lobby; if(!L) return;
+    if(acct.user) S.online.isHost = (L.host===acct.user.id);
+    if(!S.online.teamId && acct.user){
+      (L.teams||[]).forEach(function(t){ if(t.captain===acct.user.id||t.partner===acct.user.id) S.online.teamId=t.id; });
+    }
+  }
+  // map the lobby's teams into the S.teams shape hud()/viewDraw expect
+  function syncTeamsFromLobby(){
+    var L=S.online.lobby;
+    S.teams=(L.teams||[]).map(function(t){
+      return { id:t.id, name:t.name, flag:t.flag, isGhost:t.is_ghost, startedAsGhost:t.started_as_ghost,
+               alive:t.alive, eff:null, isYou:(t.id===S.online.teamId) };
+    });
+    S.round=L.round;
+  }
+  function onLobbyUpdate(){
+    var L=S.online.lobby; if(!L) return;
+    if(L.status==='open'){ if(S.online.view==='lobby') renderLobby(); return; }
+    if(L.status==='done'){ onlineFinish(); return; }
+    // racing
+    if(L.round !== S.online.lastRound){       // new stage drawn (start or advance)
+      S.online.lastRound=L.round; onlineDrawStage(); return;
+    }
+    if(S.online.view==='leaderboard') renderOnlineLeaderboard();   // live standings refresh
+  }
+
+  function renderLobby(){
+    var L=S.online.lobby; if(!L){ return; }
+    var teams=(L.teams||[]);
+    var rows=teams.map(function(t){
+      var you=(t.id===S.online.teamId);
+      return '<div class="lbrow'+(you?' you':'')+'"><span class="p">'+t.flag+'</span>'
+        +'<span class="nm">'+esc(t.name)+(t.is_ghost?' <span class="ai">AI</span>':'')+(you?' <span style="color:var(--globe);font-size:11px">you</span>':'')+'</span>'
+        +'<span class="tm" style="color:var(--mut);font-size:12px">'+(t.captain===L.host?'host':'ready')+'</span></div>';
+    }).join('');
+    var ctrl;
+    if(S.online.isHost){
+      ctrl='<button class="btn globe" id="ostart" style="margin-top:14px">Start the race 🌍 ('+teams.length+' human'+(teams.length===1?'':'s')+')</button>'
+        +'<p class="muted" style="font-size:12px;text-align:center;margin-top:8px">Empty slots (up to 11) fill with AI when you start.</p>';
+    } else {
+      ctrl='<p class="muted" style="text-align:center;margin-top:14px">⏳ Waiting for the host to start…</p>';
+    }
+    app.innerHTML = topbar()
+      + '<div class="card center"><div class="muted" style="font-size:12px;letter-spacing:.1em;text-transform:uppercase">Share this race code</div>'
+        + '<div style="font-family:\'Anton\',sans-serif;font-size:46px;letter-spacing:.14em;color:var(--globe);margin:4px 0 2px">'+esc(L.code)+'</div>'
+      + '</div>'
+      + '<div class="card"><h3 style="font-size:15px;margin-bottom:10px">Teams in the lobby</h3><div class="lb">'+rows+'</div>'+ctrl+'</div>'
+      + '<button class="btn ghost sm" id="oleave" style="width:auto">‹ Leave</button>' + foot();
+    if($('ostart')) $('ostart').onclick=onlineStart;
+    $('oleave').onclick=function(){ leaveOnline(); S.screen='home'; render(); };
+    renderAcct();
+  }
+
+  function onlineStart(){
+    var b=$('ostart'); if(b){ b.disabled=true; b.textContent='Starting…'; }
+    var c=pick(COUNTRIES).id; S.online.used={}; S.online.used[c]=1;
+    var fl=pick(FINISH).id;
+    rpc('start_globe_race',{p_lobby:S.online.lobbyId, p_country_id:c, p_finish_line_id:fl}).then(function(r){
+      if(r.error){ toast(r.error.message||'Could not start'); if(b){b.disabled=false;b.textContent='Start the race 🌍';} return; }
+      S.online.lobby=r.data; resolveMyTeam(); onLobbyUpdate();
+    });
+  }
+
+  /* ---- online race loop (reuses the offline minigame renderers) ---- */
+  function onlineDrawStage(){
+    var L=S.online.lobby; syncTeamsFromLobby();
+    if(L.round>=9){
+      var fl=finishById(L.finish_line_id)||pick(FINISH);
+      S.finishLine=fl;
+      S.dest={ name:fl.city, region:fl.region, flag:fl.flag, final:true, landmark:fl.landmark,
+               country: fl.country?countryById(fl.country):null };
+    } else {
+      var c=countryById(L.country_id)||pick(COUNTRIES);
+      S.dest={ name:c.name, region:c.region, flag:c.flag, final:false, country:c };
+      var st=statsDefault(); st.countries[c.id]=1; saveStats(st);
+    }
+    buildChallenge();
+    S.phase='draw'; S.online.view='draw'; renderStage();
+  }
+  function onlineBeginPlay(){
+    S.online.view='play';
+    rpc('globe_stage_start',{p_lobby:S.online.lobbyId, p_round:S.round, p_category:S.chosen.cat}).then(function(r){
+      if(r.error){ toast(r.error.message||'Could not start stage'); return; }
+      S.phase='play'; renderStage();   // viewPlay runs the minigame; server has stamped the start
+    });
+  }
+  function onlineSubmit(raw, misses){
+    S.online.view='checkpoint';
+    var cat=S.chosen.cat;
+    rpc('globe_checkpoint',{p_lobby:S.online.lobbyId, p_round:S.round, p_misses:misses, p_category:cat}).then(function(r){
+      if(r.error){ toast(r.error.message||'Checkpoint failed'); return; }
+      var d=r.data||{};
+      var effMs = d.effective_ms!=null ? d.effective_ms : (raw*1000 + misses*PENALTY[cat]*1000);
+      var rawMs = d.raw_ms!=null ? d.raw_ms : raw*1000;
+      S.lastResult={ raw:rawMs/1000, misses:(d.misses!=null?d.misses:misses), eff:effMs/1000, pen:PENALTY[cat], skipped:false };
+      S.phase='checkpoint'; renderStage();
+    });
+  }
+  function onlineShowLeaderboard(){ S.online.view='leaderboard'; refreshLobby(); renderOnlineLeaderboard(); }
+
+  function renderOnlineLeaderboard(){
+    var L=S.online.lobby; if(!L) return;
+    var stageById={}; (L.stage||[]).forEach(function(s){ stageById[s.team_id]=s; });
+    var alive=(L.teams||[]).filter(function(t){ return t.alive; });
+    var submitted=alive.filter(function(t){ var s=stageById[t.id]; return s&&s.submitted; });
+    // rank submitted teams by effective time; unsubmitted shown as still racing
+    var ranked=submitted.slice().sort(function(a,b){ return stageById[a.id].effective_ms-stageById[b.id].effective_ms; });
+    var racing=alive.filter(function(t){ var s=stageById[t.id]; return !(s&&s.submitted); });
+    var final=(L.round>=9);
+    var rowsHtml=ranked.map(function(t,i){
+      var eff=stageById[t.id].effective_ms/1000;
+      var win=(final&&i===0), you=(t.id===S.online.teamId);
+      var last=(!final && i===ranked.length-1 && racing.length===0);   // provisional slowest
+      return '<div class="lbrow'+(you?' you':'')+(win?' win':'')+(last?' out':'')+'">'
+        +'<span class="p">'+(win?'🏆':(i+1))+'</span>'
+        +'<span class="nm">'+esc(t.name)+(t.is_ghost?' <span class="ai">AI</span>':'')+'</span>'
+        +'<span class="tm">'+fmtTime(eff)+'s'+(last?' · slowest':'')+'</span></div>';
+    }).join('');
+    var racingHtml=racing.map(function(t){
+      return '<div class="lbrow"><span class="p">•</span><span class="nm">'+esc(t.name)+(t.is_ghost?' <span class="ai">AI</span>':'')+'</span>'
+        +'<span class="tm" style="color:var(--mut)">racing…</span></div>';
+    }).join('');
+
+    var allIn=(racing.length===0);
+    var ctrl;
+    if(final && allIn){
+      ctrl='<button class="btn globe" id="ofin" style="margin-top:14px">See the result 🏁</button>';
+    } else if(S.online.isHost){
+      ctrl = allIn
+        ? '<button class="btn globe" id="oadv" style="margin-top:14px">'+(L.round>=8?'To the Final ›':'Next Stage ›')+'</button>'
+        : '<p class="muted" style="text-align:center;margin-top:12px">Waiting for '+racing.length+' team'+(racing.length===1?'':'s')+' to check in…</p>';
+    } else {
+      ctrl = allIn
+        ? '<p class="muted" style="text-align:center;margin-top:12px">⏳ Waiting for the host to advance…</p>'
+        : '<p class="muted" style="text-align:center;margin-top:12px">'+submitted.length+'/'+alive.length+' teams checked in…</p>';
+    }
+    app.innerHTML = topbar() + hud()
+      + '<div class="card"><h3 style="font-size:15px;margin-bottom:10px">'+esc(S.dest?S.dest.name:'Checkpoint')+' — Stage '+L.round+'</h3>'
+        + '<div class="lb">'+rowsHtml+racingHtml+'</div>'+ctrl+'</div>' + foot();
+    if($('oadv')) $('oadv').onclick=onlineAdvance;
+    if($('ofin')) $('ofin').onclick=function(){ onlineFinish(); };
+    renderAcct();
+  }
+  function onlineAdvance(){
+    var b=$('oadv'); if(b){ b.disabled=true; b.textContent='…'; }
+    var next='';
+    if(S.online.lobby.round < 8){   // drawing a normal country for the next stage
+      var pool=COUNTRIES.filter(function(c){ return !S.online.used[c.id]; });
+      if(!pool.length){ S.online.used={}; pool=COUNTRIES.slice(); }
+      var c=pick(pool); S.online.used[c.id]=1; next=c.id;
+    } // round 8 → advancing into the Final (round 9) uses the finish line, no country needed
+    rpc('advance_globe_round',{p_lobby:S.online.lobbyId, p_next_country_id:next}).then(function(r){
+      if(r.error){ toast(r.error.message||'Could not advance'); if(b){b.disabled=false;b.textContent='Next Stage ›';} return; }
+      S.online.lobby=r.data; resolveMyTeam(); onLobbyUpdate();
+    });
+  }
+  function onlineFinish(){
+    S.online.view='done';
+    var L=S.online.lobby; var stageById={}; (L.stage||[]).forEach(function(s){ stageById[s.team_id]=s; });
+    var finalists=(L.teams||[]).filter(function(t){ return t.alive; });
+    var ranked=finalists.slice().sort(function(a,b){
+      var ea=(stageById[a.id]||{}).effective_ms||9e9, eb=(stageById[b.id]||{}).effective_ms||9e9; return ea-eb;
+    });
+    var youRank=ranked.findIndex(function(t){ return t.id===S.online.teamId; })+1;
+    var youWon=ranked.length&&ranked[0].id===S.online.teamId;
+    // record locally (same tallies as offline)
+    if(!S.online.recorded){ S.online.recorded=true; var st=statsDefault(); st.races++;
+      if(youRank){ if(!st.bestPlace||youRank<st.bestPlace) st.bestPlace=youRank; if(youWon) st.wins++; if(youRank<=3) st.top3++; } saveStats(st); }
+    var rows=ranked.map(function(t,i){
+      var eff=((stageById[t.id]||{}).effective_ms||0)/1000, you=(t.id===S.online.teamId);
+      return '<div class="lbrow'+(you?' you':'')+(i===0?' win':'')+'"><span class="p">'+(i===0?'🏆':(i+1))+'</span>'
+        +'<span class="nm">'+esc(t.name)+(t.is_ghost?' <span class="ai">AI</span>':'')+'</span>'
+        +'<span class="tm">'+fmtTime(eff)+'s</span></div>';
+    }).join('');
+    var banner = youWon
+      ? '<div class="banner win"><h2>🏆 You win RunTheGlobe!</h2><p>First across the finish at '+esc((S.finishLine&&S.finishLine.landmark)||'the finish line')+'.</p></div>'
+      : '<div class="banner"><h2 style="color:var(--globe)">🏁 Race complete</h2><p>You finished #'+(youRank||'-')+'. '+esc(ranked.length?ranked[0].name:'')+' took the race.</p></div>';
+    app.innerHTML = topbar() + '<div class="card">'+banner+'<div class="lb">'+rows+'</div>'
+      + '<div class="btnrow"><button class="btn ghost" id="ohome">Home</button><button class="btn globe" id="onew">New race</button></div></div>' + foot();
+    $('ohome').onclick=function(){ leaveOnline(); S.screen='home'; render(); };
+    $('onew').onclick=function(){ leaveOnline(); S.screen='online'; render(); };
+    renderAcct();
+  }
+
+  /* --------------------------------------------------------------- bootstrap */
+  S.screen='home';
+  if(!COUNTRIES.length){
+    app.innerHTML = '<div class="wrap"><div class="card center"><h2>Content failed to load</h2>'
+      + '<p class="lede">The country task bank didn\'t load. Refresh to try again.</p></div></div>';
+  } else {
+    render();
+    initAccount();
+  }
+})();
+</script>
+</body>
+</html>
