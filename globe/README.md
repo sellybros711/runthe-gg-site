@@ -36,10 +36,19 @@ end to end:
   leaderboard → **Grounded**, across 9 Stages, 11-team field, one elimination per Stage.
 - **Effective time scoring** (GDD §4): `raw + penalty × misses`, category penalties applied.
 - **Split Path** (choose 1 of 2, brain+reflex pairing preference) and **Solo Call**
-  (one assigned task) — GDD §5.
-- Five wired minigame kinds driving the 6 content categories:
-  `trivia`/`math` → multiple-choice, `word` → unscramble, `memory` → sequence-repeat,
-  `reflex` → reaction-window, `spatial` → order-by-stat.
+  (one assigned task) — GDD §5. Selection actively diversifies game types across
+  stages and never offers two of the same type at once.
+- **14 game types** across the taxonomy (GDD §5). Some are authored per country,
+  but most are GENERATED from country/world data (flags, capitals, regions, stats,
+  coordinates) so variety scales without hand-authoring every type:
+  - *Trivia* (multiple choice) · *Guess The Flag* · *Name The Capital* ·
+    *Odd One Out* (by region) · *True or False* (rapid-fire)
+  - *Word Scramble* · *Rank The Order* (order-by-stat) · *Higher or Lower* (compare a stat)
+  - *Memory Sequence* (repeat) · *Memory Match* (concentration)
+  - *Reaction* (green-light) · *Whack-A-Landmark* · *Quick Tap*
+  - *Find It On The Map* — pin-drop on a world map, scored by real great-circle
+    distance from the country's coordinates (`ll` in `countries.js`).
+  All 14 verified in-browser end to end (offline and, via the shared renderers, online).
 - **AI ghost field** (GDD §8): lobby-fill ghosts, per-team skill, per-stage noise,
   labeled `(AI)`. As weak ghosts are Grounded the field naturally speeds up (emergent
   difficulty ramp). Ghosts are labeled per the §8 rule.
@@ -82,9 +91,28 @@ mechanics; anti-cheat **detection** logic beyond the timing guard (GDD §9).
 ## Deferred (scaffolded or noted, not built)
 
 - **Local co-op** (pass-and-play) — shown as a "Soon" card.
-- **Duo-specific tasks** (GDD §6), **audio** and **drag-drop/tile** task kinds — no assets
-  in the bank yet; engine adds them by mapping a new `KIND`.
-- **Landmark Walkthrough** 360° task (GDD §13) — explicitly v2.
+- **Audio** (identify a place from a sound clip) and **duo-specific** tasks (GDD §6) —
+  need audio assets / two live inputs; engine adds them by mapping a new `KIND`.
+
+### Virtual / street-level games (the immersive next step — needs external imagery)
+
+The user wants "walk the streets of a city" style games (GDD §13 Landmark Walkthrough).
+`Find It On The Map` already delivers real interactive geography self-contained, but
+true street/panorama imagery needs an external source and a licensing decision — it
+can't be shipped self-contained. Options, in order of licensing cleanliness:
+
+1. **Mapillary** (open, crowd-sourced street imagery; MIT `mapillary-js` viewer).
+   Needs a free client token. Most permissive for gamifying. Recommended.
+2. **Self-hosted 360° panoramas** + Pannellum/Three.js viewer. Full ownership, no API
+   key, but each panorama must be sourced/licensed (CC0 libraries exist) and hosted.
+3. **Google Street View Embed** — best coverage, but ToS restricts gamifying the tiles
+   and requires a Maps API key + attribution (GDD §13 flags this). Use with caution.
+
+Game designs this unlocks: **"Where am I?"** (drop into a mystery pano → pin the guess on
+the existing map, GeoGuessr-style), **"Find the landmark"** (look around a 360° view for a
+target), and the GDD §13 look-around. The engine's kind/renderer pattern + the map
+minigame's distance scoring are already in place to plug this in — the blocker is an API
+key/imagery source, which is a product/licensing call.
 
 ## Open decisions to confirm with design
 
