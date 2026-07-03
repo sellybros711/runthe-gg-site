@@ -1,0 +1,31 @@
+{
+  "name": "Run The Globe",
+  "short_name": "Run The Globe",
+  "description": "A globe-trotting drafting and trivia race. Draw a country each Stage, beat the clock, check in, and don't finish last — or you're Grounded.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a1626",
+  "theme_color": "#06182e",
+  "icons": [
+    {
+      "src": "/assets/runthegames-icon_192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/runthegames-icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/runthegames-icon_512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
