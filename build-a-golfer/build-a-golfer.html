@@ -7073,11 +7073,15 @@ function scrDailyRound(){
   }
   add($(`<div style="height:10px"></div>`));
   if(revealing){
-    // ball in flight on the latest hole, let the shots land one-by-one before any controls appear
+    // Ball in flight on the latest hole. Controls stay available the WHOLE time now (not only in the
+    // brief gap between holes), so you can Pause or jump to the end mid-reveal. Player feedback: during
+    // auto-sim it was very hard to catch the pause/skip window that used to only appear after each hole.
     add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">⛳ Shot ${revealN}…</div>`));
-    const sk=$(`<button class="btn ghost" style="max-width:520px;margin:12px auto 0;font-size:13px">⏭ Skip to this hole's result</button>`);
+    const sk=$(`<button class="btn ghost" style="max-width:520px;margin:12px auto 0;font-size:13px">⏭ Skip this hole's replay</button>`);
     sk.onclick=()=>{ clearDailyTimer(); S.dailyRevealN=lastShotsLen; render(); scheduleDailyAdvance(); };
     add(sk);
+    if(S.dailyAuto){ const pause=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">⏸ Pause</button>`); pause.onclick=dailyPause; add(pause); }
+    const af=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">⏭ Skip to the end</button>`); af.onclick=autoFinishDaily; add(af);
   } else if(!done){
     const h=c.holes[i], sig=c.sig.find(s=>s[0]===i+1);
     add($(`<div class="scout" style="max-width:560px;margin:0 auto;text-align:center"><div style="font-weight:800;font-size:16px">Hole ${i+1} · Par ${h[0]} · ${h[1]}y</div>${h[2]?`<div class="small muted">${esc(h[2])}</div>`:''}${sig?`<div class="small" style="color:var(--gold);margin-top:4px">⛳ Signature: ${esc(sig[1])}</div>`:''}</div>`));
@@ -7104,7 +7108,7 @@ function scrDailyRound(){
     }
     // mulligan (streak reward) only when the round is paused / at a decision, never mid-flow
     if(S.dailyMullAvail&&!S.dailyMullUsed&&played.length&&(!S.dailyAuto||sig)){ const m=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">↺ Mulligan hole ${played[played.length-1].n}<span class="sub">Re-roll your last hole, one per round (streak reward)</span></button>`); m.onclick=dailyMulligan; add(m); }
-    const af=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Skip to result ⏭</button>`); af.onclick=autoFinishDaily; add(af);
+    const af=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">⏭ Skip to the end</button>`); af.onclick=autoFinishDaily; add(af);
   } else if(S.dailyAuto){ add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Heading to the clubhouse…</div>`));
   } else { const fin=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">See your round ▸</button>`); fin.onclick=finishDailyRound; add(fin); }
 }
