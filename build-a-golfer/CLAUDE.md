@@ -3580,6 +3580,7 @@ allows Google Fonts, or self-host Anton.*
   **18 holes** instead of 9 (`openH2H` holes default → 18). (2) The gold "Step to the Tee Box" button
   subtext reads **"Build your golfer, start your career"** (was "…start their career"). Verified in
   Playwright (subtext + 18-holes highlighted by default, zero errors).
+- **CS126 — realistic bot usernames.** Swapped the golf-pun bot handles (SandSaveSam, shankopotamus, putt_pirate…) for human-looking ones (first names / initials / nicknames / casual numbers: mike_42, jmarshall, sullyy, colby7…) so a backfilled opponent doesn't read as a bot. Updated both H2H_BOT_NAMES (game) and the seed (below); the seed now also purges the old-pun personas first so the board is consistent whether or not the earlier seed was run.
 - **Leaderboard seed:** `supabase/44_h2h_seed_board.sql` — one-time seed of ~185 believable bot records
   across the 4 online modes so the boards look populated day one (same name pool as the live bots, realistic
   spread, `ON CONFLICT DO NOTHING`, idempotent). Owner-run in the Supabase SQL editor.
