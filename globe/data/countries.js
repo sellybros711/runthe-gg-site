@@ -29,7 +29,7 @@
   window.GLOBE_COUNTRIES = [
     /* ---------------------------------------------------------------- Japan */
     {
-      id: "JP", name: "Japan", region: "Asia", flag: "🇯🇵", capital: "Tokyo",
+      id: "JP", name: "Japan", region: "Asia", flag: "🇯🇵", capital: "Tokyo", ll: [35.7, 139.7],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Japan?", options: ["Osaka", "Kyoto", "Tokyo", "Sapporo"], a: 2 },
@@ -53,7 +53,7 @@
     },
     /* -------------------------------------------------------------- Brazil */
     {
-      id: "BR", name: "Brazil", region: "South America", flag: "🇧🇷", capital: "Brasília",
+      id: "BR", name: "Brazil", region: "South America", flag: "🇧🇷", capital: "Brasília", ll: [-15.8, -47.9],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "Which river runs through Brazil?", options: ["Nile", "Amazon", "Danube", "Mekong"], a: 1 },
@@ -77,11 +77,11 @@
     },
     /* ---------------------------------------------------------------- Italy */
     {
-      id: "IT", name: "Italy", region: "Europe", flag: "🇮🇹", capital: "Rome",
+      id: "IT", name: "Italy", region: "Europe", flag: "🇮🇹", capital: "Rome", ll: [41.9, 12.5],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "The Colosseum stands in which city?", options: ["Milan", "Venice", "Rome", "Turin"], a: 2 },
-          { cat: "trivia", type: "brain", q: "Which of these is a famous Italian volcano?", options: ["Vesuvius", "Krakatoa", "Fuji", "Etna's rival"], a: 0 },
+          { cat: "trivia", type: "brain", q: "Which of these is a famous Italian volcano?", options: ["Vesuvius", "Krakatoa", "Fuji", "Kilauea"], a: 0 },
           { cat: "trivia", type: "brain", q: "Venice is famous for its…", options: ["Deserts", "Canals", "Ski jumps", "Geysers"], a: 1 },
         ],
         word: [
@@ -101,7 +101,7 @@
     },
     /* --------------------------------------------------------------- Egypt */
     {
-      id: "EG", name: "Egypt", region: "Africa", flag: "🇪🇬", capital: "Cairo",
+      id: "EG", name: "Egypt", region: "Africa", flag: "🇪🇬", capital: "Cairo", ll: [30.0, 31.2],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "The Great Pyramids sit near which city?", options: ["Luxor", "Giza", "Alexandria", "Aswan"], a: 1 },
@@ -125,7 +125,7 @@
     },
     /* --------------------------------------------------------------- France */
     {
-      id: "FR", name: "France", region: "Europe", flag: "🇫🇷", capital: "Paris",
+      id: "FR", name: "France", region: "Europe", flag: "🇫🇷", capital: "Paris", ll: [48.9, 2.4],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "The Eiffel Tower is in which city?", options: ["Lyon", "Nice", "Paris", "Bordeaux"], a: 2 },
@@ -149,7 +149,7 @@
     },
     /* ------------------------------------------------------------- Australia */
     {
-      id: "AU", name: "Australia", region: "Oceania", flag: "🇦🇺", capital: "Canberra",
+      id: "AU", name: "Australia", region: "Oceania", flag: "🇦🇺", capital: "Canberra", ll: [-35.3, 149.1],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Australia?", options: ["Sydney", "Melbourne", "Canberra", "Perth"], a: 2 },
@@ -173,7 +173,7 @@
     },
     /* --------------------------------------------------------------- Mexico */
     {
-      id: "MX", name: "Mexico", region: "North America", flag: "🇲🇽", capital: "Mexico City",
+      id: "MX", name: "Mexico", region: "North America", flag: "🇲🇽", capital: "Mexico City", ll: [19.4, -99.1],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Mexico?", options: ["Cancún", "Mexico City", "Guadalajara", "Tijuana"], a: 1 },
@@ -197,7 +197,7 @@
     },
     /* ----------------------------------------------------------------- India */
     {
-      id: "IN", name: "India", region: "Asia", flag: "🇮🇳", capital: "New Delhi",
+      id: "IN", name: "India", region: "Asia", flag: "🇮🇳", capital: "New Delhi", ll: [28.6, 77.2],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "The Taj Mahal is located in which city?", options: ["Mumbai", "Agra", "Jaipur", "Chennai"], a: 1 },
@@ -221,7 +221,7 @@
     },
     /* ----------------------------------------------------------------- Kenya */
     {
-      id: "KE", name: "Kenya", region: "Africa", flag: "🇰🇪", capital: "Nairobi",
+      id: "KE", name: "Kenya", region: "Africa", flag: "🇰🇪", capital: "Nairobi", ll: [-1.3, 36.8],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Kenya?", options: ["Mombasa", "Nairobi", "Kisumu", "Nakuru"], a: 1 },
@@ -245,7 +245,7 @@
     },
     /* ----------------------------------------------------------------- Canada */
     {
-      id: "CA", name: "Canada", region: "North America", flag: "🇨🇦", capital: "Ottawa",
+      id: "CA", name: "Canada", region: "North America", flag: "🇨🇦", capital: "Ottawa", ll: [45.4, -75.7],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Canada?", options: ["Toronto", "Ottawa", "Vancouver", "Montreal"], a: 1 },
@@ -269,7 +269,7 @@
     },
     /* ---------------------------------------------------------------- Greece */
     {
-      id: "GR", name: "Greece", region: "Europe", flag: "🇬🇷", capital: "Athens",
+      id: "GR", name: "Greece", region: "Europe", flag: "🇬🇷", capital: "Athens", ll: [38.0, 23.7],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "The Parthenon crowns which city?", options: ["Athens", "Sparta", "Thebes", "Corinth"], a: 0 },
@@ -293,7 +293,7 @@
     },
     /* -------------------------------------------------------------- Thailand */
     {
-      id: "TH", name: "Thailand", region: "Asia", flag: "🇹🇭", capital: "Bangkok",
+      id: "TH", name: "Thailand", region: "Asia", flag: "🇹🇭", capital: "Bangkok", ll: [13.8, 100.5],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Thailand?", options: ["Phuket", "Bangkok", "Chiang Mai", "Pattaya"], a: 1 },
@@ -317,7 +317,7 @@
     },
     /* ---------------------------------------------------------------- Spain */
     {
-      id: "ES", name: "Spain", region: "Europe", flag: "🇪🇸", capital: "Madrid",
+      id: "ES", name: "Spain", region: "Europe", flag: "🇪🇸", capital: "Madrid", ll: [40.4, -3.7],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Spain?", options: ["Barcelona", "Madrid", "Seville", "Valencia"], a: 1 },
@@ -341,7 +341,7 @@
     },
     /* -------------------------------------------------------------- Germany */
     {
-      id: "DE", name: "Germany", region: "Europe", flag: "🇩🇪", capital: "Berlin",
+      id: "DE", name: "Germany", region: "Europe", flag: "🇩🇪", capital: "Berlin", ll: [52.5, 13.4],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Germany?", options: ["Munich", "Hamburg", "Berlin", "Frankfurt"], a: 2 },
@@ -365,7 +365,7 @@
     },
     /* -------------------------------------------------------- United Kingdom */
     {
-      id: "GB", name: "United Kingdom", region: "Europe", flag: "🇬🇧", capital: "London",
+      id: "GB", name: "United Kingdom", region: "Europe", flag: "🇬🇧", capital: "London", ll: [51.5, -0.1],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of the United Kingdom?", options: ["Manchester", "London", "Edinburgh", "Liverpool"], a: 1 },
@@ -389,11 +389,11 @@
     },
     /* ------------------------------------------------------------- Portugal */
     {
-      id: "PT", name: "Portugal", region: "Europe", flag: "🇵🇹", capital: "Lisbon",
+      id: "PT", name: "Portugal", region: "Europe", flag: "🇵🇹", capital: "Lisbon", ll: [38.7, -9.1],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Portugal?", options: ["Porto", "Lisbon", "Faro", "Braga"], a: 1 },
-          { cat: "trivia", type: "brain", q: "Portugal is famous for which fortified wine?", options: ["Sherry", "Port", "Marsala", "Madeira only"], a: 1 },
+          { cat: "trivia", type: "brain", q: "Portugal is famous for which fortified wine?", options: ["Sherry", "Port", "Marsala", "Vermouth"], a: 1 },
           { cat: "trivia", type: "brain", q: "The Belém Tower stands in which city?", options: ["Lisbon", "Porto", "Coimbra", "Sintra"], a: 0 },
         ],
         word: [
@@ -413,7 +413,7 @@
     },
     /* ---------------------------------------------------------- Netherlands */
     {
-      id: "NL", name: "Netherlands", region: "Europe", flag: "🇳🇱", capital: "Amsterdam",
+      id: "NL", name: "Netherlands", region: "Europe", flag: "🇳🇱", capital: "Amsterdam", ll: [52.4, 4.9],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of the Netherlands?", options: ["Rotterdam", "The Hague", "Amsterdam", "Utrecht"], a: 2 },
@@ -437,7 +437,7 @@
     },
     /* --------------------------------------------------------------- Ireland */
     {
-      id: "IE", name: "Ireland", region: "Europe", flag: "🇮🇪", capital: "Dublin",
+      id: "IE", name: "Ireland", region: "Europe", flag: "🇮🇪", capital: "Dublin", ll: [53.3, -6.3],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Ireland?", options: ["Cork", "Dublin", "Galway", "Limerick"], a: 1 },
@@ -461,7 +461,7 @@
     },
     /* ---------------------------------------------------------------- Sweden */
     {
-      id: "SE", name: "Sweden", region: "Europe", flag: "🇸🇪", capital: "Stockholm",
+      id: "SE", name: "Sweden", region: "Europe", flag: "🇸🇪", capital: "Stockholm", ll: [59.3, 18.1],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Sweden?", options: ["Gothenburg", "Malmö", "Stockholm", "Uppsala"], a: 2 },
@@ -485,7 +485,7 @@
     },
     /* ---------------------------------------------------------------- Norway */
     {
-      id: "NO", name: "Norway", region: "Europe", flag: "🇳🇴", capital: "Oslo",
+      id: "NO", name: "Norway", region: "Europe", flag: "🇳🇴", capital: "Oslo", ll: [59.9, 10.8],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Norway?", options: ["Bergen", "Oslo", "Trondheim", "Stavanger"], a: 1 },
@@ -509,7 +509,7 @@
     },
     /* ----------------------------------------------------------- Switzerland */
     {
-      id: "CH", name: "Switzerland", region: "Europe", flag: "🇨🇭", capital: "Bern",
+      id: "CH", name: "Switzerland", region: "Europe", flag: "🇨🇭", capital: "Bern", ll: [46.9, 7.4],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Switzerland?", options: ["Zurich", "Geneva", "Bern", "Basel"], a: 2 },
@@ -533,7 +533,7 @@
     },
     /* ---------------------------------------------------------------- Turkey */
     {
-      id: "TR", name: "Turkey", region: "Europe/Asia", flag: "🇹🇷", capital: "Ankara",
+      id: "TR", name: "Turkey", region: "Europe/Asia", flag: "🇹🇷", capital: "Ankara", ll: [39.9, 32.9],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Turkey?", options: ["Istanbul", "Ankara", "Izmir", "Antalya"], a: 1 },
@@ -557,7 +557,7 @@
     },
     /* ---------------------------------------------------------------- Russia */
     {
-      id: "RU", name: "Russia", region: "Europe", flag: "🇷🇺", capital: "Moscow",
+      id: "RU", name: "Russia", region: "Europe", flag: "🇷🇺", capital: "Moscow", ll: [55.8, 37.6],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Russia?", options: ["St. Petersburg", "Moscow", "Kazan", "Sochi"], a: 1 },
@@ -581,7 +581,7 @@
     },
     /* ---------------------------------------------------------------- Poland */
     {
-      id: "PL", name: "Poland", region: "Europe", flag: "🇵🇱", capital: "Warsaw",
+      id: "PL", name: "Poland", region: "Europe", flag: "🇵🇱", capital: "Warsaw", ll: [52.2, 21.0],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Poland?", options: ["Kraków", "Warsaw", "Gdańsk", "Wrocław"], a: 1 },
@@ -605,7 +605,7 @@
     },
     /* ----------------------------------------------------------------- China */
     {
-      id: "CN", name: "China", region: "Asia", flag: "🇨🇳", capital: "Beijing",
+      id: "CN", name: "China", region: "Asia", flag: "🇨🇳", capital: "Beijing", ll: [39.9, 116.4],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of China?", options: ["Shanghai", "Beijing", "Guangzhou", "Shenzhen"], a: 1 },
@@ -629,7 +629,7 @@
     },
     /* ----------------------------------------------------------- South Korea */
     {
-      id: "KR", name: "South Korea", region: "Asia", flag: "🇰🇷", capital: "Seoul",
+      id: "KR", name: "South Korea", region: "Asia", flag: "🇰🇷", capital: "Seoul", ll: [37.6, 127.0],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of South Korea?", options: ["Busan", "Seoul", "Incheon", "Daegu"], a: 1 },
@@ -653,11 +653,11 @@
     },
     /* --------------------------------------------------------------- Vietnam */
     {
-      id: "VN", name: "Vietnam", region: "Asia", flag: "🇻🇳", capital: "Hanoi",
+      id: "VN", name: "Vietnam", region: "Asia", flag: "🇻🇳", capital: "Hanoi", ll: [21.0, 105.8],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Vietnam?", options: ["Ho Chi Minh City", "Hanoi", "Da Nang", "Hue"], a: 1 },
-          { cat: "trivia", type: "brain", q: "Ha Long Bay is famous for its thousands of limestone…", options: ["Islands", "Waterfalls", "Caves only", "Glaciers"], a: 0 },
+          { cat: "trivia", type: "brain", q: "Ha Long Bay is famous for its thousands of limestone…", options: ["Islands", "Waterfalls", "Sand dunes", "Glaciers"], a: 0 },
           { cat: "trivia", type: "brain", q: "Which noodle soup is a Vietnamese classic?", options: ["Ramen", "Pho", "Laksa", "Udon"], a: 1 },
         ],
         word: [
@@ -677,7 +677,7 @@
     },
     /* ------------------------------------------------------------- Indonesia */
     {
-      id: "ID", name: "Indonesia", region: "Asia", flag: "🇮🇩", capital: "Jakarta",
+      id: "ID", name: "Indonesia", region: "Asia", flag: "🇮🇩", capital: "Jakarta", ll: [-6.2, 106.8],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Indonesia?", options: ["Bali", "Jakarta", "Surabaya", "Bandung"], a: 1 },
@@ -701,7 +701,7 @@
     },
     /* ----------------------------------------------------------- Philippines */
     {
-      id: "PH", name: "Philippines", region: "Asia", flag: "🇵🇭", capital: "Manila",
+      id: "PH", name: "Philippines", region: "Asia", flag: "🇵🇭", capital: "Manila", ll: [14.6, 121.0],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of the Philippines?", options: ["Cebu", "Manila", "Davao", "Boracay"], a: 1 },
@@ -725,7 +725,7 @@
     },
     /* ------------------------------------------------------------- Singapore */
     {
-      id: "SG", name: "Singapore", region: "Asia", flag: "🇸🇬", capital: "Singapore",
+      id: "SG", name: "Singapore", region: "Asia", flag: "🇸🇬", capital: "Singapore", ll: [1.3, 103.8],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "The Merlion is the national symbol of which country?", options: ["Malaysia", "Singapore", "Thailand", "Indonesia"], a: 1 },
@@ -749,7 +749,7 @@
     },
     /* --------------------------------------------------- United Arab Emirates */
     {
-      id: "AE", name: "United Arab Emirates", region: "Middle East", flag: "🇦🇪", capital: "Abu Dhabi",
+      id: "AE", name: "United Arab Emirates", region: "Middle East", flag: "🇦🇪", capital: "Abu Dhabi", ll: [24.5, 54.4],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of the United Arab Emirates?", options: ["Dubai", "Abu Dhabi", "Sharjah", "Al Ain"], a: 1 },
@@ -773,7 +773,7 @@
     },
     /* ---------------------------------------------------------- Saudi Arabia */
     {
-      id: "SA", name: "Saudi Arabia", region: "Middle East", flag: "🇸🇦", capital: "Riyadh",
+      id: "SA", name: "Saudi Arabia", region: "Middle East", flag: "🇸🇦", capital: "Riyadh", ll: [24.7, 46.7],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Saudi Arabia?", options: ["Jeddah", "Riyadh", "Mecca", "Medina"], a: 1 },
@@ -797,7 +797,7 @@
     },
     /* ---------------------------------------------------------------- Israel */
     {
-      id: "IL", name: "Israel", region: "Middle East", flag: "🇮🇱", capital: "Jerusalem",
+      id: "IL", name: "Israel", region: "Middle East", flag: "🇮🇱", capital: "Jerusalem", ll: [31.8, 35.2],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Israel?", options: ["Tel Aviv", "Jerusalem", "Haifa", "Eilat"], a: 1 },
@@ -821,7 +821,7 @@
     },
     /* ----------------------------------------------------------------- Nepal */
     {
-      id: "NP", name: "Nepal", region: "Asia", flag: "🇳🇵", capital: "Kathmandu",
+      id: "NP", name: "Nepal", region: "Asia", flag: "🇳🇵", capital: "Kathmandu", ll: [27.7, 85.3],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Nepal?", options: ["Pokhara", "Kathmandu", "Lalitpur", "Biratnagar"], a: 1 },
@@ -845,7 +845,7 @@
     },
     /* ---------------------------------------------------------- South Africa */
     {
-      id: "ZA", name: "South Africa", region: "Africa", flag: "🇿🇦", capital: "Pretoria",
+      id: "ZA", name: "South Africa", region: "Africa", flag: "🇿🇦", capital: "Pretoria", ll: [-25.7, 28.2],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "Table Mountain overlooks which South African city?", options: ["Johannesburg", "Cape Town", "Durban", "Pretoria"], a: 1 },
@@ -869,7 +869,7 @@
     },
     /* --------------------------------------------------------------- Morocco */
     {
-      id: "MA", name: "Morocco", region: "Africa", flag: "🇲🇦", capital: "Rabat",
+      id: "MA", name: "Morocco", region: "Africa", flag: "🇲🇦", capital: "Rabat", ll: [34.0, -6.8],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Morocco?", options: ["Casablanca", "Rabat", "Marrakech", "Fez"], a: 1 },
@@ -893,7 +893,7 @@
     },
     /* --------------------------------------------------------------- Nigeria */
     {
-      id: "NG", name: "Nigeria", region: "Africa", flag: "🇳🇬", capital: "Abuja",
+      id: "NG", name: "Nigeria", region: "Africa", flag: "🇳🇬", capital: "Abuja", ll: [9.1, 7.5],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Nigeria?", options: ["Lagos", "Abuja", "Kano", "Ibadan"], a: 1 },
@@ -917,7 +917,7 @@
     },
     /* -------------------------------------------------------------- Tanzania */
     {
-      id: "TZ", name: "Tanzania", region: "Africa", flag: "🇹🇿", capital: "Dodoma",
+      id: "TZ", name: "Tanzania", region: "Africa", flag: "🇹🇿", capital: "Dodoma", ll: [-6.2, 35.7],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "Mount Kilimanjaro, Africa's highest peak, is located in which country?", options: ["Kenya", "Tanzania", "Uganda", "Ethiopia"], a: 1 },
@@ -941,7 +941,7 @@
     },
     /* -------------------------------------------------------------- Ethiopia */
     {
-      id: "ET", name: "Ethiopia", region: "Africa", flag: "🇪🇹", capital: "Addis Ababa",
+      id: "ET", name: "Ethiopia", region: "Africa", flag: "🇪🇹", capital: "Addis Ababa", ll: [9.0, 38.7],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Ethiopia?", options: ["Dire Dawa", "Addis Ababa", "Mekelle", "Hawassa"], a: 1 },
@@ -965,7 +965,7 @@
     },
     /* -------------------------------------------------------- United States */
     {
-      id: "US", name: "United States", region: "North America", flag: "🇺🇸", capital: "Washington, D.C.",
+      id: "US", name: "United States", region: "North America", flag: "🇺🇸", capital: "Washington, D.C.", ll: [38.9, -77.0],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of the United States?", options: ["New York", "Washington, D.C.", "Los Angeles", "Chicago"], a: 1 },
@@ -989,7 +989,7 @@
     },
     /* ------------------------------------------------------------- Argentina */
     {
-      id: "AR", name: "Argentina", region: "South America", flag: "🇦🇷", capital: "Buenos Aires",
+      id: "AR", name: "Argentina", region: "South America", flag: "🇦🇷", capital: "Buenos Aires", ll: [-34.6, -58.4],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Argentina?", options: ["Córdoba", "Buenos Aires", "Rosario", "Mendoza"], a: 1 },
@@ -1013,7 +1013,7 @@
     },
     /* ------------------------------------------------------------------ Peru */
     {
-      id: "PE", name: "Peru", region: "South America", flag: "🇵🇪", capital: "Lima",
+      id: "PE", name: "Peru", region: "South America", flag: "🇵🇪", capital: "Lima", ll: [-12.0, -77.0],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Peru?", options: ["Cusco", "Lima", "Arequipa", "Trujillo"], a: 1 },
@@ -1037,7 +1037,7 @@
     },
     /* ----------------------------------------------------------------- Chile */
     {
-      id: "CL", name: "Chile", region: "South America", flag: "🇨🇱", capital: "Santiago",
+      id: "CL", name: "Chile", region: "South America", flag: "🇨🇱", capital: "Santiago", ll: [-33.4, -70.7],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Chile?", options: ["Valparaíso", "Santiago", "Concepción", "Antofagasta"], a: 1 },
@@ -1061,7 +1061,7 @@
     },
     /* -------------------------------------------------------------- Colombia */
     {
-      id: "CO", name: "Colombia", region: "South America", flag: "🇨🇴", capital: "Bogotá",
+      id: "CO", name: "Colombia", region: "South America", flag: "🇨🇴", capital: "Bogotá", ll: [4.7, -74.1],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Colombia?", options: ["Medellín", "Bogotá", "Cali", "Cartagena"], a: 1 },
@@ -1085,7 +1085,7 @@
     },
     /* ------------------------------------------------------------------ Cuba */
     {
-      id: "CU", name: "Cuba", region: "North America", flag: "🇨🇺", capital: "Havana",
+      id: "CU", name: "Cuba", region: "North America", flag: "🇨🇺", capital: "Havana", ll: [23.1, -82.4],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of Cuba?", options: ["Santiago de Cuba", "Havana", "Camagüey", "Holguín"], a: 1 },
@@ -1109,7 +1109,7 @@
     },
     /* ----------------------------------------------------------- New Zealand */
     {
-      id: "NZ", name: "New Zealand", region: "Oceania", flag: "🇳🇿", capital: "Wellington",
+      id: "NZ", name: "New Zealand", region: "Oceania", flag: "🇳🇿", capital: "Wellington", ll: [-41.3, 174.8],
       tasks: {
         trivia: [
           { cat: "trivia", type: "brain", q: "What is the capital of New Zealand?", options: ["Auckland", "Wellington", "Christchurch", "Queenstown"], a: 1 },

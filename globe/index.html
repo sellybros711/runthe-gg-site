@@ -281,13 +281,28 @@
   // defaults here and flagged in README as pending design sign-off.
   var PENALTY = { trivia:15, math:15, memory:12, spatial:12, reflex:10, word:12, dragdrop:12, audio:15, duo:8 };
 
-  // task category -> interactive minigame kind
+  // task category -> DEFAULT interactive minigame kind (authored tasks). Generated
+  // tasks (genTasks) carry their own `kind` explicitly, so one category can drive
+  // several game types. This is what gives Split Path / Solo Call real variety.
   var KIND = { trivia:'mcq', math:'mcq', spatial:'order', memory:'sequence', reflex:'reaction', word:'scramble' };
   var CAT_LABEL = { trivia:'Trivia', math:'Math / Logic', spatial:'Spatial / Map', memory:'Memory',
                     reflex:'Reflex / Timing', word:'Word / Language' };
+  // per-kind display label (shown on the task card + game header)
+  var KIND_LABEL = {
+    mcq:'Trivia', scramble:'Word Scramble', sequence:'Memory Sequence', reaction:'Reaction',
+    order:'Rank The Order', flagid:'Guess The Flag', capital:'Name The Capital',
+    truefalse:'True or False', higherlower:'Higher or Lower', oddoneout:'Odd One Out',
+    memorymatch:'Memory Match', whack:'Whack-A-Landmark', targettap:'Quick Tap', mapfind:'Find It On The Map'
+  };
   // rough expected completion (seconds) for an average player per kind — used
   // ONLY to pace the AI ghost field. The human always competes on real time.
-  var BASE = { mcq:6.5, scramble:13, sequence:8, reaction:3.4, order:14 };
+  var BASE = { mcq:6.5, scramble:13, sequence:8, reaction:3.4, order:14,
+    flagid:5.5, capital:5.5, truefalse:6.5, higherlower:7, oddoneout:6.5,
+    memorymatch:15, whack:8, targettap:6.5, mapfind:9 };
+  // which kinds feel "reflex/physical" for Split Path pairing (GDD §5); rest are "brain"
+  var REFLEX_KINDS = { reaction:1, whack:1, targettap:1, sequence:1 };
+  function taskKind(t){ return t.kind || KIND[t.cat] || 'mcq'; }
+  function taskLabel(t){ return KIND_LABEL[taskKind(t)] || CAT_LABEL[t.cat] || 'Task'; }
 
   var GHOSTS = [
     {n:'Team Fox',   f:'🦊'}, {n:'Team Wolf',  f:'🐺'}, {n:'Team Hawk',  f:'🦅'},
@@ -491,34 +506,94 @@
   function countryById(id){ for(var i=0;i<COUNTRIES.length;i++){ if(COUNTRIES[i].id===id) return COUNTRIES[i]; } return null; }
 
   function taskPool(){
-    // gather playable tasks for the destination's country (Final may borrow a
-    // linked country's bank, else fall back to a random country's bank).
+    // authored tasks for the destination's country + tasks GENERATED from the
+    // country/world data (flags, capitals, regions, stats, coords). The generated
+    // set is what makes the mix varied without hand-authoring every type.
     var c = S.dest.country || pick(COUNTRIES);
     var out=[];
     Object.keys(c.tasks||{}).forEach(function(cat){
-      if(!KIND[cat]) return;   // only categories with a wired minigame
+      if(!KIND[cat]) return;
       (c.tasks[cat]||[]).forEach(function(t){ out.push(t); });
     });
+    out = out.concat(genTasks(c));
     return shuffle(out);
+  }
+
+  // ---- generated game types (self-contained, no per-country authoring) ----
+  function otherCountries(c, n){ return shuffle(COUNTRIES.filter(function(x){ return x.id!==c.id; })).slice(0,n); }
+  function genTasks(c){
+    var g=[], i;
+    // Guess The Flag — show a flag, pick the country
+    var wrong = otherCountries(c,3);
+    var opts = shuffle([c.name].concat(wrong.map(function(x){return x.name;})));
+    g.push({ kind:'flagid', cat:'trivia', type:'brain', q:'Which country flies this flag?', flag:c.flag,
+             options:opts, a:opts.indexOf(c.name) });
+    // Name The Capital — pick the capital from four
+    var wc = otherCountries(c,3);
+    var capOpts = shuffle([c.capital].concat(wc.map(function(x){return x.capital;})));
+    g.push({ kind:'capital', cat:'trivia', type:'brain', q:'What is the capital of '+c.name+'?',
+             options:capOpts, a:capOpts.indexOf(c.capital) });
+    // Odd One Out — three from one region + one outlier
+    var same = COUNTRIES.filter(function(x){ return x.region===c.region && x.id!==c.id; });
+    var diff = COUNTRIES.filter(function(x){ return x.region!==c.region; });
+    if(same.length>=2 && diff.length){
+      var trio=[c].concat(shuffle(same).slice(0,2)); var outlier=pick(diff);
+      var four=shuffle(trio.concat([outlier])).map(function(x){return {n:x.name,bad:x.id===outlier.id};});
+      g.push({ kind:'oddoneout', cat:'math', type:'brain', q:'Three of these are in '+c.region+'. Tap the one that is NOT.',
+               options:four.map(function(x){return x.n;}), a:four.map(function(x){return x.bad;}).indexOf(true) });
+    }
+    // True or False rapid-fire — capital statements drawn from the world
+    var tf=[]; var picks=shuffle(COUNTRIES).slice(0,5);
+    picks.forEach(function(x){
+      var lie=Math.random()<0.5, cap=x.capital;
+      if(lie){ var o=pick(otherCountries(x,1)); cap=o.capital; }
+      tf.push({ s:'The capital of '+x.name+' is '+cap+'.', t:!lie });
+    });
+    g.push({ kind:'truefalse', cat:'trivia', type:'brain', q:'True or false — tap fast!', items:tf });
+    // Higher or Lower — which city is farther north (uses a spatial task's items)
+    var sp=(c.tasks.spatial&&c.tasks.spatial[0]);
+    if(sp && sp.items && sp.items.length>=2){
+      g.push({ kind:'higherlower', cat:'math', type:'brain', q:'Which is farther NORTH?',
+               items:sp.items.slice(), rounds:Math.min(4,sp.items.length-1>2?3:2) });
+    }
+    // Memory Match — pairs from the country's memory tiles
+    var tiles=(c.tasks.memory&&c.tasks.memory[0]&&c.tasks.memory[0].tiles)||['🌍','🧭','✈️','🗺️'];
+    g.push({ kind:'memorymatch', cat:'memory', type:'brain', q:'Match all the pairs', tiles:tiles.slice(0,4) });
+    // Whack-A-Landmark — tap the country's flag, dodge the decoys
+    g.push({ kind:'whack', cat:'reflex', type:'reflex', q:'Tap '+c.flag+' as it pops up — ignore the rest!',
+             target:c.flag, decoys:shuffle(otherCountries(c,4).map(function(x){return x.flag;})) });
+    // Quick Tap — hit the moving target
+    g.push({ kind:'targettap', cat:'reflex', type:'reflex', q:'Tap the target as fast as you can!', target:c.flag });
+    // Find It On The Map — pin-drop, scored by distance (needs coords)
+    if(c.ll && c.ll.length===2){
+      g.push({ kind:'mapfind', cat:'spatial', type:'brain', q:'Where in the world is '+c.name+'? Tap the map.', ll:c.ll, name:c.name });
+    }
+    return g;
   }
 
   function buildChallenge(){
     var pool = taskPool();
-    // Split Path when we can offer a real choice; ~55% of stages, always on the Final.
-    var wantSplit = isFinal() || Math.random() < 0.55;
+    var recent = S.recentKinds || [];
+    function fresh(list){ var f=list.filter(function(t){ return recent.indexOf(taskKind(t))<0; }); return f.length?f:list; }
+    var brain  = pool.filter(function(t){ return !REFLEX_KINDS[taskKind(t)]; });
+    var reflex = pool.filter(function(t){ return REFLEX_KINDS[taskKind(t)]; });
+    // Split Path most stages (always on the Final): one brain + one reflex when
+    // possible (GDD §5), and never two of the same game type.
+    var wantSplit = isFinal() || Math.random() < 0.6;
     if(wantSplit && pool.length>=2){
-      // pairing preference (GDD §5): one "brain" + one "reflex/feel" task.
-      var brain  = pool.filter(function(t){ return t.type==='brain'; });
-      var reflex = pool.filter(function(t){ return t.type==='reflex' || t.type==='hybrid'; });
       var a,b;
-      if(brain.length && reflex.length){ a=pick(brain); b=pick(reflex); }
-      else { a=pool[0]; b=pool[1]; }   // fallback: two brain / two reflex
+      if(brain.length && reflex.length){ a=pick(fresh(brain)); b=pick(fresh(reflex)); }
+      else {
+        var two=shuffle(fresh(pool)); a=two[0];
+        b=two.filter(function(t){ return taskKind(t)!==taskKind(a); })[0] || two[1];
+      }
       S.stageType='split'; S.offered=[a,b];
     } else {
-      S.stageType='solo'; S.offered=[pool[0] || pick(taskPool())];
+      S.stageType='solo'; S.offered=[pick(fresh(pool))];
     }
     S.chosen=null;
   }
+  function noteKind(k){ S.recentKinds=(S.recentKinds||[]); S.recentKinds.push(k); if(S.recentKinds.length>3) S.recentKinds.shift(); }
 
   function renderStage(){
     if(S.phase==='draw')       return viewDraw();
@@ -568,9 +643,9 @@
       + '<div class="stagetype">'+(S.stageType==='split'?'🍴 Split Path — choose your task':'📢 Solo Call — one task, no choice')+'</div>'
       + '<div class="choice">';
     S.offered.forEach(function(t,i){
-      var kind=KIND[t.cat], typ=t.type;
+      var refl = !!REFLEX_KINDS[taskKind(t)];
       html += '<button class="taskcard" data-i="'+i+'">'
-        + '<div class="ct"><span class="catchip '+(typ==='reflex'?'reflex':(typ==='hybrid'?'hybrid':''))+'">'+esc(CAT_LABEL[t.cat]||t.cat)+'</span>'
+        + '<div class="ct"><span class="catchip '+(refl?'reflex':'')+'">'+esc(taskLabel(t))+'</span>'
         + '<span class="pen">miss +'+PENALTY[t.cat]+'s</span></div>'
         + '<div class="pr">'+esc(taskBlurb(t))+'</div></button>';
     });
@@ -593,33 +668,40 @@
     renderAcct();
   }
   function taskBlurb(t){
-    switch(KIND[t.cat]){
+    switch(taskKind(t)){
       case 'mcq':      return t.q;
       case 'scramble': return 'Unscramble the word — '+t.hint;
       case 'sequence': return t.prompt+' — repeat it back';
       case 'reaction': return t.prompt;
       case 'order':    return t.q;
-      default:         return t.prompt||'Complete the task';
+      default:         return t.q || t.prompt || 'Complete the task';
     }
   }
 
   /* --- phase: play (the minigame) --- */
   function viewPlay(){
-    var t=S.chosen, kind=KIND[t.cat];
+    var t=S.chosen, kind=taskKind(t);
+    noteKind(kind);   // remember for cross-stage variety
     S.play = { start: performance.now(), misses:0, done:false };
     app.innerHTML = topbar() + hud()
       + '<div class="card">'
-        + '<div class="game-hd"><span class="cat">'+esc(CAT_LABEL[t.cat]||t.cat)+'</span>'
+        + '<div class="game-hd"><span class="cat">'+esc(taskLabel(t))+'</span>'
         + '<span class="timer" id="tmr">0.0</span></div>'
         + '<div id="mg"></div>'
         + '<div class="missline" id="miss"></div>'
       + '</div>' + foot();
     startTimer();
-    if(kind==='mcq')      mgMcq(t);
+    if(kind==='mcq'||kind==='flagid'||kind==='capital'||kind==='oddoneout') mgMcq(t);
     else if(kind==='scramble') mgScramble(t);
     else if(kind==='sequence') mgSequence(t);
     else if(kind==='reaction') mgReaction(t);
     else if(kind==='order')    mgOrder(t);
+    else if(kind==='truefalse') mgTrueFalse(t);
+    else if(kind==='higherlower') mgHigherLower(t);
+    else if(kind==='memorymatch') mgMemoryMatch(t);
+    else if(kind==='whack') mgWhack(t);
+    else if(kind==='targettap') mgTargetTap(t);
+    else if(kind==='mapfind') mgMapFind(t);
     else finishTask();   // safety
     renderAcct();
   }
@@ -644,7 +726,8 @@
   /* ---------- minigame: multiple choice (trivia / math) ---------- */
   function mgMcq(t){
     var order = shuffle(t.options.map(function(o,i){ return {o:o,i:i}; }));
-    var html='<div class="prompt">'+esc(t.q)+'</div><div class="opts">';
+    var flag = t.flag ? '<div style="text-align:center;font-size:88px;line-height:1;margin:2px 0 12px;filter:drop-shadow(0 6px 18px rgba(0,0,0,.5))">'+t.flag+'</div>' : '';
+    var html=flag+'<div class="prompt">'+esc(t.q)+'</div><div class="opts">';
     order.forEach(function(x,j){ html += '<button class="opt" data-i="'+x.i+'" data-j="'+j+'">'+esc(x.o)+'</button>'; });
     html+='</div>'; $('mg').innerHTML=html;
     Array.prototype.forEach.call(document.querySelectorAll('.opt'), function(b){
@@ -846,6 +929,167 @@
     }
   }
 
+  function each(sel, fn){ Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+
+  /* ---------- minigame: True or False rapid-fire (trivia) ---------- */
+  function mgTrueFalse(t){ S.tf={ i:0, items:t.items }; renderTF(t); }
+  function renderTF(t){
+    var it=S.tf.items[S.tf.i];
+    $('mg').innerHTML='<div class="seqstatus">Statement <b>'+(S.tf.i+1)+'</b>/'+S.tf.items.length+'</div>'
+      + '<div class="prompt" style="text-align:center;min-height:56px;display:flex;align-items:center;justify-content:center">'+esc(it.s)+'</div>'
+      + '<div class="btnrow"><button class="btn ghost" id="tft" style="flex:1">✓ True</button>'
+      + '<button class="btn ghost" id="tff" style="flex:1">✗ False</button></div>';
+    $('tft').onclick=function(){ tfAns(t,true); }; $('tff').onclick=function(){ tfAns(t,false); };
+  }
+  function tfAns(t,ans){
+    if(S.play.done) return;
+    if(ans!==S.tf.items[S.tf.i].t){ S.play.misses++; showMiss(); }
+    S.tf.i++;
+    if(S.tf.i>=S.tf.items.length){ S.play.done=true; finishTask(); } else renderTF(t);
+  }
+
+  /* ---------- minigame: Higher or Lower (compare a stat) ---------- */
+  function mgHigherLower(t){ S.hl={ round:0, rounds:t.rounds||3, items:t.items }; renderHL(t); }
+  function renderHL(t){
+    S.hl.pair=shuffle(S.hl.items).slice(0,2);
+    $('mg').innerHTML='<div class="seqstatus">Round <b>'+(S.hl.round+1)+'</b>/'+S.hl.rounds+'</div>'
+      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div class="btnrow">'+S.hl.pair.map(function(p,i){ return '<button class="btn ghost hlo" data-i="'+i+'" style="flex:1">'+esc(p.label)+'</button>'; }).join('')+'</div>';
+    each('.hlo', function(b){ b.onclick=function(){ hlAns(t, +b.getAttribute('data-i')); }; });
+  }
+  function hlAns(t,i){
+    if(S.play.done) return;
+    var p=S.hl.pair; if(p[i].value < p[1-i].value){ S.play.misses++; showMiss(); }   // "farther north" = higher value
+    S.hl.round++;
+    if(S.hl.round>=S.hl.rounds){ S.play.done=true; finishTask(); } else renderHL(t);
+  }
+
+  /* ---------- minigame: Memory Match (concentration) ---------- */
+  function mgMemoryMatch(t){
+    var cards=shuffle(t.tiles.concat(t.tiles)).map(function(e,i){ return { id:i, em:e, up:false, done:false }; });
+    S.mm={ cards:cards, open:[] }; renderMM();
+  }
+  function renderMM(){
+    var grid=S.mm.cards.map(function(c){
+      return '<div class="seqtile mmc'+(c.done?' tap':'')+(c.up&&!c.done?' lit':'')+'" data-id="'+c.id+'">'+((c.up||c.done)?c.em:'❓')+'</div>';
+    }).join('');
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">Flip the cards, match all the pairs</div>'
+      + '<div class="seqgrid" style="max-width:280px;margin:8px auto 0">'+grid+'</div>';
+    each('.mmc', function(b){ b.onclick=function(){ mmFlip(+b.getAttribute('data-id')); }; });
+  }
+  function mmFlip(id){
+    if(S.play.done) return;
+    var c=S.mm.cards[id]; if(!c||c.up||c.done||S.mm.open.length>=2) return;
+    c.up=true; S.mm.open.push(id); renderMM();
+    if(S.mm.open.length===2){
+      var a=S.mm.cards[S.mm.open[0]], b=S.mm.cards[S.mm.open[1]];
+      if(a.em===b.em){
+        a.done=b.done=true; S.mm.open=[]; renderMM();
+        var all=true; S.mm.cards.forEach(function(x){ if(!x.done) all=false; });
+        if(all){ S.play.done=true; setTimeout(finishTask,260); }
+      } else {
+        S.play.misses++; showMiss();
+        setTimeout(function(){ a.up=false; b.up=false; S.mm.open=[]; if(!S.play.done) renderMM(); }, 720);
+      }
+    }
+  }
+
+  /* ---------- minigame: Whack-A-Landmark (reflex) ---------- */
+  function mgWhack(t){
+    S.wk={ hits:0, need:5, cells:[null,null,null,null,null,null,null,null,null], timer:null };
+    renderWhack(t);
+    S.wk.timer=setInterval(function(){ tickWhack(t); }, 820); tickWhack(t);
+  }
+  function renderWhack(t){
+    if(!$('mg')) return;
+    var cells=S.wk.cells.map(function(c,i){ return '<div class="seqtile wkc" data-i="'+i+'">'+(c||'')+'</div>'; }).join('');
+    $('mg').innerHTML='<div class="seqstatus">Hits <b>'+S.wk.hits+'</b>/'+S.wk.need+'</div>'
+      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div class="seqgrid" style="max-width:260px;margin:8px auto 0">'+cells+'</div>';
+    each('.wkc', function(b){ b.onclick=function(){ whackTap(t, +b.getAttribute('data-i')); }; });
+  }
+  function tickWhack(t){
+    if(S.play.done || !$('mg')){ clearInterval(S.wk.timer); return; }
+    var cells=[null,null,null,null,null,null,null,null,null];
+    var idx=shuffle([0,1,2,3,4,5,6,7,8]);
+    cells[idx[0]]=t.target;
+    var nd=2+Math.floor(Math.random()*2);
+    for(var k=1;k<=nd;k++){ cells[idx[k]]=t.decoys[(k-1)%t.decoys.length]; }
+    S.wk.cells=cells; renderWhack(t);
+  }
+  function whackTap(t,i){
+    if(S.play.done) return;
+    var c=S.wk.cells[i]; if(!c) return;
+    if(c===t.target){ S.wk.hits++; S.wk.cells[i]=null;
+      if(S.wk.hits>=S.wk.need){ S.play.done=true; clearInterval(S.wk.timer); finishTask(); return; }
+      renderWhack(t);
+    } else { S.play.misses++; showMiss(); S.wk.cells[i]=null; renderWhack(t); }
+  }
+
+  /* ---------- minigame: Quick Tap (reflex) ---------- */
+  function mgTargetTap(t){ S.tt={ hits:0, need:6 }; renderTT(t); }
+  function renderTT(t){
+    var x=10+Math.floor(Math.random()*80), y=12+Math.floor(Math.random()*70);
+    $('mg').innerHTML='<div class="seqstatus">Hits <b>'+S.tt.hits+'</b>/'+S.tt.need+'</div>'
+      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div id="ttbox" style="position:relative;height:210px;border-radius:16px;border:1px solid var(--cardb);background:rgba(255,255,255,.04);overflow:hidden">'
+      + '<div id="ttgt" style="position:absolute;left:'+x+'%;top:'+y+'%;font-size:42px;cursor:pointer;transform:translate(-50%,-50%);transition:left .05s,top .05s">'+t.target+'</div></div>';
+    $('ttgt').onclick=function(ev){ if(ev.stopPropagation)ev.stopPropagation(); ttHit(t); };
+    $('ttbox').onclick=function(){ if(S.play.done) return; S.play.misses++; showMiss(); };
+  }
+  function ttHit(t){
+    if(S.play.done) return;
+    S.tt.hits++;
+    if(S.tt.hits>=S.tt.need){ S.play.done=true; finishTask(); return; }
+    renderTT(t);
+  }
+
+  /* ---------- minigame: Find It On The Map (spatial, distance-scored) ---------- */
+  function haversine(la1,lo1,la2,lo2){
+    var R=6371, r=Math.PI/180, dLa=(la2-la1)*r, dLo=(lo2-lo1)*r;
+    var a=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(la1*r)*Math.cos(la2*r)*Math.sin(dLo/2)*Math.sin(dLo/2);
+    return 2*R*Math.asin(Math.min(1,Math.sqrt(a)));
+  }
+  // rough continent outlines ([lng,lat] vertices) — schematic, just to orient the
+  // player; scoring uses real coordinates so map crudeness doesn't affect fairness.
+  var CONTINENTS=[
+    [[-168,66],[-95,71],[-60,60],[-52,47],[-80,25],[-105,15],[-125,32],[-140,58]],
+    [[-81,10],[-52,3],[-35,-8],[-53,-33],[-72,-54],[-77,-30],[-82,-3]],
+    [[-10,58],[12,60],[30,66],[40,46],[10,36],[-9,37],[-11,44]],
+    [[-17,35],[10,34],[33,31],[51,12],[40,-34],[18,-35],[9,4],[-17,15]],
+    [[26,66],[80,72],[140,70],[170,66],[142,45],[122,22],[100,6],[70,8],[60,25],[45,42],[33,50]],
+    [[113,-12],[131,-12],[154,-20],[150,-38],[129,-32],[115,-35]]
+  ];
+  function mgMapFind(t){
+    var grid='', lo, la, x, y;
+    for(lo=-150;lo<=150;lo+=30){ x=lo+180; grid+='<line x1="'+x+'" y1="0" x2="'+x+'" y2="180" stroke="rgba(255,255,255,.05)" stroke-width="0.4"/>'; }
+    for(la=-60;la<=60;la+=30){ y=90-la; grid+='<line x1="0" y1="'+y+'" x2="360" y2="'+y+'" stroke="rgba(255,255,255,.05)" stroke-width="0.4"/>'; }
+    grid+='<line x1="0" y1="90" x2="360" y2="90" stroke="rgba(255,255,255,.12)" stroke-width="0.6"/>';
+    var paths=CONTINENTS.map(function(poly){
+      return '<polygon points="'+poly.map(function(p){ return (p[0]+180)+','+(90-p[1]); }).join(' ')+'" fill="rgba(58,160,255,.20)" stroke="rgba(58,160,255,.45)" stroke-width="0.6"/>';
+    }).join('');
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<svg id="wmap" viewBox="0 0 360 180" preserveAspectRatio="none" style="width:100%;height:auto;aspect-ratio:2/1;background:rgba(8,20,36,.85);border:1px solid var(--cardb);border-radius:12px;cursor:crosshair;touch-action:manipulation">'
+      + grid + paths + '</svg><div class="ohint" id="maphint">Tap the map where you think it is.</div>';
+    $('wmap').addEventListener('click', function(ev){ mapGuess(t, ev); });
+  }
+  function mapGuess(t, ev){
+    if(S.play.done) return; S.play.done=true; stopTimer();
+    var raw=(performance.now()-S.play.start)/1000;
+    var svg=$('wmap'), b=svg.getBoundingClientRect();
+    var vx=(ev.clientX-b.left)/b.width*360, vy=(ev.clientY-b.top)/b.height*180;
+    var gLng=vx-180, gLat=90-vy, d=haversine(gLat,gLng,t.ll[0],t.ll[1]);
+    var miss = d<600?0 : d<1800?1 : d<4500?2 : d<9000?3 : 4;
+    S.play.misses=miss;
+    var cx=t.ll[1]+180, cy=90-t.ll[0];
+    svg.insertAdjacentHTML('beforeend',
+      '<line x1="'+vx+'" y1="'+vy+'" x2="'+cx+'" y2="'+cy+'" stroke="rgba(255,255,255,.5)" stroke-width="0.7" stroke-dasharray="2 2"/>'
+      + '<circle cx="'+vx+'" cy="'+vy+'" r="3" fill="#EF4E50"/>'
+      + '<circle cx="'+cx+'" cy="'+cy+'" r="3.2" fill="#35d6a0" stroke="#fff" stroke-width="0.5"/>');
+    var h=$('maphint'); if(h) h.innerHTML='You were <b>'+Math.round(d).toLocaleString()+' km</b> away — '+(miss===0?'bullseye! 🎯':('+'+miss+' miss'+(miss>1?'es':'')));
+    setTimeout(function(){ resolveRound(raw, miss, false); }, 1500);
+  }
+
   /* -------------------------------------------------- Skip Pass (field median) */
   function useSkipPass(){
     S.skipUsed=true;
@@ -860,7 +1104,7 @@
   // weaker ghosts are Grounded, the surviving field is naturally faster — the
   // difficulty ramps without a hand-tuned curve.
   function simulateGhosts(){
-    var kind = KIND[(S.chosen&&S.chosen.cat) || 'trivia'] || 'mcq';
+    var kind = (S.chosen&&taskKind(S.chosen)) || 'mcq';
     var base = BASE[kind] || 8;
     var pen  = PENALTY[(S.chosen&&S.chosen.cat) || 'trivia'];
     return aliveTeams().filter(function(t){ return t.isGhost; }).map(function(t){
