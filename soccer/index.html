@@ -11825,12 +11825,14 @@ async function h2hPlayAndShow(m, st, iAmGuest, guestSquadOverride){
 
   const box = computeMatchStats(myOverall, oppOverall, mForMe.userGoals, mForMe.opponentGoals);
   const normSquad = arr => arr.map(p=>({ slot:p.slot, name:p.name, overall:p.overall, position:p.position, country:p.country, year:p.year }));
+  // simPlayerStats (the live PLAYERS tab) expects gs.picks's {player, slot} shape.
+  const myPicksForBox = mySquad.map(p=>({ player:p, slot:p.slot }));
 
   await playFriendlyMatchAnimation(mForMe, {
     youShort: myName.toUpperCase(), friendShort: oppName.toUpperCase(),
     youFlag: myFlag, friendFlag: oppFlag,
     youSquad: normSquad(mySquad), friendSquad: normSquad(oppSquad),
-    boxStats: box
+    boxStats: box, picks: myPicksForBox
   });
 
   h2hShowResult(mForMe, oppName);
@@ -12272,6 +12274,7 @@ async function playFriendlyMatchAnimation(m, labels){
     etDur:6000, ftFreeze:600, finalPause:1200, wait:fastWait,
     youLabel:labels.youShort, oppLabel:labels.friendShort,
     boxStats: labels.boxStats, boxLabels:{ you:labels.youShort, opp:labels.friendShort },
+    picks: labels.picks,                  // per-player PLAYERS tab ticks live when supplied
     penSeq: m.penSeq,                     // exact shootout when replaying a watch link
     onPenalties:s=>{ penScore=s; }
   });
@@ -12365,7 +12368,7 @@ async function runFriendlyMatch(){
   // Stage 2: play the match out live, THEN reveal the full box score.
   const penScore = await playFriendlyMatchAnimation(m, { youShort, friendShort, youFlag, friendFlag,
     youSquad: friendlyMatchResult.opponentSquad, friendSquad: friendlyMatchResult.challengerSquad,
-    boxStats: friendlyBox });
+    boxStats: friendlyBox, picks: gs.picks });
   if(penScore){
     friendlyMatchResult.penScore = { user:penScore.user, opp:penScore.opp };
     if(penScore.seq) friendlyLastMatch.penSeq = penScore.seq;   // exact shootout for the watch link
