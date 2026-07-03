@@ -3069,7 +3069,7 @@ function render(){
   app.innerHTML='';
   app.appendChild(header());
   const card=$(`<main class="card"></main>`);
-  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','rules'].includes(S.screen)?' wide':''}"></div>`);
+  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','rules','h2hhome','h2hlobby','h2hdraft','h2hwatch','h2hresult','h2hboard'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
   app.appendChild(footer());
@@ -3112,7 +3112,7 @@ function render(){
   // card instead (showing the real error message so a recurrence is diagnosable straight from a
   // screenshot, not just from analytics we might never see).
   try{
-    ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult})[S.screen]();
+    ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult,h2hhome:scrH2HHome,h2hlobby:scrH2HLobby,h2hdraft:scrH2HDraft,h2hwatch:scrH2HWatch,h2hresult:scrH2HResult,h2hboard:scrH2HBoard})[S.screen]();
   }catch(err){
     console.error('[RunTheTour] screen render failed:', S.screen, err);
     try{ track('screen_render_error',{screen:S.screen,message:(err&&err.message)||String(err)}); }catch(e){}
@@ -3805,7 +3805,9 @@ function scrTitle(){
   const mini2=$(`<div class="mini"></div>`);
   const tr=$(`<button class="btn gold">🏅 Trophy Room</button>`);
   tr.onclick=()=>{S.overlay='record';render();};
-  mini2.appendChild(tr);
+  const pvp=$(`<button class="btn teal">⚔ Play Online</button>`);
+  pvp.onclick=openH2H;
+  mini2.appendChild(tr); mini2.appendChild(pvp);
   w.appendChild(mini2);
   const credit=$(`<div class="small muted center" style="margin-top:18px;line-height:1.6;opacity:.75">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
   w.appendChild(credit);
@@ -7980,6 +7982,354 @@ async function dbLoadLegend(day){
   }catch(e){ dbCacheLegend={day,rows:[],ok:false}; }
   render();
 }
+/* ============================================================================
+   ONLINE MULTIPLAYER — Phase 1 (1v1 head-to-head). See build-a-golfer/H2H-SPEC.md
+   Both clients run the SAME seeded round locally (deterministic sim) and confirm the
+   winner by consensus (h2h_report). All state flows through the h2h_* RPCs
+   (supabase/41_h2h_phase1.sql). Self-contained: does not alter career/daily game logic.
+   Transitions are driven by polling h2h_state (~2s); Realtime is a Phase-2 upgrade.
+   ============================================================================ */
+let _h2hPoll=null, _h2hWatchTimer=null;
+function h2hClearTimers(){ if(_h2hPoll){clearTimeout(_h2hPoll);_h2hPoll=null;} if(_h2hWatchTimer){clearTimeout(_h2hWatchTimer);_h2hWatchTimer=null;} }
+function h2hUid(){ return sbUser&&sbUser.id; }
+function h2hErr(e){ const m=(e&&e.message)||String(e||''); toast(esc(m.replace(/^.*:\s*/,'')||'Something went wrong')); }
+// entry point (title button / menu): needs a signed-in account with a username
+function openH2H(){
+  if(!sb){ toast('Online play needs a connection'); return; }
+  if(!sbSignedIn()){ S.overlay='account'; render(); toast('Sign in to play online'); return; }
+  h2hClearTimers(); S.h2h={mode:'1v1', holes:9}; S.screen='h2hhome'; render();
+}
+function h2hLeave(){ h2hClearTimers(); S.h2h=null; S.screen='title'; render(); }
+
+/* ---- deterministic round: course + conditions are a pure function of the match seed ---- */
+function h2hCourseKey(seed){ return DAILY_KEYS[(seed>>>0)%DAILY_KEYS.length]; }
+function h2hCondName(seed){ const r=mulberry32(((seed>>>0)^0x5bd1e995)>>>0)(); return r<0.27?'calm':r<0.72?'breezy':r<0.92?'windy':'gusting'; }
+function h2hBuildHash(sk){ let h=2166136261>>>0; for(const c of CATS){ h^=(sk[c.k]|0); h=Math.imul(h,16777619); } return h>>>0; }
+// one hole's strokes-to-par for a given build; i can exceed the course length (playoff wraps)
+function h2hHoleScore(sk,course,courseKey,diffs,cond,seed,i){
+  const h=course.holes[i%18]; const bh=h2hBuildHash(sk);
+  const rng=mulberry32(((seed>>>0)^dHash(courseKey)^Math.imul(i+1,0x9e3779b1)^bh)>>>0);
+  return dSimHole(h[0],h[1],diffs[i%18],sk,course.fit,cond,'balanced',null,rng);
+}
+function h2hScorecard(sk,seed,holes){
+  const key=h2hCourseKey(seed), course=DAILY_COURSES[key], diffs=dBaseDiffs(course);
+  const condN=h2hCondName(seed), cond=DCFG.COND[condN]; const card=[]; let total=0;
+  for(let i=0;i<holes;i++){ const h=course.holes[i]; const tp=h2hHoleScore(sk,course,key,diffs,cond,seed,i);
+    card.push({n:i+1,par:h[0],toPar:tp}); total+=tp; }
+  return {key,course,courseKey:key,cond:condN,diffs,card,total};
+}
+
+/* ---- RPC actions ---- */
+async function h2hCreate(pub){
+  try{ const {data,error}=await sb.rpc('h2h_create',{p_mode:S.h2h.mode,p_holes:S.h2h.holes,p_public:!!pub});
+    if(error) throw error; const row=Array.isArray(data)?data[0]:data;
+    S.h2h.matchId=row.match_id; S.h2h.code=row.join_code; S.h2h.status='lobby'; S.h2h.host=true;
+    track('h2h_create',{mode:S.h2h.mode,holes:S.h2h.holes}); h2hGoLobby();
+  }catch(e){ h2hErr(e); }
+}
+async function h2hJoin(code){
+  code=String(code||'').trim().toUpperCase(); if(!code){ toast('Enter a code'); return; }
+  try{ const {data,error}=await sb.rpc('h2h_join',{p_join_code:code}); if(error) throw error;
+    S.h2h.matchId=data; S.h2h.code=code; S.h2h.status='lobby'; track('h2h_join'); h2hGoLobby();
+  }catch(e){ h2hErr(e); }
+}
+async function h2hQuick(){
+  S.h2h.searching=true; S.screen='h2hlobby'; S.h2h.quick=true; render();
+  try{ const {data,error}=await sb.rpc('h2h_quick',{p_mode:S.h2h.mode,p_holes:S.h2h.holes}); if(error) throw error;
+    S.h2h.matchId=data; S.h2h.status='lobby'; S.h2h.searching=false; track('h2h_quick',{holes:S.h2h.holes}); h2hGoLobby();
+  }catch(e){ S.h2h.searching=false; render(); h2hErr(e); }
+}
+function h2hGoLobby(){ S.screen='h2hlobby'; render(); h2hEnsurePoll(); }
+
+/* ---- polling: drives lobby → drafting → live → done ---- */
+function h2hEnsurePoll(){ if(_h2hPoll) return; _h2hPoll=setTimeout(h2hTick,1200); }
+async function h2hTick(){
+  _h2hPoll=null;
+  if(!S.h2h||!S.h2h.matchId||!String(S.screen).startsWith('h2h')) return;
+  try{ const {data,error}=await sb.rpc('h2h_state',{p_match_id:S.h2h.matchId}); if(!error&&data) h2hOnState(data); }catch(e){}
+  if(S.h2h&&S.h2h.matchId&&String(S.screen).startsWith('h2h')) _h2hPoll=setTimeout(h2hTick,2000);
+}
+function h2hOnState(st){
+  if(!S.h2h) return;
+  S.h2h.status=st.status; S.h2h.players=st.players||[]; S.h2h.seed=st.seed;
+  S.h2h.holes=st.holes; S.h2h.mode=st.mode; S.h2h.code=st.join_code||S.h2h.code; S.h2h.result=st.result;
+  const me=S.h2h.players.find(p=>p.user_id===h2hUid());
+  if(me){ S.h2h.mySlot=me.slot; S.h2h.myWheel=me.wheel_seed; }
+  if(st.status==='drafting' && !S.h2h.drafting){ h2hBeginDraft(); return; }
+  if(st.status==='live' && !S.h2h.watching){ h2hBeginWatch(); return; }
+  if(st.status==='done' && S.screen!=='h2hresult' && S.screen!=='h2hwatch'){ S.screen='h2hresult'; render(); return; }
+  if(st.status==='void' && S.screen!=='h2hresult'){ S.h2h.void=true; S.screen='h2hresult'; render(); return; }
+  if(S.screen==='h2hlobby') render();
+}
+
+/* ---- draft (own independent wheel, 3 re-spins) ---- */
+function h2hBeginDraft(){
+  S.h2h.drafting=true; S.h2h.slots={}; S.h2h.reSpins=3; S.h2h.current=null; S.h2h.spinning=false;
+  S.h2h.revealed=new Set(); S.h2h.rng=mulberry32((S.h2h.myWheel>>>0)||1); S.h2h.submitted=false;
+  track('h2h_draft_start'); S.screen='h2hdraft'; render();
+}
+function h2hGolfersLeft(){ return GOLFERS.length-(S.h2h.revealed?S.h2h.revealed.size:0); }
+function h2hFilled(){ let n=0; for(const c of CATS) if(S.h2h.slots[c.k])n++; return n; }
+function h2hSkills(){ const s={}; for(const c of CATS) s[c.k]=S.h2h.slots[c.k]?S.h2h.slots[c.k].value:REPLACEMENT; return s; }
+function h2hOvr(){ return Math.round(ovrFromSkills(h2hSkills())); }
+function h2hReveal(){
+  S.h2h.spinning=true; S.h2h.current=null; render();
+  const land=drawGolfer(S.h2h.rng,RPOOL,S.h2h.revealed);
+  if(!land){ S.h2h.spinning=false; render(); return; }
+  const finish=()=>{ S.h2h.current=land; S.h2h.spinning=false; render(); };
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches){ finish(); return; }
+  const reel=app.querySelector('.reel .name'); let t=0, total=14+Math.floor(Math.random()*5);
+  const iv=setInterval(()=>{ if(reel&&reel.isConnected) reel.textContent=GOLFERS[Math.floor(Math.random()*GOLFERS.length)].name;
+    if(++t>=total){ clearInterval(iv); finish(); } },72);
+}
+function h2hSpin(){ if(S.h2h.current||h2hGolfersLeft()<=0) return; h2hReveal(); }
+function h2hReSpin(){ if(S.h2h.reSpins<=0||h2hGolfersLeft()<=0) return; S.h2h.reSpins--; track('h2h_respin',{left:S.h2h.reSpins}); h2hReveal(); }
+function h2hTake(k){ if(!S.h2h.current) return; S.h2h.slots[k]={golfer:S.h2h.current.name,value:S.h2h.current[k]};
+  S.h2h.current=null; if(h2hFilled()>=8){ render(); return; }
+  if(h2hGolfersLeft()>0){ h2hReveal(); return; } render();
+}
+async function h2hSubmitDraft(){
+  if(h2hFilled()<8){ toast('Fill all 8 skills first'); return; }
+  S.h2h.submitting=true; render();
+  try{ const {data,error}=await sb.rpc('h2h_submit_draft',{p_match_id:S.h2h.matchId,p_skills:h2hSkills(),p_look:S.look||{}});
+    if(error) throw error; S.h2h.submitted=true; S.h2h.submitting=false;
+    track('h2h_draft_submit',{ovr:h2hOvr()});
+    if(data===true){ /* both in; poll will flip to live/watch */ } S.screen='h2hlobby'; render(); h2hEnsurePoll();
+  }catch(e){ S.h2h.submitting=false; render(); h2hErr(e); }
+}
+
+/* ---- watch: run both rounds in lockstep, resolve winner, report ---- */
+function h2hBeginWatch(){
+  const me=S.h2h.players.find(p=>p.user_id===h2hUid());
+  const opp=S.h2h.players.find(p=>p.user_id!==h2hUid());
+  if(!me||!opp||!me.draft||!opp.draft) return;   // drafts not revealed yet, wait for next poll
+  S.h2h.watching=true; S.h2h.me=me; S.h2h.opp=opp;
+  S.h2h.myCard=h2hScorecard(me.draft.skills,S.h2h.seed,S.h2h.holes);
+  S.h2h.oppCard=h2hScorecard(opp.draft.skills,S.h2h.seed,S.h2h.holes);
+  h2hResolve();
+  S.h2h.watchN=0; S.h2h.reported=false; S.h2h.watchDone=false;
+  track('h2h_watch_start'); S.screen='h2hwatch'; render(); h2hWatchStep();
+}
+function h2hResolve(){
+  const A=S.h2h.myCard, B=S.h2h.oppCard, meSlot=S.h2h.me.slot, oppSlot=S.h2h.opp.slot;
+  S.h2h.playoff=[];
+  if(A.total!==B.total){ S.h2h.winnerSlot = A.total<B.total?meSlot:oppSlot; return; }
+  // tie → sudden-death playoff (deterministic from the shared seed)
+  let i=S.h2h.holes;
+  while(true){
+    const sa=h2hHoleScore(S.h2h.me.draft.skills,A.course,A.courseKey,A.diffs,DCFG.COND[A.cond],S.h2h.seed,i);
+    const sb2=h2hHoleScore(S.h2h.opp.draft.skills,B.course,B.courseKey,B.diffs,DCFG.COND[B.cond],S.h2h.seed,i);
+    S.h2h.playoff.push({n:i+1,par:A.course.holes[i%18][0],a:sa,b:sb2});
+    if(sa!==sb2){ S.h2h.winnerSlot = sa<sb2?meSlot:oppSlot; break; }
+    if(++i>S.h2h.holes+40){ S.h2h.winnerSlot=meSlot; break; }   // safety
+  }
+}
+function h2hWatchStep(){
+  if(S.screen!=='h2hwatch'){ return; }
+  const total=S.h2h.holes+(S.h2h.playoff?S.h2h.playoff.length:0);
+  if(S.h2h.watchN>=total){ S.h2h.watchDone=true; render(); h2hFinishWatch(); return; }
+  S.h2h.watchN++; render();
+  _h2hWatchTimer=setTimeout(h2hWatchStep, 650);
+}
+function h2hWatchSkip(){ if(_h2hWatchTimer){clearTimeout(_h2hWatchTimer);_h2hWatchTimer=null;}
+  S.h2h.watchN=S.h2h.holes+(S.h2h.playoff?S.h2h.playoff.length:0); S.h2h.watchDone=true; render(); h2hFinishWatch(); }
+function h2hFinishWatch(){ if(S.h2h.reported) return; S.h2h.reported=true; h2hReport(S.h2h.winnerSlot); }
+async function h2hReport(winSlot){
+  try{ const {data,error}=await sb.rpc('h2h_report',{p_match_id:S.h2h.matchId,p_result:{win:winSlot,kind:'slot'}});
+    if(error) throw error; if(data&&data.void) S.h2h.void=true; else if(data) S.h2h.result=data;
+    track('h2h_report',{win_me:winSlot===S.h2h.mySlot});
+  }catch(e){ /* opponent's report can still resolve it, keep polling */ }
+  h2hEnsurePoll();
+}
+
+/* ---- screens ---- */
+function h2hBack(cls,label,fn){ const b=$(`<button class="btn ghost" style="width:auto;padding:7px 13px;font-size:13px;margin:0 0 10px">${label}</button>`); b.onclick=fn; add(b); }
+function scrH2HHome(){
+  h2hBack('','‹ Back to title', h2hLeave);
+  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">Online · Head-to-Head</span></div>`));
+  add($(`<h1 class="center" style="font-size:26px;margin:9px 0 2px">Play a 1v1</h1>`));
+  add($(`<p class="lede center" style="max-width:420px;margin:6px auto 16px">You and your opponent each draft your own golfer, then watch both rounds play out on the same course. Low total wins. Every result counts toward your 1v1 record.</p>`));
+  // length picker
+  const seg=$(`<div class="center" style="margin:0 0 6px"><span class="small muted">Round length</span></div>`); add(seg);
+  const row=$(`<div class="mini" style="justify-content:center;gap:10px;margin-bottom:6px"></div>`);
+  [[9,'9 holes','Quick, ~a minute'],[18,'18 holes','Full round']].forEach(o=>{
+    const on=S.h2h.holes===o[0];
+    const b=$(`<button class="btn ${on?'goldfill':'gold'}" style="width:auto;min-width:150px">${o[1]}<span class="sub">${o[2]}</span></button>`);
+    b.onclick=()=>{ S.h2h.holes=o[0]; render(); }; row.appendChild(b);
+  }); add(row);
+  add($(`<div style="height:10px"></div>`));
+  const stack=$(`<div class="stack" style="max-width:420px;margin:0 auto"></div>`);
+  const q=$(`<button class="btn goldfill">Quick Match<span class="sub">Get paired with the next player online</span></button>`); q.onclick=h2hQuick; stack.appendChild(q);
+  const cr=$(`<button class="btn teal">Play a friend<span class="sub">Create a private match and share the code</span></button>`); cr.onclick=()=>h2hCreate(false); stack.appendChild(cr);
+  // join by code
+  const jwrap=$(`<div style="margin-top:8px;display:flex;gap:8px">
+    <input id="h2h-code" maxlength="6" placeholder="ENTER CODE" style="flex:1;text-transform:uppercase;letter-spacing:.18em;text-align:center;font-weight:800;padding:12px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--oncard)">
+    <button class="btn gold" id="h2h-joinbtn" style="width:auto;padding:0 18px">Join</button></div>`);
+  stack.appendChild(jwrap);
+  const brd=$(`<button class="btn ghost" style="margin-top:12px">🏆 1v1 Leaderboard<span class="sub">Win/loss records across all players</span></button>`); brd.onclick=()=>{ S.screen='h2hboard'; render(); }; stack.appendChild(brd);
+  add(stack);
+  add($(`<p class="small muted center" style="margin:16px auto 0;max-width:400px">4-player foursomes (best ball, scramble, free-for-all) are coming next.</p>`));
+  const jb=RT.querySelector('#h2h-joinbtn'), ci=RT.querySelector('#h2h-code');
+  if(jb) jb.onclick=()=>h2hJoin(ci&&ci.value);
+  if(ci) ci.onkeydown=e=>{ if(e.key==='Enter') h2hJoin(ci.value); };
+}
+function scrH2HLobby(){
+  const st=S.h2h.status, submitted=S.h2h.submitted;
+  h2hBack('','‹ Leave match', h2hLeave);
+  if(S.h2h.searching){
+    add($(`<div class="center" style="padding:40px 0"><span class="authspin" style="width:26px;height:26px"></span>
+      <h1 class="center" style="font-size:24px;margin:18px 0 4px">Finding an opponent…</h1>
+      <p class="lede center">Pairing you with the next ${S.h2h.holes}-hole player online.</p></div>`));
+    return;
+  }
+  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">1v1 · ${S.h2h.holes} holes</span></div>`));
+  if(submitted){
+    add($(`<h1 class="center" style="font-size:24px;margin:14px 0 4px">Draft submitted ✓</h1>`));
+    add($(`<p class="lede center">Waiting for your opponent to finish their golfer…</p>`));
+    add($(`<div class="center" style="margin-top:14px"><span class="authspin" style="width:22px;height:22px"></span></div>`));
+  } else {
+    add($(`<h1 class="center" style="font-size:24px;margin:14px 0 4px">Waiting for an opponent…</h1>`));
+    if(S.h2h.code){
+      add($(`<p class="lede center" style="margin:6px 0 4px">Share this code with a friend:</p>`));
+      const codebox=$(`<div class="center" style="margin:6px 0"><span style="display:inline-block;font-family:var(--mono,monospace);font-size:34px;font-weight:800;letter-spacing:.28em;color:var(--gold);background:rgba(235,166,31,.08);border:1px solid var(--gold);border-radius:12px;padding:12px 22px">${esc(S.h2h.code)}</span></div>`);
+      add(codebox);
+      const cp=$(`<button class="btn ghost" style="max-width:220px;margin:4px auto 0">Copy code</button>`);
+      cp.onclick=()=>{ try{ navigator.clipboard.writeText(S.h2h.code); toast('Code copied'); }catch(e){} }; add(cp);
+    }
+    add($(`<div class="center" style="margin-top:16px"><span class="authspin" style="width:22px;height:22px"></span></div>`));
+  }
+  const n=(S.h2h.players||[]).length;
+  add($(`<p class="small muted center" style="margin-top:16px">${n}/2 players in the match</p>`));
+}
+function scrH2HDraft(){
+  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">1v1 Draft · your wheel</span></div>`));
+  add($(`<h1 class="center" style="font-size:22px;margin:8px 0 2px">Build your golfer</h1>`));
+  add($(`<p class="lede center" style="margin:2px 0 12px">Spin your own wheel and take one skill from each golfer. You get 3 re-spins. Fill all 8 to lock in your build.</p>`));
+  // live OVR + fill
+  add($(`<div class="center" style="margin-bottom:8px"><span class="tag">OVR ${h2hOvr()} · ${h2hFilled()}/8 filled</span></div>`));
+  if(S.h2h.current||S.h2h.spinning){
+    const g=S.h2h.current, sp=S.h2h.spinning;
+    const sub=g&&!sp?[g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · '):'';
+    add($(`<div class="reel ${sp?'spinning':''} ${g&&!sp?'landed':''}"><div class="name">${g?esc(g.name):'…'}</div><div class="sub">${esc(sub)}</div></div>`));
+  }
+  const cols=$(`<div class="cols"></div>`); const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
+  cols.appendChild(left); cols.appendChild(right);
+  const reelEl=RT.querySelector('.reel'); if(reelEl) left.appendChild(reelEl);
+  add(cols);
+  if(S.h2h.current&&!S.h2h.spinning){
+    left.appendChild($(`<div class="small muted" style="margin:10px 0 -2px;text-align:center">Tap a skill to draft it</div>`));
+    const grid=$(`<div class="attrs"></div>`);
+    CATS.forEach(cat=>{ const filled=!!S.h2h.slots[cat.k];
+      const b=$(`<button class="attr" ${filled?'disabled':''}><span class="lab">${cat.short}</span><span class="val">${S.h2h.current[cat.k]}</span>${filled?'':'<span class="take">Take</span>'}</button>`);
+      if(!filled) b.onclick=()=>h2hTake(cat.k); grid.appendChild(b);
+    }); left.appendChild(grid);
+    if(S.h2h.reSpins>0){ const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${S.h2h.reSpins} left</button>`); re.onclick=h2hReSpin; left.appendChild(re); }
+    else left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left, take one of ${esc(S.h2h.current.name)}'s skills.</div>`));
+  } else if(!S.h2h.spinning && h2hFilled()<8){
+    const spin=$(`<button class="btn teal" style="font-size:22px;padding:18px">Spin the Wheel<span class="sub">${8-h2hFilled()} slot${8-h2hFilled()>1?'s':''} to fill</span></button>`);
+    spin.onclick=h2hSpin; left.appendChild(spin);
+  }
+  right.appendChild($(`<h2 style="margin:2px 0 8px">Your scorecard · ${h2hFilled()}/8</h2>`));
+  const card=$(`<div class="card-grid"></div>`);
+  CATS.forEach(cat=>{ const f=S.h2h.slots[cat.k];
+    card.appendChild($(`<div class="slot ${f?'':'empty'}"><span class="lab">${cat.short}</span><span class="who">${f?esc(f.golfer):'·'}</span><span class="v">${f?f.value:'··'}</span></div>`));
+  });
+  right.appendChild(card);
+  if(h2hFilled()>=8){
+    const sub=$(`<button class="btn goldfill" style="margin-top:14px"${S.h2h.submitting?' disabled':''}>${S.h2h.submitting?'Submitting…':'Lock in my golfer ▸'}<span class="sub">OVR ${h2hOvr()} · ready to play</span></button>`);
+    sub.onclick=h2hSubmitDraft; add(sub);
+  }
+}
+function h2hRunTo(card,n){ let t=0; for(let i=0;i<Math.min(n,card.length);i++) t+=card[i].toPar; return t; }
+function scrH2HWatch(){
+  const meName=esc((S.h2h.me&&S.h2h.me.username)||'You'), oppName=esc((S.h2h.opp&&S.h2h.opp.username)||'Opponent');
+  const holes=S.h2h.holes, wn=S.h2h.watchN, baseN=Math.min(wn,holes);
+  const A=S.h2h.myCard, B=S.h2h.oppCard;
+  const ta=h2hRunTo(A.card,baseN), tb=h2hRunTo(B.card,baseN);
+  const done=S.h2h.watchDone;
+  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(dShort(A.course.v))} · ${dCondLabel(A.cond)}</span></div>`));
+  add($(`<h1 class="center" style="font-size:22px;margin:8px 0 2px">${done?'Final':'Live'} · ${baseN}/${holes} holes</h1>`));
+  // scoreboard
+  const board=$(`<div style="max-width:440px;margin:12px auto 0;display:grid;gap:8px"></div>`);
+  const iWin = done && S.h2h.winnerSlot===S.h2h.mySlot, oWin = done && S.h2h.winnerSlot!==S.h2h.mySlot;
+  const rowHTML=(name,tp,win)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-radius:12px;border:1px solid ${win?'var(--gold)':'var(--line)'};background:${win?'rgba(235,166,31,.10)':'rgba(255,255,255,.02)'}">
+    <span style="font-weight:800;font-size:16px">${win?'🏆 ':''}${name}</span>
+    <span class="mono" style="font-size:22px;font-weight:800;color:${tp<0?'#35d6a0':tp>0?'#e88':'var(--oncard)'}">${tp<0?tp:tp>0?'+'+tp:'E'}</span></div>`;
+  board.appendChild($(rowHTML(meName,ta,iWin)));
+  board.appendChild($(rowHTML(oppName,tb,oWin)));
+  add(board);
+  // playoff holes
+  if(wn>holes && S.h2h.playoff.length){
+    const pv=Math.min(wn-holes,S.h2h.playoff.length);
+    const po=$(`<div style="max-width:440px;margin:14px auto 0"><div class="small muted center" style="margin-bottom:6px">Sudden-death playoff</div></div>`);
+    for(let i=0;i<pv;i++){ const p=S.h2h.playoff[i];
+      po.appendChild($(`<div style="display:flex;justify-content:space-between;padding:7px 14px;border-bottom:1px solid var(--line)"><span>Playoff hole ${i+1} (par ${p.par})</span><span class="mono">${meName.split(' ')[0]} ${p.a>0?'+'+p.a:p.a} · ${oppName.split(' ')[0]} ${p.b>0?'+'+p.b:p.b}</span></div>`));
+    }
+    add(po);
+  }
+  if(!done){
+    const sk=$(`<button class="btn ghost" style="max-width:220px;margin:18px auto 0">Skip to result ▸</button>`); sk.onclick=h2hWatchSkip; add(sk);
+  } else {
+    const banner=iWin?'You win! 🏆':oWin?'You lose':'Result';
+    add($(`<h2 class="center" style="margin:18px 0 8px;color:${iWin?'var(--gold)':'inherit'}">${banner}</h2>`));
+    const go=$(`<button class="btn goldfill" style="max-width:300px;margin:0 auto">See result ▸</button>`); go.onclick=()=>{ S.screen='h2hresult'; render(); }; add(go);
+  }
+}
+function scrH2HResult(){
+  const A=S.h2h.myCard, B=S.h2h.oppCard;
+  const meName=esc((S.h2h.me&&S.h2h.me.username)||'You'), oppName=esc((S.h2h.opp&&S.h2h.opp.username)||'Opponent');
+  // official result if the server has resolved it, else our locally-computed winner
+  const official=S.h2h.result&&S.h2h.result.win!=null?S.h2h.result.win:S.h2h.winnerSlot;
+  const voided=S.h2h.void||(S.h2h.result&&S.h2h.result.void);
+  const iWin = !voided && official===S.h2h.mySlot;
+  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">1v1 · ${S.h2h.holes} holes · ${esc(dShort((A&&A.course.v)||''))}</span></div>`));
+  if(voided){
+    add($(`<h1 class="center" style="font-size:26px;margin:14px 0 4px">No contest</h1>`));
+    add($(`<p class="lede center">The two players' results didn't match, so this match was voided. Give it another go.</p>`));
+  } else {
+    add($(`<h1 class="center" style="font-size:34px;margin:12px 0 2px;color:${iWin?'var(--gold)':'inherit'}">${iWin?'Victory 🏆':'Defeat'}</h1>`));
+    if(A&&B){
+      const ta=A.total, tb=B.total;
+      const board=$(`<div style="max-width:420px;margin:14px auto 0;display:grid;gap:8px"></div>`);
+      const rowHTML=(name,tp,win)=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:12px;border:1px solid ${win?'var(--gold)':'var(--line)'};background:${win?'rgba(235,166,31,.10)':'rgba(255,255,255,.02)'}"><span style="font-weight:800">${win?'🏆 ':''}${name}</span><span class="mono" style="font-size:20px;font-weight:800">${tp<0?tp:tp>0?'+'+tp:'E'}</span></div>`;
+      board.appendChild($(rowHTML(meName,ta, official===S.h2h.mySlot)));
+      board.appendChild($(rowHTML(oppName,tb, official!==S.h2h.mySlot)));
+      add(board);
+      if(S.h2h.playoff&&S.h2h.playoff.length) add($(`<p class="small muted center" style="margin-top:8px">Decided in a ${S.h2h.playoff.length}-hole sudden-death playoff.</p>`));
+    }
+  }
+  const stack=$(`<div class="stack" style="max-width:360px;margin:22px auto 0"></div>`);
+  const again=$(`<button class="btn goldfill">Play again</button>`); again.onclick=openH2H; stack.appendChild(again);
+  const brd=$(`<button class="btn gold">🏆 1v1 Leaderboard</button>`); brd.onclick=()=>{ S.screen='h2hboard'; render(); }; stack.appendChild(brd);
+  const home=$(`<button class="btn ghost">Back to title</button>`); home.onclick=h2hLeave; stack.appendChild(home);
+  add(stack);
+}
+function scrH2HBoard(){
+  h2hBack('','‹ Back', ()=>{ S.screen=S.h2h?'h2hhome':'title'; if(!S.h2h){h2hClearTimers();} render(); });
+  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">🏆 1v1 Leaderboard</span></div>`));
+  add($(`<h1 class="center" style="font-size:24px;margin:9px 0 10px">Win / loss records</h1>`));
+  const wrap=$(`<div id="h2hboardwrap" class="board" style="max-width:520px;margin:0 auto"><div class="center muted" style="padding:24px">Loading…</div></div>`);
+  add(wrap);
+  h2hLoadBoard();
+}
+let _h2hBoardCache=null;
+async function h2hLoadBoard(){
+  try{ const {data,error}=await sb.rpc('h2h_board',{p_mode:'1v1',p_limit:100}); if(error) throw error; _h2hBoardCache=data||[]; }
+  catch(e){ _h2hBoardCache=[]; }
+  const wrap=document.getElementById('h2hboardwrap'); if(!wrap) return;
+  const rows=_h2hBoardCache; wrap.innerHTML='';
+  if(!rows.length){ wrap.appendChild($(`<div class="center muted" style="padding:24px">No 1v1 games played yet. Be the first!</div>`)); return; }
+  wrap.appendChild($(`<div class="lb lbhead" style="grid-template-columns:26px 1fr 84px 60px"><span></span><span>Player</span><span style="text-align:right">W-L</span><span style="text-align:right">Win%</span></div>`));
+  rows.forEach((r,i)=>{ const mine=r.user_id===h2hUid();
+    const pct=r.win_pct!=null?Math.round(r.win_pct*100)+'%':'—';
+    wrap.appendChild($(`<div class="lb${mine?' lbme':''}" style="grid-template-columns:26px 1fr 84px 60px">
+      <span class="mono" style="opacity:.7">${i+1}</span>
+      <span class="pl" style="font-weight:${mine?800:600}">${esc(r.username)}${mine?' <span class="small" style="color:var(--gold)">· you</span>':''}${r.streak>=3?` <span class="small" style="color:#e88">🔥${r.streak}</span>`:''}</span>
+      <span class="mny mono" style="text-align:right">${r.wins}-${r.losses}</span>
+      <span class="mny mono" style="text-align:right">${pct}</span></div>`));
+  });
+}
+
 // The Supabase CDN script is now `defer`ed, so window.supabase may not exist yet at this point in the
 // (non-deferred) inline script. Deferred external scripts run AFTER parsing but BEFORE DOMContentLoaded,
 // so if it isn't ready, wait for DOMContentLoaded to run sbInit — accounts/leaderboard still initialize,

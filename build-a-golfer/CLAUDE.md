@@ -3352,6 +3352,49 @@ allows Google Fonts, or self-host Anton.*
     migration is applied it's fully back. Rollback if ever needed: `grant execute on function
     public.email_for_username(text) to anon, authenticated;`.
 
+- **CS111 — Online multiplayer Phase 1: 1v1 head-to-head (backend + client, NOT yet deployed).**
+  Owner's new game mode: real online 1v1 where each player drafts their own golfer, both watch the rounds
+  play out on the same course, low total wins, and every result feeds a per-mode W/L leaderboard. Planned
+  first (full design in `build-a-golfer/H2H-SPEC.md`, owner-approved: independent wheels + 3 re-spins for
+  every mode, 9/18 holes, separate W/L ladder per mode, random teams for the Phase-2 foursomes, sudden-death
+  ties, no wagering yet). Shipped Phase 1 (1v1); foursomes = Phase 2, ELO/wagering = Phase 3.
+  - **Backend — `supabase/41_h2h_phase1.sql` (owner must run).** Tables `h2h_matches` / `h2h_players` /
+    `h2h_records` / `h2h_queue`, RLS on, all writes via SECURITY DEFINER RPCs. `h2h_create(mode,holes,public)`,
+    `h2h_join(code)`, `h2h_quick(mode,holes)` (Quick-Match via `FOR UPDATE SKIP LOCKED`), `h2h_submit_draft`,
+    `h2h_state` (opponents' drafts hidden until the round is live), `h2h_report` (consensus resolve — both
+    players' computed winners must agree; idempotent via a status-guarded `UPDATE ... WHERE status='live'` +
+    `GET DIAGNOSTICS`; per-mode W/L records updated exactly once; disagreement → `void`), and `h2h_board(mode)`
+    (public per-mode W/L leaderboard, usernames joined from `profiles`). The server stores only the match
+    `seed`; course + conditions are a pure function of it, derived identically on every client. Schema is
+    general enough for the Phase-2 foursome modes (`bestball`/`scramble`/`ffa`, capacity 4, team column).
+    Validated end-to-end on a local Postgres: full 1v1 lifecycle (create → drafting on join → live on drafts
+    → done on consensus), correct W/L + streak, idempotent re-report (no double-count), Quick-Match pairing,
+    disagreement → void, and the board RPC. Applies clean + idempotent.
+  - **Client (self-contained module, ~340 lines, does NOT touch career/daily game logic).** New screens
+    `h2hhome` / `h2hlobby` / `h2hdraft` / `h2hwatch` / `h2hresult` / `h2hboard`, registered in `render()`'s
+    dispatch + wide-screen list; entry via a new "⚔ Play Online" button on the title screen (gated on a
+    signed-in account — guests get the sign-in nudge). Flow: pick 9/18 → Quick Match OR create/enter a 6-char
+    code → lobby (shows the code, waits) → own independent-wheel draft with 3 re-spins (reuses `drawGolfer`
+    seeded by the server-assigned `wheel_seed`; live OVR via `ovrFromSkills`) → submit → watch (both rounds
+    run in lockstep locally using the deterministic `dSimHole`, hole-by-hole reveal, running to-par per
+    player) → resolve (low total wins; a tie plays a deterministic sudden-death playoff off the shared seed)
+    → report → result (Victory/Defeat/No-contest, both scorecards, Play again / 1v1 Leaderboard / Home). All
+    state transitions are driven by polling `h2h_state` (~2s); Supabase Realtime is a Phase-2 upgrade. The
+    board reads `h2h_board('1v1')`. New `track()` events: h2h_create/join/quick/draft_start/respin/
+    draft_submit/watch_start/report.
+  - **Verified in Playwright** with an in-page mock server (mirroring the SQL RPC logic) that auto-plays the
+    opponent, driving one real client through the full flow: guest → sign-in nudge; home → lobby (code shown)
+    → draft (8 skills, live OVR) → submit → live → watch → resolve (winner) → report → "Victory" result;
+    board shows the W/L row; and the disagreement path → status `void` → "No contest". Regression: the title
+    Play Online button renders, the existing career draft (spin → take 8 → build) and Daily Challenge both
+    still work, zero page errors.
+  - **NOT deployed to /golf yet** — the client depends on migration 41's RPCs, so deploying before the owner
+    runs it would put a live-but-broken "Play Online" button in front of real users. Sequence: owner runs
+    `supabase/41_h2h_phase1.sql` (and `40_runtour_email_login.sql` if not yet) in the Supabase SQL editor,
+    confirms, THEN deploy the client. Phase 1 known gaps (documented in the spec, hardened later): draft
+    legality is only lightly sanity-checked (full wheel-replay / edge-function re-sim is Phase 2/3); the
+    result is trusted via 2-client consensus, not yet server-re-simulated.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
