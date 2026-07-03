@@ -3552,6 +3552,25 @@ allows Google Fonts, or self-host Anton.*
     signed in (consuming the stash). Full bot match (trickle) completes end-to-end in all four modes;
     real-human flow + daily/career regress clean; zero page errors. Deployed to /golf.
 
+- **CS123 — Menu (title screen) revamp: highlight online, tidy the hierarchy** (parity with RunThePitch's
+  home revamp). Owner: promote the online modes and improve the menu UI/UX. Online play was buried as a
+  small "⚔ Play Online" button in a secondary row; now it's its own headline block, mirroring the soccer
+  game's pattern in RunTheTour's green/gold brand.
+  - **Play Online block** (`.online-home`): a teal-accented card (distinct from the gold career / blue daily
+    CTAs so colour alone signals "this is the online stuff"), a pulsing "live" dot + "NEW" badge, and two
+    entry buttons — **1v1** ("Head-to-head · live") and **Foursomes** ("2v2 & 4-player") — that drop
+    straight into the online home with that mode preset (`openH2H('1v1'|'bestball')`; `openH2H` now takes an
+    optional, onclick-safe mode arg). Reduced-motion disables the pulse.
+  - **Cleaner hierarchy:** hero + 30-year badge → a shortened one-line lede ("Draft your golfer one skill at
+    a time, then chase majors and glory, solo or online.") → the primary Step-to-the-Tee-Box / Resume CTAs →
+    Daily Challenge (+ streak/spotlight) → the Play Online block → **secondary actions demoted** from two
+    `.btn` rows to a single small-link row (`.home2`: How to Play · Leaderboard · Trophy Room) → DataGolf
+    credit. Less button-wall, clear primary path, online clearly featured.
+  - Verified in Playwright (430px): the block renders with the live dot/NEW badge + both buttons, guest taps
+    nudge sign-in, signed-in taps open the online home with the right preset mode (1v1 / bestball), the
+    secondary links route correctly (rules / leaderboard / trophy room), and career-draft + daily regress
+    clean; zero page errors. Screenshot confirms the new layout. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -215,6 +215,29 @@ window.GA_ID='G-L29P5MRWKE';
   @media (prefers-reduced-motion:reduce){.spotlive{animation:none}}
   .stack>*+*{margin-top:10px}
 
+  /* ---- Play Online: promoted to its own teal-accented home block (distinct from the gold primary) ---- */
+  .online-home{position:relative; z-index:2; width:100%; max-width:420px; margin:16px auto 4px;
+    border:1px solid rgba(15,168,136,.5); border-radius:16px; padding:12px 12px 13px;
+    background:linear-gradient(180deg, rgba(15,168,136,.12), rgba(6,20,26,.28))}
+  .online-lbl{display:flex; align-items:center; justify-content:center; gap:8px; font-family:var(--body);
+    font-weight:900; letter-spacing:.16em; font-size:11px; text-transform:uppercase; color:#4fe0c1; margin-bottom:10px}
+  .online-dot{width:8px; height:8px; border-radius:50%; background:#3ce8b8; box-shadow:0 0 0 0 rgba(60,232,184,.6); animation:onDot 2s ease-out infinite}
+  @keyframes onDot{0%{box-shadow:0 0 0 0 rgba(60,232,184,.55)} 70%{box-shadow:0 0 0 7px rgba(60,232,184,0)} 100%{box-shadow:0 0 0 0 rgba(60,232,184,0)}}
+  .online-badge{background:#3ce8b8; color:#06251e; font-size:9px; font-weight:900; letter-spacing:.08em; border-radius:5px; padding:2px 6px}
+  .online-row{display:flex; gap:8px}
+  .online-btn{flex:1 1 0; display:flex; flex-direction:column; gap:2px; align-items:flex-start; text-align:left;
+    background:rgba(6,20,26,.55); color:#fff; border:1px solid rgba(15,168,136,.55); border-radius:12px; padding:11px 12px; cursor:pointer;
+    box-shadow:0 3px 10px rgba(0,0,0,.25); transition:filter .12s, transform .12s}
+  .online-btn:hover{filter:brightness(1.12)} .online-btn:active{transform:translateY(1px)}
+  .online-btn .ol-l{font-family:var(--display); font-style:italic; font-size:17px; line-height:1; color:#eafffb}
+  .online-btn .ol-s{font-size:10.5px; font-weight:600; color:#9fd9cd; letter-spacing:.02em}
+  @media (prefers-reduced-motion:reduce){.online-dot{animation:none}}
+  /* secondary menu row: demoted small links */
+  .home2{display:flex; flex-wrap:wrap; justify-content:center; gap:8px 14px; margin-top:16px; max-width:440px}
+  .home2 button{background:none; border:none; color:var(--muted); font-family:var(--body); font-weight:700; font-size:13px;
+    letter-spacing:.01em; cursor:pointer; padding:5px 4px; display:inline-flex; align-items:center; gap:6px}
+  .home2 button:hover{color:var(--oncard)}
+
   /* ---- title scene ---- */
   .scene{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none}
   .coursebg{position:absolute; inset:0; width:100%; height:100%; display:block}
@@ -3727,7 +3750,7 @@ function scrTitle(){
   w.appendChild($(`<h1 class="hero" style="font-size:clamp(34px,8.5vw,52px)"><span class="hr1">Your Golfer.</span><br><span class="hr2">Your Tour.</span></h1>`));
   w.appendChild($(`<div class="herorule" aria-hidden="true"><span></span><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.6" fill="none" stroke="#EBA61F" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1.5" fill="#EBA61F"/></svg><span></span></div>`));
   w.appendChild($(`<div class="center" style="margin:10px 0 2px"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ 30-Year Career Simulation</span></div>`));
-  w.appendChild($(`<p class="lede center" style="max-width:360px;margin:10px auto 8px">Draft one skill from each of golf's greatest, build your own player, then live out their career, up to 30 years on tour. Chase majors, the Ryder Cup and international medals, and retire a legend.</p>`));
+  w.appendChild($(`<p class="lede center" style="max-width:340px;margin:10px auto 8px">Draft your golfer one skill at a time, then chase majors and glory, solo or online.</p>`));
   const c=career();
   if(c.builds>0){
     w.appendChild($(`<div class="small muted center" style="margin:-4px 0 12px">Your best: <b style="color:var(--gold)">${fmt(c.bestMoney)}</b> · OVR ${c.bestOvr} · ${c.builds} build${c.builds>1?'s':''}</div>`));
@@ -3795,21 +3818,26 @@ function scrTitle(){
     stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--muted)">⭐ Next Monthly Spotlight: <b style="color:var(--gold)">${esc(dShort(DAILY_COURSES[ns.key].v))}</b> · ${fmtDayKey(ns.liveDayKey)}</div>`));
   }
   w.appendChild(stack);
-  const mini=$(`<div class="mini"></div>`);
-  const how=$(`<button class="btn gold">How to Play</button>`);
-  const lb=$(`<button class="btn gold">🏆 Leaderboard</button>`);
-  how.onclick=openRules;
-  lb.onclick=()=>{S.overlay='leaderboard';render();};
-  mini.appendChild(how); mini.appendChild(lb);
-  w.appendChild(mini);
-  const mini2=$(`<div class="mini"></div>`);
-  const tr=$(`<button class="btn gold">🏅 Trophy Room</button>`);
-  tr.onclick=()=>{S.overlay='record';render();};
-  const pvp=$(`<button class="btn teal">⚔ Play Online</button>`);
-  pvp.onclick=openH2H;
-  mini2.appendChild(tr); mini2.appendChild(pvp);
-  w.appendChild(mini2);
-  const credit=$(`<div class="small muted center" style="margin-top:18px;line-height:1.6;opacity:.75">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
+  // ── Play Online: promoted to its own highlighted block (teal + live dot + NEW), so it reads as
+  //    a headline feature, not a footnote. Two entry points drop you into the online home preset. ──
+  const on=$(`<div class="online-home">
+    <div class="online-lbl"><span class="online-dot"></span>Play Online <span class="online-badge">NEW</span></div>
+    <div class="online-row">
+      <button class="online-btn" id="ol-1v1"><span class="ol-l">1v1</span><span class="ol-s">Head-to-head · live</span></button>
+      <button class="online-btn" id="ol-4"><span class="ol-l">Foursomes</span><span class="ol-s">2v2 &amp; 4-player</span></button>
+    </div></div>`);
+  const ob1=on.querySelector('#ol-1v1'), ob4=on.querySelector('#ol-4');
+  if(ob1) ob1.onclick=()=>openH2H('1v1');
+  if(ob4) ob4.onclick=()=>openH2H('bestball');
+  w.appendChild(on);
+  // ── secondary actions, demoted to small links ──
+  const sec=$(`<div class="home2"></div>`);
+  const mkLink=(label,fn)=>{ const b=$(`<button type="button">${label}</button>`); b.onclick=fn; sec.appendChild(b); };
+  mkLink('How to Play', openRules);
+  mkLink('🏆 Leaderboard', ()=>{S.overlay='leaderboard';render();});
+  mkLink('🏅 Trophy Room', ()=>{S.overlay='record';render();});
+  w.appendChild(sec);
+  const credit=$(`<div class="small muted center" style="margin-top:16px;line-height:1.6;opacity:.7">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
   w.appendChild(credit);
   add(w);
 }
@@ -8131,10 +8159,11 @@ function h2hClearTimers(){ if(_h2hPoll){clearTimeout(_h2hPoll);_h2hPoll=null;} i
 function h2hUid(){ return sbUser&&sbUser.id; }
 function h2hErr(e){ const m=(e&&e.message)||String(e||''); toast(esc(m.replace(/^.*:\s*/,'')||'Something went wrong')); }
 // entry point (title button / menu): needs a signed-in account with a username
-function openH2H(){
+function openH2H(mode){
   if(!sb){ toast('Online play needs a connection'); return; }
   if(!sbSignedIn()){ S.overlay='account'; render(); toast('Sign in to play online'); return; }
-  h2hClearTimers(); S.h2h={mode:(S.h2h&&S.h2h.mode)||'1v1', holes:(S.h2h&&S.h2h.holes)||9}; S.screen='h2hhome'; render();
+  const preset=(typeof mode==='string' && H2H_MODES.some(m=>m.id===mode))?mode:null;   // guard: also used as an onclick handler
+  h2hClearTimers(); S.h2h={mode:preset||(S.h2h&&S.h2h.mode)||'1v1', holes:(S.h2h&&S.h2h.holes)||9}; S.screen='h2hhome'; render();
 }
 function h2hLeave(){ h2hClearTimers(); const keep=S.h2h?{mode:S.h2h.mode,holes:S.h2h.holes}:null; S.h2h=keep; S.screen='title'; render(); }
 
