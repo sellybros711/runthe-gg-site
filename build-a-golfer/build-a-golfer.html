@@ -3786,7 +3786,7 @@ function scrTitle(){
     const rb=$(`<button class="btn ${cs?'gold':'teal'}">Resume Your Golfer<span class="sub">${ri.n}/8 skills drafted · pick up where you left off</span></button>`);
     rb.onclick=restoreResume; stack.appendChild(rb);
   }
-  const go=$(`<button class="btn goldfill">${(ri||cs)?'Start a New Golfer':'Step to the Tee Box'}<span class="sub">Build your golfer, start their career</span></button>`);
+  const go=$(`<button class="btn goldfill">${(ri||cs)?'Start a New Golfer':'Step to the Tee Box'}<span class="sub">Build your golfer, start your career</span></button>`);
   go.onclick=()=>{S.mode='easy';S.screen='setup';render();};
   stack.appendChild(go);
   const dleft=dailyAttemptsLeft(), datt=dailyAttempts(), dbest=dailyBest();
@@ -8167,7 +8167,7 @@ function openH2H(mode){
   if(!sb){ toast('Online play needs a connection'); return; }
   if(!sbSignedIn()){ S.overlay='account'; render(); toast('Sign in to play online'); return; }
   const preset=(typeof mode==='string' && H2H_MODES.some(m=>m.id===mode))?mode:null;   // guard: also used as an onclick handler
-  h2hClearTimers(); S.h2h={mode:preset||(S.h2h&&S.h2h.mode)||'1v1', holes:(S.h2h&&S.h2h.holes)||9}; S.screen='h2hhome'; render();
+  h2hClearTimers(); S.h2h={mode:preset||(S.h2h&&S.h2h.mode)||'1v1', holes:(S.h2h&&S.h2h.holes)||18}; S.screen='h2hhome'; render();
 }
 function h2hLeave(){ h2hClearTimers(); const keep=S.h2h?{mode:S.h2h.mode,holes:S.h2h.holes}:null; S.h2h=keep; S.screen='title'; render(); }
 

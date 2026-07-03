@@ -3571,6 +3571,19 @@ allows Google Fonts, or self-host Anton.*
     secondary links route correctly (rules / leaderboard / trophy room), and career-draft + daily regress
     clean; zero page errors. Screenshot confirms the new layout. Deployed to /golf.
 
+- **CS124 — Cohesive teal accent across the online section (deployed).** New `.online-tag` chip (teal, with
+  a pulsing "live" dot on the finding/waiting screens) replaces the gold tag at the top of every H2H screen
+  (online home, lobby, draft, matchup, watch, result, leaderboard) via a `h2hTag(html, live)` helper — so the
+  whole online area reads as one distinct teal-accented section tied to the menu's Play Online block. Owner
+  reviewed preview screenshots and approved.
+- **CS125 — Two menu/online tweaks (deployed with CS124).** (1) Online selection screen now defaults to
+  **18 holes** instead of 9 (`openH2H` holes default → 18). (2) The gold "Step to the Tee Box" button
+  subtext reads **"Build your golfer, start your career"** (was "…start their career"). Verified in
+  Playwright (subtext + 18-holes highlighted by default, zero errors).
+- **Leaderboard seed:** `supabase/44_h2h_seed_board.sql` — one-time seed of ~185 believable bot records
+  across the 4 online modes so the boards look populated day one (same name pool as the live bots, realistic
+  spread, `ON CONFLICT DO NOTHING`, idempotent). Owner-run in the Supabase SQL editor.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
