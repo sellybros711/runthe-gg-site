@@ -3438,6 +3438,26 @@ allows Google Fonts, or self-host Anton.*
     Phase 3 remains: Supabase Realtime (replace polling), ELO/tiers/seasons, rivalry cards, emotes/spectate,
     partner-coordinated drafting, currency/wagering.
 
+- **CS117 — H2H watch plays out shot-by-shot (like the Daily Challenge).** Owner: "Can the players watch
+  the h2h shot by shot, like the daily challenge?" The watch used to reveal one hole-score per unit at a
+  time; now you watch YOUR golfer's round play out shot by shot, exactly like the daily. Reuses the daily's
+  pure `dShotSeq` generator + `dShotPanel` renderer (with its live `reveal` cascade) — no daily code changed.
+  - `h2hBuildFocus()` builds the shot-by-shot round for the golfer you watch: your own drafted golfer, or —
+    in **Scramble** — your team's combined golfer (so the play-by-play matches the ball your team actually
+    plays). Deterministic (seeded per hole from the shared match seed + build hash).
+  - New driver `h2hWatchStep()` reveals shots one at a time (`H2H_SHOT_MS=620`), and when a hole is holed the
+    live standings advance exactly one hole (every unit's running to-par updates in lockstep), then on to the
+    next hole (`H2H_HOLE_DWELL=880`). Playoff holes reveal score-by-score after the regular round. "Skip to
+    result" jumps to the end. Opponents' totals never run ahead of your round, so the tension holds.
+  - `scrH2HWatch` is now two columns: left = the shot panel for your hole in play (par/yardage + each shot
+    with club, distance, and lie, result tag on holing); right = the live standings (2 team rows or 4 player
+    rows, ranked, your row marked, winner gold at the end).
+  - Verified in Playwright across 1v1 / Best Ball / Scramble / FFA: shots reveal on the panel, the scoreboard
+    advances hole-by-hole in lockstep, a full 9-hole FFA round runs to completion revealing all holes,
+    Scramble focuses the combined "Your team" golfer, the report still fires exactly once, and the
+    disagreement→void path is unaffected. Daily Challenge (shares `dShotSeq`/`dShotPanel`) + career draft
+    regress clean; zero page errors. Screenshot confirms the two-column shot-by-shot watch. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
