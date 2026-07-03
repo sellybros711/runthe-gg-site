@@ -8012,6 +8012,13 @@ function h2hLeave(){ h2hClearTimers(); const keep=S.h2h?{mode:S.h2h.mode,holes:S
 
 /* ---- deterministic round: course + conditions are a pure function of the match seed ---- */
 function h2hCourseKey(seed){ return DAILY_KEYS[(seed>>>0)%DAILY_KEYS.length]; }
+// pick a match seed that maps to a chosen course (private rooms let the creator pick). Conditions
+// still vary (they come from the full seed hash); only the course index (seed % N) is pinned.
+function h2hSeedForCourse(courseKey){
+  const N=DAILY_KEYS.length, idx=DAILY_KEYS.indexOf(courseKey); if(idx<0) return null;
+  let base=Math.floor(Math.random()*2147482000); base=base-(base%N)+idx;
+  if(base>2147483646) base-=N; if(base<0) base+=N; return base;
+}
 function h2hCondName(seed){ const r=mulberry32(((seed>>>0)^0x5bd1e995)>>>0)(); return r<0.27?'calm':r<0.72?'breezy':r<0.92?'windy':'gusting'; }
 function h2hBuildHash(sk){ let h=2166136261>>>0; for(const c of CATS){ h^=(sk[c.k]|0); h=Math.imul(h,16777619); } return h>>>0; }
 // one hole's strokes-to-par for a given build; i can exceed the course length (playoff wraps)
@@ -8030,10 +8037,17 @@ function h2hScorecard(sk,seed,holes){
 
 /* ---- RPC actions ---- */
 async function h2hCreate(pub){
-  try{ const {data,error}=await sb.rpc('h2h_create',{p_mode:S.h2h.mode,p_holes:S.h2h.holes,p_public:!!pub});
-    if(error) throw error; const row=Array.isArray(data)?data[0]:data;
+  // private rooms let the creator pick the course (encoded into the seed); quick/public stay random
+  const seed=(!pub && S.h2h.courseKey)?h2hSeedForCourse(S.h2h.courseKey):null;
+  try{
+    let r=await sb.rpc('h2h_create', seed!=null
+      ? {p_mode:S.h2h.mode,p_holes:S.h2h.holes,p_public:!!pub,p_seed:seed}
+      : {p_mode:S.h2h.mode,p_holes:S.h2h.holes,p_public:!!pub});
+    // graceful fallback if the p_seed param isn't live yet (migration 42 not applied) → random course
+    if(r.error && seed!=null) r=await sb.rpc('h2h_create',{p_mode:S.h2h.mode,p_holes:S.h2h.holes,p_public:!!pub});
+    if(r.error) throw r.error; const row=Array.isArray(r.data)?r.data[0]:r.data;
     S.h2h.matchId=row.match_id; S.h2h.code=row.join_code; S.h2h.status='lobby'; S.h2h.host=true;
-    track('h2h_create',{mode:S.h2h.mode,holes:S.h2h.holes}); h2hGoLobby();
+    track('h2h_create',{mode:S.h2h.mode,holes:S.h2h.holes,course:(!pub&&S.h2h.courseKey)||'random'}); h2hGoLobby();
   }catch(e){ h2hErr(e); }
 }
 async function h2hJoin(code){
@@ -8245,10 +8259,17 @@ function scrH2HHome(){
     const b=$(`<button class="btn ${on?'goldfill':'gold'}" style="width:auto;min-width:150px">${o[1]}<span class="sub">${o[2]}</span></button>`);
     b.onclick=()=>{ S.h2h.holes=o[0]; render(); }; row.appendChild(b);
   }); add(row);
-  add($(`<div style="height:10px"></div>`));
+  // course picker for a private "Play with friends" room (Quick Match is always a random course)
+  add($(`<div class="center" style="margin:2px 0 5px"><span class="small muted">Course · when you host a private match</span></div>`));
+  let copts='<option value="">Random course</option>';
+  DAILY_KEYS.forEach(k=>{ const c=DAILY_COURSES[k]; copts+=`<option value="${esc(k)}"${S.h2h.courseKey===k?' selected':''}>${esc(dShort(c.v))}${c.loc?' · '+esc(c.loc):''}</option>`; });
+  const csel=$(`<select id="h2h-course" style="display:block;width:100%;max-width:420px;margin:0 auto 6px;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--oncard);font-weight:600">${copts}</select>`);
+  csel.onchange=()=>{ S.h2h.courseKey=csel.value||null; };
+  add(csel);
+  add($(`<div style="height:8px"></div>`));
   const stack=$(`<div class="stack" style="max-width:420px;margin:0 auto"></div>`);
-  const q=$(`<button class="btn goldfill">Quick Match<span class="sub">${m.cap>2?`Get grouped with the next ${m.cap} players online`:'Get paired with the next player online'}</span></button>`); q.onclick=h2hQuick; stack.appendChild(q);
-  const cr=$(`<button class="btn teal">Play with friends<span class="sub">Create a private match and share the code</span></button>`); cr.onclick=()=>h2hCreate(false); stack.appendChild(cr);
+  const q=$(`<button class="btn goldfill">Quick Match<span class="sub">${m.cap>2?`Get grouped with the next ${m.cap} players online`:'Get paired with the next player online'} · random course</span></button>`); q.onclick=h2hQuick; stack.appendChild(q);
+  const cr=$(`<button class="btn teal">Play with friends<span class="sub">Private match${S.h2h.courseKey?' · '+esc(dShort(DAILY_COURSES[S.h2h.courseKey].v)):' · random course'} · share the code</span></button>`); cr.onclick=()=>h2hCreate(false); stack.appendChild(cr);
   // join by code
   const jwrap=$(`<div style="margin-top:8px;display:flex;gap:8px">
     <input id="h2h-code" maxlength="6" placeholder="ENTER CODE" style="flex:1;text-transform:uppercase;letter-spacing:.18em;text-align:center;font-weight:800;padding:12px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--oncard)">
@@ -8288,9 +8309,15 @@ function scrH2HLobby(){
   const list=$(`<div style="max-width:380px;margin:16px auto 0;display:grid;gap:7px"></div>`);
   const ordered = teamsKnown ? players.slice().sort((a,b)=>(a.team-b.team)||(a.slot-b.slot)) : players;
   ordered.forEach(p=>{ const mine=p.user_id===h2hUid();
+    // status: ready (draft submitted) · drafting (building their golfer) · joined (still in the lobby)
+    const stTxt = p.submitted ? 'ready' : (S.h2h.status==='drafting' ? 'drafting' : 'joined');
+    const stCol = p.submitted ? 'var(--gold)' : 'var(--muted)';
+    const rightHTML = teamsKnown
+      ? `<span class="small"><span style="color:var(--gold)">Team ${(p.team|0)+1}</span> <span style="color:${stCol}">· ${stTxt}</span></span>`
+      : `<span class="small" style="color:${stCol}">${stTxt}</span>`;
     list.appendChild($(`<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-radius:10px;border:1px solid ${mine?'var(--gold)':'var(--line)'};background:rgba(255,255,255,.02)">
       <span style="font-weight:${mine?800:600}">${esc(p.username)}${mine?' <span class="small" style="color:var(--gold)">· you</span>':''}</span>
-      ${teamsKnown?`<span class="small" style="color:var(--gold)">Team ${(p.team|0)+1}</span>`:`<span class="small muted">${p.submitted?'ready':'in'}</span>`}</div>`));
+      ${rightHTML}</div>`));
   });
   for(let i=0;i<need;i++) list.appendChild($(`<div style="padding:9px 13px;border-radius:10px;border:1px dashed var(--line);opacity:.5" class="small muted">Waiting for a player…</div>`));
   add(list);

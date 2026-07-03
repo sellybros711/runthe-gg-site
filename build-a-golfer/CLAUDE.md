@@ -3476,6 +3476,27 @@ allows Google Fonts, or self-host Anton.*
     result) still completes with the board populating and the void path intact. Screenshots confirm the
     1v1 two-column and 4-player FFA layouts. Daily + career regress clean; zero page errors. Deployed to /golf.
 
+- **CS119 — H2H tester feedback: lobby status label + host-picks-course (private rooms).** From a real
+  2-player test (screenshots):
+  1. **Lobby status "in" → "drafting".** In the waiting-room roster, a player still building their golfer
+     showed "in", which read like "ready". Now shows **drafting** (still building) · **ready** (draft
+     submitted) · **joined** (in the lobby, pre-draft), ready in gold. For team modes it shows the team
+     badge plus the status ("Team 1 · drafting"). Pure client.
+  2. **The private-room host can pick the course** (owner-confirmed "yes if it's a private room"). Home
+     screen gained a Course `<select>` (Random + all 39 daily courses) that applies only when you host a
+     private "Play with friends" match; Quick Match / public lobbies stay random-course so nobody farms a
+     favorable venue on the public boards. The course is encoded into the match seed
+     (`h2hSeedForCourse`: pick a seed where `seed % N` = the chosen course index; conditions still vary),
+     so every client derives the same course with no schema/state change. `supabase/42_h2h_course_pick.sql`
+     (owner-run) replaces `h2h_create` with a 4-arg version taking an optional `p_seed`, honored ONLY for
+     private rooms and only when in range, else server-random. Client sends `p_seed` for a private
+     course-pick and **gracefully falls back** to a random-course create if the param isn't live yet (so
+     deploying before the migration can't break create — it just randoms until 42 is applied). Validated
+     on local Postgres (private pins the seed, public/out-of-range fall back, 3-arg calls still work via
+     the default) and in Playwright (chosen seed maps to the chosen course, public/random send no seed,
+     the error→retry fallback path, and the new lobby labels). Deployed to /golf. **ACTION: run
+     `supabase/42_h2h_course_pick.sql`** to activate host-picks-course (label fix is live regardless).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
