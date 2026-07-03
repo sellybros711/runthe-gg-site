@@ -287,10 +287,12 @@
   // pin-drop) if the token/SDK/imagery are unavailable — it can never break a race.
   // NOTE: needs live testing with a real token; untested against Mapillary so far.
   var MAPILLARY_TOKEN = 'MLY|28596352536621799|108d6154fbd03cc2b4bdbb06b9aac963';
-  // TEMPORARY testing aid: force the first stage of every race to be a Street
-  // Scout (in a dense-coverage city) so it's easy to reach. Set back to false to
-  // restore normal random selection once Street Scout is confirmed working.
-  var FORCE_STREET_FIRST = true;
+  // Street Scout is PARKED until it can be tested end-to-end where Mapillary is
+  // reachable (the build sandbox blocks Mapillary, so it can't be debugged here).
+  // Flip STREET_LIVE = true to re-enable the game type — token + integration are
+  // preserved. FORCE_STREET_FIRST forces stage 1 to Street Scout (testing only).
+  var STREET_LIVE = false;
+  var FORCE_STREET_FIRST = false;
 
   var PENALTY = { trivia:15, math:15, memory:12, spatial:12, reflex:10, word:12, dragdrop:12, audio:15, duo:8 };
 
@@ -1129,7 +1131,7 @@
      where in the world you are." DISABLED unless MAPILLARY_TOKEN is set, and
      fully FAIL-OPEN: any hiccup (no token, SDK/tiles blocked, no imagery nearby)
      silently falls back to the plain map pin-drop so a race can never break. */
-  function streetEnabled(){ return typeof MAPILLARY_TOKEN==='string' && MAPILLARY_TOKEN.length>10; }
+  function streetEnabled(){ return STREET_LIVE && typeof MAPILLARY_TOKEN==='string' && MAPILLARY_TOKEN.length>10; }
   var _mly=0; // 0 unloaded · 1 loading · 2 ready · 3 failed
   function loadMapillary(cb){
     if(_mly===2) return cb(true,'cached');
