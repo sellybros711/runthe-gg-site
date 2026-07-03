@@ -7209,7 +7209,7 @@ function scrDailyResult(){
   } else {
     const cr=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Course Records ▸<span class="sub">See every course's record holder</span></button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
   }
-  const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Back to title</button>`); home.onclick=()=>{S._claimDaily=null;S._dailyClaimFlow=false;S.dailyClaimMsg=null;S.screen='title';S.daily=false;render();}; add(home);
+  const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Return to home</button>`); home.onclick=()=>{S._claimDaily=null;S._dailyClaimFlow=false;S.dailyClaimMsg=null;S.screen='title';S.daily=false;render();}; add(home);
   add($(`<p class="small muted center" style="margin-top:12px">${left>0?`${left} attempt${left>1?'s':''} left today · `:''}A new course drops at midnight UTC · streak ${streakDisplay()} 🔥</p>`));
 }
 function overlayCourseRecords(screen){
