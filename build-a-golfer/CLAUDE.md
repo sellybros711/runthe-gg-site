@@ -3528,6 +3528,30 @@ allows Google Fonts, or self-host Anton.*
     `supabase/43_h2h_bots.sql`** to persist bot/human records + populate the board (in-match bots work
     without it).
 
+- **CS121 — Online "feels alive" polish (parity with RunThePitch's online mode).** Owner ported four
+  waiting-room features to RunThePitch and asked for the same on RunTheTour. All client-only (no migration;
+  reuses existing RPCs):
+  1. **Trickle bot-fill.** The AI backfill no longer drops all opponents in at once — after the initial
+     wait for a real human (`H2H_BOT_WAIT` trimmed to 4-6.5s), `h2hStartBotMatch` seeds the lobby with just
+     you and `h2hTrickleBot` adds one bot every ~2-5s, so the lobby visibly fills like real players joining
+     (especially foursomes: 1→2→3→4). Once full, teams are flipped and the draft begins.
+  2. **Match-ready alerts.** `h2hNotifyReady` shows an in-app banner AND (if you granted permission and have
+     tabbed away) fires a browser `Notification` the moment your match is ready — on opponent-found
+     (→drafting) and, via `h2hNotifyHidden` (only if the tab's hidden), when the round starts (→preview). A
+     "🔔 Notify me when it's ready" button on the waiting screens requests permission (shown only while it's
+     still askable).
+  3. **Invite friends.** The private-room waiting screen now has an "Invite friends" button
+     (`navigator.share`, clipboard fallback) alongside Copy code, sharing a working deep link.
+  4. **Deep links that actually work.** A shared `…/golf?h2h=CODE` link is parsed on load (`h2hCheckLink`,
+     also handles `#h2h=`), stashed to `localStorage`, the URL cleaned, and auto-joined (`h2hTryPendingJoin`)
+     — immediately if signed in, or after the sign-in prompt (retried from `sbApply`, survives the OAuth
+     redirect). `h2hInvite` builds the link from `location.origin+pathname`.
+  - Verified in Playwright: trickle fills 1→4 one at a time then starts; the ready-banner shows + the
+    notify button appears only when permission is askable; invite shares a `?h2h=CODE` URL; the deep link
+    parses/upcases/stashes and prompts sign-in when signed out, then auto-joins with the right code once
+    signed in (consuming the stash). Full bot match (trickle) completes end-to-end in all four modes;
+    real-human flow + daily/career regress clean; zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
