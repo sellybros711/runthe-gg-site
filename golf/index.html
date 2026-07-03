@@ -13,14 +13,14 @@
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/golf/">
 <meta property="og:title" content="Run The Tour, A 30-Year Career Simulation">
-<meta property="og:description" content="Build a golfer, then live their career. Up to 30 years on tour: majors, the Ryder Cup, the Games, and a legacy on the leaderboard.">
+<meta property="og:description" content="Build a golfer, then live their career. Up to 30 years on tour: majors, the Ryder Cup, the Summer Games, and a legacy on the leaderboard.">
 <meta property="og:image" content="https://runthe.gg/golf/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Run The Tour, a 30-year golf career simulation">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Tour, A 30-Year Career Simulation">
-<meta name="twitter:description" content="Build a golfer, then live their career. Up to 30 years on tour: majors, the Ryder Cup, the Games, and a legacy on the leaderboard.">
+<meta name="twitter:description" content="Build a golfer, then live their career. Up to 30 years on tour: majors, the Ryder Cup, the Summer Games, and a legacy on the leaderboard.">
 <meta name="twitter:image" content="https://runthe.gg/golf/og.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 76'%3E%3Cpath d='M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z' fill='%2311432f' stroke='%23cda24a' stroke-width='3'/%3E%3Cpath d='M26 17 v36' stroke='%23e9d8ac' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M26 18 h16 l-4 5 4 5 h-16 z' fill='%23EBA61F'/%3E%3Cellipse cx='32' cy='57' rx='17' ry='5.4' fill='none' stroke='%23cda54a' stroke-width='1.6'/%3E%3Ccircle cx='38' cy='57' r='2.2' fill='%23f4ecd9'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -921,9 +921,9 @@ const ACH=[].concat(
    {id:'aw_no1_3',cat:'Season Awards',name:'Reign at the Top',    desc:'Finish 3 seasons ranked World No. 1.',     goal:3,pts:120,get:m=>m.no1Seasons},
    {id:'aw_wk52', cat:'Season Awards',name:'A Year at No. 1',     desc:'Spend 50+ weeks ranked World No. 1.',      goal:50,pts:100,get:m=>m.weeksAtNo1}],
   // ---- Olympics ----
-  [{id:'oly_g',  cat:'International',name:'Games Gold',       desc:'Win the gold medal at the Games.',          goal:1,pts:80, get:m=>m.olyGold},
-   {id:'oly_med',cat:'International',name:'On the Podium',    desc:'Win any medal at the Games.',               goal:1,pts:40, get:m=>m.olyMedals},
-   {id:'oly_g2', cat:'International',name:'Back-to-Back Gold',desc:'Win 2 gold medals at the Games.',           goal:2,pts:120,get:m=>m.olyGold},
+  [{id:'oly_g',  cat:'International',name:'Games Gold',       desc:'Win the gold medal at the Summer Games.',          goal:1,pts:80, get:m=>m.olyGold},
+   {id:'oly_med',cat:'International',name:'On the Podium',    desc:'Win any medal at the Summer Games.',               goal:1,pts:40, get:m=>m.olyMedals},
+   {id:'oly_g2', cat:'International',name:'Back-to-Back Gold',desc:'Win 2 gold medals at the Summer Games.',           goal:2,pts:120,get:m=>m.olyGold},
    {id:'oly_set',cat:'International',name:'Full Set',         desc:'Win gold, silver and bronze across your career.',goal:3,pts:100,get:m=>(m.olyGold>0?1:0)+(m.olySilver>0?1:0)+(m.olyBronze>0?1:0)},
    {id:'cup_app',cat:'International',name:'Cup Debut',        desc:'Make a Ryder/Presidents Cup team.',          goal:1,pts:35, get:m=>m.cupApps},
    {id:'cup_win',cat:'International',name:'Cup Champion',     desc:'Be on the winning Ryder/Presidents Cup team.',goal:1,pts:60, get:m=>m.cupWins},
@@ -1802,7 +1802,7 @@ function majorsSchedule(){ return inflatePurses(ANCHORS.filter(e=>e.major),S.yea
 // the men's Olympic golf tournament runs every 4 years (2028, 2032, ...): 72 holes, no cut, ~60 players
 // with a max of 4 per country, and gold/silver/bronze medals instead of prize money.
 function isOlympicYear(year){ return (year||1)%4===0; }   // every 4 years, first in year 4 (then 8, 12, ...)
-const OLYMPICS_EVT={name:'The Games',type:'olympics',wk:30,olympics:true,noCut:true,major:false,big:true,purse:0};
+const OLYMPICS_EVT={name:'Summer Games',type:'olympics',wk:30,olympics:true,noCut:true,major:false,big:true,purse:0};
 function seasonSchedule(year,seed){
   const shuffled=seededShuffle(REG_POOL,((seed!=null?seed:0)^0x5eed1e)>>>0);
   const N=shuffled.length, M=Math.min(REG_PER_SEASON,N);
@@ -4143,7 +4143,7 @@ function handRow(){
 function countryRow(){
   const cur=(S.look&&S.look.country)||'United States';
   const row=$(`<div style="margin:9px 0"></div>`);
-  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Country · for the Games</div>`));
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">Country · for the Summer Games</div>`));
   const sel=$(`<select class="name" style="width:100%;cursor:pointer">${COUNTRIES.map(c=>`<option value="${esc(c.n)}"${c.n===cur?' selected':''}>${esc(c.n)} (${c.c})</option>`).join('')}</select>`);
   sel.onchange=e=>{ S.look.country=e.target.value; saveLook(); render(); };
   row.appendChild(sel); return row;
@@ -4840,7 +4840,7 @@ function celebrateOlympicPodium(ce, opts){
   const stage=document.createElement('div'); stage.className='celebrate major';
   const cv=document.createElement('canvas'); cv.className='confetti'; stage.appendChild(cv);
   const wrap=$(`<div style="position:relative;z-index:2;width:min(620px,94vw);text-align:center"></div>`);
-  wrap.appendChild($(`<div class="celeb-kicker" style="color:#ffd76a;margin-top:0">🏅 The Games · Medal Ceremony</div>`));
+  wrap.appendChild($(`<div class="celeb-kicker" style="color:#ffd76a;margin-top:0">🏅 Summer Games · Medal Ceremony</div>`));
   wrap.appendChild($(`<div class="celeb-title" style="font-size:30px;margin-top:6px">The Podium</div>`));
   const sub=$(`<div class="celeb-sub" style="min-height:22px;margin-top:8px">&nbsp;</div>`); wrap.appendChild(sub);
   const podium=$(`<div style="display:flex;align-items:flex-end;justify-content:center;gap:8px;margin-top:18px"></div>`);
@@ -4948,8 +4948,8 @@ function selectionInfo(evt){
       : 'your 5-year past-champion exemption';
     sub = `You're off the Legend Circuit this week, ${reason} gets you back into the field against today's tour.`;
   } else { // olympics
-    const sel=olympicField(); made=sel.some(s=>s.you); tag='The Games';
-    title = made?'You qualified for the Games!' : 'Not in the field this time';
+    const sel=olympicField(); made=sel.some(s=>s.you); tag='Summer Games';
+    title = made?'You qualified for the Summer Games!' : 'Not in the field this time';
     sub = made
       ? `You are one of the 60 teeing it up for ${country}. Go and win a medal for the nation.`
       : `Outside the 60-player field for ${country} this cycle (max 4 per country). Keep climbing the World Ranking and you will be on the plane in four years. You will play a Tour stop this week instead.`;
@@ -5319,7 +5319,7 @@ function scrSeason(){
     <div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#E14A33">Opposite-field event</div>
     <div class="small" style="margin-top:4px;color:var(--oncard)">Outside the OWGR cut for the ${esc(evt.against)} this week. Win here to bank points and climb toward the elite fields.</div></div>`));
 
-  const typeLbl=evt.olympics?'<span class="major">🏅 The Games</span>':evt.guestMajor?'<span class="major">🎖️ Past Champion</span>':evt.major?'<span class="major">Major</span>':evt.stagger?`<span class="sig">🏆 Cup Finale · top ${evt.cap}</span>`:evt.playoff?`<span class="sig">Playoff · top ${evt.cap}</span>`:evt.oppo?'<span class="reg">Opposite-field</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?`<span class="sig">Signature · top ${evt.entryCap||50}</span>`:'<span class="reg">Tour event</span>';
+  const typeLbl=evt.olympics?'<span class="major">🏅 Summer Games</span>':evt.guestMajor?'<span class="major">🎖️ Past Champion</span>':evt.major?'<span class="major">Major</span>':evt.stagger?`<span class="sig">🏆 Cup Finale · top ${evt.cap}</span>`:evt.playoff?`<span class="sig">Playoff · top ${evt.cap}</span>`:evt.oppo?'<span class="reg">Opposite-field</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?`<span class="sig">Signature · top ${evt.entryCap||50}</span>`:'<span class="reg">Tour event</span>';
   const dayLbl=ce.done?'Final':(ce.roundsDone>=2&&!ce.players.find(o=>o.p.you).made?`After ${DAYS[1]}`:`${DAYS[Math.max(0,ce.roundsDone-1)]} · Round ${Math.min(ce.roundsDone,4)}/4`);
   const cols=$(`<div class="cols seasoncols"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col scorecol"></div>`);
@@ -5880,12 +5880,12 @@ function scrSummary(){
     const gold=S.season.olympicMedals[0];
     if(med){ const m=M[med];
       add($(`<div class="center" style="margin:8px 0 12px"><div style="display:inline-block;background:linear-gradient(180deg,#1c3a56,#0a2740);border:1px solid ${m[2]};border-radius:14px;padding:13px 22px">
-        <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${m[2]}">The Games</div>
+        <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${m[2]}">Summer Games</div>
         <div style="font:800 22px/1.1 var(--body);color:${m[2]};margin-top:6px">${m[0]} ${m[1]}</div>
         <div class="small muted" style="margin-top:4px">You medalled for ${esc((S.look&&S.look.country)||'your country')}</div></div></div>`));
     } else {
       add($(`<div class="center" style="margin:6px 0 12px"><div class="scout" style="display:inline-block;padding:10px 16px">
-        <span style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">The Games</span>
+        <span style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">Summer Games</span>
         <span class="small" style="margin-left:8px;color:var(--oncard)">🥇 ${natFlag(gold.nat)} ${esc(gold.name)} took gold</span></div></div>`));
     }
   }
