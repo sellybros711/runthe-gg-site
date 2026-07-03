@@ -3352,7 +3352,16 @@ allows Google Fonts, or self-host Anton.*
     migration is applied it's fully back. Rollback if ever needed: `grant execute on function
     public.email_for_username(text) to anon, authenticated;`.
 
-- **CS111 — Online multiplayer Phase 1: 1v1 head-to-head (backend + client, NOT yet deployed).**
+- **CS111–CS114 (deployed to /golf, not separately written up here):** "Season N Highlights" masthead
+  (CS111), EU/International team flags — `NAT_FLAG` `EUR:'eu'` + globe fallback (CS112), gold+bigger trophy +
+  clearer "made every cut" shield icon (CS113), Daily reveal Pause/Skip-to-end buttons (CS114). All live on
+  `main` (HEAD "Deploy CS114"). Numbering continues at CS115 below.
+
+- **CS-copy — Daily Challenge result button "Back to title" → "Return to home"** (owner). One-line copy tweak
+  on `scrDailyResult`; deployed directly to `golf/index.html` on `main` (isolated, no other change), and in
+  the feature-branch source of truth.
+
+- **CS115 — Online multiplayer Phase 1: 1v1 head-to-head (backend + client, NOT yet deployed).**
   Owner's new game mode: real online 1v1 where each player drafts their own golfer, both watch the rounds
   play out on the same course, low total wins, and every result feeds a per-mode W/L leaderboard. Planned
   first (full design in `build-a-golfer/H2H-SPEC.md`, owner-approved: independent wheels + 3 re-spins for
