@@ -3329,6 +3329,29 @@ allows Google Fonts, or self-host Anton.*
     the governing-law clause is deliberately non-specific ("the state in which the operator resides") —
     have counsel pin your exact state/venue.
 
+- **CS110 — close the email-harvesting vector (password-verified username login).** The audit's HIGH
+  finding: `email_for_username(username)` (16_username_login.sql) is a SECURITY DEFINER function GRANTed to
+  `anon` that returned `auth.users.email` for any username — and usernames are PUBLIC on the leaderboard, so
+  a scraper could map every username to its private email. All THREE RunThe.GG games (golf, hub, soccer)
+  call it for "sign in with a username," so the fix had to cover all three.
+  - **`supabase/40_runtour_email_login.sql`** (owner-run): new `email_for_login(username, password)` returns
+    the email ONLY when the supplied password matches the account's stored **bcrypt** hash
+    (`auth.users.encrypted_password`, verified with pgcrypto `crypt()` — GoTrue stores bcrypt). A harvester
+    with no password gets nothing; legitimate username login still works (the client already has the typed
+    password). Then REVOKEs `email_for_username` from anon/authenticated (kept defined, not dropped → rollback
+    is a one-line re-grant). Validated on a local Postgres with a real bcrypt hash: correct pw → email; wrong
+    pw / no-such-user / Google-only (no password) / empty pw → null; anon can no longer call the old function.
+  - **Client (all 3 games):** golf `sbSignInPassword`, hub `signInPassword`, and soccer `resolveLoginEmail`
+    (signature extended to take the password) now call `email_for_login` with `{p_username, p_password}` and
+    show a generic "Wrong username or password." (which also stops username-enumeration via error text).
+    Verified in Playwright: golf sends username+password to `email_for_login`, never calls the old function,
+    then signs in with the returned email; hub + soccer load clean.
+  - **Rollout note for owner:** email + Google sign-in are unaffected at all times. Only *username* sign-in
+    depends on the new function, so run `supabase/40_runtour_email_login.sql` right after this deploy lands —
+    in the brief overlap, a username login might fail (users can still log in with their email); once the
+    migration is applied it's fully back. Rollback if ever needed: `grant execute on function
+    public.email_for_username(text) to anon, authenticated;`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
