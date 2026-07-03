@@ -50,20 +50,41 @@ end to end:
 - Local **records** (races / wins / top-3 / countries visited / best finish / fastest stage).
 - IP-safe terminology throughout (GDD §2): Checkpoint, Split Path, Solo Call, Skip Pass,
   Grounded, Stage.
+- **Content: 46 countries** (GDD §12 targets ~40–50 at launch — met). Scale toward ~100
+  by appending entries to `countries.js` with the same shape.
+
+## Online Race (Beta) — GDD §3/§7-9
+
+Server-authoritative multiplayer. **Requires the migration `supabase/41_globe_online.sql`
+to be applied to the Supabase project** (creates the tables/RPCs and enables realtime).
+Until then the "Online Race" card falls back to an "Online is offline" message.
+
+- **Lobby by code**: any signed-in player creates a race (5-char code); others join.
+  Up to 11 teams; empty slots fill with AI ghosts at start (GDD §8 lobby-fill).
+- **Server-authoritative timing (GDD §9)**: the Checkpoint effective time is computed
+  by `globe_checkpoint` from the server-stamped stage start — never trusted from the
+  client. A sub-300 ms "completion" is rejected as submission-before-load.
+- **Host-driven rounds**: the host draws the shared destination and advances; the server
+  paces the ghost field to the live human median (GDD §8) and Grounds the slowest.
+- **Realtime**: clients subscribe to the lobby/team/stage tables for live lobby +
+  leaderboard (with a polling fallback if realtime isn't enabled).
+
+**Testing status**: the full client loop (menu → lobby → start → stage → Checkpoint →
+advance → Final → finish) is verified in-browser against a stubbed backend with no JS
+errors. Live multiplayer — realtime propagation, real server timing, cross-device play —
+still needs to be tested with the migration applied and two+ real clients.
+
+**Still to build on top of this foundation**: two-humans-per-team (shared team code) and
+auto-paired **online solo** matchmaking (GDD §7); **preset-phrase quick chat** (GDD §7);
+mid-race ghost **substitution** on quit/timeout (GDD §8); **Layover / Reroute** opponent
+mechanics; anti-cheat **detection** logic beyond the timing guard (GDD §9).
 
 ## Deferred (scaffolded or noted, not built)
 
-- **Online modes** (team / auto-paired solo) and **local co-op** — shown as "Soon" cards
-  on the home screen. Requires the online lobby + server-authoritative timing (GDD §9).
+- **Local co-op** (pass-and-play) — shown as a "Soon" card.
 - **Duo-specific tasks** (GDD §6), **audio** and **drag-drop/tile** task kinds — no assets
-  in the seed bank yet; engine adds them by mapping a new `KIND`.
-- **Layover / Reroute** (Yield / U-Turn) opponent-targeting mechanics — online only.
-- **Server-authoritative Checkpoint timing + anti-cheat** (GDD §9) — offline solo is
-  client-timed by definition; enforce when the online layer lands.
-- **Preset-phrase quick chat** (GDD §7) — partner comms, online only.
+  in the bank yet; engine adds them by mapping a new `KIND`.
 - **Landmark Walkthrough** 360° task (GDD §13) — explicitly v2.
-- **Content scale-up**: seed pool is 12 countries; GDD §12 targets ~40–50 at launch,
-  ~100 long-term (~27 tasks each). Append entries to `countries.js` with the same shape.
 
 ## Open decisions to confirm with design
 
