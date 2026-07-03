@@ -67,50 +67,131 @@
   .wrap{max-width:640px;margin:0 auto;padding:calc(30px + env(safe-area-inset-top,0px)) 18px 46px;}
 
   /* ---- masthead / wordmark ---- */
-  .brand{text-align:center;margin:2px 0 6px;}
+  .brand{position:relative;text-align:center;margin:2px 0 6px;}
+  /* soft animated glow behind the wordmark so the hero reads as designed, not just a logo dropped on a gradient */
+  .brand:before{content:"";position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);
+    width:min(600px,92%);height:230px;z-index:-1;pointer-events:none;
+    background:radial-gradient(closest-side, rgba(53,196,205,.22), rgba(239,78,80,.11) 52%, transparent 72%);
+    filter:blur(8px);animation:heroGlow 7s ease-in-out infinite;}
+  @keyframes heroGlow{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(1);}
+    50%{opacity:1;transform:translate(-50%,-50%) scale(1.05);}}
   .wordmark{display:block;width:100%;max-width:600px;height:auto;margin:0 auto;
     filter:drop-shadow(0 6px 30px rgba(0,0,0,.45));}
   .rule{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px auto 0;max-width:260px;color:var(--gold);}
   .rule .ln{height:2px;flex:1;background:linear-gradient(90deg,transparent,rgba(239,78,80,.6));}
   .rule .ln.r{background:linear-gradient(270deg,transparent,rgba(239,78,80,.6));}
-  .tag{text-align:center;color:var(--mut);font-weight:600;margin:16px auto 4px;max-width:440px;line-height:1.5;font-size:15px;}
+  .tag{text-align:center;color:var(--ink);font-weight:700;margin:16px auto 0;max-width:460px;line-height:1.45;font-size:16px;}
+  .tag b{color:var(--teal);}
+  /* live status pill: tells a first-time visitor what the site is at a glance */
+  .hero-status{display:inline-flex;align-items:center;gap:9px;margin:13px auto 2px;
+    padding:7px 15px;border-radius:999px;font-size:12px;font-weight:800;letter-spacing:.01em;
+    color:#cfe0f0;background:rgba(255,255,255,.04);border:1px solid var(--line);}
+  .hero-status .dot{width:8px;height:8px;border-radius:50%;background:#3ce8b8;flex:0 0 auto;
+    box-shadow:0 0 0 0 rgba(60,232,184,.6);animation:livePulse 2.4s ease-out infinite;}
+  .hero-status b{color:var(--ink);}
+  @keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(60,232,184,.5);}70%{box-shadow:0 0 0 8px rgba(60,232,184,0);}100%{box-shadow:0 0 0 0 rgba(60,232,184,0);}}
 
   /* ---- section label ---- */
   .seclab{display:flex;align-items:center;gap:10px;margin:30px 2px 12px;
     font-weight:900;letter-spacing:.16em;text-transform:uppercase;font-size:12px;color:var(--mut);}
   .seclab:before{content:"";width:9px;height:9px;border-radius:2px;background:var(--gold);flex:0 0 auto;}
 
-  /* ---- game cards ---- */
-  .games{display:grid;gap:14px;}
-  .game{display:flex;align-items:center;gap:15px;text-decoration:none;color:inherit;
-    background:linear-gradient(180deg,var(--card),#0f2338);border:1px solid var(--cardb);
-    border-radius:18px;padding:15px 16px;position:relative;overflow:hidden;
-    transition:transform .12s ease, border-color .12s ease, box-shadow .12s ease;}
-  .game:hover{transform:translateY(-2px);border-color:var(--gold);box-shadow:0 12px 30px -14px rgba(0,0,0,.7);}
-  .game:active{transform:translateY(0);}
-  .game .accent{position:absolute;left:0;top:0;bottom:0;width:4px;}
-  .game.soccer .accent{background:linear-gradient(180deg,#22b39a,#0e7a67);}
-  .game.golf .accent{background:linear-gradient(180deg,#EBA61F,#8f6412);}
-  .tile{flex:0 0 auto;width:66px;height:66px;border-radius:16px;display:flex;align-items:center;justify-content:center;
-    background:#0a1b2e;border:1px solid var(--line);overflow:hidden;}
-  .tile img{width:100%;height:100%;object-fit:contain;padding:6px;}
-  .meta{min-width:0;flex:1;}
-  .meta .nm{font-weight:900;font-size:19px;line-height:1.1;letter-spacing:.01em;}
-  /* game name follows the banner format: Run=coral, The=white, name=teal */
-  .meta .nm .r{color:var(--gold);} .meta .nm .t{color:var(--ink);} .meta .nm .g{color:var(--teal);}
-  .meta .sub{color:var(--mut);font-size:13px;margin-top:3px;line-height:1.35;}
-  .meta .chips{margin-top:7px;display:flex;gap:6px;flex-wrap:wrap;}
-  .chip{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
-    color:#bfe9df;background:rgba(34,179,154,.14);border:1px solid rgba(34,179,154,.3);padding:3px 8px;border-radius:999px;}
-  .game.golf .chip{color:#f3dca0;background:rgba(235,166,31,.14);border-color:rgba(235,166,31,.32);}
-  .go{flex:0 0 auto;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--ink);font-size:18px;font-weight:800;}
-  .game:hover .go{background:var(--gold);border-color:var(--gold);color:#fff;}
+  /* ---- game cards: each carries its own sport identity ---- */
+  .games{display:grid;gap:16px;}
+  .game{position:relative;display:block;text-decoration:none;color:inherit;overflow:hidden;
+    border-radius:20px;border:1px solid var(--cardb);isolation:isolate;
+    transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease;}
+  .game:hover{transform:translateY(-3px);box-shadow:0 20px 44px -20px rgba(0,0,0,.8);}
+  .game:active{transform:translateY(-1px);}
+  /* themed art layer (behind content) — greens for golf, navy/teal for pitch */
+  .game .art{position:absolute;inset:0;z-index:-1;}
+  .game.golf{border-color:rgba(235,166,31,.34);}
+  .game.golf .art{background:
+    radial-gradient(130% 130% at 88% -10%, rgba(235,166,31,.24), transparent 52%),
+    linear-gradient(150deg,#134734 0%, #0e3826 46%, #0a2418 100%);}
+  .game.soccer{border-color:rgba(53,196,205,.34);}
+  .game.soccer .art{background:
+    radial-gradient(130% 130% at 88% -10%, rgba(53,196,205,.24), transparent 52%),
+    linear-gradient(150deg,#123152 0%, #0e2740 46%, #0a1b2e 100%);}
+  .game:hover.golf{border-color:rgba(235,166,31,.75);}
+  .game:hover.soccer{border-color:rgba(53,196,205,.75);}
+  /* faint field/court lines etched into the far side for texture */
+  .game .art:after{content:"";position:absolute;right:-40px;top:-40px;width:210px;height:210px;border-radius:50%;
+    opacity:.5;background:radial-gradient(circle at center, transparent 58%, currentColor 59%, transparent 61%);}
+  .game.golf .art:after{color:rgba(235,166,31,.10);}
+  .game.soccer .art:after{color:rgba(53,196,205,.10);}
+
+  .g-head{display:flex;align-items:center;gap:16px;padding:18px 17px 0;}
+  .crest{flex:0 0 auto;width:76px;height:76px;position:relative;}
+  .crest img{width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 7px 16px rgba(0,0,0,.55));}
+  /* golf crest ships with a solid green background — round it so it reads as a deliberate app tile */
+  .game.golf .crest img{border-radius:16px;border:1px solid rgba(235,166,31,.3);}
+  .crest:before{content:"";position:absolute;inset:-16%;border-radius:50%;z-index:-1;
+    background:radial-gradient(circle, rgba(255,255,255,.14), transparent 66%);}
+  .game.golf .crest:before{background:radial-gradient(circle, rgba(235,166,31,.22), transparent 66%);}
+  .g-title{min-width:0;flex:1;}
+  .g-title .nm{font-family:'Anton',Impact,sans-serif;font-weight:400;font-size:31px;line-height:1;letter-spacing:.02em;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  /* 2-tone for legibility: "RunThe" in cream, the sport word in the card's theme colour */
+  .g-title .nm .r,.g-title .nm .t{color:var(--ink);}
+  .game.golf .g-title .nm .g{color:#F2C14E;}
+  .game.soccer .g-title .nm .g{color:var(--teal);}
+  .g-desc{display:block;color:#b9c9db;font-size:13.5px;line-height:1.5;padding:11px 17px 0;}
+  .badge-new,.badge-online{font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;
+    padding:4px 9px;border-radius:999px;flex:0 0 auto;line-height:1;}
+  .badge-new{color:#04241f;background:linear-gradient(180deg,#F2C14E,#E7A21C);box-shadow:0 2px 8px -2px rgba(235,166,31,.7);}
+  .badge-online{color:#04231d;background:linear-gradient(180deg,#3DD8BC,#17A891);box-shadow:0 2px 8px -2px rgba(53,196,205,.7);}
+
+  .g-chips{display:flex;gap:7px;flex-wrap:wrap;padding:12px 17px 0;}
+  .chip{font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;
+    color:#bfe9df;background:rgba(53,196,205,.13);border:1px solid rgba(53,196,205,.3);padding:4px 9px;border-radius:999px;}
+  .game.golf .chip{color:#f3dca0;background:rgba(235,166,31,.13);border-color:rgba(235,166,31,.32);}
+
+  /* RunThePitch online promo strip — puts the multiplayer modes front and centre */
+  .online-strip{margin:13px 17px 0;padding:11px 13px;border-radius:13px;
+    background:rgba(60,232,184,.08);border:1px solid rgba(60,232,184,.28);}
+  .online-strip .ol-hd{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:900;
+    letter-spacing:.1em;text-transform:uppercase;color:#7ff0d0;}
+  .online-strip .ol-dot{width:8px;height:8px;border-radius:50%;background:#3ce8b8;flex:0 0 auto;
+    box-shadow:0 0 0 0 rgba(60,232,184,.6);animation:livePulse 2.4s ease-out infinite;}
+  .online-strip .ol-modes{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;}
+  .online-strip .ol-mode{flex:1 1 150px;min-width:0;background:rgba(6,20,26,.4);border:1px solid rgba(60,232,184,.2);
+    border-radius:10px;padding:8px 11px;}
+  .online-strip .ol-mode .m-nm{display:block;font-weight:900;font-size:13px;color:#eafff8;}
+  .online-strip .ol-mode .m-sub{display:block;font-size:11px;color:#9fd9c9;margin-top:2px;font-weight:700;letter-spacing:.02em;}
+
+  .g-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:15px 17px 16px;margin-top:2px;}
+  .play{display:inline-flex;align-items:center;gap:8px;font-weight:900;font-size:14px;letter-spacing:.01em;
+    padding:11px 18px;border-radius:12px;color:#fff;line-height:1;transition:gap .18s ease, filter .12s ease;}
+  .game.golf .play{background:linear-gradient(180deg,#EEB23E,#D9931A);color:#1b1204;box-shadow:0 8px 20px -12px rgba(235,166,31,.9);}
+  .game.soccer .play{background:linear-gradient(180deg,#33D3B8,#17A891);color:#04231d;box-shadow:0 8px 20px -12px rgba(53,196,205,.9);}
+  .play .arw{transition:transform .18s ease;}
+  .game:hover .play{filter:brightness(1.06);}
+  .game:hover .play .arw{transform:translateX(4px);}
+  .g-foot .free{font-size:11.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#8ba0b6;}
 
   /* ---- account note ---- */
   .note{margin-top:22px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:14px;
     padding:13px 15px;color:var(--mut);font-size:13px;line-height:1.5;text-align:center;}
   .note b{color:var(--ink);}
+
+  /* ---- "more games" teaser: reads like a real (locked) next slot, not an apology ---- */
+  .teaser{position:relative;display:flex;align-items:center;gap:15px;margin-top:16px;overflow:hidden;
+    border-radius:20px;padding:16px 17px;border:1px dashed rgba(255,255,255,.16);
+    background:linear-gradient(150deg,rgba(255,255,255,.035),rgba(255,255,255,.015));}
+  .teaser .t-tile{flex:0 0 auto;width:60px;height:60px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:26px;filter:grayscale(.2);}
+  .teaser .t-meta{min-width:0;flex:1;}
+  .teaser .t-hd{display:flex;align-items:center;gap:9px;font-weight:900;font-size:16px;color:var(--ink);}
+  .teaser .t-tag{flex:0 0 auto;white-space:nowrap;font-size:10px;font-weight:900;letter-spacing:.09em;text-transform:uppercase;color:#9db2c8;
+    background:rgba(255,255,255,.06);border:1px solid var(--line);padding:3px 8px;border-radius:999px;}
+  .teaser .t-sub{color:var(--mut);font-size:13px;margin-top:4px;line-height:1.4;}
+  .teaser .t-sub a{color:var(--teal);font-weight:800;text-decoration:none;}
+  .teaser .t-sub a:hover{text-decoration:underline;}
+
+  @media (prefers-reduced-motion: reduce){
+    .brand:before, .hero-status .dot, .online-strip .ol-dot{animation:none;}
+    .game, .play, .play .arw{transition:none;}
+  }
 
   /* ---- footer ---- */
   .foot{margin-top:30px;text-align:center;color:#6f829a;font-size:12.5px;line-height:1.9;}
@@ -251,7 +332,8 @@ window.GA_ID='G-L29P5MRWKE';
       <div class="rule"><span class="ln"></span>
         <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="none" stroke="#EF4E50" stroke-width="1.2"/><circle cx="6" cy="6" r="1.6" fill="#EF4E50"/></svg>
         <span class="ln r"></span></div>
-      <p class="tag">Pick a game and play instantly. No download necessary.</p>
+      <p class="tag">Free, data-driven sports games you play <b>right in your browser</b>. Pick one and jump in — no download.</p>
+      <div class="hero-status"><span class="dot"></span><b>2&nbsp;games live</b> · more on the way</div>
     </header>
 
     <!-- Account panel: signed-out CTA is the default so it shows even if the
@@ -274,25 +356,35 @@ window.GA_ID='G-L29P5MRWKE';
     <div class="seclab">Choose a game</div>
     <main class="games">
       <a class="game golf" href="/golf/">
-        <span class="accent"></span>
-        <span class="tile"><img src="/golf/icon-192.png" alt="RunTheTour crest" width="66" height="66" loading="lazy" /></span>
-        <span class="meta">
-          <span class="nm"><span class="r">Run</span><span class="t">The</span><span class="g">Tour</span></span>
-          <span class="sub">Draft one skill from golf's greatest, build your player, then live a 30-year career: majors, the Ryder Cup, the Olympics.</span>
-          <span class="chips"><span class="chip">⛳ Golf Career</span><span class="chip">Daily Challenge</span></span>
+        <span class="art"></span>
+        <span class="g-head">
+          <span class="crest"><img src="/golf/icon-192.png" alt="RunTheTour crest" width="76" height="76" loading="lazy" /></span>
+          <span class="g-title">
+            <span class="nm"><span><span class="r">Run</span><span class="t">The</span><span class="g">Tour</span></span><span class="badge-new">New</span></span>
+          </span>
         </span>
-        <span class="go">›</span>
+        <span class="g-desc">Draft one skill from golf's greatest, build your player, then live a 30-year career: majors, the Ryder Cup, the Olympics.</span>
+        <span class="g-chips"><span class="chip">⛳ Golf Career</span><span class="chip">🎯 Daily Challenge</span><span class="chip">30-Year Sim</span></span>
+        <span class="g-foot"><span class="play">Play now <span class="arw">→</span></span><span class="free">Free · No download</span></span>
       </a>
 
       <a class="game soccer" href="/soccer/">
-        <span class="accent"></span>
-        <span class="tile"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="RunThePitch crest" width="66" height="66" loading="lazy" /></span>
-        <span class="meta">
-          <span class="nm"><span class="r">Run</span><span class="t">The</span><span class="g">Pitch</span></span>
-          <span class="sub">Spin a nation &amp; year, draft a legend each round, build your dream XI, then simulate your World Cup run.</span>
-          <span class="chips"><span class="chip">⚽ World Cup</span><span class="chip">Squad Builder</span></span>
+        <span class="art"></span>
+        <span class="g-head">
+          <span class="crest"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="RunThePitch crest" width="76" height="76" loading="lazy" /></span>
+          <span class="g-title">
+            <span class="nm"><span><span class="r">Run</span><span class="t">The</span><span class="g">Pitch</span></span><span class="badge-online">⚡ Multiplayer</span></span>
+          </span>
         </span>
-        <span class="go">›</span>
+        <span class="g-desc">Spin a nation &amp; year, draft a legend each round, build your dream XI, then simulate your World Cup run.</span>
+        <span class="online-strip">
+          <span class="ol-hd"><span class="ol-dot"></span>Now Online</span>
+          <span class="ol-modes">
+            <span class="ol-mode"><span class="m-nm">1v1 Friendlies</span><span class="m-sub">Live head-to-head match</span></span>
+            <span class="ol-mode"><span class="m-nm">World Cup Pool</span><span class="m-sub">48 players · full tournament</span></span>
+          </span>
+        </span>
+        <span class="g-foot"><span class="play">Play now <span class="arw">→</span></span><span class="free">Free · No download</span></span>
       </a>
     </main>
 
@@ -300,7 +392,13 @@ window.GA_ID='G-L29P5MRWKE';
       <button class="btn ghost" id="install-btn" type="button">📲 Add to Home Screen</button>
     </div>
 
-    <div class="note">🎮 <b>More games on the way.</b> RunThe.GG is a growing home for quick, free sports games. One free account works across all of them.</div>
+    <div class="teaser">
+      <span class="t-tile">🎮</span>
+      <span class="t-meta">
+        <span class="t-hd">More games on the way <span class="t-tag">Coming soon</span></span>
+        <span class="t-sub">RunThe.GG is a growing home for quick, free sports games — and your one account works across all of them. <a href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">Follow @RunTheGG</a> to hear what's next.</span>
+      </span>
+    </div>
 
     <section class="content">
       <h3>What is RunThe.GG?</h3>
