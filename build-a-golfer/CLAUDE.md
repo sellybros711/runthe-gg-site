@@ -3300,6 +3300,35 @@ allows Google Fonts, or self-host Anton.*
     (English-only/USD), a11y (no `alt` text; a few pill buttons keyboard-unreachable), a service worker for a
     real update path, and per-request board caching/materialization for very large scale.
 
+- **CS109 — launch follow-ups: service worker, age gate, accessibility, privacy/terms (owner picked all
+  four).** Still no gameplay/sim changes — infra/compliance/a11y only.
+  - **Service worker** (`build-a-golfer/sw.js` → deploys to `golf/sw.js`): network-first for navigations/HTML
+    so a new deploy reaches players immediately (ends the manual `?v=` cache-bust), cached copy as the
+    offline fallback; cache-first for same-origin static; cross-origin (fonts/Supabase/AdSense/GA/flags)
+    passed through untouched. `skipWaiting`+`clients.claim` so a new SW takes over on next load. Registered
+    from the game with a feature-detected, fully-guarded `navigator.serviceWorker.register('sw.js')` on
+    `load` — can't block or break the game if it fails. Bump the `CACHE` const to force-invalidate.
+  - **Age gate** (COPPA/GDPR-K): account creation now asks a neutral **year of birth** (`#au-birth`) and
+    blocks under-`AGE_MIN` (13) signups on BOTH the email/password and Google paths (signup mode only —
+    returning sign-in isn't gated). Stored in `localStorage.rtt_birth_year` so a returning user isn't
+    re-asked; guests aren't gated. `AGE_MIN`/`ageGateOk()` are the knobs — raise to 16 for stricter EU
+    GDPR-K. Verified: 2020→blocked, empty→blocked, 1990→passes+stores.
+  - **Accessibility**: made the footer's click-only controls keyboard-operable — "Add to Home" (`div`→
+    `button`) and the About/Privacy/Terms links (`span`→`button`); added `role="img" aria-label` to the
+    SVG-fallback avatar and the season share-card canvas. (Flags, header pills, ≡ menu, the primary avatar
+    canvas, and `ic()` icons were already labeled/`aria-hidden` from earlier passes.) Verified 0 leftover
+    click-only div/span in the footer.
+  - **Privacy/Terms GDPR-CCPA polish**: rebuilt `build-a-golfer/privacy.html` + `terms.html` from the
+    (correct) deployed golf versions and added the missing pieces — privacy: **Analytics** (GA4 cookies +
+    opt-out add-on), **Where your data is stored & international transfers** (Supabase/Google, US processing,
+    SCCs), **Your rights & choices** (GDPR access/portability/rectification/erasure/objection/withdraw),
+    **California/US** "we don't sell; AdSense may be 'sharing'; GPC honored", **Retention**, and a Children
+    section that now references the age gate; terms: **Eligibility & age** (13+), **Governing law**,
+    **Severability**. Bumped "Last updated" to 2026-07-03. This also re-syncs the stale source privacy.html
+    (which still said "does not currently run advertising") with the live deployed page. NOTE for owner:
+    the governing-law clause is deliberately non-specific ("the state in which the operator resides") —
+    have counsel pin your exact state/venue.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -3029,12 +3029,12 @@ function footer(){
   const fp=$(`<div class="footpills"></div>`);
   const mail='mailto:sellybros711@gmail.com?subject='+encodeURIComponent('RunTheTour, Questions / Comments');
   fp.appendChild($(`<a class="pill" href="${mail}" style="text-decoration:none">✉ Questions or Comments</a>`));
-  const a2h=$(`<div class="pill" style="cursor:pointer">▣ Add to Home</div>`); a2h.onclick=installApp;
+  const a2h=$(`<button type="button" class="pill" style="cursor:pointer">▣ Add to Home</button>`); a2h.onclick=installApp;
   fp.appendChild(a2h);
   fp.appendChild($(`<a class="pill" href="/soccer/" target="_blank" rel="noopener" style="text-decoration:none;border-color:var(--teal);color:var(--teal)">↗ <span style="font-style:italic;opacity:.8">Love soccer?</span> Try RunThePitch</a>`));
   f.appendChild(fp);
   const links=$(`<div class="footlinks"></div>`);
-  const mk=(t,fn)=>{const s=$(`<span style="cursor:pointer">${t}</span>`); s.onclick=fn; return s;};
+  const mk=(t,fn)=>{const s=$(`<button type="button" style="background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer">${t}</button>`); s.onclick=fn; return s;};
   links.appendChild($(`<a href="/" style="color:inherit;text-decoration:none;cursor:pointer">Home</a>`));
   links.appendChild($(`<span>·</span>`));
   links.appendChild(mk('About',()=>{S.overlay='about';render();}));
@@ -3304,6 +3304,21 @@ function unlockPerks(){
   ];
   return `<div class="perkhd">Free account unlocks</div><div class="perks">${p.map(x=>`<div class="perk"><span class="pic">${x[0]}</span><span class="pt"><b>${x[1]}</b><span>${x[2]}</span></span></div>`).join('')}</div>`;
 }
+// Neutral age gate for ACCOUNT CREATION (email is personal data → COPPA/GDPR-K trigger). We ask for a
+// year of birth (a neutral age screen, not a "confirm you're 18+" toggle) and block under-13 signups.
+// Stored locally so a returning user isn't re-asked. Guests (no account) aren't gated. NOTE for owner:
+// 13 is the US COPPA floor; raise AGE_MIN to 16 for stricter EU GDPR-K, and gate personalized ads for
+// under-16s via the AdSense CMP if you keep 13.
+const AGE_MIN=13;
+function ageGateOk(box){
+  const el=box&&box.querySelector('#au-birth'); if(!el) return {ok:true};
+  const y=parseInt(el.value,10);
+  let cur=2026; try{ cur=new Date().getFullYear(); }catch(e){}
+  if(!y || y<1900 || y>cur) return {ok:false,msg:'Enter your year of birth.'};
+  if((cur-y) < AGE_MIN) return {ok:false,msg:`Sorry, you must be at least ${AGE_MIN} to create an account.`};
+  try{ localStorage.setItem('rtt_birth_year', String(y)); }catch(e){}
+  return {ok:true};
+}
 function overlayAccount(screen){
   // signing in to claim a daily round → run the claim and drop back to the result screen, not the profile
   if(S._dailyClaimFlow && sbSignedIn()){ maybeClaimDaily(); S._dailyClaimFlow=false; S.overlay=null; S.screen='dailyresult'; render(); return; }
@@ -3332,10 +3347,13 @@ function overlayAccount(screen){
     box.querySelector('#au-out').onclick=()=>go(()=>sbSignOut());
   } else {
     const isUp=mode==='signup';
+    let birthPrefill=''; try{ birthPrefill=localStorage.getItem('rtt_birth_year')||''; }catch(e){}
     box.innerHTML=`${unlockPerks()}<button class="btn gbtn" id="au-google" ${busy?'disabled':''}>${GOOGLE_G}Continue with Google</button>
       <div class="author"><span>or</span></div>
       ${isUp?`<input class="name" id="au-user2" maxlength="20" placeholder="Username" autocomplete="username">
-              <input class="name" id="au-email" type="email" placeholder="Email" autocomplete="email" style="margin-top:8px">`
+              <input class="name" id="au-email" type="email" placeholder="Email" autocomplete="email" style="margin-top:8px">
+              <input class="name" id="au-birth" type="number" inputmode="numeric" min="1900" max="${(function(){try{return new Date().getFullYear()}catch(e){return 2026}})()}" placeholder="Year of birth" autocomplete="bday-year" value="${esc(birthPrefill)}" style="margin-top:8px" aria-label="Year of birth">
+              <div class="small muted" style="text-align:left;margin-top:4px">We ask your year of birth to confirm you're old enough for an account.</div>`
             :`<input class="name" id="au-id" placeholder="Username or email" autocomplete="username">`}
       <input class="name" id="au-pass" type="password" placeholder="Password" autocomplete="${isUp?'new-password':'current-password'}" style="margin-top:8px">
       <label class="remember" style="display:flex;align-items:center;gap:9px;margin-top:11px;font-size:12.5px;color:var(--oncard);cursor:pointer;text-align:left">
@@ -3345,10 +3363,11 @@ function overlayAccount(screen){
       ${err?`<div class="autherr">${esc(err)}</div>`:''}
       <button class="btn goldfill" id="au-go" style="margin-top:10px" ${busy?'disabled':''}>${busy?'…':(isUp?'Create account':'Sign in')}</button>
       <div class="small muted center" style="margin-top:13px">${isUp?'Already have an account?':'New here?'} <a href="#" id="au-swap" style="color:var(--gold);font-weight:700">${isUp?'Sign in':'Create one'}</a></div>`;
-    box.querySelector('#au-google').onclick=()=>{ setRemember(box.querySelector('#au-remember')&&box.querySelector('#au-remember').checked); go(()=>sbSignInGoogle()); };
+    box.querySelector('#au-google').onclick=()=>{ if(isUp){ const ag=ageGateOk(box); if(!ag.ok){ S.acctErr=ag.msg; render(); return; } } setRemember(box.querySelector('#au-remember')&&box.querySelector('#au-remember').checked); go(()=>sbSignInGoogle()); };
     box.querySelector('#au-go').onclick=async()=>{ const pass=box.querySelector('#au-pass').value;
       setRemember(box.querySelector('#au-remember')&&box.querySelector('#au-remember').checked);
       if(isUp){ const uname=box.querySelector('#au-user2').value.trim(); const email=box.querySelector('#au-email').value;
+        const ag=ageGateOk(box); if(!ag.ok){S.acctErr=ag.msg;render();return;}
         if(!uname){S.acctErr='Pick a username.';render();return;}
         if(!/^[A-Za-z0-9_]{3,20}$/.test(uname)){S.acctErr='Username: 3–20 letters, numbers or _.';render();return;}
         if(!email.trim()||!pass){S.acctErr='Enter an email and password.';render();return;}
@@ -4008,7 +4027,7 @@ function golferSVG(){
   const cap=(L.cap!==false);
   const id='f'+(++_figN);
   const collarTrim='#e6b53f';   // gold piping
-  return `<svg class="golferfig" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  return `<svg class="golferfig" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Your golfer">
   <defs>
     <radialGradient id="bg${id}" cx="50%" cy="34%" r="80%">
       <stop offset="0" stop-color="#17463a"/><stop offset="1" stop-color="#0b2820"/></radialGradient>
@@ -6015,6 +6034,8 @@ function scrSummary(){
   const vals=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
   const cv=document.createElement('canvas');
   cv.style.cssText='width:100%;max-width:320px;display:block;margin:0 auto 4px;border-radius:14px;border:1px solid var(--line)';
+  cv.setAttribute('role','img');
+  cv.setAttribute('aria-label',`Season share card: ${esc(me.name)}, overall ${ovr}, ${fmt(t.money)} earned, ${t.wins} wins, ${t.majors} majors`);
   drawShareCard(cv,{name:me.name,ovr,year:S.year||1,events:S.schedule.length,majors:S.schedule.filter(e=>e.major).length,money:t.money,net:ec.net,moneyRank,N,wins:t.wins,majorsWon:t.majors,best:t.best,fedexRank},vals);
   right.appendChild(cv);
   // primary CTA = Share (bold); Save + Copy are secondary
@@ -7958,6 +7979,9 @@ async function dbLoadLegend(day){
 if(window.supabase && window.supabase.createClient){ sbInit(); }
 else { window.addEventListener('DOMContentLoaded', sbInit); }
 try{ window.addEventListener('online', ()=>flushPendingSeasons()); }catch(e){}   // retry any unsubmitted seasons when back online
+// Service worker: network-first for the HTML so a new deploy reaches players without a manual ?v= cache-bust,
+// with a cached copy as the offline fallback. Feature-detected + fully guarded; never blocks or breaks the game.
+if('serviceWorker' in navigator){ try{ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }catch(e){} }
 
 track('game_start');
 if(LS.get('bag_seen',false)) track('return_visit'); else LS.set('bag_seen',true);
