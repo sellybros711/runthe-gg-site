@@ -94,25 +94,34 @@ mechanics; anti-cheat **detection** logic beyond the timing guard (GDD §9).
 - **Audio** (identify a place from a sound clip) and **duo-specific** tasks (GDD §6) —
   need audio assets / two live inputs; engine adds them by mapping a new `KIND`.
 
-### Virtual / street-level games (the immersive next step — needs external imagery)
+### Street Scout — virtual street-level game (built, dormant — needs a token) — GDD §13
 
-The user wants "walk the streets of a city" style games (GDD §13 Landmark Walkthrough).
-`Find It On The Map` already delivers real interactive geography self-contained, but
-true street/panorama imagery needs an external source and a licensing decision — it
-can't be shipped self-contained. Options, in order of licensing cleanliness:
+**Source chosen: Mapillary.** Rationale: its imagery is openly licensed (CC-BY-SA, needs
+attribution) and — unlike Google Street View, whose ToS restricts gamifying its tiles —
+its terms allow building games on it; it has millions of real street images worldwide;
+and the viewer can be loaded defensively so it can't destabilize the site.
 
-1. **Mapillary** (open, crowd-sourced street imagery; MIT `mapillary-js` viewer).
-   Needs a free client token. Most permissive for gamifying. Recommended.
-2. **Self-hosted 360° panoramas** + Pannellum/Three.js viewer. Full ownership, no API
-   key, but each panorama must be sourced/licensed (CC0 libraries exist) and hosted.
-3. **Google Street View Embed** — best coverage, but ToS restricts gamifying the tiles
-   and requires a Maps API key + attribution (GDD §13 flags this). Use with caution.
+**Status: implemented but shipped DORMANT.** The game type `streetscout` and the Mapillary
+integration are in `globe/index.html`, but gated behind `MAPILLARY_TOKEN` (blank by
+default) so it is **never offered** to players until a token is set. It is fully
+**fail-open**: the viewer lazy-loads only when the game is chosen, and any failure (no
+token, blocked SDK/tiles, no imagery near the country) silently falls back to the
+`Find It On The Map` pin-drop — it can never break a race.
 
-Game designs this unlocks: **"Where am I?"** (drop into a mystery pano → pin the guess on
-the existing map, GeoGuessr-style), **"Find the landmark"** (look around a 360° view for a
-target), and the GDD §13 look-around. The engine's kind/renderer pattern + the map
-minigame's distance scoring are already in place to plug this in — the blocker is an API
-key/imagery source, which is a product/licensing call.
+**To activate:**
+1. Create a free Mapillary client token (mapillary.com → account → Developers → register
+   an app). Add attribution to the game credits per Mapillary's terms.
+2. Paste it into `var MAPILLARY_TOKEN = ''` near the top of the engine in `globe/index.html`.
+3. **Live-test it** (two things I could not do from here): the integration is written to
+   Mapillary's documented Graph API + `mapillary-js` v4 but has NOT been run against a real
+   token/network yet. Verify the viewer loads, imagery appears near a country, and the
+   guess/scoring works before trusting it.
+
+**How it plays:** drop into a real street near the round's country → drag to look around →
+"Make my guess" → pin your location on the world map → scored by great-circle distance
+(reuses the map + haversine from `Find It On The Map`). This is the GeoGuessr-style
+"Where am I?" mode; "find the landmark" / pure look-around variants can build on the same
+integration.
 
 ## Open decisions to confirm with design
 

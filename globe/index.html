@@ -279,6 +279,15 @@
   // Miss penalty by scoring category (GDD §4). word/dragdrop/audio are not in
   // the §4 table (which lists the 5 scoring categories); mapped to sensible
   // defaults here and flagged in README as pending design sign-off.
+  // --- Street Scout (Mapillary street imagery) — GDD §13, virtual/immersive ---
+  // Leave BLANK to keep the street game DISABLED (default, ships dormant). To
+  // enable: create a free Mapillary client token (mapillary.com → your account →
+  // Developers → register an application) and paste it here. The game lazy-loads
+  // the Mapillary viewer only when chosen and fails open (falls back to the map
+  // pin-drop) if the token/SDK/imagery are unavailable — it can never break a race.
+  // NOTE: needs live testing with a real token; untested against Mapillary so far.
+  var MAPILLARY_TOKEN = '';
+
   var PENALTY = { trivia:15, math:15, memory:12, spatial:12, reflex:10, word:12, dragdrop:12, audio:15, duo:8 };
 
   // task category -> DEFAULT interactive minigame kind (authored tasks). Generated
@@ -292,13 +301,14 @@
     mcq:'Trivia', scramble:'Word Scramble', sequence:'Memory Sequence', reaction:'Reaction',
     order:'Rank The Order', flagid:'Guess The Flag', capital:'Name The Capital',
     truefalse:'True or False', higherlower:'Higher or Lower', oddoneout:'Odd One Out',
-    memorymatch:'Memory Match', whack:'Whack-A-Landmark', targettap:'Quick Tap', mapfind:'Find It On The Map'
+    memorymatch:'Memory Match', whack:'Whack-A-Landmark', targettap:'Quick Tap', mapfind:'Find It On The Map',
+    streetscout:'Street Scout'
   };
   // rough expected completion (seconds) for an average player per kind — used
   // ONLY to pace the AI ghost field. The human always competes on real time.
   var BASE = { mcq:6.5, scramble:13, sequence:8, reaction:3.4, order:14,
     flagid:5.5, capital:5.5, truefalse:6.5, higherlower:7, oddoneout:6.5,
-    memorymatch:15, whack:8, targettap:6.5, mapfind:9 };
+    memorymatch:15, whack:8, targettap:6.5, mapfind:9, streetscout:22 };
   // which kinds feel "reflex/physical" for Split Path pairing (GDD §5); rest are "brain"
   var REFLEX_KINDS = { reaction:1, whack:1, targettap:1, sequence:1 };
   function taskKind(t){ return t.kind || KIND[t.cat] || 'mcq'; }
@@ -567,6 +577,10 @@
     // Find It On The Map — pin-drop, scored by distance (needs coords)
     if(c.ll && c.ll.length===2){
       g.push({ kind:'mapfind', cat:'spatial', type:'brain', q:'Where in the world is '+c.name+'? Tap the map.', ll:c.ll, name:c.name });
+      // Street Scout — real street imagery; only offered when a Mapillary token is set
+      if(streetEnabled()){
+        g.push({ kind:'streetscout', cat:'spatial', type:'brain', q:'Street Scout: explore a real street near '+c.name, ll:c.ll, name:c.name });
+      }
     }
     return g;
   }
@@ -702,6 +716,7 @@
     else if(kind==='whack') mgWhack(t);
     else if(kind==='targettap') mgTargetTap(t);
     else if(kind==='mapfind') mgMapFind(t);
+    else if(kind==='streetscout') mgStreetScout(t);
     else finishTask();   // safety
     renderAcct();
   }
@@ -1060,7 +1075,9 @@
     [[26,66],[80,72],[140,70],[170,66],[142,45],[122,22],[100,6],[70,8],[60,25],[45,42],[33,50]],
     [[113,-12],[131,-12],[154,-20],[150,-38],[129,-32],[115,-35]]
   ];
-  function mgMapFind(t){
+  function mgMapFind(t){ runMapGuess(t.q, t.ll); }
+  // shared world-map pin-drop, reused by Find-It and Street Scout. `targetLL`=[lat,lng].
+  function runMapGuess(qText, targetLL){
     var grid='', lo, la, x, y;
     for(lo=-150;lo<=150;lo+=30){ x=lo+180; grid+='<line x1="'+x+'" y1="0" x2="'+x+'" y2="180" stroke="rgba(255,255,255,.05)" stroke-width="0.4"/>'; }
     for(la=-60;la<=60;la+=30){ y=90-la; grid+='<line x1="0" y1="'+y+'" x2="360" y2="'+y+'" stroke="rgba(255,255,255,.05)" stroke-width="0.4"/>'; }
@@ -1068,26 +1085,76 @@
     var paths=CONTINENTS.map(function(poly){
       return '<polygon points="'+poly.map(function(p){ return (p[0]+180)+','+(90-p[1]); }).join(' ')+'" fill="rgba(58,160,255,.20)" stroke="rgba(58,160,255,.45)" stroke-width="0.6"/>';
     }).join('');
-    $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(qText)+'</div>'
       + '<svg id="wmap" viewBox="0 0 360 180" preserveAspectRatio="none" style="width:100%;height:auto;aspect-ratio:2/1;background:rgba(8,20,36,.85);border:1px solid var(--cardb);border-radius:12px;cursor:crosshair;touch-action:manipulation">'
       + grid + paths + '</svg><div class="ohint" id="maphint">Tap the map where you think it is.</div>';
-    $('wmap').addEventListener('click', function(ev){ mapGuess(t, ev); });
+    $('wmap').addEventListener('click', function(ev){ mapGuess(ev, targetLL); });
   }
-  function mapGuess(t, ev){
+  function mapGuess(ev, targetLL){
     if(S.play.done) return; S.play.done=true; stopTimer();
     var raw=(performance.now()-S.play.start)/1000;
     var svg=$('wmap'), b=svg.getBoundingClientRect();
     var vx=(ev.clientX-b.left)/b.width*360, vy=(ev.clientY-b.top)/b.height*180;
-    var gLng=vx-180, gLat=90-vy, d=haversine(gLat,gLng,t.ll[0],t.ll[1]);
+    var gLng=vx-180, gLat=90-vy, d=haversine(gLat,gLng,targetLL[0],targetLL[1]);
     var miss = d<600?0 : d<1800?1 : d<4500?2 : d<9000?3 : 4;
     S.play.misses=miss;
-    var cx=t.ll[1]+180, cy=90-t.ll[0];
+    var cx=targetLL[1]+180, cy=90-targetLL[0];
     svg.insertAdjacentHTML('beforeend',
       '<line x1="'+vx+'" y1="'+vy+'" x2="'+cx+'" y2="'+cy+'" stroke="rgba(255,255,255,.5)" stroke-width="0.7" stroke-dasharray="2 2"/>'
       + '<circle cx="'+vx+'" cy="'+vy+'" r="3" fill="#EF4E50"/>'
       + '<circle cx="'+cx+'" cy="'+cy+'" r="3.2" fill="#35d6a0" stroke="#fff" stroke-width="0.5"/>');
     var h=$('maphint'); if(h) h.innerHTML='You were <b>'+Math.round(d).toLocaleString()+' km</b> away — '+(miss===0?'bullseye! 🎯':('+'+miss+' miss'+(miss>1?'es':'')));
     setTimeout(function(){ resolveRound(raw, miss, false); }, 1500);
+  }
+
+  /* ---------- minigame: Street Scout (Mapillary street imagery) ----------
+     "Drop into a real street somewhere near the country, look around, then pin
+     where in the world you are." DISABLED unless MAPILLARY_TOKEN is set, and
+     fully FAIL-OPEN: any hiccup (no token, SDK/tiles blocked, no imagery nearby)
+     silently falls back to the plain map pin-drop so a race can never break. */
+  function streetEnabled(){ return typeof MAPILLARY_TOKEN==='string' && MAPILLARY_TOKEN.length>10; }
+  var _mly=0; // 0 unloaded · 1 loading · 2 ready · 3 failed
+  function loadMapillary(cb){
+    if(_mly===2) return cb(true);
+    if(_mly===3) return cb(false);
+    try{
+      var css=document.createElement('link'); css.rel='stylesheet';
+      css.href='https://cdn.jsdelivr.net/npm/mapillary-js@4.1.2/dist/mapillary.css'; document.head.appendChild(css);
+      var s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/mapillary-js@4.1.2/dist/mapillary.js';
+      s.onload=function(){ _mly=2; cb(true); }; s.onerror=function(){ _mly=3; cb(false); };
+      _mly=1; document.head.appendChild(s);
+    }catch(e){ _mly=3; cb(false); }
+  }
+  function mapillaryNearby(ll, cb){
+    var d=0.4, bbox=[ll[1]-d, ll[0]-d, ll[1]+d, ll[0]+d].join(',');
+    var url='https://graph.mapillary.com/images?access_token='+encodeURIComponent(MAPILLARY_TOKEN)
+      +'&bbox='+bbox+'&limit=10&fields=id,computed_geometry';
+    fetch(url).then(function(r){ return r.json(); }).then(function(j){
+      var arr=(j&&j.data)||[]; if(!arr.length) return cb(null);
+      var im=arr[Math.floor(Math.random()*arr.length)];
+      var g=im.computed_geometry && im.computed_geometry.coordinates;   // [lng,lat]
+      cb({ id:im.id, ll:[ g?g[1]:ll[0], g?g[0]:ll[1] ] });
+    }).catch(function(){ cb(null); });
+  }
+  function mgStreetScout(t){
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">🛰️ Finding a street to scout…</div>';
+    loadMapillary(function(ok){
+      if(!ok || !window.mapillary || !window.mapillary.Viewer) return mgMapFind(t);   // fail-open
+      mapillaryNearby(t.ll, function(loc){
+        if(!loc) return mgMapFind(t);
+        $('mg').innerHTML='<div class="prompt" style="text-align:center;font-size:15px">Look around this street — then pin where in the world you are.</div>'
+          + '<div id="pano" style="width:100%;height:250px;border-radius:12px;overflow:hidden;border:1px solid var(--cardb);background:#000"></div>'
+          + '<button class="btn globe" id="ssguess" style="margin-top:12px">📍 Make my guess ›</button>';
+        try{
+          S.ssViewer=new window.mapillary.Viewer({ accessToken:MAPILLARY_TOKEN, container:'pano', imageId:loc.id });
+        }catch(e){ return mgMapFind(t); }
+        $('ssguess').onclick=function(){
+          try{ if(S.ssViewer&&S.ssViewer.remove) S.ssViewer.remove(); }catch(e){}
+          S.ssViewer=null;
+          runMapGuess('Where in the world was that street? Tap the map.', loc.ll);
+        };
+      });
+    });
   }
 
   /* -------------------------------------------------- Skip Pass (field median) */
