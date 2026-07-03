@@ -3585,6 +3585,20 @@ allows Google Fonts, or self-host Anton.*
   across the 4 online modes so the boards look populated day one (same name pool as the live bots, realistic
   spread, `ON CONFLICT DO NOTHING`, idempotent). Owner-run in the Supabase SQL editor.
 
+- **CS128 — live countdown to the next Daily Challenge course.** Owner: "add a countdown to the next daily
+  challenge... players know when it changes so they feel more inclined to play. We can even put it on the
+  title as well." The daily course rotates at UTC midnight (`todayKey()` uses getUTC*). New helpers after
+  `twoDaysAgoKey`: `dNextResetMs()` (ms until the next UTC midnight, from `Date.now()`), `fmtCdClock`
+  (HH:MM:SS) / `fmtCdHM` (compact), and `dCd(style)` which emits an inline `<span class="dc-val"
+  data-cd="clock|hm">` seeded with the current value. A single `setInterval(tickCountdowns, 1000)` at boot
+  updates EVERY `.dc-val` on screen once a second (tabular-nums so it doesn't jitter), so any surface that
+  drops a `dCd()` span ticks live for free with no per-screen wiring. Placed a gold "New course in HH:MM:SS"
+  line on: the **title screen** (right under the Daily Challenge button — creates "play before it changes"
+  urgency), the **daily preview** ("Playable for HH:MM:SS, then a new course rotates in", hidden for Monthly
+  Spotlight via `!S.special`), and the **daily-done overlay** (`overlayDailyDone`). Verified in Playwright:
+  the title `.dc-val` renders and decrements across a 1.4s wait (ticking), the preview + done-state title
+  both render the span, zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
