@@ -1132,54 +1132,63 @@
   function streetEnabled(){ return typeof MAPILLARY_TOKEN==='string' && MAPILLARY_TOKEN.length>10; }
   var _mly=0; // 0 unloaded · 1 loading · 2 ready · 3 failed
   function loadMapillary(cb){
-    if(_mly===2) return cb(true);
-    if(_mly===3) return cb(false);
-    var done=false; function fin(ok){ if(done) return; done=true; _mly=ok?2:3; cb(ok); }
+    if(_mly===2) return cb(true,'cached');
+    if(_mly===3) return cb(false,'previously failed to load');
+    var done=false; function fin(ok,why){ if(done) return; done=true; _mly=ok?2:3; cb(ok,why); }
     try{
       var css=document.createElement('link'); css.rel='stylesheet';
       css.href='https://cdn.jsdelivr.net/npm/mapillary-js@4.1.2/dist/mapillary.css'; document.head.appendChild(css);
       var s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/mapillary-js@4.1.2/dist/mapillary.js';
-      s.onload=function(){ fin(!!(window.mapillary&&window.mapillary.Viewer)); }; s.onerror=function(){ fin(false); };
+      s.onload=function(){ var ok=!!(window.mapillary&&window.mapillary.Viewer); fin(ok, ok?'loaded':'loaded but window.mapillary.Viewer missing'); };
+      s.onerror=function(){ fin(false,'script failed to load (CDN blocked?)'); };
       _mly=1; document.head.appendChild(s);
-      setTimeout(function(){ fin(false); }, 8000);   // watchdog: never hang
-    }catch(e){ fin(false); }
+      setTimeout(function(){ fin(false,'timed out loading SDK'); }, 5000);
+    }catch(e){ fin(false,'exception: '+(e&&e.message)); }
   }
   function mapillaryNearby(ll, cb){
     var d=0.4, bbox=[ll[1]-d, ll[0]-d, ll[1]+d, ll[0]+d].join(',');
     var url='https://graph.mapillary.com/images?access_token='+encodeURIComponent(MAPILLARY_TOKEN)
-      +'&bbox='+bbox+'&limit=10&fields=id,computed_geometry';
-    var done=false; function fin(v){ if(done) return; done=true; cb(v); }
-    setTimeout(function(){ fin(null); }, 8000);   // watchdog: never hang
+      +'&bbox='+bbox+'&limit=20&fields=id,computed_geometry,geometry';
+    var done=false; function fin(v,err){ if(done) return; done=true; cb(v,err); }
+    setTimeout(function(){ fin(null,'imagery request timed out'); }, 6000);
     try{
-      fetch(url).then(function(r){ return r.json(); }).then(function(j){
-        var arr=(j&&j.data)||[]; if(!arr.length) return fin(null);
+      fetch(url).then(function(r){ if(!r.ok) { fin(null,'API HTTP '+r.status); return null; } return r.json(); }).then(function(j){
+        if(!j) return;
+        var arr=(j&&j.data)||[]; if(!arr.length) return fin(null,'0 images within bbox of '+ll[0]+','+ll[1]);
         var im=arr[Math.floor(Math.random()*arr.length)];
-        var g=im.computed_geometry && im.computed_geometry.coordinates;   // [lng,lat]
+        var g=(im.computed_geometry&&im.computed_geometry.coordinates)||(im.geometry&&im.geometry.coordinates);   // [lng,lat]
         fin({ id:im.id, ll:[ g?g[1]:ll[0], g?g[0]:ll[1] ] });
-      }).catch(function(){ fin(null); });
-    }catch(e){ fin(null); }
+      }).catch(function(e){ fin(null,'fetch error: '+(e&&e.message)); });
+    }catch(e){ fin(null,'exception: '+(e&&e.message)); }
   }
   function mgStreetScout(t){
-    $('mg').innerHTML='<div class="prompt" style="text-align:center">🛰️ Finding a street to scout…</div>';
-    loadMapillary(function(ok){
-      if(!ok || !window.mapillary || !window.mapillary.Viewer) return mgMapFind(t);   // fail-open
-      mapillaryNearby(t.ll, function(loc){
-        if(!loc) return mgMapFind(t);
+    var dbg = !!FORCE_STREET_FIRST;   // verbose diagnostics only while force-testing
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">🛰️ Finding a street to scout…</div>'
+      + (dbg?'<div id="sslog" class="ohint" style="white-space:pre-line;text-align:left;font-family:monospace;font-size:11px"></div>':'')
+      + '<button class="btn ghost sm" id="ssskip" style="width:auto;margin:12px auto 0;display:block">Skip to the map ›</button>';
+    if($('ssskip')) $('ssskip').onclick=function(){ if(!S.play.done){ ssKill(); mgMapFind(t); } };
+    function log(m){ var e=$('sslog'); if(e) e.textContent=(e.textContent?e.textContent+'\n':'')+m; }
+    function fail(m){ log('⚠️ '+m); if(!dbg){ ssKill(); mgMapFind(t); } else { log('→ tap "Skip to the map" to continue.'); } }
+    log('1) loading Mapillary viewer…');
+    loadMapillary(function(ok,why){
+      log('   '+(ok?'✓ ':'✗ ')+why);
+      if(!ok) return fail('viewer SDK unavailable');
+      log('2) searching imagery near '+t.name+'…');
+      mapillaryNearby(t.ll, function(loc,err){
+        if(!loc) return fail(err||'no imagery');
+        log('   ✓ found image '+String(loc.id).slice(0,10)+'…');
         $('mg').innerHTML='<div class="prompt" style="text-align:center;font-size:15px">Look around this street — then pin where in the world you are.</div>'
           + '<div id="pano" style="width:100%;height:250px;border-radius:12px;overflow:hidden;border:1px solid var(--cardb);background:#000"></div>'
           + '<div style="text-align:center;font-size:10.5px;color:var(--mut);margin-top:5px">Street imagery © <a href="https://www.mapillary.com" target="_blank" rel="noopener" style="color:var(--mut)">Mapillary</a> contributors, CC BY-SA</div>'
           + '<button class="btn globe" id="ssguess" style="margin-top:10px">📍 Make my guess ›</button>';
         try{
           S.ssViewer=new window.mapillary.Viewer({ accessToken:MAPILLARY_TOKEN, container:'pano', imageId:loc.id });
-        }catch(e){ return mgMapFind(t); }
-        $('ssguess').onclick=function(){
-          try{ if(S.ssViewer&&S.ssViewer.remove) S.ssViewer.remove(); }catch(e){}
-          S.ssViewer=null;
-          runMapGuess('Where in the world was that street? Tap the map.', loc.ll);
-        };
+        }catch(e){ ssKill(); return mgMapFind(t); }
+        $('ssguess').onclick=function(){ ssKill(); runMapGuess('Where in the world was that street? Tap the map.', loc.ll); };
       });
     });
   }
+  function ssKill(){ try{ if(S.ssViewer&&S.ssViewer.remove) S.ssViewer.remove(); }catch(e){} S.ssViewer=null; }
 
   /* -------------------------------------------------- Skip Pass (field median) */
   function useSkipPass(){
