@@ -161,6 +161,10 @@ window.GA_ID='G-L29P5MRWKE';
   .ic{display:inline-block;width:1em;height:1em;vertical-align:-0.14em;flex:0 0 auto;line-height:1}
   .tag{display:inline-block; font:800 10px/1 var(--body); letter-spacing:.18em; text-transform:uppercase;
     color:var(--teal); border:1px solid var(--line); padding:6px 9px; border-radius:999px}
+  /* cohesive teal "online area" chip, ties every H2H screen to the Play Online home block */
+  .online-tag{display:inline-flex; align-items:center; gap:7px; font:800 10px/1 var(--body); letter-spacing:.16em;
+    text-transform:uppercase; color:#4fe0c1; border:1px solid rgba(15,168,136,.55); padding:6px 11px; border-radius:999px;
+    background:linear-gradient(180deg, rgba(15,168,136,.14), rgba(15,168,136,.04))}
 
   /* ---- buttons ---- */
   .btn{appearance:none; cursor:pointer; display:block; width:100%; text-align:center;
@@ -8412,10 +8416,12 @@ async function h2hReport(){
 
 /* ---- screens ---- */
 function h2hBack(cls,label,fn){ const b=$(`<button class="btn ghost" style="width:auto;padding:7px 13px;font-size:13px;margin:0 0 10px">${label}</button>`); b.onclick=fn; add(b); }
+// cohesive teal "online area" chip at the top of every H2H screen (live dot on the finding/waiting ones)
+function h2hTag(html, live){ return $(`<div class="center" style="margin-bottom:2px"><span class="online-tag">${live?'<span class="online-dot"></span>':''}${html}</span></div>`); }
 function scrH2HHome(){
   h2hBack('','‹ Back to title', h2hLeave);
   const m=h2hMode(S.h2h.mode);
-  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">Online multiplayer</span></div>`));
+  add(h2hTag('Play Online', true));
   add($(`<h1 class="center" style="font-size:26px;margin:9px 0 2px">Play online</h1>`));
   add($(`<p class="lede center" style="max-width:440px;margin:6px auto 14px">Draft your golfer, then watch every round play out on the same course. Each mode keeps its own win/loss record.</p>`));
   // mode picker (2x2)
@@ -8472,7 +8478,7 @@ function scrH2HLobby(){
     const nb=h2hNotifyBtn(); if(nb) add(nb);
     return;
   }
-  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(m.label)} · ${S.h2h.holes} holes</span></div>`));
+  add(h2hTag(`${esc(m.label)} · ${S.h2h.holes} holes`, true));
   if(submitted){
     add($(`<h1 class="center" style="font-size:24px;margin:14px 0 4px">Draft submitted ✓</h1>`));
     add($(`<p class="lede center">Waiting for ${cap>2?'the other players':'your opponent'} to finish drafting…</p>`));
@@ -8512,7 +8518,7 @@ function scrH2HLobby(){
 }
 function scrH2HDraft(){
   const m=h2hMode(S.h2h.mode);
-  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(m.label)} Draft · your wheel${m.teams&&S.h2h.myTeam!=null?` · Team ${(S.h2h.myTeam|0)+1}`:''}</span></div>`));
+  add(h2hTag(`${esc(m.label)} Draft · your wheel${m.teams&&S.h2h.myTeam!=null?` · Team ${(S.h2h.myTeam|0)+1}`:''}`));
   add($(`<h1 class="center" style="font-size:22px;margin:8px 0 2px">Build your golfer</h1>`));
   add($(`<p class="lede center" style="margin:2px 0 12px">Spin your own wheel and take one skill from each golfer. You get 3 re-spins. Fill all 8 to lock in your build.${m.id==='scramble'?' Your team plays the best of each skill, so cover your partner\'s gaps.':''}</p>`));
   // live OVR + fill
@@ -8567,7 +8573,7 @@ function scrH2HPreview(){
   if(!S.h2h.course){ S.h2h.course=DAILY_COURSES[h2hCourseKey(S.h2h.seed)]; S.h2h.cond=h2hCondName(S.h2h.seed); }
   const course=S.h2h.course, units=S.h2h.units, n=units.length;
   h2hBack('','‹ Leave match', h2hLeave);
-  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">Matchup · ${esc(m.label)}</span></div>`));
+  add(h2hTag(`Matchup · ${esc(m.label)}`));
   add($(`<h1 class="center" style="font-size:24px;margin:9px 0 2px">Tale of the tape</h1>`));
   add($(`<p class="lede center" style="max-width:440px;margin:6px auto 4px">${esc(dShort(course.v))} · ${dCondLabel(S.h2h.cond)} · ${S.h2h.holes} holes. ${m.teams?'Best of each skill is highlighted per team.':'Lowest total wins.'}</p>`));
   const ovrs=units.map(u=>Math.round(ovrFromSkills(u.dispSkills)));
@@ -8601,7 +8607,7 @@ function scrH2HWatch(){
   const holes=S.h2h.holes, done=S.h2h.watchDone;
   const played=Math.min(S.h2h.wHole,holes);   // holes fully holed → drive the scoreboard
   const m=h2hMode(S.h2h.mode), course=S.h2h.course, inPlay=!done && S.h2h.wHole<holes;
-  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(dShort(course.v))} · ${dCondLabel(S.h2h.cond)} · ${esc(m.label)}</span></div>`));
+  add(h2hTag(`${esc(dShort(course.v))} · ${dCondLabel(S.h2h.cond)} · ${esc(m.label)}`, !done));
   add($(`<h1 class="center" style="font-size:22px;margin:8px 0 2px">${done?'Final':'Live'} · ${done?holes:played}/${holes} holes</h1>`));
   const cols=$(`<div class="cols" style="align-items:start"></div>`);
   const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`); cols.appendChild(left); cols.appendChild(right); add(cols);
@@ -8643,7 +8649,7 @@ function scrH2HResult(){
   const m=h2hMode(S.h2h.mode), course=S.h2h.course;
   const voided=S.h2h.void||(S.h2h.result&&S.h2h.result.void);
   const iWin=!voided && h2hIWon();
-  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(m.label)} · ${S.h2h.holes} holes${course?' · '+esc(dShort(course.v)):''}</span></div>`));
+  add(h2hTag(`${esc(m.label)} · ${S.h2h.holes} holes${course?' · '+esc(dShort(course.v)):''}`));
   if(voided){
     add($(`<h1 class="center" style="font-size:26px;margin:14px 0 4px">No contest</h1>`));
     add($(`<p class="lede center">The players' results didn't match, so this match was voided. Give it another go.</p>`));
@@ -8669,7 +8675,7 @@ function scrH2HResult(){
 let _h2hBoardMode='1v1'; const _h2hBoardCache={};
 function scrH2HBoard(){
   h2hBack('','‹ Back', ()=>{ S.screen=S.h2h?'h2hhome':'title'; if(!S.h2h){h2hClearTimers();} render(); });
-  add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">🏆 Leaderboards</span></div>`));
+  add(h2hTag('🏆 Leaderboards'));
   add($(`<h1 class="center" style="font-size:24px;margin:9px 0 8px">Win / loss records</h1>`));
   // mode tabs
   const tabs=$(`<div style="max-width:520px;margin:0 auto 10px;display:grid;grid-template-columns:repeat(4,1fr);gap:6px"></div>`);
