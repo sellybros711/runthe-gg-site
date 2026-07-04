@@ -3835,6 +3835,40 @@ allows Google Fonts, or self-host Anton.*
   overlay, and a guest's first wheel spin still claims exactly 1 attempt; `#practice` hash form also works.
   Zero page errors throughout. Deployed to /golf.
 
+- **CS139 — TOURTRACE graphics overhaul: visible putting, unskewed projection, richer art.** Owner: "the
+  putting is a little hard to see the tap-in putts, and the angle of the course and ball flight gets a
+  little skewed sometimes. It also looks a little too code-drawn." Three coordinated fixes to the CS136
+  hole-view module (all presentation — the sim and the structured shot data are untouched):
+  • **Putting you can actually see.** The green close-up camera is now ADAPTIVE (`hvCamFor`): it frames
+    the ball AND the cup with a margin, zooming as tight as the putt allows (92-wide viewBox floor vs the
+    old fixed 132) — a tap-in gets a much closer camera than a 40-footer. Putt/leave distances have a
+    SCREEN-AWARE minimum (`2.4/g.vy` yds, since vertical yards compress on long holes) so a 1-ft tap-in
+    now visibly travels ~11+ display px instead of ~3. The roll WAITS for the camera tween to arrive
+    (`waitMs` in hvKick) — previously a short putt was already in the cup mid-tween. A real cup (dark
+    ellipse + rim) is drawn at the pin so putts fall INTO something, the hole-out sink pulse is bigger and
+    slower (560ms, r→9), and `hvShotMs` putt/hole buffers grew to cover the camera wait + sink.
+  • **Skew fixed.** Lateral projection scale is no longer a fixed 3.0: `g.sx=clamp(g.vy*2.6, 1.8, 3.2)`
+    follows the hole's vertical scale, cutting a 585-yd par 5's lateral-vs-downrange exaggeration from
+    ~4.7x to ~2.8x (par 4 ~2.6x, par 3 ~1.5x). The perspective taper eased 0.32→0.26. Flight-curve control
+    points are now computed in SCREEN space perpendicular to the shot line and capped at 22% of its length
+    (`hvCtrl`) — course-space control points warped under the taper near the top of the frame, which was
+    the "skewed/kinked ball flight". Hazard ellipses use `g.ry` (floored) so bunkers/water never pancake.
+  • **Richer art (still 100% deterministic inline SVG, no filters, no perf cost).** Gradients everywhere:
+    radial green/sand/water/ball, fairway + background linear, plus a soft vignette. Trees are layered
+    canopies (cast shadow + two crown layers + lit highlight) instead of flat blobs. Bunkers get a cast
+    shadow, sand gradient and an inner lip. Water gets a shoreline stroke + wave glints. The green complex
+    gets a drop shadow, fringe ring, clipped mow bands and a highlight. Rough is textured with 64 seeded
+    grass flecks. Tee box gains gold tee markers; the pin is a waving flag with a pole shadow; the ball is
+    gradient-shaded; a touchdown "puff" ring fires where a full shot lands; shot markers carry drop
+    shadows. Also fixed: under the close-up, ANY marker inside the camera box now draws to scale (`inCam`
+    in hvNode) — fringe/collar/greenside rests aren't flagged onGreen and used to render huge when zoomed;
+    and reduced-motion users now get the correct final camera (setFinal snaps the viewBox).
+  Verified in Playwright: geometry anisotropy bounds across par 3/4/5, tap-in travel ≥10 display px with a
+  tighter-than-140 camera, all new terrain layers present per hole type, a live round mid-flight (ball
+  aloft + gradient fill + tracer revealing), the green close-up + hole-out captured on screenshots, a full
+  practice round finishing clean, reduced-motion (camera snapped, holed ball sunk), and the CS138
+  practice-mode suite re-run green. Zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
