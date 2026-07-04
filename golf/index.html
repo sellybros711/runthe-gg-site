@@ -441,6 +441,16 @@ window.GA_ID='G-L29P5MRWKE';
   .lb .sc{font-family:var(--mono); font-weight:800; text-align:right; color:var(--oncard)}
   .lb .mny{font-family:var(--mono); text-align:right; color:#bfe7df; font-size:12px}
   .lb.you{background:linear-gradient(90deg, rgba(235,166,31,.22), rgba(235,166,31,.05))}
+  /* tournament winner: gold trophy + a warm gold glow on the row */
+  .lb.winner{background:linear-gradient(90deg, rgba(235,166,31,.28), rgba(235,166,31,.06));
+    box-shadow:inset 0 0 0 1px rgba(235,166,31,.55), 0 0 20px -3px rgba(235,166,31,.55); position:relative; z-index:1;
+    animation:winGlow 2.4s ease-in-out infinite}
+  .lb.winner .pos{color:var(--gold)}
+  .lb.winner .pos .ic{filter:drop-shadow(0 0 5px rgba(235,166,31,.7))}
+  .lb.winner .pl{color:var(--gold); font-weight:800}
+  @keyframes winGlow{0%,100%{box-shadow:inset 0 0 0 1px rgba(235,166,31,.5), 0 0 16px -4px rgba(235,166,31,.45)}
+    50%{box-shadow:inset 0 0 0 1px rgba(235,166,31,.7), 0 0 26px -2px rgba(235,166,31,.7)}}
+  @media (prefers-reduced-motion:reduce){ .lb.winner{animation:none} }
   .lb.you .pl{color:var(--gold); font-weight:800}
   .lb.cut .sc{color:#e07a5f}
   .sep{height:1px; background:repeating-linear-gradient(90deg,var(--line),var(--line) 6px,transparent 6px,transparent 12px)}
@@ -4736,9 +4746,10 @@ function skipToEnd(){
 function liveRow(o,pos,you,done,flag){
   const cut=(pos==='CUT'); const sc=cut?'CUT':par(Math.round(o.total)); const mny=(o.money>0)?fmt(o.money):'';
   // the trophy is only for the WINNER once the tournament is final, mid-round the leader is just 1 / T1
-  const lab=cut?'–':((pos===1&&done&&!o._tied)?'🏆':(o._tied?'T'+pos:pos));
+  const isWin=(pos===1&&done&&!o._tied);
+  const lab=cut?'–':(isWin?'🏆':(o._tied?'T'+pos:pos));
   const fl=(flag&&o.p.nation)?natFlag(o.p.nation)+' ':'';
-  return $(`<div class="lb ${you?'you':''} ${cut?'cut':''}" data-nm="${esc(o.p.name)}">
+  return $(`<div class="lb ${you?'you':''} ${cut?'cut':''} ${isWin?'winner':''}" data-nm="${esc(o.p.name)}">
     <span class="pos">${lab}</span>
     <span class="pl">${fl}${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
 }
@@ -5629,8 +5640,9 @@ function roundsRow(o){
 function lbRow(o){
   const sc=o.pos==='CUT'?'CUT':par(o.score);
   const mny=o.money>0?fmt(o.money):', ';
-  const lab=o.pos==='CUT'?'–':(o.pos===1?'🏆':(o.tied?'T'+o.pos:o.pos));
-  return $(`<div class="lb ${o.p.you?'you':''} ${o.pos==='CUT'?'cut':''}">
+  const isWin=(o.pos===1&&!o.tied);
+  const lab=o.pos==='CUT'?'–':(isWin?'🏆':(o.tied?'T'+o.pos:o.pos));
+  return $(`<div class="lb ${o.p.you?'you':''} ${o.pos==='CUT'?'cut':''} ${isWin?'winner':''}">
     <span class="pos">${lab}</span>
     <span class="pl">${o.p.name}</span><span class="sc">${sc}</span><span class="mny">${mny}</span></div>`);
 }
