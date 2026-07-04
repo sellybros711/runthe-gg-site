@@ -331,7 +331,7 @@
   var STREET_LIVE = false;
   var FORCE_STREET_FIRST = false;
 
-  var PENALTY = { trivia:15, math:15, memory:12, spatial:12, reflex:10, word:12, dragdrop:12, audio:15, duo:8 };
+  var PENALTY = { trivia:15, math:15, memory:12, spatial:12, reflex:10, word:12, dragdrop:12, audio:12, duo:8 };
 
   // task category -> DEFAULT interactive minigame kind (authored tasks). Generated
   // tasks (genTasks) carry their own `kind` explicitly, so one category can drive
@@ -345,15 +345,19 @@
     order:'Rank The Order', flagid:'Guess The Flag', capital:'Name The Capital',
     truefalse:'True or False', higherlower:'Higher or Lower', oddoneout:'Odd One Out',
     memorymatch:'Memory Match', whack:'Whack-A-Landmark', targettap:'Quick Tap', mapfind:'Find It On The Map',
-    streetscout:'Street Scout', zoomreveal:'Zoom Reveal'
+    streetscout:'Street Scout', zoomreveal:'Zoom Reveal',
+    swingmeter:'Swing Meter', eagleeye:'Eagle Eye', kimsgame:'Memory Lineup',
+    typeticket:'Type The Ticket', baggage:'Baggage Claim', rhythmecho:'Rhythm Echo'
   };
   // rough expected completion (seconds) for an average player per kind — used
   // ONLY to pace the AI ghost field. The human always competes on real time.
   var BASE = { mcq:6.5, scramble:13, sequence:8, reaction:3.4, order:14,
     flagid:5.5, capital:5.5, truefalse:6.5, higherlower:7, oddoneout:6.5,
-    memorymatch:15, whack:8, targettap:6.5, mapfind:9, streetscout:22, zoomreveal:7 };
+    memorymatch:15, whack:8, targettap:6.5, mapfind:9, streetscout:22, zoomreveal:7,
+    swingmeter:7, eagleeye:7, kimsgame:11, typeticket:12, baggage:9, rhythmecho:13 };
   // which kinds feel "reflex/physical" for Split Path pairing (GDD §5); rest are "brain"
-  var REFLEX_KINDS = { reaction:1, whack:1, targettap:1, sequence:1 };
+  var REFLEX_KINDS = { reaction:1, whack:1, targettap:1, sequence:1,
+    swingmeter:1, eagleeye:1, baggage:1, rhythmecho:1 };
   function taskKind(t){ return t.kind || KIND[t.cat] || 'mcq'; }
   function taskLabel(t){ return KIND_LABEL[taskKind(t)] || CAT_LABEL[t.cat] || 'Task'; }
 
@@ -376,6 +380,11 @@
   function fmtTime(sec){ return (Math.round(sec*10)/10).toFixed(1); }
   function median(arr){ var s=arr.slice().sort(function(x,y){return x-y;}); var m=Math.floor(s.length/2);
     return s.length%2 ? s[m] : (s[m-1]+s[m])/2; }
+  // difficulty ramp: 0 at Stage 1 → 1 at the Final. Skill games read this to
+  // scale speed / grid size / pattern length, so late Stages FEEL like a final.
+  function ramp(){ return Math.max(0, Math.min(1, (S.round-1)/(ROUNDS-1))); }
+  // testing hook: /globe/?kind=swingmeter forces every offline stage to that game
+  var FORCE_KIND=(function(){ try{ return new URLSearchParams(location.search).get('kind'); }catch(e){ return null; } })();
 
   /* ------------------------------------------------- sound + haptics (juice) */
   var _actx=null, _muted=false;
@@ -444,7 +453,7 @@
     { id:'speed', name:'Speed Demon', icon:'⚡', metric:function(s){return s.fastestStage?Math.max(0, 6-s.fastestStage):0;}, unit:'',
       tiers:[{n:1,l:'Bronze'},{n:2.5,l:'Silver'},{n:3.5,l:'Gold'}] },   // fastest < 5s / 3.5s / 2.5s
     { id:'decathlete', name:'Decathlete', icon:'🎮', metric:function(s){return kindsCount();}, unit:'game types',
-      tiers:[{n:5,l:'Bronze'},{n:10,l:'Silver'},{n:14,l:'Gold'}] },
+      tiers:[{n:6,l:'Bronze'},{n:12,l:'Silver'},{n:18,l:'Gold'}] },
     { id:'streak', name:'On A Roll', icon:'🔥', metric:function(s){return s.longestStreak;}, unit:'win streak',
       tiers:[{n:2,l:'Bronze'},{n:3,l:'Silver'},{n:5,l:'Gold'}] },
     { id:'survivor', name:'Marathoner', icon:'🧭', metric:function(s){return s.stagesPlayed;}, unit:'stages',
@@ -778,7 +787,34 @@
         g.push({ kind:'streetscout', cat:'spatial', type:'brain', q:'Street Scout: explore a real street near '+c.name, ll:c.ll, name:c.name });
       }
     }
+    // ---- knowledge-free skill games: the country only SKINS these (its flags,
+    // its city names) — the contest is timing, aim, memory and dexterity, so a
+    // player who knows nothing about the destination competes evenly. ----
+    // Swing Meter — land taps in a shrinking green zone (timing)
+    g.push({ kind:'swingmeter', cat:'reflex', type:'reflex', q:'Land 3 taps in the green zone' });
+    // Eagle Eye — one flag in the wall doesn't belong (visual hunt)
+    g.push({ kind:'eagleeye', cat:'reflex', type:'reflex', q:'One of these is NOT '+c.name+'’s flag — spot it!',
+             target:c.flag, imposters:shuffle(otherCountries(c,3).map(function(x){return x.flag;})) });
+    // Memory Lineup — flags flash, find the one that WASN'T shown (observation)
+    g.push({ kind:'kimsgame', cat:'memory', type:'brain', q:'Memorize the lineup — then spot the flag that wasn’t there' });
+    // Type The Ticket — retype the destination shown on your boarding pass (dexterity)
+    var tw=ticketWord(c);
+    if(tw) g.push({ kind:'typeticket', cat:'word', type:'brain', q:'Type your destination, fast', word:tw });
+    // Baggage Claim — grab YOUR bag off the belt, ignore lookalikes (visual match)
+    g.push({ kind:'baggage', cat:'reflex', type:'reflex', q:'Grab YOUR bag off the belt — 3 grabs' });
+    // Rhythm Echo — hear a rhythm, tap it back (timing memory; opens the audio category)
+    g.push({ kind:'rhythmecho', cat:'audio', type:'brain', q:'Listen to the rhythm, then tap it back' });
     return g;
+  }
+  // boarding-pass word for Type The Ticket: capital (fallback: country name),
+  // diacritics folded, punctuation dropped; skip anything too long to type fun.
+  function ticketWord(c){
+    function clean(s){ try{ s=(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,''); }catch(e){ s=s||''; }
+      return s.toUpperCase().replace(/[^A-Z ]/g,'').trim().replace(/ +/g,' '); }
+    var w=clean(c.capital);
+    if(w.replace(/ /g,'').length<3 || w.replace(/ /g,'').length>13) w=clean(c.name);
+    var n=w.replace(/ /g,'').length;
+    return (n>=3 && n<=13) ? w : null;
   }
 
   function buildChallenge(){
@@ -792,6 +828,11 @@
       S.chosen=null; return;
     }
     var pool = taskPool();
+    // testing hook (?kind=…): pin every offline stage to one game type
+    if(FORCE_KIND && !onlineActive()){
+      var fkl=pool.filter(function(t){ return taskKind(t)===FORCE_KIND; });
+      if(fkl.length){ S.stageType='solo'; S.offered=[fkl[0]]; S.chosen=null; return; }
+    }
     var recent = S.recentKinds || [];
     function fresh(list){ var f=list.filter(function(t){ return recent.indexOf(taskKind(t))<0; }); return f.length?f:list; }
     var brain  = pool.filter(function(t){ return !REFLEX_KINDS[taskKind(t)]; });
@@ -925,6 +966,12 @@
     else if(kind==='mapfind') mgMapFind(t);
     else if(kind==='streetscout') mgStreetScout(t);
     else if(kind==='zoomreveal') mgZoomReveal(t);
+    else if(kind==='swingmeter') mgSwingMeter(t);
+    else if(kind==='eagleeye') mgEagleEye(t);
+    else if(kind==='kimsgame') mgKimsGame(t);
+    else if(kind==='typeticket') mgTypeTicket(t);
+    else if(kind==='baggage') mgBaggage(t);
+    else if(kind==='rhythmecho') mgRhythmEcho(t);
     else finishTask();   // safety
     renderAcct();
   }
@@ -1314,6 +1361,260 @@
     S.tt.hits++; ttStatus();
     if(S.tt.hits>=S.tt.need){ S.play.done=true; finishTask(); return; }
     ttMove();
+  }
+
+  /* ================================================================
+     KNOWLEDGE-FREE SKILL GAMES — the country skins the screen, but the
+     contest is timing / aim / memory / dexterity, so a player who knows
+     nothing about the destination competes evenly. All six read ramp()
+     so late Stages get faster, tighter, longer. Build-once DOM rule
+     applies everywhere (taps must never land mid-render).
+     ================================================================ */
+
+  /* ---------- minigame: Swing Meter (timing) ---------- */
+  function mgSwingMeter(t){
+    var d=ramp();
+    S.sw={ hits:0, need:3, pos:0, zw:0.26-0.10*d, zc:0.5, speed:0.55+0.40*d, t0:performance.now() };
+    swNewZone();
+    $('mg').innerHTML='<div class="seqstatus" id="swst"></div>'
+      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div id="swbar" style="position:relative;height:74px;border-radius:14px;border:1px solid var(--cardb);background:rgba(255,255,255,.05);overflow:hidden;cursor:pointer;touch-action:manipulation">'
+        + '<div id="swz" style="position:absolute;top:0;bottom:0;background:rgba(53,214,160,.30);border-left:2px solid var(--ok);border-right:2px solid var(--ok)"></div>'
+        + '<div id="swm" style="position:absolute;top:6px;bottom:6px;width:5px;border-radius:3px;background:#fff;box-shadow:0 0 12px rgba(255,255,255,.85)"></div>'
+      + '</div>'
+      + '<div class="ohint" style="margin-top:10px">Tap the bar while the marker is in the green. The zone shrinks every hit!</div>';
+    swStatus(); swPaint();
+    $('swbar').onclick=swTap;
+    (function loop(){
+      if(S.play.done || !$('swm')) return;
+      var el=(performance.now()-S.sw.t0)/1000;
+      S.sw.pos=(Math.sin(el*S.sw.speed*Math.PI*2 - Math.PI/2)+1)/2;   // smooth 0..1 ping-pong
+      $('swm').style.left='calc('+(S.sw.pos*100)+'% - 2px)';
+      requestAnimationFrame(loop);
+    })();
+  }
+  function swStatus(){ var e=$('swst'); if(e) e.innerHTML='Hits <b>'+S.sw.hits+'</b>/'+S.sw.need; }
+  function swNewZone(){ var m=S.sw.zw/2+0.06; S.sw.zc=rnd(m,1-m); }
+  function swPaint(){ var z=$('swz'); if(z){ z.style.left=((S.sw.zc-S.sw.zw/2)*100)+'%'; z.style.width=(S.sw.zw*100)+'%'; } }
+  function swTap(){
+    if(S.play.done) return;
+    if(Math.abs(S.sw.pos-S.sw.zc)<=S.sw.zw/2){
+      sfx('correct'); S.sw.hits++; swStatus();
+      if(S.sw.hits>=S.sw.need){ S.play.done=true; setTimeout(finishTask,200); return; }
+      S.sw.zw*=0.78; S.sw.speed*=1.12; swNewZone(); swPaint();
+    } else { S.play.misses++; showMiss(); }
+  }
+
+  /* ---------- minigame: Eagle Eye (visual hunt — spot the imposter flag) ---------- */
+  function mgEagleEye(t){
+    S.ee={ round:0, rounds:3, n:12+Math.round(6*ramp()) };
+    renderEagle(t);
+  }
+  function renderEagle(t){
+    var n=Math.min(24, S.ee.n + S.ee.round*3);
+    var imp=t.imposters[S.ee.round % t.imposters.length] || t.imposters[0];
+    var at=Math.floor(Math.random()*n), tiles='';
+    for(var i=0;i<n;i++){ tiles+='<div class="seqtile eet" data-b="'+(i===at?1:0)+'" style="width:52px;height:52px;font-size:27px">'+(i===at?imp:t.target)+'</div>'; }
+    $('mg').innerHTML='<div class="seqstatus">Found <b>'+S.ee.round+'</b>/'+S.ee.rounds+'</div>'
+      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div class="seqgrid" style="max-width:340px;margin:8px auto 0;gap:8px">'+tiles+'</div>';
+    each('.eet', function(b){ b.onclick=function(){ eagleTap(t,b); }; });
+  }
+  function eagleTap(t,el){
+    if(S.play.done) return;
+    if(el.getAttribute('data-b')==='1'){
+      sfx('correct'); el.classList.add('lit');
+      S.ee.round++;
+      if(S.ee.round>=S.ee.rounds){ S.play.done=true; setTimeout(finishTask,220); }
+      else setTimeout(function(){ if(!S.play.done) renderEagle(t); },300);   // rebuild BETWEEN rounds only
+    } else { S.play.misses++; showMiss(); el.style.opacity=.35; el.style.pointerEvents='none'; }
+  }
+
+  /* ---------- minigame: Memory Lineup (flags flash — spot the one NOT shown) ---------- */
+  function mgKimsGame(t){
+    var d=ramp();
+    S.km={ round:0, rounds:3, k:4+Math.round(2*d), flashMs:2200-900*d };
+    renderKim(t);
+  }
+  function renderKim(t){
+    var flags=shuffle(COUNTRIES).slice(0, S.km.k+1).map(function(c){ return c.flag; });
+    S.km.intruder=flags[S.km.k];
+    var shown=flags.slice(0, S.km.k);
+    S.km.opts=shuffle([S.km.intruder].concat(shuffle(shown).slice(0,3)));
+    var tiles=shown.map(function(f){ return '<div class="seqtile" style="width:54px;height:54px;font-size:28px">'+f+'</div>'; }).join('');
+    $('mg').innerHTML='<div class="seqstatus">Lineup <b>'+(S.km.round+1)+'</b>/'+S.km.rounds+'</div>'
+      + '<div class="prompt" style="text-align:center">👀 Memorize the lineup…</div>'
+      + '<div class="seqgrid" id="kmshow" style="max-width:340px;margin:8px auto 0">'+tiles+'</div>';
+    setTimeout(function(){ if(!S.play.done && $('kmshow')) kimAsk(t); }, S.km.flashMs);
+  }
+  function kimAsk(t){
+    var opts=S.km.opts.map(function(f){ return '<div class="seqtile kmo" data-f="'+f+'" style="width:58px;height:58px;font-size:30px">'+f+'</div>'; }).join('');
+    $('mg').innerHTML='<div class="seqstatus">Lineup <b>'+(S.km.round+1)+'</b>/'+S.km.rounds+'</div>'
+      + '<div class="prompt" style="text-align:center">Which flag was <b style="color:var(--bad)">NOT</b> in the lineup?</div>'
+      + '<div class="seqgrid" style="margin-top:8px">'+opts+'</div>';
+    each('.kmo', function(b){ b.onclick=function(){ kimTap(t,b); }; });
+  }
+  function kimTap(t,el){
+    if(S.play.done) return;
+    if(el.getAttribute('data-f')===S.km.intruder){
+      sfx('correct'); el.classList.add('lit');
+      S.km.round++;
+      if(S.km.round>=S.km.rounds){ S.play.done=true; setTimeout(finishTask,220); }
+      else setTimeout(function(){ if(!S.play.done) renderKim(t); },320);
+    } else { S.play.misses++; showMiss(); el.style.opacity=.35; el.style.pointerEvents='none'; }
+  }
+
+  /* ---------- minigame: Type The Ticket (typing sprint — the word is SHOWN) ---------- */
+  function mgTypeTicket(t){
+    var word=t.word;
+    var letters=shuffle(word.replace(/ /g,'').split(''));
+    S.tk={ word:word, idx:0, letters:letters, used:[], fade:(ramp()>=0.35) };
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div style="border:1px solid var(--cardb);border-radius:12px;padding:12px 14px;margin-bottom:12px;background:rgba(58,160,255,.07);text-align:center">'
+        + '<div style="font-size:10px;font-weight:800;letter-spacing:.14em;color:var(--mut);text-transform:uppercase">🎫 Boarding pass · destination</div>'
+        + '<div id="tkword" style="font-family:\'Anton\',sans-serif;font-size:26px;letter-spacing:.08em;margin-top:4px;transition:opacity .9s">'+esc(word)+'</div>'
+      + '</div>'
+      + '<div class="slot" id="tkslots">'+tkSlots()+'</div>'
+      + '<div class="bank">'+letters.map(function(l,i){ return '<div class="ltile tkt" data-i="'+i+'">'+esc(l)+'</div>'; }).join('')+'</div>'
+      + (S.tk.fade?'<div class="ohint">The ink fades fast — read it while you can!</div>':'');
+    each('.tkt', function(b){ b.onclick=function(){ tkTap(+b.getAttribute('data-i'), b); }; });
+    if(S.tk.fade) setTimeout(function(){ var w=$('tkword'); if(w && !S.play.done) w.style.opacity='0.05'; }, 1500);
+  }
+  function tkSlots(){
+    var out='';
+    for(var i=0;i<S.tk.word.length;i++){
+      var ch=S.tk.word[i];
+      if(ch===' '){ out+='<div style="width:14px"></div>'; continue; }
+      var done=i<S.tk.idx;
+      out+='<div class="tileslot'+(done?' filled':'')+'">'+(done?esc(ch):'')+'</div>';
+    }
+    return out;
+  }
+  function tkTap(i, el){
+    if(S.play.done || S.tk.used[i]) return;
+    if(S.tk.letters[i]===S.tk.word[S.tk.idx]){
+      S.tk.used[i]=1; el.classList.add('used'); sfx('tap');
+      S.tk.idx++;
+      while(S.tk.word[S.tk.idx]===' ') S.tk.idx++;   // spaces fill themselves
+      var s=$('tkslots'); if(s) s.innerHTML=tkSlots();   // slots aren't tappable — safe to rebuild
+      if(S.tk.idx>=S.tk.word.length){ S.play.done=true; setTimeout(finishTask,200); }
+    } else {
+      S.play.misses++; showMiss();
+      el.style.borderColor='var(--bad)'; setTimeout(function(){ if(el) el.style.borderColor=''; },300);
+    }
+  }
+
+  /* ---------- minigame: Baggage Claim (visual match on a moving belt) ---------- */
+  function mgBaggage(t){
+    var d=ramp();
+    var bases=['🟥','🟦','🟩','🟨','🟪','🟧'], sticks=['⭐','🌙','⚡','🍀','🎀','🔔'];
+    var tb=pick(bases), ts=pick(sticks);
+    S.bg={ tb:tb, ts:ts, target:tb+ts, bases:bases, sticks:sticks, grabs:0, need:3,
+           slots:[null,null,null,null], hard:d, timer:null };
+    var cells=''; for(var i=0;i<4;i++){ cells+='<div class="seqtile bgc" data-i="'+i+'" style="width:74px;height:64px;font-size:23px;letter-spacing:2px"></div>'; }
+    $('mg').innerHTML='<div class="seqstatus" id="bgst"></div>'
+      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div style="text-align:center;margin-bottom:10px"><span class="catchip">Your bag</span> <span style="font-size:26px;letter-spacing:2px;vertical-align:middle">'+S.bg.target+'</span></div>'
+      + '<div class="seqgrid" style="margin-top:2px">'+cells+'</div>'
+      + '<div class="ohint">The belt keeps moving — tap only YOUR bag.</div>';
+    each('.bgc', function(b){ b.onclick=function(){ bgTap(+b.getAttribute('data-i')); }; });
+    bgStatus();
+    S.bg.timer=setInterval(bgTick, 1050-350*d); bgTick();
+  }
+  function bgStatus(){ var e=$('bgst'); if(e) e.innerHTML='Grabbed <b>'+S.bg.grabs+'</b>/'+S.bg.need; }
+  function bgCell(i){ return document.querySelector('.bgc[data-i="'+i+'"]'); }
+  function bgNew(){
+    // decoys converge on your bag as the race ramps: same colour, wrong sticker
+    var b = (Math.random() < 0.35+0.5*S.bg.hard) ? S.bg.tb : pick(S.bg.bases);
+    var s = pick(S.bg.sticks);
+    if(b===S.bg.tb && s===S.bg.ts) s = S.bg.sticks[(S.bg.sticks.indexOf(s)+1)%S.bg.sticks.length];
+    return b+s;
+  }
+  function bgTick(){
+    if(S.play.done || !$('bgst')){ clearInterval(S.bg.timer); return; }
+    var incoming = (S.bg.slots.indexOf(S.bg.target)<0 && Math.random()<0.55) ? S.bg.target : bgNew();
+    S.bg.slots.shift(); S.bg.slots.push(incoming);
+    for(var i=0;i<4;i++){ var el=bgCell(i); if(el) el.textContent=S.bg.slots[i]||''; }   // update in place
+  }
+  function bgTap(i){
+    if(S.play.done) return;
+    var bag=S.bg.slots[i]; if(!bag) return;
+    var el=bgCell(i);
+    if(bag===S.bg.target){
+      sfx('correct'); S.bg.grabs++; S.bg.slots[i]=null; if(el) el.textContent=''; bgStatus();
+      if(S.bg.grabs>=S.bg.need){ S.play.done=true; clearInterval(S.bg.timer); finishTask(); }
+    } else { S.play.misses++; showMiss(); S.bg.slots[i]=null; if(el) el.textContent=''; }
+  }
+
+  /* ---------- minigame: Rhythm Echo (audio — hear a rhythm, tap it back) ----------
+     Beats are separated by SHORT (~330ms) or LONG (~950ms) gaps; the player's echo
+     is judged on gap pattern, not exact timing. The pad pulses in sync with every
+     beat, so the game is fully playable muted (visual rhythm). */
+  function mgRhythmEcho(t){
+    S.re={ round:0, rounds:2, n:4+Math.round(ramp()), state:'idle', pat:[], taps:[] };
+    $('mg').innerHTML='<div class="seqstatus" id="rest">🎧 Listen…</div>'
+      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div class="reps" id="redots"></div>'
+      + '<div class="reactbox idle" id="repad" style="height:170px;cursor:pointer"><div class="big">🥁</div><div class="sm" id="resm">Listen to the beat…</div></div>';
+    $('repad').onclick=reTap;
+    reBegin();
+  }
+  function reDots(fill){
+    var e=$('redots'); if(!e) return; var h='';
+    for(var i=0;i<S.re.n;i++){ h+='<div class="rep'+(i<fill?' done':'')+'"></div>'; }
+    e.innerHTML=h;
+  }
+  function reBegin(){
+    S.re.state='play'; S.re.taps=[]; S.re.pat=[];
+    for(var i=0;i<S.re.n-1;i++){ S.re.pat.push(Math.random()<0.5?'S':'L'); }
+    if(S.re.pat.indexOf('S')<0) S.re.pat[0]='S';                       // always a mix
+    if(S.re.pat.indexOf('L')<0) S.re.pat[S.re.pat.length-1]='L';
+    var pad=$('repad'); if(pad) pad.setAttribute('data-pat', S.re.pat.join(''));
+    var st=$('rest'); if(st) st.innerHTML='🎧 Round <b>'+(S.re.round+1)+'</b>/'+S.re.rounds+' — listen…';
+    var sm=$('resm'); if(sm) sm.textContent='Listen to the beat…';
+    reDots(0);
+    var when=420;
+    rePulse(0, when);
+    for(var k=0;k<S.re.pat.length;k++){ when += (S.re.pat[k]==='S'?330:950); rePulse(k+1, when); }
+    setTimeout(function(){
+      if(S.play.done || !$('repad')) return;
+      S.re.state='echo';
+      var s2=$('rest'); if(s2) s2.innerHTML='🫵 Your turn — tap the same rhythm ('+S.re.n+' taps)';
+      var m2=$('resm'); if(m2) m2.textContent='Tap it back!';
+      reDots(0);
+    }, when+520);
+  }
+  function rePulse(i, delay){
+    setTimeout(function(){
+      var pad=$('repad'); if(!pad || S.play.done || S.re.state!=='play') return;
+      beep(720,0.10,'triangle',0.14); vibe(14);
+      pad.style.background='rgba(58,160,255,.45)';
+      reDots(i+1);
+      setTimeout(function(){ var p=$('repad'); if(p && S.re.state==='play') p.style.background=''; },150);
+    }, delay);
+  }
+  function reTap(){
+    if(S.play.done || S.re.state!=='echo') return;   // taps during playback are ignored
+    S.re.taps.push(performance.now());
+    beep(600,0.08,'triangle',0.12); vibe(10);
+    var pad=$('repad'); if(pad){ pad.style.background='rgba(53,214,160,.4)'; setTimeout(function(){ var p=$('repad'); if(p) p.style.background=''; },120); }
+    reDots(S.re.taps.length);
+    if(S.re.taps.length>=S.re.n) reJudge();
+  }
+  function reJudge(){
+    var got=[];
+    for(var i=1;i<S.re.taps.length;i++){ got.push((S.re.taps[i]-S.re.taps[i-1])<620?'S':'L'); }
+    if(got.join('')===S.re.pat.join('')){
+      sfx('correct');
+      S.re.round++;
+      if(S.re.round>=S.re.rounds){ S.play.done=true; setTimeout(finishTask,250); return; }
+      S.re.n++;   // next echo is one beat longer
+      S.re.state='play'; setTimeout(function(){ if(!S.play.done && $('repad')) reBegin(); },600);
+    } else {
+      S.play.misses++; showMiss();
+      var st=$('rest'); if(st) st.innerHTML='❌ Not quite — listen again…';
+      S.re.state='play'; setTimeout(function(){ if(!S.play.done && $('repad')) reBegin(); },800);
+    }
   }
 
   /* ---------- minigame: Find It On The Map (spatial, distance-scored) ---------- */
