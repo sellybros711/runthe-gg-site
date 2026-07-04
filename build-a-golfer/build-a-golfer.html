@@ -8169,18 +8169,65 @@ function scrDailyRound(){
   const total=counted.reduce((s,h)=>s+h.toPar,0), through=counted.length;
   const strokesThrough=counted.reduce((s,h)=>s+h.par+h.toPar,0);   // actual strokes hit so far (par-through + to-par)
   const i=played.length, done=(i>=18)&&!revealing;
+  const av=dTourAvg(c);
   if(S.moment){   // career-mode Moment: this round IS the tournament's final round
     add($(`<div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 THE MOMENT · Final round · ${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)}</span></div>`));
-    add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
-    add($(`<div class="center small" style="margin:0 0 4px;color:var(--gold);font-weight:700">${esc(S.moment.evtName)} · ${momentPosTxt(S.moment.info).replace(/<[^>]*>/g,'')} at the start of the day</div>`));
+    if(!revealing){   // ball in flight → the window's floating tournament board carries the story
+      add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
+      add($(`<div class="center small" style="margin:0 0 4px;color:var(--gold);font-weight:700">${esc(S.moment.evtName)} · ${momentPosTxt(S.moment.info).replace(/<[^>]*>/g,'')} at the start of the day</div>`));
+    }
   } else {
   add($(`<div class="center"><span class="tag">${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)} · ${S.dailyPlan}</span></div>`));
-  add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
-  const av=dTourAvg(c); const beating=(through>0)&&(total < av*(through/18));
-  add($(`<div class="center small" style="margin:0 0 4px;color:${through===0?'var(--muted)':(beating?'#35d6a0':'#e9a23b')};font-weight:700">Tour average ${dAvgTxt(av)}, beat it to win${through>0?` · ${beating?'ahead of pace ✓':'behind pace'}`:''}</div>`));
+  if(!revealing){   // ball in flight → the window's floating scoreboard carries the score + pace
+    add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
+    const beating=(through>0)&&(total < av*(through/18));
+    add($(`<div class="center small" style="margin:0 0 4px;color:${through===0?'var(--muted)':(beating?'#35d6a0':'#e9a23b')};font-weight:700">Tour average ${dAvgTxt(av)}, beat it to win${through>0?` · ${beating?'ahead of pace ✓':'behind pace'}`:''}</div>`));
   }
-  const lg=dLegend(); if(lg) add(lg);
+  }
+  const lg=revealing?null:dLegend(); if(lg) add(lg);
   const vh=(S.dailyViewHole!=null && S.dailyViewHole<played.length)?S.dailyViewHole:played.length-1;   // which hole's shot log is shown
+  if(played.length){ const liveReveal=(vh===lastIdx&&revealN!=null)?revealN:null;
+    const hvn=hvNode(played[vh], liveReveal, vh, S.dailyCourse);   // broadcast tracer hole view
+    if(hvn){
+      // ONE-WINDOW broadcast (same style as the online H2H watch): hole info, a live scoreboard and
+      // the current shot's description float ON the tracer as translucent chips.
+      const shell=hvn.querySelector('.hvshell'), h=played[vh], latest=(vh===lastIdx);
+      shell.appendChild($(`<div class="hvob hvhole">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
+      if(latest){
+        const meNm=S.dailyLegend?esc(S.dailyLegend.name):'YOU';
+        const tpCol=v=>v<0?'#4be3a8':v>0?'#ff9d8f':'#e8efe9';
+        const bd=$(`<div class="hvob hvboard"></div>`);
+        if(S.moment && S.curEvt && S.curEvt.players){
+          // a Moment IS the tournament's final round → the REAL leaderboard floats on the window,
+          // your projected total (start-of-day + holes played so far) moving through it live
+          bd.appendChild($(`<div class="hvbcap">FINAL ROUND · THRU ${through}</div>`));
+          const rows=S.curEvt.players.filter(o=>o.made).map(o=>({nm:o.p.you?'YOU':o.p.name, tp:Math.round(o.total)+(o.p.you?total:0), you:!!o.p.you})).sort((a,b)=>a.tp-b.tp);
+          const meIdx=rows.findIndex(r=>r.you);
+          const show=meIdx<4?rows.slice(0,4):rows.slice(0,3).concat([rows[meIdx]]);
+          show.forEach(r=>{ const rk=rows.indexOf(r)+1;
+            bd.appendChild($(`<div class="hvbrow ${r.you?'mine':''}"><span class="cdot" style="background:${r.you?'#3b82f6':'#8fa39a'}"></span><span class="rk">${rk}</span><span class="nm">${esc(r.nm)}</span><span class="tp" style="color:${tpCol(r.tp)}">${dtp(r.tp)}</span></div>`));
+          });
+        } else {
+          // the Daily is a match against the tour pro: you vs the pro's pace through the same holes
+          bd.appendChild($(`<div class="hvbcap">THRU ${through} · TARGET ${dAvgTxt(av)}</div>`));
+          const pace=av*(through/18);
+          const paceTxt=Math.abs(pace)<0.05?'E':(pace>0?'+':'')+pace.toFixed(1);
+          const rows=[{nm:meNm, v:total, txt:dtp(total), mine:true, col:'#3b82f6'},
+                      {nm:'TOUR PRO', v:pace, txt:paceTxt, mine:false, col:'#ef4444'}].sort((a,b)=>a.v-b.v);
+          rows.forEach((r,ri)=>bd.appendChild($(`<div class="hvbrow ${r.mine?'mine':''}"><span class="cdot" style="background:${r.col}"></span><span class="rk">${ri+1}</span><span class="nm">${r.nm}</span><span class="tp" style="color:${tpCol(r.v)}">${r.txt}</span></div>`)));
+        }
+        shell.appendChild(bd);
+        // ONE clear shot description that swaps as the shots simulate (replaces the shot-log dump in play)
+        if(revealing){ const st=(h.shots||[])[Math.max(0,(revealN||1)-1)];
+          if(st&&st.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:#3b82f6">${meNm}</b> · ${esc(st.d)}</div>`));
+        }
+      }
+      add(hvn);
+    }
+    if(!(revealing && vh===lastIdx)) add(dShotPanel(played[vh], liveReveal));
+    if(vh!==played.length-1){ const bk=$(`<button class="btn ghost" style="max-width:520px;margin:8px auto 0;font-size:12px;padding:8px">↩ Back to the latest hole</button>`); bk.onclick=()=>{ S.dailyViewHole=null; render(); }; add(bk); }
+  }
+  // scorecard strip lives BELOW the window now (the tracer is the star, H2H-style)
   const strip=$(`<div class="dcard" style="max-width:600px;margin:6px auto 0"></div>`);
   for(let k=0;k<18;k++){ const pl=played[k], isReveal=(k===lastIdx&&revealing), cur=(k===i&&!done&&!revealing);
     const showScore=pl&&!isReveal;   // the in-flight hole shows no score until the ball drops
@@ -8189,17 +8236,12 @@ function scrDailyRound(){
     strip.appendChild(cell); }
   add(strip);
   if(played.length>1) add($(`<div class="center small muted" style="margin:5px 0 0;font-size:11px">Tap any played hole to replay its shot log</div>`));
-  if(played.length){ const liveReveal=(vh===lastIdx&&revealN!=null)?revealN:null;
-    const hvn=hvNode(played[vh], liveReveal, vh, S.dailyCourse); if(hvn) add(hvn);   // broadcast tracer hole view
-    add(dShotPanel(played[vh], liveReveal));
-    if(vh!==played.length-1){ const bk=$(`<button class="btn ghost" style="max-width:520px;margin:8px auto 0;font-size:12px;padding:8px">↩ Back to the latest hole</button>`); bk.onclick=()=>{ S.dailyViewHole=null; render(); }; add(bk); }
-  }
   add($(`<div style="height:10px"></div>`));
   if(revealing){
     // Ball in flight on the latest hole. Controls stay available the WHOLE time now (not only in the
     // brief gap between holes), so you can Pause or jump to the end mid-reveal. Player feedback: during
     // auto-sim it was very hard to catch the pause/skip window that used to only appear after each hole.
-    add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">⛳ Shot ${revealN}…</div>`));
+    // (no "Shot N…" text line — the window's own stat strip shows SHOT n · LIVE)
     const sk=$(`<button class="btn ghost" style="max-width:520px;margin:12px auto 0;font-size:13px">⏭ Skip this hole's replay</button>`);
     sk.onclick=()=>{ clearDailyTimer(); S.dailyRevealN=lastShotsLen; render(); scheduleDailyAdvance(); };
     add(sk);

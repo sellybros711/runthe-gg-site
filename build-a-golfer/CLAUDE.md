@@ -4052,6 +4052,36 @@ allows Google Fonts, or self-host Anton.*
     `{value:}` → NaN skills → every hole clamps to +3 = 54), not a game bug — the NaN guards above were
     added as insurance anyway. Deployed to /golf.
 
+- **CS145 — Daily Challenge + Moments get the H2H one-window broadcast (full immersion).** Owner: "The
+  daily challenge and the moments should have the same style simulation as the online head to head. The
+  courses, holes, tour tracer, etc... fully immersed... No more boring simulation." The engine was already
+  shared (same courses, CS143 custom holes, biomes, TOURTRACE tracer); what the daily lacked was the H2H's
+  ONE-WINDOW presentation — the tracer as the whole stage with the HUD floating on it, instead of a tracer
+  embedded in a text-heavy page. `scrDailyRound` (which also serves Moments, Monthly Spotlight and Legend
+  Token rounds) now renders the same `.hvob` overlay chips as `scrH2HWatch`:
+  • **Hole chip** top-left: `HOLE n · PAR p · yyyY`.
+  • **Floating scoreboard** top-right — the Daily is now framed as a live MATCH: a `YOU` row (blue dot,
+    gold-ringed) vs a `TOUR PRO` row (red dot) showing the pro's pace through the same holes, ranked by
+    score, caption `THRU n · TARGET {avg}`. In a **Moment**, the board is the REAL tournament leaderboard
+    (top 3 + you, from `S.curEvt`), with your projected total (start-of-day + holes played so far) moving
+    through it live as you play — caption `FINAL ROUND · THRU n`. Legend Token rounds show the legend's
+    name on the YOU row.
+  • **One shot description bar** at the bottom (`.hvdesc`) that swaps as the shots simulate ("YOU · Driver
+    309 yds to the fairway, 72 yds to hole"), replacing the cumulative shot-log dump during play.
+  • **De-cluttered flight state:** while the ball is in the air, the big score line, the "Tour average…
+    beat it to win" line, the "New to golf?" card and the shot-log panel are all hidden (the window
+    carries all of it); they return between holes, where the decision prompts / controls live as before.
+    The redundant "⛳ Shot N…" text line is gone (the window's stat strip already shows SHOT n · LIVE).
+  • **Window is the star:** the tracer now sits directly under the course tag, with the 18-cell scorecard
+    strip moved BELOW it (tap-to-replay unchanged; replays show the hole chip + the existing REPLAY tag).
+  No sim/engine/pacing changes — presentation only; H2H itself untouched. Verified in Playwright
+  (hv8_test): daily reveal shows hole chip, 2-row YOU/TOUR PRO board (your row highlighted), desc bar
+  matching the current shot's narrative, zero shot-log panels and no score/pace text during flight, window
+  above the strip; hole lands → board advances to THRU 1, chrome + panel return, desc clears; full
+  practice round completes; a Moment's board shows the real 4-row leaderboard with YOU ranked correctly
+  and the finish still feeds rounds[3]/finalizes; hv7 (Moments), hv5 (multi-ball H2H) and the practice
+  suite all re-run green. Zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
