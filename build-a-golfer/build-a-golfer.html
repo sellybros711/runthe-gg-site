@@ -6792,7 +6792,17 @@ function hvPlots(g, shots, seedN){
       case 'hole': rest=pin.slice(); p.hole=true; p.onGreen=true; break;
       default: y=L-(toY!=null?toY:20); rest=[g.cx(y)+jj(i,1)*8, y];
     }
-    if(p.k==='putt'){ const d=Math.max(2.4/g.vy,(s.toFt||2)/3), u=hvUnit(pin,cur), past=hh(i,5)<0.4;   // screen-aware min so the tap-in leave visibly travels
+    if(p.k==='putt'){
+      // a missed putt must ALWAYS end closer to the hole than it started — the screen-aware visual
+      // minimum (added for tap-in visibility) could exceed the remaining distance and draw the ball
+      // rolling BACKWARDS away from the cup. Cap the drawn leave at 80% of the current distance;
+      // a "ran it past" leave travels through the hole instead, which is never backwards.
+      const distNow=Math.max(0.3,hvDistYds(pin,cur)), u=hvUnit(pin,cur);
+      // if the narrative's next leave is LONGER than the current distance, the ball can only have
+      // run THROUGH the hole — draw it past, never rolling away from the cup on the same side
+      const past=hh(i,5)<0.4 || ((s.toFt||2)/3 > distNow*0.75);
+      let d=Math.max(Math.min(2.4/g.vy, distNow*0.8), (s.toFt||2)/3);
+      if(!past) d=Math.min(d, distNow*0.8);
       rest=[pin[0]+(past?u[0]*0.8:-u[0])*d, pin[1]+(past?u[1]*0.8:-u[1])*d]; p.onGreen=true; }
     p.rest=rest;
     p.dist=hvDistYds(rest,p.from);
@@ -6854,15 +6864,56 @@ function hvPathD(g,p){ const A=hvProj(g,p.from[0],p.from[1]), C=hvCtrl(g,p), B=h
   return `M ${A[0].toFixed(1)} ${A[1].toFixed(1)} Q ${C[0].toFixed(1)} ${C[1].toFixed(1)} ${B[0].toFixed(1)} ${B[1].toFixed(1)}`; }
 function hvRollD(g,p){ const A=hvProj(g,p.land[0],p.land[1]), B=hvProj(g,p.rest[0],p.rest[1]);
   return `M ${A[0].toFixed(1)} ${A[1].toFixed(1)} L ${B[0].toFixed(1)} ${B[1].toFixed(1)}`; }
-function hvTerrain(g, seedN){
+// organic blob path: a seeded, smoothly-perturbed closed curve (Catmull-Rom → cubic beziers).
+// Same seed → same perturbation per point, so a fringe ring / bunker lip generated at a scaled
+// radius stays parallel to its parent shape. Kills the "geometric ellipse" look.
+function hvBlobD(cx,cy,rx,ry,seedN,irr,pts){
+  pts=pts||10; const P=[];
+  for(let k=0;k<pts;k++){ const a=k/pts*2*Math.PI, w=1+irr*(hvHash(seedN,k,7)-0.5)*2;
+    P.push([cx+Math.cos(a)*rx*w, cy+Math.sin(a)*ry*w]); }
+  let d='M '+P[0][0].toFixed(1)+' '+P[0][1].toFixed(1);
+  for(let k=0;k<pts;k++){ const p0=P[(k-1+pts)%pts],p1=P[k],p2=P[(k+1)%pts],p3=P[(k+2)%pts];
+    d+=` C ${(p1[0]+(p2[0]-p0[0])/6).toFixed(1)} ${(p1[1]+(p2[1]-p0[1])/6).toFixed(1)} ${(p2[0]-(p3[0]-p1[0])/6).toFixed(1)} ${(p2[1]-(p3[1]-p1[1])/6).toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`; }
+  return d+' Z';
+}
+/* ---- biomes: each course renders in its real-world environment. Palettes keep the dark
+   broadcast look; flora + ocean + bunker character change per biome. Unmapped courses (and the
+   career sim, if it ever adopts the hole view) fall back to parkland. ---- */
+const HV_BIOMES={
+ parkland:{bg:['#0a2a17','#113920','#154426'],fleck:['#0a2f19','#1d5a33'],fw:['#3a9a55','#2c7a44'],cut:'#1d5c34',cut2:'#256b3d',edge:'#1f5c35',
+   green:['#61b97a','#4aa563','#3d9053'],fringe:'#317947',gstroke:'#2c6c40',sand:['#f4e6bd','#d9c48f'],sandline:'#c2a878',
+   flora:'tree',tree:['#0e3d22','#12492a','#145131','#1a5c38','#2c7a48'],ocean:false,bunkerScale:1},
+ links:{bg:['#242f1b','#2c3a21','#344427'],fleck:['#4a4a28','#6b6b3a'],fw:['#7ba354','#5f8a42'],cut:'#3f5a2c',cut2:'#4c6a35',edge:'#41592e',
+   green:['#a0c17c','#87ad66','#759c56'],fringe:'#5d7f42',gstroke:'#55763d',sand:['#e8d7a8','#c9b57e'],sandline:'#a8905e',
+   flora:'dune',dune:['#575030','#6c633e','#7d7449'],gorse:['#2e4d20','#e2c34a'],ocean:false,bunkerScale:0.62},
+ coastal:{bg:['#0c2b1e','#123a26','#16452c'],fleck:['#0b3020','#1e5c3c'],fw:['#3d9c5e','#2f7c4a'],cut:'#1e5c3c',cut2:'#266b44',edge:'#20583a',
+   green:['#5fbd85','#48a86c','#3b9459'],fringe:'#2f7a4e',gstroke:'#2a6c46',sand:['#f2e2b5','#d6c08a'],sandline:'#bfa374',
+   flora:'cypress',tree:['#0b2e1a','#0f3d22','#123f27','#175031','#215e3c'],ocean:true,bunkerScale:1},
+ desert:{bg:['#33250e','#403016','#4a391d'],fleck:['#271e0c','#6b5527'],fw:['#4d9c50','#3a7c40'],cut:'#5a4822',cut2:'#6a5830',edge:'#3d5c2e',
+   green:['#58b06b','#46a058','#3b8f4d'],fringe:'#3a7a44',gstroke:'#356e3e',sand:['#f0dcac','#d3ba82'],sandline:'#b39a68',
+   flora:'cactus',cactus:['#3f7a4a','#57945d'],ocean:false,bunkerScale:1},
+ tropical:{bg:['#0a3020','#0f4229','#124d30'],fleck:['#0b3a24','#1f6a44'],fw:['#3fae62','#2f8c4c'],cut:'#1e6a40',cut2:'#277a4a',edge:'#20623e',
+   green:['#66cc8a','#4dbb72','#3fa862'],fringe:'#2f8a52',gstroke:'#2a7c4a',sand:['#f6e8c0','#dcc794'],sandline:'#c4aa78',
+   flora:'palm',palm:['#5a4426','#2c7a44','#3f9c58'],ocean:false,bunkerScale:1}};
+// internal course KEYS (never display names) → biome; unmapped → parkland
+const HV_COURSE_BIOME={
+ 'St Andrews Old Course':'links','Royal Troon':'links','Carnoustie':'links','Royal Portrush':'links','Turnberry':'links','Shinnecock Hills':'links','Whistling Straits':'links',
+ 'Pebble Beach Golf Links':'coastal','Torrey Pines South':'coastal','Kiawah Island Ocean':'coastal','Olympic Club':'coastal',
+ 'TPC Scottsdale':'desert',
+ 'Plantation Course at Kapalua':'tropical','Waialae Country Club':'tropical','TPC Sawgrass':'tropical','Bay Hill':'tropical','Harbour Town Golf Links':'tropical'};
+function hvBiome(courseKey){ return HV_BIOMES[HV_COURSE_BIOME[courseKey]||'parkland']; }
+function hvTerrain(g, seedN, B){
+  B=B||HV_BIOMES.parkland;
   const s=[]; const hh=(a)=>hvHash(seedN,a,3);
   const sx=g.sx;
-  // defs: gradients give every flat shape depth — light falls from the top-left everywhere
-  let defs=`<linearGradient id="hvbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a2a17"/><stop offset=".55" stop-color="#113920"/><stop offset="1" stop-color="#154426"/></linearGradient>
-    <linearGradient id="hvfwg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a9a55"/><stop offset="1" stop-color="#2c7a44"/></linearGradient>
-    <radialGradient id="hvgreen" cx=".42" cy=".36" r=".9"><stop offset="0" stop-color="#61b97a"/><stop offset=".65" stop-color="#4aa563"/><stop offset="1" stop-color="#3d9053"/></radialGradient>
-    <radialGradient id="hvsand" cx=".42" cy=".38" r=".95"><stop offset="0" stop-color="#f4e6bd"/><stop offset="1" stop-color="#d9c48f"/></radialGradient>
+  // defs: gradients give every flat shape depth — light falls from the top-left everywhere.
+  // Colors come from the course's BIOME so a links, desert or island hole reads differently.
+  let defs=`<linearGradient id="hvbg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${B.bg[0]}"/><stop offset=".55" stop-color="${B.bg[1]}"/><stop offset="1" stop-color="${B.bg[2]}"/></linearGradient>
+    <linearGradient id="hvfwg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${B.fw[0]}"/><stop offset="1" stop-color="${B.fw[1]}"/></linearGradient>
+    <radialGradient id="hvgreen" cx=".42" cy=".36" r=".9"><stop offset="0" stop-color="${B.green[0]}"/><stop offset=".65" stop-color="${B.green[1]}"/><stop offset="1" stop-color="${B.green[2]}"/></radialGradient>
+    <radialGradient id="hvsand" cx=".42" cy=".38" r=".95"><stop offset="0" stop-color="${B.sand[0]}"/><stop offset="1" stop-color="${B.sand[1]}"/></radialGradient>
     <radialGradient id="hvwatg" cx=".5" cy=".4" r=".95"><stop offset="0" stop-color="#1e6e97"/><stop offset="1" stop-color="#0b344b"/></radialGradient>
+    <linearGradient id="hvocean" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0a2f45"/><stop offset="1" stop-color="#1d6285"/></linearGradient>
     <radialGradient id="hvball" cx=".35" cy=".3" r=".95"><stop offset="0" stop-color="#ffffff"/><stop offset=".75" stop-color="#eef3ef"/><stop offset="1" stop-color="#c6d1ca"/></radialGradient>
     <radialGradient id="hvvin" cx=".5" cy=".46" r=".72"><stop offset=".6" stop-color="#000000" stop-opacity="0"/><stop offset="1" stop-color="#000000" stop-opacity=".26"/></radialGradient>`;
   let fwDD=null;
@@ -6874,60 +6925,117 @@ function hvTerrain(g, seedN){
   }
   s.push(`<defs>${defs}</defs>`);
   s.push(`<rect width="${HV_W}" height="${HV_H}" fill="url(#hvbg)"/>`);
-  // rough texture: a deterministic scatter of grass flecks so the surround doesn't read flat
+  // rough texture: a deterministic scatter of terrain flecks so the surround doesn't read flat
   let fl='';
   for(let i=0;i<64;i++){ const x=hh(200+i)*HV_W, y=hh(300+i)*HV_H, r=0.7+hh(400+i)*1.2;
-    fl+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${i%2?'#0a2f19':'#1d5a33'}" opacity=".22"/>`; }
+    fl+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${i%2?B.fleck[0]:B.fleck[1]}" opacity=".22"/>`; }
   s.push(fl);
+  // coastal biome: an ocean runs down one side of the hole (wobbled shoreline + foam + glints)
+  let oceanSide=0, oceanW=0;
+  if(B.ocean){
+    oceanSide=hh(70)<0.5?-1:1; oceanW=38+hh(71)*16;
+    const xs=oceanSide>0?HV_W:0, n=9, edge=[];
+    for(let k=0;k<=n;k++){ const y=k/n*HV_H, w=oceanW+(hvHash(seedN,80+k,3)-0.5)*18;
+      edge.push([oceanSide>0?HV_W-w:w, y]); }
+    let d='M '+edge[0][0].toFixed(1)+' '+edge[0][1].toFixed(1), foam=d;
+    for(let k=1;k<=n;k++){ const a=edge[k-1], b=edge[k], my=((a[1]+b[1])/2).toFixed(1);
+      const seg=` C ${a[0].toFixed(1)} ${my} ${b[0].toFixed(1)} ${my} ${b[0].toFixed(1)} ${b[1].toFixed(1)}`;
+      d+=seg; foam+=seg; }
+    d+=` L ${xs} ${HV_H} L ${xs} 0 Z`;
+    s.push(`<path d="${d}" fill="url(#hvocean)"/>`);
+    s.push(`<path d="${foam}" fill="none" stroke="#cfeee2" stroke-width="1.4" opacity=".45"/>`);
+    s.push(`<path d="${foam}" fill="none" stroke="#3d89b0" stroke-width="3" opacity=".25"/>`);
+    for(let k=0;k<3;k++){ const gy=40+hh(90+k)*(HV_H-80), gx=oceanSide>0?HV_W-oceanW*0.5-hh(94+k)*10:oceanW*0.5+hh(94+k)*10;
+      s.push(`<path d="M ${(gx-4).toFixed(1)} ${gy.toFixed(1)} q 4 -2.4 8 0" fill="none" stroke="#9adfff" stroke-width=".9" opacity=".5"/>`); }
+  }
   if(fwDD){
     // first-cut halo → intermediate cut → fairway gradient → mow stripes → crisp edge
-    s.push(`<path d="${fwDD}" fill="none" stroke="#1d5c34" stroke-width="26" stroke-linejoin="round" opacity=".85"/>`);
-    s.push(`<path d="${fwDD}" fill="none" stroke="#256b3d" stroke-width="10" stroke-linejoin="round" opacity=".9"/>`);
+    s.push(`<path d="${fwDD}" fill="none" stroke="${B.cut}" stroke-width="26" stroke-linejoin="round" opacity=".85"/>`);
+    s.push(`<path d="${fwDD}" fill="none" stroke="${B.cut2}" stroke-width="10" stroke-linejoin="round" opacity=".9"/>`);
     s.push(`<path d="${fwDD}" fill="url(#hvfwg)"/>`);
     let st=''; for(let yy=0; yy<HV_H; yy+=26){ if((yy/26)%2<1) st+=`<rect x="0" y="${yy}" width="${HV_W}" height="13" fill="#ffffff" opacity=".05"/>`; }
     s.push(`<g clip-path="url(#hvfw)">${st}</g>`);
-    s.push(`<path d="${fwDD}" fill="none" stroke="#1f5c35" stroke-width="1.4" opacity=".9"/>`);
+    s.push(`<path d="${fwDD}" fill="none" stroke="${B.edge}" stroke-width="1.4" opacity=".9"/>`);
   }
-  // trees: layered canopies with a cast shadow and a lit crown (was one flat blob)
+  // flora: biome-specific — layered deciduous canopies (parkland), tall lean cypress (coastal),
+  // palms (tropical), saguaros (desert), or dune mounds + gorse (links). All seeded, no rng.
+  const floraSVG=(px,py,r,dark,fs)=>{
+    const F=B.flora;
+    if(F==='palm'){ const tc=B.palm, lean=(hvHash(seedN,fs,9)-0.5)*r*0.9, tx=px+lean, ty=py-r*1.15;
+      let o=`<ellipse cx="${(px+r*0.4).toFixed(1)}" cy="${(py+r*0.28).toFixed(1)}" rx="${(r*0.9).toFixed(1)}" ry="${(r*0.5).toFixed(1)}" fill="#04150a" opacity=".45"/>`;
+      o+=`<path d="M ${px.toFixed(1)} ${py.toFixed(1)} Q ${(px+lean*0.7).toFixed(1)} ${(py-r*0.6).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)}" fill="none" stroke="${tc[0]}" stroke-width="${Math.max(1,r*0.16).toFixed(1)}"/>`;
+      for(let a=0;a<6;a++){ const an=(-170+a*32)*Math.PI/180, ex=tx+Math.cos(an)*r*1.15, ey=ty+Math.sin(an)*r*0.8+r*0.22;
+        o+=`<path d="M ${tx.toFixed(1)} ${ty.toFixed(1)} Q ${(tx+Math.cos(an)*r*0.6).toFixed(1)} ${(ty+Math.sin(an)*r*0.55-r*0.3).toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}" fill="none" stroke="${a%2?tc[1]:tc[2]}" stroke-width="${Math.max(0.9,r*0.13).toFixed(1)}" stroke-linecap="round"/>`; }
+      return o;
+    }
+    if(F==='cactus'){ const cc=B.cactus, h=r*1.5, w=Math.max(2.2,r*0.5);
+      let o=`<ellipse cx="${(px+2).toFixed(1)}" cy="${(py+1.6).toFixed(1)}" rx="${(r*0.7).toFixed(1)}" ry="${(r*0.32).toFixed(1)}" fill="#1a1206" opacity=".35"/>`;
+      o+=`<rect x="${(px-w/2).toFixed(1)}" y="${(py-h).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="${(w/2).toFixed(1)}" fill="${cc[0]}"/>`;
+      o+=`<rect x="${(px-w*1.5).toFixed(1)}" y="${(py-h*0.78).toFixed(1)}" width="${(w*0.5).toFixed(1)}" height="${(h*0.42).toFixed(1)}" rx="${(w*0.25).toFixed(1)}" fill="${cc[0]}"/>`;
+      o+=`<rect x="${(px-w*1.5).toFixed(1)}" y="${(py-h*0.46).toFixed(1)}" width="${(w*1.2).toFixed(1)}" height="${(w*0.5).toFixed(1)}" rx="${(w*0.25).toFixed(1)}" fill="${cc[0]}"/>`;
+      o+=`<line x1="${(px-w*0.1).toFixed(1)}" y1="${(py-h*0.85).toFixed(1)}" x2="${(px-w*0.1).toFixed(1)}" y2="${(py-h*0.12).toFixed(1)}" stroke="${cc[1]}" stroke-width=".7" opacity=".8"/>`;
+      return o;
+    }
+    if(F==='dune'){ const dc=B.dune;
+      let o=`<ellipse cx="${px.toFixed(1)}" cy="${(py+r*0.15).toFixed(1)}" rx="${(r*1.3).toFixed(1)}" ry="${(r*0.55).toFixed(1)}" fill="${dc[0]}"/>`;
+      o+=`<ellipse cx="${(px-r*0.3).toFixed(1)}" cy="${py.toFixed(1)}" rx="${(r*0.95).toFixed(1)}" ry="${(r*0.4).toFixed(1)}" fill="${dc[1]}"/>`;
+      o+=`<ellipse cx="${(px-r*0.45).toFixed(1)}" cy="${(py-r*0.12).toFixed(1)}" rx="${(r*0.5).toFixed(1)}" ry="${(r*0.2).toFixed(1)}" fill="${dc[2]}" opacity=".85"/>`;
+      if(hvHash(seedN,fs,11)<0.5){ o+=`<circle cx="${(px+r*0.85).toFixed(1)}" cy="${(py-r*0.08).toFixed(1)}" r="${(r*0.32).toFixed(1)}" fill="${B.gorse[0]}"/><circle cx="${(px+r*0.76).toFixed(1)}" cy="${(py-r*0.2).toFixed(1)}" r=".8" fill="${B.gorse[1]}"/><circle cx="${(px+r*0.98).toFixed(1)}" cy="${(py-r*0.02).toFixed(1)}" r=".7" fill="${B.gorse[1]}"/>`; }
+      return o;
+    }
+    if(F==='cypress'){ const tc=B.tree;
+      return `<ellipse cx="${(px+r*0.5).toFixed(1)}" cy="${(py+r*0.4).toFixed(1)}" rx="${(r*0.9).toFixed(1)}" ry="${(r*0.5).toFixed(1)}" fill="#04150a" opacity=".5"/>`
+        +`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="${(r*0.6).toFixed(1)}" ry="${(r*1.25).toFixed(1)}" fill="${dark?tc[0]:tc[1]}"/>`
+        +`<ellipse cx="${(px-r*0.2).toFixed(1)}" cy="${(py-r*0.35).toFixed(1)}" rx="${(r*0.38).toFixed(1)}" ry="${(r*0.8).toFixed(1)}" fill="${dark?tc[2]:tc[3]}"/>`
+        +`<ellipse cx="${(px-r*0.28).toFixed(1)}" cy="${(py-r*0.55).toFixed(1)}" rx="${(r*0.18).toFixed(1)}" ry="${(r*0.4).toFixed(1)}" fill="${tc[4]}" opacity=".7"/>`;
+    }
+    const tc=B.tree;   // parkland deciduous canopy
+    return `<ellipse cx="${(px+r*0.45).toFixed(1)}" cy="${(py+r*0.5).toFixed(1)}" rx="${(r*1.05).toFixed(1)}" ry="${(r*0.7).toFixed(1)}" fill="#04150a" opacity=".5"/>`
+      +`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="${dark?tc[0]:tc[1]}"/>`
+      +`<circle cx="${(px-r*0.38).toFixed(1)}" cy="${(py-r*0.3).toFixed(1)}" r="${(r*0.62).toFixed(1)}" fill="${dark?tc[2]:tc[3]}"/>`
+      +`<circle cx="${(px-r*0.52).toFixed(1)}" cy="${(py-r*0.45).toFixed(1)}" r="${(r*0.3).toFixed(1)}" fill="${tc[4]}" opacity=".7"/>`;
+  };
   let tr='';
-  for(let y=26; y<g.L-8; y+=30+hh(40+y%97)*18){
+  const floraStep=(B.flora==='cactus')?1.35:1;   // deserts are sparser
+  for(let y=26; y<g.L-8; y+=(30+hh(40+y%97)*18)*floraStep){
     for(const sd of [-1,1]){ if(hh(y+sd*3)>0.85) continue;
       const off=g.fwW/2+(g.par===3?14:20)+hh(y*2+sd)*16, x=g.cx(y)+sd*off;
       if(y>g.L-16 && Math.abs(x-g.cx(g.L))<g.greenR[0]+12) continue;
       const [px,py]=hvProj(g,x,y), r=(5.5+hh(y*3+sd)*4)*g.t(y)*sx*0.55;
-      const dark=hh(y*5+sd)<0.5;
-      tr+=`<g><ellipse cx="${(px+r*0.45).toFixed(1)}" cy="${(py+r*0.5).toFixed(1)}" rx="${(r*1.05).toFixed(1)}" ry="${(r*0.7).toFixed(1)}" fill="#04150a" opacity=".5"/>`
-        +`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="${dark?'#0e3d22':'#12492a'}"/>`
-        +`<circle cx="${(px-r*0.38).toFixed(1)}" cy="${(py-r*0.3).toFixed(1)}" r="${(r*0.62).toFixed(1)}" fill="${dark?'#145131':'#1a5c38'}"/>`
-        +`<circle cx="${(px-r*0.52).toFixed(1)}" cy="${(py-r*0.45).toFixed(1)}" r="${(r*0.3).toFixed(1)}" fill="#2c7a48" opacity=".7"/></g>`;
+      if(oceanSide && ((oceanSide>0 && px>HV_W-oceanW-10)||(oceanSide<0 && px<oceanW+10))) continue;   // nothing grows in the sea
+      tr+=`<g>${floraSVG(px,py,r,hh(y*5+sd)<0.5,y*7+sd)}</g>`;
     }
   }
   s.push(tr);
-  // water: gradient pool + shoreline + a couple of wave glints
+  // water: organic gradient pool + shoreline + a couple of wave glints
   if(g.water){ const [wx,wy]=hvProj(g,g.water.x,g.water.y), t=g.t(g.water.y);
-    const wrx=g.water.rx*sx*t, wry=g.ry(g.water.ry)*t;
-    s.push(`<ellipse cx="${wx.toFixed(1)}" cy="${(wy+2).toFixed(1)}" rx="${(wrx+2).toFixed(1)}" ry="${(wry+1.6).toFixed(1)}" fill="#06341d" opacity=".55"/>`);
-    s.push(`<ellipse cx="${wx.toFixed(1)}" cy="${wy.toFixed(1)}" rx="${wrx.toFixed(1)}" ry="${wry.toFixed(1)}" fill="url(#hvwatg)" stroke="#3d89b0" stroke-width="1.2"/>`);
+    const wrx=g.water.rx*sx*t, wry=g.ry(g.water.ry)*t, wseed=seedN^0x77;
+    s.push(`<path d="${hvBlobD(wx,wy+2,wrx+2,wry+1.6,wseed,0.24,12)}" fill="#06341d" opacity=".55"/>`);
+    s.push(`<path d="${hvBlobD(wx,wy,wrx,wry,wseed,0.24,12)}" fill="url(#hvwatg)" stroke="#3d89b0" stroke-width="1.2"/>`);
     s.push(`<path d="M ${(wx-wrx*0.45).toFixed(1)} ${(wy-wry*0.15).toFixed(1)} q 4 -2.4 8 0" fill="none" stroke="#9adfff" stroke-width=".9" opacity=".55"/>`);
     s.push(`<path d="M ${(wx+wrx*0.05).toFixed(1)} ${(wy+wry*0.3).toFixed(1)} q 3.4 -2 6.8 0" fill="none" stroke="#9adfff" stroke-width=".8" opacity=".4"/>`);
   }
-  // green complex: drop shadow → fringe ring → gradient putting surface → mow bands → highlight
+  // green complex: organic drop shadow → fringe ring → putting surface → mow bands → highlight.
+  // The fringe/shadow reuse the green's blob seed, so they stay parallel outlines of one shape.
   const [gpx,gpy]=hvProj(g,g.cx(g.L),g.L), gt=g.t(g.L);
-  const grx=g.greenR[0]*sx*gt, gry=g.ry(g.greenR[1])*gt;
-  s.push(`<ellipse cx="${(gpx+2).toFixed(1)}" cy="${(gpy+2.4).toFixed(1)}" rx="${(grx+6).toFixed(1)}" ry="${(gry+5).toFixed(1)}" fill="#03150a" opacity=".45"/>`);
-  s.push(`<ellipse cx="${gpx.toFixed(1)}" cy="${gpy.toFixed(1)}" rx="${(grx+5.5).toFixed(1)}" ry="${(gry+4.5).toFixed(1)}" fill="#317947"/>`);
-  s.push(`<ellipse cx="${gpx.toFixed(1)}" cy="${gpy.toFixed(1)}" rx="${grx.toFixed(1)}" ry="${gry.toFixed(1)}" fill="url(#hvgreen)" stroke="#2c6c40" stroke-width=".8"/>`);
-  s.push(`<clipPath id="hvgr"><ellipse cx="${gpx.toFixed(1)}" cy="${gpy.toFixed(1)}" rx="${grx.toFixed(1)}" ry="${gry.toFixed(1)}"/></clipPath>`);
+  const grx=g.greenR[0]*sx*gt, gry=g.ry(g.greenR[1])*gt, gseed=seedN^0x51;
+  const greenD=hvBlobD(gpx,gpy,grx,gry,gseed,0.09,12);
+  s.push(`<path d="${hvBlobD(gpx+2,gpy+2.4,grx+6,gry+5,gseed,0.09,12)}" fill="#03150a" opacity=".45"/>`);
+  s.push(`<path d="${hvBlobD(gpx,gpy,grx+5.5,gry+4.5,gseed,0.09,12)}" fill="${B.fringe}"/>`);
+  s.push(`<path d="${greenD}" fill="url(#hvgreen)" stroke="${B.gstroke}" stroke-width=".8"/>`);
+  s.push(`<clipPath id="hvgr"><path d="${greenD}"/></clipPath>`);
   let gb=''; const bw=Math.max(6,grx/3);
-  for(let k=-3;k<=3;k+=2){ gb+=`<rect x="${(gpx+k*bw-bw/2).toFixed(1)}" y="${(gpy-gry-2).toFixed(1)}" width="${bw.toFixed(1)}" height="${(gry*2+4).toFixed(1)}" fill="#ffffff" opacity=".045"/>`; }
+  for(let k=-3;k<=3;k+=2){ gb+=`<rect x="${(gpx+k*bw-bw/2).toFixed(1)}" y="${(gpy-gry-6).toFixed(1)}" width="${bw.toFixed(1)}" height="${(gry*2+12).toFixed(1)}" fill="#ffffff" opacity=".045"/>`; }
   s.push(`<g clip-path="url(#hvgr)">${gb}</g>`);
   s.push(`<ellipse cx="${(gpx-grx*0.28).toFixed(1)}" cy="${(gpy-gry*0.34).toFixed(1)}" rx="${(grx*0.5).toFixed(1)}" ry="${(gry*0.4).toFixed(1)}" fill="#ffffff" opacity=".07"/>`);
-  // bunkers: cast shadow, sand gradient, an inner lip so they read as bowls
-  g.bunkers.forEach(b=>{ const [bx,by]=hvProj(g,b.x,b.y), t=g.t(b.y);
-    const brx=b.r*sx*t, bry=g.ry(b.r)*t*0.92;
-    s.push(`<ellipse cx="${(bx+1.4).toFixed(1)}" cy="${(by+1.6).toFixed(1)}" rx="${brx.toFixed(1)}" ry="${bry.toFixed(1)}" fill="#04150a" opacity=".4"/>`);
-    s.push(`<ellipse cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" rx="${brx.toFixed(1)}" ry="${bry.toFixed(1)}" fill="url(#hvsand)" stroke="#c2a878" stroke-width=".9"/>`);
-    s.push(`<ellipse cx="${bx.toFixed(1)}" cy="${(by-bry*0.22).toFixed(1)}" rx="${(brx*0.72).toFixed(1)}" ry="${(bry*0.6).toFixed(1)}" fill="#000000" opacity=".08"/>`);
+  // bunkers: organic kidney shapes — cast shadow, sand gradient, an inner lip so they read as
+  // bowls. Links pot bunkers are smaller (bunkerScale) with a heavier lip.
+  const bs=B.bunkerScale||1;
+  g.bunkers.forEach((b,bi)=>{ const [bx,by]=hvProj(g,b.x,b.y), t=g.t(b.y);
+    const brx=b.r*sx*t*bs, bry=g.ry(b.r)*t*0.92*bs, bseed=seedN^Math.imul(bi+3,0x61c);
+    s.push(`<path d="${hvBlobD(bx+1.4,by+1.6,brx,bry,bseed,0.22,8)}" fill="#04150a" opacity=".4"/>`);
+    s.push(`<path d="${hvBlobD(bx,by,brx,bry,bseed,0.22,8)}" fill="url(#hvsand)" stroke="${B.sandline}" stroke-width=".9"/>`);
+    s.push(`<path d="${hvBlobD(bx,by-bry*0.22,brx*0.72,bry*0.6,bseed,0.22,8)}" fill="#000000" opacity="${bs<1?'.13':'.08'}"/>`);
   });
   // tee box + tee markers
   const [tx,ty]=hvProj(g,0,0);
@@ -7101,7 +7209,7 @@ function hvNode(hole, revealN, holeIdx, courseKey){
   else if(idx>=0 && plots[idx]) inner+=hvDoneShot(g,plots[idx],false,small&&inCam(plots[idx]));
   const cam=live?hvCamFor(g,plots,Math.max(0,idx-1)):[0,0,HV_W,HV_H];
   const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>${hvStatHTML(shots[idx], holed)}
-    <svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvTerrain(g,seedN)}${inner}</svg></div>`);
+    <svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvTerrain(g,seedN,hvBiome(courseKey))}${inner}</svg></div>`);
   if(live && plots[idx]){
     const key=(courseKey||'')+':'+holeIdx+':'+showN;
     requestAnimationFrame(()=>hvKick(key, g, plots, idx, reduce));

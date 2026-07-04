@@ -3869,6 +3869,38 @@ allows Google Fonts, or self-host Anton.*
   practice round finishing clean, reduced-motion (camera snapped, holed ball sunk), and the CS138
   practice-mode suite re-run green. Zero page errors. Deployed to /golf.
 
+- **CS140 — TOURTRACE: backwards-putt fix, organic course shapes, per-course biomes.** Owner: "my player
+  putt the ball backwards away from the hole. That should never happen. Also... greens, bunkers, and other
+  hazards shouldn't be geometric shapes... I also want to incorporate different biomes to the courses."
+  (Owner also has a reference app for the art style — screenshots to come; this is the foundation to
+  restyle against.)
+  • **Backwards putt (real bug, introduced by CS139's tap-in visibility minimum):** the screen-aware
+    minimum leave distance could EXCEED the ball's remaining distance to the hole, drawing a missed putt
+    rolling AWAY from the cup. Fixed in `hvPlots`: a missed putt's drawn leave is capped at 80% of the
+    current distance (always ends closer), and if the narrative's next leave is genuinely longer than the
+    remaining distance, the putt is drawn running THROUGH the hole (`past`) — physically the only way that
+    happens. Property-tested: 434 real engine-generated putts across 20 courses × 9 holes × 3 attempts,
+    zero same-side-and-farther results.
+  • **Organic shapes:** new `hvBlobD(cx,cy,rx,ry,seed,irr,pts)` — a seeded, smoothly-perturbed closed
+    curve (Catmull-Rom → cubic beziers). Same seed → same perturbation, so the fringe ring, green shadow
+    and bunker lips are parallel outlines of their parent shape. Greens (irr .09), bunkers (irr .22,
+    kidney-ish) and water hazards (irr .24) are all blobs now; the mow-band clip uses the green's blob.
+  • **Biomes (`HV_BIOMES` + `HV_COURSE_BIOME`, keyed by INTERNAL course keys, display names never):**
+    parkland (default — the existing look), **links** (olive windswept palette, dune mounds + gorse tufts
+    with gold bloom instead of trees, pale fescue-edged fairway, pot bunkers at 0.62 scale with a heavier
+    lip — St Andrews/Troon/Carnoustie/Portrush/Turnberry/Shinnecock/Whistling Straits keys), **coastal**
+    (an ocean band down one side with a wobbled foam shoreline + wave glints, tall lean cypress — Pebble/
+    Torrey/Kiawah/Olympic Club keys; flora never spawns in the sea), **desert** (dark scrub-brown surround
+    so the green fairway pops, saguaro cacti with arms, sparser flora — TPC Scottsdale key), **tropical**
+    (saturated greens, leaning palms with 6-frond crowns — Kapalua/Waialae/Sawgrass/Bay Hill/Harbour Town
+    keys). Every palette keeps the dark broadcast frame; `hvBiome(courseKey)` falls back to parkland for
+    unmapped keys. Wired through `hvNode` for both the Daily and the H2H watch (same course keys).
+  Verified in Playwright: the putt property test above; per-biome markup assertions (dunes+gorse, ocean
+  gradient+foam, cactus+desert bg, palm strokes, parkland canopy, greens emitted as blob paths not
+  ellipses); screenshots of all 5 biomes; a live practice round on today's course plays clean end-to-end;
+  the full CS139 graphics suite + CS138 practice suite re-run green. Zero page errors. Deployed to /golf.
+  NEXT: owner to share the reference app's screenshots — restyle palettes/details to match.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
