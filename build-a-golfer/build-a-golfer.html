@@ -4536,7 +4536,7 @@ function startSeason(majorsOnly){
 const DAYS=['THU','FRI','SAT','SUN'];
 // Pacing: default to a slow, readable "sweat" cadence so a round lands and can be absorbed
 // (testers said the old ~0.8s/round blew by too fast to read). Players can speed it up.
-const PACE={chill:{r:2200,e:3200,lbl:'Chill'}, normal:{r:1300,e:2000,lbl:'Normal'}, fast:{r:650,e:1100,lbl:'Fast'}};
+const PACE={chill:{r:2200,e:3200,lbl:'Broadcast'}, normal:{r:1300,e:2000,lbl:'Standard'}, fast:{r:650,e:1100,lbl:'Fast'}};
 function paceMs(){ return PACE[S.simPace]||PACE.chill; }
 let _lbRects=null;   // {name: top-within-board} from the previous season render, for FLIP glide
 let _prevScTotal=null;   // your last-rendered rounded to-par, for the scorecard count-up tween
