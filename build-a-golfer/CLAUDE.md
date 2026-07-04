@@ -3901,6 +3901,40 @@ allows Google Fonts, or self-host Anton.*
   the full CS139 graphics suite + CS138 practice suite re-run green. Zero page errors. Deployed to /golf.
   NEXT: owner to share the reference app's screenshots — restyle palettes/details to match.
 
+- **CS141 — TOURTRACE one-window HUD + full daylight "retro videogame" restyle (owner's Pixel-Pro-style
+  reference).** Owner sent an H2H watch screenshot ("combine these 3 elements into one window... the
+  scoreboard could be in the top corner of the tracer view with a transparent background... one clear
+  precise shot description that shuffles to the next as the shots simulate... I do not like whatever
+  scenery this is around the golf course [links dune mounds reading as brown blobs]... make it all look a
+  lot more realistic, like a retro videogame") plus two reference screenshots of a pixel-art golf game
+  (bright daylight, dense forest walls, chunky flat colors, dark UI chips floating on the course).
+  • **One-window H2H watch.** `hvNode` now wraps the SVG in a positioned `.hvshell`; during play,
+    `scrH2HWatch` renders ONLY the tracer with translucent chips floating on it: hole info top-left
+    (`.hvhole` — HOLE n · PAR p · yyy Y), live standings top-right (`.hvboard` — rank/name/to-par per
+    unit, your row gold-ringed, "THRU n · N HOLES" caption), and ONE shot description bar at the bottom
+    (`.hvdesc` — the currently-animating shot's narrative `s.d`, swapping with each reveal, replacing the
+    redundant cumulative shot log; `dShotPanel` no longer renders during H2H play). Between holes /
+    playoff / final, the full standings board + playoff rows + result render as before. The daily round's
+    own layout is untouched.
+  • **Daylight retro restyle (the whole hole view, all biomes).** `HV_BIOMES` rebuilt as bright,
+    flat-color palettes: mid-green rough base covered in seeded "v" tick grass texture, lighter fairway
+    with a first-cut ring + chunky dark edge, lightest tick-textured green with a fringe ring, white
+    speckled sand with outlines, vivid blue water with a mud-bank shore + ripple dashes (ocean shoreline
+    same treatment), classic RED flag, no more gradients/vignette (only the ball keeps its gradient).
+    Parkland/coastal grow DENSE FOREST WALLS tee-to-green and behind the green — clustered two-tone
+    canopies with dark outlines and cast shadows, ~22% autumn-colored trees, occasional birch trunks —
+    with keep-out zones for green/water/ocean (`clear()`); tropical gets palm groves via the same wall
+    placement; links dunes were redrawn as grassy marram hummocks (blob body + lit crest + exposed sand
+    pocket + grass-tuft strokes + gorse with gold bloom) instead of the brown-blob mounds the owner
+    flagged; desert keeps sparse saguaros on a tan scrub base so the fairway pops. Done-shot traces and
+    penalty lines darkened to read on the bright course.
+  Verified in Playwright: putt-monotonicity property re-run (0 backwards), 12 markup assertions per biome
+  (flat fills, tick counts, forest density, mud bank, red flag, sand speckles, dunes/gorse, cacti, palms),
+  screenshots of all 5 biomes + the one-window H2H watch (overlay board rows, your row marked, desc text
+  exactly the current shot's narrative and swapping on the next reveal, zero `.shotpanel`s during play,
+  no duplicate standings section), the between-holes/final standings branch, and a full live daily round.
+  Zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
