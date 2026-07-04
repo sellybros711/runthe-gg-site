@@ -3970,6 +3970,39 @@ allows Google Fonts, or self-host Anton.*
   geometry spec (dogleg severity/direction, split fairways, forced carries, island/peninsula greens, green
   orientation, hazard placement) driven per-course from the signature-hole data.
 
+- **CS143 — custom hole shapes across all 39 courses (mimic real courses, never copy).** Owner: "variety
+  across all 39 at once... mimic real courses as much as possible without copying them." Every hole was
+  the same ribbon template; now geometry is driven by a per-course STYLE PROFILE + signature-hole
+  features, all seeded (no rng, no tracing of real layouts):
+  • **`HV_COURSE_STYLE` (all 39 courses):** knobs capturing how each real course famously plays — dogleg
+    severity + famous turn direction (Augusta-analog sweeps left, Olympic-analog doglegs hard, St
+    Andrews-analog nearly straight), fairway width (Kapalua-analog 1.6x vs Olympic/Harbour Town 0.7-0.75x),
+    green size (St Andrews-analog 1.5x doubles vs Harbour Town-analog 0.62x smallest on tour), bunker
+    density (Whistling-analog 1.9x / Oakmont-analog 1.8x vs Kapalua 0.6x), water/creek frequency (Sawgrass
+    0.42 / Southwind 0.38 vs Oakmont/Winged Foot/Shinnecock 0), and double-dogleg tendency on par 5s.
+  • **Signature features forced into the geometry:** `hvFeat` merges the existing `DSIG_HAZ` (16 courses)
+    with `HV_SIG_EXTRA` (10 more famous holes) — island → a TRUE island green (green blob inside a big
+    pond, no sand ring), water-front/green → pond guarding the green, water-l/r + cliff → lateral water,
+    creek → a crossing stream. The Sawgrass-analog 17th is an island, the Augusta-analog Amen-corner holes
+    have their ponds, the Carnoustie-analog 17/18 get the burn.
+  • **New geometry capabilities in `hvGeom(seedN,par,yds,courseKey,holeIdx)`:** S-shaped double doglegs on
+    par 5s; a fairway WIDTH PROFILE `g.fww(y)` with seeded landing-zone pinches on tight tracks; greens
+    tucked left/right of the fairway line (`g.gcx`, clamped in frame); PERSISTENT water + creeks (drawn
+    whether or not a ball finds them — previously water only existed where a ball drowned); style-scaled
+    greenside (1-3) + fairway (0-2) bunkers that never spawn inside water/creeks.
+  • **Renderer/plots wiring:** the terrain samples the width profile, draws creeks as wobbled mud-banked
+    streams crossing the whole hole, keeps flora out of creeks, and centers the green complex on `g.gcx`;
+    `hvPlots` snaps a drowned ball to the spec'd water/creek (its invented-pond fallback only fires when a
+    hole has neither) and lands greenside scatter around the offset green.
+  Verified in Playwright across ALL 39 courses × 18 holes (702 holes): zero out-of-frame greens/water;
+  Sawgrass-17 island + Augusta-12 pond + Carnoustie-18 burn assertions; course-character separations
+  (Sawgrass ≥5 water holes vs Oakmont/Winged Foot 0; St Andrews greens ~2x Harbour Town; Kapalua fairways
+  ~1.7x Olympic; Oakmont/Whistling bunker counts ≫ Kapalua; Olympic dogleg magnitude ≫ St Andrews;
+  Southwind ≥4 water holes); within-course bend variety (13 distinct magnitudes over 14 non-par-3 holes,
+  both directions); the putt-monotonicity property re-run over the new geometry (106 putts, 0 backwards);
+  showcase screenshots (island 17, Amen-corner pond, burn 18, wide Kapalua, tight Harbour Town, coastal
+  Olympic dogleg); a full live daily round regresses clean. Zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

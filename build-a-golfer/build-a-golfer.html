@@ -6749,27 +6749,136 @@ const HV_W=360, HV_H=470, HV_TAPER=0.26;
 function hvHash(a,b,c){ let h=(2166136261^(a|0))>>>0; h=Math.imul(h^(b|0),16777619)>>>0; h=Math.imul(h^((c|0)+0x9e37),16777619)>>>0; h^=h>>>13; h=Math.imul(h,0x5bd1e995)>>>0; h^=h>>>15; return (h>>>0)/4294967296; }
 function hvUnit(a,b){ const dx=a[0]-b[0],dy=a[1]-b[1],l=Math.hypot(dx,dy)||1; return [dx/l,dy/l]; }
 function hvDistYds(a,b){ return Math.hypot(a[0]-b[0],a[1]-b[1]); }
-// deterministic hole geometry: dogleg, fairway ribbon, green, pin, cosmetic hazards
-function hvGeom(seedN, par, yds){
+/* ---- per-course STYLE: how each real course famously plays, expressed as knobs so holes MIMIC
+   its character without tracing it. dog = dogleg severity, bias = famous turn direction,
+   fw = fairway width, gsz = green size, bunk = sand density, water/creek = hazard frequency,
+   sshape = double-dogleg tendency on par 5s. Keyed by INTERNAL course keys. ---- */
+const HV_STYLE_DEF={dog:1,bias:0,fw:1,gsz:1,bunk:1,water:0.12,creek:0.08,sshape:0.18};
+const HV_COURSE_STYLE={
+ 'Augusta National':{dog:1.15,bias:-0.6,fw:1.25,gsz:1.15,bunk:0.7,water:0.16,creek:0.10,sshape:0.30},
+ 'TPC Sawgrass':{fw:0.9,gsz:0.9,water:0.42,creek:0.05,sshape:0.2},
+ 'Pebble Beach Golf Links':{dog:0.85,fw:0.9,gsz:0.7,bunk:0.95,water:0.10,creek:0.03},
+ 'St Andrews Old Course':{dog:0.4,fw:1.5,gsz:1.5,bunk:1.6,water:0,creek:0.06,sshape:0.1},
+ 'Oakmont':{dog:0.7,fw:0.8,bunk:1.8,water:0,creek:0},
+ 'TPC Scottsdale':{dog:0.9,water:0.18,creek:0.02},
+ 'Bay Hill':{water:0.34,creek:0.03},
+ 'Harbour Town Golf Links':{dog:1.1,fw:0.7,gsz:0.62,bunk:0.8,water:0.14,creek:0.04},
+ 'Quail Hollow Club':{water:0.24,creek:0.18},
+ 'Muirfield Village':{fw:0.95,gsz:0.95,bunk:1.1,water:0.24,creek:0.16},
+ 'Valhalla':{water:0.22,creek:0.14},
+ 'TPC River Highlands':{dog:0.9,fw:0.9,gsz:0.9,water:0.22,creek:0.05},
+ 'Plantation Course at Kapalua':{dog:1.25,bias:-0.4,fw:1.6,gsz:1.3,bunk:0.6,water:0,creek:0.05,sshape:0.35},
+ 'East Lake Golf Club':{dog:0.9,water:0.2,creek:0.05},
+ 'Glen Abbey':{water:0.24,creek:0.2},
+ 'Sedgefield Country Club':{fw:0.9,gsz:0.95,water:0.1,creek:0.12},
+ 'Pinehurst No. 2':{dog:0.8,fw:1.1,gsz:0.9,bunk:1.25,water:0,creek:0},
+ 'Royal Troon':{dog:0.6,fw:1.05,gsz:1.05,bunk:1.5,water:0,creek:0.03,sshape:0.1},
+ 'Carnoustie':{dog:0.7,fw:0.95,gsz:1.05,bunk:1.5,water:0.02,creek:0.22},
+ 'Royal Portrush':{dog:0.8,gsz:1.05,bunk:1.35,water:0,creek:0.03},
+ 'Turnberry':{dog:0.75,fw:1.05,gsz:1.05,bunk:1.3,water:0.02,creek:0.03},
+ 'Riviera Country Club':{fw:0.9,gsz:0.95,bunk:1.2,water:0.03,creek:0.05},
+ 'Torrey Pines South':{dog:0.8,water:0.05,creek:0.05},
+ 'Innisbrook Copperhead':{dog:1.15,fw:0.8,gsz:0.95,water:0.18,creek:0.06,sshape:0.3},
+ 'Waialae Country Club':{dog:0.9,gsz:0.95,water:0.08,creek:0.04},
+ 'Colonial Country Club':{dog:1.25,fw:0.8,gsz:0.9,water:0.12,creek:0.06},
+ 'Southern Hills':{dog:1.1,fw:0.95,gsz:0.95,bunk:1.15,water:0.1,creek:0.22},
+ 'Firestone South':{dog:0.7,fw:0.85,gsz:0.95,water:0.12,creek:0.04},
+ 'Winged Foot':{fw:0.8,bunk:1.3,water:0,creek:0},
+ 'Bethpage Black':{dog:0.9,fw:0.85,gsz:0.95,bunk:1.45,water:0,creek:0},
+ 'Whistling Straits':{dog:0.8,fw:0.95,bunk:1.9,water:0.03,creek:0.03},
+ 'Shinnecock Hills':{dog:0.9,fw:0.9,gsz:0.95,bunk:1.3,water:0,creek:0},
+ 'Kiawah Island Ocean':{dog:0.85,fw:0.9,bunk:1.2,water:0.22,creek:0.06},
+ 'Olympic Club':{dog:1.35,bias:0.5,fw:0.75,gsz:0.8,bunk:0.9,water:0,creek:0},
+ 'Baltusrol':{dog:0.9,fw:0.95,bunk:1.2,water:0.1,creek:0.06},
+ 'The Country Club':{fw:0.8,gsz:0.8,bunk:1.2,water:0.05,creek:0.08},
+ 'Merion':{dog:0.9,fw:0.8,gsz:0.85,bunk:1.3,water:0.03,creek:0.15},
+ 'Oakland Hills':{dog:1.1,fw:0.9,bunk:1.4,water:0.08,creek:0.05},
+ 'TPC Southwind':{fw:0.85,gsz:0.9,water:0.38,creek:0.08}};
+function hvStyle(k){ return Object.assign({},HV_STYLE_DEF,(k&&HV_COURSE_STYLE[k])||{}); }
+// extra signature features for courses whose famous holes aren't in DSIG_HAZ
+const HV_SIG_EXTRA={'Carnoustie':{17:'creek',18:'creek'},'TPC Southwind':{11:'water-green',18:'water-l'},
+ 'Merion':{11:'creek'},'Southern Hills':{18:'creek'},'Colonial Country Club':{13:'water-green'},
+ 'Kiawah Island Ocean':{17:'water-l'},'Baltusrol':{4:'water-front'},'Oakland Hills':{16:'water-front'},
+ 'Innisbrook Copperhead':{16:'water-l'},'East Lake Golf Club':{15:'island'}};
+function hvFeat(courseKey, holeN){
+  const a=(typeof DSIG_HAZ!=='undefined'&&DSIG_HAZ[courseKey])||{};
+  const b=HV_SIG_EXTRA[courseKey]||{};
+  return b[holeN]||a[holeN]||null;
+}
+// deterministic hole geometry, shaped by the course's style + its signature-hole features:
+// dogleg (single or S), fairway width profile with landing-zone pinches, sized/tucked greens,
+// PERSISTENT water & creeks (drawn whether or not a ball finds them), style-scaled bunkering.
+function hvGeom(seedN, par, yds, courseKey, holeIdx){
   const hh=(a)=>hvHash(seedN,a,1);
+  const st=hvStyle(courseKey);
+  const feat=(courseKey!=null&&holeIdx!=null)?hvFeat(courseKey,(holeIdx|0)+1):null;
   const L=Math.max(90,yds);
-  const bend=(par===3)?0:Math.round((hh(1)-0.5)*(par===5?46:34));
-  const g={L, par, bend, span:L+28, fwW:31+hh(2)*8, fw0:Math.min(58,L*0.24), fw1:L-22};
-  // scale: vertical px/yd is fixed by the hole length; lateral FOLLOWS it (clamped) instead of a
-  // flat 3.0 — the old fixed lateral scale left a 550-yd par 5 ~4.5x more exaggerated sideways
-  // than downrange, which is what made the course/flight angles read as skewed on long holes.
+  const g={L, par, span:L+28, fw0:Math.min(58,L*0.24), fw1:L-22};
+  // scale: vertical px/yd is fixed by the hole length; lateral FOLLOWS it (clamped) so long
+  // holes aren't wildly stretched sideways vs downrange.
   g.vy=(HV_H-78)/g.span;
   g.sx=Math.max(1.8, Math.min(3.2, g.vy*2.6));
   g.t=(y)=>1-HV_TAPER*Math.max(0,Math.min(1,y/g.span));      // far-end perspective taper
   g.ry=(r)=>r*Math.max(g.vy, g.sx*0.42);                     // hazard vertical radius (never pancakes on long holes)
-  g.cx=(y)=>{ if(par===3) return 0; const f=Math.max(0,Math.min(1,(y-L*0.40)/(L*0.44))); const e=f*f*(3-2*f); return bend*e; };
-  g.pin=[g.cx(L)+(hh(3)-0.5)*7, L+(hh(4)-0.5)*5];
-  g.greenR=[13.5+hh(5)*4, 12+hh(6)*4];
-  g.bunkers=[]; g.water=null;
-  const gx=g.cx(L);
-  const nb=1+(hh(7)<0.6?1:0);
-  for(let i=0;i<nb;i++){ const side=(hh(8+i)<0.5?-1:1); g.bunkers.push({x:gx+side*(g.greenR[0]+5.5+hh(10+i)*3), y:L-6+hh(12+i)*10, r:5.5+hh(14+i)*2.5}); }
-  if(par!==3 && hh(16)<0.7){ const yy=L*0.56+hh(18)*L*0.14; g.bunkers.push({x:g.cx(yy)+(hh(17)<0.5?-1:1)*(g.fwW/2+3.5), y:yy, r:6+hh(19)*3}); }
+  // dogleg: severity scales with the course's tendency; direction leans its famous way
+  const dir=(hh(1)+st.bias*0.28)<0.5?-1:1;
+  const mag=(par===3)?0:Math.round((6+hh(21)*(par===5?40:28))*st.dog)*dir;
+  g.bend=mag;
+  const sShape=(par===5 && hh(22)<st.sshape);
+  g.cx=(y)=>{ if(par===3) return 0;
+    if(!sShape){ const f=Math.max(0,Math.min(1,(y-L*0.40)/(L*0.44))); const e=f*f*(3-2*f); return mag*e; }
+    // double dogleg: out one way through the landing zone, back the other into the green
+    const f1=Math.max(0,Math.min(1,(y-L*0.25)/(L*0.30))), e1=f1*f1*(3-2*f1);
+    const f2=Math.max(0,Math.min(1,(y-L*0.60)/(L*0.32))), e2=f2*f2*(3-2*f2);
+    return mag*0.9*e1 - mag*1.45*e2; };
+  // fairway width PROFILE: base width by course + a seeded landing-zone pinch on tight tracks
+  const baseW=(31+hh(2)*8)*st.fw;
+  const pinchY=L*(0.55+hh(23)*0.18), pinch=(st.fw<0.95||hh(24)<0.45)?(0.68+hh(25)*0.18):1;
+  g.fwW=baseW;
+  g.fww=(y)=>{ const d=Math.abs(y-pinchY)/(L*0.16); const p=pinch+(1-pinch)*Math.min(1,d*d);
+    return baseW/2*p*(1+0.05*Math.sin(y*0.05+hh(26)*6)); };
+  // green: sized by course, sometimes tucked left/right of the fairway line (clamped in frame)
+  g.greenR=[(13.5+hh(5)*4)*st.gsz, (12+hh(6)*4)*st.gsz];
+  const maxOff=Math.max(0,(HV_W/2-26)/(g.sx*g.t(L)) - g.greenR[0] - Math.abs(g.cx(L)));
+  const goff=(hh(27)<0.5?-1:1)*Math.min(maxOff,(hh(28)<0.35?(6+hh(29)*8):0));
+  g.gcx=g.cx(L)+goff;
+  g.pin=[g.gcx+(hh(3)-0.5)*7, L+(hh(4)-0.5)*5];
+  g.bunkers=[]; g.water=null; g.creek=null; g.island=false;
+  // PERSISTENT water/creek: forced by the hole's signature feature, else rolled from course style
+  const R=g.greenR, setPond=(x,y,rx,ry,side)=>{ g.water={x,y,rx,ry,side:side||1}; };
+  const wroll=hh(30);
+  if(feat==='island'){ setPond(g.gcx, L-2, R[0]+13, R[1]+11, 1); g.island=true; }
+  else if(feat==='water-front'||feat==='water-green'){ setPond(g.gcx+(hh(31)-0.5)*8, L-R[1]-9, R[0]+8+hh(32)*5, 8+hh(33)*4, 1); }
+  else if(feat==='water-l'||feat==='water-r'||feat==='cliff'){ const sd=(feat==='water-r')?1:-1;
+    setPond(g.gcx+sd*(R[0]+14), L-6-hh(34)*20, 12+hh(35)*6, 18+hh(36)*14, sd); }
+  else if(feat==='creek'){ g.creek={y:L-(8+hh(37)*26)}; }
+  else if(par!==3 && wroll<st.creek){ g.creek={y:L*(0.35+hh(38)*0.45)}; }
+  else if(wroll<st.creek+st.water){   // seeded pond: greenside / mid-hole lateral / green-front
+    const kind=hh(39);
+    if(kind<0.4) setPond(g.gcx+(hh(40)<0.5?-1:1)*(R[0]+9), L-R[1]-8, 9+hh(41)*6, 7+hh(42)*4, 1);
+    else if(kind<0.75){ const sd=hh(43)<0.5?-1:1, wy=L*(0.5+hh(44)*0.3);
+      setPond(g.cx(wy)+sd*(g.fww(wy)+13), wy, 11+hh(45)*7, 15+hh(46)*11, sd); }
+    else setPond(g.gcx+(hh(47)-0.5)*10, L-R[1]-9, R[0]*0.9, 7+hh(48)*4, 1);
+  }
+  // bunkers: greenside ring + fairway bunkers, scaled by the course's sand character
+  const gx=g.gcx;
+  if(!g.island){
+    const nb=Math.min(3, Math.max(1, Math.round((1+(hh(7)<0.6?1:0))*st.bunk)));
+    for(let i=0;i<nb;i++){ const side=(hh(8+i)<0.5?-1:1);
+      const bx=gx+side*(R[0]+5.5+hh(10+i)*3), by=L-6+hh(12+i)*10;
+      if(g.water && Math.hypot(bx-g.water.x,by-g.water.y)<g.water.rx*0.9) continue;   // no sand in the pond
+      g.bunkers.push({x:bx, y:by, r:5.5+hh(14+i)*2.5});
+    }
+  }
+  if(par!==3){
+    const nfb=(hh(16)<0.7?1:0)+((st.bunk>1.2&&hh(49)<0.5)?1:0);
+    for(let i=0;i<nfb;i++){ const yy=L*(0.48+hh(18+i*7)*0.28);
+      const bx=g.cx(yy)+(hh(17+i*5)<0.5?-1:1)*(g.fww(yy)+3.5);
+      if(g.water && Math.hypot(bx-g.water.x,yy-g.water.y)<g.water.rx*0.9) continue;
+      if(g.creek && Math.abs(yy-g.creek.y)<6) continue;
+      g.bunkers.push({x:bx, y:yy, r:6+hh(19+i*3)*3});
+    }
+  }
   return g;
 }
 // projection: course yards (x lateral, y from tee) → SVG px, with a far-end perspective taper
@@ -6777,10 +6886,11 @@ function hvProj(g,x,y){ const f=Math.max(0,Math.min(1,y/g.span));
   return [HV_W/2 + x*g.sx*g.t(y), HV_H-34 - f*(HV_H-78)]; }
 // walk the structured shots into course-space rest/landing points + flight curve shapes
 function hvPlots(g, shots, seedN){
-  const L=g.L, gx=g.cx(L), pin=g.pin, out=[]; let cur=[0,0];
+  const L=g.L, gx=(g.gcx!=null?g.gcx:g.cx(L)), pin=g.pin, out=[]; let cur=[0,0];
   const hh=(i,s)=>hvHash(seedN,i*13+s,2), jj=(i,a)=>hh(i,a)-0.5;
-  // pre-pass: place the water hazard where a ball actually drowned (else none is drawn)
-  shots.forEach((s,i)=>{ if(s.lie==='water' && !g.water){
+  // pre-pass: if a ball drowned and the hole has NO spec'd water or creek, invent a pond where
+  // it went in (spec'd hazards from hvGeom take priority — the ball snaps to them instead)
+  shots.forEach((s,i)=>{ if(s.lie==='water' && !g.water && !g.creek){
     const dropToY=(shots[i+1]&&shots[i+1].toY!=null)?shots[i+1].toY:Math.round((s.fromY||L)*0.5);
     const wy=Math.max(34,Math.min(L-14, L-dropToY+13)), side=(hh(i,1)<0.5?-1:1);
     g.water={x:g.cx(wy)+side*11, y:wy, rx:19+hh(i,2)*9, ry:13+hh(i,3)*6, side};
@@ -6803,7 +6913,11 @@ function hvPlots(g, shots, seedN){
       case 'fc': rest=[gx+jj(i,1)*8, L-g.greenR[1]-2.5]; break;
       case 'gb': { const b=g.bunkers.filter(x=>x.y>L-18); const bb=b.find(x=>Math.sign(x.x-gx)===sgn)||b[0];
         if(bb) rest=[bb.x,bb.y]; else { rest=[gx+sgn*(g.greenR[0]+5), L-2]; g.bunkers.push({x:rest[0],y:rest[1],r:6}); } p.sand=true; break; }
-      case 'water': rest=g.water?[g.water.x-(g.water.side||1)*3, g.water.y-2]:[g.cx(L*0.6), L*0.6]; p.splash=true; break;
+      case 'water':
+        if(g.water) rest=[g.water.x-(g.water.side||1)*Math.min(3,g.water.rx*0.3), g.water.y-2];
+        else if(g.creek) rest=[g.cx(g.creek.y)+jj(i,1)*8, g.creek.y];   // drowned in the crossing creek
+        else rest=[g.cx(L*0.6), L*0.6];
+        p.splash=true; break;
       case 'drop': y=L-toY; rest=[g.cx(y)+jj(i,1)*5, y]; p.drop=true; break;
       case 'green': { const d=Math.max(1.8/g.vy,(s.ft||15)/3); let ang;   // screen-aware min: short leaves stay visible even on long holes (small vy)
         if(s.side==='left') ang=Math.PI+jj(i,2)*0.9; else if(s.side==='right') ang=jj(i,2)*0.9; else ang=-Math.PI/2+jj(i,2)*1.2;
@@ -6944,7 +7058,8 @@ function hvTerrain(g, seedN, B){
   let defs=`<radialGradient id="hvball" cx=".35" cy=".3" r=".95"><stop offset="0" stop-color="#ffffff"/><stop offset=".75" stop-color="#eef3ef"/><stop offset="1" stop-color="#c6d1ca"/></radialGradient>`;
   let fwDD=null;
   if(g.par!==3){ const Lp=[],Rp=[];
-    for(let k=0;k<=16;k++){ const y=g.fw0+(g.fw1-g.fw0)*k/16, w=g.fwW/2*(1+0.06*Math.sin(k*1.15+hh(30)*6));
+    for(let k=0;k<=16;k++){ const y=g.fw0+(g.fw1-g.fw0)*k/16;
+      const w=g.fww?g.fww(y):g.fwW/2*(1+0.06*Math.sin(k*1.15+hh(30)*6));   // width PROFILE (pinches, flares)
       Lp.push(hvProj(g,g.cx(y)-w,y)); Rp.push(hvProj(g,g.cx(y)+w,y)); }
     fwDD='M '+Lp.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L ')+' L '+Rp.reverse().map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L ')+' Z';
     defs+=`<clipPath id="hvfw"><path d="${fwDD}"/></clipPath>`;
@@ -6987,15 +7102,17 @@ function hvTerrain(g, seedN, B){
     s.push(`<path d="${fwDD}" fill="none" stroke="${B.fwEdge}" stroke-width="1.6" opacity=".95"/>`);
   }
   // green + water screen positions (needed as keep-out zones for the flora below; drawn later)
-  const [gpx,gpy]=hvProj(g,g.cx(g.L),g.L), gt=g.t(g.L);
+  const [gpx,gpy]=hvProj(g,(g.gcx!=null?g.gcx:g.cx(g.L)),g.L), gt=g.t(g.L);
   const grx=g.greenR[0]*sx*gt, gry=g.ry(g.greenR[1])*gt;
   let wpos=null;
   if(g.water){ const [wx,wy]=hvProj(g,g.water.x,g.water.y), wt2=g.t(g.water.y);
     wpos={x:wx,y:wy,rx:g.water.rx*sx*wt2,ry:g.ry(g.water.ry)*wt2}; }
-  const clear=(px,py)=>{ // true if this spot is open ground (not sea/green/water)
+  const creekPy=g.creek?hvProj(g,0,g.creek.y)[1]:null;
+  const clear=(px,py)=>{ // true if this spot is open ground (not sea/green/water/creek)
     if(oceanSide && ((oceanSide>0 && px>HV_W-oceanW-8)||(oceanSide<0 && px<oceanW+8))) return false;
     if(Math.pow((px-gpx)/(grx+11),2)+Math.pow((py-gpy)/(gry+10),2)<1) return false;
     if(wpos && Math.pow((px-wpos.x)/(wpos.rx+8),2)+Math.pow((py-wpos.y)/(wpos.ry+7),2)<1) return false;
+    if(creekPy!=null && Math.abs(py-creekPy)<10) return false;
     return true; };
   /* flora, retro-videogame style: dense FOREST WALLS down both sides for parkland/coastal
      (clustered two-tone canopies + autumn trees + birch trunks, like the reference), palm
@@ -7070,6 +7187,16 @@ function hvTerrain(g, seedN, B){
     }
   }
   s.push(tr);
+  // creek: a wobbled stream crossing the whole hole (mud banks + bright water + ripple dashes)
+  if(g.creek){
+    const cy2=g.creek.y, xspan=HV_W/(2*sx*g.t(cy2))+6, pts=[];
+    for(let k=0;k<=8;k++){ const xx=-xspan+k*(xspan*2/8), yy=cy2+(hvHash(seedN,60+k,3)-0.5)*7;
+      pts.push(hvProj(g,xx,yy)); }
+    const cd='M '+pts.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L ');
+    s.push(`<path d="${cd}" fill="none" stroke="${B.waterBank}" stroke-width="9.5" stroke-linejoin="round" opacity=".9"/>`);
+    s.push(`<path d="${cd}" fill="none" stroke="${B.water}" stroke-width="6" stroke-linejoin="round"/>`);
+    s.push(`<path d="${cd}" fill="none" stroke="${B.ripple}" stroke-width=".9" stroke-dasharray="5 7" opacity=".6"/>`);
+  }
   // water hazard: mud bank ring → flat bright blue → waterline → ripple dashes
   if(wpos){ const wseed=seedN^0x77;
     const wD=hvBlobD(wpos.x,wpos.y,wpos.rx,wpos.ry,wseed,0.24,12);
@@ -7266,7 +7393,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi){
   if(multi){
     const order=multi.order||[];
     if(!order.length || !multi.shots.every(ss=>ss.length&&ss[0].k)) return null;
-    if(!hole._hvm){ const g=hvGeom(seedN, hole.par, hole.yards||400);
+    if(!hole._hvm){ const g=hvGeom(seedN, hole.par, hole.yards||400, courseKey, holeIdx);
       hole._hvm={g, plots:multi.shots.map(ss=>hvPlots(g,ss,seedN))}; }
     const {g, plots}=hole._hvm;
     const total=order.length;
@@ -7297,7 +7424,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi){
   }
   const shots=hole.shots||[];
   if(!shots.length || !shots[0].k) return null;   // old/uninstrumented data → no graphic
-  if(!hole._hv){ const g=hvGeom(seedN, hole.par, hole.yards||hole.yd||((DAILY_COURSES[courseKey]||{}).holes||[])[holeIdx]?.[1]||400);
+  if(!hole._hv){ const g=hvGeom(seedN, hole.par, hole.yards||hole.yd||((DAILY_COURSES[courseKey]||{}).holes||[])[holeIdx]?.[1]||400, courseKey, holeIdx);
     hole._hv={g, plots:hvPlots(g, shots, seedN)}; }
   const {g, plots}=hole._hv;
   const live=(revealN!=null && revealN<=shots.length);
