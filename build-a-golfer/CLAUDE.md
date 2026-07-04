@@ -3623,10 +3623,44 @@ allows Google Fonts, or self-host Anton.*
     gained/lost vs last round (`▲6 · T3` / `▼1 · T28`), plus `✓ Made the cut` on Friday, `🏆 Winner` at the
     finish, and `Missed the cut`. Tracks `ce._momentPrevPos` for the movement delta. Plus a dashed "Cut +N"
     line drawn into the board when the cut falls within the visible top-12.
-  Verified in Playwright driving a real career season: pace defaults chill, rounds advance at ~2.2s, the
+  Verified in Playwright driving a real career season: pace defaults slow, rounds advance at ~2.2s, the
   moment refreshes THU→FRI→SAT with correct movement, FLIP transforms apply on re-sort, the pace button
-  cycles chill/normal/fast, Skip to End still works, zero page errors. Screenshot confirms the layout.
-  **PENDING: owner to confirm keep Chill as the default (vs Normal) before deploying to /golf.**
+  cycles, Skip to End still works, zero page errors. **DEPLOYED to /golf.** Owner then renamed the pace
+  tiers **Chill→Broadcast** / normal→**Standard** / fast→**Fast** (label-only; internal keys `chill/normal/
+  fast` unchanged so persisted `bag_pace` still resolves), keeping the slow "Broadcast" cadence as the
+  default preset.
+
+- **CS130 — sim toughness + variance + off-season strategy (users: "too easy to stay consistent late
+  career; the senior tour is far too easy to win an abnormal number of times; CPUs should rival the user
+  more").** Diagnosed with a Monte-Carlo harness against the real in-file functions (worldField / legendField
+  / seedWorld / advanceWorld / simRound). Root causes: (1) the living-world field DECAYS over a career — real
+  stars retire and the generated replacements were capped too low, so the top OVR fell 92→**88** across 30
+  years (median 83→79), leaving a maintained ~90 build fighting a *weakening* field; (2) the Legend Circuit
+  field is retired 50+ year-olds at fully age-declined ratings, top **80** / median **72**, so any entrant
+  ≥82 dominated (OVR-85 won ~25%/event ≈ 5 wins/yr ≈ **60 over the 12-yr circuit**); (3) off-season re-spins
+  let a player grind the SAME stat repeatedly, so repair out-paced decline and builds never really faded.
+  Owner picked **Tough but fair**, keep the regression, and asked specifically for a **once-per-stat
+  off-season lock** as the strategy lever (upgrade a stat and it locks until next off-season). Changes:
+  • **Generational phenoms** (`genRookie`): rarer high-potential tail (~2% reach 90+, ~0.5% reach 94-96,
+    clamp 92→96) so the field replenishes elite talent as stars retire → late-career field top back to
+    **~91** (median 79 / p90 86). Young phenoms still enter well below potential (living < peak until ~30),
+    so they don't instantly top the field over the real stars — they mature into contenders over ~a decade.
+    Year-1 field unchanged (top 92); daily unaffected (static seeded field).
+  • **Stronger circuit field** (`legendField` + `CIRCUIT_VET=0.42`): senior pros recover a chunk of their
+    peak on the shorter/no-cut circuit (`living + 0.42·(peak−living)` per skill) → circuit top **84** /
+    median **78** (was 80/72).
+  • **Once-per-stat off-season lock** (the requested strategy feature): `S.offseason.locked=[]`; `offTake`
+    records + refuses a second change to the same stat; `scrOffseason` renders a locked stat greyed +
+    disabled with a "🔒 locked" tag (CSS `.attr.locked` overriding the `:disabled .take{display:none}` rule);
+    intro copy explains it. Serialized in the offseason resume blob so it survives a mid-off-season refresh.
+  • **A touch more variance** (`SIM` sigma reg 2.80→**2.95**, maj 2.90→**3.05**): adds upsets so the very
+    best build isn't a lock (compresses OVR-92 dominance), justified by the now-deeper phenom field.
+  Net Monte-Carlo (per-event win rate → ~wins/season over ~20 events): regular late-career OVR 88 ~1.0/yr,
+  90 ~2.0/yr, 92 ~3.0/yr (was 88 ~1.9, 90 ~2.8, 92 ~4.5); circuit OVR 82 ~0.9/yr, 85 ~1.8/yr (was 85 ~5/yr,
+  i.e. ~60 circuit wins → ~22). Deterministic sim structure untouched; SKILLSLOPE / base / course-fit /
+  decline curve all unchanged. Verified in Playwright: full regular season runs to completion clean; the
+  stat-lock locks the taken stat, refuses a re-take, and still allows a different stat; zero page errors.
+  Deployed to /golf.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
