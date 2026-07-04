@@ -3686,6 +3686,22 @@ allows Google Fonts, or self-host Anton.*
   server); full play → exactly 1 (double-count gone); second play → 2; guest full play → 1, guest preview
   back-out → 0; a career-mode draft spin leaves the daily counter at 0. Zero page errors. Deployed to /golf.
 
+- **CS133 — season-summary reorder + off-season re-spin rule subtext.** Owner asks: (1) move the season
+  highlights ("Season N Highlights" / RunTheTour Dispatch masthead) to the TOP of the year summary; (2) move
+  the global leaderboard rank to just below the Full Season Recap button and above the career stats; (3) add
+  subtext to the off-season re-spin buttons clarifying that once you spin you MUST take a skill, and that you
+  may start the season without using all your spins. Changes in `scrSummary`: `headlinesHTML(HL)` now renders
+  immediately after the "Year N complete" tag (HL computed up there) instead of mid-page; the async
+  global-leaderboard-rank scout (`S.seasonRank`) moved out of the top region into the left column, appended
+  right after the `recapBtn` and before the career-stats block. In `scrOffseason`: the "Spin the Wheel"
+  button gained a sub ("Once you spin, you must take one of that golfer's skills. You don't have to use every
+  spin — you can start the season anytime.") and the "Re-spin · N left" button a sub ("Pass on this golfer
+  for a new one. You still must take a skill from whoever lands."). Verified in Playwright (signed-in, to
+  avoid the guest sign-up nudge which also contains "global leaderboard"): highlights render before the recap
+  button, the rank node sits after the recap button and before the career stats (DOM compareDocumentPosition),
+  both off-season buttons carry the new subtext, zero page errors; screenshot confirms Highlights leading the
+  summary. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
