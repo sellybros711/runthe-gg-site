@@ -4447,7 +4447,9 @@ function rarityFlash(g){
   if(g.rarity==='Legendary'){ toast('★ '+g.name+', LEGENDARY!'); chime(); track('legendary_pulled',{name:g.name}); }
   else if(g.rarity==='Epic') toast('◆ '+g.name+', Epic');
 }
-function spin_(){ if(S.current||golfersLeft()<=0)return; reveal(); }        // fresh reveal for the next slot, free
+function spin_(){ if(S.current||golfersLeft()<=0)return;
+  if(S.daily && !S.special && !S.dailyLegend) claimDailyAttempt();          // first wheel spin = the attempt is now committed
+  reveal(); }        // fresh reveal for the next slot, free
 function reSpin(){ if(S.reSpins<=0||golfersLeft()<=0)return; S.reSpins--; track('respin_used',{left:S.reSpins}); reveal(); }  // capped at 2
 function endIfDone(){if(filledCount()===8||golfersLeft()<=0)S.screen='build';}
 let _ac=null;
@@ -6694,9 +6696,20 @@ function beginDailyAttempt(){
   // across players for the same attempt number).
   S.drawRng=mulberry32((seed^0x2545f491^Math.imul(att+1,0x9e3779b1))>>>0);
   S.dailyCourse=dailyCourseKey(seed); S.dailyCond=dailyConditions(seed,S.dailyCourse); S.dailyPlan='balanced';
+  S.dailyClaimed=false;   // an attempt isn't consumed until the FIRST WHEEL SPIN (claimDailyAttempt), not on preview entry
   track('daily_started',{seed,course:S.dailyCourse,attempt:att+1});
   S.screen=LS.get('bag_daily_howto_seen',false)?'dailyprev':'dailyintro'; render();   // INSTANT, never "does nothing"
-  enforceDailyAttempt(seed);   // background: confirm the account isn't over its daily cap (fail-open, timeout-guarded)
+}
+// An attempt is CLAIMED at the first wheel spin (or when a Legend Token round begins), NOT when the
+// preview opens — so opening the Daily Challenge and backing out costs nothing. Runs once per attempt
+// (S.dailyClaimed guard): bumps this device's local count immediately, and (signed-in) claims the
+// account's server-side attempt so the 3-a-day cap holds cross-device. finishDailyRound does NOT
+// re-increment, it reads this already-claimed count.
+function claimDailyAttempt(){
+  if(S.dailyClaimed) return; S.dailyClaimed=true;
+  const seed=S.dailySeed, prev=dailyToday(), cur=prev?dailyAttempts():0;
+  LS.set(acctKey('bag_daily'), {date:seed, attempts:cur+1, best:prev?(prev.best||prev.result||null):null, result:prev?(prev.result||null):null});
+  enforceDailyAttempt(seed);   // signed-in: server-side cross-device claim + cap (fail-open, timeout-guarded)
 }
 // Signed-in players' 3-a-day cap is enforced by the ACCOUNT server-side, not just this browser's localStorage
 // counter (otherwise signing into the same account on another browser/device, or clearing storage, would reset
@@ -6895,6 +6908,7 @@ function beginDailyRoundWithLegend(token){
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
   S.dailyAuto=false; S.dailyViewHole=null; S.dailyRevealN=null; clearDailyTimer();
   S.dailyLegend={id:token.id, name:token.name, look:token.look};
+  claimDailyAttempt();   // playing as a Legend skips the draft; committing to it consumes the attempt
   S.name=token.name; if(token.look) S.look=Object.assign({},token.look);
   track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr,legend:true});
   S.screen='dailyround'; render(); scheduleDailyAdvance();
@@ -7033,8 +7047,10 @@ function finishDailyRound(){
   // lifetime record instead (tie counts as a loss, `won` is strict total<avg, decided by best of the day).
   const _ds=bumpStreak(); const _st=bumpDailyStats(won);
   S.dailyStreakInfo={won, mile:_ds._mile||0, gotFreeze:!!_ds._gotFreeze, usedFreeze:!!_ds._usedFreeze, current:_ds.current, freezes:_ds.freezes||0, played:_st.played, beat:_st.beat};
-  // log this attempt; the LOWEST score of the day is the one that counts (leaderboard / course record)
-  const prev=dailyToday(); const attempts=(prev?dailyAttempts():0)+1;
+  // log this attempt; the LOWEST score of the day is the one that counts (leaderboard / course record).
+  // The attempt was already CLAIMED at the first wheel spin (claimDailyAttempt), so read that count —
+  // do NOT +1 here (that double-counted a claimed attempt). Fallback to 1 if somehow unclaimed.
+  const prev=dailyToday(); const attempts=Math.max(1, dailyAttempts());
   let best=prev?(prev.best||prev.result||null):null;
   const improved=!best||total<best.total; if(improved) best=S.dailyResult;
   S.dailyAttemptNo=attempts; S.dailyImproved=improved;

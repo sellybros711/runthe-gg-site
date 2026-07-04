@@ -3670,6 +3670,22 @@ allows Google Fonts, or self-host Anton.*
   Playwright at the final board: winner `.pos` color = gold, gold box-shadow present, trophy SVG rendered,
   zero errors. Deployed to /golf.
 
+- **CS132 — daily attempt is consumed at the first wheel spin, not on opening the preview.** Owner: opening
+  the Daily Challenge start menu and backing out was using up an attempt; an attempt should count when the
+  first wheel spin is initiated. Root cause: `beginDailyAttempt` fired `enforceDailyAttempt` (the server
+  `runtour_daily_attempt_start` claim, CS81) the moment the preview rendered — so merely opening it
+  incremented the account's server count and reconciled the local counter up. (Signed-in only; guests never
+  hit enforce.) This ALSO silently double-counted: enforce reconciled local to the just-claimed number, then
+  `finishDailyRound` did `attempts+1` on top → a single play read as 2 attempts used. Fix: new
+  `claimDailyAttempt()` (guarded once per attempt via `S.dailyClaimed`) bumps the local count and does the
+  server claim; it's called at the FIRST draft spin (`spin_`, gated `S.daily && !S.special && !S.dailyLegend`
+  so career drafts and Spotlight don't trigger it) and at the start of a Legend Token round (which skips the
+  draft). `beginDailyAttempt` no longer enforces on entry (just sets `S.dailyClaimed=false`), and
+  `finishDailyRound` now reads the already-claimed count (`Math.max(1, dailyAttempts())`) instead of
+  re-incrementing. Verified in Playwright with a mock server: open preview + back out → 0 attempts (local &
+  server); full play → exactly 1 (double-count gone); second play → 2; guest full play → 1, guest preview
+  back-out → 0; a career-mode draft spin leaves the daily counter at 0. Zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
