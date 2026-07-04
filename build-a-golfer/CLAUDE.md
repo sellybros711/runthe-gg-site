@@ -3935,6 +3935,41 @@ allows Google Fonts, or self-host Anton.*
   no duplicate standings section), the between-holes/final standings branch, and a full live daily round.
   Zero page errors. Deployed to /golf.
 
+- **CS142 — Multi-ball H2H broadcast: every player's tracer, real playing order, smaller balls on the
+  green.** Owner: "make it so the users see both ball tracers... assigned either red or blue... player
+  one tees off, player 2 tees off, and then the player furthest from the hole goes next until both have
+  completed the hole... balls should get smaller when it zooms into the green"; follow-up: "For 4 player
+  free for all, there should be 4 colors: red blue cyan and yellow."
+  • **Every unit's ball on one map.** `h2hBuildPlay()` replaces the old single-focus `h2hBuildFocus`:
+    each UNIT (player in 1v1/FFA; team ball in Best Ball/Scramble via the combined skills) gets its own
+    deterministic `dShotSeq` expansion of its actual hole scores (seed + build hash + unit id, so both
+    clients watch the identical broadcast and identical builds can't produce overlapping sequences).
+  • **Real "away plays first" order.** Everyone tees off in seat order, then whoever is farthest from the
+    hole (`h2hRemOf`: yards left, or feet/3 on the green) plays next until every ball is in. The merged
+    per-hole `order` drives the watch (`S.h2h.wStep` replaces `wShot`), each step paced by that shot's own
+    `hvShotMs`.
+  • **Ball colors:** YOU are always blue; opponents take red, then cyan, then yellow (`H2H_BALL_COLS`) —
+    2 colors in 1v1/team modes, 4 in FFA. Colors thread through everything: tracer glow + roll line, ball
+    ring, shot markers, the sink pulse, a color dot per row on the floating standings, the player-name
+    chip on the stat strip, and the name prefix on the one-line shot description (which now swaps to
+    whoever is playing).
+  • **hvNode `multi` mode** ({shots, order, cols, names}) renders all units' done shots (dim, in their
+    colors) + the current step live; `hvKick`/`hvCamFor` were refactored to operate on a PLOT (not an
+    index) so any player's ball can drive the camera; the daily's single-ball path uses the same refactor.
+  • **Balls shrink on the green close-up:** `bScale()` reads the live viewBox every animation frame, so as
+    the camera zooms in the ball scales down (r 3.2 → ~1.3–2.0 viewBox units, sink pulse scaled to match)
+    instead of swallowing the green; the live-shot markup also starts small under the close-up camera.
+  Verified in Playwright: order property across 1v1 AND 4-player FFA on all 9 holes (tee shots in seat
+  order; at every subsequent step the picked unit's remaining distance ≥ every other unit still playing;
+  every shot appears exactly once, per-unit indices strictly increasing); color assignment exact
+  (blue/red, blue/red/cyan/yellow); a mid-hole 1v1 render shows BOTH tracers + 2 board dots + the correct
+  player chip and description name; FFA shows all 4 colors + 4 rows; skip-to-result works; the ball reads
+  r=2 during a real green close-up putt; the daily single-ball round regresses clean end-to-end. Zero
+  page errors. Deployed to /golf. Screenshots (mb_1v1/mb_ffa) sent to owner.
+  NEXT (owner): custom hole shapes — all holes currently share the ribbon template; design a per-hole
+  geometry spec (dogleg severity/direction, split fairways, forced carries, island/peninsula greens, green
+  orientation, hazard placement) driven per-course from the signature-hole data.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
