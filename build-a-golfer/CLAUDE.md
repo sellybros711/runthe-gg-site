@@ -4082,6 +4082,35 @@ allows Google Fonts, or self-host Anton.*
   and the finish still feeds rounds[3]/finalizes; hv7 (Moments), hv5 (multi-ball H2H) and the practice
   suite all re-run green. Zero page errors. Deployed to /golf.
 
+- **CS146 — wider TOURTRACE frame: full-bleed on phones + painted side margins + green-aware
+  scoreboard.** Owner (screenshot): "Notice how the scoreboard is blocking the golf course. Lets keep the
+  top edge where it is but expand the golf course tracer view to the extents of whatever mobile device so
+  we have more room to place the scoreboard and other elements." Three coordinated changes (Daily, Moments,
+  Spotlight, Legend rounds AND the H2H watch — they all share hvNode):
+  • **Painted side margins.** New `HV_EX=52` extends the SCENE 52 viewBox px beyond the course on each
+    side, and the full-hole camera (`HV_CAM=[-52,0,464,470]`, replacing every `[0,0,360,470]`) shows it.
+    `hvTerrain` paints the wider frame: base rough + grass ticks span the full width, coastal ocean runs
+    to the new edge (ripples included), forest/palm walls grow INTO the margins (wider offset range,
+    denser rows), links dunes / desert saguaros scatter wider, creeks cross the whole widened frame. The
+    HUD chips now float over scenery instead of the hole.
+  • **Full-bleed on phones.** `@media(max-width:700px)`: `.holeview` breaks out of the content column to
+    span the device edge-to-edge (`width:100vw` + negative side margins, square corners, side borders
+    dropped, safe-area padding on the brand/stat strips). Desktop keeps the centered card (max-width 470).
+    CSS `aspect-ratio` updated 360/470 → 464/470 (kept in sync with HV_EX by a comment at the const).
+  • **Green-aware scoreboard.** When a hole's green is tucked RIGHT (`g.gcx` projected right of centre),
+    the floating scoreboard flips to the LEFT corner and the hole chip to the right (`.hvboard.left` /
+    `.hvhole.right`), so the board can never sit on the green complex — in both scrDailyRound and
+    scrH2HWatch. The putt close-up camera (`hvCamFor2`) now frames at the new on-screen aspect
+    ((HV_W+2·EX)/HV_H) with clamps widened to the margin, so nothing gets sliced.
+  Verified in Playwright: default viewBox `-52 0 464 470`; window rect spans the full 430px viewport
+  edge-to-edge (left 0); coastal ocean paints to the frame edge; board flipped left on tucked-right greens
+  in both a Daily and a Moment (screenshots: green fully visible, chips over trees/sea); putt close-up
+  frames ball+cup at the new aspect; desktop renders the centered 470px card; hv8 (one-window HUD), hv5
+  (multi-ball H2H), hv6 (39-course geometry + putt property) and the practice suite all re-run green, zero
+  page errors. NOTE: hv3/hv4 scratch suites were found already broken on the PRIOR commit — they poke
+  CS141-era internals removed in CS142 (`focusHoles`/`h2hBuildFocus`) — superseded by hv5/hv6/hv8, not a
+  regression. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
