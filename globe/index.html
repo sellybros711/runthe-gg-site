@@ -160,7 +160,7 @@
   .prompt{font-size:17px;font-weight:800;line-height:1.4;margin-bottom:14px;}
   .opts{display:grid;gap:10px;}
   .opt{text-align:left;background:rgba(255,255,255,.04);border:1px solid var(--cardb);border-radius:12px;
-    padding:14px 15px;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;transition:border-color .1s,background .1s;}
+    padding:14px 15px;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;transition:border-color .1s,background .1s,transform .1s;}
   .opt:hover{border-color:var(--globe);}
   .opt.right{border-color:var(--ok);background:rgba(53,214,160,.12);}
   .opt.wrong{border-color:var(--bad);background:rgba(255,107,107,.12);}
@@ -170,11 +170,40 @@
     background:#0a1b2e;display:flex;align-items:center;justify-content:center;}
   .zoomflag{font-size:132px;line-height:1;transform:scale(6);transition:transform 6.5s linear;will-change:transform;}
 
-  /* juice: gentle screen + number entrances */
-  @keyframes rtgFade{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
-  @keyframes rtgPop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.12);}100%{transform:scale(1);opacity:1;}}
-  .card{animation:rtgFade .22s ease both;}
+  /* juice: gentle, cushioned motion — no hard cuts, no re-render jumps */
+  @keyframes rtgFade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+  @keyframes rtgPop{0%{transform:scale(.6);opacity:0;}60%{transform:scale(1.1);}100%{transform:scale(1);opacity:1;}}
+  @keyframes rtgSwap{from{opacity:0;transform:translateY(7px);}to{opacity:1;transform:none;}}
+  @keyframes rtgPopIn{0%{transform:scale(.55);opacity:0;}60%{transform:scale(1.1);opacity:1;}100%{transform:scale(1);opacity:1;}}
+  @keyframes rtgBelt{from{transform:translateX(30px);opacity:.25;}to{transform:none;opacity:1;}}
+  @keyframes rtgToast{from{opacity:0;transform:translate(-50%,12px);}to{opacity:1;transform:translate(-50%,0);}}
+  @keyframes rtgFlash{from{box-shadow:inset 0 0 0 3px rgba(53,214,160,.55);}to{box-shadow:inset 0 0 0 3px rgba(53,214,160,0);}}
+  .card{animation:rtgFade .3s cubic-bezier(.22,.9,.32,1) both;}
+  .card+.card{animation-delay:.05s;}
+  .card+.card+.card{animation-delay:.1s;}
+  .card+.card+.card+.card{animation-delay:.15s;}
   .bigtime{animation:rtgPop .4s cubic-bezier(.2,1.3,.4,1) both;}
+  .swap-in{animation:rtgSwap .22s cubic-bezier(.22,.9,.32,1) both;}
+  .pop-in{animation:rtgPopIn .22s cubic-bezier(.2,1.2,.4,1) both;}
+  .bg-step{animation:rtgBelt .3s cubic-bezier(.22,.9,.32,1);}
+  .hitflash{animation:rtgFlash .4s ease-out;}
+  .dest .fl{animation:rtgPop .5s cubic-bezier(.2,1.3,.4,1) both;}
+  .dest .cn,.dest .rg{animation:rtgSwap .3s ease-out both;}
+  .dest .cn{animation-delay:.08s;} .dest .rg{animation-delay:.14s;}
+  .choice .taskcard{animation:rtgSwap .26s cubic-bezier(.22,.9,.32,1) both;}
+  .choice .taskcard:nth-child(2){animation-delay:.06s;}
+  .pip{transition:background .35s ease,box-shadow .35s ease;}
+  .opt:active,.taskcard:active,.oitem:active{transform:scale(.99);}
+  .lb .lbrow>span{animation:rtgSwap .26s cubic-bezier(.22,.9,.32,1) both;}
+  .lbrow:nth-child(2)>span{animation-delay:.03s;} .lbrow:nth-child(3)>span{animation-delay:.06s;}
+  .lbrow:nth-child(4)>span{animation-delay:.09s;} .lbrow:nth-child(5)>span{animation-delay:.12s;}
+  .lbrow:nth-child(6)>span{animation-delay:.15s;} .lbrow:nth-child(7)>span{animation-delay:.18s;}
+  .lbrow:nth-child(8)>span{animation-delay:.21s;} .lbrow:nth-child(9)>span{animation-delay:.24s;}
+  .lbrow:nth-child(10)>span{animation-delay:.27s;} .lbrow:nth-child(11)>span{animation-delay:.3s;}
+  .banner{animation:rtgSwap .3s cubic-bezier(.22,.9,.32,1) both;}
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms !important;animation-delay:0ms !important;transition-duration:.01ms !important;}
+  }
 
   .missline{font-size:12.5px;color:var(--mut);margin-top:12px;text-align:center;}
   .missline b{color:var(--bad);}
@@ -215,7 +244,7 @@
   /* order */
   .orderwrap{display:grid;gap:9px;margin-bottom:6px;}
   .oitem{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.04);border:1px solid var(--cardb);
-    border-radius:12px;padding:13px 14px;cursor:pointer;font-weight:700;transition:border-color .1s,background .1s;}
+    border-radius:12px;padding:13px 14px;cursor:pointer;font-weight:700;transition:border-color .1s,background .1s,transform .1s,opacity .25s;}
   .oitem:hover{border-color:var(--globe);}
   .oitem.placed{opacity:.4;pointer-events:none;border-color:var(--ok);}
   .oitem .num{width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;
@@ -389,6 +418,12 @@
   // difficulty ramp: 0 at Stage 1 → 1 at the Final. Skill games read this to
   // scale speed / grid size / pattern length, so late Stages FEEL like a final.
   function ramp(){ return Math.max(0, Math.min(1, (S.round-1)/(ROUNDS-1))); }
+  // motion helpers: retrigger a CSS animation on an element that stays in the DOM.
+  // Used for every in-game content swap so rounds GLIDE in instead of hard-cutting.
+  function retrig(el, cls){ if(!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+  function swapIn(el){ retrig(el,'swap-in'); }
+  function popIn(el){ retrig(el,'pop-in'); }
+  function flash(el){ retrig(el,'hitflash'); }
   // testing hook: /globe/?kind=swingmeter forces every offline stage to that game
   var FORCE_KIND=(function(){ try{ return new URLSearchParams(location.search).get('kind'); }catch(e){ return null; } })();
 
@@ -1060,6 +1095,7 @@
     if(S.play && S.play.misses) sfx('wrong');   // central miss cue for every game
     var e=$('miss'); if(!e) return;
     e.innerHTML = S.play.misses ? 'Misses: <b>'+S.play.misses+'</b> (+'+(S.play.misses*PENALTY[S.chosen.cat])+'s)' : '';
+    if(S.play.misses) swapIn(e);   // pulse so the penalty registers without looking down
   }
   function finishTask(){
     stopTimer();
@@ -1145,8 +1181,8 @@
     if(S.scr.built.length===answer.length){
       if(builtStr()===answer){ S.play.done=true; setTimeout(finishTask,200); }
       else{ S.play.misses++; showMiss();
-        // clear the wrong attempt
-        S.scr.built=[]; S.scr.used=[]; setTimeout(function(){ if(!S.play.done) renderScramble(t); },350); }
+        // clear the wrong attempt (board glides back in rather than hard-cutting)
+        S.scr.built=[]; S.scr.used=[]; setTimeout(function(){ if(!S.play.done){ renderScramble(t); swapIn(document.querySelector('.slot')); } },350); }
     }
   }
 
@@ -1209,20 +1245,25 @@
     // (no "all-STOP draw = ~1s" exploit).
     S.rx={ go:0, need:5, sum:0, state:'idle', armAt:0, msg:'', sub:'', to:null };
     stopTimer();   // reaction measures its own summed reaction time, not wall clock
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">Signal Sprint — tap on GO, hold on STOP</div>'
+      + '<div class="reps" id="rxreps"></div>'
+      + '<div class="reactbox idle" id="rbox"><div class="big" id="rxbig"></div><div class="sm" id="rxsm"></div></div>';
+    $('rbox').onclick=function(){ reactTap(t); };
     renderReaction(t);
   }
+  // paint the persistent box in place — state flips are class/text swaps, not re-renders
   function renderReaction(t){
-    var reps=''; for(var i=0;i<S.rx.need;i++){ reps+='<div class="rep'+(i<S.rx.go?' done':'')+'"></div>'; }
+    var e=$('rxreps');
+    if(e){ var reps=''; for(var i=0;i<S.rx.need;i++){ reps+='<div class="rep'+(i<S.rx.go?' done':'')+'"></div>'; } e.innerHTML=reps; }
     var st=S.rx.state, cls, big, sm;
     if(st==='idle'){ cls='idle'; big='Ready?'; sm='Tap to start — then tap on 🟢 GO, but never on 🛑 STOP.'; }
     else if(st==='wait'){ cls='wait'; big='Wait…'; sm='Watch for the signal.'; }
     else if(st==='go'){ cls='go'; big='GO — TAP!'; sm='Now!'; }
     else if(st==='stop'){ cls='stop'; big='🛑 STOP'; sm="Don't tap!"; }
     else { cls='fb'; big=S.rx.msg; sm=S.rx.sub; }
-    $('mg').innerHTML='<div class="prompt" style="text-align:center">Signal Sprint — tap on GO, hold on STOP</div>'
-      + '<div class="reps">'+reps+'</div>'
-      + '<div class="reactbox '+cls+'" id="rbox"><div class="big">'+big+'</div><div class="sm">'+sm+'</div></div>';
-    $('rbox').onclick=function(){ reactTap(t); };
+    var box=$('rbox'); if(box) box.className='reactbox '+cls;
+    var b=$('rxbig'); if(b) b.textContent=big;
+    var s=$('rxsm'); if(s) s.textContent=sm;
   }
   function rxClear(){ if(S.rx.to){ clearTimeout(S.rx.to); S.rx.to=null; } }
   function reactBegin(t){
@@ -1316,69 +1357,99 @@
 
   function each(sel, fn){ Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
 
-  /* ---------- minigame: True or False rapid-fire (trivia) ---------- */
-  function mgTrueFalse(t){ S.tf={ i:0, items:t.items }; renderTF(t); }
-  function renderTF(t){
-    var it=S.tf.items[S.tf.i];
-    $('mg').innerHTML='<div class="seqstatus">Statement <b>'+(S.tf.i+1)+'</b>/'+S.tf.items.length+'</div>'
-      + '<div class="prompt" style="text-align:center;min-height:56px;display:flex;align-items:center;justify-content:center">'+esc(it.s)+'</div>'
+  /* ---------- minigame: True or False rapid-fire (trivia) ----------
+     Shell built ONCE; each statement glides in (swapIn) instead of the whole
+     game re-rendering per answer — buttons stay put under your thumbs. */
+  function mgTrueFalse(t){
+    S.tf={ i:0, items:t.items };
+    $('mg').innerHTML='<div class="seqstatus" id="tfst"></div>'
+      + '<div class="prompt" id="tfq" style="text-align:center;min-height:56px;display:flex;align-items:center;justify-content:center"></div>'
       + '<div class="btnrow"><button class="btn ghost" id="tft" style="flex:1">✓ True</button>'
       + '<button class="btn ghost" id="tff" style="flex:1">✗ False</button></div>';
-    $('tft').onclick=function(){ tfAns(t,true); }; $('tff').onclick=function(){ tfAns(t,false); };
+    $('tft').onclick=function(){ tfAns(t,true,this); }; $('tff').onclick=function(){ tfAns(t,false,this); };
+    tfPaint();
   }
-  function tfAns(t,ans){
-    if(S.play.done) return;
-    if(ans!==S.tf.items[S.tf.i].t){ S.play.misses++; showMiss(); }
-    S.tf.i++;
-    if(S.tf.i>=S.tf.items.length){ S.play.done=true; finishTask(); } else renderTF(t);
+  function tfPaint(){
+    var st=$('tfst'); if(st) st.innerHTML='Statement <b>'+(S.tf.i+1)+'</b>/'+S.tf.items.length;
+    var q=$('tfq'); if(q){ q.textContent=S.tf.items[S.tf.i].s; swapIn(q); }
+  }
+  function tfAns(t,ans,btn){
+    if(S.play.done || S.tf.lock) return;
+    var ok = (ans===S.tf.items[S.tf.i].t);
+    if(ok) sfx('tap'); else { S.play.misses++; showMiss(); }
+    if(btn) btn.style.borderColor = ok?'var(--ok)':'var(--bad)';
+    S.tf.lock=true;   // feedback beat — same pacing as the MCQ games' 220ms
+    setTimeout(function(){
+      S.tf.lock=false; if(btn) btn.style.borderColor='';
+      S.tf.i++;
+      if(S.tf.i>=S.tf.items.length){ S.play.done=true; finishTask(); } else tfPaint();
+    },240);
   }
 
-  /* ---------- minigame: Higher or Lower (compare a stat) ---------- */
-  function mgHigherLower(t){ S.hl={ round:0, rounds:t.rounds||3, items:t.items }; renderHL(t); }
-  function renderHL(t){
-    S.hl.pair=shuffle(S.hl.items).slice(0,2);
-    $('mg').innerHTML='<div class="seqstatus">Round <b>'+(S.hl.round+1)+'</b>/'+S.hl.rounds+'</div>'
+  /* ---------- minigame: Higher or Lower (compare a stat) ----------
+     Shell built ONCE; only the two option labels swap in per round. */
+  function mgHigherLower(t){
+    S.hl={ round:0, rounds:t.rounds||3, items:t.items };
+    $('mg').innerHTML='<div class="seqstatus" id="hlst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div class="btnrow">'+S.hl.pair.map(function(p,i){ return '<button class="btn ghost hlo" data-i="'+i+'" style="flex:1">'+esc(p.label)+'</button>'; }).join('')+'</div>';
-    each('.hlo', function(b){ b.onclick=function(){ hlAns(t, +b.getAttribute('data-i')); }; });
+      + '<div class="btnrow"><button class="btn ghost hlo" data-i="0" style="flex:1"></button>'
+      + '<button class="btn ghost hlo" data-i="1" style="flex:1"></button></div>';
+    each('.hlo', function(b){ b.onclick=function(){ hlAns(t, +b.getAttribute('data-i'), b); }; });
+    hlPaint();
   }
-  function hlAns(t,i){
-    if(S.play.done) return;
+  function hlPaint(){
+    S.hl.pair=shuffle(S.hl.items).slice(0,2);
+    var st=$('hlst'); if(st) st.innerHTML='Round <b>'+(S.hl.round+1)+'</b>/'+S.hl.rounds;
+    each('.hlo', function(b){ var i=+b.getAttribute('data-i'); b.textContent=S.hl.pair[i].label; swapIn(b); });
+  }
+  function hlAns(t,i,btn){
+    if(S.play.done || S.hl.lock) return;
     // north/east => higher value wins; south/west => lower value wins. Ties ok.
     var lowerWins = (t.dir==='south' || t.dir==='west');
     var p=S.hl.pair, mine=p[i].value, other=p[1-i].value;
     var ok = (mine===other) || (lowerWins ? mine<=other : mine>=other);
     if(ok) sfx('tap'); else { S.play.misses++; showMiss(); }
-    S.hl.round++;
-    if(S.hl.round>=S.hl.rounds){ S.play.done=true; finishTask(); } else renderHL(t);
+    if(btn) btn.style.borderColor = ok?'var(--ok)':'var(--bad)';
+    S.hl.lock=true;
+    setTimeout(function(){
+      S.hl.lock=false; if(btn) btn.style.borderColor='';
+      S.hl.round++;
+      if(S.hl.round>=S.hl.rounds){ S.play.done=true; finishTask(); } else hlPaint();
+    },240);
   }
 
-  /* ---------- minigame: Memory Match (concentration) ---------- */
+  /* ---------- minigame: Memory Match (concentration) ----------
+     Grid built ONCE; flips update the single card in place with a pop, so
+     reveals feel like card turns instead of the whole board re-rendering. */
   function mgMemoryMatch(t){
     var cards=shuffle(t.tiles.concat(t.tiles)).map(function(e,i){ return { id:i, em:e, up:false, done:false }; });
-    S.mm={ cards:cards, open:[] }; renderMM();
-  }
-  function renderMM(){
-    var grid=S.mm.cards.map(function(c){
-      return '<div class="seqtile mmc'+(c.done?' tap':'')+(c.up&&!c.done?' lit':'')+'" data-id="'+c.id+'">'+((c.up||c.done)?c.em:'❓')+'</div>';
-    }).join('');
+    S.mm={ cards:cards, open:[] };
+    var grid=cards.map(function(c){ return '<div class="seqtile mmc" data-id="'+c.id+'">❓</div>'; }).join('');
     $('mg').innerHTML='<div class="prompt" style="text-align:center">Flip the cards, match all the pairs</div>'
       + '<div class="seqgrid" style="max-width:280px;margin:8px auto 0">'+grid+'</div>';
     each('.mmc', function(b){ b.onclick=function(){ mmFlip(+b.getAttribute('data-id')); }; });
   }
+  function mmPaint(id, pop){
+    var c=S.mm.cards[id], el=document.querySelector('.mmc[data-id="'+id+'"]');
+    if(!c||!el) return;
+    el.textContent=(c.up||c.done)?c.em:'❓';
+    el.classList.toggle('lit', c.up&&!c.done);
+    el.classList.toggle('tap', c.done);
+    if(pop) popIn(el);
+  }
   function mmFlip(id){
     if(S.play.done) return;
     var c=S.mm.cards[id]; if(!c||c.up||c.done||S.mm.open.length>=2) return;
-    c.up=true; S.mm.open.push(id); renderMM();
+    c.up=true; S.mm.open.push(id); mmPaint(id, true);
     if(S.mm.open.length===2){
       var a=S.mm.cards[S.mm.open[0]], b=S.mm.cards[S.mm.open[1]];
       if(a.em===b.em){
-        a.done=b.done=true; S.mm.open=[]; renderMM();
+        a.done=b.done=true; S.mm.open=[]; mmPaint(a.id); mmPaint(b.id);
         var all=true; S.mm.cards.forEach(function(x){ if(!x.done) all=false; });
         if(all){ S.play.done=true; setTimeout(finishTask,260); }
       } else {
         S.play.misses++; showMiss();
-        setTimeout(function(){ a.up=false; b.up=false; S.mm.open=[]; if(!S.play.done) renderMM(); }, 720);
+        setTimeout(function(){ a.up=false; b.up=false; S.mm.open=[]; if(!S.play.done){ mmPaint(a.id); mmPaint(b.id); } }, 720);
       }
     }
   }
@@ -1396,7 +1467,8 @@
   }
   function wkStatus(){ var e=$('wkst'); if(e) e.innerHTML='Hits <b>'+S.wk.hits+'</b>/'+S.wk.need; }
   function wkCell(i){ return document.querySelector('.wkc[data-i="'+i+'"]'); }
-  function wkPaint(){ for(var i=0;i<9;i++){ var el=wkCell(i); if(el) el.textContent=S.wk.cells[i]||''; } }
+  function wkPaint(){ for(var i=0;i<9;i++){ var el=wkCell(i); if(!el) continue; var v=S.wk.cells[i]||'';
+    if(el.textContent!==v){ el.textContent=v; if(v) popIn(el); else el.classList.remove('pop-in'); } } }
   function tickWhack(t){
     if(S.play.done || !$('wkst')){ clearInterval(S.wk.timer); return; }
     var cells=[null,null,null,null,null,null,null,null,null];
@@ -1422,7 +1494,7 @@
     $('mg').innerHTML='<div class="seqstatus" id="ttst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div id="ttbox" style="position:relative;height:210px;border-radius:16px;border:1px solid var(--cardb);background:rgba(255,255,255,.04);overflow:hidden">'
-      + '<div id="ttgt" style="position:absolute;font-size:42px;cursor:pointer;transform:translate(-50%,-50%);transition:left .06s,top .06s">'+t.target+'</div></div>';
+      + '<div id="ttgt" style="position:absolute;font-size:42px;cursor:pointer;transform:translate(-50%,-50%);transition:left .14s cubic-bezier(.25,.9,.35,1),top .14s cubic-bezier(.25,.9,.35,1)">'+t.target+'</div></div>';
     $('ttgt').onclick=function(ev){ if(ev.stopPropagation)ev.stopPropagation(); ttHit(t); };
     $('ttbox').onclick=function(){ if(S.play.done) return; S.play.misses++; showMiss(); };
     ttStatus(); ttMove();
@@ -1472,7 +1544,7 @@
   function swTap(){
     if(S.play.done) return;
     if(Math.abs(S.sw.pos-S.sw.zc)<=S.sw.zw/2){
-      sfx('correct'); S.sw.hits++; swStatus();
+      sfx('correct'); S.sw.hits++; swStatus(); flash($('swbar'));
       if(S.sw.hits>=S.sw.need){ S.play.done=true; setTimeout(finishTask,200); return; }
       S.sw.zw*=0.78; S.sw.speed*=1.12; swNewZone(); swPaint();
     } else { S.play.misses++; showMiss(); }
@@ -1490,7 +1562,7 @@
     for(var i=0;i<n;i++){ tiles+='<div class="seqtile eet" data-b="'+(i===at?1:0)+'" style="width:52px;height:52px;font-size:27px">'+(i===at?imp:t.target)+'</div>'; }
     $('mg').innerHTML='<div class="seqstatus">Found <b>'+S.ee.round+'</b>/'+S.ee.rounds+'</div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div class="seqgrid" style="max-width:340px;margin:8px auto 0;gap:8px">'+tiles+'</div>';
+      + '<div class="seqgrid swap-in" style="max-width:340px;margin:8px auto 0;gap:8px">'+tiles+'</div>';
     each('.eet', function(b){ b.onclick=function(){ eagleTap(t,b); }; });
   }
   function eagleTap(t,el){
@@ -1517,14 +1589,14 @@
     var tiles=shown.map(function(f){ return '<div class="seqtile" style="width:54px;height:54px;font-size:28px">'+f+'</div>'; }).join('');
     $('mg').innerHTML='<div class="seqstatus">Lineup <b>'+(S.km.round+1)+'</b>/'+S.km.rounds+'</div>'
       + '<div class="prompt" style="text-align:center">👀 Memorize the lineup…</div>'
-      + '<div class="seqgrid" id="kmshow" style="max-width:340px;margin:8px auto 0">'+tiles+'</div>';
+      + '<div class="seqgrid swap-in" id="kmshow" style="max-width:340px;margin:8px auto 0">'+tiles+'</div>';
     setTimeout(function(){ if(!S.play.done && $('kmshow')) kimAsk(t); }, S.km.flashMs);
   }
   function kimAsk(t){
     var opts=S.km.opts.map(function(f){ return '<div class="seqtile kmo" data-f="'+f+'" style="width:58px;height:58px;font-size:30px">'+f+'</div>'; }).join('');
     $('mg').innerHTML='<div class="seqstatus">Lineup <b>'+(S.km.round+1)+'</b>/'+S.km.rounds+'</div>'
       + '<div class="prompt" style="text-align:center">Which flag was <b style="color:var(--bad)">NOT</b> in the lineup?</div>'
-      + '<div class="seqgrid" style="margin-top:8px">'+opts+'</div>';
+      + '<div class="seqgrid swap-in" style="margin-top:8px">'+opts+'</div>';
     each('.kmo', function(b){ b.onclick=function(){ kimTap(t,b); }; });
   }
   function kimTap(t,el){
@@ -1607,7 +1679,10 @@
     if(S.play.done || !$('bgst')){ clearInterval(S.bg.timer); return; }
     var incoming = (S.bg.slots.indexOf(S.bg.target)<0 && Math.random()<0.55) ? S.bg.target : bgNew();
     S.bg.slots.shift(); S.bg.slots.push(incoming);
-    for(var i=0;i<4;i++){ var el=bgCell(i); if(el) el.textContent=S.bg.slots[i]||''; }   // update in place
+    var i, el;
+    for(i=0;i<4;i++){ el=bgCell(i); if(el){ el.textContent=S.bg.slots[i]||''; el.classList.remove('bg-step'); } }
+    void document.body.offsetWidth;   // one reflow, then every bag slides in like the belt stepped
+    for(i=0;i<4;i++){ el=bgCell(i); if(el) el.classList.add('bg-step'); }
   }
   function bgTap(i){
     if(S.play.done) return;
@@ -1690,25 +1765,34 @@
     }
   }
 
-  /* ---------- minigame: Closer or Farther (distance duel, 3 rounds) ---------- */
-  function mgCloserFar(t){ S.cf={ i:0, rounds:t.pairs.length }; renderCF(t); }
-  function renderCF(t){
-    var p=t.pairs[S.cf.i];
-    $('mg').innerHTML='<div class="seqstatus">Round <b>'+(S.cf.i+1)+'</b>/'+S.cf.rounds+'</div>'
+  /* ---------- minigame: Closer or Farther (distance duel, 3 rounds) ----------
+     Shell built ONCE; the two capitals swap in per round. */
+  function mgCloserFar(t){
+    S.cf={ i:0, rounds:t.pairs.length };
+    $('mg').innerHTML='<div class="seqstatus" id="cfst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div class="btnrow">'
-        + '<button class="btn ghost hlo" data-i="0" style="flex:1">'+esc(p.a.label)+'</button>'
-        + '<button class="btn ghost hlo" data-i="1" style="flex:1">'+esc(p.b.label)+'</button>'
-      + '</div>';
-    each('.hlo', function(b){ b.onclick=function(){ cfAns(t, +b.getAttribute('data-i')); }; });
+      + '<div class="btnrow"><button class="btn ghost hlo" data-i="0" style="flex:1"></button>'
+      + '<button class="btn ghost hlo" data-i="1" style="flex:1"></button></div>';
+    each('.hlo', function(b){ b.onclick=function(){ cfAns(t, +b.getAttribute('data-i'), b); }; });
+    cfPaint(t);
   }
-  function cfAns(t,i){
-    if(S.play.done) return;
+  function cfPaint(t){
     var p=t.pairs[S.cf.i];
-    var correct = (p.a.d<=p.b.d) ? 0 : 1;
-    if(i===correct) sfx('tap'); else { S.play.misses++; showMiss(); }
-    S.cf.i++;
-    if(S.cf.i>=S.cf.rounds){ S.play.done=true; finishTask(); } else renderCF(t);
+    var st=$('cfst'); if(st) st.innerHTML='Round <b>'+(S.cf.i+1)+'</b>/'+S.cf.rounds;
+    each('.hlo', function(b){ var i=+b.getAttribute('data-i'); b.textContent=(i===0?p.a.label:p.b.label); swapIn(b); });
+  }
+  function cfAns(t,i,btn){
+    if(S.play.done || S.cf.lock) return;
+    var p=t.pairs[S.cf.i];
+    var ok = (i === ((p.a.d<=p.b.d)?0:1));
+    if(ok) sfx('tap'); else { S.play.misses++; showMiss(); }
+    if(btn) btn.style.borderColor = ok?'var(--ok)':'var(--bad)';
+    S.cf.lock=true;
+    setTimeout(function(){
+      S.cf.lock=false; if(btn) btn.style.borderColor='';
+      S.cf.i++;
+      if(S.cf.i>=S.cf.rounds){ S.play.done=true; finishTask(); } else cfPaint(t);
+    },240);
   }
 
   /* ---------- minigame: Compass Chase (tap the direction, 2-3 rounds) ---------- */
@@ -1720,19 +1804,25 @@
       + '<div id="cptgt" style="text-align:center;font-size:17px;font-weight:800;margin-bottom:12px"></div>'
       + '<div class="btnrow">'+DIRS.slice(0,2).map(function(d2){ return '<button class="btn ghost hlo" data-d="'+d2[0]+'" style="flex:1">'+d2[1]+'</button>'; }).join('')+'</div>'
       + '<div class="btnrow">'+DIRS.slice(2).map(function(d2){ return '<button class="btn ghost hlo" data-d="'+d2[0]+'" style="flex:1">'+d2[1]+'</button>'; }).join('')+'</div>';
-    each('.hlo', function(b){ b.onclick=function(){ cpAns(t, b.getAttribute('data-d')); }; });
+    each('.hlo', function(b){ b.onclick=function(){ cpAns(t, b.getAttribute('data-d'), b); }; });
     cpPaint(t);
   }
   function cpPaint(t){
     var r=S.cp.rounds[S.cp.i];
     var st=$('cpst'); if(st) st.innerHTML='Target <b>'+(S.cp.i+1)+'</b>/'+S.cp.rounds.length;
-    var tg=$('cptgt'); if(tg) tg.innerHTML=r.flag+' '+esc(r.name);
+    var tg=$('cptgt'); if(tg){ tg.innerHTML=r.flag+' '+esc(r.name); swapIn(tg); }
   }
-  function cpAns(t,d){
-    if(S.play.done) return;
-    if(d===S.cp.rounds[S.cp.i].dir) sfx('tap'); else { S.play.misses++; showMiss(); }
-    S.cp.i++;
-    if(S.cp.i>=S.cp.rounds.length){ S.play.done=true; finishTask(); } else cpPaint(t);
+  function cpAns(t,d,btn){
+    if(S.play.done || S.cp.lock) return;
+    var ok = (d===S.cp.rounds[S.cp.i].dir);
+    if(ok) sfx('tap'); else { S.play.misses++; showMiss(); }
+    if(btn) btn.style.borderColor = ok?'var(--ok)':'var(--bad)';
+    S.cp.lock=true;
+    setTimeout(function(){
+      S.cp.lock=false; if(btn) btn.style.borderColor='';
+      S.cp.i++;
+      if(S.cp.i>=S.cp.rounds.length){ S.play.done=true; finishTask(); } else cpPaint(t);
+    },240);
   }
 
   /* ---------- minigame: Region Sort (two buckets, six countries) ---------- */
@@ -1745,7 +1835,7 @@
         + '<button class="btn ghost hlo" data-r="'+esc(t.regA)+'" style="flex:1">'+esc(t.regA)+'</button>'
         + '<button class="btn ghost hlo" data-r="'+esc(t.regB)+'" style="flex:1">'+esc(t.regB)+'</button>'
       + '</div>';
-    each('.hlo', function(b){ b.onclick=function(){ rsAns(t, b.getAttribute('data-r')); }; });
+    each('.hlo', function(b){ b.onclick=function(){ rsAns(t, b.getAttribute('data-r'), b); }; });
     rsPaint();
   }
   function rsPaint(){
@@ -1753,12 +1843,19 @@
     var st=$('rsst'); if(st) st.innerHTML='Sorted <b>'+S.rs.i+'</b>/'+S.rs.queue.length;
     var f=$('rsflag'); if(f) f.textContent=q.flag;
     var n=$('rsname'); if(n) n.textContent=q.name;
+    swapIn($('rscard'));
   }
-  function rsAns(t,r){
-    if(S.play.done) return;
-    if(r===S.rs.queue[S.rs.i].region) sfx('tap'); else { S.play.misses++; showMiss(); }
-    S.rs.i++;
-    if(S.rs.i>=S.rs.queue.length){ S.play.done=true; finishTask(); } else rsPaint();
+  function rsAns(t,r,btn){
+    if(S.play.done || S.rs.lock) return;
+    var ok = (r===S.rs.queue[S.rs.i].region);
+    if(ok) sfx('tap'); else { S.play.misses++; showMiss(); }
+    if(btn) btn.style.borderColor = ok?'var(--ok)':'var(--bad)';
+    S.rs.lock=true;
+    setTimeout(function(){
+      S.rs.lock=false; if(btn) btn.style.borderColor='';
+      S.rs.i++;
+      if(S.rs.i>=S.rs.queue.length){ S.play.done=true; finishTask(); } else rsPaint();
+    },240);
   }
 
   /* ---------- minigame: Pitch Patrol (ears — tap HIGH, hold LOW) ----------
@@ -1854,7 +1951,7 @@
     setTimeout(function(){
       if(S.play.done || !$('rwp')) return;
       if(hit){
-        sfx('correct'); S.rw.lands++; rwStatus();
+        sfx('correct'); S.rw.lands++; rwStatus(); flash($('rwfield'));
         if(S.rw.lands>=S.rw.need){ S.play.done=true; setTimeout(finishTask,200); return; }
         S.rw.zw*=0.82; S.rw.speed*=1.15; rwNewZone(); rwPaint();
       } else { S.play.misses++; showMiss(); }
@@ -1872,7 +1969,7 @@
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div id="psbox" style="position:relative;height:200px;border-radius:14px;border:1px solid var(--cardb);background:rgba(8,20,36,.7);overflow:hidden">'
         + '<div id="pssub" style="position:absolute;font-size:40px;transform:translate(-50%,-50%);filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))">'+(t.flag||'🌍')+'</div>'
-        + '<div id="psframe" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:2px dashed rgba(255,255,255,.75);border-radius:10px"></div>'
+        + '<div id="psframe" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:2px dashed rgba(255,255,255,.75);border-radius:10px;transition:width .25s ease,height .25s ease,border-color .15s"></div>'
       + '</div>'
       + '<button class="btn globe" id="psshut" style="margin-top:12px">📸 Snap</button>';
     psStatus(); psFrame();
@@ -1910,7 +2007,7 @@
     $('mg').innerHTML='<div class="seqstatus" id="stst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div id="stfield" style="position:relative;height:150px;border-radius:14px;border:1px solid var(--cardb);background:rgba(235,166,31,.07);overflow:hidden;cursor:pointer;touch-action:manipulation">'
-        + '<div id="stbox" style="position:absolute;top:26px;height:96px;border:2.5px dashed var(--gold);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer"></div>'
+        + '<div id="stbox" style="position:absolute;top:26px;height:96px;border:2.5px dashed var(--gold);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer;transition:width .22s ease"></div>'
       + '</div>'
       + '<div class="ohint" style="margin-top:10px">Stamp INSIDE the sliding box — smudges cost time.</div>';
     stStatus();
@@ -1929,8 +2026,8 @@
   function stStatus(){ var e=$('stst'); if(e) e.innerHTML='Stamps <b>'+S.st2.stamps+'</b>/'+S.st2.need; }
   function stHit(){
     if(S.play.done) return;
-    sfx('correct'); S.st2.stamps++; stStatus();
-    var box=$('stbox'); if(box){ box.textContent='✅'; setTimeout(function(){ var b2=$('stbox'); if(b2) b2.textContent=''; },220); }
+    sfx('correct'); S.st2.stamps++; stStatus(); flash($('stfield'));
+    var box=$('stbox'); if(box){ box.textContent='✅'; popIn(box); setTimeout(function(){ var b2=$('stbox'); if(b2) b2.textContent=''; },220); }
     if(S.st2.stamps>=S.st2.need){ S.play.done=true; setTimeout(finishTask,200); return; }
     S.st2.w=Math.max(46, S.st2.w*0.82); S.st2.speed*=1.16;
   }
@@ -2279,8 +2376,11 @@
     var t=document.createElement('div'); t.textContent=msg;
     t.style.cssText='position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99;'
       +'background:#122a44;border:1px solid var(--cardb);color:var(--ink);font-weight:700;font-size:13px;'
-      +'padding:11px 16px;border-radius:12px;box-shadow:0 10px 30px -10px rgba(0,0,0,.7);max-width:90%;text-align:center;';
-    document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 3200);
+      +'padding:11px 16px;border-radius:12px;box-shadow:0 10px 30px -10px rgba(0,0,0,.7);max-width:90%;text-align:center;'
+      +'animation:rtgToast .28s cubic-bezier(.22,.9,.32,1);transition:opacity .35s ease;';
+    document.body.appendChild(t);
+    setTimeout(function(){ t.style.opacity='0'; }, 2800);
+    setTimeout(function(){ t.remove(); }, 3200);
   }
   function rpc(fn, args){ return sb.rpc(fn, args); }
 
