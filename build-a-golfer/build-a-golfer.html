@@ -4643,6 +4643,100 @@ function simNextRound(){
   }
   if(ce.roundsDone>=4) finalizeEvent();
 }
+/* ---- THE MOMENT: Sunday in contention → a popup offers to PLAY the final round yourself,
+   hole by hole with the Daily Challenge engine (signature-hole decisions included). Your played
+   score replaces the engine's final round; the field sims theirs as normal. Career mode only,
+   interactive play only (skip-to-end / headless / eliminated sims never pause). ---- */
+const MOMENT_MAJOR={gap:5,pos:10}, MOMENT_BIG={gap:3,pos:6}, MOMENT_REG={gap:2,pos:3};
+function momentInfo(ce){
+  if(!ce || ce.done || ce.roundsDone!==3 || S.daily) return null;
+  const evt=ce.evt;
+  if(evt.olympics || evt.teamcup) return null;          // special formats keep their own set pieces
+  const me=ce.players.find(o=>o.p.you); if(!me || !me.made) return null;
+  const alive=ce.players.filter(o=>o.made).sort((a,b)=>a.total-b.total);
+  const pos=alive.findIndex(o=>o.p.you)+1;
+  const gap=Math.round(me.total-alive[0].total);
+  const th=evt.major?MOMENT_MAJOR:(evt.big||evt.playoff)?MOMENT_BIG:MOMENT_REG;
+  if(!(gap<=th.gap && pos<=th.pos)) return null;
+  const margin=(pos===1&&alive[1])?Math.round(alive[1].total-me.total):0;
+  const rival=(pos===1?alive[1]:alive[0]);
+  return {pos, gap, margin, leaderName:rival?rival.p.name:'', major:!!evt.major};
+}
+function momentPosTxt(info){
+  if(info.pos===1) return info.gap<0||info.margin>0 ? `You LEAD by ${Math.max(1,info.margin)}` : 'You are tied for the lead';
+  if(info.gap===0) return 'You are tied for the lead';
+  return `You sit ${info.pos<=1?'':'T'}${info.pos}, ${info.gap} back of ${esc(info.leaderName)}`;
+}
+function momentPopup(ce, info){
+  const evt=ce.evt;
+  document.querySelectorAll('.momentov').forEach(n=>n.remove());
+  const ov=$(`<div class="momentov" style="position:fixed;inset:0;z-index:60;background:rgba(3,10,7,.92);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto">
+    <div style="max-width:430px;width:100%;background:linear-gradient(180deg,#0d2b1c,#07160e);border:1px solid var(--gold);border-radius:18px;padding:26px 22px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.65)">
+      <div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 THE MOMENT</span></div>
+      <h2 style="margin:12px 0 4px;font-size:24px">${esc(evt.name)}</h2>
+      <p class="lede" style="margin:4px 0 6px">Sunday. The final round${evt.major?' of a MAJOR':''}. ${momentPosTxt(info)} with 18 holes to play.</p>
+      <p class="small muted" style="margin:0 0 16px">Take the sticks and play every shot yourself — with the big calls on the signature holes — or let the simulation decide.</p>
+      <div class="mbtns" style="display:grid;gap:10px"></div>
+    </div></div>`);
+  const btns=ov.querySelector('.mbtns');
+  const play=$(`<button class="btn goldfill">⛳ Play the final round<span class="sub">Hole by hole, every decision is yours</span></button>`);
+  play.onclick=()=>{ ov.remove(); track('moment_play',{evt:evt.name,major:!!evt.major}); startMomentRound(ce, info); };
+  const sim=$(`<button class="btn ghost">Sim the round ▸</button>`);
+  sim.onclick=()=>{ ov.remove(); track('moment_sim',{evt:evt.name}); render(); };
+  btns.appendChild(play); btns.appendChild(sim);
+  document.body.appendChild(ov);
+  track('moment_offered',{evt:evt.name,major:!!evt.major,gap:info.gap,pos:info.pos});
+}
+// map a scheduled event to a playable DAILY_COURSES venue (EVENT_COURSE references those objects
+// directly, so identity recovers the internal key); unmapped events get a deterministic stand-in.
+function momentCourseKey(evtName){
+  const ec=EVENT_COURSE[evtName];
+  if(ec){ for(const k of Object.keys(DAILY_COURSES)) if(DAILY_COURSES[k]===ec) return k; }
+  const keys=Object.keys(DAILY_COURSES);
+  return keys[(dHash(evtName||'x')>>>0)%keys.length];
+}
+function startMomentRound(ce, info){
+  const key=momentCourseKey(ce.evt.name), c=DAILY_COURSES[key];
+  const p=buildPlayer(); const sk={}; CATS.forEach(cc=>sk[cc.k]=p[cc.k]);
+  // FAIRNESS calibration: playing the Moment must carry the same EXPECTED score as simming it —
+  // your edge comes from the decisions, not from switching engines. Estimate both engines' means
+  // for THIS player at THIS event and spread the gap across the holes as pin difficulty.
+  const me=ce.players.find(o=>o.p.you);
+  let sSum=0; for(let k=0;k<240;k++) sSum+=simRound(me.eo, me.p.clu, {major:ce.evt.major,big:ce.evt.big,finalRd:true,courseAdj:ce.courseAdj});
+  const diffs=dBaseDiffs(c), cond=['calm','breezy','windy'][(dHash(ce.evt.name)>>>2)%3];
+  let dSum=0; const K=50;
+  for(let k=0;k<K;k++){ let t=0; const rr=mulberry32((Math.random()*2147483647)>>>0);
+    for(let i=0;i<18;i++) t+=dSimHole(c.holes[i][0],c.holes[i][1],diffs[i],sk,c.fit,DCFG.COND[cond],'balanced',null,rr);
+    dSum+=t; }
+  let shift=(sSum/240 - dSum/K)/18; if(!isFinite(shift)) shift=0;
+  S.moment={idx:ce.idx, evtName:ce.evt.name, info, major:!!ce.evt.major};
+  S.daily=false; S.special=false; S.dailyLegend=null;
+  S.dailyCourse=key; S.dailyCond=cond; S.dailyPlan='balanced';
+  S.dailySeed=(Math.random()*2147483647)>>>0; S.dailyAttempt=0;
+  S.dailySkills=sk; S.dailyOvr=Math.round(p.skill);
+  S.dailyDiffs=diffs.map(d=>d+shift);
+  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=true; S.dailyMullAvail=false; S.dailyResult=null;
+  S.dailyAuto=false; S.dailyViewHole=null; S.dailyRevealN=null; clearDailyTimer();
+  S.dailyClaimed=true;   // borrowed Daily plumbing must never touch Daily Challenge attempts/records
+  S.screen='dailyround'; render(); scheduleDailyAdvance();
+}
+function finishMomentRound(){
+  const total=S.dailyHoles.reduce((s,h)=>s+h.toPar,0);
+  const ce=S.curEvt, m=S.moment;
+  track('moment_finished',{evt:m&&m.evtName,total});
+  S.moment=null; clearDailyTimer();
+  const holes=S.dailyHoles.slice();
+  S.dailyHoles=[]; S.dailyResult=null; S.dailyRevealN=null; S.dailyViewHole=null; S.dailyAttacks={};
+  if(!ce || ce.done || ce.roundsDone!==3){ S.screen='season'; render(); return; }   // safety: state moved on underneath
+  // Sunday plays out: YOUR round is the one you just played, the field sims theirs
+  const r=ce.roundsDone;
+  ce.players.forEach(o=>{ if(!o.made) return;
+    const s=o.p.you ? total : simRound(o.eo,o.p.clu,{major:ce.evt.major,big:ce.evt.big,finalRd:true,courseAdj:ce.courseAdj});
+    o.rounds[r]=s; o.total+=s; });
+  ce.roundsDone=4; ce._momentHoles=holes; ce._momentTotal=total;
+  finalizeEvent();
+  S.screen='season'; render();   // lands on the final leaderboard; win/playoff celebrations flow as normal
+}
 // one sudden-death hole, lower is better, high variance so a single hole is genuinely random
 function playoffHole(eo,clu,major){ return gauss()*1.15 - (eo-80)*0.035 + (major?0.1:0); }
 // sudden-death playoff among the players tied for the lead; returns the winner + holes played
@@ -5649,6 +5743,13 @@ function scrSeason(){
     return;
   }
 
+  // THE MOMENT: heading into Sunday in contention → pause and offer to play the final round.
+  // Interactive career play only; skip-to-end / headless sims never reach this scheduler.
+  if(!ce.done && ce.roundsDone===3 && !ce._momentAsked){
+    ce._momentAsked=true;
+    const mi=momentInfo(ce);
+    if(mi){ clearTimeout(seasonTimer); momentPopup(ce, mi); return; }
+  }
   // scheduling
   if(reduce){
     if(!ce.done){ while(!ce.done) simNextRound(); render(); return; }
@@ -7822,8 +7923,10 @@ function consumeLegendToken(id){
   if(t && !t.used){ t.used=true; LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush(); }
 }
 function finishDailyRound(){
+  if(S.moment) return finishMomentRound();   // a career-mode Moment: the score feeds the tournament, not the Daily
   if(S.special) return finishSpotlightRound();
   if(S.dailyResult)return;
+  if(!S.dailyHoles||!S.dailyHoles.length)return;   // nothing played (e.g. a stray call after a Moment cleaned up) → never record an empty round
   const total=S.dailyHoles.reduce((s,h)=>s+h.toPar,0), c=DAILY_COURSES[S.dailyCourse];
   // PRACTICE: show the result but record NOTHING — no course record, no bag_daily write, no board
   // submission, no streak/daily-stats/achievements, and a Legend Token round doesn't spend the token.
@@ -8066,10 +8169,16 @@ function scrDailyRound(){
   const total=counted.reduce((s,h)=>s+h.toPar,0), through=counted.length;
   const strokesThrough=counted.reduce((s,h)=>s+h.par+h.toPar,0);   // actual strokes hit so far (par-through + to-par)
   const i=played.length, done=(i>=18)&&!revealing;
+  if(S.moment){   // career-mode Moment: this round IS the tournament's final round
+    add($(`<div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 THE MOMENT · Final round · ${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)}</span></div>`));
+    add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
+    add($(`<div class="center small" style="margin:0 0 4px;color:var(--gold);font-weight:700">${esc(S.moment.evtName)} · ${momentPosTxt(S.moment.info).replace(/<[^>]*>/g,'')} at the start of the day</div>`));
+  } else {
   add($(`<div class="center"><span class="tag">${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)} · ${S.dailyPlan}</span></div>`));
   add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
   const av=dTourAvg(c); const beating=(through>0)&&(total < av*(through/18));
   add($(`<div class="center small" style="margin:0 0 4px;color:${through===0?'var(--muted)':(beating?'#35d6a0':'#e9a23b')};font-weight:700">Tour average ${dAvgTxt(av)}, beat it to win${through>0?` · ${beating?'ahead of pace ✓':'behind pace'}`:''}</div>`));
+  }
   const lg=dLegend(); if(lg) add(lg);
   const vh=(S.dailyViewHole!=null && S.dailyViewHole<played.length)?S.dailyViewHole:played.length-1;   // which hole's shot log is shown
   const strip=$(`<div class="dcard" style="max-width:600px;margin:6px auto 0"></div>`);

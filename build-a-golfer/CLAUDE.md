@@ -4003,6 +4003,55 @@ allows Google Fonts, or self-host Anton.*
   showcase screenshots (island 17, Amen-corner pond, burn 18, wide Kapalua, tight Harbour Town, coastal
   Olympic dogleg); a full live daily round regresses clean. Zero page errors. Deployed to /golf.
 
+- **CS144 — Career MOMENTS: jump in and play the final round when you're in contention.** Owner: "add
+  moments into career mode... if they are in contention in a major or a tournament, to jump in and watch
+  the rest of the round... only on the final day of tournaments, and a pop up should appear explaining the
+  moment, and asking the user if they want to play or sim. If they play, they will go into the hole by hole
+  simulation and have decisions on shots like they would in daily challenge mode."
+  • **Trigger.** After round 3 of any career stroke-play event (majors, signature, playoffs, regular — not
+    the Games/team cups, which keep their own set pieces), `momentInfo(ce)` checks whether you're genuinely
+    in contention, with looser thresholds the bigger the stage: MAJOR gap ≤5 & pos ≤10 · BIG/signature/
+    playoff gap ≤3 & pos ≤6 · regular gap ≤2 & pos ≤3. Requires you made the cut. Fires only in the
+    INTERACTIVE season loop (`scrSeason`, once per event via `ce._momentAsked`) — skip-to-end, headless
+    sims, elimination fast-forwards and `simNextRound` itself never pause, so Auto Sim's "hands-off"
+    promise and every existing test path are untouched.
+  • **The popup** (`momentPopup`, full-screen `.momentov` overlay): red 🔥 THE MOMENT tag, the event name,
+    a situation line ("Sunday. The final round of a MAJOR. You sit T2, 2 back of Keegan Bradley with 18
+    holes to play."), and two buttons — "⛳ Play the final round · Hole by hole, every decision is yours"
+    (gold) or "Sim the round ▸" (ghost, resumes the scheduler exactly as before).
+  • **Playing it** (`startMomentRound`) borrows the entire Daily Challenge round engine WITHOUT touching
+    the Daily: your CAREER build's live skills (incl. caddie base boosts) become `S.dailySkills`, the venue
+    comes from `momentCourseKey` (EVENT_COURSE references DAILY_COURSES objects by identity → the real
+    mapped venue for 28 events, e.g. The Magnolia Invitational plays at the Augusta-analog; unmapped events
+    get a deterministic stand-in course), conditions are seeded from the event name, and you get the full
+    hole-by-hole flow — TOURTRACE tracer, shot-by-shot reveal, signature-hole Attack/Safe decisions —
+    re-skinned with a red "🔥 THE MOMENT · Final round · {course} · {cond}" tag and a gold standings line
+    instead of the tour-average target. No mulligan (it's tournament golf). `S.moment` carries the event;
+    `S.daily` stays false; `S.dailyClaimed=true` so the borrowed plumbing can never touch attempts/records.
+  • **Fairness calibration:** playing must carry the same EXPECTED score as simming — your edge comes from
+    the decisions, not from switching engines. `startMomentRound` estimates both engines' means for YOUR
+    build at THIS event (240 `simRound` draws vs 50 × 18-hole daily sims) and spreads the gap across the 18
+    holes as pin difficulty (`shift`, NaN-guarded). Verified: shifted daily mean lands within ~0.9 strokes
+    of the sim mean (tolerance 1.2) — same expectation, human variance.
+  • **Feeding it back** (`finishMomentRound`, routed as the FIRST branch of `finishDailyRound`): your
+    played 18-hole total becomes your round-4 score, the field sims theirs with the normal engine,
+    `finalizeEvent()` runs — so playoffs, win celebrations, money, OWGR, achievements and headlines all
+    flow exactly as if the engine had produced your round. `ce._momentHoles/_momentTotal` are kept on the
+    event for posterity. All borrowed daily state is cleared; a safety bail covers the state having moved
+    on underneath.
+  • **Hardening (this round):** `finishDailyRound` now also refuses to run on an EMPTY round (a stray
+    second call after a Moment cleaned up could previously have written a garbage 0-hole daily result);
+    the calibration shift is `isFinite`-guarded.
+  • Verified in Playwright (hv7_test): threshold unit checks (all 7 cases), event→course mapping (mapped +
+    stand-in), popup fires on a rigged contention Sunday with correct copy, SIM path resumes and completes
+    with no re-ask, PLAY path enters `dailyround` with `S.moment` set / daily isolated / re-skinned header,
+    the full auto-finished round feeds rounds[3] (= `_momentTotal`), finalizes the event and lands back on
+    the season leaderboard with Daily storage byte-identical, calibration sanity within tolerance, headless
+    loops never popup, and the practice-mode daily regression still passes. Zero page errors. NOTE: an
+    earlier test failure ("+54 round") was a TEST-FIXTURE bug (slots seeded as `{v:}` instead of
+    `{value:}` → NaN skills → every hole clamps to +3 = 54), not a game bug — the NaN guards above were
+    added as insurance anyway. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
