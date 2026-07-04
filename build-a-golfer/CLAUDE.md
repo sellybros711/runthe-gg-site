@@ -3662,6 +3662,14 @@ allows Google Fonts, or self-host Anton.*
   stat-lock locks the taken stat, refuses a re-take, and still allows a different stat; zero page errors.
   Deployed to /golf.
 
+- **CS131 — gold winner row on the final tournament leaderboard.** Owner (screenshot): the winner's trophy
+  should be gold and the winner's row should have a gold glow. `liveRow` (live/final board) + `lbRow` (recap
+  board) now tag the solo winner with a `winner` class; CSS `.lb.winner` gives a gold gradient + a gold ring
+  and a soft pulsing gold glow (`@keyframes winGlow`, reduced-motion static), `.lb.winner .pos` turns the
+  trophy SVG gold (it's drawn in `currentColor`) with a drop-shadow, and the name goes gold. Verified in
+  Playwright at the final board: winner `.pos` color = gold, gold box-shadow present, trophy SVG rendered,
+  zero errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
