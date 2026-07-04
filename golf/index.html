@@ -5961,18 +5961,10 @@ function scrSummary(){
     LS.set(acctKey('bag_daily'),{date:S.dailySeed,done:true,result:{name:me.name,ovr,net:ec.net,money:t.money,moneyRank,N,wins:t.wins,majors:t.majors,best:t.best}});}
   const circuitYear=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):(S.year||1);
   add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':(S.circuitMode?('Legend Circuit · Year '+circuitYear+' complete'):(S.year>1?('Career Mode · Year '+S.year+' complete'):'Season complete'))}</span></div>`));
-  // "how did my season rank amongst every season ever posted", resolves async (see loadSeasonRank);
-  // simply omitted until it lands (or if the backend never answers), same fail-open style as elsewhere.
-  if(!S.daily && !S.circuitMode && S.seasonRank){
-    const sr=S.seasonRank;
-    const rankNode=add($(`<div class="center" style="margin:10px 0 2px">
-      <div class="scout" style="display:inline-block;padding:12px 18px">
-        <div class="small muted" style="letter-spacing:.1em;text-transform:uppercase;font-weight:800">Global leaderboard</div>
-        <div style="font:800 16px/1.3 var(--body);color:var(--gold);margin-top:5px">Your season ranked #${Number(sr.rank).toLocaleString()} of ${Number(sr.total).toLocaleString()} worldwide</div>
-        <button class="btn gold lb-open" style="width:auto;margin-top:9px;padding:9px 16px;font-size:12px">🏆 View Leaderboard</button>
-      </div></div>`));
-    rankNode.querySelector('.lb-open').onclick=()=>{S.overlay='leaderboard';render();};
-  }
+  // season highlights masthead (#6) leads the summary now — the year's story up top.
+  // (The global leaderboard rank moved down into the left column, below the Full Season Recap button.)
+  const HL=(!S.daily)?seasonHeadlines({t,moneyRank,N,ec,year:S.year||1}):null;
+  if(HL) add($(headlinesHTML(HL)));
   // Race to the Cup outcome, champion, eliminated, or finished the season in the standings
   if(!S.daily){
     const el=S.season.eliminated, champ=S.season.cupChampion;
@@ -6025,8 +6017,6 @@ function scrSummary(){
     add(seasonRepNode(achPoints()-gained, S.freshAch));   // status bar on top → achievements reveal one by one, rep climbs in sync
   }
   if(sbSignedIn() && S.freshRep){ add($(repUpHTML(S.freshRep))); }
-  // season headlines (#6): newspaper-style recap of the year's story
-  const HL=(!S.daily)?seasonHeadlines({t,moneyRank,N,ec,year:S.year||1}):null;
   // five headline stats: Earnings · Profit (two money tiles) over Tour Rank · Top 10's · Wins
   const pcol=ec.net>=0?'#35d6a0':'#E14A33';
   const tilesA=$(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin-bottom:10px"></div>`);
@@ -6105,7 +6095,6 @@ function scrSummary(){
       <div style="font:800 19px/1.15 var(--body);color:${col};margin-top:6px">${tie?esc(winName)+' retain the Cup':(mineWon?'🏆 ':'')+esc(winName)+' win the Cup'}</div>
       <div class="small muted" style="margin-top:4px">${sub}</div></div></div>`));
   }
-  if(HL) add($(headlinesHTML(HL)));
   if(S.freshRivalOutgrown) add($(rivalOutgrownHTML(S.freshRivalOutgrown)));
   if(S.freshRival) add($(rivalFormedHTML(S.freshRival)));
   if(S.rivalOutcome) add($(rivalCardHTML(S.rivalOutcome)));
@@ -6186,6 +6175,18 @@ function scrSummary(){
   left.appendChild(board);
   const recapBtn=$(`<button class="btn gold" style="margin-top:10px">Full Season Recap<span class="sub">Every event, leaderboard by leaderboard</span></button>`);
   recapBtn.onclick=()=>{S.recapEvent=null; S.recapYear=S.year||1; S.screen='recap'; render();}; left.appendChild(recapBtn);
+  // global leaderboard rank — below the Full Season Recap button, above the career stats (owner-placed).
+  // Resolves async (loadSeasonRank); omitted until it lands / if the backend never answers (fail-open).
+  if(!S.daily && !S.circuitMode && S.seasonRank){
+    const sr=S.seasonRank;
+    const rankNode=$(`<div class="scout" style="margin-top:12px;text-align:center;padding:12px 18px">
+      <div class="small muted" style="letter-spacing:.1em;text-transform:uppercase;font-weight:800">Global leaderboard</div>
+      <div style="font:800 16px/1.3 var(--body);color:var(--gold);margin-top:5px">Your season ranked #${Number(sr.rank).toLocaleString()} of ${Number(sr.total).toLocaleString()} worldwide</div>
+      <button class="btn gold lb-open" style="width:auto;margin-top:9px;padding:9px 16px;font-size:12px">🏆 View Leaderboard</button>
+    </div>`);
+    rankNode.querySelector('.lb-open').onclick=()=>{S.overlay='leaderboard';render();};
+    left.appendChild(rankNode);
+  }
   if(!S.daily && S.career && S.career.seasons.length>1){
     const c=S.career, ccol=c.net>=0?'#35d6a0':'#E14A33';
     left.appendChild($(`<h2 style="margin:16px 0 8px">Career · ${c.seasons.length} years (through Year ${S.year})</h2>`));
@@ -6466,10 +6467,10 @@ function scrOffseason(){
       bt.onclick=()=>offTake(cat.k); grid.appendChild(bt);
     });
     left.appendChild(grid);
-    if(os.reSpins>0){ const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${os.reSpins} left</button>`); re.onclick=offReSpin; left.appendChild(re); }
+    if(os.reSpins>0){ const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${os.reSpins} left<span class="sub">Pass on this golfer for a new one. You still must take a skill from whoever lands.</span></button>`); re.onclick=offReSpin; left.appendChild(re); }
     else left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left, take one of ${S.current.name}'s skills.</div>`));
   } else if(!S.spinning){
-    if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel</button>`); spin.onclick=offSpin; left.appendChild(spin); }
+    if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel<span class="sub">Once you spin, you must take one of that golfer's skills. You don't have to use every spin — you can start the season anytime.</span></button>`); spin.onclick=offSpin; left.appendChild(spin); }
     else left.appendChild($(`<div class="small muted center" style="padding:10px 0">All ${os.maxChanges} changes used.</div>`));
     const cont=$(`<button class="btn goldfill" style="margin-top:10px">Start Year ${S.circuitMode?circuitYear3:S.year} ▸<span class="sub">${os.changes>0?'Run the new season':'Keep your bag, run it as-is'}</span></button>`);
     cont.onclick=finishOffseason;
