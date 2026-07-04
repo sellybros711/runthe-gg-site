@@ -3702,6 +3702,17 @@ allows Google Fonts, or self-host Anton.*
   both off-season buttons carry the new subtext, zero page errors; screenshot confirms Highlights leading the
   summary. Deployed to /golf.
 
+- **CS134 — floating "scroll down to continue" cue on the year summary.** Owner: players don't realize they
+  must scroll to the bottom of the (long) summary to reach the advance button. Added `setupSummaryScrollCue`:
+  the primary advance button (`Continue to Year N` / `Finish Career` / `Finish Legend Circuit`, or the daily
+  `Build Another Golfer`) now carries `id="sum-advance"`, and a fixed gold pill (`.scrollcue`, bottom-center,
+  safe-area aware, bobbing ▾) reads "Scroll down · <that action>". An IntersectionObserver toggles the pill's
+  `.show` class so it's visible only while the button is off-screen and hides once it scrolls into view;
+  tapping it smooth-scrolls to the button and pulses it (`.cuepulse`). Fail-open (no IntersectionObserver →
+  just shows). Verified in Playwright on a 430×720 phone viewport: pill shows at top with the correct next
+  action, tapping scrolls the button into view + pill hides + button pulses, zero page errors; screenshot
+  confirms the pill. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
