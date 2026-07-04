@@ -8200,6 +8200,35 @@ function scrDailyRound(){
   }
   }
   const lg=revealing?null:dLegend(); if(lg) add(lg);
+  // NEXT-HOLE INFO + DECISIONS AT THE TOP (owner: on mobile the decision used to render below the
+  // window + shot log + scorecard, i.e. below the fold — the user had no idea a decision came up).
+  // The tracer window sits underneath; mulligan / skip-to-end stay at the bottom as utilities.
+  if(!revealing && !done){
+    const h=c.holes[i], sig=c.sig.find(s=>s[0]===i+1);
+    add($(`<div class="scout" style="max-width:560px;margin:8px auto 0;text-align:center"><div style="font-weight:800;font-size:16px">Hole ${i+1} · Par ${h[0]} · ${h[1]}y</div>${h[2]?`<div class="small muted">${esc(h[2])}</div>`:''}${sig?`<div class="small" style="color:var(--gold);margin-top:4px">⛳ Signature: ${esc(sig[1])}</div>`:''}</div>`));
+    add($(`<div style="height:10px"></div>`));
+    if(sig){
+      // signature hole, a course-aware risk/reward scenario; auto-play pauses for your call
+      const sc=dScenario(S.dailyCourse,i,total,dTourAvg(c));
+      add($(`<div class="scout" style="max-width:560px;margin:0 auto;text-align:center;border-color:var(--gold)">
+        ${sc.sit?`<div class="small" style="color:#e9a23b;font-weight:800;margin-bottom:7px">${esc(sc.sit)}</div>`:''}
+        <div class="small" style="text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--gold)">${esc(sc.tag)}</div>
+        <div style="font-size:14px;line-height:1.45;margin-top:6px">${esc(sc.prompt)}</div></div>`));
+      add($(`<div style="height:10px"></div>`));
+      sc.opts.forEach((o,idx)=>{
+        const btn=$(`<button class="btn choice" style="max-width:520px;margin:0 auto">${o.agg?'⚡ ':'🛡 '}${esc(o.l)}<span class="sub">${esc(o.s)}</span></button>`);
+        btn.onclick=()=>playDailyHole(o.agg); add(btn);
+        if(idx===0) add($(`<div class="ordiv">or</div>`));   // make it obvious these are the two choices
+      });
+    } else if(S.dailyAuto){
+      add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Playing your round…</div>`));
+      const pause=$(`<button class="btn ghost" style="max-width:520px;margin:12px auto 0">⏸ Pause</button>`); pause.onclick=dailyPause; add(pause);
+    } else {
+      const b=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Play hole ${i+1} ▸</button>`); b.onclick=()=>playDailyHole(); add(b);
+      const res=$(`<button class="btn blue" style="max-width:520px;margin:10px auto 0">▶ Resume auto-play</button>`); res.onclick=dailyResume; add(res);
+    }
+    add($(`<div style="height:6px"></div>`));
+  }
   const vh=(S.dailyViewHole!=null && S.dailyViewHole<played.length)?S.dailyViewHole:played.length-1;   // which hole's shot log is shown
   if(played.length){ const liveReveal=(vh===lastIdx&&revealN!=null)?revealN:null;
     const hvn=hvNode(played[vh], liveReveal, vh, S.dailyCourse);   // broadcast tracer hole view
@@ -8267,29 +8296,9 @@ function scrDailyRound(){
     if(S.dailyAuto){ const pause=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">⏸ Pause</button>`); pause.onclick=dailyPause; add(pause); }
     const af=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">⏭ Skip to the end</button>`); af.onclick=autoFinishDaily; add(af);
   } else if(!done){
-    const h=c.holes[i], sig=c.sig.find(s=>s[0]===i+1);
-    add($(`<div class="scout" style="max-width:560px;margin:0 auto;text-align:center"><div style="font-weight:800;font-size:16px">Hole ${i+1} · Par ${h[0]} · ${h[1]}y</div>${h[2]?`<div class="small muted">${esc(h[2])}</div>`:''}${sig?`<div class="small" style="color:var(--gold);margin-top:4px">⛳ Signature: ${esc(sig[1])}</div>`:''}</div>`));
-    add($(`<div style="height:10px"></div>`));
-    if(sig){
-      // signature hole, a course-aware risk/reward scenario; auto-play pauses for your call
-      const sc=dScenario(S.dailyCourse,i,total,dTourAvg(c));
-      add($(`<div class="scout" style="max-width:560px;margin:0 auto;text-align:center;border-color:var(--gold)">
-        ${sc.sit?`<div class="small" style="color:#e9a23b;font-weight:800;margin-bottom:7px">${esc(sc.sit)}</div>`:''}
-        <div class="small" style="text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--gold)">${esc(sc.tag)}</div>
-        <div style="font-size:14px;line-height:1.45;margin-top:6px">${esc(sc.prompt)}</div></div>`));
-      add($(`<div style="height:10px"></div>`));
-      sc.opts.forEach((o,idx)=>{
-        const btn=$(`<button class="btn choice" style="max-width:520px;margin:0 auto">${o.agg?'⚡ ':'🛡 '}${esc(o.l)}<span class="sub">${esc(o.s)}</span></button>`);
-        btn.onclick=()=>playDailyHole(o.agg); add(btn);
-        if(idx===0) add($(`<div class="ordiv">or</div>`));   // make it obvious these are the two choices
-      });
-    } else if(S.dailyAuto){
-      add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Playing your round…</div>`));
-      const pause=$(`<button class="btn ghost" style="max-width:520px;margin:12px auto 0">⏸ Pause</button>`); pause.onclick=dailyPause; add(pause);
-    } else {
-      const b=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Play hole ${i+1} ▸</button>`); b.onclick=()=>playDailyHole(); add(b);
-      const res=$(`<button class="btn blue" style="max-width:520px;margin:10px auto 0">▶ Resume auto-play</button>`); res.onclick=dailyResume; add(res);
-    }
+    // the next-hole card + decision buttons now render at the TOP (above the window) — only the
+    // utility actions live down here
+    const sig=c.sig.find(s=>s[0]===i+1);
     // mulligan (streak reward) only when the round is paused / at a decision, never mid-flow
     if(S.dailyMullAvail&&!S.dailyMullUsed&&played.length&&(!S.dailyAuto||sig)){ const m=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">↺ Mulligan hole ${played[played.length-1].n}<span class="sub">Re-roll your last hole, one per round (streak reward)</span></button>`); m.onclick=dailyMulligan; add(m); }
     const af=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">⏭ Skip to the end</button>`); af.onclick=autoFinishDaily; add(af);

@@ -4111,6 +4111,21 @@ allows Google Fonts, or self-host Anton.*
   CS141-era internals removed in CS142 (`focusHoles`/`h2hBuildFocus`) — superseded by hv5/hv6/hv8, not a
   regression. Deployed to /golf.
 
+- **CS147 — next-hole info + decisions moved to the TOP of the round screen.** Owner (screenshot with
+  arrows): "I want to move all of the moment and decision information and the decisions to the top. The
+  user on mobile currently has no idea it comes up." Between holes, the next-hole card (hole · par ·
+  yards · signature note), the signature-hole scenario card and the two decision buttons — plus the manual
+  "Play hole N ▸ / Resume auto-play" and paused-auto controls — used to render BELOW the tracer window,
+  shot log and scorecard strip, i.e. below the fold on a phone: when auto-play paused for a decision,
+  nothing visible changed. That whole block now renders at the TOP of `scrDailyRound`, directly under the
+  score header, with the tracer window (showing the finished previous hole) beneath it. Utility actions
+  (Mulligan, Skip to the end) stay at the bottom. Applies to the Daily, Moments, Spotlight and Legend
+  rounds alike. Verified in Playwright on a 430×930 viewport: at the first signature-hole pause the
+  scenario + both choice buttons are fully visible with NO scrolling (choice top 707px < 930), above the
+  window in DOM order; after deciding, the next hole's action (another decision, or the Play-hole button
+  when paused) also renders on top; mulligan/skip stay below; a full practice round still completes; hv8
+  (one-window HUD), hv7 (Moments) and the practice suite re-run green, zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
