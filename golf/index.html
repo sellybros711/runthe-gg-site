@@ -537,6 +537,7 @@ window.GA_ID='G-L29P5MRWKE';
   .hvbrow{display:flex;align-items:center;gap:6px;background:rgba(8,17,26,.72);border:1px solid rgba(255,255,255,.16);
     border-radius:8px;padding:4px 8px;font:700 10.5px/1 var(--body);color:#eef4ee}
   .hvbrow.mine{border-color:var(--gold)}
+  .hvbrow .cdot{width:7px;height:7px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
   .hvbrow .rk{color:#b9c6bd;font-family:var(--mono);font-size:9.5px}
   .hvbrow .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:92px}
   .hvbrow .tp{font-family:var(--mono);font-weight:800;margin-left:auto;padding-left:6px}
@@ -6856,8 +6857,8 @@ function hvFlightMs(d){ return Math.max(700,Math.min(2000,Math.round(650+d*3.4))
 // TOURCAST-style flavor numbers, derived from the shot (deterministic, no rng)
 function hvSpeed(d){ return Math.round(Math.max(56,Math.min(184, 46+d*0.43))); }
 function hvApex(d){ return Math.round(Math.max(18,Math.min(132, 12+d*0.36))); }
-function hvCamFor(g, plots, idx){   // camera: full hole, or the green close-up for the putting phase
-  const p=plots[idx];
+function hvCamFor(g, plots, idx){ return hvCamFor2(g, plots[idx]); }
+function hvCamFor2(g, p){   // camera: full hole, or the green close-up for the putting phase
   if(p && (p.k==='putt'||p.k==='hole')){
     // ADAPTIVE close-up: frame the ball AND the cup with a margin, zooming as tight as the putt
     // allows — a tap-in gets a much closer camera than a 40-footer, so short putts finally read.
@@ -7110,8 +7111,11 @@ function hvTerrain(g, seedN, B){
 }
 // one shot's static (already-played) tracer + marker. `small` shrinks markers/strokes for the
 // green close-up camera (a zoomed viewBox scales everything, so chips drawn full-size read huge)
-function hvDoneShot(g,p,dim,small){
-  const col=dim?'rgba(15,77,68,.55)':'rgba(10,94,83,.9)', w=(dim?1.6:2)*(small?0.45:1);   // darker teal reads on the bright daylight course
+function hvDoneShot(g,p,dim,small,pcol){
+  // pcol = the player's assigned ball color (multi-ball H2H); default = the single-player teal
+  const base=pcol||'#0a5e53';
+  const col=`${base}${dim?'8c':'e6'}`;   // hex alpha: dim .55 / bright .9
+  const w=(dim?1.6:2)*(small?0.45:1);
   let s='';
   if(p.k==='putt'||p.k==='hole'){ s+=`<path d="${hvRollD(g,{land:p.from,rest:p.rest})}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`; }
   else if(p.k==='pen'){ const A=hvProj(g,p.from[0],p.from[1]),B=hvProj(g,p.rest[0],p.rest[1]);
@@ -7120,27 +7124,31 @@ function hvDoneShot(g,p,dim,small){
     s+=`<path d="${hvRollD(g,p)}" fill="none" stroke="${col}" stroke-width="${(1.2*(small?0.5:1)).toFixed(1)}" stroke-dasharray="2 3"/>`; }
   if(!p.hole){ const [mx,my]=hvProj(g,p.rest[0],p.rest[1]);
     const mr=small?2.7:6.5, fs=small?3.6:8, sw=small?0.6:1.3;
-    s+=`<g><circle cx="${(mx+0.8).toFixed(1)}" cy="${(my+1).toFixed(1)}" r="${mr}" fill="#04150a" opacity=".35"/><circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="${mr}" fill="${p.splash?'#8a2f22':'#0a1626'}" stroke="${dim?'#3d5a52':'#06A291'}" stroke-width="${sw}"/><text x="${mx.toFixed(1)}" y="${(my+fs*0.36).toFixed(1)}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#fff" font-family="inherit">${p.i+1}</text></g>`; }
+    s+=`<g><circle cx="${(mx+0.8).toFixed(1)}" cy="${(my+1).toFixed(1)}" r="${mr}" fill="#04150a" opacity=".35"/><circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="${mr}" fill="${p.splash?'#8a2f22':'#0a1626'}" stroke="${pcol||(dim?'#3d5a52':'#06A291')}" stroke-width="${sw}"/><text x="${mx.toFixed(1)}" y="${(my+fs*0.36).toFixed(1)}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#fff" font-family="inherit">${p.i+1}</text></g>`; }
   return s;
 }
-// the in-flight shot's elements (hidden tracer + ball + shadow), the animator drives them
-function hvLiveShot(g,p,small){
+// the in-flight shot's elements (hidden tracer + ball + shadow), the animator drives them.
+// pcol tints the tracer glow / roll / ball ring to the player's assigned color (multi-ball H2H).
+function hvLiveShot(g,p,small,pcol){
   const A=hvProj(g,p.from[0],p.from[1]);
+  const glow=pcol?`${pcol}88`:'rgba(235,166,31,.45)';
+  const ballR=small?2.0:3.2;   // the ball starts smaller under the green close-up camera
   let s='';
-  if(p.k==='putt'||p.k==='hole'){ s+=`<path id="hv-roll" d="${hvRollD(g,{land:p.from,rest:p.rest})}" fill="none" stroke="#fff" stroke-width="${small?0.9:2}" stroke-linecap="round" opacity=".9"/>`; }
+  if(p.k==='putt'||p.k==='hole'){ s+=`<path id="hv-roll" d="${hvRollD(g,{land:p.from,rest:p.rest})}" fill="none" stroke="${pcol||'#fff'}" stroke-width="${small?0.9:2}" stroke-linecap="round" opacity=".9"/>`; }
   else if(p.k==='pen'){ s+=`<path id="hv-roll" d="M ${A[0]} ${A[1]} L ${hvProj(g,p.rest[0],p.rest[1]).map(v=>v.toFixed(1)).join(' ')}" fill="none" stroke="#274238" stroke-width="1.3" stroke-dasharray="3 4"/>`; }
-  else { s+=`<path id="hv-traceg" d="${hvPathD(g,p)}" fill="none" stroke="rgba(235,166,31,.45)" stroke-width="5" stroke-linecap="round"/>`;
+  else { s+=`<path id="hv-traceg" d="${hvPathD(g,p)}" fill="none" stroke="${glow}" stroke-width="5" stroke-linecap="round"/>`;
     s+=`<path id="hv-trace" d="${hvPathD(g,p)}" fill="none" stroke="#ffffff" stroke-width="2.1" stroke-linecap="round"/>`;
-    s+=`<path id="hv-roll" d="${hvRollD(g,p)}" fill="none" stroke="#ffffff" stroke-width="1.4" opacity=".8"/>`; }
+    s+=`<path id="hv-roll" d="${hvRollD(g,p)}" fill="none" stroke="${pcol||'#ffffff'}" stroke-width="1.4" opacity=".8"/>`; }
   s+=`<circle id="hv-splash" cx="0" cy="0" r="0" fill="none" stroke="#7fd4ff" stroke-width="2" opacity="0"/>`;
   s+=`<circle id="hv-puff" cx="0" cy="0" r="0" fill="none" stroke="#eaf5ee" stroke-width="1.5" opacity="0"/>`;
   s+=`<ellipse id="hv-shadow" cx="${A[0].toFixed(1)}" cy="${(A[1]+2).toFixed(1)}" rx="3" ry="1.6" fill="#000" opacity="0"/>`;
-  s+=`<circle id="hv-ball" cx="${A[0].toFixed(1)}" cy="${A[1].toFixed(1)}" r="3.2" fill="url(#hvball)" stroke="rgba(8,22,14,.5)" stroke-width=".55"/>`;
-  s+=`<circle id="hv-sink" cx="0" cy="0" r="0" fill="none" stroke="#EBA61F" stroke-width="2" opacity="0"/>`;
+  s+=`<circle id="hv-ball" cx="${A[0].toFixed(1)}" cy="${A[1].toFixed(1)}" r="${ballR}" fill="url(#hvball)" stroke="${pcol||'rgba(8,22,14,.5)'}" stroke-width="${pcol?'.9':'.55'}"/>`;
+  s+=`<circle id="hv-sink" cx="0" cy="0" r="0" fill="none" stroke="${pcol||'#EBA61F'}" stroke-width="2" opacity="0"/>`;
   return s;
 }
-// stat strip above the graphic (SHOT n · dist · to-hole + ball speed / apex flavor)
-function hvStatHTML(s, holed){
+// stat strip above the graphic (SHOT n · dist · to-hole + ball speed / apex flavor).
+// who/pcol add a player identity chip in the player's ball color (multi-ball H2H).
+function hvStatHTML(s, holed, who, pcol){
   if(!s) return '';
   const isFull=(s.k==='tee'||s.k==='app'||s.k==='adv'||s.k==='chip');
   const d=isFull?Math.max(12,(s.fromY||60)-(s.toY||0)):0;
@@ -7152,31 +7160,39 @@ function hvStatHTML(s, holed){
   if(isFull){ const toTxt=(s.toY!=null&&s.toY>0)?`${s.toY} YDS`:(s.ft!=null?dFeet(s.ft).replace(' ft ','FT ').replace(' in.','IN').toUpperCase():'');
     if(toTxt) right=`TO HOLE <b>${toTxt}</b>`; }
   const flavor=(isFull&&d>60)?`<span class="hvchip">BALL SPEED <b>${hvSpeed(s.dr||d)} MPH</b></span><span class="hvchip">APEX <b>${hvApex(s.dr||d)} FT</b></span>`:'';
-  return `<div class="hvstat"><span class="hvchip gold">SHOT ${s.n}</span><span class="hvchip"><b>${mid}</b></span>${right?`<span class="hvchip">${right}</span>`:''}${flavor}${holed&&s.tag?`<span class="hvchip res">${esc(s.tag).toUpperCase()}</span>`:''}</div>`;
+  const whoChip=who?`<span class="hvchip" style="color:${pcol||'var(--oncard)'};border-color:${pcol||'var(--panelb)'}">${esc(String(who).toUpperCase())}</span>`:'';
+  return `<div class="hvstat">${whoChip}<span class="hvchip gold">SHOT ${s.n}</span><span class="hvchip"><b>${mid}</b></span>${right?`<span class="hvchip">${right}</span>`:''}${flavor}${holed&&s.tag?`<span class="hvchip res">${esc(s.tag).toUpperCase()}</span>`:''}</div>`;
 }
-/* ---- the animator: real-ball physics feel (launch/hang/curve/land/bounce/roll) ---- */
+/* ---- the animator: real-ball physics feel (launch/hang/curve/land/bounce/roll).
+   p = the plot being played, pPrev = the previous step's plot (drives the camera-from box).
+   The ball SHRINKS as the camera zooms into the green (bScale reads the live viewBox) so it
+   stops swallowing the putting surface on the close-up. ---- */
 let _hvA={key:null, raf:0};
-function hvKick(key, g, plots, idx, reduce){
+function hvKick(key, g, p, pPrev, reduce, opts){
   if(_hvA.key===key) return;
   _hvA.key=key; if(_hvA.raf) cancelAnimationFrame(_hvA.raf);
-  const p=plots[idx]; if(!p) return;
+  if(!p) return;
+  opts=opts||{};
   const q=(id)=>document.getElementById(id);
+  const bScale=()=>{ const sv=q('hv-svg'); if(!sv) return 1;
+    const w=parseFloat((sv.getAttribute('viewBox')||'').split(' ')[2])||HV_W;
+    return Math.max(0.42, Math.min(1, (w/HV_W)*1.55)); };
   const setFinal=()=>{ const t=q('hv-trace'),r=q('hv-roll'),b=q('hv-ball'),sh=q('hv-shadow'),pf=q('hv-puff'),sv=q('hv-svg');
     if(t){t.style.strokeDasharray='none';t.style.strokeDashoffset='0';}
     if(r){r.style.strokeDasharray=(p.k==='pen')?'3 4':'none';r.style.strokeDashoffset='0';}
-    if(b){ const R=hvProj(g,p.rest[0],p.rest[1]); b.setAttribute('cx',R[0]);b.setAttribute('cy',R[1]);b.setAttribute('r',p.hole?0:3.2); }
-    if(sh) sh.setAttribute('opacity','0'); if(pf) pf.setAttribute('opacity','0');
-    if(sv) sv.setAttribute('viewBox', hvCamFor(g,plots,idx).join(' ')); };   // reduced-motion users still get the right camera
+    if(sv) sv.setAttribute('viewBox', hvCamFor2(g,p).join(' '));   // reduced-motion users still get the right camera
+    if(b){ const R=hvProj(g,p.rest[0],p.rest[1]); b.setAttribute('cx',R[0]);b.setAttribute('cy',R[1]);b.setAttribute('r',p.hole?0:(3.2*bScale()).toFixed(2)); }
+    if(sh) sh.setAttribute('opacity','0'); if(pf) pf.setAttribute('opacity','0'); };
   if(reduce){ setFinal(); return; }
   const isFly=(p.k==='tee'||p.k==='app'||p.k==='adv'||p.k==='chip');
   const flyMs=isFly?hvFlightMs(p.dist):0;
   const groundMs=isFly?(p.dist>40?520:340):0;
-  const rollMs=(p.k==='putt'||p.k==='hole')?Math.max(650,Math.min(1900,700+Math.min(70,(p.k==='hole'?(plots[idx]&&plots[idx].dist*3||8):p.dist*3))*13)):0;
+  const rollMs=(p.k==='putt'||p.k==='hole')?Math.max(650,Math.min(1900,700+Math.min(70,p.dist*3||8)*13)):0;
   const penMs=(p.k==='pen')?700:0;
   const camMs=460;
   const t0=performance.now();
   const A=hvProj(g,p.from[0],p.from[1]), C=hvCtrl(g,p), B=hvProj(g,p.land[0],p.land[1]), R=hvProj(g,p.rest[0],p.rest[1]);
-  const camFrom=hvCamFor(g,plots,Math.max(0,idx-1)), camTo=hvCamFor(g,plots,idx);
+  const camFrom=hvCamFor2(g,pPrev||null), camTo=hvCamFor2(g,p);
   const camMove=camFrom.join(',')!==camTo.join(',');
   // putts hold at address until the green close-up camera has arrived — previously the roll ran
   // DURING the camera tween, so a short putt was already in the cup before you could see it
@@ -7199,7 +7215,7 @@ function hvKick(key, g, plots, idx, reduce){
         const x=(1-te)*(1-te)*A[0]+2*(1-te)*te*C[0]+te*te*B[0];
         const y=(1-te)*(1-te)*A[1]+2*(1-te)*te*C[1]+te*te*B[1];
         const h=4*te*(1-te)*(p.k==='tee'?1:(p.k==='chip'?0.45:0.75))*Math.min(1,p.dist/240+0.35);
-        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',y.toFixed(1)); ball.setAttribute('r',(3.2+h*4.6).toFixed(2));
+        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',y.toFixed(1)); ball.setAttribute('r',((3.2+h*4.6)*bScale()).toFixed(2));
         if(sh){ sh.setAttribute('cx',(x+2+h*7).toFixed(1)); sh.setAttribute('cy',(y+2+h*6).toFixed(1)); sh.setAttribute('opacity',(0.28*Math.min(1,h*3)).toFixed(2)); sh.setAttribute('rx',(3-h*1.2).toFixed(2)); }
         if(trace){ trace.style.strokeDashoffset=traceLen*(1-te); const tg=q('hv-traceg'); if(tg) tg.style.strokeDashoffset=traceLen*(1-te); }
       } else if(p.splash){
@@ -7211,7 +7227,7 @@ function hvKick(key, g, plots, idx, reduce){
         const t=(el-flyMs)/groundMs, te=1-Math.pow(1-t,2.2);       // decelerating bounce + roll-out
         const x=B[0]+(R[0]-B[0])*te, y=B[1]+(R[1]-B[1])*te;
         const hop=(t<0.55)?Math.abs(Math.sin(t*3*Math.PI/0.55))*(0.16*(1-t/0.55)):0;
-        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',(y-hop*8).toFixed(1)); ball.setAttribute('r',(3.2+hop*2.4).toFixed(2));
+        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',(y-hop*8).toFixed(1)); ball.setAttribute('r',((3.2+hop*2.4)*bScale()).toFixed(2));
         if(sh) sh.setAttribute('opacity',(hop>0.02?0.2:0).toFixed(2)), sh.setAttribute('cx',(x+1.5).toFixed(1)), sh.setAttribute('cy',(y+1.5).toFixed(1));
         const pf=q('hv-puff'), pt=(el-flyMs)/300;   // touchdown puff ring at the landing spot
         if(pf){ if(pt<=1){ pf.setAttribute('cx',B[0]);pf.setAttribute('cy',B[1]);pf.setAttribute('r',(2+pt*7).toFixed(1));pf.setAttribute('opacity',(0.5*(1-pt)).toFixed(2)); } else pf.setAttribute('opacity','0'); }
@@ -7219,7 +7235,7 @@ function hvKick(key, g, plots, idx, reduce){
       } else { setFinal(); _hvA.raf=0; return; }
     } else if(p.k==='pen'){
       const t=Math.min(1,el/penMs);
-      ball.setAttribute('cx',R[0]); ball.setAttribute('cy',(R[1]-(1-t)*8).toFixed(1)); ball.setAttribute('r','3.2');
+      ball.setAttribute('cx',R[0]); ball.setAttribute('cy',(R[1]-(1-t)*8).toFixed(1)); ball.setAttribute('r',(3.2*bScale()).toFixed(2));
       ball.setAttribute('opacity',t.toFixed(2));
       if(t>=1){ ball.setAttribute('opacity','1'); setFinal(); _hvA.raf=0; return; }
     } else {   // putt / hole-out: wait for the camera, then a pure roll with decel, then the drop
@@ -7231,8 +7247,9 @@ function hvKick(key, g, plots, idx, reduce){
       ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',y.toFixed(1));
       if(rollEl) rollEl.style.strokeDashoffset=rollLen*(1-te);
       if(p.hole && t>=1){
-        const st=Math.min(1,(ep-rollMs)/560); ball.setAttribute('r',(3.2*(1-st)).toFixed(2));   // slower, more visible drop
-        const sk2=q('hv-sink'); if(sk2){ sk2.setAttribute('cx',R[0]);sk2.setAttribute('cy',R[1]);sk2.setAttribute('r',(2+st*7).toFixed(1));sk2.setAttribute('stroke-width','1.1');sk2.setAttribute('opacity',(0.95*(1-st)).toFixed(2)); }
+        const bsc=bScale();
+        const st=Math.min(1,(ep-rollMs)/560); ball.setAttribute('r',(3.2*bsc*(1-st)).toFixed(2));   // slower, more visible drop
+        const sk2=q('hv-sink'); if(sk2){ sk2.setAttribute('cx',R[0]);sk2.setAttribute('cy',R[1]);sk2.setAttribute('r',((2+st*7)*Math.max(bsc,0.55)).toFixed(1));sk2.setAttribute('stroke-width','1.1');sk2.setAttribute('opacity',(0.95*(1-st)).toFixed(2)); }
         if(st>=1){ _hvA.raf=0; return; }
       } else if(t>=1){ _hvA.raf=0; return; }
     }
@@ -7240,11 +7257,46 @@ function hvKick(key, g, plots, idx, reduce){
   }
   _hvA.raf=requestAnimationFrame(frame);
 }
-// build the whole hole-view node. revealN null → review mode (everything static)
-function hvNode(hole, revealN, holeIdx, courseKey){
+// build the whole hole-view node. revealN null → review mode (everything static).
+// multi = {shots:[per-unit shot arrays], order:[{u,i} play order], cols:[per-unit ball colors],
+// names:[per-unit labels]} → MULTI-BALL mode: every competitor's ball on one map, revealed in
+// real "away plays first" order; revealN then counts STEPS through the merged order.
+function hvNode(hole, revealN, holeIdx, courseKey, multi){
+  const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
+  if(multi){
+    const order=multi.order||[];
+    if(!order.length || !multi.shots.every(ss=>ss.length&&ss[0].k)) return null;
+    if(!hole._hvm){ const g=hvGeom(seedN, hole.par, hole.yards||400);
+      hole._hvm={g, plots:multi.shots.map(ss=>hvPlots(g,ss,seedN))}; }
+    const {g, plots}=hole._hvm;
+    const total=order.length;
+    const live=(revealN!=null && revealN<=total);
+    const showN=live?revealN:total;
+    const cur=order[showN-1], prev=showN>1?order[showN-2]:null;
+    const curP=cur?plots[cur.u][cur.i]:null, prevP=prev?plots[prev.u][prev.i]:null;
+    const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+    const camTarget=(live&&curP)?hvCamFor2(g,curP):[0,0,HV_W,HV_H];
+    const small=camTarget[2]<HV_W*0.6;
+    const inCam=(p)=>{ const [x,y]=hvProj(g,p.rest[0],p.rest[1]);
+      return x>=camTarget[0]-8&&x<=camTarget[0]+camTarget[2]+8&&y>=camTarget[1]-8&&y<=camTarget[1]+camTarget[3]+8; };
+    let inner='';
+    for(let k=0;k<showN-1;k++){ const r=order[k], p=plots[r.u][r.i];
+      inner+=hvDoneShot(g,p,true,small&&inCam(p),multi.cols[r.u]); }
+    const holed=(showN>=total);
+    if(live && curP) inner+=hvLiveShot(g,curP,small,multi.cols[cur.u]);
+    else if(curP) inner+=hvDoneShot(g,curP,false,small&&inCam(curP),multi.cols[cur.u]);
+    const cam=live?hvCamFor2(g,prevP):[0,0,HV_W,HV_H];
+    const sh=cur?multi.shots[cur.u][cur.i]:null;
+    const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>${hvStatHTML(sh, holed, multi.names?multi.names[cur.u]:null, multi.cols[cur.u])}
+      <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvTerrain(g,seedN,hvBiome(courseKey))}${inner}</svg></div></div>`);
+    if(live && curP){
+      const key=(courseKey||'')+':m'+holeIdx+':'+showN;
+      requestAnimationFrame(()=>hvKick(key, g, curP, prevP, reduce));
+    }
+    return node;
+  }
   const shots=hole.shots||[];
   if(!shots.length || !shots[0].k) return null;   // old/uninstrumented data → no graphic
-  const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
   if(!hole._hv){ const g=hvGeom(seedN, hole.par, hole.yards||hole.yd||((DAILY_COURSES[courseKey]||{}).holes||[])[holeIdx]?.[1]||400);
     hole._hv={g, plots:hvPlots(g, shots, seedN)}; }
   const {g, plots}=hole._hv;
@@ -7268,7 +7320,7 @@ function hvNode(hole, revealN, holeIdx, courseKey){
     <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvTerrain(g,seedN,hvBiome(courseKey))}${inner}</svg></div></div>`);
   if(live && plots[idx]){
     const key=(courseKey||'')+':'+holeIdx+':'+showN;
-    requestAnimationFrame(()=>hvKick(key, g, plots, idx, reduce));
+    requestAnimationFrame(()=>hvKick(key, g, plots[idx], idx>0?plots[idx-1]:null, reduce));
   }
   return node;
 }
@@ -9162,22 +9214,40 @@ function h2hEnterPreview(){
   S.screen='h2hpreview'; render();
 }
 const H2H_SHOT_MS=620, H2H_HOLE_DWELL=880;   // shot-by-shot pacing (mirrors the daily's feel)
-// build the shot-by-shot round for the golfer YOU watch: your own drafted golfer, or (in scramble)
-// your team's combined golfer. Reuses the daily's dShotSeq so the play-by-play reads identically.
-function h2hBuildFocus(){
-  const seed=S.h2h.seed, holes=S.h2h.holes, mode=S.h2h.mode;
-  const key=h2hCourseKey(seed), course=DAILY_COURSES[key], meP=S.h2h.players.find(p=>p.user_id===h2hUid());
-  let sk, label, scores;
-  if(mode==='scramble'){ sk=S.h2h.myUnit.combined; label='Your team'; scores=S.h2h.myUnit.scores.slice(); }
-  else { sk=meP.draft.skills; label='Your golfer';
-    const kk=h2hCourseKey(seed), c2=DAILY_COURSES[kk], d2=dBaseDiffs(c2), cond=DCFG.COND[h2hCondName(seed)];
-    scores=[]; for(let i=0;i<holes;i++) scores.push(h2hHoleScore(sk,c2,kk,d2,cond,seed,i)); }
-  const bh=h2hBuildHash(sk);
-  S.h2h.focusLabel=label;
-  S.h2h.focusHoles=[];
-  for(let i=0;i<holes;i++){ const h=course.holes[i], par=h[0], yards=h[1], toPar=scores[i];
-    const rng=mulberry32(((seed>>>0)^dHash(key)^Math.imul(i+1,0x9e3779b1)^bh^0x54075407)>>>0);
-    S.h2h.focusHoles.push({n:i+1, par, yards, toPar, shots:dShotSeq(par,yards,par+toPar,rng,sk,{})});
+// ball colors: YOU are always blue; opponents take red, then cyan, then yellow (owner spec)
+const H2H_BALL_COLS=['#3b82f6','#ef4444','#22d3ee','#eab308'];
+// remaining distance to the hole (yards) after a shot — drives the real "away plays first" order
+function h2hRemOf(s){ if(!s || s.k==='hole' || s.lie==='hole') return 0;
+  if(s.toY!=null && s.toY>0) return s.toY;
+  if(s.toFt!=null) return Math.max(0.15, s.toFt/3);
+  if(s.ft!=null) return Math.max(0.15, s.ft/3);
+  return 6; }
+/* MULTI-BALL round: every unit (player or team ball) gets its own shot-by-shot sequence for
+   every hole, plus a merged play ORDER like a real round — everyone tees off in seat order,
+   then whoever is farthest from the hole plays next until every ball is in. Deterministic
+   (seed + build hash + unit id) so both clients watch the identical broadcast. */
+function h2hBuildPlay(){
+  const seed=S.h2h.seed, holes=S.h2h.holes, units=S.h2h.units;
+  const key=h2hCourseKey(seed), course=DAILY_COURSES[key];
+  const myIdx=units.findIndex(u=>u.members.some(p=>p.user_id===h2hUid()));
+  let ci=1;
+  S.h2h.unitCols=units.map((u,ui)=>ui===myIdx?H2H_BALL_COLS[0]:H2H_BALL_COLS[Math.min(ci++,3)]);
+  S.h2h.unitNames=units.map(u=>u.kind==='team'?`Team ${(u.id|0)+1}`:String(u.label||''));
+  S.h2h.playHoles=[];
+  for(let i=0;i<holes;i++){
+    const h=course.holes[i], par=h[0], yards=h[1];
+    const uShots=units.map(u=>{ const sk=u.kind==='team'?(u.combined||u.dispSkills):u.dispSkills;
+      const rng=mulberry32(((seed>>>0)^dHash(key)^Math.imul(i+1,0x9e3779b1)^h2hBuildHash(sk)^Math.imul((u.id|0)+1,0x2545)^0x54075407)>>>0);
+      return dShotSeq(par,yards,par+u.scores[i],rng,sk,{}); });
+    const idx=units.map(()=>0), rem=units.map(()=>1e9), order=[];
+    units.forEach((u,ui)=>{ order.push({u:ui,i:0}); rem[ui]=h2hRemOf(uShots[ui][0]); idx[ui]=1; });   // tee shots in seat order
+    for(let guard=0; guard<200; guard++){                     // then: farthest from the hole plays next
+      let pick=-1, best=-1;
+      for(let ui=0;ui<units.length;ui++){ if(idx[ui]>=uShots[ui].length) continue; if(rem[ui]>best){best=rem[ui];pick=ui;} }
+      if(pick<0) break;
+      order.push({u:pick, i:idx[pick]}); rem[pick]=h2hRemOf(uShots[pick][idx[pick]]); idx[pick]++;
+    }
+    S.h2h.playHoles.push({n:i+1, par, yards, shots:uShots, order});
   }
 }
 function h2hBeginWatch(){
@@ -9188,8 +9258,8 @@ function h2hBeginWatch(){
   S.h2h.units.forEach(u=>{ u.scores=[]; u.total=0; for(let i=0;i<holes;i++){ const s=u.holeScore(i); u.scores.push(s); u.total+=s; } });
   h2hResolve();
   S.h2h.myUnit=S.h2h.units.find(u=>u.members.some(p=>p.user_id===h2hUid()));
-  h2hBuildFocus();
-  S.h2h.wHole=0; S.h2h.wShot=0; S.h2h.poN=0; S.h2h.reported=false; S.h2h.watchDone=false;
+  h2hBuildPlay();
+  S.h2h.wHole=0; S.h2h.wStep=0; S.h2h.poN=0; S.h2h.reported=false; S.h2h.watchDone=false;
   track('h2h_watch_start',{mode:S.h2h.mode}); S.screen='h2hwatch'; render(); h2hWatchStep();
 }
 function h2hResolve(){
@@ -9219,13 +9289,14 @@ function h2hWatchStep(){
     if(S.h2h.poN<po.length){ S.h2h.poN++; render(); _h2hWatchTimer=setTimeout(h2hWatchStep, H2H_HOLE_DWELL); return; }
     S.h2h.watchDone=true; render(); h2hFinishWatch(); return;
   }
-  const hole=S.h2h.focusHoles[S.h2h.wHole], nsh=hole.shots.length;
-  if(S.h2h.wShot<nsh){                       // reveal the next shot
-    S.h2h.wShot++; render();
-    const holed=S.h2h.wShot>=nsh;
-    _h2hWatchTimer=setTimeout(h2hWatchStep, holed?Math.max(H2H_HOLE_DWELL,hvShotMs(hole.shots[S.h2h.wShot-1])):hvShotMs(hole.shots[S.h2h.wShot-1]));
-  } else {                                    // ball holed → advance to the next hole
-    S.h2h.wHole++; S.h2h.wShot=0; render();
+  const hole=S.h2h.playHoles[S.h2h.wHole], nst=hole.order.length;
+  if(S.h2h.wStep<nst){                       // reveal the next shot in the merged play order
+    S.h2h.wStep++; render();
+    const cur=hole.order[S.h2h.wStep-1], sh=hole.shots[cur.u][cur.i];
+    const allHoled=S.h2h.wStep>=nst;
+    _h2hWatchTimer=setTimeout(h2hWatchStep, allHoled?Math.max(H2H_HOLE_DWELL,hvShotMs(sh)):hvShotMs(sh));
+  } else {                                    // every ball is in → advance to the next hole
+    S.h2h.wHole++; S.h2h.wStep=0; render();
     _h2hWatchTimer=setTimeout(h2hWatchStep, 60);
   }
 }
@@ -9442,26 +9513,25 @@ function scrH2HWatch(){
   // current shot's description float ON it as translucent chips (owner's reference style). The
   // old separate standings column + cumulative shot log are gone during play.
   if(inPlay){
-    const h=S.h2h.focusHoles[S.h2h.wHole];
-    add($(`<div class="small muted" style="text-align:center;margin:8px 0 4px">${esc(S.h2h.focusLabel)}</div>`));
-    const hvn=h2hCourseKey?hvNode(h, S.h2h.wShot, S.h2h.wHole, h2hCourseKey(S.h2h.seed)):null;   // broadcast tracer hole view
+    const h=S.h2h.playHoles[S.h2h.wHole];
+    const multi={shots:h.shots, order:h.order, cols:S.h2h.unitCols, names:S.h2h.unitNames};
+    const hvn=h2hCourseKey?hvNode(h, S.h2h.wStep, S.h2h.wHole, h2hCourseKey(S.h2h.seed), multi):null;   // every ball on one map
     if(hvn){
       const shell=hvn.querySelector('.hvshell');
       shell.appendChild($(`<div class="hvob hvhole">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
       const bd=$(`<div class="hvob hvboard"><div class="hvbcap">THRU ${played} · ${holes} HOLES</div></div>`);
-      const rows=S.h2h.units.map(u=>({u, tp:h2hSum(u.scores,played)})).sort((a,b)=>a.tp-b.tp);
+      const rows=S.h2h.units.map((u,ui)=>({u, ui, tp:h2hSum(u.scores,played)})).sort((a,b)=>a.tp-b.tp);
       rows.forEach((r,i)=>{ const mine=r.u.members.some(p=>p.user_id===h2hUid());
-        const nm=r.u.kind==='team'?`Team ${(r.u.id|0)+1}`:String(r.u.label||'');
-        bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="rk">${i+1}</span><span class="nm">${esc(nm)}</span><span class="tp" style="color:${r.tp<0?'#4be3a8':r.tp>0?'#ff9d8f':'#e8efe9'}">${h2hTpTxt(r.tp)}</span></div>`));
+        bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="cdot" style="background:${S.h2h.unitCols[r.ui]}"></span><span class="rk">${i+1}</span><span class="nm">${esc(S.h2h.unitNames[r.ui])}</span><span class="tp" style="color:${r.tp<0?'#4be3a8':r.tp>0?'#ff9d8f':'#e8efe9'}">${h2hTpTxt(r.tp)}</span></div>`));
       });
       shell.appendChild(bd);
-      // ONE clear shot description that swaps to the next as the shots simulate
-      const si=Math.max(0, Math.min(S.h2h.wShot||1, h.shots.length)-1);
-      const st=h.shots[si];
-      if(st && st.d) shell.appendChild($(`<div class="hvob hvdesc">${esc(st.d)}</div>`));
+      // ONE clear shot description that swaps to whoever is playing as the shots simulate
+      const cur=h.order[Math.max(0,Math.min(S.h2h.wStep||1,h.order.length)-1)];
+      const st=cur?h.shots[cur.u][cur.i]:null;
+      if(st && st.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${S.h2h.unitCols[cur.u]}">${esc(S.h2h.unitNames[cur.u])}</b> · ${esc(st.d)}</div>`));
       add(hvn);
     } else {
-      add(dShotPanel(h, S.h2h.wShot));   // no graphic available → old text panel fallback
+      add($(`<div class="center muted" style="padding:24px 8px">Playing…</div>`));
     }
   } else {
   add($(`<h1 class="center" style="font-size:22px;margin:8px 0 2px">${done?'Final':'Live'} · ${done?holes:played}/${holes} holes</h1>`));
