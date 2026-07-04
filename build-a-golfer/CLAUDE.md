@@ -3767,6 +3767,44 @@ allows Google Fonts, or self-host Anton.*
   1/2/3 + green close-up + HOLED chip; H2H watch renders + animates + skip-to-result intact; daily
   skip-hole/auto-finish/reduced-motion all clean; zero page errors everywhere. Deployed to /golf.
 
+- **CS137 — FICTIONALIZATION SHIPPED (all courses, tournaments, cups) + TourTrace branding.** Owner
+  approved the RENAME-SPEC names ("move forward and push to the live game") and asked to rename the
+  TOURCAST-style view to our own name as the featured view. Three-pass implementation:
+  • **Pass 1 (courses):** all 39 DAILY_COURSES rewritten in place — new display names/locations (Magnolia
+    Hollow, Graystone Cove, The Auld Links at Carrickmoor, Grindstone, Ravenwood Black…), 39 new blurbs
+    (course character kept, real architects/history/people removed), all ~117 signature-hole lines rewritten,
+    protected hole nicknames replaced (new flora set at Magnolia Hollow, scots set at Carrickmoor, Plowlines/
+    Gauntlet/Thimble/Chasm/Fangs…). Internal course KEYS unchanged (server rows, records, seeds all intact —
+    a mid-pass bug where the global rename hit the 10 dual-use keys, e.g. "Quail Hollow Club", was caught by
+    a key-integrity audit and every key position restored; verified all 39 keys + 16 DSIG_HAZ keys intact).
+  • **Pass 2 (events/cups/venues):** global longest-first rename of the entire schedule — majors (The
+    Magnolia Invitational / The Championship / The National Open / The Links Championship), The Stadium
+    Classic, all sponsor-branded events (BMW/FedEx/Deere/Zurich/Sony/Wyndham/… → Crossroads/Memphis/Quad
+    Cities/Bayou/Island/Piedmont…), full Legend Circuit slate, oppo events, EVENT_COURSE standalone venues,
+    and the cups: FedEx Cup→**Tour Cup**, Ryder Cup→**Atlantic Cup**, Presidents Cup→**Nations Cup**,
+    Schwab Cup→**Legends Cup**. COURSEFIT/EVENT_COURSE lookups keyed by event name stayed consistent
+    automatically. Cosmetics de-personed (Sunday Red→Victory Red, Poulter Pink→Matchplay Pink, Hogan
+    Grey→Heritage Grey, Masters Green→Invitational Green; Argyle reqText de-Payned).
+  • **Pass 3 (code):** majorTheme regexes updated (/Magnolia/, /National Open/, /Links Championship/) +
+    the green jacket SVG recolored to a **burgundy Champion Blazer** (Augusta trade dress removed) and the
+    Claret Jug/Wanamaker labels → Links Flagon / Championship Cup; "the The" replace-doubling fixed;
+    achievement names (Magnolia Royalty, Magnolia Champion); the not-affiliated disclaimer now states all
+    tournaments/venues/cups are fictional; `/Players/i` achievement+entry-cap regexes → /Stadium Classic/i.
+    **`LEGACY_EVENT_ALIAS` + `normalizeCareerNames()`** normalize old event names in persisted careers
+    (majorStats keys merged, winsList renamed) at resumeCareer/viewEndedCareer, so an in-flight career keeps
+    its majors, Grand Slam eligibility and guest-major exemptions. lt.maj uses abbreviated keys (unaffected);
+    MAJOR_KEYS renamed consistently with fresh season data.
+  • **TourTrace:** the hole view is now branded **TOURTRACE** (wordmark strip + pulsing LIVE chip / REPLAY
+    tag) and remains the default, featured presentation of live play in the daily + H2H.
+  Verified in Playwright: a generated season schedule + venues contain zero real names (21 events incl. the
+  4 renamed majors + Atlantic Cup); majorTheme returns the burgundy blazer/flagon/cup themes; a LEGACY
+  career with old-named Grand Slam majorStats still qualifies after normalization; the daily preview/round
+  shows Graystone Cove with the TOURTRACE LIVE brand while the internal key stays "Pebble Beach Golf Links";
+  all 39 H2H course-picker names fictional; a full strong-build season completes (4 wins, fictional names
+  throughout the summary) — zero page errors everywhere. Player roster + caddie names deliberately left
+  real (separate right-of-publicity decision, flagged in RENAME-SPEC §7). courses.json (internal doc) not
+  updated — the game file is canonical. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

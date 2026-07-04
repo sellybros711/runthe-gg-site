@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <!-- RunTheTour, solo season · v2 · RunThePitch skin -->
 <title>Run The Tour · A 30-Year Golf Career Simulation · RunThe.GG</title>
-<meta name="description" content="Draft one skill from each of golf's greatest, build your own player, then live their career, up to 30 years on tour. Chase majors, the Ryder Cup, the Presidents Cup and international medals, climb the World Ranking, and watch your golfer rise, peak and retire a legend. A free RunThe.GG game.">
+<meta name="description" content="Draft one skill from each of golf's greatest, build your own player, then live their career, up to 30 years on tour. Chase majors, the Atlantic Cup, the Nations Cup and international medals, climb the World Ranking, and watch your golfer rise, peak and retire a legend. A free RunThe.GG game.">
 <meta name="theme-color" content="#11432f">
 <link rel="canonical" href="https://runthe.gg/golf/">
 <!-- Open Graph / Twitter. Absolute URLs for the runthe.gg/golf deploy; og.png sits beside this file. -->
@@ -13,14 +13,14 @@
 <meta property="og:site_name" content="RunThe.GG">
 <meta property="og:url" content="https://runthe.gg/golf/">
 <meta property="og:title" content="Run The Tour, A 30-Year Career Simulation">
-<meta property="og:description" content="Build a golfer, then live their career. Up to 30 years on tour: majors, the Ryder Cup, the Summer Games, and a legacy on the leaderboard.">
+<meta property="og:description" content="Build a golfer, then live their career. Up to 30 years on tour: majors, the Atlantic Cup, the Summer Games, and a legacy on the leaderboard.">
 <meta property="og:image" content="https://runthe.gg/golf/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="Run The Tour, a 30-year golf career simulation">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Run The Tour, A 30-Year Career Simulation">
-<meta name="twitter:description" content="Build a golfer, then live their career. Up to 30 years on tour: majors, the Ryder Cup, the Summer Games, and a legacy on the leaderboard.">
+<meta name="twitter:description" content="Build a golfer, then live their career. Up to 30 years on tour: majors, the Atlantic Cup, the Summer Games, and a legacy on the leaderboard.">
 <meta name="twitter:image" content="https://runthe.gg/golf/og.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 76'%3E%3Cpath d='M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z' fill='%2311432f' stroke='%23cda24a' stroke-width='3'/%3E%3Cpath d='M26 17 v36' stroke='%23e9d8ac' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M26 18 h16 l-4 5 4 5 h-16 z' fill='%23EBA61F'/%3E%3Cellipse cx='32' cy='57' rx='17' ry='5.4' fill='none' stroke='%23cda54a' stroke-width='1.6'/%3E%3Ccircle cx='38' cy='57' r='2.2' fill='%23f4ecd9'/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -131,7 +131,7 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes marq{to{transform:translateX(-50%)}}
   .screen{max-width:600px; margin:0 auto; padding:18px 16px 22px; position:relative}
   .screen.wide{max-width:1140px}
-  /* Ryder/Presidents Cup running scoreboard, pinned to the top of the viewport while the
+  /* Ryder/Nations Cup running scoreboard, pinned to the top of the viewport while the
      match-by-match session cards below it scroll, so the score never leaves view. */
   .cupsticky{position:sticky; top:0; z-index:6; margin:0 -16px 4px; padding:calc(8px + env(safe-area-inset-top, 0px)) 16px 6px;
     background:#06200f; border-bottom:1px solid var(--line); box-shadow:0 8px 14px -10px rgba(0,0,0,.55)}
@@ -532,6 +532,14 @@ window.GA_ID='G-L29P5MRWKE';
   .hvchip b{color:var(--oncard);font-family:var(--mono)}
   .hvchip.gold{color:#1a1206;background:linear-gradient(180deg,#f6c944,#e39a12);border-color:rgba(0,0,0,.2);font-weight:800}
   .hvchip.res{color:var(--gold);border-color:var(--gold);font-weight:800}
+  .hvbrand{display:flex;align-items:center;justify-content:space-between;margin:0 2px 6px}
+  .ttmark{font:800 12px/1 var(--body);letter-spacing:.22em;color:var(--cream, #F4E3C9)}
+  .ttmark b{color:var(--gold)}
+  .ttlive{display:inline-flex;align-items:center;gap:5px;font:800 9.5px/1 var(--body);letter-spacing:.14em;color:#ff6b5e}
+  .ttdot{width:6px;height:6px;border-radius:50%;background:#ff6b5e;animation:ttpulse 1.4s ease-in-out infinite}
+  .ttrep{font:800 9.5px/1 var(--body);letter-spacing:.14em;color:var(--muted)}
+  @keyframes ttpulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @media (prefers-reduced-motion:reduce){ .ttdot{animation:none} }
 
   .sbar{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line);
     border:1px solid var(--line); border-radius:13px; overflow:hidden; margin-bottom:14px}
@@ -759,7 +767,7 @@ function seasonNet(t){const gross=t.money, caddie=gross*caddieFeePct(), agent=gr
    Red → Gold → White → Blue → Black (championship). Each badge has up to 5
    thresholds; crossing one promotes you to that tee. Metrics accumulate in
    bag_career.lt and never reset between careers. */
-const MAJOR_KEYS={'The Masters':'masters','The Championship':'champ','U.S. Open':'usopen','The Open':'open'};
+const MAJOR_KEYS={'The Magnolia Invitational':'masters','The Championship':'champ','The National Open':'usopen','The Links Championship':'open'};
 const TEE_TIERS=[
   {key:'red',  name:'Red Tees',   c:'#D23B36'},
   {key:'gold', name:'Gold Tees',  c:'#D7A328'},
@@ -773,10 +781,10 @@ const BADGES=[
   {id:'frontrun', e:'📋', t:'Front Runner',      cat:'Winning',     d:'Finish #1 on the season earnings list.',      tiers:[1,3,8,20,45],             get:m=>m.moneyLeaderSeasons},
   // Majors
   {id:'major',    e:'⛳', t:'Major Champion',     cat:'Majors',      d:'Win major championships.',                    tiers:[1,6,18,45,110],           get:m=>m.majors},
-  {id:'masters',  e:'🟢', t:'Green Jacket',       cat:'Majors',      d:'Win The Masters.',                            tiers:[1,3,8,20,45],             get:m=>m.maj.masters},
-  {id:'wanamaker',e:'🏆', t:'Wanamaker',          cat:'Majors',      d:'Win The Championship.',                       tiers:[1,3,8,20,45],             get:m=>m.maj.champ},
-  {id:'usopen',   e:'🇺🇸', t:'National Open',      cat:'Majors',      d:'Win the U.S. Open.',                          tiers:[1,3,8,20,45],             get:m=>m.maj.usopen},
-  {id:'theopen',  e:'🏺', t:'Claret Jug',         cat:'Majors',      d:'Win The Open.',                               tiers:[1,3,8,20,45],             get:m=>m.maj.open},
+  {id:'masters',  e:'🟢', t:'Champion Blazer',       cat:'Majors',      d:'Win The Magnolia Invitational.',                            tiers:[1,3,8,20,45],             get:m=>m.maj.masters},
+  {id:'wanamaker',e:'🏆', t:'Championship Cup',          cat:'Majors',      d:'Win The Championship.',                       tiers:[1,3,8,20,45],             get:m=>m.maj.champ},
+  {id:'usopen',   e:'🇺🇸', t:'National Open',      cat:'Majors',      d:'Win The National Open.',                          tiers:[1,3,8,20,45],             get:m=>m.maj.usopen},
+  {id:'theopen',  e:'🏺', t:'Links Flagon',         cat:'Majors',      d:'Win The Links Championship.',                               tiers:[1,3,8,20,45],             get:m=>m.maj.open},
   {id:'cslam',    e:'👑', t:'Career Grand Slam',  cat:'Majors',      d:'Collect all four majors, Black: all four in one career.', tiers:[1,2,3,4,5], get:m=>m.careerSlams>0?5:Math.min(4,m.distinctMajors), fmt:v=>v>=5?'Slam':v+' / 4', noNum:true},
   {id:'sslam',    e:'🌟', t:'Single-Season Slam', cat:'Majors',      d:'Win all four majors in one season.',          tiers:[1,2,3,5,8],               get:m=>m.slamSeasons},
   // Consistency
@@ -855,11 +863,11 @@ function badgeCard(b,m){ const v=b.get(m); const lvl=badgeLevel(b,m); const max=
 // UNLOCKABLE colours, each a DISTINCT hue (never a shade of a basic) tied to real golf lore. Shared by
 // shirt + hat. Unlocks are derived from lifetime metrics + Tour Rep, so nothing extra is persisted.
 const COSMETIC_SHIRTS=[
-  {id:'red',        m:'#d2342e', s:'#a82822', name:'Sunday Red',     req:m=>m.wins>=10,        reqText:"Win 10 tournaments, Tiger's Sunday red"},
-  {id:'mastersgrn', m:'#1f7a44', s:'#155a31', name:'Masters Green',  req:m=>m.maj.masters>=1,  reqText:'Win The Masters, the green jacket'},
+  {id:'red',        m:'#d2342e', s:'#a82822', name:'Victory Red',     req:m=>m.wins>=10,        reqText:"Win 10 tournaments, Tiger's Sunday red"},
+  {id:'mastersgrn', m:'#1f7a44', s:'#155a31', name:'Invitational Green',  req:m=>m.maj.masters>=1,  reqText:'Win The Magnolia Invitational, the champion blazer'},
   {id:'orange',     m:'#e8702a', s:'#c25a1e', name:'Sunday Orange',  req:m=>m.top10>=10,       reqText:"Record 10 top-10 finishes, Fowler's orange"},
-  {id:'pink',       m:'#e0589b', s:'#bd4480', name:'Poulter Pink',   req:m=>m.rivalWins>=3,    reqText:"Beat your rival in 3 seasons, Poulter's pink"},
-  {id:'hogangrey',  m:'#6b7682', s:'#545d67', name:'Hogan Grey',     req:m=>m.majors>=3,       reqText:'Win 3 major championships, Hogan grey'},
+  {id:'pink',       m:'#e0589b', s:'#bd4480', name:'Matchplay Pink',   req:m=>m.rivalWins>=3,    reqText:"Beat your rival in 3 seasons, Poulter's pink"},
+  {id:'hogangrey',  m:'#6b7682', s:'#545d67', name:'Heritage Grey',     req:m=>m.majors>=3,       reqText:'Win 3 major championships, Hogan grey'},
   {id:'bronze',     m:'#b5763a', s:'#92602e', name:'Bronze',         req:m=>m.wins>=3,         reqText:'Win 3 tournaments'},
   {id:'linkssky',   m:'#38a8d8', s:'#2c87ad', name:'Links Sky',      req:()=>repAtLeast('Star'), reqText:'Reach Tour Rep: Star'},
 ];
@@ -873,8 +881,8 @@ const PATTERNS=[
   {id:'pinstripe',  name:'Pinstripe',   tone:'light', depth:0.55, req:()=>repAtLeast('Contender'), reqText:'Reach Tour Rep: Contender'},
   {id:'polka',      name:'Polka Dot',   tone:'light', depth:0.50, req:()=>spotWins()>=1,           reqText:'Win a Monthly Spotlight'},
   {id:'gingham',    name:'Gingham',     tone:'dark',  depth:0.45, req:m=>m.seasons>=5,             reqText:'Play 5 full seasons'},
-  {id:'argyle',     name:'Argyle',      tone:'dark',  depth:0.55, req:m=>m.maj.usopen>=1,          reqText:"Win the U.S. Open, Payne Stewart's argyle"},
-  {id:'tartan',     name:'Tartan',      tone:'dark',  depth:0.50, req:m=>m.maj.open>=1,            reqText:'Win The Open, links tartan'},
+  {id:'argyle',     name:'Argyle',      tone:'dark',  depth:0.55, req:m=>m.maj.usopen>=1,          reqText:"Win The National Open, the classic knickerbocker argyle"},
+  {id:'tartan',     name:'Tartan',      tone:'dark',  depth:0.50, req:m=>m.maj.open>=1,            reqText:'Win The Links Championship, links tartan'},
   {id:'houndstooth',name:'Houndstooth', tone:'dark',  depth:0.60, req:()=>repAtLeast('Legend'),    reqText:'Reach Tour Rep: Legend'},
   {id:'chevron',    name:'Chevron',     tone:'dark',  depth:0.45, req:()=>repAtLeast('Icon'),      reqText:'Reach Tour Rep: Icon'},
   {id:'colorblock', name:'Colorblock',  tone:'dark',  depth:0.70, req:m=>m.wins>=5,                reqText:'Win 5 tournaments'},
@@ -905,7 +913,7 @@ const TITLES=[
   {id:'money', name:'Money Leader',      req:m=>m.moneyLeaderSeasons>=1},
   {id:'vet',   name:'Tour Veteran',      req:m=>m.seasons>=10},
   {id:'major', name:'Major Champion',    req:m=>m.majors>=1},
-  {id:'green', name:'Masters Champion',  req:m=>m.maj.masters>=1},
+  {id:'green', name:'Magnolia Champion',  req:m=>m.maj.masters>=1},
   {id:'slam',  name:'Grand Slam Winner', req:m=>m.distinctMajors>=4||m.careerSlams>0},
   {id:'hof',   name:'Hall of Famer',     req:m=>m.careers>=1},
   // prestige titles earned by Tour Rep rank (req reads current rank; m ignored)
@@ -920,10 +928,10 @@ function equippedTitle(){ const m=badgeMetrics(); const id=(S.look&&S.look.title
   const t=TITLES.find(x=>x.id===id&&titleUnlocked(x.id,m)); return (t?t.name:'Tour Pro'); }
 // the four major trophies, for the Trophy Room cabinet (lifetime counts from lt.maj)
 const TROPHY_CABINET=[
-  {k:'masters',name:'The Masters',  svg:greenJacketSVG,  short:'Green Jacket'},
-  {k:'champ',  name:'The Championship', svg:wanamakerSVG, short:'Wanamaker'},
-  {k:'usopen', name:'U.S. Open',    svg:usOpenTrophySVG, short:'U.S. Open'},
-  {k:'open',   name:'The Open',     svg:claretJugSVG,    short:'Claret Jug'},
+  {k:'masters',name:'The Magnolia Invitational',  svg:greenJacketSVG,  short:'Champion Blazer'},
+  {k:'champ',  name:'The Championship', svg:wanamakerSVG, short:'Championship Cup'},
+  {k:'usopen', name:'The National Open',    svg:usOpenTrophySVG, short:'The National Open'},
+  {k:'open',   name:'The Links Championship',     svg:claretJugSVG,    short:'Links Flagon'},
 ];
 // one round medallion chip, emoji badge + count + label, dimmed when never earned (an aspirational slot)
 function trophyChip(emoji,label,n,col){
@@ -949,7 +957,7 @@ function trophyCabinetHTML(m){
   const medals=trophyChip('🥇','Games Gold',m.olyGold||0,'#f4cf5b')
     +trophyChip('🥈','Games Silver',m.olySilver||0,'#cbd2da')
     +trophyChip('🥉','Games Bronze',m.olyBronze||0,'#cd8e5a')
-    +trophyChip('🏆','FedEx Cup',m.fedexCups||0,'var(--gold)')
+    +trophyChip('🏆','Tour Cup',m.fedexCups||0,'var(--gold)')
     +trophyChip('🏌','Team Cups',m.cupWins||0,'#7ec8ff')
     +trophyChip('🎖','Captaincies',m.cupCaptain||0,'#e3b94f');
   // Shelf 3, season honours / awards
@@ -1007,18 +1015,18 @@ const ACH=[].concat(
    {id:'oly_med',cat:'International',name:'On the Podium',    desc:'Win any medal at the Summer Games.',               goal:1,pts:40, get:m=>m.olyMedals},
    {id:'oly_g2', cat:'International',name:'Back-to-Back Gold',desc:'Win 2 gold medals at the Summer Games.',           goal:2,pts:120,get:m=>m.olyGold},
    {id:'oly_set',cat:'International',name:'Full Set',         desc:'Win gold, silver and bronze across your career.',goal:3,pts:100,get:m=>(m.olyGold>0?1:0)+(m.olySilver>0?1:0)+(m.olyBronze>0?1:0)},
-   {id:'cup_app',cat:'International',name:'Cup Debut',        desc:'Make a Ryder/Presidents Cup team.',          goal:1,pts:35, get:m=>m.cupApps},
-   {id:'cup_win',cat:'International',name:'Cup Champion',     desc:'Be on the winning Ryder/Presidents Cup team.',goal:1,pts:60, get:m=>m.cupWins},
-   {id:'cup_w5', cat:'International',name:'Cup Legend',       desc:'Win 5 Ryder/Presidents Cups.',               goal:5,pts:100,get:m=>m.cupWins},
+   {id:'cup_app',cat:'International',name:'Cup Debut',        desc:'Make a Ryder/Nations Cup team.',          goal:1,pts:35, get:m=>m.cupApps},
+   {id:'cup_win',cat:'International',name:'Cup Champion',     desc:'Be on the winning Ryder/Nations Cup team.',goal:1,pts:60, get:m=>m.cupWins},
+   {id:'cup_w5', cat:'International',name:'Cup Legend',       desc:'Win 5 Ryder/Nations Cups.',               goal:5,pts:100,get:m=>m.cupWins},
    {id:'cup_pts',cat:'International',name:'Team Talisman',    desc:'Bank 25 career Cup points.',                 goal:25,pts:80, get:m=>m.cupPoints},
    {id:'cup_5pt',cat:'International',name:'Perfect Week',     desc:'Win all 5 of your matches in one Cup.',       goal:5,pts:90, get:m=>m.cupBest},
-   {id:'cup_cap',cat:'International',name:'The Captaincy',    desc:'Captain a Ryder or Presidents Cup team.',     goal:1,pts:50, get:m=>m.cupCaptain},
+   {id:'cup_cap',cat:'International',name:'The Captaincy',    desc:'Captain a Ryder or Nations Cup team.',     goal:1,pts:50, get:m=>m.cupCaptain},
    {id:'cup_capw',cat:'International',name:'Winning Captain', desc:'Captain your team to a Cup win.',             goal:1,pts:80, get:m=>m.cupCaptainWins}],
   // ---- Majors ----
-  [{id:'maj_masters',cat:'Majors',name:'Green Jacket',    desc:'Win The Masters.',                             goal:1,pts:40, get:m=>m.mastersWins},
-   {id:'maj_pga',    cat:'Majors',name:'Wanamaker',       desc:'Win The Championship.',                        goal:1,pts:40, get:m=>m.pgaWins},
-   {id:'maj_usopen', cat:'Majors',name:'National Open',   desc:'Win the U.S. Open.',                           goal:1,pts:40, get:m=>m.usopenWins},
-   {id:'maj_open',   cat:'Majors',name:'Claret Jug',      desc:'Win The Open.',                                goal:1,pts:40, get:m=>m.openWins},
+  [{id:'maj_masters',cat:'Majors',name:'Champion Blazer',    desc:'Win The Magnolia Invitational.',                             goal:1,pts:40, get:m=>m.mastersWins},
+   {id:'maj_pga',    cat:'Majors',name:'Championship Cup',       desc:'Win The Championship.',                        goal:1,pts:40, get:m=>m.pgaWins},
+   {id:'maj_usopen', cat:'Majors',name:'National Open',   desc:'Win The National Open.',                           goal:1,pts:40, get:m=>m.usopenWins},
+   {id:'maj_open',   cat:'Majors',name:'Links Flagon',      desc:'Win The Links Championship.',                                goal:1,pts:40, get:m=>m.openWins},
    {id:'maj_slam',   cat:'Majors',name:'Career Grand Slam',desc:'Win all four majors across your career.',     goal:4,pts:100,get:m=>m.distinctMajors},
    {id:'maj_double', cat:'Majors',name:'Double Major',    desc:'Win 2 majors in a single season.',             goal:2,pts:60, get:m=>m.majorsInSeasonMax},
    {id:'maj_sslam',  cat:'Majors',name:'Immortal',        desc:'Win all four majors in ONE season.',           goal:1,pts:150,get:m=>m.slamSeasons}],
@@ -1076,10 +1084,10 @@ const ACH=[].concat(
    {id:'win_200', cat:'Winning',name:'Immortal',              desc:'Win 200 career tournaments.',           goal:200,pts:150,get:m=>m.wins},
    {id:'win_poy8',cat:'Winning',name:'Era-Defining',          desc:'Lead the money list in 8 seasons.',     goal:8,pts:100,get:m=>m.moneyLeaderSeasons},
    {id:'maj_3of4',cat:'Majors',name:'Three-Quarter Slam',     desc:'Win 3 different majors in your career.', goal:3,pts:75, get:m=>m.distinctMajors},
-   {id:'maj_mast3',cat:'Majors',name:'Augusta Royalty',       desc:'Win The Masters 3 times.',              goal:3,pts:60, get:m=>m.mastersWins},
-   {id:'maj_pga3',cat:'Majors',name:'Wanamaker Collector',    desc:'Win The Championship 3 times.',          goal:3,pts:60, get:m=>m.pgaWins},
-   {id:'maj_uso3',cat:'Majors',name:'Open Champion ×3',       desc:'Win the U.S. Open 3 times.',            goal:3,pts:60, get:m=>m.usopenWins},
-   {id:'maj_opn3',cat:'Majors',name:'Jug Keeper',             desc:'Win The Open 3 times.',                 goal:3,pts:60, get:m=>m.openWins},
+   {id:'maj_mast3',cat:'Majors',name:'Magnolia Royalty',       desc:'Win The Magnolia Invitational 3 times.',              goal:3,pts:60, get:m=>m.mastersWins},
+   {id:'maj_pga3',cat:'Majors',name:'Championship Cup Collector',    desc:'Win The Championship 3 times.',          goal:3,pts:60, get:m=>m.pgaWins},
+   {id:'maj_uso3',cat:'Majors',name:'Open Champion ×3',       desc:'Win The National Open 3 times.',            goal:3,pts:60, get:m=>m.usopenWins},
+   {id:'maj_opn3',cat:'Majors',name:'Jug Keeper',             desc:'Win The Links Championship 3 times.',                 goal:3,pts:60, get:m=>m.openWins},
    {id:'cl_po10', cat:'Clutch',name:'Playoff King',           desc:'Win 10 playoffs.',                      goal:10,pts:100,get:m=>m.playoffWins},
    {id:'cl_back5',cat:'Clutch',name:'Sunday Specialist',      desc:'Win 5 come-from-behind finishes.',      goal:5,pts:75, get:m=>m.comebacks},
    {id:'cl_wire5',cat:'Clutch',name:'Front Runner',           desc:'Win wire-to-wire 5 times.',             goal:5,pts:75, get:m=>m.wireToWire},
@@ -1105,7 +1113,7 @@ const ACH=[].concat(
    {id:'gs_finale',cat:'Getting Started',name:'Made It to the End',desc:'Reach the season finale.',              goal:1,pts:10,get:m=>m.played}],
   // ---- Winning ----
   [{id:'win_finale',cat:'Winning',name:'Cup Champion', desc:'Win the Tour Championship and lift the Cup.',                  goal:1,pts:60, get:m=>m.wonFinale},
-   {id:'win_players',cat:'Winning',name:'The Fifth Major',  desc:'Win The Players Championship.',           goal:1,pts:50, get:m=>m.wonPlayers},
+   {id:'win_players',cat:'Winning',name:'The Fifth Major',  desc:'Win The Stadium Classic Championship.',           goal:1,pts:50, get:m=>m.wonPlayers},
    {id:'win_sig',   cat:'Winning',name:'Signature Win',     desc:'Win a signature event.',                  goal:1,pts:35, get:m=>m.wonSignature}],
   // ---- Majors ----
   [{id:'maj_50',  cat:'Majors',name:'Major Immortal',       desc:'Win 50 career majors.',                  goal:50,pts:150,get:m=>m.majors},
@@ -1498,9 +1506,9 @@ function saveMidSeasonAndExit(){
 }
 function resumeCareer(){ const r=careerSaveInfo(); if(!r || r.ended) return;   // an ended career is never resumable, see viewEndedCareer()
   reset();
-  S.career=r.career; S.fieldRoster=r.fieldRoster||null; S.slots=r.slots||S.slots;
+  S.career=normalizeCareerNames(r.career); S.fieldRoster=r.fieldRoster||null; S.slots=r.slots||S.slots;
   S.careerSeed=(r.careerSeed!=null?r.careerSeed:null); S.world=r.world||null;
-  S.circuitMode=r.circuitMode||false; S.circuitStartYear=(r.circuitStartYear!=null?r.circuitStartYear:null); S.circuitCareer=r.circuitCareer||null;
+  S.circuitMode=r.circuitMode||false; S.circuitStartYear=(r.circuitStartYear!=null?r.circuitStartYear:null); S.circuitCareer=normalizeCareerNames(r.circuitCareer||null);
   S.name=r.name||''; S.look=Object.assign({},DEFLOOK,r.look||{}); S.year=r.year||1; S.daily=false;
   if(r.resumeScreen==='summary' && r.snap && r.snap.season){   // resume ONTO the season results page
     ensureWorld(); RNG=Math.random;
@@ -1530,10 +1538,10 @@ function resumeCareer(){ const r=careerSaveInfo(); if(!r || r.ended) return;   /
 // A retired/ended career (endCareer()) is kept addressable so an accidental refresh mid-ceremony
 // doesn't lose it, but it must never be played on from here, just redisplay the same ceremony screen.
 function viewEndedCareer(){ const r=careerSaveInfo(); if(!r || !r.ended) return; reset();
-  S.career=r.career; S.name=r.name||''; S.look=Object.assign({},DEFLOOK,r.look||{}); S.year=r.year||1;
+  S.career=normalizeCareerNames(r.career); S.name=r.name||''; S.look=Object.assign({},DEFLOOK,r.look||{}); S.year=r.year||1;
   S.slots=r.slots||S.slots; S.daily=false; S.careerOver=true;
   if(r.circuitEnded){   // Legend Circuit finale reviewed instead of the regular 30-year ceremony
-    S.circuitCareer=r.circuitCareer||null; S.circuitEnd=r.circuitEnd||null; S.freshLegendToken=r.freshLegendToken||null;
+    S.circuitCareer=normalizeCareerNames(r.circuitCareer||null); S.circuitEnd=r.circuitEnd||null; S.freshLegendToken=r.freshLegendToken||null;
     track('circuit_ceremony_reviewed',{year:S.year});
     S.screen='circuitend'; render(); return;
   }
@@ -1617,7 +1625,7 @@ const ROSTER=[
   {"name":"Gene Littler","era":"leg","tier":"legend","rarity":"Rare","nation":"USA","country":"United States","born":1930,"majors":1,"archetype":"Marksman","signature":"Driving Accuracy","data_source":"reputation","arc_age":32,"potential":80,"overall":80,"pot_band":{"exp":80,"lo":80,"hi":80,"boom":0.0,"bust":0.0},"dist":70,"acc":88,"app":84,"sht":80,"scr":77,"bnk":78,"put":79,"clu":78,"note":"Gene the Machine"},
   {"name":"Miller Barber","era":"leg","tier":"legend","rarity":"Common","nation":"USA","country":"United States","born":1931,"majors":0,"archetype":"Ballstriker","signature":"Approach","data_source":"reputation","arc_age":32,"potential":78,"overall":77,"pot_band":{"exp":78,"lo":78,"hi":78,"boom":0.0,"bust":0.0},"dist":76,"acc":82,"app":86,"sht":76,"scr":74,"bnk":78,"put":66,"clu":78,"note":"Mr. X"},
   {"name":"Henrik Stenson","era":"leg","tier":"legend","rarity":"Epic","nation":"SWE","country":"Sweden","born":1976,"majors":1,"archetype":"Marksman","signature":"Driving Accuracy","data_source":"current (DataGolf 2026-06-22)","arc_age":45,"potential":80,"overall":74,"pot_band":{"exp":80,"lo":75,"hi":82,"boom":0.06,"bust":0.08},"dist":66,"acc":88,"app":76,"sht":73,"scr":70,"bnk":72,"put":65,"clu":83,"note":"2016 Open, irons"},
-  {"name":"Ian Poulter","era":"leg","tier":"legend","rarity":"Rare","nation":"ENG","country":"England","born":1976,"majors":0,"archetype":"Closer","signature":"Composure","data_source":"current (DataGolf 2026-06-22)","arc_age":45,"potential":85,"overall":75,"pot_band":{"exp":85,"lo":80,"hi":87,"boom":0.06,"bust":0.08},"dist":60,"acc":78,"app":70,"sht":77,"scr":76,"bnk":76,"put":76,"clu":92,"note":"Ryder Cup hero"},
+  {"name":"Ian Poulter","era":"leg","tier":"legend","rarity":"Rare","nation":"ENG","country":"England","born":1976,"majors":0,"archetype":"Closer","signature":"Composure","data_source":"current (DataGolf 2026-06-22)","arc_age":45,"potential":85,"overall":75,"pot_band":{"exp":85,"lo":80,"hi":87,"boom":0.06,"bust":0.08},"dist":60,"acc":78,"app":70,"sht":77,"scr":76,"bnk":76,"put":76,"clu":92,"note":"Atlantic Cup hero"},
   {"name":"Paul Casey","era":"leg","tier":"legend","rarity":"Rare","nation":"ENG","country":"England","born":1977,"majors":0,"archetype":"Ballstriker","signature":"Approach","data_source":"current (DataGolf 2026-06-22)","arc_age":45,"potential":84,"overall":79,"pot_band":{"exp":84,"lo":79,"hi":86,"boom":0.06,"bust":0.08},"dist":76,"acc":81,"app":82,"sht":78,"scr":76,"bnk":77,"put":74,"clu":84,"note":"Ballstriker"},
   {"name":"Martin Kaymer","era":"leg","tier":"legend","rarity":"Epic","nation":"GER","country":"Germany","born":1984,"majors":2,"archetype":"Closer","signature":"Composure","data_source":"current (DataGolf 2026-06-22)","arc_age":42,"potential":82,"overall":76,"pot_band":{"exp":82,"lo":78,"hi":84,"boom":0.06,"bust":0.08},"dist":65,"acc":74,"app":76,"sht":73,"scr":74,"bnk":73,"put":77,"clu":88,"note":"2 majors, ex-#1"},
   {"name":"Graeme McDowell","era":"leg","tier":"legend","rarity":"Rare","nation":"NIR","country":"Northern Ireland","born":1979,"majors":1,"archetype":"Closer","signature":"Composure","data_source":"current (DataGolf 2026-06-22)","arc_age":45,"potential":81,"overall":73,"pot_band":{"exp":81,"lo":76,"hi":83,"boom":0.06,"bust":0.08},"dist":61,"acc":77,"app":73,"sht":71,"scr":71,"bnk":71,"put":71,"clu":88,"note":"2010 US Open"},
@@ -1815,15 +1823,15 @@ function drawGolfer(rng,pool,revealed){
   const g=all[Math.floor(rng()*all.length)]; revealed.add(g.name); return g;
 }
 
-// Season schedule (20 events) = permanent ANCHORS (the 4 majors, The Players, the marquee
-// signature events, the two FedEx playoffs + the Tour Championship finale) that recur every year,
+// Season schedule (20 events) = permanent ANCHORS (the 4 majors, The Stadium Classic, the marquee
+// signature events, the two Tour Cup playoffs + the Tour Championship finale) that recur every year,
 // PLUS a ROTATING slate drawn from REG_POOL so a career doesn't replay the same smaller
 // tournaments each season. `wk` orders everything chronologically (Jan → Tour Championship).
-// FedEx-style playoffs: the last 3 events cut the field by season points (70 → 50 → 30, no cut), and the
+// Tour Cup-style playoffs: the last 3 events cut the field by season points (70 → 50 → 30, no cut), and the
 // finale uses staggered "Starting Strokes" (the points leader tees off at -10). cap = field size by points.
 const PLAYOFF_EV={
-  'FedEx St. Jude Championship':{cap:70,stage:1},
-  'BMW Championship':           {cap:50,stage:2},
+  'The Memphis Championship':{cap:70,stage:1},
+  'The Crossroads Championship':           {cap:50,stage:2},
   'Tour Championship':          {cap:30,stage:3,stagger:true},
 };
 // East Lake starting strokes by points seed (1st=-10 … 30th=even)
@@ -1835,44 +1843,44 @@ const mkEvt=e=>{ const o={name:e[0],purse:e[1]*1e6,type:e[2],wk:e[3],major:e[2]=
   const p=PLAYOFF_EV[e[0]];
   if(p){ o.playoff=true; o.cap=p.cap; o.stage=p.stage; o.noCut=true; o.stagger=!!p.stagger; }
   else if(o.major){ o.limited=true; o.entryCap=ENTRY_CAP.major; }
-  else if(o.type==='sig' && !/Players/i.test(o.name)){ o.limited=true; o.entryCap=ENTRY_CAP.sig; }   // The Players keeps a full field
+  else if(o.type==='sig' && !/Stadium Classic/i.test(o.name)){ o.limited=true; o.entryCap=ENTRY_CAP.sig; }   // The Stadium Classic keeps a full field
   return o; };
 const ANCHORS=[
-  ['Kapalua Invitational',20,'sig',1],
-  ['Pebble Beach Pro-Am',20,'sig',6],
-  ['Bay Hill Invitational',20,'sig',10],
-  ['The Players',25,'sig',11],
-  ['The Masters',21,'major',15],
+  ['Trade Winds Invitational',20,'sig',1],
+  ['Graystone Cove Pro-Am',20,'sig',6],
+  ['Osprey Bay Invitational',20,'sig',10],
+  ['The Stadium Classic',25,'sig',11],
+  ['The Magnolia Invitational',21,'major',15],
   ['The Championship',19,'major',19],
-  ['Memorial Tournament',20,'sig',21],
-  ['U.S. Open',21.5,'major',23],
-  ['Travelers Championship',20,'sig',24],
-  ['The Open',17,'major',28],
-  ['FedEx St. Jude Championship',20,'sig',31],
-  ['BMW Championship',20,'sig',32],
+  ['The Founders Invitational',20,'sig',21],
+  ['The National Open',21.5,'major',23],
+  ['River Bend Classic',20,'sig',24],
+  ['The Links Championship',17,'major',28],
+  ['The Memphis Championship',20,'sig',31],
+  ['The Crossroads Championship',20,'sig',32],
   ['Tour Championship',25,'finale',33],
 ].map(mkEvt);
 const REG_POOL=[
-  ['Sony Open',8.3,'reg',2],
-  ['The American Express',8.4,'reg',3],
-  ['Farmers Insurance Open',9.3,'reg',4],
+  ['Island Open',8.3,'reg',2],
+  ['Desert Classic',8.4,'reg',3],
+  ['San Diego Open',9.3,'reg',4],
   ['Phoenix Open',9.2,'reg',5],
-  ['Genesis Invitational',9.5,'reg',7],
+  ['Canyon Crest Invitational',9.5,'reg',7],
   ['Mexico Open',8.1,'reg',8],
-  ['Cognizant Classic',8.4,'reg',9],
-  ['Valspar Championship',8.7,'reg',12],
+  ['Palm Coast Classic',8.4,'reg',9],
+  ['Gulf Coast Classic',8.7,'reg',12],
   ['Houston Open',9.5,'reg',13],
   ['Texas Open',9.2,'reg',14],
-  ['Hilton Head Classic',9,'reg',16],
-  ['Zurich Team Classic',9,'reg',17],
+  ['Lighthouse Classic',9,'reg',16],
+  ['Bayou Team Classic',9,'reg',17],
   ['Charlotte Open',9.5,'reg',18],
-  ['Charles Schwab Challenge',9.1,'reg',20],
+  ['Fort Worth Invitational',9.1,'reg',20],
   ['Canadian Open',9.4,'reg',22],
-  ['Rocket Mortgage Classic',9.2,'reg',25],
-  ['John Deere Classic',8,'reg',26],
+  ['Motor City Classic',9.2,'reg',25],
+  ['Quad Cities Classic',8,'reg',26],
   ['Scottish Open',9,'reg',27],
-  ['3M Open',8.1,'reg',29],
-  ['Wyndham Championship',8.1,'reg',30],
+  ['Twin Cities Open',8.1,'reg',29],
+  ['Piedmont Classic',8.1,'reg',30],
 ].map(mkEvt);
 const REG_PER_SEASON=7, REG_STRIDE=4;   // 13 anchors + 7 rotating = 20 events/season; ~4 of 7 small events swap each year
 // default slate (daily / fallback): anchors + the first rotating window, in calendar order
@@ -1910,7 +1918,7 @@ function seasonSchedule(year,seed){
 /* ---- The Legend Circuit: an optional post-career epilogue for a signed-in 50+ retiree, facing off
    against golfers who've themselves aged out of the regular tour. Modeled on the real PGA Tour
    Champions: age-50 eligibility, the 5 real senior majors, a smaller ~78-man field, and a season-ending
-   points race modeled on the real Charles Schwab Cup (a 3-event playoff that narrows the field each
+   points race modeled on the real Legends Cup (a 3-event playoff that narrows the field each
    stage). Reuses the EXACT SAME 4-round/cut event-simulation engine as the regular tour, unchanged -
    real Champions Tour events are mostly 54-hole/no-cut, but touching the shared round-simulation engine
    (used by every other feature in the game) for that one authenticity detail wasn't worth the risk;
@@ -1919,40 +1927,40 @@ const CIRCUIT_MIN_AGE=50, CIRCUIT_MAX_YEARS=12, CIRCUIT_FIELDSIZE=78;
 // the 5 real PGA Tour Champions majors, with their real (approximate, current-era) purses, all no-cut
 // for simplicity (2 of the 5 real majors already are; the other 3 use a 36-hole cut in real life).
 const CIRCUIT_MAJORS=[
-  ['Regions Tradition',2.6,1],
-  ['Senior PGA Championship',3.0,9],
-  ['U.S. Senior Open',4.0,13],
-  ['Senior Players Championship',3.5,18],
-  ['Senior Open Championship',2.85,23],
+  ['The Legacy Invitational',2.6,1],
+  ['Legends Championship',3.0,9],
+  ['National Senior Open',4.0,13],
+  ['Legends Stadium Classic',3.5,18],
+  ['Legends Links Championship',2.85,23],
 ].map(e=>({name:e[0],purse:e[1]*1e6,type:'major',wk:e[2],major:true,big:true,noCut:true}));
 // regular circuit stops, real-scale purses (~$2-2.5M, matching the researched Champions Tour norm,
 // roughly a tenth of the regular tour's). A rotating slate, same spirit as REG_POOL/seasonSchedule.
 const CIRCUIT_REG=[
-  ['Cologuard Classic',3],['Chubb Classic',3],['Hoag Classic',3],['Rapiscan Systems Classic',2.1],
-  ['Mitsubishi Electric Classic',2.1],['Insperity Invitational',2.2],['Regions Charity Classic',2.1],
-  ['Ally Challenge',2.4],['Boeing Classic',2.2],['Ascension Charity Classic',2.2],
+  ['Tucson Legends Classic',3],['Naples Classic',3],['Newport Classic',3],['Ozarks Classic',2.1],
+  ['Peachtree Legends Classic',2.1],['Woodlands Invitational',2.2],['Birmingham Classic',2.1],
+  ['Great Lakes Classic',2.4],['Cascade Classic',2.2],['Gateway Legends Classic',2.2],
 ].map((e,i)=>({name:e[0],purse:e[1]*1e6,type:'reg',wk:4+i*2,major:false,big:false,noCut:true}));
-// season-ending points race, modeled on the real Charles Schwab Cup: 3-event playoff narrowing the
+// season-ending points race, modeled on the real Legends Cup: 3-event playoff narrowing the
 // field each stage (cap sizes scaled proportionally to our smaller CIRCUIT_FIELDSIZE vs. the real
 // tour's ~150-man membership pool feeding 72→54→36).
 const CIRCUIT_PLAYOFFS=[
-  {name:'Charles Schwab Cup Playoffs I',   purse:2.5e6, cap:55, stage:1},
-  {name:'Charles Schwab Cup Playoffs II',  purse:2.5e6, cap:40, stage:2},
-  {name:'Charles Schwab Cup Championship', purse:3.0e6, cap:25, stage:3, stagger:true},
+  {name:'Legends Cup Playoffs I',   purse:2.5e6, cap:55, stage:1},
+  {name:'Legends Cup Playoffs II',  purse:2.5e6, cap:40, stage:2},
+  {name:'Legends Cup Championship', purse:3.0e6, cap:25, stage:3, stagger:true},
 ].map((e,i)=>({...e,type:'sig',wk:28+i*2,major:false,big:true,playoff:true,noCut:true}));
 // ---- Past-champion exemptions into the REGULAR tour's own majors, during the Legend Circuit ----
 // Modeled on each major's real current-era past-champion policy: the Masters grants a true lifetime
-// invitation; The Open exempts past champions through age 60; the PGA Championship ("The Championship"
-// in-game) exempts winners for 5 years (its old lifetime exemption was rescinded in 2016); the U.S. Open
-// has never had a past-champions exemption category at all, so a U.S. Open win grants nothing here.
-const GUEST_MAJOR_WK={'The Masters':15,'The Championship':19,'U.S. Open':24,'The Open':27};
-const GUEST_MAJOR_PURSE={'The Masters':22e6,'The Championship':18.5e6,'U.S. Open':21.5e6,'The Open':17e6};
+// invitation; The Links Championship exempts past champions through age 60; the PGA Championship ("The Championship"
+// in-game) exempts winners for 5 years (its old lifetime exemption was rescinded in 2016); The National Open
+// has never had a past-champions exemption category at all, so a The National Open win grants nothing here.
+const GUEST_MAJOR_WK={'The Magnolia Invitational':15,'The Championship':19,'The National Open':24,'The Links Championship':27};
+const GUEST_MAJOR_PURSE={'The Magnolia Invitational':22e6,'The Championship':18.5e6,'The National Open':21.5e6,'The Links Championship':17e6};
 function guestMajorExemptions(){
   if(!S.career || !S.career.winsList) return [];
   const lastWinYear={}; S.career.winsList.forEach(w=>{ if(w.major) lastWinYear[w.name]=Math.max(lastWinYear[w.name]||0, w.year); });
   const age=playerAge(), yr=S.year||1, out=[];
-  if(lastWinYear['The Masters']!=null) out.push('The Masters');                                             // lifetime
-  if(lastWinYear['The Open']!=null && age<=60) out.push('The Open');                                        // through age 60
+  if(lastWinYear['The Magnolia Invitational']!=null) out.push('The Magnolia Invitational');                                             // lifetime
+  if(lastWinYear['The Links Championship']!=null && age<=60) out.push('The Links Championship');                                        // through age 60
   if(lastWinYear['The Championship']!=null && (yr-lastWinYear['The Championship'])<=5) out.push('The Championship'); // 5-year exemption
   return out;
 }
@@ -2044,42 +2052,42 @@ function simRound(eo,clu,{major,big,finalRd,courseAdj}){
    Opens have no entry yet -> neutral (eventWeights returns base weights). */
 const COURSEFIT={
   // --- regular / signature events ---
-  "Kapalua Invitational": {dist:0.923,acc:0.923,app:0.82,sht:0.82,scr:0.82,bnk:0.82,put:0.918,clu:1},  // Plantation Course at Kapalua
+  "Trade Winds Invitational": {dist:0.923,acc:0.923,app:0.82,sht:0.82,scr:0.82,bnk:0.82,put:0.918,clu:1},  // Plantation Course at Kapalua
   "Phoenix Open": {dist:1.249,acc:1.249,app:0.82,sht:0.987,scr:0.987,bnk:0.987,put:1.014,clu:1},  // TPC Scottsdale
-  "Pebble Beach Pro-Am": {dist:0.82,acc:0.82,app:1.153,sht:1.137,scr:1.137,bnk:1.137,put:1.088,clu:1},  // Pebble Beach GL
-  "Bay Hill Invitational": {dist:1.173,acc:1.173,app:1.206,sht:0.979,scr:0.979,bnk:0.979,put:0.973,clu:1},  // Bay Hill Club & Lodge
-  "The Players": {dist:1.227,acc:1.227,app:1.257,sht:1.13,scr:1.13,bnk:1.13,put:0.995,clu:1},  // TPC Sawgrass
-  "Hilton Head Classic": {dist:0.993,acc:0.993,app:1.179,sht:1.183,scr:1.183,bnk:1.183,put:0.959,clu:1},  // Harbour Town GL
-  "Charlotte Open": {dist:1.2,acc:1.2,app:0.956,sht:1.062,scr:1.062,bnk:1.062,put:1.09,clu:1},  // Quail Hollow Club
-  "Memorial Tournament": {dist:0.872,acc:0.872,app:1.269,sht:1.298,scr:1.298,bnk:1.298,put:1.102,clu:1},  // Muirfield Village GC
+  "Graystone Cove Pro-Am": {dist:0.82,acc:0.82,app:1.153,sht:1.137,scr:1.137,bnk:1.137,put:1.088,clu:1},  // Pebble Beach GL
+  "Osprey Bay Invitational": {dist:1.173,acc:1.173,app:1.206,sht:0.979,scr:0.979,bnk:0.979,put:0.973,clu:1},  // Osprey Bay Club & Lodge
+  "The Stadium Classic": {dist:1.227,acc:1.227,app:1.257,sht:1.13,scr:1.13,bnk:1.13,put:0.995,clu:1},  // TPC Sawgrass
+  "Lighthouse Classic": {dist:0.993,acc:0.993,app:1.179,sht:1.183,scr:1.183,bnk:1.183,put:0.959,clu:1},  // Harbour Town GL
+  "Charlotte Open": {dist:1.2,acc:1.2,app:0.956,sht:1.062,scr:1.062,bnk:1.062,put:1.09,clu:1},  // Fox Den Club
+  "The Founders Invitational": {dist:0.872,acc:0.872,app:1.269,sht:1.298,scr:1.298,bnk:1.298,put:1.102,clu:1},  // Muirfield Village GC
   "Canadian Open": {dist:1.136,acc:1.136,app:1.221,sht:1.147,scr:1.147,bnk:1.147,put:0.986,clu:1},  // Glen Abbey GC
-  "Travelers Championship": {dist:1.243,acc:1.243,app:0.897,sht:1.046,scr:1.046,bnk:1.046,put:0.987,clu:1},  // TPC River Highlands
-  "Wyndham Championship": {dist:1.054,acc:1.054,app:0.82,sht:0.82,scr:0.82,bnk:0.82,put:0.975,clu:1},  // Sedgefield CC
+  "River Bend Classic": {dist:1.243,acc:1.243,app:0.897,sht:1.046,scr:1.046,bnk:1.046,put:0.987,clu:1},  // River Bend Golf Club
+  "Piedmont Classic": {dist:1.054,acc:1.054,app:0.82,sht:0.82,scr:0.82,bnk:0.82,put:0.975,clu:1},  // Sedgefield CC
   "Tour Championship": {dist:0.82,acc:0.82,app:0.861,sht:0.857,scr:0.857,bnk:0.857,put:0.968,clu:1},  // East Lake GC
-  // --- FedEx Cup playoffs ---
-  "FedEx St. Jude Championship": {dist:1.12,acc:1.12,app:1.2,sht:1.1,scr:1.1,bnk:1.1,put:1.05,clu:1},  // TPC Southwind, tight, water, accuracy + approach
-  "BMW Championship":            {dist:1.18,acc:1.18,app:1.18,sht:1.1,scr:1.1,bnk:1.1,put:1.05,clu:1},  // rotating big-test venues, long, all-around
+  // --- Tour Cup playoffs ---
+  "The Memphis Championship": {dist:1.12,acc:1.12,app:1.2,sht:1.1,scr:1.1,bnk:1.1,put:1.05,clu:1},  // Delta Winds Golf Club, tight, water, accuracy + approach
+  "The Crossroads Championship":            {dist:1.18,acc:1.18,app:1.18,sht:1.1,scr:1.1,bnk:1.1,put:1.05,clu:1},  // rotating big-test venues, long, all-around
   // --- rotating regular-tour venues: each given the character of its real host course ---
-  "Sony Open":              {dist:0.95,acc:0.95,app:1.15,sht:1.05,scr:1.05,bnk:1.05,put:1.18,clu:1},  // Waialae CC, tight, short, wedges + putting
-  "The American Express":   {dist:1.0,acc:1.0,app:1.0,sht:0.95,scr:0.95,bnk:0.95,put:1.18,clu:1},     // PGA West / La Quinta, birdie-fest, hot putter
-  "Farmers Insurance Open": {dist:1.25,acc:1.25,app:1.22,sht:1.05,scr:1.05,bnk:1.05,put:1.0,clu:1},   // Torrey Pines South, long, brutish ball-striking
-  "Genesis Invitational":   {dist:1.1,acc:1.1,app:1.27,sht:1.18,scr:1.18,bnk:1.18,put:1.0,clu:1},     // Riviera CC, elite ball-striking, kikuyu short game
-  "Mexico Open":            {dist:1.1,acc:1.1,app:1.0,sht:0.95,scr:0.95,bnk:0.95,put:1.12,clu:1},     // Vidanta Vallarta, scoring, length helps
-  "Cognizant Classic":      {dist:1.12,acc:1.12,app:1.22,sht:1.1,scr:1.1,bnk:1.1,put:1.0,clu:1},      // PGA National (Bear Trap), water, wind, accuracy
-  "Valspar Championship":   {dist:1.1,acc:1.1,app:1.22,sht:1.12,scr:1.12,bnk:1.12,put:1.08,clu:1},    // Innisbrook Copperhead, tight, small fast greens
+  "Island Open":              {dist:0.95,acc:0.95,app:1.15,sht:1.05,scr:1.05,bnk:1.05,put:1.18,clu:1},  // Waialae CC, tight, short, wedges + putting
+  "Desert Classic":   {dist:1.0,acc:1.0,app:1.0,sht:0.95,scr:0.95,bnk:0.95,put:1.18,clu:1},     // PGA West / La Quinta, birdie-fest, hot putter
+  "San Diego Open": {dist:1.25,acc:1.25,app:1.22,sht:1.05,scr:1.05,bnk:1.05,put:1.0,clu:1},   // Torrey Pines South, long, brutish ball-striking
+  "Canyon Crest Invitational":   {dist:1.1,acc:1.1,app:1.27,sht:1.18,scr:1.18,bnk:1.18,put:1.0,clu:1},     // Riviera CC, elite ball-striking, kikuyu short game
+  "Mexico Open":            {dist:1.1,acc:1.1,app:1.0,sht:0.95,scr:0.95,bnk:0.95,put:1.12,clu:1},     // Vallarta Shores, scoring, length helps
+  "Palm Coast Classic":      {dist:1.12,acc:1.12,app:1.22,sht:1.1,scr:1.1,bnk:1.1,put:1.0,clu:1},      // PGA National (Bear Trap), water, wind, accuracy
+  "Gulf Coast Classic":   {dist:1.1,acc:1.1,app:1.22,sht:1.12,scr:1.12,bnk:1.12,put:1.08,clu:1},    // Innisbrook Copperhead, tight, small fast greens
   "Houston Open":           {dist:1.2,acc:1.2,app:1.18,sht:1.05,scr:1.05,bnk:1.05,put:1.0,clu:1},     // Memorial Park, long, demanding ball-striking
   "Texas Open":             {dist:1.15,acc:1.15,app:1.15,sht:1.18,scr:1.18,bnk:1.18,put:1.0,clu:1},   // TPC San Antonio Oaks, windy, scrambling
-  "Zurich Team Classic":    {dist:1.1,acc:1.1,app:1.0,sht:0.95,scr:0.95,bnk:0.95,put:1.1,clu:1},      // TPC Louisiana, water, low scoring
-  "Charles Schwab Challenge":{dist:0.98,acc:0.98,app:1.27,sht:1.12,scr:1.12,bnk:1.12,put:1.05,clu:1}, // Colonial, short, precise irons (Hogan's Alley)
-  "Rocket Mortgage Classic":{dist:1.05,acc:1.05,app:1.0,sht:0.95,scr:0.95,bnk:0.95,put:1.18,clu:1},   // Detroit GC, birdie-fest, putting
-  "John Deere Classic":     {dist:0.95,acc:0.95,app:1.05,sht:1.05,scr:1.05,bnk:1.05,put:1.22,clu:1},  // TPC Deere Run, low scoring, hot putter
+  "Bayou Team Classic":    {dist:1.1,acc:1.1,app:1.0,sht:0.95,scr:0.95,bnk:0.95,put:1.1,clu:1},      // Bayou Grande Golf Club, water, low scoring
+  "Fort Worth Invitational":{dist:0.98,acc:0.98,app:1.27,sht:1.12,scr:1.12,bnk:1.12,put:1.05,clu:1}, // Colonial, short, precise irons (Hogan's Alley)
+  "Motor City Classic":{dist:1.05,acc:1.05,app:1.0,sht:0.95,scr:0.95,bnk:0.95,put:1.18,clu:1},   // Detroit GC, birdie-fest, putting
+  "Quad Cities Classic":     {dist:0.95,acc:0.95,app:1.05,sht:1.05,scr:1.05,bnk:1.05,put:1.22,clu:1},  // Quad Cities Run, low scoring, hot putter
   "Scottish Open":          {dist:1.15,acc:1.15,app:1.1,sht:1.15,scr:1.15,bnk:1.15,put:1.08,clu:1},   // links, wind, flight control, all-around
-  "3M Open":                {dist:1.12,acc:1.12,app:1.0,sht:1.0,scr:1.0,bnk:1.0,put:1.12,clu:1},      // TPC Twin Cities, long with water, birdies
+  "Twin Cities Open":                {dist:1.12,acc:1.12,app:1.0,sht:1.0,scr:1.0,bnk:1.0,put:1.12,clu:1},      // Twin Cities National, long with water, birdies
   // --- majors: measured venues (course_fit.json) ---
-  'The Masters':      {dist:1.137,acc:1.137,app:1.141,sht:1.339,scr:1.339,bnk:1.339,put:0.976,clu:1},  // Augusta National GC (fully measured)
+  'The Magnolia Invitational':      {dist:1.137,acc:1.137,app:1.141,sht:1.339,scr:1.339,bnk:1.339,put:0.976,clu:1},  // Augusta National GC (fully measured)
   'The Championship': {dist:1.124,acc:1.124,app:1.215,sht:1.11,scr:1.11,bnk:1.11,put:1.082,clu:1},  // Valhalla GC
-  'U.S. Open':        {dist:1.262,acc:1.262,app:1.191,sht:1.4,scr:1.4,bnk:1.4,put:1.194,clu:1},  // Oakmont CC
-  'The Open':         {dist:1.328,acc:1.328,app:0.85,sht:1.113,scr:1.113,bnk:1.113,put:1.265,clu:1},  // St Andrews (Old Course)
+  'The National Open':        {dist:1.262,acc:1.262,app:1.191,sht:1.4,scr:1.4,bnk:1.4,put:1.194,clu:1},  // Oakmont CC
+  'The Links Championship':         {dist:1.328,acc:1.328,app:0.85,sht:1.113,scr:1.113,bnk:1.113,put:1.265,clu:1},  // St Andrews (Old Course)
 };
 function eventWeights(evt){
   const m=COURSEFIT[evt.name]; if(!m) return CATS;                 // default = neutral base weights
@@ -2091,30 +2099,7 @@ function eventOverall(p,ew){ return ew.reduce((s,c)=>s+p[c.k]*c.w,0); }
 
 /* ---------- state ---------- */
 const SPINS=10, REPLACEMENT=62;
-const DAILY_COURSES={"Augusta National":{"v":"Augusta National Golf Club","loc":"Augusta, Georgia","par":72,"yd":7565,"ver":true,"blurb":"Bobby Jones and Alister MacKenzie's 1933 masterpiece, carved from a former nursery and ablaze with azaleas and dogwood every April. The fairways look generous, but the real defense is the greens, vast, glassy and pitched so severely that the wrong angle turns a birdie putt into a three-putt. Amen Corner (11-12-13) is the soul of the place, where Rae's Creek has drowned countless contenders, while the reachable par-5s reward bold, towering iron play. Pinpoint approach control and a deft touch around firm, fall-away surfaces win here far more than raw length.","avg":1.41,"cdiff":0.06,"fit":{"dist":1.137,"acc":1.137,"app":1.141,"sht":1.339,"scr":1.339,"bnk":1.339,"put":0.976,"clu":1},"sig":[[12,"Amen Corner's perilous short par-3 over Rae's Creek, swirling wind, tiny green"],[13,"Par-5 dogleg in Amen Corner; eagle chance but water guards the green"],[15,"Par-5 over water where late eagles and bogeys decide the Masters"]],"holes":[[4,445,"Tea Olive"],[5,585,"Pink Dogwood"],[4,350,"Flowering Peach"],[3,240,"Flowering Crab Apple"],[4,495,"Magnolia"],[3,180,"Juniper"],[4,450,"Pampas"],[5,570,"Yellow Jasmine"],[4,460,"Carolina Cherry"],[4,495,"Camellia"],[4,520,"White Dogwood"],[3,155,"Golden Bell"],[5,545,"Azalea"],[4,440,"Chinese Fir"],[5,550,"Firethorn"],[3,170,"Redbud"],[4,450,"Nandina"],[4,465,"Holly"]]},"TPC Sawgrass":{"v":"TPC Sawgrass (Stadium)","loc":"Ponte Vedra Beach, Florida","par":72,"yd":7275,"ver":true,"blurb":"Pete Dye's 1980 stadium-golf manifesto, built on Florida swampland and framed by railroad ties, sharp mounding and water that lurks on nearly every hole. It is a shotmaker's puzzle where position trumps power and the par-4s are scaled to demand exact angles off the tee. The closing trio is famous the world over, none more than the 17th, a tiny island green where the Players is routinely won or lost in a single swing. Accuracy, nerve and a sharp wedge game beat brute strength every time.","avg":0.27,"cdiff":-0.037,"fit":{"dist":1.227,"acc":1.227,"app":1.257,"sht":1.13,"scr":1.13,"bnk":1.13,"put":0.995,"clu":1},"sig":[[17,"The island-green par-3 at 137 yards ringed by water, golf's most feared short hole"],[16,"Reachable par-5 before 17, an eagle look that sets up a daring finish"],[18,"Brutal par-4 with water all down the left, a nervy closer"]],"holes":[[4,423,""],[5,532,""],[3,177,""],[4,384,""],[4,471,""],[4,393,""],[4,451,""],[3,237,""],[5,602,""],[4,424,""],[5,558,""],[4,369,""],[3,181,""],[4,481,""],[4,470,""],[5,523,""],[3,137,""],[4,462,""]]},"Pebble Beach Golf Links":{"v":"Pebble Beach Golf Links","loc":"Pebble Beach, California","par":72,"yd":6972,"ver":true,"blurb":"Perched on the Monterey Peninsula since 1919, Pebble pairs jaw-dropping Pacific cliffs with the smallest greens in championship golf. Eight holes run along the ocean, where the wind off Carmel Bay turns short irons into guesswork and the postage-stamp 7th can need anything from a flick wedge to a punched mid-iron. The cliffside 8th, 9th and 10th form one of the hardest three-hole stretches in golf, and the par-5 18th along the seawall is the most photographed finishing hole in the game. Precise approach play and a steady touch on tiny targets matter far more than distance here.","avg":-1.27,"cdiff":-0.169,"fit":{"dist":0.82,"acc":0.82,"app":1.153,"sht":1.137,"scr":1.137,"bnk":1.137,"put":1.088,"clu":1},"sig":[[7,"The world's most photographed par-3, 106 yards downhill to a cliffside green"],[8,"Cliff-carry approach over a chasm, one of golf's great second shots"],[18,"Par-5 hugging the ocean the whole way left, an iconic finish"]],"holes":[[4,381,""],[5,516,""],[4,404,""],[4,331,""],[3,195,""],[5,523,""],[3,106,""],[4,428,""],[4,504,""],[4,446,""],[4,390,""],[3,202,""],[4,445,""],[5,580,""],[4,397,""],[4,403,""],[3,178,""],[5,543,""]]},"St Andrews Old Course":{"v":"The Old Course at St Andrews","loc":"St Andrews, Scotland","par":72,"yd":7305,"ver":true,"blurb":"The Home of Golf, played over the same linksland for some 600 years and shaped by nature more than any architect. Seven enormous double greens, blind tee shots and over a hundred ravenous pot bunkers, Hell Bunker, the Beardies, the Road Hole bunker, reward local knowledge and punish the careless. With no wind it can be torn apart; when it howls off the North Sea it becomes a brutal exam of flight control and creativity. The 17th Road Hole is the most fearsome par-4 in golf, while the wide 1st and 18th share the iconic Swilcan Bridge.","avg":0.3,"cdiff":-0.022,"fit":{"dist":1.328,"acc":1.328,"app":0.85,"sht":1.113,"scr":1.113,"bnk":1.113,"put":1.265,"clu":1},"sig":[[17,"The Road Hole par-4, Road Bunker and the wall behind make it maybe golf's hardest par-4"],[14,"Long par-5 with Hell Bunker lurking, bold seconds flirt with disaster"],[18,"Drivable home hole over the Swilcan Burn into the town, birdie or heartbreak"]],"holes":[[4,376,"Burn"],[4,453,"Dyke"],[4,397,"Cartgate (Out)"],[4,480,"Ginger Beer"],[5,568,"Hole o' Cross (Out)"],[4,412,"Heathery (Out)"],[4,371,"High (Out)"],[3,188,"Short"],[4,352,"End"],[4,386,"Bobby Jones"],[3,174,"High (In)"],[4,351,"Heathery (In)"],[4,465,"Hole o' Cross (In)"],[5,618,"Long"],[4,455,"Cartgate (In)"],[4,418,"Corner of the Dyke"],[4,495,"Road"],[4,357,"Home"]]},"Oakmont":{"v":"Oakmont Country Club","loc":"Oakmont, Pennsylvania","par":70,"yd":7357,"ver":true,"blurb":"Founded in 1903 by Henry Fownes on the belief that a shot poorly played should be a shot irrevocably lost, Oakmont is widely regarded as the hardest course in America. Its greens are the fastest in championship golf, lightning-quick and tilted, while the Church Pews bunker between the 3rd and 4th and over 175 other traps swallow anything offline. The rough is punishing, the fairways pinched, and par is a genuinely great score on nearly every hole. Only flawless ball-striking and ice-cold putting survive; this is by far the sternest test in the rotation.","avg":4.18,"cdiff":0.291,"fit":{"dist":1.262,"acc":1.262,"app":1.191,"sht":1.4,"scr":1.4,"bnk":1.4,"put":1.194,"clu":1},"sig":[[3,"The Church Pews, a vast bunker of grass ridges between 3 and 4"],[8,"At ~289 yards, the longest par-3 in major-championship golf"],[17,"Drivable par-4 dangling a birdie amid Oakmont's torture"]],"holes":[[4,488,""],[4,346,""],[4,462,"Church Pews"],[5,609,""],[4,408,""],[3,200,""],[4,479,""],[3,289,"Long par-3"],[4,477,""],[4,461,""],[4,400,""],[5,632,""],[3,182,""],[4,379,""],[4,500,""],[3,231,""],[4,312,""],[4,502,""]]},"TPC Scottsdale":{"v":"TPC Scottsdale (Stadium)","loc":"Scottsdale, Arizona","par":71,"yd":7261,"ver":true,"blurb":"A Tom Weiskopf and Jay Morrish desert design that hosts the rowdiest week in golf at the WM Phoenix Open. Generous landing areas and soft, receptive greens make it a birdie-fest where the elite go deep into red figures. The signature 16th is a fully enclosed stadium par-3 where thousands of fans roar or jeer every tee shot, and the drivable 17th tempts players to take on the water for an eagle look. Aggressive distance and confident wedge play are rewarded, this is a week to chase a low number.","avg":-0.89,"cdiff":-0.144,"fit":{"dist":1.249,"acc":1.249,"app":0.82,"sht":0.987,"scr":0.987,"bnk":0.987,"put":1.014,"clu":1},"sig":[[16,"The stadium par-3 ringed by 20,000 fans, golf's loudest hole"],[17,"Drivable par-4 at 332 yards, go for the green and ignite the crowd"],[15,"Reachable par-5 setting up the famous finish"]],"holes":[[4,403,""],[4,442,""],[5,558,""],[3,183,""],[4,470,""],[4,432,""],[3,215,""],[4,475,""],[4,453,""],[4,428,""],[4,472,""],[3,192,""],[5,558,""],[4,490,""],[5,553,""],[3,163,"The Coliseum"],[4,332,""],[4,442,""]]},"Bay Hill":{"v":"Bay Hill Club & Lodge","loc":"Orlando, Florida","par":72,"yd":7466,"ver":true,"blurb":"Arnold Palmer's beloved Orlando home, a long, muscular parkland layout he reshaped to demand power and precision in equal measure. Water, deep bunkering and thick Bermuda rough guard firm greens, and the wind off the lakes can flip a round in an afternoon. The closing stretch is one of the Tour's toughest, capped by the par-4 18th, a forced carry over water to a rock-walled green that has decided countless Arnold Palmer Invitationals. Long, accurate iron play and the courage to attack guarded pins separate the field.","avg":0.99,"cdiff":0.022,"fit":{"dist":1.173,"acc":1.173,"app":1.206,"sht":0.979,"scr":0.979,"bnk":0.979,"put":0.973,"clu":1},"sig":[[18,"Water-guarded par-4 closer in a natural amphitheater, Palmer's signature drama"],[6,"C-shaped par-5 bending around water, reward for the brave"],[16,"Reachable par-5 swinging momentum down the stretch"]],"holes":[[4,461,""],[3,231,""],[4,434,""],[5,590,""],[4,390,""],[5,555,""],[3,199,""],[4,460,""],[4,480,""],[4,400,""],[4,438,""],[5,574,""],[4,382,""],[3,215,""],[4,467,""],[5,511,""],[3,221,""],[4,458,""]]},"Harbour Town Golf Links":{"v":"Harbour Town Golf Links","loc":"Hilton Head Island, South Carolina","par":71,"yd":7213,"ver":true,"blurb":"A 1969 Pete Dye design, shaped with Jack Nicklaus consulting, threaded through live oaks and Spanish moss on Hilton Head Island. Short by modern standards, it is all about control, narrow, tree-lined corridors and small greens reward the surgeon over the bomber and make driver a liability on many holes. The finish opens dramatically to Calibogue Sound, ending beneath the candy-striped lighthouse at the wind-exposed par-4 18th. Shot-shaping, accuracy off the tee and crisp wedges win here; raw length is almost a disadvantage.","avg":-0.91,"cdiff":-0.14,"fit":{"dist":0.993,"acc":0.993,"app":1.179,"sht":1.183,"scr":1.183,"bnk":1.183,"put":0.959,"clu":1},"sig":[[18,"Exposed par-4 along Calibogue Sound to the lighthouse, a windswept, iconic finish"],[17,"Coastal par-3 fully exposed to the wind"],[14,"Demanding short par-3 to a shallow Dye green"]],"holes":[[4,410,""],[5,550,""],[4,469,""],[3,200,""],[5,569,""],[4,419,""],[3,217,""],[4,473,""],[4,332,""],[4,451,""],[4,436,""],[4,430,""],[4,373,""],[3,192,""],[5,588,""],[4,434,""],[3,198,""],[4,472,""]]},"Quail Hollow Club":{"v":"Quail Hollow Club","loc":"Charlotte, North Carolina","par":71,"yd":7558,"ver":true,"blurb":"A George Cobb course later toughened by Tom Fazio into one of the Tour's most demanding parkland tests, set among the creeks and hardwoods of Charlotte. It rewards length but punishes the wayward, with water and deep bunkers framing large, rolling Bermuda greens. The finish, the fearsome 'Green Mile' of 16, 17 and 18, is among the hardest closing stretches in golf, with water down the left of two long par-4s and a brutal par-3 in between. Power off the tee paired with elite long-iron approach play is the winning formula.","avg":0.96,"cdiff":0.021,"fit":{"dist":1.2,"acc":1.2,"app":0.956,"sht":1.062,"scr":1.062,"bnk":1.062,"put":1.09,"clu":1},"sig":[[18,"Closing par-4 with a creek down the entire left, a brutal finish"],[17,"Par-3 to a water-guarded green in the Green Mile"],[16,"536-yard par-4 to open the Green Mile gauntlet"]],"holes":[[4,495,""],[4,452,""],[4,483,""],[3,184,""],[4,449,""],[3,249,""],[5,546,""],[4,346,""],[4,505,""],[5,592,""],[4,462,""],[4,456,""],[3,205,""],[4,344,""],[5,577,""],[4,536,"Green Mile"],[3,190,"Green Mile"],[4,494,"Green Mile"]]},"Muirfield Village":{"v":"Muirfield Village Golf Club","loc":"Dublin, Ohio","par":72,"yd":7569,"ver":true,"blurb":"Jack Nicklaus's exacting masterpiece, designed and obsessively refined as his answer to Augusta in the Ohio countryside. Tree-lined corridors, water in play on a dozen holes and lightning, severely contoured greens make it one of the most precise tests on Tour. Position off the tee is everything, and the demanding closing holes, especially the long, water-guarded 18th, routinely deliver drama at the Memorial. Total ball-striking, distance control and a confident putter are required to go low here.","avg":1.26,"cdiff":0.05,"fit":{"dist":0.872,"acc":0.872,"app":1.269,"sht":1.298,"scr":1.298,"bnk":1.298,"put":1.102,"clu":1},"sig":[[18,"Brutish par-4 closer with a creek left, routinely the hardest hole at the Memorial"],[16,"Par-3 over water to a perched green, classic Nicklaus risk"],[14,"Short, strategic par-4 demanding a precise wedge"]],"holes":[[4,490,""],[4,459,""],[4,392,""],[3,210,""],[5,547,""],[4,455,""],[5,582,""],[3,200,""],[4,417,""],[4,472,""],[5,588,""],[3,180,""],[4,455,""],[4,360,""],[5,561,""],[3,218,""],[4,503,""],[4,480,""]]},"Valhalla":{"v":"Valhalla Golf Club","loc":"Louisville, Kentucky","par":71,"yd":7609,"ver":true,"blurb":"A bold Jack Nicklaus championship design in Kentucky, laid over rolling bluegrass and limestone with water in play across both nines. The front nine rewards aggression while the back demands precision, and the greens are large and boldly contoured. It has staged some of the PGA Championship's most memorable finishes, often decided at the reachable par-5 18th where eagle and disaster sit side by side. Big hitting that can carry the hazards, backed by sharp iron play, sets up a low number.","avg":-0.43,"cdiff":-0.102,"fit":{"dist":1.124,"acc":1.124,"app":1.215,"sht":1.11,"scr":1.11,"bnk":1.11,"put":1.082,"clu":1},"sig":[[13,"Island-green par-4 ringed by water and limestone rock"],[18,"Reachable par-5 to the clubhouse, every PGA Championship here decided on it"],[7,"Long par-5 'Genuine Risk' tempting a go at the green"]],"holes":[[4,484,""],[4,500,""],[3,208,""],[4,372,""],[4,463,""],[4,495,""],[5,597,""],[3,190,""],[4,415,""],[5,590,""],[3,211,""],[4,494,""],[4,351,"Island Green"],[3,254,""],[4,435,""],[4,508,""],[4,472,""],[5,570,"Photo Finish"]]},"TPC River Highlands":{"v":"TPC River Highlands","loc":"Cromwell, Connecticut","par":70,"yd":6841,"ver":true,"blurb":"A compact, thrilling Pete Dye and Bobby Weed design in Connecticut that yields some of the lowest scoring on the entire Tour. There is little rough and the par-70 layout invites birdies, but the risk-reward finish keeps everyone honest. The 'Bermuda Triangle' of 15, 16 and 17, a drivable par-4 and short holes carved around the lake, can swing the Travelers in a matter of minutes. Aggressive wedge play, hot putting and the nerve to attack the water are the keys to a deep red number.","avg":-1.5,"cdiff":-0.192,"fit":{"dist":1.243,"acc":1.243,"app":0.897,"sht":1.046,"scr":1.046,"bnk":1.046,"put":0.987,"clu":1},"sig":[[15,"Drivable 296-yard par-4 with water left, supreme risk-reward"],[16,"Par-3 over the lake to a shallow green in the Bermuda Triangle"],[17,"Tight par-4 around the water to set up the finish"]],"holes":[[4,434,""],[4,341,""],[4,431,""],[4,481,""],[3,223,""],[5,574,""],[4,443,""],[3,202,""],[4,406,""],[4,462,""],[3,158,""],[4,411,""],[5,523,""],[4,421,""],[4,296,""],[3,171,""],[4,420,""],[4,444,""]]},"Plantation Course at Kapalua":{"v":"The Plantation Course at Kapalua","loc":"Kapalua, Maui, Hawaii","par":73,"yd":7596,"ver":true,"blurb":"A vast, sweeping Coore-Crenshaw design tumbling down a Maui hillside above the Pacific, the par-73 home of the season-opening Sentry. Enormous fairways and huge elevation changes let the elite field bomb it and feed approaches off the slopes, sending winning totals deep into the 30s under par. Trade winds whip across the exposed ridges, demanding players flight the ball and use the contours. It closes with the Tour's longest hole, a plunging par-5 18th reachable downwind, making distance and imagination the dominant skills.","avg":-2,"cdiff":-0.24,"fit":{"dist":0.923,"acc":0.923,"app":0.82,"sht":0.82,"scr":0.82,"bnk":0.82,"put":0.918,"clu":1},"sig":[[18,"The Tour's longest hole, a 677-yard downhill par-5 you can ride the trade winds down"],[7,"A huge downwind par-4 that plays far shorter than its yardage"],[17,"A 550-yard par-4, only at Kapalua"]],"holes":[[4,520,""],[3,219,""],[4,424,""],[4,422,""],[5,526,""],[4,424,""],[4,522,""],[3,199,""],[5,550,""],[4,384,""],[3,161,""],[4,424,""],[4,383,""],[4,301,""],[5,541,""],[4,369,""],[4,550,""],[5,677,""]]},"East Lake Golf Club":{"v":"East Lake Golf Club","loc":"Atlanta, Georgia","par":71,"yd":7490,"ver":false,"blurb":"Bobby Jones's historic Atlanta home club, recently restored toward its 1949 Donald Ross character and lengthened for the Tour Championship finale. Tree-lined and stoutly bunkered, it now plays as a stern par 71 with firm greens and a water-bisected par-5 closer that crowns the FedEx Cup. The redesign added real teeth, rewarding long, controlled iron play and punishing loose approaches. Complete, well-rounded golf, not one standout skill, tends to lift the season's final trophy here.","avg":-1.82,"cdiff":-0.223,"fit":{"dist":0.82,"acc":0.82,"app":0.861,"sht":0.857,"scr":0.857,"bnk":0.857,"put":0.968,"clu":1},"sig":[[18,"Long par-5 closer bisected by water, the Tour Championship's deciding hole"],[15,"Reachable par-5 to spark a late charge"],[9,"Long, demanding par-3 to a guarded green"]],"holes":[[4,485,""],[3,205,""],[4,440,""],[4,415,""],[4,460,""],[5,545,""],[4,480,""],[4,430,""],[3,235,""],[4,430,""],[3,205,""],[4,440,""],[4,470,""],[4,430,""],[5,545,""],[3,210,""],[4,440,""],[5,590,""]]},"Glen Abbey":{"v":"Glen Abbey Golf Club","loc":"Oakville, Ontario, Canada","par":72,"yd":7253,"ver":true,"blurb":"Jack Nicklaus's first solo design, a 1976 layout in the Ontario woods that hosted the Canadian Open more than two dozen times. An open, reachable front nine gives way to a daring 'valley' back nine where Sixteen Mile Creek snakes through the closing holes. The par-5 18th, its green guarded by water, has produced legendary finishes, none greater than Tiger's 6-iron from the fairway bunker in 2000. Reachable par-5s and a willingness to take on the creek make it a scorable but dramatic test.","avg":-1,"cdiff":-0.142,"fit":{"dist":1.136,"acc":1.136,"app":1.221,"sht":1.147,"scr":1.147,"bnk":1.147,"put":0.986,"clu":1},"sig":[[11,"Start of the famous 'valley holes' plunging toward Sixteen Mile Creek"],[18,"Water-guarded par-4 closer where Tiger's 2000 bunker shot became legend"],[13,"Par-5 in the valley tempting an aggressive second"]],"holes":[[5,502,""],[4,414,""],[3,156,""],[4,417,""],[5,527,""],[4,437,""],[3,197,""],[4,433,""],[4,458,""],[4,443,""],[4,452,"Valley"],[3,205,"Valley"],[5,558,"Valley"],[4,457,"Valley"],[3,141,"Valley"],[5,516,""],[4,436,""],[4,470,""]]},"Sedgefield Country Club":{"v":"Sedgefield Country Club","loc":"Greensboro, North Carolina","par":70,"yd":7117,"ver":false,"blurb":"A classic 1926 Donald Ross design in Greensboro, lovingly restored to its original character as the home of the Wyndham Championship. There is no water in play; the defense is all in the details, subtle turtle-back greens that repel imprecise approaches, clever bunkering and tree-lined parkland framing. It favors finesse, angles and a deft touch over raw power, exactly the way Ross intended. Accurate iron play to the right portions of the greens, and a sharp short game when you miss, are how scores tumble here.","avg":-0.85,"cdiff":-0.129,"fit":{"dist":1.054,"acc":1.054,"app":0.82,"sht":0.82,"scr":0.82,"bnk":0.82,"put":0.975,"clu":1},"sig":[[18,"Downhill par-4 closer off an elevated tee"],[7,"Long, exacting par-3, one of the course's stoutest holes"],[17,"Reachable par-5 offering a late birdie before the finish"]],"holes":[[4,420,""],[4,440,""],[3,175,""],[4,430,""],[5,530,""],[4,425,""],[3,225,""],[4,375,""],[4,415,""],[4,435,""],[4,450,""],[3,240,""],[4,395,""],[4,440,""],[3,190,""],[4,400,""],[5,575,""],[4,502,""]]},
-  "Pinehurst No. 2":{"v":"Pinehurst No. 2","loc":"Pinehurst, North Carolina","par":70,"yd":7550,"ver":false,"blurb":"Donald Ross's 1907 masterpiece, its severe turtleback greens shed anything but a perfectly judged approach, punishing misses into sandy waste areas and wiregrass.","avg":3.0,"cdiff":0.222,"fit":{"dist":0.879,"acc":0.879,"app":0.976,"sht":1.4,"scr":1.4,"bnk":1.4,"put":1.107,"clu":1.0},"sig":[[5,"A brutal 588-yard par 5 that stretches the round's toughest demand for precision off the tee"],[10,"The longest hole at a U.S. Open, a 617-yard par 5 that tests both power and patience"],[13,"Pinehurst's turtleback greens are never more punishing than on this short, dangerous par 4"]],"holes":[[4,398,""],[4,507,""],[4,387,""],[4,528,""],[5,588,""],[3,216,""],[4,426,""],[4,492,""],[3,184,""],[5,617,""],[4,478,""],[4,486,""],[4,381,""],[4,472,""],[3,199,""],[4,536,""],[3,207,""],[4,448,""]]},
-  "Royal Troon":{"v":"Royal Troon Golf Club (Old Course)","loc":"Troon, Scotland","par":71,"yd":7249,"ver":false,"blurb":"A brutal out-and-back Ayrshire links where the terrifying, tiny par-3 8th, the Postage Stamp, sits inside a murderous stretch of railway, gorse, and coastal wind.","avg":2.8,"cdiff":0.205,"fit":{"dist":1.4,"acc":1.4,"app":1.175,"sht":1.226,"scr":1.226,"bnk":1.226,"put":0.971,"clu":1.0},"sig":[[8,"The Postage Stamp, golf's smallest and most feared par 3, a mere 123 yards ringed by deep pot bunkers"],[11,"The Railway hole runs tight along the Glasgow-Ayr line with gorse choking the fairway, one of the hardest holes in Open rotation"],[18,"Craigend's closing par 4 has decided Open Championships, including Henrik Stenson's 2016 duel with Phil Mickelson"]],"holes":[[4,453,"Seal"],[4,391,"Black Rock"],[4,379,"Gyaws"],[5,555,"Dunure"],[3,188,"Greenan"],[5,623,"Turnberry"],[4,405,"Tel-el-Kebir"],[3,123,"Postage Stamp"],[4,387,"The Monk"],[4,451,"Sandhills"],[4,482,"The Railway"],[4,430,"The Fox"],[4,473,"Burmah"],[3,178,"Alton"],[4,499,"Crosbie"],[5,554,"Well"],[3,220,"Rabbit"],[4,458,"Craigend"]]},
-  "Carnoustie":{"v":"Carnoustie Golf Links (Championship Course)","loc":"Carnoustie, Scotland","par":71,"yd":7413,"ver":false,"blurb":"'Carnasty', a merciless finishing stretch where the twisting Barry Burn crosses the fairway three times and has ended championship dreams, most infamously Jean van de Velde's.","avg":1.8,"cdiff":0.121,"fit":{"dist":0.95,"acc":1.25,"app":1.2,"sht":1.2,"scr":1.25,"bnk":1.15,"put":1.05,"clu":1.0},"sig":[[18,"The Barry Burn crossing in front of the Home green produced Jean van de Velde's catastrophic 1999 meltdown that cost him the Claret Jug"],[6,"Hogan's Alley, named for Ben Hogan's daring line over the burn in his lone 1953 Open win, remains high-risk, high-reward"],[17,"The Island hole demands a drive threaded between two bends of the Barry Burn, one of the tightest tee shots in championship golf"]],"holes":[[4,406,"Cup"],[4,463,"Gulley"],[4,358,"Jockie's Burn"],[4,412,"Hillocks"],[4,415,"Brae"],[5,578,"Hogan's Alley"],[4,410,"Plantation"],[3,183,"Short"],[4,478,"Railway"],[4,466,"South America"],[4,383,"Dyke"],[4,499,"Southward Ho"],[3,168,"Whins"],[5,514,"Spectacles"],[4,472,"Lucky Slap"],[3,248,"Barry Burn"],[4,461,"Island"],[4,499,"Home"]]},
-  "Royal Portrush":{"v":"Royal Portrush Golf Club (Dunluce Links)","loc":"Portrush, Northern Ireland","par":71,"yd":7370,"ver":false,"blurb":"The Open's dramatic return to Northern Ireland after 68 years, where wild dunes, Atlantic wind, and the terrifying drop of Calamity Corner test nerve at every turn.","avg":1.175,"cdiff":0.067,"fit":{"dist":1.244,"acc":1.244,"app":1.057,"sht":1.127,"scr":1.127,"bnk":1.127,"put":1.016,"clu":1.0},"sig":[[16,"Calamity Corner, a par 3 played over a yawning chasm to a narrow green, one of golf's most feared and photographed holes"],[1,"Rory McIlroy's opening tee shot went out of bounds here in 2019, leading to a quadruple-bogey in front of his home crowd"],[18,"Babington's closing hole saw Shane Lowry seal a six-shot win in brutal wind and rain to become Ireland's Open champion"]],"holes":[[4,420,"Hughie's"],[5,575,"Giant's Grave"],[3,176,"Islay"],[4,502,"Fred Daly's"],[4,372,"White Rocks"],[3,193,"Harry Colt's"],[5,607,"Curran Point"],[4,432,"Dunluce"],[4,432,"P.G. Stevenson's"],[4,448,"Himalayas"],[4,474,"Tavern"],[5,532,"Dhu Varren"],[3,195,"Feather Bed"],[4,470,"Causeway"],[4,426,"Skerries"],[3,236,"Calamity Corner"],[4,407,"Purgatory"],[4,473,"Babington's"]]},
-  "Turnberry":{"v":"Turnberry (Ailsa Course)","loc":"Turnberry, Scotland","par":70,"yd":7204,"ver":false,"blurb":"A dramatic clifftop links beneath the Turnberry lighthouse, where Ailsa Craig looms over the Firth of Clyde and the closing holes have broken hearts, most famously Tom Watson's at 59.","avg":2.59,"cdiff":0.188,"fit":{"dist":1.05,"acc":1.1,"app":1.2,"sht":1.2,"scr":1.25,"bnk":1.15,"put":1.05,"clu":1.0},"sig":[[9,"Bruce's Castle plays from a rocky promontory past the iconic lighthouse, with Ailsa Craig on the horizon"],[18,"Duel in the Sun, named for the legendary 1977 Nicklaus-Watson finish, in 2009, 59-year-old Watson's approach here forced the playoff he'd lose to Stewart Cink"],[17,"Lang Whang, the course's other par 5, swung the pivotal 2009 playoff after Watson's double bogey"]],"holes":[[4,354,"Ailsa Craig"],[4,428,"Mak Siccar"],[4,489,"Blaw Wearie"],[3,166,"Woe-Be-Tide"],[4,474,"Fin' Me Oot"],[3,231,"Tappie Toorie"],[5,538,"Roon the Ben"],[4,454,"Goat Fell"],[4,449,"Bruce's Castle"],[4,456,"Dinna Fouter"],[3,175,"Maidens"],[4,451,"Monument"],[4,410,"Tickly Tap"],[4,448,"Risk-an-Hope"],[3,206,"Ca' Canny"],[4,455,"Wee Burn"],[5,559,"Lang Whang"],[4,461,"Duel in the Sun"]]},
-  "Riviera Country Club":{"v":"Riviera Country Club","loc":"Pacific Palisades, California","par":71,"yd":7383,"ver":false,"blurb":"A canyon-carved George Thomas masterpiece where a mid-green bunker and a drivable, dagger-thin par-4 tenth have humbled legends since Hogan turned it into his personal 'Alley.'","avg":-1.35,"cdiff":-0.155,"fit":{"dist":0.82,"acc":0.82,"app":0.844,"sht":1.251,"scr":1.251,"bnk":1.251,"put":1.069,"clu":1.0},"sig":[[6,"A par 3 famous for the bunker built directly into the middle of the green, splitting the surface into four tricky quadrants"],[10,"A tempting, drivable par 4 ringed by bunkers that Jack Nicklaus called one of the greatest short holes in championship golf"],[18,"An uphill, semi-blind closer climbing the canyon wall to a green that has decided the Genesis Invitational"]],"holes":[[5,503,""],[4,471,""],[4,434,""],[3,273,""],[4,434,""],[3,199,""],[4,408,""],[4,433,""],[4,458,""],[4,315,""],[5,583,""],[4,479,""],[4,459,""],[3,192,""],[4,487,""],[3,166,""],[5,590,""],[4,499,""]]},
-  "Torrey Pines South":{"v":"Torrey Pines Golf Course (South)","loc":"La Jolla, California","par":72,"yd":7765,"ver":false,"blurb":"A rugged, wind-whipped municipal test perched on La Jolla's sea cliffs, where the par-3 3rd stares down the Pacific and a brutal closing stretch has decided U.S. Opens.","avg":-0.19,"cdiff":-0.052,"fit":{"dist":0.82,"acc":0.82,"app":1.008,"sht":1.081,"scr":1.081,"bnk":1.081,"put":1.069,"clu":1.0},"sig":[[3,"A cliffside par 3 with a postcard Pacific Ocean backdrop, one of the most beautiful and intimidating tee shots in golf"],[18,"The par-5 closer guarded by 'Devlin's Billabong,' where Tiger Woods drained a clutch birdie to force the legendary 2008 U.S. Open playoff"],[13,"A monster 621-yard par 5 anchoring the demanding closing stretch, a key battleground in the 2021 U.S. Open"]],"holes":[[4,451,""],[4,389,""],[3,201,""],[4,490,""],[4,454,""],[5,564,""],[4,462,""],[3,177,""],[5,615,""],[4,454,""],[3,225,""],[4,505,""],[5,621,""],[4,437,""],[4,480,""],[3,227,""],[4,443,""],[5,570,"Devlin's Billabong"]]},
-  "Innisbrook Copperhead":{"v":"Innisbrook Resort (Copperhead Course)","loc":"Palm Harbor, Florida","par":71,"yd":7250,"ver":false,"blurb":"Pine-lined and unusually hilly for Florida, Copperhead bares its fangs in the closing 'Snake Pit,' Moccasin, Rattler, and Copperhead, where Valspar titles are won or lost.","avg":0.65,"cdiff":0.021,"fit":{"dist":0.82,"acc":0.82,"app":0.949,"sht":0.948,"scr":0.948,"bnk":0.948,"put":0.949,"clu":1.0},"sig":[[16,"Moccasin, a heavily water-guarded par 4 that opens the fearsome Snake Pit finishing stretch"],[17,"The Rattler, a long, well-bunkered par 3 demanding a precise long-iron with the tournament on the line"],[14,"Packard's Double Dogleg, a bending 590-yard par 5 widely called the course's true signature hole"]],"holes":[[5,521,"Innisbrook's View"],[4,413,"Second Thoughts"],[4,442,"Narrow Neck"],[3,210,"Bunkered"],[5,650,"Longview"],[4,470,"Sidewinder"],[4,420,"Hidden Gem"],[3,176,"Drop Off"],[4,378,""],[4,374,"The Descent"],[5,601,"O's Alley"],[4,460,"Bridge Hole"],[3,191,"Forced Carry"],[5,590,"Packard's Double Dogleg"],[3,215,"Snake Bite"],[4,459,"Moccasin"],[3,215,"The Rattler"],[4,465,"The Copperhead"]]},
-  "Waialae Country Club":{"v":"Waialae Country Club","loc":"Honolulu, Hawaii","par":70,"yd":6935,"ver":false,"blurb":"A Seth Raynor gem along Waialae Beach, its template greens demand precise ball-striking while trade winds and Diamond Head views punish any lapse in a birdie-friendly but exacting test.","avg":-1.0,"cdiff":-0.124,"fit":{"dist":1.044,"acc":1.044,"app":0.82,"sht":0.87,"scr":0.87,"bnk":0.87,"put":0.968,"clu":1.0},"sig":[[17,"Alae, a stunning Redan-style par 3 hugging Waialae Beach, its raised green guarded by deep bunkers and shifting trade winds"],[18,"Kilou Loa, the closing par 5 where Isao Aoki holed a wedge for eagle in 1983 to win his only PGA Tour title"],[16,"Welo, a demanding par 4 that sets up the dramatic finish along the shoreline"]],"holes":[[4,420,""],[4,423,""],[4,422,""],[3,204,""],[4,467,""],[4,462,""],[3,176,""],[3,188,""],[5,506,""],[4,426,""],[4,395,""],[4,426,""],[4,430,""],[4,430,""],[4,398,""],[4,417,"Welo"],[3,194,"Alae"],[5,551,"Kilou Loa"]]},
-  "Colonial Country Club":{"v":"Colonial Country Club","loc":"Fort Worth, Texas","par":70,"yd":7289,"ver":false,"blurb":"A tight, tree-lined shotmaker's gauntlet along the Trinity River, where Ben Hogan's ghost still haunts the notorious Horrible Horseshoe.","avg":0.4,"cdiff":-0.001,"fit":{"dist":0.82,"acc":0.82,"app":1.043,"sht":0.871,"scr":0.871,"bnk":0.871,"put":0.996,"clu":1.0},"sig":[[4,"The par-3 heart of the 'Horrible Horseshoe', a 247-yard terror to an elevated green that has never been aced in tournament history"],[5,"The hardest hole at Colonial, a dogleg-right par 4 with a river right and ditch left demanding a precise tee shot"],[13,"The signature par 3 over water where Colonial's tournament crowd gathers thickest"]],"holes":[[5,581,""],[4,389,""],[4,483,""],[3,247,""],[4,476,""],[4,406,""],[4,430,""],[3,210,""],[4,430,""],[4,430,""],[5,635,""],[4,430,""],[3,199,""],[4,448,""],[4,428,""],[4,430,""],[3,210,""],[4,427,""]]},
-  "Southern Hills":{"v":"Southern Hills Country Club","loc":"Tulsa, Oklahoma","par":70,"yd":7556,"ver":false,"blurb":"A Perry Maxwell design where tree-lined corridors and a snaking creek punish any drive that strays, capped by a par 4 that Hogan and Palmer both called one of America's greatest.","avg":3.2,"cdiff":0.239,"fit":{"dist":1.027,"acc":1.027,"app":1.199,"sht":1.203,"scr":1.203,"bnk":1.203,"put":1.118,"clu":1.0},"sig":[[12,"Praised by Hogan and Palmer as one of America's greatest par 4s, a dogleg left with a blind tee shot and a creek by the green"],[17,"A short, driveable, risk-reward par 4 where Justin Thomas drove the green in the 2022 PGA Championship playoff"],[5,"The longest hole on the course and the only par 5 on the front nine, a stern 656-yard test"]],"holes":[[4,468,""],[4,500,""],[4,472,""],[4,377,""],[5,656,""],[3,214,""],[4,489,""],[3,251,""],[4,391,""],[4,441,""],[3,173,""],[4,456,""],[5,632,""],[3,230,""],[4,417,""],[4,527,""],[4,371,""],[4,491,""]]},
-  "Firestone South":{"v":"Firestone Country Club (South Course)","loc":"Akron, Ohio","par":70,"yd":7252,"ver":false,"blurb":"A tree-lined Akron gauntlet built for power and precision, anchored by the 667-yard 'Monster' 16th and a Tiger Woods proving ground for two decades.","avg":-0.1,"cdiff":-0.044,"fit":{"dist":0.862,"acc":0.862,"app":0.987,"sht":0.974,"scr":0.974,"bnk":0.974,"put":1.008,"clu":1.0},"sig":[[16,"The Monster, a 667-yard par 5 named by Arnold Palmer after a costly 1960 triple bogey, one of the longest par 5s in tour golf"],[18,"A tree-lined closer where Tiger Woods struck his legendary 2000 'Shot in the Dark' to seal an 11-shot rout"],[6,"Long rated the course's hardest hole, a tight, tree-guarded dogleg that breaks many contenders' rounds"]],"holes":[[4,399,""],[5,497,""],[4,442,""],[4,471,""],[3,200,""],[4,469,""],[3,219,""],[4,452,""],[4,484,""],[4,410,""],[4,370,""],[3,180,""],[4,467,""],[4,440,""],[3,221,""],[5,667,"The Monster"],[4,400,""],[4,464,""]]},
-  "Winged Foot":{"v":"Winged Foot Golf Club (West Course)","loc":"Mamaroneck, New York","par":70,"yd":7477,"ver":false,"blurb":"A merciless Tillinghast gauntlet of pinched fairways, cavernous bunkers, and severely canted greens that earned Winged Foot its 'Massacre' reputation in 1974.","avg":4.07,"cdiff":0.311,"fit":{"dist":0.82,"acc":0.82,"app":1.214,"sht":1.344,"scr":1.344,"bnk":1.344,"put":1.226,"clu":1.0},"sig":[[10,"Ben Hogan called this par 3 'a 3-iron into someone's bedroom window,' a three-lobed green ringed by canyon-deep bunkers"],[18,"The green where Phil Mickelson's 2006 meltdown, driver into a hospitality tent, a tree, a bunker, cost him the U.S. Open"],[12,"A brutal 633-yard par-5 dogleg that stretches even the field's longest hitters to their limit"]],"holes":[[4,451,""],[4,484,""],[3,243,""],[4,467,""],[4,502,""],[4,321,""],[3,162,""],[4,490,""],[5,565,""],[3,214,""],[4,384,""],[5,633,""],[3,212,""],[4,452,""],[4,426,""],[4,498,""],[4,504,""],[4,469,""]]},
-  "Bethpage Black":{"v":"Bethpage Black Course","loc":"Farmingdale, New York","par":70,"yd":7363,"ver":false,"blurb":"A public-course gauntlet by A.W. Tillinghast, where the first-tee warning sign promises 'extremely difficult,' and brutal length, deep bunkers, and unrelenting rough punish every miscalculation.","avg":2.543,"cdiff":0.184,"fit":{"dist":0.82,"acc":0.82,"app":0.967,"sht":0.946,"scr":0.946,"bnk":0.946,"put":1.04,"clu":1.0},"sig":[[4,"The par-5 signature hole, split by a massive Sahara-style bunker complex that turns a birdie chance into a heroic gamble"],[7,"Converted from a par 5 into a brutish, dogleg-right 520-yard par 4 for major championships"],[15,"The toughest hole in multiple U.S. Opens, its approach climbs 50 feet to a green so steep locals sled down it in winter"]],"holes":[[4,430,""],[4,389,""],[3,158,""],[5,517,""],[4,478,""],[4,408,""],[4,520,""],[3,210,""],[4,460,""],[4,502,""],[4,435,""],[4,501,""],[5,608,""],[3,161,""],[4,478,""],[4,490,""],[3,207,""],[4,411,""]]},
-  "Whistling Straits":{"v":"Whistling Straits (Straits Course)","loc":"Haven, Wisconsin","par":72,"yd":7730,"ver":false,"blurb":"A wind-lashed links carved into Lake Michigan's bluffs, guarded by over a thousand bunkers and a shoreline that turns every round into a survival test.","avg":2.0,"cdiff":0.137,"fit":{"dist":0.981,"acc":0.981,"app":1.123,"sht":1.35,"scr":1.35,"bnk":1.35,"put":1.111,"clu":1.0},"sig":[[17,"Pinched Nerve demands a white-knuckle tee shot over dunes with a 20-foot drop to sand or Lake Michigan itself"],[18,"Dyeabolical is Pete Dye's diabolical finisher, where Dustin Johnson's 2010 bunker ruling cost him a shot at the PGA Championship title"],[13,"Cliff Hanger hugs the Lake Michigan shoreline with a narrow green perched above the water"]],"holes":[[4,493,"Outward Bound"],[5,597,"Cross Country"],[3,188,"O'Man"],[4,494,"Glory"],[5,603,"Snake"],[4,409,"Gremlin's Ear"],[3,221,"Shipwreck"],[4,507,"On the Rocks"],[4,442,"Down and Dirty"],[4,361,"Voyageur"],[5,645,"Sand Box"],[3,163,"Pop Up"],[4,402,"Cliff Hanger"],[4,396,"Widow's Watch"],[4,518,"Grand Strand"],[5,568,"Endless Bite"],[3,223,"Pinched Nerve"],[4,500,"Dyeabolical"]]},
-  "Shinnecock Hills":{"v":"Shinnecock Hills Golf Club","loc":"Southampton, New York","par":70,"yd":7449,"ver":false,"blurb":"A founding pillar of American golf, Shinnecock's windswept Long Island linksland tests firm fescue and domed greens where 2004's near-disaster gave way to 2018's hard-earned redemption.","avg":4.39,"cdiff":0.336,"fit":{"dist":0.909,"acc":0.909,"app":1.075,"sht":1.218,"scr":1.218,"bnk":1.218,"put":1.126,"clu":1.0},"sig":[[7,"The brutal Redan-style par 3 whose baked-out green nearly broke the championship in 2004, forever synonymous with USGA overreach"],[11,"Just 159 yards yet so ferocious Lee Trevino dubbed it 'the shortest par 5 in golf'"],[18,"An uphill, partially blind finisher playing home to the Stanford White clubhouse, one of championship golf's great closing stages"]],"holes":[[4,399,"Westward Ho"],[3,252,"Plateau"],[4,501,"Peconic"],[4,476,"Pump House"],[5,592,"Montauk"],[4,495,"Pond"],[3,189,"Redan"],[4,439,"Lowlands"],[4,482,"Ben Nevis"],[4,415,"Eastward Ho"],[3,159,"Hill Head"],[4,469,"Tuckahoe"],[4,374,"Road"],[4,519,"Thom's Elbow"],[4,409,"Sebonac"],[5,616,"Shinnecock"],[3,178,"Eden"],[4,485,"Home"]]},
-  "Kiawah Island Ocean":{"v":"The Ocean Course at Kiawah Island","loc":"Kiawah Island, South Carolina","par":72,"yd":7846,"ver":false,"blurb":"Pete Dye strips away every tree and hides his traps in plain sight, leaving golfers exposed on wind-lashed dunes where the Atlantic decides who out-thinks it and who doesn't.","avg":2.0,"cdiff":0.137,"fit":{"dist":1.361,"acc":1.361,"app":1.283,"sht":1.4,"scr":1.4,"bnk":1.4,"put":1.038,"clu":1.0},"sig":[[17,"A fully exposed island-style par 3 dubbed the tournament's torture chamber, where Phil Mickelson's tense bogey nearly cost him the 2021 PGA Championship"],[18,"An ocean-hugging par-4 closer where the 1991 'War by the Shore' Ryder Cup was decided with the Atlantic bearing down the entire hole"],[7,"A near-600-yard par 5 that forces a gamble over a natural dune intrusion, epitomizing Dye's risk-reward deception"]],"holes":[[4,396,""],[5,557,""],[4,390,""],[4,484,""],[3,207,""],[4,490,""],[5,579,""],[3,197,""],[4,514,""],[4,447,""],[5,593,""],[4,484,""],[4,497,""],[3,238,""],[4,466,""],[5,581,""],[3,221,""],[4,505,""]]},
-  "Olympic Club":{"v":"The Olympic Club (Lake Course)","loc":"San Francisco, California","par":70,"yd":7177,"ver":false,"blurb":"Cypress-shadowed and relentlessly canted, this par-70 has spent seventy years luring the game's greatest names into historic collapse on one deceptively short, cruelly sloped green after another.","avg":4.75,"cdiff":0.365,"fit":{"dist":0.9,"acc":1.3,"app":1.2,"sht":1.15,"scr":1.15,"bnk":1.05,"put":1.05,"clu":1.0},"sig":[[18,"A short, savage par 4 whose tiny hillside green has decided three separate U.S. Opens and nearly a fourth in 2012"],[1,"One of the longest par-4 openers in U.S. Open history, offering no chance to ease into the round"],[16,"The longest hole in U.S. Open championship history at 670 yards, testing endurance as much as ball-striking"]],"holes":[[4,520,""],[4,428,""],[3,247,""],[4,438,""],[4,498,""],[4,489,""],[4,288,""],[3,200,""],[4,449,""],[4,430,""],[4,430,""],[4,451,""],[3,199,""],[4,417,""],[3,154,""],[5,670,""],[5,522,""],[4,347,""]]},
-  "Baltusrol":{"v":"Baltusrol Golf Club (Lower Course)","loc":"Springfield, New Jersey","par":70,"yd":7253,"ver":false,"blurb":"A Tillinghast gauntlet of diagonal bunkers and blind doglegs that builds to two monstrous closing par 5s, where a mid-fairway desert called the Sahara and a long slog to 18 have broken and made major champions alike.","avg":0.41,"cdiff":0,"fit":{"dist":1.15,"acc":1.05,"app":1.2,"sht":1.0,"scr":1.0,"bnk":1.0,"put":1.05,"clu":1.0},"sig":[[4,"The Famous Fourth, a par 3 over a lake so demanding Robert Trent Jones defended his redesign by acing it himself in front of skeptical members"],[17,"A three-shot par 5 bisected by the massive sandy Sahara waste complex, demanding two precise strikes just for position"],[18,"The closing par 5 where Jack Nicklaus struck his legendary 1-iron approach to set up the winning birdie in the 1967 U.S. Open"]],"holes":[[4,478,""],[4,378,""],[4,504,""],[3,195,"The Famous Fourth"],[4,375,""],[4,482,""],[4,505,""],[4,347,""],[3,210,""],[4,437,""],[4,444,""],[3,220,""],[4,432,""],[4,430,""],[4,383,""],[3,230,""],[5,650,"Sahara"],[5,553,""]]},
-  "The Country Club":{"v":"The Country Club","loc":"Brookline, Massachusetts","par":70,"yd":7264,"ver":false,"blurb":"An 1890s puzzle box of blind crests, tilted greens, and puddingstone ledge threaded between New England stone walls, where the low, historic Elbow can undo a round as easily as any brute par 5.","avg":3.0,"cdiff":0.222,"fit":{"dist":0.82,"acc":0.82,"app":1.184,"sht":1.339,"scr":1.339,"bnk":1.339,"put":1.062,"clu":1.0},"sig":[[17,"Elbow, the most historically loaded hole in American golf, Ouimet birdied it to force the 1913 playoff, and Justin Leonard's putt here sealed the 1999 Ryder Cup comeback"],[11,"Reintroduced for the 2022 U.S. Open as a deliberate callback to Francis Ouimet's legendary 1913 win"],[18,"The closing hole where Matt Fitzpatrick sealed his 2022 U.S. Open title with a clutch bunker shot to a few feet"]],"holes":[[4,488,""],[3,215,""],[4,499,""],[4,493,""],[4,310,""],[3,192,""],[4,375,""],[5,557,""],[4,427,""],[4,499,""],[3,131,""],[4,473,""],[4,450,""],[5,619,""],[4,510,""],[3,202,""],[4,373,"Elbow"],[4,451,""]]},
-  "Merion":{"v":"Merion Golf Club (East Course)","loc":"Ardmore, Pennsylvania","par":70,"yd":6979,"ver":false,"blurb":"Merion disarms with its brevity, then punishes every loose swing with claustrophobic fairways, wicker baskets offering no wind clue, and a merciless quarry-scarred finish where precision beats power every time.","avg":4.5,"cdiff":0.345,"fit":{"dist":0.82,"acc":1.3,"app":1.25,"sht":1.15,"scr":1.15,"bnk":1.05,"put":1.15,"clu":1.0},"sig":[[11,"Site of Bobby Jones's 1930 Grand Slam-clinching victory, its green nearly encircled by 'Baffling Brook,' swallowing any wayward approach"],[17,"A long downhill par 3 over rock and scrub in 'the Quarry,' where Shawn Stefani made the first U.S. Open hole-in-one at Merion in 2013"],[18,"An uphill finisher over the old quarry where Ben Hogan's iconic 1-iron won the 1950 U.S. Open"]],"holes":[[4,350,""],[5,556,""],[3,256,""],[5,628,""],[4,504,""],[4,487,""],[4,360,""],[4,359,""],[3,236,""],[4,303,""],[4,367,""],[4,403,""],[3,115,""],[4,464,""],[4,411,""],[4,430,""],[3,229,""],[4,521,""]]},
-  "Oakland Hills":{"v":"Oakland Hills Country Club (South Course)","loc":"Bloomfield Hills, Michigan","par":70,"yd":7365,"ver":false,"blurb":"Robert Trent Jones dressed Donald Ross's rolling Michigan farmland in menacing new bunkers and tightened fairways until even Hogan, its conqueror, branded it a monster that had to be beaten into submission.","avg":4.0,"cdiff":0.305,"fit":{"dist":0.95,"acc":1.3,"app":1.25,"sht":1.15,"scr":1.15,"bnk":1.05,"put":1.05,"clu":1.0},"sig":[[16,"A sharp dogleg right bending around a pond to a green guarded by water, demanding a precise second shot over hazard"],[17,"A long, exposed par 3 regarded as the course's best one-shotter, offering little margin for error into a well-defended green"],[11,"One of Donald Ross's original prized holes, with a severely sloping fairway that leaves a blind approach if the tee shot misses right"]],"holes":[[4,435,""],[5,529,""],[3,198,""],[4,446,""],[4,490,""],[4,387,""],[4,449,""],[4,491,""],[3,257,""],[4,400,""],[4,455,""],[5,593,""],[3,191,""],[4,501,""],[4,401,""],[4,406,""],[3,238,""],[4,498,""]]},
-  "TPC Southwind":{"v":"TPC Southwind","loc":"Memphis, Tennessee","par":70,"yd":7283,"ver":false,"blurb":"A humid, tree-lined gauntlet of zoysia fairways and water-guarded greens where a scaled-down island green and a brutal 231-yard par 3 decide the first FedEx Cup Playoffs cut.","avg":-0.88,"cdiff":-0.113,"fit":{"dist":1.112,"acc":1.112,"app":1.27,"sht":1.073,"scr":1.073,"bnk":1.073,"put":0.948,"clu":1.0},"sig":[[11,"A 165-yard par 3 to a tiny island green, often called a smaller cousin of TPC Sawgrass's famous 17th"],[14,"A 231-yard par 3 guarded by water down the entire right side, routinely ranked among the toughest par 3s on Tour"],[18,"A demanding 453-yard closing par 4 that has decided the FedEx St. Jude Championship in playoffs and dramatic finishes"]],"holes":[[4,434,""],[4,401,""],[5,554,""],[3,196,""],[4,529,""],[4,445,""],[4,482,""],[3,178,""],[4,457,""],[4,465,""],[3,165,""],[4,406,""],[4,472,""],[3,231,""],[4,395,""],[5,530,""],[4,490,""],[4,453,""]]}};
+const DAILY_COURSES={"Augusta National":{"v":"Magnolia Hollow Golf Club","loc":"Georgia","par":72,"yd":7565,"ver":true,"blurb":"A springtime cathedral of pines, magnolias and blooming azaleas, where the fairways look wide and the true defense is the glassiest set of greens in championship golf. The second nine is built for drama: water guards the short 12th and both closing par-5s, so a Sunday charge can become a splash in one swing. Pinpoint irons and a velvet touch on firm, fall-away surfaces win here far more than raw length.","avg":1.41,"cdiff":0.06,"fit":{"dist":1.137,"acc":1.137,"app":1.141,"sht":1.339,"scr":1.339,"bnk":1.339,"put":0.976,"clu":1},"sig":[[12,"A perilous short par-3 over the creek at the Cathedral turn, swirling wind, shallow green"],[13,"Par-5 dogleg around the creek; eagle chance but water guards the green"],[15,"Par-5 over the pond where late eagles and bogeys decide the Invitational"]],"holes":[[4,445,"Sweetbay"],[5,585,"Red Maple"],[4,350,"Peach Blossom"],[3,240,"Crab Apple"],[4,495,"Magnolia Walk"],[3,180,"Loblolly"],[4,450,"Wisteria"],[5,570,"Honeysuckle"],[4,460,"Cherry Laurel"],[4,495,"Silverbell"],[4,520,"Dogtooth"],[3,155,"Golden Rain"],[5,545,"Foxglove"],[4,440,"River Birch"],[5,550,"Firebush"],[3,170,"Ironwood"],[4,450,"Sugarberry"],[4,465,"Hollybrook"]]},"TPC Sawgrass":{"v":"Cypress Marsh (Stadium Course)","loc":"Northeast Florida","par":72,"yd":7275,"ver":true,"blurb":"A stadium-golf puzzle carved from Florida marshland, framed by railroad ties, sharp mounding and water lurking on nearly every hole. Position beats power on par-4s that demand exact angles, and the famous closing trio can flip any round: a tiny island green at 17, then water all down the left at the last. Accuracy, nerve and a sharp wedge game rule here.","avg":0.27,"cdiff":-0.037,"fit":{"dist":1.227,"acc":1.227,"app":1.257,"sht":1.13,"scr":1.13,"bnk":1.13,"put":0.995,"clu":1},"sig":[[17,"The island-green par-3 at 137 yards ringed by water, the most feared short hole in the game"],[16,"Reachable par-5 eagle look that sets up the daring finish"],[18,"Brutal par-4 with water all down the left, a nervy closer"]],"holes":[[4,423,""],[5,532,""],[3,177,""],[4,384,""],[4,471,""],[4,393,""],[4,451,""],[3,237,""],[5,602,""],[4,424,""],[5,558,""],[4,369,""],[3,181,""],[4,481,""],[4,470,""],[5,523,""],[3,137,""],[4,462,""]]},"Pebble Beach Golf Links":{"v":"Graystone Cove Golf Links","loc":"Monterey Peninsula, California","par":72,"yd":6972,"ver":true,"blurb":"Clifftop golf above a cold, restless ocean, with the smallest greens in the championship game. Half the round hangs over the water, where sea wind turns short irons into guesswork and a three-hole cliff stretch can wreck any card, before a par-5 closer that curls along the seawall. Precise approach play and a steady touch on tiny targets beat raw distance every time.","avg":-1.27,"cdiff":-0.169,"fit":{"dist":0.82,"acc":0.82,"app":1.153,"sht":1.137,"scr":1.137,"bnk":1.137,"put":1.088,"clu":1},"sig":[[7,"A tiny downhill par-3 to a cliffside green, wind straight off the cove"],[8,"A blind drive to the bluff, then a cliff-carry approach over the chasm"],[18,"Par-5 curling along the seawall, ocean the whole way left"]],"holes":[[4,381,""],[5,516,""],[4,404,""],[4,331,""],[3,195,""],[5,523,""],[3,106,""],[4,428,""],[4,504,""],[4,446,""],[4,390,""],[3,202,""],[4,445,""],[5,580,""],[4,397,""],[4,403,""],[3,178,""],[5,543,""]]},"St Andrews Old Course":{"v":"The Auld Links at Carrickmoor","loc":"Fife, Scotland","par":72,"yd":7305,"ver":true,"blurb":"Ancient linksland shaped by wind and sheep long before architects, with vast double greens, blind humps and a hundred ravenous pot bunkers. Becalmed it can be torn apart; when the sea wind howls it becomes an exam in flight and imagination. The Wall Hole 17th is as hard a par-4 as exists, and the drivable home hole over the burn ends rounds in birdie or heartbreak.","avg":0.3,"cdiff":-0.022,"fit":{"dist":1.328,"acc":1.328,"app":0.85,"sht":1.113,"scr":1.113,"bnk":1.113,"put":1.265,"clu":1},"sig":[[17,"The Wall Hole: a deep pot bunker at the green and a stone wall behind it"],[14,"Long par-5 with the great Pit bunker lurking for bold second shots"],[18,"Drivable home hole over the burn into the old town"]],"holes":[[4,376,"Burnside"],[4,453,"Dyke End"],[4,397,"Gorse Gate"],[4,480,"Ginger Jar"],[5,568,"Crossing Out"],[4,412,"Heather Out"],[4,371,"High Moor"],[3,188,"Wee One"],[4,352,"Land's End"],[4,386,"The Turn"],[3,174,"High In"],[4,351,"Whins"],[4,465,"Crossing In"],[5,618,"Lang Hame"],[4,455,"Gorse In"],[4,418,"Wall Corner"],[4,495,"The Wall"],[4,357,"Toun End"]]},"Oakmont":{"v":"Grindstone Country Club","loc":"Western Pennsylvania","par":70,"yd":7357,"ver":true,"blurb":"Built on the belief that a shot poorly played should be a shot lost forever, this is the hardest parkland test in America. The greens run faster than anything else in the game, the famous ridged Plowlines bunker swallows anything loose, and par is a great score nearly everywhere. Flawless ball-striking and ice-cold putting, or no chance at all.","avg":4.18,"cdiff":0.291,"fit":{"dist":1.262,"acc":1.262,"app":1.191,"sht":1.4,"scr":1.4,"bnk":1.4,"put":1.194,"clu":1},"sig":[[3,"The Plowlines: a vast bunker combed into grass ridges between 3 and 4"],[8,"A par-3 near 290 yards, the longest short hole in the sport"],[17,"A drivable par-4 dangling one birdie amid the punishment"]],"holes":[[4,488,""],[4,346,""],[4,462,"The Plowlines"],[5,609,""],[4,408,""],[3,200,""],[4,479,""],[3,289,"Long par-3"],[4,477,""],[4,461,""],[4,400,""],[5,632,""],[3,182,""],[4,379,""],[4,500,""],[3,231,""],[4,312,""],[4,502,""]]},"TPC Scottsdale":{"v":"Cactus Ridge (Stadium Course)","loc":"Scottsdale, Arizona","par":71,"yd":7261,"ver":true,"blurb":"Desert target golf built for the rowdiest week of the season, with generous landing zones and soft greens that invite a birdie-fest. The enclosed stadium par-3 16th roars or jeers every single swing, and the drivable 17th tempts a rip at the green over water. Bring distance, confident wedges and a thick skin: this is a week to go low.","avg":-0.89,"cdiff":-0.144,"fit":{"dist":1.249,"acc":1.249,"app":0.82,"sht":0.987,"scr":0.987,"bnk":0.987,"put":1.014,"clu":1},"sig":[[16,"The stadium par-3 ringed by 20,000 fans, the loudest hole in golf"],[17,"Drivable par-4 at 332 yards, take on the water and ignite the crowd"],[15,"Reachable par-5 setting up the famous finish"]],"holes":[[4,403,""],[4,442,""],[5,558,""],[3,183,""],[4,470,""],[4,432,""],[3,215,""],[4,475,""],[4,453,""],[4,428,""],[4,472,""],[3,192,""],[5,558,""],[4,490,""],[5,553,""],[3,163,"The Coliseum"],[4,332,""],[4,442,""]]},"Bay Hill":{"v":"Osprey Bay Club & Lodge","loc":"Orlando, Florida","par":72,"yd":7466,"ver":true,"blurb":"A long, muscular Florida parkland where water, deep bunkers and thick Bermuda rough guard firm greens, and the lake wind can flip a round in an hour. The closing stretch is among the tour's meanest, capped by a par-4 finisher over water to a rock-walled green. Long, accurate irons and the courage to attack guarded pins decide it.","avg":0.99,"cdiff":0.022,"fit":{"dist":1.173,"acc":1.173,"app":1.206,"sht":0.979,"scr":0.979,"bnk":0.979,"put":0.973,"clu":1},"sig":[[18,"Water-guarded par-4 closer to a rock-walled green in a natural amphitheater"],[6,"C-shaped par-5 bending around the bay, reward for the brave line"],[16,"Reachable par-5 swinging momentum down the stretch"]],"holes":[[4,461,""],[3,231,""],[4,434,""],[5,590,""],[4,390,""],[5,555,""],[3,199,""],[4,460,""],[4,480,""],[4,400,""],[4,438,""],[5,574,""],[4,382,""],[3,215,""],[4,467,""],[5,511,""],[3,221,""],[4,458,""]]},"Harbour Town Golf Links":{"v":"Lighthouse Point Golf Links","loc":"Lowcountry, South Carolina","par":71,"yd":7213,"ver":true,"blurb":"Short, tight and endlessly clever, threaded through live oaks and Spanish moss where driver is often the wrong club. Small greens and narrow corridors reward the surgeon over the bomber, then the finish bursts open to the sound and a wind-blasted par-4 beneath the striped lighthouse. Shot-shaping and crisp wedges win; raw length is nearly a handicap.","avg":-0.91,"cdiff":-0.14,"fit":{"dist":0.993,"acc":0.993,"app":1.179,"sht":1.183,"scr":1.183,"bnk":1.183,"put":0.959,"clu":1},"sig":[[18,"Exposed par-4 along the sound to the lighthouse, wind off the water"],[17,"Coastal par-3 fully exposed to the breeze"],[14,"A shallow, angled green on a demanding short par-3"]],"holes":[[4,410,""],[5,550,""],[4,469,""],[3,200,""],[5,569,""],[4,419,""],[3,217,""],[4,473,""],[4,332,""],[4,451,""],[4,436,""],[4,430,""],[4,373,""],[3,192,""],[5,588,""],[4,434,""],[3,198,""],[4,472,""]]},"Quail Hollow Club":{"v":"Fox Den Club","loc":"Charlotte, North Carolina","par":71,"yd":7558,"ver":true,"blurb":"A big, rolling parkland of creeks and hardwoods that rewards length but punishes the loose. Everything builds to the Gauntlet, the three-hole closing stretch with water stalking two long par-4s and a brutal par-3 between them. Power off the tee and elite long irons are the winning formula.","avg":0.96,"cdiff":0.021,"fit":{"dist":1.2,"acc":1.2,"app":0.956,"sht":1.062,"scr":1.062,"bnk":1.062,"put":1.09,"clu":1},"sig":[[18,"Closing par-4 with a creek down the entire left, the Gauntlet's last test"],[17,"Par-3 to a water-guarded green in the heart of the Gauntlet"],[16,"A 536-yard par-4 to open the Gauntlet"]],"holes":[[4,495,""],[4,452,""],[4,483,""],[3,184,""],[4,449,""],[3,249,""],[5,546,""],[4,346,""],[4,505,""],[5,592,""],[4,462,""],[4,456,""],[3,205,""],[4,344,""],[5,577,""],[4,536,"The Gauntlet"],[3,190,"The Gauntlet"],[4,494,"The Gauntlet"]]},"Muirfield Village":{"v":"Founders Village Golf Club","loc":"Dublin, Ohio","par":72,"yd":7569,"ver":true,"blurb":"An exacting parkland masterpiece, endlessly refined, with water touching a dozen holes and some of the fastest, most contoured greens on tour. Position off the tee is everything and the long, creek-guarded finisher routinely decides the Founders Invitational. Total ball-striking plus a brave putter, or nothing.","avg":1.26,"cdiff":0.05,"fit":{"dist":0.872,"acc":0.872,"app":1.269,"sht":1.298,"scr":1.298,"bnk":1.298,"put":1.102,"clu":1},"sig":[[18,"Brutish par-4 closer with a creek left, routinely the week's hardest hole"],[16,"Par-3 over water to a perched green, pure risk"],[14,"Short, strategic par-4 demanding a dead-handed wedge"]],"holes":[[4,490,""],[4,459,""],[4,392,""],[3,210,""],[5,547,""],[4,455,""],[5,582,""],[3,200,""],[4,417,""],[4,472,""],[5,588,""],[3,180,""],[4,455,""],[4,360,""],[5,561,""],[3,218,""],[4,503,""],[4,480,""]]},"Valhalla":{"v":"Ironwood Ridge Golf Club","loc":"Louisville, Kentucky","par":71,"yd":7609,"ver":true,"blurb":"A bold championship layout over rolling bluegrass and limestone, water threading both nines. The front invites aggression, the back demands precision, and the reachable par-5 last, eagle and disaster side by side, has settled every Championship played here. Big carries backed by sharp irons set up the low rounds.","avg":-0.43,"cdiff":-0.102,"fit":{"dist":1.124,"acc":1.124,"app":1.215,"sht":1.11,"scr":1.11,"bnk":1.11,"put":1.082,"clu":1},"sig":[[13,"Island-green par-4 ringed by water and limestone rock"],[18,"Reachable par-5 to the clubhouse where the Championship is decided"],[7,"Long, tempting par-5 daring a go at the green"]],"holes":[[4,484,""],[4,500,""],[3,208,""],[4,372,""],[4,463,""],[4,495,""],[5,597,""],[3,190,""],[4,415,""],[5,590,""],[3,211,""],[4,494,""],[4,351,"Island Green"],[3,254,""],[4,435,""],[4,508,""],[4,472,""],[5,570,"Photo Finish"]]},"TPC River Highlands":{"v":"River Bend Golf Club","loc":"Connecticut","par":70,"yd":6841,"ver":true,"blurb":"A compact, thrilling par-70 that yields the lowest scoring of the season, until the lake. The Bend's closing triangle, a drivable par-4 and two watery short holes, can swing the tournament in ten minutes. Hot wedges, hotter putting and the nerve to keep attacking.","avg":-1.5,"cdiff":-0.192,"fit":{"dist":1.243,"acc":1.243,"app":0.897,"sht":1.046,"scr":1.046,"bnk":1.046,"put":0.987,"clu":1},"sig":[[15,"Drivable 296-yard par-4 with water left, supreme risk-reward"],[16,"Par-3 over the lake to a shallow green"],[17,"Tight par-4 around the water to set up the finish"]],"holes":[[4,434,""],[4,341,""],[4,431,""],[4,481,""],[3,223,""],[5,574,""],[4,443,""],[3,202,""],[4,406,""],[4,462,""],[3,158,""],[4,411,""],[5,523,""],[4,421,""],[4,296,""],[3,171,""],[4,420,""],[4,444,""]]},"Plantation Course at Kapalua":{"v":"Trade Winds Golf Club","loc":"Maui, Hawaii","par":73,"yd":7596,"ver":true,"blurb":"A vast island hillside course tumbling toward the Pacific, with enormous fairways, huge elevation drops and trade winds that demand flighted, imaginative golf. The slopes feed the brave to eagle looks all day, and the plunging 677-yard finisher, the longest hole on tour, can be ridden downwind in two. Distance and imagination dominate.","avg":-2,"cdiff":-0.24,"fit":{"dist":0.923,"acc":0.923,"app":0.82,"sht":0.82,"scr":0.82,"bnk":0.82,"put":0.918,"clu":1},"sig":[[18,"A 677-yard downhill par-5 you can ride the trade winds down"],[7,"A huge downwind par-4 that plays far shorter than the card"],[17,"A 550-yard par-4, found nowhere else"]],"holes":[[4,520,""],[3,219,""],[4,424,""],[4,422,""],[5,526,""],[4,424,""],[4,522,""],[3,199,""],[5,550,""],[4,384,""],[3,161,""],[4,424,""],[4,383,""],[4,301,""],[5,541,""],[4,369,""],[4,550,""],[5,677,""]]},"East Lake Golf Club":{"v":"Old Grove Golf Club","loc":"Atlanta, Georgia","par":71,"yd":7490,"ver":false,"blurb":"A stately, tree-lined finale venue restored to firm, classical toughness: stout bunkering, quick greens and a water-split par-5 closer that crowns the Tour Cup. No single skill wins here; the season's most complete golfer usually lifts the trophy.","avg":-1.82,"cdiff":-0.223,"fit":{"dist":0.82,"acc":0.82,"app":0.861,"sht":0.857,"scr":0.857,"bnk":0.857,"put":0.968,"clu":1},"sig":[[18,"Long par-5 closer bisected by water, the Cup's deciding hole"],[15,"Reachable par-5 to spark a late charge"],[9,"Long, demanding par-3 to a guarded green"]],"holes":[[4,485,""],[3,205,""],[4,440,""],[4,415,""],[4,460,""],[5,545,""],[4,480,""],[4,430,""],[3,235,""],[4,430,""],[3,205,""],[4,440,""],[4,470,""],[4,430,""],[5,545,""],[3,210,""],[4,440,""],[5,590,""]]},"Glen Abbey":{"v":"Maple Glen Golf Club","loc":"Ontario, Canada","par":72,"yd":7253,"ver":true,"blurb":"A classic Canadian parkland with an open front nine and a daring valley back nine, where a cold creek snakes through the closing holes. The water-guarded finisher begs for one heroic long iron with everything on the line. Reachable par-5s and a willingness to take on the creek make it scorable but dramatic.","avg":-1,"cdiff":-0.142,"fit":{"dist":1.136,"acc":1.136,"app":1.221,"sht":1.147,"scr":1.147,"bnk":1.147,"put":0.986,"clu":1},"sig":[[11,"Start of the valley holes plunging toward the creek"],[18,"Water-guarded closer that begs for a heroic long iron"],[13,"Par-5 in the valley tempting an aggressive second"]],"holes":[[5,502,""],[4,414,""],[3,156,""],[4,417,""],[5,527,""],[4,437,""],[3,197,""],[4,433,""],[4,458,""],[4,443,""],[4,452,"Valley"],[3,205,"Valley"],[5,558,"Valley"],[4,457,"Valley"],[3,141,"Valley"],[5,516,""],[4,436,""],[4,470,""]]},"Sedgefield Country Club":{"v":"Thistledown Country Club","loc":"Greensboro, North Carolina","par":70,"yd":7117,"ver":false,"blurb":"A restored 1920s parkland gem with no water at all: the defense is subtle turtleback greens that shrug away imprecise irons, clever bunkering and tree-lined angles. Finesse and touch, exactly as the old masters intended.","avg":-0.85,"cdiff":-0.129,"fit":{"dist":1.054,"acc":1.054,"app":0.82,"sht":0.82,"scr":0.82,"bnk":0.82,"put":0.975,"clu":1},"sig":[[18,"Downhill par-4 closer off an elevated tee"],[7,"Long, exacting par-3, the course's sternest hole"],[17,"Reachable par-5 offering one late birdie"]],"holes":[[4,420,""],[4,440,""],[3,175,""],[4,430,""],[5,530,""],[4,425,""],[3,225,""],[4,375,""],[4,415,""],[4,435,""],[4,450,""],[3,240,""],[4,395,""],[4,440,""],[3,190,""],[4,400,""],[5,575,""],[4,502,""]]},"Pinehurst No. 2":{"v":"Longleaf No. 2","loc":"Carolina Sandhills, North Carolina","par":70,"yd":7550,"ver":false,"blurb":"Sandhills golf at its purest: crowned turtleback greens shrug away anything not struck dead flush, with wire grass and bare sand waiting on every miss. There is no rough to hack from, only wrong angles and impossible recoveries. The great short-game examination.","avg":3,"cdiff":0.222,"fit":{"dist":0.879,"acc":0.879,"app":0.976,"sht":1.4,"scr":1.4,"bnk":1.4,"put":1.107,"clu":1},"sig":[[5,"A brutal 588-yard par 5 demanding the round's straightest driving"],[10,"A 617-yard par 5 that tests power and patience in equal measure"],[13,"Turtleback greens at their cruelest on this short, dangerous par 4"]],"holes":[[4,398,""],[4,507,""],[4,387,""],[4,528,""],[5,588,""],[3,216,""],[4,426,""],[4,492,""],[3,184,""],[5,617,""],[4,478,""],[4,486,""],[4,381,""],[4,472,""],[3,199,""],[4,536,""],[3,207,""],[4,448,""]]},"Royal Troon":{"v":"Royal Aynsmuir (Old Course)","loc":"Ayrshire, Scotland","par":71,"yd":7249,"ver":false,"blurb":"A hard-running Ayrshire links that saves its teeth for the homeward wind: an outward nine for scoring, then gorse, rail line and pot bunkers all the way in. The tiny 8th, the Thimble, is the most feared 123 yards in the game. Flight the ball or be eaten.","avg":2.8,"cdiff":0.205,"fit":{"dist":1.4,"acc":1.4,"app":1.175,"sht":1.226,"scr":1.226,"bnk":1.226,"put":0.971,"clu":1},"sig":[[8,"The Thimble, a tiny 123-yard par 3 ringed by deep pot bunkers, the smallest target in championship golf"],[11,"Railside runs tight along the rail line with gorse choking the fairway"],[18,"A closing par 4 beneath the clubhouse windows that has decided championships"]],"holes":[[4,453,""],[4,391,""],[4,379,""],[5,555,""],[3,188,""],[5,623,""],[4,405,""],[3,123,"The Thimble"],[4,387,""],[4,451,""],[4,482,"Railside"],[4,430,""],[4,473,""],[3,178,""],[4,499,""],[5,554,""],[3,220,""],[4,458,""]]},"Carnoustie":{"v":"Drumnoch Links (Championship)","loc":"Angus, Scotland","par":71,"yd":7413,"ver":false,"blurb":"The meanest links in Scotland: bleak, burn-crossed and merciless in any breeze. Nothing about it is pretty and everything about it is honest, culminating in a closing stretch where the burn snakes across the fairway just as nerves run thinnest. Survival golf.","avg":1.8,"cdiff":0.121,"fit":{"dist":0.95,"acc":1.25,"app":1.2,"sht":1.2,"scr":1.25,"bnk":1.15,"put":1.05,"clu":1},"sig":[[18,"The burn crosses twice in front of the Home green, ready to drown a final card"],[6,"A daring line over the burn down the left buys the only easy angle in"],[17,"A drive threaded between two bends of the burn, the tightest tee shot in the championship"]],"holes":[[4,406,""],[4,463,""],[4,358,""],[4,412,""],[4,415,""],[5,578,""],[4,410,""],[3,183,""],[4,478,""],[4,466,""],[4,383,""],[4,499,""],[3,168,""],[5,514,""],[4,472,""],[3,248,""],[4,461,""],[4,499,""]]},"Royal Portrush":{"v":"Royal Causeway (Dunes Links)","loc":"Northern Ireland","par":71,"yd":7370,"ver":false,"blurb":"Towering dune golf above a basalt coastline, with greens set in natural amphitheaters and a par 3 across a chasm that buckles knees. Wind and rain arrive without warning off the North Atlantic. As dramatic as championship golf gets.","avg":1.175,"cdiff":0.067,"fit":{"dist":1.244,"acc":1.244,"app":1.057,"sht":1.127,"scr":1.127,"bnk":1.127,"put":1.016,"clu":1},"sig":[[16,"A par 3 over a yawning chasm to a narrow shelf of green, the most feared shot on the links"],[1,"Out of bounds pinching both sides makes this the tightest opener in championship golf"],[18,"A natural amphitheater closer where wind and rain crown the toughest"]],"holes":[[4,420,""],[5,575,""],[3,176,""],[4,502,""],[4,372,""],[3,193,""],[5,607,""],[4,432,""],[4,432,""],[4,448,""],[4,474,""],[5,532,""],[3,195,""],[4,470,""],[4,426,""],[3,236,"The Chasm"],[4,407,""],[4,473,""]]},"Turnberry":{"v":"Craigfell Links","loc":"Ayrshire, Scotland","par":70,"yd":7204,"ver":false,"blurb":"A cliff-and-crag links running past its white lighthouse with a great sea rock on the horizon. Fair in calm, ferocious in wind, with a run of shoreline holes that reward brave carries and punish the timid. Made for duels.","avg":2.59,"cdiff":0.188,"fit":{"dist":1.05,"acc":1.1,"app":1.2,"sht":1.2,"scr":1.25,"bnk":1.15,"put":1.05,"clu":1},"sig":[[9,"Played from a rocky promontory past the lighthouse, the sea crag on the horizon"],[18,"A duel-ready closer where championships swing on one approach"],[17,"A long two-shot par 5 that has flipped playoffs"]],"holes":[[4,354,""],[4,428,""],[4,489,""],[3,166,""],[4,474,""],[3,231,""],[5,538,""],[4,454,""],[4,449,"The Lighthouse"],[4,456,""],[3,175,""],[4,451,""],[4,410,""],[4,448,""],[3,206,""],[4,455,""],[5,559,""],[4,461,""]]},"Riviera Country Club":{"v":"Canyon Crest Country Club","loc":"Los Angeles, California","par":71,"yd":7383,"ver":false,"blurb":"An old-Hollywood canyon classic on sticky kikuyu grass: all angles, camber and guile. Its short holes are world-famous, one green with a bunker set in its middle, and a drivable 10th that may be the best short par 4 anywhere. Craft beats muscle.","avg":-1.35,"cdiff":-0.155,"fit":{"dist":0.82,"acc":0.82,"app":0.844,"sht":1.251,"scr":1.251,"bnk":1.251,"put":1.069,"clu":1},"sig":[[6,"A par 3 with a bunker set in the middle of the green, four putting quadrants around it"],[10,"A tempting drivable par 4 ringed by bunkers, the finest short hole in the game"],[18,"An uphill, semi-blind closer climbing the canyon wall to a natural amphitheater"]],"holes":[[5,503,""],[4,471,""],[4,434,""],[3,273,""],[4,434,""],[3,199,""],[4,408,""],[4,433,""],[4,458,""],[4,315,""],[5,583,""],[4,479,""],[4,459,""],[3,192,""],[4,487,""],[3,166,""],[5,590,""],[4,499,""]]},"Torrey Pines South":{"v":"Seacliff Municipal (South)","loc":"San Diego, California","par":72,"yd":7765,"ver":false,"blurb":"A brawny public course on ocean bluffs: long, honest and exposed to the sea air. Cliff-edge par 3s and a pond-guarded closing par 5 give it championship drama; its length gives it championship teeth. Every yard is earned.","avg":-0.19,"cdiff":-0.052,"fit":{"dist":0.82,"acc":0.82,"app":1.008,"sht":1.081,"scr":1.081,"bnk":1.081,"put":1.069,"clu":1},"sig":[[3,"A cliffside par 3 with the whole Pacific behind the green"],[18,"A par-5 closer around the pond where titles go to playoffs"],[13,"A 621-yard par 5 anchoring the closing stretch"]],"holes":[[4,451,""],[4,389,""],[3,201,""],[4,490,""],[4,454,""],[5,564,""],[4,462,""],[3,177,""],[5,615,""],[4,454,""],[3,225,""],[4,505,""],[5,621,""],[4,437,""],[4,480,""],[3,227,""],[4,443,""],[5,570,""]]},"Innisbrook Copperhead":{"v":"Palm Grove (Diamondback Course)","loc":"Tampa Bay, Florida","par":71,"yd":7250,"ver":false,"blurb":"A rolling, pine-framed Florida course with more elevation change than anything else in the state, saving its venom for the end. The final stretch, water, fangs and one long brutal par 3, routinely flips the tournament. Position first, then bravery.","avg":0.65,"cdiff":0.021,"fit":{"dist":0.82,"acc":0.82,"app":0.949,"sht":0.948,"scr":0.948,"bnk":0.948,"put":0.949,"clu":1},"sig":[[16,"A water-choked par 4 that bares the course's fangs"],[17,"A long, well-bunkered par 3 with the tournament on the line"],[14,"A bending 590-yard double-dogleg par 5, the course's true signature"]],"holes":[[5,521,""],[4,413,""],[4,442,""],[3,210,""],[5,650,""],[4,470,""],[4,420,""],[3,176,""],[4,378,""],[4,374,""],[5,601,""],[4,460,""],[3,191,""],[5,590,"Double Dogleg"],[3,215,""],[4,459,"Coils"],[3,215,"Fangs"],[4,465,"The Diamondback"]]},"Waialae Country Club":{"v":"Makani Country Club","loc":"Honolulu, Hawaii","par":70,"yd":6935,"ver":false,"blurb":"A short, breezy seaside course where the trade winds are the whole defense. Low, running approaches into small, quick greens set up a birdie-fest for flight-controllers; the shoreline finish can still bite. Go low or go home.","avg":-1,"cdiff":-0.124,"fit":{"dist":1.044,"acc":1.044,"app":0.82,"sht":0.87,"scr":0.87,"bnk":0.87,"put":0.968,"clu":1},"sig":[[17,"A Redan-style par 3 hugging the beach, raised green guarded by deep bunkers and trade winds"],[18,"A closing par 5 where a holed wedge can steal the title"],[16,"A demanding par 4 setting up the shoreline finish"]],"holes":[[4,420,""],[4,423,""],[4,422,""],[3,204,""],[4,467,""],[4,462,""],[3,176,""],[3,188,""],[5,506,""],[4,426,""],[4,395,""],[4,426,""],[4,430,""],[4,430,""],[4,398,""],[4,417,""],[3,194,""],[5,551,""]]},"Colonial Country Club":{"v":"Old Republic Country Club","loc":"Fort Worth, Texas","par":70,"yd":7289,"ver":false,"blurb":"A tight, old-school Texas classic of doglegs and river breezes, where the driver mostly stays in the bag. Its three-hole vice on the front nine is as hard a stretch as the tour plays. Precision from another era.","avg":0.4,"cdiff":-0.001,"fit":{"dist":0.82,"acc":0.82,"app":1.043,"sht":0.871,"scr":0.871,"bnk":0.871,"put":0.996,"clu":1},"sig":[[4,"A 247-yard par-3 terror to an elevated green that has never been aced"],[5,"A dogleg-right par 4, river right and ditch left, the hardest hole on the card"],[13,"The signature par 3 over water where the crowds gather thickest"]],"holes":[[5,581,""],[4,389,""],[4,483,""],[3,247,""],[4,476,""],[4,406,""],[4,430,""],[3,210,""],[4,430,""],[4,430,""],[5,635,""],[4,430,""],[3,199,""],[4,448,""],[4,428,""],[4,430,""],[3,210,""],[4,427,""]]},"Southern Hills":{"v":"Cottonwood Hills Country Club","loc":"Tulsa, Oklahoma","par":70,"yd":7556,"ver":false,"blurb":"A sweeping, creek-laced championship course of tilted fairways and crowned greens under an Oklahoma sun. Sloping lies feed everything toward trouble, and its drivable 17th is pure playoff theater. A ball-striker's proving ground.","avg":3.2,"cdiff":0.239,"fit":{"dist":1.027,"acc":1.027,"app":1.199,"sht":1.203,"scr":1.203,"bnk":1.203,"put":1.118,"clu":1},"sig":[[12,"A dogleg-left par 4 with a blind tee shot and a creek at the green, an all-time two-shotter"],[17,"A short, drivable risk-reward par 4 built for playoff drama"],[5,"A stern 656-yard par 5, the only three-shotter on the front"]],"holes":[[4,468,""],[4,500,""],[4,472,""],[4,377,""],[5,656,""],[3,214,""],[4,489,""],[3,251,""],[4,391,""],[4,441,""],[3,173,""],[4,456,""],[5,632,""],[3,230,""],[4,417,""],[4,527,""],[4,371,""],[4,491,""]]},"Firestone South":{"v":"Ironstone Country Club (South)","loc":"Akron, Ohio","par":70,"yd":7252,"ver":false,"blurb":"A long, relentless corridor course through towering trees, famous for the Monster, a 667-yard par 5 that has wrecked generations of contenders. Fairways must be hit, then hit again. A heavyweight fight over eighteen holes.","avg":-0.1,"cdiff":-0.044,"fit":{"dist":0.862,"acc":0.862,"app":0.987,"sht":0.974,"scr":0.974,"bnk":0.974,"put":1.008,"clu":1},"sig":[[16,"The Monster, a 667-yard par 5 that has wrecked contenders for generations"],[18,"A tree-lined closer demanding one last perfect iron through the gap"],[6,"A tight, tree-guarded dogleg long rated the hardest hole on the card"]],"holes":[[4,399,""],[5,497,""],[4,442,""],[4,471,""],[3,200,""],[4,469,""],[3,219,""],[4,452,""],[4,484,""],[4,410,""],[4,370,""],[3,180,""],[4,467,""],[4,440,""],[3,221,""],[5,667,"The Monster"],[4,400,""],[4,464,""]]},"Winged Foot":{"v":"Quicksilver Golf Club (West)","loc":"Westchester, New York","par":70,"yd":7477,"ver":false,"blurb":"A stately northeastern brute with canyon-deep bunkers guarding pinched, lobed greens. Nothing tricky, nothing hidden, just relentless demands and a closing dogleg that has broken champions on the final walk. The purest hard course in America.","avg":4.07,"cdiff":0.311,"fit":{"dist":0.82,"acc":0.82,"app":1.214,"sht":1.344,"scr":1.344,"bnk":1.344,"put":1.226,"clu":1},"sig":[[10,"A par 3 to a three-lobed green ringed by canyon-deep bunkers"],[18,"A dogleg closer that has broken more than one champion on the final walk"],[12,"A brutal 633-yard par-5 dogleg stretching the longest hitters"]],"holes":[[4,451,""],[4,484,""],[3,243,""],[4,467,""],[4,502,""],[4,321,""],[3,162,""],[4,490,""],[5,565,""],[3,214,""],[4,384,""],[5,633,""],[3,212,""],[4,452,""],[4,426,""],[4,498,""],[4,504,""],[4,469,""]]},"Bethpage Black":{"v":"Ravenwood Black Course","loc":"Long Island, New York","par":70,"yd":7363,"ver":false,"blurb":"The people's monster: a massive public course with a warning sign at the first tee, sprawling bunker deserts and punishing climbs. The crowds are loud and the rough is louder. Only the strong survive the Black.","avg":2.543,"cdiff":0.184,"fit":{"dist":0.82,"acc":0.82,"app":0.967,"sht":0.946,"scr":0.946,"bnk":0.946,"put":1.04,"clu":1},"sig":[[4,"A par-5 split by a massive desert of bunkers, birdie only for the heroic"],[7,"A brutish 520-yard dogleg-right par 4"],[15,"An approach climbing fifty feet to a green steep enough to sled down"]],"holes":[[4,430,""],[4,389,""],[3,158,""],[5,517,""],[4,478,""],[4,408,""],[4,520,""],[3,210,""],[4,460,""],[4,502,""],[4,435,""],[4,501,""],[5,608,""],[3,161,""],[4,478,""],[4,490,""],[3,207,""],[4,411,""]]},"Whistling Straits":{"v":"Gale Harbor (Bluffs Course)","loc":"Lake Michigan shore, Wisconsin","par":72,"yd":7730,"ver":false,"blurb":"A man-made links on a great lake bluff with a thousand bunkers and wind off the water on every shot. Two miles of shoreline holes swing from sublime to savage in one gust. Nothing hides here.","avg":2,"cdiff":0.137,"fit":{"dist":0.981,"acc":0.981,"app":1.123,"sht":1.35,"scr":1.35,"bnk":1.35,"put":1.111,"clu":1},"sig":[[17,"A white-knuckle tee shot over dunes with a twenty-foot drop to sand or the lake itself"],[18,"A diabolical finisher through a thousand bunkers"],[13,"A narrow green perched above the shoreline"]],"holes":[[4,493,""],[5,597,""],[3,188,""],[4,494,""],[5,603,""],[4,409,""],[3,221,""],[4,507,""],[4,442,""],[4,361,""],[5,645,""],[3,163,""],[4,402,"Cliff Edge"],[4,396,""],[4,518,""],[5,568,""],[3,223,""],[4,500,""]]},"Shinnecock Hills":{"v":"Seagrass Hills Golf Club","loc":"Long Island, New York","par":70,"yd":7449,"ver":false,"blurb":"Wind-swept, fescue-framed golf on rolling glacial hills, the closest thing to a links on this side of the ocean. Baked greens, cross-winds and an uphill, half-blind finisher below the great clubhouse on the hill. When it blows, pars feel like birdies.","avg":4.39,"cdiff":0.336,"fit":{"dist":0.909,"acc":0.909,"app":1.075,"sht":1.218,"scr":1.218,"bnk":1.218,"put":1.126,"clu":1},"sig":[[7,"A brutal Redan par 3 whose baked-out green can barely hold a wedge"],[11,"Just 159 yards, yet so ferocious it plays like the shortest par 5 in golf"],[18,"An uphill, half-blind finisher to the clubhouse on the hill"]],"holes":[[4,399,""],[3,252,""],[4,501,""],[4,476,""],[5,592,""],[4,495,""],[3,189,""],[4,439,""],[4,482,""],[4,415,""],[3,159,""],[4,469,""],[4,374,""],[4,519,""],[4,409,""],[5,616,""],[3,178,""],[4,485,""]]},"Kiawah Island Ocean":{"v":"Saltmarsh Island (Ocean Course)","loc":"South Carolina","par":72,"yd":7846,"ver":false,"blurb":"Every hole stares at the Atlantic and every shot is played in its wind, across a wild ribbon of dunes and saltmarsh. The most exposed championship course in America, with an island-style par 3 late that has tortured the very best. Flight it or fail.","avg":2,"cdiff":0.137,"fit":{"dist":1.361,"acc":1.361,"app":1.283,"sht":1.4,"scr":1.4,"bnk":1.4,"put":1.038,"clu":1},"sig":[[17,"A fully exposed island-style par 3, the round's torture chamber"],[18,"An ocean-hugging closer with the Atlantic bearing down the whole way"],[7,"A near-600-yard par 5 gambling over a wall of dunes"]],"holes":[[4,396,""],[5,557,""],[4,390,""],[4,484,""],[3,207,""],[4,490,""],[5,579,""],[3,197,""],[4,514,""],[4,447,""],[5,593,""],[4,484,""],[4,497,""],[3,238,""],[4,466,""],[5,581,""],[3,221,""],[4,505,""]]},"Olympic Club":{"v":"Lakeside Athletic Club (Lake Course)","loc":"San Francisco, California","par":70,"yd":7177,"ver":false,"blurb":"Fog-cooled, cypress-lined doglegs tilted against the player, with tiny greens and thick coastal rough. It has never needed length to break champions: the savage little closing par 4 has decided title after title. Old-school attrition.","avg":4.75,"cdiff":0.365,"fit":{"dist":0.9,"acc":1.3,"app":1.2,"sht":1.15,"scr":1.15,"bnk":1.05,"put":1.05,"clu":1},"sig":[[18,"A short, savage par 4 to a tiny hillside green that has decided championships"],[1,"One of the longest par-4 openers in the sport"],[16,"A 670-yard endurance test, the longest hole in championship golf"]],"holes":[[4,520,""],[4,428,""],[3,247,""],[4,438,""],[4,498,""],[4,489,""],[4,288,""],[3,200,""],[4,449,""],[4,430,""],[4,430,""],[4,451,""],[3,199,""],[4,417,""],[3,154,""],[5,670,""],[5,522,""],[4,347,""]]},"Baltusrol":{"v":"Barrowmoor Golf Club (Lower)","loc":"New Jersey","par":70,"yd":7253,"ver":false,"blurb":"A grand old parkland of lakeside par 3s and vast sandy wastes, finishing with back-to-back par 5s built for heroics. History hangs off every hole, and the last long iron over water writes the ending. Classic championship theater.","avg":0.41,"cdiff":0,"fit":{"dist":1.15,"acc":1.05,"app":1.2,"sht":1,"scr":1,"bnk":1,"put":1.05,"clu":1},"sig":[[4,"A famous par 3 across the lake, all carry, no bail-out"],[17,"A three-shot par 5 bisected by a vast sandy waste"],[18,"A closing par 5 built for one last heroic long iron"]],"holes":[[4,478,""],[4,378,""],[4,504,""],[3,195,""],[4,375,""],[4,482,""],[4,505,""],[4,347,""],[3,210,""],[4,437,""],[4,444,""],[3,220,""],[4,432,""],[4,430,""],[4,383,""],[3,230,""],[5,650,""],[5,553,""]]},"The Country Club":{"v":"The Village Club","loc":"Massachusetts","par":70,"yd":7264,"ver":false,"blurb":"An antique, rock-ledged New England course of short, awkward, brilliant holes that modern power cannot solve. Small crowned greens, blind angles and a century of drama packed into its closing dogleg. Quirk with fangs.","avg":3,"cdiff":0.222,"fit":{"dist":0.82,"acc":0.82,"app":1.184,"sht":1.339,"scr":1.339,"bnk":1.339,"put":1.062,"clu":1},"sig":[[17,"A short dogleg whose tiny green has hosted a century of collapses and comebacks"],[11,"A revived antique two-shotter, all angles and awkward stances"],[18,"A classic amphitheater closer settled from the greenside bunker more than once"]],"holes":[[4,488,""],[3,215,""],[4,499,""],[4,493,""],[4,310,""],[3,192,""],[4,375,""],[5,557,""],[4,427,""],[4,499,""],[3,131,""],[4,473,""],[4,450,""],[5,619,""],[4,510,""],[3,202,""],[4,373,""],[4,451,""]]},"Merion":{"v":"Hollowbrook Golf Club (East)","loc":"Main Line, Pennsylvania","par":70,"yd":6979,"ver":false,"blurb":"A compact parkland jewel that proves length is optional: a brook winds around tiny greens, the old quarry guards the finish, and every approach asks a question. The thinking golfer's championship test.","avg":4.5,"cdiff":0.345,"fit":{"dist":0.82,"acc":1.3,"app":1.25,"sht":1.15,"scr":1.15,"bnk":1.05,"put":1.15,"clu":1},"sig":[[11,"A short par 4 to a green nearly encircled by the brook, swallowing any loose approach"],[17,"A long downhill par 3 over rock and scrub in the old quarry"],[18,"An uphill finisher over the quarry begging for one perfect long iron"]],"holes":[[4,350,""],[5,556,""],[3,256,""],[5,628,""],[4,504,""],[4,487,""],[4,360,""],[4,359,""],[3,236,""],[4,303,""],[4,367,""],[4,403,""],[3,115,""],[4,464,""],[4,411,""],[4,430,""],[3,229,""],[4,521,""]]},"Oakland Hills":{"v":"Greenmont Hills (South)","loc":"Michigan","par":70,"yd":7365,"ver":false,"blurb":"A big-shouldered course of tilted fairways, clover-leaf bunkers and greens that repel the merely good shot. The pond-guarded 16th is one of the game's great momentum-swing holes. Earn every par.","avg":4,"cdiff":0.305,"fit":{"dist":0.95,"acc":1.3,"app":1.25,"sht":1.15,"scr":1.15,"bnk":1.05,"put":1.05,"clu":1},"sig":[[16,"A sharp dogleg right around a pond to a water-guarded green"],[17,"A long, exposed par 3, the course's best one-shotter"],[11,"A severely sloping fairway that leaves a blind approach from the wrong side"]],"holes":[[4,435,""],[5,529,""],[3,198,""],[4,446,""],[4,490,""],[4,387,""],[4,449,""],[4,491,""],[3,257,""],[4,400,""],[4,455,""],[5,593,""],[3,191,""],[4,501,""],[4,401,""],[4,406,""],[3,238,""],[4,498,""]]},"TPC Southwind":{"v":"Delta Winds Golf Club","loc":"Memphis, Tennessee","par":70,"yd":7283,"ver":false,"blurb":"A water-laced southern course where eleven holes flirt with lakes and streams, including a tiny island par 3. Scores come easily until they suddenly don't: the closing stretch has decided playoff after playoff. Fearless, precise golf wins.","avg":-0.88,"cdiff":-0.113,"fit":{"dist":1.112,"acc":1.112,"app":1.27,"sht":1.073,"scr":1.073,"bnk":1.073,"put":0.948,"clu":1},"sig":[[11,"A 165-yard par 3 to a tiny island green"],[14,"A 231-yard par 3 with water down the entire right, among the toughest short holes anywhere"],[18,"A demanding 453-yard closer that has decided playoffs"]],"holes":[[4,434,""],[4,401,""],[5,554,""],[3,196,""],[4,529,""],[4,445,""],[4,482,""],[3,178,""],[4,457,""],[4,465,""],[3,165,""],[4,406,""],[4,472,""],[3,231,""],[4,395,""],[5,530,""],[4,490,""],[4,453,""]]}};
 /* ============ DAILY CHALLENGE, one round at a real course (runthetour-daily-spec) ============ */
 const DAILY_KEYS=Object.keys(DAILY_COURSES);
 const DAILY_MEAN_YPP=DAILY_KEYS.reduce((s,k)=>s+DAILY_COURSES[k].yd/DAILY_COURSES[k].par,0)/DAILY_KEYS.length;
@@ -2128,61 +2113,61 @@ const DAILY_MEAN_YPP=DAILY_KEYS.reduce((s,k)=>s+DAILY_COURSES[k].yd/DAILY_COURSE
    representative rather than a claim of a single permanent home. */
 const EVENT_COURSE={
   // --- regular tour: reuse the matching DAILY_COURSES entry ---
-  'Kapalua Invitational':      DAILY_COURSES['Plantation Course at Kapalua'],
-  'Pebble Beach Pro-Am':       DAILY_COURSES['Pebble Beach Golf Links'],
-  'Bay Hill Invitational':     DAILY_COURSES['Bay Hill'],
-  'The Players':               DAILY_COURSES['TPC Sawgrass'],
-  'The Masters':                DAILY_COURSES['Augusta National'],
+  'Trade Winds Invitational':      DAILY_COURSES['Plantation Course at Kapalua'],
+  'Graystone Cove Pro-Am':       DAILY_COURSES['Graystone Cove Golf Links'],
+  'Osprey Bay Invitational':     DAILY_COURSES['Bay Hill'],
+  'The Stadium Classic':               DAILY_COURSES['TPC Sawgrass'],
+  'The Magnolia Invitational':                DAILY_COURSES['Augusta National'],
   'The Championship':          DAILY_COURSES['Valhalla'],
-  'Memorial Tournament':       DAILY_COURSES['Muirfield Village'],
-  'U.S. Open':                  DAILY_COURSES['Oakmont'],
-  'Travelers Championship':    DAILY_COURSES['TPC River Highlands'],
-  'The Open':                   DAILY_COURSES['St Andrews Old Course'],
-  'FedEx St. Jude Championship': DAILY_COURSES['TPC Southwind'],
-  'Tour Championship':         DAILY_COURSES['East Lake Golf Club'],
-  'Sony Open':                  DAILY_COURSES['Waialae Country Club'],
-  'Farmers Insurance Open':    DAILY_COURSES['Torrey Pines South'],
+  'The Founders Invitational':       DAILY_COURSES['Muirfield Village'],
+  'The National Open':                  DAILY_COURSES['Oakmont'],
+  'River Bend Classic':    DAILY_COURSES['River Bend Golf Club'],
+  'The Links Championship':                   DAILY_COURSES['St Andrews Old Course'],
+  'The Memphis Championship': DAILY_COURSES['Delta Winds Golf Club'],
+  'Tour Championship':         DAILY_COURSES['Old Grove Golf Club'],
+  'Island Open':                  DAILY_COURSES['Makani Country Club'],
+  'San Diego Open':    DAILY_COURSES['Torrey Pines South'],
   'Phoenix Open':               DAILY_COURSES['TPC Scottsdale'],
-  'Genesis Invitational':      DAILY_COURSES['Riviera Country Club'],
-  'Valspar Championship':      DAILY_COURSES['Innisbrook Copperhead'],
-  'Hilton Head Classic':       DAILY_COURSES['Harbour Town Golf Links'],
-  'Charlotte Open':             DAILY_COURSES['Quail Hollow Club'],
-  'Charles Schwab Challenge':  DAILY_COURSES['Colonial Country Club'],
+  'Canyon Crest Invitational':      DAILY_COURSES['Canyon Crest Country Club'],
+  'Gulf Coast Classic':      DAILY_COURSES['Innisbrook Copperhead'],
+  'Lighthouse Classic':       DAILY_COURSES['Lighthouse Point Golf Links'],
+  'Charlotte Open':             DAILY_COURSES['Fox Den Club'],
+  'Fort Worth Invitational':  DAILY_COURSES['Old Republic Country Club'],
   'Canadian Open':              DAILY_COURSES['Glen Abbey'],
-  'Wyndham Championship':      DAILY_COURSES['Sedgefield Country Club'],
+  'Piedmont Classic':      DAILY_COURSES['Thistledown Country Club'],
   // --- regular tour: no matching Daily Challenge venue, standalone entry ---
-  'BMW Championship':          {v:'Caves Valley Golf Club', loc:'Owings Mills, Maryland'},
-  'The American Express':      {v:'PGA West (Stadium Course)', loc:'La Quinta, California'},
-  'Mexico Open':                {v:'Vidanta Vallarta', loc:'Puerto Vallarta, Mexico'},
-  'Cognizant Classic':          {v:'PGA National Resort (Champion Course)', loc:'Palm Beach Gardens, Florida'},
-  'Houston Open':               {v:'Memorial Park Golf Course', loc:'Houston, Texas'},
-  'Texas Open':                  {v:'TPC San Antonio (Oaks Course)', loc:'San Antonio, Texas'},
-  'Zurich Team Classic':        {v:'TPC Louisiana', loc:'Avondale, Louisiana'},
-  'Rocket Mortgage Classic':    {v:'Detroit Golf Club', loc:'Detroit, Michigan'},
-  'John Deere Classic':         {v:'TPC Deere Run', loc:'Silvis, Illinois'},
-  'Scottish Open':              {v:'The Renaissance Club', loc:'North Berwick, Scotland'},
-  '3M Open':                     {v:'TPC Twin Cities', loc:'Blaine, Minnesota'},
+  'The Crossroads Championship':          {v:'Crossvale Golf Club', loc:'Owings Mills, Maryland'},
+  'Desert Classic':      {v:'Desert Stadium (Palms Course)', loc:'La Quinta, California'},
+  'Mexico Open':                {v:'Vallarta Shores', loc:'Puerto Vallarta, Mexico'},
+  'Palm Coast Classic':          {v:'Palm Coast Resort (Champion Course)', loc:'Palm Beach Gardens, Florida'},
+  'Houston Open':               {v:'Bayou Park Golf Course', loc:'Houston, Texas'},
+  'Texas Open':                  {v:'Hill Country Oaks', loc:'San Antonio, Texas'},
+  'Bayou Team Classic':        {v:'Bayou Grande Golf Club', loc:'Avondale, Louisiana'},
+  'Motor City Classic':    {v:'Motor City Golf Club', loc:'Detroit, Michigan'},
+  'Quad Cities Classic':         {v:'Quad Cities Run', loc:'Silvis, Illinois'},
+  'Scottish Open':              {v:'Firth Links', loc:'North Berwick, Scotland'},
+  'Twin Cities Open':                     {v:'Twin Cities National', loc:'Blaine, Minnesota'},
   // --- Legend Circuit majors: reuse DAILY_COURSES where the real senior major shares a Daily venue ---
-  'Regions Tradition':               {v:'Greystone Golf & Country Club', loc:'Birmingham, Alabama'},
-  'Senior PGA Championship':         {v:'Harbor Shores Resort', loc:'Benton Harbor, Michigan'},
-  'U.S. Senior Open':                {v:'The Broadmoor (East Course)', loc:'Colorado Springs, Colorado'},
-  'Senior Players Championship':    DAILY_COURSES['Firestone South'],
-  'Senior Open Championship':       DAILY_COURSES['Carnoustie'],
+  'The Legacy Invitational':               {v:'Stonebrook Golf & Country Club', loc:'Birmingham, Alabama'},
+  'Legends Championship':         {v:'Harbor Bluffs Resort', loc:'Benton Harbor, Michigan'},
+  'National Senior Open':                {v:'The Highmoor (East Course)', loc:'Colorado Springs, Colorado'},
+  'Legends Stadium Classic':    DAILY_COURSES['Firestone South'],
+  'Legends Links Championship':       DAILY_COURSES['Carnoustie'],
   // --- Legend Circuit regular stops (real Champions Tour hosts) ---
-  'Cologuard Classic':          {v:'Omni Tucson National Resort', loc:'Tucson, Arizona'},
-  'Chubb Classic':               {v:'Talis Park Golf Club', loc:'Naples, Florida'},
-  'Hoag Classic':                 {v:'Newport Beach Country Club', loc:'Newport Beach, California'},
-  'Rapiscan Systems Classic':    {v:'Big Cedar Lodge (Ozarks National)', loc:'Ridgedale, Missouri'},
-  'Mitsubishi Electric Classic': {v:'TPC Sugarloaf', loc:'Duluth, Georgia'},
-  'Insperity Invitational':      {v:'The Woodlands Country Club', loc:'The Woodlands, Texas'},
-  'Regions Charity Classic':     {v:'Greystone Golf & Country Club', loc:'Birmingham, Alabama'},
-  'Ally Challenge':               {v:'Warwick Hills Golf & Country Club', loc:'Grand Blanc, Michigan'},
-  'Boeing Classic':               {v:'The Club at Snoqualmie Ridge', loc:'Snoqualmie, Washington'},
-  'Ascension Charity Classic':   {v:'Norwood Hills Country Club', loc:'St. Louis, Missouri'},
+  'Tucson Legends Classic':          {v:'Tucson Desert National', loc:'Tucson, Arizona'},
+  'Naples Classic':               {v:'Palmetto Park Golf Club', loc:'Naples, Florida'},
+  'Newport Classic':                 {v:'Newport Harbor Country Club', loc:'Newport Beach, California'},
+  'Ozarks Classic':    {v:'Cedar Ridge (Ozarks National)', loc:'Ridgedale, Missouri'},
+  'Peachtree Legends Classic': {v:'Peachtree Ridge', loc:'Duluth, Georgia'},
+  'Woodlands Invitational':      {v:'The Woodlands Club', loc:'The Woodlands, Texas'},
+  'Birmingham Classic':     {v:'Stonebrook Golf & Country Club', loc:'Birmingham, Alabama'},
+  'Great Lakes Classic':               {v:'Lakeshore Hills Golf & Country Club', loc:'Grand Blanc, Michigan'},
+  'Cascade Classic':               {v:'The Club at Cascade Ridge', loc:'Snoqualmie, Washington'},
+  'Gateway Legends Classic':   {v:'Gateway Hills Country Club', loc:'St. Louis, Missouri'},
   // --- Legend Circuit season-ending points race ---
-  'Charles Schwab Cup Playoffs I':    {v:'Philadelphia Cricket Club (Wissahickon Course)', loc:'Flourtown, Pennsylvania'},
-  'Charles Schwab Cup Playoffs II':   {v:'Prestonwood Country Club', loc:'Cary, North Carolina'},
-  'Charles Schwab Cup Championship':  {v:'Phoenix Country Club', loc:'Phoenix, Arizona'},
+  'Legends Cup Playoffs I':    {v:'Liberty Cricket Club', loc:'Flourtown, Pennsylvania'},
+  'Legends Cup Playoffs II':   {v:'Prairiewood Country Club', loc:'Cary, North Carolina'},
+  'Legends Cup Championship':  {v:'Sonoran Country Club', loc:'Phoenix, Arizona'},
 };
 // {venue, location} for a scheduled event's real course, or null if unmapped (Olympics/team-cup weeks,
 // or any future event added without an entry), callers must handle the no-subtitle case.
@@ -2327,7 +2312,7 @@ function playerNation(){ return COUNTRY_CODE[(S.look&&S.look.country)||'United S
 const NAT_FLAG={USA:'us',ENG:'gb-eng',SCO:'gb-sct',NIR:'gb-nir',WAL:'gb-wls',IRL:'ie',AUS:'au',NZL:'nz',
   KOR:'kr',JPN:'jp',TPE:'tw',SGP:'sg',IND:'in',RSA:'za',ZIM:'zw',FIJ:'fj',ESP:'es',SWE:'se',NOR:'no',
   DEN:'dk',GER:'de',FRA:'fr',ITA:'it',BEL:'be',AUT:'at',POL:'pl',JEY:'je',CAN:'ca',MEX:'mx',ARG:'ar',CHI:'cl',
-  EUR:'eu'};   // EUR = the European Union flag (Ryder Cup "Europe" team)
+  EUR:'eu'};   // EUR = the European Union flag (Atlantic Cup "Europe" team)
 function natFlagUrl(code,w){ const iso=NAT_FLAG[code]; return iso?`https://flagcdn.com/w${w||40}/${iso}.png`:null; }
 function natFlag(code,cls){
   // team designations that aren't a single country: Europe -> EU flag (via NAT_FLAG), International -> globe
@@ -2472,7 +2457,7 @@ function updateWorldRanking(){
    Signature events invite the top ENTRY_CAP.sig by OWGR, majors the top ENTRY_CAP.major (+ a personal
    winner's / major-champ exemption). Players outside the cut tee up a concurrent OPPOSITE-FIELD event
    instead; whichever tier you DON'T play is simmed headlessly so the season standings + OWGR stay whole. */
-const OPPO_NAMES=['Barracuda Championship','Barbasol Championship','Puerto Rico Open','ISCO Championship','Myrtle Beach Classic','Corales Puntacana Championship'];
+const OPPO_NAMES=['Tahoe Championship','Bluegrass Open','Puerto Rico Open','Falls City Open','Myrtle Beach Classic','Coral Coast Championship'];
 function makeOppoEvt(evt){ return {name:OPPO_NAMES[(evt.wk||0)%OPPO_NAMES.length], purse:4*1e6, type:'reg', wk:evt.wk, major:false, big:false, oppo:true, against:evt.name}; }
 // personal exemptions: 5-yr major-champ exemption into majors, 2-yr winner's exemption into signature events
 function playerExempt(evt){ const yr=S.year||1, wl=(S.career&&S.career.winsList)||[];
@@ -2568,7 +2553,7 @@ function computeAwards(){
     no1:{name:top?top.name:'-', you:!!(top&&top.you)},
   };
 }
-/* ===== Ryder Cup / Presidents Cup, team match play =====
+/* ===== Atlantic Cup / Nations Cup, team match play =====
    One team event per year (Ryder in odd years = USA vs Europe, Presidents in even years = USA vs
    International). You play only if your nationality fits one of that year's two teams. 28 points over 5
    sessions (Day1/Day2 foursomes+fourball, Day3 singles), first to 14.5. Match play: per-hole integer
@@ -2576,8 +2561,8 @@ function computeAwards(){
 const EURO_NATS=new Set(['ENG','SCO','NIR','IRL','WAL','ESP','SWE','NOR','GER','FRA','ITA','DEN','BEL','AUT','POL','JEY']);
 function eligibleForTeam(nat,region){ return region==='USA'?nat==='USA':region==='EUR'?EURO_NATS.has(nat):(nat!=='USA'&&!EURO_NATS.has(nat)); }
 function teamEventForYear(year){ return ((year||1)%2===1)
-  ? {type:'ryder',regionB:'EUR',nameA:'United States',nameB:'Europe',short:'Ryder Cup',codeA:'USA',codeB:'EUR'}
-  : {type:'presidents',regionB:'INTL',nameA:'United States',nameB:'International',short:'Presidents Cup',codeA:'USA',codeB:'INT'}; }
+  ? {type:'ryder',regionB:'EUR',nameA:'United States',nameB:'Europe',short:'Atlantic Cup',codeA:'USA',codeB:'EUR'}
+  : {type:'presidents',regionB:'INTL',nameA:'United States',nameB:'International',short:'Nations Cup',codeA:'USA',codeB:'INT'}; }
 function playerInTeamEvent(year){ const te=teamEventForYear(year), nat=playerNation(); return nat==='USA'||eligibleForTeam(nat,te.regionB); }
 // the OWGR-ordered pool of every eligible player for a region (incl. YOU if eligible)
 function cupPool(region, me){
@@ -2904,22 +2889,22 @@ const CADDIES=[
   {id:'fanny-sunesson', name:'Fanny Sunesson', tier:1, link:'Nick Faldo', power:{base:{acc:2}, major:{app:1}}, desc:'+2 Accuracy · +1 Approach in majors', flavor:'Razor-precise yardages that anchored Nick Faldo\'s run as the best player in the world.'},
   {id:'angelo-argea', name:'Angelo Argea', tier:1, link:'Jack Nicklaus', power:{base:{clu:1,dist:1}, major:{clu:1}}, desc:'+1 Composure, +1 Distance · +1 Composure in majors', flavor:'Twenty years of confidence and calm that freed Jack Nicklaus to swing away.'},
   // ---- Tier 2 · Hall of Fame (unlock at Legend) ----
-  {id:'carl-jackson', name:'Carl Jackson', tier:2, link:'Ben Crenshaw', power:{base:{put:1}, venue:{names:['The Masters'], d:{put:2}}}, desc:'+1 Putting · +2 Putting at The Masters', flavor:'Ben Crenshaw\'s Masters caddie for four decades, a legendary Augusta green-reader.'},
+  {id:'carl-jackson', name:'Carl Jackson', tier:2, link:'Ben Crenshaw', power:{base:{put:1}, venue:{names:['The Magnolia Invitational'], d:{put:2}}}, desc:'+1 Putting · +2 Putting at The Magnolia Invitational', flavor:'Ben Crenshaw\'s Masters caddie for four decades, a legendary Augusta green-reader.'},
   {id:'bruce-edwards', name:'Bruce Edwards', tier:2, link:'Tom Watson', power:{base:{clu:2,app:1}}, desc:'+2 Composure · +1 Approach', flavor:'Tom Watson\'s loyal man for three decades, the steadiest presence ever to carry a bag.'},
   {id:'jp-fitzgerald', name:'J.P. Fitzgerald', tier:2, link:'Rory McIlroy', power:{base:{dist:1,app:1}}, desc:'+1 Distance, +1 Approach', flavor:'Guided Rory McIlroy\'s power game through four majors and the climb to World No. 1.'},
   {id:'joe-lacava', name:'Joe LaCava', tier:2, link:'Fred Couples, Tiger Woods', power:{base:{clu:1,scr:1}}, desc:'+1 Composure, +1 Scrambling', flavor:'Calm, steady trouble-management for some of the biggest names in the game.'},
   {id:'herman-mitchell', name:'Herman Mitchell', tier:2, link:'Lee Trevino', power:{base:{acc:2}}, desc:'+2 Accuracy', flavor:'Nineteen fiery years and six majors on the bag of shotmaker Lee Trevino.'},
   {id:'terry-mcnamara', name:'Terry McNamara', tier:2, link:'Annika Sorenstam', power:{base:{app:1,put:1}}, desc:'+1 Approach, +1 Putting', flavor:'On the bag through Annika Sorenstam\'s most dominant stretch, 48 wins in six years.'},
   // ---- Tier 3 · Major Champion (unlock at Champion) ----
-  {id:'alfie-fyles', name:'Alfie Fyles', tier:3, link:'Tom Watson (Open)', power:{base:{app:1}, venue:{names:['The Open'], d:{app:1,clu:1}}}, desc:'+1 Approach · +1 Approach & Composure at The Open', flavor:'Talked Watson into the winning club on the last hole of the 1977 Duel in the Sun.'},
-  {id:'willie-peterson', name:'Willie Peterson', tier:3, link:'Jack Nicklaus (Masters)', power:{base:{put:1}, venue:{names:['The Masters'], d:{put:1,clu:1}}}, desc:'+1 Putting · +1 Putting & Composure at The Masters', flavor:'On the bag for five of Jack\'s six Masters wins, famous for his leap on the 16th.'},
-  {id:'tip-anderson', name:'James "Tip" Anderson', tier:3, link:'Arnold Palmer (Open)', power:{base:{acc:1}, venue:{names:['The Open'], d:{acc:1,sht:1}}}, desc:'+1 Accuracy · +1 Accuracy & Short Game at The Open', flavor:'A St Andrews original whose local knowledge won Arnold Palmer two Open Championships.'},
+  {id:'alfie-fyles', name:'Alfie Fyles', tier:3, link:'Tom Watson (Open)', power:{base:{app:1}, venue:{names:['The Links Championship'], d:{app:1,clu:1}}}, desc:'+1 Approach · +1 Approach & Composure at The Links Championship', flavor:'Talked Watson into the winning club on the last hole of the 1977 Duel in the Sun.'},
+  {id:'willie-peterson', name:'Willie Peterson', tier:3, link:'Jack Nicklaus (Masters)', power:{base:{put:1}, venue:{names:['The Magnolia Invitational'], d:{put:1,clu:1}}}, desc:'+1 Putting · +1 Putting & Composure at The Magnolia Invitational', flavor:'On the bag for five of Jack\'s six Masters wins, famous for his leap on the 16th.'},
+  {id:'tip-anderson', name:'James "Tip" Anderson', tier:3, link:'Arnold Palmer (Open)', power:{base:{acc:1}, venue:{names:['The Links Championship'], d:{acc:1,sht:1}}}, desc:'+1 Accuracy · +1 Accuracy & Short Game at The Links Championship', flavor:'A St Andrews original whose local knowledge won Arnold Palmer two Open Championships.'},
   {id:'willie-aitchison', name:'Willie Aitchison', tier:3, link:'Roberto De Vicenzo, Tom Watson', power:{base:{clu:2}}, desc:'+2 Composure', flavor:'Steadied a nerve-rattled De Vicenzo to beat Nicklaus at the 1967 Open.'},
   {id:'rabbit-dyer', name:'Alfred "Rabbit" Dyer', tier:3, link:'Gary Player', power:{base:{bnk:1,clu:1}}, desc:'+1 Bunker, +1 Composure', flavor:'Gary Player\'s man for 18 years, the game\'s greatest bunker player.'},
   // ---- Tier 4 · Tour Veteran (unlock at Star) ----
-  {id:'pete-bender', name:'Pete Bender', tier:4, link:'Greg Norman, Ian Baker-Finch', power:{base:{acc:1}, venue:{names:['The Open'], d:{sht:1}}}, desc:'+1 Accuracy · +1 Short Game at The Open', flavor:'A 45-year veteran with Open wins alongside Norman and Baker-Finch.'},
+  {id:'pete-bender', name:'Pete Bender', tier:4, link:'Greg Norman, Ian Baker-Finch', power:{base:{acc:1}, venue:{names:['The Links Championship'], d:{sht:1}}}, desc:'+1 Accuracy · +1 Short Game at The Links Championship', flavor:'A 45-year veteran with Open wins alongside Norman and Baker-Finch.'},
   {id:'mike-martinez', name:'Mike Martinez', tier:4, link:'Johnny Miller, Tom Lehman', power:{base:{app:1,put:1}}, desc:'+1 Approach, +1 Putting', flavor:'On the bag for Johnny Miller\'s historic 63 and Tom Lehman\'s Open win.'},
-  {id:'pappy-stokes', name:'William "Pappy" Stokes', tier:4, link:'Ben Hogan +3 more', power:{base:{app:1}, venue:{names:['The Masters'], d:{app:1,put:1}}}, desc:'+1 Approach · +1 Approach & Putting at The Masters', flavor:'Won five Masters for four different players, a feat no caddie has matched.'},
+  {id:'pappy-stokes', name:'William "Pappy" Stokes', tier:4, link:'Ben Hogan +3 more', power:{base:{app:1}, venue:{names:['The Magnolia Invitational'], d:{app:1,put:1}}}, desc:'+1 Approach · +1 Approach & Putting at The Magnolia Invitational', flavor:'Won five Masters for four different players, a feat no caddie has matched.'},
   {id:'steve-hulka', name:'Steve Hulka', tier:4, link:'150+ players since 1972', power:{fee:0.09}, desc:'Caddie fee 10% → 9% (keep more winnings)', flavor:'The ultimate journeyman, 150+ bags carried, and he knows the business cold.'},
   // ---- Tier 5 · Colorful Character (unlock at Contender) ----
   {id:'two-shot-lynch', name:'Lee "Two Shot" Lynch', tier:5, link:'Al Geiberger\'s 59', power:{base:{clu:2,dist:-1}}, desc:'+2 Composure, −1 Distance', flavor:'So relentlessly conservative it cost you aggression, but you never beat yourself.'},
@@ -2927,15 +2912,15 @@ const CADDIES=[
   {id:'killer-foy', name:'Sam "Killer" Foy', tier:5, link:'Hale Irwin', power:{base:{scr:1,clu:1}}, desc:'+1 Scrambling, +1 Composure', flavor:'A former boxer turned caddie who grinds out every hole.'},
   {id:'last-call-lance', name:'Lance "Last Call" Ten Broeck', tier:5, link:'Various; a tour pro himself', power:{base:{clu:1}}, desc:'+1 Composure', flavor:'Everyone\'s friend, keeps you loose and enjoying the walk.'},
   // ---- Tier 6 · Historic (unlock at Tour Pro) ----
-  {id:'freddie-bennett', name:'Freddie Bennett', tier:6, link:'Augusta caddiemaster', power:{base:{app:1}, venue:{names:['The Masters'], d:{app:1}}}, desc:'+1 Approach · +1 Approach at The Masters', flavor:'Augusta National\'s longtime caddiemaster, who mentored generations of loopers.'},
+  {id:'freddie-bennett', name:'Freddie Bennett', tier:6, link:'Augusta caddiemaster', power:{base:{app:1}, venue:{names:['The Magnolia Invitational'], d:{app:1}}}, desc:'+1 Approach · +1 Approach at The Magnolia Invitational', flavor:'Augusta National\'s longtime caddiemaster, who mentored generations of loopers.'},
   {id:'eddie-lowery', name:'Eddie Lowery', tier:6, link:'Francis Ouimet (1913)', power:{base:{clu:1,scr:1}}, desc:'+1 Composure, +1 Scrambling', flavor:'The ten-year-old who believed amateur Francis Ouimet to the greatest upset in golf.'},
-  {id:'iron-man', name:'"Iron Man"', tier:6, link:'Arnold Palmer (Masters)', power:{base:{acc:1}, venue:{names:['The Masters'], d:{acc:1}}}, desc:'+1 Accuracy · +1 Accuracy at The Masters', flavor:'The steady Augusta counterweight to all four of Palmer\'s go-for-broke Masters wins.'},
+  {id:'iron-man', name:'"Iron Man"', tier:6, link:'Arnold Palmer (Masters)', power:{base:{acc:1}, venue:{names:['The Magnolia Invitational'], d:{acc:1}}}, desc:'+1 Accuracy · +1 Accuracy at The Magnolia Invitational', flavor:'The steady Augusta counterweight to all four of Palmer\'s go-for-broke Masters wins.'},
   // ---- Tier 7 · Deep Lore (unlock at Journeyman) ----
-  {id:'snipes-nipper', name:'Ernest "Snipes" Nipper', tier:7, link:'Augusta caddie lineage', power:{base:{sht:1}, venue:{names:['The Masters'], d:{sht:1}}}, desc:'+1 Short Game · +1 Short Game at The Masters', flavor:'A fondly remembered Augusta local looper from the club-caddie era.'},
-  {id:'bubba-beard', name:'Jerry "Bubba" Beard', tier:7, link:'Augusta caddie lineage', power:{base:{put:1}, venue:{names:['The Masters'], d:{put:1}}}, desc:'+1 Putting · +1 Putting at The Masters', flavor:'Part of the deep bench of Augusta caddies who could read the grain by feel.'},
+  {id:'snipes-nipper', name:'Ernest "Snipes" Nipper', tier:7, link:'Augusta caddie lineage', power:{base:{sht:1}, venue:{names:['The Magnolia Invitational'], d:{sht:1}}}, desc:'+1 Short Game · +1 Short Game at The Magnolia Invitational', flavor:'A fondly remembered Augusta local looper from the club-caddie era.'},
+  {id:'bubba-beard', name:'Jerry "Bubba" Beard', tier:7, link:'Augusta caddie lineage', power:{base:{put:1}, venue:{names:['The Magnolia Invitational'], d:{put:1}}}, desc:'+1 Putting · +1 Putting at The Magnolia Invitational', flavor:'Part of the deep bench of Augusta caddies who could read the grain by feel.'},
   // ---- Tier 8 · Legacy (unlocked from the start) ----
-  {id:'shorty-mac', name:'Matthew "Shorty Mac" Palmer', tier:8, link:'Augusta caddie lineage', power:{base:{bnk:1}, venue:{names:['The Masters'], d:{bnk:1}}}, desc:'+1 Bunker · +1 Bunker at The Masters', flavor:'A name passed down in Augusta lore, knew every inch of the course by feel.'},
-  {id:'stovepipe', name:'"Stovepipe"', tier:8, link:'Augusta caddie lineage', power:{base:{scr:1}, venue:{names:['The Masters'], d:{scr:1}}}, desc:'+1 Scrambling · +1 Scrambling at The Masters', flavor:'One of the great nickname-only Augusta loopers of the old caddie era.'},
+  {id:'shorty-mac', name:'Matthew "Shorty Mac" Palmer', tier:8, link:'Augusta caddie lineage', power:{base:{bnk:1}, venue:{names:['The Magnolia Invitational'], d:{bnk:1}}}, desc:'+1 Bunker · +1 Bunker at The Magnolia Invitational', flavor:'A name passed down in Augusta lore, knew every inch of the course by feel.'},
+  {id:'stovepipe', name:'"Stovepipe"', tier:8, link:'Augusta caddie lineage', power:{base:{scr:1}, venue:{names:['The Magnolia Invitational'], d:{scr:1}}}, desc:'+1 Scrambling · +1 Scrambling at The Magnolia Invitational', flavor:'One of the great nickname-only Augusta loopers of the old caddie era.'},
 ];
 const CADDIE_BY_ID=Object.fromEntries(CADDIES.map(c=>[c.id,c]));
 function caddieUnlocked(cad){ if(!cad) return false; return repRankIndex(repTier().tier.name) >= (8-cad.tier); }
@@ -3260,7 +3245,7 @@ function scrRules(){
     ['🔁','Re-spin twice','Don\'t like who landed? Re-spin to pass and reveal someone else, you get 2 re-spins for the whole draft.'],
     ['🧱','Fill all 8 skills','Distance, accuracy, approach, short game, scrambling, bunker, putting, composure. Spikes win events; one weak slot loses weekends.'],
     ['💰','Run a pro season','Bank the most prize money and climb the earnings list. Winnings are big, but caddie, agent and ~$2.8M/yr of tour costs can put a mediocre build in the red.'],
-    ['📈','Live a full career, not just a season','Your golfer ages, peaks and eventually declines across up to 30 seasons. Chase majors, the Ryder Cup, the Presidents Cup and international medals, climb the World Ranking, build a rivalry, and retire a legend with a trophy case to show for it.'],
+    ['📈','Live a full career, not just a season','Your golfer ages, peaks and eventually declines across up to 30 seasons. Chase majors, the Atlantic Cup, the Nations Cup and international medals, climb the World Ranking, build a rivalry, and retire a legend with a trophy case to show for it.'],
   ];
   const cList=$(`<div class="perks" style="max-width:560px;margin:0 auto 18px"></div>`);
   cSteps.forEach(s=>cList.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
@@ -3318,7 +3303,7 @@ function overlayRecordGuest(screen){
     <div style="position:relative;overflow:hidden;border-radius:16px;border:1px solid var(--gold);background:linear-gradient(160deg,#16331f,#0a2740 58%,#0a1626);padding:20px 18px;margin:0 auto 14px;max-width:520px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.4)">
       <div style="font:800 11px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">✨ Your Trophy Room awaits</div>
       <div style="font-family:var(--serif);font-weight:800;font-size:24px;color:#fff;margin:9px 0 7px;line-height:1.12">Win it all.<br>Keep it forever.</div>
-      <div class="small muted" style="max-width:380px;margin:0 auto;line-height:1.4">Majors, international medals, the FedEx Cup, the Ryder Cup &mdash; every trophy you earn is saved to your free account, your titles equipped, your career ranked against the world.</div>
+      <div class="small muted" style="max-width:380px;margin:0 auto;line-height:1.4">Majors, international medals, the Tour Cup, the Atlantic Cup &mdash; every trophy you earn is saved to your free account, your titles equipped, your career ranked against the world.</div>
       <button class="btn goldfill" id="rec-signup" style="margin:15px auto 0;max-width:320px">🏆 Create your free account ▸</button>
       <button class="btn ghost" id="rec-signin" style="margin:8px auto 0;max-width:320px">I already have one &middot; Sign in</button>
     </div>
@@ -3727,7 +3712,7 @@ function overlayAbout(screen){
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="About RunTheTour">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>About</h3>
-    <p class="lede"><b style="color:var(--oncard)">RunTheTour</b> is a free 30-year golf career simulation from <b style="color:var(--teal)">RunThe.GG</b>. Spin a wheel of real golfers, draft one skill from each to build your own, then live out their career: majors, the Ryder Cup, the Presidents Cup, international medals, and a World Ranking climb across up to 30 seasons.</p>
+    <p class="lede"><b style="color:var(--oncard)">RunTheTour</b> is a free 30-year golf career simulation from <b style="color:var(--teal)">RunThe.GG</b>. Spin a wheel of real golfers, draft one skill from each to build your own, then live out their career: majors, the Atlantic Cup, the Nations Cup, international medals, and a World Ranking climb across up to 30 seasons.</p>
     <p class="lede">It's in active development, new features are landing regularly. Got an idea or a bug? We'd love to hear it.</p>
     <div class="scout">
       <b style="color:var(--teal)">More from RunThe.GG</b>
@@ -3769,7 +3754,7 @@ function overlayTerms(screen){
     <h3>Terms</h3>
     <p class="lede">RunTheTour is a free, fan-made golf simulation game. By playing, creating an account, or appearing on the leaderboard, you agree to these terms.</p>
     <ol style="color:#dbe6ee;padding-left:18px">
-      <li><b>Not affiliated with any real organization.</b> RunTheTour is an independent, unofficial fan project, not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, the Masters / Augusta National, the Ryder Cup, the Presidents Cup, or any golfer, event, or organization named in the game. Real player names and public statistics build fictional, simulated golfers; all results are entirely fictional.</li>
+      <li><b>Not affiliated with any real organization.</b> RunTheTour is an independent, unofficial fan project, not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, or any professional golfer; all tournaments, venues and cups in the game are fictional, event, or organization named in the game. Real player names and public statistics build fictional, simulated golfers; all results are entirely fictional.</li>
       <li><b>Entertainment only, no real money.</b> In-game currency, prize money, and rankings have no real-world value and aren't a form of gambling or wagering.</li>
       <li><b>Your account.</b> Choose a username that isn't offensive, impersonating, or misleading. We reserve the right to rename, suspend, or remove accounts, leaderboard entries, or usernames that violate this, or that we determine were used to abuse or manipulate the leaderboard.</li>
       <li><b>No warranty.</b> RunTheTour is provided "as is," in active development, without warranties of any kind, we don't guarantee the game, leaderboard, or your saved progress will always be available or error-free.</li>
@@ -4598,7 +4583,7 @@ function beginEvent(){
   let evt=S.schedule[S.evtIndex];
   let field=S.season.field, stagger=null;
   if(evt.playoff){
-    // FedEx playoffs: only the top-`cap` players by season points tee it up; the finale staggers starting strokes.
+    // Tour Cup playoffs: only the top-`cap` players by season points tee it up; the finale staggers starting strokes.
     field=[...S.season.field].sort((a,b)=>(S.season.totals[b.name].points||0)-(S.season.totals[a.name].points||0)).slice(0,evt.cap);
     if(evt.stagger){ stagger={}; field.forEach((p,i)=>{ stagger[p.name]=STAGGER[Math.min(i,STAGGER.length-1)]; }); }
   } else if(evt.olympics && !S.daily){
@@ -4606,7 +4591,7 @@ function beginEvent(){
     // while the Olympics runs headlessly (still crowning medalists).
     const meP=S.season.field.find(p=>p.you), oly=olympicPlayers(meP);
     if(oly.some(p=>p.you)){ field=oly; }
-    else { simOlympicsHeadless(oly); evt={name:'John Deere Classic',type:'reg',wk:evt.wk,purse:8*1e6,regfill:true,major:false,big:false};
+    else { simOlympicsHeadless(oly); evt={name:'Quad Cities Classic',type:'reg',wk:evt.wk,purse:8*1e6,regfill:true,major:false,big:false};
       field=S.season.field.filter(p=>!oly.some(o=>o.name===p.name)); }
   } else if(evt.limited && !S.daily){
     // OWGR-gated signature/major: split into marquee + opposite-field, sim the tier you DON'T play headlessly.
@@ -4722,7 +4707,7 @@ function finalizeEvent(){
       if(ce.playoff&&ce.playoff.you&&!ce.playoff.youWon) ev.inc.playoffLosses=1;
       if(you.pos===1){
         if(/Tour Championship|Finale/i.test(evt.name)||evt.type==='finale') ev.set.wonFinale=1;
-        if(/Players/i.test(evt.name)) ev.set.wonPlayers=1;
+        if(/Stadium Classic/i.test(evt.name)) ev.set.wonPlayers=1;
         if(evt.big) ev.set.wonSignature=1;
         const cum=(k)=>{ let s=0; for(let i=0;i<=k;i++) s+=(you.rounds[i]||0); return s; };
         const lead=(k)=>{ let best=Infinity; ce.players.forEach(o=>{ let s=0,ok=true; for(let i=0;i<=k;i++){ if(o.rounds[i]==null){ok=false;break;} s+=o.rounds[i]; } if(ok)best=Math.min(best,s); }); return best; };
@@ -4743,7 +4728,7 @@ function finalizeEvent(){
       const fresh=evaluateAch(); if(fresh.length){ S.freshAch=(S.freshAch||[]).concat(fresh); }
     }
   }
-  // the staggered finale crowns the season-long Cup champion (East Lake winner = FedExCup champ)
+  // the staggered finale crowns the season-long Cup champion (East Lake winner = Tour Cup champ)
   if(ce.stagger && order.length){ S.season.cupChampion=order[0].p.name; S.season.cupYouWon=!!order[0].p.you; }
   S.season.results.push({evt,order,playoff:ce.playoff}); ce.done=true; ce.order=order;
 }
@@ -4829,8 +4814,8 @@ function wanamakerSVG(){ return `<svg viewBox="0 0 100 116" width="100%" height=
   <rect x="26" y="102" width="48" height="10" rx="3" fill="url(#wm)"/></svg>`; }
 function greenJacketSVG(){ return `<svg viewBox="0 0 100 116" width="100%" height="100%">
   <defs>
-    <linearGradient id="gj" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2aa35c"/><stop offset="1" stop-color="#0f5e34"/></linearGradient>
-    <linearGradient id="gjl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#33b466"/><stop offset="1" stop-color="#13733e"/></linearGradient>
+    <linearGradient id="gj" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a34457"/><stop offset="1" stop-color="#5e1f2e"/></linearGradient>
+    <linearGradient id="gjl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b45568"/><stop offset="1" stop-color="#733142"/></linearGradient>
   </defs>
   <!-- jacket body: broad rounded shoulders, sleeves hang at the sides, shallow open hem -->
   <path d="M44 32 C34 30 22 33 15 44 L20 106 L46 106 L50 91 L54 106 L80 106 L85 44 C78 33 66 30 56 32 L50 41 Z" fill="url(#gj)" stroke="#0a3d22" stroke-width="2" stroke-linejoin="round"/>
@@ -4858,10 +4843,10 @@ function usOpenTrophySVG(){ return `<svg viewBox="0 0 100 116" width="100%" heig
   <rect x="33" y="90" width="34" height="8" rx="2" fill="url(#uo)"/>
   <rect x="26" y="98" width="48" height="11" rx="3" fill="#3a6fb0"/></svg>`; }
 function majorTheme(name){
-  if(/Masters/i.test(name)) return {label:'The Masters · Green Jacket', accent:'#1f8f4e', svg:greenJacketSVG};
-  if(/U\.?S\.? Open/i.test(name)) return {label:'U.S. Open Champion', accent:'#3a6fb0', svg:usOpenTrophySVG};
-  if(/^The Open$|Open Championship/i.test(name)) return {label:'The Open · Claret Jug', accent:'#d8c38a', svg:claretJugSVG};
-  if(/Championship/i.test(name)) return {label:'PGA · Wanamaker Trophy', accent:'#cfd3d8', svg:wanamakerSVG};
+  if(/Magnolia/i.test(name)) return {label:'The Magnolia Invitational · Champion Blazer', accent:'#8a2f45', svg:greenJacketSVG};
+  if(/National Open/i.test(name)) return {label:'The National Open Champion', accent:'#3a6fb0', svg:usOpenTrophySVG};
+  if(/Links Championship/i.test(name)) return {label:'The Links Championship · Links Flagon', accent:'#d8c38a', svg:claretJugSVG};
+  if(/Championship/i.test(name)) return {label:'The Championship · Championship Cup', accent:'#cfd3d8', svg:wanamakerSVG};
   return {label:'Major Championship', accent:'#EBA61F', svg:winTrophySVG};
 }
 // lightweight rAF confetti, one center burst (wins) or two corner cannons (majors); auto-stops
@@ -5067,9 +5052,9 @@ function finishSeasonHeadless(){
     S.evtIndex++;
   }
 }
-/* ---------- Ryder/Presidents Cup screen: reveal the 5 sessions, running team score ---------- */
+/* ---------- Ryder/Nations Cup screen: reveal the 5 sessions, running team score ---------- */
 // Each cup gets its own visual identity so it's obvious AT A GLANCE which one is being played:
-// Ryder Cup = navy & gold (USA in red vs Europe in EU blue); Presidents Cup = charcoal & silver
+// Atlantic Cup = navy & gold (USA in red vs Europe in EU blue); Nations Cup = charcoal & silver
 // (USA in blue vs International in bronze). Used by the intro tag, the sticky scoreboard wordmark,
 // and the two team score panels.
 const CUP_THEME={
@@ -5091,7 +5076,7 @@ function cupMatchRow(m, anim){
     <div style="flex:1;min-width:0;text-align:right;font-size:12.5px;line-height:1.3;${bWon?'':'opacity:.7'}">${side(m.b,bWon)}</div>
   </div>`;
 }
-// pre-event selection announcement for the FedEx playoffs and the Olympics (the cup has its own intro)
+// pre-event selection announcement for the Tour Cup playoffs and the Olympics (the cup has its own intro)
 // Shared copy for the playoff / Olympic selection moment, used by both the full-screen card
 // (Auto Sim OFF) and the timed bottom pop-up (Auto Sim ON).
 function selectionInfo(evt){
@@ -5099,20 +5084,20 @@ function selectionInfo(evt){
   let tag, made, title, sub;
   if(evt.playoff){
     const rank=pointsRank(meName); made=rank<=evt.cap;
-    tag=S.circuitMode?'Schwab Cup Playoffs':'FedEx Cup Playoffs';
+    tag=S.circuitMode?'Legends Cup Playoffs':'Tour Cup Playoffs';
     if(made){
       title = S.circuitMode
-        ? (evt.stage===1?"You're in the Playoffs!" : evt.stage===2?'Through to Playoffs II!' : 'You made the Schwab Cup Championship!')
-        : (evt.stage===1?"You're in the Playoffs!" : evt.stage===2?'Through to the BMW Championship!' : 'You made it to East Lake!');
-      sub = `#${rank} in the ${S.circuitMode?'Schwab Cup':'FedEx Cup'} standings, inside the top ${evt.cap}. ${evt.stagger?`Just ${evt.cap} left, with a staggered start, this one is for the Cup itself.`:'Keep climbing, the field shrinks again next week.'}`;
+        ? (evt.stage===1?"You're in the Playoffs!" : evt.stage===2?'Through to Playoffs II!' : 'You made the Legends Cup Championship!')
+        : (evt.stage===1?"You're in the Playoffs!" : evt.stage===2?'Through to The Crossroads Championship!' : 'You made it to East Lake!');
+      sub = `#${rank} in the ${S.circuitMode?'Legends Cup':'Tour Cup'} standings, inside the top ${evt.cap}. ${evt.stagger?`Just ${evt.cap} left, with a staggered start, this one is for the Cup itself.`:'Keep climbing, the field shrinks again next week.'}`;
     } else {
       title = evt.stage===1?'Just missed the Playoffs' : 'Your playoff run ends here';
       sub = `#${rank} in the standings, agonisingly outside the top ${evt.cap}. That is a season to be proud of, build on it and you will be deep in this hunt next year.`;
     }
   } else if(evt.guestMajor){
     tag='Past Champion'; made=true; title=`Welcome back to ${evt.name}`;
-    const reason = evt.name==='The Masters' ? 'a lifetime past-champion invitation'
-      : evt.name==='The Open' ? 'your past-champion exemption'
+    const reason = evt.name==='The Magnolia Invitational' ? 'a lifetime past-champion invitation'
+      : evt.name==='The Links Championship' ? 'your past-champion exemption'
       : 'your 5-year past-champion exemption';
     sub = `You're off the Legend Circuit this week, ${reason} gets you back into the field against today's tour.`;
   } else { // olympics
@@ -5382,20 +5367,20 @@ function raceToCupNode(byPts, evt){
   const myPts=Math.round((byPts.find(r=>r.n===meName)||{}).points||0);
   const fmtP=n=>Math.round(n).toLocaleString();
   // `noun` = what the top-N actually qualify FOR, named explicitly so the strip always reads as a
-  // complete sentence: "Only the top 70 qualify for the FedEx Cup Playoffs. You're #12, safely in."
+  // complete sentence: "Only the top 70 qualify for the Tour Cup Playoffs. You're #12, safely in."
   let gate=0, noun='';
   if(S.circuitMode){
-    if(!evt.playoff){ gate=CIRCUIT_PLAYOFFS[0].cap; noun='the Schwab Cup Playoffs'; }
+    if(!evt.playoff){ gate=CIRCUIT_PLAYOFFS[0].cap; noun='the Legends Cup Playoffs'; }
     else if(evt.stage===1){ gate=CIRCUIT_PLAYOFFS[1].cap; noun='the '+CIRCUIT_PLAYOFFS[1].name; }
     else if(evt.stage===2){ gate=CIRCUIT_PLAYOFFS[2].cap; noun='the '+CIRCUIT_PLAYOFFS[2].name; }
   } else {
-    if(!evt.playoff){ gate=70; noun='the FedEx Cup Playoffs'; }
-    else if(evt.stage===1){ gate=50; noun='the BMW Championship'; }
+    if(!evt.playoff){ gate=70; noun='the Tour Cup Playoffs'; }
+    else if(evt.stage===1){ gate=50; noun='The Crossroads Championship'; }
     else if(evt.stage===2){ gate=30; noun='the Tour Championship at East Lake'; }
   }
   const finale=(gate===0);
   let detail, inside=true, line=gate;
-  if(finale){ detail=S.circuitMode?'You made the finale. Win the Schwab Cup Championship to lift the Cup.':'You made the 30-man finale. Win the Tour Championship to lift the Cup.'; }
+  if(finale){ detail=S.circuitMode?'You made the finale. Win the Legends Cup Championship to lift the Cup.':'You made the 30-man finale. Win the Tour Championship to lift the Cup.'; }
   else {
     inside=rank<=gate; const lineP=Math.round((byPts[gate-1]||{points:0}).points||0);
     if(inside){ const cu=gate-rank;
@@ -5411,7 +5396,7 @@ function raceToCupNode(byPts, evt){
   const col=finale?'var(--gold)':(inside?'#35d6a0':'#E14A33');
   const wrap=$(`<div class="race2cup" style="background:#0a2740;border:1px solid var(--line);border-radius:13px;padding:11px 13px;margin:0 0 12px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-      <div style="min-width:0"><div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">${finale?'🏆 The Cup is on the line':(S.circuitMode?'Race to the Schwab Cup':'Race to the Cup')}</div>
+      <div style="min-width:0"><div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">${finale?'🏆 The Cup is on the line':(S.circuitMode?'Race to the Legends Cup':'Race to the Cup')}</div>
         <div class="small" style="margin-top:3px;color:var(--oncard)">${detail}</div></div>
       <div style="text-align:right;flex:0 0 auto"><div class="mono" style="font-weight:800;font-size:20px;color:${col}">#${rank}</div>
         <div class="small muted" style="margin-top:1px">${fmtP(myPts)} pts</div></div>
@@ -5426,7 +5411,7 @@ function raceToCupNode(byPts, evt){
 function scrSeason(){
   clearTimeout(seasonTimer);
   if(!S.simPace) S.simPace=LS.get('bag_pace','chill');   // default to the slow, readable "sweat" cadence
-  // Ryder/Presidents Cup weeks route to their own match-play screen
+  // Ryder/Nations Cup weeks route to their own match-play screen
   const cur=S.schedule[S.evtIndex];
   if(cur && cur.teamcup && !S.daily){ scrTeamCup(); return; }
   // pre-event selection announcement (playoffs / Olympics), "you made it / just missed", shown once.
@@ -5440,7 +5425,7 @@ function scrSeason(){
         selectionPopup(cur);                 // falls through to render the event (or elimination) underneath
       } else { scrSelectionScreen(cur); return; }
     } }
-  // FedEx playoffs: if you didn't qualify for this stage's field, your season is over.
+  // Tour Cup playoffs: if you didn't qualify for this stage's field, your season is over.
   // Finish the playoffs headlessly (so a Cup champion is still crowned) and jump to the summary.
   const up=S.schedule[S.evtIndex];
   if(up && up.playoff && !S.daily && !S.season.eliminated){
@@ -5460,7 +5445,7 @@ function scrSeason(){
   const avg=t.played?ord(Math.round(t.finishSum/t.played)):', ';
   const high=t.best===99?', ':ord(t.best);
   const ec=seasonNet(t); const netCol=ec.net>=0?'#35d6a0':'#E14A33';
-  // live Tour Rank, where you sit on the season points list (FedEx-style), updated each event
+  // live Tour Rank, where you sit on the season points list (Tour Cup-style), updated each event
   const byPts=Object.entries(S.season.totals).map(([n,v])=>({n,points:v.points})).sort((a,b)=>b.points-a.points);
   const tourRank=byPts.findIndex(r=>r.n===S.season.me.name)+1;
   const NP=byPts.length;
@@ -5920,7 +5905,7 @@ function scrSummary(){
         if(aw.no1.you)S.career.awards.no1++;
         S.career.medals=S.career.medals||{gold:0,silver:0,bronze:0};
         if(med)S.career.medals[med]++; } }
-    // FedEx Cup title, lifetime counter for the Trophy Case (no prior running tally existed)
+    // Tour Cup title, lifetime counter for the Trophy Case (no prior running tally existed)
     if(!S.daily && S.season.cupYouWon){ const c=career(), lt=(c.lt=Object.assign(ltDefault(),c.lt||{}));
       lt.fedexCups=(lt.fedexCups||0)+1; saveCareerLifetime(c); S.career.fedexCups=(S.career.fedexCups||0)+1; }
     // emergent rivalry: tally head-to-head, graduate a rivalry you've outgrown, then crown a fresh nemesis
@@ -5991,7 +5976,7 @@ function scrSummary(){
   // Race to the Cup outcome, champion, eliminated, or finished the season in the standings
   if(!S.daily){
     const el=S.season.eliminated, champ=S.season.cupChampion;
-    const cupName=S.circuitMode?'Schwab Cup':'FedEx Cup', finaleName=S.circuitMode?'Schwab Cup Championship':'Tour Championship at East Lake';
+    const cupName=S.circuitMode?'Legends Cup':'Tour Cup', finaleName=S.circuitMode?'Legends Cup Championship':'Tour Championship at East Lake';
     if(S.season.cupYouWon){
       add($(`<div class="center" style="margin:10px 0 2px"><div style="display:inline-block;background:linear-gradient(180deg,#1c5638,#0c2e1d);border:1px solid var(--gold);border-radius:14px;padding:13px 20px">
         <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">${cupName}</div>
@@ -6001,10 +5986,10 @@ function scrSummary(){
       add($(`<div class="center" style="margin:10px 0 2px"><div style="display:inline-block;background:#0a2740;border:1px solid #E14A33;border-radius:14px;padding:12px 18px">
         <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:#E14A33">Playoffs · eliminated</div>
         <div style="font:800 17px/1.15 var(--body);color:var(--oncard);margin-top:6px">Bounced at the ${esc(el.event)}</div>
-        <div class="small muted" style="margin-top:4px">Finished #${el.rank} in the Race to the ${S.circuitMode?'Schwab Cup':'Cup'}${champ?` · ${esc(champ)} took the Cup`:''}</div></div></div>`));
+        <div class="small muted" style="margin-top:4px">Finished #${el.rank} in the Race to the ${S.circuitMode?'Legends Cup':'Cup'}${champ?` · ${esc(champ)} took the Cup`:''}</div></div></div>`));
     } else if(champ){
       add($(`<div class="center" style="margin:10px 0 2px"><div style="display:inline-block;background:#0a2740;border:1px solid var(--line);border-radius:14px;padding:12px 18px">
-        <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">Race to the ${S.circuitMode?'Schwab Cup':'Cup'}</div>
+        <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">Race to the ${S.circuitMode?'Legends Cup':'Cup'}</div>
         <div style="font:800 17px/1.15 var(--body);color:var(--oncard);margin-top:6px">#${fedexRank} in the final standings</div>
         <div class="small muted" style="margin-top:4px">🏆 ${esc(champ)} won the ${finaleName}</div></div></div>`));
     }
@@ -6107,7 +6092,7 @@ function scrSummary(){
         <span class="small" style="margin-left:8px;color:var(--oncard)">🥇 ${natFlag(gold.nat)} ${esc(gold.name)} took gold</span></div></div>`));
     }
   }
-  // ---- Ryder/Presidents Cup callout ----
+  // ---- Ryder/Nations Cup callout ----
   if(!S.daily && S.season.teamCup && (S.season.teamCup.playerSide || S.season.teamCup.captain)){
     const T=S.season.teamCup, mineWon=T.mineWon, tie=T.retained, col=mineWon?'var(--gold)':tie?'#c9b25a':'#9fb0bf';
     const winName=T.winner==='A'?T.nameA:T.nameB, mine=(T.captain?T.mySide:T.playerSide)==='A'?T.nameA:T.nameB;
@@ -6329,18 +6314,33 @@ function continueFranchise(){
    of drafting fresh. Deliberately gated on genuine accomplishment (not just a high OVR) so it rewards
    playing well, not min-maxing the spin wheel. One token per qualifying completed career, run another
    full career, earn another. Signed-in only (career mode itself already requires an account, CS54). ---- */
+/* ---- legacy event-name aliases: careers saved BEFORE the fictionalization pass hold old
+   tournament names in majorStats keys / winsList entries. Normalize them at load so major
+   tallies, Grand Slam checks, guest-major exemptions and the ceremony boards stay whole. ---- */
+const LEGACY_EVENT_ALIAS={'The Masters':'The Magnolia Invitational','U.S. Open':'The National Open','The Open':'The Links Championship','PGA Championship':'The Championship','The Players':'The Stadium Classic','Kapalua Invitational':'Trade Winds Invitational','Pebble Beach Pro-Am':'Graystone Cove Pro-Am','Bay Hill Invitational':'Osprey Bay Invitational','Memorial Tournament':'The Founders Invitational','Travelers Championship':'River Bend Classic','FedEx St. Jude Championship':'The Memphis Championship','BMW Championship':'The Crossroads Championship','Sony Open':'Island Open','The American Express':'Desert Classic','Farmers Insurance Open':'San Diego Open','Genesis Invitational':'Canyon Crest Invitational','Cognizant Classic':'Palm Coast Classic','Valspar Championship':'Gulf Coast Classic','Hilton Head Classic':'Lighthouse Classic','Zurich Team Classic':'Bayou Team Classic','Charles Schwab Challenge':'Fort Worth Invitational','Rocket Mortgage Classic':'Motor City Classic','John Deere Classic':'Quad Cities Classic','3M Open':'Twin Cities Open','Wyndham Championship':'Piedmont Classic','Regions Tradition':'The Legacy Invitational','Senior PGA Championship':'Legends Championship','U.S. Senior Open':'National Senior Open','Senior Players Championship':'Legends Stadium Classic','Senior Open Championship':'Legends Links Championship','Charles Schwab Cup Playoffs I':'Legends Cup Playoffs I','Charles Schwab Cup Playoffs II':'Legends Cup Playoffs II','Charles Schwab Cup Championship':'Legends Cup Championship'};
+function evAlias(n){ return LEGACY_EVENT_ALIAS[n]||n; }
+function normalizeCareerNames(c){ if(!c) return c;
+  if(c.majorStats && Object.keys(c.majorStats).some(k=>LEGACY_EVENT_ALIAS[k])){
+    const m={}; Object.entries(c.majorStats).forEach(([k,v])=>{ const nk=evAlias(k);
+      if(m[nk]){ m[nk].played+=(v.played||0); m[nk].wins+=(v.wins||0); m[nk].top10+=(v.top10||0); m[nk].best=Math.min(m[nk].best!=null?m[nk].best:99, v.best!=null?v.best:99); }
+      else m[nk]=Object.assign({},v); });
+    c.majorStats=m;
+  }
+  if(Array.isArray(c.winsList)) c.winsList.forEach(w=>{ if(w&&w.name) w.name=evAlias(w.name); });
+  return c;
+}
 const LEGEND_MAJORS_BAR=5, LEGEND_POY_BAR=3;
 function legendQualifies(c){
   if(!c) return false;
   const ms=c.majorStats||{};
-  const slam=['The Masters','The Championship','U.S. Open','The Open'].every(n=>ms[n]&&ms[n].wins>0);
+  const slam=['The Magnolia Invitational','The Championship','The National Open','The Links Championship'].every(n=>ms[n]&&ms[n].wins>0);
   const majors5=(c.majors||0)>=LEGEND_MAJORS_BAR;
   const poy3=(c.awards&&c.awards.poy||0)>=LEGEND_POY_BAR;
   return slam||majors5||poy3;
 }
 function legendQualifyReason(c){
   const ms=(c&&c.majorStats)||{};
-  if(['The Masters','The Championship','U.S. Open','The Open'].every(n=>ms[n]&&ms[n].wins>0)) return 'Career Grand Slam';
+  if(['The Magnolia Invitational','The Championship','The National Open','The Links Championship'].every(n=>ms[n]&&ms[n].wins>0)) return 'Career Grand Slam';
   if((c.majors||0)>=LEGEND_MAJORS_BAR) return c.majors+' career majors';
   if((c.awards&&c.awards.poy||0)>=LEGEND_POY_BAR) return c.awards.poy+'x Player of the Year';
   return '';
@@ -6388,7 +6388,7 @@ function endCareer(reason){
   try{ const cc=career(); cc.lt=Object.assign(ltDefault(),cc.lt||{}); cc.lt.maj=Object.assign({masters:0,champ:0,usopen:0,open:0},cc.lt.maj||{});
     cc.lt.careers++;
     const ms=(S.career&&S.career.majorStats)||{};
-    if(['The Masters','The Championship','U.S. Open','The Open'].every(n=>ms[n]&&ms[n].wins>0)) cc.lt.careerSlams++;
+    if(['The Magnolia Invitational','The Championship','The National Open','The Links Championship'].every(n=>ms[n]&&ms[n].wins>0)) cc.lt.careerSlams++;
     _badgeFresh(cc); saveCareerLifetime(cc); sbSyncStats();
   }catch(e){}
   S.careerFreshAch=evaluateAch();   // career-completion achievements (Full Circle, Hall of Fame…)
@@ -7023,7 +7023,7 @@ function hvNode(hole, revealN, holeIdx, courseKey){
   if(live && idx>=0 && plots[idx]) inner+=hvLiveShot(g,plots[idx],small);
   else if(idx>=0 && plots[idx]) inner+=hvDoneShot(g,plots[idx],false,small&&plots[idx].onGreen);
   const cam=live?hvCamFor(g,plots,Math.max(0,idx-1)):[0,0,HV_W,HV_H];
-  const node=$(`<div class="holeview">${hvStatHTML(shots[idx], holed)}
+  const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>${hvStatHTML(shots[idx], holed)}
     <svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvTerrain(g,seedN)}${inner}</svg></div>`);
   if(live && plots[idx]){
     const key=(courseKey||'')+':'+holeIdx+':'+showN;
@@ -7844,7 +7844,7 @@ function overlayCourseRecords(screen){
 }
 /* ---------- career-end ceremony (bounded career → reset) ---------- */
 /* ---- career win/season displays, grouped into collapsible dropdowns so a long career stays readable ---- */
-const MAJOR_NAMES=['The Masters','The Championship','U.S. Open','The Open'];
+const MAJOR_NAMES=['The Magnolia Invitational','The Championship','The National Open','The Links Championship'];
 // majors grouped by championship (× count + the years won), in a dropdown, your prestige cabinet at a glance
 function careerMajorsHTML(c){
   const majors=(c.winsList||[]).filter(w=>w.major);
@@ -7899,7 +7899,7 @@ function scrCareerEnd(){
   tiles.appendChild(tile('Seasons',e.years+''));
   add(tiles);
   // career record at the 4 major championships
-  const MAJORS=['The Masters','The Championship','U.S. Open','The Open'];
+  const MAJORS=['The Magnolia Invitational','The Championship','The National Open','The Links Championship'];
   const mstats=c.majorStats||{};
   const winsByName={}; (c.winsList||[]).forEach(w=>{ if(w.major) winsByName[w.name]=(winsByName[w.name]||0)+1; });
   add($(`<h2 class="center" style="margin:16px 0 8px;font-size:15px">Major championships</h2>`));

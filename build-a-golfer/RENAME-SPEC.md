@@ -1,6 +1,6 @@
 # RunTheTour — Fictionalization Spec (courses, tournaments, cups)
 
-Status: **PROPOSED — awaiting owner name review. Nothing implemented yet.**
+Status: **IMPLEMENTED (owner-approved) — shipped to /golf. This doc is now the reference mapping.**
 
 ## Why
 Real course names, tournament names, and (worst) sponsor-branded event names ("BMW
