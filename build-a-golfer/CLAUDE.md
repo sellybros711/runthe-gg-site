@@ -3734,6 +3734,39 @@ allows Google Fonts, or self-host Anton.*
   fixed, so it's self-healing — a one-off `truncate/delete from runtour_daily_attempts where day=<today>` could
   unlock them immediately if desired, but isn't required.
 
+- **CS136 — HOLE VIEW: broadcast-style animated ball + tracer (TOURCAST-inspired), Daily + H2H.** Owner sent
+  PGA Tour app TOURCAST screenshots: "I want the ball and ball tracer to be animated and simulating like a
+  real golf ball." Built a stylized top-down hole graphic that plays every shot like a broadcast tracer:
+  • **Structured shot data.** Every `dShotSeq` push now ALSO records `{k:tee/app/adv/chip/pen/putt/hole,
+    lie:fw/rl/rr/ru/tr/fb/gb/fr/fc/sr/lo/green/water/drop/hole, fromY, toY, ft, toFt, side, dr}` — the text
+    narrative is unchanged and every rng call is preserved in order (verified: 12,000 par/score/seed combos
+    produce byte-identical narratives vs HEAD, so determinism/server-verifiability is untouched).
+  • **HOLEVIEW module** (`hvGeom/hvPlots/hvTerrain/hvDoneShot/hvLiveShot/hvKick/hvNode`, ~300 lines,
+    self-contained): deterministic per-hole geometry (dogleg fairway ribbon + mow stripes + rough halo, tree
+    blobs, greenside/fairway bunkers, green + fringe + gold pin, tee box; a water hazard is drawn exactly
+    where a ball actually drowned, from the shot data) projected with a far-end perspective taper. Each
+    shot's rest position is plotted from its structured lie (rough side, bunker snap, green position from
+    ft-to-hole + side, penalty drop, water splash point) with deterministic hash jitter (no rng).
+  • **Real-ball animation** (rAF, ids re-queried every frame so mid-flight re-renders can't kill it): launch
+    → hang (ball scales up at apex + drifting shadow) → draw/fade curve (quadratic flight biased toward the
+    miss side) → land short of the rest spot → bounce (decaying hops) → roll out; the white-hot tracer with a
+    gold glow draws behind the ball in real time (stroke-dash reveal), putts roll with decel + sink into the
+    cup with a gold pulse, water shots end in a splash ring, penalty drops fade in. Numbered markers
+    (TOURCAST-style chips) are left at every resting spot; prior shots stay as dim teal traces.
+  • **Camera**: full-hole view → tweened green close-up for the putting phase (viewBox animation); markers/
+    strokes drawn to scale in the close-up so chips don't blow up under zoom.
+  • **Stat strip** above the graphic: `SHOT n · 300 YDS · TO HOLE 81 YDS` + derived flavor chips
+    `BALL SPEED 175 MPH · APEX 120 FT` (deterministic from distance), result chip on holing.
+  • **Pacing**: the reveal scheduler now waits for each shot's animation (`hvShotMs`: drives ~2.3s, chips
+    ~1.6s, putts ~1.4s, capped 2.6s) in BOTH the daily (`startShotReveal`) and the H2H watch
+    (`h2hWatchStep`), so the next shot fires when the ball has landed. Skip/Pause/auto-finish unchanged.
+  • Integrated in `scrDailyRound` (above the play-by-play text; tapping a played hole replays its full
+    static tracer map) and `scrH2HWatch` (your focused golfer's hole, left column). Old/uninstrumented
+    stored rounds gracefully render no graphic. Reduced-motion → static final states, no animation.
+  Verified in Playwright: mid-flight ball scaled at apex + moving + tracer revealing; full hole → markers
+  1/2/3 + green close-up + HOLED chip; H2H watch renders + animates + skip-to-result intact; daily
+  skip-hole/auto-finish/reduced-motion all clean; zero page errors everywhere. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
