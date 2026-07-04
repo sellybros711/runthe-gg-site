@@ -3713,6 +3713,27 @@ allows Google Fonts, or self-host Anton.*
   action, tapping scrolls the button into view + pill hides + button pulses, zero page errors; screenshot
   confirms the pill. Deployed to /golf.
 
+- **CS135 — fix: Daily Challenge button "does nothing" (blank bounce back to title).** Owner report:
+  clicking Daily Challenge on the title did nothing. Root cause: `startDailyChallenge` routed to the result
+  screen whenever `dailyAttempts()>0`, but a signed-in account can have `bag_daily={date,attempts:N}` with NO
+  stored `best`/`result` — `reconcileDailyAttempts` pulls the account's server attempt count into local, and
+  if there's no server round to fetch it leaves `best` unset (this is exactly the state left behind by the
+  now-fixed pre-CS132 "enforce-on-preview-open" bug, which inflated the server count every time the preview
+  was opened). With no showable result, `scrDailyResult` bailed via `S.screen='title'; return render()` — but
+  that nested `render()` is INSIDE render's dispatch, so it hits the re-entrancy guard and defers, netting a
+  bounce straight back to the title = "the button does nothing." (Same for a stale/unknown course key.) Fixes:
+  (1) `startDailyChallenge` now only shows the result screen when there's a genuinely renderable result
+  (`dailyBest()` with a course still in `DAILY_COURSES`); otherwise if attempts remain it goes to play, and if
+  out of attempts it shows the graceful "done for today" overlay — never a blank bounce. (2) `scrDailyResult`'s
+  no-result / unknown-course guard now renders the title INLINE (`return scrTitle()`) instead of a re-entrant
+  `render()`. Verified in Playwright across the reproduced states (inflated-count-no-best → done overlay;
+  old-format `{done:true}` and unknown-course with attempts left → into play; fresh guest → intro; valid result
+  → result screen with Play again): no blank screens, zero page errors. Deployed to /golf. NOTE for owner:
+  accounts whose server attempt count was inflated by the old bug are (correctly, per the server cap) locked
+  for TODAY and will see "done for today"; the count resets at UTC midnight and the underlying bug is already
+  fixed, so it's self-healing — a one-off `truncate/delete from runtour_daily_attempts where day=<today>` could
+  unlock them immediately if desired, but isn't required.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
