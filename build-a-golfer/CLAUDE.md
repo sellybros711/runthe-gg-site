@@ -3805,6 +3805,36 @@ allows Google Fonts, or self-host Anton.*
   real (separate right-of-publicity decision, flagged in RENAME-SPEC §7). courses.json (internal doc) not
   updated — the game file is canonical. Deployed to /golf.
 
+- **CS138 — Practice mode (?practice=1): unlimited Daily Challenge rounds, nothing recorded.** Owner was
+  out of daily attempts and needed a way to test the new features (TOURTRACE hole view, fictionalized
+  courses) without the 3-a-day server cap. Built a proper practice mode rather than a backdoor, so it's
+  safe to ship publicly by design — a practice round can't touch anything competitive, so there's nothing
+  to exploit. Activate with **`https://runthe.gg/golf/?practice=1`** (or `#practice`); the URL param is
+  deliberately KEPT (unlike `?h2h=`, which is cleaned) so a refresh stays in practice mode — drop the param
+  for normal play.
+  Implementation: module-level `let PRACTICE=false` (NOT on S, since `reset()` rebuilds S every attempt) +
+  `practiceCheck()` URL parser called at boot before the first render (so the title button reflects it),
+  with a toast announcing the mode. Gates: `startDailyChallenge` goes straight into a fresh round (never
+  the result screen / done overlay); `beginDailyAttempt` skips the attempts-left gate and salts the draft
+  wheel + per-hole luck with a RANDOM attempt number so every practice round offers a fresh draft and fresh
+  variance (determinism doesn't matter — nothing is submitted); `claimDailyAttempt` no-ops (no local bump,
+  no server `runtour_daily_attempt_start` claim; `enforceDailyAttempt` double-guarded); `finishDailyRound`
+  has an early practice branch that builds a `practice:true` result and skips ALL bookkeeping — no
+  `recordCourseScore`, no `bag_daily` write, no `sbSubmitDaily`/`verifyDailyRecord`, no
+  `bumpStreak`/`bumpDailyStats`/`captureDailyFeats`/`evaluateAch`, no guest-claim stash, and a Legend Token
+  round never spends the token. UI: the title Daily button reads "Daily Challenge · Practice · unlimited
+  practice rounds"; the preview and result screens carry a teal "Practice … nothing is recorded" tag; the
+  result hides attempt counts / best-of-day / percentile / streak / lifetime-record / guest-sign-in cards
+  and always offers "Play again ▸ · Unlimited practice rounds".
+  Verified in Playwright (served over http; signed-in account with 0 attempts left + mocked `sb.rpc`
+  recording every call): practice enters the daily flow despite 0 attempts, a full draft → 18-hole round →
+  result completes with `bag_daily` untouched (attempts stay 3, no result written), ZERO attempt-claim or
+  submit RPCs fired, streak/daily-stats/course-records all still empty, the result screen is
+  practice-tagged with unlimited Play again (which starts a fresh round with a different draft salt);
+  normal-mode regression: no param → PRACTICE off, an out-of-attempts account still bounces to the "done"
+  overlay, and a guest's first wheel spin still claims exactly 1 attempt; `#practice` hash form also works.
+  Zero page errors throughout. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -3863,7 +3863,8 @@ function scrTitle(){
   // every branch below must tolerate it instead of assuming "attempts used" implies "we know the score."
   const bestTxt = dbest ? `Best ${dTot(dbest.total, dbest.par!=null?dbest.par:(DAILY_COURSES[dbest.course]||{}).par)}` : `Best on this device: not yet known`;
   let dMain, dSub, dCls;
-  if(datt===0){ dMain='Daily Challenge'; dSub='Beat the tour average at a new famous course every day'; dCls='blue'; }
+  if(PRACTICE){ dMain='Daily Challenge · Practice'; dSub='Unlimited practice rounds · nothing is recorded, no attempts used'; dCls='blue'; }
+  else if(datt===0){ dMain='Daily Challenge'; dSub='Beat the tour average at a new famous course every day'; dCls='blue'; }
   else if(dleft<=0){ dMain=`Daily Challenge · ${dwon?'Beaten ✓':'Done'}`; dSub=`${bestTxt}${dbest?(dwon?', you beat the tour average':' · came up short of the tour average'):''} · new course at midnight UTC`; dCls='gold'; }
   else { dMain=`Daily Challenge · ${dleft} left`; dSub=`${bestTxt} · ${dwon?'tour average beaten ✓, go lower':'beat the tour average to win'} (${dailyMaxAttempts()} tr${dailyMaxAttempts()===1?'y':'ies'}/day)`; dCls='blue'; }
   const daily=$(`<button class="btn ${dCls}" style="margin-top:10px">${dMain}<span class="sub">${dSub}</span></button>`);
@@ -7033,6 +7034,7 @@ function hvNode(hole, revealN, holeIdx, courseKey){
 }
 function startDailyChallenge(){
   S.special=false;   // entering the regular daily, never treat it as a Spotlight
+  if(PRACTICE){ beginDailyAttempt(); return; }   // practice: straight into a fresh round, always
   const r=dailyBest();
   const showable=!!(r && DAILY_COURSES[r.course]);   // a real, renderable result exists to show
   // already played today WITH a showable result → show it (Play again if attempts remain).
@@ -7049,9 +7051,12 @@ function startDailyChallenge(){
 // 3-a-day cap in the BACKGROUND (enforceDailyAttempt) — it still bounces an over-cap player to the "done"
 // overlay within a moment, and score submission / records are separately server-gated, so the cap holds.
 function beginDailyAttempt(){
-  if(dailyAttemptsLeft()<=0){ S.overlay='dailydone'; render(); return; }
+  if(!PRACTICE && dailyAttemptsLeft()<=0){ S.overlay='dailydone'; render(); return; }
   const seed=todayKey();
-  const att=dailyAttempts(); reset();
+  // practice: a random attempt salt so every practice round offers a fresh draft wheel + fresh
+  // per-hole luck (a fixed number would replay near-identical rounds); determinism doesn't matter
+  // here since nothing is submitted. Normal play keeps the real, server-verifiable attempt number.
+  const att=PRACTICE ? ((Math.random()*100000)|0) : dailyAttempts(); reset();
   S.daily=true; S.dailySeed=seed; S.mode='daily'; S.dailyMode='round'; S.dailyAttempt=att;
   // course/conditions/hole-sim stay seeded by the day (fair, server-verifiable); only the draft
   // wheel is salted by attempt # so each of your 3 plays offers a fresh draft (still identical
@@ -7069,6 +7074,7 @@ function beginDailyAttempt(){
 // re-increment, it reads this already-claimed count.
 function claimDailyAttempt(){
   if(S.dailyClaimed) return; S.dailyClaimed=true;
+  if(PRACTICE) return;   // practice rounds are free: no local bump, no server claim
   const seed=S.dailySeed, prev=dailyToday(), cur=prev?dailyAttempts():0;
   LS.set(acctKey('bag_daily'), {date:seed, attempts:cur+1, best:prev?(prev.best||prev.result||null):null, result:prev?(prev.result||null):null});
   enforceDailyAttempt(seed);   // signed-in: server-side cross-device claim + cap (fail-open, timeout-guarded)
@@ -7079,6 +7085,7 @@ function claimDailyAttempt(){
 // the button. Fails OPEN on any network/RPC problem (offline, sb not loaded, migration not applied, timeout),
 // matching the rest of the online backend; only an explicit "no attempts left" bounces the player out.
 async function enforceDailyAttempt(seed){
+  if(PRACTICE) return;   // belt-and-suspenders: a practice round never touches the server counter
   if(!sb || !sbSignedIn()) return;
   const withTimeout=(promise,ms)=>Promise.race([
     Promise.resolve(promise).then(v=>({v}),e=>({e})),
@@ -7136,6 +7143,7 @@ function scrDailyPreview(){
   if(sb && crCache===null) crLoad();   // pull global course records so the record box is global, not just local
   const key=S.dailyCourse, c=DAILY_COURSES[key], rec=courseRecords()[key];
   add($(`<div class="center"><span class="tag" style="color:${S.special?'#ffd76a':'var(--gold)'};border-color:${S.special?'#ffd76a':'var(--gold)'}">${S.special?'⭐ Monthly Spotlight · special event':'⛳ Daily Challenge · today\'s course'}</span></div>`));
+  if(PRACTICE && !S.special) add($(`<div class="center" style="margin-top:5px"><span class="tag" style="color:#16b5a6;border-color:#16b5a6">Practice mode · unlimited rounds, nothing is recorded</span></div>`));
   add($(`<h1 class="center" style="font-size:30px;margin:10px 0 2px">${esc(c.v)}</h1>`));
   add($(`<p class="lede center" style="margin:0 0 6px">${esc(c.loc)} · Par ${c.par} · ${c.yd.toLocaleString()} yds · ${dCondLabel(S.dailyCond)}</p>`));
   if(!S.special) add($(`<div class="small center" style="margin:0 0 10px;color:var(--muted)">Playable for <span style="color:var(--gold);font-weight:800">${dCd('clock')}</span>, then a new course rotates in</div>`));
@@ -7398,6 +7406,17 @@ function finishDailyRound(){
   if(S.special) return finishSpotlightRound();
   if(S.dailyResult)return;
   const total=S.dailyHoles.reduce((s,h)=>s+h.toPar,0), c=DAILY_COURSES[S.dailyCourse];
+  // PRACTICE: show the result but record NOTHING — no course record, no bag_daily write, no board
+  // submission, no streak/daily-stats/achievements, and a Legend Token round doesn't spend the token.
+  if(PRACTICE){
+    const holes=S.dailyHoles.map(h=>({par:h.par,toPar:h.toPar}));
+    const avg=dTourAvg(c), won=total<avg;
+    S.dailyResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,record:false,holes,avg,won,day:S.dailySeed,skills:S.dailySkills,decisions:null,isLegend:!!S.dailyLegend,legendName:S.dailyLegend?S.dailyLegend.name:null,practice:true};
+    S.dailyStreakInfo=null; S.dailyFreshAch=null; S.dailyAttemptNo=null; S.dailyImproved=false;
+    S._claimDaily=null; S.dailyClaimMsg=null;
+    track('daily_completed',{course:S.dailyCourse,total,won,avg,practice:true});
+    S.screen='dailyresult'; render(); return;
+  }
   const signedIn=sbSignedIn();
   const isLegend=!!S.dailyLegend;
   // guests can't claim a course record or post to the global board, they sign in to log the score
@@ -7693,7 +7712,8 @@ function scrDailyResult(){
   if(sb && crCache===null) crLoad();   // ensure the course-record comparison reflects the global record
   const _ds2=S.dailySeed||todayKey();
   if(sb && (dbCache===null||dbCache.day!==_ds2)) dbLoad(_ds2);   // today's board → percentile (fails open)
-  const best=dailyBest(); const justPlayed=!!S.dailyResult;
+  const practice=!!(S.dailyResult&&S.dailyResult.practice);
+  const best=practice?null:dailyBest(); const justPlayed=!!S.dailyResult;   // practice never compares to the real day's best
   const r=S.dailyResult||best;
   // no showable result (missing, or a stale/unknown course from reconciled server data) → render the title
   // INLINE (scrTitle writes into the current screen). A re-entrant render() here just hits render's
@@ -7703,6 +7723,7 @@ function scrDailyResult(){
   const total=r.total;
   const attempts=dailyAttempts(), left=dailyAttemptsLeft();
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge${justPlayed?' complete':''}</span></div>`));
+  if(practice) add($(`<div class="center" style="margin-top:4px"><span class="tag" style="color:#16b5a6;border-color:#16b5a6">Practice round · nothing is recorded</span></div>`));
   if(r.isLegend) add($(`<div class="center" style="margin-top:4px"><span class="tag" style="color:#ffd76a;border-color:#ffd76a">🏆 Played as Legend · ${esc(r.legendName||'')}</span></div>`));
   add($(`<h1 class="center" style="font-size:26px;margin:10px 0 2px">${esc(c.v)}</h1>`));
   add($(`<div class="center" style="margin:6px 0"><span class="mono" style="font-weight:800;font-size:44px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${dTot(total, c.par)}</span></div>`));
@@ -7712,19 +7733,19 @@ function scrDailyResult(){
   add($(`<div class="scout" style="max-width:520px;margin:0 auto 4px;text-align:center;border-color:${wonDay?'#35d6a0':'var(--gold)'}">
     ${wonDay?`<b style="color:#35d6a0;font-size:17px">🏁 You beat the pro!</b>`:`<b style="color:var(--oncard);font-size:16px">Short of the tour average</b>`}
     <div class="small muted" style="margin-top:3px">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}${(best&&best.total!==total)?` · best today ${dTot(best.total, c.par)} ${wonDay?'(winner)':''}`:''}</div>
-    ${(wonDay&&left>0)?`<div class="small" style="margin-top:5px;color:#35d6a0;font-weight:700">Challenge cleared. Use your ${left} remaining attempt${left>1?'s':''} to go even lower and chase the course record.</div>`:''}</div>`));
+    ${(wonDay&&left>0&&!practice)?`<div class="small" style="margin-top:5px;color:#35d6a0;font-weight:700">Challenge cleared. Use your ${left} remaining attempt${left>1?'s':''} to go even lower and chase the course record.</div>`:''}</div>`));
   // result of logging a guest round to a just-signed-in account (saved, or out of attempts)
   if(S.dailyClaimMsg){ const m=S.dailyClaimMsg;
     add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:${m.ok?'#35d6a0':'#E14A33'}">
       ${m.ok?`<b style="color:#35d6a0">✓ Saved to your account</b><div class="small muted" style="margin-top:3px">Logged as attempt ${m.attempt} of ${m.max}${m.record?' · 🏆 course record!':''}.</div>`
             :`<b style="color:#E14A33">Couldn't submit this score</b><div class="small muted" style="margin-top:3px">This account is out of daily attempts (${m.used}/${m.max} used today). A new course drops at midnight UTC.</div>`}</div>`)); }
   // guests: one attempt, no course records, sign in to log this score and unlock more attempts
-  if(!sbSignedIn()){
+  if(!practice && !sbSignedIn()){
     add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:var(--gold);background:rgba(235,166,31,.06)">
       <b style="color:var(--gold)">Save this score to your account</b>
       <div class="small muted" style="margin-top:3px">Guests get ${GUEST_DAILY_ATTEMPTS} attempt a day and can't hold course records. Sign in to log this round, unlock ${DAILY_MAX_ATTEMPTS} attempts a day, and chase the record.</div></div>`)); }
   // reassurance: an attempt that didn't beat your best of the day still keeps your best, swing freely
-  if(justPlayed && (S.dailyAttemptNo||attempts)>1 && !S.dailyImproved){
+  if(!practice && justPlayed && (S.dailyAttemptNo||attempts)>1 && !S.dailyImproved){
     add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#7ec8ff">
       <b style="color:#7ec8ff">Your best score is safe</b>
       <div class="small muted" style="margin-top:3px">This attempt (${dTot(total, c.par)}) didn't beat your best of <b style="color:var(--gold)">${dTot(bestT, c.par)}</b>, and that's totally fine, only your best round of the day counts${wonDay?" (you've already beaten the pro)":""}. Swing freely and try again.</div></div>`));
@@ -7737,9 +7758,10 @@ function scrDailyResult(){
   // attempts + best-of-day (the best is what's logged to the leaderboard)
   const bestTxt = best?`Best today <b style="color:var(--gold)">${dTot(best.total, best.par!=null?best.par:c.par)}</b>`:'';
   const newBest = justPlayed && S.dailyImproved && attempts>1;
-  add($(`<div class="small muted center" style="margin:0 0 10px">${justPlayed?`Attempt ${S.dailyAttemptNo||attempts} of ${dailyMaxAttempts()} · `:''}${bestTxt}${newBest?' · <span style="color:#35d6a0;font-weight:800">new personal best!</span>':''}<br>${sbSignedIn()?'Your best of the day is logged to the leaderboard.':'Sign in to log your best to the leaderboard.'}</div>`));
+  if(practice) add($(`<div class="small muted center" style="margin:0 0 10px">Practice round · no attempt used, nothing logged to the leaderboard</div>`));
+  else add($(`<div class="small muted center" style="margin:0 0 10px">${justPlayed?`Attempt ${S.dailyAttemptNo||attempts} of ${dailyMaxAttempts()} · `:''}${bestTxt}${newBest?' · <span style="color:#35d6a0;font-weight:800">new personal best!</span>':''}<br>${sbSignedIn()?'Your best of the day is logged to the leaderboard.':'Sign in to log your best to the leaderboard.'}</div>`));
   // percentile vs today's global board (when enough rounds posted)
-  if(dbCache && dbCache.ok && dbCache.day===_ds2 && dbCache.rows.length>=5){
+  if(!practice && dbCache && dbCache.ok && dbCache.day===_ds2 && dbCache.rows.length>=5){
     const mine=best?best.total:total, beat=dbCache.rows.filter(x=>x.to_par>mine).length, pct=Math.round(100*beat/dbCache.rows.length);
     add($(`<div class="center" style="margin:-4px 0 10px;font-weight:800;color:var(--gold)">Better than ${pct}% of today's ${dbCache.rows.length} players</div>`));
   }
@@ -7749,7 +7771,7 @@ function scrDailyResult(){
   else if(si&&si.usedFreeze) add($(`<div class="scout small" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#7ec8ff"><b style="color:#7ec8ff">❄️ Streak freeze used</b> <span class="muted">, your ${si.current}-day streak survived a missed day.</span></div>`));
   else if(si) add($(`<div class="small center" style="margin:0 0 8px;color:var(--gold);font-weight:700">🔥 ${streakDisplay()}-day streak, see you tomorrow to keep it going</div>`));
   // Wordle-style lifetime record: total days played + how often you beat the pro (a tie counts as a loss)
-  { const st=dailyStats(); if(st.played>0){ const pct=dailyWinPct(); const ds=LS.get(acctKey('bag_streak'),{}); const best=ds.longest||streakDisplay();
+  if(!practice){ const st=dailyStats(); if(st.played>0){ const pct=dailyWinPct(); const ds=LS.get(acctKey('bag_streak'),{}); const best=ds.longest||streakDisplay();
     add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px"><div class="small muted center" style="letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Your daily record</div>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center">
         <div><div style="font-weight:800;font-size:20px;color:var(--oncard)">${st.played}</div><div class="small muted" style="font-size:10px">Played</div></div>
@@ -7775,7 +7797,12 @@ function scrDailyResult(){
   const shr=$(`<button class="btn goldfill" style="max-width:520px;margin:14px auto 0">↗ Share your result<span class="sub">Emoji scorecard, challenge a friend</span></button>`);
   shr.onclick=()=>{ track('daily_result_shared'); shareText(dailyShareText(shareR)); }; add(shr);
   add($(`<div style="height:10px"></div>`));
-  if(!sbSignedIn()){
+  if(practice){
+    // practice: play as many rounds as you like, nothing is consumed or recorded
+    const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Play again ▸<span class="sub">Unlimited practice rounds · nothing is recorded</span></button>`);
+    again.onclick=beginDailyAttempt; add(again);
+    const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
+  } else if(!sbSignedIn()){
     // guest: primary action is signing in (which logs this score and unlocks more attempts)
     const si=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">🔐 Sign in to save this score ▸<span class="sub">Log it to your account &amp; unlock ${DAILY_MAX_ATTEMPTS} attempts a day</span></button>`);
     si.onclick=()=>{ S._dailyClaimFlow=true; S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); }; add(si);
@@ -7788,7 +7815,7 @@ function scrDailyResult(){
     const cr=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Course Records ▸<span class="sub">See every course's record holder</span></button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
   }
   const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Return to home</button>`); home.onclick=()=>{S._claimDaily=null;S._dailyClaimFlow=false;S.dailyClaimMsg=null;S.screen='title';S.daily=false;render();}; add(home);
-  add($(`<p class="small muted center" style="margin-top:12px">${left>0?`${left} attempt${left>1?'s':''} left today · `:''}A new course drops at midnight UTC · streak ${streakDisplay()} 🔥</p>`));
+  add($(`<p class="small muted center" style="margin-top:12px">${practice?'Practice mode · unlimited rounds, nothing is recorded · ':(left>0?`${left} attempt${left>1?'s':''} left today · `:'')}A new course drops at midnight UTC${practice?'':' · streak '+streakDisplay()+' 🔥'}</p>`));
 }
 function overlayCourseRecords(screen){
   const today=S.dailyCourse||dailyCourseKey(todayKey());
@@ -8678,6 +8705,23 @@ function h2hInvite(){
   track('h2h_invite');
 }
 // parse ?h2h=CODE (or #h2h=CODE) on load, stash it, and try to join (prompting sign-in if needed)
+/* ---- PRACTICE MODE (?practice=1): unlimited Daily Challenge rounds for testing new features.
+   Nothing is recorded, no attempts are consumed (locally or on the account's server counter), no
+   leaderboard / course-record submissions, no streak / daily-stats / achievements, and a Legend
+   Token round never spends the token. Safe to ship publicly by design: a practice round can't
+   touch anything competitive, so there's nothing to exploit. Module-level (NOT on S) because
+   reset() rebuilds S at the start of every attempt. The URL param is deliberately KEPT (not
+   cleaned like ?h2h=) so a refresh stays in practice mode; drop the param for normal play. ---- */
+let PRACTICE=false;
+function practiceCheck(){
+  let on=false;
+  try{ const u=new URL(location.href); on=(u.searchParams.get('practice')==='1'); }catch(e){}
+  if(!on && /[#&?]practice(=1)?($|&)/.test(location.hash||'')) on=true;
+  if(!on) return;
+  PRACTICE=true;
+  track('practice_mode_on');
+  toast('Practice mode: unlimited daily rounds, nothing is recorded');
+}
 function h2hCheckLink(){
   let code=null;
   try{ const u=new URL(location.href); code=u.searchParams.get('h2h'); }catch(e){}
@@ -9268,6 +9312,7 @@ if('serviceWorker' in navigator){ try{ window.addEventListener('load',()=>{ navi
 
 track('game_start');
 if(LS.get('bag_seen',false)) track('return_visit'); else LS.set('bag_seen',true);
+try{ practiceCheck(); }catch(e){}   // ?practice=1 → unlimited daily rounds for testing, nothing recorded
 render();
 try{ setInterval(tickCountdowns, 1000); }catch(e){}   // live "next daily course in …" countdowns
 try{ h2hCheckLink(); }catch(e){}   // arrived via an invite link (?h2h=CODE)? stash it + join (prompting sign-in)
