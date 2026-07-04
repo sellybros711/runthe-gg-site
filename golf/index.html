@@ -6708,10 +6708,14 @@ function dCondLabel(c){ if(!c) return ''; return {calm:'☼ Calm',breezy:'≈ Br
 function dShort(name){ return String(name).split('(')[0].trim(); }
 function startDailyChallenge(){
   S.special=false;   // entering the regular daily, never treat it as a Spotlight
-  // already played today → show their best round + the right CTA (Play again, or Sign in for guests / out of attempts)
-  if(dailyAttempts()>0){ S.daily=true; S.dailyResult=null; S.dailyClaimMsg=null; S.screen='dailyresult'; render(); return; }
-  if(dailyAttemptsLeft()<=0){ S.overlay='dailydone'; render(); return; }
-  beginDailyAttempt();
+  const r=dailyBest();
+  const showable=!!(r && DAILY_COURSES[r.course]);   // a real, renderable result exists to show
+  // already played today WITH a showable result → show it (Play again if attempts remain).
+  if(showable && dailyAttempts()>0){ S.daily=true; S.dailyResult=null; S.dailyClaimMsg=null; S.screen='dailyresult'; render(); return; }
+  // No showable result (e.g. the account's server attempt count was reconciled in without a stored round):
+  // if attempts remain, go play; otherwise show a graceful "done for today" overlay — never a blank bounce.
+  if(dailyAttemptsLeft()>0){ beginDailyAttempt(); return; }
+  S.daily=false; S.overlay='dailydone'; render();
 }
 // UI-FIRST: tapping Daily Challenge must ALWAYS change the screen immediately, on every browser/network.
 // The earlier version `await`ed the server attempt-check BEFORE switching screens, so on a browser/network
@@ -7361,8 +7365,12 @@ function scrDailyResult(){
   const _ds2=S.dailySeed||todayKey();
   if(sb && (dbCache===null||dbCache.day!==_ds2)) dbLoad(_ds2);   // today's board → percentile (fails open)
   const best=dailyBest(); const justPlayed=!!S.dailyResult;
-  const r=S.dailyResult||best; if(!r){ S.screen='title'; return render(); }
-  const c=DAILY_COURSES[r.course]; if(!c){ S.dailyResult=null; S.screen='title'; return render(); }   // unknown course (stale data) → don't white-screen
+  const r=S.dailyResult||best;
+  // no showable result (missing, or a stale/unknown course from reconciled server data) → render the title
+  // INLINE (scrTitle writes into the current screen). A re-entrant render() here just hits render's
+  // re-entrancy guard and defers, which leaves the daily button looking like it "does nothing".
+  if(!r || !DAILY_COURSES[r.course]){ S.dailyResult=null; S.screen='title'; return scrTitle(); }
+  const c=DAILY_COURSES[r.course];
   const total=r.total;
   const attempts=dailyAttempts(), left=dailyAttemptsLeft();
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge${justPlayed?' complete':''}</span></div>`));
