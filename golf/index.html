@@ -308,6 +308,8 @@ window.GA_ID='G-L29P5MRWKE';
   .attr:hover:not(:disabled){border-color:var(--gold)}
   .attr:active:not(:disabled){transform:scale(.985)}
   .attr:disabled{opacity:.34; cursor:not-allowed} .attr:disabled .take{display:none}
+  .attr.locked{opacity:.5; background:rgba(255,255,255,.02)} .attr.locked .val{color:var(--muted)}
+  .attr.locked .take{display:inline-flex!important; align-items:center; color:var(--muted)!important; letter-spacing:.04em}
   .attr.keyhole{border-color:var(--gold); background:linear-gradient(180deg,rgba(235,166,31,.16),rgba(235,166,31,.05))}
   .attr.keyhole .lab{color:#f3e7c8}
   .attr .keystar{flex:0 0 auto; color:var(--gold); font-size:12px; line-height:1; margin-right:-3px}
@@ -1941,10 +1943,17 @@ function buildGuestMajorField(){
 // the field: golfers who've themselves retired from the regular tour, at their CURRENT living rating -
 // they keep aging/declining after retirement too, computed fresh via livingOf() rather than the stale
 // rating they were stamped with at the moment they retired.
+// Senior pros stay dangerous: on the (shorter, no-cut) Legend Circuit a retired great recovers a good
+// chunk of the peak form that fully-age-declined ratings strip away, so the circuit field is genuinely
+// competitive (top ~87, median ~78) instead of a weak lay-up (was top 80 / median 72, which let any
+// OVR-82+ entrant win an absurd number of times).
+const CIRCUIT_VET=0.42;
 function legendField(n){
   const w=ensureWorld(); if(!w || !w.alumni.length) return [];
   return w.alumni.slice(-Math.max(n*3, 150))
-    .map(g=>{ const l=livingOf(g,w.simYear); const o={name:g.name, skill:l.ov, nation:g.nation}; SKK.forEach(s=>o[s]=l.ls[s]); return o; })
+    .map(g=>{ const l=livingOf(g,w.simYear), sp=skillPotential(g); const o={name:g.name, nation:g.nation};
+      SKK.forEach(s=>o[s]=clamp(Math.round(l.ls[s]+CIRCUIT_VET*(sp[s]-l.ls[s])),40,99));
+      o.skill=Math.round(SKK.reduce((a,s)=>a+o[s]*CW[s],0)); return o; })
     .sort((a,b)=>b.skill-a.skill).slice(0,n);
 }
 
@@ -1964,7 +1973,7 @@ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 // clearly-better build's per-event win probability far higher than any real career (see CLAUDE.md CS78):
 // real legends peak around a 15-20% major win rate in their absolute prime, not 25%+ routinely. base & csd
 // unchanged (those track the winning-score calibration, a separate concern from win-rate realism).
-const SIM={reg:{base:0.91,sigma:2.80,csd:0.90}, maj:{base:2.74,sigma:2.90,csd:1.45}};
+const SIM={reg:{base:0.91,sigma:2.95,csd:0.90}, maj:{base:2.74,sigma:3.05,csd:1.45}};
 const SKILLSLOPE=0.238;
 // Diminishing returns above the field's realistic ceiling (~92 OVR is close to the best NPCs a maxed
 // build ever faces), real strokes-gained data shows the very best players in the world separate from
@@ -2306,8 +2315,18 @@ function genRookie(rng,simYear,used){
   // Generated rookies fill out the field as role players / journeymen, they should NOT stand above the
   // real stars (the user wants REAL young players to be the ones who ascend). So cap their ceiling ~92:
   // mostly 75-85, a rare prospect reaches the high 80s / low 90s, but the elite tier stays real.
-  const tt=rng(); let pot; if(tt<.72)pot=cgauss(rng,78,2.5);else if(tt<.92)pot=cgauss(rng,82,1.8);else if(tt<.99)pot=cgauss(rng,86,1.6);else pot=cgauss(rng,89,1.5);
-  pot=clamp(Math.round(pot),70,92);
+  // Generational turnover: as the real stars retire over a long career, the field must keep producing
+  // genuine elites or it decays (top OVR fell 92->88 across 30 yrs, making late career too easy). A rare
+  // phenom tail (~2% reach 90+, ~0.5% reach 94-96) keeps the ceiling up so you always have real rivals.
+  // Young phenoms still enter well below their potential (living < peak until ~30), so they don't
+  // instantly top the field over the real stars, they mature into contenders over ~a decade.
+  const tt=rng(); let pot;
+  if(tt<.68)pot=cgauss(rng,78,2.5);
+  else if(tt<.90)pot=cgauss(rng,82,1.8);
+  else if(tt<.975)pot=cgauss(rng,86,1.7);
+  else if(tt<.995)pot=cgauss(rng,91,1.6);
+  else pot=cgauss(rng,94.5,1.4);
+  pot=clamp(Math.round(pot),70,96);
   const ar=wpick(rng,ARCH_W), sig=ARCH_SIG[ar], cap={};
   SKK.forEach(s=>cap[s]=pot+(sig.includes(s)?6+Math.round(rng()*6):0)+Math.round(cgauss(rng,0,2)));
   cap.clu=Math.max(cap.clu,pot-2+Math.round(rng()*4));
@@ -6243,7 +6262,7 @@ function continueFranchise(){
   const _decline={}; CATS.forEach(c=>{ const sl=S.slots[c.k]; if(sl&&_pre[c.k]!=null){ const d=sl.value-_pre[c.k]; if(d<0) _decline[c.k]=d; } });
   S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false; S.seasonRank=null;
   // off-season tune-up: re-spin to swap fresh skills in (now also to repair age decline)
-  const _perk=repPerk(); S.offseason={changes:0,maxChanges:_perk.changes,reSpins:_perk.reSpins,decline:_decline}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
+  const _perk=repPerk(); S.offseason={changes:0,maxChanges:_perk.changes,reSpins:_perk.reSpins,decline:_decline,locked:[]}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
   track('offseason_start',{year:S.year});
   saveCareer(offseasonResumeExtra());   // checkpoint the off-season (world advanced, decline applied) so a refresh resumes HERE, not the prior results page
   S.screen='offseason'; render();
@@ -6377,13 +6396,18 @@ function newCareer(){ clearCareerSave(); reset(); render(); }
 function finishOffseason(){ track('offseason_done',{changes:S.offseason.changes}); startSeason(false); }
 function offSpin(){ if(S.current||S.spinning)return; reveal(); }
 function offReSpin(){ if(S.offseason.reSpins<=0)return; S.offseason.reSpins--; track('offseason_respin'); saveCareer(offseasonResumeExtra()); reveal(); }
-function offTake(k){ S.slots[k]={golfer:S.current.name,value:S.current[k]}; S.offseason.changes++; if(S.offseason.decline) delete S.offseason.decline[k]; S.current=null; track('offseason_swap',{slot:k}); saveCareer(offseasonResumeExtra()); render(); }
+function offTake(k){
+  if(!S.offseason.locked) S.offseason.locked=[];
+  if(S.offseason.locked.includes(k)) return;          // a stat can be changed only once per off-season
+  S.slots[k]={golfer:S.current.name,value:S.current[k]}; S.offseason.changes++;
+  S.offseason.locked.push(k);                          // lock this stat for the rest of the off-season
+  if(S.offseason.decline) delete S.offseason.decline[k]; S.current=null; track('offseason_swap',{slot:k}); saveCareer(offseasonResumeExtra()); render(); }
 function scrOffseason(){
   const os=S.offseason||{changes:0,maxChanges:3,reSpins:2};
   const circuitYear3=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):null;
   add($(`<div class="center"><span class="tag">${S.circuitMode?('Legend Circuit · Off-Season · Year '+circuitYear3+' prep'):('Career Mode · Off-Season · Year '+S.year+' prep')}</span></div>`));
   add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tune your game</h1>`));
-  add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag, up to <b>${os.maxChanges} changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. Keep your bag as-is, or spin to improve it, but once you spin, you must take a skill before moving on.</p>`));
+  add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag, up to <b>${os.maxChanges} changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. <b style="color:var(--gold)">Each stat can only be changed once per off-season</b> — upgrade it and it locks until next year, so choose which to protect. Once you spin, you must take a skill before moving on.</p>`));
   // Tour Rep perk banner, shows what your rank grants + what the next rank unlocks (a "keep climbing" nudge)
   { const r=repTier(), cur=repPerk(); let teaser='';
     if(r.next){ const np=repPerk2(r.next.name); const dc=np.changes-cur.changes, dr=np.reSpins-cur.reSpins;
@@ -6411,9 +6435,17 @@ function scrOffseason(){
   if(S.current&&!S.spinning){
     left.appendChild($(`<div class="small muted" style="margin:10px 0 -2px;text-align:center">Tap a skill to swap it in, green is an upgrade, red a downgrade</div>`));
     const grid=$(`<div class="attrs"></div>`);
+    const lockedSet=os.locked||[];
     CATS.forEach(cat=>{
       const cur=S.slots[cat.k]?S.slots[cat.k].value:REPLACEMENT; const nv=S.current[cat.k]; const d=nv-cur;
       const dcol=d>0?'#35d6a0':(d<0?'#e07a5f':'var(--muted)');
+      const locked=lockedSet.includes(cat.k);
+      if(locked){
+        const bt=$(`<button class="attr locked" disabled aria-label="${cat.short} already changed this off-season, locked">
+          <span class="lab">${cat.short}</span><span class="val">${cur}</span>
+          <span class="take" style="background:none;padding:0 0 0 2px;color:var(--muted);font-size:12px">🔒 locked</span></button>`);
+        grid.appendChild(bt); return;
+      }
       const bt=$(`<button class="attr" aria-label="Swap ${cat.short} to ${nv}, ${d>=0?'up':'down'} ${Math.abs(d)}">
         <span class="lab">${cat.short}</span><span class="val">${nv}</span>
         <span class="take" style="background:none;padding:0 0 0 2px;color:${dcol};font-family:var(--mono);font-weight:800;font-size:13px">${d>0?'▲+':(d<0?'▼':'·')}${d!==0?Math.abs(d):''}</span></button>`);
