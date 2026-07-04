@@ -203,6 +203,7 @@
     <div class="tab" data-tab="history">History</div>
     <div class="tab" data-tab="market">Market</div>
     <div class="tab" data-tab="finances">Finances</div>
+    <div class="tab" data-tab="editor">Editor</div>
   </div>
 
   <main>
@@ -332,6 +333,18 @@
       <h2>Finances &amp; Company</h2>
       <div class="grid2" id="financeGrid"></div>
     </div>
+
+    <!-- EDITOR -->
+    <div class="panel" id="panel-editor">
+      <h2>Worker Editor <span class="sub2">retune any wrestler — changes save with your career</span></h2>
+      <div class="builder-box">
+        <label class="fld" style="margin-bottom:12px;">
+          <div class="stat-mini fldlab">Wrestler</div>
+          <select id="editPick" onchange="loadEditWorker()" style="min-width:280px;"></select>
+        </label>
+        <div id="editFields"></div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -346,6 +359,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="roster.js"></script>
+<script src="corrections.js"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -383,9 +397,15 @@ const typeMeta = {
 // ---------- Game state ----------
 let S = null; // the whole save object
 
+function applyCorrection(w){
+  const c = (window.RTR_CORRECTIONS || {})[w.id];
+  if(c) Object.assign(w, c);
+  return w;
+}
+
 function freshState(promoName){
   const meta = PROMO_META[promoName];
-  const all = window.RTR_ROSTER.map(w => JSON.parse(JSON.stringify(w)));
+  const all = window.RTR_ROSTER.map(w => applyCorrection(JSON.parse(JSON.stringify(w))));
   const roster = all.filter(w => w.promotion === promoName).map(normalizeWorker);
   const pool   = all.filter(w => w.promotion !== promoName).map(normalizeWorker);
   return {
@@ -540,6 +560,7 @@ function enterGame(){
 function renderAll(){
   refreshHud(); renderInbox(); renderRoster(); renderBuildSelectors(); renderCard();
   renderFeuds(); renderTitles(); renderHistory(); renderMarket(); renderFinances();
+  renderEditor();
   updateTabPips();
 }
 
@@ -1153,6 +1174,59 @@ function renderFinances(){
       <div class="stat-mini" style="text-transform:uppercase; letter-spacing:1px;">${l}</div>
       <div style="font-size:22px; font-family:'Courier New',monospace; color:${c}; margin-top:4px;">${v}</div>
     </div>`).join('');
+}
+
+// ---------- Editor ----------
+const EDIT_STATS = [
+  ['inRing','In-Ring'],['psych','Psychology'],['ent','Entertainment'],['phys','Physical'],
+  ['overness','Overness'],['momentum','Momentum'],['condition','Condition'],['morale','Morale'],
+  ['age','Age'],['salary','Salary $/wk'],
+];
+function allWorkersSorted(){
+  return [...S.roster.map(w=>({w,loc:'roster'})), ...S.pool.map(w=>({w,loc:'pool'}))]
+    .sort((a,b)=> a.w.name.localeCompare(b.w.name));
+}
+function renderEditor(){
+  const sel = $('editPick');
+  const prev = sel.value;
+  sel.innerHTML = allWorkersSorted().map(({w,loc})=>
+    `<option value="${w.id}">${w.name} — ${loc==='roster'?S.promo.name:w.promotion}</option>`).join('');
+  if(prev && byId(prev)) sel.value = prev;
+  loadEditWorker();
+}
+function loadEditWorker(){
+  const id = $('editPick').value;
+  const w = byId(id);
+  const box = $('editFields');
+  if(!w){ box.innerHTML = '<div class="empty-note">No wrestler selected.</div>'; return; }
+  const maxFor = k => (k==='salary'?200000:(k==='age'?70:100));
+  box.innerHTML = `
+    <div class="row-wrap" style="margin-bottom:12px;">
+      <label class="fld"><div class="stat-mini fldlab">Name</div><input type="text" id="ed_name" value="${w.name.replace(/"/g,'&quot;')}"></label>
+      <label class="fld"><div class="stat-mini fldlab">Alignment</div>
+        <select id="ed_align">${['face','tweener','heel'].map(a=>`<option value="${a}" ${w.align===a?'selected':''}>${a}</option>`).join('')}</select></label>
+      <label class="fld"><div class="stat-mini fldlab">Tier</div>
+        <select id="ed_tier">${['elite','upper','mid','lower'].map(t=>`<option value="${t}" ${w.tier===t?'selected':''}>${t}</option>`).join('')}</select></label>
+    </div>
+    <div class="grid2">
+      ${EDIT_STATS.map(([k,lbl])=>`<label class="fld stat-tile">
+        <div class="stat-mini fldlab">${lbl} <span class="mono" id="edv_${k}" style="color:var(--gold-bright)">${Math.round(w[k])}</span></div>
+        <input type="range" min="0" max="${maxFor(k)}" step="${k==='salary'?500:1}" value="${Math.round(w[k])}" id="ed_${k}"
+          oninput="document.getElementById('edv_${k}').textContent = this.value">
+      </label>`).join('')}
+    </div>
+    <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
+      <button onclick="saveEditWorker('${w.id}')">Save Changes</button>
+      <span class="hint">Edits apply immediately and persist in this career's save.</span>
+    </div>`;
+}
+function saveEditWorker(id){
+  const w = byId(id); if(!w) return;
+  w.name = ($('ed_name').value||w.name).trim();
+  w.align = $('ed_align').value; w.tier = $('ed_tier').value;
+  EDIT_STATS.forEach(([k])=>{ const el=$('ed_'+k); if(el) w[k] = Number(el.value); });
+  save(); renderAll();
+  toast(w.name+' updated');
 }
 
 // ---------- Modal ----------
