@@ -347,17 +347,23 @@
     memorymatch:'Memory Match', whack:'Whack-A-Landmark', targettap:'Quick Tap', mapfind:'Find It On The Map',
     streetscout:'Street Scout', zoomreveal:'Zoom Reveal',
     swingmeter:'Swing Meter', eagleeye:'Eagle Eye', kimsgame:'Memory Lineup',
-    typeticket:'Type The Ticket', baggage:'Baggage Claim', rhythmecho:'Rhythm Echo'
+    typeticket:'Type The Ticket', baggage:'Baggage Claim', rhythmecho:'Rhythm Echo',
+    closest:'Closest Neighbor', closerfar:'Closer or Farther', compass:'Compass Chase',
+    regionsort:'Region Sort', flightplan:'Flight Plan',
+    pitchpatrol:'Pitch Patrol', runway:'Runway Landing', photosnap:'Photo Snap', stampit:'Stamp It'
   };
   // rough expected completion (seconds) for an average player per kind — used
   // ONLY to pace the AI ghost field. The human always competes on real time.
   var BASE = { mcq:6.5, scramble:13, sequence:8, reaction:3.4, order:14,
     flagid:5.5, capital:5.5, truefalse:6.5, higherlower:7, oddoneout:6.5,
     memorymatch:15, whack:8, targettap:6.5, mapfind:9, streetscout:22, zoomreveal:7,
-    swingmeter:7, eagleeye:7, kimsgame:11, typeticket:12, baggage:9, rhythmecho:13 };
+    swingmeter:7, eagleeye:7, kimsgame:11, typeticket:12, baggage:9, rhythmecho:13,
+    closest:7, closerfar:9, compass:8, regionsort:10, flightplan:12,
+    pitchpatrol:14, runway:9, photosnap:8, stampit:7 };
   // which kinds feel "reflex/physical" for Split Path pairing (GDD §5); rest are "brain"
   var REFLEX_KINDS = { reaction:1, whack:1, targettap:1, sequence:1,
-    swingmeter:1, eagleeye:1, baggage:1, rhythmecho:1 };
+    swingmeter:1, eagleeye:1, baggage:1, rhythmecho:1,
+    pitchpatrol:1, runway:1, photosnap:1, stampit:1 };
   function taskKind(t){ return t.kind || KIND[t.cat] || 'mcq'; }
   function taskLabel(t){ return KIND_LABEL[taskKind(t)] || CAT_LABEL[t.cat] || 'Task'; }
 
@@ -804,6 +810,66 @@
     g.push({ kind:'baggage', cat:'reflex', type:'reflex', q:'Grab YOUR bag off the belt — 3 grabs' });
     // Rhythm Echo — hear a rhythm, tap it back (timing memory; opens the audio category)
     g.push({ kind:'rhythmecho', cat:'audio', type:'brain', q:'Listen to the rhythm, then tap it back' });
+    // ---- distance/direction games generated from coordinates (objective, no
+    // authoring): each is only offered when a clearly-fair instance exists ----
+    if(c.ll && c.ll.length===2){
+      var byd = COUNTRIES.filter(function(x){ return x.id!==c.id && x.ll; })
+        .map(function(x){ return { x:x, d:haversine(c.ll[0],c.ll[1],x.ll[0],x.ll[1]) }; })
+        .sort(function(p,q2){ return p.d-q2.d; });
+      if(byd.length>=12){
+        // Closest Neighbor — one option is clearly nearest (others ≥1.7× farther)
+        var near=byd[0], far=shuffle(byd.filter(function(p){ return p.d>near.d*1.7; })).slice(0,3);
+        if(far.length===3){
+          var copts=shuffle([near.x.name].concat(far.map(function(p){ return p.x.name; })));
+          g.push({ kind:'closest', cat:'spatial', type:'brain', q:'Which of these is CLOSEST to '+c.name+'?',
+                   options:copts, a:copts.indexOf(near.x.name) });
+        }
+        // Closer or Farther — 3 rounds; pairs differ by ≥1.5× so they're never a coin flip
+        var pairs=[], tries=0;
+        while(pairs.length<3 && tries<40){
+          tries++;
+          var two=shuffle(byd).slice(0,2);
+          var hi=Math.max(two[0].d,two[1].d), lo=Math.min(two[0].d,two[1].d);
+          if(lo>200 && hi/lo>=1.5) pairs.push({ a:{label:two[0].x.capital, d:two[0].d}, b:{label:two[1].x.capital, d:two[1].d} });
+        }
+        if(pairs.length>=2) g.push({ kind:'closerfar', cat:'spatial', type:'brain',
+                                     q:'Which capital is CLOSER to '+(c.capital||c.name)+'?', pairs:pairs });
+        // Compass Chase — only targets whose direction is DOMINANT (no ambiguity)
+        var dirs=[], shuf=shuffle(byd), k2;
+        for(k2=0;k2<shuf.length && dirs.length<3;k2++){
+          var o2=shuf[k2].x;
+          var dlat=o2.ll[0]-c.ll[0];
+          var dlng=((o2.ll[1]-c.ll[1]+540)%360)-180;
+          if(Math.abs(dlat)>=Math.abs(dlng)*2 && Math.abs(dlat)>8) dirs.push({ name:o2.name, flag:o2.flag, dir:dlat>0?'N':'S' });
+          else if(Math.abs(dlng)>=Math.abs(dlat)*2 && Math.abs(dlng)>10) dirs.push({ name:o2.name, flag:o2.flag, dir:dlng>0?'E':'W' });
+        }
+        if(dirs.length>=2) g.push({ kind:'compass', cat:'spatial', type:'brain',
+                                    q:'You\'re in '+c.name+' — which way to each country?', rounds:dirs });
+        // Flight Plan — order 4 stops nearest → farthest (gaps ≥1.25× keep it fair)
+        var idxs=[Math.floor(byd.length*0.05), Math.floor(byd.length*0.3), Math.floor(byd.length*0.6), byd.length-2];
+        var stops=idxs.map(function(i2){ return byd[i2]; });
+        var okgap=true, s2;
+        for(s2=1;s2<stops.length;s2++){ if(stops[s2].d < stops[s2-1].d*1.25) okgap=false; }
+        if(okgap) g.push({ kind:'flightplan', cat:'dragdrop', type:'brain', dir:'near',
+                           q:'Flight plan from '+c.name+': tap the stops nearest → farthest',
+                           items:shuffle(stops).map(function(p){ return { label:p.x.capital, value:Math.round(p.d) }; }) });
+      }
+    }
+    // Region Sort — two buckets, six countries (opens the dragdrop category)
+    var regs={}; COUNTRIES.forEach(function(x){ if(x.region!==c.region) regs[x.region]=(regs[x.region]||0)+1; });
+    var regB=shuffle(Object.keys(regs).filter(function(r2){ return regs[r2]>=3; }))[0];
+    var sameR=COUNTRIES.filter(function(x){ return x.region===c.region; });
+    if(regB && sameR.length>=3){
+      var qA=shuffle(sameR).slice(0,3), qB=shuffle(COUNTRIES.filter(function(x){ return x.region===regB; })).slice(0,3);
+      g.push({ kind:'regionsort', cat:'dragdrop', type:'brain', q:'Sort each country into its region',
+               regA:c.region, regB:regB,
+               queue:shuffle(qA.concat(qB)).map(function(x){ return { name:x.name, flag:x.flag, region:x.region }; }) });
+    }
+    // ---- pure-skill set 2 (timing/aim/ears — zero knowledge) ----
+    g.push({ kind:'runway', cat:'reflex', type:'reflex', q:'Land on the runway — 3 clean landings' });
+    g.push({ kind:'photosnap', cat:'reflex', type:'reflex', flag:c.flag, q:'Frame '+c.flag+' in the viewfinder — 3 clean shots' });
+    g.push({ kind:'stampit', cat:'reflex', type:'reflex', q:'Stamp the passport — hit the moving box 3 times' });
+    g.push({ kind:'pitchpatrol', cat:'audio', type:'reflex', q:'Tap on the HIGH note — hold on the LOW' });
     return g;
   }
   // boarding-pass word for Type The Ticket: capital (fallback: country name),
@@ -953,11 +1019,11 @@
         + '<div class="missline" id="miss"></div>'
       + '</div>' + foot();
     startTimer();
-    if(kind==='mcq'||kind==='flagid'||kind==='capital'||kind==='oddoneout') mgMcq(t);
+    if(kind==='mcq'||kind==='flagid'||kind==='capital'||kind==='oddoneout'||kind==='closest') mgMcq(t);
     else if(kind==='scramble') mgScramble(t);
     else if(kind==='sequence') mgSequence(t);
     else if(kind==='reaction') mgReaction(t);
-    else if(kind==='order')    mgOrder(t);
+    else if(kind==='order'||kind==='flightplan') mgOrder(t);
     else if(kind==='truefalse') mgTrueFalse(t);
     else if(kind==='higherlower') mgHigherLower(t);
     else if(kind==='memorymatch') mgMemoryMatch(t);
@@ -972,6 +1038,13 @@
     else if(kind==='typeticket') mgTypeTicket(t);
     else if(kind==='baggage') mgBaggage(t);
     else if(kind==='rhythmecho') mgRhythmEcho(t);
+    else if(kind==='closerfar') mgCloserFar(t);
+    else if(kind==='compass') mgCompass(t);
+    else if(kind==='regionsort') mgRegionSort(t);
+    else if(kind==='pitchpatrol') mgPitchPatrol(t);
+    else if(kind==='runway') mgRunway(t);
+    else if(kind==='photosnap') mgPhotoSnap(t);
+    else if(kind==='stampit') mgStampIt(t);
     else finishTask();   // safety
     renderAcct();
   }
@@ -1199,14 +1272,14 @@
   }
   function sortedLabels(t){
     var dir=t.dir, items=t.items.slice();
-    var asc = (dir==='asc'||dir==='south'||dir==='west');   // ascending value = first
+    var asc = (dir==='asc'||dir==='south'||dir==='west'||dir==='near');   // ascending value = first
     items.sort(function(a,b){ return asc ? a.value-b.value : b.value-a.value; });
     return items.map(function(x){ return x.label; });
   }
   function dirHint(t){
     var map={ north:'northernmost → southernmost', south:'southernmost → northernmost',
       west:'westernmost → easternmost', east:'easternmost → westernmost',
-      asc:'smallest → largest', desc:'largest → smallest' };
+      asc:'smallest → largest', desc:'largest → smallest', near:'nearest → farthest' };
     return map[t.dir] || 'in order';
   }
   function renderOrder(t){
@@ -1615,6 +1688,251 @@
       var st=$('rest'); if(st) st.innerHTML='❌ Not quite — listen again…';
       S.re.state='play'; setTimeout(function(){ if(!S.play.done && $('repad')) reBegin(); },800);
     }
+  }
+
+  /* ---------- minigame: Closer or Farther (distance duel, 3 rounds) ---------- */
+  function mgCloserFar(t){ S.cf={ i:0, rounds:t.pairs.length }; renderCF(t); }
+  function renderCF(t){
+    var p=t.pairs[S.cf.i];
+    $('mg').innerHTML='<div class="seqstatus">Round <b>'+(S.cf.i+1)+'</b>/'+S.cf.rounds+'</div>'
+      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div class="btnrow">'
+        + '<button class="btn ghost hlo" data-i="0" style="flex:1">'+esc(p.a.label)+'</button>'
+        + '<button class="btn ghost hlo" data-i="1" style="flex:1">'+esc(p.b.label)+'</button>'
+      + '</div>';
+    each('.hlo', function(b){ b.onclick=function(){ cfAns(t, +b.getAttribute('data-i')); }; });
+  }
+  function cfAns(t,i){
+    if(S.play.done) return;
+    var p=t.pairs[S.cf.i];
+    var correct = (p.a.d<=p.b.d) ? 0 : 1;
+    if(i===correct) sfx('tap'); else { S.play.misses++; showMiss(); }
+    S.cf.i++;
+    if(S.cf.i>=S.cf.rounds){ S.play.done=true; finishTask(); } else renderCF(t);
+  }
+
+  /* ---------- minigame: Compass Chase (tap the direction, 2-3 rounds) ---------- */
+  function mgCompass(t){
+    S.cp={ i:0, rounds:t.rounds };
+    var DIRS=[['N','⬆️ North'],['S','⬇️ South'],['E','➡️ East'],['W','⬅️ West']];
+    $('mg').innerHTML='<div class="seqstatus" id="cpst"></div>'
+      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div id="cptgt" style="text-align:center;font-size:17px;font-weight:800;margin-bottom:12px"></div>'
+      + '<div class="btnrow">'+DIRS.slice(0,2).map(function(d2){ return '<button class="btn ghost hlo" data-d="'+d2[0]+'" style="flex:1">'+d2[1]+'</button>'; }).join('')+'</div>'
+      + '<div class="btnrow">'+DIRS.slice(2).map(function(d2){ return '<button class="btn ghost hlo" data-d="'+d2[0]+'" style="flex:1">'+d2[1]+'</button>'; }).join('')+'</div>';
+    each('.hlo', function(b){ b.onclick=function(){ cpAns(t, b.getAttribute('data-d')); }; });
+    cpPaint(t);
+  }
+  function cpPaint(t){
+    var r=S.cp.rounds[S.cp.i];
+    var st=$('cpst'); if(st) st.innerHTML='Target <b>'+(S.cp.i+1)+'</b>/'+S.cp.rounds.length;
+    var tg=$('cptgt'); if(tg) tg.innerHTML=r.flag+' '+esc(r.name);
+  }
+  function cpAns(t,d){
+    if(S.play.done) return;
+    if(d===S.cp.rounds[S.cp.i].dir) sfx('tap'); else { S.play.misses++; showMiss(); }
+    S.cp.i++;
+    if(S.cp.i>=S.cp.rounds.length){ S.play.done=true; finishTask(); } else cpPaint(t);
+  }
+
+  /* ---------- minigame: Region Sort (two buckets, six countries) ---------- */
+  function mgRegionSort(t){
+    S.rs={ i:0, queue:t.queue };
+    $('mg').innerHTML='<div class="seqstatus" id="rsst"></div>'
+      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div id="rscard" style="text-align:center;margin-bottom:14px"><span style="font-size:44px;display:block" id="rsflag"></span><b id="rsname" style="font-size:18px"></b></div>'
+      + '<div class="btnrow">'
+        + '<button class="btn ghost hlo" data-r="'+esc(t.regA)+'" style="flex:1">'+esc(t.regA)+'</button>'
+        + '<button class="btn ghost hlo" data-r="'+esc(t.regB)+'" style="flex:1">'+esc(t.regB)+'</button>'
+      + '</div>';
+    each('.hlo', function(b){ b.onclick=function(){ rsAns(t, b.getAttribute('data-r')); }; });
+    rsPaint();
+  }
+  function rsPaint(){
+    var q=S.rs.queue[S.rs.i];
+    var st=$('rsst'); if(st) st.innerHTML='Sorted <b>'+S.rs.i+'</b>/'+S.rs.queue.length;
+    var f=$('rsflag'); if(f) f.textContent=q.flag;
+    var n=$('rsname'); if(n) n.textContent=q.name;
+  }
+  function rsAns(t,r){
+    if(S.play.done) return;
+    if(r===S.rs.queue[S.rs.i].region) sfx('tap'); else { S.play.misses++; showMiss(); }
+    S.rs.i++;
+    if(S.rs.i>=S.rs.queue.length){ S.play.done=true; finishTask(); } else rsPaint();
+  }
+
+  /* ---------- minigame: Pitch Patrol (ears — tap HIGH, hold LOW) ----------
+     With sound ON the pad flashes the SAME neutral pulse for both notes, so your
+     ears decide. Muted (or no Web Audio), the pad shows ▲/▼ instead — the game
+     stays fully playable as a visual reflex test. */
+  function mgPitchPatrol(t){
+    S.pp={ hits:0, need:4, state:'idle', to:null };
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div class="reps" id="ppreps"></div>'
+      + '<div class="reactbox idle" id="ppad" style="height:170px;cursor:pointer"><div class="big" id="ppbig">🎧 Ready?</div><div class="sm" id="ppsm">Tap to start — then tap HIGH notes, hold through LOW ones.</div></div>';
+    ppReps(); $('ppad').onclick=function(){ ppTap(); };
+  }
+  function ppReps(){ var e=$('ppreps'); if(!e) return; var h=''; for(var i=0;i<S.pp.need;i++){ h+='<div class="rep'+(i<S.pp.hits?' done':'')+'"></div>'; } e.innerHTML=h; }
+  function ppClear(){ if(S.pp.to){ clearTimeout(S.pp.to); S.pp.to=null; } }
+  function ppSet(big, sm, tone){
+    var b=$('ppbig'), s=$('ppsm'), pad=$('ppad');
+    if(b) b.textContent=big; if(s) s.textContent=sm;
+    if(pad){ pad.setAttribute('data-tone', tone||''); }
+  }
+  function ppWait(){
+    S.pp.state='wait'; ppSet('…','Listen…','');
+    var pad=$('ppad'); if(pad) pad.style.background='';
+    ppClear(); S.pp.to=setTimeout(ppTone, rnd(700,1600));
+  }
+  function ppTone(){
+    if(S.play.done || !$('ppad')) return;
+    var isHigh=Math.random()<0.6;
+    S.pp.state=isHigh?'high':'low'; S.pp.armAt=performance.now();
+    beep(isHigh?920:200, 0.24, 'triangle', 0.16);
+    var quiet=_muted || !actx();   // no ears available → show the direction
+    ppSet(quiet?(isHigh?'▲ HIGH':'▼ LOW'):'♪', quiet?(isHigh?'TAP!':'hold…'):'What was that note?', isHigh?'H':'L');
+    var pad=$('ppad'); if(pad){ pad.style.background='rgba(58,160,255,.35)'; setTimeout(function(){ var p=$('ppad'); if(p) p.style.background=''; },200); }
+    ppClear();
+    if(isHigh) S.pp.to=setTimeout(function(){ if(S.pp.state==='high'&&!S.play.done) ppResolve('slow'); }, 1150);
+    else       S.pp.to=setTimeout(function(){ if(S.pp.state==='low' &&!S.play.done) ppResolve('held'); }, 900);
+  }
+  function ppTap(){
+    if(S.play.done) return;
+    var s=S.pp.state;
+    if(s==='idle'){ actx(); ppWait(); return; }
+    if(s==='fb') return;
+    if(s==='wait'){ ppClear(); ppResolve('early'); return; }
+    if(s==='high'){ ppClear(); ppResolve('hit'); return; }
+    if(s==='low'){ ppClear(); ppResolve('lowTap'); return; }
+  }
+  // hit/slow consume a HIGH rep; held/lowTap/early don't advance completion
+  function ppResolve(kind){
+    ppClear();
+    if(kind==='hit'){ S.pp.hits++; sfx('correct'); ppSet('⚡ Nice!','That was the high note.',''); }
+    else if(kind==='slow'){ S.pp.hits++; S.play.misses++; showMiss(); ppSet('Too slow!','+1 miss','');}
+    else if(kind==='held'){ ppSet('Held ✓','Good ear.',''); }
+    else if(kind==='lowTap'){ S.play.misses++; showMiss(); ppSet('That was LOW!','+1 miss',''); }
+    else { S.play.misses++; showMiss(); ppSet('Too soon!','+1 miss — wait for the note',''); }
+    S.pp.state='fb'; ppReps();
+    if(S.pp.hits>=S.pp.need){ S.play.done=true; S.pp.to=setTimeout(finishTask, 550); }
+    else S.pp.to=setTimeout(function(){ if(!S.play.done) ppWait(); }, 650);
+  }
+
+  /* ---------- minigame: Runway Landing (time the drop over a moving pass) ---------- */
+  function mgRunway(t){
+    var d=ramp();
+    S.rw={ lands:0, need:3, x:0, zw:0.24-0.07*d, zx:0, speed:0.30+0.14*d, dropping:false, t0:performance.now() };
+    rwNewZone();
+    $('mg').innerHTML='<div class="seqstatus" id="rwst"></div>'
+      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div id="rwfield" style="position:relative;height:170px;border-radius:14px;border:1px solid var(--cardb);background:linear-gradient(180deg,rgba(58,160,255,.10),rgba(255,255,255,.03) 70%);overflow:hidden;cursor:pointer;touch-action:manipulation">'
+        + '<div id="rwp" style="position:absolute;top:16px;font-size:30px;transition:top .22s ease-in">✈️</div>'
+        + '<div style="position:absolute;left:0;right:0;bottom:0;height:22px;background:rgba(255,255,255,.05)"></div>'
+        + '<div id="rwz" style="position:absolute;bottom:0;height:22px;background:rgba(53,214,160,.45);border-left:2px solid var(--ok);border-right:2px solid var(--ok)"></div>'
+      + '</div>'
+      + '<div class="ohint" style="margin-top:10px">Tap to drop the plane — land it on the green strip.</div>';
+    rwStatus(); rwPaint();
+    $('rwfield').onclick=rwDrop;
+    (function loop(){
+      if(S.play.done || !$('rwp')) return;
+      if(!S.rw.dropping){
+        var el=(performance.now()-S.rw.t0)/1000;
+        S.rw.x=(el*S.rw.speed)%1.12 - 0.06;   // fly through, wrap just off-screen
+        $('rwp').style.left=(S.rw.x*100)+'%';
+      }
+      requestAnimationFrame(loop);
+    })();
+  }
+  function rwStatus(){ var e=$('rwst'); if(e) e.innerHTML='Landings <b>'+S.rw.lands+'</b>/'+S.rw.need; }
+  function rwNewZone(){ S.rw.zx=rnd(0.08, 0.92-S.rw.zw); }
+  function rwPaint(){ var z=$('rwz'); if(z){ z.style.left=(S.rw.zx*100)+'%'; z.style.width=(S.rw.zw*100)+'%'; } }
+  function rwDrop(){
+    if(S.play.done || S.rw.dropping) return;
+    S.rw.dropping=true;
+    var p=$('rwp'); if(p) p.style.top='126px';
+    var hit = (S.rw.x+0.04>=S.rw.zx && S.rw.x+0.04<=S.rw.zx+S.rw.zw);   // plane centre vs strip
+    setTimeout(function(){
+      if(S.play.done || !$('rwp')) return;
+      if(hit){
+        sfx('correct'); S.rw.lands++; rwStatus();
+        if(S.rw.lands>=S.rw.need){ S.play.done=true; setTimeout(finishTask,200); return; }
+        S.rw.zw*=0.82; S.rw.speed*=1.15; rwNewZone(); rwPaint();
+      } else { S.play.misses++; showMiss(); }
+      var p2=$('rwp'); if(p2) p2.style.top='16px';
+      S.rw.t0=performance.now()-((S.rw.x+0.06)/S.rw.speed)*1000;   // resume the pass smoothly
+      S.rw.dropping=false;
+    }, 300);
+  }
+
+  /* ---------- minigame: Photo Snap (track a drifting subject, tap the shutter) ---------- */
+  function mgPhotoSnap(t){
+    var d=ramp();
+    S.ps={ shots:0, need:3, fw:0.38-0.08*d, spd:0.55+0.45*d, x:0.5, y:0.5, t0:performance.now() };
+    $('mg').innerHTML='<div class="seqstatus" id="psst"></div>'
+      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div id="psbox" style="position:relative;height:200px;border-radius:14px;border:1px solid var(--cardb);background:rgba(8,20,36,.7);overflow:hidden">'
+        + '<div id="pssub" style="position:absolute;font-size:40px;transform:translate(-50%,-50%);filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))">'+(t.flag||'🌍')+'</div>'
+        + '<div id="psframe" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:2px dashed rgba(255,255,255,.75);border-radius:10px"></div>'
+      + '</div>'
+      + '<button class="btn globe" id="psshut" style="margin-top:12px">📸 Snap</button>';
+    psStatus(); psFrame();
+    $('psshut').onclick=psSnap;
+    (function loop(){
+      if(S.play.done || !$('pssub')) return;
+      var el=(performance.now()-S.ps.t0)/1000*S.ps.spd;
+      S.ps.x=0.5+0.38*Math.sin(el*2.1);
+      S.ps.y=0.5+0.34*Math.sin(el*3.3+1.2);
+      var s=$('pssub'); s.style.left=(S.ps.x*100)+'%'; s.style.top=(S.ps.y*100)+'%';
+      requestAnimationFrame(loop);
+    })();
+  }
+  function psStatus(){ var e=$('psst'); if(e) e.innerHTML='Shots <b>'+S.ps.shots+'</b>/'+S.ps.need; }
+  function psFrame(){ var f=$('psframe'); if(f){ f.style.width=(S.ps.fw*100)+'%'; f.style.height=(S.ps.fw*200*0.9)+'px'; } }
+  function psSnap(){
+    if(S.play.done) return;
+    var inX=Math.abs(S.ps.x-0.5)<S.ps.fw/2, inY=Math.abs(S.ps.y-0.5)<S.ps.fw*0.9;
+    var f=$('psframe');
+    if(inX && inY){
+      sfx('correct'); S.ps.shots++; psStatus();
+      if(f){ f.style.borderColor='var(--ok)'; setTimeout(function(){ var f2=$('psframe'); if(f2) f2.style.borderColor='rgba(255,255,255,.75)'; },250); }
+      if(S.ps.shots>=S.ps.need){ S.play.done=true; setTimeout(finishTask,200); return; }
+      S.ps.fw*=0.82; S.ps.spd*=1.18; psFrame();
+    } else {
+      S.play.misses++; showMiss();
+      if(f){ f.style.borderColor='var(--bad)'; setTimeout(function(){ var f2=$('psframe'); if(f2) f2.style.borderColor='rgba(255,255,255,.75)'; },250); }
+    }
+  }
+
+  /* ---------- minigame: Stamp It (tap the sliding passport box) ---------- */
+  function mgStampIt(t){
+    var d=ramp();
+    S.st2={ stamps:0, need:3, w:76-14*d, speed:0.55+0.4*d, t0:performance.now() };
+    $('mg').innerHTML='<div class="seqstatus" id="stst"></div>'
+      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div id="stfield" style="position:relative;height:150px;border-radius:14px;border:1px solid var(--cardb);background:rgba(235,166,31,.07);overflow:hidden;cursor:pointer;touch-action:manipulation">'
+        + '<div id="stbox" style="position:absolute;top:26px;height:96px;border:2.5px dashed var(--gold);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer"></div>'
+      + '</div>'
+      + '<div class="ohint" style="margin-top:10px">Stamp INSIDE the sliding box — smudges cost time.</div>';
+    stStatus();
+    $('stbox').onclick=function(ev){ if(ev.stopPropagation) ev.stopPropagation(); stHit(); };
+    $('stfield').onclick=function(){ if(S.play.done) return; S.play.misses++; showMiss(); };
+    (function loop(){
+      var box=$('stbox'), field=$('stfield');
+      if(S.play.done || !box || !field) return;
+      var el=(performance.now()-S.st2.t0)/1000;
+      var p=(Math.sin(el*S.st2.speed*Math.PI*2)+1)/2;
+      box.style.width=S.st2.w+'px';
+      box.style.left=(p*(field.clientWidth-S.st2.w-8)+4)+'px';
+      requestAnimationFrame(loop);
+    })();
+  }
+  function stStatus(){ var e=$('stst'); if(e) e.innerHTML='Stamps <b>'+S.st2.stamps+'</b>/'+S.st2.need; }
+  function stHit(){
+    if(S.play.done) return;
+    sfx('correct'); S.st2.stamps++; stStatus();
+    var box=$('stbox'); if(box){ box.textContent='✅'; setTimeout(function(){ var b2=$('stbox'); if(b2) b2.textContent=''; },220); }
+    if(S.st2.stamps>=S.st2.need){ S.play.done=true; setTimeout(finishTask,200); return; }
+    S.st2.w=Math.max(46, S.st2.w*0.82); S.st2.speed*=1.16;
   }
 
   /* ---------- minigame: Find It On The Map (spatial, distance-scored) ---------- */
