@@ -199,9 +199,11 @@
     <div class="tab" data-tab="roster">Roster</div>
     <div class="tab" data-tab="build">Build Show</div>
     <div class="tab" data-tab="feuds">Feuds</div>
+    <div class="tab" data-tab="stables">Stables</div>
     <div class="tab" data-tab="titles">Titles</div>
     <div class="tab" data-tab="history">History</div>
     <div class="tab" data-tab="market">Market</div>
+    <div class="tab" data-tab="world">World</div>
     <div class="tab" data-tab="finances">Finances</div>
     <div class="tab" data-tab="editor">Editor</div>
   </div>
@@ -306,6 +308,23 @@
       <div id="feudList"></div>
     </div>
 
+    <!-- STABLES -->
+    <div class="panel" id="panel-stables">
+      <h2>Tag Teams &amp; Stables <span class="sub2">chemistry builds when a unit is booked together</span></h2>
+      <div class="builder-box">
+        <div class="row-wrap">
+          <label class="fld"><div class="stat-mini fldlab">Type</div>
+            <select id="teamType"><option value="tag">Tag Team</option><option value="stable">Stable</option></select></label>
+          <label class="fld"><div class="stat-mini fldlab">Name</div><input type="text" id="teamName" placeholder="e.g. The Bloodline"></label>
+          <label class="fld"><div class="stat-mini fldlab">Members (pick 2+)</div>
+            <select id="teamMembers" multiple size="6" style="min-width:230px;"></select></label>
+          <button onclick="createTeam()">Form Unit</button>
+        </div>
+        <div class="warn" id="teamWarn"></div>
+      </div>
+      <div id="teamList"></div>
+    </div>
+
     <!-- TITLES -->
     <div class="panel" id="panel-titles">
       <h2>Championships <span class="sub2">a title changes hands only when the champion is pinned</span></h2>
@@ -326,6 +345,12 @@
         <select id="marketPromoFilter" onchange="renderMarket()"></select>
       </div>
       <div class="scroll-list" id="marketList"></div>
+    </div>
+
+    <!-- WORLD / RIVALS -->
+    <div class="panel" id="panel-world">
+      <h2>The Wrestling World <span class="sub2">rival promotions book their own shows every week</span></h2>
+      <div id="worldList"></div>
     </div>
 
     <!-- FINANCES -->
@@ -408,6 +433,9 @@ function freshState(promoName){
   const all = window.RTR_ROSTER.map(w => applyCorrection(JSON.parse(JSON.stringify(w))));
   const roster = all.filter(w => w.promotion === promoName).map(normalizeWorker);
   const pool   = all.filter(w => w.promotion !== promoName).map(normalizeWorker);
+  // stagger signed-roster contract lengths so they don't all expire at once
+  roster.forEach(w=>{ w.contractWeeks = 44 + (idNum(w.id) % 60); w.expiryWarned = false; });
+  pool.forEach(w=>{ w.contractWeeks = 0; }); // rivals/FAs: not player-tracked until signed
   return {
     schema: SCHEMA,
     promo: { name: promoName, cash: meta.cash, popW: meta.popW, perfW: meta.perfW,
@@ -417,11 +445,14 @@ function freshState(promoName){
     card: [],
     history: [],
     feuds: [],
+    teams: [],
     titles: defaultTitles(promoName, roster),
+    rivalRatings: {},
     inbox: [{ ico:'📋', sev:'story', txt:`Welcome to <b>${promoName}</b>. Book your first show to get the crowd invested.` }],
     seq: 1,
   };
 }
+function idNum(id){ return parseInt((id||'w0').replace(/\D/g,''),10) || 0; }
 
 function normalizeWorker(w){
   if(w.align === undefined) w.align = 'tweener';
@@ -430,6 +461,8 @@ function normalizeWorker(w){
   if(w.morale === undefined) w.morale = 75;
   if(w.injWeeks === undefined) w.injWeeks = 0;
   if(w.weeksIdle === undefined) w.weeksIdle = 0;
+  if(w.contractWeeks === undefined) w.contractWeeks = 0;
+  if(w.expiryWarned === undefined) w.expiryWarned = false;
   return w;
 }
 
@@ -540,6 +573,7 @@ function continueCareer(){
   // migrate any missing fields
   S.roster.forEach(normalizeWorker); S.pool.forEach(normalizeWorker);
   if(!S.feuds) S.feuds = []; if(!S.titles) S.titles = []; if(!S.inbox) S.inbox = [];
+  if(!S.teams) S.teams = []; if(!S.rivalRatings) S.rivalRatings = {};
   enterGame();
 }
 function confirmDeleteSave(){
@@ -559,8 +593,8 @@ function enterGame(){
 
 function renderAll(){
   refreshHud(); renderInbox(); renderRoster(); renderBuildSelectors(); renderCard();
-  renderFeuds(); renderTitles(); renderHistory(); renderMarket(); renderFinances();
-  renderEditor();
+  renderFeuds(); renderStables(); renderTitles(); renderHistory(); renderMarket();
+  renderWorld(); renderFinances(); renderEditor();
   updateTabPips();
 }
 
@@ -631,10 +665,24 @@ function renderRoster(){
       <div class="stat-mini">CND ${Math.round(w.condition)}${bar(w.condition,'cond')}</div>
       <div class="stat-mini">MOR ${Math.round(w.morale)}${bar(w.morale,'mor')}</div>
       <div class="stat-mini">${money(w.salary)}/wk</div>
+      <div class="stat-mini" style="color:${w.contractWeeks<=12?'#f08a76':'var(--text-faint)'}">📄 ${w.contractWeeks}w left</div>
+      ${w.contractWeeks<=20?`<button class="ghost" onclick="resignWorker('${w.id}')">Re-sign</button>`:''}
       <button class="ghost" onclick="cycleAlign('${w.id}')">Turn</button>
       <button class="danger" onclick="releaseWorker('${w.id}')">Release</button>
     </div>`;
   }).join('') || '<div class="empty-note">No wrestlers match that filter.</div>';
+}
+
+function resignWorker(id){
+  const w = rosterById(id); if(!w) return;
+  const cost = Math.round(w.salary*4);
+  openModal('Re-sign '+w.name+'?', `Extend their deal by 52 weeks for a <b>${money(cost)}</b> signing cost. Their current deal has ${w.contractWeeks} week${w.contractWeeks!==1?'s':''} left.`,
+    [{label:'Cancel', cls:'ghost', fn:closeModal},
+     {label:`Pay ${money(cost)}`, cls:'', fn:()=>{
+        if(S.promo.cash < cost){ toast("Can't afford that."); closeModal(); return; }
+        S.promo.cash -= cost; w.contractWeeks += 52; w.expiryWarned=false; w.morale=clamp(w.morale+5);
+        closeModal(); renderAll(); scheduleSave(); toast(w.name+' re-signed (+52w)');
+     }}]);
 }
 
 function cycleAlign(id){
@@ -677,6 +725,7 @@ function renderBuildSelectors(){
   // feud selectors
   $('feudA').innerHTML = S.roster.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
   $('feudB').innerHTML = S.roster.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+  renderTeamSelectors();
   updateRoadNote();
 }
 function nm(id){ const w=byId(id); return w?w.name:'?'; }
@@ -807,6 +856,13 @@ function calcSegmentRating(seg){
   // Title match adds stakes
   if(seg.titleId){ base += 4; notes.push({t:'championship on the line → +4', k:'pos'}); }
 
+  // Team chemistry — a cohesive tag team / stable in the match performs better
+  if(!isPromo){
+    const team = dominantTeam(seg.ids);
+    if(team){ const cb = 3 + (team.chemistry-50)*0.12; base += cb;
+      notes.push({t:`${team.name} chemistry ${Math.round(team.chemistry)} → ${cb>=0?'+':''}${cb.toFixed(1)}`, k: cb>=0?'pos':'neg'}); }
+  }
+
   const final = Math.round(clamp(base));
   return { final, notes, ws, avgPop };
 }
@@ -836,6 +892,9 @@ function runShow(){
       w.morale = clamp(w.morale + (seg.intent==='bury' && !isWinner ? -6 : 1));
       w.weeksIdle = 0;
     });
+    // team chemistry build when a unit is booked together
+    const dt = dominantTeam(seg.ids);
+    if(dt){ dt.chemistry = clamp(dt.chemistry + 3, 0, 100); }
     // feud heat build
     if(seg.feudId){
       const f = S.feuds.find(x=>x.id===seg.feudId);
@@ -874,10 +933,12 @@ function runShow(){
   const revenue = Math.round(showRating*showRating*3 + overnessSum*40);
   S.promo.cash += revenue;
 
-  S.history.unshift({ week:S.week, showRating, revenue,
+  const column = generateColumn(showRating, results, events);
+  S.history.unshift({ week:S.week, showRating, revenue, column,
     segs: results.map(({seg,r})=>({
       type:seg.type, names: seg.ids.map(nm), rating:r.final,
       notes:r.notes, winner: seg.winner?nm(seg.winner):null,
+      flavor: segFlavor(seg, r),
       title: seg.titleId?(S.titles.find(t=>t.id===seg.titleId)||{}).name:null,
     })), events });
 
@@ -920,6 +981,28 @@ function weeklyTick(usedIds, showInfo){
     if(w.injWeeks>0 && !justInjured.has(w.id)){ w.injWeeks--; if(w.injWeeks===0) startInbox.push({ico:'🟢', sev:'good', txt:`<b>${w.name}</b> is cleared to return from injury.`}); }
   });
 
+  // 3b. contracts — tick down, warn, expire to free agency
+  const expired = [];
+  S.roster.forEach(w=>{
+    w.contractWeeks = Math.max(0, (w.contractWeeks||0) - 1);
+    if(w.contractWeeks<=12 && w.contractWeeks>0 && !w.expiryWarned){
+      w.expiryWarned = true;
+      startInbox.push({ico:'📄', sev:'story', txt:`<b>${w.name}</b>'s contract expires in ${w.contractWeeks} weeks. Re-sign them before a rival makes an offer.`});
+    }
+    if(w.contractWeeks<=0) expired.push(w);
+  });
+  expired.forEach(w=>{
+    const idx=S.roster.findIndex(x=>x.id===w.id);
+    if(idx>-1){ S.roster.splice(idx,1); w.promotion='Free Agent';
+      S.feuds=S.feuds.filter(f=>f.a!==w.id&&f.b!==w.id);
+      S.teams.forEach(t=>{ t.memberIds = t.memberIds.filter(m=>m!==w.id); });
+      S.titles.forEach(t=>{ if(t.holderIds.includes(w.id)) vacateTitle(t); });
+      S.pool.push(w);
+      startInbox.push({ico:'📄', sev:'bad', txt:`<b>${w.name}</b>'s contract expired and they left as a free agent.`});
+    }
+  });
+  S.teams = S.teams.filter(t=>t.memberIds.length>=2); // dissolve broken units
+
   // 4. feud fatigue — long cold feuds cool off
   S.feuds.forEach(f=>{
     const usedThisWeek = usedIds.has(f.a) && usedIds.has(f.b);
@@ -943,8 +1026,10 @@ function weeklyTick(usedIds, showInfo){
       startInbox.push({ico:'🚪', sev:'bad', txt:`<b>${w.name}</b> walked out over how they were being booked and left the promotion.`}); }
   });
 
-  // 6. AI rival poaching — a rival occasionally signs a disgruntled/idle star of yours (light touch)
+  // 6. AI rival promotions — they book their own shows, sign free agents, and poach
   aiRivalMoves(startInbox);
+  simulateRivalShows();
+  rivalsSignFreeAgents(startInbox);
 
   // 7. contract-expiry-ish morale flags
   S.roster.forEach(w=>{
@@ -1052,9 +1137,125 @@ function renderFeuds(){
       </div>
       <div class="heat-track"><div class="heat-fill" style="width:${clamp(f.heat)}%"></div></div>
       <div class="stat-mini">Heat ${Math.round(f.heat)}/100 · started week ${f.startWeek} · ${f.beats.length} beat${f.beats.length!==1?'s':''}</div>
+      <div class="prose" style="margin-top:6px;">${generatePromo(f)}</div>
       ${beats?`<div class="breakdown" style="margin-top:6px;">${beats}</div>`:''}
     </div>`;
   }).join('');
+}
+
+// ---------- Tag teams & stables ----------
+function teamOf(id){ return S.teams.find(t=>t.memberIds.includes(id)); }
+// the team best represented in a match (>=2 members present)
+function dominantTeam(ids){
+  let best=null, bestN=0;
+  S.teams.forEach(t=>{ const n=t.memberIds.filter(m=>ids.includes(m)).length; if(n>=2 && n>bestN){best=t; bestN=n;} });
+  return best;
+}
+function createTeam(){
+  const type=$('teamType').value, name=($('teamName').value||'').trim();
+  const ids=Array.from($('teamMembers').selectedOptions).map(o=>o.value);
+  const warn=$('teamWarn'); warn.textContent='';
+  if(!name){ warn.textContent='Give the unit a name.'; return; }
+  if(ids.length<2){ warn.textContent='Pick at least 2 members.'; return; }
+  if(type==='tag' && ids.length>3){ warn.textContent='Tag teams are 2–3 members; use a stable for larger groups.'; return; }
+  S.teams.push({ id:nextId('tm_'), type, name, memberIds:ids, leaderId:ids[0], chemistry:50, startWeek:S.week });
+  $('teamName').value=''; $('teamMembers').selectedIndex=-1;
+  renderStables(); renderBuildSelectors(); scheduleSave(); toast((type==='tag'?'Tag team':'Stable')+' formed: '+name);
+}
+function breakUpTeam(id){
+  const t=S.teams.find(x=>x.id===id); if(!t) return;
+  const members=t.memberIds.slice();
+  openModal('Break up '+t.name+'?', t.type==='stable'
+      ? `Stable breakups are storyline gold. Turn two members against each other to spin off a feud?`
+      : `Split this team? The two can be turned into rivals.`,
+    [{label:'Just disband', cls:'ghost', fn:()=>{ closeModal(); doBreak(id,false); }},
+     {label:'Disband + start feud', cls:'', fn:()=>{ closeModal(); doBreak(id,true); }}]);
+}
+function doBreak(id, feud){
+  const t=S.teams.find(x=>x.id===id); if(!t) return;
+  const m=t.memberIds.slice();
+  S.teams=S.teams.filter(x=>x.id!==id);
+  if(feud && m.length>=2){
+    const a=m[0], b=m[1];
+    if(!S.feuds.some(f=>(f.a===a&&f.b===b)||(f.a===b&&f.b===a))){
+      S.feuds.push({id:nextId('f_'), a, b, heat:45, beats:[], blowoffReady:false, coldWeeks:0, startWeek:S.week});
+      pushInbox({ico:'💥', sev:'story', txt:`<b>${t.name}</b> imploded — <b>${nm(a)}</b> turned on <b>${nm(b)}</b>. A red-hot feud is born.`});
+    }
+  }
+  renderAll(); scheduleSave(); toast(t.name+' disbanded');
+}
+function renderStables(){
+  const el=$('teamList');
+  if(!S.teams.length){ el.innerHTML='<div class="empty-note">No units yet. Form a tag team or stable above — booked together, they build chemistry that boosts their matches; break a stable up for an instant feud.</div>'; return; }
+  el.innerHTML=S.teams.map(t=>{
+    const members=t.memberIds.map(nm).join(', ');
+    return `<div class="feud-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+        <div class="heads">${t.name} <span class="badge ${t.type==='stable'?'promo':'tier'}">${t.type}</span></div>
+        <button class="ghost danger" onclick="breakUpTeam('${t.id}')">Break Up</button>
+      </div>
+      <div class="heat-track"><div class="heat-fill" style="width:${clamp(t.chemistry)}%; background:linear-gradient(90deg,var(--blue),var(--gold-bright));"></div></div>
+      <div class="stat-mini">Chemistry ${Math.round(t.chemistry)}/100 · ${members}</div>
+    </div>`;
+  }).join('');
+}
+function renderTeamSelectors(){
+  const avail=availableRoster();
+  $('teamMembers').innerHTML=avail.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+}
+
+// ---------- AI rival promotions ----------
+function promoRoster(name){ return S.pool.filter(w=>w.promotion===name); }
+function simulateRivalShows(){
+  Object.keys(PROMO_META).filter(p=>p!==S.promo.name).forEach(p=>{
+    const r=promoRoster(p); if(!r.length) return;
+    const top=[...r].sort((a,b)=>b.overness-a.overness).slice(0,6);
+    const meta=PROMO_META[p];
+    const avgPop=top.reduce((s,w)=>s+w.overness,0)/top.length;
+    const avgPerf=top.reduce((s,w)=>s+w.inRing,0)/top.length;
+    const jitter=(seededRand(p+S.week)-0.5)*8;
+    const rating=Math.round(clamp(avgPop*meta.popW + avgPerf*meta.perfW + jitter));
+    S.rivalRatings[p]=rating;
+    // their workers drift: a strong show lifts momentum/overness slightly
+    top.forEach(w=>{
+      w.momentum = clamp(w.momentum + (rating-60)/12);
+      w.overness = clamp(w.overness + (rating-62)/40);
+    });
+    r.forEach(w=>{ if(!top.includes(w)) w.momentum = clamp(w.momentum + (50-w.momentum)*0.15); });
+  });
+}
+function rivalsSignFreeAgents(startInbox){
+  const fas=S.pool.filter(w=>w.promotion==='Free Agent').sort((a,b)=>b.overness-a.overness);
+  fas.forEach(w=>{
+    if(w.overness<62) return;
+    const r=seededRand(`${w.id}-${S.week}-fasign`);
+    if(r<0.4){ const promo=pickRivalPromo(); w.promotion=promo;
+      // (silent — only notify if it was a notable name)
+      if(w.overness>=75) startInbox.push({ico:'✍️', sev:'info', txt:`<b>${promo}</b> signed free agent <b>${w.name}</b>.`});
+    }
+  });
+}
+function renderWorld(){
+  const el=$('worldList');
+  const rows=Object.keys(PROMO_META).map(p=>{
+    const isYou=p===S.promo.name;
+    const r=isYou?null:promoRoster(p);
+    const size=isYou?S.roster.length:(r?r.length:0);
+    const avgOver=isYou
+      ? (S.roster.length?S.roster.reduce((s,w)=>s+w.overness,0)/S.roster.length:0)
+      : (r&&r.length?r.reduce((s,w)=>s+w.overness,0)/r.length:0);
+    const lastRating=isYou?(S.history[0]?S.history[0].showRating:null):(S.rivalRatings[p]??null);
+    return {p, isYou, size, avgOver, lastRating, tier:PROMO_META[p].tierLabel};
+  }).sort((a,b)=>b.avgOver-a.avgOver);
+  el.innerHTML = `<div class="grid2">` + rows.map((row,i)=>`
+    <div class="stat-tile" style="${row.isYou?'border-color:var(--gold);':''}">
+      <div style="display:flex; justify-content:space-between; align-items:baseline;">
+        <div class="vs-line">#${i+1} ${row.p}${row.isYou?' <span class="badge promo">You</span>':''}</div>
+        <div class="mono" style="color:var(--gold-bright); font-size:18px;">${Math.round(row.avgOver)}</div>
+      </div>
+      <div class="stat-mini" style="margin-top:4px;">${row.tier} · ${row.size} roster</div>
+      <div class="stat-mini">Last show: ${row.lastRating!=null?`<span class="rating-dial ${ratingClass(row.lastRating)}" style="font-size:12px; padding:1px 6px;">${row.lastRating}</span>`:'—'}</div>
+    </div>`).join('') + `</div>`;
 }
 
 // ---------- Titles ----------
@@ -1083,15 +1284,17 @@ function renderHistory(){
   el.innerHTML = S.history.map(h=>`
     <div class="recap-block">
       <h3>Week ${h.week} — Overall <span class="rating-dial ${ratingClass(h.showRating)}">${h.showRating}</span> · ${money(h.revenue)}</h3>
+      ${h.column?`<div class="prose" style="margin:2px 0 10px;"><em>Dirt sheet:</em> ${h.column}</div>`:''}
       ${(h.events&&h.events.length)?`<div style="margin:4px 0 8px;">${h.events.map(e=>`<div class="stat-mini">${e.ico||''} ${e.txt}</div>`).join('')}</div>`:''}
       ${h.segs.map(s=>{
         const names = s.names.join(s.type==='promo'?' & ':' vs. ');
         const noteHtml = (s.notes||[]).map(n=>`<span class="${n.k==='pos'?'pos':n.k==='neg'?'neg':''}">${n.t}</span>`).join('<br>');
-        return `<div style="margin-top:8px;">
+        return `<div style="margin-top:10px;">
           <span class="vs-line">${typeMeta[s.type]?typeMeta[s.type].label:s.type}: ${names}</span>
           <span class="rating-dial ${ratingClass(s.rating)}" style="margin-left:8px;">${s.rating}</span>
           ${s.title?`<span class="badge promo" style="margin-left:6px;">🏆 ${s.title}</span>`:''}
           ${s.winner?`<span class="stat-mini" style="margin-left:6px;">def. → ${s.winner}</span>`:''}
+          ${s.flavor?`<div class="prose" style="margin-top:2px;">${s.flavor}</div>`:''}
           <div class="breakdown">${noteHtml}</div>
         </div>`;
       }).join('')}
@@ -1104,6 +1307,65 @@ function dirtSheet(r){
   if(r>=55) return 'A solid, if unspectacular, show.';
   if(r>=40) return 'Columnists shrugged. Forgettable.';
   return 'Panned online as a creative low point.';
+}
+
+/* ============================================================
+   NARRATIVE LAYER (deterministic "generative shell")
+   Reads finalized deterministic results and writes in-world prose.
+   Template-driven for a keyless, offline, single-player build. The
+   seam is intentional: swap generateColumn/segFlavor/generatePromo
+   for an LLM call (feeding the same result objects as the prompt) and
+   nothing about game balance changes — outcomes are already decided.
+   ============================================================ */
+function pick(arr, seed){ return arr[Math.floor(seededRand(seed)*arr.length)]; }
+function verbFor(rating, seed){
+  if(rating>=82) return pick(['tore the house down','delivered a classic','stole the show','had the crowd on their feet'], seed);
+  if(rating>=66) return pick(['turned in a strong outing','clicked well','kept the crowd hot','went over well'], seed);
+  if(rating>=48) return pick(['had a serviceable match','did enough','kept things moving'], seed);
+  return pick(['struggled to connect','fell flat','lost the crowd','never got going'], seed);
+}
+function segFlavor(seg, r){
+  const names = seg.ids.map(nm);
+  const seed = seg.ids.join('')+S.week+seg.type;
+  const label = (typeMeta[seg.type]?typeMeta[seg.type].label:seg.type).toLowerCase();
+  if(seg.type==='promo'){
+    return `${names.join(' & ')} grabbed the mic; the segment ${verbFor(r.final, seed)}.`;
+  }
+  let s = `In the ${label}, ${names.join(' and ')} ${verbFor(r.final, seed)}`;
+  if(seg.winner) s += `, with ${nm(seg.winner)} standing tall`;
+  s += '.';
+  return s;
+}
+function generateColumn(showRating, results, events){
+  const seed = 'col'+S.week+showRating;
+  const opener = showRating>=78 ? pick(['A statement night for','One of the best cards in a while from','The crowd went home happy after'], seed)
+    : showRating>=58 ? pick(['A steady week for',`Business as usual for`,'A watchable night from'], seed)
+    : pick(['A rough week for',`Questions are being asked about the booking at`,'A night to forget for'], seed);
+  const me = results[results.length-1];
+  const meLine = me ? `The main event saw ${me.seg.ids.map(nm).join(me.seg.type==='promo'?' & ':' vs. ')} ${verbFor(me.r.final, seed+'me')} (${me.r.final}).` : '';
+  let e = '';
+  const titleChange = events.find(x=>/NEW CHAMPION/.test(x.txt));
+  const blow = events.find(x=>/blow-off/.test(x.txt));
+  if(titleChange) e += ' '+titleChange.txt.replace(/<\/?b>/g,'').replace('NEW CHAMPION: ','New champion crowned — ');
+  else if(blow) e += ' '+blow.txt.replace(/<\/?b>/g,'');
+  return `${opener} ${S.promo.name}. ${meLine}${e} ${dirtSheet(showRating)}`;
+}
+function generatePromo(f){
+  const A=nm(f.a), B=nm(f.b);
+  const wa=byId(f.a), wb=byId(f.b);
+  const heel = wa && wa.align==='heel' ? A : (wb && wb.align==='heel' ? B : A);
+  const face = heel===A ? B : A;
+  const seed = f.id+S.week;
+  if(f.heat>=75) return `"${A}, ${B} — this ends at the top of the card, and everyone knows it."`;
+  if(f.heat>=45) return pick([
+    `"${heel} thinks this is over. ${face} has other ideas."`,
+    `"Every week ${heel} runs their mouth, and every week ${face} is still standing."`,
+    `"${A} and ${B} can't stand the sight of each other — and the crowd can feel it."`,
+  ], seed);
+  return pick([
+    `"There's history here between ${A} and ${B}, and it's only just starting to boil."`,
+    `"${face} has ${heel} in their sights."`,
+  ], seed);
 }
 
 // ---------- Market ----------
@@ -1148,6 +1410,7 @@ function signWorker(id){
   S.pool.splice(idx,1);
   const from = w.promotion;
   w.promotion = S.promo.name; w.morale = clamp(Math.max(w.morale, 70)); w.weeksIdle=0;
+  w.contractWeeks = 52; w.expiryWarned = false;
   S.roster.push(w);
   renderAll(); scheduleSave();
   toast(`${isFA?'Signed':'Poached'} ${w.name}${isFA?'':' from '+from}`);
