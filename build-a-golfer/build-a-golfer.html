@@ -10304,6 +10304,31 @@ function h2hBotLobbyFull(){
   h2hNotifyReady('Your match is ready','Your opponents are in — tap to draft your golfer.');
   S.h2h._botTimer=setTimeout(()=>{ if(S.h2h&&S.h2h.bots&&S.screen==='h2hlobby'&&!S.h2h.drafting) h2hBeginDraft(); }, 1100);
 }
+/* ---- fill a private "play with friends" lobby: open it to the public pool (a waiting Quick-Match
+   human joins) with an AI fallback, or fill the rest with AI right away. Host-only (server-enforced in
+   h2h_open_public / h2h_fill_bots — migration 46). Bots are real server players, so every human in the
+   lobby sees them and the match resolves on human consensus. ---- */
+function h2hClearFillTimer(){ if(typeof S!=='undefined'&&S.h2h&&S.h2h._fillTimer){ clearTimeout(S.h2h._fillTimer); S.h2h._fillTimer=null; } }
+async function h2hOpenLobby(){
+  if(!S.h2h||!S.h2h.matchId||!S.h2h.host||!sb) return;
+  h2hClearFillTimer(); S.h2h.opened=true; render();
+  try{ const {error}=await sb.rpc('h2h_open_public',{p_match_id:S.h2h.matchId}); if(error) throw error;
+    toast('Lobby opened — a waiting player can join'); track('h2h_open_public',{mode:S.h2h.mode});
+    // fallback: nobody joined in a short window → fill the rest with AI so the group isn't stuck
+    S.h2h._fillTimer=setTimeout(h2hFillFallback, 9000+Math.random()*4000);
+  }catch(e){ S.h2h.opened=false; render(); h2hErr(e); }
+}
+function h2hFillFallback(){ if(S.h2h) S.h2h._fillTimer=null;
+  if(!S.h2h||!S.h2h.host||S.h2h.status!=='lobby') return;
+  if((S.h2h.players||[]).length>=h2hCap(S.h2h.mode)) return;   // a real player filled it
+  h2hFillBots(); }
+async function h2hFillBots(){
+  if(!S.h2h||!S.h2h.matchId||!S.h2h.host||!sb) return;
+  h2hClearFillTimer();
+  try{ const {error}=await sb.rpc('h2h_fill_bots',{p_match_id:S.h2h.matchId}); if(error) throw error;
+    track('h2h_fill_bots',{mode:S.h2h.mode}); h2hTick();   // pull the now-full/drafting state immediately
+  }catch(e){ h2hErr(e); }
+}
 /* ---- "match ready" alerts: in-app banner always + a browser notification if you've tabbed away ---- */
 function h2hBanner(title, body){
   const el=$(`<div id="h2hbanner" style="position:fixed;left:50%;top:calc(12px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:50;max-width:92vw;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:12px;padding:12px 16px;box-shadow:0 10px 30px rgba(0,0,0,.5);cursor:pointer">
@@ -10380,7 +10405,7 @@ async function h2hRecordBotMatch(){
   try{ await sb.rpc('h2h_record_bot_match',{p_mode:S.h2h.mode, p_won:won, p_bots:bots}); }catch(e){}
 }
 let _h2hPoll=null, _h2hWatchTimer=null;
-function h2hClearTimers(){ if(_h2hPoll){clearTimeout(_h2hPoll);_h2hPoll=null;} if(_h2hWatchTimer){clearTimeout(_h2hWatchTimer);_h2hWatchTimer=null;} h2hClearBotTimer(); }
+function h2hClearTimers(){ if(_h2hPoll){clearTimeout(_h2hPoll);_h2hPoll=null;} if(_h2hWatchTimer){clearTimeout(_h2hWatchTimer);_h2hWatchTimer=null;} h2hClearBotTimer(); h2hClearFillTimer(); }
 function h2hUid(){ return sbUser&&sbUser.id; }
 function h2hErr(e){ const m=(e&&e.message)||String(e||''); toast(esc(m.replace(/^.*:\s*/,'')||'Something went wrong')); }
 // entry point (title button / menu): needs a signed-in account with a username
@@ -10465,7 +10490,8 @@ function h2hOnState(st){
   S.h2h.holes=st.holes; S.h2h.mode=st.mode; S.h2h.code=st.join_code||S.h2h.code; S.h2h.result=st.result;
   const me=S.h2h.players.find(p=>p.user_id===h2hUid());
   if(me){ S.h2h.mySlot=me.slot; S.h2h.myWheel=me.wheel_seed; S.h2h.myTeam=me.team; }
-  if(st.status!=='lobby') h2hClearBotTimer();   // a real human filled the match, don't backfill with AI
+  S.h2h.createdBy=st.created_by;
+  if(st.status!=='lobby'){ h2hClearBotTimer(); h2hClearFillTimer(); }   // the match started; stop any fill fallback
   if(st.status==='drafting' && !S.h2h.drafting){ h2hNotifyReady('Your match is ready','An opponent joined — draft your golfer.'); h2hBeginDraft(); return; }
   if(st.status==='live' && !S.h2h.watching && !S.h2h.previewed){ h2hEnterPreview(); return; }
   // capture the resolved result but NEVER yank the player off the leaderboard (or anywhere they
@@ -10742,6 +10768,19 @@ function scrH2HLobby(){
       cp.onclick=()=>{ try{ navigator.clipboard.writeText(S.h2h.code); toast('Code copied'); }catch(e){} };
       btns.appendChild(inv); btns.appendChild(cp); add(btns);
       const nb=h2hNotifyBtn(); if(nb) add(nb);
+    }
+    // HOST-only: fill the open seat(s) from the public pool or with AI so a short group isn't stuck.
+    // (Not for Quick-Match lobbies, which already auto-fill, or client-only bot matches.)
+    if(S.h2h.host && need>0 && !S.h2h.searching && !S.h2h.quick && !S.h2h.bots){
+      add($(`<p class="small muted center" style="margin:16px 0 6px">— or fill the open seat${need>1?'s':''} —</p>`));
+      const fillWrap=$(`<div style="max-width:340px;margin:0 auto;display:grid;gap:8px"></div>`);
+      if(S.h2h.opened){
+        fillWrap.appendChild($(`<div class="center small" style="color:var(--teal,#0FA888);font-weight:700"><span class="authspin" style="width:14px;height:14px;vertical-align:-2px"></span> Open to anyone — a waiting player will join, or AI fills in shortly…</div>`));
+      } else {
+        const op=$(`<button class="btn teal">Open to anyone ▸<span class="sub">A waiting player joins — or AI fills in</span></button>`); op.onclick=h2hOpenLobby; fillWrap.appendChild(op);
+      }
+      const ai=$(`<button class="btn ghost">Start now vs AI ▸<span class="sub">Fill the last ${need} seat${need>1?'s':''} with AI and tee off</span></button>`); ai.onclick=h2hFillBots; fillWrap.appendChild(ai);
+      add(fillWrap);
     }
   }
   // roster

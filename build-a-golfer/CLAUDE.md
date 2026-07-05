@@ -4817,6 +4817,35 @@ allows Google Fonts, or self-host Anton.*
   HUD), stall (CS156), hv6 (39-course geometry + putt property), practice (fixed a stale CS171 "Start
   Drafting"→"Build Your Golfer" button selector) all green; zero page errors. Deployed to /golf.
 
+- **CS174 — fill a private "play with friends" lobby from the public pool or with AI (owner: "if you have
+  2 of your friends in a foursome and nobody else to play, press a button to join a public lobby where a
+  waiting user or bot will join").** A short private group is no longer stuck. Host-only, two ways:
+  • **"Open to anyone ▸"** flips the private lobby to `is_public` (new `h2h_open_public` RPC) so a real
+    Quick-Match seeker fills the open seat (the existing `h2h_quick` matcher already scans open public
+    lobbies), AND arms a ~9-13s AI fallback so the group is never left waiting forever.
+  • **"Start now vs AI ▸"** fills the remaining seats immediately (new `h2h_fill_bots` RPC) and tees off.
+  Architecture: bots are now REAL `h2h_players` rows (so every human in the lobby sees them and the match
+  resolves normally), with `user_id=null` + `is_bot=true`. Migration **`supabase/46_h2h_lobby_fill.sql`**
+  relaxes `h2h_players.user_id` to NULLABLE + adds `is_bot` (Postgres treats NULLs as distinct in the
+  `unique(match_id,user_id)` index, so many bots coexist; the FK to `auth.users` only checks non-null rows),
+  server-generates each bot's build (70-88 base + spikes, so a host can't stack weak bots to farm the
+  board) and a human-looking handle, and **redefines `h2h_report` to resolve on HUMAN consensus** — bots
+  never call a client so they never report; they auto-agree and never get a board W/L record.
+  `h2h_submit_draft` needed no change (bots are inserted already-submitted, so once all humans submit the
+  match flips live). Both new RPCs are host-only (server-enforced via `created_by`).
+  Client (self-contained in the H2H module): the fill buttons render only for the host on a private,
+  not-full lobby (not Quick-Match, which auto-fills, and not client-only bot matches); `h2hOpenLobby`
+  opens public + arms the fallback timer; `h2hFillBots` calls the RPC then pulls state; the fallback/fill
+  timers are cleared on leaving the lobby / when the match starts. Fails open with a toast if migration 46
+  isn't applied yet.
+  Validated `46` end-to-end on a local Postgres (host + friend + 2 server bots → drafting; both humans
+  submit → live; both report the same winner → done with the two humans credited, 2 record rows, zero bot
+  rows; open-to-public + a real Quick-Match human fill; non-host fill blocked). Client verified in Playwright
+  (cs174_client): the host sees "Open to anyone" + "Start now vs AI" on a 2/4 foursome; "Start now vs AI"
+  fills to 4 (2 bots) and enters the draft; a non-host never sees the buttons; "Open to anyone" flips public
+  + arms the AI fallback. H2H regression suite green; zero page errors. **ACTION: run
+  `supabase/46_h2h_lobby_fill.sql`.** Deployed client to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
