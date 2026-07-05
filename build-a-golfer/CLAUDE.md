@@ -4393,6 +4393,52 @@ allows Google Fonts, or self-host Anton.*
     `WEEK_GOALS` targets, the freeze reward.
   This completes recs #1–#5 from the daily-games deep research (Wave 1 = #1–#3 in CS158, Wave 2 = #4–#5 here).
 
+- **CS160 — shot-tracer spoiler/UX fixes (owner feedback on the immersive round).** Four fixes to the
+  daily/Moment/Spotlight/Legend round view (`scrDailyRound` + the hole-view module); the sim/score engine
+  is untouched. (The 5th item — decisions must come before the SPECIFIC shot they concern, not always at
+  hole start — is a bigger simulate-both-choices redesign, split out as a focused follow-up.)
+  1. **No tracer pre-flash (owner: "I see the shot tracer line come up for a brief moment before the shot
+     initiates. It spoils the upcoming shot").** The in-flight shot's three paths (`hv-traceg`/`hv-trace`/
+     `hv-roll`, plus the putt roll) were drawn FULL for one frame before `hvKick`'s first rAF frame
+     recomputed their real length and hid them — a visible flash of the whole ball flight before the shot
+     started. Now they render `stroke-dasharray="9999" stroke-dashoffset="9999"` (invisible) in the
+     live-shot markup, and the animator draws them in as before. Added `_hvA.done` tracking + `hvRevealPaths()`
+     so that when a re-render rebuilds the DOM for a shot we've ALREADY finished animating (e.g. the
+     post-hole beat re-renders with the same animation key → `hvKick` early-returns with no running frame
+     loop), the freshly-hidden paths are snapped to their final drawn state instead of vanishing.
+     Reduced-motion (`setFinal`) already reveals them. Pen (penalty-drop) path left as-is (its opacity
+     isn't re-revealed on completion, so hiding it would strand it).
+  2. **No "in the hole" spoiler (owner: "the shot description for in the hole comes up before the ball goes
+     in the hole, spoiling the result").** The one-line `.hvdesc` on the tracer window swapped to the
+     holing shot's text ("In the hole") the instant the final shot revealed — while the ball was still
+     dropping. Gated it on `!S.dailySinking`, so during the sink phase no shot description shows; the
+     colored result pill reveals the outcome only AFTER the ball is in.
+  3. **No between-holes shot-log flash / scorecard shift (owner: "the scorecard gets moved after each hole
+     for a moment while all of the shot descriptions come up and then go away").** Removed the between-holes
+     `dShotPanel` render (it dumped the full shot log after each hole + during the holed beat, pushing the
+     page around). The full log now lives ONLY in review; during play the window's one-line description
+     narrates the current shot.
+  4. **Full clickable shot list in review (owner: "the full list of shot descriptions for the hole should
+     only come up if someone goes back and views a hole's result. They should also be able to click on any
+     shot and replay that shot on the tracer view").** Tapping a scorecard cell opens review; the numbered
+     scrubber chips are replaced by a full readable `.shotlist` — one row per shot with its complete
+     description, the selected row highlighted, tap any row to replay JUST that shot on the tracer window
+     (bumps `S.dailyReviewNonce` so the animator re-fires). Replay + Share-this-shot buttons kept.
+  Verified in Playwright (cs160): live full-shot paths start hidden (dashoffset 9999) then reveal as the
+  animator runs; no shot description renders while the ball is sinking + a result pill shows on the holed
+  beat; zero `.shotpanel` between holes AND during the holed beat; review shows the full clickable list
+  (row count == shot count, each row has its description, tapping row 2 selects+replays it, old `.shotscrub`
+  gone); a full practice round still finishes. Regressions cs157 (result pill / taller tracer / static
+  share — review-scrubber assertions updated to the new `.shotlist`), cs158 (Round Rating), cs159 (passport
+  + weekly goals) all green; zero page errors. Deployed to /golf.
+  FOLLOW-UP (deferred): decision timing (owner: "the prompts for the in game decisions always come at the
+  start of a hole, regardless of what it's asking. It should come up before the shot that it's asking about
+  — putting/approach/layup/driving decisions, specific to the actual holes, matching what's visually
+  shown"). Planned as a two-sim contextual approach: sim both attack/safe choices, reveal the common
+  decision-independent prefix (e.g. the drive), pause at the decision shot index with contextual copy, then
+  reveal the chosen continuation. Requires mapping dScenario types → shot indices; architectural change to
+  playDailyHole + the reveal flow.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
