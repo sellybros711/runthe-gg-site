@@ -4667,6 +4667,31 @@ allows Google Fonts, or self-host Anton.*
   fires off the beat-the-pro margin; a signed-in result screenshot confirms the cleaner hierarchy. Deployed
   to /golf.
 
+- **CS169 — putting realism pt2: no more missed short putts, great lags are the norm, good putting makes
+  birdies (owner: "too many missed short putts... more likely to hit it far and lag to a tap-in than hit it
+  close and 2/3-putt from <6 ft... good putting brings golfers").** Analyzed real PGA make% by distance
+  (inside 3 ft ~99%, 5-6 ft ~70%, 10-15 ft ~30%; lag from 40 ft leaves ~2.5 ft; 3-putts come from a poor
+  LONG first putt, almost never from inside 10 ft). The CS166 model still let a 3-putt's first putt leave a
+  SHORT second putt, so it read as "missed a 3-footer." Rewrote the putt narration (dShotSeq; the
+  deterministic dSimHole score + shot-count===stroke-count invariant untouched, re-verified 2,352 combos):
+  1. **The first putt is a great lag to tap-in distance — the norm.** A 2-putt (or the comebacker after a
+     miss) now leaves a genuine tap-in that scales with distance + Putting skill: an elite putter lags to
+     ~1.8 ft on average, a weak one to ~3.2 ft. So the common line is "Putt 24 ft, 1 ft 9 in. to hole → in."
+  2. **3-putts come from a POOR LAG, not a choked tap-in.** When a 3-putt happens (rare), the first putt is
+     modeled as a bad-speed lag that leaves a believable 5-9 ft mid-ranger (elite ~7 ft, weak ~11 ft), which
+     is then missed — so the missed putt is always a realistic mid-range putt. Measured: **zero** putts from
+     inside 3.5 ft that miss, across elite/good/weak builds (the exact "missed short putt" complaint, gone).
+  3. **Slightly fewer 3-putts for decent putters** (wPutt exponent 2.6→3.0, ×0.6→0.5): elite 0% / good 3% /
+     weak 16% of over-par holes — good putting clearly separates.
+  4. **Good putting makes birdies, not just stiff approaches** (birdie proximity bonus widened): an elite
+     putter's made birdie putts now average ~20 ft vs a weak putter's ~14 ft, so a great putter drains the
+     longer ones ("good putting brings golfers home") instead of every birdie coming from kick-in range.
+  Verified in Playwright (cs169): the invariant, zero missed-short-putts, tap-in lag norm, believable 3-putt
+  structure, deeper birdie putts for good putters, determinism, and a full round; sample narratives read
+  like real golf (elite par = drive → wedge to 24 ft → lag to 1'9" → in; bogeys/doubles come from
+  trees/missed greens, not 3-putts). Regressions cs166/cs162, physics, stall, hv6/hv8 all green. Deployed
+  to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
