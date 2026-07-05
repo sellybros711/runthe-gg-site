@@ -501,7 +501,7 @@
     swingmeter:'Swing Meter', eagleeye:'Eagle Eye', kimsgame:'Memory Lineup',
     typeticket:'Type The Ticket', baggage:'Baggage Claim', rhythmecho:'Rhythm Echo',
     closest:'Closest Neighbor', closerfar:'Closer or Farther', compass:'Compass Chase',
-    regionsort:'Region Sort', flightplan:'Flight Plan', globehunt:'Globe Hunt',
+    regionsort:'Region Sort', flightplan:'Flight Plan', globehunt:'Globe Hunt', detective:'The Dossier',
     pitchpatrol:'Pitch Patrol', runway:'Runway Landing', photosnap:'Photo Snap', stampit:'Stamp It'
   };
   // expected completion (seconds) for an average player per kind — used ONLY to
@@ -515,7 +515,7 @@
     flagid:5.5, capital:5.5, truefalse:7, higherlower:7, oddoneout:6,
     memorymatch:15, whack:8, targettap:6.5, mapfind:9, streetscout:22, zoomreveal:7,
     swingmeter:8, eagleeye:15, kimsgame:14, typeticket:12, baggage:9, rhythmecho:13,
-    closest:6, closerfar:8, compass:7, regionsort:10, flightplan:12, globehunt:12,
+    closest:6, closerfar:8, compass:7, regionsort:10, flightplan:12, globehunt:12, detective:9,
     pitchpatrol:14, runway:9, photosnap:8, stampit:7 };
   // which kinds feel "reflex/physical" for Split Path pairing (GDD §5); rest are "brain"
   var REFLEX_KINDS = { reaction:1, whack:1, targettap:1, sequence:1,
@@ -1102,6 +1102,26 @@
                regA:c.region, regB:regB,
                queue:shuffle(qA.concat(qB)).map(function(x){ return { name:x.name, flag:x.flag, region:x.region }; }) });
     }
+    // The Dossier — Countryle-style deduction: crack a hidden country from a
+    // ladder of clues (region → hemisphere → capital initial → capital). Decoys
+    // are chosen so every clue actually rules one suspect out.
+    if(c.ll && c.capital){
+      var oth=COUNTRIES.filter(function(x){ return x.id!==c.id && x.ll && x.capital; });
+      var cNorth=c.ll[0]>=0, cInit=c.capital.charAt(0).toUpperCase();
+      var dR=shuffle(oth.filter(function(x){ return x.region!==c.region; }))[0];
+      var dH=shuffle(oth.filter(function(x){ return (x.ll[0]>=0)!==cNorth && (!dR||x.id!==dR.id); }))[0];
+      var dI=shuffle(oth.filter(function(x){ return x.capital.charAt(0).toUpperCase()!==cInit && (!dR||x.id!==dR.id) && (!dH||x.id!==dH.id); }))[0];
+      if(dR && dH && dI){
+        var suspects=shuffle([c,dR,dH,dI]).map(function(x){ return { name:x.name, flag:x.flag }; });
+        g.push({ kind:'detective', cat:'trivia', type:'brain',
+                 q:'Whose passport is this? Read the dossier and make your accusation.',
+                 answer:c.name, suspects:suspects,
+                 clues:[ 'Region on file: '+c.region,
+                         'Last seen in the '+(cNorth?'Northern':'Southern')+' Hemisphere',
+                         'Their capital begins with the letter “'+cInit+'”',
+                         'Capital city: '+c.capital ] });
+      }
+    }
     // ---- pure-skill set 2 (timing/aim/ears — zero knowledge) ----
     g.push({ kind:'runway', cat:'reflex', type:'reflex', q:'Land on the runway — 3 clean landings' });
     g.push({ kind:'photosnap', cat:'reflex', type:'reflex', flag:c.flag, q:'Frame '+c.flag+' in the viewfinder — 3 clean shots' });
@@ -1324,6 +1344,7 @@
     else if(kind==='targettap') mgTargetTap(t);
     else if(kind==='mapfind') mgMapFind(t);
     else if(kind==='globehunt') mgGlobeHunt(t);
+    else if(kind==='detective') mgDetective(t);
     else if(kind==='streetscout') mgStreetScout(t);
     else if(kind==='zoomreveal') mgZoomReveal(t);
     else if(kind==='swingmeter') mgSwingMeter(t);
@@ -2468,6 +2489,56 @@
     el.setAttribute('fill', h.c); el.setAttribute('r','4.2');
     sfx('tap');
     var r=$('ghread'); if(r){ r.innerHTML='<b>'+p.flag+' '+esc(p.name)+'</b> · <span style="color:'+h.c+'">'+h.t+'</span> · '+trend; swapIn(r); }
+  }
+
+  /* ---------- minigame: The Dossier (Countryle-style deduction) ----------
+     Crack a hidden country from a ladder of clues. Start with one clue and
+     reveal more on demand; accuse a suspect at any time. Fewer clues + no wrong
+     accusations = a faster, cleaner solve. Each wrong accusation is a miss and
+     auto-reveals the next clue. */
+  function mgDetective(t){
+    S.dt={ shown:1, done:false };
+    var sus=t.suspects.map(function(s,i){
+      return '<button class="dtsus" data-i="'+i+'" style="display:flex;align-items:center;gap:8px;justify-content:center;padding:12px 8px;border:1px solid var(--cardb);border-radius:12px;background:var(--card2);color:var(--ink);font-weight:800;font-size:15px;cursor:pointer">'
+        + '<span style="font-size:24px">'+s.flag+'</span><span>'+esc(s.name)+'</span></button>';
+    }).join('');
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<div id="dtfile" style="background:var(--card);border:1px dashed var(--cardb);border-radius:12px;padding:12px 14px;margin-bottom:12px">'
+        + '<div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);margin-bottom:8px">🕵 Dossier — Case File</div>'
+        + '<div id="dtclues"></div></div>'
+      + '<button class="btn ghost" id="dtmore" style="width:100%;margin-bottom:12px">Reveal another clue 🔍</button>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">'+sus+'</div>';
+    each('.dtsus', function(b){ b.addEventListener('click', function(){ dtAccuse(t, +b.getAttribute('data-i'), b); }); });
+    var more=$('dtmore'); if(more) more.addEventListener('click', function(){ dtReveal(t); });
+    dtPaintClues(t);
+  }
+  function dtPaintClues(t){
+    var box=$('dtclues'); if(!box) return;
+    box.innerHTML=t.clues.slice(0, S.dt.shown).map(function(cl,i){
+      return '<div class="dtclue" style="padding:5px 0;border-top:'+(i?'1px solid var(--cardb)':'none')+'">📌 '+esc(cl)+'</div>';
+    }).join('');
+    var last=box.lastElementChild; if(last) swapIn(last);
+    var more=$('dtmore');
+    if(more && S.dt.shown>=t.clues.length){ more.disabled=true; more.textContent='All clues revealed'; more.style.opacity='.5'; }
+  }
+  function dtReveal(t){
+    if(S.dt.done || S.dt.shown>=t.clues.length) return;
+    S.dt.shown++; sfx('tap'); dtPaintClues(t);
+  }
+  function dtAccuse(t, i, btn){
+    if(S.play.done || S.dt.done || btn.getAttribute('data-out')) return;
+    var ok = (t.suspects[i].name===t.answer);
+    if(ok){
+      S.dt.done=true; S.play.done=true; sfx('correct');
+      btn.style.borderColor='var(--ok)'; btn.style.background='rgba(63,206,134,.18)';
+      popIn(btn);
+      setTimeout(function(){ finishTask(); }, 650);
+    } else {
+      S.play.misses++; showMiss();
+      btn.setAttribute('data-out','1'); btn.style.borderColor='var(--bad)'; btn.style.opacity='.4';
+      if(S.dt.shown<t.clues.length){ S.dt.shown++; dtPaintClues(t); }
+      else flash($('dtfile'));
+    }
   }
 
   /* ---------- minigame: Street Scout (Mapillary street imagery) ----------
