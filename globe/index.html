@@ -445,6 +445,7 @@
 <!-- data banks (loaded before the engine) -->
 <script src="/globe/data/countries.js"></script>
 <script src="/globe/data/finish_lines.js"></script>
+<script src="/globe/data/world.js"></script>
 
 <script>
 "use strict";
@@ -2422,14 +2423,22 @@
   ];
   // schematic world map (equirectangular: x=lng+180 [0..360], y=90-lat [0..180]),
   // shared by Find-It, Street Scout and the between-Stage Flight Leg.
+  var LAND = (window.GLOBE_LAND && window.GLOBE_LAND.length) ? window.GLOBE_LAND : null;
   function worldSVGInner(){
     var grid='', lo, la, x, y;
     for(lo=-150;lo<=150;lo+=30){ x=lo+180; grid+='<line x1="'+x+'" y1="0" x2="'+x+'" y2="180" stroke="rgba(255,255,255,.05)" stroke-width="0.4"/>'; }
     for(la=-60;la<=60;la+=30){ y=90-la; grid+='<line x1="0" y1="'+y+'" x2="360" y2="'+y+'" stroke="rgba(255,255,255,.05)" stroke-width="0.4"/>'; }
     grid+='<line x1="0" y1="90" x2="360" y2="90" stroke="rgba(255,255,255,.12)" stroke-width="0.6"/>';
-    var paths=CONTINENTS.map(function(poly){
-      return '<polygon points="'+poly.map(function(p){ return (p[0]+180)+','+(90-p[1]); }).join(' ')+'" fill="rgba(70,165,108,.34)" stroke="rgba(93,196,132,.6)" stroke-width="0.6"/>';
-    }).join('');
+    var paths;
+    if(LAND){
+      // real coastlines (Natural Earth, projected to svg coords) — one filled path
+      var d=LAND.map(function(r){ return 'M'+r.map(function(p){ return p[0]+' '+p[1]; }).join('L')+'Z'; }).join('');
+      paths='<path d="'+d+'" fill="rgba(70,165,108,.32)" stroke="rgba(93,196,132,.55)" stroke-width="0.4" stroke-linejoin="round" fill-rule="evenodd"/>';
+    } else {
+      paths=CONTINENTS.map(function(poly){
+        return '<polygon points="'+poly.map(function(p){ return (p[0]+180)+','+(90-p[1]); }).join(' ')+'" fill="rgba(70,165,108,.34)" stroke="rgba(93,196,132,.6)" stroke-width="0.6"/>';
+      }).join('');
+    }
     return grid+paths;
   }
   function mgMapFind(t){ runMapGuess(t.q, t.ll); }
