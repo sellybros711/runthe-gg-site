@@ -7465,31 +7465,45 @@ function hvBlobD(cx,cy,rx,ry,seedN,irr,pts){
    outlines, white speckled sand, vivid blue water with a mud bank. flora 'forest' biomes get
    dense tree walls down both sides; the rest get their signature scatter. */
 const HV_BIOMES={
- parkland:{base:'#79a03c',tickD:'#698c31',tickL:'#8fb949',cut:'#84ad42',fw:'#95bd4c',fwEdge:'#5f8230',
+ // parkland: tall pines + broadleaf woods, blooming azaleas near the green, distant tree-line horizon
+ parkland:{ground:'grass',base:'#5f8a30',tickD:'#4f7628',tickL:'#79a442',cut:'#84ad42',fw:'#96bf4d',fwEdge:'#557a2b',
    green:'#b9d96e',fringe:'#a4c95d',gLine:'#6f9339',sand:'#f2f0e4',sandLine:'#8f8a76',sandSpeck:'#b9b6a6',
-   water:'#3f9fe0',waterBank:'#8a6b42',ripple:'#bfe3f7',outline:'#23411a',shad:'#31541f',
-   flora:'forest',treeG:['#2e5c1e','#3f7a28','#5d9c34','#79b944'],treeA:['#7a4d16','#a06a1c','#c08a2a','#d9a83f'],trunk:'#e8e2d2',
-   ocean:false,bunkerScale:1},
- links:{base:'#9aa04f',tickD:'#868c42',tickL:'#b3b962',cut:'#a4ad55',fw:'#aeb95c',fwEdge:'#767e38',
-   green:'#ccd97e',fringe:'#bcca6e',gLine:'#8b944a',sand:'#efe7c6',sandLine:'#a89a6a',sandSpeck:'#cdc099',
-   water:'#3f9fe0',waterBank:'#8a7a52',ripple:'#bfe3f7',outline:'#4e5426',shad:'#6e7436',
-   flora:'dune',dune:['#7d8140','#8f9449','#a3a856'],gorse:['#4a5c22','#e2c34a'],trunk:'#e8e2d2',
-   ocean:false,bunkerScale:0.62},
- coastal:{base:'#74a03e',tickD:'#648c33',tickL:'#89b94b',cut:'#7fad45',fw:'#90bd4f',fwEdge:'#5a8232',
+   water:'#3f9fe0',waterBank:'#7d6238',ripple:'#bfe3f7',reed:'#4f7a26',outline:'#1e3d16',shad:'#20401a',
+   backdrop:'treeline',ocean:false,bunkerScale:1,
+   scatter:[['decid',0.5],['pine',0.4],['flower',0.1]],
+   treeG:['#2e5c1e','#3f7a28','#5d9c34','#79b944'],treeA:['#7a4d16','#a06a1c','#c08a2a','#d9a83f'],
+   pine:['#1b4416','#265a1f','#37732a'],trunk:'#e8e2d2',flowerCols:['#ff9ecb','#ffffff','#ef6fa6']},
+ // coastal: windswept Monterey cypress + pines above the sea cliffs
+ coastal:{ground:'grass',base:'#5a8a34',tickD:'#4c7628',tickL:'#74a442',cut:'#7fad45',fw:'#90bd4f',fwEdge:'#517a2c',
    green:'#b4d96f',fringe:'#9fc95e',gLine:'#6a933b',sand:'#f2ecd8',sandLine:'#948d74',sandSpeck:'#bcb59d',
-   water:'#3f9fe0',waterBank:'#8a6b42',ripple:'#bfe3f7',outline:'#20411c',shad:'#2e5421',
-   flora:'forest',treeG:['#274f1c','#356b24','#4c8a2e','#63a83c'],treeA:['#4f6b24','#5f7f2c','#748f36','#8aa444'],trunk:'#d9d2be',
-   ocean:true,bunkerScale:1},
- desert:{base:'#cfae6e',tickD:'#b8945a',tickL:'#e0c383',cut:'#a4a648',fw:'#95bd4c',fwEdge:'#6f8236',
-   green:'#b9d96e',fringe:'#a4c95d',gLine:'#6f9339',sand:'#f4f1e2',sandLine:'#9a9176',sandSpeck:'#c4bca0',
-   water:'#3f9fe0',waterBank:'#8a6b42',ripple:'#bfe3f7',outline:'#6e5426',shad:'#8a6f3d',
-   flora:'cactus',cactus:['#4f8f3f','#6aa74f'],trunk:'#8a6b42',
-   ocean:false,bunkerScale:1},
- tropical:{base:'#6fae3f',tickD:'#5e9834',tickL:'#84c44e',cut:'#7bbc46',fw:'#8cc850',fwEdge:'#549031',
+   water:'#3f9fe0',waterBank:'#7d6238',ripple:'#bfe3f7',reed:'#4f7a26',outline:'#1a3d16',shad:'#204020',
+   backdrop:'cliffsea',ocean:true,bunkerScale:1,
+   scatter:[['cypress',0.5],['pine',0.38],['flower',0.12]],
+   treeG:['#274f1c','#356b24','#4c8a2e','#63a83c'],treeA:['#4f6b24','#5f7f2c','#748f36','#8aa444'],
+   pine:['#1b4416','#265a1f','#37732a'],cypress:['#22401b','#356b26'],trunk:'#d9d2be',flowerCols:['#f4b6d0','#ffffff']},
+ // desert: a Sonoran rock-and-mountain course — bare desert floor, red-rock outcrops, saguaro/ocotillo/
+ // scrub, jagged mountains on the horizon; the irrigated fairway + green pop against the sand
+ desert:{ground:'desert',base:'#c99457',floorD:'#b57e42',floorL:'#dcab68',gravel:'#a9743e',
+   rockA:'#c46536',rockB:'#9c4526',rockHi:'#e0925a',
+   cut:'#8aae3d',fw:'#8dc24c',fwEdge:'#5f8a30',green:'#b7db64',fringe:'#a0c956',gLine:'#6b9137',
+   sand:'#efe0c2',sandLine:'#b79a6a',sandSpeck:'#d6c49a',water:'#3f9fe0',waterBank:'#8a6b42',ripple:'#bfe3f7',
+   outline:'#5a3418',shad:'#7a4a24',backdrop:'mountains',ocean:false,bunkerScale:1,rocks:true,
+   scatter:[['saguaro',0.3],['barrel',0.17],['scrub',0.28],['ocotillo',0.13],['rock',0.12]],
+   cactus:['#4f8f3f','#6aa74f'],trunk:'#8a6b42',flowerCols:['#f2c53d','#d47ad4','#e8703a']},
+ // links: treeless fescue + marram dunes, yellow gorse, a grey sliver of sea on the horizon
+ links:{ground:'links',base:'#93a04c',tickD:'#7f8c40',tickL:'#adba60',cut:'#9aa64f',fw:'#aeba5b',fwEdge:'#6f7a33',
+   green:'#ccd97e',fringe:'#bcca6e',gLine:'#84924a',sand:'#e7dcbc',sandLine:'#a89a6a',sandSpeck:'#cdc099',
+   water:'#5a8fb0',waterBank:'#7a6a44',ripple:'#c7ddec',outline:'#484f24',shad:'#5f6634',
+   backdrop:'dunesea',ocean:false,bunkerScale:0.6,
+   scatter:[['dune',0.5],['gorse',0.28],['fescue',0.22]],
+   dune:['#7d8140','#8f9449','#a3a856'],gorse:['#4a5c22','#e2c34a'],trunk:'#e8e2d2',flowerCols:['#e2c34a','#c9b2d6']},
+ // tropical: palms + broadleaf jungle, bright hibiscus, teal lagoon water, jungle-hill horizon
+ tropical:{ground:'grass',base:'#4f8a2c',tickD:'#427526',tickL:'#68a840',cut:'#7bbc46',fw:'#8cc850',fwEdge:'#4f9030',
    green:'#bfe07a',fringe:'#aacf68',gLine:'#6f9c3c',sand:'#f6f1de',sandLine:'#948c70',sandSpeck:'#c2b998',
-   water:'#3f9fe0',waterBank:'#8a6b42',ripple:'#bfe3f7',outline:'#1e4418',shad:'#2c581f',
-   flora:'palm',palm:['#8a6b42','#2e7a30','#4aa348'],trunk:'#8a6b42',
-   ocean:false,bunkerScale:1}};
+   water:'#2fb2c2',waterBank:'#6e5a38',ripple:'#c7f0f2',reed:'#3f7a30',outline:'#153c14',shad:'#1c4a1c',
+   backdrop:'jungle',ocean:false,bunkerScale:1,
+   scatter:[['palm',0.5],['broadleaf',0.32],['flower',0.18]],
+   palm:['#8a6b42','#2e7a30','#4aa348'],broadleaf:['#1c541a','#2e7a2c','#49a83e'],trunk:'#8a6b42',flowerCols:['#ff5a5a','#ffcf3a','#ff8adf']}};
 // internal course KEYS (never display names) → biome; unmapped → parkland
 const HV_COURSE_BIOME={
  'St Andrews Old Course':'links','Royal Troon':'links','Carnoustie':'links','Royal Portrush':'links','Turnberry':'links','Shinnecock Hills':'links','Whistling Straits':'links',
@@ -7498,27 +7512,51 @@ const HV_COURSE_BIOME={
  'Plantation Course at Kapalua':'tropical','Waialae Country Club':'tropical','TPC Sawgrass':'tropical','Bay Hill':'tropical','Harbour Town Golf Links':'tropical'};
 function hvBiome(courseKey){ return HV_BIOMES[HV_COURSE_BIOME[courseKey]||'parkland']; }
 function hvTerrain(g, seedN, B){
+  if(g._terrainStr) return g._terrainStr;   // terrain is static per hole — build once, reuse every re-render
   B=B||HV_BIOMES.parkland;
   const s=[]; const hh=(a)=>hvHash(seedN,a,3);
   const sx=g.sx;
   // FLAT daylight terrain (retro-videogame look, per the owner's reference): bright color
   // blocks with chunky dark outlines. Only the ball keeps a gradient.
   let defs=`<radialGradient id="hvball" cx=".35" cy=".3" r=".95"><stop offset="0" stop-color="#ffffff"/><stop offset=".75" stop-color="#eef3ef"/><stop offset="1" stop-color="#c6d1ca"/></radialGradient>`;
-  let fwDD=null;
+  let fwDD=null, fwBounds=null;   // fwBounds: per-depth fairway screen x-range → keeps the forest out of the corridor
   if(g.par!==3){ const Lp=[],Rp=[];
     for(let k=0;k<=16;k++){ const y=g.fw0+(g.fw1-g.fw0)*k/16;
       const w=g.fww?g.fww(y):g.fwW/2*(1+0.06*Math.sin(k*1.15+hh(30)*6));   // width PROFILE (pinches, flares)
       Lp.push(hvProj(g,g.cx(y)-w,y)); Rp.push(hvProj(g,g.cx(y)+w,y)); }
-    fwDD='M '+Lp.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L ')+' L '+Rp.reverse().map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L ')+' Z';
+    fwDD='M '+Lp.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L ')+' L '+Rp.slice().reverse().map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L ')+' Z';
     defs+=`<clipPath id="hvfw"><path d="${fwDD}"/></clipPath>`;
+    fwBounds=Lp.map((p,k)=>({y:(p[1]+Rp[k][1])/2, xL:Math.min(p[0],Rp[k][0]), xR:Math.max(p[0],Rp[k][0])})).sort((a,b)=>a.y-b.y);
   }
+  const inFairway=(px,py)=>{ if(!fwBounds) return false;
+    if(py<fwBounds[0].y-6||py>fwBounds[fwBounds.length-1].y+6) return false;
+    let a=fwBounds[0];
+    for(let k=1;k<fwBounds.length;k++){ const b=fwBounds[k];
+      if(b.y>=py){ const t=(py-a.y)/((b.y-a.y)||1); return px>a.xL+(b.xL-a.xL)*t-2 && px<a.xR+(b.xR-a.xR)*t+2; }
+      a=b; }
+    return false; };
   s.push(`<defs>${defs}</defs>`);
-  s.push(`<rect x="${-HV_EX}" width="${HV_W+2*HV_EX}" height="${HV_H}" fill="${B.base}"/>`);
-  // grass texture: little "v" tick marks scattered across the rough (light + dark, seeded)
+  const FW=HV_W+2*HV_EX;
+  s.push(`<rect x="${-HV_EX}" width="${FW}" height="${HV_H}" fill="${B.base}"/>`);
   const vTick=(x,y,c,o)=>`<path d="M ${x.toFixed(1)} ${y.toFixed(1)} l 1.5 1.9 l 1.5 -1.9" fill="none" stroke="${c}" stroke-width=".9" opacity="${o}"/>`;
-  let fl='';
-  for(let i=0;i<118;i++){ fl+=vTick(-HV_EX+hh(200+i)*(HV_W+2*HV_EX), hh(300+i)*HV_H, i%2?B.tickD:B.tickL, '.55'); }
-  s.push(fl);
+  // GROUND: subtle elevation shading (soft light/dark blobs = rolling terrain → depth) + per-biome texture
+  let gr='';
+  for(let i=0;i<7;i++){ const ux=-HV_EX+hh(700+i)*FW, uy=hh(720+i)*HV_H, urx=42+hh(740+i)*62;
+    gr+=`<ellipse cx="${ux.toFixed(1)}" cy="${uy.toFixed(1)}" rx="${urx.toFixed(1)}" ry="${(urx*0.5).toFixed(1)}" fill="${i%2?B.tickL:B.tickD}" opacity=".16"/>`; }
+  if(B.ground==='desert'){
+    // bare desert floor: gravel speckle, pale dry-wash sweeps, a few rust rock-shadow patches (no grass)
+    for(let i=0;i<66;i++){ gr+=`<circle cx="${(-HV_EX+hh(200+i)*FW).toFixed(1)}" cy="${(hh(300+i)*HV_H).toFixed(1)}" r="${(0.8+hh(360+i)*1.2).toFixed(1)}" fill="${i%3?B.gravel:B.floorD}" opacity=".5"/>`; }
+    for(let i=0;i<4;i++){ const wy=hh(400+i)*HV_H; let d=`M ${-HV_EX} ${wy.toFixed(1)}`;
+      for(let k=1;k<=6;k++) d+=` Q ${(-HV_EX+(k-0.5)*FW/6).toFixed(1)} ${(wy+(hh(410+i*6+k)-0.5)*34).toFixed(1)} ${(-HV_EX+k*FW/6).toFixed(1)} ${(wy+(hh(420+i*6+k)-0.5)*22).toFixed(1)}`;
+      gr+=`<path d="${d}" fill="none" stroke="${B.floorL}" stroke-width="${(10+hh(430+i)*14).toFixed(1)}" stroke-linecap="round" opacity=".4"/>`; }
+    for(let i=0;i<5;i++) gr+=`<path d="${hvBlobD(-HV_EX+hh(440+i)*FW, hh(450+i)*HV_H, 16+hh(460+i)*20, 8+hh(470+i)*10, seedN^(i*131), 0.3, 9)}" fill="${B.floorD}" opacity=".3"/>`;
+  } else if(B.ground==='links'){
+    for(let i=0;i<62;i++){ gr+=vTick(-HV_EX+hh(200+i)*FW, hh(300+i)*HV_H, i%2?B.tickD:B.tickL, '.5'); }
+    for(let i=0;i<5;i++) gr+=`<path d="${hvBlobD(-HV_EX+hh(450+i)*FW, hh(460+i)*HV_H, 18+hh(470+i)*16, 9+hh(480+i)*8, seedN^(i*97), 0.3, 9)}" fill="${B.sand}" opacity=".32"/>`;   // sandy scrapes
+  } else {
+    for(let i=0;i<56;i++){ gr+=vTick(-HV_EX+hh(200+i)*FW, hh(300+i)*HV_H, i%2?B.tickD:B.tickL, '.5'); }   // most rough is under the forest
+  }
+  s.push(gr);
   // coastal biome: water runs down one side — mud-bank shoreline, flat bright blue, ripple dashes
   let oceanSide=0, oceanW=0;
   if(B.ocean){
@@ -7556,11 +7594,13 @@ function hvTerrain(g, seedN, B){
   if(g.water){ const [wx,wy]=hvProj(g,g.water.x,g.water.y), wt2=g.t(g.water.y);
     wpos={x:wx,y:wy,rx:g.water.rx*sx*wt2,ry:g.ry(g.water.ry)*wt2}; }
   const creekPy=g.creek?hvProj(g,0,g.creek.y)[1]:null;
-  const clear=(px,py)=>{ // true if this spot is open ground (not sea/green/water/creek)
+  const bpos=g.bunkers.map(b=>{ const [bx,by]=hvProj(g,b.x,b.y),t=g.t(b.y); return {x:bx,y:by,rx:b.r*sx*t*(B.bunkerScale||1)+7,ry:g.ry(b.r)*t+7}; });
+  const clear=(px,py)=>{ // true if this spot is open ground (not sea/green/water/creek/bunker)
     if(oceanSide && ((oceanSide>0 && px>HV_W-oceanW-8)||(oceanSide<0 && px<oceanW+8))) return false;
     if(Math.pow((px-gpx)/(grx+11),2)+Math.pow((py-gpy)/(gry+10),2)<1) return false;
     if(wpos && Math.pow((px-wpos.x)/(wpos.rx+8),2)+Math.pow((py-wpos.y)/(wpos.ry+7),2)<1) return false;
     if(creekPy!=null && Math.abs(py-creekPy)<10) return false;
+    for(const bp of bpos){ if(Math.pow((px-bp.x)/bp.rx,2)+Math.pow((py-bp.y)/bp.ry,2)<1) return false; }
     return true; };
   /* flora, retro-videogame style: dense FOREST WALLS down both sides for parkland/coastal
      (clustered two-tone canopies + autumn trees + birch trunks, like the reference), palm
@@ -7571,8 +7611,7 @@ function hvTerrain(g, seedN, B){
     o+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="${C[0]}" stroke="${B.outline}" stroke-width=".8"/>`;
     o+=`<circle cx="${(px-r*0.22).toFixed(1)}" cy="${(py-r*0.18).toFixed(1)}" r="${(r*0.7).toFixed(1)}" fill="${C[1]}"/>`;
     o+=`<circle cx="${(px+r*0.3).toFixed(1)}" cy="${(py-r*0.02).toFixed(1)}" r="${(r*0.45).toFixed(1)}" fill="${C[1]}"/>`;
-    o+=`<circle cx="${(px-r*0.36).toFixed(1)}" cy="${(py-r*0.36).toFixed(1)}" r="${(r*0.4).toFixed(1)}" fill="${C[2]}"/>`;
-    o+=`<circle cx="${(px-r*0.14).toFixed(1)}" cy="${(py-r*0.46).toFixed(1)}" r="${(r*0.26).toFixed(1)}" fill="${C[3]}"/>`;
+    o+=`<circle cx="${(px-r*0.3).toFixed(1)}" cy="${(py-r*0.34).toFixed(1)}" r="${(r*0.4).toFixed(1)}" fill="${C[3]}"/>`;   // lit crown
     if(hvHash(seedN,fs,15)<0.22) o+=`<rect x="${(px-0.7).toFixed(1)}" y="${(py+r*0.55).toFixed(1)}" width="1.4" height="${(r*0.5).toFixed(1)}" fill="${B.trunk}"/>`;
     return o;
   };
@@ -7580,7 +7619,7 @@ function hvTerrain(g, seedN, B){
     const tc=B.palm, lean=(hvHash(seedN,fs,9)-0.5)*r*0.9, tx=px+lean, ty=py-r*1.15;
     let o=`<ellipse cx="${(px+r*0.4).toFixed(1)}" cy="${(py+r*0.28).toFixed(1)}" rx="${(r*0.9).toFixed(1)}" ry="${(r*0.5).toFixed(1)}" fill="${B.shad}" opacity=".5"/>`;
     o+=`<path d="M ${px.toFixed(1)} ${py.toFixed(1)} Q ${(px+lean*0.7).toFixed(1)} ${(py-r*0.6).toFixed(1)} ${tx.toFixed(1)} ${ty.toFixed(1)}" fill="none" stroke="${tc[0]}" stroke-width="${Math.max(1,r*0.16).toFixed(1)}"/>`;
-    for(let a=0;a<6;a++){ const an=(-170+a*32)*Math.PI/180, ex=tx+Math.cos(an)*r*1.15, ey=ty+Math.sin(an)*r*0.8+r*0.22;
+    for(let a=0;a<5;a++){ const an=(-168+a*39)*Math.PI/180, ex=tx+Math.cos(an)*r*1.15, ey=ty+Math.sin(an)*r*0.8+r*0.22;
       o+=`<path d="M ${tx.toFixed(1)} ${ty.toFixed(1)} Q ${(tx+Math.cos(an)*r*0.6).toFixed(1)} ${(ty+Math.sin(an)*r*0.55-r*0.3).toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}" fill="none" stroke="${a%2?tc[1]:tc[2]}" stroke-width="${Math.max(0.9,r*0.13).toFixed(1)}" stroke-linecap="round"/>`; }
     return o;
   };
@@ -7604,35 +7643,93 @@ function hvTerrain(g, seedN, B){
     if(hvHash(seedN,fs,11)<0.5){ o+=`<circle cx="${(px+r*0.85).toFixed(1)}" cy="${(py-r*0.12).toFixed(1)}" r="${(r*0.3).toFixed(1)}" fill="${B.gorse[0]}" stroke="${B.outline}" stroke-width=".5"/><circle cx="${(px+r*0.76).toFixed(1)}" cy="${(py-r*0.22).toFixed(1)}" r=".8" fill="${B.gorse[1]}"/><circle cx="${(px+r*0.97).toFixed(1)}" cy="${(py-r*0.06).toFixed(1)}" r=".7" fill="${B.gorse[1]}"/>`; }
     return o;
   };
+  // ---- additional biome flora (owner: real, distinct biomes with varied tree types + flowers) ----
+  const pine=(px,py,r,fs)=>{ const C=B.pine||['#1b4416','#265a1f','#37732a'], w=r*1.08;
+    let o=`<ellipse cx="${(px+r*0.34).toFixed(1)}" cy="${(py+r*0.52).toFixed(1)}" rx="${(r*0.85).toFixed(1)}" ry="${(r*0.4).toFixed(1)}" fill="${B.shad}" opacity=".45"/>`;
+    o+=`<rect x="${(px-r*0.12).toFixed(1)}" y="${(py+r*0.25).toFixed(1)}" width="${(r*0.24).toFixed(1)}" height="${(r*0.6).toFixed(1)}" fill="${B.trunk||'#6b4a2a'}"/>`;
+    const tier=(cy,tw,c)=>`<path d="M ${px.toFixed(1)} ${(cy-r*0.9).toFixed(1)} L ${(px-tw).toFixed(1)} ${cy.toFixed(1)} L ${(px+tw).toFixed(1)} ${cy.toFixed(1)} Z" fill="${c}" stroke="${B.outline}" stroke-width=".5"/>`;
+    o+=tier(py+r*0.55,w,C[0])+tier(py+r*0.05,w*0.8,C[1])+tier(py-r*0.45,w*0.56,C[2]); return o; };
+  const cypress=(px,py,r,fs)=>{ const C=B.cypress||['#22401b','#356b26'], ds=Math.imul(fs,2654435761)>>>0, lean=(hvHash(seedN,fs,9)-0.5)*r*0.4;
+    let o=`<ellipse cx="${(px+r*0.3).toFixed(1)}" cy="${(py+r*0.4).toFixed(1)}" rx="${(r*0.7).toFixed(1)}" ry="${(r*0.35).toFixed(1)}" fill="${B.shad}" opacity=".45"/>`;
+    o+=`<path d="${hvBlobD(px+lean,py-r*0.45,r*0.6,r*1.15,ds,0.24,10)}" fill="${C[0]}" stroke="${B.outline}" stroke-width=".7"/>`;
+    o+=`<path d="${hvBlobD(px+lean-r*0.16,py-r*0.7,r*0.38,r*0.72,ds^7,0.26,9)}" fill="${C[1]}"/>`; return o; };
+  const broadleaf=(px,py,r,fs)=>{ const C=B.broadleaf||['#1c541a','#2e7a2c','#49a83e'];
+    let o=`<ellipse cx="${(px+r*0.32).toFixed(1)}" cy="${(py+r*0.42).toFixed(1)}" rx="${(r*1.05).toFixed(1)}" ry="${(r*0.5).toFixed(1)}" fill="${B.shad}" opacity=".45"/>`;
+    o+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="${C[0]}" stroke="${B.outline}" stroke-width=".8"/>`;
+    o+=`<circle cx="${(px-r*0.3).toFixed(1)}" cy="${(py-r*0.18).toFixed(1)}" r="${(r*0.58).toFixed(1)}" fill="${C[1]}"/>`;
+    o+=`<circle cx="${(px+r*0.3).toFixed(1)}" cy="${(py-r*0.1).toFixed(1)}" r="${(r*0.46).toFixed(1)}" fill="${C[1]}"/>`;
+    o+=`<circle cx="${(px-r*0.05).toFixed(1)}" cy="${(py-r*0.4).toFixed(1)}" r="${(r*0.4).toFixed(1)}" fill="${C[2]}"/>`; return o; };
+  const flowerBush=(px,py,r,fs)=>{ const cols=B.flowerCols||['#ff9ecb'], fr=r*0.82, base=(B.treeG&&B.treeG[1])||(B.broadleaf&&B.broadleaf[1])||'#3f7a28';
+    let o=`<ellipse cx="${(px+r*0.24).toFixed(1)}" cy="${(py+r*0.3).toFixed(1)}" rx="${(fr*0.9).toFixed(1)}" ry="${(fr*0.4).toFixed(1)}" fill="${B.shad}" opacity=".4"/>`;
+    o+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${fr.toFixed(1)}" fill="${base}" stroke="${B.outline}" stroke-width=".6"/>`;
+    for(let k=0;k<5;k++){ const a=k/5*6.283+fs, rr=fr*(0.3+hvHash(seedN,fs*7+k,5)*0.58);
+      o+=`<circle cx="${(px+Math.cos(a)*rr).toFixed(1)}" cy="${(py+Math.sin(a)*rr*0.9).toFixed(1)}" r="${(fr*0.26).toFixed(1)}" fill="${cols[k%cols.length]}"/>`; } return o; };
+  const barrel=(px,py,r)=>{ const cc=B.cactus||['#4f8f3f','#6aa74f'], br=r*0.55;
+    let o=`<ellipse cx="${(px+1.5).toFixed(1)}" cy="${(py+br*0.7).toFixed(1)}" rx="${(br*0.95).toFixed(1)}" ry="${(br*0.32).toFixed(1)}" fill="${B.shad}" opacity=".4"/>`;
+    o+=`<ellipse cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" rx="${br.toFixed(1)}" ry="${(br*1.2).toFixed(1)}" fill="${cc[0]}" stroke="${B.outline}" stroke-width=".6"/>`;
+    for(let k=-2;k<=2;k++) o+=`<line x1="${(px+k*br*0.36).toFixed(1)}" y1="${(py-br*1.05).toFixed(1)}" x2="${(px+k*br*0.36).toFixed(1)}" y2="${(py+br*1.05).toFixed(1)}" stroke="${cc[1]}" stroke-width=".45" opacity=".7"/>`;
+    o+=`<circle cx="${px.toFixed(1)}" cy="${(py-br*1.15).toFixed(1)}" r="1.1" fill="#f2c53d"/>`; return o; };
+  const scrub=(px,py,r,fs)=>{ const ds=Math.imul(fs,2654435761)>>>0, sr=r*0.72;
+    let o=`<ellipse cx="${(px+1).toFixed(1)}" cy="${(py+sr*0.4).toFixed(1)}" rx="${sr.toFixed(1)}" ry="${(sr*0.3).toFixed(1)}" fill="${B.shad}" opacity=".35"/>`;
+    o+=`<path d="${hvBlobD(px,py,sr,sr*0.62,ds,0.32,9)}" fill="#7d8f4c" stroke="${B.outline}" stroke-width=".5"/>`;
+    o+=`<path d="${hvBlobD(px-sr*0.2,py-sr*0.14,sr*0.55,sr*0.36,ds^5,0.3,8)}" fill="#97a860"/>`; return o; };
+  const ocotillo=(px,py,r,fs)=>{ const oh=r*1.9;
+    let o=`<ellipse cx="${px.toFixed(1)}" cy="${(py+2).toFixed(1)}" rx="${(r*0.5).toFixed(1)}" ry="${(r*0.18).toFixed(1)}" fill="${B.shad}" opacity=".35"/>`;
+    for(let k=-2;k<=2;k++){ const a=k*17*Math.PI/180, ex=px+Math.sin(a)*oh*0.55, ey=py-oh;
+      o+=`<path d="M ${px.toFixed(1)} ${py.toFixed(1)} Q ${(px+Math.sin(a)*oh*0.22).toFixed(1)} ${(py-oh*0.5).toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}" fill="none" stroke="#5f7a34" stroke-width="1" stroke-linecap="round"/>`;
+      o+=`<circle cx="${ex.toFixed(1)}" cy="${ey.toFixed(1)}" r="1.1" fill="#e8443a"/>`; } return o; };
+  const rock=(px,py,r,fs)=>{ const s2=Math.imul(fs,2654435761)>>>0;
+    const poly=(cx,cy,rr,c)=>{ let p=[]; for(let k=0;k<6;k++){ const a=k/6*6.283, rad=rr*(0.62+hvHash(s2,k*3+(cy|0),3)*0.6); p.push(`${(cx+Math.cos(a)*rad).toFixed(1)},${(cy+Math.sin(a)*rad*0.82).toFixed(1)}`); } return `<polygon points="${p.join(' ')}" fill="${c}" stroke="${B.outline}" stroke-width=".6"/>`; };
+    let o=`<ellipse cx="${(px+r*0.3).toFixed(1)}" cy="${(py+r*0.4).toFixed(1)}" rx="${(r*1.15).toFixed(1)}" ry="${(r*0.45).toFixed(1)}" fill="${B.shad}" opacity=".45"/>`;
+    o+=poly(px,py,r,B.rockB||'#9c4526')+poly(px-r*0.16,py-r*0.22,r*0.68,B.rockA||'#c46536')+poly(px+r*0.26,py-r*0.06,r*0.42,B.rockHi||'#e0925a'); return o; };
+  const gorseBush=(px,py,r,fs)=>{ const gc=B.gorse||['#4a5c22','#e2c34a'], ds=Math.imul(fs,2654435761)>>>0;
+    let o=`<ellipse cx="${(px+1).toFixed(1)}" cy="${(py+r*0.3).toFixed(1)}" rx="${(r*0.8).toFixed(1)}" ry="${(r*0.28).toFixed(1)}" fill="${B.shad}" opacity=".35"/>`;
+    o+=`<path d="${hvBlobD(px,py,r*0.78,r*0.5,ds,0.3,9)}" fill="${gc[0]}" stroke="${B.outline}" stroke-width=".5"/>`;
+    for(let k=0;k<6;k++){ const a=k/6*6.283+fs, rr=r*0.52; o+=`<circle cx="${(px+Math.cos(a)*rr).toFixed(1)}" cy="${(py+Math.sin(a)*rr*0.7).toFixed(1)}" r="1.2" fill="${gc[1]}"/>`; } return o; };
+  const fescue=(px,py,r,fs)=>{ let o=''; const n=5;
+    for(let k=0;k<n;k++){ const bx=px+(k-2)*1.7, sway=(hvHash(seedN,fs*7+k,3)-0.5)*3.4;
+      o+=`<path d="M ${bx.toFixed(1)} ${(py+r*0.3).toFixed(1)} q ${sway.toFixed(1)} ${(-r*0.7).toFixed(1)} ${(sway*1.5).toFixed(1)} ${(-r*1.35).toFixed(1)}" fill="none" stroke="${k%2?B.tickD:B.tickL}" stroke-width=".95" stroke-linecap="round"/>`; }
+    return o; };
+  const plantAt=(type,x,y,r,fs)=>{ switch(type){
+    case 'pine': return pine(x,y,r,fs);
+    case 'cypress': return cypress(x,y,r,fs);
+    case 'broadleaf': return broadleaf(x,y,r,fs);
+    case 'flower': return flowerBush(x,y,r,fs);
+    case 'palm': return palm(x,y,r,fs);
+    case 'saguaro': return cactus(x,y,r);
+    case 'barrel': return barrel(x,y,r);
+    case 'scrub': return scrub(x,y,r,fs);
+    case 'ocotillo': return ocotillo(x,y,r,fs);
+    case 'rock': return rock(x,y,r,fs);
+    case 'dune': return dune(x,y,r,fs);
+    case 'gorse': return gorseBush(x,y,r,fs);
+    case 'fescue': return fescue(x,y,r,fs);
+    default: return canopy(x,y,r,hvHash(seedN,fs,15)<0.2,fs);
+  }};
+  // weighted pick of a plant type from the biome's scatter mix
+  const pickPlant=(h)=>{ const sc=B.scatter||[['decid',1]]; let a=0; for(const e of sc){ a+=e[1]; if(h<a) return e[0]; } return sc[sc.length-1][0]; };
   let tr='';
-  if(B.flora==='forest'||B.flora==='palm'){
-    // dense walls of trees framing the hole tee-to-green (and behind the green)
-    let rows=0;
-    for(let y=4; y<Math.min(g.span-4,g.L+24) && rows<40; y+=9+hh(500+(y|0))*8, rows++){
-      for(const sd of [-1,1]){
-        const nT=1+(hh(510+(y|0)+sd*7)<0.72?1:0)+(hh(515+(y|0)+sd*13)<0.4?1:0);
-        for(let k2=0;k2<nT;k2++){
-          const off=g.fwW/2+(g.par===3?9:13)+4+hh(520+(y|0)*3+sd*11+k2*17)*(52+HV_EX*1.1);
-          const x=g.cx(Math.min(y,g.L))+sd*off;
-          const [px,py]=hvProj(g,x,y);
-          if(px<-HV_EX-8||px>HV_W+HV_EX+8) continue;
-          if(!clear(px,py)) continue;
-          const r=(4.4+hh(530+(y|0)*5+sd+k2*29)*4.6)*g.t(y)*sx*0.5;
-          tr+=`<g>${B.flora==='palm'?palm(px,py,r,(y|0)*7+sd+k2):canopy(px,py,r,hh(540+(y|0)+sd+k2)<0.22,(y|0)*7+sd+k2)}</g>`;
-        }
+  {
+    // Scatter the biome's flora across the whole rough tee-to-green from its plant MIX (B.scatter), drawn
+    // back-to-front for a layered, depth-y look. Wooded biomes (grass ground) fill a DENSE carpet — a hole
+    // carved through forest; desert/links are a more open scatter (bare floor is part of the character).
+    // Fairway corridor + green/water/bunker/ocean keep-outs stay clear; organic gaps + jitter break the grid.
+    const dense=(B.ground==='grass'), STEP=dense?22:26, gap=dense?0.15:0.34;
+    const items=[];
+    for(let py=-6; py<HV_H+8; py+=STEP){ const dep=0.42+0.64*(py/HV_H);   // near (bottom) larger
+      for(let px=-HV_EX-4; px<HV_W+HV_EX+6; px+=STEP){
+        const jx=(hvHash(seedN,(px*7+py*131)|0,3)-0.5)*STEP*0.82, jy=(hvHash(seedN,(px*131+py*7)|0,5)-0.5)*STEP*0.7;
+        const x=px+jx, y=py+jy;
+        if(x<-HV_EX-5||x>HV_W+HV_EX+5||y<-8||y>HV_H+8) continue;
+        if(inFairway(x,y)||!clear(x,y)) continue;
+        if(hvHash(seedN,(px*17+py*29)|0,9)<gap) continue;   // organic gaps
+        const type=pickPlant(hvHash(seedN,(px*23+py*41)|0,17));
+        const r=(5.2+hvHash(seedN,(px*3+py*5)|0,11)*4.6)*dep;
+        items.push({x,y,r,type,fs:(px*7+py)|0});
       }
     }
-  } else {
-    const floraStep=(B.flora==='cactus')?1.35:1;   // deserts are sparser
-    for(let y=26; y<g.L-8; y+=(30+hh(40+y%97)*18)*floraStep){
-      for(const sd of [-1,1]){ if(hh(y+sd*3)>0.85) continue;
-        const off=g.fwW/2+(g.par===3?14:20)+hh(y*2+sd)*(16+HV_EX*0.7), x=g.cx(y)+sd*off;
-        const [px,py]=hvProj(g,x,y);
-        if(!clear(px,py)) continue;
-        const r=(5.5+hh(y*3+sd)*4)*g.t(y)*sx*0.55;
-        tr+=`<g>${B.flora==='cactus'?cactus(px,py,r):dune(px,py,r,y*7+sd)}</g>`;
-      }
-    }
+    items.sort((a,b)=>a.y-b.y);
+    for(const t of items) tr+=`<g>${plantAt(t.type,t.x,t.y,t.r,t.fs)}</g>`;
   }
   s.push(tr);
   // creek: a wobbled stream crossing the whole hole (mud banks + bright water + ripple dashes)
@@ -7682,7 +7779,7 @@ function hvTerrain(g, seedN, B){
     +`<line x1="${(ppx+0.6).toFixed(1)}" y1="${(ppy+0.6).toFixed(1)}" x2="${(ppx+4.4).toFixed(1)}" y2="${(ppy+2).toFixed(1)}" stroke="${B.shad}" stroke-width=".8" opacity=".6"/>`
     +`<line x1="${ppx.toFixed(1)}" y1="${ppy.toFixed(1)}" x2="${ppx.toFixed(1)}" y2="${(ppy-15).toFixed(1)}" stroke="#f4f2ea" stroke-width="1.3"/>`
     +`<path d="M ${ppx.toFixed(1)} ${(ppy-15).toFixed(1)} q 5 0.6 9 2.6 q -4.2 1.9 -9 3.4 Z" fill="#e14a33" stroke="#8c2416" stroke-width=".5"/></g>`);
-  return s.join('');
+  return (g._terrainStr = s.join(''));
 }
 // one shot's static (already-played) tracer + marker. `small` shrinks markers/strokes for the
 // green close-up camera (a zoomed viewBox scales everything, so chips drawn full-size read huge)

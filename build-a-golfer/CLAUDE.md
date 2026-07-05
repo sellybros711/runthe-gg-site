@@ -4539,6 +4539,47 @@ allows Google Fonts, or self-host Anton.*
   (what you watch); the per-hole SCORE already weights each skill by hole archetype via DTPL (a drivable
   par-4 weights distance, a short par-3 weights approach+putting) — that calibrated balance was left as-is.
 
+- **CS164 + CS165 — hole-view graphics overhaul: dense forest + real, distinct biomes with depth.**
+  Owner (with a Pixel-Pro-Golf reference screenshot): "Our game looks way too much like a web based game
+  and not like a built out golf game with unique holes." Then, after the dense-forest pass: "I want real
+  biomes. The desert shouldn't look like a brown field with some cactuses sparsely spread around. It should
+  look like a real rock desert mountain course... each [course] to have their own uniqueness... Different
+  flowers, tree types, some courses should have a ton of water, some should have less or none... more depth
+  to the scenery as a whole but on top of that I want there to be more detail." Chose "richer SVG for now
+  but let's really go for it" over a canvas/pixel-art renderer or external art assets — so this stays a
+  self-contained, deterministic SVG renderer, pushed hard. All rendering-only; the sim, hole geometry, and
+  the shot-count invariant are untouched (verified).
+  • **CS164 — dense forest carpet + terrain caching.** Replaced the sparse two-sided tree strips with a
+    screen-space grid that fills the ENTIRE rough tee-to-green with overlapping, back-to-front, jittered
+    trees (a hole "carved through forest," matching the reference), keeping the fairway corridor + green/
+    water/bunker/ocean keep-outs clear. Added an `inFairway(px,py)` corridor test (from the fairway edge
+    points) and a bunker keep-out to `clear()`. Since the terrain is static per hole, it's now built once
+    and cached on `g._terrainStr` (re-renders during the shot reveal reuse it) so the added density stays
+    performant.
+  • **CS165 — real, distinct biomes.** Rebuilt `HV_BIOMES` as a data model (`ground`, `scatter` plant-mix,
+    per-plant colors, `flowerCols`) + a `plantAt()` dispatcher, and added a full set of SVG plant/terrain
+    renderers: **pine** (stacked-tier conifer), **cypress** (windswept), **broadleaf** (lush round),
+    **flowerBush** (azalea/hibiscus with colored blooms), **barrel** cactus, desert **scrub**, **ocotillo**
+    (red-tipped stems), red-rock **outcrops**, standalone **gorse**, and **fescue** tufts. Each biome now
+    scatters its own MIX: parkland = deciduous + pine + azaleas; coastal = cypress + pine + flowers over the
+    sea cliffs; **desert = a Sonoran rock-and-sand floor** (bare desert ground with gravel speckle, pale
+    dry-wash sweeps, rust rock-shadow patches for depth) scattering saguaro + barrel + scrub + ocotillo +
+    rock outcrops (no more "brown field with cacti"); links = treeless fescue + marram dunes + gorse + sandy
+    scrapes; tropical = palms + broadleaf jungle + bright hibiscus. Per-biome GROUND (desert sand / links
+    fescue / grass) replaces the one green base, plus soft light/dark undulation blobs on every biome for a
+    sense of rolling terrain (depth). Water stays geometry-driven, so water-heavy courses (Sawgrass, Bay
+    Hill) show lots and links/desert show little — as the owner asked. Wooded biomes fill a dense carpet;
+    desert/links are a more open scatter (bare ground is part of their character). The irrigated green
+    fairway/green pop against desert/links.
+  • Perf: terrain cached; densest biome (tropical) ~3.5k static nodes, re-parsed once per shot reveal (not
+    per animation frame — the ball animates via rAF attribute updates on a few elements), so it stays smooth.
+  • Verified in Playwright: screenshots of all 5 biomes (desert now a real rock/sand desert course; each
+    biome visibly unique); node counts measured/trimmed; regressions hv5 (multi-ball H2H), hv6 (39-course
+    geometry + putt property — confirms the new renderers error on no course), hv7 (Moments), hv8 (one-window
+    HUD), physics, cs162 (sim invariant) and the practice suite all green; zero page errors. Deployed to
+    /golf. Tunable: `HV_BIOMES` (palettes/plant mixes/flowers), the `STEP`/`gap` density, `HV_COURSE_BIOME`
+    (which course maps to which biome).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
