@@ -398,6 +398,8 @@
   .foot a{color:#9db2c8;text-decoration:none;font-weight:700;}
   .foot a:hover{color:var(--ink);}
   .foot .sep{margin:0 6px;color:#3c4c60;}
+  .foot .footsub{margin-top:5px;font-size:11px;color:var(--mut);font-weight:600;letter-spacing:.02em;}
+  .foot .footsub a{color:var(--globe);font-weight:800;}
 </style>
 </head>
 <body>
@@ -769,10 +771,15 @@
   }
   function statTile(v,k){ return '<div class="stat"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>'; }
   function foot(){
-    return '<div class="foot"><a href="/globe/">RunTheGlobe</a> · part of <a href="/">RunThe.GG</a>'
-      + '<span class="sep">·</span><a href="/about.html">About</a>'
-      + '<span class="sep">·</span><a href="/contact.html">Contact</a>'
-      + '<span class="sep">·</span><a href="/privacy.html">Privacy</a></div>';
+    return '<div class="foot">'
+      + '<div class="footnav">'
+        + '<a href="/">Home</a><span class="sep">·</span>'
+        + '<a href="/contact.html">Contact</a><span class="sep">·</span>'
+        + '<a href="/privacy.html">Privacy</a><span class="sep">·</span>'
+        + '<a href="/about.html">About</a>'
+      + '</div>'
+      + '<div class="footsub">a <a href="/">RunThe.GG</a> Game</div>'
+      + '</div>';
   }
 
   /* ----------------------------------------------------------------- setup */
