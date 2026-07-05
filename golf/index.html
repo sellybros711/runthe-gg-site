@@ -7014,10 +7014,12 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
   const teeSafe = (par!==3) && (dp==='tee' ? (opts.decAgg===false) : !!opts.safe);
   // the shot that reaches the green must MATCH the decision you made: attacking aims at the flag (tighter
   // when it comes off, short-sided when it doesn't); playing safe aims at the middle (longer first putt).
+  // proximity is driven HARD by Approach skill (owner: every rating should visibly show) — the skill
+  // term dominates the random spread, so an elite iron player stuffs it and a weak one scatters
   const greenDesc=(club,appQ,pre)=>{ let side,phrase,prox;
-    if(atk>0){ side=dPick(rng,['left','right']); phrase=`firing at the ${side} flag`; prox=Math.max(3,(toPar<0?4+rng()*11:(26-16*appQ)+rng()*15)); }
-    else if(atk<0){ side='center'; phrase='to the middle of the green'; prox=Math.max(6,(toPar<0?11+rng()*13:(34-13*appQ)+rng()*18)); }
-    else { side=dPick(rng,sides); phrase=`to ${side} green`; prox=Math.max(3,(toPar<0?6+rng()*16:(30-18*appQ)+rng()*20)); }
+    if(atk>0){ side=dPick(rng,['left','right']); phrase=`firing at the ${side} flag`; prox=Math.max(3,(toPar<0?4+rng()*10:(31-24*appQ)+rng()*10)); }
+    else if(atk<0){ side='center'; phrase='to the middle of the green'; prox=Math.max(6,(toPar<0?11+rng()*12:(38-22*appQ)+rng()*12)); }
+    else { side=dPick(rng,sides); phrase=`to ${side} green`; prox=Math.max(3,(toPar<0?6+rng()*14:(34-26*appQ)+rng()*12)); }
     // an elite PUTTER's birdies don't all come from kick-in range — they drain longer ones, so on an
     // under-par hole the made putt can start deeper (credit shifts from the iron to the flat stick)
     if(toPar<0) prox+=dSkQ(dSk(sk,'put'))*rng()*9;
@@ -7086,16 +7088,18 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
         // LIE-AWARE recovery: a bunker shot leans on Bunker skill, a rough chip on Short Game +
         // Scrambling, a fringe chip on pure Short Game — so the right stat drives the right shot
         const fromBunker=(offLie==='gb'||offLie==='fb');
-        const sgQ=fromBunker ? dSkQ(0.65*dSk(sk,'bnk')+0.35*dSk(sk,'sht'))
-          : (offLie==='fr'||offLie==='fc') ? dSkQ(0.8*dSk(sk,'sht')+0.2*dSk(sk,'scr'))
-          : dSkQ(0.45*dSk(sk,'sht')+0.45*dSk(sk,'scr')+0.10*dSk(sk,'bnk'));
-        ftToHole=Math.max(2,(22-13*sgQ)+rng()*18); const cside=dPick(rng,sides);
+        const sgQ=fromBunker ? dSkQ(0.78*dSk(sk,'bnk')+0.22*dSk(sk,'sht'))          // sand save → Bunker skill
+          : (offLie==='fr'||offLie==='fc') ? dSkQ(0.82*dSk(sk,'sht')+0.18*dSk(sk,'scr'))   // greenside chip → Short Game
+          : dSkQ(0.42*dSk(sk,'sht')+0.5*dSk(sk,'scr')+0.08*dSk(sk,'bnk'));           // rough recovery → Scrambling + Short Game
+        // the recovery is driven HARD by the relevant short-game skill: an elite gets it tight for the
+        // save, a poor one leaves it well outside (owner: bunker/short-game/scrambling should visibly matter)
+        ftToHole=Math.max(1.5,(27-22*sgQ)+rng()*10); const cside=dPick(rng,sides);
         const chipVerb=fromBunker?`splashes out of the ${offLie==='fb'?'fairway ':''}bunker`:`${dist<32?'lob wedge':'sand wedge'}`;
         sh.push({d:`${chipVerb} to ${cside} green, ${dFeet(ftToHole)} to hole`, k:'chip', lie:'green', side:cside, fromY:fromYds, toY:0, ft:ftToHole, spin:Math.max(0,Math.min(1,sgQ))}); }
       else { const appQ=dSkQ(dSk(sk,'app')); const g=greenDesc(dClub(fromYds),appQ,`${dClub(fromYds)} from ${fromYds} yds`); ftToHole=g.ft; sh.push({d:`${g.d}, ${dFeet(ftToHole)} to hole`, k:'app', lie:'green', side:g.side, fromY:fromYds, toY:0, ft:ftToHole, spin:g.spin}); }   // approach → approach skill, matched to the attack/safe choice
       played++;
     } else if(water && rem()>=3){ sh.push({d:`${dClub(fromYds)} from ${fromYds} yds, into the water hazard`, k:'app', lie:'water', fromY:fromYds}); played++; dist=Math.max(30,Math.round(fromYds*0.45)); sh.push({d:`penalty drop, ${Math.round(dist)} yds to hole`, k:'pen', lie:'drop', fromY:fromYds, toY:Math.round(dist)}); played++; water=false;
-    } else if(dist>205){ let adv=Math.max(40,Math.min(dist-30,Math.round(70+rng()*150))); dist=Math.max(26,dist-adv);   // too far to reach the green, advance
+    } else if(dist>205){ const dq=dSkQ(dSk(sk,'dist')); let adv=Math.max(40,Math.min(dist-30,Math.round(70+dq*95+rng()*70))); dist=Math.max(26,dist-adv);   // too far to reach the green, advance — a longer hitter advances further
       const fw6=rng()<0.6; sh.push({d:`${dClub(adv)} ${adv} yds to ${fw6?'the fairway':'the rough'}, ${Math.round(dist)} yds to hole`, k:'adv', lie:fw6?'fw':'ru', fromY:fromYds, toY:Math.round(dist)}); played++;
     } else {
       // MISSED the green — but a PRO's miss is a NEAR miss, not a wild sideways spray (owner: shots were
@@ -7124,7 +7128,7 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
   }
   for(let pi=0;pi<P;pi++){ const lastPutt=(pi===P-1), putQ=dSkQ(dSk(sk,'put'));
     if(lastPutt) sh.push({d:ftToHole>=17?`Drains it from ${Math.round(ftToHole)} ft!`:'In the hole',tag:dResultLong(par,toPar), k:'hole', lie:'hole', ft:ftToHole});
-    else { const putt=ftToHole, leave=Math.max(0.8,(3.2-2.0*putQ)+rng()*2.4); sh.push({d:`Putt ${dFeet(putt)}, ${dFeet(leave)} to hole`, k:'putt', lie:'green', ft:putt, toFt:leave}); ftToHole=leave; }   // weak putter leaves more / misses short
+    else { const putt=ftToHole, leave=Math.max(0.6,(4.4-3.6*putQ)+rng()*1.5); sh.push({d:`Putt ${dFeet(putt)}, ${dFeet(leave)} to hole`, k:'putt', lie:'green', ft:putt, toFt:leave}); ftToHole=leave; }   // Putting drives the leave HARD: an elite lags to a tap-in, a weak putter leaves 4-5 ft
   }
   // HOLE-OUT: rarely a one-putt finish is actually a shot HOLED from just off the green — a chip-in, a
   // holed bunker shot, or a pitch that drops. Same stroke count (no tap-in): the approach/chip lands
