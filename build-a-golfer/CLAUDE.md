@@ -4368,6 +4368,31 @@ allows Google Fonts, or self-host Anton.*
     to /golf. Wave 2 next: #4 weekly meta-goals + #5 course-mastery passport (will store best grade per
     course, so it builds on this grade). Tunable: `RGRADES` cutoffs / score weights in `dRoundGrade`.
 
+- **CS159 — Daily deep-research batch, Wave 2 of 2: weekly meta-goals (#4) + Course Passport (#5).**
+  The Daily's solo collection/progression layer (a loop the online H2H ladder doesn't have), building on
+  CS158's Round Rating. Per-account, cloud-synced grow-only; sim/score engine untouched.
+  • **#5 Course Passport.** `bag_coursemastery` tracks, per Daily course, your best score (lowest to-par),
+    best Round Rating grade, plays and "conquered" count (times you beat the tour average). Updated in
+    `finishDailyRound` (`bumpMastery`). New `overlayPassport` lists all 39 courses with your best score +
+    a colored grade chip (S/A/B/C/D) + a ✓ when conquered, unplayed dimmed, and a summary header
+    (N/39 played · M conquered · K A+-graded + progress bar). Reachable from the ≡ menu (new "🎫 Course
+    Passport" Play row) and a button on the daily result. `masterySummary()` for the header.
+  • **#4 Weekly meta-goals.** `bag_weekgoals` (keyed to a 7-day UTC block via `weekKey`) tracks this week's
+    distinct days played, "beat the pro" days, and best grade. `WEEK_GOALS` = Play 5 days · Beat the pro 3× ·
+    Grade an A round or better. Completing all 3 awards a ❄️ streak freeze (once/week — ties into #1's
+    loss-aversion loop). A compact "This Week" progress panel shows on the title (once you've played) and a
+    recap/celebration on the daily result (`bumpWeekGoals` sets `S.dailyWeekReward` for the completion card).
+  • **Cross-device.** Both stores added to the CS82 cloud-save bundle with grow-only merges
+    (`mergeCourseMastery`: per course keep lowest score / best grade / higher counts; `mergeWeekGoals`: newer
+    week wins, same week unions day/beat maps + max counts + OR the reward flag), plus `cloudPull` restores.
+  • Verified in Playwright (cs159): a real finish records mastery (best+grade+plays+beat) and the weekly day;
+    the passport overlay lists all 39 with the played course graded/conquered and unplayed dimmed;
+    completing all 3 weekly goals grants exactly one freeze; the title weekly panel shows once played; both
+    merges are grow-only (lower score / best grade / union days / preserve reward). practice/cs158/hv8
+    regressions green; screenshots confirm the passport + the "This Week" panel. Deployed to /golf. Tunable:
+    `WEEK_GOALS` targets, the freeze reward.
+  This completes recs #1–#5 from the daily-games deep research (Wave 1 = #1–#3 in CS158, Wave 2 = #4–#5 here).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
