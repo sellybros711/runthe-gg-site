@@ -4480,6 +4480,38 @@ allows Google Fonts, or self-host Anton.*
     all green; zero page errors. Screenshot confirms the approach decision appears after the drive with a
     matching context line. Deployed to /golf.
 
+- **CS162 — realistic pro miss dispersion (no more amateur shanks into greenside bunkers).** Owner
+  (screenshot of a par where a short shot sprayed sideways into a greenside bunker): "This is really
+  unrealistic of a path to a par... that's what an amateur would do. These are pros. They shouldn't have
+  missed like this unless their rating is really low... Some shots are so off target and it feels so
+  unrealistic." Root cause: `dShotSeq`'s "missed the green" branch picked a miss lie UNIFORMLY at random
+  (greenside bunker / left rough / right rough / long / short) with NO skill or distance scaling, and the
+  `gb` (greenside bunker) geometry snaps the ball to a bunker OFF TO THE SIDE of the green — so even a
+  short approach from a 90-OVR pro could read as a lateral shank into the sand. Sim/scoring engine
+  (dSimHole) untouched; this is narrative + hole-view geometry only, and the shot-count===stroke-count
+  invariant is preserved (re-verified).
+  • **The miss is now a NEAR miss for pros, scaled by skill AND distance.** New `missQ` (0.7·approach +
+    0.3·accuracy) and a distance factor drive a `nearMiss` probability: a short shot (≤130y) from a good
+    player near-misses ~92% of the time (just off the fringe / front collar / a step off the green / just
+    short — leaving a simple chip), rising toward wild misses only for weak players or long approaches
+    (>170y). Only when it's genuinely a bad miss does it find a greenside bunker / deep rough, and even
+    then a low-skill build sprays far more than a high one. Measured over 4,400+ missed-green samples: an
+    elite (OVR 96) build near-misses **96%** of the time (4% into a bunker/rough), a weak (OVR 64) build
+    **75%** near / **25%** wild — pros barely miss, amateurs spray.
+  • The same skill-scaled logic was applied to the **par-3 tee miss** (a pro mostly just misses the edge;
+    only a weak ball-striker finds a bunker), and near-miss lies are placed just off the green (front
+    collar / fringe / just through) instead of laterally, so the tracer reads as a realistic near-miss
+    that chips on, not a sideways shank. New near-miss lie mappings added to `HV_LIE`.
+  • Verified in Playwright (cs162): 2,184-combo shot-count===stroke-count invariant (all paths incl.
+    teePreset) still 0 bad; the elite-vs-weak miss profile above; determinism preserved; a full practice
+    round completes; plus a screenshot of a real par-4 up-and-down par now reading "Driver 315 to the
+    fairway → 7-iron missed the green into the front collar → lob wedge to 14 ft → in the hole" with the
+    ball resting just short of the green (not in a side bunker). Regressions cs157/160/161, hv5/6/7/8,
+    physics (its over-strict `landShort` tolerance loosened — a low-spin running approach can land a hair
+    short of the 0.9-radius mark at the true green edge and release on, which is realistic), stall,
+    bugfix all green; zero page errors. Deployed to /golf. Tunable: the `nearP` distance bands + the
+    `missQ<0.42` wild-spray threshold in dShotSeq.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
