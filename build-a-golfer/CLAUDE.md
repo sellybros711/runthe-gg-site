@@ -4769,6 +4769,54 @@ allows Google Fonts, or self-host Anton.*
   Online + Legend Circuit dropdowns with the Tour Rep bar, zero page errors. Daily regressions
   (cs159/cs169) green. Deployed to /golf.
 
+- **CS173 — Moments: PLAYABLE sudden-death playoff + tournament name on the round page (owner: "when the
+  user chooses to play the last day of the tournament in the moment situations, and the tournament goes to
+  a playoff, it should show the playoff. It should play out like a real playoff does on the pga tour. It
+  also says the course but not the name of the tournament on this page").** Two parts:
+  1. **Tournament name on the Moment round page.** The header used to read only the venue/conditions ("THE
+     MOMENT · Final round · Trade Winds Golf Club · Breezy"). It now leads with the actual TOURNAMENT name
+     + "Final Round" (`S.moment.evtName`) with the venue/conditions as a `📍` subtitle underneath. (Same
+     header serves the playoff, showing "Sudden-Death Playoff · Extra hole N".)
+  2. **Playable sudden-death playoff.** Confirmed via Playwright that the playoff already FIRED from a Moment
+     finish (finishMomentRound → finalizeEvent → the text `celebratePlayoff` reveal), so the wiring wasn't
+     broken — but since the player just PLAYED their 18 holes shot-by-shot on TOURTRACE, dropping to a text
+     card for the climax was an anticlimactic downgrade. Now, when a Moment round finishes in a TIE FOR THE
+     LEAD that includes YOU, you PLAY the sudden-death holes yourself, the way a real PGA playoff goes:
+     - `finishMomentRound` detects the tie (after the field sims Sunday) and routes to `startMomentPlayoff`
+       instead of finalizing. It keeps `S.moment` set and reuses the Moment's already-configured course /
+       conditions / diffs / skills.
+     - `momentPlayoffTee` plays ONE extra hole on the TOURTRACE window (rotating the closing holes 18/1/10
+       via `MOMENT_PO_HOLES`), driven by the existing daily hole engine with a new `S.momentPOHoleIdx`
+       override in `playDailyHole` (a no-op for the normal 18-hole daily — `ci===i` when `S.momentPO` is
+       null) and a dedicated `S.momentPO` branch in `scheduleDailyAdvance` (no signature decisions, no
+       18-hole finish path). The floating scoreboard shows a "SUDDEN-DEATH · HOLE N" board of the players
+       still alive (you gold-ringed, all TIED).
+     - `momentPlayoffResolve` scores every contender on that same hole for a FAIR comparison — YOUR played
+       to-par vs each opponent's `dSimHole` on the identical hole/difficulty from their real 8 skills —
+       lowest wins the hole, ties advance. An extra-hole overlay (`momentPlayoffShowHole`) reveals each
+       player's result (Birdie/Par/… · eliminated) with a Continue button: still tied → next hole; resolved
+       → "You won the playoff!" / "Lost … on the Nth extra hole". If you're eliminated mid-way, the rest is
+       simmed headlessly so a champion is still crowned (you don't keep playing holes you're out of).
+     - `momentPlayoffFinish` stashes the PLAYED outcome on `ce._playoffResult` (winner object + holes +
+       per-hole log) and sets `ce._playoffShown=true`, then calls `finalizeEvent` — which now uses
+       `ce._playoffResult` in place of `simPlayoff` when present (so money/points/ties/achievements/results
+       all flow identically to a simmed playoff). Back on the season screen, a WIN flows into the normal
+       win celebration; a loss shows the final leaderboard "Lost in a playoff". The auto text
+       `celebratePlayoff` reveal is skipped for the played playoff but is UNCHANGED for every non-Moment
+       (simmed) season playoff.
+     - Fairness note: opponents are simmed with `dSimHole` on the same shifted diffs the player faced
+       (the Moment's calibration shift), so the sudden-death comparison is apples-to-apples on that hole;
+       the deterministic `dSimHole` score engine is otherwise untouched.
+  Verified in Playwright: (cs173) a NON-Moment simmed tie still fires the text `celebratePlayoff` reveal
+  (unchanged); (cs173b) a Moment tie routes to the PLAYABLE playoff and finalizes correctly on both the WIN
+  (pos 1, youWon, win celebration fires, `S.momentPO` cleaned up) and LOSS (pos 2, youWon false) paths;
+  (cs173c) a natural timer-driven run auto-plays the extra hole on the TOURTRACE window with the
+  "SUDDEN-DEATH · HOLE 1" board and resolves via the extra-hole overlay to a win. Regressions: hv7
+  (Moments — updated the stale "THE MOMENT" header assertion to the new tournament-name header, and stubbed
+  the field in the "finish 2nd" case so a random tie can't accidentally trigger a playoff), hv8 (one-window
+  HUD), stall (CS156), hv6 (39-course geometry + putt property), practice (fixed a stale CS171 "Start
+  Drafting"→"Build Your Golfer" button selector) all green; zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
