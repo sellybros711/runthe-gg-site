@@ -133,6 +133,23 @@
   .promo-card h3{margin:0 0 6px; font-family:var(--display); letter-spacing:.02em; color:var(--gold-bright); font-size:26px; text-transform:uppercase;}
   .promo-card .meta{font-size:11px; color:var(--text-faint); font-family:var(--mono);}
   .promo-card .roster-count{color:var(--text-dim); font-size:12px; margin-top:6px;}
+  .mode-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:14px; margin-top:12px;}
+  .mode-card{background:var(--panel); border:1.5px solid var(--line); border-radius:14px; padding:18px 20px; cursor:pointer; transition:border-color .15s, transform .1s;}
+  .mode-card:hover{transform:translateY(-2px);}
+  .mode-card.selected{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset, 0 10px 30px -16px rgba(235,166,31,.6);}
+  .mode-card h3{margin:0 0 2px; font-family:var(--display); letter-spacing:.02em; color:var(--gold-bright); font-size:24px; text-transform:uppercase;}
+  .mode-card .meta{font-size:11px; color:var(--text-faint); font-family:var(--mono); text-transform:uppercase; letter-spacing:.08em;}
+  .mode-card p{font-size:13px; color:var(--text-dim); margin:10px 0 8px; line-height:1.5;}
+  .mode-card ul{margin:0; padding-left:18px; font-size:12px; color:var(--text-dim);} .mode-card li{margin:2px 0;}
+  .mode-pill{display:inline-block; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink); background:var(--gold); padding:2px 8px; border-radius:999px; font-weight:800; font-family:var(--body); vertical-align:middle;}
+  /* scorecard */
+  .score-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin:6px 0 12px;}
+  .score-cell{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
+  .score-cell .lab{font-family:var(--body); font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint);}
+  .score-cell .val{font-family:var(--mono); font-size:22px; font-weight:800; margin-top:4px; color:var(--cream);}
+  .score-cell .dlt{font-family:var(--mono); font-size:11px; margin-top:2px;}
+  .dlt.up{color:var(--green);} .dlt.down{color:#f08a76;} .dlt.flat{color:var(--text-faint);}
+  .grade-badge{font-family:var(--display); font-size:44px; line-height:1; padding:6px 16px; border-radius:12px; display:inline-block;}
   .beta-tag{display:inline-block; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink); background:var(--gold); padding:3px 9px; border-radius:999px; font-weight:800; vertical-align:middle; margin-left:10px; font-family:var(--body);}
   .continue-bar{background:var(--panel); border:1px solid var(--gold); border-radius:14px; padding:16px 18px; margin:18px 0; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;}
   .brandmark{font-family:var(--display); text-transform:uppercase; letter-spacing:.02em; font-size:40px; line-height:.9;}
@@ -175,7 +192,23 @@
     </div>
   </div>
 
-  <div style="color:var(--text-dim); font-size:12px; letter-spacing:2px; text-transform:uppercase; margin-top:18px;">Start a new career — choose your promotion</div>
+  <div style="color:var(--text-dim); font-size:12px; letter-spacing:2px; text-transform:uppercase; margin-top:22px;">1 · Choose your mode</div>
+  <div class="mode-grid" id="modeGrid">
+    <div class="mode-card selected" data-mode="quick" onclick="selectMode('quick')">
+      <h3>Quick Mode</h3>
+      <div class="meta">GM-style · pick-up-and-play</div>
+      <p>Draft a card, book the show, hit your grade. A fixed weekly budget keeps spending simple — focus on the booking, not the spreadsheet.</p>
+      <ul><li>Weekly spending allowance</li><li>Auto venue &amp; ticketing</li><li>Streamlined scorecard</li></ul>
+    </div>
+    <div class="mode-card" data-mode="junkie" onclick="selectMode('junkie')">
+      <h3>Wrestling Junkie</h3>
+      <div class="meta">Deep sim · run the whole company</div>
+      <p>The full experience. Real budget and P&amp;L, venues and ticket pricing, TV deals, contracts, feuds, stables, managers — every lever of running a promotion.</p>
+      <ul><li>Full budget &amp; line-item finances</li><li>Pick venues &amp; set ticket prices</li><li>Deep multi-category grading</li></ul>
+    </div>
+  </div>
+
+  <div style="color:var(--text-dim); font-size:12px; letter-spacing:2px; text-transform:uppercase; margin-top:22px;">2 · Choose your promotion</div>
   <div class="promo-grid" id="promoGrid"></div>
 </div>
 
@@ -184,11 +217,12 @@
   <div class="masthead">
     <div>
       <h1 id="promoName">WWE</h1>
-      <div class="sub">RunTheRopes · Booking Sim</div>
+      <div class="sub">RunTheRopes · <span id="hudMode">Booking Sim</span></div>
     </div>
     <div class="hud">
       <div class="cell"><div class="label">Week</div><div class="value" id="hudWeek">1</div></div>
       <div class="cell"><div class="label">Cash</div><div class="value" id="hudCash">$0</div></div>
+      <div class="cell"><div class="label">TV</div><div class="value" id="hudTv">—</div></div>
       <div class="cell"><div class="label">Roster</div><div class="value" id="hudRoster">0</div></div>
       <div class="cell"><div class="label">Popularity</div><div class="value" id="hudPop">0</div></div>
     </div>
@@ -365,7 +399,7 @@
     <!-- FINANCES -->
     <div class="panel" id="panel-finances">
       <h2>Finances &amp; Company</h2>
-      <div class="grid2" id="financeGrid"></div>
+      <div id="financeGrid"></div>
     </div>
 
     <!-- EDITOR -->
@@ -429,6 +463,35 @@ const typeMeta = {
   promo:    { label:'Promo / Angle',   floor:0,  condCost:2,  minP:1, maxP:6, injRisk:0.0, perf:'ent'    },
 };
 
+// ---------- Modes, venues & finances ----------
+// Venue ladder: capacity + fixed running cost. Junkie mode picks; Quick auto-selects.
+const VENUES = [
+  { id:'club',    name:'Club / Armory',   cap:1200,  cost:15000   },
+  { id:'theater', name:'Theater',         cap:3500,  cost:50000   },
+  { id:'ballroom',name:'Ballroom / Expo', cap:6500,  cost:110000  },
+  { id:'arena_s', name:'Small Arena',     cap:11000, cost:240000  },
+  { id:'arena',   name:'Arena',           cap:18000, cost:520000  },
+  { id:'dome',    name:'Stadium / Dome',  cap:48000, cost:1500000 },
+];
+function venueById(id){ return VENUES.find(v=>v.id===id) || VENUES[0]; }
+// default venue + weekly budget by promotion size tier
+const TIER_SETUP = {
+  'International':              { venue:'arena',   tvDeal:2200000, budget:900000, price:65 },
+  'International (Puro)':       { venue:'arena_s', tvDeal:700000,  budget:420000, price:55 },
+  'National':                  { venue:'ballroom',tvDeal:280000,  budget:260000, price:45 },
+  'National (Lucha)':          { venue:'ballroom',tvDeal:220000,  budget:230000, price:38 },
+  'National (Joshi)':          { venue:'theater', tvDeal:180000,  budget:180000, price:42 },
+  'Regional':                  { venue:'theater', tvDeal:90000,   budget:120000, price:40 },
+  'Regional (Joshi)':          { venue:'theater', tvDeal:70000,   budget:100000, price:38 },
+};
+function tierSetup(label){ return TIER_SETUP[label] || TIER_SETUP['Regional']; }
+
+let selectedMode = 'quick';
+function selectMode(m){
+  selectedMode = m;
+  document.querySelectorAll('.mode-card').forEach(c=>c.classList.toggle('selected', c.dataset.mode===m));
+}
+
 // ---------- Game state ----------
 let S = null; // the whole save object
 
@@ -438,8 +501,9 @@ function applyCorrection(w){
   return w;
 }
 
-function freshState(promoName){
+function freshState(promoName, mode){
   const meta = PROMO_META[promoName];
+  const setup = tierSetup(meta.tierLabel);
   const all = window.RTR_ROSTER.map(w => applyCorrection(JSON.parse(JSON.stringify(w))));
   const roster = all.filter(w => w.promotion === promoName).map(normalizeWorker);
   const pool   = all.filter(w => w.promotion !== promoName).map(normalizeWorker);
@@ -452,8 +516,10 @@ function freshState(promoName){
   pool.forEach(w=>{ w.contractWeeks = 0; }); // rivals/FAs: not player-tracked until signed
   return {
     schema: SCHEMA,
+    mode: (mode === 'junkie' ? 'junkie' : 'quick'),
     promo: { name: promoName, cash: meta.cash, popW: meta.popW, perfW: meta.perfW,
-             tierLabel: meta.tierLabel, product: meta.product, gmId: null },
+             tierLabel: meta.tierLabel, product: meta.product, gmId: null,
+             venue: setup.venue, ticketPrice: setup.price, tvDeal: setup.tvDeal, budget: setup.budget },
     week: 1,
     roster, pool,
     card: [],
@@ -462,6 +528,7 @@ function freshState(promoName){
     teams: [],
     titles: defaultTitles(promoName, roster),
     rivalRatings: {},
+    metrics: { tvRating: null, attendance: null, lastNet: null, grade: null, spentThisWeek: 0, peakTv: 0 },
     inbox: [{ ico:'📋', sev:'story', txt:`Welcome to <b>${promoName}</b>. Book your first show to get the crowd invested.` }],
     seq: 1,
   };
@@ -584,7 +651,7 @@ function startCareer(p){
   doStart(p);
 }
 function doStart(p){
-  S = freshState(p);
+  S = freshState(p, selectedMode);
   save();
   enterGame();
 }
@@ -597,6 +664,10 @@ function continueCareer(){
   if(!S.feuds) S.feuds = []; if(!S.titles) S.titles = []; if(!S.inbox) S.inbox = [];
   if(!S.teams) S.teams = []; if(!S.rivalRatings) S.rivalRatings = {};
   if(S.promo.gmId === undefined) S.promo.gmId = null;
+  if(!S.mode) S.mode = 'junkie';
+  if(!S.metrics) S.metrics = { tvRating:null, attendance:null, lastNet:null, grade:null, spentThisWeek:0, peakTv:0 };
+  if(S.promo.venue === undefined){ const su=tierSetup(S.promo.tierLabel);
+    S.promo.venue=su.venue; S.promo.ticketPrice=su.price; S.promo.tvDeal=su.tvDeal; S.promo.budget=su.budget; }
   enterGame();
 }
 function confirmDeleteSave(){
@@ -631,6 +702,9 @@ function refreshHud(){
   const ws = myWrestlers();
   const pop = ws.length ? Math.round(ws.reduce((s,w)=>s+w.overness,0)/ws.length) : 0;
   $('hudPop').textContent = pop;
+  $('hudTv').textContent = (S.metrics && S.metrics.tvRating!=null) ? S.metrics.tvRating : '—';
+  const modeEl = $('hudMode');
+  if(modeEl) modeEl.innerHTML = (S.mode==='junkie'?'Wrestling Junkie':'Quick Mode') + (S.mode==='quick'?` · <span class="mono" style="color:#94764a">${money(budgetLeft())} budget</span>`:'');
   $('payrollLbl').textContent = 'Weekly payroll: ' + money(S.roster.reduce((s,w)=>s+w.salary,0));
 }
 
@@ -720,7 +794,8 @@ function resignWorker(id){
     [{label:'Cancel', cls:'ghost', fn:closeModal},
      {label:`Pay ${money(cost)}`, cls:'', fn:()=>{
         if(S.promo.cash < cost){ toast("Can't afford that."); closeModal(); return; }
-        S.promo.cash -= cost; w.contractWeeks += 52; w.expiryWarned=false; w.morale=clamp(w.morale+5);
+        if(!canSpend(cost)){ toast(`Over budget — ${money(budgetLeft())} left this week.`); closeModal(); return; }
+        S.promo.cash -= cost; recordSpend(cost); w.contractWeeks += 52; w.expiryWarned=false; w.morale=clamp(w.morale+5);
         closeModal(); renderAll(); scheduleSave(); toast(w.name+' re-signed (+52w)');
      }}]);
 }
@@ -760,7 +835,7 @@ function availableRoster(){ return S.roster.filter(w=>w.injWeeks<=0 && !isManage
 function onSegTypeChange(){ updateRoadNote(); }
 
 function renderBuildSelectors(){
-  $('buildWeekLbl').textContent = 'Week '+S.week;
+  $('buildWeekLbl').textContent = 'Week '+S.week + (S.mode==='junkie'?` · ${currentVenue().name} · ${money(S.promo.ticketPrice)}/ticket`:'');
   const avail = availableRoster();
   $('segWorkers').innerHTML = avail.map(w=>`<option value="${w.id}">${w.name} · OVR ${Math.round(w.overness)} ${w.align[0].toUpperCase()}</option>`).join('');
   $('segWinner').innerHTML = '<option value="">— no winner set —</option>' + avail.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
@@ -918,6 +993,76 @@ function calcSegmentRating(seg){
 }
 
 // ---------- Run show ----------
+// ---------- Show scoring & finances (crowd, TV, tickets, P&L) ----------
+function currentVenue(){ return venueById(S.promo.venue); }
+function weeklyPayroll(){ return S.roster.reduce((s,w)=>s+w.salary,0); }
+function letterGrade(x){ if(x>=90)return'A+'; if(x>=85)return'A'; if(x>=80)return'A-'; if(x>=74)return'B+'; if(x>=68)return'B'; if(x>=62)return'B-'; if(x>=56)return'C+'; if(x>=50)return'C'; if(x>=44)return'C-'; if(x>=38)return'D'; return'F'; }
+function gradeColor(g){ const c=g[0]; if(c==='A')return'var(--gold-bright)'; if(c==='B')return'var(--green)'; if(c==='C')return'var(--text-dim)'; return'#f08a76'; }
+
+function computeShowMetrics(showRating, results){
+  const ws = myWrestlers();
+  const pop = ws.length ? ws.reduce((s,w)=>s+w.overness,0)/ws.length : 40;
+  const main = results[results.length-1];
+  const starPower = main ? (main.seg.ids.map(byId).filter(Boolean).reduce((s,w)=>s+w.overness,0)/main.seg.ids.length) : pop;
+  const setup = tierSetup(S.promo.tierLabel);
+  const venue = currentVenue();
+  const capacity = venue.cap;
+
+  // demand 0..~1.1 from popularity, show quality, star power
+  const demand = clamp((pop*0.45 + showRating*0.30 + starPower*0.25)/100, 0, 1.12);
+  // ticket price sensitivity vs the tier's baseline price
+  const price = S.promo.ticketPrice;
+  const priceFactor = clamp(1.18 - (price/(setup.price*2)), 0.35, 1.12);
+  const sellThrough = clamp(demand * priceFactor, 0, 1);
+  const attendance = Math.round(capacity * sellThrough);
+  const gate = attendance * price;
+
+  // TV rating: 0-100 appeal index, nudged by last week's trend
+  const trend = S.metrics.tvRating!=null ? (S.metrics.tvRating-55)*0.15 : 0;
+  const tvRating = Math.round(clamp(pop*0.5 + showRating*0.32 + starPower*0.18 + trend, 0, 100));
+  const tvRevenue = Math.round(S.promo.tvDeal * (0.7 + tvRating/100*0.6));
+  const merch = Math.round(attendance * (pop/100) * 14);
+
+  const payroll = weeklyPayroll();
+  const production = Math.round(venue.cost*0.35 + capacity*2);
+  const venueCost = venue.cost;
+  const revenue = gate + tvRevenue + merch;
+  const costs = payroll + production + venueCost;
+  const net = revenue - costs;
+
+  // grade blends crowd, TV, sell-through and profitability
+  const profitScore = clamp(52 + (net/(costs+1))*45, 0, 100);
+  const composite = showRating*0.40 + tvRating*0.25 + sellThrough*100*0.20 + profitScore*0.15;
+  return { crowd:showRating, tvRating, attendance, capacity, sellThrough, gate, tvRevenue, merch,
+           payroll, production, venueCost, revenue, costs, net, profitScore, composite,
+           grade:letterGrade(composite), venueName:venue.name, ticketPrice:price };
+}
+
+function showScorecard(M, deltas){
+  const dArrow = (v,invBad)=> v>0 ? `<span class="dlt up">▲ ${Math.abs(Math.round(v)).toLocaleString()}</span>` : v<0 ? `<span class="dlt down">▼ ${Math.abs(Math.round(v)).toLocaleString()}</span>` : `<span class="dlt flat">—</span>`;
+  const netCls = M.net>=0?'up':'down';
+  const junkie = S.mode==='junkie';
+  const cells = [
+    ['Crowd', M.crowd, dArrow(deltas.crowd)],
+    ['TV Rating', M.tvRating, dArrow(deltas.tvRating)],
+    ['Attendance', `${M.attendance.toLocaleString()}`, `<span class="dlt flat">${Math.round(M.sellThrough*100)}% of ${M.capacity.toLocaleString()}</span>`],
+    ['Gate', money(M.gate), dArrow(deltas.attendance)+' fans'],
+  ];
+  if(junkie){
+    cells.push(['TV Money', money(M.tvRevenue), '<span class="dlt flat">weekly deal</span>']);
+    cells.push(['Merch', money(M.merch), '<span class="dlt flat">at the venue</span>']);
+  }
+  cells.push(['Net Profit', `<span style="color:${M.net>=0?'var(--green)':'#f08a76'}">${money(M.net)}</span>`, dArrow(deltas.net)]);
+  let body = `<div style="display:flex; align-items:center; gap:14px; margin-bottom:6px;">
+      <span class="grade-badge" style="background:rgba(255,255,255,.05); color:${gradeColor(M.grade)}; border:1px solid ${gradeColor(M.grade)}">${M.grade}</span>
+      <div><div class="vs-line">Week ${S.week} Show Grade</div>
+      <div class="stat-mini">${M.venueName} · ${money(S.promo.ticketPrice)}/ticket · ${M.attendance.toLocaleString()} in the building</div></div>
+    </div>
+    <div class="score-grid">${cells.map(([l,v,d])=>`<div class="score-cell"><div class="lab">${l}</div><div class="val">${v}</div><div>${d}</div></div>`).join('')}</div>`;
+  if(!junkie){ body += `<div class="hint">Quick Mode: venue &amp; pricing are handled for you. Switch to Wrestling Junkie for full budget control.</div>`; }
+  openModal('Show Results', body, [{label:'Continue', cls:'', fn:()=>{ closeModal(); switchTab('inbox'); }}]);
+}
+
 function runShow(){
   if(!S.card.length) return;
   const results = S.card.map(seg=>({seg, r: calcSegmentRating(seg)}));
@@ -978,13 +1123,21 @@ function runShow(){
     }
   });
 
-  // Revenue: show quality × audience, + a slice of total overness
-  const overnessSum = S.roster.reduce((s,w)=>s+w.overness,0);
-  const revenue = Math.round(showRating*showRating*3 + overnessSum*40);
-  S.promo.cash += revenue;
+  // Multi-category scorecard + finances (crowd, TV, gate, net…)
+  const M = computeShowMetrics(showRating, results);
+  const prev = S.metrics;
+  const deltas = {
+    crowd: (prev.lastCrowd!=null)? showRating-prev.lastCrowd : 0,
+    tvRating: (prev.tvRating!=null)? M.tvRating-prev.tvRating : 0,
+    attendance: (prev.attendance!=null)? M.attendance-prev.attendance : 0,
+    net: (prev.lastNet!=null)? M.net-prev.lastNet : 0,
+  };
+  S.promo.cash += M.net;
+  S.metrics = { tvRating:M.tvRating, attendance:M.attendance, lastNet:M.net, lastCrowd:showRating,
+                grade:M.grade, spentThisWeek:0, peakTv:Math.max(prev.peakTv||0, M.tvRating) };
 
   const column = generateColumn(showRating, results, events);
-  S.history.unshift({ week:S.week, showRating, revenue, column,
+  S.history.unshift({ week:S.week, showRating, revenue:M.net, metrics:M, deltas, column,
     segs: results.map(({seg,r})=>({
       type:seg.type, names: seg.ids.map(nm), rating:r.final,
       notes:r.notes, winner: seg.winner?nm(seg.winner):null,
@@ -999,8 +1152,8 @@ function runShow(){
 
   S.card = [];
   // advance the week (this show counts as the week's activity)
-  weeklyTick(usedIds, {showRating, revenue, events, extraInbox: injMsgs, justInjured});
-  switchTab('inbox');
+  weeklyTick(usedIds, {showRating, revenue:M.net, metrics:M, events, extraInbox: injMsgs, justInjured});
+  showScorecard(M, deltas);
 }
 
 // ---------- Weekly tick ----------
@@ -1013,9 +1166,14 @@ function advanceWeek(){
 function weeklyTick(usedIds, showInfo){
   const startInbox = (showInfo.extraInbox||[]).slice();
   const justInjured = showInfo.justInjured || new Set();
-  // 1. financial settlement
-  const payroll = S.roster.reduce((s,w)=>s+w.salary,0);
-  S.promo.cash -= payroll;
+  // 1. financial settlement.
+  //    If a show ran, its net P&L (incl. payroll) was already applied in runShow.
+  //    A dark/no-show week still pays salaries and takes a slice of TV money.
+  const payroll = weeklyPayroll();
+  if(!showInfo.metrics){
+    const tvIdle = Math.round(S.promo.tvDeal*0.55);
+    S.promo.cash += tvIdle - payroll;
+  }
 
   // GM passive — a hired GM lifts morale baseline and sharpens the business
   const theGM = gm();
@@ -1102,13 +1260,15 @@ function weeklyTick(usedIds, showInfo){
 
   // finalize: bump week, build the new inbox
   S.week += 1;
+  if(S.metrics) S.metrics.spentThisWeek = 0; // Quick-mode allowance refreshes
   const inbox = [];
-  if(showInfo.showRating!=null){
-    inbox.push({ico:'⭐', sev: showInfo.showRating>=70?'good':(showInfo.showRating>=50?'story':'bad'),
-      txt:`Last week's show scored <b>${showInfo.showRating}</b> and drew ${money(showInfo.revenue)}. ${dirtSheet(showInfo.showRating)}`});
+  if(showInfo.metrics){
+    const M = showInfo.metrics;
+    inbox.push({ico:'⭐', sev: M.composite>=68?'good':(M.composite>=50?'story':'bad'),
+      txt:`Last week graded <b>${M.grade}</b> — crowd ${M.crowd}, TV ${M.tvRating}, ${M.attendance.toLocaleString()} in the seats, net ${M.net>=0?'+':''}${money(M.net)}. ${dirtSheet(M.crowd)}`});
     (showInfo.events||[]).forEach(e=>inbox.push(e));
   } else {
-    inbox.push({ico:'💤', sev:'info', txt:`You ran no show this week. Payroll of ${money(payroll)} still went out.`});
+    inbox.push({ico:'💤', sev:'info', txt:`You ran no show this week. Salaries of ${money(payroll)} still went out (TV money softened the hit).`});
   }
   startInbox.forEach(i=>inbox.push(i));
   // feud blow-off nudges
@@ -1276,6 +1436,10 @@ function bestManagerFor(ids){
   return mgrs.sort((a,b)=>b.mgrBonus-a.mgrBonus)[0];
 }
 function gm(){ return S.promo.gmId ? byId(S.promo.gmId) : null; }
+// Quick mode: a weekly spending allowance caps signings/re-signs.
+function budgetLeft(){ return S.mode==='quick' ? Math.max(0, S.promo.budget - (S.metrics.spentThisWeek||0)) : Infinity; }
+function canSpend(cost){ return cost <= budgetLeft(); }
+function recordSpend(cost){ if(S.mode==='quick') S.metrics.spentThisWeek = (S.metrics.spentThisWeek||0) + cost; }
 // clear any GM/manager links pointing at a departing person id
 function detachPersonRefs(id){
   if(S.promo.gmId===id) S.promo.gmId=null;
@@ -1423,7 +1587,7 @@ function renderHistory(){
   if(!S.history.length){ el.innerHTML='<div class="empty-note">No shows run yet.</div>'; return; }
   el.innerHTML = S.history.map(h=>`
     <div class="recap-block">
-      <h3>Week ${h.week} — Overall <span class="rating-dial ${ratingClass(h.showRating)}">${h.showRating}</span> · ${money(h.revenue)}</h3>
+      <h3>Week ${h.week} ${h.metrics?`<span style="color:${gradeColor(h.metrics.grade)}">${h.metrics.grade}</span> · `:''}Crowd <span class="rating-dial ${ratingClass(h.showRating)}">${h.showRating}</span>${h.metrics?` · TV ${h.metrics.tvRating} · ${h.metrics.attendance.toLocaleString()} fans · net ${h.metrics.net>=0?'+':''}${money(h.metrics.net)}`:` · ${money(h.revenue)}`}</h3>
       ${h.column?`<div class="prose" style="margin:2px 0 10px;"><em>Dirt sheet:</em> ${h.column}</div>`:''}
       ${(h.events&&h.events.length)?`<div style="margin:4px 0 8px;">${h.events.map(e=>`<div class="stat-mini">${e.ico||''} ${e.txt}</div>`).join('')}</div>`:''}
       ${h.segs.map(s=>{
@@ -1549,7 +1713,8 @@ function signWorker(id){
   const w = S.pool[idx];
   const {isFA, bonus} = poachInfo(w);
   if(S.promo.cash < bonus){ toast("Can't afford that."); return; }
-  S.promo.cash -= bonus;
+  if(!canSpend(bonus)){ toast(`Over budget — ${money(budgetLeft())} left this week.`); return; }
+  S.promo.cash -= bonus; recordSpend(bonus);
   S.pool.splice(idx,1);
   const from = w.promotion;
   w.promotion = S.promo.name; w.morale = clamp(Math.max(w.morale, 70)); w.weeksIdle=0;
@@ -1561,26 +1726,64 @@ function signWorker(id){
 
 // ---------- Finances ----------
 function renderFinances(){
-  const payroll = S.roster.reduce((s,w)=>s+w.salary,0);
-  const avgOver = S.roster.length?Math.round(S.roster.reduce((s,w)=>s+w.overness,0)/S.roster.length):0;
+  const payroll = weeklyPayroll();
   const injured = S.roster.filter(w=>w.injWeeks>0).length;
+  const m = S.metrics;
+  const junkie = S.mode==='junkie';
   const grid = $('financeGrid');
+
   const cells = [
+    ['Mode', junkie?'Wrestling Junkie':'Quick Mode', 'var(--gold-bright)'],
     ['Cash on hand', money(S.promo.cash), S.promo.cash<0?'var(--red)':'var(--gold-bright)'],
     ['Weekly payroll', money(payroll)+' /wk', 'var(--text)'],
-    ['Roster size', S.roster.length + (injured?` (${injured} injured)`:''), 'var(--text)'],
-    ['Avg. overness', avgOver, 'var(--text)'],
+    ['Last TV rating', m.tvRating!=null?m.tvRating:'—', 'var(--text)'],
+    ['Last attendance', m.attendance!=null?m.attendance.toLocaleString():'—', 'var(--text)'],
+    ['Last grade', m.grade||'—', m.grade?gradeColor(m.grade):'var(--text)'],
+    ['Last net', m.lastNet!=null?money(m.lastNet):'—', (m.lastNet||0)>=0?'var(--green)':'#f08a76'],
+    ['Peak TV', m.peakTv||0, 'var(--text)'],
     ['Promotion tier', S.promo.tierLabel, 'var(--text)'],
-    ['Product', S.promo.product, 'var(--text)'],
-    ['Product weighting', `${Math.round(S.promo.popW*100)}% popularity / ${Math.round(S.promo.perfW*100)}% performance`, 'var(--text-dim)'],
-    ['Shows run', S.history.length, 'var(--text)'],
-    ['Active feuds', S.feuds.length, 'var(--text)'],
   ];
-  grid.innerHTML = cells.map(([l,v,c])=>`<div class="feud-card">
+  if(!junkie){
+    cells.push(['Weekly budget', money(budgetLeft())+' left', budgetLeft()>0?'var(--green)':'#f08a76']);
+  }
+  let html = `<div class="grid2">` + cells.map(([l,v,c])=>`<div class="stat-tile">
       <div class="stat-mini" style="text-transform:uppercase; letter-spacing:1px;">${l}</div>
-      <div style="font-size:22px; font-family:'Courier New',monospace; color:${c}; margin-top:4px;">${v}</div>
-    </div>`).join('');
+      <div style="font-size:22px; font-family:var(--mono); color:${c}; margin-top:4px;">${v}</div>
+    </div>`).join('') + `</div>`;
+
+  // Junkie: venue + ticket-price controls that feed the show P&L
+  if(junkie){
+    const v = currentVenue();
+    html += `<div class="builder-box" style="margin-top:14px;">
+      <div class="vs-line" style="margin-bottom:8px;">Show Setup &amp; Budget</div>
+      <div class="row-wrap">
+        <label class="fld"><div class="stat-mini fldlab">Venue (capacity · cost)</div>
+          <select onchange="setVenue(this.value)">${VENUES.map(x=>`<option value="${x.id}" ${x.id===S.promo.venue?'selected':''}>${x.name} — ${x.cap.toLocaleString()} · ${money(x.cost)}</option>`).join('')}</select></label>
+        <label class="fld"><div class="stat-mini fldlab">Ticket price <span class="mono" style="color:var(--gold-bright)">${money(S.promo.ticketPrice)}</span></div>
+          <input type="range" min="10" max="250" step="5" value="${S.promo.ticketPrice}" oninput="setTicket(this.value)"></label>
+        <div class="stat-mini">TV deal: ${money(S.promo.tvDeal)}/wk · Product: ${S.promo.product}</div>
+      </div>
+      <div class="hint" style="margin-top:8px;">Bigger venues cost more but seat more fans; pricing too high thins the crowd. The show grade weighs crowd, TV, sell-through and profit.</div>
+    </div>`;
+    // last show P&L breakdown
+    if(S.history[0] && S.history[0].metrics){
+      const M=S.history[0].metrics;
+      const line=(l,v,pos)=>`<div style="display:flex; justify-content:space-between;"><span class="stat-mini">${l}</span><span class="mono" style="color:${pos?'var(--green)':'#f08a76'}">${pos?'+':'−'}${money(Math.abs(v))}</span></div>`;
+      html += `<div class="builder-box" style="margin-top:12px;"><div class="vs-line" style="margin-bottom:8px;">Last Show P&amp;L — Week ${S.history[0].week}</div>
+        ${line('Gate ('+M.attendance.toLocaleString()+' × '+money(M.ticketPrice)+')',M.gate,true)}
+        ${line('TV money',M.tvRevenue,true)}
+        ${line('Merch',M.merch,true)}
+        ${line('Payroll',M.payroll,false)}
+        ${line('Venue',M.venueCost,false)}
+        ${line('Production',M.production,false)}
+        <div style="display:flex; justify-content:space-between; border-top:1px solid var(--line); margin-top:6px; padding-top:6px;"><span class="vs-line">Net</span><span class="mono" style="font-size:16px; color:${M.net>=0?'var(--green)':'#f08a76'}">${M.net>=0?'+':''}${money(M.net)}</span></div>
+      </div>`;
+    }
+  }
+  grid.innerHTML = html;
 }
+function setVenue(id){ S.promo.venue=id; renderFinances(); renderBuildSelectors(); scheduleSave(); }
+function setTicket(v){ S.promo.ticketPrice=Number(v); renderFinances(); scheduleSave(); }
 
 // ---------- Editor ----------
 const EDIT_STATS = [
