@@ -4512,6 +4512,33 @@ allows Google Fonts, or self-host Anton.*
     bugfix all green; zero page errors. Deployed to /golf. Tunable: the `nearP` distance bands + the
     `missQ<0.42` wild-spray threshold in dShotSeq.
 
+- **CS163 — every rating visibly drives its own shot (skill signal strengthened per shot type).** Owner:
+  "It shouldn't all be about the total overall of the golfer. Every aspect of the simulation should
+  reflect the ratings of the golfer. Driving power, accuracy, scrambling, approach, bunker shots, putting,
+  etc." Audited with extreme single-skill builds (one stat at 99, rest at 60) measuring the actual shot
+  output per dimension. Found the wiring existed (CS155) but the RANDOM spread in each proximity formula
+  often swamped the skill term, so short game / scrambling / bunker barely showed. Strengthened the
+  skill coefficient (and trimmed the noise) in each shot-quality computation so the relevant rating
+  DOMINATES — same rng-call count, so determinism + the shot-count===stroke-count invariant are preserved
+  (the deterministic dSimHole score and the DTPL per-hole skill weights are untouched):
+  • **Approach** → approach proximity: an elite iron player stuffs it, a weak one scatters (attack/safe/
+    neutral prox formulas re-weighted toward `appQ`).
+  • **Short Game** → greenside chip proximity (fringe/collar chips lean 0.82 on Short Game).
+  • **Scrambling** → rough-recovery proximity (rough chips lean 0.5 on Scrambling).
+  • **Bunker** → sand-shot proximity (bunker recoveries lean 0.78 on Bunker skill).
+  • **Putting** → the lag/leave distance (elite lags to a tap-in, weak leaves 4-5 ft) + the existing
+    3-putt attribution and longer-drained birdie putts.
+  • **Driving Distance** → drive length (already strong) AND now the par-5 layup/advance shot (a longer
+    hitter advances further toward the green).
+  • Driving Accuracy (fairways hit) and the CS162 miss dispersion already keyed off their specific ratings.
+  Verified with the audit harness — each single-skill build now clearly excels ONLY in its dimension:
+  Bomber drive 332 vs 271 baseline; Surgeon approach 14 ft vs 29; Chipper chip 18 ft vs 31; Scrambler
+  rough recovery 23 ft vs 31; Sandman bunker 14 ft vs 31; Putter leave 1.7 ft vs 5 (and 0% 3-putt).
+  Regressions cs161/162, physics (backspin + carry), hv6 (geometry) and hv8 (HUD) all green; invariant
+  and determinism intact; zero page errors. Deployed to /golf. NOTE: this is the shot-by-shot SIGNAL
+  (what you watch); the per-hole SCORE already weights each skill by hole archetype via DTPL (a drivable
+  par-4 weights distance, a short par-3 weights approach+putting) — that calibrated balance was left as-is.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
