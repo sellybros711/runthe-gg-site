@@ -501,7 +501,7 @@
     swingmeter:'Swing Meter', eagleeye:'Eagle Eye', kimsgame:'Memory Lineup',
     typeticket:'Type The Ticket', baggage:'Baggage Claim', rhythmecho:'Rhythm Echo',
     closest:'Closest Neighbor', closerfar:'Closer or Farther', compass:'Compass Chase',
-    regionsort:'Region Sort', flightplan:'Flight Plan',
+    regionsort:'Region Sort', flightplan:'Flight Plan', globehunt:'Globe Hunt',
     pitchpatrol:'Pitch Patrol', runway:'Runway Landing', photosnap:'Photo Snap', stampit:'Stamp It'
   };
   // expected completion (seconds) for an average player per kind — used ONLY to
@@ -515,7 +515,7 @@
     flagid:5.5, capital:5.5, truefalse:7, higherlower:7, oddoneout:6,
     memorymatch:15, whack:8, targettap:6.5, mapfind:9, streetscout:22, zoomreveal:7,
     swingmeter:8, eagleeye:15, kimsgame:14, typeticket:12, baggage:9, rhythmecho:13,
-    closest:6, closerfar:8, compass:7, regionsort:10, flightplan:12,
+    closest:6, closerfar:8, compass:7, regionsort:10, flightplan:12, globehunt:12,
     pitchpatrol:14, runway:9, photosnap:8, stampit:7 };
   // which kinds feel "reflex/physical" for Split Path pairing (GDD §5); rest are "brain"
   var REFLEX_KINDS = { reaction:1, whack:1, targettap:1, sequence:1,
@@ -1082,6 +1082,14 @@
         if(okgap) g.push({ kind:'flightplan', cat:'dragdrop', type:'brain', dir:'near',
                            q:'Flight plan from '+c.name+': tap the stops nearest → farthest',
                            items:shuffle(stops).map(function(p){ return { label:p.x.capital, value:Math.round(p.d) }; }) });
+        // Globe Hunt — a hidden country; tap dots and follow the heat to find it
+        // (the "warmer / colder" hunt). Spread ~15 decoy pins across the world so
+        // the heat readings actually triangulate.
+        var decoys=shuffle(byd.slice(3)).slice(0,15).map(function(p){ return p.x; });
+        var pins=shuffle([c].concat(decoys)).map(function(x){ return { name:x.name, flag:x.flag, ll:x.ll }; });
+        if(pins.length>=8) g.push({ kind:'globehunt', cat:'spatial', type:'brain',
+                                    q:'A country is hidden. Tap dots and follow the heat to find it.',
+                                    target:{ name:c.name, flag:c.flag, ll:c.ll }, pins:pins });
       }
     }
     // Region Sort — two buckets, six countries (opens the dragdrop category)
@@ -1315,6 +1323,7 @@
     else if(kind==='whack') mgWhack(t);
     else if(kind==='targettap') mgTargetTap(t);
     else if(kind==='mapfind') mgMapFind(t);
+    else if(kind==='globehunt') mgGlobeHunt(t);
     else if(kind==='streetscout') mgStreetScout(t);
     else if(kind==='zoomreveal') mgZoomReveal(t);
     else if(kind==='swingmeter') mgSwingMeter(t);
@@ -2409,6 +2418,56 @@
       + '<circle cx="'+cx+'" cy="'+cy+'" r="3.2" fill="#35d6a0" stroke="#fff" stroke-width="0.5"/>');
     var h=$('maphint'); if(h) h.innerHTML='You were <b>'+Math.round(d).toLocaleString()+' km</b> away — '+(miss===0?'bullseye! 🎯':('+'+miss+' miss'+(miss>1?'es':'')));
     setTimeout(function(){ resolveRound(raw, miss, false); }, 1500);
+  }
+
+  /* ---------- minigame: Globe Hunt (Globle-style "warmer / colder" hunt) ----------
+     A country is hidden among a spread of dots. Tap a dot to take a heat reading
+     (distance to the hidden country) and follow the warmth to pin it down. Par is
+     4 readings; each reading over par is a small miss, so it rewards triangulation
+     without punishing exploration. */
+  function mgGlobeHunt(t){
+    S.gh={ tgt:t.target.ll, guesses:0, best:Infinity, par:4, done:false };
+    var dots=t.pins.map(function(p,i){
+      var x=p.ll[1]+180, y=90-p.ll[0];
+      return '<circle class="ghdot" data-i="'+i+'" cx="'+x+'" cy="'+y+'" r="3.2" '
+        + 'fill="rgba(240,238,230,.30)" stroke="rgba(255,255,255,.5)" stroke-width="0.5" style="cursor:pointer;transition:r .18s ease,fill .18s ease"/>';
+    }).join('');
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<svg id="ghmap" viewBox="0 0 360 180" preserveAspectRatio="none" style="width:100%;height:auto;aspect-ratio:2/1;background:radial-gradient(120% 120% at 50% 40%,rgba(26,74,134,.5),rgba(10,8,26,.92));border:1px solid var(--cardb);border-radius:12px;touch-action:manipulation">'
+      + worldSVGInner() + dots + '</svg>'
+      + '<div id="ghread" style="text-align:center;margin-top:10px;font-weight:700;min-height:22px">Tap any dot to take a heat reading.</div>';
+    each('.ghdot', function(el){ el.addEventListener('click', function(){ ghTap(t, +el.getAttribute('data-i'), el); }); });
+  }
+  function ghHeat(d){
+    if(d<1200)  return { t:'Boiling 🔥', c:'#EE5A44' };
+    if(d<3000)  return { t:'Hot',        c:'#F6A544' };
+    if(d<6000)  return { t:'Warm',       c:'#ECB550' };
+    if(d<10000) return { t:'Cool',       c:'#46A56C' };
+    return              { t:'Cold ❄️',   c:'#4a86e0' };
+  }
+  function ghTap(t, i, el){
+    if(S.play.done || S.gh.done || el.getAttribute('data-hit')) return;
+    var p=t.pins[i], d=haversine(p.ll[0],p.ll[1],S.gh.tgt[0],S.gh.tgt[1]);
+    S.gh.guesses++;
+    el.setAttribute('data-hit','1');
+    if(d<1){   // this dot IS the hidden country
+      S.gh.done=true; S.play.done=true; sfx('correct');
+      el.setAttribute('r','5.5'); el.setAttribute('fill','#F6D488'); el.setAttribute('stroke','#fff'); el.setAttribute('stroke-width','1');
+      var svg=$('ghmap'); if(svg) svg.insertAdjacentHTML('beforeend',
+        '<circle cx="'+(p.ll[1]+180)+'" cy="'+(90-p.ll[0])+'" r="3" fill="none" stroke="#F6D488" stroke-width="1.2">'
+        + '<animate attributeName="r" from="3" to="18" dur="0.7s"/><animate attributeName="opacity" from="1" to="0" dur="0.7s"/></circle>');
+      var extra=Math.max(0, S.gh.guesses - S.gh.par);
+      S.play.misses=Math.min(4, extra);
+      var r=$('ghread'); if(r) r.innerHTML='<b>'+p.flag+' '+esc(p.name)+'</b> — found it in '+S.gh.guesses+' reading'+(S.gh.guesses>1?'s':'')+(S.play.misses?' · +'+S.play.misses+' miss'+(S.play.misses>1?'es':''):' · clean 🎯');
+      showMiss();
+      setTimeout(function(){ finishTask(); }, 950);
+      return;
+    }
+    var h=ghHeat(d), trend=(d<S.gh.best-50)?'warmer ↑':(d>S.gh.best+50?'colder ↓':'—');
+    if(d<S.gh.best) S.gh.best=d;
+    el.setAttribute('fill', h.c); el.setAttribute('r','4.2');
+    sfx('tap');
+    var r=$('ghread'); if(r){ r.innerHTML='<b>'+p.flag+' '+esc(p.name)+'</b> · <span style="color:'+h.c+'">'+h.t+'</span> · '+trend; swapIn(r); }
   }
 
   /* ---------- minigame: Street Scout (Mapillary street imagery) ----------
