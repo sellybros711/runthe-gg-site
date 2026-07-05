@@ -577,17 +577,48 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes reflashPop{0%{opacity:0;transform:scale(.86)}60%{transform:scale(1.03)}100%{opacity:1;transform:scale(1)}}
   @media (prefers-reduced-motion:reduce){ .reflash{animation:none} }
   @media (prefers-reduced-motion:reduce){ .hvdesc{animation:none} }
-  /* holed-result pill: floats top-CENTER on the tracer between the hole chip (left) and the
-     scoreboard (right) instead of a card that pushes the whole page down */
-  .hvresult{top:46px;left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap;
-    background:rgba(8,17,26,.9);border:2px solid var(--gold);border-radius:13px;padding:8px 16px;
-    box-shadow:0 12px 28px -14px rgba(0,0,0,.9);animation:hvresPop .42s cubic-bezier(.2,1.3,.4,1)}
-  .hvresult .rn{font:900 17px/1 var(--body);letter-spacing:.03em}
-  .hvresult .rs{font:800 12px/1 var(--mono);opacity:.92;margin-left:7px}
-  /* keep translateX(-50%) centering through the pop (a bare scale() keyframe would drop it) */
-  @keyframes hvresPop{0%{opacity:0;transform:translateX(-50%) scale(.86)}60%{transform:translateX(-50%) scale(1.03)}100%{opacity:1;transform:translateX(-50%) scale(1)}}
+  /* holed-result pill: floats CENTER on the tracer (its own layer) so it never collides with the
+     always-present scoreboard — the leaderboard stays put; the result pops over the middle of the course */
+  .hvresult{top:44%;left:50%;transform:translate(-50%,-50%);text-align:center;white-space:nowrap;
+    background:rgba(8,17,26,.92);border:2.5px solid var(--gold);border-radius:15px;padding:11px 22px;
+    box-shadow:0 18px 40px -16px rgba(0,0,0,.95);animation:hvresPop .44s cubic-bezier(.2,1.3,.4,1)}
+  .hvresult .rn{font:900 22px/1 var(--body);letter-spacing:.03em}
+  .hvresult .rs{font:800 14px/1 var(--mono);opacity:.92;margin-left:8px}
+  /* keep the translate centering through the pop (a bare scale() keyframe would drop it) */
+  @keyframes hvresPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.84)}60%{transform:translate(-50%,-50%) scale(1.04)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
   @media (prefers-reduced-motion:reduce){ .hvresult{animation:none} }
-  @media (prefers-reduced-motion:reduce){ .hvresult{animation:none} }
+  /* decision MODAL: a real pop-up presenting the situation + 2 options over a dimmed course — never
+     shifts the page underneath (owner: a real, exciting pop-up that draws attention) */
+  .decisionov{position:fixed;inset:0;z-index:56;display:flex;align-items:center;justify-content:center;
+    padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));
+    background:rgba(3,10,7,.62);backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);animation:dcFade .2s ease}
+  @keyframes dcFade{from{opacity:0}to{opacity:1}}
+  .decisioncard{max-width:440px;width:100%;max-height:100%;overflow:auto;text-align:center;
+    background:linear-gradient(180deg,#0d2c20,#07211a);border:2px solid var(--gold);border-radius:20px;padding:20px 20px 22px;
+    box-shadow:0 30px 70px -20px rgba(0,0,0,.9),0 0 0 1px rgba(235,166,31,.22) inset;animation:dcPop .34s cubic-bezier(.2,1.25,.4,1)}
+  @keyframes dcPop{0%{opacity:0;transform:scale(.9) translateY(10px)}100%{opacity:1;transform:none}}
+  .dc-flag{font:800 10px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+  .dc-hole{font:900 19px/1.15 var(--body);color:var(--cream);margin-top:8px}
+  .dc-sub{font:600 12px/1.35 var(--body);color:var(--muted);margin-top:5px}
+  .dc-sit{font:800 13px/1.35 var(--body);color:#ffcf6a;margin-top:11px}
+  .dc-tag{font:800 10.5px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-top:12px}
+  .dc-prompt{font:600 14px/1.5 var(--body);color:var(--oncard);margin-top:7px}
+  .dc-opts{margin-top:16px}
+  .dc-opt{display:block;width:100%;border-radius:14px;padding:13px 14px;cursor:pointer;text-align:center;
+    border:2px solid;background:rgba(0,0,0,.22);transition:transform .1s ease}
+  .dc-opt:active{transform:translateY(2px)}
+  .dc-opt .dc-oi{font-size:16px;margin-right:6px}
+  .dc-opt .dc-ol{font:900 15px/1.15 var(--body);letter-spacing:.01em}
+  .dc-opt .dc-os{display:block;font:600 11.5px/1.3 var(--body);color:var(--muted);margin-top:4px}
+  .dc-opt.agg{border-color:#ff6b4a;box-shadow:0 8px 22px -12px rgba(255,90,60,.7)}
+  .dc-opt.agg .dc-ol{color:#ff8a6e}
+  .dc-opt.safe{border-color:#3fcaa8;box-shadow:0 8px 22px -12px rgba(63,202,168,.55)}
+  .dc-opt.safe .dc-ol{color:#5fe0c0}
+  .dc-or{font:800 10px/1 var(--body);letter-spacing:.2em;color:var(--muted);margin:9px 0;text-transform:uppercase}
+  @media (prefers-reduced-motion:reduce){ .decisionov,.decisioncard{animation:none} }
+  /* crisp FLIP glide when scoreboard rows swap order (positions animate, not teleport) */
+  .hvbrow{transition:none}
+  @media (prefers-reduced-motion:reduce){ .hvbrow{transition:none!important} }
   /* shot-review scrubber: rewatch any hole, replay any single shot's animation */
   .revbar{max-width:560px;margin:9px auto 0;text-align:center}
   .revbar .rvtitle{font:800 13px/1.3 var(--body);color:var(--oncard)}
@@ -4797,6 +4828,7 @@ const DAYS=['THU','FRI','SAT','SUN'];
 const PACE={chill:{r:2200,e:3200,lbl:'Broadcast'}, normal:{r:1300,e:2000,lbl:'Standard'}, fast:{r:650,e:1100,lbl:'Fast'}};
 function paceMs(){ return PACE[S.simPace]||PACE.chill; }
 let _lbRects=null;   // {name: top-within-board} from the previous season render, for FLIP glide
+let _hvbRects=null;  // {name: top-within-board} of the tracer's floating scoreboard, for crisp FLIP swaps
 let _prevScTotal=null;   // your last-rendered rounded to-par, for the scorecard count-up tween
 function beginEvent(){
   let evt=S.schedule[S.evtIndex];
@@ -4915,7 +4947,7 @@ function startMomentRound(ce, info){
   S.dailySkills=sk; S.dailyOvr=Math.round(p.skill);
   S.dailyDiffs=diffs.map(d=>d+shift);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=true; S.dailyMullAvail=false; S.dailyResult=null;
-  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer();
+  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;
   S.dailyClaimed=true;   // borrowed Daily plumbing must never touch Daily Challenge attempts/records
   S.screen='dailyround'; render(); scheduleDailyAdvance();
 }
@@ -7790,10 +7822,7 @@ function hvTerrain(g, seedN, B){
   s.push(`<path d="${hvBlobD(gpx+1.6,gpy+2,grx+5.5,gry+4.5,gseed,gIrr,12)}" fill="${B.shad}" opacity=".5"/>`);
   s.push(`<path d="${hvBlobD(gpx,gpy,grx+5,gry+4,gseed,gIrr,12)}" fill="${B.fringe}"/>`);
   s.push(`<path d="${greenD}" fill="${B.green}" stroke="${B.gLine}" stroke-width="1.2"/>`);
-  let gtx='';
-  for(let r2=0;r2<3;r2++) for(let c2=0;c2<3;c2++){
-    gtx+=vTick(gpx-grx*0.55+c2*grx*0.32, gpy-gry*0.42+r2*gry*0.42, B.gLine, '.5'); }
-  s.push(`<clipPath id="hvgr"><path d="${greenD}"/></clipPath><g clip-path="url(#hvgr)">${gtx}</g>`);
+  // (owner: removed the "v" grass-tick pattern on the greens — the putting surface reads cleaner plain)
   // bunkers: white speckled sand with a chunky outline (links pot bunkers smaller, heavier lip)
   const bs=B.bunkerScale||1;
   g.bunkers.forEach((b,bi)=>{ const [bx,by]=hvProj(g,b.x,b.y), t=g.t(b.y);
@@ -8013,7 +8042,16 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce){
     return node;
   }
   const shots=hole.shots||[];
-  if(!shots.length || !shots[0].k) return null;   // old/uninstrumented data → no graphic
+  if(!shots.length || !shots[0].k){
+    // no shots yet → a FRESH hole preview (terrain + tee + pin, no ball). Used to show the UPCOMING hole
+    // while a tee/par-3 decision or the between-holes pause is on screen, so what's shown matches the
+    // decision being asked (owner: show the next hole before the drive, not the previous hole's putt).
+    if(holeIdx==null || !courseKey || hole.par==null) return null;
+    const g=(hole._hv&&hole._hv.g)||hvGeom(seedN, hole.par, hole.yards||hole.yd||400, courseKey, holeIdx);
+    hole._hv={g, plots:[]};
+    return $(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span><span class="ttrep">NEXT HOLE</span></div>
+      <div class="hvshell"><svg viewBox="${HV_CAM.join(' ')}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Hole ${hole.n} preview">${hvTerrain(g,seedN,hvBiome(courseKey))}</svg></div></div>`);
+  }
   if(!hole._hv){ const g=hvGeom(seedN, hole.par, hole.yards||hole.yd||((DAILY_COURSES[courseKey]||{}).holes||[])[holeIdx]?.[1]||400, courseKey, holeIdx);
     hole._hv={g, plots:hvPlots(g, shots, seedN)}; }
   const {g, plots}=hole._hv;
@@ -8302,7 +8340,7 @@ function beginDailyRound(){
   const p=buildPlayer(); S.dailySkills={}; CATS.forEach(c=>S.dailySkills[c.k]=p[c.k]);
   S.dailyOvr=Math.round(p.skill); S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
-  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer();   // the round plays itself; only signature-hole decisions pause it
+  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;   // the round plays itself; only signature-hole decisions pause it
   S.dailyLegend=null;
   track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr});
   S.screen='dailyround'; render(); scheduleDailyAdvance();
@@ -8314,7 +8352,7 @@ function beginDailyRoundWithLegend(token){
   S.dailySkills=Object.assign({},token.skills); S.dailyOvr=token.ovr;
   S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
-  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer();
+  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;
   S.dailyLegend={id:token.id, name:token.name, look:token.look};
   claimDailyAttempt();   // playing as a Legend skips the draft; committing to it consumes the attempt
   S.name=token.name; if(token.look) S.look=Object.assign({},token.look);
@@ -8779,6 +8817,28 @@ function dLegend(){
   el.querySelector('.legendx').onclick=()=>{ LS.set('bag_daily_legend_seen',true); render(); };
   return el;
 }
+// A real pop-up presenting a signature-hole decision: the situation + the two options, over a dimmed
+// course. position:fixed so it never shifts the page underneath (owner: an exciting, attention-drawing
+// pop-up). `pick(agg)` runs the chosen line.
+function dDecisionModal(holeLine, subLine, sc, pick){
+  const ov=$(`<div class="decisionov"></div>`);
+  const card=$(`<div class="decisioncard" role="dialog" aria-modal="true"></div>`);
+  card.appendChild($(`<div class="dc-flag">⛳ Your call</div>`));
+  card.appendChild($(`<div class="dc-hole">${esc(holeLine)}</div>`));
+  if(subLine) card.appendChild($(`<div class="dc-sub">${esc(subLine)}</div>`));
+  if(sc.sit) card.appendChild($(`<div class="dc-sit">${esc(sc.sit)}</div>`));
+  card.appendChild($(`<div class="dc-tag">${esc(sc.tag)}</div>`));
+  card.appendChild($(`<div class="dc-prompt">${esc(sc.prompt)}</div>`));
+  const opts=$(`<div class="dc-opts"></div>`);
+  sc.opts.forEach((o,idx)=>{
+    const b=$(`<button class="dc-opt ${o.agg?'agg':'safe'}"><span class="dc-oi">${o.agg?'⚡':'🛡'}</span><span class="dc-ol">${esc(o.l)}</span><span class="dc-os">${esc(o.s)}</span></button>`);
+    b.onclick=()=>pick(o.agg); opts.appendChild(b);
+    if(idx===0 && sc.opts.length>1) opts.appendChild($(`<div class="dc-or">or</div>`));
+  });
+  card.appendChild(opts);
+  ov.appendChild(card);
+  return ov;
+}
 function scrDailyRound(){
   const c=DAILY_COURSES[S.dailyCourse], played=S.dailyHoles;
   const lastIdx=played.length-1;
@@ -8803,6 +8863,11 @@ function scrDailyRound(){
   // par-4/5 approach decision in progress: the drive is on the tracer, the approach prompt shows once
   // it lands (suppressed while reviewing a past hole).
   const prov = (S.dailyProv && !reviewing) ? S.dailyProv : null;
+  // between-holes / pre-hole state (not a drive-in-flight, reveal, holed beat, or review): the tracer
+  // previews the UPCOMING hole (owner: show the next hole before the drive, not the previous hole's putt).
+  const previewNext = (!prov && !revealing && !holePause && !reviewing && !done && played.length>0);
+  // a signature-hole tee/par-3 decision is pending (par-4/5 approach decisions come via `prov`)
+  const teeSig = previewNext ? c.sig.find(s=>s[0]===i+1) : null;
   if(S.moment){   // career-mode Moment: this round IS the tournament's final round
     add($(`<div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 THE MOMENT · Final round · ${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)}</span></div>`));
     if(!boardPresent && !reviewing){
@@ -8842,47 +8907,15 @@ function scrDailyRound(){
   // NEXT-HOLE INFO + DECISIONS AT THE TOP (owner: on mobile the decision used to render below the
   // window + shot log + scorecard, i.e. below the fold — the user had no idea a decision came up).
   // The tracer window sits underneath; mulligan / skip-to-end stay at the bottom as utilities.
-  if(prov){
-    // par-4/5 APPROACH decision: the drive has been (is being) revealed on the tracer below; the
-    // prompt lands before the APPROACH, matching what's on screen (owner: decisions before the shot).
-    const h=prov.hole, sc=prov.scenario;
-    add($(`<div class="scout" style="max-width:560px;margin:8px auto 0;text-align:center"><div style="font-weight:800;font-size:16px">Hole ${h.n} · Par ${h.par} · ${h.yards}y</div><div class="small muted">Your drive found ${dLieName(prov.d0.shot.lie)} · ${prov.d0.dist} yds to the green</div></div>`));
-    add($(`<div style="height:10px"></div>`));
-    if(prov.await){
-      add($(`<div class="scout" style="max-width:560px;margin:0 auto;text-align:center;border-color:var(--gold)">
-        ${sc.sit?`<div class="small" style="color:#e9a23b;font-weight:800;margin-bottom:7px">${esc(sc.sit)}</div>`:''}
-        <div class="small" style="text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--gold)">${esc(sc.tag)}</div>
-        <div style="font-size:14px;line-height:1.45;margin-top:6px">${esc(sc.prompt)}</div></div>`));
-      add($(`<div style="height:10px"></div>`));
-      sc.opts.forEach((o,idx)=>{
-        const btn=$(`<button class="btn choice" style="max-width:520px;margin:0 auto">${o.agg?'⚡ ':'🛡 '}${esc(o.l)}<span class="sub">${esc(o.s)}</span></button>`);
-        btn.onclick=()=>dailyResolveApproach(o.agg); add(btn);
-        if(idx===0) add($(`<div class="ordiv">or</div>`));
-      });
-    } else {
-      add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Off the tee…</div>`));
-    }
+  // Signature-hole DECISIONS now render as a real pop-up modal (added at the very end so it overlays
+  // everything) — the tracer underneath shows the relevant hole (upcoming hole for a tee call, the drive
+  // for an approach call). Only the non-decision status/controls render inline here.
+  if(prov && !prov.await){
+    add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Off the tee…</div>`));
     add($(`<div style="height:6px"></div>`));
-  } else if(!revealing && !done && !holePause && !reviewing){
-    const h=c.holes[i], sig=c.sig.find(s=>s[0]===i+1);
-    add($(`<div class="scout" style="max-width:560px;margin:8px auto 0;text-align:center"><div style="font-weight:800;font-size:16px">Hole ${i+1} · Par ${h[0]} · ${h[1]}y</div>${h[2]?`<div class="small muted">${esc(h[2])}</div>`:''}${sig?`<div class="small" style="color:var(--gold);margin-top:4px">⛳ Signature: ${esc(sig[1])}</div>`:''}</div>`));
-    add($(`<div style="height:10px"></div>`));
-    if(sig){
-      // signature hole, a course-aware risk/reward scenario; auto-play pauses for your call.
-      // (par-3 / driving decisions are asked up-front here; par-4/5 approach decisions never reach
-      // this branch — scheduleDailyAdvance routes them through dailyStartApproachHole instead.)
-      const sc=dScenario(S.dailyCourse,i,total,dTourAvg(c));
-      add($(`<div class="scout" style="max-width:560px;margin:0 auto;text-align:center;border-color:var(--gold)">
-        ${sc.sit?`<div class="small" style="color:#e9a23b;font-weight:800;margin-bottom:7px">${esc(sc.sit)}</div>`:''}
-        <div class="small" style="text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--gold)">${esc(sc.tag)}</div>
-        <div style="font-size:14px;line-height:1.45;margin-top:6px">${esc(sc.prompt)}</div></div>`));
-      add($(`<div style="height:10px"></div>`));
-      sc.opts.forEach((o,idx)=>{
-        const btn=$(`<button class="btn choice" style="max-width:520px;margin:0 auto">${o.agg?'⚡ ':'🛡 '}${esc(o.l)}<span class="sub">${esc(o.s)}</span></button>`);
-        btn.onclick=()=>playDailyHole(o.agg, sc.phase); add(btn);
-        if(idx===0) add($(`<div class="ordiv">or</div>`));   // make it obvious these are the two choices
-      });
-    } else if(S.dailyAuto){
+  } else if(previewNext && !teeSig){
+    // non-decision, between holes: the tracer shows the upcoming hole; here are the play controls
+    if(S.dailyAuto){
       add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Playing your round…</div>`));
       const pause=$(`<button class="btn ghost" style="max-width:520px;margin:12px auto 0">⏸ Pause</button>`); pause.onclick=dailyPause; add(pause);
     } else {
@@ -8906,7 +8939,8 @@ function scrDailyRound(){
       const big=ace?'HOLE-IN-ONE!':esc(dResultLong(lh.par,lh.toPar)).toUpperCase();
       shell.appendChild($(`<div class="hvob hvresult" style="border-color:${col}"><span class="rn" style="color:${col}">${big}</span><span class="rs" style="color:${col}">${lh.par+lh.toPar} (${dtp(lh.toPar)})</span></div>`));
     }
-    if(latest && !holePauseFlag){   // during the holed beat the result pill is the focus — drop the board so it doesn't collide
+    if(latest){   // the scoreboard is ALWAYS shown on the live window (owner: it must never disappear, even
+      // during the holed-result pill — the pill floats over the center, the board stays put top-corner)
       const meNm=S.dailyLegend?esc(S.dailyLegend.name):'YOU';
       const tpCol=v=>v<0?'#4be3a8':v>0?'#ff9d8f':'#e8efe9';
       const bd=$(`<div class="hvob hvboard${gRight?' left':''}"></div>`);
@@ -8916,7 +8950,7 @@ function scrDailyRound(){
         const meIdx=rows.findIndex(r=>r.you);
         const show=meIdx<4?rows.slice(0,4):rows.slice(0,3).concat([rows[meIdx]]);
         show.forEach(r=>{ const rk=rows.indexOf(r)+1;
-          bd.appendChild($(`<div class="hvbrow ${r.you?'mine':''}"><span class="cdot" style="background:${r.you?'#3b82f6':'#8fa39a'}"></span><span class="rk">${rk}</span><span class="nm">${esc(r.nm)}</span><span class="tp" style="color:${tpCol(r.tp)}">${dtp(r.tp)}</span></div>`));
+          bd.appendChild($(`<div class="hvbrow ${r.you?'mine':''}" data-nm="${esc(r.nm)}"><span class="cdot" style="background:${r.you?'#3b82f6':'#8fa39a'}"></span><span class="rk">${rk}</span><span class="nm">${esc(r.nm)}</span><span class="tp" style="color:${tpCol(r.tp)}">${dtp(r.tp)}</span></div>`));
         });
       } else {
         bd.appendChild($(`<div class="hvbcap">THRU ${through} · TARGET ${dAvgTxt(av)}</div>`));
@@ -8924,17 +8958,36 @@ function scrDailyRound(){
         const paceTxt=Math.abs(pace)<0.05?'E':(pace>0?'+':'')+pace.toFixed(1);
         const rows=[{nm:meNm, v:total, txt:dtp(total), mine:true, col:'#3b82f6'},
                     {nm:'TOUR PRO', v:pace, txt:paceTxt, mine:false, col:'#ef4444'}].sort((a,b)=>a.v-b.v);
-        rows.forEach((r,ri)=>bd.appendChild($(`<div class="hvbrow ${r.mine?'mine':''}"><span class="cdot" style="background:${r.col}"></span><span class="rk">${ri+1}</span><span class="nm">${r.nm}</span><span class="tp" style="color:${tpCol(r.v)}">${r.txt}</span></div>`)));
+        rows.forEach((r,ri)=>bd.appendChild($(`<div class="hvbrow ${r.mine?'mine':''}" data-nm="${r.nm}"><span class="cdot" style="background:${r.col}"></span><span class="rk">${ri+1}</span><span class="nm">${r.nm}</span><span class="tp" style="color:${tpCol(r.v)}">${r.txt}</span></div>`)));
       }
       shell.appendChild(bd);
+      // crisp FLIP: when the standings re-order between holes, glide each row from its old slot to the new
+      // one instead of teleporting (owner: "if players swap I want to see them swap").
+      const reduceB=matchMedia('(prefers-reduced-motion:reduce)').matches;
+      if(!reduceB){ const prev=_hvbRects, nowR={};
+        requestAnimationFrame(()=>{ if(!bd.isConnected) return;
+          const brect=bd.getBoundingClientRect(), rows2=[...bd.querySelectorAll('.hvbrow')];
+          rows2.forEach(row=>{ const nm=row.getAttribute('data-nm'); if(!nm) return;
+            const t=row.getBoundingClientRect().top-brect.top; nowR[nm]=t;
+            if(prev && prev[nm]!=null){ const d=prev[nm]-t; if(Math.abs(d)>1.5){ row.style.transition='none'; row.style.transform=`translateY(${d}px)`; row.dataset.flip='1'; } } });
+          requestAnimationFrame(()=>{ rows2.forEach(row=>{ if(!row.dataset.flip) return;
+            row.style.transition='transform .5s cubic-bezier(.22,1,.36,1)'; row.style.transform=''; delete row.dataset.flip; }); });
+          _hvbRects=nowR;
+        });
+      } else { _hvbRects=null; }
       // ONE clear shot description that swaps as the shots simulate (replaces the shot-log dump in play).
-      if(descShot && descShot.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:#3b82f6">${meNm}</b> · ${esc(descShot.d)}</div>`));
+      if(descShot && descShot.d && !holePauseFlag) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:#3b82f6">${meNm}</b> · ${esc(descShot.d)}</div>`));
     }
     add(hvn);
   }
   if(prov){
     // par-4/5 approach decision: the neutral drive plays out (shot 0), then the prompt above shows
     drawWindow(prov.hole, prov.revealN, prov.i, true, false, prov.hole.shots[0], null);
+  } else if(previewNext){
+    // between holes / at a tee decision → show the UPCOMING hole (fresh tee view), not the previous
+    // hole's finished state, so what's on screen matches the drive/decision being asked (owner note 1).
+    const ph={n:i+1, par:c.holes[i][0], yards:c.holes[i][1], shots:[]};
+    drawWindow(ph, null, i, true, false, null, null);
   } else if(played.length){
     // review mode replays a chosen shot (S.dailyReviewShot) with a nonce so the animator re-fires each tap;
     // otherwise the live reveal drives the latest hole and a past hole is static
@@ -8982,6 +9035,15 @@ function scrDailyRound(){
     const af=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">⏭ Skip to the end</button>`); af.onclick=autoFinishDaily; add(af);
   } else if(S.dailyAuto){ add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Heading to the clubhouse…</div>`));
   } else { const fin=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">See your round ▸</button>`); fin.onclick=finishDailyRound; add(fin); }
+  // DECISION POP-UP (added LAST so it overlays everything; position:fixed → never shifts the page). The
+  // tracer underneath shows the relevant hole (upcoming hole for a tee call, the drive for an approach).
+  if(prov && prov.await){
+    const h=prov.hole, sub=`Your drive found ${dLieName(prov.d0.shot.lie)} · ${prov.d0.dist} yds to the green`;
+    add(dDecisionModal(`Hole ${h.n} · Par ${h.par} · ${h.yards}y`, sub, prov.scenario, (agg)=>dailyResolveApproach(agg)));
+  } else if(teeSig){
+    const h=c.holes[i], sc=dScenario(S.dailyCourse,i,total,dTourAvg(c));
+    add(dDecisionModal(`Hole ${i+1} · Par ${h[0]} · ${h[1]}y`, teeSig[1]?('Signature hole · '+teeSig[1]):null, sc, (agg)=>playDailyHole(agg, sc.phase)));
+  }
 }
 function scrDailyResult(){
   if(S.special) return scrSpotlightResult();

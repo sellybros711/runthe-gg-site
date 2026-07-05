@@ -4692,6 +4692,32 @@ allows Google Fonts, or self-host Anton.*
   trees/missed greens, not 3-putts). Regressions cs166/cs162, physics, stall, hv6/hv8 all green. Deployed
   to /golf.
 
+- **CS170 — round-screen revamp: next-hole-before-the-drive, a real decision pop-up, crisp always-on
+  scoreboard (owner's 3 notes on IMG_16907812) + remove the green "v" pattern.**
+  1. **Show the NEXT hole before the drive.** A tee/between-holes decision used to leave the PREVIOUS
+     hole's finished putt on the tracer while asking about the upcoming drive. `hvNode` now renders a fresh
+     hole preview (terrain + tee + pin, no ball) for a hole with no shots yet, and `scrDailyRound` draws the
+     UPCOMING hole (`previewNext`) between holes — so the hole on screen matches the drive/decision being
+     asked. (Approach decisions still correctly show the just-hit drive.)
+  2. **The decision is now a real pop-up modal.** Replaced the inline decision card (which pushed the page
+     around) with `dDecisionModal` — a `position:fixed`, centered, animated overlay over a dimmed/blurred
+     course that never shifts the page: "⛳ YOUR CALL", the hole + situation, and the two options as bold
+     distinct buttons (⚡ aggressive red / 🛡 safe teal, "OR" between). Used for both the signature tee/par-3
+     call and the par-4/5 approach call; picking one dismisses it and plays the hole.
+  3. **The floating scoreboard is crisp and never disappears.** It used to vanish during the holed-result
+     pill; now the board is ALWAYS shown on the live window and the result pill floats over the center of
+     the tracer instead (so they coexist). Added a FLIP glide (`_hvbRects`, `data-nm` per row): when the
+     standings re-order between holes, rows animate from their old slot to the new one instead of teleporting
+     ("if players swap I want to see them swap"). Reduced-motion falls back to no animation.
+  4. **Removed the "v" grass-tick pattern on the greens** (all courses) — the putting surface reads cleaner
+     plain (dropped the clipped green-tick group in `hvTerrain`).
+  Verified in Playwright (cs170): the decision renders as a fixed modal with 2 options and the tracer behind
+  it shows the hole being decided (chip = the upcoming hole, not the previous); the scoreboard is present at
+  the decision AND during the holed-result pill (never disappears); choosing advances the round; the green
+  v-ticks are gone; a full practice round completes. Regressions hv5/hv6/hv7/hv8, physics, cs169, and the
+  updated stall test (decision is now the `.dc-opt` modal, not the old inline `.btn.choice`) all green.
+  Screenshot confirms the pop-up over the blurred course. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
