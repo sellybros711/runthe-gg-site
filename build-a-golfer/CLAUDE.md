@@ -4260,6 +4260,30 @@ allows Google Fonts, or self-host Anton.*
      every case** (the hard invariant), aces occur but stay rare (0.04%), hole-outs generate, and a full
      round still completes. hv6/hv8/physics/practice suites green, zero page errors. Deployed to /golf.
 
+- **CS155 — every stat now visibly drives its own part of the shot simulation.** Owner: "The approach
+  logic should be applied to all stats. Higher driver power should result in longer drives, higher putting
+  should increase the likelihood of longer putts and less 3 putts, etc." Extended the CS152–154 treatment
+  (approach → proximity/backspin) to the whole bag, in `dShotSeq`'s narrative + hole-view physics (the
+  deterministic `dSimHole` score engine is untouched — verified, shot count === stroke count invariant
+  re-run at 6,300 combos with 0 mismatches):
+  • **Driving Distance** — drive length now scales hard with the stat: weak (62) averages ~272 yds, elite
+    (97) ~334, and a true bomber (distQ>0.8) occasionally steps on one for an extra 8–18. Was a ±50-yd
+    band; now ~±62 with the elite tail.
+  • **Putting** — three levers: (1) the extra strokes on over-par holes are attributed to the flat stick
+    FAR less often for elite putters (3-putt attribution on a double: elite 0.5% vs weak 91%); (2) a par
+    save's one-putt conversion now includes Putting (a save = chip + MADE putt), not just Scrambling; (3)
+    an elite putter's made birdie putts start deeper (avg 17.7 ft vs 14.0 — they drain longer ones), and
+    any make from 17+ ft is narrated "Drains it from N ft!".
+  • **Bunker / Short Game / Scrambling** — recoveries are now LIE-AWARE: a greenside/fairway-bunker shot
+    leans on Bunker skill (65/35 with Short Game) and narrates "splashes out of the bunker to X ft";
+    a fringe/collar chip is pure Short Game; a rough chip is Short Game + Scrambling. Elite bunker play
+    splashes to ~21 ft vs weak ~28 (and feeds the CS154 hole-out chance via the same quality).
+  • Driving Accuracy (fairway % + bad-lie severity) and Approach (proximity/backspin/attack-safe) were
+    already wired from earlier passes; unchanged.
+  Verified via a per-stat property suite (each lever moves in the right direction with only that stat
+  varied) + the full physics/shots/geometry/practice/one-window regressions, zero page errors. Deployed
+  to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
