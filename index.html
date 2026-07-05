@@ -215,10 +215,15 @@
       radial-gradient(420px 200px at 100% 130%, rgba(239,78,80,.16), transparent 70%),
       linear-gradient(180deg,#12233b,#0e1d31);
     border:1px solid var(--cardb);}
+  /* "optional / free" tag makes it unmistakable that an account is a bonus, not a wall */
+  .acct .a-tag{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:900;
+    letter-spacing:.07em;text-transform:uppercase;color:#8ff0cf;
+    background:rgba(53,214,160,.12);border:1px solid rgba(53,214,160,.34);padding:4px 10px;border-radius:999px;margin:0 0 10px;}
   .acct .a-hd{font-family:'Anton',Impact,sans-serif;font-weight:400;letter-spacing:.01em;
     text-transform:uppercase;font-size:clamp(21px,6vw,27px);line-height:1;margin:0;}
   .acct .a-hd .g{color:var(--gold);} .acct .a-hd .t{color:var(--teal);}
   .acct .a-sub{color:var(--mut);font-size:13.5px;line-height:1.5;margin:8px 0 0;max-width:460px;}
+  .acct .a-sub b{color:var(--ink);}
   .acct .perks{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 0;}
   .acct .perk{font-size:11px;font-weight:800;letter-spacing:.03em;color:#cfe0f0;
     background:rgba(255,255,255,.05);border:1px solid var(--line);padding:4px 9px;border-radius:999px;}
@@ -339,26 +344,9 @@ window.GA_ID='G-L29P5MRWKE';
       <div class="rule"><span class="ln"></span>
         <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="none" stroke="#EF4E50" stroke-width="1.2"/><circle cx="6" cy="6" r="1.6" fill="#EF4E50"/></svg>
         <span class="ln r"></span></div>
-      <p class="tag">Free, data-driven sports games you play <b>right in your browser</b>. Pick one and jump in — no download.</p>
+      <p class="tag">Free, data-driven sports games you play <b>right in your browser</b>. Pick one and jump in — no download, no sign-up.</p>
       <div class="hero-status"><span class="dot"></span><b>2&nbsp;games live</b> · more on the way</div>
     </header>
-
-    <!-- Account panel: signed-out CTA is the default so it shows even if the
-         accounts script fails to load; JS swaps in the signed-in bar on session. -->
-    <section id="acct" class="acct" aria-live="polite">
-      <h2 class="a-hd">One <span class="t">account.</span> Every <span class="g">game.</span></h2>
-      <p class="a-sub">Create a free account to start earning in-game rewards: trophies, streaks, leaderboard rank and saves that follow you into every RunThe.GG game.</p>
-      <div class="perks">
-        <span class="perk">🏆 <b>Trophies</b> <span class="amp">&amp;</span> <span class="tl">badges</span></span>
-        <span class="perk">📈 Leaderboard rank</span>
-        <span class="perk">🔥 Daily streaks</span>
-        <span class="perk">☁️ Saves across devices</span>
-      </div>
-      <div class="a-cta">
-        <button class="btn gold flex1" id="acct-signup">Create free account</button>
-        <button class="btn ghost flexa" id="acct-signin">Sign in</button>
-      </div>
-    </section>
 
     <div class="seclab">Choose a game</div>
     <main class="games">
@@ -394,6 +382,25 @@ window.GA_ID='G-L29P5MRWKE';
         <span class="g-foot"><span class="play">Play now <span class="arw">→</span></span><span class="free">Free · No download</span></span>
       </a>
     </main>
+
+    <!-- Account panel sits BELOW the games on purpose: playing requires no account,
+         so the games come first. Signed-out CTA is the default so it shows even if the
+         accounts script fails to load; JS swaps in the signed-in bar on session. -->
+    <section id="acct" class="acct" aria-live="polite">
+      <div class="a-tag">✓ Free &amp; optional</div>
+      <h2 class="a-hd">One <span class="t">account.</span> Every <span class="g">game.</span></h2>
+      <p class="a-sub"><b>No account needed to play</b> — every game above is free, right now. Want to keep your progress? Create a free account to save your stats and earn rewards that follow you into every RunThe.GG game.</p>
+      <div class="perks">
+        <span class="perk">🏆 <b>Trophies</b> <span class="amp">&amp;</span> <span class="tl">badges</span></span>
+        <span class="perk">📈 Leaderboard rank</span>
+        <span class="perk">🔥 Daily streaks</span>
+        <span class="perk">☁️ Saves across devices</span>
+      </div>
+      <div class="a-cta">
+        <button class="btn gold flex1" id="acct-signup">Create free account</button>
+        <button class="btn ghost flexa" id="acct-signin">Sign in</button>
+      </div>
+    </section>
 
     <div class="installrow">
       <button class="btn ghost" id="install-btn" type="button">📲 Add to Home Screen</button>
@@ -627,8 +634,9 @@ window.GA_ID='G-L29P5MRWKE';
     }else{
       el.className='acct';
       el.innerHTML=
+        '<div class="a-tag">✓ Free &amp; optional</div>'+
         '<h2 class="a-hd">One <span class="t">account.</span> Every <span class="g">game.</span></h2>'+
-        '<p class="a-sub">Create a free account to start earning in-game rewards: trophies, streaks, leaderboard rank and saves that follow you into every RunThe.GG game.</p>'+
+        '<p class="a-sub"><b>No account needed to play</b> — every game above is free, right now. Want to keep your progress? Create a free account to save your stats and earn rewards that follow you into every RunThe.GG game.</p>'+
         '<div class="perks"><span class="perk">🏆 <b>Trophies</b> <span class="amp">&amp;</span> <span class="tl">badges</span></span><span class="perk">📈 Leaderboard rank</span><span class="perk">🔥 Daily streaks</span><span class="perk">☁️ Saves across devices</span></div>'+
         '<div class="a-cta"><button class="btn gold flex1" id="acct-signup">Create free account</button><button class="btn ghost flexa" id="acct-signin">Sign in</button></div>';
       $('acct-signup').onclick=function(){ openModal('signup'); };
