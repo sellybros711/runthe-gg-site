@@ -150,6 +150,20 @@
   .ill-lb div{display:flex;justify-content:space-between;gap:6px;padding:3px 6px;border-radius:5px;background:rgba(255,255,255,.06);margin-bottom:3px;color:var(--ink);}
   .ill-lb .g{background:rgba(238,90,68,.2);color:#ffb3a6;}
 
+  /* City Run (the Amazing-Race sprint to the Checkpoint) */
+  #runscene{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--cardb);cursor:pointer;
+    touch-action:manipulation;user-select:none;-webkit-user-select:none;}
+  .runbanner{position:absolute;top:8px;left:10px;font-family:'Bricolage Grotesque','Archivo',sans-serif;font-weight:800;
+    font-size:13px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.75);letter-spacing:.05em;pointer-events:none;}
+  .runtmr{position:absolute;top:8px;right:10px;font-weight:900;font-size:12.5px;color:#fff;background:rgba(0,0,0,.4);
+    padding:3px 8px;border-radius:8px;font-variant-numeric:tabular-nums;pointer-events:none;}
+  .runhint{position:absolute;bottom:7px;left:0;right:0;text-align:center;font-size:12px;font-weight:800;color:#fff;
+    text-shadow:0 2px 8px rgba(0,0,0,.85);pointer-events:none;}
+  .gate.pick .matp{animation:gatepulse .9s ease-in-out infinite;}
+  @keyframes gatepulse{0%,100%{opacity:.45;}50%{opacity:1;}}
+  @keyframes runshake{0%,100%{transform:none;}25%{transform:translateX(-6px);}75%{transform:translateX(6px);}}
+  .runshake{animation:runshake .28s ease;}
+
   .btn{appearance:none;border:0;cursor:pointer;font-family:inherit;font-weight:800;font-size:15px;
     border-radius:13px;padding:14px 18px;text-decoration:none;display:inline-flex;align-items:center;
     justify-content:center;gap:8px;transition:transform .12s cubic-bezier(.22,.9,.32,1),filter .15s,box-shadow .2s;
@@ -710,7 +724,7 @@
         + '<div class="hero-imgwrap"><img class="hero-wm" src="/globe/brand/wordmark.jpg" alt="Run The Globe" width="1200" height="434" /></div>'
         + '<div class="hero-cap">'
           + '<div class="herohook">Outrun 10 rival teams around the world.</div>'
-          + '<p class="lede" style="margin-top:7px">Every Stage jets the whole field to a new country. Beat the clock at trivia, memory, maps, reflex &amp; more — the slowest team each Stage is <b style="color:var(--coral)">Grounded</b>. Survive all '
+          + '<p class="lede" style="margin-top:7px">Every Stage jets the field to a new country. Beat the clock at 30+ challenges, then <b>sprint the city to the Checkpoint mat</b> — the slowest team each Stage is <b style="color:var(--coral)">Grounded</b>. Survive all '
           + ROUNDS + ' Stages to win the Final.</p>'
           + '<button class="btn ghost sm" id="howto" style="margin-top:12px">📖 How to play</button>'
         + '</div>'
@@ -754,7 +768,7 @@
     var illoDraw = '<div class="ill-flag">🗼</div><div class="ill-t">TOKYO</div><div class="ill-s">Asia</div>';
     var illoGames= '<div class="ill-chips"><span>🧠</span><span>🗺️</span><span>⚡</span><span>🎧</span><span>🔤</span><span>🎯</span></div>';
     var illoSplit= '<div class="ill-split"><span class="a">🧠 Brain</span><span class="b">⚡ Reflex</span></div>';
-    var illoCheck= '<div class="ill-time">6.4<span>s</span></div><div class="ill-s">effective</div>';
+    var illoRun = '<div class="ill-flag">🏃</div><div class="ill-t">→ 🚩 MAT</div><div class="ill-s">sprint!</div>';
     var illoGround='<div class="ill-lb"><div><span>1 You</span><span>5.1</span></div><div><span>2 Fox</span><span>7.8</span></div><div class="g"><span>3 Wolf</span><span>OUT</span></div></div>';
     var illoFinal= '<div class="ill-flag">🏁</div><div class="ill-t" style="color:var(--acc)">THE FINAL</div>';
     app.innerHTML = topbar()
@@ -763,8 +777,8 @@
       + howPanel('gold', illoDraw, '1 · Draw a destination', 'Every Stage jets the whole field to the same random country — you fly the leg on the map, then the destination is revealed. A race criss-crosses '+ROUNDS+' of them.')
       + howPanel('green', illoGames, '2 · Beat the clock', 'Play a lightning challenge from <b>30+ game types</b> — trivia, maps, memory, word, reflex and audio. A timer runs the whole time, and every slip adds penalty seconds.')
       + howPanel('coral', illoSplit, '3 · Split Path or Solo Call', 'Most Stages are a <b>Split Path</b>: pick one of two challenges — usually a brain game vs a reflex game — and play to your strength. A <b>Solo Call</b> hands everyone the same single task.')
-      + howPanel('gold', illoCheck, '4 · Check in', 'Your <b>effective time</b> = raw time + penalty seconds. Every team checks in and the field is ranked fastest to slowest.')
-      + howPanel('coral', illoGround, '5 · Don\'t finish last', 'The slowest team each Stage is <b style="color:var(--coral)">Grounded</b> — eliminated. One fumbled challenge and it could be you.')
+      + howPanel('gold', illoRun, '4 · Sprint to the Checkpoint', 'Touch down in a <b>cartoon version of the city</b> and sprint through the streets, Amazing-Race style. Find the Checkpoint mat flying <b>your destination\'s flag</b> and tap it — the clock runs the whole way.')
+      + howPanel('coral', illoGround, '5 · Don\'t finish last', 'Your <b>effective time</b> = challenge + City Run + penalties. The slowest team each Stage is <b style="color:var(--coral)">Grounded</b> — eliminated.')
       + howPanel('green', illoFinal, '6 · Win the Final', 'Outlast everyone to Stage '+ROUNDS+' — the Final. The last 3 teams sprint to a world landmark; the fastest wins the whole race.')
       + '<div class="card"><h3 style="font-size:15px;margin-bottom:6px">🤝 Solo or team up</h3>'
         + '<p class="muted" style="font-size:13px;line-height:1.6;margin:0">Race <b>Solo</b>, or as a team — <b>Same Screen</b> (two of you on one device, taking turns) or <b>Two Devices</b> (you and a partner on separate phones, times combined). Either way you face a full field, so it feels the same whether the rivals are friends or the house.</p></div>'
@@ -882,6 +896,7 @@
     S.usedCountries = {};
     S.skipUsed = false;
     S.spectating = false;
+    S._runPend=null; S._runDone=false;   // City Run guards
     S._lastLL = null;   // no origin yet → first Flight Leg departs from a neutral hub
     S.finishLine = pick(FINISH);   // GDD §11: the Final's location, locked at race start
     S.screen='stage';
@@ -1140,6 +1155,7 @@
     if(S.phase==='draw')       return viewDraw();
     if(S.phase==='choice')     return onlineActive()?duoViewChoice():viewChoice();
     if(S.phase==='play')       return viewPlay();
+    if(S.phase==='run')        return viewRun();
     if(S.phase==='checkpoint') return viewCheckpoint();
     if(S.phase==='leaderboard')return onlineActive()?duoViewLeaderboard():viewLeaderboard();
     if(S.phase==='grounded')   return onlineActive()?duoSpectate():viewGrounded();
@@ -2457,17 +2473,28 @@
     return aliveTeams().filter(function(t){ return t.isGhost; }).map(function(t){
       var misses = (Math.random() < clampP(t.skill)) ? 1 : 0;
       if(Math.random() < clampP(t.skill)*0.4) misses++;
-      var eff = base * t.skill * rnd(0.9,1.12) + misses*pen;
+      // challenge time + the City Run to the Checkpoint (every team runs it)
+      var eff = base * t.skill * rnd(0.9,1.12) + misses*pen + RUN_BASE * t.skill * rnd(0.85,1.15);
       return { team:t, eff:eff };
     });
   }
   function clampP(skill){ var p=(skill-0.8)*0.45; return Math.max(0, Math.min(0.55, p)); }
 
   function resolveRound(playerRaw, playerMisses, skipped, preGhosts){
-    if(onlineActive()){ return duoSubmit(playerRaw, playerMisses); }   // two-devices duo: post my time, combine on the leaderboard
+    // Amazing-Race beat: after the challenge you still have to SPRINT THE CITY to
+    // the Checkpoint mat, and that run counts. Intercept the first resolve, play
+    // the City Run, then come back through here with the combined time.
+    if(!skipped && !S._runDone){
+      S._runPend={ raw:playerRaw, misses:playerMisses, ghosts:preGhosts||null };
+      stopTimer(); S.phase='run'; renderStage(); return;
+    }
+    var act = S._runPend ? S._runPend.raw : playerRaw;      // challenge-only time
+    var runT = Math.max(0, playerRaw - act);                 // city-run time
+    S._runDone=false; S._runPend=null;
+    if(onlineActive()){ return duoSubmit(playerRaw, playerMisses, act, runT); }   // two-devices duo: post my time, combine on the leaderboard
     var pen = PENALTY[(S.chosen&&S.chosen.cat) || 'trivia'];
     var playerEff = skipped ? playerRaw : (playerRaw + playerMisses*pen);
-    S.lastResult = { raw:playerRaw, misses:playerMisses, eff:playerEff, skipped:!!skipped, pen:pen };
+    S.lastResult = { raw:playerRaw, act:act, runT:runT, misses:playerMisses, eff:playerEff, skipped:!!skipped, pen:pen };
 
     var ghosts = preGhosts || simulateGhosts();
     // stamp this round's effective time onto every alive team
@@ -2480,15 +2507,176 @@
       // fastest-stage only counts FLAWLESS real wall-clock games; reaction/sequence
       // report synthetic time, and mapfind is distance-scored (a deliberately wrong
       // pin is fast) — requiring 0 misses closes that Speed-Demon badge exploit.
+      // Uses the CHALLENGE time only (the City Run is a separate skill).
       var k=taskKind(S.chosen||{});
       if(playerMisses===0 && k!=='reaction' && k!=='sequence' && k!=='mapfind'
-         && (!st.fastestStage || playerRaw<st.fastestStage)) st.fastestStage=playerRaw;
+         && (!st.fastestStage || act<st.fastestStage)) st.fastestStage=act;
       if(playerMisses===0) st.perfectStages++;
     }
     saveStats(st);
 
     S.phase='checkpoint';
     renderStage();
+  }
+
+  /* =====================================================================
+     CITY RUN — the Amazing-Race finish. After the challenge you touch down
+     in a CARTOON VERSION OF THE CITY (procedurally drawn + seeded per
+     country, so every city always has its own skyline, in its region's
+     palette) and sprint to the Checkpoint. Mash-tap to run; at the plaza,
+     FIND the mat flying the destination's flag among three landmark gates
+     and tap it — wrong mat costs +2.5s. The whole run counts toward your
+     effective time; the ghost field runs it too (RUN_BASE pacing).
+     ===================================================================== */
+  var RUN_BASE = 6;   // expected seconds for an average team's City Run
+  var CITY_PAL = {
+    'Europe':        { sky:['#2b2f63','#7a5a8f'], back:'#3a3160', front:['#8a5d52','#a97456','#6e5d8e'], roof:'#5b3d4f', win:'#ffd98a' },
+    'Asia':          { sky:['#1f2a5c','#c96a6a'], back:'#35284f', front:['#7a4b56','#9c6249','#585085'], roof:'#43304f', win:'#ffe08d' },
+    'Africa':        { sky:['#3a2a52','#c98a4b'], back:'#4a3350', front:['#a06a44','#b98955','#7d5a4a'], roof:'#5d4038', win:'#ffe6a1' },
+    'North America': { sky:['#1c2350','#5a5f9e'], back:'#2c2f5c', front:['#4e5678','#5f6b91','#3f4a70'], roof:'#333a5c', win:'#cfe4ff' },
+    'South America': { sky:['#28224f','#b0648a'], back:'#3c2d55', front:['#8f5a63','#a5714f','#645a8a'], roof:'#4d3a55', win:'#ffd98a' },
+    'Oceania':       { sky:['#1d2d55','#4a7d9e'], back:'#2e3a5e', front:['#54688a','#6b7a95','#47597d'], roof:'#3a4a66', win:'#d8ecff' }
+  };
+  var CITY_LM = {
+    'Europe':['🏰','🗼','⛪'], 'Asia':['🏯','⛩️','🕌'], 'Africa':['🕌','🗿','🏛️'],
+    'North America':['🗽','🌉','🎡'], 'South America':['🗿','⛪','🏟️'], 'Oceania':['🌉','🎡','🏟️']
+  };
+  function cityHash(s){ s=String(s||'X'); var h=9; for(var i=0;i<s.length;i++) h=Math.imul(h^s.charCodeAt(i),387420489)>>>0; return h||7; }
+
+  function viewRun(){
+    var pend=S._runPend||{ raw:0, misses:0 };
+    var cc=S.dest&&S.dest.country;
+    var region=String((S.dest&&S.dest.region)||'Europe').split('/')[0];
+    var pal=CITY_PAL[region]||CITY_PAL['Europe'];
+    var rng=_mulberry32(cityHash((cc&&cc.id)||(S.dest&&S.dest.name)));
+    // decoy flags for the two wrong mats (seeded; never the destination's)
+    var pool=COUNTRIES.filter(function(x){ return !cc||x.id!==cc.id; });
+    var d1=pool[Math.floor(rng()*pool.length)], d2=pool[Math.floor(rng()*pool.length)];
+    if(d2===d1) d2=pool[(pool.indexOf(d1)+7)%pool.length];
+    var okIdx=Math.floor(rng()*3);
+    var flags=[]; flags[okIdx]=S.dest.flag;
+    var dec=[d1.flag,d2.flag], di=0;
+    for(var i2=0;i2<3;i2++){ if(flags[i2]==null) flags[i2]=dec[di++]; }
+    var lms=(CITY_LM[region]||CITY_LM['Europe']).slice();
+    for(var s1=lms.length-1;s1>0;s1--){ var j1=Math.floor(rng()*(s1+1)); var tv=lms[s1]; lms[s1]=lms[j1]; lms[j1]=tv; }
+
+    // ---- draw the cartoon skyline (SVG world, 800×230) ----
+    var W=800, H=230, GY=192, sb=[];
+    sb.push('<defs><linearGradient id="skyg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+pal.sky[0]+'"/><stop offset="1" stop-color="'+pal.sky[1]+'"/></linearGradient></defs>');
+    sb.push('<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="url(#skyg)"/>');
+    sb.push('<text x="'+Math.round(60+rng()*640)+'" y="'+Math.round(34+rng()*18)+'" font-size="20" opacity=".92">'+(rng()<0.5?'☀️':'🌙')+'</text>');
+    for(var cl2=0;cl2<3;cl2++) sb.push('<text x="'+Math.round(rng()*710)+'" y="'+Math.round(24+rng()*36)+'" font-size="'+Math.round(13+rng()*8)+'" opacity=".5">☁️</text>');
+    for(var bx=0;bx<W;){ var bw=34+rng()*44, bh=52+rng()*86;
+      sb.push('<rect x="'+bx.toFixed(1)+'" y="'+(GY-bh).toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+bh.toFixed(1)+'" fill="'+pal.back+'"/>'); bx+=bw+2+rng()*10; }
+    for(var fx=4;fx<560;){ var fw=44+rng()*46, fh=46+rng()*78, col=pal.front[Math.floor(rng()*pal.front.length)];   // keep the checkpoint plaza clear
+      sb.push('<rect x="'+fx.toFixed(1)+'" y="'+(GY-fh).toFixed(1)+'" width="'+fw.toFixed(1)+'" height="'+fh.toFixed(1)+'" rx="2" fill="'+col+'"/>');
+      sb.push('<rect x="'+fx.toFixed(1)+'" y="'+(GY-fh).toFixed(1)+'" width="'+fw.toFixed(1)+'" height="6" fill="'+pal.roof+'"/>');
+      for(var wy=GY-fh+13; wy<GY-12; wy+=15){ for(var wx=fx+7; wx<fx+fw-9; wx+=13){ if(rng()<0.6) sb.push('<rect x="'+wx.toFixed(1)+'" y="'+wy.toFixed(1)+'" width="6" height="8" rx="1" fill="'+pal.win+'" opacity=".9"/>'); } }
+      fx+=fw+6+rng()*16;
+    }
+    sb.push('<rect x="0" y="'+GY+'" width="'+W+'" height="'+(H-GY)+'" fill="#171230"/>');
+    sb.push('<rect x="0" y="'+GY+'" width="'+W+'" height="3" fill="rgba(255,255,255,.14)"/>');
+    for(var rx=8;rx<W;rx+=34) sb.push('<rect x="'+rx+'" y="'+(GY+18)+'" width="16" height="2.5" rx="1" fill="rgba(255,255,255,.22)"/>');
+    // checkpoint plaza: three landmark gates, each with a flag + mat
+    var GX=[648,716,784];
+    for(var gi=0;gi<3;gi++){
+      var gx=GX[gi];
+      sb.push('<g class="gate" data-gi="'+gi+'" data-ok="'+(gi===okIdx?1:0)+'" style="pointer-events:all;cursor:pointer">'
+        +'<text x="'+gx+'" y="'+(GY-10)+'" font-size="30" text-anchor="middle">'+lms[gi]+'</text>'
+        +'<line x1="'+(gx-22)+'" y1="'+GY+'" x2="'+(gx-22)+'" y2="'+(GY-48)+'" stroke="#c9b998" stroke-width="2"/>'
+        +'<text x="'+(gx-12)+'" y="'+(GY-38)+'" font-size="14" text-anchor="middle">'+flags[gi]+'</text>'
+        +'<rect class="matp" x="'+(gx-19)+'" y="'+(GY+5)+'" width="42" height="10" rx="2" fill="#E24632" opacity=".6"/>'
+        +'<rect x="'+(gx-19)+'" y="'+(GY+8)+'" width="42" height="3.5" fill="#F6D488" opacity=".85"/>'
+        +'</g>');
+    }
+    sb.push('<text id="rnr" font-size="21" text-anchor="middle">🏃</text>');
+
+    var cap=(cc&&cc.capital)||(S.dest&&S.dest.name)||'';
+    app.innerHTML = topbar() + hud()
+      + '<div class="card">'
+        + '<div class="stagetype">🏁 Run to the Checkpoint — '+esc(S.dest?S.dest.name:'')+'</div>'
+        + '<div id="runscene" data-state="intro">'
+          + '<svg id="citysvg" viewBox="360 0 440 '+H+'" preserveAspectRatio="xMidYMid slice" style="display:block;width:100%;height:auto;aspect-ratio:440/230">'+sb.join('')+'</svg>'
+          + '<div class="runbanner">📍 '+esc(String(cap).toUpperCase())+'</div>'
+          + '<div class="runtmr" id="rtmr"></div>'
+          + '<div class="runhint" id="rhint">Touching down…</div>'
+        + '</div>'
+        + '<div class="ohint" style="margin-top:10px">Tap fast to sprint. The Checkpoint mat flies '+(S.dest?S.dest.flag:'🚩')+' — wrong mat +2.5s.</div>'
+      + '</div>' + foot();
+
+    // ---- run loop ----
+    var svg=$('citysvg'), scene=$('runscene'), rnr=document.getElementById('rnr');
+    var st={ state:'intro', x:26, v:0, pen:0, t0:performance.now(), last:performance.now(), done:false };
+    var PLAZA=612, VIEW=440;
+    function setVB(cx){ svg.setAttribute('viewBox', cx.toFixed(1)+' 0 '+VIEW+' '+H); }
+    function paintRunner(){
+      var bob=(st.v>10)?Math.abs(Math.sin(performance.now()/70))*4:0;
+      rnr.setAttribute('transform','translate('+st.x.toFixed(1)+','+(GY-2-bob).toFixed(1)+') scale(-1,1)');
+      rnr.setAttribute('x',0); rnr.setAttribute('y',0);
+    }
+    paintRunner();
+    var tmrIv=setInterval(function(){ var e=$('rtmr'); if(!e){ clearInterval(tmrIv); return; }
+      var run=(st.state==='intro')?0:Math.max(0,(performance.now()-st.t0)/1000+st.pen);
+      e.textContent='⏱ '+fmtTime(pend.raw+run)+'s'; },100);
+    function beginRun(){
+      if(st.done||!$('runscene')) return;
+      st.state='run'; st.t0=performance.now(); st.last=performance.now();
+      scene.setAttribute('data-state','run'); setVB(0);
+      var h=$('rhint'); if(h) h.textContent='Tap fast to sprint →';
+    }
+    if(reduceMotion()) beginRun();
+    else{
+      // establishing shot: start on the checkpoint plaza (see the mats!), then a
+      // quick cinematic pan back to your runner — and go.
+      var it0=performance.now(), IDUR=950;
+      (function introPan(){
+        if(st.state!=='intro'||!$('citysvg')) return;
+        var t=Math.min(1,(performance.now()-it0)/IDUR);
+        var e2=1-Math.pow(1-t,3);
+        setVB((W-VIEW)*(1-e2));
+        if(t>=1){ beginRun(); return; }
+        requestAnimationFrame(introPan);
+      })();
+    }
+    fastTap(scene, function(){ if(st.state!=='run') return; st.v=Math.min(300, st.v+92); });
+    each('#runscene .gate', function(g){
+      g.addEventListener('click', function(ev){ if(ev.stopPropagation) ev.stopPropagation(); gateTap(g); });
+    });
+    function gateTap(g){
+      if(st.state!=='pick'||st.done) return;
+      if(g.getAttribute('data-ok')==='1'){
+        st.done=true; st.state='done'; scene.setAttribute('data-state','done');
+        sfx('correct'); vibe(20);
+        rnr.textContent='🙌'; st.x=GX[+g.getAttribute('data-gi')]; paintRunner();
+        var runT=Math.max(0,(performance.now()-st.t0)/1000+st.pen);
+        clearInterval(tmrIv);
+        setTimeout(function(){ finishRunPhase(runT); }, 430);
+      } else {
+        st.pen+=2.5; sfx('wrong'); vibe([16,40,16]); retrig(scene,'runshake');
+        var h=$('rhint'); if(h) h.innerHTML='Wrong mat! +2.5s — find '+(S.dest?S.dest.flag:'the flag');
+      }
+    }
+    (function loop(){
+      if(st.done||!$('runscene')||S.phase!=='run') return;
+      var now=performance.now(), dt=Math.min(0.05,(now-st.last)/1000); st.last=now;
+      if(st.state==='run'){
+        st.x+=st.v*dt; st.v*=Math.pow(0.14,dt);
+        if(st.x>=PLAZA){
+          st.x=PLAZA; st.v=0; st.state='pick'; scene.setAttribute('data-state','pick');
+          each('#runscene .gate',function(g){ g.classList.add('pick'); });
+          var h=$('rhint'); if(h) h.innerHTML='You\'re here! Tap the mat flying '+(S.dest?S.dest.flag:'the flag');
+        }
+        setVB(Math.max(0,Math.min(W-VIEW, st.x-130)));
+        paintRunner();
+      } else if(st.state==='pick'){ setVB(W-VIEW); paintRunner(); }
+      requestAnimationFrame(loop);
+    })();
+    renderAcct();
+  }
+  function finishRunPhase(runT){
+    S._runDone=true;
+    var p=S._runPend||{ raw:0, misses:0, ghosts:null };
+    resolveRound(p.raw+Math.max(0,runT), p.misses, false, p.ghosts);
   }
 
   /* --- phase: checkpoint (lock the time) --- */
@@ -2499,9 +2687,9 @@
     if(r.skipped){
       body = '<p class="lede" style="text-align:center">⏩ <b>Skip Pass used.</b> You checked in at the field\'s median time.</p>';
     } else {
-      body = '<div class="breakdown"><span>Raw <b>'+fmtTime(r.raw)+'s</b></span>'
-        + '<span>Misses <b>'+r.misses+'</b></span>'
-        + '<span>Penalty <b>+'+(r.misses*r.pen)+'s</b></span></div>';
+      body = '<div class="breakdown"><span>Challenge <b>'+fmtTime(r.act!=null?r.act:r.raw)+'s</b></span>'
+        + (r.runT?'<span>City Run <b>'+fmtTime(r.runT)+'s</b></span>':'')
+        + '<span>Misses <b>'+r.misses+'</b> (+'+(r.misses*r.pen)+'s)</span></div>';
     }
     app.innerHTML = topbar() + hud()
       + '<div class="card center">'
@@ -2597,7 +2785,7 @@
     var last3 = aliveTeams().slice();
     // pace a final and rank
     var kind='mcq', base=BASE.mcq;
-    var res = last3.map(function(t){ return { team:t, eff: base*t.skill*rnd(0.9,1.12) }; });
+    var res = last3.map(function(t){ return { team:t, eff: (base+RUN_BASE)*t.skill*rnd(0.9,1.12) }; });
     res.sort(function(a,b){ return a.eff-b.eff; });
 
     var rows='';
@@ -2620,7 +2808,7 @@
   function simSpectatorStage(){
     var ghosts=aliveTeams().filter(function(t){return t.isGhost;});
     var base=BASE.mcq;
-    var res=ghosts.map(function(t){ return {team:t, eff: base*t.skill*rnd(0.9,1.12)}; });
+    var res=ghosts.map(function(t){ return {team:t, eff: (base+RUN_BASE)*t.skill*rnd(0.9,1.12)}; });
     res.sort(function(a,b){ return a.eff-b.eff; });
     var slow=res[res.length-1]; if(slow) slow.team.alive=false;
   }
@@ -2866,7 +3054,8 @@
         offered.forEach(function(task){
           var kind=taskKind(task), base=BASE[kind]||8, pen=PENALTY[task.cat]||12;
           var misses=(Math.random()<clampP(t.skill))?1:0; if(Math.random()<clampP(t.skill)*0.4) misses++;
-          eff += base*t.skill*rnd(0.9,1.12) + misses*pen;
+          // each partner's challenge + their own City Run to the mat
+          eff += base*t.skill*rnd(0.9,1.12) + misses*pen + RUN_BASE*t.skill*rnd(0.85,1.15);
         });
         return { team:t, eff:eff };
       });
@@ -2885,7 +3074,8 @@
   /* ---- duo race flow ---- */
   function duoDestLL(){ return (S.dest && S.dest.country && S.dest.country.ll) || null; }
   function duoStart(){
-    S._recorded=false; duoRebuild(); S.online.started=true; S.online.view='race';
+    S._recorded=false; S._runPend=null; S._runDone=false;
+    duoRebuild(); S.online.started=true; S.online.view='race';
     S.screen='stage'; S._lastLL=null; duoSetStage(1);
     flightTo(duoDestLL(), function(){ S.phase='draw'; renderStage(); }); duoSave();
   }
@@ -2912,12 +3102,13 @@
     if(mb) mb.onclick=function(){ S.chosen=S.offered[mine]; S.phase='play'; renderStage(); };
     renderAcct();
   }
-  function duoSubmit(raw, misses){
+  function duoSubmit(raw, misses, act, runT){
+    if(act==null) act=raw; runT=runT||0;
     var cat=S.chosen.cat, pen=PENALTY[cat];
     var effSec=raw+misses*pen, effMs=Math.round(effSec*1000);
-    S.lastResult={ raw:raw, misses:misses, eff:effSec, pen:pen, skipped:false };
+    S.lastResult={ raw:raw, act:act, runT:runT, misses:misses, eff:effSec, pen:pen, skipped:false };
     var st=statsDefault(); st.stagesPlayed++; if(misses===0) st.perfectStages++;
-    var k=taskKind(S.chosen||{}); if(misses===0&&k!=='reaction'&&k!=='sequence'&&k!=='mapfind'&&(!st.fastestStage||raw<st.fastestStage)) st.fastestStage=raw; saveStats(st);
+    var k=taskKind(S.chosen||{}); if(misses===0&&k!=='reaction'&&k!=='sequence'&&k!=='mapfind'&&(!st.fastestStage||act<st.fastestStage)) st.fastestStage=act; saveStats(st);
     (S.online.times[S.round]=S.online.times[S.round]||{})[S.online.slot]=effMs;   // remember mine immediately
     S.phase='checkpoint'; renderStage();
     rpc('post_globe_duo_time',{p_duo:S.online.duoId, p_round:S.round, p_ms:effMs}).then(function(r){ if(onlineActive()&&r&&r.data) duoIngest(r.data); }).catch(function(){});
@@ -2991,13 +3182,13 @@
     while(S.round<ROUNDS && S.teams.filter(function(t){return t.alive;}).length>3){
       S.round++;
       var ag=S.teams.filter(function(t){return t.alive&&t.isGhost;});
-      var res=withRng(duoRng(S.round,9), function(){ return ag.map(function(t){ return {team:t, eff: BASE.mcq*t.skill*rnd(0.9,1.12)}; }); });
+      var res=withRng(duoRng(S.round,9), function(){ return ag.map(function(t){ return {team:t, eff: (BASE.mcq+RUN_BASE)*t.skill*rnd(0.9,1.12)}; }); });
       res.sort(function(a,b){ return (a.eff-b.eff)||(a.team.id<b.team.id?-1:1); });
       var slow=res[res.length-1]; if(slow) slow.team.alive=false;
     }
     S.round=ROUNDS;
     var last3=S.teams.filter(function(t){return t.alive;});
-    var fin=withRng(duoRng(999,9), function(){ return last3.map(function(t){ return {team:t, eff: BASE.mcq*t.skill*rnd(0.9,1.12)}; }); });
+    var fin=withRng(duoRng(999,9), function(){ return last3.map(function(t){ return {team:t, eff: (BASE.mcq+RUN_BASE)*t.skill*rnd(0.9,1.12)}; }); });
     fin.sort(function(a,b){ return (a.eff-b.eff)||(a.team.id<b.team.id?-1:1); });
     var rows=fin.map(function(x,i){ return '<div class="lbrow'+(i===0?' win':'')+'"><span class="p">'+(i===0?'🏆':(i+1))+'</span><span class="nm">'+esc(x.team.name)+'</span><span class="tm">'+fmtTime(x.eff)+'s</span></div>'; }).join('');
     app.innerHTML = topbar()
