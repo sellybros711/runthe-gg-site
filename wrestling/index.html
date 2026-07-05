@@ -200,6 +200,7 @@
     <div class="tab" data-tab="build">Build Show</div>
     <div class="tab" data-tab="feuds">Feuds</div>
     <div class="tab" data-tab="stables">Stables</div>
+    <div class="tab" data-tab="personnel">Managers</div>
     <div class="tab" data-tab="titles">Titles</div>
     <div class="tab" data-tab="history">History</div>
     <div class="tab" data-tab="market">Market</div>
@@ -318,11 +319,19 @@
           <label class="fld"><div class="stat-mini fldlab">Name</div><input type="text" id="teamName" placeholder="e.g. The Bloodline"></label>
           <label class="fld"><div class="stat-mini fldlab">Members (pick 2+)</div>
             <select id="teamMembers" multiple size="6" style="min-width:230px;"></select></label>
+          <label class="fld"><div class="stat-mini fldlab">Manager (optional)</div>
+            <select id="teamManager"><option value="">— none —</option></select></label>
           <button onclick="createTeam()">Form Unit</button>
         </div>
         <div class="warn" id="teamWarn"></div>
       </div>
       <div id="teamList"></div>
+    </div>
+
+    <!-- PERSONALITIES / MANAGERS -->
+    <div class="panel" id="panel-personnel">
+      <h2>Managers, Legends &amp; GM <span class="sub2">pair a mouthpiece with a wrestler or stable</span></h2>
+      <div id="personnelList"></div>
     </div>
 
     <!-- TITLES -->
@@ -385,6 +394,7 @@
 
 <script src="roster.js"></script>
 <script src="corrections.js"></script>
+<script src="personalities.js"></script>
 <script>
 "use strict";
 /* ============================================================
@@ -433,13 +443,17 @@ function freshState(promoName){
   const all = window.RTR_ROSTER.map(w => applyCorrection(JSON.parse(JSON.stringify(w))));
   const roster = all.filter(w => w.promotion === promoName).map(normalizeWorker);
   const pool   = all.filter(w => w.promotion !== promoName).map(normalizeWorker);
+  // add the free-agent / legend / manager talent pool
+  (window.RTR_PERSONALITIES || []).forEach(pw=>{
+    pool.push(normalizeWorker(Object.assign({ promotion:'Free Agent', momentum:55, condition:90, morale:75 }, JSON.parse(JSON.stringify(pw)))));
+  });
   // stagger signed-roster contract lengths so they don't all expire at once
   roster.forEach(w=>{ w.contractWeeks = 44 + (idNum(w.id) % 60); w.expiryWarned = false; });
   pool.forEach(w=>{ w.contractWeeks = 0; }); // rivals/FAs: not player-tracked until signed
   return {
     schema: SCHEMA,
     promo: { name: promoName, cash: meta.cash, popW: meta.popW, perfW: meta.perfW,
-             tierLabel: meta.tierLabel, product: meta.product },
+             tierLabel: meta.tierLabel, product: meta.product, gmId: null },
     week: 1,
     roster, pool,
     card: [],
@@ -463,8 +477,16 @@ function normalizeWorker(w){
   if(w.weeksIdle === undefined) w.weeksIdle = 0;
   if(w.contractWeeks === undefined) w.contractWeeks = 0;
   if(w.expiryWarned === undefined) w.expiryWarned = false;
+  if(w.role === undefined) w.role = 'wrestler';
+  if(w.retired === undefined) w.retired = false;
+  if(w.mgrBonus === undefined) w.mgrBonus = 0;
+  if(w.canGM === undefined) w.canGM = false;
+  if(w.managerId === undefined) w.managerId = null; // wrestler's assigned manager
   return w;
 }
+function isManager(w){ return w && w.role === 'manager'; }
+function myManagers(){ return S.roster.filter(isManager); }
+function myWrestlers(){ return S.roster.filter(w=>!isManager(w)); }
 
 function defaultTitles(promoName, roster){
   // Seed a world title + tag titles, held by the promotion's top workers
@@ -574,6 +596,7 @@ function continueCareer(){
   S.roster.forEach(normalizeWorker); S.pool.forEach(normalizeWorker);
   if(!S.feuds) S.feuds = []; if(!S.titles) S.titles = []; if(!S.inbox) S.inbox = [];
   if(!S.teams) S.teams = []; if(!S.rivalRatings) S.rivalRatings = {};
+  if(S.promo.gmId === undefined) S.promo.gmId = null;
   enterGame();
 }
 function confirmDeleteSave(){
@@ -593,7 +616,7 @@ function enterGame(){
 
 function renderAll(){
   refreshHud(); renderInbox(); renderRoster(); renderBuildSelectors(); renderCard();
-  renderFeuds(); renderStables(); renderTitles(); renderHistory(); renderMarket();
+  renderFeuds(); renderStables(); renderPersonalities(); renderTitles(); renderHistory(); renderMarket();
   renderWorld(); renderFinances(); renderEditor();
   updateTabPips();
 }
@@ -605,7 +628,8 @@ function refreshHud(){
   const cashEl = $('hudCash'); cashEl.textContent = money(S.promo.cash);
   cashEl.classList.toggle('warn', S.promo.cash < 0);
   $('hudRoster').textContent = S.roster.length;
-  const pop = S.roster.length ? Math.round(S.roster.reduce((s,w)=>s+w.overness,0)/S.roster.length) : 0;
+  const ws = myWrestlers();
+  const pop = ws.length ? Math.round(ws.reduce((s,w)=>s+w.overness,0)/ws.length) : 0;
   $('hudPop').textContent = pop;
   $('payrollLbl').textContent = 'Weekly payroll: ' + money(S.roster.reduce((s,w)=>s+w.salary,0));
 }
@@ -650,12 +674,28 @@ function renderRoster(){
   const list = S.roster.filter(w=>w.name.toLowerCase().includes(filter))
     .sort((a,b)=> (b[sortKey]||0) - (a[sortKey]||0));
   $('rosterList').innerHTML = list.map(w=>{
+    if(isManager(w)){
+      const gmTag = gm() && gm().id===w.id ? ' <span class="badge promo">GM</span>' : '';
+      return `<div class="card-row">
+        <div class="worker-name">${w.name}${gmTag}</div>
+        <span class="badge ${w.retired?'promo':'tier'}">${w.retired?'Legend':'Manager'}</span>
+        <div class="stat-mini">ENT ${w.ent}${bar(w.ent)}</div>
+        <div class="stat-mini">MGR ${w.mgrBonus}${bar(w.mgrBonus)}</div>
+        <div class="stat-mini">OVR ${Math.round(w.overness)}${bar(w.overness)}</div>
+        <div class="stat-mini">${money(w.salary)}/wk</div>
+        <div class="stat-mini" style="color:${w.contractWeeks<=12?'#f08a76':'var(--text-faint)'}">📄 ${w.contractWeeks}w</div>
+        ${w.contractWeeks<=20?`<button class="ghost" onclick="resignWorker('${w.id}')">Re-sign</button>`:''}
+        <button class="danger" onclick="releaseWorker('${w.id}')">Release</button>
+      </div>`;
+    }
     const t = heldTitle(w.id);
     const hurt = w.injWeeks > 0;
+    const mgr = w.managerId ? byId(w.managerId) : null;
     return `<div class="card-row ${hurt?'hurt':''} ${t?'champ':''}">
       <div class="worker-name">${w.name}${t?` <span class="champ-belt" title="${t.name}">🏆</span>`:''}</div>
       ${alignBadge(w)}
       <span class="badge tier">${w.tier||''}</span>
+      ${mgr?`<span class="badge promo" title="Managed by ${mgr.name}">🎤 ${mgr.name}</span>`:''}
       ${hurt?`<span class="badge hurt">Injured ${w.injWeeks}w</span>`:''}
       <div class="stat-mini">RING ${w.inRing}${bar(w.inRing)}</div>
       <div class="stat-mini">PSY ${w.psych}${bar(w.psych)}</div>
@@ -705,14 +745,18 @@ function doRelease(id){
   S.pool.push(w);
   // morale hit if releasing someone over
   if(w.overness >= 70){ S.roster.forEach(o=>o.morale = clamp(o.morale-4)); }
-  // clean up feuds/titles referencing them
+  // clean up feuds/titles/manager refs referencing them
   S.feuds = S.feuds.filter(f=> f.a!==id && f.b!==id);
   S.titles.forEach(t=>{ if(t.holderIds && t.holderIds.includes(id)){ vacateTitle(t); } });
+  if(S.promo.gmId===id) S.promo.gmId=null;                 // was the GM
+  S.roster.forEach(o=>{ if(o.managerId===id) o.managerId=null; }); // was someone's manager
+  S.teams.forEach(t=>{ if(t.managerId===id) t.managerId=null; });
+  w.managerId = null;                                       // released wrestler loses their manager link
   renderAll(); scheduleSave(); toast(w.name+' released');
 }
 
 // ---------- Build selectors ----------
-function availableRoster(){ return S.roster.filter(w=>w.injWeeks<=0); }
+function availableRoster(){ return S.roster.filter(w=>w.injWeeks<=0 && !isManager(w)); }
 function onSegTypeChange(){ updateRoadNote(); }
 
 function renderBuildSelectors(){
@@ -722,9 +766,10 @@ function renderBuildSelectors(){
   $('segWinner').innerHTML = '<option value="">— no winner set —</option>' + avail.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
   $('segTitle').innerHTML = '<option value="">— none —</option>' + S.titles.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
   $('segFeud').innerHTML = '<option value="">— none —</option>' + S.feuds.map(f=>`<option value="${f.id}">${nm(f.a)} vs ${nm(f.b)} (heat ${Math.round(f.heat)})</option>`).join('');
-  // feud selectors
-  $('feudA').innerHTML = S.roster.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
-  $('feudB').innerHTML = S.roster.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+  // feud selectors (wrestlers only)
+  const wrestlers = myWrestlers();
+  $('feudA').innerHTML = wrestlers.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+  $('feudB').innerHTML = wrestlers.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
   renderTeamSelectors();
   updateRoadNote();
 }
@@ -863,6 +908,11 @@ function calcSegmentRating(seg){
       notes.push({t:`${team.name} chemistry ${Math.round(team.chemistry)} → ${cb>=0?'+':''}${cb.toFixed(1)}`, k: cb>=0?'pos':'neg'}); }
   }
 
+  // Manager at ringside — a great mouthpiece lifts the segment (more on the mic)
+  const mgr = bestManagerFor(seg.ids);
+  if(mgr){ const mb = (isPromo?0.11:0.07)*mgr.mgrBonus; base += mb;
+    notes.push({t:`${mgr.name} at ringside → +${mb.toFixed(1)}`, k:'pos'}); }
+
   const final = Math.round(clamp(base));
   return { final, notes, ws, avgPop };
 }
@@ -967,18 +1017,22 @@ function weeklyTick(usedIds, showInfo){
   const payroll = S.roster.reduce((s,w)=>s+w.salary,0);
   S.promo.cash -= payroll;
 
-  // 2. decay / regen + idle tracking
+  // GM passive — a hired GM lifts morale baseline and sharpens the business
+  const theGM = gm();
+  const gmMoraleBase = theGM ? 72 + theGM.mgrBonus*0.06 : 72; // up to ~78
+  // 2. decay / regen + idle tracking (managers don't wrestle → no ring wear/idle penalty)
   S.roster.forEach(w=>{
-    const used = usedIds.has(w.id);
-    if(!used){
-      w.weeksIdle = (w.weeksIdle||0)+1;
-      w.momentum += (50 - w.momentum)*0.2;       // momentum decays toward baseline
-      w.condition = clamp(w.condition + 12, 0, 100); // rest heals
-      if(w.weeksIdle>=3){ w.morale = clamp(w.morale-3); w.overness = clamp(w.overness-0.5); }
+    if(!isManager(w)){
+      const used = usedIds.has(w.id);
+      if(!used){
+        w.weeksIdle = (w.weeksIdle||0)+1;
+        w.momentum += (50 - w.momentum)*0.2;       // momentum decays toward baseline
+        w.condition = clamp(w.condition + 12, 0, 100); // rest heals
+        if(w.weeksIdle>=3){ w.morale = clamp(w.morale-3); w.overness = clamp(w.overness-0.5); }
+      }
+      if(w.injWeeks>0 && !justInjured.has(w.id)){ w.injWeeks--; if(w.injWeeks===0) startInbox.push({ico:'🟢', sev:'good', txt:`<b>${w.name}</b> is cleared to return from injury.`}); }
     }
-    w.morale += (72 - w.morale)*0.12;             // morale drifts to baseline
-    // injury recovery (skip anyone injured this very week so they serve full time)
-    if(w.injWeeks>0 && !justInjured.has(w.id)){ w.injWeeks--; if(w.injWeeks===0) startInbox.push({ico:'🟢', sev:'good', txt:`<b>${w.name}</b> is cleared to return from injury.`}); }
+    w.morale += (gmMoraleBase - w.morale)*0.12;    // morale drifts to (GM-boosted) baseline
   });
 
   // 3b. contracts — tick down, warn, expire to free agency
@@ -997,8 +1051,9 @@ function weeklyTick(usedIds, showInfo){
       S.feuds=S.feuds.filter(f=>f.a!==w.id&&f.b!==w.id);
       S.teams.forEach(t=>{ t.memberIds = t.memberIds.filter(m=>m!==w.id); });
       S.titles.forEach(t=>{ if(t.holderIds.includes(w.id)) vacateTitle(t); });
+      detachPersonRefs(w.id);
       S.pool.push(w);
-      startInbox.push({ico:'📄', sev:'bad', txt:`<b>${w.name}</b>'s contract expired and they left as a free agent.`});
+      startInbox.push({ico:'📄', sev:'bad', txt:`<b>${w.name}</b>'s ${isManager(w)?'deal':'contract'} expired and they left.`});
     }
   });
   S.teams = S.teams.filter(t=>t.memberIds.length>=2); // dissolve broken units
@@ -1022,7 +1077,9 @@ function weeklyTick(usedIds, showInfo){
     const idx = S.roster.findIndex(x=>x.id===w.id);
     if(idx>-1){ S.roster.splice(idx,1); w.promotion='Free Agent'; S.pool.push(w);
       S.feuds = S.feuds.filter(f=>f.a!==w.id && f.b!==w.id);
+      S.teams.forEach(t=>{ t.memberIds = t.memberIds.filter(m=>m!==w.id); });
       S.titles.forEach(t=>{ if(t.holderIds.includes(w.id)) vacateTitle(t); });
+      detachPersonRefs(w.id);
       startInbox.push({ico:'🚪', sev:'bad', txt:`<b>${w.name}</b> walked out over how they were being booked and left the promotion.`}); }
   });
 
@@ -1066,8 +1123,8 @@ function weeklyTick(usedIds, showInfo){
 
 // AI rivals: occasionally poach an idle/unhappy star, and re-sign free agents so pool stays lively
 function aiRivalMoves(startInbox){
-  // rival signs one of your unhappy idle stars occasionally
-  const targets = S.roster.filter(w=>w.morale<30 && (w.weeksIdle||0)>=2 && w.overness>=60);
+  // rival signs one of your unhappy idle stars occasionally (wrestlers only)
+  const targets = S.roster.filter(w=>!isManager(w) && w.morale<30 && (w.weeksIdle||0)>=2 && w.overness>=60);
   targets.forEach(w=>{
     const r = seededRand(`${w.id}-${S.week}-poach`);
     if(r<0.2){
@@ -1076,7 +1133,9 @@ function aiRivalMoves(startInbox){
         const rival = pickRivalPromo();
         w.promotion=rival; S.pool.push(w);
         S.feuds=S.feuds.filter(f=>f.a!==w.id&&f.b!==w.id);
+        S.teams.forEach(t=>{ t.memberIds = t.memberIds.filter(m=>m!==w.id); });
         S.titles.forEach(t=>{ if(t.holderIds.includes(w.id)) vacateTitle(t); });
+        detachPersonRefs(w.id);
         startInbox.push({ico:'📡', sev:'bad', txt:`<b>${rival}</b> poached <b>${w.name}</b> right out from under you — they were unhappy and idle.`});
       }
     }
@@ -1158,8 +1217,8 @@ function createTeam(){
   if(!name){ warn.textContent='Give the unit a name.'; return; }
   if(ids.length<2){ warn.textContent='Pick at least 2 members.'; return; }
   if(type==='tag' && ids.length>3){ warn.textContent='Tag teams are 2–3 members; use a stable for larger groups.'; return; }
-  S.teams.push({ id:nextId('tm_'), type, name, memberIds:ids, leaderId:ids[0], chemistry:50, startWeek:S.week });
-  $('teamName').value=''; $('teamMembers').selectedIndex=-1;
+  S.teams.push({ id:nextId('tm_'), type, name, memberIds:ids, leaderId:ids[0], chemistry:50, startWeek:S.week, managerId: $('teamManager').value||null });
+  $('teamName').value=''; $('teamMembers').selectedIndex=-1; $('teamManager').value='';
   renderStables(); renderBuildSelectors(); scheduleSave(); toast((type==='tag'?'Tag team':'Stable')+' formed: '+name);
 }
 function breakUpTeam(id){
@@ -1202,6 +1261,86 @@ function renderStables(){
 function renderTeamSelectors(){
   const avail=availableRoster();
   $('teamMembers').innerHTML=avail.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
+  const tm=$('teamManager'); if(tm) tm.innerHTML='<option value="">— none —</option>'+myManagers().map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+}
+
+// ---------- Managers, legends & GM ----------
+// best (highest-mgrBonus) manager attached to anyone in a segment, via
+// a wrestler's personal manager or their dominant team's manager
+function bestManagerFor(ids){
+  const mgrs = [];
+  ids.forEach(id=>{ const w=byId(id); if(w && w.managerId){ const m=byId(w.managerId); if(m && S.roster.includes(m)) mgrs.push(m); } });
+  const team = dominantTeam(ids);
+  if(team && team.managerId){ const m=byId(team.managerId); if(m && S.roster.includes(m)) mgrs.push(m); }
+  if(!mgrs.length) return null;
+  return mgrs.sort((a,b)=>b.mgrBonus-a.mgrBonus)[0];
+}
+function gm(){ return S.promo.gmId ? byId(S.promo.gmId) : null; }
+// clear any GM/manager links pointing at a departing person id
+function detachPersonRefs(id){
+  if(S.promo.gmId===id) S.promo.gmId=null;
+  S.roster.forEach(o=>{ if(o.managerId===id) o.managerId=null; });
+  S.teams.forEach(t=>{ if(t.managerId===id) t.managerId=null; });
+}
+function assignManager(mgrId, clientId){
+  // clientId can be a wrestler id or a team id (tm_...)
+  const m = byId(mgrId); if(!m) return;
+  if(clientId==='' ){ /* unassign handled by caller */ }
+  if(clientId.startsWith && clientId.startsWith('tm_')){
+    const t=S.teams.find(x=>x.id===clientId); if(t) t.managerId=mgrId;
+  } else {
+    const w=rosterById(clientId); if(w) w.managerId=mgrId;
+  }
+  renderAll(); scheduleSave(); toast(m.name+' assigned');
+}
+function unassignManagerFrom(kind,id){
+  if(kind==='w'){ const w=rosterById(id); if(w) w.managerId=null; }
+  else { const t=S.teams.find(x=>x.id===id); if(t) t.managerId=null; }
+  renderAll(); scheduleSave();
+}
+function setGM(id){ S.promo.gmId = id||null; renderAll(); scheduleSave(); toast(id?byId(id).name+' hired as GM':'GM removed'); }
+
+function renderPersonalities(){
+  const el=$('personnelList');
+  const mgrs=myManagers();
+  const g=gm();
+  const wrestlers=myWrestlers();
+  // GM section
+  let html = `<div class="builder-box"><div class="vs-line" style="margin-bottom:8px;">General Manager</div>`;
+  const gmEligible = mgrs.filter(m=>m.canGM);
+  html += `<div class="stat-mini" style="margin-bottom:8px;">A GM lifts locker-room morale and sharpens the business — a small company-wide edge each week.</div>`;
+  html += `<select id="gmPick" onchange="setGM(this.value)"><option value="">— no GM —</option>` +
+    gmEligible.map(m=>`<option value="${m.id}" ${g&&g.id===m.id?'selected':''}>${m.name} (mgr ${m.mgrBonus})</option>`).join('') + `</select>`;
+  if(!gmEligible.length) html += `<div class="hint" style="margin-top:6px;">Sign a legend or a booking-minded manager (Heyman, Callis, Cornette…) from the Market to fill this role.</div>`;
+  html += `</div>`;
+
+  // Managers on roster + assignment
+  if(!mgrs.length){
+    html += `<div class="empty-note">No managers or legends signed. Head to the Market — legends and famous managers sit in the free-agent pool. Pair one with a wrestler or a stable to boost their segments and heat.</div>`;
+  } else {
+    html += mgrs.map(m=>{
+      const clients = wrestlers.filter(w=>w.managerId===m.id).map(w=>w.name)
+        .concat(S.teams.filter(t=>t.managerId===m.id).map(t=>t.name+' (stable)'));
+      const opts = `<option value="">— assign to… —</option>`
+        + `<optgroup label="Wrestlers">`+wrestlers.map(w=>`<option value="${w.id}">${w.name}</option>`).join('')+`</optgroup>`
+        + (S.teams.length?`<optgroup label="Stables">`+S.teams.map(t=>`<option value="${t.id}">${t.name}</option>`).join('')+`</optgroup>`:``);
+      return `<div class="feud-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div class="heads">${m.name} <span class="badge ${m.retired?'promo':'tier'}">${m.retired?'Legend':'Manager'}</span> <span class="badge tier">MGR ${m.mgrBonus}</span></div>
+          <div>${money(m.salary)}/wk</div>
+        </div>
+        <div class="stat-mini" style="margin:6px 0;">Managing: ${clients.length?clients.join(', '):'<span style="color:var(--text-faint)">nobody yet</span>'}</div>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+          <select onchange="if(this.value){assignManager('${m.id}',this.value); this.value='';}">${opts}</select>
+        </div>
+      </div>`;
+    }).join('');
+    // show current pairings with unassign
+    const paired = wrestlers.filter(w=>w.managerId).map(w=>`<span class="badge tier" style="margin:2px;">${w.name} ← ${nm(w.managerId)} <a href="#" onclick="unassignManagerFrom('w','${w.id}');return false;" style="color:#f08a76;">✕</a></span>`)
+      .concat(S.teams.filter(t=>t.managerId).map(t=>`<span class="badge tier" style="margin:2px;">${t.name} ← ${nm(t.managerId)} <a href="#" onclick="unassignManagerFrom('t','${t.id}');return false;" style="color:#f08a76;">✕</a></span>`));
+    if(paired.length) html += `<div style="margin-top:10px;"><div class="stat-mini" style="margin-bottom:4px;">CURRENT PAIRINGS</div>${paired.join(' ')}</div>`;
+  }
+  el.innerHTML = html;
 }
 
 // ---------- AI rival promotions ----------
@@ -1225,7 +1364,7 @@ function simulateRivalShows(){
   });
 }
 function rivalsSignFreeAgents(startInbox){
-  const fas=S.pool.filter(w=>w.promotion==='Free Agent').sort((a,b)=>b.overness-a.overness);
+  const fas=S.pool.filter(w=>w.promotion==='Free Agent' && !isManager(w)).sort((a,b)=>b.overness-a.overness);
   fas.forEach(w=>{
     if(w.overness<62) return;
     const r=seededRand(`${w.id}-${S.week}-fasign`);
@@ -1240,9 +1379,10 @@ function renderWorld(){
   const rows=Object.keys(PROMO_META).map(p=>{
     const isYou=p===S.promo.name;
     const r=isYou?null:promoRoster(p);
-    const size=isYou?S.roster.length:(r?r.length:0);
+    const youW = isYou?myWrestlers():null;
+    const size=isYou?youW.length:(r?r.length:0);
     const avgOver=isYou
-      ? (S.roster.length?S.roster.reduce((s,w)=>s+w.overness,0)/S.roster.length:0)
+      ? (youW.length?youW.reduce((s,w)=>s+w.overness,0)/youW.length:0)
       : (r&&r.length?r.reduce((s,w)=>s+w.overness,0)/r.length:0);
     const lastRating=isYou?(S.history[0]?S.history[0].showRating:null):(S.rivalRatings[p]??null);
     return {p, isYou, size, avgOver, lastRating, tier:PROMO_META[p].tierLabel};
@@ -1388,16 +1528,19 @@ function renderMarket(){
   $('marketList').innerHTML = list.map(w=>{
     const {isFA, bonus} = poachInfo(w);
     const canAfford = S.promo.cash >= bonus;
+    const mg = isManager(w);
+    const roleBadge = mg ? `<span class="badge promo">${w.retired?'Legend':'Manager'}</span>` : `<span class="badge promo">${w.promotion}</span>`;
+    const stats = mg
+      ? `<div class="stat-mini">ENT ${w.ent}${bar(w.ent)}</div><div class="stat-mini">MGR ${w.mgrBonus}${bar(w.mgrBonus)}</div><div class="stat-mini">OVR ${Math.round(w.overness)}${bar(w.overness)}</div>${w.canGM?'<span class="badge tier">can GM</span>':''}`
+      : `<div class="stat-mini">RING ${w.inRing}${bar(w.inRing)}</div><div class="stat-mini">PSY ${w.psych}${bar(w.psych)}</div><div class="stat-mini">ENT ${w.ent}${bar(w.ent)}</div><div class="stat-mini">OVR ${Math.round(w.overness)}${bar(w.overness)}</div>`;
+    const label = mg ? 'Hire' : (isFA?'Sign':'Poach');
     return `<div class="card-row">
       <div class="worker-name">${w.name}</div>
-      <span class="badge promo">${w.promotion}</span>
-      ${alignBadge(w)}
-      <div class="stat-mini">RING ${w.inRing}${bar(w.inRing)}</div>
-      <div class="stat-mini">PSY ${w.psych}${bar(w.psych)}</div>
-      <div class="stat-mini">ENT ${w.ent}${bar(w.ent)}</div>
-      <div class="stat-mini">OVR ${Math.round(w.overness)}${bar(w.overness)}</div>
-      <div class="fa-price">${isFA?'Signing bonus':'Poach fee'} ${money(bonus)} · ${money(w.salary)}/wk</div>
-      <button onclick="signWorker('${w.id}')" ${canAfford?'':'disabled'}>${isFA?'Sign':'Poach'}</button>
+      ${roleBadge}
+      ${mg?'':alignBadge(w)}
+      ${stats}
+      <div class="fa-price">${mg?'Hire fee':(isFA?'Signing bonus':'Poach fee')} ${money(bonus)} · ${money(w.salary)}/wk</div>
+      <button onclick="signWorker('${w.id}')" ${canAfford?'':'disabled'}>${label}</button>
     </div>`;
   }).join('') || '<div class="empty-note">No wrestlers match that filter.</div>';
 }
@@ -1413,7 +1556,7 @@ function signWorker(id){
   w.contractWeeks = 52; w.expiryWarned = false;
   S.roster.push(w);
   renderAll(); scheduleSave();
-  toast(`${isFA?'Signed':'Poached'} ${w.name}${isFA?'':' from '+from}`);
+  toast(`${isManager(w)?'Hired':(isFA?'Signed':'Poached')} ${w.name}${(isFA||isManager(w))?'':' from '+from}`);
 }
 
 // ---------- Finances ----------

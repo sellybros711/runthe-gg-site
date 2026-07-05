@@ -284,4 +284,33 @@ window.RTR_CORRECTIONS = {
   w0276: { age:35, inRing:66, psych:64, ent:70, phys:68, overness:54 }, // Hyper Misao
   w0277: { age:26, inRing:70, psych:62, ent:62, phys:68, overness:58 }, // Suzume
   w0281: { age:24, inRing:58, psych:52, ent:64, phys:56, overness:44 }, // Yuki Arai
+
+  // ---- deep cuts: remaining identifiable lower-card names (v0.3.1) ----
+  w0089: { age:38, inRing:66, psych:54, ent:58, phys:66, overness:42 }, // Angel (Los Garza)
+  w0090: { age:36, inRing:64, psych:52, ent:56, phys:64, overness:42 }, // Berto (Los Garza)
+  w0092: { age:33, inRing:60, psych:54, ent:64, phys:58, overness:46 }, // Elton Prince (Pretty Deadly)
+  w0093: { age:32, inRing:60, psych:54, ent:64, phys:58, overness:46 }, // Kit Wilson (Pretty Deadly)
+  w0096: { age:34, inRing:58, psych:54, ent:52, phys:76, overness:44 }, // Talla Tonga
+  w0098: { age:33, inRing:54, psych:50, ent:60, phys:60, overness:40 }, // B-Fab
+  w0100: { age:26, inRing:58, psych:50, ent:54, phys:70, overness:40 }, // Kali Armstrong
+  w0101: { age:25, inRing:60, psych:52, ent:58, phys:64, overness:42 }, // Lainey Reid
+  w0188: { age:30, inRing:60, psych:54, ent:60, phys:64, overness:40 }, // BDE
+  w0192: { age:36, inRing:58, psych:52, ent:60, phys:70, overness:46 }, // Ash by Elegance
+  w0197: { age:34, inRing:62, psych:56, ent:56, phys:64, overness:44 }, // KiLynn King
+  w0198: { age:31, inRing:60, psych:56, ent:54, phys:66, overness:42 }, // Lei Ying Lee
+  w0224: { age:30, inRing:58, psych:52, ent:58, phys:60, overness:42 }, // Christyan Reid
+  w0225: { age:34, inRing:62, psych:56, ent:56, phys:62, overness:44 }, // Trish Adora
+  w0249: { age:24, inRing:66, psych:58, ent:56, phys:70, overness:46 }, // Kosei Fujita
+  w0250: { age:31, inRing:66, psych:56, ent:54, phys:64, overness:48 }, // Master Wato
+  w0251: { age:36, inRing:70, psych:58, ent:56, phys:66, overness:50 }, // Titan
+  w0263: { age:35, inRing:70, psych:60, ent:64, phys:66, overness:52 }, // Saori Anou
+  w0264: { age:23, inRing:64, psych:54, ent:56, phys:66, overness:48 }, // Rina
+  w0265: { age:34, inRing:66, psych:58, ent:56, phys:64, overness:50 }, // Konami
+  w0266: { age:26, inRing:60, psych:52, ent:60, phys:62, overness:46 }, // Waka Tsukiyama
+  w0267: { age:26, inRing:62, psych:52, ent:54, phys:62, overness:46 }, // Yuna Mizumori
+  w0278: { age:33, inRing:56, psych:56, ent:66, phys:60, overness:48 }, // Raku
+  w0279: { age:29, inRing:62, psych:54, ent:52, phys:62, overness:44 }, // Yuki Aino
+  w0280: { age:36, inRing:54, psych:54, ent:66, phys:56, overness:46 }, // Pom Harajuku
+  w0283: { age:24, inRing:58, psych:52, ent:60, phys:62, overness:44 }, // Shino Suzuki
+  w0285: { age:28, inRing:58, psych:52, ent:56, phys:62, overness:44 }, // Toga
 };
