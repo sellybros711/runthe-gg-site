@@ -1577,13 +1577,12 @@ function dRoundGrade(holes, total, avg){
 // resolve a grade for a stored/backfilled result (uses the stored grade, else recomputes from holes)
 function gradeFromResult(r){ if(!r) return null; if(r.grade&&r.grade.key) return r.grade;
   const c=DAILY_COURSES[r.course]; return dRoundGrade(r.holes||[], r.total, r.avg!=null?r.avg:(c?dTourAvg(c):0)); }
-// Wordle-style emoji result for the daily, a paste-anywhere viral hook, now LEADING with the grade
+// Wordle-style emoji result for the daily, a paste-anywhere viral hook, led by the score + beat-the-pro
 function dailyShareText(r){ const c=DAILY_COURSES[r.course]; const holes=r.holes||[];
   const emo=t=> t<=-2?'🟦':t===-1?'🟩':t===0?'⬜':t===1?'🟨':'🟥';   // eagle+ blue · birdie green · par white · bogey yellow · dbl+ red
   let grid=''; holes.forEach((h,i)=>{ grid+=emo(h.toPar); if(i===8)grid+='\n'; });
   const av=r.avg!=null?r.avg:dTourAvg(c), won=r.total<av, st=streakDisplay();
-  const gr=gradeFromResult(r), gLine=gr?`${gr.letter} · ${gr.label} — `:'';
-  return `⛳ RunTheTour Daily · ${dShort(c.v)}\n${gLine}${dTot(r.total, c.par)} on par ${c.par}${won?' · beat the pro ✓':''}${st>0?` · 🔥${st}`:''}\n${grid}\nThink you can beat it? https://runthe.gg/golf`; }
+  return `⛳ RunTheTour Daily · ${dShort(c.v)}\n${dTot(r.total, c.par)} on par ${c.par}${won?' · beat the pro ✓':''}${st>0?` · 🔥${st}`:''}\n${grid}\nThink you can beat it? https://runthe.gg/golf`; }
 /* ---------- #5 Course Mastery Passport + #4 weekly meta-goals (the Daily's collection/goal layer,
    a solo progression the H2H ladder doesn't have). Per-account, cloud-synced grow-only. ---------- */
 function courseMastery(){ const m=LS.get(acctKey('bag_coursemastery'),{}); return (m&&typeof m==='object')?m:{}; }
@@ -1603,16 +1602,16 @@ function weekKey(){ const t=todayKey(),y=Math.floor(t/10000),mo=Math.floor(t/100
 const WEEK_GOALS=[
   {k:'days',  label:'Play 5 days this week',       target:5, get:w=>Object.keys(w.days||{}).length},
   {k:'beats', label:'Beat the pro 3 times',        target:3, get:w=>w.beats||0},
-  {k:'grade', label:'Grade an A round or better',  target:1, get:w=>((w.bestGrade==null?-1:w.bestGrade)>=3)?1:0},
+  {k:'low',   label:'Beat the pro by 3+ in a round', target:1, get:w=>((w.bestMargin==null?-99:w.bestMargin)>=3)?1:0},
 ];
 function weekGoals(){ const wk=weekKey(); let w=LS.get(acctKey('bag_weekgoals'),null);
-  if(!w||typeof w!=='object'||w.week!==wk) w={week:wk,days:{},beats:0,bestGrade:-1,beatDays:{},rewarded:false};
+  if(!w||typeof w!=='object'||w.week!==wk) w={week:wk,days:{},beats:0,bestGrade:-1,bestMargin:-99,beatDays:{},rewarded:false};
   w.days=w.days||{}; w.beatDays=w.beatDays||{}; return w; }
 function weekGoalsDone(w){ w=w||weekGoals(); return WEEK_GOALS.every(g=>g.get(w)>=g.target); }
-function bumpWeekGoals(won, gradeTier){
+function bumpWeekGoals(won, margin){
   const w=weekGoals(), t=todayKey(); w.days[t]=1;
   if(won && !w.beatDays[t]){ w.beats=(w.beats||0)+1; w.beatDays[t]=1; }   // one "beat" per day (a later attempt can flip a day)
-  if(gradeTier!=null && gradeTier>(w.bestGrade==null?-1:w.bestGrade)) w.bestGrade=gradeTier;
+  if(margin!=null && margin>(w.bestMargin==null?-99:w.bestMargin)) w.bestMargin=margin;   // how far under the pro average, best of the week
   let gotReward=false;
   if(weekGoalsDone(w) && !w.rewarded){ w.rewarded=true; gotReward=true;    // reward = a streak freeze (ties into #1)
     const ds=LS.get(acctKey('bag_streak'),{current:0,longest:0,last:null,freezes:0,miles:{}})||{current:0,longest:0,last:null,freezes:0,miles:{}};
@@ -8561,7 +8560,7 @@ function finishDailyRound(){
   // lifetime record instead (tie counts as a loss, `won` is strict total<avg, decided by best of the day).
   const _ds=bumpStreak(); const _st=bumpDailyStats(won);
   bumpMastery(S.dailyCourse, total, grade?grade.tier:null, won);   // #5 course passport (best score + best grade per course)
-  const _wg=bumpWeekGoals(won, grade?grade.tier:null); S.dailyWeekReward=_wg.gotReward;   // #4 weekly goals (+ freeze reward)
+  const _wg=bumpWeekGoals(won, avg-total); S.dailyWeekReward=_wg.gotReward;   // #4 weekly goals (beat-the-pro margin; + freeze reward)
   S.dailyStreakInfo={won, mile:_ds._mile||0, gotFreeze:!!_ds._gotFreeze, usedFreeze:!!_ds._usedFreeze, current:_ds.current, freezes:_ds.freezes||0, played:_st.played, beat:_st.beat};
   // log this attempt; the LOWEST score of the day is the one that counts (leaderboard / course record).
   // The attempt was already CLAIMED at the first wheel spin (claimDailyAttempt), so read that count —
@@ -9001,13 +9000,9 @@ function scrDailyResult(){
   add($(`<h1 class="center" style="font-size:26px;margin:10px 0 2px">${esc(c.v)}</h1>`));
   add($(`<div class="center" style="margin:6px 0"><span class="mono" style="font-weight:800;font-size:44px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${dTot(total, c.par)}</span></div>`));
   add($(`<p class="lede center" style="margin:0 0 8px">Par ${c.par} · OVR ${r.ovr}${dCondLabel(r.cond)?' · '+dCondLabel(r.cond):''}</p>`));
-  // ROUND RATING: the "how you played" grade — the Daily's own identity (separate from the H2H ladder)
-  const gr=gradeFromResult(r);
-  if(gr) add($(`<div class="gradecard" style="border-color:${gr.col}">
-    <div class="gletter" style="color:${gr.col}">${gr.letter}</div>
-    <div class="ginfo"><div class="glabel" style="color:${gr.col}">${esc(gr.label)}<span class="gsub">Round Rating</span></div>
-      <div class="gblurb">${esc(gr.blurb)}</div>${gr.featTxt?`<div class="gfeat">${esc(gr.featTxt)}</div>`:''}</div></div>`));
   // headline: did you beat the tour average? (the main objective). best-of-day decides the day.
+  // (The old "Round Rating" grade card was removed per owner: the score + beat-the-pro + your stats are
+  // the main attraction; the grade added noise and buried the important info.)
   const av=(r.avg!=null?r.avg:dTourAvg(c)); const bestT=best?best.total:total; const wonDay=bestT<av; const margin=Math.abs((av-total));
   add($(`<div class="scout" style="max-width:520px;margin:0 auto 4px;text-align:center;border-color:${wonDay?'#35d6a0':'var(--gold)'}">
     ${wonDay?`<b style="color:#35d6a0;font-size:17px">🏁 You beat the pro!</b>`:`<b style="color:var(--oncard);font-size:16px">Short of the tour average</b>`}
@@ -9638,6 +9633,7 @@ function mergeWeekGoals(local, server){
   if((local.week||0)>(server.week||0)) return local;
   return { week:local.week, days:Object.assign({},server.days,local.days), beatDays:Object.assign({},server.beatDays,local.beatDays),
     beats:Math.max(local.beats||0,server.beats||0), bestGrade:Math.max(local.bestGrade==null?-1:local.bestGrade,server.bestGrade==null?-1:server.bestGrade),
+    bestMargin:Math.max(local.bestMargin==null?-99:local.bestMargin,server.bestMargin==null?-99:server.bestMargin),
     rewarded:!!(local.rewarded||server.rewarded) };
 }
 // Grow-only merge of a course-records map: for each course, the LOWER round (to-par) wins, so a merge can
