@@ -575,6 +575,16 @@
   .wc-match-row.final-row.revealed{animation:wcFinalFlash .7s ease-out;}
   .wc-reveal-skip{display:none;margin:0 auto 14px;font-size:12px;padding:6px 16px;width:auto;}
 
+  /* Best Third-Place Teams: a flat cross-group table, not a collapsible
+     block like the group-of-4 tables above — it's a single ranked list. */
+  .wc-third-table{background:var(--white);border:1.5px solid var(--border-soft);border-radius:12px;
+    padding:4px 12px;margin-bottom:14px;text-align:left;}
+  .wc-grp-tag{font-size:11px;font-weight:700;color:var(--muted);margin-left:4px;}
+  .wc-group-row.wc-eliminated{color:var(--muted);opacity:.55;text-decoration:line-through;}
+  .wc-group-row.wc-third-pending{opacity:.7;}
+  .wc-third-cutoff{font-weight:900;font-size:11px;letter-spacing:1px;text-transform:uppercase;
+    color:var(--gold);text-align:center;padding:6px 0;border-top:1.5px dashed var(--gold);}
+
   /* "your World Cup is ready" banner — fixed to the top, persists until
      tapped/dismissed (a transient toast isn't enough for something the
      player needs to act on after coming back to the app). */
@@ -12122,10 +12132,31 @@ async function wcShowBracket(seasonId, myEntrantId){
 }
 
 function wcResultLabel(me){
-  return me.eliminated_round==='champion' ? 'YOU WON THE WORLD CUP! 🏆'
-    : me.eliminated_round==='final' ? 'RUNNER-UP — lost the Final'
-    : me.eliminated_round==='group' ? 'Eliminated in the Group Stage'
-    : `Eliminated in the ${WC_STAGE_LABELS[me.eliminated_round]||me.eliminated_round||''}`;
+  if(me.eliminated_round==='champion') return 'YOU WON THE WORLD CUP! 🏆';
+  if(me.eliminated_round==='final') return 'RUNNER-UP — lost the Final';
+  if(me.eliminated_round==='group'){
+    return (me.group_rank===3 && me.third_rank>8)
+      ? 'So close! Missed out among the third-place teams.'
+      : 'Eliminated in the Group Stage';
+  }
+  return `Eliminated in the ${WC_STAGE_LABELS[me.eliminated_round]||me.eliminated_round||''}`;
+}
+
+// 12 groups, lettered A-L like the real World Cup (0->A, 11->L).
+function wcGroupLetter(gn){ return String.fromCharCode(65 + gn); }
+
+function wcGroupBlockHtml(rows, gn, isMine, myEntrantId){
+  const sorted = rows.slice().sort((a,b)=>(a.group_rank||9)-(b.group_rank||9));
+  let html = `<div class="wc-group-block${isMine?' mine open':''}" data-g="${gn}">`+
+    `<div class="wc-group-head"><span>Group ${wcGroupLetter(gn)}${isMine?' (yours)':''}</span><span class="chev">›</span></div>`+
+    `<div class="wc-group-rows">`;
+  sorted.forEach(r=>{
+    html += `<div class="wc-group-row${r.advanced?' advanced':''}${r.id===myEntrantId?' mine':''}">`+
+      `<span class="g-nm">${flagChip(r.flag)} ${escapeHtml(r.name)}</span>`+
+      `<span class="g-stat">${r.pts}pts (${r.gf}-${r.ga})</span></div>`;
+  });
+  html += `</div></div>`;
+  return html;
 }
 
 function wcGroupsHtml(entrants, myGroupNo, myEntrantId){
@@ -12133,19 +12164,31 @@ function wcGroupsHtml(entrants, myGroupNo, myEntrantId){
   entrants.forEach(e=>{ (groups[e.group_no]=groups[e.group_no]||[]).push(e); });
   const groupNos = Object.keys(groups).map(Number).sort((a,b)=>a-b);
   let html = '<div class="wc-round-title">Groups</div>';
-  groupNos.forEach(gn=>{
-    const rows = groups[gn].slice().sort((a,b)=>(a.group_rank||9)-(b.group_rank||9));
-    const isMine = gn===myGroupNo;
-    html += `<div class="wc-group-block${isMine?' mine open':''}" data-g="${gn}">`+
-      `<div class="wc-group-head"><span>Group ${gn+1}${isMine?' (yours)':''}</span><span class="chev">›</span></div>`+
-      `<div class="wc-group-rows">`;
-    rows.forEach(r=>{
-      html += `<div class="wc-group-row${r.advanced?' advanced':''}${r.id===myEntrantId?' mine':''}">`+
-        `<span class="g-nm">${flagChip(r.flag)} ${escapeHtml(r.name)}</span>`+
-        `<span class="g-stat">${r.pts}pts (${r.gf}-${r.ga})</span></div>`;
-    });
-    html += `</div></div>`;
+  groupNos.forEach(gn=>{ html += wcGroupBlockHtml(groups[gn], gn, gn===myGroupNo, myEntrantId); });
+  return html;
+}
+
+// The 8 best third-place finishers (out of 12) join the 24 group winners/
+// runners-up in the Round of 32 — the real 2026 World Cup format. Rows are
+// already in the client's own group blocks above; this is the separate
+// cross-group table that decides which thirds make it.
+function wcThirdRowHtml(r, myEntrantId, pending){
+  const advanced = r.third_rank<=8;
+  const cls = ['wc-group-row']; if(r.id===myEntrantId) cls.push('mine');
+  cls.push(pending ? 'wc-third-pending' : (advanced ? 'advanced' : 'wc-eliminated'));
+  return `<div class="${cls.join(' ')}">`+
+    `<span class="g-nm">${r.third_rank}. ${flagChip(r.flag)} ${escapeHtml(r.name)} <span class="wc-grp-tag">Grp ${wcGroupLetter(r.group_no)}</span></span>`+
+    `<span class="g-stat">${r.pts}pts (${r.gf}-${r.ga})</span></div>`;
+}
+function wcThirdPlaceHtml(entrants, myEntrantId){
+  const thirds = entrants.filter(e=>e.group_rank===3 && e.third_rank!=null).sort((a,b)=>a.third_rank-b.third_rank);
+  if(!thirds.length) return '';
+  let html = '<div class="wc-round-title">Best Third-Place Teams</div><div class="wc-third-table">';
+  thirds.forEach(r=>{
+    html += wcThirdRowHtml(r, myEntrantId, false);
+    if(r.third_rank===8) html += '<div class="wc-third-cutoff">— top 8 advance —</div>';
   });
+  html += '</div>';
   return html;
 }
 
@@ -12189,6 +12232,7 @@ function wcRenderBracket(data, myEntrantId){
   banner.innerHTML = me ? `<span class="${me.eliminated_round==='champion'?'ok':''}">${wcResultLabel(me)}</span>` : '';
 
   let html = wcGroupsHtml(entrants, me?me.group_no:null, myEntrantId);
+  html += wcThirdPlaceHtml(entrants, myEntrantId);
 
   WC_STAGE_ORDER.forEach(stage=>{
     const stageMatches = matches.filter(m=>m.stage===stage);
@@ -12235,14 +12279,56 @@ async function wcRevealBracket(data, myEntrantId){
   const matches = data.matches || [];
   const byId = {}; entrants.forEach(e=>byId[e.id]=e);
   const me = myEntrantId ? byId[myEntrantId] : null;
+  const myGroupNo = me ? me.group_no : null;
 
   const content = $('wc-bracket-content');
-  content.innerHTML = wcGroupsHtml(entrants, me?me.group_no:null, myEntrantId);
-  content.querySelectorAll('.wc-group-head').forEach(h=>{
-    h.addEventListener('click', ()=>{ h.closest('.wc-group-block').classList.toggle('open'); });
-  });
-
+  content.innerHTML = '';
   const skipBtn = $('wc-reveal-skip'); if(skipBtn) skipBtn.style.display = 'inline-block';
+
+  // ---- groups, revealed one at a time (yours gets a longer beat + auto-opens) ----
+  content.insertAdjacentHTML('beforeend', '<div class="wc-round-title">Groups</div>');
+  const groups = {};
+  entrants.forEach(e=>{ (groups[e.group_no]=groups[e.group_no]||[]).push(e); });
+  const groupNos = Object.keys(groups).map(Number).sort((a,b)=>a-b);
+
+  for(const gn of groupNos){
+    if(myToken !== wcRevealToken) return;
+    const isMine = gn===myGroupNo;
+    content.insertAdjacentHTML('beforeend', wcGroupBlockHtml(groups[gn], gn, isMine, myEntrantId));
+    const block = content.lastElementChild;
+    block.querySelector('.wc-group-head').addEventListener('click', ()=>{ block.classList.toggle('open'); });
+    block.scrollIntoView({ behavior:'smooth', block:'center' });
+    await wcRevealSleep(isMine ? 650 : 300);
+  }
+  if(myToken !== wcRevealToken) return;
+  await wcRevealSleep(400);
+
+  // ---- best third-place teams: settles 8 of the 32 knockout spots, so it
+  // only makes sense once every group's final table is in ----
+  const thirds = entrants.filter(e=>e.group_rank===3 && e.third_rank!=null).sort((a,b)=>a.third_rank-b.third_rank);
+  if(thirds.length){
+    content.insertAdjacentHTML('beforeend', '<div class="wc-round-title">Best Third-Place Teams</div><div class="wc-third-table" id="wc-third-table"></div>');
+    const table = content.querySelector('#wc-third-table');
+    table.scrollIntoView({ behavior:'smooth', block:'center' });
+    for(const r of thirds){
+      if(myToken !== wcRevealToken) return;
+      const mine = r.id===myEntrantId;
+      table.insertAdjacentHTML('beforeend', wcThirdRowHtml(r, myEntrantId, true));
+      const row = table.lastElementChild;
+      await wcRevealSleep(mine ? 750 : 380);
+      if(myToken !== wcRevealToken) return;
+      row.classList.remove('wc-third-pending');
+      row.classList.add(r.third_rank<=8 ? 'advanced' : 'wc-eliminated');
+      if(r.third_rank===8){
+        table.insertAdjacentHTML('beforeend', '<div class="wc-third-cutoff">— top 8 advance —</div>');
+        await wcRevealSleep(550);
+      } else {
+        await wcRevealSleep(180);
+      }
+    }
+  }
+  if(myToken !== wcRevealToken) return;
+  await wcRevealSleep(500);
 
   for(const stage of WC_STAGE_ORDER){
     if(myToken !== wcRevealToken) return; // a newer reveal took over
