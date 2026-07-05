@@ -146,19 +146,32 @@
   .btnrow{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
   .btnrow .btn{flex:1 1 auto;}
 
-  /* mode list */
-  .mode{display:flex;align-items:center;gap:14px;width:100%;text-align:left;margin-bottom:11px;
-    background:rgba(255,255,255,.025);border:1px solid var(--line);border-radius:15px;padding:14px 15px;
-    cursor:pointer;transition:border-color .16s ease,transform .16s cubic-bezier(.22,.9,.32,1),background .16s;}
-  .mode:hover:not(.soon){border-color:rgba(236,181,80,.5);transform:translateY(-2px);background:rgba(236,181,80,.05);}
+  /* mode list — each mode is a designed card with its own accent identity */
+  .mode{--acc:var(--globe);--accl:rgba(236,181,80,.26);--accb:rgba(236,181,80,.42);--accs:rgba(236,181,80,.5);
+    display:flex;align-items:center;gap:15px;width:100%;text-align:left;margin-bottom:12px;position:relative;overflow:hidden;
+    background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));
+    border:1px solid var(--line);border-radius:18px;padding:16px 16px 16px 19px;cursor:pointer;
+    transition:border-color .18s,transform .18s cubic-bezier(.22,.9,.32,1),box-shadow .18s,background .18s;}
+  .mode.m-gold{--acc:#ECB550;--accl:rgba(236,181,80,.26);--accb:rgba(236,181,80,.42);--accs:rgba(236,181,80,.55);}
+  .mode.m-green{--acc:#4FB57A;--accl:rgba(70,165,108,.28);--accb:rgba(70,165,108,.46);--accs:rgba(70,165,108,.55);}
+  .mode.m-coral{--acc:#F0684F;--accl:rgba(238,90,68,.26);--accb:rgba(238,90,68,.44);--accs:rgba(238,90,68,.55);}
+  .mode::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--acc);opacity:.85;}
+  /* faint accent glow bloom behind the icon */
+  .mode::after{content:"";position:absolute;left:-10px;top:50%;width:120px;height:120px;transform:translateY(-50%);
+    background:radial-gradient(circle,var(--accl),transparent 68%);opacity:.5;pointer-events:none;}
+  .mode:hover:not(.soon){transform:translateY(-2px);border-color:var(--accb);box-shadow:0 16px 34px -20px #000,0 0 0 1px var(--accb) inset;}
   .mode.soon{opacity:.6;cursor:default;}
-  .mode .ic{flex:0 0 auto;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
-    font-size:22px;background:linear-gradient(160deg,#221c46,#15112e);border:1px solid var(--cardb);}
-  .mode .mm{min-width:0;flex:1;}
-  .mode .mn{display:block;font-weight:900;font-size:15.5px;}
-  .mode .md{display:block;color:var(--mut);font-size:12.5px;margin-top:3px;line-height:1.4;}
-  .tag{font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:999px;
-    background:rgba(236,181,80,.16);color:var(--goldhi);border:1px solid rgba(236,181,80,.32);flex:0 0 auto;}
+  .mode .ic{position:relative;z-index:1;flex:0 0 auto;width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+    color:var(--acc);background:radial-gradient(circle at 34% 26%,var(--accl),rgba(255,255,255,.02) 75%);
+    border:1px solid var(--accb);box-shadow:0 8px 18px -10px var(--accs),inset 0 1px 0 rgba(255,255,255,.14);}
+  .mode .ic svg{width:28px;height:28px;display:block;}
+  .mode .mm{min-width:0;flex:1;position:relative;z-index:1;}
+  .mode .mn{display:block;font-family:'Bricolage Grotesque','Archivo',sans-serif;font-weight:800;font-size:17px;letter-spacing:.005em;line-height:1.12;}
+  .mode .md{display:block;color:var(--mut);font-size:12.5px;margin-top:4px;line-height:1.45;}
+  .mode .chev{flex:0 0 auto;position:relative;z-index:1;color:var(--mut);font-size:22px;line-height:1;opacity:.55;transition:color .16s,opacity .16s,transform .16s;}
+  .mode:hover:not(.soon) .chev{color:var(--acc);opacity:1;transform:translateX(3px);}
+  .tag{font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;padding:3px 8px;border-radius:999px;align-self:center;
+    background:var(--accl);color:var(--acc);border:1px solid var(--accb);flex:0 0 auto;position:relative;z-index:1;}
   .tag.soon{background:rgba(255,255,255,.06);color:var(--mut);border-color:var(--line);}
 
   input[type=text]{width:100%;background:rgba(8,6,20,.6);border:1px solid var(--cardb);border-radius:11px;color:var(--ink);
@@ -676,9 +689,9 @@
       + '<div class="card">'
         + '<h3 style="font-size:16px;margin-bottom:4px">How do you want to play?</h3>'
         + '<p class="muted" style="font-size:12.5px;margin:0 0 12px">You race a field of 11 teams either way — pick who\'s on <b>your</b> team.</p>'
-        + modeRow('solo','🏃','Solo Race','Race the field on your own — you take every challenge.','',false)
-        + modeRow('duo_same','👥','Team Race · Same Screen','You and a partner, one device, one team. Take turns each Stage.','',false)
-        + modeRow('duo_two','🌐','Team Race · Two Devices','You and a partner on separate devices, same team.','Beta',false)
+        + modeRow('solo',MODE_ICON.solo,'Solo Race','Race the field on your own — you take every challenge.','','gold')
+        + modeRow('duo_same',MODE_ICON.duo,'Team Race · Same Screen','You and a partner, one device, one team. Take turns each Stage.','','green')
+        + modeRow('duo_two',MODE_ICON.two,'Team Race · Two Devices','You and a partner on separate devices, same team.','Beta','coral')
       + '</div>'
       + '<div class="card">'
         + '<h3 style="font-size:16px;margin-bottom:12px">Your record</h3>'
@@ -739,11 +752,18 @@
     $('tback').onclick=function(){ S.screen='home'; render(); };
     renderAcct();
   }
-  function modeRow(id,ic,name,desc,tag,soon){
-    return '<div class="mode'+(soon?' soon':'')+'" id="mode-'+id+'">'
-      + '<span class="ic">'+ic+'</span>'
+  // crisp inline icons (inherit the mode's accent colour) — cleaner than emoji
+  var MODE_ICON = {
+    solo: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="6.5" r="3.6"/><path d="M5 21a7 7 0 0 1 14 0 1 1 0 0 1-1 1H6a1 1 0 0 1-1-1Z"/></svg>',
+    duo:  '<svg viewBox="0 0 30 24" fill="currentColor"><circle cx="9.5" cy="6.4" r="3.3"/><circle cx="20.5" cy="6.4" r="3.3"/><path d="M2.5 20.5a7 7 0 0 1 14 0 .8.8 0 0 1-.8.8H3.3a.8.8 0 0 1-.8-.8Z"/><path d="M13.5 20.5a7 7 0 0 1 14 0 .8.8 0 0 1-.8.8H14.3a.8.8 0 0 1-.8-.8Z" opacity=".7"/></svg>',
+    two:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><rect x="3" y="4.5" width="8.5" height="15" rx="2"/><rect x="14" y="8" width="7" height="11.5" rx="2"/><circle cx="7.25" cy="16.5" r="1" fill="currentColor" stroke="none"/></svg>'
+  };
+  function modeRow(id,icon,name,desc,tag,accent){
+    return '<div class="mode m-'+accent+(tag&&tag!=='Beta'?' soon':'')+'" id="mode-'+id+'">'
+      + '<span class="ic">'+icon+'</span>'
       + '<span class="mm"><span class="mn">'+name+'</span><span class="md">'+desc+'</span></span>'
-      + '<span class="tag'+(soon?' soon':'')+'">'+tag+'</span></div>';
+      + (tag?'<span class="tag'+(tag!=='Beta'?' soon':'')+'">'+tag+'</span>':'')
+      + '<span class="chev">›</span></div>';
   }
   function statTile(v,k){ return '<div class="stat"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>'; }
   function foot(){
