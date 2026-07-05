@@ -4726,7 +4726,7 @@ function startMomentRound(ce, info){
   S.dailySkills=sk; S.dailyOvr=Math.round(p.skill);
   S.dailyDiffs=diffs.map(d=>d+shift);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=true; S.dailyMullAvail=false; S.dailyResult=null;
-  S.dailyAuto=false; S.dailyViewHole=null; S.dailyRevealN=null; clearDailyTimer();
+  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; clearDailyTimer();
   S.dailyClaimed=true;   // borrowed Daily plumbing must never touch Daily Challenge attempts/records
   S.screen='dailyround'; render(); scheduleDailyAdvance();
 }
@@ -7530,7 +7530,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi){
     else if(curP) inner+=hvDoneShot(g,curP,false,small&&inCam(curP),multi.cols[cur.u]);
     const cam=live?hvCamFor2(g,prevP):HV_CAM;
     const sh=cur?multi.shots[cur.u][cur.i]:null;
-    const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>${hvStatHTML(sh, holed, multi.names?multi.names[cur.u]:null, multi.cols[cur.u])}
+    const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
       <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvTerrain(g,seedN,hvBiome(courseKey))}${inner}</svg></div></div>`);
     if(live && curP){
       const key=(courseKey||'')+':m'+holeIdx+':'+showN;
@@ -7559,7 +7559,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi){
   if(live && idx>=0 && plots[idx]) inner+=hvLiveShot(g,plots[idx],small);
   else if(idx>=0 && plots[idx]) inner+=hvDoneShot(g,plots[idx],false,small&&inCam(plots[idx]));
   const cam=live?hvCamFor(g,plots,Math.max(0,idx-1)):HV_CAM;
-  const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>${hvStatHTML(shots[idx], holed)}
+  const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
     <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvTerrain(g,seedN,hvBiome(courseKey))}${inner}</svg></div></div>`);
   if(live && plots[idx]){
     const key=(courseKey||'')+':'+holeIdx+':'+showN;
@@ -7743,8 +7743,10 @@ const SHOT_STAGGER=130;       // ms between shot rows when REVIEWING a past hole
 const SHOT_REVEAL_MS=750;     // live play reveals shots one at a time, 0.75s apart; the ball lands last
 function clearDailyTimer(){ if(_dailyTimer){clearTimeout(_dailyTimer);_dailyTimer=null;} if(_shotTimer){clearTimeout(_shotTimer);_shotTimer=null;} }
 function nextDailySig(){ const i=S.dailyHoles.length; return DAILY_COURSES[S.dailyCourse].sig.find(s=>s[0]===i+1); }
-// short beat after the ball is holed before the next hole auto-plays (the shot reveal is timed separately)
-function dailyDwell(){ return 650; }
+// beat after the ball is holed before the next hole auto-plays — long enough to REGISTER the result
+// (owner: it used to jump to the next tee before you could see what you scored). The shot reveal itself
+// is timed separately (hvShotMs); this is the pause on the finished hole.
+function dailyDwell(){ return 1900; }
 // reveal the latest hole's shots one-by-one (0.75s apart); only once the ball is in the hole does the
 // score land on the card and the round move on.
 function startShotReveal(){
@@ -7787,11 +7789,15 @@ function scheduleDailyAdvance(){
   clearDailyTimer();
   if(!S.dailyAuto||S.screen!=='dailyround')return;
   const i=S.dailyHoles.length;
-  if(i>=18){ _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround') finishDailyRound(); }, dailyDwell()); return; }
-  if(nextDailySig())return;   // pause here for the player's shot choice (the one meaningful click)
-  _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround'&&S.dailyAuto) playDailyHole(null); }, dailyDwell());
+  // hold the immersive view on the just-holed result (scDailyRound reads S.dailyHolePause) so the score
+  // registers before the next tee shot; then advance / finish after the dwell
+  if(i>=18){ S.dailyHolePause=true; render(); _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround') finishDailyRound(); }, dailyDwell()); return; }
+  if(nextDailySig()){ S.dailyHolePause=false; return; }   // pause here for the player's shot choice (the one meaningful click)
+  const started=i>0;   // the very first tee shot fires quickly; the post-hole beat only applies once a hole is done
+  S.dailyHolePause=started; if(started) render();
+  _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround'&&S.dailyAuto){ S.dailyHolePause=false; playDailyHole(null); } }, started?dailyDwell():450);
 }
-function dailyPause(){ S.dailyAuto=false; clearDailyTimer();
+function dailyPause(){ S.dailyAuto=false; S.dailyHolePause=false; clearDailyTimer();
   const p=S.dailyHoles; if(p.length) S.dailyRevealN=(p[p.length-1].shots||[]).length;   // land the ball if mid-flight
   render(); }
 function dailyResume(){ S.dailyAuto=true; S.dailyViewHole=null; render();
@@ -7801,7 +7807,7 @@ function beginDailyRound(){
   const p=buildPlayer(); S.dailySkills={}; CATS.forEach(c=>S.dailySkills[c.k]=p[c.k]);
   S.dailyOvr=Math.round(p.skill); S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
-  S.dailyAuto=false; S.dailyViewHole=null; S.dailyRevealN=null; clearDailyTimer();   // auto-play defaults OFF, you tee off each hole
+  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; clearDailyTimer();   // the round plays itself; only signature-hole decisions pause it
   S.dailyLegend=null;
   track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr});
   S.screen='dailyround'; render(); scheduleDailyAdvance();
@@ -7813,7 +7819,7 @@ function beginDailyRoundWithLegend(token){
   S.dailySkills=Object.assign({},token.skills); S.dailyOvr=token.ovr;
   S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
-  S.dailyAuto=false; S.dailyViewHole=null; S.dailyRevealN=null; clearDailyTimer();
+  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; clearDailyTimer();
   S.dailyLegend={id:token.id, name:token.name, look:token.look};
   claimDailyAttempt();   // playing as a Legend skips the draft; committing to it consumes the attempt
   S.name=token.name; if(token.look) S.look=Object.assign({},token.look);
@@ -7829,6 +7835,7 @@ function dBuildSeed(){ if(!S.dailySkills) return 0; let h=2166136261>>>0; for(co
 function dAttSalt(base){ return (((base||0) ^ Math.imul((S.dailyAttempt||0)+1, 0x85ebca77) ^ dBuildSeed()) >>> 0); }
 function playDailyHole(attack){
   const c=DAILY_COURSES[S.dailyCourse], i=S.dailyHoles.length; if(i>=18)return;
+  S.dailyHolePause=false;
   const h=c.holes[i], a=(attack===true||attack===false)?attack:null;
   const toPar=dSimHole(h[0],h[1],S.dailyDiffs[i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,a,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0)));
   S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0x5407)),S.dailySkills,{safe:a===false,attack:a===true})});
@@ -7836,7 +7843,7 @@ function playDailyHole(attack){
   render();
   startShotReveal();   // play the shots out, the score only hits the card once the ball is holed
 }
-function autoFinishDaily(){ clearDailyTimer(); S.dailyAuto=false; const c=DAILY_COURSES[S.dailyCourse];
+function autoFinishDaily(){ clearDailyTimer(); S.dailyAuto=false; S.dailyHolePause=false; const c=DAILY_COURSES[S.dailyCourse];
   while(S.dailyHoles.length<18){ const i=S.dailyHoles.length,h=c.holes[i];
     const toPar=dSimHole(h[0],h[1],S.dailyDiffs[i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,null,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0)));
     S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:null,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0x5407)),S.dailySkills,{})}); }
@@ -8185,25 +8192,40 @@ function scrDailyRound(){
   const strokesThrough=counted.reduce((s,h)=>s+h.par+h.toPar,0);   // actual strokes hit so far (par-through + to-par)
   const i=played.length, done=(i>=18)&&!revealing;
   const av=dTourAvg(c);
+  const reviewingPast=(S.dailyViewHole!=null && S.dailyViewHole<lastIdx);
+  // the tracer window's floating scoreboard already shows your total + pace whenever it's on screen
+  // (latest hole, not reviewing a past one) — so the standalone big-number header only shows when
+  // there's no window yet (before the first tee shot) or you're reviewing an older hole
+  const boardPresent = played.length>0 && !reviewingPast;
+  const holePause = !!S.dailyHolePause && !done && !revealing;   // ball just holed → hold a beat on the result
   if(S.moment){   // career-mode Moment: this round IS the tournament's final round
     add($(`<div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 THE MOMENT · Final round · ${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)}</span></div>`));
-    if(!revealing){   // ball in flight → the window's floating tournament board carries the story
+    if(!boardPresent){
       add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
       add($(`<div class="center small" style="margin:0 0 4px;color:var(--gold);font-weight:700">${esc(S.moment.evtName)} · ${momentPosTxt(S.moment.info).replace(/<[^>]*>/g,'')} at the start of the day</div>`));
     }
   } else {
   add($(`<div class="center"><span class="tag">${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)} · ${S.dailyPlan}</span></div>`));
-  if(!revealing){   // ball in flight → the window's floating scoreboard carries the score + pace
+  if(!boardPresent){
     add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
     const beating=(through>0)&&(total < av*(through/18));
     add($(`<div class="center small" style="margin:0 0 4px;color:${through===0?'var(--muted)':(beating?'#35d6a0':'#e9a23b')};font-weight:700">Tour average ${dAvgTxt(av)}, beat it to win${through>0?` · ${beating?'ahead of pace ✓':'behind pace'}`:''}</div>`));
   }
   }
-  const lg=revealing?null:dLegend(); if(lg) add(lg);
+  const lg=(revealing||holePause)?null:dLegend(); if(lg) add(lg);
+  // just holed → show the RESULT of the hole you finished (a clear beat before the next tee)
+  if(holePause && lastIdx>=0){
+    const lh=played[lastIdx];
+    add($(`<div class="scout" style="max-width:560px;margin:8px auto 0;text-align:center;border-color:${dScoreCol(lh.toPar)}">
+      <div class="small muted" style="letter-spacing:.1em;text-transform:uppercase">Hole ${lh.n} · Par ${lh.par}</div>
+      <div style="font-weight:800;font-size:22px;color:${dScoreCol(lh.toPar)};margin-top:2px">${esc(dResultLong(lh.par,lh.toPar))}</div>
+      <div class="small muted" style="margin-top:3px">Next hole coming up…</div></div>`));
+    add($(`<div style="height:8px"></div>`));
+  }
   // NEXT-HOLE INFO + DECISIONS AT THE TOP (owner: on mobile the decision used to render below the
   // window + shot log + scorecard, i.e. below the fold — the user had no idea a decision came up).
   // The tracer window sits underneath; mulligan / skip-to-end stay at the bottom as utilities.
-  if(!revealing && !done){
+  if(!revealing && !done && !holePause){
     const h=c.holes[i], sig=c.sig.find(s=>s[0]===i+1);
     add($(`<div class="scout" style="max-width:560px;margin:8px auto 0;text-align:center"><div style="font-weight:800;font-size:16px">Hole ${i+1} · Par ${h[0]} · ${h[1]}y</div>${h[2]?`<div class="small muted">${esc(h[2])}</div>`:''}${sig?`<div class="small" style="color:var(--gold);margin-top:4px">⛳ Signature: ${esc(sig[1])}</div>`:''}</div>`));
     add($(`<div style="height:10px"></div>`));
