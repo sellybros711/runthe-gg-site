@@ -4439,6 +4439,47 @@ allows Google Fonts, or self-host Anton.*
   reveal the chosen continuation. Requires mapping dScenario types → shot indices; architectural change to
   playDailyHole + the reveal flow.
 
+- **CS161 — decision timing: the prompt now comes BEFORE the shot it's about (tee + approach only; no
+  putting decisions).** Owner: "the prompts for the in game decisions always come at the start of a hole,
+  regardless of what it's asking. It should come up before the shot that it's asking about... make sense
+  with what is visually shown." Then: "Let's just do tee and approach. There should be no putting
+  decisions. Putting should be strictly based on putting rating." Sim/score engine (dSimHole) untouched —
+  the decision still feeds it (aggressive lowers the scoring mean, raises variance); only WHEN the prompt
+  appears and WHICH shot the narrative reflects changed. The hard invariant (shot-count === stroke-count)
+  is preserved and re-verified (4,725 combos, 0 mismatches).
+  • **Decisions are now scoped to a shot phase.** `dScenario` tags each scenario `phase`: **'tee'** (a
+    driving decision — drivable par-4, reach-in-two tee, tee-shot-line) or **'app'** (an approach/second-shot
+    decision — pin-hunt, between-clubs, go-for-it-in-two, layup, carry, etc.). Par-3 decisions are 'app'
+    (the tee shot IS the approach). There are NO putting-decision templates (there never were) — putting
+    outcomes are driven purely by the Putting rating in `dShotSeq` (unchanged).
+  • **`dShotSeq` scopes the choice to the right shot.** New `opts.decPhase`/`opts.decAgg`: a 'tee' decision
+    biases only the DRIVE (driver vs 3-wood/short via `teeSafe`), leaving the approach neutral; an 'app'
+    decision biases only the APPROACH aim (fire at the flag vs the middle, via the existing `greenDesc`
+    atk), leaving the drive neutral. Previously the single attack/safe flag conflated both.
+  • **Reveal flow — the drive plays first, THEN the approach decision (par 4/5 'app' only).** New
+    `dNeutralDrive()` generates a decision-INDEPENDENT drive (driver, in play, never reaching the green),
+    seeded separately from the score so it's identical whichever choice the player then makes; it feeds
+    `dShotSeq` as `opts.teePreset` so shot 0 of the final hole IS that drive. `scheduleDailyAdvance` routes
+    a par-4/5 'app' signature hole to `dailyStartApproachHole` (S.dailyProv): reveals the neutral drive on
+    the tracer, then — once it lands — surfaces the approach decision with a context line matching the
+    screen ("Your drive found the left rough · 226 yds to the green"). `dailyResolveApproach(agg)` sims the
+    chosen score with `teePreset` (so the revealed drive stays shot 0) and continues revealing from the
+    approach. Par-3 and 'tee' decisions still show up-front (already correct timing — the decision is about
+    the very next shot). The rare par-4 eagle with a preset drive becomes a holed approach (drive + holed
+    shot = 2), handled by a P===0 hole-out branch.
+  • **Plumbing:** the tracer window + HUD were factored into a `drawWindow()` helper shared by the normal
+    reveal and the provisional drive; `S.dailyProv` is reset in every round-init/finish path, guarded in
+    `scheduleDailyAdvance`/`dailyPause`/`dailyReviewOpen`/`dailyReviewClose` so a pending approach decision
+    is never stranded or duplicated; `dailyMulligan` re-sims an 'app' hole with the same preset drive.
+  • Verified in Playwright (cs161): 4,725-combo shot-count===stroke-count invariant (all decision paths incl.
+    teePreset), determinism, teePreset-is-shot-0, attack/safe share the same drive but differ on the
+    approach, no par-3 gets a 'tee' phase, the reveal flow (drive first → no decision until it lands → 2
+    choice buttons → resolve pushes one correct-count hole), and a full practice round. Regressions
+    cs157/158/159/160, hv5 (multi-ball H2H), hv6 (39-course geometry + putt property), hv7 (Moments), hv8
+    (one-window HUD — updated for CS160's no-between-holes-panel), hv10, physics, stall (CS156), h2h_regress
+    all green; zero page errors. Screenshot confirms the approach decision appears after the drive with a
+    matching context line. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

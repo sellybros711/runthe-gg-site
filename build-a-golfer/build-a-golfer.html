@@ -4916,7 +4916,7 @@ function startMomentRound(ce, info){
   S.dailySkills=sk; S.dailyOvr=Math.round(p.skill);
   S.dailyDiffs=diffs.map(d=>d+shift);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=true; S.dailyMullAvail=false; S.dailyResult=null;
-  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; clearDailyTimer();
+  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer();
   S.dailyClaimed=true;   // borrowed Daily plumbing must never touch Daily Challenge attempts/records
   S.screen='dailyround'; render(); scheduleDailyAdvance();
 }
@@ -6982,9 +6982,36 @@ function dSk(sk,k){ return (sk&&sk[k]!=null)?sk[k]:80; }                    // s
 function dSkQ(v){ return Math.max(0.03,Math.min(0.97,(v-58)/40)); }          // competence 0..1
 function dBallQ(sk){ const a=dSk(sk,'app'),c=dSk(sk,'acc'); return dSkQ(0.55*Math.min(a,c)+0.25*((a+c)/2)+0.20*dSk(sk,'scr')); }
 function dClub(y){ if(y>=278)return'driver'; if(y>=248)return'3-wood'; if(y>=226)return'hybrid'; if(y>=208)return'4-iron'; if(y>=194)return'5-iron'; if(y>=179)return'6-iron'; if(y>=164)return'7-iron'; if(y>=149)return'8-iron'; if(y>=134)return'9-iron'; if(y>=119)return'pitching wedge'; if(y>=95)return'gap wedge'; if(y>=70)return'sand wedge'; return'lob wedge'; }
+// A decision-INDEPENDENT tee shot for a par-4/5 (driver, in play, never reaching the green). Used by
+// the signature-hole APPROACH decisions: we reveal this drive, THEN ask the approach decision, so the
+// prompt lands before the shot it's about and matches what's on screen. Seeded separately from the
+// score (a fixed salt) so it's identical whichever choice the player then makes, and it feeds dShotSeq
+// as opts.teePreset so shot 0 of the final hole is exactly this drive.
+function dNeutralDrive(yards, sk, par, rng){
+  const accQ=dSkQ(dSk(sk,'acc')), distQ=dSkQ(dSk(sk,'dist'));
+  let drive=Math.round((par===5?266:258)+distQ*68+rng()*13);
+  if(distQ>0.8 && rng()<0.25) drive+=Math.round(8+rng()*10);
+  drive=Math.max(180, Math.min(drive, yards-60));   // always leaves an approach (never reaches the green)
+  const dist=Math.max(45, yards-drive);
+  const fairway=rng()<(0.26+0.64*accQ);
+  const lie=fairway?'the fairway':dPick(rng, accQ<0.32?['the right rough','the left rough','a fairway bunker','the trees']:['the right rough','the left rough']);
+  const shot={n:1, d:`Driver ${drive} yds to ${lie}, ${Math.round(dist)} yds to hole`, k:'tee', lie:HV_LIE[lie]||'ru', fromY:yards, toY:Math.round(dist), dr:drive};
+  return {shot, dist:Math.round(dist)};
+}
+// readable name for a lie code (used in the approach-decision context line)
+function dLieName(lie){ return {fw:'the fairway',rr:'the right rough',rl:'the left rough',ru:'the rough',fb:'a fairway bunker',tr:'the trees',gb:'a greenside bunker',fr:'the fringe',fc:'the collar',sr:'the short rough',lo:'over the green'}[lie]||'the rough'; }
 function dShotSeq(par,yards,strokes,rng,sk,opts){
   opts=opts||{}; sk=sk||{}; const toPar=strokes-par; const sh=[]; const sides=['left','right','center'];
-  const atk=opts.attack?1:(opts.safe?-1:0);   // signature-hole choice: +1 attack the pin, -1 play safe
+  // Signature-hole decision, SCOPED to the shot it's actually about (owner: the prompt should come
+  // before the specific shot and match what's shown):
+  //   par 3          → the tee shot IS the approach, so the choice biases the green-arrival (atk)
+  //   par 4/5 'app'  → biases the APPROACH only; the drive stays neutral (revealed before the decision)
+  //   par 4/5 'tee'  → biases the DRIVE only (teeSafe); the approach stays neutral
+  // (legacy opts.attack/opts.safe still honored for any caller that hasn't moved to decPhase.)
+  const dp=opts.decPhase; const dagg=(opts.decAgg===true);
+  const atk = dp ? (((par===3)||dp==='app') ? (dagg?1:-1) : 0)
+                 : (opts.attack?1:(opts.safe?-1:0));
+  const teeSafe = (par!==3) && (dp==='tee' ? (opts.decAgg===false) : !!opts.safe);
   // the shot that reaches the green must MATCH the decision you made: attacking aims at the flag (tighter
   // when it comes off, short-sided when it doesn't); playing safe aims at the middle (longer first putt).
   const greenDesc=(club,appQ,pre)=>{ let side,phrase,prox;
@@ -7014,20 +7041,26 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
   else { P=1; greenReach=strokes-1; }
   const floor=par===3?1:(par===4?1:2);
   greenReach=Math.max(floor,Math.min(strokes-1,greenReach)); P=strokes-greenReach;
+  // a preset (already-revealed) drive is shot 0 and never reaches the green, so at least one more
+  // shot is needed to get there — force greenReach>=2 (a par-4 eagle then becomes a holed approach)
+  if(opts.teePreset && par!==3){ greenReach=Math.max(2,greenReach); P=strokes-greenReach; }
   const regReach=par-2;
   // penalty episode (water/OB) spends 2 long shots: the wayward shot + the drop. Only when there
   // are >=2 extra long strokes to burn and the build is loose; likelier for weak accuracy/approach.
   let water=(toPar>=2 && (greenReach-regReach)>=2 && rng() < (0.14+0.52*(1-dBallQ(sk))));
   let dist=yards, ftToHole=null, played=0, offLie=null; const need=greenReach; const rem=()=>need-played;
   // TEE SHOT
-  if(par!==3){
+  if(par!==3 && opts.teePreset){
+    // the drive was already revealed BEFORE the approach decision — reuse it verbatim as shot 0
+    sh.push(Object.assign({}, opts.teePreset.shot)); played++; dist=opts.teePreset.dist;
+  } else if(par!==3){
     const accQ=dSkQ(dSk(sk,'acc')), distQ=dSkQ(dSk(sk,'dist'));
     // drive length scales HARD with Driving Distance (weak ~268 → elite ~330), and a true bomber
     // occasionally steps on one for an extra dozen yards
     let drive=Math.round((par===5?266:258)+distQ*68+rng()*13);
     if(distQ>0.8 && rng()<0.25) drive+=Math.round(8+rng()*10);
-    if(opts.safe)drive-=Math.round(10+rng()*14);
-    drive=Math.min(drive,yards-20); const teeClub=opts.safe?'3-wood':'driver';
+    if(teeSafe)drive-=Math.round(10+rng()*14);
+    drive=Math.min(drive,yards-20); const teeClub=teeSafe?'3-wood':'driver';
     if(water && rem()>=3 && rng()<0.6){ sh.push({d:`${teeClub}, pushed into the water hazard`, k:'tee', lie:'water', fromY:yards}); played++; dist=Math.max(20,yards-Math.round(drive*0.55)); sh.push({d:`penalty drop, ${Math.round(dist)} yds to hole`, k:'pen', lie:'drop', fromY:yards, toY:Math.round(dist)}); played++; water=false; }
     else { dist=Math.max(10,yards-drive); const fairway=rng()<(0.26+0.64*accQ);
       const lie=fairway?'the fairway':dPick(rng, accQ<0.32?['the right rough','the left rough','a fairway bunker','the trees']:['the right rough','the left rough']);
@@ -7061,6 +7094,13 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
       dist=Math.round(16+rng()*22); offLie=HV_LIE[missLie]||'ru'; sh.push({d:`${dClub(fromYds)} from ${fromYds} yds, missed the green ${missLie}`, k:'app', lie:offLie, fromY:fromYds, toY:dist}); played++; }
   }
   if(ftToHole==null)ftToHole=20+rng()*20;
+  // P===0 only happens with a preset drive + a would-be eagle on a par 4 (drive + holed approach, no
+  // putt) — the approach itself finishes. Convert the last (green-arrival) shot into the hole-out.
+  if(P===0 && par!==3 && sh.length){
+    const fin=sh[sh.length-1];
+    fin.d=fin.d.replace(/,\s*[^,]*to hole\s*$/i,'')+`, and it drops for ${dResultLong(par,toPar).toLowerCase()}`;
+    fin.lie='hole'; fin.hole=true; fin.holeout=true; fin.ft=0; fin.toY=0; fin.tag=dResultLong(par,toPar);
+  }
   for(let pi=0;pi<P;pi++){ const lastPutt=(pi===P-1), putQ=dSkQ(dSk(sk,'put'));
     if(lastPutt) sh.push({d:ftToHole>=17?`Drains it from ${Math.round(ftToHole)} ft!`:'In the hole',tag:dResultLong(par,toPar), k:'hole', lie:'hole', ft:ftToHole});
     else { const putt=ftToHole, leave=Math.max(0.8,(3.2-2.0*putQ)+rng()*2.4); sh.push({d:`Putt ${dFeet(putt)}, ${dFeet(leave)} to hole`, k:'putt', lie:'green', ft:putt, toFt:leave}); ftToHole=leave; }   // weak putter leaves more / misses short
@@ -8070,6 +8110,7 @@ function dShotPanel(h, reveal){
   return el;
 }
 function scheduleDailyAdvance(){
+  if(S.dailyProv)return;   // a par-4/5 approach decision is pending (drive revealing/awaiting) — don't touch its timers
   clearDailyTimer();
   if(!S.dailyAuto||S.screen!=='dailyround')return;
   const i=S.dailyHoles.length;
@@ -8079,13 +8120,20 @@ function scheduleDailyAdvance(){
   // pause here for the player's shot choice (the one meaningful click). MUST render — the last render
   // was the ball sinking (revealing state, no decision shown); without this the signature-hole decision
   // never appears and the round looks STALLED (tester: "stalled on hole 3, didn't see any choice").
-  if(nextDailySig()){ S.dailyHolePause=false; S.dailySinking=false; render(); return; }
+  if(nextDailySig()){ S.dailyHolePause=false; S.dailySinking=false;
+    const c=DAILY_COURSES[S.dailyCourse], total=S.dailyHoles.reduce((s,h)=>s+h.toPar,0), sc=dScenario(S.dailyCourse,i,total,dTourAvg(c));
+    // an APPROACH decision on a par 4/5 comes AFTER the drive: reveal a neutral drive, then ask.
+    if(sc.phase==='app' && c.holes[i][0]!==3){ dailyStartApproachHole(i, sc); return; }
+    // par-3 / driving decisions are asked up-front (before the shot they're about); scrDailyRound renders it
+    S.dailyProv=null; render(); return; }
   const started=i>0;   // the very first tee shot fires quickly; the post-hole beat only applies once a hole is done
   S.dailyHolePause=started; if(started) render();
   _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround'&&S.dailyAuto){ S.dailyHolePause=false; playDailyHole(null); } }, started?dailyDwell():450);
 }
-function dailyPause(){ S.dailyAuto=false; S.dailyHolePause=false; clearDailyTimer();
-  const p=S.dailyHoles; if(p.length) S.dailyRevealN=(p[p.length-1].shots||[]).length;   // land the ball if mid-flight
+function dailyPause(){ S.dailyAuto=false; S.dailyHolePause=false;
+  if(S.dailyProv) S.dailyProv.await=true;   // land the drive so the approach decision doesn't get stranded
+  clearDailyTimer();
+  const p=S.dailyHoles; if(p.length && !S.dailyProv) S.dailyRevealN=(p[p.length-1].shots||[]).length;   // land the ball if mid-flight
   render(); }
 function dailyResume(){ S.dailyAuto=true; S.dailyViewHole=null; render();
   const p=S.dailyHoles, len=p.length?(p[p.length-1].shots||[]).length:0;
@@ -8094,7 +8142,7 @@ function beginDailyRound(){
   const p=buildPlayer(); S.dailySkills={}; CATS.forEach(c=>S.dailySkills[c.k]=p[c.k]);
   S.dailyOvr=Math.round(p.skill); S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
-  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; clearDailyTimer();   // the round plays itself; only signature-hole decisions pause it
+  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer();   // the round plays itself; only signature-hole decisions pause it
   S.dailyLegend=null;
   track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr});
   S.screen='dailyround'; render(); scheduleDailyAdvance();
@@ -8106,7 +8154,7 @@ function beginDailyRoundWithLegend(token){
   S.dailySkills=Object.assign({},token.skills); S.dailyOvr=token.ovr;
   S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
-  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; clearDailyTimer();
+  S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer();
   S.dailyLegend={id:token.id, name:token.name, look:token.look};
   claimDailyAttempt();   // playing as a Legend skips the draft; committing to it consumes the attempt
   S.name=token.name; if(token.look) S.look=Object.assign({},token.look);
@@ -8120,17 +8168,47 @@ function beginDailyRoundWithLegend(token){
 // fully deterministic + server-verifiable (the server re-sims from the stored skills).
 function dBuildSeed(){ if(!S.dailySkills) return 0; let h=2166136261>>>0; for(const c of CATS){ h^=(S.dailySkills[c.k]|0); h=Math.imul(h,16777619); } return h>>>0; }
 function dAttSalt(base){ return (((base||0) ^ Math.imul((S.dailyAttempt||0)+1, 0x85ebca77) ^ dBuildSeed()) >>> 0); }
-function playDailyHole(attack){
+// Plays a hole from the tee (auto-play holes, par-3 up-front decisions, and par-4/5 TEE decisions).
+// phase (from dScenario) scopes a decision to the drive; par-4/5 APPROACH decisions do NOT come
+// through here — they go via dailyStartApproachHole → dailyResolveApproach (reveal drive, then decide).
+function playDailyHole(attack, phase){
+  S.dailyProv=null;
   const c=DAILY_COURSES[S.dailyCourse], i=S.dailyHoles.length; if(i>=18)return;
   S.dailyHolePause=false; S.dailySinking=false;
   const h=c.holes[i], a=(attack===true||attack===false)?attack:null;
+  const ph=(a===null)?null:(phase||'app');
   const toPar=dSimHole(h[0],h[1],S.dailyDiffs[i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,a,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0)));
-  S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0x5407)),S.dailySkills,{safe:a===false,attack:a===true})});
+  S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a,decPhase:ph,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0x5407)),S.dailySkills,ph?{decPhase:ph,decAgg:a}:{})});
   S.dailyViewHole=null; S.dailyRevealN=1;   // first shot lands now; the rest reveal one-by-one
   render();
   startShotReveal();   // play the shots out, the score only hits the card once the ball is holed
 }
-function autoFinishDaily(){ clearDailyTimer(); S.dailyAuto=false; S.dailyHolePause=false; const c=DAILY_COURSES[S.dailyCourse];
+// Par-4/5 APPROACH decision: reveal a decision-independent drive FIRST, then ask the approach prompt.
+function dailyStartApproachHole(i, sc){
+  const c=DAILY_COURSES[S.dailyCourse], h=c.holes[i];
+  const d0=dNeutralDrive(h[1], S.dailySkills, h[0], dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0x0d1)));
+  const hole={i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar:null,attack:null,shots:[d0.shot],_prov:true};
+  S.dailyProv={i, hole, d0, scenario:sc, revealN:1, await:false};
+  S.dailyHolePause=false; S.dailySinking=false; S.dailyViewHole=null;
+  if(_shotTimer){clearTimeout(_shotTimer);_shotTimer=null;}
+  render();
+  // reveal the drive; when its animation lands, surface the approach decision
+  _shotTimer=setTimeout(()=>{ _shotTimer=null; if(S.screen!=='dailyround'||!S.dailyProv)return;
+    S.dailyProv.await=true; render(); }, hvShotMs(d0.shot));
+}
+function dailyResolveApproach(agg){
+  const prov=S.dailyProv; if(!prov)return; if(_shotTimer){clearTimeout(_shotTimer);_shotTimer=null;}
+  const c=DAILY_COURSES[S.dailyCourse], i=prov.i, h=c.holes[i], a=(agg===true||agg===false)?agg:null;
+  const toPar=dSimHole(h[0],h[1],S.dailyDiffs[i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,a,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0)));
+  const shots=dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0x5407)),S.dailySkills,{decPhase:'app',decAgg:a,teePreset:prov.d0});
+  S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a,decPhase:'app',_d0:prov.d0,shots});
+  S.dailyProv=null; S.dailyViewHole=null; S.dailyHolePause=false;
+  // the drive is already on screen (shot 1) — continue revealing from shot 2
+  S.dailyRevealN=Math.min(2,shots.length); S.dailySinking=(S.dailyRevealN>=shots.length);
+  render();
+  startShotReveal();
+}
+function autoFinishDaily(){ clearDailyTimer(); S.dailyAuto=false; S.dailyHolePause=false; S.dailyProv=null; const c=DAILY_COURSES[S.dailyCourse];
   while(S.dailyHoles.length<18){ const i=S.dailyHoles.length,h=c.holes[i];
     const toPar=dSimHole(h[0],h[1],S.dailyDiffs[i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,null,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0)));
     S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:null,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0x5407)),S.dailySkills,{})}); }
@@ -8141,7 +8219,8 @@ function dailyMulligan(){
   const last=S.dailyHoles[S.dailyHoles.length-1], c=DAILY_COURSES[S.dailyCourse];
   const alt=dSimHole(last.par,last.yards,S.dailyDiffs[last.i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,last.attack,dHoleRng(S.dailySeed,S.dailyCourse,last.i,dAttSalt(0x4d2)));
   if(alt<last.toPar) last.toPar=alt;
-  last.shots=dShotSeq(last.par,last.yards,last.par+last.toPar,dHoleRng(S.dailySeed,S.dailyCourse,last.i,dAttSalt(0x5408)),S.dailySkills,{safe:last.attack===false,attack:last.attack===true});
+  const mopts=last.decPhase?{decPhase:last.decPhase,decAgg:last.attack, ...(last._d0?{teePreset:last._d0}:{})}:{};
+  last.shots=dShotSeq(last.par,last.yards,last.par+last.toPar,dHoleRng(S.dailySeed,S.dailyCourse,last.i,dAttSalt(0x5408)),S.dailySkills,mopts);
   last.mull=true; S.dailyMullUsed=true; S.dailyRevealN=(last.shots||[]).length; track('daily_mulligan'); render();
 }
 // ---- Shot review: pause the round, rewatch any hole, replay any single shot's animation ----
@@ -8149,6 +8228,7 @@ function dailyMulligan(){
 // review resumes exactly where it was. The replay animates through the normal hvNode/hvKick path.
 function dailyReviewOpen(k){
   if(k==null||k<0||k>=S.dailyHoles.length) return;
+  if(S.dailyProv) S.dailyProv.await=true;   // if a drive was mid-flight, land it so the decision returns on close
   clearDailyTimer();
   const p=S.dailyHoles;
   if(p.length) S.dailyRevealN=(p[p.length-1].shots||[]).length;   // land any in-flight ball; its score already counts
@@ -8429,7 +8509,10 @@ function dScenario(courseKey,i,total,av){
   const side=haz==='water-l'?'left':haz==='water-r'?'right':(rng()<0.5?'left':'right'), other=side==='left'?'right':'left';
   const hazWord=haz==='creek'?'the creek':haz==='cliff'?'the cliff edge':haz==='bunker'?'the bunkers':wet?'the water':'the trouble';
   const windy=S.dailyCond!=='calm';
-  const S2=(tag,prompt,aL,aS,sL,sS,sit)=>({tag,prompt,opts:[{l:aL,s:aS,agg:true},{l:sL,s:sS,agg:false}],sit:!!sit});
+  // phase: 'tee' = a driving decision (shown before the drive, biases the drive); 'app' (default) = an
+  // approach/second-shot decision (par 4/5: the drive is revealed FIRST, then this prompt; biases the
+  // approach). par-3 decisions are 'app' and shown up-front (the tee shot IS the approach).
+  const S2=(tag,prompt,aL,aS,sL,sS,sit,phase)=>({tag,prompt,opts:[{l:aL,s:aS,agg:true},{l:sL,s:sS,agg:false}],sit:!!sit,phase:phase||'app'});
   const T=[];
   // ---------- decisions that fit this hole's shot type + hazard ----------
   if(type==='tee3'||type==='app4'){
@@ -8461,17 +8544,17 @@ function dScenario(courseKey,i,total,av){
     T.push(S2(`tee shot · ${yards} yds`,
       `Off the tee: the aggressive line flirts with ${hazWord} but opens up the green; the safe side leaves a longer, awkward approach. How do you play it?`,
       `Driver down the ${side} edge`, `Best angle in, but ${hazWord} is right there`,
-      '3-wood to the fat of the fairway', 'Longer in, but safely in play'));
+      '3-wood to the fat of the fairway', 'Longer in, but safely in play', false, 'tee'));
   if(type==='drive4')
     T.push(S2(`${yards} yds · drivable`,
       `${yards}-yard drivable par-4. Have a go at the green off the tee, or lay back to a full wedge?`,
       'Driver at the green', 'Eagle/birdie if it finds the surface, trouble if it misses',
-      'Lay back to a wedge', 'A simple pitch in, birdie still on'));
+      'Lay back to a wedge', 'A simple pitch in, birdie still on', false, 'tee'));
   if(type==='short4')
     T.push(S2(`short par-4 · ${yards} yds`,
       `Short, strategic par-4. Take on the green-side trouble off the tee, or lay back to your favourite wedge number?`,
       'Take it on off the tee', 'A close pitch if it works, short-side trouble if not',
-      'Lay back for a full wedge', 'Control your number from the fairway'));
+      'Lay back for a full wedge', 'Control your number from the fairway', false, 'tee'));
   if(type==='go5'){
     T.push(S2(`${yd} out · go for it in two?`,
       `${yd} yards to get home in two${wet?`, ${hazWord} guarding the green`:''}. Send it, or lay up to a comfortable wedge?`,
@@ -8480,7 +8563,7 @@ function dScenario(courseKey,i,total,av){
     T.push(S2(`tee shot · reaching in two`,
       `To get home in two you’ve got to rip driver and bring ${hazWord} into play off the tee, or position it and lay up. How aggressive off the tee?`,
       'Rip driver to get home', 'Sets up the eagle, but the drive has to be perfect',
-      'Position it, then lay up', 'Takes the big number out of play'));
+      'Position it, then lay up', 'Takes the big number out of play', false, 'tee'));
   }
   if(type==='long5')
     T.push(S2(`layup · ${yards} yds`,
@@ -8520,7 +8603,10 @@ function dScenario(courseKey,i,total,av){
   // pick: favour a situational scenario when one applies, else seeded variety (stable per day/hole)
   const sitC=T.filter(t=>t.sit);
   const chosen = (sitC.length && rng()<0.45) ? sitC[Math.floor(rng()*sitC.length)] : T[Math.floor(rng()*T.length)];
-  return {tag:chosen.tag, prompt:chosen.prompt, opts:chosen.opts, sit:chosen.sit?'':dSitLine(total,av,i)};
+  // par-3 decisions are always shown up-front (the tee shot IS the approach); only par-4/5 'app'
+  // decisions get the reveal-the-drive-first treatment.
+  const phase=(par===3)?'app':chosen.phase;
+  return {tag:chosen.tag, prompt:chosen.prompt, opts:chosen.opts, sit:chosen.sit?'':dSitLine(total,av,i), phase};
 }
 // one-time plain-language primer for non-golfers, dismissible, then it never shows again
 function dLegend(){
@@ -8554,6 +8640,9 @@ function scrDailyRound(){
   // there's no window yet (before the first tee shot) or you're reviewing an older hole
   const boardPresent = played.length>0 && !reviewingPast;
   const holePause = !!S.dailyHolePause && !done && !revealing;   // ball just holed → hold a beat on the result
+  // par-4/5 approach decision in progress: the drive is on the tracer, the approach prompt shows once
+  // it lands (suppressed while reviewing a past hole).
+  const prov = (S.dailyProv && !reviewing) ? S.dailyProv : null;
   if(S.moment){   // career-mode Moment: this round IS the tournament's final round
     add($(`<div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 THE MOMENT · Final round · ${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)}</span></div>`));
     if(!boardPresent && !reviewing){
@@ -8593,12 +8682,35 @@ function scrDailyRound(){
   // NEXT-HOLE INFO + DECISIONS AT THE TOP (owner: on mobile the decision used to render below the
   // window + shot log + scorecard, i.e. below the fold — the user had no idea a decision came up).
   // The tracer window sits underneath; mulligan / skip-to-end stay at the bottom as utilities.
-  if(!revealing && !done && !holePause && !reviewing){
+  if(prov){
+    // par-4/5 APPROACH decision: the drive has been (is being) revealed on the tracer below; the
+    // prompt lands before the APPROACH, matching what's on screen (owner: decisions before the shot).
+    const h=prov.hole, sc=prov.scenario;
+    add($(`<div class="scout" style="max-width:560px;margin:8px auto 0;text-align:center"><div style="font-weight:800;font-size:16px">Hole ${h.n} · Par ${h.par} · ${h.yards}y</div><div class="small muted">Your drive found ${dLieName(prov.d0.shot.lie)} · ${prov.d0.dist} yds to the green</div></div>`));
+    add($(`<div style="height:10px"></div>`));
+    if(prov.await){
+      add($(`<div class="scout" style="max-width:560px;margin:0 auto;text-align:center;border-color:var(--gold)">
+        ${sc.sit?`<div class="small" style="color:#e9a23b;font-weight:800;margin-bottom:7px">${esc(sc.sit)}</div>`:''}
+        <div class="small" style="text-transform:uppercase;letter-spacing:.08em;font-weight:800;color:var(--gold)">${esc(sc.tag)}</div>
+        <div style="font-size:14px;line-height:1.45;margin-top:6px">${esc(sc.prompt)}</div></div>`));
+      add($(`<div style="height:10px"></div>`));
+      sc.opts.forEach((o,idx)=>{
+        const btn=$(`<button class="btn choice" style="max-width:520px;margin:0 auto">${o.agg?'⚡ ':'🛡 '}${esc(o.l)}<span class="sub">${esc(o.s)}</span></button>`);
+        btn.onclick=()=>dailyResolveApproach(o.agg); add(btn);
+        if(idx===0) add($(`<div class="ordiv">or</div>`));
+      });
+    } else {
+      add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Off the tee…</div>`));
+    }
+    add($(`<div style="height:6px"></div>`));
+  } else if(!revealing && !done && !holePause && !reviewing){
     const h=c.holes[i], sig=c.sig.find(s=>s[0]===i+1);
     add($(`<div class="scout" style="max-width:560px;margin:8px auto 0;text-align:center"><div style="font-weight:800;font-size:16px">Hole ${i+1} · Par ${h[0]} · ${h[1]}y</div>${h[2]?`<div class="small muted">${esc(h[2])}</div>`:''}${sig?`<div class="small" style="color:var(--gold);margin-top:4px">⛳ Signature: ${esc(sig[1])}</div>`:''}</div>`));
     add($(`<div style="height:10px"></div>`));
     if(sig){
-      // signature hole, a course-aware risk/reward scenario; auto-play pauses for your call
+      // signature hole, a course-aware risk/reward scenario; auto-play pauses for your call.
+      // (par-3 / driving decisions are asked up-front here; par-4/5 approach decisions never reach
+      // this branch — scheduleDailyAdvance routes them through dailyStartApproachHole instead.)
       const sc=dScenario(S.dailyCourse,i,total,dTourAvg(c));
       add($(`<div class="scout" style="max-width:560px;margin:0 auto;text-align:center;border-color:var(--gold)">
         ${sc.sit?`<div class="small" style="color:#e9a23b;font-weight:800;margin-bottom:7px">${esc(sc.sit)}</div>`:''}
@@ -8607,7 +8719,7 @@ function scrDailyRound(){
       add($(`<div style="height:10px"></div>`));
       sc.opts.forEach((o,idx)=>{
         const btn=$(`<button class="btn choice" style="max-width:520px;margin:0 auto">${o.agg?'⚡ ':'🛡 '}${esc(o.l)}<span class="sub">${esc(o.s)}</span></button>`);
-        btn.onclick=()=>playDailyHole(o.agg); add(btn);
+        btn.onclick=()=>playDailyHole(o.agg, sc.phase); add(btn);
         if(idx===0) add($(`<div class="ordiv">or</div>`));   // make it obvious these are the two choices
       });
     } else if(S.dailyAuto){
@@ -8620,62 +8732,59 @@ function scrDailyRound(){
     add($(`<div style="height:6px"></div>`));
   }
   const vh=(S.dailyViewHole!=null && S.dailyViewHole<played.length)?S.dailyViewHole:played.length-1;   // which hole's shot log is shown
-  if(played.length){
+  // draws the tracer window + floating HUD (hole chip, YOU-vs-pro board, one shot description). Shared
+  // by the normal reveal AND the par-4/5 approach-decision drive (S.dailyProv).
+  function drawWindow(hole, reveal, holeIdx, latest, holePauseFlag, descShot, revNonce){
+    const hvn=hvNode(hole, reveal, holeIdx, S.dailyCourse, null, revNonce!=null?revNonce:null);
+    if(!hvn) return;
+    const shell=hvn.querySelector('.hvshell'), h=hole;
+    const gg=h._hv&&h._hv.g;
+    const gRight=gg?hvProj(gg,(gg.gcx!=null?gg.gcx:gg.cx(gg.L)),gg.L)[0]>HV_W/2+20:false;
+    shell.appendChild($(`<div class="hvob hvhole${gRight?' right':''}">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
+    if(holePauseFlag && lastIdx>=0){
+      const lh=played[lastIdx], col=dScoreCol(lh.toPar), ace=(lh.par===3 && lh.par+lh.toPar===1);
+      const big=ace?'HOLE-IN-ONE!':esc(dResultLong(lh.par,lh.toPar)).toUpperCase();
+      shell.appendChild($(`<div class="hvob hvresult" style="border-color:${col}"><span class="rn" style="color:${col}">${big}</span><span class="rs" style="color:${col}">${lh.par+lh.toPar} (${dtp(lh.toPar)})</span></div>`));
+    }
+    if(latest && !holePauseFlag){   // during the holed beat the result pill is the focus — drop the board so it doesn't collide
+      const meNm=S.dailyLegend?esc(S.dailyLegend.name):'YOU';
+      const tpCol=v=>v<0?'#4be3a8':v>0?'#ff9d8f':'#e8efe9';
+      const bd=$(`<div class="hvob hvboard${gRight?' left':''}"></div>`);
+      if(S.moment && S.curEvt && S.curEvt.players){
+        bd.appendChild($(`<div class="hvbcap">FINAL ROUND · THRU ${through}</div>`));
+        const rows=S.curEvt.players.filter(o=>o.made).map(o=>({nm:o.p.you?'YOU':o.p.name, tp:Math.round(o.total)+(o.p.you?total:0), you:!!o.p.you})).sort((a,b)=>a.tp-b.tp);
+        const meIdx=rows.findIndex(r=>r.you);
+        const show=meIdx<4?rows.slice(0,4):rows.slice(0,3).concat([rows[meIdx]]);
+        show.forEach(r=>{ const rk=rows.indexOf(r)+1;
+          bd.appendChild($(`<div class="hvbrow ${r.you?'mine':''}"><span class="cdot" style="background:${r.you?'#3b82f6':'#8fa39a'}"></span><span class="rk">${rk}</span><span class="nm">${esc(r.nm)}</span><span class="tp" style="color:${tpCol(r.tp)}">${dtp(r.tp)}</span></div>`));
+        });
+      } else {
+        bd.appendChild($(`<div class="hvbcap">THRU ${through} · TARGET ${dAvgTxt(av)}</div>`));
+        const pace=av*(through/18);
+        const paceTxt=Math.abs(pace)<0.05?'E':(pace>0?'+':'')+pace.toFixed(1);
+        const rows=[{nm:meNm, v:total, txt:dtp(total), mine:true, col:'#3b82f6'},
+                    {nm:'TOUR PRO', v:pace, txt:paceTxt, mine:false, col:'#ef4444'}].sort((a,b)=>a.v-b.v);
+        rows.forEach((r,ri)=>bd.appendChild($(`<div class="hvbrow ${r.mine?'mine':''}"><span class="cdot" style="background:${r.col}"></span><span class="rk">${ri+1}</span><span class="nm">${r.nm}</span><span class="tp" style="color:${tpCol(r.v)}">${r.txt}</span></div>`)));
+      }
+      shell.appendChild(bd);
+      // ONE clear shot description that swaps as the shots simulate (replaces the shot-log dump in play).
+      if(descShot && descShot.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:#3b82f6">${meNm}</b> · ${esc(descShot.d)}</div>`));
+    }
+    add(hvn);
+  }
+  if(prov){
+    // par-4/5 approach decision: the neutral drive plays out (shot 0), then the prompt above shows
+    drawWindow(prov.hole, prov.revealN, prov.i, true, false, prov.hole.shots[0], null);
+  } else if(played.length){
     // review mode replays a chosen shot (S.dailyReviewShot) with a nonce so the animator re-fires each tap;
     // otherwise the live reveal drives the latest hole and a past hole is static
     const liveReveal = reviewing ? (S.dailyReviewShot||null) : ((vh===lastIdx&&revealN!=null)?revealN:null);
-    const hvn=hvNode(played[vh], liveReveal, vh, S.dailyCourse, null, reviewing?S.dailyReviewNonce:null);   // broadcast tracer hole view
-    if(hvn){
-      // ONE-WINDOW broadcast (same style as the online H2H watch): hole info, a live scoreboard and
-      // the current shot's description float ON the tracer as translucent chips.
-      const shell=hvn.querySelector('.hvshell'), h=played[vh], latest=(vh===lastIdx);
-      // green tucked right → the scoreboard flips to the LEFT corner (and the hole chip to the
-      // right) so it never sits on top of the green complex
-      const gg=h._hv&&h._hv.g;
-      const gRight=gg?hvProj(gg,(gg.gcx!=null?gg.gcx:gg.cx(gg.L)),gg.L)[0]>HV_W/2+20:false;
-      shell.appendChild($(`<div class="hvob hvhole${gRight?' right':''}">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
-      // holed RESULT floats top-center between the hole chip and the scoreboard (no page shift)
-      if(holePause && latest && lastIdx>=0){
-        const lh=played[lastIdx], col=dScoreCol(lh.toPar), ace=(lh.par===3 && lh.par+lh.toPar===1);
-        const big=ace?'HOLE-IN-ONE!':esc(dResultLong(lh.par,lh.toPar)).toUpperCase();
-        shell.appendChild($(`<div class="hvob hvresult" style="border-color:${col}"><span class="rn" style="color:${col}">${big}</span><span class="rs" style="color:${col}">${lh.par+lh.toPar} (${dtp(lh.toPar)})</span></div>`));
-      }
-      if(latest && !holePause){   // during the holed beat the result pill is the focus — drop the board so it doesn't collide
-        const meNm=S.dailyLegend?esc(S.dailyLegend.name):'YOU';
-        const tpCol=v=>v<0?'#4be3a8':v>0?'#ff9d8f':'#e8efe9';
-        const bd=$(`<div class="hvob hvboard${gRight?' left':''}"></div>`);
-        if(S.moment && S.curEvt && S.curEvt.players){
-          // a Moment IS the tournament's final round → the REAL leaderboard floats on the window,
-          // your projected total (start-of-day + holes played so far) moving through it live
-          bd.appendChild($(`<div class="hvbcap">FINAL ROUND · THRU ${through}</div>`));
-          const rows=S.curEvt.players.filter(o=>o.made).map(o=>({nm:o.p.you?'YOU':o.p.name, tp:Math.round(o.total)+(o.p.you?total:0), you:!!o.p.you})).sort((a,b)=>a.tp-b.tp);
-          const meIdx=rows.findIndex(r=>r.you);
-          const show=meIdx<4?rows.slice(0,4):rows.slice(0,3).concat([rows[meIdx]]);
-          show.forEach(r=>{ const rk=rows.indexOf(r)+1;
-            bd.appendChild($(`<div class="hvbrow ${r.you?'mine':''}"><span class="cdot" style="background:${r.you?'#3b82f6':'#8fa39a'}"></span><span class="rk">${rk}</span><span class="nm">${esc(r.nm)}</span><span class="tp" style="color:${tpCol(r.tp)}">${dtp(r.tp)}</span></div>`));
-          });
-        } else {
-          // the Daily is a match against the tour pro: you vs the pro's pace through the same holes
-          bd.appendChild($(`<div class="hvbcap">THRU ${through} · TARGET ${dAvgTxt(av)}</div>`));
-          const pace=av*(through/18);
-          const paceTxt=Math.abs(pace)<0.05?'E':(pace>0?'+':'')+pace.toFixed(1);
-          const rows=[{nm:meNm, v:total, txt:dtp(total), mine:true, col:'#3b82f6'},
-                      {nm:'TOUR PRO', v:pace, txt:paceTxt, mine:false, col:'#ef4444'}].sort((a,b)=>a.v-b.v);
-          rows.forEach((r,ri)=>bd.appendChild($(`<div class="hvbrow ${r.mine?'mine':''}"><span class="cdot" style="background:${r.col}"></span><span class="rk">${ri+1}</span><span class="nm">${r.nm}</span><span class="tp" style="color:${tpCol(r.v)}">${r.txt}</span></div>`)));
-        }
-        shell.appendChild(bd);
-        // ONE clear shot description that swaps as the shots simulate (replaces the shot-log dump in play).
-        // While the ball is DROPPING into the cup (S.dailySinking) we withhold the holing shot's text so
-        // "In the hole" never appears before the ball is actually in — the result pill reveals it after.
-        if(revealing && !S.dailySinking){ const st=(h.shots||[])[Math.max(0,(revealN||1)-1)];
-          if(st&&st.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:#3b82f6">${meNm}</b> · ${esc(st.d)}</div>`));
-        }
-      }
-      add(hvn);
-    }
+    // ONE clear shot description while the ball is in flight (withheld while it's DROPPING so
+    // "In the hole" never appears before the ball is in — the result pill reveals it after)
+    const descShot=(!reviewing && vh===lastIdx && revealing && !S.dailySinking) ? (played[vh].shots||[])[Math.max(0,(revealN||1)-1)] : null;
+    drawWindow(played[vh], liveReveal, vh, (vh===lastIdx), holePause, descShot, reviewing?S.dailyReviewNonce:null);
     if(reviewing){
-      // the scrubber + description render ABOVE the window (see the block after dLegend); down here
-      // is just the exit control (resume the round / back to your round)
+      // the shot list renders ABOVE the window (see the block after dLegend); here is just the exit control
       const done18=played.length>=18;
       const bk=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0;font-size:13px">${done18?'↩ Back to your round':(S.dailyAuto?'▶ Resume the round':'↩ Back')}</button>`);
       bk.onclick=dailyReviewClose; add(bk);
