@@ -4163,6 +4163,18 @@ allows Google Fonts, or self-host Anton.*
   online block precedes the Career button which precedes Daily; button renamed; block not duplicated; both
   online entry points intact; screenshot confirms the order. Deployed to /golf.
 
+- **CS150 — fixed two conflicting "resume" buttons on the title.** Owner (screenshot): saw both "Resume
+  Career Mode" (Year 1 · mid-season · Coby Selly) AND "Resume Your Golfer" (8/8 skills drafted) stacked
+  together — "How do I have 2 resume buttons with 2 different options?" They're two unrelated persistence
+  mechanisms: `careerSaveInfo()` (`bag_careersave` — an actual in-progress CAREER) and `resumeInfo()`
+  (`bag_resume` — a stale, half-finished free-play DRAFT snapshot that was never taken into a season).
+  When a career save exists, the draft-resume is redundant and confusing (tapping it would just begin
+  ANOTHER golfer — exactly what the "Career Mode · Start a new golfer" button below already does). Fix:
+  "Resume Your Golfer" now only renders when there's no career save (`if(ri && !cs)`); with a career it's
+  hidden, so exactly one resume path shows. A draft-only state (no career) is unchanged — the draft-resume
+  still appears. Verified in Playwright: both-present → only "Resume Career Mode" (draft-resume count 0);
+  draft-only → "Resume Your Golfer" still shows. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
