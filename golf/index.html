@@ -453,6 +453,21 @@ window.GA_ID='G-L29P5MRWKE';
   @media (prefers-reduced-motion:reduce){ .lb.winner{animation:none} }
   .lb.you .pl{color:var(--gold); font-weight:800}
   .lb.cut .sc{color:#e07a5f}
+  /* Tour Rep tier name — a distinct text effect per rank (higher = flashier) */
+  .rept{font-weight:800; font-size:10px; letter-spacing:.02em; white-space:nowrap}
+  .rept-journeyman{color:#a9b7ad}
+  .rept-pro{color:#2fd0c0}                                           /* teal */
+  .rept-contender{color:#d98a3d}                                     /* bronze */
+  .rept-star{background:linear-gradient(90deg,#cdd6df,#ffffff,#9fb0bf); -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 0 5px rgba(220,230,240,.28)}                       /* brushed silver */
+  .rept-champion{background:linear-gradient(90deg,#e39a12,#ffe89a,#f6c944); -webkit-background-clip:text; background-clip:text; color:transparent}  /* polished gold */
+  .rept-legend{color:#c79bff; text-shadow:0 0 8px rgba(168,85,247,.65)}   /* violet glow */
+  .rept-icon{background:linear-gradient(90deg,#f6c944,#ff8a5b,#f6c944); background-size:200% auto; -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:reptShimmer 2.6s linear infinite}                     /* molten shimmer */
+  .rept-goat{background:linear-gradient(90deg,#ff5e5e,#ffd23f,#4be3a8,#3b82f6,#c79bff,#ff5e5e); background-size:300% auto; -webkit-background-clip:text; background-clip:text; color:transparent;
+    font-weight:900; animation:reptShimmer 3.2s linear infinite}    /* prismatic (G.O.A.T.) */
+  @keyframes reptShimmer{to{background-position:200% center}}
+  @media (prefers-reduced-motion:reduce){ .rept-icon,.rept-goat{animation:none} }
   .sep{height:1px; background:repeating-linear-gradient(90deg,var(--line),var(--line) 6px,transparent 6px,transparent 12px)}
   /* collapsible career groups (native <details>, no re-render needed) */
   .acc{border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:7px; background:var(--board)}
@@ -1229,6 +1244,9 @@ function repTierFor(pts, count){
 function repTier(pts){ pts=pts==null?achPoints():pts; return repTierFor(pts, achCount()); }
 function repAtLeast(name){ return repRankIndex(repTier().tier.name) >= repRankIndex(name); }   // for rep-gated cosmetics
 function repTierName(pts){ return repTierFor(pts, pts>=ACH_TOTAL_PTS?ACH_TOTAL:0).tier.name; }   // pts-only (e.g. other players on the board)
+// each Tour Rep tier gets its own text effect (CSS classes .rept-*) on the leaderboard
+const REP_CLASS={'Journeyman':'journeyman','Tour Pro':'pro','Contender':'contender','Star':'star','Champion':'champion','Legend':'legend','Icon':'icon','G.O.A.T.':'goat'};
+function repClass(name){ const k=REP_CLASS[(name||'').replace(/^🐐\s*/,'')]; return 'rept'+(k?' rept-'+k:''); }
 // Tour Rep perk: off-season CHANGES + RE-SPINS. A long, steady climb, almost every rank-up grants a
 // change or a re-spin, from a modest floor (1 change + 1 re-spin) up to the MAX of 3 changes + 3 re-spins,
 // reached at Legend (rank 7 of 9). Icon / G.O.A.T. are rewarded by prestige, not more perks. [changes, re-spins]
@@ -3556,9 +3574,9 @@ function overlayLeaderboard(screen){
   const youName=(c.hof[0]&&c.hof[0].name)||S.name||'You';
   const lbRowHTML=(pos,name,sub,valHTML,you,rep)=>`<div class="lb ${you?'you':''}" style="grid-template-columns:34px 1fr auto">
       <span class="pos">${pos===1?'🏆':pos}</span>
-      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}${rep?` <span style="color:var(--gold);font-weight:700;font-size:10px">· ${esc(rep)}</span>`:''}</div>${sub?`<div class="small muted" style="font-size:10.5px">${esc(sub)}</div>`:''}</span>
+      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}${rep?` <span style="color:var(--muted);font-size:10px">·</span> <span class="${repClass(rep)}">${esc(rep)}</span>`:''}</div>${sub?`<div class="small muted" style="font-size:10.5px">${esc(sub)}</div>`:''}</span>
       <span class="mny" style="white-space:nowrap">${valHTML}</span></div>`;
-  const lbRep=r=>{ const rp=(r&&r.rep_pts!=null)?repTierName(r.rep_pts):null; return (rp&&rp!=='Amateur')?(rp==='G.O.A.T.'?'🐐 G.O.A.T.':rp):null; };
+  const lbRep=r=>{ const rp=(r&&r.rep_pts!=null)?repTierName(r.rep_pts):null; return (rp&&rp!=='Amateur')?rp:null; };   // raw tier name; repClass picks the effect
   const globalOk = view && view.ok;
   const globalRows = globalOk ? dirRows : [];   // dirRows is already in display order (top N, or true bottom N)
   // guest sign-in prompt shown inside the board, rendered in EVERY state (full / empty / local-fallback)
