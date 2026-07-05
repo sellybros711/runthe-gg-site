@@ -4186,6 +4186,30 @@ allows Google Fonts, or self-host Anton.*
   Playwright: all 8 tiers resolve to distinct `.rept-*` classes and render with no page errors;
   screenshot confirms the eight looks. Deployed to /golf.
 
+- **CS152 — two tester bugs: stuck career draft + shot narrative matching the decision.**
+  1. **Stuck draft (Jordo: "it's saying I drafted my team, that's my daily challenge team… won't let me
+     advance, it's stuck").** Root cause: the Daily Challenge path calls `reset()` before its draft, but the
+     title **"Career Mode"** button only did `S.screen='setup'` with no reset. So after playing a Daily
+     (which fills all 8 skill slots), starting a career draft inherited the daily team at 8/8 with re-spins
+     spent — the draft screen showed a revealed golfer over a full board and could never advance. Fix: the
+     Career Mode button now calls `reset()` first (clears slots/reSpins/revealed/drawRng/daily flag), so a
+     fresh career always starts from an empty draft. Belt-and-suspenders: `scrDraft` now self-heals — if it
+     ever renders with a full 8/8 board (not mid-spin), it routes straight to the build screen instead of
+     stranding. Verified: a simulated finished-daily state (8/8, 0 re-spins) → tapping Career Mode resets to
+     0/8 with 2 re-spins and daily=false; a draft entered at 8/8 self-heals to `build`.
+  2. **"Simulation after certain decisions doesn't align with the decision made."** The signature-hole
+     Attack/Safe choice only affected the *tee club* in the shot narrative — the approach/pin line read
+     identically whether you chose "fire at the pin" or "aim for the fat of the green," so the shots you
+     watched didn't reflect your call. Fix: `dShotSeq` now threads the choice into the green-arrival shot
+     (`greenDesc`): **attack** → "firing at the left/right flag" with a tighter proximity, **safe** → "to
+     the middle of the green" with a longer first putt. Applied to both the par-3 tee-to-green and the
+     par-4/5 approach. The SCORE is still 100% engine-decided (`dSimHole` untouched, verified deterministic)
+     — only the narration is made consistent with the decision. Verified: same hole/score with opposite
+     decisions now produces visibly different, on-message narratives; hv6/hv8/practice suites still green.
+  Zero page errors. Deployed to /golf. (The "birdie putt → question → back to the start" report was the
+  same class of issue on an older build; CS148's post-hole beat already stops a decision from co-appearing
+  with a putt still rolling, and this reset fix removes the stuck-state entirely.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
