@@ -54,6 +54,11 @@
     --line:rgba(255,255,255,.09); --ok:#3fce86; --bad:#ff6b6b;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  /* snappy input: no 300ms tap delay / double-tap-zoom, no text-selection lag on
+     rapid tapping across every interactive surface */
+  .btn,.opt,.taskcard,.mode,.hlo,.oitem,.ltile,.seqtile,.mutebtn,.eet,.kmo,.tkt,.bgc,.wkc,
+  #mg,#mg *{touch-action:manipulation;}
+  #mg,.opt,.taskcard,.hlo,.seqtile,.btn{user-select:none;-webkit-user-select:none;}
   html,body{margin:0;padding:0;}
   body{
     font-family:'Archivo',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
@@ -202,11 +207,15 @@
     background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:5px 10px;}
   .prompt{font-size:17px;font-weight:800;line-height:1.4;margin-bottom:14px;}
   .opts{display:grid;gap:10px;}
-  .opt{text-align:left;background:rgba(255,255,255,.04);border:1px solid var(--cardb);border-radius:12px;
-    padding:14px 15px;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;transition:border-color .1s,background .1s,transform .1s;}
+  .opt{position:relative;text-align:left;background:rgba(255,255,255,.04);border:1px solid var(--cardb);border-radius:12px;
+    padding:14px 40px 14px 15px;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;transition:border-color .1s,background .1s,transform .1s;}
   .opt:hover{border-color:var(--globe);}
   .opt.right{border-color:var(--ok);background:rgba(53,214,160,.12);}
   .opt.wrong{border-color:var(--bad);background:rgba(255,107,107,.12);}
+  /* glyph so correctness isn't signalled by colour alone (accessibility) */
+  .opt.right::after,.opt.wrong::after{position:absolute;right:13px;top:50%;transform:translateY(-50%);font-weight:900;font-size:16px;}
+  .opt.right::after{content:"✓";color:var(--ok);}
+  .opt.wrong::after{content:"✗";color:var(--bad);}
 
   /* zoom reveal (guess the flag as it zooms out) */
   .zoombox{width:158px;height:158px;margin:8px auto 0;border-radius:16px;overflow:hidden;border:1px solid var(--cardb);
@@ -283,6 +292,24 @@
   .reps{display:flex;gap:6px;justify-content:center;margin-bottom:12px;}
   .rep{width:26px;height:6px;border-radius:3px;background:rgba(255,255,255,.12);}
   .rep.done{background:var(--ok);}
+
+  /* Stamp It — a real passport page you press ink stamps onto */
+  .passport{position:relative;height:180px;border-radius:12px;overflow:hidden;cursor:pointer;touch-action:manipulation;
+    background:linear-gradient(160deg,#efe4c6,#dcc99e 60%,#cdb888);border:1px solid #a98f5f;
+    box-shadow:inset 0 2px 10px rgba(120,90,40,.35), inset 0 0 40px rgba(150,120,70,.25);}
+  .passport .gutter{position:absolute;left:50%;top:6px;bottom:6px;width:2px;transform:translateX(-1px);
+    background:linear-gradient(180deg,transparent,rgba(90,66,30,.35),transparent);}
+  .stampslot{position:absolute;top:30px;bottom:16px;border:2px dashed rgba(70,50,20,.55);border-radius:12px;
+    background:rgba(120,90,40,.08);transition:left .18s ease,width .18s ease,border-color .15s;z-index:1;}
+  .stamphead{position:absolute;top:-6px;font-size:40px;transform:translateX(-50%);z-index:3;pointer-events:none;
+    filter:drop-shadow(0 6px 5px rgba(0,0,0,.4));transition:top .09s ease, transform .09s ease;}
+  .stamphead.press{top:14px;}
+  .imprint{position:absolute;border:2.5px solid;border-radius:50%;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;font-weight:900;text-transform:uppercase;letter-spacing:.02em;pointer-events:none;z-index:2;
+    mix-blend-mode:multiply;box-shadow:inset 0 0 0 3px currentColor;opacity:.82;}
+  .imprint .ic{font-size:20px;line-height:1;margin:1px 0;}
+  .imprint .cty{font-size:8px;line-height:1.1;max-width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .imprint .br{font-size:6px;opacity:.85;}
 
   /* order */
   .orderwrap{display:grid;gap:9px;margin-bottom:6px;}
@@ -414,7 +441,7 @@
                     reflex:'Reflex / Timing', word:'Word / Language' };
   // per-kind display label (shown on the task card + game header)
   var KIND_LABEL = {
-    mcq:'Trivia', scramble:'Word Scramble', sequence:'Memory Sequence', reaction:'Reaction',
+    mcq:'Trivia', scramble:'Word Scramble', sequence:'Memory Sequence', reaction:'Signal Sprint',
     order:'Rank The Order', flagid:'Guess The Flag', capital:'Name The Capital',
     truefalse:'True or False', higherlower:'Higher or Lower', oddoneout:'Odd One Out',
     memorymatch:'Memory Match', whack:'Whack-A-Landmark', targettap:'Quick Tap', mapfind:'Find It On The Map',
@@ -425,13 +452,18 @@
     regionsort:'Region Sort', flightplan:'Flight Plan',
     pitchpatrol:'Pitch Patrol', runway:'Runway Landing', photosnap:'Photo Snap', stampit:'Stamp It'
   };
-  // rough expected completion (seconds) for an average player per kind — used
-  // ONLY to pace the AI ghost field. The human always competes on real time.
-  var BASE = { mcq:6.5, scramble:13, sequence:8, reaction:3.4, order:14,
-    flagid:5.5, capital:5.5, truefalse:6.5, higherlower:7, oddoneout:6.5,
+  // expected completion (seconds) for an average player per kind — used ONLY to
+  // pace the AI ghost field. The human always competes on real time, so these are
+  // tuned so a competent human is ~even with the MEDIAN ghost on every kind (no
+  // kind is an auto-win or an auto-loss). Retuned after playtest audit:
+  //  · eagleeye/kimsgame were far too fast (human always Grounded) → raised
+  //  · reaction/sequence report synthetic input-only time → ghosts sped up so
+  //    they aren't free wins that dominate every Split Path choice
+  var BASE = { mcq:6, scramble:13, sequence:5, reaction:2.8, order:14,
+    flagid:5.5, capital:5.5, truefalse:7, higherlower:7, oddoneout:6,
     memorymatch:15, whack:8, targettap:6.5, mapfind:9, streetscout:22, zoomreveal:7,
-    swingmeter:7, eagleeye:7, kimsgame:11, typeticket:12, baggage:9, rhythmecho:13,
-    closest:7, closerfar:9, compass:8, regionsort:10, flightplan:12,
+    swingmeter:8, eagleeye:15, kimsgame:14, typeticket:12, baggage:9, rhythmecho:13,
+    closest:6, closerfar:8, compass:7, regionsort:10, flightplan:12,
     pitchpatrol:14, runway:9, photosnap:8, stampit:7 };
   // which kinds feel "reflex/physical" for Split Path pairing (GDD §5); rest are "brain"
   var REFLEX_KINDS = { reaction:1, whack:1, targettap:1, sequence:1,
@@ -468,6 +500,16 @@
   function swapIn(el){ retrig(el,'swap-in'); }
   function popIn(el){ retrig(el,'pop-in'); }
   function flash(el){ retrig(el,'hitflash'); }
+  // fastTap: fire on pointerdown so reflex/timing taps register INSTANTLY (no
+  // wait for the click event, which on touch can lag ~tens of ms behind the
+  // finger). Still fires for a synthetic .click() (used by the test harness) via
+  // the click listener, guarded so a real tap never double-fires. `stop`=true
+  // stops propagation so a hit on a child target doesn't also trip a parent miss.
+  function fastTap(el, fn, stop){
+    if(!el) return;
+    el.addEventListener('pointerdown', function(e){ el.__pd=1; if(stop&&e.stopPropagation) e.stopPropagation(); fn(e); });
+    el.addEventListener('click', function(e){ if(stop&&e.stopPropagation) e.stopPropagation(); if(el.__pd){ el.__pd=0; return; } fn(e); });
+  }
   // testing hook: /globe/?kind=swingmeter forces every offline stage to that game
   var FORCE_KIND=(function(){ try{ return new URLSearchParams(location.search).get('kind'); }catch(e){ return null; } })();
 
@@ -812,6 +854,13 @@
 
   // ---- generated game types (self-contained, no per-country authoring) ----
   function otherCountries(c, n){ return shuffle(COUNTRIES.filter(function(x){ return x.id!==c.id; })).slice(0,n); }
+  // regions can be compound (e.g. Turkey = "Europe/Asia"); two regions "share" if
+  // any slash-part matches, so a transcontinental country is never a false outlier.
+  function regionShares(a, b){
+    var pa=String(a).split('/'), pb=String(b).split('/');
+    for(var i=0;i<pa.length;i++){ if(pb.indexOf(pa[i])>=0) return true; }
+    return false;
+  }
   function genTasks(c){
     var g=[], i;
     // Guess The Flag — show a flag, pick the country
@@ -829,17 +878,21 @@
     var capOpts = shuffle([c.capital].concat(wc.map(function(x){return x.capital;})));
     g.push({ kind:'capital', cat:'trivia', type:'brain', q:'What is the capital of '+c.name+'?',
              options:capOpts, a:capOpts.indexOf(c.capital) });
-    // Odd One Out — three from one region + one outlier
-    var same = COUNTRIES.filter(function(x){ return x.region===c.region && x.id!==c.id; });
-    var diff = COUNTRIES.filter(function(x){ return x.region!==c.region; });
+    // Odd One Out — three from one region + one outlier. Use region OVERLAP so a
+    // transcontinental country (e.g. Turkey = Europe/Asia) is never an ambiguous
+    // outlier, and the region label shown is a clean single continent.
+    var cReg = String(c.region).split('/')[0];
+    var same = COUNTRIES.filter(function(x){ return x.id!==c.id && regionShares(x.region, c.region); });
+    var diff = COUNTRIES.filter(function(x){ return !regionShares(x.region, c.region); });
     if(same.length>=2 && diff.length){
       var trio=[c].concat(shuffle(same).slice(0,2)); var outlier=pick(diff);
       var four=shuffle(trio.concat([outlier])).map(function(x){return {n:x.name,bad:x.id===outlier.id};});
-      g.push({ kind:'oddoneout', cat:'math', type:'brain', q:'Three of these are in '+c.region+'. Tap the one that is NOT.',
+      g.push({ kind:'oddoneout', cat:'math', type:'brain', q:'Three of these are in '+cReg+'. Tap the one that is NOT.',
                options:four.map(function(x){return x.n;}), a:four.map(function(x){return x.bad;}).indexOf(true) });
     }
     // True or False rapid-fire — capital statements drawn from the world
-    var tf=[]; var picks=shuffle(COUNTRIES).slice(0,5);
+    // (count ramps 4→7 across the race so later Stages are longer/harder)
+    var tf=[]; var picks=shuffle(COUNTRIES).slice(0, 4+Math.round(3*ramp()));
     picks.forEach(function(x){
       var lie=Math.random()<0.5, cap=x.capital;
       if(lie){ var o=pick(otherCountries(x,1)); cap=o.capital; }
@@ -948,7 +1001,7 @@
     // ---- pure-skill set 2 (timing/aim/ears — zero knowledge) ----
     g.push({ kind:'runway', cat:'reflex', type:'reflex', q:'Land on the runway — 3 clean landings' });
     g.push({ kind:'photosnap', cat:'reflex', type:'reflex', flag:c.flag, q:'Frame '+c.flag+' in the viewfinder — 3 clean shots' });
-    g.push({ kind:'stampit', cat:'reflex', type:'reflex', q:'Stamp the passport — hit the moving box 3 times' });
+    g.push({ kind:'stampit', cat:'reflex', type:'reflex', q:'Stamp the passport — press when the stamp lines up over the box' });
     g.push({ kind:'pitchpatrol', cat:'audio', type:'reflex', q:'Tap on the HIGH note — hold on the LOW' });
     return g;
   }
@@ -1293,7 +1346,7 @@
     $('mg').innerHTML='<div class="prompt" style="text-align:center">Signal Sprint — tap on GO, hold on STOP</div>'
       + '<div class="reps" id="rxreps"></div>'
       + '<div class="reactbox idle" id="rbox"><div class="big" id="rxbig"></div><div class="sm" id="rxsm"></div></div>';
-    $('rbox').onclick=function(){ reactTap(t); };
+    fastTap($('rbox'), function(){ reactTap(t); });
     renderReaction(t);
   }
   // paint the persistent box in place — state flips are class/text swaps, not re-renders
@@ -1443,7 +1496,16 @@
     hlPaint();
   }
   function hlPaint(){
-    S.hl.pair=shuffle(S.hl.items).slice(0,2);
+    // pick two cities with a clear gap (≥4°) so the answer is knowable, not a
+    // 1° coin-flip that still costs a penalty on a wrong tap
+    var best=null, bestGap=-1;
+    for(var tries=0;tries<24;tries++){
+      var pr=shuffle(S.hl.items).slice(0,2);
+      var gap=Math.abs(pr[0].value-pr[1].value);
+      if(gap>bestGap){ bestGap=gap; best=pr; }
+      if(gap>=4) break;
+    }
+    S.hl.pair=best;
     var st=$('hlst'); if(st) st.innerHTML='Round <b>'+(S.hl.round+1)+'</b>/'+S.hl.rounds;
     each('.hlo', function(b){ var i=+b.getAttribute('data-i'); b.textContent=S.hl.pair[i].label; swapIn(b); });
   }
@@ -1502,13 +1564,15 @@
   /* ---------- minigame: Whack-A-Landmark (reflex) ---------- */
   // grid built ONCE; cells update via textContent so taps are never dropped mid-render
   function mgWhack(t){
-    S.wk={ hits:0, need:5, cells:[null,null,null,null,null,null,null,null,null], timer:null };
+    // pop rate speeds up (820→560ms) and one more hit is needed on later Stages
+    var d=ramp(), tick=Math.round(820-260*d);
+    S.wk={ hits:0, need:5+Math.round(d), cells:[null,null,null,null,null,null,null,null,null], timer:null };
     var cells=''; for(var i=0;i<9;i++){ cells+='<div class="seqtile wkc" data-i="'+i+'"></div>'; }
     $('mg').innerHTML='<div class="seqstatus" id="wkst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div class="seqgrid" style="max-width:260px;margin:8px auto 0">'+cells+'</div>';
-    each('.wkc', function(b){ b.onclick=function(){ whackTap(t, +b.getAttribute('data-i')); }; });
-    wkStatus(); S.wk.timer=setInterval(function(){ tickWhack(t); }, 820); tickWhack(t);
+    each('.wkc', function(b){ fastTap(b, function(){ whackTap(t, +b.getAttribute('data-i')); }); });
+    wkStatus(); S.wk.timer=setInterval(function(){ tickWhack(t); }, tick); tickWhack(t);
   }
   function wkStatus(){ var e=$('wkst'); if(e) e.innerHTML='Hits <b>'+S.wk.hits+'</b>/'+S.wk.need; }
   function wkCell(i){ return document.querySelector('.wkc[data-i="'+i+'"]'); }
@@ -1535,20 +1599,22 @@
   // box + target built ONCE; hits just move the existing target (no rebuild → a
   // fast follow-up tap can't accidentally land on the background as a miss)
   function mgTargetTap(t){
-    S.tt={ hits:0, need:6 };
+    S.tt={ hits:0, need:6, grace:0 };
     $('mg').innerHTML='<div class="seqstatus" id="ttst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div id="ttbox" style="position:relative;height:210px;border-radius:16px;border:1px solid var(--cardb);background:rgba(255,255,255,.04);overflow:hidden">'
       + '<div id="ttgt" style="position:absolute;font-size:42px;cursor:pointer;transform:translate(-50%,-50%);transition:left .14s cubic-bezier(.25,.9,.35,1),top .14s cubic-bezier(.25,.9,.35,1)">'+t.target+'</div></div>';
-    $('ttgt').onclick=function(ev){ if(ev.stopPropagation)ev.stopPropagation(); ttHit(t); };
-    $('ttbox').onclick=function(){ if(S.play.done) return; S.play.misses++; showMiss(); };
+    fastTap($('ttgt'), function(){ ttHit(t); }, true);
+    // background tap = miss, but only after a short grace so an over-eager second
+    // tap right after a hit (while the target is gliding away) isn't punished
+    $('ttbox').onclick=function(){ if(S.play.done) return; if(performance.now()-S.tt.grace<220) return; S.play.misses++; showMiss(); };
     ttStatus(); ttMove();
   }
   function ttStatus(){ var e=$('ttst'); if(e) e.innerHTML='Hits <b>'+S.tt.hits+'</b>/'+S.tt.need; }
   function ttMove(){ var g=$('ttgt'); if(g){ g.style.left=(10+Math.floor(Math.random()*80))+'%'; g.style.top=(12+Math.floor(Math.random()*70))+'%'; } }
   function ttHit(t){
     if(S.play.done) return;
-    S.tt.hits++; ttStatus();
+    S.tt.hits++; S.tt.grace=performance.now(); ttStatus();
     if(S.tt.hits>=S.tt.need){ S.play.done=true; finishTask(); return; }
     ttMove();
   }
@@ -1574,7 +1640,7 @@
       + '</div>'
       + '<div class="ohint" style="margin-top:10px">Tap the bar while the marker is in the green. The zone shrinks every hit!</div>';
     swStatus(); swPaint();
-    $('swbar').onclick=swTap;
+    fastTap($('swbar'), swTap);
     (function loop(){
       if(S.play.done || !$('swm')) return;
       var el=(performance.now()-S.sw.t0)/1000;
@@ -1707,7 +1773,7 @@
       + '<div style="text-align:center;margin-bottom:10px"><span class="catchip">Your bag</span> <span style="font-size:26px;letter-spacing:2px;vertical-align:middle">'+S.bg.target+'</span></div>'
       + '<div class="seqgrid" style="margin-top:2px">'+cells+'</div>'
       + '<div class="ohint">The belt keeps moving — tap only YOUR bag.</div>';
-    each('.bgc', function(b){ b.onclick=function(){ bgTap(+b.getAttribute('data-i')); }; });
+    each('.bgc', function(b){ fastTap(b, function(){ bgTap(+b.getAttribute('data-i')); }); });
     bgStatus();
     S.bg.timer=setInterval(bgTick, 1050-350*d); bgTick();
   }
@@ -1749,7 +1815,7 @@
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div class="reps" id="redots"></div>'
       + '<div class="reactbox idle" id="repad" style="height:170px;cursor:pointer"><div class="big">🥁</div><div class="sm" id="resm">Listen to the beat…</div></div>';
-    $('repad').onclick=reTap;
+    fastTap($('repad'), reTap);
     reBegin();
   }
   function reDots(fill){
@@ -1912,7 +1978,7 @@
     $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div class="reps" id="ppreps"></div>'
       + '<div class="reactbox idle" id="ppad" style="height:170px;cursor:pointer"><div class="big" id="ppbig">🎧 Ready?</div><div class="sm" id="ppsm">Tap to start — then tap HIGH notes, hold through LOW ones.</div></div>';
-    ppReps(); $('ppad').onclick=function(){ ppTap(); };
+    ppReps(); fastTap($('ppad'), function(){ ppTap(); });
   }
   function ppReps(){ var e=$('ppreps'); if(!e) return; var h=''; for(var i=0;i<S.pp.need;i++){ h+='<div class="rep'+(i<S.pp.hits?' done':'')+'"></div>'; } e.innerHTML=h; }
   function ppClear(){ if(S.pp.to){ clearTimeout(S.pp.to); S.pp.to=null; } }
@@ -1931,9 +1997,10 @@
     var isHigh=Math.random()<0.6;
     S.pp.state=isHigh?'high':'low'; S.pp.armAt=performance.now();
     beep(isHigh?920:200, 0.24, 'triangle', 0.16);
-    var quiet=_muted || !actx();   // no ears available → show the direction
-    ppSet(quiet?(isHigh?'▲ HIGH':'▼ LOW'):'♪', quiet?(isHigh?'TAP!':'hold…'):'What was that note?', isHigh?'H':'L');
-    var pad=$('ppad'); if(pad){ pad.style.background='rgba(236,181,80,.35)'; setTimeout(function(){ var p=$('ppad'); if(p) p.style.background=''; },200); }
+    // ALWAYS show the ▲/▼ direction (with colour) so the game is fully playable
+    // without sound — deaf/HoH players aren't locked out; the tone is extra juice.
+    ppSet(isHigh?'▲ HIGH':'▼ LOW', isHigh?'TAP!':'hold…', isHigh?'H':'L');
+    var pad=$('ppad'); if(pad){ pad.style.background=isHigh?'rgba(236,181,80,.4)':'rgba(70,90,140,.35)'; setTimeout(function(){ var p=$('ppad'); if(p) p.style.background=''; },220); }
     ppClear();
     if(isHigh) S.pp.to=setTimeout(function(){ if(S.pp.state==='high'&&!S.play.done) ppResolve('slow'); }, 1150);
     else       S.pp.to=setTimeout(function(){ if(S.pp.state==='low' &&!S.play.done) ppResolve('held'); }, 900);
@@ -1967,14 +2034,18 @@
     rwNewZone();
     $('mg').innerHTML='<div class="seqstatus" id="rwst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div id="rwfield" style="position:relative;height:170px;border-radius:14px;border:1px solid var(--cardb);background:linear-gradient(180deg,rgba(236,181,80,.10),rgba(255,255,255,.03) 70%);overflow:hidden;cursor:pointer;touch-action:manipulation">'
-        + '<div id="rwp" style="position:absolute;top:16px;font-size:30px;transition:top .22s ease-in">✈️</div>'
-        + '<div style="position:absolute;left:0;right:0;bottom:0;height:22px;background:rgba(255,255,255,.05)"></div>'
-        + '<div id="rwz" style="position:absolute;bottom:0;height:22px;background:rgba(53,214,160,.45);border-left:2px solid var(--ok);border-right:2px solid var(--ok)"></div>'
+      + '<div id="rwfield" style="position:relative;height:170px;border-radius:14px;border:1px solid var(--cardb);cursor:pointer;touch-action:manipulation;overflow:hidden;'
+          + 'background:linear-gradient(180deg,#1a2a52 0%,#3a5aa0 46%,#2f7d4c 62%,#256b41 100%)">'   // dusk sky over green land
+        // runway strip: dark asphalt with a dashed centreline
+        + '<div style="position:absolute;left:0;right:0;bottom:0;height:40px;background:#20242c;box-shadow:inset 0 2px 6px rgba(0,0,0,.5)"></div>'
+        + '<div style="position:absolute;left:0;right:0;bottom:19px;height:3px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.85) 0 16px,transparent 16px 34px)"></div>'
+        // touchdown zone (the target) marked on the runway
+        + '<div id="rwz" style="position:absolute;bottom:0;height:40px;background:rgba(63,206,134,.32);border-left:3px solid var(--ok);border-right:3px solid var(--ok)"></div>'
+        + '<div id="rwp" style="position:absolute;top:16px;font-size:30px;transition:top .22s ease-in;filter:drop-shadow(0 6px 4px rgba(0,0,0,.4))">✈️</div>'
       + '</div>'
-      + '<div class="ohint" style="margin-top:10px">Tap to drop the plane — land it on the green strip.</div>';
+      + '<div class="ohint" style="margin-top:10px">Tap to drop the plane — land it on the lit touchdown zone.</div>';
     rwStatus(); rwPaint();
-    $('rwfield').onclick=rwDrop;
+    fastTap($('rwfield'), rwDrop);
     (function loop(){
       if(S.play.done || !$('rwp')) return;
       if(!S.rw.dropping){
@@ -2012,13 +2083,21 @@
     S.ps={ shots:0, need:3, fw:0.38-0.08*d, spd:0.55+0.45*d, x:0.5, y:0.5, t0:performance.now() };
     $('mg').innerHTML='<div class="seqstatus" id="psst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div id="psbox" style="position:relative;height:200px;border-radius:14px;border:1px solid var(--cardb);background:rgba(8,20,36,.7);overflow:hidden">'
-        + '<div id="pssub" style="position:absolute;font-size:40px;transform:translate(-50%,-50%);filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))">'+(t.flag||'🌍')+'</div>'
-        + '<div id="psframe" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:2px dashed rgba(255,255,255,.75);border-radius:10px;transition:width .25s ease,height .25s ease,border-color .15s"></div>'
+      + '<div id="psbox" style="position:relative;height:200px;border-radius:14px;border:1px solid var(--cardb);overflow:hidden;'
+          + 'background:radial-gradient(120% 120% at 50% 40%,#123, #0a1020)">'
+        // viewfinder chrome: rule-of-thirds grid, corner brackets, REC dot
+        + '<div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.12) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.12) 1px,transparent 1px);background-size:33.3% 33.3%;background-position:center"></div>'
+        + '<div style="position:absolute;left:8px;top:8px;width:16px;height:16px;border-left:2px solid rgba(255,255,255,.6);border-top:2px solid rgba(255,255,255,.6)"></div>'
+        + '<div style="position:absolute;right:8px;top:8px;width:16px;height:16px;border-right:2px solid rgba(255,255,255,.6);border-top:2px solid rgba(255,255,255,.6)"></div>'
+        + '<div style="position:absolute;left:8px;bottom:8px;width:16px;height:16px;border-left:2px solid rgba(255,255,255,.6);border-bottom:2px solid rgba(255,255,255,.6)"></div>'
+        + '<div style="position:absolute;right:8px;bottom:8px;width:16px;height:16px;border-right:2px solid rgba(255,255,255,.6);border-bottom:2px solid rgba(255,255,255,.6)"></div>'
+        + '<div style="position:absolute;left:10px;top:9px;display:flex;align-items:center;gap:4px;font-size:9px;font-weight:800;color:#ff5a5a"><span style="width:7px;height:7px;border-radius:50%;background:#ff5a5a;display:inline-block"></span>REC</div>'
+        + '<div id="pssub" style="position:absolute;font-size:40px;transform:translate(-50%,-50%);filter:drop-shadow(0 4px 12px rgba(0,0,0,.6))">'+(t.flag||'🌍')+'</div>'
+        + '<div id="psframe" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border:2px solid var(--goldhi);border-radius:10px;box-shadow:0 0 0 100vmax rgba(0,0,0,.28);transition:width .25s ease,height .25s ease,border-color .15s"></div>'
       + '</div>'
       + '<button class="btn globe" id="psshut" style="margin-top:12px">📸 Snap</button>';
     psStatus(); psFrame();
-    $('psshut').onclick=psSnap;
+    fastTap($('psshut'), psSnap);
     (function loop(){
       if(S.play.done || !$('pssub')) return;
       var el=(performance.now()-S.ps.t0)/1000*S.ps.spd;
@@ -2036,45 +2115,68 @@
     var f=$('psframe');
     if(inX && inY){
       sfx('correct'); S.ps.shots++; psStatus();
-      if(f){ f.style.borderColor='var(--ok)'; setTimeout(function(){ var f2=$('psframe'); if(f2) f2.style.borderColor='rgba(255,255,255,.75)'; },250); }
+      if(f){ f.style.borderColor='var(--ok)'; setTimeout(function(){ var f2=$('psframe'); if(f2) f2.style.borderColor='var(--goldhi)'; },250); }
       if(S.ps.shots>=S.ps.need){ S.play.done=true; setTimeout(finishTask,200); return; }
       S.ps.fw*=0.82; S.ps.spd*=1.18; psFrame();
     } else {
       S.play.misses++; showMiss();
-      if(f){ f.style.borderColor='var(--bad)'; setTimeout(function(){ var f2=$('psframe'); if(f2) f2.style.borderColor='rgba(255,255,255,.75)'; },250); }
+      if(f){ f.style.borderColor='var(--bad)'; setTimeout(function(){ var f2=$('psframe'); if(f2) f2.style.borderColor='var(--goldhi)'; },250); }
     }
   }
 
-  /* ---------- minigame: Stamp It (tap the sliding passport box) ---------- */
+  /* ---------- minigame: Stamp It (press the stamp onto the passport) ----------
+     You hold a rubber stamp that slides across the page; press it down when it's
+     over the empty slot and it leaves a real inked passport stamp (city + ✈).
+     Land it off the slot and you get a faint smudge (a miss). Slot narrows and
+     the stamp speeds up with each clean stamp. Themed on the drawn destination. */
   function mgStampIt(t){
     var d=ramp();
-    S.st2={ stamps:0, need:3, w:76-14*d, speed:0.55+0.4*d, t0:performance.now() };
+    S.st2={ stamps:0, need:3, tol:0.16-0.06*d, speed:0.42+0.4*d, pos:0.5, tx:0.5, t0:performance.now(),
+            city:((S.dest&&S.dest.name)||'GLOBE'), flag:((S.dest&&S.dest.flag)||'✈') };
+    stNewTarget();
     $('mg').innerHTML='<div class="seqstatus" id="stst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div id="stfield" style="position:relative;height:150px;border-radius:14px;border:1px solid var(--cardb);background:rgba(236,181,80,.07);overflow:hidden;cursor:pointer;touch-action:manipulation">'
-        + '<div id="stbox" style="position:absolute;top:26px;height:96px;border:2.5px dashed var(--coral);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer;transition:width .22s ease"></div>'
+      + '<div id="stfield" class="passport">'
+        + '<div class="gutter"></div>'
+        + '<div id="sttarget" class="stampslot"></div>'
+        + '<div id="ststamp" class="stamphead">🔻</div>'
       + '</div>'
-      + '<div class="ohint" style="margin-top:10px">Stamp INSIDE the sliding box — smudges cost time.</div>';
-    stStatus();
-    $('stbox').onclick=function(ev){ if(ev.stopPropagation) ev.stopPropagation(); stHit(); };
-    $('stfield').onclick=function(){ if(S.play.done) return; S.play.misses++; showMiss(); };
+      + '<div class="ohint" style="margin-top:10px">Press the stamp down when it\'s over the empty box.</div>';
+    stStatus(); stPaintTarget();
+    fastTap($('stfield'), stTap);
     (function loop(){
-      var box=$('stbox'), field=$('stfield');
-      if(S.play.done || !box || !field) return;
+      var stamp=$('ststamp'), field=$('stfield');
+      if(S.play.done || !stamp || !field) return;
       var el=(performance.now()-S.st2.t0)/1000;
-      var p=(Math.sin(el*S.st2.speed*Math.PI*2)+1)/2;
-      box.style.width=S.st2.w+'px';
-      box.style.left=(p*(field.clientWidth-S.st2.w-8)+4)+'px';
+      S.st2.pos=(Math.sin(el*S.st2.speed*Math.PI*2)+1)/2;
+      stamp.style.left=(S.st2.pos*100)+'%';
       requestAnimationFrame(loop);
     })();
   }
   function stStatus(){ var e=$('stst'); if(e) e.innerHTML='Stamps <b>'+S.st2.stamps+'</b>/'+S.st2.need; }
-  function stHit(){
+  function stNewTarget(){ var m=S.st2.tol+0.04; S.st2.tx=rnd(m,1-m); }
+  function stPaintTarget(){ var tg=$('sttarget'); if(tg){ tg.style.left=((S.st2.tx-S.st2.tol)*100)+'%'; tg.style.width=(S.st2.tol*2*100)+'%'; } }
+  var ST_INKS=['#b3372b','#1f5fa8','#2c7d4c','#6a4a12'];   // passport inks: red, blue, green, sepia
+  function stTap(){
     if(S.play.done) return;
-    sfx('correct'); S.st2.stamps++; stStatus(); flash($('stfield'));
-    var box=$('stbox'); if(box){ box.textContent='✅'; popIn(box); setTimeout(function(){ var b2=$('stbox'); if(b2) b2.textContent=''; },220); }
-    if(S.st2.stamps>=S.st2.need){ S.play.done=true; setTimeout(finishTask,200); return; }
-    S.st2.w=Math.max(46, S.st2.w*0.82); S.st2.speed*=1.16;
+    var head=$('ststamp'); if(head){ retrig(head,'press'); }   // press-down animation
+    var field=$('stfield');
+    var hit=Math.abs(S.st2.pos-S.st2.tx)<=S.st2.tol;
+    // leave an ink imprint on the page where the stamp came down
+    if(field){
+      var ink=hit?ST_INKS[S.st2.stamps%ST_INKS.length]:'rgba(90,70,40,.5)';
+      var sz=hit?64:52, rot=Math.round(rnd(-13,13));
+      var im=document.createElement('div'); im.className='imprint';
+      im.style.cssText='left:calc('+(S.st2.pos*100)+'% - '+(sz/2)+'px);top:'+(hit?42:60)+'px;width:'+sz+'px;height:'+sz+'px;'
+        +'color:'+ink+';transform:rotate('+rot+'deg)'+(hit?'':';opacity:.4;filter:blur(.6px)');
+      im.innerHTML='<div class="cty">'+esc(S.st2.city)+'</div><div class="ic">'+(hit?S.st2.flag:'〰')+'</div><div class="br">RUN THE GLOBE</div>';
+      field.appendChild(im); popIn(im);
+    }
+    if(hit){
+      sfx('correct'); S.st2.stamps++; stStatus(); vibe(14);
+      if(S.st2.stamps>=S.st2.need){ S.play.done=true; setTimeout(finishTask,300); return; }
+      S.st2.tol=Math.max(0.06, S.st2.tol*0.82); S.st2.speed*=1.16; stNewTarget(); stPaintTarget();
+    } else { S.play.misses++; showMiss(); }
   }
 
   /* ---------- minigame: Find It On The Map (spatial, distance-scored) ---------- */
@@ -2233,10 +2335,12 @@
     // retention metrics (badges)
     var st=statsDefault(); st.stagesPlayed++;
     if(!skipped){
-      // fastest-stage only counts real wall-clock games; reaction/sequence report
-      // a synthetic time (summed reaction / input-only) that isn't comparable.
+      // fastest-stage only counts FLAWLESS real wall-clock games; reaction/sequence
+      // report synthetic time, and mapfind is distance-scored (a deliberately wrong
+      // pin is fast) — requiring 0 misses closes that Speed-Demon badge exploit.
       var k=taskKind(S.chosen||{});
-      if(k!=='reaction' && k!=='sequence' && (!st.fastestStage || playerRaw<st.fastestStage)) st.fastestStage=playerRaw;
+      if(playerMisses===0 && k!=='reaction' && k!=='sequence' && k!=='mapfind'
+         && (!st.fastestStage || playerRaw<st.fastestStage)) st.fastestStage=playerRaw;
       if(playerMisses===0) st.perfectStages++;
     }
     saveStats(st);
@@ -2247,7 +2351,7 @@
 
   /* --- phase: checkpoint (lock the time) --- */
   function viewCheckpoint(){
-    sfx('checkpoint');
+    if(S._cpSfx!==S.round){ S._cpSfx=S.round; sfx('checkpoint'); }   // one sting per stage, not per re-render
     var r=S.lastResult;
     var body;
     if(r.skipped){
@@ -2669,7 +2773,7 @@
     var effSec=raw+misses*pen, effMs=Math.round(effSec*1000);
     S.lastResult={ raw:raw, misses:misses, eff:effSec, pen:pen, skipped:false };
     var st=statsDefault(); st.stagesPlayed++; if(misses===0) st.perfectStages++;
-    var k=taskKind(S.chosen||{}); if(k!=='reaction'&&k!=='sequence'&&(!st.fastestStage||raw<st.fastestStage)) st.fastestStage=raw; saveStats(st);
+    var k=taskKind(S.chosen||{}); if(misses===0&&k!=='reaction'&&k!=='sequence'&&k!=='mapfind'&&(!st.fastestStage||raw<st.fastestStage)) st.fastestStage=raw; saveStats(st);
     (S.online.times[S.round]=S.online.times[S.round]||{})[S.online.slot]=effMs;   // remember mine immediately
     S.phase='checkpoint'; renderStage();
     rpc('post_globe_duo_time',{p_duo:S.online.duoId, p_round:S.round, p_ms:effMs}).then(function(r){ if(onlineActive()&&r&&r.data) duoIngest(r.data); }).catch(function(){});
