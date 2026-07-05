@@ -6499,10 +6499,12 @@ function scrSummary(){
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
   add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':(S.circuitMode?('Year '+circuitYear+' of '+CIRCUIT_MAX_YEARS+' · '):('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS+' · '))}${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
   const netCol=ec.net>=0?'#35d6a0':'#E14A33';
-  add($(`<div class="center" style="margin-bottom:6px">
-    <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Net profit</div>
-    <div class="mono" style="font-weight:800;font-size:38px;color:${netCol};margin-top:4px">${fmtSigned(ec.net)}</div>
-    <div class="small muted" style="margin-top:2px">${fmt(ec.gross)} won · −${fmt(ec.costs)} expenses</div></div>`));
+  // MONEY grouped in ONE horizontal card (owner: money was scattered across ~4 spots and net profit was
+  // shown twice — the big hero AND a "Profit" tile). Earnings (gross) + Net profit side by side, one place.
+  add($(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin:4px 0 6px">
+    <div class="tile"><div class="k">Earnings</div><div class="v cream" style="font-size:23px;white-space:nowrap">${fmt(t.money)}</div><div class="small muted" style="font-size:10px;margin-top:3px">prize money won</div></div>
+    <div class="tile"><div class="k">Net profit</div><div class="v" style="font-size:23px;white-space:nowrap;color:${netCol}">${fmtSigned(ec.net)}</div><div class="small muted" style="font-size:10px;margin-top:3px">after −${fmt(ec.costs)} costs</div></div>
+  </div>`));
   // expandable itemized expense sheet (caddie / agent / travel / tour overhead)
   const expWrap=$(`<div class="center" style="margin:0 0 8px"></div>`);
   const expBtn=$(`<button class="btn ghost" style="width:auto;font-size:11px;padding:6px 13px">${S.showExpenses?'Hide expense breakdown ▴':'See expense breakdown ▾'}</button>`);
@@ -6527,19 +6529,24 @@ function scrSummary(){
     add(seasonRepNode(achPoints()-gained, S.freshAch));   // status bar on top → achievements reveal one by one, rep climbs in sync
   }
   if(sbSignedIn() && S.freshRep){ add($(repUpHTML(S.freshRep))); }
-  // five headline stats: Earnings · Profit (two money tiles) over Tour Rank · Top 10's · Wins
-  const pcol=ec.net>=0?'#35d6a0':'#E14A33';
-  const tilesA=$(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin-bottom:10px"></div>`);
-  tilesA.appendChild(tile('Earnings',fmt(t.money),true));
-  tilesA.appendChild($(`<div class="tile"><div class="k">Profit</div><div class="v" style="color:${pcol}">${fmtSigned(ec.net)}</div></div>`));
-  add(tilesA);
+  // performance stats row (money now lives only in the grouped card above — no more duplicate Profit tile)
   const tilesB=$(`<div class="tiles" style="grid-template-columns:repeat(4,1fr);margin-top:0"></div>`);
   const statTile=(k,v)=>$(`<div class="tile"><div class="k">${k}</div><div class="v" style="font-size:19px;white-space:nowrap">${v}</div></div>`);
-  tilesB.appendChild(statTile('Tour Rank',fedexRank+' / '+N));
-  tilesB.appendChild(statTile("Top 10's",t.top10+''));
   tilesB.appendChild(statTile('Wins',t.wins+''));
   tilesB.appendChild(statTile('Majors',t.majors+''));
+  tilesB.appendChild(statTile("Top 10's",t.top10+''));
+  tilesB.appendChild(statTile('Tour Rank',fedexRank+' / '+N));
   add(tilesB);
+  // WINS grouped with the Wins stat: the actual tournaments won this season sit right under the row
+  // (owner: "wins are at top once and then tiny" — keep the count and the won-events together).
+  { const wonThisSeason=[];
+    (S.season.results||[]).forEach(r=>{ const meR=r.order&&r.order.find(o=>o.p&&o.p.you); if(meR&&meR.pos===1) wonThisSeason.push({name:r.evt.name,major:!!r.evt.major}); });
+    if(wonThisSeason.length){
+      const wrap=$(`<div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin:8px 0 2px"></div>`);
+      wonThisSeason.forEach(w=>wrap.appendChild($(`<span class="tag" style="font-size:12px;padding:6px 11px;${w.major?'color:var(--gold);border-color:var(--gold)':''}">🏆 ${esc(w.name)}${w.major?' · MAJOR':''}</span>`)));
+      add(wrap);
+    }
+  }
   // Official World Ranking + Tour Card status, the season's headline standing, with year-over-year movement
   if(!S.daily && S.worldRankMove){
     const m=S.worldRankMove, cs=cardStatus(m.now), dlt=m.prev-m.now;   // dlt>0 = climbed (lower number is better)
@@ -6608,15 +6615,7 @@ function scrSummary(){
   if(S.freshRivalOutgrown) add($(rivalOutgrownHTML(S.freshRivalOutgrown)));
   if(S.freshRival) add($(rivalFormedHTML(S.freshRival)));
   if(S.rivalOutcome) add($(rivalCardHTML(S.rivalOutcome)));
-  // the actual tournaments won this season (majors flagged in gold)
-  const wonThisSeason=[];
-  (S.season.results||[]).forEach(r=>{ const meR=r.order&&r.order.find(o=>o.p&&o.p.you); if(meR&&meR.pos===1) wonThisSeason.push({name:r.evt.name,major:!!r.evt.major}); });
-  if(wonThisSeason.length){
-    add($(`<h2 class="center" style="margin:14px 0 8px;font-size:15px">Tournaments won this season</h2>`));
-    const wrap=$(`<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:4px"></div>`);
-    wonThisSeason.forEach(w=>wrap.appendChild($(`<span class="tag" style="font-size:12px;padding:7px 12px;${w.major?'color:var(--gold);border-color:var(--gold)':''}">🏆 ${w.name}${w.major?' · MAJOR':''}</span>`)));
-    add(wrap);
-  }
+  // (Tournaments won this season now render up top, grouped with the Wins stat.)
   // year-over-year skill changes, only once decline kicks in (Year 15+), since
   // before that nothing moves and every tile would read 0. Shows the new rating
   // with the change (e.g. red −1) beside it. Circuit seasons read their OWN skillSeasons
@@ -9128,7 +9127,9 @@ function scrDailyRound(){
     if(holePauseFlag && lastIdx>=0){
       const lh=played[lastIdx], col=dScoreCol(lh.toPar), ace=(lh.par===3 && lh.par+lh.toPar===1);
       const big=ace?'HOLE-IN-ONE!':esc(dResultLong(lh.par,lh.toPar)).toUpperCase();
-      shell.appendChild($(`<div class="hvob hvresult" style="border-color:${col}"><span class="rn" style="color:${col}">${big}</span><span class="rs" style="color:${col}">${lh.par+lh.toPar} (${dtp(lh.toPar)})</span></div>`));
+      // the number next to the result is where you STAND in the round (running to-par), not the hole's
+      // strokes (owner: "that should say birdie −3", i.e. my score, not −1 for the hole)
+      shell.appendChild($(`<div class="hvob hvresult" style="border-color:${col}"><span class="rn" style="color:${col}">${big}</span><span class="rs" style="color:${col}">${dtp(total)}</span></div>`));
     }
     if(latest){   // the scoreboard is ALWAYS shown on the live window (owner: it must never disappear, even
       // during the holed-result pill — the pill floats over the center, the board stays put top-corner)

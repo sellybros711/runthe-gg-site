@@ -4846,6 +4846,31 @@ allows Google Fonts, or self-host Anton.*
   + arms the AI fallback. H2H regression suite green; zero page errors. **ACTION: run
   `supabase/46_h2h_lobby_fill.sql`.** Deployed client to /golf.
 
+- **CS175 — round result pill shows your SCORE, not the hole; season summary money/wins regrouped +
+  de-duplicated (tester Jordo).** Three screenshot notes:
+  1. **Result pill = running round score.** The holed-result pill on the tracer read "BIRDIE 3 (−1)" (the
+     hole's strokes + hole to-par). Jordo: "the number next to par/birdie/bogey should be the score that
+     I'm at… that should say birdie −3." Changed the pill's secondary to the RUNNING round total to-par
+     (`dtp(total)`), so a birdie that puts you at −3 for the round reads "BIRDIE −3" (verified: PAR shows
+     "+1" after 3 holes, i.e. the round position, not the hole).
+  2. **Money grouped + de-duplicated on the season summary.** Money was scattered across ~4 spots and the
+     net-profit figure appeared TWICE up top — a giant "NET PROFIT" hero AND an identical "Profit" stat
+     tile. Replaced the tall hero + the Earnings/Profit tile row with ONE horizontal money card:
+     **Earnings** (gross) | **Net profit** (with "−$X costs") side by side, one place. The duplicate Profit
+     tile is gone; money now lives only in that card + the season earnings list + the career card.
+  3. **Wins grouped.** Jordo: "wins are at top once and then tiny." The Wins count and the "Tournaments won
+     this season" chips were far apart; moved the won-tournament chips up to render directly under the
+     stat row (Wins · Majors · Top 10's · Tour Rank), so the count and the named wins sit together. Removed
+     the separate lower "Tournaments won this season" section (no more duplication) and dropped its header
+     (the chips are self-explanatory under the Wins stat).
+  Net effect also shortens the summary (removed the big hero + a whole tiles row), addressing "that page
+  doesn't need to be as long." The record/bookkeeping block (all in the `if(!S.recorded)` guard) was
+  untouched — layout-only. Verified in Playwright (cs175): a full simmed season lands on the summary with
+  the grouped money card (Earnings + Net profit), no standalone Profit tile, and the won-tournament chips
+  under the stat row; the result pill shows the running round total; hv8 (daily HUD), practice, and cs157
+  (result pill / review) regressions all green; zero page errors. (Jordo's "better color scheme" note is
+  noted but not acted on — needs direction.) Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
