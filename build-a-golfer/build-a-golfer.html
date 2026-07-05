@@ -217,6 +217,10 @@ window.GA_ID='G-L29P5MRWKE';
   .spotlive{position:relative; animation:spotpulse 2.4s ease-in-out infinite}
   @keyframes spotpulse{0%,100%{box-shadow:0 0 0 0 rgba(235,166,31,.0)}50%{box-shadow:0 0 0 4px rgba(235,166,31,.16)}}
   @media (prefers-reduced-motion:reduce){.spotlive{animation:none}}
+  .streakrisk{max-width:520px;margin-left:auto;margin-right:auto;text-align:center;padding:10px 14px;border-radius:14px;
+    border:1.5px solid var(--gold);background:rgba(235,166,31,.1);animation:streakPulse 2.4s ease-in-out infinite}
+  @keyframes streakPulse{0%,100%{box-shadow:0 0 0 0 rgba(235,166,31,.3)}50%{box-shadow:0 0 0 7px rgba(235,166,31,0)}}
+  @media (prefers-reduced-motion:reduce){.streakrisk{animation:none}}
   .stack>*+*{margin-top:10px}
 
   /* ---- Play Online: promoted to its own teal-accented home block (distinct from the gold primary) ---- */
@@ -594,6 +598,15 @@ window.GA_ID='G-L29P5MRWKE';
   .shotscrub .sc.on{background:linear-gradient(180deg,#f6c944,#e39a12);color:#1a1206;border-color:transparent}
   .revbtns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:520px;margin:10px auto 0}
   .revbtns .btn{margin:0;flex:1 1 auto;min-width:130px;max-width:250px}
+  /* Round Rating grade card (Daily result hero) */
+  .gradecard{max-width:520px;margin:6px auto 12px;display:flex;align-items:center;gap:15px;padding:13px 17px;
+    border-radius:16px;border:2px solid var(--gold);background:rgba(8,17,26,.5);text-align:left;
+    box-shadow:0 14px 30px -20px rgba(0,0,0,.85)}
+  .gradecard .gletter{font:900 42px/1 var(--body);width:54px;text-align:center;flex:0 0 auto;text-shadow:0 2px 10px rgba(0,0,0,.45)}
+  .gradecard .glabel{font:900 19px/1 var(--body);letter-spacing:.02em;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .gradecard .glabel .gsub{font:800 9.5px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .gradecard .gblurb{font:600 12.5px/1.3 var(--body);color:var(--oncard);margin-top:3px}
+  .gradecard .gfeat{font:700 11px/1.3 var(--body);color:var(--muted);margin-top:3px}
   .hvstat{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;margin:0 0 8px}
   .hvchip{font:700 10px/1 var(--body);letter-spacing:.08em;color:var(--muted);background:#0a1626;
     border:1px solid var(--line);border-radius:7px;padding:5px 8px;white-space:nowrap}
@@ -1497,12 +1510,54 @@ function dailyWinPct(){ const st=dailyStats(); return st.played?Math.round(100*s
 async function shareText(text){ recordAchEvent({set:{shared:1}}); evaluateAch();
   try{ if(navigator.share){ await navigator.share({text}); return; } }catch(e){ if(e&&e.name==='AbortError')return; }
   try{ await navigator.clipboard.writeText(text); toast('Copied! Paste it anywhere'); }catch(_){ toast('Could not copy'); } }
-// Wordle-style emoji result for the daily, a paste-anywhere viral hook
+/* ---------- ROUND RATING: a secondary "how you played" grade (S/A/B/C/D), distinct from the raw
+   score. Rewards the SHAPE of the round (birdies, eagles, hole-outs, bogey-free, beating the field)
+   on top of the number, giving the Daily its own identity vs the online H2H ladder. Pure function of
+   the finished round → deterministic + reproducible. Thresholds are tunable. ---------- */
+const RGRADES=[
+  {k:'D', label:'Grinder',   col:'#e9a23b', blurb:'Ground it out.'},
+  {k:'C', label:'Solid',     col:'#e7eee7', blurb:'Steady and solid.'},
+  {k:'B', label:'Clutch',    col:'#2fd1c0', blurb:'Clutch when it counted.'},
+  {k:'A', label:'Brilliant', col:'#35d6a0', blurb:'Brilliant golf.'},
+  {k:'S', label:'Legendary', col:'#EBA61F', blurb:'A round for the ages.'}
+];
+function dRoundGrade(holes, total, avg){
+  if(!holes||!holes.length) return null;
+  if(total==null) total=holes.reduce((s,h)=>s+h.toPar,0);
+  const margin=(avg!=null?avg:0)-total;            // + = beat the tour field
+  let sc=margin*7, birdies=0, eagles=0, aces=0, holeouts=0, bogeys=0, dbls=0;
+  holes.forEach(h=>{ const tp=h.toPar, strokes=h.par+tp;
+    if(h.par===3 && strokes===1){ aces++; sc+=22; }
+    else if(tp<=-2){ eagles++; sc+=9; }
+    else if(tp===-1){ birdies++; sc+=3; }
+    else if(tp===1){ bogeys++; sc-=1.5; }
+    else if(tp>=2){ dbls++; sc-=4; }
+    if((h.shots||[]).some(s=>s.holeout)){ holeouts++; sc+=5; }   // chip-in / bunker hole-out / pitch-in flair
+  });
+  const bogeyFree=(bogeys+dbls)===0 && holes.length>=18;
+  if(bogeyFree) sc+=12;
+  let ti=0; if(sc>=48)ti=4; else if(sc>=30)ti=3; else if(sc>=15)ti=2; else if(sc>=0)ti=1; else ti=0;
+  const g=RGRADES[ti], parts=[];
+  if(aces) parts.push(aces+' ace'+(aces>1?'s':''));
+  if(eagles) parts.push(eagles+' eagle'+(eagles>1?'s':''));
+  if(birdies) parts.push(birdies+' birdie'+(birdies>1?'s':''));
+  if(holeouts) parts.push(holeouts+' hole-out'+(holeouts>1?'s':''));
+  if(bogeyFree) parts.push('bogey-free');
+  if(margin>0.05) parts.push('beat the field by '+margin.toFixed(1));
+  else if(margin<-0.05) parts.push((-margin).toFixed(1)+' over the field');
+  return {tier:ti, key:g.k, letter:g.k, label:g.label, col:g.col, blurb:g.blurb, score:Math.round(sc),
+    feats:{birdies,eagles,aces,holeouts,bogeyFree,margin:+margin.toFixed(2)}, featTxt:parts.slice(0,3).join(' · ')};
+}
+// resolve a grade for a stored/backfilled result (uses the stored grade, else recomputes from holes)
+function gradeFromResult(r){ if(!r) return null; if(r.grade&&r.grade.key) return r.grade;
+  const c=DAILY_COURSES[r.course]; return dRoundGrade(r.holes||[], r.total, r.avg!=null?r.avg:(c?dTourAvg(c):0)); }
+// Wordle-style emoji result for the daily, a paste-anywhere viral hook, now LEADING with the grade
 function dailyShareText(r){ const c=DAILY_COURSES[r.course]; const holes=r.holes||[];
   const emo=t=> t<=-2?'🟦':t===-1?'🟩':t===0?'⬜':t===1?'🟨':'🟥';   // eagle+ blue · birdie green · par white · bogey yellow · dbl+ red
   let grid=''; holes.forEach((h,i)=>{ grid+=emo(h.toPar); if(i===8)grid+='\n'; });
   const av=r.avg!=null?r.avg:dTourAvg(c), won=r.total<av, st=streakDisplay();
-  return `⛳ RunTheTour Daily, ${dShort(c.v)}\n${dTot(r.total, c.par)} on par ${c.par}${won?' · beat the pro ✓':''}${st>0?` · 🔥${st}`:''}\n${grid}\nThink you can beat it? https://runthe.gg/golf`; }
+  const gr=gradeFromResult(r), gLine=gr?`${gr.letter} · ${gr.label} — `:'';
+  return `⛳ RunTheTour Daily · ${dShort(c.v)}\n${gLine}${dTot(r.total, c.par)} on par ${c.par}${won?' · beat the pro ✓':''}${st>0?` · 🔥${st}`:''}\n${grid}\nThink you can beat it? https://runthe.gg/golf`; }
 /* ---------- resume an in-progress free-play golfer across a refresh ---------- */
 function saveResume(){ if(S.daily||!(S.screen==='draft'||S.screen==='build'))return;
   LS.set('bag_resume',{slots:S.slots,revealed:[...S.revealed],reSpins:S.reSpins,name:S.name,look:S.look,mode:S.mode,year:S.year}); }
@@ -3967,7 +4022,15 @@ function scrTitle(){
   // live countdown to the next daily course — creates "play today before it changes" urgency
   stack.appendChild($(`<div class="small center" style="margin-top:8px;color:var(--muted)">New course in <span style="color:var(--gold)">${dCd('clock')}</span></div>`));
   const st=streakDisplay(), fz=streakFreezes();
-  if(st>0) stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--gold);font-weight:700">🔥 ${st}-day daily streak, keep it alive${fz>0?` · ❄️ ${fz} freeze${fz>1?'s':''}`:''}</div>`));
+  const playedToday=((LS.get(acctKey('bag_streak'),{})||{}).last===todayKey());
+  if(st>0 && !playedToday && !PRACTICE){
+    // streak AT RISK today → loss-aversion banner with the live countdown (the #1 documented daily-retention lever)
+    stack.appendChild($(`<div class="streakrisk" style="margin-top:10px">
+      <div style="font-weight:900;font-size:15px;color:var(--gold)">🔥 ${st}-day streak on the line</div>
+      <div class="small" style="color:#f0d9a6;margin-top:2px">Play today to keep it alive${fz>0?` (a ❄️ freeze can bridge one miss)`:''} · resets in <span style="color:#fff;font-weight:800">${dCd('clock')}</span></div></div>`));
+  } else if(st>0){
+    stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--gold);font-weight:700">🔥 ${st}-day daily streak going${fz>0?` · ❄️ ${fz} freeze${fz>1?'s':''}`:''}</div>`));
+  }
   // Monthly Spotlight (#11): a special 1-day event, surfaced with urgency only on the day it's live
   if(spotlightLiveToday()){
     const sp=monthlySpotlight(todayKey()), sc=DAILY_COURSES[sp.key];
@@ -8159,7 +8222,8 @@ function finishDailyRound(){
   if(PRACTICE){
     const holes=S.dailyHoles.map(h=>({par:h.par,toPar:h.toPar}));
     const avg=dTourAvg(c), won=total<avg;
-    S.dailyResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,record:false,holes,avg,won,day:S.dailySeed,skills:S.dailySkills,decisions:null,isLegend:!!S.dailyLegend,legendName:S.dailyLegend?S.dailyLegend.name:null,practice:true};
+    const grade=dRoundGrade(S.dailyHoles, total, avg);
+    S.dailyResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,record:false,holes,avg,won,grade,day:S.dailySeed,skills:S.dailySkills,decisions:null,isLegend:!!S.dailyLegend,legendName:S.dailyLegend?S.dailyLegend.name:null,practice:true};
     S.dailyStreakInfo=null; S.dailyFreshAch=null; S.dailyAttemptNo=null; S.dailyImproved=false;
     S._claimDaily=null; S.dailyClaimMsg=null;
     track('daily_completed',{course:S.dailyCourse,total,won,avg,practice:true});
@@ -8172,7 +8236,8 @@ function finishDailyRound(){
   const holes=S.dailyHoles.map(h=>({par:h.par,toPar:h.toPar}));   // compact, enough to redraw the scorecard
   const avg=dTourAvg(c), won=total<avg;   // beat the real tour scoring average = won the day
   const decisions={plan:S.dailyPlan,att:(S.dailyAttempt||0),attacks:S.dailyHoles.filter(h=>h.attack!=null).map(h=>({n:h.n,a:h.attack}))};
-  S.dailyResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,record:isRec,holes,avg,won,day:S.dailySeed,skills:S.dailySkills,decisions,isLegend,legendName:isLegend?S.dailyLegend.name:null};
+  const grade=dRoundGrade(S.dailyHoles, total, avg);   // Round Rating (secondary "how you played" grade)
+  S.dailyResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,record:isRec,holes,avg,won,grade,day:S.dailySeed,skills:S.dailySkills,decisions,isLegend,legendName:isLegend?S.dailyLegend.name:null};
   if(isLegend) consumeLegendToken(S.dailyLegend.id);   // spent on completion, win or lose, never wasted on an abandoned round
   // "days played" streak: advances once per day on completion (win or lose). Beating the pro feeds the
   // lifetime record instead (tie counts as a loss, `won` is strict total<avg, decided by best of the day).
@@ -8580,6 +8645,12 @@ function scrDailyResult(){
   add($(`<h1 class="center" style="font-size:26px;margin:10px 0 2px">${esc(c.v)}</h1>`));
   add($(`<div class="center" style="margin:6px 0"><span class="mono" style="font-weight:800;font-size:44px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${dTot(total, c.par)}</span></div>`));
   add($(`<p class="lede center" style="margin:0 0 8px">Par ${c.par} · OVR ${r.ovr}${dCondLabel(r.cond)?' · '+dCondLabel(r.cond):''}</p>`));
+  // ROUND RATING: the "how you played" grade — the Daily's own identity (separate from the H2H ladder)
+  const gr=gradeFromResult(r);
+  if(gr) add($(`<div class="gradecard" style="border-color:${gr.col}">
+    <div class="gletter" style="color:${gr.col}">${gr.letter}</div>
+    <div class="ginfo"><div class="glabel" style="color:${gr.col}">${esc(gr.label)}<span class="gsub">Round Rating</span></div>
+      <div class="gblurb">${esc(gr.blurb)}</div>${gr.featTxt?`<div class="gfeat">${esc(gr.featTxt)}</div>`:''}</div></div>`));
   // headline: did you beat the tour average? (the main objective). best-of-day decides the day.
   const av=(r.avg!=null?r.avg:dTourAvg(c)); const bestT=best?best.total:total; const wonDay=bestT<av; const margin=Math.abs((av-total));
   add($(`<div class="scout" style="max-width:520px;margin:0 auto 4px;text-align:center;border-color:${wonDay?'#35d6a0':'var(--gold)'}">

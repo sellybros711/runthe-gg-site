@@ -4338,6 +4338,36 @@ allows Google Fonts, or self-host Anton.*
     hv8 (one-window HUD), hv5 (multi-ball H2H), hv7 (Moments), hv10, practice all green; screenshots
     confirm the centered BIRDIE pill + the review panel above the taller window. Deployed to /golf.
 
+- **CS158 — Daily deep-research batch, Wave 1 of 2: Round Rating + streak salience + grade-forward
+  share (recs #1–#3).** Owner greenlit building recs 1–5 from the daily-games deep research; split into
+  two reviewable waves (Wave 1 = the Tier-1 items the rest lean on; Wave 2 = weekly goals + course
+  passport). All client-side; the sim/score engine is untouched.
+  • **#2 Round Rating (the wedge vs H2H).** New `dRoundGrade(holes,total,avg)` grades the SHAPE of the
+    round on a golf-flavored S/A/B/C/D scale (Legendary/Brilliant/Clutch/Solid/Grinder), a pure function
+    of the finished round (deterministic). Score = margin·7 (how far under the tour field) + style bonuses
+    (birdie +3, eagle +9, ace +22, hole-out +5, bogey-free +12) − blow-ups (bogey −1.5, double+ −4), then
+    thresholded to a tier; `RGRADES` table + tuned cutoffs. Returns a feats line ("6 birdies · bogey-free ·
+    beat the field by 7.8"). Stored on `S.dailyResult.grade` (finishDailyRound + the PRACTICE branch);
+    `gradeFromResult(r)` reads it or recomputes from holes for backfilled results. Rendered as the result
+    hero — a colored `.gradecard` (big letter + label + "Round Rating" + blurb + feats) right under the
+    score, giving the Daily its own "how you played" identity separate from the raw number / the ladder.
+  • **#3 Grade-forward share.** `dailyShareText` now leads with the grade ("B · Clutch — 71 (E) on par
+    71 · beat the pro ✓ · 🔥12") above the Wordle emoji grid, so a shared Daily result reads as a
+    performance brag, not just a number.
+  • **#1 Streak salience (loss aversion — the #1 documented retention lever).** New title-screen
+    `.streakrisk` banner: when you have a live streak but HAVEN'T played today, a pulsing gold box reads
+    "🔥 N-day streak on the line · Play today to keep it alive (a ❄️ freeze can bridge one miss) · resets
+    in HH:MM:SS" (live countdown via the existing `dCd`). Once you've played today it collapses to the
+    calmer "🔥 N-day daily streak going" line. `playedToday` = `bag_streak.last===todayKey()`. (A true
+    push notification needs a service-worker push backend — owner-side — so this is the in-app salience
+    piece, which is the documented high-leverage lever.)
+  • Verified in Playwright (cs158): grade tiers (brilliant→S, rough→D, solid→C) + feats line; finish
+    stores the grade, the result renders the grade card, share leads with it; at-risk banner shows with
+    the countdown when a live streak is unplayed today and vanishes (→ calmer line) once played; practice/
+    hv8/cs157 regressions green; screenshots confirm the S·Legendary card + the at-risk banner. Deployed
+    to /golf. Wave 2 next: #4 weekly meta-goals + #5 course-mastery passport (will store best grade per
+    course, so it builds on this grade). Tunable: `RGRADES` cutoffs / score weights in `dRoundGrade`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
