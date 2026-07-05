@@ -7070,7 +7070,14 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
     const appQ=dSkQ(dSk(sk,'app'));
     if(water && rem()>=3){ sh.push({d:`${dClub(yards)} from the tee, into the water hazard`, k:'tee', lie:'water', fromY:yards}); played++; dist=Math.round(yards*0.4); sh.push({d:`penalty drop, ${dist} yds to hole`, k:'pen', lie:'drop', fromY:yards, toY:dist}); played++; water=false; }
     else if(rem()===1){ const g=greenDesc(dClub(yards),appQ,dClub(yards)); ftToHole=g.ft; sh.push({d:`${g.d}, ${dFeet(ftToHole)} to hole`, k:'tee', lie:'green', side:g.side, fromY:yards, toY:0, ft:ftToHole, spin:g.spin}); played++; }
-    else { const miss3=dPick(rng,appQ<0.4?['into the greenside bunker','into the left rough','long over the green']:['just off the right fringe','into the front collar']); const mft=Math.round(16+rng()*26); offLie=HV_LIE[miss3]||'fr'; sh.push({d:`${dClub(yards)} ${miss3}, ${mft} ft to hole`, k:'tee', lie:offLie, fromY:yards, toY:22, ft:mft}); played++; dist=22; }
+    else { // par-3 tee shot that misses the green — a pro mostly just misses the edge (simple chip), only
+      // a weak ball-striker sprays it into a bunker or deep rough (owner: pro misses shouldn't be wild)
+      const nearMiss=rng()<Math.min(0.94,0.52+0.30*appQ);
+      const miss3=nearMiss
+        ? dPick(rng,['just off the fringe','into the front collar','just short into the fringe','a step off the green'])
+        : dPick(rng, appQ<0.42?['into the greenside bunker','into the deep rough','long over the green']:['into the greenside bunker','into the left rough','into the right rough']);
+      const mft=Math.round(nearMiss?(10+rng()*15):(20+rng()*24)); offLie=HV_LIE[miss3]||'fr';
+      sh.push({d:`${dClub(yards)} ${miss3}, ${mft} ft to hole`, k:'tee', lie:offLie, fromY:yards, toY:22, ft:mft}); played++; dist=22; }
   }
   // ADVANCE / APPROACH / RECOVERY shots until on the green
   while(rem()>0){ const lastLong=(rem()===1), fromYds=Math.round(dist);
@@ -7090,8 +7097,22 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
     } else if(water && rem()>=3){ sh.push({d:`${dClub(fromYds)} from ${fromYds} yds, into the water hazard`, k:'app', lie:'water', fromY:fromYds}); played++; dist=Math.max(30,Math.round(fromYds*0.45)); sh.push({d:`penalty drop, ${Math.round(dist)} yds to hole`, k:'pen', lie:'drop', fromY:fromYds, toY:Math.round(dist)}); played++; water=false;
     } else if(dist>205){ let adv=Math.max(40,Math.min(dist-30,Math.round(70+rng()*150))); dist=Math.max(26,dist-adv);   // too far to reach the green, advance
       const fw6=rng()<0.6; sh.push({d:`${dClub(adv)} ${adv} yds to ${fw6?'the fairway':'the rough'}, ${Math.round(dist)} yds to hole`, k:'adv', lie:fw6?'fw':'ru', fromY:fromYds, toY:Math.round(dist)}); played++;
-    } else { const missLie=dPick(rng,['into the greenside bunker','into the right rough','into the left rough','long over the green','short into the rough']);   // missed green (weak ball-striking)
-      dist=Math.round(16+rng()*22); offLie=HV_LIE[missLie]||'ru'; sh.push({d:`${dClub(fromYds)} from ${fromYds} yds, missed the green ${missLie}`, k:'app', lie:offLie, fromY:fromYds, toY:dist}); played++; }
+    } else {
+      // MISSED the green — but a PRO's miss is a NEAR miss, not a wild sideways spray (owner: shots were
+      // way off target / into greenside bunkers from close range, which only an amateur would do). The
+      // miss severity scales with approach+accuracy skill AND the shot distance: a short shot from a good
+      // player barely misses (fringe/collar/just short → a simple chip); only weak players or long
+      // approaches find greenside bunkers or deep rough. Placed just off the green, not laterally.
+      const missQ=dSkQ(0.7*dSk(sk,'app')+0.3*dSk(sk,'acc'));
+      const nearP=(fromYds<=130?0.80:fromYds<=170?0.58:0.34)+0.18*missQ;
+      const nearMiss=rng()<Math.min(0.96,nearP);
+      const missLie=nearMiss
+        ? dPick(rng,['just short into the fringe','into the front collar','just off the fringe','through the back fringe','a step off the green'])
+        : dPick(rng, missQ<0.42?['into the greenside bunker','into the deep rough','long over the green']
+                               :['into the greenside bunker','into the right rough','into the left rough']);
+      offLie=HV_LIE[missLie]||'fr';
+      dist=Math.round(nearMiss?(5+rng()*9):(13+rng()*15));   // yards to hole after the miss (near miss = easy chip)
+      sh.push({d:`${dClub(fromYds)} from ${fromYds} yds, missed the green ${missLie}`, k:'app', lie:offLie, fromY:fromYds, toY:dist}); played++; }
   }
   if(ftToHole==null)ftToHole=20+rng()*20;
   // P===0 only happens with a preset drive + a would-be eagle on a par 4 (drive + holed approach, no
@@ -7137,7 +7158,10 @@ function dShort(name){ return String(name).split('(')[0].trim(); }
    structured shot data — pure presentation, the deterministic scores are untouched. */
 const HV_LIE={'the fairway':'fw','the right rough':'rr','the left rough':'rl','a fairway bunker':'fb','the trees':'tr',
   'into the greenside bunker':'gb','into the left rough':'rl','into the right rough':'rr','long over the green':'lo',
-  'just off the right fringe':'fr','into the front collar':'fc','short into the rough':'sr'};
+  'just off the right fringe':'fr','into the front collar':'fc','short into the rough':'sr',
+  // near-miss lies (a pro's miss barely misses — a simple chip back), placed just off the green
+  'just off the fringe':'fr','just short into the fringe':'fc','through the back fringe':'lo',
+  'into the deep rough':'rr','a step off the green':'fc'};
 const HV_W=360, HV_H=560, HV_TAPER=0.26;   // HV_H taller (was 470) → a bigger vertical tracer window
 // EXTRA painted margin each side of the course (rough/trees/sea) — the full-hole camera shows it,
 // so the floating HUD chips (scoreboard, hole info) sit over scenery instead of blocking the hole.
