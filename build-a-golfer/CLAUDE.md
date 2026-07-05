@@ -4126,6 +4126,33 @@ allows Google Fonts, or self-host Anton.*
   when paused) also renders on top; mulligan/skip stay below; a full practice round still completes; hv8
   (one-window HUD), hv7 (Moments) and the practice suite re-run green, zero page errors. Deployed to /golf.
 
+- **CS148 — round pacing + declutter + auto-start (owner feedback on the immersive view).** Three asks:
+  (1) "When the ball goes into the hole, it moves way too quickly to the next hole. The user doesn't have
+  time to register what they did"; (2) "the text above the shot tracer view and at the bottom is
+  redundant"; (3) "auto play should start automatically when a round is initiated ... the player [shouldn't
+  have] to press a button to begin."
+  • **Post-hole beat.** The auto-advance dwell went 650ms → **1900ms**, and the holed hole now holds on a
+    RESULT banner (`S.dailyHolePause`): "Hole N · Par P · **Birdie** · Next hole coming up…" — so you
+    actually register the score before the next tee shot fires. The next-hole decision block is suppressed
+    during the beat. Manual mode is unaffected (you control the pace). Applies to Daily/Moments/Spotlight/
+    Legend.
+  • **De-duplicated chrome (redundant text).** The floating on-course scoreboard already shows your total +
+    pace and the on-course description bar already narrates the current shot, so: the **broadcast stat
+    strip above the tracer** (SHOT n · yds · ball speed · apex) is removed from hvNode (both single- and
+    multi-ball, so H2H benefits too — it keeps its own player-named desc bar), and the **standalone big
+    score/"Tour average" header** now only renders when the window isn't showing it (before the first tee,
+    or while reviewing a past hole). Net: during play it's just the course tag → the window (hole chip +
+    scoreboard + one shot-description bar) → scorecard strip. One readout each, nothing doubled.
+  • **Auto-start.** `beginDailyRound` / `beginDailyRoundWithLegend` / `startMomentRound` now set
+    `S.dailyAuto=true`; the round plays itself the moment you enter it (first tee fires ~450ms in), pausing
+    only for signature-hole decisions. Pause/Resume + Skip still available. (Spotlight flows through
+    `beginDailyRound`, so it inherits it.)
+  Verified in Playwright: auto-play ON at start and hole 1 auto-tees with no click; the stat strip is gone
+  (0) while the on-course desc bar (1) + floating board (1) remain; the redundant score/pace header is gone
+  while the board is present; the post-hole result banner holds for the dwell then auto-advances to the
+  next hole; a full practice round self-completes; hv8/hv7/hv5/hv10/practice suites all re-run green, zero
+  page errors. Screenshots: clean flight view + "Birdie · Next hole coming up…" beat. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
