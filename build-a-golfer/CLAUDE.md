@@ -4210,6 +4210,30 @@ allows Google Fonts, or self-host Anton.*
   same class of issue on an older build; CS148's post-hole beat already stops a decision from co-appearing
   with a putt still rolling, and this reset fix removes the stuck-state entirely.)
 
+- **CS153 — realistic hazard physics + approach-skill backspin in the tracer.** Owner (screenshot of a
+  ball's roll line crossing the water): "the ball bounced on the water. This is impossible… it either has
+  to land in the water, bounce before the water and land short, bounce before the water and roll in, or
+  land over the water." Plus: "higher approach players should have more backspin… hit it closer to the
+  pin." Root cause: `hvPlots` computed a full shot's LANDING point as a fixed roll-back from the rest
+  (`rest − unit·roll`, up to ~25 course-units), so on a green fronted by water the landing fell IN the
+  water and the ball then "bounced + rolled" across the surface onto the green. Fixes (hole-view geometry
+  only — the deterministic `dSimHole` score is untouched, verified):
+  • **Carry the hazard.** For any shot that ends ON the green (`p.onGreen`, k tee/app/chip), the landing is
+    now forced onto the putting surface: roll is clamped so the touchdown never falls short of the green's
+    front edge, and a final safety walks the landing forward off any fronting water body (island / edge
+    greens land exactly on their rest spot, so the roll line never crosses open water). Water shots still
+    splash at the water (that path was already correct); this only stops the impossible bounce-across.
+  • **Backspin by approach skill.** `dShotSeq` now tags each green-arrival shot with a `spin` value from the
+    relevant skill (approach for full shots, short-game for chips, low for a released drive) — and the
+    roll-out is driven by it: a high-approach player zips it and checks it up quick (short roll, stops near
+    the pin), a low-approach player releases and runs out. A very spinny attacking approach can even read
+    "zips back toward the cup." Proximity to the pin already scaled with approach (CS152); this makes the
+    ball's visible behaviour match. Verified over 1,404 green-landing shots across all 39 courses: **zero**
+    land in the water, **zero** land short of the green, and elite-approach roll (2.4) is far shorter than
+    weak-approach roll (6.1). Score determinism confirmed unchanged. hv6/hv8/practice/bugfix suites green,
+    zero page errors; screenshot of a water-fronted par-3 shows the flight carrying the water and the ball
+    resting on the green. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
