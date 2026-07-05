@@ -4299,6 +4299,45 @@ allows Google Fonts, or self-host Anton.*
   sink), choosing plays the hole, and a full auto round completes with no stall; hv8/hv10/practice green.
   Deployed to /golf.
 
+- **CS157 — round-screen redesign: result pill on the tracer, taller window, shot-by-shot rewatch +
+  static share.** Owner (screenshot IMG_7864 of a Moment round): (1) the holed result "pushes everything
+  on the screen around" — make it a big colored pill in the top-center of the tracer, between the current
+  pills; (2) "the page shifts around so much... make the tour tracer bigger vertically and fit as much as
+  we can onto it so it feels like one cohesive page"; (3) "all the shot descriptions come up for 1 second
+  after the hole" — build a really good rewatch UX (go back to any hole, replay any shot) and, ideally,
+  share a shot. Via AskUserQuestion the owner chose **static image share now, animated GIF as a
+  fast-follow**. All changes are in `scrDailyRound` (shared by Daily / Moments / Spotlight / Legend) + the
+  hole-view module; the sim/score engine is untouched.
+  • **Result → floating pill on the tracer (no page shift).** Removed the big `.reflash` card that pushed
+    the whole page down when a hole finished. The holed result now renders as a `.hvob hvresult` chip
+    (BIRDIE / 5 (+1), colored by score, pop animation) floating top-center ON the window during the
+    post-hole beat (`holePause`). To avoid colliding with the floating scoreboard on a phone (the top row
+    is full — hole chip left, board right), the board is SUPPRESSED for the ~1.9s beat so the result pill
+    is the clean focus; it returns the instant the next hole starts. (The pill uses its own `hvresPop`
+    keyframe with `translateX(-50%)` baked in, since a bare `scale()` keyframe would drop the centering.)
+  • **Taller tracer.** `HV_H` 470→560 (CSS aspect-ratio `464/470`→`464/560` kept in sync) — a noticeably
+    taller window on both phone (full-bleed) and desktop, with more room for the HUD chips. The geometry
+    scales with HV_H so every hole/biome stays in frame (re-verified by the hv6 39-course property test).
+  • **Shot-by-shot rewatch (the "really Good" review UX).** Tapping any scorecard cell now opens REVIEW:
+    it HOLDS the round (clears the reveal timers WITHOUT touching `S.dailyAuto`, so closing resumes exactly
+    where it paused — no auto-flag tangles around signature decisions), suppresses the legend/score-header
+    chrome, and shows a review panel ABOVE the window: "Reviewing Hole N · Par P · <result> · score", the
+    SELECTED shot's full description (no more 1-second flash), a numbered **shot scrubber** (tap any shot
+    to replay JUST that shot's animation in the window), a "▶ Replay shot N" button, "↗ Share this shot",
+    and a "▶ Resume the round / ↩ Back" exit. Replay re-fires the animator via a new `animNonce` 6th param
+    to `hvNode` (bumped each tap so the same shot re-animates). New state `S.dailyReviewShot` /
+    `S.dailyReviewNonce`; helpers `dailyReviewOpen`/`dailyReviewShotN`/`dailyReviewClose`.
+  • **Static-image share.** `hvStaticSVG(hole,courseKey,holeIdx)` builds a self-contained full-hole tracer
+    SVG (terrain defs + every shot's flight line & marker); `hvShareShot(holeIdx)` rasterizes it to a 2.4×
+    canvas with a titled bar (Hole · Par · score · RunTheTour) and shares via `navigator.share({files})` or
+    a download fallback. (Animated GIF replay = the agreed fast-follow.)
+  • Verified in Playwright (cs157): HV_H=560, result pill floats on the `.hvshell` (old `.reflash` gone),
+    review holds the round + scrubber chip count == shot count + tapping a shot selects it, bumps the
+    nonce, and shows its full description, close clears the state, `hvStaticSVG` produces a valid SVG that
+    rasterizes (Image load), full practice round still completes; regressions hv6 (geometry, taller frame),
+    hv8 (one-window HUD), hv5 (multi-ball H2H), hv7 (Moments), hv10, practice all green; screenshots
+    confirm the centered BIRDIE pill + the review panel above the taller window. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
