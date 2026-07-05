@@ -4992,7 +4992,7 @@ function startMomentRound(ce, info){
     dSum+=t; }
   let shift=(sSum/240 - dSum/K)/18; if(!isFinite(shift)) shift=0;
   S.moment={idx:ce.idx, evtName:ce.evt.name, info, major:!!ce.evt.major};
-  S.daily=false; S.special=false; S.dailyLegend=null;
+  S.daily=false; S.special=false; S.dailyLegend=null; S.momentPO=null; S.momentPOHoleIdx=null;
   S.dailyCourse=key; S.dailyCond=cond; S.dailyPlan='balanced';
   S.dailySeed=(Math.random()*2147483647)>>>0; S.dailyAttempt=0;
   S.dailySkills=sk; S.dailyOvr=Math.round(p.skill);
@@ -5006,18 +5006,115 @@ function finishMomentRound(){
   const total=S.dailyHoles.reduce((s,h)=>s+h.toPar,0);
   const ce=S.curEvt, m=S.moment;
   track('moment_finished',{evt:m&&m.evtName,total});
-  S.moment=null; clearDailyTimer();
+  clearDailyTimer();
   const holes=S.dailyHoles.slice();
-  S.dailyHoles=[]; S.dailyResult=null; S.dailyRevealN=null; S.dailyViewHole=null; S.dailyAttacks={};
-  if(!ce || ce.done || ce.roundsDone!==3){ S.screen='season'; render(); return; }   // safety: state moved on underneath
+  if(!ce || ce.done || ce.roundsDone!==3){   // safety: state moved on underneath
+    S.moment=null; S.dailyHoles=[]; S.dailyResult=null; S.dailyRevealN=null; S.dailyViewHole=null; S.dailyAttacks={};
+    S.screen='season'; render(); return;
+  }
   // Sunday plays out: YOUR round is the one you just played, the field sims theirs
   const r=ce.roundsDone;
   ce.players.forEach(o=>{ if(!o.made) return;
     const s=o.p.you ? total : simRound(o.eo,o.p.clu,{major:ce.evt.major,big:ce.evt.big,finalRd:true,courseAdj:ce.courseAdj});
     o.rounds[r]=s; o.total+=s; });
   ce.roundsDone=4; ce._momentHoles=holes; ce._momentTotal=total;
+  // TIE FOR THE LEAD that includes YOU → play a REAL sudden-death playoff. You played the round, so you
+  // play the playoff too, hole by hole, the way it goes on the PGA Tour. (Won/lost outright → finalize now.)
+  const made=ce.players.filter(o=>o.made).sort((a,b)=>a.total-b.total);
+  const leadScore=made.length?Math.round(made[0].total):0;
+  const lead=made.filter(o=>Math.round(o.total)===leadScore);
+  if(lead.length>1 && lead.some(o=>o.p.you)){ startMomentPlayoff(ce, lead); return; }   // keeps S.moment set
+  S.moment=null; S.dailyHoles=[]; S.dailyResult=null; S.dailyRevealN=null; S.dailyViewHole=null; S.dailyAttacks={};
   finalizeEvent();
   S.screen='season'; render();   // lands on the final leaderboard; win/playoff celebrations flow as normal
+}
+// ---- Playable Moment playoff: you play each sudden-death hole (TOURTRACE), the field's holes are simmed
+// on the SAME hole/difficulty for a fair comparison; lowest wins the hole, ties go on. Reuses the Moment's
+// course/conditions/skills setup that finishMomentRound leaves in place. ----
+const MOMENT_PO_HOLES=[17,0,9,17,0,9,17,0];   // rotate closing holes (18 / 1 / 10) across extra holes
+function startMomentPlayoff(ce, lead){
+  S.momentPO={ round:0, log:[], contenders:lead.slice(), alive:lead.slice(), resolved:null };
+  if(S.moment) S.moment.playoff=true;
+  momentPlayoffTee();
+}
+function momentPlayoffTee(){
+  const po=S.momentPO; if(!po) return;
+  S.momentPOHoleIdx=MOMENT_PO_HOLES[po.round%MOMENT_PO_HOLES.length];
+  S.dailyHoles=[]; S.dailyProv=null; S.dailyRevealN=null; S.dailyViewHole=null;
+  S.dailyHolePause=false; S.dailySinking=false; S.dailyAuto=true; _hvbRects=null;
+  S.screen='dailyround'; render(); scheduleDailyAdvance();
+}
+function momentPlayoffResolve(){
+  const po=S.momentPO, ce=S.curEvt; if(!po||!ce) return;
+  const c=DAILY_COURSES[S.dailyCourse], ci=S.momentPOHoleIdx, h=c.holes[ci];
+  const youTp=S.dailyHoles.length?S.dailyHoles[0].toPar:0;
+  const rng=mulberry32((dHash('po'+po.round+(ce.evt.name||''))>>>0));
+  const diff=(S.dailyDiffs&&S.dailyDiffs[ci]!=null)?S.dailyDiffs[ci]:dBaseDiffs(c)[ci];
+  const scores=po.alive.map(o=>{
+    let tp;
+    if(o.p.you) tp=youTp;
+    else { const sk={}; CATS.forEach(cc=>sk[cc.k]=(o.p[cc.k]!=null?o.p[cc.k]:78));
+      tp=dSimHole(h[0],h[1],diff,sk,c.fit,DCFG.COND[S.dailyCond],'balanced',null,rng); }
+    return {o, tp};
+  });
+  const best=Math.min(...scores.map(s=>s.tp));
+  const low=scores.filter(s=>s.tp<=best+1e-9);
+  const advancing=(low.length<scores.length)?low:scores;   // all tied → all advance to the next hole
+  po.round++;
+  po.log.push({hole:po.round, scores:scores.map(s=>({name:s.o.p.name, you:!!s.o.p.you,
+    label:dResultLong(h[0],s.tp), advances:advancing.indexOf(s)>=0}))});
+  if(low.length<scores.length) po.alive=low.map(s=>s.o);
+  const youAlive=po.alive.some(o=>o.p.you);
+  if(po.alive.length===1){ po.resolved={winner:po.alive[0], holes:po.round, youWon:!!po.alive[0].p.you}; }
+  else if(!youAlive){   // you're eliminated → sim the rest headlessly to crown the champion (you don't play on)
+    let alive=po.alive.slice(), rd=po.round;
+    while(alive.length>1 && rd<12){ rd++; const hi=MOMENT_PO_HOLES[rd%MOMENT_PO_HOLES.length], hh=c.holes[hi];
+      const dd=(S.dailyDiffs&&S.dailyDiffs[hi]!=null)?S.dailyDiffs[hi]:dBaseDiffs(c)[hi];
+      const rr=mulberry32((dHash('pox'+rd+(ce.evt.name||''))>>>0));
+      const sc=alive.map(o=>{ const sk={}; CATS.forEach(cc=>sk[cc.k]=(o.p[cc.k]!=null?o.p[cc.k]:78));
+        return {o, tp:dSimHole(hh[0],hh[1],dd,sk,c.fit,DCFG.COND[S.dailyCond],'balanced',null,rr)}; });
+      const b=Math.min(...sc.map(s=>s.tp)), lo=sc.filter(s=>s.tp<=b+1e-9);
+      if(lo.length<sc.length) alive=lo.map(s=>s.o); }
+    po.resolved={winner:alive[0], holes:rd, youWon:false};
+  }
+  else if(po.round>=8){ po.resolved={winner:po.alive[0], holes:po.round, youWon:!!po.alive[0].p.you}; }
+  momentPlayoffShowHole();
+}
+function momentPlayoffShowHole(){
+  const po=S.momentPO, ce=S.curEvt; if(!po||!ce) return;
+  const last=po.log[po.log.length-1], resolved=po.resolved;
+  document.querySelectorAll('.momentov').forEach(n=>n.remove());
+  const rowsHtml=last.scores.map(s=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:5px 0;color:${s.you?'#ffd76a':'#dfeee6'};font-weight:${s.you?800:600}"><span>${s.you?'★ ':''}${esc(s.name)}</span><span>${esc(s.label)}${s.advances?'':' <span style="color:#e07a5f">· eliminated</span>'}</span></div>`).join('');
+  let footer='', btnLabel='Next playoff hole ▸';
+  if(resolved){
+    footer = resolved.youWon
+      ? `<div style="font-family:var(--serif);color:#35d6a0;font-weight:800;font-size:24px;margin-top:12px">You won the playoff!</div>`
+      : `<div style="font-family:var(--serif);color:#fff;font-weight:800;font-size:20px;margin-top:12px">Lost in the playoff</div><div class="small" style="color:#cfe6d8;margin-top:3px">${esc(resolved.winner.p.name)} took it on the ${ord(resolved.holes)} extra hole.</div>`;
+    btnLabel = resolved.youWon?'Celebrate ▸':'Continue ▸';
+  } else { footer=`<div class="small" style="color:#cfe6d8;margin-top:10px">Still tied. On to the next hole.</div>`; }
+  const ov=$(`<div class="momentov" style="position:fixed;inset:0;z-index:60;background:rgba(3,10,7,.92);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto">
+    <div style="max-width:430px;width:100%;background:linear-gradient(180deg,#0d2b1c,#07160e);border:1px solid var(--gold);border-radius:18px;padding:24px 22px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.65)">
+      <div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 SUDDEN-DEATH PLAYOFF</span></div>
+      <h2 style="margin:10px 0 2px;font-size:20px">${esc(ce.evt.name)}</h2>
+      <div class="small muted" style="margin:0 0 12px">Extra hole ${last.hole}</div>
+      <div style="text-align:left;max-width:320px;margin:0 auto">${rowsHtml}</div>
+      ${footer}
+      <div class="mbtns" style="margin-top:16px"></div>
+    </div></div>`);
+  const btn=$(`<button class="btn goldfill">${btnLabel}</button>`);
+  btn.onclick=()=>{ ov.remove(); if(resolved) momentPlayoffFinish(); else momentPlayoffTee(); };
+  ov.querySelector('.mbtns').appendChild(btn);
+  document.body.appendChild(ov);
+}
+function momentPlayoffFinish(){
+  const po=S.momentPO, ce=S.curEvt; if(!po||!ce){ S.momentPO=null; S.momentPOHoleIdx=null; S.moment=null; S.screen='season'; render(); return; }
+  ce._playoffResult={winner:po.resolved.winner, holes:po.resolved.holes, log:po.log};   // finalizeEvent uses this instead of simPlayoff
+  ce._playoffShown=true;   // already played out hole by hole → skip the auto text reveal
+  S.momentPO=null; S.momentPOHoleIdx=null; S.moment=null;
+  S.dailyHoles=[]; S.dailyResult=null; S.dailyRevealN=null; S.dailyViewHole=null; S.dailyAttacks={};
+  finalizeEvent();
+  document.querySelectorAll('.momentov').forEach(n=>n.remove());
+  S.screen='season'; render();   // a win → celebrateWin fires (playoff flagged already shown)
 }
 // one sudden-death hole, lower is better, high variance so a single hole is genuinely random
 function playoffHole(eo,clu,major){ return gauss()*1.15 - (eo-80)*0.035 + (major?0.1:0); }
@@ -5065,8 +5162,10 @@ function finalizeEvent(){
     const leadScore=Math.round(made[0].total);
     const lead=made.filter(o=>Math.round(o.total)===leadScore);
     if(lead.length>1){
-      const po=simPlayoff(lead,evt.major);
-      made.splice(made.indexOf(po.winner),1); made.unshift(po.winner);   // winner takes 1st outright
+      // a Moment playoff was already PLAYED OUT (ce._playoffResult) → use that outcome; else auto-sim it
+      const po=ce._playoffResult ? ce._playoffResult : simPlayoff(lead,evt.major);
+      if(made.indexOf(po.winner)>=0) made.splice(made.indexOf(po.winner),1);
+      made.unshift(po.winner);   // winner takes 1st outright
       solo=true;
       ce.playoff={players:lead.map(o=>o.p.name), winner:po.winner.p.name, holes:po.holes,
         you:lead.some(o=>o.p.you), youWon:!!po.winner.p.you, log:po.log};
@@ -8365,6 +8464,14 @@ function scheduleDailyAdvance(){
   if(S.dailyProv)return;   // a par-4/5 approach decision is pending (drive revealing/awaiting) — don't touch its timers
   clearDailyTimer();
   if(!S.dailyAuto||S.screen!=='dailyround')return;
+  // Moment sudden-death playoff: play exactly the one extra hole, then hold a beat and resolve it (no
+  // signature decisions, no 18-hole finish path).
+  if(S.momentPO){
+    const n=S.dailyHoles.length;
+    if(n>=1){ S.dailyHolePause=true; render(); _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround') momentPlayoffResolve(); }, dailyDwell()); return; }
+    _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround'&&S.dailyAuto) playDailyHole(null); }, 550);
+    return;
+  }
   const i=S.dailyHoles.length;
   // hold the immersive view on the just-holed result (scDailyRound reads S.dailyHolePause) so the score
   // registers before the next tee shot; then advance / finish after the dwell
@@ -8395,7 +8502,7 @@ function beginDailyRound(){
   S.dailyOvr=Math.round(p.skill); S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
   S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;   // the round plays itself; only signature-hole decisions pause it
-  S.dailyLegend=null;
+  S.dailyLegend=null; S.momentPO=null; S.momentPOHoleIdx=null;
   track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr});
   S.screen='dailyround'; render(); scheduleDailyAdvance();
 }
@@ -8407,7 +8514,7 @@ function beginDailyRoundWithLegend(token){
   S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
   S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;
-  S.dailyLegend={id:token.id, name:token.name, look:token.look};
+  S.dailyLegend={id:token.id, name:token.name, look:token.look}; S.momentPO=null; S.momentPOHoleIdx=null;
   claimDailyAttempt();   // playing as a Legend skips the draft; committing to it consumes the attempt
   S.name=token.name; if(token.look) S.look=Object.assign({},token.look);
   track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr,legend:true});
@@ -8426,11 +8533,15 @@ function dAttSalt(base){ return (((base||0) ^ Math.imul((S.dailyAttempt||0)+1, 0
 function playDailyHole(attack, phase){
   S.dailyProv=null;
   const c=DAILY_COURSES[S.dailyCourse], i=S.dailyHoles.length; if(i>=18)return;
+  // a Moment playoff plays a specific closing hole (S.momentPOHoleIdx), not the i-th; salt the seed by the
+  // extra-hole number so each sudden-death hole plays differently.
+  const po=S.momentPO, ci=(po&&S.momentPOHoleIdx!=null)?S.momentPOHoleIdx:i;
+  const sSalt=po?0xA00+po.round:0, xSalt=po?0xB00+po.round:0x5407;
   S.dailyHolePause=false; S.dailySinking=false;
-  const h=c.holes[i], a=(attack===true||attack===false)?attack:null;
+  const h=c.holes[ci], a=(attack===true||attack===false)?attack:null;
   const ph=(a===null)?null:(phase||'app');
-  const toPar=dSimHole(h[0],h[1],S.dailyDiffs[i],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,a,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0)));
-  S.dailyHoles.push({i,n:i+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a,decPhase:ph,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,i,dAttSalt(0x5407)),S.dailySkills,ph?{decPhase:ph,decAgg:a}:{})});
+  const toPar=dSimHole(h[0],h[1],S.dailyDiffs[ci],S.dailySkills,c.fit,DCFG.COND[S.dailyCond],S.dailyPlan,a,dHoleRng(S.dailySeed,S.dailyCourse,ci,dAttSalt(sSalt)));
+  S.dailyHoles.push({i,n:ci+1,par:h[0],yards:h[1],name:h[2],toPar,attack:a,decPhase:ph,shots:dShotSeq(h[0],h[1],h[0]+toPar,dHoleRng(S.dailySeed,S.dailyCourse,ci,dAttSalt(xSalt)),S.dailySkills,ph?{decPhase:ph,decAgg:a}:{})});
   S.dailyViewHole=null; S.dailyRevealN=1;   // first shot lands now; the rest reveal one-by-one
   render();
   startShotReveal();   // play the shots out, the score only hits the card once the ball is holed
@@ -8647,6 +8758,7 @@ function consumeLegendToken(id){
   if(t && !t.used){ t.used=true; LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush(); recordAchEvent({inc:{legendTokensUsed:1}}); }
 }
 function finishDailyRound(){
+  if(S.momentPO) return;   // mid sudden-death playoff: the playoff engine drives completion, not the daily finish
   if(S.moment) return finishMomentRound();   // a career-mode Moment: the score feeds the tournament, not the Daily
   if(S.special) return finishSpotlightRound();
   if(S.dailyResult)return;
@@ -8946,8 +9058,10 @@ function scrDailyRound(){
   // a signature-hole tee/par-3 decision is pending (par-4/5 approach decisions come via `prov`)
   const teeSig = previewNext ? c.sig.find(s=>s[0]===i+1) : null;
   if(S.moment){   // career-mode Moment: this round IS the tournament's final round
-    add($(`<div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 THE MOMENT · Final round · ${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)}</span></div>`));
-    if(!boardPresent && !reviewing){
+    const po=S.momentPO;
+    add($(`<div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 ${esc(S.moment.evtName||'The Moment')} · ${po?'Sudden-Death Playoff':'Final Round'}</span></div>`));
+    add($(`<p class="lede center" style="margin:5px 0 0">📍 ${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)}${po?` · Extra hole ${po.round+1}`:''}</p>`));
+    if(!boardPresent && !reviewing && !po){
       add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
       add($(`<div class="center small" style="margin:0 0 4px;color:var(--gold);font-weight:700">${esc(S.moment.evtName)} · ${momentPosTxt(S.moment.info).replace(/<[^>]*>/g,'')} at the start of the day</div>`));
     }
@@ -9021,7 +9135,12 @@ function scrDailyRound(){
       const meNm=S.dailyLegend?esc(S.dailyLegend.name):'YOU';
       const tpCol=v=>v<0?'#4be3a8':v>0?'#ff9d8f':'#e8efe9';
       const bd=$(`<div class="hvob hvboard${gRight?' left':''}"></div>`);
-      if(S.moment && S.curEvt && S.curEvt.players){
+      if(S.moment && S.momentPO){
+        // sudden-death playoff: show the players still alive, tied at the lead
+        bd.appendChild($(`<div class="hvbcap">SUDDEN-DEATH · HOLE ${S.momentPO.round+1}</div>`));
+        S.momentPO.alive.forEach((o,ri)=>{ const you=!!o.p.you;
+          bd.appendChild($(`<div class="hvbrow ${you?'mine':''}" data-nm="${esc(o.p.you?'YOU':o.p.name)}"><span class="cdot" style="background:${you?'#3b82f6':'#8fa39a'}"></span><span class="rk">${ri+1}</span><span class="nm">${esc(you?'YOU':o.p.name)}</span><span class="tp" style="color:#ffd76a">TIED</span></div>`)); });
+      } else if(S.moment && S.curEvt && S.curEvt.players){
         bd.appendChild($(`<div class="hvbcap">FINAL ROUND · THRU ${through}</div>`));
         const rows=S.curEvt.players.filter(o=>o.made).map(o=>({nm:o.p.you?'YOU':o.p.name, tp:Math.round(o.total)+(o.p.you?total:0), you:!!o.p.you})).sort((a,b)=>a.tp-b.tp);
         const meIdx=rows.findIndex(r=>r.you);
@@ -9082,7 +9201,9 @@ function scrDailyRound(){
     // the full shot-by-shot log lives ONLY in review (open a hole to see it) — during play the
     // one-line description on the tracer window narrates each shot, so no between-holes log flash.
   }
-  // scorecard strip lives BELOW the window now (the tracer is the star, H2H-style)
+  // scorecard strip lives BELOW the window now (the tracer is the star, H2H-style). The sudden-death
+  // playoff plays one extra hole at a time (overlay resolves it), so the 18-cell strip is skipped.
+  if(!S.momentPO){
   const strip=$(`<div class="dcard" style="max-width:600px;margin:6px auto 0"></div>`);
   for(let k=0;k<18;k++){ const pl=played[k], isReveal=(k===lastIdx&&revealing), cur=(k===i&&!done&&!revealing);
     const showScore=pl&&!isReveal;   // the in-flight hole shows no score until the ball drops
@@ -9091,8 +9212,10 @@ function scrDailyRound(){
     strip.appendChild(cell); }
   add(strip);
   if(played.length>1 && !reviewing) add($(`<div class="center small muted" style="margin:5px 0 0;font-size:11px">Tap any hole to rewatch it shot by shot</div>`));
+  }
   add($(`<div style="height:10px"></div>`));
-  if(reviewing){ /* review bar carries its own Back/Resume + Share; no bottom controls */ }
+  if(S.momentPO){ /* playoff auto-plays; the extra-hole overlay carries the result + Continue */ }
+  else if(reviewing){ /* review bar carries its own Back/Resume + Share; no bottom controls */ }
   else if(revealing){
     // Ball in flight on the latest hole. Controls stay available the WHOLE time now (not only in the
     // brief gap between holes), so you can Pause or jump to the end mid-reveal. Player feedback: during
