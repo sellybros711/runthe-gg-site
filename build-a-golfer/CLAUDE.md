@@ -4284,6 +4284,21 @@ allows Google Fonts, or self-host Anton.*
   varied) + the full physics/shots/geometry/practice/one-window regressions, zero page errors. Deployed
   to /golf.
 
+- **CS156 — fix: Daily round "stalled on hole 3, didn't see any choice" (regression from CS154).** Tester
+  (Jared): the auto-playing daily round froze on a hole with no visible decision; he had to pause and skip
+  to the end to see his result. Root cause: CS154's sink-wait made the ball's final render happen in the
+  "sinking" (revealing) state, which correctly hides the decision/result. But `scheduleDailyAdvance`'s
+  **signature-hole branch** (`if(nextDailySig()) return`) returned WITHOUT calling `render()` — so when
+  auto-play advanced INTO a signature hole, the last frame on screen was the sunk ball with no decision
+  card, and nothing re-rendered to show the Attack/Safe choice. The round looked stalled (it was actually
+  waiting for a click on a card that never drew). Every other branch of `scheduleDailyAdvance` already
+  renders; this one didn't (it worked before CS154 because the preceding reveal render showed the
+  non-revealing state). Fix: the signature branch now clears `dailySinking` and calls `render()` before
+  returning, so the decision appears the moment the round reaches a signature hole. Verified in Playwright:
+  auto-playing into a signature hole shows the 2 choice buttons + scenario (no decision shown during the
+  sink), choosing plays the hole, and a full auto round completes with no stall; hv8/hv10/practice green.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

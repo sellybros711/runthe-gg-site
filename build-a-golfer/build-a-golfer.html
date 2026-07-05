@@ -7911,7 +7911,10 @@ function scheduleDailyAdvance(){
   // hold the immersive view on the just-holed result (scDailyRound reads S.dailyHolePause) so the score
   // registers before the next tee shot; then advance / finish after the dwell
   if(i>=18){ S.dailyHolePause=true; render(); _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround') finishDailyRound(); }, dailyDwell()); return; }
-  if(nextDailySig()){ S.dailyHolePause=false; return; }   // pause here for the player's shot choice (the one meaningful click)
+  // pause here for the player's shot choice (the one meaningful click). MUST render — the last render
+  // was the ball sinking (revealing state, no decision shown); without this the signature-hole decision
+  // never appears and the round looks STALLED (tester: "stalled on hole 3, didn't see any choice").
+  if(nextDailySig()){ S.dailyHolePause=false; S.dailySinking=false; render(); return; }
   const started=i>0;   // the very first tee shot fires quickly; the post-hole beat only applies once a hole is done
   S.dailyHolePause=started; if(started) render();
   _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround'&&S.dailyAuto){ S.dailyHolePause=false; playDailyHole(null); } }, started?dailyDwell():450);
