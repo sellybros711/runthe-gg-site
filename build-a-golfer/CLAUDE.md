@@ -4175,6 +4175,17 @@ allows Google Fonts, or self-host Anton.*
   still appears. Verified in Playwright: both-present → only "Resume Career Mode" (draft-resume count 0);
   draft-only → "Resume Your Golfer" still shows. Deployed to /golf.
 
+- **CS151 — per-tier text effect on the leaderboard Tour Rep name.** Owner: "I want every tier to have a
+  different text effect. Just the tier name." The tier chip beside each username (·  Champion / Star / …)
+  used to be a flat gold label for every rank. Now each of the 8 shown tiers has its own effect via CSS
+  classes (`.rept-*`), flashier as you climb: Journeyman grey → Tour Pro teal → Contender bronze → Star
+  brushed-silver gradient → Champion polished-gold gradient → Legend violet glow → Icon molten-gold
+  shimmer (animated) → G.O.A.T. prismatic rainbow shimmer (animated). New `repClass(name)` maps the tier
+  name (emoji-stripped) to its class; `lbRep` now returns the raw tier name and `lbRowHTML` applies the
+  class (the "·" separator kept neutral). Animations respect `prefers-reduced-motion`. Verified in
+  Playwright: all 8 tiers resolve to distinct `.rept-*` classes and render with no page errors;
+  screenshot confirms the eight looks. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
