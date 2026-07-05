@@ -8,13 +8,28 @@
 const fs = require('fs');
 const path = require('path');
 
-const UPLOADS = '/root/.claude/uploads/3327b054-5e6f-528e-8f9b-73fec84c411b';
-const NEW_JSON = path.join(UPLOADS, '4ac42f0a-world_cup_full_rosters_1966_2026_FINAL.json');
-const MD = path.join(UPLOADS, '5a9154a1-2026_WC_rating_changelog.md');
-const OLD_JSON = path.join(__dirname, '..', 'data', 'world_cup_full_rosters_1966_2026_4.json');
+// In-repo canonical source (self-contained — no dependency on the ephemeral
+// uploads dir). Drop a fresh FINAL.json + changelog.md into data/ and re-run.
+const DATA = path.join(__dirname, '..', 'data');
+const NEW_JSON = path.join(DATA, 'world_cup_full_rosters_1966_2026_FINAL.json');
+const MD = path.join(DATA, '2026_WC_rating_changelog.md');
+const OLD_JSON = path.join(DATA, 'world_cup_full_rosters_1966_2026_4.json');
 const OUT_JSON = OLD_JSON; // overwrite the convertData IN_PATH
 
 const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
+// Parse a changelog section header into an ISO date. Handles any month (the
+// 2026 tournament spans June–July) plus ranges like "June 28 – July 3" and
+// trailing "(Matchday 3)"/"(Round of 32)" suffixes — the FIRST month+day in
+// the header wins.
+const MONTHS = { january:1,february:2,march:3,april:4,may:5,june:6,july:7,
+  august:8,september:9,october:10,november:11,december:12 };
+function parseDateHeader(line) {
+  if (!/^##/.test(line)) return null;
+  const m = line.match(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})\b/i);
+  if (!m) return null;
+  return `2026-${String(MONTHS[m[1].toLowerCase()]).padStart(2, '0')}-${String(+m[2]).padStart(2, '0')}`;
+}
 
 // changelog country -> data country
 const COUNTRY = {
@@ -31,18 +46,18 @@ let curDate = null;
 const updates = []; // {name, country, old, neu, date, reason}
 for (const raw of md.split('\n')) {
   const line = raw.trim();
-  const dm = line.match(/^##\s*📅?\s*(June \d+)/) || line.match(/^##\s*🔼?\s*(June \d+)/);
-  if (dm) {
-    // map "June 11" -> 2026-06-11
-    const d = dm[1].match(/June (\d+)/);
-    curDate = d ? `2026-06-${String(+d[1]).padStart(2, '0')}` : null;
-    continue;
-  }
+  const d = parseDateHeader(line);
+  if (d) { curDate = d; continue; }
   // - Player (Country): old → new — reason
   const m = line.match(/^-\s+(.+?)\s+\(([^)]+)\):\s*(\d+)\s*→\s*(\d+)\s*[—-]+\s*(.+)$/);
   if (m && curDate) {
+    // A couple of source bullets cram two players into one line
+    // ("OtherName — see note; RealName (Country): x → y"); the real subject is
+    // the segment after the last semicolon.
+    let nm = m[1].trim();
+    if (nm.includes(';')) nm = nm.split(';').pop().trim();
     updates.push({
-      name: m[1].trim(), country: fixCountry(m[2]),
+      name: nm, country: fixCountry(m[2]),
       old: +m[3], neu: +m[4], date: curDate, reason: m[5].trim(),
     });
   }

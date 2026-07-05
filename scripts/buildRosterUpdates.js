@@ -11,13 +11,25 @@
 const fs = require('fs');
 const path = require('path');
 
-const MD = '/root/.claude/uploads/3327b054-5e6f-528e-8f9b-73fec84c411b/5a9154a1-2026_WC_rating_changelog.md';
+const MD = path.join(__dirname, '..', 'data', '2026_WC_rating_changelog.md');
 const RAW = path.join(__dirname, '..', 'data', 'world_cup_full_rosters_1966_2026_4.json');
 const PLAYERS = path.join(__dirname, '..', 'data', 'players_all.json');
 const OUT_JSON = path.join(__dirname, '..', 'data', 'roster_updates.json');
 const OUT_JS = path.join(__dirname, '..', 'data', 'roster_updates.js');
 
 const norm = s => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
+// Section-header date parse — any month + day, ranges, and "(Matchday 3)" style
+// suffixes all resolve to the first month+day in the header (the tournament
+// spans June–July 2026).
+const MONTHS = { january:1,february:2,march:3,april:4,may:5,june:6,july:7,
+  august:8,september:9,october:10,november:11,december:12 };
+function parseDateHeader(line) {
+  if (!/^##/.test(line)) return null;
+  const m = line.match(/\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})\b/i);
+  if (!m) return null;
+  return `2026-${String(MONTHS[m[1].toLowerCase()]).padStart(2, '0')}-${String(+m[2]).padStart(2, '0')}`;
+}
 const COUNTRY = {
   'usa': 'united states', 'united states': 'united states',
   "côte d'ivoire": 'ivory coast', "cote d'ivoire": 'ivory coast', 'ivory coast': 'ivory coast',
@@ -42,15 +54,15 @@ let curDate = null;
 const events = [];
 for (const raw of md.split('\n')) {
   const line = raw.trim();
-  const dm = line.match(/^##\s*[^\w]*\s*(June \d+)/);
-  if (dm) {
-    const d = dm[1].match(/June (\d+)/);
-    curDate = d ? `2026-06-${String(+d[1]).padStart(2, '0')}` : null;
-    continue;
-  }
+  const d = parseDateHeader(line);
+  if (d) { curDate = d; continue; }
   const m = line.match(/^-\s+(.+?)\s+\(([^)]+)\):\s*(\d+)\s*→\s*(\d+)\s*[—-]+\s*(.+)$/);
   if (!m || !curDate) continue;
-  const name = m[1].trim(), country = m[2].trim();
+  // Some source bullets merge two players ("OtherName — see note; RealName
+  // (Country): x → y") — the real subject is after the last semicolon.
+  let name = m[1].trim();
+  if (name.includes(';')) name = name.split(';').pop().trim();
+  const country = m[2].trim();
   const pl = lookup(name, country);
   events.push({
     name: pl ? pl.name : name,
