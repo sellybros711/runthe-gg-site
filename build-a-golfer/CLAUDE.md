@@ -4718,6 +4718,33 @@ allows Google Fonts, or self-host Anton.*
   updated stall test (decision is now the `.dc-opt` modal, not the old inline `.btn.choice`) all green.
   Screenshot confirms the pop-up over the blurred course. Deployed to /golf.
 
+- **CS171 — setup button rename, Spotlight = full week, Spotlight is now server-based (board + course
+  records).** Three owner asks:
+  1. **Setup button → "Build Your Golfer"** (was "Start Drafting"), sub reworded.
+  2. **Monthly Spotlight now runs a FULL WEEK** (`SPOT_WINDOW_DAYS=7`): `spotlightLiveToday()` is live for
+     the 7 days from the spotlight's live date (its day-of-month is 1..24 so the week never crosses the
+     month); `nextSpotlight()` + the title banner + "attempts left" copy updated from "today" to "this week".
+  3. **Spotlight scores now reach the leaderboards, server-based** (was local-only `bag_special`, never
+     posted). New migration **`supabase/45_runtour_spotlight.sql`** mirrors the Legend pattern: an
+     `is_spotlight` flag on `runtour_daily_scores`, `p_is_spotlight` on `runtour_submit_daily`, and a
+     `p_spotlight` filter on `runtour_daily_board` / `runtour_course_records` / `runtour_my_daily` — so the
+     Spotlight has its OWN global board and its OWN course-record bucket (correct: it's played in forced
+     tough weather, so it must not mix with the regular daily records for the same course). **Also widened
+     the row uniqueness from `(user_id, day)` to `(user_id, day, is_legend, is_spotlight)`** so a daily, a
+     legend, and a spotlight round on the SAME calendar day coexist instead of overwriting each other (also
+     fixes a latent legend-overwrites-daily clash). `finishSpotlightRound` submits to the server tagged
+     `isSpotlight` (queues in `_pendingSpot` for guests, flushed on sign-in), records a spotlight course
+     record in its own bucket (`bag_courserecords_spotlight`, cloud-synced), and verifies it against the
+     server; the Spotlight result screen now shows the Spotlight's global leaderboard + course record.
+     Client fails open (spotlight submit is skipped, never posted as a plain daily) until the owner runs 45.
+  Validated migration 45 against local Postgres (applied 24→30→45 clean + idempotent): a daily, spotlight,
+  and legend round on the same day all coexist; the spotlight board/records are separate from the human
+  daily; forged low scores still clamp. Client verified in Playwright (cs171): button text, the 7-day live
+  window (live dom..dom+6, not before/after), spotlight submits tagged is_spotlight on its own liveDayKey to
+  its own record bucket (never leaking into the daily bucket), and a guest spotlight queues then posts on
+  sign-in. Regressions cs158/cs159/cs170 green. **ACTION: run `supabase/45_runtour_spotlight.sql`.** Deployed
+  client to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
