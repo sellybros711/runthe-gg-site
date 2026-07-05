@@ -665,10 +665,12 @@
     renderHome();
   }
 
-  function topbar(){
+  function topbar(hideWm){
+    // hideWm: on the home screen the hero already shows the RUN THE GLOBE wordmark,
+    // so the topbar drops its text wordmark and keeps just the icon (no double-up).
     return '<div class="topbar">'
-      + '<a class="brand" href="/globe/"><img class="globemark" src="/globe/brand/icon_88.png" alt="" width="40" height="40" />'
-      + '<span class="wm"><span class="r">Run</span><span class="t">The</span><span class="g">Globe</span></span></a>'
+      + '<a class="brand" href="/globe/"><img class="globemark" src="/globe/brand/icon_88.png" alt="RunTheGlobe" width="40" height="40" />'
+      + (hideWm?'':'<span class="wm"><span class="r">Run</span><span class="t">The</span><span class="g">Globe</span></span>')+'</a>'
       + '<button class="mutebtn" id="muteBtn" title="Sound on/off" aria-label="Sound on/off">'+(_muted?'🔇':'🔊')+'</button>'
       + '<span class="acct" id="acct"></span></div>';
   }
@@ -676,7 +678,7 @@
   /* ------------------------------------------------------------------ home */
   function renderHome(){
     var st = statsDefault();
-    app.innerHTML = topbar()
+    app.innerHTML = topbar(true)   // hero shows the wordmark → drop the topbar one
       + '<div class="preview">🛠️ Preview build · not yet released</div>'
       + '<div class="hero">'
         + '<div class="hero-imgwrap"><img class="hero-wm" src="/globe/brand/wordmark.jpg" alt="Run The Globe" width="1200" height="434" /></div>'
@@ -767,9 +769,10 @@
   }
   function statTile(v,k){ return '<div class="stat"><div class="v">'+v+'</div><div class="k">'+k+'</div></div>'; }
   function foot(){
-    return '<div class="foot"><a href="/globe/">RunTheGlobe</a> · part of '
-      + '<a href="/">RunThe.GG</a><span class="sep">·</span>'
-      + '<a href="/privacy.html">Privacy</a></div>';
+    return '<div class="foot"><a href="/globe/">RunTheGlobe</a> · part of <a href="/">RunThe.GG</a>'
+      + '<span class="sep">·</span><a href="/about.html">About</a>'
+      + '<span class="sep">·</span><a href="/contact.html">Contact</a>'
+      + '<span class="sep">·</span><a href="/privacy.html">Privacy</a></div>';
   }
 
   /* ----------------------------------------------------------------- setup */
