@@ -4612,6 +4612,41 @@ allows Google Fonts, or self-host Anton.*
   and a full practice round. Regressions cs160/161/162, physics (carry + backspin), stall (CS156), hv6
   (39-course geometry + putt property), hv8 (one-window HUD) all green; zero page errors. Deployed to /golf.
 
+- **CS167 — course-shape variety: real doglegs, varied fairway thickness, varied green size/shape (owner:
+  "make our courses feel way more unique from one another").** Owner studied real courses and asked for
+  more fairway-thickness variation, green size AND shape variation, "dog legs left and right that actually
+  turn (we only have s curves)," and less squared-off fairways. All changes are in `hvGeom`/`hvTerrain`
+  (the deterministic hole-view geometry); no sim/score/decision logic touched, and every hole stays
+  in-frame + the putt-monotonicity property holds (re-verified).
+  1. **Doglegs that actually turn.** The old centerline was a smoothstep that eased in AND out across the
+     whole hole — a gentle bow that read as an S-curve. Replaced with a real two-segment dogleg: a STRAIGHT
+     leg off the tee to a corner (seeded 36-58% down the hole), then a mostly-straight DIAGONAL leg to the
+     green (elbow softly rounded). Doglegs now go both ways (measured 222 left / 207 right across the 39
+     courses) and **100% of them turn at a corner** (a nearly-straight first third, a clearly-offset last
+     third) instead of bowing evenly. Added ~1-in-5 dead-straight non-par-3 holes for variety (120 of 549),
+     and sharpened the par-5 double-dogleg corners too.
+  2. **Fairway thickness variation.** Base width was a narrow 31-39 yd band with one pinch; now a much wider
+     24-44 yd base (× the course's fw character → measured 17-67 across courses) shaped ALONG the hole by a
+     broad driving-zone flare, a distinct neck pinch, and a rippled non-parallel edge — so thickness varies
+     both course-to-course and within a hole (avg within-hole width swing ~0.52). Bumped the fairway outline
+     from 16 to 22 samples so the edges read organic, not squared-off.
+  3. **Green size AND shape.** Greens were near-circular ellipses of similar size (rx 13.5-17.5, ry 12-16).
+     Now each green gets an overall size roll × the course's green-size character (measured green-area range
+     >14×) and an aspect ratio from wide-and-shallow to deep-and-narrow (0.67-1.56, area kept roughly
+     constant), plus a per-hole irregularity (0.13-0.28, was a flat 0.09) so outlines vary — Redan-ish,
+     kidney, long tongue — instead of all circles. Threaded the new `g.greenIrr` through the green's
+     shadow/fringe/surface blobs.
+  Verified in Playwright (cs167): across all 702 holes, 0 greens/water off-frame; doglegs both directions +
+  100% turn-at-a-corner + some dead-straight; green aspect/size/irregularity all span their intended ranges;
+  fairway base width varies >2.2× across courses with ~0.5 avg within-hole swing; a full practice round
+  renders clean. Screenshots confirm a tight dogleg-left (Colonial-analog) vs a wide dogleg-right par-5
+  (Kapalua-analog) look genuinely distinct with greens tucked to their corners. Regressions: hv6 (39-course
+  geometry property — its "bends vary" assertion updated for the new intentional dead-straight holes; putt
+  monotonicity still 0 backwards), physics (carry + backspin), cs166 (sim invariant), hv5/hv8/hv10 all green;
+  hv11's stale "Next hole coming up" text check updated to the CS157 `.hvresult` pill (the text was removed in
+  CS157, so it was failing pre-CS167 too). hv7 (Moment calibration) is a known pre-existing stochastic/flaky
+  test, unaffected by this geometry-only change (confirmed identical scoring). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

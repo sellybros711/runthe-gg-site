@@ -7258,25 +7258,44 @@ function hvGeom(seedN, par, yds, courseKey, holeIdx){
   g.sx=Math.max(1.8, Math.min(3.2, g.vy*2.6));
   g.t=(y)=>1-HV_TAPER*Math.max(0,Math.min(1,y/g.span));      // far-end perspective taper
   g.ry=(r)=>r*Math.max(g.vy, g.sx*0.42);                     // hazard vertical radius (never pancakes on long holes)
-  // dogleg: severity scales with the course's tendency; direction leans its famous way
+  // dogleg: severity scales with the course's tendency; direction leans its famous way. A real dogleg
+  // TURNS at a corner — a straight leg off the tee, then a straight diagonal leg to the green — rather
+  // than bowing the whole way (the old smoothstep read as a gentle S-curve). Some holes play dead straight.
   const dir=(hh(1)+st.bias*0.28)<0.5?-1:1;
-  const mag=(par===3)?0:Math.round((6+hh(21)*(par===5?40:28))*st.dog)*dir;
+  const straight=(par!==3 && hh(50)<0.22);                            // ~1 in 5 non-par-3s is dead straight
+  const mag=(par===3||straight)?0:Math.round((10+hh(21)*(par===5?42:30))*st.dog)*dir;
   g.bend=mag;
+  const cf=0.36+hh(51)*0.22;                                          // the corner sits 36-58% down the hole
   const sShape=(par===5 && hh(22)<st.sshape);
-  g.cx=(y)=>{ if(par===3) return 0;
-    if(!sShape){ const f=Math.max(0,Math.min(1,(y-L*0.40)/(L*0.44))); const e=f*f*(3-2*f); return mag*e; }
-    // double dogleg: out one way through the landing zone, back the other into the green
-    const f1=Math.max(0,Math.min(1,(y-L*0.25)/(L*0.30))), e1=f1*f1*(3-2*f1);
-    const f2=Math.max(0,Math.min(1,(y-L*0.60)/(L*0.32))), e2=f2*f2*(3-2*f2);
-    return mag*0.9*e1 - mag*1.45*e2; };
-  // fairway width PROFILE: base width by course + a seeded landing-zone pinch on tight tracks
-  const baseW=(31+hh(2)*8)*st.fw;
-  const pinchY=L*(0.55+hh(23)*0.18), pinch=(st.fw<0.95||hh(24)<0.45)?(0.68+hh(25)*0.18):1;
+  g.cx=(y)=>{ if(par===3||!mag) return 0;
+    if(!sShape){ const cY=L*cf; if(y<=cY) return 0;                   // straight leg off the tee...
+      const t=Math.min(1,(y-cY)/(L-cY));
+      return mag*(t*0.7 + (t*t*(3-2*t))*0.3); }                       // ...then a mostly-straight diagonal leg to the green (elbow softly rounded)
+    // double dogleg (some par-5s): out one way past the first corner, back the other into the green
+    const f1=Math.max(0,Math.min(1,(y-L*0.24)/(L*0.24))), e1=f1*f1*(3-2*f1);
+    const f2=Math.max(0,Math.min(1,(y-L*0.60)/(L*0.24))), e2=f2*f2*(3-2*f2);
+    return mag*e1 - mag*1.7*e2; };
+  // fairway width PROFILE: base width by course (now a much wider hole-to-hole spread) shaped along the
+  // hole by a broad driving-zone flare, a distinct neck pinch, and a rippled (non-parallel) edge — so
+  // fairways vary in thickness both course-to-course AND within a hole, and read organic, not squared-off.
+  const baseW=(24+hh(2)*20)*st.fw;
   g.fwW=baseW;
-  g.fww=(y)=>{ const d=Math.abs(y-pinchY)/(L*0.16); const p=pinch+(1-pinch)*Math.min(1,d*d);
-    return baseW/2*p*(1+0.05*Math.sin(y*0.05+hh(26)*6)); };
+  const lzY=L*(0.32+hh(52)*0.14);                                     // driving landing zone (widest point)
+  const lzAmt=0.16+hh(53)*0.24;
+  const neckY=L*(0.58+hh(23)*0.22);                                   // a neck somewhere past the flare
+  const neckAmt=(st.fw<0.95||hh(24)<0.5)?(0.30+hh(25)*0.22):(0.10+hh(25)*0.12);
+  g.fww=(y)=>{ let w=baseW/2;
+    w*=1+lzAmt*Math.exp(-Math.pow((y-lzY)/(L*0.14),2));               // flare at the landing zone
+    w*=1-neckAmt*Math.exp(-Math.pow((y-neckY)/(L*0.09),2));           // pinch at the neck
+    w*=1+0.11*Math.sin(y*0.052+hh(26)*6)+0.055*Math.sin(y*0.14+hh(54)*6);   // organic wavy edge (not parallel)
+    return Math.max(baseW*0.17, w); };
   // green: sized by course, sometimes tucked left/right of the fairway line (clamped in frame)
-  g.greenR=[(13.5+hh(5)*4)*st.gsz, (12+hh(6)*4)*st.gsz];
+  // green: size AND shape vary per hole — an overall size roll × the course's green-size character, and an
+  // aspect ratio ranging from wide-and-shallow to deep-and-narrow (area kept roughly constant), plus a
+  // per-hole irregularity so outlines aren't near-circular (Redan-ish, kidney, long tongue, etc.).
+  const gArea=(12.5+hh(5)*2.5)*st.gsz*(0.84+hh(55)*0.46), gAsp=0.66+hh(6)*0.9;
+  g.greenR=[gArea*Math.sqrt(gAsp), gArea/Math.sqrt(gAsp)];
+  g.greenIrr=0.13+hh(56)*0.15;
   const maxOff=Math.max(0,(HV_W/2-26)/(g.sx*g.t(L)) - g.greenR[0] - Math.abs(g.cx(L)));
   const goff=(hh(27)<0.5?-1:1)*Math.min(maxOff,(hh(28)<0.35?(6+hh(29)*8):0));
   g.gcx=g.cx(L)+goff;
@@ -7534,7 +7553,7 @@ function hvTerrain(g, seedN, B){
   let defs=`<radialGradient id="hvball" cx=".35" cy=".3" r=".95"><stop offset="0" stop-color="#ffffff"/><stop offset=".75" stop-color="#eef3ef"/><stop offset="1" stop-color="#c6d1ca"/></radialGradient>`;
   let fwDD=null, fwBounds=null;   // fwBounds: per-depth fairway screen x-range → keeps the forest out of the corridor
   if(g.par!==3){ const Lp=[],Rp=[];
-    for(let k=0;k<=16;k++){ const y=g.fw0+(g.fw1-g.fw0)*k/16;
+    for(let k=0;k<=22;k++){ const y=g.fw0+(g.fw1-g.fw0)*k/22;
       const w=g.fww?g.fww(y):g.fwW/2*(1+0.06*Math.sin(k*1.15+hh(30)*6));   // width PROFILE (pinches, flares)
       Lp.push(hvProj(g,g.cx(y)-w,y)); Rp.push(hvProj(g,g.cx(y)+w,y)); }
     fwDD='M '+Lp.map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L ')+' L '+Rp.slice().reverse().map(p=>p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' L ')+' Z';
@@ -7763,10 +7782,10 @@ function hvTerrain(g, seedN, B){
     s.push(`<path d="M ${(wpos.x-wpos.rx*0.45).toFixed(1)} ${(wpos.y-wpos.ry*0.2).toFixed(1)} h 7 M ${(wpos.x+wpos.rx*0.1).toFixed(1)} ${(wpos.y+wpos.ry*0.3).toFixed(1)} h 6 M ${(wpos.x-wpos.rx*0.15).toFixed(1)} ${(wpos.y+wpos.ry*0.02).toFixed(1)} h 5" fill="none" stroke="${B.ripple}" stroke-width="1" opacity=".65"/>`);
   }
   // green complex: fringe ring → flat putting surface → tick rows (retro grass) → chunky outline
-  const gseed=seedN^0x51;
-  const greenD=hvBlobD(gpx,gpy,grx,gry,gseed,0.09,12);
-  s.push(`<path d="${hvBlobD(gpx+1.6,gpy+2,grx+5.5,gry+4.5,gseed,0.09,12)}" fill="${B.shad}" opacity=".5"/>`);
-  s.push(`<path d="${hvBlobD(gpx,gpy,grx+5,gry+4,gseed,0.09,12)}" fill="${B.fringe}"/>`);
+  const gseed=seedN^0x51, gIrr=g.greenIrr||0.09;
+  const greenD=hvBlobD(gpx,gpy,grx,gry,gseed,gIrr,12);
+  s.push(`<path d="${hvBlobD(gpx+1.6,gpy+2,grx+5.5,gry+4.5,gseed,gIrr,12)}" fill="${B.shad}" opacity=".5"/>`);
+  s.push(`<path d="${hvBlobD(gpx,gpy,grx+5,gry+4,gseed,gIrr,12)}" fill="${B.fringe}"/>`);
   s.push(`<path d="${greenD}" fill="${B.green}" stroke="${B.gLine}" stroke-width="1.2"/>`);
   let gtx='';
   for(let r2=0;r2<3;r2++) for(let c2=0;c2<3;c2++){
