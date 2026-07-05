@@ -1,15 +1,23 @@
 -- ============================================================================
 -- 20_reload_wc_players_2026.sql  —  Reload the server ratings after the 2026
---                                   World Cup data swap (ratings through Jun 23)
+--                                   World Cup data swap (ratings through Jul 4)
 -- ============================================================================
 -- WHY: submit_draft() recomputes every leaderboard score from wc_players. The
 -- client now ships recalibrated 2026 ratings (data/players_all.json, DATA_VERSION
--- 0.0.34). If the server table still holds the OLD ratings, new submissions get
+-- 0.0.37). If the server table still holds the OLD ratings, new submissions get
 -- scored against stale numbers and the leaderboard drifts from what players see.
 -- Reloading wc_players from the freshly generated CSV keeps server == client.
 --
 -- The row COUNT is unchanged (9,976) — only wc_overall / is_captain / award
 -- values move — so this is a clean truncate-and-reimport, no schema change.
+--
+-- ── AUTOMATED PATH (preferred) ──────────────────────────────────────────────
+-- The `.github/workflows/sync-wc-players.yml` GitHub Action runs on every push
+-- to main that touches data/players_all.json or supabase/wc_players.csv. It
+-- regenerates the CSV and reloads wc_players in one transaction (TRUNCATE +
+-- \copy). So merging this data swap to main syncs Supabase automatically —
+-- provided the SUPABASE_DB_URL secret is set. The steps below are the manual
+-- fallback if you ever need to reload by hand.
 --
 -- ── STEP 1 ────────────────────────────────────────────────────────────────
 -- Run this in the Supabase SQL editor to clear the table:
@@ -21,13 +29,15 @@ TRUNCATE wc_players;
 --      player_id, wc_overall, position, is_captain, award)
 --
 -- ── STEP 3 — verify (run after import) ──────────────────────────────────────
--- Expect: 9976 rows, and the six post-ceiling stars at their new highs.
+-- Expect: 9976 rows, and the 2026 stars at their post-tournament highs.
 --   select count(*) as rows from wc_players;                       -- 9976
 --   select player_id, wc_overall from wc_players
 --   where player_id in (
 --     'FRA_2026_mbappe','ARG_2026_messi','NOR_2026_haaland',
---     'BRA_2026_junior','ESP_2026_yamal','FRA_2026_dembele'
+--     'BRA_2026_junior','ENG_2026_kane','FRA_2026_dembele',
+--     'ESP_2026_yamal','ESP_2026_oyarzabal'
 --   ) order by wc_overall desc;
---   -- mbappe 99, messi 99, haaland 98, junior 98, yamal 97, dembele 97
+--   -- mbappe 99, messi 99, haaland 99, junior 99, kane 99, dembele 99,
+--   -- yamal 97, oyarzabal 90
 --   -- (exact player_id suffixes may differ; confirm against data/players_all.json)
 -- ----------------------------------------------------------------------------
