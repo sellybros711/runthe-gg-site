@@ -897,7 +897,8 @@
     S.skipUsed = false;
     S.spectating = false;
     S._runPend=null; S._runDone=false;   // City Run guards
-    S._lastLL = null;   // no origin yet → first Flight Leg departs from a neutral hub
+    S._lastLL = null;   // no origin yet → first Flight Leg departs from HOME_LL (player's area, or US east coast)
+    requestHome();      // ask for location so the opening leg departs from near the player
     S.finishLine = pick(FINISH);   // GDD §11: the Final's location, locked at race start
     S.screen='stage';
     drawStage();
@@ -959,16 +960,20 @@
   }
   function genTasks(c){
     var g=[], i;
-    // Guess The Flag — show a flag, pick the country
-    var wrong = otherCountries(c,3);
-    var opts = shuffle([c.name].concat(wrong.map(function(x){return x.name;})));
-    g.push({ kind:'flagid', cat:'trivia', type:'brain', q:'Which country flies this flag?', flag:c.flag,
-             options:opts, a:opts.indexOf(c.name) });
-    // Zoom Reveal — name the country as its flag zooms out
-    var zw = otherCountries(c,3);
-    var zopts = shuffle([c.name].concat(zw.map(function(x){return x.name;})));
-    g.push({ kind:'zoomreveal', cat:'trivia', type:'brain', q:'Guess the country as its flag zooms out', flag:c.flag,
-             options:zopts, a:zopts.indexOf(c.name) });
+    // Guess The Flag — show a flag, pick the country. The subject is a RANDOM
+    // country, NOT the one you're currently visiting (showing your own flag was a
+    // giveaway, not a game).
+    var fq = otherCountries(c,1)[0] || c;
+    var wrong = otherCountries(fq,3);
+    var opts = shuffle([fq.name].concat(wrong.map(function(x){return x.name;})));
+    g.push({ kind:'flagid', cat:'trivia', type:'brain', q:'Which country flies this flag?', flag:fq.flag,
+             options:opts, a:opts.indexOf(fq.name) });
+    // Zoom Reveal — name the country as its flag zooms out (also a random subject)
+    var zq = otherCountries(c,1)[0] || c;
+    var zw = otherCountries(zq,3);
+    var zopts = shuffle([zq.name].concat(zw.map(function(x){return x.name;})));
+    g.push({ kind:'zoomreveal', cat:'trivia', type:'brain', q:'Guess the country as its flag zooms out', flag:zq.flag,
+             options:zopts, a:zopts.indexOf(zq.name) });
     // Name The Capital — pick the capital from four
     var wc = otherCountries(c,3);
     var capOpts = shuffle([c.capital].concat(wc.map(function(x){return x.capital;})));
@@ -1208,9 +1213,23 @@
      destination name stays hidden until the draw, so the flight builds suspense
      and the draw is the payoff (the golf "ball lands last" beat). */
   function reduceMotion(){ try{ return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }catch(e){ return false; } }
+  // where the very first Flight Leg departs from. Defaults to the US east coast
+  // (New Jersey / New York coastline — clearly on land, not mid-ocean) and is
+  // upgraded to the player's real location if they allow it.
+  var HOME_LL=[39.8,-74.1];
+  var _homeAsked=false;
+  function requestHome(){
+    if(_homeAsked) return; _homeAsked=true;
+    try{
+      if(navigator.geolocation) navigator.geolocation.getCurrentPosition(
+        function(pos){ if(pos&&pos.coords&&isFinite(pos.coords.latitude)&&isFinite(pos.coords.longitude)) HOME_LL=[pos.coords.latitude, pos.coords.longitude]; },
+        function(){},
+        { timeout:7000, maximumAge:1800000, enableHighAccuracy:false });
+    }catch(e){}
+  }
   function flightTo(toLL, then){
     if(reduceMotion() || !toLL || toLL.length!==2){ if(then) then(); return; }
-    S.flight={ from:(S._lastLL||[34,-40]), to:toLL, then:then, done:false };
+    S.flight={ from:(S._lastLL||HOME_LL), to:toLL, then:then, done:false };
     S._lastLL=toLL; S.phase='flight'; renderStage();
   }
   function llToXY(ll){ return [ll[1]+180, 90-ll[0]]; }
