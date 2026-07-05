@@ -4745,6 +4745,30 @@ allows Google Fonts, or self-host Anton.*
   sign-in. Regressions cs158/cs159/cs170 green. **ACTION: run `supabase/45_runtour_spotlight.sql`.** Deployed
   client to /golf.
 
+- **CS172 — achievements buffed out: 146 → 200, every game mode has feats (owner: "add as many as you can
+  think of... every scenario in every game mode... move tiers accordingly").** Added 54 achievements + 2 new
+  categories, wiring the previously-uncovered modes:
+  • **Online (new category, 13):** play/win your first match, win in each mode (1v1 / Best Ball / Scramble /
+    Free-for-All), win in ALL four modes, tiered win ladders (10/25/50/100) and matches-played (25/100).
+    Captured in `h2hFinishWatch` (`h2hCaptureAch`: matches + wins overall + per-mode; deterministic local
+    win, fires once per finished match, real + bot).
+  • **Legend Circuit (new category, 7):** play a circuit season, win a circuit event, win a circuit major,
+    complete the full circuit, + tiered circuit wins (10/25) and majors (5). Live stats read from
+    `S.circuitCareer` and persisted at `endCircuit`.
+  • **Legend Tokens:** earn a token / earn 5 / play the Daily as a Legend (captured at mint + consume).
+  • **Caddies:** hire a caddie / hire a Hall-of-Fame (tier-1) caddie (captured on equip).
+  • **Daily:** Hole in One! (aces now tracked in `captureDailyFeats`); "Played Them All" fixed 16→**39**
+    courses + a new 25-course tier; deeper Spotlight tier (6 wins).
+  • **Deeper ladders** on existing metrics: 150 wins, 10 team Cups, 3 Games golds, $1B earnings, 60 seasons.
+  New metrics get 0-defaults in `achMetrics` so progress bars read correctly before the first capture. The
+  **Tour Rep tiers auto-rescaled** — thresholds are a % of total points (now 13,090), so every rank moved up
+  proportionally with the bigger catalog (exactly what "move tiers accordingly" needs); G.O.A.T. still = 100%.
+  Verified in Playwright (cs172): 200 achievements, 0 duplicate ids, every category non-empty, every `get()`
+  safe; all new captures (online/circuit/token/caddie/ace) unlock their achievements; "All-Rounder" only
+  fires after winning all four online modes; tiers monotonic + GOAT at total; Trophy Room renders the new
+  Online + Legend Circuit dropdowns with the Tour Rep bar, zero page errors. Daily regressions
+  (cs159/cs169) green. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

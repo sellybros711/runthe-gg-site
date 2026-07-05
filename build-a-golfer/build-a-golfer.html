@@ -1119,7 +1119,7 @@ function trophyCabinetHTML(m){
    bag (`achMetrics`): lifetime career stats (lt), daily stats, spotlight/rival wins, and SITUATIONAL flags
    captured at the moment they happen (playoff wins, wire-to-wire, comebacks, low rounds, etc., in bag_ach).
    Completing achievements awards POINTS → a named Tour Rep rank (the "keep playing" hook) and unlocks. */
-const ACH_CATS=['Getting Started','Winning','Season Awards','International','Majors','Clutch','Records & Streaks','Consistency','The Money','Career & Legacy','Daily Challenge','Daily Mastery','Rivalry & Spotlight','The Build','The Draft'];
+const ACH_CATS=['Getting Started','Winning','Season Awards','International','Majors','Clutch','Records & Streaks','Consistency','The Money','Career & Legacy','Daily Challenge','Daily Mastery','Rivalry & Spotlight','Online','Legend Circuit','The Build','The Draft'];
 // tiered-achievement helper: one metric, several thresholds
 function aT(idb,cat,key,defs){ return defs.map(([g,nm,d,p])=>({id:idb+'_'+g,cat,name:nm,desc:d,goal:g,pts:p,get:m=>m[key]||0})); }
 const ACH=[].concat(
@@ -1283,12 +1283,48 @@ const ACH=[].concat(
    {id:'dm_rec1',cat:'Daily Mastery',name:'Record Holder',  desc:'Set a course record in the Daily.',      goal:1,pts:50, get:m=>m.dailyRecords},
    {id:'dm_rec10',cat:'Daily Mastery',name:'Record Collector',desc:'Set 10 daily course records.',         goal:10,pts:100,get:m=>m.dailyRecords},
    {id:'dm_c10', cat:'Daily Mastery',name:'Globetrotter',   desc:'Play 10 different daily courses.',        goal:10,pts:50, get:m=>m.distinctDailyCourses},
-   {id:'dm_call',cat:'Daily Mastery',name:'Played Them All', desc:'Play all 16 courses in the daily rotation.',goal:16,pts:100,get:m=>m.distinctDailyCourses}],
+   {id:'dm_c25', cat:'Daily Mastery',name:'Seen the Tour',  desc:'Play 25 different daily courses.',        goal:25,pts:75, get:m=>m.distinctDailyCourses},
+   {id:'dm_call',cat:'Daily Mastery',name:'Played Them All', desc:'Play all 39 courses in the daily rotation.',goal:39,pts:120,get:m=>m.distinctDailyCourses}],
   // ---- The Draft / Build ----
   [{id:'dr_leg', cat:'The Draft',name:"Legend's Touch",     desc:'Draft a skill from a Legendary golfer.', goal:1,pts:35, get:m=>m.legendaryDrafted},
    {id:'dr_99',  cat:'The Draft',name:'Perfect Attribute',  desc:'Carry a 99-rated skill into a season.',  goal:1,pts:60, get:m=>m.maxSkill99},
    {id:'dr_spec',cat:'The Draft',name:'Specialist',         desc:'Carry a 95+ rated skill.',               goal:1,pts:35, get:m=>m.maxSingle95},
-   {id:'dr_team',cat:'The Draft',name:'Dream Team',         desc:'Build a bag with 8 skills from 8 different golfers.',goal:1,pts:50,get:m=>m.allEight}]
+   {id:'dr_team',cat:'The Draft',name:'Dream Team',         desc:'Build a bag with 8 skills from 8 different golfers.',goal:1,pts:50,get:m=>m.allEight}],
+  // ================= EXPANSION 2: every game mode has feats to chase =================
+  // ---- Online (1v1 / Best Ball / Scramble / Free-for-All) ----
+  [{id:'h2h_play',cat:'Online',name:'Online Debut',      desc:'Play your first online match.',              goal:1,pts:15, get:m=>m.h2hMatches},
+   {id:'h2h_win', cat:'Online',name:'First Blood',       desc:'Win your first online match.',               goal:1,pts:25, get:m=>m.h2hWins},
+   {id:'h2h_1v1', cat:'Online',name:'Head to Head',      desc:'Win a 1v1 match.',                           goal:1,pts:20, get:m=>m.h2h1v1Wins},
+   {id:'h2h_bb',  cat:'Online',name:'Best Ball Boss',    desc:'Win a Best Ball match.',                     goal:1,pts:20, get:m=>m.h2hBbWins},
+   {id:'h2h_sc',  cat:'Online',name:'Scramble Specialist',desc:'Win a Scramble match.',                     goal:1,pts:20, get:m=>m.h2hScWins},
+   {id:'h2h_ffa', cat:'Online',name:'Last One Standing', desc:'Win a Free-for-All match.',                  goal:1,pts:20, get:m=>m.h2hFfaWins},
+   {id:'h2h_all', cat:'Online',name:'All-Rounder',       desc:'Win a match in all four online modes.',      goal:4,pts:60, get:m=>m.h2hModesWon}],
+  aT('h2hw','Online','h2hWins',[[10,'Online Regular','Win 10 online matches.',35],[25,'Online Contender','Win 25 online matches.',60],[50,'Online Ace','Win 50 online matches.',100],[100,'Online Legend','Win 100 online matches.',150]]),
+  aT('h2hm','Online','h2hMatches',[[25,'Match Grinder','Play 25 online matches.',25],[100,'Online Fixture','Play 100 online matches.',60]]),
+  // ---- Legend Circuit (the 50+ senior epilogue) ----
+  [{id:'cir_join',cat:'Legend Circuit',name:'Senior Debut',   desc:'Play a season on the Legend Circuit.',         goal:1,pts:25, get:m=>m.circuitSeasons},
+   {id:'cir_win', cat:'Legend Circuit',name:'Circuit Winner', desc:'Win a Legend Circuit event.',                  goal:1,pts:35, get:m=>m.circuitWins},
+   {id:'cir_maj', cat:'Legend Circuit',name:'Senior Major',   desc:'Win a Legend Circuit major.',                  goal:1,pts:50, get:m=>m.circuitMajors},
+   {id:'cir_done',cat:'Legend Circuit',name:'A Full Circuit', desc:'Complete the full Legend Circuit.',            goal:1,pts:60, get:m=>m.circuitDone}],
+  aT('cirw','Legend Circuit','circuitWins',[[10,'Circuit Force','Win 10 Legend Circuit events.',50],[25,'Circuit Legend','Win 25 Legend Circuit events.',100]]),
+  aT('cirm','Legend Circuit','circuitMajors',[[5,'Senior Major Champ','Win 5 Legend Circuit majors.',75]]),
+  // ---- Legend Tokens ----
+  [{id:'lt_earn', cat:'Career & Legacy',name:'Immortalized',   desc:'Earn a Legend Token.',                        goal:1,pts:30, get:m=>m.legendTokensEarned},
+   {id:'lt_earn5',cat:'Career & Legacy',name:'Hall of Legends',desc:'Earn 5 Legend Tokens.',                       goal:5,pts:90, get:m=>m.legendTokensEarned},
+   {id:'lt_use',  cat:'Daily Mastery',  name:'Legend Reborn',  desc:'Play the Daily Challenge as a Legend build.', goal:1,pts:25, get:m=>m.legendTokensUsed}],
+  // ---- Caddies ----
+  [{id:'cad_hire',cat:'The Draft',name:'On the Bag',          desc:'Hire a caddie.',                              goal:1,pts:15, get:m=>m.caddieEquipped},
+   {id:'cad_leg', cat:'The Draft',name:'A Legendary Looper',  desc:'Hire a Hall-of-Fame caddie.',                 goal:1,pts:40, get:m=>m.caddieLegend}],
+  // ---- Daily Mastery (a hole-in-one) ----
+  [{id:'dm_ace', cat:'Daily Mastery',name:'Hole in One!',     desc:'Ace a par-3 in the Daily Challenge.',         goal:1,pts:50, get:m=>m.dailyAces}],
+  // ---- Spotlight (deeper) ----
+  [{id:'sp_6',   cat:'Rivalry & Spotlight',name:'Half a Year in the Sun',desc:'Win 6 Monthly Spotlights.',        goal:6,pts:75, get:m=>m.spotWins}],
+  // ---- deeper progression on existing ladders ----
+  aT('winx','Winning','wins',[[150,'Tour Immortal','Win 150 career tournaments.',125]]),
+  aT('cupx','International','cupWins',[[10,'Cup Dynasty','Win 10 team Cups.',150]]),
+  aT('olyx','International','olyGold',[[3,'Three-Time Champion','Win 3 gold medals at the Games.',150]]),
+  aT('monx','The Money','earnings',[[1e9,'Billionaire','Bank $1B in career earnings.',125]]),
+  aT('seax','Career & Legacy','seasons',[[60,'Sixty Seasons','Play 60 tour seasons, across any number of careers.',125]])
 );
 const ACH_BY_CAT=ACH_CATS.map(c=>({cat:c, list:ACH.filter(a=>a.cat===c)}));
 const ACH_TOTAL=ACH.length, ACH_TOTAL_PTS=ACH.reduce((s,a)=>s+a.pts,0);
@@ -1314,11 +1350,21 @@ function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const 
     dailyPlayed:ds.played||0, dailyBeat:ds.beat||0, streakBest:sk.longest||0, spotWins:spotWins(),
     onAccount:(typeof sbSignedIn==='function'&&sbSignedIn())?1:0,
     titleSet:(S.look&&S.look.title&&S.look.title!=='none')?1:0,
-    distinctDailyCourses:Object.keys(f.dcourses||{}).length }); }
+    distinctDailyCourses:Object.keys(f.dcourses||{}).length,
+    // live Legend Circuit stats merged with the persisted flags, so circuit feats count during AND after
+    circuitWins:Math.max(f.circuitWins||0, (S.circuitCareer&&S.circuitCareer.wins)||0),
+    circuitMajors:Math.max(f.circuitMajors||0, (S.circuitCareer&&S.circuitCareer.majors)||0),
+    circuitSeasons:Math.max(f.circuitSeasons||0, (S.circuitCareer&&S.circuitCareer.seasons&&S.circuitCareer.seasons.length)||0),
+    // online: how many of the 4 modes you've won at least once (for the "win in every mode" feat)
+    h2hModesWon:(f.h2h1v1Wins>0?1:0)+(f.h2hBbWins>0?1:0)+(f.h2hScWins>0?1:0)+(f.h2hFfaWins>0?1:0),
+    // 0-defaults for the new flag metrics (so progress bars read 0/goal before the first capture)
+    h2hMatches:f.h2hMatches||0, h2hWins:f.h2hWins||0, h2h1v1Wins:f.h2h1v1Wins||0, h2hBbWins:f.h2hBbWins||0, h2hScWins:f.h2hScWins||0, h2hFfaWins:f.h2hFfaWins||0,
+    circuitDone:f.circuitDone||0, legendTokensEarned:f.legendTokensEarned||0, legendTokensUsed:f.legendTokensUsed||0,
+    caddieEquipped:f.caddieEquipped||0, caddieLegend:f.caddieLegend||0, dailyAces:f.dailyAces||0 }); }
 // per-round daily feats (eagles, bogey-free, low rounds, course records, courses seen) → achievement flags
 function captureDailyFeats(holes,total,courseKey,isRec){ const st=achState(), f=st.flags;
-  let eag=0,alb=0,bf=true; (holes||[]).forEach(h=>{ if(h.toPar<=-2)eag++; if(h.toPar<=-3)alb++; if(h.toPar>0)bf=false; });
-  f.dailyEagles=(f.dailyEagles||0)+eag; f.dailyAlbatross=(f.dailyAlbatross||0)+alb;
+  let eag=0,alb=0,ace=0,bf=true; (holes||[]).forEach(h=>{ if(h.toPar<=-2)eag++; if(h.toPar<=-3)alb++; if(h.par===3&&(h.par+h.toPar)===1)ace++; if(h.toPar>0)bf=false; });
+  f.dailyEagles=(f.dailyEagles||0)+eag; f.dailyAlbatross=(f.dailyAlbatross||0)+alb; f.dailyAces=(f.dailyAces||0)+ace;
   if(bf&&(holes||[]).length===18)f.dailyBogeyFree=1; if(total<=-8)f.dailyLow8=1; if(total<=-10)f.dailyLow10=1;
   if(isRec)f.dailyRecords=(f.dailyRecords||0)+1;
   if(courseKey){ f.dcourses=f.dcourses||{}; f.dcourses[courseKey]=1; }
@@ -4539,7 +4585,8 @@ function caddieRow(){
       byTier[t].map(c=>`<option value="${esc(c.id)}"${c.id===cur?' selected':''}>${esc(c.name)}, ${esc(c.desc)}</option>`).join('')+
     `</optgroup>`).join('');
   const sel=$(`<select class="name" style="width:100%;cursor:pointer"><option value=""${cur===''?' selected':''}>No caddie</option>${groups}</select>`);
-  sel.onchange=e=>{ S.look.caddie=e.target.value; saveLook(); track('caddie_pick',{id:e.target.value||'none'}); render(); };
+  sel.onchange=e=>{ S.look.caddie=e.target.value; saveLook(); track('caddie_pick',{id:e.target.value||'none'});
+    const cad=CADDIE_BY_ID[e.target.value]; if(cad){ recordAchEvent({set:{caddieEquipped:1}}); if(cad.tier<=1) recordAchEvent({set:{caddieLegend:1}}); evaluateAch&&evaluateAch(); } render(); };
   row.appendChild(sel);
   const cad=equippedCaddie();
   if(cad){
@@ -6731,6 +6778,7 @@ function mintLegendToken(){
   };
   const tokens=legendTokens(); tokens.push(token); LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush();
   track('legend_token_earned',{ovr:token.ovr,reason:token.reason,years:token.years});
+  recordAchEvent({inc:{legendTokensEarned:1}});
   return token;
 }
 function endCareer(reason){
@@ -6783,6 +6831,7 @@ function mintCircuitLegendToken(){
   };
   const tokens=legendTokens(); tokens.push(token); LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush();
   track('legend_token_earned',{ovr:token.ovr,reason:token.reason,years:token.years,circuit:true});
+  recordAchEvent({inc:{legendTokensEarned:1}});
   return token;
 }
 function endCircuit(){
@@ -6792,6 +6841,7 @@ function endCircuit(){
   S.circuitEnd={years:cc.seasons.length, money:cc.money, net:cc.net, wins:cc.wins, majors:cc.majors, top10:cc.top10,
     best: cc.seasons.reduce((m,s)=>Math.max(m,s.money),0), bestFin: cc.best, age:playerAge()};
   track('circuit_ended',{years:S.circuitEnd.years,wins:cc.wins,majors:cc.majors,net:Math.round(cc.net)});
+  recordAchEvent({inc:{circuitDone:1}, max:{circuitWins:cc.wins||0, circuitMajors:cc.majors||0, circuitSeasons:(cc.seasons||[]).length}});
   S.circuitMode=false; S.careerOver=true; S.screen='circuitend';
   saveCareer({ended:true, circuitEnded:true, circuitEnd:S.circuitEnd, circuitCareer:cc, freshLegendToken:S.freshLegendToken});
   render();
@@ -8594,7 +8644,7 @@ function scrSpotlightResult(){
 // marks a Legend Token spent (round complete, win or lose), called once from finishDailyRound
 function consumeLegendToken(id){
   if(!id) return; const tokens=legendTokens(); const t=tokens.find(x=>x.id===id);
-  if(t && !t.used){ t.used=true; LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush(); }
+  if(t && !t.used){ t.used=true; LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush(); recordAchEvent({inc:{legendTokensUsed:1}}); }
 }
 function finishDailyRound(){
   if(S.moment) return finishMomentRound();   // a career-mode Moment: the score feeds the tournament, not the Daily
@@ -10469,8 +10519,16 @@ function h2hWatchStep(){
 function h2hWatchSkip(){ if(_h2hWatchTimer){clearTimeout(_h2hWatchTimer);_h2hWatchTimer=null;}
   S.h2h.wHole=S.h2h.holes; S.h2h.poN=(S.h2h.playoff?S.h2h.playoff.length:0); S.h2h.watchDone=true; render(); h2hFinishWatch(); }
 function h2hFinishWatch(){ if(S.h2h.reported) return; S.h2h.reported=true;
+  h2hCaptureAch();
   if(S.h2h.bots){ h2hRecordBotMatch(); return; }
   h2hReport(); }
+// online-match achievement flags: matches played + wins (overall + per mode; deterministic local win
+// determination, same on every client). Fires once per finished match.
+function h2hCaptureAch(){ if(!sbSignedIn()) return;
+  const mode=S.h2h.mode||'1v1', won=!!(S.h2h.myUnit && S.h2h.winVal!=null && S.h2h.myUnit.id===S.h2h.winVal);
+  const key={'1v1':'h2h1v1Wins','bestball':'h2hBbWins','scramble':'h2hScWins','ffa':'h2hFfaWins'}[mode]||'h2hXWins';
+  const inc={h2hMatches:1}; if(won){ inc.h2hWins=1; inc[key]=1; }
+  recordAchEvent({inc}); const fresh=evaluateAch&&evaluateAch(); if(fresh&&fresh.length&&typeof achToast==='function') achToast(fresh); }
 async function h2hReport(){
   try{ const {data,error}=await sb.rpc('h2h_report',{p_match_id:S.h2h.matchId,p_result:{win:S.h2h.winVal,kind:S.h2h.winKind}});
     if(error) throw error;
