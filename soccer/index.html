@@ -12263,6 +12263,12 @@ function wcRenderBracket(data, myEntrantId){
 let wcRevealToken = 0;
 let wcRevealSkip = false;
 const WC_STAGE_REVEAL_DELAY = { r32:500, r16:650, qf:850, sf:1150, final:1700 };
+// Group stage + third-place table move quickly — the real suspense is the
+// knockout bracket above, so this section is paced to get there fast rather
+// than dwell on 12 standings tables.
+const WC_GROUP_REVEAL_DELAY = 150, WC_GROUP_REVEAL_DELAY_MINE = 400;
+const WC_THIRD_REVEAL_DELAY = 90, WC_THIRD_REVEAL_DELAY_MINE = 300;
+const WC_THIRD_CUTOFF_PAUSE = 300, WC_THIRD_ROW_PAUSE = 60;
 
 async function wcRevealSleep(ms){
   const step = 60;
@@ -12298,10 +12304,10 @@ async function wcRevealBracket(data, myEntrantId){
     const block = content.lastElementChild;
     block.querySelector('.wc-group-head').addEventListener('click', ()=>{ block.classList.toggle('open'); });
     block.scrollIntoView({ behavior:'smooth', block:'center' });
-    await wcRevealSleep(isMine ? 650 : 300);
+    await wcRevealSleep(isMine ? WC_GROUP_REVEAL_DELAY_MINE : WC_GROUP_REVEAL_DELAY);
   }
   if(myToken !== wcRevealToken) return;
-  await wcRevealSleep(400);
+  await wcRevealSleep(220);
 
   // ---- best third-place teams: settles 8 of the 32 knockout spots, so it
   // only makes sense once every group's final table is in ----
@@ -12315,20 +12321,20 @@ async function wcRevealBracket(data, myEntrantId){
       const mine = r.id===myEntrantId;
       table.insertAdjacentHTML('beforeend', wcThirdRowHtml(r, myEntrantId, true));
       const row = table.lastElementChild;
-      await wcRevealSleep(mine ? 750 : 380);
+      await wcRevealSleep(mine ? WC_THIRD_REVEAL_DELAY_MINE : WC_THIRD_REVEAL_DELAY);
       if(myToken !== wcRevealToken) return;
       row.classList.remove('wc-third-pending');
       row.classList.add(r.third_rank<=8 ? 'advanced' : 'wc-eliminated');
       if(r.third_rank===8){
         table.insertAdjacentHTML('beforeend', '<div class="wc-third-cutoff">— top 8 advance —</div>');
-        await wcRevealSleep(550);
+        await wcRevealSleep(WC_THIRD_CUTOFF_PAUSE);
       } else {
-        await wcRevealSleep(180);
+        await wcRevealSleep(WC_THIRD_ROW_PAUSE);
       }
     }
   }
   if(myToken !== wcRevealToken) return;
-  await wcRevealSleep(500);
+  await wcRevealSleep(280);
 
   for(const stage of WC_STAGE_ORDER){
     if(myToken !== wcRevealToken) return; // a newer reveal took over
