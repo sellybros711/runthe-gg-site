@@ -3878,8 +3878,12 @@ function scrTitle(){
     const cb=$(`<button class="btn teal">Resume ${circuit?'Legend Circuit':'Career Mode'}<span class="sub">${sub}</span></button>`);
     cb.onclick=resumeCareer; stack.appendChild(cb);
   }
-  if(ri){
-    const rb=$(`<button class="btn ${cs?'gold':'teal'}">Resume Your Golfer<span class="sub">${ri.n}/8 skills drafted · pick up where you left off</span></button>`);
+  // "Resume Your Golfer" is a stale in-progress DRAFT snapshot (a half-drafted golfer never taken into a
+  // season). If you already have a career to resume, this is redundant + confusing (two "resume" buttons
+  // meaning different things — starting the draft would just begin ANOTHER golfer, which is what the
+  // Career Mode button below already does), so only show it when there's no career save.
+  if(ri && !cs){
+    const rb=$(`<button class="btn teal">Resume Your Golfer<span class="sub">${ri.n}/8 skills drafted · pick up where you left off</span></button>`);
     rb.onclick=restoreResume; stack.appendChild(rb);
   }
   // ── Play Online sits ABOVE the primary Career Mode button (owner) ──
