@@ -4580,6 +4580,38 @@ allows Google Fonts, or self-host Anton.*
     /golf. Tunable: `HV_BIOMES` (palettes/plant mixes/flowers), the `STEP`/`gap` density, `HV_COURSE_BIOME`
     (which course maps to which biome).
 
+- **CS166 — putting realism + real hazards (owner IMG_7879: irregular 3-putts, "making up score with
+  putts").** Owner screenshot showed a 3-putt bogey reading "Putt 1 ft 4 in., 1 ft 5 in. to hole" — a
+  16-inch putt "leaving" 17 inches — with a 92-Putting golfer 3-putting repeatedly. Owner: "I want to see
+  more long putts, and less putts that go pretty much one inch. It seems like it is trying to get the
+  golfer to a certain score, and making up for it with the putts... balls should go into the water or maybe
+  get stuck behind trees and the player has to punch out into the fairway. There are way more real life
+  scenarios that result in a higher score than putting 3-4 times." All fixes are in `dShotSeq` (the shot
+  NARRATIVE); the deterministic `dSimHole` score engine and the per-hole DTPL skill weights are untouched,
+  and the hard shot-count===stroke-count invariant is preserved (re-verified 4,620 combos, 0 mismatches).
+  1. **The literal bug (leave > putt).** The intermediate-putt leave was a flat `4.4−3.6·putQ+rng·1.5` that
+     ignored the putt distance, so a short putt could "leave" a longer one. Rewrote it to SCALE with the
+     putt distance and shrink with Putting skill, hard-capped at `putt·0.8` so a leave can NEVER exceed the
+     distance just putted — an elite lags a long putt to a tap-in, a weak putter leaves a missable 4-6
+     footer, and a genuine 3-putt now reads lag → missable putt → tap-in. (Verified: 0 leaves ≥ their putt
+     across all builds; 0 sub-2ft intermediate putts for an elite; avg leave 2.3ft elite / 3.6ft weak.)
+  2. **"Making up score with putts."** The over-par decomposition attributed extra strokes to a 3-putt far
+     too readily. Steepened the putt-attribution weight (`wPutt` exponent 1.9→2.6, ×0.6), boosted the
+     ball-striking weight (`wBall` +0.10, exponent 1.5→1.3), and CAPPED extra putts at one (`pe<1`) — so
+     over-par holes now come from tee-to-green trouble, and only a genuinely weak putter ever wears a single
+     3-putt. A 92-Putting golfer now 3-putts **0%** of over-par holes vs a 60-putter's **18%** (was
+     effectively "whatever the score needed").
+  3. **Real hazards.** Broadened the water trigger (base 0.14→0.20, accuracy-scaled) and added a
+     **tree-trouble** episode: a loose drive finds the trees and the player punches out to the fairway (the
+     extra stroke), then plays on — the exact scenario the owner described. Both scale with the relevant
+     rating (water off ball-striking, trees off accuracy) and only fire when there are spare long strokes to
+     burn, so a par or clean round never triggers one. Over a score-heavy sample a loose build hits water
+     ~10% / trees ~24% of over-par holes vs an elite build ~7% / ~10%.
+  Verified in Playwright (cs166): the invariant across all decision/teePreset paths, the leave-never-exceeds
+  + 3-putt-scaling + no-tiny-putts properties above, hazards surfacing more for loose builds, determinism,
+  and a full practice round. Regressions cs160/161/162, physics (carry + backspin), stall (CS156), hv6
+  (39-course geometry + putt property), hv8 (one-window HUD) all green; zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
