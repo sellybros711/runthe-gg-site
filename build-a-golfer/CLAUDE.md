@@ -4234,6 +4234,32 @@ allows Google Fonts, or self-host Anton.*
     zero page errors; screenshot of a water-fronted par-3 shows the flight carrying the water and the ball
     resting on the green. Deployed to /golf.
 
+- **CS154 — score never shows before the ball drops + prominent result flash + hole-outs, chip-ins,
+  bunker hole-outs, aces.** Owner: "the score on the scoreboard shows before the ball goes in sometimes —
+  this should never happen. When the shot goes in, the result (par/bogey/birdie/eagle) should come up on
+  the screen before moving on. I want all types of shots possible — hole-outs from the fairway, chip-ins,
+  bunker hole-outs, hole-in-ones (very rare)."
+  1. **Score withheld until the ball is IN.** Bug: when the final (holed) shot was revealed, the scorecard
+     + floating scoreboard updated immediately — while the ball's sink animation was still playing. Added a
+     `S.dailySinking` state: the last shot reveals, the ball drops, and only when its animation completes is
+     the score committed. `revealing` now includes the sinking phase, so the scorecard cell stays "·" and
+     the board caption stays "THRU n-1 / TARGET" until the ball is actually in the cup. Verified: board
+     shows THRU 0 while sinking, flips to THRU 1 the instant the ball drops.
+  2. **Prominent result flash.** The post-hole beat (CS148) is now a big, colored, animated card that pops
+     in AFTER the ball drops: the result name huge (BIRDIE / PAR / BOGEY / EAGLE / ⛳ HOLE-IN-ONE!), the
+     score (`3 (−1)`), attack/safe tag, a one-line flavor ("Birdie — nicely done", "Holed out — what a
+     shot!"), before the next tee. `.reflash` pop animation, reduced-motion safe.
+  3. **New shot types.** `dSimHole` now lets a would-be par-3 double-eagle become a genuine **hole-in-one**
+     (~12% of an already-rare −2 draw → ~0.04% overall ace rate, seeded/deterministic). `dShotSeq` renders
+     the ace (tee shot into the cup) and, for one-putt finishes, rarely converts the tap-in into a **shot
+     HOLED from just off the green** — a chip-in, a holed bunker shot, or a pitch-in — skill-weighted (good
+     short game / approach → more hole-outs). Crucially this preserves the stroke count exactly (the
+     approach lands just off the green, the finishing stroke drops — same number of shots), so the score
+     engine is untouched. The result flash + shot log call these out ("chips it in!", "holes the bunker
+     shot!", "Hole-in-One!"). Verified over 7,560 par/score/skill combos: **shot count === stroke count in
+     every case** (the hard invariant), aces occur but stay rare (0.04%), hole-outs generate, and a full
+     round still completes. hv6/hv8/physics/practice suites green, zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
