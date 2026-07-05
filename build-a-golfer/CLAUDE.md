@@ -4647,6 +4647,26 @@ allows Google Fonts, or self-host Anton.*
   CS157, so it was failing pre-CS167 too). hv7 (Moment calibration) is a known pre-existing stochastic/flaky
   test, unaffected by this geometry-only change (confirmed identical scoring). Deployed to /golf.
 
+- **CS168 — declutter the Daily result: remove the Round Rating, foreground score + beat-the-pro +
+  stats (owner IMG_7884: "too overwhelming, the important info is getting lost... we don't like the round
+  rating").** The result page led with a big "Round Rating" grade card (C · Solid · blurb · feats) sitting
+  between the score and the "You beat the pro" message, competing for attention. Removed it so the three
+  things the owner wants as the main attraction — the **score**, **whether you beat the pro**, and your
+  **daily record stats** — now stack directly: score → "🏁 You beat the pro!" card → "Your Daily Record"
+  (Played / Beat the pro / Win rate / Best streak). Also:
+  - **Share text** no longer leads with the grade letter — it leads with the score + beat-the-pro
+    (`74 (+3) on par 71 · beat the pro ✓`), then the emoji scorecard.
+  - **Weekly goal** #3 was "Grade an A round or better" (referenced the now-removed rating); replaced with
+    a score-based **"Beat the pro by 3+ in a round"** (tracks the best beat-the-pro margin of the week,
+    `bestMargin`, cloud-merged grow-only like the other weekly fields).
+  The grade is still computed internally and kept per-course in the Course Passport overlay (a separate,
+  low-traffic collection screen the owner didn't flag) so that collection layer and its cloud data are
+  undisturbed; it just no longer appears on the result page, in the share, or in the weekly goals. Verified
+  in Playwright (cs158/cs159 updated for the new design): the grade card is absent, "Round Rating" text is
+  gone, score + beat-the-pro render, the share no longer leads with a grade letter, and the weekly reward
+  fires off the beat-the-pro margin; a signed-in result screenshot confirms the cleaner hierarchy. Deployed
+  to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
