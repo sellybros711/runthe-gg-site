@@ -2471,7 +2471,8 @@ function monthlySpotlightFor(Y,M){ const mk=Y*100+M, h=_spotHash(mk);
   const dom=1+(h%24);                                  // the live date lands 1..24 (valid every month)
   return {mk,Y,M,key,cond,dom,liveDayKey:Y*10000+M*100+dom,month:MONTH_NAMES[M-1],name:`${MONTH_NAMES[M-1]} Spotlight`}; }
 function monthlySpotlight(dayKey){ const d=_ymd(dayKey||todayKey()); return monthlySpotlightFor(d.Y,d.M); }
-function spotlightLiveToday(){ return monthlySpotlight(todayKey()).liveDayKey===todayKey(); }
+const SPOT_WINDOW_DAYS=7;   // a Spotlight is now live for a full WEEK, starting on its live date
+function spotlightLiveToday(){ const sp=monthlySpotlight(todayKey()), d=todayKey()%100; return d>=sp.dom && d<sp.dom+SPOT_WINDOW_DAYS; }
 function spotState(){ const s=LS.get(acctKey('bag_special'),{wins:0,played:0,months:{}})||{wins:0,played:0,months:{}}; s.months=s.months||{}; return s; }
 function spotWins(){ return spotState().wins||0; }
 function spotMonthRec(mk){ return spotState().months[mk]||null; }
@@ -2479,7 +2480,7 @@ function spotAttempts(mk){ const r=spotMonthRec(mk); return r?(r.attempts||0):0;
 function spotAttemptsLeft(mk){ return Math.max(0,SPOT_MAX_ATTEMPTS-spotAttempts(mk)); }
 function spotDoneThisMonth(){ return spotAttemptsLeft(monthlySpotlight(todayKey()).mk)<=0; }
 function nextSpotlight(){ const t=todayKey(), cur=monthlySpotlight(t);
-  if(cur.liveDayKey>=t) return cur;                    // still upcoming (or today) this month
+  if(cur.liveDayKey+SPOT_WINDOW_DAYS-1>=t) return cur;                    // still upcoming or live this week
   let Y=cur.Y, M=cur.M+1; if(M>12){M=1;Y++;} return monthlySpotlightFor(Y,M); }
 function fmtDayKey(k){ const d=_ymd(k); return MONTH_NAMES[d.M-1].slice(0,3)+' '+d.D; }
 function dCourseSkillTop(c,n){ return CATS.filter(x=>x.k!=='clu').sort((a,b)=>c.fit[b.k]-c.fit[a.k]).slice(0,n||3); }
@@ -2488,9 +2489,12 @@ function courseRecords(){ return LS.get('bag_courserecords',{}); }
 // Legend-run course records are tracked in a SEPARATE bucket/board, a maxed 30-year peak build
 // shouldn't just steamroll every freshly-drafted golfer's shot at a human course record.
 function courseRecordsLegend(){ return LS.get('bag_courserecords_legend',{}); }
-function recordCourseScore(courseKey,toPar,ovr,name,isLegend){
-  const key=isLegend?'bag_courserecords_legend':'bag_courserecords';
-  const r=isLegend?courseRecordsLegend():courseRecords(); const cur=r[courseKey];
+// Spotlight-run course records live in their OWN bucket too — the Spotlight is played in forced tough
+// weather, so its records must not mix with the normal daily records for the same course.
+function courseRecordsSpot(){ return LS.get('bag_courserecords_spotlight',{}); }
+function recordCourseScore(courseKey,toPar,ovr,name,isLegend,isSpotlight){
+  const key=isSpotlight?'bag_courserecords_spotlight':(isLegend?'bag_courserecords_legend':'bag_courserecords');
+  const r=isSpotlight?courseRecordsSpot():(isLegend?courseRecordsLegend():courseRecords()); const cur=r[courseKey];
   if(!cur || toPar<cur.toPar){ r[courseKey]={toPar,ovr,name:name||'You',mine:true,date:todayKey()}; LS.set(key,r);
     if(typeof cloudPush==='function') cloudPush(); return true; }   // sync the new record to the account (cross-device)
   return false; }
@@ -4132,15 +4136,15 @@ function scrTitle(){
       return `<div class="wg-row"><span>${ok?'✓ ':''}${g.label}</span><span class="wg-v" style="color:${ok?'#35d6a0':'var(--muted)'}">${v}/${g.target}</span></div>`; }).join('');
     stack.appendChild($(`<div class="wg-panel${done?' done':''}"><div class="wg-hd"><span>This Week</span>${done?'<span style="color:#35d6a0">Complete ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all 3 → ❄️ freeze</span>'}</div>${rows}</div>`));
   }
-  // Monthly Spotlight (#11): a special 1-day event, surfaced with urgency only on the day it's live
+  // Monthly Spotlight (#11): a special event, now live for a full WEEK; surfaced with urgency while live
   if(spotlightLiveToday()){
     const sp=monthlySpotlight(todayKey()), sc=DAILY_COURSES[sp.key];
     const att=spotAttempts(sp.mk), left=spotAttemptsLeft(sp.mk), rec=spotMonthRec(sp.mk), won=rec&&rec.won;
     let sb2;
     if(att===0){
-      sb2=$(`<button class="btn goldfill spotlive" style="margin-top:12px">⭐ ${esc(sp.month)} Spotlight, Today only<span class="sub">${esc(dShort(sc.v))} · ${dCondLabel(sp.cond)} · beat the pro in a special event</span></button>`);
+      sb2=$(`<button class="btn goldfill spotlive" style="margin-top:12px">⭐ ${esc(sp.month)} Spotlight · This week<span class="sub">${esc(dShort(sc.v))} · ${dCondLabel(sp.cond)} · beat the pro in a special event</span></button>`);
     } else if(left>0){
-      sb2=$(`<button class="btn gold spotlive" style="margin-top:12px">⭐ ${esc(sp.month)} Spotlight · ${won?'Won ✓':'best '+dTot(rec.best, sc.par)}<span class="sub">${esc(dShort(sc.v))} · ${won?'go lower':'beat the pro'} · ${left} attempt${left>1?'s':''} left today</span></button>`);
+      sb2=$(`<button class="btn gold spotlive" style="margin-top:12px">⭐ ${esc(sp.month)} Spotlight · ${won?'Won ✓':'best '+dTot(rec.best, sc.par)}<span class="sub">${esc(dShort(sc.v))} · ${won?'go lower':'beat the pro'} · ${left} attempt${left>1?'s':''} left this week</span></button>`);
     } else {
       sb2=$(`<button class="btn gold spotlive" style="margin-top:12px">⭐ ${esc(sp.month)} Spotlight · ${won?'Won ✓':'Complete'}<span class="sub">${esc(dShort(sc.v))} · ${won?'you beat the pro':'best '+dTot(rec.best, sc.par)} · see your result</span></button>`);
     }
@@ -4230,7 +4234,7 @@ function scrSetup(){
     right.appendChild(patternRow('Hat pattern','hatPat',S.look.hatPat||'none'));
   }
 
-  const go=$(`<button class="btn goldfill" style="margin-top:16px">Start Drafting ▸<span class="sub">${S.daily?'Build a golfer for today\'s course':'Spin to build your golfer'}</span></button>`);
+  const go=$(`<button class="btn goldfill" style="margin-top:16px">Build Your Golfer ▸<span class="sub">${S.daily?'Draft a golfer for today\'s course':'Spin the wheel to draft your golfer'}</span></button>`);
   go.onclick=()=>{ if(guest && !(S.name||'').trim()) S.name='Your Golfer'; track('draft_started',{daily:S.daily,guest}); S.screen='draft'; render(); }; right.appendChild(go);
   const back=$(`<button class="btn ghost" style="margin-top:10px">‹ Back</button>`);
   back.onclick=()=>{reset();S.screen='title';render();}; right.appendChild(back);
@@ -8514,8 +8518,15 @@ function finishSpotlightRound(){
   const improved=(rec.best==null||total<rec.best); if(improved) rec.best=total;
   const firstWin=won&&!rec.won; if(won) rec.won=true; if(firstWin) st.wins=(st.wins||0)+1;
   LS.set(acctKey('bag_special'),st); cloudPush();
-  S.spotResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,holes,avg,won,firstWin,best:rec.best,attemptNo:rec.attempts,mk:sp.mk};
+  // SERVER-BASED: log the Spotlight to its OWN global board + course records (signed-in only; its own
+  // bucket + own weather, so it never mixes with the regular daily). Guests' rounds queue until sign-in.
+  const signedIn=sbSignedIn();
+  const isRec = signedIn ? recordCourseScore(sp.key, total, S.dailyOvr, sbUsername||S.name||'You', false, true) : false;
+  S.spotResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,holes,avg,won,firstWin,best:rec.best,attemptNo:rec.attempts,mk:sp.mk,record:isRec,day:sp.liveDayKey};
   S.dailyResult=S.spotResult;   // lets the shared scorecard-grid path treat this as "just played"
+  sbSubmitDaily({day:sp.liveDayKey, course:sp.key, total, ovr:S.dailyOvr, won, skills:S.dailySkills,
+    decisions:{plan:S.dailyPlan,att:(S.dailyAttempt||0)}, isSpotlight:true});
+  if(signedIn) verifyDailyRecord(sp.key, false, true);   // correct an optimistic local record vs the server
   track('spotlight_completed',{mk:sp.mk,total,won,attempt:rec.attempts});
   captureDailyFeats(S.dailyHoles,total,sp.key,false);
   achToast(evaluateAch());
@@ -8525,6 +8536,9 @@ function spotlightShareText(r,sp){ const c=DAILY_COURSES[r.course];
   return `⭐ RunTheTour ${sp.month} Spotlight, ${dShort(c.v)}\n${dTot(r.total, c.par)} on par ${c.par}${r.won?' · beat the pro ✓':''}\nA special 1-day event. Can you beat it? https://runthe.gg/golf`; }
 function scrSpotlightResult(){
   const sp=S.spotCfg||monthlySpotlight(todayKey()), mk=sp.mk;
+  const _spDay=sp.liveDayKey;
+  if(sb && crCacheSpot===null) crLoadSpot();                                   // spotlight course records (server)
+  if(sb && (dbCacheSpot===null||dbCacheSpot.day!==_spDay)) dbLoadSpot(_spDay);  // this spotlight's global board (server)
   const justPlayed=!!S.spotResult, rec=spotMonthRec(mk);
   const r=S.spotResult||(rec&&rec.best!=null?{course:sp.key,total:rec.best,par:DAILY_COURSES[sp.key].par,ovr:', ',cond:sp.cond,holes:null,avg:dTourAvg(DAILY_COURSES[sp.key]),won:rec.won}:null);
   if(!r){ S.special=false; S.screen='title'; return render(); }
@@ -8547,6 +8561,18 @@ function scrSpotlightResult(){
         <div><div style="font-weight:800;font-size:20px;color:#35d6a0">${wins}</div><div class="small muted" style="font-size:10px">Events won</div></div>
         <div><div style="font-weight:800;font-size:20px;color:var(--oncard)">${played}</div><div class="small muted" style="font-size:10px">Events played</div></div>
       </div>${(justPlayed&&!wonEvent&&left>0)?`<div class="small center" style="margin-top:6px;color:#e9a23b;font-weight:700">One attempt left. Beat the pro to claim the win.</div>`:''}</div>`)); }
+  // SPOTLIGHT course record (server-based, its own bucket) — separate from the regular daily record
+  { const srec=(crCacheSpot&&crCacheSpot.recs[sp.key])||courseRecordsSpot()[sp.key];
+    if(S.spotResult&&S.spotResult.record){ add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">🏆 Spotlight course record!</b><div class="small muted" style="margin-top:2px">You hold the ${esc(sp.month)} Spotlight record at ${esc(dShort(c.v))}.</div></div>`)); }
+    else if(srec){ add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center">Spotlight record: <b style="color:var(--gold)">${dTot(srec.toPar, c.par)}</b> by ${esc(srec.name)}${srec.toPar<total?` · you were ${total-srec.toPar} back`:''}</div>`)); }
+    else if(!sbSignedIn()){ add($(`<div class="scout small muted" style="max-width:520px;margin:0 auto 8px;text-align:center">Sign in to post your Spotlight score to the global leaderboard.</div>`)); } }
+  // SPOTLIGHT global leaderboard (this event's own board, server-based)
+  if(dbCacheSpot&&dbCacheSpot.day===_spDay&&dbCacheSpot.ok&&dbCacheSpot.rows.length){
+    const board=$(`<div class="scout" style="max-width:520px;margin:0 auto 8px"><div class="small muted center" style="letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">⭐ Spotlight leaderboard</div></div>`);
+    dbCacheSpot.rows.slice(0,10).forEach(row=>{ const mine=sbUser&&row.user_id===sbUser.id;
+      board.appendChild($(`<div style="display:flex;align-items:center;gap:8px;padding:3px 4px;${mine?'background:rgba(235,166,31,.10);border-radius:6px':''}"><span class="mono small muted" style="width:20px">${row.rank}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:${mine?'800':'600'}">${esc(row.display_name)}${mine?' (you)':''}</span><span class="mono" style="font-weight:800;color:${row.to_par<0?'#35d6a0':row.to_par>0?'#E14A33':'var(--oncard)'}">${dTot(row.to_par, c.par)}</span></div>`)); });
+    add(board);
+  }
   const holes=(S.dailyHoles&&S.dailyHoles.length===18)?S.dailyHoles:(r.holes&&r.holes.length===18?r.holes:null);
   if(holes){
     const grid=$(`<div style="max-width:600px;margin:14px auto 0"></div>`);
@@ -8627,12 +8653,13 @@ function finishDailyRound(){
 // better score already exists on the server (or lands moments later) but hasn't been merged locally yet.
 // Re-fetch the authoritative record right after submitting and correct the flag/UI if the guess was
 // wrong, fixes "it says I have the record but someone shot a lower score."
-async function verifyDailyRecord(courseKey, isLegend){
+async function verifyDailyRecord(courseKey, isLegend, isSpotlight){
   if(!sb || !sbUser) return;
-  await (isLegend ? crLoadLegend() : crLoad());   // refetch + self-heal the local course-record cache
-  const rec=(isLegend?courseRecordsLegend():courseRecords())[courseKey];
+  await (isSpotlight ? crLoadSpot() : (isLegend ? crLoadLegend() : crLoad()));   // refetch + self-heal the local course-record cache
+  const rec=(isSpotlight?courseRecordsSpot():(isLegend?courseRecordsLegend():courseRecords()))[courseKey];
   const trulyMine=!!(rec && rec.mine);
   let changed=false;
+  if(isSpotlight){ if(S.spotResult && S.spotResult.course===courseKey && S.spotResult.record!==trulyMine){ S.spotResult.record=trulyMine; changed=true; if(S.dailyResult===S.spotResult){} } if(changed) render(); return; }
   if(S.dailyResult && S.dailyResult.course===courseKey && !!S.dailyResult.isLegend===!!isLegend && S.dailyResult.record!==trulyMine){
     S.dailyResult.record=trulyMine; changed=true;
     const today=dailyToday();
@@ -9450,6 +9477,7 @@ const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 let sb=null, sbUser=null, sbUsername=null, sbProfile=null, lbCache={}, _pendingSeason=null;
 let _pendingDaily=null, crCache=null, dbCache=null;   // daily-challenge backend (Phase 3)
 let crCacheLegend=null, dbCacheLegend=null;   // Legend-tier course records / board (separate from the human ones above)
+let crCacheSpot=null, dbCacheSpot=null, _pendingSpot=null;   // Monthly Spotlight course records / board (own bucket)
 let dailyAttemptsCheckedDay=null;   // guards reconcileDailyAttempts() to once per day per session
 const RTT_AUTH_KEY='sb-runtour-auth';   // RunTheTour's own saved-session key (separate from RunThePitch)
 function rttRemember(){ try{ return localStorage.getItem('rtt_remember')==='1'; }catch(e){ return false; } }
@@ -9508,6 +9536,7 @@ async function sbApply(session){
     cloudPull();   // pull + merge the full profile bundle (career save, tokens, streak, stats, achievements)
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
     if(_pendingDaily){ _pendingDaily=null; }   // legacy guest stash is no longer auto-posted (claim flow gates it)
+    if(_pendingSpot){ const p=_pendingSpot; _pendingSpot=null; sbSubmitDaily(p); }   // post a spotlight round played before sign-in
     if(oauth){                                    // just came back from Google → confirm on the title screen
       if(sbUsername) toast('Signed in as '+esc(sbUsername));
       else { S.overlay='account'; S.acctMode='username'; }
@@ -9559,7 +9588,7 @@ async function sbSignOut(){
   try{ localStorage.removeItem(RTT_AUTH_KEY); localStorage.removeItem('rtt_oauth_pending'); }catch(e){}
   setRemember(false);
   sbUser=null; sbUsername=null; sbProfile=null; lbCache={}; _pendingSeason=null;
-  _pendingDaily=null; crCache=null; dbCache=null;
+  _pendingDaily=null; _pendingSpot=null; crCache=null; dbCache=null; crCacheSpot=null; dbCacheSpot=null;
 }
 async function sbSetUsername(name){
   if(!sb||!sbUser) throw new Error('Sign in first.');
@@ -9669,6 +9698,7 @@ function cloudBundle(){
     name: LS.get('bag_name', null),                // golfer name (rides with look's timestamp)
     courseRecords: courseRecords(),                // your all-time course records (device store; kept in sync cross-device)
     courseRecordsLegend: courseRecordsLegend(),
+    courseRecordsSpot: courseRecordsSpot(),        // Monthly Spotlight course records (own bucket)
     careersave: LS.get(acctKey('bag_careersave'), null),
     legendTokens: legendTokens(),
     streak: LS.get(acctKey('bag_streak'), null),
@@ -9801,7 +9831,8 @@ async function cloudPull(){
     LS.set(acctKey('bag_career'), mergeCareerLifetime(career(), server.career));   // restore build-record fields cross-device
     LS.set('bag_courserecords', mergeCourseRecords(courseRecords(), server.courseRecords));           // restore course records cross-device
     LS.set('bag_courserecords_legend', mergeCourseRecords(courseRecordsLegend(), server.courseRecordsLegend));
-    crCache=null; crCacheLegend=null;   // force the records overlay to re-read the freshly-merged local store
+    LS.set('bag_courserecords_spotlight', mergeCourseRecords(courseRecordsSpot(), server.courseRecordsSpot));
+    crCache=null; crCacheLegend=null; crCacheSpot=null;   // force the records overlay to re-read the freshly-merged local store
     // identity (look + name): last-write-wins by the look's _ts, so the most-recently-customized device wins
     { const sv=server.look, lv=LS.get('bag_look',null);
       if(sv && typeof sv==='object' && (sv._ts||0) > ((lv&&lv._ts)||0)){
@@ -9897,19 +9928,22 @@ async function lbLoad(tab,sort,dir){
 /* ---- Daily Challenge backend (Phase 3): submit best round + global board/records. Fails open. ---- */
 async function sbSubmitDaily(b){
   if(!sb || !b) return;
-  if(!sbUser){ _pendingDaily=b; return; }            // post as soon as they sign in
+  if(!sbUser){ if(b.isSpotlight)_pendingSpot=b; else _pendingDaily=b; return; }   // post as soon as they sign in
   try{
     // same fix as flushPendingSeasons: supabase-js resolves (doesn't throw) on a Postgres error, so
     // this MUST be checked explicitly, otherwise a rejected submission (bad param, RLS, etc.) looks
     // identical to a successful one and the round is silently never posted.
     const {error}=await sb.rpc('runtour_submit_daily',{p_day:b.day,p_course:b.course,p_to_par:b.total,p_ovr:b.ovr,
       p_won:!!b.won,p_golfer:(S.name||'Your Golfer'),p_skills:b.skills||null,p_decisions:b.decisions||null,
-      p_is_legend:!!b.isLegend});
+      p_is_legend:!!b.isLegend, p_is_spotlight:!!b.isSpotlight});
     if(error) throw error;
-    crCache=null; dbCache=null; crCacheLegend=null; dbCacheLegend=null;   // refresh records/board next open
+    crCache=null; dbCache=null; crCacheLegend=null; dbCacheLegend=null; crCacheSpot=null; dbCacheSpot=null;
   }catch(e){
-    // p_is_legend isn't recognized until supabase/30_runtour_legend.sql is applied, retry without it
-    // so a non-legend submission still goes through even before the owner runs that migration.
+    // A SPOTLIGHT submit needs supabase/45; if that isn't applied yet, DON'T fall back to a plain daily
+    // submit (that would wrongly post the spotlight onto the regular daily board/records) — just skip.
+    if(b.isSpotlight){ console.error('[RunTheTour] spotlight submit failed (run supabase/45):', (e&&e.message)||e, b); return; }
+    // p_is_legend/p_is_spotlight aren't recognized until 30/45 are applied; retry without them so a plain
+    // daily still posts even before those migrations. (Legend keeps its own separate board once 30 is in.)
     if(!b.isLegend){ console.error('[RunTheTour] daily submit failed:', (e&&e.message)||e, b); return; }
     try{
       const {error:error2}=await sb.rpc('runtour_submit_daily',{p_day:b.day,p_course:b.course,p_to_par:b.total,p_ovr:b.ovr,
@@ -9990,6 +10024,26 @@ async function dbLoadLegend(day){
   try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:50,p_legend:true});
     dbCacheLegend={day,rows:(data||[]),ok:!error};
   }catch(e){ dbCacheLegend={day,rows:[],ok:false}; }
+  render();
+}
+// Monthly Spotlight course records / board (own bucket, own weather). Fails open (empty) until the owner
+// runs supabase/45_runtour_spotlight.sql — the p_spotlight RPC arg simply errors until then, caught below.
+async function crLoadSpot(){
+  if(!sb){ crCacheSpot={recs:{},ok:false}; render(); return; }
+  try{ const {data,error}=await sb.rpc('runtour_course_records',{p_spotlight:true});
+    const recs={}; (data||[]).forEach(r=>{ recs[r.course_key]={toPar:r.to_par,name:r.display_name,ovr:r.ovr,day:r.day,mine:(sbUser&&r.user_id===sbUser.id),global:true}; });
+    crCacheSpot={recs,ok:!error};
+    if(!error){ const loc=courseRecordsSpot(); let changed=false;
+      for(const k in recs){ if(!loc[k] || recs[k].toPar<loc[k].toPar){ loc[k]={toPar:recs[k].toPar,ovr:recs[k].ovr,name:recs[k].name,mine:recs[k].mine,date:recs[k].day,global:true}; changed=true; } }
+      if(changed) LS.set('bag_courserecords_spotlight',loc); }
+  }catch(e){ crCacheSpot={recs:{},ok:false}; }
+  render();
+}
+async function dbLoadSpot(day){
+  if(!sb){ dbCacheSpot={day,rows:[],ok:false}; render(); return; }
+  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:50,p_spotlight:true});
+    dbCacheSpot={day,rows:(data||[]),ok:!error};
+  }catch(e){ dbCacheSpot={day,rows:[],ok:false}; }
   render();
 }
 /* ============================================================================
