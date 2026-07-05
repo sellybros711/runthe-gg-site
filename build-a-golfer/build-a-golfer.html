@@ -3882,7 +3882,18 @@ function scrTitle(){
     const rb=$(`<button class="btn ${cs?'gold':'teal'}">Resume Your Golfer<span class="sub">${ri.n}/8 skills drafted · pick up where you left off</span></button>`);
     rb.onclick=restoreResume; stack.appendChild(rb);
   }
-  const go=$(`<button class="btn goldfill">${(ri||cs)?'Start a New Golfer':'Step to the Tee Box'}<span class="sub">Build your golfer, start your career</span></button>`);
+  // ── Play Online sits ABOVE the primary Career Mode button (owner) ──
+  const on=$(`<div class="online-home" style="margin:16px auto 6px">
+    <div class="online-lbl"><span class="online-dot"></span>Play Online <span class="online-badge">NEW</span></div>
+    <div class="online-row">
+      <button class="online-btn" id="ol-1v1"><span class="ol-l">1v1</span><span class="ol-s">Head-to-head · live</span></button>
+      <button class="online-btn" id="ol-4"><span class="ol-l">Foursomes</span><span class="ol-s">2v2 &amp; 4-player</span></button>
+    </div></div>`);
+  const ob1=on.querySelector('#ol-1v1'), ob4=on.querySelector('#ol-4');
+  if(ob1) ob1.onclick=()=>openH2H('1v1');
+  if(ob4) ob4.onclick=()=>openH2H('bestball');
+  stack.appendChild(on);
+  const go=$(`<button class="btn goldfill">Career Mode<span class="sub">${(ri||cs)?'Start a new golfer, play a fresh 30-year career':'Draft your golfer, play a 30-year career'}</span></button>`);
   go.onclick=()=>{S.mode='easy';S.screen='setup';render();};
   stack.appendChild(go);
   const dleft=dailyAttemptsLeft(), datt=dailyAttempts(), dbest=dailyBest();
@@ -3921,18 +3932,6 @@ function scrTitle(){
     stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--muted)">⭐ Next Monthly Spotlight: <b style="color:var(--gold)">${esc(dShort(DAILY_COURSES[ns.key].v))}</b> · ${fmtDayKey(ns.liveDayKey)}</div>`));
   }
   w.appendChild(stack);
-  // ── Play Online: promoted to its own highlighted block (teal + live dot + NEW), so it reads as
-  //    a headline feature, not a footnote. Two entry points drop you into the online home preset. ──
-  const on=$(`<div class="online-home">
-    <div class="online-lbl"><span class="online-dot"></span>Play Online <span class="online-badge">NEW</span></div>
-    <div class="online-row">
-      <button class="online-btn" id="ol-1v1"><span class="ol-l">1v1</span><span class="ol-s">Head-to-head · live</span></button>
-      <button class="online-btn" id="ol-4"><span class="ol-l">Foursomes</span><span class="ol-s">2v2 &amp; 4-player</span></button>
-    </div></div>`);
-  const ob1=on.querySelector('#ol-1v1'), ob4=on.querySelector('#ol-4');
-  if(ob1) ob1.onclick=()=>openH2H('1v1');
-  if(ob4) ob4.onclick=()=>openH2H('bestball');
-  w.appendChild(on);
   // ── secondary actions, demoted to small links ──
   const sec=$(`<div class="home2"></div>`);
   const mkLink=(label,fn)=>{ const b=$(`<button type="button">${label}</button>`); b.onclick=fn; sec.appendChild(b); };

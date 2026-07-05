@@ -4153,6 +4153,16 @@ allows Google Fonts, or self-host Anton.*
   next hole; a full practice round self-completes; hv8/hv7/hv5/hv10/practice suites all re-run green, zero
   page errors. Screenshots: clean flight view + "Birdie · Next hole coming up…" beat. Deployed to /golf.
 
+- **CS149 — title layout: Play Online above the primary button + "Career Mode" rename.** Owner
+  (screenshot): move the Play Online block on top of the yellow primary button, and rename that button from
+  "Step to the Tee Box" to "Career Mode" with a brief description. Done: the `.online-home` block (1v1 /
+  Foursomes) now renders inside the primary stack directly ABOVE the gold button (was appended after the
+  whole stack); the gold button reads **"Career Mode"** with sub "Draft your golfer, play a 30-year
+  career" (or "Start a new golfer, play a fresh 30-year career" when a career/resume already exists). Daily
+  Challenge, countdown, streak and Spotlight stay below it, unchanged. Verified in Playwright (430px): the
+  online block precedes the Career button which precedes Daily; button renamed; block not duplicated; both
+  online entry points intact; screenshot confirms the order. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
