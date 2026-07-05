@@ -126,6 +126,29 @@
     background:linear-gradient(180deg,transparent,var(--card));}
   .hero-cap{padding:2px 18px 18px;text-align:center;}
   .hero-cap .lede{color:#d9d3ea;}
+  .herohook{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-weight:800;font-size:19px;line-height:1.2;
+    color:var(--goldhi);}
+
+  /* how-to-play panels (illustrated) */
+  .howp{display:flex;gap:15px;align-items:center;padding:15px;}
+  .howp .howillo{flex:0 0 auto;width:98px;min-height:92px;border-radius:14px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:2px;text-align:center;padding:8px 6px;color:var(--acc);
+    background:radial-gradient(circle at 40% 28%,var(--accl),rgba(255,255,255,.02) 75%);border:1px solid var(--accb);}
+  .howp .howtx{min-width:0;flex:1;}
+  .howp .howtx h3{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-size:15.5px;margin-bottom:5px;}
+  .howp .howtx p{font-size:12.5px;color:var(--mut);line-height:1.55;margin:0;}
+  .howp .howtx p b{color:var(--ink);}
+  .ill-flag{font-size:34px;line-height:1;}
+  .ill-t{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-weight:800;font-size:12px;color:var(--ink);letter-spacing:.03em;}
+  .ill-s{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut);}
+  .ill-chips{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:18px;}
+  .ill-split{display:flex;flex-direction:column;gap:5px;width:100%;font-size:9.5px;font-weight:800;}
+  .ill-split span{padding:5px 6px;border-radius:7px;border:1px solid var(--accb);background:rgba(255,255,255,.05);color:var(--ink);}
+  .ill-time{font-family:'Bricolage Grotesque','Archivo',sans-serif;font-weight:800;font-size:30px;color:var(--acc);line-height:1;}
+  .ill-time span{font-size:14px;color:var(--mut);}
+  .ill-lb{width:86px;font-size:8.5px;font-weight:700;}
+  .ill-lb div{display:flex;justify-content:space-between;gap:6px;padding:3px 6px;border-radius:5px;background:rgba(255,255,255,.06);margin-bottom:3px;color:var(--ink);}
+  .ill-lb .g{background:rgba(238,90,68,.2);color:#ffb3a6;}
 
   .btn{appearance:none;border:0;cursor:pointer;font-family:inherit;font-weight:800;font-size:15px;
     border-radius:13px;padding:14px 18px;text-decoration:none;display:inline-flex;align-items:center;
@@ -152,9 +175,9 @@
     background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.012));
     border:1px solid var(--line);border-radius:18px;padding:16px 16px 16px 19px;cursor:pointer;
     transition:border-color .18s,transform .18s cubic-bezier(.22,.9,.32,1),box-shadow .18s,background .18s;}
-  .mode.m-gold{--acc:#ECB550;--accl:rgba(236,181,80,.26);--accb:rgba(236,181,80,.42);--accs:rgba(236,181,80,.55);}
-  .mode.m-green{--acc:#4FB57A;--accl:rgba(70,165,108,.28);--accb:rgba(70,165,108,.46);--accs:rgba(70,165,108,.55);}
-  .mode.m-coral{--acc:#F0684F;--accl:rgba(238,90,68,.26);--accb:rgba(238,90,68,.44);--accs:rgba(238,90,68,.55);}
+  .m-gold{--acc:#ECB550;--accl:rgba(236,181,80,.26);--accb:rgba(236,181,80,.42);--accs:rgba(236,181,80,.55);}
+  .m-green{--acc:#4FB57A;--accl:rgba(70,165,108,.28);--accb:rgba(70,165,108,.46);--accs:rgba(70,165,108,.55);}
+  .m-coral{--acc:#F0684F;--accl:rgba(238,90,68,.26);--accb:rgba(238,90,68,.44);--accs:rgba(238,90,68,.55);}
   .mode::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--acc);opacity:.85;}
   /* faint accent glow bloom behind the icon */
   .mode::after{content:"";position:absolute;left:-10px;top:50%;width:120px;height:120px;transform:translateY(-50%);
@@ -663,6 +686,7 @@
     if(S.screen==='online')    return renderDuoMenu();
     if(S.screen==='lobby')     return renderDuoLobby();
     if(S.screen==='trophies')  return renderTrophies();
+    if(S.screen==='howto')     return renderHowTo();
     if(S.screen==='stage')     return renderStage();
     renderHome();
   }
@@ -685,9 +709,10 @@
       + '<div class="hero">'
         + '<div class="hero-imgwrap"><img class="hero-wm" src="/globe/brand/wordmark.jpg" alt="Run The Globe" width="1200" height="434" /></div>'
         + '<div class="hero-cap">'
-          + '<p class="lede" style="margin-top:0">Draw a country each Stage, beat the clock on a Split Path or Solo Call, then check in. '
-          + 'Finish last and you\'re <b style="color:var(--coral)">Grounded</b>. Outlast the field across '
+          + '<div class="herohook">Outrun 10 rival teams around the world.</div>'
+          + '<p class="lede" style="margin-top:7px">Every Stage jets the whole field to a new country. Beat the clock at trivia, memory, maps, reflex &amp; more — the slowest team each Stage is <b style="color:var(--coral)">Grounded</b>. Survive all '
           + ROUNDS + ' Stages to win the Final.</p>'
+          + '<button class="btn ghost sm" id="howto" style="margin-top:12px">📖 How to play</button>'
         + '</div>'
       + '</div>'
       + '<div class="card">'
@@ -709,23 +734,46 @@
         + '</div>'
         + '<button class="btn ghost" id="trophies" style="margin-top:12px">🏆 Trophy Room</button>'
       + '</div>'
-      + '<div class="card">'
-        + '<h3 style="font-size:16px;margin-bottom:12px">How to play</h3>'
-        + '<div class="steps">'
-          + step(1,'Draw a destination','Every Stage sends the whole field to the same random country.')
-          + step(2,'Beat the clock','Play a quick challenge — trivia, memory, reflex, maps and more. Slips add penalty seconds.')
-          + step(3,'Check in at the Checkpoint','Your effective time = your time + penalties. Teams rank fastest to slowest.')
-          + step(4,'Don\'t finish last','The slowest team each Stage is Grounded. Outlast the field across '+ROUNDS+' Stages to win the Final.')
-        + '</div>'
-      + '</div>'
       + foot();
     var m1=$('mode-solo'); if(m1) m1.onclick=function(){ S.coop=null; S.screen='setup'; render(); };
     var m2=$('mode-duo_same'); if(m2) m2.onclick=function(){ S.coop={ same:true }; S.screen='setup'; render(); };
     var m3=$('mode-duo_two'); if(m3) m3.onclick=function(){ S.coop=null; S.screen='online'; render(); };
     var tr=$('trophies'); if(tr) tr.onclick=function(){ S.screen='trophies'; render(); };
+    var ht=$('howto'); if(ht) ht.onclick=function(){ S.screen='howto'; render(); };
     renderAcct();
   }
   function step(n,t,d){ return '<div class="step"><span class="n">'+n+'</span><span class="tx"><b>'+esc(t)+'</b> — '+esc(d)+'</span></div>'; }
+
+  /* ------------------------------------------------------- how to play (detailed) */
+  function howPanel(accent, illo, title, body){
+    return '<div class="card howp m-'+accent+'">'
+      + '<div class="howillo">'+illo+'</div>'
+      + '<div class="howtx"><h3>'+title+'</h3><p>'+body+'</p></div></div>';
+  }
+  function renderHowTo(){
+    var illoDraw = '<div class="ill-flag">🗼</div><div class="ill-t">TOKYO</div><div class="ill-s">Asia</div>';
+    var illoGames= '<div class="ill-chips"><span>🧠</span><span>🗺️</span><span>⚡</span><span>🎧</span><span>🔤</span><span>🎯</span></div>';
+    var illoSplit= '<div class="ill-split"><span class="a">🧠 Brain</span><span class="b">⚡ Reflex</span></div>';
+    var illoCheck= '<div class="ill-time">6.4<span>s</span></div><div class="ill-s">effective</div>';
+    var illoGround='<div class="ill-lb"><div><span>1 You</span><span>5.1</span></div><div><span>2 Fox</span><span>7.8</span></div><div class="g"><span>3 Wolf</span><span>OUT</span></div></div>';
+    var illoFinal= '<div class="ill-flag">🏁</div><div class="ill-t" style="color:var(--acc)">THE FINAL</div>';
+    app.innerHTML = topbar()
+      + '<div class="card"><h1 style="font-size:26px">How to Play</h1>'
+        + '<p class="lede">RunTheGlobe is a survival race around the world against a field of '+FIELD_SIZE+' teams. Here\'s one Stage of the loop — you\'ll run '+ROUNDS+' of them.</p></div>'
+      + howPanel('gold', illoDraw, '1 · Draw a destination', 'Every Stage jets the whole field to the same random country — you fly the leg on the map, then the destination is revealed. A race criss-crosses '+ROUNDS+' of them.')
+      + howPanel('green', illoGames, '2 · Beat the clock', 'Play a lightning challenge from <b>30+ game types</b> — trivia, maps, memory, word, reflex and audio. A timer runs the whole time, and every slip adds penalty seconds.')
+      + howPanel('coral', illoSplit, '3 · Split Path or Solo Call', 'Most Stages are a <b>Split Path</b>: pick one of two challenges — usually a brain game vs a reflex game — and play to your strength. A <b>Solo Call</b> hands everyone the same single task.')
+      + howPanel('gold', illoCheck, '4 · Check in', 'Your <b>effective time</b> = raw time + penalty seconds. Every team checks in and the field is ranked fastest to slowest.')
+      + howPanel('coral', illoGround, '5 · Don\'t finish last', 'The slowest team each Stage is <b style="color:var(--coral)">Grounded</b> — eliminated. One fumbled challenge and it could be you.')
+      + howPanel('green', illoFinal, '6 · Win the Final', 'Outlast everyone to Stage '+ROUNDS+' — the Final. The last 3 teams sprint to a world landmark; the fastest wins the whole race.')
+      + '<div class="card"><h3 style="font-size:15px;margin-bottom:6px">🤝 Solo or team up</h3>'
+        + '<p class="muted" style="font-size:13px;line-height:1.6;margin:0">Race <b>Solo</b>, or as a team — <b>Same Screen</b> (two of you on one device, taking turns) or <b>Two Devices</b> (you and a partner on separate phones, times combined). Either way you face a full field, so it feels the same whether the rivals are friends or the house.</p></div>'
+      + '<div class="btnrow"><button class="btn ghost" id="htback">‹ Back</button><button class="btn globe" id="htplay">Start racing 🌍</button></div>'
+      + foot();
+    $('htback').onclick=function(){ S.screen='home'; render(); };
+    $('htplay').onclick=function(){ S.coop=null; S.screen='setup'; render(); };
+    renderAcct();
+  }
 
   /* --------------------------------------------------------- trophy room */
   function renderTrophies(){
