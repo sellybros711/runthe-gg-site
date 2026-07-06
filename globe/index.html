@@ -503,7 +503,7 @@
     typeticket:'Type The Ticket', baggage:'Baggage Claim', rhythmecho:'Rhythm Echo',
     closest:'Closest Neighbor', closerfar:'Closer or Farther', compass:'Compass Chase',
     regionsort:'Region Sort', flightplan:'Flight Plan', globehunt:'Globe Hunt', detective:'The Dossier',
-    pitchpatrol:'Pitch Patrol', runway:'Runway Landing', photosnap:'Photo Snap', stampit:'Stamp It'
+    pitchpatrol:'Pitch Patrol', runway:'Pilot The Landing', photosnap:'Photo Snap', stampit:'Stamp It'
   };
   // expected completion (seconds) for an average player per kind — used ONLY to
   // pace the AI ghost field. The human always competes on real time, so these are
@@ -2230,53 +2230,94 @@
   }
 
   /* ---------- minigame: Runway Landing (time the drop over a moving pass) ---------- */
+  /* ---------- minigame: Pilot The Landing (controllable descent) ----------
+     A side-view approach. The plane cruises in from the left; you tap "Begin
+     Descent" to start a steady sink, then "Flare / Touchdown" to cushion onto the
+     runway. Flare too high and you drop in too fast (hard landing); land short or
+     overshoot the strip and you miss; grease it into the touchdown zone with a
+     gentle flare for a clean, fast time. One landing = one experience. */
+  var RW={ H:210 };
   function mgRunway(t){
     var d=ramp();
-    S.rw={ lands:0, need:3, x:0, zw:0.24-0.07*d, zx:0, speed:0.30+0.14*d, dropping:false, t0:performance.now() };
-    rwNewZone();
-    $('mg').innerHTML='<div class="seqstatus" id="rwst"></div>'
-      + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div id="rwfield" style="position:relative;height:170px;border-radius:14px;border:1px solid var(--cardb);cursor:pointer;touch-action:manipulation;overflow:hidden;'
-          + 'background:linear-gradient(180deg,#1a2a52 0%,#3a5aa0 46%,#2f7d4c 62%,#256b41 100%)">'   // dusk sky over green land
-        // runway strip: dark asphalt with a dashed centreline
-        + '<div style="position:absolute;left:0;right:0;bottom:0;height:40px;background:#20242c;box-shadow:inset 0 2px 6px rgba(0,0,0,.5)"></div>'
-        + '<div style="position:absolute;left:0;right:0;bottom:19px;height:3px;background:repeating-linear-gradient(90deg,rgba(255,255,255,.85) 0 16px,transparent 16px 34px)"></div>'
-        // touchdown zone (the target) marked on the runway
-        + '<div id="rwz" style="position:absolute;bottom:0;height:40px;background:rgba(63,206,134,.32);border-left:3px solid var(--ok);border-right:3px solid var(--ok)"></div>'
-        + '<div id="rwp" style="position:absolute;top:16px;font-size:30px;transition:top .22s ease-in;filter:drop-shadow(0 6px 4px rgba(0,0,0,.4))">✈️</div>'
+    S.rw={ phase:'cruise', alt:0.9, x:0.04, vs:0,
+           cruise:0.9, cspeed:0.155+0.05*d, drate:0.42+0.12*d,
+           z0:0.54, z1:0.86, flareAlt:0, slam:false, done2:false, last:performance.now() };
+    $('mg').innerHTML='<div class="seqstatus" id="rwst">✈️ Cleared to land</div>'
+      + '<div class="prompt" style="text-align:center;margin-bottom:8px">Bring her down smooth — <b>descend</b>, then <b>flare</b> to touch down gently.</div>'
+      + '<div id="rwfield" style="position:relative;height:'+RW.H+'px;border-radius:14px;border:1px solid var(--cardb);overflow:hidden;touch-action:manipulation;'
+          + 'background:linear-gradient(180deg,#20386e 0%,#3f63ad 34%,#89a7cf 60%,#b9cfe0 66%)">'
+        + '<svg viewBox="0 0 360 210" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">'
+          + '<polygon points="0,138 55,108 105,132 165,96 220,130 285,104 360,132 360,140 0,140" fill="rgba(40,60,96,.5)"/>'
+        + '</svg>'
+        + '<div style="position:absolute;left:0;right:0;bottom:0;height:'+Math.round(RW.H*0.34)+'px;background:linear-gradient(180deg,#3f7d4f,#2c6640)"></div>'
+        + '<div id="rwrun" style="position:absolute;bottom:0;left:38%;right:0;height:'+Math.round(RW.H*0.20)+'px;background:#2a2f38;box-shadow:inset 0 3px 8px rgba(0,0,0,.45)">'
+          + '<div style="position:absolute;left:0;right:0;top:50%;height:3px;transform:translateY(-50%);background:repeating-linear-gradient(90deg,rgba(255,255,255,.9) 0 20px,transparent 20px 42px)"></div>'
+          + '<div style="position:absolute;left:2%;top:14%;bottom:14%;width:8px;background:repeating-linear-gradient(180deg,#fff 0 6px,transparent 6px 12px)"></div>'
+        + '</div>'
+        + '<div id="rwz" style="position:absolute;bottom:0;height:'+Math.round(RW.H*0.20)+'px;left:'+(S.rw.z0*100)+'%;width:'+((S.rw.z1-S.rw.z0)*100)+'%;background:rgba(63,206,134,.30);border-left:3px solid var(--ok);border-right:3px solid var(--ok)"></div>'
+        + '<svg viewBox="0 0 360 210" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none">'
+          + '<line x1="16" y1="24" x2="'+(((S.rw.z0+S.rw.z1)/2)*360)+'" y2="'+rwGroundY()+'" stroke="rgba(255,255,255,.35)" stroke-width="1.2" stroke-dasharray="4 5"/>'
+        + '</svg>'
+        + '<div id="rwsh" style="position:absolute;font-size:26px;opacity:.15">🛬</div>'
+        + '<div id="rwp" style="position:absolute;font-size:30px;transform-origin:center;filter:drop-shadow(0 5px 6px rgba(0,0,0,.35))">🛬</div>'
+        + '<div style="position:absolute;right:6px;top:8px;bottom:'+Math.round(RW.H*0.34)+'px;width:8px;background:rgba(0,0,0,.25);border-radius:4px;overflow:hidden">'
+          + '<div id="rwvs" style="position:absolute;left:0;right:0;bottom:0;height:0;background:var(--ok)"></div></div>'
       + '</div>'
-      + '<div class="ohint" style="margin-top:10px">Tap to drop the plane — land it on the lit touchdown zone.</div>';
-    rwStatus(); rwPaint();
-    fastTap($('rwfield'), rwDrop);
+      + '<div id="rwmsg" style="text-align:center;margin:10px 0 8px;min-height:20px;font-weight:700;color:var(--mut)">Steady on approach…</div>'
+      + '<button class="btn globe" id="rwbtn" style="width:100%">▼ Begin Descent</button>';
+    rwPlace();
+    fastTap($('rwbtn'), rwAction);
+    S.rw.last=performance.now();
     (function loop(){
-      if(S.play.done || !$('rwp')) return;
-      if(!S.rw.dropping){
-        var el=(performance.now()-S.rw.t0)/1000;
-        S.rw.x=(el*S.rw.speed)%1.12 - 0.06;   // fly through, wrap just off-screen
-        $('rwp').style.left=(S.rw.x*100)+'%';
-      }
+      var f=$('rwfield'); if(S.play.done || S.rw.done2 || !f) return;
+      var now=performance.now(), dt=Math.min(0.05,(now-S.rw.last)/1000); S.rw.last=now;
+      var r=S.rw;
+      if(r.phase==='cruise'){ r.x+=r.cspeed*dt; r.vs=0; }
+      else if(r.phase==='descent'){ r.x+=r.cspeed*dt; r.vs=r.drate; r.alt-=r.vs*dt;
+        if(r.alt<=0){ r.alt=0; r.slam=true; return rwTouchdown(); } }
+      else if(r.phase==='flare'){ r.x+=r.cspeed*0.55*dt; r.vs=Math.max(0.09,r.vs-1.6*dt); r.alt-=r.vs*dt;  // floor sink so she always settles
+        if(r.alt<=0){ r.alt=0; return rwTouchdown(); } }
+      if(r.x>=0.98 && r.phase!=='flare'){ return rwOvershoot(); }
+      rwPlace();
       requestAnimationFrame(loop);
     })();
   }
-  function rwStatus(){ var e=$('rwst'); if(e) e.innerHTML='Landings <b>'+S.rw.lands+'</b>/'+S.rw.need; }
-  function rwNewZone(){ S.rw.zx=rnd(0.08, 0.92-S.rw.zw); }
-  function rwPaint(){ var z=$('rwz'); if(z){ z.style.left=(S.rw.zx*100)+'%'; z.style.width=(S.rw.zw*100)+'%'; } }
-  function rwDrop(){
-    if(S.play.done || S.rw.dropping) return;
-    S.rw.dropping=true;
-    var p=$('rwp'); if(p) p.style.top='126px';
-    var hit = (S.rw.x+0.04>=S.rw.zx && S.rw.x+0.04<=S.rw.zx+S.rw.zw);   // plane centre vs strip
-    setTimeout(function(){
-      if(S.play.done || !$('rwp')) return;
-      if(hit){
-        sfx('correct'); S.rw.lands++; rwStatus(); flash($('rwfield'));
-        if(S.rw.lands>=S.rw.need){ S.play.done=true; setTimeout(finishTask,200); return; }
-        S.rw.zw*=0.82; S.rw.speed*=1.15; rwNewZone(); rwPaint();
-      } else { S.play.misses++; showMiss(); }
-      var p2=$('rwp'); if(p2) p2.style.top='16px';
-      S.rw.t0=performance.now()-((S.rw.x+0.06)/S.rw.speed)*1000;   // resume the pass smoothly
-      S.rw.dropping=false;
-    }, 300);
+  function rwGroundY(){ return RW.H - RW.H*0.20 - 6; }   // svg y of the touchdown surface
+  function rwPlace(){
+    var r=S.rw, p=$('rwp'), sh=$('rwsh'), f=$('rwfield'); if(!p||!f) return;
+    var topPx = 12 + (1-r.alt)*(rwGroundY()-12);
+    var leftPct = r.x*100;
+    var pitch = r.phase==='descent' ? 12 : (r.phase==='flare'? -4 : 2);
+    p.style.left=leftPct+'%'; p.style.top=topPx+'px'; p.style.transform='translate(-50%,-50%) rotate('+pitch+'deg)';
+    if(sh){ sh.style.left=leftPct+'%'; sh.style.top=(rwGroundY()+8)+'px'; sh.style.opacity=String(0.08+0.22*(1-r.alt)); sh.style.transform='translate(-50%,-50%) scaleY(.3) scaleX('+(0.5+0.6*(1-r.alt))+')'; }
+    var vs=$('rwvs'); if(vs){ var mag=Math.min(1,r.vs/0.6); vs.style.height=Math.round(mag*100)+'%'; vs.style.background = r.vs>0.5?'var(--bad)':(r.vs>0.28?'var(--globe)':'var(--ok)'); }
+    f.setAttribute('data-phase',r.phase); f.setAttribute('data-alt',r.alt.toFixed(3)); f.setAttribute('data-x',r.x.toFixed(3));
+  }
+  function rwAction(){
+    if(S.play.done || S.rw.done2) return;
+    var r=S.rw, b=$('rwbtn');
+    if(r.phase==='cruise'){ r.phase='descent'; sfx('tap'); if(b) b.textContent='🛬 Flare / Touchdown';
+      var m=$('rwmsg'); if(m){ m.textContent='Descending — ease her onto the numbers.'; } }
+    else if(r.phase==='descent'){ r.phase='flare'; r.flareAlt=r.alt; sfx('tap'); if(b){ b.disabled=true; b.style.opacity='.5'; } }
+  }
+  function rwOvershoot(){ if(S.rw.done2) return; S.rw.done2=true; rwResult(false,'✈️ Overshot the runway — go around!',2); }
+  function rwTouchdown(){
+    if(S.rw.done2) return; S.rw.done2=true;
+    var r=S.rw, xc=r.x, inZone = xc>=r.z0-0.03 && xc<=r.z1+0.03;
+    rwPlace();
+    if(r.slam || r.flareAlt>0.34){ rwResult(false, r.slam?'💥 Slammed it — you never flared!':'💥 Hard landing — came in too fast!', inZone?2:3); }
+    else if(!inZone){ rwResult(false, xc<r.z0?'⬇️ Landed short of the runway':'➡️ Floated past the zone', 2); }
+    else if(r.flareAlt<=0.17){ rwResult(true,'🛬 Greased it! Textbook landing.',0,true); }
+    else { rwResult(true,'🛬 Smooth landing.',0); }
+  }
+  function rwResult(ok, msg, miss, perfect){
+    var f=$('rwfield'), m=$('rwmsg');
+    if(ok){ sfx('correct'); vibe(perfect?[15,30,15]:14); if(f) flash(f); }
+    else { for(var i=0;i<miss;i++){ S.play.misses++; } sfx('wrong'); vibe([25,40,25]); if(f) retrig(f,'hitflash'); }
+    showMiss();
+    if(m){ m.textContent=msg; m.style.color=ok?'var(--ok)':'var(--bad)'; }
+    S.play.done=true;
+    setTimeout(finishTask, 950);
   }
 
   /* ---------- minigame: Photo Snap (track a drifting subject, tap the shutter) ---------- */
@@ -2306,16 +2347,21 @@
       S.ps.x=0.5+0.38*Math.sin(el*2.1);
       S.ps.y=0.5+0.34*Math.sin(el*3.3+1.2);
       var s=$('pssub'); s.style.left=(S.ps.x*100)+'%'; s.style.top=(S.ps.y*100)+'%';
+      // live lock indicator: the frame glows green only when a snap would count
+      var f=$('psframe'); if(f && !S.ps._flash){ f.style.borderColor = psInFrame()?'var(--ok)':'var(--goldhi)'; }
       requestAnimationFrame(loop);
     })();
   }
   function psStatus(){ var e=$('psst'); if(e) e.innerHTML='Shots <b>'+S.ps.shots+'</b>/'+S.ps.need; }
   function psFrame(){ var f=$('psframe'); if(f){ f.style.width=(S.ps.fw*100)+'%'; f.style.height=(S.ps.fw*200*0.9)+'px'; } }
+  // subject centre inside the reticle: half-width = fw/2, half-height = fw*0.45
+  // (frame height is fw*0.9 of the box; the old check used fw*0.9 as the HALF,
+  // so a subject well outside the frame still counted — that was the bug).
+  function psInFrame(){ return Math.abs(S.ps.x-0.5)<S.ps.fw/2 && Math.abs(S.ps.y-0.5)<S.ps.fw*0.45; }
   function psSnap(){
     if(S.play.done) return;
-    var inX=Math.abs(S.ps.x-0.5)<S.ps.fw/2, inY=Math.abs(S.ps.y-0.5)<S.ps.fw*0.9;
-    var f=$('psframe');
-    if(inX && inY){
+    var f=$('psframe'); S.ps._flash=true; setTimeout(function(){ S.ps._flash=false; },250);
+    if(psInFrame()){
       sfx('correct'); S.ps.shots++; psStatus();
       if(f){ f.style.borderColor='var(--ok)'; setTimeout(function(){ var f2=$('psframe'); if(f2) f2.style.borderColor='var(--goldhi)'; },250); }
       if(S.ps.shots>=S.ps.need){ S.play.done=true; setTimeout(finishTask,200); return; }
@@ -2326,59 +2372,85 @@
     }
   }
 
-  /* ---------- minigame: Stamp It (press the stamp onto the passport) ----------
-     You hold a rubber stamp that slides across the page; press it down when it's
-     over the empty slot and it leaves a real inked passport stamp (city + ✈).
-     Land it off the slot and you get a faint smudge (a miss). Slot narrows and
-     the stamp speeds up with each clean stamp. Themed on the drawn destination. */
+  /* ---------- minigame: Stamp It (align + pressure) ----------
+     A two-part skill, not a single tap. First LINE UP the sliding stamp over the
+     empty slot (tap to lock its position); then PRESS with the right force — a
+     pressure needle sweeps up and down, tap to set it. Too light = a faint
+     half-stamp; too hard = an over-inked smudge; aligned + firm-but-not-too-hard
+     = a crisp passport stamp. Themed on the drawn destination. */
+  var ST_INKS=['#b3372b','#1f5fa8','#2c7d4c','#6a4a12'];   // passport inks: red, blue, green, sepia
   function mgStampIt(t){
     var d=ramp();
-    S.st2={ stamps:0, need:3, tol:0.16-0.06*d, speed:0.42+0.4*d, pos:0.5, tx:0.5, t0:performance.now(),
+    S.st2={ phase:'aim', tol:0.11-0.03*d, speed:0.5+0.35*d, pos:0.5, tx:0.5,
+            press:0, pdir:1, pspeed:0.85+0.4*d, lockX:0.5, alignErr:1, done2:false, t0:performance.now(),
             city:((S.dest&&S.dest.name)||'GLOBE'), flag:((S.dest&&S.dest.flag)||'✈') };
-    stNewTarget();
-    $('mg').innerHTML='<div class="seqstatus" id="stst"></div>'
+    var m=S.st2.tol+0.05; S.st2.tx=rnd(m,1-m);
+    $('mg').innerHTML='<div class="seqstatus" id="stst">Step 1 — line up the stamp</div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
       + '<div id="stfield" class="passport">'
         + '<div class="gutter"></div>'
         + '<div id="sttarget" class="stampslot"></div>'
         + '<div id="ststamp" class="stamphead">🔻</div>'
       + '</div>'
-      + '<div class="ohint" style="margin-top:10px">Press the stamp down when it\'s over the empty box.</div>';
-    stStatus(); stPaintTarget();
+      // pressure gauge (revealed in step 2): green "just right" band + a sweeping needle
+      + '<div id="stgauge" style="display:none;position:relative;height:26px;margin-top:12px;border-radius:8px;overflow:hidden;background:var(--card2);border:1px solid var(--cardb)">'
+        + '<div style="position:absolute;top:0;bottom:0;left:60%;width:25%;background:rgba(63,206,134,.35);border-left:2px solid var(--ok);border-right:2px solid var(--ok)"></div>'
+        + '<div id="stneedle" style="position:absolute;top:-2px;bottom:-2px;width:4px;background:var(--goldhi);box-shadow:0 0 8px var(--goldhi)"></div>'
+        + '<div style="position:absolute;left:6px;top:5px;font-size:10px;font-weight:800;color:var(--mut)">LIGHT</div>'
+        + '<div style="position:absolute;right:6px;top:5px;font-size:10px;font-weight:800;color:var(--mut)">HARD</div>'
+      + '</div>'
+      + '<div class="ohint" id="sthint" style="margin-top:10px">Tap when the stamp is over the empty box.</div>';
+    stPaintTarget();
     fastTap($('stfield'), stTap);
+    var gg=$('stgauge'); if(gg) fastTap(gg, stTap);
     (function loop(){
-      var stamp=$('ststamp'), field=$('stfield');
-      if(S.play.done || !stamp || !field) return;
-      var el=(performance.now()-S.st2.t0)/1000;
-      S.st2.pos=(Math.sin(el*S.st2.speed*Math.PI*2)+1)/2;
-      stamp.style.left=(S.st2.pos*100)+'%';
+      var r=S.st2, field=$('stfield'); if(S.play.done || r.done2 || !field) return;
+      var el=(performance.now()-r.t0)/1000;
+      if(r.phase==='aim'){ r.pos=(Math.sin(el*r.speed*Math.PI*2)+1)/2; var st=$('ststamp'); if(st) st.style.left=(r.pos*100)+'%'; }
+      else if(r.phase==='press'){ r.press+=r.pdir*r.pspeed*0.016; if(r.press>=1){ r.press=1; r.pdir=-1; } if(r.press<=0){ r.press=0; r.pdir=1; }
+        var n=$('stneedle'); if(n) n.style.left=(r.press*100)+'%'; }
+      field.setAttribute('data-phase',r.phase); field.setAttribute('data-pos',r.pos.toFixed(3)); field.setAttribute('data-tx',r.tx.toFixed(3)); field.setAttribute('data-tol',r.tol.toFixed(3)); field.setAttribute('data-press',r.press.toFixed(3));
       requestAnimationFrame(loop);
     })();
   }
-  function stStatus(){ var e=$('stst'); if(e) e.innerHTML='Stamps <b>'+S.st2.stamps+'</b>/'+S.st2.need; }
-  function stNewTarget(){ var m=S.st2.tol+0.04; S.st2.tx=rnd(m,1-m); }
   function stPaintTarget(){ var tg=$('sttarget'); if(tg){ tg.style.left=((S.st2.tx-S.st2.tol)*100)+'%'; tg.style.width=(S.st2.tol*2*100)+'%'; } }
-  var ST_INKS=['#b3372b','#1f5fa8','#2c7d4c','#6a4a12'];   // passport inks: red, blue, green, sepia
   function stTap(){
-    if(S.play.done) return;
-    var head=$('ststamp'); if(head){ retrig(head,'press'); }   // press-down animation
+    if(S.play.done || S.st2.done2) return;
+    var r=S.st2;
+    if(r.phase==='aim'){
+      r.lockX=r.pos; r.alignErr=Math.abs(r.pos-r.tx); r.phase='press';
+      var st=$('ststamp'); if(st){ st.style.left=(r.lockX*100)+'%'; retrig(st,'press'); }
+      var gg=$('stgauge'); if(gg) gg.style.display='block';
+      var stt=$('stst'); if(stt) stt.innerHTML='Step 2 — press with the right force';
+      var h=$('sthint'); if(h) h.textContent='Tap when the needle is in the green band.';
+      sfx('tap');
+      return;
+    }
+    // press phase — commit the stamp
+    r.done2=true;
+    var head=$('ststamp'); if(head) retrig(head,'press');
+    var aligned = r.alignErr<=r.tol;
+    var pressGood = r.press>=0.6 && r.press<=0.85;
+    var crisp = aligned && pressGood;
     var field=$('stfield');
-    var hit=Math.abs(S.st2.pos-S.st2.tx)<=S.st2.tol;
-    // leave an ink imprint on the page where the stamp came down
     if(field){
-      var ink=hit?ST_INKS[S.st2.stamps%ST_INKS.length]:'rgba(90,70,40,.5)';
-      var sz=hit?64:52, rot=Math.round(rnd(-13,13));
+      var ink=crisp?ST_INKS[Math.floor(rnd(0,ST_INKS.length))]:'rgba(90,70,40,.55)';
+      var sz=crisp?70:(r.press<0.6?46:78), rot=Math.round(rnd(-12,12));
+      var faint = r.press<0.6, smudge = r.press>0.85;
       var im=document.createElement('div'); im.className='imprint';
-      im.style.cssText='left:calc('+(S.st2.pos*100)+'% - '+(sz/2)+'px);top:'+(hit?42:60)+'px;width:'+sz+'px;height:'+sz+'px;'
-        +'color:'+ink+';transform:rotate('+rot+'deg)'+(hit?'':';opacity:.4;filter:blur(.6px)');
-      im.innerHTML='<div class="cty">'+esc(S.st2.city)+'</div><div class="ic">'+(hit?S.st2.flag:'〰')+'</div><div class="br">RUN THE GLOBE</div>';
+      im.style.cssText='left:calc('+(r.lockX*100)+'% - '+(sz/2)+'px);top:'+(crisp?40:52)+'px;width:'+sz+'px;height:'+sz+'px;'
+        +'color:'+ink+';transform:rotate('+rot+'deg)'+(crisp?'':';opacity:'+(faint?0.4:0.7)+(smudge?';filter:blur(1.4px)':(faint?';filter:blur(.5px)':'')));
+      im.innerHTML='<div class="cty">'+esc(r.city)+'</div><div class="ic">'+(aligned?r.flag:'〰')+'</div><div class="br">RUN THE GLOBE</div>';
       field.appendChild(im); popIn(im);
     }
-    if(hit){
-      sfx('correct'); S.st2.stamps++; stStatus(); vibe(14);
-      if(S.st2.stamps>=S.st2.need){ S.play.done=true; setTimeout(finishTask,300); return; }
-      S.st2.tol=Math.max(0.06, S.st2.tol*0.82); S.st2.speed*=1.16; stNewTarget(); stPaintTarget();
-    } else { S.play.misses++; showMiss(); }
+    var stt=$('stst'), h=$('sthint');
+    if(crisp){ sfx('correct'); vibe([12,24,12]); if(stt) stt.innerHTML='🛂 Crisp stamp!'; if(h){ h.textContent='Perfectly aligned and inked.'; h.style.color='var(--ok)'; } }
+    else {
+      var why = !aligned ? 'Off the box — smudged.' : (r.press<0.6 ? 'Too light — a faint half-stamp.' : 'Too hard — over-inked blot.');
+      S.play.misses++; if(!aligned && !pressGood) S.play.misses++;   // both wrong = 2
+      showMiss(); if(stt) stt.innerHTML='Smudged'; if(h){ h.textContent=why; h.style.color='var(--bad)'; }
+    }
+    S.play.done=true; setTimeout(finishTask, 800);
   }
 
   /* ---------- minigame: Find It On The Map (spatial, distance-scored) ---------- */
