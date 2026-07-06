@@ -4895,6 +4895,30 @@ allows Google Fonts, or self-host Anton.*
   standings + per-hole grid). H2H regression + hv6 (geometry/putt) green; zero page errors. All
   client-only, no migration. Deployed to /golf.
 
+- **CS177 — online matches: playoff PLAYS OUT on the tracer, win/lose animation, live-scoreboard-on-holed.**
+  Three online-mode asks:
+  1. **Sudden-death playoff now plays out shot-by-shot on the TOURTRACE tracer** instead of just declaring
+     the winner. `h2hBuildPlay` now also builds `S.h2h.poPlay` — a per-extra-hole shot sequence for the
+     units still alive — from the ALREADY-RESOLVED playoff scores (`h2hResolve`), so the winner and the
+     2-client consensus are unchanged (this is purely the visual reveal). `h2hWatchStep` drives each playoff
+     hole like a regular hole (tee off, then away-plays-first), and `scrH2HWatch` renders it in the one-window
+     tracer with a red "SUDDEN-DEATH · EXTRA HOLE N" chip and a live board of the alive units (score revealed
+     as each holes out, advancer in gold). Skip-to-result skips the playoff too.
+  2. **Win/lose animation when a match finishes.** New `h2hCelebrate()` — a full-screen `YOU WIN!` (gold,
+     confetti cannons + haptic) / `DEFEAT` overlay, fired once on watch-done, dismissing to the result
+     screen. Guarded so a deferred fire after state changed is a no-op (fixed an hv5 page error where the
+     40ms-deferred call read `S.h2h.result` on a reset `S.h2h`).
+  3. **Live scoreboard updates the moment a ball drops, not when the hole advances.** New `h2hHoledUnits(hole,
+     step)` returns which units' balls are already in the cup at the current reveal step; the in-play
+     scoreboard adds the current hole's score for those units, so your total ticks the instant your ball is
+     holed (previously it waited for every ball to finish the hole).
+  Also renamed the CS176 result scorecard `h2hScorecard()` → `h2hResultCard()` to stop shadowing the older
+  `h2hScorecard(sk,seed,holes)` data-builder (harmless but fragile). Verified in Playwright (cs177): a tied
+  1v1 builds a playable playoff hole (2 alive + shot seqs + order), it renders on the tracer with the
+  SUDDEN-DEATH indicator, the finish shows the DEFEAT/WIN animation → dismiss to result, and `h2hHoledUnits`
+  correctly flags a unit as holed mid-hole (before advance). H2H regression + hv5 (multi-ball watch, now
+  error-free) green; zero page errors. Client-only, no migration. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
