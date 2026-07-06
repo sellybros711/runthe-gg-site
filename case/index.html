@@ -73,7 +73,7 @@
   .tab.active{color:var(--amber);border-color:var(--line);border-bottom-color:var(--panel);background:var(--panel);}
   .rankblock{margin-bottom:26px;}
   .rankblock h3{margin:0 0 3px;font-size:22px;}
-  .caselist{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;}
+  .caselist{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;align-items:start;}
   .casetile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px;cursor:pointer;transition:border-color .12s;}
   .casetile:hover{border-color:rgba(217,164,65,.45);}
   .casetile.locked{cursor:default;opacity:.55;}
@@ -94,13 +94,22 @@
   .phasetab.active{color:#1b1204;background:var(--amber);border-color:transparent;}
   .phasetab:disabled{opacity:.35;cursor:not-allowed;}
   .briefingcard{max-width:640px;margin:30px auto;text-align:center;}
-  .hotspotgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+  .hotspotgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;align-items:start;}
   .hotspot{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;}
-  .evtag{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;margin:4px 6px 0 0;cursor:pointer;}
-  .evtag.logged{border-color:rgba(95,157,114,.5);color:var(--green);}
-  .evtag[disabled]{opacity:.4;cursor:not-allowed;}
-  .tier{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);}
-  .boardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:10px;}
+  .hotspot h4{margin:0 0 3px;font-size:15px;}
+  .hotspot > p.faint{margin:0 0 12px;}
+  .tier{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-faint);flex-shrink:0;}
+  .evlist{display:flex;flex-direction:column;gap:7px;}
+  .evrow{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 12px;cursor:pointer;transition:border-color .12s ease,background .12s ease;font-family:inherit;color:inherit;}
+  .evrow:hover:not([disabled]){border-color:rgba(217,164,65,.45);}
+  .evrow.logged{border-color:rgba(95,157,114,.45);background:rgba(95,157,114,.08);}
+  .evrow[disabled]{opacity:.45;cursor:not-allowed;}
+  .evicon{width:19px;height:19px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;line-height:1;color:var(--text-faint);flex-shrink:0;background:var(--panel);}
+  .evrow.logged .evicon{border-color:var(--green);color:var(--green);background:rgba(95,157,114,.18);}
+  .evbody{display:flex;justify-content:space-between;align-items:center;gap:10px;flex:1;min-width:0;}
+  .evname{font-size:13.5px;line-height:1.3;}
+  .evrow.logged .evname{color:var(--green);}
+  .boardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:10px;align-items:start;}
   .boardcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;font-size:13px;}
   .boardcard.suspect{border-color:rgba(92,143,176,.4);}
   .boardcard.selected{border-color:var(--amber-bright);box-shadow:0 0 0 2px rgba(240,192,96,.25) inset;}
@@ -680,13 +689,15 @@
         var ev = c.evidence.find(function (e) { return e.id === eid; });
         var logged = entry.evidence_logged.indexOf(eid) !== -1;
         var disabled = readOnly || gated;
-        return '<button class="evtag ' + (logged ? 'logged' : '') + '" ' + (disabled && !logged ? 'disabled' : '') + ' data-action="log-evidence" data-evidence-id="' + eid + '" title="' + esc(ev.description) + '">' +
-          (logged ? '✓ ' : '') + esc(ev.name) + ' <span class="tier">' + esc(ev.tier) + '</span></button>';
+        return '<button class="evrow ' + (logged ? 'logged' : '') + '" ' + (disabled && !logged ? 'disabled' : '') + ' data-action="log-evidence" data-evidence-id="' + eid + '" title="' + esc(ev.description) + '">' +
+          '<span class="evicon">' + (logged ? '✓' : '') + '</span>' +
+          '<span class="evbody"><span class="evname">' + esc(ev.name) + '</span><span class="tier">' + esc(ev.tier) + '</span></span>' +
+        '</button>';
       }).join('');
       return '<div class="hotspot">' +
-        '<h4 style="margin:0 0 2px;">' + esc(h.name) + '</h4>' +
-        '<p class="faint" style="margin:0 0 8px;">' + esc(h.description || '') + '</p>' +
-        (gated ? '<button class="btn small" ' + (readOnly ? 'disabled' : '') + ' data-action="call-specialist" data-specialist="' + h.requires_specialist + '">Call ' + esc(specialistLabel(h.requires_specialist)) + '</button>' : '<div>' + evList + '</div>') +
+        '<h4>' + esc(h.name) + '</h4>' +
+        '<p class="faint">' + esc(h.description || '') + '</p>' +
+        (gated ? '<button class="btn small" ' + (readOnly ? 'disabled' : '') + ' data-action="call-specialist" data-specialist="' + h.requires_specialist + '">Call ' + esc(specialistLabel(h.requires_specialist)) + '</button>' : '<div class="evlist">' + evList + '</div>') +
       '</div>';
     }).join('') + '</div>';
   }
