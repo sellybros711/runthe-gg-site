@@ -5323,6 +5323,17 @@ allows Google Fonts, or self-host Anton.*
   shirt stays within its boundaries; zero page errors. Mask PNGs + AV_VER/CACHE bump only (recolour code
   unchanged).
 
+- **CS201 — glove now covers the WHOLE hand (was stopping halfway).** Owner (with a real golf-glove
+  reference): our glove only covered the fingers/lower hand, leaving the back of the hand + wrist bare — a
+  real glove covers the entire hand to the wrist. Measured the right-hand skin profile from the masks: the
+  male fist runs y≈680–770 (back-of-hand/wrist down to fingertips) but the glove ellipse was centred at
+  cy=742 (over the fingers), so it missed the top of the hand. Raised + enlarged the glove ellipse
+  (`gloveCy` 742→721, `gloveRy` 46→55, `gloveRx` 36→39) so it now spans wrist→fingertips with the strap
+  sitting at the wrist like a real glove cuff; nudged the female ellipse down/bigger to match her lower fist
+  (cy 740→748, ry 28→34, rx 22→24). Verified by rendering the real avatar over http for both genders — the
+  whole hand is gloved to the wrist, zero page errors. HTML only (recolour code + masks unchanged, no cache
+  bump needed).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
