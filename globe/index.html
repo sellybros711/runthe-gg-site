@@ -237,8 +237,10 @@
   .hud{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;}
   .pips{display:flex;gap:5px;flex:1;min-width:0;flex-wrap:wrap;}
   .pip{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.12);flex:0 0 auto;}
-  .pip.done{background:var(--globe);} .pip.now{background:var(--coral);box-shadow:0 0 0 3px rgba(238,90,68,.25);}
+  .pip.done{background:var(--globe);} .pip.now{background:var(--coral);box-shadow:0 0 0 3px rgba(238,90,68,.25);animation:pipPulse 1.7s ease-in-out infinite;}
   .pip.final{background:var(--amber);}
+  @keyframes pipPulse{0%,100%{box-shadow:0 0 0 3px rgba(238,90,68,.28)}50%{box-shadow:0 0 0 7px rgba(238,90,68,.08)}}
+  @media (prefers-reduced-motion:reduce){.pip.now{animation:none;}}
   .remain{font-size:12px;font-weight:800;color:var(--mut);white-space:nowrap;}
   .remain b{color:var(--ink);}
 
@@ -1482,7 +1484,7 @@
       b.onclick=function(){
         if(S.play.done) return;
         var correct = (+b.getAttribute('data-i'))===t.a;
-        if(correct){ b.classList.add('right'); sfx('correct'); S.play.done=true; setTimeout(finishTask,220); }
+        if(correct){ b.classList.add('right'); popIn(b); vibe(12); sfx('correct'); S.play.done=true; setTimeout(finishTask,220); }
         else{ b.classList.add('wrong'); b.disabled=true; S.play.misses++; showMiss(); }
       };
     });
@@ -1512,7 +1514,7 @@
     Array.prototype.forEach.call(document.querySelectorAll('.opt'), function(b){
       b.onclick=function(){
         if(S.play.done) return;
-        if((+b.getAttribute('data-i'))===t.a){ b.classList.add('right'); sfx('correct'); frRevealAll(); S.play.done=true; setTimeout(finishTask,320); }
+        if((+b.getAttribute('data-i'))===t.a){ b.classList.add('right'); popIn(b); vibe(12); sfx('correct'); frRevealAll(); S.play.done=true; setTimeout(finishTask,320); }
         else{ b.classList.add('wrong'); b.disabled=true; S.play.misses++; showMiss(); frReveal(); }
       };
     });
@@ -3026,11 +3028,22 @@
     app.innerHTML = topbar() + hud()
       + '<div class="card center">'
         + '<div class="stagetype">✅ Checkpoint</div>'
-        + '<div class="bigtime" style="margin-top:6px">'+fmtTime(r.eff)+'<span class="u">s</span></div>'
+        + '<div class="bigtime" id="bigt" style="margin-top:6px">'+fmtTime(r.eff)+'<span class="u">s</span></div>'
         + '<div class="muted" style="font-size:12px;margin-top:4px">your effective time</div>'
         + body
         + '<button class="btn globe" id="lb" style="margin-top:16px">See the leaderboard ›</button>'
       + '</div>' + foot();
+    // count the time up to the locked value — makes the payoff land
+    (function(){
+      var el=$('bigt'); if(!el || reduceMotion() || !(r.eff>0)) return;
+      var t0=performance.now(), DUR=620;
+      (function tick(){
+        var e=$('bigt'); if(!e || S.phase!=='checkpoint') return;
+        var k=Math.min(1,(performance.now()-t0)/DUR), ez=1-Math.pow(1-k,3);
+        e.innerHTML=fmtTime(r.eff*ez)+'<span class="u">s</span>';
+        if(k<1) requestAnimationFrame(tick);
+      })();
+    })();
     $('lb').onclick=function(){
       if(onlineActive()) duoShowLeaderboard(); else { S.phase='leaderboard'; renderStage(); }
     };
