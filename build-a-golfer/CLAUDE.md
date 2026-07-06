@@ -5163,6 +5163,15 @@ allows Google Fonts, or self-host Anton.*
   `paintAvatarFull`. Verified in-app on both genders with blonde hair: brows render dark (l≈0) while the
   hair is blonde (l≈0.48). JS only.
 
+- **CS189 — cache-bust the avatar art so the CS187 mask fix actually reaches devices.** Owner (IMG_7940):
+  the blue belt/waistband was STILL showing. Root cause: not a mask bug (verified in-app — the current mask
+  renders the belt stone/pants-coloured, belt→pants colour-distance 49 vs belt→shirt 66), but the **service
+  worker** serves same-origin static assets **cache-first**, so the device kept the OLD cached mask PNG while
+  the CS188 eyebrow fix (network-first HTML) did land. Fixed: `AV_VER` appended as `?v=` to every avatar image
+  URL in `avLoad` (bump it on any base/mask/accessory art change → the new URL isn't in the SW cache → fetched
+  fresh) + bumped the SW `CACHE` `runtour-v1`→`v2` to flush the stale entries on next load. Verified the avatar
+  still renders with the versioned URLs. Deploy: index.html + `golf/sw.js`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
