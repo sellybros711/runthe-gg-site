@@ -7529,6 +7529,21 @@ function hvGeom(seedN, par, yds, courseKey, holeIdx){
 function hvProj(g,x,y){ const f=Math.max(0,Math.min(1,y/g.span));
   return [HV_W/2 + x*g.sx*g.t(y), HV_H-34 - f*(HV_H-78)]; }
 // walk the structured shots into course-space rest/landing points + flight curve shapes
+// a ball whose lie is NOT water must never be DRAWN sitting in a pond/creek (the hazard geometry and the
+// ball's rest position are computed independently, so they can overlap). Push it just onto land — radially
+// out of the pond ellipse, or short of the crossing creek. (owner/Jordo: "it told me I wasn't in the
+// water… im blue lol" — the blue ball marker was drawn in the water on a dry lie.)
+function hvOutOfWater(g, pt){
+  let x=pt[0], y=pt[1];
+  if(g.water){ const w=g.water, rx=(w.rx||16)+2.5, ry=(w.ry||12)+2.5;
+    const dx=(x-w.x)/rx, dy=(y-w.y)/ry, d2=dx*dx+dy*dy;
+    if(d2<1){ const d=Math.sqrt(d2);
+      if(d<0.15){ x=w.x; y=w.y+ry*1.08; }               // at the pond center → drop it just short of the water
+      else { const k=1.06/d; x=w.x+(x-w.x)*k; y=w.y+(y-w.y)*k; } } }
+  if(g.creek){ const cy=g.creek.y, band=8;
+    if(Math.abs(y-cy)<band) y=(y>=cy?cy+band:cy-band); }   // nudge to the near side of the crossing creek
+  return [x,y];
+}
 function hvPlots(g, shots, seedN){
   const L=g.L, gx=(g.gcx!=null?g.gcx:g.cx(L)), pin=g.pin, out=[]; let cur=[0,0];
   const hh=(i,s)=>hvHash(seedN,i*13+s,2), jj=(i,a)=>hh(i,a)-0.5;
@@ -7581,6 +7596,9 @@ function hvPlots(g, shots, seedN){
       let d=Math.max(Math.min(2.4/g.vy, distNow*0.8), (s.toFt||2)/3);
       if(!past) d=Math.min(d, distNow*0.8);
       rest=[pin[0]+(past?u[0]*0.8:-u[0])*d, pin[1]+(past?u[1]*0.8:-u[1])*d]; p.onGreen=true; }
+    // dry lie (not water/drop) that overlaps a pond/creek → push the resting ball onto land so it's never
+    // drawn in the water when the shot didn't find it. (Green shots are handled by the carry safety below.)
+    if(rest && !p.onGreen && s.lie!=='water' && s.lie!=='drop' && (g.water||g.creek)) rest=hvOutOfWater(g,rest);
     p.rest=rest;
     p.dist=hvDistYds(rest,p.from);
     // landing = a bit short of rest (the ball bounces + rolls out); putts/drops roll only
@@ -7601,6 +7619,7 @@ function hvPlots(g, shots, seedN){
       if(u[1]>0.001){ const maxRoll=(rest[1]-frontY)/u[1]; if(maxRoll<roll) roll=Math.max(0,maxRoll); }   // clamp so the landing sits on the green
     }
     p.land=[rest[0]-u[0]*roll, rest[1]-u[1]*roll];
+    if(!p.onGreen && s.lie!=='water' && s.lie!=='drop' && (g.water||g.creek)) p.land=hvOutOfWater(g,p.land);   // touchdown can't be on water either
     // final safety: if a green-ending shot's landing still dips into a fronting water body while the
     // rest is on dry green, walk it forward toward the rest until it clears the water — the ball must
     // carry the hazard fully and land on the surface, it can never touch down on the water.
@@ -10953,6 +10972,38 @@ function scrH2HWatch(){
     const go=$(`<button class="btn goldfill" style="max-width:300px;margin:0 auto">See result ▸</button>`); go.onclick=()=>{ S.screen='h2hresult'; render(); }; add(go);
   }
 }
+// hole-by-hole scorecard for the finished match (owner/Jordo: "See Result should show the scorecards").
+// Rows = each unit (player / team ball); columns = holes; cell = strokes, colored by score-to-par.
+function h2hScorecard(){
+  const units=S.h2h.units, holes=S.h2h.holes, course=S.h2h.course;
+  if(!units||!course||!units[0]||!units[0].scores) return null;
+  const cw=23, nameW=104, totW=36, bg='rgba(9,26,18,.98)';
+  const wrap=$(`<div style="max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px"></div>`);
+  const tbl=$(`<div style="display:inline-block;min-width:100%"></div>`);
+  const nameCell=(html,extra)=>`<div style="width:${nameW}px;flex:0 0 auto;padding:6px 8px;position:sticky;left:0;z-index:1;background:${bg};${extra||''}">${html}</div>`;
+  const mk=cells=>{ const r=$(`<div style="display:flex;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.05)"></div>`); cells.forEach(c=>r.appendChild($(c))); return r; };
+  // header: HOLE | 1..N | TOT
+  const hdr=[nameCell(`<span style="font:800 10px/1 var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Hole</span>`)];
+  for(let i=0;i<holes;i++) hdr.push(`<div style="width:${cw}px;flex:0 0 auto;text-align:center;padding:6px 0;font:700 11px/1 var(--mono);color:var(--muted)">${i+1}</div>`);
+  hdr.push(`<div style="width:${totW}px;flex:0 0 auto;text-align:center;padding:6px 0;font:800 10px/1 var(--body);color:var(--gold)">TOT</div>`);
+  tbl.appendChild(mk(hdr));
+  // par row
+  let parTot=0; const par=[nameCell(`<span style="font:700 10px/1 var(--body);color:var(--muted)">Par</span>`)];
+  for(let i=0;i<holes;i++){ const p=course.holes[i][0]; parTot+=p; par.push(`<div style="width:${cw}px;flex:0 0 auto;text-align:center;padding:5px 0;font:600 11px/1 var(--mono);color:var(--muted)">${p}</div>`); }
+  par.push(`<div style="width:${totW}px;flex:0 0 auto;text-align:center;padding:5px 0;font:700 11px/1 var(--mono);color:var(--muted)">${parTot}</div>`);
+  tbl.appendChild(mk(par));
+  // one row per unit
+  units.forEach((u,ui)=>{ const col=(S.h2h.unitCols&&S.h2h.unitCols[ui])||'#fff', mine=u.members.some(p=>p.user_id===h2hUid());
+    const nm=u.kind==='team'?`Team ${(u.id|0)+1}`:esc(u.label);
+    const cells=[nameCell(`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:6px;vertical-align:1px"></span><span style="font:800 11px/1.1 var(--body);color:${mine?'var(--gold)':'var(--oncard)'}">${nm}</span>`, mine?'box-shadow:inset 2px 0 0 var(--gold)':'')];
+    for(let i=0;i<holes;i++){ const tp=u.scores[i], s=course.holes[i][0]+tp;
+      cells.push(`<div style="width:${cw}px;flex:0 0 auto;text-align:center;padding:6px 0;font:700 12px/1 var(--mono);color:${dScoreCol(tp)}">${s}</div>`); }
+    cells.push(`<div style="width:${totW}px;flex:0 0 auto;text-align:center;padding:6px 0;font:800 12px/1 var(--mono);color:${h2hTpColor(u.total)}">${h2hTpTxt(u.total)}</div>`);
+    tbl.appendChild(mk(cells));
+  });
+  wrap.appendChild(tbl);
+  return wrap;
+}
 function scrH2HResult(){
   const m=h2hMode(S.h2h.mode), course=S.h2h.course;
   const voided=S.h2h.void||(S.h2h.result&&S.h2h.result.void);
@@ -10972,6 +11023,9 @@ function scrH2HResult(){
       });
       add(board);
       if(S.h2h.playoff&&S.h2h.playoff.length) add($(`<p class="small muted center" style="margin-top:8px">Decided in a ${S.h2h.playoff.length}-hole sudden-death playoff.</p>`));
+      // hole-by-hole scorecard (owner: "See Result should show the scorecards", not just repeat the standings)
+      const sc=h2hScorecard();
+      if(sc){ add($(`<h2 class="center" style="margin:20px 0 8px;font-size:15px">Scorecard</h2>`)); add(sc); }
     }
   }
   const stack=$(`<div class="stack" style="max-width:360px;margin:22px auto 0"></div>`);
@@ -10997,22 +11051,33 @@ function scrH2HBoard(){
 }
 async function h2hLoadBoard(mode){
   if(!_h2hBoardCache[mode]){
-    try{ const {data,error}=await sb.rpc('h2h_board',{p_mode:mode,p_limit:100}); if(error) throw error; _h2hBoardCache[mode]=data||[]; }
+    // fetch deep (server clamps to 500) so we can locate YOU even when you're ranked below the bot pool
+    try{ const {data,error}=await sb.rpc('h2h_board',{p_mode:mode,p_limit:500}); if(error) throw error; _h2hBoardCache[mode]=data||[]; }
     catch(e){ _h2hBoardCache[mode]=[]; }
   }
   if(_h2hBoardMode!==mode) return;   // user switched tabs while loading
   const wrap=document.getElementById('h2hboardwrap'); if(!wrap) return;
   const rows=_h2hBoardCache[mode]; wrap.innerHTML='';
   if(!rows.length){ wrap.appendChild($(`<div class="center muted" style="padding:24px">No ${esc(h2hMode(mode).label)} games played yet. Be the first!</div>`)); return; }
-  wrap.appendChild($(`<div class="lb lbhead" style="grid-template-columns:26px 1fr 84px 60px"><span></span><span>Player</span><span style="text-align:right">W-L</span><span style="text-align:right">Win%</span></div>`));
-  rows.forEach((r,i)=>{ const mine=r.user_id===h2hUid();
-    const pct=r.win_pct!=null?Math.round(r.win_pct*100)+'%':'—';
-    wrap.appendChild($(`<div class="lb${mine?' lbme':''}" style="grid-template-columns:26px 1fr 84px 60px">
-      <span class="mono" style="opacity:.7">${i+1}</span>
-      <span class="pl" style="font-weight:${mine?800:600}">${esc(r.username)}${mine?' <span class="small" style="color:var(--gold)">· you</span>':''}${r.streak>=3?` <span class="small" style="color:#e88">🔥${r.streak}</span>`:''}</span>
+  const rowHTML=(r,rank,mine)=>{ const pct=r.win_pct!=null?Math.round(r.win_pct*100)+'%':'—';
+    return `<div class="lb${mine?' lbme':''}" style="grid-template-columns:30px 1fr 84px 60px${mine?';border:1px solid var(--gold);border-radius:10px':''}">
+      <span class="mono" style="${mine?'color:var(--gold);font-weight:800':'opacity:.7'}">${rank}</span>
+      <span class="pl" style="font-weight:${mine?800:600}">${mine?'You · ':''}${esc(r.username)}${r.streak>=3?` <span class="small" style="color:#e88">🔥${r.streak}</span>`:''}</span>
       <span class="mny mono" style="text-align:right">${r.wins}-${r.losses}</span>
-      <span class="mny mono" style="text-align:right">${pct}</span></div>`));
-  });
+      <span class="mny mono" style="text-align:right">${pct}</span></div>`; };
+  // PIN your record + rank at the very top (owner/Jordo: "always see ur record and place at the top")
+  const meIdx=rows.findIndex(r=>r.user_id&&r.user_id===h2hUid());
+  if(sbSignedIn()){
+    if(meIdx>=0){ wrap.appendChild($(`<div style="margin-bottom:10px">${rowHTML(rows[meIdx], meIdx+1, true)}</div>`)); }
+    else { wrap.appendChild($(`<div class="scout small muted" style="text-align:center;margin-bottom:10px">Play a ${esc(h2hMode(mode).label)} match to claim your spot on the board.</div>`)); }
+  }
+  wrap.appendChild($(`<div class="lb lbhead" style="grid-template-columns:30px 1fr 84px 60px"><span></span><span>Player</span><span style="text-align:right">W-L</span><span style="text-align:right">Win%</span></div>`));
+  const TOP=50;
+  rows.slice(0,TOP).forEach((r,i)=>{ wrap.appendChild($(rowHTML(r, i+1, r.user_id&&r.user_id===h2hUid()))); });
+  if(meIdx>=TOP){   // you're outside the visible top → show your row in context below a divider
+    wrap.appendChild($(`<div class="sep" style="margin:4px 0"></div>`));
+    wrap.appendChild($(rowHTML(rows[meIdx], meIdx+1, true)));
+  }
 }
 
 // The Supabase CDN script is now `defer`ed, so window.supabase may not exist yet at this point in the
