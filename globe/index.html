@@ -445,6 +445,7 @@
 <script src="/globe/data/countries.js"></script>
 <script src="/globe/data/finish_lines.js"></script>
 <script src="/globe/data/world.js"></script>
+<script src="/globe/data/trivia.js"></script>
 
 <script>
 "use strict";
@@ -458,6 +459,19 @@
 
   var COUNTRIES = window.GLOBE_COUNTRIES || [];
   var FINISH = window.GLOBE_FINISH_LINES || [];
+
+  // Merge the supplementary trivia bank (data/trivia.js) into each country's
+  // authored trivia. Varied categories; answers are never the country's own name.
+  (function mergeTrivia(){
+    var T = window.GLOBE_TRIVIA; if(!T) return;
+    COUNTRIES.forEach(function(c){
+      var extra = T[c.id]; if(!extra || !extra.length) return;
+      c.tasks = c.tasks || {};
+      c.tasks.trivia = (c.tasks.trivia || []).concat(extra.map(function(t){
+        return { cat:'trivia', type:'brain', q:t.q, options:t.options, a:t.a };
+      }));
+    });
+  })();
 
   /* ---- IP-safe terminology (GDD §2) is used throughout the UI strings ----
      Checkpoint / Split Path / Solo Call / Skip Pass / Grounded / Stage ---- */
