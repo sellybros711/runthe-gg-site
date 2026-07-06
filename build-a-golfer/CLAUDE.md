@@ -5200,6 +5200,39 @@ allows Google Fonts, or self-host Anton.*
   auto-fits above — the face stays fully visible regardless of the hat art's height (cap/visor/bucket/champ).
   Verified in-app both genders: cap on top of the head, brim at the brow, face clear. HTML only.
 
+- **CS192 — full cosmetics economy: every colour/pattern/accessory is a shop purchase (a real grind).**
+  Owner: put each shirt colour, shirt pattern, hat colour, trouser colour, shoe colour, and accessory in the
+  shop; default everyone to a **white shirt + no hat**; purchases appear in the player's customization; make
+  it a genuine grind (not "buy everything after one career").
+  • **Unified cosmetic ownership** on the existing coin economy: purchases live in the cloud-synced
+    `coinState.owned` map under namespaced keys (`sh:`/`sp:`/`ht:`/`pt:`/`so:` for shirt/pattern/hat/trousers/
+    shoes; accessories keep their ids). `FREE_COSMETICS` = the starting kit (white shirt, solid pattern, white
+    trousers→stone, white shoes, white hat). Helpers `cosOwned/cosBuy/cosmeticPrice/cosmeticItems/cosEquip`.
+    Because it rides the same `owned` map, cross-device sync + the CS186 0-coin reset apply automatically.
+  • **Defaults** (`DEFLOOK`): `polo:'white'`, `cap:false`, `pants:'stone'`, `shoes:'white'` — a fresh golfer
+    is a plain white shirt, no hat, and everything else is locked until bought.
+  • **Grind prices**: shirt colour 4k (special/lore colours 12k), pattern 10k, hat 4k, trousers 4k, shoes 4k;
+    accessories keep their CS186 prices (2.5k–102k). Full catalogue ≈ **1.3M coins**; a strong career earns
+    ~20–35k, so buying everything is ~40 careers — a real grind (all tunable via `cosmeticPrice`/`accPrice`).
+    Cosmetic colours are no longer achievement-gated — they're purchased.
+  • **Customization gating** (setup): `cosColorRow`/`cosPatRow` show OWNED colours/patterns as selectable and
+    LOCKED ones dimmed with 🔒 + price; tapping a locked one opens the Pro Shop to that category. Added
+    **Trousers** and **Shoes** colour rows (new `SHOES` palette; trousers expanded to 8). Skin/hair stay free
+    (appearance, not purchasable).
+  • **Shoe colour** now recolours the full-body avatar's shoe mask region (white shoes keep the base art;
+    any other colour tints via the same machinery). `avLook` carries `shoesHex`.
+  • **Shop** (`overlayShop`): new category chips (Shirt colour / Shirt pattern / Hat colour / Trousers /
+    Shoe colour) alongside the accessory slots; `cosCard` renders a swatch + name + price with Buy/Equip/
+    Remove; the dressing-room avatar updates live as you buy/equip. Buying auto-equips.
+  • **Migration**: `grandfatherLook()` (on sign-in) marks a returning player's currently-worn shirt/pattern/
+    hat/trousers/shoes as owned, so the shop launch never strips their existing look.
+  Verified in Playwright: defaults (white/no-hat), setup pickers show only white owned + the rest 🔒, buying
+  navy shirt/argyle/navy trousers/red shoes/gold hat deducts 26k + equips (hat turns the cap on), can't
+  rebuild an owned item, broke can't buy, the shop renders all categories with the live dressed avatar;
+  economy/guest/cap regressions green, zero errors. Deployed (HTML only). NOTE: profile "wardrobe" display is
+  covered by the account-scoped ownership + customization; a dedicated Trophy-Room wardrobe grid could be
+  added later if wanted.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

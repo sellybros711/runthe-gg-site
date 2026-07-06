@@ -3152,7 +3152,19 @@ const PANTS=[
   {id:'grey', a:'#9aa0a8', b:'#878d95'},
   {id:'white',a:'#ededdf', b:'#deded1'},
   {id:'black',a:'#262a31', b:'#1d2026'},
+  {id:'khaki',a:'#b39a68', b:'#9c854f'},
+  {id:'red',  a:'#b3413a', b:'#8f322d'},
+  {id:'green',a:'#3f6b45', b:'#315538'},
 ];
+const SHOES=[
+  {id:'white',a:'#eef0ee'},
+  {id:'black',a:'#282b31'},
+  {id:'navy', a:'#2c3750'},
+  {id:'grey', a:'#9aa0a8'},
+  {id:'red',  a:'#c23b34'},
+  {id:'tan',  a:'#c6b189'},
+];
+function shoeCol(id){ return (SHOES.find(x=>x.id===id)||SHOES[0]).a; }
 // hair shades, dark → light, each tuned to read distinctly on the painted sideburns/fringe
 const HAIRS=[
   {id:'black',     m:'#1c150f', s:'#100b07'},
@@ -3163,7 +3175,7 @@ const HAIRS=[
   {id:'platinum',  m:'#e4ca9b', s:'#c7ab78'},
   {id:'grey',      m:'#b3ada4', s:'#928c83'},
 ];
-const DEFLOOK={skin:'tan',polo:'teal',pants:'stone',hair:'brown',cap:true,lefty:false,gender:'male',country:'United States',caddie:''};
+const DEFLOOK={skin:'tan',polo:'white',pants:'stone',shoes:'white',hair:'brown',cap:false,lefty:false,gender:'male',country:'United States',caddie:''};
 // ---------- Legendary Caddies ----------
 // Pick a real, storied caddie to loop for your golfer; each grants a small, on-theme edge. They unlock
 // as you climb the Tour Rep ladder (the humble local loopers first, the legendary bagmen at the top),
@@ -3395,6 +3407,45 @@ function accBoost(){ if(!SHOP_ENABLED) return {};   // shelved: equipped gear gi
   return out;
 }
 function accBoostTotal(){ const b=accBoost(); return Object.values(b).reduce((a,x)=>a+x,0); }
+// ---- cosmetics (colours + patterns) are PURCHASED too (same coin economy, namespaced owned keys) ----
+// keys: sh:<shirt>  sp:<pattern>  ht:<hat colour>  pt:<pants>  so:<shoes>. Free defaults below.
+const FREE_COSMETICS={'sh:white':1,'sp:none':1,'hp:none':1,'ht:white':1,'pt:stone':1,'so:white':1};
+const COS_CATS=[ {k:'shirt',pk:'sh',lookKey:'polo',name:'Shirt colour'}, {k:'pat',pk:'sp',lookKey:'shirtPat',name:'Shirt pattern'},
+  {k:'hat',pk:'ht',lookKey:'hat',name:'Hat colour'}, {k:'pants',pk:'pt',lookKey:'pants',name:'Trousers'}, {k:'shoes',pk:'so',lookKey:'shoes',name:'Shoe colour'} ];
+function cosPk(cat){ const c=COS_CATS.find(x=>x.k===cat); return c?c.pk:cat; }
+function cosKey(cat,id){ return cosPk(cat)+':'+id; }
+function cosmeticPrice(cat,id){
+  if(cat==='shirt') return COSMETIC_SHIRTS.some(s=>s.id===id)?12000:4000;   // basic 4k, special/lore colours 12k
+  if(cat==='pat')   return id==='none'?0:10000;
+  if(cat==='hat')   return 4000;
+  if(cat==='pants') return 4000;
+  if(cat==='shoes') return 4000;
+  return 0;
+}
+function cosOwned(cat,id){ const k=cosKey(cat,id); return !!FREE_COSMETICS[k] || !!coinState().owned[k]; }
+function cosBuy(cat,id){
+  if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy'};
+  if(cosOwned(cat,id)) return {ok:false,msg:'Already owned'};
+  const price=cosmeticPrice(cat,id), s=coinState();
+  if(coinBalance()<price) return {ok:false,msg:'Not enough coins'};
+  s.spent+=price; s.owned[cosKey(cat,id)]=1; coinSave(s);
+  track('shop_buy_cos',{cat,id,price}); return {ok:true};
+}
+// the selectable items in a cosmetic category (id, display name, swatch colour / pattern id)
+function cosmeticItems(cat){
+  if(cat==='shirt'||cat==='hat') return allShirts().map(o=>({id:o.id,name:o.name||cosTitle(o.id),col:o.m}));
+  if(cat==='pat')   return PATTERNS.map(p=>({id:p.id,name:p.name,pat:p.id}));
+  if(cat==='pants') return PANTS.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
+  if(cat==='shoes') return SHOES.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
+  return [];
+}
+function cosTitle(id){ return String(id).charAt(0).toUpperCase()+String(id).slice(1); }
+// grandfather a returning player's currently-worn look so the shop launch doesn't strip it (once, on sign-in)
+function grandfatherLook(){ if(!sbSignedIn()||!S.look) return; const s=coinState(); let ch=false;
+  const own=(cat,id)=>{ if(id==null) return; const k=cosKey(cat,id); if(!FREE_COSMETICS[k]&&!s.owned[k]){ s.owned[k]=1; ch=true; } };
+  own('shirt',S.look.polo); own('pat',S.look.shirtPat); own('hat',S.look.hat); own('pants',S.look.pants); own('shoes',S.look.shoes);
+  if(ch) coinSave(s);
+}
 function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
   CATS.forEach(c=>p[c.k]=S.slots[c.k]?S.slots[c.k].value:REPLACEMENT);
   // equipped accessory boosts (solo only — buildPlayer feeds Career + Daily; H2H uses its own draft)
@@ -4451,11 +4502,13 @@ function scrSetup(){
     right.appendChild(setupHeader('Caddie'));
     right.appendChild(caddieRow());
     right.appendChild(setupHeader('Kit'));
-    right.appendChild(colorRow('Shirt','polo',S.look.polo));
-    right.appendChild(patternRow('Shirt pattern','shirtPat',S.look.shirtPat||'none'));
+    right.appendChild(cosColorRow('Shirt','shirt'));
+    right.appendChild(cosPatRow('Shirt pattern','shirtPat'));
+    right.appendChild(cosColorRow('Trousers','pants'));
+    right.appendChild(cosColorRow('Shoes','shoes'));
     right.appendChild(capToggleRow());
-    right.appendChild(colorRow('Hat','hat',S.look.hat||S.look.polo));
-    right.appendChild(patternRow('Hat pattern','hatPat',S.look.hatPat||'none'));
+    right.appendChild(cosColorRow('Hat','hat'));
+    right.appendChild(cosPatRow('Hat pattern','hatPat'));
   }
 
   const go=$(`<button class="btn goldfill" style="margin-top:16px">Build Your Golfer ▸<span class="sub">${S.daily?'Draft a golfer for today\'s course':'Spin the wheel to draft your golfer'}</span></button>`);
@@ -4521,9 +4574,9 @@ function avLook(L){L=L||DEFLOOK;
   const sk=SKINS.find(x=>x.id===L.skin)||SKINS[1], hr=HAIRS.find(x=>x.id===L.hair)||HAIRS[1], po=findShirt(L.polo);
   const ht=findShirt(L.hat||L.polo);   // hat colour (own choice; falls back to shirt colour for old saves)
   const g=(L.gender==='female')?'female':'male';
-  const sp=L.shirtPat||'none', hp=L.hatPat||'none';
-  return{ gender:g, skinHex:sk.m, hairHex:hr.m, shirtHex:po.m, hatHex:ht.m, shirtPat:sp, hatPat:hp,
-    key:g+'_'+sk.id+'_'+hr.id+'_'+po.id+'_'+(L.hat||po.id)+'_'+sp+'_'+hp };
+  const sp=L.shirtPat||'none', hp=L.hatPat||'none', so=L.shoes||'white';
+  return{ gender:g, skinHex:sk.m, hairHex:hr.m, shirtHex:po.m, hatHex:ht.m, shoesHex:shoeCol(so), shirtPat:sp, hatPat:hp,
+    key:g+'_'+sk.id+'_'+hr.id+'_'+po.id+'_'+(L.hat||po.id)+'_'+sp+'_'+hp+'_'+so };
 }
 function avBlit(canvas,off){const cx=canvas.getContext('2d');cx.clearRect(0,0,canvas.width,canvas.height);cx.drawImage(off,0,0,canvas.width,canvas.height);}
 function avVectorFallback(canvas){const w=canvas.closest('.avatarfig');if(w)w.innerHTML=golferSVG();}
@@ -4703,11 +4756,14 @@ function paintAvatarFull(canvas, look){
       const _hr=avHexRgb(o.hairHex), hairTl=avRgbHsl(_hr.r,_hr.g,_hr.b).l;
       const skinLp=Math.min(0.92,0.44+(1-skinTl)*0.58), hairLp=Math.min(0.88,0.42+hairTl*0.55);
       const shirtLp=avKitLp(o.shirtHex), pantsLp=avKitLp(pantsHex);
-      if(m) for(let i=0;i<d.length;i+=4){ const reg=avMaskRegionFull(m[i],m[i+1],m[i+2]); if(!reg||reg==='shoes') continue;
+      const whiteShoes=(o.shoesHex||'#eef0ee').toLowerCase()==='#eef0ee', shoesLp=avKitLp(o.shoesHex);
+      if(m) for(let i=0;i<d.length;i+=4){ const reg=avMaskRegionFull(m[i],m[i+1],m[i+2]); if(!reg) continue;
+        if(reg==='shoes' && whiteShoes) continue;   // default white shoes keep the base art
         let tg,st,sb,lp;
         if(reg==='skin'){ tg=o.skinHex; st=0.95; sb=0.92; lp=skinLp; }
         else if(reg==='hair'){ tg=o.hairHex; st=1.0; sb=1.05; lp=hairLp; }   // brows/eyes are carved out of the mask (kept as base), so hair recolours cleanly incl. temples
         else if(reg==='shirt'){ tg=o.shirtHex; st=0.96; sb=1.05; lp=shirtLp; }
+        else if(reg==='shoes'){ tg=o.shoesHex; st=0.95; sb=1.0; lp=shoesLp; }
         else { tg=pantsHex; st=0.95; sb=1.0; lp=pantsLp; }
         const t=avTint(d[i],d[i+1],d[i+2],tg,st,sb,lp); d[i]=t.r; d[i+1]=t.g; d[i+2]=t.b; }
       tctx.putImageData(id,0,0); ctx.drawImage(tmp,xoff,0);
@@ -4845,31 +4901,33 @@ function capToggleRow(){
   row.appendChild(mk('Cap on',true)); row.appendChild(mk('No cap',false));
   wrap.appendChild(row); return wrap;
 }
-function colorRow(label,key,cur){
-  const m=badgeMetrics();
+// colour picker gated by OWNERSHIP (buy in the Pro Shop). cat: shirt|hat|pants|shoes.
+function cosColorRow(label,cat){
+  const c=COS_CATS.find(x=>x.k===cat), lookKey=c.lookKey;
+  const dflt=(cat==='shirt'?'white':cat==='pants'?'stone':'white');
+  const cur=(cat==='hat')?(S.look.hat||S.look.polo):(S.look[lookKey]||dflt);
   const row=$(`<div style="margin:9px 0"></div>`);
-  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${label}</div>`));
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${esc(label)}</div>`));
   const wrap=$(`<div style="display:flex;gap:9px;flex-wrap:wrap"></div>`);
-  POLOS.forEach(o=>{ const sel=cur===o.id;
-    const sw=$(`<button aria-label="${label} ${o.id}" style="width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.m};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}"></button>`);
-    sw.onclick=()=>{S.look[key]=o.id; saveLook(); render();}; wrap.appendChild(sw); });
-  COSMETIC_SHIRTS.forEach(o=>{ const sel=cur===o.id; const open=!!o.req(m);
-    const sw=$(`<button aria-label="${label} ${o.name}${open?'':' (locked)'}" title="${esc(o.name)}${open?'':' · '+esc(o.reqText)}" style="position:relative;width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.m};cursor:pointer;padding:0;opacity:${open?'1':'0.4'};box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}">${open?'':'<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px">🔒</span>'}</button>`);
-    sw.onclick=()=>{ if(!o.req(m)){ toast('🔒 '+o.name+' · '+o.reqText); return; } S.look[key]=o.id; saveLook(); render(); };
+  cosmeticItems(cat).forEach(o=>{ const sel=cur===o.id, owned=cosOwned(cat,o.id), price=cosmeticPrice(cat,o.id);
+    const sw=$(`<button aria-label="${esc(label)} ${esc(o.name)}${owned?'':' (locked)'}" title="${esc(o.name)}${owned?'':' · '+coinFmt(price)+' coins'}" style="position:relative;width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.col};cursor:pointer;padding:0;opacity:${owned?'1':'0.4'};box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}">${owned?'':'<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px">🔒</span>'}</button>`);
+    sw.onclick=()=>{ if(!owned){ openShopTo(cat); return; } S.look[lookKey]=o.id; saveLook(); render(); };
     wrap.appendChild(sw); });
   row.appendChild(wrap);
-  if(COSMETIC_SHIRTS.some(o=>!o.req(m))) row.appendChild($(`<div class="small muted" style="margin-top:5px;font-size:10.5px">🔒 Tap a locked colour to see how to unlock it.</div>`));
+  if(cosmeticItems(cat).some(o=>!cosOwned(cat,o.id))) row.appendChild($(`<div class="small muted" style="margin-top:5px;font-size:10.5px">🔒 Locked colours are in the Pro Shop.</div>`));
   return row;
 }
+function openShopTo(cat){ if(!sbSignedIn()){ toast('Sign in to shop'); return; } S.overlay='shop'; S.shopSlot='cos:'+cat; render(); }
 // pattern picker (shirt or hat), labelled chips, locked ones show 🔒 + toast the requirement.
-function patternRow(label,key,cur){
-  const m=badgeMetrics();
+// pattern picker gated by OWNERSHIP (buy in the Pro Shop). lookKey: shirtPat|hatPat (patterns are owned once).
+function cosPatRow(label,lookKey){
+  const cur=S.look[lookKey]||'none';
   const row=$(`<div style="margin:9px 0"></div>`);
-  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${label}</div>`));
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${esc(label)}</div>`));
   const wrap=$(`<div style="display:flex;gap:6px;flex-wrap:wrap"></div>`);
-  PATTERNS.forEach(p=>{ const sel=cur===p.id, open=(p.id==='none')||!!p.req(m);
-    const chip=$(`<button title="${esc(p.name)}${open?'':' · '+esc(p.reqText)}" style="font:700 11px var(--body);padding:6px 10px;border-radius:999px;cursor:pointer;background:${sel?'rgba(235,166,31,.14)':'transparent'};border:1px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};color:${sel?'var(--gold)':(open?'var(--oncard)':'var(--muted)')};opacity:${open?1:0.65}">${open?'':'🔒 '}${esc(p.name)}</button>`);
-    chip.onclick=()=>{ if(!open){ toast('🔒 '+p.name+' · '+p.reqText); return; } S.look[key]=p.id; saveLook(); render(); };
+  PATTERNS.forEach(p=>{ const sel=cur===p.id, owned=cosOwned('pat',p.id), price=cosmeticPrice('pat',p.id);
+    const chip=$(`<button title="${esc(p.name)}${owned?'':' · '+coinFmt(price)+' coins'}" style="font:700 11px var(--body);padding:6px 10px;border-radius:999px;cursor:pointer;background:${sel?'rgba(235,166,31,.14)':'transparent'};border:1px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};color:${sel?'var(--gold)':(owned?'var(--oncard)':'var(--muted)')};opacity:${owned?1:0.6}">${owned?'':'🔒 '}${esc(p.name)}</button>`);
+    chip.onclick=()=>{ if(!owned){ openShopTo('pat'); return; } S.look[lookKey]=p.id; saveLook(); render(); };
     wrap.appendChild(chip); });
   row.appendChild(wrap); return row;
 }
@@ -9974,6 +10032,25 @@ function shopCard(it){ const r=ACC_RARITY[it.rarity]||ACC_RARITY.common, owned=a
     <div class="small muted" style="font-size:10px;flex:1 1 auto">${esc(it.desc||'')}</div>
     ${action}</div>`;
 }
+// equip a purchased cosmetic (set the look key; a hat colour also turns the cap on)
+function cosEquip(cat,id){ if(!S.look) return; const c=COS_CATS.find(x=>x.k===cat); if(!c) return; S.look[c.lookKey]=id; if(cat==='hat') S.look.cap=true; saveLook(); }
+// a shop card for a cosmetic (shirt/hat/pants/shoes colour or a pattern)
+function cosCard(cat,o){
+  const c=COS_CATS.find(x=>x.k===cat), owned=cosOwned(cat,o.id), price=cosmeticPrice(cat,o.id);
+  const equipped=(cat==='hat')?((S.look.hat||S.look.polo)===o.id):(cat==='pat'?(S.look.shirtPat===o.id):(S.look[c.lookKey]===o.id));
+  const swatch=o.pat?`<span style="width:30px;height:30px;border-radius:7px;border:1px solid rgba(255,255,255,.22);background:repeating-linear-gradient(45deg,#46564a,#46564a 3px,#6b7d6f 3px,#6b7d6f 6px);flex:0 0 auto"></span>`
+    :`<span style="width:30px;height:30px;border-radius:50%;background:${o.col};display:inline-block;border:1px solid rgba(255,255,255,.22);flex:0 0 auto"></span>`;
+  let action;
+  if(equipped && cat==='pat' && o.id!=='none') action=`<button class="btn ghost" data-crem="${cat}" style="width:100%;padding:8px;font-size:12px">Equipped ✓ · Remove</button>`;
+  else if(equipped) action=`<button class="btn ghost" disabled style="width:100%;padding:8px;font-size:12px;opacity:.75">Equipped ✓</button>`;
+  else if(owned) action=`<button class="btn gold" data-ceq="${cat}:${o.id}" style="width:100%;padding:8px;font-size:12px">Equip</button>`;
+  else { const afford=coinBalance()>=price;
+    action=`<button class="btn ${afford?'goldfill':'ghost'}" data-cbuy="${cat}:${o.id}"${afford?'':' disabled'} style="width:100%;padding:8px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:5px"><span style="width:15px;height:15px">${ic('coin',{size:'15px'})}</span>${coinFmt(price)}</button>`; }
+  return `<div style="border:1.5px solid ${equipped?'var(--gold)':'rgba(255,255,255,.12)'};border-radius:13px;padding:11px;background:${equipped?'rgba(235,166,31,.09)':'rgba(255,255,255,.03)'};display:flex;flex-direction:column;gap:7px">
+    <div style="display:flex;align-items:center;gap:8px">${swatch}<div style="min-width:0"><div style="font-weight:800;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(o.name)}</div>
+      <div style="font:800 8.5px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:2px">${esc(c.name)}</div></div></div>
+    ${action}</div>`;
+}
 function overlayShop(screen){
   if(!SHOP_ENABLED){ S.overlay=null; return; }   // shelved until the economy is rebalanced
   const signed=sbSignedIn(), filt=S.shopSlot||'all', s=coinState();
@@ -10001,21 +10078,30 @@ function overlayShop(screen){
   const dav=$(avatarFullHTML()); dav.style.height='300px'; dress.appendChild(dav); ov.appendChild(dress);
   const chips=$(`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 2px"></div>`);
   const mkChip=(k,label)=>{ const on=filt===k, b=$(`<button class="tag" style="cursor:pointer;font-size:11px;padding:6px 11px;${on?'color:var(--gold);border-color:var(--gold);background:rgba(235,166,31,.1)':''}">${esc(label)}</button>`); b.onclick=()=>{S.shopSlot=k;render();}; return b; };
-  chips.appendChild(mkChip('all','All')); chips.appendChild(mkChip('owned','My Gear'));
+  chips.appendChild(mkChip('all','All')); chips.appendChild(mkChip('owned','My items'));
+  COS_CATS.forEach(c=>chips.appendChild(mkChip('cos:'+c.k, c.name)));
   ACC_SLOTS.forEach(sl=>chips.appendChild(mkChip(sl.k, sl.name)));
   ov.appendChild(chips);
-  let items=ACCESSORIES.slice(); MILESTONE_ITEMS.forEach(mi=>{ if(s.owned[mi.id]) items.push(mi); });
-  if(filt==='owned') items=items.filter(it=>s.owned[it.id]);
-  else if(filt!=='all') items=items.filter(it=>it.slot===filt);
-  items.sort((a,b)=>{ const ea=accEquipped(a.slot)===a.id?0:1, eb=accEquipped(b.slot)===b.id?0:1; if(ea!==eb) return ea-eb;
-    const oa=accOwned(a.id)?0:1, ob=accOwned(b.id)?0:1; if(oa!==ob) return oa-ob; return accPrice(a)-accPrice(b); });
   const grid=$(`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:8px"></div>`);
-  if(!items.length) grid.appendChild($(`<div class="small muted center" style="grid-column:1/-1;padding:20px 8px">No gear here yet.</div>`));
-  items.forEach(it=>grid.appendChild($(shopCard(it))));
+  const addCos=(cat)=>cosmeticItems(cat).forEach(o=>grid.appendChild($(cosCard(cat,o))));
+  const addAcc=(list)=>{ list.sort((a,b)=>{ const ea=accEquipped(a.slot)===a.id?0:1, eb=accEquipped(b.slot)===b.id?0:1; if(ea!==eb) return ea-eb;
+      const oa=accOwned(a.id)?0:1, ob=accOwned(b.id)?0:1; if(oa!==ob) return oa-ob; return accPrice(a)-accPrice(b); });
+    list.forEach(it=>grid.appendChild($(shopCard(it)))); };
+  let accList=ACCESSORIES.slice(); MILESTONE_ITEMS.forEach(mi=>{ if(s.owned[mi.id]) accList.push(mi); });
+  if(filt.indexOf('cos:')===0){ addCos(filt.slice(4)); }
+  else if(filt==='owned'){
+    COS_CATS.forEach(c=>cosmeticItems(c.k).forEach(o=>{ if(cosOwned(c.k,o.id)&&!FREE_COSMETICS[cosKey(c.k,o.id)]) grid.appendChild($(cosCard(c.k,o))); }));
+    addAcc(accList.filter(it=>s.owned[it.id]));
+  } else if(filt==='all'){ COS_CATS.forEach(c=>addCos(c.k)); addAcc(accList); }
+  else { addAcc(accList.filter(it=>it.slot===filt)); }
+  if(!grid.children.length) grid.appendChild($(`<div class="small muted center" style="grid-column:1/-1;padding:20px 8px">Nothing here yet.</div>`));
   ov.appendChild(grid);
   grid.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{ const r=accBuy(b.getAttribute('data-buy')); try{toast(r.ok?'Purchased & equipped!':r.msg);}catch(e){} render(); });
   grid.querySelectorAll('[data-equip]').forEach(b=>b.onclick=()=>{ accEquip(b.getAttribute('data-equip')); render(); });
   grid.querySelectorAll('[data-uneq]').forEach(b=>b.onclick=()=>{ accUnequip(b.getAttribute('data-uneq')); render(); });
+  grid.querySelectorAll('[data-cbuy]').forEach(b=>b.onclick=()=>{ const p=b.getAttribute('data-cbuy').split(':'), r=cosBuy(p[0],p[1]); if(r.ok) cosEquip(p[0],p[1]); try{toast(r.ok?'Purchased & equipped!':r.msg);}catch(e){} render(); });
+  grid.querySelectorAll('[data-ceq]').forEach(b=>b.onclick=()=>{ const p=b.getAttribute('data-ceq').split(':'); cosEquip(p[0],p[1]); render(); });
+  grid.querySelectorAll('[data-crem]').forEach(b=>b.onclick=()=>{ const cat=b.getAttribute('data-crem'), c=COS_CATS.find(x=>x.k===cat); if(c){ S.look[c.lookKey]='none'; saveLook(); } render(); });
   ov.appendChild($(`<button class="btn red">Close</button>`));
   ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
   screen.appendChild(ov);
@@ -10327,6 +10413,7 @@ async function sbApply(session){
     flushPendingSeasons();   // post every season queued while signed out / offline (fire-and-forget)
     migrateLegacyCareerSave();   // claim a pre-scoping career for this account, drop the unscoped copy
     migrateLegacyLifetimeStats();   // claim this browser's pre-scoping lifetime badges/stats, once
+    try{ grandfatherLook(); }catch(e){}   // CS192: keep a returning player's current look owned after the cosmetics-shop launch
     maybeClaimDaily();        // log a guest-played daily round to the account (consumes one of its attempts)
     // refresh course records + today's attempt count from the server RIGHT on sign-in, not just whenever
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
