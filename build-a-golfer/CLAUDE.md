@@ -5233,6 +5233,37 @@ allows Google Fonts, or self-host Anton.*
   covered by the account-scoped ownership + customization; a dedicated Trophy-Room wardrobe grid could be
   added later if wanted.
 
+- **CS193 — branded Coin currency icon.** Owner: "create a coin icon with our logo on it and use that as
+  the currency." Added `ICONS.coin` (a gold minted coin — reeded/dashed edge, inner rim, RunThe.GG
+  flag-over-green emblem) + `ICONS.coins` (a matching two-coin stack for balances), drawn in the same
+  inline-SVG style as the rest of the UI icons so they inherit theme sizing/alignment. `coinFmt(n)` now
+  comma-groups the number with NO leading "$" — the coin icon IS the currency mark (e.g. the shop banner
+  reads a gold coin + "12,500"). The icons render in the Pro Shop balance banner, on Buy buttons, and the
+  title-screen shop entry. HTML only.
+
+- **CS194 — full-body avatar: patterns now render + kit colours are actually dark (owner: "The patterns
+  are not working on the new profiles... The colors are also not nearly dark enough. It all looks like
+  variations of white with a tint on it").** Two real bugs in `paintAvatarFull` (the signed-in dressable
+  avatar) plus more patterns:
+  1. **Colours too light.** The full-body kit ART is near-WHITE (measured base region means: shirt ~0.96,
+     shoes ~0.95, pants ~0.80), and the recolour used `avTint` with a lightness LERP (`avKitLp` → ~0.12
+     pull for mid colours), so a navy/black garment came out as pale-tinted white (navy rendered at
+     lightness ~0.88). New `avKitTint(r,g,b,hex,baseMean,satB)` instead SHIFTS the whole garment's
+     lightness so its MEAN lands on the target colour while preserving the base fold/shading contrast
+     (`sl = target_l + (base_l − baseMean)·0.9`, clamped). Per-gender base means in `AV_KIT_MEAN`. Now
+     navy renders at lightness **0.216** (was ~0.88), black 0.147, white stays 0.937, and a shadow fold
+     stays darker than a mid pixel (shading kept). Used for shirt/pants/shoes; skin/hair keep their
+     existing per-target `lpull` (they were already correct).
+  2. **Patterns weren't applied at all** in `paintAvatarFull` — the portrait `avCompute` overlaid the
+     shirt pattern but the full-body recolour loop never did. Added the shirt-pattern overlay to the shirt
+     branch (`patFactor(o.shirtPat, x, y)` clipped to the shirt mask region, tone light→lighten /
+     dark→darken by `depth·pf`), so a purchased pattern now shows on the dressed golfer.
+  3. **6 new patterns** (auto-flow into the Pro Shop + setup pickers via `cosmeticItems('pat')`):
+     Checkerboard, Windowpane, Diagonal, Micro Dot, Herringbone, Camo — each with a `patFactor` case
+     (verified coverage 6–59%, all render cleanly).
+  Verified via a node unit test of the extracted colour math + pattern functions (navy/black/white
+  lightness targets, shading preservation, all new patterns render); inline scripts parse clean. HTML only.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

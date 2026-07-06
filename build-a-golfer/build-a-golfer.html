@@ -845,8 +845,9 @@ const ICONS={
   arrowUp:'<path d="M12 20V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
   arrowUR:'<path d="M7 17 17 7M8 7h9v9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
   arrowLeft:'<path d="M11 6l-6 6 6 6M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
-  coin:'<circle cx="12" cy="12" r="9" fill="#EBA61F"/><circle cx="12" cy="12" r="6.6" fill="none" stroke="#8a6410" stroke-width="1.2"/><path d="M12 7.5v9M9.6 9.5h3.2a1.7 1.7 0 0 1 0 3.4h-2.4a1.7 1.7 0 0 0 0 3.4h3.4" fill="none" stroke="#8a6410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
-  coins:'<ellipse cx="9" cy="8" rx="6" ry="2.6" fill="#EBA61F"/><path d="M3 8v4c0 1.4 2.7 2.6 6 2.6s6-1.2 6-2.6V8" fill="none" stroke="#8a6410" stroke-width="1.3"/><ellipse cx="15" cy="14" rx="6" ry="2.6" fill="#f0b93a"/><path d="M9 14v3c0 1.4 2.7 2.6 6 2.6s6-1.2 6-2.6v-3" fill="none" stroke="#8a6410" stroke-width="1.3"/>',
+  // RunTheTour-branded coin: gold, reeded edge, the flag-over-green crest mark embossed (the currency)
+  coin:'<circle cx="12" cy="12" r="11" fill="#EBA61F"/><circle cx="12" cy="12" r="11" fill="none" stroke="#9a6b17" stroke-width="1.3"/><circle cx="12" cy="12" r="9.6" fill="none" stroke="#8a6410" stroke-width="0.8" stroke-dasharray="0.5 1.05" opacity="0.85"/><circle cx="12" cy="12" r="9.4" fill="none" stroke="#f7d574" stroke-width="0.7" opacity="0.55"/><path d="M9.7 6.6 v10" stroke="#7a5410" stroke-width="1.3" stroke-linecap="round"/><path d="M9.7 6.7 h4.8 l-1.6 2 1.6 2 h-4.8 z" fill="#7a5410"/><ellipse cx="12" cy="16.6" rx="4.8" ry="1.5" fill="none" stroke="#7a5410" stroke-width="1"/><circle cx="13.7" cy="16.6" r="0.85" fill="#7a5410"/>',
+  coins:'<circle cx="8.5" cy="9" r="6.5" fill="#e0a01c" stroke="#8a6410" stroke-width="1"/><path d="M6 6.7 v4.6" stroke="#7a5410" stroke-width="1" stroke-linecap="round"/><path d="M6 6.8 h3 l-1 1.3 1 1.3 h-3 z" fill="#7a5410"/><circle cx="15.5" cy="14.5" r="7" fill="#EBA61F" stroke="#9a6b17" stroke-width="1.2"/><circle cx="15.5" cy="14.5" r="5.9" fill="none" stroke="#8a6410" stroke-width="0.6" stroke-dasharray="0.5 1" opacity="0.8"/><path d="M13.6 10.9 v7" stroke="#7a5410" stroke-width="1.1" stroke-linecap="round"/><path d="M13.6 11 h3.3 l-1.1 1.4 1.1 1.4 h-3.3 z" fill="#7a5410"/><ellipse cx="15.6" cy="17.9" rx="3.2" ry="1" fill="none" stroke="#7a5410" stroke-width="0.9"/>',
   cap:'<path d="M5 15c0-4.6 3.2-8 7-8 3.5 0 6.1 2.5 6.6 6.2L18 15z"/><rect x="4" y="14.6" width="10" height="2.4" rx="1.2"/>',
   shades:'<circle cx="7" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M10.2 12h3.6M3.4 10.6l1.4.8M20.6 10.6l-1.4.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
   glove:'<path d="M7 21v-9c0-1.1.4-2 1.3-2s1.2.9 1.2 2V8.2c0-1.1.4-2 1.3-2s1.2.9 1.2 2V8c0-1.1.4-2 1.3-2s1.2.9 1.2 2v3.2l1.1-1c.9-.8 2 .1 1.5 1.4L16 17v4z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>',
@@ -1040,6 +1041,12 @@ const PATTERNS=[
   {id:'houndstooth',name:'Houndstooth', tone:'dark',  depth:0.60, req:()=>repAtLeast('Legend'),    reqText:'Reach Tour Rep: Legend'},
   {id:'chevron',    name:'Chevron',     tone:'dark',  depth:0.45, req:()=>repAtLeast('Icon'),      reqText:'Reach Tour Rep: Icon'},
   {id:'colorblock', name:'Colorblock',  tone:'dark',  depth:0.70, req:m=>m.wins>=5,                reqText:'Win 5 tournaments'},
+  {id:'checker',    name:'Checkerboard',tone:'dark',  depth:0.62, req:()=>true, reqText:''},
+  {id:'windowpane', name:'Windowpane',  tone:'dark',  depth:0.55, req:()=>true, reqText:''},
+  {id:'diagonal',   name:'Diagonal',    tone:'dark',  depth:0.46, req:()=>true, reqText:''},
+  {id:'microdot',   name:'Micro Dot',   tone:'light', depth:0.42, req:()=>true, reqText:''},
+  {id:'herringbone',name:'Herringbone', tone:'dark',  depth:0.44, req:()=>true, reqText:''},
+  {id:'camo',       name:'Camo',        tone:'dark',  depth:0.55, req:()=>true, reqText:''},
 ];
 function findPattern(id){ return PATTERNS.find(p=>p.id===id)||PATTERNS[0]; }
 function patternUnlocked(id,m){ const p=PATTERNS.find(x=>x.id===id); return p?!!p.req(m||badgeMetrics()):true; }
@@ -1057,6 +1064,12 @@ function patFactor(id,x,y){
       if(a<h&&b<h) return 1; if(a>=h&&b>=h) return 0;
       if(a<h&&b>=h) return (a>(b-h))?1:0; return ((a-h)<b)?1:0; }
     case 'colorblock':{ return ((((x+y)%240)+240)%240)<120?0:1; }
+    case 'checker':{ const P=36,h=P/2; const cx=((x%P+P)%P)<h?0:1, cy=((y%P+P)%P)<h?0:1; return (cx^cy)?1:0; }
+    case 'windowpane':{ const P=48,W=3; return (((x%P+P)%P)<W||((y%P+P)%P)<W)?1:0; }
+    case 'diagonal':{ const P=26; return (((x+y)%P+P)%P)<P*0.42?1:0; }
+    case 'microdot':{ const G=20,dx=((x%G+G)%G)-10,dy=((y%G+G)%G)-10; return (dx*dx+dy*dy<9)?1:0; }
+    case 'herringbone':{ const P=16; const band=((((y/P)|0)%2)+2)%2, slope=band?1:-1; return ((((x+slope*y)%P)+P)%P)<P*0.5?1:0; }
+    case 'camo':{ const v=Math.sin(x*0.09)+Math.sin(y*0.11)+Math.sin((x+y)*0.05)+Math.sin(x*0.05-y*0.07); return v>0.6?1:(v<-0.9?0.6:0); }
     default: return 0;
   }
 }
@@ -3369,7 +3382,7 @@ function coinsEarnedRaw(){ let c=COIN_START; const ac=(achState().unlocked)||{};
   return Math.round(c);
 }
 function coinBalance(){ return Math.max(0, coinsEarned()-coinState().spent); }
-function coinFmt(n){ return (typeof fmt==='function'?fmt(Math.round(n)):(''+Math.round(n))); }
+function coinFmt(n){ n=Math.round(n||0); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','); }   // comma-grouped, no $ — the coin icon is the currency mark
 function grantMilestoneItems(s){ const m=achMetrics(); MILESTONE_ITEMS.forEach(mi=>{ try{ if(!s.owned[mi.id] && mi.when(m)) s.owned[mi.id]=1; }catch(e){} }); }
 // reconcile: self-heal earned total, grant milestone gear, toast newly-earned coins. Runs on load +
 // after evaluateAch / finishes. Signed-in only (coins are an account feature).
@@ -4597,6 +4610,17 @@ function avIsBrow(nx,ny){ return ny>0.275 && ny<0.42 && nx>0.30 && nx<0.70; }   
 // toward the target or they stay base-toned teal/grey instead of reading black/white.
 function avKitLp(hex){ const c=avHexRgb(hex), l=avRgbHsl(c.r,c.g,c.b).l, d=Math.abs(l-0.5);
   return d<0.22 ? 0.12 : 0.12 + Math.min(1,(d-0.22)/0.13)*0.74; }   // → ~0.86 at pure black/white
+// The full-body kit art is near-WHITE (shirt mean ~0.96, shoes ~0.95, pants ~0.80), so a lightness LERP
+// keeps a navy/black garment reading as pale-tinted white. Instead SHIFT the whole garment so its mean
+// lands on the target's lightness while preserving the base fold/shading contrast → true dark colours.
+const AV_KIT_MEAN={ male:{shirt:0.965,pants:0.789,shoes:0.944}, female:{shirt:0.968,pants:0.817,shoes:0.956} };
+function avKitTint(r,g,b,hex,baseMean,satB){
+  const s=avRgbHsl(r,g,b), t=avHexRgb(hex), th=avRgbHsl(t.r,t.g,t.b);
+  let sl=th.l+(s.l-baseMean)*0.9;                       // recentre lightness on the target, keep shading
+  sl=Math.max(0,Math.min(1,sl));
+  const ss=Math.max(0,Math.min(1,th.s*(satB==null?1:satB)));
+  return avHslRgb(th.h,ss,sl);
+}
 function avCompute(canvas,key,o){
   const e=avLoad(AV_BASE[o.gender]), mk=avLoad(AV_MASK[o.gender]);
   const go=()=>{ if(e.failed){avVectorFallback(canvas);return;}
@@ -4755,17 +4779,22 @@ function paintAvatarFull(canvas, look){
       const _sk=avHexRgb(o.skinHex), skinTl=avRgbHsl(_sk.r,_sk.g,_sk.b).l;
       const _hr=avHexRgb(o.hairHex), hairTl=avRgbHsl(_hr.r,_hr.g,_hr.b).l;
       const skinLp=Math.min(0.92,0.44+(1-skinTl)*0.58), hairLp=Math.min(0.88,0.42+hairTl*0.55);
-      const shirtLp=avKitLp(o.shirtHex), pantsLp=avKitLp(pantsHex);
-      const whiteShoes=(o.shoesHex||'#eef0ee').toLowerCase()==='#eef0ee', shoesLp=avKitLp(o.shoesHex);
+      const KM=AV_KIT_MEAN[g]||AV_KIT_MEAN.male;
+      const whiteShoes=(o.shoesHex||'#eef0ee').toLowerCase()==='#eef0ee';
+      const shirtPat=(o.shirtPat&&o.shirtPat!=='none')?findPattern(o.shirtPat):null;
       if(m) for(let i=0;i<d.length;i+=4){ const reg=avMaskRegionFull(m[i],m[i+1],m[i+2]); if(!reg) continue;
         if(reg==='shoes' && whiteShoes) continue;   // default white shoes keep the base art
-        let tg,st,sb,lp;
-        if(reg==='skin'){ tg=o.skinHex; st=0.95; sb=0.92; lp=skinLp; }
-        else if(reg==='hair'){ tg=o.hairHex; st=1.0; sb=1.05; lp=hairLp; }   // brows/eyes are carved out of the mask (kept as base), so hair recolours cleanly incl. temples
-        else if(reg==='shirt'){ tg=o.shirtHex; st=0.96; sb=1.05; lp=shirtLp; }
-        else if(reg==='shoes'){ tg=o.shoesHex; st=0.95; sb=1.0; lp=shoesLp; }
-        else { tg=pantsHex; st=0.95; sb=1.0; lp=pantsLp; }
-        const t=avTint(d[i],d[i+1],d[i+2],tg,st,sb,lp); d[i]=t.r; d[i+1]=t.g; d[i+2]=t.b; }
+        let t;
+        if(reg==='skin'){ t=avTint(d[i],d[i+1],d[i+2],o.skinHex,0.95,0.92,skinLp); }
+        else if(reg==='hair'){ t=avTint(d[i],d[i+1],d[i+2],o.hairHex,1.0,1.05,hairLp); }   // brows/eyes carved out of the mask
+        else if(reg==='shirt'){ t=avKitTint(d[i],d[i+1],d[i+2],o.shirtHex,KM.shirt,1.05);
+          if(shirtPat){ const px=i>>2, pf=patFactor(shirtPat.id,px%bw,(px/bw)|0);   // shirt pattern, clipped to the shirt region
+            if(pf>0){ const dep=shirtPat.depth*pf;
+              if(shirtPat.tone==='light'){ t.r+=(255-t.r)*dep; t.g+=(255-t.g)*dep; t.b+=(255-t.b)*dep; }
+              else { t.r*=1-dep; t.g*=1-dep; t.b*=1-dep; } } } }
+        else if(reg==='shoes'){ t=avKitTint(d[i],d[i+1],d[i+2],o.shoesHex,KM.shoes,1.0); }
+        else { t=avKitTint(d[i],d[i+1],d[i+2],pantsHex,KM.pants,1.0); }
+        d[i]=t.r; d[i+1]=t.g; d[i+2]=t.b; }
       tctx.putImageData(id,0,0); ctx.drawImage(tmp,xoff,0);
       // composite equipped accessories, back-to-front (+ the free cap in the head slot when worn)
       AV_DRAW_ORDER.forEach(slot=>{ const cfg=ACC_PLACE[slot]; if(!cfg) return;
