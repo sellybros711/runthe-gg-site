@@ -475,7 +475,7 @@
   // the Mapillary viewer only when chosen and fails open (falls back to the map
   // pin-drop) if the token/SDK/imagery are unavailable — it can never break a race.
   // NOTE: needs live testing with a real token; untested against Mapillary so far.
-  var MAPILLARY_TOKEN = 'MLY|28596352536621799|108d6154fbd03cc2b4bdbb06b9aac963';
+  var MAPILLARY_TOKEN = '';   // redacted — set a real Mapillary client token here to re-enable Street Scout
   // Street Scout is PARKED until it can be tested end-to-end where Mapillary is
   // reachable (the build sandbox blocks Mapillary, so it can't be debugged here).
   // Flip STREET_LIVE = true to re-enable the game type — token + integration are
@@ -979,12 +979,13 @@
     var capOpts = shuffle([c.capital].concat(wc.map(function(x){return x.capital;})));
     g.push({ kind:'capital', cat:'trivia', type:'brain', q:'What is the capital of '+c.name+'?',
              options:capOpts, a:capOpts.indexOf(c.capital) });
-    // Odd One Out — three from one region + one outlier. Use region OVERLAP so a
-    // transcontinental country (e.g. Turkey = Europe/Asia) is never an ambiguous
-    // outlier, and the region label shown is a clean single continent.
+    // Odd One Out — three from one region + one outlier. Match against the SINGLE
+    // displayed region (cReg), not c's full region string: otherwise a country that
+    // shares only c's *secondary* region (e.g. an Asian country when the label says
+    // "Europe" for transcontinental Turkey) would be a second valid odd-one-out.
     var cReg = String(c.region).split('/')[0];
-    var same = COUNTRIES.filter(function(x){ return x.id!==c.id && regionShares(x.region, c.region); });
-    var diff = COUNTRIES.filter(function(x){ return !regionShares(x.region, c.region); });
+    var same = COUNTRIES.filter(function(x){ return x.id!==c.id && regionShares(x.region, cReg); });
+    var diff = COUNTRIES.filter(function(x){ return !regionShares(x.region, cReg); });
     if(same.length>=2 && diff.length){
       var trio=[c].concat(shuffle(same).slice(0,2)); var outlier=pick(diff);
       var four=shuffle(trio.concat([outlier])).map(function(x){return {n:x.name,bad:x.id===outlier.id};});
@@ -3107,7 +3108,6 @@
      from the seed + posted times. Requires supabase/43_globe_duo.sql.
      ====================================================================== */
   function onlineActive(){ return !!(S.online && S.online.active); }
-  function finishById(id){ for(var i=0;i<FINISH.length;i++){ if(FINISH[i].id===id) return FINISH[i]; } return null; }
   function toast(msg){
     var t=document.createElement('div'); t.textContent=msg;
     t.style.cssText='position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:99;'
