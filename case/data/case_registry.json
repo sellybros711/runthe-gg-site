@@ -1,0 +1,55 @@
+{
+  "_comment": "Full 44-case career map. status:'authored' means a matching file exists under data/cases/ and is playable now; status:'planned' is a locked placeholder — title/teaser only, no case file yet, safe to show in the hub without spoiling anything. order_in_rank must be contiguous per rank_required (validate.mjs enforces this and cross-checks 'authored' entries against data/cases/*.json).",
+  "cases": [
+    { "case_id": "modern_01_first_day", "rank_required": "cadet", "order_in_rank": 1, "title": "First Day", "teaser": "Your first ride-along. Someone's bike didn't just wander off.", "status": "planned" },
+    { "case_id": "modern_02_five_finger", "rank_required": "cadet", "order_in_rank": 2, "title": "Five Finger Discount", "teaser": "A corner store's register is short and the owner has three stories.", "status": "planned" },
+    { "case_id": "modern_03_broken_window", "rank_required": "cadet", "order_in_rank": 3, "title": "Broken Window", "teaser": "Vandalism, or something dressed up to look like it.", "status": "planned" },
+    { "case_id": "modern_04_water_damage", "rank_required": "cadet", "order_in_rank": 4, "title": "Water Damage", "teaser": "A landlord's insurance claim doesn't hold up under a flashlight.", "status": "authored", "file": "cases/modern_04_water_damage.json" },
+    { "case_id": "modern_05_open_house", "rank_required": "cadet", "order_in_rank": 5, "title": "Open House", "teaser": "Nothing was taken. That's the problem.", "status": "planned" },
+    { "case_id": "modern_06_ride_along", "rank_required": "cadet", "order_in_rank": 6, "title": "Ride Along", "teaser": "Last case before the badge upgrade — and it's not as simple as it looked on paper.", "status": "planned" },
+
+    { "case_id": "modern_07_paper_trail", "rank_required": "junior", "order_in_rank": 1, "title": "Paper Trail", "teaser": "A fraud complaint that keeps pointing at a company that doesn't seem to exist.", "status": "planned" },
+    { "case_id": "modern_08_familiar_face", "rank_required": "junior", "order_in_rank": 2, "title": "Familiar Face", "teaser": "A witness swears they've seen someone from your own precinct somewhere they shouldn't have been.", "status": "planned" },
+    { "case_id": "modern_09_smash_and_grab", "rank_required": "junior", "order_in_rank": 3, "title": "Smash and Grab", "teaser": "A jewelry store heist that was over in ninety seconds flat.", "status": "planned" },
+    { "case_id": "modern_10_quiet_neighbor", "rank_required": "junior", "order_in_rank": 4, "title": "Quiet Neighbor", "teaser": "The building's quietest tenant just became its most interesting.", "status": "planned" },
+    { "case_id": "modern_11_paper_cut", "rank_required": "junior", "order_in_rank": 5, "title": "Paper Cut", "teaser": "A forged signature, a missing notary, and a very annoyed bank.", "status": "planned" },
+    { "case_id": "modern_12_short_lease", "rank_required": "junior", "order_in_rank": 6, "title": "Short Lease", "teaser": "A storage unit rented for one month, paid in full, never opened by anyone you can find.", "status": "planned" },
+    { "case_id": "modern_13_second_opinion", "rank_required": "junior", "order_in_rank": 7, "title": "Second Opinion", "teaser": "Two witnesses, two stories, and only one of them is lying.", "status": "planned" },
+    { "case_id": "modern_14_open_and_shut", "rank_required": "junior", "order_in_rank": 8, "title": "Open and Shut", "teaser": "Everyone wants this one closed by end of day. That's exactly why you shouldn't.", "status": "planned" },
+
+    { "case_id": "modern_15_dead_drop", "rank_required": "detective", "order_in_rank": 1, "title": "Dead Drop", "teaser": "Cash changed hands in an alley that has no cameras and, somehow, three witnesses.", "status": "planned" },
+    { "case_id": "modern_16_night_shift", "rank_required": "detective", "order_in_rank": 2, "title": "Night Shift", "teaser": "A warehouse break-in with a suspiciously convenient guard schedule.", "status": "planned" },
+    { "case_id": "modern_17_burned_bridge", "rank_required": "detective", "order_in_rank": 3, "title": "Burned Bridge", "teaser": "An arson case where the insurance payout is bigger than the building was worth.", "status": "planned" },
+    { "case_id": "modern_18_double_entry", "rank_required": "detective", "order_in_rank": 4, "title": "Double Entry", "teaser": "Two sets of books, and only one of them was meant for you to find.", "status": "planned" },
+    { "case_id": "modern_19_repeat_offender", "rank_required": "detective", "order_in_rank": 5, "title": "Repeat Offender", "teaser": "Same MO, different name, three years apart.", "status": "planned" },
+    { "case_id": "modern_20_house_call", "rank_required": "detective", "order_in_rank": 6, "title": "House Call", "teaser": "A home invasion where the victim is oddly reluctant to press charges.", "status": "planned" },
+    { "case_id": "modern_21_second_story", "rank_required": "detective", "order_in_rank": 7, "title": "Second Story", "teaser": "A rooftop entry too clean for a first-timer.", "status": "planned" },
+    { "case_id": "modern_22_closing_time", "rank_required": "detective", "order_in_rank": 8, "title": "Closing Time", "teaser": "A bar owner's disappearance the night before an audit.", "status": "planned" },
+
+    { "case_id": "modern_23_recanted", "rank_required": "senior", "order_in_rank": 1, "title": "Recanted", "teaser": "Your key witness just changed their story, and not because they remembered wrong.", "status": "planned" },
+    { "case_id": "modern_24_conflict_of_interest", "rank_required": "senior", "order_in_rank": 2, "title": "Conflict of Interest", "teaser": "Everyone involved has a reason to want this case to go away quietly.", "status": "planned" },
+    { "case_id": "modern_25_notarized", "rank_required": "senior", "order_in_rank": 3, "title": "Notarized", "teaser": "A stamp that's supposed to mean something doesn't mean what it's supposed to.", "status": "planned" },
+    { "case_id": "modern_26_chain_of_custody", "rank_required": "senior", "order_in_rank": 4, "title": "Chain of Custody", "teaser": "Evidence went missing between the scene and the lab. Somebody in the chain is lying.", "status": "planned" },
+    { "case_id": "modern_27_the_long_game", "rank_required": "senior", "order_in_rank": 5, "title": "The Long Game", "teaser": "A scheme three years in the making, unraveling because of one impatient mistake.", "status": "planned" },
+
+    { "case_id": "modern_28_first_body", "rank_required": "homicide", "order_in_rank": 1, "title": "First Body", "teaser": "Your first homicide. Your partner steers you away from one thread without quite saying why.", "status": "planned" },
+    { "case_id": "modern_29_last_call", "rank_required": "homicide", "order_in_rank": 2, "title": "Last Call", "teaser": "A bartender's final shift, and the last person to see him alive isn't talking.", "status": "planned" },
+    { "case_id": "modern_30_cleanup_crew", "rank_required": "homicide", "order_in_rank": 3, "title": "Cleanup Crew", "teaser": "A scene too clean to be an accident, and too professional to be a first offense.", "status": "authored", "file": "cases/modern_30_cleanup_crew.json" },
+    { "case_id": "modern_31_close_to_home", "rank_required": "homicide", "order_in_rank": 4, "title": "Close to Home", "teaser": "This one hits closer to the precinct than anyone's comfortable admitting.", "status": "planned" },
+    { "case_id": "modern_32_second_glance", "rank_required": "homicide", "order_in_rank": 5, "title": "Second Glance", "teaser": "A cold trail warms up the moment you stop looking where everyone told you to look.", "status": "planned" },
+    { "case_id": "modern_33_loose_ends", "rank_required": "homicide", "order_in_rank": 6, "title": "Loose Ends", "teaser": "A cleanup job gone wrong leaves behind exactly the kind of paperwork it shouldn't have.", "status": "planned" },
+    { "case_id": "modern_34_the_wrong_door", "rank_required": "homicide", "order_in_rank": 7, "title": "The Wrong Door", "teaser": "Someone on the inside gave a very specific address to the wrong people.", "status": "planned" },
+    { "case_id": "modern_35_burned_out", "rank_required": "homicide", "order_in_rank": 8, "title": "Burned Out", "teaser": "A fire meant to destroy evidence instead preserved exactly the wrong page.", "status": "planned" },
+
+    { "case_id": "modern_36_paper_tiger", "rank_required": "major_crimes", "order_in_rank": 1, "title": "Paper Tiger", "teaser": "The network's paperwork finally gets a face attached to it.", "status": "planned" },
+    { "case_id": "modern_37_task_force", "rank_required": "major_crimes", "order_in_rank": 2, "title": "Task Force", "teaser": "Three agencies, one case, and nobody agreeing on jurisdiction.", "status": "planned" },
+    { "case_id": "modern_38_wire_and_fire", "rank_required": "major_crimes", "order_in_rank": 3, "title": "Wire and Fire", "teaser": "A financial crime and an arson that turn out to be the same case wearing two hats.", "status": "planned" },
+    { "case_id": "modern_39_familiar_hand", "rank_required": "major_crimes", "order_in_rank": 4, "title": "Familiar Hand", "teaser": "A handwriting match comes back with a name you weren't ready to see.", "status": "planned" },
+    { "case_id": "modern_40_the_long_con", "rank_required": "major_crimes", "order_in_rank": 5, "title": "The Long Con", "teaser": "A confidence scheme that's been running so long it's practically load-bearing.", "status": "planned" },
+    { "case_id": "modern_41_no_witnesses", "rank_required": "major_crimes", "order_in_rank": 6, "title": "No Witnesses", "teaser": "Everyone who could talk has already decided not to.", "status": "planned" },
+    { "case_id": "modern_42_the_ledger", "rank_required": "major_crimes", "order_in_rank": 7, "title": "The Ledger", "teaser": "The full picture, on paper, at last.", "status": "planned" },
+
+    { "case_id": "modern_43_the_last_favor", "rank_required": "finale", "order_in_rank": 1, "title": "The Last Favor", "teaser": "One more small ask before the wheels come off.", "status": "planned" },
+    { "case_id": "modern_44_run_the_case", "rank_required": "finale", "order_in_rank": 2, "title": "Run the Case", "teaser": "Everything, all at once, and no partner to lean on but the one you chose to trust.", "status": "planned" }
+  ]
+}

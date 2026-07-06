@@ -1,0 +1,71 @@
+{
+  "case_id": "modern_04_water_damage",
+  "mode": "career",
+  "title": "Water Damage",
+  "rank_required": "cadet",
+  "order_in_rank": 4,
+  "quick_flavor": null,
+  "briefing": "A landlord filed an insurance claim for a burst pipe that flooded a ground-floor unit. The adjuster wants a police report before they'll pay out — routine, except the tenant swears there was no pipe to burst.",
+  "partner_id": "det_okafor",
+  "clue_total": 4,
+  "give_up": { "allowed": true, "min_investigation_pct": 0.3 },
+  "location_hotspots": [
+    { "id": "hot_apartment", "name": "The flooded unit", "description": "Water damage along one wall, oddly even for a 'burst pipe.'", "evidence_ids": ["ev_water_stain"] },
+    { "id": "hot_basement", "name": "Basement pipes", "description": "The building's plumbing, all of it, in one place.", "evidence_ids": ["ev_pipe_dry"] },
+    { "id": "hot_landlord_office", "name": "Landlord's office", "description": "Filing cabinets going back a decade.", "evidence_ids": ["ev_forged_invoice", "ev_shell_invoice", "ev_neighbor_complaint"] },
+    { "id": "hot_landlord_phone", "name": "Landlord's phone", "description": "Sitting right there on the desk, unlocked.", "evidence_ids": ["ev_texts_plumber"] }
+  ],
+  "evidence": [
+    { "id": "ev_water_stain", "name": "Water stain pattern", "tier": "physical", "description": "The stain climbs evenly from floor to waist height along a single wall — consistent with a bucket, not a burst pipe.", "is_clue": true, "unlocks_board_connections": ["conn_not_accidental"], "unlocks_dialogue": [], "thread_tag": null },
+    { "id": "ev_pipe_dry", "name": "Bone-dry pipe", "tier": "physical", "description": "The pipe the claim blames is dry, capped, and hasn't carried water in months.", "is_clue": true, "unlocks_board_connections": ["conn_not_accidental"], "unlocks_dialogue": [], "thread_tag": null },
+    { "id": "ev_forged_invoice", "name": "Backdated repair invoice", "tier": "physical", "description": "An invoice for 'emergency plumbing repair,' dated the day of the flood, from a plumber who says he never went.", "is_clue": true, "unlocks_board_connections": ["conn_landlord"], "unlocks_dialogue": ["dt_landlord_n2"], "thread_tag": null },
+    { "id": "ev_texts_plumber", "name": "Texts to the plumber", "tier": "digital", "description": "The landlord, three days before the flood: 'just sign the invoice, you don't have to actually come out.'", "is_clue": true, "unlocks_board_connections": ["conn_landlord"], "unlocks_dialogue": ["dt_landlord_n1"], "thread_tag": null },
+    { "id": "ev_shell_invoice", "name": "Water mitigation invoice", "tier": "physical", "description": "A separate, unrelated-looking invoice from a 'water mitigation consultancy' buried in the same file. Paid in full, no follow-up. Not evidence of this fraud — just odd paperwork.", "is_clue": false, "unlocks_board_connections": [], "unlocks_dialogue": [], "thread_tag": "bc_voss_invoice" },
+    { "id": "ev_neighbor_complaint", "name": "Neighbor's noise complaint", "tier": "testimonial", "description": "A neighbor complaining about renovation noise last month. Unrelated to the claim.", "is_clue": false, "unlocks_board_connections": [], "unlocks_dialogue": [], "thread_tag": null }
+  ],
+  "board_connections": [
+    { "id": "conn_not_accidental", "from": "ev_water_stain", "to": "ev_pipe_dry", "unlocks_dialogue": [], "unlocks_hotspots": ["hot_landlord_office"], "reveals_suspect": null },
+    { "id": "conn_landlord", "from": "ev_forged_invoice", "to": "sus_landlord", "unlocks_dialogue": ["dt_landlord_n1"], "unlocks_hotspots": [], "reveals_suspect": "sus_landlord" }
+  ],
+  "suspects": [
+    { "id": "sus_landlord", "name": "The landlord", "character_id": null, "motive": "Insurance fraud — staged the flood to cover a renovation he didn't want to pay for out of pocket.", "alibi": "Says he was out of town when it happened. Was actually two floors up the whole time.", "is_guilty": true, "dialogue_tree_id": "dt_landlord" },
+    { "id": "sus_plumber", "name": "The plumber", "character_id": null, "motive": "None — named on the invoice but denies doing the work.", "alibi": "Confirmed on another job site all day, three other clients vouch for him.", "is_guilty": false, "dialogue_tree_id": null }
+  ],
+  "dialogue_trees": [
+    {
+      "id": "dt_landlord",
+      "root_node": "dt_landlord_n1",
+      "nodes": [
+        { "id": "dt_landlord_n1", "speaker_line": "Terrible luck, that pipe. Old building.", "locked_until_evidence": "ev_texts_plumber",
+          "options": [
+            { "text": "Your plumber says he never came out.", "present_evidence_id": "ev_texts_plumber", "goto": "dt_landlord_n2", "effect": "break_alibi" },
+            { "text": "Walk me through the timeline again.", "present_evidence_id": null, "goto": "dt_landlord_n1", "effect": "suspect_lawyers_up" }
+          ]
+        },
+        { "id": "dt_landlord_n2", "speaker_line": "He came by, I just... don't have a great memory for dates.", "locked_until_evidence": "ev_forged_invoice",
+          "options": [
+            { "text": "This invoice is backdated. You wrote it yourself.", "present_evidence_id": "ev_forged_invoice", "goto": "dt_landlord_n3", "effect": "force_admission" }
+          ]
+        },
+        { "id": "dt_landlord_n3", "speaker_line": "...Fine. The reno money fell through. Insurance doesn't ask questions about a burst pipe.", "locked_until_evidence": null,
+          "options": [
+            { "text": "That's fraud, and you know it.", "present_evidence_id": null, "goto": "END", "effect": null }
+          ]
+        }
+      ]
+    }
+  ],
+  "solution": {
+    "correct_suspect": "sus_landlord",
+    "required_evidence": ["ev_water_stain", "ev_pipe_dry", "ev_texts_plumber"],
+    "correct_motive": "Insurance fraud — staged flood damage to cover a renovation, using a friendly plumber's invoice as cover."
+  },
+  "consequence_hooks": {
+    "wrongful_accusation_targets": ["sus_plumber"],
+    "recurring_npc_spawns": ["lawyer_grant"],
+    "partner_override_trust_delta": -5
+  },
+  "rewards": { "xp": 150, "skill_points": 1, "badges": [] },
+  "thread_tags": ["bc_voss_invoice"],
+  "promotion_gate": false
+}

@@ -1,0 +1,81 @@
+{
+  "case_id": "modern_30_cleanup_crew",
+  "mode": "career",
+  "title": "Cleanup Crew",
+  "rank_required": "homicide",
+  "order_in_rank": 3,
+  "quick_flavor": null,
+  "briefing": "A body in a studio apartment, ruled a probable overdose by the first responders. Something's off - the scene is immaculate. Too immaculate. The ME, Lena Park, flagged it for you personally before signing anything.",
+  "partner_id": "det_okafor",
+  "clue_total": 8,
+  "give_up": { "allowed": true, "min_investigation_pct": 0.4 },
+  "location_hotspots": [
+    { "id": "hot_body", "name": "The body", "description": "Victim: Marcus Idem, 34.", "requires_specialist": "me", "evidence_ids": ["ev_injection_site", "ev_tox_pending"] },
+    { "id": "hot_apartment", "name": "The apartment", "description": "Spotless. No prints, no clutter.", "evidence_ids": ["ev_wiped_surfaces", "ev_staged_paraphernalia"] },
+    { "id": "hot_phone", "name": "Victim's phone", "description": "Locked; needs digital forensics.", "requires_specialist": "digital_forensics", "evidence_ids": ["ev_last_texts", "ev_deleted_thread"] },
+    { "id": "hot_hallway_cam", "name": "Building camera", "description": "Corridor CCTV, partial coverage.", "requires_specialist": "digital_forensics", "evidence_ids": ["ev_cctv_gap", "ev_boone_glimpse"] }
+  ],
+  "evidence": [
+    { "id": "ev_injection_site", "name": "Injection site (wrong arm)", "tier": "physical", "description": "Injection in the right arm; the victim was right-handed. Inconsistent with self-administration.", "is_clue": true, "unlocks_board_connections": ["conn_not_selfharm"], "unlocks_dialogue": [], "thread_tag": null },
+    { "id": "ev_tox_pending", "name": "Tox screen (pending)", "tier": "physical", "description": "Results take in-game time. May land after you must decide.", "is_clue": true, "unlocks_board_connections": [], "unlocks_dialogue": [], "thread_tag": null },
+    { "id": "ev_wiped_surfaces", "name": "Wiped surfaces", "tier": "physical", "description": "Every surface professionally cleaned. Nobody lives this clean.", "is_clue": true, "unlocks_board_connections": ["conn_professional"], "unlocks_dialogue": ["dt_boone_n2"], "thread_tag": "bc_boone_contact" },
+    { "id": "ev_staged_paraphernalia", "name": "Staged paraphernalia", "tier": "physical", "description": "Drug kit arranged too neatly - placed, not used. Matches the staging seen in Case 14.", "is_clue": true, "unlocks_board_connections": ["conn_professional"], "unlocks_dialogue": [], "thread_tag": "bc_boone_contact" },
+    { "id": "ev_last_texts", "name": "Last texts", "tier": "digital", "description": "Victim arranged to meet someone about 'making it right' the night he died.", "is_clue": true, "unlocks_board_connections": [], "unlocks_dialogue": ["dt_boone_n2"], "thread_tag": null },
+    { "id": "ev_deleted_thread", "name": "Recovered deleted thread", "tier": "digital", "description": "Deleted messages reference a debt owed to people who 'clean up their own messes.'", "is_clue": true, "unlocks_board_connections": ["conn_professional"], "unlocks_dialogue": ["dt_boone_n3"], "thread_tag": "bc_boone_contact" },
+    { "id": "ev_cctv_gap", "name": "CCTV gap", "tier": "digital", "description": "Exactly 9 minutes of corridor footage is missing - deliberately, not a glitch.", "is_clue": true, "unlocks_board_connections": ["conn_professional"], "unlocks_dialogue": [], "thread_tag": null },
+    { "id": "ev_boone_glimpse", "name": "Figure on the stairwell", "tier": "digital", "description": "A large man leaving via the stairs at the edge of the gap. Face obscured; build matches Boone.", "is_clue": true, "unlocks_board_connections": ["conn_boone"], "unlocks_dialogue": ["dt_boone_n1"], "thread_tag": "bc_boone_contact" },
+    { "id": "ev_neighbor_hearsay", "name": "Neighbor's account", "tier": "testimonial", "description": "Neighbor 'heard the victim was into bad stuff.' Steers you toward the overdose story. Unreliable.", "is_clue": false, "unlocks_board_connections": [], "unlocks_dialogue": [], "thread_tag": null }
+  ],
+  "board_connections": [
+    { "id": "conn_not_selfharm", "from": "ev_injection_site", "to": "sus_boone", "unlocks_dialogue": [], "unlocks_hotspots": [], "reveals_suspect": null },
+    { "id": "conn_professional", "from": "ev_wiped_surfaces", "to": "ev_staged_paraphernalia", "unlocks_dialogue": [], "unlocks_hotspots": ["hot_hallway_cam"], "reveals_suspect": null },
+    { "id": "conn_boone", "from": "ev_boone_glimpse", "to": "sus_boone", "unlocks_dialogue": ["dt_boone_n1"], "unlocks_hotspots": [], "reveals_suspect": "sus_boone" }
+  ],
+  "suspects": [
+    { "id": "sus_boone", "name": "\"Boone\"", "character_id": "antag_boone", "motive": "Contract cleanup - silenced the victim over a debt and staged the scene as an overdose.", "alibi": "Claims he was never there. The stairwell footage says otherwise.", "is_guilty": true, "dialogue_tree_id": "dt_boone" },
+    { "id": "sus_dealer", "name": "Local dealer (Reyes's tip)", "character_id": null, "motive": "Obvious scapegoat - the overdose story points here.", "alibi": "Was in county lockup that night, verifiable.", "is_guilty": false, "dialogue_tree_id": null }
+  ],
+  "dialogue_trees": [
+    {
+      "id": "dt_boone",
+      "root_node": "dt_boone_n1",
+      "nodes": [
+        { "id": "dt_boone_n1", "speaker_line": "Never been to that address. You've got the wrong guy.", "locked_until_evidence": "ev_boone_glimpse",
+          "options": [
+            { "text": "That's you on the stairwell.", "present_evidence_id": "ev_boone_glimpse", "goto": "dt_boone_n2", "effect": "break_alibi" },
+            { "text": "Push on the overdose angle.", "present_evidence_id": "ev_neighbor_hearsay", "goto": "dt_boone_n1", "effect": "suspect_lawyers_up" }
+          ]
+        },
+        { "id": "dt_boone_n2", "speaker_line": "So I was in the building. Doesn't make me a killer. Guy used. Everybody knew.", "locked_until_evidence": "ev_wiped_surfaces",
+          "options": [
+            { "text": "He was right-handed. The needle's in the wrong arm.", "present_evidence_id": "ev_injection_site", "goto": "dt_boone_n3", "effect": "catch_contradiction" },
+            { "text": "Nobody cleans a place like this by accident.", "present_evidence_id": "ev_wiped_surfaces", "goto": "dt_boone_n3", "effect": "catch_contradiction" }
+          ]
+        },
+        { "id": "dt_boone_n3", "speaker_line": "...I do a job. I don't ask questions and I don't keep names. That's the whole point.", "locked_until_evidence": "ev_deleted_thread",
+          "options": [
+            { "text": "Who hired you?", "present_evidence_id": "ev_deleted_thread", "goto": "dt_boone_n4", "effect": "force_admission" }
+          ]
+        },
+        { "id": "dt_boone_n4", "speaker_line": "A voice. A number that's dead now. You think people like me ever meet people like him? Good luck, detective.", "locked_until_evidence": null,
+          "options": [
+            { "text": "Book him. The rest is a thread for later.", "present_evidence_id": null, "goto": "END", "effect": null }
+          ]
+        }
+      ]
+    }
+  ],
+  "solution": {
+    "correct_suspect": "sus_boone",
+    "required_evidence": ["ev_boone_glimpse", "ev_injection_site", "ev_deleted_thread"],
+    "correct_motive": "Contract killing staged as an overdose; Boone was hired anonymously to silence the victim and clean the scene."
+  },
+  "consequence_hooks": {
+    "wrongful_accusation_targets": ["sus_dealer"],
+    "recurring_npc_spawns": ["lawyer_grant"],
+    "partner_override_trust_delta": -8
+  },
+  "rewards": { "xp": 600, "skill_points": 2, "badges": ["badge_network_1"] },
+  "thread_tags": ["bc_boone_contact"],
+  "promotion_gate": false
+}

@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://runthe.gg/schema/characters.schema.json",
+  "title": "RunTheCase Character Registry",
+  "description": "The recurring cast: partners, specialists, antagonists, and the villain network. Referenced by id from case files (suspects[].character_id, partner_id) and threads.json.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["characters"],
+  "properties": {
+    "characters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "role", "is_placeholder"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+          "name": { "type": "string" },
+          "role": {
+            "type": "string",
+            "enum": ["partner", "specialist", "suspect_recurring", "antagonist", "villain", "victim_recurring", "legal", "informant"],
+            "description": "Narrative function. A single character can only hold one primary role here; recurring suspects across cases still use suspects[].character_id in case files."
+          },
+          "unit": { "type": ["string", "null"], "description": "e.g. 'ME', 'Digital Forensics', 'District Attorney' " },
+          "description": { "type": "string" },
+          "is_placeholder": {
+            "type": "boolean",
+            "description": "True if name/identity is a stand-in pending a design decision. Must be false before ship."
+          },
+          "cover_identity": {
+            "type": ["string", "null"],
+            "description": "Public-facing profession/cover, for characters who are not what they seem (e.g. the villain's day job). Never shown to the player until the reveal case."
+          },
+          "thread_role": {
+            "type": ["string", "null"],
+            "enum": ["villain", "antagonist", "inside_man", null],
+            "description": "Cross-reference into threads.json. Internal only — never surfaced in player-facing text (ENGINE-SPEC §5 spoiler-safety)."
+          },
+          "relationship_defaults": {
+            "type": "object",
+            "additionalProperties": false,
+            "description": "Only set for characters with a trackable relationship (partners).",
+            "properties": {
+              "trust": { "type": "integer", "minimum": 0, "maximum": 100 },
+              "status": { "type": "string", "enum": ["active", "strained", "quit"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}
