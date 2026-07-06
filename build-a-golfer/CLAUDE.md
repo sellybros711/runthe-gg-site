@@ -4954,6 +4954,42 @@ allows Google Fonts, or self-host Anton.*
   the 8 skills as supporting detail. Client-only, no engine change. Screenshot-confirmed; zero page errors.
   Deployed to /golf.
 
+- **CS180 — animated GIF shot-share (the CS157 fast-follow) + every share tagged @RunTheGG #golf
+  #RunTheTour.** Owner: "do the gif shot share, and make all x/twitter shares tag @RunTheGG and use the
+  hashtags #golf and #RunTheTour."
+  • **GIF shot-share.** The round-review "Share this shot" button now builds a looping **animated GIF** of
+    the hole playing out shot-by-shot on the TOURTRACE tracer (was a static PNG). Fully self-contained (no
+    libs, CSP-safe): a median-cut quantizer (`gifMedianCut`) + nearest-color cache (`gifNearest`) + a
+    correct GIF89a LZW encoder (`gifLZW`) + writer (`gifBuild`) — NETSCAPE loop, per-frame delays. The
+    compositor (`hvGifShare`→`hvGifRender`→`hvGifCompose`) rasterizes the terrain once to a background
+    canvas, then draws each shot's flight/roll + moving ball frame-by-frame (reusing `hvProj`/`hvCtrl`),
+    holds ~2.2s on the final hole with a "Hole n · Par · score · RunTheTour" caption bar, and shares via
+    `navigator.share({files})` (download fallback). Falls back to the static PNG (`hvShareShot`) on any
+    failure/unsupported browser. **The LZW code-width bump was the one hard bug**: a naive bump-on-add is
+    off by one vs the canonical GIF encoder (Kevin Weiner) and yields a "broken data stream" in strict
+    decoders — fixed by bumping inside `emit` when `next>maxcode` (the emit AFTER the entry that fills the
+    width). Verified by decoding the produced GIF with PIL: 280×377, 40 unique animating frames, pixels
+    exact, ~0.7 MB. Screenshot-checked (tracer climbs mid-flight → full hole + markers + result at the end).
+  • **Social tags on every share.** New `SOCIAL_TAG='@RunTheGG #golf #RunTheTour'` + `withSocial(t)`
+    (idempotent), routed through the two share funnels (`shareText`, `shareCard`) and the shot GIF/PNG
+    shares — so EVERY share caption (daily, season, major win, career/circuit end, spotlight, shot) carries
+    the handle + hashtags. Verified the appended tag appears once and doesn't double.
+  Client-only, no migration. Regressions hv8/cs178 green; zero page errors. Deployed to /golf.
+- **CS181 — leaderboard: every instance of a player shows their most-updated username + tier tag.** Jordo
+  (screenshot): the same player appeared with different tier tags/usernames across their rows. Root cause:
+  every season/career is its own row (by design) and each froze the `display_name` + `rep_pts` AT SUBMIT
+  TIME, so a player's older rows showed a stale name and a lower Tour Rep tier. Fix (client-side, in
+  `overlayLeaderboard`): rep points only ever accrue, so the row with a user's highest `rep_pts` carries
+  their newest username — normalize every row of the same `user_id` to that canonical name + the max rep
+  (so all instances agree and show the most-updated tier), and for the signed-in viewer override with their
+  LIVE `sbUsername` + current `achPoints()`. Guest rows (null user_id) are never grouped. Verified
+  (cs181): three rows of the signed-in account all show the live name + tier; another player's two rows
+  collapse to their latest name + highest tier; the guest row is untouched; zero page errors. Deployed to
+  /golf. NOTE (minor, not fixed): a player who renamed but hasn't posted a season SINCE won't reflect the
+  new name to OTHER viewers until they post once (the client only has posted rows). A server-side
+  `profiles` join in the board RPCs would make it authoritative for that edge — flagged as an optional
+  follow-up, not built.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
