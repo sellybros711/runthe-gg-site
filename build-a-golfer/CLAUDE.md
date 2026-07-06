@@ -5066,6 +5066,43 @@ allows Google Fonts, or self-host Anton.*
   title/menu show no shop, the overlay won't open. Deployed to /golf. (Phase-2 full-body avatar art
   pipeline is separate and unaffected — bases/masks/headwear assets remain committed for that build.)
 
+- **CS185 — water splash (sound + animation), go-for-it decisions actually matter, distance calibration
+  (owner IMG_7928/IMG_7931).** Owner played a par-5 over water and flagged three things (screenshots): a
+  shot "bounced absurdly far and over a body of water"; the ball "says 11 ft from the hole but looks
+  farther"; and after choosing "go for it" over the water, "my player laid up short — I want these
+  decisions to actually matter... I should have seen my player hit it AT the green, with a high risk of the
+  water. If a ball lands in the water I want a splash sound + a little splash animation." All changes are in
+  the shot NARRATIVE (`dShotSeq`) + hole-view presentation (`hvLiveShot`/`hvKick`/`hvPlots`); the
+  deterministic `dSimHole` score engine and the shot-count===stroke-count invariant are untouched
+  (re-verified 8,640 go-for-it combos, 0 mismatches).
+  1. **Splash sound + animation.** New `hvSplashSound()` (WebAudio, no assets): a low-passed decaying noise
+     burst (the splash) + a low sine "ploop" (the ball entering), fired ONCE when a ball reaches the water
+     (`_hvA.splashed` guard, skipped under reduced-motion). The splash visual is upgraded to a two-ring
+     ripple (`hv-splash` + a delayed wider `hv-splash2`) plus 5 droplets (`hv-drop0..4`) that arc up out of
+     the entry point and fall back, over ~600ms.
+  2. **"Go for it in two" now reflects the decision** (the core fix). The reachable-par-5 approach decision
+     (`go5`, `decPhase:'app'`) previously only biased the eventual green-arrival shot, so on any score that
+     didn't reach in two the SECOND shot was a generic advance/lay-up — the "go for it" choice was invisible.
+     Now `dShotSeq` tags `goForIt`/`layUp` and rewrites the second shot (after the revealed neutral drive) to
+     MATCH the call: **aggressive** fires AT the green — reaching in two (birdie/eagle) holes out via the
+     flag-hunting greenDesc; a blow-up (bogey+) goes at the green and FINDS THE WATER → penalty drop (the
+     risk materializing, with the new splash); a par comes up "just short" near the green for an up-and-down
+     — never a lay-up. **Safe** narrates a deliberate "lays up to a full wedge." So the shots you watch now
+     reflect the decision you made, with the water as the real downside of going for it.
+  3. **On-green distance calibration** ("11 ft looked farther"). The on-green rest was drawn at `ft/3` course
+     units, which overstated the ball-to-pin gap relative to the green's drawn size; recalibrated to `ft/3.6`
+     so an 11-ft shot sits ~22% of the green radius from the pin (proportionally accurate), matching the
+     stated distance. The screen-aware minimum (tap-in visibility on long holes) and the CS178 putt close-up
+     camera are unchanged.
+  4. **Bounce-over-water** — the reported "bounced absurdly far over water" shot was the go-for-it attempt
+     being mis-narrated as a full shot crossing the pond; routing the aggressive over-water attempt to a
+     proper splash (fix #2) + the existing CS153 green-carry safety (a green-bound ball must carry a fronting
+     hazard in the air, never bounce across it) covers it. Verified via cs185/cs185b (splash markup + sound
+     safety; invariant + narrative: goForIt goes for the green / shows water blow-ups / comes up short,
+     layUp lays up) and regressions hv6 (39-course geometry + putt property), hv8 (one-window HUD), physics
+     (carry + backspin), cs162 (miss dispersion invariant), cs169 (putting), practice (full round) — all
+     green, zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

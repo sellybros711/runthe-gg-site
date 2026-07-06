@@ -4930,6 +4930,21 @@ function chime(){   // soft gold sparkle when a Legendary lands
     });
   }catch(e){}
 }
+// splash SFX when a ball finds the water: a filtered noise burst + a low "ploop" (WebAudio, no assets)
+function hvSplashSound(){ try{
+  _ac=_ac||new (window.AudioContext||window.webkitAudioContext)();
+  const ac=_ac; if(ac.state==='suspended') ac.resume(); const t=ac.currentTime;
+  const dur=0.55, sr=ac.sampleRate, buf=ac.createBuffer(1,Math.floor(sr*dur),sr), ch=buf.getChannelData(0);
+  for(let i=0;i<ch.length;i++){ ch[i]=(Math.random()*2-1)*Math.pow(1-i/ch.length,2); }   // decaying noise = the splash
+  const src=ac.createBufferSource(); src.buffer=buf;
+  const lp=ac.createBiquadFilter(); lp.type='lowpass'; lp.frequency.setValueAtTime(2000,t); lp.frequency.exponentialRampToValueAtTime(320,t+0.42);
+  const g=ac.createGain(); g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(0.32,t+0.02); g.gain.exponentialRampToValueAtTime(0.0007,t+0.5);
+  src.connect(lp); lp.connect(g); g.connect(ac.destination); src.start(t); src.stop(t+dur);
+  const o=ac.createOscillator(), og=ac.createGain(); o.type='sine';   // low water "ploop"
+  o.frequency.setValueAtTime(440,t); o.frequency.exponentialRampToValueAtTime(140,t+0.2);
+  og.gain.setValueAtTime(0.0001,t); og.gain.linearRampToValueAtTime(0.22,t+0.015); og.gain.exponentialRampToValueAtTime(0.0006,t+0.32);
+  o.connect(og); og.connect(ac.destination); o.start(t); o.stop(t+0.36);
+}catch(e){} }
 function takeAttr(k){
   S.slots[k]={golfer:S.current.name,value:S.current[k]};
   S.current=null; endIfDone();
@@ -7368,6 +7383,11 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
   const atk = dp ? (((par===3)||dp==='app') ? (dagg?1:-1) : 0)
                  : (opts.attack?1:(opts.safe?-1:0));
   const teeSafe = (par!==3) && (dp==='tee' ? (opts.decAgg===false) : !!opts.safe);
+  // "GO FOR IT IN TWO" (reachable par-5, approach decision): the choice must be REFLECTED in the 2nd shot
+  // (owner: "I chose to go for it, I should see my player hit it AT the green over the water, not lay up").
+  const go5app = (par===5 && opts.teePreset && dp==='app' && dShotType(par,yards)==='go5');
+  const goForIt = go5app && dagg;      // aggressive → the 2nd shot fires at the green (high water risk)
+  const layUp   = go5app && !dagg;     // safe → the 2nd shot deliberately lays up to a wedge
   // the shot that reaches the green must MATCH the decision you made: attacking aims at the flag (tighter
   // when it comes off, short-sided when it doesn't); playing safe aims at the middle (longer first putt).
   // proximity is driven HARD by Approach skill (owner: every rating should visibly show) — the skill
@@ -7446,6 +7466,21 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
   }
   // ADVANCE / APPROACH / RECOVERY shots until on the green
   while(rem()>0){ const lastLong=(rem()===1), fromYds=Math.round(dist);
+    // GO-FOR-IT (par-5 aggressive) 2nd shot: fire AT the green, don't lay up. Reaching in two (birdie/
+    // eagle) is the lastLong greenDesc below; here we handle the shots that DON'T reach — the risk bit.
+    if(goForIt && played===1 && !lastLong){
+      if(toPar>=1 && rem()>=3){   // a blow-up: went for the green over the water, found it → penalty drop
+        sh.push({d:`goes for the green in two, but it finds the water`, k:'app', lie:'water', fromY:fromYds}); played++;
+        dist=Math.max(30,Math.round(fromYds*0.5));
+        sh.push({d:`penalty drop, ${Math.round(dist)} yds to hole`, k:'pen', lie:'drop', fromY:fromYds, toY:Math.round(dist)}); played++;
+        water=false; continue;
+      }
+      if(rem()===2){   // came up just short of the green — an aggressive shot, not a lay-up
+        dist=Math.round(28+rng()*16); offLie='fw';
+        sh.push({d:`goes for the green in two but comes up just short, ${dist} yds to hole`, k:'app', lie:'fw', fromY:fromYds, toY:dist}); played++; continue;
+      }
+      // rem>=3 on a par (rare) → fall through to the normal flow (can't manufacture a water blow-up on a par)
+    }
     if(lastLong){
       if(played>=regReach){
         // LIE-AWARE recovery: a bunker shot leans on Bunker skill, a rough chip on Short Game +
@@ -7463,7 +7498,8 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
       played++;
     } else if(water && rem()>=3){ sh.push({d:`${dClub(fromYds)} from ${fromYds} yds, into the water hazard`, k:'app', lie:'water', fromY:fromYds}); played++; dist=Math.max(30,Math.round(fromYds*0.45)); sh.push({d:`penalty drop, ${Math.round(dist)} yds to hole`, k:'pen', lie:'drop', fromY:fromYds, toY:Math.round(dist)}); played++; water=false;
     } else if(dist>205){ const dq=dSkQ(dSk(sk,'dist')); let adv=Math.max(40,Math.min(dist-30,Math.round(70+dq*95+rng()*70))); dist=Math.max(26,dist-adv);   // too far to reach the green, advance — a longer hitter advances further
-      const fw6=rng()<0.6; sh.push({d:`${dClub(adv)} ${adv} yds to ${fw6?'the fairway':'the rough'}, ${Math.round(dist)} yds to hole`, k:'adv', lie:fw6?'fw':'ru', fromY:fromYds, toY:Math.round(dist)}); played++;
+      const fw6=rng()<0.6, layTxt=(layUp&&played===1);   // safe go-for-it decision: narrate the deliberate lay-up
+      sh.push({d: layTxt ? `lays up to ${Math.round(dist)} yds, leaving a full wedge` : `${dClub(adv)} ${adv} yds to ${fw6?'the fairway':'the rough'}, ${Math.round(dist)} yds to hole`, k:'adv', lie:fw6?'fw':'ru', fromY:fromYds, toY:Math.round(dist)}); played++;
     } else {
       // MISSED the green — but a PRO's miss is a NEAR miss, not a wild sideways spray (owner: shots were
       // way off target / into greenside bunkers from close range, which only an amateur would do). The
@@ -7751,7 +7787,7 @@ function hvPlots(g, shots, seedN){
         else rest=[g.cx(L*0.6), L*0.6];
         p.splash=true; break;
       case 'drop': y=L-toY; rest=[g.cx(y)+jj(i,1)*5, y]; p.drop=true; break;
-      case 'green': { const d=Math.max(1.8/g.vy,(s.ft||15)/3); let ang;   // screen-aware min: short leaves stay visible even on long holes (small vy)
+      case 'green': { const d=Math.max(1.8/g.vy,(s.ft||15)/3.6); let ang;   // ft→units calibrated to green size (owner: an 11ft shot looked farther than 11ft); screen-aware min keeps short leaves visible on long holes
         if(s.side==='left') ang=Math.PI+jj(i,2)*0.9; else if(s.side==='right') ang=jj(i,2)*0.9; else ang=-Math.PI/2+jj(i,2)*1.2;
         rest=[pin[0]+Math.cos(ang)*d, pin[1]+Math.sin(ang)*d]; p.onGreen=true; break; }
       case 'hole': rest=pin.slice(); p.hole=true; p.onGreen=true; break;
@@ -8222,6 +8258,8 @@ function hvLiveShot(g,p,small,pcol){
     s+=`<path id="hv-trace" d="${hvPathD(g,p)}" fill="none" stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" stroke-dasharray="9999" stroke-dashoffset="9999"/>`;
     s+=`<path id="hv-roll" d="${hvRollD(g,p)}" fill="none" stroke="${pcol||'#ffffff'}" stroke-width="1.4" opacity=".8" stroke-dasharray="9999" stroke-dashoffset="9999"/>`; }
   s+=`<circle id="hv-splash" cx="0" cy="0" r="0" fill="none" stroke="#7fd4ff" stroke-width="2" opacity="0"/>`;
+  s+=`<circle id="hv-splash2" cx="0" cy="0" r="0" fill="none" stroke="#c7edff" stroke-width="1.3" opacity="0"/>`;
+  for(let d=0;d<5;d++) s+=`<circle id="hv-drop${d}" cx="0" cy="0" r="0" fill="#a9def7" opacity="0"/>`;
   s+=`<circle id="hv-puff" cx="0" cy="0" r="0" fill="none" stroke="#eaf5ee" stroke-width="1.5" opacity="0"/>`;
   s+=`<ellipse id="hv-shadow" cx="${A[0].toFixed(1)}" cy="${(A[1]+2).toFixed(1)}" rx="3" ry="1.6" fill="#000" opacity="0"/>`;
   s+=`<circle id="hv-ball" cx="${A[0].toFixed(1)}" cy="${A[1].toFixed(1)}" r="${ballR}" fill="url(#hvball)" stroke="${pcol||'rgba(8,22,14,.5)'}" stroke-width="${pcol?'.9':'.55'}"/>`;
@@ -8262,7 +8300,7 @@ function hvRevealPaths(p){
 }
 function hvKick(key, g, p, pPrev, reduce, opts){
   if(_hvA.key===key){ if(_hvA.done) hvRevealPaths(p); return; }
-  _hvA.key=key; _hvA.done=false; if(_hvA.raf) cancelAnimationFrame(_hvA.raf);
+  _hvA.key=key; _hvA.done=false; _hvA.splashed=false; if(_hvA.raf) cancelAnimationFrame(_hvA.raf);
   if(!p) return;
   opts=opts||{};
   const q=(id)=>document.getElementById(id);
@@ -8311,10 +8349,18 @@ function hvKick(key, g, p, pPrev, reduce, opts){
         if(sh){ sh.setAttribute('cx',(x+2+h*7).toFixed(1)); sh.setAttribute('cy',(y+2+h*6).toFixed(1)); sh.setAttribute('opacity',(0.28*Math.min(1,h*3)).toFixed(2)); sh.setAttribute('rx',(3-h*1.2).toFixed(2)); }
         if(trace){ trace.style.strokeDashoffset=traceLen*(1-te); const tg=q('hv-traceg'); if(tg) tg.style.strokeDashoffset=traceLen*(1-te); }
       } else if(p.splash){
-        const sp=q('hv-splash'); const st=Math.min(1,(el-flyMs)/380);
+        const st=Math.min(1,(el-flyMs)/560);
         ball.setAttribute('r','0'); if(sh)sh.setAttribute('opacity','0');
-        if(sp){ sp.setAttribute('cx',B[0]);sp.setAttribute('cy',B[1]);sp.setAttribute('r',(st*10).toFixed(1));sp.setAttribute('opacity',(0.9*(1-st)).toFixed(2)); }
-        if(el>flyMs+420){ _hvA.raf=0; _hvA.done=true; return; }
+        if(!_hvA.splashed){ _hvA.splashed=true; if(!reduce) hvSplashSound(); }   // splash sound on entry
+        const sp=q('hv-splash'), sp2=q('hv-splash2');
+        if(sp){ sp.setAttribute('cx',B[0]);sp.setAttribute('cy',B[1]);sp.setAttribute('r',(2+st*13).toFixed(1));sp.setAttribute('opacity',(0.92*(1-st)).toFixed(2)); }
+        if(sp2){ const s2=Math.max(0,(st-0.15)/0.85); sp2.setAttribute('cx',B[0]);sp2.setAttribute('cy',B[1]);sp2.setAttribute('r',(2+s2*21).toFixed(1));sp2.setAttribute('opacity',(0.6*(1-s2)).toFixed(2)); }
+        for(let d=0;d<5;d++){ const dr=q('hv-drop'+d); if(!dr) continue;   // droplets arc up out of the splash and fall back
+          const ang=-Math.PI/2+(d-2)*0.5, dist=6+d*1.3, arc=Math.sin(st*Math.PI)*(8+d*1.6);
+          dr.setAttribute('cx',(B[0]+Math.cos(ang)*dist*st).toFixed(1));
+          dr.setAttribute('cy',(B[1]+Math.sin(ang)*dist*st-arc).toFixed(1));
+          dr.setAttribute('r',(1.7*(1-st*0.55)).toFixed(2)); dr.setAttribute('opacity',(0.9*(1-st)).toFixed(2)); }
+        if(el>flyMs+600){ _hvA.raf=0; _hvA.done=true; return; }
       } else if(el<=flyMs+groundMs){
         const t=(el-flyMs)/groundMs, te=1-Math.pow(1-t,2.2);       // decelerating bounce + roll-out
         const x=B[0]+(R[0]-B[0])*te, y=B[1]+(R[1]-B[1])*te;
