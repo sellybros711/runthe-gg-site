@@ -343,6 +343,14 @@
   }
 
   .missline{font-size:12.5px;color:var(--mut);margin-top:12px;text-align:center;}
+  /* power-up (boost) bar */
+  .boostbar{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px;}
+  .boost{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;padding:9px 13px;border-radius:999px;
+    background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid var(--cardb);color:var(--ink);
+    cursor:pointer;transition:border-color .12s,box-shadow .12s,background .12s,opacity .12s;}
+  .boost:hover:not(:disabled){border-color:var(--globe);box-shadow:0 8px 20px -14px rgba(236,181,80,.55);}
+  .boost:disabled{opacity:.32;cursor:default;}
+  .boost.armed{border-color:var(--ok);color:var(--ok);background:rgba(53,214,160,.12);}
   .missline b{color:var(--bad);}
 
   /* scramble */
@@ -954,6 +962,7 @@
     S.round = 1;
     S.usedCountries = {};
     S.skipUsed = false;
+    S.boosts = { fifty:1, shield:1 };    // one of each power-up per race
     S.spectating = false;
     S._runPend=null; S._runDone=false;   // City Run guards
     S._lastLL = null;   // no origin yet → first Flight Leg departs from HOME_LL (player's area, or US east coast)
@@ -1413,13 +1422,14 @@
     var t=S.chosen, kind=taskKind(t);
     noteKind(kind);   // remember for cross-stage variety
     var _sk=statsDefault(); _sk.kinds[kind]=1; saveStats(_sk);   // track game types played (badges)
-    S.play = { start: performance.now(), misses:0, done:false };
+    S.play = { start: performance.now(), misses:0, done:false, shield:false };
     app.innerHTML = topbar() + hud()
       + '<div class="card">'
         + '<div class="game-hd"><span class="cat">'+esc(taskLabel(t))+(coopTurn()?' · 👤 '+esc(coopTurn()):'')+'</span>'
         + '<span class="timer" id="tmr">0.0</span></div>'
         + '<div id="mg"></div>'
         + '<div class="missline" id="miss"></div>'
+        + '<div class="boostbar" id="boostbar"></div>'
       + '</div>' + foot();
     startTimer();
     if(kind==='mcq'||kind==='flagid'||kind==='capital'||kind==='oddoneout'||kind==='closest') mgMcq(t);
@@ -1451,7 +1461,34 @@
     else if(kind==='photosnap') mgPhotoSnap(t);
     else if(kind==='stampit') mgStampIt(t);
     else finishTask();   // safety
+    renderBoosts(kind);
     renderAcct();
+  }
+  // ---- power-ups (Boosts): one of each per race, deployed mid-challenge ----
+  var MCQ_KINDS={ mcq:1, flagid:1, capital:1, oddoneout:1, closest:1, zoomreveal:1 };
+  function renderBoosts(kind){
+    var bar=$('boostbar'); if(!bar) return;
+    if(!S.boosts) S.boosts={ fifty:1, shield:1 };
+    var html='';
+    if(MCQ_KINDS[kind]) html+='<button class="boost" id="bfifty"'+((S.boosts.fifty>0&&!S.play.done)?'':' disabled')+'>🔍 50 / 50</button>';
+    html+='<button class="boost'+(S.play.shield?' armed':'')+'" id="bshield"'+(((S.boosts.shield>0||S.play.shield)&&!S.play.done)?'':' disabled')+'>'+(S.play.shield?'🛡️ Shield armed':'🛡️ Shield')+'</button>';
+    bar.innerHTML=html;
+    var bf=$('bfifty'); if(bf) bf.onclick=deployFifty;
+    var bs=$('bshield'); if(bs) bs.onclick=deployShield;
+  }
+  function deployFifty(){
+    if(S.play.done || !S.boosts || S.boosts.fifty<=0) return;
+    var t=S.chosen; if(!t || t.a==null) return;
+    var wrong=[]; each('.opt', function(o){ if(+o.getAttribute('data-i')!==t.a && !o.classList.contains('wrong')) wrong.push(o); });
+    if(wrong.length<2) return;
+    wrong=shuffle(wrong).slice(0,2);
+    wrong.forEach(function(o){ o.classList.add('wrong'); o.disabled=true; });
+    S.boosts.fifty--; sfx('tap'); vibe(10); renderBoosts(taskKind(t));
+  }
+  function deployShield(){
+    if(S.play.done || S.play.shield || !S.boosts || S.boosts.shield<=0) return;
+    S.play.shield=true; S.boosts.shield--; sfx('tap'); vibe([10,30,10]);
+    renderBoosts(taskKind(S.chosen||{}));
   }
   function startTimer(){
     stopTimer();
@@ -2815,6 +2852,9 @@
   function clampP(skill){ var p=(skill-0.8)*0.45; return Math.max(0, Math.min(0.55, p)); }
 
   function resolveRound(playerRaw, playerMisses, skipped, preGhosts){
+    // Shield boost: forgive one miss (consumed on the first resolve so the City
+    // Run re-entry doesn't double-refund).
+    if(S.play && S.play.shield){ if(playerMisses>0){ playerMisses=Math.max(0,playerMisses-1); S._shieldSaved=true; } S.play.shield=false; }
     // Amazing-Race beat: after the challenge you still have to SPRINT THE CITY to
     // the Checkpoint mat, and that run counts. Intercept the first resolve, play
     // the City Run, then come back through here with the combined time.
@@ -3023,8 +3063,10 @@
     } else {
       body = '<div class="breakdown"><span>Challenge <b>'+fmtTime(r.act!=null?r.act:r.raw)+'s</b></span>'
         + (r.runT?'<span>City Run <b>'+fmtTime(r.runT)+'s</b></span>':'')
-        + '<span>Misses <b>'+r.misses+'</b> (+'+(r.misses*r.pen)+'s)</span></div>';
+        + '<span>Misses <b>'+r.misses+'</b> (+'+(r.misses*r.pen)+'s)</span></div>'
+        + (S._shieldSaved ? '<div class="muted" style="font-size:12px;margin-top:8px;color:var(--ok)">🛡️ Shield forgave a miss</div>' : '');
     }
+    S._shieldSaved=false;
     app.innerHTML = topbar() + hud()
       + '<div class="card center">'
         + '<div class="stagetype">✅ Checkpoint</div>'
@@ -3418,7 +3460,7 @@
   /* ---- duo race flow ---- */
   function duoDestLL(){ return (S.dest && S.dest.country && S.dest.country.ll) || null; }
   function duoStart(){
-    S._recorded=false; S._runPend=null; S._runDone=false;
+    S._recorded=false; S._runPend=null; S._runDone=false; S.boosts={ fifty:1, shield:1 };
     duoRebuild(); S.online.started=true; S.online.view='race';
     S.screen='stage'; S._lastLL=null; duoSetStage(1);
     flightTo(duoDestLL(), function(){ S.phase='draw'; renderStage(); }); duoSave();
