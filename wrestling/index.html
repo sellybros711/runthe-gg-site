@@ -12,22 +12,25 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow+Semi+Condensed:wght@500;600;700;800;900&family=Cinzel:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
-    --cream:#F4E8D6; --oncard:#F4E3C9; --ink:#0b0a0c;
-    --gold:#EBA61F; --gold2:#c79320; --gold-bright:#f6c964;
-    --red:#E14A33; --red2:#b8371f; --green:#4fae7e; --blue:#5aa9c9; --purple:#b08ac6;
-    --text:#F4E3C9; --text-dim:#b6a892; --text-faint:#7d7466; --muted:#b6a892;
+    /* Palette from the RUN THE ROPES belt logo: cream + red on near-black */
+    --cream:#F4E8DB; --oncard:#F4E8DB; --ink:#0c0b0b;
+    /* brand accent is now the belt red (was gold); "gold" vars kept as names */
+    --gold:#C6392C; --gold2:#9e2a20; --gold-bright:#F4E8DB;
+    --red:#C6392C; --red2:#8f231b; --green:#5bb083; --blue:#6aa7c4; --purple:#b08ac6;
+    --brandred:#C6392C; --brandred-bright:#e05446;
+    --text:#F0E6D8; --text-dim:#b3a794; --text-faint:#7c7367; --muted:#b3a794;
     --panel:rgba(255,255,255,.045); --panel-raised:rgba(255,255,255,.075);
-    --card:rgba(255,255,255,.045); --line:rgba(244,227,201,.12);
+    --card:rgba(255,255,255,.045); --line:rgba(244,232,219,.13);
     --display:'Anton',Impact,'Arial Narrow',sans-serif;
     --serif:'Cinzel','Times New Roman',Georgia,serif;
     --body:'Barlow Semi Condensed',system-ui,'Segoe UI',Roboto,sans-serif;
     --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
     --pagebg:
-      radial-gradient(1200px 520px at 50% -6%, rgba(235,166,31,.16), transparent 62%),
-      radial-gradient(900px 600px at 50% 118%, rgba(225,74,51,.14), transparent 68%),
-      radial-gradient(700px 500px at 12% 8%, rgba(120,120,140,.06), transparent 60%),
-      linear-gradient(180deg,#141216,#0b0a0c 60%);
-    --bg:#0b0a0c;
+      radial-gradient(1200px 520px at 50% -6%, rgba(198,57,44,.20), transparent 60%),
+      radial-gradient(900px 600px at 50% 118%, rgba(198,57,44,.12), transparent 66%),
+      radial-gradient(700px 500px at 12% 8%, rgba(255,255,255,.04), transparent 60%),
+      linear-gradient(180deg,#151113,#0c0b0b 58%);
+    --bg:#0c0b0b;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;overscroll-behavior-y:none;}
@@ -68,7 +71,7 @@
   .badge.face{background:rgba(79,174,126,.2); color:var(--green);}
   .badge.heel{background:rgba(225,74,51,.2); color:#f08a76;}
   .badge.tweener{background:rgba(176,138,198,.2); color:#c7abda;}
-  .badge.promo{background:rgba(235,166,31,.18); color:var(--gold-bright);}
+  .badge.promo{background:rgba(244,232,219,.12); color:var(--cream);}
   .badge.hurt{background:rgba(225,74,51,.34); color:#f5b3a6;}
   .badge.tier{background:rgba(244,227,201,.08); color:var(--text-dim);}
   .stat-mini{font-family:var(--mono); font-size:11px; color:var(--text-dim); white-space:nowrap;}
@@ -94,7 +97,7 @@
   .segment-ticket{background:var(--panel-raised); border:1px dashed var(--gold); border-radius:10px; padding:10px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;}
   .vs-line{font-family:var(--display); letter-spacing:.02em; font-size:15px; color:var(--cream);}
   .rating-dial{font-family:var(--mono); font-weight:800; font-size:18px; padding:4px 10px; border-radius:8px; min-width:46px; text-align:center; display:inline-block;}
-  .r-elite{background:rgba(235,166,31,.2); color:var(--gold-bright);}
+  .r-elite{background:rgba(244,232,219,.16); color:var(--cream);}
   .r-good{background:rgba(79,174,126,.2); color:var(--green);}
   .r-mid{background:rgba(244,227,201,.1); color:var(--text-dim);}
   .r-bad{background:rgba(225,74,51,.2); color:#f08a76;}
@@ -136,7 +139,7 @@
   .mode-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(300px, 1fr)); gap:14px; margin-top:12px;}
   .mode-card{background:var(--panel); border:1.5px solid var(--line); border-radius:14px; padding:18px 20px; cursor:pointer; transition:border-color .15s, transform .1s;}
   .mode-card:hover{transform:translateY(-2px);}
-  .mode-card.selected{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset, 0 10px 30px -16px rgba(235,166,31,.6);}
+  .mode-card.selected{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset, 0 10px 30px -16px rgba(198,57,44,.6);}
   .mode-card h3{margin:0 0 2px; font-family:var(--display); letter-spacing:.02em; color:var(--gold-bright); font-size:24px; text-transform:uppercase;}
   .mode-card .meta{font-size:11px; color:var(--text-faint); font-family:var(--mono); text-transform:uppercase; letter-spacing:.08em;}
   .mode-card p{font-size:13px; color:var(--text-dim); margin:10px 0 8px; line-height:1.5;}
@@ -152,6 +155,7 @@
   .grade-badge{font-family:var(--display); font-size:44px; line-height:1; padding:6px 16px; border-radius:12px; display:inline-block;}
   .beta-tag{display:inline-block; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink); background:var(--gold); padding:3px 9px; border-radius:999px; font-weight:800; vertical-align:middle; margin-left:10px; font-family:var(--body);}
   .continue-bar{background:var(--panel); border:1px solid var(--gold); border-radius:14px; padding:16px 18px; margin:18px 0; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;}
+  .belt-logo{width:100%; max-width:440px; height:auto; display:block; filter:drop-shadow(0 8px 26px rgba(0,0,0,.55));}
   .brandmark{font-family:var(--display); text-transform:uppercase; letter-spacing:.02em; font-size:40px; line-height:.9;}
   .brandmark .r{color:var(--cream);} .brandmark .t{color:var(--gold);} .brandmark .g{color:var(--cream);}
 
@@ -177,8 +181,47 @@
 
 <!-- ============ START SCREEN ============ -->
 <div id="startScreen" class="center-screen">
-  <div class="brandmark"><span class="r">Run</span><span class="t">The</span><span class="g">Ropes</span><span class="beta-tag">Beta</span></div>
-  <div style="color:var(--text-faint); font-size:12px; letter-spacing:.24em; text-transform:uppercase; margin:4px 0 6px; font-weight:800;">Wrestling Booking Sim · Career Mode</div>
+  <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+    <svg class="belt-logo" viewBox="0 0 1000 560" role="img" aria-label="Run The Ropes">
+      <defs><style>
+        .rtr-plate{fill:#100d0d;stroke:#F4E8DB;stroke-width:7;stroke-linejoin:round;}
+        .rtr-inner{fill:none;stroke:#F4E8DB;stroke-width:2.5;stroke-linejoin:round;opacity:.85;}
+        .rtr-rope{stroke:#C6392C;stroke-width:13;stroke-linecap:round;stroke-dasharray:15 9;}
+        .rtr-snap{fill:#F4E8DB;}
+        .rtr-wm{font-family:'Anton',Impact,sans-serif;fill:#F4E8DB;}
+        .rtr-wmred{font-family:'Anton',Impact,sans-serif;fill:#C6392C;}
+        .rtr-acc{stroke:#C6392C;stroke-width:10;stroke-linecap:round;fill:none;}
+      </style></defs>
+      <!-- connecting straps -->
+      <path class="rtr-plate" d="M300 235 L360 250 L360 310 L300 325 Z"/>
+      <path class="rtr-plate" d="M700 235 L640 250 L640 310 L700 325 Z"/>
+      <!-- side plates -->
+      <path class="rtr-plate" d="M170 205 L290 182 L335 240 L335 320 L290 378 L170 355 Z"/>
+      <path class="rtr-inner" d="M188 222 L286 203 L318 246 L318 314 L286 357 L188 338 Z"/>
+      <circle class="rtr-snap" cx="252" cy="205" r="6"/><circle class="rtr-snap" cx="252" cy="355" r="6"/>
+      <line class="rtr-rope" x1="205" y1="252" x2="305" y2="252"/>
+      <line class="rtr-rope" x1="205" y1="280" x2="305" y2="280"/>
+      <line class="rtr-rope" x1="205" y1="308" x2="305" y2="308"/>
+      <path class="rtr-plate" d="M830 205 L710 182 L665 240 L665 320 L710 378 L830 355 Z"/>
+      <path class="rtr-inner" d="M812 222 L714 203 L682 246 L682 314 L714 357 L812 338 Z"/>
+      <circle class="rtr-snap" cx="748" cy="205" r="6"/><circle class="rtr-snap" cx="748" cy="355" r="6"/>
+      <line class="rtr-rope" x1="695" y1="252" x2="795" y2="252"/>
+      <line class="rtr-rope" x1="695" y1="280" x2="795" y2="280"/>
+      <line class="rtr-rope" x1="695" y1="308" x2="795" y2="308"/>
+      <!-- center plate -->
+      <path class="rtr-plate" d="M415 95 H585 L660 170 V400 L585 475 H415 L340 400 V170 Z"/>
+      <path class="rtr-inner" d="M424 112 H576 L643 178 V392 L576 458 H424 L357 392 V178 Z"/>
+      <path class="rtr-acc" d="M452 150 L500 138 L548 150"/>
+      <path class="rtr-acc" d="M452 430 L500 442 L548 430"/>
+      <text class="rtr-wm"    x="500" y="242" text-anchor="middle" font-size="104" letter-spacing="1">RUN</text>
+      <line class="rtr-acc" x1="410" y1="285" x2="452" y2="285" stroke-width="8"/>
+      <line class="rtr-acc" x1="548" y1="285" x2="590" y2="285" stroke-width="8"/>
+      <text class="rtr-wmred" x="500" y="308" text-anchor="middle" font-size="66" letter-spacing="2">THE</text>
+      <text class="rtr-wm"    x="500" y="408" text-anchor="middle" font-size="104" letter-spacing="1">ROPES</text>
+    </svg>
+    <span class="beta-tag" style="align-self:flex-start;">Beta</span>
+  </div>
+  <div style="color:var(--text-faint); font-size:12px; letter-spacing:.24em; text-transform:uppercase; margin:8px 0 6px; font-weight:800;">Wrestling Booking Sim · Career Mode</div>
   <p class="hint" style="max-width:640px;">Take control of a wrestling promotion. Sign and poach talent, book weekly shows, run feuds, defend championships, and grow your company. Every rating is deterministic and fully inspectable — no random bombs, just booking decisions with visible consequences.</p>
 
   <div id="continueBar" class="continue-bar" style="display:none;">
@@ -476,15 +519,32 @@ const VENUES = [
 function venueById(id){ return VENUES.find(v=>v.id===id) || VENUES[0]; }
 // default venue + weekly budget by promotion size tier
 const TIER_SETUP = {
-  'International':              { venue:'arena',   tvDeal:2200000, budget:900000, price:65 },
-  'International (Puro)':       { venue:'arena_s', tvDeal:700000,  budget:420000, price:55 },
-  'National':                  { venue:'ballroom',tvDeal:280000,  budget:260000, price:45 },
-  'National (Lucha)':          { venue:'ballroom',tvDeal:220000,  budget:230000, price:38 },
-  'National (Joshi)':          { venue:'theater', tvDeal:180000,  budget:180000, price:42 },
-  'Regional':                  { venue:'theater', tvDeal:90000,   budget:120000, price:40 },
-  'Regional (Joshi)':          { venue:'theater', tvDeal:70000,   budget:100000, price:38 },
+  'International':              { venue:'arena',   tvDeal:2000000, budget:900000, price:65 },
+  'International (Puro)':       { venue:'arena_s', tvDeal:430000,  budget:360000, price:55 },
+  'National':                  { venue:'ballroom',tvDeal:135000,  budget:200000, price:45 },
+  'National (Lucha)':          { venue:'ballroom',tvDeal:95000,   budget:170000, price:38 },
+  'National (Joshi)':          { venue:'theater', tvDeal:70000,   budget:130000, price:42 },
+  'Regional':                  { venue:'theater', tvDeal:28000,   budget:90000,  price:40 },
+  'Regional (Joshi)':          { venue:'theater', tvDeal:30000,   budget:80000,  price:38 },
 };
 function tierSetup(label){ return TIER_SETUP[label] || TIER_SETUP['Regional']; }
+
+// Realistic weekly salary = market value (steep overness curve) scaled by the
+// promotion's pay tier. A big-promotion top star earns ~$90k/wk; the same
+// overness in a regional/joshi fed earns a fraction of that. This is what
+// keeps small promos lean (cheap rosters) yet able to gamble on talent at
+// their own scale, while stars stay expensive inside the big brands.
+const PAY_FACTOR = {
+  'International':1.0, 'International (Puro)':0.55,
+  'National':0.42, 'National (Lucha)':0.42, 'National (Joshi)':0.35,
+  'Regional':0.35, 'Regional (Joshi)':0.26,
+};
+function payFactor(tierLabel){ return PAY_FACTOR[tierLabel] != null ? PAY_FACTOR[tierLabel] : 0.5; }
+function marketSalary(overness, tierLabel){
+  const x = Math.max(0, Math.min(100, overness))/100;
+  const base = 1000 + Math.pow(x,4)*110000;
+  return Math.max(800, Math.round(base * payFactor(tierLabel) / 250) * 250);
+}
 
 let selectedMode = 'quick';
 function selectMode(m){
@@ -511,6 +571,13 @@ function freshState(promoName, mode){
   (window.RTR_PERSONALITIES || []).forEach(pw=>{
     pool.push(normalizeWorker(Object.assign({ promotion:'Free Agent', momentum:55, condition:90, morale:75 }, JSON.parse(JSON.stringify(pw)))));
   });
+  // realistic salaries: recompute every wrestler's pay from overness × their
+  // promotion's pay tier (managers keep authored appearance fees).
+  roster.forEach(w=>{ if(w.role !== 'manager') w.salary = marketSalary(w.overness, meta.tierLabel); });
+  pool.forEach(w=>{ if(w.role !== 'manager'){
+    const tl = (PROMO_META[w.promotion]||{}).tierLabel || 'National'; // FAs → mid scale
+    w.salary = marketSalary(w.overness, tl);
+  }});
   // stagger signed-roster contract lengths so they don't all expire at once
   roster.forEach(w=>{ w.contractWeeks = 44 + (idNum(w.id) % 60); w.expiryWarned = false; });
   pool.forEach(w=>{ w.contractWeeks = 0; }); // rivals/FAs: not player-tracked until signed
@@ -1008,11 +1075,12 @@ function computeShowMetrics(showRating, results){
   const venue = currentVenue();
   const capacity = venue.cap;
 
-  // demand 0..~1.1 from popularity, show quality, star power
-  const demand = clamp((pop*0.45 + showRating*0.30 + starPower*0.25)/100, 0, 1.12);
-  // ticket price sensitivity vs the tier's baseline price
+  // demand from star power (fans come for the top of the card), show quality,
+  // and overall popularity. A strong card from over talent can sell out.
+  const demand = clamp(((starPower*0.45 + showRating*0.35 + pop*0.20)/100) * 1.18, 0, 1.2);
+  // ticket price sensitivity — ~1.0 at the tier's baseline price, cheaper fills more
   const price = S.promo.ticketPrice;
-  const priceFactor = clamp(1.18 - (price/(setup.price*2)), 0.35, 1.12);
+  const priceFactor = clamp(1.5 - (price/setup.price)*0.5, 0.4, 1.25);
   const sellThrough = clamp(demand * priceFactor, 0, 1);
   const attendance = Math.round(capacity * sellThrough);
   const gate = attendance * price;
@@ -1026,15 +1094,16 @@ function computeShowMetrics(showRating, results){
   const payroll = weeklyPayroll();
   const production = Math.round(venue.cost*0.35 + capacity*2);
   const venueCost = venue.cost;
+  const overhead = Math.round(ws.length * 900 + 8000); // staff, travel, office
   const revenue = gate + tvRevenue + merch;
-  const costs = payroll + production + venueCost;
+  const costs = payroll + production + venueCost + overhead;
   const net = revenue - costs;
 
   // grade blends crowd, TV, sell-through and profitability
   const profitScore = clamp(52 + (net/(costs+1))*45, 0, 100);
   const composite = showRating*0.40 + tvRating*0.25 + sellThrough*100*0.20 + profitScore*0.15;
   return { crowd:showRating, tvRating, attendance, capacity, sellThrough, gate, tvRevenue, merch,
-           payroll, production, venueCost, revenue, costs, net, profitScore, composite,
+           payroll, production, venueCost, overhead, revenue, costs, net, profitScore, composite,
            grade:letterGrade(composite), venueName:venue.name, ticketPrice:price };
 }
 
@@ -1719,6 +1788,7 @@ function signWorker(id){
   const from = w.promotion;
   w.promotion = S.promo.name; w.morale = clamp(Math.max(w.morale, 70)); w.weeksIdle=0;
   w.contractWeeks = 52; w.expiryWarned = false;
+  if(!isManager(w)) w.salary = marketSalary(w.overness, S.promo.tierLabel); // pay at your scale
   S.roster.push(w);
   renderAll(); scheduleSave();
   toast(`${isManager(w)?'Hired':(isFA?'Signed':'Poached')} ${w.name}${(isFA||isManager(w))?'':' from '+from}`);
@@ -1776,6 +1846,7 @@ function renderFinances(){
         ${line('Payroll',M.payroll,false)}
         ${line('Venue',M.venueCost,false)}
         ${line('Production',M.production,false)}
+        ${line('Overhead',M.overhead||0,false)}
         <div style="display:flex; justify-content:space-between; border-top:1px solid var(--line); margin-top:6px; padding-top:6px;"><span class="vs-line">Net</span><span class="mono" style="font-size:16px; color:${M.net>=0?'var(--green)':'#f08a76'}">${M.net>=0?'+':''}${money(M.net)}</span></div>
       </div>`;
     }

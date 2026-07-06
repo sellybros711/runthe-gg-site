@@ -21,11 +21,27 @@
    ============================================================ */
 window.RTR_PERSONALITIES = [
   // ---------------- Free-agent wrestlers ----------------
-  { id:'fa01', name:'Brock Lesnar',   tier:'elite', align:'heel',    inRing:76, psych:80, ent:76, phys:96, overness:90, age:48, salary:60000, role:'wrestler' },
-  { id:'fa02', name:'Malakai Black',  tier:'upper', align:'heel',    inRing:82, psych:78, ent:78, phys:74, overness:74, age:40, salary:24000, role:'wrestler' },
-  { id:'fa03', name:'Karrion Kross',  tier:'mid',   align:'heel',    inRing:66, psych:64, ent:76, phys:82, overness:62, age:40, salary:18000, role:'wrestler' },
-  { id:'fa04', name:'Matt Riddle',    tier:'mid',   align:'face',    inRing:78, psych:66, ent:70, phys:74, overness:62, age:39, salary:17000, role:'wrestler' },
-  { id:'fa05', name:'Scarlett',       tier:'lower', align:'heel',    inRing:54, psych:56, ent:72, phys:62, overness:56, age:34, salary:12000, role:'wrestler' },
+  // Recently-released, indie, deathmatch and lucha names not on the eight
+  // rosters. Salaries here are placeholders — a realistic market-salary model
+  // (overness-based) recomputes every wrestler's pay at career start.
+  { id:'fa01', name:'Karrion Kross',   tier:'mid',   align:'heel',    inRing:66, psych:64, ent:76, phys:82, overness:64, age:40, salary:15000, role:'wrestler' },
+  { id:'fa02', name:'Scarlett',        tier:'lower', align:'heel',    inRing:54, psych:56, ent:72, phys:62, overness:56, age:34, salary:9000,  role:'wrestler' },
+  { id:'fa03', name:'Matt Riddle',     tier:'mid',   align:'face',    inRing:78, psych:66, ent:70, phys:74, overness:62, age:39, salary:14000, role:'wrestler' },
+  { id:'fa04', name:'Lio Rush',        tier:'mid',   align:'face',    inRing:80, psych:60, ent:68, phys:70, overness:56, age:31, salary:11000, role:'wrestler' },
+  { id:'fa05', name:'Mistico',         tier:'mid',   align:'face',    inRing:78, psych:66, ent:70, phys:66, overness:64, age:42, salary:12000, role:'wrestler' },
+  { id:'fa06', name:'Volador Jr.',     tier:'mid',   align:'heel',    inRing:76, psych:66, ent:62, phys:66, overness:56, age:42, salary:10000, role:'wrestler' },
+  { id:'fa07', name:'Lince Dorado',    tier:'lower', align:'face',    inRing:68, psych:56, ent:60, phys:64, overness:48, age:34, salary:7000,  role:'wrestler' },
+  { id:'fa08', name:'PCO',             tier:'mid',   align:'heel',    inRing:60, psych:60, ent:62, phys:80, overness:54, age:57, salary:8000,  role:'wrestler' },
+  { id:'fa09', name:'Nick Gage',       tier:'mid',   align:'heel',    inRing:58, psych:62, ent:70, phys:74, overness:56, age:44, salary:8000,  role:'wrestler' },
+  { id:'fa10', name:'Joey Janela',     tier:'lower', align:'face',    inRing:66, psych:58, ent:64, phys:64, overness:50, age:35, salary:7000,  role:'wrestler' },
+  { id:'fa11', name:'Mance Warner',    tier:'lower', align:'heel',    inRing:62, psych:58, ent:66, phys:70, overness:50, age:36, salary:7000,  role:'wrestler' },
+  { id:'fa12', name:'Killian Dain',    tier:'lower', align:'heel',    inRing:64, psych:58, ent:58, phys:80, overness:50, age:38, salary:7000,  role:'wrestler' },
+  { id:'fa13', name:'Blake Christian', tier:'mid',   align:'face',    inRing:76, psych:58, ent:60, phys:68, overness:52, age:26, salary:8000,  role:'wrestler' },
+  { id:'fa14', name:'Marina Shafir',   tier:'lower', align:'heel',    inRing:62, psych:58, ent:56, phys:74, overness:50, age:37, salary:7000,  role:'wrestler' },
+  { id:'fa15', name:'Kylie Rae',       tier:'lower', align:'face',    inRing:66, psych:58, ent:66, phys:62, overness:50, age:33, salary:7000,  role:'wrestler' },
+  { id:'fa16', name:'Tegan Nox',       tier:'lower', align:'face',    inRing:66, psych:58, ent:60, phys:66, overness:52, age:30, salary:8000,  role:'wrestler' },
+  { id:'fa17', name:'Shotzi',          tier:'lower', align:'face',    inRing:64, psych:56, ent:62, phys:66, overness:52, age:33, salary:8000,  role:'wrestler' },
+  { id:'fa18', name:'Effy',            tier:'lower', align:'tweener', inRing:64, psych:58, ent:68, phys:62, overness:50, age:35, salary:7000,  role:'wrestler' },
 
   // ---------------- Retired legends (manager / GM) ----------------
   { id:'leg01', name:'Stone Cold Steve Austin', tier:'legend', align:'tweener', inRing:0, psych:70, ent:96, phys:0, overness:96, age:61, salary:30000, role:'manager', retired:true, canGM:true,  mgrBonus:88 },
