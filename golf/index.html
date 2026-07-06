@@ -3263,6 +3263,11 @@ function ovrFromSkills(sk){
      H2H builds its own draft and never calls buildPlayer, so bought gear can't touch ranked / the H2H
      board. Per-skill + total caps keep career from being trivialized.
    - Account-scoped (acctKey) + cloud-synced. Signed-in feature (like achievements). ------------------- */
+// SHELVED (owner): the shop/coins economy + boosts are hidden from the frontend until they're rebalanced
+// (the derived balance was far too generous — a long-time account could buy everything at once — and the
+// boosts were too strong). Flip this true only once the economy is redesigned (likely server-authoritative).
+// While false: no shop entry points render, the overlay is unreachable, and equipped gear gives ZERO boost.
+const SHOP_ENABLED=false;
 const COIN_START=300;                       // welcome coins on your first signed-in load
 const ACC_SKILL_CAP=6, ACC_TOTAL_CAP=18;    // clamp so a full gear loadout is a meaningful, bounded edge
 const ACC_RARITY={ common:{c:'#b8c4bd',label:'Common'}, rare:{c:'#4aa3ff',label:'Rare'},
@@ -3361,7 +3366,8 @@ function accBuy(id){ const it=accById(id); if(!it) return {ok:false,msg:'Unknown
   return {ok:true};
 }
 // ---- boosts: summed over equipped gear, clamped per-skill + total (SOLO ONLY via buildPlayer) ----
-function accBoost(){ const out={}; let total=0; ACC_SLOTS.forEach(sl=>{ const id=accEquipped(sl.k); const it=id&&accById(id);
+function accBoost(){ if(!SHOP_ENABLED) return {};   // shelved: equipped gear gives no boost while the economy is disabled
+  const out={}; let total=0; ACC_SLOTS.forEach(sl=>{ const id=accEquipped(sl.k); const it=id&&accById(id);
     if(it&&it.boost) for(const k in it.boost){ out[k]=(out[k]||0)+it.boost[k]; } });
   for(const k in out) out[k]=Math.min(ACC_SKILL_CAP, out[k]);
   // enforce the total cap by trimming largest-first if needed
@@ -4110,7 +4116,7 @@ function overlayMenu(screen){
   play.appendChild(menuRow('🏅','Trophy Room',signedIn?'Your badges, titles & Legend Tokens':'Sign in to unlock your record',go(()=>{S.overlay='record';})));
   play.appendChild(menuRow('⛳','Course Records','Today\'s board & all-time bests',go(()=>{S.overlay='courserecords';})));
   play.appendChild(menuRow('🎫','Course Passport',`Your best grade at all ${DAILY_KEYS.length} courses`,go(()=>{S.overlay='passport';})));
-  play.appendChild(menuRow(ic('cart'),'Pro Shop', signedIn?('Coins: '+coinFmt(coinBalance())+' · gear & boosts'):'Sign in to earn coins & gear',go(()=>{S.overlay='shop';})));
+  if(SHOP_ENABLED) play.appendChild(menuRow(ic('cart'),'Pro Shop', signedIn?('Coins: '+coinFmt(coinBalance())+' · gear & boosts'):'Sign in to earn coins & gear',go(()=>{S.overlay='shop';})));
   ov.appendChild(play);
   const acct=$(`<div style="margin-bottom:16px"></div>`);
   acct.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Account</div>`));
@@ -4354,7 +4360,7 @@ function scrTitle(){
   mkLink('How to Play', openRules);
   mkLink('🏆 Leaderboard', ()=>{S.overlay='leaderboard';render();});
   mkLink('🏅 Trophy Room', ()=>{S.overlay='record';render();});
-  mkLink((sbSignedIn()?ic('coin')+' '+coinFmt(coinBalance())+' · ':'')+'Pro Shop', ()=>{S.overlay='shop';render();});
+  if(SHOP_ENABLED) mkLink((sbSignedIn()?ic('coin')+' '+coinFmt(coinBalance())+' · ':'')+'Pro Shop', ()=>{S.overlay='shop';render();});
   w.appendChild(sec);
   const credit=$(`<div class="small muted center" style="margin-top:16px;line-height:1.6;opacity:.7">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
   w.appendChild(credit);
@@ -9757,6 +9763,7 @@ function shopCard(it){ const r=ACC_RARITY[it.rarity]||ACC_RARITY.common, owned=a
     ${action}</div>`;
 }
 function overlayShop(screen){
+  if(!SHOP_ENABLED){ S.overlay=null; return; }   // shelved until the economy is rebalanced
   const signed=sbSignedIn(), filt=S.shopSlot||'all', s=coinState();
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Pro Shop">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
