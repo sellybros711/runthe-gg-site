@@ -5264,6 +5264,19 @@ allows Google Fonts, or self-host Anton.*
   Verified via a node unit test of the extracted colour math + pattern functions (navy/black/white
   lightness targets, shading preservation, all new patterns render); inline scripts parse clean. HTML only.
 
+- **CS197 — all equipped accessories fit the golfer naturally (both genders).** Owner: "make all of the
+  accessories fit on the golfer perfectly, as if they were part of the same image." Replicated the
+  `paintAvatarFull` compositing in Python to render the actual dressed golfer and calibrated every slot
+  against the measured anatomy (hands, feet, eyes, waist read from the base masks; male hands at hip level
+  ~y730, the skirted female's hands higher-relative ~y778). Fixes: glasses now sit ACROSS the eyes
+  (eyeY 98→116 male / measured 155 female, was on the brow); the glove is worn ON the right hand (was
+  floating on the thigh — the old handY/handRx anchors were wrong); the ball is held at the left hand; the
+  ball-marker charm is clipped at the belt/pocket (`hipLx` anchor) instead of floating on the crotch; and
+  the driver/putter now GRIP at the hand with the head on the ground via a new `spanY:['gripY','footY']`
+  placement mode that scales a club to span two anatomy anchors (so it lands correctly on both the male and
+  the shorter-torso female). Verified by rendering the full male + female composites with one item per slot;
+  HTML only (no art/mask changes).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
