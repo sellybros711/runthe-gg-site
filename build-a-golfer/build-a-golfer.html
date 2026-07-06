@@ -63,7 +63,7 @@ window.GA_ID='G-L29P5MRWKE';
     --teal:#06A291; --gold:#EBA61F; --gold2:#c79320;
     --red:#E14A33; --red2:#b8371f;
     --cardA:#0d2740; --cardB:#0a1a2c;
-    --board:rgba(255,255,255,.035); --oncard:#F4E3C9; --muted:#88a397;
+    --board:rgba(255,255,255,.035); --oncard:#F4E3C9; --muted:#accabb;
     --line:rgba(244,227,201,.09);
     --panel:rgba(255,255,255,.045); --panelb:rgba(244,227,201,.10);
     --display:'Anton',Impact,'Arial Narrow',sans-serif;
@@ -75,7 +75,7 @@ window.GA_ID='G-L29P5MRWKE';
       radial-gradient(1300px 680px at 50% -8%, rgba(74,156,108,.22), transparent 60%),
       radial-gradient(900px 700px at 50% 120%, rgba(10,60,40,.5), transparent 70%),
       linear-gradient(180deg,#11432f,#06200f);
-    --pageink:#F4E3C9; --pagemut:#9cbfa8; --pill:rgba(0,0,0,.26); --pillb:rgba(244,227,201,.16);
+    --pageink:#F4E3C9; --pagemut:#b7d3c2; --pill:rgba(0,0,0,.26); --pillb:rgba(244,227,201,.16);
   }
   *{box-sizing:border-box}
   html,body{margin:0; overscroll-behavior-y:none}
@@ -153,16 +153,16 @@ window.GA_ID='G-L29P5MRWKE';
 
   h1{font-family:var(--display); font-style:normal; font-weight:400; color:var(--oncard);
     letter-spacing:.01em; line-height:.96; margin:6px 0; text-transform:uppercase; text-shadow:0 2px 18px rgba(0,0,0,.5)}
-  h2{font-family:var(--body); font-weight:800; font-size:12px; letter-spacing:.16em; text-transform:uppercase; color:var(--muted); margin:0 0 10px}
-  p.lede{color:#d7e2ea; margin:0 0 16px}
+  h2{font-family:var(--body); font-weight:800; font-size:13px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:0 0 10px}
+  p.lede{color:#dbe6ec; margin:0 0 16px; font-size:15px; line-height:1.45}
   .center{text-align:center}
-  .muted{color:var(--muted)} .small{font-size:12.5px}
+  .muted{color:var(--muted)} .small{font-size:13px}
   .mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
   .ic{display:inline-block;width:1em;height:1em;vertical-align:-0.14em;flex:0 0 auto;line-height:1}
-  .tag{display:inline-block; font:800 10px/1 var(--body); letter-spacing:.18em; text-transform:uppercase;
-    color:var(--teal); border:1px solid var(--line); padding:6px 9px; border-radius:999px}
+  .tag{display:inline-block; font:800 11px/1 var(--body); letter-spacing:.11em; text-transform:uppercase;
+    color:var(--teal); border:1px solid var(--line); padding:6px 10px; border-radius:999px}
   /* cohesive teal "online area" chip, ties every H2H screen to the Play Online home block */
-  .online-tag{display:inline-flex; align-items:center; gap:7px; font:800 10px/1 var(--body); letter-spacing:.16em;
+  .online-tag{display:inline-flex; align-items:center; gap:7px; font:800 11px/1 var(--body); letter-spacing:.11em;
     text-transform:uppercase; color:#4fe0c1; border:1px solid rgba(15,168,136,.55); padding:6px 11px; border-radius:999px;
     background:linear-gradient(180deg, rgba(15,168,136,.14), rgba(15,168,136,.04))}
 
@@ -536,7 +536,7 @@ window.GA_ID='G-L29P5MRWKE';
     border-radius:11px; flex-wrap:wrap}
   .moment.fresh{animation:momentIn .5s cubic-bezier(.22,1,.36,1)}
   @keyframes momentIn{0%{transform:translateY(7px) scale(.97); opacity:0}100%{transform:none; opacity:1}}
-  .moment .mday{font:800 10px/1 var(--body); letter-spacing:.16em; color:var(--muted); text-transform:uppercase}
+  .moment .mday{font:800 11.5px/1 var(--body); letter-spacing:.16em; color:var(--muted); text-transform:uppercase}
   .moment .mscore{font-family:var(--mono); font-weight:800; font-size:20px; line-height:1}
   .moment .mmove{font:800 12px/1 var(--body); letter-spacing:.02em}
   .sc-topar.tick{animation:scPop .5s ease}
@@ -571,7 +571,7 @@ window.GA_ID='G-L29P5MRWKE';
   .hvshell{position:relative}
   .hvob{position:absolute;z-index:2;pointer-events:none}
   .hvhole{top:8px;left:8px;background:rgba(8,17,26,.72);border:1px solid rgba(255,255,255,.16);border-radius:8px;
-    padding:5px 9px;font:800 10px/1 var(--body);letter-spacing:.1em;color:#eef4ee}
+    padding:5px 9px;font:800 11.5px/1 var(--body);letter-spacing:.1em;color:#eef4ee}
   .hvhole.right{left:auto;right:8px}
   .hvboard{top:8px;right:8px;display:grid;gap:4px;max-width:47%}
   .hvboard.left{right:auto;left:8px}
@@ -611,7 +611,7 @@ window.GA_ID='G-L29P5MRWKE';
     background:linear-gradient(180deg,#0d2c20,#07211a);border:2px solid var(--gold);border-radius:20px;padding:20px 20px 22px;
     box-shadow:0 30px 70px -20px rgba(0,0,0,.9),0 0 0 1px rgba(235,166,31,.22) inset;animation:dcPop .34s cubic-bezier(.2,1.25,.4,1)}
   @keyframes dcPop{0%{opacity:0;transform:scale(.9) translateY(10px)}100%{opacity:1;transform:none}}
-  .dc-flag{font:800 10px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+  .dc-flag{font:800 11.5px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
   .dc-hole{font:900 19px/1.15 var(--body);color:var(--cream);margin-top:8px}
   .dc-sub{font:600 12px/1.35 var(--body);color:var(--muted);margin-top:5px}
   .dc-sit{font:800 13px/1.35 var(--body);color:#ffcf6a;margin-top:11px}
@@ -628,7 +628,7 @@ window.GA_ID='G-L29P5MRWKE';
   .dc-opt.agg .dc-ol{color:#ff8a6e}
   .dc-opt.safe{border-color:#3fcaa8;box-shadow:0 8px 22px -12px rgba(63,202,168,.55)}
   .dc-opt.safe .dc-ol{color:#5fe0c0}
-  .dc-or{font:800 10px/1 var(--body);letter-spacing:.2em;color:var(--muted);margin:9px 0;text-transform:uppercase}
+  .dc-or{font:800 11.5px/1 var(--body);letter-spacing:.2em;color:var(--muted);margin:9px 0;text-transform:uppercase}
   @media (prefers-reduced-motion:reduce){ .decisionov,.decisioncard{animation:none} }
   /* crisp FLIP glide when scoreboard rows swap order (positions animate, not teleport) */
   .hvbrow{transition:none}
@@ -716,7 +716,7 @@ window.GA_ID='G-L29P5MRWKE';
   .tiles.four{grid-template-columns:repeat(4,1fr)}
   @media(max-width:680px){ .tiles.four{grid-template-columns:1fr 1fr} }
   .tile{background:var(--panel); border:1px solid var(--panelb); border-radius:12px; padding:12px 14px}
-  .tile .k{font:800 10px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+  .tile .k{font:800 11.5px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
   .tile .v{font-family:var(--mono); font-weight:800; font-size:23px; margin-top:6px; color:var(--gold)}
   .tile .v.cream{color:var(--oncard)}
   .share{background:#0a2740; border:1px dashed var(--line); border-radius:11px; padding:12px 14px; font-family:var(--mono); font-size:12px; color:#d2e1ea; white-space:pre-wrap; margin-top:6px}
@@ -4515,7 +4515,7 @@ function toast(msg){
 
 /* ---------- setup (create your golfer) ---------- */
 // a labelled section header with a divider rule, groups the form so it doesn't read as a wall of controls
-function setupHeader(label){ return $(`<div style="display:flex;align-items:center;gap:10px;margin:17px 0 3px"><span style="letter-spacing:.12em;text-transform:uppercase;font-size:10.5px;font-weight:800;color:#9fb4ab">${esc(label)}</span><span style="flex:1;height:1px;background:rgba(255,255,255,.08)"></span></div>`); }
+function setupHeader(label){ return $(`<div style="display:flex;align-items:center;gap:10px;margin:18px 0 4px"><span style="letter-spacing:.08em;text-transform:uppercase;font-size:12.5px;font-weight:800;color:#cadecf">${esc(label)}</span><span style="flex:1;height:1px;background:rgba(255,255,255,.1)"></span></div>`); }
 function scrSetup(){
   const guest=!sbSignedIn();
   add($(`<div class="center"><span class="tag"${S.special?' style="color:#ffd76a;border-color:#ffd76a"':''}>${S.special?'⭐ Monthly Spotlight':(S.daily?'Daily Challenge':'New golfer')}</span></div>`));
@@ -6108,7 +6108,7 @@ function selectionInfo(evt){
 function selectionPopup(evt){
   const info=selectionInfo(evt), col=info.made?'var(--gold)':'#e9a23b';
   const t=$(`<div style="position:fixed;left:0;right:0;bottom:22px;margin:0 auto;z-index:30;width:min(440px,92vw);box-sizing:border-box;background:linear-gradient(180deg,${info.made?'#15331f':'#0a2740'},#0a1626);color:var(--oncard);border:1px solid ${col};border-radius:12px;padding:13px 16px;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:celebRise .35s ease both">
-    <div style="font:800 10px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:${col};margin-bottom:5px">${info.made?'🎉 ':''}${esc(info.tag)} · Selection</div>
+    <div style="font:800 11.5px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:${col};margin-bottom:5px">${info.made?'🎉 ':''}${esc(info.tag)} · Selection</div>
     <div style="font:800 17px/1.2 var(--body);color:${col}">${info.made?'🏆 ':''}${info.title}</div>
     <div class="small muted" style="margin-top:4px">${info.sub}</div></div>`);
   document.body.appendChild(t);
@@ -6391,7 +6391,7 @@ function raceToCupNode(byPts, evt){
   const col=finale?'var(--gold)':(inside?'#35d6a0':'#E14A33');
   const wrap=$(`<div class="race2cup" style="background:#0a2740;border:1px solid var(--line);border-radius:13px;padding:11px 13px;margin:0 0 12px">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
-      <div style="min-width:0"><div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">${finale?'🏆 The Cup is on the line':(S.circuitMode?'Race to the Legends Cup':'Race to the Cup')}</div>
+      <div style="min-width:0"><div style="font:800 11.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">${finale?'🏆 The Cup is on the line':(S.circuitMode?'Race to the Legends Cup':'Race to the Cup')}</div>
         <div class="small" style="margin-top:3px;color:var(--oncard)">${detail}</div></div>
       <div style="text-align:right;flex:0 0 auto"><div class="mono" style="font-weight:800;font-size:20px;color:${col}">#${rank}</div>
         <div class="small muted" style="margin-top:1px">${fmtP(myPts)} pts</div></div>
@@ -6465,7 +6465,7 @@ function scrSeason(){
   if(!S.daily && t.played) add(raceToCupNode(byPts, evt));
   // opposite-field note: you missed the OWGR cut for this week's marquee event and are playing the alternate
   if(evt.oppo) add($(`<div class="scout" style="border-color:#E14A33;margin:0 0 12px;padding:10px 13px">
-    <div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#E14A33">Opposite-field event</div>
+    <div style="font:800 11.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#E14A33">Opposite-field event</div>
     <div class="small" style="margin-top:4px;color:var(--oncard)">Outside the OWGR cut for the ${esc(evt.against)} this week. Win here to bank points and climb toward the elite fields.</div></div>`));
 
   const typeLbl=evt.olympics?'<span class="major">🏅 Summer Games</span>':evt.guestMajor?'<span class="major">🎖️ Past Champion</span>':evt.major?'<span class="major">Major</span>':evt.stagger?`<span class="sig">🏆 Cup Finale · top ${evt.cap}</span>`:evt.playoff?`<span class="sig">Playoff · top ${evt.cap}</span>`:evt.oppo?'<span class="reg">Opposite-field</span>':evt.type==='finale'?'<span class="sig">Finale</span>':evt.big?`<span class="sig">Signature · top ${evt.entryCap||50}</span>`:'<span class="reg">Tour event</span>';
@@ -7071,7 +7071,7 @@ function scrSummary(){
     const moveCol=firstYr?'var(--gold)':(dlt>0?'#35d6a0':dlt<0?'#E14A33':'var(--muted)');
     add($(`<div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin:8px 0 12px;border-color:${cs.col}">
       <div style="min-width:0">
-        <div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">Official World Ranking</div>
+        <div style="font:800 11.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">Official World Ranking</div>
         <div style="font:800 26px/1 var(--body);color:var(--oncard);margin-top:6px">World #${m.now} <span style="font-size:13px;color:${moveCol};font-weight:700">${moveTxt}</span></div>
         <div class="small" style="margin-top:5px;color:${cs.col};font-weight:700">${cs.label}</div>
         <div class="small muted" style="margin-top:1px">${cs.note}</div>
@@ -7113,7 +7113,7 @@ function scrSummary(){
         <div class="small muted" style="margin-top:4px">You medalled for ${esc((S.look&&S.look.country)||'your country')}</div></div></div>`));
     } else {
       add($(`<div class="center" style="margin:6px 0 12px"><div class="scout" style="display:inline-block;padding:10px 16px">
-        <span style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">Summer Games</span>
+        <span style="font:800 11.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">Summer Games</span>
         <span class="small" style="margin-left:8px;color:var(--oncard)">🥇 ${natFlag(gold.nat)} ${esc(gold.name)} took gold</span></div></div>`));
     }
   }
@@ -11969,9 +11969,9 @@ function h2hResultCard(){
   const nameCell=(html,extra)=>`<div style="width:${nameW}px;flex:0 0 auto;padding:6px 8px;position:sticky;left:0;z-index:1;background:${bg};${extra||''}">${html}</div>`;
   const mk=cells=>{ const r=$(`<div style="display:flex;white-space:nowrap;border-bottom:1px solid rgba(255,255,255,.05)"></div>`); cells.forEach(c=>r.appendChild($(c))); return r; };
   // header: HOLE | 1..N | TOT
-  const hdr=[nameCell(`<span style="font:800 10px/1 var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Hole</span>`)];
+  const hdr=[nameCell(`<span style="font:800 11.5px/1 var(--body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Hole</span>`)];
   for(let i=0;i<holes;i++) hdr.push(`<div style="width:${cw}px;flex:0 0 auto;text-align:center;padding:6px 0;font:700 11px/1 var(--mono);color:var(--muted)">${i+1}</div>`);
-  hdr.push(`<div style="width:${totW}px;flex:0 0 auto;text-align:center;padding:6px 0;font:800 10px/1 var(--body);color:var(--gold)">TOT</div>`);
+  hdr.push(`<div style="width:${totW}px;flex:0 0 auto;text-align:center;padding:6px 0;font:800 11.5px/1 var(--body);color:var(--gold)">TOT</div>`);
   tbl.appendChild(mk(hdr));
   // par row
   let parTot=0; const par=[nameCell(`<span style="font:700 10px/1 var(--body);color:var(--muted)">Par</span>`)];

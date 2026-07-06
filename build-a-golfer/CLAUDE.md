@@ -5361,6 +5361,18 @@ allows Google Fonts, or self-host Anton.*
   dark-styled `option`s. Applies to the Country and Caddie selects on the setup screen. Verified over http —
   the dropdowns now match the dark-green theme; zero page errors. CSS only.
 
+- **CS205 — site-wide legibility pass (category labels + body text).** Owner: the category fonts/sizes are
+  sometimes hard to read across the site; make it easier on the eyes on desktop and mobile, keep enough info
+  above the fold, clear and space-efficient. The culprit was the small uppercase "eyebrow" category labels —
+  ~10px, heavy `.16em` letter-spacing, in a low-contrast muted grey-green. Fixed globally at the shared
+  tokens/classes so every screen benefits at once: brightened `--muted` `#88a397`→`#accabb` and `--pagemut`
+  `#9cbfa8`→`#b7d3c2` (much better contrast on the dark-green bg); `h2` 12→13px + letter-spacing .16→.1em;
+  `.small` 12.5→13px; `.lede` set to 15px/1.45 line-height; `.tag`/`.online-tag` 10→11px + tighter spacing;
+  the `setupHeader` category rule 10.5→12.5px, brighter colour, less spacing; and bumped the 13 inline
+  `font:800 10px` eyebrow labels to 11.5px. All conservative size/contrast changes (no reflow risk). Verified
+  by rendering the title (mobile + desktop), setup, and shop over http — category labels are noticeably more
+  readable, layouts intact, good above-the-fold density; zero page errors. CSS/label-size only.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
