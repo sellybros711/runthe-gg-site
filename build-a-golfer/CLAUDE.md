@@ -5334,6 +5334,16 @@ allows Google Fonts, or self-host Anton.*
   whole hand is gloved to the wrist, zero page errors. HTML only (recolour code + masks unchanged, no cache
   bump needed).
 
+- **CS202 — female cap + glove fixed (bad anatomy anchors).** Owner (female avatar screenshot): "hat and
+  glove are off." Gridded her face and found the `AV_ANAT` female anchors were badly wrong — her eyes are at
+  y≈97 (brow ≈82) but `eyeY` was 155 and `browLine` 114 (down at her nose/mouth), so the cap brim sat over
+  her eyes and glasses would too. Fixed `browLine` 114→80 (brim now at the brow, eyes visible) and `eyeY`
+  155→97. Gridded her right hand and found the fist at ≈(326, 746) spanning y≈705–790; the CS201 glove
+  ellipse was too low/left (on the thigh), so re-centred it on the fist (`gloveCx` 320→326, `gloveCy`
+  748→746, `gloveRx` 24→25, `gloveRy` 34→40) — the glove now covers her hand with the strap at the wrist.
+  Verified by rendering the real female avatar over http (cap seated at the brow with eyes visible, glove on
+  the fist); male unchanged. HTML only.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
