@@ -70,6 +70,20 @@
       linear-gradient(180deg,#140f2c 0%, var(--bg) 46%, #08061a 100%);
     background-attachment:fixed;
   }
+  /* ambient living backdrop: slow-drifting brass/teal glows + a faint travel grid
+     so the app never reads as a static void below the fold */
+  body::before{content:"";position:fixed;inset:-25%;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(360px 360px at 22% 28%, rgba(236,181,80,.07), transparent 62%),
+      radial-gradient(420px 420px at 80% 72%, rgba(70,165,108,.06), transparent 62%),
+      radial-gradient(300px 300px at 68% 18%, rgba(238,90,68,.05), transparent 62%);
+    animation:bgDrift 30s ease-in-out infinite alternate;}
+  body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+    background-image:radial-gradient(rgba(255,255,255,.035) 1px, transparent 1.4px);
+    background-size:34px 34px;animation:gridPan 60s linear infinite;}
+  @keyframes bgDrift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(-5%,4%) scale(1.06)}}
+  @keyframes gridPan{0%{background-position:0 0}100%{background-position:34px 68px}}
+  @media (prefers-reduced-motion:reduce){body::before,body::after{animation:none;}}
   /* faint lat/long grid — echoes the wordmark map, kills the flat "empty dark" look */
   body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
     background-image:
@@ -1304,22 +1318,26 @@
           + '<circle id="flydest" cx="'+P1[0]+'" cy="'+P1[1]+'" r="0" fill="none" stroke="#EE5A44" stroke-width="1.4"/>'
           + '<text id="flyplane" x="'+P0[0]+'" y="'+P0[1]+'" font-size="15" text-anchor="middle" dominant-baseline="central">✈️</text>'
         + '</svg>'
-        + '<div class="ohint" id="flyhint" style="margin-top:10px">Drawing your next destination… <span style="opacity:.6">· tap to skip</span></div>'
+        + '<div class="ohint" id="flyhint" style="margin-top:10px">✈️ <b>Tap to boost</b> your flight — mash to get there faster.</div>'
       + '</div>' + foot();
-    var arc=$('flyarc'), plane=$('flyplane'), dest=$('flydest');
-    var DUR=1250, t0=performance.now();
+    var arc=$('flyarc'), plane=$('flyplane'), dest=$('flydest'), card=$('flycard');
+    var prog=0, boost=0, last=performance.now();
     function finish(){ if(f.done) return; f.done=true; if(S.flight) S.flight=null; if(f.then) f.then(); }
-    var card=$('flycard'); if(card) card.onclick=finish;
+    function boostTap(){ boost=Math.min(4, boost+1); vibe(8);
+      var pl=$('flyplane'); if(pl){ pl.setAttribute('font-size','19'); setTimeout(function(){ var p=$('flyplane'); if(p) p.setAttribute('font-size','15'); },130); } }
+    if(card) fastTap(card, boostTap);
     (function loop(){
       if(f.done || !$('flyplane') || S.phase!=='flight'){ return; }
-      var t=Math.min(1,(performance.now()-t0)/DUR);
-      var e=t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;   // easeInOut
+      var now=performance.now(), dt=Math.min(0.05,(now-last)/1000); last=now;
+      boost*=Math.pow(0.2,dt);                        // quick decay so mashing feels responsive
+      var rate=0.62*(1+boost*1.6); prog=Math.min(1, prog+rate*dt);   // base ~1.6s; taps accelerate
+      var e=prog<.5?2*prog*prog:1-Math.pow(-2*prog+2,2)/2;   // easeInOut
       var p=bez(e), p2=bez(Math.min(1,e+0.01));
       var ang=Math.atan2(p2[1]-p[1], p2[0]-p[0])*180/Math.PI + 45;   // ✈️ points NE at rest
       if(plane){ plane.setAttribute('x',p[0]); plane.setAttribute('y',p[1]); plane.setAttribute('transform','rotate('+ang+' '+p[0]+' '+p[1]+')'); }
-      if(arc){ arc.style.strokeDasharray='1 1'; arc.style.strokeDashoffset=String(1-e); }   // trail draws behind the plane
+      if(arc){ arc.style.strokeDasharray='1 1'; arc.style.strokeDashoffset=String(1-e); arc.setAttribute('stroke-width', boost>0.5?'2.3':'1.4'); }   // trail thickens on boost
       if(dest && e>0.82){ dest.setAttribute('r', String((e-0.82)/0.18*5)); }                // destination ring blooms on arrival
-      if(t>=1){ if(dest) dest.setAttribute('r','5'); setTimeout(finish,260); return; }
+      if(prog>=1){ if(dest) dest.setAttribute('r','5'); setTimeout(finish,220); return; }
       requestAnimationFrame(loop);
     })();
     renderAcct();
