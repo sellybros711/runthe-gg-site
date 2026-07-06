@@ -1,0 +1,75 @@
+{
+  "characters": [
+    {
+      "id": "det_okafor",
+      "name": "Detective Priya Okafor",
+      "role": "partner",
+      "unit": null,
+      "description": "Your assigned partner from Cadet rank onward. Sharp, patient, methodical — the kind of partner who lets you make the call and only pushes back when it matters.",
+      "is_placeholder": false,
+      "cover_identity": null,
+      "thread_role": "inside_man",
+      "relationship_defaults": { "trust": 65, "status": "active" }
+    },
+    {
+      "id": "lena_park",
+      "name": "Lena Park",
+      "role": "specialist",
+      "unit": "Medical Examiner",
+      "description": "ME who flags anything that doesn't sit right before she'll sign off on it. First one to call a 'probable overdose' a probable lie.",
+      "is_placeholder": false,
+      "cover_identity": null,
+      "thread_role": null
+    },
+    {
+      "id": "villain_voss",
+      "name": "Voss",
+      "role": "villain",
+      "unit": null,
+      "description": "The name attached to the network's money. Never appears at a scene; appears in the paperwork — invoices, shell registrations, wire memos — long before appearing in person.",
+      "is_placeholder": true,
+      "cover_identity": "Registered agent / compliance consultant for a chain of logistics and import-export shell companies — the cover that lets Voss originate the invoices and wire transfers the early breadcrumbs are built from.",
+      "thread_role": "villain"
+    },
+    {
+      "id": "antag_nadia",
+      "name": "Nadia",
+      "role": "antagonist",
+      "unit": null,
+      "description": "Voss's fixer. Handles the people Boone's cleanup work leaves behind — witnesses, loose ends, anyone who needs a reason to stay quiet.",
+      "is_placeholder": true,
+      "cover_identity": null,
+      "thread_role": "antagonist"
+    },
+    {
+      "id": "antag_boone",
+      "name": "\"Boone\"",
+      "role": "antagonist",
+      "unit": null,
+      "description": "Contract cleaner. Doesn't ask who hired him and doesn't keep names — which is exactly why the network keeps hiring him. First surfaces as the guilty party in Case 30, resurfaces as a recurring obstacle afterward.",
+      "is_placeholder": true,
+      "cover_identity": null,
+      "thread_role": "antagonist"
+    },
+    {
+      "id": "lawyer_grant",
+      "name": "Grant",
+      "role": "legal",
+      "unit": "Defense Counsel",
+      "description": "Shows up fast and well-briefed whenever a wrongful accusation lands — too fast, too well-briefed, for a public defender. Spawned into the world by consequence_hooks.recurring_npc_spawns.",
+      "is_placeholder": false,
+      "cover_identity": null,
+      "thread_role": null
+    },
+    {
+      "id": "reyes",
+      "name": "Reyes",
+      "role": "informant",
+      "unit": null,
+      "description": "Beat-level informant whose tips are reliable about eighty percent of the time — and always worth checking before they're worth trusting.",
+      "is_placeholder": false,
+      "cover_identity": null,
+      "thread_role": null
+    }
+  ]
+}

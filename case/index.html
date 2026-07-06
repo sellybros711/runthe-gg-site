@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>RunTheCase — Detective Career Sim</title>
+<meta name="robots" content="noindex, nofollow" />
+<meta name="theme-color" content="#0e1013" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230e1013'/%3E%3Ctext x='16' y='23' font-size='18' text-anchor='middle'%3E%F0%9F%94%8E%3C/text%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0e1013; --panel:#171a1f; --panel2:#1e222a; --line:rgba(244,232,219,.10);
+    --text:#e9e6df; --text-dim:#a8a49a; --text-faint:#726f66;
+    --amber:#d9a441; --amber-bright:#f0c060; --red:#c1503f; --red-bright:#e0705c;
+    --green:#5f9d72; --blue:#5c8fb0;
+    --display:'Bebas Neue',Impact,'Arial Narrow',sans-serif;
+    --body:'Inter',system-ui,'Segoe UI',Roboto,sans-serif;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(900px 480px at 50% -8%, rgba(217,164,65,.10), transparent 60%),
+      linear-gradient(180deg,#14161b,var(--ink) 60%);
+    color:var(--text); font-family:var(--body); min-height:100vh; line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{font-family:var(--display); letter-spacing:.02em;}
+  a{color:var(--amber);}
+  button{font-family:inherit;}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 16px 80px;}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;justify-content:center;
+    border:1px solid var(--line); background:var(--panel2); color:var(--text);
+    padding:10px 18px;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;
+    transition:transform .12s ease, border-color .12s ease, background .12s ease;
+  }
+  .btn:hover{border-color:rgba(217,164,65,.5); transform:translateY(-1px);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+  .btn.primary{background:linear-gradient(180deg,var(--amber-bright),var(--amber));color:#1b1204;border-color:transparent;}
+  .btn.primary:hover{filter:brightness(1.05);}
+  .btn.danger{border-color:rgba(193,80,63,.5);color:var(--red-bright);}
+  .btn.ghost{background:transparent;}
+  .btn.small{padding:6px 12px;font-size:12.5px;border-radius:8px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--line);color:var(--text-dim);}
+  .pill.locked{color:var(--text-faint);}
+  .pill.playable{color:var(--amber);border-color:rgba(217,164,65,.4);}
+  .pill.solved{color:var(--green);border-color:rgba(95,157,114,.4);}
+  .pill.given_up{color:var(--text-dim);}
+  .muted{color:var(--text-dim);}
+  .faint{color:var(--text-faint);font-size:12.5px;}
+  .row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .between{justify-content:space-between;}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:10px 18px;border-radius:10px;font-size:13.5px;box-shadow:0 12px 30px -12px rgba(0,0,0,.6);z-index:50;max-width:90vw;}
+
+  /* ---- Title screen ---- */
+  .titlescreen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;}
+  .logo{font-size:64px;line-height:1;margin-bottom:6px;}
+  .logo .r{color:var(--text);} .logo .t{color:var(--amber);} .logo .c{color:var(--red-bright);}
+  .tagline{color:var(--text-dim);max-width:520px;margin:6px 0 26px;font-size:15px;}
+  .titleactions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+  .dormant-badge{position:fixed;top:14px;right:14px;font-size:11px;color:var(--text-faint);border:1px dashed var(--line);padding:4px 9px;border-radius:8px;}
+
+  /* ---- Hub ---- */
+  .hubheader{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+  .tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);margin:18px 0 18px;flex-wrap:wrap;}
+  .tab{padding:9px 14px;border-radius:10px 10px 0 0;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--text-dim);border:1px solid transparent;}
+  .tab.active{color:var(--amber);border-color:var(--line);border-bottom-color:var(--panel);background:var(--panel);}
+  .rankblock{margin-bottom:26px;}
+  .rankblock h3{margin:0 0 3px;font-size:22px;}
+  .caselist{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;}
+  .casetile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:13px;cursor:pointer;transition:border-color .12s;}
+  .casetile:hover{border-color:rgba(217,164,65,.45);}
+  .casetile.locked{cursor:default;opacity:.55;}
+  .casetile.locked:hover{border-color:var(--line);}
+  .casetile h4{margin:6px 0 4px;font-size:15px;}
+  .statbar{height:6px;border-radius:3px;background:var(--panel2);overflow:hidden;}
+  .statbar > div{height:100%;background:linear-gradient(90deg,var(--amber),var(--amber-bright));}
+  .statgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0;}
+  .stattile{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;}
+  .stattile .num{font-family:var(--display);font-size:28px;color:var(--amber);}
+  .npclist{display:flex;flex-direction:column;gap:8px;}
+  .npcrow{display:flex;justify-content:space-between;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 14px;}
+
+  /* ---- Case view ---- */
+  .casebar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+  .phasetabs{display:flex;gap:6px;flex-wrap:wrap;}
+  .phasetab{padding:7px 13px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--line);color:var(--text-dim);}
+  .phasetab.active{color:#1b1204;background:var(--amber);border-color:transparent;}
+  .phasetab:disabled{opacity:.35;cursor:not-allowed;}
+  .briefingcard{max-width:640px;margin:30px auto;text-align:center;}
+  .hotspotgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+  .hotspot{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;}
+  .evtag{display:inline-flex;align-items:center;gap:6px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;margin:4px 6px 0 0;cursor:pointer;}
+  .evtag.logged{border-color:rgba(95,157,114,.5);color:var(--green);}
+  .evtag[disabled]{opacity:.4;cursor:not-allowed;}
+  .tier{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);}
+  .boardgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:10px;}
+  .boardcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;cursor:pointer;font-size:13px;}
+  .boardcard.suspect{border-color:rgba(92,143,176,.4);}
+  .boardcard.selected{border-color:var(--amber-bright);box-shadow:0 0 0 2px rgba(240,192,96,.25) inset;}
+  .connlist{margin-top:16px;}
+  .connrow{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px;}
+  .suspecttabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+  .chatnode{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;max-width:640px;}
+  .speaker{font-size:12px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+  .line{font-size:16px;margin-bottom:16px;}
+  .optionbtn{display:block;width:100%;text-align:left;margin-bottom:8px;}
+  .effecttag{display:inline-block;margin-left:8px;font-size:11px;color:var(--amber);}
+  .accusegrid{display:grid;grid-template-columns:1fr;gap:20px;max-width:640px;}
+  .radiorow, .checkrow{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer;}
+  .radiorow.checked, .checkrow.checked{border-color:var(--amber);background:rgba(217,164,65,.06);}
+  .scorecard{max-width:560px;margin:0 auto;}
+  .scorebreakdown{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:14px 0;}
+  .scoreitem{text-align:center;background:var(--panel2);border-radius:10px;padding:12px;}
+  .scoreitem.good{color:var(--green);} .scoreitem.bad{color:var(--red-bright);}
+  .badgepop{display:inline-flex;align-items:center;gap:6px;background:rgba(217,164,65,.12);border:1px solid rgba(217,164,65,.4);color:var(--amber);padding:6px 12px;border-radius:999px;font-size:12.5px;margin:4px 6px 0 0;}
+
+  /* ---- Visual-novel scene layer (briefing + interrogation) ---- */
+  .vnscene{position:relative;border-radius:16px;overflow:hidden;margin-bottom:16px;border:1px solid var(--line);}
+  .vnscene .backdrop{position:absolute;inset:0;z-index:0;}
+  .vnscene .vncontent{position:relative;z-index:1;padding:22px;}
+  .vn-avatar-row{display:flex;align-items:center;gap:14px;margin-bottom:12px;}
+  .vn-avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;flex-shrink:0;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45);box-shadow:0 6px 18px -8px rgba(0,0,0,.6);}
+  .vn-name{font-family:var(--display);font-size:21px;letter-spacing:.02em;}
+  .vn-name .vn-sub{display:block;font-family:var(--body);font-size:12px;color:var(--text-dim);letter-spacing:0;font-weight:500;}
+  .vn-textbox{background:rgba(10,11,14,.55);border:1px solid var(--line);border-radius:12px;padding:16px 18px;font-size:16.5px;line-height:1.55;cursor:pointer;min-height:34px;}
+  .vn-cursor{display:inline-block;width:8px;height:16px;background:currentColor;margin-left:2px;vertical-align:-2px;animation:vnblink 1s steps(1) infinite;}
+  @keyframes vnblink{50%{opacity:0}}
+  .vn-skiphint{margin-top:8px;font-size:11.5px;color:var(--text-faint);text-align:right;}
+  .vn-after{margin-top:16px;}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="engine.js"></script>
+<script>
+(function () {
+  'use strict';
+  var RTC = window.RunTheCase;
+
+  // Motive picker decoys — kept in the UI layer (not the data contract) since
+  // only these two cases are authored; new cases should add their own here.
+  var MOTIVE_DECOYS = {
+    modern_04_water_damage: [
+      'The landlord panicked and lied to protect a tenant he liked.',
+      'The plumber botched a real repair and covered it up himself.'
+    ],
+    modern_30_cleanup_crew: [
+      'A drug deal gone wrong with no third party involved.',
+      'A self-inflicted overdose that a panicked witness tried to hide.'
+    ]
+  };
+
+  var App = {
+    data: null,
+    save: null,
+    screen: 'loading',
+    hubTab: 'cases',
+    caseId: null,
+    caseData: null,
+    phase: null,
+    activeSuspect: null,
+    activeNode: null,
+    boardSelection: null,
+    accusation: { suspect_id: null, cited_evidence: [], motive_choice: null },
+    lastResolution: null,
+    toastMsg: null,
+    toastTimer: null,
+    motiveOrderCache: {},
+    scene: null,
+    typewriterTimer: null
+  };
+
+  // ---------------------------------------------------------------------
+  // Generated portraits + typewriter scene reveal (no art assets needed)
+  // ---------------------------------------------------------------------
+
+  function hashStr(s) {
+    var h = 0;
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    return Math.abs(h);
+  }
+
+  function initialsFor(name) {
+    var clean = String(name || '?').replace(/["“”]/g, '').trim();
+    var parts = clean.split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  function avatarHtml(id, name, size) {
+    size = size || 56;
+    var hue = hashStr(id) % 360;
+    var bg = 'linear-gradient(160deg, hsl(' + hue + ',65%,52%), hsl(' + ((hue + 40) % 360) + ',55%,32%))';
+    return '<div class="vn-avatar" style="width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size * 0.36) + 'px;background:' + bg + ';">' + esc(initialsFor(name)) + '</div>';
+  }
+
+  function sceneBackdropStyle(id) {
+    var hue = hashStr(id) % 360;
+    return 'background:radial-gradient(circle at 26% 15%, hsla(' + hue + ',55%,35%,.32), transparent 62%), linear-gradient(180deg,#14161b,var(--panel) 75%);';
+  }
+
+  function clearTypewriter() {
+    if (App.typewriterTimer) { clearInterval(App.typewriterTimer); App.typewriterTimer = null; }
+  }
+
+  function startTypewriter(key, text) {
+    if (App.scene && App.scene.key === key) return;
+    clearTypewriter();
+    App.scene = { key: key, full: text, count: 0, done: text.length === 0 };
+    if (App.scene.done) return;
+    App.typewriterTimer = setInterval(function () {
+      App.scene.count += 2;
+      if (App.scene.count >= App.scene.full.length) {
+        App.scene.count = App.scene.full.length;
+        App.scene.done = true;
+        clearTypewriter();
+      }
+      render();
+    }, 22);
+  }
+
+  function completeTypewriter() {
+    if (App.scene && !App.scene.done) {
+      App.scene.count = App.scene.full.length;
+      App.scene.done = true;
+      clearTypewriter();
+      render();
+    }
+  }
+
+  function sceneText() {
+    if (!App.scene) return { text: '', done: true };
+    var shown = App.scene.done ? App.scene.full : App.scene.full.slice(0, App.scene.count);
+    return { text: shown, done: App.scene.done };
+  }
+
+  function renderVnScene(opts) {
+    // opts: { bgId, avatarId, avatarName, nameLabel, subLabel, text, after }
+    var st = sceneText();
+    return '<div class="vnscene">' +
+      '<div class="backdrop" style="' + sceneBackdropStyle(opts.bgId) + '"></div>' +
+      '<div class="vncontent">' +
+        '<div class="vn-avatar-row">' + avatarHtml(opts.avatarId, opts.avatarName) +
+          '<div class="vn-name">' + esc(opts.nameLabel) + (opts.subLabel ? '<span class="vn-sub">' + esc(opts.subLabel) + '</span>' : '') + '</div>' +
+        '</div>' +
+        '<div class="vn-textbox" data-action="scene-skip">' + esc(st.text) + (st.done ? '' : '<span class="vn-cursor"></span>') + '</div>' +
+        (st.done ? '<div class="vn-after">' + opts.after + '</div>' : '<div class="vn-skiphint">Click the text to skip ahead</div>') +
+      '</div>' +
+    '</div>';
+  }
+
+  function shuffleForCase(list, caseId) {
+    if (App.motiveOrderCache[caseId]) return App.motiveOrderCache[caseId];
+    var arr = list.slice();
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    App.motiveOrderCache[caseId] = arr;
+    return arr;
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function toast(msg) {
+    App.toastMsg = msg;
+    render();
+    clearTimeout(App.toastTimer);
+    App.toastTimer = setTimeout(function () { App.toastMsg = null; render(); }, 2600);
+  }
+
+  function cb() { return App.save.casebook[App.caseId]; }
+
+  // ---------------------------------------------------------------------
+  // Boot
+  // ---------------------------------------------------------------------
+
+  RTC.loadAll().then(function (data) {
+    App.data = data;
+    App.save = RTC.Save.load(data.career, data.characters);
+    var hasProgress = Object.keys(App.save.casebook).length > 0;
+    App.screen = 'title';
+    App._hasProgress = hasProgress;
+    render();
+  }).catch(function (e) {
+    document.getElementById('app').innerHTML = '<div class="wrap"><div class="card"><h2>Couldn\'t load RunTheCase</h2><p class="muted">' + esc(e.message) + '</p></div></div>';
+  });
+
+  // ---------------------------------------------------------------------
+  // Actions
+  // ---------------------------------------------------------------------
+
+  var actions = {
+    'go-hub': function () { clearTypewriter(); App.scene = null; App.screen = 'hub'; App.caseId = null; App.caseData = null; render(); },
+    'hub-tab': function (d) { App.hubTab = d.tab; render(); },
+    'new-career': function () {
+      RTC.Save.reset();
+      App.save = RTC.Save.createDefault(App.data.career, App.data.characters);
+      RTC.Save.persist(App.save);
+      App.screen = 'hub'; App.hubTab = 'cases';
+      render();
+    },
+    'continue-career': function () { App.screen = 'hub'; render(); },
+    'open-case': function (d) { openCase(d.caseId); },
+    'begin-investigation': function () {
+      var entry = cb();
+      entry.status = 'in_progress';
+      entry.phase = 'investigation';
+      RTC.Save.persist(App.save);
+      App.phase = 'investigation';
+      render();
+    },
+    'set-phase': function (d) {
+      App.phase = d.phase;
+      cb().phase = d.phase;
+      RTC.Save.persist(App.save);
+      App.activeSuspect = null; App.activeNode = null; App.boardSelection = null;
+      render();
+    },
+    'call-specialist': function (d) {
+      RTC.callSpecialist(App.save, App.caseData, d.specialist);
+      RTC.Save.persist(App.save);
+      toast('Called in ' + specialistLabel(d.specialist) + '.');
+    },
+    'log-evidence': function (d) {
+      var evidence = App.caseData.evidence.find(function (e) { return e.id === d.evidenceId; });
+      var already = cb().evidence_logged.indexOf(d.evidenceId) !== -1;
+      RTC.logEvidence(App.save, App.caseData, d.evidenceId);
+      RTC.Save.persist(App.save);
+      if (!already) toast('Logged: ' + evidence.name);
+      render();
+    },
+    'board-select': function (d) { selectBoardItem(d.id); },
+    'goto-interrogation': function (d) { App.phase = 'interrogation'; App.activeSuspect = d.suspectId; App.activeNode = null; render(); },
+    'dialogue-option': function (d) { applyDialogueOption(d); },
+    'accuse-suspect': function (d) { App.accusation.suspect_id = d.suspectId; render(); },
+    'accuse-evidence': function (d) {
+      var i = App.accusation.cited_evidence.indexOf(d.evidenceId);
+      if (i === -1) App.accusation.cited_evidence.push(d.evidenceId); else App.accusation.cited_evidence.splice(i, 1);
+      render();
+    },
+    'accuse-motive': function (d) { App.accusation.motive_choice = d.motive; render(); },
+    'submit-accusation': function () { submitAccusation(); },
+    'give-up': function () { doGiveUp(); },
+    'resolution-continue': function () {
+      App.lastResolution = null;
+      App.screen = 'hub'; App.hubTab = 'cases';
+      render();
+    },
+    'scene-skip': function () { completeTypewriter(); },
+    'reset-career': function () {
+      if (!confirm('Reset your entire RunTheCase career? This clears all progress in this browser.')) return;
+      RTC.Save.reset();
+      App.save = RTC.Save.createDefault(App.data.career, App.data.characters);
+      App.screen = 'title'; App._hasProgress = false;
+      render();
+    }
+  };
+
+  document.getElementById('app').addEventListener('click', function (e) {
+    var el = e.target.closest('[data-action]');
+    if (!el) return;
+    var action = el.getAttribute('data-action');
+    if (!actions[action]) return;
+    if (action !== 'scene-skip') clearTypewriter();
+    var data = {};
+    Array.prototype.forEach.call(el.attributes, function (a) {
+      if (a.name.indexOf('data-') === 0 && a.name !== 'data-action') {
+        data[a.name.slice(5).replace(/-([a-z])/g, function (_, c) { return c.toUpperCase(); })] = a.value;
+      }
+    });
+    actions[action](data);
+  });
+
+  function specialistLabel(id) {
+    return { forensics: 'Forensics', digital_forensics: 'Digital Forensics', me: 'the Medical Examiner' }[id] || id;
+  }
+
+  // ---------------------------------------------------------------------
+  // Case lifecycle
+  // ---------------------------------------------------------------------
+
+  function openCase(caseId) {
+    clearTypewriter(); App.scene = null;
+    RTC.loadCase(caseId, App.data.registry).then(function (caseData) {
+      App.caseId = caseId;
+      App.caseData = caseData;
+      var entry = RTC.Save.ensureCasebookEntry(App.save, caseId);
+      RTC.Save.persist(App.save);
+      App.phase = entry.status === 'unopened' ? 'briefing' : (entry.phase || 'investigation');
+      App.screen = 'case';
+      App.accusation = { suspect_id: null, cited_evidence: [], motive_choice: null };
+      render();
+    }).catch(function (e) { toast(e.message); });
+  }
+
+  function isReadOnly() {
+    var status = cb().status;
+    return status === 'solved' || status === 'given_up';
+  }
+
+  function selectBoardItem(id) {
+    if (isReadOnly()) return;
+    if (!App.boardSelection) { App.boardSelection = id; render(); return; }
+    if (App.boardSelection === id) { App.boardSelection = null; render(); return; }
+    var a = App.boardSelection, b = id;
+    var conn = (App.caseData.board_connections || []).find(function (c) {
+      return (c.from === a && c.to === b) || (c.from === b && c.to === a);
+    });
+    App.boardSelection = null;
+    if (conn) {
+      var already = cb().board_connections_made.indexOf(conn.id) !== -1;
+      RTC.applyBoardConnection(App.save, App.caseData, conn.id);
+      RTC.Save.persist(App.save);
+      toast(already ? 'Already connected.' : 'Connection made — new leads unlocked.');
+    } else {
+      toast('No connection there. Try another pairing — nothing is lost by exploring.');
+    }
+    render();
+  }
+
+  function applyDialogueOption(d) {
+    if (isReadOnly()) return;
+    var tree = (App.caseData.dialogue_trees || []).find(function (t) { return t.id === d.treeId; });
+    var nodeId = App.activeNode || tree.root_node;
+    var node = RTC.getDialogueNode(App.caseData, d.treeId, nodeId);
+    var option = node.options[Number(d.optIndex)];
+    if (option.present_evidence_id) {
+      var already = cb().evidence_logged.indexOf(option.present_evidence_id) !== -1;
+      if (!already) { toast('You need to have logged that evidence first.'); return; }
+    }
+    if (option.effect === 'partner_trust_up' || option.effect === 'partner_trust_down') {
+      var partnerId = App.caseData.partner_id;
+      var rel = App.save.relationships[partnerId];
+      if (rel) {
+        rel.trust = Math.max(0, Math.min(100, rel.trust + (option.effect === 'partner_trust_up' ? 5 : -5)));
+      }
+    }
+    App.activeNode = option.goto === 'END' ? '__END__' : option.goto;
+    RTC.Save.persist(App.save);
+    render();
+  }
+
+  function submitAccusation() {
+    if (!App.accusation.suspect_id || !App.accusation.motive_choice) { toast('Pick a suspect and a motive before you commit.'); return; }
+    var result = RTC.resolveCase({ save: App.save, career: App.data.career, registry: App.data.registry, badges: App.data.badges, caseData: App.caseData }, App.accusation);
+    App.lastResolution = result;
+    App.phase = 'resolution';
+    cb().phase = 'resolution';
+    render();
+  }
+
+  function doGiveUp() {
+    var result = RTC.giveUpCase({ save: App.save, caseData: App.caseData });
+    if (!result.ok) { toast(result.reason); return; }
+    App.screen = 'hub'; App.hubTab = 'cases';
+    render();
+  }
+
+  // ---------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------
+
+  function render() {
+    var app = document.getElementById('app');
+    var html = '';
+    if (App.screen === 'loading') html = '<div class="wrap"><p class="muted">Loading the precinct...</p></div>';
+    else if (App.screen === 'title') html = renderTitle();
+    else if (App.screen === 'hub') html = renderHub();
+    else if (App.screen === 'case') html = renderCase();
+    if (App.toastMsg) html += '<div class="toast">' + esc(App.toastMsg) + '</div>';
+    app.innerHTML = html;
+  }
+
+  function renderTitle() {
+    return '' +
+      '<div class="dormant-badge">internal test build</div>' +
+      '<div class="titlescreen">' +
+        '<div class="logo"><span class="r">Run</span><span class="t">The</span><span class="c">Case</span> 🔎</div>' +
+        '<p class="tagline">A detective career sim. Investigate scenes, work the Board, break alibis in Interrogation, and build a case that holds up — or doesn\'t. Free-roam any unlocked case, in any order, at your own pace.</p>' +
+        '<div class="titleactions">' +
+          (App._hasProgress ? '<button class="btn primary" data-action="continue-career">Continue Career</button>' : '') +
+          '<button class="btn ' + (App._hasProgress ? 'ghost' : 'primary') + '" data-action="new-career">' + (App._hasProgress ? 'New Career (overwrites save)' : 'Start Career') + '</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function renderHub() {
+    var career = App.data.career, save = App.save;
+    var rankInfo = RTC.rankInfo(career, save.detective.rank);
+    var tier = RTC.reputationTier(career, save.detective.reputation);
+    var tabs = ['cases', 'network', 'partner', 'detective'];
+    var labels = { cases: 'Cases', network: 'Network', partner: 'Partner', detective: 'Detective' };
+    var body = '';
+    if (App.hubTab === 'cases') body = renderCaseTab();
+    else if (App.hubTab === 'network') body = renderNetworkTab();
+    else if (App.hubTab === 'partner') body = renderPartnerTab();
+    else if (App.hubTab === 'detective') body = renderDetectiveTab();
+
+    return '<div class="wrap">' +
+      '<div class="hubheader">' +
+        '<div><div class="logo" style="font-size:34px;"><span class="r">Run</span><span class="t">The</span><span class="c">Case</span></div>' +
+          '<div class="muted">' + esc(rankInfo ? rankInfo.name : save.detective.rank) + ' &middot; Reputation ' + save.detective.reputation + ' (' + esc(tier ? tier.name : '') + ')' +
+          (save.detective.employment === 'fired' ? ' &middot; <span style="color:var(--red-bright)">FIRED</span>' : '') + '</div></div>' +
+        '<button class="btn small ghost" data-action="reset-career">Reset career</button>' +
+      '</div>' +
+      '<div class="tabs">' + tabs.map(function (t) {
+        return '<div class="tab ' + (App.hubTab === t ? 'active' : '') + '" data-action="hub-tab" data-tab="' + t + '">' + labels[t] + '</div>';
+      }).join('') + '</div>' +
+      body +
+      '</div>';
+  }
+
+  function renderCaseTab() {
+    var board = RTC.getCaseBoard(App.save, App.data.registry, App.data.career);
+    var byRank = {};
+    var order = [];
+    (App.data.career.ranks || []).slice().sort(function (a, b) { return a.order - b.order; }).forEach(function (r) { byRank[r.id] = []; order.push(r.id); });
+    board.forEach(function (c) { (byRank[c.rank_required] = byRank[c.rank_required] || []).push(c); });
+
+    return order.map(function (rankId) {
+      var cases = (byRank[rankId] || []).slice().sort(function (a, b) { return a.order_in_rank - b.order_in_rank; });
+      if (!cases.length) return '';
+      var rank = RTC.rankInfo(App.data.career, rankId);
+      var anyUnlocked = cases.some(function (c) { return c.rank_unlocked; });
+      return '<div class="rankblock">' +
+        '<h3>' + esc(rank.name) + '</h3><p class="faint">' + esc(rank.description || '') + '</p>' +
+        '<div class="caselist">' + cases.map(function (c) { return renderCaseTile(c, anyUnlocked); }).join('') + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderCaseTile(c, rankUnlocked) {
+    var locked = !c.playable;
+    var statusPill = c.status === 'solved' ? '<span class="pill solved">Solved</span>' :
+      c.status === 'given_up' ? '<span class="pill given_up">Given up</span>' :
+      c.status === 'in_progress' ? '<span class="pill playable">In progress</span>' :
+      c.playable ? '<span class="pill playable">Ready</span>' : (c.rank_unlocked ? '<span class="pill locked">Case sealed</span>' : '<span class="pill locked">Rank locked</span>');
+    return '<div class="casetile ' + (locked ? 'locked' : '') + '" ' + (locked ? '' : 'data-action="open-case" data-case-id="' + c.case_id + '"') + '>' +
+      statusPill +
+      '<h4>' + esc(c.playable ? c.title : (c.rank_unlocked ? 'Case File Sealed' : c.title)) + '</h4>' +
+      '<p class="faint">' + esc(c.playable ? c.teaser : (c.rank_unlocked ? 'More cases are still being authored for this rank.' : 'Reach ' + esc(RTC.rankInfo(App.data.career, c.rank_required).name) + ' to see this one.')) + '</p>' +
+    '</div>';
+  }
+
+  function renderNetworkTab() {
+    var save = App.save, characters = App.data.characters, badges = App.data.badges;
+    var breadcrumbsSeen = Object.keys(save.flags).filter(function (f) { return f.indexOf('seen_bc_') === 0 && save.flags[f]; }).length;
+    var totalBreadcrumbs = App.data.threads.breadcrumbs.length;
+    var clueTotal = save.career_stats.clues_possible_total, clueFound = save.career_stats.clues_found_total;
+    var cluePct = clueTotal > 0 ? Math.round((clueFound / clueTotal) * 100) : 0;
+
+    var npcRows = save.world.npc_spawns.map(function (id) {
+      var c = RTC.findCharacter(characters, id);
+      return '<div class="npcrow"><span>' + esc(c ? c.name : id) + '</span><span class="faint">entered the world</span></div>';
+    }).join('') || '<p class="faint">No recurring figures have surfaced yet — they show up as a consequence of how your cases go.</p>';
+
+    var wrongedRows = save.world.wronged_suspects.map(function (id) {
+      return '<div class="npcrow"><span>' + esc(id) + '</span><span class="faint">wrongly accused — may resurface</span></div>';
+    }).join('') || '<p class="faint">Nobody\'s been wrongly accused. Keep it that way.</p>';
+
+    var badgeChips = save.badges_earned.map(function (id) {
+      var b = (badges.badges || []).find(function (x) { return x.id === id; });
+      return '<span class="badgepop">🏅 ' + esc(b ? b.name : id) + '</span>';
+    }).join('') || '<p class="faint">No badges yet.</p>';
+
+    return '<div class="statgrid">' +
+        '<div class="stattile"><div class="num">' + breadcrumbsSeen + ' / ' + totalBreadcrumbs + '</div><div class="faint">hidden threads found (never shown which ones you missed)</div></div>' +
+        '<div class="stattile"><div class="num">' + cluePct + '%</div><div class="faint">career clue recovery rate</div><div class="statbar"><div style="width:' + cluePct + '%"></div></div></div>' +
+        '<div class="stattile"><div class="num">' + save.career_stats.wrongful_accusations + '</div><div class="faint">wrongful accusations</div></div>' +
+      '</div>' +
+      '<div class="card" style="margin-bottom:14px;"><h3 style="margin-top:0;">On the Street</h3>' + npcRows + '</div>' +
+      '<div class="card" style="margin-bottom:14px;"><h3 style="margin-top:0;">Open Grievances</h3>' + wrongedRows + '</div>' +
+      '<div class="card"><h3 style="margin-top:0;">Badges</h3>' + badgeChips + '</div>';
+  }
+
+  function renderPartnerTab() {
+    var save = App.save, characters = App.data.characters;
+    var rows = Object.keys(save.relationships).map(function (id) {
+      var c = RTC.findCharacter(characters, id);
+      var rel = save.relationships[id];
+      var statusColor = rel.status === 'active' ? 'var(--green)' : rel.status === 'strained' ? 'var(--amber)' : 'var(--red-bright)';
+      return '<div class="card" style="margin-bottom:12px;">' +
+        '<div class="row between"><h3 style="margin:0;">' + esc(c ? c.name : id) + '</h3><span class="pill" style="color:' + statusColor + ';border-color:' + statusColor + '55;">' + esc(rel.status) + '</span></div>' +
+        '<p class="faint" style="margin:8px 0 10px;">' + esc(c ? c.description : '') + '</p>' +
+        '<div class="statbar"><div style="width:' + rel.trust + '%"></div></div>' +
+        '<p class="faint" style="margin-top:6px;">Trust: ' + rel.trust + ' / 100</p>' +
+      '</div>';
+    }).join('');
+    return rows || '<p class="faint">No partner assigned yet.</p>';
+  }
+
+  function renderDetectiveTab() {
+    var save = App.save, career = App.data.career;
+    var rank = RTC.rankInfo(career, save.detective.rank);
+    var tier = RTC.reputationTier(career, save.detective.reputation);
+    return '<div class="statgrid">' +
+        '<div class="stattile"><div class="num">' + esc(rank.name) + '</div><div class="faint">current rank</div></div>' +
+        '<div class="stattile"><div class="num">' + save.detective.reputation + '</div><div class="faint">reputation (' + esc(tier ? tier.name : '') + ')</div></div>' +
+        '<div class="stattile"><div class="num">' + save.career_stats.wrongful_accusations + '</div><div class="faint">wrongful accusations</div></div>' +
+        '<div class="stattile"><div class="num">' + save.career_stats.cases_given_up + '</div><div class="faint">cases given up</div></div>' +
+      '</div>' +
+      '<div class="card"><h3 style="margin-top:0;">' + esc(rank.name) + '</h3><p class="muted">' + esc(rank.description || '') + '</p>' +
+      (save.detective.employment === 'fired' ? '<p style="color:var(--red-bright);font-weight:700;">You\'ve been fired. Reset your career to play on.</p>' : '') +
+      '</div>';
+  }
+
+  // ---------------------------------------------------------------------
+  // Case screen
+  // ---------------------------------------------------------------------
+
+  function renderCase() {
+    var c = App.caseData, entry = cb();
+    var readOnly = isReadOnly();
+    var phases = ['briefing', 'investigation', 'board', 'interrogation', 'accusation', 'resolution'];
+    var labels = { briefing: 'Briefing', investigation: 'Investigation', board: 'Board', interrogation: 'Interrogation', accusation: 'Accusation', resolution: 'Resolution' };
+
+    var body;
+    if (App.phase === 'briefing') body = renderBriefing();
+    else if (App.phase === 'investigation') body = renderInvestigation();
+    else if (App.phase === 'board') body = renderBoard();
+    else if (App.phase === 'interrogation') body = renderInterrogation();
+    else if (App.phase === 'accusation') body = renderAccusation();
+    else if (App.phase === 'resolution') body = renderResolution();
+    else body = '';
+
+    var pct = c.clue_total > 0 ? Math.round((entry.clues_found / c.clue_total) * 100) : 0;
+
+    return '<div class="wrap">' +
+      '<div class="casebar">' +
+        '<div><h2 style="margin:0 0 2px;">' + esc(c.title) + '</h2><span class="faint">Clues found: ' + entry.clues_found + ' / ' + c.clue_total + ' (' + pct + '%)</span></div>' +
+        '<div class="row">' +
+          (App.phase !== 'briefing' && App.phase !== 'resolution' && !readOnly ? '<button class="btn small danger" data-action="give-up">Give up case</button>' : '') +
+          '<button class="btn small ghost" data-action="go-hub">Back to Hub</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="phasetabs">' + phases.map(function (p) {
+        var disabled = p === 'briefing' ? false : (entry.status === 'unopened');
+        if (p === 'resolution' && entry.status !== 'solved' && entry.status !== 'given_up' && App.phase !== 'resolution') disabled = true;
+        return '<button class="phasetab ' + (App.phase === p ? 'active' : '') + '" ' + (disabled ? 'disabled' : 'data-action="set-phase" data-phase="' + p + '"') + '>' + labels[p] + '</button>';
+      }).join('') + '</div>' +
+      body +
+    '</div>';
+  }
+
+  function renderBriefing() {
+    var c = App.caseData;
+    var partner = c.partner_id ? RTC.findCharacter(App.data.characters, c.partner_id) : null;
+    startTypewriter('briefing:' + c.case_id, c.briefing);
+    return renderVnScene({
+      bgId: c.case_id,
+      avatarId: partner ? partner.id : c.case_id,
+      avatarName: partner ? partner.name : '📁',
+      nameLabel: partner ? partner.name : 'Case File',
+      subLabel: partner ? 'Your partner on this one' : c.title,
+      after: '<button class="btn primary" data-action="begin-investigation">Begin Investigation</button>'
+      /* text comes from App.scene, set by startTypewriter just above */
+    });
+  }
+
+  function renderInvestigation() {
+    var c = App.caseData, entry = cb(), readOnly = isReadOnly();
+    var hotspots = (c.location_hotspots || []).filter(function (h) { return RTC.isHotspotVisible(c, h, entry); });
+    return '<div class="hotspotgrid">' + hotspots.map(function (h) {
+      var gated = RTC.isHotspotGated(h, entry);
+      var evList = (h.evidence_ids || []).map(function (eid) {
+        var ev = c.evidence.find(function (e) { return e.id === eid; });
+        var logged = entry.evidence_logged.indexOf(eid) !== -1;
+        var disabled = readOnly || gated;
+        return '<button class="evtag ' + (logged ? 'logged' : '') + '" ' + (disabled && !logged ? 'disabled' : '') + ' data-action="log-evidence" data-evidence-id="' + eid + '" title="' + esc(ev.description) + '">' +
+          (logged ? '✓ ' : '') + esc(ev.name) + ' <span class="tier">' + esc(ev.tier) + '</span></button>';
+      }).join('');
+      return '<div class="hotspot">' +
+        '<h4 style="margin:0 0 2px;">' + esc(h.name) + '</h4>' +
+        '<p class="faint" style="margin:0 0 8px;">' + esc(h.description || '') + '</p>' +
+        (gated ? '<button class="btn small" ' + (readOnly ? 'disabled' : '') + ' data-action="call-specialist" data-specialist="' + h.requires_specialist + '">Call ' + esc(specialistLabel(h.requires_specialist)) + '</button>' : '<div>' + evList + '</div>') +
+      '</div>';
+    }).join('') + '</div>';
+  }
+
+  function renderBoard() {
+    var c = App.caseData, entry = cb();
+    var evidenceCards = entry.evidence_logged.map(function (eid) {
+      var ev = c.evidence.find(function (e) { return e.id === eid; });
+      return { id: eid, label: ev.name, tier: ev.tier, kind: 'evidence' };
+    });
+    var suspectCards = (c.suspects || []).map(function (s) { return { id: s.id, label: s.name, tier: 'suspect', kind: 'suspect' }; });
+    var cards = evidenceCards.concat(suspectCards);
+    var madeConns = entry.board_connections_made.map(function (cid) {
+      var conn = (c.board_connections || []).find(function (x) { return x.id === cid; });
+      return connLabel(conn);
+    });
+    return '<p class="faint">Click one card, then another, to try connecting them. Wrong pairings are free — nothing is lost by exploring.</p>' +
+      '<div class="boardgrid">' + cards.map(function (card) {
+        return '<div class="boardcard ' + (card.kind === 'suspect' ? 'suspect' : '') + ' ' + (App.boardSelection === card.id ? 'selected' : '') + '" data-action="board-select" data-id="' + card.id + '">' +
+          '<div class="tier">' + esc(card.kind === 'suspect' ? 'Suspect' : card.tier) + '</div>' + esc(card.label) +
+        '</div>';
+      }).join('') + '</div>' +
+      (madeConns.length ? '<div class="connlist"><h4>Connections made</h4>' + madeConns.map(function (l) { return '<div class="connrow">' + esc(l) + '</div>'; }).join('') + '</div>' : '');
+  }
+
+  function connLabel(conn) {
+    var c = App.caseData;
+    function nameOf(id) {
+      var ev = c.evidence.find(function (e) { return e.id === id; });
+      if (ev) return ev.name;
+      var s = c.suspects.find(function (x) { return x.id === id; });
+      return s ? s.name : id;
+    }
+    return nameOf(conn.from) + ' ↔ ' + nameOf(conn.to);
+  }
+
+  function renderInterrogation() {
+    var c = App.caseData, entry = cb();
+    var suspects = (c.suspects || []).filter(function (s) { return s.dialogue_tree_id; });
+    if (!suspects.length) return '<p class="faint">No one\'s been identified for interrogation yet — keep working the Board.</p>';
+    var tabs = suspects.map(function (s) {
+      var tree = (c.dialogue_trees || []).find(function (t) { return t.id === s.dialogue_tree_id; });
+      var rootNode = tree ? RTC.getDialogueNode(c, tree.id, tree.root_node) : null;
+      var enterable = rootNode ? RTC.isNodeEnterable(rootNode, entry) : false;
+      return '<button class="btn small ' + (App.activeSuspect === s.id ? 'primary' : 'ghost') + '" ' + (enterable ? 'data-action="goto-interrogation" data-suspect-id="' + s.id + '"' : 'disabled title="Not enough evidence to bring them in yet"') + '>' + esc(s.name) + '</button>';
+    }).join('');
+    var body = '';
+    if (App.activeSuspect) {
+      var suspect = suspects.find(function (s) { return s.id === App.activeSuspect; });
+      var tree = (c.dialogue_trees || []).find(function (t) { return t.id === suspect.dialogue_tree_id; });
+      var nodeId = App.activeNode == null ? tree.root_node : App.activeNode;
+      var node = nodeId === '__END__' ? null : RTC.getDialogueNode(c, tree.id, nodeId);
+      if (nodeId === '__END__') {
+        clearTypewriter(); App.scene = null;
+        body = '<div class="chatnode"><p class="line">Nothing more to press them on right now.</p></div>';
+      } else if (!node) {
+        clearTypewriter(); App.scene = null;
+        body = '<div class="chatnode"><p class="line">End of the line for now. Keep investigating for more.</p></div>';
+      } else if (!RTC.isNodeEnterable(node, entry)) {
+        clearTypewriter(); App.scene = null;
+        body = '<div class="chatnode"><p class="line">You need more evidence before pressing this further.</p></div>';
+      } else {
+        startTypewriter('node:' + tree.id + ':' + node.id, node.speaker_line);
+        var optionsHtml = (node.options || []).map(function (opt, i) {
+          var needsEv = opt.present_evidence_id;
+          var have = !needsEv || entry.evidence_logged.indexOf(needsEv) !== -1;
+          var evName = needsEv ? (c.evidence.find(function (e) { return e.id === needsEv; }) || {}).name : null;
+          return '<button class="btn optionbtn ' + (have ? '' : 'ghost') + '" ' + (have ? 'data-action="dialogue-option" data-tree-id="' + tree.id + '" data-opt-index="' + i + '"' : 'disabled') + ' title="' + (needsEv && !have ? 'Requires evidence: ' + esc(evName) : '') + '">' +
+            esc(opt.text) + (opt.effect ? '<span class="effecttag">' + esc(opt.effect.replace(/_/g, ' ')) + '</span>' : '') +
+          '</button>';
+        }).join('');
+        body = renderVnScene({
+          bgId: suspect.id,
+          avatarId: suspect.id,
+          avatarName: suspect.name,
+          nameLabel: suspect.name,
+          subLabel: 'Interrogation',
+          after: optionsHtml
+        });
+      }
+    } else {
+      body = '<p class="faint">Choose a suspect above to begin.</p>';
+    }
+    return '<div class="suspecttabs">' + tabs + '</div>' + body;
+  }
+
+  function renderAccusation() {
+    var c = App.caseData, entry = cb();
+    if (isReadOnly()) {
+      return '<p class="faint">This case is closed. Revisit the Board or Investigation to review it.</p>';
+    }
+    var suspectRows = (c.suspects || []).map(function (s) {
+      var checked = App.accusation.suspect_id === s.id;
+      return '<div class="radiorow ' + (checked ? 'checked' : '') + '" data-action="accuse-suspect" data-suspect-id="' + s.id + '">' +
+        '<div><b>' + esc(s.name) + '</b><div class="faint">' + esc(s.alibi || '') + '</div></div>' +
+      '</div>';
+    }).join('');
+    var evRows = entry.evidence_logged.map(function (eid) {
+      var ev = c.evidence.find(function (e) { return e.id === eid; });
+      var checked = App.accusation.cited_evidence.indexOf(eid) !== -1;
+      return '<div class="checkrow ' + (checked ? 'checked' : '') + '" data-action="accuse-evidence" data-evidence-id="' + eid + '">' + esc(ev.name) + '</div>';
+    }).join('') || '<p class="faint">No evidence logged yet.</p>';
+    var motives = [c.solution.correct_motive].concat(MOTIVE_DECOYS[c.case_id] || []);
+    var shuffled = shuffleForCase(motives, c.case_id);
+    var motiveRows = shuffled.map(function (m) {
+      var checked = App.accusation.motive_choice === m;
+      return '<div class="radiorow ' + (checked ? 'checked' : '') + '" data-action="accuse-motive" data-motive="' + esc(m) + '">' + esc(m) + '</div>';
+    }).join('');
+    return '<div class="accusegrid">' +
+      '<div><h3>Who did it?</h3>' + suspectRows + '</div>' +
+      '<div><h3>Cite your evidence</h3>' + evRows + '</div>' +
+      '<div><h3>What was the motive?</h3>' + motiveRows + '</div>' +
+      '<div><button class="btn primary" data-action="submit-accusation">Commit to this accusation</button>' +
+      '<p class="faint">You can change your mind and come back here any time before committing.</p></div>' +
+    '</div>';
+  }
+
+  function renderResolution() {
+    var r = App.lastResolution;
+    var entry = cb();
+    if (!r) {
+      return '<div class="card scorecard">' +
+        '<h3>' + (entry.status === 'given_up' ? 'Case given up' : 'Case closed') + '</h3>' +
+        '<p class="muted">Status: ' + esc(entry.status) + (entry.correct ? ' — correct' : '') + '</p>' +
+        '<button class="btn primary" data-action="go-hub">Back to Hub</button>' +
+      '</div>';
+    }
+    var s = r.score;
+    var outcomeLabel = s.outcome === 'solved' ? 'Case Closed — Airtight' : s.outcome === 'shaky' ? 'Case Closed — Shaky' : 'Wrongful Accusation';
+    var outcomeColor = s.outcome === 'wrongful' ? 'var(--red-bright)' : 'var(--green)';
+    return '<div class="card scorecard">' +
+      '<h3 style="color:' + outcomeColor + ';margin-top:0;">' + outcomeLabel + '</h3>' +
+      '<div class="scorebreakdown">' +
+        '<div class="scoreitem ' + (s.correct_suspect ? 'good' : 'bad') + '"><div>Suspect</div><b>' + (s.correct_suspect ? 'Correct' : 'Wrong') + '</b></div>' +
+        '<div class="scoreitem ' + (s.correct_evidence ? 'good' : 'bad') + '"><div>Evidence</div><b>' + (s.correct_evidence ? 'Airtight' : 'Incomplete') + '</b></div>' +
+        '<div class="scoreitem ' + (s.correct_motive ? 'good' : 'bad') + '"><div>Motive</div><b>' + (s.correct_motive ? 'Correct' : 'Wrong') + '</b></div>' +
+      '</div>' +
+      '<p class="muted">Case score: ' + Math.round(s.case_score * 100) + '%</p>' +
+      (r.consequence ? '<p style="color:var(--red-bright);">' + esc(r.consequence.consequence) + '</p><p class="faint">Reputation ' + r.consequence.reputation_delta + '. The case stays open — head back to the Board to reconsider.</p>' : '') +
+      (r.fired ? '<p style="color:var(--red-bright);font-weight:800;">You\'ve been fired.</p>' : '') +
+      (r.promoted ? '<p style="color:var(--amber);font-weight:800;">Promoted to ' + esc(RTC.rankInfo(App.data.career, App.save.detective.rank).name) + '!</p>' : '') +
+      (r.badgesAwarded && r.badgesAwarded.length ? '<div>' + r.badgesAwarded.map(function (id) {
+        var b = (App.data.badges.badges || []).find(function (x) { return x.id === id; });
+        return '<span class="badgepop">🏅 ' + esc(b ? b.name : id) + '</span>';
+      }).join('') + '</div>' : '') +
+      '<div style="margin-top:16px;"><button class="btn primary" data-action="resolution-continue">Back to Hub</button>' +
+      (s.outcome === 'wrongful' ? ' <button class="btn ghost" data-action="set-phase" data-phase="board">Reconsider on the Board</button>' : '') +
+      '</div>' +
+    '</div>';
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,16 @@
+{
+  "badges": [
+    { "id": "badge_first_collar", "name": "First Collar", "description": "Closed your first case with the correct suspect." },
+    { "id": "badge_airtight_1", "name": "Airtight", "description": "Closed a case with the correct suspect, all required evidence, and the correct motive." },
+    { "id": "badge_network_1", "name": "Pulled a Thread", "description": "Logged your first hidden breadcrumb without knowing it yet." },
+    { "id": "badge_network_2", "name": "Following the Money", "description": "Logged five hidden breadcrumbs across your career." },
+    { "id": "badge_network_3", "name": "The Full Picture", "description": "Logged every hidden breadcrumb in the game." },
+    { "id": "badge_clean_sweep", "name": "Clean Sweep", "description": "Found every discoverable clue in a single case." },
+    { "id": "badge_partner_ironclad", "name": "Ironclad", "description": "Built your partner's trust to its maximum." },
+    { "id": "badge_lone_wolf", "name": "Lone Wolf", "description": "Closed a case after your partner quit on you." },
+    { "id": "badge_no_wrongful_rank", "name": "Clean Record", "description": "Cleared an entire rank without a single wrongful accusation." },
+    { "id": "badge_escape_valve", "name": "Knew When to Fold", "description": "Gave up a case and kept your job anyway." },
+    { "id": "badge_specialist_network", "name": "Every Specialist", "description": "Called in every specialist type at least once across your career." },
+    { "id": "badge_cold_case_closer", "name": "Cold Case Closer", "description": "Solved a Cold Case flavor Quick Case." }
+  ]
+}
