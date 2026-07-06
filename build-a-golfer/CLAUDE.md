@@ -5140,6 +5140,21 @@ allows Google Fonts, or self-host Anton.*
     placement. Note: a couple of catalog items reuse art (only 3 eyewear / 3 driver / 2 charm arts for 4/4/4
     items); more art can be dropped in and mapped in `ACC_ART`.
 
+- **CS187 — regenerated the full-body avatar masks (fix the "really bad" masking).** Owner (IMG_7936):
+  the full-body recolor showed a **pink band across the belt/waist** — the polo colour bleeding onto the
+  waistband — plus speckle. Root cause: the CS183 auto-segmented full-body stencil masks were noisy exactly
+  in the shirt→pants transition; the belt/waistband pixels were mislabelled **shirt** (blue), so they took
+  the polo colour. Rebuilt both masks (`full/base-{male,female}-mask.png`) from the base ART directly with a
+  clean, calibrated classifier: skin = warm saturated (hue 8–50°, s>0.32), hair = dark warm mass (l<0.30),
+  and the achromatic garments split by **lightness + position** — polo is near-white (l≈0.97) in the upper
+  body, pants+belt are mid-grey (l≈0.82), shoes are bright white at the feet — with a waist-Y guard so a
+  bright belt buckle can't read as shirt, plus a 3×3 majority denoise to kill isolated speckle. The belt now
+  recolours with the pants (matching), so the pink band is gone. Validated by recolouring with vivid
+  non-default colours (pink polo / red trousers / dark skin / blonde hair) on both genders — crisp regions,
+  no bleed — and confirmed in-app via the real `paintAvatarFull` path on the owner's exact look (deep skin /
+  blonde / pink polo / stone trousers): clean. Only the mask PNGs changed; no JS. Deployed (masks copied to
+  `golf/public/avatars/golfers/full/`).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
