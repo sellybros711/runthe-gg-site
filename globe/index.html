@@ -943,7 +943,12 @@
     var out=[];
     Object.keys(c.tasks||{}).forEach(function(cat){
       if(!KIND[cat]) return;
-      (c.tasks[cat]||[]).forEach(function(t){ out.push(t); });
+      (c.tasks[cat]||[]).forEach(function(t){
+        // never serve a trivia/math question whose answer IS the destination's
+        // own name — you already know where you are, so it's a giveaway.
+        if(t.options && t.options[t.a]===c.name) return;
+        out.push(t);
+      });
     });
     out = out.concat(genTasks(c));
     return shuffle(out);
