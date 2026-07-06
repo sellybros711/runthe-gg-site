@@ -1610,7 +1610,10 @@ function bumpDailyStats(won){ const t=todayKey(); const st=dailyStats();
   if(won && !st.wonDays[t]){ st.beat=(st.beat||0)+1; st.wonDays[t]=1; }      // a later attempt can flip a day to a win
   LS.set(acctKey('bag_dailystats'),st); cloudPush(); return st; }
 function dailyWinPct(){ const st=dailyStats(); return st.played?Math.round(100*st.beat/st.played):0; }
-async function shareText(text){ recordAchEvent({set:{shared:1}}); evaluateAch();
+// every X/Twitter (and cross-app) share from the game carries the same handle + hashtags
+const SOCIAL_TAG='@RunTheGG #golf #RunTheTour';
+function withSocial(t){ if(!t) return SOCIAL_TAG; return t.indexOf(SOCIAL_TAG)>=0 ? t : (t+'\n\n'+SOCIAL_TAG); }
+async function shareText(text){ text=withSocial(text); recordAchEvent({set:{shared:1}}); evaluateAch();
   try{ if(navigator.share){ await navigator.share({text}); return; } }catch(e){ if(e&&e.name==='AbortError')return; }
   try{ await navigator.clipboard.writeText(text); toast('Copied! Paste it anywhere'); }catch(_){ toast('Could not copy'); } }
 /* ---------- ROUND RATING: a secondary "how you played" grade (S/A/B/C/D), distinct from the raw
@@ -3805,6 +3808,19 @@ function overlayLeaderboard(screen){
   const lbRep=r=>{ const rp=(r&&r.rep_pts!=null)?repTierName(r.rep_pts):null; return (rp&&rp!=='Amateur')?rp:null; };   // raw tier name; repClass picks the effect
   const globalOk = view && view.ok;
   const globalRows = globalOk ? dirRows : [];   // dirRows is already in display order (top N, or true bottom N)
+  // Same player can appear many times (every season & career is its own row), and each row froze the
+  // username + rep tier AT SUBMIT TIME — so old rows show a stale name/lower tier. Normalize every instance
+  // of an account to its MOST-UPDATED identity: rep points only ever accrue, so the row with a user's
+  // highest rep_pts carries their newest username. Use that name + the max rep for ALL of that user's rows;
+  // for the signed-in viewer, override with their live username + current rep. (Jordo: "every instance of a
+  // player should have the most updated tier tag and username if they changed it.")
+  const lbIdent={};
+  globalRows.forEach(r=>{ if(!r.user_id) return; const rp=(r.rep_pts!=null?r.rep_pts:-1), cur=lbIdent[r.user_id];
+    if(!cur || rp>cur.rp){ lbIdent[r.user_id]={name:r.display_name, rp}; } });
+  const lbCanon=r=>{ let name=r.display_name, rep=r.rep_pts;
+    const c=r.user_id&&lbIdent[r.user_id]; if(c){ name=c.name; if(c.rp>=0) rep=c.rp; }
+    if(sbUser&&r.user_id===sbUser.id){ if(sbUsername) name=sbUsername; const my=(typeof achPoints==='function')?achPoints():null; if(my!=null) rep=Math.max(rep!=null?rep:0, my); }
+    return {name, rep}; };
   // guest sign-in prompt shown inside the board, rendered in EVERY state (full / empty / local-fallback)
   // so a signed-out player always gets it on every tab, not just when the global board has rows.
   const guestBoardCTA = !sbSignedIn() ? `<div class="lockcta" style="text-align:center;padding:18px 12px;margin-top:10px">
@@ -3817,13 +3833,13 @@ function overlayLeaderboard(screen){
     board=`<div class="small muted center" style="padding:18px 8px">Loading the global board…</div>`;
   } else if(globalOk && globalRows.length){
     const rowFn=r=>{
-      const you=sbUser&&r.user_id===sbUser.id, v=lbStatVal(r,tab,sort);
+      const you=sbUser&&r.user_id===sbUser.id, v=lbStatVal(r,tab,sort), id=lbCanon(r);
       const arch=(r.skills && CATS.every(c=>typeof r.skills[c.k]==='number')) ? archetype(r.skills) : null;
       const golferPart=r.golfer_name ? r.golfer_name+(arch?' · '+arch.name:'')+' · ' : '';
       const sub = tab==='season'
         ? golferPart+'OVR '+r.ovr+(r.year?' · Yr '+r.year:'')+(sort!=='earnings'?' · '+fmt(r.season_earnings):'')
         : golferPart+r.seasons+' szn · '+(r.wins||0)+' win'+((r.wins||0)===1?'':'s')+(sort!=='earnings'?' · '+fmt(r.career_earnings):'');
-      return lbRowHTML(r.rank,r.display_name,sub,v,you,lbRep(r));
+      return lbRowHTML(r.rank,id.name,sub,v,you,lbRep({rep_pts:id.rep}));
     };
     const rows=globalRows;   // already ordered by the server (top N desc, or true bottom N asc)
     if(sbSignedIn()){
@@ -6263,6 +6279,7 @@ function drawCareerCard(cv,info,vals){
   });
 }
 function shareCard(cv,text,name,suffix){
+  text=withSocial(text);
   recordAchEvent({set:{shared:1}}); evaluateAch();
   cv.toBlob(async b=>{
     if(!b){toast('Could not build the image, copy the text instead');return;}
@@ -8641,6 +8658,162 @@ function hvStaticSVG(hole, courseKey, holeIdx){
   const [x,y,w,h]=HV_CAM;
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${w} ${h}" width="${w}" height="${h}">${inner}</svg>`;
 }
+/* ---------- animated GIF shot-share: encodes the hole's shots playing out on the tracer into a
+   looping GIF89a. Fully self-contained (no libs, CSP-safe): median-cut quantizer + LZW encoder.
+   Falls back to the static PNG (hvShareShot) on any failure / unsupported browser. ---------- */
+function gifMedianCut(px, maxColors){   // px: flat Uint8 [r,g,b,...] (sampled) → array of [r,g,b]
+  const boxOf=arr=>{ let rmn=255,rmx=0,gmn=255,gmx=0,bmn=255,bmx=0;
+    for(let i=0;i<arr.length;i+=3){ const r=arr[i],g=arr[i+1],b=arr[i+2];
+      if(r<rmn)rmn=r; if(r>rmx)rmx=r; if(g<gmn)gmn=g; if(g>gmx)gmx=g; if(b<bmn)bmn=b; if(b>bmx)bmx=b; }
+    return {arr,rr:rmx-rmn,gr:gmx-gmn,br:bmx-bmn}; };
+  let boxes=[boxOf(px)];
+  while(boxes.length<maxColors){
+    let bi=-1,best=-1;
+    for(let i=0;i<boxes.length;i++){ const b=boxes[i]; if(b.arr.length<=3) continue;
+      const rng=Math.max(b.rr,b.gr,b.br); if(rng>best){best=rng;bi=i;} }
+    if(bi<0) break;
+    const b=boxes[bi], ch=(b.rr>=b.gr&&b.rr>=b.br)?0:(b.gr>=b.br?1:2), n=b.arr.length/3, idx=[];
+    for(let i=0;i<n;i++) idx.push(i);
+    idx.sort((x,y)=>b.arr[x*3+ch]-b.arr[y*3+ch]);
+    const mid=n>>1, a1=new Uint8Array(mid*3), a2=new Uint8Array((n-mid)*3);
+    for(let i=0;i<mid;i++){ a1[i*3]=b.arr[idx[i]*3]; a1[i*3+1]=b.arr[idx[i]*3+1]; a1[i*3+2]=b.arr[idx[i]*3+2]; }
+    for(let i=mid;i<n;i++){ const j=(i-mid)*3,s=idx[i]*3; a2[j]=b.arr[s]; a2[j+1]=b.arr[s+1]; a2[j+2]=b.arr[s+2]; }
+    boxes.splice(bi,1,boxOf(a1),boxOf(a2));
+  }
+  return boxes.map(b=>{ let r=0,g=0,bl=0,n=b.arr.length/3;
+    for(let i=0;i<b.arr.length;i+=3){ r+=b.arr[i]; g+=b.arr[i+1]; bl+=b.arr[i+2]; }
+    return n?[Math.round(r/n),Math.round(g/n),Math.round(bl/n)]:[0,0,0]; });
+}
+function gifNearest(pal, r,g,b, cache){
+  const key=((r>>2)<<12)|((g>>2)<<6)|(b>>2);
+  const c=cache[key]; if(c>=0) return c;
+  let bi=0,bd=1e9;
+  for(let i=0;i<pal.length;i++){ const p=pal[i],dr=r-p[0],dg=g-p[1],db=b-p[2],d=dr*dr+dg*dg+db*db; if(d<bd){bd=d;bi=i;} }
+  cache[key]=bi; return bi;
+}
+function gifLZW(minCode, data){   // GIF variable-width LZW → array of code-stream bytes
+  // width bump matches the canonical GIF encoder: increase codeSize on the emit AFTER the entry that
+  // fills the current width was added (checking next>maxcode inside emit) — a naive bump-on-add is off
+  // by one and produces a "broken data stream" for strict decoders.
+  const clear=1<<minCode, eoi=clear+1; let codeSize, maxcode, dict, next;
+  const out=[]; let cur=0, n=0;
+  const emit=code=>{ cur|=code<<n; n+=codeSize; while(n>=8){ out.push(cur&0xff); cur>>=8; n-=8; }
+    if(next>maxcode && codeSize<12){ codeSize++; maxcode=(1<<codeSize)-1; } };
+  const reset=()=>{ dict=new Map(); next=clear+2; codeSize=minCode+1; maxcode=(1<<codeSize)-1; };
+  reset(); emit(clear);
+  let prefix=data[0];
+  for(let i=1;i<data.length;i++){ const k=data[i], key=prefix*4096+k;
+    if(dict.has(key)){ prefix=dict.get(key); }
+    else { emit(prefix);
+      if(next<4096){ dict.set(key,next++); }
+      else { emit(clear); reset(); }
+      prefix=k; } }
+  emit(prefix); emit(eoi);
+  if(n>0) out.push(cur&0xff);
+  return out;
+}
+function gifBuild(w,h,pal,frames){
+  const bytes=[]; const put=b=>bytes.push(b&0xff);
+  const puts=s=>{ for(let i=0;i<s.length;i++) put(s.charCodeAt(i)); };
+  const putw=v=>{ put(v); put(v>>8); };
+  let gctBits=1; while((1<<(gctBits+1))<pal.length) gctBits++; const gctSize=1<<(gctBits+1);
+  puts('GIF89a'); putw(w); putw(h); put(0x80|(gctBits<<4)|gctBits); put(0); put(0);
+  for(let i=0;i<gctSize;i++){ const p=pal[i]||[0,0,0]; put(p[0]); put(p[1]); put(p[2]); }
+  puts('!'); put(0xFF); put(11); puts('NETSCAPE2.0'); put(3); put(1); putw(0); put(0);   // loop forever
+  const min=gctBits+1;
+  frames.forEach(f=>{
+    put(0x21); put(0xF9); put(4); put(0x04); putw(f.delay); put(0); put(0);   // GCE: disposal=1, no transparency
+    put(0x2C); putw(0); putw(0); putw(w); putw(h); put(0);                     // image descriptor
+    put(min);
+    const codes=gifLZW(min, f.idx);
+    for(let i=0;i<codes.length;i+=255){ const end=Math.min(i+255,codes.length); put(end-i); for(let j=i;j<end;j++) put(codes[j]); }
+    put(0);
+  });
+  put(0x3B);
+  return new Uint8Array(bytes);
+}
+function hvGifShare(holeIdx){
+  try{
+    const hole=S.dailyHoles&&S.dailyHoles[holeIdx], c=DAILY_COURSES[S.dailyCourse];
+    if(!hole||!c||!(hole.shots&&hole.shots.length&&hole.shots[0]&&hole.shots[0].k)){ return hvShareShot(holeIdx); }
+    track('daily_share_gif',{hole:holeIdx+1});
+    toast('Building your shot GIF…');
+    setTimeout(()=>{ try{ hvGifRender(hole, holeIdx, c); }catch(e){ console.error('gif',e); hvShareShot(holeIdx); } }, 30);
+  }catch(e){ hvShareShot(holeIdx); }
+}
+function hvGifRender(hole, holeIdx, c){
+  const courseKey=S.dailyCourse;
+  const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
+  const g=(hole._hv&&hole._hv.g)||hvGeom(seedN, hole.par, hole.yards||400, courseKey, holeIdx);
+  const plots=(hole._hv&&hole._hv.plots)||hvPlots(g, hole.shots, seedN);
+  const biome=hvBiome(courseKey), [vx,vy,vw,vh]=HV_CAM;
+  const W=280, scale=W/vw, imgH=Math.round(vh*scale), barH=Math.round(W*0.14), H=imgH+barH;
+  const terr=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vx} ${vy} ${vw} ${vh}" width="${vw}" height="${vh}">${hvTerrain(g,seedN,biome)}</svg>`;
+  const img=new Image();
+  img.onload=()=>{ try{ hvGifCompose(img,g,plots,hole,c,{W,imgH,barH,H,scale,vx,vy}); }catch(e){ console.error('gif',e); hvShareShot(holeIdx); } };
+  img.onerror=()=>hvShareShot(holeIdx);
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(terr);
+}
+function hvGifCompose(img,g,plots,hole,c,D){
+  const {W,imgH,barH,H,scale,vx,vy}=D;
+  const bg=document.createElement('canvas'); bg.width=W; bg.height=H; const bx=bg.getContext('2d');
+  bx.fillStyle='#0a1a10'; bx.fillRect(0,0,W,H); bx.drawImage(img,0,0,W,imgH);
+  bx.fillStyle='#07130c'; bx.fillRect(0,imgH,W,barH); bx.textBaseline='middle';
+  bx.fillStyle='#EBA61F'; bx.font=`800 ${Math.round(barH*0.32)}px "Barlow Semi Condensed",Arial,sans-serif`;
+  bx.fillText(`Hole ${hole.n} · Par ${hole.par}`, Math.round(barH*0.2), imgH+barH*0.34);
+  bx.fillStyle='#eef4ee';
+  bx.fillText(`${hole.par+hole.toPar} (${dtp(hole.toPar)}) · ${dResultLong(hole.par,hole.toPar)}`, Math.round(barH*0.2), imgH+barH*0.72);
+  bx.fillStyle='#9fb3a4'; bx.font=`700 ${Math.round(barH*0.24)}px "Barlow Semi Condensed",Arial,sans-serif`; bx.textAlign='right';
+  bx.fillText('RunTheTour · runthe.gg/golf', W-Math.round(barH*0.2), imgH+barH*0.53); bx.textAlign='left';
+  const P=pt=>{ const s=hvProj(g,pt[0],pt[1]); return [(s[0]-vx)*scale,(s[1]-vy)*scale]; };
+  const cbez=(A,C,B,t)=>{ const u=1-t; return [u*u*A[0]+2*u*t*C[0]+t*t*B[0], u*u*A[1]+2*u*t*C[1]+t*t*B[1]]; };
+  const lin=(A,B,t)=>[A[0]+(B[0]-A[0])*t, A[1]+(B[1]-A[1])*t];
+  const shots=plots.map(p=>{ const A=P(p.from), rest=P(p.rest||p.from), putt=(p.k==='putt'||p.k==='hole');
+    if(putt) return {putt:true,A,rest};
+    const B=P(p.land||p.rest||p.from); let C;
+    if(p.land){ const cc=hvCtrl(g,p); C=[(cc[0]-vx)*scale,(cc[1]-vy)*scale]; } else C=[(A[0]+B[0])/2,(A[1]+B[1])/2];
+    return {A,C,B,rest}; });
+  const drawDone=(ctx,sh)=>{ ctx.save(); ctx.lineCap='round';
+    ctx.strokeStyle='rgba(120,220,190,.5)'; ctx.lineWidth=Math.max(1,W*0.006); ctx.beginPath();
+    ctx.moveTo(sh.A[0],sh.A[1]);
+    if(sh.putt) ctx.lineTo(sh.rest[0],sh.rest[1]);
+    else { ctx.quadraticCurveTo(sh.C[0],sh.C[1],sh.B[0],sh.B[1]); ctx.lineTo(sh.rest[0],sh.rest[1]); }
+    ctx.stroke();
+    ctx.fillStyle='rgba(10,25,16,.85)'; ctx.strokeStyle='#EBA61F'; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.arc(sh.rest[0],sh.rest[1],W*0.019,0,7); ctx.fill(); ctx.stroke(); ctx.restore(); };
+  const drawActive=(ctx,sh,t)=>{ ctx.save(); ctx.lineCap='round'; const lw=Math.max(1.4,W*0.008); let head;
+    if(sh.putt){ head=lin(sh.A,sh.rest,t); ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.lineWidth=lw;
+      ctx.beginPath(); ctx.moveTo(sh.A[0],sh.A[1]); ctx.lineTo(head[0],head[1]); ctx.stroke(); }
+    else { const fT=0.72, samp=tt=> tt<=fT?cbez(sh.A,sh.C,sh.B,tt/fT):lin(sh.B,sh.rest,(tt-fT)/(1-fT)), N=Math.max(2,Math.round(t*26));
+      ctx.strokeStyle='rgba(255,215,106,.55)'; ctx.lineWidth=lw+2;
+      ctx.beginPath(); ctx.moveTo(sh.A[0],sh.A[1]); for(let i=1;i<=N;i++){ const q=samp(t*i/N); ctx.lineTo(q[0],q[1]); } ctx.stroke();
+      ctx.strokeStyle='rgba(255,255,255,.95)'; ctx.lineWidth=lw;
+      ctx.beginPath(); ctx.moveTo(sh.A[0],sh.A[1]); for(let i=1;i<=N;i++){ const q=samp(t*i/N); ctx.lineTo(q[0],q[1]); } ctx.stroke();
+      head=samp(t); }
+    ctx.fillStyle='#fff'; ctx.strokeStyle='rgba(0,0,0,.35)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.arc(head[0],head[1],W*0.016,0,7); ctx.fill(); ctx.stroke(); ctx.restore(); };
+  const cv=document.createElement('canvas'); cv.width=W; cv.height=H; const ctx=cv.getContext('2d');
+  const frames=[], cache=new Int32Array(262144).fill(-1); let pal=null;
+  const state=(active,t)=>{ ctx.drawImage(bg,0,0);
+    for(let i=0;i<shots.length;i++){ if(i<active) drawDone(ctx,shots[i]); }
+    if(active<shots.length) drawActive(ctx,shots[active],t); else for(let i=0;i<shots.length;i++) drawDone(ctx,shots[i]); };
+  const push=delay=>{ const data=ctx.getImageData(0,0,W,H).data;
+    if(!pal){ const s=[]; for(let i=0;i<data.length;i+=28){ s.push(data[i],data[i+1],data[i+2]); }
+      pal=gifMedianCut(new Uint8Array(s),250);
+      pal.push([255,255,255],[255,215,106],[235,166,31],[10,25,16],[7,19,12],[159,179,164]);
+      if(pal.length>256) pal=pal.slice(0,256); }
+    const idx=new Uint8Array(W*H);
+    for(let p=0,q=0;p<data.length;p+=4,q++) idx[q]=gifNearest(pal,data[p],data[p+1],data[p+2],cache);
+    frames.push({idx,delay}); };
+  shots.forEach((sh,si)=>{ const steps=sh.putt?6:9; for(let k=1;k<=steps;k++){ state(si,k/steps); push(5); } });
+  state(shots.length,1); push(220);   // hold on the final result before the loop restarts
+  const bytes=gifBuild(W,H,pal,frames);
+  const blob=new Blob([bytes],{type:'image/gif'}), fname=`runthetour-hole${hole.n}.gif`;
+  const file=new File([blob],fname,{type:'image/gif'});
+  const txt=withSocial(`${dShort(c.v)} · Hole ${hole.n} · ${hole.par+hole.toPar} (${dtp(hole.toPar)}) on RunTheTour`);
+  if(navigator.canShare&&navigator.canShare({files:[file]})){ navigator.share({files:[file],title:'RunTheTour',text:txt}).catch(e=>{ if(!(e&&e.name==='AbortError')) toast('Saved your shot GIF'); }); }
+  else { const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); toast('Saved your shot GIF'); }
+}
 function hvShareShot(holeIdx){
   const hole=S.dailyHoles[holeIdx], c=DAILY_COURSES[S.dailyCourse]; if(!hole||!c) return;
   const svg=hvStaticSVG(hole, S.dailyCourse, holeIdx); if(!svg){ toast('Nothing to share on this hole'); return; }
@@ -8660,7 +8833,7 @@ function hvShareShot(holeIdx){
     ctx.fillText('RunTheTour · runthe.gg/golf', W-Math.round(barH*0.22), imgH+barH*0.54); ctx.textAlign='left';
     cv.toBlob(b=>{ if(!b){ toast("Couldn't build the image"); return; }
       const fname=`runthetour-hole${hole.n}.png`, file=new File([b],fname,{type:'image/png'});
-      if(navigator.canShare&&navigator.canShare({files:[file]})) navigator.share({files:[file], title:'RunTheTour', text:`${dShort(c.v)} · Hole ${hole.n} · ${hole.par+hole.toPar} (${dtp(hole.toPar)})`}).catch(()=>{});
+      if(navigator.canShare&&navigator.canShare({files:[file]})) navigator.share({files:[file], title:'RunTheTour', text:withSocial(`${dShort(c.v)} · Hole ${hole.n} · ${hole.par+hole.toPar} (${dtp(hole.toPar)})`)}).catch(()=>{});
       else { const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=fname; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),4000); toast('Saved the shot image'); }
     },'image/png');
   };
@@ -9109,7 +9282,7 @@ function scrDailyRound(){
     bar.appendChild(list);
     const btns=$(`<div class="revbtns"></div>`);
     const rp=$(`<button class="btn blue">▶ Replay ${sel?('shot '+sel):'shot 1'}</button>`); rp.onclick=()=>dailyReviewShotN(sel||1); btns.appendChild(rp);
-    const shb=$(`<button class="btn ghost">↗ Share this shot</button>`); shb.onclick=()=>hvShareShot(S.dailyViewHole); btns.appendChild(shb);
+    const shb=$(`<button class="btn ghost">↗ Share this hole (GIF)</button>`); shb.onclick=()=>hvGifShare(S.dailyViewHole); btns.appendChild(shb);
     bar.appendChild(btns);
     add(bar);
   }
