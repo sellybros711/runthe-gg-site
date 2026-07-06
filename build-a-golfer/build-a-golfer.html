@@ -839,7 +839,18 @@ const ICONS={
   swap:'<path d="M7 7h11M15 4l3 3-3 3M17 17H6M9 14l-3 3 3 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
   arrowUp:'<path d="M12 20V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
   arrowUR:'<path d="M7 17 17 7M8 7h9v9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
-  arrowLeft:'<path d="M11 6l-6 6 6 6M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+  arrowLeft:'<path d="M11 6l-6 6 6 6M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  coin:'<circle cx="12" cy="12" r="9" fill="#EBA61F"/><circle cx="12" cy="12" r="6.6" fill="none" stroke="#8a6410" stroke-width="1.2"/><path d="M12 7.5v9M9.6 9.5h3.2a1.7 1.7 0 0 1 0 3.4h-2.4a1.7 1.7 0 0 0 0 3.4h3.4" fill="none" stroke="#8a6410" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>',
+  coins:'<ellipse cx="9" cy="8" rx="6" ry="2.6" fill="#EBA61F"/><path d="M3 8v4c0 1.4 2.7 2.6 6 2.6s6-1.2 6-2.6V8" fill="none" stroke="#8a6410" stroke-width="1.3"/><ellipse cx="15" cy="14" rx="6" ry="2.6" fill="#f0b93a"/><path d="M9 14v3c0 1.4 2.7 2.6 6 2.6s6-1.2 6-2.6v-3" fill="none" stroke="#8a6410" stroke-width="1.3"/>',
+  cap:'<path d="M5 15c0-4.6 3.2-8 7-8 3.5 0 6.1 2.5 6.6 6.2L18 15z"/><rect x="4" y="14.6" width="10" height="2.4" rx="1.2"/>',
+  shades:'<circle cx="7" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M10.2 12h3.6M3.4 10.6l1.4.8M20.6 10.6l-1.4.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  glove:'<path d="M7 21v-9c0-1.1.4-2 1.3-2s1.2.9 1.2 2V8.2c0-1.1.4-2 1.3-2s1.2.9 1.2 2V8c0-1.1.4-2 1.3-2s1.2.9 1.2 2v3.2l1.1-1c.9-.8 2 .1 1.5 1.4L16 17v4z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>',
+  shoe:'<path d="M3 16c0-1.8 1-2.8 2.8-2.8L9 9l2 1 .8 2 5.7 1c2 .35 3 1.2 3 3v1H3z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M3.5 18.5h17" fill="none" stroke="currentColor" stroke-width="1.5"/>',
+  driver:'<path d="M6 18 16 8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><path d="M14.5 6.4c2.7-1.8 5.6.8 4.7 3.6-.8 2.2-4.6 3-7.7 1.7z"/><circle cx="6" cy="18" r="1.7"/>',
+  putter:'<path d="M9 3v11.5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><rect x="4.5" y="14.5" width="13" height="3.2" rx="1.4"/>',
+  ball:'<circle cx="12" cy="12" r="8.2"/><circle cx="9" cy="9.6" r=".9" fill="#0c2c23"/><circle cx="12.7" cy="8.6" r=".9" fill="#0c2c23"/><circle cx="15" cy="12" r=".9" fill="#0c2c23"/><circle cx="11.2" cy="12.6" r=".9" fill="#0c2c23"/><circle cx="8.4" cy="13.4" r=".9" fill="#0c2c23"/><circle cx="13.6" cy="15.2" r=".9" fill="#0c2c23"/>',
+  charm:'<path d="M12 12c-2.4-2.6-5.4-1-5.4 1.1 0 1.8 2.6 2.7 5.4.4-2.3 2.8-.4 5.4 1.1 5.4 1.8 0 2.7-2.6.4-5.4 2.8 2.3 5.4.4 5.4-1.1 0-2.1-3-3.7-5.4-1.1 2.6-2.4 1-5.4-1.1-5.4-1.8 0-2.7 2.6-.4 5.4z"/><path d="M12 17.5v3.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
+  cart:'<circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/><path d="M3 4h2l2.2 11.2a1.5 1.5 0 0 0 1.5 1.2h8.1a1.5 1.5 0 0 0 1.5-1.2L21 8H6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>'
 };
 function ic(name,o){ o=o||{}; const inner=ICONS[name]; if(!inner) return '';
   const sz=o.size||'1em';
@@ -1414,6 +1425,7 @@ function evaluateAch(){ if(!sbSignedIn()) return []; const s=achState(); const m
     if(repRankIndex(afterRank)>repRankIndex(beforeRank)){ S.freshRep={from:beforeRank,to:afterRank}; track('rep_up',{to:afterRank}); }
     LS.set(acctKey('bag_ach'),s); sbSyncStats&&sbSyncStats(); cloudPush(); track('ach_unlocked',{n:fresh.length,ids:fresh.map(a=>a.id).join(',')});
   }
+  try{ reconcileCoins(); }catch(e){}   // CS183: award coins for new achievements + milestone gear
   return fresh; }
 // big celebratory Tour Rep promotion card (shown on the summary / career-end when you rank up)
 function repUpHTML(r){ if(!r) return ''; const goat=r.to==='G.O.A.T.';
@@ -3243,8 +3255,126 @@ function ovrFromSkills(sk){
   const dd=below.length?Math.sqrt(below.reduce((a,b)=>a+b*b,0)/vals.length):0;
   const o=wmean - OVR_IMBALANCE_K*Math.max(0, dd-OVR_DEADBAND);      // only cherry-picked spread is penalised
   return Math.max(40, Math.min(99, o)); }
+/* ===================== COINS + SHOP + ACCESSORIES (CS183) =====================
+   In-game currency + a shop of equippable gear that grants small stat boosts. Design guarantees:
+   - Coins are DERIVED from permanent progress (achievements + lifetime milestones) minus a `spent`
+     counter, so they can never be farmed by replaying and stay identical across devices.
+   - Boosts apply in SOLO play only: they're baked in buildPlayer(), which feeds Career + Daily; online
+     H2H builds its own draft and never calls buildPlayer, so bought gear can't touch ranked / the H2H
+     board. Per-skill + total caps keep career from being trivialized.
+   - Account-scoped (acctKey) + cloud-synced. Signed-in feature (like achievements). ------------------- */
+const COIN_START=300;                       // welcome coins on your first signed-in load
+const ACC_SKILL_CAP=6, ACC_TOTAL_CAP=18;    // clamp so a full gear loadout is a meaningful, bounded edge
+const ACC_RARITY={ common:{c:'#b8c4bd',label:'Common'}, rare:{c:'#4aa3ff',label:'Rare'},
+  epic:{c:'#b06be0',label:'Epic'}, legendary:{c:'#EBA61F',label:'Legendary'}, exclusive:{c:'#35d6a0',label:'Exclusive'} };
+const ACC_SLOTS=[ {k:'head',name:'Headwear',icon:'cap'}, {k:'eyes',name:'Eyewear',icon:'shades'},
+  {k:'glove',name:'Glove',icon:'glove'}, {k:'shoes',name:'Shoes',icon:'shoe'}, {k:'driver',name:'Driver',icon:'driver'},
+  {k:'putter',name:'Putter',icon:'putter'}, {k:'ball',name:'Ball',icon:'ball'}, {k:'charm',name:'Charm',icon:'charm'} ];
+const ACC_SLOT_BY={}; ACC_SLOTS.forEach(s=>ACC_SLOT_BY[s.k]=s);
+// purchasable catalog (id, slot, name, rarity, price, boost{skill:+delta}, desc)
+const ACCESSORIES=[
+  {id:'head_visor',  slot:'head',  name:'Tour Visor',          rarity:'common',   price:400,  boost:{clu:2},        desc:'Keeps the sun out and the focus in.'},
+  {id:'head_bucket', slot:'head',  name:'Bucket Hat',          rarity:'rare',     price:1800, boost:{clu:3},        desc:'Unbothered. Ice cold.'},
+  {id:'head_sig',    slot:'head',  name:'Signature Cap',       rarity:'epic',     price:5500, boost:{clu:3,app:2},  desc:'The look of a closer.'},
+  {id:'head_crown',  slot:'head',  name:"Champion's Cap",      rarity:'legendary',price:14000,boost:{clu:4,app:2},  desc:'Worn by winners only.'},
+  {id:'eyes_sport',  slot:'eyes',  name:'Sport Shades',        rarity:'common',   price:400,  boost:{app:2},        desc:'Cut the glare, see the line.'},
+  {id:'eyes_polar',  slot:'eyes',  name:'Polarized Pros',      rarity:'rare',     price:1800, boost:{app:3},        desc:'Reads greens like a book.'},
+  {id:'eyes_focus',  slot:'eyes',  name:'Focus Optics',        rarity:'epic',     price:5500, boost:{app:3,clu:2},  desc:'Locks you into the target.'},
+  {id:'eyes_eagle',  slot:'eyes',  name:'Eagle-Eye Elites',    rarity:'legendary',price:14000,boost:{app:4,clu:2},  desc:'You see every break.'},
+  {id:'glove_rain',  slot:'glove', name:'Rain Glove',          rarity:'common',   price:400,  boost:{sht:2},        desc:'Grippy in any weather.'},
+  {id:'glove_cab',   slot:'glove', name:'Cabretta Glove',      rarity:'rare',     price:1800, boost:{put:3},        desc:'Pure feel on the greens.'},
+  {id:'glove_tour',  slot:'glove', name:'Tour-Feel Glove',     rarity:'epic',     price:5500, boost:{put:3,sht:2},  desc:'Soft hands, cold blood.'},
+  {id:'glove_gold',  slot:'glove', name:'Golden-Grip Glove',   rarity:'legendary',price:14000,boost:{put:4,sht:3},  desc:'The touch of a magician.'},
+  {id:'shoes_train', slot:'shoes', name:'Spikeless Trainers',  rarity:'common',   price:400,  boost:{acc:2},        desc:'Sure-footed through the swing.'},
+  {id:'shoes_boa',   slot:'shoes', name:'BOA Golf Shoes',      rarity:'rare',     price:1800, boost:{dist:3},       desc:'Locked in, wound up.'},
+  {id:'shoes_tract', slot:'shoes', name:'Tour-Traction Shoes', rarity:'epic',     price:5500, boost:{dist:2,acc:3}, desc:'Every ounce into the ball.'},
+  {id:'shoes_carbon',slot:'shoes', name:'Carbon-Plate Cleats', rarity:'legendary',price:14000,boost:{dist:4,acc:3}, desc:'Explosive ground force.'},
+  {id:'drv_graph',   slot:'driver',name:'Graphite Driver',     rarity:'common',   price:600,  boost:{dist:2},       desc:'Light, fast, forgiving.'},
+  {id:'drv_ti',      slot:'driver',name:'Titanium Driver',     rarity:'rare',     price:2200, boost:{dist:3},       desc:'Cannon off the tee.'},
+  {id:'drv_speed',   slot:'driver',name:'Speed-Injected Driver',rarity:'epic',    price:6000, boost:{dist:4},       desc:'Ball speed for days.'},
+  {id:'drv_rocket',  slot:'driver',name:'Rocket-Launcher Driver',rarity:'legendary',price:16000,boost:{dist:5,acc:2},desc:'Bombs it, and finds the short grass.'},
+  {id:'put_blade',   slot:'putter',name:'Blade Putter',        rarity:'common',   price:600,  boost:{put:2},        desc:'Classic feel, pure roll.'},
+  {id:'put_mallet',  slot:'putter',name:'Mallet Putter',       rarity:'rare',     price:2200, boost:{put:3},        desc:'Forgiving and dead straight.'},
+  {id:'put_counter', slot:'putter',name:'Counterbalance Putter',rarity:'epic',    price:6000, boost:{put:4},        desc:'Silky under pressure.'},
+  {id:'put_wand',    slot:'putter',name:'The Magic Wand',      rarity:'legendary',price:16000,boost:{put:6},        desc:'It just goes in.'},
+  {id:'ball_dist',   slot:'ball',  name:'Distance Ball',       rarity:'common',   price:400,  boost:{app:2},        desc:'Long and stable.'},
+  {id:'ball_soft',   slot:'ball',  name:'Tour-Soft Ball',      rarity:'rare',     price:1800, boost:{scr:3},        desc:'Checks up on a dime.'},
+  {id:'ball_ureth',  slot:'ball',  name:'Urethane Tour Ball',  rarity:'epic',     price:5500, boost:{app:3,scr:2},  desc:'Total command of your flight.'},
+  {id:'ball_proto',  slot:'ball',  name:'Prototype Tour Ball', rarity:'legendary',price:14000,boost:{app:4,scr:3},  desc:'Not available in stores. Except this one.'},
+  {id:'charm_tee',   slot:'charm', name:'Lucky Tee',           rarity:'common',   price:400,  boost:{scr:2},        desc:'You just get up-and-down more.'},
+  {id:'charm_mark',  slot:'charm', name:'Ball-Marker Coin',    rarity:'rare',     price:1800, boost:{clu:3},        desc:'A little swagger on the greens.'},
+  {id:'charm_divot', slot:'charm', name:'Divot-Tool Charm',    rarity:'epic',     price:5500, boost:{scr:3,clu:2},  desc:'Fix the green, fix your nerves.'},
+  {id:'charm_clover',slot:'charm', name:'Four-Leaf Clover Pin',rarity:'legendary',price:14000,boost:{clu:3,scr:3},  desc:'Fortune favors the bold.'}
+];
+// exclusive gear earned FREE at big milestones (never in the shop). Granted idempotently to `owned`.
+const MILESTONE_ITEMS=[
+  {id:'mi_first_win',slot:'charm', name:'Rookie Ball-Marker',  rarity:'exclusive',boost:{clu:2},       when:m=>(m.wins||0)>=1,           note:'First career win'},
+  {id:'mi_major',    slot:'ball',  name:'Major Marker Ball',   rarity:'exclusive',boost:{app:3},       when:m=>(m.majors||0)>=1,         note:'First major'},
+  {id:'mi_slam',     slot:'charm', name:'Grand Slam Signet',   rarity:'exclusive',boost:{clu:4,scr:4}, when:m=>(m.grandSlam||m.slams)>=1||((m.mastersWins||0)>=1&&(m.champWins||0)>=1&&(m.usOpenWins||0)>=1&&(m.openWins||0)>=1), note:'Career Grand Slam'},
+  {id:'mi_no1',      slot:'head',  name:'World No.1 Cap',      rarity:'exclusive',boost:{clu:3,app:3}, when:m=>(m.no1Seasons||0)>=1,      note:'Reach World No.1'},
+  {id:'mi_career',   slot:'driver',name:"Legend's Driver",     rarity:'exclusive',boost:{dist:5,acc:3},when:m=>(m.careersCompleted||0)>=1,note:'Complete a career'}
+];
+const ACC_BY_ID={}; ACCESSORIES.concat(MILESTONE_ITEMS).forEach(a=>ACC_BY_ID[a.id]=a);
+function accById(id){ return ACC_BY_ID[id]||null; }
+// ---- economy ----
+function coinState(){ const s=LS.get(acctKey('bag_coins'),null)||{}; s.spent=s.spent||0; s.seen=s.seen||0; s.owned=(s.owned&&typeof s.owned==='object')?s.owned:{}; return s; }
+function coinSave(s){ LS.set(acctKey('bag_coins'), s); if(typeof cloudPush==='function') cloudPush(); }
+// deterministic earned total — every entry here is a "way to earn coins"; add terms to add more
+function coinsEarned(){ let c=COIN_START; const ac=(achState().unlocked)||{};
+  ACH.forEach(a=>{ if(ac[a.id]) c+=a.pts*3; });                 // every achievement pays out (points ×3)
+  const m=achMetrics();
+  c+=(m.wins||0)*60 + (m.majors||0)*400;                        // tour wins / majors
+  c+=(m.cupWins||0)*300 + (m.cupApps||0)*40 + (m.fedexCups||0)*800;
+  c+=(m.olyGold||0)*500 + (m.olySilver||0)*250 + (m.olyBronze||0)*120;
+  c+=(m.no1Seasons||0)*600 + (m.poySeasons||0)*450 + (m.moneyLeaderSeasons||0)*300 + (m.scoringSeasons||0)*300 + (m.roySeasons||0)*300;
+  c+=(m.dailyBeats||0)*20 + (m.bestStreak||0)*25 + (m.spotWins||0)*200;      // daily / streak / spotlight
+  c+=(m.seasonsPlayed||0)*40 + (m.careersCompleted||0)*1500;
+  c+=(m.rivalWins||0)*150 + (m.rivalsOutgrown||0)*250 + (m.h2hWins||0)*30 + (m.holesInOne||0)*300;
+  return Math.round(c);
+}
+function coinBalance(){ return Math.max(0, coinsEarned()-coinState().spent); }
+function coinFmt(n){ return (typeof fmt==='function'?fmt(Math.round(n)):(''+Math.round(n))); }
+function grantMilestoneItems(s){ const m=achMetrics(); MILESTONE_ITEMS.forEach(mi=>{ try{ if(!s.owned[mi.id] && mi.when(m)) s.owned[mi.id]=1; }catch(e){} }); }
+// reconcile: self-heal earned total, grant milestone gear, toast newly-earned coins. Runs on load +
+// after evaluateAch / finishes. Signed-in only (coins are an account feature).
+function reconcileCoins(silent){ if(!sbSignedIn()) return 0; const s=coinState(); const e=coinsEarned(); let gain=0, changed=false;
+  if(e>s.seen){ gain=e-s.seen; s.seen=e; changed=true; }
+  const before=Object.keys(s.owned).length; grantMilestoneItems(s); if(Object.keys(s.owned).length!==before) changed=true;
+  if(changed) coinSave(s);
+  if(gain>0 && !silent) coinToast(gain);
+  return gain;
+}
+function coinToast(n){ try{ toast('+'+coinFmt(n)+' coins earned!'); }catch(e){} }
+// ---- ownership + equip (equipped gear lives in look.acc, synced last-write-wins like the rest of identity) ----
+function accOwned(id){ return !!coinState().owned[id]; }
+function accEquipMap(){ const a=(S.look&&S.look.acc)||{}; return (a&&typeof a==='object')?a:{}; }
+function accEquipped(slot){ const id=accEquipMap()[slot]; return (id&&accOwned(id))?id:null; }   // only if still owned
+function accEquip(id){ const it=accById(id); if(!it||!accOwned(id)) return; S.look.acc=Object.assign({},accEquipMap()); S.look.acc[it.slot]=id; saveLook(); }
+function accUnequip(slot){ if(!S.look) return; const m=Object.assign({},accEquipMap()); delete m[slot]; S.look.acc=m; saveLook(); }
+function accBuy(id){ const it=accById(id); if(!it) return {ok:false,msg:'Unknown item'};
+  if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy gear'};
+  if(accOwned(id)) return {ok:false,msg:'Already owned'};
+  if(it.rarity==='exclusive') return {ok:false,msg:'Earned, not bought'};
+  const s=coinState(); if(coinsEarned()-s.spent < it.price) return {ok:false,msg:'Not enough coins'};
+  s.spent+=it.price; s.owned[id]=1; coinSave(s); accEquip(id);
+  track('shop_buy',{id:id,price:it.price,rarity:it.rarity});
+  return {ok:true};
+}
+// ---- boosts: summed over equipped gear, clamped per-skill + total (SOLO ONLY via buildPlayer) ----
+function accBoost(){ const out={}; let total=0; ACC_SLOTS.forEach(sl=>{ const id=accEquipped(sl.k); const it=id&&accById(id);
+    if(it&&it.boost) for(const k in it.boost){ out[k]=(out[k]||0)+it.boost[k]; } });
+  for(const k in out) out[k]=Math.min(ACC_SKILL_CAP, out[k]);
+  // enforce the total cap by trimming largest-first if needed
+  total=Object.values(out).reduce((a,b)=>a+b,0);
+  while(total>ACC_TOTAL_CAP){ let mk=null; for(const k in out){ if(out[k]>0 && (mk===null||out[k]>out[mk])) mk=k; } if(mk===null) break; out[mk]--; total--; }
+  return out;
+}
+function accBoostTotal(){ const b=accBoost(); return Object.values(b).reduce((a,x)=>a+x,0); }
 function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
   CATS.forEach(c=>p[c.k]=S.slots[c.k]?S.slots[c.k].value:REPLACEMENT);
+  // equipped accessory boosts (solo only — buildPlayer feeds Career + Daily; H2H uses its own draft)
+  const ab=accBoost(); for(const k in ab){ if(p[k]!=null) p[k]=Math.max(40,Math.min(99, p[k]+ab[k])); }
+  if(accBoostTotal()>0) p._gear=1;
   // caddie: bake the always-on part of your caddie's power into your ratings so it shows in OVR + radar
   // (situational major/venue bonuses are added to your event overall in the sim, not here). Clamped so a
   // boost can't push a rating out of range or a -1 (Two Shot Lynch) below the floor.
@@ -3462,6 +3592,7 @@ function render(){
     if(S.overlay==='dailydone') overlayDailyDone(app);
     if(S.overlay==='courserecords') overlayCourseRecords(app);
     if(S.overlay==='passport') overlayPassport(app);
+    if(S.overlay==='shop') overlayShop(app);
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
     if(S.overlay==='about') overlayAbout(app);
     if(S.overlay==='privacy') overlayPrivacy(app);
@@ -3979,6 +4110,7 @@ function overlayMenu(screen){
   play.appendChild(menuRow('🏅','Trophy Room',signedIn?'Your badges, titles & Legend Tokens':'Sign in to unlock your record',go(()=>{S.overlay='record';})));
   play.appendChild(menuRow('⛳','Course Records','Today\'s board & all-time bests',go(()=>{S.overlay='courserecords';})));
   play.appendChild(menuRow('🎫','Course Passport',`Your best grade at all ${DAILY_KEYS.length} courses`,go(()=>{S.overlay='passport';})));
+  play.appendChild(menuRow(ic('cart'),'Pro Shop', signedIn?('Coins: '+coinFmt(coinBalance())+' · gear & boosts'):'Sign in to earn coins & gear',go(()=>{S.overlay='shop';})));
   ov.appendChild(play);
   const acct=$(`<div style="margin-bottom:16px"></div>`);
   acct.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Account</div>`));
@@ -4222,6 +4354,7 @@ function scrTitle(){
   mkLink('How to Play', openRules);
   mkLink('🏆 Leaderboard', ()=>{S.overlay='leaderboard';render();});
   mkLink('🏅 Trophy Room', ()=>{S.overlay='record';render();});
+  mkLink((sbSignedIn()?ic('coin')+' '+coinFmt(coinBalance())+' · ':'')+'Pro Shop', ()=>{S.overlay='shop';render();});
   w.appendChild(sec);
   const credit=$(`<div class="small muted center" style="margin-top:16px;line-height:1.6;opacity:.7">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
   w.appendChild(credit);
@@ -9606,6 +9739,65 @@ function overlayPassport(screen){
   ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
   screen.appendChild(ov);
 }
+function shopBoostTxt(boost){ return Object.keys(boost).map(k=>'+'+boost[k]+' '+(RSHORT[k]||k)).join(' · '); }
+function shopCard(it){ const r=ACC_RARITY[it.rarity]||ACC_RARITY.common, owned=accOwned(it.id), eq=accEquipped(it.slot)===it.id;
+  const afford=coinBalance()>=it.price, sl=ACC_SLOT_BY[it.slot]||{icon:'gear'};
+  let action;
+  if(eq) action=`<button class="btn ghost" data-uneq="${it.slot}" style="width:100%;padding:8px;font-size:12px">Equipped ✓ · Unequip</button>`;
+  else if(owned) action=`<button class="btn gold" data-equip="${it.id}" style="width:100%;padding:8px;font-size:12px">Equip</button>`;
+  else if(it.rarity==='exclusive') action=`<div class="small muted center" style="padding:6px 0;font-size:10px">Earned · ${esc(it.note||'milestone')}</div>`;
+  else action=`<button class="btn ${afford?'goldfill':'ghost'}" data-buy="${it.id}"${afford?'':' disabled'} style="width:100%;padding:8px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:5px"><span style="width:15px;height:15px">${ic('coin',{size:'15px'})}</span>${coinFmt(it.price)}</button>`;
+  return `<div style="border:1.5px solid ${eq?'var(--gold)':r.c+'55'};border-radius:13px;padding:11px;background:${eq?'rgba(235,166,31,.09)':'rgba(255,255,255,.03)'};display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="width:30px;height:30px;color:${r.c};flex:0 0 auto">${ic(sl.icon,{size:'28px'})}</span>
+      <div style="min-width:0"><div style="font-weight:800;font-size:12.5px;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.name)}</div>
+        <div style="font:800 8.5px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:${r.c};margin-top:2px">${r.label}</div></div></div>
+    <div style="font-weight:700;font-size:11px;color:#8fe0c4">${shopBoostTxt(it.boost)}</div>
+    <div class="small muted" style="font-size:10px;flex:1 1 auto">${esc(it.desc||'')}</div>
+    ${action}</div>`;
+}
+function overlayShop(screen){
+  const signed=sbSignedIn(), filt=S.shopSlot||'all', s=coinState();
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Pro Shop">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Pro Shop</h3></div>`);
+  ov.appendChild($(`<div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+    <div><div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Your Coins</div>
+      <div style="display:flex;align-items:center;gap:7px;margin-top:6px"><span style="width:26px;height:26px">${ic('coin',{size:'26px'})}</span><span style="font:900 26px/1 var(--body);color:var(--gold)">${signed?coinFmt(coinBalance()):'—'}</span></div></div>
+    <div class="small muted" style="max-width:158px;text-align:right;line-height:1.35">Gear boosts help in Career & Daily. Earn coins from wins, majors, dailies & achievements.</div></div>`));
+  if(!signed){
+    ov.appendChild($(`<div class="lockcta" style="text-align:center;padding:20px 12px;margin-top:12px">
+      <div style="font-size:22px">${ic('lock',{size:'22px'})}</div>
+      <b style="color:var(--gold);display:block;margin-top:6px">Sign in to earn coins & shop</b>
+      <div class="small muted" style="margin:4px auto 12px;max-width:320px">Coins and gear are tied to your free RunThe.GG account and sync across devices.</div>
+      <div style="display:flex;gap:8px;justify-content:center"><button class="btn gold" id="shop-up" style="width:auto;padding:9px 15px;font-size:12px">Create account</button><button class="btn ghost" id="shop-in" style="width:auto;padding:9px 15px;font-size:12px">Sign in</button></div></div>`));
+    ov.appendChild($(`<button class="btn red">Close</button>`));
+    ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
+    const su=ov.querySelector('#shop-up'); if(su) su.onclick=()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();};
+    const si=ov.querySelector('#shop-in'); if(si) si.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
+    screen.appendChild(ov); return;
+  }
+  const chips=$(`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 2px"></div>`);
+  const mkChip=(k,label)=>{ const on=filt===k, b=$(`<button class="tag" style="cursor:pointer;font-size:11px;padding:6px 11px;${on?'color:var(--gold);border-color:var(--gold);background:rgba(235,166,31,.1)':''}">${esc(label)}</button>`); b.onclick=()=>{S.shopSlot=k;render();}; return b; };
+  chips.appendChild(mkChip('all','All')); chips.appendChild(mkChip('owned','My Gear'));
+  ACC_SLOTS.forEach(sl=>chips.appendChild(mkChip(sl.k, sl.name)));
+  ov.appendChild(chips);
+  let items=ACCESSORIES.slice(); MILESTONE_ITEMS.forEach(mi=>{ if(s.owned[mi.id]) items.push(mi); });
+  if(filt==='owned') items=items.filter(it=>s.owned[it.id]);
+  else if(filt!=='all') items=items.filter(it=>it.slot===filt);
+  items.sort((a,b)=>{ const ea=accEquipped(a.slot)===a.id?0:1, eb=accEquipped(b.slot)===b.id?0:1; if(ea!==eb) return ea-eb;
+    const oa=accOwned(a.id)?0:1, ob=accOwned(b.id)?0:1; if(oa!==ob) return oa-ob; return (a.price||0)-(b.price||0); });
+  const grid=$(`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:8px"></div>`);
+  if(!items.length) grid.appendChild($(`<div class="small muted center" style="grid-column:1/-1;padding:20px 8px">No gear here yet.</div>`));
+  items.forEach(it=>grid.appendChild($(shopCard(it))));
+  ov.appendChild(grid);
+  grid.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{ const r=accBuy(b.getAttribute('data-buy')); try{toast(r.ok?'Purchased & equipped!':r.msg);}catch(e){} render(); });
+  grid.querySelectorAll('[data-equip]').forEach(b=>b.onclick=()=>{ accEquip(b.getAttribute('data-equip')); render(); });
+  grid.querySelectorAll('[data-uneq]').forEach(b=>b.onclick=()=>{ accUnequip(b.getAttribute('data-uneq')); render(); });
+  ov.appendChild($(`<button class="btn red">Close</button>`));
+  ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
+  screen.appendChild(ov);
+}
 function overlayCourseRecords(screen){
   const today=S.dailyCourse||dailyCourseKey(todayKey());
   const todaySeed=S.dailySeed||todayKey();
@@ -10092,6 +10284,7 @@ function cloudBundle(){
     special: LS.get(acctKey('bag_special'), null),
     coursemastery: LS.get(acctKey('bag_coursemastery'), null),   // #5 passport (best score+grade per course)
     weekgoals: LS.get(acctKey('bag_weekgoals'), null),           // #4 this week's goal progress
+    coins: LS.get(acctKey('bag_coins'), null),                   // CS183 currency: {spent,seen,owned} (earned is derived)
   };
 }
 // grow-only merge of the course-mastery map: per course keep the LOWEST score, the BEST grade, and the
@@ -10108,6 +10301,12 @@ function mergeCourseMastery(local, server){
   return out;
 }
 // weekly goals: keep the newer week; within the same week union the day/beat maps and take the higher counts
+// CS183 coins: spent + seen counters are monotonic (max-merge); owned gear is a union. earned is derived
+// from already-synced progress, so it's identical on every device once ach/lt sync.
+function mergeCoins(local, server){ const d={spent:0,seen:0,owned:{}};
+  const l=(local&&typeof local==='object')?local:d, s=(server&&typeof server==='object')?server:d;
+  return {spent:Math.max(l.spent||0,s.spent||0), seen:Math.max(l.seen||0,s.seen||0),
+    owned:Object.assign({}, l.owned||{}, s.owned||{})}; }
 function mergeWeekGoals(local, server){
   if(!server) return local; if(!local) return server;
   if((server.week||0)>(local.week||0)) return server;
@@ -10232,6 +10431,8 @@ async function cloudPull(){
     LS.set(acctKey('bag_special'), mergeSpecial(LS.get(acctKey('bag_special'),null), server.special));
     LS.set(acctKey('bag_coursemastery'), mergeCourseMastery(courseMastery(), server.coursemastery));   // #5 passport cross-device
     { const mw=mergeWeekGoals(LS.get(acctKey('bag_weekgoals'),null), server.weekgoals); if(mw) LS.set(acctKey('bag_weekgoals'), mw); }   // #4 weekly goals
+    LS.set(acctKey('bag_coins'), mergeCoins(coinState(), server.coins));   // CS183 coins/gear cross-device
+    reconcileCoins(true);   // self-heal earned total + grant milestone gear silently after a cross-device merge
     cloudPush();
     render();
   }catch(e){ /* fail open, local state stands until the next pull */ }

@@ -5015,6 +5015,43 @@ allows Google Fonts, or self-host Anton.*
      confirmed (major card glows gold with the blazer trophy; regular cards read clean). Regressions
      cs175 (summary money card/layout), hv7 (Moments/playoff) green; zero page errors. Deployed to /golf.
 
+- **CS183 — In-game currency (Coins) + Pro Shop + equippable accessories with boosts (Phase 1).** Owner:
+  "implement in-game currency + accessories that give boosts, a shop to buy them with coins, and many ways
+  to earn coins (big milestones etc.)." Decisions (AskUserQuestion): **boosts apply in SOLO modes only**
+  (Career + Daily; online H2H + boards stay fair), and the **full-body dressable avatar art will be
+  AI-generated from prompts** I provide (see `AVATAR-ASSET-PROMPTS.md`) — so Phase 1 ships the whole
+  economy + shop + boost system with clean **icon tiles**, and the visible worn-accessory avatar is Phase 2
+  once the owner hands back the generated layers.
+  • **Economy (farm-proof + cross-device):** coins are DERIVED from permanent progress —
+    `coinsEarned()` = 300 welcome + Σ(unlocked-achievement points ×3) + milestone terms (wins 60 / majors
+    400 / cups 300 / FedEx… Tour Cup 800 / medals / World No.1 600 / POY 450 / daily beats 20 / streak 25 /
+    Spotlight 200 / seasons 40 / **career completed 1500** / rivalry / h2h wins / holes-in-one …) — minus a
+    `spent` counter. Balance = earned − spent (≥0). Because earned is derived from already-synced stats it's
+    identical on every device and can't be farmed by replaying. `bag_coins = {spent, seen, owned}` is
+    account-scoped + added to the CS82 cloud bundle (`mergeCoins`: spent/seen = max, owned = union).
+    `reconcileCoins()` (run after `evaluateAch` + on cloud pull) self-heals the earned floor, grants
+    milestone gear, and toasts "+N coins earned"; null-safe defaults (per CS87).
+  • **Accessories:** 32 purchasable items across 8 slots (Headwear/Eyewear/Glove/Shoes/Driver/Putter/Ball/
+    Charm) × 4 rarities (Common→Legendary, ~400→16k coins), each with a small themed skill boost, plus 5
+    **exclusive** milestone-earned items (first win/major/Grand Slam/World No.1/career-complete) that aren't
+    for sale. `accBoost()` sums equipped gear, clamped **per-skill ≤6 and total ≤18**, and is baked in
+    `buildPlayer()` — which feeds Career + Daily only; H2H uses its own draft, so gear never touches ranked
+    play (verified). Equipped set lives in `look.acc` (synced LWW like the rest of identity). The build
+    scorecard already shows the boosted numbers green ▲ (CS92 delta logic picks up the gear automatically).
+  • **Pro Shop** (`overlayShop`, new SVG icons: coin/coins/cap/shades/glove/shoe/driver/putter/ball/charm/
+    cart): coin-balance banner, slot filter chips (+ "My Gear"), rarity-colored item cards with boost/price/
+    Buy/Equip/Unequip, equipped-first sorting. Signed-in feature (guests get a sign-in nudge, like
+    achievements). Reachable from the ≡ menu, the title screen (with live balance), and the overlay
+    dispatcher. `accBuy` deducts coins, adds to owned, auto-equips.
+  Verified (cs183): all-achievements-unlocked → 39,570 coins; buy deducts exactly; a +3 driver lifts DRV
+  80→83; stacked gear clamps to the per-skill/total caps; unequip removes the boost; milestone gear grants
+  when metrics qualify; guests can't buy; `mergeCoins` max/union; the shop renders 35 action cards signed-in
+  and a nudge for guests; screenshot confirms the layout. Regressions cs175 (summary/buildPlayer), hv8
+  (daily uses buildPlayer), cs182 (playoff), cs177 (H2H unaffected) all green; zero page errors. Deployed to
+  /golf. **Phase 2 (owner):** generate the avatar/accessory art from `AVATAR-ASSET-PROMPTS.md`, then I wire
+  the full-body dressable avatar + visibly-worn gear. Tunables: `COIN_START`, the `coinsEarned` term
+  weights, `ACC_SKILL_CAP`/`ACC_TOTAL_CAP`, item prices/boosts.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
