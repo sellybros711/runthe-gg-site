@@ -5052,6 +5052,20 @@ allows Google Fonts, or self-host Anton.*
   the full-body dressable avatar + visibly-worn gear. Tunables: `COIN_START`, the `coinsEarned` term
   weights, `ACC_SKILL_CAP`/`ACC_TOTAL_CAP`, item prices/boosts.
 
+- **CS184 — Coins/Shop SHELVED behind a flag (owner: "put it on the backend for now, the system makes no
+  sense — I could buy everything immediately and the boosts are too big").** The CS183 economy was derived
+  from lifetime progress, so a long-time account (owner has hundreds of wins/achievements) started with a
+  massive balance and could afford the whole catalog at once, and the accessory boosts were too strong.
+  Rather than delete the (working) system, added `const SHOP_ENABLED=false` that fully hides it from the
+  frontend: no "Pro Shop" link on the title, no Pro Shop row in the ≡ menu, `overlayShop` early-returns
+  (route unreachable), and — importantly — `accBoost()` returns `{}` so any already-equipped gear gives
+  **zero** boost (buildPlayer is back to unboosted; no sim/career/daily effect, no pay-to-win). The coin
+  economy, catalog, shop UI and cloud sync all remain in code for a future rebalanced (likely
+  server-authoritative) re-launch — flip `SHOP_ENABLED=true` to restore, after redesigning the coin
+  formula + boost magnitudes. Verified (cs184): flag off → boosts empty, buildPlayer dist unboosted,
+  title/menu show no shop, the overlay won't open. Deployed to /golf. (Phase-2 full-body avatar art
+  pipeline is separate and unaffected — bases/masks/headwear assets remain committed for that build.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
