@@ -5084,7 +5084,7 @@ function momentPlayoffResolve(){
   if(po.alive.length===1){ po.resolved={winner:po.alive[0], holes:po.round, youWon:!!po.alive[0].p.you}; }
   else if(!youAlive){   // you're eliminated → sim the rest headlessly to crown the champion (you don't play on)
     let alive=po.alive.slice(), rd=po.round;
-    while(alive.length>1 && rd<12){ rd++; const hi=MOMENT_PO_HOLES[rd%MOMENT_PO_HOLES.length], hh=c.holes[hi];
+    while(alive.length>1 && rd<40){ rd++; const hi=MOMENT_PO_HOLES[rd%MOMENT_PO_HOLES.length], hh=c.holes[hi];
       const dd=(S.dailyDiffs&&S.dailyDiffs[hi]!=null)?S.dailyDiffs[hi]:dBaseDiffs(c)[hi];
       const rr=mulberry32((dHash('pox'+rd+(ce.evt.name||''))>>>0));
       const sc=alive.map(o=>{ const sk={}; CATS.forEach(cc=>sk[cc.k]=(o.p[cc.k]!=null?o.p[cc.k]:78));
@@ -5093,7 +5093,7 @@ function momentPlayoffResolve(){
       if(lo.length<sc.length) alive=lo.map(s=>s.o); }
     po.resolved={winner:alive[0], holes:rd, youWon:false};
   }
-  else if(po.round>=8){ po.resolved={winner:po.alive[0], holes:po.round, youWon:!!po.alive[0].p.you}; }
+  else if(po.round>=40){ po.resolved={winner:po.alive[0], holes:po.round, youWon:!!po.alive[0].p.you}; }
   momentPlayoffShowHole();
 }
 function momentPlayoffShowHole(){
@@ -5133,20 +5133,22 @@ function momentPlayoffFinish(){
   S.screen='season'; render();   // a win → celebrateWin fires (playoff flagged already shown)
 }
 // one sudden-death hole, lower is better, high variance so a single hole is genuinely random
-function playoffHole(eo,clu,major){ return gauss()*1.15 - (eo-80)*0.035 + (major?0.1:0); }
+// one sudden-death hole → a SCORE-TO-PAR INTEGER (like a real playoff hole). Two players who make the
+// same score TIE the hole and it moves on; a winner is only decided when someone is beaten outright.
+function playoffHole(eo,clu,major){ const z=gauss()*1.15 - (eo-80)*0.035 + (major?0.1:0);
+  return z<=-1.45?-2 : z<=-0.55?-1 : z<=0.6?0 : z<=1.7?1 : 2; }
 // sudden-death playoff among the players tied for the lead; returns the winner + holes played
-function poLabel(v){ return v<=-0.8?'Birdie':v<=0.55?'Par':'Bogey'; }
+function poLabel(v){ return v<=-2?'Eagle':v===-1?'Birdie':v===0?'Par':v===1?'Bogey':'Double'; }
 function simPlayoff(contenders,major){
   let alive=contenders.slice(), hole=0; const log=[];
-  while(alive.length>1 && hole<25){
+  while(alive.length>1 && hole<60){   // plays on until someone is beaten outright (60-hole safety net)
     hole++;
     alive.forEach(o=>{ o._ph=playoffHole(o.eo,o.p.clu,major); });
     const best=Math.min(...alive.map(o=>o._ph));
-    const low=alive.filter(o=>o._ph<=best+1e-9);
-    const advancing=(low.length<alive.length)?low:alive;
+    const low=alive.filter(o=>o._ph===best);   // EXACT tie on the hole score → everyone tied plays another hole
     // record the hole (for a watchable reveal when YOU are in the playoff)
-    log.push({hole, scores:alive.map(o=>({name:o.p.name, you:!!o.p.you, label:poLabel(o._ph), advances:advancing.indexOf(o)>=0}))});
-    if(low.length<alive.length) alive=low;   // separation → the rest are eliminated
+    log.push({hole, scores:alive.map(o=>({name:o.p.name, you:!!o.p.you, label:poLabel(o._ph), advances:low.indexOf(o)>=0}))});
+    if(low.length<alive.length) alive=low;   // someone beaten → eliminated; a full tie replays the hole
   }
   return {winner:alive[0]||contenders[0], holes:Math.max(1,hole), log};
 }
@@ -6559,8 +6561,23 @@ function scrSummary(){
   { const wonThisSeason=[];
     (S.season.results||[]).forEach(r=>{ const meR=r.order&&r.order.find(o=>o.p&&o.p.you); if(meR&&meR.pos===1) wonThisSeason.push({name:r.evt.name,major:!!r.evt.major}); });
     if(wonThisSeason.length){
-      const wrap=$(`<div style="display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin:8px 0 2px"></div>`);
-      wonThisSeason.forEach(w=>wrap.appendChild($(`<span class="tag" style="font-size:12px;padding:6px 11px;${w.major?'color:var(--gold);border-color:var(--gold)':''}">🏆 ${esc(w.name)}${w.major?' · MAJOR':''}</span>`)));
+      // Prominent trophy showcase (owner: "make it much more apparent, bigger") — a titled section with
+      // per-tournament trophy cards; majors get their custom trophy + gold treatment.
+      add($(`<div class="center" style="font:800 12px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin:20px 0 3px">Tournaments Won</div>`));
+      add($(`<div class="center small muted" style="margin:0 0 11px">${wonThisSeason.length} title${wonThisSeason.length>1?'s':''} this season</div>`));
+      const wrap=$(`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:11px;max-width:600px;margin:0 auto 6px"></div>`);
+      wonThisSeason.forEach(w=>{ const maj=w.major, th=maj?majorTheme(w.name):null;
+        wrap.appendChild($(`<div style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:15px;
+          border:1.5px solid ${maj?'var(--gold)':'rgba(235,166,31,.32)'};
+          background:${maj?'linear-gradient(135deg,rgba(235,166,31,.20),rgba(235,166,31,.05))':'rgba(255,255,255,.035)'};
+          box-shadow:${maj?'0 6px 22px rgba(235,166,31,.16)':'0 2px 10px rgba(0,0,0,.18)'}">
+          <div style="flex:0 0 auto;width:40px;height:46px">${maj?th.svg():winTrophySVG()}</div>
+          <div style="min-width:0">
+            <div style="font:800 16px/1.15 var(--body);color:${maj?'var(--gold)':'var(--oncard)'};overflow:hidden;text-overflow:ellipsis">${esc(w.name)}</div>
+            ${maj?'<div style="font:800 9.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin-top:5px">Major Championship</div>'
+                 :'<div class="small muted" style="margin-top:4px">Tour victory</div>'}
+          </div></div>`));
+      });
       add(wrap);
     }
   }
