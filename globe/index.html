@@ -250,26 +250,39 @@
   .taskcard .pr{font-size:14px;color:var(--ink);font-weight:700;line-height:1.4;}
 
   /* minigame */
-  .game-hd{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-  .game-hd .cat{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--teal);}
-  .timer{margin-left:auto;font-variant-numeric:tabular-nums;font-weight:900;font-size:18px;color:var(--ink);
-    background:rgba(0,0,0,.25);border:1px solid var(--line);border-radius:10px;padding:5px 10px;}
-  .prompt{font-size:17px;font-weight:800;line-height:1.4;margin-bottom:14px;}
-  .opts{display:grid;gap:10px;}
-  .opt{position:relative;text-align:left;background:rgba(255,255,255,.04);border:1px solid var(--cardb);border-radius:12px;
-    padding:14px 40px 14px 15px;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;transition:border-color .1s,background .1s,transform .1s;}
-  .opt:hover{border-color:var(--globe);}
-  .opt.right{border-color:var(--ok);background:rgba(53,214,160,.12);}
+  .game-hd{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+  /* category as an accent chip with a lit dot */
+  .game-hd .cat{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:800;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--goldhi);background:rgba(236,181,80,.10);border:1px solid rgba(236,181,80,.24);
+    padding:6px 11px;border-radius:999px;}
+  .game-hd .cat::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--globe);box-shadow:0 0 8px var(--globe);}
+  /* timer as a clock pill */
+  .timer{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums;
+    font-weight:900;font-size:18px;color:var(--ink);background:rgba(0,0,0,.28);border:1px solid var(--cardb);
+    border-radius:999px;padding:6px 13px 6px 11px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);}
+  .timer::before{content:"⏱";font-size:13px;opacity:.7;}
+  .prompt{font-size:18px;font-weight:800;line-height:1.35;letter-spacing:-.01em;margin-bottom:16px;color:var(--ink);}
+  /* option buttons: lettered badges + tactile gradient + gold hover glow */
+  .opts{counter-reset:opt;display:grid;gap:11px;}
+  .opt{position:relative;text-align:left;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+    border:1px solid var(--cardb);border-radius:14px;padding:15px 44px 15px 56px;font-size:15px;font-weight:700;
+    color:var(--ink);cursor:pointer;transition:border-color .12s,background .12s,transform .1s,box-shadow .12s;}
+  .opt::before{counter-increment:opt;content:counter(opt,upper-alpha);position:absolute;left:11px;top:50%;
+    transform:translateY(-50%);width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+    border-radius:9px;background:rgba(255,255,255,.06);border:1px solid var(--cardb);color:var(--mut);
+    font-weight:900;font-size:13px;transition:background .12s,border-color .12s,color .12s;}
+  .opt:hover{border-color:var(--globe);background:linear-gradient(180deg,rgba(236,181,80,.11),rgba(236,181,80,.03));
+    box-shadow:0 8px 22px -14px rgba(236,181,80,.55);}
+  .opt:hover::before{background:rgba(236,181,80,.18);border-color:var(--globe);color:var(--goldhi);}
+  .opt.right{border-color:var(--ok);background:rgba(53,214,160,.14);}
+  .opt.right::before{background:rgba(53,214,160,.2);border-color:var(--ok);color:var(--ok);}
   .opt.wrong{border-color:var(--bad);background:rgba(255,107,107,.12);}
+  .opt.wrong::before{background:rgba(255,107,107,.18);border-color:var(--bad);color:var(--bad);}
   /* glyph so correctness isn't signalled by colour alone (accessibility) */
-  .opt.right::after,.opt.wrong::after{position:absolute;right:13px;top:50%;transform:translateY(-50%);font-weight:900;font-size:16px;}
+  .opt.right::after,.opt.wrong::after{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-weight:900;font-size:16px;}
   .opt.right::after{content:"✓";color:var(--ok);}
   .opt.wrong::after{content:"✗";color:var(--bad);}
 
-  /* zoom reveal (guess the flag as it zooms out) */
-  .zoombox{width:158px;height:158px;margin:8px auto 0;border-radius:16px;overflow:hidden;border:1px solid var(--cardb);
-    background:#15112e;display:flex;align-items:center;justify-content:center;}
-  .zoomflag{font-size:132px;line-height:1;transform:scale(6);transition:transform 6.5s linear;will-change:transform;}
 
   /* juice: gentle, cushioned motion — no hard cuts, no re-render jumps */
   @keyframes rtgFade{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
@@ -511,12 +524,12 @@
     order:'Rank The Order', flagid:'Guess The Flag', capital:'Name The Capital',
     truefalse:'True or False', higherlower:'Higher or Lower', oddoneout:'Odd One Out',
     memorymatch:'Memory Match', whack:'Whack-A-Landmark', targettap:'Quick Tap', mapfind:'Find It On The Map',
-    streetscout:'Street Scout', zoomreveal:'Zoom Reveal',
+    streetscout:'Street Scout', zoomreveal:'Flag Reveal',
     swingmeter:'Swing Meter', eagleeye:'Eagle Eye', kimsgame:'Memory Lineup',
     typeticket:'Type The Ticket', baggage:'Baggage Claim', rhythmecho:'Rhythm Echo',
     closest:'Closest Neighbor', closerfar:'Closer or Farther', compass:'Compass Chase',
     regionsort:'Region Sort', flightplan:'Flight Plan', globehunt:'Globe Hunt', detective:'The Dossier',
-    pitchpatrol:'Pitch Patrol', runway:'Pilot The Landing', photosnap:'Photo Snap', stampit:'Stamp It'
+    runway:'Pilot The Landing', photosnap:'Photo Snap', stampit:'Stamp It'
   };
   // expected completion (seconds) for an average player per kind — used ONLY to
   // pace the AI ghost field. The human always competes on real time, so these are
@@ -530,11 +543,11 @@
     memorymatch:15, whack:8, targettap:6.5, mapfind:9, streetscout:22, zoomreveal:7,
     swingmeter:8, eagleeye:15, kimsgame:14, typeticket:12, baggage:9, rhythmecho:13,
     closest:6, closerfar:8, compass:7, regionsort:10, flightplan:12, globehunt:12, detective:9,
-    pitchpatrol:14, runway:9, photosnap:8, stampit:7 };
+    runway:9, photosnap:8, stampit:7 };
   // which kinds feel "reflex/physical" for Split Path pairing (GDD §5); rest are "brain"
   var REFLEX_KINDS = { reaction:1, whack:1, targettap:1, sequence:1,
     swingmeter:1, eagleeye:1, baggage:1, rhythmecho:1,
-    pitchpatrol:1, runway:1, photosnap:1, stampit:1 };
+    runway:1, photosnap:1, stampit:1 };
   function taskKind(t){ return t.kind || KIND[t.cat] || 'mcq'; }
   function taskLabel(t){ return KIND_LABEL[taskKind(t)] || CAT_LABEL[t.cat] || 'Task'; }
 
@@ -987,11 +1000,11 @@
     var opts = shuffle([fq.name].concat(wrong.map(function(x){return x.name;})));
     g.push({ kind:'flagid', cat:'trivia', type:'brain', q:'Which country flies this flag?', flag:fq.flag,
              options:opts, a:opts.indexOf(fq.name) });
-    // Zoom Reveal — name the country as its flag zooms out (also a random subject)
+    // Flag Reveal — Flagle-style: name the flag as pieces are uncovered (random subject)
     var zq = otherCountries(c,1)[0] || c;
     var zw = otherCountries(zq,3);
     var zopts = shuffle([zq.name].concat(zw.map(function(x){return x.name;})));
-    g.push({ kind:'zoomreveal', cat:'trivia', type:'brain', q:'Guess the country as its flag zooms out', flag:zq.flag,
+    g.push({ kind:'zoomreveal', cat:'trivia', type:'brain', q:'Which country flies this flag? Guess from the revealed pieces.', flag:zq.flag,
              options:zopts, a:zopts.indexOf(zq.name) });
     // Name The Capital — pick the capital from four
     var wc = otherCountries(c,3);
@@ -1099,14 +1112,17 @@
         }
         if(dirs.length>=2) g.push({ kind:'compass', cat:'spatial', type:'brain',
                                     q:'You\'re in '+c.name+' — which way to each country?', rounds:dirs });
-        // Flight Plan — order 4 stops nearest → farthest (gaps ≥1.25× keep it fair)
+        // Flight Plan — plot a route on the map: tap the 4 stops nearest → farthest
+        // (gaps ≥1.25× keep the order unambiguous). Distinct from Rank The Order:
+        // it's a real map route-draw, not a list sort.
         var idxs=[Math.floor(byd.length*0.05), Math.floor(byd.length*0.3), Math.floor(byd.length*0.6), byd.length-2];
         var stops=idxs.map(function(i2){ return byd[i2]; });
         var okgap=true, s2;
         for(s2=1;s2<stops.length;s2++){ if(stops[s2].d < stops[s2-1].d*1.25) okgap=false; }
-        if(okgap) g.push({ kind:'flightplan', cat:'dragdrop', type:'brain', dir:'near',
-                           q:'Flight plan from '+c.name+': tap the stops nearest → farthest',
-                           items:shuffle(stops).map(function(p){ return { label:p.x.capital, value:Math.round(p.d) }; }) });
+        if(okgap) g.push({ kind:'flightplan', cat:'dragdrop', type:'brain',
+                           q:'Plot your route from '+c.name+' — tap the stops nearest → farthest.',
+                           origin:{ name:c.name, ll:c.ll },
+                           stops:shuffle(stops).map(function(p){ return { name:p.x.name, flag:p.x.flag, ll:p.x.ll, d:Math.round(p.d) }; }) });
         // Globe Hunt — a hidden country; tap dots and follow the heat to find it
         // (the "warmer / colder" hunt). Spread ~15 decoy pins across the world so
         // the heat readings actually triangulate.
@@ -1151,7 +1167,6 @@
     g.push({ kind:'runway', cat:'reflex', type:'reflex', q:'Land on the runway — 3 clean landings' });
     g.push({ kind:'photosnap', cat:'reflex', type:'reflex', flag:c.flag, q:'Frame '+c.flag+' in the viewfinder — 3 clean shots' });
     g.push({ kind:'stampit', cat:'reflex', type:'reflex', q:'Stamp the passport — press when the stamp lines up over the box' });
-    g.push({ kind:'pitchpatrol', cat:'audio', type:'reflex', q:'Tap on the HIGH note — hold on the LOW' });
     return g;
   }
   // boarding-pass word for Type The Ticket: capital (fallback: country name),
@@ -1375,7 +1390,8 @@
     else if(kind==='scramble') mgScramble(t);
     else if(kind==='sequence') mgSequence(t);
     else if(kind==='reaction') mgReaction(t);
-    else if(kind==='order'||kind==='flightplan') mgOrder(t);
+    else if(kind==='order') mgOrder(t);
+    else if(kind==='flightplan') mgFlightPlan(t);
     else if(kind==='truefalse') mgTrueFalse(t);
     else if(kind==='higherlower') mgHigherLower(t);
     else if(kind==='memorymatch') mgMemoryMatch(t);
@@ -1395,7 +1411,6 @@
     else if(kind==='closerfar') mgCloserFar(t);
     else if(kind==='compass') mgCompass(t);
     else if(kind==='regionsort') mgRegionSort(t);
-    else if(kind==='pitchpatrol') mgPitchPatrol(t);
     else if(kind==='runway') mgRunway(t);
     else if(kind==='photosnap') mgPhotoSnap(t);
     else if(kind==='stampit') mgStampIt(t);
@@ -1439,22 +1454,42 @@
     });
   }
 
-  /* ---------- minigame: Zoom Reveal (name the flag as it zooms out) ---------- */
+  /* ---------- minigame: Flag Reveal (Flagle-style) ----------
+     The flag hides under a grid of tiles. One piece is uncovered for free; each
+     WRONG guess peels back another tile (and costs a miss). Recognise it from as
+     few pieces as possible for a fast, clean solve. */
   function mgZoomReveal(t){
     var order = shuffle(t.options.map(function(o,i){ return {o:o,i:i}; }));
     var opts=''; order.forEach(function(x){ opts+='<button class="opt" data-i="'+x.i+'">'+esc(x.o)+'</button>'; });
+    var COLS=3, ROWS=2, N=COLS*ROWS, tiles='', r, c;
+    for(r=0;r<ROWS;r++){ for(c=0;c<COLS;c++){
+      tiles+='<div class="frtile" data-idx="'+(r*COLS+c)+'" style="position:absolute;left:'+(c*100/COLS)+'%;top:'+(r*100/ROWS)+'%;width:'+(100/COLS+0.5)+'%;height:'+(100/ROWS+0.5)+'%;'
+        +'background:var(--card2);border:1px solid var(--bg);box-sizing:border-box;transition:opacity .3s ease"></div>';
+    }}
+    S.fr={ order:shuffle([0,1,2,3,4,5]) };
     $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div class="zoombox"><div class="zoomflag" id="zf">'+t.flag+'</div></div>'
-      + '<div class="opts" style="margin-top:14px">'+opts+'</div>';
-    var zf=$('zf'); if(zf){ requestAnimationFrame(function(){ if($('zf')) $('zf').style.transform='scale(1)'; }); }
+      + '<div class="frbox" style="position:relative;width:180px;height:126px;margin:6px auto 4px;border-radius:12px;overflow:hidden;border:1px solid var(--cardb);display:flex;align-items:center;justify-content:center;background:#0a081a">'
+        + '<div style="font-size:104px;line-height:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.5))">'+t.flag+'</div>'
+        + tiles
+      + '</div>'
+      + '<div class="ohint" id="frhint" style="margin-bottom:10px">Name the flag — each wrong guess reveals another piece.</div>'
+      + '<div class="opts">'+opts+'</div>';
+    frReveal();   // one piece free
     Array.prototype.forEach.call(document.querySelectorAll('.opt'), function(b){
       b.onclick=function(){
         if(S.play.done) return;
-        if((+b.getAttribute('data-i'))===t.a){ b.classList.add('right'); sfx('correct'); S.play.done=true; setTimeout(finishTask,220); }
-        else{ b.classList.add('wrong'); b.disabled=true; S.play.misses++; showMiss(); }
+        if((+b.getAttribute('data-i'))===t.a){ b.classList.add('right'); sfx('correct'); frRevealAll(); S.play.done=true; setTimeout(finishTask,320); }
+        else{ b.classList.add('wrong'); b.disabled=true; S.play.misses++; showMiss(); frReveal(); }
       };
     });
   }
+  function frReveal(){
+    if(!S.fr || !S.fr.order.length) return;
+    var idx=S.fr.order.shift();
+    var el=document.querySelector('.frtile[data-idx="'+idx+'"]');
+    if(el){ el.style.opacity='0'; setTimeout(function(){ if(el&&el.parentNode) el.parentNode.removeChild(el); },320); }
+  }
+  function frRevealAll(){ if(S.fr) S.fr.order=[]; each('.frtile', function(el){ el.style.opacity='0'; }); }
 
   /* ---------- minigame: unscramble (word) ---------- */
   function mgScramble(t){
@@ -1675,6 +1710,51 @@
   }
 
   function each(sel, fn){ Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
+
+  /* ---------- minigame: Flight Plan (draw the route on the map) ----------
+     Tap the stops in order nearest → farthest from your origin; each correct tap
+     extends a dashed flight arc across the world map. A wrong-next stop is a miss.
+     Spatial and visual — a real route-draw, not a list sort. */
+  function mgFlightPlan(t){
+    var order=t.stops.slice().sort(function(a,b){ return a.d-b.d; }).map(function(s){ return s.name; });
+    S.fp={ order:order, placed:0, lastXY:llToXY(t.origin.ll) };
+    var o=llToXY(t.origin.ll);
+    var dots=t.stops.map(function(s,i){
+      var p=llToXY(s.ll);
+      return '<g class="fpstop" data-name="'+esc(s.name)+'" data-x="'+p[0]+'" data-y="'+p[1]+'" style="cursor:pointer;pointer-events:all">'
+        + '<circle cx="'+p[0]+'" cy="'+p[1]+'" r="7" fill="transparent"/>'
+        + '<circle class="fpdot" cx="'+p[0]+'" cy="'+p[1]+'" r="3.4" fill="rgba(240,238,230,.85)" stroke="#0a081a" stroke-width="0.6"/>'
+        + '<text class="fpnum" x="'+p[0]+'" y="'+(p[1]-6)+'" font-size="7" font-weight="800" text-anchor="middle" fill="#F6D488"></text>'
+        + '</g>';
+    }).join('');
+    $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
+      + '<svg id="fpmap" viewBox="0 0 360 180" preserveAspectRatio="none" style="width:100%;height:auto;aspect-ratio:2/1;background:radial-gradient(120% 120% at 50% 40%,rgba(26,74,134,.5),rgba(10,8,26,.92));border:1px solid var(--cardb);border-radius:12px;touch-action:manipulation">'
+      + worldSVGInner()
+      + '<g id="fproute"></g>'
+      + '<circle cx="'+o[0]+'" cy="'+o[1]+'" r="4.2" fill="#EE5A44" stroke="#fff" stroke-width="0.7"/>'
+      + '<text x="'+o[0]+'" y="'+(o[1]-6)+'" font-size="7" font-weight="800" text-anchor="middle" fill="#EE5A44">START</text>'
+      + dots
+      + '</svg>'
+      + '<div class="ohint" id="fphint" style="margin-top:10px">Tap the nearest stop first, then work outward.</div>';
+    each('#fpmap .fpstop', function(g){ g.addEventListener('click', function(){ fpTap(g); }); });
+  }
+  function fpTap(g){
+    if(S.play.done) return;
+    var name=g.getAttribute('data-name');
+    if(name!==S.fp.order[S.fp.placed]){
+      S.play.misses++; showMiss();
+      var d=g.querySelector('.fpdot'); if(d){ d.setAttribute('stroke','#ff6b6b'); d.setAttribute('stroke-width','1.4'); setTimeout(function(){ if(d){ d.setAttribute('stroke','#0a081a'); d.setAttribute('stroke-width','0.6'); } },320); }
+      return;
+    }
+    var x=+g.getAttribute('data-x'), y=+g.getAttribute('data-y');
+    var route=$('fproute');
+    if(route) route.insertAdjacentHTML('beforeend','<line x1="'+S.fp.lastXY[0]+'" y1="'+S.fp.lastXY[1]+'" x2="'+x+'" y2="'+y+'" stroke="#EE5A44" stroke-width="1.4" stroke-dasharray="3 3" stroke-linecap="round"/>');
+    S.fp.lastXY=[x,y]; S.fp.placed++;
+    sfx('tap');
+    var d2=g.querySelector('.fpdot'); if(d2){ d2.setAttribute('fill','#F6D488'); d2.setAttribute('r','4'); }
+    var num=g.querySelector('.fpnum'); if(num) num.textContent=String(S.fp.placed);
+    if(S.fp.placed>=S.fp.order.length){ S.play.done=true; sfx('correct'); setTimeout(finishTask,300); }
+  }
 
   /* ---------- minigame: True or False rapid-fire (trivia) ----------
      Shell built ONCE; each statement glides in (swapIn) instead of the whole
@@ -2190,65 +2270,6 @@
     },240);
   }
 
-  /* ---------- minigame: Pitch Patrol (ears — tap HIGH, hold LOW) ----------
-     With sound ON the pad flashes the SAME neutral pulse for both notes, so your
-     ears decide. Muted (or no Web Audio), the pad shows ▲/▼ instead — the game
-     stays fully playable as a visual reflex test. */
-  function mgPitchPatrol(t){
-    S.pp={ hits:0, need:4, state:'idle', to:null };
-    $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div class="reps" id="ppreps"></div>'
-      + '<div class="reactbox idle" id="ppad" style="height:170px;cursor:pointer"><div class="big" id="ppbig">🎧 Ready?</div><div class="sm" id="ppsm">Tap to start — then tap HIGH notes, hold through LOW ones.</div></div>';
-    ppReps(); fastTap($('ppad'), function(){ ppTap(); });
-  }
-  function ppReps(){ var e=$('ppreps'); if(!e) return; var h=''; for(var i=0;i<S.pp.need;i++){ h+='<div class="rep'+(i<S.pp.hits?' done':'')+'"></div>'; } e.innerHTML=h; }
-  function ppClear(){ if(S.pp.to){ clearTimeout(S.pp.to); S.pp.to=null; } }
-  function ppSet(big, sm, tone){
-    var b=$('ppbig'), s=$('ppsm'), pad=$('ppad');
-    if(b) b.textContent=big; if(s) s.textContent=sm;
-    if(pad){ pad.setAttribute('data-tone', tone||''); }
-  }
-  function ppWait(){
-    S.pp.state='wait'; ppSet('…','Listen…','');
-    var pad=$('ppad'); if(pad) pad.style.background='';
-    ppClear(); S.pp.to=setTimeout(ppTone, rnd(700,1600));
-  }
-  function ppTone(){
-    if(S.play.done || !$('ppad')) return;
-    var isHigh=Math.random()<0.6;
-    S.pp.state=isHigh?'high':'low'; S.pp.armAt=performance.now();
-    beep(isHigh?920:200, 0.24, 'triangle', 0.16);
-    // ALWAYS show the ▲/▼ direction (with colour) so the game is fully playable
-    // without sound — deaf/HoH players aren't locked out; the tone is extra juice.
-    ppSet(isHigh?'▲ HIGH':'▼ LOW', isHigh?'TAP!':'hold…', isHigh?'H':'L');
-    var pad=$('ppad'); if(pad){ pad.style.background=isHigh?'rgba(236,181,80,.4)':'rgba(70,90,140,.35)'; setTimeout(function(){ var p=$('ppad'); if(p) p.style.background=''; },220); }
-    ppClear();
-    if(isHigh) S.pp.to=setTimeout(function(){ if(S.pp.state==='high'&&!S.play.done) ppResolve('slow'); }, 1150);
-    else       S.pp.to=setTimeout(function(){ if(S.pp.state==='low' &&!S.play.done) ppResolve('held'); }, 900);
-  }
-  function ppTap(){
-    if(S.play.done) return;
-    var s=S.pp.state;
-    if(s==='idle'){ actx(); ppWait(); return; }
-    if(s==='fb') return;
-    if(s==='wait'){ ppClear(); ppResolve('early'); return; }
-    if(s==='high'){ ppClear(); ppResolve('hit'); return; }
-    if(s==='low'){ ppClear(); ppResolve('lowTap'); return; }
-  }
-  // hit/slow consume a HIGH rep; held/lowTap/early don't advance completion
-  function ppResolve(kind){
-    ppClear();
-    if(kind==='hit'){ S.pp.hits++; sfx('correct'); ppSet('⚡ Nice!','That was the high note.',''); }
-    else if(kind==='slow'){ S.pp.hits++; S.play.misses++; showMiss(); ppSet('Too slow!','+1 miss','');}
-    else if(kind==='held'){ ppSet('Held ✓','Good ear.',''); }
-    else if(kind==='lowTap'){ S.play.misses++; showMiss(); ppSet('That was LOW!','+1 miss',''); }
-    else { S.play.misses++; showMiss(); ppSet('Too soon!','+1 miss — wait for the note',''); }
-    S.pp.state='fb'; ppReps();
-    if(S.pp.hits>=S.pp.need){ S.play.done=true; S.pp.to=setTimeout(finishTask, 550); }
-    else S.pp.to=setTimeout(function(){ if(!S.play.done) ppWait(); }, 650);
-  }
-
-  /* ---------- minigame: Runway Landing (time the drop over a moving pass) ---------- */
   /* ---------- minigame: Pilot The Landing (controllable descent) ----------
      A side-view approach. The plane cruises in from the left; you tap "Begin
      Descent" to start a steady sink, then "Flare / Touchdown" to cushion onto the
