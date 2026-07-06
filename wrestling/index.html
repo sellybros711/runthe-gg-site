@@ -163,7 +163,7 @@
   .grade-badge{font-family:var(--display); font-size:44px; line-height:1; padding:6px 16px; border-radius:12px; display:inline-block;}
   .beta-tag{display:inline-block; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink); background:var(--gold); padding:3px 9px; border-radius:999px; font-weight:800; vertical-align:middle; margin-left:10px; font-family:var(--body);}
   .continue-bar{background:var(--panel); border:1px solid var(--gold); border-radius:14px; padding:16px 18px; margin:18px 0; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;}
-  .belt-logo{width:100%; max-width:440px; height:auto; display:block; filter:drop-shadow(0 8px 26px rgba(0,0,0,.55));}
+  .belt-logo{width:100%; max-width:480px; height:auto; display:block; filter:drop-shadow(0 10px 30px rgba(0,0,0,.5));}
   .brandmark{font-family:var(--display); text-transform:uppercase; letter-spacing:.02em; font-size:40px; line-height:.9;}
   .brandmark .r{color:var(--cream);} .brandmark .t{color:var(--gold);} .brandmark .g{color:var(--cream);}
 
@@ -190,42 +190,43 @@
 <!-- ============ START SCREEN ============ -->
 <div id="startScreen" class="center-screen">
   <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
-    <svg class="belt-logo" viewBox="0 0 1000 560" role="img" aria-label="Run The Ropes">
+    <svg class="belt-logo" viewBox="0 0 1080 470" role="img" aria-label="Run The Ropes">
       <defs><style>
         .rtr-plate{fill:#100d0d;stroke:#F4E8DB;stroke-width:7;stroke-linejoin:round;}
         .rtr-inner{fill:none;stroke:#F4E8DB;stroke-width:2.5;stroke-linejoin:round;opacity:.85;}
-        .rtr-rope{stroke:#C6392C;stroke-width:13;stroke-linecap:round;stroke-dasharray:15 9;}
+        .rtr-rope{stroke:#C6392C;stroke-width:12;stroke-linecap:round;stroke-dasharray:14 9;}
         .rtr-snap{fill:#F4E8DB;}
         .rtr-wm{font-family:'Anton',Impact,sans-serif;fill:#F4E8DB;}
         .rtr-wmred{font-family:'Anton',Impact,sans-serif;fill:#C6392C;}
         .rtr-acc{stroke:#C6392C;stroke-width:10;stroke-linecap:round;fill:none;}
       </style></defs>
-      <!-- connecting straps -->
-      <path class="rtr-plate" d="M300 235 L360 250 L360 310 L300 325 Z"/>
-      <path class="rtr-plate" d="M700 235 L640 250 L640 310 L700 325 Z"/>
-      <!-- side plates -->
-      <path class="rtr-plate" d="M170 205 L290 182 L335 240 L335 320 L290 378 L170 355 Z"/>
-      <path class="rtr-inner" d="M188 222 L286 203 L318 246 L318 314 L286 357 L188 338 Z"/>
-      <circle class="rtr-snap" cx="252" cy="205" r="6"/><circle class="rtr-snap" cx="252" cy="355" r="6"/>
-      <line class="rtr-rope" x1="205" y1="252" x2="305" y2="252"/>
-      <line class="rtr-rope" x1="205" y1="280" x2="305" y2="280"/>
-      <line class="rtr-rope" x1="205" y1="308" x2="305" y2="308"/>
-      <path class="rtr-plate" d="M830 205 L710 182 L665 240 L665 320 L710 378 L830 355 Z"/>
-      <path class="rtr-inner" d="M812 222 L714 203 L682 246 L682 314 L714 357 L812 338 Z"/>
-      <circle class="rtr-snap" cx="748" cy="205" r="6"/><circle class="rtr-snap" cx="748" cy="355" r="6"/>
-      <line class="rtr-rope" x1="695" y1="252" x2="795" y2="252"/>
-      <line class="rtr-rope" x1="695" y1="280" x2="795" y2="280"/>
-      <line class="rtr-rope" x1="695" y1="308" x2="795" y2="308"/>
+      <!-- connecting straps (drawn first, behind plates) -->
+      <path class="rtr-plate" d="M300 192 L392 206 L392 264 L300 278 Z"/>
+      <path class="rtr-plate" d="M780 192 L688 206 L688 264 L780 278 Z"/>
+      <!-- left side plate -->
+      <path class="rtr-plate" d="M200 120 L300 176 L300 294 L200 350 L100 294 L100 176 Z"/>
+      <path class="rtr-inner" d="M200 142 L282 188 L282 282 L200 328 L118 282 L118 188 Z"/>
+      <circle class="rtr-snap" cx="200" cy="152" r="6"/><circle class="rtr-snap" cx="200" cy="318" r="6"/>
+      <line class="rtr-rope" x1="140" y1="205" x2="260" y2="205"/>
+      <line class="rtr-rope" x1="140" y1="235" x2="260" y2="235"/>
+      <line class="rtr-rope" x1="140" y1="265" x2="260" y2="265"/>
+      <!-- right side plate -->
+      <path class="rtr-plate" d="M880 120 L980 176 L980 294 L880 350 L780 294 L780 176 Z"/>
+      <path class="rtr-inner" d="M880 142 L962 188 L962 282 L880 328 L798 282 L798 188 Z"/>
+      <circle class="rtr-snap" cx="880" cy="152" r="6"/><circle class="rtr-snap" cx="880" cy="318" r="6"/>
+      <line class="rtr-rope" x1="820" y1="205" x2="940" y2="205"/>
+      <line class="rtr-rope" x1="820" y1="235" x2="940" y2="235"/>
+      <line class="rtr-rope" x1="820" y1="265" x2="940" y2="265"/>
       <!-- center plate -->
-      <path class="rtr-plate" d="M415 95 H585 L660 170 V400 L585 475 H415 L340 400 V170 Z"/>
-      <path class="rtr-inner" d="M424 112 H576 L643 178 V392 L576 458 H424 L357 392 V178 Z"/>
-      <path class="rtr-acc" d="M452 150 L500 138 L548 150"/>
-      <path class="rtr-acc" d="M452 430 L500 442 L548 430"/>
-      <text class="rtr-wm"    x="500" y="242" text-anchor="middle" font-size="104" letter-spacing="1">RUN</text>
-      <line class="rtr-acc" x1="410" y1="285" x2="452" y2="285" stroke-width="8"/>
-      <line class="rtr-acc" x1="548" y1="285" x2="590" y2="285" stroke-width="8"/>
-      <text class="rtr-wmred" x="500" y="308" text-anchor="middle" font-size="66" letter-spacing="2">THE</text>
-      <text class="rtr-wm"    x="500" y="408" text-anchor="middle" font-size="104" letter-spacing="1">ROPES</text>
+      <path class="rtr-plate" d="M462 55 H618 L690 127 V343 L618 415 H462 L390 343 V127 Z"/>
+      <path class="rtr-inner" d="M472 74 H608 L671 137 V333 L608 396 H472 L409 333 V137 Z"/>
+      <path class="rtr-acc" d="M498 106 L540 92 L582 106"/>
+      <path class="rtr-acc" d="M498 364 L540 378 L582 364"/>
+      <text class="rtr-wm"    x="540" y="192" text-anchor="middle" font-size="96" letter-spacing="1">RUN</text>
+      <line class="rtr-acc" x1="452" y1="228" x2="494" y2="228" stroke-width="8"/>
+      <line class="rtr-acc" x1="586" y1="228" x2="628" y2="228" stroke-width="8"/>
+      <text class="rtr-wmred" x="540" y="252" text-anchor="middle" font-size="62" letter-spacing="2">THE</text>
+      <text class="rtr-wm"    x="540" y="352" text-anchor="middle" font-size="96" letter-spacing="1">ROPES</text>
     </svg>
     <span class="beta-tag" style="align-self:flex-start;">Beta</span>
   </div>
