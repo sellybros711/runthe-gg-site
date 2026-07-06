@@ -329,6 +329,9 @@ window.GA_ID='G-L29P5MRWKE';
   .buildhero .avatarfig{width:114px; height:114px}
   .avatarfig img, .avatarfig svg, .avatarfig canvas{width:100%; height:100%; display:block}
   .avatarfig canvas{border-radius:50%}
+  /* full-body dressable avatar (signed-in): a tall figure, not a round medallion */
+  .avatarfig.fullbody{width:auto; height:auto; filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}
+  .avatarfig.fullbody canvas{width:auto; height:100%; border-radius:0; margin:0 auto}
   .avatarimg{object-fit:cover; border-radius:50%}
   .ovrchip{position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:6px;
     background:rgba(6,16,26,.95); border:1.5px solid var(--tc,#cd7f32); border-radius:999px; padding:4px 12px;
@@ -3267,9 +3270,17 @@ function ovrFromSkills(sk){
 // (the derived balance was far too generous — a long-time account could buy everything at once — and the
 // boosts were too strong). Flip this true only once the economy is redesigned (likely server-authoritative).
 // While false: no shop entry points render, the overlay is unreachable, and equipped gear gives ZERO boost.
-const SHOP_ENABLED=false;
-const COIN_START=300;                       // welcome coins on your first signed-in load
-const ACC_SKILL_CAP=6, ACC_TOTAL_CAP=18;    // clamp so a full gear loadout is a meaningful, bounded edge
+const SHOP_ENABLED=true;   // CS186: re-enabled with a rebalanced economy (0-coin reset + higher prices + smaller boosts)
+const COIN_START=300;                       // welcome coins (baked into the reset baseline, so post-reset everyone starts at 0)
+const COIN_EPOCH=1;                          // bump to reset every account's coins/gear to 0 again
+const ACC_SKILL_CAP=3, ACC_TOTAL_CAP=8;     // CS186: boosts severely reduced — a full loadout is now a small, bounded edge
+const ACC_BOOST_SCALE=0.5;                   // scale down the catalog boosts (owner: decrease the boosts)
+// CS186 severe prices (owner): earned slowly, so gear is a long-term goal. By rarity, clubs cost a bit more.
+function accPrice(it){ if(!it||it.rarity==='exclusive') return 0;
+  const base={common:2500,rare:10000,epic:30000,legendary:85000}[it.rarity]||2500;
+  return Math.round(base*((it.slot==='driver'||it.slot==='putter')?1.2:1)); }
+// display + gameplay boost for an item, scaled down from the catalog value (min +1 on any listed skill)
+function accItemBoost(it){ const o={}; if(it&&it.boost) for(const k in it.boost) o[k]=Math.max(1,Math.floor(it.boost[k]*ACC_BOOST_SCALE)); return o; }
 const ACC_RARITY={ common:{c:'#b8c4bd',label:'Common'}, rare:{c:'#4aa3ff',label:'Rare'},
   epic:{c:'#b06be0',label:'Epic'}, legendary:{c:'#EBA61F',label:'Legendary'}, exclusive:{c:'#35d6a0',label:'Exclusive'} };
 const ACC_SLOTS=[ {k:'head',name:'Headwear',icon:'cap'}, {k:'eyes',name:'Eyewear',icon:'shades'},
@@ -3322,10 +3333,16 @@ const MILESTONE_ITEMS=[
 const ACC_BY_ID={}; ACCESSORIES.concat(MILESTONE_ITEMS).forEach(a=>ACC_BY_ID[a.id]=a);
 function accById(id){ return ACC_BY_ID[id]||null; }
 // ---- economy ----
-function coinState(){ const s=LS.get(acctKey('bag_coins'),null)||{}; s.spent=s.spent||0; s.seen=s.seen||0; s.owned=(s.owned&&typeof s.owned==='object')?s.owned:{}; return s; }
+function coinState(){ let s=LS.get(acctKey('bag_coins'),null)||{}; s.spent=s.spent||0; s.seen=s.seen||0; s.owned=(s.owned&&typeof s.owned==='object')?s.owned:{};
+  // CS186 one-time reset to 0: bank the current derived earned as a baseline, wipe spend + owned gear, so
+  // every account starts at 0 and earns going forward. Equipped-but-unowned gear simply stops rendering.
+  if(s.epoch!==COIN_EPOCH){ s.epoch=COIN_EPOCH; s.baseline=coinsEarnedRaw(); s.spent=0; s.owned={}; s.seen=s.baseline; LS.set(acctKey('bag_coins'), s); }
+  s.baseline=s.baseline||0; return s; }
 function coinSave(s){ LS.set(acctKey('bag_coins'), s); if(typeof cloudPush==='function') cloudPush(); }
-// deterministic earned total — every entry here is a "way to earn coins"; add terms to add more
-function coinsEarned(){ let c=COIN_START; const ac=(achState().unlocked)||{};
+// spendable coins = derived-earned minus the reset baseline (so post-reset everyone starts at 0)
+function coinsEarned(){ return Math.max(0, coinsEarnedRaw()-coinState().baseline); }
+// deterministic RAW earned total — every entry here is a "way to earn coins"; add terms to add more
+function coinsEarnedRaw(){ let c=COIN_START; const ac=(achState().unlocked)||{};
   ACH.forEach(a=>{ if(ac[a.id]) c+=a.pts*3; });                 // every achievement pays out (points ×3)
   const m=achMetrics();
   c+=(m.wins||0)*60 + (m.majors||0)*400;                        // tour wins / majors
@@ -3342,7 +3359,7 @@ function coinFmt(n){ return (typeof fmt==='function'?fmt(Math.round(n)):(''+Math
 function grantMilestoneItems(s){ const m=achMetrics(); MILESTONE_ITEMS.forEach(mi=>{ try{ if(!s.owned[mi.id] && mi.when(m)) s.owned[mi.id]=1; }catch(e){} }); }
 // reconcile: self-heal earned total, grant milestone gear, toast newly-earned coins. Runs on load +
 // after evaluateAch / finishes. Signed-in only (coins are an account feature).
-function reconcileCoins(silent){ if(!sbSignedIn()) return 0; const s=coinState(); const e=coinsEarned(); let gain=0, changed=false;
+function reconcileCoins(silent){ if(!sbSignedIn()) return 0; const s=coinState(); const e=coinsEarnedRaw(); let gain=0, changed=false;
   if(e>s.seen){ gain=e-s.seen; s.seen=e; changed=true; }
   const before=Object.keys(s.owned).length; grantMilestoneItems(s); if(Object.keys(s.owned).length!==before) changed=true;
   if(changed) coinSave(s);
@@ -3360,15 +3377,15 @@ function accBuy(id){ const it=accById(id); if(!it) return {ok:false,msg:'Unknown
   if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy gear'};
   if(accOwned(id)) return {ok:false,msg:'Already owned'};
   if(it.rarity==='exclusive') return {ok:false,msg:'Earned, not bought'};
-  const s=coinState(); if(coinsEarned()-s.spent < it.price) return {ok:false,msg:'Not enough coins'};
-  s.spent+=it.price; s.owned[id]=1; coinSave(s); accEquip(id);
-  track('shop_buy',{id:id,price:it.price,rarity:it.rarity});
+  const s=coinState(), price=accPrice(it); if(coinBalance() < price) return {ok:false,msg:'Not enough coins'};
+  s.spent+=price; s.owned[id]=1; coinSave(s); accEquip(id);
+  track('shop_buy',{id:id,price:price,rarity:it.rarity});
   return {ok:true};
 }
 // ---- boosts: summed over equipped gear, clamped per-skill + total (SOLO ONLY via buildPlayer) ----
 function accBoost(){ if(!SHOP_ENABLED) return {};   // shelved: equipped gear gives no boost while the economy is disabled
   const out={}; let total=0; ACC_SLOTS.forEach(sl=>{ const id=accEquipped(sl.k); const it=id&&accById(id);
-    if(it&&it.boost) for(const k in it.boost){ out[k]=(out[k]||0)+it.boost[k]; } });
+    const b=it&&accItemBoost(it); if(b) for(const k in b){ out[k]=(out[k]||0)+b[k]; } });
   for(const k in out) out[k]=Math.min(ACC_SKILL_CAP, out[k]);
   // enforce the total cap by trimming largest-first if needed
   total=Object.values(out).reduce((a,b)=>a+b,0);
@@ -4396,7 +4413,10 @@ function scrSetup(){
   // avatar preview, large, sticky so it stays visible while you scroll the options. A solid
   // backdrop is needed once it's pinned (see the .setup-cols CSS) since the customization list
   // scrolls up underneath it, without one, the swatches/rows behind would show through.
-  const f=$(avatarHTML()); f.style.width='184px'; f.style.height='184px'; f.style.filter='drop-shadow(0 7px 16px rgba(0,0,0,.45))';
+  const full=sbSignedIn();
+  const f=$(avatarShowHTML());
+  if(full){ f.style.height='300px'; f.style.filter='drop-shadow(0 8px 18px rgba(0,0,0,.5))'; }
+  else { f.style.width='184px'; f.style.height='184px'; f.style.filter='drop-shadow(0 7px 16px rgba(0,0,0,.45))'; }
   const figwrap=$(`<div style="display:flex;justify-content:center;position:sticky;top:8px;z-index:3;padding:10px 0 14px;margin:0 -16px;background:#06200f;border-bottom:1px solid var(--line)"></div>`); figwrap.appendChild(f); left.appendChild(figwrap);
 
   // ---- Appearance (available to everyone) ----
@@ -4568,11 +4588,120 @@ function paintAvatar(canvas,look){
   avCompute(canvas,key,o);
 }
 function paintAvatars(){
-  document.querySelectorAll('canvas.avatarcanvas[data-avatar-pending]').forEach(c=>{ c.removeAttribute('data-avatar-pending'); paintAvatar(c,S.look); });
+  document.querySelectorAll('canvas.avatarcanvas[data-avatar-pending]').forEach(c=>{ c.removeAttribute('data-avatar-pending');
+    if(c.hasAttribute('data-avatar-full')) paintAvatarFull(c,S.look); else paintAvatar(c,S.look); });
 }
 function avatarHTML(){
   return `<div class="avatarfig"><canvas class="avatarcanvas" width="512" height="512" data-avatar-pending="1" role="img" aria-label="Your golfer"></canvas></div>`;
 }
+
+/* ===== CS186 — full-body dressable avatar (signed-in): recolored base + equipped accessory layers ===== */
+const AV_FULL={ male:'public/avatars/golfers/full/base-male.png', female:'public/avatars/golfers/full/base-female.png' };
+const AV_FULL_MASK={ male:'public/avatars/golfers/full/base-male-mask.png', female:'public/avatars/golfers/full/base-female-mask.png' };
+const ACC_DIR='public/avatars/golfers/full/acc/';
+const _avRenderFull=new Map();
+// full-body mask regions (distinct palette from the portrait mask): skin=red, hair=green, shirt=blue,
+// pants=yellow, shoes=magenta. Shoes are left as-drawn (white) — equipped shoe gear covers them.
+function avMaskRegionFull(r,g,b){ if(r<45&&g<45&&b<45) return null;
+  if(r>150&&b>150&&g<120) return 'shoes';
+  if(r>150&&g>150&&b<120) return 'pants';
+  if(b>=r&&b>=g&&b>110) return 'shirt';
+  if(g>=r&&g>=b&&g>110) return 'hair';
+  if(r>=g&&r>=b&&r>110) return 'skin';
+  return null; }
+// base-body anatomy (base-local px) — measured from the base masks — for anchoring accessories
+const AV_ANAT={
+  male:  {W:420,H:1400,headCx:211,headTop:2,eyeY:98,footCx:211,footY:1330,handRx:352,handLx:70,handY:735,sideRxIn:372,sideLxIn:48,waistY:690},
+  female:{W:380,H:1400,headCx:213,headTop:4,eyeY:112,footCx:197,footY:1330,handRx:322,handLx:58,handY:735,sideRxIn:338,sideLxIn:42,waistY:690},
+};
+const AV_FRAME_W=440, AV_FRAME_H=1400;   // common frame; the (narrower) base is centred in it
+// content trim rectangles [x0,y0,x1,y1] for each art file (the art is a large product-shot on a 1024x1792 canvas)
+const ACC_BBOX={
+  'acc-ball':[209,569,817,1192],'acc-charm-clover':[342,670,680,1073],'acc-charm-marker':[297,665,732,1105],
+  'acc-driver-graphite':[594,165,781,1636],'acc-driver-rocket':[519,158,793,1677],'acc-driver-titanium':[580,162,785,1647],
+  'acc-eyes-aviator':[238,293,786,496],'acc-eyes-shield':[237,301,789,493],'acc-eyes-sport':[311,263,713,383],
+  'acc-glove-gold-left':[428,528,795,1252],'acc-glove-gold-right':[210,544,552,1218],'acc-glove-white-left':[445,546,788,1213],'acc-glove-white-right':[209,545,552,1218],
+  'acc-head-bucket':[0,0,546,338],'acc-head-cap':[0,0,340,300],'acc-head-champ':[0,0,409,383],'acc-head-visor':[0,0,445,227],
+  'acc-putter-blade':[584,164,803,1621],'acc-putter-mallet':[586,162,805,1668],'acc-putter-wand':[582,162,803,1622],
+  'acc-shoes-boa':[170,1165,843,1617],'acc-shoes-carbon':[107,1043,916,1451],'acc-shoes-trainer':[158,1236,866,1575],
+};
+// per-slot placement: target width (frac of base W) or height (frac of base H), anchor point (anatomy key) + nudge
+const ACC_PLACE={
+  eyes:  {wFrac:0.34,ax:'headCx',ay:'eyeY'},
+  head:  {wFrac:0.40,ax:'headCx',ay:'headTop',anch:'top',dy:-20},
+  shoes: {wFrac:0.92,ax:'footCx',ay:'footY',anch:'bottom',dy:10},
+  glove: {wFrac:0.17,ax:'handRx',ay:'handY'},
+  driver:{hFrac:0.60,ax:'sideRxIn',ay:'footY',anch:'bottom'},
+  putter:{hFrac:0.52,ax:'sideLxIn',ay:'footY',anch:'bottom'},
+  ball:  {wFrac:0.10,ax:'handLx',ay:'handY',dy:30},
+  charm: {wFrac:0.09,ax:'headCx',ay:'waistY',dx:70},
+};
+// accessory id → art file (art coverage is partial; a few items reuse the nearest matching art)
+const ACC_ART={
+  head_visor:'acc-head-visor',head_bucket:'acc-head-bucket',head_sig:'acc-head-cap',head_crown:'acc-head-champ',
+  eyes_sport:'acc-eyes-sport',eyes_polar:'acc-eyes-aviator',eyes_focus:'acc-eyes-shield',eyes_eagle:'acc-eyes-shield',
+  glove_rain:'acc-glove-white-right',glove_cab:'acc-glove-white-right',glove_tour:'acc-glove-white-right',glove_gold:'acc-glove-gold-right',
+  shoes_train:'acc-shoes-trainer',shoes_boa:'acc-shoes-boa',shoes_tract:'acc-shoes-carbon',shoes_carbon:'acc-shoes-carbon',
+  drv_graph:'acc-driver-graphite',drv_ti:'acc-driver-titanium',drv_speed:'acc-driver-titanium',drv_rocket:'acc-driver-rocket',
+  put_blade:'acc-putter-blade',put_mallet:'acc-putter-mallet',put_counter:'acc-putter-mallet',put_wand:'acc-putter-wand',
+  ball_dist:'acc-ball',ball_soft:'acc-ball',ball_ureth:'acc-ball',ball_proto:'acc-ball',
+  charm_tee:'acc-charm-marker',charm_mark:'acc-charm-marker',charm_divot:'acc-charm-marker',charm_clover:'acc-charm-clover',
+  mi_first_win:'acc-charm-marker',mi_major:'acc-ball',mi_slam:'acc-charm-clover',mi_no1:'acc-head-champ',mi_career:'acc-driver-rocket',
+};
+const AV_DRAW_ORDER=['driver','putter','shoes','glove','ball','charm','eyes','head'];
+function _avWaitAll(entries, cb){ const pend=entries.filter(e=>e&&!e.ready&&!e.failed);
+  if(!pend.length){ cb(); return; } let n=pend.length; const done=()=>{ if(--n<=0) cb(); };
+  pend.forEach(e=>{ e.img.addEventListener('load',done,{once:true}); e.img.addEventListener('error',done,{once:true}); }); }
+function avatarFullHTML(){
+  return `<div class="avatarfig fullbody"><canvas class="avatarcanvas avfull" width="${AV_FRAME_W}" height="${AV_FRAME_H}" data-avatar-full="1" data-avatar-pending="1" role="img" aria-label="Your golfer"></canvas></div>`;
+}
+function paintAvatarFull(canvas, look){
+  look=look||S.look||DEFLOOK; const o=avLook(look);
+  const g=o.gender, A=AV_ANAT[g]||AV_ANAT.male;
+  const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===look.pants))||{a:'#c7bfa8'}).a;
+  const eq={}; if(typeof accEquipped==='function') ACC_SLOTS.forEach(sl=>{ const id=accEquipped(sl.k); if(id&&ACC_ART[id]) eq[sl.k]=id; });
+  const key=o.key+'|p'+(look.pants||'stone')+'|'+ACC_SLOTS.map(sl=>eq[sl.k]||'').join(',');
+  const cached=_avRenderFull.get(key); if(cached){ avBlit(canvas,cached); return; }
+  const base=avLoad(AV_FULL[g]), mask=avLoad(AV_FULL_MASK[g]);
+  const accEntries=Object.keys(eq).map(slot=>({slot,id:eq[slot],e:avLoad(ACC_DIR+ACC_ART[eq[slot]]+'.png')}));
+  _avWaitAll([base,mask].concat(accEntries.map(a=>a.e)), ()=>{
+    if(base.failed){ avVectorFallback(canvas); return; }
+    try{
+      const bw=A.W, bh=A.H, xoff=Math.round((AV_FRAME_W-bw)/2);
+      const off=document.createElement('canvas'); off.width=AV_FRAME_W; off.height=AV_FRAME_H;
+      const ctx=off.getContext('2d');
+      // recolor the base via its mask (temp at native size), then place it centred in the frame
+      const tmp=document.createElement('canvas'); tmp.width=bw; tmp.height=bh;
+      const tctx=tmp.getContext('2d',{willReadFrequently:true}); tctx.drawImage(base.img,0,0,bw,bh);
+      const id=tctx.getImageData(0,0,bw,bh), d=id.data;
+      let m=null; if(mask.ready){ const mc=document.createElement('canvas'); mc.width=bw; mc.height=bh;
+        const mx=mc.getContext('2d',{willReadFrequently:true}); mx.drawImage(mask.img,0,0,bw,bh); m=mx.getImageData(0,0,bw,bh).data; }
+      const _sk=avHexRgb(o.skinHex), skinTl=avRgbHsl(_sk.r,_sk.g,_sk.b).l;
+      const _hr=avHexRgb(o.hairHex), hairTl=avRgbHsl(_hr.r,_hr.g,_hr.b).l;
+      const skinLp=Math.min(0.92,0.44+(1-skinTl)*0.58), hairLp=Math.min(0.88,0.42+hairTl*0.55);
+      const shirtLp=avKitLp(o.shirtHex), pantsLp=avKitLp(pantsHex);
+      if(m) for(let i=0;i<d.length;i+=4){ const reg=avMaskRegionFull(m[i],m[i+1],m[i+2]); if(!reg||reg==='shoes') continue;
+        let tg,st,sb,lp;
+        if(reg==='skin'){ tg=o.skinHex; st=0.95; sb=0.92; lp=skinLp; }
+        else if(reg==='hair'){ tg=o.hairHex; st=1.0; sb=1.05; lp=hairLp; }
+        else if(reg==='shirt'){ tg=o.shirtHex; st=0.96; sb=1.05; lp=shirtLp; }
+        else { tg=pantsHex; st=0.95; sb=1.0; lp=pantsLp; }
+        const t=avTint(d[i],d[i+1],d[i+2],tg,st,sb,lp); d[i]=t.r; d[i+1]=t.g; d[i+2]=t.b; }
+      tctx.putImageData(id,0,0); ctx.drawImage(tmp,xoff,0);
+      // composite equipped accessories, back-to-front
+      AV_DRAW_ORDER.forEach(slot=>{ const a=accEntries.find(x=>x.slot===slot); if(!a||!a.e.ready) return;
+        const bbox=ACC_BBOX[ACC_ART[a.id]], cfg=ACC_PLACE[slot]; if(!bbox||!cfg) return;
+        const sx=bbox[0],sy=bbox[1],sw=bbox[2]-bbox[0],sh=bbox[3]-bbox[1];
+        const scale=cfg.wFrac?((A.W*cfg.wFrac)/sw):((A.H*cfg.hFrac)/sh), dw=sw*scale, dh=sh*scale;
+        const ax=A[cfg.ax]+xoff, ay=A[cfg.ay], dx=ax-dw/2+(cfg.dx||0);
+        const anch=cfg.anch||'center', dy=(anch==='top'?ay:anch==='bottom'?ay-dh:ay-dh/2)+(cfg.dy||0);
+        try{ ctx.drawImage(a.e.img, sx,sy,sw,sh, dx,dy,dw,dh); }catch(e){} });
+      _avRenderFull.set(key,off); avBlit(canvas,off);
+    }catch(err){ avVectorFallback(canvas); }
+  });
+}
+// full body for signed-in players (dressable), the portrait bust for guests
+function avatarShowHTML(){ return sbSignedIn()?avatarFullHTML():avatarHTML(); }
 
 /* ---------- draft ---------- */
 let _figN=0;
@@ -9793,18 +9922,18 @@ function overlayPassport(screen){
 }
 function shopBoostTxt(boost){ return Object.keys(boost).map(k=>'+'+boost[k]+' '+(RSHORT[k]||k)).join(' · '); }
 function shopCard(it){ const r=ACC_RARITY[it.rarity]||ACC_RARITY.common, owned=accOwned(it.id), eq=accEquipped(it.slot)===it.id;
-  const afford=coinBalance()>=it.price, sl=ACC_SLOT_BY[it.slot]||{icon:'gear'};
+  const price=accPrice(it), afford=coinBalance()>=price, sl=ACC_SLOT_BY[it.slot]||{icon:'gear'};
   let action;
   if(eq) action=`<button class="btn ghost" data-uneq="${it.slot}" style="width:100%;padding:8px;font-size:12px">Equipped ✓ · Unequip</button>`;
   else if(owned) action=`<button class="btn gold" data-equip="${it.id}" style="width:100%;padding:8px;font-size:12px">Equip</button>`;
   else if(it.rarity==='exclusive') action=`<div class="small muted center" style="padding:6px 0;font-size:10px">Earned · ${esc(it.note||'milestone')}</div>`;
-  else action=`<button class="btn ${afford?'goldfill':'ghost'}" data-buy="${it.id}"${afford?'':' disabled'} style="width:100%;padding:8px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:5px"><span style="width:15px;height:15px">${ic('coin',{size:'15px'})}</span>${coinFmt(it.price)}</button>`;
+  else action=`<button class="btn ${afford?'goldfill':'ghost'}" data-buy="${it.id}"${afford?'':' disabled'} style="width:100%;padding:8px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:5px"><span style="width:15px;height:15px">${ic('coin',{size:'15px'})}</span>${coinFmt(price)}</button>`;
   return `<div style="border:1.5px solid ${eq?'var(--gold)':r.c+'55'};border-radius:13px;padding:11px;background:${eq?'rgba(235,166,31,.09)':'rgba(255,255,255,.03)'};display:flex;flex-direction:column;gap:6px">
     <div style="display:flex;align-items:center;gap:8px">
       <span style="width:30px;height:30px;color:${r.c};flex:0 0 auto">${ic(sl.icon,{size:'28px'})}</span>
       <div style="min-width:0"><div style="font-weight:800;font-size:12.5px;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.name)}</div>
         <div style="font:800 8.5px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:${r.c};margin-top:2px">${r.label}</div></div></div>
-    <div style="font-weight:700;font-size:11px;color:#8fe0c4">${shopBoostTxt(it.boost)}</div>
+    <div style="font-weight:700;font-size:11px;color:#8fe0c4">${shopBoostTxt(accItemBoost(it))}</div>
     <div class="small muted" style="font-size:10px;flex:1 1 auto">${esc(it.desc||'')}</div>
     ${action}</div>`;
 }
@@ -9830,6 +9959,9 @@ function overlayShop(screen){
     const si=ov.querySelector('#shop-in'); if(si) si.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
     screen.appendChild(ov); return;
   }
+  // dressing room: your full-body golfer wearing the equipped gear, updates live as you buy/equip
+  const dress=$(`<div style="display:flex;justify-content:center;padding:6px 0 2px"></div>`);
+  const dav=$(avatarFullHTML()); dav.style.height='300px'; dress.appendChild(dav); ov.appendChild(dress);
   const chips=$(`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 2px"></div>`);
   const mkChip=(k,label)=>{ const on=filt===k, b=$(`<button class="tag" style="cursor:pointer;font-size:11px;padding:6px 11px;${on?'color:var(--gold);border-color:var(--gold);background:rgba(235,166,31,.1)':''}">${esc(label)}</button>`); b.onclick=()=>{S.shopSlot=k;render();}; return b; };
   chips.appendChild(mkChip('all','All')); chips.appendChild(mkChip('owned','My Gear'));
@@ -9839,7 +9971,7 @@ function overlayShop(screen){
   if(filt==='owned') items=items.filter(it=>s.owned[it.id]);
   else if(filt!=='all') items=items.filter(it=>it.slot===filt);
   items.sort((a,b)=>{ const ea=accEquipped(a.slot)===a.id?0:1, eb=accEquipped(b.slot)===b.id?0:1; if(ea!==eb) return ea-eb;
-    const oa=accOwned(a.id)?0:1, ob=accOwned(b.id)?0:1; if(oa!==ob) return oa-ob; return (a.price||0)-(b.price||0); });
+    const oa=accOwned(a.id)?0:1, ob=accOwned(b.id)?0:1; if(oa!==ob) return oa-ob; return accPrice(a)-accPrice(b); });
   const grid=$(`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:8px"></div>`);
   if(!items.length) grid.appendChild($(`<div class="small muted center" style="grid-column:1/-1;padding:20px 8px">No gear here yet.</div>`));
   items.forEach(it=>grid.appendChild($(shopCard(it))));
@@ -10358,8 +10490,12 @@ function mergeCourseMastery(local, server){
 // from already-synced progress, so it's identical on every device once ach/lt sync.
 function mergeCoins(local, server){ const d={spent:0,seen:0,owned:{}};
   const l=(local&&typeof local==='object')?local:d, s=(server&&typeof server==='object')?server:d;
-  return {spent:Math.max(l.spent||0,s.spent||0), seen:Math.max(l.seen||0,s.seen||0),
-    owned:Object.assign({}, l.owned||{}, s.owned||{})}; }
+  // CS186 epoch: a reset bumps the epoch. The HIGHER epoch wins wholesale (its baseline/spend/gear) so a
+  // stale pre-reset copy on another device can't re-union old gear back in. Same epoch → union/max as before.
+  const le=l.epoch||0, se=s.epoch||0;
+  if(le!==se){ return Object.assign({}, le>se?l:s); }
+  return {epoch:le, baseline:Math.max(l.baseline||0,s.baseline||0), spent:Math.max(l.spent||0,s.spent||0),
+    seen:Math.max(l.seen||0,s.seen||0), owned:Object.assign({}, l.owned||{}, s.owned||{})}; }
 function mergeWeekGoals(local, server){
   if(!server) return local; if(!local) return server;
   if((server.week||0)>(local.week||0)) return server;

@@ -5103,6 +5103,43 @@ allows Google Fonts, or self-host Anton.*
      (carry + backspin), cs162 (miss dispersion invariant), cs169 (putting), practice (full round) — all
      green, zero page errors. Deployed to /golf.
 
+- **CS186 — Pro Shop RELAUNCHED (rebalanced economy) + full-body dressable avatar (signed-in).** Owner
+  supplied the AI-generated accessory art (19 PNGs: eyewear, gloves, shoes, drivers, putters, ball, charms —
+  banked in `public/avatars/golfers/full/acc/`, joining the earlier bases + headwear) and chose (via
+  AskUserQuestion): "Full-body dressable for signed-in users. Reset all users to 0 coins, severely raise
+  accessory prices, decrease the boosts." Both delivered.
+  • **Economy rebalance (un-shelves CS184):** `SHOP_ENABLED` false→true. New `COIN_EPOCH=1` one-time reset —
+    `coinState()` banks the current derived-earned as a `baseline` and wipes spend + owned gear the first time
+    the epoch mismatches, so EVERY account starts at **0 coins** and earns going forward (`coinsEarned()` =
+    `coinsEarnedRaw()−baseline`); equipped-but-unowned gear simply stops rendering. `mergeCoins` is now
+    epoch-aware (higher epoch wins wholesale) so the reset propagates cross-device instead of the old owned
+    gear being re-unioned back. **Prices ~5× higher** via a centralized `accPrice(it)` (common 2,500 / rare
+    10,000 / epic 30,000 / legendary 85,000; clubs ×1.2) — gear is now a long-term goal, not an instant
+    buy-everything. **Boosts severely cut:** `accItemBoost()` scales catalog boosts ×0.5 (min +1) and the caps
+    dropped (`ACC_SKILL_CAP` 6→3, `ACC_TOTAL_CAP` 18→8) — a full loadout is now ~+8 spread, down from +18. The
+    catalog literals are untouched; price/boost are computed centrally so the shop card, buy path, and sort all
+    read the rebalanced values.
+  • **Full-body dressable avatar (signed-in):** new `paintAvatarFull()` recolors the full-body base
+    (`full/base-{g}.png`) via its region mask (`avMaskRegionFull`: skin=red/hair=green/shirt=blue/pants=yellow/
+    shoes=magenta — reuses the existing `avTint`/`avKitLp` machinery, adds pants) and composites the EQUIPPED
+    accessories on top. The accessory art is large "product-shot" scale, so each is placed by a per-slot config
+    (`ACC_PLACE`: target width/height as a fraction of the base + an anatomy anchor from `AV_ANAT`, measured
+    from the base masks) after trimming to its content bbox (`ACC_BBOX`); `ACC_ART` maps each shop item id →
+    art file (partial coverage reuses the nearest). Draw order back-to-front (clubs at the sides, shoes, hand
+    items, face, hat). Cached per look+gear key. Rendered on the **setup "Create your golfer"** sticky preview
+    (300px tall) and as a live **Pro Shop dressing room** (updates as you buy/equip). **Guests keep the
+    portrait bust** (`avatarShowHTML()` gates on `sbSignedIn()`); the build-hero + Trophy Room stay portrait
+    for now (limited blast radius — extendable later). Fails over to the vector portrait if the base art 404s.
+  • **Deploy note:** the full-body assets (`golf/public/avatars/golfers/full/**`) must be copied to `main`
+    alongside `golf/index.html` (only `base/` was there before).
+  • Verified in Playwright (cs186a/b/c): shop enabled, coins reset to 0 (owned cleared, baseline banked),
+    prices raised + boosts reduced, broke account can't buy; the full-body avatar renders dressed on the setup
+    screen (signed-in) and as the shop dressing room, guests get the portrait; regressions hv8 (daily HUD),
+    cs185b (go-for-it), practice (full round) all green, zero page errors. Screenshots confirmed the dressed
+    golfer + rebalanced shop. Tunables: `accPrice` tiers, `ACC_BOOST_SCALE`, the caps, `ACC_PLACE` per-slot
+    placement. Note: a couple of catalog items reuse art (only 3 eyewear / 3 driver / 2 charm arts for 4/4/4
+    items); more art can be dropped in and mapped in `ACC_ART`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
