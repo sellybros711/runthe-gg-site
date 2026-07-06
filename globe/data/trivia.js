@@ -380,5 +380,140 @@
       { q: "Belgrade, Serbia's capital, sits where the Sava meets which river?", options: ["Danube", "Rhine", "Volga", "Seine"], a: 0 },
       { q: "Serbia is located on which European peninsula?", options: ["Balkan", "Iberian", "Scandinavian", "Italian"], a: 0 },
     ],
+    SK: [
+      { q: "Bratislava, Slovakia's capital, sits on which major river?", options: ["Danube", "Rhine", "Volga", "Seine"], a: 0 },
+      { q: "Slovakia peacefully split in 1993 from which former country?", options: ["Czechoslovakia", "Yugoslavia", "The USSR", "Austria-Hungary"], a: 0 },
+      { q: "Slovakia's High Tatras mountains are part of which range?", options: ["Carpathians", "Alps", "Pyrenees", "Urals"], a: 0 },
+    ],
+    BG: [
+      { q: "Bulgaria is a leading producer of fragrant oil from which flower?", options: ["Rose", "Lavender", "Jasmine", "Tulip"], a: 0 },
+      { q: "Which fermented dairy food is Bulgaria especially famous for?", options: ["Yogurt", "Kimchi", "Butter", "Cream cheese"], a: 0 },
+      { q: "Bulgaria's eastern shore lies on which sea?", options: ["Black Sea", "Adriatic Sea", "Baltic Sea", "Aegean Sea"], a: 0 },
+    ],
+    BD: [
+      { q: "Bangladesh's many rivers form the world's largest river…?", options: ["Delta", "Canyon", "Glacier", "Reef"], a: 0 },
+      { q: "Bangladesh's economy relies heavily on exporting which goods?", options: ["Garments", "Cars", "Oil", "Electronics"], a: 0 },
+      { q: "Bangladesh shares the tiger-filled Sundarbans mangroves with which country?", options: ["India", "Myanmar", "Nepal", "China"], a: 0 },
+    ],
+    KH: [
+      { q: "Angkor Wat, the world's largest religious monument, was first built as a temple to which religion?", options: ["Hinduism", "Christianity", "Islam", "Shinto"], a: 0 },
+      { q: "The Angkor temples were built by which ancient empire?", options: ["Khmer", "Mughal", "Ming", "Inca"], a: 0 },
+      { q: "Cambodia's great central lake is called Tonlé…?", options: ["Sap", "Mekong", "Bap", "Delta"], a: 0 },
+    ],
+    MM: [
+      { q: "Myanmar was formerly known by which name?", options: ["Burma", "Siam", "Ceylon", "Persia"], a: 0 },
+      { q: "The golden Shwedagon Pagoda is a landmark of which Myanmar city?", options: ["Yangon", "Bangkok", "Hanoi", "Dhaka"], a: 0 },
+      { q: "Myanmar borders which two giant Asian countries?", options: ["India and China", "Japan and Korea", "Iran and Iraq", "Russia and Mongolia"], a: 0 },
+    ],
+    KZ: [
+      { q: "Kazakhstan is the world's largest landlocked country — on which continent?", options: ["Asia", "Africa", "Europe", "South America"], a: 0 },
+      { q: "The Baikonur Cosmodrome in Kazakhstan is used to launch what?", options: ["Spacecraft", "Submarines", "Jets", "Trains"], a: 0 },
+      { q: "Kazakhstan was, until 1991, part of which former union?", options: ["The Soviet Union", "The Ottoman Empire", "The British Empire", "Yugoslavia"], a: 0 },
+    ],
+    UZ: [
+      { q: "Samarkand and Bukhara were fabled cities along which ancient trade route?", options: ["The Silk Road", "The Spice Route", "The Amber Road", "The Tea Horse Road"], a: 0 },
+      { q: "Uzbekistan lies in which region of Asia?", options: ["Central Asia", "Southeast Asia", "East Asia", "The Middle East"], a: 0 },
+      { q: "Uzbekistan is one of only two countries you must cross two borders to leave to reach a sea — it is thus…?", options: ["Double-landlocked", "An island", "A peninsula", "An archipelago"], a: 0 },
+    ],
+    IQ: [
+      { q: "Ancient Mesopotamia lay between the Tigris and which other river?", options: ["Euphrates", "Nile", "Jordan", "Indus"], a: 0 },
+      { q: "The ancient city of Babylon arose in which historic region?", options: ["Mesopotamia", "Anatolia", "Persia", "Arabia"], a: 0 },
+      { q: "Iraq's capital, once a great center of learning, is…?", options: ["Baghdad", "Tehran", "Damascus", "Amman"], a: 0 },
+    ],
+    TW: [
+      { q: "Taiwan is one of the world's leading makers of which high-tech component?", options: ["Computer chips", "Diamonds", "Steel", "Textiles"], a: 0 },
+      { q: "Taipei 101 was, on completion, briefly the world's tallest what?", options: ["Building", "Bridge", "Statue", "Dam"], a: 0 },
+      { q: "Taiwan is an island separated from mainland China by the Taiwan…?", options: ["Strait", "Canal", "Gulf", "Bay"], a: 0 },
+    ],
+    AZ: [
+      { q: "Azerbaijan sits on the shore of which large inland sea?", options: ["Caspian Sea", "Black Sea", "Baltic Sea", "Red Sea"], a: 0 },
+      { q: "Azerbaijan is nicknamed the 'Land of Fire' thanks to natural deposits of…?", options: ["Natural gas", "Coal", "Sulfur", "Lava"], a: 0 },
+      { q: "Azerbaijan lies in which mountainous region between Europe and Asia?", options: ["The Caucasus", "The Balkans", "The Alps", "The Urals"], a: 0 },
+    ],
+    GE: [
+      { q: "The country of Georgia lies in which mountainous region?", options: ["The Caucasus", "The Balkans", "Scandinavia", "The Andes"], a: 0 },
+      { q: "Georgia is considered one of the oldest homelands of which drink?", options: ["Wine", "Beer", "Coffee", "Tea"], a: 0 },
+      { q: "Georgia borders which large country to its north?", options: ["Russia", "Iran", "Egypt", "Ukraine"], a: 0 },
+    ],
+    QA: [
+      { q: "Qatar hosted the 2022 FIFA World Cup in which sport?", options: ["Football", "Cricket", "Rugby", "Basketball"], a: 0 },
+      { q: "Qatar is a small, wealthy nation on which larger peninsula?", options: ["Arabian", "Iberian", "Balkan", "Indian"], a: 0 },
+      { q: "Qatar's wealth comes largely from exporting oil and natural…?", options: ["Gas", "Rubber", "Timber", "Wool"], a: 0 },
+    ],
+    KW: [
+      { q: "Kuwait is a small, oil-rich country at the head of which gulf?", options: ["The Persian Gulf", "The Gulf of Mexico", "The Gulf of Aden", "Hudson Bay"], a: 0 },
+      { q: "Kuwait's economy is dominated by exporting which resource?", options: ["Oil", "Coffee", "Fish", "Cotton"], a: 0 },
+      { q: "Kuwait shares borders with Iraq and which other country?", options: ["Saudi Arabia", "Iran", "Jordan", "Yemen"], a: 0 },
+    ],
+    LB: [
+      { q: "Lebanon's flag features which type of tree?", options: ["Cedar", "Palm", "Oak", "Olive"], a: 0 },
+      { q: "Lebanon's capital, an ancient Mediterranean port, is…?", options: ["Beirut", "Damascus", "Amman", "Cairo"], a: 0 },
+      { q: "Lebanon borders Syria and which other country?", options: ["Israel", "Iraq", "Turkey", "Egypt"], a: 0 },
+    ],
+    OM: [
+      { q: "Oman sits at the eastern tip of which peninsula?", options: ["Arabian", "Iberian", "Sinai", "Balkan"], a: 0 },
+      { q: "Oman grew wealthy trading which fragrant resin in ancient times?", options: ["Frankincense", "Amber", "Jade", "Silk"], a: 0 },
+      { q: "Oman's capital city is…?", options: ["Muscat", "Doha", "Dubai", "Sana'a"], a: 0 },
+    ],
+    CI: [
+      { q: "Côte d'Ivoire is the world's largest producer of which bean used for chocolate?", options: ["Cocoa", "Coffee", "Soy", "Vanilla"], a: 0 },
+      { q: "Côte d'Ivoire's name translates into English as the … Coast.", options: ["Ivory", "Gold", "Pepper", "Silver"], a: 0 },
+      { q: "Côte d'Ivoire lies on the southern coast of which continent?", options: ["Africa", "Asia", "South America", "Europe"], a: 0 },
+    ],
+    SN: [
+      { q: "Senegal is the westernmost country of mainland which continent?", options: ["Africa", "Asia", "Europe", "Australia"], a: 0 },
+      { q: "The famous off-road Dakar Rally was originally named after which African capital?", options: ["Dakar", "Nairobi", "Lagos", "Cairo"], a: 0 },
+      { q: "Senegalese star Youssou N'Dour is world-famous in which field?", options: ["Music", "Football", "Film", "Painting"], a: 0 },
+    ],
+    UG: [
+      { q: "Uganda shares which lake, Africa's largest, with Kenya and Tanzania?", options: ["Lake Victoria", "Lake Baikal", "Lake Chad", "Lake Malawi"], a: 0 },
+      { q: "Uganda is a famous destination for trekking to see which endangered ape?", options: ["Mountain gorillas", "Orangutans", "Pandas", "Lemurs"], a: 0 },
+      { q: "Uganda is crossed by which imaginary line?", options: ["The Equator", "The Prime Meridian", "The Arctic Circle", "The Tropic of Cancer"], a: 0 },
+    ],
+    ZW: [
+      { q: "Zimbabwe shares the massive Victoria Falls with which neighbour?", options: ["Zambia", "Botswana", "Mozambique", "Namibia"], a: 0 },
+      { q: "Which thundering waterfall lies on the Zimbabwe–Zambia border?", options: ["Victoria Falls", "Niagara Falls", "Angel Falls", "Iguazu Falls"], a: 0 },
+      { q: "Zimbabwe's national parks are famous for herds of which large tusked animal?", options: ["Elephants", "Kangaroos", "Bison", "Reindeer"], a: 0 },
+    ],
+    MZ: [
+      { q: "Mozambique has a long coastline on which ocean?", options: ["Indian Ocean", "Atlantic Ocean", "Pacific Ocean", "Arctic Ocean"], a: 0 },
+      { q: "Mozambique's official language reflects its rule by which former colonial power?", options: ["Portugal", "France", "Britain", "Spain"], a: 0 },
+      { q: "Mozambique lies on the southeastern coast of which continent?", options: ["Africa", "Asia", "South America", "Europe"], a: 0 },
+    ],
+    MG: [
+      { q: "Madagascar is the only wild home of which big-eyed primate?", options: ["Lemurs", "Chimpanzees", "Orangutans", "Gorillas"], a: 0 },
+      { q: "Madagascar lies off the southeastern coast of which continent?", options: ["Africa", "Asia", "Australia", "South America"], a: 0 },
+      { q: "Madagascar is the world's fourth-largest what?", options: ["Island", "Desert", "Lake", "Peninsula"], a: 0 },
+    ],
+    CM: [
+      { q: "Cameroon's national football team is nicknamed the Indomitable…?", options: ["Lions", "Eagles", "Elephants", "Stars"], a: 0 },
+      { q: "Cameroon is nicknamed 'Africa in miniature' for its variety of climates on which continent?", options: ["Africa", "Asia", "Europe", "South America"], a: 0 },
+      { q: "Cameroon lies on the coast of which gulf?", options: ["Gulf of Guinea", "Gulf of Mexico", "Persian Gulf", "Bay of Bengal"], a: 0 },
+    ],
+    AO: [
+      { q: "Angola's official language reflects rule by which former colonial power?", options: ["Portugal", "France", "Britain", "Spain"], a: 0 },
+      { q: "Angola is a major exporter of oil and which gemstone?", options: ["Diamonds", "Emeralds", "Rubies", "Pearls"], a: 0 },
+      { q: "Angola lies on the Atlantic coast of which continent?", options: ["Africa", "South America", "Asia", "Europe"], a: 0 },
+    ],
+    DO: [
+      { q: "The Dominican Republic shares the island of Hispaniola with which country?", options: ["Haiti", "Cuba", "Jamaica", "Puerto Rico"], a: 0 },
+      { q: "The Dominican Republic produces many star players in which sport?", options: ["Baseball", "Cricket", "Rugby", "Ice hockey"], a: 0 },
+      { q: "The Dominican Republic is a popular beach destination in which sea?", options: ["Caribbean", "Mediterranean", "Baltic", "Aegean"], a: 0 },
+    ],
+    PY: [
+      { q: "Paraguay is one of only two landlocked countries on which continent?", options: ["South America", "Africa", "Europe", "Asia"], a: 0 },
+      { q: "The huge Itaipú hydroelectric dam is shared by Paraguay and which country?", options: ["Brazil", "Argentina", "Bolivia", "Chile"], a: 0 },
+      { q: "Many Paraguayans speak Spanish plus which indigenous language?", options: ["Guaraní", "Quechua", "Nahuatl", "Maya"], a: 0 },
+    ],
+    FJ: [
+      { q: "Fiji is an island nation in which ocean?", options: ["Pacific Ocean", "Indian Ocean", "Atlantic Ocean", "Arctic Ocean"], a: 0 },
+      { q: "Fiji won its first-ever Olympic gold medals in which sport?", options: ["Rugby sevens", "Beach volleyball", "Futsal", "Cricket"], a: 0 },
+      { q: "Fiji is made up of hundreds of tropical…?", options: ["Islands", "Volcanoes", "Deserts", "Glaciers"], a: 0 },
+    ],
+    PG: [
+      { q: "Papua New Guinea shares the island of New Guinea with which country?", options: ["Indonesia", "Australia", "The Philippines", "Fiji"], a: 0 },
+      { q: "Papua New Guinea has one of the world's highest counts of what?", options: ["Languages", "Volcanoes", "Deserts", "Glaciers"], a: 0 },
+      { q: "Papua New Guinea lies just north of which large country?", options: ["Australia", "New Zealand", "Japan", "India"], a: 0 },
+    ],
   };
 })();
