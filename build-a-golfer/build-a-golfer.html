@@ -332,6 +332,8 @@ window.GA_ID='G-L29P5MRWKE';
   /* full-body dressable avatar (signed-in): a tall figure, not a round medallion */
   .avatarfig.fullbody{width:auto; height:auto; filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}
   .avatarfig.fullbody canvas{width:auto; height:100%; border-radius:0; margin:0 auto}
+  .buildhero .avatarfig.fullbody{width:auto; height:210px}
+  .herofig.hasfull{display:flex; justify-content:center}
   .avatarimg{object-fit:cover; border-radius:50%}
   .ovrchip{position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:6px;
     background:rgba(6,16,26,.95); border:1.5px solid var(--tc,#cd7f32); border-radius:999px; padding:4px 12px;
@@ -4451,6 +4453,7 @@ function scrSetup(){
     right.appendChild(setupHeader('Kit'));
     right.appendChild(colorRow('Shirt','polo',S.look.polo));
     right.appendChild(patternRow('Shirt pattern','shirtPat',S.look.shirtPat||'none'));
+    right.appendChild(capToggleRow());
     right.appendChild(colorRow('Hat','hat',S.look.hat||S.look.polo));
     right.appendChild(patternRow('Hat pattern','hatPat',S.look.hatPat||'none'));
   }
@@ -4474,7 +4477,7 @@ const _avRender=new Map();   // look-key -> recolored 512 offscreen canvas
 // bump AV_VER whenever any avatar PNG (base/mask/accessory) changes — the ?v= busts the
 // service-worker's cache-first store so the new art reaches devices immediately (a mask edit
 // otherwise stays stale because static assets are served from cache first).
-const AV_VER='2';
+const AV_VER='3';
 function avLoad(src){
   let e=_avImg.get(src);
   if(!e){ e={img:new Image(),ready:false,failed:false}; e.img.crossOrigin='anonymous';
@@ -4654,25 +4657,37 @@ const ACC_ART={
   mi_first_win:'acc-charm-marker',mi_major:'acc-ball',mi_slam:'acc-charm-clover',mi_no1:'acc-head-champ',mi_career:'acc-driver-rocket',
 };
 const AV_DRAW_ORDER=['driver','putter','shoes','glove','ball','charm','eyes','head'];
-// eyebrows are baked into the HAIR region of the full-body mask; keep them a fixed natural brow
-// instead of following light hair (blonde/grey/platinum). Central-face band, measured from the base.
-function avIsBrowFull(nx,ny){ return ny>0.050 && ny<0.082 && nx>0.34 && nx<0.66; }
 function _avWaitAll(entries, cb){ const pend=entries.filter(e=>e&&!e.ready&&!e.failed);
   if(!pend.length){ cb(); return; } let n=pend.length; const done=()=>{ if(--n<=0) cb(); };
   pend.forEach(e=>{ e.img.addEventListener('load',done,{once:true}); e.img.addEventListener('error',done,{once:true}); }); }
 function avatarFullHTML(){
   return `<div class="avatarfig fullbody"><canvas class="avatarcanvas avfull" width="${AV_FRAME_W}" height="${AV_FRAME_H}" data-avatar-full="1" data-avatar-pending="1" role="img" aria-label="Your golfer"></canvas></div>`;
 }
+// a free basic cap (recoloured to the player's hat colour), drawn when no shop headwear is equipped —
+// so every golfer can wear a hat in setup, like the old portrait. Cached per colour.
+const _avCapCache=new Map();
+function avTintedCap(hex){
+  const e=avLoad(ACC_DIR+'acc-head-cap.png'); if(!e.ready) return null;
+  let c=_avCapCache.get(hex); if(c) return c;
+  const bb=ACC_BBOX['acc-head-cap'], w=bb[2]-bb[0], h=bb[3]-bb[1];
+  const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+  const cx=cv.getContext('2d',{willReadFrequently:true}); cx.drawImage(e.img, bb[0],bb[1],w,h, 0,0,w,h);
+  const id=cx.getImageData(0,0,w,h), d=id.data, lp=avKitLp(hex);
+  for(let i=0;i<d.length;i+=4){ if(d[i+3]<20) continue; const t=avTint(d[i],d[i+1],d[i+2],hex,0.9,1.0,lp); d[i]=t.r;d[i+1]=t.g;d[i+2]=t.b; }
+  cx.putImageData(id,0,0); _avCapCache.set(hex,cv); return cv;
+}
 function paintAvatarFull(canvas, look){
   look=look||S.look||DEFLOOK; const o=avLook(look);
   const g=o.gender, A=AV_ANAT[g]||AV_ANAT.male;
   const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===look.pants))||{a:'#c7bfa8'}).a;
   const eq={}; if(typeof accEquipped==='function') ACC_SLOTS.forEach(sl=>{ const id=accEquipped(sl.k); if(id&&ACC_ART[id]) eq[sl.k]=id; });
-  const key=o.key+'|p'+(look.pants||'stone')+'|'+ACC_SLOTS.map(sl=>eq[sl.k]||'').join(',');
+  const freeCap = !eq.head && (look.cap!==false);   // no shop headwear → the free basic cap (if cap is on)
+  const key=o.key+'|p'+(look.pants||'stone')+'|c'+(freeCap?o.hatHex:'0')+'|'+ACC_SLOTS.map(sl=>eq[sl.k]||'').join(',');
   const cached=_avRenderFull.get(key); if(cached){ avBlit(canvas,cached); return; }
   const base=avLoad(AV_FULL[g]), mask=avLoad(AV_FULL_MASK[g]);
   const accEntries=Object.keys(eq).map(slot=>({slot,id:eq[slot],e:avLoad(ACC_DIR+ACC_ART[eq[slot]]+'.png')}));
-  _avWaitAll([base,mask].concat(accEntries.map(a=>a.e)), ()=>{
+  const capE=freeCap?avLoad(ACC_DIR+'acc-head-cap.png'):null;
+  _avWaitAll([base,mask].concat(accEntries.map(a=>a.e)).concat(capE?[capE]:[]), ()=>{
     if(base.failed){ avVectorFallback(canvas); return; }
     try{
       const bw=A.W, bh=A.H, xoff=Math.round((AV_FRAME_W-bw)/2);
@@ -4691,21 +4706,23 @@ function paintAvatarFull(canvas, look){
       if(m) for(let i=0;i<d.length;i+=4){ const reg=avMaskRegionFull(m[i],m[i+1],m[i+2]); if(!reg||reg==='shoes') continue;
         let tg,st,sb,lp;
         if(reg==='skin'){ tg=o.skinHex; st=0.95; sb=0.92; lp=skinLp; }
-        else if(reg==='hair'){ const px=i>>2, nx=(px%bw)/bw, ny=((px/bw)|0)/bh;
-          if(avIsBrowFull(nx,ny)){ tg=BROW_HEX; st=0.9; sb=0.85; lp=0.42; }   // eyebrows stay a fixed brow, don't follow hair
-          else { tg=o.hairHex; st=1.0; sb=1.05; lp=hairLp; } }
+        else if(reg==='hair'){ tg=o.hairHex; st=1.0; sb=1.05; lp=hairLp; }   // brows/eyes are carved out of the mask (kept as base), so hair recolours cleanly incl. temples
         else if(reg==='shirt'){ tg=o.shirtHex; st=0.96; sb=1.05; lp=shirtLp; }
         else { tg=pantsHex; st=0.95; sb=1.0; lp=pantsLp; }
         const t=avTint(d[i],d[i+1],d[i+2],tg,st,sb,lp); d[i]=t.r; d[i+1]=t.g; d[i+2]=t.b; }
       tctx.putImageData(id,0,0); ctx.drawImage(tmp,xoff,0);
-      // composite equipped accessories, back-to-front
-      AV_DRAW_ORDER.forEach(slot=>{ const a=accEntries.find(x=>x.slot===slot); if(!a||!a.e.ready) return;
-        const bbox=ACC_BBOX[ACC_ART[a.id]], cfg=ACC_PLACE[slot]; if(!bbox||!cfg) return;
+      // composite equipped accessories, back-to-front (+ the free cap in the head slot when worn)
+      AV_DRAW_ORDER.forEach(slot=>{ const cfg=ACC_PLACE[slot]; if(!cfg) return;
+        let img, bbox;
+        const a=accEntries.find(x=>x.slot===slot);
+        if(a && a.e.ready){ img=a.e.img; bbox=ACC_BBOX[ACC_ART[a.id]]; }
+        else if(slot==='head' && freeCap){ const cap=avTintedCap(o.hatHex); if(cap){ img=cap; bbox=[0,0,cap.width,cap.height]; } }
+        if(!img||!bbox) return;
         const sx=bbox[0],sy=bbox[1],sw=bbox[2]-bbox[0],sh=bbox[3]-bbox[1];
         const scale=cfg.wFrac?((A.W*cfg.wFrac)/sw):((A.H*cfg.hFrac)/sh), dw=sw*scale, dh=sh*scale;
         const ax=A[cfg.ax]+xoff, ay=A[cfg.ay], dx=ax-dw/2+(cfg.dx||0);
         const anch=cfg.anch||'center', dy=(anch==='top'?ay:anch==='bottom'?ay-dh:ay-dh/2)+(cfg.dy||0);
-        try{ ctx.drawImage(a.e.img, sx,sy,sw,sh, dx,dy,dw,dh); }catch(e){} });
+        try{ ctx.drawImage(img, sx,sy,sw,sh, dx,dy,dw,dh); }catch(e){} });
       _avRenderFull.set(key,off); avBlit(canvas,off);
     }catch(err){ avVectorFallback(canvas); }
   });
@@ -4818,6 +4835,16 @@ function swatchRow(label,opts,curId,key,colorOf){
 }
 // colour picker (shirt or hat) with unlockable cosmetic colours (locked ones show 🔒 + the requirement).
 // `cur` is the currently-equipped id (hat falls back to the shirt colour for old saves).
+// cap on/off toggle (the free basic cap on the full-body avatar; its colour is the Hat row below)
+function capToggleRow(){
+  const on=S.look.cap!==false;
+  const wrap=$(`<div style="margin:9px 0 2px"></div>`);
+  wrap.appendChild($(`<div style="letter-spacing:.1em;text-transform:uppercase;font-size:10px;font-weight:800;color:#9fb4ab;margin-bottom:5px">Cap</div>`));
+  const row=$(`<div style="display:flex;gap:8px"></div>`);
+  const mk=(lab,val)=>{ const b=$(`<button class="btn ${(val===on)?'gold':'ghost'}" style="flex:1;padding:8px;font-size:12px">${lab}</button>`); b.onclick=()=>{ S.look.cap=val; saveLook(); render(); }; return b; };
+  row.appendChild(mk('Cap on',true)); row.appendChild(mk('No cap',false));
+  wrap.appendChild(row); return wrap;
+}
 function colorRow(label,key,cur){
   const m=badgeMetrics();
   const row=$(`<div style="margin:9px 0"></div>`);
@@ -4940,7 +4967,7 @@ function buildHero(){
   const t=ovrTier(ovr);
   return $(`<div class="buildhero">
     <div class="herocol">
-      <div class="herofig">${avatarHTML()}
+      <div class="herofig${sbSignedIn()?' hasfull':''}">${avatarShowHTML()}
         <div class="ovrchip" style="--tc:${t.c}"><b>${ovr}</b><i>${t.lab}</i></div></div>
       <div class="heroname">${esc(S.name||'Your Golfer')}</div>
       <div class="herometa">${filledCount()}/8 drafted</div>

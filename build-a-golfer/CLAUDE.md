@@ -5172,6 +5172,27 @@ allows Google Fonts, or self-host Anton.*
   fresh) + bumped the SW `CACHE` `runtour-v1`→`v2` to flush the stale entries on next load. Verified the avatar
   still renders with the versioned URLs. Deploy: index.html + `golf/sw.js`.
 
+- **CS190 — full-body avatar: dark-brow fix (no side stripe), selectable free cap, build-page uses the full
+  golfer.** Three owner notes:
+  1. **"Blonde hair has a dark stripe on the sides."** The CS188 render-time brow band spanned the full head
+     width, so it darkened the temple/side hair too. Fixed at the MASK level instead: regenerated both masks
+     carving the EYEBROWS + eyes out of the hair region (a hair pixel inside the measured **face oval**, below
+     the hairline → left as base art = natural dark), so all the hair (incl. temples/sideburns) recolours
+     cleanly while brows/eyes stay dark. Broadened the hair classifier (catches dark desaturated hair-shadow
+     pixels) + a speck-fill so no stray dark flecks remain. Removed the render-time `avIsBrowFull`. Validated
+     platinum-blonde on both genders: brows dark, hair fully blonde, no stripe, no specks.
+  2. **"No way to select a hat."** The full-body avatar only showed a hat if a shop headwear item was equipped,
+     so the setup Hat-colour picker did nothing. Added a FREE basic cap: `avTintedCap(hex)` recolours the
+     `acc-head-cap` art to the player's hat colour (cached), drawn on the head when no shop headwear is equipped
+     and the cap is on; plus a **Cap on/off** toggle (`capToggleRow`) in setup next to the Hat colour row
+     (`look.cap`, default on). Verified: navy cap renders on the head, toggling off shows hair.
+  3. **"The build-page headshot should match the full golfer."** `buildHero` now uses `avatarShowHTML()` — the
+     signed-in build screen shows the same full-body dressable golfer (cap + kit) as setup, with the OVR chip
+     over it, instead of the old portrait bust.
+  Bumped `AV_VER` 2→3 so the regenerated masks bust the SW cache. Verified in-app (cap on/off, build-hero full
+  body, dark brows) + regressions (shop/economy/guest-portrait) green, zero errors. Deploy: index.html + the
+  two regenerated masks.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
