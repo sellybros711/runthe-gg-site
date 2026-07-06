@@ -4713,7 +4713,7 @@ const ACC_BBOX={
 // per-slot placement: target width (frac of base W) or height (frac of base H), anchor point (anatomy key) + nudge
 const ACC_PLACE={
   eyes:  {wFrac:0.34,ax:'headCx',ay:'eyeY'},
-  head:  {wFrac:0.40,ax:'headCx',ay:'browLine',anch:'bottom'},   // brim sits at the brow line, crown auto-fits above — face stays visible
+  head:  {wFrac:0.33,ax:'headCx',ay:'browLine',anch:'bottom',dy:10},   // sized to the ~140px head; brim just below the brow, crown seated on the dome (not floating above)
   shoes: {wFrac:0.92,ax:'footCx',ay:'footY',anch:'bottom',dy:10},
   glove: {wFrac:0.17,ax:'handRx',ay:'handY'},
   driver:{hFrac:0.60,ax:'sideRxIn',ay:'footY',anch:'bottom'},
