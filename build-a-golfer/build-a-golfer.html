@@ -436,6 +436,15 @@ window.GA_ID='G-L29P5MRWKE';
   .scout{background:var(--panel); border:1px solid var(--panelb); border-radius:12px; padding:12px 14px; font-size:13px; color:#dfeae2; margin-top:12px}
   input.name{width:100%; background:#0a2740; border:1px solid var(--line); color:var(--oncard);
     font:800 16px/1 var(--body); border-radius:11px; padding:13px 14px; margin-top:6px}
+  /* themed dropdowns — match the dark panel instead of the browser's white default */
+  select.name{width:100%; border:1px solid var(--line); color:var(--oncard); font:800 15.5px/1.2 var(--body);
+    border-radius:11px; padding:13px 42px 13px 14px; margin-top:6px; cursor:pointer;
+    -webkit-appearance:none; -moz-appearance:none; appearance:none;
+    background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23EBA61F' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>") no-repeat right 14px center / 16px,
+      linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.14)) #0a2740}
+  select.name:hover{border-color:rgba(235,166,31,.5)}
+  select.name:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(235,166,31,.16)}
+  select.name option{background:#0a2740; color:var(--oncard); font-weight:600}
 
   /* ---- leaderboard ---- */
   .evt-head{display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:10px}

@@ -5354,6 +5354,13 @@ allows Google Fonts, or self-host Anton.*
   whole hand with the strap at the wrist and stops cleanly at the fingertips (leg stays bare). Male
   unaffected (no `gloveMaxY`). HTML only.
 
+- **CS204 — themed the Country/Caddie dropdowns.** Owner: make the dropdown boxes more appealing. They were
+  bare white native `<select>`s because the dark input style was scoped to `input.name` only. Added a
+  `select.name` rule: dark navy fill with a subtle top-highlight gradient (matching the text inputs), cream
+  text, rounded corners, a custom gold chevron (inline SVG, `appearance:none`), gold hover/focus ring, and
+  dark-styled `option`s. Applies to the Country and Caddie selects on the setup screen. Verified over http —
+  the dropdowns now match the dark-green theme; zero page errors. CSS only.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
