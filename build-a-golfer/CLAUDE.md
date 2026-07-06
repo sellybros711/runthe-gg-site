@@ -5193,6 +5193,13 @@ allows Google Fonts, or self-host Anton.*
   body, dark brows) + regressions (shop/economy/guest-portrait) green, zero errors. Deploy: index.html + the
   two regenerated masks.
 
+- **CS191 — cap sizing/placement (was too big, covering the face).** The head-slot placement anchored the
+  hat's TOP at the crown, so the tall cap art's big brim hung down over the eyes. Re-anchored it by the
+  BRIM: `ACC_PLACE.head` now `{wFrac:0.34 (was .40), ax:'headCx', ay:'browLine', anch:'bottom'}` with a new
+  `browLine` anatomy anchor (male 84 / female 98), so any headwear's brim sits at the brow line and the crown
+  auto-fits above — the face stays fully visible regardless of the hat art's height (cap/visor/bucket/champ).
+  Verified in-app both genders: cap on top of the head, brim at the brow, face clear. HTML only.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

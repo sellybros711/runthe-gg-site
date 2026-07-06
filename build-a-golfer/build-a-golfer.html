@@ -4619,8 +4619,8 @@ function avMaskRegionFull(r,g,b){ if(r<45&&g<45&&b<45) return null;
   return null; }
 // base-body anatomy (base-local px) — measured from the base masks — for anchoring accessories
 const AV_ANAT={
-  male:  {W:420,H:1400,headCx:211,headTop:2,eyeY:98,footCx:211,footY:1330,handRx:352,handLx:70,handY:735,sideRxIn:372,sideLxIn:48,waistY:690},
-  female:{W:380,H:1400,headCx:213,headTop:4,eyeY:112,footCx:197,footY:1330,handRx:322,handLx:58,handY:735,sideRxIn:338,sideLxIn:42,waistY:690},
+  male:  {W:420,H:1400,headCx:211,headTop:2,eyeY:98,browLine:84,footCx:211,footY:1330,handRx:352,handLx:70,handY:735,sideRxIn:372,sideLxIn:48,waistY:690},
+  female:{W:380,H:1400,headCx:213,headTop:4,eyeY:112,browLine:98,footCx:197,footY:1330,handRx:322,handLx:58,handY:735,sideRxIn:338,sideLxIn:42,waistY:690},
 };
 const AV_FRAME_W=440, AV_FRAME_H=1400;   // common frame; the (narrower) base is centred in it
 // content trim rectangles [x0,y0,x1,y1] for each art file (the art is a large product-shot on a 1024x1792 canvas)
@@ -4636,7 +4636,7 @@ const ACC_BBOX={
 // per-slot placement: target width (frac of base W) or height (frac of base H), anchor point (anatomy key) + nudge
 const ACC_PLACE={
   eyes:  {wFrac:0.34,ax:'headCx',ay:'eyeY'},
-  head:  {wFrac:0.40,ax:'headCx',ay:'headTop',anch:'top',dy:-20},
+  head:  {wFrac:0.34,ax:'headCx',ay:'browLine',anch:'bottom'},   // brim sits at the brow line, crown auto-fits above — face stays visible
   shoes: {wFrac:0.92,ax:'footCx',ay:'footY',anch:'bottom',dy:10},
   glove: {wFrac:0.17,ax:'handRx',ay:'handY'},
   driver:{hFrac:0.60,ax:'sideRxIn',ay:'footY',anch:'bottom'},
