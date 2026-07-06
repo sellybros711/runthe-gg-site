@@ -3487,7 +3487,7 @@ function render(){
       <span class="tag" style="color:#E14A33;border-color:#E14A33">Something went wrong</span>
       <p class="lede center" style="margin:14px 0 18px">This screen hit a snag loading. Your saved progress is untouched, try heading back to the title screen.</p>
       <p class="small muted center" style="margin:0 0 18px;word-break:break-word">${esc(S.screen)}: ${esc((err&&err.message)||String(err))}</p>
-      <button class="btn goldfill" id="rerr-home">Back to Title</button></div>`);
+      <button class="btn goldfill" id="rerr-home">Back to Home</button></div>`);
     const hb=fb.querySelector('#rerr-home'); hb.onclick=()=>{ S.overlay=null; S.screen='title'; render(); };
     screen.appendChild(fb);
   }
@@ -7663,7 +7663,9 @@ function hvCamFor2(g, p){   // camera: full hole, or the green close-up for the 
     // allows — a tap-in gets a much closer camera than a 40-footer, so short putts finally read.
     const P=hvProj(g,g.pin[0],g.pin[1]), A=hvProj(g,p.from[0],p.from[1]);
     const AR=(HV_W+2*HV_EX)/HV_H;   // match the on-screen box so nothing gets sliced off
-    let w=Math.max(92, Math.abs(A[0]-P[0])+64, (Math.abs(A[1]-P[1])+84)*AR);
+    // tighter framing than before (owner/Jordo: "the green can be bigger — an 8ft putt is not right on
+    // top of the hole"): less padding + a smaller floor so the green fills the frame and putt distance reads.
+    let w=Math.max(60, Math.abs(A[0]-P[0])+40, (Math.abs(A[1]-P[1])+54)*AR);
     w=Math.min(w, 210);
     const h=w/AR;
     const cx=(A[0]+P[0])/2, cy=(A[1]+P[1])/2-h*0.04;
@@ -8767,7 +8769,7 @@ function scrSpotlightResult(){
     const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">${wonEvent?'Go lower ▸':'Play again ▸'}<span class="sub">${wonEvent?`Pro beaten, chase a lower score (${left} left)`:`${left} of ${SPOT_MAX_ATTEMPTS} attempt${left>1?'s':''} left, beat the tour average`}</span></button>`);
     again.onclick=beginSpotlightAttempt; add(again);
   }
-  const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Back to title</button>`); home.onclick=()=>{S.special=false;S.daily=false;S.screen='title';render();}; add(home);
+  const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Back to home</button>`); home.onclick=()=>{S.special=false;S.daily=false;S.screen='title';render();}; add(home);
   add($(`<p class="small muted center" style="margin-top:12px">A special 1-day event · the next Spotlight drops next month.</p>`));
 }
 // marks a Legend Token spent (round complete, win or lose), called once from finishDailyRound
@@ -10334,8 +10336,8 @@ async function h2hOpenLobby(){
   h2hClearFillTimer(); S.h2h.opened=true; render();
   try{ const {error}=await sb.rpc('h2h_open_public',{p_match_id:S.h2h.matchId}); if(error) throw error;
     toast('Lobby opened — a waiting player can join'); track('h2h_open_public',{mode:S.h2h.mode});
-    // fallback: nobody joined in a short window → fill the rest with AI so the group isn't stuck
-    S.h2h._fillTimer=setTimeout(h2hFillFallback, 9000+Math.random()*4000);
+    // fallback: nobody joined within 10s → fill the rest with AI so the group isn't stuck
+    S.h2h._fillTimer=setTimeout(h2hFillFallback, 10000);
   }catch(e){ S.h2h.opened=false; render(); h2hErr(e); }
 }
 function h2hFillFallback(){ if(S.h2h) S.h2h._fillTimer=null;
@@ -10745,7 +10747,7 @@ function h2hBack(cls,label,fn){ const b=$(`<button class="btn ghost" style="widt
 // cohesive teal "online area" chip at the top of every H2H screen (live dot on the finding/waiting ones)
 function h2hTag(html, live){ return $(`<div class="center" style="margin-bottom:2px"><span class="online-tag">${live?'<span class="online-dot"></span>':''}${html}</span></div>`); }
 function scrH2HHome(){
-  h2hBack('','‹ Back to title', h2hLeave);
+  h2hBack('','‹ Back to home', h2hLeave);
   const m=h2hMode(S.h2h.mode);
   add(h2hTag('Play Online', true));
   add($(`<h1 class="center" style="font-size:26px;margin:9px 0 2px">Play online</h1>`));
@@ -10827,11 +10829,10 @@ function scrH2HLobby(){
       add($(`<p class="small muted center" style="margin:16px 0 6px">— or fill the open seat${need>1?'s':''} —</p>`));
       const fillWrap=$(`<div style="max-width:340px;margin:0 auto;display:grid;gap:8px"></div>`);
       if(S.h2h.opened){
-        fillWrap.appendChild($(`<div class="center small" style="color:var(--teal,#0FA888);font-weight:700"><span class="authspin" style="width:14px;height:14px;vertical-align:-2px"></span> Open to anyone — a waiting player will join, or AI fills in shortly…</div>`));
+        fillWrap.appendChild($(`<div class="center small" style="color:var(--teal,#0FA888);font-weight:700"><span class="authspin" style="width:14px;height:14px;vertical-align:-2px"></span> Open to anyone — a waiting player can join. AI fills in after 10s…</div>`));
       } else {
-        const op=$(`<button class="btn teal">Open to anyone ▸<span class="sub">A waiting player joins — or AI fills in</span></button>`); op.onclick=h2hOpenLobby; fillWrap.appendChild(op);
+        const op=$(`<button class="btn teal">Open to anyone ▸<span class="sub">A waiting player joins — or AI fills in after 10s</span></button>`); op.onclick=h2hOpenLobby; fillWrap.appendChild(op);
       }
-      const ai=$(`<button class="btn ghost">Start now vs AI ▸<span class="sub">Fill the last ${need} seat${need>1?'s':''} with AI and tee off</span></button>`); ai.onclick=h2hFillBots; fillWrap.appendChild(ai);
       add(fillWrap);
     }
   }
@@ -11067,9 +11068,19 @@ function scrH2HWatch(){
 // hole-by-hole scorecard for the finished match (owner/Jordo: "See Result should show the scorecards").
 // Rows = each unit (player / team ball); columns = holes; cell = strokes, colored by score-to-par.
 // (named h2hResultCard to avoid shadowing the older data-builder h2hScorecard(sk,seed,holes).)
+// classic golf scorecard notation: circle = under par (double for eagle+), square = over (double for dbl+)
+function scMark(s,tp){
+  const st='display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;line-height:1';
+  if(tp<=-2) return `<span style="${st};border:1.5px solid currentColor;border-radius:50%;outline:1.3px solid currentColor;outline-offset:1.2px">${s}</span>`;
+  if(tp===-1) return `<span style="${st};border:1.5px solid currentColor;border-radius:50%">${s}</span>`;
+  if(tp>=2)  return `<span style="${st};border:1.5px solid currentColor;border-radius:3px;outline:1.3px solid currentColor;outline-offset:1.2px">${s}</span>`;
+  if(tp===1) return `<span style="${st};border:1.5px solid currentColor;border-radius:3px">${s}</span>`;
+  return `<span style="${st}">${s}</span>`;
+}
 function h2hResultCard(){
   const units=S.h2h.units, holes=S.h2h.holes, course=S.h2h.course;
   if(!units||!course||!units[0]||!units[0].scores) return null;
+  const winId=(typeof h2hOfficialWin==='function')?h2hOfficialWin():null;
   const cw=23, nameW=104, totW=36, bg='rgba(9,26,18,.98)';
   const wrap=$(`<div style="max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px"></div>`);
   const tbl=$(`<div style="display:inline-block;min-width:100%"></div>`);
@@ -11087,11 +11098,13 @@ function h2hResultCard(){
   tbl.appendChild(mk(par));
   // one row per unit
   units.forEach((u,ui)=>{ const col=(S.h2h.unitCols&&S.h2h.unitCols[ui])||'#fff', mine=u.members.some(p=>p.user_id===h2hUid());
+    const isWin=winId!=null && u.id===winId;
     const nm=u.kind==='team'?`Team ${(u.id|0)+1}`:esc(u.label);
-    const cells=[nameCell(`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:6px;vertical-align:1px"></span><span style="font:800 11px/1.1 var(--body);color:${mine?'var(--gold)':'var(--oncard)'}">${nm}</span>`, mine?'box-shadow:inset 2px 0 0 var(--gold)':'')];
+    const rowBg=isWin?'rgba(235,166,31,.10)':bg;
+    const cells=[nameCell(`${isWin?'<span class="ic" style="color:var(--gold);margin-right:4px;vertical-align:-2px">'+ic('trophy')+'</span>':''}<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:6px;vertical-align:1px"></span><span style="font:800 11px/1.1 var(--body);color:${mine?'var(--gold)':(isWin?'var(--gold)':'var(--oncard)')}">${nm}</span>`, `background:${rowBg};${mine?'box-shadow:inset 2px 0 0 var(--gold)':''}`)];
     for(let i=0;i<holes;i++){ const tp=u.scores[i], s=course.holes[i][0]+tp;
-      cells.push(`<div style="width:${cw}px;flex:0 0 auto;text-align:center;padding:6px 0;font:700 12px/1 var(--mono);color:${dScoreCol(tp)}">${s}</div>`); }
-    cells.push(`<div style="width:${totW}px;flex:0 0 auto;text-align:center;padding:6px 0;font:800 12px/1 var(--mono);color:${h2hTpColor(u.total)}">${h2hTpTxt(u.total)}</div>`);
+      cells.push(`<div style="width:${cw}px;flex:0 0 auto;text-align:center;padding:6px 0;font:700 12px/1 var(--mono);color:${dScoreCol(tp)};background:${isWin?'rgba(235,166,31,.06)':'transparent'}">${scMark(s,tp)}</div>`); }
+    cells.push(`<div style="width:${totW}px;flex:0 0 auto;text-align:center;padding:6px 0;font:800 12px/1 var(--mono);color:${h2hTpColor(u.total)};background:${isWin?'rgba(235,166,31,.06)':'transparent'}">${h2hTpTxt(u.total)}</div>`);
     tbl.appendChild(mk(cells));
   });
   wrap.appendChild(tbl);
@@ -11124,7 +11137,7 @@ function scrH2HResult(){
   const stack=$(`<div class="stack" style="max-width:360px;margin:22px auto 0"></div>`);
   const again=$(`<button class="btn goldfill">Play again</button>`); again.onclick=openH2H; stack.appendChild(again);
   const brd=$(`<button class="btn gold">🏆 Leaderboards</button>`); brd.onclick=()=>{ _h2hBoardMode=S.h2h.mode; S.screen='h2hboard'; render(); }; stack.appendChild(brd);
-  const home=$(`<button class="btn ghost">Back to title</button>`); home.onclick=h2hLeave; stack.appendChild(home);
+  const home=$(`<button class="btn ghost">Back to home</button>`); home.onclick=h2hLeave; stack.appendChild(home);
   add(stack);
 }
 let _h2hBoardMode='1v1'; const _h2hBoardCache={};
