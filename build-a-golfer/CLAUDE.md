@@ -5155,6 +5155,14 @@ allows Google Fonts, or self-host Anton.*
   blonde / pink polo / stone trousers): clean. Only the mask PNGs changed; no JS. Deployed (masks copied to
   `golf/public/avatars/golfers/full/`).
 
+- **CS188 — full-body eyebrows stop following the hair colour.** Owner: on the full-body avatar the
+  eyebrows took the hair colour (garish with blonde/grey/platinum). The brows are baked into the mask's
+  HAIR region, so they were recoloured with the hair. Mirrored the portrait's fix: `avIsBrowFull(nx,ny)`
+  (a central-face band, ny 0.050–0.082 × nx 0.34–0.66, measured from the base faces) — hair-region pixels
+  in that band are tinted to the fixed `BROW_HEX` natural brow instead of the hair colour, in
+  `paintAvatarFull`. Verified in-app on both genders with blonde hair: brows render dark (l≈0) while the
+  hair is blonde (l≈0.48). JS only.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -4649,6 +4649,9 @@ const ACC_ART={
   mi_first_win:'acc-charm-marker',mi_major:'acc-ball',mi_slam:'acc-charm-clover',mi_no1:'acc-head-champ',mi_career:'acc-driver-rocket',
 };
 const AV_DRAW_ORDER=['driver','putter','shoes','glove','ball','charm','eyes','head'];
+// eyebrows are baked into the HAIR region of the full-body mask; keep them a fixed natural brow
+// instead of following light hair (blonde/grey/platinum). Central-face band, measured from the base.
+function avIsBrowFull(nx,ny){ return ny>0.050 && ny<0.082 && nx>0.34 && nx<0.66; }
 function _avWaitAll(entries, cb){ const pend=entries.filter(e=>e&&!e.ready&&!e.failed);
   if(!pend.length){ cb(); return; } let n=pend.length; const done=()=>{ if(--n<=0) cb(); };
   pend.forEach(e=>{ e.img.addEventListener('load',done,{once:true}); e.img.addEventListener('error',done,{once:true}); }); }
@@ -4683,7 +4686,9 @@ function paintAvatarFull(canvas, look){
       if(m) for(let i=0;i<d.length;i+=4){ const reg=avMaskRegionFull(m[i],m[i+1],m[i+2]); if(!reg||reg==='shoes') continue;
         let tg,st,sb,lp;
         if(reg==='skin'){ tg=o.skinHex; st=0.95; sb=0.92; lp=skinLp; }
-        else if(reg==='hair'){ tg=o.hairHex; st=1.0; sb=1.05; lp=hairLp; }
+        else if(reg==='hair'){ const px=i>>2, nx=(px%bw)/bw, ny=((px/bw)|0)/bh;
+          if(avIsBrowFull(nx,ny)){ tg=BROW_HEX; st=0.9; sb=0.85; lp=0.42; }   // eyebrows stay a fixed brow, don't follow hair
+          else { tg=o.hairHex; st=1.0; sb=1.05; lp=hairLp; } }
         else if(reg==='shirt'){ tg=o.shirtHex; st=0.96; sb=1.05; lp=shirtLp; }
         else { tg=pantsHex; st=0.95; sb=1.0; lp=pantsLp; }
         const t=avTint(d[i],d[i+1],d[i+2],tg,st,sb,lp); d[i]=t.r; d[i+1]=t.g; d[i+2]=t.b; }
