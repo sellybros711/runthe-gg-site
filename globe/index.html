@@ -2859,7 +2859,7 @@
           + '<div class="runtmr" id="rtmr"></div>'
           + '<div class="runhint" id="rhint">Touching down…</div>'
         + '</div>'
-        + '<div class="ohint" style="margin-top:10px">Tap fast to sprint. The Checkpoint mat flies '+(S.dest?S.dest.flag:'🚩')+' — wrong mat +2.5s.</div>'
+        + '<div class="ohint" style="margin-top:10px">Tap fast to sprint, then hit the mat flying <b>your destination\'s flag</b> — from memory. Wrong mat +2.5s.</div>'
       + '</div>' + foot();
 
     // ---- run loop ----
@@ -2911,7 +2911,7 @@
         setTimeout(function(){ finishRunPhase(runT); }, 430);
       } else {
         st.pen+=2.5; sfx('wrong'); vibe([16,40,16]); retrig(scene,'runshake');
-        var h=$('rhint'); if(h) h.innerHTML='Wrong mat! +2.5s — find '+(S.dest?S.dest.flag:'the flag');
+        var h=$('rhint'); if(h) h.innerHTML='Wrong mat! +2.5s — which flag was your destination?';
       }
     }
     (function loop(){
@@ -2922,7 +2922,7 @@
         if(st.x>=PLAZA){
           st.x=PLAZA; st.v=0; st.state='pick'; scene.setAttribute('data-state','pick');
           each('#runscene .gate',function(g){ g.classList.add('pick'); });
-          var h=$('rhint'); if(h) h.innerHTML='You\'re here! Tap the mat flying '+(S.dest?S.dest.flag:'the flag');
+          var h=$('rhint'); if(h) h.innerHTML='You\'re here! Tap the mat flying your destination\'s flag.';
         }
         setVB(Math.max(0,Math.min(W-VIEW, st.x-130)));
         paintRunner();
