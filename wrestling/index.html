@@ -18,7 +18,7 @@
     --gold:#C6392C; --gold2:#9e2a20; --gold-bright:#F4E8DB;
     --red:#C6392C; --red2:#8f231b; --green:#5bb083; --blue:#6aa7c4; --purple:#b08ac6;
     --brandred:#C6392C; --brandred-bright:#e05446;
-    --text:#F0E6D8; --text-dim:#b3a794; --text-faint:#7c7367; --muted:#b3a794;
+    --text:#F2EADD; --text-dim:#cabda8; --text-faint:#9b917f; --muted:#cabda8;
     --panel:rgba(255,255,255,.045); --panel-raised:rgba(255,255,255,.075);
     --card:rgba(255,255,255,.045); --line:rgba(244,232,219,.13);
     --display:'Anton',Impact,'Arial Narrow',sans-serif;
@@ -74,7 +74,7 @@
   .badge.promo{background:rgba(244,232,219,.12); color:var(--cream);}
   .badge.hurt{background:rgba(225,74,51,.34); color:#f5b3a6;}
   .badge.tier{background:rgba(244,227,201,.08); color:var(--text-dim);}
-  .stat-mini{font-family:var(--mono); font-size:11px; color:var(--text-dim); white-space:nowrap;}
+  .stat-mini{font-family:var(--mono); font-size:12px; color:var(--text-dim); white-space:nowrap;}
   .bar-track{width:52px; height:6px; background:rgba(0,0,0,.45); border-radius:3px; overflow:hidden; display:inline-block; vertical-align:middle; margin-left:4px;}
   .bar-fill{height:100%; background:var(--gold);}
   .bar-fill.mo{background:var(--green);} .bar-fill.cond{background:var(--blue);} .bar-fill.mor{background:var(--purple);}
@@ -86,14 +86,22 @@
   button.big{padding:12px 26px; font-size:14px;}
   button:disabled{opacity:.35; cursor:not-allowed;}
   button:disabled:hover{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.18)); color:var(--gold-bright);}
-  select,input{background:rgba(0,0,0,.35); border:1px solid var(--line); color:var(--text); padding:7px 9px; border-radius:8px; font-size:12px; font-family:var(--body);}
-  input[type=text]{width:220px; max-width:100%;}
-  select:focus,input:focus{outline:2px solid var(--gold); outline-offset:1px;}
+  select,input{background:rgba(0,0,0,.32); border:1px solid var(--line); color:var(--text); padding:9px 11px; border-radius:8px; font-size:14px; font-family:var(--body); font-weight:600;}
+  select{cursor:pointer;}
+  input[type=text]{width:240px; max-width:100%;}
+  select:focus,input:focus{outline:2px solid var(--gold); outline-offset:1px; border-color:var(--gold);}
   label.fld{display:block;}
-  .stat-mini.fldlab{margin-bottom:3px; letter-spacing:.08em; text-transform:uppercase;}
+  .stat-mini.fldlab{margin-bottom:5px; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--text-dim); font-weight:700;}
 
-  .builder-box{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; margin-bottom:16px;}
+  .builder-box{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; margin-bottom:16px;}
   .row-wrap{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;}
+  .build-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:14px; align-items:end;}
+  .build-grid .fld select{width:100%;}
+  .build-full{grid-column:1 / -1;}
+  .participant-list{width:100%; min-height:230px; font-size:14px; line-height:1.5;}
+  .participant-list option{padding:6px 8px; border-radius:5px;}
+  .participant-list option:checked{background:var(--brandred) linear-gradient(0deg,var(--brandred),var(--brandred)); color:#fff; font-weight:700;}
+  .section-head{margin:18px 0 10px; color:var(--cream); font-family:var(--display); font-size:18px; letter-spacing:.03em; text-transform:uppercase;}
   .segment-ticket{background:var(--panel-raised); border:1px dashed var(--gold); border-radius:10px; padding:10px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;}
   .vs-line{font-family:var(--display); letter-spacing:.02em; font-size:15px; color:var(--cream);}
   .rating-dial{font-family:var(--mono); font-weight:800; font-size:18px; padding:4px 10px; border-radius:8px; min-width:46px; text-align:center; display:inline-block;}
@@ -319,9 +327,9 @@
     <div class="panel" id="panel-build">
       <h2>Build This Week's Show <span class="sub2" id="buildWeekLbl"></span></h2>
       <div class="builder-box">
-        <div class="row-wrap">
+        <div class="build-grid">
           <label class="fld">
-            <div class="stat-mini fldlab">SEGMENT TYPE</div>
+            <div class="stat-mini fldlab">Segment Type</div>
             <select id="segType" onchange="onSegTypeChange()">
               <option value="singles">Singles Match</option>
               <option value="tag">Tag Team Match</option>
@@ -334,11 +342,7 @@
             </select>
           </label>
           <label class="fld">
-            <div class="stat-mini fldlab">PARTICIPANTS <span class="hint">(pick from list)</span></div>
-            <select id="segWorkers" multiple size="6" style="min-width:230px;"></select>
-          </label>
-          <label class="fld">
-            <div class="stat-mini fldlab">INTENT</div>
+            <div class="stat-mini fldlab">Intent</div>
             <select id="segIntent">
               <option value="standard">Standard match</option>
               <option value="showcase">Showcase a star</option>
@@ -346,25 +350,29 @@
               <option value="bury">Bury someone</option>
             </select>
           </label>
+          <label class="fld build-full">
+            <div class="stat-mini fldlab">Participants <span class="hint" style="text-transform:none; letter-spacing:0;">— click to select; hold Ctrl / Cmd (or ⇧) to pick more</span></div>
+            <select id="segWorkers" class="participant-list" multiple size="9"></select>
+          </label>
           <label class="fld">
-            <div class="stat-mini fldlab">WINNER</div>
+            <div class="stat-mini fldlab">Winner</div>
             <select id="segWinner"><option value="">— no winner set —</option></select>
           </label>
           <label class="fld">
-            <div class="stat-mini fldlab">TITLE ON THE LINE</div>
+            <div class="stat-mini fldlab">Title on the Line</div>
             <select id="segTitle"><option value="">— none —</option></select>
           </label>
           <label class="fld">
-            <div class="stat-mini fldlab">FEUD</div>
+            <div class="stat-mini fldlab">Feud</div>
             <select id="segFeud"><option value="">— none —</option></select>
           </label>
-          <button onclick="addSegment()">+ Add Segment</button>
         </div>
         <div class="warn" id="builderWarn"></div>
         <div class="road-note" id="roadNote"></div>
+        <button class="big" style="margin-top:14px;" onclick="addSegment()">+ Add Segment to Card</button>
       </div>
 
-      <h3 style="margin:6px 0; color:var(--text-dim); font-size:13px; text-transform:uppercase; letter-spacing:1px;">Tonight's Card</h3>
+      <h3 class="section-head">Tonight's Card</h3>
       <div id="cardList"></div>
       <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap;">
         <button class="big" id="runShowBtn" onclick="runShow()" disabled>Run Show &amp; Advance Week ▶</button>
@@ -493,6 +501,38 @@ const PROMO_META = {
   Stardom: { cash: 200000,  popW: 0.45, perfW: 0.55, tierLabel: 'National (Joshi)',    product: 'Joshi' },
   TJPW:    { cash: 100000,  popW: 0.50, perfW: 0.50, tierLabel: 'Regional (Joshi)',    product: 'Joshi / Idol' },
 };
+
+// ---------- Premium Live Events (PPVs) ----------
+// Every 4th week is a big event: the spectacle scales up, feuds pay off, and
+// PPV buys are a major payday that scales with the promotion's TV tier.
+const PPV_EVERY = 4;
+const PPV_NAMES = {
+  WWE:['WrestleMania','Backlash','Money in the Bank','SummerSlam','Bad Blood','Survivor Series','Royal Rumble','Elimination Chamber'],
+  AEW:['Revolution','Double or Nothing','All Out','WrestleDream','Full Gear','Worlds End','Grand Slam','Forbidden Door'],
+  TNA:['Hard to Kill','Rebellion','Under Siege','Slammiversary','Emergence','Bound for Glory','Turning Point','Genesis'],
+  AAA:['Rey de Reyes','Verano de Escandalo','Triplemania','Heroes Inmortales','Guerra de Titanes'],
+  ROH:['Supercard of Honor','Best in the World','Death Before Dishonor','Final Battle'],
+  NJPW:['Wrestle Kingdom','New Beginning','Dominion','G1 Climax Final','Destruction','Power Struggle'],
+  Stardom:['Supreme Fight','Cinderella Tournament','Grand Prix','5STAR Grand Prix','Dream Queendom'],
+  TJPW:['Tokyo Princess Cup','Summer Sun Princess','Grand Princess','Wrestle Princess'],
+};
+function isPpvWeek(){ return S && S.week % PPV_EVERY === 0; }
+function nextPpvWeek(){ return isPpvWeek() ? S.week : (Math.floor(S.week/PPV_EVERY)+1)*PPV_EVERY; }
+function weeksToPpv(){ return nextPpvWeek() - S.week; }
+function ppvName(forWeek){
+  const wk = forWeek || S.week;
+  const names = PPV_NAMES[S.promo.name] || ['Supershow'];
+  return names[(Math.floor((wk-1)/PPV_EVERY)) % names.length];
+}
+function venueIndex(id){ return VENUES.findIndex(v=>v.id===id); }
+// which venue the show actually runs in — Junkie honours the player's pick;
+// Quick auto-scales, bumping up for a big event.
+function effectiveVenue(ppv){
+  if(S.mode==='junkie') return currentVenue();
+  let idx = venueIndex(S.promo.venue);
+  if(ppv) idx = Math.min(VENUES.length-1, idx+2);
+  return VENUES[idx] || VENUES[0];
+}
 
 // Match/segment tuning — inspectable constants, not hardcoded logic
 const typeMeta = {
@@ -902,9 +942,14 @@ function availableRoster(){ return S.roster.filter(w=>w.injWeeks<=0 && !isManage
 function onSegTypeChange(){ updateRoadNote(); }
 
 function renderBuildSelectors(){
-  $('buildWeekLbl').textContent = 'Week '+S.week + (S.mode==='junkie'?` · ${currentVenue().name} · ${money(S.promo.ticketPrice)}/ticket`:'');
+  const venInfo = S.mode==='junkie' ? ` · ${effectiveVenue(isPpvWeek()).name} · ${money(S.promo.ticketPrice)}/ticket` : '';
+  $('buildWeekLbl').innerHTML = isPpvWeek()
+    ? `<span class="mode-pill" style="background:var(--brandred); color:#fff;">🔴 Premium Live Event</span> ${ppvName()} · Week ${S.week}${venInfo}`
+    : `Week ${S.week} · next big event in ${weeksToPpv()} wk${weeksToPpv()!==1?'s':''}${venInfo}`;
+  const runBtn = $('runShowBtn'); if(runBtn) runBtn.innerHTML = isPpvWeek()? `Run ${ppvName()} ▶` : 'Run Show &amp; Advance Week ▶';
   const avail = availableRoster();
-  $('segWorkers').innerHTML = avail.map(w=>`<option value="${w.id}">${w.name} · OVR ${Math.round(w.overness)} ${w.align[0].toUpperCase()}</option>`).join('');
+  $('segWorkers').innerHTML = avail.sort((a,b)=>b.overness-a.overness)
+    .map(w=>`<option value="${w.id}">${w.name}  ·  ${w.align}  ·  OVR ${Math.round(w.overness)}</option>`).join('');
   $('segWinner').innerHTML = '<option value="">— no winner set —</option>' + avail.map(w=>`<option value="${w.id}">${w.name}</option>`).join('');
   $('segTitle').innerHTML = '<option value="">— none —</option>' + S.titles.map(t=>`<option value="${t.id}">${t.name}</option>`).join('');
   $('segFeud').innerHTML = '<option value="">— none —</option>' + S.feuds.map(f=>`<option value="${f.id}">${nm(f.a)} vs ${nm(f.b)} (heat ${Math.round(f.heat)})</option>`).join('');
@@ -1034,14 +1079,16 @@ function calcSegmentRating(seg){
   if(seg.intent==='showcase'){ base+=3; notes.push({t:'intent showcase → +3', k:'pos'}); }
   if(seg.intent==='elevate'){ base+=1; notes.push({t:'intent elevate → +1', k:'pos'}); }
 
-  // Step 4 — feud / heat (sub-linear diminishing returns)
+  // Step 4 — feud / heat (sub-linear diminishing returns; amplified at big events)
   if(seg.feudId){
     const f = S.feuds.find(x=>x.id===seg.feudId);
-    if(f){ const hb = 14 * Math.log10(1 + f.heat/10); base += hb;
+    if(f){ let hb = 14 * Math.log10(1 + f.heat/10); if(isPpvWeek()) hb *= 1.5; base += hb;
       notes.push({t:`feud heat ${Math.round(f.heat)} → +${hb.toFixed(1)}`, k:'pos'}); }
   }
   // Title match adds stakes
   if(seg.titleId){ base += 4; notes.push({t:'championship on the line → +4', k:'pos'}); }
+  // Big-event spectacle
+  if(isPpvWeek()){ base += 5; notes.push({t:'premium live event → +5', k:'pos'}); }
 
   // Team chemistry — a cohesive tag team / stable in the match performs better
   if(!isPromo){
@@ -1066,18 +1113,18 @@ function weeklyPayroll(){ return S.roster.reduce((s,w)=>s+w.salary,0); }
 function letterGrade(x){ if(x>=90)return'A+'; if(x>=85)return'A'; if(x>=80)return'A-'; if(x>=74)return'B+'; if(x>=68)return'B'; if(x>=62)return'B-'; if(x>=56)return'C+'; if(x>=50)return'C'; if(x>=44)return'C-'; if(x>=38)return'D'; return'F'; }
 function gradeColor(g){ const c=g[0]; if(c==='A')return'var(--gold-bright)'; if(c==='B')return'var(--green)'; if(c==='C')return'var(--text-dim)'; return'#f08a76'; }
 
-function computeShowMetrics(showRating, results){
+function computeShowMetrics(showRating, results, ppv){
   const ws = myWrestlers();
   const pop = ws.length ? ws.reduce((s,w)=>s+w.overness,0)/ws.length : 40;
   const main = results[results.length-1];
   const starPower = main ? (main.seg.ids.map(byId).filter(Boolean).reduce((s,w)=>s+w.overness,0)/main.seg.ids.length) : pop;
   const setup = tierSetup(S.promo.tierLabel);
-  const venue = currentVenue();
+  const venue = effectiveVenue(ppv);
   const capacity = venue.cap;
 
   // demand from star power (fans come for the top of the card), show quality,
-  // and overall popularity. A strong card from over talent can sell out.
-  const demand = clamp(((starPower*0.45 + showRating*0.35 + pop*0.20)/100) * 1.18, 0, 1.2);
+  // and overall popularity. A big event draws a premium crowd.
+  const demand = clamp(((starPower*0.45 + showRating*0.35 + pop*0.20)/100) * (ppv?1.32:1.18), 0, 1.25);
   // ticket price sensitivity — ~1.0 at the tier's baseline price, cheaper fills more
   const price = S.promo.ticketPrice;
   const priceFactor = clamp(1.5 - (price/setup.price)*0.5, 0.4, 1.25);
@@ -1087,15 +1134,24 @@ function computeShowMetrics(showRating, results){
 
   // TV rating: 0-100 appeal index, nudged by last week's trend
   const trend = S.metrics.tvRating!=null ? (S.metrics.tvRating-55)*0.15 : 0;
-  const tvRating = Math.round(clamp(pop*0.5 + showRating*0.32 + starPower*0.18 + trend, 0, 100));
+  const tvRating = Math.round(clamp(pop*0.5 + showRating*0.32 + starPower*0.18 + trend + (ppv?4:0), 0, 100));
   const tvRevenue = Math.round(S.promo.tvDeal * (0.7 + tvRating/100*0.6));
-  const merch = Math.round(attendance * (pop/100) * 14);
+  const merch = Math.round(attendance * (pop/100) * (ppv?24:14));
+
+  // PPV buys — the big payday, scaling with appeal and the promotion's TV tier
+  let ppvRevenue = 0, ppvBuys = 0;
+  if(ppv){
+    const topHeat = S.feuds.reduce((m,f)=>Math.max(m,f.heat),0);
+    const appeal = clamp(pop*0.5 + showRating*0.35 + starPower*0.15 + topHeat*0.08, 0, 100);
+    ppvRevenue = Math.round(S.promo.tvDeal * (0.6 + appeal/100 * 2.8));
+    ppvBuys = Math.round(ppvRevenue / 42);
+  }
 
   const payroll = weeklyPayroll();
-  const production = Math.round(venue.cost*0.35 + capacity*2);
+  const production = Math.round(venue.cost*0.35 + capacity*2) + (ppv?Math.round(venue.cost*0.3):0);
   const venueCost = venue.cost;
   const overhead = Math.round(ws.length * 900 + 8000); // staff, travel, office
-  const revenue = gate + tvRevenue + merch;
+  const revenue = gate + tvRevenue + merch + ppvRevenue;
   const costs = payroll + production + venueCost + overhead;
   const net = revenue - costs;
 
@@ -1103,6 +1159,7 @@ function computeShowMetrics(showRating, results){
   const profitScore = clamp(52 + (net/(costs+1))*45, 0, 100);
   const composite = showRating*0.40 + tvRating*0.25 + sellThrough*100*0.20 + profitScore*0.15;
   return { crowd:showRating, tvRating, attendance, capacity, sellThrough, gate, tvRevenue, merch,
+           ppv:!!ppv, ppvRevenue, ppvBuys, eventName: ppv?ppvName():null,
            payroll, production, venueCost, overhead, revenue, costs, net, profitScore, composite,
            grade:letterGrade(composite), venueName:venue.name, ticketPrice:price };
 }
@@ -1117,23 +1174,27 @@ function showScorecard(M, deltas){
     ['Attendance', `${M.attendance.toLocaleString()}`, `<span class="dlt flat">${Math.round(M.sellThrough*100)}% of ${M.capacity.toLocaleString()}</span>`],
     ['Gate', money(M.gate), dArrow(deltas.attendance)+' fans'],
   ];
+  if(M.ppv){ cells.push(['PPV Buys', M.ppvBuys.toLocaleString(), `<span class="dlt up">${money(M.ppvRevenue)}</span>`]); }
   if(junkie){
     cells.push(['TV Money', money(M.tvRevenue), '<span class="dlt flat">weekly deal</span>']);
     cells.push(['Merch', money(M.merch), '<span class="dlt flat">at the venue</span>']);
   }
   cells.push(['Net Profit', `<span style="color:${M.net>=0?'var(--green)':'#f08a76'}">${money(M.net)}</span>`, dArrow(deltas.net)]);
+  const title = M.ppv ? `<span class="mode-pill" style="background:var(--brandred); color:#fff;">Premium Live Event</span> ${M.eventName}` : `Week ${S.week} Show Grade`;
   let body = `<div style="display:flex; align-items:center; gap:14px; margin-bottom:6px;">
       <span class="grade-badge" style="background:rgba(255,255,255,.05); color:${gradeColor(M.grade)}; border:1px solid ${gradeColor(M.grade)}">${M.grade}</span>
-      <div><div class="vs-line">Week ${S.week} Show Grade</div>
+      <div><div class="vs-line">${title}</div>
       <div class="stat-mini">${M.venueName} · ${money(S.promo.ticketPrice)}/ticket · ${M.attendance.toLocaleString()} in the building</div></div>
     </div>
     <div class="score-grid">${cells.map(([l,v,d])=>`<div class="score-cell"><div class="lab">${l}</div><div class="val">${v}</div><div>${d}</div></div>`).join('')}</div>`;
   if(!junkie){ body += `<div class="hint">Quick Mode: venue &amp; pricing are handled for you. Switch to Wrestling Junkie for full budget control.</div>`; }
-  openModal('Show Results', body, [{label:'Continue', cls:'', fn:()=>{ closeModal(); switchTab('inbox'); }}]);
+  openModal(M.ppv?'Event Results':'Show Results', body, [{label:'Continue', cls:'', fn:()=>{ closeModal(); switchTab('inbox'); }}]);
 }
 
 function runShow(){
   if(!S.card.length) return;
+  const ppv = isPpvWeek();
+  const swing = ppv ? 1.7 : 1; // big events move the needle harder
   const results = S.card.map(seg=>({seg, r: calcSegmentRating(seg)}));
   // show rating: weighted, main event heaviest
   const n = results.length;
@@ -1149,9 +1210,9 @@ function runShow(){
     seg.ids.forEach(id=>usedIds.add(id));
     r.ws.forEach(w=>{
       const isWinner = seg.winner===w.id;
-      const delta = (r.final-60)/8;
+      const delta = (r.final-60)/8 * swing;
       w.overness = clamp(w.overness + (isWinner || !seg.winner ? delta : delta/2));
-      w.momentum = clamp(w.momentum + (isWinner ? 6 : (seg.intent==='bury' ? -8 : -2)));
+      w.momentum = clamp(w.momentum + (isWinner ? 6*swing : (seg.intent==='bury' ? -8 : -2)));
       w.condition = clamp(w.condition - meta.condCost, 0, 100);
       w.morale = clamp(w.morale + (seg.intent==='bury' && !isWinner ? -6 : 1));
       w.weeksIdle = 0;
@@ -1163,11 +1224,20 @@ function runShow(){
     if(seg.feudId){
       const f = S.feuds.find(x=>x.id===seg.feudId);
       if(f){
-        const gain = 6 + (r.final-55)*0.25 + (seg.winner?3:0);
-        f.heat = clamp(f.heat + Math.max(2,gain), 0, 100);
-        f.beats.push({week:S.week, type:seg.type, rating:r.final, winner: seg.winner?nm(seg.winner):null});
-        if(f.heat>=80 && !f.blowoffReady){ f.blowoffReady = true;
-          events.push({ico:'🔥', sev:'story', txt:`<b>${nm(f.a)} vs ${nm(f.b)}</b> is white-hot (heat ${Math.round(f.heat)}). It's blow-off time — book the big match.`}); }
+        // A hot feud paying off in a big-event match is a blow-off: huge payoff,
+        // then the story resets so it doesn't run forever.
+        if(ppv && f.heat>=70 && seg.winner){
+          const win = byId(seg.winner);
+          if(win){ win.overness = clamp(win.overness + 6); win.momentum = clamp(win.momentum + 12); }
+          f.heat = 22; f.blowoffReady = false; f.beats.push({week:S.week, type:seg.type, rating:r.final, winner:nm(seg.winner), blowoff:true});
+          events.push({ico:'🎇', sev:'good', txt:`Blow-off! <b>${nm(seg.winner)}</b> settles the score with ${nm(f.a)===nm(seg.winner)?nm(f.b):nm(f.a)} at ${ppvName()} — a defining moment.`});
+        } else {
+          const gain = (6 + (r.final-55)*0.25 + (seg.winner?3:0)) * (ppv?1.4:1);
+          f.heat = clamp(f.heat + Math.max(2,gain), 0, 100);
+          f.beats.push({week:S.week, type:seg.type, rating:r.final, winner: seg.winner?nm(seg.winner):null});
+          if(f.heat>=80 && !f.blowoffReady){ f.blowoffReady = true;
+            events.push({ico:'🔥', sev:'story', txt:`<b>${nm(f.a)} vs ${nm(f.b)}</b> is white-hot (heat ${Math.round(f.heat)}). It's blow-off time — pay it off at the next big event.`}); }
+        }
       }
     }
     // title change: only if current champion is pinned (i.e., a holder is a participant and NOT the winner, winner takes it)
@@ -1193,7 +1263,7 @@ function runShow(){
   });
 
   // Multi-category scorecard + finances (crowd, TV, gate, net…)
-  const M = computeShowMetrics(showRating, results);
+  const M = computeShowMetrics(showRating, results, ppv);
   const prev = S.metrics;
   const deltas = {
     crowd: (prev.lastCrowd!=null)? showRating-prev.lastCrowd : 0,
@@ -1206,7 +1276,7 @@ function runShow(){
                 grade:M.grade, spentThisWeek:0, peakTv:Math.max(prev.peakTv||0, M.tvRating) };
 
   const column = generateColumn(showRating, results, events);
-  S.history.unshift({ week:S.week, showRating, revenue:M.net, metrics:M, deltas, column,
+  S.history.unshift({ week:S.week, showRating, revenue:M.net, metrics:M, deltas, column, ppv, eventName:M.eventName,
     segs: results.map(({seg,r})=>({
       type:seg.type, names: seg.ids.map(nm), rating:r.final,
       notes:r.notes, winner: seg.winner?nm(seg.winner):null,
@@ -1333,13 +1403,17 @@ function weeklyTick(usedIds, showInfo){
   const inbox = [];
   if(showInfo.metrics){
     const M = showInfo.metrics;
-    inbox.push({ico:'⭐', sev: M.composite>=68?'good':(M.composite>=50?'story':'bad'),
-      txt:`Last week graded <b>${M.grade}</b> — crowd ${M.crowd}, TV ${M.tvRating}, ${M.attendance.toLocaleString()} in the seats, net ${M.net>=0?'+':''}${money(M.net)}. ${dirtSheet(M.crowd)}`});
+    inbox.push({ico: M.ppv?'🎇':'⭐', sev: M.composite>=68?'good':(M.composite>=50?'story':'bad'),
+      txt:`${M.ppv?`<b>${M.eventName}</b> graded`:`Last week graded`} <b>${M.grade}</b> — crowd ${M.crowd}, TV ${M.tvRating}, ${M.attendance.toLocaleString()} in the seats${M.ppv?`, ${M.ppvBuys.toLocaleString()} buys`:''}, net ${M.net>=0?'+':''}${money(M.net)}. ${dirtSheet(M.crowd)}`});
     (showInfo.events||[]).forEach(e=>inbox.push(e));
   } else {
     inbox.push({ico:'💤', sev:'info', txt:`You ran no show this week. Salaries of ${money(payroll)} still went out (TV money softened the hit).`});
   }
   startInbox.forEach(i=>inbox.push(i));
+  // big-event countdown
+  const wtp = weeksToPpv();
+  if(wtp===0) inbox.push({ico:'🔴', sev:'story', txt:`<b>${ppvName()}</b> is TONIGHT — your Premium Live Event. Book the biggest card you can and pay off your hottest feuds.`});
+  else if(wtp<=2) inbox.push({ico:'📅', sev:'story', txt:`<b>${ppvName(nextPpvWeek())}</b> is ${wtp} week${wtp!==1?'s':''} away. Build heat now so the big show delivers.`});
   // feud blow-off nudges
   S.feuds.filter(f=>f.blowoffReady && f.coldWeeks>=2).forEach(f=>{
     inbox.push({ico:'🥊', sev:'story', txt:`<b>${nm(f.a)} vs ${nm(f.b)}</b> is cooling off (heat ${Math.round(f.heat)}). Pay it off before the crowd checks out.`});
@@ -1656,7 +1730,7 @@ function renderHistory(){
   if(!S.history.length){ el.innerHTML='<div class="empty-note">No shows run yet.</div>'; return; }
   el.innerHTML = S.history.map(h=>`
     <div class="recap-block">
-      <h3>Week ${h.week} ${h.metrics?`<span style="color:${gradeColor(h.metrics.grade)}">${h.metrics.grade}</span> · `:''}Crowd <span class="rating-dial ${ratingClass(h.showRating)}">${h.showRating}</span>${h.metrics?` · TV ${h.metrics.tvRating} · ${h.metrics.attendance.toLocaleString()} fans · net ${h.metrics.net>=0?'+':''}${money(h.metrics.net)}`:` · ${money(h.revenue)}`}</h3>
+      <h3>${h.ppv?`🎇 ${h.eventName} · `:`Week ${h.week} · `}${h.metrics?`<span style="color:${gradeColor(h.metrics.grade)}">${h.metrics.grade}</span> · `:''}Crowd <span class="rating-dial ${ratingClass(h.showRating)}">${h.showRating}</span>${h.metrics?` · TV ${h.metrics.tvRating} · ${h.metrics.attendance.toLocaleString()} fans${h.ppv?` · ${h.metrics.ppvBuys.toLocaleString()} buys`:''} · net ${h.metrics.net>=0?'+':''}${money(h.metrics.net)}`:` · ${money(h.revenue)}`}</h3>
       ${h.column?`<div class="prose" style="margin:2px 0 10px;"><em>Dirt sheet:</em> ${h.column}</div>`:''}
       ${(h.events&&h.events.length)?`<div style="margin:4px 0 8px;">${h.events.map(e=>`<div class="stat-mini">${e.ico||''} ${e.txt}</div>`).join('')}</div>`:''}
       ${h.segs.map(s=>{
