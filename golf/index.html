@@ -10634,6 +10634,27 @@ function h2hBuildPlay(){
     }
     S.h2h.playHoles.push({n:i+1, par, yards, shots:uShots, order});
   }
+  // PLAYOFF holes played out on the tracer, built from the ALREADY-RESOLVED playoff scores (h2hResolve),
+  // so the winner/consensus is unchanged — this is purely the visual reveal. Each sudden-death hole shows
+  // only the units still alive (a subset), teeing off then away-plays-first, exactly like a regular hole.
+  S.h2h.poPlay=[];
+  (S.h2h.playoff||[]).forEach((ph,k)=>{
+    const hi=(holes+k)%18, h=course.holes[hi], par=h[0], yards=h[1];
+    const alive=ph.scores.map(sc=>{ const ui=units.findIndex(u=>u.id===sc.id); return {ui, u:units[ui], sc}; })
+      .filter(x=>x.ui>=0);
+    if(alive.length<1) return;
+    const shots=alive.map(a=>{ const sk=a.u.kind==='team'?(a.u.combined||a.u.dispSkills):a.u.dispSkills;
+      const rng=mulberry32(((seed>>>0)^dHash(key)^Math.imul(holes+k+1,0x9e3779b1)^h2hBuildHash(sk)^Math.imul((a.u.id|0)+1,0x2545)^0x504f0aa)>>>0);
+      return dShotSeq(par,yards,par+a.sc.s,rng,sk,{}); });
+    const idx=alive.map(()=>0), rem=alive.map(()=>1e9), order=[];
+    alive.forEach((a,ai)=>{ order.push({u:ai,i:0}); rem[ai]=h2hRemOf(shots[ai][0]); idx[ai]=1; });
+    for(let guard=0; guard<150; guard++){ let pick=-1,best=-1;
+      for(let ai=0;ai<alive.length;ai++){ if(idx[ai]>=shots[ai].length) continue; if(rem[ai]>best){best=rem[ai];pick=ai;} }
+      if(pick<0) break; order.push({u:pick,i:idx[pick]}); rem[pick]=h2hRemOf(shots[pick][idx[pick]]); idx[pick]++; }
+    S.h2h.poPlay.push({ n:hi+1, par, yards, shots, order,
+      cols: alive.map(a=>S.h2h.unitCols[a.ui]), names: alive.map(a=>S.h2h.unitNames[a.ui]),
+      alive: alive.map(a=>({ui:a.ui, id:a.u.id, name:S.h2h.unitNames[a.ui], col:S.h2h.unitCols[a.ui], s:a.sc.s, low:a.sc.low})) });
+  });
 }
 function h2hBeginWatch(){
   if(!h2hAllDrafted()) return;   // drafts not all revealed yet, wait for the next poll
@@ -10644,7 +10665,7 @@ function h2hBeginWatch(){
   h2hResolve();
   S.h2h.myUnit=S.h2h.units.find(u=>u.members.some(p=>p.user_id===h2hUid()));
   h2hBuildPlay();
-  S.h2h.wHole=0; S.h2h.wStep=0; S.h2h.poN=0; S.h2h.reported=false; S.h2h.watchDone=false;
+  S.h2h.wHole=0; S.h2h.wStep=0; S.h2h.poN=0; S.h2h.poHole=null; S.h2h.poStep=0; S.h2h._celebrated=false; S.h2h.reported=false; S.h2h.watchDone=false;
   track('h2h_watch_start',{mode:S.h2h.mode}); S.screen='h2hwatch'; render(); h2hWatchStep();
 }
 function h2hResolve(){
@@ -10669,9 +10690,18 @@ function h2hIWon(){ const off=h2hOfficialWin(); return off!=null && S.h2h.myUnit
 function h2hWatchStep(){
   if(S.screen!=='h2hwatch'){ return; }
   const holes=S.h2h.holes;
-  if(S.h2h.wHole>=holes){   // regular round done → reveal any playoff holes, then finish
-    const po=S.h2h.playoff||[];
-    if(S.h2h.poN<po.length){ S.h2h.poN++; render(); _h2hWatchTimer=setTimeout(h2hWatchStep, H2H_HOLE_DWELL); return; }
+  if(S.h2h.wHole>=holes){   // regular round done → PLAY OUT the sudden-death playoff on the tracer, then finish
+    const po=S.h2h.poPlay||[];
+    if(po.length){
+      if(S.h2h.poHole==null){ S.h2h.poHole=0; S.h2h.poStep=0; render(); _h2hWatchTimer=setTimeout(h2hWatchStep, H2H_HOLE_DWELL); return; }
+      if(S.h2h.poHole<po.length){
+        const ph=po[S.h2h.poHole], nst=ph.order.length;
+        if(S.h2h.poStep<nst){ S.h2h.poStep++; render();
+          const cur=ph.order[S.h2h.poStep-1], sh=ph.shots[cur.u][cur.i], allHoled=S.h2h.poStep>=nst;
+          _h2hWatchTimer=setTimeout(h2hWatchStep, allHoled?Math.max(H2H_HOLE_DWELL,hvShotMs(sh)):hvShotMs(sh)); return;
+        } else { S.h2h.poHole++; S.h2h.poStep=0; S.h2h.poN=S.h2h.poHole; render(); _h2hWatchTimer=setTimeout(h2hWatchStep, 700); return; }
+      }
+    }
     S.h2h.watchDone=true; render(); h2hFinishWatch(); return;
   }
   const hole=S.h2h.playHoles[S.h2h.wHole], nst=hole.order.length;
@@ -10686,7 +10716,9 @@ function h2hWatchStep(){
   }
 }
 function h2hWatchSkip(){ if(_h2hWatchTimer){clearTimeout(_h2hWatchTimer);_h2hWatchTimer=null;}
-  S.h2h.wHole=S.h2h.holes; S.h2h.poN=(S.h2h.playoff?S.h2h.playoff.length:0); S.h2h.watchDone=true; render(); h2hFinishWatch(); }
+  S.h2h.wHole=S.h2h.holes; S.h2h.poN=(S.h2h.playoff?S.h2h.playoff.length:0);
+  S.h2h.poHole=(S.h2h.poPlay?S.h2h.poPlay.length:0); S.h2h.poStep=0;
+  S.h2h.watchDone=true; render(); h2hFinishWatch(); }
 function h2hFinishWatch(){ if(S.h2h.reported) return; S.h2h.reported=true;
   h2hCaptureAch();
   if(S.h2h.bots){ h2hRecordBotMatch(); return; }
@@ -10864,6 +10896,12 @@ function scrH2HDraft(){
   }
 }
 function h2hSum(scores,n){ let t=0; for(let i=0;i<Math.min(n,scores.length);i++) t+=scores[i]; return t; }
+// which units' ball is IN THE CUP at this reveal step of a hole (a unit is done when ALL its shots for
+// the hole have been revealed) — drives the live scoreboard updating the moment a ball drops.
+function h2hHoledUnits(hole, step){ const done=new Set(), c={};
+  for(let k=0;k<step && k<hole.order.length;k++){ const o=hole.order[k]; c[o.u]=(c[o.u]||0)+1;
+    if(hole.shots[o.u] && c[o.u]>=hole.shots[o.u].length) done.add(o.u); }
+  return done; }
 function h2hTpTxt(tp){ return tp<0?String(tp):tp>0?'+'+tp:'E'; }
 function h2hTpColor(tp){ return tp<0?'#35d6a0':tp>0?'#e88':'var(--oncard)'; }
 // one standings row for a unit (player or team) at a running to-par
@@ -10910,10 +10948,38 @@ function scrH2HPreview(){
   const start=$(`<button class="btn goldfill" style="max-width:320px;margin:18px auto 0">Start the round ▸<span class="sub">Watch it play out shot by shot</span></button>`);
   start.onclick=h2hBeginWatch; add(start);
 }
+// full-screen win/lose animation when an online match finishes (owner: "an animation saying who wins")
+function h2hCelebrate(){
+  if(!S.h2h || !S.h2h.units || document.querySelector('.h2hceleb')) return;   // state may have changed before this deferred call fired
+  if(S.screen!=='h2hwatch') return;
+  const iWin=h2hIWon(), off=h2hOfficialWin(), reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const winnerIdx=S.h2h.units?S.h2h.units.findIndex(u=>u.id===off):-1;
+  const winName=winnerIdx>=0?S.h2h.unitNames[winnerIdx]:'';
+  const stage=document.createElement('div'); stage.className='celebrate h2hceleb';
+  stage.innerHTML=`<canvas class="h2hconf" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
+    <div style="position:relative;z-index:2;text-align:center;width:min(520px,92vw)">
+      <div style="letter-spacing:.22em;text-transform:uppercase;color:#ffd76a;font-weight:800;font-size:12px">${esc(h2hMode(S.h2h.mode).label)} · ${S.h2h.holes} holes</div>
+      <div style="font-family:var(--serif);font-weight:800;color:${iWin?'#ffd76a':'#fff'};font-size:46px;line-height:1.05;margin:10px 0 4px">${iWin?'YOU WIN!':'DEFEAT'}</div>
+      <div class="small" style="color:#cfe6d8">${iWin?'Great match.':(winName?esc(winName)+' takes it.':'Better luck next time.')}</div>
+      <div class="h2hceleb-act" style="margin-top:20px"></div>
+    </div>`;
+  document.body.appendChild(stage);
+  let stopConf=null;
+  const go=()=>{ if(stopConf)stopConf(); stage.remove(); S.screen='h2hresult'; render(); };
+  const btn=$(`<button class="btn goldfill" style="max-width:300px;margin:0 auto">See result ▸</button>`);
+  btn.onclick=e=>{ e.stopPropagation(); go(); };
+  stage.querySelector('.h2hceleb-act').appendChild(btn);
+  stage.onclick=go;
+  if(iWin && !reduce){ try{ stopConf=confettiRun(stage.querySelector('.h2hconf'), {colors:['#ffd76a','#35d6a0','#3b82f6','#ffffff'], count:150, mode:'cannons'}); }catch(e){} }
+  try{ if(iWin && navigator.vibrate) navigator.vibrate([30,40,30]); }catch(e){}
+  track('h2h_celebrate',{win:iWin});
+}
 function scrH2HWatch(){
   const holes=S.h2h.holes, done=S.h2h.watchDone;
   const played=Math.min(S.h2h.wHole,holes);   // holes fully holed → drive the scoreboard
   const m=h2hMode(S.h2h.mode), course=S.h2h.course, inPlay=!done && S.h2h.wHole<holes;
+  // sudden-death playoff PLAYING OUT on the tracer (after the regular round, before the match is done)
+  const inPO=!done && S.h2h.wHole>=holes && S.h2h.poPlay && S.h2h.poPlay.length && S.h2h.poHole!=null && S.h2h.poHole<S.h2h.poPlay.length;
   add(h2hTag(`${esc(dShort(course.v))} · ${dCondLabel(S.h2h.cond)} · ${esc(m.label)}`, !done));
   // ONE WINDOW while in play: the tracer is the whole screen — the scoreboard, hole info and the
   // current shot's description float ON it as translucent chips (owner's reference style). The
@@ -10929,7 +10995,10 @@ function scrH2HWatch(){
       const gRight=gg?hvProj(gg,(gg.gcx!=null?gg.gcx:gg.cx(gg.L)),gg.L)[0]>HV_W/2+20:false;
       shell.appendChild($(`<div class="hvob hvhole${gRight?' right':''}">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
       const bd=$(`<div class="hvob hvboard${gRight?' left':''}"><div class="hvbcap">THRU ${played} · ${holes} HOLES</div></div>`);
-      const rows=S.h2h.units.map((u,ui)=>({u, ui, tp:h2hSum(u.scores,played)})).sort((a,b)=>a.tp-b.tp);
+      // the scoreboard updates the MOMENT a ball drops, not when the hole advances (owner) — add the
+      // current hole's score for any unit whose ball is already in the cup at this reveal step.
+      const holed=h2hHoledUnits(h, S.h2h.wStep);
+      const rows=S.h2h.units.map((u,ui)=>({u, ui, tp:h2hSum(u.scores,played)+(holed.has(ui)?(u.scores[played]||0):0)})).sort((a,b)=>a.tp-b.tp);
       rows.forEach((r,i)=>{ const mine=r.u.members.some(p=>p.user_id===h2hUid());
         bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="cdot" style="background:${S.h2h.unitCols[r.ui]}"></span><span class="rk">${i+1}</span><span class="nm">${esc(S.h2h.unitNames[r.ui])}</span><span class="tp" style="color:${r.tp<0?'#4be3a8':r.tp>0?'#ff9d8f':'#e8efe9'}">${h2hTpTxt(r.tp)}</span></div>`));
       });
@@ -10942,6 +11011,27 @@ function scrH2HWatch(){
     } else {
       add($(`<div class="center muted" style="padding:24px 8px">Playing…</div>`));
     }
+  } else if(inPO){
+    // sudden-death playoff hole on the tracer — only the units still alive, same one-window style
+    const ph=S.h2h.poPlay[S.h2h.poHole];
+    const multi={shots:ph.shots, order:ph.order, cols:ph.cols, names:ph.names};
+    const holeObj={n:ph.n, par:ph.par, yards:ph.yards, shots:ph.shots};
+    const hvn=hvNode(holeObj, S.h2h.poStep, ph.n-1, h2hCourseKey(S.h2h.seed), multi);
+    if(hvn){
+      const shell=hvn.querySelector('.hvshell');
+      const gg=holeObj._hvm&&holeObj._hvm.g;
+      const gRight=gg?hvProj(gg,(gg.gcx!=null?gg.gcx:gg.cx(gg.L)),gg.L)[0]>HV_W/2+20:false;
+      shell.appendChild($(`<div class="hvob hvhole${gRight?' right':''}" style="border-color:#ff6b5e;color:#ffd0c8">SUDDEN-DEATH · EXTRA HOLE ${S.h2h.poHole+1} · PAR ${ph.par}</div>`));
+      const holedPO=h2hHoledUnits(ph, S.h2h.poStep), myU=S.h2h.myUnit;
+      const bd=$(`<div class="hvob hvboard${gRight?' left':''}"><div class="hvbcap" style="color:#ffd0c8">SUDDEN-DEATH · HOLE ${S.h2h.poHole+1}</div></div>`);
+      ph.alive.forEach((a,ai)=>{ const mine=myU && S.h2h.units[a.ui] && S.h2h.units[a.ui].id===myU.id, isIn=holedPO.has(ai);
+        bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="cdot" style="background:${a.col}"></span><span class="nm">${esc(a.name)}</span><span class="tp" style="color:${isIn?(a.low?'var(--gold)':'#ff9d8f'):'#8fa39a'}">${isIn?esc(dResultLong(ph.par,a.s)):'…'}</span></div>`)); });
+      shell.appendChild(bd);
+      const cur=ph.order[Math.max(0,Math.min(S.h2h.poStep||1,ph.order.length)-1)];
+      const st=cur?ph.shots[cur.u][cur.i]:null;
+      if(st && st.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${ph.cols[cur.u]}">${esc(ph.names[cur.u])}</b> · ${esc(st.d)}</div>`));
+      add(hvn);
+    } else add($(`<div class="center" style="padding:24px 8px;color:#ffd0c8;font-weight:800">Sudden-death playoff…</div>`));
   } else {
   add($(`<h1 class="center" style="font-size:22px;margin:8px 0 2px">${done?'Final':'Live'} · ${done?holes:played}/${holes} holes</h1>`));
   const right=$(`<div style="max-width:440px;margin:0 auto"></div>`); add(right);
@@ -10970,11 +11060,14 @@ function scrH2HWatch(){
     const iWin=h2hIWon();
     add($(`<h2 class="center" style="margin:18px 0 8px;color:${iWin?'var(--gold)':'inherit'}">${iWin?'You win! 🏆':'You lose'}</h2>`));
     const go=$(`<button class="btn goldfill" style="max-width:300px;margin:0 auto">See result ▸</button>`); go.onclick=()=>{ S.screen='h2hresult'; render(); }; add(go);
+    // full-screen win/lose ANIMATION, once (owner) — confetti on a win, then Continue → result screen
+    if(!S.h2h._celebrated){ S.h2h._celebrated=true; setTimeout(h2hCelebrate, 40); }
   }
 }
 // hole-by-hole scorecard for the finished match (owner/Jordo: "See Result should show the scorecards").
 // Rows = each unit (player / team ball); columns = holes; cell = strokes, colored by score-to-par.
-function h2hScorecard(){
+// (named h2hResultCard to avoid shadowing the older data-builder h2hScorecard(sk,seed,holes).)
+function h2hResultCard(){
   const units=S.h2h.units, holes=S.h2h.holes, course=S.h2h.course;
   if(!units||!course||!units[0]||!units[0].scores) return null;
   const cw=23, nameW=104, totW=36, bg='rgba(9,26,18,.98)';
@@ -11024,7 +11117,7 @@ function scrH2HResult(){
       add(board);
       if(S.h2h.playoff&&S.h2h.playoff.length) add($(`<p class="small muted center" style="margin-top:8px">Decided in a ${S.h2h.playoff.length}-hole sudden-death playoff.</p>`));
       // hole-by-hole scorecard (owner: "See Result should show the scorecards", not just repeat the standings)
-      const sc=h2hScorecard();
+      const sc=h2hResultCard();
       if(sc){ add($(`<h2 class="center" style="margin:20px 0 8px;font-size:15px">Scorecard</h2>`)); add(sc); }
     }
   }
