@@ -5193,7 +5193,7 @@ allows Google Fonts, or self-host Anton.*
   body, dark brows) + regressions (shop/economy/guest-portrait) green, zero errors. Deploy: index.html + the
   two regenerated masks.
 
-- **CS191 — cap sizing/placement (was too big, covering the face).** The head-slot placement anchored the
+- **CS191 — cap sizing/placement (too big+covering, then too high; seated at brim=brow).** The head-slot placement anchored the
   hat's TOP at the crown, so the tall cap art's big brim hung down over the eyes. Re-anchored it by the
   BRIM: `ACC_PLACE.head` now `{wFrac:0.34 (was .40), ax:'headCx', ay:'browLine', anch:'bottom'}` with a new
   `browLine` anatomy anchor (male 84 / female 98), so any headwear's brim sits at the brow line and the crown
