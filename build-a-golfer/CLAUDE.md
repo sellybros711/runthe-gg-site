@@ -5307,6 +5307,22 @@ allows Google Fonts, or self-host Anton.*
   glove + clubs equipped: the gloved hand conforms to the fingers, wears the strap, and grips the club; zero
   page errors. HTML only.
 
+- **CS200 — pixel-perfect shirt edges (mask cleanup).** Owner (screenshot of a red pinstripe polo): "the
+  shirt is a little pixelated at the edges — make it pixel perfect." Diagnosed by reproducing the recolour in
+  Python: the mask is 1:1 with the base (no scaling), but the mask GENERATION had mislabeled the shirt's
+  bright-white detail pixels — collar/placket/seam/cuff/hem highlights (pure white in the base art) were
+  tagged as background or `pants` or `skin`, so the recolour skipped them and the near-white fabric showed
+  through as jagged light blotches. Cleaned up both full-body masks (`base-{male,female}-mask.png`) offline:
+  (1) flood-fill fully-enclosed shirt holes; (2) reclaim bright pixels strongly surrounded by shirt; (3) an
+  edge pass that reclaims the mislabeled hem/seam pixels adjacent to the shirt — stray `pants` labels above
+  the real waist, bright `None` highlights (never the dark silhouette edge), and pure-white hems over skin —
+  while protecting normal skin, hair, shoes and the background. The cleanup only ever relabels TOWARD shirt,
+  so it can't damage other regions. Bumped `AV_VER` 3→4 and the SW cache v2→v3 so devices fetch the corrected
+  masks. Verified by rendering the REAL full-body avatar over http (canvas not file:// tainted) with a red
+  pinstripe and a navy polo on both genders: crisp clean edges at collar/sleeves/placket/hem, no blotches,
+  shirt stays within its boundaries; zero page errors. Mask PNGs + AV_VER/CACHE bump only (recolour code
+  unchanged).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -4582,7 +4582,7 @@ const _avRender=new Map();   // look-key -> recolored 512 offscreen canvas
 // bump AV_VER whenever any avatar PNG (base/mask/accessory) changes — the ?v= busts the
 // service-worker's cache-first store so the new art reaches devices immediately (a mask edit
 // otherwise stays stale because static assets are served from cache first).
-const AV_VER='3';
+const AV_VER='4';
 function avLoad(src){
   let e=_avImg.get(src);
   if(!e){ e={img:new Image(),ready:false,failed:false}; e.img.crossOrigin='anonymous';
