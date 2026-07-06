@@ -4871,6 +4871,30 @@ allows Google Fonts, or self-host Anton.*
   (result pill / review) regressions all green; zero page errors. (Jordo's "better color scheme" note is
   noted but not acted on — needs direction.) Deployed to /golf.
 
+- **CS176 — three online-mode fixes (tester Jordo).**
+  1. **Ball no longer drawn in the water on a dry lie** ("it told me I wasn't in the water… im blue lol").
+     The tracer's water hazard geometry and a ball's rest position are computed independently, so a
+     fairway/short/recovery lie could overlap the drawn pond and render the ball sitting in the water even
+     though the sim never put it there. Added `hvOutOfWater(g,pt)` — for any dry lie (not water/drop, not a
+     green shot, which the CS153 carry-safety already handles), the resting ball AND its touchdown are
+     pushed just onto land (radially out of the pond ellipse, or to the near side of a crossing creek).
+     Property-tested across all 148 water holes × varied scores (1,865 dry-lie plots): **0** now rest in
+     the water. Applies everywhere the hole view is used (Daily, Moments, H2H).
+  2. **Your record + rank pinned at the top of the Win/Loss leaderboard** ("you should always see ur record
+     and place at the top"). `h2hLoadBoard` now fetches deep (server clamps to 500) so it can locate you
+     even when you're ranked below the bot pool, and renders a gold-ringed "You · #rank · W-L · Win%" row
+     at the very top of every mode tab (plus your row in-context below the top-50 if you're outside it, and
+     a "play a match to claim your spot" note if you have no record yet).
+  3. **The H2H result screen now shows the hole-by-hole SCORECARD** ("when you press see result it's the
+     same page — should show the scorecards"). New `h2hScorecard()` renders a horizontally-scrollable card
+     under the final standings: a sticky player/team column + one cell per hole (strokes, colored by
+     score-to-par) + a total, one row per unit (you gold, ball-color dots matching the tracer, par row on
+     top). So "See Result" is now a real results page, not a repeat of the watch standings.
+  Verified in Playwright (cs176): the water property (0 bad across 148 holes), the leaderboard pin for a
+  rank-3 (in-list) and a rank-120 (outside top-50) player, and the result scorecard rendering (Victory +
+  standings + per-hole grid). H2H regression + hv6 (geometry/putt) green; zero page errors. All
+  client-only, no migration. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
