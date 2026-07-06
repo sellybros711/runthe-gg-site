@@ -272,7 +272,7 @@
       <div class="sub">RunTheRopes · <span id="hudMode">Booking Sim</span></div>
     </div>
     <div class="hud">
-      <div class="cell"><div class="label">Week</div><div class="value" id="hudWeek">1</div></div>
+      <div class="cell"><div class="label">Year · Week</div><div class="value" id="hudWeek">1</div></div>
       <div class="cell"><div class="label">Cash</div><div class="value" id="hudCash">$0</div></div>
       <div class="cell"><div class="label">TV</div><div class="value" id="hudTv">—</div></div>
       <div class="cell"><div class="label">Roster</div><div class="value" id="hudRoster">0</div></div>
@@ -587,6 +587,130 @@ function marketSalary(overness, tierLabel){
   return Math.max(800, Math.round(base * payFactor(tierLabel) / 250) * 250);
 }
 
+// ---------- Aging & career progression ----------
+// A worker's in-ring skill composite — the number that grows toward a hidden
+// potential in youth and erodes in decline.
+function skillComposite(w){ return w.inRing*0.42 + w.psych*0.30 + w.ent*0.28; }
+// Hidden ceiling for the composite, derived from current level + age headroom.
+function derivePotential(w){
+  const lvl = skillComposite(w);
+  const s = seededRand((w.id||'w')+'-pot');
+  let head;
+  if(w.age<=22) head = 12 + s*26;      // raw prospects: big upside
+  else if(w.age<=26) head = 6 + s*18;
+  else if(w.age<=30) head = 1 + s*9;
+  else head = -1 + s*3;                // at or past peak
+  return Math.round(clamp(lvl + head, 42, 99));
+}
+function derivePeakAge(w){ return 28 + Math.floor(seededRand((w.id||'w')+'-peak')*6); } // 28-33
+function careerStage(w){
+  if(w.age < w.peakAge) return skillComposite(w) < (w.potential-3) ? 'developing' : 'prime';
+  if(w.age <= w.peakAge+3) return 'prime';
+  return 'declining';
+}
+function retireChance(age){
+  if(age<39) return 0;
+  if(age<42) return 0.02;
+  if(age<45) return 0.05;
+  if(age<48) return 0.11;
+  if(age<51) return 0.22;
+  if(age<54) return 0.38;
+  return 0.55;
+}
+// one year of attribute movement for a wrestler
+function ageDrift(w, year){
+  const stage = careerStage(w);
+  if(stage==='developing'){
+    const lvl = skillComposite(w);
+    if(lvl < w.potential){
+      const g = Math.min(w.potential - lvl, 1.4 + seededRand(w.id+'-g'+year)*2.8);
+      w.inRing=clamp(w.inRing+g*0.5); w.psych=clamp(w.psych+g*0.3); w.ent=clamp(w.ent+g*0.25);
+      w.phys=clamp(w.phys+g*0.15); w.overness=clamp(w.overness+g*0.35);
+      return {kind:'up', amt:g};
+    }
+  } else if(stage==='declining'){
+    const past = Math.max(0, w.age-(w.peakAge+3));
+    const dropBase = w.age>=45 ? 3.2 : w.age>=40 ? 2.0 : 1.1;
+    const d = dropBase + past*0.25 + seededRand(w.id+'-d'+year)*1.1;
+    w.phys=clamp(w.phys-d*0.65); w.inRing=clamp(w.inRing-d*0.42);
+    w.psych=clamp(w.psych-d*0.10); w.ent=clamp(w.ent-d*0.16); w.overness=clamp(w.overness-d*0.30);
+    return {kind:'down', amt:d};
+  }
+  return {kind:'flat', amt:0};
+}
+function wasEverChampion(id){ return S.titles.some(t=>(t.lineage||[]).some(l=>l.id===id)); }
+function removeWorkerEverywhere(id){
+  let i=S.roster.findIndex(w=>w.id===id); if(i>-1) S.roster.splice(i,1);
+  i=S.pool.findIndex(w=>w.id===id); if(i>-1) S.pool.splice(i,1);
+  S.feuds=S.feuds.filter(f=>f.a!==id && f.b!==id);
+  S.teams.forEach(t=>{ t.memberIds=t.memberIds.filter(m=>m!==id); });
+  S.teams=S.teams.filter(t=>t.memberIds.length>=2);
+  S.titles.forEach(t=>{ if(t.holderIds && t.holderIds.includes(id)) vacateTitle(t); });
+  detachPersonRefs(id);
+}
+function retireWorker(w, summary){
+  const wasYours = S.roster.includes(w);
+  const notable = w.potential>=80 || w.overness>=72 || wasEverChampion(w.id);
+  removeWorkerEverywhere(w.id);
+  summary.retired.push({name:w.name, age:w.age, wasYours, over:Math.round(w.overness), notable});
+  if(notable){ // a big career comes back as a hireable legend/manager
+    const legend = normalizeWorker({
+      id:'leg_'+w.id, name:w.name, promotion:'Free Agent', tier:'legend', align:w.align||'tweener',
+      inRing:0, psych:Math.round(clamp(w.psych)), ent:Math.round(clamp(w.ent)), phys:0,
+      overness:Math.round(clamp(w.overness+6)), momentum:55, condition:90, morale:75, age:w.age,
+      salary:Math.round((1000+w.ent*180)/500)*500, role:'manager', retired:true,
+      canGM:w.psych>=72, mgrBonus:Math.round(clamp(w.ent*0.6+w.psych*0.4)), contractWeeks:0,
+    });
+    S.pool.push(legend);
+  }
+}
+const P_FIRST=['Axel','Rico','Dante','Kai','Zane','Bryce','Cole','Nico','Rhys','Beau','Jax','Milo','Remy','Dex','Ash','Leo','Cass','Nova','Reese','Iris','Mika','Sage','Rue','Kane','Vince','Tex','Enzo','Sol','Nyla','Willow','Skye','Cora','Devi','Bex','Juno','Rae'];
+const P_LAST=['Kade','Vaughn','Sterling','Cruz','Ryker','Steele','Blaze','Knox','Frost','Vale','Sinclair','Marsh','Quinn','Hale','Doyle','Reyes','Storm','Kruger','Wilder','Banks','Cross','Lane','Voss','Ridge','Nash','Bishop','Fox','Payne','Rain','Wolfe'];
+function spawnProspect(i){
+  S.prospectSeq=(S.prospectSeq||0)+1;
+  const sd='prosp'+S.year+'-'+i;
+  const name=P_FIRST[Math.floor(seededRand(sd+'f')*P_FIRST.length)]+' '+P_LAST[Math.floor(seededRand(sd+'l')*P_LAST.length)];
+  const age=19+Math.floor(seededRand(sd+'a')*5);
+  const base=42+seededRand(sd+'b')*16;
+  const w=normalizeWorker({ id:'pr'+S.prospectSeq, name, promotion:'Free Agent', tier:'prospect',
+    align: seededRand(sd+'al')<0.5?'face':'heel',
+    inRing:Math.round(base+seededRand(sd+'r')*6), psych:Math.round(base-4+seededRand(sd+'p')*6),
+    ent:Math.round(base-2+seededRand(sd+'e')*8), phys:Math.round(base+2+seededRand(sd+'ph')*8),
+    overness:Math.round(28+seededRand(sd+'o')*14), momentum:55, condition:92, morale:75,
+    age, salary:0, role:'wrestler', contractWeeks:0 });
+  S.pool.push(w);
+  return {name:w.name, age, pot:w.potential};
+}
+function runAnnualProgression(){
+  const summary={retired:[], breakouts:[], prospects:[]};
+  const active=[...S.roster,...S.pool].filter(w=>w.role!=='manager' && !w.retired);
+  active.forEach(w=>{
+    w.age+=1;
+    const dr=ageDrift(w, S.year);
+    if(dr.kind==='up' && dr.amt>=2.4 && w.overness>=52) summary.breakouts.push({name:w.name, promo:w.promotion, over:Math.round(w.overness)});
+  });
+  [...S.roster,...S.pool].filter(w=>w.role==='manager').forEach(m=>m.age+=1);
+  // retirements (snapshot list first — retireWorker mutates the arrays)
+  active.slice().forEach(w=>{
+    if(!S.roster.includes(w) && !S.pool.includes(w)) return;
+    const forced = w.age>=40 && skillComposite(w)<42;
+    if(forced || seededRand(w.id+'-ret'+S.year) < retireChance(w.age)) retireWorker(w, summary);
+  });
+  const nP=5+Math.floor(seededRand('nprosp'+S.year)*4); // 5-8 new prospects/year
+  for(let i=0;i<nP;i++) summary.prospects.push(spawnProspect(i));
+  return summary;
+}
+function pushYearSummary(inbox, ys){
+  inbox.push({ico:'📅', sev:'story', txt:`<b>Year ${S.year} begins.</b> ${ys.prospects.length} fresh prospects entered the scene, ${ys.retired.length} veteran${ys.retired.length!==1?'s':''} hung up the boots.`});
+  ys.retired.filter(r=>r.wasYours || r.notable).slice(0,5).forEach(r=>{
+    inbox.push({ico:'🎖️', sev: r.wasYours?'bad':'info', txt:`<b>${r.name}</b> retired at ${r.age}${r.notable?' — a legend of the business, now available to hire as a manager/GM':''}.${r.wasYours?' They were on your roster.':''}`});
+  });
+  const bo=ys.breakouts.sort((a,b)=>b.over-a.over).slice(0,3);
+  if(bo.length) inbox.push({ico:'📈', sev:'good', txt:`Breakout year for ${bo.map(b=>`<b>${b.name}</b>`).join(', ')} — rising fast.`});
+  const topProsp=ys.prospects.sort((a,b)=>b.pot-a.pot)[0];
+  if(topProsp) inbox.push({ico:'🌱', sev:'story', txt:`Hot prospect <b>${topProsp.name}</b> (age ${topProsp.age}) is turning heads on the indies — sign them before a rival does.`});
+}
+
 let selectedMode = 'quick';
 function selectMode(m){
   selectedMode = m;
@@ -628,7 +752,7 @@ function freshState(promoName, mode){
     promo: { name: promoName, cash: meta.cash, popW: meta.popW, perfW: meta.perfW,
              tierLabel: meta.tierLabel, product: meta.product, gmId: null,
              venue: setup.venue, ticketPrice: setup.price, tvDeal: setup.tvDeal, budget: setup.budget },
-    week: 1,
+    week: 1, year: 1, prospectSeq: 0,
     roster, pool,
     card: [],
     history: [],
@@ -657,9 +781,17 @@ function normalizeWorker(w){
   if(w.mgrBonus === undefined) w.mgrBonus = 0;
   if(w.canGM === undefined) w.canGM = false;
   if(w.managerId === undefined) w.managerId = null; // wrestler's assigned manager
+  if(w.peakAge === undefined) w.peakAge = derivePeakAge(w);
+  if(w.potential === undefined) w.potential = derivePotential(w);
   return w;
 }
 function isManager(w){ return w && w.role === 'manager'; }
+function stageBadge(w){
+  if(isManager(w)) return `<span class="badge tier" title="age ${w.age}">${w.age}</span>`;
+  const st = careerStage(w);
+  const m = { developing:['▲','#5bb083','Rising'], prime:['●','var(--cream)','Prime'], declining:['▼','#e0554a','Declining'] }[st];
+  return `<span class="badge tier" title="${m[2]} · age ${w.age}" style="color:${m[1]}">${m[0]} ${w.age}</span>`;
+}
 function myManagers(){ return S.roster.filter(isManager); }
 function myWrestlers(){ return S.roster.filter(w=>!isManager(w)); }
 
@@ -773,6 +905,7 @@ function continueCareer(){
   if(!S.teams) S.teams = []; if(!S.rivalRatings) S.rivalRatings = {};
   if(S.promo.gmId === undefined) S.promo.gmId = null;
   if(!S.mode) S.mode = 'junkie';
+  if(!S.year) S.year = 1; if(S.prospectSeq===undefined) S.prospectSeq = 0;
   if(!S.metrics) S.metrics = { tvRating:null, attendance:null, lastNet:null, grade:null, spentThisWeek:0, peakTv:0 };
   if(S.promo.venue === undefined){ const su=tierSetup(S.promo.tierLabel);
     S.promo.venue=su.venue; S.promo.ticketPrice=su.price; S.promo.tvDeal=su.tvDeal; S.promo.budget=su.budget; }
@@ -803,7 +936,7 @@ function renderAll(){
 // ---------- HUD ----------
 function refreshHud(){
   $('promoName').textContent = S.promo.name;
-  $('hudWeek').textContent = S.week;
+  $('hudWeek').textContent = `Y${S.year||1} · W${((S.week-1)%52)+1}`;
   const cashEl = $('hudCash'); cashEl.textContent = money(S.promo.cash);
   cashEl.classList.toggle('warn', S.promo.cash < 0);
   $('hudRoster').textContent = S.roster.length;
@@ -877,6 +1010,7 @@ function renderRoster(){
       <div class="worker-name">${w.name}${t?` <span class="champ-belt" title="${t.name}">🏆</span>`:''}</div>
       ${alignBadge(w)}
       <span class="badge tier">${w.tier||''}</span>
+      ${stageBadge(w)}
       ${mgr?`<span class="badge promo" title="Managed by ${mgr.name}">🎤 ${mgr.name}</span>`:''}
       ${hurt?`<span class="badge hurt">Injured ${w.injWeeks}w</span>`:''}
       <div class="stat-mini">RING ${w.inRing}${bar(w.inRing)}</div>
@@ -1401,6 +1535,9 @@ function weeklyTick(usedIds, showInfo){
   // finalize: bump week, build the new inbox
   S.week += 1;
   if(S.metrics) S.metrics.spentThisWeek = 0; // Quick-mode allowance refreshes
+  // annual progression at each in-world year boundary (52-week years)
+  let yearSummary = null;
+  if(S.week>1 && (S.week-1) % 52 === 0){ S.year += 1; yearSummary = runAnnualProgression(); }
   const inbox = [];
   if(showInfo.metrics){
     const M = showInfo.metrics;
@@ -1410,6 +1547,7 @@ function weeklyTick(usedIds, showInfo){
   } else {
     inbox.push({ico:'💤', sev:'info', txt:`You ran no show this week. Salaries of ${money(payroll)} still went out (TV money softened the hit).`});
   }
+  if(yearSummary) pushYearSummary(inbox, yearSummary);
   startInbox.forEach(i=>inbox.push(i));
   // big-event countdown
   const wtp = weeksToPpv();
