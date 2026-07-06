@@ -5344,6 +5344,16 @@ allows Google Fonts, or self-host Anton.*
   Verified by rendering the real female avatar over http (cap seated at the brow with eyes visible, glove on
   the fist); male unchanged. HTML only.
 
+- **CS203 — female glove: cover the whole hand to the wrist, stop bleeding into the leg.** Owner: the glove
+  should cover the entire hand up to the wrist and it was bleeding into the bare leg. Her hand and thigh are
+  one continuous skin mass, so the recolour ellipse both missed the wrist and spilled its rounded bottom onto
+  the leg. Gridded the hip/hand/leg region: the fist is ≈(333,736) spanning y≈694–780 with the leg directly
+  below (no gap). Re-fitted the ellipse (gloveCx 326→333, cy 746→736, rx 25→21, ry 40→44) so it covers
+  wrist→fingertips, and added a per-gender hard lower bound `gloveMaxY=781` — the glove recolour never
+  applies below the fingertips, so it can't bleed into the leg. Verified over http: the glove covers the
+  whole hand with the strap at the wrist and stops cleanly at the fingertips (leg stays bare). Male
+  unaffected (no `gloveMaxY`). HTML only.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
