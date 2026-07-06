@@ -4946,6 +4946,14 @@ allows Google Fonts, or self-host Anton.*
   playoff play-out/celebrate/holed-scoreboard), hv6 (39-course geometry + putt property), hv8 (one-window
   daily HUD), practice, stall all green; zero page errors. Deployed to /golf.
 
+- **CS179 — H2H matchup: OVR row made prominent (Jordo IMG_7907: "Overall should be a little more prominent
+  than the rest").** On the "Tale of the tape" preview (`scrH2HPreview`), OVR was rendered like just another
+  skill row (18px values). Elevated it to the headline stat: 29px tabular numbers in rounded banded cells
+  (leader gold-tinted `rgba(235,166,31,.15)`, others a faint fill), a slightly larger gold "OVR" label, and
+  a full-width gradient divider separating it from the skill rows below — so OVR reads as the top-line and
+  the 8 skills as supporting detail. Client-only, no engine change. Screenshot-confirmed; zero page errors.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

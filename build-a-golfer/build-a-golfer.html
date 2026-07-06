@@ -10936,9 +10936,11 @@ function scrH2HPreview(){
       <div style="font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nm}${mine?' <span class="small" style="color:var(--gold)">you</span>':''}</div>
       <div class="small muted" style="margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px">${sub}</div></div>`));
   });
-  // OVR row
-  grid.appendChild($(`<div style="display:flex;align-items:center;font-weight:800;font-size:12px;color:var(--gold)">OVR</div>`));
-  ovrs.forEach(v=>{ const hi=v===maxOvr; grid.appendChild($(`<div style="text-align:center;font-weight:800;font-size:18px;color:${hi?'var(--gold)':'var(--oncard)'}">${v}</div>`)); });
+  // OVR row — the headline stat, visually elevated above the skill rows (Jordo: "should be a little more prominent")
+  grid.appendChild($(`<div style="display:flex;align-items:center;font-weight:800;font-size:13px;color:var(--gold);letter-spacing:.04em">OVR</div>`));
+  ovrs.forEach(v=>{ const hi=v===maxOvr; grid.appendChild($(`<div style="text-align:center;font-weight:800;font-size:29px;line-height:1;padding:7px 0;border-radius:10px;font-variant-numeric:tabular-nums;background:${hi?'rgba(235,166,31,.15)':'rgba(255,255,255,.03)'};color:${hi?'var(--gold)':'var(--oncard)'}">${v}</div>`)); });
+  // divider so OVR reads as the headline, skills as supporting detail
+  grid.appendChild($(`<div style="grid-column:1/-1;height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent);margin:7px 0 3px"></div>`));
   // skill rows, max highlighted
   CATS.forEach(c=>{ const vals=units.map(u=>u.dispSkills[c.k]|0), mx=Math.max.apply(null,vals);
     grid.appendChild($(`<div style="display:flex;align-items:center;font-size:11px;color:#9fb4ab">${RSHORT[c.k]}</div>`));
