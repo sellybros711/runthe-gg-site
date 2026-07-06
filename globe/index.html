@@ -95,7 +95,7 @@
     white-space:nowrap;}
   .wm .r{color:var(--globe);} .wm .t{color:var(--ink);} .wm .g{color:var(--globe);}
   .mutebtn{margin-left:auto;flex:0 0 auto;background:rgba(255,255,255,.05);border:1px solid var(--cardb);border-radius:10px;
-    width:34px;height:34px;font-size:16px;cursor:pointer;line-height:1;padding:0;transition:border-color .15s,background .15s;}
+    width:44px;height:44px;font-size:17px;cursor:pointer;line-height:1;padding:0;transition:border-color .15s,background .15s;}
   .mutebtn:hover{border-color:var(--globe);background:rgba(236,181,80,.08);}
   .mutebtn + .acct{margin-left:10px;}
   .acct{text-align:right;font-size:12px;line-height:1.3;flex:0 0 auto;}
@@ -178,7 +178,7 @@
     box-shadow:0 10px 26px -12px rgba(238,90,68,.85), inset 0 1px 0 rgba(255,255,255,.25);}
   .btn.ghost{background:rgba(255,255,255,.05);color:var(--ink);border:1px solid var(--cardb);}
   .btn.ghost:hover{border-color:var(--globe);background:rgba(236,181,80,.07);}
-  .btn.sm{width:auto;padding:9px 14px;font-size:13px;}
+  .btn.sm{width:auto;padding:12px 16px;font-size:13px;min-height:44px;}
   .btn[disabled]{opacity:.45;cursor:default;filter:grayscale(.3);}
   .btnrow{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
   .btnrow .btn{flex:1 1 auto;}
@@ -246,7 +246,6 @@
   .catchip{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;
     background:rgba(236,181,80,.14);color:#F6D488;border:1px solid rgba(236,181,80,.3);}
   .catchip.reflex{background:rgba(238,90,68,.14);color:#ffc2be;border-color:rgba(238,90,68,.32);}
-  .catchip.hybrid{background:rgba(236,181,80,.14);color:#f3dca0;border-color:rgba(236,181,80,.32);}
   .taskcard .pen{margin-left:auto;font-size:11px;color:var(--mut);font-weight:700;}
   .taskcard .pr{font-size:14px;color:var(--ink);font-weight:700;line-height:1.4;}
 
@@ -783,7 +782,7 @@
       + howPanel('green', illoFinal, '6 · Win the Final', 'Outlast everyone to Stage '+ROUNDS+' — the Final. The last 3 teams sprint to a world landmark; the fastest wins the whole race.')
       + '<div class="card"><h3 style="font-size:15px;margin-bottom:6px">🤝 Solo or team up</h3>'
         + '<p class="muted" style="font-size:13px;line-height:1.6;margin:0">Race <b>Solo</b>, or as a team — <b>Same Screen</b> (two of you on one device, taking turns) or <b>Two Devices</b> (you and a partner on separate phones, times combined). Either way you face a full field, so it feels the same whether the rivals are friends or the house.</p></div>'
-      + '<div class="btnrow"><button class="btn ghost" id="htback">‹ Back</button><button class="btn globe" id="htplay">Start racing 🌍</button></div>'
+      + '<div class="btnrow"><button class="btn ghost" id="htback">‹ Back</button><button class="btn globe" id="htplay">Start the race 🌍</button></div>'
       + foot();
     $('htback').onclick=function(){ S.screen='home'; render(); };
     $('htplay').onclick=function(){ S.coop=null; S.screen='setup'; render(); };
@@ -1254,7 +1253,7 @@
           + '<circle id="flydest" cx="'+P1[0]+'" cy="'+P1[1]+'" r="0" fill="none" stroke="#EE5A44" stroke-width="1.4"/>'
           + '<text id="flyplane" x="'+P0[0]+'" y="'+P0[1]+'" font-size="15" text-anchor="middle" dominant-baseline="central">✈️</text>'
         + '</svg>'
-        + '<div class="ohint" id="flyhint" style="margin-top:10px">Drawing your next destination…</div>'
+        + '<div class="ohint" id="flyhint" style="margin-top:10px">Drawing your next destination… <span style="opacity:.6">· tap to skip</span></div>'
       + '</div>' + foot();
     var arc=$('flyarc'), plane=$('flyplane'), dest=$('flydest');
     var DUR=1250, t0=performance.now();
@@ -2521,10 +2520,9 @@
   function mgMapFind(t){ runMapGuess(t.q, t.ll); }
   // shared world-map pin-drop, reused by Find-It and Street Scout. `targetLL`=[lat,lng].
   function runMapGuess(qText, targetLL){
-    var grid='', paths=worldSVGInner();
     $('mg').innerHTML='<div class="prompt" style="text-align:center">'+esc(qText)+'</div>'
       + '<svg id="wmap" viewBox="0 0 360 180" preserveAspectRatio="none" style="width:100%;height:auto;aspect-ratio:2/1;background:radial-gradient(120% 120% at 50% 40%,rgba(26,74,134,.5),rgba(10,8,26,.92));border:1px solid var(--cardb);border-radius:12px;cursor:crosshair;touch-action:manipulation">'
-      + grid + paths + '</svg><div class="ohint" id="maphint">Tap the map where you think it is.</div>';
+      + worldSVGInner() + '</svg><div class="ohint" id="maphint">Tap the map where you think it is.</div>';
     $('wmap').addEventListener('click', function(ev){ mapGuess(ev, targetLL); });
   }
   function mapGuess(ev, targetLL){
@@ -3020,7 +3018,7 @@
       sfx('lose');
       recordRaceEnd(ranked);   // record now (idempotent) so an abandon still counts
       // GDD §10: binary Grounded choice — watch live, or return home. No reward for watching.
-      btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Return home</button><button class="btn globe" id="watch">Watch the rest ▶</button></div>';
+      btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn globe" id="watch">Watch the rest ▶</button></div>';
       $('home').onclick=function(){ S.screen='home'; render(); };
       $('watch').onclick=function(){ S.phase='grounded'; S.spectating=true; groundAndAdvance(groundedTeam); render(); };
     } else {
@@ -3265,7 +3263,7 @@
           ? '<div class="lbrow"><span class="p">🧭</span><span class="nm">'+esc(S.online.partnerName||'Partner')+'</span><span class="tm" style="color:var(--mut);font-size:12px">ready</span></div>'
           : '<div class="lbrow"><span class="p">⏳</span><span class="nm" style="color:var(--mut)">Waiting for your partner…</span><span class="tm"></span></div>');
     var ctrl = two
-      ? '<button class="btn globe" id="ostart" style="margin-top:14px">Start racing 🌍</button>'
+      ? '<button class="btn globe" id="ostart" style="margin-top:14px">Start the race 🌍</button>'
         + '<p class="muted" style="font-size:12px;text-align:center;margin-top:8px">You face a field of '+FIELD_SIZE+' teams. Each Stage you both play a different challenge — your times add up.</p>'
       : '<p class="muted" style="text-align:center;margin-top:14px">Send your partner the code above. When they join, you can start.</p>';
     app.innerHTML = topbar()
@@ -3426,7 +3424,7 @@
       $('share').onclick=function(){ shareResult(youWon2 ? ('🌍 My partner and I just WON a team race in RunTheGlobe! Play at runthe.gg/globe') : ('🌍 My team finished #'+youRank+' in a RunTheGlobe team race. Race us at runthe.gg/globe')); };
     } else if(groundedTeam.id==='you'){
       sfx('lose'); recordRaceEnd(ranked); duoClearSess();
-      btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Return home</button><button class="btn globe" id="watch">Watch the rest ▶</button></div>';
+      btns.innerHTML='<div class="btnrow"><button class="btn ghost" id="home">Home</button><button class="btn globe" id="watch">Watch the rest ▶</button></div>';
       $('home').onclick=function(){ duoLeave(); S.screen='home'; render(); };
       $('watch').onclick=function(){ groundAndAdvance(groundedTeam); duoSpectate(); };
     } else {
