@@ -723,6 +723,45 @@ window.GA_ID='G-L29P5MRWKE';
   .ov ol{margin:0 0 14px; padding-left:18px; color:#dbe6ee} .ov li{margin:7px 0}
   .ov .x{position:absolute; top:calc(10px + env(safe-area-inset-top, 0px)); right:14px}
 
+  /* ---- Pro Shop / locker ---- */
+  .shop-sticky{position:sticky; top:0; z-index:6; background:#06200f; padding-bottom:9px;
+    box-shadow:0 12px 14px -12px rgba(0,0,0,.7)}
+  .shop-bar{display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .shop-bar h3{margin:0; font-size:22px}
+  .coinpill{display:inline-flex; align-items:center; gap:6px; background:rgba(235,166,31,.13); border:1px solid rgba(235,166,31,.4);
+    border-radius:999px; padding:5px 12px 5px 8px; font:900 16px/1 var(--body); color:var(--gold)}
+  .shop-preview{display:flex; justify-content:center; align-items:flex-end; height:190px; margin:2px 0 4px}
+  .shop-preview .avatarfig{height:190px}
+  .segrow{display:flex; gap:6px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
+    border-radius:11px; padding:4px}
+  .segrow button{flex:1; border:0; background:transparent; color:var(--muted); font:800 12px/1 var(--body);
+    padding:8px 4px; border-radius:8px; cursor:pointer; letter-spacing:.02em}
+  .segrow button.on{background:var(--gold); color:#3a2708}
+  .catrow{display:flex; gap:7px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding:9px 2px 3px; scrollbar-width:none}
+  .catrow::-webkit-scrollbar{display:none}
+  .catchip{flex:0 0 auto; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.03); color:var(--muted);
+    font:800 11.5px/1 var(--body); padding:8px 13px; border-radius:999px; cursor:pointer; white-space:nowrap}
+  .catchip.on{color:var(--gold); border-color:var(--gold); background:rgba(235,166,31,.12)}
+  .sgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:9px; margin-top:12px}
+  .stile{position:relative; display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center;
+    border:1.5px solid rgba(255,255,255,.11); background:rgba(255,255,255,.035); border-radius:13px;
+    padding:11px 6px 8px; cursor:pointer; transition:border-color .12s, background .12s; color:inherit; font-family:var(--body)}
+  .stile:hover{border-color:rgba(255,255,255,.28)}
+  .stile.eq{border-color:var(--gold); background:rgba(235,166,31,.11)}
+  .stile.lock{opacity:.94}
+  .sthumb{width:48px; height:48px; border-radius:11px; display:flex; align-items:center; justify-content:center;
+    background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.12); overflow:hidden; flex:0 0 auto}
+  .sthumb.color{border-width:2px}
+  .snm{font:800 11px/1.2 var(--body); color:var(--oncard); min-height:26px; display:flex; align-items:center;
+    overflow:hidden; text-overflow:ellipsis}
+  .sfoot{font:800 10.5px/1 var(--body); display:inline-flex; align-items:center; gap:4px; min-height:14px}
+  .sfoot.eqf{color:var(--gold)} .sfoot.own{color:#7fd3b0}
+  .sfoot.price{color:var(--gold)} .sfoot.price.no{color:#e88}
+  .sbadge{position:absolute; top:6px; right:6px; width:19px; height:19px; border-radius:50%; background:var(--gold);
+    color:#2a1c04; font:900 12px/19px var(--body); text-align:center}
+  .srar{position:absolute; top:7px; left:7px; width:8px; height:8px; border-radius:50%}
+  .shop-empty{grid-column:1/-1; text-align:center; padding:26px 10px; color:var(--muted)}
+
   /* ---- footer ---- */
   .foot{max-width:438px; margin:18px auto 0; text-align:center; position:relative; z-index:2}
   .footpills{display:flex; flex-wrap:wrap; gap:10px 10px; row-gap:8px; justify-content:center}
@@ -4722,7 +4761,7 @@ const ACC_PLACE={
   driver:{spanY:['gripY','footY'],ax:'handRx'},                        // grip at the right hand, head on the ground (spans hand→ground on both bodies)
   putter:{spanY:['gripY','footY'],ax:'handLx',dx:12},                  // grip at the left hand, head on the ground
   glove: {wFrac:0.145,ax:'handRx',ay:'handY',dy:8},                    // worn on the right hand
-  ball:  {wFrac:0.075,ax:'handLx',ay:'handY',dx:24,dy:16},             // held by the left hand
+  ball:  {wFrac:0.058,ax:'footCx',ay:'footY',dx:-48,dy:32},            // resting on the ground at the golfer's feet (ball at address)
   charm: {wFrac:0.05,ax:'hipLx',ay:'waistY',dy:4},                     // ball-marker clipped at the belt/pocket
 };
 // accessory id → art file (art coverage is partial; a few items reuse the nearest matching art)
@@ -4956,7 +4995,7 @@ function cosColorRow(label,cat){
   if(cosmeticItems(cat).some(o=>!cosOwned(cat,o.id))) row.appendChild($(`<div class="small muted" style="margin-top:5px;font-size:10.5px">🔒 Locked colours are in the Pro Shop.</div>`));
   return row;
 }
-function openShopTo(cat){ if(!sbSignedIn()){ toast('Sign in to shop'); return; } S.overlay='shop'; S.shopSlot='cos:'+cat; render(); }
+function openShopTo(cat){ if(!sbSignedIn()){ toast('Sign in to shop'); return; } S.overlay='shop'; S.shopSec='apparel'; S.shopCat=cat; render(); }
 // pattern picker (shirt or hat), labelled chips, locked ones show 🔒 + toast the requirement.
 // pattern picker gated by OWNERSHIP (buy in the Pro Shop). lookKey: shirtPat|hatPat (patterns are owned once).
 function cosPatRow(label,lookKey){
@@ -10090,21 +10129,84 @@ function cosCard(cat,o){
       <div style="font:800 8.5px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:2px">${esc(c.name)}</div></div></div>
     ${action}</div>`;
 }
+// ---- redesigned Pro Shop (locker): sticky live preview + coins, two-level nav, tap-to-equip tiles ----
+// a small CSS-approximation of each pattern, just for the tile swatch (the real pattern renders on the avatar)
+function patSwatchBg(id){ const a='#5a6b5e', b='#93a598';
+  switch(id){
+    case 'none':        return 'linear-gradient(135deg,#7d8f82,#5a6b5e)';
+    case 'pinstripe':   return `repeating-linear-gradient(90deg,${a} 0 3px,${b} 3px 8px)`;
+    case 'polka': case 'microdot': return `radial-gradient(${b} 26%,transparent 27%) 0 0/9px 9px,${a}`;
+    case 'gingham':     return `repeating-linear-gradient(0deg,${a} 0 4px,transparent 4px 8px),repeating-linear-gradient(90deg,${b}88 0 4px,transparent 4px 8px),#46564a`;
+    case 'checker':     return `conic-gradient(${b} 0 25%,${a} 0 50%,${b} 0 75%,${a} 0) 0 0/14px 14px`;
+    case 'windowpane':  return `repeating-linear-gradient(0deg,${b} 0 2px,transparent 2px 14px),repeating-linear-gradient(90deg,${b} 0 2px,transparent 2px 14px),${a}`;
+    case 'diagonal': case 'herringbone': case 'houndstooth': case 'argyle': case 'tartan': case 'chevron':
+                        return `repeating-linear-gradient(45deg,${a} 0 5px,${b} 5px 10px)`;
+    case 'colorblock':  return `linear-gradient(90deg,${a} 0 50%,${b} 50% 100%)`;
+    case 'camo':        return `radial-gradient(circle at 30% 30%,${b} 18%,transparent 19%),radial-gradient(circle at 70% 65%,#6f8175 22%,transparent 23%),${a}`;
+    default:            return `repeating-linear-gradient(45deg,${a} 0 5px,${b} 5px 10px)`;
+  }
+}
+// one locker tile. o={thumb, name, sub, state:'eq'|'own'|'lock', price, afford, rarColor, data}
+function shopTile(o){
+  let foot;
+  if(o.state==='eq') foot=`<span class="sfoot eqf">Equipped</span>`;
+  else if(o.state==='own') foot=`<span class="sfoot own">Owned</span>`;
+  else foot=`<span class="sfoot price${o.afford?'':' no'}"><span style="width:12px;height:12px">${ic('coin',{size:'12px'})}</span>${coinFmt(o.price||0)}</span>`;
+  return `<button class="stile ${o.state}" ${o.data||''}>`
+    +(o.rarColor?`<span class="srar" style="background:${o.rarColor}"></span>`:'')
+    +(o.state==='eq'?`<span class="sbadge">✓</span>`:'')
+    +o.thumb
+    +`<span class="snm">${esc(o.name)}</span>`
+    +(o.sub?`<span class="sfoot" style="color:#8fe0c4;font-size:9.5px">${o.sub}</span>`:'')
+    +foot+`</button>`;
+}
+function cosTileHTML(cat,o){
+  const c=COS_CATS.find(x=>x.k===cat), owned=cosOwned(cat,o.id), price=cosmeticPrice(cat,o.id);
+  const equipped = cat==='hat' ? ((S.look.hat||S.look.polo)===o.id)
+                 : cat==='pat' ? ((S.look.shirtPat||'none')===o.id)
+                 : (S.look[c.lookKey]===o.id);
+  const thumb = (o.pat!==undefined)
+     ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
+     : `<span class="sthumb color" style="background:${o.col}"></span>`;
+  const state = equipped?'eq':(owned?'own':'lock');
+  return shopTile({thumb,name:o.name,state,price,afford:coinBalance()>=price,
+    data:`data-tile data-kind="cos" data-cat="${cat}" data-id="${esc(o.id)}"`});
+}
+function accTileHTML(it){
+  const r=ACC_RARITY[it.rarity]||ACC_RARITY.common, sl=ACC_SLOT_BY[it.slot]||{icon:'gear'};
+  const owned=accOwned(it.id), equipped=accEquipped(it.slot)===it.id, price=accPrice(it), excl=it.rarity==='exclusive';
+  const thumb=`<span class="sthumb" style="color:${r.c}"><span style="width:32px;height:32px">${ic(sl.icon,{size:'32px'})}</span></span>`;
+  const boost=shopBoostTxt(accItemBoost(it));
+  let state,data;
+  if(equipped){ state='eq'; data=`data-tile data-kind="acc-uneq" data-slot="${it.slot}"`; }
+  else if(owned){ state='own'; data=`data-tile data-kind="acc-eq" data-id="${it.id}"`; }
+  else { state='lock'; data=excl?`data-tile`:`data-tile data-kind="acc-buy" data-id="${it.id}"`; }
+  return shopTile({thumb,name:it.name,sub:boost,state,price:excl?0:price,afford:coinBalance()>=price,rarColor:r.c,data});
+}
+function shopTileClick(b){
+  const kind=b.getAttribute('data-kind'); if(!kind) return;
+  if(kind==='cos'){ const cat=b.getAttribute('data-cat'), id=b.getAttribute('data-id');
+    if(cosOwned(cat,id)){ const c=COS_CATS.find(x=>x.k===cat);
+      const equipped = cat==='hat'?((S.look.hat||S.look.polo)===id):cat==='pat'?((S.look.shirtPat||'none')===id):(S.look[c.lookKey]===id);
+      if(equipped){ if(cat==='pat'&&id!=='none'){ S.look.shirtPat='none'; saveLook(); } }   // tap an equipped pattern to remove it
+      else cosEquip(cat,id);
+    } else { const r=cosBuy(cat,id); if(r.ok) cosEquip(cat,id); try{toast(r.ok?'Purchased & equipped!':r.msg);}catch(e){} }
+  }
+  else if(kind==='acc-uneq'){ accUnequip(b.getAttribute('data-slot')); }
+  else if(kind==='acc-eq'){ accEquip(b.getAttribute('data-id')); }
+  else if(kind==='acc-buy'){ const r=accBuy(b.getAttribute('data-id')); try{toast(r.ok?'Purchased & equipped!':r.msg);}catch(e){} }
+  render();
+}
 function overlayShop(screen){
   if(!SHOP_ENABLED){ S.overlay=null; return; }   // shelved until the economy is rebalanced
-  const signed=sbSignedIn(), filt=S.shopSlot||'all', s=coinState();
-  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Pro Shop">
-    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
-    <h3>Pro Shop</h3></div>`);
-  ov.appendChild($(`<div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
-    <div><div style="font:800 10px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Your Coins</div>
-      <div style="display:flex;align-items:center;gap:7px;margin-top:6px"><span style="width:26px;height:26px">${ic('coin',{size:'26px'})}</span><span style="font:900 26px/1 var(--body);color:var(--gold)">${signed?coinFmt(coinBalance()):'—'}</span></div></div>
-    <div class="small muted" style="max-width:158px;text-align:right;line-height:1.35">Gear boosts help in Career & Daily. Earn coins from wins, majors, dailies & achievements.</div></div>`));
+  const signed=sbSignedIn();
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Pro Shop"></div>`);
   if(!signed){
-    ov.appendChild($(`<div class="lockcta" style="text-align:center;padding:20px 12px;margin-top:12px">
+    ov.appendChild($(`<button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button><h3>Pro Shop</h3>`));
+    ov.appendChild($(`<div class="lockcta" style="text-align:center;padding:22px 12px;margin-top:8px;flex-direction:column">
       <div style="font-size:22px">${ic('lock',{size:'22px'})}</div>
       <b style="color:var(--gold);display:block;margin-top:6px">Sign in to earn coins & shop</b>
-      <div class="small muted" style="margin:4px auto 12px;max-width:320px">Coins and gear are tied to your free RunThe.GG account and sync across devices.</div>
+      <div class="small muted" style="margin:4px auto 14px;max-width:320px">Coins, gear and your look are tied to your free RunThe.GG account and sync across every device.</div>
       <div style="display:flex;gap:8px;justify-content:center"><button class="btn gold" id="shop-up" style="width:auto;padding:9px 15px;font-size:12px">Create account</button><button class="btn ghost" id="shop-in" style="width:auto;padding:9px 15px;font-size:12px">Sign in</button></div></div>`));
     ov.appendChild($(`<button class="btn red">Close</button>`));
     ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
@@ -10112,37 +10214,46 @@ function overlayShop(screen){
     const si=ov.querySelector('#shop-in'); if(si) si.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
     screen.appendChild(ov); return;
   }
-  // dressing room: your full-body golfer wearing the equipped gear, updates live as you buy/equip
-  const dress=$(`<div style="display:flex;justify-content:center;padding:6px 0 2px"></div>`);
-  const dav=$(avatarFullHTML()); dav.style.height='300px'; dress.appendChild(dav); ov.appendChild(dress);
-  const chips=$(`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 2px"></div>`);
-  const mkChip=(k,label)=>{ const on=filt===k, b=$(`<button class="tag" style="cursor:pointer;font-size:11px;padding:6px 11px;${on?'color:var(--gold);border-color:var(--gold);background:rgba(235,166,31,.1)':''}">${esc(label)}</button>`); b.onclick=()=>{S.shopSlot=k;render();}; return b; };
-  chips.appendChild(mkChip('all','All')); chips.appendChild(mkChip('owned','My items'));
-  COS_CATS.forEach(c=>chips.appendChild(mkChip('cos:'+c.k, c.name)));
-  ACC_SLOTS.forEach(sl=>chips.appendChild(mkChip(sl.k, sl.name)));
-  ov.appendChild(chips);
-  const grid=$(`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:8px"></div>`);
-  const addCos=(cat)=>cosmeticItems(cat).forEach(o=>grid.appendChild($(cosCard(cat,o))));
-  const addAcc=(list)=>{ list.sort((a,b)=>{ const ea=accEquipped(a.slot)===a.id?0:1, eb=accEquipped(b.slot)===b.id?0:1; if(ea!==eb) return ea-eb;
-      const oa=accOwned(a.id)?0:1, ob=accOwned(b.id)?0:1; if(oa!==ob) return oa-ob; return accPrice(a)-accPrice(b); });
-    list.forEach(it=>grid.appendChild($(shopCard(it)))); };
-  let accList=ACCESSORIES.slice(); MILESTONE_ITEMS.forEach(mi=>{ if(s.owned[mi.id]) accList.push(mi); });
-  if(filt.indexOf('cos:')===0){ addCos(filt.slice(4)); }
-  else if(filt==='owned'){
-    COS_CATS.forEach(c=>cosmeticItems(c.k).forEach(o=>{ if(cosOwned(c.k,o.id)&&!FREE_COSMETICS[cosKey(c.k,o.id)]) grid.appendChild($(cosCard(c.k,o))); }));
-    addAcc(accList.filter(it=>s.owned[it.id]));
-  } else if(filt==='all'){ COS_CATS.forEach(c=>addCos(c.k)); addAcc(accList); }
-  else { addAcc(accList.filter(it=>it.slot===filt)); }
-  if(!grid.children.length) grid.appendChild($(`<div class="small muted center" style="grid-column:1/-1;padding:20px 8px">Nothing here yet.</div>`));
+  const sec = (S.shopSec==='gear'||S.shopSec==='owned')?S.shopSec:'apparel';
+  const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes']];
+  const GEAR=ACC_SLOTS.map(sl=>[sl.k, sl.k==='shoes'?'Footwear':sl.name]);
+  const cats = sec==='apparel'?APP : sec==='gear'?GEAR : null;
+  let cat=S.shopCat; if(cats && !cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.shopCat=cat;
+  // sticky: bar (title+coins+close) → live preview → section segment → category chips
+  const sticky=$(`<div class="shop-sticky">
+    <div class="shop-bar"><h3>Pro Shop</h3>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="coinpill"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(coinBalance())}</span>
+        <button class="btn ghost x2" style="width:auto;padding:7px 11px;font-size:14px">✕</button></div></div>
+    <div class="shop-preview">${avatarFullHTML()}</div>
+    <div class="segrow">
+      <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel</button>
+      <button data-sec="gear" class="${sec==='gear'?'on':''}">Equipment</button>
+      <button data-sec="owned" class="${sec==='owned'?'on':''}">My Items</button></div>
+    ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-cat="${c[0]}">${esc(c[1])}</button>`).join('')}</div>`:''}
+  </div>`);
+  ov.appendChild(sticky);
+  const grid=$(`<div class="sgrid"></div>`); const tiles=[];
+  if(sec==='apparel'){ cosmeticItems(cat).forEach(o=>tiles.push(cosTileHTML(cat,o))); }
+  else if(sec==='gear'){
+    let list=ACCESSORIES.filter(it=>it.slot===cat);
+    MILESTONE_ITEMS.forEach(mi=>{ if(mi.slot===cat && accOwned(mi.id)) list.push(mi); });
+    list.sort((a,b)=>{ const ea=accEquipped(a.slot)===a.id?0:1, eb=accEquipped(b.slot)===b.id?0:1; if(ea!==eb)return ea-eb;
+      const oa=accOwned(a.id)?0:1, ob=accOwned(b.id)?0:1; if(oa!==ob)return oa-ob; return accPrice(a)-accPrice(b); });
+    list.forEach(it=>tiles.push(accTileHTML(it)));
+  } else {  // My Items: purchased cosmetics (non-free) + owned gear
+    COS_CATS.forEach(c=>cosmeticItems(c.k).forEach(o=>{ if(cosOwned(c.k,o.id)&&!FREE_COSMETICS[cosKey(c.k,o.id)]) tiles.push(cosTileHTML(c.k,o)); }));
+    ACCESSORIES.concat(MILESTONE_ITEMS).forEach(it=>{ if(accOwned(it.id)) tiles.push(accTileHTML(it)); });
+  }
+  grid.innerHTML = tiles.length?tiles.join('')
+    : `<div class="shop-empty">${sec==='owned'?'You haven’t bought anything yet — browse Apparel & Equipment to kit out your golfer.':'Nothing here yet.'}</div>`;
   ov.appendChild(grid);
-  grid.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{ const r=accBuy(b.getAttribute('data-buy')); try{toast(r.ok?'Purchased & equipped!':r.msg);}catch(e){} render(); });
-  grid.querySelectorAll('[data-equip]').forEach(b=>b.onclick=()=>{ accEquip(b.getAttribute('data-equip')); render(); });
-  grid.querySelectorAll('[data-uneq]').forEach(b=>b.onclick=()=>{ accUnequip(b.getAttribute('data-uneq')); render(); });
-  grid.querySelectorAll('[data-cbuy]').forEach(b=>b.onclick=()=>{ const p=b.getAttribute('data-cbuy').split(':'), r=cosBuy(p[0],p[1]); if(r.ok) cosEquip(p[0],p[1]); try{toast(r.ok?'Purchased & equipped!':r.msg);}catch(e){} render(); });
-  grid.querySelectorAll('[data-ceq]').forEach(b=>b.onclick=()=>{ const p=b.getAttribute('data-ceq').split(':'); cosEquip(p[0],p[1]); render(); });
-  grid.querySelectorAll('[data-crem]').forEach(b=>b.onclick=()=>{ const cat=b.getAttribute('data-crem'), c=COS_CATS.find(x=>x.k===cat); if(c){ S.look[c.lookKey]='none'; saveLook(); } render(); });
-  ov.appendChild($(`<button class="btn red">Close</button>`));
-  ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
+  ov.appendChild($(`<div class="small muted center" style="margin-top:14px">Tap an item to wear it, or buy it with coins. Gear boosts help in Career & Daily.</div>`));
+  ov.appendChild($(`<button class="btn red" style="margin-top:10px">Done</button>`));
+  sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
+  sticky.querySelectorAll('[data-cat]').forEach(x=>x.onclick=()=>{ S.shopCat=x.getAttribute('data-cat'); render(); });
+  grid.querySelectorAll('[data-tile]').forEach(x=>x.onclick=()=>shopTileClick(x));
+  ov.querySelectorAll('.x2,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
   screen.appendChild(ov);
 }
 function overlayCourseRecords(screen){
