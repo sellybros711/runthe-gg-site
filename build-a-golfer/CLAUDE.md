@@ -4919,6 +4919,33 @@ allows Google Fonts, or self-host Anton.*
   correctly flags a unit as holed mid-hole (before advance). H2H regression + hv5 (multi-ball watch, now
   error-free) green; zero page errors. Client-only, no migration. Deployed to /golf.
 
+- **CS178 — four tester (Jordo) fixes: bigger green on putts, one-button lobby fill, polished H2H
+  scorecard, "back to home" copy.** All client-only, no migration; sim/score engine untouched.
+  1. **Green close-up is tighter so short putts read** ("when it gets to the green, the green can be
+     bigger — an 8-foot putt is really not right on top of the hole"). The TOURTRACE putt camera
+     (`hvCamFor2`) floored the viewBox at 92 wide with 64/84 padding, so a short putt framed the ball+cup
+     with a lot of air and the 8-footer looked like a tap-in. Tightened to a 60 floor + 40/54 padding, so
+     the green fills the frame and putt distance reads (adaptive still holds: a 40-ft putt zooms out more
+     than an 8-ft; verified short-putt viewBox 60 vs the old 92, long > short). Ball scaling (`bScale`)
+     already adapts to the viewBox, so the ball stays a consistent on-screen size at the tighter zoom.
+  2. **Lobby fill = ONE "Open to anyone" button, AI after 10s** ("shouldn't it just say open to anyone and
+     then give u ai after 10 seconds"). Removed the separate "Start now vs AI" button from the private-lobby
+     fill UI; the single "Open to anyone ▸" opens the lobby to the public pool and the AI fallback now fires
+     at a fixed **10s** (was a random 9-13s). `h2hFillBots` is still used by the fallback, just no longer a
+     manual button. Copy updated ("A waiting player joins — or AI fills in after 10s").
+  3. **H2H scorecard polished** ("hate that I can't see my scorecard… could look better but glad its in").
+     `h2hResultCard` now draws classic golf notation — a green **circle** for a birdie (double circle for
+     eagle+), a red **square** for a bogey (double square for double+), par plain (`scMark(s,tp)`, colored
+     by `dScoreCol`) — and highlights the winning unit's row with a gold tint + a trophy by the name.
+     Screenshot-confirmed on the result screen.
+  4. **"Back to title" → "Back to home"** everywhere (render-error fallback card, Spotlight result, H2H
+     lobby back-link, H2H result) — matching the earlier daily-result "Return to home" rename.
+  Verified in Playwright (cs178): the tighter putt camera, the single lobby button with no "Start now vs
+  AI" + the "after 10s" copy, "Back to home" on the H2H result with no "Back to title" left, and the
+  scorecard notation marks + winner tint. Regressions cs176/cs177 (H2H water/leaderboard-pin/result card,
+  playoff play-out/celebrate/holed-scoreboard), hv6 (39-course geometry + putt property), hv8 (one-window
+  daily HUD), practice, stall all green; zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
