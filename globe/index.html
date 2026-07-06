@@ -176,10 +176,13 @@
   /* coral action button */
   .btn.gold{background:linear-gradient(180deg,#F5715C,#E24632);color:#fff;
     box-shadow:0 10px 26px -12px rgba(238,90,68,.85), inset 0 1px 0 rgba(255,255,255,.25);}
-  .btn.ghost{background:rgba(255,255,255,.05);color:var(--ink);border:1px solid var(--cardb);}
-  .btn.ghost:hover{border-color:var(--globe);background:rgba(236,181,80,.07);}
+  .btn.ghost{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02));color:var(--ink);border:1px solid var(--cardb);}
+  .btn.ghost:hover:not([disabled]){border-color:var(--globe);background:linear-gradient(180deg,rgba(236,181,80,.12),rgba(236,181,80,.03));box-shadow:0 8px 22px -14px rgba(236,181,80,.55);}
   .btn.sm{width:auto;padding:12px 16px;font-size:13px;min-height:44px;}
   .btn[disabled]{opacity:.45;cursor:default;filter:grayscale(.3);}
+  /* two-button contest rows (Higher/Lower, Compass, Region Sort, Closer/Farther) — bigger, punchier */
+  .hlo{min-height:62px;font-size:16px;border-radius:14px;}
+  .hlo:active{transform:scale(.98);}
   .btnrow{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
   .btnrow .btn{flex:1 1 auto;}
 
@@ -237,11 +240,15 @@
     color:#2a1c00;background:linear-gradient(180deg,#ffd766,#ECB550);padding:5px 11px;border-radius:999px;}
 
   /* task choice */
-  .stagetype{text-align:center;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--teal);margin:2px 0 12px;}
+  /* stage-type as a centered accent chip (matches the contest header) */
+  .stagetype{width:fit-content;margin:2px auto 14px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--goldhi);background:rgba(236,181,80,.10);border:1px solid rgba(236,181,80,.22);padding:6px 12px;border-radius:999px;}
   .choice{display:grid;gap:12px;}
-  .taskcard{text-align:left;background:rgba(255,255,255,.03);border:1px solid var(--cardb);border-radius:15px;
-    padding:15px;cursor:pointer;transition:border-color .12s,transform .12s;}
-  .taskcard:hover{border-color:var(--globe);transform:translateY(-1px);}
+  .taskcard{position:relative;text-align:left;background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.02));
+    border:1px solid var(--cardb);border-radius:16px;padding:16px;cursor:pointer;
+    transition:border-color .12s,transform .12s,box-shadow .12s,background .12s;}
+  .taskcard:hover{border-color:var(--globe);transform:translateY(-2px);
+    background:linear-gradient(180deg,rgba(236,181,80,.09),rgba(236,181,80,.02));box-shadow:0 12px 28px -16px rgba(236,181,80,.5);}
   .taskcard .ct{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
   .catchip{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:3px 8px;border-radius:999px;
     background:rgba(236,181,80,.14);color:#F6D488;border:1px solid rgba(236,181,80,.3);}
@@ -339,7 +346,9 @@
     background:rgba(255,255,255,.05);border:1px solid var(--cardb);cursor:pointer;transition:transform .1s,background .1s,box-shadow .1s;}
   .seqtile.lit{background:rgba(236,181,80,.35);box-shadow:0 0 0 4px rgba(236,181,80,.25);transform:scale(1.08);}
   .seqtile.tap{background:rgba(53,214,160,.25);}
-  .seqstatus{text-align:center;font-size:13px;font-weight:700;color:var(--mut);margin-bottom:10px;}
+  .seqstatus{width:fit-content;margin:0 auto 12px;font-size:12px;font-weight:800;color:var(--mut);
+    background:rgba(255,255,255,.05);border:1px solid var(--cardb);padding:5px 13px;border-radius:999px;text-align:center;}
+  .seqstatus b{color:var(--ink);}
 
   /* reaction */
   .reactbox{height:190px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;
