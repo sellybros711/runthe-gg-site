@@ -4990,6 +4990,31 @@ allows Google Fonts, or self-host Anton.*
   `profiles` join in the board RPCs would make it authoritative for that edge — flagged as an optional
   follow-up, not built.
 
+- **CS182 — playoff ties now play on until someone wins outright + prominent "Tournaments Won" showcase.**
+  Two owner asks (screenshot):
+  1. **Playoff ties keep going** ("many times players tied on a playoff hole and a winner is determined — it
+     should go to another hole until somebody beats the other"). Root cause: the career auto-sim
+     `simPlayoff` scored each sudden-death hole as a CONTINUOUS float (`playoffHole` returned `gauss()*1.15
+     - …`), so two players who both made a "Birdie" (e.g. 3.4 vs 3.5) had a winner declared on a hole they'd
+     visibly tied. Fixed by making `playoffHole` return a SCORE-TO-PAR INTEGER (eagle/birdie/par/bogey/
+     double) like a real playoff hole, and `simPlayoff` now advances only those tied for the low with EXACT
+     integer equality — a full tie replays the hole, and a winner is decided only when someone is beaten
+     outright (60-hole safety net). `poLabel` updated for the integer buckets. The Moment playoff and H2H
+     playoff already used discrete integer scores (`dSimHole`/`holeScore`) and tie-continued correctly —
+     only their arbitrary caps were raised (Moment 8→40 holes + headless 12→40; H2H's 45 kept) so a genuine
+     tie can run instead of being force-decided. Verified (cs182): 4000 two-player sims, **0** cases where a
+     winner was declared on a tied hole; 26% went to extra holes (2–7), matching real golf; the invariant
+     "every non-final hole is a tie, the final hole the winner scored strictly lower" holds every time; a
+     3-way playoff resolves correctly.
+  2. **"Tournaments Won" showcase** ("make these much more apparent, bigger — redesign this section"). The
+     tiny won-tournament `.tag` chips on the season summary are replaced with a titled section
+     ("TOURNAMENTS WON · N titles this season") of prominent trophy cards — each a large card with the
+     tournament name in 16px bold + a trophy graphic; MAJORS get their own custom major trophy
+     (`majorTheme().svg` — Champion Blazer/Links Flagon/etc.), a gold border + gradient + glow, and a "MAJOR
+     CHAMPIONSHIP" label, while regular wins get the generic gold trophy + "Tour victory". Screenshot-
+     confirmed (major card glows gold with the blazer trophy; regular cards read clean). Regressions
+     cs175 (summary money card/layout), hv7 (Moments/playoff) green; zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
