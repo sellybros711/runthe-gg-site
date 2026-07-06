@@ -4698,8 +4698,10 @@ function avMaskRegionFull(r,g,b){ if(r<45&&g<45&&b<45) return null;
 const AV_ANAT={
   // faceCx = the FACE-FEATURE centre (nose/mouth axis) the eye judges "centred" by — the head is drawn
   // slightly turned so it differs from the silhouette headCx; the cap/glasses centre on faceCx.
-  male:  {W:420,H:1400,headCx:211,faceCx:214,headTop:2,eyeY:98,browLine:100,footCx:211,footY:1330,handRx:352,handLx:70,handY:735,sideRxIn:372,sideLxIn:48,waistY:690},
-  female:{W:380,H:1400,headCx:213,faceCx:213,headTop:4,eyeY:112,browLine:114,footCx:197,footY:1330,handRx:322,handLx:58,handY:735,sideRxIn:338,sideLxIn:42,waistY:690},
+  // handY = the fist centre; gripY = where a held club's grip sits (just above the fist); hipLx = belt/pocket
+  // for a clipped marker. Measured per-gender from the base art (the female is skirted with hands higher-relative).
+  male:  {W:420,H:1400,headCx:211,faceCx:214,headTop:2,eyeY:116,browLine:100,footCx:211,footY:1330,handRx:385,handLx:42,handY:730,gripY:716,hipLx:158,sideRxIn:372,sideLxIn:48,waistY:690},
+  female:{W:380,H:1400,headCx:213,faceCx:213,headTop:4,eyeY:155,browLine:114,footCx:197,footY:1330,handRx:286,handLx:96,handY:778,gripY:764,hipLx:132,sideRxIn:338,sideLxIn:42,waistY:712},
 };
 const AV_FRAME_W=440, AV_FRAME_H=1400;   // common frame; the (narrower) base is centred in it
 // content trim rectangles [x0,y0,x1,y1] for each art file (the art is a large product-shot on a 1024x1792 canvas)
@@ -4714,14 +4716,14 @@ const ACC_BBOX={
 };
 // per-slot placement: target width (frac of base W) or height (frac of base H), anchor point (anatomy key) + nudge
 const ACC_PLACE={
-  eyes:  {wFrac:0.34,ax:'faceCx',ay:'eyeY'},
+  eyes:  {wFrac:0.34,ax:'faceCx',ay:'eyeY'},                            // across the eyes
   head:  {wFrac:0.33,ax:'faceCx',ay:'browLine',anch:'bottom',dy:10},   // sized to the ~140px head; brim just below the brow, crown seated on the dome; centred on the face-feature axis
   shoes: {wFrac:0.92,ax:'footCx',ay:'footY',anch:'bottom',dy:10},
-  glove: {wFrac:0.17,ax:'handRx',ay:'handY'},
-  driver:{hFrac:0.60,ax:'sideRxIn',ay:'footY',anch:'bottom'},
-  putter:{hFrac:0.52,ax:'sideLxIn',ay:'footY',anch:'bottom'},
-  ball:  {wFrac:0.10,ax:'handLx',ay:'handY',dy:30},
-  charm: {wFrac:0.09,ax:'headCx',ay:'waistY',dx:70},
+  driver:{spanY:['gripY','footY'],ax:'handRx'},                        // grip at the right hand, head on the ground (spans hand→ground on both bodies)
+  putter:{spanY:['gripY','footY'],ax:'handLx',dx:12},                  // grip at the left hand, head on the ground
+  glove: {wFrac:0.145,ax:'handRx',ay:'handY',dy:8},                    // worn on the right hand
+  ball:  {wFrac:0.075,ax:'handLx',ay:'handY',dx:24,dy:16},             // held by the left hand
+  charm: {wFrac:0.05,ax:'hipLx',ay:'waistY',dy:4},                     // ball-marker clipped at the belt/pocket
 };
 // accessory id → art file (art coverage is partial; a few items reuse the nearest matching art)
 const ACC_ART={
@@ -4806,9 +4808,15 @@ function paintAvatarFull(canvas, look){
         else if(slot==='head' && freeCap){ const cap=avTintedCap(o.hatHex); if(cap){ img=cap; bbox=[0,0,cap.width,cap.height]; } }
         if(!img||!bbox) return;
         const sx=bbox[0],sy=bbox[1],sw=bbox[2]-bbox[0],sh=bbox[3]-bbox[1];
-        const scale=cfg.wFrac?((A.W*cfg.wFrac)/sw):((A.H*cfg.hFrac)/sh), dw=sw*scale, dh=sh*scale;
-        const ax=A[cfg.ax]+xoff, ay=A[cfg.ay], dx=ax-dw/2+(cfg.dx||0);
-        const anch=cfg.anch||'center', dy=(anch==='top'?ay:anch==='bottom'?ay-dh:ay-dh/2)+(cfg.dy||0);
+        let dw,dh,dx,dy;
+        if(cfg.spanY){   // scale the art to span two anatomy anchors (e.g. a club: grip at the hand → head on the ground)
+          dh=A[cfg.spanY[1]]-A[cfg.spanY[0]]; const sc=dh/sh; dw=sw*sc;
+          dx=A[cfg.ax]+xoff-dw/2+(cfg.dx||0); dy=A[cfg.spanY[0]]+(cfg.dy||0);
+        } else {
+          const scale=cfg.wFrac?((A.W*cfg.wFrac)/sw):((A.H*cfg.hFrac)/sh); dw=sw*scale; dh=sh*scale;
+          const ax=A[cfg.ax]+xoff, ay=A[cfg.ay]; dx=ax-dw/2+(cfg.dx||0);
+          const anch=cfg.anch||'center'; dy=(anch==='top'?ay:anch==='bottom'?ay-dh:ay-dh/2)+(cfg.dy||0);
+        }
         try{ ctx.drawImage(img, sx,sy,sw,sh, dx,dy,dw,dh); }catch(e){} });
       _avRenderFull.set(key,off); avBlit(canvas,off);
     }catch(err){ avVectorFallback(canvas); }
