@@ -120,6 +120,20 @@
   .scoreitem{text-align:center;background:var(--panel2);border-radius:10px;padding:12px;}
   .scoreitem.good{color:var(--green);} .scoreitem.bad{color:var(--red-bright);}
   .badgepop{display:inline-flex;align-items:center;gap:6px;background:rgba(217,164,65,.12);border:1px solid rgba(217,164,65,.4);color:var(--amber);padding:6px 12px;border-radius:999px;font-size:12.5px;margin:4px 6px 0 0;}
+
+  /* ---- Visual-novel scene layer (briefing + interrogation) ---- */
+  .vnscene{position:relative;border-radius:16px;overflow:hidden;margin-bottom:16px;border:1px solid var(--line);}
+  .vnscene .backdrop{position:absolute;inset:0;z-index:0;}
+  .vnscene .vncontent{position:relative;z-index:1;padding:22px;}
+  .vn-avatar-row{display:flex;align-items:center;gap:14px;margin-bottom:12px;}
+  .vn-avatar{border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;flex-shrink:0;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45);box-shadow:0 6px 18px -8px rgba(0,0,0,.6);}
+  .vn-name{font-family:var(--display);font-size:21px;letter-spacing:.02em;}
+  .vn-name .vn-sub{display:block;font-family:var(--body);font-size:12px;color:var(--text-dim);letter-spacing:0;font-weight:500;}
+  .vn-textbox{background:rgba(10,11,14,.55);border:1px solid var(--line);border-radius:12px;padding:16px 18px;font-size:16.5px;line-height:1.55;cursor:pointer;min-height:34px;}
+  .vn-cursor{display:inline-block;width:8px;height:16px;background:currentColor;margin-left:2px;vertical-align:-2px;animation:vnblink 1s steps(1) infinite;}
+  @keyframes vnblink{50%{opacity:0}}
+  .vn-skiphint{margin-top:8px;font-size:11.5px;color:var(--text-faint);text-align:right;}
+  .vn-after{margin-top:16px;}
 </style>
 </head>
 <body>
@@ -159,8 +173,90 @@
     lastResolution: null,
     toastMsg: null,
     toastTimer: null,
-    motiveOrderCache: {}
+    motiveOrderCache: {},
+    scene: null,
+    typewriterTimer: null
   };
+
+  // ---------------------------------------------------------------------
+  // Generated portraits + typewriter scene reveal (no art assets needed)
+  // ---------------------------------------------------------------------
+
+  function hashStr(s) {
+    var h = 0;
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+    return Math.abs(h);
+  }
+
+  function initialsFor(name) {
+    var clean = String(name || '?').replace(/["“”]/g, '').trim();
+    var parts = clean.split(/\s+/).filter(Boolean);
+    if (!parts.length) return '?';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+
+  function avatarHtml(id, name, size) {
+    size = size || 56;
+    var hue = hashStr(id) % 360;
+    var bg = 'linear-gradient(160deg, hsl(' + hue + ',65%,52%), hsl(' + ((hue + 40) % 360) + ',55%,32%))';
+    return '<div class="vn-avatar" style="width:' + size + 'px;height:' + size + 'px;font-size:' + Math.round(size * 0.36) + 'px;background:' + bg + ';">' + esc(initialsFor(name)) + '</div>';
+  }
+
+  function sceneBackdropStyle(id) {
+    var hue = hashStr(id) % 360;
+    return 'background:radial-gradient(circle at 26% 15%, hsla(' + hue + ',55%,35%,.32), transparent 62%), linear-gradient(180deg,#14161b,var(--panel) 75%);';
+  }
+
+  function clearTypewriter() {
+    if (App.typewriterTimer) { clearInterval(App.typewriterTimer); App.typewriterTimer = null; }
+  }
+
+  function startTypewriter(key, text) {
+    if (App.scene && App.scene.key === key) return;
+    clearTypewriter();
+    App.scene = { key: key, full: text, count: 0, done: text.length === 0 };
+    if (App.scene.done) return;
+    App.typewriterTimer = setInterval(function () {
+      App.scene.count += 2;
+      if (App.scene.count >= App.scene.full.length) {
+        App.scene.count = App.scene.full.length;
+        App.scene.done = true;
+        clearTypewriter();
+      }
+      render();
+    }, 22);
+  }
+
+  function completeTypewriter() {
+    if (App.scene && !App.scene.done) {
+      App.scene.count = App.scene.full.length;
+      App.scene.done = true;
+      clearTypewriter();
+      render();
+    }
+  }
+
+  function sceneText() {
+    if (!App.scene) return { text: '', done: true };
+    var shown = App.scene.done ? App.scene.full : App.scene.full.slice(0, App.scene.count);
+    return { text: shown, done: App.scene.done };
+  }
+
+  function renderVnScene(opts) {
+    // opts: { bgId, avatarId, avatarName, nameLabel, subLabel, text, after }
+    var st = sceneText();
+    return '<div class="vnscene">' +
+      '<div class="backdrop" style="' + sceneBackdropStyle(opts.bgId) + '"></div>' +
+      '<div class="vncontent">' +
+        '<div class="vn-avatar-row">' + avatarHtml(opts.avatarId, opts.avatarName) +
+          '<div class="vn-name">' + esc(opts.nameLabel) + (opts.subLabel ? '<span class="vn-sub">' + esc(opts.subLabel) + '</span>' : '') + '</div>' +
+        '</div>' +
+        '<div class="vn-textbox" data-action="scene-skip">' + esc(st.text) + (st.done ? '' : '<span class="vn-cursor"></span>') + '</div>' +
+        (st.done ? '<div class="vn-after">' + opts.after + '</div>' : '<div class="vn-skiphint">Click the text to skip ahead</div>') +
+      '</div>' +
+    '</div>';
+  }
 
   function shuffleForCase(list, caseId) {
     if (App.motiveOrderCache[caseId]) return App.motiveOrderCache[caseId];
@@ -208,7 +304,7 @@
   // ---------------------------------------------------------------------
 
   var actions = {
-    'go-hub': function () { App.screen = 'hub'; App.caseId = null; App.caseData = null; render(); },
+    'go-hub': function () { clearTypewriter(); App.scene = null; App.screen = 'hub'; App.caseId = null; App.caseData = null; render(); },
     'hub-tab': function (d) { App.hubTab = d.tab; render(); },
     'new-career': function () {
       RTC.Save.reset();
@@ -264,6 +360,7 @@
       App.screen = 'hub'; App.hubTab = 'cases';
       render();
     },
+    'scene-skip': function () { completeTypewriter(); },
     'reset-career': function () {
       if (!confirm('Reset your entire RunTheCase career? This clears all progress in this browser.')) return;
       RTC.Save.reset();
@@ -278,6 +375,7 @@
     if (!el) return;
     var action = el.getAttribute('data-action');
     if (!actions[action]) return;
+    if (action !== 'scene-skip') clearTypewriter();
     var data = {};
     Array.prototype.forEach.call(el.attributes, function (a) {
       if (a.name.indexOf('data-') === 0 && a.name !== 'data-action') {
@@ -296,6 +394,7 @@
   // ---------------------------------------------------------------------
 
   function openCase(caseId) {
+    clearTypewriter(); App.scene = null;
     RTC.loadCase(caseId, App.data.registry).then(function (caseData) {
       App.caseId = caseId;
       App.caseData = caseData;
@@ -560,12 +659,16 @@
   function renderBriefing() {
     var c = App.caseData;
     var partner = c.partner_id ? RTC.findCharacter(App.data.characters, c.partner_id) : null;
-    return '<div class="briefingcard card">' +
-      '<h3 style="margin-top:0;">Briefing</h3>' +
-      '<p style="font-size:16px;">' + esc(c.briefing) + '</p>' +
-      (partner ? '<p class="faint">Partnered with ' + esc(partner.name) + '.</p>' : '') +
-      '<button class="btn primary" data-action="begin-investigation">Begin Investigation</button>' +
-    '</div>';
+    startTypewriter('briefing:' + c.case_id, c.briefing);
+    return renderVnScene({
+      bgId: c.case_id,
+      avatarId: partner ? partner.id : c.case_id,
+      avatarName: partner ? partner.name : '📁',
+      nameLabel: partner ? partner.name : 'Case File',
+      subLabel: partner ? 'Your partner on this one' : c.title,
+      after: '<button class="btn primary" data-action="begin-investigation">Begin Investigation</button>'
+      /* text comes from App.scene, set by startTypewriter just above */
+    });
   }
 
   function renderInvestigation() {
@@ -637,24 +740,32 @@
       var nodeId = App.activeNode == null ? tree.root_node : App.activeNode;
       var node = nodeId === '__END__' ? null : RTC.getDialogueNode(c, tree.id, nodeId);
       if (nodeId === '__END__') {
+        clearTypewriter(); App.scene = null;
         body = '<div class="chatnode"><p class="line">Nothing more to press them on right now.</p></div>';
       } else if (!node) {
+        clearTypewriter(); App.scene = null;
         body = '<div class="chatnode"><p class="line">End of the line for now. Keep investigating for more.</p></div>';
       } else if (!RTC.isNodeEnterable(node, entry)) {
+        clearTypewriter(); App.scene = null;
         body = '<div class="chatnode"><p class="line">You need more evidence before pressing this further.</p></div>';
       } else {
-        body = '<div class="chatnode">' +
-          '<div class="speaker">' + esc(suspect.name) + '</div>' +
-          '<div class="line">' + esc(node.speaker_line) + '</div>' +
-          (node.options || []).map(function (opt, i) {
-            var needsEv = opt.present_evidence_id;
-            var have = !needsEv || entry.evidence_logged.indexOf(needsEv) !== -1;
-            var evName = needsEv ? (c.evidence.find(function (e) { return e.id === needsEv; }) || {}).name : null;
-            return '<button class="btn optionbtn ' + (have ? '' : 'ghost') + '" ' + (have ? 'data-action="dialogue-option" data-tree-id="' + tree.id + '" data-opt-index="' + i + '"' : 'disabled') + ' title="' + (needsEv && !have ? 'Requires evidence: ' + esc(evName) : '') + '">' +
-              esc(opt.text) + (opt.effect ? '<span class="effecttag">' + esc(opt.effect.replace(/_/g, ' ')) + '</span>' : '') +
-            '</button>';
-          }).join('') +
-        '</div>';
+        startTypewriter('node:' + tree.id + ':' + node.id, node.speaker_line);
+        var optionsHtml = (node.options || []).map(function (opt, i) {
+          var needsEv = opt.present_evidence_id;
+          var have = !needsEv || entry.evidence_logged.indexOf(needsEv) !== -1;
+          var evName = needsEv ? (c.evidence.find(function (e) { return e.id === needsEv; }) || {}).name : null;
+          return '<button class="btn optionbtn ' + (have ? '' : 'ghost') + '" ' + (have ? 'data-action="dialogue-option" data-tree-id="' + tree.id + '" data-opt-index="' + i + '"' : 'disabled') + ' title="' + (needsEv && !have ? 'Requires evidence: ' + esc(evName) : '') + '">' +
+            esc(opt.text) + (opt.effect ? '<span class="effecttag">' + esc(opt.effect.replace(/_/g, ' ')) + '</span>' : '') +
+          '</button>';
+        }).join('');
+        body = renderVnScene({
+          bgId: suspect.id,
+          avatarId: suspect.id,
+          avatarName: suspect.name,
+          nameLabel: suspect.name,
+          subLabel: 'Interrogation',
+          after: optionsHtml
+        });
       }
     } else {
       body = '<p class="faint">Choose a suspect above to begin.</p>';
