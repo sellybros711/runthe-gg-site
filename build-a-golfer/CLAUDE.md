@@ -5277,6 +5277,22 @@ allows Google Fonts, or self-host Anton.*
   the shorter-torso female). Verified by rendering the full male + female composites with one item per slot;
   HTML only (no art/mask changes).
 
+- **CS198 — ball placement + Pro Shop redesigned as a game-style locker.** Owner: "the ball is still
+  floating awkwardly, and the functionality of the entire profile/shop needs updating — the UI/UX is not
+  great... look how other games do it."
+  • **Ball** now rests on the ground at the golfer's feet (a ball at address) instead of floating by the
+    hand — reads naturally on both bodies (verified in the render harness).
+  • **Pro Shop rebuilt** (`overlayShop`) into a locker like 2K/Fortnite/Rocket League: a STICKY top with
+    the title, a prominent gold coin-balance pill, a live full-body avatar preview, a two-level nav
+    (Apparel / Equipment / My Items → category chips), and a responsive grid of compact **tap-to-act
+    tiles**. Each tile shows a colour/pattern swatch or a rarity-coloured gear icon, the name, gear boosts,
+    and a clear state: EQUIPPED (gold ring + ✓), OWNED, or LOCKED (price + coin, dimmed if unaffordable) —
+    plus a rarity dot on gear. Tap an owned item to wear it, tap a locked one to buy+equip; the preview and
+    balance update live. Replaces the old one-big-card-per-item list with a button on every card. New
+    helpers `shopTile`/`cosTileHTML`/`accTileHTML`/`shopTileClick`/`patSwatchBg`; `openShopTo` retargeted to
+    the new `shopSec`/`shopCat` state. Verified with headless Chromium (Apparel + Equipment tabs, equipped/
+    locked states, rarity dots, boosts, prices all render; zero page errors). HTML/CSS only.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
