@@ -5293,6 +5293,20 @@ allows Google Fonts, or self-host Anton.*
     the new `shopSec`/`shopCat` state. Verified with headless Chromium (Apparel + Equipment tabs, equipped/
     locked states, rarity dots, boosts, prices all render; zero page errors). HTML/CSS only.
 
+- **CS199 — glove that actually fits the hand (procedural, not a pasted product shot).** Owner: "the glove
+  looks really bad — make a new glove that fits the golfer's hand." The old glove was a product-shot PNG
+  composited near the hand, which never sat right. Replaced it entirely: the glove is now PAINTED onto the
+  golfer's OWN hand pixels — a golf glove is a form-fitting white hand, so recolouring the fist's skin white
+  (preserving its knuckle/finger shading) fits perfectly by construction, plus a drawn wrist-strap band.
+  New per-gender `glove{Cx,Cy,Rx,Ry}` fist ellipse in `AV_ANAT` (the male hand is against the trousers so a
+  loose ellipse is clean; the skirted female's hand abuts her bare leg so hers is a tight ellipse on the fist
+  — also corrected the female right-hand anchor 286→320, which aligns the driver grip onto the real hand).
+  `gloveHexFor(id)` picks white (or gold for the Golden-Grip Glove). Removed the glove from the accessory
+  art/draw-order; the shop still sells/equips it (icon tile) — it just renders on the hand now. Verified by
+  rendering the real full-body avatar over http (so the canvas isn't file:// tainted) for both genders with a
+  glove + clubs equipped: the gloved hand conforms to the fingers, wears the strap, and grips the club; zero
+  page errors. HTML only.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

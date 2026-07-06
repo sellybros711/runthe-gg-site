@@ -4739,8 +4739,10 @@ const AV_ANAT={
   // slightly turned so it differs from the silhouette headCx; the cap/glasses centre on faceCx.
   // handY = the fist centre; gripY = where a held club's grip sits (just above the fist); hipLx = belt/pocket
   // for a clipped marker. Measured per-gender from the base art (the female is skirted with hands higher-relative).
-  male:  {W:420,H:1400,headCx:211,faceCx:214,headTop:2,eyeY:116,browLine:100,footCx:211,footY:1330,handRx:385,handLx:42,handY:730,gripY:716,hipLx:158,sideRxIn:372,sideLxIn:48,waistY:690},
-  female:{W:380,H:1400,headCx:213,faceCx:213,headTop:4,eyeY:155,browLine:114,footCx:197,footY:1330,handRx:286,handLx:96,handY:778,gripY:764,hipLx:132,sideRxIn:338,sideLxIn:42,waistY:712},
+  // glove{Cx,Cy,Rx,Ry} = an ellipse over the RIGHT fist; the glove is painted by recolouring the hand's own
+  // skin pixels white (a golf glove is a form-fitting white hand), so it always fits perfectly.
+  male:  {W:420,H:1400,headCx:211,faceCx:214,headTop:2,eyeY:116,browLine:100,footCx:211,footY:1330,handRx:385,handLx:42,handY:730,gripY:716,hipLx:158,gloveCx:382,gloveCy:742,gloveRx:36,gloveRy:46,sideRxIn:372,sideLxIn:48,waistY:690},
+  female:{W:380,H:1400,headCx:213,faceCx:213,headTop:4,eyeY:155,browLine:114,footCx:197,footY:1330,handRx:320,handLx:96,handY:778,gripY:764,hipLx:132,gloveCx:320,gloveCy:740,gloveRx:22,gloveRy:28,sideRxIn:338,sideLxIn:42,waistY:712},
 };
 const AV_FRAME_W=440, AV_FRAME_H=1400;   // common frame; the (narrower) base is centred in it
 // content trim rectangles [x0,y0,x1,y1] for each art file (the art is a large product-shot on a 1024x1792 canvas)
@@ -4760,7 +4762,6 @@ const ACC_PLACE={
   shoes: {wFrac:0.92,ax:'footCx',ay:'footY',anch:'bottom',dy:10},
   driver:{spanY:['gripY','footY'],ax:'handRx'},                        // grip at the right hand, head on the ground (spans hand→ground on both bodies)
   putter:{spanY:['gripY','footY'],ax:'handLx',dx:12},                  // grip at the left hand, head on the ground
-  glove: {wFrac:0.145,ax:'handRx',ay:'handY',dy:8},                    // worn on the right hand
   ball:  {wFrac:0.058,ax:'footCx',ay:'footY',dx:-48,dy:32},            // resting on the ground at the golfer's feet (ball at address)
   charm: {wFrac:0.05,ax:'hipLx',ay:'waistY',dy:4},                     // ball-marker clipped at the belt/pocket
 };
@@ -4768,7 +4769,6 @@ const ACC_PLACE={
 const ACC_ART={
   head_visor:'acc-head-visor',head_bucket:'acc-head-bucket',head_sig:'acc-head-cap',head_crown:'acc-head-champ',
   eyes_sport:'acc-eyes-sport',eyes_polar:'acc-eyes-aviator',eyes_focus:'acc-eyes-shield',eyes_eagle:'acc-eyes-shield',
-  glove_rain:'acc-glove-white-right',glove_cab:'acc-glove-white-right',glove_tour:'acc-glove-white-right',glove_gold:'acc-glove-gold-right',
   shoes_train:'acc-shoes-trainer',shoes_boa:'acc-shoes-boa',shoes_tract:'acc-shoes-carbon',shoes_carbon:'acc-shoes-carbon',
   drv_graph:'acc-driver-graphite',drv_ti:'acc-driver-titanium',drv_speed:'acc-driver-titanium',drv_rocket:'acc-driver-rocket',
   put_blade:'acc-putter-blade',put_mallet:'acc-putter-mallet',put_counter:'acc-putter-mallet',put_wand:'acc-putter-wand',
@@ -4776,7 +4776,9 @@ const ACC_ART={
   charm_tee:'acc-charm-marker',charm_mark:'acc-charm-marker',charm_divot:'acc-charm-marker',charm_clover:'acc-charm-clover',
   mi_first_win:'acc-charm-marker',mi_major:'acc-ball',mi_slam:'acc-charm-clover',mi_no1:'acc-head-champ',mi_career:'acc-driver-rocket',
 };
-const AV_DRAW_ORDER=['driver','putter','shoes','glove','ball','charm','eyes','head'];
+const AV_DRAW_ORDER=['driver','putter','shoes','ball','charm','eyes','head'];   // glove is painted onto the hand (see gloveHexFor), not composited from art
+// the equipped glove's colour (white for most, gold for the Golden-Grip); null = no glove
+function gloveHexFor(id){ return id ? (/gold/.test(id)?'#d8ad3f':'#f0f0ee') : null; }
 function _avWaitAll(entries, cb){ const pend=entries.filter(e=>e&&!e.ready&&!e.failed);
   if(!pend.length){ cb(); return; } let n=pend.length; const done=()=>{ if(--n<=0) cb(); };
   pend.forEach(e=>{ e.img.addEventListener('load',done,{once:true}); e.img.addEventListener('error',done,{once:true}); }); }
@@ -4801,8 +4803,9 @@ function paintAvatarFull(canvas, look){
   const g=o.gender, A=AV_ANAT[g]||AV_ANAT.male;
   const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===look.pants))||{a:'#c7bfa8'}).a;
   const eq={}; if(typeof accEquipped==='function') ACC_SLOTS.forEach(sl=>{ const id=accEquipped(sl.k); if(id&&ACC_ART[id]) eq[sl.k]=id; });
+  const gloveId=(typeof accEquipped==='function')?accEquipped('glove'):null, gloveHex=gloveHexFor(gloveId);
   const freeCap = !eq.head && (look.cap!==false);   // no shop headwear → the free basic cap (if cap is on)
-  const key=o.key+'|p'+(look.pants||'stone')+'|c'+(freeCap?o.hatHex:'0')+'|'+ACC_SLOTS.map(sl=>eq[sl.k]||'').join(',');
+  const key=o.key+'|p'+(look.pants||'stone')+'|c'+(freeCap?o.hatHex:'0')+'|gl'+(gloveId||'')+'|'+ACC_SLOTS.map(sl=>eq[sl.k]||'').join(',');
   const cached=_avRenderFull.get(key); if(cached){ avBlit(canvas,cached); return; }
   const base=avLoad(AV_FULL[g]), mask=avLoad(AV_FULL_MASK[g]);
   const accEntries=Object.keys(eq).map(slot=>({slot,id:eq[slot],e:avLoad(ACC_DIR+ACC_ART[eq[slot]]+'.png')}));
@@ -4828,7 +4831,12 @@ function paintAvatarFull(canvas, look){
       if(m) for(let i=0;i<d.length;i+=4){ const reg=avMaskRegionFull(m[i],m[i+1],m[i+2]); if(!reg) continue;
         if(reg==='shoes' && whiteShoes) continue;   // default white shoes keep the base art
         let t;
-        if(reg==='skin'){ t=avTint(d[i],d[i+1],d[i+2],o.skinHex,0.95,0.92,skinLp); }
+        if(reg==='skin'){
+          if(gloveHex){ const px=i>>2, gx=(px%bw-A.gloveCx)/A.gloveRx, gy=(((px/bw)|0)-A.gloveCy)/A.gloveRy;
+            if(gx*gx+gy*gy<=1) t=avKitTint(d[i],d[i+1],d[i+2],gloveHex,0.66,0.9);   // paint the glove onto the hand's own pixels → perfect fit
+            else t=avTint(d[i],d[i+1],d[i+2],o.skinHex,0.95,0.92,skinLp);
+          } else t=avTint(d[i],d[i+1],d[i+2],o.skinHex,0.95,0.92,skinLp);
+        }
         else if(reg==='hair'){ t=avTint(d[i],d[i+1],d[i+2],o.hairHex,1.0,1.05,hairLp); }   // brows/eyes carved out of the mask
         else if(reg==='shirt'){ t=avKitTint(d[i],d[i+1],d[i+2],o.shirtHex,KM.shirt,1.05);
           if(shirtPat){ const px=i>>2, pf=patFactor(shirtPat.id,px%bw,(px/bw)|0);   // shirt pattern, clipped to the shirt region
@@ -4838,7 +4846,15 @@ function paintAvatarFull(canvas, look){
         else if(reg==='shoes'){ t=avKitTint(d[i],d[i+1],d[i+2],o.shoesHex,KM.shoes,1.0); }
         else { t=avKitTint(d[i],d[i+1],d[i+2],pantsHex,KM.pants,1.0); }
         d[i]=t.r; d[i+1]=t.g; d[i+2]=t.b; }
-      tctx.putImageData(id,0,0); ctx.drawImage(tmp,xoff,0);
+      tctx.putImageData(id,0,0);
+      if(gloveHex){   // a wrist strap band across the top of the glove
+        const sw=A.gloveRx*1.7, sh=12, scx=A.gloveCx, scy=A.gloveCy-A.gloveRy+8;
+        tctx.fillStyle=(gloveHex==='#d8ad3f')?'#c69a2f':'#e4e4e6'; tctx.strokeStyle='rgba(120,120,128,.75)'; tctx.lineWidth=1.5;
+        tctx.beginPath();
+        if(tctx.roundRect) tctx.roundRect(scx-sw/2,scy-sh/2,sw,sh,4); else tctx.rect(scx-sw/2,scy-sh/2,sw,sh);
+        tctx.fill(); tctx.stroke();
+      }
+      ctx.drawImage(tmp,xoff,0);
       // composite equipped accessories, back-to-front (+ the free cap in the head slot when worn)
       AV_DRAW_ORDER.forEach(slot=>{ const cfg=ACC_PLACE[slot]; if(!cfg) return;
         let img, bbox;
