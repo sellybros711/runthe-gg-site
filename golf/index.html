@@ -5973,6 +5973,28 @@ function celebrateWin(evt, o, opts){
   if(autoAdv) celebTimer=setTimeout(finish, major?2600:2000);
   else if(!major) celebTimer=setTimeout(finish, 2000);
 }
+/* ---- course-record celebration: a full-screen pop-up when you claim a course record ---- */
+function celebrateCourseRecord(courseName, scoreTxt, opts){
+  opts=opts||{};
+  const reduce = opts.reduce!=null ? !!opts.reduce : !!(window.matchMedia && matchMedia('(prefers-reduced-motion:reduce)').matches);
+  const win=document.createElement('div'); win.className='celebrate';
+  const cv=document.createElement('canvas'); cv.className='confetti'; win.appendChild(cv);
+  win.appendChild($(`<div class="spot"></div>`));
+  win.appendChild($(`<div class="celeb-trophy">${winTrophySVG()}</div>`));
+  win.appendChild($(`<div class="celeb-kicker">${esc(opts.kicker||'Course Record')}</div>`));
+  win.appendChild($(`<div class="celeb-title">New Record!</div>`));
+  win.appendChild($(`<div class="celeb-sub">${scoreTxt?esc(scoreTxt)+' · ':''}You hold the record at ${esc(courseName)}</div>`));
+  let done=false, timer=null;
+  function finish(){ if(done)return; done=true; if(timer){clearTimeout(timer);timer=null;} if(_celebStop){_celebStop();_celebStop=null;} win.remove(); }
+  const actions=$(`<div class="celeb-actions"></div>`);
+  const cont=$(`<button class="btn goldfill">Continue ▸</button>`); cont.onclick=e=>{ e.stopPropagation(); finish(); }; actions.appendChild(cont);
+  win.appendChild(actions);
+  document.body.appendChild(win);
+  try{ if(!reduce && navigator.vibrate) navigator.vibrate([0,30,40,50]); }catch(_){}
+  track('daily_course_record');
+  if(!reduce){ _celebStop=confettiRun(cv,{count:150, colors:['#EBA61F','#f9d271','#ffffff','#35d6a0'], mode:'cannons'}); }
+  win.onclick=finish;   // tap anywhere dismisses (result screen sits underneath)
+}
 /* ---- Olympic medal ceremony: reveal the podium bronze → silver → gold, in order ---- */
 function celebrateOlympicPodium(ce, opts){
   opts=opts||{}; const reduce=!!opts.reduce, auto=!!opts.auto;
@@ -9447,7 +9469,14 @@ function scrSpotlightResult(){
       </div>${(justPlayed&&!wonEvent&&left>0)?`<div class="small center" style="margin-top:6px;color:#e9a23b;font-weight:700">One attempt left. Beat the pro to claim the win.</div>`:''}</div>`)); }
   // SPOTLIGHT course record (server-based, its own bucket) — separate from the regular daily record
   { const srec=(crCacheSpot&&crCacheSpot.recs[sp.key])||courseRecordsSpot()[sp.key];
-    if(S.spotResult&&S.spotResult.record){ add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">🏆 Spotlight course record!</b><div class="small muted" style="margin-top:2px">You hold the ${esc(sp.month)} Spotlight record at ${esc(dShort(c.v))}.</div></div>`)); }
+    if(S.spotResult&&S.spotResult.record){
+      if(!S.spotResult._crCelebrated){ S.spotResult._crCelebrated=true; const cn=dShort(c.v), st=dTot(total, c.par);
+        setTimeout(()=>{ if(S.screen==='dailyresult'){ try{ celebrateCourseRecord(cn, st, {kicker:sp.month+' Spotlight Record'}); }catch(e){} } }, 360); }
+      add($(`<div style="max-width:520px;margin:0 auto 8px;text-align:center;padding:16px 18px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(235,166,31,.22),rgba(235,166,31,.05));box-shadow:0 6px 22px rgba(235,166,31,.18)">
+        <div style="width:50px;height:58px;margin:0 auto 4px">${winTrophySVG()}</div>
+        <div style="font:800 12px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">New Spotlight Record</div>
+        <div style="font-family:var(--display);font-size:26px;color:var(--oncard);margin-top:6px;line-height:1">${dTot(total, c.par)}</div>
+        <div class="small" style="margin-top:5px;color:#dfeae2">You hold the ${esc(sp.month)} Spotlight record at <b>${esc(dShort(c.v))}</b></div></div>`)); }
     else if(srec){ add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center">Spotlight record: <b style="color:var(--gold)">${dTot(srec.toPar, c.par)}</b> by ${esc(srec.name)}${srec.toPar<total?` · you were ${total-srec.toPar} back`:''}</div>`)); }
     else if(!sbSignedIn()){ add($(`<div class="scout small muted" style="max-width:520px;margin:0 auto 8px;text-align:center">Sign in to post your Spotlight score to the global leaderboard.</div>`)); } }
   // SPOTLIGHT global leaderboard (this event's own board, server-based)
@@ -10055,7 +10084,16 @@ function scrDailyResult(){
     }
   }
   const rec=courseRecords()[r.course];
-  if(r.record) add($(`<div class="scout" style="max-width:520px;margin:0 auto;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">🏆 New course record!</b><div class="small muted" style="margin-top:2px">You hold the record at ${esc(dShort(c.v))}.</div></div>`));
+  if(r.record){
+    // fire the celebration pop-up once for this result, then list the record prominently
+    if(!r._crCelebrated){ r._crCelebrated=true; const cn=dShort(c.v), st=dTot(total, c.par);
+      setTimeout(()=>{ if(S.screen==='dailyresult'){ try{ celebrateCourseRecord(cn, st); }catch(e){} } }, 360); }
+    add($(`<div style="max-width:520px;margin:0 auto;text-align:center;padding:16px 18px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(235,166,31,.22),rgba(235,166,31,.05));box-shadow:0 6px 22px rgba(235,166,31,.18)">
+      <div style="width:50px;height:58px;margin:0 auto 4px">${winTrophySVG()}</div>
+      <div style="font:800 12px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">New Course Record</div>
+      <div style="font-family:var(--display);font-size:26px;color:var(--oncard);margin-top:6px;line-height:1">${dTot(total, c.par)}</div>
+      <div class="small" style="margin-top:5px;color:#dfeae2">You hold the record at <b>${esc(dShort(c.v))}</b></div></div>`));
+  }
   else if(rec) add($(`<div class="scout" style="max-width:520px;margin:0 auto;text-align:center">Course record: <b style="color:var(--gold)">${dTot(rec.toPar, c.par)}</b> by ${esc(rec.name)}${rec.toPar<total?` · you were ${total-rec.toPar} back`:''}</div>`));
   const holes=(S.dailyHoles&&S.dailyHoles.length===18)?S.dailyHoles:(r.holes&&r.holes.length===18?r.holes:null);
   if(holes){
