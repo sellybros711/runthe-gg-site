@@ -241,10 +241,18 @@ window.GA_ID='G-L29P5MRWKE';
   .online-btn .ol-s{font-size:10.5px; font-weight:600; color:#9fd9cd; letter-spacing:.02em}
   @media (prefers-reduced-motion:reduce){.online-dot{animation:none}}
   /* secondary menu row: demoted small links */
-  .home2{display:flex; flex-wrap:wrap; justify-content:center; gap:8px 14px; margin-top:16px; max-width:440px}
-  .home2 button{background:none; border:none; color:var(--muted); font-family:var(--body); font-weight:700; font-size:13px;
-    letter-spacing:.01em; cursor:pointer; padding:5px 4px; display:inline-flex; align-items:center; gap:6px}
-  .home2 button:hover{color:var(--oncard)}
+  /* ---- title nav tiles (Leaderboard / Trophy Room / Pro Shop / How to Play) ---- */
+  .home-nav{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; max-width:440px; margin:18px auto 0}
+  @media(min-width:600px){ .home-nav{grid-template-columns:repeat(4,1fr); max-width:640px} }
+  .navtile{display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center; gap:5px;
+    padding:15px 8px 13px; border-radius:15px; background:var(--panel); border:1.5px solid var(--panelb); color:var(--oncard);
+    font-family:var(--body); cursor:pointer; box-shadow:0 3px 12px rgba(0,0,0,.18); transition:transform .12s ease, border-color .12s ease, background .12s ease}
+  .navtile:hover{transform:translateY(-2px); border-color:var(--gold); background:rgba(235,166,31,.09)}
+  .navtile:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
+  .navtile .ni{font-size:23px; line-height:1; color:var(--gold); margin-bottom:1px}
+  .navtile .nl{font-weight:800; font-size:13.5px; letter-spacing:.01em}
+  .navtile .ns{font-size:11px; color:var(--muted); font-weight:700; display:inline-flex; align-items:center; gap:4px}
+  .navtile.hot{border-color:rgba(235,166,31,.55); background:linear-gradient(160deg,rgba(235,166,31,.12),rgba(235,166,31,.03))}
 
   /* ---- title scene ---- */
   .scene{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none}
@@ -4565,13 +4573,16 @@ function scrTitle(){
     stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--muted)">⭐ Next Monthly Spotlight: <b style="color:var(--gold)">${esc(dShort(DAILY_COURSES[ns.key].v))}</b> · ${fmtDayKey(ns.liveDayKey)}</div>`));
   }
   w.appendChild(stack);
-  // ── secondary actions, demoted to small links ──
-  const sec=$(`<div class="home2"></div>`);
-  const mkLink=(label,fn)=>{ const b=$(`<button type="button">${label}</button>`); b.onclick=fn; sec.appendChild(b); };
-  mkLink('How to Play', openRules);
-  mkLink('🏆 Leaderboard', ()=>{S.overlay='leaderboard';render();});
-  mkLink('🏅 Trophy Room', ()=>{S.overlay='record';render();});
-  if(SHOP_ENABLED) mkLink((sbSignedIn()?ic('coin')+' '+coinFmt(coinBalance())+' · ':'')+'Pro Shop', ()=>{S.overlay='shop';render();});
+  // ── destinations, promoted to prominent nav tiles (Leaderboard / Trophy Room / Pro Shop stand out) ──
+  const sec=$(`<div class="home-nav"></div>`);
+  const signedIn=sbSignedIn();
+  const mkTile=(icon,label,sub,fn,hot)=>{ const b=$(`<button type="button" class="navtile${hot?' hot':''}" aria-label="${esc(label)}">
+      <span class="ni" aria-hidden="true">${icon}</span><span class="nl">${esc(label)}</span>${sub?`<span class="ns">${sub}</span>`:''}</button>`);
+    b.onclick=fn; sec.appendChild(b); };
+  mkTile('🏆','Leaderboard','Rankings', ()=>{S.overlay='leaderboard';render();}, true);
+  mkTile('🏅','Trophy Room', signedIn?'Trophies & rank':'Sign in', ()=>{S.overlay='record';render();}, true);
+  if(SHOP_ENABLED) mkTile(ic('cart'),'Pro Shop', signedIn?(ic('coin')+' '+coinFmt(coinBalance())):'Gear & boosts', ()=>{S.overlay='shop';render();}, true);
+  mkTile('📖','How to Play','Rules & tips', openRules, false);
   w.appendChild(sec);
   const credit=$(`<div class="small muted center" style="margin-top:16px;line-height:1.6;opacity:.7">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
   w.appendChild(credit);
