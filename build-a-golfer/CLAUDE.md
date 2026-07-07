@@ -5373,6 +5373,23 @@ allows Google Fonts, or self-host Anton.*
   by rendering the title (mobile + desktop), setup, and shop over http — category labels are noticeably more
   readable, layouts intact, good above-the-fold density; zero page errors. CSS/label-size only.
 
+- **CS206 — course record is now a celebration pop-up + a prominent banner.** Owner (screenshot of the
+  daily result's small "New course record!" scout card): "Getting the course record should be a pop up and
+  then listed more prominently." New `celebrateCourseRecord(courseName, scoreTxt, opts)` — a full-screen
+  `.celebrate` overlay (reusing the win-celebration infra: gold `winTrophySVG` trophy that pops in, spotlight,
+  gold/green confetti cannons, haptic buzz, "COURSE RECORD / New Record! / {score} · You hold the record at
+  {course}", a Continue button + tap-anywhere to dismiss; reduced-motion safe, fires `track('daily_course_record')`).
+  It fires ONCE per result on `scrDailyResult` when `r.record` is true (guarded by `r._crCelebrated` so async
+  re-renders — crLoad/dbLoad/verifyDailyRecord — don't re-fire it, and a 360 ms `setTimeout` gated on
+  `S.screen==='dailyresult'` so it lands after the result paints without stranding if the user leaves). The
+  small `.scout` "New course record!" card was replaced with a prominent gold-bordered banner (gradient fill +
+  glow, a trophy, "NEW COURSE RECORD", the score in the display font, "You hold the record at {course}").
+  Mirrored the same treatment on the **Monthly Spotlight** result (`scrSpotlightResult`) — its own kicker
+  ("{month} Spotlight Record") and banner. The result sits underneath the overlay, so nothing is lost on
+  dismiss. Verified over http in Playwright: forcing a daily result with `record:true` renders the prominent
+  banner AND fires the pop-up (trophy SVG + confetti + correct "64 (−8) · You hold the record at Magnolia
+  Hollow…" copy); Continue removes it and a re-render does not re-fire it; zero page errors. HTML only.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
