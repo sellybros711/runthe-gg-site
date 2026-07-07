@@ -5390,6 +5390,39 @@ allows Google Fonts, or self-host Anton.*
   banner AND fires the pop-up (trophy SVG + confetti + correct "64 (−8) · You hold the record at Magnolia
   Hollow…" copy); Continue removes it and a re-render does not re-fire it; zero page errors. HTML only.
 
+- **CS207 — achievements + ranks buffed for a long-haul grind (owner: "a lot more achievements and levels…
+  should feel like it takes a very long time to get through levels and ranks. And there should be a lot of
+  them").** The owner hit near-max Tour Rep in ~1-2 weeks. Two coordinated levers, both pure content (no new
+  capture wiring, all new tiers reference metrics already in `achMetrics`):
+  1. **~90 new achievements → 289 total (was ~200); total points 13,090 → 30,600 (~2.3×).** An "EXPANSION 3"
+     block of deep prestige tiers on every accumulating metric — wins 300/500/750/1000, majors 75/100/150,
+     seasons 100/150/250, careers 50/75/100, starts 1k/2.5k/5k, top-10s 3k/6k, cuts 3k/7.5k/15k, earnings
+     $10B/$25B/$50B, net $1B/$5B, daily played 1k/2.5k/5k, daily beats 750/1.5k/3k, streak 500/1000, online
+     wins 250/500/1000 + matches 500/1.5k/5k, circuit wins 50/100 + majors 10/20, Cups 15/25 + apps/points
+     tiers, spotlights 36/60, rivals 50/100, POY 5/10, World No.1 5/10, weeks-at-No.1 100/250/500, playoffs
+     25/50, comebacks/wire-to-wire 10/25, daily eagles 250/500, aces 3/5/10, daily records 25/50, a 99-OVR
+     build, single-season Grand Slam ×2/×3, and more. These are years of play, so they massively inflate the
+     denominator.
+  2. **Tour Rep ladder 9 → 20 ranks.** New `REP_TIERS`: Amateur · Rookie · Qualifier · Journeyman · Tour
+     Regular · Tour Pro · Established Pro · Contender · Challenger · Rising Star · Star · All-Star · Standout ·
+     Champion · Elite · Superstar · Legend · Immortal · Icon · G.O.A.T. — thresholds as a % of total points on
+     a convex curve (cheap early rank-ups: Rookie 306 pts, Qualifier 765; progressively steeper: Icon 29,529,
+     G.O.A.T. = 100% completion). All the milestone names the rest of the game couples to (Amateur/Journeyman/
+     Tour Pro/Contender/Star/Champion/Legend/Icon/G.O.A.T.) remain, with the new ranks inserted between them.
+  Everything that reads a rank was made ladder-length-relative so nothing breaks: `caddieUnlocked` /
+  `nextCaddieUnlock` use a new `caddieUnlockIndex(tier)` that spreads the 8 caddie tiers proportionally across
+  the ladder (tier 8 → Amateur, tier 1 → Icon); off-season perks are now `repPerkFor(name)` computed from the
+  rank's ladder fraction (floor 1 change + 1 re-spin → max 3/3 by ~Superstar) instead of a per-name table;
+  `REP_CLASS` maps every rank (incl. the new ones) to an existing `.rept-*` leaderboard text effect (no new
+  CSS). `repAtLeast()`, the rank-gated cosmetics/titles, and the `rep_*` title badges all key off names that
+  still exist, so they're unaffected.
+  **Effect (told the owner):** nobody LOSES anything — every unlocked achievement + its points are preserved;
+  the rank NAME just recomputes live against the bigger ladder. A near-maxed account (~11k pts) now reads
+  ~Star with a long climb, not near-Icon — the intended "takes a long time" outcome. Verified over http in
+  Playwright: 289 achievements, 0 duplicate ids, every get()/goal/pts valid + every category valid; the
+  rank/perk/caddie/text-effect mapping computed correct across all 20 ranks; the Trophy Room + Tour Rep bar
+  render populated with zero page errors. Tunable: `REP_TIERS` fractions, the tier point values. HTML only.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
