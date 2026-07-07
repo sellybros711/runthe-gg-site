@@ -1401,13 +1401,79 @@ const ACH=[].concat(
   aT('cupx','International','cupWins',[[10,'Cup Dynasty','Win 10 team Cups.',150]]),
   aT('olyx','International','olyGold',[[3,'Three-Time Champion','Win 3 gold medals at the Games.',150]]),
   aT('monx','The Money','earnings',[[1e9,'Billionaire','Bank $1B in career earnings.',125]]),
-  aT('seax','Career & Legacy','seasons',[[60,'Sixty Seasons','Play 60 tour seasons, across any number of careers.',125]])
+  aT('seax','Career & Legacy','seasons',[[60,'Sixty Seasons','Play 60 tour seasons, across any number of careers.',125]]),
+  // ===== EXPANSION 3: the long grind — deep prestige tiers across every mode, so ranks take far longer =====
+  // ---- Winning ----
+  aT('wingr','Winning','wins',[[300,'Tour Titan','Win 300 career tournaments.',150],[500,'Five Hundred Club','Win 500 career tournaments.',200],[750,'Untouchable','Win 750 career tournaments.',250],[1000,'One Thousand Wins','Win 1,000 career tournaments.',300]]),
+  [{id:'win_s7', cat:'Winning',name:'Vintage Season',    desc:'Win 7 tournaments in a single season.',  goal:7, pts:100,get:m=>m.seasonWinsMax},
+   {id:'win_s10',cat:'Winning',name:'Season of a Lifetime',desc:'Win 10 tournaments in a single season.',goal:10,pts:150,get:m=>m.seasonWinsMax}],
+  // ---- Majors ----
+  aT('majgr','Majors','majors',[[75,'Major Monarch','Win 75 career majors.',175],[100,'Century of Majors','Win 100 career majors.',250],[150,'Beyond the Greats','Win 150 career majors.',300]]),
+  aT('majss','Majors','slamSeasons',[[2,'Twice Immortal','Win the single-season Grand Slam twice.',175],[3,'Thrice Immortal','Win the single-season Grand Slam 3 times.',300]]),
+  // ---- Season Awards ----
+  aT('poygr','Season Awards','poySeasons',[[5,'Perennial POY','Win Player of the Year 5 times.',150],[10,'Decade of Dominance','Win Player of the Year 10 times.',250]]),
+  aT('no1gr','Season Awards','no1Seasons',[[5,'Fixture at the Top','Finish 5 seasons ranked World No. 1.',150],[10,'The Standard','Finish 10 seasons ranked World No. 1.',250]]),
+  aT('wkgr','Season Awards','weeksAtNo1',[[100,'100 Weeks on Top','Spend 100 weeks at World No. 1.',100],[250,'250 Weeks on Top','Spend 250 weeks at World No. 1.',175],[500,'500 Weeks on Top','Spend 500 weeks at World No. 1.',300]]),
+  aT('scorgr','Season Awards','scoringSeasons',[[10,'Scoring Machine','Win 10 scoring titles.',175]]),
+  // ---- Consistency ----
+  aT('topgr','Consistency','top10',[[3000,'Top-10 Colossus','Card 3,000 career top-10s.',150],[6000,'Top-10 Immortal','Card 6,000 career top-10s.',250]]),
+  aT('cutgr','Consistency','made',[[3000,'Cut Machine','Make 3,000 career cuts.',150],[7500,'Never Miss','Make 7,500 career cuts.',250],[15000,'Weekend Immortal','Make 15,000 career cuts.',300]]),
+  aT('irongr','Consistency','ironSeasons',[[25,'Ironclad','Make every cut in 25 seasons.',175]]),
+  // ---- The Money ----
+  aT('mongr','The Money','earnings',[[10e9,'Ten Billion','Bank $10B in career earnings.',175],[25e9,'Twenty-Five Billion','Bank $25B in career earnings.',250],[50e9,'Fifty Billion','Bank $50B in career earnings.',300]]),
+  aT('netgr','The Money','net',[[1e9,'Billionaire Net Worth','Reach $1B career net worth.',150],[5e9,'Five-Billion Fortune','Reach $5B career net worth.',250]]),
+  aT('profgr','The Money','profitSeasons',[[25,'Always Profitable','Finish 25 seasons in profit.',75],[50,'The Business','Finish 50 seasons in profit.',125],[100,'A Century of Profit','Finish 100 seasons in profit.',200]]),
+  // ---- Career & Legacy ----
+  aT('seagr','Career & Legacy','seasons',[[100,'Century on Tour','Play 100 tour seasons.',150],[150,'A Life on Tour','Play 150 tour seasons.',225],[250,'Time Immemorial','Play 250 tour seasons.',300]]),
+  aT('plgr','Career & Legacy','played',[[1000,'A Thousand Starts','Play 1,000 career tournaments.',100],[2500,'Tour Institution','Play 2,500 career tournaments.',175],[5000,'Five Thousand Starts','Play 5,000 career tournaments.',300]]),
+  [{id:'leg_50', cat:'Career & Legacy',name:'Dynasty',        desc:'Complete 50 full careers.', goal:50, pts:175,get:m=>m.careers},
+   {id:'leg_75', cat:'Career & Legacy',name:'Living History',  desc:'Complete 75 full careers.', goal:75, pts:250,get:m=>m.careers},
+   {id:'leg_100',cat:'Career & Legacy',name:'Hundred Lifetimes',desc:'Complete 100 full careers.',goal:100,pts:300,get:m=>m.careers}],
+  aT('ltgr','Career & Legacy','legendTokensEarned',[[10,'Token Collector','Earn 10 Legend Tokens.',100],[25,'Immortal Vault','Earn 25 Legend Tokens.',200]]),
+  // ---- Clutch ----
+  aT('plyogr','Clutch','playoffWins',[[25,'Playoff Master','Win 25 sudden-death playoffs.',100],[50,'Overtime Legend','Win 50 sudden-death playoffs.',175]]),
+  aT('cbgr','Clutch','comebacks',[[10,'Comeback King','Win 10 come-from-behind finishes.',100],[25,'Never Out of It','Win 25 come-from-behind finishes.',175]]),
+  aT('wtwgr','Clutch','wireToWire',[[10,'Front-Runner Supreme','Win 10 wire-to-wire.',100],[25,'Lead & Never Lose It','Win 25 wire-to-wire.',175]]),
+  // ---- Daily Challenge ----
+  aT('dplgr','Daily Challenge','dailyPlayed',[[1000,'Daily Obsessed','Play 1,000 Daily Challenges.',125],[2500,'Daily Institution','Play 2,500 Daily Challenges.',225],[5000,'Five Thousand Dailies','Play 5,000 Daily Challenges.',300]]),
+  aT('dbtgr','Daily Challenge','dailyBeat',[[750,'Pro Slayer','Beat the pro 750 times.',125],[1500,'Daily Virtuoso','Beat the pro 1,500 times.',225],[3000,'Daily Immortal','Beat the pro 3,000 times.',300]]),
+  aT('dstgr','Daily Challenge','streakBest',[[500,'Unbroken','Reach a 500-day play streak.',175],[1000,'A Thousand Days','Reach a 1,000-day play streak.',300]]),
+  // ---- Daily Mastery ----
+  aT('dmegr','Daily Mastery','dailyEagles',[[250,'Eagle Storm','Make 250 daily eagles.',150],[500,'Eagle Deluge','Make 500 daily eagles.',250]]),
+  aT('dmace','Daily Mastery','dailyAces',[[3,'Ace Again','Make 3 daily holes-in-one.',75],[5,'Ace Collector','Make 5 daily holes-in-one.',125],[10,'Ace Machine','Make 10 daily holes-in-one.',225]]),
+  [{id:'dm_rec25',cat:'Daily Mastery',name:'Record Hoarder',desc:'Set 25 daily course records.',goal:25,pts:150,get:m=>m.dailyRecords},
+   {id:'dm_rec50',cat:'Daily Mastery',name:'Record Dynasty', desc:'Set 50 daily course records.',goal:50,pts:250,get:m=>m.dailyRecords}],
+  // ---- Rivalry & Spotlight ----
+  aT('spgr','Rivalry & Spotlight','spotWins',[[36,'Three Years in the Sun','Win 36 Monthly Spotlights.',150],[60,'Spotlight Icon','Win 60 Monthly Spotlights.',250]]),
+  aT('rvgr','Rivalry & Spotlight','rivalWins',[[50,'Rival Crusher','Beat rivals 50 times.',150],[100,'Nemesis of All','Beat rivals 100 times.',250]]),
+  // ---- International ----
+  aT('cupgr','International','cupWins',[[15,'Cup Colossus','Win 15 team Cups.',175],[25,'Cup Immortal','Win 25 team Cups.',300]]),
+  aT('cupagr','International','cupApps',[[10,'Team Regular','Make 10 Cup teams.',60],[25,'Team Stalwart','Make 25 Cup teams.',125],[50,'Team Institution','Make 50 Cup teams.',225]]),
+  aT('cuppgr','International','cupPoints',[[75,'Cup Points Machine','Bank 75 career Cup points.',125],[200,'Cup Points Legend','Bank 200 career Cup points.',225]]),
+  aT('olygr','International','olyGold',[[5,'Five-Time Champion','Win 5 gold medals at the Games.',175],[8,'Eight Golds','Win 8 gold medals at the Games.',300]]),
+  // ---- Online ----
+  aT('h2hwgr','Online','h2hWins',[[250,'Online Elite','Win 250 online matches.',150],[500,'Online Master','Win 500 online matches.',225],[1000,'Online Immortal','Win 1,000 online matches.',300]]),
+  aT('h2hmgr','Online','h2hMatches',[[500,'Match Machine','Play 500 online matches.',75],[1500,'Online Regular','Play 1,500 online matches.',150],[5000,'Online Fixture','Play 5,000 online matches.',250]]),
+  // ---- Legend Circuit ----
+  aT('cirwgr','Legend Circuit','circuitWins',[[50,'Circuit Icon','Win 50 Legend Circuit events.',150],[100,'Circuit Immortal','Win 100 Legend Circuit events.',250]]),
+  aT('cirmgr','Legend Circuit','circuitMajors',[[10,'Senior Major Legend','Win 10 Legend Circuit majors.',150],[20,'Senior Grand Master','Win 20 Legend Circuit majors.',250]]),
+  // ---- The Build ----
+  [{id:'bld_99',cat:'The Build',name:'The Perfect Golfer',desc:'Build a 99 OVR golfer.',goal:99,pts:250,get:m=>m.maxOvr}]
 );
 const ACH_BY_CAT=ACH_CATS.map(c=>({cat:c, list:ACH.filter(a=>a.cat===c)}));
 const ACH_TOTAL=ACH.length, ACH_TOTAL_PTS=ACH.reduce((s,a)=>s+a.pts,0);
-// Tour Rep ranks scale to the total points available (thresholds as % of all points)
-const REP_TIERS=[['Amateur',0],['Journeyman',.06],['Tour Pro',.15],['Contender',.28],['Star',.45],['Champion',.62],['Legend',.80],['Icon',.96]]
-  .map(([name,f])=>({name, at:Math.round(f*ACH_TOTAL_PTS)}));
+// Tour Rep ranks scale to the total points available (thresholds as % of all points). A long ladder —
+// cheap early ranks (quick first rank-ups) that get progressively more expensive, so climbing to the top
+// is a genuine long-haul grind. The milestone names the rest of the game couples to (Amateur / Journeyman /
+// Tour Pro / Contender / Star / Champion / Legend / Icon / G.O.A.T.) all remain, with new ranks inserted
+// between them; everything that reads a rank does so by name or by ladder-relative index (see below), so
+// adding ranks here needs no other change.
+const REP_TIERS=[
+  ['Amateur',0],       ['Rookie',.01],        ['Qualifier',.025],  ['Journeyman',.045],  ['Tour Regular',.07],
+  ['Tour Pro',.10],    ['Established Pro',.135],['Contender',.175], ['Challenger',.22],   ['Rising Star',.27],
+  ['Star',.33],        ['All-Star',.40],      ['Standout',.47],    ['Champion',.55],     ['Elite',.63],
+  ['Superstar',.72],   ['Legend',.81],        ['Immortal',.90],    ['Icon',.965]
+].map(([name,f])=>({name, at:Math.round(f*ACH_TOTAL_PTS)}));
 // LS.get's default only applies when the key is missing entirely, a key whose stored value is the
 // literal `null` (see mergeAch/mergeStreak/etc. below) comes back as null, not the default, so every
 // reader here also needs its own `||{...}` fallback before touching a sub-property.
@@ -1461,16 +1527,26 @@ function repTierFor(pts, count){
 function repTier(pts){ pts=pts==null?achPoints():pts; return repTierFor(pts, achCount()); }
 function repAtLeast(name){ return repRankIndex(repTier().tier.name) >= repRankIndex(name); }   // for rep-gated cosmetics
 function repTierName(pts){ return repTierFor(pts, pts>=ACH_TOTAL_PTS?ACH_TOTAL:0).tier.name; }   // pts-only (e.g. other players on the board)
-// each Tour Rep tier gets its own text effect (CSS classes .rept-*) on the leaderboard
-const REP_CLASS={'Journeyman':'journeyman','Tour Pro':'pro','Contender':'contender','Star':'star','Champion':'champion','Legend':'legend','Icon':'icon','G.O.A.T.':'goat'};
+// each Tour Rep tier gets a text effect (CSS classes .rept-*) on the leaderboard. The new inserted ranks
+// reuse the existing effect of the milestone rank they sit near, so no new CSS is needed (the flashiest
+// effects still land at the top of the ladder). '' = base (no effect).
+const REP_CLASS={
+  'Amateur':'',        'Rookie':'',            'Qualifier':'journeyman','Journeyman':'journeyman','Tour Regular':'journeyman',
+  'Tour Pro':'pro',    'Established Pro':'pro', 'Contender':'contender', 'Challenger':'contender', 'Rising Star':'star',
+  'Star':'star',       'All-Star':'star',      'Standout':'champion',   'Champion':'champion',    'Elite':'champion',
+  'Superstar':'legend','Legend':'legend',      'Immortal':'icon',       'Icon':'icon',            'G.O.A.T.':'goat' };
 function repClass(name){ const k=REP_CLASS[(name||'').replace(/^🐐\s*/,'')]; return 'rept'+(k?' rept-'+k:''); }
-// Tour Rep perk: off-season CHANGES + RE-SPINS. A long, steady climb, almost every rank-up grants a
-// change or a re-spin, from a modest floor (1 change + 1 re-spin) up to the MAX of 3 changes + 3 re-spins,
-// reached at Legend (rank 7 of 9). Icon / G.O.A.T. are rewarded by prestige, not more perks. [changes, re-spins]
-const REP_PERKS={ 'Amateur':[1,1], 'Journeyman':[2,1], 'Tour Pro':[2,2], 'Contender':[2,2], 'Star':[3,2],
-  'Champion':[3,2], 'Legend':[3,3], 'Icon':[3,3], 'G.O.A.T.':[3,3] };
-function repPerk(){ const p=REP_PERKS[repTier().tier.name]||[3,2]; return {changes:p[0], reSpins:p[1]}; }
-function repPerk2(name){ const p=REP_PERKS[name]||[3,2]; return {changes:p[0], reSpins:p[1]}; }   // for the next-rank teaser
+// Tour Rep perk: off-season CHANGES + RE-SPINS, computed from where the rank sits on the ladder (not a
+// per-name table, so it scales with any ladder length). Floor 1 change + 1 re-spin; ramps to the MAX of
+// 3 changes + 3 re-spins by roughly three-quarters up the ladder. Top ranks are rewarded by prestige,
+// not more perks.
+function repPerkFor(name){ const i=repRankIndex(name); if(i<0) return {changes:3,reSpins:2};
+  const top=Math.max(1, REP_ORDER.length-1), f=i/top;
+  const changes = f>=0.55?3 : f>=0.22?2 : 1;
+  const reSpins = f>=0.75?3 : f>=0.40?2 : 1;
+  return {changes, reSpins}; }
+function repPerk(){ return repPerkFor(repTier().tier.name); }
+function repPerk2(name){ return repPerkFor(name); }   // for the next-rank teaser
 // situational-flag recorder: inc (add), max (keep largest), set (boolean/flag)
 // Achievements + Tour Rep are a signed-in (RunThe.GG account) feature, guests never earn, accrue, or
 // see them (the Trophy Room / leaderboard are already gated too). Both entry points below no-op for a
@@ -3288,7 +3364,11 @@ const CADDIES=[
   {id:'stovepipe', name:'"Stovepipe"', tier:8, link:'Augusta caddie lineage', power:{base:{scr:1}, venue:{names:['The Magnolia Invitational'], d:{scr:1}}}, desc:'+1 Scrambling · +1 Scrambling at The Magnolia Invitational', flavor:'One of the great nickname-only Augusta loopers of the old caddie era.'},
 ];
 const CADDIE_BY_ID=Object.fromEntries(CADDIES.map(c=>[c.id,c]));
-function caddieUnlocked(cad){ if(!cad) return false; return repRankIndex(repTier().tier.name) >= (8-cad.tier); }
+// caddie tiers 1 (legendary) .. 8 (humble) map across the Tour Rep ladder: tier 8 unlocks at the very
+// bottom (Amateur), tier 1 at the top non-GOAT rank (Icon). Ladder-relative, so it stays correct however
+// many ranks the ladder has.
+function caddieUnlockIndex(t){ const topNonGoat=Math.max(1, REP_ORDER.length-2); return Math.round((8-t)/7*topNonGoat); }
+function caddieUnlocked(cad){ if(!cad) return false; return repRankIndex(repTier().tier.name) >= caddieUnlockIndex(cad.tier); }
 // the caddie you have equipped, but ONLY if it's a real, currently-unlocked one (a saved pick that's
 // since become locked, or an unknown id, safely resolves to "no caddie").
 function equippedCaddie(){ const c=CADDIE_BY_ID[(S.look&&S.look.caddie)||'']; return (c && caddieUnlocked(c))?c:null; }
@@ -3296,7 +3376,7 @@ function unlockedCaddies(){ return CADDIES.filter(caddieUnlocked); }
 // count how many caddies unlock at the NEXT rep rank up (for the "3 more unlock at Star" nudge)
 function nextCaddieUnlock(){
   const cur=repRankIndex(repTier().tier.name);
-  for(let idx=cur+1; idx<=7; idx++){ const t=8-idx; const n=CADDIES.filter(c=>c.tier===t).length; if(n) return {rank:REP_ORDER[idx], count:n}; }
+  for(let idx=cur+1; idx<REP_ORDER.length-1; idx++){ const n=CADDIES.filter(c=>caddieUnlockIndex(c.tier)===idx).length; if(n) return {rank:REP_ORDER[idx], count:n}; }
   return null;
 }
 // situational (major / host-course) bonus to your event-effective overall, weighted the same way
