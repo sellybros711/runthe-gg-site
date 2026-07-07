@@ -5423,6 +5423,18 @@ allows Google Fonts, or self-host Anton.*
   rank/perk/caddie/text-effect mapping computed correct across all 20 ranks; the Trophy Room + Tour Rep bar
   render populated with zero page errors. Tunable: `REP_TIERS` fractions, the tier point values. HTML only.
 
+- **CS208 — title-screen destinations promoted to prominent nav tiles.** Owner (screenshot): the four
+  bottom links (How to Play · Leaderboard · Trophy Room · Pro Shop) should be more prominent, "especially
+  Leaderboard, Trophy Room and Pro Shop." They were a small muted text-link row (`.home2`, CS123). Replaced
+  with a `.home-nav` grid of proper tile buttons (`.navtile`): a gold icon, bold label, and a one-line sub,
+  2×2 on phones / 4-across ≥600px, with hover lift + gold focus ring. Leaderboard / Trophy Room / Pro Shop
+  get the emphasized `.hot` treatment (gold-tinted gradient + gold-ish border) so they stand out; How to Play
+  is a normal tile. Subs are context-aware: Leaderboard "Rankings"; Trophy Room "Trophies & rank" (signed-in)
+  / "Sign in" (guest); Pro Shop shows the live coin balance (coin icon + `coinFmt(coinBalance())`) signed-in
+  / "Gear & boosts" guest; How to Play "Rules & tips". Verified over http at a 430px viewport: 4 tiles render
+  in a 2-col grid, the three named ones flagged `.hot`, old `.home2` gone, zero page errors; screenshot
+  confirms the prominent cards. CSS + one scrTitle block; HTML only.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
