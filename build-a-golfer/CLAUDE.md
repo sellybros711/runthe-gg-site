@@ -5618,6 +5618,18 @@ allows Google Fonts, or self-host Anton.*
   explosion all pop. Deployed to /golf. Tunable: the alpine/heath palettes, `HV_COURSE_TWEAK`, the ocean
   `oceanW`/`deep`/`shallow`/`cliff`/`beach` fields.
 
+- **CS219 — more bespoke venues + depth vignette.** Owner: keep going. Added `HV_COURSE_TWEAK` entries for
+  6 more signature venues: **TPC Sawgrass** (cypress-marsh, teal water everywhere, denser), **Kiawah Island
+  Ocean** (huge dramatic Atlantic — widest sea), **Harbour Town** (lowcountry live-oak canopy + green marsh
+  water), **Torrey Pines South** (Torrey pines on the cliffs + big ocean), **Bay Hill** (Florida water
+  course), **Whistling Straits** (Lake Michigan dunescape + beach). Plus a subtle **frame vignette**
+  (`hvvig` radial edge-darkening drawn on top of the terrain) that gives every hole depth and makes the
+  bright turf pop without breaking the flat retro look — kept light enough that it doesn't dull the green on
+  the putting close-up. Verified in Playwright: 10 tweak venues, all render in preview + live shot paths,
+  the putt close-up is unaffected, zero page errors; screenshots confirm Sawgrass marsh, Kiawah's Atlantic,
+  Harbour Town oaks, and the vignette framing. Deployed to /golf. (A literal distant horizon/skyline doesn't
+  fit the top-down view, so "depth" was delivered via the vignette + the existing elevation shading.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
