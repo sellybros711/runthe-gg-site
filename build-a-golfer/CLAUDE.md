@@ -5668,6 +5668,13 @@ allows Google Fonts, or self-host Anton.*
   its own slug; only `repClass` (leaderboard) consumes it. Reduced-motion disables the shimmers. Verified:
   20 ranks → 20 unique classes, screenshot confirms each is visually distinct, zero errors. Deployed to /golf.
 
+- **CS223 — tap-ins roll straight in (owner: short putts took crazy lines).** CS220 applied a break +
+  ~30% rim-in horseshoe to EVERY made putt, so a 1-ft tap-in curved absurdly. Gated it by distance: in
+  `hvPlots` a made putt only gets a break when it's beyond ~1.4 course-units (~4 ft) from the hole, and can
+  only horseshoe past ~3 units (~9 ft); `hvPuttPathD` now draws a literal straight line for any made putt
+  left unflagged (a tap-in). Lip-outs on missed putts are unchanged. Verified: tap-ins draw straight
+  (curve 0), medium putts break gently, long putts break + can rim in; zero errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
