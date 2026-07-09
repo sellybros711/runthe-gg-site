@@ -5023,6 +5023,53 @@ function avDrawAcc(ctx,img,slot){
 // and place each shoe under the correct foot (measured foot centres per gender, mapped through the base transform).
 const FOOT_ANCHOR={ male:{lx:97,rx:325,y:1337,w:118}, female:{lx:83,rx:316,y:1337,w:90} };
 const SHOE_ART={ x0:0.396, mid:0.5005, x1:0.605, y0:0.888, y1:0.975 };   // shoe-pair content region (frac of art)
+// hand centres (base px, measured from the masks): the glove goes on the left hand, the club is gripped
+// in the right hand. `groundY` is where the club head rests. Like the shoes, these place the accessory on
+// the base golfer's ACTUAL anatomy (the V2 art drew them for a narrower reference golfer, so an unscaled
+// full-canvas overlay lands off the body).
+const HAND_ANCHOR={ male:{lx:46,rx:381,y:700,w:64,groundY:1362}, female:{lx:25,rx:342,y:690,w:50,groundY:1362} };
+// content bounding box (fraction of the art canvas) of an accessory, computed once from its alpha + cached
+const _accBBoxCache=new Map();
+function avContentBBox(img){
+  const src=img.src||img.currentSrc||''; let c=_accBBoxCache.get(src); if(c) return c;
+  const iw=img.naturalWidth||ACC_NATIVE_W, ih=img.naturalHeight||ACC_NATIVE_H;
+  try{
+    const cv=document.createElement('canvas'); cv.width=iw; cv.height=ih;
+    const cx=cv.getContext('2d',{willReadFrequently:true}); cx.drawImage(img,0,0);
+    const d=cx.getImageData(0,0,iw,ih).data;
+    let x0=iw,y0=ih,x1=-1,y1=-1;
+    for(let y=0;y<ih;y++){ const row=y*iw; for(let x=0;x<iw;x++){ if(d[(row+x)*4+3]>30){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } } }
+    if(x1<x0){ c={x0:0,y0:0,x1:1,y1:1,gripFrac:0.5}; }
+    else {
+      // grip = x-centre of the topmost ~9% of content rows (for a club, this is the handle end)
+      const gtop=y0+Math.max(1,Math.round((y1-y0)*0.09)); let gx0=iw,gx1=-1;
+      for(let y=y0;y<gtop;y++){ const row=y*iw; for(let x=x0;x<=x1;x++){ if(d[(row+x)*4+3]>30){ if(x<gx0)gx0=x; if(x>gx1)gx1=x; } } }
+      const gc=(gx1<gx0)?(x0+x1)/2:(gx0+gx1)/2;
+      c={x0:x0/iw,y0:y0/ih,x1:(x1+1)/iw,y1:(y1+1)/ih,gripFrac:(x1>x0)?(gc-x0)/(x1-x0):0.5};
+    }
+  }catch(e){ c={x0:0,y0:0,x1:1,y1:1}; }
+  _accBBoxCache.set(src,c); return c;
+}
+// glove: crop to its content and set it ON the golfer's (left) hand, sized to the hand
+function avDrawGlove(ctx,img,g,bdx,bdy,bsc){
+  const ha=HAND_ANCHOR[g]||HAND_ANCHOR.male, bb=avContentBBox(img);
+  const iw=img.naturalWidth||ACC_NATIVE_W, ih=img.naturalHeight||ACC_NATIVE_H;
+  const sx=bb.x0*iw, sy=bb.y0*ih, sw=(bb.x1-bb.x0)*iw, sh=(bb.y1-bb.y0)*ih;
+  const dh=118*bsc, dw=dh*(sw/sh);                     // fit the glove to the hand/wrist
+  const hx=bdx+ha.lx*bsc, hy=bdy+ha.y*bsc;
+  ctx.drawImage(img, sx,sy,sw,sh, hx-dw/2, hy-dh*0.55, dw, dh);
+}
+// club: crop to its content, grip it in the (right) hand with the head on the ground
+function avDrawClub(ctx,img,g,bdx,bdy,bsc){
+  const ha=HAND_ANCHOR[g]||HAND_ANCHOR.male, bb=avContentBBox(img);
+  const iw=img.naturalWidth||ACC_NATIVE_W, ih=img.naturalHeight||ACC_NATIVE_H;
+  const sx=bb.x0*iw, sy=bb.y0*ih, sw=(bb.x1-bb.x0)*iw, sh=(bb.y1-bb.y0)*ih;
+  const gripX=bdx+ha.rx*bsc, gripY=bdy+(ha.y-14)*bsc, groundY=bdy+ha.groundY*bsc;
+  const dh=groundY-gripY, dw=dh*(sw/sh);
+  // align the club's grip (not the whole-image centre) onto the hand
+  const dx=gripX-(bb.gripFrac==null?0.5:bb.gripFrac)*dw;
+  ctx.drawImage(img, sx,sy,sw,sh, dx, gripY, dw, dh);
+}
 function avDrawShoes(ctx,img,g,bdx,bdy,bsc){
   const fa=FOOT_ANCHOR[g]||FOOT_ANCHOR.male, S=SHOE_ART;
   const iw=img.naturalWidth||ACC_NATIVE_W, ih=img.naturalHeight||ACC_NATIVE_H;
@@ -5104,10 +5151,9 @@ function paintAvatarFull(canvas, look){
       const _hr=avHexRgb(o.hairHex), hairTl=avRgbHsl(_hr.r,_hr.g,_hr.b).l;
       const skinLp=Math.min(0.92,0.44+(1-skinTl)*0.58), hairLp=Math.min(0.88,0.42+hairTl*0.55);
       const KM=AV_KIT_MEAN[g]||AV_KIT_MEAN.male;
-      const whiteShoes=(o.shoesHex||'#eef0ee').toLowerCase()==='#eef0ee';
+      const hasAccShoes=!!eq.shoes;   // an accessory shoe is equipped → hide the base golfer's own shoes behind it
       const shirtPat=(o.shirtPat&&o.shirtPat!=='none')?findPattern(o.shirtPat):null;
       if(m) for(let i=0;i<d.length;i+=4){ const reg=avMaskRegionFull(m[i],m[i+1],m[i+2]); if(!reg) continue;
-        if(reg==='shoes' && whiteShoes) continue;   // default white shoes keep the base art (the aligned accessory shoe draws over them)
         let t;
         if(reg==='skin'){ t=avTint(d[i],d[i+1],d[i+2],o.skinHex,0.95,0.92,skinLp); }   // glove is now composited from art (see AV_DRAW_ORDER)
         else if(reg==='hair'){ t=avTint(d[i],d[i+1],d[i+2],o.hairHex,1.0,1.05,hairLp); }   // brows/eyes carved out of the mask
@@ -5116,7 +5162,7 @@ function paintAvatarFull(canvas, look){
             if(pf>0){ const dep=shirtPat.depth*pf;
               if(shirtPat.tone==='light'){ t.r+=(255-t.r)*dep; t.g+=(255-t.g)*dep; t.b+=(255-t.b)*dep; }
               else { t.r*=1-dep; t.g*=1-dep; t.b*=1-dep; } } } }
-        else if(reg==='shoes'){ t=avKitTint(d[i],d[i+1],d[i+2],o.shoesHex,KM.shoes,1.0); }
+        else if(reg==='shoes'){ t=avKitTint(d[i],d[i+1],d[i+2],hasAccShoes?pantsHex:o.shoesHex,hasAccShoes?KM.pants:KM.shoes,1.0); }   // accessory shoe on → blend the base shoe into the leg so it can't peek out white
         else { t=avKitTint(d[i],d[i+1],d[i+2],pantsHex,KM.pants,1.0); }
         d[i]=t.r; d[i+1]=t.g; d[i+2]=t.b; }
       tctx.putImageData(id,0,0);
@@ -5129,7 +5175,12 @@ function paintAvatarFull(canvas, look){
         if(a && a.e.ready) img=a.e.img;
         else if(slot==='head' && freeCap) img=avTintedCap(o.hatHex);
         if(!img) return;
-        try{ if(slot==='shoes') avDrawShoes(ctx,img,g,_bdx,_bdy,_bsc); else avDrawAcc(ctx,img,slot); }catch(e){} });
+        try{
+          if(slot==='shoes') avDrawShoes(ctx,img,g,_bdx,_bdy,_bsc);
+          else if(slot==='glove') avDrawGlove(ctx,img,g,_bdx,_bdy,_bsc);
+          else if(slot==='driver'||slot==='putter') avDrawClub(ctx,img,g,_bdx,_bdy,_bsc);
+          else avDrawAcc(ctx,img,slot);
+        }catch(e){} });
       _avRenderFull.set(key,off); avBlit(canvas,off);
     }catch(err){ avVectorFallback(canvas); }
   });
