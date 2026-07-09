@@ -8402,7 +8402,10 @@ function hvPlots(g, shots, seedN){
         if(s.side==='left') ang=Math.PI+jj(i,2)*0.9; else if(s.side==='right') ang=jj(i,2)*0.9; else ang=-Math.PI/2+jj(i,2)*1.2;
         rest=[pin[0]+Math.cos(ang)*d, pin[1]+Math.sin(ang)*d]; p.onGreen=true; break; }
       case 'hole': rest=pin.slice(); p.hole=true; p.onGreen=true;
-        p._brk=(hh(i,10)-0.5)*0.14; p.lipSide=(hh(i,9)<0.5?-1:1); p.rimIn=(hh(i,8)<0.3); break;   // a made putt breaks, and ~30% catch the lip and horseshoe in
+        // only real-length made putts break; a tap-in rolls straight in, and only a genuinely long putt can horseshoe
+        { const dHole=Math.hypot(cur[0]-pin[0],cur[1]-pin[1]);
+          if(dHole>1.4){ p._brk=(hh(i,10)-0.5)*0.12; p.lipSide=(hh(i,9)<0.5?-1:1); p.rimIn=(dHole>3 && hh(i,8)<0.26); } }
+        break;
       default: y=L-(toY!=null?toY:20); rest=[g.cx(y)+jj(i,1)*8, y];
     }
     if(p.k==='putt'){
@@ -8515,6 +8518,9 @@ function hvPuttPathD(g,p){
   const cr=HV_CUP_RX; let ux=P[0]-A[0], uy=P[1]-A[1]; const ul=Math.hypot(ux,uy)||1; ux/=ul; uy/=ul;
   const px=-uy, py=ux, brk=(p._brk||0)*ul, side=p.lipSide||1;
   const f=(x,y)=>x.toFixed(1)+' '+y.toFixed(1);
+  // a TAP-IN goes straight in — no break, no horseshoe (owner: short putts were taking crazy lines). A
+  // tap-in is a made putt the distance-gate in hvPlots left unflagged (no break, no rim-in).
+  if(p.hole && !p._brk && !p.rimIn) return `M ${f(A[0],A[1])} L ${f(P[0],P[1])}`;
   if(p.hole){
     const mid=[(A[0]+P[0])/2+px*brk,(A[1]+P[1])/2+py*brk];
     if(p.rimIn){ const rim=[P[0]-ux*cr+px*side*cr*0.85, P[1]-uy*cr+py*side*cr*0.85];   // catch the rim, curl to centre
