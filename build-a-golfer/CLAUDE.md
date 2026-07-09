@@ -5596,6 +5596,28 @@ allows Google Fonts, or self-host Anton.*
   wildflower floors and the vivid palettes. Deployed to /golf. Tunable: `floorTex` per biome, the
   hue/season/density ranges in `hvCourseVary`.
 
+- **CS218 — new alpine + heathland biomes, dramatic ocean, hand-tuned signature venues (owner: "I really
+  want the visuals to pop").** Building on CS216/217:
+  • **2 new biomes** (10 total): **alpine** — a rugged mountain course (cool blue-green turf, tall dark
+    spruce, grey granite rock outcrops, a scree-rock floor), assigned to Olympic Club (which has no ocean
+    views, so moving it off coastal is more accurate too); **heath** — a windswept purple moor (blooming
+    heather mounds, sandy scrapes, birch + Scots pine, wispy fescue), assigned to Shinnecock Hills + The
+    Country Club. New flora: `spruce` (tall narrow conifer), `heather` (purple bloom mound), `birch` (white
+    marked trunk + light canopy); new `scree` floor texture.
+  • **Dramatic ocean** (the coastal/links `B.ocean` rendering fully rewritten): a **shallow→deep two-tone**
+    sea, a rocky **cliff** shoreline (jagged rocks) or a sandy **beach**, a white **foam** waterline, and
+    scattered **whitecaps** — and the sea is much wider. Coastal (Pebble/Torrey/Kiawah) gets a big blue
+    Pacific with cliffs; links (St Andrews/Carnoustie/Troon/…) now gets a grey North Sea with a beach.
+  • **Hand-tuned signature venues** via a new `HV_COURSE_TWEAK` map (applied after the per-course variation
+    in `hvBiome`): Augusta's azaleas cranked to a dense vivid pink/white/crimson bloom, Pebble's Pacific
+    widened to a dramatic 70-92px, Pinehurst opened up, St Andrews given a tighter sea + beach.
+  All centralized in the biome table + `hvBiome`/`hvTerrain` + the flora functions; verified in Playwright:
+  10 biomes present, the reassignments + hand-tunes apply, and the new biomes + enhanced ocean render in
+  BOTH preview and live shot paths with zero page errors; screenshots confirm alpine (spruce + granite),
+  heath (purple heather), Pebble's cliffs + whitecaps, St Andrews' sea + beach, and Augusta's azalea
+  explosion all pop. Deployed to /golf. Tunable: the alpine/heath palettes, `HV_COURSE_TWEAK`, the ocean
+  `oceanW`/`deep`/`shallow`/`cliff`/`beach` fields.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
