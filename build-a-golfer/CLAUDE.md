@@ -5468,6 +5468,14 @@ allows Google Fonts, or self-host Anton.*
   screenshot confirms the cleaner hierarchy. (Monthly Spotlight keeps its own gold+pulse event identity,
   visually separated below Daily.) HTML only.
 
+- **CS211 — shrink the eyewear + shoes on the full-body avatar (owner: "Glasses and shoes too big").**
+  The equipped sunglasses spanned wider than the face and the shoes reached up the shin. Reduced the
+  `ACC_PLACE` target widths: eyewear `wFrac` 0.34→0.25 (now sits across the eyes at face width, not wider)
+  and shoes `wFrac` 0.92→0.62 (the pair now sits at the feet, sized to the stance). Both apply per-gender
+  (scaled off each base's width), so male and female stay proportional. Verified over http by rendering the
+  real full-body avatar (aviator glasses + BOA shoes) on both genders — glasses fit the face, shoes fit the
+  feet, zero page errors. JS-only (placement config; no art/mask change, so no cache-bump needed).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
