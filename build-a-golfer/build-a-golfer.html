@@ -8159,7 +8159,14 @@ const HV_EX=52, HV_CAM=[-HV_EX,0,HV_W+2*HV_EX,HV_H];
 // cup + on-green ball sizes (viewBox units). A real ball (1.68") is ~0.4× the hole's width (4.25"), so on
 // the green the ball is drawn at a FIXED small radius — because ball AND cup are both in viewBox units, the
 // camera scales them together and the ratio stays realistic at every zoom (no more ball-bigger-than-hole).
-const HV_CUP_RX=2.5, HV_CUP_RY=1.75, HV_GBALL=1.05;
+const HV_CUP_RX=2.15, HV_CUP_RY=1.5, HV_GBALL=0.95;   // slightly smaller hole + ball (owner)
+// The pin ROTATES per play (like a real course's 4 hole locations). It's cosmetic — the score is engine-
+// decided — so we derive the rotation from whatever play context is current (day/attempt/round/match).
+function hvPinRot(){ try{ if(typeof S!=='undefined' && S){
+    // scope to the current mode so it's deterministic per play (and both H2H clients pick the same pin)
+    if(S.h2h && S.h2h.matchId) return dHash(String(S.h2h.matchId))>>>0;
+    if(S.daily) return (((S.dailyAttempt||0)+(S.dailySeed!=null?dHash(String(S.dailySeed)):0))>>>0);
+    return (((S.evtIndex||0)*3+(S.year||0)*5+(S.moment?2:0)+(S.circuitMode?1:0))>>>0); } }catch(e){} return 0; }
 function hvHash(a,b,c){ let h=(2166136261^(a|0))>>>0; h=Math.imul(h^(b|0),16777619)>>>0; h=Math.imul(h^((c|0)+0x9e37),16777619)>>>0; h^=h>>>13; h=Math.imul(h,0x5bd1e995)>>>0; h^=h>>>15; return (h>>>0)/4294967296; }
 function hvUnit(a,b){ const dx=a[0]-b[0],dy=a[1]-b[1],l=Math.hypot(dx,dy)||1; return [dx/l,dy/l]; }
 function hvDistYds(a,b){ return Math.hypot(a[0]-b[0],a[1]-b[1]); }
@@ -8275,7 +8282,15 @@ function hvGeom(seedN, par, yds, courseKey, holeIdx){
   const maxOff=Math.max(0,(HV_W/2-26)/(g.sx*g.t(L)) - g.greenR[0] - Math.abs(g.cx(L)));
   const goff=(hh(27)<0.5?-1:1)*Math.min(maxOff,(hh(28)<0.35?(6+hh(29)*8):0));
   g.gcx=g.cx(L)+goff;
-  g.pin=[g.gcx+(hh(3)-0.5)*7, L+(hh(4)-0.5)*5];
+  // 4 realistic hole locations (front/back × left/right, tucked but 40-60% in — never dead-center, never
+  // on the edge), and pick one by the per-play rotation so the pin moves every time the course is played.
+  g.pinCands=[
+    [g.gcx+(hh(40)-0.5)*g.greenR[0]*0.4, L-g.greenR[1]*(0.42+hh(41)*0.16)],   // front
+    [g.gcx+(hh(42)-0.5)*g.greenR[0]*0.4, L+g.greenR[1]*(0.42+hh(43)*0.16)],   // back
+    [g.gcx-g.greenR[0]*(0.42+hh(44)*0.16), L+(hh(45)-0.5)*g.greenR[1]*0.4],   // left
+    [g.gcx+g.greenR[0]*(0.42+hh(46)*0.16), L+(hh(47)-0.5)*g.greenR[1]*0.4]];  // right
+  const pinIdx=(((seedN>>>3)+Math.imul((holeIdx|0)+1,0x9e37)+hvPinRot())%4+4)%4;
+  g.pin=g.pinCands[pinIdx];
   g.bunkers=[]; g.water=null; g.creek=null; g.island=false;
   // PERSISTENT water/creek: forced by the hole's signature feature, else rolled from course style
   const R=g.greenR, setPond=(x,y,rx,ry,side)=>{ g.water={x,y,rx,ry,side:side||1}; };
@@ -8370,21 +8385,24 @@ function hvPlots(g, shots, seedN){
       case 'green': { const d=Math.max(1.8/g.vy,(s.ft||15)/3.6); let ang;   // ft→units calibrated to green size (owner: an 11ft shot looked farther than 11ft); screen-aware min keeps short leaves visible on long holes
         if(s.side==='left') ang=Math.PI+jj(i,2)*0.9; else if(s.side==='right') ang=jj(i,2)*0.9; else ang=-Math.PI/2+jj(i,2)*1.2;
         rest=[pin[0]+Math.cos(ang)*d, pin[1]+Math.sin(ang)*d]; p.onGreen=true; break; }
-      case 'hole': rest=pin.slice(); p.hole=true; p.onGreen=true; break;
+      case 'hole': rest=pin.slice(); p.hole=true; p.onGreen=true;
+        p._brk=(hh(i,10)-0.5)*0.14; p.lipSide=(hh(i,9)<0.5?-1:1); p.rimIn=(hh(i,8)<0.3); break;   // a made putt breaks, and ~30% catch the lip and horseshoe in
       default: y=L-(toY!=null?toY:20); rest=[g.cx(y)+jj(i,1)*8, y];
     }
     if(p.k==='putt'){
-      // a missed putt must ALWAYS end closer to the hole than it started — the screen-aware visual
-      // minimum (added for tap-in visibility) could exceed the remaining distance and draw the ball
-      // rolling BACKWARDS away from the cup. Cap the drawn leave at 80% of the current distance;
-      // a "ran it past" leave travels through the hole instead, which is never backwards.
-      const distNow=Math.max(0.3,hvDistYds(pin,cur)), u=hvUnit(pin,cur);
-      // if the narrative's next leave is LONGER than the current distance, the ball can only have
-      // run THROUGH the hole — draw it past, never rolling away from the cup on the same side
-      const past=hh(i,5)<0.4 || ((s.toFt||2)/3 > distNow*0.75);
-      let d=Math.max(Math.min(2.4/g.vy, distNow*0.8), (s.toFt||2)/3);
-      if(!past) d=Math.min(d, distNow*0.8);
-      rest=[pin[0]+(past?u[0]*0.8:-u[0])*d, pin[1]+(past?u[1]*0.8:-u[1])*d]; p.onGreen=true; }
+      // A missed putt should MISS realistically (owner) — never roll straight over/through the cup. A
+      // makeable putt LIPS OUT: it rolls to the rim, catches the edge and spins off to the SIDE, resting
+      // just past the hole. A long first putt LAGS: it dies just short and slightly offline. Either way the
+      // ball ends closer than it started and never crosses the cup centre. (Cosmetic — score is fixed.)
+      const distNow=Math.max(0.3,hvDistYds(pin,cur)), u=hvUnit(pin,cur), perp=[-u[1],u[0]], side=(hh(i,5)<0.5?-1:1);
+      const leaveFt=(s.toFt||2), d=Math.max(Math.min(2.0/g.vy, distNow*0.85), leaveFt/3);
+      p._brk=(hh(i,7)-0.5)*0.14; p.onGreen=true;
+      const lag=(leaveFt>6 || distNow>6);   // long first putt → lag it close; short makeable → lip out / burn the edge
+      if(lag){ const dd=Math.min(d, distNow*0.8);
+        rest=[pin[0]-u[0]*dd+perp[0]*side*dd*0.3, pin[1]-u[1]*dd+perp[1]*side*dd*0.3]; }
+      else { p.lip=true; p.lipSide=side; const dd=Math.max(d, 0.85/g.vy);
+        const dir=[u[0]*0.45+perp[0]*side, u[1]*0.45+perp[1]*side], dl=Math.hypot(dir[0],dir[1])||1;
+        rest=[pin[0]+dir[0]/dl*dd, pin[1]+dir[1]/dl*dd]; } }
     // dry lie (not water/drop) that overlaps a pond/creek → push the resting ball onto land so it's never
     // drawn in the water when the shot didn't find it. (Green shots are handled by the carry safety below.)
     if(rest && !p.onGreen && s.lie!=='water' && s.lie!=='drop' && (g.water||g.creek)) rest=hvOutOfWater(g,rest);
@@ -8474,6 +8492,26 @@ function hvPathD(g,p){ const A=hvProj(g,p.from[0],p.from[1]), C=hvCtrl(g,p), B=h
   return `M ${A[0].toFixed(1)} ${A[1].toFixed(1)} Q ${C[0].toFixed(1)} ${C[1].toFixed(1)} ${B[0].toFixed(1)} ${B[1].toFixed(1)}`; }
 function hvRollD(g,p){ const A=hvProj(g,p.land[0],p.land[1]), B=hvProj(g,p.rest[0],p.rest[1]);
   return `M ${A[0].toFixed(1)} ${A[1].toFixed(1)} L ${B[0].toFixed(1)} ${B[1].toFixed(1)}`; }
+// putt roll path: a BROKEN (curved) line, and — realistically — a made putt can horseshoe in around the
+// rim, a miss lips out around the cup and spins off to the side. Never a dead-straight roll through the hole.
+function hvPuttPathD(g,p){
+  const A=hvProj(g,p.from[0],p.from[1]), P=hvProj(g,g.pin[0],g.pin[1]), R=hvProj(g,p.rest[0],p.rest[1]);
+  const cr=HV_CUP_RX; let ux=P[0]-A[0], uy=P[1]-A[1]; const ul=Math.hypot(ux,uy)||1; ux/=ul; uy/=ul;
+  const px=-uy, py=ux, brk=(p._brk||0)*ul, side=p.lipSide||1;
+  const f=(x,y)=>x.toFixed(1)+' '+y.toFixed(1);
+  if(p.hole){
+    const mid=[(A[0]+P[0])/2+px*brk,(A[1]+P[1])/2+py*brk];
+    if(p.rimIn){ const rim=[P[0]-ux*cr+px*side*cr*0.85, P[1]-uy*cr+py*side*cr*0.85];   // catch the rim, curl to centre
+      return `M ${f(A[0],A[1])} Q ${f(mid[0],mid[1])} ${f(rim[0],rim[1])} Q ${f(P[0]+px*side*cr,P[1]+py*side*cr)} ${f(P[0],P[1])}`; }
+    return `M ${f(A[0],A[1])} Q ${f(mid[0],mid[1])} ${f(P[0],P[1])}`;   // breaking putt into the cup
+  }
+  if(p.lip){   // roll to the near rim, spin around the cup, off to the side
+    const nearRim=[P[0]-ux*cr, P[1]-uy*cr], around=[P[0]+px*side*cr*1.2, P[1]+py*side*cr*1.2];
+    return `M ${f(A[0],A[1])} Q ${f((A[0]+nearRim[0])/2+px*brk,(A[1]+nearRim[1])/2+py*brk)} ${f(nearRim[0],nearRim[1])} Q ${f(around[0],around[1])} ${f(R[0],R[1])}`;
+  }
+  const mid=[(A[0]+R[0])/2+px*brk,(A[1]+R[1])/2+py*brk];   // lag: gentle break, dies short & offline
+  return `M ${f(A[0],A[1])} Q ${f(mid[0],mid[1])} ${f(R[0],R[1])}`;
+}
 // organic blob path: a seeded, smoothly-perturbed closed curve (Catmull-Rom → cubic beziers).
 // Same seed → same perturbation per point, so a fringe ring / bunker lip generated at a scaled
 // radius stays parallel to its parent shape. Kills the "geometric ellipse" look.
@@ -8963,7 +9001,7 @@ function hvDoneShot(g,p,dim,small,pcol){
   const col=`${base}${dim?'8c':'e6'}`;   // hex alpha: dim .55 / bright .9
   const w=(dim?1.6:2)*(small?0.45:1);
   let s='';
-  if(p.k==='putt'||p.k==='hole'){ s+=`<path d="${hvRollD(g,{land:p.from,rest:p.rest})}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`; }
+  if(p.k==='putt'||p.k==='hole'){ s+=`<path d="${hvPuttPathD(g,p)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`; }
   else if(p.k==='pen'){ const A=hvProj(g,p.from[0],p.from[1]),B=hvProj(g,p.rest[0],p.rest[1]);
     s+=`<path d="M ${A[0]} ${A[1]} L ${B[0]} ${B[1]}" fill="none" stroke="${col}" stroke-width="1.3" stroke-dasharray="3 4"/>`; }
   else { s+=`<path d="${hvPathD(g,p)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
@@ -8981,7 +9019,7 @@ function hvLiveShot(g,p,small,pcol){
   const onGreen=(p.k==='putt'||p.k==='hole');
   const ballR=onGreen?HV_GBALL:(small?2.0:3.2);   // on the green the ball is a fixed, realistic fraction of the cup
   let s='';
-  if(p.k==='putt'||p.k==='hole'){ s+=`<path id="hv-roll" d="${hvRollD(g,{land:p.from,rest:p.rest})}" fill="none" stroke="${pcol||'#fff'}" stroke-width="${small?0.9:2}" stroke-linecap="round" opacity=".9" stroke-dasharray="9999" stroke-dashoffset="9999"/>`; }
+  if(p.k==='putt'||p.k==='hole'){ s+=`<path id="hv-roll" d="${hvPuttPathD(g,p)}" fill="none" stroke="${pcol||'#fff'}" stroke-width="${small?0.9:2}" stroke-linecap="round" opacity=".9" stroke-dasharray="9999" stroke-dashoffset="9999"/>`; }
   else if(p.k==='pen'){ s+=`<path id="hv-roll" d="M ${A[0]} ${A[1]} L ${hvProj(g,p.rest[0],p.rest[1]).map(v=>v.toFixed(1)).join(' ')}" fill="none" stroke="#274238" stroke-width="1.3" stroke-dasharray="3 4"/>`; }
   else { s+=`<path id="hv-traceg" d="${hvPathD(g,p)}" fill="none" stroke="${glow}" stroke-width="5" stroke-linecap="round" stroke-dasharray="9999" stroke-dashoffset="9999"/>`;
     s+=`<path id="hv-trace" d="${hvPathD(g,p)}" fill="none" stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" stroke-dasharray="9999" stroke-dashoffset="9999"/>`;
@@ -9111,7 +9149,9 @@ function hvKick(key, g, p, pPrev, reduce, opts){
       const ep=el-waitMs;
       if(ep<0){ ball.setAttribute('cx',A[0].toFixed(1)); ball.setAttribute('cy',A[1].toFixed(1)); _hvA.raf=requestAnimationFrame(frame); return; }
       const t=Math.min(1,ep/rollMs), te=1-Math.pow(1-t,2.4);
-      const x=A[0]+(R[0]-A[0])*te, y=A[1]+(R[1]-A[1])*te;
+      let x,y;
+      if(rollEl && rollLen){ const pt=rollEl.getPointAtLength(rollLen*te); x=pt.x; y=pt.y; }   // follow the broken/lip-out/rim-in curve
+      else { x=A[0]+(R[0]-A[0])*te; y=A[1]+(R[1]-A[1])*te; }
       ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',y.toFixed(1));
       if(rollEl) rollEl.style.strokeDashoffset=rollLen*(1-te);
       if(p.hole && t>=1){

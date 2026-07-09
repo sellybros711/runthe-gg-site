@@ -5630,6 +5630,27 @@ allows Google Fonts, or self-host Anton.*
   Harbour Town oaks, and the vignette framing. Deployed to /golf. (A literal distant horizon/skyline doesn't
   fit the top-down view, so "depth" was delivered via the vignette + the existing elevation shading.)
 
+- **CS220 — smaller hole, rotating realistic pins, breaking putts with lip-outs + rim-ins (owner).** All
+  cosmetic — the score is engine-decided (`dSimHole` untouched), so none of this changes outcomes.
+  • **Smaller hole + ball**: `HV_CUP_RX/RY` 2.5/1.75 → 2.15/1.5, `HV_GBALL` 1.05 → 0.95.
+  • **Rotating pins (4 hole locations)**: `hvGeom` now generates 4 realistic hole locations per hole
+    (front / back / left / right, each ~42-58% toward the edge on one axis and near-centre on the other —
+    never dead-centre, never on the edge) and picks one via `hvPinRot()`, which is scoped per mode
+    (day+attempt for the daily, match id for H2H so both clients agree, event+year for career) so the pin
+    genuinely moves every time the course is played. Verified: 702 pins across all 39 courses × 18 holes,
+    0 out of the 0.25-0.78 safe band (actual range 0.42-0.61 from centre).
+  • **Realistic putts**: replaced the dead-straight roll that ran over/through the cup. New `hvPuttPathD`
+    draws a BROKEN (curved) putt, and the ball now follows that path (the animation reads
+    `getPointAtLength` instead of lerping a straight line). A **makeable miss LIPS OUT** — rolls to the rim,
+    catches the edge and spins off to the side, resting just past the hole (never through the centre). A
+    **long first putt LAGS** — dies just short and slightly offline. A **made putt breaks into the cup**,
+    and ~30% **catch the lip and horseshoe in**. Verified: 54 missed putts, 0 rolling backwards away from
+    the hole; live putt render + animation clean.
+  Verified in Playwright (pin realism sweep, putt monotonicity, curved-path presence, a live breaking-putt
+  render) with zero page errors; screenshot confirms an off-centre pin, a smaller hole, and a breaking
+  putt. Deployed to /golf. Tunable: `HV_CUP_RX`/`HV_GBALL`, the pin candidate offsets, the lip-out vs lag
+  threshold + rim-in probability in `hvPlots`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
