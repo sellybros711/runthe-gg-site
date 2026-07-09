@@ -8,7 +8,7 @@
                               caching/CORS; the SW never intercepts them).
    skipWaiting + clients.claim mean a newly-deployed SW takes over on the next load. Bump CACHE to
    force-invalidate everything on a breaking change. */
-const CACHE = 'runtour-v3';   // bumped: flush stale cached avatar masks (CS200 shirt-edge mask cleanup)
+const CACHE = 'runtour-v5';   // bumped: V2 aligned accessory art + head/feet-aligned overlay (CS226)
 
 self.addEventListener('install', () => { self.skipWaiting(); });
 

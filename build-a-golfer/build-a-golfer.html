@@ -208,6 +208,8 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes celebFade{from{opacity:0}to{opacity:1}}
   @keyframes celebPop{0%{opacity:0;transform:scale(.3) translateY(34px)}60%{opacity:1}100%{opacity:1;transform:scale(1) translateY(0)}}
   @keyframes celebRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes momRise{from{opacity:0;transform:translateY(16px) scale(.82)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes momGlow{0%,100%{opacity:.55}50%{opacity:1}}
   @keyframes celebSpot{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
   @media (prefers-reduced-motion:reduce){ .celebrate,.celeb-trophy,.celeb-kicker,.celeb-title,.celeb-sub,.celeb-cheque,.celeb-tally,.celeb-actions,.celebrate .spot{animation-duration:.01ms} }
   .btn:disabled{opacity:.45; cursor:not-allowed}
@@ -4816,7 +4818,7 @@ const _avRender=new Map();   // look-key -> recolored 512 offscreen canvas
 // bump AV_VER whenever any avatar PNG (base/mask/accessory) changes — the ?v= busts the
 // service-worker's cache-first store so the new art reaches devices immediately (a mask edit
 // otherwise stays stale because static assets are served from cache first).
-const AV_VER='4';
+const AV_VER='6';
 function avLoad(src){
   let e=_avImg.get(src);
   if(!e){ e={img:new Image(),ready:false,failed:false}; e.img.crossOrigin='anonymous';
@@ -4978,31 +4980,29 @@ const AV_ANAT={
   male:  {W:420,H:1400,headCx:211,faceCx:214,headTop:2,eyeY:116,browLine:100,footCx:211,footY:1330,handRx:385,handLx:42,handY:730,gripY:716,hipLx:158,gloveCx:382,gloveCy:721,gloveRx:39,gloveRy:55,sideRxIn:372,sideLxIn:48,waistY:690},
   female:{W:380,H:1400,headCx:213,faceCx:213,headTop:4,eyeY:97,browLine:80,footCx:197,footY:1330,handRx:320,handLx:96,handY:778,gripY:764,hipLx:132,gloveCx:333,gloveCy:736,gloveRx:21,gloveRy:44,gloveMaxY:781,sideRxIn:338,sideLxIn:42,waistY:712},
 };
-const AV_FRAME_W=440, AV_FRAME_H=1400;   // common frame; the (narrower) base is centred in it
-// content trim rectangles [x0,y0,x1,y1] for each art file (the art is a large product-shot on a 1024x1792 canvas)
-const ACC_BBOX={
-  'acc-ball':[209,569,817,1192],'acc-charm-clover':[342,670,680,1073],'acc-charm-marker':[297,665,732,1105],
-  'acc-driver-graphite':[594,165,781,1636],'acc-driver-rocket':[519,158,793,1677],'acc-driver-titanium':[580,162,785,1647],
-  'acc-eyes-aviator':[238,293,786,496],'acc-eyes-shield':[237,301,789,493],'acc-eyes-sport':[311,263,713,383],
-  'acc-glove-gold-left':[428,528,795,1252],'acc-glove-gold-right':[210,544,552,1218],'acc-glove-white-left':[445,546,788,1213],'acc-glove-white-right':[209,545,552,1218],
-  'acc-head-bucket':[0,0,546,338],'acc-head-cap':[0,0,340,300],'acc-head-champ':[0,0,409,383],'acc-head-visor':[0,0,445,227],
-  'acc-putter-blade':[584,164,803,1621],'acc-putter-mallet':[586,162,805,1668],'acc-putter-wand':[582,162,803,1622],
-  'acc-shoes-boa':[170,1165,843,1617],'acc-shoes-carbon':[107,1043,916,1451],'acc-shoes-trainer':[158,1236,866,1575],
-};
-// per-slot placement: target width (frac of base W) or height (frac of base H), anchor point (anatomy key) + nudge
-const ACC_PLACE={
-  eyes:  {wFrac:0.25,ax:'faceCx',ay:'eyeY'},                            // across the eyes (sized to the face, not wider)
-  head:  {wFrac:0.33,ax:'faceCx',ay:'browLine',anch:'bottom',dy:10},   // sized to the ~140px head; brim just below the brow, crown seated on the dome; centred on the face-feature axis
-  shoes: {wFrac:0.62,ax:'footCx',ay:'footY',anch:'bottom',dy:10},      // pair sized to the stance, not oversized
-  driver:{spanY:['gripY','footY'],ax:'handRx'},                        // grip at the right hand, head on the ground (spans hand→ground on both bodies)
-  putter:{spanY:['gripY','footY'],ax:'handLx',dx:12},                  // grip at the left hand, head on the ground
-  ball:  {wFrac:0.058,ax:'footCx',ay:'footY',dx:-48,dy:32},            // resting on the ground at the golfer's feet (ball at address)
-  charm: {wFrac:0.05,ax:'hipLx',ay:'waistY',dy:4},                     // ball-marker clipped at the belt/pocket
-};
-// accessory id → art file (art coverage is partial; a few items reuse the nearest matching art)
+// The accessory art (updated set) is PRE-POSITIONED on a common 1024x1792 canvas — each item is drawn at
+// the exact spot + scale it belongs on a full-body golfer (cap on the head, glasses on the face, shoes at
+// the feet, club at the side, ball at address). So there is NO per-slot placement/trim maths any more:
+// every accessory (and the base golfer) is composited into one shared frame with a single fixed transform.
+const ACC_NATIVE_W=1024, ACC_NATIVE_H=1792;   // shared art canvas: the golfer is centred at 0.5, head~0.045, feet~0.972
+// We composite the base golfer AND every accessory into ONE shared frame with the SAME transform, so the
+// pre-positioned art lands 1:1 on the body (full-canvas overlay, per the asset spec — no per-item trim/centre).
+// The frame keeps a uniform horizontal window of the art (crops only the always-empty far margins, same window
+// for base + all accessories → alignment preserved) and maps the art height to the base height.
+const ACC_WIN=0.74;                            // fraction of art width kept
+const AV_FRAME_H=1400;
+const _accScale=AV_FRAME_H/ACC_NATIVE_H;                                  // art→frame scale (~0.781)
+const _accSrcW=ACC_WIN*ACC_NATIVE_W, _accSrcX=(0.5-ACC_WIN/2)*ACC_NATIVE_W;
+const AV_FRAME_W=Math.round(_accSrcW*_accScale);                          // ~592
+function avDrawAcc(ctx,img){ ctx.drawImage(img, _accSrcX,0,_accSrcW,ACC_NATIVE_H, 0,0,AV_FRAME_W,AV_FRAME_H); }
+// where the golfer's head-top and foot-bottom sit inside the art canvas (measured), and the base golfer's own
+// opaque head-top/foot-bottom rows — used to re-frame the (differently-proportioned) base into the art's golfer box.
+const GB_HEAD=0.045, GB_FOOT=0.972, BASE_TOP=3, BASE_BOT=1397;
+// accessory id → art file. The glove is now composited from art too (right-hand glove art fits the pose).
 const ACC_ART={
   head_visor:'acc-head-visor',head_bucket:'acc-head-bucket',head_sig:'acc-head-cap',head_crown:'acc-head-champ',
   eyes_sport:'acc-eyes-sport',eyes_polar:'acc-eyes-aviator',eyes_focus:'acc-eyes-shield',eyes_eagle:'acc-eyes-shield',
+  glove_rain:'acc-glove-white-right',glove_cab:'acc-glove-white-right',glove_tour:'acc-glove-white-right',glove_gold:'acc-glove-gold-right',
   shoes_train:'acc-shoes-trainer',shoes_boa:'acc-shoes-boa',shoes_tract:'acc-shoes-carbon',shoes_carbon:'acc-shoes-carbon',
   drv_graph:'acc-driver-graphite',drv_ti:'acc-driver-titanium',drv_speed:'acc-driver-titanium',drv_rocket:'acc-driver-rocket',
   put_blade:'acc-putter-blade',put_mallet:'acc-putter-mallet',put_counter:'acc-putter-mallet',put_wand:'acc-putter-wand',
@@ -5010,9 +5010,8 @@ const ACC_ART={
   charm_tee:'acc-charm-marker',charm_mark:'acc-charm-marker',charm_divot:'acc-charm-marker',charm_clover:'acc-charm-clover',
   mi_first_win:'acc-charm-marker',mi_major:'acc-ball',mi_slam:'acc-charm-clover',mi_no1:'acc-head-champ',mi_career:'acc-driver-rocket',
 };
-const AV_DRAW_ORDER=['driver','putter','shoes','ball','charm','eyes','head'];   // glove is painted onto the hand (see gloveHexFor), not composited from art
-// the equipped glove's colour (white for most, gold for the Golden-Grip); null = no glove
-function gloveHexFor(id){ return id ? (/gold/.test(id)?'#d8ad3f':'#f0f0ee') : null; }
+// back-to-front: side club → feet → hand glove → waist charm → face glasses → head cap
+const AV_DRAW_ORDER=['driver','putter','shoes','ball','glove','charm','eyes','head'];
 function _avWaitAll(entries, cb){ const pend=entries.filter(e=>e&&!e.ready&&!e.failed);
   if(!pend.length){ cb(); return; } let n=pend.length; const done=()=>{ if(--n<=0) cb(); };
   pend.forEach(e=>{ e.img.addEventListener('load',done,{once:true}); e.img.addEventListener('error',done,{once:true}); }); }
@@ -5025,9 +5024,9 @@ const _avCapCache=new Map();
 function avTintedCap(hex){
   const e=avLoad(ACC_DIR+'acc-head-cap.png'); if(!e.ready) return null;
   let c=_avCapCache.get(hex); if(c) return c;
-  const bb=ACC_BBOX['acc-head-cap'], w=bb[2]-bb[0], h=bb[3]-bb[1];
+  const w=e.img.naturalWidth||ACC_NATIVE_W, h=e.img.naturalHeight||ACC_NATIVE_H;   // recolour the full pre-positioned cap art
   const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-  const cx=cv.getContext('2d',{willReadFrequently:true}); cx.drawImage(e.img, bb[0],bb[1],w,h, 0,0,w,h);
+  const cx=cv.getContext('2d',{willReadFrequently:true}); cx.drawImage(e.img,0,0,w,h);
   const id=cx.getImageData(0,0,w,h), d=id.data, lp=avKitLp(hex);
   for(let i=0;i<d.length;i+=4){ if(d[i+3]<20) continue; const t=avTint(d[i],d[i+1],d[i+2],hex,0.9,1.0,lp); d[i]=t.r;d[i+1]=t.g;d[i+2]=t.b; }
   cx.putImageData(id,0,0); _avCapCache.set(hex,cv); return cv;
@@ -5040,11 +5039,8 @@ function paintAvatarFull(canvas, look){
   // Pro Shop: preview a not-yet-owned accessory on the golfer before buying (guarded to the shop overlay).
   const _pvAcc=(S.shopPreview && S.overlay==='shop' && S.shopPreview.kind==='acc')?S.shopPreview:null;
   if(_pvAcc && ACC_ART[_pvAcc.id]) eq[_pvAcc.slot]=_pvAcc.id;
-  let gloveId=(typeof accEquipped==='function')?accEquipped('glove'):null;
-  if(_pvAcc && _pvAcc.slot==='glove') gloveId=_pvAcc.id;
-  const gloveHex=gloveHexFor(gloveId);
   const freeCap = !eq.head && (look.cap!==false);   // no shop headwear → the free basic cap (if cap is on)
-  const key=o.key+'|p'+(look.pants||'stone')+'|c'+(freeCap?o.hatHex:'0')+'|gl'+(gloveId||'')+'|'+ACC_SLOTS.map(sl=>eq[sl.k]||'').join(',');
+  const key=o.key+'|p'+(look.pants||'stone')+'|c'+(freeCap?o.hatHex:'0')+'|'+ACC_SLOTS.map(sl=>eq[sl.k]||'').join(',');
   const cached=_avRenderFull.get(key); if(cached){ avBlit(canvas,cached); return; }
   const base=avLoad(AV_FULL[g]), mask=avLoad(AV_FULL_MASK[g]);
   const accEntries=Object.keys(eq).map(slot=>({slot,id:eq[slot],e:avLoad(ACC_DIR+ACC_ART[eq[slot]]+'.png')}));
@@ -5052,7 +5048,11 @@ function paintAvatarFull(canvas, look){
   _avWaitAll([base,mask].concat(accEntries.map(a=>a.e)).concat(capE?[capE]:[]), ()=>{
     if(base.failed){ avVectorFallback(canvas); return; }
     try{
-      const bw=A.W, bh=A.H, xoff=Math.round((AV_FRAME_W-bw)/2);
+      const bw=A.W, bh=A.H;
+      // re-frame the base golfer into the art's golfer box (align head-top → GB_HEAD, foot-bottom → GB_FOOT),
+      // so the pre-positioned accessories land 1:1 on the body regardless of the base's own proportions.
+      const _bsc=(GB_FOOT-GB_HEAD)*AV_FRAME_H/(BASE_BOT-BASE_TOP);
+      const _bdw=bw*_bsc, _bdh=bh*_bsc, _bdx=Math.round(AV_FRAME_W/2-_bdw/2), _bdy=Math.round(GB_HEAD*AV_FRAME_H-BASE_TOP*_bsc);
       const off=document.createElement('canvas'); off.width=AV_FRAME_W; off.height=AV_FRAME_H;
       const ctx=off.getContext('2d');
       // recolor the base via its mask (temp at native size), then place it centred in the frame
@@ -5068,15 +5068,9 @@ function paintAvatarFull(canvas, look){
       const whiteShoes=(o.shoesHex||'#eef0ee').toLowerCase()==='#eef0ee';
       const shirtPat=(o.shirtPat&&o.shirtPat!=='none')?findPattern(o.shirtPat):null;
       if(m) for(let i=0;i<d.length;i+=4){ const reg=avMaskRegionFull(m[i],m[i+1],m[i+2]); if(!reg) continue;
-        if(reg==='shoes' && whiteShoes) continue;   // default white shoes keep the base art
+        if(reg==='shoes' && whiteShoes) continue;   // default white shoes keep the base art (the aligned accessory shoe draws over them)
         let t;
-        if(reg==='skin'){
-          if(gloveHex){ const px=i>>2, py=(px/bw)|0, gx=(px%bw-A.gloveCx)/A.gloveRx, gy=(py-A.gloveCy)/A.gloveRy;
-            // paint the glove onto the hand's own pixels (perfect fit); gloveMaxY stops it bleeding past the wrist/fingertips into a bare leg
-            if(gx*gx+gy*gy<=1 && (!A.gloveMaxY || py<=A.gloveMaxY)) t=avKitTint(d[i],d[i+1],d[i+2],gloveHex,0.66,0.9);
-            else t=avTint(d[i],d[i+1],d[i+2],o.skinHex,0.95,0.92,skinLp);
-          } else t=avTint(d[i],d[i+1],d[i+2],o.skinHex,0.95,0.92,skinLp);
-        }
+        if(reg==='skin'){ t=avTint(d[i],d[i+1],d[i+2],o.skinHex,0.95,0.92,skinLp); }   // glove is now composited from art (see AV_DRAW_ORDER)
         else if(reg==='hair'){ t=avTint(d[i],d[i+1],d[i+2],o.hairHex,1.0,1.05,hairLp); }   // brows/eyes carved out of the mask
         else if(reg==='shirt'){ t=avKitTint(d[i],d[i+1],d[i+2],o.shirtHex,KM.shirt,1.05);
           if(shirtPat){ const px=i>>2, pf=patFactor(shirtPat.id,px%bw,(px/bw)|0);   // shirt pattern, clipped to the shirt region
@@ -5087,32 +5081,16 @@ function paintAvatarFull(canvas, look){
         else { t=avKitTint(d[i],d[i+1],d[i+2],pantsHex,KM.pants,1.0); }
         d[i]=t.r; d[i+1]=t.g; d[i+2]=t.b; }
       tctx.putImageData(id,0,0);
-      if(gloveHex){   // a wrist strap band across the top of the glove
-        const sw=A.gloveRx*1.7, sh=12, scx=A.gloveCx, scy=A.gloveCy-A.gloveRy+8;
-        tctx.fillStyle=(gloveHex==='#d8ad3f')?'#c69a2f':'#e4e4e6'; tctx.strokeStyle='rgba(120,120,128,.75)'; tctx.lineWidth=1.5;
-        tctx.beginPath();
-        if(tctx.roundRect) tctx.roundRect(scx-sw/2,scy-sh/2,sw,sh,4); else tctx.rect(scx-sw/2,scy-sh/2,sw,sh);
-        tctx.fill(); tctx.stroke();
-      }
-      ctx.drawImage(tmp,xoff,0);
-      // composite equipped accessories, back-to-front (+ the free cap in the head slot when worn)
-      AV_DRAW_ORDER.forEach(slot=>{ const cfg=ACC_PLACE[slot]; if(!cfg) return;
-        let img, bbox;
+      ctx.drawImage(tmp,_bdx,_bdy,_bdw,_bdh);
+      // composite equipped accessories, back-to-front. The art is pre-positioned on the shared 1024x1792
+      // canvas, so each item (and the free cap) is drawn with the single fixed frame transform (avDrawAcc).
+      AV_DRAW_ORDER.forEach(slot=>{
+        let img;
         const a=accEntries.find(x=>x.slot===slot);
-        if(a && a.e.ready){ img=a.e.img; bbox=ACC_BBOX[ACC_ART[a.id]]; }
-        else if(slot==='head' && freeCap){ const cap=avTintedCap(o.hatHex); if(cap){ img=cap; bbox=[0,0,cap.width,cap.height]; } }
-        if(!img||!bbox) return;
-        const sx=bbox[0],sy=bbox[1],sw=bbox[2]-bbox[0],sh=bbox[3]-bbox[1];
-        let dw,dh,dx,dy;
-        if(cfg.spanY){   // scale the art to span two anatomy anchors (e.g. a club: grip at the hand → head on the ground)
-          dh=A[cfg.spanY[1]]-A[cfg.spanY[0]]; const sc=dh/sh; dw=sw*sc;
-          dx=A[cfg.ax]+xoff-dw/2+(cfg.dx||0); dy=A[cfg.spanY[0]]+(cfg.dy||0);
-        } else {
-          const scale=cfg.wFrac?((A.W*cfg.wFrac)/sw):((A.H*cfg.hFrac)/sh); dw=sw*scale; dh=sh*scale;
-          const ax=A[cfg.ax]+xoff, ay=A[cfg.ay]; dx=ax-dw/2+(cfg.dx||0);
-          const anch=cfg.anch||'center'; dy=(anch==='top'?ay:anch==='bottom'?ay-dh:ay-dh/2)+(cfg.dy||0);
-        }
-        try{ ctx.drawImage(img, sx,sy,sw,sh, dx,dy,dw,dh); }catch(e){} });
+        if(a && a.e.ready) img=a.e.img;
+        else if(slot==='head' && freeCap) img=avTintedCap(o.hatHex);
+        if(!img) return;
+        try{ avDrawAcc(ctx,img); }catch(e){} });
       _avRenderFull.set(key,off); avBlit(canvas,off);
     }catch(err){ avVectorFallback(canvas); }
   });
@@ -5596,6 +5574,7 @@ function startSeason(majorsOnly){
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0,toPar:0,rounds:0}]))};
   S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0; S.seasonRank=null;
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false;   // unlocked during THIS season (shown on the summary)
+  if(S.career && S.career.story){ S.career.story.seasonCount=0; }   // reset the per-season storyline cap (CS225)
   S.curEvt=null;
   track('season_started',{mode:S.daily?'daily':(majorsOnly?'majors':'full'),ovr:Math.round(me.skill),year:S.year||1});
   S.screen='season'; autoSaveSeason(); render();   // checkpoint the freshly-built golfer right away
@@ -5604,8 +5583,8 @@ function startSeason(majorsOnly){
 const DAYS=['THU','FRI','SAT','SUN'];
 // Pacing: default to a slow, readable "sweat" cadence so a round lands and can be absorbed
 // (testers said the old ~0.8s/round blew by too fast to read). Players can speed it up.
-const PACE={chill:{r:2200,e:3200,lbl:'Broadcast'}, normal:{r:1300,e:2000,lbl:'Standard'}, fast:{r:650,e:1100,lbl:'Fast'}};
-function paceMs(){ return PACE[S.simPace]||PACE.chill; }
+const PACE={chill:{r:2200,e:3200,lbl:'Broadcast'}, normal:{r:820,e:1250,lbl:'Standard'}, fast:{r:460,e:820,lbl:'Fast'}};   // Standard sped up + is now the default (owner)
+function paceMs(){ return PACE[S.simPace]||PACE.normal; }
 let _lbRects=null;   // {name: top-within-board} from the previous season render, for FLIP glide
 let _hvbRects=null;  // {name: top-within-board} of the tracer's floating scoreboard, for crisp FLIP swaps
 let _prevScTotal=null;   // your last-rendered rounded to-par, for the scorecard count-up tween
@@ -5638,6 +5617,8 @@ function beginEvent(){
   const courseAdj=gauss()*(evt.major?SIM.maj.csd:SIM.reg.csd);  // one course/weather difficulty draw for the week
   S.curEvt={evt, idx:S.evtIndex, roundsDone:0, done:false, order:null, courseAdj, stagger:!!stagger,
     players:field.map(p=>({p, eo:eventOverall(p,ew)+(p.you?caddieEventEo(ew,evt.name,evt.major):0), rounds:[null,null,null,null], total:stagger?stagger[p.name]:0, start:stagger?stagger[p.name]:0, made:true}))};
+  // consume a storyline confidence perk (tiny, capped ≤0.8, one event) into your event-effective overall
+  if(S.season && S.season.confBoost){ const meO=S.curEvt.players.find(o=>o.p.you); if(meO) meO.eo+=S.season.confBoost; S.season.confBoost=0; }
   simNextRound();   // play Thursday immediately so the first frame has scores
 }
 function simNextRound(){
@@ -5657,16 +5638,19 @@ function simNextRound(){
    hole by hole with the Daily Challenge engine (signature-hole decisions included). Your played
    score replaces the engine's final round; the field sims theirs as normal. Career mode only,
    interactive play only (skip-to-end / headless / eliminated sims never pause). ---- */
-const MOMENT_MAJOR={gap:5,pos:10}, MOMENT_BIG={gap:3,pos:6}, MOMENT_REG={gap:2,pos:3};
+// FEWER + GRANDER (owner): the playable Moment now fires ONLY at big events (majors, signature events,
+// playoffs) and only when you're GENUINELY in contention, not just top-10. Regular events never trigger it.
+const MOMENT_MAJOR={gap:4,pos:5}, MOMENT_BIG={gap:2,pos:4}, MOMENT_PLAYOFF={gap:2,pos:4};
 function momentInfo(ce){
   if(!ce || ce.done || ce.roundsDone!==3 || S.daily) return null;
   const evt=ce.evt;
   if(evt.olympics || evt.teamcup) return null;          // special formats keep their own set pieces
+  if(!(evt.major || evt.big || evt.playoff)) return null;   // only the marquee occasions
   const me=ce.players.find(o=>o.p.you); if(!me || !me.made) return null;
   const alive=ce.players.filter(o=>o.made).sort((a,b)=>a.total-b.total);
   const pos=alive.findIndex(o=>o.p.you)+1;
   const gap=Math.round(me.total-alive[0].total);
-  const th=evt.major?MOMENT_MAJOR:(evt.big||evt.playoff)?MOMENT_BIG:MOMENT_REG;
+  const th=evt.major?MOMENT_MAJOR:(evt.playoff?MOMENT_PLAYOFF:MOMENT_BIG);
   if(!(gap<=th.gap && pos<=th.pos)) return null;
   const margin=(pos===1&&alive[1])?Math.round(alive[1].total-me.total):0;
   const rival=(pos===1?alive[1]:alive[0]);
@@ -5680,22 +5664,186 @@ function momentPosTxt(info){
 function momentPopup(ce, info){
   const evt=ce.evt;
   document.querySelectorAll('.momentov').forEach(n=>n.remove());
-  const ov=$(`<div class="momentov" style="position:fixed;inset:0;z-index:60;background:rgba(3,10,7,.92);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto">
-    <div style="max-width:430px;width:100%;background:linear-gradient(180deg,#0d2b1c,#07160e);border:1px solid var(--gold);border-radius:18px;padding:26px 22px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.65)">
-      <div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 THE MOMENT</span></div>
-      <h2 style="margin:12px 0 4px;font-size:24px">${esc(evt.name)}</h2>
-      <p class="lede" style="margin:4px 0 6px">Sunday. The final round${evt.major?' of a MAJOR':''}. ${momentPosTxt(info)} with 18 holes to play.</p>
-      <p class="small muted" style="margin:0 0 16px">Take the sticks and play every shot yourself — with the big calls on the signature holes — or let the simulation decide.</p>
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const th=evt.major?majorTheme(evt.name):null;
+  const kicker=evt.major?'MAJOR CHAMPIONSHIP SUNDAY':(evt.playoff?'PLAYOFF SUNDAY':'SIGNATURE SUNDAY');
+  const accent=evt.major?'#ffd45e':'#ff8a5b';
+  // GRANDER, cinematic (owner: fewer + more grand). Full-screen spotlight, the major's own trophy, big type.
+  const ov=$(`<div class="momentov" style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;
+      background:radial-gradient(120% 90% at 50% 18%, rgba(30,18,4,.78), rgba(2,7,5,.97) 70%)">
+    <div class="momentcard" style="max-width:460px;width:100%;text-align:center;position:relative">
+      <div style="position:absolute;inset:-40% 10% auto 10%;height:220px;background:radial-gradient(60% 60% at 50% 0,${accent}44,transparent 70%);filter:blur(6px);pointer-events:none${reduce?'':';animation:momGlow 3.2s ease-in-out infinite'}"></div>
+      ${th?`<div style="width:92px;height:104px;margin:0 auto 8px;filter:drop-shadow(0 8px 22px rgba(0,0,0,.5))${reduce?'':';animation:momRise .7s cubic-bezier(.2,1.3,.4,1) both'}">${th.svg()}</div>`:`<div style="font-size:52px;line-height:1;margin-bottom:4px">🔥</div>`}
+      <div style="font:800 12px/1 var(--body);letter-spacing:.28em;color:${accent};text-transform:uppercase">${kicker}</div>
+      <h1 style="margin:8px 0 2px;font-size:30px;line-height:1.05;color:#fff">${esc(evt.name)}</h1>
+      <div style="font:800 11px/1 var(--body);letter-spacing:.22em;color:#ff6b5e;text-transform:uppercase;margin-bottom:12px">🔥 The Moment</div>
+      <p class="lede" style="margin:4px 0 6px;color:#e8f0e8">Sunday. The final round${evt.major?' of a major':''}. <b style="color:${accent}">${momentPosTxt(info)}</b> with 18 holes to play.</p>
+      <p class="small" style="margin:0 0 18px;color:#9fb3a8">This is what a career is made of. Take the sticks and play every shot yourself — the big calls on the signature holes are yours — or let the sim decide.</p>
       <div class="mbtns" style="display:grid;gap:10px"></div>
     </div></div>`);
   const btns=ov.querySelector('.mbtns');
-  const play=$(`<button class="btn goldfill">⛳ Play the final round<span class="sub">Hole by hole, every decision is yours</span></button>`);
+  const play=$(`<button class="btn goldfill" style="font-size:16px;padding:15px">⛳ Play the final round<span class="sub">Hole by hole, every decision is yours</span></button>`);
   play.onclick=()=>{ ov.remove(); track('moment_play',{evt:evt.name,major:!!evt.major}); startMomentRound(ce, info); };
-  const sim=$(`<button class="btn ghost">Sim the round ▸</button>`);
+  const sim=$(`<button class="btn ghost">Watch the sim ▸</button>`);
   sim.onclick=()=>{ ov.remove(); track('moment_sim',{evt:evt.name}); render(); };
   btns.appendChild(play); btns.appendChild(sim);
+  if(!reduce && typeof confettiRun==='function') try{ confettiRun(ov, [accent,'#ffffff'], 1100); }catch(e){}
   document.body.appendChild(ov);
+  if(navigator.vibrate) try{ navigator.vibrate(30); }catch(e){}
   track('moment_offered',{evt:evt.name,major:!!evt.major,gap:info.gap,pos:info.pos});
+}
+/* ===================== SEASON STORYLINES (CS225) =====================
+   Occasional OFF-COURSE beats between events — press room, sponsors, rivalry, fans. Your choice shapes
+   a career PERSONA (traits), can grant a small one-event confidence perk, and is logged to a "Career
+   Story" feed shown on the season summary + career end. Interactive CAREER play only (never daily,
+   circuit, or headless). The ONLY sim effect is a tiny, capped composure boost consumed in beginEvent. */
+const STORY_CONF_CAP=0.8, STORY_PER_SEASON=5, STORY_GAP=2;
+function careerStory(){ const c=(S.career=S.career||{}); if(!c.story) c.story={traits:{}, endorsements:0, fan:0, feed:[], lastBeat:-99, seasonCount:0, seenEvt:{}};
+  const s=c.story; s.traits=s.traits||{}; s.feed=s.feed||[]; s.seenEvt=s.seenEvt||{}; return s; }
+function storyGainConf(n){ if(!S.season) return; S.season.confBoost=Math.min(STORY_CONF_CAP,(S.season.confBoost||0)+n); }
+const STORY_PERSONA={confident:'The Confident One', brash:'The Showman', showman:'The Showman', clutch:'Mr. Clutch',
+  humble:'The Humble Champion', fanFav:'Fan Favorite', loyal:'The Loyal Pro', maverick:'The Maverick', gritty:'The Grinder'};
+function storyPersona(){ const t=careerStory().traits||{}; const e=Object.entries(t).sort((a,b)=>b[1]-a[1]); return e.length&&e[0][1]>=2?(STORY_PERSONA[e[0][0]]||null):null; }
+function storyCtx(ce){
+  const res=(S.season&&S.season.results)||[]; const last=res.length?res[res.length-1]:null;
+  let won=false, top10=false, missed=false, lastName='';
+  if(last){ const meR=last.order.find(o=>o.p&&o.p.you); lastName=last.evt.name;
+    if(meR){ won=(meR.pos===1); top10=(typeof meR.pos==='number'&&meR.pos<=10); missed=(meR.pos==='CUT'); } }
+  const rival=S.career&&S.career.rival;
+  const tot=(S.season&&S.season.totals)||{}, meN=S.season.me.name;
+  const byMoney=Object.entries(tot).map(([n,v])=>({n,m:v.money})).sort((a,b)=>b.m-a.m);
+  const rank=byMoney.findIndex(x=>x.n===meN)+1;
+  const recent=res.slice(-3).map(r=>{ const m=r.order.find(o=>o.p&&o.p.you); return m?(m.pos==='CUT'?99:(typeof m.pos==='number'?m.pos:99)):99; });
+  const cold=recent.length>=2 && recent.slice(-2).every(p=>p>25);
+  return {won, top10, missed, lastName, rival, rivalName:(rival&&rival.name)||'', upName:ce.evt.name, major:!!ce.evt.major, big:!!ce.evt.big,
+    yr:S.year||1, rank, N:byMoney.length||1, cold, seasons:(S.career&&S.career.seasons&&S.career.seasons.length)||0};
+}
+// each beat: when(ctx)→bool, tag, title(ctx), body(ctx), ch:[{t,s,tr,conf,endo,fan,r,head(ctx)}]
+const STORYLINES=[
+ {id:'press_win', tag:'PRESS ROOM', when:c=>c.won, title:c=>'The champion’s podium',
+  body:c=>`You’ve just won ${esc(c.lastName)}. The room is packed, every camera trained on you. How do you carry the win?`,
+  ch:[{t:'Credit the team',s:'Humble in victory',tr:'humble',conf:0.2,r:'The room warms to you — a class act.',head:c=>`Won ${c.lastName}, stayed humble`},
+      {t:'“I’m just getting started”',s:'Quiet belief',tr:'confident',conf:0.4,r:'You back it up with belief. The tour is on notice.',head:'Served notice: just getting started'},
+      {t:'“Who’s next?”',s:'Pure swagger',tr:'brash',conf:0.3,fan:1,r:'The clip goes viral. Fans eat up the swagger.',head:'Called out the field after winning'}]},
+ {id:'press_miss', tag:'PRESS ROOM', when:c=>c.missed, title:c=>'A hard week',
+  body:c=>`You missed the cut at ${esc(c.lastName)}. Reporters want to know what went wrong.`,
+  ch:[{t:'Own it — back to work',s:'Accountable',tr:'gritty',conf:0.4,r:'You take it on the chin and vow to bounce back.',head:'Owned a missed cut, vowed to respond'},
+      {t:'Blame the conditions',s:'Deflect',tr:'maverick',conf:0.1,r:'The presser gets frosty, but you don’t care.',head:'Blamed the setup for a bad week'},
+      {t:'Stay upbeat',s:'Glass half full',fan:1,conf:0.2,r:'Your optimism plays well with the fans.',head:'Kept smiling through a rough week'}]},
+ {id:'sponsor', tag:'SPONSORS', when:c=>c.top10||c.won, title:c=>'A sponsor comes calling',
+  body:c=>`After your run at ${esc(c.lastName)}, a major brand wants your name on the bag. Their reps are waiting.`,
+  ch:[{t:'Sign the deal',s:'Security + backing',tr:'confident',endo:1,conf:0.3,r:'Ink on paper. The backing feels good walking to the first tee.',head:'Signed a new endorsement deal'},
+      {t:'Hold out for more',s:'Bet on yourself',tr:'maverick',conf:0.2,r:'You pass — you’re worth more, and you know it.',head:'Bet on himself, held out for more'},
+      {t:'Stay independent',s:'No strings',tr:'loyal',fan:1,r:'You keep it simple. The purists respect it.',head:'Turned down the money to stay independent'}]},
+ {id:'rival', tag:'RIVALRY', when:c=>!!c.rivalName, title:c=>'Your rival fired a shot',
+  body:c=>`${esc(c.rivalName)} told the press they’ve got your number and this year isn’t close. The quote is everywhere.`,
+  ch:[{t:'Fire right back',s:'Bring it on',tr:'brash',conf:0.4,fan:1,r:'Rivalry ignited. This just got personal.',head:c=>`Traded shots with ${c.rivalName}`},
+      {t:'Let the clubs talk',s:'Ice cold',tr:'clutch',conf:0.5,r:'No words. You’ll answer on Sunday.',head:c=>`Let the clubs answer ${c.rivalName}`},
+      {t:'Take the high road',s:'Above it',tr:'humble',fan:1,conf:0.2,r:'You keep it classy. The rivalry only grows.',head:c=>`Took the high road with ${c.rivalName}`}]},
+ {id:'fan_kid', tag:'THE FANS', when:c=>true, title:c=>'A young fan at the ropes',
+  body:c=>`A kid in your colours has waited all morning by the ropes for an autograph — right as you’re walking to warm up.`,
+  ch:[{t:'Make their day',s:'Sign + a photo',tr:'fanFav',fan:1,conf:0.2,r:'The photo makes the local news. A fan for life.',head:'Made a young fan’s whole year'},
+      {t:'Quick wave, stay locked in',s:'Tunnel vision',tr:'clutch',conf:0.4,r:'All business. Your focus is razor-sharp.',head:'All business at the ropes'}]},
+ {id:'media_fav', tag:'THE STORY', when:c=>c.rank<=3 && c.seasons>=1, title:c=>'You’re the story of the season',
+  body:c=>`Sitting #${c.rank} on the money list, the media has crowned you the man to beat. The hype machine is loud.`,
+  ch:[{t:'Embrace the spotlight',s:'Own the moment',tr:'showman',conf:0.4,fan:1,r:'You lean in. Pressure is a privilege.',head:'Embraced favourite status'},
+      {t:'Downplay it',s:'Head down',tr:'humble',conf:0.3,r:'You wave it off and keep grinding.',head:'Shrugged off the hype'},
+      {t:'Ignore the noise',s:'Blinders on',tr:'gritty',conf:0.4,r:'You tune it all out. Just golf.',head:'Tuned out the noise'}]},
+ {id:'slump', tag:'THE STORY', when:c=>c.cold, title:c=>'Whispers of a slump',
+  body:c=>`A couple of quiet weeks and the pundits are asking if the magic’s gone. What’s the plan?`,
+  ch:[{t:'Grind it out',s:'Extra range time',tr:'gritty',conf:0.5,r:'You put in the work. Form is temporary; class is permanent.',head:'Answered slump talk with hard work'},
+      {t:'Shrug it off',s:'Golf is golf',tr:'maverick',conf:0.3,r:'You’re not worried. It’ll turn.',head:'Waved off the slump chatter'}]},
+ {id:'vet', tag:'THE LOCKER ROOM', when:c=>c.seasons>=2, title:c=>'A veteran pulls you aside',
+  body:c=>`An old pro shares some hard-won advice about handling the back-nine pressure that separates good from great.`,
+  ch:[{t:'Take it to heart',s:'Learn from the best',tr:'clutch',conf:0.5,r:'The words stick. You feel calmer over the ball.',head:'Soaked up a veteran’s wisdom'},
+      {t:'Trust your own game',s:'My way',tr:'maverick',conf:0.3,r:'You nod politely — but you’ll do it your way.',head:'Backed his own instincts'}]},
+ {id:'home', tag:'HOME GAME', when:c=>true, title:c=>'The hometown crowd',
+  body:c=>`This week the galleries are packed with folks who’ve followed you since day one, chanting your name off the first tee.`,
+  ch:[{t:'Feed off the energy',s:'Ride the roars',tr:'showman',conf:0.4,fan:1,r:'The crowd lifts you. You’re buzzing.',head:'Fed off a roaring home crowd'},
+      {t:'Block it out',s:'Cocoon mode',tr:'clutch',conf:0.4,r:'You go quiet inside the noise. Total focus.',head:'Stayed ice-calm at home'}]},
+ {id:'charity', tag:'OFF THE COURSE', when:c=>c.seasons>=1, title:c=>'A charity asks for your help',
+  body:c=>`A junior-golf foundation wants you to host a clinic for kids who’d never otherwise pick up a club.`,
+  ch:[{t:'Host the clinic',s:'Give back',tr:'loyal',fan:1,conf:0.2,r:'A hundred kids, a hundred smiles. This matters.',head:'Hosted a junior clinic'},
+      {t:'Donate quietly',s:'No cameras',tr:'humble',fan:1,r:'You write the cheque and skip the photo op.',head:'Gave back quietly'}]},
+ {id:'gear', tag:'THE BAG', when:c=>true, title:c=>'A rep offers new gear',
+  body:c=>`A club rep is pushing a hot new driver they swear will add distance — but it’s the week of a big event.`,
+  ch:[{t:'Gamble on it',s:'Chase the upside',tr:'maverick',conf:0.2,r:'You throw it in the bag. New week, new toy.',head:'Gambled on new gear'},
+      {t:'Stick with what works',s:'Dance with who brung ya',tr:'loyal',conf:0.3,r:'You trust the sticks that got you here.',head:'Trusted his tried-and-true bag'}]},
+ {id:'major_presser', tag:'MAJOR WEEK', when:c=>c.major, title:c=>'Major-week press conference',
+  body:c=>`It’s major week and the questions come fast: are you here to contend, or just to compete?`,
+  ch:[{t:'Set the bar high',s:'I came to win',tr:'confident',conf:0.4,fan:1,r:'Bold words. Now go earn them.',head:c=>`Declared he came to win the ${c.upName}`},
+      {t:'Play it cool',s:'One shot at a time',tr:'clutch',conf:0.4,r:'Measured and calm. Classic contender energy.',head:'Kept it cool going into a major'}]}
+];
+function maybeStoryline(ce){
+  if(S.daily || S.circuitMode || !S.career) return null;
+  if(!ce || ce.done) return null;
+  const story=careerStory();
+  if(S.evtIndex - (story.lastBeat==null?-99:story.lastBeat) < STORY_GAP) return null;
+  if((story.seasonCount||0) >= STORY_PER_SEASON) return null;
+  const ctx=storyCtx(ce);
+  const pool=STORYLINES.filter(b=>{ try{ return b.when(ctx); }catch(e){ return false; } })
+    .filter(b=>{ const l=story.seenEvt[b.id]; return l==null || (S.evtIndex-l)>=8; });
+  if(!pool.length) return null;
+  if(Math.random()>0.6) return null;   // ~occasional even when eligible
+  return {beat:pool[Math.floor(Math.random()*pool.length)], ctx};
+}
+function showStoryline(sb){
+  const {beat, ctx}=sb, story=careerStory();
+  story.lastBeat=S.evtIndex; story.seasonCount=(story.seasonCount||0)+1; story.seenEvt[beat.id]=S.evtIndex;
+  const T=(v)=>typeof v==='function'?v(ctx):v;
+  document.querySelectorAll('.momentov,.storyov').forEach(n=>n.remove());
+  const ov=$(`<div class="storyov" style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;
+      background:radial-gradient(120% 90% at 50% 15%, rgba(6,32,48,.72), rgba(2,7,10,.96) 72%)">
+    <div style="max-width:440px;width:100%;background:linear-gradient(180deg,#0c2436,#07141c);border:1px solid #2f6f86;border-radius:18px;padding:24px 22px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.6)">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.26em;color:#5fd0e0;text-transform:uppercase">${T(beat.tag)}</div>
+      <h2 style="margin:9px 0 8px;font-size:22px;color:#fff">${esc(T(beat.title))}</h2>
+      <p class="lede" style="margin:0 0 16px;color:#dbe7ee">${T(beat.body)}</p>
+      <div class="sbtns" style="display:grid;gap:9px"></div>
+      <div class="sreply" style="min-height:0;margin-top:10px"></div>
+    </div></div>`);
+  const btns=ov.querySelector('.sbtns'), replyBox=ov.querySelector('.sreply');
+  beat.ch.forEach(ch=>{
+    const b=$(`<button class="btn ghost" style="text-align:left">${esc(ch.t)}${ch.s?`<span class="sub">${esc(ch.s)}</span>`:''}</button>`);
+    b.onclick=()=>{
+      // apply
+      if(ch.tr) story.traits[ch.tr]=(story.traits[ch.tr]||0)+1;
+      if(ch.conf) storyGainConf(ch.conf);
+      if(ch.endo) story.endorsements=(story.endorsements||0)+1;
+      if(ch.fan) story.fan=(story.fan||0)+1;
+      const head=T(ch.head)||T(beat.title);
+      story.feed.unshift({year:S.year||1, evt:ctx.upName, text:head}); if(story.feed.length>60) story.feed.length=60;
+      track('storyline_choice',{id:beat.id, choice:ch.t});
+      // show the reply, then a Continue that resumes the sim
+      btns.querySelectorAll('button').forEach(x=>x.disabled=true);
+      const perk=[ch.conf?'🎯 Confidence up for the next event':'', ch.endo?'🤝 Endorsement signed':'', ch.fan?'❤️ Fans love it':''].filter(Boolean).join(' · ');
+      replyBox.innerHTML='';
+      replyBox.appendChild($(`<div class="scout" style="border-color:#2f6f86;text-align:left;margin:2px 0 10px"><div style="color:#dbe7ee">${esc(T(ch.r))}</div>${perk?`<div class="small" style="color:#5fd0e0;margin-top:6px">${perk}</div>`:''}</div>`));
+      const cont=$(`<button class="btn goldfill">Back to the tournament ▸</button>`);
+      cont.onclick=()=>{ ov.remove(); render(); };
+      replyBox.appendChild(cont);
+    };
+    btns.appendChild(b);
+  });
+  document.body.appendChild(ov);
+  track('storyline_shown',{id:beat.id});
+}
+// the season-summary / career payoff: a compact "Career Story" card (persona + recent off-course beats)
+function storyFeedHTML(){
+  const c=S.career; if(!c||!c.story) return '';
+  const s=c.story, feed=(s.feed||[]).slice(0,6), persona=storyPersona();
+  if(!feed.length && !persona && !(s.endorsements>0)) return '';
+  const rows=feed.map(f=>`<div style="display:flex;gap:8px;padding:6px 0;border-top:1px solid rgba(255,255,255,.06)">
+    <span class="small" style="color:#5fd0e0;min-width:42px;font-weight:800">Yr ${f.year}</span>
+    <span class="small" style="color:#dbe7ee">${esc(f.text)}</span></div>`).join('');
+  const meta=[s.endorsements>0?(s.endorsements+' endorsement'+(s.endorsements>1?'s':'')):'', s.fan>0?'fan favourite':''].filter(Boolean).join(' · ');
+  return `<div class="scout" style="border-color:#2f6f86;text-align:left;margin:8px auto;max-width:520px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.2em;color:#5fd0e0;text-transform:uppercase">Career Story</div>
+      ${persona?`<div class="small" style="color:#ffd45e;font-weight:800">${esc(persona)}</div>`:''}
+    </div>
+    ${meta?`<div class="small" style="color:#9fb3a8;margin-top:3px">${esc(meta)}</div>`:''}
+    ${rows||'<div class="small" style="color:#9fb3a8;margin-top:4px">Your story is just beginning.</div>'}
+  </div>`;
 }
 // map a scheduled event to a playable DAILY_COURSES venue (EVENT_COURSE references those objects
 // directly, so identity recovers the internal key); unmapped events get a deterministic stand-in.
@@ -6662,7 +6810,7 @@ function raceToCupNode(byPts, evt){
 }
 function scrSeason(){
   clearTimeout(seasonTimer);
-  if(!S.simPace) S.simPace=LS.get('bag_pace','chill');   // default to the slow, readable "sweat" cadence
+  if(!S.simPace) S.simPace=LS.get('bag_pace','normal');   // default to the brisk Standard cadence (owner)
   // Ryder/Nations Cup weeks route to their own match-play screen
   const cur=S.schedule[S.evtIndex];
   if(cur && cur.teamcup && !S.daily){ scrTeamCup(); return; }
@@ -6824,7 +6972,7 @@ function scrSeason(){
   row.appendChild(auto); row.appendChild(skip); ctrl.appendChild(row);
   // pace control: default slow ("Chill") so the sim reads; cycle up to Fast for a quick sim
   const paceBtn=$(`<button class="btn ghost" style="margin-top:10px;font-size:13px">⏱ Pace · ${paceMs().lbl}<span class="sub">How fast each round plays out</span></button>`);
-  paceBtn.onclick=()=>{ const ord=['chill','normal','fast']; S.simPace=ord[(ord.indexOf(S.simPace)+1)%3]||'chill'; LS.set('bag_pace',S.simPace); track('sim_pace',{pace:S.simPace}); render(); };
+  paceBtn.onclick=()=>{ const ord=['normal','fast','chill']; S.simPace=ord[(ord.indexOf(S.simPace)+1)%3]||'normal'; LS.set('bag_pace',S.simPace); track('sim_pace',{pace:S.simPace}); render(); };
   ctrl.appendChild(paceBtn);
   if(!S.daily){   // career: let the player stop mid-season and resume exactly here
     const se=$(`<button class="btn ghost" style="margin-top:10px;font-size:13px">Save &amp; Exit<span class="sub">Stop now, resume this season from the home screen</span></button>`);
@@ -6881,6 +7029,13 @@ function scrSeason(){
     return;
   }
 
+  // SEASON STORYLINE (CS225): an occasional off-course beat as a new event gets underway. beginEvent
+  // auto-sims Thursday, so roundsDone===1 at the first scheduler render for this event. Career play only.
+  if(!ce.done && ce.roundsDone===1 && !ce._storyChecked && S.evtIndex>0 && !S.circuitMode && !S.daily){
+    ce._storyChecked=true;
+    const sb=maybeStoryline(ce);
+    if(sb){ clearTimeout(seasonTimer); showStoryline(sb); return; }
+  }
   // THE MOMENT: heading into Sunday in contention → pause and offer to play the final round.
   // Interactive career play only; skip-to-end / headless sims never reach this scheduler.
   if(!ce.done && ce.roundsDone===3 && !ce._momentAsked){
@@ -7300,6 +7455,7 @@ function scrSummary(){
   // ---- Season Stats (CS214): real measured scoring + a full derived tour-stat profile ----
   { const seasonSk=Object.fromEntries(CATS.map(c=>[c.k, me[c.k]!=null?me[c.k]:REPLACEMENT]));
     add($(statSheetHTML(seasonSk, seasonRealStats(), {title:(S.circuitMode?'Legend Circuit · Season Stats':'Season Stats')}))); }
+  { const sf=storyFeedHTML(); if(sf) add($(sf)); }   // CS225: Career Story feed + persona payoff
   // WINS grouped with the Wins stat: the actual tournaments won this season sit right under the row
   // (owner: "wins are at top once and then tiny" — keep the count and the won-events together).
   { const wonThisSeason=[];
@@ -10912,6 +11068,7 @@ function scrCareerEnd(){
   add(tiles);
   // ---- Career Stats (CS214) ----
   { const cSk=careerAvgSkills(c); if(cSk){ const w=$(`<div style="max-width:520px;margin:6px auto"></div>`); w.innerHTML=emojifyIcons(statSheetHTML(cSk, careerRealStats(c), {title:'Career Stats'})); add(w); } }
+  { const sf=storyFeedHTML(); if(sf){ const w=$(`<div style="max-width:520px;margin:0 auto"></div>`); w.innerHTML=emojifyIcons(sf); add(w); } }   // CS225 Career Story
   // career record at the 4 major championships
   const MAJORS=['The Magnolia Invitational','The Championship','The National Open','The Links Championship'];
   const mstats=c.majorStats||{};
