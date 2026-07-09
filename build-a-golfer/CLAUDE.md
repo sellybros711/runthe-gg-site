@@ -5757,6 +5757,37 @@ allows Google Fonts, or self-host Anton.*
   animation to the result with zero page errors. Tunable: the outcome thresholds in the `hvPlots` putt
   branch.
 
+- **CS228 — tiered sponsors: scale with following, off-season stay/switch choice, relationship meter
+  (owner: "the sponsor should scale with your following... prompt sponsor options before the next season,
+  stay or switch... new one offers better rewards but harder/longer tasks... a relationship meter, and
+  upgrading means starting a new relationship; rewards get slightly bigger as the relationship grows").**
+  Rebuilt the Sponsor Contracts system (CS-era) around a tiered brand ladder + a per-sponsor relationship.
+  • **Following scales rewards.** `sponsorFolMult()` adds up to +60% to every bonus on a log curve of your
+    CS226 Followers (10k→+0, 100k→+20%, 1M→+40%, 10M→+60%). Popularity genuinely sells.
+  • **Four prestige tiers** (`SPONSOR_TIERS`: Regional / National / Premium / Global) each with a reward
+    multiplier (1.0→2.7×) AND a difficulty multiplier — a bigger brand pays far more but demands MORE
+    (countable goals like cuts/top-10s scale up, the Global tier wants an extra win). Structural rank goals
+    (Tour Card top-100, Playoffs top-70, Finale top-30) stay put since they map to real cutlines.
+  • **Relationship meter** (`rel` 1-5, +6%/level = up to +24% loyalty bonus, shown as a gold pip meter on
+    the season deal, report card, and off-season card). Deliver ≥2 goals → loyalty grows; a shutout dings
+    it and earns a strike; TWO shutouts in a row and the sponsor drops you to a fresh entry-tier "prove it"
+    deal. A single tough year never loses the deal, so loyalty is worth building.
+  • **Off-season stay/switch prompt.** Each off-season, `computeSponsorOffer()` checks your "market value"
+    (following + OVR + career wins/majors); if you've grown enough to attract the NEXT tier up, a prominent
+    decision card appears in `scrOffseason` (before the season starts): **Stay** with your current brand
+    (keep compounding loyalty, familiar goals) or **Sign** with the bigger brand (shown "≈ +X% bigger base
+    rewards", tougher goals, relationship resets to Lv 1). No eligible offer → the card just shows your
+    current relationship status. An undecided offer at Start = you stayed. Deterministic per (careerSeed,
+    year); persisted on `S.career.sponsor`/`.sponsorOffer` (save/resume safe); legacy careers migrate their
+    old `lastContract` into a relationship via `ensureSponsor()`.
+  Verified in Playwright: reward scaling (Regional/low-follow floor $1.27M → Global/3M-follow/Lv5 floor
+  $6.01M, 4.7×); goals get harder (Regional 9 cuts → Global 14); offers gate on standing (strong player
+  gets a one-tier-up offer, weak player none); the decision card renders both choices and switching resets
+  the relationship; a 6-season career shows a real arc (loyalty grows on delivery, tiers climb via offers,
+  Premium goals bite, no unfair drop after one bad year, followers 5k→206k driving bigger deals); full
+  headless seasons + off-season + summary render with zero page errors. Tunable: `SPONSOR_TIERS`
+  reward/diff, `SPONSOR_TIER_REQ` thresholds, `SPONSOR_REL_MAX`, the folMult curve.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
