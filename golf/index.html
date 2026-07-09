@@ -3421,6 +3421,91 @@ function ovrFromSkills(sk){
   const dd=below.length?Math.sqrt(below.reduce((a,b)=>a+b*b,0)/vals.length):0;
   const o=wmean - OVR_IMBALANCE_K*Math.max(0, dd-OVR_DEADBAND);      // only cherry-picked spread is penalised
   return Math.max(40, Math.min(99, o)); }
+/* ===================== REAL GOLFER STATS (CS214) =====================
+   A full PGA-Tour-style stat profile DERIVED from the 8 skill ratings. Ratings are DataGolf-SG-anchored
+   (rating 80 = tour average), so these read like honest season stats; the sim is score-level, so the
+   granular splits (SG categories, GIR, putts, scrambling, sand saves) are modeled from the ratings.
+   The MEASURED scoring average comes from the actual rounds a golfer played (seasonRealStats/careerRealStats),
+   shown alongside. Everything is a pure function of `sk` so the leaderboard can compute + sort by it too. */
+const PAR_BASE=71;   // representative par for turning to-par-per-round into a strokes-per-round average
+function golferStats(sk){
+  const g=k=>(sk&&sk[k]!=null?sk[k]:REPLACEMENT);
+  const dist=g('dist'),acc=g('acc'),app=g('app'),sht=g('sht'),scr=g('scr'),bnk=g('bnk'),put=g('put');
+  const argR=0.5*sht+0.3*scr+0.2*bnk;                          // combined around-the-green rating
+  const sgOtt=(0.55*(dist-80)+0.45*(acc-80))/15;               // strokes gained per round, anchored 80→0
+  const sgApp=(app-80)/13;
+  const sgArg=(argR-80)/16;
+  const sgPut=(put-80)/15;
+  const sgTot=sgOtt+sgApp+sgArg+sgPut;
+  const ttg=sgOtt+sgApp+sgArg;                                 // tee-to-green = everything but putting
+  return {
+    ovr:ovrFromSkills(sk),
+    sgOtt, sgApp, sgArg, sgPut, sgTot, ttg,
+    drDist:299+(dist-80)*1.15,                                 // driving distance, yards
+    drAcc:61+(acc-80)*0.42,                                    // driving accuracy, % fairways
+    gir:66+(app-80)*0.40,                                      // greens in regulation, %
+    putts:29.0-(put-80)*0.055,                                 // putts per round
+    scramble:58+(scr-80)*0.45,                                 // scrambling, %
+    sandSave:50+(bnk-80)*0.50,                                 // sand saves, %
+    hcp:-(sgTot*1.55+3.0),                                     // handicap (negative value = a plus handicap)
+  };
+}
+function fmtHcp(h){ const v=-h; return (v>=0?'+':'−')+Math.abs(v).toFixed(1); }   // tour pros are plus handicaps
+function fmtSG(v){ return `<span style="color:${v>=0?'#35d6a0':'#E14A33'}">${v>=0?'+':'−'}${Math.abs(v).toFixed(2)}</span>`; }
+// real MEASURED scoring from the actual rounds played this season (+ strokes gained vs the field)
+function seasonRealStats(){
+  const tot=S.season&&S.season.totals; if(!tot) return null;
+  const meName=S.season.me&&S.season.me.name, t=meName&&tot[meName];
+  if(!t||!t.rounds) return null;
+  const myTp=t.toPar/t.rounds;
+  const names=Object.keys(tot).filter(n=>tot[n].rounds>0);
+  const fieldTp=names.reduce((a,n)=>a+tot[n].toPar/tot[n].rounds,0)/Math.max(1,names.length);
+  return {rounds:t.rounds, toPar:myTp, sgVsField:fieldTp-myTp, scoringAvg:PAR_BASE+myTp};
+}
+function careerRealStats(c){ if(!c||!c.rounds) return null; const myTp=c.toPar/c.rounds;
+  return {rounds:c.rounds, toPar:myTp, scoringAvg:PAR_BASE+myTp}; }
+// average build across a career's per-year skill snapshots (for the career derived-stat profile)
+function careerAvgSkills(c){ const ss=(c&&c.skillSeasons)||[]; if(!ss.length) return null;
+  const out={}; CATS.forEach(cc=>{ out[cc.k]=Math.round(ss.reduce((a,s)=>a+(s.skills[cc.k]||0),0)/ss.length); }); return out; }
+// the shared stat-sheet card: measured scoring on top, then the derived SG + traditional stat profile
+function statSheetHTML(sk, real, opts){
+  opts=opts||{}; const s=golferStats(sk);
+  const row=(k,v,strong)=>`<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 2px;border-bottom:1px solid rgba(255,255,255,.06)"><span class="small ${strong?'':'muted'}" style="text-align:left${strong?';font-weight:800':''}">${k}</span><span class="mono" style="white-space:nowrap;font-weight:${strong?800:700};color:var(--oncard)">${v}</span></div>`;
+  let scoreCard='';
+  if(real){
+    const tpTxt=(real.toPar<=0?'−':'+')+Math.abs(real.toPar).toFixed(2);
+    scoreCard=`<div class="tiles" style="grid-template-columns:1fr 1fr 1fr;margin:0 0 10px;gap:8px">
+      <div class="tile"><div class="k">Scoring avg</div><div class="v cream" style="font-size:20px">${real.scoringAvg.toFixed(1)}</div><div class="small muted" style="font-size:10px;margin-top:2px">${tpTxt}/round</div></div>
+      <div class="tile"><div class="k">SG: Total</div><div class="v" style="font-size:20px">${real.sgVsField!=null?fmtSG(real.sgVsField):fmtSG(s.sgTot)}</div><div class="small muted" style="font-size:10px;margin-top:2px">${real.sgVsField!=null?'vs the field':'modeled'}</div></div>
+      <div class="tile"><div class="k">Handicap</div><div class="v cream" style="font-size:20px">${fmtHcp(s.hcp)}</div><div class="small muted" style="font-size:10px;margin-top:2px">${real.rounds} rounds</div></div>
+    </div>`;
+  }
+  const left=[
+    ['Strokes Gained','',true],
+    ['SG: Off the Tee', fmtSG(s.sgOtt)],
+    ['SG: Approach', fmtSG(s.sgApp)],
+    ['SG: Around Green', fmtSG(s.sgArg)],
+    ['SG: Putting', fmtSG(s.sgPut)],
+    ['SG: Tee to Green', fmtSG(s.ttg)],
+  ].map(r=>row(r[0],r[1],r[2])).join('');
+  const right=[
+    ['Ball striking','',true],
+    ['Driving distance', s.drDist.toFixed(0)+' yds'],
+    ['Driving accuracy', s.drAcc.toFixed(1)+'%'],
+    ['Greens in reg', s.gir.toFixed(1)+'%'],
+    ['Putts / round', s.putts.toFixed(1)],
+    ['Scrambling', s.scramble.toFixed(0)+'%'],
+    ['Sand saves', s.sandSave.toFixed(0)+'%'],
+  ].map(r=>row(r[0],r[1],r[2])).join('');
+  return `<div class="scout" style="padding:12px 14px;margin:6px 0 8px;text-align:left">
+    ${opts.title?`<div style="font:800 11.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:10px">${opts.title}</div>`:''}
+    ${scoreCard}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 18px">
+      <div>${left}</div><div>${right}</div>
+    </div>
+    <div class="small muted" style="margin-top:9px;font-size:10.5px;line-height:1.4">Scoring average is measured from rounds played. Strokes-gained splits and traditional stats are modeled from your golfer's ratings.</div>
+  </div>`;
+}
 /* ===================== COINS + SHOP + ACCESSORIES (CS183) =====================
    In-game currency + a shop of equippable gear that grants small stat boosts. Design guarantees:
    - Coins are DERIVED from permanent progress (achievements + lifetime milestones) minus a `spent`
@@ -4116,9 +4201,13 @@ function overlayAccount(screen){
 }
 // leaderboard sort categories per tab: [key, label]. A player can top many different boards.
 const LB_SORTS={   // Tour Rep is no longer a sort category, the rep rank shows next to each name instead
-  season:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['ovr','OVR']],
-  career:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['seasons','Seasons']],
+  // ...the derived stat sorts (sg/ttg/putts/hcp) are computed client-side from each row's stored skills
+  season:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['ovr','OVR'],['sg','Strokes Gained'],['ttg','Tee to Green'],['putts','Avg Putts'],['hcp','Handicap']],
+  career:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['seasons','Seasons'],['sg','Strokes Gained'],['ttg','Tee to Green'],['putts','Avg Putts'],['hcp','Handicap']],
 };
+// CS214: these aren't DB columns — they're derived from each row's `skills` jsonb (golferStats) and ranked
+// client-side over the fetched board. key=field on golferStats(); low=true when a lower value is better.
+const LB_DERIVED={ sg:{key:'sgTot',low:false}, ttg:{key:'ttg',low:false}, putts:{key:'putts',low:true}, hcp:{key:'hcp',low:true} };
 function lbSortValid(tab,sort){ return (LB_SORTS[tab]||[]).some(s=>s[0]===sort); }
 function lbSortLabel(tab,sort){ const f=(LB_SORTS[tab]||[]).find(s=>s[0]===sort); return f?f[1]:'Earnings'; }
 function lbStatVal(r,tab,sort){   // the right-hand value column for the chosen sort
@@ -4129,6 +4218,14 @@ function lbStatVal(r,tab,sort){   // the right-hand value column for the chosen 
     case 'ovr': return `<span style="color:var(--gold)">OVR ${r.ovr||'-'}</span>`;
     case 'seasons': return `<span style="color:var(--gold)">${r.seasons||0} szn</span>`;
     case 'rep': { const rp=r.rep_pts!=null?repTierName(r.rep_pts):null; return `<span style="color:var(--gold);font-size:12px">${esc(rp||'-')}</span>`; }
+    case 'sg': case 'ttg': case 'hcp': case 'putts': {   // CS214 derived-from-skills stat columns
+      if(!r.skills || !CATS.every(cc=>typeof r.skills[cc.k]==='number')) return `<span class="muted">–</span>`;
+      const g=golferStats(r.skills);
+      if(sort==='sg')   return `<span style="font-weight:700">${fmtSG(g.sgTot)} SG</span>`;
+      if(sort==='ttg')  return `<span style="font-weight:700">${fmtSG(g.ttg)} T2G</span>`;
+      if(sort==='hcp')  return `<span style="color:var(--gold)">${fmtHcp(g.hcp)}</span>`;
+      return `<span style="color:var(--gold)">${g.putts.toFixed(1)} putts</span>`;   // putts
+    }
     default: return `<span style="color:var(--gold)">${fmt(tab==='career'?r.career_earnings:r.season_earnings)}</span>`;
   }
 }
@@ -4141,7 +4238,22 @@ function overlayLeaderboard(screen){
   // top-200. If the p_dir param isn't live yet (migration 38 not applied), fall back to reversing the
   // top-200 desc board so the toggle still does something.
   let view, dirRows;
-  if(dir==='asc'){
+  const derivedDef=LB_DERIVED[sort];
+  if(derivedDef){
+    // CS214: the server can't sort by a derived stat, so fetch the (earnings-ordered) base board — lbLoad
+    // falls back to earnings order when p_sort is unknown — and rank it client-side by golferStats().
+    const k=tab+':'+sort; let v=lbCache[k];
+    if(!v){ lbLoad(tab,sort,'desc'); v=lbCache[k]; }
+    view=v;
+    if(v && v.ok){
+      const rows=v.rows.filter(r=>r.skills && CATS.every(cc=>typeof r.skills[cc.k]==='number'))
+        .map(r=>Object.assign({}, r, {_stat:golferStats(r.skills)[derivedDef.key]}));
+      rows.sort((a,b)=> derivedDef.low ? (a._stat-b._stat) : (b._stat-a._stat));   // best first
+      rows.forEach((r,i)=>{ r.rank=i+1; });                                         // rank in best-first order
+      if(dir==='asc') rows.reverse();                                              // dir toggle → show worst first (real ranks kept)
+      dirRows=rows;
+    } else dirRows=[];
+  } else if(dir==='asc'){
     const kAsc=tab+':'+sort+':asc'; let vAsc=lbCache[kAsc];
     if(!vAsc){ lbLoad(tab,sort,'asc'); vAsc=lbCache[kAsc]; }
     if(vAsc && vAsc.ok && !vAsc.legacyDir){ view=vAsc; dirRows=vAsc.rows; }     // true bottom N, worst-first
@@ -4248,7 +4360,7 @@ function overlayLeaderboard(screen){
     <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:6px;flex-wrap:wrap">${sortChips}</div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 0 8px">
       <div style="min-width:0"><h2 style="margin:0 0 2px">${tab==='season'?'Single Season':'Career'} · ${esc(lbl)}</h2>
-        <div class="small muted" style="margin:0">${tab==='season'?'Every posted season':'Every career sim'} ranked by ${esc(lbl.toLowerCase())}${dir==='asc'?' · the lowest in the database':''}</div></div>
+        <div class="small muted" style="margin:0">${derivedDef?`Posted ${tab==='season'?'seasons':'careers'} ranked by ${esc(lbl.toLowerCase())} (derived from each golfer's ratings)`:`${tab==='season'?'Every posted season':'Every career sim'} ranked by ${esc(lbl.toLowerCase())}${dir==='asc'?' · the lowest in the database':''}`}</div></div>
       <button class="btn ghost lbdir" style="width:auto;flex:0 0 auto;padding:7px 10px;font-size:11px;white-space:nowrap" title="${dir==='desc'?'Showing best first, tap to flip':'Showing worst first, tap to flip'}">${dir==='desc'?'▼ High–Low':'▲ Low–High'}</button>
     </div>
     <div class="board">${board}</div>
@@ -6989,6 +7101,7 @@ function scrSummary(){
         else if(rr.rvAhead>rr.meAhead){ rvNow.seasonsLost=(rvNow.seasonsLost||0)+1; rvNow.seriesStreak=0; } } }
     S.career.winsList=S.career.winsList||[];
     S.career.money+=t.money; S.career.net+=ec.net; S.career.wins+=t.wins; S.career.majors+=t.majors; S.career.top10+=t.top10;
+    S.career.toPar=(S.career.toPar||0)+(t.toPar||0); S.career.rounds=(S.career.rounds||0)+(t.rounds||0);   // CS214: real career scoring
     if(t.best<S.career.best)S.career.best=t.best;
     // record the actual tournaments won this season for the career Wins list
     S.season.results.forEach(r=>{ const meR=r.order.find(o=>o.p.you); if(meR&&meR.pos===1) S.career.winsList.push({name:r.evt.name,year:S.year||1,major:!!r.evt.major}); });
@@ -7071,6 +7184,7 @@ function scrSummary(){
       // Token on completion (see endCircuit()) instead.
       const cc=(S.circuitCareer=S.circuitCareer||{money:0,net:0,wins:0,majors:0,top10:0,best:99,seasons:[],winsList:[],majorStats:{}});
       cc.money+=t.money; cc.net+=ec.net; cc.wins+=t.wins; cc.majors+=t.majors; cc.top10+=t.top10;
+      cc.toPar=(cc.toPar||0)+(t.toPar||0); cc.rounds=(cc.rounds||0)+(t.rounds||0);   // CS214: real circuit-career scoring
       if(t.best<cc.best) cc.best=t.best;
       S.season.results.forEach(r=>{ const meR=r.order.find(o=>o.p.you); if(meR&&meR.pos===1) cc.winsList.push({name:r.evt.name,year:S.year||1,major:!!r.evt.major}); });
       S.season.results.forEach(r=>{ if(!r.evt.major) return; const meR=r.order.find(o=>o.p.you); if(!meR) return;
@@ -7167,6 +7281,9 @@ function scrSummary(){
   tilesB.appendChild(statTile("Top 10's",t.top10+''));
   tilesB.appendChild(statTile('Tour Rank',fedexRank+' / '+N));
   add(tilesB);
+  // ---- Season Stats (CS214): real measured scoring + a full derived tour-stat profile ----
+  { const seasonSk=Object.fromEntries(CATS.map(c=>[c.k, me[c.k]!=null?me[c.k]:REPLACEMENT]));
+    add($(statSheetHTML(seasonSk, seasonRealStats(), {title:(S.circuitMode?'Legend Circuit · Season Stats':'Season Stats')}))); }
   // WINS grouped with the Wins stat: the actual tournaments won this season sit right under the row
   // (owner: "wins are at top once and then tiny" — keep the count and the won-events together).
   { const wonThisSeason=[];
@@ -7354,6 +7471,8 @@ function scrSummary(){
     const bestS=(c.seasons||[]).reduce((m,s)=>(!m||s.money>m.money)?s:m,null);
     if(bestS) ct.appendChild($(`<div class="tile"><div class="k">Season high</div><div class="v cream" style="font-size:17px">${fmt(bestS.money)}</div><div class="small muted" style="font-size:10px;margin-top:2px">Year ${bestS.year}</div></div>`));
     left.appendChild(ct);
+    // ---- Career Stats (CS214): measured career scoring + career-average derived profile ----
+    { const cSk=careerAvgSkills(c); if(cSk) left.appendChild($(statSheetHTML(cSk, careerRealStats(c), {title:'Career Stats · '+c.seasons.length+' years'}))); }
     // Wins + seasons, grouped into dropdowns so a long career stays readable
     const wl=(c.winsList||[]);
     const majWins=wl.filter(w=>w.major).length;
@@ -10577,6 +10696,8 @@ function scrCareerEnd(){
   tiles.appendChild(tile('Best season',fmt(e.best||0),true));
   tiles.appendChild(tile('Seasons',e.years+''));
   add(tiles);
+  // ---- Career Stats (CS214) ----
+  { const cSk=careerAvgSkills(c); if(cSk){ const w=$(`<div style="max-width:520px;margin:6px auto"></div>`); w.innerHTML=emojifyIcons(statSheetHTML(cSk, careerRealStats(c), {title:'Career Stats'})); add(w); } }
   // career record at the 4 major championships
   const MAJORS=['The Magnolia Invitational','The Championship','The National Open','The Links Championship'];
   const mstats=c.majorStats||{};
@@ -10654,6 +10775,8 @@ function scrCircuitEnd(){
   tiles.appendChild(tile('Best season',fmt(e.best||0),true));
   tiles.appendChild(tile('Seasons',e.years+''));
   add(tiles);
+  // ---- Circuit Career Stats (CS214) ----
+  { const cSk=careerAvgSkills(c); if(cSk){ const w=$(`<div style="max-width:520px;margin:6px auto"></div>`); w.innerHTML=emojifyIcons(statSheetHTML(cSk, careerRealStats(c), {title:'Circuit Career Stats'})); add(w); } }
   // record at the 5 Legend Circuit majors
   const mstats=c.majorStats||{};
   const winsByName={}; (c.winsList||[]).forEach(w=>{ if(w.major) winsByName[w.name]=(winsByName[w.name]||0)+1; });
