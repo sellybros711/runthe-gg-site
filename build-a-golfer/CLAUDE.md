@@ -5501,6 +5501,43 @@ allows Google Fonts, or self-host Anton.*
   board projects −9→(thru9)→−9→(thru18)−9 etc. matching the final totals exactly; the finish reuses the
   pre-sim (live board == final, no jump); the player's total is correct; zero page errors. HTML/JS only.
 
+- **CS214 — real golfer stats after every season & career, sortable on the leaderboard (owner: "I want
+  real Stats to be shown for your golfer after each season and for career as well. And I want these stats
+  to be available to sort by on the leaderboard. Like tee to green, avg putts, strokes gained, handicap,
+  etc").** Two data sources kept honest and clearly separated: a MEASURED scoring average from the actual
+  rounds played, plus a full PGA-style stat profile DERIVED from the 8 skill ratings (which are
+  DataGolf-SG-anchored, rating 80 = tour average). New pure `golferStats(sk)` returns SG:Off-the-Tee /
+  Approach / Around-Green / Putting / Total / Tee-to-Green (per round, anchored 80→0), driving distance
+  (yds), driving accuracy, GIR, putts/round, scrambling %, sand saves %, and a plus handicap; anchored so
+  a tour-average build reads SG 0 / 299 yds / 66% GIR / 29 putts / +3.0 hcp, and an elite build reads
+  ~+3.9 SG / ~+9 hcp / fewer putts. `seasonRealStats()`/`careerRealStats()` compute the measured
+  scoring average (and, for a season, real strokes-gained vs the field) from `S.season.totals[*].toPar/
+  .rounds` (already tracked for the scoring title); career accumulates `toPar`/`rounds` per season (new,
+  in both the regular and circuit record blocks) and averages `skillSeasons` for the career-average
+  derived profile. Shared `statSheetHTML(sk, real, {title})` renders a card: a 3-tile measured header
+  (Scoring avg + to-par/round · SG:Total vs field · Handicap) over two columns of SG + traditional stats,
+  with a one-line "scoring is measured, the splits are modeled from ratings" honesty note.
+  • **Wired in** on the season summary (after the Wins/Majors/Top10/Rank tiles), the career section of the
+    summary, and BOTH end-of-career ceremonies (`scrCareerEnd` + `scrCircuitEnd`).
+  • **Leaderboard sorts.** Added Strokes Gained / Tee to Green / Avg Putts / Handicap to `LB_SORTS` for
+    both the Single-Season and Career boards. These aren't DB columns, so they're computed client-side
+    from each row's stored `skills` jsonb (already returned since migration 31) via `golferStats()` and
+    ranked over the fetched board (`LB_DERIVED` maps sort→{golferStats key, low=lower-is-better};
+    `lbLoad` already falls back to the earnings-ordered board when the server doesn't recognize the
+    `p_sort`, so no SQL change is needed). `lbStatVal` renders the derived value column (+2.48 SG, 28.4
+    putts, +7.3 hcp, etc.), rows missing skills are excluded from a derived sort, and the subtitle is
+    transparent ("Posted seasons ranked by … (derived from each golfer's ratings)"). The High–Low toggle
+    flips best/worst-first while keeping each row's real best-first rank. **No migration** — entirely
+    client-side; the derived board ranks the fetched field, which is the honest scope of a stat computed
+    from stored ratings rather than a server column.
+  Verified in Playwright: `golferStats` anchors (tour-avg→0/299/29/+3.0, elite→+3.9SG/+9.1hcp/fewer
+  putts, better build = better SG); `statSheetHTML` renders scoring + SG + traditional sections;
+  `seasonRealStats` computes real scoring + field SG; the season summary renders both the Season Stats
+  and Career Stats cards with zero page errors; the leaderboard SG/putts/handicap sorts rank correctly
+  (Surgeon +2.48 → Bomber +0.46 by SG; Putter tops Avg Putts at 28.0), exclude skill-less legacy rows,
+  and show the derived-stat column + transparent subtitle. Screenshots confirm both surfaces. Deployed to
+  /golf. Tunable: the anchor slopes in `golferStats` (rating→stat) and `PAR_BASE`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
