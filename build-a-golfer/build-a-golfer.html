@@ -8527,20 +8527,21 @@ const HV_BIOMES={
    scatter:[['dune',0.5],['gorse',0.28],['fescue',0.22]],
    dune:['#7d8140','#8f9449','#a3a856'],gorse:['#4a5c22','#e2c34a'],trunk:'#e8e2d2',flowerCols:['#e2c34a','#c9b2d6']},
  // tropical: palms + broadleaf jungle, bright hibiscus, teal lagoon water, jungle-hill horizon
- tropical:{ground:'grass',base:'#4f8a2c',tickD:'#427526',tickL:'#68a840',cut:'#7bbc46',fw:'#8cc850',fwEdge:'#4f9030',
-   green:'#bfe07a',fringe:'#aacf68',gLine:'#6f9c3c',sand:'#f6f1de',sandLine:'#948c70',sandSpeck:'#c2b998',
-   water:'#2fb2c2',waterBank:'#6e5a38',ripple:'#c7f0f2',reed:'#3f7a30',outline:'#153c14',shad:'#1c4a1c',
-   backdrop:'jungle',ocean:false,bunkerScale:1,
+ tropical:{ground:'grass',base:'#3f8a24',tickD:'#347222',tickL:'#5faa38',cut:'#74c040',fw:'#84d048',fwEdge:'#489428',
+   green:'#c2e878',fringe:'#a8d662',gLine:'#6ea238',sand:'#f6f1de',sandLine:'#948c70',sandSpeck:'#c2b998',
+   water:'#20bcce',waterBank:'#6e5a38',ripple:'#c7f0f2',reed:'#3f7a30',outline:'#0f3c10',shad:'#134a14',
+   backdrop:'jungle',ocean:false,bunkerScale:1,floorTex:'undergrowth',underCol:'#1e5e1a',autumnP:0.02,stepMul:0.92,
    scatter:[['palm',0.5],['broadleaf',0.32],['flower',0.18]],
    palm:['#8a6b42','#2e7a30','#4aa348'],broadleaf:['#1c541a','#2e7a2c','#49a83e'],trunk:'#8a6b42',flowerCols:['#ff5a5a','#ffcf3a','#ff8adf']},
- // pine: tall Southern pine forest (Augusta/East Lake) — warm green, pine-dominant walls, blooming azaleas
- pine:{ground:'grass',base:'#5a842c',tickD:'#4a7024',tickL:'#72a03c',cut:'#7fac3e',fw:'#8fbc48',fwEdge:'#4f7328',
-   green:'#b4d666',fringe:'#9fc857',gLine:'#6a9035',sand:'#efe7d0',sandLine:'#8f8a76',sandSpeck:'#b9b6a6',
-   water:'#3f9fe0',waterBank:'#7d6238',ripple:'#bfe3f7',reed:'#4f7a26',outline:'#1c3a14',shad:'#1e3c16',
-   backdrop:'treeline',ocean:false,bunkerScale:1,
+ // pine: tall Southern pine forest (Augusta/East Lake) — deep warm green, pine-dominant walls, pine-straw
+ // floor, blooming azaleas; mostly evergreen (low autumn)
+ pine:{ground:'grass',base:'#527d26',tickD:'#446e20',tickL:'#6a9a34',cut:'#77a636',fw:'#87b840',fwEdge:'#476f24',
+   green:'#b0d55f',fringe:'#9bc74f',gLine:'#648c30',sand:'#efe7d0',sandLine:'#8f8a76',sandSpeck:'#b9b6a6',
+   water:'#3f9fe0',waterBank:'#7d6238',ripple:'#bfe3f7',reed:'#4f7a26',outline:'#183514',shad:'#1a3a14',
+   backdrop:'treeline',ocean:false,bunkerScale:1,floorTex:'pinestraw',strawCol:'#a9773e',autumnP:0.1,stepMul:0.94,
    scatter:[['pine',0.62],['decid',0.18],['flower',0.2]],
-   treeG:['#265417','#367024','#4f9430','#6bb03e'],treeA:['#7a4d16','#a06a1c','#c08a2a','#d9a83f'],
-   pine:['#173e12','#22521b','#316b26'],trunk:'#9a6a3a',flowerCols:['#ff8fbf','#ffffff','#e0567f']},
+   treeG:['#204e14','#317020','#48912c','#63ac3a'],treeA:['#7a4d16','#a06a1c','#c08a2a','#d9a83f'],
+   pine:['#123a10','#1e4e18','#2c6522'],trunk:'#9a6a3a',flowerCols:['#ff8fbf','#ffffff','#e0567f','#ff6aa0']},
  // sandhills: Carolina sandy waste (Pinehurst) — tawny sand rough, wiregrass tufts, longleaf pines, green pops
  sandhills:{ground:'links',base:'#b89a5e',tickD:'#a2864a',tickL:'#cdb478',cut:'#8fae44',fw:'#93c04a',fwEdge:'#5f8a2e',
    green:'#bcda66',fringe:'#a8c957',gLine:'#6f9437',sand:'#ede0bd',sandLine:'#b79a6a',sandSpeck:'#d6c49a',
@@ -8550,13 +8551,13 @@ const HV_BIOMES={
    pine:['#22521b','#316b26','#4a8a34'],treeG:['#3a6b28','#4f8a30','#6bb03e','#7fc04a'],treeA:['#7a4d16','#a06a1c'],
    dune:['#c2a866','#d0b878','#dcc48a'],gorse:['#7d8140','#e2c34a'],trunk:'#9a6a3a',flowerCols:['#e2c34a','#c9b2d6']},
  // prairie: warm open plains (Texas/Oklahoma/Tennessee) — golden-green, sparse oaks + scrub, big sky
- prairie:{ground:'grass',sparse:true,base:'#84923e',tickD:'#727f34',tickL:'#9caa50',cut:'#93a446',fw:'#a4b854',fwEdge:'#67762f',
-   green:'#c2d873',fringe:'#aec863',gLine:'#7f9040',sand:'#eee2c2',sandLine:'#b0996a',sandSpeck:'#cfc097',
-   water:'#4a9cd8',waterBank:'#8a6b42',ripple:'#c7ddec',reed:'#6f7a34',outline:'#454f22',shad:'#55602c',
-   backdrop:'treeline',ocean:false,bunkerScale:1,
+ prairie:{ground:'grass',sparse:true,base:'#8f9838',tickD:'#7c852f',tickL:'#a8b24c',cut:'#9aa63e',fw:'#adbc4c',fwEdge:'#6b7628',
+   green:'#c6da6c',fringe:'#b2c85a',gLine:'#82913a',sand:'#eee2c2',sandLine:'#b0996a',sandSpeck:'#cfc097',
+   water:'#4a9cd8',waterBank:'#8a6b42',ripple:'#c7ddec',reed:'#6f7a34',outline:'#4a5220',shad:'#5c6528',
+   backdrop:'treeline',ocean:false,bunkerScale:1,floorTex:'wildflower',autumnP:0.34,stepMul:1.12,
    scatter:[['decid',0.4],['scrub',0.4],['flower',0.2]],
-   treeG:['#5a6b26','#6f8030','#88a03e','#9cb44a'],treeA:['#8a6a1c','#a8842a','#c2a03a','#d9b84f'],
-   pine:['#4a5a24','#5f7030','#748a3c'],trunk:'#a07a44',flowerCols:['#e2b84a','#d98a5a','#c9b2d6']}};
+   treeG:['#5f6f22','#77852c','#93a53a','#a8bc48'],treeA:['#8a6a1c','#a8842a','#c2a03a','#d9b84f'],
+   pine:['#4a5a24','#5f7030','#748a3c'],trunk:'#a07a44',flowerCols:['#f0c23e','#e08a4a','#d6a0d0','#f0e26a']}};
 // internal course KEYS (never display names) → biome; unmapped → parkland
 const HV_COURSE_BIOME={
  'St Andrews Old Course':'links','Royal Troon':'links','Carnoustie':'links','Royal Portrush':'links','Turnberry':'links','Shinnecock Hills':'links','Whistling Straits':'links',
@@ -8586,12 +8587,17 @@ function hvHexShift(hex, dH, mL, mS){   // shift a #rrggbb color in HSL (hue °,
 function hvCourseVary(base, key){
   const B=JSON.parse(JSON.stringify(base)); if(!key) return B;
   const sd=(dHash('scene:'+key))>>>0, rnd=(i)=>hvHash(sd,i,7);   // hvHash already returns [0,1)
-  const dH=(rnd(1)-0.5)*26, mL=0.93+rnd(2)*0.14, mS=0.90+rnd(3)*0.22;   // grass hue ±13°, light/sat wobble
+  const dH=(rnd(1)-0.5)*36, mL=0.90+rnd(2)*0.18, mS=0.88+rnd(3)*0.28;   // grass hue ±18°, wider light/sat wobble
   HV_GRASS_KEYS.forEach(k=>{ if(typeof B[k]==='string') B[k]=hvHexShift(B[k],dH,mL,mS); });
-  const dHt=dH*0.7, mLt=0.95+rnd(4)*0.1;                                 // trees track the grass shift, softer
+  const dHt=dH*0.7, mLt=0.94+rnd(4)*0.12;                               // trees track the grass shift, softer
   HV_TREE_KEYS.forEach(k=>{ if(Array.isArray(B[k])) B[k]=B[k].map(c=>hvHexShift(c,dHt,mLt,0.98)); });
-  const dHf=(rnd(7)-0.5)*90;                                            // flowers rotate more (pink↔coral↔lavender)
-  if(Array.isArray(B.flowerCols)) B.flowerCols=B.flowerCols.map(c=> c.toLowerCase()==='#ffffff'?c:hvHexShift(c,dHf,0.98+rnd(8)*0.1,1));
+  const dHf=(rnd(7)-0.5)*100;                                           // flowers rotate more (pink↔coral↔lavender↔gold)
+  if(Array.isArray(B.flowerCols)) B.flowerCols=B.flowerCols.map(c=> c.toLowerCase()==='#ffffff'?c:hvHexShift(c,dHf,0.96+rnd(8)*0.14,1));
+  if(B.floorTex==='wildflower' || B.floorTex==='pinestraw'){ if(typeof B.strawCol==='string') B.strawCol=hvHexShift(B.strawCol,dH*0.5,mL,1); }
+  // per-course SEASONAL + DENSITY character within the biome (autumn-heavy vs evergreen; thick vs airy woods)
+  const baseAut=(B.autumnP!=null?B.autumnP:0.2);
+  B.autumnP=Math.max(0.02, Math.min(0.55, baseAut + (rnd(10)-0.5)*0.5));
+  B.stepMul=(B.stepMul||1)*(0.9+rnd(11)*0.28);
   if(B.scatter && B.scatter.length>1){                                  // rotate the flora mix so a different plant dominates
     const ws=B.scatter.map(e=>e[1]), rot=1+Math.floor(rnd(6)*(B.scatter.length-1));
     B.scatter=B.scatter.map((e,i)=>[e[0], ws[(i+rot)%ws.length]]);
@@ -8646,6 +8652,16 @@ function hvTerrain(g, seedN, B){
     for(let i=0;i<5;i++) gr+=`<path d="${hvBlobD(-HV_EX+hh(450+i)*FW, hh(460+i)*HV_H, 18+hh(470+i)*16, 9+hh(480+i)*8, seedN^(i*97), 0.3, 9)}" fill="${B.sand}" opacity=".32"/>`;   // sandy scrapes
   } else {
     for(let i=0;i<56;i++){ gr+=vTick(-HV_EX+hh(200+i)*FW, hh(300+i)*HV_H, i%2?B.tickD:B.tickL, '.5'); }   // most rough is under the forest
+    // per-biome FLOOR texture (owner: push each biome farther): pine-straw beds, jungle undergrowth,
+    // prairie wildflower speckle — distinct rough character beyond the grass ticks
+    if(B.floorTex==='pinestraw'){ const pc=B.strawCol||'#a9773e';
+      for(let i=0;i<40;i++){ const x=-HV_EX+hh(500+i)*FW, y=hh(520+i)*HV_H, a=hh(540+i)*6.28;
+        gr+=`<path d="M ${x.toFixed(1)} ${y.toFixed(1)} l ${(Math.cos(a)*4.5).toFixed(1)} ${(Math.sin(a)*4.5).toFixed(1)}" stroke="${pc}" stroke-width=".8" opacity=".38"/>`; } }
+    else if(B.floorTex==='undergrowth'){ const uc=B.underCol||'#2c6a24';
+      for(let i=0;i<24;i++) gr+=`<path d="${hvBlobD(-HV_EX+hh(500+i)*FW, hh(520+i)*HV_H, 7+hh(540+i)*9, 4+hh(560+i)*5, seedN^(i*53), 0.34, 8)}" fill="${uc}" opacity=".28"/>`; }
+    else if(B.floorTex==='wildflower'){ const fc=B.flowerCols||['#e2b84a'];
+      for(let i=0;i<34;i++){ const x=-HV_EX+hh(500+i)*FW, y=hh(520+i)*HV_H;
+        gr+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(0.9+hh(560+i)*0.8).toFixed(1)}" fill="${fc[i%fc.length]}" opacity=".5"/>`; } }
   }
   s.push(gr);
   // coastal biome: water runs down one side — mud-bank shoreline, flat bright blue, ripple dashes
@@ -8795,7 +8811,7 @@ function hvTerrain(g, seedN, B){
     case 'dune': return dune(x,y,r,fs);
     case 'gorse': return gorseBush(x,y,r,fs);
     case 'fescue': return fescue(x,y,r,fs);
-    default: return canopy(x,y,r,hvHash(seedN,fs,15)<0.2,fs);
+    default: return canopy(x,y,r,hvHash(seedN,fs,15)<(B.autumnP!=null?B.autumnP:0.2),fs);
   }};
   // weighted pick of a plant type from the biome's scatter mix
   const pickPlant=(h)=>{ const sc=B.scatter||[['decid',1]]; let a=0; for(const e of sc){ a+=e[1]; if(h<a) return e[0]; } return sc[sc.length-1][0]; };
@@ -8805,7 +8821,7 @@ function hvTerrain(g, seedN, B){
     // back-to-front for a layered, depth-y look. Wooded biomes (grass ground) fill a DENSE carpet — a hole
     // carved through forest; desert/links are a more open scatter (bare floor is part of the character).
     // Fairway corridor + green/water/bunker/ocean keep-outs stay clear; organic gaps + jitter break the grid.
-    const dense=(B.ground==='grass' && !B.sparse), STEP=dense?22:26, gap=dense?0.15:0.34;   // prairie/sandhills scatter openly
+    const dense=(B.ground==='grass' && !B.sparse), STEP=Math.round((dense?22:26)*(B.stepMul||1)), gap=dense?0.15:0.34;   // prairie/sandhills scatter openly; stepMul varies density per course
     const items=[];
     for(let py=-6; py<HV_H+8; py+=STEP){ const dep=0.42+0.64*(py/HV_H);   // near (bottom) larger
       for(let px=-HV_EX-4; px<HV_W+HV_EX+6; px+=STEP){

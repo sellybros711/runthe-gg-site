@@ -5576,6 +5576,26 @@ allows Google Fonts, or self-host Anton.*
   page errors; screenshots confirm all six sampled courses look visually distinct. Deployed to /golf.
   Tunable: the hue/light/sat ranges in `hvCourseVary`, the new biome palettes, `HV_COURSE_BIOME` mappings.
 
+- **CS217 — push the scenery farther: floor textures, vivid palettes, wider per-course character.**
+  Owner: "push them all farther." Enriched the CS216 biome system on every axis:
+  • **Per-biome FLOOR textures** (new rough character beyond the grass ticks): pine gets a **pine-straw**
+    needle bed (rust streaks), tropical gets dark **undergrowth** blotches, prairie gets a **wildflower**
+    speckle in its accent colors. Wired via a `floorTex` field consumed in `hvTerrain`'s ground branch.
+  • **More vivid, more distinct palettes**: pine deepened to a warm forest green (deeper pine tiers,
+    evergreen `autumnP:0.1`), tropical pushed to a lush saturated jungle green + brighter teal water,
+    prairie warmed to a golden-olive plain with autumn-heavy oaks (`autumnP:0.34`).
+  • **Wider per-course variation** in `hvCourseVary`: grass hue range ±13°→**±18°**, wider light/sat wobble,
+    bigger flower-hue rotation, and — new — a per-course **seasonal + density character**: each course rolls
+    its own `autumnP` (autumn-heavy vs evergreen tree mix) and `stepMul` (thick vs airy woods) within its
+    biome. So two pine courses now clearly differ (Augusta: deep green + azaleas; East Lake: cooler + more
+    autumn trees + a pond), as do two prairie courses.
+  All centralized in the biome table + `hvCourseVary`/`hvTerrain` (terrain built once per hole + cached, so
+  the added floor detail is free on re-render). Verified in Playwright: 8 courses across all biomes +
+  intra-biome pairs render richer and visibly distinct in BOTH the preview and live shot paths, node counts
+  reasonable (~1k open / ~3.2k dense), zero page errors; screenshots confirm the pine-straw/undergrowth/
+  wildflower floors and the vivid palettes. Deployed to /golf. Tunable: `floorTex` per biome, the
+  hue/season/density ranges in `hvCourseVary`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
