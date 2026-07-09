@@ -5484,6 +5484,23 @@ allows Google Fonts, or self-host Anton.*
   the toast sits above it with a clear gap (no overlap); with no cue it stays at 26px; zero page errors.
   CSS/JS one-liner.
 
+- **CS213 — Career Moment: the field's Sunday now plays out LIVE (fixes "the 2nd/3rd guy always wins by
+  2-3 at the end").** Tester (Jordan): playing the final round hole-by-hole with a lead/tied, "all of a
+  sudden the guy in 2nd or third always wins by 2-3 strokes." First *measured* whether the Moment engine was
+  actually unfair — it's not: a Monte-Carlo vs a fully-simmed baseline showed playing the round changes the
+  leader's win-rate by only 0.1-0.7 pts (mean calibration bias ≈ 0; the played round's SD is a hair lower,
+  ~2.7 vs ~2.9, negligible). The real problem was **presentation**: the on-screen leaderboard showed the
+  opponents FROZEN at their start-of-Sunday totals (their round 4 wasn't simmed until you holed out on 18),
+  so you appeared to lead all day and then 2-3 of them leapfrogged you the instant the round ended — "out of
+  nowhere." Fix: `startMomentRound` now PRE-SIMS the whole field's Sunday round up front (`o._r4sim`), the
+  Moment leaderboard REVEALS each opponent's round progressively (× holes you've played / 18) so challengers
+  visibly make their moves as you go, and `finishMomentRound` REUSES those exact pre-simmed scores — so the
+  live board at the 18th hole equals the final result exactly (no end-of-round jump), and nothing changes
+  statistically (same `simRound` draws, just computed earlier and shown live). The existing FLIP row
+  animation now glides the challengers past you as it happens. Verified over http: opponents pre-simmed; the
+  board projects −9→(thru9)→−9→(thru18)−9 etc. matching the final totals exactly; the finish reuses the
+  pre-sim (live board == final, no jump); the player's total is correct; zero page errors. HTML/JS only.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

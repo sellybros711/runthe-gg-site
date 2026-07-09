@@ -5592,6 +5592,11 @@ function startMomentRound(ce, info){
     dSum+=t; }
   let shift=(sSum/240 - dSum/K)/18; if(!isFinite(shift)) shift=0;
   S.moment={idx:ce.idx, evtName:ce.evt.name, info, major:!!ce.evt.major};
+  // Pre-sim the FIELD's Sunday round now, so the leaderboard can play out LIVE alongside you (challengers
+  // making their moves hole by hole) instead of everyone freezing at their start-of-day total and all
+  // leapfrogging you at the very end. finishMomentRound reuses these exact scores, so nothing changes
+  // statistically — only the presentation becomes live + fair-feeling.
+  ce.players.forEach(o=>{ if(o.made && !o.p.you) o._r4sim=simRound(o.eo,o.p.clu,{major:ce.evt.major,big:ce.evt.big,finalRd:true,courseAdj:ce.courseAdj}); });
   S.daily=false; S.special=false; S.dailyLegend=null; S.momentPO=null; S.momentPOHoleIdx=null;
   S.dailyCourse=key; S.dailyCond=cond; S.dailyPlan='balanced';
   S.dailySeed=(Math.random()*2147483647)>>>0; S.dailyAttempt=0;
@@ -5615,8 +5620,8 @@ function finishMomentRound(){
   // Sunday plays out: YOUR round is the one you just played, the field sims theirs
   const r=ce.roundsDone;
   ce.players.forEach(o=>{ if(!o.made) return;
-    const s=o.p.you ? total : simRound(o.eo,o.p.clu,{major:ce.evt.major,big:ce.evt.big,finalRd:true,courseAdj:ce.courseAdj});
-    o.rounds[r]=s; o.total+=s; });
+    const s=o.p.you ? total : (o._r4sim!=null ? o._r4sim : simRound(o.eo,o.p.clu,{major:ce.evt.major,big:ce.evt.big,finalRd:true,courseAdj:ce.courseAdj}));
+    o.rounds[r]=s; o.total+=s; delete o._r4sim; });
   ce.roundsDone=4; ce._momentHoles=holes; ce._momentTotal=total;
   // TIE FOR THE LEAD that includes YOU → play a REAL sudden-death playoff. You played the round, so you
   // play the playoff too, hole by hole, the way it goes on the PGA Tour. (Won/lost outright → finalize now.)
@@ -9998,7 +10003,10 @@ function scrDailyRound(){
           bd.appendChild($(`<div class="hvbrow ${you?'mine':''}" data-nm="${esc(o.p.you?'YOU':o.p.name)}"><span class="cdot" style="background:${you?'#3b82f6':'#8fa39a'}"></span><span class="rk">${ri+1}</span><span class="nm">${esc(you?'YOU':o.p.name)}</span><span class="tp" style="color:#ffd76a">TIED</span></div>`)); });
       } else if(S.moment && S.curEvt && S.curEvt.players){
         bd.appendChild($(`<div class="hvbcap">FINAL ROUND · THRU ${through}</div>`));
-        const rows=S.curEvt.players.filter(o=>o.made).map(o=>({nm:o.p.you?'YOU':o.p.name, tp:Math.round(o.total)+(o.p.you?total:0), you:!!o.p.you})).sort((a,b)=>a.tp-b.tp);
+        // opponents' Sunday round is REVEALED progressively (× holes you've played / 18), so the board moves
+        // live as challengers make their moves — instead of them being frozen then jumping at the finish.
+        // Round the whole projected total (not the parts) so the live board matches the final leaderboard exactly.
+        const rows=S.curEvt.players.filter(o=>o.made).map(o=>({nm:o.p.you?'YOU':o.p.name, tp:Math.round(o.p.you?(o.total+total):(o.total+(o._r4sim||0)*through/18)), you:!!o.p.you})).sort((a,b)=>a.tp-b.tp);
         const meIdx=rows.findIndex(r=>r.you);
         const show=meIdx<4?rows.slice(0,4):rows.slice(0,3).concat([rows[meIdx]]);
         show.forEach(r=>{ const rk=rows.indexOf(r)+1;
