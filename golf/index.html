@@ -481,19 +481,36 @@ window.GA_ID='G-L29P5MRWKE';
   .lb.cut .sc{color:#e07a5f}
   /* Tour Rep tier name — a distinct text effect per rank (higher = flashier) */
   .rept{font-weight:800; font-size:10px; letter-spacing:.02em; white-space:nowrap}
-  .rept-journeyman{color:#a9b7ad}
-  .rept-pro{color:#2fd0c0}                                           /* teal */
-  .rept-contender{color:#d98a3d}                                     /* bronze */
-  .rept-star{background:linear-gradient(90deg,#cdd6df,#ffffff,#9fb0bf); -webkit-background-clip:text; background-clip:text; color:transparent;
-    text-shadow:0 0 5px rgba(220,230,240,.28)}                       /* brushed silver */
-  .rept-champion{background:linear-gradient(90deg,#e39a12,#ffe89a,#f6c944); -webkit-background-clip:text; background-clip:text; color:transparent}  /* polished gold */
-  .rept-legend{color:#c79bff; text-shadow:0 0 8px rgba(168,85,247,.65)}   /* violet glow */
-  .rept-icon{background:linear-gradient(90deg,#f6c944,#ff8a5b,#f6c944); background-size:200% auto; -webkit-background-clip:text; background-clip:text; color:transparent;
-    animation:reptShimmer 2.6s linear infinite}                     /* molten shimmer */
-  .rept-goat{background:linear-gradient(90deg,#ff5e5e,#ffd23f,#4be3a8,#3b82f6,#c79bff,#ff5e5e); background-size:300% auto; -webkit-background-clip:text; background-clip:text; color:transparent;
-    font-weight:900; animation:reptShimmer 3.2s linear infinite}    /* prismatic (G.O.A.T.) */
+  /* every rank has its OWN look — flat hues low, gradients + glow mid, animated shimmers at the top */
+  .rept-am{color:#8b978c}                                            /* Amateur — muted grey */
+  .rept-rk{color:#74b47f}                                            /* Rookie — soft green */
+  .rept-ql{color:#6f9fc8}                                            /* Qualifier — steel blue */
+  .rept-jm{color:#c4a86a}                                            /* Journeyman — khaki */
+  .rept-tr{color:#4dbf97}                                            /* Tour Regular — sage/mint */
+  .rept-tp{color:#25d3c2}                                            /* Tour Pro — teal */
+  .rept-ep{color:#3aa6ee}                                            /* Established Pro — sky blue */
+  .rept-cn{color:#d98a3d}                                            /* Contender — bronze */
+  .rept-cl{color:#e9702f; text-shadow:0 0 5px rgba(233,112,47,.4)}   /* Challenger — copper */
+  .rept-rs{color:#ff8ac0; text-shadow:0 0 6px rgba(255,120,190,.55)} /* Rising Star — rose glow */
+  .rept-st{background:linear-gradient(90deg,#cdd6df,#ffffff,#9fb0bf); -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 0 5px rgba(220,230,240,.28)}                       /* Star — brushed silver */
+  .rept-as{color:#6a9bff; text-shadow:0 0 8px rgba(90,140,255,.7)}   /* All-Star — electric blue */
+  .rept-sd{background:linear-gradient(90deg,#22b877,#8affc4,#22b877); -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 0 6px rgba(60,220,150,.4)}                         /* Standout — emerald */
+  .rept-ch{background:linear-gradient(90deg,#e39a12,#ffe89a,#f6c944); -webkit-background-clip:text; background-clip:text; color:transparent}  /* Champion — polished gold */
+  .rept-el{background:linear-gradient(90deg,#e0344f,#ff97a6,#e0344f); -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 0 7px rgba(224,52,79,.5)}                          /* Elite — ruby */
+  .rept-ss{background:linear-gradient(90deg,#c04fe0,#ff7ad9,#c04fe0); background-size:200% auto; -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:reptShimmer 2.8s linear infinite}                      /* Superstar — magenta shimmer */
+  .rept-lg{color:#c79bff; text-shadow:0 0 10px rgba(168,85,247,.8)}  /* Legend — violet glow */
+  .rept-im{background:linear-gradient(90deg,#7fe8ff,#ffffff,#7fe8ff); background-size:200% auto; -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 0 9px rgba(120,225,255,.6); animation:reptShimmer 3.6s linear infinite}   /* Immortal — icy shimmer */
+  .rept-ic{background:linear-gradient(90deg,#f6c944,#ff8a5b,#f6c944); background-size:200% auto; -webkit-background-clip:text; background-clip:text; color:transparent;
+    animation:reptShimmer 2.4s linear infinite}                      /* Icon — molten gold */
+  .rept-gt{background:linear-gradient(90deg,#ff5e5e,#ffd23f,#4be3a8,#3b82f6,#c79bff,#ff5e5e); background-size:300% auto; -webkit-background-clip:text; background-clip:text; color:transparent;
+    font-weight:900; animation:reptShimmer 3.2s linear infinite}     /* G.O.A.T. — prismatic */
   @keyframes reptShimmer{to{background-position:200% center}}
-  @media (prefers-reduced-motion:reduce){ .rept-icon,.rept-goat{animation:none} }
+  @media (prefers-reduced-motion:reduce){ .rept-ss,.rept-im,.rept-ic,.rept-gt{animation:none} }
   .sep{height:1px; background:repeating-linear-gradient(90deg,var(--line),var(--line) 6px,transparent 6px,transparent 12px)}
   /* collapsible career groups (native <details>, no re-render needed) */
   .acc{border:1px solid var(--line); border-radius:12px; overflow:hidden; margin-bottom:7px; background:var(--board)}
@@ -1535,14 +1552,13 @@ function repTierFor(pts, count){
 function repTier(pts){ pts=pts==null?achPoints():pts; return repTierFor(pts, achCount()); }
 function repAtLeast(name){ return repRankIndex(repTier().tier.name) >= repRankIndex(name); }   // for rep-gated cosmetics
 function repTierName(pts){ return repTierFor(pts, pts>=ACH_TOTAL_PTS?ACH_TOTAL:0).tier.name; }   // pts-only (e.g. other players on the board)
-// each Tour Rep tier gets a text effect (CSS classes .rept-*) on the leaderboard. The new inserted ranks
-// reuse the existing effect of the milestone rank they sit near, so no new CSS is needed (the flashiest
-// effects still land at the top of the ladder). '' = base (no effect).
+// each Tour Rep tier gets its OWN distinct text effect (CSS classes .rept-*) on the leaderboard, escalating
+// from flat hues at the bottom to gradients + glow in the middle to animated shimmers at the very top.
 const REP_CLASS={
-  'Amateur':'',        'Rookie':'',            'Qualifier':'journeyman','Journeyman':'journeyman','Tour Regular':'journeyman',
-  'Tour Pro':'pro',    'Established Pro':'pro', 'Contender':'contender', 'Challenger':'contender', 'Rising Star':'star',
-  'Star':'star',       'All-Star':'star',      'Standout':'champion',   'Champion':'champion',    'Elite':'champion',
-  'Superstar':'legend','Legend':'legend',      'Immortal':'icon',       'Icon':'icon',            'G.O.A.T.':'goat' };
+  'Amateur':'am',      'Rookie':'rk',          'Qualifier':'ql',        'Journeyman':'jm',        'Tour Regular':'tr',
+  'Tour Pro':'tp',     'Established Pro':'ep',  'Contender':'cn',        'Challenger':'cl',        'Rising Star':'rs',
+  'Star':'st',         'All-Star':'as',        'Standout':'sd',         'Champion':'ch',          'Elite':'el',
+  'Superstar':'ss',    'Legend':'lg',          'Immortal':'im',         'Icon':'ic',              'G.O.A.T.':'gt' };
 function repClass(name){ const k=REP_CLASS[(name||'').replace(/^🐐\s*/,'')]; return 'rept'+(k?' rept-'+k:''); }
 // Tour Rep perk: off-season CHANGES + RE-SPINS, computed from where the rank sits on the ladder (not a
 // per-name table, so it scales with any ladder length). Floor 1 change + 1 re-spin; ramps to the MAX of
