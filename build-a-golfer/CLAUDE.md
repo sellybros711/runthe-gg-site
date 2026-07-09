@@ -5658,6 +5658,16 @@ allows Google Fonts, or self-host Anton.*
   through all 4 locations (the old linear mod-4 could collide). Verified: daily pin identical across
   attempts, all 4 positions used across 8 days, career still rotates per event, zero errors. Deployed to /golf.
 
+- **CS222 — every Tour Rep tier tag has its own unique look (owner).** The 20 ranks previously shared
+  only ~8 leaderboard text effects (the inserted ranks reused a neighbour's). Gave all 20 a distinct
+  `.rept-*` treatment that escalates with prestige: flat hues low (Amateur grey · Rookie green · Qualifier
+  steel · Journeyman khaki · Tour Regular mint · Tour Pro teal · Established Pro sky · Contender bronze),
+  gradients + glow mid (Challenger copper · Rising Star rose · Star silver · All-Star electric blue ·
+  Standout emerald · Champion gold · Elite ruby), and animated shimmers at the top (Superstar magenta ·
+  Legend violet · Immortal icy · Icon molten gold · G.O.A.T. prismatic). `REP_CLASS` now maps each rank to
+  its own slug; only `repClass` (leaderboard) consumes it. Reduced-motion disables the shimmers. Verified:
+  20 ranks → 20 unique classes, screenshot confirms each is visually distinct, zero errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
