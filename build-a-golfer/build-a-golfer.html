@@ -1925,7 +1925,8 @@ function autoSaveSeason(){
   if(S.daily || !S.season || S.screen!=='season' || !sbSignedIn()) return;
   saveCareer({ resumeScreen:'season', mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
     season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me,
-      contract:S.season.contract, skipped:S.season.skipped, coinRaw0:S.season.coinRaw0 } } });
+      contract:S.season.contract, skipped:S.season.skipped, coinRaw0:S.season.coinRaw0,
+      stops:S.season.stops, momentsShown:S.season.momentsShown } } });
 }
 function clearCareerSave(){ LS.set(acctKey('bag_careersave'),null); cloudPush(); }
 // one-time: an in-progress career saved before careers were account-scoped lives under the old unscoped
@@ -1966,19 +1967,19 @@ function resumeCareer(){ const r=careerSaveInfo(); if(!r || r.ended) return;   /
     S.seasonRank=sn.seasonRank||null; S.worldRankMove=sn.worldRankMove||null; S.seasonAwards=sn.seasonAwards||null;
     S.freshBadges=sn.freshBadges||null; S.freshAch=sn.freshAch||[]; S.freshRep=sn.freshRep||null;
     S.rivalOutcome=sn.rivalOutcome||null; S.freshRival=sn.freshRival||null; S.freshRivalOutgrown=sn.freshRivalOutgrown||null;
-    S.autoSim=LS.get('bag_autosim',false);
+    S.autoSim=LS.get('bag_autosim',true);
     track('career_resume',{year:S.year,at:'summary'}); S.screen='summary'; render(); return;
   }
   if(r.resumeScreen==='offseason' && r.offseason){   // resume INTO the off-season tune-up (world already advanced)
     ensureWorld(); RNG=Math.random;
     S.offseason=r.offseason; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
-    S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.autoSim=LS.get('bag_autosim',false);
+    S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.autoSim=LS.get('bag_autosim',true);
     track('career_resume',{year:S.year,at:'offseason'}); S.screen='offseason'; render(); return;
   }
   if(r.mid && r.mid.season){   // resume INTO the in-progress season (mid-season save)
     ensureWorld(); RNG=Math.random;
     S.schedule=r.mid.schedule||[]; S.evtIndex=r.mid.evtIndex||0; S.season=r.mid.season; S.freshAch=r.mid.freshAch||[];
-    S.curEvt=null; S.recorded=false; S.autoSim=LS.get('bag_autosim',false);
+    S.curEvt=null; S.recorded=false; S.autoSim=LS.get('bag_autosim',true);
     track('career_resume',{year:S.year,mid:true}); S.screen='season'; render(); return;
   }
   track('career_resume',{year:S.year}); continueFranchise(); }   // legacy save with no screen tag: pick up at next off-season
@@ -3430,7 +3431,7 @@ function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);S={screen:'t
   slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get('bag_name',''),
   look:Object.assign({},DEFLOOK,LS.get('bag_look',{})),year:1,career:null,
   schedule:[],evtIndex:0,season:null,curEvt:null,fieldRoster:null,overlay:null,seasonPaused:false,recorded:false,recapEvent:null,
-  autoSim:LS.get('bag_autosim',false),simRate:LS.get('bag_speed',1),daily:false,dailySeed:null,dailyStored:false};}
+  autoSim:LS.get('bag_autosim',true),simRate:LS.get('bag_speed',1),daily:false,dailySeed:null,dailyStored:false};}
 reset();
 if(LS.get('bag_dark',false))document.body.classList.add('dark');
 
@@ -5678,6 +5679,7 @@ function startSeason(majorsOnly){
   S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0; S.seasonRank=null;
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false;   // unlocked during THIS season (shown on the summary)
   if(S.career && S.career.story){ S.career.story.seasonCount=0; }   // reset the per-season storyline cap (CS225)
+  S.season.stops=0; S.season.momentsShown=0;   // shared interruption budget (max 4 pop-ups/season)
   if(!S.daily && !S.circuitMode && S.career){ try{ S.season.contract=makeContract(); }catch(e){} }   // sponsor season deal (goals + bonuses)
   if(sbSignedIn() && !S.daily){ try{ S.season.coinRaw0=coinsEarnedRaw(); }catch(e){} }   // baseline for the skip-forfeits-coins rule (coins accrue per event, so snapshot at season start)
   S.curEvt=null;
@@ -5802,7 +5804,13 @@ function momentPopup(ce, info){
    a career PERSONA (traits), can grant a small one-event confidence perk, and is logged to a "Career
    Story" feed shown on the season summary + career end. Interactive CAREER play only (never daily,
    circuit, or headless). The ONLY sim effect is a tiny, capped composure boost consumed in beginEvent. */
-const STORY_CONF_CAP=0.8, STORY_PER_SEASON=5, STORY_GAP=2;
+const STORY_CONF_CAP=0.8, STORY_PER_SEASON=2, STORY_GAP=2;
+// Interruption budget (owner): a season is a SIMULATOR for anyone, not just golf fans — cap the total
+// number of times the sim pauses for a pop-up (storyline + Moment) at 4/season so casual users aren't
+// nagged into skipping. Moments (play-the-final-round) are prioritized within that budget over storylines.
+const SEASON_STOP_BUDGET=4, MOMENT_PER_SEASON=3;
+function seasonStops(){ return (S.season&&S.season.stops)||0; }
+function seasonStopLeft(){ return SEASON_STOP_BUDGET - seasonStops(); }
 function careerStory(){ const c=(S.career=S.career||{}); if(!c.story) c.story={traits:{}, endorsements:0, fan:0, feed:[], lastBeat:-99, seasonCount:0, seenEvt:{}};
   const s=c.story; s.traits=s.traits||{}; s.feed=s.feed||[]; s.seenEvt=s.seenEvt||{}; return s; }
 function storyGainConf(n){ if(!S.season) return; S.season.confBoost=Math.min(STORY_CONF_CAP,(S.season.confBoost||0)+n); }
@@ -5883,6 +5891,7 @@ function maybeStoryline(ce){
   if(S.daily || S.circuitMode || !S.career) return null;
   if(!ce || ce.done) return null;
   const story=careerStory();
+  if(seasonStopLeft() <= 0) return null;                              // shared season interruption budget spent
   if(S.evtIndex - (story.lastBeat==null?-99:story.lastBeat) < STORY_GAP) return null;
   if((story.seasonCount||0) >= STORY_PER_SEASON) return null;
   const ctx=storyCtx(ce);
@@ -5894,6 +5903,7 @@ function maybeStoryline(ce){
 }
 function showStoryline(sb){
   const {beat, ctx}=sb, story=careerStory();
+  if(S.season) S.season.stops=(S.season.stops||0)+1;   // count against the shared interruption budget
   story.lastBeat=S.evtIndex; story.seasonCount=(story.seasonCount||0)+1; story.seenEvt[beat.id]=S.evtIndex;
   const T=(v)=>typeof v==='function'?v(ctx):v;
   document.querySelectorAll('.momentov,.storyov').forEach(n=>n.remove());
@@ -7240,10 +7250,12 @@ function scrSeason(){
   }
   // THE MOMENT: heading into Sunday in contention → pause and offer to play the final round.
   // Interactive career play only; skip-to-end / headless sims never reach this scheduler.
-  if(!ce.done && ce.roundsDone===3 && !ce._momentAsked){
+  if(!ce.done && ce.roundsDone===3 && !ce._momentAsked
+     && seasonStopLeft()>0 && (S.season&&(S.season.momentsShown||0)<MOMENT_PER_SEASON)){
     ce._momentAsked=true;
     const mi=momentInfo(ce);
-    if(mi){ clearTimeout(seasonTimer); momentPopup(ce, mi); return; }
+    if(mi){ S.season.stops=(S.season.stops||0)+1; S.season.momentsShown=(S.season.momentsShown||0)+1;
+      clearTimeout(seasonTimer); momentPopup(ce, mi); return; }
   }
   // scheduling
   if(reduce){

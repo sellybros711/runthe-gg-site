@@ -5682,6 +5682,25 @@ allows Google Fonts, or self-host Anton.*
   scoreboard top-right for the whole simulation. (The unused `.hvhole.right`/`.hvboard.left` CSS is left in
   place, harmless.) Verified: no flip logic remains, page loads clean, zero errors. Deployed to /golf.
 
+- **CS225 — cap interactive season pop-ups at 3-4/season + Auto Sim on by default (owner: "users should
+  have a maximum of 3-4 pop ups per season... this is a simulator for anybody, not just dedicated golf
+  fans. I'm worried we'll lose users if the sim stops so many times, or people just skip to the end").**
+  Two coordinated levers: (1) **Auto Sim now defaults ON** (`LS.get('bag_autosim', true)` at all 4 read
+  sites) so a season auto-flows instead of requiring ~20 manual "Next Event" clicks — casual users watch it
+  play out, power users can toggle it off. (2) A **shared per-season interruption budget** so the sim never
+  pauses for more than 4 pop-ups total: new `SEASON_STOP_BUDGET=4` with `S.season.stops`/`momentsShown`
+  reset in `startSeason` and persisted in the mid-season autosave snapshot. `STORY_PER_SEASON` dropped 5→2
+  (off-course storyline beats are now the minor, lower-priority pauses), `MOMENT_PER_SEASON=3` (the
+  play-the-final-round Moments are prioritized within the budget). `maybeStoryline` bails when
+  `seasonStopLeft()<=0`; `showStoryline` increments `stops`; the Moment trigger is gated on both
+  `seasonStopLeft()>0` AND `momentsShown<MOMENT_PER_SEASON` and increments both (only when a Moment actually
+  shows — `momentInfo` returning null doesn't spend budget). Net: at most 4 pauses/season (≤2 storylines,
+  Moments filling the rest, up to 3), so a full season for a non-golf-fan flows start to finish with a
+  handful of meaningful decisions rather than ~20 stops. Verified in Playwright (string-form evaluate on the
+  live functions): fresh budget 4; storylines cap at 2; with 2 storylines already shown only 2 more Moments
+  fire (budget, not the per-mode cap, binds); `stops` never exceeds 4; Auto Sim default ON confirmed; page
+  loads with zero page errors. Tunable: `SEASON_STOP_BUDGET`, `STORY_PER_SEASON`, `MOMENT_PER_SEASON`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
