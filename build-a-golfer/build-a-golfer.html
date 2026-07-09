@@ -4999,7 +4999,26 @@ const _accScale=AV_FRAME_H/ACC_NATIVE_H;                                  // art
 const _accSrcX=ACC_WL*ACC_NATIVE_W, _accSrcW=(ACC_WR-ACC_WL)*ACC_NATIVE_W;
 const AV_FRAME_W=Math.round(_accSrcW*_accScale);                          // ~496
 const GOLFER_CX=Math.round((0.5-ACC_WL)/(ACC_WR-ACC_WL)*AV_FRAME_W);      // golfer's x-centre inside the frame
-function avDrawAcc(ctx,img){ ctx.drawImage(img, _accSrcX,0,_accSrcW,ACC_NATIVE_H, 0,0,AV_FRAME_W,AV_FRAME_H); }
+// The V2 art was drawn for a narrower reference golfer, so at height-alignment each accessory is undersized
+// for our base golfer's actual head/hands/feet (measured: cap 102px vs head ~126px, shoe-pair 168 vs foot
+// span ~338). Fix: scale each accessory UP around its own centre (frac of the art canvas) so it grows IN
+// PLACE (stays aligned) to fit. Per-slot k tuned to the base anatomy.
+const ACC_FIT={
+  head:  {k:1.30, cx:0.500, cy:0.071},
+  eyes:  {k:1.24, cx:0.500, cy:0.114},
+  glove: {k:1.35, cx:0.251, cy:0.507},
+  shoes: {k:1.55, cx:0.466, cy:0.926},
+  driver:{k:1.10, cx:0.776, cy:0.698},
+  putter:{k:1.10, cx:0.784, cy:0.698},
+  ball:  {k:1.25, cx:0.500, cy:0.936},
+  charm: {k:1.22, cx:0.429, cy:0.464},
+};
+// draw an accessory scaled by its per-slot k around its centre (the centre point stays fixed, so it grows in place)
+function avDrawAcc(ctx,img,slot){
+  const f=ACC_FIT[slot]||{k:1,cx:0.5,cy:0.5}, k=f.k;
+  const fxc=(f.cx*ACC_NATIVE_W-_accSrcX)/_accSrcW*AV_FRAME_W, fyc=f.cy*AV_FRAME_H;
+  ctx.drawImage(img, _accSrcX,0,_accSrcW,ACC_NATIVE_H, fxc*(1-k),fyc*(1-k), AV_FRAME_W*k,AV_FRAME_H*k);
+}
 // where the golfer's head-top and foot-bottom sit inside the art canvas (measured), and the base golfer's own
 // opaque head-top/foot-bottom rows — used to re-frame the (differently-proportioned) base into the art's golfer box.
 const GB_HEAD=0.045, GB_FOOT=0.972, BASE_TOP=3, BASE_BOT=1397;
@@ -5095,7 +5114,7 @@ function paintAvatarFull(canvas, look){
         if(a && a.e.ready) img=a.e.img;
         else if(slot==='head' && freeCap) img=avTintedCap(o.hatHex);
         if(!img) return;
-        try{ avDrawAcc(ctx,img); }catch(e){} });
+        try{ avDrawAcc(ctx,img,slot); }catch(e){} });
       _avRenderFull.set(key,off); avBlit(canvas,off);
     }catch(err){ avVectorFallback(canvas); }
   });
