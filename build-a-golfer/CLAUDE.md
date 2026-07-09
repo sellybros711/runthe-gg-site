@@ -5435,6 +5435,39 @@ allows Google Fonts, or self-host Anton.*
   in a 2-col grid, the three named ones flagged `.hot`, old `.home2` gone, zero page errors; screenshot
   confirms the prominent cards. CSS + one scrTitle block; HTML only.
 
+- **CS209 — Pro Shop: preview + confirm before buying (no more accidental one-tap purchases).** Owner
+  (screenshot): "There needs to be a confirmation before purchasing... it currently buys it if you click on
+  it. Players should be able to preview the item before confirming." Tapping a LOCKED item used to call
+  `cosBuy`/`accBuy` immediately (spend + equip on a single tap). Now it opens a preview+confirm flow: the
+  tapped item is shown ON the golfer in the live avatar (nothing spent), and the grid is replaced by a
+  gold-bordered confirmation card — item name, price (coin icon), "Balance X → Y after" (green if
+  affordable, red if not), and Cancel / Buy buttons (Buy disabled + "Not enough coins" when short). Only
+  Buy spends coins + equips; Cancel or tapping another category/the ✕ discards the preview. Owned items still
+  equip instantly (no cost, no confirm). Implementation: new `S.shopPreview={kind,cat,id,slot,name,price}`;
+  `shopEffLook()` merges a pending COSMETIC into the avatar's look, and `paintAvatarFull` injects a pending
+  GEAR item into the equipped set — both guarded to `S.overlay==='shop'` so a stale preview can never leak to
+  setup/build/other screens; the pending-canvas painter now paints full avatars with `shopEffLook()`.
+  `shopTileClick` sets the preview for locked cos/acc taps instead of buying; `shopConfirmBuy()` performs the
+  real purchase; the preview is cleared on cancel / section / category / close. Verified over http in
+  Playwright: tapping a locked colour previews it on the golfer with the balance unchanged and the confirm
+  card shown; Cancel leaves it unowned + unspent; a second tap → Buy deducts exactly the price, marks it
+  owned, and equips it; zero page errors. Screenshot confirms the golfer wearing the (unowned) previewed
+  shirt above a clean confirm card. HTML only.
+
+- **CS210 — title-screen colour hierarchy cleanup (owner-approved "full cleanup").** Owner asked whether the
+  title button colours were "the most efficient" — they weren't: teal was used for BOTH Resume and Play
+  Online, and gold for BOTH "Career Mode (start new)" AND the Daily "Done" state, and the returning player's
+  primary action (Resume) wore teal while the destructive "start a new golfer" wore the loud gold. Via
+  AskUserQuestion the owner picked the full cleanup: each colour now means exactly one thing. **Gold = your
+  single primary action** — when a career/draft is in progress, **Resume Career Mode / Resume Your Golfer** is
+  gold `goldfill` and "Career Mode (start a new golfer)" drops to a quiet `ghost` outline (it's not what a
+  returning player usually wants and it retires the current golfer); with nothing to resume, Career Mode is
+  the gold primary. **Blue = Daily Challenge** always, including the "Done" state (was flipping to gold).
+  **Teal = Play Online only** (unchanged). Verified in Playwright both states: career-in-progress →
+  Resume=goldfill, Career Mode=ghost, Daily=blue; fresh → Career Mode=goldfill, Daily=blue; zero page errors;
+  screenshot confirms the cleaner hierarchy. (Monthly Spotlight keeps its own gold+pulse event identity,
+  visually separated below Daily.) HTML only.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
