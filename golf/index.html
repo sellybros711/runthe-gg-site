@@ -10315,9 +10315,8 @@ function scrDailyRound(){
     const hvn=hvNode(hole, reveal, holeIdx, S.dailyCourse, null, revNonce!=null?revNonce:null);
     if(!hvn) return;
     const shell=hvn.querySelector('.hvshell'), h=hole;
-    const gg=h._hv&&h._hv.g;
-    const gRight=gg?hvProj(gg,(gg.gcx!=null?gg.gcx:gg.cx(gg.L)),gg.L)[0]>HV_W/2+20:false;
-    shell.appendChild($(`<div class="hvob hvhole${gRight?' right':''}">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
+    // hole info + scoreboard stay in FIXED corners all round (owner: they must not flip between holes)
+    shell.appendChild($(`<div class="hvob hvhole">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
     if(holePauseFlag && lastIdx>=0){
       const lh=played[lastIdx], col=dScoreCol(lh.toPar), ace=(lh.par===3 && lh.par+lh.toPar===1);
       const big=ace?'HOLE-IN-ONE!':esc(dResultLong(lh.par,lh.toPar)).toUpperCase();
@@ -10329,7 +10328,7 @@ function scrDailyRound(){
       // during the holed-result pill — the pill floats over the center, the board stays put top-corner)
       const meNm=S.dailyLegend?esc(S.dailyLegend.name):'YOU';
       const tpCol=v=>v<0?'#4be3a8':v>0?'#ff9d8f':'#e8efe9';
-      const bd=$(`<div class="hvob hvboard${gRight?' left':''}"></div>`);
+      const bd=$(`<div class="hvob hvboard"></div>`);
       if(S.moment && S.momentPO){
         // sudden-death playoff: show the players still alive, tied at the lead
         bd.appendChild($(`<div class="hvbcap">SUDDEN-DEATH · HOLE ${S.momentPO.round+1}</div>`));
@@ -12398,11 +12397,9 @@ function scrH2HWatch(){
     const hvn=h2hCourseKey?hvNode(h, S.h2h.wStep, S.h2h.wHole, h2hCourseKey(S.h2h.seed), multi):null;   // every ball on one map
     if(hvn){
       const shell=hvn.querySelector('.hvshell');
-      // green tucked right → scoreboard flips left / hole chip right (same rule as the daily)
-      const gg=h._hvm&&h._hvm.g;
-      const gRight=gg?hvProj(gg,(gg.gcx!=null?gg.gcx:gg.cx(gg.L)),gg.L)[0]>HV_W/2+20:false;
-      shell.appendChild($(`<div class="hvob hvhole${gRight?' right':''}">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
-      const bd=$(`<div class="hvob hvboard${gRight?' left':''}"><div class="hvbcap">THRU ${played} · ${holes} HOLES</div></div>`);
+      // hole info + scoreboard stay in FIXED corners all round (owner: they must not flip between holes)
+      shell.appendChild($(`<div class="hvob hvhole">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
+      const bd=$(`<div class="hvob hvboard"><div class="hvbcap">THRU ${played} · ${holes} HOLES</div></div>`);
       // the scoreboard updates the MOMENT a ball drops, not when the hole advances (owner) — add the
       // current hole's score for any unit whose ball is already in the cup at this reveal step.
       const holed=h2hHoledUnits(h, S.h2h.wStep);
@@ -12427,11 +12424,9 @@ function scrH2HWatch(){
     const hvn=hvNode(holeObj, S.h2h.poStep, ph.n-1, h2hCourseKey(S.h2h.seed), multi);
     if(hvn){
       const shell=hvn.querySelector('.hvshell');
-      const gg=holeObj._hvm&&holeObj._hvm.g;
-      const gRight=gg?hvProj(gg,(gg.gcx!=null?gg.gcx:gg.cx(gg.L)),gg.L)[0]>HV_W/2+20:false;
-      shell.appendChild($(`<div class="hvob hvhole${gRight?' right':''}" style="border-color:#ff6b5e;color:#ffd0c8">SUDDEN-DEATH · EXTRA HOLE ${S.h2h.poHole+1} · PAR ${ph.par}</div>`));
+      shell.appendChild($(`<div class="hvob hvhole" style="border-color:#ff6b5e;color:#ffd0c8">SUDDEN-DEATH · EXTRA HOLE ${S.h2h.poHole+1} · PAR ${ph.par}</div>`));
       const holedPO=h2hHoledUnits(ph, S.h2h.poStep), myU=S.h2h.myUnit;
-      const bd=$(`<div class="hvob hvboard${gRight?' left':''}"><div class="hvbcap" style="color:#ffd0c8">SUDDEN-DEATH · HOLE ${S.h2h.poHole+1}</div></div>`);
+      const bd=$(`<div class="hvob hvboard"><div class="hvbcap" style="color:#ffd0c8">SUDDEN-DEATH · HOLE ${S.h2h.poHole+1}</div></div>`);
       ph.alive.forEach((a,ai)=>{ const mine=myU && S.h2h.units[a.ui] && S.h2h.units[a.ui].id===myU.id, isIn=holedPO.has(ai);
         bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="cdot" style="background:${a.col}"></span><span class="nm">${esc(a.name)}</span><span class="tp" style="color:${isIn?(a.low?'var(--gold)':'#ff9d8f'):'#8fa39a'}">${isIn?esc(dResultLong(ph.par,a.s)):'…'}</span></div>`)); });
       shell.appendChild(bd);
