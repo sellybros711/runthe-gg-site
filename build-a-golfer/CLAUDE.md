@@ -5675,6 +5675,13 @@ allows Google Fonts, or self-host Anton.*
   left unflagged (a tap-in). Lip-outs on missed putts are unchanged. Verified: tap-ins draw straight
   (curve 0), medium putts break gently, long putts break + can rim in; zero errors. Deployed to /golf.
 
+- **CS224 — hole info + scoreboard stay in fixed corners (owner: they flipped on some holes).** CS146's
+  green-aware layout flipped the floating hole-info chip and the scoreboard to the opposite corners when a
+  hole's green was tucked to one side, so they jumped around between holes. Removed the flip at all three
+  sites (daily/Moment round, H2H watch, H2H sudden-death) — the hole info now always sits top-left and the
+  scoreboard top-right for the whole simulation. (The unused `.hvhole.right`/`.hvboard.left` CSS is left in
+  place, harmless.) Verified: no flip logic remains, page loads clean, zero errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
