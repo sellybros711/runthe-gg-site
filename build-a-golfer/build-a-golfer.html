@@ -342,7 +342,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* full-body dressable avatar (signed-in): a tall figure, not a round medallion */
   .avatarfig.fullbody{width:auto; height:auto; filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}
   .avatarfig.fullbody canvas{width:auto; height:100%; border-radius:0; margin:0 auto}
-  .buildhero .avatarfig.fullbody{width:auto; height:210px}
+  .buildhero .avatarfig.fullbody{width:auto; height:250px}
   .herofig.hasfull{display:flex; justify-content:center}
   .avatarimg{object-fit:cover; border-radius:50%}
   .ovrchip{position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:6px;
@@ -766,8 +766,8 @@ window.GA_ID='G-L29P5MRWKE';
   .shop-bar h3{margin:0; font-size:22px}
   .coinpill{display:inline-flex; align-items:center; gap:6px; background:rgba(235,166,31,.13); border:1px solid rgba(235,166,31,.4);
     border-radius:999px; padding:5px 12px 5px 8px; font:900 16px/1 var(--body); color:var(--gold)}
-  .shop-preview{display:flex; justify-content:center; align-items:flex-end; height:190px; margin:2px 0 4px}
-  .shop-preview .avatarfig{height:190px}
+  .shop-preview{display:flex; justify-content:center; align-items:flex-end; height:230px; margin:2px 0 4px}
+  .shop-preview .avatarfig{height:230px}
   .segrow{display:flex; gap:6px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
     border-radius:11px; padding:4px}
   .segrow button{flex:1; border:0; background:transparent; color:var(--muted); font:800 12px/1 var(--body);
@@ -4756,7 +4756,7 @@ function scrSetup(){
   // scrolls up underneath it, without one, the swatches/rows behind would show through.
   const full=sbSignedIn();
   const f=$(avatarShowHTML());
-  if(full){ f.style.height='300px'; f.style.filter='drop-shadow(0 8px 18px rgba(0,0,0,.5))'; }
+  if(full){ f.style.height='372px'; f.style.filter='drop-shadow(0 8px 18px rgba(0,0,0,.5))'; }
   else { f.style.width='184px'; f.style.height='184px'; f.style.filter='drop-shadow(0 7px 16px rgba(0,0,0,.45))'; }
   const figwrap=$(`<div style="display:flex;justify-content:center;position:sticky;top:8px;z-index:3;padding:10px 0 14px;margin:0 -16px;background:#06200f;border-bottom:1px solid var(--line)"></div>`); figwrap.appendChild(f); left.appendChild(figwrap);
 
@@ -4989,11 +4989,16 @@ const ACC_NATIVE_W=1024, ACC_NATIVE_H=1792;   // shared art canvas: the golfer i
 // pre-positioned art lands 1:1 on the body (full-canvas overlay, per the asset spec — no per-item trim/centre).
 // The frame keeps a uniform horizontal window of the art (crops only the always-empty far margins, same window
 // for base + all accessories → alignment preserved) and maps the art height to the base height.
-const ACC_WIN=0.74;                            // fraction of art width kept
+// Horizontal window kept from the art (same for base + every accessory → alignment preserved). Cropped tight
+// to the widest content: the glove pins the left (~0.230), the side club pins the right (~0.838). This drops
+// the always-empty far margins so the golfer reads large; the golfer (centred at 0.5 in the art) ends up a
+// touch left of the frame centre, leaving room for the club on the right.
+const ACC_WL=0.225, ACC_WR=0.845;
 const AV_FRAME_H=1400;
 const _accScale=AV_FRAME_H/ACC_NATIVE_H;                                  // art→frame scale (~0.781)
-const _accSrcW=ACC_WIN*ACC_NATIVE_W, _accSrcX=(0.5-ACC_WIN/2)*ACC_NATIVE_W;
-const AV_FRAME_W=Math.round(_accSrcW*_accScale);                          // ~592
+const _accSrcX=ACC_WL*ACC_NATIVE_W, _accSrcW=(ACC_WR-ACC_WL)*ACC_NATIVE_W;
+const AV_FRAME_W=Math.round(_accSrcW*_accScale);                          // ~496
+const GOLFER_CX=Math.round((0.5-ACC_WL)/(ACC_WR-ACC_WL)*AV_FRAME_W);      // golfer's x-centre inside the frame
 function avDrawAcc(ctx,img){ ctx.drawImage(img, _accSrcX,0,_accSrcW,ACC_NATIVE_H, 0,0,AV_FRAME_W,AV_FRAME_H); }
 // where the golfer's head-top and foot-bottom sit inside the art canvas (measured), and the base golfer's own
 // opaque head-top/foot-bottom rows — used to re-frame the (differently-proportioned) base into the art's golfer box.
@@ -5052,7 +5057,7 @@ function paintAvatarFull(canvas, look){
       // re-frame the base golfer into the art's golfer box (align head-top → GB_HEAD, foot-bottom → GB_FOOT),
       // so the pre-positioned accessories land 1:1 on the body regardless of the base's own proportions.
       const _bsc=(GB_FOOT-GB_HEAD)*AV_FRAME_H/(BASE_BOT-BASE_TOP);
-      const _bdw=bw*_bsc, _bdh=bh*_bsc, _bdx=Math.round(AV_FRAME_W/2-_bdw/2), _bdy=Math.round(GB_HEAD*AV_FRAME_H-BASE_TOP*_bsc);
+      const _bdw=bw*_bsc, _bdh=bh*_bsc, _bdx=Math.round(GOLFER_CX-_bdw/2), _bdy=Math.round(GB_HEAD*AV_FRAME_H-BASE_TOP*_bsc);
       const off=document.createElement('canvas'); off.width=AV_FRAME_W; off.height=AV_FRAME_H;
       const ctx=off.getContext('2d');
       // recolor the base via its mask (temp at native size), then place it centred in the frame
