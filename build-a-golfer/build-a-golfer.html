@@ -4604,7 +4604,9 @@ function startRoll(){
   },1700);
 }
 function toast(msg){
-  const t=$(`<div style="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:30;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4)">${msg}</div>`);
+  // sit ABOVE the "scroll to continue" pill when it's on the page (both live bottom-centre), so they don't clash
+  const bottom = document.querySelector('.scrollcue') ? 'calc(74px + env(safe-area-inset-bottom,0px))' : '26px';
+  const t=$(`<div style="position:fixed;left:50%;bottom:${bottom};transform:translateX(-50%);z-index:45;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4)">${msg}</div>`);
   document.body.appendChild(t); setTimeout(()=>t.remove(),1800);
 }
 

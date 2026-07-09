@@ -5476,6 +5476,14 @@ allows Google Fonts, or self-host Anton.*
   real full-body avatar (aviator glasses + BOA shoes) on both genders — glasses fit the face, shoes fit the
   feet, zero page errors. JS-only (placement config; no art/mask change, so no cache-bump needed).
 
+- **CS212 — toast no longer clashes with the "scroll to continue" pill (owner screenshot).** On the season
+  summary the "+100 coins earned!" toast rendered right on top of the gold `.scrollcue` pill ("Scroll down ·
+  Continue to Year N") — both are `position:fixed` bottom-centre. Fixed `toast()` to detect a `.scrollcue`
+  on the page and raise itself above it (`bottom: calc(74px + safe-area)` when a cue is present, else the
+  normal 26px), and bumped its z-index 30→45 so it's cleanly on top. Verified over http: with a cue present
+  the toast sits above it with a clear gap (no overlap); with no cue it stays at 26px; zero page errors.
+  CSS/JS one-liner.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
