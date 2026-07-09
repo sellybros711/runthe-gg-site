@@ -5740,6 +5740,23 @@ allows Google Fonts, or self-host Anton.*
     screen shows the live strip; zero page errors throughout. Tunable: `CONF_EO_MAX`, the result/choice
     confidence + follower weights in `resultMomentum`/`showStoryline`.
 
+- **CS227 — realistic missed-putt variety (owner: "I don't like how every missed putt is a lip out — it
+  should be short, long, lip outs, missed left, missed right").** Since CS220 every makeable missed putt
+  in the hole view was forced to `p.lip=true` (roll to the rim, spin off to the side) — so every miss
+  looked identical. Rewrote the missed-putt branch of `hvPlots` (the visual only — the deterministic
+  `dSimHole` score is untouched) to pick one of FIVE realistic outcomes by hash: **short** (dies just
+  short, on line), **long** (burns the edge and runs past), **lip out** (catches the rim, spins off),
+  **missed left**, **missed right** — roughly 20% each. Also gave the controlled LAG (long first putt)
+  mild variety: most die just short, ~22% now trickle a touch past, with a slight side, instead of always
+  dying short-and-left. Every miss still ends near the hole (a tap-in comeback) and never rolls backward
+  away from it, so the earlier realism invariants hold. The existing `hvPuttPathD` renderer already draws
+  these rest positions (its default A→rest curve covers short/long/left/right; the lip branch covers the
+  lip-out), so no renderer change was needed. Verified in Playwright over 400 samples across all 39
+  courses: even spread (short 19% / long 20% / left 19% / right 20% / lip 23%), **0** putts resting
+  farther from the hole than they started, 0 NaN; a full practice round plays through the live shot-reveal
+  animation to the result with zero page errors. Tunable: the outcome thresholds in the `hvPlots` putt
+  branch.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
