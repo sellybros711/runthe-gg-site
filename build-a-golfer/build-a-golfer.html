@@ -8165,7 +8165,7 @@ const HV_CUP_RX=2.15, HV_CUP_RY=1.5, HV_GBALL=0.95;   // slightly smaller hole +
 function hvPinRot(){ try{ if(typeof S!=='undefined' && S){
     // scope to the current mode so it's deterministic per play (and both H2H clients pick the same pin)
     if(S.h2h && S.h2h.matchId) return dHash(String(S.h2h.matchId))>>>0;
-    if(S.daily) return (((S.dailyAttempt||0)+(S.dailySeed!=null?dHash(String(S.dailySeed)):0))>>>0);
+    if(S.daily) return ((S.dailySeed!=null?dHash(String(S.dailySeed)):0)>>>0);   // daily pin is fixed per day → same for everyone (and across your attempts)
     return (((S.evtIndex||0)*3+(S.year||0)*5+(S.moment?2:0)+(S.circuitMode?1:0))>>>0); } }catch(e){} return 0; }
 function hvHash(a,b,c){ let h=(2166136261^(a|0))>>>0; h=Math.imul(h^(b|0),16777619)>>>0; h=Math.imul(h^((c|0)+0x9e37),16777619)>>>0; h^=h>>>13; h=Math.imul(h,0x5bd1e995)>>>0; h^=h>>>15; return (h>>>0)/4294967296; }
 function hvUnit(a,b){ const dx=a[0]-b[0],dy=a[1]-b[1],l=Math.hypot(dx,dy)||1; return [dx/l,dy/l]; }
@@ -8289,7 +8289,7 @@ function hvGeom(seedN, par, yds, courseKey, holeIdx){
     [g.gcx+(hh(42)-0.5)*g.greenR[0]*0.4, L+g.greenR[1]*(0.42+hh(43)*0.16)],   // back
     [g.gcx-g.greenR[0]*(0.42+hh(44)*0.16), L+(hh(45)-0.5)*g.greenR[1]*0.4],   // left
     [g.gcx+g.greenR[0]*(0.42+hh(46)*0.16), L+(hh(47)-0.5)*g.greenR[1]*0.4]];  // right
-  const pinIdx=(((seedN>>>3)+Math.imul((holeIdx|0)+1,0x9e37)+hvPinRot())%4+4)%4;
+  const pinIdx=Math.min(3,(hvHash((seedN^hvPinRot())>>>0,(holeIdx|0)+1,7)*4)|0);   // well-mixed → reliably rotates per play/hole
   g.pin=g.pinCands[pinIdx];
   g.bunkers=[]; g.water=null; g.creek=null; g.island=false;
   // PERSISTENT water/creek: forced by the hole's signature feature, else rolled from course style

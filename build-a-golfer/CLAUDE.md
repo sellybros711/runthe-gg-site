@@ -5651,6 +5651,13 @@ allows Google Fonts, or self-host Anton.*
   putt. Deployed to /golf. Tunable: `HV_CUP_RX`/`HV_GBALL`, the pin candidate offsets, the lip-out vs lag
   threshold + rim-in probability in `hvPlots`.
 
+- **CS221 — Daily Challenge pin is the same for everyone (owner).** Scoped the daily pin rotation to
+  the DAY seed only (dropped the per-attempt component in `hvPinRot`), so every player sees the same hole
+  locations on a given day and the pin stays put across your 3 attempts, then rotates day to day. Also
+  swapped the pin-index selection to a well-mixed `hvHash` so consecutive days/events reliably cycle
+  through all 4 locations (the old linear mod-4 could collide). Verified: daily pin identical across
+  attempts, all 4 positions used across 8 days, career still rotates per event, zero errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
