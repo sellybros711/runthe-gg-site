@@ -5006,8 +5006,8 @@ const GOLFER_CX=Math.round((0.5-ACC_WL)/(ACC_WR-ACC_WL)*AV_FRAME_W);      // gol
 const ACC_FIT={
   head:  {k:1.30, cx:0.500, cy:0.071},
   eyes:  {k:1.24, cx:0.500, cy:0.114},
-  glove: {k:1.35, cx:0.251, cy:0.507},
-  shoes: {k:1.55, cx:0.466, cy:0.926},
+  glove: {k:1.80, cx:0.251, cy:0.507},
+  shoes: {k:1.55, cx:0.466, cy:0.926},   // (shoes use avDrawShoes, not this k)
   driver:{k:1.10, cx:0.776, cy:0.698},
   putter:{k:1.10, cx:0.784, cy:0.698},
   ball:  {k:1.25, cx:0.500, cy:0.936},
@@ -5018,6 +5018,21 @@ function avDrawAcc(ctx,img,slot){
   const f=ACC_FIT[slot]||{k:1,cx:0.5,cy:0.5}, k=f.k;
   const fxc=(f.cx*ACC_NATIVE_W-_accSrcX)/_accSrcW*AV_FRAME_W, fyc=f.cy*AV_FRAME_H;
   ctx.drawImage(img, _accSrcX,0,_accSrcW,ACC_NATIVE_H, fxc*(1-k),fyc*(1-k), AV_FRAME_W*k,AV_FRAME_H*k);
+}
+// The shoe art is a PAIR with a narrow stance; our golfer's feet are spread wide. Split it down the middle
+// and place each shoe under the correct foot (measured foot centres per gender, mapped through the base transform).
+const FOOT_ANCHOR={ male:{lx:97,rx:325,y:1337,w:118}, female:{lx:83,rx:316,y:1337,w:90} };
+const SHOE_ART={ x0:0.396, mid:0.5005, x1:0.605, y0:0.888, y1:0.975 };   // shoe-pair content region (frac of art)
+function avDrawShoes(ctx,img,g,bdx,bdy,bsc){
+  const fa=FOOT_ANCHOR[g]||FOOT_ANCHOR.male, S=SHOE_ART;
+  const iw=img.naturalWidth||ACC_NATIVE_W, ih=img.naturalHeight||ACC_NATIVE_H;
+  const k=ACC_FIT.shoes.k, scale=AV_FRAME_W*k/_accSrcW;                  // same px scale the shoe slot used
+  const ay0=S.y0*ih, ah=(S.y1-S.y0)*ih, dh=ah*scale;
+  const destTop=0.926*AV_FRAME_H*(1-k)+S.y0*AV_FRAME_H*k;               // same vertical band as before
+  const FLx=bdx+fa.lx*bsc, FRx=bdx+fa.rx*bsc;                            // foot centres in frame
+  const lsw=(S.mid-S.x0)*iw, rsw=(S.x1-S.mid)*iw;
+  ctx.drawImage(img, S.x0*iw,ay0, lsw,ah, FLx-lsw*scale/2,destTop, lsw*scale,dh);   // left shoe under left foot
+  ctx.drawImage(img, S.mid*iw,ay0, rsw,ah, FRx-rsw*scale/2,destTop, rsw*scale,dh);  // right shoe under right foot
 }
 // where the golfer's head-top and foot-bottom sit inside the art canvas (measured), and the base golfer's own
 // opaque head-top/foot-bottom rows — used to re-frame the (differently-proportioned) base into the art's golfer box.
@@ -5114,7 +5129,7 @@ function paintAvatarFull(canvas, look){
         if(a && a.e.ready) img=a.e.img;
         else if(slot==='head' && freeCap) img=avTintedCap(o.hatHex);
         if(!img) return;
-        try{ avDrawAcc(ctx,img,slot); }catch(e){} });
+        try{ if(slot==='shoes') avDrawShoes(ctx,img,g,_bdx,_bdy,_bsc); else avDrawAcc(ctx,img,slot); }catch(e){} });
       _avRenderFull.set(key,off); avBlit(canvas,off);
     }catch(err){ avVectorFallback(canvas); }
   });
