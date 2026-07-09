@@ -1924,7 +1924,8 @@ function offseasonResumeExtra(){ return { resumeScreen:'offseason', offseason:S.
 function autoSaveSeason(){
   if(S.daily || !S.season || S.screen!=='season' || !sbSignedIn()) return;
   saveCareer({ resumeScreen:'season', mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
-    season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me } } });
+    season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me,
+      contract:S.season.contract, skipped:S.season.skipped, coinRaw0:S.season.coinRaw0 } } });
 }
 function clearCareerSave(){ LS.set(acctKey('bag_careersave'),null); cloudPush(); }
 // one-time: an in-progress career saved before careers were account-scoped lives under the old unscoped
@@ -3603,10 +3604,12 @@ function coinState(){ let s=LS.get(acctKey('bag_coins'),null)||{}; s.spent=s.spe
   // CS186 one-time reset to 0: bank the current derived earned as a baseline, wipe spend + owned gear, so
   // every account starts at 0 and earns going forward. Equipped-but-unowned gear simply stops rendering.
   if(s.epoch!==COIN_EPOCH){ s.epoch=COIN_EPOCH; s.baseline=coinsEarnedRaw(); s.spent=0; s.owned={}; s.seen=s.baseline; LS.set(acctKey('bag_coins'), s); }
-  s.baseline=s.baseline||0; return s; }
+  s.baseline=s.baseline||0; s.forfeit=s.forfeit||0; return s; }
 function coinSave(s){ LS.set(acctKey('bag_coins'), s); if(typeof cloudPush==='function') cloudPush(); }
-// spendable coins = derived-earned minus the reset baseline (so post-reset everyone starts at 0)
-function coinsEarned(){ return Math.max(0, coinsEarnedRaw()-coinState().baseline); }
+// spendable coins = derived-earned minus the reset baseline (so post-reset everyone starts at 0) minus
+// forfeited coins (a season SKIPPED via "Sim to end of season" earns nothing, see the summary record block)
+function coinsEarned(){ const s=coinState(); return Math.max(0, coinsEarnedRaw()-s.baseline-(s.forfeit||0)); }
+let _coinsSuppressToast=false;   // set while finalizing a skipped season so the "+N coins" toast doesn't flash
 // deterministic RAW earned total — every entry here is a "way to earn coins"; add terms to add more
 function coinsEarnedRaw(){ let c=COIN_START; const ac=(achState().unlocked)||{};
   ACH.forEach(a=>{ if(ac[a.id]) c+=a.pts*3; });                 // every achievement pays out (points ×3)
@@ -3629,7 +3632,7 @@ function reconcileCoins(silent){ if(!sbSignedIn()) return 0; const s=coinState()
   if(e>s.seen){ gain=e-s.seen; s.seen=e; changed=true; }
   const before=Object.keys(s.owned).length; grantMilestoneItems(s); if(Object.keys(s.owned).length!==before) changed=true;
   if(changed) coinSave(s);
-  if(gain>0 && !silent) coinToast(gain);
+  if(gain>0 && !silent && !_coinsSuppressToast) coinToast(gain);
   return gain;
 }
 function coinToast(n){ try{ toast('+'+coinFmt(n)+' coins earned!'); }catch(e){} }
@@ -5665,6 +5668,8 @@ function startSeason(majorsOnly){
   S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0; S.seasonRank=null;
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false;   // unlocked during THIS season (shown on the summary)
   if(S.career && S.career.story){ S.career.story.seasonCount=0; }   // reset the per-season storyline cap (CS225)
+  if(!S.daily && !S.circuitMode && S.career){ try{ S.season.contract=makeContract(); }catch(e){} }   // sponsor season deal (goals + bonuses)
+  if(sbSignedIn() && !S.daily){ try{ S.season.coinRaw0=coinsEarnedRaw(); }catch(e){} }   // baseline for the skip-forfeits-coins rule (coins accrue per event, so snapshot at season start)
   S.curEvt=null;
   track('season_started',{mode:S.daily?'daily':(majorsOnly?'majors':'full'),ovr:Math.round(me.skill),year:S.year||1});
   S.screen='season'; autoSaveSeason(); render();   // checkpoint the freshly-built golfer right away
@@ -5934,6 +5939,95 @@ function storyFeedHTML(){
     ${meta?`<div class="small" style="color:#9fb3a8;margin-top:3px">${esc(meta)}</div>`:''}
     ${rows||'<div class="small" style="color:#9fb3a8;margin-top:4px">Your story is just beginning.</div>'}
   </div>`;
+}
+/* ===================== SPONSOR CONTRACTS (season goals + stakes) =====================
+   Each season your sponsor sets you 3 concrete objectives, each worth a cash bonus. Progress tracks
+   LIVE on the season screen; met bonuses pay into your net at season end; a report card + a renewal
+   (bigger deal if you deliver, a "prove it" deal if you flop, dropped if you badly miss) carries the
+   story into next year. Interactive CAREER only (never daily / circuit / headless). Deterministic per
+   (careerSeed, year) so it regenerates identically on resume. */
+const SPONSORS=['Apex Athletic','Meridian Golf','Vantage','Ironclad','Northwind Apparel','Summit Sportswear',
+  'Fairway & Co.','Crestline','Onyx Golf','Halyard','Kestrel','Vanguard Athletic'];
+function contractSeed(){ return mulberry32((((S.careerSeed||1)>>>0) ^ (((S.year||1)*0x9E3779B1)>>>0) ^ 0x0C047AC7)>>>0); }
+// live status of a single goal, from the season totals (lower rank = better for rank goals)
+function goalProg(g,t){
+  const N=Object.keys(S.season.totals).length||1;
+  switch(g.kind){
+    case 'cuts':   return {cur:t.made, done:t.made>=g.target, txt:t.made+' / '+g.target+' cuts', pct:Math.min(100,Math.round(t.made/g.target*100))};
+    case 'top10':  return {cur:t.top10, done:t.top10>=g.target, txt:t.top10+' / '+g.target+' top-10s', pct:Math.min(100,Math.round(t.top10/g.target*100))};
+    case 'wins':   return {cur:t.wins, done:t.wins>=g.target, txt:t.wins+' / '+g.target+' win'+(g.target>1?'s':''), pct:Math.min(100,Math.round(t.wins/g.target*100))};
+    case 'major':  return {cur:t.majors, done:t.majors>=g.target, txt:t.majors>0?'Major won':'No major yet', pct:t.majors>0?100:0};
+    case 'ptsRank':{ const r=t.played?pointsRank(S.season.me.name):N, ok=t.played>0&&r<=g.target;
+                     return {cur:r, done:ok, rankGoal:true, txt:t.played?('#'+r+' in points'):('need top '+g.target), pct:ok?100:0}; }
+    case 'sigWin':{ const w=(S.season.results||[]).some(x=>{ const m=x.order.find(o=>o.p&&o.p.you); return m&&m.pos===1&&(x.evt.big||x.evt.major); });
+                     return {cur:w?1:0, done:w, txt:w?'Signature win':'No signature win yet', pct:w?100:0}; }
+  }
+  return {cur:0,done:false,txt:'',pct:0};
+}
+function makeContract(){
+  if(S.daily || S.circuitMode || !S.career || !S.season) return null;
+  const rng=contractSeed(), pick=a=>a[Math.floor(rng()*a.length)];
+  const me=S.season.me, ovr=me?Math.round(me.skill):(S.career.peakOvr||82), yr=S.year||1;
+  const last=S.career.lastContract, infl=purseMult(yr);
+  // sponsor continuity: a delivered contract renews (bigger, loyalty-scaled); a flop shops you elsewhere
+  let sponsor, loyal=1, renewals=0;
+  if(last && !last.flop){ sponsor=last.sponsor; renewals=(last.renewals||0)+1; loyal=Math.min(1.7,1+0.14*renewals); }
+  else sponsor=pick(SPONSORS.filter(s=>!last||s!==last.sponsor));
+  const proveIt=!!(last && last.flop);   // a fresh, smaller "prove yourself" deal after a bad year
+  const B=v=>Math.max(2e5,Math.round(v*infl*loyal*(proveIt?0.7:1)/1e4)*1e4);
+  const tier = ovr>=88?'elite' : ovr>=83?'contender' : 'grind';
+  let goals;
+  if(tier==='grind') goals=[
+    {kind:'cuts', target:9, bonus:B(700000), label:'Make 9 cuts', tag:'FLOOR'},
+    {kind:'top10', target:2, bonus:B(1100000), label:'Record 2 top-10s', tag:'TARGET'},
+    {kind:'ptsRank', target:CARD_LINE, bonus:B(1700000), label:'Keep your Tour Card · top '+CARD_LINE, tag:'CARD', card:true} ];
+  else if(tier==='contender') goals=[
+    {kind:'top10', target:5, bonus:B(1200000), label:'Record 5 top-10s', tag:'FLOOR'},
+    {kind:'ptsRank', target:70, bonus:B(1900000), label:'Reach the Playoffs · top 70', tag:'TARGET'},
+    {kind:'wins', target:1, bonus:B(3200000), label:'Win a tournament', tag:'STRETCH'} ];
+  else goals=[
+    {kind:'wins', target:2, bonus:B(2400000), label:'Win twice', tag:'FLOOR'},
+    {kind:'ptsRank', target:30, bonus:B(2800000), label:'Reach the Tour Cup Finale · top 30', tag:'TARGET'},
+    {kind:'major', target:1, bonus:B(4800000), label:'Win a major', tag:'STRETCH'} ];
+  return {sponsor, tier, goals, renewals, proveIt};
+}
+// bonuses banked from the goals met so far (used live + at settlement)
+function contractEarned(){ const c=S.season&&S.season.contract; if(!c) return 0; const t=S.season.totals[S.season.me.name];
+  return c.goals.reduce((s,g)=>s+(goalProg(g,t).done?g.bonus:0),0); }
+// live season-screen strip: sponsor + goal progress bars + running bonus banked
+function contractNode(){
+  const c=S.season&&S.season.contract; if(!c) return null; const t=S.season.totals[S.season.me.name];
+  const done=c.goals.filter(g=>goalProg(g,t).done).length, banked=contractEarned();
+  const rows=c.goals.map(g=>{ const pr=goalProg(g,t), col=pr.done?'#35d6a0':'#5fd0e0';
+    return `<div style="padding:8px 0;border-top:1px solid rgba(255,255,255,.06)">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <span class="small" style="text-align:left;color:${pr.done?'#35d6a0':'var(--oncard)'};font-weight:700">${esc(g.label)}</span>
+        <span class="mono small" style="color:#ffd45e;font-weight:800;white-space:nowrap">+${fmt(g.bonus)}</span></div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:4px">
+        <div style="flex:1;height:5px;border-radius:4px;background:rgba(255,255,255,.09);overflow:hidden"><div style="height:100%;width:${pr.pct}%;background:${col};border-radius:4px"></div></div>
+        <span class="small" style="color:${col};min-width:92px;text-align:right">${esc(pr.txt)}</span></div></div>`; }).join('');
+  return $(`<div class="scout" style="border-color:#2f6f86;text-align:left;margin:0 0 12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.2em;color:#5fd0e0;text-transform:uppercase">${ic('cart')} ${esc(c.sponsor)} · Season Deal</div>
+      <div class="small" style="color:#ffd45e;font-weight:800">${done}/${c.goals.length} met · +${fmt(banked)} banked</div></div>
+    ${rows}</div>`);
+}
+// season-summary report card: each goal ✓/✗ + its bonus, the total banked, and the renewal outlook
+function contractReportHTML(contract, states, bonus){
+  if(!contract) return '';
+  const met=states.filter(x=>x.done).length, all=met===contract.goals.length;
+  const rows=contract.goals.map(g=>{ const s=states.find(y=>y.g===g)||{done:false}; return `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.06)">
+    <span class="small" style="text-align:left;color:${s.done?'#35d6a0':'#c98'};font-weight:700">${s.done?'✓':'✕'} ${esc(g.label)}</span>
+    <span class="mono small" style="color:${s.done?'#ffd45e':'#7d8f86'};font-weight:800;white-space:nowrap">${s.done?'+'+fmt(g.bonus):'missed'}</span></div>`; }).join('');
+  const outlook = all ? 'Every goal delivered. Your sponsor is thrilled, expect a bigger deal next year.'
+    : met===0 ? 'A tough year. The relationship is on the rocks.'
+    : `${met} of ${contract.goals.length} goals met. Solid, but there’s more on the table.`;
+  return `<div class="scout" style="border-color:${all?'#ffd45e':'#2f6f86'};text-align:left;margin:10px auto;max-width:520px;${all?'box-shadow:0 0 22px rgba(235,166,31,.18)':''}">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.2em;color:${all?'#ffd45e':'#5fd0e0'};text-transform:uppercase">${ic('cart')} ${esc(contract.sponsor)} · Report Card</div>
+      <div class="small" style="color:#ffd45e;font-weight:800">${met}/${contract.goals.length} met · +${fmt(bonus)}</div></div>
+    ${rows}
+    <div class="small" style="color:#9fb3a8;margin-top:8px">${esc(outlook)}</div></div>`;
 }
 // map a scheduled event to a playable DAILY_COURSES venue (EVENT_COURSE references those objects
 // directly, so identity recovers the internal key); unmapped events get a deterministic stand-in.
@@ -6213,13 +6307,18 @@ function liveOrder(ce){   // current standings mid-event; assigns _pos / _tied (
 function advanceEvent(){ if(S.evtIndex>=S.schedule.length-1){ S.screen='summary'; } else { S.evtIndex++; S.curEvt=null; autoSaveSeason(); } }
 function skipToEnd(){
   clearTimeout(seasonTimer);
-  while(S.curEvt && !S.curEvt.done) simNextRound();
-  while(S.evtIndex < S.schedule.length-1){ S.evtIndex++; S.curEvt=null;
-    const evt=S.schedule[S.evtIndex];
-    if(evt.teamcup){ render(); return; }   // stop at the team cup so you still play it out
-    if(evt.playoff && !S.daily && !S.season.eliminated){ const mr=pointsRank(S.season.me.name); if(mr>evt.cap) S.season.eliminated={stage:evt.stage,rank:mr,event:evt.name,cap:evt.cap}; }
-    beginEvent(); while(!S.curEvt.done) simNextRound(); }
-  S.screen='summary'; render();
+  if(S.season) S.season.skipped=true;   // simmed to the end → this season earns no coins (play the rounds to earn)
+  track('season_skipped',{year:S.year||1,evt:S.evtIndex});
+  _coinsSuppressToast=true;   // no per-event "+N coins" toasts while fast-simming a skipped season
+  try{
+    while(S.curEvt && !S.curEvt.done) simNextRound();
+    while(S.evtIndex < S.schedule.length-1){ S.evtIndex++; S.curEvt=null;
+      const evt=S.schedule[S.evtIndex];
+      if(evt.teamcup){ render(); return; }   // stop at the team cup so you still play it out
+      if(evt.playoff && !S.daily && !S.season.eliminated){ const mr=pointsRank(S.season.me.name); if(mr>evt.cap) S.season.eliminated={stage:evt.stage,rank:mr,event:evt.name,cap:evt.cap}; }
+      beginEvent(); while(!S.curEvt.done) simNextRound(); }
+    S.screen='summary'; render();
+  } finally { _coinsSuppressToast=false; }
 }
 function liveRow(o,pos,you,done,flag){
   const cut=(pos==='CUT'); const sc=cut?'CUT':par(Math.round(o.total)); const mny=(o.money>0)?fmt(o.money):'';
@@ -6958,6 +7057,8 @@ function scrSeason(){
   </div>`));
   if(evt.major) add($(`<div class="majorbanner">★ Major Championship ★</div>`));
   if(!S.daily && t.played) add(raceToCupNode(byPts, evt));
+  if(!S.daily && !S.circuitMode){ if(S.season && !S.season.contract && S.career){ try{ S.season.contract=makeContract(); }catch(e){} }   // regenerate on resume (deterministic)
+    const cn=contractNode(); if(cn) add(cn); }
   // opposite-field note: you missed the OWGR cut for this week's marquee event and are playing the alternate
   if(evt.oppo) add($(`<div class="scout" style="border-color:#E14A33;margin:0 0 12px;padding:10px 13px">
     <div style="font:800 11.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#E14A33">Opposite-field event</div>
@@ -7057,7 +7158,8 @@ function scrSeason(){
   const row=$(`<div class="mini" style="margin-top:10px"></div>`);
   const auto=$(`<button class="btn ${S.autoSim?'teal':'gold'}">Auto Sim · ${S.autoSim?'On':'Off'}</button>`);
   auto.onclick=()=>{S.autoSim=!S.autoSim; LS.set('bag_autosim',S.autoSim); track('autosim_toggle',{on:S.autoSim}); render();};
-  const skip=$(`<button class="btn ghost">Skip to End ⏭</button>`);
+  const skipWarn=(!S.daily && !S.circuitMode && SHOP_ENABLED && sbSignedIn() && !(S.season&&S.season.skipped));
+  const skip=$(`<button class="btn ghost">Skip to End ⏭${skipWarn?'<span class="sub">Earns no coins — play the rounds to earn</span>':''}</button>`);
   skip.onclick=skipToEnd;
   row.appendChild(auto); row.appendChild(skip); ctrl.appendChild(row);
   // pace control: default slow ("Chill") so the sim reads; cycle up to Fast for a quick sim
@@ -7344,7 +7446,19 @@ function scrSummary(){
   const N=byMoney.length;
   const ovr=Math.round(me.skill);
   const ec=seasonNet(t);
+  // ---- sponsor contract settlement (goals met → cash bonus into net) ----
+  const contract=(!S.daily && !S.circuitMode)?(S.season.contract||null):null;
+  const goalStates=contract?contract.goals.map(g=>({g, done:goalProg(g,t).done})):[];
+  const contractBonus=goalStates.reduce((s,x)=>s+(x.done?x.g.bonus:0),0);
+  const goalsMet=goalStates.filter(x=>x.done).length;
+  const netTotal=ec.net+contractBonus;
+  const netCol0=netTotal>=0?'#35d6a0':'#E14A33';
   if(!S.recorded){S.recorded=true;
+    // COINS: a season SIMMED to the end (Skip to end of season) earns NO coins. Coins accrue per event, so
+    // we snapshot the derived-coin raw at SEASON START (S.season.coinRaw0) and forfeit the whole season's
+    // gain here (incentive to stay in and play the rounds + Moments). Suppress the per-event coin toasts too.
+    const _coinRaw0=(S.season&&S.season.coinRaw0!=null)?S.season.coinRaw0:((sbSignedIn()&&!S.daily)?coinsEarnedRaw():0);
+    _coinsSuppressToast=!!(S.season&&S.season.skipped);
     if(!S.circuitMode){
     const majorWins={};
     S.season.results.forEach(r=>{ if(!r.evt.major)return; const meR=r.order.find(o=>o.p.you); if(meR&&meR.pos===1) majorWins[r.evt.name]=(majorWins[r.evt.name]||0)+1; });
@@ -7353,7 +7467,7 @@ function scrSummary(){
     const rivalBeat=!!(rr&&rr.status==='h2h'&&rr.beat);
     if(rivalBeat){ const rv=getRival(); if(rv&&rv.ovr>ovr) recordAchEvent({set:{rivalUpset:1}}); }
     if(rr) track('rival_season',{name:rr.name,status:rr.status,beat:rivalBeat});
-    const r=recordSeason({name:me.name,ovr,money:t.money,gross:ec.gross,net:ec.net,wins:t.wins,majorsWon:t.majors,played:t.played,made:t.made,top10:t.top10,moneyRank,best:t.best,majorWins,rivalBeat}); S.freshBadges=r.fresh;
+    const r=recordSeason({name:me.name,ovr,money:t.money,gross:ec.gross,net:netTotal,wins:t.wins,majorsWon:t.majors,played:t.played,made:t.made,top10:t.top10,moneyRank,best:t.best,majorWins,rivalBeat}); S.freshBadges=r.fresh;
     S.career=S.career||{money:0,net:0,wins:0,majors:0,top10:0,best:99,seasons:[],winsList:[]};
     // emergent rivalry: bank this season's series result vs your current nemesis (before accruing/forming)
     if(!S.daily){ const rvNow=S.career.rival;
@@ -7361,8 +7475,20 @@ function scrSummary(){
         if(rr.beat){ rvNow.seasonsWon=(rvNow.seasonsWon||0)+1; rvNow.seriesStreak=(rvNow.seriesStreak||0)+1; }
         else if(rr.rvAhead>rr.meAhead){ rvNow.seasonsLost=(rvNow.seasonsLost||0)+1; rvNow.seriesStreak=0; } } }
     S.career.winsList=S.career.winsList||[];
-    S.career.money+=t.money; S.career.net+=ec.net; S.career.wins+=t.wins; S.career.majors+=t.majors; S.career.top10+=t.top10;
+    S.career.money+=t.money; S.career.net+=netTotal; S.career.wins+=t.wins; S.career.majors+=t.majors; S.career.top10+=t.top10;
     S.career.toPar=(S.career.toPar||0)+(t.toPar||0); S.career.rounds=(S.career.rounds||0)+(t.rounds||0);   // CS214: real career scoring
+    // ---- sponsor contract: settle the renewal for next year + log the story ----
+    if(contract){
+      const cardGoal=contract.goals.find(g=>g.card), cardState=cardGoal&&goalStates.find(x=>x.g===cardGoal), missedCard=!!(cardGoal && cardState && !cardState.done);
+      const flop=(goalsMet===0)||(missedCard && goalsMet<2);
+      S.career.lastContract={sponsor:contract.sponsor, met:goalsMet, total:contract.goals.length, renewals:contract.renewals, flop, missedCard};
+      const st=careerStory();
+      const line = goalsMet===contract.goals.length ? `Delivered every goal for ${contract.sponsor} (+${fmt(contractBonus)})`
+                 : flop ? `Fell short for ${contract.sponsor}, the deal is in doubt`
+                 : `Hit ${goalsMet}/${contract.goals.length} sponsor goals (+${fmt(contractBonus)})`;
+      st.feed.unshift({year:S.year||1, evt:'Season', text:line}); if(st.feed.length>60) st.feed.length=60;
+      if(contractBonus>0) track('contract_settled',{met:goalsMet,bonus:Math.round(contractBonus),tier:contract.tier});
+    }
     if(t.best<S.career.best)S.career.best=t.best;
     // record the actual tournaments won this season for the career Wins list
     S.season.results.forEach(r=>{ const meR=r.order.find(o=>o.p.you); if(meR&&meR.pos===1) S.career.winsList.push({name:r.evt.name,year:S.year||1,major:!!r.evt.major}); });
@@ -7372,7 +7498,7 @@ function scrSummary(){
       const ms=S.career.majorStats[r.evt.name]||(S.career.majorStats[r.evt.name]={played:0,wins:0,top10:0,best:99});
       ms.played++; const fin=(meR.pos==='CUT')?99:meR.pos;
       if(meR.pos===1) ms.wins++; if(fin<=10) ms.top10++; if(fin<ms.best) ms.best=fin; });
-    S.career.seasons.push({year:S.year||1,net:ec.net,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank,top10:t.top10,played:t.played,made:t.made});
+    S.career.seasons.push({year:S.year||1,net:netTotal,money:t.money,wins:t.wins,majors:t.majors,best:t.best,rank:moneyRank,top10:t.top10,played:t.played,made:t.made});
     // track this career's PEAK build (full 8-skill snapshot, not just the overall number), this is
     // the golfer a Legend Token freezes and hands back to you in the Daily Challenge if this career
     // goes on to qualify (see endCareer). Compared against ovr so a later decline year can't overwrite it.
@@ -7433,7 +7559,7 @@ function scrSummary(){
       const fresh=evaluateAch(); if(fresh.length) S.freshAch=(S.freshAch||[]).concat(fresh);
     }
     // post to the public leaderboard (guests post anonymized; no-op only if the backend's offline)
-    if(!S.daily) sbSubmitSeason({golfer:me.name,ovr,year:S.year||1,earnings:t.money,net:ec.net,wins:t.wins,majors:t.majors,
+    if(!S.daily) sbSubmitSeason({golfer:me.name,ovr,year:S.year||1,earnings:t.money,net:netTotal,wins:t.wins,majors:t.majors,
       careerId:(S.careerSeed!=null?String(S.careerSeed):null),
       skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))})
       .then(()=>loadSeasonRank(t.money));   // fetch "ranked #N of M all-time" once the post attempt settles
@@ -7467,6 +7593,12 @@ function scrSummary(){
       cc.skillSeasons.push({year:S.year||1,skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))});
       track('circuit_season_finished',{ovr,net:Math.round(ec.net),wins:t.wins,majors:t.majors,year:S.year||1});
     }
+    // forfeit the coins this SKIPPED season would have earned (see the snapshot above)
+    if(!S.daily && S.season && S.season.skipped && sbSignedIn()){
+      const cs=coinState(); cs.forfeit=(cs.forfeit||0)+Math.max(0, coinsEarnedRaw()-_coinRaw0); cs.seen=coinsEarnedRaw(); coinSave(cs);
+      track('season_coins_forfeited',{year:S.year||1});
+    }
+    _coinsSuppressToast=false;
     S.summaryTab='season';
     track('season_finished',{ovr,net:Math.round(ec.net),gross:Math.round(ec.gross),wins:t.wins,majors:t.majors,moneyRank,N,daily:S.daily,year:S.year||1});
     if(!S.daily) saveCareer(summaryResumeExtra());   // auto-save the franchise so a refresh/return resumes RIGHT here on the results page (not next season)
@@ -7508,7 +7640,7 @@ function scrSummary(){
   // shown twice — the big hero AND a "Profit" tile). Earnings (gross) + Net profit side by side, one place.
   add($(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin:4px 0 6px">
     <div class="tile"><div class="k">Earnings</div><div class="v cream" style="font-size:23px;white-space:nowrap">${fmt(t.money)}</div><div class="small muted" style="font-size:10px;margin-top:3px">prize money won</div></div>
-    <div class="tile"><div class="k">Net profit</div><div class="v" style="font-size:23px;white-space:nowrap;color:${netCol}">${fmtSigned(ec.net)}</div><div class="small muted" style="font-size:10px;margin-top:3px">after −${fmt(ec.costs)} costs</div></div>
+    <div class="tile"><div class="k">Net profit</div><div class="v" style="font-size:23px;white-space:nowrap;color:${netCol0}">${fmtSigned(netTotal)}</div><div class="small muted" style="font-size:10px;margin-top:3px">${contractBonus>0?('incl. +'+fmt(contractBonus)+' sponsor'):('after −'+fmt(ec.costs)+' costs')}</div></div>
   </div>`));
   // expandable itemized expense sheet (caddie / agent / travel / tour overhead)
   const expWrap=$(`<div class="center" style="margin:0 0 8px"></div>`);
@@ -7524,11 +7656,17 @@ function scrSummary(){
       row(`Travel · ${t.played} event${t.played===1?'':'s'} × $22k`,'−'+fmt(ec.travel),'#E14A33'),
       row('Tour overhead · coach, equipment, taxes, team','−'+fmt(ec.fixed),'#E14A33'),
       row('Total expenses','−'+fmt(ec.costs),'#E14A33',true),
-      `<div style="display:flex;justify-content:space-between;gap:14px;padding:8px 2px 2px"><span class="small" style="font-weight:800">Net profit</span><span class="mono" style="color:${netCol};font-weight:800">${fmtSigned(ec.net)}</span></div>`
+      contractBonus>0?row(contract.sponsor+' · sponsor bonuses','+'+fmt(contractBonus),'#ffd45e'):'',
+      `<div style="display:flex;justify-content:space-between;gap:14px;padding:8px 2px 2px"><span class="small" style="font-weight:800">Net profit</span><span class="mono" style="color:${netCol0};font-weight:800">${fmtSigned(netTotal)}</span></div>`
     ].join('');
     expWrap.appendChild($(`<div class="scout" style="max-width:460px;margin:8px auto 0;text-align:left">${items}</div>`));
   }
   add(expWrap);
+  if(!S.daily && S.season && S.season.skipped && SHOP_ENABLED && sbSignedIn())   // simmed to the end → no coins this season
+    add($(`<div class="scout" style="border-color:#b98a2a;text-align:left;margin:8px auto;max-width:520px">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.2em;color:#ffd45e;text-transform:uppercase">${ic('coin')} No coins this season</div>
+      <div class="small" style="color:#dbe7ee;margin-top:4px">You simmed this season to the end, so it earned no coins. Stay in the sim and play the rounds (and the Moments) next year to earn.</div></div>`));
+  if(contract) add($(contractReportHTML(contract, goalStates, contractBonus)));   // sponsor season report card
   if(sbSignedIn() && S.freshAch&&S.freshAch.length){   // Tour Rep / achievements are a signed-in feature, never shown to guests
     const gained=S.freshAch.reduce((s,a)=>s+(a.pts||0),0);
     add(seasonRepNode(achPoints()-gained, S.freshAch));   // status bar on top → achievements reveal one by one, rep climbs in sync
@@ -7758,7 +7896,7 @@ function scrSummary(){
   cv.style.cssText='width:100%;max-width:320px;display:block;margin:0 auto 4px;border-radius:14px;border:1px solid var(--line)';
   cv.setAttribute('role','img');
   cv.setAttribute('aria-label',`Season share card: ${esc(me.name)}, overall ${ovr}, ${fmt(t.money)} earned, ${t.wins} wins, ${t.majors} majors`);
-  drawShareCard(cv,{name:me.name,ovr,year:S.year||1,events:S.schedule.length,majors:S.schedule.filter(e=>e.major).length,money:t.money,net:ec.net,moneyRank,N,wins:t.wins,majorsWon:t.majors,best:t.best,fedexRank},vals);
+  drawShareCard(cv,{name:me.name,ovr,year:S.year||1,events:S.schedule.length,majors:S.schedule.filter(e=>e.major).length,money:t.money,net:netTotal,moneyRank,N,wins:t.wins,majorsWon:t.majors,best:t.best,fedexRank},vals);
   right.appendChild(cv);
   // primary CTA = Share (bold); Save + Copy are secondary
   const sh=$(`<button class="btn goldfill" style="margin-top:10px">↗ Share my season<span class="sub">Card + caption, ready to post</span></button>`);
@@ -11566,7 +11704,7 @@ function mergeCoins(local, server){ const d={spent:0,seen:0,owned:{}};
   const le=l.epoch||0, se=s.epoch||0;
   if(le!==se){ return Object.assign({}, le>se?l:s); }
   return {epoch:le, baseline:Math.max(l.baseline||0,s.baseline||0), spent:Math.max(l.spent||0,s.spent||0),
-    seen:Math.max(l.seen||0,s.seen||0), owned:Object.assign({}, l.owned||{}, s.owned||{})}; }
+    forfeit:Math.max(l.forfeit||0,s.forfeit||0), seen:Math.max(l.seen||0,s.seen||0), owned:Object.assign({}, l.owned||{}, s.owned||{})}; }
 function mergeWeekGoals(local, server){
   if(!server) return local; if(!local) return server;
   if((server.week||0)>(local.week||0)) return server;
