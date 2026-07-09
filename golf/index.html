@@ -210,6 +210,16 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes celebRise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
   @keyframes momRise{from{opacity:0;transform:translateY(16px) scale(.82)}to{opacity:1;transform:translateY(0) scale(1)}}
   @keyframes momGlow{0%,100%{opacity:.55}50%{opacity:1}}
+  /* CS226 press-conference set piece + momentum meters */
+  @keyframes pressFlash{0%{opacity:0;transform:scale(.4)}12%{opacity:.95}30%{opacity:0;transform:scale(1.3)}100%{opacity:0}}
+  @keyframes pressGlow{0%,100%{opacity:.4}50%{opacity:.85}}
+  @keyframes meterFill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  .flashbulb{position:absolute;width:12px;height:12px;border-radius:50%;background:radial-gradient(circle,#fff,rgba(255,255,255,0) 70%);pointer-events:none}
+  .cmeter{height:9px;border-radius:6px;background:rgba(255,255,255,.12);overflow:hidden;position:relative}
+  .cmeter>span{display:block;height:100%;border-radius:6px;transform-origin:left;transition:width .7s cubic-bezier(.3,1,.4,1)}
+  .statpill{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .statpill .lab{font:800 9.5px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:#7fa8b8}
+  @media (prefers-reduced-motion:reduce){ .flashbulb{animation:none!important;display:none} }
   @keyframes celebSpot{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
   @media (prefers-reduced-motion:reduce){ .celebrate,.celeb-trophy,.celeb-kicker,.celeb-title,.celeb-sub,.celeb-cheque,.celeb-tally,.celeb-actions,.celebrate .spot{animation-duration:.01ms} }
   .btn:disabled{opacity:.45; cursor:not-allowed}
@@ -1926,7 +1936,8 @@ function autoSaveSeason(){
   saveCareer({ resumeScreen:'season', mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
     season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me,
       contract:S.season.contract, skipped:S.season.skipped, coinRaw0:S.season.coinRaw0,
-      stops:S.season.stops, momentsShown:S.season.momentsShown } } });
+      stops:S.season.stops, momentsShown:S.season.momentsShown,
+      confidence:S.season.confidence, followers0:S.season.followers0 } } });
 }
 function clearCareerSave(){ LS.set(acctKey('bag_careersave'),null); cloudPush(); }
 // one-time: an in-progress career saved before careers were account-scoped lives under the old unscoped
@@ -5680,6 +5691,11 @@ function startSeason(majorsOnly){
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false;   // unlocked during THIS season (shown on the summary)
   if(S.career && S.career.story){ S.career.story.seasonCount=0; }   // reset the per-season storyline cap (CS225)
   S.season.stops=0; S.season.momentsShown=0;   // shared interruption budget (max 4 pop-ups/season)
+  if(!S.daily && !S.circuitMode && S.career){   // CS226 momentum: carry confidence over with gentle reversion; snapshot followers for the season delta
+    const st=careerStory(); const base=(st.confidence!=null?st.confidence:CONF_START);
+    S.season.confidence=confClamp(Math.round(base+(CONF_START-base)*0.25));
+    S.season.followers0=st.followers||FOLLOWERS_START;
+  }
   if(!S.daily && !S.circuitMode && S.career){ try{ S.season.contract=makeContract(); }catch(e){} }   // sponsor season deal (goals + bonuses)
   if(sbSignedIn() && !S.daily){ try{ S.season.coinRaw0=coinsEarnedRaw(); }catch(e){} }   // baseline for the skip-forfeits-coins rule (coins accrue per event, so snapshot at season start)
   S.curEvt=null;
@@ -5724,8 +5740,9 @@ function beginEvent(){
   const courseAdj=gauss()*(evt.major?SIM.maj.csd:SIM.reg.csd);  // one course/weather difficulty draw for the week
   S.curEvt={evt, idx:S.evtIndex, roundsDone:0, done:false, order:null, courseAdj, stagger:!!stagger,
     players:field.map(p=>({p, eo:eventOverall(p,ew)+(p.you?caddieEventEo(ew,evt.name,evt.major):0), rounds:[null,null,null,null], total:stagger?stagger[p.name]:0, start:stagger?stagger[p.name]:0, made:true}))};
-  // consume a storyline confidence perk (tiny, capped ≤0.8, one event) into your event-effective overall
-  if(S.season && S.season.confBoost){ const meO=S.curEvt.players.find(o=>o.p.you); if(meO) meO.eo+=S.season.confBoost; S.season.confBoost=0; }
+  // CONFIDENCE (CS226): a standing ±eo edge for the player, driven by how your season is going + press choices.
+  // Career only; ±0.7 OVR-equiv, 0 at neutral. A hot, confident player has a small edge; a rattled one a small drag.
+  if(S.season && !S.daily && !S.circuitMode && S.career){ const meO=S.curEvt.players.find(o=>o.p.you); if(meO) meO.eo+=confEo(); }
   simNextRound();   // play Thursday immediately so the first frame has scores
 }
 function simNextRound(){
@@ -5812,8 +5829,56 @@ const SEASON_STOP_BUDGET=4, MOMENT_PER_SEASON=3;
 function seasonStops(){ return (S.season&&S.season.stops)||0; }
 function seasonStopLeft(){ return SEASON_STOP_BUDGET - seasonStops(); }
 function careerStory(){ const c=(S.career=S.career||{}); if(!c.story) c.story={traits:{}, endorsements:0, fan:0, feed:[], lastBeat:-99, seasonCount:0, seenEvt:{}};
-  const s=c.story; s.traits=s.traits||{}; s.feed=s.feed||[]; s.seenEvt=s.seenEvt||{}; return s; }
-function storyGainConf(n){ if(!S.season) return; S.season.confBoost=Math.min(STORY_CONF_CAP,(S.season.confBoost||0)+n); }
+  const s=c.story; s.traits=s.traits||{}; s.feed=s.feed||[]; s.seenEvt=s.seenEvt||{};
+  if(s.followers==null) s.followers=FOLLOWERS_START; if(s.confidence==null) s.confidence=CONF_START; return s; }
+/* ---- Momentum: CONFIDENCE (0-100, fluctuates with results + press choices; a small ±eo edge) and
+   FOLLOWERS (career popularity that grows with wins/moments/soundbites). CS226. Career play only. ---- */
+const CONF_START=50, FOLLOWERS_START=2500, CONF_EO_MAX=0.7;
+function confClamp(v){ return Math.max(0, Math.min(100, v)); }
+function seasonConf(){ return (S.season && S.season.confidence!=null) ? S.season.confidence : CONF_START; }
+function adjConf(d){ if(!S.season) return; S.season.confidence=confClamp((S.season.confidence!=null?S.season.confidence:CONF_START)+d); }
+function confEo(){ return ((seasonConf()-50)/50)*CONF_EO_MAX; }   // ±0.7 OVR-equiv nudge for the player only; 0 at neutral
+function confLabel(c){ c=Math.round(c); return c>=82?'Locked in':c>=64?'Confident':c>=44?'Steady':c>=26?'Shaky':'Rattled'; }
+function confColor(c){ c=Math.round(c); return c>=64?'#35d6a0':c>=44?'#5fd0e0':c>=26?'#e0a53a':'#E14A33'; }
+function gainFollowers(pct, flat){ const s=careerStory(); const cur=s.followers||FOLLOWERS_START; const add=Math.round(cur*(pct||0)+(flat||0)); s.followers=Math.max(0, cur+add); return add; }
+function fmtFollowers(n){ n=Math.round(n||0);
+  if(n>=1e6) return (n/1e6).toFixed(n>=1e7?0:1).replace(/\.0$/,'')+'M';
+  if(n>=1e4) return Math.round(n/1e3)+'K';
+  if(n>=1e3) return (n/1e3).toFixed(1).replace(/\.0$/,'')+'K';
+  return ''+n; }
+// per-event momentum from a finish: confidence swing + follower growth (career, non-circuit)
+function resultMomentum(pos, evt){
+  const major=!!evt.major, big=!!evt.big||!!evt.playoff;
+  let dc=0, fpct=0, fflat=0;
+  if(pos===1){ dc=major?16:big?12:10; fpct=major?0.16:big?0.10:0.07; fflat=1600; }
+  else if(typeof pos==='number'){
+    if(pos<=5){ dc=major?7:5; fpct=major?0.05:0.035; fflat=700; }
+    else if(pos<=10){ dc=3; fpct=0.02; fflat=380; }
+    else if(pos<=25){ dc=0; fpct=0.006; fflat=140; }
+    else { dc=-2; fpct=0.002; fflat=40; }
+  } else { dc=-6; fpct=-0.004; fflat=0; }   // missed the cut
+  dc += (50-seasonConf())*0.05;             // gentle mean-reversion so extremes don't stick
+  adjConf(dc); gainFollowers(fpct, fflat);
+}
+// legacy shim: a storyline "confidence" choice now moves the season confidence rating
+function storyGainConf(n){ adjConf((n||0)*11); }   // ch.conf 0.2-0.5 → ~+2 to +5 confidence
+// shared UI bits
+function confMeterHTML(conf){ const c=Math.round(conf), col=confColor(c), pct=Math.max(4,Math.min(100,c));
+  return `<div class="statpill"><div class="lab">Confidence</div>
+    <div class="cmeter"><span style="width:${pct}%;background:${col}"></span></div>
+    <div class="small" style="color:${col};font-weight:800;letter-spacing:0">${confLabel(c)} · ${c}</div></div>`; }
+function momentumNode(){   // live season-screen strip: confidence (fluctuates) + following
+  if(S.daily || S.circuitMode || !S.career) return null;
+  const st=careerStory(); const delta=(S.season&&S.season.followers0!=null)?((st.followers||0)-S.season.followers0):null;
+  return $(`<div class="scout" style="border-color:#2f6f86;margin:0 0 12px">
+    <div style="display:flex;gap:14px;align-items:stretch">
+      <div style="flex:1">${followersChipHTML(delta>0?delta:null)}</div>
+      <div style="flex:1">${confMeterHTML(seasonConf())}</div>
+    </div></div>`); }
+function followersChipHTML(delta){ const s=careerStory();
+  return `<div class="statpill"><div class="lab">Followers</div>
+    <div class="v gold" style="font-size:19px;line-height:1">${fmtFollowers(s.followers)}</div>
+    ${delta!=null?`<div class="small" style="color:#35d6a0;font-weight:800;letter-spacing:0">▲ +${fmtFollowers(delta)} this season</div>`:'<div class="small" style="color:#9fb3a8;letter-spacing:0">career following</div>'}</div>`; }
 const STORY_PERSONA={confident:'The Confident One', brash:'The Showman', showman:'The Showman', clutch:'Mr. Clutch',
   humble:'The Humble Champion', fanFav:'Fan Favorite', loyal:'The Loyal Pro', maverick:'The Maverick', gritty:'The Grinder'};
 function storyPersona(){ const t=careerStory().traits||{}; const e=Object.entries(t).sort((a,b)=>b[1]-a[1]); return e.length&&e[0][1]>=2?(STORY_PERSONA[e[0][0]]||null):null; }
@@ -5901,41 +5966,88 @@ function maybeStoryline(ce){
   if(Math.random()>0.6) return null;   // ~occasional even when eligible
   return {beat:pool[Math.floor(Math.random()*pool.length)], ctx};
 }
+// a microphone at the podium — the press-conference motif
+const PRESS_MIC=`<svg viewBox="0 0 24 32" width="30" height="40" aria-hidden="true" style="display:block;margin:0 auto">
+  <rect x="8.3" y="1.5" width="7.4" height="14" rx="3.7" fill="#e3edf3"/>
+  <rect x="9.8" y="4" width="4.4" height="1.4" rx="0.7" fill="#9fb8c6"/><rect x="9.8" y="7" width="4.4" height="1.4" rx="0.7" fill="#9fb8c6"/><rect x="9.8" y="10" width="4.4" height="1.4" rx="0.7" fill="#9fb8c6"/>
+  <path d="M5.5 12.5a6.5 6.5 0 0 0 13 0" fill="none" stroke="#7fa8b8" stroke-width="1.7" stroke-linecap="round"/>
+  <line x1="12" y1="19" x2="12" y2="26" stroke="#7fa8b8" stroke-width="1.7" stroke-linecap="round"/>
+  <line x1="7.5" y1="27" x2="16.5" y2="27" stroke="#7fa8b8" stroke-width="1.7" stroke-linecap="round"/></svg>`;
 function showStoryline(sb){
   const {beat, ctx}=sb, story=careerStory();
   if(S.season) S.season.stops=(S.season.stops||0)+1;   // count against the shared interruption budget
   story.lastBeat=S.evtIndex; story.seasonCount=(story.seasonCount||0)+1; story.seenEvt[beat.id]=S.evtIndex;
   const T=(v)=>typeof v==='function'?v(ctx):v;
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const pressish=/PRESS|RIVAL|STORY|MAJOR|SPONSOR/.test(String(T(beat.tag)).toUpperCase());
+  const badge=pressish?'Press Conference':'The Spotlight';
+  const prompt=pressish?'Cameras are rolling. What do you say?':'The cameras are on you. What’s your move?';
   document.querySelectorAll('.momentov,.storyov').forEach(n=>n.remove());
+  const bulbs=reduce?'':[[8,20],[26,12],[52,9],[74,15],[90,24]].map(([l,t],i)=>
+    `<span class="flashbulb" style="left:${l}%;top:${t}px;animation:pressFlash ${2.2+i*0.5}s ease-in-out ${i*0.4}s infinite"></span>`).join('');
   const ov=$(`<div class="storyov" style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;
-      background:radial-gradient(120% 90% at 50% 15%, rgba(6,32,48,.72), rgba(2,7,10,.96) 72%)">
-    <div style="max-width:440px;width:100%;background:linear-gradient(180deg,#0c2436,#07141c);border:1px solid #2f6f86;border-radius:18px;padding:24px 22px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.6)">
-      <div style="font:800 11px/1 var(--body);letter-spacing:.26em;color:#5fd0e0;text-transform:uppercase">${T(beat.tag)}</div>
-      <h2 style="margin:9px 0 8px;font-size:22px;color:#fff">${esc(T(beat.title))}</h2>
-      <p class="lede" style="margin:0 0 16px;color:#dbe7ee">${T(beat.body)}</p>
-      <div class="sbtns" style="display:grid;gap:9px"></div>
-      <div class="sreply" style="min-height:0;margin-top:10px"></div>
+      background:radial-gradient(120% 90% at 50% 8%, rgba(10,38,54,.82), rgba(2,6,9,.98) 70%)">
+    <div style="max-width:452px;width:100%;position:relative;background:linear-gradient(180deg,#0d2334,#060f16);border:1px solid #2f6f86;border-radius:18px;padding:20px 20px 22px;box-shadow:0 30px 80px rgba(0,0,0,.6);overflow:hidden">
+      <div style="position:absolute;inset:0 0 auto 0;height:120px;pointer-events:none">${bulbs}
+        <div style="position:absolute;inset:-30% 18% auto 18%;height:150px;background:radial-gradient(60% 60% at 50% 0,rgba(95,208,224,.28),transparent 72%)${reduce?'':';animation:pressGlow 3.4s ease-in-out infinite'}"></div></div>
+      <!-- at-stake momentum strip -->
+      <div style="display:flex;gap:12px;align-items:stretch;position:relative;margin-bottom:12px">
+        <div style="flex:1" class="js-fol">${followersChipHTML(S.season?((story.followers||0)-(S.season.followers0||0))||null:null)}</div>
+        <div style="flex:1" class="js-conf">${confMeterHTML(seasonConf())}</div>
+      </div>
+      <div style="position:relative;text-align:center">
+        <div style="display:inline-flex;align-items:center;gap:7px;padding:3px 11px;border:1px solid #2f6f86;border-radius:999px;background:rgba(9,32,46,.7);margin-bottom:8px">
+          <span style="width:7px;height:7px;border-radius:50%;background:#ff5b52;box-shadow:0 0 8px #ff5b52${reduce?'':';animation:pressGlow 1.4s ease-in-out infinite'}"></span>
+          <span style="font:800 10px/1 var(--body);letter-spacing:.24em;color:#8fd6e4;text-transform:uppercase">${badge}</span>
+        </div>
+        ${PRESS_MIC}
+        <div style="font:800 10px/1 var(--body);letter-spacing:.22em;color:#5fd0e0;text-transform:uppercase;margin-top:8px">${T(beat.tag)}</div>
+        <h2 style="margin:6px 0 8px;font-size:21px;color:#fff;line-height:1.15">${esc(T(beat.title))}</h2>
+        <p class="lede" style="margin:0 auto 15px;color:#dbe7ee;max-width:400px">${T(beat.body)}</p>
+        <div class="small" style="color:#7fa8b8;letter-spacing:.06em;margin:-6px 0 12px">${prompt}</div>
+        <div class="sbtns" style="display:grid;gap:9px;text-align:left"></div>
+        <div class="sreply" style="min-height:0;margin-top:12px"></div>
+      </div>
     </div></div>`);
   const btns=ov.querySelector('.sbtns'), replyBox=ov.querySelector('.sreply');
   beat.ch.forEach(ch=>{
-    const b=$(`<button class="btn ghost" style="text-align:left">${esc(ch.t)}${ch.s?`<span class="sub">${esc(ch.s)}</span>`:''}</button>`);
+    const b=$(`<button class="btn ghost" style="text-align:left;padding-left:36px;position:relative">
+      <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#5fd0e0;font-size:15px">“</span>
+      ${esc(ch.t)}${ch.s?`<span class="sub">${esc(ch.s)}</span>`:''}</button>`);
     b.onclick=()=>{
-      // apply
+      // apply — capture before/after momentum for the on-screen deltas
+      const conf0=seasonConf(), fol0=story.followers||0;
       if(ch.tr) story.traits[ch.tr]=(story.traits[ch.tr]||0)+1;
       if(ch.conf) storyGainConf(ch.conf);
+      // followers: every media hit grows the following a little; a fan-play choice goes viral (bigger for a showman)
+      const showman=(ch.tr==='brash'||ch.tr==='showman'||ch.tr==='fanFav');
+      const folPct=(ch.fan?(showman?0.11:0.075):0.015)+(showman?0.02:0);
+      gainFollowers(folPct, ch.fan?900:250);
       if(ch.endo) story.endorsements=(story.endorsements||0)+1;
       if(ch.fan) story.fan=(story.fan||0)+1;
       const head=T(ch.head)||T(beat.title);
       story.feed.unshift({year:S.year||1, evt:ctx.upName, text:head}); if(story.feed.length>60) story.feed.length=60;
       track('storyline_choice',{id:beat.id, choice:ch.t});
-      // show the reply, then a Continue that resumes the sim
+      const dConf=Math.round(seasonConf()-conf0), dFol=Math.round((story.followers||0)-fol0);
+      // tick the at-stake meters up to their new values (meter width animates via CSS)
+      const folBox=ov.querySelector('.js-fol'), confBox=ov.querySelector('.js-conf');
+      if(folBox) folBox.innerHTML=followersChipHTML(S.season?((story.followers||0)-(S.season.followers0||0))||null:null);
+      if(confBox) confBox.innerHTML=confMeterHTML(seasonConf());
+      // reporter reaction + the tangible fallout
       btns.querySelectorAll('button').forEach(x=>x.disabled=true);
-      const perk=[ch.conf?'🎯 Confidence up for the next event':'', ch.endo?'🤝 Endorsement signed':'', ch.fan?'❤️ Fans love it':''].filter(Boolean).join(' · ');
+      const chips=[];
+      if(dFol>0) chips.push(`<span style="color:#35d6a0;font-weight:800">▲ +${fmtFollowers(dFol)} followers</span>`);
+      if(dConf!==0) chips.push(`<span style="color:${dConf>0?'#35d6a0':'#E14A33'};font-weight:800">Confidence ${dConf>0?'↑':'↓'} ${dConf>0?'+':''}${dConf} · ${confLabel(seasonConf())}</span>`);
+      if(ch.endo) chips.push(`<span style="color:#ffd45e;font-weight:800">Endorsement signed</span>`);
       replyBox.innerHTML='';
-      replyBox.appendChild($(`<div class="scout" style="border-color:#2f6f86;text-align:left;margin:2px 0 10px"><div style="color:#dbe7ee">${esc(T(ch.r))}</div>${perk?`<div class="small" style="color:#5fd0e0;margin-top:6px">${perk}</div>`:''}</div>`));
+      replyBox.appendChild($(`<div class="scout" style="border-color:#2f6f86;text-align:left;margin:2px 0 10px">
+        <div class="small" style="color:#7fa8b8;letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:4px">The reaction</div>
+        <div style="color:#eef4f7">${esc(T(ch.r))}</div>
+        ${chips.length?`<div class="small" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px 12px">${chips.join('')}</div>`:''}</div>`));
       const cont=$(`<button class="btn goldfill">Back to the tournament ▸</button>`);
       cont.onclick=()=>{ ov.remove(); render(); };
       replyBox.appendChild(cont);
+      replyBox.scrollIntoView({block:'nearest'});
     };
     btns.appendChild(b);
   });
@@ -5946,7 +6058,8 @@ function showStoryline(sb){
 function storyFeedHTML(){
   const c=S.career; if(!c||!c.story) return '';
   const s=c.story, feed=(s.feed||[]).slice(0,6), persona=storyPersona();
-  if(!feed.length && !persona && !(s.endorsements>0)) return '';
+  const seasonDelta=(S.season && S.season.followers0!=null)?((s.followers||0)-S.season.followers0):null;
+  const conf=(S.season && S.season.confidence!=null)?S.season.confidence:(s.confidence!=null?s.confidence:CONF_START);
   const rows=feed.map(f=>`<div style="display:flex;gap:8px;padding:6px 0;border-top:1px solid rgba(255,255,255,.06)">
     <span class="small" style="color:#5fd0e0;min-width:42px;font-weight:800">Yr ${f.year}</span>
     <span class="small" style="color:#dbe7ee">${esc(f.text)}</span></div>`).join('');
@@ -5955,6 +6068,10 @@ function storyFeedHTML(){
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
       <div style="font:800 11px/1 var(--body);letter-spacing:.2em;color:#5fd0e0;text-transform:uppercase">Career Story</div>
       ${persona?`<div class="small" style="color:#ffd45e;font-weight:800">${esc(persona)}</div>`:''}
+    </div>
+    <div style="display:flex;gap:14px;align-items:stretch;margin:10px 0 6px;padding:10px 0;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08)">
+      <div style="flex:1">${followersChipHTML(seasonDelta>0?seasonDelta:null)}</div>
+      <div style="flex:1">${confMeterHTML(conf)}</div>
     </div>
     ${meta?`<div class="small" style="color:#9fb3a8;margin-top:3px">${esc(meta)}</div>`:''}
     ${rows||'<div class="small" style="color:#9fb3a8;margin-top:4px">Your story is just beginning.</div>'}
@@ -6310,6 +6427,8 @@ function finalizeEvent(){
       const fresh=evaluateAch(); if(fresh.length){ S.freshAch=(S.freshAch||[]).concat(fresh); }
     }
   }
+  // MOMENTUM (CS226): a finish moves your confidence + grows (or dents) your following. Career only.
+  if(!S.daily && !S.circuitMode && S.career){ const you=order.find(o=>o.p.you); if(you) resultMomentum(you.pos, evt); }
   // the staggered finale crowns the season-long Cup champion (East Lake winner = Tour Cup champ)
   if(ce.stagger && order.length){ S.season.cupChampion=order[0].p.name; S.season.cupYouWon=!!order[0].p.you; }
   S.season.results.push({evt,order,playoff:ce.playoff}); ce.done=true; ce.order=order;
@@ -7079,6 +7198,7 @@ function scrSeason(){
   if(!S.daily && t.played) add(raceToCupNode(byPts, evt));
   if(!S.daily && !S.circuitMode){ if(S.season && !S.season.contract && S.career){ try{ S.season.contract=makeContract(); }catch(e){} }   // regenerate on resume (deterministic)
     const cn=contractNode(); if(cn) add(cn); }
+  { const mn=momentumNode(); if(mn) add(mn); }   // CS226 live confidence + following
   // opposite-field note: you missed the OWGR cut for this week's marquee event and are playing the alternate
   if(evt.oppo) add($(`<div class="scout" style="border-color:#E14A33;margin:0 0 12px;padding:10px 13px">
     <div style="font:800 11.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:#E14A33">Opposite-field event</div>
@@ -7481,6 +7601,7 @@ function scrSummary(){
     // gain here (incentive to stay in and play the rounds + Moments). Suppress the per-event coin toasts too.
     const _coinRaw0=(S.season&&S.season.coinRaw0!=null)?S.season.coinRaw0:((sbSignedIn()&&!S.daily)?coinsEarnedRaw():0);
     _coinsSuppressToast=!!(S.season&&S.season.skipped);
+    if(!S.daily && !S.circuitMode && S.season && S.season.confidence!=null){ careerStory().confidence=S.season.confidence; }   // CS226 carry confidence into next season
     if(!S.circuitMode){
     const majorWins={};
     S.season.results.forEach(r=>{ if(!r.evt.major)return; const meR=r.order.find(o=>o.p.you); if(meR&&meR.pos===1) majorWins[r.evt.name]=(majorWins[r.evt.name]||0)+1; });
