@@ -5538,6 +5538,44 @@ allows Google Fonts, or self-host Anton.*
   and show the derived-stat column + transparent subtitle. Screenshots confirm both surfaces. Deployed to
   /golf. Tunable: the anchor slopes in `golferStats` (rating→stat) and `PAR_BASE`.
 
+- **CS215 — smaller, realistic golf ball on the green.** Owner: "the golf ball is too big when it's on
+  the green, almost bigger than the hole." Root cause: the on-green ball was drawn at a near-CONSTANT
+  on-screen size (`bScale` kept it ~the same pixels regardless of zoom) while the cup is a fixed-size
+  viewBox ellipse — so at moderate putt zooms the ball rendered ~0.6-1.4× the hole's width (too big). Fix:
+  on putt/hole shots the ball is now a FIXED small viewBox radius (`HV_GBALL=1.05`) instead of `3.2×bScale`
+  — because the ball AND the cup are both in viewBox units, the camera scales them together and the ratio
+  stays realistic (measured **0.42** = a real ball is ~0.4× the hole's width) at every zoom. Applied to the
+  live putt roll (`hvLiveShot` initial radius), the resting-putt `setFinal`, and the hole-out drop (which
+  now shrinks from the small green size, and the sink ring scales off the cup). Slightly enlarged the cup
+  (`HV_CUP_RX/RY` 2.1/1.5 → 2.5/1.75) for a proper hole look + better sink visibility. Flight shots keep
+  their normal `bScale` sizing (the ball in the air, under the full-hole camera). Verified in Playwright by
+  rendering a real putt close-up: ball 1.05 vs cup 2.5 (ratio 0.42, ball < hole at every zoom); screenshot
+  confirms a small white ball on the green. Deployed to /golf.
+
+- **CS216 — per-course scenery identity + 3 new region biomes (owner: "not nearly enough variation of
+  scenery between courses… distinct scenery for each state/country").** ~20 of the 39 daily courses all
+  rendered as the same "parkland" biome, so they looked alike. Two coordinated levers (owner chose the full
+  "per-course identity + new biomes" option via AskUserQuestion):
+  1. **3 new biomes** (5 → 8): **pine** (tall Southern pine forest — warm green, pine-dominant walls,
+     azaleas), **sandhills** (Carolina sandy waste — tawny sand rough, wiregrass, longleaf pines, the green
+     pops), **prairie** (warm open plains — golden-green, sparse oaks/scrub, big sky). Remapped 7 courses by
+     real character: Augusta / East Lake / Sedgefield → pine; Pinehurst No. 2 → sandhills; Colonial /
+     Southern Hills / TPC Southwind → prairie. Added a `sparse` flag so prairie/sandhills scatter openly
+     (not a dense forest carpet).
+  2. **Per-course visual identity** — `hvBiome(courseKey)` now returns a deterministically VARIED copy of the
+     course's biome (cached per key): `hvCourseVary` shifts every grass/ground color in HSL (hue ±13°,
+     light/sat wobble) via a new `hvHexShift`, tints the tree palettes to match, rotates the flower accent
+     colors (pink↔coral↔lavender), and rotates the flora-mix weights so a different plant dominates
+     (pine-heavy vs broadleaf-heavy). So even two "parkland" venues now read clearly different — Winged Foot
+     (warm, broadleaf, pink blooms) vs Bethpage (cooler, pine-dense) vs Oakmont (muted olive, open) are
+     distinct at a glance. Seeded by the course key, so a given course always looks the same.
+  Centralized entirely in `hvBiome`/`hvCourseVary` — `hvTerrain` is unchanged (it just consumes the biome
+  object), so nothing else in the renderer needed touching. Verified in Playwright: 8 biomes present,
+  parkland courses now differ in base/green/flowers, the 3 new biomes render in both the preview AND live
+  shot paths (Augusta pine / Pinehurst sandhills / Colonial prairie / Sedgefield / Southern Hills) with zero
+  page errors; screenshots confirm all six sampled courses look visually distinct. Deployed to /golf.
+  Tunable: the hue/light/sat ranges in `hvCourseVary`, the new biome palettes, `HV_COURSE_BIOME` mappings.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
