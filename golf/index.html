@@ -4493,7 +4493,7 @@ function scrTitle(){
       : mid
       ? `Year ${cs.year} · mid-season (event ${(cs.mid.evtIndex||0)+1}) · ${who} · pick up where you left off`
       : `Year ${cs.year} done · ${who} · OVR ${cs.ovr} · continue your ${circuit?'circuit':'career'}`;
-    const cb=$(`<button class="btn teal">Resume ${circuit?'Legend Circuit':'Career Mode'}<span class="sub">${sub}</span></button>`);
+    const cb=$(`<button class="btn goldfill">Resume ${circuit?'Legend Circuit':'Career Mode'}<span class="sub">${sub}</span></button>`);
     cb.onclick=resumeCareer; stack.appendChild(cb);
   }
   // "Resume Your Golfer" is a stale in-progress DRAFT snapshot (a half-drafted golfer never taken into a
@@ -4501,7 +4501,7 @@ function scrTitle(){
   // meaning different things — starting the draft would just begin ANOTHER golfer, which is what the
   // Career Mode button below already does), so only show it when there's no career save.
   if(ri && !cs){
-    const rb=$(`<button class="btn teal">Resume Your Golfer<span class="sub">${ri.n}/8 skills drafted · pick up where you left off</span></button>`);
+    const rb=$(`<button class="btn goldfill">Resume Your Golfer<span class="sub">${ri.n}/8 skills drafted · pick up where you left off</span></button>`);
     rb.onclick=restoreResume; stack.appendChild(rb);
   }
   // ── Play Online sits ABOVE the primary Career Mode button (owner) ──
@@ -4515,7 +4515,11 @@ function scrTitle(){
   if(ob1) ob1.onclick=()=>openH2H('1v1');
   if(ob4) ob4.onclick=()=>openH2H('bestball');
   stack.appendChild(on);
-  const go=$(`<button class="btn goldfill">Career Mode<span class="sub">${(ri||cs)?'Start a new golfer, play a fresh 30-year career':'Draft your golfer, play a 30-year career'}</span></button>`);
+  // Colour hierarchy: gold = your single primary action. When a career/draft is already in progress, RESUME
+  // (above) is the gold primary, so "start a new golfer" drops to a quiet ghost secondary. With nothing to
+  // resume, Career Mode IS the gold primary.
+  const goCls=(ri||cs)?'ghost':'goldfill';
+  const go=$(`<button class="btn ${goCls}">Career Mode<span class="sub">${(ri||cs)?'Start a new golfer, play a fresh 30-year career':'Draft your golfer, play a 30-year career'}</span></button>`);
   // reset() clears the draft state (slots/reSpins/revealed/drawRng) so a FRESH career draft never
   // inherits a previous run's team — e.g. the 8/8 build left over from a Daily Challenge, which
   // stranded the draft at "8/8 drafted" with no way to advance.
@@ -4530,7 +4534,7 @@ function scrTitle(){
   let dMain, dSub, dCls;
   if(PRACTICE){ dMain='Daily Challenge · Practice'; dSub='Unlimited practice rounds · nothing is recorded, no attempts used'; dCls='blue'; }
   else if(datt===0){ dMain='Daily Challenge'; dSub='Beat the tour average at a new famous course every day'; dCls='blue'; }
-  else if(dleft<=0){ dMain=`Daily Challenge · ${dwon?'Beaten ✓':'Done'}`; dSub=`${bestTxt}${dbest?(dwon?', you beat the tour average':' · came up short of the tour average'):''} · new course at midnight UTC`; dCls='gold'; }
+  else if(dleft<=0){ dMain=`Daily Challenge · ${dwon?'Beaten ✓':'Done'}`; dSub=`${bestTxt}${dbest?(dwon?', you beat the tour average':' · came up short of the tour average'):''} · new course at midnight UTC`; dCls='blue'; }   // Daily stays blue even when done (gold is reserved for the single primary action)
   else { dMain=`Daily Challenge · ${dleft} left`; dSub=`${bestTxt} · ${dwon?'tour average beaten ✓, go lower':'beat the tour average to win'} (${dailyMaxAttempts()} tr${dailyMaxAttempts()===1?'y':'ies'}/day)`; dCls='blue'; }
   const daily=$(`<button class="btn ${dCls}" style="margin-top:10px">${dMain}<span class="sub">${dSub}</span></button>`);
   daily.onclick=startDailyChallenge;
@@ -4813,7 +4817,7 @@ function paintAvatar(canvas,look){
 }
 function paintAvatars(){
   document.querySelectorAll('canvas.avatarcanvas[data-avatar-pending]').forEach(c=>{ c.removeAttribute('data-avatar-pending');
-    if(c.hasAttribute('data-avatar-full')) paintAvatarFull(c,S.look); else paintAvatar(c,S.look); });
+    if(c.hasAttribute('data-avatar-full')) paintAvatarFull(c,shopEffLook()); else paintAvatar(c,S.look); });
 }
 function avatarHTML(){
   return `<div class="avatarfig"><canvas class="avatarcanvas" width="512" height="512" data-avatar-pending="1" role="img" aria-label="Your golfer"></canvas></div>`;
@@ -4903,7 +4907,12 @@ function paintAvatarFull(canvas, look){
   const g=o.gender, A=AV_ANAT[g]||AV_ANAT.male;
   const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===look.pants))||{a:'#c7bfa8'}).a;
   const eq={}; if(typeof accEquipped==='function') ACC_SLOTS.forEach(sl=>{ const id=accEquipped(sl.k); if(id&&ACC_ART[id]) eq[sl.k]=id; });
-  const gloveId=(typeof accEquipped==='function')?accEquipped('glove'):null, gloveHex=gloveHexFor(gloveId);
+  // Pro Shop: preview a not-yet-owned accessory on the golfer before buying (guarded to the shop overlay).
+  const _pvAcc=(S.shopPreview && S.overlay==='shop' && S.shopPreview.kind==='acc')?S.shopPreview:null;
+  if(_pvAcc && ACC_ART[_pvAcc.id]) eq[_pvAcc.slot]=_pvAcc.id;
+  let gloveId=(typeof accEquipped==='function')?accEquipped('glove'):null;
+  if(_pvAcc && _pvAcc.slot==='glove') gloveId=_pvAcc.id;
+  const gloveHex=gloveHexFor(gloveId);
   const freeCap = !eq.head && (look.cap!==false);   // no shop headwear → the free basic cap (if cap is on)
   const key=o.key+'|p'+(look.pants||'stone')+'|c'+(freeCap?o.hatHex:'0')+'|gl'+(gloveId||'')+'|'+ACC_SLOTS.map(sl=>eq[sl.k]||'').join(',');
   const cached=_avRenderFull.get(key); if(cached){ avBlit(canvas,cached); return; }
@@ -10267,6 +10276,17 @@ function shopCard(it){ const r=ACC_RARITY[it.rarity]||ACC_RARITY.common, owned=a
 }
 // equip a purchased cosmetic (set the look key; a hat colour also turns the cap on)
 function cosEquip(cat,id){ if(!S.look) return; const c=COS_CATS.find(x=>x.k===cat); if(!c) return; S.look[c.lookKey]=id; if(cat==='hat') S.look.cap=true; saveLook(); }
+// ---- Pro Shop purchase preview + confirm: tapping a locked item PREVIEWS it (no coins spent) until you confirm ----
+// the look the full-body avatar paints with — merged with a pending COSMETIC preview while shopping (gear
+// preview is injected inside paintAvatarFull). Returns S.look untouched everywhere else.
+function shopEffLook(){ const p=S.shopPreview; if(!p || S.overlay!=='shop' || p.kind!=='cos' || !S.look) return S.look;
+  const L=Object.assign({},S.look), c=COS_CATS.find(x=>x.k===p.cat); if(c){ L[c.lookKey]=p.id; if(p.cat==='hat') L.cap=true; } return L; }
+function shopConfirmBuy(){ const p=S.shopPreview; if(!p) return; let r;
+  if(p.kind==='cos'){ r=cosBuy(p.cat,p.id); if(r&&r.ok) cosEquip(p.cat,p.id); }
+  else { r=accBuy(p.id); }   // accBuy auto-equips
+  S.shopPreview=null;
+  try{ toast(r&&r.ok?'Purchased & equipped!':((r&&r.msg)||'Could not buy')); }catch(e){}
+  render(); }
 // a shop card for a cosmetic (shirt/hat/pants/shoes colour or a pattern)
 function cosCard(cat,o){
   const c=COS_CATS.find(x=>x.k===cat), owned=cosOwned(cat,o.id), price=cosmeticPrice(cat,o.id);
@@ -10345,11 +10365,15 @@ function shopTileClick(b){
       const equipped = cat==='hat'?((S.look.hat||S.look.polo)===id):cat==='pat'?((S.look.shirtPat||'none')===id):(S.look[c.lookKey]===id);
       if(equipped){ if(cat==='pat'&&id!=='none'){ S.look.shirtPat='none'; saveLook(); } }   // tap an equipped pattern to remove it
       else cosEquip(cat,id);
-    } else { const r=cosBuy(cat,id); if(r.ok) cosEquip(cat,id); try{toast(r.ok?'Purchased & equipped!':r.msg);}catch(e){} }
+    } else {   // LOCKED → preview it on the golfer + confirm before spending coins (no instant buy)
+      const it=(cosmeticItems(cat)||[]).find(o=>o.id===id);
+      S.shopPreview={kind:'cos', cat, id, name:(it&&it.name)||id, price:cosmeticPrice(cat,id)};
+    }
   }
   else if(kind==='acc-uneq'){ accUnequip(b.getAttribute('data-slot')); }
   else if(kind==='acc-eq'){ accEquip(b.getAttribute('data-id')); }
-  else if(kind==='acc-buy'){ const r=accBuy(b.getAttribute('data-id')); try{toast(r.ok?'Purchased & equipped!':r.msg);}catch(e){} }
+  else if(kind==='acc-buy'){ const id=b.getAttribute('data-id'), it=accById(id);   // LOCKED gear → preview + confirm
+    S.shopPreview={kind:'acc', id, slot:(it&&it.slot)||null, name:(it&&it.name)||'Item', price:it?accPrice(it):0}; }
   render();
 }
 function overlayShop(screen){
@@ -10400,15 +10424,39 @@ function overlayShop(screen){
     COS_CATS.forEach(c=>cosmeticItems(c.k).forEach(o=>{ if(cosOwned(c.k,o.id)&&!FREE_COSMETICS[cosKey(c.k,o.id)]) tiles.push(cosTileHTML(c.k,o)); }));
     ACCESSORIES.concat(MILESTONE_ITEMS).forEach(it=>{ if(accOwned(it.id)) tiles.push(accTileHTML(it)); });
   }
+  // PREVIEW + CONFIRM: a locked item you tapped is being previewed on the golfer (above) — show the
+  // confirmation card instead of the grid so nothing is bought on a single tap.
+  const pv=S.shopPreview;
+  if(pv){
+    const bal=coinBalance(), afford=bal>=pv.price, after=Math.max(0,bal-pv.price);
+    const card=$(`<div style="max-width:520px;margin:14px auto 0;padding:18px 16px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(235,166,31,.14),rgba(235,166,31,.03));text-align:center">
+      <div style="font:800 11px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">Confirm purchase</div>
+      <div style="font-family:var(--display);font-size:22px;color:var(--oncard);margin-top:6px">${esc(pv.name)}</div>
+      <div style="display:inline-flex;align-items:center;gap:6px;margin-top:7px;font-weight:800;font-size:19px;color:var(--gold)"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(pv.price)}</div>
+      <div class="small muted" style="margin-top:5px">Balance ${coinFmt(bal)} &rarr; <b style="color:${afford?'#35d6a0':'#e2554e'}">${coinFmt(after)}</b> after</div>
+      <div class="small" style="margin-top:8px;color:#8fe0c4">Previewing on your golfer above &mdash; nothing is spent until you buy.</div>
+      <div style="display:flex;gap:10px;margin-top:14px">
+        <button class="btn ghost" id="pv-cancel" style="flex:1;margin:0">Cancel</button>
+        <button class="btn goldfill" id="pv-buy" style="flex:1;margin:0" ${afford?'':'disabled'}>${afford?'Buy':'Not enough coins'}</button>
+      </div></div>`);
+    ov.appendChild(card);
+    card.querySelector('#pv-cancel').onclick=()=>{ S.shopPreview=null; render(); };
+    const buyb=card.querySelector('#pv-buy'); if(buyb&&afford) buyb.onclick=shopConfirmBuy;
+    // tapping a section/category or the ✕ cancels the pending preview
+    sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.shopSec=x.getAttribute('data-sec'); render(); });
+    sticky.querySelectorAll('[data-cat]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.shopCat=x.getAttribute('data-cat'); render(); });
+    ov.querySelectorAll('.x2').forEach(el=>el.onclick=()=>{S.shopPreview=null;S.overlay=null;render();});
+    screen.appendChild(ov); return;
+  }
   grid.innerHTML = tiles.length?tiles.join('')
     : `<div class="shop-empty">${sec==='owned'?'You haven’t bought anything yet — browse Apparel & Equipment to kit out your golfer.':'Nothing here yet.'}</div>`;
   ov.appendChild(grid);
-  ov.appendChild($(`<div class="small muted center" style="margin-top:14px">Tap an item to wear it, or buy it with coins. Gear boosts help in Career & Daily.</div>`));
+  ov.appendChild($(`<div class="small muted center" style="margin-top:14px">Tap an item to preview it, then confirm to buy. Gear boosts help in Career & Daily.</div>`));
   ov.appendChild($(`<button class="btn red" style="margin-top:10px">Done</button>`));
   sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
   sticky.querySelectorAll('[data-cat]').forEach(x=>x.onclick=()=>{ S.shopCat=x.getAttribute('data-cat'); render(); });
   grid.querySelectorAll('[data-tile]').forEach(x=>x.onclick=()=>shopTileClick(x));
-  ov.querySelectorAll('.x2,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
+  ov.querySelectorAll('.x2,.red').forEach(el=>el.onclick=()=>{S.shopPreview=null;S.overlay=null;render();});
   screen.appendChild(ov);
 }
 function overlayCourseRecords(screen){
