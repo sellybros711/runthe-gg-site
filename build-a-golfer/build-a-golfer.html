@@ -981,7 +981,7 @@ function migrateLegacyLifetimeStats(){
 /* expenses: caddie 10% + agent 8% of winnings, ~$20k travel/event, plus ~$2.6M/yr of fixed
    tour costs (coach, equipment, taxes, team). Fixed cost is prorated by events played so the
    running in-season net stays sensible. Tuned via Monte Carlo so a weak build can finish red. */
-const COSTS={caddiePct:0.10, agentPct:0.08, travelPerEvent:22000, seasonFixed:2.8e6};
+const COSTS={caddiePct:0.10, agentPct:0.08, travelPerEvent:22000, seasonFixed:1.4e6};   // overhead halved (was 2.8e6): a good finish at a regular-purse event should turn a profit, like the real tour, instead of being eaten by a flat annual cost
 const SEASON_EVENTS=18;
 // Legend Circuit purses run ~1/8 the regular tour's (real Champions Tour scale, see CS76 research),
 // but a percentage-of-earnings cost (caddie/agent) already scales down with them automatically, only
@@ -2445,8 +2445,18 @@ function legendField(n){
     .sort((a,b)=>b.skill-a.skill).slice(0,n);
 }
 
-const PAYOUT=[.18,.109,.069,.049,.041,.0363,.0338,.0313,.0293,.0273,.0253,.0233,.0215,.0201,.0189,
-  .0177,.0167,.0157,.0149,.0141,.0133,.0125,.0117,.0109,.0101,.0097,.0093,.009,.0087,.0084,.0081,.0078,.0075,.0072,.0069];
+// prize distribution (fraction of the purse by finishing position). EVERYONE who makes the cut earns a
+// share (positions 1-70); a player who misses the cut earns $0 (assignTies gives them pct=0). The top-35
+// shares match the real tour curve (winner 18%); the 36th-70th tail spreads the remaining purse so the
+// FULL 100% is distributed among the players who made the weekend (was only ~93.5% to the top 35 before).
+const PAYOUT=[
+  0.18,0.109,0.069,0.049,0.041,0.0363,0.0338,0.0313,0.0293,0.0273,
+  0.0253,0.0233,0.0215,0.0201,0.0189,0.0177,0.0167,0.0157,0.0149,0.0141,
+  0.0133,0.0125,0.0117,0.0109,0.0101,0.0097,0.0093,0.009,0.0087,0.0084,
+  0.0081,0.0078,0.0075,0.0072,0.0069,0.00261,0.00256,0.00252,0.00247,0.00243,
+  0.00239,0.00234,0.0023,0.00225,0.00221,0.00216,0.00212,0.00207,0.00203,0.00198,
+  0.00194,0.00189,0.00185,0.0018,0.00176,0.00171,0.00167,0.00162,0.00158,0.00154,
+  0.00149,0.00145,0.0014,0.00136,0.00131,0.00127,0.00122,0.00118,0.00113,0.00109];
 
 /* ---------- sim, constants measured from 246,968 real tour rounds, 2004-2018 (DataGolf spec §1) ---------- */
 function gauss(){let u=0,v=0;while(!u)u=RNG();while(!v)v=RNG();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
