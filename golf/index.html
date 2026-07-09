@@ -8936,19 +8936,35 @@ function hvPlots(g, shots, seedN){
       default: y=L-(toY!=null?toY:20); rest=[g.cx(y)+jj(i,1)*8, y];
     }
     if(p.k==='putt'){
-      // A missed putt should MISS realistically (owner) — never roll straight over/through the cup. A
-      // makeable putt LIPS OUT: it rolls to the rim, catches the edge and spins off to the SIDE, resting
-      // just past the hole. A long first putt LAGS: it dies just short and slightly offline. Either way the
-      // ball ends closer than it started and never crosses the cup centre. (Cosmetic — score is fixed.)
+      // A missed putt should MISS REALISTICALLY (owner): not always a lip-out. A long first putt LAGS
+      // close (usually short, occasionally a touch past). A makeable putt that misses does so one of five
+      // ways — short, long (runs past), lipped out, missed left, or missed right — chosen by hash so it
+      // varies. Either way the ball ends near the hole (a tap-in comeback) and never crosses the cup
+      // centre on line. (Cosmetic — the score is fixed by the engine.)
       const distNow=Math.max(0.3,hvDistYds(pin,cur)), u=hvUnit(pin,cur), perp=[-u[1],u[0]], side=(hh(i,5)<0.5?-1:1);
       const leaveFt=(s.toFt||2), d=Math.max(Math.min(2.0/g.vy, distNow*0.85), leaveFt/3);
-      p._brk=(hh(i,7)-0.5)*0.14; p.onGreen=true;
-      const lag=(leaveFt>6 || distNow>6);   // long first putt → lag it close; short makeable → lip out / burn the edge
-      if(lag){ const dd=Math.min(d, distNow*0.8);
-        rest=[pin[0]-u[0]*dd+perp[0]*side*dd*0.3, pin[1]-u[1]*dd+perp[1]*side*dd*0.3]; }
-      else { p.lip=true; p.lipSide=side; const dd=Math.max(d, 0.85/g.vy);
-        const dir=[u[0]*0.45+perp[0]*side, u[1]*0.45+perp[1]*side], dl=Math.hypot(dir[0],dir[1])||1;
-        rest=[pin[0]+dir[0]/dl*dd, pin[1]+dir[1]/dl*dd]; } }
+      p._brk=(hh(i,7)-0.5)*0.13; p.onGreen=true;
+      const lag=(leaveFt>6 || distNow>6);   // long first putt → controlled lag; short makeable → varied miss
+      if(lag){
+        const dd=Math.min(d, distNow*0.8), past=(hh(i,8)<0.22);   // most lags die just short; some trickle past
+        const along=(past?-1:1)*dd*(0.68+hh(i,9)*0.5);
+        rest=[pin[0]+u[0]*along+perp[0]*side*dd*0.32, pin[1]+u[1]*along+perp[1]*side*dd*0.32];
+      } else {
+        const dd=Math.max(d, 0.7/g.vy), roll=hh(i,11);
+        if(roll<0.20){                                  // LIP OUT — catches the rim, spins off to the side
+          p.lip=true; p.lipSide=side;
+          const dir=[u[0]*0.42+perp[0]*side, u[1]*0.42+perp[1]*side], dl=Math.hypot(dir[0],dir[1])||1;
+          rest=[pin[0]+dir[0]/dl*dd, pin[1]+dir[1]/dl*dd];
+        } else if(roll<0.42){                           // SHORT — dies just short, on line
+          rest=[pin[0]+u[0]*dd+perp[0]*side*dd*0.10, pin[1]+u[1]*dd+perp[1]*side*dd*0.10];
+        } else if(roll<0.62){                           // LONG — burns the edge and runs past
+          rest=[pin[0]-u[0]*dd+perp[0]*side*dd*0.28, pin[1]-u[1]*dd+perp[1]*side*dd*0.28];
+        } else if(roll<0.81){                           // MISSED LEFT — slides by on the low/left side
+          p.lipSide=-1; rest=[pin[0]+perp[0]*-1*dd*0.95+u[0]*dd*0.22, pin[1]+perp[1]*-1*dd*0.95+u[1]*dd*0.22];
+        } else {                                        // MISSED RIGHT
+          p.lipSide=1;  rest=[pin[0]+perp[0]* 1*dd*0.95+u[0]*dd*0.22, pin[1]+perp[1]* 1*dd*0.95+u[1]*dd*0.22];
+        }
+      } }
     // dry lie (not water/drop) that overlaps a pond/creek → push the resting ball onto land so it's never
     // drawn in the water when the shot didn't find it. (Green shots are handled by the carry safety below.)
     if(rest && !p.onGreen && s.lie!=='water' && s.lie!=='drop' && (g.water||g.creek)) rest=hvOutOfWater(g,rest);
