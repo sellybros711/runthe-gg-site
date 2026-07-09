@@ -342,7 +342,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* full-body dressable avatar (signed-in): a tall figure, not a round medallion */
   .avatarfig.fullbody{width:auto; height:auto; filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}
   .avatarfig.fullbody canvas{width:auto; height:100%; border-radius:0; margin:0 auto}
-  .buildhero .avatarfig.fullbody{width:auto; height:250px}
+  .buildhero .avatarfig.fullbody{width:auto; height:340px}
   .herofig.hasfull{display:flex; justify-content:center}
   .avatarimg{object-fit:cover; border-radius:50%}
   .ovrchip{position:absolute; bottom:-10px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:6px;
@@ -766,8 +766,8 @@ window.GA_ID='G-L29P5MRWKE';
   .shop-bar h3{margin:0; font-size:22px}
   .coinpill{display:inline-flex; align-items:center; gap:6px; background:rgba(235,166,31,.13); border:1px solid rgba(235,166,31,.4);
     border-radius:999px; padding:5px 12px 5px 8px; font:900 16px/1 var(--body); color:var(--gold)}
-  .shop-preview{display:flex; justify-content:center; align-items:flex-end; height:230px; margin:2px 0 4px}
-  .shop-preview .avatarfig{height:230px}
+  .shop-preview{display:flex; justify-content:center; align-items:flex-end; height:340px; margin:2px 0 4px}
+  .shop-preview .avatarfig{height:340px}
   .segrow{display:flex; gap:6px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
     border-radius:11px; padding:4px}
   .segrow button{flex:1; border:0; background:transparent; color:var(--muted); font:800 12px/1 var(--body);
@@ -4756,7 +4756,7 @@ function scrSetup(){
   // scrolls up underneath it, without one, the swatches/rows behind would show through.
   const full=sbSignedIn();
   const f=$(avatarShowHTML());
-  if(full){ f.style.height='372px'; f.style.filter='drop-shadow(0 8px 18px rgba(0,0,0,.5))'; }
+  if(full){ f.style.height='min(58vh,520px)'; f.style.filter='drop-shadow(0 8px 18px rgba(0,0,0,.5))'; }
   else { f.style.width='184px'; f.style.height='184px'; f.style.filter='drop-shadow(0 7px 16px rgba(0,0,0,.45))'; }
   const figwrap=$(`<div style="display:flex;justify-content:center;position:sticky;top:8px;z-index:3;padding:10px 0 14px;margin:0 -16px;background:#06200f;border-bottom:1px solid var(--line)"></div>`); figwrap.appendChild(f); left.appendChild(figwrap);
 
