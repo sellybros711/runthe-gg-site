@@ -5701,6 +5701,45 @@ allows Google Fonts, or self-host Anton.*
   fire (budget, not the per-mode cap, binds); `stops` never exceeds 4; Auto Sim default ON confirmed; page
   loads with zero page errors. Tunable: `SEASON_STOP_BUDGET`, `STORY_PER_SEASON`, `MOMENT_PER_SEASON`.
 
+- **CS226 — press-conference set piece + Confidence & Followers as living career stats (owner: "make
+  this feel more press-conference-y... the result should have a meaningful impact — fans/followers to
+  reflect popularity, a confidence rating that fluctuates with decisions throughout the career and
+  season").** Turned the storyline pop-ups (CS225) from flavor into a system with real stakes, and gave
+  the choices tangible, visible consequences.
+  • **Confidence (0-100, fluctuates).** New season stat `S.season.confidence`, carried from a career
+    baseline (`career.story.confidence`) with gentle reversion toward 50 each new season. It moves from
+    (a) **results** — `resultMomentum(pos,evt)` in `finalizeEvent`: a win +10 (major +16), top-5 +5-7,
+    top-10 +3, missed cut −6, plus mean-reversion so extremes don't stick; and (b) **press choices** —
+    each `conf` choice adds ~+2 to +5. It has a **real, fair sim effect**: `confEo()` gives the player a
+    standing ±0.7 OVR-equiv edge (0 at neutral, applied in `beginEvent`), so a hot, confident player has a
+    small edge and a rattled one a small drag — symmetric (the old system only ever gave a positive
+    perk), bounded, and modest (~0.1 stroke/round at the extreme). Labels Rattled→Shaky→Steady→Confident→
+    Locked in with a colored meter.
+  • **Followers (career popularity).** New `career.story.followers` (starts 2,500), grows %-based (so it
+    compounds like a real following) from wins/majors/high finishes (per-event, in `resultMomentum`) and
+    from press soundbites — a fan-play answer goes viral, bigger for a showman/brash persona. Formatted
+    2.5K / 1.3M, with a "▲ +X this season" delta.
+  • **Press-conference overlay.** Rebuilt `showStoryline` as a media set piece: a red LIVE dot + adaptive
+    badge (**Press Conference** for press/rivalry/story/major/sponsor beats, **The Spotlight** for
+    fan/home/off-course beats), a drawn microphone, subtle flashbulbs, a "Cameras are rolling. What do you
+    say?" prompt, and the choices styled as quote-marked soundbites. A momentum strip at the top shows
+    your **Followers + Confidence at stake**; after you answer, the reporter reaction appears with the
+    tangible fallout as prominent chips (▲ +110K followers · Confidence ↑ +4 · Confident · endorsement)
+    and the top meters tick up to their new values.
+  • **Surfaced everywhere.** A live momentum strip on the season screen (confidence + following, updates
+    each event), and the summary/career-end "Career Story" card now leads with Followers (+season delta)
+    and a Confidence meter.
+  • Career play only (never daily/circuit/headless-for-sim-effect — `confEo`/`resultMomentum` guarded
+    `!S.daily && !S.circuitMode && S.career`). Persisted in the mid-season autosave (confidence,
+    followers0) and carried to the career baseline at season end; legacy saves default (50 / 2,500) with
+    no crash. Verified in Playwright: helper math (formatting, confEo bounds ±0.7, a major win raises
+    confidence 50→66 + followers, six missed cuts drag it to 30 / eo −0.28, clamps); the overlay renders
+    the press badge/mic/meters/soundbites and a choice moves both stats + shows the deltas + reaction; the
+    adaptive Press-Conference vs The-Spotlight framing per beat; a full 20-event headless season runs
+    clean (confidence 50→57, followers 8k→15.6k) and the summary shows the upgraded card; the season
+    screen shows the live strip; zero page errors throughout. Tunable: `CONF_EO_MAX`, the result/choice
+    confidence + follower weights in `resultMomentum`/`showStoryline`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
