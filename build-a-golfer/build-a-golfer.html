@@ -4556,7 +4556,7 @@ function overlayTerms(screen){
     <h3>Terms</h3>
     <p class="lede">RunTheTour is a free, fan-made golf simulation game. By playing, creating an account, or appearing on the leaderboard, you agree to these terms.</p>
     <ol style="color:#dbe6ee;padding-left:18px">
-      <li><b>Not affiliated with any real organization.</b> RunTheTour is an independent, unofficial fan project, not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, or any professional golfer; all tournaments, venues and cups in the game are fictional, event, or organization named in the game. Real player names and public statistics build fictional, simulated golfers; all results are entirely fictional.</li>
+      <li><b>Not affiliated with any real organization.</b> RunTheTour is an independent, unofficial fan project, not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, or any professional golfer; all tournaments, venues, cups and sponsor brands in the game are fictional, and any resemblance to a real event, company, or organization is coincidental. Real player names and public statistics build fictional, simulated golfers; all results are entirely fictional.</li>
       <li><b>Entertainment only, no real money.</b> In-game currency, prize money, and rankings have no real-world value and aren't a form of gambling or wagering.</li>
       <li><b>Your account.</b> Choose a username that isn't offensive, impersonating, or misleading. We reserve the right to rename, suspend, or remove accounts, leaderboard entries, or usernames that violate this, or that we determine were used to abuse or manipulate the leaderboard.</li>
       <li><b>No warranty.</b> RunTheTour is provided "as is," in active development, without warranties of any kind, we don't guarantee the game, leaderboard, or your saved progress will always be available or error-free.</li>
@@ -5893,7 +5893,11 @@ function storyCtx(ce){
   const rank=byMoney.findIndex(x=>x.n===meN)+1;
   const recent=res.slice(-3).map(r=>{ const m=r.order.find(o=>o.p&&o.p.you); return m?(m.pos==='CUT'?99:(typeof m.pos==='number'?m.pos:99)):99; });
   const cold=recent.length>=2 && recent.slice(-2).every(p=>p>25);
+  // a fitting brand for the "sponsor comes calling" beat: one tier above your current deal, named for immersion
+  let sBrand='a major brand'; try{ const sp=ensureSponsor(), t=Math.min(SPONSOR_TIERS.length-1, sp.tier+1), pool=brandsOfTier(t).filter(b=>b!==sp.brand);
+    if(pool.length) sBrand=pool[(S.evtIndex||0)%pool.length]; }catch(e){}
   return {won, top10, missed, lastName, rival, rivalName:(rival&&rival.name)||'', upName:ce.evt.name, major:!!ce.evt.major, big:!!ce.evt.big,
+    sponsorBrand:sBrand,
     yr:S.year||1, rank, N:byMoney.length||1, cold, seasons:(S.career&&S.career.seasons&&S.career.seasons.length)||0};
 }
 // each beat: when(ctx)→bool, tag, title(ctx), body(ctx), ch:[{t,s,tr,conf,endo,fan,r,head(ctx)}]
@@ -5909,8 +5913,8 @@ const STORYLINES=[
       {t:'Blame the conditions',s:'Deflect',tr:'maverick',conf:0.1,r:'The presser gets frosty, but you don’t care.',head:'Blamed the setup for a bad week'},
       {t:'Stay upbeat',s:'Glass half full',fan:1,conf:0.2,r:'Your optimism plays well with the fans.',head:'Kept smiling through a rough week'}]},
  {id:'sponsor', tag:'SPONSORS', when:c=>c.top10||c.won, title:c=>'A sponsor comes calling',
-  body:c=>`After your run at ${esc(c.lastName)}, a major brand wants your name on the bag. Their reps are waiting.`,
-  ch:[{t:'Sign the deal',s:'Security + backing',tr:'confident',endo:1,conf:0.3,r:'Ink on paper. The backing feels good walking to the first tee.',head:'Signed a new endorsement deal'},
+  body:c=>`After your run at ${esc(c.lastName)}, ${esc(c.sponsorBrand||'a major brand')} wants your name on the bag. Their reps are waiting.`,
+  ch:[{t:'Sign the deal',s:'Security + backing',tr:'confident',endo:1,conf:0.3,r:'Ink on paper. The backing feels good walking to the first tee.',head:c=>`Signed an endorsement with ${c.sponsorBrand||'a new brand'}`},
       {t:'Hold out for more',s:'Bet on yourself',tr:'maverick',conf:0.2,r:'You pass — you’re worth more, and you know it.',head:'Bet on himself, held out for more'},
       {t:'Stay independent',s:'No strings',tr:'loyal',fan:1,r:'You keep it simple. The purists respect it.',head:'Turned down the money to stay independent'}]},
  {id:'rival', tag:'RIVALRY', when:c=>!!c.rivalName, title:c=>'Your rival fired a shot',
@@ -6088,18 +6092,73 @@ function storyFeedHTML(){
 // Rewards also scale with your FOLLOWING (popularity sells). Each off-season, if your standing has grown
 // enough to attract a bigger brand, you're offered the choice: stay and keep compounding loyalty, or upgrade.
 const SPONSOR_TIERS=[
-  {name:'Regional', reward:1.00, diff:1.00, brands:['Fairway & Co.','Halyard','Kestrel','Crestline','Cedar & Oak']},
-  {name:'National', reward:1.45, diff:1.24, brands:['Northwind Apparel','Summit Sportswear','Onyx Golf','Vantage']},
-  {name:'Premium',  reward:2.00, diff:1.50, brands:['Meridian Golf','Ironclad','Vanguard Athletic','Halcyon']},
-  {name:'Global',   reward:2.70, diff:1.80, brands:['Apex Athletic','Monarch','Aurora Global']}
+  {name:'Regional', reward:1.00, diff:1.00},
+  {name:'National', reward:1.45, diff:1.24},
+  {name:'Premium',  reward:2.00, diff:1.50},
+  {name:'Global',   reward:2.70, diff:1.80}
 ];
 const SPONSOR_TIER_REQ=[0, 26, 56, 88];   // market value needed to attract each tier's interest
 const SPONSOR_REL_MAX=5;
+// CS229: every sponsor is a FAKE BRAND with its own identity — category, colour, tagline, and a
+// PERSONALITY trait that changes the deal. So two offers at the same tier can feel very different, and
+// choosing is about more than money. (All brands are fictional — see the not-affiliated disclaimer.)
+const BRAND_TRAITS={
+  steady:     {label:'Steady',     desc:'A dependable, balanced partner.'},
+  demanding:  {label:'Demanding',  desc:'Top dollar, but they expect results — bigger money, tougher goals.', reward:1.12, diff:1.16},
+  loyal:      {label:'Loyalty-first', desc:'They reward loyalty richly — your relationship bonus grows faster.', relStep:0.10},
+  marketing:  {label:'Image-driven', desc:'A deal built on your brand — your following moves the money more.', folBoost:1.7},
+  patient:    {label:'Patient',    desc:'They stand by you through lean years — far slower to walk away.', strikes:3},
+  performance:{label:'Big-stage',  desc:'They live for the marquee moments — win & major bonuses are boosted.', stretch:1.4}
+};
+const BRAND_CATS={apparel:'Apparel',equipment:'Equipment',auto:'Motors',finance:'Finance',luxury:'Luxury',energy:'Energy',airline:'Airline',tech:'Tech',beverage:'Beverage'};
+const BRANDS=[
+  // Tier 0 — Regional
+  {name:'Cedar & Oak', tier:0, cat:'apparel', color:'#6f8f5a', tag:'Built for the long walk.', trait:'steady'},
+  {name:'Fairway & Co.', tier:0, cat:'apparel', color:'#4f9d84', tag:'Honest golf, honest gear.', trait:'loyal'},
+  {name:'Halyard', tier:0, cat:'apparel', color:'#3f6f9f', tag:'Weather every round.', trait:'steady'},
+  {name:'Kestrel', tier:0, cat:'equipment', color:'#7a8794', tag:'Quiet precision.', trait:'demanding'},
+  {name:'Crestline', tier:0, cat:'finance', color:'#3f9f97', tag:'Cover every lie.', trait:'patient'},
+  {name:'Tallgrass', tier:0, cat:'beverage', color:'#8a9a3f', tag:'Refresh the back nine.', trait:'marketing'},
+  // Tier 1 — National
+  {name:'Northwind Apparel', tier:1, cat:'apparel', color:'#3f7fd0', tag:'Into the wind.', trait:'steady'},
+  {name:'Summit Sportswear', tier:1, cat:'apparel', color:'#e08a3a', tag:'Reach the top.', trait:'demanding'},
+  {name:'Onyx Golf', tier:1, cat:'equipment', color:'#454b58', tag:'Forged in black.', trait:'performance'},
+  {name:'Vantage', tier:1, cat:'finance', color:'#35a06a', tag:'See the whole course.', trait:'patient'},
+  {name:'Redline Energy', tier:1, cat:'energy', color:'#d8443a', tag:'Fuel the finish.', trait:'marketing'},
+  {name:'Trailhead Motors', tier:1, cat:'auto', color:'#a9762f', tag:'Go anywhere.', trait:'loyal'},
+  // Tier 2 — Premium
+  {name:'Meridian Golf', tier:2, cat:'equipment', color:'#d6a63a', tag:'The line you trust.', trait:'performance'},
+  {name:'Ironclad', tier:2, cat:'finance', color:'#8592a0', tag:'Nothing left to chance.', trait:'demanding'},
+  {name:'Vanguard Athletic', tier:2, cat:'apparel', color:'#c0384a', tag:'Lead from the front.', trait:'demanding'},
+  {name:'Halcyon Air', tier:2, cat:'airline', color:'#4fb0d0', tag:'Calm in the skies.', trait:'marketing'},
+  {name:'Aeris', tier:2, cat:'tech', color:'#3fc0b0', tag:'Every shot, measured.', trait:'steady'},
+  {name:'Sterling Trust', tier:2, cat:'finance', color:'#3f8f6a', tag:'Wealth, well played.', trait:'loyal'},
+  // Tier 3 — Global
+  {name:'Apex Athletic', tier:3, cat:'apparel', color:'#e0b23a', tag:'Above the rest.', trait:'performance'},
+  {name:'Monarch', tier:3, cat:'luxury', color:'#9a6fe0', tag:'Time is everything.', trait:'demanding'},
+  {name:'Aurora Global', tier:3, cat:'airline', color:'#3fb08a', tag:'The world, connected.', trait:'marketing'},
+  {name:'Nimbus', tier:3, cat:'tech', color:'#6f8ae8', tag:'Golf in the cloud.', trait:'steady'},
+  {name:'Veloce', tier:3, cat:'auto', color:'#d43a3a', tag:'Pure velocity.', trait:'performance'},
+  {name:'Zenith Bank', tier:3, cat:'finance', color:'#c9a24a', tag:'At the summit of finance.', trait:'patient'}
+];
+const BRAND_BY_NAME={}; BRANDS.forEach(b=>BRAND_BY_NAME[b.name]=b);
+function brandInfo(name){ return BRAND_BY_NAME[name]||{name:name||'Sponsor', tier:0, cat:'apparel', color:'#5fd0e0', tag:'', trait:'steady'}; }
+function brandsOfTier(t){ return BRANDS.filter(b=>b.tier===t).map(b=>b.name); }
+function brandTrait(name){ return BRAND_TRAITS[brandInfo(name).trait]||BRAND_TRAITS.steady; }
+function brandInitials(name){ const w=String(name).replace(/&/g,'').split(/\s+/).filter(Boolean);
+  return ((w[0]||'?')[0]+(w[1]?w[1][0]:'')).toUpperCase(); }
+// a fake logo mark + wordmark: a colour-blocked initials tile + the brand name (+ optional tagline/category)
+function brandBadge(name, opts){ opts=opts||{}; const b=brandInfo(name), sz=opts.sz||22;
+  return `<span style="display:inline-flex;align-items:center;gap:8px;min-width:0">
+    <span style="width:${sz}px;height:${sz}px;flex:0 0 auto;border-radius:${Math.round(sz*0.28)}px;background:linear-gradient(135deg,${b.color},${b.color}bb);color:#0c1116;font-weight:900;display:inline-flex;align-items:center;justify-content:center;font-size:${Math.round(sz*0.46)}px;letter-spacing:-.5px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)">${brandInitials(name)}</span>
+    <span style="min-width:0"><span style="font-weight:800;color:${opts.on||'var(--oncard)'};white-space:nowrap">${esc(name)}</span>${opts.cat?`<span class="small" style="display:block;color:#8fa7b3;letter-spacing:.04em">${BRAND_CATS[b.cat]||''}${opts.trait?' · '+esc(brandTrait(name).label):''}</span>`:''}</span></span>`; }
 function sponsorTierInfo(t){ return SPONSOR_TIERS[Math.max(0,Math.min(SPONSOR_TIERS.length-1,t|0))]; }
-function sponsorRelMult(rel){ return 1 + 0.06*(Math.max(1,Math.min(SPONSOR_REL_MAX,rel||1))-1); }   // +6%/level, cap +24%
-function sponsorFolMult(){ const f=(careerStory().followers)||FOLLOWERS_START;
-  return 1 + Math.max(0, Math.min(0.6, (Math.log10(Math.max(10000,f))-4)*0.2)); }   // 10k→+0, 100k→+.2, 1M→+.4, 10M→+.6
-function sponsorPick(tier, avoid, rng){ const all=sponsorTierInfo(tier).brands, pool=all.filter(b=>b!==avoid), p=pool.length?pool:all;
+function sponsorRelMult(rel, brand){ const step=(brandTrait(brand).relStep)||0.06;   // loyal brands grow faster (+10%/lvl vs +6%)
+  return 1 + step*(Math.max(1,Math.min(SPONSOR_REL_MAX,rel||1))-1); }
+function sponsorFolMult(brand){ const f=(careerStory().followers)||FOLLOWERS_START;
+  const base=Math.max(0, Math.min(0.6, (Math.log10(Math.max(10000,f))-4)*0.2));   // 10k→+0, 100k→+.2, 1M→+.4, 10M→+.6
+  return 1 + base*((brandTrait(brand).folBoost)||1); }   // image-driven brands amplify the follower effect
+function sponsorPick(tier, avoid, rng){ const all=brandsOfTier(tier), pool=all.filter(b=>b!==avoid), p=pool.length?pool:all;
   return p[Math.floor((rng?rng():Math.random())*p.length)]; }
 // your "market value" to sponsors: following + current OVR + career achievement (roughly 0-120)
 function sponsorMarketValue(){ const st=careerStory(), c=S.career||{};
@@ -6112,7 +6171,7 @@ function eligibleSponsorTier(){ const v=sponsorMarketValue(); let t=0; for(let i
 // ensure a committed sponsor relationship exists (migrate a legacy lastContract, else seed an entry deal)
 function ensureSponsor(){ const c=(S.career=S.career||{});
   if(!c.sponsor){ const lc=c.lastContract, rng=mulberry32((((S.careerSeed||1)>>>0)^0x53504f4e)>>>0);
-    if(lc && lc.sponsor){ let tier=0; SPONSOR_TIERS.forEach((T,i)=>{ if(T.brands.includes(lc.sponsor)) tier=i; });
+    if(lc && lc.sponsor){ const tier=(BRAND_BY_NAME[lc.sponsor]?brandInfo(lc.sponsor).tier:0);
       c.sponsor={brand:lc.sponsor, tier, rel:Math.max(1,Math.min(SPONSOR_REL_MAX,1+(lc.renewals||0))), seasons:(lc.renewals||0)+1}; }
     else c.sponsor={brand:sponsorPick(0,null,rng), tier:0, rel:1, seasons:0}; }
   return c.sponsor; }
@@ -6139,39 +6198,42 @@ function goalProg(g,t){
 }
 function makeContract(){
   if(S.daily || S.circuitMode || !S.career || !S.season) return null;
-  const sp=ensureSponsor(), ti=sponsorTierInfo(sp.tier);
+  const sp=ensureSponsor(), ti=sponsorTierInfo(sp.tier), tr=brandTrait(sp.brand);
   const me=S.season.me, ovr=me?Math.round(me.skill):(S.career.peakOvr||82), yr=S.year||1, infl=purseMult(yr);
-  // bonuses scale with: purse inflation × sponsor tier (prestige) × your FOLLOWING × RELATIONSHIP loyalty
-  const folM=sponsorFolMult(), relM=sponsorRelMult(sp.rel);
+  // bonuses scale with: purse inflation × sponsor tier × BRAND TRAIT × your FOLLOWING × RELATIONSHIP loyalty
+  const folM=sponsorFolMult(sp.brand), relM=sponsorRelMult(sp.rel, sp.brand), trR=tr.reward||1, trStretch=tr.stretch||1;
   const proveIt=!!(S.career.lastContract && S.career.lastContract.dropped);   // small "prove it" deal right after being dropped
-  const B=v=>Math.max(2e5,Math.round(v*infl*ti.reward*folM*relM*(proveIt?0.82:1)/1e4)*1e4);
-  // a bigger sponsor demands MORE: countable goals scale up, the top tier wants an extra win. Structural
-  // rank goals (Tour Card top-100, Playoffs top-70, Finale top-30) stay put — they map to real cutlines.
-  const dm=1+(ti.diff-1)*0.6;
-  const T=(base,kind)=> (kind==='cuts'||kind==='top10')?Math.max(base,Math.ceil(base*dm)) : (kind==='wins')?(base+(ti.diff>=1.7?1:0)) : base;
+  const B=(v,stretch)=>Math.max(2e5,Math.round(v*infl*ti.reward*trR*folM*relM*(stretch?trStretch:1)*(proveIt?0.82:1)/1e4)*1e4);
+  // a bigger sponsor (and a "demanding" brand) demands MORE: countable goals scale up, the top tier wants an
+  // extra win. Structural rank goals (Tour Card top-100, Playoffs top-70, Finale top-30) map to real cutlines.
+  const effDiff=ti.diff*(tr.diff||1), dm=1+(effDiff-1)*0.6;
+  const T=(base,kind)=> (kind==='cuts'||kind==='top10')?Math.max(base,Math.ceil(base*dm)) : (kind==='wins')?(base+(effDiff>=1.7?1:0)) : base;
   const tier = ovr>=88?'elite' : ovr>=83?'contender' : 'grind';
   let goals;
   if(tier==='grind'){ const c1=T(9,'cuts'), c2=T(2,'top10');
     goals=[{kind:'cuts', target:c1, bonus:B(700000), label:'Make '+c1+' cuts', tag:'FLOOR'},
       {kind:'top10', target:c2, bonus:B(1100000), label:'Record '+c2+' top-10s', tag:'TARGET'},
-      {kind:'ptsRank', target:CARD_LINE, bonus:B(1700000), label:'Keep your Tour Card · top '+CARD_LINE, tag:'CARD', card:true}]; }
+      {kind:'ptsRank', target:CARD_LINE, bonus:B(1700000,true), label:'Keep your Tour Card · top '+CARD_LINE, tag:'CARD', card:true}]; }
   else if(tier==='contender'){ const c1=T(5,'top10'), w=T(1,'wins');
     goals=[{kind:'top10', target:c1, bonus:B(1200000), label:'Record '+c1+' top-10s', tag:'FLOOR'},
       {kind:'ptsRank', target:70, bonus:B(1900000), label:'Reach the Playoffs · top 70', tag:'TARGET'},
-      {kind:'wins', target:w, bonus:B(3200000), label:w>1?('Win '+w+' tournaments'):'Win a tournament', tag:'STRETCH'}]; }
+      {kind:'wins', target:w, bonus:B(3200000,true), label:w>1?('Win '+w+' tournaments'):'Win a tournament', tag:'STRETCH'}]; }
   else { const w=T(2,'wins');
     goals=[{kind:'wins', target:w, bonus:B(2400000), label:'Win '+(w>2?w+' times':'twice'), tag:'FLOOR'},
       {kind:'ptsRank', target:30, bonus:B(2800000), label:'Reach the Tour Cup Finale · top 30', tag:'TARGET'},
-      {kind:'major', target:1, bonus:B(4800000), label:'Win a major', tag:'STRETCH'}]; }
-  return {sponsor:sp.brand, tier, sponsorTier:sp.tier, tierName:ti.name, rel:sp.rel, goals, proveIt};
+      {kind:'major', target:1, bonus:B(4800000,true), label:'Win a major', tag:'STRETCH'}]; }
+  return {sponsor:sp.brand, tier, sponsorTier:sp.tier, tierName:ti.name, rel:sp.rel, trait:brandInfo(sp.brand).trait, goals, proveIt};
 }
 // relationship meter chip (rel level + loyalty %); used in the off-season card, season deal, report card
 function sponsorRelMeterHTML(sp){ const rel=Math.max(1,Math.min(SPONSOR_REL_MAX,sp.rel||1));
-  const pct=Math.round((sponsorRelMult(rel)-1)*100), pips=Array.from({length:SPONSOR_REL_MAX},(_,i)=>
+  const pct=Math.round((sponsorRelMult(rel, sp.brand)-1)*100), pips=Array.from({length:SPONSOR_REL_MAX},(_,i)=>
     `<span style="width:16px;height:6px;border-radius:3px;background:${i<rel?'#ffd45e':'rgba(255,255,255,.14)'}"></span>`).join('');
   return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <span style="display:flex;gap:3px">${pips}</span>
     <span class="small" style="color:#ffd45e;font-weight:800;letter-spacing:0">Loyalty Lv ${rel}${pct>0?' · +'+pct+'% rewards':''}</span></div>`; }
+// signing bonus paid when you switch brands — a one-time cash sweetener that offsets losing your loyalty
+function sponsorSigningBonus(brand){ const ti=sponsorTierInfo(brandInfo(brand).tier);
+  return Math.round(2.4e6*ti.reward*sponsorFolMult(brand)*purseMult(S.year||1)/1e5)*1e5; }
 // bonuses banked from the goals met so far (used live + at settlement)
 function contractEarned(){ const c=S.season&&S.season.contract; if(!c) return 0; const t=S.season.totals[S.season.me.name];
   return c.goals.reduce((s,g)=>s+(goalProg(g,t).done?g.bonus:0),0); }
@@ -6187,12 +6249,13 @@ function contractNode(){
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:4px">
         <div style="flex:1;height:5px;border-radius:4px;background:rgba(255,255,255,.09);overflow:hidden"><div style="height:100%;width:${pr.pct}%;background:${col};border-radius:4px"></div></div>
         <span class="small" style="color:${col};min-width:92px;text-align:right">${esc(pr.txt)}</span></div></div>`; }).join('');
-  const tn=c.tierName||(sponsorTierInfo(c.sponsorTier||0).name);
-  return $(`<div class="scout" style="border-color:#2f6f86;text-align:left;margin:0 0 12px">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
-      <div style="font:800 11px/1 var(--body);letter-spacing:.2em;color:#5fd0e0;text-transform:uppercase">${ic('cart')} ${esc(c.sponsor)} · ${esc(tn)} Deal</div>
-      <div class="small" style="color:#ffd45e;font-weight:800">${done}/${c.goals.length} met · +${fmt(banked)} banked</div></div>
-    ${c.rel?`<div style="margin-top:6px">${sponsorRelMeterHTML({rel:c.rel})}</div>`:''}
+  const tn=c.tierName||(sponsorTierInfo(c.sponsorTier||0).name), bi=brandInfo(c.sponsor);
+  return $(`<div class="scout" style="border-color:${bi.color}66;text-align:left;margin:0 0 12px">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      ${brandBadge(c.sponsor,{cat:true,trait:true})}
+      <div style="text-align:right"><div class="small" style="color:#ffd45e;font-weight:800">${done}/${c.goals.length} met · +${fmt(banked)}</div>
+        <div class="small muted">${esc(tn)} deal</div></div></div>
+    ${c.rel?`<div style="margin-top:8px">${sponsorRelMeterHTML({rel:c.rel,brand:c.sponsor})}</div>`:''}
     ${rows}</div>`);
 }
 // OFF-SEASON sponsor decision: stay with your current brand (compounding loyalty) or upgrade to a bigger
@@ -6200,33 +6263,41 @@ function contractNode(){
 // If there's no pending offer, this just shows your current relationship status (read-only).
 function sponsorDecisionNode(){
   if(S.daily || S.circuitMode || !S.career) return null;
-  const sp=ensureSponsor(), ti=sponsorTierInfo(sp.tier), offer=S.career.sponsorOffer;
-  const wrap=$(`<div class="scout" style="border-color:${offer?'#ffd45e':'#2f6f86'};text-align:left;max-width:560px;margin:0 auto 12px;${offer?'box-shadow:0 0 22px rgba(235,166,31,.16)':''}"></div>`);
+  const sp=ensureSponsor(), ti=sponsorTierInfo(sp.tier), bi=brandInfo(sp.brand), tr=brandTrait(sp.brand), offer=S.career.sponsorOffer;
+  const wrap=$(`<div class="scout" style="border-color:${offer?'#ffd45e':bi.color+'66'};text-align:left;max-width:560px;margin:0 auto 12px;${offer?'box-shadow:0 0 22px rgba(235,166,31,.16)':''}"></div>`);
+  const hist=(S.career.sponsorHistory||[]).map(h=>h.brand);
   if(!offer){
-    wrap.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
-        <div style="font:800 11px/1 var(--body);letter-spacing:.2em;color:#5fd0e0;text-transform:uppercase">${ic('cart')} Sponsor · ${esc(sp.brand)}</div>
-        <div class="small muted">${esc(ti.name)} · Year ${(sp.seasons||0)+1} together</div></div>
+    wrap.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        ${brandBadge(sp.brand,{cat:true,trait:true,sz:26})}
+        <div class="small muted" style="text-align:right">${esc(ti.name)}<br>Year ${(sp.seasons||0)+1} together</div></div>
+      ${bi.tag?`<div class="small" style="color:${bi.color};font-style:italic;margin-top:7px">“${esc(bi.tag)}”</div>`:''}
+      <div class="small muted" style="margin-top:6px">${esc(tr.label)} — ${esc(tr.desc)}</div>
       <div style="margin-top:8px">${sponsorRelMeterHTML(sp)}</div>
-      <div class="small muted" style="margin-top:6px">Keep delivering to deepen the relationship and grow every bonus. A bigger brand may come calling as your following grows.</div>`;
+      <div class="small muted" style="margin-top:6px">Keep delivering to deepen the relationship and grow every bonus. A bigger brand may come calling as your following grows.</div>
+      ${hist.length?`<div class="small muted" style="margin-top:6px">Past sponsors: ${esc(hist.slice(-4).join(', '))}</div>`:''}`;
     return wrap;
   }
-  // there IS an offer — build the compare + choice
-  const nti=sponsorTierInfo(offer.tier);
-  const curFactor=ti.reward*sponsorRelMult(sp.rel), newFactor=nti.reward*sponsorRelMult(1);
-  const pct=Math.round((newFactor/curFactor-1)*100);
+  // there IS an offer — build the two-brand compare + choice
+  const nti=sponsorTierInfo(offer.tier), nbi=brandInfo(offer.brand), ntr=brandTrait(offer.brand);
+  const curFactor=ti.reward*(tr.reward||1)*sponsorRelMult(sp.rel, sp.brand);
+  const newFactor=nti.reward*(ntr.reward||1)*sponsorRelMult(1, offer.brand);
+  const pct=Math.round((newFactor/curFactor-1)*100), signing=sponsorSigningBonus(offer.brand);
   wrap.innerHTML=`<div style="font:800 11px/1 var(--body);letter-spacing:.22em;color:#ffd45e;text-transform:uppercase;display:flex;align-items:center;gap:7px">${ic('cart')} A bigger sponsor is interested</div>
-    <p class="small" style="color:var(--oncard);margin:8px 0 12px">${esc(nti.name)} brand <b style="color:#ffd45e">${esc(offer.brand)}</b> wants to sign you${pct>0?` — about <b style="color:#35d6a0">+${pct}% bigger</b> base rewards`:''}. But the goals are tougher, and you'd start a <b>new relationship</b> from scratch, giving up your loyalty with ${esc(sp.brand)}.</p>
-    <div style="display:grid;gap:9px" class="sponsor-choice"></div>`;
+    <p class="small" style="color:var(--oncard);margin:8px 0 12px"><b style="color:#ffd45e">${esc(offer.brand)}</b> (${esc(nti.name)}) wants to sign you${pct>0?` — about <b style="color:#35d6a0">+${pct}%</b> bigger base rewards`:''}, plus a <b style="color:#ffd45e">${fmt(signing)}</b> signing bonus. But the goals are tougher and you'd start a <b>new relationship</b>, giving up your loyalty with ${esc(sp.brand)}.</p>
+    <div style="display:grid;gap:10px" class="sponsor-choice"></div>`;
   const box=wrap.querySelector('.sponsor-choice');
-  const stay=$(`<button class="btn ghost" style="text-align:left">Stay with ${esc(sp.brand)}
-    <span class="sub">${esc(ti.name)} · Loyalty Lv ${sp.rel}${sponsorRelMult(sp.rel)>1?(' · +'+Math.round((sponsorRelMult(sp.rel)-1)*100)+'% rewards'):''} · familiar goals</span></button>`);
+  const optHTML=(brand,tierName,traitObj,rel,extra)=>`<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;width:100%">
+      <span style="min-width:0">${brandBadge(brand,{cat:true,trait:true})}
+        <span class="small" style="display:block;color:${brandInfo(brand).color};font-style:italic;margin-top:3px">“${esc(brandInfo(brand).tag||'')}”</span></span>
+      <span class="small" style="text-align:right;flex:0 0 auto;color:#9fb3a8;white-space:nowrap">${extra}</span></div>`;
+  const stay=$(`<button class="btn ghost" style="text-align:left;padding:12px 13px">${optHTML(sp.brand, ti.name, tr, sp.rel, 'STAY · Loyalty Lv '+sp.rel+(sponsorRelMult(sp.rel,sp.brand)>1?'<br>+'+Math.round((sponsorRelMult(sp.rel,sp.brand)-1)*100)+'% loyalty':''))}</button>`);
   stay.onclick=()=>{ S.career.sponsorOffer=null; track('sponsor_stay',{brand:sp.brand,tier:sp.tier});
     try{ saveCareer(offseasonResumeExtra()); }catch(e){} toast('Loyalty with '+sp.brand+' continues'); render(); };
-  const sw=$(`<button class="btn goldfill" style="text-align:left">Sign with ${esc(offer.brand)}
-    <span class="sub">${esc(nti.name)} · bigger rewards, tougher goals · relationship resets to Lv 1</span></button>`);
-  sw.onclick=()=>{ S.career.sponsor={brand:offer.brand, tier:offer.tier, rel:1, seasons:0}; S.career.sponsorOffer=null;
-    track('sponsor_switch',{brand:offer.brand,tier:offer.tier}); try{ saveCareer(offseasonResumeExtra()); }catch(e){}
-    toast('Signed with '+offer.brand+' — new chapter begins'); render(); };
+  const sw=$(`<button class="btn goldfill" style="text-align:left;padding:12px 13px">${optHTML(offer.brand, nti.name, ntr, 1, 'SIGN · +'+fmt(signing)+'<br>tougher goals')}</button>`);
+  sw.onclick=()=>{ (S.career.sponsorHistory=S.career.sponsorHistory||[]).push({brand:sp.brand, tier:sp.tier, endYear:S.year||1, reason:'switched'});
+    S.career.sponsor={brand:offer.brand, tier:offer.tier, rel:1, seasons:0}; S.career.pendingSigning=signing; S.career.sponsorOffer=null;
+    track('sponsor_switch',{brand:offer.brand,tier:offer.tier,signing}); try{ saveCareer(offseasonResumeExtra()); }catch(e){}
+    toast('Signed with '+offer.brand+' · +'+fmt(signing)+' signing bonus'); render(); };
   box.appendChild(stay); box.appendChild(sw);
   return wrap;
 }
@@ -6243,11 +6314,13 @@ function contractReportHTML(contract, states, bonus){
     : all ? 'Every goal delivered. Your sponsor is thrilled, the relationship deepens and next year’s bonuses grow.'
     : met===0 ? 'A tough year. The relationship took a hit.'
     : `${met} of ${contract.goals.length} goals met. The relationship holds, there’s more on the table.`;
-  return `<div class="scout" style="border-color:${all?'#ffd45e':'#2f6f86'};text-align:left;margin:10px auto;max-width:520px;${all?'box-shadow:0 0 22px rgba(235,166,31,.18)':''}">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
-      <div style="font:800 11px/1 var(--body);letter-spacing:.2em;color:${all?'#ffd45e':'#5fd0e0'};text-transform:uppercase">${ic('cart')} ${esc(contract.sponsor)} · Report Card</div>
-      <div class="small" style="color:#ffd45e;font-weight:800">${met}/${contract.goals.length} met · +${fmt(bonus)}</div></div>
+  return `<div class="scout" style="border-color:${all?'#ffd45e':brandInfo(contract.sponsor).color+'66'};text-align:left;margin:10px auto;max-width:520px;${all?'box-shadow:0 0 22px rgba(235,166,31,.18)':''}">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+      ${brandBadge(contract.sponsor,{cat:true})}
+      <div style="text-align:right"><div class="small" style="color:#ffd45e;font-weight:800">${met}/${contract.goals.length} met · +${fmt(bonus)}</div>
+        <div class="small muted">Report Card</div></div></div>
     ${rows}
+    ${(S.season&&S.season._signingPaid>0)?`<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.06)"><span class="small" style="color:#ffd45e;font-weight:700">✍ Signing bonus${sp?' · '+esc(sp.brand):''}</span><span class="mono small" style="color:#ffd45e;font-weight:800">+${fmt(S.season._signingPaid)}</span></div>`:''}
     ${(sp&&!dropped)?`<div style="margin-top:8px">${sponsorRelMeterHTML(sp)}</div>`:''}
     <div class="small" style="color:#9fb3a8;margin-top:8px">${outlook}</div></div>`;
 }
@@ -7678,7 +7751,9 @@ function scrSummary(){
   const goalStates=contract?contract.goals.map(g=>({g, done:goalProg(g,t).done})):[];
   const contractBonus=goalStates.reduce((s,x)=>s+(x.done?x.g.bonus:0),0);
   const goalsMet=goalStates.filter(x=>x.done).length;
-  const netTotal=ec.net+contractBonus;
+  // one-time SIGNING BONUS from switching brands last off-season, paid this season (stable across re-renders)
+  const signing=(S.season._signingPaid!=null)?S.season._signingPaid:((!S.daily&&!S.circuitMode&&S.career&&S.career.pendingSigning)||0);
+  const netTotal=ec.net+contractBonus+signing;
   const netCol0=netTotal>=0?'#35d6a0':'#E14A33';
   if(!S.recorded){S.recorded=true;
     // COINS: a season SIMMED to the end (Skip to end of season) earns NO coins. Coins accrue per event, so
@@ -7712,14 +7787,15 @@ function scrSummary(){
       // CS228: advance the RELATIONSHIP — deliver ≥2 goals → loyalty grows (bigger bonuses next year); a
       // shutout dings it and earns a strike; TWO shutouts in a row and the sponsor drops you to a fresh
       // entry-tier deal. A single tough year never loses the deal, so loyalty is worth building.
-      const sp=ensureSponsor(), total=contract.goals.length;
+      const sp=ensureSponsor(), total=contract.goals.length, dropAt=(brandTrait(sp.brand).strikes||2);   // "patient" brands tolerate 3 strikes
       if(goalsMet>=2){ sp.rel=Math.min(SPONSOR_REL_MAX,(sp.rel||1)+1); sp.strikes=0; }
       else if(goalsMet===0){ sp.rel=Math.max(1,(sp.rel||1)-1); sp.strikes=(sp.strikes||0)+1; }
       else sp.strikes=0;   // met exactly 1 → hold steady
       sp.seasons=(sp.seasons||0)+1;
       let dropped=false;
-      if((sp.strikes||0)>=2){ dropped=true; const rng=mulberry32((((S.careerSeed||1)>>>0)^(((S.year||1)*0x71c07)>>>0))>>>0);
-        S.career.sponsor={brand:sponsorPick(0, sp.brand, rng), tier:0, rel:1, seasons:0}; }
+      if((sp.strikes||0)>=dropAt){ dropped=true; const rng=mulberry32((((S.careerSeed||1)>>>0)^(((S.year||1)*0x71c07)>>>0))>>>0);
+        const nb=sponsorPick(0, sp.brand, rng); (S.career.sponsorHistory=S.career.sponsorHistory||[]).push({brand:sp.brand, tier:sp.tier, endYear:S.year||1, reason:'dropped'});
+        S.career.sponsor={brand:nb, tier:0, rel:1, seasons:0}; }
       S.career.lastContract={sponsor:contract.sponsor, met:goalsMet, total, flop, missedCard, dropped};
       const st=careerStory();
       const line = goalsMet===contract.goals.length ? `Delivered every goal for ${contract.sponsor} (+${fmt(contractBonus)})`
@@ -7728,6 +7804,8 @@ function scrSummary(){
       st.feed.unshift({year:S.year||1, evt:'Season', text:line}); if(st.feed.length>60) st.feed.length=60;
       if(contractBonus>0) track('contract_settled',{met:goalsMet,bonus:Math.round(contractBonus),tier:contract.tier});
     }
+    // consume the one-time signing bonus (set at the off-season switch); store it so re-renders stay stable
+    S.season._signingPaid=signing; if(S.career) S.career.pendingSigning=0;
     if(t.best<S.career.best)S.career.best=t.best;
     // record the actual tournaments won this season for the career Wins list
     S.season.results.forEach(r=>{ const meR=r.order.find(o=>o.p.you); if(meR&&meR.pos===1) S.career.winsList.push({name:r.evt.name,year:S.year||1,major:!!r.evt.major}); });
@@ -7896,6 +7974,7 @@ function scrSummary(){
       row('Tour overhead · coach, equipment, taxes, team','−'+fmt(ec.fixed),'#E14A33'),
       row('Total expenses','−'+fmt(ec.costs),'#E14A33',true),
       contractBonus>0?row(contract.sponsor+' · sponsor bonuses','+'+fmt(contractBonus),'#ffd45e'):'',
+      signing>0?row((S.career&&S.career.sponsor?S.career.sponsor.brand:'New sponsor')+' · signing bonus','+'+fmt(signing),'#ffd45e'):'',
       `<div style="display:flex;justify-content:space-between;gap:14px;padding:8px 2px 2px"><span class="small" style="font-weight:800">Net profit</span><span class="mono" style="color:${netCol0};font-weight:800">${fmtSigned(netTotal)}</span></div>`
     ].join('');
     expWrap.appendChild($(`<div class="scout" style="max-width:460px;margin:8px auto 0;text-align:left">${items}</div>`));

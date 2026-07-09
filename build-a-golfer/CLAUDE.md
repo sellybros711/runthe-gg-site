@@ -5788,6 +5788,37 @@ allows Google Fonts, or self-host Anton.*
   headless seasons + off-season + summary render with zero page errors. Tunable: `SPONSOR_TIERS`
   reward/diff, `SPONSOR_TIER_REQ` thresholds, `SPONSOR_REL_MAX`, the folMult curve.
 
+- **CS229 — fake-brand catalog: named sponsors with identities, logos, personalities + signing bonuses
+  (owner: "can we add fake brands? I want to build this feature out a lot more").** Built the tiered
+  sponsor system (CS228) out into a full roster of fictional brands, each with real character.
+  • **24 fictional brands** (`BRANDS`) across the 4 tiers, each with a **category** (Apparel / Equipment /
+    Motors / Finance / Luxury / Energy / Airline / Tech / Beverage), a **brand colour**, a **tagline**
+    ("Forged in black.", "Above the rest.", "Time is everything."), and a **personality trait**.
+  • **Fake logos + wordmarks** (`brandBadge`): a colour-blocked initials tile ("SS", "OG", "AA") + the
+    brand name + category/trait, rendered everywhere the sponsor shows — the live season deal, the report
+    card, the off-season decision, and both offer options.
+  • **Personality traits change the deal** (`BRAND_TRAITS`), so two same-tier offers feel different and
+    choosing is about more than money: **Demanding** (bigger money, tougher goals), **Loyalty-first**
+    (relationship bonus grows faster, +10%/lvl vs +6%), **Image-driven** (your following moves the money
+    more), **Patient** (tolerates 3 shutout years before dropping you, not 2), **Big-stage** (win & major
+    bonuses boosted), **Steady** (balanced). All wired into `makeContract`/settlement.
+  • **Signing bonus** (`sponsorSigningBonus`): switching to a new brand pays a one-time cash sweetener
+    (scales with tier + following, e.g. ~$8M for a Global brand) that offsets losing your loyalty — shown
+    in the offer, paid into next season's net, and itemized on the report card + expense sheet.
+  • **Two-brand compare** in the off-season offer card (both brands with logo, category, trait, tagline,
+    and the loyalty/signing tradeoff), a **sponsor history** ("Past sponsors: …"), and the "a sponsor comes
+    calling" press storyline now **names a real brand** one tier above your current deal.
+  • Added "sponsor brands are fictional" to the not-affiliated disclaimer (invented names could
+    coincidentally match a real company).
+  Verified in Playwright: 24 brands across all tiers with valid traits; the badge renders; each trait
+  moves the deal correctly (demanding pays more + harder, performance boosts the stretch bonus, loyal
+  grows faster at Lv5, image-driven raises the follower multiplier 1.26→1.44, patient = 3 strikes);
+  signing bonus is positive, pays into net exactly once (stable across re-renders), clears the pending
+  flag, and shows on the report card; the storyline names a brand ("…Vantage wants your name on the
+  bag"); a 6-season career runs clean with named brands throughout; zero page errors. Screenshots confirm
+  the branded season-deal strip and the two-brand offer card. Tunable: the `BRANDS` catalog, `BRAND_TRAITS`
+  modifiers, `sponsorSigningBonus`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
