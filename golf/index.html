@@ -4861,9 +4861,9 @@ const ACC_BBOX={
 };
 // per-slot placement: target width (frac of base W) or height (frac of base H), anchor point (anatomy key) + nudge
 const ACC_PLACE={
-  eyes:  {wFrac:0.34,ax:'faceCx',ay:'eyeY'},                            // across the eyes
+  eyes:  {wFrac:0.25,ax:'faceCx',ay:'eyeY'},                            // across the eyes (sized to the face, not wider)
   head:  {wFrac:0.33,ax:'faceCx',ay:'browLine',anch:'bottom',dy:10},   // sized to the ~140px head; brim just below the brow, crown seated on the dome; centred on the face-feature axis
-  shoes: {wFrac:0.92,ax:'footCx',ay:'footY',anch:'bottom',dy:10},
+  shoes: {wFrac:0.62,ax:'footCx',ay:'footY',anch:'bottom',dy:10},      // pair sized to the stance, not oversized
   driver:{spanY:['gripY','footY'],ax:'handRx'},                        // grip at the right hand, head on the ground (spans hand→ground on both bodies)
   putter:{spanY:['gripY','footY'],ax:'handLx',dx:12},                  // grip at the left hand, head on the ground
   ball:  {wFrac:0.058,ax:'footCx',ay:'footY',dx:-48,dy:32},            // resting on the ground at the golfer's feet (ball at address)
