@@ -5830,6 +5830,19 @@ allows Google Fonts, or self-host Anton.*
   state contains "AI", the button still works, zero page errors. (Remaining "AI"/"bot" strings are all
   code comments, not user-facing.)
 
+- **CS231 — cleaner sponsor decision card (owner/Jordo: "this can look cleaner + easier to read").** The
+  CS229 stay/switch offer crammed logo + category + trait + italic tagline + a right-aligned two-line meta
+  into each button, which read as a wall of text (and the signing bonus was easy to misread). Redesigned
+  each option as a clean card: a top row of **logo tile + brand name (title case) + a `STAY ▸`/`SIGN ▸`
+  action word**, a small `Tier · Trait` subtitle, then a divider and **two tidy fact lines** — STAY:
+  "Loyalty Lv N · +X% rewards / Same goals…"; SIGN: "**+X% rewards · +$5.5M signing bonus** / Tougher
+  goals · loyalty resets to Lv 1". Dropped the tagline from the buttons, shortened the intro to one line,
+  set the buttons to mixed-case (`text-transform:none`) so the facts read naturally instead of shouting,
+  and used a new compact `fmtShort` money format ($5.5M) so the signing bonus is unmistakably a positive.
+  New `brandTile(name,sz)` helper renders just the colour-blocked logo. Verified in Playwright (renders,
+  STAY+SIGN present, zero page errors); screenshot confirms the clear hierarchy. Behaviour/plumbing
+  unchanged — layout only.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

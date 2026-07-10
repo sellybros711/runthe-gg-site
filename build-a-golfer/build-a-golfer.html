@@ -841,6 +841,11 @@ let rollTimer=null;
 let seasonTimer=null;
 const add=(el)=>RT.appendChild(el);
 const fmt=(n)=>'$'+Math.round(n).toLocaleString('en-US');
+const fmtShort=(n)=>{ n=Math.round(n||0); const s=n<0?'-':''; n=Math.abs(n);
+  if(n>=1e9) return s+'$'+(n/1e9).toFixed(1).replace(/\.0$/,'')+'B';
+  if(n>=1e6) return s+'$'+(n/1e6).toFixed(1).replace(/\.0$/,'')+'M';
+  if(n>=1e3) return s+'$'+Math.round(n/1e3)+'k';
+  return s+'$'+n; };
 const fmtSigned=(n)=>(n<0?'−':'')+'$'+Math.round(Math.abs(n)).toLocaleString('en-US');
 const par=(s)=>s===0?'E':(s>0?'+'+s:''+s);
 const ord=(n)=>{const v=n%100; if(v>=11&&v<=13)return n+'th'; return n+({1:'st',2:'nd',3:'rd'}[n%10]||'th');};
@@ -6147,6 +6152,9 @@ function brandsOfTier(t){ return BRANDS.filter(b=>b.tier===t).map(b=>b.name); }
 function brandTrait(name){ return BRAND_TRAITS[brandInfo(name).trait]||BRAND_TRAITS.steady; }
 function brandInitials(name){ const w=String(name).replace(/&/g,'').split(/\s+/).filter(Boolean);
   return ((w[0]||'?')[0]+(w[1]?w[1][0]:'')).toUpperCase(); }
+// just the colour-blocked logo tile (no wordmark) — for the clean sponsor-decision option cards
+function brandTile(name, sz){ sz=sz||34; const b=brandInfo(name);
+  return `<span style="width:${sz}px;height:${sz}px;flex:0 0 auto;border-radius:${Math.round(sz*0.26)}px;background:linear-gradient(135deg,${b.color},${b.color}bb);color:#0c1116;font-weight:900;display:inline-flex;align-items:center;justify-content:center;font-size:${Math.round(sz*0.44)}px;letter-spacing:-.5px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)">${brandInitials(name)}</span>`; }
 // a fake logo mark + wordmark: a colour-blocked initials tile + the brand name (+ optional tagline/category)
 function brandBadge(name, opts){ opts=opts||{}; const b=brandInfo(name), sz=opts.sz||22;
   return `<span style="display:inline-flex;align-items:center;gap:8px;min-width:0">
@@ -6277,27 +6285,36 @@ function sponsorDecisionNode(){
       ${hist.length?`<div class="small muted" style="margin-top:6px">Past sponsors: ${esc(hist.slice(-4).join(', '))}</div>`:''}`;
     return wrap;
   }
-  // there IS an offer — build the two-brand compare + choice
-  const nti=sponsorTierInfo(offer.tier), nbi=brandInfo(offer.brand), ntr=brandTrait(offer.brand);
+  // there IS an offer — clean two-option compare (owner/Jordo: "this can look cleaner + easier to read")
+  const nti=sponsorTierInfo(offer.tier), ntr=brandTrait(offer.brand);
   const curFactor=ti.reward*(tr.reward||1)*sponsorRelMult(sp.rel, sp.brand);
   const newFactor=nti.reward*(ntr.reward||1)*sponsorRelMult(1, offer.brand);
   const pct=Math.round((newFactor/curFactor-1)*100), signing=sponsorSigningBonus(offer.brand);
+  const relPct=Math.round((sponsorRelMult(sp.rel,sp.brand)-1)*100);
   wrap.innerHTML=`<div style="font:800 11px/1 var(--body);letter-spacing:.22em;color:#ffd45e;text-transform:uppercase;display:flex;align-items:center;gap:7px">${ic('cart')} A bigger sponsor is interested</div>
-    <p class="small" style="color:var(--oncard);margin:8px 0 12px"><b style="color:#ffd45e">${esc(offer.brand)}</b> (${esc(nti.name)}) wants to sign you${pct>0?` — about <b style="color:#35d6a0">+${pct}%</b> bigger base rewards`:''}, plus a <b style="color:#ffd45e">${fmt(signing)}</b> signing bonus. But the goals are tougher and you'd start a <b>new relationship</b>, giving up your loyalty with ${esc(sp.brand)}.</p>
+    <p class="small muted" style="margin:7px 0 12px"><b style="color:#ffd45e">${esc(offer.brand)}</b> wants to sign you. Bigger money, tougher goals — and your loyalty with ${esc(sp.brand)} starts over. Your call:</p>
     <div style="display:grid;gap:10px" class="sponsor-choice"></div>`;
   const box=wrap.querySelector('.sponsor-choice');
-  const optHTML=(brand,tierName,traitObj,rel,extra)=>`<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;width:100%">
-      <span style="min-width:0">${brandBadge(brand,{cat:true,trait:true})}
-        <span class="small" style="display:block;color:${brandInfo(brand).color};font-style:italic;margin-top:3px">“${esc(brandInfo(brand).tag||'')}”</span></span>
-      <span class="small" style="text-align:right;flex:0 0 auto;color:#9fb3a8;white-space:nowrap">${extra}</span></div>`;
-  const stay=$(`<button class="btn ghost" style="text-align:left;padding:12px 13px">${optHTML(sp.brand, ti.name, tr, sp.rel, 'STAY · Loyalty Lv '+sp.rel+(sponsorRelMult(sp.rel,sp.brand)>1?'<br>+'+Math.round((sponsorRelMult(sp.rel,sp.brand)-1)*100)+'% loyalty':''))}</button>`);
+  // one clean card: logo + name + action word on top, then two neat fact lines
+  const optCard=(brand,tierName,traitLabel,action,facts,dark)=>{
+    const nameCol=dark?'#171c12':'var(--oncard)', subCol=dark?'rgba(23,28,18,.72)':'#9fb3a8', line=dark?'rgba(0,0,0,.16)':'rgba(255,255,255,.1)';
+    return `<div style="display:flex;align-items:center;gap:11px;width:100%">
+        ${brandTile(brand,36)}
+        <span style="flex:1;min-width:0">
+          <span style="display:block;font-weight:800;font-size:15px;line-height:1.15;color:${nameCol};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(brand)}</span>
+          <span style="display:block;font-size:11px;letter-spacing:.02em;margin-top:1px;color:${subCol}">${esc(tierName)} · ${esc(traitLabel)}</span></span>
+        <span style="flex:0 0 auto;font-weight:900;font-size:12px;letter-spacing:.1em;color:${nameCol}">${action} ▸</span></div>
+      <div style="margin-top:8px;padding-top:7px;border-top:1px solid ${line};font-size:12px;line-height:1.55;color:${dark?'rgba(23,28,18,.85)':'var(--oncard)'}">${facts}</div>`; };
+  const stayFacts=`Loyalty Lv ${sp.rel}${relPct>0?' · <b>+'+relPct+'% rewards</b>':''}<br>Same goals · keep building the relationship`;
+  const signFacts=`${pct>0?'<b>+'+pct+'% rewards</b> · ':''}<b>+${fmtShort(signing)} signing bonus</b><br>Tougher goals · loyalty resets to Lv 1`;
+  const stay=$(`<button class="btn ghost" style="text-align:left;padding:13px 14px;display:block;text-transform:none">${optCard(sp.brand, ti.name, tr.label, 'STAY', stayFacts, false)}</button>`);
   stay.onclick=()=>{ S.career.sponsorOffer=null; track('sponsor_stay',{brand:sp.brand,tier:sp.tier});
     try{ saveCareer(offseasonResumeExtra()); }catch(e){} toast('Loyalty with '+sp.brand+' continues'); render(); };
-  const sw=$(`<button class="btn goldfill" style="text-align:left;padding:12px 13px">${optHTML(offer.brand, nti.name, ntr, 1, 'SIGN · +'+fmt(signing)+'<br>tougher goals')}</button>`);
+  const sw=$(`<button class="btn goldfill" style="text-align:left;padding:13px 14px;display:block;text-transform:none">${optCard(offer.brand, nti.name, ntr.label, 'SIGN', signFacts, true)}</button>`);
   sw.onclick=()=>{ (S.career.sponsorHistory=S.career.sponsorHistory||[]).push({brand:sp.brand, tier:sp.tier, endYear:S.year||1, reason:'switched'});
     S.career.sponsor={brand:offer.brand, tier:offer.tier, rel:1, seasons:0}; S.career.pendingSigning=signing; S.career.sponsorOffer=null;
     track('sponsor_switch',{brand:offer.brand,tier:offer.tier,signing}); try{ saveCareer(offseasonResumeExtra()); }catch(e){}
-    toast('Signed with '+offer.brand+' · +'+fmt(signing)+' signing bonus'); render(); };
+    toast('Signed with '+offer.brand+' · +'+fmtShort(signing)+' signing bonus'); render(); };
   box.appendChild(stay); box.appendChild(sw);
   return wrap;
 }
