@@ -6002,6 +6002,17 @@ allows Google Fonts, or self-host Anton.*
   attempt — holds. Zero page errors. Deployed to /golf. (No SQL: the separate Legend board/records tier
   already exists from CS63; free plays just post there as before, minus the attempt cost.)
 
+- **CS238 — restyled the chip/tag pills (owner: "make these little boxes more visually appealing against the
+  green").** The `.tag` and `.online-tag` pills (used across the app — course/mode chips, section kickers,
+  playoff/spotlight tags, the H2H online strip) were flat transparent outlines that read weakly on the green.
+  Rebuilt as proper chips: a `currentColor`-tinted dark fill (`color-mix`, so each pill tints to whatever
+  accent its inline `color` sets — gold/teal/red/green), a soft drop shadow + inner top highlight for depth,
+  tighter uppercase tracking. `.online-tag` keeps its teal identity with a richer gradient + soft glow. Solid
+  inline `border-color`/`background` overrides (e.g. cup-theme tags) still win, so nothing themed regressed.
+  Verified a swatch of accent colors renders cleanly on the page bg with zero errors. Also exported
+  `runthetour_courses.csv` (39 daily courses: name, location, biome, par, yards, tour avg, signature holes,
+  description) for the owner to build per-course visual-theme prompts.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
