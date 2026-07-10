@@ -219,7 +219,15 @@ window.GA_ID='G-L29P5MRWKE';
   .cmeter>span{display:block;height:100%;border-radius:6px;transform-origin:left;transition:width .7s cubic-bezier(.3,1,.4,1)}
   .statpill{display:flex;flex-direction:column;gap:3px;min-width:0}
   .statpill .lab{font:800 9.5px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:#7fa8b8}
-  @media (prefers-reduced-motion:reduce){ .flashbulb{animation:none!important;display:none} }
+  /* CS234 sponsor-decision option cards — two equal-weight panels, accent = choice type */
+  .sp-opt{position:relative;text-align:left;cursor:pointer;overflow:hidden;border-radius:14px;border:1px solid var(--line);
+    background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.14));box-shadow:0 8px 20px -12px rgba(0,0,0,.6);
+    transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease}
+  .sp-opt:hover{transform:translateY(-1px);box-shadow:0 12px 26px -12px rgba(0,0,0,.72);border-color:var(--acc)}
+  .sp-opt:active{transform:translateY(0)}
+  .sp-opt:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+  .sp-opt .sp-acc{height:4px;width:100%}
+  @media (prefers-reduced-motion:reduce){ .flashbulb{animation:none!important;display:none} .sp-opt{transition:none} }
   @keyframes celebSpot{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
   @media (prefers-reduced-motion:reduce){ .celebrate,.celeb-trophy,.celeb-kicker,.celeb-title,.celeb-sub,.celeb-cheque,.celeb-tally,.celeb-actions,.celebrate .spot{animation-duration:.01ms} }
   .btn:disabled{opacity:.45; cursor:not-allowed}
@@ -6289,36 +6297,53 @@ function sponsorDecisionNode(){
       ${hist.length?`<div class="small muted" style="margin-top:6px">Past sponsors: ${esc(hist.slice(-4).join(', '))}</div>`:''}`;
     return wrap;
   }
-  // there IS an offer — clean two-option compare (owner/Jordo: "this can look cleaner + easier to read")
+  // there IS an offer — two BALANCED, structured cards (owner/Jordo: "not sure why one is clear and one is
+  // yellow... each element should stand out so you can decide quicker"). Both are equal-weight dark panels;
+  // the accent colour now means the CHOICE TYPE (teal = stay/safe, gold = switch/new), not "the loud one".
   const nti=sponsorTierInfo(offer.tier), ntr=brandTrait(offer.brand);
   const curFactor=ti.reward*(tr.reward||1)*sponsorRelMult(sp.rel, sp.brand);
   const newFactor=nti.reward*(ntr.reward||1)*sponsorRelMult(1, offer.brand);
   const pct=Math.round((newFactor/curFactor-1)*100), signing=sponsorSigningBonus(offer.brand);
   const relPct=Math.round((sponsorRelMult(sp.rel,sp.brand)-1)*100);
-  wrap.innerHTML=`<div style="font:800 11px/1 var(--body);letter-spacing:.22em;color:#ffd45e;text-transform:uppercase;display:flex;align-items:center;gap:7px">${ic('cart')} A bigger sponsor is interested</div>
-    <p class="small muted" style="margin:7px 0 12px"><b style="color:#ffd45e">${esc(offer.brand)}</b> wants to sign you. Bigger money, tougher goals — and your loyalty with ${esc(sp.brand)} starts over. Your call:</p>
-    <div style="display:grid;gap:10px" class="sponsor-choice"></div>`;
+  const TEAL='#2fc7a8', GOLD='#e6b53e';
+  wrap.innerHTML=`<div style="font:800 11px/1 var(--body);letter-spacing:.22em;color:#ffd45e;text-transform:uppercase;display:flex;align-items:center;gap:7px">${ic('cart')} Sponsorship decision</div>
+    <p class="small" style="margin:7px 0 13px;color:var(--oncard)"><b style="color:#ffd45e">${esc(offer.brand)}</b> wants to sign you. Compare the two deals and choose:</p>
+    <div style="display:grid;gap:11px" class="sponsor-choice"></div>`;
   const box=wrap.querySelector('.sponsor-choice');
-  // one clean card: logo + name + action word on top, then two neat fact lines
-  const optCard=(brand,tierName,traitLabel,action,facts,dark)=>{
-    const nameCol=dark?'#171c12':'var(--oncard)', subCol=dark?'rgba(23,28,18,.72)':'#9fb3a8', line=dark?'rgba(0,0,0,.16)':'rgba(255,255,255,.1)';
-    return `<div style="display:flex;align-items:center;gap:11px;width:100%">
-        ${brandTile(brand,36)}
-        <span style="flex:1;min-width:0">
-          <span style="display:block;font-weight:800;font-size:15px;line-height:1.15;color:${nameCol};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(brand)}</span>
-          <span style="display:block;font-size:11px;letter-spacing:.02em;margin-top:1px;color:${subCol}">${esc(tierName)} · ${esc(traitLabel)}</span></span>
-        <span style="flex:0 0 auto;font-weight:900;font-size:12px;letter-spacing:.1em;color:${nameCol}">${action} ▸</span></div>
-      <div style="margin-top:8px;padding-top:7px;border-top:1px solid ${line};font-size:12px;line-height:1.55;color:${dark?'rgba(23,28,18,.85)':'var(--oncard)'}">${facts}</div>`; };
-  const stayFacts=`Loyalty Lv ${sp.rel}${relPct>0?' · <b>+'+relPct+'% rewards</b>':''}<br>Same goals · keep building the relationship`;
-  const signFacts=`${pct>0?'<b>+'+pct+'% rewards</b> · ':''}<b>+${fmtShort(signing)} signing bonus</b><br>Tougher goals · loyalty resets to Lv 1`;
-  const stay=$(`<button class="btn ghost" style="text-align:left;padding:13px 14px;display:block;text-transform:none">${optCard(sp.brand, ti.name, tr.label, 'STAY', stayFacts, false)}</button>`);
-  stay.onclick=()=>{ S.career.sponsorOffer=null; track('sponsor_stay',{brand:sp.brand,tier:sp.tier});
+  const spRow=(label,value,col)=>`<div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:2px 0">
+      <span class="small" style="color:#8fa7b3;letter-spacing:.02em;flex:0 0 auto">${label}</span>
+      <span style="font-weight:800;font-size:13.5px;color:${col||'var(--oncard)'};text-align:right;min-width:0">${value}</span></div>`;
+  const spCard=(brand,tierLabel,action,accent,rowsHtml)=>{
+    const c=$(`<div class="sp-opt" role="button" tabindex="0" aria-label="${esc(action)} ${esc(brand)}" style="--acc:${accent};border-color:${accent}66">
+        <div class="sp-acc" style="background:${accent}"></div>
+        <div style="padding:12px 14px 13px">
+          <div style="display:flex;align-items:center;gap:11px">
+            ${brandTile(brand,40)}
+            <span style="flex:1;min-width:0">
+              <span style="display:block;font-weight:800;font-size:16px;line-height:1.1;color:var(--oncard);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(brand)}</span>
+              <span class="small" style="display:block;color:#9fb3a8;margin-top:2px">${esc(tierLabel)}</span></span>
+            <span style="flex:0 0 auto;background:${accent};color:#07130e;font-weight:900;font-size:12px;letter-spacing:.12em;padding:7px 13px;border-radius:999px">${action} ›</span></div>
+          <div style="margin-top:11px;padding-top:9px;border-top:1px solid rgba(255,255,255,.09);display:grid;gap:5px">${rowsHtml}</div>
+        </div></div>`);
+    return c; };
+  const stayRows = spRow('Loyalty', `Lv ${sp.rel}${relPct>0?' · +'+relPct+'%':''}`, '#ffd45e')
+    + spRow('Rewards', 'Same as now', 'var(--oncard)')
+    + spRow('Goals', 'Familiar', 'var(--oncard)')
+    + spRow('The play', 'Keep your loyalty', TEAL);
+  const signRows = spRow('Rewards', `+${pct}% bigger`, '#35d6a0')
+    + spRow('Signing bonus', `+${fmtShort(signing)}`, '#ffd45e')
+    + spRow('Goals', 'Tougher', '#e0a53a')
+    + spRow('Loyalty', 'Resets to Lv 1', '#e07a5f');
+  const stay=spCard(sp.brand, `${esc(ti.name)} · ${esc(tr.label)}`, 'STAY', TEAL, stayRows);
+  const doStay=()=>{ S.career.sponsorOffer=null; track('sponsor_stay',{brand:sp.brand,tier:sp.tier});
     try{ saveCareer(offseasonResumeExtra()); }catch(e){} toast('Loyalty with '+sp.brand+' continues'); render(); };
-  const sw=$(`<button class="btn goldfill" style="text-align:left;padding:13px 14px;display:block;text-transform:none">${optCard(offer.brand, nti.name, ntr.label, 'SIGN', signFacts, true)}</button>`);
-  sw.onclick=()=>{ (S.career.sponsorHistory=S.career.sponsorHistory||[]).push({brand:sp.brand, tier:sp.tier, endYear:S.year||1, reason:'switched'});
+  stay.onclick=doStay; stay.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); doStay(); } };
+  const sw=spCard(offer.brand, `${esc(nti.name)} · ${esc(ntr.label)}`, 'SWITCH', GOLD, signRows);
+  const doSwitch=()=>{ (S.career.sponsorHistory=S.career.sponsorHistory||[]).push({brand:sp.brand, tier:sp.tier, endYear:S.year||1, reason:'switched'});
     S.career.sponsor={brand:offer.brand, tier:offer.tier, rel:1, seasons:0}; S.career.pendingSigning=signing; S.career.sponsorOffer=null;
     track('sponsor_switch',{brand:offer.brand,tier:offer.tier,signing}); try{ saveCareer(offseasonResumeExtra()); }catch(e){}
     toast('Signed with '+offer.brand+' · +'+fmtShort(signing)+' signing bonus'); render(); };
+  sw.onclick=doSwitch; sw.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); doSwitch(); } };
   box.appendChild(stay); box.appendChild(sw);
   return wrap;
 }
@@ -6472,14 +6497,14 @@ function momentPlayoffShowHole(){
   if(resolved){
     footer = resolved.youWon
       ? `<div style="font-family:var(--serif);color:#35d6a0;font-weight:800;font-size:24px;margin-top:12px">You won the playoff!</div>`
-      : `<div style="font-family:var(--serif);color:#fff;font-weight:800;font-size:20px;margin-top:12px">Lost in the playoff</div><div class="small" style="color:#cfe6d8;margin-top:3px">${esc(resolved.winner.p.name)} took it on the ${ord(resolved.holes)} extra hole.</div>`;
+      : `<div style="font-family:var(--serif);color:#fff;font-weight:800;font-size:20px;margin-top:12px">Lost in the playoff</div><div class="small" style="color:#cfe6d8;margin-top:3px">${esc(resolved.winner.p.name)} took it on the ${ord(resolved.holes)} playoff hole.</div>`;
     btnLabel = resolved.youWon?'Celebrate ▸':'Continue ▸';
   } else { footer=`<div class="small" style="color:#cfe6d8;margin-top:10px">Still tied. On to the next hole.</div>`; }
   const ov=$(`<div class="momentov" style="position:fixed;inset:0;z-index:60;background:rgba(3,10,7,.92);display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto">
     <div style="max-width:430px;width:100%;background:linear-gradient(180deg,#0d2b1c,#07160e);border:1px solid var(--gold);border-radius:18px;padding:24px 22px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.65)">
       <div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 SUDDEN-DEATH PLAYOFF</span></div>
       <h2 style="margin:10px 0 2px;font-size:20px">${esc(ce.evt.name)}</h2>
-      <div class="small muted" style="margin:0 0 12px">Extra hole ${last.hole}</div>
+      <div class="small muted" style="margin:0 0 12px">Playoff hole ${last.hole}</div>
       <div style="text-align:left;max-width:320px;margin:0 auto">${rowsHtml}</div>
       ${footer}
       <div class="mbtns" style="margin-top:16px"></div>
@@ -6552,9 +6577,17 @@ function startPlayoffWatch(ce, contenders, opts){
   opts=opts||{};
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const plan=poBuildPlan(ce, contenders);
-  S.poW={ plan, hole:0, step:0, done:false, auto:!!opts.auto, reduce };
+  // CS235: open with a quick pop-up announcement naming the opponent(s), then auto-roll into the TOURTRACE sim.
+  S.poW={ plan, hole:0, step:0, done:false, auto:!!opts.auto, reduce, intro:true };
   _hvbRects=null; if(_poWTimer){clearTimeout(_poWTimer);_poWTimer=null;}
-  S.screen='playoffwatch'; render(); _poWTimer=setTimeout(poWatchStep, reduce?20:700);
+  S.screen='playoffwatch'; render(); _poWTimer=setTimeout(poWatchBegin, reduce?20:2600);
+}
+// clear the intro announcement and start the shot-by-shot playoff sim (auto-timer or tap)
+function poWatchBegin(){
+  if(S.screen!=='playoffwatch'){ return; }
+  const W=S.poW; if(!W||!W.intro) return;
+  W.intro=false; if(_poWTimer){clearTimeout(_poWTimer);_poWTimer=null;} render();
+  _poWTimer=setTimeout(poWatchStep, W.reduce?20:600);
 }
 function poWatchStep(){
   if(S.screen!=='playoffwatch'){ return; }
@@ -6593,6 +6626,26 @@ function scrPlayoffWatch(){
   const plan=W.plan, key=plan.key, courseObj=DAILY_COURSES[key];
   const venue=courseObj?dShort(courseObj.v):'';
   add(h2hTag(`Sudden-Death Playoff${venue?' · '+esc(venue):''}`, !W.done));
+  if(W.intro){
+    // CS235: quick pop-up announcement — "you're entering a playoff against X" — then it auto-rolls into the sim
+    const field=plan.holes[0]?plan.holes[0].alive:[];
+    const opps=field.filter(a=>!a.you);
+    const nm=opps.map(a=>esc(a.name));
+    const oppTxt = nm.length<=1 ? (nm[0]||'the field')
+      : nm.length===2 ? nm[0]+' and '+nm[1]
+      : nm.slice(0,-1).join(', ')+' and '+nm[nm.length-1];
+    const dots=opps.map(a=>`<span class="cdot" style="background:${a.col};width:13px;height:13px"></span>`).join('');
+    add($(`<div class="scout" style="max-width:460px;margin:26px auto 12px;text-align:center;border-color:#ff6b5e;box-shadow:0 0 26px rgba(255,107,94,.18)">
+      <div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 Playoff</span></div>
+      <h2 style="margin:14px 0 5px;font-size:24px;font-family:var(--serif);color:#fff">You're in a playoff!</h2>
+      <div class="small" style="color:#cfe6d8">${esc(plan.evt||'Sudden death')}${plan.major?' · Major':''}</div>
+      <div style="font-size:15px;color:var(--oncard);line-height:1.5;margin:12px 0 8px">Sudden death against<br><b style="color:#ffd45e">${oppTxt}</b></div>
+      <div style="display:flex;justify-content:center;align-items:center;gap:7px;margin:6px 0 2px">${dots}</div>
+      <div class="small muted" style="margin-top:12px">Heading to the TOURTRACE simulation…</div>
+    </div>`));
+    if(!W.reduce){ const go=$(`<button class="btn goldfill" style="max-width:320px;margin:6px auto 0">Start the playoff ▸</button>`); go.onclick=poWatchBegin; add(go); }
+    return;
+  }
   if(!W.done && W.hole<plan.holes.length){
     const ph=plan.holes[W.hole];
     const multi={shots:ph.shots, order:ph.order, cols:ph.cols, names:ph.names.map((n,i)=>ph.alive[i].you?'YOU':n)};
@@ -6600,10 +6653,10 @@ function scrPlayoffWatch(){
     const hvn=hvNode(holeObj, W.step, ph.n-1, key, multi);
     if(hvn){
       const shell=hvn.querySelector('.hvshell');
-      shell.appendChild($(`<div class="hvob hvhole" style="border-color:#ff6b5e;color:#ffd0c8">SUDDEN-DEATH · EXTRA HOLE ${W.hole+1} · PAR ${ph.par}</div>`));
+      shell.appendChild($(`<div class="hvob hvhole" style="border-color:#ff6b5e;color:#ffd0c8">SUDDEN-DEATH · PLAYOFF HOLE ${W.hole+1} · PAR ${ph.par}</div>`));
       const holed=h2hHoledUnits(ph, W.step);
       const curP=ph.order[Math.max(0,Math.min(W.step||1,ph.order.length)-1)], stP=curP?ph.shots[curP.u][curP.i]:null;
-      const bd=$(`<div class="hvob hvboard${(stP&&stP.d)?'':' nodesc'}"><div class="hvbcap" style="color:#ffd0c8">EXTRA HOLE ${W.hole+1}</div></div>`);
+      const bd=$(`<div class="hvob hvboard${(stP&&stP.d)?'':' nodesc'}"><div class="hvbcap" style="color:#ffd0c8">PLAYOFF HOLE ${W.hole+1}</div></div>`);
       ph.alive.forEach((a,ai)=>{ const isIn=holed.has(ai);
         bd.appendChild($(`<div class="hvbrow ${a.you?'mine':''}"><span class="cdot" style="background:${a.col}"></span><span class="nm">${a.you?'YOU':esc(a.name)}</span><span class="tp" style="color:${isIn?(a.low?'var(--gold)':'#ff9d8f'):'#8fa39a'}">${isIn?esc(dResultLong(ph.par,a.tp)):'…'}</span></div>`)); });
       shell.appendChild(bd);
@@ -6617,7 +6670,7 @@ function scrPlayoffWatch(){
     add($(`<div class="scout" style="max-width:440px;margin:16px auto 10px;text-align:center;border-color:var(--gold);box-shadow:0 0 22px rgba(235,166,31,.16)">
       <div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 Sudden-Death Playoff</span></div>
       <h2 style="margin:12px 0 4px;font-size:22px;color:${won?'#35d6a0':'#fff'}">${won?'You won the playoff!':'Lost in the playoff'}</h2>
-      <div class="small muted">${won?('Took it on the '+ord(plan.holeCount)+' extra hole'):(esc(plan.winner&&plan.winner.p?plan.winner.p.name:'')+' won on the '+ord(plan.holeCount)+' extra hole')}</div>
+      <div class="small muted">${won?('Took it on the '+ord(plan.holeCount)+' playoff hole'):(esc(plan.winner&&plan.winner.p?plan.winner.p.name:'')+' won on the '+ord(plan.holeCount)+' playoff hole')}</div>
     </div>`));
     if(W.auto||W.reduce){ add($(`<div class="center small muted">Continuing…</div>`)); }
     else { const cont=$(`<button class="btn goldfill" style="max-width:320px;margin:0 auto">${won?'Celebrate ▸':'Continue ▸'}</button>`); cont.onclick=poWatchFinish; add(cont); }
@@ -6929,7 +6982,7 @@ function celebratePlayoff(ce, opts){
   function done(){
     actions.innerHTML = emojifyIcons(youWon
       ? `<div style="font-family:var(--serif);color:#35d6a0;font-weight:800;font-size:26px">🏆 You won the playoff!</div>`
-      : `<div style="font-family:var(--serif);color:#fff;font-weight:800;font-size:23px">So close, lost in the playoff</div><div class="small" style="color:#cfe6d8;margin-top:2px">${esc(po.winner)} took it on the ${ord(po.holes)} extra hole.</div>`);
+      : `<div style="font-family:var(--serif);color:#fff;font-weight:800;font-size:23px">So close, lost in the playoff</div><div class="small" style="color:#cfe6d8;margin-top:2px">${esc(po.winner)} took it on the ${ord(po.holes)} playoff hole.</div>`);
     // A WIN always flows on into the single win celebration (which is where it waits/auto-advances per
     // Auto Sim), no separate click. A LOSS has no celebration after, so Auto Sim OFF waits for the player.
     if(youWon){ _poTimer=setTimeout(finish, opts.reduce?20:2000); }
@@ -11121,7 +11174,7 @@ function scrDailyRound(){
   if(S.moment){   // career-mode Moment: this round IS the tournament's final round
     const po=S.momentPO;
     add($(`<div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 ${esc(S.moment.evtName||'The Moment')} · ${po?'Sudden-Death Playoff':'Final Round'}</span></div>`));
-    add($(`<p class="lede center" style="margin:5px 0 0">📍 ${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)}${po?` · Extra hole ${po.round+1}`:''}</p>`));
+    add($(`<p class="lede center" style="margin:5px 0 0">📍 ${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)}${po?` · Playoff hole ${po.round+1}`:''}</p>`));
     if(!boardPresent && !reviewing && !po){
       add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
       add($(`<div class="center small" style="margin:0 0 4px;color:var(--gold);font-weight:700">${esc(S.moment.evtName)} · ${momentPosTxt(S.moment.info).replace(/<[^>]*>/g,'')} at the start of the day</div>`));
@@ -13294,7 +13347,7 @@ function scrH2HWatch(){
     const hvn=hvNode(holeObj, S.h2h.poStep, ph.n-1, h2hCourseKey(S.h2h.seed), multi);
     if(hvn){
       const shell=hvn.querySelector('.hvshell');
-      shell.appendChild($(`<div class="hvob hvhole" style="border-color:#ff6b5e;color:#ffd0c8">SUDDEN-DEATH · EXTRA HOLE ${S.h2h.poHole+1} · PAR ${ph.par}</div>`));
+      shell.appendChild($(`<div class="hvob hvhole" style="border-color:#ff6b5e;color:#ffd0c8">SUDDEN-DEATH · PLAYOFF HOLE ${S.h2h.poHole+1} · PAR ${ph.par}</div>`));
       const holedPO=h2hHoledUnits(ph, S.h2h.poStep), myU=S.h2h.myUnit;
       const curP=ph.order[Math.max(0,Math.min(S.h2h.poStep||1,ph.order.length)-1)], stP=curP?ph.shots[curP.u][curP.i]:null;
       const bd=$(`<div class="hvob hvboard${(stP&&stP.d)?'':' nodesc'}"><div class="hvbcap" style="color:#ffd0c8">SUDDEN-DEATH · HOLE ${S.h2h.poHole+1}</div></div>`);
