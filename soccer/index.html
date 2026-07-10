@@ -2236,6 +2236,15 @@
     background:var(--paper);border:1.5px solid var(--border-soft);box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);}
   .share-opt .ico svg{display:block;width:28px;height:28px;}
 
+  /* ---------- feedback category chips ---------- */
+  .fb-cats{display:flex;gap:8px;margin:2px 0 14px;}
+  .fb-cat{flex:1;padding:10px 6px;border-radius:10px;border:1.5px solid var(--border-soft);
+    background:var(--white);font-weight:800;font-size:13px;color:var(--muted-2);cursor:pointer;
+    transition:border-color .12s, background .12s, color .12s;}
+  .fb-cat.active{border-color:var(--red);color:var(--ink);background:rgba(229,64,42,.09);}
+  .fb-optional{font-weight:600;font-size:11px;color:var(--muted);}
+  .footer-btn.fb-footer{border-color:var(--teal);color:var(--teal);}
+  .footer-btn.fb-footer:hover{border-color:var(--teal);color:var(--ink);}
   /* ---------- rating feedback ---------- */
   .rate-trigger{display:inline-block;margin:8px auto 4px;padding:6px 4px;background:none;border:none;
     color:var(--muted);font-family:inherit;font-weight:700;font-size:12px;text-decoration:underline;
@@ -2885,7 +2894,7 @@ window.GA_ID='G-L29P5MRWKE';
         case 'online': call(typeof openOnlineHub==='function'?openOnlineHub:null); break;
         case 'howto': call(typeof openHowTo==='function'?openHowTo:null); break;
         case 'roster': call(openRosterUpdates); break;
-        case 'feedback': call(function(){ openRatingForm({}); }); break;
+        case 'feedback': call(typeof openFeedbackForm==='function'?openFeedbackForm:function(){ openRatingForm({}); }); break;
         case 'a2hs': { var b=document.getElementById('btn-add-home'); if(b){ b.click(); } else { call(typeof showA2HS==='function'?showA2HS:null); } break; }
         case 'auth': (typeof isSignedIn==='function'&&isSignedIn()) ? call(acctSignOut) : call(openAccountModal); break;
       }
@@ -3698,6 +3707,7 @@ window.GA_ID='G-L29P5MRWKE';
       <button id="btn-roster-updates" type="button" class="footer-btn"><svg class="tl-ico" viewBox="0 0 14 20" aria-hidden="true"><polygon points="9,0 2,11 7,11 5,20 12,9 7,9" fill="currentColor"/></svg> Roster Updates</button>
       <button id="btn-add-home" type="button" class="footer-btn"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="10.4" y1="4.3" x2="13.6" y2="4.3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="19.6" r=".95" fill="currentColor"/><rect x="8.4" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="6.4" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="8.4" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/><rect x="13.1" y="10.6" width="2.5" height="2.5" rx=".6" fill="currentColor"/></svg> Add to Home</button>
       <a href="/golf" target="_blank" rel="noopener" class="footer-btn footer-btn-cross"><span class="footer-btn-hook">↗ Love golf?</span> Try RunTheTour</a>
+      <button id="btn-feedback-foot" type="button" class="footer-btn fb-footer"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 9h8M8 12.5h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> Feedback</button>
     </div>
     <div class="x-follow"><a href="https://x.com/RunTheGG" target="_blank" rel="noopener noreferrer">Follow <b>@RunTheGG</b> on X for News and Updates</a></div>
     <a href="/">Home</a><span class="sep">·</span><a href="/soccer/about.html">About</a><span class="sep">·</span><a href="/soccer/privacy.html">Privacy</a><span class="sep">·</span><a href="/soccer/contact.html">Contact</a>
@@ -3974,6 +3984,23 @@ window.GA_ID='G-L29P5MRWKE';
     <label class="rate-field">Suggested overall<input id="rate-ovr" inputmode="numeric" maxlength="3" autocomplete="off"></label>
     <label class="rate-field">Explanation (optional)<textarea id="rate-note" rows="3" maxlength="500"></textarea></label>
     <button class="btn red" id="rate-submit">Submit</button>
+  </div>
+</div>
+
+<!-- ===== general feedback (bugs / ideas / anything) ===== -->
+<div class="rate-bg" id="fb-bg">
+  <div class="rate-card">
+    <button class="profile-close" id="fb-close" aria-label="Close">✕</button>
+    <div class="rate-title">Send Feedback</div>
+    <div class="rate-sub">Found a bug, or have an idea to make the game better? We read every message.</div>
+    <div class="fb-cats" id="fb-cats">
+      <button type="button" class="fb-cat active" data-cat="Bug">🐞 Bug</button>
+      <button type="button" class="fb-cat" data-cat="Idea">💡 Idea</button>
+      <button type="button" class="fb-cat" data-cat="Other">💬 Other</button>
+    </div>
+    <label class="rate-field">Your message<textarea id="fb-msg" rows="5" maxlength="1500" placeholder="What happened, or what would you like to see?"></textarea></label>
+    <label class="rate-field">Email <span class="fb-optional">(optional — only if you'd like a reply)</span><input id="fb-email" type="email" maxlength="120" autocomplete="email"></label>
+    <button class="btn red" id="fb-submit">Send Feedback</button>
   </div>
 </div>
 
@@ -7558,6 +7585,7 @@ function goToResults(){
     <div class="res-bio-hint">Tap a player for their bio card</div>
     <div id="res-squad"></div>
     <div class="center"><button class="rate-trigger" id="rate-link-results">Disagree with a rating?</button></div>
+    <div class="center"><button class="rate-trigger" id="fb-link-results">🐞 Found a bug or have an idea? Tell us →</button></div>
     </div>`;
   c.innerHTML=html;
   $('summary-host').appendChild(buildSummaryCard());
@@ -7607,6 +7635,7 @@ function goToResults(){
   const isDaily = !!(gs && gs.daily);
   $('res-leaderboard').addEventListener('click', ()=> isDaily ? openDailyBoard() : openEntryModal(roundName, r.teamOverall, color));
   $('rate-link-results').addEventListener('click', ()=>openRatingForm());
+  { const fb=$('fb-link-results'); if(fb) fb.addEventListener('click', ()=>openFeedbackForm()); }
   fillRankBadge(r.teamOverall, progress);   // daily board, global board, or local fallback
 
   showScreen('reveal');
@@ -9085,6 +9114,62 @@ $('rate-link-select').addEventListener('click',()=>{
 $('rate-submit').addEventListener('click',submitRatingForm);
 $('rate-close').addEventListener('click',closeRatingForm);
 $('rate-bg').addEventListener('click',e=>{ if(e.target===$('rate-bg')) closeRatingForm(); });
+
+// ---------- general feedback (bugs / ideas / anything) ----------
+// Reuses the same delivery pipeline as the rating form (Formspree → silent
+// email, with a mailto fallback). Auto-attaches lightweight context (screen,
+// mode, version, device) so a bug report is actionable without extra back-and-forth.
+let fbCategory='Bug';
+function openFeedbackForm(prefill){
+  prefill=prefill||{};
+  fbCategory = prefill.cat || 'Bug';
+  document.querySelectorAll('#fb-cats .fb-cat').forEach(b=>b.classList.toggle('active', b.dataset.cat===fbCategory));
+  $('fb-msg').value = prefill.msg || '';
+  let em=''; try{ em = (authUser && authUser.email) || ''; }catch(e){}
+  $('fb-email').value = em;
+  if(typeof closeMenu==='function'){ try{ closeMenu(); }catch(e){} }
+  $('fb-bg').classList.add('show');
+  setTimeout(()=>$('fb-msg').focus(),60);
+}
+function closeFeedbackForm(){ $('fb-bg').classList.remove('show'); }
+function _fbContext(){
+  try{
+    const screen=(typeof currentScreenName==='function')?currentScreenName():'-';
+    const who=(typeof authUsername==='function' && authUsername())||'(guest)';
+    const mode=`${draftType||'-'}/${gameMode||'-'}${onlineMode?(' online:'+onlineMode):''}`;
+    return `Screen: ${screen}\nMode: ${mode}\nUser: ${who}\nVersion: ${DATA_VERSION}\nURL: ${location.href}\nUA: ${navigator.userAgent}`;
+  }catch(e){ return '-'; }
+}
+async function submitFeedbackForm(){
+  const msg=$('fb-msg').value.trim();
+  const email=$('fb-email').value.trim();
+  if(!msg){ $('fb-msg').focus(); return; }
+  const ctx=_fbContext();
+  const btn=$('fb-submit'); const label=btn.textContent;
+  if(FORMSPREE_READY){
+    btn.disabled=true; btn.textContent='Sending…';
+    try{
+      const res=await fetch(FORMSPREE_ENDPOINT,{
+        method:'POST', headers:{ 'Content-Type':'application/json', 'Accept':'application/json' },
+        body:JSON.stringify({ _subject:`RunThePitch — ${fbCategory} feedback`,
+          category:fbCategory, message:msg, reply_email:email||'-', context:ctx })
+      });
+      if(res.ok){ btn.disabled=false; btn.textContent=label; closeFeedbackForm(); showToast('Thanks! Feedback sent ✓'); return; }
+    }catch(e){ /* fall through to mailto */ }
+    btn.disabled=false; btn.textContent=label;
+  }
+  const body=`Category: ${fbCategory}\n\n${msg}\n\n--- context ---\n${ctx}${email?('\nReply to: '+email):''}`;
+  window.location.href=`mailto:${RATING_FEEDBACK_EMAIL}?subject=${encodeURIComponent('RunThePitch — '+fbCategory+' feedback')}&body=${encodeURIComponent(body)}`;
+  closeFeedbackForm();
+}
+document.querySelectorAll('#fb-cats .fb-cat').forEach(b=>b.addEventListener('click',()=>{
+  fbCategory=b.dataset.cat;
+  document.querySelectorAll('#fb-cats .fb-cat').forEach(x=>x.classList.toggle('active', x===b));
+}));
+$('fb-submit').addEventListener('click',submitFeedbackForm);
+$('fb-close').addEventListener('click',closeFeedbackForm);
+$('fb-bg').addEventListener('click',e=>{ if(e.target===$('fb-bg')) closeFeedbackForm(); });
+{ const fbFoot=$('btn-feedback-foot'); if(fbFoot) fbFoot.addEventListener('click',()=>openFeedbackForm()); }
 
 $('profile-bg').addEventListener('click',e=>{ if(e.target===$('profile-bg')) closeProfile(); });
 
