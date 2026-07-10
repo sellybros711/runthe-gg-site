@@ -1760,6 +1760,23 @@
     line-height:1.4;color:var(--muted-2);max-width:340px;}
   .res-nearmiss b{font-family:'Anton',Impact,sans-serif;font-weight:400;color:#B8860B;font-size:15px;}
   /* end-of-run re-draft hook (tailored "fix it" framing above the re-draft button) */
+  /* online hub: live activity ticker */
+  .online-activity{background:var(--white);border:1.5px solid var(--border-soft);border-radius:12px;
+    padding:10px 14px;margin-bottom:16px;text-align:left;box-shadow:var(--shadow-sm);}
+  .oa-head{display:flex;align-items:center;gap:7px;font-weight:900;font-size:10px;letter-spacing:1.2px;
+    text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .oa-dot{width:8px;height:8px;border-radius:50%;background:#E5402A;box-shadow:0 0 0 0 rgba(229,64,42,.6);
+    animation:oaPulse 1.6s ease-out infinite;}
+  @keyframes oaPulse{0%{box-shadow:0 0 0 0 rgba(229,64,42,.55);}70%{box-shadow:0 0 0 7px rgba(229,64,42,0);}100%{box-shadow:0 0 0 0 rgba(229,64,42,0);}}
+  .oa-item{display:flex;align-items:center;gap:9px;min-height:24px;opacity:0;transform:translateY(4px);
+    transition:opacity .22s ease, transform .22s ease;font-weight:600;font-size:13px;color:var(--muted-2);}
+  .oa-item.show{opacity:1;transform:none;}
+  .oa-item b{color:var(--ink);font-weight:800;}
+  .oa-ico{flex:0 0 auto;font-size:15px;}
+  .oa-txt{flex:1;min-width:0;line-height:1.35;}
+  .oa-txt .flag-ico{width:18px;height:13px;vertical-align:-2px;margin-right:2px;border-radius:2px;}
+  .oa-id{font-weight:900;font-size:11px;white-space:nowrap;}
+
   .btn.beatmine{background:linear-gradient(135deg,#F4B413,#E5402A);color:#fff;border:none;
     box-shadow:0 4px 14px rgba(229,64,42,.3);font-weight:900;}
   .btn.beatmine:hover{filter:brightness(1.06);}
@@ -3483,6 +3500,10 @@ window.GA_ID='G-L29P5MRWKE';
     <div class="fr-wrap">
       <div class="fr-title">ONLINE</div>
       <div class="fr-sub">Play live against real opponents</div>
+      <div class="online-activity" id="online-activity">
+        <div class="oa-head"><span class="oa-dot"></span> LIVE ACTIVITY</div>
+        <div class="oa-item" id="oa-item"></div>
+      </div>
       <div class="online-card" id="online-card-h2h">
         <div class="online-card-badge">1v1</div>
         <div class="online-card-title">Online Friendly</div>
@@ -12178,7 +12199,60 @@ let wcPollTimer  = null;
 function openOnlineHub(){
   showScreen('online-hub');
   refreshOnlinePoolStatus();
+  startActivityFeed();
 }
+
+// ---- live activity feed (vitality) -----------------------------------------
+// A rolling "happening now" ticker. Same philosophy as the rest of online:
+// it's populated so the space never feels dead. Items are synthesised from the
+// real bot roster, real legends/nations from the dataset, and the four
+// formation identities, so every line references genuine football rather than
+// obvious filler. Auto-advances only while the hub is on screen.
+let _actTimer=null, _actItems=[], _actIdx=0;
+function _actName(){ return ONLINE_BOT_NAMES[Math.floor(Math.random()*ONLINE_BOT_NAMES.length)]; }
+function _actFlag(){ return ONLINE_BOT_FLAGS[Math.floor(Math.random()*ONLINE_BOT_FLAGS.length)]; }
+function _actTwoNames(){ const a=_actName(); let b=_actName(); let g=0; while(b===a && g++<5) b=_actName(); return [a,b]; }
+function _actLegend(){
+  const pool=(window.PLAYERS||[]).filter(p=>p.wc_overall>=89 && p.year<2026);
+  return pool.length ? pool[Math.floor(Math.random()*pool.length)] : null;
+}
+function _actIdentity(){ const ks=['ATTACKING','BALANCED','POSSESSION','DEFENSIVE']; return FORMATION_PROFILES[ks[Math.floor(Math.random()*ks.length)]]; }
+function _actRoundName(){ return ['Round of 16','Quarter-Final','Semi-Final','the Final'][Math.floor(Math.random()*4)]; }
+function genActivityItems(n){
+  const out=[];
+  const wrap=(icon, inner)=>`<span class="oa-ico">${icon}</span><span class="oa-txt">${inner}</span>`;
+  const builders=[
+    ()=>{ const ov=(88+Math.random()*14).toFixed(1); const id=_actIdentity();
+      return wrap('🏆', `${flagChip(_actFlag())} <b>${_actName()}</b> won the World Cup — <b>${ov}</b> OVR <span class="oa-id" style="color:${id.color}">${id.emoji} ${id.label}</span>`); },
+    ()=>wrap('⚽', `${flagChip(_actFlag())} <b>${_actName()}</b> reached ${_actRoundName()} with a <b>${(84+Math.random()*12).toFixed(1)}</b> OVR side`),
+    ()=>{ const [a,b]=_actTwoNames(); const ga=Math.floor(Math.random()*4)+1, gb=Math.floor(Math.random()*ga);
+      return wrap('🔥', `${flagChip(_actFlag())} <b>${a}</b> beat <b>${b}</b> ${ga}–${gb} in an Online Friendly`); },
+    ()=>{ const l=_actLegend(); return l ? wrap('✍️', `${flagChip(_actFlag())} <b>${_actName()}</b> drafted ${escapeHtml(l.name)} (${escapeHtml(l.country)} ${l.year})`) : null; },
+    ()=>wrap('🌍', `${flagChip(_actFlag())} <b>${_actName()}</b> joined the World Cup pool`),
+    ()=>wrap('📊', `<b>${(1000+Math.floor(Math.random()*1400)).toLocaleString()}</b> squads drafted today`),
+    ()=>{ const id=_actIdentity(); return wrap(id.emoji, `<b>${_actName()}</b> is running a <b style="color:${id.color}">${id.label}</b> shape`); },
+  ];
+  let guard=0;
+  while(out.length<n && guard++<n*4){
+    const html=builders[Math.floor(Math.random()*builders.length)]();
+    if(html) out.push(html);
+  }
+  return out;
+}
+function startActivityFeed(){
+  _actItems = genActivityItems(18); _actIdx=0;
+  const el=$('oa-item'); if(!el) return;
+  const advance=()=>{
+    const hub=document.getElementById('screen-online-hub');
+    if(!hub || !hub.classList.contains('active')) return;   // self-pause when off-screen
+    el.classList.remove('show');
+    setTimeout(()=>{ el.innerHTML=_actItems[_actIdx % _actItems.length]; el.classList.add('show'); _actIdx++; }, 220);
+  };
+  stopActivityFeed();
+  el.innerHTML=_actItems[0]; el.classList.add('show'); _actIdx=1;
+  _actTimer=setInterval(advance, 3600);
+}
+function stopActivityFeed(){ if(_actTimer){ clearInterval(_actTimer); _actTimer=null; } }
 async function refreshOnlinePoolStatus(){
   const el = $('online-pool-status'); if(!el) return;
   try{
