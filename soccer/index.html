@@ -2437,6 +2437,17 @@
   .fm-badge-name{font-family:'Anton',Impact,sans-serif;font-size:17px;letter-spacing:1px;color:var(--ink);}
   .fm-badge-id{font-weight:900;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:#fff;
     background:var(--fm-col);border-radius:999px;padding:3px 9px;}
+  /* profile: formation mastery rows */
+  .fm-mastery{display:flex;flex-direction:column;gap:6px;margin-bottom:6px;}
+  .fmm-row{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    background:var(--white);border:1.5px solid var(--border-soft);border-left:4px solid var(--fm-col);
+    border-radius:10px;padding:9px 12px;box-shadow:var(--shadow-sm);}
+  .fmm-row.fmm-off{opacity:.5;}
+  .fmm-id{display:inline-flex;align-items:center;gap:6px;font-weight:900;font-size:13px;color:var(--ink);}
+  .fmm-emoji{font-size:14px;}
+  .fmm-stats{display:inline-flex;align-items:center;gap:12px;}
+  .fmm-stat{font-weight:600;font-size:11px;color:var(--muted);white-space:nowrap;}
+  .fmm-stat b{font-family:'Anton',Impact,sans-serif;font-size:15px;color:var(--ink);font-weight:400;margin-right:2px;}
   /* online result: your shape vs theirs */
   .h2h-fm-row{display:flex;align-items:center;justify-content:center;gap:14px;margin:2px 0 18px;flex-wrap:wrap;}
   .h2h-fm-side{display:flex;flex-direction:column;align-items:center;gap:5px;}
@@ -3164,6 +3175,9 @@ window.GA_ID='G-L29P5MRWKE';
       </div>
 
       <div class="acct-stats" id="acct-stats"></div>
+
+      <div class="prof-section-title" id="fm-mastery-title" style="display:none">Formation Mastery</div>
+      <div class="fm-mastery" id="fm-mastery"></div>
 
       <button type="button" class="prof-collapse-head" id="ach-head">
         <span class="pc-title">Achievements</span>
@@ -5864,6 +5878,7 @@ function renderProfilePage(){
   acctSelectedFlag = (authProfile && authProfile.flag) || acctSelectedFlag || 'USA';
   buildAcctFlagRow();
   renderProfileStats();
+  renderFormationMastery();
   renderAchievements();
   renderTopDrafts();
   renderLegends();
@@ -7402,6 +7417,7 @@ async function fillNearMiss(rank, overall){
 
 function goToResults(){
   const _sc=document.getElementById('sim-controls'); if(_sc) _sc.classList.add('hidden');
+  try{ fmMasteryRecordSoloRun(); }catch(e){}   // log this run's formation to mastery (idempotent)
   const r=gs.result, sim=simResult;
   const oc=simOutcome(sim);
   const color=outcomeColor(oc.label);
@@ -9449,6 +9465,54 @@ function formationCardHtml(squad, opts){
     ${opts.hideBlurb ? '' : `<div class="fm-card-blurb">${escapeHtml(p.blurb)}</div>`}
   </div>`;
 }
+// ---- formation mastery (per-identity record, localStorage v1) --------------
+// Tracks how you've done with each tactical shape: solo tournament runs +
+// World Cup titles, and Online Friendly wins. Local-only for now (a fast,
+// backend-free first version); surfaced on the profile as a tactical record.
+const FM_MASTERY_KEY = 'rtp_formation_mastery';
+function fmMasteryLoad(){ try{ return JSON.parse(localStorage.getItem(FM_MASTERY_KEY))||{}; }catch(e){ return {}; } }
+function fmMasterySave(m){ try{ localStorage.setItem(FM_MASTERY_KEY, JSON.stringify(m)); }catch(e){} }
+function fmMasteryRecord(identity, opts){
+  if(!identity || !FORMATION_PROFILES[identity]) return;
+  opts = opts || {};
+  const m = fmMasteryLoad();
+  const e = m[identity] || (m[identity] = { runs:0, titles:0, wins:0 });
+  if(opts.run)   e.runs   = (e.runs||0)+1;
+  if(opts.title) e.titles = (e.titles||0)+1;
+  if(opts.win)   e.wins   = (e.wins||0)+1;
+  fmMasterySave(m);
+}
+// Derive + record a solo full-draft run from gs.result (idempotent per run).
+function fmMasteryRecordSoloRun(){
+  if(!isFullDraft() || !gs || !gs.result || gs.result._fmRecorded) return;
+  const squad = (gs.result.scoredPicks||[]).map(sp=>sp.player);
+  if(squad.length < 11) return;
+  const f = deriveFormation(squad);
+  const champ = !!(simResult && !simResult.eliminated && simResult.furthestRound==='Final');
+  fmMasteryRecord(f.identity, { run:true, title:champ });
+  gs.result._fmRecorded = true;
+}
+function renderFormationMastery(){
+  const box=document.getElementById('fm-mastery'); const title=document.getElementById('fm-mastery-title');
+  if(!box) return;
+  const m=fmMasteryLoad();
+  const order=['ATTACKING','BALANCED','POSSESSION','DEFENSIVE'];
+  const any = order.some(k=>m[k] && (m[k].runs||m[k].wins||m[k].titles));
+  if(title) title.style.display = any ? '' : 'none';
+  if(!any){ box.innerHTML=''; return; }
+  box.innerHTML = order.map(k=>{
+    const p=FORMATION_PROFILES[k]; const e=m[k]||{runs:0,titles:0,wins:0};
+    const on = (e.runs||e.wins||e.titles);
+    return `<div class="fmm-row${on?'':' fmm-off'}" style="--fm-col:${p.color}">
+      <span class="fmm-id"><span class="fmm-emoji">${p.emoji}</span>${p.label}</span>
+      <span class="fmm-stats">
+        <span class="fmm-stat"><b>${e.runs||0}</b> runs</span>
+        <span class="fmm-stat"><b>${e.titles||0}</b> 🏆</span>
+        <span class="fmm-stat"><b>${e.wins||0}</b> online W</span>
+      </span></div>`;
+  }).join('');
+}
+
 // Compact one-line badge (e.g. for the sim header / online lobby).
 function formationBadgeHtml(squad){
   const f = deriveFormation(squad);
@@ -12484,6 +12548,7 @@ function h2hShowResult(mForMe, oppName, mySquad, oppSquad){
   if(fmRow){
     if(mySquad && oppSquad){
       const mine = deriveFormation(mySquad), theirs = deriveFormation(oppSquad);
+      try{ fmMasteryRecord(mine.identity, { win: won }); }catch(e){}   // online win by shape
       fmRow.innerHTML =
         `<div class="h2h-fm-side"><div class="h2h-fm-who">YOU</div>${formationBadgeHtml(mySquad)}</div>`+
         `<div class="h2h-fm-vs">vs</div>`+
