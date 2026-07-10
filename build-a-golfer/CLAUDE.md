@@ -5819,6 +5819,17 @@ allows Google Fonts, or self-host Anton.*
   the branded season-deal strip and the two-brand offer card. Tunable: the `BRANDS` catalog, `BRAND_TRAITS`
   modifiers, `sponsorSigningBonus`.
 
+- **CS230 — hide the "AI fills the spot" wording in online waiting (owner: "when waiting for an opponent
+  it shouldn't say an AI will fill the spot — hide this").** The private-lobby "open the seat" UI was the
+  only place that disclosed the CS120 AI backfill ("a waiting player can join. AI fills in after 10s",
+  and the button sub "A waiting player joins — or AI fills in after 10s"). Reworded to "Open to anyone —
+  finding a player to fill the open seat(s)…" and the button sub to "Let a waiting player join your
+  match", so a filled-in opponent never reads as AI. The backfill mechanic itself is unchanged (the timer
+  still arms in `h2hOpenLobby`) — this is copy only. Quick Match already said only "Finding an opponent…"
+  with no AI mention. Verified in Playwright: neither the open-seat button state nor the opened/searching
+  state contains "AI", the button still works, zero page errors. (Remaining "AI"/"bot" strings are all
+  code comments, not user-facing.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
