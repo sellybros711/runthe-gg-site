@@ -6052,6 +6052,24 @@ allows Google Fonts, or self-host Anton.*
   finishes clean; career setup is unaffected (no daily card leaks in). **Awaiting owner go-ahead on two
   tweaks (frame subtlety, tagline copy) before deploying to /golf.**
 
+- **CS241 — season sim screen decluttered: live tournament under the stats, everything else minimized
+  below (owner IMG_8050: "so much info before you see the weekly standings... when the sim is going the
+  priority is watching the tournaments play out + the season stats at top; everything else much more
+  minimal... you don't even know the sim is going unless you scroll down").** `scrSeason` used to stack, in
+  order: season-stat bar → Race to the Cup strip → TWO full sponsor goal cards (per-slot progress bars) →
+  momentum strip → THEN the `.cols` (live leaderboard + scorecard). So the weekly standings were buried
+  under a wall and you couldn't tell the sim was running without scrolling. Reordered: **season-stat bar
+  (kept at top) → the live tournament (`.cols`: leaderboard + scorecard) → controls**, then Race to the Cup /
+  sponsors / momentum moved BELOW, minimized. Sponsors collapse to a new `contractStripNode()` — a
+  one-line-per-slot `.acc` accordion (logo + brand + goals-met + running bonus, e.g. "Cedar & Oak 0/3 ·
+  Tallgrass 0/3 · +$0"), expanding to the full goal cards on tap (default collapsed). The `makeContracts()`
+  data-setup on resume was kept up top (side-effect only); the major banner + opposite-field note stay near
+  the tournament (contextual to this week's event). Layout-only — no sim/engine/state change. Verified in
+  Playwright (a rigged year-3 career season, signed-in, both sponsor slots filled): DOM top-level order is
+  sbar → tournament → controls → race → sponsors(collapsed) → momentum, `sbarFirst` true, sponsors accordion
+  closed by default, zero page errors; screenshot confirms the stat bar → Phoenix Open scorecard +
+  leaderboard → controls → compact Race/sponsors/momentum flow. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
