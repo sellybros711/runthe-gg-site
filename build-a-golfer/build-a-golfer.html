@@ -10072,6 +10072,10 @@ function hvTerrain(g, seedN, B){
   const fogC=B.ocean?'#bcd2da':'#a9c0b0';
   defs+=`<radialGradient id="hvfog" cx=".5" cy=".4" r=".92"><stop offset=".5" stop-color="${fogC}" stop-opacity="0"/><stop offset="1" stop-color="${fogC}" stop-opacity="${B.ocean?'.22':'.1'}"/></radialGradient>`;
   defs+=`<radialGradient id="hvsheen" cx=".5" cy=".5" r=".6"><stop offset="0" stop-color="#eaffd0" stop-opacity=".2"/><stop offset="1" stop-color="#eaffd0" stop-opacity="0"/></radialGradient>`;
+  // CS249: shared shading gradients that make FLAT tree shapes look ROUNDED + LIT (the illustrated art
+  // style) regardless of each course's own colors — a highlight top-left, shadow bottom-right, overlaid.
+  defs+=`<radialGradient id="hvsphere" cx=".33" cy=".28" r=".82"><stop offset="0" stop-color="#ffffff" stop-opacity=".34"/><stop offset=".42" stop-color="#ffffff" stop-opacity="0"/><stop offset=".72" stop-color="#02100a" stop-opacity="0"/><stop offset="1" stop-color="#02100a" stop-opacity=".46"/></radialGradient>`;
+  defs+=`<linearGradient id="hvcone" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff" stop-opacity=".22"/><stop offset=".46" stop-color="#ffffff" stop-opacity="0"/><stop offset="1" stop-color="#02100a" stop-opacity=".44"/></linearGradient>`;
   defs+=`<filter id="hvsoft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>`;
   let fwDD=null, fwBounds=null;   // fwBounds: per-depth fairway screen x-range → keeps the forest out of the corridor
   if(g.par!==3){ const Lp=[],Rp=[];
@@ -10183,12 +10187,13 @@ function hvTerrain(g, seedN, B){
      groves for tropical, marram dunes + gorse for links, sparse saguaros for desert. */
   const canopy=(px,py,r,autumn,fs)=>{
     const C=autumn?B.treeA:B.treeG;
-    let o=`<circle cx="${(px+r*0.32).toFixed(1)}" cy="${(py+r*0.38).toFixed(1)}" r="${r.toFixed(1)}" fill="${B.shad}" opacity=".5"/>`;
-    o+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="${C[0]}" stroke="${B.outline}" stroke-width=".8"/>`;
-    o+=`<circle cx="${(px-r*0.22).toFixed(1)}" cy="${(py-r*0.18).toFixed(1)}" r="${(r*0.7).toFixed(1)}" fill="${C[1]}"/>`;
-    o+=`<circle cx="${(px+r*0.3).toFixed(1)}" cy="${(py-r*0.02).toFixed(1)}" r="${(r*0.45).toFixed(1)}" fill="${C[1]}"/>`;
-    o+=`<circle cx="${(px-r*0.3).toFixed(1)}" cy="${(py-r*0.34).toFixed(1)}" r="${(r*0.4).toFixed(1)}" fill="${C[3]}"/>`;   // lit crown
-    if(hvHash(seedN,fs,15)<0.22) o+=`<rect x="${(px-0.7).toFixed(1)}" y="${(py+r*0.55).toFixed(1)}" width="1.4" height="${(r*0.5).toFixed(1)}" fill="${B.trunk}"/>`;
+    let o=`<ellipse cx="${(px+r*0.34).toFixed(1)}" cy="${(py+r*0.5).toFixed(1)}" rx="${(r*1.05).toFixed(1)}" ry="${(r*0.4).toFixed(1)}" fill="${B.shad}" opacity=".42"/>`;   // soft cast shadow
+    if(hvHash(seedN,fs,15)<0.22) o+=`<rect x="${(px-0.7).toFixed(1)}" y="${(py+r*0.5).toFixed(1)}" width="1.4" height="${(r*0.55).toFixed(1)}" fill="${B.trunk}"/>`;
+    o+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="${C[0]}" stroke="${B.outline}" stroke-width=".7"/>`;
+    o+=`<circle cx="${(px-r*0.2).toFixed(1)}" cy="${(py-r*0.16).toFixed(1)}" r="${(r*0.68).toFixed(1)}" fill="${C[1]}"/>`;
+    o+=`<circle cx="${(px+r*0.32).toFixed(1)}" cy="${(py).toFixed(1)}" r="${(r*0.42).toFixed(1)}" fill="${C[1]}"/>`;
+    o+=`<circle cx="${(px-r*0.32).toFixed(1)}" cy="${(py-r*0.36).toFixed(1)}" r="${(r*0.36).toFixed(1)}" fill="${C[3]}"/>`;   // lit crown
+    o+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="url(#hvsphere)"/>`;   // rounded lit/shaded sphere
     return o;
   };
   const palm=(px,py,r,fs)=>{
@@ -10223,7 +10228,8 @@ function hvTerrain(g, seedN, B){
   const pine=(px,py,r,fs)=>{ const C=B.pine||['#1b4416','#265a1f','#37732a'], w=r*1.08;
     let o=`<ellipse cx="${(px+r*0.34).toFixed(1)}" cy="${(py+r*0.52).toFixed(1)}" rx="${(r*0.85).toFixed(1)}" ry="${(r*0.4).toFixed(1)}" fill="${B.shad}" opacity=".45"/>`;
     o+=`<rect x="${(px-r*0.12).toFixed(1)}" y="${(py+r*0.25).toFixed(1)}" width="${(r*0.24).toFixed(1)}" height="${(r*0.6).toFixed(1)}" fill="${B.trunk||'#6b4a2a'}"/>`;
-    const tier=(cy,tw,c)=>`<path d="M ${px.toFixed(1)} ${(cy-r*0.9).toFixed(1)} L ${(px-tw).toFixed(1)} ${cy.toFixed(1)} L ${(px+tw).toFixed(1)} ${cy.toFixed(1)} Z" fill="${c}" stroke="${B.outline}" stroke-width=".5"/>`;
+    const tri=(cy,tw)=>`M ${px.toFixed(1)} ${(cy-r*0.9).toFixed(1)} L ${(px-tw).toFixed(1)} ${cy.toFixed(1)} L ${(px+tw).toFixed(1)} ${cy.toFixed(1)} Z`;
+    const tier=(cy,tw,c)=>`<path d="${tri(cy,tw)}" fill="${c}" stroke="${B.outline}" stroke-width=".5"/><path d="${tri(cy,tw)}" fill="url(#hvcone)"/>`;   // solid + lit-left/shaded-right cone shading
     o+=tier(py+r*0.55,w,C[0])+tier(py+r*0.05,w*0.8,C[1])+tier(py-r*0.45,w*0.56,C[2]); return o; };
   const cypress=(px,py,r,fs)=>{ const C=B.cypress||['#22401b','#356b26'], ds=Math.imul(fs,2654435761)>>>0, lean=(hvHash(seedN,fs,9)-0.5)*r*0.4;
     let o=`<ellipse cx="${(px+r*0.3).toFixed(1)}" cy="${(py+r*0.4).toFixed(1)}" rx="${(r*0.7).toFixed(1)}" ry="${(r*0.35).toFixed(1)}" fill="${B.shad}" opacity=".45"/>`;
@@ -10231,10 +10237,11 @@ function hvTerrain(g, seedN, B){
     o+=`<path d="${hvBlobD(px+lean-r*0.16,py-r*0.7,r*0.38,r*0.72,ds^7,0.26,9)}" fill="${C[1]}"/>`; return o; };
   const broadleaf=(px,py,r,fs)=>{ const C=B.broadleaf||['#1c541a','#2e7a2c','#49a83e'];
     let o=`<ellipse cx="${(px+r*0.32).toFixed(1)}" cy="${(py+r*0.42).toFixed(1)}" rx="${(r*1.05).toFixed(1)}" ry="${(r*0.5).toFixed(1)}" fill="${B.shad}" opacity=".45"/>`;
-    o+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="${C[0]}" stroke="${B.outline}" stroke-width=".8"/>`;
+    o+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="${C[0]}" stroke="${B.outline}" stroke-width=".7"/>`;
     o+=`<circle cx="${(px-r*0.3).toFixed(1)}" cy="${(py-r*0.18).toFixed(1)}" r="${(r*0.58).toFixed(1)}" fill="${C[1]}"/>`;
     o+=`<circle cx="${(px+r*0.3).toFixed(1)}" cy="${(py-r*0.1).toFixed(1)}" r="${(r*0.46).toFixed(1)}" fill="${C[1]}"/>`;
-    o+=`<circle cx="${(px-r*0.05).toFixed(1)}" cy="${(py-r*0.4).toFixed(1)}" r="${(r*0.4).toFixed(1)}" fill="${C[2]}"/>`; return o; };
+    o+=`<circle cx="${(px-r*0.05).toFixed(1)}" cy="${(py-r*0.4).toFixed(1)}" r="${(r*0.4).toFixed(1)}" fill="${C[2]}"/>`;
+    o+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${r.toFixed(1)}" fill="url(#hvsphere)"/>`; return o; };
   const flowerBush=(px,py,r,fs)=>{ const cols=B.flowerCols||['#ff9ecb'], fr=r*0.82, base=(B.treeG&&B.treeG[1])||(B.broadleaf&&B.broadleaf[1])||'#3f7a28';
     let o=`<ellipse cx="${(px+r*0.24).toFixed(1)}" cy="${(py+r*0.3).toFixed(1)}" rx="${(fr*0.9).toFixed(1)}" ry="${(fr*0.4).toFixed(1)}" fill="${B.shad}" opacity=".4"/>`;
     o+=`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="${fr.toFixed(1)}" fill="${base}" stroke="${B.outline}" stroke-width=".6"/>`;
