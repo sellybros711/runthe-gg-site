@@ -6231,6 +6231,35 @@ allows Google Fonts, or self-host Anton.*
   to /golf. Tunable: the per-course `HV_COURSE_TWEAK` entries (grassShift/stepMul/bunkerScale/scatter), the
   frame alpha/glow in `hvFrameStyle`.
 
+- **CS247 — hole view declutter + depth pass (owner: CS246 "all it did was change the color of the same
+  little box, I wanted to improve" the COURSE itself).** CS246's palette/frame theming was too superficial —
+  the play view still read as a generic cartoon because the art itself was the problem: the rough was a
+  wall-to-wall carpet of hundreds of identical tiny tree-dots (STEP≈22, only 15% gaps) plus random pink/white
+  flower speckles, over a flat bright fairway with near-invisible mow bands. (Worse, CS246's density tweaks
+  had made some courses even more cluttered.) This pass rebuilds how the scene reads, in `hvTerrain`:
+  • **Fewer, bigger, varied trees.** Tree STEP raised (dense 22→30, open 26→34), organic clearings raised
+    (gap 0.15→0.3 / 0.34→0.44), and tree radius grown + widened (was ~5-10, now ~7.5-17 with more variance
+    and stronger near/far perspective) — so trees read as real trees framing the hole, not a uniform grid of
+    dots.
+  • **Breathing room along the fairway.** New `nearFw()` test opens a first-cut band (~1.15×STEP) around the
+    fairway corridor, thinning ~62% of the trees that would crowd the edge — the hole has space instead of
+    trees pressing right against the short grass.
+  • **Half the flower speckles** (a per-plant skip on the noisy pink/white `flower` bushes) — much less
+    visual noise.
+  • **Manicured fairway + depth.** Real mowing stripes now show (alternating light/dark bands at 9%/6%
+    opacity, was a single ~4.5% white overlay), and the rough's soft elevation shading was strengthened (7→9
+    undulation blobs, opacity .16→.2) for a rolling, depth-y surface.
+  All 39 courses share the pass, so it stacks with CS246's per-course identities: Winged Foot now reads as an
+  intentional tree-lined hole with a striped fairway, Oakmont as a genuinely open championship course with
+  big fairway bunkers, etc. Rendering-only (terrain is still built-once-and-cached per hole; fewer trees =
+  cheaper, not slower). Sim, geometry, and score untouched. Verified in Playwright: all 39 courses render (0
+  null, 39/39 framed + distinct), a full Winged Foot phone round plays to completion with zero page errors;
+  before/after screenshots confirm the wall-of-dots is gone and the fairway now looks manicured. Deployed to
+  /golf. NOTE: still the same top-down flat-illustration style — if the owner wants a bigger art-direction
+  change (a different reference look / more realism), that's a separate, larger effort; this pass makes the
+  existing style read as premium rather than noisy. Tunable: STEP/gap/tree-radius, the `nearFw` band + skip
+  rate, mow-stripe opacity.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

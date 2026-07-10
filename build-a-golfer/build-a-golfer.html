@@ -10068,8 +10068,8 @@ function hvTerrain(g, seedN, B){
   const vTick=(x,y,c,o)=>`<path d="M ${x.toFixed(1)} ${y.toFixed(1)} l 1.5 1.9 l 1.5 -1.9" fill="none" stroke="${c}" stroke-width=".9" opacity="${o}"/>`;
   // GROUND: subtle elevation shading (soft light/dark blobs = rolling terrain → depth) + per-biome texture
   let gr='';
-  for(let i=0;i<7;i++){ const ux=-HV_EX+hh(700+i)*FW, uy=hh(720+i)*HV_H, urx=42+hh(740+i)*62;
-    gr+=`<ellipse cx="${ux.toFixed(1)}" cy="${uy.toFixed(1)}" rx="${urx.toFixed(1)}" ry="${(urx*0.5).toFixed(1)}" fill="${i%2?B.tickL:B.tickD}" opacity=".16"/>`; }
+  for(let i=0;i<9;i++){ const ux=-HV_EX+hh(700+i)*FW, uy=hh(720+i)*HV_H, urx=46+hh(740+i)*70;
+    gr+=`<ellipse cx="${ux.toFixed(1)}" cy="${uy.toFixed(1)}" rx="${urx.toFixed(1)}" ry="${(urx*0.52).toFixed(1)}" fill="${i%2?B.tickL:B.tickD}" opacity=".2"/>`; }
   if(B.ground==='desert'){
     // bare desert floor: gravel speckle, pale dry-wash sweeps, a few rust rock-shadow patches (no grass)
     for(let i=0;i<66;i++){ gr+=`<circle cx="${(-HV_EX+hh(200+i)*FW).toFixed(1)}" cy="${(hh(300+i)*HV_H).toFixed(1)}" r="${(0.8+hh(360+i)*1.2).toFixed(1)}" fill="${i%3?B.gravel:B.floorD}" opacity=".5"/>`; }
@@ -10127,7 +10127,8 @@ function hvTerrain(g, seedN, B){
     // first-cut ring → flat fairway → faint mow bands + fairway ticks → chunky edge line
     s.push(`<path d="${fwDD}" fill="none" stroke="${B.cut}" stroke-width="18" stroke-linejoin="round"/>`);
     s.push(`<path d="${fwDD}" fill="${B.fw}"/>`);
-    let st=''; for(let yy=0; yy<HV_H; yy+=30){ if((yy/30)%2<1) st+=`<rect x="0" y="${yy}" width="${HV_W}" height="15" fill="#ffffff" opacity=".045"/>`; }
+    let st=''; for(let yy=0; yy<HV_H; yy+=26){ const lite=(yy/26)%2<1;   // visible mowing stripes → a manicured, depth-y fairway
+      st+=`<rect x="0" y="${yy}" width="${HV_W}" height="13" fill="${lite?'#ffffff':'#0a2c14'}" opacity="${lite?'.09':'.06'}"/>`; }
     for(let i=0;i<26;i++){ const ty=g.fw0+(g.fw1-g.fw0)*hh(600+i); const tp2=hvProj(g,g.cx(ty)+(hh(640+i)-0.5)*g.fwW*0.8,ty);
       st+=vTick(tp2[0],tp2[1],B.fwEdge,'.4'); }
     s.push(`<g clip-path="url(#hvfw)">${st}</g>`);
@@ -10282,17 +10283,29 @@ function hvTerrain(g, seedN, B){
     // back-to-front for a layered, depth-y look. Wooded biomes (grass ground) fill a DENSE carpet — a hole
     // carved through forest; desert/links are a more open scatter (bare floor is part of the character).
     // Fairway corridor + green/water/bunker/ocean keep-outs stay clear; organic gaps + jitter break the grid.
-    const dense=(B.ground==='grass' && !B.sparse), STEP=Math.round((dense?22:26)*(B.stepMul||1)), gap=dense?0.15:0.34;   // prairie/sandhills scatter openly; stepMul varies density per course
+    // CS247 declutter: bigger STEP (fewer trees), larger/varied trees, an OPEN band along the fairway
+    // (breathing room), organic clearings, and half the flower speckles — so a hole reads as an intentional
+    // tree-framed course, not a wall-to-wall carpet of identical dots.
+    const dense=(B.ground==='grass' && !B.sparse), STEP=Math.round((dense?30:34)*(B.stepMul||1)), gap=dense?0.3:0.44;
+    const nearFw=(px,py,m)=>{ if(!fwBounds) return false;
+      if(py<fwBounds[0].y-m||py>fwBounds[fwBounds.length-1].y+m) return false;
+      let a=fwBounds[0];
+      for(let k=1;k<fwBounds.length;k++){ const b=fwBounds[k];
+        if(b.y>=py){ const t=(py-a.y)/((b.y-a.y)||1); return px>a.xL+(b.xL-a.xL)*t-m && px<a.xR+(b.xR-a.xR)*t+m; }
+        a=b; }
+      return false; };
     const items=[];
-    for(let py=-6; py<HV_H+8; py+=STEP){ const dep=0.42+0.64*(py/HV_H);   // near (bottom) larger
+    for(let py=-6; py<HV_H+8; py+=STEP){ const dep=0.5+0.7*(py/HV_H);   // near (bottom) larger
       for(let px=-HV_EX-4; px<HV_W+HV_EX+6; px+=STEP){
-        const jx=(hvHash(seedN,(px*7+py*131)|0,3)-0.5)*STEP*0.82, jy=(hvHash(seedN,(px*131+py*7)|0,5)-0.5)*STEP*0.7;
+        const jx=(hvHash(seedN,(px*7+py*131)|0,3)-0.5)*STEP*0.9, jy=(hvHash(seedN,(px*131+py*7)|0,5)-0.5)*STEP*0.8;
         const x=px+jx, y=py+jy;
         if(x<-HV_EX-5||x>HV_W+HV_EX+5||y<-8||y>HV_H+8) continue;
         if(inFairway(x,y)||!clear(x,y)) continue;
-        if(hvHash(seedN,(px*17+py*29)|0,9)<gap) continue;   // organic gaps
+        if(hvHash(seedN,(px*17+py*29)|0,9)<gap) continue;                             // organic clearings
+        if(nearFw(x,y,STEP*1.15) && hvHash(seedN,(px*13+py*53)|0,19)<0.62) continue;  // open first-cut band by the fairway
         const type=pickPlant(hvHash(seedN,(px*23+py*41)|0,17));
-        const r=(5.2+hvHash(seedN,(px*3+py*5)|0,11)*4.6)*dep;
+        if(type==='flower' && hvHash(seedN,(px*5+py*3)|0,21)<0.55) continue;          // fewer flower speckles (less noise)
+        const r=(7.6+hvHash(seedN,(px*3+py*5)|0,11)*7)*dep;                           // bigger, more varied trees
         items.push({x,y,r,type,fs:(px*7+py)|0});
       }
     }
