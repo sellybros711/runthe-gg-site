@@ -6318,6 +6318,38 @@ allows Google Fonts, or self-host Anton.*
   tracer to demonstrate quality. Owner picked "ship the interim" for now; the image POC is available on
   request.
 
+- **CS250 — home-page reorganization: "Beat the Pro" is the top button; clearer 2-group hierarchy (owner:
+  "reorganize the home page and make it easier for users to process. Move daily challenge to be the top
+  button, rename it BEAT THE PRO. What else can enhance playability/UX?").** The title `scrTitle()` stack
+  used to read hero → marketing badge + lede → [Resume/Career gold] → Play Online → Career Mode → Daily
+  Challenge (blue, at the BOTTOM) → its satellites, i.e. the daily was the last thing you saw and there was
+  a text wall before any button. Reorganized into two clearly-labelled groups with the daily on top:
+  1. **Renamed "Daily Challenge" → "Beat the Pro"** on the primary user-facing surfaces — the home button (all
+     4 branches: Practice / fresh / done / N-left, still `startDailyChallenge`, kept BLUE per the CS210 colour
+     system), the daily-preview kicker ("TODAY'S BEAT THE PRO"), the daily-preview tag ("⛳ Beat the Pro ·
+     today's course"), and the draft-screen mode tag. Left the deeper help/achievement "Daily Challenge"
+     strings as the descriptive feature name (brand + descriptor pattern), so existing achievement categories/
+     data are untouched.
+  2. **Beat the Pro is now the TOP button** (owner's explicit ask) — one quick, low-commitment round is the
+     easiest thing to tap on landing — with its whole satellite family grouped directly under it (live
+     countdown, free-Legend hook, streak / streak-at-risk banner, weekly meta-goals panel, Monthly Spotlight).
+  3. **A "CAREER" section divider** (`.stack-sep` — a labelled gradient rule) separates the quick-daily group
+     from the deep career group: Resume Career/Legend Circuit or View Ceremony (gold primary / teal) → Resume
+     Draft → Career Mode (gold primary, or a quiet ghost when a resume exists) → Play Online (teal, prominent).
+     The CS210 colour hierarchy (gold = single primary career action, blue = daily, teal = online) is intact;
+     the resume/ended/draft branch LOGIC is byte-identical, just relocated as a block.
+  4. **Decluttered the top:** removed the marketing lede paragraph (the biggest text block before the buttons)
+     so you reach the first button faster; kept the small "⛳ 30-Year Career Simulation" badge (product
+     identity) + the small "Your best" line.
+  Verified in Playwright (440px): fresh state renders Beat the Pro first (blue), no "Daily Challenge" button,
+  `startDailyChallenge` still wired, the CAREER divider present, Career Mode gold (no resume) with Play Online
+  after; the preview kicker reads "TODAY'S BEAT THE PRO"; zero page errors. (The resume-gold/career-ghost path
+  is sign-in-gated per CS54, so it only shows for a signed-in account; the branch code is unchanged from before
+  the move.) Screenshot confirms the cleaner hierarchy. Deployed to /golf. FURTHER UX SUGGESTIONS surfaced to
+  the owner in chat (first-run "one-tap try" flow, a guest→account conversion nudge on the result, a persistent
+  bottom-tab nav, an "Up Next" resume hero for returning careers, sound/haptics polish) — not yet built,
+  awaiting picks.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
