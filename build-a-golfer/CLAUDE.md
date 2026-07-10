@@ -6283,6 +6283,41 @@ allows Google Fonts, or self-host Anton.*
   desktop + phone screenshots confirm the cohesive framing, the framed scorecard, and the background glow.
   Deployed to /golf. Tunable: `.droundglow` opacity, `.bcasthd`/`.dcardwrap` styling.
 
+- **CS249 — moodier, illustrated hole-view art (interim art-style upgrade; owner wants closer to the
+  painterly mockups but accepts the procedural ceiling).** Owner shared AI-generated mockups of a
+  painterly/illustrated top-down hole and asked to get closer to that art style (away from the flat "retro"
+  look), keeping each course's unique per-biome identity. Established the honest ceiling: the procedural
+  SVG renderer can approach the MOOD but can't become painterly raster art (that needs a generated-image
+  pipeline — documented below as the parked real path). Owner chose to SHIP the procedural improvement as
+  an interim. All in `hvTerrain`, applies to every course/hole, keeps the live tracer, self-contained:
+  • **Moody lighting** — the depth vignette is much stronger (edges fall toward near-black like the mockup),
+    so the course reads dark/atmospheric instead of flat bright.
+  • **Glowing fairway** — a soft warm sheen (`hvsheen`) on the short grass so it pops out of the shadows.
+  • **Gold fireflies** — ~46 tiny warm glowing particles drifting in the darker rough (sparse over the lit
+    fairway), the mockup's signature.
+  • **Dimensional trees** — the key art-style lever: shared shading gradients (`hvsphere` for round
+    canopies, `hvcone` for conifers) overlaid on every tree so flat discs/triangles read as ROUNDED,
+    lit-from-top-left forms — regardless of each course's own colors. Applied across canopy / broadleaf /
+    birch (sphere) and pine / spruce / cypress (cone), plus softer cast shadows, so all biomes match.
+  • A faint cool haze kept only near water. Filter-blurred shapes are few (edges only), so cost stays low;
+    terrain is still built-once-cached per hole.
+  Per-course biomes/identities (CS246) are untouched — only the drawing style/lighting changed. Verified in
+  Playwright: all 39 courses render (0 null, framed, distinct), a full round plays to completion, a 6-biome
+  spread (pine/coastal/links/desert/tropical/alpine) all look consistent and moody, zero page errors.
+  Deployed to /golf. Tunable: vignette/fog/sheen opacity, firefly count, the `hvsphere`/`hvcone` shading
+  strength.
+  **PARKED — the real painterly art style (needs owner's go + an image source):** the only way to actually
+  match the painterly mockups is generated IMAGES, not code-drawn shapes. Feasible plan: use each hole's
+  existing procedural GEOMETRY as the structure guide for an img2img/ControlNet generation → the AI restyles
+  it painterly AND it auto-aligns with the hole, so the live ball tracer still works on top. ~702 images,
+  one-time batch (~$10-30 on a gen API), hosted on a CDN + lazy-loaded, with the procedural renderer as the
+  fallback. I can build the entire client side (image backdrop + tracer overlay + lazy-load + fallback); I
+  CANNOT generate the images from this sandbox (no image-gen tool) — needs an AI image API key or the owner
+  running the batch. Proposed proof-of-concept before committing: owner generates ONE painterly image for a
+  specific hole (I provide the exact hole geometry/reference to prompt from), I wire it in with the working
+  tracer to demonstrate quality. Owner picked "ship the interim" for now; the image POC is available on
+  request.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
