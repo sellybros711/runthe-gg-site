@@ -6200,6 +6200,37 @@ allows Google Fonts, or self-host Anton.*
   game (`soccer/index.html`) — independent of this Supabase-backed golf form; no conflict, could be unified
   later if wanted. Deployed to /golf.
 
+- **CS246 — the daily theme now carries into the PLAY view + every course looks distinct while playing
+  (owner: CS240's themed card "was changed, which is great, however the course still looks the same while
+  playing").** CS240 themed the Daily preview card (accent, palette, motifs) but that identity barely reached
+  the round: it was only a 2px inset ring, and ~14 marquee courses fell back to the generic bright-green
+  parkland biome, so they all looked alike. Owner picked BOTH fixes (AskUserQuestion).
+  1. **Carry the theme into the TOURTRACE window.** New `hvThemeAccent(courseKey)` (cached, derived from
+     `dailyTheme`→biome) + `hvFrameStyle()`; every hole-view svg (`hvNode`, all 3 build paths — daily,
+     preview, sudden-death — so H2H and career Moments benefit too) now renders a THEMED FRAME: an
+     accent-colored border + soft accent glow, instead of the plain panel border. The daily round's course
+     tag ("QUICKSILVER GOLF CLUB · CALM · BALANCED") is now tinted the day's accent instead of a generic
+     teal. Removed the redundant CS240 shell inset-ring (the svg carries the frame now). So the playing
+     screen visibly belongs to today's course (e.g. Winged Foot plays under a crimson frame + crimson tag,
+     Oakmont under gold).
+  2. **Distinct scenery per course.** `hvBiome` gained compact per-course `grassShift`/`treeShift`
+     ([hue°,light×,sat×]) support so a venue gets its own tone in one triple, applied before the existing
+     direct-field overrides. Reassigned **Innisbrook Copperhead → pine** (real pine framing), and added a
+     `HV_COURSE_TWEAK` identity for each of the 13 remaining parkland-default venues — a distinct combo of
+     grass tone, tree DENSITY (`stepMul`), autumn/evergreen mix, flora scatter, flower palette and bunker
+     scale: e.g. **Winged Foot** dark mature dense woods + canyon bunkers (a "northeastern brute"),
+     **Bethpage Black** darkest/densest forest, **Oakmont** treeless & OPEN with big fairway bunkers on pale
+     firm turf, **Riviera** blue-green kikuyu, **Merion** quarry/sandy waste, **Oakland Hills** clover-leaf
+     bunkers everywhere, etc. The existing per-course `hvCourseVary` hue-shift stacks on top, so no two
+     courses match.
+  Verified in Playwright: all **39** daily courses render (0 null), **39/39 now have a distinct base grass
+  tone** (was ~25 sharing generic parkland green), 39/39 carry the themed frame, Innisbrook is pine; a full
+  Winged Foot practice round plays to completion with the crimson themed tag + framed window + dense-woodland
+  scenery and zero page errors; side-by-side screenshots confirm Winged Foot / Oakmont / Bethpage / Riviera
+  look genuinely different. Rendering-only — the sim, hole geometry, and score engine are untouched. Deployed
+  to /golf. Tunable: the per-course `HV_COURSE_TWEAK` entries (grassShift/stepMul/bunkerScale/scatter), the
+  frame alpha/glow in `hvFrameStyle`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

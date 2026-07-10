@@ -9864,7 +9864,7 @@ const HV_COURSE_BIOME={
  'Shinnecock Hills':'heath','The Country Club':'heath',
  'TPC Scottsdale':'desert',
  'Plantation Course at Kapalua':'tropical','Waialae Country Club':'tropical','TPC Sawgrass':'tropical','Bay Hill':'tropical','Harbour Town Golf Links':'tropical',
- 'Augusta National':'pine','East Lake Golf Club':'pine','Sedgefield Country Club':'pine',
+ 'Augusta National':'pine','East Lake Golf Club':'pine','Sedgefield Country Club':'pine','Innisbrook Copperhead':'pine',
  'Pinehurst No. 2':'sandhills',
  'Colonial Country Club':'prairie','Southern Hills':'prairie','TPC Southwind':'prairie'};
 // hand-tuned per-venue overrides applied AFTER the per-course variation (signature venues that deserve a
@@ -9880,7 +9880,35 @@ const HV_COURSE_TWEAK={
  'Harbour Town Golf Links':{water:'#4f8a6a', ripple:'#c2e6cf', scatter:[['broadleaf',0.55],['palm',0.2],['flower',0.25]], stepMul:0.9},   // lowcountry live-oaks + marsh
  'Torrey Pines South':{oceanW:[58,82], scatter:[['pine',0.55],['cypress',0.3],['flower',0.15]]},   // Torrey pines on the cliffs
  'Bay Hill':{water:'#37a6d2', scatter:[['palm',0.34],['broadleaf',0.36],['flower',0.3]]},   // Florida water course
- 'Whistling Straits':{oceanW:[48,66], beach:'#cdb98a', bunkerScale:0.7}};   // Lake Michigan dunescape
+ 'Whistling Straits':{oceanW:[48,66], beach:'#cdb98a', bunkerScale:0.7},   // Lake Michigan dunescape
+ // CS246: distinct identities for the classic PARKLAND-default venues (were all a generic bright green).
+ // grassShift = [hue°, light×, sat×] tone; stepMul = tree density (higher = sparser); scatter = flora mix.
+ 'Winged Foot':{grassShift:[-5,0.9,1.02], treeShift:[-4,0.92,1], stepMul:0.8, autumnP:0.12, bunkerScale:1.38,
+   scatter:[['decid',0.6],['pine',0.28],['flower',0.12]], flowerCols:['#e0567f','#ffffff','#c96f9c']},        // stately NE brute, canyon bunkers, dark mature woods
+ 'Bethpage Black':{grassShift:[-7,0.85,0.96], treeShift:[-6,0.86,0.98], stepMul:0.74, autumnP:0.08, bunkerScale:1.32,
+   scatter:[['pine',0.5],['decid',0.4],['flower',0.1]], flowerCols:['#ffffff','#d8e0c0']},                    // darkest, densest, brutal wooded
+ 'Oakmont':{grassShift:[3,1.06,0.86], treeShift:[2,1.02,0.9], stepMul:1.55, autumnP:0.14, bunkerScale:1.5,
+   scatter:[['decid',0.5],['pine',0.2],['flower',0.3]], flowerCols:['#f0c23e','#ffffff']},                    // treeless & open, church-pew bunkers, firm pale turf
+ 'Quail Hollow Club':{grassShift:[5,0.98,1.06], treeShift:[4,0.98,1.02], stepMul:0.86, autumnP:0.18, bunkerScale:1.0,
+   scatter:[['decid',0.62],['pine',0.24],['flower',0.14]], flowerCols:['#ff9ecb','#ffffff','#e0567f'], water:'#3a97d8'},  // lush hardwood corridors + creeks
+ 'Muirfield Village':{grassShift:[3,1.09,1.1], treeShift:[3,1.06,1.04], stepMul:1.02, autumnP:0.1, bunkerScale:1.12,
+   scatter:[['decid',0.5],['pine',0.34],['flower',0.16]], flowerCols:['#ff9ecb','#ffffff'], water:'#37a6e2'},  // pristine, manicured, water a dozen holes
+ 'Valhalla':{grassShift:[-9,1.0,0.94], treeShift:[-6,0.98,0.96], stepMul:1.2, autumnP:0.16, bunkerScale:1.05,
+   scatter:[['decid',0.44],['pine',0.36],['flower',0.2]], flowerCols:['#f0c23e','#ffffff','#c9b2d6'], water:'#3fa0dd'},   // open bluegrass bluffs, limestone, water both nines
+ 'TPC River Highlands':{grassShift:[6,1.02,1.06], treeShift:[5,1.0,1.02], stepMul:1.06, autumnP:0.14, bunkerScale:1.0,
+   scatter:[['decid',0.52],['pine',0.3],['flower',0.18]], flowerCols:['#ff9ecb','#ffffff'], water:'#37a6e2'},  // short, bright, lakeside
+ 'Glen Abbey':{grassShift:[-3,0.95,1.0], treeShift:[-2,0.94,1.0], stepMul:0.94, autumnP:0.28, bunkerScale:1.0,
+   scatter:[['decid',0.5],['pine',0.36],['flower',0.14]], flowerCols:['#d9a83f','#ffffff','#e0567f'], water:'#3a97d8'},   // Canadian valley, cold creek, autumnal
+ 'Riviera Country Club':{grassShift:[-11,0.92,0.9], treeShift:[-6,0.96,0.92], stepMul:1.0, autumnP:0.06, bunkerScale:1.12,
+   scatter:[['decid',0.56],['pine',0.2],['flower',0.24]], flowerCols:['#f0c23e','#ffffff','#d6a0d0'], trunk:'#d9d2be'},   // blue-green kikuyu, eucalyptus, canyon
+ 'Firestone South':{grassShift:[-3,0.9,1.0], treeShift:[-4,0.88,1.0], stepMul:0.8, autumnP:0.1, bunkerScale:1.0,
+   scatter:[['decid',0.5],['pine',0.42],['flower',0.08]], flowerCols:['#ffffff','#d8e0c0']},                  // towering trees, tight corridors ("the Monster")
+ 'Baltusrol':{grassShift:[2,1.0,1.0], treeShift:[1,1.0,1.0], stepMul:1.0, autumnP:0.14, bunkerScale:1.18,
+   scatter:[['decid',0.52],['pine',0.3],['flower',0.18]], flowerCols:['#ff9ecb','#ffffff'], water:'#3fa0dd'},  // lakeside, sandy wastes, par-3s over water
+ 'Merion':{grassShift:[4,1.0,1.02], treeShift:[3,1.0,1.0], stepMul:1.0, autumnP:0.2, bunkerScale:1.26,
+   scatter:[['decid',0.58],['pine',0.24],['flower',0.18]], flowerCols:['#f0c23e','#ff9ecb','#ffffff']},        // quarry + wicker baskets, sandy waste, a brook
+ 'Oakland Hills':{grassShift:[-4,0.95,1.0], treeShift:[-3,0.94,1.0], stepMul:0.96, autumnP:0.15, bunkerScale:1.4,
+   scatter:[['decid',0.54],['pine',0.32],['flower',0.14]], flowerCols:['#ffffff','#e0567f']}};                // clover-leaf bunkers everywhere, tilted, repellent greens
 // per-course VISUAL IDENTITY (CS216): each course gets a deterministic palette + flora variation layered
 // on its biome, so even two "parkland" venues read clearly different. Cached per key.
 const HV_GRASS_KEYS=['base','tickD','tickL','cut','fw','fwEdge','green','fringe','gLine'];
@@ -9921,7 +9949,12 @@ function hvCourseVary(base, key){
 const _hvBiomeCache={};
 function hvBiome(courseKey){ const k=courseKey||'_';
   if(!_hvBiomeCache[k]){ const B=hvCourseVary(HV_BIOMES[HV_COURSE_BIOME[courseKey]||'parkland'], courseKey);
-    if(courseKey && HV_COURSE_TWEAK[courseKey]) Object.assign(B, HV_COURSE_TWEAK[courseKey]);   // signature-venue hand-tune
+    const tw=courseKey && HV_COURSE_TWEAK[courseKey];
+    if(tw){   // signature-venue hand-tune. grassShift/treeShift give a course a distinct tone in one triple.
+      if(tw.grassShift){ const[dH,mL,mS]=tw.grassShift; HV_GRASS_KEYS.forEach(kk=>{ if(typeof B[kk]==='string') B[kk]=hvHexShift(B[kk],dH,mL,mS); }); }
+      if(tw.treeShift){ const[dH,mL,mS]=tw.treeShift; HV_TREE_KEYS.forEach(kk=>{ if(Array.isArray(B[kk])) B[kk]=B[kk].map(c=>hvHexShift(c,dH,mL,mS)); }); }
+      Object.assign(B, tw);   // then any direct field overrides (stepMul, scatter, flowerCols, bunkerScale, water…)
+    }
     _hvBiomeCache[k]=B; }
   return _hvBiomeCache[k]; }
 // ---- CS240: Daily "today's course" presentation theme. Each daily course gets a punchy tagline + a few
@@ -10489,8 +10522,17 @@ function hvKick(key, g, p, pPrev, reduce, opts){
 // multi = {shots:[per-unit shot arrays], order:[{u,i} play order], cols:[per-unit ball colors],
 // names:[per-unit labels]} → MULTI-BALL mode: every competitor's ball on one map, revealed in
 // real "away plays first" order; revealN then counts STEPS through the merged order.
+// CS246: the day's course accent (from its theme/biome) — cached, used to frame the TOURTRACE window so
+// the playing screen carries the same identity as the themed daily card.
+const _hvAccentCache={};
+function hvThemeAccent(courseKey){ const k=courseKey||'_';
+  if(_hvAccentCache[k]===undefined){ try{ _hvAccentCache[k]=dailyTheme(courseKey).accent||'#e0a83b'; }catch(e){ _hvAccentCache[k]='#e0a83b'; } }
+  return _hvAccentCache[k]; }
+function hvFrameStyle(courseKey){ const a=hvThemeAccent(courseKey);
+  return `border-color:${a}99;box-shadow:0 0 0 2px ${a}3d, 0 0 20px -6px ${a}66, 0 16px 36px -22px rgba(0,0,0,.82), inset 0 1px 0 rgba(255,255,255,.05)`; }
 function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce){
   const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
+  const fst=hvFrameStyle(courseKey);   // themed frame for every svg in this node
   if(multi){
     const order=multi.order||[];
     if(!order.length || !multi.shots.every(ss=>ss.length&&ss[0].k)) return null;
@@ -10516,7 +10558,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce){
     const cam=live?hvCamFor2(g,prevP):HV_CAM;
     const sh=cur?multi.shots[cur.u][cur.i]:null;
     const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
-      <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvTerrain(g,seedN,hvBiome(courseKey))}${inner}</svg></div></div>`);
+      <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvTerrain(g,seedN,hvBiome(courseKey))}${inner}</svg></div></div>`);
     if(live && curP){
       const key=(courseKey||'')+':m'+holeIdx+':'+showN;
       requestAnimationFrame(()=>hvKick(key, g, curP, prevP, reduce));
@@ -10532,7 +10574,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce){
     const g=(hole._hv&&hole._hv.g)||hvGeom(seedN, hole.par, hole.yards||hole.yd||400, courseKey, holeIdx);
     hole._hv={g, plots:[]};
     return $(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span><span class="ttrep">NEXT HOLE</span></div>
-      <div class="hvshell"><svg viewBox="${HV_CAM.join(' ')}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Hole ${hole.n} preview">${hvTerrain(g,seedN,hvBiome(courseKey))}</svg></div></div>`);
+      <div class="hvshell"><svg viewBox="${HV_CAM.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} preview">${hvTerrain(g,seedN,hvBiome(courseKey))}</svg></div></div>`);
   }
   if(!hole._hv){ const g=hvGeom(seedN, hole.par, hole.yards||hole.yd||((DAILY_COURSES[courseKey]||{}).holes||[])[holeIdx]?.[1]||400, courseKey, holeIdx);
     hole._hv={g, plots:hvPlots(g, shots, seedN)}; }
@@ -10554,7 +10596,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce){
   else if(idx>=0 && plots[idx]) inner+=hvDoneShot(g,plots[idx],false,small&&inCam(plots[idx]));
   const cam=live?hvCamFor(g,plots,Math.max(0,idx-1)):HV_CAM;
   const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
-    <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvTerrain(g,seedN,hvBiome(courseKey))}${inner}</svg></div></div>`);
+    <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvTerrain(g,seedN,hvBiome(courseKey))}${inner}</svg></div></div>`);
   if(live && plots[idx]){
     const key=(courseKey||'')+':'+holeIdx+':'+showN+(animNonce!=null?':r'+animNonce:'');
     requestAnimationFrame(()=>hvKick(key, g, plots[idx], idx>0?plots[idx-1]:null, reduce));
@@ -11571,7 +11613,7 @@ function scrDailyRound(){
       add($(`<div class="center small" style="margin:0 0 4px;color:var(--gold);font-weight:700">${esc(S.moment.evtName)} · ${momentPosTxt(S.moment.info).replace(/<[^>]*>/g,'')} at the start of the day</div>`));
     }
   } else {
-  add($(`<div class="center"><span class="tag">${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)} · ${S.dailyPlan}</span></div>`));
+  { const _ta=hvThemeAccent(S.dailyCourse); add($(`<div class="center"><span class="tag" style="color:${_ta};border-color:${_ta}88">${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)} · ${S.dailyPlan}</span></div>`)); }
   if(!boardPresent && !reviewing){
     add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
     const beating=(through>0)&&(total < av*(through/18));
@@ -11627,7 +11669,7 @@ function scrDailyRound(){
     const hvn=hvNode(hole, reveal, holeIdx, S.dailyCourse, null, revNonce!=null?revNonce:null);
     if(!hvn) return;
     const shell=hvn.querySelector('.hvshell'), h=hole;
-    if(shell){ const _th=dailyTheme(S.dailyCourse); shell.style.boxShadow=`inset 0 0 0 2px ${_th.accent}55`; }   // CS240: themed accent frame
+    // (CS246: the themed accent frame now lives on the svg itself via hvFrameStyle, so the whole window is framed)
     // hole info + scoreboard stay in FIXED corners all round (owner: they must not flip between holes)
     shell.appendChild($(`<div class="hvob hvhole">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
     if(holePauseFlag && lastIdx>=0){
