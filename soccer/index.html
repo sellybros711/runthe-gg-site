@@ -7692,6 +7692,13 @@ function loadImg(src, cross){
     i.onload=()=>res(i); i.onerror=()=>res(null); i.src=src; });
 }
 function rrect(x,ctx,X,Y,W,H,r){ ctx.beginPath(); ctx.moveTo(X+r,Y); ctx.arcTo(X+W,Y,X+W,Y+H,r); ctx.arcTo(X+W,Y+H,X,Y+H,r); ctx.arcTo(X,Y+H,X,Y,r); ctx.arcTo(X,Y,X+W,Y,r); ctx.closePath(); }
+// Draw letter-spaced text centred at (cx, y) with the current font/fill.
+function canvasSpacedText(ctx, text, cx, y, sp){
+  const prevAlign=ctx.textAlign; ctx.textAlign='left';
+  let w=0; for(const ch of text) w+=ctx.measureText(ch).width+sp; w-=sp;
+  let lx=cx-w/2; for(const ch of text){ ctx.fillText(ch,lx,y); lx+=ctx.measureText(ch).width+sp; }
+  ctx.textAlign=prevAlign;
+}
 
 // up to 4 recap lines from the simulation (knockout scores + top scorer)
 function shareRecapLines(){
@@ -8058,6 +8065,116 @@ function drawCanvasBracket(x, cx, cy, r, isChamp){
   }
   x.textAlign='left';
 }
+// Signature 9:16 "team card" — the XI laid out on a pitch as flag-filled
+// tokens, topped with the result, team OVR and the formation identity. Built
+// for full-draft results (the shape only exists there); story-optimised so it
+// reads as a real all-star team, not a stat list.
+async function buildTeamCardCanvas(){
+  await (document.fonts && document.fonts.ready);
+  const W=1080, H=1920, CX=W/2, cream='#FDF6E3';
+  const r=simResult;
+  const isChamp = r ? (!r.eliminated && r.furthestRound==='Final') : false;
+  const squad = (gs.result.scoredPicks||[]).map(sp=>sp.player);
+  const f = deriveFormation(squad); const prof = f.profile;
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
+
+  // ---- background: navy + gold glow + gold top stripe (brand) ----
+  x.fillStyle='#0b1324'; x.fillRect(0,0,W,H);
+  let g=x.createRadialGradient(CX,360,60,CX,360,780);
+  g.addColorStop(0,'rgba(244,180,19,0.30)'); g.addColorStop(.5,'rgba(244,180,19,0.10)'); g.addColorStop(1,'rgba(244,180,19,0)');
+  x.fillStyle=g; x.fillRect(0,0,W,H);
+  const stripe=x.createLinearGradient(0,0,W,0);
+  stripe.addColorStop(0,'#9C6C18'); stripe.addColorStop(.32,'#F4B413'); stripe.addColorStop(.5,'#FCEFA8'); stripe.addColorStop(.68,'#F4B413'); stripe.addColorStop(1,'#9C6C18');
+  x.fillStyle=stripe; x.fillRect(0,0,W,14);
+
+  // ---- wordmark ----
+  x.textBaseline='alphabetic'; x.textAlign='left'; x.font='400 66px Anton';
+  const seg=[['RUN',cream],['THE','#138A6B'],['PITCH',cream]];
+  let tot=0; for(const [t] of seg) tot+=x.measureText(t).width; let lx=CX-tot/2;
+  for(const [t,col] of seg){ x.fillStyle=col; x.fillText(t,lx,108); lx+=x.measureText(t).width; }
+
+  // ---- result headline ----
+  x.textAlign='center';
+  if(isChamp){
+    x.font='400 60px Anton'; x.fillStyle='#F4B413';
+    x.save(); x.shadowColor='rgba(244,180,19,.5)'; x.shadowBlur=20; x.fillText('WORLD CUP CHAMPIONS 🏆', CX, 196); x.restore();
+  } else {
+    x.font='800 30px Archivo'; x.fillStyle='#ff6a5a'; x.fillText('REACHED THE', CX, 170);
+    x.font='400 58px Anton'; x.fillStyle=cream;
+    x.save(); x.shadowColor='rgba(0,0,0,.4)'; x.shadowBlur=10; x.fillText(shareEliminatedRound(r).toUpperCase(), CX, 228); x.restore();
+  }
+
+  // ---- team overall + formation identity pill ----
+  const teamOv=gs.result.teamOverall; const over100=teamOv>=100;
+  const teamColor= over100?'#F4B413':(teamOv>=90?'#4ade80':teamOv>=80?'#F4B413':teamOv>=70?'#F47B20':'#E5402A');
+  x.font='400 92px Anton'; x.fillStyle=teamColor;
+  x.save(); x.shadowColor=over100?'rgba(244,180,19,.95)':'rgba(0,0,0,.4)'; x.shadowBlur=over100?30:14;
+  x.fillText(teamOv.toFixed(1), CX, 332); x.restore();
+  x.font='900 22px Archivo'; x.fillStyle=cream; canvasSpacedText(x,'TEAM OVERALL',CX,364,3);
+  // pill: "4-3-3   ATTACKING"
+  const pill = f.name+'    '+prof.label.toUpperCase();
+  x.font='900 30px Archivo'; const pw=x.measureText(pill).width+64, ph=58, px=CX-pw/2, py=392;
+  rrect('',x,px,py,pw,ph,29); x.fillStyle=prof.color; x.fill();
+  x.fillStyle='#fff'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(pill, CX, py+ph/2+2); x.textBaseline='alphabetic';
+
+  // ---- pitch ----
+  const pTop=488, pBot=1566, pL=48, pR=W-48, pW=pR-pL, pH=pBot-pTop;
+  x.fillStyle='#127a4f'; rrect('',x,pL,pTop,pW,pH,28); x.fill();
+  x.save(); rrect('',x,pL,pTop,pW,pH,28); x.clip();
+  for(let i=0;i<8;i++){ if(i%2){ x.fillStyle='rgba(255,255,255,.05)'; x.fillRect(pL, pTop+i*(pH/8), pW, pH/8); } }
+  x.strokeStyle='rgba(255,255,255,.32)'; x.lineWidth=4;
+  x.strokeRect(pL+16,pTop+16,pW-32,pH-32);
+  x.beginPath(); x.moveTo(pL, pTop+pH/2); x.lineTo(pR, pTop+pH/2); x.stroke();
+  x.beginPath(); x.arc(CX, pTop+pH/2, 92, 0, Math.PI*2); x.stroke();
+  x.restore();
+
+  // preload flags (cross-origin) once per country
+  const flagCache={};
+  await Promise.all([...new Set(squad.map(p=>p.country))].map(async cty=>{
+    const u=flagImg(cty,320); flagCache[cty]= u ? await loadImg(u,true).catch(()=>null) : null;
+  }));
+
+  const lines=[['FWD', squad.filter(p=>p.position==='FWD')],['MID', squad.filter(p=>p.position==='MID')],
+               ['DEF', squad.filter(p=>p.position==='DEF')],['GK', squad.filter(p=>p.position==='GK')]];
+  const rowH=pH/lines.length, R=60;
+  lines.forEach(([pos, players], li)=>{
+    if(!players.length) return;
+    const cy=pTop + rowH*li + rowH/2; const n=players.length;
+    players.forEach((p, pi)=>{
+      const cx=pL + pW*(pi+1)/(n+1);
+      // flag fill, circle-clipped, cover-fit
+      x.save(); x.beginPath(); x.arc(cx,cy,R,0,Math.PI*2); x.closePath(); x.clip();
+      const fl=flagCache[p.country];
+      if(fl){ const ar=fl.width/fl.height; let dw=2*R, dh=2*R; if(ar>1){ dw=dh*ar; } else { dh=dw/ar; }
+        x.drawImage(fl, cx-dw/2, cy-dh/2, dw, dh); }
+      else { x.fillStyle='#33415c'; x.fillRect(cx-R,cy-R,2*R,2*R); }
+      x.restore();
+      // position ring
+      x.beginPath(); x.arc(cx,cy,R,0,Math.PI*2); x.lineWidth=7; x.strokeStyle=PITCH_COLORS[pos]||'#888'; x.stroke();
+      // name pill
+      let nm=shortName(p.name); x.font='900 24px Archivo';
+      const maxNW=2*R+30; let nw=Math.min(x.measureText(nm).width+22, maxNW), nh=36;
+      rrect('',x,cx-nw/2, cy-nh/2, nw, nh, 9); x.fillStyle='rgba(0,0,0,.62)'; x.fill();
+      x.fillStyle='#fff'; x.textAlign='center'; x.textBaseline='middle';
+      let dn=nm; while(x.measureText(dn).width>nw-16 && dn.length>3) dn=dn.slice(0,-1);
+      if(dn!==nm) dn=dn+'…'; x.fillText(dn, cx, cy+1); x.textBaseline='alphabetic';
+      // OVR badge
+      const ov=p.overall; const oc= ov>=90?'#F4B413':ov>=82?'#F47B20':ov>=74?'#1F9E57':'#E5402A';
+      x.font='400 32px Anton'; const ow=x.measureText(String(ov)).width+24, oh=38;
+      rrect('',x,cx-ow/2, cy+R-12, ow, oh, 9); x.fillStyle=oc; x.fill();
+      x.fillStyle= ov>=90?'#1a1008':'#fff'; x.textAlign='center'; x.textBaseline='middle';
+      x.fillText(String(ov), cx, cy+R-12+oh/2+2); x.textBaseline='alphabetic';
+    });
+  });
+
+  // ---- footer ----
+  x.textAlign='center'; x.font='400 50px Anton'; x.fillStyle=cream;
+  x.save(); x.shadowColor='rgba(0,0,0,.4)'; x.shadowBlur=12; x.fillText('Can you win the World Cup?', CX, H-96); x.restore();
+  x.font='900 46px Archivo'; x.fillStyle='#F4B413'; x.fillText('runthe.gg', CX, H-40);
+  x.textAlign='left';
+  return c;
+}
+
 async function buildSimpleShareCanvas(){
   await (document.fonts && document.fonts.ready);
   const W=1080, CX=W/2, ink='#16120F', cream='#FDF6E3';
@@ -8196,7 +8313,12 @@ async function openSharePopup(){
   const bg=$('share-bg'); if(!bg) return;
   // generated preview image (async; hidden until ready)
   const img=$('share-preview'); if(img){ img.style.display='none';
-    buildSimpleShareCanvas().then(canvas=>{ img.src=canvas.toDataURL('image/png'); img.style.display=''; }).catch(()=>{}); }
+    // Full-draft results get the signature 9:16 pitch team card; everything
+    // else keeps the roster-list card (no formation to show).
+    const useTeamCard = isFullDraft() && gs && gs.result && (gs.result.scoredPicks||[]).length;
+    const buildShare = useTeamCard ? buildTeamCardCanvas : buildSimpleShareCanvas;
+    buildShare().then(canvas=>{ img.src=canvas.toDataURL('image/png'); img.style.display=''; })
+      .catch(()=>{ buildSimpleShareCanvas().then(canvas=>{ img.src=canvas.toDataURL('image/png'); img.style.display=''; }).catch(()=>{}); }); }
   // share-target grid
   const grid=$('share-grid'); grid.innerHTML='';
   const msg=shareTextCore(), link=SHARE_HOME;
