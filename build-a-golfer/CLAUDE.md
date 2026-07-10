@@ -5856,6 +5856,32 @@ allows Google Fonts, or self-host Anton.*
   screenshot confirms the green at the top is fully clear with the board tucked bottom-right above the shot
   description.
 
+- **CS233 — career sudden-death playoff plays out like an H2H match: all players' balls on one tracer
+  (owner/Jordo: "the playoff holes should play out like a h2h match would, showing all players balls...
+  all players in one sim").** The Moment playoff (when you play the final round and tie) used to be "you
+  play your ball on the tracer, then a text card shows everyone's result." Rebuilt it as a multi-ball
+  broadcast, exactly like the online H2H sudden-death: EVERY tied contender's ball on ONE TOURTRACE map,
+  hole by hole, everyone tees off then whoever is farthest from the hole plays next, until someone is
+  beaten outright. New reusable module (`poBuildPlan`/`buildPoOrder`/`startPlayoffWatch`/`poWatchStep`/
+  `poWatchFinish`/`scrPlayoffWatch`, screen `playoffwatch`) that reuses `dShotSeq` (per-player shot
+  sequences), `hvNode` multi-mode (all balls on one map, from the H2H watch), `h2hRemOf` (away-first
+  order), `h2hHoledUnits` and the CS232 bottom-right board. Ball colours match H2H (YOU blue, others
+  red/cyan/yellow…); the board shows each alive player's result as their ball holes out (low = gold),
+  with a "SUDDEN-DEATH · EXTRA HOLE N" chip, the one-line shot description, and a Skip-to-result button;
+  the reveal auto-paces per shot with a beat between holes. Deterministic per (event, round, player). The
+  winner it derives feeds `ce._playoffResult` (with `_playoffShown`), so `finalizeEvent` assigns money/
+  points/positions unchanged and a win still flows into the win celebration — this is purely the visual.
+  Replaces the old play-your-ball-then-text-card flow; the now-unused `momentPlayoff*` text functions and
+  the daily-round `S.momentPO` board branch are left in place but dead (never triggered). Verified in
+  Playwright: a rigged 2- and 3-way tie routes to `playoffwatch`, the plan builds N extra holes with each
+  contender's shot sequence + away-first order, the tracer renders all balls + the board + shot desc
+  mid-reveal, Skip and the full reduced-motion timer chain both resolve to the season with
+  `ce._playoffResult`/`ce.done`/`ce.playoff` set, and a screenshot confirms all three balls on one map
+  with the board bottom-right. Zero page errors; practice daily + H2H watch regress clean. NOTE: the
+  AUTO-SIM season playoff (when you don't play the Moment) still uses the quick text reveal
+  (`celebratePlayoff`) — converting that too needs the season playoff engine to sim on specific course
+  holes (it currently uses the abstract `playoffHole`), flagged as a follow-up.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
