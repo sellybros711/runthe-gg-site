@@ -6157,6 +6157,49 @@ allows Google Fonts, or self-host Anton.*
   /golf. Tunable: `DECLINE_START_YEAR`/`DECLINE_FULL_YEAR`, `DECLINE_RAMP_MIN`/`MAX`, the `formMod` strength
   (0.25), per-skill `DECLINE_RATE`.
 
+- **CS245 — in-app "Send Feedback" form (bugs / ideas / anything), surfaced where players actually look
+  (owner: "a place for players to submit bugs, ideas... in a logical place where players will see it and be
+  inclined to give feedback").** A proper low-friction in-app form (no email client needed) replaces the
+  scattered `mailto:` links, so a player can report a bug or share an idea in a few taps without leaving the
+  game.
+  • **The form** (`overlayFeedback`, a standard `.ov` overlay): three category chips (Bug / Idea / Other,
+    with new themed `bug`/`bulb`/`chat` SVG icons), a message textarea (context-aware placeholder), an
+    optional email field for guests (signed-in users are told we can follow up via their account), a privacy
+    note, and a gold Send CTA → a warm "Thank you!" state with a "Send another" option. On-brand
+    dark-green/gold, matching the game's icon system (CS103 auto-converts the 💬/🐞/💡 emoji to the new SVG
+    icons at the `$()` layer).
+  • **Durable + fail-open delivery.** `submitFeedback()` posts to Supabase immediately when the RPC is
+    reachable; on ANY failure (offline, or the migration not applied yet) it queues the submission to
+    localStorage (`bag_pending_feedback`, cap 50) and `flushFeedback()` retries it on the next load / sign-in
+    (wired into `sbApply`, runs for guests too) and the `online` event — mirroring the pending-seasons queue.
+    So a submission is never lost and no email client is ever required; the player always sees "Thank you!".
+    Each payload carries the current screen/mode/year + UA for bug triage (disclosed in the form, "nothing
+    that identifies you").
+  • **Placement (logical + visible + inviting):** a gold "Send Feedback" pill in the **footer** (renders on
+    every screen), a **Send Feedback** row in the ≡ **menu** (About section, replacing the old Contact
+    mailto), the **About** overlay's Send Feedback button, and a low-key "Found a bug or have an idea? Tell
+    us ›" link on the **season summary** (the reflection moment engaged players sit on). All open the same
+    form.
+  • **Backend — `supabase/47_runtour_feedback.sql` (owner-run):** a `runtour_feedback` table (category /
+    message / optional email / jsonb context / user_id+username when signed in / status for triage) written
+    ONLY through an anon-callable `runtour_feedback_submit` SECURITY DEFINER RPC — so guests AND signed-in
+    players can submit, the message is trimmed + length-capped (4000), the category is whitelisted (bad →
+    'other'), an emailed reply address is kept only if it looks like an email, and the username is attributed
+    server-side from `profiles`. RLS on with NO select/insert policy → anon/authenticated can't read or write
+    the table directly; only the definer RPC writes, only the dashboard reads. Validated end-to-end against a
+    local Postgres: applies clean + idempotent, signed-in submit attributes the username, guest submit stores
+    a valid email, bad category coerces to 'other', empty message rejected, and anon SELECT is denied by RLS.
+  • **Deploy-safe before the migration:** the client fails open, so deploying ahead of the owner running 47
+    is safe — feedback submitted in the interim queues locally and flushes automatically once the RPC is
+    live. **ACTION: run `supabase/47_runtour_feedback.sql`**, then read submissions in the Supabase table
+    editor (`runtour_feedback`, newest first).
+  Verified in Playwright: the footer pill / menu row / About button all open the form; category switching,
+  the textarea, and short-text validation work; a real submit (no server in the sandbox) shows the thank-you
+  and durably queues the payload with its category + context; the guest email field shows when signed out;
+  zero page errors. NOTE: a parallel session added a separate **mailto-based** feedback form to the SOCCER
+  game (`soccer/index.html`) — independent of this Supabase-backed golf form; no conflict, could be unified
+  later if wanted. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

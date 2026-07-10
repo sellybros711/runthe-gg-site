@@ -918,6 +918,9 @@ const ICONS={
   target:'<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="1.8"/>',
   checkered:'<path d="M6 3v18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M7 4h10v8H7z" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M7 4h2.5v2H7zM12 4h2.5v2H12zM9.5 6h2.5v2H9.5zM14.5 6h2.5v2h-2.5zM7 8h2.5v2H7zM12 8h2.5v2H12zM9.5 10h2.5v2H9.5zM14.5 10h2.5v2h-2.5z"/>',
   mail:'<rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4 7l8 6 8-6" fill="none" stroke="currentColor" stroke-width="1.7"/>',
+  chat:'<path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M7.5 9.5h9M7.5 12.5h6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  bug:'<path d="M9 6a3 3 0 0 1 6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="7" y="8" width="10" height="11" rx="5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 9v10M3 11h4M17 11h4M3.6 6.6 7 9M20.4 6.6 17 9M3.6 16.4 7 14M20.4 16.4 17 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  bulb:'<path d="M12 3a6 6 0 0 0-4 10.4c.8.7 1 1.4 1 2.6h6c0-1.2.2-1.9 1-2.6A6 6 0 0 0 12 3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9.5 19h5M10.2 21h3.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
   money:'<path d="M16 8.2C15.2 6.8 13.7 6 12 6c-2.2 0-3.8 1.1-3.8 2.7 0 1.5 1.2 2.3 3.8 2.8 2.6.5 4 1.4 4 3.1 0 1.6-1.7 2.6-4 2.6-1.8 0-3.4-.7-4.2-2M12 3.6v16.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>',
   clipboard:'<rect x="5" y="4" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="9" y="2.5" width="6" height="3.2" rx="1"/><path d="M8 11h8M8 14h8M8 17h5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
   crown:'<path d="M4 8l3 4 5-6 5 6 3-4-1.5 11H5.5z"/><rect x="5" y="19" width="14" height="2"/>',
@@ -989,7 +992,8 @@ const EMOJI_MAP={
   '📖':'book','📜':'scroll','♟':'pawn','☁':'cloud','🎒':'bag','🟢':'circleGreen','🏺':'jug','✂':'scissors',
   '🗓':'calendar','🏛':'building','🐍':'snake','⚙':'gear','🏌':'golfer','🎰':'slot','🔁':'repeat','🧱':'brick',
   '🏠':'home','👤':'user','😤':'grit','🌱':'sprout','☼':'sun','⚑':'pennant','⚖':'scales',
-  '⬆':'arrowUp','↗':'arrowUR','↩':'arrowLeft'
+  '⬆':'arrowUp','↗':'arrowUR','↩':'arrowLeft',
+  '💬':'chat','🐞':'bug','💡':'bulb'
 };
 const EMOJI_RE=new RegExp('(?:'+Object.keys(EMOJI_MAP).map(e=>e.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')️?','g');
 function emojifyIcons(h){ if(h==null) return h; h=String(h);
@@ -3916,8 +3920,9 @@ function header(){
 function footer(){
   const f=$(`<div class="foot"></div>`);
   const fp=$(`<div class="footpills"></div>`);
-  const mail='mailto:sellybros711@gmail.com?subject='+encodeURIComponent('RunTheTour, Questions / Comments');
-  fp.appendChild($(`<a class="pill" href="${mail}" style="text-decoration:none">✉ Questions or Comments</a>`));
+  const fbPill=$(`<button type="button" class="pill" style="cursor:pointer;border-color:var(--gold);color:var(--gold)">${ic('chat')} Send Feedback</button>`);
+  fbPill.onclick=()=>openFeedback();
+  fp.appendChild(fbPill);
   const a2h=$(`<button type="button" class="pill" style="cursor:pointer">▣ Add to Home</button>`); a2h.onclick=installApp;
   fp.appendChild(a2h);
   fp.appendChild($(`<a class="pill" href="/soccer/" target="_blank" rel="noopener" style="text-decoration:none;border-color:var(--teal);color:var(--teal)">↗ <span style="font-style:italic;opacity:.8">Love soccer?</span> Try RunThePitch</a>`));
@@ -3932,7 +3937,7 @@ function footer(){
   links.appendChild($(`<span>·</span>`));
   links.appendChild(mk('Terms',()=>{S.overlay='terms';render();}));
   links.appendChild($(`<span>·</span>`));
-  links.appendChild($(`<a href="${mail}" style="color:inherit;text-decoration:none;cursor:pointer">Contact</a>`));
+  links.appendChild(mk('Feedback',()=>openFeedback()));
   f.appendChild(links);
   return f;
 }
@@ -3982,6 +3987,7 @@ function render(){
     if(S.overlay==='shop') overlayShop(app);
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
     if(S.overlay==='about') overlayAbout(app);
+    if(S.overlay==='feedback') overlayFeedback(app);
     if(S.overlay==='privacy') overlayPrivacy(app);
     if(S.overlay==='terms') overlayTerms(app);
     if(S.overlay==='menu') overlayMenu(app);
@@ -4536,12 +4542,98 @@ function overlayMenu(screen){
   info.appendChild(menuRow('ℹ️','About','Who\'s behind Run The Tour',go(()=>{S.overlay='about';})));
   info.appendChild(menuRow('🔒','Privacy','What we collect, and why',go(()=>{S.overlay='privacy';})));
   info.appendChild(menuRow('📜','Terms','Terms of use',go(()=>{S.overlay='terms';})));
-  info.appendChild(menuRow('✉️','Contact','Questions or feedback',()=>{ location.href='mailto:sellybros711@gmail.com?subject='+encodeURIComponent('RunTheTour, Questions / Comments'); }));
+  info.appendChild(menuRow('💬','Send Feedback','Report a bug or share an idea',go(()=>{ fbReset(); })));
   info.appendChild(menuRow('▣','Add to Home Screen','Install as an app',()=>{ S.overlay=null; render(); installApp(); }));
   ov.appendChild(info);
   ov.appendChild($(`<button class="btn red">Close</button>`));
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  screen.appendChild(ov);
+}
+/* ---- Player feedback: an in-app "Send Feedback" form (bugs / ideas / anything).
+   Durable + fail-open: a submission is posted to Supabase immediately when the RPC
+   is reachable, else queued to localStorage and flushed on the next load / sign-in
+   (like the pending-seasons queue), so nothing is ever lost and no email client is
+   needed. Callable by guests AND signed-in players (server RPC is anon-callable). --- */
+function fbReset(cat){ S.fbCat=cat||S.fbCat||'bug'; S.fbSent=false; S.fbErr=''; S.fbBusy=false; S.overlay='feedback'; }
+function openFeedback(cat){ fbReset(cat); render(); }
+function loadPendingFeedback(){ const a=LS.get('bag_pending_feedback',[]); return Array.isArray(a)?a:[]; }
+function savePendingFeedback(a){ LS.set('bag_pending_feedback', a.slice(-50)); }
+function queueFeedback(p){ const q=loadPendingFeedback(); q.push(p); savePendingFeedback(q); }
+async function flushFeedback(){
+  if(!sb) return; const q=loadPendingFeedback(); if(!q.length) return;
+  const keep=[];
+  for(const p of q){
+    try{ const {error}=await sb.rpc('runtour_feedback_submit',{p_category:p.category,p_message:p.message,p_email:p.email,p_context:p.context}); if(error) throw error; }
+    catch(e){ keep.push(p); }   // still unreachable / migration not applied yet → keep for next time
+  }
+  savePendingFeedback(keep);
+}
+async function submitFeedback(){
+  const text=(S.fbText||'').trim();
+  if(text.length<3){ S.fbErr='Please add a little more detail so we can help.'; render(); return; }
+  const payload={ category:S.fbCat||'other', message:text.slice(0,4000),
+    email:((S.fbEmail||'').trim().slice(0,200))||null,
+    context:{ screen:S.screen, mode:(S.circuitMode?'circuit':(S.daily?'daily':'career')), year:(S.year||null),
+      signedIn:sbSignedIn(), ua:((navigator.userAgent||'').slice(0,300)) } };
+  S.fbBusy=true; S.fbErr=''; render();
+  let ok=false;
+  if(sb){ try{ const {error}=await sb.rpc('runtour_feedback_submit',{p_category:payload.category,p_message:payload.message,p_email:payload.email,p_context:payload.context}); ok=!error; }catch(e){} }
+  if(!ok) queueFeedback(payload);   // durable: flushes when the server is reachable (never lost)
+  S.fbBusy=false; S.fbSent=true; S.fbText='';
+  try{ track('feedback_sent',{category:payload.category, queued:!ok}); }catch(e){}
+  render();
+}
+function overlayFeedback(screen){
+  if(S.fbCat===undefined) S.fbCat='bug';
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Send feedback">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>${ic('chat')} Send Feedback</h3></div>`);
+  if(S.fbSent){
+    ov.appendChild($(`<div class="scout center" style="padding:24px 16px;margin-top:6px">
+      <div style="color:var(--gold);line-height:1">${ic('party',{size:38})}</div>
+      <p class="lede" style="margin:12px 0 4px"><b style="color:var(--oncard)">Thank you!</b></p>
+      <p class="small muted" style="line-height:1.55">Your message went straight to the team. RunTheTour is shaped by players like you, we read every one.</p></div>`));
+    const again=$(`<button class="btn ghost" style="margin-top:12px">Send another</button>`); again.onclick=()=>{ S.fbSent=false; render(); };
+    ov.appendChild(again);
+    ov.appendChild($(`<div style="height:8px"></div>`));
+    ov.appendChild($(`<button class="btn red">Close</button>`));
+    ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
+    screen.appendChild(ov); return;
+  }
+  ov.appendChild($(`<p class="lede" style="margin:2px 0 14px">Found a bug, have an idea, or just want to tell us something? We'd love to hear it, RunTheTour is in active development and your feedback drives what we build next.</p>`));
+  const cats=[['bug','bug','Bug',"Something's broken"],['idea','bulb','Idea','A request or improvement'],['other','chat','Other','Anything else']];
+  const chips=$(`<div style="display:flex;gap:8px;margin-bottom:14px"></div>`);
+  cats.forEach(([k,icn,lbl,desc])=>{
+    const on=S.fbCat===k;
+    const c=$(`<button type="button" style="flex:1 1 0;min-width:0;background:${on?'linear-gradient(180deg,#1ec6a6,#0a7c67)':'linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.14))'};color:${on?'#04211c':'var(--oncard)'};border:1.5px solid ${on?'var(--teal)':'var(--line)'};border-radius:12px;padding:10px 6px;cursor:pointer;text-align:center">
+      <span style="display:inline-block;line-height:1">${ic(icn,{size:20})}</span>
+      <span style="display:block;font-weight:800;font-size:13px;margin-top:3px">${lbl}</span>
+      <span style="display:block;font-size:10px;opacity:.72;margin-top:1px">${desc}</span></button>`);
+    c.onclick=()=>{ S.fbCat=k; render(); };
+    chips.appendChild(c);
+  });
+  ov.appendChild(chips);
+  const ph=S.fbCat==='bug'?'What happened, and what were you doing when it broke?':S.fbCat==='idea'?'What would make the game better?':'Tell us anything…';
+  const ta=$(`<textarea rows="5" placeholder="${esc(ph)}" style="width:100%;box-sizing:border-box;background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.14));color:var(--oncard);border:1px solid var(--line);border-radius:12px;padding:12px 13px;font-family:var(--body);font-size:15px;line-height:1.4;resize:vertical;min-height:112px"></textarea>`);
+  ta.value=S.fbText||''; ta.oninput=()=>{ S.fbText=ta.value; };
+  ov.appendChild(ta);
+  if(!sbSignedIn()){
+    const em=$(`<input class="name" type="email" placeholder="Email (optional, only if you'd like a reply)" style="margin-top:10px">`);
+    em.value=S.fbEmail||''; em.oninput=()=>{ S.fbEmail=em.value; };
+    ov.appendChild(em);
+  } else {
+    ov.appendChild($(`<p class="small muted" style="margin:9px 0 0">Signed in as <b style="color:var(--oncard)">${esc(sbUsername||'you')}</b>, we can follow up if needed.</p>`));
+  }
+  if(S.fbErr) ov.appendChild($(`<p class="small" style="color:#E14A33;margin:9px 0 0">${esc(S.fbErr)}</p>`));
+  ov.appendChild($(`<p class="small muted" style="margin:10px 0 0;line-height:1.45">We attach the screen you're on to help us reproduce bugs, nothing that identifies you. See our <a href="#" class="fbpriv" style="color:var(--gold)">Privacy note</a>.</p>`));
+  const send=$(`<button class="btn goldfill" style="margin-top:14px${S.fbBusy?';opacity:.7':''}">${S.fbBusy?'Sending…':'Send Feedback'}</button>`);
+  send.disabled=!!S.fbBusy; send.onclick=submitFeedback;
+  ov.appendChild(send);
+  ov.appendChild($(`<div style="height:8px"></div>`));
+  ov.appendChild($(`<button class="btn red">Close</button>`));
+  const pv=ov.querySelector('.fbpriv'); if(pv) pv.onclick=(e)=>{ e.preventDefault(); S.overlay='privacy'; render(); };
+  ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
   screen.appendChild(ov);
 }
 function overlayAbout(screen){
@@ -4555,9 +4647,10 @@ function overlayAbout(screen){
       <div class="small muted" style="margin-top:5px;line-height:1.5">RunTheTour is one of a growing family of free games from RunThe.GG, all under one account. Also try <a href="/soccer/" target="_blank" rel="noopener" style="color:var(--teal);font-weight:700">RunThePitch ↗</a>, build a World Cup squad from real players, with more games on the way.</div>
     </div>
     <p class="small muted" style="line-height:1.5;margin-top:12px">Real golfer skill ratings are derived from <a href="https://datagolf.com" target="_blank" rel="noopener" style="color:var(--gold);font-weight:700">DataGolf</a> data. RunTheTour is an independent fan project, not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, or any player or organization shown in the game. All results are simulated for entertainment only.</p>
-    <a class="btn gold" href="mailto:sellybros711@gmail.com?subject=${encodeURIComponent('RunTheTour, Feedback')}" style="text-decoration:none;display:block">✉ Send Feedback</a>
+    <button class="btn gold ab-fb" style="display:block;width:100%">${ic('chat')} Send Feedback</button>
     <div style="height:10px"></div>
     <button class="btn red">Close</button></div>`);
+  const abfb=ov.querySelector('.ab-fb'); if(abfb) abfb.onclick=()=>openFeedback();
   ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
   screen.appendChild(ov);
 }
@@ -8657,6 +8750,9 @@ function scrSummary(){
       const joinCircuit=$(`<button class="btn teal" style="margin-top:10px">Join the Legend Circuit ▸<span class="sub">Face off against every retired legend on tour, at age ${playerAge()}</span></button>`);
       joinCircuit.onclick=()=>{ endCareer('age'); startCircuit(); }; right.appendChild(joinCircuit);
     }
+    const fbLink=$(`<button type="button" style="display:block;width:100%;margin-top:16px;background:none;border:0;color:var(--muted);cursor:pointer;font-family:var(--body);font-size:13px">${ic('chat')} Found a bug or have an idea for the game? <span style="color:var(--gold);font-weight:800">Tell us ›</span></button>`);
+    fbLink.onclick=()=>openFeedback();
+    right.appendChild(fbLink);
   }
   // the summary is long and the advance button sits at the very bottom — many players don't realize they
   // have to scroll to continue. Show a floating cue that points down to it, visible only while that button
@@ -12334,6 +12430,7 @@ function sbInit(){
 }
 async function sbApply(session){
   S.authPending=false;   // OAuth round-trip resolved (success or not), drop the "finishing" pill
+  try{ flushFeedback(); }catch(e){}   // post any feedback queued while offline / before the migration went live (guests too)
   sbUser=(session&&session.user)||null; sbUsername=null; sbProfile=null;
   let oauth=false; try{ if(localStorage.getItem('rtt_oauth_pending')&&sbUser){ oauth=true; localStorage.removeItem('rtt_oauth_pending'); } }catch(e){}
   if(sbUser&&sb){
