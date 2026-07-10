@@ -6013,6 +6013,23 @@ allows Google Fonts, or self-host Anton.*
   `runthetour_courses.csv` (39 daily courses: name, location, biome, par, yards, tour avg, signature holes,
   description) for the owner to build per-course visual-theme prompts.
 
+- **CS239 — online post-match result: centered + sleeker scorecard, tap-a-hole to rewatch.** Owner (H2H
+  result screenshot): "the online post match leaderboard can look a lot better — center it, sleeker design,
+  and each hole should be clickable to go back and watch it." The `h2hResultCard` scorecard was `max-width:100%`
+  so on the wide result screen it ran to the left edge while the standings/buttons were centered. Rebuilt it:
+  a bounded, centered card (`max-width:560px;margin:0 auto`), rounded with a subtle gradient fill + soft shadow,
+  tighter spacing, gold TOT, a sticky name column, and a "Tap any hole to rewatch it ▶" hint. Each hole
+  column is now clickable (delegated `data-h2hhole` handler + a desktop column-hover highlight via `.scHole`/
+  `.colhi` CSS). Tapping a hole calls new `h2hReplayHole(n)` → a single-hole REPLAY on the TOURTRACE tracer:
+  a new `S.h2h.replay` branch in `scrH2HWatch` plays just that hole's shots (reusing the watch's per-hole shot
+  data + one-window tracer: hole chip, floating scoreboard, shot-description bar) driven by `h2hReplayStep`,
+  with "Skip to end of hole" / "↻ Replay hole" / "‹ Back to result" controls. Deterministic/read-only
+  — it replays the already-decided shot data, never re-reports the match; `h2hReplayHole` rebuilds
+  `playHoles` via `h2hBuildPlay` if missing. Verified in Playwright (constructed a finished 1v1): scorecard
+  bounded to 560px centered with 72 clickable hole cells + the hint; tapping hole 6 enters the replay
+  (screen h2hwatch, tracer + both balls + scoreboard + "5-iron to left green, 15 ft to hole" desc + Back
+  button); Back returns to the result and clears the replay state; zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
