@@ -6260,6 +6260,29 @@ allows Google Fonts, or self-host Anton.*
   existing style read as premium rather than noisy. Tunable: STEP/gap/tree-radius, the `nearFw` band + skip
   rate, mow-stripe opacity.
 
+- **CS248 — round-screen "broadcast" chrome (owner: the tracer graphic is fine, "I want the aesthetic
+  AROUND it to look better").** CS246/247 improved the course art, but the owner clarified the ask was the
+  UI *surrounding* the tracer — the loose tag pill, plain scorecard boxes and controls floating on flat
+  green. Owner picked all three directions (AskUserQuestion: frame as one panel + polish the pieces + richer
+  background). A presentation-only pass on `scrDailyRound` (daily/spotlight/moment/legend rounds):
+  1. **Broadcast title bar** (`.bcasthd`) replaces the tiny centered `.tag` pill: a full-width header above
+     the window with the course name in the display italic + a course-accent left edge, and the conditions ·
+     plan in the accent on the right. Reads like a broadcast lower-third and, sitting flush above the
+     TOURTRACE strip + framed window, groups them into one unit (full-bleed on phones to match the window).
+  2. **Framed scorecard panel** (`.dcardwrap`): the 18-cell strip is wrapped in a titled card ("SCORECARD ·
+     N thru" + a "Tap a hole to rewatch" hint on the right) with a subtle gradient/border/shadow, and the
+     cells (`.dcell`) got a gradient + inset highlight and a soft glow on the current hole — so the bottom of
+     the screen reads as a designed scoreboard, not bare boxes.
+  3. **Richer background** (`.droundglow`): a subtle course-accent radial glow (fixed, z-index -1, ~11%
+     opacity) behind the whole round, warming the flat dark-green backdrop (incl. the empty desktop margins)
+     and tying the screen to the day's theme.
+  Together the header → window → scorecard now stack as one cohesive broadcast module with consistent width,
+  accent trim and depth, instead of loose elements on flat green. Presentation-only — no sim/geometry/score
+  change; the moment-round's own event tag and the H2H screens are untouched (daily-only classes). Verified
+  in Playwright: all 39 courses render, a full Winged Foot round plays to completion, zero page errors;
+  desktop + phone screenshots confirm the cohesive framing, the framed scorecard, and the background glow.
+  Deployed to /golf. Tunable: `.droundglow` opacity, `.bcasthd`/`.dcardwrap` styling.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
