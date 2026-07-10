@@ -10064,7 +10064,15 @@ function hvTerrain(g, seedN, B){
   let defs=`<radialGradient id="hvball" cx=".35" cy=".3" r=".95"><stop offset="0" stop-color="#ffffff"/><stop offset=".75" stop-color="#eef3ef"/><stop offset="1" stop-color="#c6d1ca"/></radialGradient>`;
   // CS219: a subtle frame vignette (edge/corner darkening) that gives the course depth and makes the bright
   // turf pop — a lighting effect, not a surface gradient, so it keeps the flat retro look.
-  defs+=`<radialGradient id="hvvig" cx=".5" cy=".42" r=".72"><stop offset=".62" stop-color="#04120a" stop-opacity="0"/><stop offset="1" stop-color="#04120a" stop-opacity=".26"/></radialGradient>`;
+  // CS249 (POC v2 — owner's stylized-illustration mockup): a DARK, moody forest with a glowing lit
+  // fairway, gold firefly particles in the shadows, and a soft sheen on the short grass. The dark
+  // vignette does the heavy lifting (edges fall to near-black like the mockup); a faint cool haze is
+  // kept only near water. Filter-blurred shapes are few, so cost stays low.
+  defs+=`<radialGradient id="hvvig" cx=".5" cy=".47" r=".64"><stop offset=".3" stop-color="#020c07" stop-opacity="0"/><stop offset=".72" stop-color="#020c07" stop-opacity=".34"/><stop offset="1" stop-color="#020c07" stop-opacity=".72"/></radialGradient>`;
+  const fogC=B.ocean?'#bcd2da':'#a9c0b0';
+  defs+=`<radialGradient id="hvfog" cx=".5" cy=".4" r=".92"><stop offset=".5" stop-color="${fogC}" stop-opacity="0"/><stop offset="1" stop-color="${fogC}" stop-opacity="${B.ocean?'.22':'.1'}"/></radialGradient>`;
+  defs+=`<radialGradient id="hvsheen" cx=".5" cy=".5" r=".6"><stop offset="0" stop-color="#eaffd0" stop-opacity=".2"/><stop offset="1" stop-color="#eaffd0" stop-opacity="0"/></radialGradient>`;
+  defs+=`<filter id="hvsoft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>`;
   let fwDD=null, fwBounds=null;   // fwBounds: per-depth fairway screen x-range → keeps the forest out of the corridor
   if(g.par!==3){ const Lp=[],Rp=[];
     for(let k=0;k<=22;k++){ const y=g.fw0+(g.fw1-g.fw0)*k/22;
@@ -10151,6 +10159,8 @@ function hvTerrain(g, seedN, B){
     for(let i=0;i<26;i++){ const ty=g.fw0+(g.fw1-g.fw0)*hh(600+i); const tp2=hvProj(g,g.cx(ty)+(hh(640+i)-0.5)*g.fwW*0.8,ty);
       st+=vTick(tp2[0],tp2[1],B.fwEdge,'.4'); }
     s.push(`<g clip-path="url(#hvfw)">${st}</g>`);
+    // CS249: a soft lit sheen down the fairway (a shaft of light on the short grass) → depth, not flat
+    s.push(`<g clip-path="url(#hvfw)"><ellipse cx="${(HV_W/2).toFixed(0)}" cy="${(HV_H*0.5).toFixed(0)}" rx="${(HV_W*0.34).toFixed(0)}" ry="${(HV_H*0.34).toFixed(0)}" fill="url(#hvsheen)"/></g>`);
     s.push(`<path d="${fwDD}" fill="none" stroke="${B.fwEdge}" stroke-width="1.6" opacity=".95"/>`);
   }
   // green + water screen positions (needed as keep-out zones for the flora below; drawn later)
@@ -10376,7 +10386,17 @@ function hvTerrain(g, seedN, B){
     +`<line x1="${(ppx+0.6).toFixed(1)}" y1="${(ppy+0.6).toFixed(1)}" x2="${(ppx+4.4).toFixed(1)}" y2="${(ppy+2).toFixed(1)}" stroke="${B.shad}" stroke-width=".8" opacity=".6"/>`
     +`<line x1="${ppx.toFixed(1)}" y1="${ppy.toFixed(1)}" x2="${ppx.toFixed(1)}" y2="${(ppy-15).toFixed(1)}" stroke="#f4f2ea" stroke-width="1.3"/>`
     +`<path d="M ${ppx.toFixed(1)} ${(ppy-15).toFixed(1)} q 5 0.6 9 2.6 q -4.2 1.9 -9 3.4 Z" fill="#e14a33" stroke="#8c2416" stroke-width=".5"/></g>`);
-  s.push(`<rect x="${-HV_EX}" y="0" width="${FW}" height="${HV_H}" fill="url(#hvvig)" pointer-events="none"/>`);   // depth vignette on top
+  s.push(`<rect x="${-HV_EX}" y="0" width="${FW}" height="${HV_H}" fill="url(#hvvig)" pointer-events="none"/>`);   // moody dark edges
+  s.push(`<rect x="${-HV_EX}" y="0" width="${FW}" height="${HV_H}" fill="url(#hvfog)" pointer-events="none"/>`);   // faint cool haze
+  // CS249: gold FIREFLY particles drifting in the shadows (the mockup's signature) — tiny warm dots,
+  // denser in the darker rough, sparse over the lit fairway, each with a soft glow.
+  { let fl=''; for(let i=0;i<46;i++){ const fx=-HV_EX+hh(950+i)*FW, fy=hh(980+i)*HV_H, br=0.7+hh(1010+i)*1.3;
+      const onFw=(typeof inFairway==='function')&&inFairway(fx,fy);
+      if(onFw && hh(1040+i)<0.7) continue;                       // keep them mostly in the dark rough
+      const a=(0.25+hh(1020+i)*0.45).toFixed(2);
+      fl+=`<circle cx="${fx.toFixed(1)}" cy="${fy.toFixed(1)}" r="${(br*2).toFixed(1)}" fill="#ffe9a0" opacity="${(a*0.28).toFixed(2)}"/><circle cx="${fx.toFixed(1)}" cy="${fy.toFixed(1)}" r="${br.toFixed(1)}" fill="#fff2c4" opacity="${a}"/>`; }
+    s.push(fl);
+  }
   return (g._terrainStr = s.join(''));
 }
 // one shot's static (already-played) tracer + marker. `small` shrinks markers/strokes for the
