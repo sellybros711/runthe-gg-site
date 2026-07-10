@@ -159,12 +159,19 @@ window.GA_ID='G-L29P5MRWKE';
   .muted{color:var(--muted)} .small{font-size:13px}
   .mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
   .ic{display:inline-block;width:1em;height:1em;vertical-align:-0.14em;flex:0 0 auto;line-height:1}
-  .tag{display:inline-block; font:800 11px/1 var(--body); letter-spacing:.11em; text-transform:uppercase;
-    color:var(--teal); border:1px solid var(--line); padding:6px 10px; border-radius:999px}
+  /* chip/tag: a rounded pill with a currentColor-tinted dark fill + soft depth so it pops on the green
+     (accent driven by inline `color`; a solid inline border-color still overrides the softened default). */
+  .tag{display:inline-flex; align-items:center; gap:5px; vertical-align:middle;
+    font:800 10.5px/1 var(--body); letter-spacing:.13em; text-transform:uppercase; color:var(--teal);
+    border:1px solid color-mix(in srgb, currentColor 40%, transparent);
+    background:linear-gradient(180deg, color-mix(in srgb, currentColor 18%, transparent), color-mix(in srgb, currentColor 5%, transparent)), rgba(3,17,11,.55);
+    padding:6px 12px; border-radius:999px;
+    box-shadow:0 3px 9px rgba(0,0,0,.30), inset 0 1px 0 rgba(255,255,255,.10)}
   /* cohesive teal "online area" chip, ties every H2H screen to the Play Online home block */
-  .online-tag{display:inline-flex; align-items:center; gap:7px; font:800 11px/1 var(--body); letter-spacing:.11em;
-    text-transform:uppercase; color:#4fe0c1; border:1px solid rgba(15,168,136,.55); padding:6px 11px; border-radius:999px;
-    background:linear-gradient(180deg, rgba(15,168,136,.14), rgba(15,168,136,.04))}
+  .online-tag{display:inline-flex; align-items:center; gap:7px; vertical-align:middle; font:800 10.5px/1 var(--body); letter-spacing:.13em;
+    text-transform:uppercase; color:#63e8cb; border:1px solid rgba(79,224,193,.5); padding:7px 13px; border-radius:999px;
+    background:linear-gradient(180deg, rgba(24,190,158,.26), rgba(15,168,136,.07)), rgba(3,20,15,.55);
+    box-shadow:0 4px 14px rgba(0,0,0,.32), 0 0 14px rgba(38,200,166,.10), inset 0 1px 0 rgba(255,255,255,.14)}
 
   /* ---- buttons ---- */
   .btn{appearance:none; cursor:pointer; display:block; width:100%; text-align:center;
