@@ -1760,6 +1760,9 @@
     line-height:1.4;color:var(--muted-2);max-width:340px;}
   .res-nearmiss b{font-family:'Anton',Impact,sans-serif;font-weight:400;color:#B8860B;font-size:15px;}
   /* end-of-run re-draft hook (tailored "fix it" framing above the re-draft button) */
+  .btn.beatmine{background:linear-gradient(135deg,#F4B413,#E5402A);color:#fff;border:none;
+    box-shadow:0 4px 14px rgba(229,64,42,.3);font-weight:900;}
+  .btn.beatmine:hover{filter:brightness(1.06);}
   .res-redraft{margin-top:16px;}
   .res-redraft-hook{text-align:center;font-weight:700;font-size:13px;line-height:1.4;
     color:var(--ink);background:#fbf4e6;border:1.5px solid var(--border-soft);border-radius:12px;
@@ -7452,6 +7455,7 @@ function goToResults(){
     <div class="res-redraft">
       <div class="res-redraft-hook" id="res-redraft-hook"></div>
       <div class="stack" style="margin-top:10px;">
+        <button class="btn beatmine" id="res-beatmine">⚔️ Beat My Squad — challenge a friend</button>
         <button class="btn teal" id="res-again">Draft a New Squad</button>
         <button class="btn blue" id="res-boxscores">📊 Tournament Recap</button>
         <button class="btn ghost" id="res-home">Home</button>
@@ -7503,6 +7507,8 @@ function goToResults(){
     squadBox.appendChild(row);
   });
   $('res-share').addEventListener('click', openSharePopup);   // grid of share targets
+  { const bm=$('res-beatmine');
+    if(bm){ if(SUPABASE_READY){ bm.addEventListener('click', beatMySquadShare); } else { bm.style.display='none'; } } }
   $('res-again').addEventListener('click', newGame);
   { const rh=$('res-home'); if(rh) rh.addEventListener('click', ()=>{ if(typeof friendlyReset==='function') friendlyReset(); showScreen('start'); }); }
   $('res-boxscores').addEventListener('click', openBoxScores);
@@ -13124,6 +13130,30 @@ async function generateChallengeLink(){
     linkEl.value="Couldn't create your link. Tap Share to try again.";
     shareBtn._url=null; copyBtn._url=null; shareBtn._retry=true;
     shareBtn.disabled=false; copyBtn.disabled=true;
+  }
+}
+
+// "Beat My Squad" one-tap from the results screen: turn the squad you just ran
+// with into a shareable challenge (async — the friend drafts their own XI and
+// plays yours), reusing the existing friendly-challenge service. No need to
+// re-enter Friendly mode; frBuildPayload reads straight from gs.result.
+async function beatMySquadShare(){
+  const btn=$('res-beatmine');
+  if(!gs || !gs.result || !(gs.result.scoredPicks||[]).length){ showToast("No squad to challenge with yet."); return; }
+  if(!SUPABASE_READY){ showToast('Challenges need an internet connection.'); return; }
+  const orig = btn ? btn.innerHTML : '';
+  if(btn){ btn.disabled=true; btn.innerHTML='Creating your challenge…'; }
+  try{
+    // Default the challenger identity to the signed-in profile so the friend
+    // sees who they're up against.
+    if(!friendlyMyName)  friendlyMyName = (typeof authUsername==='function' && authUsername()) || '';
+    if(!friendlyMyFlag || friendlyMyFlag==='USA') friendlyMyFlag = (authProfile && authProfile.flag) || friendlyMyFlag || 'USA';
+    const code = await sbCreateChallenge(frBuildPayload());
+    await friendlyShareLink(frChallengeUrl(code));
+  }catch(e){
+    showToast("Couldn't create your challenge link. Try again.");
+  }finally{
+    if(btn){ btn.disabled=false; btn.innerHTML = orig || '⚔️ Beat My Squad — challenge a friend'; }
   }
 }
 
