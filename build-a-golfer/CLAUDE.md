@@ -6124,6 +6124,39 @@ allows Google Fonts, or self-host Anton.*
   `S.sponsorsOpen:true`); the three primary-control states measure 72/73/73px (was 71/73/73 with the ghost
   residual, ~40/73 before the fix); zero page errors. Deployed to /golf.
 
+- **CS244 — career regression starts YEAR 15 for everyone + steepens all the way to year 42 (owner:
+  "the regression is starting later than we planned. It should start in year 15 and get increasingly more
+  regression until year 42").** Two root causes, both fixed in the decline model
+  (`applyPlayerDecline`/`pastPeak`):
+  1. **Onset was delayed for good players.** Decline was gated on `effAge = playerAge − primeBank` (a
+     "prime bank" of up to +3 years earned by winning), so a dominant career shifted its regression start
+     from year 15 (age 36) to ~year 18 — exactly the "starting later than planned" the owner saw. Onset is
+     now anchored to the CAREER YEAR: `pastPeak()` and `applyPlayerDecline` gate on `S.year >=
+     DECLINE_START_YEAR (15)`, so EVERY golfer — dominant, average or struggling — starts regressing at
+     year 15 no matter how well they've played. The prime bank is kept, but demoted to a RATE modifier only
+     (`formMod = 1 − primeBank/3·0.25` → a great career fades ~0.75×, a slump ~1.25×) — it can never delay
+     the year-15 start again, and even a hot career visibly declines from 15 on.
+  2. **The severity ramp capped too early.** The old ramp `min(2.5, (effAge−35)/6)` hit its 2.5 ceiling
+     around year 29 (earlier/later depending on age), so regression stopped getting worse well before the
+     end of a run. Replaced with a year-anchored ramp that grows every single year from `DECLINE_START_YEAR
+     (15)` to `DECLINE_FULL_YEAR (42)` — `ramp = 0.35 + t·(2.5−0.35)`, `t=(year−15)/27` — so per-year OVR
+     loss climbs monotonically from ~−0.34/yr at year 15 to ~−2.42/yr at year 42 and never plateaus. Year
+     42 is the last Legend Circuit year (career years 1–30 + circuit 31–42, `S.year` climbs continuously
+     through `continueFranchise`), so the ramp spans the entire 27-year playable decline window (age
+     36→63).
+  New constants `DECLINE_START_YEAR=15`, `DECLINE_FULL_YEAR=42`, `DECLINE_RAMP_MIN=0.35`,
+  `DECLINE_RAMP_MAX=2.5`; `effAge()` removed (unused after the rework), per-skill `DECLINE_RATE` unchanged,
+  prime-bank clamp widened −2..3 → −3..3 for a symmetric form effect. Only the PLAYER's build declines here
+  — the CPU field's separate age-based aging (`ARCS`/`livingOf`) is untouched. Verified against the real
+  in-file functions in Playwright: `firstDecline` year = 15 for dominant/neutral/struggling careers alike
+  (was ~18 for a dominant one), `pastPeak` flips exactly at year 15 (false at 14, true at 15), per-year loss
+  steepens monotonically through year 42 (neutral case clean; the dominant/struggling cases only "flatten"
+  in a sampled check due to per-skill integer rounding + the 48-floor, not a real cap), sample OVR
+  trajectory for a 90 build: dominant 89.9(y15)→79.4(y30)→65(y42), neutral →72.3→54, struggling(82)
+  →64.6→50.9; form still separates the outcomes (dominant fades slowest); zero page errors. Deployed to
+  /golf. Tunable: `DECLINE_START_YEAR`/`DECLINE_FULL_YEAR`, `DECLINE_RAMP_MIN`/`MAX`, the `formMod` strength
+  (0.25), per-skill `DECLINE_RATE`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

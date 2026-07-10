@@ -3315,25 +3315,30 @@ function rivalCardHTML(rr){ if(!rr) return '';
    around year 29, so nothing plateaus early). Power (distance) fades first, touch/experience last.
    The FIELD ages by its own real age. ---- */
 const START_AGE=22, PEAK_END_AGE=35, CAREER_MAX_YEARS=30, FIELD_RETIRE_AGE=55;
+// Regression is anchored to the career YEAR: it always begins at DECLINE_START_YEAR and gets steadily
+// steeper every year to DECLINE_FULL_YEAR (the last Legend Circuit year), never capping before then.
+const DECLINE_START_YEAR=15, DECLINE_FULL_YEAR=42;
+const DECLINE_RAMP_MIN=0.35, DECLINE_RAMP_MAX=2.5;   // per-year severity multiplier: year 15 → year 42
 const DECLINE_RATE={dist:2.1,acc:1.15,app:1.15,sht:0.8,scr:0.8,bnk:0.8,put:0.7,clu:0.25};
 function playerAge(){ return START_AGE + ((S.year||1)-1); }
 // how the season just finished went vs the field: -1 (poor) .. +1 (dominant). Wins/majors keep you sharp.
 function seasonForm(s){ if(!s) return 0; const N=FIELDSIZE||120;
   const rank=s.rank||Math.round(N*0.6), rankScore=1-(rank-1)/Math.max(1,N-1);
   return clamp((rankScore-0.5)/0.5 + (s.wins||0)*0.25 + (s.majors||0)*0.35, -1, 1); }
-// competitive age = real age minus a "prime bank" earned by sustained good play (a great career can
-// stay sharp a few years longer; a slump ages you faster). Capped at +3 so even a dominant career
-// can't push regression off indefinitely, it starts around year 15 and only shifts by a few years
-// either way. Bank is persisted on the career.
-function effAge(){ return playerAge() - ((S.career&&S.career.primeBank)||0); }
-function pastPeak(){ return effAge() > PEAK_END_AGE; }
-function applyPlayerDecline(){   // once per off-season; scaled by how far past your peak you are
+// A "prime bank" earned by sustained good play only softens the RATE of decline (a great career fades a
+// little slower, a slump a little faster) — it can NEVER delay the year-15 onset, so EVERY golfer starts
+// regressing on schedule and it keeps steepening through year 42. Bank is persisted on the career.
+function pastPeak(){ return (S.year||1) >= DECLINE_START_YEAR; }
+function applyPlayerDecline(){   // once per off-season; severity ramps with the career year, not age
   const c=S.career; if(!c) return;
+  const y=S.year||1;
   const last=(c.seasons&&c.seasons[c.seasons.length-1])||null;
-  c.primeBank=clamp((c.primeBank||0)+seasonForm(last), -2, 3);   // win → defy age; slump → age faster
-  const sev=effAge()-PEAK_END_AGE; if(sev<=0) return;            // still in your prime, nothing fades
-  const ramp=Math.min(2.5, sev/6);                              // barely anything at first, keeps steepening for years
-  CATS.forEach(cat=>{ const sl=S.slots[cat.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[cat.k]*ramp)); });
+  c.primeBank=clamp((c.primeBank||0)+seasonForm(last), -3, 3);   // win → fade slower; slump → fade faster
+  if(y<DECLINE_START_YEAR) return;                               // still in your prime, nothing fades
+  const formMod=1-(c.primeBank/3)*0.25;                          // +3 bank → 0.75×, -3 bank → 1.25×
+  const t=clamp((y-DECLINE_START_YEAR)/(DECLINE_FULL_YEAR-DECLINE_START_YEAR),0,1);
+  const ramp=DECLINE_RAMP_MIN + t*(DECLINE_RAMP_MAX-DECLINE_RAMP_MIN);   // barely anything at 15, keeps steepening to 42
+  CATS.forEach(cat=>{ const sl=S.slots[cat.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[cat.k]*ramp*formMod)); });
 }
 function playerRetires(){ return (S.year||1) >= CAREER_MAX_YEARS; }   // forced at the 30-year shelf life
 /* golfer customization palettes */
