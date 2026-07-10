@@ -5843,6 +5843,19 @@ allows Google Fonts, or self-host Anton.*
   STAY+SIGN present, zero page errors); screenshot confirms the clear hierarchy. Behaviour/plumbing
   unchanged — layout only.
 
+- **CS232 — move the TOURTRACE scoreboard to bottom-right so it never covers the green (owner).** The
+  floating leaderboard was pinned top-right (CS224), but the green/pin is always near the TOP of the hole
+  (tee→green plays bottom→top), so on holes with the green tucked top-right the board sat right on top of
+  it. Moved `.hvboard` to the BOTTOM-right, anchored just above the shot-description bar (`bottom:48px`,
+  growing upward into the lower fairway/rough — never the green), with a `.nodesc` variant (`bottom:10px`)
+  for the frames where no description bar is showing. Applies to the Daily/Moment round and the H2H watch +
+  sudden-death boards (all share the floating HUD). Widened the board slightly (47%→52%) and right-aligned
+  it so 4-player names fit. Layout only; the live FLIP row-swap animation, the "updates the moment a ball
+  drops" logic, and everything else are unchanged. Verified in Playwright (board bottom-anchored 48px above
+  the shell bottom, top at ~80% down the frame, `nodesc` toggles with the desc bar, zero page errors);
+  screenshot confirms the green at the top is fully clear with the board tucked bottom-right above the shot
+  description.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
