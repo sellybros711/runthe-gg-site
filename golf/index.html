@@ -12955,9 +12955,9 @@ function scrH2HLobby(){
       add($(`<p class="small muted center" style="margin:16px 0 6px">— or fill the open seat${need>1?'s':''} —</p>`));
       const fillWrap=$(`<div style="max-width:340px;margin:0 auto;display:grid;gap:8px"></div>`);
       if(S.h2h.opened){
-        fillWrap.appendChild($(`<div class="center small" style="color:var(--teal,#0FA888);font-weight:700"><span class="authspin" style="width:14px;height:14px;vertical-align:-2px"></span> Open to anyone — a waiting player can join. AI fills in after 10s…</div>`));
+        fillWrap.appendChild($(`<div class="center small" style="color:var(--teal,#0FA888);font-weight:700"><span class="authspin" style="width:14px;height:14px;vertical-align:-2px"></span> Open to anyone — finding a player to fill the open seat${need>1?'s':''}…</div>`));
       } else {
-        const op=$(`<button class="btn teal">Open to anyone ▸<span class="sub">A waiting player joins — or AI fills in after 10s</span></button>`); op.onclick=h2hOpenLobby; fillWrap.appendChild(op);
+        const op=$(`<button class="btn teal">Open to anyone ▸<span class="sub">Let a waiting player join your match</span></button>`); op.onclick=h2hOpenLobby; fillWrap.appendChild(op);
       }
       add(fillWrap);
     }
