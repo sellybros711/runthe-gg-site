@@ -5684,15 +5684,83 @@ async function applySession(session){
     if(typeof closeAccountModal==='function') closeAccountModal();
     if(typeof runOnlineInvite==='function') runOnlineInvite(inv);
   }
-  // ...but in that case keep them on their result; otherwise show the profile.
+  // Signing in must NEVER yank you off what you're doing. Wherever you log in,
+  // we just close the sign-in modal and refresh the top bar (syncAuthUI already
+  // ran) so you can resume exactly where you were. The profile-discovery
+  // redirect and the username prompts only surface from truly idle screens
+  // (the landing / profile, or the results screen — a natural moment), never
+  // mid-draft, mid-sim or mid-match.
   const rev=document.getElementById('screen-reveal');
   const onReveal=!!(rev && rev.classList.contains('active'));
-  if(justLoggedIn && !onReveal && !pendingInvite) openProfilePage();
-  // Username prompts: a legacy "Anonymous" account is forced to rename whenever
-  // signed in; a fresh sign-in with no username at all (e.g. Google) is prompted
-  // (skippable). Anonymous takes priority.
-  if(authUser && isAnonName(authUsername())) showUsernamePrompt({ force:true });
-  else if(justLoggedIn && !authUsername()) showUsernamePrompt();
+  const cur = (typeof currentScreenName==='function') ? currentScreenName() : 'start';
+  const idleScreen = (cur==='start' || cur==='profile' || cur==='reveal');
+  // A pending OAuth mid-draft resume (snapshot waiting) must win: don't flash
+  // the profile or a prompt before boot() restores the draft.
+  const resuming = (typeof hasFreshResumeSnapshot==='function') && hasFreshResumeSnapshot();
+  if(justLoggedIn && typeof closeAccountModal==='function') closeAccountModal();
+  if(justLoggedIn && idleScreen && !onReveal && !pendingInvite && !resuming) openProfilePage();
+  // Username prompts: a legacy "Anonymous" account is forced to rename, and a
+  // fresh sign-in with no username is prompted (skippable) — but only on an
+  // idle screen so an in-progress draft/match is never interrupted.
+  if(idleScreen && !resuming){
+    if(authUser && isAnonName(authUsername())) showUsernamePrompt({ force:true });
+    else if(justLoggedIn && !authUsername()) showUsernamePrompt();
+  }
+}
+
+// ---- resume across an OAuth full-page reload -------------------------------
+// Google sign-in navigates the whole page away and back, which would otherwise
+// drop an in-progress draft and dump you on the landing page. Before the
+// redirect we snapshot the live draft (gs is plain, serialisable data) + its
+// context; on return we restore it and re-render, so signing in with Google
+// mid-draft resumes exactly where you were. Email sign-in never reloads, so it
+// doesn't need this (applySession already keeps you put).
+const RESUME_KEY = 'rtp_resume';
+const RESUME_DRAFT_SCREENS = ['home','select','formation','setup'];
+function hasFreshResumeSnapshot(){
+  try{
+    const s=JSON.parse(localStorage.getItem(RESUME_KEY)||'null');
+    return !!(s && s.gs && (Date.now()-(s.ts||0) <= 30*60*1000));
+  }catch(e){ return false; }
+}
+function snapshotResumeState(){
+  try{
+    const cur = currentScreenName();
+    if(!gs || !RESUME_DRAFT_SCREENS.includes(cur)){ localStorage.removeItem(RESUME_KEY); return; }
+    localStorage.setItem(RESUME_KEY, JSON.stringify({
+      v:1, ts:Date.now(), screen:cur, gs,
+      draftType, gameMode, onlineMode,
+      friendlyMode:!!friendlyMode, friendlyRole:friendlyRole||null,
+      pendingFormation:pendingFormation||null,
+      friendlyMyName:(typeof friendlyMyName!=='undefined')?friendlyMyName:'',
+      friendlyMyFlag:(typeof friendlyMyFlag!=='undefined')?friendlyMyFlag:'USA',
+      challenger:(window.CHALLENGER_DATA||null)
+    }));
+  }catch(e){ try{ localStorage.removeItem(RESUME_KEY); }catch(_){} }
+}
+function restoreResumeState(){
+  let snap=null;
+  try{ snap=JSON.parse(localStorage.getItem(RESUME_KEY)||'null'); }catch(e){}
+  try{ localStorage.removeItem(RESUME_KEY); }catch(e){}
+  if(!snap || !snap.gs || !snap.screen) return false;
+  if(Date.now()-(snap.ts||0) > 30*60*1000) return false;            // stale
+  if(!RESUME_DRAFT_SCREENS.includes(snap.screen)) return false;
+  if(!(window.PLAYERS && window.PLAYERS.length)) return false;       // dataset must be loaded
+  try{
+    gs = snap.gs;
+    draftType = snap.draftType || (gs && gs.draftType) || 'quick';
+    gameMode  = snap.gameMode  || 'easy';
+    onlineMode = snap.onlineMode || null;
+    friendlyMode = !!snap.friendlyMode;
+    friendlyRole = snap.friendlyRole || null;
+    pendingFormation = snap.pendingFormation || null;
+    if(typeof friendlyMyName!=='undefined' && snap.friendlyMyName!=null) friendlyMyName = snap.friendlyMyName;
+    if(typeof friendlyMyFlag!=='undefined' && snap.friendlyMyFlag!=null) friendlyMyFlag = snap.friendlyMyFlag;
+    if(snap.challenger) window.CHALLENGER_DATA = snap.challenger;
+    goToHome();   // the pitch/spin screen rebuilds from gs → resumes a partial XI
+    if(typeof showToast==='function') showToast('Signed in — back to your draft ⚽');
+    return true;
+  }catch(e){ return false; }
 }
 
 // The username the player picked at sign-up rides along in their auth metadata.
@@ -6429,7 +6497,10 @@ async function acctGoogle(){
     // Mark the OAuth round-trip so that, on return, we can prompt a brand-new
     // Google user to pick a username (Google gives us no username of its own).
     try{ localStorage.setItem('rtp_oauth_pending','1'); }catch(e){}
-    const { error } = await sbClient.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin } });
+    snapshotResumeState();   // preserve an in-progress draft across the full-page redirect
+    // Return to THIS game page (not the site root) so Google users land back on
+    // the game, signed in — and the snapshot above restores their draft.
+    const { error } = await sbClient.auth.signInWithOAuth({ provider:'google', options:{ redirectTo: location.origin + location.pathname } });
     if(error) throw error;
   }catch(e){ try{ localStorage.removeItem('rtp_oauth_pending'); }catch(_){} acctError('Google sign-in isn’t enabled yet.'); }
 }
@@ -13842,6 +13913,9 @@ if(window.__CHALLENGE_CODE || window.__WATCH_CODE){
 // 2) Boot the engine, then (for short links) fetch + route. A ?w= watch link
 //    replays B's match for A; a ?c= challenge shows the landing.
 boot().then(async ()=>{
+  // Returning from a Google sign-in that happened mid-draft → restore the draft
+  // and stop; nothing else should route on top of it.
+  if(typeof restoreResumeState==='function' && restoreResumeState()) return;
   if(window.__WATCH_CODE){
     await resolveWatchCode();
     if(window.__WATCH_DATA){ const d=window.__WATCH_DATA; window.__WATCH_DATA=null; return watchFriendlyReplay(d); }
