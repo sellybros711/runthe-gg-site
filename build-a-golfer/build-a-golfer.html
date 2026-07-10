@@ -5231,7 +5231,8 @@ function paintAvatarFull(canvas, look){
       // CS236: wear the sponsor logos — SHIRT sponsor on the chest, HAT sponsor on the cap front (worn last,
       // so it sits ON the cap, not under it). Base-space anchors → frame coords via the body transform.
       try{
-        if(shirtSp && shX1>shX0){ const sw=shX1-shX0, lw=sw*0.20, cx=(shX0+shX1)/2, cy=shY0+(shY1-shY0)*0.42;
+        if(shirtSp && shX1>shX0){ const sw=shX1-shX0, sh=shY1-shY0, lw=sw*0.125,
+          cx=(shX0+shX1)/2 + sw*0.15, cy=shY0+sh*0.37;   // left-chest pocket (wearer's left = viewer's right), small
           const fw=lw*_bsc, fx=_bdx+cx*_bsc-fw/2, fy=_bdy+cy*_bsc-fw/2; brandLogoDraw(ctx, shirtSp, fx, fy, fw, fw); }
         if(hatSp && (eq.head||freeCap)){ const lw=A.W*0.095, cx=A.headCx, cy=A.browLine-(g==='female'?30:42);
           const fw=lw*_bsc, fx=_bdx+cx*_bsc-fw/2, fy=_bdy+cy*_bsc-fw/2; brandLogoDraw(ctx, hatSp, fx, fy, fw, fw); }
