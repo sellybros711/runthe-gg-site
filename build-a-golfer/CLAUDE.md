@@ -6030,6 +6030,28 @@ allows Google Fonts, or self-host Anton.*
   (screen h2hwatch, tracer + both balls + scoreboard + "5-iron to left green, 15 ft to hole" desc + Back
   button); Back returns to the result and clears the replay state; zero page errors. Deployed to /golf.
 
+- **CS240 — themed "Today's Daily Challenge" feature card (owner Option 3), NOT yet deployed.** Owner
+  wanted each day's Daily to feel special; a plain palette recolor read as "just a color change," so after
+  mocking up two richer directions (atmosphere/time-of-day vs a full presentation package) the owner picked
+  the **presentation package**. When you open the Daily preview, a branded feature card now greets you:
+  "TODAY'S DAILY CHALLENGE" kicker → big venue name → meta line (location · par · yards · conditions) →
+  an italic **tagline** in the course's own accent color → the vibe blurb (with Read more) → a 5-swatch
+  **palette strip** → 3 **motif chips**. During the round the tracer window gets a matching accent frame
+  (a subtle 2px inset ring). New `DAILY_THEME` table (all 39 daily courses, each with a hand-written tagline
+  + 3 motif tags — e.g. Magnolia Hollow "Glass greens, spring bloom." / azaleas in bloom · pine cathedral ·
+  glassy greens); `dailyTheme(key)` derives the accent + palette from that course's own biome
+  (`hvBiome`) so the card always matches what you actually play (Augusta azalea-pink, Scottsdale desert-amber,
+  St Andrews gorse-gold, Kiawah coastal-pink…), with a luminance guard to keep the accent bright enough for
+  the CTA/frame; `dailyFeatureCard(key)` builds the card (folds in the old h1 name / lede / blurb-scout so
+  the preview isn't longer). Also covers the Monthly Spotlight preview (kicker flips to "Monthly Spotlight").
+  Scope: this themes the **Daily Challenge** (owner redirected here from the original 26 career-venue persona
+  ask); the persona spreadsheet became a style reference, since the Daily rotates a different set of 39
+  courses. Verified in Playwright: all 39 courses resolve a theme + bright accent + ≥3-swatch palette with
+  zero page errors; the feature card renders on Augusta/Scottsdale/St Andrews/Kiawah (each visually
+  distinct); a full practice round plays with the themed accent frame (azalea-pink inset ring confirmed) and
+  finishes clean; career setup is unaffected (no daily card leaks in). **Awaiting owner go-ahead on two
+  tweaks (frame subtlety, tagline copy) before deploying to /golf.**
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
