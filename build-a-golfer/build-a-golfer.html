@@ -6456,11 +6456,16 @@ function contractStripNode(){
   const chips=list.map(x=>{ const c=x.contract; const done=c.goals.filter(g=>goalProg(g,t).done).length; banked+=contractEarnedOne(c);
     return `<span style="display:inline-flex;align-items:center;gap:5px;min-width:0">${brandLogoSVG(c.sponsor,18)}<b style="color:var(--oncard);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:9em">${esc(c.sponsor)}</b><span style="color:#ffd45e;font-weight:800">${done}/${c.goals.length}</span></span>`;
   }).join('<span style="opacity:.35;margin:0 5px">·</span>');
-  return $(`<details class="acc" style="max-width:560px;margin:0 auto 10px">
+  // CS243: remember open/closed across re-renders — the sim rebuilds the DOM every event, so without this the
+  // dropdown snapped shut after each tournament. Persist in S.sponsorsOpen; the toggle listener updates it
+  // WITHOUT a re-render, so it stays exactly as the user left it until they close it.
+  const det=$(`<details class="acc" ${S.sponsorsOpen?'open':''} style="max-width:560px;margin:0 auto 10px">
     <summary class="accsum"><span class="chev">›</span>
       <span style="min-width:0;flex:1;display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px">${chips}</span>
       <span class="mono small" style="color:#ffd45e;font-weight:800;flex:0 0 auto">+${fmt(banked)}</span></summary>
     <div style="padding:0 12px 12px">${list.map(x=>contractCardHTML(x.contract, x.slot)).join('')}</div></details>`);
+  det.addEventListener('toggle', ()=>{ S.sponsorsOpen=det.open; });
+  return det;
 }
 // one slot's status card (current sponsor + loyalty, or an "open slot" placeholder)
 function slotStatusCardHTML(slot){
@@ -7819,16 +7824,19 @@ function scrSeason(){
   // controls
   const lastEvent=(S.evtIndex>=S.schedule.length-1);
   const ctrl=$(`<div style="margin-top:12px"></div>`);
+  // CS243: the primary control keeps a CONSTANT height whether the round is playing or the results are in
+  // (a two-line button in every state) so the tournament block doesn't grow when results come up and shove
+  // the controls / Race to the Cup / sponsors / momentum down (owner: "everything slightly moves").
   if(ce.done){
     if(lastEvent){
-      const fin=$(`<button class="btn goldfill">Season Results ▸</button>`);
+      const fin=$(`<button class="btn goldfill">Season Results ▸<span class="sub">Your year in review</span></button>`);
       fin.onclick=()=>{clearTimeout(seasonTimer); S.screen='summary'; render();}; ctrl.appendChild(fin);
     } else {
       const nx=$(`<button class="btn red">Next Event ▸<span class="sub">${esc(playerEvtName(S.schedule[S.evtIndex+1]))}</span></button>`);
       nx.onclick=()=>{clearTimeout(seasonTimer); advanceEvent(); render();}; ctrl.appendChild(nx);
     }
   } else {
-    ctrl.appendChild($(`<div class="small muted center" style="padding:6px 0">Playing out the tournament…</div>`));
+    ctrl.appendChild($(`<button class="btn" disabled style="cursor:default;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.18));color:var(--oncard);opacity:.78">Playing out the tournament…<span class="sub">${ce.roundsDone>=4?'Final round':'Round '+Math.max(1,Math.min(ce.roundsDone,4))+' of 4'}</span></button>`));
   }
   const row=$(`<div class="mini" style="margin-top:10px"></div>`);
   const auto=$(`<button class="btn ${S.autoSim?'teal':'gold'}">Auto Sim · ${S.autoSim?'On':'Off'}</button>`);

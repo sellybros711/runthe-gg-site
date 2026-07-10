@@ -6100,6 +6100,30 @@ allows Google Fonts, or self-host Anton.*
   in `makeContractFor`, the `scoreAvg` targets. (Signing bonuses also drop proportionally since
   `sponsorSigningBonus` reads the tier reward — consistent.)
 
+- **CS243 — two season-sim bugs from CS241 (owner: "the sponsor dropdown auto-closes after each tournament
+  is simmed — it should stay open until the user closes it; and everything on the screen slightly moves when
+  the tournament ends and the results come up, making it hard to focus").**
+  1. **Sponsor dropdown persistence.** The collapsed sponsor accordion (`contractStripNode`, CS241) is
+     rebuilt on every `render()`, and each new `<details>` defaulted to closed — so every time a tournament
+     finished and the season screen re-rendered, an open sponsor panel snapped shut. Fixed by persisting the
+     open state on `S.sponsorsOpen`: the `<details>` renders `open` iff `S.sponsorsOpen`, and a `toggle`
+     listener writes the user's choice back (`S.sponsorsOpen=det.open`). So it now stays exactly as the user
+     left it across every re-render/sim, only closing on an explicit tap.
+  2. **Layout shift when a tournament ends.** The primary control under the live tournament changed HEIGHT
+     when `ce.done` flipped false→true — a one-line "Playing…" `div` (~40px) became a two-line "Next Event ▸ /
+     Season Results ▸" button (~73px), so the whole block below (controls / Race to the Cup / sponsors /
+     momentum) got shoved down ~33px the instant results came up. Fixed by making the "Playing…" state a
+     two-line button with a `.sub` line ("Round N of 4" / "Final round") that matches the Next/Results
+     button's box model exactly. First cut used `btn ghost`, which left a 2px residual (ghost overrides
+     `border:1px` + `font-size:18px` vs the base `.btn` `border:0` + `21px`); reconciled by dropping `ghost`
+     and styling the disabled "Playing…" button as a plain `.btn` with a neutral dark fill — identical box
+     model (border:0, font-size:21px, padding:15px). Measured heights now 72 vs 73 (a sub-pixel line-box
+     rounding artifact, imperceptible) vs the original ~33px jump.
+  Verified in Playwright (a rigged year-3 career season, signed-in, both sponsor slots filled): opening the
+  sponsor accordion then simming a tournament to completion + re-rendering leaves it OPEN (`stayedOpen:true`,
+  `S.sponsorsOpen:true`); the three primary-control states measure 72/73/73px (was 71/73/73 with the ghost
+  residual, ~40/73 before the fix); zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
