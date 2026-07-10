@@ -440,8 +440,8 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* daily challenge scorecard */
   .dcard{display:grid; grid-template-columns:repeat(9,1fr); gap:4px}
-  .dcell{background:var(--panel); border:1px solid var(--panelb); border-radius:7px; padding:5px 0 4px; text-align:center}
-  .dcell.cur{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset}
+  .dcell{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.24)); border:1px solid var(--panelb); border-radius:8px; padding:6px 0 5px; text-align:center; box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+  .dcell.cur{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset, 0 0 12px -4px var(--gold)}
   .dcell.sel{border-color:var(--teal); box-shadow:0 0 0 1px var(--teal) inset}
   .dcell.done{transition:transform .05s ease} .dcell.done:active{transform:scale(.94)}
   .dcell .dn{font-size:9px; color:var(--muted); font-weight:700; line-height:1}
@@ -451,6 +451,25 @@ window.GA_ID='G-L29P5MRWKE';
   .dcell .ds .smk.box{border:1.6px solid currentColor; border-radius:3px}
   .dcell .ds .smk.dcircle{border:1.6px solid currentColor; border-radius:50%; outline:1.6px solid currentColor; outline-offset:1.6px}
   .dcell .ds .smk.dbox{border:1.6px solid currentColor; border-radius:3px; outline:1.6px solid currentColor; outline-offset:1.6px}
+  /* CS248: round-screen "broadcast" chrome — cohesive premium framing around the tracer */
+  .droundglow{position:fixed; inset:0; z-index:-1; pointer-events:none;
+    background:radial-gradient(78% 52% at 50% 18%, var(--gl,#e0a83b), transparent 62%); opacity:.11}
+  .bcasthd{max-width:470px; margin:0 auto 5px; display:flex; align-items:center; gap:10px; position:relative; overflow:hidden;
+    background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(4,16,10,.34)); border:1px solid var(--panelb);
+    border-radius:13px; padding:9px 15px 9px 16px; box-shadow:0 6px 18px -12px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.05)}
+  .bcasthd::before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--bacc,#e0a83b)}
+  .bcasthd .bc-name{flex:1; min-width:0; font-family:var(--display); font-style:italic; font-size:18px; line-height:1.05;
+    color:var(--cream,#F4E3C9); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:.01em}
+  .bcasthd .bc-meta{flex:0 0 auto; font:800 10px/1 var(--body); letter-spacing:.09em; text-transform:uppercase; color:var(--bacc,#e0a83b)}
+  .dcardwrap{max-width:600px; margin:9px auto 0; background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(4,16,10,.3));
+    border:1px solid var(--panelb); border-radius:14px; padding:10px 12px 11px; box-shadow:0 8px 22px -14px rgba(0,0,0,.7)}
+  .dcardhd{display:flex; align-items:baseline; justify-content:space-between; margin:0 2px 8px}
+  .dcardhd .t{font:800 10.5px/1 var(--body); letter-spacing:.17em; text-transform:uppercase; color:var(--muted)}
+  .dcardhd .h{font:700 10.5px/1 var(--body); color:var(--gold); opacity:.85}
+  @media(max-width:700px){
+    .bcasthd,.dcardwrap{max-width:none; width:100vw; margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw);
+      border-radius:0; border-left:none; border-right:none}
+  }
   .shotpanel{max-width:560px; margin:8px auto 0; background:var(--panel); border:1px solid var(--panelb); border-radius:13px; padding:10px 14px}
   .shothd{display:flex; align-items:baseline; gap:11px; border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:2px}
   .shothd .hn{font-family:var(--display); font-style:italic; font-size:26px; color:var(--oncard); line-height:.9}
@@ -11617,6 +11636,7 @@ function scrDailyRound(){
   const previewNext = (!prov && !revealing && !holePause && !reviewing && !done && played.length>0);
   // a signature-hole tee/par-3 decision is pending (par-4/5 approach decisions come via `prov`)
   const teeSig = previewNext ? c.sig.find(s=>s[0]===i+1) : null;
+  add($(`<div class="droundglow" style="--gl:${hvThemeAccent(S.dailyCourse)}"></div>`));   // CS248: subtle themed glow behind the whole round
   if(S.moment){   // career-mode Moment: this round IS the tournament's final round
     const po=S.momentPO;
     add($(`<div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 ${esc(S.moment.evtName||'The Moment')} · ${po?'Sudden-Death Playoff':'Final Round'}</span></div>`));
@@ -11626,7 +11646,8 @@ function scrDailyRound(){
       add($(`<div class="center small" style="margin:0 0 4px;color:var(--gold);font-weight:700">${esc(S.moment.evtName)} · ${momentPosTxt(S.moment.info).replace(/<[^>]*>/g,'')} at the start of the day</div>`));
     }
   } else {
-  { const _ta=hvThemeAccent(S.dailyCourse); add($(`<div class="center"><span class="tag" style="color:${_ta};border-color:${_ta}88">${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)} · ${S.dailyPlan}</span></div>`)); }
+  { const _ta=hvThemeAccent(S.dailyCourse);
+    add($(`<div class="bcasthd" style="--bacc:${_ta}"><span class="bc-name">${esc(dShort(c.v))}</span><span class="bc-meta">${dCondLabel(S.dailyCond)} · ${esc(S.dailyPlan)}</span></div>`)); }
   if(!boardPresent && !reviewing){
     add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
     const beating=(through>0)&&(total < av*(through/18));
@@ -11770,14 +11791,16 @@ function scrDailyRound(){
   // scorecard strip lives BELOW the window now (the tracer is the star, H2H-style). The sudden-death
   // playoff plays one extra hole at a time (overlay resolves it), so the 18-cell strip is skipped.
   if(!S.momentPO){
-  const strip=$(`<div class="dcard" style="max-width:600px;margin:6px auto 0"></div>`);
+  const wrap=$(`<div class="dcardwrap"></div>`);
+  wrap.appendChild($(`<div class="dcardhd"><span class="t">Scorecard · ${through} thru</span><span class="h">${(played.length>1&&!reviewing)?'Tap a hole to rewatch':''}</span></div>`));
+  const strip=$(`<div class="dcard"></div>`);
   for(let k=0;k<18;k++){ const pl=played[k], isReveal=(k===lastIdx&&revealing), cur=(k===i&&!done&&!revealing);
     const showScore=pl&&!isReveal;   // the in-flight hole shows no score until the ball drops
     const cell=$(`<div class="dcell ${(cur||isReveal)?'cur':''} ${showScore?'done':''} ${(showScore&&k===vh&&played.length>1)?'sel':''}"><div class="dn">${k+1}</div><div class="ds" style="color:${showScore?dScoreCol(pl.toPar):'var(--muted)'}">${showScore?dCellScore(pl):'·'}</div></div>`);
     if(pl){ cell.style.cursor='pointer'; cell.setAttribute('role','button'); cell.setAttribute('aria-label',`Rewatch hole ${k+1}`); cell.onclick=()=>{ if(S.dailyViewHole===k) dailyReviewClose(); else dailyReviewOpen(k); }; }
     strip.appendChild(cell); }
-  add(strip);
-  if(played.length>1 && !reviewing) add($(`<div class="center small muted" style="margin:5px 0 0;font-size:11px">Tap any hole to rewatch it shot by shot</div>`));
+  wrap.appendChild(strip);
+  add(wrap);
   }
   add($(`<div style="height:10px"></div>`));
   if(S.momentPO){ /* playoff auto-plays; the extra-hole overlay carries the result + Continue */ }
