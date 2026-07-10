@@ -6070,6 +6070,36 @@ allows Google Fonts, or self-host Anton.*
   closed by default, zero page errors; screenshot confirms the stat bar → Phoenix Open scorecard +
   leaderboard → controls → compact Race/sponsors/momentum flow. Deployed to /golf.
 
+- **CS242 — sponsor economy rebalance: ~50% less pay, less-automatic floor, goal variety (owner:
+  "players are earning a ton more per season because of sponsors").** Measured the actual numbers first: a
+  dominant popular vet (OVR 90, 3M followers, two Global sponsors, Lv5 loyalty) could bank **~$104M/season**
+  in sponsor bonuses if all goals met — a single "win a major" goal paid ~$30M, MORE than the major's own
+  purse; a mid-career Premium player ~$34M. Prize money for a great season is ~$20-50M, so sponsors paid
+  2-3× what golf paid. Root cause: modest base bonuses ($2.4-4.8M) but the multipliers COMPOUND — tier
+  (Global ×2.7) × following (up to ×1.6) × loyalty (×1.24) × inflation (×1.25) → ~4.5-6× before two slots.
+  Owner picked (AskUserQuestion) **moderate ~50% cut + make the floor less automatic + add goal variety**.
+  Changes:
+  • **Money (main lever):** compressed the tier ladder `SPONSOR_TIERS` reward (was 1/1.45/2/2.7 →
+    **1/1.28/1.50/2.05**), softened the following curve `sponsorFolMult` (cap +0.6→**+0.35**, slope
+    0.2→0.117), and added a global `SPONSOR_MONEY=0.78` scale on `B()`. Result: elite $104M→**$52.8M**
+    (49% cut), mid $34M→**$18.5M** (46%), rookie ~$3.6M — sponsors now a supplement (~1/3-1/2 of prize
+    money), no single goal out-earns winning the event.
+  • **Floor less automatic:** the near-guaranteed FLOOR goals now pay small change (grind "make cuts"
+    ~$250k, elite "win twice" ~$4M — were ~$10M) with the money moved onto the hard STRETCH (major
+    $4.8M→$5.6M base; win $3.2M→$3.6M); floor TARGETS bumped (cuts 9→10, top-10s 5→6/2→3).
+  • **Variety:** the middle "TARGET" goal is now drawn from a per-tier POOL, deterministically seeded by
+    (careerSeed, year, slot) so it's stable within a save but rotates season-to-season and can differ
+    between the two slots — options: reach the Playoffs/Finale (ptsRank), **win $X in prize money** (new
+    `money` goal kind), **season scoring average under X/round** (new `scoreAvg` kind, min 30 rounds), or a
+    **signature/major win** (sigWin). Both new kinds added to `goalProg` with live progress bars.
+  Verified in Playwright: recomputed totals across elite/mid/rookie (46-49% cuts); the new `money`/`scoreAvg`
+  goals compute correct progress + done state with no NaN and render in the live contract card; variety
+  kinds appear in generated contracts; a full headless season settles with zero errors; OVR→tier gating
+  intact (80→grind, 85/87→contender, 88/92→elite, correct floor/stretch). Deployed to /golf. Tunable:
+  `SPONSOR_TIERS` rewards, `SPONSOR_MONEY`, `sponsorFolMult` curve, the per-tier base bonuses + variety pools
+  in `makeContractFor`, the `scoreAvg` targets. (Signing bonuses also drop proportionally since
+  `sponsorSigningBonus` reads the tier reward — consistent.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
