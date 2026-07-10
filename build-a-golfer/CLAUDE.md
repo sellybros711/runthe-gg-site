@@ -5967,6 +5967,41 @@ allows Google Fonts, or self-host Anton.*
   with zero page errors. Deployed to /golf. Tunable: `SPONSOR_DUAL_REWARD`/`SPONSOR_DUAL_DIFF`, `LOGO_SPEC`,
   the chest/hat logo placement in `paintAvatarFull`.
 
+- **CS237 — playing the Daily as a created golfer is FREE (career-mode incentive) (owner: "playing the daily
+  challenge with one of your created players does not cost a daily challenge spin... every time you use your
+  created player it is like a free play").** Owner picks (AskUserQuestion): keep **Legend golfers** (the
+  existing created-golfer vehicle — an elite retired career's peak build) as the qualifier, and post free
+  scores to a **separate 'Career Golfers' board**. Surgical change to the Legend Token system:
+  • **Free + reusable.** `beginDailyRoundWithLegend` no longer calls `claimDailyAttempt()` — a Legend play
+    never consumes one of the 3 daily draft attempts. The token is never spent: `consumeLegendToken` →
+    `creditLegendToken` (credits the "played as a Legend" achievement once via a new `t.played` flag, never
+    sets `used`), and `legendTokensUnused()` now returns all tokens, so each earned Legend is a permanent,
+    unlimited free daily entry. `finishDailyRound` gets an `isLegend` branch that records ONLY to the
+    separate Legend course-record tier + board and skips ALL draft bookkeeping (attempts, best-of-day,
+    streak, weekly goals, mastery, guest-claim) — the two modes stay cleanly separate.
+  • **No grind exploit.** A Legend play is deterministic per (day, build): `S.dailyAttempt` is fixed to 0,
+    so replaying the same Legend on the same day gives an identical round (no farming a lucky seed), while
+    different Legend builds still play differently. Verified: replay = identical total.
+  • **Always reachable.** `startDailyChallenge`/`beginDailyAttempt` now route to the preview (not the
+    "done" overlay) when you're out of draft attempts but own a Legend (`hasFreeLegends()`). The preview
+    hides the "Draft your golfer" button when out of attempts and shows an "Out of draft attempts — your
+    Legend golfers play free" note; the Legend section is rebranded "Your Legend golfers · FREE PLAY" with
+    "Play free ▸" buttons and a "scores post to the separate Career Golfers leaderboard" line. A dedicated
+    Legend result screen (focused: score + beat-the-pro + achievements + "Play the Daily / Course Records /
+    Home", no draft-only sections) loops back into the Daily.
+  • **Advertising** (the owner's open question): a green "🏆 Your Legend golfers play the Daily free — no
+    attempt used" line under the title Daily button when you own one; the preview FREE-PLAY card; the
+    How-to-Play bullet rewritten ("Your career golfers play free... FREE and unlimited, never uses a daily
+    attempt"); the Trophy Room "Your Legend golfers · Free play" strip; and the career-end / Legend Circuit
+    ceremony copy ("replay the Daily as this build for free, any time").
+  Verified in Playwright (signed-in stub + a seeded Legend token): a free Legend play leaves draft attempts
+  untouched (3 used / 0 left → still 0 left), the token stays present + unused + played:true, the streak is
+  untouched, the result is `isLegend`; at 0 draft attempts `startDailyChallenge` → the preview (not the
+  done overlay) with the FREE-PLAY card + "Play free" button + "Career Golfers" note + hidden draft button;
+  replay is deterministic; and the regression — a guest's first draft wheel spin still claims exactly 1
+  attempt — holds. Zero page errors. Deployed to /golf. (No SQL: the separate Legend board/records tier
+  already exists from CS63; free plays just post there as before, minus the attempt cost.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

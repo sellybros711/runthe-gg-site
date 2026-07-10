@@ -4044,7 +4044,7 @@ function scrRules(){
     ['🎯','Draft for the course','The preview shows what skills win there and the day\'s conditions. Spin a golfer built to attack today\'s course.'],
     ['♟️','Play it your way','Pick a game plan, then choose Attack or Play Safe on the signature holes. Aggressive chases a low number, but it can blow up.'],
     ['🏆','Claim the course record','Post the lowest round and the course record is yours. Beat the standing record and your name sits on it until someone takes it.'],
-    ['🎖️','Play a Legend Token','Finish a full 30-year career at an elite level (a Career Grand Slam, 5+ majors, or 3x Player of the Year) and bank a one-time entry as that career\'s peak build. Legend rounds have their own leaderboard and course records.'],
+    ['🎖️','Your career golfers play free','Finish a full 30-year career at an elite level (a Career Grand Slam, 5+ majors, or 3x Player of the Year) and that golfer becomes a Legend you can replay the Daily Challenge with, FREE and unlimited — it never uses one of your daily attempts. Legend rounds have their own Career Golfers leaderboard and course records.'],
   ];
   const dList=$(`<div class="perks" style="max-width:560px;margin:0 auto 18px"></div>`);
   dSteps.forEach(s=>dList.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
@@ -4713,6 +4713,8 @@ function scrTitle(){
   stack.appendChild(daily);
   // live countdown to the next daily course — creates "play today before it changes" urgency
   stack.appendChild($(`<div class="small center" style="margin-top:8px;color:var(--muted)">New course in <span style="color:var(--gold)">${dCd('clock')}</span></div>`));
+  // CS237: career-mode hook — your created Legend golfers play the Daily free (no attempt used)
+  if(!PRACTICE && hasFreeLegends()) stack.appendChild($(`<div class="small center" style="margin-top:6px;color:#35d6a0;font-weight:700">🏆 Your Legend golfers play the Daily free — no attempt used</div>`));
   const st=streakDisplay(), fz=streakFreezes();
   const playedToday=((LS.get(acctKey('bag_streak'),{})||{}).last===todayKey());
   if(st>0 && !playedToday && !PRACTICE){
@@ -8655,20 +8657,22 @@ function legendQualifyReason(c){
   return '';
 }
 function legendTokens(){ return LS.get(acctKey('bag_legend_tokens'),[]); }
-function legendTokensUnused(){ return legendTokens().filter(t=>!t.used); }
+// CS237: Legend plays are now free + reusable, so every earned Legend is always available (tokens are
+// never consumed). Kept the name/shape for back-compat; a legacy `used:true` token still shows (we no
+// longer set `used`). `hasFreeLegends()` = the player owns ≥1 Legend they can play free today.
+function legendTokensUnused(){ return legendTokens(); }
+function hasFreeLegends(){ return sbSignedIn() && legendTokens().length>0; }
 // Trophy Room strip, shows unused tokens (spend them from the Daily Challenge preview screen) and,
 // once at least one has been earned, a small lifetime tally. Renders nothing for a player who's never
 // finished a qualifying career, so it doesn't clutter the Trophy Room for most players.
 function legendTokensHTML(){
   const all=legendTokens(); if(!all.length) return '';
-  const unused=all.filter(t=>!t.used);
-  const rows=unused.slice(0,3).map(t=>`<div class="lb" style="grid-template-columns:1fr auto">
+  const rows=all.slice(0,4).map(t=>`<div class="lb" style="grid-template-columns:1fr auto">
     <span class="pl" style="min-width:0"><div style="font-weight:700">${esc(t.name)} · OVR ${t.ovr}</div><div class="small muted" style="font-size:10.5px">${esc(t.reason)}</div></span>
-    <span class="small" style="color:var(--gold);font-weight:800;align-self:center">Ready</span></div>`).join('');
+    <span class="small" style="color:#35d6a0;font-weight:800;align-self:center">Free play</span></div>`).join('');
   return `<div style="margin-bottom:14px">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:15px">🏆</span><b style="color:var(--gold);font-size:13.5px">Legend Tokens</b><span class="small muted">${unused.length} ready · ${all.length} earned lifetime</span></div>
-    ${unused.length?`<div class="board">${rows}</div><div class="small muted" style="margin-top:6px">Spend one from the Daily Challenge preview screen.</div>`
-      :`<div class="small muted">All spent, finish another full 30-year career at an elite level to earn another.</div>`}</div>`;
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:15px">🏆</span><b style="color:var(--gold);font-size:13.5px">Your Legend golfers</b><span class="small muted">${all.length} earned</span></div>
+    <div class="board">${rows}</div><div class="small muted" style="margin-top:6px">Each plays the Daily Challenge free (no attempt used) from the preview screen — as often as you like.</div></div>`;
 }
 // mints a token from the just-finished career's PEAK build, only when the full 30 years were played
 // (reason 'age', the forced-retirement path) and the career cleared the qualification bar.
@@ -10316,8 +10320,9 @@ function startDailyChallenge(){
   // already played today WITH a showable result → show it (Play again if attempts remain).
   if(showable && dailyAttempts()>0){ S.daily=true; S.dailyResult=null; S.dailyClaimMsg=null; S.screen='dailyresult'; render(); return; }
   // No showable result (e.g. the account's server attempt count was reconciled in without a stored round):
-  // if attempts remain, go play; otherwise show a graceful "done for today" overlay — never a blank bounce.
-  if(dailyAttemptsLeft()>0){ beginDailyAttempt(); return; }
+  // if attempts remain (or you own a Legend, which plays free), go to the preview; otherwise a graceful
+  // "done for today" overlay — never a blank bounce.
+  if(dailyAttemptsLeft()>0 || hasFreeLegends()){ beginDailyAttempt(); return; }
   S.daily=false; S.overlay='dailydone'; render();
 }
 // UI-FIRST: tapping Daily Challenge must ALWAYS change the screen immediately, on every browser/network.
@@ -10327,7 +10332,7 @@ function startDailyChallenge(){
 // 3-a-day cap in the BACKGROUND (enforceDailyAttempt) — it still bounces an over-cap player to the "done"
 // overlay within a moment, and score submission / records are separately server-gated, so the cap holds.
 function beginDailyAttempt(){
-  if(!PRACTICE && dailyAttemptsLeft()<=0){ S.overlay='dailydone'; render(); return; }
+  if(!PRACTICE && dailyAttemptsLeft()<=0 && !hasFreeLegends()){ S.overlay='dailydone'; render(); return; }   // out of draft attempts + no free Legend to play → done
   const seed=todayKey();
   // practice: a random attempt salt so every practice round offers a fresh draft wheel + fresh
   // per-hole luck (a fixed number would replay near-identical rounds); determinism doesn't matter
@@ -10453,25 +10458,31 @@ function scrDailyPreview(){
     b.onclick=()=>{ S.dailyPlan=k; render(); }; dial.appendChild(b); });
   add(dial);
   add($(`<div style="height:14px"></div>`));
-  const go=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Draft your golfer ▸<span class="sub">Build a golfer for ${esc(dShort(c.v))}</span></button>`);
-  go.onclick=()=>{ S.screen='setup'; render(); }; add(go);
+  const canDraft = PRACTICE || dailyAttemptsLeft()>0;
+  if(canDraft){
+    const go=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Draft your golfer ▸<span class="sub">Build a golfer for ${esc(dShort(c.v))}${PRACTICE?'':` · uses 1 of ${dailyMaxAttempts()} attempts`}</span></button>`);
+    go.onclick=()=>{ S.screen='setup'; render(); }; add(go);
+  } else {
+    add($(`<div class="scout" style="max-width:520px;margin:0 auto;text-align:center;border-color:#7ec8ff"><b style="color:#7ec8ff">Out of draft attempts today</b><div class="small muted" style="margin-top:3px">A fresh course drops at midnight UTC — but your Legend golfers play free, any time. Pick one below.</div></div>`));
+  }
   const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`);
   cr.onclick=()=>{ S.overlay='courserecords'; render(); }; add(cr);
-  // Legend Tokens: a signed-in player who's finished a qualifying full 30-year career can skip the
-  // draft and play this round as that career's peak build, one-time, instead of a fresh spin.
+  // CS237: play the Daily FREE as any of your created career golfers (Legend builds from a completed
+  // qualifying 30-year career). Doesn't use a draft attempt, reusable, and posts to the Career Golfers board.
   if(!S.special){ const toks=legendTokensUnused();
     if(toks.length){
       toks.sort((a,b)=>b.ovr-a.ovr);
       const wrap=$(`<div style="max-width:520px;margin:14px auto 0;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(235,166,31,.08),rgba(10,22,38,.25));padding:14px 15px"></div>`);
-      wrap.appendChild($(`<div style="display:flex;align-items:center;gap:7px;margin-bottom:9px"><span style="font-size:16px">🏆</span><b style="color:var(--gold);font-size:13.5px">Legend Token${toks.length>1?'s':''} available</b></div>`));
+      wrap.appendChild($(`<div style="display:flex;align-items:center;gap:7px;margin-bottom:3px"><span style="font-size:16px">🏆</span><b style="color:var(--gold);font-size:13.5px">Your Legend golfers</b><span class="tag" style="font-size:9.5px;color:#35d6a0;border-color:#35d6a0;padding:2px 7px">FREE PLAY</span></div>`));
+      wrap.appendChild($(`<div class="small muted" style="margin-bottom:7px">Play today's course as a created golfer — doesn't use a daily attempt.</div>`));
       toks.forEach(tok=>{
         const row=$(`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(235,166,31,.15)"></div>`);
         row.appendChild($(`<div style="min-width:0"><div style="font-weight:800;color:var(--oncard)">${esc(tok.name)} · OVR ${tok.ovr}</div><div class="small muted" style="margin-top:1px">${esc(tok.reason)} · ${tok.years}-year career</div></div>`));
-        const use=$(`<button class="btn gold" style="width:auto;flex:0 0 auto;padding:9px 14px;font-size:12.5px">Play as Legend ▸</button>`);
-        use.onclick=()=>{ track('legend_token_used',{ovr:tok.ovr}); beginDailyRoundWithLegend(tok); }; row.appendChild(use);
+        const use=$(`<button class="btn gold" style="width:auto;flex:0 0 auto;padding:9px 14px;font-size:12.5px">Play free ▸</button>`);
+        use.onclick=()=>{ track('legend_token_used',{ovr:tok.ovr,free:true}); beginDailyRoundWithLegend(tok); }; row.appendChild(use);
         wrap.appendChild(row);
       });
-      wrap.appendChild($(`<div class="small muted" style="margin-top:9px;line-height:1.4">Uses one of today's attempts and this token, still consumed even if you don't beat the tour average.</div>`));
+      wrap.appendChild($(`<div class="small muted" style="margin-top:9px;line-height:1.4">Free and unlimited · your Legend scores post to the separate <b style="color:var(--gold)">Career Golfers</b> leaderboard, not the draft board.</div>`));
       add(wrap);
     }
   }
@@ -10582,16 +10593,16 @@ function beginDailyRound(){
   track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr});
   S.screen='dailyround'; render(); scheduleDailyAdvance();
 }
-// Legend Token path: skip the draft entirely and play with a retired career's frozen PEAK build.
-// Token isn't marked used yet, that happens on submission (finishDailyRound), so backing out or
-// abandoning the round doesn't burn it.
+// Legend Token path: skip the draft entirely and play with a created career golfer's frozen PEAK build.
+// CS237: this is a FREE play — it doesn't consume a daily attempt, and the token is never spent (reusable).
+// Deterministic per (day, build): the attempt salt is fixed to 0 so replaying the same Legend on the same
+// day gives an identical round (no grind for a lucky seed); different Legend builds still play differently.
 function beginDailyRoundWithLegend(token){
-  S.dailySkills=Object.assign({},token.skills); S.dailyOvr=token.ovr;
+  S.dailySkills=Object.assign({},token.skills); S.dailyOvr=token.ovr; S.dailyAttempt=0;
   S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
   S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;
   S.dailyLegend={id:token.id, name:token.name, look:token.look}; S.momentPO=null; S.momentPOHoleIdx=null;
-  claimDailyAttempt();   // playing as a Legend skips the draft; committing to it consumes the attempt
   S.name=token.name; if(token.look) S.look=Object.assign({},token.look);
   track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr,legend:true});
   S.screen='dailyround'; render(); scheduleDailyAdvance();
@@ -10991,10 +11002,11 @@ function scrSpotlightResult(){
   const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Back to home</button>`); home.onclick=()=>{S.special=false;S.daily=false;S.screen='title';render();}; add(home);
   add($(`<p class="small muted center" style="margin-top:12px">A special 1-day event · the next Spotlight drops next month.</p>`));
 }
-// marks a Legend Token spent (round complete, win or lose), called once from finishDailyRound
-function consumeLegendToken(id){
+// CS237: a Legend (created-golfer) daily play is FREE + REUSABLE — the token is never consumed. This just
+// credits the "played as a Legend" achievement ONCE per token (t.played), so replaying doesn't inflate it.
+function creditLegendToken(id){
   if(!id) return; const tokens=legendTokens(); const t=tokens.find(x=>x.id===id);
-  if(t && !t.used){ t.used=true; LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush(); recordAchEvent({inc:{legendTokensUsed:1}}); }
+  if(t && !t.played){ t.played=true; LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush(); recordAchEvent({inc:{legendTokensUsed:1}}); }
 }
 function finishDailyRound(){
   if(S.momentPO) return;   // mid sudden-death playoff: the playoff engine drives completion, not the daily finish
@@ -11024,7 +11036,17 @@ function finishDailyRound(){
   const decisions={plan:S.dailyPlan,att:(S.dailyAttempt||0),attacks:S.dailyHoles.filter(h=>h.attack!=null).map(h=>({n:h.n,a:h.attack}))};
   const grade=dRoundGrade(S.dailyHoles, total, avg);   // Round Rating (secondary "how you played" grade)
   S.dailyResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,record:isRec,holes,avg,won,grade,day:S.dailySeed,skills:S.dailySkills,decisions,isLegend,legendName:isLegend?S.dailyLegend.name:null};
-  if(isLegend) consumeLegendToken(S.dailyLegend.id);   // spent on completion, win or lose, never wasted on an abandoned round
+  if(isLegend){
+    // CS237: a FREE + REUSABLE Legend (created-golfer) play — records ONLY to the separate Career Golfers
+    // (Legend) course-record tier + board; it never touches the draft daily's attempts, best-of-day,
+    // streak, weekly goals, or mastery, so the two modes stay cleanly separate.
+    creditLegendToken(S.dailyLegend.id);
+    if(signedIn){ sbSubmitDaily(S.dailyResult); verifyDailyRecord(S.dailyCourse, true); }
+    S.dailyStreakInfo=null; S.dailyAttemptNo=null; S.dailyImproved=false; S._claimDaily=null; S.dailyClaimMsg=null;
+    track('daily_completed',{course:S.dailyCourse,total,won,avg,legend:true,free:true,guest:!signedIn});
+    S._repAnimShown=false; S.dailyFreshAch=evaluateAch();
+    S.screen='dailyresult'; render(); return;
+  }
   // "days played" streak: advances once per day on completion (win or lose). Beating the pro feeds the
   // lifetime record instead (tie counts as a loss, `won` is strict total<avg, decided by best of the day).
   const _ds=bumpStreak(); const _st=bumpDailyStats(won);
@@ -11517,7 +11539,18 @@ function scrDailyResult(){
   add($(`<div class="scout" style="max-width:520px;margin:0 auto 4px;text-align:center;border-color:${wonDay?'#35d6a0':'var(--gold)'}">
     ${wonDay?`<b style="color:#35d6a0;font-size:17px">🏁 You beat the pro!</b>`:`<b style="color:var(--oncard);font-size:16px">Short of the tour average</b>`}
     <div class="small muted" style="margin-top:3px">Tour pros average <b style="color:var(--gold)">${dAvgTxt(av)}</b> here${justPlayed?` · this round ${total<av?`<span style="color:#35d6a0">beat it by ${margin.toFixed(1)}</span>`:`<span style="color:#e9a23b">missed by ${margin.toFixed(1)}</span>`}`:''}${(best&&best.total!==total)?` · best today ${dTot(best.total, c.par)} ${wonDay?'(winner)':''}`:''}</div>
-    ${(wonDay&&left>0&&!practice)?`<div class="small" style="margin-top:5px;color:#35d6a0;font-weight:700">Challenge cleared. Use your ${left} remaining attempt${left>1?'s':''} to go even lower and chase the course record.</div>`:''}</div>`));
+    ${(wonDay&&left>0&&!practice&&!r.isLegend)?`<div class="small" style="margin-top:5px;color:#35d6a0;font-weight:700">Challenge cleared. Use your ${left} remaining attempt${left>1?'s':''} to go even lower and chase the course record.</div>`:''}</div>`));
+  // CS237: a FREE Legend (created-golfer) play — focused result (no draft attempts / streak / weekly / claim
+  // sections apply), then back into the Daily. Scores live on the separate Career Golfers board.
+  if(r.isLegend){
+    if(justPlayed && S.dailyFreshAch && S.dailyFreshAch.length){ const g=S.dailyFreshAch.reduce((s,a)=>s+(a.pts||0),0); add(seasonRepNode(achPoints()-g, S.dailyFreshAch)); }
+    add($(`<div class="small muted center" style="max-width:520px;margin:2px auto 12px">Free play with your created golfer · no daily attempt used. Your Legend scores post to the <b style="color:var(--gold)">Career Golfers</b> board.</div>`));
+    const again=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Play the Daily ▸<span class="sub">Draft a golfer, or play free as another Legend</span></button>`);
+    again.onclick=()=>{ S.dailyResult=null; beginDailyAttempt(); }; add(again);
+    const cr2=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`); cr2.onclick=()=>{ S.overlay='courserecords'; render(); }; add(cr2);
+    const home2=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Return to home</button>`); home2.onclick=()=>{ S.daily=false; S.dailyLegend=null; S.dailyResult=null; S.screen='title'; render(); }; add(home2);
+    return;
+  }
   // result of logging a guest round to a just-signed-in account (saved, or out of attempts)
   if(S.dailyClaimMsg){ const m=S.dailyClaimMsg;
     add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:${m.ok?'#35d6a0':'#E14A33'}">
@@ -11888,7 +11921,7 @@ function overlayCourseRecords(screen){
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Course Records</h3></div>`);
   ov.appendChild(tabs);
-  if(tab==='legend') ov.appendChild($(`<p class="small muted center" style="margin:8px 0 0">Rounds played with a retired career's peak build via a Legend Token, kept separate from everyday drafted golfers.</p>`));
+  if(tab==='legend') ov.appendChild($(`<p class="small muted center" style="margin:8px 0 0">The Career Golfers board — free rounds played as your created career (Legend) golfers, kept separate from everyday drafted golfers.</p>`));
   ov.appendChild($(`<div><h2 style="margin:12px 0 8px">Today · ${esc(dShort(DAILY_COURSES[today].v))}</h2>
     <p class="lede" style="margin:0 0 8px;font-size:12.5px">${tab==='legend'?'The global leaderboard for legend-token rounds at today’s course.':'The global leaderboard for today’s course. Lowest round wins the day.'}</p></div>`));
   const boardWrap=$(`<div></div>`); boardWrap.innerHTML=emojifyIcons(boardHTML); ov.appendChild(boardWrap);
@@ -11943,7 +11976,7 @@ function scrCareerEnd(){
     add($(`<div class="center" style="margin:0 0 16px"><div style="display:inline-block;background:linear-gradient(180deg,#3a2a0f,#0a1626);border:1px solid var(--gold);border-radius:14px;padding:16px 22px;max-width:92vw;box-shadow:0 0 24px rgba(235,166,31,.25)">
       <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">🏆 Legend Token Earned</div>
       <div style="font:800 20px/1.2 var(--body);color:var(--oncard);margin-top:7px">${esc(lt.name)} · OVR ${lt.ovr} at their peak</div>
-      <div class="small muted" style="margin-top:5px;max-width:400px">${esc(lt.reason)} across ${lt.years} seasons earns a one-time Daily Challenge entry, spin your legend into a future daily round instead of drafting fresh.</div></div></div>`));
+      <div class="small muted" style="margin-top:5px;max-width:400px">${esc(lt.reason)} across ${lt.years} seasons turns this golfer into a Legend, replay the Daily Challenge as this build for free, any time. It never uses a daily attempt.</div></div></div>`));
   }
   add($(`<div class="center" style="margin-bottom:8px">
     <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Career net worth</div>
@@ -12023,7 +12056,7 @@ function scrCircuitEnd(){
     add($(`<div class="center" style="margin:0 0 16px"><div style="display:inline-block;background:linear-gradient(180deg,#3a2a0f,#0a1626);border:1px solid var(--gold);border-radius:14px;padding:16px 22px;max-width:92vw;box-shadow:0 0 24px rgba(235,166,31,.25)">
       <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">🏆 Legend Token Earned</div>
       <div style="font:800 20px/1.2 var(--body);color:var(--oncard)">${esc(lt.name)} · OVR ${lt.ovr}</div>
-      <div class="small muted" style="margin-top:5px;max-width:400px">Completing the Legend Circuit earns a one-time Daily Challenge entry, spin your legend into a future daily round instead of drafting fresh.</div></div></div>`));
+      <div class="small muted" style="margin-top:5px;max-width:400px">Completing the Legend Circuit turns this golfer into a Legend, replay the Daily Challenge as this build for free, any time. It never uses a daily attempt.</div></div></div>`));
   }
   add($(`<div class="center" style="margin-bottom:8px">
     <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Circuit net worth</div>
