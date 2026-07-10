@@ -1760,6 +1760,26 @@
     line-height:1.4;color:var(--muted-2);max-width:340px;}
   .res-nearmiss b{font-family:'Anton',Impact,sans-serif;font-weight:400;color:#B8860B;font-size:15px;}
   /* end-of-run re-draft hook (tailored "fix it" framing above the re-draft button) */
+  /* online hub: live activity ticker */
+  .online-activity{background:var(--white);border:1.5px solid var(--border-soft);border-radius:12px;
+    padding:10px 14px;margin-bottom:16px;text-align:left;box-shadow:var(--shadow-sm);}
+  .oa-head{display:flex;align-items:center;gap:7px;font-weight:900;font-size:10px;letter-spacing:1.2px;
+    text-transform:uppercase;color:var(--muted);margin-bottom:6px;}
+  .oa-dot{width:8px;height:8px;border-radius:50%;background:#E5402A;box-shadow:0 0 0 0 rgba(229,64,42,.6);
+    animation:oaPulse 1.6s ease-out infinite;}
+  @keyframes oaPulse{0%{box-shadow:0 0 0 0 rgba(229,64,42,.55);}70%{box-shadow:0 0 0 7px rgba(229,64,42,0);}100%{box-shadow:0 0 0 0 rgba(229,64,42,0);}}
+  .oa-item{display:flex;align-items:center;gap:9px;min-height:24px;opacity:0;transform:translateY(4px);
+    transition:opacity .22s ease, transform .22s ease;font-weight:600;font-size:13px;color:var(--muted-2);}
+  .oa-item.show{opacity:1;transform:none;}
+  .oa-item b{color:var(--ink);font-weight:800;}
+  .oa-ico{flex:0 0 auto;font-size:15px;}
+  .oa-txt{flex:1;min-width:0;line-height:1.35;}
+  .oa-txt .flag-ico{width:18px;height:13px;vertical-align:-2px;margin-right:2px;border-radius:2px;}
+  .oa-id{font-weight:900;font-size:11px;white-space:nowrap;}
+
+  .btn.beatmine{background:linear-gradient(135deg,#F4B413,#E5402A);color:#fff;border:none;
+    box-shadow:0 4px 14px rgba(229,64,42,.3);font-weight:900;}
+  .btn.beatmine:hover{filter:brightness(1.06);}
   .res-redraft{margin-top:16px;}
   .res-redraft-hook{text-align:center;font-weight:700;font-size:13px;line-height:1.4;
     color:var(--ink);background:#fbf4e6;border:1.5px solid var(--border-soft);border-radius:12px;
@@ -2405,28 +2425,49 @@
   .fm-card-emoji{font-size:14px;}
   .fm-card-blurb{font-weight:600;font-size:13px;line-height:1.45;color:var(--muted-2);margin-top:12px;text-align:center;}
   /* pitch */
-  .fmp-pitch{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:6px;
-    background:linear-gradient(#1a8f5e,#127a4f);border-radius:12px;padding:14px 8px;min-height:230px;overflow:hidden;
+  .fmp-pitch{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:12px;
+    background:linear-gradient(#1a8f5e,#127a4f);border-radius:12px;padding:16px 8px 18px;min-height:268px;overflow:hidden;
     box-shadow:inset 0 0 0 2px rgba(255,255,255,.14);}
   /* subtle pitch markings: centre line + centre circle + penalty box up top */
   .fmp-pitch::before{content:"";position:absolute;left:50%;top:50%;width:64px;height:64px;transform:translate(-50%,-50%);
     border:2px solid rgba(255,255,255,.16);border-radius:50%;}
   .fmp-pitch::after{content:"";position:absolute;left:0;right:0;top:50%;height:0;border-top:2px solid rgba(255,255,255,.14);}
   .fmp-line{display:flex;justify-content:space-evenly;align-items:center;gap:6px;position:relative;z-index:1;flex:1;}
-  .fmp-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;
-    min-width:44px;max-width:60px;background:rgba(255,255,255,.96);border-radius:9px;padding:4px 5px;
-    border:2px solid #cfc4b2;box-shadow:0 2px 5px rgba(0,0,0,.28);}
-  .fmp-chip.fmp-elite{border-color:var(--gold);}
-  .fmp-chip.fmp-great{border-color:#E5402A;}
-  .fmp-chip.fmp-good{border-color:#2A6BD1;}
-  .fmp-ov{font-family:'Anton',Impact,sans-serif;font-size:15px;line-height:1;color:#16120F;}
-  .fmp-nm{font-weight:800;font-size:9px;line-height:1.1;color:#5a5048;max-width:56px;overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap;margin-top:1px;}
+  /* circular flag-filled token, position-coloured ring (mirrors the draft pitch) */
+  .fmp-tok{position:relative;width:46px;height:46px;border-radius:50%;flex:0 0 auto;
+    background-size:cover;background-position:center;background-repeat:no-repeat;
+    border:3px solid var(--tok-ring,#cfc4b2);box-shadow:0 2px 6px rgba(0,0,0,.4);
+    display:flex;align-items:center;justify-content:center;}
+  .fmp-tok.pos-GK{--tok-ring:var(--pos-gk);}
+  .fmp-tok.pos-DEF{--tok-ring:var(--pos-def);}
+  .fmp-tok.pos-MID{--tok-ring:var(--pos-mid);}
+  .fmp-tok.pos-FWD{--tok-ring:var(--pos-fwd);}
+  .fmp-tok-noflag{background:#3a4a63;}
+  .fmp-tok-nm{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    max-width:52px;font-weight:900;font-size:9px;line-height:1;color:#fff;text-align:center;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    background:rgba(0,0,0,.55);border-radius:5px;padding:2px 4px;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+  .fmp-tok-ov{position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);
+    font-family:'Anton',Impact,sans-serif;font-size:12px;line-height:1;color:#fff;
+    border-radius:5px;padding:1px 5px;box-shadow:0 1px 3px rgba(0,0,0,.4);}
+  .fmp-tok-ov.red{background:#E5402A;}.fmp-tok-ov.orange{background:#F47B20;}
+  .fmp-tok-ov.gold{background:#F4B413;color:#1a1008;}.fmp-tok-ov.green{background:#1F9E57;}
   /* compact inline badge */
   .fm-badge{--fm-col:var(--teal);display:inline-flex;align-items:center;gap:8px;vertical-align:middle;}
   .fm-badge-name{font-family:'Anton',Impact,sans-serif;font-size:17px;letter-spacing:1px;color:var(--ink);}
   .fm-badge-id{font-weight:900;font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:#fff;
     background:var(--fm-col);border-radius:999px;padding:3px 9px;}
+  /* profile: formation mastery rows */
+  .fm-mastery{display:flex;flex-direction:column;gap:6px;margin-bottom:6px;}
+  .fmm-row{display:flex;align-items:center;justify-content:space-between;gap:8px;
+    background:var(--white);border:1.5px solid var(--border-soft);border-left:4px solid var(--fm-col);
+    border-radius:10px;padding:9px 12px;box-shadow:var(--shadow-sm);}
+  .fmm-row.fmm-off{opacity:.5;}
+  .fmm-id{display:inline-flex;align-items:center;gap:6px;font-weight:900;font-size:13px;color:var(--ink);}
+  .fmm-emoji{font-size:14px;}
+  .fmm-stats{display:inline-flex;align-items:center;gap:12px;}
+  .fmm-stat{font-weight:600;font-size:11px;color:var(--muted);white-space:nowrap;}
+  .fmm-stat b{font-family:'Anton',Impact,sans-serif;font-size:15px;color:var(--ink);font-weight:400;margin-right:2px;}
   /* online result: your shape vs theirs */
   .h2h-fm-row{display:flex;align-items:center;justify-content:center;gap:14px;margin:2px 0 18px;flex-wrap:wrap;}
   .h2h-fm-side{display:flex;flex-direction:column;align-items:center;gap:5px;}
@@ -3155,6 +3196,9 @@ window.GA_ID='G-L29P5MRWKE';
 
       <div class="acct-stats" id="acct-stats"></div>
 
+      <div class="prof-section-title" id="fm-mastery-title" style="display:none">Formation Mastery</div>
+      <div class="fm-mastery" id="fm-mastery"></div>
+
       <button type="button" class="prof-collapse-head" id="ach-head">
         <span class="pc-title">Achievements</span>
         <span class="pc-count"><b id="ach-count">0 / 45</b> completed</span>
@@ -3456,6 +3500,10 @@ window.GA_ID='G-L29P5MRWKE';
     <div class="fr-wrap">
       <div class="fr-title">ONLINE</div>
       <div class="fr-sub">Play live against real opponents</div>
+      <div class="online-activity" id="online-activity">
+        <div class="oa-head"><span class="oa-dot"></span> LIVE ACTIVITY</div>
+        <div class="oa-item" id="oa-item"></div>
+      </div>
       <div class="online-card" id="online-card-h2h">
         <div class="online-card-badge">1v1</div>
         <div class="online-card-title">Online Friendly</div>
@@ -5854,6 +5902,7 @@ function renderProfilePage(){
   acctSelectedFlag = (authProfile && authProfile.flag) || acctSelectedFlag || 'USA';
   buildAcctFlagRow();
   renderProfileStats();
+  renderFormationMastery();
   renderAchievements();
   renderTopDrafts();
   renderLegends();
@@ -7392,6 +7441,7 @@ async function fillNearMiss(rank, overall){
 
 function goToResults(){
   const _sc=document.getElementById('sim-controls'); if(_sc) _sc.classList.add('hidden');
+  try{ fmMasteryRecordSoloRun(); }catch(e){}   // log this run's formation to mastery (idempotent)
   const r=gs.result, sim=simResult;
   const oc=simOutcome(sim);
   const color=outcomeColor(oc.label);
@@ -7426,6 +7476,7 @@ function goToResults(){
     <div class="res-redraft">
       <div class="res-redraft-hook" id="res-redraft-hook"></div>
       <div class="stack" style="margin-top:10px;">
+        <button class="btn beatmine" id="res-beatmine">⚔️ Beat My Squad — challenge a friend</button>
         <button class="btn teal" id="res-again">Draft a New Squad</button>
         <button class="btn blue" id="res-boxscores">📊 Tournament Recap</button>
         <button class="btn ghost" id="res-home">Home</button>
@@ -7477,6 +7528,8 @@ function goToResults(){
     squadBox.appendChild(row);
   });
   $('res-share').addEventListener('click', openSharePopup);   // grid of share targets
+  { const bm=$('res-beatmine');
+    if(bm){ if(SUPABASE_READY){ bm.addEventListener('click', beatMySquadShare); } else { bm.style.display='none'; } } }
   $('res-again').addEventListener('click', newGame);
   { const rh=$('res-home'); if(rh) rh.addEventListener('click', ()=>{ if(typeof friendlyReset==='function') friendlyReset(); showScreen('start'); }); }
   $('res-boxscores').addEventListener('click', openBoxScores);
@@ -7682,6 +7735,13 @@ function loadImg(src, cross){
     i.onload=()=>res(i); i.onerror=()=>res(null); i.src=src; });
 }
 function rrect(x,ctx,X,Y,W,H,r){ ctx.beginPath(); ctx.moveTo(X+r,Y); ctx.arcTo(X+W,Y,X+W,Y+H,r); ctx.arcTo(X+W,Y+H,X,Y+H,r); ctx.arcTo(X,Y+H,X,Y,r); ctx.arcTo(X,Y,X+W,Y,r); ctx.closePath(); }
+// Draw letter-spaced text centred at (cx, y) with the current font/fill.
+function canvasSpacedText(ctx, text, cx, y, sp){
+  const prevAlign=ctx.textAlign; ctx.textAlign='left';
+  let w=0; for(const ch of text) w+=ctx.measureText(ch).width+sp; w-=sp;
+  let lx=cx-w/2; for(const ch of text){ ctx.fillText(ch,lx,y); lx+=ctx.measureText(ch).width+sp; }
+  ctx.textAlign=prevAlign;
+}
 
 // up to 4 recap lines from the simulation (knockout scores + top scorer)
 function shareRecapLines(){
@@ -8048,6 +8108,116 @@ function drawCanvasBracket(x, cx, cy, r, isChamp){
   }
   x.textAlign='left';
 }
+// Signature 9:16 "team card" — the XI laid out on a pitch as flag-filled
+// tokens, topped with the result, team OVR and the formation identity. Built
+// for full-draft results (the shape only exists there); story-optimised so it
+// reads as a real all-star team, not a stat list.
+async function buildTeamCardCanvas(){
+  await (document.fonts && document.fonts.ready);
+  const W=1080, H=1920, CX=W/2, cream='#FDF6E3';
+  const r=simResult;
+  const isChamp = r ? (!r.eliminated && r.furthestRound==='Final') : false;
+  const squad = (gs.result.scoredPicks||[]).map(sp=>sp.player);
+  const f = deriveFormation(squad); const prof = f.profile;
+  const c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
+
+  // ---- background: navy + gold glow + gold top stripe (brand) ----
+  x.fillStyle='#0b1324'; x.fillRect(0,0,W,H);
+  let g=x.createRadialGradient(CX,360,60,CX,360,780);
+  g.addColorStop(0,'rgba(244,180,19,0.30)'); g.addColorStop(.5,'rgba(244,180,19,0.10)'); g.addColorStop(1,'rgba(244,180,19,0)');
+  x.fillStyle=g; x.fillRect(0,0,W,H);
+  const stripe=x.createLinearGradient(0,0,W,0);
+  stripe.addColorStop(0,'#9C6C18'); stripe.addColorStop(.32,'#F4B413'); stripe.addColorStop(.5,'#FCEFA8'); stripe.addColorStop(.68,'#F4B413'); stripe.addColorStop(1,'#9C6C18');
+  x.fillStyle=stripe; x.fillRect(0,0,W,14);
+
+  // ---- wordmark ----
+  x.textBaseline='alphabetic'; x.textAlign='left'; x.font='400 66px Anton';
+  const seg=[['RUN',cream],['THE','#138A6B'],['PITCH',cream]];
+  let tot=0; for(const [t] of seg) tot+=x.measureText(t).width; let lx=CX-tot/2;
+  for(const [t,col] of seg){ x.fillStyle=col; x.fillText(t,lx,108); lx+=x.measureText(t).width; }
+
+  // ---- result headline ----
+  x.textAlign='center';
+  if(isChamp){
+    x.font='400 60px Anton'; x.fillStyle='#F4B413';
+    x.save(); x.shadowColor='rgba(244,180,19,.5)'; x.shadowBlur=20; x.fillText('WORLD CUP CHAMPIONS 🏆', CX, 196); x.restore();
+  } else {
+    x.font='800 30px Archivo'; x.fillStyle='#ff6a5a'; x.fillText('REACHED THE', CX, 170);
+    x.font='400 58px Anton'; x.fillStyle=cream;
+    x.save(); x.shadowColor='rgba(0,0,0,.4)'; x.shadowBlur=10; x.fillText(shareEliminatedRound(r).toUpperCase(), CX, 228); x.restore();
+  }
+
+  // ---- team overall + formation identity pill ----
+  const teamOv=gs.result.teamOverall; const over100=teamOv>=100;
+  const teamColor= over100?'#F4B413':(teamOv>=90?'#4ade80':teamOv>=80?'#F4B413':teamOv>=70?'#F47B20':'#E5402A');
+  x.font='400 92px Anton'; x.fillStyle=teamColor;
+  x.save(); x.shadowColor=over100?'rgba(244,180,19,.95)':'rgba(0,0,0,.4)'; x.shadowBlur=over100?30:14;
+  x.fillText(teamOv.toFixed(1), CX, 332); x.restore();
+  x.font='900 22px Archivo'; x.fillStyle=cream; canvasSpacedText(x,'TEAM OVERALL',CX,364,3);
+  // pill: "4-3-3   ATTACKING"
+  const pill = f.name+'    '+prof.label.toUpperCase();
+  x.font='900 30px Archivo'; const pw=x.measureText(pill).width+64, ph=58, px=CX-pw/2, py=392;
+  rrect('',x,px,py,pw,ph,29); x.fillStyle=prof.color; x.fill();
+  x.fillStyle='#fff'; x.textAlign='center'; x.textBaseline='middle'; x.fillText(pill, CX, py+ph/2+2); x.textBaseline='alphabetic';
+
+  // ---- pitch ----
+  const pTop=488, pBot=1566, pL=48, pR=W-48, pW=pR-pL, pH=pBot-pTop;
+  x.fillStyle='#127a4f'; rrect('',x,pL,pTop,pW,pH,28); x.fill();
+  x.save(); rrect('',x,pL,pTop,pW,pH,28); x.clip();
+  for(let i=0;i<8;i++){ if(i%2){ x.fillStyle='rgba(255,255,255,.05)'; x.fillRect(pL, pTop+i*(pH/8), pW, pH/8); } }
+  x.strokeStyle='rgba(255,255,255,.32)'; x.lineWidth=4;
+  x.strokeRect(pL+16,pTop+16,pW-32,pH-32);
+  x.beginPath(); x.moveTo(pL, pTop+pH/2); x.lineTo(pR, pTop+pH/2); x.stroke();
+  x.beginPath(); x.arc(CX, pTop+pH/2, 92, 0, Math.PI*2); x.stroke();
+  x.restore();
+
+  // preload flags (cross-origin) once per country
+  const flagCache={};
+  await Promise.all([...new Set(squad.map(p=>p.country))].map(async cty=>{
+    const u=flagImg(cty,320); flagCache[cty]= u ? await loadImg(u,true).catch(()=>null) : null;
+  }));
+
+  const lines=[['FWD', squad.filter(p=>p.position==='FWD')],['MID', squad.filter(p=>p.position==='MID')],
+               ['DEF', squad.filter(p=>p.position==='DEF')],['GK', squad.filter(p=>p.position==='GK')]];
+  const rowH=pH/lines.length, R=60;
+  lines.forEach(([pos, players], li)=>{
+    if(!players.length) return;
+    const cy=pTop + rowH*li + rowH/2; const n=players.length;
+    players.forEach((p, pi)=>{
+      const cx=pL + pW*(pi+1)/(n+1);
+      // flag fill, circle-clipped, cover-fit
+      x.save(); x.beginPath(); x.arc(cx,cy,R,0,Math.PI*2); x.closePath(); x.clip();
+      const fl=flagCache[p.country];
+      if(fl){ const ar=fl.width/fl.height; let dw=2*R, dh=2*R; if(ar>1){ dw=dh*ar; } else { dh=dw/ar; }
+        x.drawImage(fl, cx-dw/2, cy-dh/2, dw, dh); }
+      else { x.fillStyle='#33415c'; x.fillRect(cx-R,cy-R,2*R,2*R); }
+      x.restore();
+      // position ring
+      x.beginPath(); x.arc(cx,cy,R,0,Math.PI*2); x.lineWidth=7; x.strokeStyle=PITCH_COLORS[pos]||'#888'; x.stroke();
+      // name pill
+      let nm=shortName(p.name); x.font='900 24px Archivo';
+      const maxNW=2*R+30; let nw=Math.min(x.measureText(nm).width+22, maxNW), nh=36;
+      rrect('',x,cx-nw/2, cy-nh/2, nw, nh, 9); x.fillStyle='rgba(0,0,0,.62)'; x.fill();
+      x.fillStyle='#fff'; x.textAlign='center'; x.textBaseline='middle';
+      let dn=nm; while(x.measureText(dn).width>nw-16 && dn.length>3) dn=dn.slice(0,-1);
+      if(dn!==nm) dn=dn+'…'; x.fillText(dn, cx, cy+1); x.textBaseline='alphabetic';
+      // OVR badge
+      const ov=p.overall; const oc= ov>=90?'#F4B413':ov>=82?'#F47B20':ov>=74?'#1F9E57':'#E5402A';
+      x.font='400 32px Anton'; const ow=x.measureText(String(ov)).width+24, oh=38;
+      rrect('',x,cx-ow/2, cy+R-12, ow, oh, 9); x.fillStyle=oc; x.fill();
+      x.fillStyle= ov>=90?'#1a1008':'#fff'; x.textAlign='center'; x.textBaseline='middle';
+      x.fillText(String(ov), cx, cy+R-12+oh/2+2); x.textBaseline='alphabetic';
+    });
+  });
+
+  // ---- footer ----
+  x.textAlign='center'; x.font='400 50px Anton'; x.fillStyle=cream;
+  x.save(); x.shadowColor='rgba(0,0,0,.4)'; x.shadowBlur=12; x.fillText('Can you win the World Cup?', CX, H-96); x.restore();
+  x.font='900 46px Archivo'; x.fillStyle='#F4B413'; x.fillText('runthe.gg', CX, H-40);
+  x.textAlign='left';
+  return c;
+}
+
 async function buildSimpleShareCanvas(){
   await (document.fonts && document.fonts.ready);
   const W=1080, CX=W/2, ink='#16120F', cream='#FDF6E3';
@@ -8186,7 +8356,12 @@ async function openSharePopup(){
   const bg=$('share-bg'); if(!bg) return;
   // generated preview image (async; hidden until ready)
   const img=$('share-preview'); if(img){ img.style.display='none';
-    buildSimpleShareCanvas().then(canvas=>{ img.src=canvas.toDataURL('image/png'); img.style.display=''; }).catch(()=>{}); }
+    // Full-draft results get the signature 9:16 pitch team card; everything
+    // else keeps the roster-list card (no formation to show).
+    const useTeamCard = isFullDraft() && gs && gs.result && (gs.result.scoredPicks||[]).length;
+    const buildShare = useTeamCard ? buildTeamCardCanvas : buildSimpleShareCanvas;
+    buildShare().then(canvas=>{ img.src=canvas.toDataURL('image/png'); img.style.display=''; })
+      .catch(()=>{ buildSimpleShareCanvas().then(canvas=>{ img.src=canvas.toDataURL('image/png'); img.style.display=''; }).catch(()=>{}); }); }
   // share-target grid
   const grid=$('share-grid'); grid.innerHTML='';
   const msg=shareTextCore(), link=SHARE_HOME;
@@ -9280,16 +9455,25 @@ function positionalRatingsFromSquad(squad, fallbackOverall){
 // ---- formation UI helpers (pitch viz + summary card + compact badge) --------
 // A vertical pitch with the XI laid out in real formation lines (attacking end
 // at the top). `squad` = hydrated players ({name, position, overall, country}).
-function ovTierClass(ov){
-  if(ov>=90) return 'fmp-elite'; if(ov>=82) return 'fmp-great';
-  if(ov>=74) return 'fmp-good';  return 'fmp-base';
+function ovBadgeClass(ov){
+  if(ov>=90) return 'gold'; if(ov>=82) return 'orange';
+  if(ov>=74) return 'green'; return 'red';
 }
+// Circular, flag-filled player tokens — the same characterful treatment the
+// draft pitch uses (nation flag as the token fill, position-coloured ring,
+// name pill + OVR badge) — so the formation card and share image read as a
+// real all-star XI instead of anonymous white pills.
 function renderFormationPitch(squad){
   const byPos = pos => (squad||[]).filter(p=>p && p.position===pos);
-  const line = (players, cls) => `<div class="fmp-line ${cls}">`+
-    players.map(p=>`<div class="fmp-chip ${ovTierClass(p.overall||0)}" title="${escapeHtml(p.name||'')} · ${p.overall||''} OVR">`+
-      `<span class="fmp-ov">${p.overall!=null?p.overall:''}</span>`+
-      `<span class="fmp-nm">${escapeHtml(shortName(p.name||''))}</span></div>`).join('')+`</div>`;
+  const tok = p => {
+    const url = flagImg(p.country, 160);
+    const bg = url ? ` style="background-image:url('${url}')"` : '';
+    const ov = p.overall!=null ? p.overall : '';
+    return `<div class="fmp-tok pos-${p.position||'DEF'}${url?'':' fmp-tok-noflag'}"${bg} title="${escapeHtml(p.name||'')} · ${ov} OVR">`+
+      `<span class="fmp-tok-nm">${escapeHtml(shortName(p.name||''))}</span>`+
+      `<span class="fmp-tok-ov ${ovBadgeClass(p.overall||0)}">${ov}</span></div>`;
+  };
+  const line = (players, cls) => `<div class="fmp-line ${cls}">`+players.map(tok).join('')+`</div>`;
   return `<div class="fmp-pitch">`+
     line(byPos('FWD'),'fmp-fwd')+line(byPos('MID'),'fmp-mid')+
     line(byPos('DEF'),'fmp-def')+line(byPos('GK'),'fmp-gk')+`</div>`;
@@ -9308,6 +9492,54 @@ function formationCardHtml(squad, opts){
     ${opts.hideBlurb ? '' : `<div class="fm-card-blurb">${escapeHtml(p.blurb)}</div>`}
   </div>`;
 }
+// ---- formation mastery (per-identity record, localStorage v1) --------------
+// Tracks how you've done with each tactical shape: solo tournament runs +
+// World Cup titles, and Online Friendly wins. Local-only for now (a fast,
+// backend-free first version); surfaced on the profile as a tactical record.
+const FM_MASTERY_KEY = 'rtp_formation_mastery';
+function fmMasteryLoad(){ try{ return JSON.parse(localStorage.getItem(FM_MASTERY_KEY))||{}; }catch(e){ return {}; } }
+function fmMasterySave(m){ try{ localStorage.setItem(FM_MASTERY_KEY, JSON.stringify(m)); }catch(e){} }
+function fmMasteryRecord(identity, opts){
+  if(!identity || !FORMATION_PROFILES[identity]) return;
+  opts = opts || {};
+  const m = fmMasteryLoad();
+  const e = m[identity] || (m[identity] = { runs:0, titles:0, wins:0 });
+  if(opts.run)   e.runs   = (e.runs||0)+1;
+  if(opts.title) e.titles = (e.titles||0)+1;
+  if(opts.win)   e.wins   = (e.wins||0)+1;
+  fmMasterySave(m);
+}
+// Derive + record a solo full-draft run from gs.result (idempotent per run).
+function fmMasteryRecordSoloRun(){
+  if(!isFullDraft() || !gs || !gs.result || gs.result._fmRecorded) return;
+  const squad = (gs.result.scoredPicks||[]).map(sp=>sp.player);
+  if(squad.length < 11) return;
+  const f = deriveFormation(squad);
+  const champ = !!(simResult && !simResult.eliminated && simResult.furthestRound==='Final');
+  fmMasteryRecord(f.identity, { run:true, title:champ });
+  gs.result._fmRecorded = true;
+}
+function renderFormationMastery(){
+  const box=document.getElementById('fm-mastery'); const title=document.getElementById('fm-mastery-title');
+  if(!box) return;
+  const m=fmMasteryLoad();
+  const order=['ATTACKING','BALANCED','POSSESSION','DEFENSIVE'];
+  const any = order.some(k=>m[k] && (m[k].runs||m[k].wins||m[k].titles));
+  if(title) title.style.display = any ? '' : 'none';
+  if(!any){ box.innerHTML=''; return; }
+  box.innerHTML = order.map(k=>{
+    const p=FORMATION_PROFILES[k]; const e=m[k]||{runs:0,titles:0,wins:0};
+    const on = (e.runs||e.wins||e.titles);
+    return `<div class="fmm-row${on?'':' fmm-off'}" style="--fm-col:${p.color}">
+      <span class="fmm-id"><span class="fmm-emoji">${p.emoji}</span>${p.label}</span>
+      <span class="fmm-stats">
+        <span class="fmm-stat"><b>${e.runs||0}</b> runs</span>
+        <span class="fmm-stat"><b>${e.titles||0}</b> 🏆</span>
+        <span class="fmm-stat"><b>${e.wins||0}</b> online W</span>
+      </span></div>`;
+  }).join('');
+}
+
 // Compact one-line badge (e.g. for the sim header / online lobby).
 function formationBadgeHtml(squad){
   const f = deriveFormation(squad);
@@ -11967,7 +12199,60 @@ let wcPollTimer  = null;
 function openOnlineHub(){
   showScreen('online-hub');
   refreshOnlinePoolStatus();
+  startActivityFeed();
 }
+
+// ---- live activity feed (vitality) -----------------------------------------
+// A rolling "happening now" ticker. Same philosophy as the rest of online:
+// it's populated so the space never feels dead. Items are synthesised from the
+// real bot roster, real legends/nations from the dataset, and the four
+// formation identities, so every line references genuine football rather than
+// obvious filler. Auto-advances only while the hub is on screen.
+let _actTimer=null, _actItems=[], _actIdx=0;
+function _actName(){ return ONLINE_BOT_NAMES[Math.floor(Math.random()*ONLINE_BOT_NAMES.length)]; }
+function _actFlag(){ return ONLINE_BOT_FLAGS[Math.floor(Math.random()*ONLINE_BOT_FLAGS.length)]; }
+function _actTwoNames(){ const a=_actName(); let b=_actName(); let g=0; while(b===a && g++<5) b=_actName(); return [a,b]; }
+function _actLegend(){
+  const pool=(window.PLAYERS||[]).filter(p=>p.wc_overall>=89 && p.year<2026);
+  return pool.length ? pool[Math.floor(Math.random()*pool.length)] : null;
+}
+function _actIdentity(){ const ks=['ATTACKING','BALANCED','POSSESSION','DEFENSIVE']; return FORMATION_PROFILES[ks[Math.floor(Math.random()*ks.length)]]; }
+function _actRoundName(){ return ['Round of 16','Quarter-Final','Semi-Final','the Final'][Math.floor(Math.random()*4)]; }
+function genActivityItems(n){
+  const out=[];
+  const wrap=(icon, inner)=>`<span class="oa-ico">${icon}</span><span class="oa-txt">${inner}</span>`;
+  const builders=[
+    ()=>{ const ov=(88+Math.random()*14).toFixed(1); const id=_actIdentity();
+      return wrap('🏆', `${flagChip(_actFlag())} <b>${_actName()}</b> won the World Cup — <b>${ov}</b> OVR <span class="oa-id" style="color:${id.color}">${id.emoji} ${id.label}</span>`); },
+    ()=>wrap('⚽', `${flagChip(_actFlag())} <b>${_actName()}</b> reached ${_actRoundName()} with a <b>${(84+Math.random()*12).toFixed(1)}</b> OVR side`),
+    ()=>{ const [a,b]=_actTwoNames(); const ga=Math.floor(Math.random()*4)+1, gb=Math.floor(Math.random()*ga);
+      return wrap('🔥', `${flagChip(_actFlag())} <b>${a}</b> beat <b>${b}</b> ${ga}–${gb} in an Online Friendly`); },
+    ()=>{ const l=_actLegend(); return l ? wrap('✍️', `${flagChip(_actFlag())} <b>${_actName()}</b> drafted ${escapeHtml(l.name)} (${escapeHtml(l.country)} ${l.year})`) : null; },
+    ()=>wrap('🌍', `${flagChip(_actFlag())} <b>${_actName()}</b> joined the World Cup pool`),
+    ()=>wrap('📊', `<b>${(1000+Math.floor(Math.random()*1400)).toLocaleString()}</b> squads drafted today`),
+    ()=>{ const id=_actIdentity(); return wrap(id.emoji, `<b>${_actName()}</b> is running a <b style="color:${id.color}">${id.label}</b> shape`); },
+  ];
+  let guard=0;
+  while(out.length<n && guard++<n*4){
+    const html=builders[Math.floor(Math.random()*builders.length)]();
+    if(html) out.push(html);
+  }
+  return out;
+}
+function startActivityFeed(){
+  _actItems = genActivityItems(18); _actIdx=0;
+  const el=$('oa-item'); if(!el) return;
+  const advance=()=>{
+    const hub=document.getElementById('screen-online-hub');
+    if(!hub || !hub.classList.contains('active')) return;   // self-pause when off-screen
+    el.classList.remove('show');
+    setTimeout(()=>{ el.innerHTML=_actItems[_actIdx % _actItems.length]; el.classList.add('show'); _actIdx++; }, 220);
+  };
+  stopActivityFeed();
+  el.innerHTML=_actItems[0]; el.classList.add('show'); _actIdx=1;
+  _actTimer=setInterval(advance, 3600);
+}
+function stopActivityFeed(){ if(_actTimer){ clearInterval(_actTimer); _actTimer=null; } }
 async function refreshOnlinePoolStatus(){
   const el = $('online-pool-status'); if(!el) return;
   try{
@@ -12343,6 +12628,7 @@ function h2hShowResult(mForMe, oppName, mySquad, oppSquad){
   if(fmRow){
     if(mySquad && oppSquad){
       const mine = deriveFormation(mySquad), theirs = deriveFormation(oppSquad);
+      try{ fmMasteryRecord(mine.identity, { win: won }); }catch(e){}   // online win by shape
       fmRow.innerHTML =
         `<div class="h2h-fm-side"><div class="h2h-fm-who">YOU</div>${formationBadgeHtml(mySquad)}</div>`+
         `<div class="h2h-fm-vs">vs</div>`+
@@ -12918,6 +13204,30 @@ async function generateChallengeLink(){
     linkEl.value="Couldn't create your link. Tap Share to try again.";
     shareBtn._url=null; copyBtn._url=null; shareBtn._retry=true;
     shareBtn.disabled=false; copyBtn.disabled=true;
+  }
+}
+
+// "Beat My Squad" one-tap from the results screen: turn the squad you just ran
+// with into a shareable challenge (async — the friend drafts their own XI and
+// plays yours), reusing the existing friendly-challenge service. No need to
+// re-enter Friendly mode; frBuildPayload reads straight from gs.result.
+async function beatMySquadShare(){
+  const btn=$('res-beatmine');
+  if(!gs || !gs.result || !(gs.result.scoredPicks||[]).length){ showToast("No squad to challenge with yet."); return; }
+  if(!SUPABASE_READY){ showToast('Challenges need an internet connection.'); return; }
+  const orig = btn ? btn.innerHTML : '';
+  if(btn){ btn.disabled=true; btn.innerHTML='Creating your challenge…'; }
+  try{
+    // Default the challenger identity to the signed-in profile so the friend
+    // sees who they're up against.
+    if(!friendlyMyName)  friendlyMyName = (typeof authUsername==='function' && authUsername()) || '';
+    if(!friendlyMyFlag || friendlyMyFlag==='USA') friendlyMyFlag = (authProfile && authProfile.flag) || friendlyMyFlag || 'USA';
+    const code = await sbCreateChallenge(frBuildPayload());
+    await friendlyShareLink(frChallengeUrl(code));
+  }catch(e){
+    showToast("Couldn't create your challenge link. Try again.");
+  }finally{
+    if(btn){ btn.disabled=false; btn.innerHTML = orig || '⚔️ Beat My Squad — challenge a friend'; }
   }
 }
 
