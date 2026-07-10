@@ -610,8 +610,12 @@ window.GA_ID='G-L29P5MRWKE';
   .hvhole{top:8px;left:8px;background:rgba(8,17,26,.72);border:1px solid rgba(255,255,255,.16);border-radius:8px;
     padding:5px 9px;font:800 11.5px/1 var(--body);letter-spacing:.1em;color:#eef4ee}
   .hvhole.right{left:auto;right:8px}
-  .hvboard{top:8px;right:8px;display:grid;gap:4px;max-width:47%}
-  .hvboard.left{right:auto;left:8px}
+  /* board sits BOTTOM-right, above the shot-description bar — the green is always near the TOP of the
+     hole, so a top-right board covered it (owner). Anchored to the bottom, it grows upward into the
+     lower fairway/rough, never the green. */
+  .hvboard{bottom:48px;right:8px;display:grid;gap:4px;max-width:52%;justify-items:end}
+  .hvboard.nodesc{bottom:10px}
+  .hvboard.left{right:auto;left:8px;justify-items:start}
   .hvboard.left .hvbcap{text-align:left;padding-left:2px}
   .hvbcap{font:800 8.5px/1 var(--body);letter-spacing:.14em;color:#f2ead6;text-align:right;padding-right:2px;text-shadow:0 1px 2px rgba(0,0,0,.8)}
   .hvbrow{display:flex;align-items:center;gap:6px;background:rgba(8,17,26,.72);border:1px solid rgba(255,255,255,.16);
@@ -11066,7 +11070,8 @@ function scrDailyRound(){
       // during the holed-result pill — the pill floats over the center, the board stays put top-corner)
       const meNm=S.dailyLegend?esc(S.dailyLegend.name):'YOU';
       const tpCol=v=>v<0?'#4be3a8':v>0?'#ff9d8f':'#e8efe9';
-      const bd=$(`<div class="hvob hvboard"></div>`);
+      const noDesc=!(descShot && descShot.d && !holePauseFlag);   // board drops to the very bottom when no shot-desc bar
+      const bd=$(`<div class="hvob hvboard${noDesc?' nodesc':''}"></div>`);
       if(S.moment && S.momentPO){
         // sudden-death playoff: show the players still alive, tied at the lead
         bd.appendChild($(`<div class="hvbcap">SUDDEN-DEATH · HOLE ${S.momentPO.round+1}</div>`));
@@ -13138,7 +13143,8 @@ function scrH2HWatch(){
       const shell=hvn.querySelector('.hvshell');
       // hole info + scoreboard stay in FIXED corners all round (owner: they must not flip between holes)
       shell.appendChild($(`<div class="hvob hvhole">HOLE ${h.n} · PAR ${h.par} · ${h.yards}Y</div>`));
-      const bd=$(`<div class="hvob hvboard"><div class="hvbcap">THRU ${played} · ${holes} HOLES</div></div>`);
+      const curW=h.order[Math.max(0,Math.min(S.h2h.wStep||1,h.order.length)-1)], stW=curW?h.shots[curW.u][curW.i]:null;
+      const bd=$(`<div class="hvob hvboard${(stW&&stW.d)?'':' nodesc'}"><div class="hvbcap">THRU ${played} · ${holes} HOLES</div></div>`);
       // the scoreboard updates the MOMENT a ball drops, not when the hole advances (owner) — add the
       // current hole's score for any unit whose ball is already in the cup at this reveal step.
       const holed=h2hHoledUnits(h, S.h2h.wStep);
@@ -13148,8 +13154,7 @@ function scrH2HWatch(){
       });
       shell.appendChild(bd);
       // ONE clear shot description that swaps to whoever is playing as the shots simulate
-      const cur=h.order[Math.max(0,Math.min(S.h2h.wStep||1,h.order.length)-1)];
-      const st=cur?h.shots[cur.u][cur.i]:null;
+      const cur=curW, st=stW;
       if(st && st.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${S.h2h.unitCols[cur.u]}">${esc(S.h2h.unitNames[cur.u])}</b> · ${esc(st.d)}</div>`));
       add(hvn);
     } else {
@@ -13165,12 +13170,12 @@ function scrH2HWatch(){
       const shell=hvn.querySelector('.hvshell');
       shell.appendChild($(`<div class="hvob hvhole" style="border-color:#ff6b5e;color:#ffd0c8">SUDDEN-DEATH · EXTRA HOLE ${S.h2h.poHole+1} · PAR ${ph.par}</div>`));
       const holedPO=h2hHoledUnits(ph, S.h2h.poStep), myU=S.h2h.myUnit;
-      const bd=$(`<div class="hvob hvboard"><div class="hvbcap" style="color:#ffd0c8">SUDDEN-DEATH · HOLE ${S.h2h.poHole+1}</div></div>`);
+      const curP=ph.order[Math.max(0,Math.min(S.h2h.poStep||1,ph.order.length)-1)], stP=curP?ph.shots[curP.u][curP.i]:null;
+      const bd=$(`<div class="hvob hvboard${(stP&&stP.d)?'':' nodesc'}"><div class="hvbcap" style="color:#ffd0c8">SUDDEN-DEATH · HOLE ${S.h2h.poHole+1}</div></div>`);
       ph.alive.forEach((a,ai)=>{ const mine=myU && S.h2h.units[a.ui] && S.h2h.units[a.ui].id===myU.id, isIn=holedPO.has(ai);
         bd.appendChild($(`<div class="hvbrow ${mine?'mine':''}"><span class="cdot" style="background:${a.col}"></span><span class="nm">${esc(a.name)}</span><span class="tp" style="color:${isIn?(a.low?'var(--gold)':'#ff9d8f'):'#8fa39a'}">${isIn?esc(dResultLong(ph.par,a.s)):'…'}</span></div>`)); });
       shell.appendChild(bd);
-      const cur=ph.order[Math.max(0,Math.min(S.h2h.poStep||1,ph.order.length)-1)];
-      const st=cur?ph.shots[cur.u][cur.i]:null;
+      const cur=curP, st=stP;
       if(st && st.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${ph.cols[cur.u]}">${esc(ph.names[cur.u])}</b> · ${esc(st.d)}</div>`));
       add(hvn);
     } else add($(`<div class="center" style="padding:24px 8px;color:#ffd0c8;font-weight:800">Sudden-death playoff…</div>`));
