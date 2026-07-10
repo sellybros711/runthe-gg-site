@@ -3929,7 +3929,7 @@ function render(){
   app.innerHTML='';
   app.appendChild(header());
   const card=$(`<main class="card"></main>`);
-  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','rules','h2hhome','h2hlobby','h2hdraft','h2hpreview','h2hwatch','h2hresult','h2hboard'].includes(S.screen)?' wide':''}"></div>`);
+  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','rules','h2hhome','h2hlobby','h2hdraft','h2hpreview','h2hwatch','h2hresult','h2hboard'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
   app.appendChild(footer());
@@ -3974,7 +3974,7 @@ function render(){
   // card instead (showing the real error message so a recurrence is diagnosable straight from a
   // screenshot, not just from analytics we might never see).
   try{
-    ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult,h2hhome:scrH2HHome,h2hlobby:scrH2HLobby,h2hdraft:scrH2HDraft,h2hpreview:scrH2HPreview,h2hwatch:scrH2HWatch,h2hresult:scrH2HResult,h2hboard:scrH2HBoard})[S.screen]();
+    ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult,playoffwatch:scrPlayoffWatch,h2hhome:scrH2HHome,h2hlobby:scrH2HLobby,h2hdraft:scrH2HDraft,h2hpreview:scrH2HPreview,h2hwatch:scrH2HWatch,h2hresult:scrH2HResult,h2hboard:scrH2HBoard})[S.screen]();
   }catch(err){
     console.error('[RunTheTour] screen render failed:', S.screen, err);
     try{ track('screen_render_error',{screen:S.screen,message:(err&&err.message)||String(err)}); }catch(e){}
@@ -6414,9 +6414,11 @@ function finishMomentRound(){
 // course/conditions/skills setup that finishMomentRound leaves in place. ----
 const MOMENT_PO_HOLES=[17,0,9,17,0,9,17,0];   // rotate closing holes (18 / 1 / 10) across extra holes
 function startMomentPlayoff(ce, lead){
-  S.momentPO={ round:0, log:[], contenders:lead.slice(), alive:lead.slice(), resolved:null };
+  // CS233: the sudden-death playoff now plays out like an H2H match — EVERY contender's ball on one
+  // tracer, hole by hole, away-plays-first — instead of you playing your ball then a text card.
   if(S.moment) S.moment.playoff=true;
-  momentPlayoffTee();
+  S.momentPO=null; S.momentPOHoleIdx=null;
+  startPlayoffWatch(ce, lead, {auto:false});
 }
 function momentPlayoffTee(){
   const po=S.momentPO; if(!po) return;
@@ -6496,6 +6498,130 @@ function momentPlayoffFinish(){
   finalizeEvent();
   document.querySelectorAll('.momentov').forEach(n=>n.remove());
   S.screen='season'; render();   // a win → celebrateWin fires (playoff flagged already shown)
+}
+/* ===================== MULTI-BALL PLAYOFF WATCH (CS233) =====================
+   A career sudden-death playoff plays out like an H2H match: every contender's ball on ONE tracer,
+   hole by hole, everyone tees off then whoever is farthest from the hole plays next, until someone
+   is beaten outright. Deterministic per (event, round, player). Reuses dShotSeq + hvNode multi-mode +
+   the away-first order builder. The winner it derives feeds finalizeEvent via ce._playoffResult, so
+   money/points/positions are unchanged — this is the visual reveal. */
+let _poWTimer=null;
+const PO_BALL_COLS=['#3b82f6','#ef4444','#22d3ee','#eab308','#a855f7','#f97316'];   // YOU=blue, then red/cyan/yellow…
+function buildPoOrder(shotsArr){   // tee in listed order, then farthest-from-hole plays next
+  const n=shotsArr.length, idx=shotsArr.map(()=>0), rem=shotsArr.map(()=>1e9), order=[];
+  for(let u=0;u<n;u++){ order.push({u,i:0}); rem[u]=h2hRemOf(shotsArr[u][0]); idx[u]=1; }
+  for(let guard=0; guard<200; guard++){ let pick=-1,best=-1;
+    for(let u=0;u<n;u++){ if(idx[u]>=shotsArr[u].length) continue; if(rem[u]>best){best=rem[u];pick=u;} }
+    if(pick<0) break; order.push({u:pick,i:idx[pick]}); rem[pick]=h2hRemOf(shotsArr[pick][idx[pick]]); idx[pick]++; }
+  return order;
+}
+function poBuildPlan(ce, contenders){
+  const key=(S.dailyCourse && DAILY_COURSES[S.dailyCourse])?S.dailyCourse:momentCourseKey(ce.evt.name);
+  const c=DAILY_COURSES[key];
+  const cond=(S.dailyCond&&DCFG.COND[S.dailyCond])?S.dailyCond:['calm','breezy','windy'][(dHash(ce.evt.name||'x')>>>2)%3];
+  const diffs=(S.dailyDiffs&&S.dailyDiffs.length===18)?S.dailyDiffs:dBaseDiffs(c);
+  const skOf=o=>{ const s={}; CATS.forEach(cc=>s[cc.k]=(o.p[cc.k]!=null?o.p[cc.k]:78)); return s; };
+  let ci=1;
+  let alive=contenders.map(o=>({o, name:o.p.name, you:!!o.p.you, col:(o.p.you?PO_BALL_COLS[0]:PO_BALL_COLS[Math.min(ci++,PO_BALL_COLS.length-1)])}));
+  const holes=[]; let round=0, winner=null;
+  while(alive.length>1 && round<40){
+    const hi=MOMENT_PO_HOLES[round%MOMENT_PO_HOLES.length], h=c.holes[hi], par=h[0], yards=h[1];
+    const diff=(diffs[hi]!=null)?diffs[hi]:dBaseDiffs(c)[hi];
+    const scored=alive.map(a=>{ const s=skOf(a.o);
+      const rng=mulberry32((dHash('cpo'+(ce.evt.name||'')+'_'+round)^dHash(a.name)^Math.imul(hi+1,0x9e3779b1))>>>0);
+      const tp=dSimHole(par,yards,diff,s,c.fit,DCFG.COND[cond],'balanced',null,rng);
+      const rng2=mulberry32((dHash('cpq'+(ce.evt.name||'')+'_'+round)^dHash(a.name)^Math.imul(hi+7,0x2545f491))>>>0);
+      const shots=dShotSeq(par,yards,par+tp,rng2,s,{});
+      return {a, tp, shots}; });
+    const best=Math.min.apply(null, scored.map(s=>s.tp));
+    const low=scored.filter(s=>s.tp<=best+1e-9);
+    const advancing=(low.length<scored.length)?low:scored;   // all tied → all play on
+    const shotsArr=scored.map(s=>s.shots);
+    holes.push({ n:hi+1, par, yards, shots:shotsArr, order:buildPoOrder(shotsArr),
+      cols:scored.map(s=>s.a.col), names:scored.map(s=>s.a.name),
+      alive:scored.map(s=>({ o:s.a.o, name:s.a.name, col:s.a.col, tp:s.tp, you:s.a.you,
+        advances:advancing.indexOf(s)>=0, low:s.tp<=best+1e-9 })) });
+    round++;
+    if(low.length<scored.length) alive=low.map(s=>s.a);
+    if(alive.length===1) winner=alive[0].o;
+  }
+  if(!winner) winner=(alive[0]&&alive[0].o)||contenders[0];
+  return { holes, winner, holeCount:round, key, evt:ce.evt.name, major:!!ce.evt.major };
+}
+function startPlayoffWatch(ce, contenders, opts){
+  opts=opts||{};
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const plan=poBuildPlan(ce, contenders);
+  S.poW={ plan, hole:0, step:0, done:false, auto:!!opts.auto, reduce };
+  _hvbRects=null; if(_poWTimer){clearTimeout(_poWTimer);_poWTimer=null;}
+  S.screen='playoffwatch'; render(); _poWTimer=setTimeout(poWatchStep, reduce?20:700);
+}
+function poWatchStep(){
+  if(S.screen!=='playoffwatch'){ return; }
+  const W=S.poW; if(!W) return; const holes=W.plan.holes;
+  if(W.hole>=holes.length){ W.done=true; render();   // winner decided → show the result
+    if(W.auto||W.reduce) _poWTimer=setTimeout(poWatchFinish, W.reduce?20:2400);
+    return; }
+  const ph=holes[W.hole], nst=ph.order.length;
+  if(W.step<nst){                          // reveal the next shot in the merged play order
+    W.step++; render();
+    const cur=ph.order[W.step-1], sh=ph.shots[cur.u][cur.i], allHoled=W.step>=nst;
+    _poWTimer=setTimeout(poWatchStep, W.reduce?20:(allHoled?Math.max(1500,hvShotMs(sh)):hvShotMs(sh)));
+  } else {                                  // every ball in → beat, then the next extra hole
+    W.hole++; W.step=0; _hvbRects=null; render();
+    _poWTimer=setTimeout(poWatchStep, W.reduce?20:1100);
+  }
+}
+function poWatchSkip(){ if(_poWTimer){clearTimeout(_poWTimer);_poWTimer=null;} const W=S.poW; if(!W) return;
+  W.hole=W.plan.holes.length; W.step=0; W.done=true; render();
+  if(W.auto||W.reduce) _poWTimer=setTimeout(poWatchFinish, 400); }
+function poWatchFinish(){
+  if(_poWTimer){clearTimeout(_poWTimer);_poWTimer=null;}
+  const W=S.poW, ce=S.curEvt; if(!W||!ce){ S.poW=null; S.moment=null; S.momentPO=null; S.screen='season'; render(); return; }
+  const plan=W.plan;
+  ce._playoffResult={ winner:plan.winner, holes:plan.holeCount,
+    log: plan.holes.map((h,i)=>({hole:i+1, scores:h.alive.map(a=>({name:a.name, you:a.you, label:dResultLong(h.par,a.tp), advances:a.advances}))})) };
+  ce._playoffShown=true;   // already played out on the tracer → skip the auto text reveal
+  S.poW=null; S.moment=null; S.momentPO=null; S.momentPOHoleIdx=null;
+  S.dailyHoles=[]; S.dailyResult=null; S.dailyRevealN=null; S.dailyViewHole=null; S.dailyAttacks={};
+  finalizeEvent();
+  document.querySelectorAll('.momentov').forEach(n=>n.remove());
+  S.screen='season'; render();   // a win → celebrateWin fires (playoff flagged already shown)
+}
+function scrPlayoffWatch(){
+  const W=S.poW; if(!W){ S.screen='season'; return scrSeason(); }
+  const plan=W.plan, key=plan.key, courseObj=DAILY_COURSES[key];
+  const venue=courseObj?dShort(courseObj.v):'';
+  add(h2hTag(`Sudden-Death Playoff${venue?' · '+esc(venue):''}`, !W.done));
+  if(!W.done && W.hole<plan.holes.length){
+    const ph=plan.holes[W.hole];
+    const multi={shots:ph.shots, order:ph.order, cols:ph.cols, names:ph.names.map((n,i)=>ph.alive[i].you?'YOU':n)};
+    const holeObj={n:ph.n, par:ph.par, yards:ph.yards, shots:ph.shots};
+    const hvn=hvNode(holeObj, W.step, ph.n-1, key, multi);
+    if(hvn){
+      const shell=hvn.querySelector('.hvshell');
+      shell.appendChild($(`<div class="hvob hvhole" style="border-color:#ff6b5e;color:#ffd0c8">SUDDEN-DEATH · EXTRA HOLE ${W.hole+1} · PAR ${ph.par}</div>`));
+      const holed=h2hHoledUnits(ph, W.step);
+      const curP=ph.order[Math.max(0,Math.min(W.step||1,ph.order.length)-1)], stP=curP?ph.shots[curP.u][curP.i]:null;
+      const bd=$(`<div class="hvob hvboard${(stP&&stP.d)?'':' nodesc'}"><div class="hvbcap" style="color:#ffd0c8">EXTRA HOLE ${W.hole+1}</div></div>`);
+      ph.alive.forEach((a,ai)=>{ const isIn=holed.has(ai);
+        bd.appendChild($(`<div class="hvbrow ${a.you?'mine':''}"><span class="cdot" style="background:${a.col}"></span><span class="nm">${a.you?'YOU':esc(a.name)}</span><span class="tp" style="color:${isIn?(a.low?'var(--gold)':'#ff9d8f'):'#8fa39a'}">${isIn?esc(dResultLong(ph.par,a.tp)):'…'}</span></div>`)); });
+      shell.appendChild(bd);
+      if(stP && stP.d) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:${ph.cols[curP.u]}">${ph.alive[curP.u]&&ph.alive[curP.u].you?'YOU':esc(ph.names[curP.u])}</b> · ${esc(stP.d)}</div>`));
+      add(hvn);
+    } else { add($(`<div class="center muted" style="padding:24px 8px">Sudden-death playoff…</div>`)); }
+    if(!W.reduce){ const sk=$(`<button class="btn ghost" style="max-width:320px;margin:12px auto 0">Skip to result ▸</button>`); sk.onclick=poWatchSkip; add(sk); }
+  } else {
+    // final result
+    const won=!!(plan.winner && plan.winner.p && plan.winner.p.you);
+    add($(`<div class="scout" style="max-width:440px;margin:16px auto 10px;text-align:center;border-color:var(--gold);box-shadow:0 0 22px rgba(235,166,31,.16)">
+      <div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 Sudden-Death Playoff</span></div>
+      <h2 style="margin:12px 0 4px;font-size:22px;color:${won?'#35d6a0':'#fff'}">${won?'You won the playoff!':'Lost in the playoff'}</h2>
+      <div class="small muted">${won?('Took it on the '+ord(plan.holeCount)+' extra hole'):(esc(plan.winner&&plan.winner.p?plan.winner.p.name:'')+' won on the '+ord(plan.holeCount)+' extra hole')}</div>
+    </div>`));
+    if(W.auto||W.reduce){ add($(`<div class="center small muted">Continuing…</div>`)); }
+    else { const cont=$(`<button class="btn goldfill" style="max-width:320px;margin:0 auto">${won?'Celebrate ▸':'Continue ▸'}</button>`); cont.onclick=poWatchFinish; add(cont); }
+  }
 }
 // one sudden-death hole, lower is better, high variance so a single hole is genuinely random
 // one sudden-death hole → a SCORE-TO-PAR INTEGER (like a real playoff hole). Two players who make the
