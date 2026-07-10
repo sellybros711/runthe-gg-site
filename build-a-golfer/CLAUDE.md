@@ -5921,6 +5921,52 @@ allows Google Fonts, or self-host Anton.*
   timer fire on its own both clear the intro and show "SUDDEN-DEATH · PLAYOFF HOLE 1 · PAR 4" with board cap
   "PLAYOFF HOLE 1"; zero "EXTRA HOLE" left on the page; zero page errors on both paths. Deployed to /golf.
 
+- **CS236 — brand logos + TWO sponsor slots (hat + shirt) worn on the golfer (owner: "make logos for each
+  fake brand... incorporate hat and shirt sponsors, choose hat or shirt when you sign, fill up to 2 slots at a
+  time, and the logos actually appear on the hat and shirt").** Owner picks (AskUserQuestion): **vector logos
+  drawn in-game** (not AI PNGs) + **each slot is its own deal**; then, mid-build: "since there are double
+  sponsors, make the goals slightly more difficult and pay slightly less."
+  • **Vector brand logos.** New `LOGO_SPEC` gives all 24 fictional brands a distinct mark — a shaped badge
+    (6 shapes: rounded / circle / hex / diamond / shield / tag) in the brand colour + a monogram + an accent
+    motif (top bar / underline / diagonal split / inner ring). Rendered two ways from the same spec so the
+    marks match everywhere: `brandLogoSVG(name,sz)` (SVG, for all UI) and `brandLogoDraw(ctx,name,x,y,w,h)`
+    (canvas primitives — synchronous, never taints — so the mark can be painted onto the golfer). `brandTile`
+    /`brandBadge` now use the real logo instead of the old initials-in-a-box tile. Verified all 24 render as
+    valid SVG + draw to canvas with 0 errors across 6 shapes.
+  • **Two sponsor slots.** `S.career.sponsor` (single) → `S.career.sponsors={hat,shirt}` (each
+    `{brand,tier,rel,seasons,strikes}`), migrating a legacy single sponsor into the SHIRT slot and seeding a
+    starter shirt deal for a new career (hat left open as a growth hook). Helpers `ensureSponsors`/`sponsorOf`
+    /`sponsorFilledSlots`; `ensureSponsor()` kept as a compat shim returning the primary (shirt) sponsor.
+  • **Each slot its own deal (harder + less pay).** `makeContract` → `makeContractFor(sp,slot)` +
+    `makeContracts()` building a full 3-goal contract PER filled slot into `S.season.contracts={hat,shirt}`;
+    new `SPONSOR_DUAL_REWARD=0.72` (each deal pays ~28% less) + `SPONSOR_DUAL_DIFF=1.12` (goals a bit harder)
+    so two slots is a meaningful bump (~1.44× a lone deal), not a 2× windfall. Live strip (`contractNode`) +
+    season-summary report card (`contractsReportHTML`) render one card per slot with its logo + goals +
+    loyalty. Settlement in `finalizeEvent` now iterates both slots independently (per-slot relationship growth
+    / strikes / drop-and-reseed / story feed), `contractsEarned` sums both, and `S.career.lastContracts[slot]`
+    tracks the "prove-it" state per slot.
+  • **Sign to hat OR shirt.** Off-season `sponsorDecisionNode` rebuilt: shows the two slot cards (brand logo +
+    tier + loyalty meter, or an "Open slot"), then any interested brands from `computeSponsorOffers()` (fill an
+    open slot at your eligible tier, and/or a tier-up for your lowest filled slot). Each offer has **Sign as
+    Hat / Sign as Shirt** buttons (labelled "Replace on X · loyalty resets" when that slot is occupied);
+    `signSponsor(offer,slot)` fills/replaces the slot (fresh Lv1 relationship, signing bonus accumulates into
+    next season's net). `S.career.sponsorOffer`→`sponsorOffers` (array); wired at off-season start +
+    `finishOffseason`.
+  • **Logos worn on the golfer.** `paintAvatarFull` (the signed-in full-body dressable avatar) now paints the
+    HAT sponsor's logo on the cap front (only when a hat is worn) and the SHIRT sponsor's logo on the chest
+    (placed from the live shirt-region bbox, ~mid-chest, ~20% torso width) — so a sponsored career golfer
+    visibly wears both marks in setup / build-hero / the Pro Shop dressing room. Career-only (reads
+    `S.career.sponsors`, never seeds during render, so setup shows none until you've signed); cache key
+    includes both brands so it re-renders on a sponsor change. Screenshot-confirmed: "RE" (Redline Energy) on
+    the cap + "A" (Apex Athletic) diamond on the chest, reading like a real sponsored polo.
+  Verified in Playwright: 24 distinct logos; two-slot seed/sign/replace/history; per-slot contracts build with
+  the dual factors (National hat $3.18M vs Global shirt $5.29M floors); a full simulated season →
+  finishSeasonHeadless → summary settles BOTH slots once (hat rel 2→3, shirt 3→4, seasons++, lastContracts
+  set), renders exactly 2 report cards, zero errors; the off-season UI shows both slots + 2 offers with
+  Sign-as-Hat/Shirt; the avatar wears both logos; guest (no career) avatar + daily + title all render clean
+  with zero page errors. Deployed to /golf. Tunable: `SPONSOR_DUAL_REWARD`/`SPONSOR_DUAL_DIFF`, `LOGO_SPEC`,
+  the chest/hat logo placement in `paintAvatarFull`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
