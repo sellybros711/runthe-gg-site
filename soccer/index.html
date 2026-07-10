@@ -2405,23 +2405,33 @@
   .fm-card-emoji{font-size:14px;}
   .fm-card-blurb{font-weight:600;font-size:13px;line-height:1.45;color:var(--muted-2);margin-top:12px;text-align:center;}
   /* pitch */
-  .fmp-pitch{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:6px;
-    background:linear-gradient(#1a8f5e,#127a4f);border-radius:12px;padding:14px 8px;min-height:230px;overflow:hidden;
+  .fmp-pitch{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:12px;
+    background:linear-gradient(#1a8f5e,#127a4f);border-radius:12px;padding:16px 8px 18px;min-height:268px;overflow:hidden;
     box-shadow:inset 0 0 0 2px rgba(255,255,255,.14);}
   /* subtle pitch markings: centre line + centre circle + penalty box up top */
   .fmp-pitch::before{content:"";position:absolute;left:50%;top:50%;width:64px;height:64px;transform:translate(-50%,-50%);
     border:2px solid rgba(255,255,255,.16);border-radius:50%;}
   .fmp-pitch::after{content:"";position:absolute;left:0;right:0;top:50%;height:0;border-top:2px solid rgba(255,255,255,.14);}
   .fmp-line{display:flex;justify-content:space-evenly;align-items:center;gap:6px;position:relative;z-index:1;flex:1;}
-  .fmp-chip{display:flex;flex-direction:column;align-items:center;justify-content:center;
-    min-width:44px;max-width:60px;background:rgba(255,255,255,.96);border-radius:9px;padding:4px 5px;
-    border:2px solid #cfc4b2;box-shadow:0 2px 5px rgba(0,0,0,.28);}
-  .fmp-chip.fmp-elite{border-color:var(--gold);}
-  .fmp-chip.fmp-great{border-color:#E5402A;}
-  .fmp-chip.fmp-good{border-color:#2A6BD1;}
-  .fmp-ov{font-family:'Anton',Impact,sans-serif;font-size:15px;line-height:1;color:#16120F;}
-  .fmp-nm{font-weight:800;font-size:9px;line-height:1.1;color:#5a5048;max-width:56px;overflow:hidden;
-    text-overflow:ellipsis;white-space:nowrap;margin-top:1px;}
+  /* circular flag-filled token, position-coloured ring (mirrors the draft pitch) */
+  .fmp-tok{position:relative;width:46px;height:46px;border-radius:50%;flex:0 0 auto;
+    background-size:cover;background-position:center;background-repeat:no-repeat;
+    border:3px solid var(--tok-ring,#cfc4b2);box-shadow:0 2px 6px rgba(0,0,0,.4);
+    display:flex;align-items:center;justify-content:center;}
+  .fmp-tok.pos-GK{--tok-ring:var(--pos-gk);}
+  .fmp-tok.pos-DEF{--tok-ring:var(--pos-def);}
+  .fmp-tok.pos-MID{--tok-ring:var(--pos-mid);}
+  .fmp-tok.pos-FWD{--tok-ring:var(--pos-fwd);}
+  .fmp-tok-noflag{background:#3a4a63;}
+  .fmp-tok-nm{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    max-width:52px;font-weight:900;font-size:9px;line-height:1;color:#fff;text-align:center;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    background:rgba(0,0,0,.55);border-radius:5px;padding:2px 4px;text-shadow:0 1px 2px rgba(0,0,0,.6);}
+  .fmp-tok-ov{position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);
+    font-family:'Anton',Impact,sans-serif;font-size:12px;line-height:1;color:#fff;
+    border-radius:5px;padding:1px 5px;box-shadow:0 1px 3px rgba(0,0,0,.4);}
+  .fmp-tok-ov.red{background:#E5402A;}.fmp-tok-ov.orange{background:#F47B20;}
+  .fmp-tok-ov.gold{background:#F4B413;color:#1a1008;}.fmp-tok-ov.green{background:#1F9E57;}
   /* compact inline badge */
   .fm-badge{--fm-col:var(--teal);display:inline-flex;align-items:center;gap:8px;vertical-align:middle;}
   .fm-badge-name{font-family:'Anton',Impact,sans-serif;font-size:17px;letter-spacing:1px;color:var(--ink);}
@@ -9280,16 +9290,25 @@ function positionalRatingsFromSquad(squad, fallbackOverall){
 // ---- formation UI helpers (pitch viz + summary card + compact badge) --------
 // A vertical pitch with the XI laid out in real formation lines (attacking end
 // at the top). `squad` = hydrated players ({name, position, overall, country}).
-function ovTierClass(ov){
-  if(ov>=90) return 'fmp-elite'; if(ov>=82) return 'fmp-great';
-  if(ov>=74) return 'fmp-good';  return 'fmp-base';
+function ovBadgeClass(ov){
+  if(ov>=90) return 'gold'; if(ov>=82) return 'orange';
+  if(ov>=74) return 'green'; return 'red';
 }
+// Circular, flag-filled player tokens — the same characterful treatment the
+// draft pitch uses (nation flag as the token fill, position-coloured ring,
+// name pill + OVR badge) — so the formation card and share image read as a
+// real all-star XI instead of anonymous white pills.
 function renderFormationPitch(squad){
   const byPos = pos => (squad||[]).filter(p=>p && p.position===pos);
-  const line = (players, cls) => `<div class="fmp-line ${cls}">`+
-    players.map(p=>`<div class="fmp-chip ${ovTierClass(p.overall||0)}" title="${escapeHtml(p.name||'')} · ${p.overall||''} OVR">`+
-      `<span class="fmp-ov">${p.overall!=null?p.overall:''}</span>`+
-      `<span class="fmp-nm">${escapeHtml(shortName(p.name||''))}</span></div>`).join('')+`</div>`;
+  const tok = p => {
+    const url = flagImg(p.country, 160);
+    const bg = url ? ` style="background-image:url('${url}')"` : '';
+    const ov = p.overall!=null ? p.overall : '';
+    return `<div class="fmp-tok pos-${p.position||'DEF'}${url?'':' fmp-tok-noflag'}"${bg} title="${escapeHtml(p.name||'')} · ${ov} OVR">`+
+      `<span class="fmp-tok-nm">${escapeHtml(shortName(p.name||''))}</span>`+
+      `<span class="fmp-tok-ov ${ovBadgeClass(p.overall||0)}">${ov}</span></div>`;
+  };
+  const line = (players, cls) => `<div class="fmp-line ${cls}">`+players.map(tok).join('')+`</div>`;
   return `<div class="fmp-pitch">`+
     line(byPos('FWD'),'fmp-fwd')+line(byPos('MID'),'fmp-mid')+
     line(byPos('DEF'),'fmp-def')+line(byPos('GK'),'fmp-gk')+`</div>`;
