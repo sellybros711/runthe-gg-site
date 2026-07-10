@@ -5882,6 +5882,45 @@ allows Google Fonts, or self-host Anton.*
   (`celebratePlayoff`) — converting that too needs the season playoff engine to sim on specific course
   holes (it currently uses the abstract `playoffHole`), flagged as a follow-up.
 
+- **CS234 — sponsor decision redesign: two balanced, equal-weight cards (owner/Jordo: "not sure why one is
+  clear and one is yellow... maybe change the whole color and style of it — each element should stand out so
+  you can decide quicker").** The CS231 stay/switch offer used a ghost outline for STAY and a loud gold-fill
+  for SWITCH, which read as "one important, one not" and confused the choice. Replaced the offer branch of
+  `sponsorDecisionNode` with two matched dark `.sp-opt` panels where the accent colour now means the CHOICE
+  TYPE, not visual weight: **teal = stay/loyalty**, **gold = switch/new**. Each card has a coloured accent
+  bar, the brand logo tile + name + `Tier · Trait` subtitle + a filled action pill (`STAY ›` teal / `SWITCH ›`
+  gold), and a divider over four labelled fact rows (`spRow` label↔value): STAY shows Loyalty (Lv + bonus %)·
+  Rewards (Same as now)· Goals (Familiar)· The play (Keep your loyalty); SWITCH shows Rewards (+X% bigger)·
+  Signing bonus (+$5.5M via `fmtShort`)· Goals (Tougher)· Loyalty (Resets to Lv 1). Both are clickable
+  `role=button` panels (`.sp-opt` CSS: hover-lift, active, focus-visible ring, keyboard Enter/Space via
+  `onkeydown`). The stay/switch handlers are unchanged (`doStay`/`doSwitch` — same tracking, saveCareer,
+  sponsorHistory push, pendingSigning, toasts). Verified in Playwright: 2 `.sp-opt` cards render, clicking the
+  SWITCH card changed the sponsor (Halcyon Air → Zenith Bank), cleared the offer, set pendingSigning, zero
+  page errors; screenshot confirmed the clean balanced layout. Deployed to /golf.
+
+- **CS235 — playoff announcement pop-up + "EXTRA HOLE" → "PLAYOFF HOLE" (owner: "have every playoff show a
+  quick pop up announcement that you are entering a playoff against 'x' and then it will automatically go to
+  the tourtracer sim... where the scoreboard says extra hole 1 it should say playoff hole 1").** Two parts on
+  the career sudden-death playoff watch (the CS233 multi-ball TOURTRACE path):
+  1. **Announcement pop-up.** `startPlayoffWatch` now opens with an intro phase (`S.poW.intro=true`) instead
+     of going straight to the shot reveal. `scrPlayoffWatch` renders a prominent announcement card — a red
+     "🔥 Playoff" tag, "You're in a playoff!", the event name (+ "· Major"), "Sudden death against **X and
+     Y**" (opponent names pulled from `plan.holes[0].alive` filtered to `!you`, joined with commas +
+     "and"), the opponents' ball-colour dots, and "Heading to the TOURTRACE simulation…". A new
+     `poWatchBegin()` clears the intro and starts `poWatchStep()`; it fires automatically after ~2.6s
+     (20ms under reduced motion) OR on tapping the gold "Start the playoff ▸" button (guarded `if(!W.intro)
+     return` so the timer + tap can't double-fire). So every career playoff announces the opponent(s) then
+     auto-rolls into the sim.
+  2. **Rename.** Every user-facing "EXTRA HOLE"/"extra hole" → "PLAYOFF HOLE"/"playoff hole": the
+     scrPlayoffWatch hole chip ("SUDDEN-DEATH · PLAYOFF HOLE N · PAR p"), the floating board caption
+     ("PLAYOFF HOLE N"), the result card ("Took it on the Nth playoff hole"), the H2H sudden-death chip, and
+     the (dead-but-kept) momentPlayoff/celebratePlayoff text reveals for consistency. Only code comments
+     still say "extra hole".
+  Verified in Playwright: a rigged 2- and single-opponent tie routes to `playoffwatch` with the intro card
+  naming both opponents ("Rory Vale and Ken Brauer"); tapping "Start the playoff" AND letting the ~2.6s
+  timer fire on its own both clear the intro and show "SUDDEN-DEATH · PLAYOFF HOLE 1 · PAR 4" with board cap
+  "PLAYOFF HOLE 1"; zero "EXTRA HOLE" left on the page; zero page errors on both paths. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
