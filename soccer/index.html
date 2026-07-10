@@ -2435,6 +2435,41 @@
   .h2h-fm-vs{font-family:'Anton',Impact,sans-serif;font-size:15px;color:var(--muted);}
   .h2h-fm-side .fm-badge{flex-direction:column;gap:3px;}
 
+  /* ---------- How to Play ---------- */
+  #screen-howto.active{display:block;}
+  .htp-wrap{max-width:480px;margin:0 auto;padding:8px 16px 40px;text-align:left;}
+  .htp-back{background:none;border:none;color:var(--teal);font-weight:900;font-size:14px;
+    padding:8px 0;cursor:pointer;letter-spacing:.3px;}
+  .htp-title{font-family:'Anton',Impact,sans-serif;font-size:40px;line-height:1;color:var(--ink);
+    text-transform:uppercase;letter-spacing:1px;margin:4px 0 8px;}
+  .htp-tagline{font-weight:600;font-size:14px;line-height:1.5;color:var(--muted-2);margin-bottom:18px;}
+  .htp-intro{display:flex;flex-direction:column;gap:10px;background:var(--white);border:1.5px solid var(--border-soft);
+    border-radius:14px;padding:14px 14px;margin-bottom:16px;box-shadow:var(--shadow-sm);}
+  .htp-step{display:flex;align-items:flex-start;gap:11px;font-weight:600;font-size:13.5px;line-height:1.45;color:var(--muted-2);}
+  .htp-step b{color:var(--ink);}
+  .htp-step-n{flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:var(--teal);color:#fff;
+    font-family:'Anton',Impact,sans-serif;font-size:14px;display:flex;align-items:center;justify-content:center;}
+  .htp-acc{background:var(--white);border:1.5px solid var(--border-soft);border-radius:14px;
+    margin-bottom:10px;overflow:hidden;box-shadow:var(--shadow-sm);}
+  .htp-acc>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;
+    padding:14px 15px;font-weight:900;font-size:16px;color:var(--ink);}
+  .htp-acc>summary::-webkit-details-marker{display:none;}
+  .htp-emoji{font-size:19px;flex:0 0 auto;}
+  .htp-chev{margin-left:auto;color:var(--muted);font-size:20px;transition:transform .2s ease;font-weight:900;}
+  .htp-acc[open]>summary .htp-chev{transform:rotate(90deg);}
+  .htp-body{padding:0 16px 15px;font-weight:500;font-size:13.5px;line-height:1.6;color:var(--muted-2);}
+  .htp-body b{color:var(--ink);font-weight:800;}
+  .htp-body p{margin:0 0 10px;}
+  .htp-body ul{margin:0 0 10px;padding-left:18px;}
+  .htp-body li{margin-bottom:6px;}
+  /* the four tactical identities, injected from FORMATION_PROFILES */
+  .htp-ids{display:flex;flex-direction:column;gap:8px;margin:4px 0 12px;}
+  .htp-id{border-left:4px solid var(--id-col);background:var(--paper);border-radius:8px;padding:9px 12px;}
+  .htp-id-head{display:flex;align-items:center;gap:7px;font-weight:900;font-size:13px;color:var(--ink);margin-bottom:2px;}
+  .htp-id-pill{font-size:9px;font-weight:900;letter-spacing:.5px;text-transform:uppercase;color:#fff;
+    background:var(--id-col);border-radius:999px;padding:2px 8px;}
+  .htp-id-blurb{font-weight:500;font-size:12.5px;line-height:1.45;color:var(--muted-2);}
+
   /* ---------- Full Draft (11) pitch, smaller circles so 5-wide rows fit 390px ---------- */
   .pitch-wrap.full .pslot{width:16.5%;}
   .pitch-wrap.full .pslot .psl-label{font-size:12px;}
@@ -2774,6 +2809,7 @@ window.GA_ID='G-L29P5MRWKE';
       <button class="menu-item" type="button" data-act="leaderboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v4a6 6 0 0 1-12 0z"/><path d="M6 5H3v1.5a3 3 0 0 0 3 3M18 5h3v1.5a3 3 0 0 1-3 3M12 14v3M8.5 20h7l-1-3h-5z"/></svg> Leaderboard</button>
       <button class="menu-item" type="button" data-act="online"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 4 6 4 9s-1.5 6.3-4 9c-2.5-2.7-4-6-4-9s1.5-6.3 4-9z"/></svg> Online</button>
       <button class="menu-item" type="button" data-act="daily"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/><path d="M12 12.5l1 2 2 .3-1.5 1.5.4 2.2-1.9-1-1.9 1 .4-2.2L9 14.8l2-.3z" class="mi-fill"/></svg> Daily Challenge</button>
+      <button class="menu-item" type="button" data-act="howto"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M9.2 9.2a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4" fill="none"/><circle cx="12" cy="17.4" r="1" class="mi-fill"/></svg> How to Play</button>
       <button class="menu-item" type="button" data-act="roster"><svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="13,2 4,14 11,14 9,22 18,10 11,10" class="mi-fill"/></svg> Roster Updates</button>
       <button class="menu-item" type="button" data-act="feedback"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z"/><path d="M8 9h8M8 12.5h5"/></svg> Feedback</button>
       <button class="menu-item" type="button" data-act="a2hs"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6.5" y="2.5" width="11" height="19" rx="2.4"/><line x1="10.4" y1="4.6" x2="13.6" y2="4.6"/><circle cx="12" cy="18.8" r=".9" class="mi-fill"/></svg> Add to Home</button>
@@ -2806,6 +2842,7 @@ window.GA_ID='G-L29P5MRWKE';
         case 'leaderboard': call(openLeaderboardView); break;
         case 'daily': call(openDailyIntro); break;
         case 'online': call(typeof openOnlineHub==='function'?openOnlineHub:null); break;
+        case 'howto': call(typeof openHowTo==='function'?openHowTo:null); break;
         case 'roster': call(openRosterUpdates); break;
         case 'feedback': call(function(){ openRatingForm({}); }); break;
         case 'a2hs': { var b=document.getElementById('btn-add-home'); if(b){ b.click(); } else { call(typeof showA2HS==='function'?showA2HS:null); } break; }
@@ -3057,6 +3094,7 @@ window.GA_ID='G-L29P5MRWKE';
       <!-- secondary actions, demoted to small links -->
       <div class="home-secondary">
         <button id="btn-home-leaderboard" type="button" class="home-2nd"><svg class="tl-ico" viewBox="0 0 24 28" aria-hidden="true"><defs><linearGradient id="tlTrophy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".5" stop-color="#E8C25A"/><stop offset="1" stop-color="#8A5E12"/></linearGradient></defs><path d="M5 4 C2.5 4 2.5 9 5.6 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M19 4 C21.5 4 21.5 9 18.4 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M6 3 H18 V8 C18 13 14.5 15 12 15 C9.5 15 6 13 6 8 Z" fill="url(#tlTrophy)" stroke="#00000033" stroke-width=".6"/><rect x="11" y="15" width="2" height="4" fill="url(#tlTrophy)"/><rect x="8" y="19" width="8" height="2" rx="1" fill="url(#tlTrophy)"/><rect x="6.5" y="21" width="11" height="2.6" rx="1.3" fill="url(#tlTrophy)" stroke="#00000022" stroke-width=".5"/></svg> Leaderboard</button>
+        <button id="home-howto" type="button" class="home-2nd"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="9.5"/><path d="M9.2 9.2a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><circle cx="12" cy="17.4" r="1" fill="currentColor" stroke="none"/></svg> How to Play</button>
       </div>
       <!-- flag lane (scrolls right) below the kickoff button -->
       <div class="flag-marquee bottom"><div class="flag-lane right" id="flag-lane-2"></div></div>
@@ -3433,6 +3471,98 @@ window.GA_ID='G-L29P5MRWKE';
         <button class="btn red big" id="online-go-wc">JOIN THE POOL →</button>
         <button class="online-card-link" id="online-board-wc">View Leaderboard</button>
       </div>
+    </div>
+  </section>
+
+  <!-- ===== HOW TO PLAY (game + sim mechanics) ===== -->
+  <section id="screen-howto" class="screen">
+    <div class="htp-wrap">
+      <button class="htp-back" id="htp-back" type="button">‹ Back</button>
+      <div class="htp-title">How to Play</div>
+      <div class="htp-tagline">Draft legends from every World Cup, build your XI, and simulate your run to the trophy. Here's how it all works.</div>
+
+      <div class="htp-intro">
+        <div class="htp-step"><span class="htp-step-n">1</span><div><b>Draft</b> a squad — each round you spin a nation &amp; year and pick a legend from that team.</div></div>
+        <div class="htp-step"><span class="htp-step-n">2</span><div><b>Build</b> your best XI. Your players' ratings, leaders and the shape you end up with all matter.</div></div>
+        <div class="htp-step"><span class="htp-step-n">3</span><div><b>Simulate</b> your World Cup — group stage through the Final — and climb the leaderboard.</div></div>
+      </div>
+
+      <details class="htp-acc" open>
+        <summary><span class="htp-emoji">🃏</span> Drafting your squad<span class="htp-chev">›</span></summary>
+        <div class="htp-body">
+          <p>Every round the wheel lands on a <b>country and a World Cup year</b> (1966–2026). You draft one player from that squad into an open slot. Great teams come from reading the spin — knowing which nations were stacked in which year.</p>
+          <p><b>Two draft sizes:</b></p>
+          <ul>
+            <li><b>Quick Draft</b> — 6 fast rounds: GK, DEF, DEF, MID, FWD, FLEX. A quick hit.</li>
+            <li><b>Full Team</b> — a complete 11-man XI over 11 rounds: 1 GK, 3 DEF, 2 MID, 2 FWD, and <b>3 FLEX</b> slots you can fill with any outfield player (DEF, MID or FWD). Your FLEX picks decide your formation — see Formations &amp; Tactics below.</li>
+          </ul>
+          <p><b>Two difficulties:</b> <b>Easy</b> shows overall ratings while you draft so you can chase the strongest lineup. <b>Hard</b> hides them — you draft on name and gut alone, a pure test of ball knowledge.</p>
+        </div>
+      </details>
+
+      <details class="htp-acc">
+        <summary><span class="htp-emoji">⭐</span> Team Rating (OVR)<span class="htp-chev">›</span></summary>
+        <div class="htp-body">
+          <p>Your <b>Team OVR</b> is the number that ranks you on the leaderboard. It's your XI's quality, built up like this:</p>
+          <ul>
+            <li>Start with the <b>average overall</b> of your drafted players.</li>
+            <li><b>99-rated legends</b> each add a little extra on top — stacking all-time greats pays off.</li>
+            <li><b>Captains</b> give a small leadership boost (each one multiplies your rating up slightly).</li>
+            <li><b>Major individual awards</b> (Golden Boot, Golden Ball, etc.) add a further boost per award.</li>
+          </ul>
+          <p>The strongest squads push past 100 OVR. This rating is pure squad quality — <b>your formation does not change it</b> (it changes how you play, not your leaderboard number).</p>
+        </div>
+      </details>
+
+      <details class="htp-acc">
+        <summary><span class="htp-emoji">🧩</span> Formations &amp; Tactics<span class="htp-chev">›</span></summary>
+        <div class="htp-body">
+          <p>In <b>Full Team</b> drafts, the positions you pick — especially your 3 FLEX slots — settle your XI into a real <b>formation</b> (like 4-3-3 or 5-3-2) and one of four <b>tactical identities</b>. Your identity shapes how your matches play out:</p>
+          <div id="htp-identities" class="htp-ids"></div>
+          <p>It's a <b>real but secondary</b> lever: a smart shape gives you an edge in a matchup and changes your scorelines, but a clearly stronger squad still wins most of the time. Aiming your strength at an opponent's weakness is worth a few percent — not a free win.</p>
+        </div>
+      </details>
+
+      <details class="htp-acc">
+        <summary><span class="htp-emoji">⚽</span> How matches are simulated<span class="htp-chev">›</span></summary>
+        <div class="htp-body">
+          <p>Your opponents are <b>real historical World Cup squads</b>, drawn to match the round. Each match is decided by a calibrated model, not a coin flip:</p>
+          <ul>
+            <li><b>Quality leads.</b> The bigger your Team OVR edge, the more likely you win — but an upset is always possible.</li>
+            <li><b>The title is meant to be hard.</b> Winning it all realistically needs an elite squad. Roughly: an <b>86</b> OVR side lifts the trophy a couple percent of the time, <b>90</b> ≈ 1-in-5, <b>92</b> ≈ 2-in-5, and a <b>99</b> super-team ≈ 80%+. Below 86 it's a long-shot by design.</li>
+            <li><b>Weak sides get punished early.</b> Squads in the low 80s and below face an extra hurdle in the first knockout rounds, so they tend to bow out early rather than fluke a deep run.</li>
+            <li><b>Group stage</b> is a strength gate: 90+ sides go through automatically, 86+ almost always, and it scales down from there.</li>
+            <li><b>Formation</b> nudges the margins and the odds a little (see above), and level matches go to <b>extra time and penalties</b>.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="htp-acc">
+        <summary><span class="htp-emoji">🏆</span> Game modes<span class="htp-chev">›</span></summary>
+        <div class="htp-body">
+          <ul>
+            <li><b>World Cup (solo)</b> — the main event. Draft, then simulate group stage → knockouts → Final. Reach the trophy and top the all-time board.</li>
+            <li><b>Daily Challenge</b> — one themed draft, the same for everyone, every day. Build a streak.</li>
+            <li><b>Online Friendly</b> — draft and get matched 1v1 against another player (or a quick opponent), then watch the match play out live. Your formation matters here too.</li>
+            <li><b>Online World Cup</b> — join a 48-player pool. When it fills it's split into 12 groups of 4; the top 2 of each group plus the 8 best third-place teams reach a 32-team knockout that plays out to a champion.</li>
+            <li><b>Leaderboards</b> — every mode ranks you. One free account carries your record, streaks and titles.</li>
+          </ul>
+        </div>
+      </details>
+
+      <details class="htp-acc">
+        <summary><span class="htp-emoji">💡</span> Tips to go far<span class="htp-chev">›</span></summary>
+        <div class="htp-body">
+          <ul>
+            <li><b>Chase 86+.</b> Below it, a title run is a genuine long-shot — prioritise overall quality.</li>
+            <li><b>Stack 99s and captains.</b> The rating bonuses compound and can push you past 100.</li>
+            <li><b>Pick a shape on purpose.</b> Load up front to out-score opponents, or sit deep to frustrate a stronger side.</li>
+            <li><b>Read the spin.</b> Learn which nations peaked in which years to grab elite players when they appear.</li>
+          </ul>
+        </div>
+      </details>
+
+      <button class="btn red big" id="htp-play" style="margin-top:18px;">Start Drafting →</button>
     </div>
   </section>
 
@@ -8142,6 +8272,10 @@ $('btn-home-leaderboard').addEventListener('click', openLeaderboardView);
 // ---- daily challenge wiring ----
 (function wireDaily(){
   const on=(id,ev,fn)=>{ const el=$(id); if(el) el.addEventListener(ev,fn); };
+  // How to Play
+  on('htp-back','click',()=>showScreen('start'));
+  on('htp-play','click',()=>{ if(typeof friendlyReset==='function'){ try{friendlyReset();}catch(e){} } goToDraftTypeSelect(); });
+  on('home-howto','click',openHowTo);
   // Anyone can open the Daily Challenge intro; the Start button is gated there.
   on('btn-daily','click',openDailyIntro);
   on('btn-daily-board','click',()=>openDailyBoard('today'));   // viewing the board is open to all
@@ -8303,6 +8437,22 @@ function openInfo(key){
   $('info-bg').classList.add('show');
 }
 function closeInfo(){ $('info-bg').classList.remove('show'); }
+
+// How to Play — the tactical-identity legend is injected live from the
+// formation engine so it can never drift from the real profiles.
+function openHowTo(){
+  const box = document.getElementById('htp-identities');
+  if(box && typeof FORMATION_PROFILES !== 'undefined'){
+    box.innerHTML = ['ATTACKING','BALANCED','POSSESSION','DEFENSIVE'].map(k=>{
+      const p = FORMATION_PROFILES[k];
+      return `<div class="htp-id" style="--id-col:${p.color}">`+
+        `<div class="htp-id-head"><span>${p.emoji}</span>${p.label}<span class="htp-id-pill">${k}</span></div>`+
+        `<div class="htp-id-blurb">${escapeHtml(p.blurb)}</div></div>`;
+    }).join('');
+  }
+  showScreen('howto');
+  window.scrollTo({ top:0, behavior:'auto' });
+}
 document.querySelectorAll('.infobtn').forEach(b=>{
   b.addEventListener('click',e=>{ e.stopPropagation(); openInfo(b.dataset.info); });
 });
