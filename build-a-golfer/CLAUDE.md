@@ -6926,6 +6926,42 @@ allows Google Fonts, or self-host Anton.*
   composure benefit curves, consequence-beat thresholds. FOLLOW-UPS (not built): a shareable "Career Persona"
   card capturing your quadrant + funniest soundbites; sponsor-loyalty tie to respect; more consequence beats.
 
+- **CS281 — banner stats + Fans leaderboard + hazard realism + natural chip-ins (owner batch, from a live
+  screenshot).** Five requests:
+  • **Cuts Made + Top 10s back on the season banner.** The CS264 franchise banner didn't show them; added a
+    Top 10 and a Cuts stat cell (from `t.top10`/`t.made`).
+  • **Form chip → Confidence rating.** The banner's "▲ Hot / ● Steady / ▼ Cold" Form chip is replaced by a
+    **Confidence** cell showing the actual rating number, coloured by `confColor` (owner: "show confidence
+    rating instead").
+  • **"Fans" leaderboard category.** New sort on both the Single-Season and Career boards ranking by follower
+    count. Since followers isn't derivable from a row's stored skills, it needs the value in the row:
+    `supabase/48_runtour_fans.sql` (owner-run) adds a `followers` column, threads an optional `p_followers`
+    through both submit RPCs (clamped ≤2B), and adds a `'fans'` sort + `followers` return to both board RPCs —
+    all backward compatible (new trailing defaulted args, so old callers still resolve). The client sends
+    `careerStory().followers` with each season and, **deploy-safe**, tries the submit WITH `p_followers` first
+    and falls back WITHOUT on error, so deploying before the migration never strands a season; the board
+    gracefully shows "0 fans" in earnings order until the migration lands. `lbStatVal` renders "{N} fans"
+    (orange). **ACTION: run `supabase/48_runtour_fans.sql`.** Validated end-to-end against a local Postgres
+    (new + old-style submit, fans board ranking, guest path, career max-followers, idempotent).
+  • **Realistic fairway hazards (owner: the pond sat at ~half the driving distance and swallowed the drive).**
+    Three `hvGeom`/`hvPlots` fixes: (1) a crossing **creek** no longer spawns in the tee-shot landing zone
+    (0.25–0.68 of the hole) — it's now a **short forced carry** off the tee (13–20%) or a **green-front**
+    hazard (74–88%); (2) a seeded **lateral pond** is offset fully past the fairway edge (center = half-width
+    + radius + margin) so its inner edge clears the fairway instead of sitting in the middle of it; (3) the
+    **invented pond** created when an errant ball drowns (a hole with no spec'd water) is now placed as a
+    LATERAL hazard beside the fairway, not dead-centre at the landing zone — so it reads as "pushed it into
+    the lateral water," never "the fairway forced me in." Verified across all 39 courses × 18 holes: **0**
+    creeks in the landing zone, **0** mid-hole ponds overlapping the fairway.
+  • **Natural chip-ins (owner: "the shot before chip-ins is almost always a really bad shot that goes
+    sideways… predictable and unnatural").** When a one-putt finish converts to a holed chip/pitch, the setup
+    shot is no longer rewritten as a lateral spray (`into the right/left rough`) — it's now a natural
+    just-short-of-the-green position (front collar / short rough / fringe, weighted to the front), with an
+    occasional greenside bunker on a chip. Verified: over 58 hole-outs, **0** lateral-spray setups.
+  All presentation/geometry/UI (the deterministic `dSimHole` score engine is untouched). Verified in
+  Playwright (banner cells, Fans sort + value + resilient submit fallback, hazard placement across 39
+  courses, chip-in setup naturalness), zero page errors. Deployed to /golf. Tunable: the creek forced-carry
+  vs green-front bands + pond lateral offset in `hvGeom`, the chip-in setup lie pool in `dShotSeq`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
