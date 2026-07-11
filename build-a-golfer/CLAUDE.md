@@ -6499,6 +6499,38 @@ allows Google Fonts, or self-host Anton.*
   /golf. NOTE: the UTC→ET switch shifts the day boundary a one-time small amount at deploy (a player mid-day
   may see the "new course" timing move by up to a few hours once); self-corrects the next day.
 
+- **CS258 — touching hero cards fixed + Spotlight playable/done states + two confirmations (owner
+  screenshots + mid-turn asks).** Batch:
+  • **Touching cards (owner: "beat the pro and career mode shouldn't be touching").** The stacked title
+    hero cards (blue Beat the Pro `.gcard` + gold `.resumecard`/Career button) had only the generic
+    `.stack>*+*{margin-top:10px}` gap, which read as touching under the cards' big drop-shadows/rounded
+    corners. Added `.stack>.gcard,.stack>.resumecard{margin-top:16px}` (with a `:first-child` reset so the
+    top card isn't over-spaced) — verified a clean 16px gap between the daily card and the resume card.
+  • **Monthly Spotlight neon-when-playable / translucent-when-done (owner: "this user can no longer play
+    July Spotlight, so it should be translucent; if playable it should be more neon purple and glowing").**
+    `spotlightHeroCard()` now branches on `playable = left>0`: playable → `spot-neon spotlive` (a brighter
+    neon-purple gradient + a constant purple GLOW that breathes brighter via the enhanced `spotPulse`
+    keyframes; reduced-motion gets a static strong glow), CTA "Play ▸"; all attempts used → `spot-done`
+    (opacity .5 + desaturated, no pulse/glow), CTA "View result ▸". So a finished Spotlight reads as
+    unavailable and a live one pops.
+  • **Off-season "lock in" confirmation (owner: "when selecting a skill to change, ask to lock in so you
+    can't mis-click").** Tapping an off-season skill tile no longer applies the swap immediately — it opens
+    a new `confirmSkill` overlay ("Lock in {skill}? {cur} → {nv} · ▲/▼ delta · this stat locks for the rest
+    of the off-season") with Lock-it-in / Cancel; only Lock-it-in calls `offTake(k)`. Prevents a costly
+    mis-tap on the once-per-off-season stat lock.
+  • **Retire confirmation with years-left (owner: "if you click retire, warn 'are you sure… you have 15
+    years left'").** The season-summary "Retire, End Career" / "End Circuit Now" button now opens a
+    `confirmRetire` overlay instead of ending immediately: career shows "You still have N years left in
+    this 30-year career…" (N = `CAREER_MAX_YEARS − S.year`), circuit shows "N seasons left on the Legend
+    Circuit" (N = `CIRCUIT_MAX_YEARS − circuitYear`), red "Retire for good" / "End the Circuit" +
+    "Keep playing". Only the red button calls `endCareer('chose')`/`endCircuit()`.
+  Both overlays reuse the existing `.ov` confirm pattern (registered in the render overlay dispatch;
+  `S.confirmSkill` carries the tapped stat). Verified in Playwright: 16px card gap; spotlight playable
+  (neon+spotlive+"Play ▸") vs done (spot-done, opacity .5, "View result ▸", "WON ✓"); the skill tile opens
+  the lock-in overlay and locking applies the swap (changes 0→1, stat locked); the retire overlay shows
+  "15 years left" (career) and "9 seasons left" (circuit) with the right title/buttons; zero page errors.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
