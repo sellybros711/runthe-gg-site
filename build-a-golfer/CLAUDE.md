@@ -7036,6 +7036,26 @@ allows Google Fonts, or self-host Anton.*
     event the Net text animated +$343k → +$618k → +$1.1M over the tween window (start ≠ settled); a
     phone-width banner screenshot confirms the wider Cuts cell fits cleanly; zero page errors.
 
+- **CS285 — season banner: smooth-scrolling schedule rail + Confidence/Respect horizontal meters (owner,
+  from the same banner screenshot).** Two more banner tweaks:
+  • **Rail glides instead of jumping.** The season event rail (`seasonRailNode`) hard-set `scrollLeft` to
+    centre the current event on every render — jumpy and hard to follow as the schedule progressed. Now it
+    tracks the last-centred event index (`S._railIdx`) + scroll position (`S._railScroll`): on a same-event
+    re-render (the many mid-round redraws) it snaps to centre instantly (clean, no jitter), but when the
+    schedule ADVANCES event-to-event it starts from the previous position and `scrollTo({behavior:'smooth'})`
+    glides to the new centre. Reduced-motion snaps. Reset in `startSeason` so a new season centres instantly
+    (no glide from the prior season's schedule offsets). Verified: on advance, scrollLeft started at the old
+    target (370) and settled at the new one (473) — a real scroll animation, not a jump.
+  • **Confidence → horizontal meter + Respect meter.** Since Confidence had wrapped to its own banner row as
+    a bare number, replaced it with a horizontal **Confidence** meter (`confMeterHTML`) and added a **Respect**
+    meter (`respMeterHTML`, new helper mirroring the two-axis reputation colour) stacked below it, in a
+    full-width `.cb-meters` block under the stat cells (career-only — the reputation system is off in
+    daily/circuit). The Confidence stat cell was removed from the top row (now World/Tour/Net/Wins/Top 10/
+    Cuts, fits one row cleaner). Both meter bars GLIDE to their new width when they change (reusing the
+    `.cmeter` width transition), matching the CS284 net count-up feel; snap on the first render + reduced-
+    motion (baselines reset in `startSeason`). Verified in Playwright (Confidence absent from `.cb-stats`,
+    `.cb-meters` shows Confidence + Respect, rail glides) + a phone-width screenshot; zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
