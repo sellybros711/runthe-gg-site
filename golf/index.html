@@ -902,6 +902,30 @@ window.GA_ID='G-L29P5MRWKE';
   .sstat .k{font:800 9.5px/1 var(--body); letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
   .sstat .v{font-family:var(--mono); font-weight:800; font-size:18px; margin-top:5px; color:var(--oncard)}
   .sstat .v.gold{color:var(--gold); font-size:22px}
+  /* CS264: Career Hub dashboard — franchise-mode banner (avatar · name · year/age + stats) + season event rail */
+  .careerbanner{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:12px; padding:12px 15px;
+    border-radius:16px; border:1px solid var(--line); background:linear-gradient(160deg,rgba(28,69,54,.92),rgba(13,43,33,.94));
+    box-shadow:0 12px 28px -16px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.05)}
+  .cb-id{display:flex; align-items:center; gap:12px; min-width:0}
+  .cb-av{flex:0 0 auto; width:54px; height:54px; border-radius:50%; box-shadow:0 0 0 2px rgba(216,173,74,.55), 0 5px 14px rgba(0,0,0,.45)}
+  .cb-av .avatarfig{width:54px; height:54px}
+  .cb-name{font-family:var(--display); font-style:italic; font-size:24px; line-height:1; color:#f4eddc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .cb-sub{font:800 10px/1.3 var(--body); letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-top:4px}
+  .cb-stats{display:flex; gap:15px; margin-left:auto; flex-wrap:wrap}
+  .cb-stat{text-align:center; min-width:48px}
+  .cb-stat .k{font:800 8.5px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+  .cb-stat .v{font-family:var(--mono); font-weight:800; font-size:19px; margin-top:5px; color:var(--oncard); white-space:nowrap}
+  @media(max-width:540px){ .cb-stats{width:100%; margin-left:0; justify-content:space-between; gap:8px} .cb-stat{min-width:0} }
+  .seasonrail{display:flex; gap:7px; overflow-x:auto; padding:1px 0 9px; margin-bottom:10px; -webkit-overflow-scrolling:touch; scrollbar-width:none}
+  .seasonrail::-webkit-scrollbar{display:none}
+  .srev{flex:0 0 auto; min-width:56px; max-width:96px; border-radius:10px; padding:7px 9px; text-align:center;
+    background:var(--panel); border:1px solid var(--line); opacity:.5}
+  .srev.done{opacity:1}
+  .srev.cur{opacity:1; border-color:var(--gold); background:rgba(216,173,74,.15); box-shadow:0 0 0 1px rgba(216,173,74,.45)}
+  .srev.win{border-color:var(--gold); background:rgba(216,173,74,.22)}
+  .srev .en{font:800 8.5px/1.15 var(--body); letter-spacing:.02em; text-transform:uppercase; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .srev .er{font-family:var(--mono); font-weight:800; font-size:13px; margin-top:4px; color:var(--oncard)}
+  .srev.win .er{color:var(--gold)}
   .screen.major-screen{background:radial-gradient(130% 70% at 50% -8%, rgba(235,166,31,.20), transparent 62%)}
   .majorbanner{display:flex; align-items:center; justify-content:center; gap:8px;
     background:linear-gradient(90deg,#5a3d0b,var(--gold),#5a3d0b); color:#1a1206;
@@ -8193,6 +8217,23 @@ function raceToCupNode(byPts, evt){
   </div>`);
   return wrap;
 }
+// CS264: season event rail — a horizontal timeline of the schedule; completed events show your finish
+// (gold WIN for a victory), the current event is highlighted, upcoming ones fade back.
+function seasonRailNode(){
+  if(S.daily || !S.schedule || !S.schedule.length) return null;
+  const results=(S.season&&S.season.results)||[];
+  const rail=$(`<div class="seasonrail" aria-label="Season events"></div>`);
+  S.schedule.forEach((evt,i)=>{
+    let cls='srev', res='·';
+    if(i<S.evtIndex){ cls+=' done'; const r=results[i], me=r&&r.order&&r.order.find(o=>o.p.you);
+      if(me){ if(me.pos===1){ cls+=' win'; res='WIN'; } else res=ord(me.pos); } else res='✓'; }
+    else if(i===S.evtIndex){ cls+=' cur'; res='NOW'; }
+    rail.appendChild($(`<div class="${cls}" title="${esc(evt.name)}"><div class="en">${evt.major?'★ ':''}${esc(evt.name)}</div><div class="er">${res}</div></div>`));
+  });
+  // center the current event in the rail (container-only scroll, never moves the page)
+  requestAnimationFrame(()=>{ try{ const cur=rail.querySelector('.srev.cur'); if(cur&&rail.clientWidth) rail.scrollLeft=Math.max(0, cur.offsetLeft - rail.clientWidth/2 + cur.clientWidth/2); }catch(e){} });
+  return rail;
+}
 function scrSeason(){
   clearTimeout(seasonTimer);
   if(!S.simPace) S.simPace=LS.get('bag_pace','normal');   // default to the brisk Standard cadence (owner)
@@ -8237,20 +8278,24 @@ function scrSeason(){
   const rankTxt=t.played?('#'+tourRank):', ';
   // World Rank (OWGR), career-long rolling ranking, stable across the season
   const wr=!S.daily?myWorldRank():0, wrN=!S.daily?worldRankSize():0;
-  add($(`<div class="sbar">
-    <div class="sstat w3"><div class="k">Net profit · through ${t.played} event${t.played===1?'':'s'}</div>
-      <div class="v" style="color:${netCol};font-size:22px">${fmtSigned(ec.net)}</div>
-      <div class="k" style="margin-top:3px;text-transform:none;letter-spacing:0">${fmt(ec.gross)} won · −${fmt(ec.costs)} costs</div></div>
-    ${!S.daily?`<div class="sstat rankcell"><div class="k">World Rank</div>
-      <div class="v gold" style="font-size:22px">#${wr}</div>
-      <div class="k" style="margin-top:3px;text-transform:none;letter-spacing:0">of ${wrN} · OWGR</div></div>`:''}
-    <div class="sstat rankcell"><div class="k">Tour Rank</div>
-      <div class="v gold" style="font-size:22px">${rankTxt}</div>
-      <div class="k" style="margin-top:3px;text-transform:none;letter-spacing:0">${t.played?('of '+NP):'season points'}</div></div>
-    <div class="sstat"><div class="k">Avg finish</div><div class="v">${avg}</div></div>
-    <div class="sstat"><div class="k">Wins</div><div class="v">${t.wins}</div></div>
-    <div class="sstat"><div class="k">Cuts made</div><div class="v">${t.made}/${t.played}</div></div>
+  // CS264: franchise-mode career banner (avatar · name · year/age) + the season stat bar as a dashboard header
+  const cbName=esc(S.season.me.name||S.name||'Your Golfer');
+  const cbYr=S.circuitMode?('Legend Circuit · Yr '+Math.max(1,(S.year||1)-30)):('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS);
+  const conf=(S.season&&S.season.confidence!=null)?S.season.confidence:50;
+  const formTxt=conf>=64?'▲ Hot':conf>=44?'● Steady':'▼ Cold', formCol=conf>=64?'#35d6a0':conf>=44?'var(--gold)':'#E14A33';
+  const netShort=(ec.net>=0?'+':'−')+fmtShort(Math.abs(ec.net));
+  add($(`<div class="careerbanner">
+    <div class="cb-id"><div class="cb-av">${avatarHTML()}</div>
+      <div style="min-width:0"><div class="cb-name">${cbName}</div><div class="cb-sub">${cbYr} · Age ${playerAge()}</div></div></div>
+    <div class="cb-stats">
+      ${!S.daily?`<div class="cb-stat"><div class="k">World</div><div class="v" style="color:var(--gold)">#${wr}</div></div>`:''}
+      <div class="cb-stat"><div class="k">Tour</div><div class="v" style="color:var(--gold)">${rankTxt}</div></div>
+      <div class="cb-stat"><div class="k">Net</div><div class="v" style="color:${netCol};font-size:16px">${netShort}</div></div>
+      <div class="cb-stat"><div class="k">Wins</div><div class="v">${t.wins}</div></div>
+      <div class="cb-stat"><div class="k">Form</div><div class="v" style="color:${formCol};font-size:14px">${formTxt}</div></div>
+    </div>
   </div>`));
+  { const rail=seasonRailNode(); if(rail) add(rail); }
   if(evt.major) add($(`<div class="majorbanner">★ Major Championship ★</div>`));
   // CS241: the live tournament (leaderboard + scorecard) now sits right under the season-stat bar so a
   // player watching the sim sees the standings immediately — no scrolling past a wall of Race-to-the-Cup /
