@@ -6463,6 +6463,42 @@ allows Google Fonts, or self-host Anton.*
   calendar still shows below the daily card; zero page errors. Screenshot confirms the four-card layout.
   Deployed to /golf.
 
+- **CS257 — home reorder + spotlight recolor + declutter + "Build" language + daily reset → US Eastern.**
+  A batch of owner tweaks:
+  • **Career Mode is now 2nd**, right below Beat the Pro. The homepage is a clean set of mode cards in order
+    Beat the Pro (blue) → Career (gold) → Play Online (teal) → Monthly Spotlight; the old "CAREER" divider is
+    gone.
+  • **Spotlight recolored** from amber to **purple** (`.gc-purple`, pulse recolored to match) so it no longer
+    looks like the gold Career card — Career stays yellow/gold.
+  • **Streak calendar + weekly goals moved off the homepage** into the Beat-the-Pro flow (the daily preview
+    screen, `scrDailyPreview`), so the title stays clean. The free-Legend hook was already covered by the
+    preview's "Your Legend golfers" block; the daily card still folds in the streak chip.
+  • **Fixed cut-off card titles** — `.gc-title` no longer clips (`white-space:nowrap`/`overflow:hidden`/
+    ellipsis removed → it wraps, with a little right padding for the italic overhang), so "July Spotlight"
+    etc. show fully.
+  • **"Draft" → "Build" for golfer creation** (owner: "Build your golfer sounds better, promote it over
+    draft"). Changed all user-facing "draft your golfer"/"draft a golfer" and related promo copy — the title
+    cards, career subs ("Build your golfer · 30-year career", "Build a new golfer"), the build-screen header,
+    the daily preview CTA ("Build your golfer ▸"), the H2H intro + "Golfer submitted ✓", the how-to tips
+    ("Build for the course"), the meta description, and the resume sub ("N/8 skills built"). Left the
+    skill-level draft MECHANIC terms (the "draft a skill" spin/take action, the "The Draft" achievement
+    category) as-is since they accurately describe the wheel mechanic.
+  • **Daily challenge resets at midnight US Eastern, not UTC** (owner). `todayKey`/`yesterdayKey`/
+    `twoDaysAgoKey`/`dayKeyBack`/`dNextResetMs` now compute the "day" in **America/New_York** (auto EST/EDT)
+    via `Intl.DateTimeFormat`, with a UTC fallback. Deliberately a SINGLE fixed zone, not the user's local
+    zone: the daily course + leaderboard are GLOBAL, so all clients must share the same day key at the same
+    instant — per-user local time would split players onto different courses/boards (flagged this to the
+    owner). No SQL change: the server just stores whatever day key the client sends, and every client now
+    agrees on ET. User-facing "midnight UTC" copy → "midnight ET". The daily seed (`todayKey()`) drives the
+    course rotation + board key, so it all follows automatically.
+  Verified in Playwright: title order daily→career→online→spotlight with a purple spotlight card and no
+  streak calendar on the homepage; the daily preview now shows the streak calendar + weekly goals + a "Build
+  your golfer" CTA (no "Draft your golfer" left); card titles render un-clipped; `todayKey()` matches the ET
+  calendar date, `yesterdayKey()===dayKeyBack(1)`, and `dNextResetMs()` counts down to ET midnight; the
+  online card + meta use "Build". Zero page errors. Screenshot confirms the four-card layout. Deployed to
+  /golf. NOTE: the UTC→ET switch shifts the day boundary a one-time small amount at deploy (a player mid-day
+  may see the "new course" timing move by up to a few hours once); self-corrects the next day.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
