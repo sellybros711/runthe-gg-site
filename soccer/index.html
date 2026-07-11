@@ -1885,6 +1885,48 @@
     font-family:inherit;font-weight:800;font-size:12px;letter-spacing:.3px;padding:8px 4px;
     border-radius:8px;cursor:pointer;text-transform:uppercase;}
   .lb-seg button.active{background:var(--gold);color:var(--ink);}
+  /* ---------- top-3 podium ---------- */
+  .lb-podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;
+    padding:14px 4px 0;margin-bottom:6px;}
+  .lb-pod-spot{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;
+    --pod-col:#D8D8D8;}
+  .lb-pod-spot.gold{--pod-col:#F4D469;} .lb-pod-spot.silver{--pod-col:#D8D8D8;} .lb-pod-spot.bronze{--pod-col:#E0995A;}
+  .lb-pod-spot.has-lineup{cursor:pointer;}
+  .pod-token{position:relative;--tok:50px;width:var(--tok);height:var(--tok);margin-bottom:2px;}
+  .lb-pod-spot.rank-1 .pod-token{--tok:62px;}
+  .pod-flagwrap{display:block;width:100%;height:100%;border-radius:50%;overflow:hidden;
+    border:3px solid var(--pod-col);background:rgba(255,255,255,.12);
+    box-shadow:0 5px 14px rgba(0,0,0,.45);}
+  .lb-pod-spot.rank-1 .pod-flagwrap{box-shadow:0 0 18px rgba(244,212,105,.7),0 5px 14px rgba(0,0,0,.45);}
+  .pod-flagwrap .flag-ico{width:100%;height:100%;border-radius:50%;display:block;
+    background-size:cover;background-position:center;}
+  .pod-flag-none{display:block;width:100%;height:100%;border-radius:50%;
+    background:repeating-linear-gradient(45deg,rgba(255,255,255,.14),rgba(255,255,255,.14) 5px,rgba(255,255,255,.06) 5px,rgba(255,255,255,.06) 10px);}
+  .pod-medal{position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);line-height:0;}
+  .pod-medal .pod-trophy{width:22px;height:25px;display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55));}
+  .pod-name{font-weight:800;font-size:11.5px;color:#fff;max-width:100%;text-align:center;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:4px;}
+  .lb-pod-spot.rank-1 .pod-name{font-size:12.5px;}
+  .pod-you{flex:0 0 auto;font-size:8px;font-weight:900;letter-spacing:.5px;color:var(--ink);
+    background:var(--gold);border-radius:4px;padding:1px 4px;}
+  .pod-ov{font-family:'Anton',Impact,sans-serif;font-size:16px;line-height:1;color:#fff;
+    display:flex;align-items:center;gap:4px;}
+  .lb-pod-spot.rank-1 .pod-ov{font-size:20px;}
+  .pod-ov.red{color:var(--red);} .pod-ov.orange{color:var(--orange);} .pod-ov.gold{color:var(--gold);}
+  .pod-ov.green{color:#4ade80;} .pod-ov.over100{color:#F4B413;}
+  .pod-meta{display:inline-flex;align-items:center;}
+  .pod-meta .ico-em,.pod-meta svg{width:13px;height:13px;}
+  .pod-base{width:100%;max-width:98px;border-radius:9px 9px 0 0;margin-top:2px;
+    display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;
+    background:var(--pod-col);
+    box-shadow:inset 0 -18px 22px -14px rgba(0,0,0,.5);}
+  .lb-pod-spot.rank-1 .pod-base{height:58px;}
+  .lb-pod-spot.rank-2 .pod-base{height:42px;}
+  .lb-pod-spot.rank-3 .pod-base{height:32px;}
+  .pod-rank{font-family:'Anton',Impact,sans-serif;font-size:22px;color:rgba(0,0,0,.55);}
+  .lb-pod-spot.rank-1 .pod-rank{font-size:28px;color:rgba(60,40,0,.7);}
+  .lb-pod-spot.you .pod-flagwrap{outline:2px solid var(--gold);outline-offset:2px;}
+
   .lb-row{display:flex;align-items:center;gap:10px;padding:9px 6px;border-bottom:1px solid rgba(255,255,255,.1);}
   .lb-row:last-child{border-bottom:none;}
   .lb-rank{flex:0 0 30px;font-family:'Anton',Impact,sans-serif;font-size:20px;text-align:center;color:#fff;opacity:.85;}
@@ -7108,7 +7150,13 @@ function renderLeaderboardRows(rows, highlightId){
   lbCurrentRows = rows;
   const list=$('lb-list');
   if(!rows.length){ list.innerHTML='<div class="lb-empty">No drafts yet, play one to get on the board!</div>'; return; }
-  list.innerHTML = rows.map((row,i)=>{
+  // Top three get a visual podium; everyone else lists below starting at rank 4.
+  // With fewer than three drafts we keep the plain medal list (no partial podium).
+  const usePodium = rows.length>=3;
+  const podium = usePodium ? lbPodiumHtml(rows.slice(0,3), highlightId) : '';
+  const startIdx = usePodium ? 3 : 0;
+  const listHtml = rows.slice(startIdx).map((row,j)=>{
+    const i=j+startIdx;
     const you = highlightId!=null && row.id===highlightId;
     const nm  = cleanDisplayName((row.name && String(row.name).trim()) ? row.name : 'Anonymous');
     const rank=i+1;
@@ -7125,6 +7173,31 @@ function renderLeaderboardRows(rows, highlightId){
       ${hasLineup?'<span class="lb-chev" aria-hidden="true">›</span>':''}
     </div>`;
   }).join('');
+  list.innerHTML = podium + (listHtml ? `<div class="lb-rows">${listHtml}</div>` : '');
+}
+
+// Build the top-three podium. Columns render visually as 2nd · 1st · 3rd, with
+// 1st tallest + gold, so the champion literally stands above the rest. Each spot
+// is tappable (opens its stored lineup) via the same #lb-list delegation.
+function lbPodiumHtml(top3, highlightId){
+  const order=[1,0,2];   // left→right: silver, gold, bronze
+  const spots=order.map(idx=>{
+    const row=top3[idx];
+    if(!row) return '<div class="lb-pod-spot empty"></div>';
+    const rank=idx+1;
+    const tier=MEDAL_TIERS[idx];   // gold / silver / bronze
+    const you = highlightId!=null && row.id===highlightId;
+    const nm  = cleanDisplayName((row.name && String(row.name).trim()) ? row.name : 'Anonymous');
+    const hasLineup = Array.isArray(row.player_ids) && row.player_ids.length>0;
+    const fl=(row.flag && String(row.flag).trim()) ? flagChip(row.flag,'pod-flag') : '';
+    return `<div class="lb-pod-spot ${tier} rank-${rank}${you?' you':''}${hasLineup?' has-lineup':''}" data-i="${idx}" data-id="${row.id==null?'':row.id}">
+      <div class="pod-token"><span class="pod-flagwrap">${fl||'<span class="pod-flag-none"></span>'}</span><span class="pod-medal">${metalTrophySvg(rank,'pod-trophy')}</span></div>
+      <div class="pod-name">${escapeHtml(nm)}${you?'<span class="pod-you">YOU</span>':''}</div>
+      <div class="pod-ov ${ovTier(row.overall)}">${(+row.overall).toFixed(1)}</div>
+      <div class="pod-base"><span class="pod-rank">${rank}</span></div>
+    </div>`;
+  }).join('');
+  return `<div class="lb-podium">${spots}</div>`;
 }
 
 // Lazy id→player lookup over the loaded dataset (rebuilt once PLAYERS arrives).
@@ -9206,7 +9279,7 @@ initAuth();
 
 // Tap a board row with a stored lineup → show the squad behind that score.
 $('lb-list').addEventListener('click', e=>{
-  const rowEl = e.target.closest('.lb-row.has-lineup');
+  const rowEl = e.target.closest('.lb-row.has-lineup, .lb-pod-spot.has-lineup');
   if(!rowEl) return;
   // Resolve the clicked row by its stable id first (immune to any index/render
   // desync), falling back to the positional index for local preview rows that
