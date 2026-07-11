@@ -139,13 +139,18 @@ window.GA_ID='G-L29P5MRWKE';
      match-by-match session cards below it scroll, so the score never leaves view. */
   .cupsticky{position:sticky; top:0; z-index:6; margin:0 -16px 4px; padding:calc(8px + env(safe-area-inset-top, 0px)) 16px 6px;
     background:#06200f; border-bottom:1px solid var(--line); box-shadow:0 8px 14px -10px rgba(0,0,0,.55)}
-  /* CS296: on mobile, pin the team-cup controls to the bottom of the viewport so you don't scroll the whole
-     28-match list to reach Next match / Auto Sim / Skip. Desktop keeps them in-flow. */
+  /* CS298: on mobile, GLUE the team-cup controls to the bottom of the viewport (position:fixed) so you never
+     scroll the 28-match list to reach Next match / Auto Sim / Skip. A sticky bar overlapped + hid the cards
+     behind it and released mid-scroll (owner: "it moves to the middle when I scroll"); fixed + reserved
+     bottom padding (#app.has-cupbar) keeps it pinned AND stops it covering the last cards / footer. Desktop
+     keeps the controls in-flow. */
   .cupctrl{max-width:560px; margin:6px auto 0}
   @media(max-width:700px){
-    .cupctrl{position:sticky; bottom:0; z-index:6; max-width:none; margin:10px -16px 0;
-      padding:10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
-      background:#06200f; border-top:1px solid var(--line); box-shadow:0 -8px 16px -10px rgba(0,0,0,.6)}
+    .cupctrl{position:fixed; left:0; right:0; bottom:0; z-index:20; max-width:none; margin:0;
+      padding:9px 14px calc(9px + env(safe-area-inset-bottom, 0px));
+      background:#06200f; border-top:1px solid var(--line); box-shadow:0 -10px 22px -10px rgba(0,0,0,.7)}
+    .cupctrl > *{max-width:560px; margin-left:auto; margin-right:auto}
+    #app.has-cupbar{padding-bottom:calc(168px + env(safe-area-inset-bottom, 0px))}
   }
   .cols{display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start}
   .col{min-width:0}
@@ -4473,6 +4478,7 @@ function render(){
   if(_rendering){ setTimeout(render,0); return; }
   _rendering=true;
   try{
+  app.classList.remove('has-cupbar');   // CS298: cleared each render; only the team-cup reveal re-adds it (reserves space for the fixed control bar)
   const savedY=window.scrollY;
   const prevOv=app.querySelector('.ov'); const savedOvY=prevOv?prevOv.scrollTop:0;   // keep overlay scroll across async re-renders
   if(S.screen!=='dailyround') clearDailyTimer();   // stop daily auto-advance if we left the round
@@ -8820,7 +8826,8 @@ function scrTeamCup(){
     add(card);
   });
 
-  // controls (CS296: sticky to the bottom of the viewport on mobile)
+  // controls (CS298: fixed to the bottom of the viewport on mobile — reserve space so it never covers cards)
+  app.classList.add('has-cupbar');
   const ctrl=$(`<div class="cupctrl"></div>`);
   if(!allDone){
     const next=flat[matchN];
