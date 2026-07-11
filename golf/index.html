@@ -6538,21 +6538,31 @@ const STORY_PERSONA={confident:'The Confident One', brash:'The Showman', showman
 function storyPersona(){ const t=careerStory().traits||{}; const e=Object.entries(t).sort((a,b)=>b[1]-a[1]); return e.length&&e[0][1]>=2?(STORY_PERSONA[e[0][0]]||null):null; }
 function storyCtx(ce){
   const res=(S.season&&S.season.results)||[]; const last=res.length?res[res.length-1]:null;
-  let won=false, top10=false, missed=false, lastName='';
-  if(last){ const meR=last.order.find(o=>o.p&&o.p.you); lastName=last.evt.name;
-    if(meR){ won=(meR.pos===1); top10=(typeof meR.pos==='number'&&meR.pos<=10); missed=(meR.pos==='CUT'); } }
+  let won=false, top10=false, missed=false, lastName='', runnerUp=false, majorWin=false, lastMajor=false;
+  if(last){ const meR=last.order.find(o=>o.p&&o.p.you); lastName=last.evt.name; lastMajor=!!last.evt.major;
+    if(meR){ won=(meR.pos===1); runnerUp=(meR.pos===2); top10=(typeof meR.pos==='number'&&meR.pos<=10); missed=(meR.pos==='CUT'); majorWin=won&&lastMajor; } }
   const rival=S.career&&S.career.rival;
   const tot=(S.season&&S.season.totals)||{}, meN=S.season.me.name;
   const byMoney=Object.entries(tot).map(([n,v])=>({n,m:v.money})).sort((a,b)=>b.m-a.m);
   const rank=byMoney.findIndex(x=>x.n===meN)+1;
   const recent=res.slice(-3).map(r=>{ const m=r.order.find(o=>o.p&&o.p.you); return m?(m.pos==='CUT'?99:(typeof m.pos==='number'?m.pos:99)):99; });
   const cold=recent.length>=2 && recent.slice(-2).every(p=>p>25);
+  const hot=recent.length>=2 && recent.slice(-2).every(p=>p<=5);
+  // CS275 situational signals for richer, more specific interviews
+  const seasonsPlayed=(S.career&&S.career.seasons&&S.career.seasons.length)||0;
+  const careerWins=(S.career&&S.career.wins)||0;
+  const firstWin=won && careerWins===0 && (S.season.totals[meN]?(S.season.totals[meN].wins||0):0)<=1;   // first-ever tour win
+  let worldNo1=false; try{ worldNo1=(myWorldRank()===1); }catch(e){}
+  const age=(typeof playerAge==='function')?playerAge():22;
+  const rookie=(S.year||1)===1;
+  const veteran=age>=38;
+  const twilight=(S.year||1)>=Math.max(1,CAREER_MAX_YEARS-4);   // last few years of a 30-yr career
   // a fitting brand for the "sponsor comes calling" beat: one tier above your current deal, named for immersion
   let sBrand='a major brand'; try{ const sp=ensureSponsor(), t=Math.min(SPONSOR_TIERS.length-1, sp.tier+1), pool=brandsOfTier(t).filter(b=>b!==sp.brand);
     if(pool.length) sBrand=pool[(S.evtIndex||0)%pool.length]; }catch(e){}
-  return {won, top10, missed, lastName, rival, rivalName:(rival&&rival.name)||'', upName:ce.evt.name, major:!!ce.evt.major, big:!!ce.evt.big,
-    sponsorBrand:sBrand,
-    yr:S.year||1, rank, N:byMoney.length||1, cold, seasons:(S.career&&S.career.seasons&&S.career.seasons.length)||0};
+  return {won, top10, missed, runnerUp, majorWin, lastMajor, lastName, rival, rivalName:(rival&&rival.name)||'', upName:ce.evt.name, major:!!ce.evt.major, big:!!ce.evt.big,
+    sponsorBrand:sBrand, firstWin, worldNo1, age, rookie, veteran, twilight, hot, careerWins,
+    yr:S.year||1, rank, N:byMoney.length||1, cold, seasons:seasonsPlayed};
 }
 // each beat: when(ctx)→bool, tag, title(ctx), body(ctx), ch:[{t,s,tr,conf,endo,fan,r,head(ctx)}]
 const STORYLINES=[
@@ -6608,7 +6618,68 @@ const STORYLINES=[
  {id:'major_presser', tag:'MAJOR WEEK', when:c=>c.major, title:c=>'Major-week press conference',
   body:c=>`It’s major week and the questions come fast: are you here to contend, or just to compete?`,
   ch:[{t:'Set the bar high',s:'I came to win',tr:'confident',conf:0.4,fan:1,r:'Bold words. Now go earn them.',head:c=>`Declared he came to win the ${c.upName}`},
-      {t:'Play it cool',s:'One shot at a time',tr:'clutch',conf:0.4,r:'Measured and calm. Classic contender energy.',head:'Kept it cool going into a major'}]}
+      {t:'Play it cool',s:'One shot at a time',tr:'clutch',conf:0.4,r:'Measured and calm. Classic contender energy.',head:'Kept it cool going into a major'}],pri:1},
+ // ── CS275: situational, higher-stakes interviews (some choices carry a real downside) ──
+ {id:'major_champ', tag:'MAJOR CHAMPION', pri:4, when:c=>c.majorWin, title:c=>'You’re a MAJOR champion',
+  body:c=>`You just won ${esc(c.lastName)} — a major. The trophy is in your hands and the golf world is watching your every word.`,
+  ch:[{t:'“This is just the beginning”',s:'Chase a dynasty',tr:'confident',conf:0.6,fan:1,r:'You put the tour on notice. Legends talk like this.',head:c=>`Won the ${c.lastName}, vowed it’s just the start`},
+      {t:'Thank everyone who built you',s:'Humble legacy',tr:'humble',conf:0.4,fol:0.09,r:'A gracious champion. The story writes itself.',head:c=>`A humble major champion at ${c.lastName}`},
+      {t:'Dedicate it to your family',s:'For them',tr:'loyal',conf:0.3,fol:0.13,r:'The moment goes viral for all the right reasons.',head:'Dedicated a major to family'}]},
+ {id:'runner_up', tag:'SO CLOSE', pri:3, when:c=>c.runnerUp, title:c=>'Second again',
+  body:c=>`You finished runner-up at ${esc(c.lastName)}, agonisingly close. The press wants to know how much it stings.`,
+  ch:[{t:'“I’ll be back — count on it”',s:'Fuel for the fire',tr:'gritty',conf:0.5,r:'You turn heartbreak into motivation. Respect.',head:'Turned a runner-up into fuel'},
+      {t:'Vent your frustration',s:'Let it out',tr:'maverick',conf:-0.2,fol:-0.03,r:'The clip isn’t a good look. It lingers.',head:'Let frustration boil over after a near-miss'},
+      {t:'Tip your cap to the winner',s:'Class act',tr:'humble',conf:0.2,fol:0.06,r:'Graceful in defeat. The fans love it.',head:'Gracious runner-up'}]},
+ {id:'world_no1', tag:'WORLD NO. 1', pri:4, when:c=>c.worldNo1 && c.seasons>=1, title:c=>'On top of the world',
+  body:c=>`You’ve reached World No. 1. Every rival is now measuring themselves against you. How do you wear the crown?`,
+  ch:[{t:'Own it — I’m the best',s:'Embrace the target',tr:'confident',conf:0.5,fan:1,r:'No false modesty. You earned the top spot.',head:'Embraced World No. 1'},
+      {t:'Stay hungry, stay humble',s:'Nothing’s given',tr:'gritty',conf:0.5,r:'The right mindset to STAY there.',head:'Reached No. 1 and stayed hungry'},
+      {t:'“Rankings don’t define me”',s:'Deflect',tr:'maverick',conf:0.2,fol:-0.02,r:'A curious take that puzzles the room.',head:'Downplayed a No. 1 ranking'}]},
+ {id:'rookie_intro', tag:'ROOKIE', pri:3, when:c=>c.rookie && c.seasons===0, title:c=>'Your first tour presser',
+  body:c=>`You’re a tour rookie and the microphones are new. What kind of pro do you want to be?`,
+  ch:[{t:'“I’m here to win, now”',s:'No fear',tr:'confident',conf:0.4,r:'Bold for a rookie. The room raises an eyebrow — and remembers.',head:'A fearless rookie declaration'},
+      {t:'Soak it all in and learn',s:'Student of the game',tr:'humble',conf:0.3,fol:0.05,r:'Mature beyond your years. Veterans nod.',head:'A humble rookie debut'}]},
+ {id:'rookie_win', tag:'MAIDEN WIN', pri:4, when:c=>c.firstWin, title:c=>'Your FIRST tour win',
+  body:c=>`Your maiden victory at ${esc(c.lastName)} — the one you’ll never forget. Emotions are running high.`,
+  ch:[{t:'Let the emotion show',s:'A moment of pure joy',tr:'fanFav',conf:0.4,fol:0.14,r:'Tears and smiles. A star is born, and fans fall in love.',head:c=>`Emotional maiden win at ${c.lastName}`},
+      {t:'“First of many”',s:'Ice in the veins',tr:'confident',conf:0.5,r:'Cold-blooded. The tour just met a problem.',head:'Called a maiden win the first of many'}]},
+ {id:'veteran_legacy', tag:'LEGACY', pri:2, when:c=>c.veteran, title:c=>'Legacy questions',
+  body:c=>`Deep into your career, the press keeps asking about your legacy and how much you’ve got left.`,
+  ch:[{t:'“I’m chasing greatness till the end”',s:'Still hungry',tr:'gritty',conf:0.5,r:'The fire still burns. Inspiring stuff.',head:'A veteran still chasing greatness'},
+      {t:'Reflect and give thanks',s:'Grateful',tr:'humble',conf:0.3,fol:0.08,r:'A elder statesman moment. Beautifully done.',head:'A grateful career reflection'},
+      {t:'Mentor the next generation',s:'Pay it forward',tr:'loyal',conf:0.2,fol:0.1,r:'Rookies flock to you. A respected veteran.',head:'Became a mentor to the young guns'}]},
+ {id:'twilight_retire', tag:'THE FINAL STRETCH', pri:2, when:c=>c.twilight, title:c=>'Retirement talk',
+  body:c=>`With the finish line in sight, everyone wants to know: how long will you keep teeing it up?`,
+  ch:[{t:'“I’m not done yet”',s:'One more run',tr:'gritty',conf:0.5,r:'You’ve got fight left. Nobody counts you out.',head:'Vowed he’s not done yet'},
+      {t:'Go out on your terms',s:'Peace with it',tr:'humble',conf:0.3,fol:0.07,r:'Serene and secure. A career well spent.',head:'At peace with the final stretch'}]},
+ {id:'social_flare', tag:'SOCIAL MEDIA', pri:1, when:c=>c.seasons>=1, title:c=>'Your post lit up the timeline',
+  body:c=>`Something you posted has the golf internet buzzing — and not everyone’s happy. The reporters pounce.`,
+  ch:[{t:'Double down',s:'No regrets',tr:'brash',conf:-0.1,fol:0.12,r:'Engagement explodes — but a few sponsors wince.',head:'Doubled down and went viral'},
+      {t:'Clarify and move on',s:'Defuse it',tr:'humble',conf:0.3,fol:0.02,r:'You take the heat out of it. Smart.',head:'Calmly defused a social flare-up'},
+      {t:'Delete it',s:'Pretend it never happened',tr:'maverick',conf:0.1,fol:-0.04,r:'The screenshots are already everywhere. It lingers.',head:'Deleted a post — too late'}]},
+ {id:'media_critic', tag:'THE CRITICS', pri:1, when:c=>c.missed||c.cold, title:c=>'A pundit wrote you off',
+  body:c=>`A big-name analyst says your best days are behind you. The quote is trending. Your response?`,
+  ch:[{t:'Prove them wrong',s:'Silent fury',tr:'gritty',conf:0.5,r:'You bookmark the quote. Motivation locked in.',head:'Answered the critics with resolve'},
+      {t:'Clap back on camera',s:'Bring receipts',tr:'brash',conf:0.1,fan:1,fol:0.08,r:'The exchange goes viral. It’s personal now.',head:'Clapped back at a critic'},
+      {t:'“Everyone’s entitled to an opinion”',s:'Unbothered',tr:'clutch',conf:0.3,r:'Ice cold. The critic looks small.',head:'Shrugged off the critics'}]},
+ {id:'hot_streak', tag:'ON A HEATER', pri:2, when:c=>c.hot, title:c=>'You’re red-hot',
+  body:c=>`Two big weeks in a row and everyone can feel it. Is this the best golf of your life?`,
+  ch:[{t:'Ride the wave',s:'Feeling unstoppable',tr:'showman',conf:0.5,fan:1,r:'You’re buzzing and the galleries feel it.',head:'Rode a red-hot streak'},
+      {t:'Stay in the moment',s:'One week at a time',tr:'clutch',conf:0.4,r:'Grounded. This is how streaks last.',head:'Stayed grounded on a heater'}]},
+ {id:'caddie', tag:'THE PARTNERSHIP', pri:1, when:c=>c.cold, title:c=>'Questions about your caddie',
+  body:c=>`After a couple of rough weeks, whispers say it might be time for a caddie change. What’s the call?`,
+  ch:[{t:'Ride with my guy',s:'Loyalty',tr:'loyal',conf:0.3,fol:0.05,r:'You back your team publicly. They’ll run through walls for you.',head:'Backed his caddie through a slump'},
+      {t:'Make a change',s:'Shake it up',tr:'maverick',conf:0.2,fol:-0.02,r:'A cold, business decision. Time will tell.',head:'Split with his caddie'}]},
+ {id:'money_lead', tag:'THE MONEY LIST', pri:1, when:c=>c.rank<=5 && c.seasons>=1, title:c=>'Leading the money list',
+  body:c=>`You’re #${c.rank} on the money list and the cheques are enormous. Reporters ask what it all means to you.`,
+  ch:[{t:'“The money’s a byproduct”',s:'It’s about winning',tr:'humble',conf:0.3,r:'The right note. Substance over flash.',head:'Kept the focus off the money'},
+      {t:'“I’ve earned every cent”',s:'Own it',tr:'confident',conf:0.3,fol:0.04,r:'Unapologetic. Fans respect the honesty.',head:'Owned his earnings'},
+      {t:'Pledge a chunk to charity',s:'Give it back',tr:'loyal',conf:0.2,fol:0.11,r:'A headline for all the right reasons.',head:'Pledged winnings to charity'}]},
+ {id:'appearance_fee', tag:'THE OFFER', pri:1, when:c=>c.top10||c.won, title:c=>'A huge appearance fee',
+  body:c=>`An overseas event is dangling a massive appearance fee to show up — the week before a big tournament.`,
+  ch:[{t:'Take the payday',s:'Cash the cheque',tr:'maverick',conf:-0.1,fol:0.09,r:'The bank account loves it; your prep takes a hit.',head:'Chased an appearance-fee payday'},
+      {t:'Skip it, stay sharp',s:'Golf first',tr:'clutch',conf:0.3,r:'Disciplined. Your game thanks you.',head:'Turned down easy money to stay sharp'},
+      {t:'Go, and donate the fee',s:'Best of both',tr:'loyal',conf:0.1,fol:0.1,r:'Goodwill and a great story.',head:'Donated an appearance fee'}]}
 ];
 function maybeStoryline(ce){
   if(S.daily || S.circuitMode || !S.career) return null;
@@ -6618,10 +6689,14 @@ function maybeStoryline(ce){
   if(S.evtIndex - (story.lastBeat==null?-99:story.lastBeat) < STORY_GAP) return null;
   if((story.seasonCount||0) >= STORY_PER_SEASON) return null;
   const ctx=storyCtx(ce);
-  const pool=STORYLINES.filter(b=>{ try{ return b.when(ctx); }catch(e){ return false; } })
+  let pool=STORYLINES.filter(b=>{ try{ return b.when(ctx); }catch(e){ return false; } })
     .filter(b=>{ const l=story.seenEvt[b.id]; return l==null || (S.evtIndex-l)>=8; });
   if(!pool.length) return null;
   if(Math.random()>0.6) return null;   // ~occasional even when eligible
+  // CS275: prefer the highest-priority (most situational) applicable beat, random among ties, so a
+  // major win / first win / World No.1 moment surfaces over a generic beat when it's earned.
+  const maxPri=Math.max(...pool.map(b=>b.pri||0));
+  if(maxPri>0) pool=pool.filter(b=>(b.pri||0)===maxPri);
   return {beat:pool[Math.floor(Math.random()*pool.length)], ctx};
 }
 // a microphone at the podium — the press-conference motif
@@ -6676,11 +6751,14 @@ function showStoryline(sb){
       // apply — capture before/after momentum for the on-screen deltas
       const conf0=seasonConf(), fol0=story.followers||0;
       if(ch.tr) story.traits[ch.tr]=(story.traits[ch.tr]||0)+1;
+      const personaNew=(ch.tr && story.traits[ch.tr]===2 && STORY_PERSONA[ch.tr]) ? STORY_PERSONA[ch.tr] : null;   // CS275: trait just hit the persona threshold
       if(ch.conf) storyGainConf(ch.conf);
-      // followers: every media hit grows the following a little; a fan-play choice goes viral (bigger for a showman)
-      const showman=(ch.tr==='brash'||ch.tr==='showman'||ch.tr==='fanFav');
-      const folPct=(ch.fan?(showman?0.11:0.075):0.015)+(showman?0.02:0);
-      gainFollowers(folPct, ch.fan?900:250);
+      // followers: an explicit ch.fol (a pct, may be NEGATIVE for a risky choice) overrides the default growth
+      let folPct, folFlat;
+      if(ch.fol!=null){ folPct=ch.fol; folFlat=ch.fol<0?0:200; }
+      else { const showman=(ch.tr==='brash'||ch.tr==='showman'||ch.tr==='fanFav');
+        folPct=(ch.fan?(showman?0.11:0.075):0.015)+(showman?0.02:0); folFlat=ch.fan?900:250; }
+      gainFollowers(folPct, folFlat);
       if(ch.endo) story.endorsements=(story.endorsements||0)+1;
       if(ch.fan) story.fan=(story.fan||0)+1;
       const head=T(ch.head)||T(beat.title);
@@ -6695,8 +6773,10 @@ function showStoryline(sb){
       btns.querySelectorAll('button').forEach(x=>x.disabled=true);
       const chips=[];
       if(dFol>0) chips.push(`<span style="color:#35d6a0;font-weight:800">▲ +${fmtFollowers(dFol)} followers</span>`);
+      else if(dFol<0) chips.push(`<span style="color:#E14A33;font-weight:800">▼ ${fmtFollowers(-dFol)} followers</span>`);
       if(dConf!==0) chips.push(`<span style="color:${dConf>0?'#35d6a0':'#E14A33'};font-weight:800">Confidence ${dConf>0?'↑':'↓'} ${dConf>0?'+':''}${dConf} · ${confLabel(seasonConf())}</span>`);
       if(ch.endo) chips.push(`<span style="color:#ffd45e;font-weight:800">Endorsement signed</span>`);
+      if(personaNew) chips.push(`<span style="color:#ffd45e;font-weight:800">You’re becoming ${esc(personaNew)}</span>`);
       replyBox.innerHTML='';
       replyBox.appendChild($(`<div class="scout" style="border-color:#2f6f86;text-align:left;margin:2px 0 10px">
         <div class="small" style="color:#7fa8b8;letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:4px">The reaction</div>
