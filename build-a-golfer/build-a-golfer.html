@@ -1508,7 +1508,7 @@ function trophyCabinetHTML(m){
    bag (`achMetrics`): lifetime career stats (lt), daily stats, spotlight/rival wins, and SITUATIONAL flags
    captured at the moment they happen (playoff wins, wire-to-wire, comebacks, low rounds, etc., in bag_ach).
    Completing achievements awards POINTS → a named Tour Rep rank (the "keep playing" hook) and unlocks. */
-const ACH_CATS=['Getting Started','Winning','Season Awards','International','Majors','Clutch','Records & Streaks','Consistency','The Money','Career & Legacy','Daily Challenge','Daily Mastery','Rivalry & Spotlight','Online','Legend Circuit','The Build','The Draft'];
+const ACH_CATS=['Getting Started','Winning','Season Awards','International','Majors','Clutch','Records & Streaks','Consistency','The Money','Career & Legacy','Daily Challenge','Daily Mastery','Rivalry & Spotlight','The Moment','Reputation & Sponsors','Online','Legend Circuit','Progression','The Build','The Draft'];
 // tiered-achievement helper: one metric, several thresholds
 function aT(idb,cat,key,defs){ return defs.map(([g,nm,d,p])=>({id:idb+'_'+g,cat,name:nm,desc:d,goal:g,pts:p,get:m=>m[key]||0})); }
 const ACH=[].concat(
@@ -1769,6 +1769,50 @@ const ACH=[].concat(
   // ---- Legend Circuit ----
   aT('cirwgr','Legend Circuit','circuitWins',[[50,'Circuit Icon','Win 50 Legend Circuit events.',150],[100,'Circuit Immortal','Win 100 Legend Circuit events.',250]]),
   aT('cirmgr','Legend Circuit','circuitMajors',[[10,'Senior Major Legend','Win 10 Legend Circuit majors.',150],[20,'Senior Grand Master','Win 20 Legend Circuit majors.',250]]),
+  // ================= EXPANSION 4 (CS290): progression, reputation/sponsors, the moment, course mastery =================
+  // ---- Progression: Player Level (XP) ----
+  aT('lvl','Progression','playerLevel',[[5,'Rising Talent','Reach Player Level 5.',20],[10,'Seasoned','Reach Player Level 10.',35],[25,'Well Established','Reach Player Level 25.',60],[50,'Elite Level','Reach Player Level 50.',100],[100,'Level Legend','Reach Player Level 100.',175]]),
+  // ---- Progression: coins earned (lifetime). get() reads coinsEarnedRaw() DIRECTLY (not via metrics) to
+  // avoid recursion, since coinsEarnedRaw() itself calls achMetrics(). ----
+  [[5000,'Pocket Change','Earn 5,000 coins.',15],[25000,'Well Off','Earn 25,000 coins.',35],[100000,'Coin Collector','Earn 100,000 coins.',60],[500000,'Coin Baron','Earn 500,000 coins.',100],[1000000,'Coin Tycoon','Earn 1,000,000 coins.',175],[5000000,'Coin Mogul','Earn 5,000,000 coins.',250]].map(([g,nm,d,p])=>({id:'coin_'+g,cat:'Progression',name:nm,desc:d,goal:g,pts:p,get:()=>{try{return Math.round(coinsEarnedRaw());}catch(e){return 0;}}})),
+  // ---- Progression: Pro Shop cosmetics owned ----
+  [{id:'cos_1', cat:'Progression',name:'Dressed Up',   desc:'Own your first Pro Shop item.',   goal:1, pts:15, get:m=>m.cosmeticsOwned},
+   {id:'cos_10',cat:'Progression',name:'Full Wardrobe',desc:'Own 10 Pro Shop items.',          goal:10,pts:40, get:m=>m.cosmeticsOwned},
+   {id:'cos_25',cat:'Progression',name:'Fashionista',  desc:'Own 25 Pro Shop items.',          goal:25,pts:90, get:m=>m.cosmeticsOwned}],
+  // ---- Progression: mulli-spins ----
+  [{id:'mul_5', cat:'Progression',name:'Second Chances',desc:'Earn 5 mulli-spins.', goal:5, pts:25, get:m=>m.mulliEarned},
+   {id:'mul_25',cat:'Progression',name:'Mulligan Master',desc:'Earn 25 mulli-spins.',goal:25,pts:75, get:m=>m.mulliEarned}],
+  // ---- Progression: Daily Quests ----
+  [{id:'dq_1',  cat:'Progression',name:'Quest Starter',desc:'Complete all your Daily Quests in a day.', goal:1,  pts:15, get:m=>m.questDaysDone},
+   {id:'dq_10', cat:'Progression',name:'Quest Regular',desc:'Complete your Daily Quests on 10 days.',    goal:10, pts:40, get:m=>m.questDaysDone},
+   {id:'dq_50', cat:'Progression',name:'Quest Devotee',desc:'Complete your Daily Quests on 50 days.',    goal:50, pts:90, get:m=>m.questDaysDone},
+   {id:'dq_150',cat:'Progression',name:'Quest Master',  desc:'Complete your Daily Quests on 150 days.',   goal:150,pts:175,get:m=>m.questDaysDone}],
+  // ---- Progression: Weekly Challenges ----
+  [{id:'wc_5', cat:'Progression',name:'Weekend Warrior',  desc:'Complete 5 Weekly Challenges.',  goal:5,  pts:25, get:m=>m.weeklyDone},
+   {id:'wc_25',cat:'Progression',name:'Challenge Seeker', desc:'Complete 25 Weekly Challenges.', goal:25, pts:75, get:m=>m.weeklyDone},
+   {id:'wc_75',cat:'Progression',name:'Challenge Conqueror',desc:'Complete 75 Weekly Challenges.',goal:75,pts:150,get:m=>m.weeklyDone}],
+  // ---- Reputation & Sponsors ----
+  [{id:'rep_fan60', cat:'Reputation & Sponsors',name:'Fan Favourite',      desc:'Become a popular player (60+ Fans).',            goal:60,pts:30, get:m=>m.maxFans},
+   {id:'rep_fan78', cat:'Reputation & Sponsors',name:'Superstar Following', desc:'Reach superstar popularity (78+ Fans).',        goal:78,pts:75, get:m=>m.maxFans},
+   {id:'rep_res60', cat:'Reputation & Sponsors',name:'Respected',           desc:'Earn the tour’s respect (60+ Respect).',   goal:60,pts:30, get:m=>m.maxRespect},
+   {id:'rep_res78', cat:'Reputation & Sponsors',name:'Revered',             desc:'Become revered on tour (78+ Respect).',         goal:78,pts:75, get:m=>m.maxRespect},
+   {id:'rep_both',  cat:'Reputation & Sponsors',name:'The Complete Superstar',desc:'Be both loved by fans AND respected by peers.',goal:1,pts:100,get:m=>m.repComplete},
+   {id:'spn_amb1',  cat:'Reputation & Sponsors',name:'Face of the Brand',    desc:'Become a Brand Ambassador for a sponsor.',      goal:1,pts:40, get:m=>m.brandAmbassadors},
+   {id:'spn_amb5',  cat:'Reputation & Sponsors',name:'Marketing Machine',    desc:'Become a Brand Ambassador 5 times.',            goal:5,pts:120,get:m=>m.brandAmbassadors},
+   {id:'spn_both',  cat:'Reputation & Sponsors',name:'Double Deal',          desc:'Carry a hat AND a shirt sponsor at once.',      goal:1,pts:25, get:m=>m.bothSponsors}],
+  // ---- The Moment (playing the final round of a career event) ----
+  [{id:'mom_1', cat:'The Moment',name:'Take the Sticks',   desc:'Play the final round of a career event yourself.', goal:1, pts:20, get:m=>m.momentsPlayed},
+   {id:'mom_10',cat:'The Moment',name:'Big-Game Player',   desc:'Play 10 career Moments hole-by-hole.',             goal:10,pts:60, get:m=>m.momentsPlayed},
+   {id:'mom_25',cat:'The Moment',name:'Moment Master',     desc:'Play 25 career Moments hole-by-hole.',             goal:25,pts:120,get:m=>m.momentsPlayed},
+   {id:'mom_g1',cat:'The Moment',name:'Settled the Score', desc:'Win a Grudge Match against your rival.',           goal:1, pts:35, get:m=>m.momentGrudgeWins},
+   {id:'mom_g5',cat:'The Moment',name:'Rival Destroyer',   desc:'Win 5 Grudge Matches.',                            goal:5, pts:90, get:m=>m.momentGrudgeWins},
+   {id:'mom_g15',cat:'The Moment',name:'Grudge Legend',    desc:'Win 15 Grudge Matches.',                           goal:15,pts:175,get:m=>m.momentGrudgeWins}],
+  // ---- Daily Mastery: Course Passport ----
+  [{id:'cm_con5', cat:'Daily Mastery',name:'Course Conqueror',desc:'Beat the tour average at 5 different courses.',  goal:5, pts:35, get:m=>m.coursesConquered},
+   {id:'cm_con15',cat:'Daily Mastery',name:'Road Warrior',    desc:'Beat the tour average at 15 different courses.', goal:15,pts:75, get:m=>m.coursesConquered},
+   {id:'cm_con39',cat:'Daily Mastery',name:'Conquered the Tour',desc:'Beat the tour average at all 39 daily courses.',goal:39,pts:175,get:m=>m.coursesConquered},
+   {id:'cm_a5',   cat:'Daily Mastery',name:'Straight-A Golfer',desc:'Earn an A-grade round at 5 different courses.',  goal:5, pts:50, get:m=>m.coursesMasteredA},
+   {id:'cm_a15',  cat:'Daily Mastery',name:'Honour Roll',     desc:'Earn an A-grade round at 15 different courses.', goal:15,pts:120,get:m=>m.coursesMasteredA}],
   // ---- The Build ----
   [{id:'bld_99',cat:'The Build',name:'The Perfect Golfer',desc:'Build a 99 OVR golfer.',goal:99,pts:250,get:m=>m.maxOvr}]
 );
@@ -1815,7 +1859,21 @@ function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const 
     // 0-defaults for the new flag metrics (so progress bars read 0/goal before the first capture)
     h2hMatches:f.h2hMatches||0, h2hWins:f.h2hWins||0, h2h1v1Wins:f.h2h1v1Wins||0, h2hBbWins:f.h2hBbWins||0, h2hScWins:f.h2hScWins||0, h2hFfaWins:f.h2hFfaWins||0,
     circuitDone:f.circuitDone||0, legendTokensEarned:f.legendTokensEarned||0, legendTokensUsed:f.legendTokensUsed||0,
-    caddieEquipped:f.caddieEquipped||0, caddieLegend:f.caddieLegend||0, dailyAces:f.dailyAces||0 }); }
+    caddieEquipped:f.caddieEquipped||0, caddieLegend:f.caddieLegend||0, dailyAces:f.dailyAces||0,
+    // ---- CS290 EXPANSION 4: progression, reputation/sponsors, moments, course mastery ----
+    // live-computed (no capture needed):
+    playerLevel:(function(){try{return playerLevel();}catch(e){return 1;}})(),
+    // NOTE: coins are NOT read here — coinsEarnedRaw() calls achMetrics(), so referencing it here would recurse.
+    // The coin achievements read coinsEarnedRaw() directly in their get() (called after achMetrics resolves).
+    cosmeticsOwned:(function(){try{const c=LS.get(acctKey('bag_coins'),null); return (c&&c.owned)?Object.keys(c.owned).length:0;}catch(e){return 0;}})(),   // read the store directly (coinState() can call coinsEarnedRaw → recursion)
+    mulliEarned:(function(){try{return xpState().mulliEarned||0;}catch(e){return 0;}})(),
+    coursesConquered:(function(){try{const cm=courseMastery();return DAILY_KEYS.filter(k=>cm[k]&&cm[k].beat>0).length;}catch(e){return 0;}})(),
+    coursesMasteredA:(function(){try{const cm=courseMastery();return DAILY_KEYS.filter(k=>cm[k]&&(cm[k].grade==null?-1:cm[k].grade)>=3).length;}catch(e){return 0;}})(),
+    // flag-captured (0-defaults so progress bars read 0/goal before the first capture):
+    questDaysDone:f.questDaysDone||0, weeklyDone:f.weeklyDone||0,
+    momentsPlayed:f.momentsPlayed||0, momentGrudgeWins:f.momentGrudgeWins||0,
+    maxFans:f.maxFans||0, maxRespect:f.maxRespect||0, repComplete:f.repComplete||0,
+    brandAmbassadors:f.brandAmbassadors||0, bothSponsors:f.bothSponsors||0 }); }
 // per-round daily feats (eagles, bogey-free, low rounds, course records, courses seen) → achievement flags
 function captureDailyFeats(holes,total,courseKey,isRec){ const st=achState(), f=st.flags;
   let eag=0,alb=0,ace=0,bf=true; (holes||[]).forEach(h=>{ if(h.toPar<=-2)eag++; if(h.toPar<=-3)alb++; if(h.par===3&&(h.par+h.toPar)===1)ace++; if(h.toPar>0)bf=false; });
@@ -1870,7 +1928,14 @@ function recordAchEvent(ev){ if(!sbSignedIn()) return; const s=achState(); const
   LS.set(acctKey('bag_ach'),s); }
 // check every achievement against current metrics; persist + return the newly-completed ones.
 // Also detects a Tour Rep PROMOTION (crossing into a higher rank) and stashes it on S.freshRep.
-function evaluateAch(){ if(!sbSignedIn()) return []; const s=achState(); const m=achMetrics(); const fresh=[];
+function evaluateAch(){ if(!sbSignedIn()) return [];
+  // CS290: capture reputation (Fans/Respect) + two-slot sponsor state from the live career before reading metrics
+  try{ if(S.career && typeof careerStory==='function' && careerStory().rep){ const rp=careerStory().rep;
+      recordAchEvent({max:{maxFans:Math.round(rp.fans||0), maxRespect:Math.round(rp.respect||0)}});
+      if((rp.fans||0)>=75 && (rp.respect||0)>=70) recordAchEvent({set:{repComplete:1}}); }
+    if(S.career && S.career.sponsors){ const sps=S.career.sponsors; if(['hat','shirt'].filter(sl=>sps[sl]&&sps[sl].brand).length>=2) recordAchEvent({set:{bothSponsors:1}}); }
+  }catch(e){}
+  const s=achState(); const m=achMetrics(); const fresh=[];
   const beforeRank=repTierFor(s.pts||0, Object.keys(s.unlocked).length).tier.name;
   ACH.forEach(a=>{ if(!s.unlocked[a.id] && a.get(m)>=a.goal){ s.unlocked[a.id]=todayKey(); s.pts=(s.pts||0)+a.pts; fresh.push(a); } });
   if(fresh.length){
@@ -2228,7 +2293,7 @@ function dailyQuests(){ const t=todayKey(); let q=LS.get(acctKey('bag_dailyquest
 function dailyQuestsAllDone(q){ q=q||dailyQuests(); return DAILY_QUEST_DEFS.every(d=>q[d.k]); }
 function questDaily(type){ if(!sbSignedIn()) return; const q=dailyQuests(); q[type]=1;
   let leveled=null;
-  if(dailyQuestsAllDone(q) && !q.xpDone){ q.xpDone=1; LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); leveled=addXp(DAILY_QUEST_XP); S.questDailyJustDone=true; track('daily_quests_done'); }
+  if(dailyQuestsAllDone(q) && !q.xpDone){ q.xpDone=1; LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); leveled=addXp(DAILY_QUEST_XP); S.questDailyJustDone=true; try{ recordAchEvent({inc:{questDaysDone:1}}); evaluateAch(); }catch(e){} track('daily_quests_done'); }
   else { LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); }
   return leveled; }
 // ---- Weekly challenges (rotate weekly, cross-mode, harder; each done → XP + a mulli-spin) ----
@@ -2259,6 +2324,7 @@ function questWeekly(metric,n){ if(!sbSignedIn()||!(n>0)) return; const w=weekCh
   const newly=[]; weeklySet().forEach(c=>{ if(!w.done[c.id] && (w.prog[c.metric]||0)>=c.target){ w.done[c.id]=1; newly.push(c); } });
   LS.set(acctKey('bag_weeklychal'),w); if(typeof cloudPush==='function')cloudPush();
   newly.forEach(c=>{ addXp(WEEKLY_CHAL_XP); addMulliSpin(1); track('weekly_chal_done',{id:c.id}); });
+  if(newly.length){ try{ recordAchEvent({inc:{weeklyDone:newly.length}}); evaluateAch(); }catch(e){} }
   if(newly.length) S.questWeeklyJustDone=(S.questWeeklyJustDone||[]).concat(newly);
   return newly; }
 // mulli-spin: a banked extra spin, used when you run out of re-spins (draft + off-season)
@@ -2280,6 +2346,26 @@ function challengesNode(){
   const wDone=weekChalDoneCount(w), wTot=set.length;
   el.appendChild($(`<div class="wg-panel${wDone>=wTot?' done':''}"><div class="wg-hd"><span>Weekly Challenges</span><span class="small muted" style="letter-spacing:0;text-transform:none">${wDone}/${wTot} · each → +${WEEKLY_CHAL_XP} XP &amp; 🌀 mulli-spin</span></div>${wr}</div>`));
   return el;
+}
+// CS290: a once-a-day "here's your challenges board" pop-up for signed-in players when they enter the game.
+function maybeChallengesPopup(){
+  if(!sbSignedIn()) return;
+  const dkey=acctKey('bag_chalpop_day'); if(LS.get(dkey,0)===todayKey()) return; LS.set(dkey, todayKey());
+  if(document.querySelector('.chalpop')) return;
+  const cn=challengesNode(); if(!cn) return;
+  const q=dailyQuests(), w=weekChal(), set=weeklySet();
+  const dqLeft=DAILY_QUEST_DEFS.filter(d=>!q[d.k]).length, wLeft=set.filter(c=>!w.done[c.id]).length;
+  const ov=$(`<div class="chalpop" style="position:fixed;inset:0;z-index:62;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;background:radial-gradient(120% 90% at 50% 12%, rgba(10,30,20,.82), rgba(2,7,5,.96) 70%)">
+    <div style="max-width:440px;width:100%;background:linear-gradient(180deg,#0d2036,#0a1626);border:1px solid rgba(235,166,31,.4);border-radius:18px;padding:18px 17px;box-shadow:0 20px 60px -18px rgba(0,0,0,.7)">
+      <div style="text-align:center;font:800 12px/1 var(--body);letter-spacing:.24em;text-transform:uppercase;color:var(--gold)">🎯 Your Challenges</div>
+      <div class="small muted" style="text-align:center;margin:5px 0 13px">${dqLeft||wLeft?`${dqLeft} daily quest${dqLeft===1?'':'s'} &amp; ${wLeft} weekly left today — earn XP, coins &amp; mulli-spins`:`All caught up — nice work! Check back tomorrow`}</div>
+      <div class="cn-holder"></div>
+      <button class="btn goldfill" style="margin-top:14px">Let's play ▸</button>
+    </div></div>`);
+  ov.querySelector('.cn-holder').appendChild(cn);
+  ov.querySelector('button').onclick=()=>ov.remove();
+  ov.onclick=(e)=>{ if(e.target===ov) ov.remove(); };
+  document.body.appendChild(ov);
 }
 /* ---------- resume an in-progress free-play golfer across a refresh ---------- */
 function saveResume(){ if(S.daily||!(S.screen==='draft'||S.screen==='build'))return;
@@ -5366,11 +5452,15 @@ function scrTitle(){
   const mkTile=(icon,label,sub,fn,hot)=>{ const b=$(`<button type="button" class="navtile${hot?' hot':''}" aria-label="${esc(label)}">
       <span class="ni" aria-hidden="true">${icon}</span><span class="nl">${esc(label)}</span>${sub?`<span class="ns">${sub}</span>`:''}</button>`);
     b.onclick=fn; sec.appendChild(b); };
+  // CS290: Challenges is now a prominent nav tile (was buried in the ≡ menu) — daily quests + weekly
+  // challenges + Player Level, all earning XP / coins / mulli-spins.
+  mkTile('🎯','Challenges', signedIn?('Level '+playerLevel()+' · quests'):'Sign in to earn', ()=>{S.overlay='challenges';render();}, true);
   mkTile('🏆','Leaderboard','Rankings', ()=>{S.overlay='leaderboard';render();}, true);
   mkTile('🏅','Trophy Room', signedIn?'Trophies & rank':'Sign in', ()=>{S.overlay='record';render();}, true);
   if(SHOP_ENABLED) mkTile(ic('cart'),'Pro Shop', signedIn?(ic('coin')+' '+coinFmt(coinBalance())):'Gear & boosts', ()=>{S.overlay='shop';render();}, true);
   // (How to Play moved up under the hero, CS287)
   w.appendChild(sec);
+  if(signedIn) setTimeout(()=>{ try{ maybeChallengesPopup(); }catch(e){} }, 260);   // CS290: once-a-day challenges pop-up on entry
   const credit=$(`<div class="small muted center" style="margin-top:16px;line-height:1.6;opacity:.7">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
   w.appendChild(credit);
   add(w);
@@ -7576,6 +7666,7 @@ function finishMomentRound(){
   // once here regardless of whether a playoff follows. resultMomentum (from the final position) applies
   // separately in finalizeEvent, so the two don't double-count.
   if(!S.circuitMode && S.career && S.season){
+    try{ recordAchEvent({inc:{momentsPlayed:1}}); }catch(e){}   // CS290: playing a career Moment
     const st=applyMomentStakes(holes, ce.evt);
     // CS278 — GRUDGE MATCH result: if your nemesis was in the mix, grade the personal head-to-head this event
     // (did you finish ahead of them?) and bank grudge stakes ON TOP of the decision stakes + season series.
@@ -7586,7 +7677,7 @@ function finishMomentRound(){
         const tie=Math.round(meP.total)===Math.round(rvP.total), won=!tie && meP.total<rvP.total;
         gr={name:m.rivalName, won, tie, me:Math.round(meP.total), rv:Math.round(rvP.total), evt:m.evtName};
         const rvObj=getRival();
-        if(rvObj){ if(won){ rvObj.grudgeWins=(rvObj.grudgeWins||0)+1; } else if(!tie){ rvObj.grudgeLosses=(rvObj.grudgeLosses||0)+1; } }
+        if(rvObj){ if(won){ rvObj.grudgeWins=(rvObj.grudgeWins||0)+1; try{ recordAchEvent({inc:{momentGrudgeWins:1}}); }catch(e){} } else if(!tie){ rvObj.grudgeLosses=(rvObj.grudgeLosses||0)+1; } }
         adjConf(won?3.5:tie?0:-2.5);
         gr.fol = won ? gainFollowers(0.035, 1600) : tie ? gainFollowers(0.006, 200) : gainFollowers(0.004, 120);
         if(won){ const s=careerStory(); s.traits=s.traits||{}; s.traits.gritty=(s.traits.gritty||0)+1; }
@@ -9291,6 +9382,7 @@ function scrSummary(){
         if(sp.rel>=SPONSOR_REL_MAX && !sp.ambassador){ sp.ambassador=true;
           const fol=gainFollowers(0.07, 4000);
           S.season._ambNew=S.season._ambNew||{}; S.season._ambNew[slot]={brand:c.sponsor, fol};   // persist so the summary re-renders keep the celebration
+          try{ recordAchEvent({inc:{brandAmbassadors:1}}); }catch(e){}   // CS290
           careerStory().feed.unshift({year:S.year||1, evt:'Sponsor', text:`Named a brand ambassador for ${c.sponsor}`}); }
         let dropped=false;
         if((sp.strikes||0)>=dropAt){ dropped=true; anyDropped=true;

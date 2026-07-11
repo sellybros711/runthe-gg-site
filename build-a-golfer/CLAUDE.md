@@ -7103,6 +7103,40 @@ allows Google Fonts, or self-host Anton.*
   the user's gold, with no extra icon clutter. Verified in Playwright (no swords SVG in the board, rival row
   keeps its red highlight, name renders clean) + a screenshot; zero page errors.
 
+- **CS290 — Challenges made visible (nav tile + sign-in pop-up) + 42 new achievements across every mode/
+  feature; Tour Rep tiers auto-rescaled (owner: "I don't see where the daily/weekly quests are... make
+  them more apparent + a sign-in pop-up. Create more achievements covering everything, move the tier
+  goalposts, make sure each user is in their proper tier").**
+  • **Quests visibility.** The daily-quests + weekly-challenges + Player-Level panel (`challengesNode`, CS261)
+    was buried in the ≡ menu. Now: (1) a prominent **🎯 Challenges** tile in the title-screen nav row (next to
+    Leaderboard / Trophy Room / Pro Shop), showing your level; (2) a once-a-day **sign-in pop-up**
+    (`maybeChallengesPopup`, gated per-account-day via `bag_chalpop_day`, fires ~260ms after a signed-in title
+    render) that greets you with your Level bar + Daily Quests + Weekly Challenges and how many are left today.
+  • **+42 achievements → 331 total (was 289), 20 categories (added "Progression", "Reputation & Sponsors",
+    "The Moment").** Covers the previously-untracked systems: **Progression** — Player Level (5/10/25/50/100),
+    coins earned (5k→5M), Pro Shop cosmetics owned, mulli-spins, Daily-Quest days (1/10/50/150), Weekly
+    Challenges (5/25/75); **Reputation & Sponsors** — Fans 60/78, Respect 60/78, The Complete Superstar,
+    Brand Ambassador ×1/×5, Double Deal (both sponsor slots); **The Moment** — play 1/10/25 career Moments,
+    win 1/5/15 Grudge Matches; **Daily Mastery / Course Passport** — conquer 5/15/39 courses, A-grade 5/15
+    courses. New live-computed metrics (playerLevel, cosmeticsOwned, mulliEarned, coursesConquered/MasteredA)
+    + flag captures (`questDaysDone`/`weeklyDone` in questDaily/questWeekly, `momentsPlayed`/`momentGrudgeWins`
+    in finishMomentRound, `maxFans`/`maxRespect`/`repComplete`/`bothSponsors` in evaluateAch from the live
+    career, `brandAmbassadors` at the sponsor-ambassador trigger). The coin achievements read `coinsEarnedRaw()`
+    directly in their `get()` (NOT via metrics) because `coinsEarnedRaw()` calls `achMetrics()` — putting coins
+    in achMetrics caused infinite recursion (found + fixed during testing; `cosmeticsOwned` reads the raw
+    `bag_coins` store for the same reason, since `coinState()` can call `coinsEarnedRaw()` on an epoch reset).
+  • **Tier goalposts + user recompute.** `REP_TIERS` thresholds are % of `ACH_TOTAL_PTS`, so adding
+    achievements automatically raises every goalpost; `evaluateAch()` recomputes each user's rank live from
+    their current points (and retroactively credits the new achievements they already qualify for on the next
+    Trophy Room open / gameplay), so everyone lands in their correct new tier with no migration. No false
+    "demotion" fanfare (the promotion card only fires on a rank INCREASE).
+  Verified in Playwright: catalog integrity (331 ach / 33,890 pts / 20 cats / 0 dup ids / all get()/goal/pts
+  valid); no recursion (coinsEarnedRaw + achMetrics run clean); all new captures unlock their achievements
+  (11/11 fresh); a strong existing account (35% of total pts) resolves to a sensible "Star" tier (not GOAT,
+  not Amateur); the Challenges nav tile + sign-in pop-up render (screenshot) and the Trophy Room shows the 3
+  new categories; a full practice daily round + title/trophy render with zero page errors. Tunable: the new
+  achievement goals/points, the popup cadence.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
