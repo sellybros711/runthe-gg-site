@@ -7262,6 +7262,22 @@ allows Google Fonts, or self-host Anton.*
   `MOMENT_MAJOR` (gap/pos), `MOMENT_PER_SEASON`, the grudge contention band + per-season cap, the 40%
   guarantee threshold. Deployed to /golf.
 
+- **CS296 — Team Cup controls pinned to the bottom of the screen on mobile (owner: "pin the control buttons
+  to the bottom of the screen on mobile so it's not constantly scrolling the entire screen").** On the
+  Ryder/Presidents Cup (Atlantic/Nations Cup) screen (`scrTeamCup`), the Next Match / Auto Sim / Skip to
+  Result controls sat in-flow at the very bottom, so with up to 28 match rows revealing you had to scroll
+  the whole list to reach them. Wrapped the controls in a `.cupctrl` container that on mobile
+  (`@media max-width:700px`) is `position:sticky; bottom:0` with an opaque page-matching background + top
+  border/shadow + safe-area bottom padding — mirroring the existing sticky-TOP scoreboard (`.cupsticky`,
+  CS67) — so the controls stay pinned at the bottom of the viewport while the session cards scroll behind
+  them. Desktop keeps them in-flow (the media query only kicks in on phones). Pure layout — the buttons and
+  their handlers are unchanged (just a wrapper-class swap). Verified in Playwright at a phone viewport: the
+  `.cupctrl` computes `position:sticky; bottom:0` and stays pinned to the viewport bottom even scrolled to
+  the top of a long list, while at desktop width it's in-flow (scrolls off with the page); zero page errors.
+  Screenshot confirms the controls pinned at the bottom with the cards scrolling above. Deployed to /golf.
+  (The main season screen's controls already sit right under the live tournament per CS241, so they weren't
+  part of this — only the long-scroll team-cup screen the owner flagged.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
