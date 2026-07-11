@@ -6638,6 +6638,23 @@ allows Google Fonts, or self-host Anton.*
   (first win, major, ranking milestones), the design-token/card-tier foundation, the Build-a-Golfer live stage,
   and broadcast-recap results screens with animated ResultDeltas.
 
+- **CS265 — career milestone/narrative timeline (second slice of the visual audit, pairs with CS264).**
+  Added a "Career Timeline" that reads like a franchise story, derived entirely from the career's own history
+  (`S.career.winsList` + `.seasons`) — no new data/tracking. `careerMilestones(c)` builds an ordered set:
+  Turned Pro (Yr 1) → First Tour Win (event named) → First Major (which major) → 10th/25th/50th/75th Career
+  Win → 3/5/10 Career Majors → **Career Grand Slam** (the year the 4th distinct major is won) → Topped the
+  Money List (first season money-list #1) → Career-Best Season (max-net year, "$Xm net · N wins"), sorted by
+  year. `careerTimelineNode(c)` renders it as a vertical timeline: a gold-ringed dot with a themed icon
+  (⛳/🏆/★/💰/👑 → the app's SVG icons via emojifyIcons), a connecting rail, a "Yr N" badge, and title + sub.
+  Wired into all three career views: the season-summary **Career tab** (after Career Stats), and both the
+  **career-end** and **Legend-Circuit-end** ceremonies (using each ceremony's own `c`). Renders only with ≥2
+  milestones (so a brand-new career doesn't show a lone "Turned Pro"). New `.ctimeline` CSS. Verified in
+  Playwright: a rich seeded career produces the 9-milestone timeline in correct year order (Turned Pro →
+  First Win → First Major → 10th Win → Money List → Career-Best → 3 Majors → Grand Slam → 5 Majors), the node
+  renders with themed icons + rail, zero page errors; screenshot confirms the franchise-story look. Deployed
+  to /golf. Remaining audit follow-ups: Build-a-Golfer live stage, broadcast-recap results (animated
+  ResultDeltas), design-token/card-tier foundation.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
