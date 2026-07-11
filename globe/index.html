@@ -1979,27 +1979,34 @@
   var HR_TRAFFIC=['🚗','🚙','🚌','🚐','🏍️'];
   function mgTargetTap(t){
     var d=ramp();
-    S.hr={ picks:0, need:3, veh:null, x:0, spd:0, type:null, zx0:0.38, zx1:0.64, d:d, noTaxi:0, last:performance.now() };
+    S.hr={ picks:0, need:3, veh:null, x:0, spd:0, type:null, zx0:0.34, zx1:0.66, d:d, noTaxi:0, hot:false, last:performance.now() };
     $('mg').innerHTML='<div class="seqstatus" id="hrst"></div>'
       + '<div class="prompt" style="text-align:center">'+esc(t.q)+'</div>'
-      + '<div id="hrfield" style="position:relative;height:200px;border-radius:14px;overflow:hidden;border:1px solid var(--cardb);'
+      + '<div id="hrfield" style="position:relative;height:200px;border-radius:14px;overflow:hidden;border:1px solid var(--cardb);cursor:pointer;touch-action:manipulation;'
         + 'background:linear-gradient(180deg,#243056 0%,#3a4e86 42%,#6076a6 58%,#2a2e3c 58%,#20232e 100%)">'
-        + '<svg viewBox="0 0 360 200" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">'
+        + '<svg viewBox="0 0 360 200" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none">'
           + '<polygon points="0,116 40,84 80,116 130,72 180,112 240,78 300,116 360,88 360,120 0,120" fill="rgba(18,26,50,.6)"/>'
         + '</svg>'
-        + '<div style="position:absolute;left:0;right:0;bottom:0;height:82px;background:#22242e"></div>'
-        + '<div style="position:absolute;left:0;right:0;bottom:40px;height:3px;background:repeating-linear-gradient(90deg,rgba(255,235,150,.85) 0 22px,transparent 22px 44px)"></div>'
-        + '<div id="hrzone" style="position:absolute;bottom:0;left:38%;width:26%;height:82px;background:rgba(63,206,134,.16);border-left:2px dashed var(--ok);border-right:2px dashed var(--ok)"></div>'
-        + '<div style="position:absolute;bottom:60px;left:51%;transform:translateX(-50%);font-size:24px">🧍</div>'
-        + '<div style="position:absolute;bottom:5px;left:51%;transform:translateX(-50%);font-size:9px;font-weight:800;color:var(--ok);letter-spacing:.08em">PICK-UP</div>'
+        + '<div style="position:absolute;left:0;right:0;bottom:0;height:82px;background:#22242e;pointer-events:none"></div>'
+        + '<div style="position:absolute;left:0;right:0;bottom:40px;height:3px;background:repeating-linear-gradient(90deg,rgba(255,235,150,.85) 0 22px,transparent 22px 44px);pointer-events:none"></div>'
+        + '<div id="hrzone" style="position:absolute;bottom:0;left:34%;width:32%;height:82px;background:rgba(63,206,134,.14);border-left:2px dashed var(--ok);border-right:2px dashed var(--ok);transition:background .1s;pointer-events:none"></div>'
+        + '<div style="position:absolute;bottom:60px;left:50%;transform:translateX(-50%);font-size:24px;pointer-events:none">🧍</div>'
+        + '<div id="hrcue" style="position:absolute;bottom:96px;left:50%;transform:translateX(-50%);font-size:13px;font-weight:900;color:var(--ok);opacity:0;transition:opacity .1s;pointer-events:none">🖐️ NOW!</div>'
       + '</div>'
-      + '<div class="ohint">Tap the <b>🚕 taxi</b> when it reaches the pick-up zone — ignore the traffic.</div>';
+      + '<div class="ohint">Tap <b>anywhere</b> the moment your <b>🚕 taxi</b> reaches the curb — not the traffic.</div>';
     hrStatus(); hrSpawn();
+    fastTap($('hrfield'), hrTap);
+    S.hr.last=performance.now();
     (function loop(){
       var f=$('hrfield'); if(S.play.done || !f) return;
       var now=performance.now(), dt=Math.min(0.05,(now-S.hr.last)/1000); S.hr.last=now;
       if(S.hr.veh){ S.hr.x+=S.hr.spd*dt; S.hr.veh.style.left=(S.hr.x*100)+'%';
-        if(S.hr.x>1.14){ hrDespawn(); hrSpawn(); } }
+        if(S.hr.x>1.16){ hrDespawn(); hrSpawn(); } }
+      // highlight the curb + show NOW when YOUR taxi is in the zone
+      var hot = !!(S.hr.veh && S.hr.type==='taxi' && S.hr.x>=S.hr.zx0 && S.hr.x<=S.hr.zx1);
+      if(hot!==S.hr.hot){ S.hr.hot=hot;
+        var z=$('hrzone'); if(z) z.style.background=hot?'rgba(63,206,134,.42)':'rgba(63,206,134,.14)';
+        var c=$('hrcue'); if(c) c.style.opacity=hot?'1':'0'; }
       requestAnimationFrame(loop);
     })();
   }
@@ -2008,23 +2015,23 @@
     var f=$('hrfield'); if(!f || S.play.done) return;
     var isTaxi = (S.hr.noTaxi>=2) || Math.random()<0.6;   // never more than 2 traffic in a row
     S.hr.noTaxi = isTaxi?0:S.hr.noTaxi+1;
-    S.hr.type=isTaxi?'taxi':'traffic'; S.hr.x=-0.14; S.hr.spd=0.42+0.18*S.hr.d+rnd(-0.03,0.05);
+    S.hr.type=isTaxi?'taxi':'traffic'; S.hr.x=-0.16; S.hr.spd=0.30+0.14*S.hr.d+rnd(-0.02,0.04);
     var el=document.createElement('div');
     el.id='hrveh'; el.setAttribute('data-taxi', isTaxi?'1':'0');
-    el.style.cssText='position:absolute;bottom:24px;left:-14%;font-size:34px;transform:translateX(-50%) scaleX(-1);cursor:pointer;filter:drop-shadow(0 4px 4px rgba(0,0,0,.4))';
+    el.style.cssText='position:absolute;bottom:24px;left:-16%;font-size:38px;transform:translateX(-50%) scaleX(-1);pointer-events:none;filter:drop-shadow(0 4px 4px rgba(0,0,0,.4))';
     el.textContent=isTaxi?'🚕':HR_TRAFFIC[Math.floor(Math.random()*HR_TRAFFIC.length)];
     f.appendChild(el); S.hr.veh=el;
-    fastTap(el, hrTap);
   }
-  function hrDespawn(){ if(S.hr.veh&&S.hr.veh.parentNode) S.hr.veh.parentNode.removeChild(S.hr.veh); S.hr.veh=null; }
+  function hrDespawn(){ if(S.hr.veh&&S.hr.veh.parentNode) S.hr.veh.parentNode.removeChild(S.hr.veh); S.hr.veh=null; S.hr.hot=false; }
   function hrTap(){
-    if(S.play.done || !S.hr.veh) return;
-    var inZone = S.hr.x>=S.hr.zx0 && S.hr.x<=S.hr.zx1;
-    if(S.hr.type==='taxi' && inZone){
+    if(S.play.done) return;
+    var inZone = S.hr.veh && S.hr.x>=S.hr.zx0 && S.hr.x<=S.hr.zx1;
+    if(S.hr.veh && S.hr.type==='taxi' && inZone){
       sfx('correct'); vibe(14); S.hr.picks++; hrStatus();
-      var el=S.hr.veh; if(el){ el.style.transition='transform .25s'; el.style.transform='translateX(-50%) scaleX(-1) translateY(-16px)'; }
+      var el=S.hr.veh; if(el){ el.style.transition='transform .25s,opacity .25s'; el.style.transform='translateX(-50%) scaleX(-1) translateY(-18px)'; el.style.opacity='0'; }
       hrDespawn();
-      if(S.hr.picks>=S.hr.need){ S.play.done=true; setTimeout(finishTask,260); return; }
+      var c=$('hrcue'); if(c) c.style.opacity='0';
+      if(S.hr.picks>=S.hr.need){ S.play.done=true; setTimeout(finishTask,300); return; }
       hrSpawn();
     } else {
       S.play.misses++; showMiss();
