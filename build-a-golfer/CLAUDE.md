@@ -6854,6 +6854,38 @@ allows Google Fonts, or self-host Anton.*
   grudge detection band (top-8 / ±4) in `grudgeRival`, the grudge confidence/follower weights in
   `finishMomentRound`.
 
+- **CS279 — press beats can backfire + rivals woven into the press room (owner: "press beats have potential
+  NEGATIVE impacts too — right now it's an automatic positive and it's really easy" + "incorporate rivals
+  into press beats").** Two things: press-conference choices are now real gambles, and the rivalry shows up
+  in the press room.
+  • **Risk model** (`showStoryline` apply block, restructured): a choice can carry a `risk` (probability it
+    backfires). Bold answers now ROLL — on a backfire the choice costs Confidence (scaled to how ambitious it
+    was) AND ~5% of your following, grants NO reputation/trait/persona gain, and shows a red "It backfired"
+    reaction with a specific `rBad` line + `headBad` feed entry. On success it's the intended upside as before.
+    SAFE choices (no `risk`) always resolve to their upside/trade-off — so the measured answer is the reliable
+    one and the swaggering answer is the high-risk/high-reward one. Each risky option is flagged with a red
+    "⚡ Risky" pill so the gamble is informed, not a gotcha. 13 of the boldest choices across the catalog got
+    risk (0.28–0.45): fire-back-at-rival, chase-a-dynasty, own-World-No.1, "first of many", the rookie boast,
+    double-down-online, clap-back-at-a-critic, embrace-the-hype, ride-the-heater, gamble-on-new-gear,
+    set-the-bar-high, and the two new rival beats. (Guaranteed trade-off choices from CS275 — e.g. "vent your
+    frustration" — keep their certain downside; `risk` is the separate probabilistic layer.)
+  • **Rival press beats**: `storyCtx` now exposes `rivalAhead` (nemesis above you on the money list) and your
+    lifetime grudge record (`grudgeW`/`grudgeL`, from CS278). Two new storylines — **rival_ahead** ("{Rival}
+    is ahead of you", with a high-risk public *guarantee* to finish ahead) and **rival_grudge** (the press
+    asks about your {W}–{L} grudge-match rivalry, with a risky "I own that matchup" claim) — plus the existing
+    "rival fired a shot" beat's fire-back option is now risky (it can make YOU look rattled and hand them
+    bulletin-board material).
+  • **Bug fix surfaced by this change**: the season-follower chip (`followersChipHTML`) showed "▲ +-10000"
+    when the season delta went negative (now possible when a backfire loses followers below the season's
+    starting count) — it now shows a red "▼ 10K this season" for negative deltas.
+  Verified in Playwright: 27 storylines (0 dups, 13 risky choices, 3 rival beats); `storyCtx` exposes the
+  rival signals; a forced backfire drops confidence + followers, grants no trait, and renders the red "It
+  backfired" card with the deltas; the same choice on success grants the upside + trait; a safe choice never
+  backfires even at random 0; the rival_ahead beat applies when the rival leads and renders the ⚡ Risky pill;
+  and the follower chip shows ▼ for negative deltas with no "+-". Screenshot confirms the press conference
+  with the risky pill and the red backfire card. Deployed to /golf. Tunable: per-choice `risk` values + the
+  backfire magnitude (confidence/`folBad`) in `showStoryline`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

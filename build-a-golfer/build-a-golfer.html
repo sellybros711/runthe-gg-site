@@ -6599,9 +6599,12 @@ function rivalLiveHTML(){
     <span class="small" style="color:${col};font-weight:800;white-space:nowrap">${met?`${meAhead}–${rvAhead} head-to-head`:'no meetings yet'}</span></div>`;
 }
 function followersChipHTML(delta){ const s=careerStory();
+  // CS279: the season delta can now go NEGATIVE (a press-conference backfire loses followers), so show ▼ in red
+  const sub = (delta!=null && delta>0) ? `<div class="small" style="color:#35d6a0;font-weight:800;letter-spacing:0">▲ +${fmtFollowers(delta)} this season</div>`
+            : (delta!=null && delta<0) ? `<div class="small" style="color:#E14A33;font-weight:800;letter-spacing:0">▼ ${fmtFollowers(-delta)} this season</div>`
+            : '<div class="small" style="color:#9fb3a8;letter-spacing:0">career following</div>';
   return `<div class="statpill"><div class="lab">Followers</div>
-    <div class="v gold" style="font-size:19px;line-height:1">${fmtFollowers(s.followers)}</div>
-    ${delta!=null?`<div class="small" style="color:#35d6a0;font-weight:800;letter-spacing:0">▲ +${fmtFollowers(delta)} this season</div>`:'<div class="small" style="color:#9fb3a8;letter-spacing:0">career following</div>'}</div>`; }
+    <div class="v gold" style="font-size:19px;line-height:1">${fmtFollowers(s.followers)}</div>${sub}</div>`; }
 const STORY_PERSONA={confident:'The Confident One', brash:'The Showman', showman:'The Showman', clutch:'Mr. Clutch',
   humble:'The Humble Champion', fanFav:'Fan Favorite', loyal:'The Loyal Pro', maverick:'The Maverick', gritty:'The Grinder'};
 function storyPersona(){ const t=careerStory().traits||{}; const e=Object.entries(t).sort((a,b)=>b[1]-a[1]); return e.length&&e[0][1]>=2?(STORY_PERSONA[e[0][0]]||null):null; }
@@ -6614,6 +6617,10 @@ function storyCtx(ce){
   const tot=(S.season&&S.season.totals)||{}, meN=S.season.me.name;
   const byMoney=Object.entries(tot).map(([n,v])=>({n,m:v.money})).sort((a,b)=>b.m-a.m);
   const rank=byMoney.findIndex(x=>x.n===meN)+1;
+  // CS279 rival press signals: is your nemesis ahead of you this season, and your lifetime grudge record
+  let rivalAhead=false, grudgeW=0, grudgeL=0;
+  if(rival){ const rvRank=byMoney.findIndex(x=>x.n===rival.name)+1; rivalAhead=rvRank>0 && rank>0 && rvRank<rank;
+    grudgeW=rival.grudgeWins||0; grudgeL=rival.grudgeLosses||0; }
   const recent=res.slice(-3).map(r=>{ const m=r.order.find(o=>o.p&&o.p.you); return m?(m.pos==='CUT'?99:(typeof m.pos==='number'?m.pos:99)):99; });
   const cold=recent.length>=2 && recent.slice(-2).every(p=>p>25);
   const hot=recent.length>=2 && recent.slice(-2).every(p=>p<=5);
@@ -6631,6 +6638,7 @@ function storyCtx(ce){
     if(pool.length) sBrand=pool[(S.evtIndex||0)%pool.length]; }catch(e){}
   return {won, top10, missed, runnerUp, majorWin, lastMajor, lastName, rival, rivalName:(rival&&rival.name)||'', upName:ce.evt.name, major:!!ce.evt.major, big:!!ce.evt.big,
     sponsorBrand:sBrand, firstWin, worldNo1, age, rookie, veteran, twilight, hot, careerWins,
+    rivalAhead, grudgeW, grudgeL,
     yr:S.year||1, rank, N:byMoney.length||1, cold, seasons:seasonsPlayed};
 }
 // each beat: when(ctx)→bool, tag, title(ctx), body(ctx), ch:[{t,s,tr,conf,endo,fan,r,head(ctx)}]
@@ -6652,16 +6660,35 @@ const STORYLINES=[
       {t:'Stay independent',s:'No strings',tr:'loyal',fan:1,r:'You keep it simple. The purists respect it.',head:'Turned down the money to stay independent'}]},
  {id:'rival', tag:'RIVALRY', when:c=>!!c.rivalName, title:c=>'Your rival fired a shot',
   body:c=>`${esc(c.rivalName)} told the press they’ve got your number and this year isn’t close. The quote is everywhere.`,
-  ch:[{t:'Fire right back',s:'Bring it on',tr:'brash',conf:0.4,fan:1,r:'Rivalry ignited. This just got personal.',head:c=>`Traded shots with ${c.rivalName}`},
+  ch:[{t:'Fire right back',s:'Bring it on',tr:'brash',conf:0.4,fan:1,risk:0.4,
+        r:'Rivalry ignited. This just got personal — and you look ready for it.',head:c=>`Traded shots with ${c.rivalName}`,
+        rBad:'The back-and-forth makes YOU look rattled. Their camp has the bulletin-board material now.',headBad:c=>`Took the bait from ${c.rivalName}`},
       {t:'Let the clubs talk',s:'Ice cold',tr:'clutch',conf:0.5,r:'No words. You’ll answer on Sunday.',head:c=>`Let the clubs answer ${c.rivalName}`},
       {t:'Take the high road',s:'Above it',tr:'humble',fan:1,conf:0.2,r:'You keep it classy. The rivalry only grows.',head:c=>`Took the high road with ${c.rivalName}`}]},
+ // CS279 — rival is BEATING you this season
+ {id:'rival_ahead', tag:'RIVALRY', pri:2, when:c=>!!c.rivalName && c.rivalAhead && c.seasons>=1, title:c=>`${esc(c.rivalName)} is ahead of you`,
+  body:c=>`Your nemesis ${esc(c.rivalName)} is sitting above you on the money list, and the press keeps reminding you. How do you handle it?`,
+  ch:[{t:'“I’ll run them down”',s:'Quiet resolve',tr:'gritty',conf:0.4,r:'No panic, just purpose. You mean it.',head:c=>`Vowed to run ${c.rivalName} down`},
+      {t:'Guarantee you’ll finish ahead',s:'Put it on record',tr:'confident',conf:0.5,fan:1,risk:0.45,
+        r:'A bold public guarantee — and the belief is real. The tour takes note.',head:c=>`Guaranteed he’d finish ahead of ${c.rivalName}`,
+        rBad:'A guarantee you can’t control. If they keep winning, this clip haunts you all year.',headBad:c=>`Made a guarantee about ${c.rivalName} he may regret`},
+      {t:'Focus on your own game',s:'Blinders on',tr:'clutch',conf:0.3,r:'You refuse to make it about them. Smart.',head:'Kept the focus on his own game'}]},
+ // CS279 — you've built a grudge-match record vs your nemesis
+ {id:'rival_grudge', tag:'THE RIVALRY', pri:2, when:c=>!!c.rivalName && (c.grudgeW+c.grudgeL)>=2, title:c=>`The ${esc(c.rivalName)} rivalry`,
+  body:c=>`You and ${esc(c.rivalName)} have gone head-to-head down the stretch ${c.grudgeW+c.grudgeL} times now (you’re ${c.grudgeW}–${c.grudgeL}). Everyone wants your take on the rivalry.`,
+  ch:[{t:c=>c.grudgeW>c.grudgeL?'“I own that matchup”':'“I’ll get the better of them”',s:'Stake your claim',tr:'brash',conf:0.4,fan:1,risk:0.4,
+        r:'Pure theatre. The fans eat up the beef and you look every bit the star.',head:c=>`Called out ${c.rivalName} over their rivalry`,
+        rBad:'Bold talk that ages badly the moment they beat you again. The room smells insecurity.',headBad:c=>`Overplayed the ${c.rivalName} rivalry`},
+      {t:'Credit the rivalry for your best golf',s:'Respect it',tr:'humble',conf:0.3,fol:0.06,r:'Gracious and true. A rivalry for the ages needs two greats.',head:c=>`Credited the ${c.rivalName} rivalry`},
+      {t:'Downplay it entirely',s:'Just another player',tr:'clutch',conf:0.3,r:'Ice cold. You give them nothing.',head:'Downplayed the rivalry'}]},
  {id:'fan_kid', tag:'THE FANS', when:c=>true, title:c=>'A young fan at the ropes',
   body:c=>`A kid in your colours has waited all morning by the ropes for an autograph — right as you’re walking to warm up.`,
   ch:[{t:'Make their day',s:'Sign + a photo',tr:'fanFav',fan:1,conf:0.2,r:'The photo makes the local news. A fan for life.',head:'Made a young fan’s whole year'},
       {t:'Quick wave, stay locked in',s:'Tunnel vision',tr:'clutch',conf:0.4,r:'All business. Your focus is razor-sharp.',head:'All business at the ropes'}]},
  {id:'media_fav', tag:'THE STORY', when:c=>c.rank<=3 && c.seasons>=1, title:c=>'You’re the story of the season',
   body:c=>`Sitting #${c.rank} on the money list, the media has crowned you the man to beat. The hype machine is loud.`,
-  ch:[{t:'Embrace the spotlight',s:'Own the moment',tr:'showman',conf:0.4,fan:1,r:'You lean in. Pressure is a privilege.',head:'Embraced favourite status'},
+  ch:[{t:'Embrace the spotlight',s:'Own the moment',tr:'showman',conf:0.4,fan:1,risk:0.28,r:'You lean in. Pressure is a privilege, and you look built for it.',head:'Embraced favourite status',
+        rBad:'The hype gets in your head. Wearing the favourite tag turns out to be heavier than it looked.',headBad:'Let favourite status become a weight'},
       {t:'Downplay it',s:'Head down',tr:'humble',conf:0.3,r:'You wave it off and keep grinding.',head:'Shrugged off the hype'},
       {t:'Ignore the noise',s:'Blinders on',tr:'gritty',conf:0.4,r:'You tune it all out. Just golf.',head:'Tuned out the noise'}]},
  {id:'slump', tag:'THE STORY', when:c=>c.cold, title:c=>'Whispers of a slump',
@@ -6682,16 +6709,19 @@ const STORYLINES=[
       {t:'Donate quietly',s:'No cameras',tr:'humble',fan:1,r:'You write the cheque and skip the photo op.',head:'Gave back quietly'}]},
  {id:'gear', tag:'THE BAG', when:c=>true, title:c=>'A rep offers new gear',
   body:c=>`A club rep is pushing a hot new driver they swear will add distance — but it’s the week of a big event.`,
-  ch:[{t:'Gamble on it',s:'Chase the upside',tr:'maverick',conf:0.2,r:'You throw it in the bag. New week, new toy.',head:'Gambled on new gear'},
+  ch:[{t:'Gamble on it',s:'Chase the upside',tr:'maverick',conf:0.2,risk:0.4,r:'It’s dialled in from the first swing. Free speed — what a find.',head:'Gambled on new gear and it paid off',
+        rBad:'You never trust it. Fighting a new club during a big week is the last thing you needed.',headBad:'A new-gear gamble that backfired'},
       {t:'Stick with what works',s:'Dance with who brung ya',tr:'loyal',conf:0.3,r:'You trust the sticks that got you here.',head:'Trusted his tried-and-true bag'}]},
  {id:'major_presser', tag:'MAJOR WEEK', when:c=>c.major, title:c=>'Major-week press conference',
   body:c=>`It’s major week and the questions come fast: are you here to contend, or just to compete?`,
-  ch:[{t:'Set the bar high',s:'I came to win',tr:'confident',conf:0.4,fan:1,r:'Bold words. Now go earn them.',head:c=>`Declared he came to win the ${c.upName}`},
+  ch:[{t:'Set the bar high',s:'I came to win',tr:'confident',conf:0.4,fan:1,risk:0.3,r:'Bold words, and you look ready to earn them. The room believes you.',head:c=>`Declared he came to win the ${c.upName}`,
+        rBad:'The declaration hangs over you all week. Say it, then miss the cut, and it stings twice.',headBad:c=>`Talked big before the ${c.upName}`},
       {t:'Play it cool',s:'One shot at a time',tr:'clutch',conf:0.4,r:'Measured and calm. Classic contender energy.',head:'Kept it cool going into a major'}],pri:1},
  // ── CS275: situational, higher-stakes interviews (some choices carry a real downside) ──
  {id:'major_champ', tag:'MAJOR CHAMPION', pri:4, when:c=>c.majorWin, title:c=>'You’re a MAJOR champion',
   body:c=>`You just won ${esc(c.lastName)} — a major. The trophy is in your hands and the golf world is watching your every word.`,
-  ch:[{t:'“This is just the beginning”',s:'Chase a dynasty',tr:'confident',conf:0.6,fan:1,r:'You put the tour on notice. Legends talk like this.',head:c=>`Won the ${c.lastName}, vowed it’s just the start`},
+  ch:[{t:'“This is just the beginning”',s:'Chase a dynasty',tr:'confident',conf:0.6,fan:1,risk:0.28,r:'You put the tour on notice. Legends talk like this.',head:c=>`Won the ${c.lastName}, vowed it’s just the start`,
+        rBad:'It reads as arrogance before you’ve proven you can back it up. The pundits pounce.',headBad:c=>`Overpromised after winning ${c.lastName}`},
       {t:'Thank everyone who built you',s:'Humble legacy',tr:'humble',conf:0.4,fol:0.09,r:'A gracious champion. The story writes itself.',head:c=>`A humble major champion at ${c.lastName}`},
       {t:'Dedicate it to your family',s:'For them',tr:'loyal',conf:0.3,fol:0.13,r:'The moment goes viral for all the right reasons.',head:'Dedicated a major to family'}]},
  {id:'runner_up', tag:'SO CLOSE', pri:3, when:c=>c.runnerUp, title:c=>'Second again',
@@ -6701,17 +6731,20 @@ const STORYLINES=[
       {t:'Tip your cap to the winner',s:'Class act',tr:'humble',conf:0.2,fol:0.06,r:'Graceful in defeat. The fans love it.',head:'Gracious runner-up'}]},
  {id:'world_no1', tag:'WORLD NO. 1', pri:4, when:c=>c.worldNo1 && c.seasons>=1, title:c=>'On top of the world',
   body:c=>`You’ve reached World No. 1. Every rival is now measuring themselves against you. How do you wear the crown?`,
-  ch:[{t:'Own it — I’m the best',s:'Embrace the target',tr:'confident',conf:0.5,fan:1,r:'No false modesty. You earned the top spot.',head:'Embraced World No. 1'},
+  ch:[{t:'Own it — I’m the best',s:'Embrace the target',tr:'confident',conf:0.5,fan:1,risk:0.32,r:'No false modesty. You earned the top spot and you wear it well.',head:'Embraced World No. 1',
+        rBad:'It comes off as a target-painting boast. Every rival is now extra motivated to knock you off.',headBad:'Wore the No. 1 crown a little too loudly'},
       {t:'Stay hungry, stay humble',s:'Nothing’s given',tr:'gritty',conf:0.5,r:'The right mindset to STAY there.',head:'Reached No. 1 and stayed hungry'},
       {t:'“Rankings don’t define me”',s:'Deflect',tr:'maverick',conf:0.2,fol:-0.02,r:'A curious take that puzzles the room.',head:'Downplayed a No. 1 ranking'}]},
  {id:'rookie_intro', tag:'ROOKIE', pri:3, when:c=>c.rookie && c.seasons===0, title:c=>'Your first tour presser',
   body:c=>`You’re a tour rookie and the microphones are new. What kind of pro do you want to be?`,
-  ch:[{t:'“I’m here to win, now”',s:'No fear',tr:'confident',conf:0.4,r:'Bold for a rookie. The room raises an eyebrow — and remembers.',head:'A fearless rookie declaration'},
+  ch:[{t:'“I’m here to win, now”',s:'No fear',tr:'confident',conf:0.4,risk:0.35,r:'Bold for a rookie. The room raises an eyebrow — and remembers.',head:'A fearless rookie declaration',
+        rBad:'The veterans smirk. A rookie writing cheques they can’t cash — the pressure just doubled.',headBad:'A rookie boast the locker room won’t forget'},
       {t:'Soak it all in and learn',s:'Student of the game',tr:'humble',conf:0.3,fol:0.05,r:'Mature beyond your years. Veterans nod.',head:'A humble rookie debut'}]},
  {id:'rookie_win', tag:'MAIDEN WIN', pri:4, when:c=>c.firstWin, title:c=>'Your FIRST tour win',
   body:c=>`Your maiden victory at ${esc(c.lastName)} — the one you’ll never forget. Emotions are running high.`,
   ch:[{t:'Let the emotion show',s:'A moment of pure joy',tr:'fanFav',conf:0.4,fol:0.14,r:'Tears and smiles. A star is born, and fans fall in love.',head:c=>`Emotional maiden win at ${c.lastName}`},
-      {t:'“First of many”',s:'Ice in the veins',tr:'confident',conf:0.5,r:'Cold-blooded. The tour just met a problem.',head:'Called a maiden win the first of many'}]},
+      {t:'“First of many”',s:'Ice in the veins',tr:'confident',conf:0.5,risk:0.3,r:'Cold-blooded. The tour just met a problem.',head:'Called a maiden win the first of many',
+        rBad:'Big words for a one-win pro. If the next one doesn’t come soon, this clip won’t age well.',headBad:'Called it “first of many” — then went quiet'}]},
  {id:'veteran_legacy', tag:'LEGACY', pri:2, when:c=>c.veteran, title:c=>'Legacy questions',
   body:c=>`Deep into your career, the press keeps asking about your legacy and how much you’ve got left.`,
   ch:[{t:'“I’m chasing greatness till the end”',s:'Still hungry',tr:'gritty',conf:0.5,r:'The fire still burns. Inspiring stuff.',head:'A veteran still chasing greatness'},
@@ -6723,17 +6756,20 @@ const STORYLINES=[
       {t:'Go out on your terms',s:'Peace with it',tr:'humble',conf:0.3,fol:0.07,r:'Serene and secure. A career well spent.',head:'At peace with the final stretch'}]},
  {id:'social_flare', tag:'SOCIAL MEDIA', pri:1, when:c=>c.seasons>=1, title:c=>'Your post lit up the timeline',
   body:c=>`Something you posted has the golf internet buzzing — and not everyone’s happy. The reporters pounce.`,
-  ch:[{t:'Double down',s:'No regrets',tr:'brash',conf:-0.1,fol:0.12,r:'Engagement explodes — but a few sponsors wince.',head:'Doubled down and went viral'},
+  ch:[{t:'Double down',s:'No regrets',tr:'brash',conf:-0.1,fol:0.12,risk:0.45,r:'Engagement explodes — you own the narrative and the numbers soar.',head:'Doubled down and went viral',
+        rBad:'It spirals. Sponsors distance themselves and the pile-on rattles you all week.',headBad:'Doubled down — and it blew up in his face',folBad:0.09},
       {t:'Clarify and move on',s:'Defuse it',tr:'humble',conf:0.3,fol:0.02,r:'You take the heat out of it. Smart.',head:'Calmly defused a social flare-up'},
       {t:'Delete it',s:'Pretend it never happened',tr:'maverick',conf:0.1,fol:-0.04,r:'The screenshots are already everywhere. It lingers.',head:'Deleted a post — too late'}]},
  {id:'media_critic', tag:'THE CRITICS', pri:1, when:c=>c.missed||c.cold, title:c=>'A pundit wrote you off',
   body:c=>`A big-name analyst says your best days are behind you. The quote is trending. Your response?`,
   ch:[{t:'Prove them wrong',s:'Silent fury',tr:'gritty',conf:0.5,r:'You bookmark the quote. Motivation locked in.',head:'Answered the critics with resolve'},
-      {t:'Clap back on camera',s:'Bring receipts',tr:'brash',conf:0.1,fan:1,fol:0.08,r:'The exchange goes viral. It’s personal now.',head:'Clapped back at a critic'},
+      {t:'Clap back on camera',s:'Bring receipts',tr:'brash',conf:0.1,fan:1,fol:0.08,risk:0.4,r:'The exchange goes viral and you come out looking sharp. It’s personal now.',head:'Clapped back at a critic',
+        rBad:'You look thin-skinned. The critic doubles down and now everyone’s piling on.',headBad:'Lost his cool at a critic',folBad:0.05},
       {t:'“Everyone’s entitled to an opinion”',s:'Unbothered',tr:'clutch',conf:0.3,r:'Ice cold. The critic looks small.',head:'Shrugged off the critics'}]},
  {id:'hot_streak', tag:'ON A HEATER', pri:2, when:c=>c.hot, title:c=>'You’re red-hot',
   body:c=>`Two big weeks in a row and everyone can feel it. Is this the best golf of your life?`,
-  ch:[{t:'Ride the wave',s:'Feeling unstoppable',tr:'showman',conf:0.5,fan:1,r:'You’re buzzing and the galleries feel it.',head:'Rode a red-hot streak'},
+  ch:[{t:'Ride the wave',s:'Feeling unstoppable',tr:'showman',conf:0.5,fan:1,risk:0.3,r:'You’re buzzing and the galleries feel it. The confidence is sky-high.',head:'Rode a red-hot streak',
+        rBad:'You get ahead of yourself. Calling it your best-ever golf out loud invites the regression.',headBad:'Got carried away on a hot streak'},
       {t:'Stay in the moment',s:'One week at a time',tr:'clutch',conf:0.4,r:'Grounded. This is how streaks last.',head:'Stayed grounded on a heater'}]},
  {id:'caddie', tag:'THE PARTNERSHIP', pri:1, when:c=>c.cold, title:c=>'Questions about your caddie',
   body:c=>`After a couple of rough weeks, whispers say it might be time for a caddie change. What’s the call?`,
@@ -6813,28 +6849,44 @@ function showStoryline(sb){
     </div></div>`);
   const btns=ov.querySelector('.sbtns'), replyBox=ov.querySelector('.sreply');
   beat.ch.forEach(ch=>{
-    const b=$(`<button class="btn ghost" style="text-align:left;padding-left:36px;position:relative">
+    // CS279: a choice can carry RISK — a bold answer that might blow up. Flag it so the gamble is informed.
+    const riskTag = ch.risk ? `<span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font:800 9px/1 var(--body);letter-spacing:.08em;color:#ff8f7e;border:1px solid rgba(255,90,77,.5);border-radius:999px;padding:3px 7px;text-transform:uppercase">⚡ Risky</span>` : '';
+    const b=$(`<button class="btn ghost" style="text-align:left;padding-left:36px;padding-right:${ch.risk?'78px':'14px'};position:relative">
       <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#5fd0e0;font-size:15px">“</span>
-      ${esc(ch.t)}${ch.s?`<span class="sub">${esc(ch.s)}</span>`:''}</button>`);
+      ${esc(ch.t)}${ch.s?`<span class="sub">${esc(ch.s)}</span>`:''}${riskTag}</button>`);
     b.onclick=()=>{
       // apply — capture before/after momentum for the on-screen deltas
       const conf0=seasonConf(), fol0=story.followers||0;
-      if(ch.tr) story.traits[ch.tr]=(story.traits[ch.tr]||0)+1;
-      const personaNew=(ch.tr && story.traits[ch.tr]===2 && STORY_PERSONA[ch.tr]) ? STORY_PERSONA[ch.tr] : null;   // CS275: trait just hit the persona threshold
-      if(ch.conf) storyGainConf(ch.conf);
-      // followers: an explicit ch.fol (a pct, may be NEGATIVE for a risky choice) overrides the default growth
-      let folPct, folFlat;
-      if(ch.fol!=null){ folPct=ch.fol; folFlat=ch.fol<0?0:200; }
-      else { const showman=(ch.tr==='brash'||ch.tr==='showman'||ch.tr==='fanFav');
-        folPct=(ch.fan?(showman?0.11:0.075):0.015)+(showman?0.02:0); folFlat=ch.fan?900:250; }
-      gainFollowers(folPct, folFlat);
-      if(ch.endo) story.endorsements=(story.endorsements||0)+1;
-      if(ch.fan) story.fan=(story.fan||0)+1;
-      const head=T(ch.head)||T(beat.title);
-      story.feed.unshift({year:S.year||1, evt:ctx.upName, text:head}); if(story.feed.length>60) story.feed.length=60;
-      track('storyline_choice',{id:beat.id, choice:ch.t});
+      // CS279: risky choices ROLL — a backfire costs confidence + followers and grants no reputation (the
+      // choice didn't land). Safe choices (no ch.risk) always resolve to their intended upside/trade-off.
+      const backfired = ch.risk ? (Math.random() < ch.risk) : false;
+      let personaNew=null, reaction, headline;
+      if(backfired){
+        const hit = -(Math.abs(ch.conf||0.32)*0.9 + 0.12);   // scale the confidence hit to the choice's ambition
+        storyGainConf(hit);
+        gainFollowers(-(ch.folBad!=null?ch.folBad:0.05), 0);   // lose ~5% of your following
+        reaction = T(ch.rBad) || 'It lands badly. The clip is everywhere for the wrong reasons and the room turns on you.';
+        headline = T(ch.headBad) || ((T(ch.head)||T(beat.title))+' — and it backfired');
+        track('storyline_backfire',{id:beat.id, choice:ch.t});
+      } else {
+        if(ch.tr) story.traits[ch.tr]=(story.traits[ch.tr]||0)+1;
+        personaNew=(ch.tr && story.traits[ch.tr]===2 && STORY_PERSONA[ch.tr]) ? STORY_PERSONA[ch.tr] : null;   // CS275: trait just hit the persona threshold
+        if(ch.conf) storyGainConf(ch.conf);
+        // followers: an explicit ch.fol (a pct, may be NEGATIVE for a guaranteed trade-off) overrides the default growth
+        let folPct, folFlat;
+        if(ch.fol!=null){ folPct=ch.fol; folFlat=ch.fol<0?0:200; }
+        else { const showman=(ch.tr==='brash'||ch.tr==='showman'||ch.tr==='fanFav');
+          folPct=(ch.fan?(showman?0.11:0.075):0.015)+(showman?0.02:0); folFlat=ch.fan?900:250; }
+        gainFollowers(folPct, folFlat);
+        if(ch.endo) story.endorsements=(story.endorsements||0)+1;
+        if(ch.fan) story.fan=(story.fan||0)+1;
+        reaction = T(ch.r);
+        headline = T(ch.head)||T(beat.title);
+      }
+      story.feed.unshift({year:S.year||1, evt:ctx.upName, text:headline}); if(story.feed.length>60) story.feed.length=60;
+      track('storyline_choice',{id:beat.id, choice:ch.t, backfired});
       const dConf=Math.round(seasonConf()-conf0), dFol=Math.round((story.followers||0)-fol0);
-      // tick the at-stake meters up to their new values (meter width animates via CSS)
+      // tick the at-stake meters to their new values (meter width animates via CSS)
       const folBox=ov.querySelector('.js-fol'), confBox=ov.querySelector('.js-conf');
       if(folBox) folBox.innerHTML=followersChipHTML(S.season?((story.followers||0)-(S.season.followers0||0))||null:null);
       if(confBox) confBox.innerHTML=confMeterHTML(seasonConf());
@@ -6844,12 +6896,12 @@ function showStoryline(sb){
       if(dFol>0) chips.push(`<span style="color:#35d6a0;font-weight:800">▲ +${fmtFollowers(dFol)} followers</span>`);
       else if(dFol<0) chips.push(`<span style="color:#E14A33;font-weight:800">▼ ${fmtFollowers(-dFol)} followers</span>`);
       if(dConf!==0) chips.push(`<span style="color:${dConf>0?'#35d6a0':'#E14A33'};font-weight:800">Confidence ${dConf>0?'↑':'↓'} ${dConf>0?'+':''}${dConf} · ${confLabel(seasonConf())}</span>`);
-      if(ch.endo) chips.push(`<span style="color:#ffd45e;font-weight:800">Endorsement signed</span>`);
+      if(!backfired && ch.endo) chips.push(`<span style="color:#ffd45e;font-weight:800">Endorsement signed</span>`);
       if(personaNew) chips.push(`<span style="color:#ffd45e;font-weight:800">You’re becoming ${esc(personaNew)}</span>`);
       replyBox.innerHTML='';
-      replyBox.appendChild($(`<div class="scout" style="border-color:#2f6f86;text-align:left;margin:2px 0 10px">
-        <div class="small" style="color:#7fa8b8;letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:4px">The reaction</div>
-        <div style="color:#eef4f7">${esc(T(ch.r))}</div>
+      replyBox.appendChild($(`<div class="scout" style="border-color:${backfired?'#E14A33':'#2f6f86'};text-align:left;margin:2px 0 10px">
+        <div class="small" style="color:${backfired?'#ff8f7e':'#7fa8b8'};letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:4px">${backfired?'It backfired':'The reaction'}</div>
+        <div style="color:#eef4f7">${esc(reaction)}</div>
         ${chips.length?`<div class="small" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px 12px">${chips.join('')}</div>`:''}</div>`));
       const cont=$(`<button class="btn goldfill">Back to the tournament ▸</button>`);
       cont.onclick=()=>{ ov.remove(); render(); };
