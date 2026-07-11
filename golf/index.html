@@ -10172,6 +10172,14 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
   // shot is needed to get there — force greenReach>=2 (a par-4 eagle then becomes a holed approach)
   if(opts.teePreset && par!==3){ greenReach=Math.max(2,greenReach); P=strokes-greenReach; }
   const regReach=par-2;
+  // CS282 — NATURAL hole-out: on any one-putt-type hole, a small skill-weighted chance the finishing stroke
+  // is HOLED from wherever the ball naturally comes to rest, rather than from a scripted "setup" position.
+  // The last approach simply comes up just off the green (indistinguishable from any ordinary near-miss, from
+  // whatever distance / lie it happens to be) and the finish drops — a chip, pitch, or bunker hole-out. No
+  // fixed trigger position, so it can happen anywhere at any time. Score is unchanged (the ball reaches a
+  // greenside spot in greenReach shots, then one holing stroke = the same total as reach-green + 1 putt).
+  const holeOut = par!==3 && P===1 && greenReach>=2 &&
+    rng() < 0.05*(0.45+dSkQ(0.5*dSk(sk,'sht')+0.3*dSk(sk,'scr')+0.2*dSk(sk,'app')));
   // penalty episode (water/OB) spends 2 long shots: the wayward shot + the drop. Only when there
   // are >=2 extra long strokes to burn and the build is loose; likelier for weak accuracy/approach.
   // hazard episodes make over-par holes come from real trouble, not phantom putts. Water spends 2 long
@@ -10230,7 +10238,22 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
       // rem>=3 on a par (rare) → fall through to the normal flow (can't manufacture a water blow-up on a par)
     }
     if(lastLong){
-      if(played>=regReach){
+      if(holeOut){
+        // CS282 — the ball just comes up off the green like any ordinary near-miss: a varied, natural
+        // lie and distance (never a scripted setup), from wherever it happens to end up. The finishing
+        // stroke below holes it, so there's no specific position that "triggers" a chip-in — it can
+        // happen anywhere. Miss severity scales with skill + distance, same as a normal missed green.
+        const missQ=dSkQ(0.7*dSk(sk,'app')+0.3*dSk(sk,'acc'));
+        const nearMiss=rng()<Math.min(0.95,(fromYds<=140?0.72:fromYds<=175?0.52:0.34)+0.2*missQ);
+        const oLie=nearMiss
+          ? dPick(rng,['just short into the fringe','into the front collar','just off the fringe','through the back fringe','a step off the green','pin-high off the right edge','pin-high off the left edge'])
+          : dPick(rng, missQ<0.42?['into the greenside bunker','into the deep rough','long over the green']
+                                 :['into the greenside bunker','into the right rough','into the left rough']);
+        offLie=HV_LIE[oLie]||'fr';
+        dist=Math.round(nearMiss?(5+rng()*10):(12+rng()*15));
+        sh.push({d:`${dClub(fromYds)} from ${fromYds} yds, ${oLie}`, k:'app', lie:offLie, fromY:fromYds, toY:dist});
+      }
+      else if(played>=regReach){
         // LIE-AWARE recovery: a bunker shot leans on Bunker skill, a rough chip on Short Game +
         // Scrambling, a fringe chip on pure Short Game — so the right stat drives the right shot
         const fromBunker=(offLie==='gb'||offLie==='fb');
@@ -10273,41 +10296,31 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
     fin.d=fin.d.replace(/,\s*[^,]*to hole\s*$/i,'')+`, and it drops for ${dResultLong(par,toPar).toLowerCase()}`;
     fin.lie='hole'; fin.hole=true; fin.holeout=true; fin.ft=0; fin.toY=0; fin.tag=dResultLong(par,toPar);
   }
-  for(let pi=0;pi<P;pi++){ const lastPutt=(pi===P-1), putQ=dSkQ(dSk(sk,'put'));
-    if(lastPutt) sh.push({d:ftToHole>=17?`Drains it from ${Math.round(ftToHole)} ft!`:'In the hole',tag:dResultLong(par,toPar), k:'hole', lie:'hole', ft:ftToHole});
-    else { const putt=ftToHole, remaining=P-pi;   // putts left INCLUDING this one
-      // Real tour putting (make% by distance): a pro's FIRST putt is nearly always a great lag to tap-in
-      // range — a good round is built on lag putting + holing short ones, not on approaches stopping stiff.
-      // So the DEFAULT (a 2-putt, or the comebacker after a miss) leaves a genuine tap-in that scales with
-      // distance + Putting skill. A true 3-putt (rare; far more common for weak putters) comes from a POOR
-      // LAG that leaves a MISSABLE mid-range putt (~5-9 ft), which is then missed — NOT from choking a
-      // tap-in. So the missed putt is always a believable mid-ranger, never a 2-footer.
-      let leave;
-      if(remaining>=3){ leave=Math.max(4.5, Math.min(putt*0.9, (5+(1-putQ)*5)+rng()*2.5)); }   // poor lag → real 5-9 ft miss
-      else { const slope=0.11-0.075*putQ; leave=Math.max(0.5, Math.min(putt*0.85, 0.5+slope*putt+rng()*(0.22+0.02*putt))); }   // great lag → tap-in
-      sh.push({d:`Putt ${dFeet(putt)}, ${dFeet(leave)} to hole`, k:'putt', lie:'green', ft:putt, toFt:leave}); ftToHole=leave; }
-  }
-  // HOLE-OUT: rarely a one-putt finish is actually a shot HOLED from just off the green — a chip-in, a
-  // holed bunker shot, or a pitch that drops. Same stroke count (no tap-in): the approach/chip lands
-  // just off the green and the finishing stroke goes in. Par-3 hole-outs are aces (handled above).
-  if(par!==3 && P===1 && sh.length>=2){
-    const fin=sh[sh.length-1], appr=sh[sh.length-2];
-    if(fin.k==='hole' && appr.lie==='green' && (appr.k==='app'||appr.k==='chip')){
-      const sgQ=dSkQ(0.6*dSk(sk,'sht')+0.4*dSk(sk,'scr')), apQ=dSkQ(dSk(sk,'app'));
-      const isChip=(appr.k==='chip'), q=isChip?sgQ:apQ;
-      if(rng() < (isChip?0.06:0.02)*(0.5+q)){          // skilled short game / approach → more hole-outs
-        // CS281: the setup shot must read NATURAL — a chip-in comes from just short of / beside the green,
-        // NOT a wild sideways spray (owner: "the shot before chip-ins is almost always a really bad shot
-        // that goes sideways... predictable and unnatural"). So place it just off the green FRONT (collar /
-        // short rough / fringe), with an occasional greenside bunker on a chip — never the lateral rough.
-        const bunker=isChip && rng()<0.3;
-        const offLie=bunker?'gb':dPick(rng, ['fc','sr','fc','fr']);   // weight the front collar / short rough (front, natural)
-        const offNm={gb:'into the greenside bunker',fc:'just short of the green',sr:'into the short rough short of the green',fr:'to the fringe'}[offLie];
-        const club=isChip?((appr.fromY||30)<32?'lob wedge':'sand wedge'):dClub(appr.fromY||30);
-        appr.d=`${club} ${offNm}`; appr.lie=offLie; appr.onGreen=false; appr.toY=18; delete appr.ft;
-        const inVerb=bunker?'holes the bunker shot':isChip?'chips it in':'pitches it in';
-        fin.d=`${inVerb}!`; fin.k='chip'; fin.lie='hole'; fin.hole=true; fin.holeout=true; fin.fromY=18; fin.ft=0;
-      }
+  if(holeOut){
+    // CS282 — the finish: the ball came to rest just off the green (offLie, dist yds) as an ordinary
+    // near-miss, and THIS stroke holes it — a chip, a pitch, or a holed bunker shot. Same stroke count
+    // as a one-putt (green-side shot + hole-out = reach-green + putt), so the score is unchanged. There's
+    // no scripted setup: the ball is wherever it naturally finished, so a hole-out can happen anywhere.
+    const fromBunker=(offLie==='gb'||offLie==='fb');
+    const sgQ=fromBunker ? dSkQ(0.78*dSk(sk,'bnk')+0.22*dSk(sk,'sht'))
+      : (offLie==='fr'||offLie==='fc') ? dSkQ(0.82*dSk(sk,'sht')+0.18*dSk(sk,'scr'))
+      : dSkQ(0.42*dSk(sk,'sht')+0.5*dSk(sk,'scr')+0.08*dSk(sk,'bnk'));
+    const inVerb=fromBunker?'holes the bunker shot':(dist<30?'chips it in':'pitches it in');
+    sh.push({d:`${inVerb} from ${Math.round(dist)} yds!`, tag:dResultLong(par,toPar), k:'chip', lie:'hole', side:dPick(rng,sides), fromY:Math.round(dist), toY:0, ft:0, hole:true, holeout:true, spin:Math.max(0,Math.min(1,sgQ))});
+  } else {
+    for(let pi=0;pi<P;pi++){ const lastPutt=(pi===P-1), putQ=dSkQ(dSk(sk,'put'));
+      if(lastPutt) sh.push({d:ftToHole>=17?`Drains it from ${Math.round(ftToHole)} ft!`:'In the hole',tag:dResultLong(par,toPar), k:'hole', lie:'hole', ft:ftToHole});
+      else { const putt=ftToHole, remaining=P-pi;   // putts left INCLUDING this one
+        // Real tour putting (make% by distance): a pro's FIRST putt is nearly always a great lag to tap-in
+        // range — a good round is built on lag putting + holing short ones, not on approaches stopping stiff.
+        // So the DEFAULT (a 2-putt, or the comebacker after a miss) leaves a genuine tap-in that scales with
+        // distance + Putting skill. A true 3-putt (rare; far more common for weak putters) comes from a POOR
+        // LAG that leaves a MISSABLE mid-range putt (~5-9 ft), which is then missed — NOT from choking a
+        // tap-in. So the missed putt is always a believable mid-ranger, never a 2-footer.
+        let leave;
+        if(remaining>=3){ leave=Math.max(4.5, Math.min(putt*0.9, (5+(1-putQ)*5)+rng()*2.5)); }   // poor lag → real 5-9 ft miss
+        else { const slope=0.11-0.075*putQ; leave=Math.max(0.5, Math.min(putt*0.85, 0.5+slope*putt+rng()*(0.22+0.02*putt))); }   // great lag → tap-in
+        sh.push({d:`Putt ${dFeet(putt)}, ${dFeet(leave)} to hole`, k:'putt', lie:'green', ft:putt, toFt:leave}); ftToHole=leave; }
     }
   }
   sh.forEach((s,i)=>{ s.n=i+1; s.d=s.d.charAt(0).toUpperCase()+s.d.slice(1); });   // sentence-case each line
