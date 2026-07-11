@@ -489,15 +489,39 @@
 
   /* ---------- Online multiplayer (Online Friendly + Online World Cup) ---------- */
   .fr-wrap.wide{max-width:640px;}
-  .online-card{background:var(--white);border:1.5px solid var(--border-soft);border-radius:16px;
-    padding:20px 18px;margin-bottom:18px;box-shadow:var(--shadow-sm);text-align:center;}
-  .online-card-badge{display:inline-block;background:var(--teal);color:#fff;font-weight:900;font-size:11px;
+  .online-card{position:relative;overflow:hidden;background:var(--white);border:1.5px solid var(--border-soft);
+    border-radius:16px;padding:22px 18px 20px;margin-bottom:18px;box-shadow:var(--shadow-sm);text-align:center;}
+  /* each mode gets its own accent identity so the two cards aren't twins */
+  .online-card{--oc:var(--teal);}
+  #online-card-h2h{--oc:var(--red);}
+  #online-card-wc{--oc:var(--gold);}
+  .online-card::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;background:var(--oc);}
+  .online-card-ico{width:38px;height:38px;margin:0 auto 8px;color:var(--oc);
+    display:grid;place-items:center;}
+  .online-card-ico svg{width:100%;height:100%;display:block;
+    filter:drop-shadow(0 2px 6px rgba(var(--shadow-rgb),.22));}
+  .online-card-badge{display:inline-block;background:var(--oc);color:#fff;font-weight:900;font-size:11px;
     letter-spacing:1px;text-transform:uppercase;border-radius:999px;padding:4px 12px;margin-bottom:10px;}
+  #online-card-wc .online-card-badge{color:var(--ink);}
   .online-card-title{font-family:'Anton',Impact,sans-serif;font-size:24px;text-transform:uppercase;color:var(--ink);margin-bottom:6px;}
   .online-card-desc{font-weight:600;color:var(--muted-2);font-size:14px;line-height:1.5;margin-bottom:16px;}
   .online-card-link{background:none;border:none;color:var(--teal);font-weight:800;font-size:13px;
     text-decoration:underline;margin-top:12px;padding:6px;cursor:pointer;}
   .online-pool-status{font-weight:800;color:var(--muted-2);font-size:13px;margin-bottom:12px;}
+  /* live pool fill: count + a progress track that ties to the WC card's gold */
+  .oh-pool{margin:0 auto 14px;max-width:300px;}
+  .oh-pool-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px;}
+  .oh-pool-count{font-family:'Anton',Impact,sans-serif;font-size:17px;color:var(--ink);letter-spacing:.5px;}
+  .oh-pool-count b{color:var(--gold);}
+  .oh-pool-state{font-weight:900;font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);
+    display:inline-flex;align-items:center;gap:5px;}
+  .oh-pool-state .oh-pool-dot{width:7px;height:7px;border-radius:50%;background:var(--pos-mid);
+    box-shadow:0 0 0 0 rgba(31,158,87,.5);animation:ohPulse 1.5s ease-out infinite;}
+  .oh-pool-state.locking{color:var(--gold);} .oh-pool-state.locking .oh-pool-dot{background:var(--gold);animation:none;}
+  @keyframes ohPulse{0%{box-shadow:0 0 0 0 rgba(31,158,87,.5)}70%{box-shadow:0 0 0 6px rgba(31,158,87,0)}100%{box-shadow:0 0 0 0 rgba(31,158,87,0)}}
+  .oh-pool-track{width:100%;height:9px;border-radius:999px;background:var(--border-soft);overflow:hidden;}
+  .oh-pool-track span{display:block;height:100%;border-radius:999px;
+    background:linear-gradient(90deg,#E8C25A,var(--gold));transition:width .5s ease;}
   .online-pool-status.big{font-size:16px;color:var(--ink);margin:18px 0 10px;}
   .online-divider{font-weight:900;font-size:11px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:14px;}
   .online-join-row{display:flex;gap:8px;max-width:300px;margin:0 auto;align-items:stretch;}
@@ -3703,18 +3727,20 @@ window.GA_ID='G-L29P5MRWKE';
         <div class="oa-item" id="oa-item"></div>
       </div>
       <div class="online-card" id="online-card-h2h">
-        <div class="online-card-badge">1v1</div>
+        <div class="online-card-ico"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg></div>
+        <div class="online-card-badge">1v1 · Instant</div>
         <div class="online-card-title">Online Friendly</div>
         <div class="online-card-desc">Draft a squad, get matched instantly, and watch the match play out live. Win to climb the leaderboard.</div>
         <button class="btn red big" id="online-go-h2h">PLAY ONLINE FRIENDLY →</button>
         <button class="online-card-link" id="online-board-h2h">View Leaderboard</button>
       </div>
       <div class="online-card" id="online-card-wc">
-        <div class="online-card-badge">48-PLAYER POOL</div>
+        <div class="online-card-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4h10v4a5 5 0 0 1-10 0Z"/><path d="M7 5H4v1.5a3 3 0 0 0 3 3M17 5h3v1.5a3 3 0 0 1-3 3"/><path d="M12 13v3M9 20h6M10.5 20v-1.5h3V20"/></svg></div>
+        <div class="online-card-badge">48-Player Pool</div>
         <div class="online-card-title">Online World Cup</div>
         <div class="online-card-desc">Join the pool with your squad. Once it fills, 48 entrants are split into groups and a full World Cup plays out, group stage to Final.</div>
         <div class="online-pool-status" id="online-pool-status">Loading pool…</div>
-        <button class="btn red big" id="online-go-wc">JOIN THE POOL →</button>
+        <button class="btn gold big" id="online-go-wc">JOIN THE POOL →</button>
         <button class="online-card-link" id="online-board-wc">View Leaderboard</button>
       </div>
     </div>
@@ -12700,7 +12726,20 @@ async function refreshOnlinePoolStatus(){
   const el = $('online-pool-status'); if(!el) return;
   try{
     const st = await sbRpc('soccer_wc_pool_state', {});
-    el.textContent = (st && st.season_id) ? `${st.count}/48 joined right now` : 'A new pool is opening…';
+    if(st && st.season_id){
+      const cap=48, count=Math.max(0,Math.min(cap, +st.count||0));
+      const pct=Math.round(count/cap*100);
+      const locking = count>=cap;
+      el.innerHTML = `<div class="oh-pool">
+        <div class="oh-pool-top">
+          <span class="oh-pool-count"><b>${count}</b> / ${cap} in the pool</span>
+          <span class="oh-pool-state${locking?' locking':''}">${locking?'Locking in':'<span class="oh-pool-dot"></span>Filling now'}</span>
+        </div>
+        <div class="oh-pool-track"><span style="width:${pct}%"></span></div>
+      </div>`;
+    }else{
+      el.textContent = 'A new pool is opening…';
+    }
   }catch(e){ el.textContent = 'Pool status unavailable'; }
   // Reflect an already-in-progress entry so the CTA doesn't silently force a
   // second draft on top of a spot the player already locked in.
