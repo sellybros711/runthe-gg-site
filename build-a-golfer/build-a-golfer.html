@@ -961,6 +961,17 @@ window.GA_ID='G-L29P5MRWKE';
   .istat .k{font:800 8.5px/1 var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
   .istat .v{font-family:var(--mono); font-weight:800; font-size:16px; margin-top:5px; color:var(--oncard); font-variant-numeric:tabular-nums}
   .impact-card-status{font-size:12px; font-weight:700}
+  /* CS268: leaderboard top-3 podium */
+  .lbpodium{display:grid; grid-template-columns:1fr 1.12fr 1fr; align-items:end; gap:8px; margin:2px 0 14px}
+  .lbpod{border-radius:12px; text-align:center; padding:12px 7px; border:1px solid var(--line); background:rgba(255,255,255,.04); min-width:0}
+  .lbpod.p1{padding-top:20px; border-color:var(--gold); background:linear-gradient(180deg,rgba(216,173,74,.2),rgba(216,173,74,.04))}
+  .lbpod.p2{background:linear-gradient(180deg,rgba(200,208,214,.14),rgba(200,208,214,.03))}
+  .lbpod.p3{background:linear-gradient(180deg,rgba(198,140,86,.15),rgba(198,140,86,.03))}
+  .lbpod .medal{font-size:22px; line-height:1}
+  .lbpod .medal .ic{width:22px; height:22px}
+  .lbpod .nm{font-weight:800; font-size:12px; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--oncard)}
+  .lbpod .vl{font-family:var(--mono); font-weight:800; font-size:13px; margin-top:3px; color:var(--gold)}
+  .lbpod .rk{font:700 9.5px/1.2 var(--body); color:var(--muted); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .screen.major-screen{background:radial-gradient(130% 70% at 50% -8%, rgba(235,166,31,.20), transparent 62%)}
   .majorbanner{display:flex; align-items:center; justify-content:center; gap:8px;
     background:linear-gradient(90deg,#5a3d0b,var(--gold),#5a3d0b); color:#1a1206;
@@ -4713,13 +4724,21 @@ function overlayLeaderboard(screen){
       return lbRowHTML(r.rank,id.name,sub,v,you,lbRep({rep_pts:id.rep}));
     };
     const rows=globalRows;   // already ordered by the server (top N desc, or true bottom N asc)
+    // CS268: top-3 podium (only on the default best-first view, not the low→high "bottom of the DB" view)
+    let podiumHTML='';
+    if(dir!=='asc' && rows.length>=3){
+      const pod=[rows[1],rows[0],rows[2]];   // DOM order 2·1·3 so #1 sits centre/elevated
+      const cls=['p2','p1','p3'], med=['🥈','🥇','🥉'];
+      podiumHTML='<div class="lbpodium">'+pod.map((r,di)=>{ const id=lbCanon(r), v=lbStatVal(r,tab,sort);
+        return `<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="nm">${esc(id.name)}</div><div class="vl">${v}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`; }).join('')+'</div>';
+    }
     if(sbSignedIn()){
-      board=rows.map(rowFn).join('');
+      board=podiumHTML+rows.map(rowFn).join('');
     } else {
       // guest: show the top few clearly, blur the rest behind a sign-in CTA
       const top=rows.slice(0,5).map(rowFn).join('');
       const tail=rows.slice(5).map(rowFn).join('');
-      board = top + (tail
+      board = podiumHTML + top + (tail
         ? `<div class="lockwrap"><div class="lockblur">${tail}</div>
             <div class="lockover"><div class="lockmsg">🔒 <b>Sign in to see the full board</b><div class="small muted">Post your seasons and claim your rank.</div></div>
             <div class="mini" style="margin:0;width:auto;gap:8px"><button class="btn gold" id="lb-lock-up" style="width:auto;padding:9px 14px;font-size:12px">Create account</button><button class="btn ghost" id="lb-lock-in" style="width:auto;padding:9px 14px;font-size:12px">Sign in</button></div></div></div>`
