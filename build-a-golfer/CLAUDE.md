@@ -7056,13 +7056,14 @@ allows Google Fonts, or self-host Anton.*
     motion (baselines reset in `startSeason`). Verified in Playwright (Confidence absent from `.cb-stats`,
     `.cb-meters` shows Confidence + Respect, rail glides) + a phone-width screenshot; zero page errors.
 
-- **CS286 — banner Net shows 2 decimal places (owner).** The banner Net used the shared `fmtShort`
-  (1-decimal M/B, e.g. +$2.4M). Added a banner-local `netFmt2` that renders the M/B abbreviation to 2
-  decimals (+$2.43M, +$5.00M, +$1.23B; k and below unchanged) — local so `fmtShort`'s other call sites
-  (report cards, sponsor offers, Season Impact card) keep their 1-decimal form. Wired into both the initial
-  `netShort` and the `_animCount` count-up formatter. Verified: netFmt2 samples (2.431M→+$2.43M,
-  5M→+$5.00M, 12.35M, 1.23B) and a full-season banner settled at +$30.58M matching the raw $30,580,881;
-  zero page errors.
+- **CS286 — shortened money shows 2 decimal places GLOBALLY (owner).** Changed the shared `fmtShort`
+  helper itself so every shortened M/B figure across the whole game shows 2 decimals ($1.23M, $5.00M,
+  $12.35M, $1.23B) instead of 1 ($2.4M) — banner Net, season-summary money card, report cards, sponsor
+  offers/signing bonuses, Season Impact card, career/net-worth stats, etc. (k and below unchanged: integer
+  k / whole dollars). (First shipped as a banner-local `netFmt2`; owner then asked for it everywhere, so
+  the logic moved into `fmtShort` and the local helper was removed.) Verified fmtShort samples (2.431M→
+  $2.43M, 5M→$5.00M, 12.35M, 1.23B, negatives, k) + the banner count-up settling on the precise 2-decimal
+  value; zero page errors.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
