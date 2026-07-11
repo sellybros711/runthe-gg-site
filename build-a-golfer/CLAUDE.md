@@ -6616,6 +6616,28 @@ allows Google Fonts, or self-host Anton.*
   card's own stats instead. Verified in Playwright: top no longer contains "Your best", the gold new-career
   card shows the three bests chips; zero page errors. Deployed to /golf.
 
+- **CS264 — Career Hub dashboard (first slice of the ChatGPT visual audit; owner picked "Career Hub").**
+  Turned the top of the live season screen (`scrSeason`, the screen players see most) into a franchise-mode
+  dashboard header, replacing the plain 6-cell `.sbar` stat grid:
+  • **Career banner** (`.careerbanner`) — a raised gradient panel with the golfer's portrait avatar (gold-ringed
+    medallion), name (display italic), "Year N of 30 · Age M" (circuit → "Legend Circuit · Yr N · Age M"),
+    and a compact stat row: World rank (#), Tour rank (#), Net (short signed, green/red), Wins, and a **Form**
+    chip driven by season confidence (▲ Hot / ● Steady / ▼ Cold). Reads like a 2K MyCareer header instead of a
+    web-dashboard stat bar. Mobile: the stat row wraps full-width and space-betweens.
+  • **Season event rail** (`.seasonrail`, new `seasonRailNode()`) — a horizontal, scrollable timeline of the
+    whole schedule: completed events show your finish (WIN in gold for a victory, else `ord(pos)` e.g. 5th /
+    62nd), the current event is highlighted gold with "NOW", upcoming events fade back to 50% opacity. Majors
+    get a ★. The rail auto-centers the current event on render (container-only scroll — never moves the page).
+  The live tournament (leaderboard + scorecard) and controls sit directly below, unchanged (CS241 order kept).
+  Pure presentation — no sim/season-state changes; all data comes from existing `S.season`/`S.schedule`/
+  `S.season.results`/`myWorldRank()`/`playerAge()`. Verified in Playwright: a real career season renders the
+  banner (name/year/age/5 stats/avatar) + the rail (21 chips, NOW on current, done chips) with the old `.sbar`
+  gone and zero page errors; a seeded state confirms the WIN/5th/62nd/NOW/upcoming chips and the ▲ Hot form
+  chip; screenshot confirms the franchise-dashboard look. Deployed to /golf.
+  **Follow-ups from the same audit (not this pass, owner to sequence):** a career milestone/narrative timeline
+  (first win, major, ranking milestones), the design-token/card-tier foundation, the Build-a-Golfer live stage,
+  and broadcast-recap results screens with animated ResultDeltas.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
