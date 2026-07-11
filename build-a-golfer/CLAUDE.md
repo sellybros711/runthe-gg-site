@@ -6998,6 +6998,31 @@ allows Google Fonts, or self-host Anton.*
   sequences (par 4/5, fringe/collar/bunker setups) each render a valid SVG through `hvNode` with 0 errors.
   Deployed to /golf. Tunable: the hole-out probability (`0.05*(0.45+...)`) + the miss-lie pool in `dShotSeq`.
 
+- **CS283 — fairway hole-outs (holed approaches for eagle) + verified natural aces (owner: "Are fairway
+  hole outs and hole in ones possible as well? They should also feel natural").** Audited the two:
+  • **Hole-in-ones already work** (CS154) — the score engine (`dSimHole`) caps at −2, and on a par-3 a rare
+    would-be −2 (a 1) becomes a genuine ace ~12% of the time (~0.04% overall, seeded/deterministic),
+    rendered as "7-iron from the tee, and it's a hole-in-one!". Confirmed the narration + hole-view render.
+    (Aces are par-3-only, which is realistic — par-4 aces are freak events; the −2 score cap means no
+    albatrosses either, so the only par-4/5 "hole-out score" is an eagle.)
+  • **Fairway hole-outs (the gap):** a par-4 eagle was ALWAYS narrated as "drove the green + made the putt"
+    — fine on a driveable 310-yd hole, but unrealistic on a 460-yd one (you can't reach that green off the
+    tee). A real long-par-4 eagle is a **holed approach from the fairway**, which only happened on
+    preset-drive eagles. New `dShotSeq` up-front decision (CS283): for an eagle (`toPar===-2`) on a par-4/5,
+    a **long par-4** (≥335 yds) always becomes a holed approach (P=0 → the existing P===0 hole-out
+    conversion holes the last full shot: "Driver to the fairway, 153 to hole → 8-iron from 153 yds, and it
+    drops for eagle"); a **driveable par-4** (<335) stays mostly drive-the-green with ~35% holed approaches
+    for variety; a **par-5 eagle** is usually reach-in-two + putt but ~16% (skill-weighted on Approach)
+    becomes a holed wedge third ("Driver → 5-iron layup → Lob wedge from 30 yds, and it drops for eagle").
+    No scripted position — the ball is holed from wherever the approach is played, and the count stays exact
+    (greenReach shots, the last one holes, no putt). Deterministic; the `dSimHole` score engine is untouched.
+  Verified in Playwright: shot-count===stroke-count across **38,220 combos, 0 mismatches**; a long par-4
+  eagle is a holed approach **600/600** times (0 drive-the-green), a driveable par-4 eagle mixes
+  drive-green (398) + holed approach (202), a par-5 eagle holes the wedge ~17%; the ace narration renders;
+  and a long par-4 eagle, a par-5 holed wedge, and a par-3 ace each render a valid SVG through `hvNode`
+  with 0 page errors. Deployed to /golf. Tunable: the par-4 driveable threshold (335 yds) + the par-4/par-5
+  fairway-hole-out probabilities in `dShotSeq`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

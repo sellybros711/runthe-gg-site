@@ -10171,6 +10171,20 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
   // a preset (already-revealed) drive is shot 0 and never reaches the green, so at least one more
   // shot is needed to get there — force greenReach>=2 (a par-4 eagle then becomes a holed approach)
   if(opts.teePreset && par!==3){ greenReach=Math.max(2,greenReach); P=strokes-greenReach; }
+  // CS283 — NATURAL fairway hole-out: an eagle on a par-4/5 can be a FULL approach shot HOLED from the
+  // fairway (or rough), not always a drive-the-green putt. A LONG par-4 eagle in particular MUST be a
+  // holed approach (you can't reach a 460-yard green off the tee — the old drive-the-green narrative was
+  // only realistic on driveable holes), and there's a small skill-weighted chance to hole the wedge for
+  // eagle on a par-5. Setting P=0 routes the last long shot through the P===0 hole-out conversion below,
+  // so the ball is holed from wherever the approach happens to be played — no scripted position, and the
+  // count stays exact (greenReach shots, the last one holes, no putt). (The score engine caps at -2, so
+  // eagle is the only fairway-hole-out score; par-3 aces are handled separately above.)
+  if(par!==3 && toPar===-2 && !opts.teePreset){
+    let fw=false;
+    if(par===4) fw = (yards>=335) || (rng() < 0.35);                     // long par-4 eagle = holed approach; driveable = usually drive-the-green
+    else if(par===5) fw = (rng() < 0.16*(0.5+dSkQ(dSk(sk,'app'))));      // par-5 eagle is usually reach-in-two + putt; occasionally a holed wedge third
+    if(fw){ greenReach=strokes; P=0; }
+  }
   const regReach=par-2;
   // CS282 — NATURAL hole-out: on any one-putt-type hole, a small skill-weighted chance the finishing stroke
   // is HOLED from wherever the ball naturally comes to rest, rather than from a scripted "setup" position.
@@ -10289,8 +10303,9 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
       sh.push({d:`${dClub(fromYds)} from ${fromYds} yds, missed the green ${missLie}`, k:'app', lie:offLie, fromY:fromYds, toY:dist}); played++; }
   }
   if(ftToHole==null)ftToHole=20+rng()*20;
-  // P===0 only happens with a preset drive + a would-be eagle on a par 4 (drive + holed approach, no
-  // putt) — the approach itself finishes. Convert the last (green-arrival) shot into the hole-out.
+  // P===0 = a FAIRWAY HOLE-OUT: an eagle where the last FULL shot is holed from the fairway/rough (CS283),
+  // a preset-drive eagle (drive + holed approach), or a par-5 holed wedge — no putt, the approach itself
+  // finishes. Convert the last (green-arrival) shot into the hole-out with its result tag.
   if(P===0 && par!==3 && sh.length){
     const fin=sh[sh.length-1];
     fin.d=fin.d.replace(/,\s*[^,]*to hole\s*$/i,'')+`, and it drops for ${dResultLong(par,toPar).toLowerCase()}`;
