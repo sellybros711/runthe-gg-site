@@ -907,6 +907,10 @@ window.GA_ID='G-L29P5MRWKE';
   .wg-hd{display:flex;justify-content:space-between;align-items:baseline;font:800 12px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
   .wg-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font:700 13px/1.4 var(--body);color:var(--oncard);padding:2px 0}
   .wg-row .wg-v{font-family:var(--mono);font-weight:800}
+  /* CS294: a completed quest turns the whole row green (label, check + value + hint), so "done" reads at a glance */
+  .wg-row.done{color:#35d6a0}
+  .wg-row.done .wg-v{color:#35d6a0}
+  .wg-row.done .muted{color:#7fd0b0}
   .wg-panel.done{border-color:#35d6a0;background:rgba(53,214,160,.08)}
   /* CS261: challenges panel — Player Level XP bar + daily quests + weekly challenges */
   .chalpanel{max-width:520px;margin:12px auto 0}
@@ -916,6 +920,13 @@ window.GA_ID='G-L29P5MRWKE';
   .xplvl{font:800 15px/1 var(--display);font-style:italic;color:#d9c9ff;letter-spacing:.02em}
   .xpbar{height:9px;border-radius:6px;background:rgba(8,14,28,.6);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
   .xpbar>i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#8a6bf0,#b79bff)}
+  /* CS294: challenges now feed your Tour Rep tier (no separate level) — a gold tier progress bar */
+  .reptbar-wrap{padding:12px 14px;border-radius:14px;border:1px solid rgba(235,166,31,.42);background:linear-gradient(160deg,rgba(235,166,31,.14),rgba(20,26,44,.4))}
+  .reptbar-hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .reptbar-tier{font:800 15px/1 var(--display);font-style:italic;color:var(--gold);letter-spacing:.02em}
+  .reptbar{height:9px;border-radius:6px;background:rgba(8,14,28,.6);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
+  .reptbar>i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#e6a91f,#f6cd74)}
+  .reptbar-foot{margin-top:7px;font-size:11px;color:var(--muted)}
   /* CS252: streak calendar — the last N days as coloured cells so the streak feels visual */
   .stcalwrap{max-width:520px;margin:10px auto 0;padding:11px 13px;border-radius:14px;border:1px solid rgba(235,166,31,.24);background:rgba(8,17,26,.42)}
   .stcal-hd{display:flex;justify-content:space-between;align-items:center;font:800 13px/1 var(--body);color:var(--gold);margin-bottom:9px}
@@ -1790,8 +1801,8 @@ const ACH=[].concat(
   aT('cirwgr','Legend Circuit','circuitWins',[[50,'Circuit Icon','Win 50 Legend Circuit events.',150],[100,'Circuit Immortal','Win 100 Legend Circuit events.',250]]),
   aT('cirmgr','Legend Circuit','circuitMajors',[[10,'Senior Major Legend','Win 10 Legend Circuit majors.',150],[20,'Senior Grand Master','Win 20 Legend Circuit majors.',250]]),
   // ================= EXPANSION 4 (CS290): progression, reputation/sponsors, the moment, course mastery =================
-  // ---- Progression: Player Level (XP) ----
-  aT('lvl','Progression','playerLevel',[[5,'Rising Talent','Reach Player Level 5.',20],[10,'Seasoned','Reach Player Level 10.',35],[25,'Well Established','Reach Player Level 25.',60],[50,'Elite Level','Reach Player Level 50.',100],[100,'Level Legend','Reach Player Level 100.',175]]),
+  // ---- Progression: Tour Rep earned from Challenges (CS294: quests/challenges feed your tier, no level) ----
+  aT('chalrep','Progression','challengePts',[[1000,'Rising Talent','Earn 1,000 Tour Rep from challenges.',20],[3000,'Seasoned','Earn 3,000 Tour Rep from challenges.',35],[10000,'Well Established','Earn 10,000 Tour Rep from challenges.',60],[25000,'Dedicated','Earn 25,000 Tour Rep from challenges.',100],[60000,'Challenge Legend','Earn 60,000 Tour Rep from challenges.',175]]),
   // ---- Progression: coins earned (lifetime). get() reads coinsEarnedRaw() DIRECTLY (not via metrics) to
   // avoid recursion, since coinsEarnedRaw() itself calls achMetrics(). ----
   [[5000,'Pocket Change','Earn 5,000 coins.',15],[25000,'Well Off','Earn 25,000 coins.',35],[100000,'Coin Collector','Earn 100,000 coins.',60],[500000,'Coin Baron','Earn 500,000 coins.',100],[1000000,'Coin Tycoon','Earn 1,000,000 coins.',175],[5000000,'Coin Mogul','Earn 5,000,000 coins.',250]].map(([g,nm,d,p])=>({id:'coin_'+g,cat:'Progression',name:nm,desc:d,goal:g,pts:p,get:()=>{try{return Math.round(coinsEarnedRaw());}catch(e){return 0;}}})),
@@ -1882,7 +1893,9 @@ function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const 
     caddieEquipped:f.caddieEquipped||0, caddieLegend:f.caddieLegend||0, dailyAces:f.dailyAces||0,
     // ---- CS290 EXPANSION 4: progression, reputation/sponsors, moments, course mastery ----
     // live-computed (no capture needed):
-    playerLevel:(function(){try{return playerLevel();}catch(e){return 1;}})(),
+    playerLevel:(function(){try{return playerLevel();}catch(e){return 1;}})(),   // internal coin curve only (not shown)
+    challengePts:(function(){try{return challengeRepPts();}catch(e){return 0;}})(),   // CS294: Tour Rep earned via quests/challenges
+    // NOTE: challengePts feeds achPoints(), but the chalrep achievements read it via metrics (no recursion — xpState is separate storage)
     // NOTE: coins are NOT read here — coinsEarnedRaw() calls achMetrics(), so referencing it here would recurse.
     // The coin achievements read coinsEarnedRaw() directly in their get() (called after achMetrics resolves).
     cosmeticsOwned:(function(){try{const c=LS.get(acctKey('bag_coins'),null); return (c&&c.owned)?Object.keys(c.owned).length:0;}catch(e){return 0;}})(),   // read the store directly (coinState() can call coinsEarnedRaw → recursion)
@@ -1903,14 +1916,20 @@ function captureDailyFeats(holes,total,courseKey,isRec){ const st=achState(), f=
   if(courseKey){ f.dcourses=f.dcourses||{}; f.dcourses[courseKey]=1; }
   LS.set(acctKey('bag_ach'),st); }
 function achDone(id){ return !!achState().unlocked[id]; }
-function achPoints(){ return achState().pts||0; }
+// CS294: Tour Rep = achievement points + challenge points (daily quests / weekly challenges feed your tier;
+// there is no separate "level"). Kept in a separate store (bag_xp) and summed only here, so the two pools
+// never corrupt each other at rest. GOAT still requires completing every achievement (see repTierFor).
+function challengeRepPts(){ try{ return xpTotal(); }catch(e){ return 0; } }
+function achPoints(){ return (achState().pts||0) + challengeRepPts(); }
 function achCount(){ const u=achState().unlocked; return Object.keys(u).length; }
 const GOAT_TIER={name:'G.O.A.T.', at:ACH_TOTAL_PTS};   // the apex rank, every achievement complete
 const REP_ORDER=REP_TIERS.map(t=>t.name).concat(['G.O.A.T.']);   // rank ladder, low → high
 function repRankIndex(name){ return REP_ORDER.indexOf(name); }
 // core tier resolver: pts + completion-count. GOAT requires 100% (count) OR maxed points (other players).
 function repTierFor(pts, count){
-  if((count!=null && count>=ACH_TOTAL) || pts>=ACH_TOTAL_PTS) return {tier:GOAT_TIER, next:null};
+  // GOAT = every achievement complete. (Challenge points can lift you to Icon, but the summit needs 100%.)
+  // count==null is the leaderboard "other player" path where only pts are known → allow maxed pts to show GOAT.
+  if(count!=null ? count>=ACH_TOTAL : pts>=ACH_TOTAL_PTS) return {tier:GOAT_TIER, next:null};
   let t=REP_TIERS[0],nx=null; for(let i=0;i<REP_TIERS.length;i++){ if(pts>=REP_TIERS[i].at){t=REP_TIERS[i]; nx=REP_TIERS[i+1]||null;} }
   if(!nx) nx=GOAT_TIER;
   return {tier:t, next:nx}; }
@@ -1955,11 +1974,11 @@ function evaluateAch(){ if(!sbSignedIn()) return [];
       if((rp.fans||0)>=75 && (rp.respect||0)>=70) recordAchEvent({set:{repComplete:1}}); }
     if(S.career && S.career.sponsors){ const sps=S.career.sponsors; if(['hat','shirt'].filter(sl=>sps[sl]&&sps[sl].brand).length>=2) recordAchEvent({set:{bothSponsors:1}}); }
   }catch(e){}
-  const s=achState(); const m=achMetrics(); const fresh=[];
-  const beforeRank=repTierFor(s.pts||0, Object.keys(s.unlocked).length).tier.name;
+  const s=achState(); const m=achMetrics(); const fresh=[]; const cp=challengeRepPts();
+  const beforeRank=repTierFor((s.pts||0)+cp, Object.keys(s.unlocked).length).tier.name;
   ACH.forEach(a=>{ if(!s.unlocked[a.id] && a.get(m)>=a.goal){ s.unlocked[a.id]=todayKey(); s.pts=(s.pts||0)+a.pts; fresh.push(a); } });
   if(fresh.length){
-    const afterRank=repTierFor(s.pts, Object.keys(s.unlocked).length).tier.name;
+    const afterRank=repTierFor((s.pts||0)+cp, Object.keys(s.unlocked).length).tier.name;
     if(repRankIndex(afterRank)>repRankIndex(beforeRank)){ S.freshRep={from:beforeRank,to:afterRank}; track('rep_up',{to:afterRank}); }
     LS.set(acctKey('bag_ach'),s); sbSyncStats&&sbSyncStats(); cloudPush(); track('ach_unlocked',{n:fresh.length,ids:fresh.map(a=>a.id).join(',')});
   }
@@ -2278,13 +2297,14 @@ function masterySummary(){ const m=courseMastery(); let played=0,beaten=0,aGrade
   return {played,beaten,aGrades,total:DAILY_KEYS.length}; }
 // a fixed 7-day UTC block, derived from todayKey (Date.UTC is a pure static, allowed unlike Date.now)
 function weekKey(){ const t=todayKey(),y=Math.floor(t/10000),mo=Math.floor(t/100)%100,d=t%100; return Math.floor(Date.UTC(y,mo-1,d)/86400000/7); }
-// ═══════════════ Challenges: Daily Quests + Weekly Challenges + Player Level (XP → level → coins) ═══════════════
-// Signed-in feature (guests never accrue). XP raises a Player Level; each level-up pays out Pro Shop coins
-// (a level term added to coinsEarnedRaw, so it flows through the normal coin/reconcile/toast pipeline).
-// Weekly challenges span ALL modes and reward XP + a "mulli-spin" (a banked extra draft/off-season spin).
-const DAILY_QUEST_XP=120;      // awarded once/day for finishing all the day's daily quests
-const WEEKLY_CHAL_XP=250;      // awarded per weekly challenge completed
-const LEVEL_COIN=250;          // Pro Shop coins granted per Player Level reached
+// ═══════════════ Challenges: Daily Quests + Weekly Challenges (CS294: feed your Tour Rep tier) ═══════════════
+// Signed-in feature (guests never accrue). Completing quests/challenges grants TOUR REP POINTS (added to
+// achPoints, so they climb your Tour Rep tier — there is no separate "level"). The same challenge-points
+// store also pays out Pro Shop coins via a term in coinsEarnedRaw (the internal xpForLevel curve is kept
+// only as that coin curve — never surfaced to the player). Weekly challenges also grant a "mulli-spin".
+const DAILY_QUEST_XP=120;      // Tour Rep awarded once/day for finishing all the day's daily quests
+const WEEKLY_CHAL_XP=250;      // Tour Rep awarded per weekly challenge completed
+const LEVEL_COIN=250;          // Pro Shop coins granted per internal coin-curve step reached
 function xpState(){ let s=LS.get(acctKey('bag_xp'),null); if(!s||typeof s!=='object') s={};
   s.xp=s.xp||0; s.mulliEarned=s.mulliEarned||0; s.mulliSpent=s.mulliSpent||0; return s; }
 function xpSave(s){ LS.set(acctKey('bag_xp'),s); if(typeof cloudPush==='function') cloudPush(); }
@@ -2293,12 +2313,18 @@ function xpForLevel(L){ return 200 + (Math.max(1,L)-1)*40; }   // XP to go from 
 function xpLevelInfo(total){ total=Math.max(0,total||0); let L=1,rem=total; while(rem>=xpForLevel(L)){ rem-=xpForLevel(L); L++; } return {level:L,into:rem,need:xpForLevel(L),pct:Math.min(100,Math.round(rem/xpForLevel(L)*100))}; }
 function playerLevel(){ return xpLevelInfo(xpTotal()).level; }
 function levelCoinTotal(L){ return (Math.max(1,L)-1)*LEVEL_COIN; }   // cumulative coins earned from reaching level L
-function addXp(n){ if(!sbSignedIn()||!(n>0)) return null; const s=xpState(); const before=xpLevelInfo(s.xp).level; s.xp+=n; const after=xpLevelInfo(s.xp).level; xpSave(s);
-  try{ reconcileCoins(true); }catch(e){}   // level-up coins register via coinsEarnedRaw's level term
-  const info={xp:n, level:after, leveled:after>before};
-  try{ toast('+'+n+' XP'+(info.leveled?' · Level '+after+'!':'')); }catch(e){}
-  if(info.leveled){ try{ sfx('win'); buzz([0,30,40,50]); }catch(e){} }
-  return info; }
+// CS294: XP is Tour Rep now. Awarding it can push you into a higher Tour Rep RANK (challenge-driven promotion),
+// which we detect here and surface via the shared S.freshRep pipeline (summary card + achToast); the toast just
+// reports "+N Tour Rep" so it never double-names the rank with achToast.
+function addXp(n){ if(!sbSignedIn()||!(n>0)) return null;
+  const beforeRank=repTier().tier.name;
+  const s=xpState(); s.xp+=n; xpSave(s);
+  try{ reconcileCoins(true); }catch(e){}   // challenge-points coins register via coinsEarnedRaw's term
+  const afterRank=repTier().tier.name; const rankUp=repRankIndex(afterRank)>repRankIndex(beforeRank);
+  if(rankUp && !S.freshRep) S.freshRep={from:beforeRank,to:afterRank};
+  try{ toast('+'+n+' Tour Rep'); }catch(e){}
+  if(rankUp){ try{ sfx('win'); buzz([0,30,40,50]); }catch(e){} }
+  return {xp:n, rankUp, rank:afterRank}; }
 function mulliSpins(){ const s=xpState(); return Math.max(0,(s.mulliEarned||0)-(s.mulliSpent||0)); }
 function addMulliSpin(n){ const s=xpState(); s.mulliEarned=(s.mulliEarned||0)+(n||1); xpSave(s); }
 function useMulliSpin(){ const s=xpState(); if(Math.max(0,(s.mulliEarned||0)-(s.mulliSpent||0))<=0) return false; s.mulliSpent=(s.mulliSpent||0)+1; xpSave(s); return true; }
@@ -2351,21 +2377,31 @@ function questWeekly(metric,n){ if(!sbSignedIn()||!(n>0)) return; const w=weekCh
 // mulli-spin: a banked extra spin, used when you run out of re-spins (draft + off-season)
 function mulliSpinDraft(){ if(!useMulliSpin())return; S.reSpins=(S.reSpins||0)+1; track('mulli_spin',{where:'draft'}); reSpin(); }
 function mulliSpinOff(){ if(!useMulliSpin())return; S.offseason.reSpins=(S.offseason.reSpins||0)+1; track('mulli_spin',{where:'offseason'}); offReSpin(); }
-// ---- UI: the Challenges panel (Player Level bar + daily quests + weekly challenges) ----
+// CS294: your Tour Rep tier progress bar — challenges feed it (no separate level)
+function repTierBarHTML(ms){
+  const pts=achPoints(), r=repTier(pts), goat=(r.tier.name==='G.O.A.T.');
+  const lo=r.tier.at, hi=r.next?r.next.at:ACH_TOTAL_PTS, frac=hi>lo?Math.max(0,Math.min(1,(pts-lo)/(hi-lo))):1;
+  const foot = goat ? '<b style="color:#f6cd74">Every achievement complete — the summit.</b>'
+    : (r.next ? (r.next.name==='G.O.A.T.' ? 'Complete every achievement to reach <b style="color:var(--gold)">G.O.A.T.</b>'
+        : `<b style="color:var(--gold)">${esc(r.next.name)}</b> in ${Math.max(0,hi-pts)} rep`) : '');
+  return `<div class="reptbar-wrap">
+    <div class="reptbar-hd"><span class="reptbar-tier">${goat?'🐐 ':''}${esc(r.tier.name)}</span><span class="small muted">${pts} Tour Rep${ms>0?' · 🌀 '+ms+' mulli-spin'+(ms===1?'':'s'):''}</span></div>
+    <div class="reptbar"><i style="width:${Math.round(frac*100)}%"></i></div>
+    <div class="reptbar-foot">Tour Rep · ${foot||'keep climbing'}</div></div>`;
+}
+// ---- UI: the Challenges panel (Tour Rep tier bar + daily quests + weekly challenges) ----
 function challengesNode(){
   if(!sbSignedIn()) return null;
-  const li=xpLevelInfo(xpTotal()), q=dailyQuests(), w=weekChal(), set=weeklySet(), ms=mulliSpins();
+  const q=dailyQuests(), w=weekChal(), set=weeklySet(), ms=mulliSpins();
   const el=$(`<div class="chalpanel"></div>`);
-  el.appendChild($(`<div class="xpbar-wrap">
-    <div class="xpbar-hd"><span class="xplvl">Level ${li.level}</span><span class="small muted">${li.into} / ${li.need} XP${ms>0?' · 🌀 '+ms+' mulli-spin'+(ms===1?'':'s'):''}</span></div>
-    <div class="xpbar"><i style="width:${li.pct}%"></i></div></div>`));
-  const dq=DAILY_QUEST_DEFS.map(d=>`<div class="wg-row"><span>${q[d.k]?'✓ ':'○ '}${d.label} <span class="small muted" style="letter-spacing:0;text-transform:none">· ${d.hint}</span></span><span class="wg-v" style="color:${q[d.k]?'#35d6a0':'var(--muted)'}">${q[d.k]?'done':''}</span></div>`).join('');
+  el.appendChild($(repTierBarHTML(ms)));
+  const dq=DAILY_QUEST_DEFS.map(d=>`<div class="wg-row${q[d.k]?' done':''}"><span>${q[d.k]?'✓ ':'○ '}${d.label} <span class="small muted" style="letter-spacing:0;text-transform:none">· ${d.hint}</span></span><span class="wg-v">${q[d.k]?'done':''}</span></div>`).join('');
   const dqDone=dailyQuestsAllDone(q);
-  el.appendChild($(`<div class="wg-panel${dqDone?' done':''}"><div class="wg-hd"><span>Daily Quests</span>${dqDone?'<span style="color:#35d6a0">+'+DAILY_QUEST_XP+' XP ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all '+DAILY_QUEST_DEFS.length+' → +'+DAILY_QUEST_XP+' XP</span>'}</div>${dq}</div>`));
+  el.appendChild($(`<div class="wg-panel${dqDone?' done':''}"><div class="wg-hd"><span>Daily Quests</span>${dqDone?'<span style="color:#35d6a0">+'+DAILY_QUEST_XP+' Rep ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all '+DAILY_QUEST_DEFS.length+' → +'+DAILY_QUEST_XP+' Rep</span>'}</div>${dq}</div>`));
   const wr=set.map(c=>{ const v=Math.min(w.prog[c.metric]||0,c.target), ok=!!w.done[c.id];
-    return `<div class="wg-row"><span>${ok?'✓ ':''}${c.label}</span><span class="wg-v" style="color:${ok?'#35d6a0':'var(--muted)'}">${v}/${c.target}</span></div>`; }).join('');
+    return `<div class="wg-row${ok?' done':''}"><span>${ok?'✓ ':''}${c.label}</span><span class="wg-v" style="${ok?'':'color:var(--muted)'}">${v}/${c.target}</span></div>`; }).join('');
   const wDone=weekChalDoneCount(w), wTot=set.length;
-  el.appendChild($(`<div class="wg-panel${wDone>=wTot?' done':''}"><div class="wg-hd"><span>Weekly Challenges</span><span class="small muted" style="letter-spacing:0;text-transform:none">${wDone}/${wTot} · each → +${WEEKLY_CHAL_XP} XP &amp; 🌀 mulli-spin</span></div>${wr}</div>`));
+  el.appendChild($(`<div class="wg-panel${wDone>=wTot?' done':''}"><div class="wg-hd"><span>Weekly Challenges</span><span class="small muted" style="letter-spacing:0;text-transform:none">${wDone}/${wTot} · each → +${WEEKLY_CHAL_XP} Rep &amp; 🌀 mulli-spin</span></div>${wr}</div>`));
   return el;
 }
 // CS290: a once-a-day "here's your challenges board" pop-up for signed-in players when they enter the game.
@@ -2379,7 +2415,7 @@ function maybeChallengesPopup(){
   const ov=$(`<div class="chalpop" style="position:fixed;inset:0;z-index:62;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;background:radial-gradient(120% 90% at 50% 12%, rgba(10,30,20,.82), rgba(2,7,5,.96) 70%)">
     <div style="max-width:440px;width:100%;background:linear-gradient(180deg,#0d2036,#0a1626);border:1px solid rgba(235,166,31,.4);border-radius:18px;padding:18px 17px;box-shadow:0 20px 60px -18px rgba(0,0,0,.7)">
       <div style="text-align:center;font:800 12px/1 var(--body);letter-spacing:.24em;text-transform:uppercase;color:var(--gold)">🎯 Your Challenges</div>
-      <div class="small muted" style="text-align:center;margin:5px 0 13px">${dqLeft||wLeft?`${dqLeft} daily quest${dqLeft===1?'':'s'} &amp; ${wLeft} weekly left today — earn XP, coins &amp; mulli-spins`:`All caught up — nice work! Check back tomorrow`}</div>
+      <div class="small muted" style="text-align:center;margin:5px 0 13px">${dqLeft||wLeft?`${dqLeft} daily quest${dqLeft===1?'':'s'} &amp; ${wLeft} weekly left today — earn Tour Rep, coins &amp; mulli-spins`:`All caught up — nice work! Check back tomorrow`}</div>
       <div class="cn-holder"></div>
       <button class="btn goldfill" style="margin-top:14px">Let's play ▸</button>
     </div></div>`);
@@ -5012,9 +5048,9 @@ function overlayChallenges(screen){
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Challenges</h3></div>`);
   if(!sbSignedIn()){
-    ov.appendChild($(`<p class="lede">Sign in to a free RunThe.GG account to earn XP, level up for Pro Shop coins, and bank 🌀 mulli-spins from the weekly challenges.</p>`));
+    ov.appendChild($(`<p class="lede">Sign in to a free RunThe.GG account to climb your Tour Rep tier, earn Pro Shop coins, and bank 🌀 mulli-spins from the weekly challenges.</p>`));
   } else {
-    ov.appendChild($(`<p class="lede" style="max-width:520px;margin:0 auto 4px">Finish all 3 daily quests for XP. The weekly challenges rotate every week and span every mode — each one pays XP plus a 🌀 mulli-spin (a banked extra spin for the draft or off-season). Levelling up pays Pro Shop coins.</p>`));
+    ov.appendChild($(`<p class="lede" style="max-width:520px;margin:0 auto 4px">Finish your daily quests to earn Tour Rep toward your next tier. The weekly challenges rotate every week and span every mode — each one pays Tour Rep plus a 🌀 mulli-spin (a banked extra spin for the draft or off-season), and challenges keep your Pro Shop coins flowing too.</p>`));
     const cn=challengesNode(); if(cn) ov.appendChild(cn);
   }
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
@@ -5071,7 +5107,7 @@ function overlayMenu(screen){
   play.appendChild(menuRow('🏠','Home','Title screen',go(()=>{S.screen='title';})));
   play.appendChild(menuRow('📖','How to Play','Career mode & daily challenge',go(openRules)));
   play.appendChild(menuRow('🏆','Leaderboard','Season & career rankings',go(()=>{S.overlay='leaderboard';})));
-  play.appendChild(menuRow('🎯','Challenges',signedIn?('Level '+playerLevel()+' · daily & weekly quests'):'Sign in to earn XP & rewards',go(()=>{S.overlay='challenges';})));
+  play.appendChild(menuRow('🎯','Challenges',signedIn?(repTier().tier.name+' · daily & weekly quests'):'Sign in to earn Tour Rep & rewards',go(()=>{S.overlay='challenges';})));
   play.appendChild(menuRow('🏅','Trophy Room',signedIn?'Your badges, titles & Legend Tokens':'Sign in to unlock your record',go(()=>{S.overlay='record';})));
   play.appendChild(menuRow('⛳','Course Records','Today\'s board & all-time bests',go(()=>{S.overlay='courserecords';})));
   play.appendChild(menuRow('🎫','Course Passport',`Your best grade at all ${DAILY_KEYS.length} courses`,go(()=>{S.overlay='passport';})));
@@ -5474,8 +5510,8 @@ function scrTitle(){
       <span class="ni" aria-hidden="true">${icon}</span><span class="nl">${esc(label)}</span>${sub?`<span class="ns">${sub}</span>`:''}</button>`);
     b.onclick=fn; sec.appendChild(b); };
   // CS290: Challenges is now a prominent nav tile (was buried in the ≡ menu) — daily quests + weekly
-  // challenges + Player Level, all earning XP / coins / mulli-spins.
-  mkTile('🎯','Challenges', signedIn?('Level '+playerLevel()+' · quests'):'Sign in to earn', ()=>{S.overlay='challenges';render();}, true);
+  // challenges — daily/weekly quests feed your Tour Rep tier + earn coins / mulli-spins.
+  mkTile('🎯','Challenges', signedIn?(repTier().tier.name+' · quests'):'Sign in to earn', ()=>{S.overlay='challenges';render();}, true);
   mkTile('🏆','Leaderboard','Rankings', ()=>{S.overlay='leaderboard';render();}, true);
   mkTile('🏅','Trophy Room', signedIn?'Trophies & rank':'Sign in', ()=>{S.overlay='record';render();}, true);
   if(SHOP_ENABLED) mkTile(ic('cart'),'Pro Shop', signedIn?(ic('coin')+' '+coinFmt(coinBalance())):'Gear & boosts', ()=>{S.overlay='shop';render();}, true);
@@ -13328,10 +13364,10 @@ function scrDailyResult(){
   // CS261 Challenges: celebrate anything just completed this round, then show the challenges panel
   if(!practice && sbSignedIn()){
     if(justPlayed && S.questDailyJustDone){
-      add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#35d6a0"><b style="color:#35d6a0">Daily Quests complete!</b><div class="small muted" style="margin-top:3px">All ${DAILY_QUEST_DEFS.length} done today · +${DAILY_QUEST_XP} XP</div></div>`));
+      add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#35d6a0"><b style="color:#35d6a0">Daily Quests complete!</b><div class="small muted" style="margin-top:3px">All ${DAILY_QUEST_DEFS.length} done today · +${DAILY_QUEST_XP} Tour Rep</div></div>`));
     }
     if(justPlayed && (S.questWeeklyJustDone||[]).length){
-      add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">Weekly Challenge${S.questWeeklyJustDone.length>1?'s':''} complete!</b><div class="small muted" style="margin-top:3px">${S.questWeeklyJustDone.map(c=>esc(c.label)).join(' · ')} · +${WEEKLY_CHAL_XP} XP &amp; 🌀 mulli-spin each</div></div>`));
+      add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">Weekly Challenge${S.questWeeklyJustDone.length>1?'s':''} complete!</b><div class="small muted" style="margin-top:3px">${S.questWeeklyJustDone.map(c=>esc(c.label)).join(' · ')} · +${WEEKLY_CHAL_XP} Tour Rep &amp; 🌀 mulli-spin each</div></div>`));
     }
     const cn=challengesNode(); if(cn){ cn.style.maxWidth='520px'; cn.style.margin='0 auto 8px'; add(cn); }
   }
