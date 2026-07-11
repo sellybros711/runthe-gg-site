@@ -342,9 +342,16 @@ window.GA_ID='G-L29P5MRWKE';
   .gc-chip{display:inline-flex; align-items:center; gap:5px; font:800 11.5px/1 var(--body); border-radius:8px; padding:6px 9px; background:var(--chip)}
   .gc-chip.hot{background:rgba(235,166,31,.92); color:#20160a}
   .gc-go{margin-left:auto; font:900 12.5px/1 var(--body); letter-spacing:.03em; border-radius:9px; padding:8px 13px; background:var(--chip)}
-  .gcard.spotlive{box-shadow:0 14px 32px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14), 0 0 0 0 rgba(176,126,240,.5); animation:spotPulse 2.4s ease-in-out infinite}
-  @keyframes spotPulse{0%,100%{box-shadow:0 14px 32px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14), 0 0 0 0 rgba(176,126,240,.6)} 50%{box-shadow:0 14px 32px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14), 0 0 0 7px rgba(176,126,240,0)}}
-  @media (prefers-reduced-motion:reduce){ .gcard.spotlive{animation:none} }
+  /* CS258: a clear gap so the stacked hero cards never look like they're touching */
+  .stack>.gcard, .stack>.resumecard{margin-top:16px}
+  .stack>.gcard:first-child, .stack>.resumecard:first-child{margin-top:0}
+  /* Monthly Spotlight — neon purple + glowing when playable, translucent when done */
+  .gc-purple.spot-neon{background:linear-gradient(158deg,#c98cff,#8b3cf5 55%,#7a1fe0)}
+  .gcard.spotlive{box-shadow:0 14px 32px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18), 0 0 20px 0 rgba(184,112,255,.55); animation:spotPulse 2.4s ease-in-out infinite}
+  @keyframes spotPulse{0%,100%{box-shadow:0 14px 32px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18), 0 0 18px 1px rgba(184,112,255,.5)} 50%{box-shadow:0 14px 32px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18), 0 0 32px 7px rgba(196,124,255,.9)}}
+  @media (prefers-reduced-motion:reduce){ .gcard.spotlive{animation:none} .gcard.spotlive{box-shadow:0 14px 32px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.18), 0 0 26px 4px rgba(196,124,255,.75)} }
+  .gcard.spot-done{opacity:.5; filter:saturate(.55); box-shadow:0 10px 22px -16px rgba(0,0,0,.5)}
+  .gcard.spot-done .gc-go{opacity:.7}
   /* online card's two mode buttons */
   .oc-row{display:flex; gap:8px; margin-top:12px}
   .oc-btn{flex:1; min-width:0; background:rgba(2,20,16,.3); border:1px solid rgba(255,255,255,.18); border-radius:12px; padding:9px 8px; color:inherit; cursor:pointer; text-align:center}
@@ -4155,6 +4162,8 @@ function render(){
     if(S.overlay==='passport') overlayPassport(app);
     if(S.overlay==='shop') overlayShop(app);
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
+    if(S.overlay==='confirmSkill') overlayConfirmSkill(app);
+    if(S.overlay==='confirmRetire') overlayConfirmRetire(app);
     if(S.overlay==='about') overlayAbout(app);
     if(S.overlay==='feedback') overlayFeedback(app);
     if(S.overlay==='privacy') overlayPrivacy(app);
@@ -4655,6 +4664,55 @@ function overlayConfirmReset(screen){
   };
   screen.appendChild(ov);
 }
+// Confirm an off-season skill swap before it's locked in (a stat can only change once per off-season,
+// so a mis-tap is costly). Shows the exact swap and asks the player to lock it in.
+function overlayConfirmSkill(screen){
+  const k=S.confirmSkill; const cat=CATS.find(c=>c.k===k);
+  if(!k||!cat||!S.current){ S.overlay=null; return render(); }
+  const cur=S.slots[k]?S.slots[k].value:REPLACEMENT; const nv=S.current[k]; const d=nv-cur;
+  const dcol=d>0?'#35d6a0':(d<0?'#e07a5f':'var(--muted)');
+  const dtxt=d>0?`▲ +${d} upgrade`:(d<0?`▼ ${Math.abs(d)} downgrade`:'no change');
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Lock in ${cat.short}?</h3>
+    <p class="lede">Swap in <b>${esc(S.current.name)}</b>'s ${cat.short}. <b style="color:var(--gold)">This stat locks for the rest of the off-season</b>, so you can't change it again this year.</p>
+    <div class="scout center" style="max-width:340px;margin:0 auto 4px"><span class="mono" style="font-weight:800;font-size:26px">${cur} → ${nv}</span> <span style="color:${dcol};font-family:var(--mono);font-weight:800">${dtxt}</span></div>
+    <button class="btn goldfill">Lock it in ▸</button>
+    <button class="btn ghost cancel" style="margin-top:10px">Cancel</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;S.confirmSkill=null;render();};
+  ov.querySelector('.cancel').onclick=()=>{S.overlay=null;S.confirmSkill=null;render();};
+  ov.querySelector('.goldfill').onclick=()=>{ S.overlay=null; const kk=S.confirmSkill; S.confirmSkill=null; offTake(kk); };
+  screen.appendChild(ov);
+}
+// Confirm before voluntarily retiring / ending the circuit early — surfaces how many years are left.
+function overlayConfirmRetire(screen){
+  const circuit=!!S.circuitMode;
+  let left, unit, label, body;
+  if(circuit){
+    const cy=(S.year||1)-(S.circuitStartYear||1)+1;
+    left=Math.max(0, CIRCUIT_MAX_YEARS-cy);
+    label='End the Legend Circuit?';
+    body=left>0
+      ? `You still have <b>${left} season${left===1?'':'s'} left</b> on the Legend Circuit. Ending it now closes out this run for good, there's no coming back to it.`
+      : `This closes out your Legend Circuit run. Your career stats and achievements are always safe.`;
+  } else {
+    left=Math.max(0, CAREER_MAX_YEARS-(S.year||1));
+    label='Retire your golfer?';
+    body=left>0
+      ? `You still have <b>${left} year${left===1?'':'s'} left</b> in this 30-year career. Retiring now ends it for good, there's no coming back to this golfer. Your lifetime stats and achievements carry over untouched.`
+      : `This ends your career. Your lifetime stats and achievements carry over untouched.`;
+  }
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>${label}</h3>
+    <p class="lede">${body}</p>
+    <button class="btn red">${circuit?'End the Circuit':'Retire for good'}</button>
+    <button class="btn ghost cancel" style="margin-top:10px">Keep playing</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.cancel').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{ S.overlay=null; circuit?endCircuit():endCareer('chose'); };
+  screen.appendChild(ov);
+}
 function overlayDailyDone(screen){
   const r=dailyBest();
   const isRound=r&&r.course&&DAILY_COURSES[r.course];
@@ -4957,10 +5015,14 @@ function spotlightHeroCard(){
   if(att===0){ badge='THIS WEEK'; mid=`${esc(dShort(sc.v))} · ${dCondLabel(sp.cond)} · beat the pro in a special event`; }
   else if(left>0){ badge=won?'WON ✓':`${left} LEFT`; mid=`${esc(dShort(sc.v))} · ${won?'go lower':'beat the pro'} · best ${dTot(rec.best, sc.par)}`; }
   else { badge=won?'WON ✓':'COMPLETE'; mid=`${esc(dShort(sc.v))} · ${won?'you beat the pro':'best '+dTot(rec.best, sc.par)}`; }
-  const card=$(`<button class="gcard gc-purple spotlive" aria-label="${esc(sp.month)} Monthly Spotlight">
+  // Playable (attempts remaining, incl. "go lower") → neon purple + glow. Otherwise (all
+  // attempts used) → translucent/done, so a finished spotlight reads as unavailable.
+  const playable=left>0;
+  const cls=playable?'gcard gc-purple spot-neon spotlive':'gcard gc-purple spot-done';
+  const card=$(`<button class="${cls}" aria-label="${esc(sp.month)} Monthly Spotlight">
     <div class="gc-top"><div style="min-width:0"><div class="gc-kick">★ Monthly Spotlight</div><div class="gc-title">${esc(sp.month)} Spotlight</div></div><span class="gc-badge">${badge}</span></div>
     <div class="gc-mid">${mid}</div>
-    <div class="gc-row"><span class="gc-go">Play ▸</span></div>
+    <div class="gc-row"><span class="gc-go">${playable?'Play ▸':'View result ▸'}</span></div>
   </button>`);
   card.onclick=startSpotlight;
   return card;
@@ -8975,7 +9037,7 @@ function scrSummary(){
     save.onclick=()=>{ saveCareer(summaryResumeExtra()); track('career_saved_exit',{year:S.year||1}); reset(); render(); };
     right.appendChild(save);
     const retire=$(`<button class="btn ghost" style="margin-top:10px">${S.circuitMode?'End Circuit Now':'Retire, End Career'}</button>`);
-    retire.onclick=()=>{ S.circuitMode?endCircuit():endCareer('chose'); }; right.appendChild(retire);
+    retire.onclick=()=>{ S.overlay='confirmRetire'; render(); }; right.appendChild(retire);
     // right on the year-30 result page itself (not just the separate ceremony screen after "Finish
     // Career ▸"), finalizes the just-completed career exactly as "Finish Career" does, then drops
     // straight into the circuit's own off-season instead of lingering on the ceremony first.
@@ -9228,7 +9290,8 @@ function scrOffseason(){
       const bt=$(`<button class="attr" aria-label="Swap ${cat.short} to ${nv}, ${d>=0?'up':'down'} ${Math.abs(d)}">
         <span class="lab">${cat.short}</span><span class="val">${nv}</span>
         <span class="take" style="background:none;padding:0 0 0 2px;color:${dcol};font-family:var(--mono);font-weight:800;font-size:13px">${d>0?'▲+':(d<0?'▼':'·')}${d!==0?Math.abs(d):''}</span></button>`);
-      bt.onclick=()=>offTake(cat.k); grid.appendChild(bt);
+      bt.onclick=()=>{ S.confirmSkill=cat.k; S.overlay='confirmSkill'; render(); };  // confirm before it locks in (no mis-tap)
+      grid.appendChild(bt);
     });
     left.appendChild(grid);
     if(os.reSpins>0){ const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${os.reSpins} left<span class="sub">Pass on this golfer for a new one</span></button>`); re.onclick=offReSpin; left.appendChild(re); }
