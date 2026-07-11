@@ -4642,8 +4642,8 @@ function overlayAccount(screen){
 // leaderboard sort categories per tab: [key, label]. A player can top many different boards.
 const LB_SORTS={   // Tour Rep is no longer a sort category, the rep rank shows next to each name instead
   // ...the derived stat sorts (sg/ttg/putts/hcp) are computed client-side from each row's stored skills
-  season:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['ovr','OVR'],['sg','Strokes Gained'],['ttg','Tee to Green'],['putts','Avg Putts'],['hcp','Handicap']],
-  career:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['seasons','Seasons'],['sg','Strokes Gained'],['ttg','Tee to Green'],['putts','Avg Putts'],['hcp','Handicap']],
+  season:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['ovr','OVR'],['fans','Fans'],['sg','Strokes Gained'],['ttg','Tee to Green'],['putts','Avg Putts'],['hcp','Handicap']],
+  career:[['earnings','Earnings'],['net','Profit'],['wins','Wins'],['majors','Majors'],['seasons','Seasons'],['fans','Fans'],['sg','Strokes Gained'],['ttg','Tee to Green'],['putts','Avg Putts'],['hcp','Handicap']],
 };
 // CS214: these aren't DB columns — they're derived from each row's `skills` jsonb (golferStats) and ranked
 // client-side over the fetched board. key=field on golferStats(); low=true when a lower value is better.
@@ -4657,6 +4657,7 @@ function lbStatVal(r,tab,sort){   // the right-hand value column for the chosen 
     case 'majors': return `<span style="color:var(--gold)">${r.majors||0} maj</span>`;
     case 'ovr': return `<span style="color:var(--gold)">OVR ${r.ovr||'-'}</span>`;
     case 'seasons': return `<span style="color:var(--gold)">${r.seasons||0} szn</span>`;
+    case 'fans': return `<span style="color:#ff9d3a;font-weight:800">${fmtFollowers(r.followers||0)} fans</span>`;   // CS281
     case 'rep': { const rp=r.rep_pts!=null?repTierName(r.rep_pts):null; return `<span style="color:var(--gold);font-size:12px">${esc(rp||'-')}</span>`; }
     case 'sg': case 'ttg': case 'hcp': case 'putts': {   // CS214 derived-from-skills stat columns
       if(!r.skills || !CATS.every(cc=>typeof r.skills[cc.k]==='number')) return `<span class="muted">–</span>`;
@@ -8718,7 +8719,7 @@ function scrSeason(){
   const cbName=esc(S.season.me.name||S.name||'Your Golfer');
   const cbYr=S.circuitMode?('Legend Circuit · Yr '+Math.max(1,(S.year||1)-30)):('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS);
   const conf=(S.season&&S.season.confidence!=null)?S.season.confidence:50;
-  const formTxt=conf>=64?'▲ Hot':conf>=44?'● Steady':'▼ Cold', formCol=conf>=64?'#35d6a0':conf>=44?'var(--gold)':'#E14A33';
+  const confCol=confColor(conf);   // CS281: show the confidence RATING (number + colour) instead of a Form label
   const netShort=(ec.net>=0?'+':'−')+fmtShort(Math.abs(ec.net));
   add($(`<div class="careerbanner">
     <div class="cb-id"><div class="cb-av">${avatarHTML()}</div>
@@ -8728,7 +8729,9 @@ function scrSeason(){
       <div class="cb-stat"><div class="k">Tour</div><div class="v" style="color:var(--gold)">${rankTxt}</div></div>
       <div class="cb-stat"><div class="k">Net</div><div class="v" style="color:${netCol};font-size:16px">${netShort}</div></div>
       <div class="cb-stat"><div class="k">Wins</div><div class="v">${t.wins}</div></div>
-      <div class="cb-stat"><div class="k">Form</div><div class="v" style="color:${formCol};font-size:14px">${formTxt}</div></div>
+      <div class="cb-stat"><div class="k">Top 10</div><div class="v">${t.top10}</div></div>
+      <div class="cb-stat"><div class="k">Cuts</div><div class="v">${t.made}</div></div>
+      <div class="cb-stat"><div class="k">Confidence</div><div class="v" style="color:${confCol}">${Math.round(conf)}</div></div>
     </div>
   </div>`));
   { const rail=seasonRailNode(); if(rail) add(rail); }
@@ -9312,7 +9315,7 @@ function scrSummary(){
     }
     // post to the public leaderboard (guests post anonymized; no-op only if the backend's offline)
     if(!S.daily) sbSubmitSeason({golfer:me.name,ovr,year:S.year||1,earnings:t.money,net:netTotal,wins:t.wins,majors:t.majors,
-      careerId:(S.careerSeed!=null?String(S.careerSeed):null),
+      careerId:(S.careerSeed!=null?String(S.careerSeed):null), followers:Math.round((careerStory().followers)||0),   // CS281 Fans board
       skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))})
       .then(()=>loadSeasonRank(t.money));   // fetch "ranked #N of M all-time" once the post attempt settles
     } else {
@@ -10293,9 +10296,13 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
       const sgQ=dSkQ(0.6*dSk(sk,'sht')+0.4*dSk(sk,'scr')), apQ=dSkQ(dSk(sk,'app'));
       const isChip=(appr.k==='chip'), q=isChip?sgQ:apQ;
       if(rng() < (isChip?0.06:0.02)*(0.5+q)){          // skilled short game / approach → more hole-outs
-        const bunker=isChip && rng()<0.4;
-        const offLie=bunker?'gb':dPick(rng, isChip?['fr','sr']:['fr','rr','rl']);
-        const offNm={gb:'into the greenside bunker',fr:'just off the fringe',sr:'into the short rough',rr:'into the right rough',rl:'into the left rough'}[offLie];
+        // CS281: the setup shot must read NATURAL — a chip-in comes from just short of / beside the green,
+        // NOT a wild sideways spray (owner: "the shot before chip-ins is almost always a really bad shot
+        // that goes sideways... predictable and unnatural"). So place it just off the green FRONT (collar /
+        // short rough / fringe), with an occasional greenside bunker on a chip — never the lateral rough.
+        const bunker=isChip && rng()<0.3;
+        const offLie=bunker?'gb':dPick(rng, ['fc','sr','fc','fr']);   // weight the front collar / short rough (front, natural)
+        const offNm={gb:'into the greenside bunker',fc:'just short of the green',sr:'into the short rough short of the green',fr:'to the fringe'}[offLie];
         const club=isChip?((appr.fromY||30)<32?'lob wedge':'sand wedge'):dClub(appr.fromY||30);
         appr.d=`${club} ${offNm}`; appr.lie=offLie; appr.onGreen=false; appr.toY=18; delete appr.ft;
         const inVerb=bunker?'holes the bunker shot':isChip?'chips it in':'pitches it in';
@@ -10469,12 +10476,17 @@ function hvGeom(seedN, par, yds, courseKey, holeIdx){
   else if(feat==='water-l'||feat==='water-r'||feat==='cliff'){ const sd=(feat==='water-r')?1:-1;
     setPond(g.gcx+sd*(R[0]+14), L-6-hh(34)*20, 12+hh(35)*6, 18+hh(36)*14, sd); }
   else if(feat==='creek'){ g.creek={y:L-(8+hh(37)*26)}; }
-  else if(par!==3 && wroll<st.creek){ g.creek={y:L*(0.35+hh(38)*0.45)}; }
-  else if(wroll<st.creek+st.water){   // seeded pond: greenside / mid-hole lateral / green-front
+  // CS281: a crossing creek must NOT sit in the tee-shot landing zone (unrealistic — it forces normal drives
+  // into the water). Real crossing hazards are either a SHORT forced carry off the tee (you fly it) or guard
+  // the GREEN. Place it at 13-20% (forced carry) or 74-88% (green-front), never mid-hole.
+  else if(par!==3 && wroll<st.creek){ g.creek={y: hh(38)<0.38 ? L*(0.13+hh(50)*0.07) : L*(0.74+hh(51)*0.14)}; }
+  else if(wroll<st.creek+st.water){   // seeded pond: greenside / lateral (well off the fairway) / green-front
     const kind=hh(39);
     if(kind<0.4) setPond(g.gcx+(hh(40)<0.5?-1:1)*(R[0]+9), L-R[1]-8, 9+hh(41)*6, 7+hh(42)*4, 1);
-    else if(kind<0.75){ const sd=hh(43)<0.5?-1:1, wy=L*(0.5+hh(44)*0.3);
-      setPond(g.cx(wy)+sd*(g.fww(wy)+13), wy, 11+hh(45)*7, 15+hh(46)*11, sd); }
+    else if(kind<0.75){ const sd=hh(43)<0.5?-1:1, wy=L*(0.5+hh(44)*0.3), rx=11+hh(45)*7;
+      // offset the pond CENTER past the fairway edge by its own radius, so its inner edge clears the fairway
+      // entirely (a lateral hazard beside the fairway, not a pond sitting in the middle of it)
+      setPond(g.cx(wy)+sd*(g.fww(wy)+rx+6), wy, rx, 15+hh(46)*11, sd); }
     else setPond(g.gcx+(hh(47)-0.5)*10, L-R[1]-9, R[0]*0.9, 7+hh(48)*4, 1);
   }
   // bunkers: greenside ring + fairway bunkers, scaled by the course's sand character
@@ -10525,7 +10537,11 @@ function hvPlots(g, shots, seedN){
   shots.forEach((s,i)=>{ if(s.lie==='water' && !g.water && !g.creek){
     const dropToY=(shots[i+1]&&shots[i+1].toY!=null)?shots[i+1].toY:Math.round((s.fromY||L)*0.5);
     const wy=Math.max(34,Math.min(L-14, L-dropToY+13)), side=(hh(i,1)<0.5?-1:1);
-    g.water={x:g.cx(wy)+side*11, y:wy, rx:19+hh(i,2)*9, ry:13+hh(i,3)*6, side};
+    // CS281: an errant ball found a LATERAL water hazard beside the fairway — offset the pond fully past the
+    // fairway edge (center = half-width + radius + margin) so it never reads as a pond dead-centre in the
+    // fairway forcing normal shots in. The ball then rests at the pond's near edge (the 'water' lie case).
+    const rx=16+hh(i,2)*8, ry=13+hh(i,3)*6, fw=(g.fww?g.fww(wy):(g.fwW/2));
+    g.water={x:g.cx(wy)+side*(fw+rx+5), y:wy, rx, ry, side};
   }});
   shots.forEach((s,i)=>{
     const p={i, k:s.k||'app', lie:s.lie||'fw'};
@@ -14036,15 +14052,22 @@ async function flushPendingSeasons(){
       // code never checked `error` here, so a rejected submission was silently counted as posted and
       // dropped from this retry queue forever, the exact bug behind seasons vanishing without a trace.
       let error;
+      // CS281: send p_followers (the Fans leaderboard) when the DB supports it; if migration 48 isn't
+      // applied yet the extra-arg call errors, so RETRY without it — a season is never stranded pre-migration.
+      const fol=Math.max(0, Math.round(s.followers||0));
       if(guest){
         // no identity is sent at all, the server hardcodes 'Anonymous' / 'Guest Player' regardless
-        ({error}=await sb.rpc('runtour_submit_season_guest',{p_ovr:s.ovr,p_year:s.year,
-          p_earnings:Math.round(s.earnings||0),p_net:Math.round(s.net||0),p_wins:s.wins,p_majors:s.majors,
-          p_skills:s.skills,p_career_id:s.careerId||null}));
+        const base={p_ovr:s.ovr,p_year:s.year,p_earnings:Math.round(s.earnings||0),p_net:Math.round(s.net||0),
+          p_wins:s.wins,p_majors:s.majors,p_skills:s.skills,p_career_id:s.careerId||null};
+        let res=await sb.rpc('runtour_submit_season_guest',Object.assign({p_followers:fol},base));
+        if(res.error) res=await sb.rpc('runtour_submit_season_guest',base);
+        error=res.error;
       } else {
-        ({error}=await sb.rpc('runtour_submit_season',{p_golfer:s.golfer,p_ovr:s.ovr,p_year:s.year,
-          p_earnings:Math.round(s.earnings||0),p_net:Math.round(s.net||0),p_wins:s.wins,p_majors:s.majors,
-          p_skills:s.skills,p_career_id:s.careerId||null,p_rep_pts:(s.repPts!=null?s.repPts:achPoints())}));
+        const base={p_golfer:s.golfer,p_ovr:s.ovr,p_year:s.year,p_earnings:Math.round(s.earnings||0),p_net:Math.round(s.net||0),
+          p_wins:s.wins,p_majors:s.majors,p_skills:s.skills,p_career_id:s.careerId||null,p_rep_pts:(s.repPts!=null?s.repPts:achPoints())};
+        let res=await sb.rpc('runtour_submit_season',Object.assign({p_followers:fol},base));
+        if(res.error) res=await sb.rpc('runtour_submit_season',base);
+        error=res.error;
       }
       if(error) throw error;
       posted++;
