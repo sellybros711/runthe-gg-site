@@ -7196,6 +7196,41 @@ allows Google Fonts, or self-host Anton.*
   shareText while a guest stays 0; all 4 done → +120 XP once (xpDone=1); the panel renders the "Share a
   result" row + "all 4" header; zero page errors. Screenshot confirms the 4-row panel. Deployed to /golf.
 
+- **CS294 — Challenges UI: completed quests turn green + the separate Player Level is merged into Tour Rep
+  (owner: "completed quests should turn green; there shouldn't be a separate level system, it should feed
+  into your tier").**
+  1. **Green completed rows.** A finished daily quest / weekly challenge row now turns the WHOLE row green
+     (label + ✓ + value + hint) via a new `.wg-row.done` rule, so "done" reads at a glance (was only the
+     right-side "done"/count in green).
+  2. **No more separate Level — challenges feed your Tour Rep tier.** The Player Level (XP) system is gone
+     from the UI. Completing quests/challenges still grants the same amounts (120/250) but they're now
+     **Tour Rep points**: `achPoints()` = achievement points + `challengeRepPts()` (the `bag_xp` store,
+     summed only at read so the two pools never corrupt each other at rest). So doing quests climbs your
+     Tour Rep tier directly. The Challenges panel's purple "Level N / XP" bar is replaced by a gold **Tour
+     Rep tier bar** (`repTierBarHTML`: rank name · total rep · progress to the next rank + mulli-spins), and
+     every "XP"/"Level" label across the panel, menu row, title tile, overlay copy, sign-in popup, and the
+     daily-result completion banners now reads "Tour Rep". `addXp` detects a challenge-driven rank-up and
+     surfaces it through the existing `S.freshRep` pipeline (summary card + achToast) with a "+N Tour Rep"
+     toast + celebration.
+     - **GOAT stays 100%-gated:** `repTierFor` now only awards G.O.A.T. on full achievement completion
+       (count-based), so challenge points can lift you as high as Icon but the summit still needs every
+       achievement. `evaluateAch`'s rank-up detection uses the combined total so it's consistent with the
+       displayed tier.
+     - **Coins unchanged:** the internal `xpForLevel`/`playerLevel`/`levelCoinTotal` curve is KEPT purely as
+       the Pro Shop coin payout (never surfaced as a "level"), so the coin economy is byte-for-byte the same.
+     - **Achievements:** the 5 "Reach Player Level N" achievements are converted to "Earn N Tour Rep from
+       challenges" (`chalrep_*`, get=`m.challengePts`, same point values → `ACH_TOTAL_PTS` unchanged, so no
+       tier rescale). New `challengePts` metric in `achMetrics`.
+  Retroactive + safe: a signed-in player's existing quest XP now counts as Tour Rep (a positive one-time
+  bump), coins are untouched, and everything cloud-syncs as before (bag_xp still in the bundle). Verified in
+  Playwright (cs294): challenge points feed achPoints and climb the tier (Rookie→Journeyman); GOAT stays
+  gated (83,890 pts / 0 achievements → Icon, not GOAT); addXp grants rep + detects a rank-up + sets freshRep;
+  the 5 chalrep achievements exist, 0 old lvl achievements, ACH total unchanged (331 / 33,890 pts); coins
+  still derive from the internal level curve; the panel shows the tier bar (no level bar), 1 green done row,
+  "Tour Rep" not "XP"; guest title + a full practice daily round regress clean with zero page errors.
+  Screenshot confirms the gold tier bar + green completed quest. Deployed to /golf. Tunable: `DAILY_QUEST_XP`/
+  `WEEKLY_CHAL_XP` (now rep amounts), the `chalrep` thresholds.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
