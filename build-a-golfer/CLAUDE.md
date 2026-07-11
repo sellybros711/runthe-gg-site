@@ -7231,6 +7231,37 @@ allows Google Fonts, or self-host Anton.*
   Screenshot confirms the gold tier bar + green completed quest. Deployed to /golf. Tunable: `DAILY_QUEST_XP`/
   `WEEKLY_CHAL_XP` (now rep amounts), the `chalrep` thresholds.
 
+- **CS295 — Moments rebalanced to REALLY big occasions + at least one interview/decision guaranteed every
+  season (owner: "I went through a season with 0 interview or decision pop-ups and a ton of moment pop-ups...
+  limit moments to really big moments, there are too many grudge matches, the threshold is too large... and
+  there shouldn't be a full season without at least one [decision] coming up").** Diagnosis: the shared
+  interruption budget let Moments (which triggered on ANY major/signature/playoff event within 4-5 of the
+  lead, up to 3/season, and billed a grudge match whenever the rival was merely top-8) consume the season
+  while storylines were gated behind a flat `Math.random()>0.6` + budget + event-gap, so a season could
+  easily produce 3 grudge moments and 0 interviews. Fixes:
+  1. **Moments = only the biggest, only in real contention.** `momentInfo` now fires ONLY for a **major or
+     the Tour Championship finale** (was major/signature/playoff), and only when you're **top-3 AND within 2
+     shots** of the lead (`MOMENT_MAJOR` gap 4→2 / pos 5→3). Cap dropped to **2/season** (`MOMENT_PER_SEASON`
+     3→2). So a Moment is now a genuine "I'm in the hunt on Sunday at a major" set piece, not a routine
+     interruption.
+  3. **Far fewer grudge matches.** `grudgeRival` now bills a grudge only when the nemesis is **top-5 AND
+     within 3 shots** of you (was top-8 OR within 4 — nearly always true), and the scheduler caps it to **one
+     grudge per season** (`S.season.grudgeShown`); a later contended Moment stays a normal Moment. Reset in
+     startSeason + carried in the mid-season save.
+  2. **A guaranteed interview/decision every season.** `maybeStoryline` now GUARANTEES the season's first
+     storyline: once you're ~40% through the schedule with none fired yet, it bypasses the random roll, the
+     event-gap, AND the interruption budget, and falls back to an always-applicable beat (fan/home/gear,
+     ignoring cooldown) if no situational one fits — so no career year passes without at least one press
+     conference / sponsor / fan / life decision. The 2nd/3rd of the season stay occasional (the existing
+     random+budget+gap logic). The catalog already spans the owner's examples (sponsor decisions, fan-tweet
+     replies, reporter interviews pre/post-major, life/legacy, rivalry) — they just needed to actually fire.
+  Verified in Playwright (cs295): a contended major fires a Moment while a far major / signature / non-finale
+  playoff do not; the finale in contention fires; grudge only when the rival is top-5 & within 3; the season's
+  first storyline fires past 40% despite a spent budget + gap while a 2nd is correctly gated and early-season
+  stays normal; the CS291 press-conference render regression is clean; zero page errors. Tunable:
+  `MOMENT_MAJOR` (gap/pos), `MOMENT_PER_SEASON`, the grudge contention band + per-season cap, the 40%
+  guarantee threshold. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
