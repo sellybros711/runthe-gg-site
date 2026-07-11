@@ -144,6 +144,19 @@ window.GA_ID='G-L29P5MRWKE';
   /* sticky setup avatar — big on desktop, much smaller on phones so it doesn't eat the screen while scrolling */
   .avatarfig.fullbody.av-setup-full{height:min(56vh,520px)}
   @media(max-width:700px){ .avatarfig.fullbody.av-setup-full{height:min(34vh,300px)} }
+  /* CS266: Build-a-Golfer live stage — spotlight glow, name above, floor shadow; sticky action bar */
+  .setup-figwrap{position:sticky; top:8px; z-index:3; padding:8px 0 12px; margin:0 -16px; background:#06200f; border-bottom:1px solid var(--line)}
+  .avstage{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end}
+  .avstage::before{content:''; position:absolute; left:50%; top:6%; width:min(72%,340px); height:80%; transform:translateX(-50%);
+    border-radius:50%; z-index:0; pointer-events:none;
+    background:radial-gradient(ellipse at center, rgba(216,173,74,.20), rgba(216,173,74,.05) 52%, transparent 72%)}
+  .avstage-name{position:relative; z-index:1; font-family:var(--display); font-style:italic; font-size:20px; line-height:1; color:#f4eddc; margin-bottom:3px; text-align:center; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .avstage .avatarfig{position:relative; z-index:1}
+  .avfloor{position:relative; z-index:0; width:52%; max-width:210px; height:15px; margin-top:-4px; border-radius:50%;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,.5), rgba(0,0,0,.18) 55%, transparent 72%)}
+  .setup-actionbar{position:sticky; bottom:0; z-index:4; display:flex; gap:9px; align-items:stretch; margin:16px -16px 0;
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px)); border-top:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(6,32,15,0), #06200f 34%)}
   @media(max-width:860px){
     .cols{grid-template-columns:1fr; gap:16px} .seasoncols .scorecol{order:-1}
     /* Stacked single-column layout breaks the row-sharing trick above (each column becomes its own
@@ -402,9 +415,11 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes pop{0%{transform:scale(.97)}55%{transform:scale(1.02)}100%{transform:scale(1)}}
   .spinning .name{animation:flick .08s steps(1) infinite} @keyframes flick{50%{opacity:.34}}
   .attrs{display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:10px}
-  .attr{display:flex; align-items:center; gap:9px; background:var(--panel);
-    border:1px solid var(--panelb); border-radius:10px; padding:9px 10px 9px 12px; cursor:pointer; text-align:left;
+  .attr{display:flex; align-items:center; gap:9px; background:var(--panel); position:relative;
+    border:1px solid var(--panelb); border-radius:10px; padding:9px 10px 11px 12px; cursor:pointer; text-align:left;
     color:var(--oncard); font:inherit; width:100%; box-shadow:0 4px 12px -10px rgba(0,0,0,.6); transition:transform .05s ease, border-color .12s ease}
+  .attr .attrbar{position:absolute; left:0; right:0; bottom:0; height:3px; background:rgba(255,255,255,.06); border-radius:0 0 10px 10px; overflow:hidden}
+  .attr .attrbar>i{display:block; height:100%; border-radius:0 2px 2px 0}
   .attr .lab{flex:1; font-weight:600; font-size:12px; color:#cfdbe6}
   .attr .val{font-family:var(--mono); font-weight:800; font-size:16px; color:var(--gold)}
   .attr .take{font:800 9px/1 var(--body); letter-spacing:.08em; text-transform:uppercase; color:#04211c;
@@ -937,6 +952,28 @@ window.GA_ID='G-L29P5MRWKE';
   .ct-body{padding-top:3px}
   .ct-title{font-weight:800; font-size:14px; color:var(--oncard)}
   .ct-sub{font-size:12px; color:var(--muted); margin-top:2px}
+  /* CS267: Season Impact broadcast card (animated deltas) */
+  .impactcard{margin:8px 0 12px}
+  .impact-hd{font:800 11.5px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--gold); margin-bottom:9px}
+  .impact-rank{margin-bottom:11px}
+  .impact-rank .il{font:800 9.5px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+  .impact-rank .iv{font:800 26px/1 var(--body); color:var(--oncard); margin-top:5px; font-variant-numeric:tabular-nums}
+  .impact-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border-radius:11px; overflow:hidden; margin-bottom:10px}
+  .istat{background:rgba(255,255,255,.04); padding:9px 10px; text-align:center}
+  .istat .k{font:800 8.5px/1 var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+  .istat .v{font-family:var(--mono); font-weight:800; font-size:16px; margin-top:5px; color:var(--oncard); font-variant-numeric:tabular-nums}
+  .impact-card-status{font-size:12px; font-weight:700}
+  /* CS268: leaderboard top-3 podium */
+  .lbpodium{display:grid; grid-template-columns:1fr 1.12fr 1fr; align-items:end; gap:8px; margin:2px 0 14px}
+  .lbpod{border-radius:12px; text-align:center; padding:12px 7px; border:1px solid var(--line); background:rgba(255,255,255,.04); min-width:0}
+  .lbpod.p1{padding-top:20px; border-color:var(--gold); background:linear-gradient(180deg,rgba(216,173,74,.2),rgba(216,173,74,.04))}
+  .lbpod.p2{background:linear-gradient(180deg,rgba(200,208,214,.14),rgba(200,208,214,.03))}
+  .lbpod.p3{background:linear-gradient(180deg,rgba(198,140,86,.15),rgba(198,140,86,.03))}
+  .lbpod .medal{font-size:22px; line-height:1}
+  .lbpod .medal .ic{width:22px; height:22px}
+  .lbpod .nm{font-weight:800; font-size:12px; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--oncard)}
+  .lbpod .vl{font-family:var(--mono); font-weight:800; font-size:13px; margin-top:3px; color:var(--gold)}
+  .lbpod .rk{font:700 9.5px/1.2 var(--body); color:var(--muted); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
   .screen.major-screen{background:radial-gradient(130% 70% at 50% -8%, rgba(235,166,31,.20), transparent 62%)}
   .majorbanner{display:flex; align-items:center; justify-content:center; gap:8px;
     background:linear-gradient(90deg,#5a3d0b,var(--gold),#5a3d0b); color:#1a1206;
@@ -4689,13 +4726,21 @@ function overlayLeaderboard(screen){
       return lbRowHTML(r.rank,id.name,sub,v,you,lbRep({rep_pts:id.rep}));
     };
     const rows=globalRows;   // already ordered by the server (top N desc, or true bottom N asc)
+    // CS268: top-3 podium (only on the default best-first view, not the low→high "bottom of the DB" view)
+    let podiumHTML='';
+    if(dir!=='asc' && rows.length>=3){
+      const pod=[rows[1],rows[0],rows[2]];   // DOM order 2·1·3 so #1 sits centre/elevated
+      const cls=['p2','p1','p3'], med=['🥈','🥇','🥉'];
+      podiumHTML='<div class="lbpodium">'+pod.map((r,di)=>{ const id=lbCanon(r), v=lbStatVal(r,tab,sort);
+        return `<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="nm">${esc(id.name)}</div><div class="vl">${v}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`; }).join('')+'</div>';
+    }
     if(sbSignedIn()){
-      board=rows.map(rowFn).join('');
+      board=podiumHTML+rows.map(rowFn).join('');
     } else {
       // guest: show the top few clearly, blur the rest behind a sign-in CTA
       const top=rows.slice(0,5).map(rowFn).join('');
       const tail=rows.slice(5).map(rowFn).join('');
-      board = top + (tail
+      board = podiumHTML + top + (tail
         ? `<div class="lockwrap"><div class="lockblur">${tail}</div>
             <div class="lockover"><div class="lockmsg">🔒 <b>Sign in to see the full board</b><div class="small muted">Post your seasons and claim your rank.</div></div>
             <div class="mini" style="margin:0;width:auto;gap:8px"><button class="btn gold" id="lb-lock-up" style="width:auto;padding:9px 14px;font-size:12px">Create account</button><button class="btn ghost" id="lb-lock-in" style="width:auto;padding:9px 14px;font-size:12px">Sign in</button></div></div></div>`
@@ -5336,11 +5381,16 @@ function scrSetup(){
   // avatar preview, large, sticky so it stays visible while you scroll the options. A solid
   // backdrop is needed once it's pinned (see the .setup-cols CSS) since the customization list
   // scrolls up underneath it, without one, the swatches/rows behind would show through.
+  // CS266: a live avatar STAGE — golden spotlight behind the golfer, name above, floor shadow beneath
   const full=sbSignedIn();
   const f=$(avatarShowHTML());
-  if(full){ f.classList.add('av-setup-full'); f.style.filter='drop-shadow(0 8px 18px rgba(0,0,0,.5))'; }
-  else { f.style.width='184px'; f.style.height='184px'; f.style.filter='drop-shadow(0 7px 16px rgba(0,0,0,.45))'; }
-  const figwrap=$(`<div style="display:flex;justify-content:center;position:sticky;top:8px;z-index:3;padding:10px 0 14px;margin:0 -16px;background:#06200f;border-bottom:1px solid var(--line)"></div>`); figwrap.appendChild(f); left.appendChild(figwrap);
+  if(full){ f.classList.add('av-setup-full'); f.style.filter='drop-shadow(0 10px 20px rgba(0,0,0,.5))'; }
+  else { f.style.width='184px'; f.style.height='184px'; f.style.filter='drop-shadow(0 9px 18px rgba(0,0,0,.45))'; }
+  const stage=$(`<div class="avstage"></div>`);
+  stage.appendChild($(`<div class="avstage-name">${esc((sbSignedIn()&&(S.name||'').trim())?S.name:'Your Golfer')}</div>`));
+  stage.appendChild(f);
+  stage.appendChild($(`<div class="avfloor" aria-hidden="true"></div>`));
+  const figwrap=$(`<div class="setup-figwrap"></div>`); figwrap.appendChild(stage); left.appendChild(figwrap);
 
   // ---- Appearance (available to everyone) ----
   right.appendChild(setupHeader('Appearance'));
@@ -5381,10 +5431,13 @@ function scrSetup(){
     right.appendChild(cosPatRow('Hat pattern','hatPat'));
   }
 
-  const go=$(`<button class="btn goldfill" style="margin-top:16px">Build Your Golfer ▸<span class="sub">${S.daily?'Build a golfer for today\'s course':'Spin the wheel to build your golfer'}</span></button>`);
-  go.onclick=()=>{ if(guest && !(S.name||'').trim()) S.name='Your Golfer'; track('draft_started',{daily:S.daily,guest}); S.screen='draft'; render(); }; right.appendChild(go);
-  const back=$(`<button class="btn ghost" style="margin-top:10px">‹ Back</button>`);
-  back.onclick=()=>{reset();S.screen='title';render();}; right.appendChild(back);
+  // CS266: sticky action bar so the primary "Build Your Golfer" CTA stays reachable while scrolling the kit
+  const bar=$(`<div class="setup-actionbar"></div>`);
+  const back=$(`<button class="btn ghost" style="margin:0;width:auto;flex:0 0 auto;padding:12px 15px">‹ Back</button>`);
+  back.onclick=()=>{reset();S.screen='title';render();};
+  const go=$(`<button class="btn goldfill" style="margin:0;flex:1 1 auto">Build Your Golfer ▸</button>`);
+  go.onclick=()=>{ if(guest && !(S.name||'').trim()) S.name='Your Golfer'; track('draft_started',{daily:S.daily,guest}); S.screen='draft'; render(); };
+  bar.appendChild(back); bar.appendChild(go); add(bar);
 }
 
 /* ---------- avatar (layered canvas recolor) ---------- */
@@ -6085,8 +6138,9 @@ function scrDraft(){
     CATS.forEach(cat=>{
       const filled=!!S.slots[cat.k];
       const key=dailyKeys&&dailyKeys.has(cat.k);
-      const b=$(`<button class="attr${key?' keyhole':''}" ${filled?'disabled':''} aria-label="${filled?'Already filled: '+cat.short:'Draft '+cat.short+', rated '+S.current[cat.k]+(key?', key skill for today\'s course':'')}">
-        ${key?'<span class="keystar" aria-hidden="true">★</span>':''}<span class="lab">${cat.short}</span><span class="val">${S.current[cat.k]}</span>${filled?'':'<span class="take">Take</span>'}</button>`);
+      const rv=S.current[cat.k], rc=rv>=90?'#d8ad4a':rv>=80?'#49b675':rv>=70?'#7ec8ff':'#9fb0bd';   // CS269 rating→strength colour
+      const b=$(`<button class="attr${key?' keyhole':''}" ${filled?'disabled':''} aria-label="${filled?'Already filled: '+cat.short:'Draft '+cat.short+', rated '+rv+(key?', key skill for today\'s course':'')}">
+        ${key?'<span class="keystar" aria-hidden="true">★</span>':''}<span class="lab">${cat.short}</span><span class="val">${rv}</span><span class="attrbar"><i style="width:${Math.min(100,rv)}%;background:${rc}"></i></span>${filled?'':'<span class="take">Take</span>'}</button>`);
       if(!filled) b.onclick=()=>takeAttr(cat.k);
       grid.appendChild(b);
     });
@@ -6285,7 +6339,7 @@ function startSeason(majorsOnly){
   field.push(me);
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0,toPar:0,rounds:0}]))};
   S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0; S.seasonRank=null;
-  S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false;   // unlocked during THIS season (shown on the summary)
+  S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false; S._impactShown=false;   // unlocked during THIS season (shown on the summary)
   if(S.career && S.career.story){ S.career.story.seasonCount=0; }   // reset the per-season storyline cap (CS225)
   S.season.stops=0; S.season.momentsShown=0;   // shared interruption budget (max 4 pop-ups/season)
   if(!S.daily && !S.circuitMode && S.career){   // CS226 momentum: carry confidence over with gentle reversion; snapshot followers for the season delta
@@ -8702,6 +8756,36 @@ function headlinesHTML(h){
     ${notes}</div>`;
 }
 /* ---------- summary ---------- */
+// CS267: a count-up tween for the Season Impact card (ease-out; respects reduced motion via the caller)
+function _animCount(el, from, to, fmtFn, ms){
+  const now=()=>((typeof performance!=='undefined'&&performance.now)?performance.now():Date.now());
+  const t0=now(); (function fr(){ const p=Math.min(1,(now()-t0)/ms), e=1-Math.pow(1-p,3);
+    el.textContent=fmtFn(from+(to-from)*e); if(p<1) requestAnimationFrame(fr); else el.textContent=fmtFn(to); })();
+}
+function seasonImpactNode(m, cst, moveTxt, moveCol, firstYr, points, gross, net){
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const wrap=$(`<div class="scout impactcard" style="border-color:${cst.col}">
+    <div class="impact-hd">Season Impact</div>
+    <div class="impact-rank"><div class="il">Official World Ranking</div>
+      <div class="iv"><span id="imp-wr">World #${m.now}</span> <span style="font-size:13px;color:${moveCol};font-weight:700">${moveTxt}</span></div></div>
+    <div class="impact-grid">
+      <div class="istat"><div class="k">Tour Points</div><div class="v" id="imp-pts">+${points}</div></div>
+      <div class="istat"><div class="k">Earnings</div><div class="v" id="imp-earn">+${fmtShort(gross)}</div></div>
+      <div class="istat"><div class="k">Net Profit</div><div class="v" style="color:${net>=0?'#35d6a0':'#E14A33'}" id="imp-net">${(net>=0?'+':'−')+fmtShort(Math.abs(net))}</div></div>
+    </div>
+    <div class="impact-card-status" style="color:${cst.col}">${esc(cst.label)} <span class="muted" style="font-weight:600">· ${esc(cst.note)} · of ${m.size}</span></div>
+  </div>`);
+  if(S._impactShown || reduce) return wrap;   // animate only once per summary
+  S._impactShown=true;
+  requestAnimationFrame(()=>{
+    const wr=wrap.querySelector('#imp-wr'), pts=wrap.querySelector('#imp-pts'), earn=wrap.querySelector('#imp-earn'), netEl=wrap.querySelector('#imp-net');
+    if(wr && !firstYr) _animCount(wr, m.prev, m.now, v=>'World #'+Math.round(v), 900);
+    if(pts) _animCount(pts, 0, points, v=>'+'+Math.round(v), 850);
+    if(earn) _animCount(earn, 0, gross, v=>'+'+fmtShort(Math.max(0,v)), 850);
+    if(netEl) _animCount(netEl, 0, net, v=>(v>=0?'+':'−')+fmtShort(Math.abs(v)), 850);
+  });
+  return wrap;
+}
 function scrSummary(){
   const me=S.season.me, t=S.season.totals[me.name];
   const byMoney=Object.entries(S.season.totals).map(([n,v])=>({n,...v})).sort((a,b)=>b.money-a.money);
@@ -9001,21 +9085,14 @@ function scrSummary(){
       add(wrap);
     }
   }
-  // Official World Ranking + Tour Card status, the season's headline standing, with year-over-year movement
+  // CS267: Season Impact — a broadcast-style recap card whose numbers COUNT UP on first view
+  // (world rank prev→now, tour points gained, season earnings, net). Tour Card status underneath.
   if(!S.daily && S.worldRankMove){
-    const m=S.worldRankMove, cs=cardStatus(m.now), dlt=m.prev-m.now;   // dlt>0 = climbed (lower number is better)
+    const m=S.worldRankMove, cst=cardStatus(m.now), dlt=m.prev-m.now;   // dlt>0 = climbed (lower is better)
     const firstYr=(S.career&&S.career.seasons.length<=1);
-    const moveTxt=firstYr?'New entry':(dlt>0?`▲ ${dlt}`:dlt<0?`▼ ${Math.abs(dlt)}`:'- level');
+    const moveTxt=firstYr?'New entry':(dlt>0?`▲ ${dlt}`:dlt<0?`▼ ${Math.abs(dlt)}`:'— level');
     const moveCol=firstYr?'var(--gold)':(dlt>0?'#35d6a0':dlt<0?'#E14A33':'var(--muted)');
-    add($(`<div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin:8px 0 12px;border-color:${cs.col}">
-      <div style="min-width:0">
-        <div style="font:800 11.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">Official World Ranking</div>
-        <div style="font:800 26px/1 var(--body);color:var(--oncard);margin-top:6px">World #${m.now} <span style="font-size:13px;color:${moveCol};font-weight:700">${moveTxt}</span></div>
-        <div class="small" style="margin-top:5px;color:${cs.col};font-weight:700">${cs.label}</div>
-        <div class="small muted" style="margin-top:1px">${cs.note}</div>
-      </div>
-      <div style="text-align:right;flex:0 0 auto"><div class="small muted">of ${m.size}</div></div>
-    </div>`));
+    add(seasonImpactNode(m, cst, moveTxt, moveCol, firstYr, (t.points||0), ec.gross, ec.net));
   }
   // ---- Season Awards ----
   if(!S.daily && S.seasonAwards){
