@@ -7169,6 +7169,19 @@ allows Google Fonts, or self-host Anton.*
   (fan tweets + a headline card). Deployed to /golf. Tunable: the `PB_TONES` content pools, the opponent-quote
   probability (0.45), `STORY_PER_SEASON`/`SEASON_STOP_BUDGET`.
 
+- **CS292 — off-season: show which stats are LOCKED on the "Your golfer" scorecard (owner IMG_8091: "I
+  want the user to know which stats are locked before they choose if they want to use their next spin. Make
+  it clean").** The once-per-off-season stat lock (CS130) was only visible AFTER you spun (the skill tiles
+  greyed out a locked stat), so before deciding whether to spend a spin you couldn't tell which of your 8
+  stats a swap could still land on. Now the off-season "Your golfer" scorecard (`scrOffseason`, the
+  current-bag list under the avatar) flags every stat already changed this off-season: a clean gold "🔒
+  LOCKED" pill next to the golfer name + a subtle gold tint on the row (`.slot.locked`/`.slotlock`), plus a
+  one-line gold hint under the heading ("🔒 Locked stats have already been changed this off-season and can't
+  change again — a spin can only land on your open stats") shown only when at least one stat is locked.
+  Reads directly off the existing `S.offseason.locked` array, so it stays in sync with the spin-screen lock
+  and the resume snapshot. Verified in Playwright (a state with SCR + BNK locked → exactly those 2 rows get
+  the locked class + badge, the hint renders, zero page errors) + a screenshot. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
