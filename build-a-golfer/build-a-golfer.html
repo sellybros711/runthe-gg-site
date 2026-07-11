@@ -10611,6 +10611,19 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
       sh.push({d:`${dClub(fromYds)} from ${fromYds} yds, missed the green ${missLie}`, k:'app', lie:offLie, fromY:fromYds, toY:dist}); played++; }
   }
   if(ftToHole==null)ftToHole=20+rng()*20;
+  // CS297: a 2-or-more-putt must ORIGINATE from a realistic lag distance. Pros essentially never 2-putt
+  // from a few feet or miss a tap-in — so if the ball finished close but the score needs 2+ putts, the
+  // approach actually finished farther out. Push the first-putt distance to a believable lag and SYNC the
+  // green-arrival shot (its "X ft to hole" text + tracer rest spot) so the sequence never reads as leaving
+  // a lag to 1 foot / missing a short putt. Narration only — no shot is added, so the stroke count is exact.
+  if(P>=2){
+    const minLag = P>=3 ? 28 : 14;
+    if(ftToHole < minLag){
+      ftToHole = minLag + rng()*16;
+      for(let i=sh.length-1;i>=0;i--){ const s=sh[i];
+        if(s.lie==='green'){ s.ft=ftToHole; s.d=s.d.replace(/,\s*[^,]*to hole\s*$/i, `, ${dFeet(ftToHole)} to hole`); break; } }
+    }
+  }
   // P===0 = a FAIRWAY HOLE-OUT: an eagle where the last FULL shot is holed from the fairway/rough (CS283),
   // a preset-drive eagle (drive + holed approach), or a par-5 holed wedge — no putt, the approach itself
   // finishes. Convert the last (green-arrival) shot into the hole-out with its result tag.
@@ -10642,7 +10655,10 @@ function dShotSeq(par,yards,strokes,rng,sk,opts){
         // tap-in. So the missed putt is always a believable mid-ranger, never a 2-footer.
         let leave;
         if(remaining>=3){ leave=Math.max(4.5, Math.min(putt*0.9, (5+(1-putQ)*5)+rng()*2.5)); }   // poor lag → real 5-9 ft miss
-        else { const slope=0.11-0.075*putQ; leave=Math.max(0.5, Math.min(putt*0.85, 0.5+slope*putt+rng()*(0.22+0.02*putt))); }   // great lag → tap-in
+        // CS297: a made 2-putt / comebacker leaves a genuine SHORT putt (~1.6-3 ft) — a real, separate stroke —
+        // never a ~1-foot "should've dropped" tap-in (owner: don't hit a 2-putt to 1 foot / miss 1-footers).
+        // Capped at 70% of the current distance so it always makes progress toward the hole.
+        else { const slope=0.11-0.075*putQ; leave=Math.min(putt*0.7, Math.max(1.6, 1.2+slope*putt*0.7+rng()*(0.5+0.02*putt))); }
         sh.push({d:`Putt ${dFeet(putt)}, ${dFeet(leave)} to hole`, k:'putt', lie:'green', ft:putt, toFt:leave}); ftToHole=leave; }
     }
   }

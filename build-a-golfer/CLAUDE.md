@@ -7278,6 +7278,26 @@ allows Google Fonts, or self-host Anton.*
   (The main season screen's controls already sit right under the live tournament per CS241, so they weren't
   part of this — only the long-scroll team-cup screen the owner flagged.)
 
+- **CS297 — putting realism pt3: no missed 1-footers, 2-putts don't leave it to 1 foot (owner: "I see
+  players missing 1 foot putts... if you're going to have a player 2-putt, do not have them hit it to 1
+  foot").** Root cause: the number of putts (`P`) was decoupled from the first-putt distance (`ftToHole`),
+  so a hole could narrate a "2-putt from 6 ft" or a "3-putt from 8 ft" whose intermediate leave landed at
+  ~1 ft — reading as a pro missing a short putt (which essentially never happens on tour). Two fixes in
+  `dShotSeq` (NARRATION + hole-view distances only — the deterministic `dSimHole` score is untouched, and
+  the hard shot-count===stroke-count invariant is preserved):
+  1. **A 2+ putt must ORIGINATE from a realistic lag distance.** If the ball finished close but the score
+     needs 2+ putts, the approach actually finished farther out — so `ftToHole` is floored (2-putt ≥14 ft,
+     3-putt ≥28 ft) and the green-arrival shot is SYNCED (its "X ft to hole" text + the tracer rest spot),
+     so you never see a 2-putt/3-putt from a few feet.
+  2. **The comebacker is a genuine short putt, never a ~1-footer.** The made second putt / comebacker now
+     leaves ~1.6–3 ft (a real, separate stroke), capped at 70% of the current distance so it always makes
+     progress — instead of the old ~0.5–1 ft "should've dropped" tap-in.
+  Verified in Playwright over 6,480 par/score/skill/seed combos: **0** shot-count mismatches, **0** putt
+  leaves under 1.5 ft, **0** two-putts originating under 12 ft, **0** backwards putts; sample narratives read
+  true ("Lob wedge to center green, 17 ft to hole / Putt 17 ft, 2 ft 6 in. to hole / In the hole" — a clean
+  2-putt leaving a real ~2-footer, made). A full practice round still renders the tracer with zero page
+  errors. Tunable: the `minLag` floors (14/28 ft) and the comebacker leave band. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
