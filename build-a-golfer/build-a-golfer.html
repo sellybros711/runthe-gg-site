@@ -8631,12 +8631,17 @@ function selectionInfo(evt){
 // Timed bottom pop-up version of the selection announcement, appears, reads, fades, no click needed.
 function selectionPopup(evt){
   const info=selectionInfo(evt), col=info.made?'var(--gold)':'#e9a23b';
-  const t=$(`<div style="position:fixed;left:0;right:0;bottom:22px;margin:0 auto;z-index:30;width:min(440px,92vw);box-sizing:border-box;background:linear-gradient(180deg,${info.made?'#15331f':'#0a2740'},#0a1626);color:var(--oncard);border:1px solid ${col};border-radius:12px;padding:13px 16px;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:celebRise .35s ease both">
+  // CS299: pin to the bottom exactly like toast() does — position:fixed with left:50%+translateX(-50%)
+  // centering and an OPACITY-only fade. The old version used `animation:celebRise` (a transform keyframe),
+  // and on iOS a fixed element with a running transform animation gets positioned relative to the document
+  // instead of the viewport, so it drifted to the middle when scrolling (owner: "it moves to the middle").
+  const t=$(`<div style="position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:45;width:min(440px,92vw);box-sizing:border-box;background:linear-gradient(180deg,${info.made?'#15331f':'#0a2740'},#0a1626);color:var(--oncard);border:1px solid ${col};border-radius:12px;padding:13px 16px;box-shadow:0 10px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .3s ease">
     <div style="font:800 11.5px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:${col};margin-bottom:5px">${info.made?'🎉 ':''}${esc(info.tag)} · Selection</div>
     <div style="font:800 17px/1.2 var(--body);color:${col}">${info.made?'🏆 ':''}${info.title}</div>
     <div class="small muted" style="margin-top:4px">${info.sub}</div></div>`);
   document.body.appendChild(t);
-  setTimeout(()=>{ t.style.transition='opacity .45s ease'; t.style.opacity='0'; setTimeout(()=>{ if(t.parentNode) t.remove(); },450); }, 3300);
+  requestAnimationFrame(()=>{ t.style.opacity='1'; });
+  setTimeout(()=>{ t.style.opacity='0'; setTimeout(()=>{ if(t.parentNode) t.remove(); },350); }, 3300);
 }
 function scrSelectionScreen(evt){
   clearTimeout(seasonTimer); RT.classList.add('major-screen');

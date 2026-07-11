@@ -7313,6 +7313,22 @@ allows Google Fonts, or self-host Anton.*
   and desktop keeps the controls in-flow (position static). Screenshot confirms the bar pinned at the bottom
   with a clean gap above it while cards scroll behind. Deployed to /golf. Tunable: the `168px` reserve height.
 
+- **CS299 — selection-announcement pop-up now stays pinned to the bottom (iOS fixed-positioning fix).**
+  Owner (screenshot of the "Tour Cup Playoffs · Selection — You made it to East Lake!" card mid-screen over
+  the leaderboard): "The same thing was happening with other footer pop ups when scrolling. It should stay
+  pinned on the bottom." Root cause: `selectionPopup` was a `position:fixed; bottom` element that used
+  `animation:celebRise` (a keyframe animation involving `transform`). On iOS Safari/PWA a `position:fixed`
+  element with a running CSS transform animation gets positioned relative to the DOCUMENT instead of the
+  viewport — so, created while the page was scrolled, it stuck to a document position and drifted to the
+  middle as you scrolled. (Regular `toast()`s never had this because they use no keyframe animation.) Fixed
+  by mirroring the proven `toast()` pattern exactly: `position:fixed; left:50%; bottom:calc(22px + safe-area);
+  transform:translateX(-50%)` (a STATIC transform, fine) with an **opacity-only** fade (no transform
+  keyframe). Audited every other fixed-bottom element — `toast()`, the auth-pending pill, and `.scrollcue`
+  all already use static transforms (the scrollcue's bob animation is on a child, not the fixed element) —
+  so `selectionPopup` was the only offender. Verified in Playwright: the pop-up is `position:fixed` with no
+  transform animation, pinned to the viewport bottom, and STAYS pinned after scrolling (rectBottom unchanged
+  at scroll 0 and 500); zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
