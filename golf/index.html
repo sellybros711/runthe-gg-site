@@ -5120,13 +5120,18 @@ function scrTitle(){
     const rb=$(`<button class="btn goldfill">Resume Your Golfer<span class="sub">${ri.n}/8 skills built</span></button>`);
     rb.onclick=restoreResume; stack.appendChild(rb);
   }
-  // gold = the single primary career action; with a resume in progress, "start a new golfer" drops to ghost
-  const goCls=(ri||cs)?'ghost':'goldfill';
-  const go=$(`<button class="btn ${goCls}">${(ri||cs)?'New Career':'Career Mode'}<span class="sub">${(ri||cs)?'Build a new golfer':'Build your golfer · 30-year career'}</span></button>`);
-  // reset() clears the build state so a FRESH career never inherits a previous run's team (e.g. an 8/8
-  // Daily build that stranded the draft at "8/8 drafted" with no way to advance).
-  go.onclick=()=>{reset();S.mode='easy';S.screen='setup';render();};
-  stack.appendChild(go);
+  // Career is one of the 4 home modes. With a saved career, that slot is the Continue Career card above,
+  // so NO separate "New Career" button here — you start a fresh career from inside your current one
+  // (Continue → off-season → Retire → start a new golfer). Only show a Career-Mode start button when
+  // there's no career to continue (fresh player, or a stale build draft to turn into a career).
+  if(!cs){
+    const goCls=ri?'ghost':'goldfill';
+    const go=$(`<button class="btn ${goCls}">${ri?'New Career':'Career Mode'}<span class="sub">${ri?'Build a new golfer':'Build your golfer · 30-year career'}</span></button>`);
+    // reset() clears the build state so a FRESH career never inherits a previous run's team (e.g. an 8/8
+    // Daily build that stranded the draft at "8/8 drafted" with no way to advance).
+    go.onclick=()=>{reset();S.mode='easy';S.screen='setup';render();};
+    stack.appendChild(go);
+  }
   // 3) Play Online (teal card)
   stack.appendChild(onlineHeroCard());
   // 4) Monthly Spotlight (purple card while live, else a small "next" tease)
