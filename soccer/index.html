@@ -2114,9 +2114,14 @@
   .acct-username-row .entry-name{margin-bottom:0;}
   /* profile: stat tiles */
   .acct-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0 4px;}
-  .acct-stat{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
-    border-radius:11px;padding:10px 6px;text-align:center;}
+  .acct-stat{position:relative;overflow:hidden;background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:11px 6px 10px;text-align:center;}
+  /* per-stat accent bar across the top + a faint colour wash from it */
+  .acct-stat::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:var(--sc,transparent);}
+  .acct-stat .as-ico{display:block;width:19px;height:19px;margin:0 auto 5px;color:var(--sc,#9a9a9a);}
+  .acct-stat .as-ico svg{width:100%;height:100%;display:block;}
   .acct-stat .as-num{display:block;font-family:'Anton',Impact,sans-serif;font-size:22px;color:#fff;line-height:1;}
+  .acct-stat .as-num.sc{color:var(--sc);}
   .acct-stat .as-lbl{display:block;font-size:8.5px;font-weight:800;text-transform:uppercase;
     letter-spacing:.5px;color:#9a9a9a;margin-top:5px;}
   .acct-stat-loading{grid-column:1/-1;text-align:center;color:#9a9a9a;font-size:12px;padding:8px;}
@@ -6240,19 +6245,44 @@ async function loadMyStats(){
   renderProfileStats();
   renderAchievements();   // server counts feed the count/quality badges
 }
+// Small stroke/fill icons for the profile stat dashboard (inherit currentColor
+// so each tile tints its own icon).
+function statIco(id){
+  const st='fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"';
+  switch(id){
+    case 'drafts': return `<svg viewBox="0 0 24 24" ${st}><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1"/><path d="M8.5 9h7M8.5 13h7M8.5 17h4"/></svg>`;
+    case 'cups':   return `<svg viewBox="0 0 24 24" ${st}><path d="M7 4h10v4a5 5 0 0 1-10 0Z"/><path d="M7 5H4v1.5a3 3 0 0 0 3 3M17 5h3v1.5a3 3 0 0 1-3 3"/><path d="M12 13v3M9 20h6M10.5 20v-1.5h3V20"/></svg>`;
+    case 'ovr':    return `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9 6.8 19.2l1-5.8L3.5 9.2l5.9-.9Z"/></svg>`;
+    case 'flame':  return `<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2c.8 3.6 3.8 4.9 3.8 8.6 0 1-.3 1.9-.8 2.7 1.4-.7 2-2.3 2-2.3.9 1.9 1.4 3.6 1.4 5.1C18.4 19.5 15.5 22 12 22s-6.4-2.5-6.4-5.9c0-3.2 2.7-4.5 3.3-7.7 1.3 1.5 2 2 2.6 1.3.9-1.2-.5-3.6 0.5-7.7Z"/></svg>`;
+    case 'peak':   return `<svg viewBox="0 0 24 24" ${st}><path d="M4 18l5-6 4 4 7-9"/><path d="M20 11V7h-4"/></svg>`;
+    case 'legends':return `<svg viewBox="0 0 24 24" ${st}><rect x="3" y="7" width="12" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></svg>`;
+    default: return '';
+  }
+}
+const OV_TIER_COLOR={red:'var(--red)',orange:'var(--orange)',gold:'var(--gold)',green:'#4ade80',over100:'#F4B413'};
 function renderProfileStats(){
   const wrap=$('acct-stats'); if(!wrap) return;
   if(!myStats){ wrap.innerHTML='<div class="acct-stat-loading">Loading stats…</div>'; return; }
   const s=myStats;
+  const bestOv=(s.best_overall!=null && +s.best_overall>0) ? +s.best_overall : null;
+  const ovColor = bestOv!=null ? (OV_TIER_COLOR[ovTier(bestOv)]||'var(--gold)') : '#9a9a9a';
+  // [label, value, icon, accent colour, colour-the-number?]
   const tiles=[
-    ['Drafts', s.games||0],
-    ['World Cups', s.wins||0],
-    ['Best OVR', (s.best_overall!=null && +s.best_overall>0) ? (+s.best_overall).toFixed(1) : '-'],
-    ['Current Streak', s.current_streak||0],
-    ['Best Streak', s.longest_streak||0],
-    ['Legends', s.legends||0]
+    ['Drafts',         s.games||0,                                        'drafts', 'var(--teal)',  false],
+    ['World Cups',     s.wins||0,                                         'cups',   'var(--gold)',  true ],
+    ['Best OVR',       bestOv!=null ? bestOv.toFixed(1) : '-',            'ovr',    ovColor,        true ],
+    ['Current Streak', s.current_streak||0,                              'flame',  'var(--orange)',(s.current_streak||0)>0],
+    ['Best Streak',    s.longest_streak||0,                              'peak',   '#F47B20',      false],
+    ['Legends',        s.legends||0,                                      'legends','var(--blue)',  false],
   ];
-  wrap.innerHTML = tiles.map(t=>`<div class="acct-stat"><span class="as-num">${t[1]}</span><span class="as-lbl">${t[0]}</span></div>`).join('');
+  wrap.innerHTML = tiles.map(t=>{
+    const [lbl,val,ico,col,colorNum]=t;
+    return `<div class="acct-stat" style="--sc:${col}">
+      <span class="as-ico">${statIco(ico)}</span>
+      <span class="as-num${colorNum?' sc':''}">${val}</span>
+      <span class="as-lbl">${lbl}</span>
+    </div>`;
+  }).join('');
 }
 
 // ---- achievements --------------------------------------------------------
