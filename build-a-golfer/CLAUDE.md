@@ -7182,6 +7182,20 @@ allows Google Fonts, or self-host Anton.*
   and the resume snapshot. Verified in Playwright (a state with SCR + BNK locked → exactly those 2 rows get
   the locked class + badge, the hint renders, zero page errors) + a screenshot. Deployed to /golf.
 
+- **CS293 — new daily quest: "Share a result" (owner: "add a daily quest that says share a result to a
+  friend or social media").** Added a 4th daily quest (`DAILY_QUEST_DEFS`) — "Share a result · Friend or
+  social" (key `share`) — credited via `questDaily('share')` from every share funnel: the text funnel
+  (`shareText` — daily result, season, major win, career/circuit end) and the image funnel (`shareCard`),
+  plus the TOURTRACE shot-share (`hvGifShare` GIF + `hvShareShot` PNG). Guests never accrue (questDaily
+  early-returns when not signed in, same as the other quests). Since it's now 4 quests, the all-done XP
+  bonus (+120) requires all 4, and the count-based UI text updated from the hardcoded "3" to
+  `DAILY_QUEST_DEFS.length` (challenges panel header "all 4 → +120 XP" + the daily-result "All 4 done
+  today" banner; the sign-in popup's "N daily quests left" was already dynamic). Default quest shape +
+  `mergeDailyQuests` (cloud sync) extended with the `share` field so it syncs cross-device grow-only.
+  Verified in Playwright (cs293): 4 quests incl. share; a signed-in share credits the quest (0→1) via
+  shareText while a guest stays 0; all 4 done → +120 XP once (xpDone=1); the panel renders the "Share a
+  result" row + "all 4" header; zero page errors. Screenshot confirms the 4-row panel. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
