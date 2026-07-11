@@ -325,6 +325,31 @@ window.GA_ID='G-L29P5MRWKE';
   .rc-stats{display:flex; align-items:center; gap:16px; margin-top:12px}
   .rc-stat b{font:900 16px/1 var(--mono)} .rc-stat span{font:700 10px/1 var(--body); opacity:.66; margin-left:3px}
   .rc-go{margin-left:auto; font:900 12.5px/1 var(--body); letter-spacing:.03em; background:rgba(20,15,8,.14); border-radius:9px; padding:8px 13px}
+  /* CS256: matching hero cards for Daily / Spotlight / Online (same polish as the resume card, own accents) */
+  .gcard{display:block; width:100%; max-width:520px; margin:0 auto; text-align:left; cursor:pointer; border:0; border-radius:18px;
+    padding:14px 16px; position:relative; overflow:hidden; box-shadow:0 14px 32px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14)}
+  .gcard:active{transform:translateY(1px)}
+  .gc-blue{background:linear-gradient(158deg,#5f90f2,#3a63c8 60%,#3053b4); color:#f1f6ff; --chip:rgba(4,12,30,.3)}
+  .gc-teal{background:linear-gradient(158deg,#20bda9,#0a877a 60%,#07736a); color:#eafff9; --chip:rgba(2,20,16,.28)}
+  .gc-amber{background:linear-gradient(158deg,#f6c463,#ec9a25 60%,#df7d1c); color:#24170a; --chip:rgba(20,14,6,.15)}
+  .gc-top{display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
+  .gc-kick{font:800 10px/1.3 var(--body); letter-spacing:.14em; text-transform:uppercase; opacity:.72; display:flex; align-items:center; gap:6px}
+  .gc-title{font-family:var(--display); font-style:italic; font-size:24px; line-height:1; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .gc-badge{flex:0 0 auto; font:900 12px/1 var(--mono); letter-spacing:.04em; border-radius:9px; padding:7px 10px; background:var(--chip); white-space:nowrap}
+  .gc-mid{font:700 12px/1.35 var(--body); margin-top:9px; opacity:.92}
+  .gc-row{display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap}
+  .gc-chip{display:inline-flex; align-items:center; gap:5px; font:800 11.5px/1 var(--body); border-radius:8px; padding:6px 9px; background:var(--chip)}
+  .gc-chip.hot{background:rgba(235,166,31,.92); color:#20160a}
+  .gc-go{margin-left:auto; font:900 12.5px/1 var(--body); letter-spacing:.03em; border-radius:9px; padding:8px 13px; background:var(--chip)}
+  .gcard.spotlive{box-shadow:0 14px 32px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14), 0 0 0 0 rgba(240,168,60,.5); animation:spotPulse 2.4s ease-in-out infinite}
+  @keyframes spotPulse{0%,100%{box-shadow:0 14px 32px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14), 0 0 0 0 rgba(240,168,60,.55)} 50%{box-shadow:0 14px 32px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14), 0 0 0 7px rgba(240,168,60,0)}}
+  @media (prefers-reduced-motion:reduce){ .gcard.spotlive{animation:none} }
+  /* online card's two mode buttons */
+  .oc-row{display:flex; gap:8px; margin-top:12px}
+  .oc-btn{flex:1; min-width:0; background:rgba(2,20,16,.3); border:1px solid rgba(255,255,255,.18); border-radius:12px; padding:9px 8px; color:inherit; cursor:pointer; text-align:center}
+  .oc-btn:active{transform:translateY(1px)}
+  .oc-btn .ol-l{display:block; font:900 15px/1 var(--body)}
+  .oc-btn .ol-s{display:block; font:700 10px/1.2 var(--body); opacity:.74; margin-top:3px}
   .trophy{width:54px; height:72px; display:block; margin:2px auto 4px; filter:drop-shadow(0 6px 14px rgba(235,166,31,.4))}
   .scorechip{display:inline-flex; align-items:center; gap:14px; background:rgba(7,18,30,.82);
     border:1px solid var(--gold); border-radius:12px; padding:9px 16px; margin:6px auto 16px;
@@ -4883,6 +4908,61 @@ function resumeCareerCard(cs){
   card.onclick=resumeCareer;
   return card;
 }
+// CS256: Daily Challenge hero card — combines the streak + attempts + countdown into one rich card.
+function dailyHeroCard(){
+  const dleft=dailyAttemptsLeft(), datt=dailyAttempts(), dbest=dailyBest();
+  const dwon=dbest&&dbest.avg!=null&&dbest.total<dbest.avg;
+  const bestTxt=dbest?`Best ${dTot(dbest.total, dbest.par!=null?dbest.par:(DAILY_COURSES[dbest.course]||{}).par)}`:'';
+  let badge,mid;
+  if(PRACTICE){ badge='PRACTICE'; mid='Unlimited rounds · nothing recorded'; }
+  else if(datt===0){ badge='PLAY'; mid='Beat the tour average at a new famous course every day'; }
+  else if(dleft<=0){ badge=dwon?'BEATEN ✓':'DONE'; mid=`${bestTxt||'Played today'}${dwon?' · you beat the pro':' · came up short'} · new course at midnight`; }
+  else { badge=`${dleft} LEFT`; mid=`${bestTxt?bestTxt+' · ':''}${dwon?'beaten ✓ · go lower':'beat the tour average to win'}`; }
+  const st=streakDisplay(), fz=streakFreezes();
+  const playedToday=((LS.get(acctKey('bag_streak'),{})||{}).last===todayKey());
+  const atRisk=st>0 && !playedToday && !PRACTICE;
+  const streakChip = PRACTICE ? '' : (st>0
+    ? `<span class="gc-chip${atRisk?' hot':''}">🔥 ${st}-day streak${atRisk?' on the line':''}${(fz>0&&!atRisk)?` · ❄️ ${fz}`:''}</span>`
+    : `<span class="gc-chip">🔥 Start your streak</span>`);
+  const card=$(`<button class="gcard gc-blue" aria-label="Play the daily challenge, Beat the Pro">
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">Daily Challenge</div><div class="gc-title">Beat the Pro</div></div><span class="gc-badge">${badge}</span></div>
+    <div class="gc-mid">${mid}</div>
+    <div class="gc-row">${streakChip}<span class="gc-chip">New in ${dCd('hm')}</span><span class="gc-go">Play ▸</span></div>
+  </button>`);
+  card.onclick=startDailyChallenge;
+  return card;
+}
+// CS256: Monthly Spotlight hero card (amber, pulsing).
+function spotlightHeroCard(){
+  const sp=monthlySpotlight(todayKey()), sc=DAILY_COURSES[sp.key];
+  const att=spotAttempts(sp.mk), left=spotAttemptsLeft(sp.mk), rec=spotMonthRec(sp.mk), won=rec&&rec.won;
+  let badge,mid;
+  if(att===0){ badge='THIS WEEK'; mid=`${esc(dShort(sc.v))} · ${dCondLabel(sp.cond)} · beat the pro in a special event`; }
+  else if(left>0){ badge=won?'WON ✓':`${left} LEFT`; mid=`${esc(dShort(sc.v))} · ${won?'go lower':'beat the pro'} · best ${dTot(rec.best, sc.par)}`; }
+  else { badge=won?'WON ✓':'COMPLETE'; mid=`${esc(dShort(sc.v))} · ${won?'you beat the pro':'best '+dTot(rec.best, sc.par)}`; }
+  const card=$(`<button class="gcard gc-amber spotlive" aria-label="${esc(sp.month)} Monthly Spotlight">
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">★ Monthly Spotlight</div><div class="gc-title">${esc(sp.month)} Spotlight</div></div><span class="gc-badge">${badge}</span></div>
+    <div class="gc-mid">${mid}</div>
+    <div class="gc-row"><span class="gc-go">Play ▸</span></div>
+  </button>`);
+  card.onclick=startSpotlight;
+  return card;
+}
+// CS256: Play Online hero card (teal) — a container with the two mode entry buttons.
+function onlineHeroCard(){
+  const card=$(`<div class="gcard gc-teal" style="margin:16px auto 4px">
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick"><span class="online-dot"></span>Play Online <span class="online-badge">NEW</span></div><div class="gc-title">Head to Head</div></div></div>
+    <div class="gc-mid">Draft your golfer, then face real players live.</div>
+    <div class="oc-row">
+      <button class="oc-btn" id="ol-1v1"><span class="ol-l">1v1</span><span class="ol-s">Head-to-head · live</span></button>
+      <button class="oc-btn" id="ol-4"><span class="ol-l">Foursomes</span><span class="ol-s">2v2 &amp; 4-player</span></button>
+    </div>
+  </div>`);
+  const ob1=card.querySelector('#ol-1v1'), ob4=card.querySelector('#ol-4');
+  if(ob1) ob1.onclick=()=>openH2H('1v1');
+  if(ob4) ob4.onclick=()=>openH2H('bestball');
+  return card;
+}
 function scrTitle(){
   reconcileDailyAttempts();   // self-heal "attempts left" against the server before it's even displayed below
   const scene=$(`<div class="scene"><svg class="coursebg" viewBox="0 0 440 440" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
@@ -4939,34 +5019,12 @@ function scrTitle(){
   // quick round, no commitment: the easiest thing to tap on landing. Its
   // satellites (countdown, streak, weekly goals, spotlight) group under it.
   // ════════════════════════════════════════════════════════════════════
-  const dleft=dailyAttemptsLeft(), datt=dailyAttempts(), dbest=dailyBest();
-  const dwon=dbest&&dbest.avg!=null&&dbest.total<dbest.avg;
-  // dbest can legitimately be null even with attempts used up, e.g. a server-side attempt count just
-  // self-healed on a browser that never locally recorded a result (see reconcileDailyAttempts()), so
-  // every branch below must tolerate it instead of assuming "attempts used" implies "we know the score."
-  const bestTxt = dbest ? `Best ${dTot(dbest.total, dbest.par!=null?dbest.par:(DAILY_COURSES[dbest.course]||{}).par)}` : `Best on this device: not yet known`;
-  let dMain, dSub, dCls;
-  if(PRACTICE){ dMain='Beat the Pro · Practice'; dSub='Unlimited rounds · nothing recorded'; dCls='blue'; }
-  else if(datt===0){ dMain='Beat the Pro'; dSub='A new famous course every day'; dCls='blue'; }
-  else if(dleft<=0){ dMain=`Beat the Pro · ${dwon?'Beaten ✓':'Done'}`; dSub=`${bestTxt}${dbest?(dwon?' · beaten ✓':' · came up short'):''} · new course at midnight`; dCls='blue'; }   // stays blue even when done (gold is reserved for the single primary action)
-  else { dMain=`Beat the Pro · ${dleft} left`; dSub=`${bestTxt} · ${dwon?'beaten ✓ · go lower':'beat the tour average'}`; dCls='blue'; }
-  const daily=$(`<button class="btn ${dCls}">${dMain}<span class="sub">${dSub}</span></button>`);
-  daily.onclick=startDailyChallenge;
-  stack.appendChild(daily);
-  // live countdown to the next daily course — creates "play today before it changes" urgency
-  stack.appendChild($(`<div class="small center" style="margin-top:8px;color:var(--muted)">New course in <span style="color:var(--gold)">${dCd('clock')}</span></div>`));
+  // CS256: the Daily Challenge is now a rich hero card that folds in the streak + attempts + countdown
+  const st=streakDisplay();
+  stack.appendChild(dailyHeroCard());
   // CS237: career-mode hook — your created Legend golfers play the Daily free (no attempt used)
   if(!PRACTICE && hasFreeLegends()) stack.appendChild($(`<div class="small center" style="margin-top:6px;color:#35d6a0;font-weight:700">🏆 Your Legend golfers play the Daily free — no attempt used</div>`));
-  const st=streakDisplay(), fz=streakFreezes();
-  const playedToday=((LS.get(acctKey('bag_streak'),{})||{}).last===todayKey());
-  if(st>0 && !playedToday && !PRACTICE){
-    // streak AT RISK today → loss-aversion banner with the live countdown (the #1 documented daily-retention lever)
-    stack.appendChild($(`<div class="streakrisk" style="margin-top:10px">
-      <div style="font-weight:900;font-size:15px;color:var(--gold)">🔥 ${st}-day streak on the line</div>
-      <div class="small" style="color:#f0d9a6;margin-top:2px">Play today to keep it alive${fz>0?` (a ❄️ freeze can bridge one miss)`:''} · resets in <span style="color:#fff;font-weight:800">${dCd('clock')}</span></div></div>`));
-  }
-  // CS252: the streak CALENDAR makes the streak visual (replaces the old one-line "streak going" text).
-  // Shown once there's any daily history so it isn't clutter for a first-timer.
+  // CS252: the streak CALENDAR makes the streak visual. Shown once there's any daily history.
   if(!PRACTICE && (Object.keys(streakDays()).length>0 || st>0)) stack.appendChild(streakCalendar(14));
   // #4 weekly meta-goals — a solo weekly progression loop (complete all 3 → a streak freeze). Shown
   // once the player has some daily history so it's a goal to chase, not clutter for a first-timer.
@@ -4976,22 +5034,12 @@ function scrTitle(){
       return `<div class="wg-row"><span>${ok?'✓ ':''}${g.label}</span><span class="wg-v" style="color:${ok?'#35d6a0':'var(--muted)'}">${v}/${g.target}</span></div>`; }).join('');
     stack.appendChild($(`<div class="wg-panel${done?' done':''}"><div class="wg-hd"><span>This Week</span>${done?'<span style="color:#35d6a0">Complete ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all 3 → ❄️ freeze</span>'}</div>${rows}</div>`));
   }
-  // Monthly Spotlight (#11): a special event, now live for a full WEEK; surfaced with urgency while live
+  // Monthly Spotlight (#11): a special event, live for a full WEEK — a rich amber hero card while live
   if(spotlightLiveToday()){
-    const sp=monthlySpotlight(todayKey()), sc=DAILY_COURSES[sp.key];
-    const att=spotAttempts(sp.mk), left=spotAttemptsLeft(sp.mk), rec=spotMonthRec(sp.mk), won=rec&&rec.won;
-    let sb2;
-    if(att===0){
-      sb2=$(`<button class="btn goldfill spotlive" style="margin-top:12px">⭐ ${esc(sp.month)} Spotlight · This week<span class="sub">${esc(dShort(sc.v))} · ${dCondLabel(sp.cond)} · beat the pro in a special event</span></button>`);
-    } else if(left>0){
-      sb2=$(`<button class="btn gold spotlive" style="margin-top:12px">⭐ ${esc(sp.month)} Spotlight · ${won?'Won ✓':'best '+dTot(rec.best, sc.par)}<span class="sub">${esc(dShort(sc.v))} · ${won?'go lower':'beat the pro'} · ${left} attempt${left>1?'s':''} left this week</span></button>`);
-    } else {
-      sb2=$(`<button class="btn gold spotlive" style="margin-top:12px">⭐ ${esc(sp.month)} Spotlight · ${won?'Won ✓':'Complete'}<span class="sub">${esc(dShort(sc.v))} · ${won?'you beat the pro':'best '+dTot(rec.best, sc.par)} · see your result</span></button>`);
-    }
-    sb2.onclick=startSpotlight; stack.appendChild(sb2);
+    const card=spotlightHeroCard(); card.style.marginTop='12px'; stack.appendChild(card);
   } else {
     const ns=nextSpotlight();
-    stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--muted)">⭐ Next Monthly Spotlight: <b style="color:var(--gold)">${esc(dShort(DAILY_COURSES[ns.key].v))}</b> · ${fmtDayKey(ns.liveDayKey)}</div>`));
+    stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--muted)">★ Next Monthly Spotlight: <b style="color:var(--gold)">${esc(dShort(DAILY_COURSES[ns.key].v))}</b> · ${fmtDayKey(ns.liveDayKey)}</div>`));
   }
   // ════════════════════════════════════════════════════════════════════
   // CAREER — the deep mode. Resume (if a career/draft is in progress) is the
@@ -5027,17 +5075,8 @@ function scrTitle(){
   // stranded the draft at "8/8 drafted" with no way to advance.
   go.onclick=()=>{reset();S.mode='easy';S.screen='setup';render();};
   stack.appendChild(go);
-  // ── Play Online sits under the career primary (owner: Play Online prominent) ──
-  const on=$(`<div class="online-home" style="margin:16px auto 4px">
-    <div class="online-lbl"><span class="online-dot"></span>Play Online <span class="online-badge">NEW</span></div>
-    <div class="online-row">
-      <button class="online-btn" id="ol-1v1"><span class="ol-l">1v1</span><span class="ol-s">Head-to-head · live</span></button>
-      <button class="online-btn" id="ol-4"><span class="ol-l">Foursomes</span><span class="ol-s">2v2 &amp; 4-player</span></button>
-    </div></div>`);
-  const ob1=on.querySelector('#ol-1v1'), ob4=on.querySelector('#ol-4');
-  if(ob1) ob1.onclick=()=>openH2H('1v1');
-  if(ob4) ob4.onclick=()=>openH2H('bestball');
-  stack.appendChild(on);
+  // ── Play Online — a rich teal hero card (CS256), under the career primary ──
+  stack.appendChild(onlineHeroCard());
   w.appendChild(stack);
   // ── destinations, promoted to prominent nav tiles (Leaderboard / Trophy Room / Pro Shop stand out) ──
   const sec=$(`<div class="home-nav"></div>`);
