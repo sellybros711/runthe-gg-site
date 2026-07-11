@@ -792,6 +792,26 @@ window.GA_ID='G-L29P5MRWKE';
   .wg-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font:700 13px/1.4 var(--body);color:var(--oncard);padding:2px 0}
   .wg-row .wg-v{font-family:var(--mono);font-weight:800}
   .wg-panel.done{border-color:#35d6a0;background:rgba(53,214,160,.08)}
+  /* CS252: streak calendar — the last N days as coloured cells so the streak feels visual */
+  .stcalwrap{max-width:520px;margin:10px auto 0;padding:11px 13px;border-radius:14px;border:1px solid rgba(235,166,31,.24);background:rgba(8,17,26,.42)}
+  .stcal-hd{display:flex;justify-content:space-between;align-items:center;font:800 13px/1 var(--body);color:var(--gold);margin-bottom:9px}
+  .stcal-best{color:var(--muted);font-weight:700;font-size:11px}
+  .stcal{display:flex;gap:4px;justify-content:space-between}
+  .stcal-d{flex:1 1 0;min-width:0;aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;
+    font:800 9px/1 var(--mono);background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);color:rgba(200,215,205,.45)}
+  .stcal-d.play{background:rgba(53,214,160,.22);border-color:rgba(53,214,160,.5);color:#bff0dc}
+  .stcal-d.beat{background:rgba(235,166,31,.3);border-color:var(--gold);color:#ffe6ab}
+  .stcal-d.frz{background:rgba(96,160,235,.22);border-color:rgba(120,180,255,.6);color:#cfe4ff}
+  .stcal-d.today{box-shadow:0 0 0 2px rgba(235,166,31,.6)}
+  .stcal-lg{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:9px;font:700 10px/1.4 var(--body);color:var(--muted)}
+  .stcal-lg .k{width:10px;height:10px;border-radius:3px;display:inline-block;margin:0 1px 0 6px;vertical-align:-1px}
+  .stcal-lg .k:first-child{margin-left:0}
+  .stcal-lg .k.play{background:rgba(53,214,160,.6)} .stcal-lg .k.beat{background:var(--gold)} .stcal-lg .k.frz{background:rgba(120,180,255,.65)}
+  /* CS252: menu toggle switch (Sound / Haptics) */
+  .mtog{flex:0 0 auto;width:40px;height:23px;border-radius:12px;background:rgba(255,255,255,.16);position:relative;transition:background .15s}
+  .mtog.on{background:var(--gold)}
+  .mtog-k{position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+  .mtog.on .mtog-k{left:19px}
   .hvstat{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;margin:0 0 8px}
   .hvchip{font:700 10px/1 var(--body);letter-spacing:.08em;color:var(--muted);background:#0a1626;
     border:1px solid var(--line);border-radius:7px;padding:5px 8px;white-space:nowrap}
@@ -988,6 +1008,8 @@ const ICONS={
   gem:'<path d="M6 3h12l3 5-9 13L3 8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M3 8h18M9 3l-3 5 6 13 6-13-3-5" fill="none" stroke="currentColor" stroke-width="1.2"/>',
   rock:'<path d="M4 15l4-7 4 2 4-4 4 6-2 7H5z"/>',
   book:'<path d="M12 5C10 3.5 6 3.5 4 4v14c2-.5 6-.5 8 1 2-1.5 6-1.5 8-1V4c-2-.5-6-.5-8 1Zm0 0v14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>',
+  sound:'<path d="M4 9.5v5h3.5L12 18V6L7.5 9.5H4Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a8 8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  haptic:'<rect x="8" y="3" width="8" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M11 18h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M4.5 8.5v7M19.5 8.5v7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
   pawn:'<circle cx="12" cy="6" r="3"/><path d="M9 9c0 2 1 3 1 5H8l-2 8h12l-2-8h-2c0-2 1-3 1-5z"/>',
   cloud:'<path d="M7 18a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.2A3.5 3.5 0 0 1 17 18z"/>',
   bag:'<path d="M7 8V6a5 5 0 0 1 10 0v2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M5 8h14l1 12H4z"/>',
@@ -1046,7 +1068,7 @@ const EMOJI_MAP={
   '🗓':'calendar','🏛':'building','🐍':'snake','⚙':'gear','🏌':'golfer','🎰':'slot','🔁':'repeat','🧱':'brick',
   '🏠':'home','👤':'user','😤':'grit','🌱':'sprout','☼':'sun','⚑':'pennant','⚖':'scales',
   '⬆':'arrowUp','↗':'arrowUR','↩':'arrowLeft',
-  '💬':'chat','🐞':'bug','💡':'bulb'
+  '💬':'chat','🐞':'bug','💡':'bulb','🔊':'sound','📳':'haptic'
 };
 const EMOJI_RE=new RegExp('(?:'+Object.keys(EMOJI_MAP).map(e=>e.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')).join('|')+')️?','g');
 function emojifyIcons(h){ if(h==null) return h; h=String(h);
@@ -1864,19 +1886,44 @@ function tickCountdowns(){ const els=document.querySelectorAll('.dc-val'); if(!e
   els.forEach(e=>{ e.textContent = e.getAttribute('data-cd')==='hm'?fmtCdHM(ms):fmtCdClock(ms); }); }
 const STREAK_MILES=[3,7,14,30,60,100];                       // milestone lengths (recognition; freeze at 7/30/100)
 function streakFreezes(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.freezes||0; }
-function bumpStreak(){const ds=LS.get(acctKey('bag_streak'),{current:0,longest:0,last:null,freezes:0,miles:{}})||{current:0,longest:0,last:null,freezes:0,miles:{}}; const t=todayKey();
-  if(ds.last===t)return ds;
+function bumpStreak(){const ds=LS.get(acctKey('bag_streak'),{current:0,longest:0,last:null,freezes:0,miles:{},days:{}})||{current:0,longest:0,last:null,freezes:0,miles:{},days:{}}; const t=todayKey();
+  ds.days=ds.days||{};
+  if(ds.last===t){ ds.days[t]=ds.days[t]||1; return ds; }
   ds.freezes=ds.freezes||0; ds.miles=ds.miles||{}; ds._usedFreeze=false; ds._gotFreeze=false; ds._mile=0;
   if(ds.last===yesterdayKey()) ds.current=(ds.current||0)+1;                       // played on consecutive days
-  else if(ds.last===twoDaysAgoKey() && ds.freezes>0){ ds.freezes--; ds.current=(ds.current||0)+1; ds._usedFreeze=true; }  // a freeze bridges one missed day
+  else if(ds.last===twoDaysAgoKey() && ds.freezes>0){ ds.freezes--; ds.current=(ds.current||0)+1; ds._usedFreeze=true; ds.days[yesterdayKey()]='f'; }  // a freeze bridges one missed day
   else ds.current=1;
-  ds.last=t; if(ds.current>ds.longest)ds.longest=ds.current;
+  ds.last=t; ds.days[t]=1;   // CS252: record the played day for the streak calendar
+  if(ds.current>ds.longest)ds.longest=ds.current;
   const m=ds.current;
   if(STREAK_MILES.includes(m) && !ds.miles[m]){ ds.miles[m]=1; ds._mile=m;
     if(m===7||m===30||m===100){ ds.freezes=(ds.freezes||0)+1; ds._gotFreeze=true; } }   // earn a freeze at big milestones
   LS.set(acctKey('bag_streak'),ds); cloudPush(); return ds;}
 function streakDisplay(){const ds=LS.get(acctKey('bag_streak'),null); if(!ds||!ds.current)return 0;
   return (ds.last===todayKey()||ds.last===yesterdayKey()||(ds.last===twoDaysAgoKey()&&(ds.freezes||0)>0))?ds.current:0;}
+function streakDays(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.days||{}; }
+function dayKeyBack(n){ const d=new Date(); d.setUTCDate(d.getUTCDate()-n); return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate(); }
+// CS252: a tiny "streak calendar" — the last N UTC days as coloured cells so the streak feels visual,
+// not just a number. Played = teal, Beat the pro = gold, Freeze-bridged = blue, missed = faint; today ringed.
+function streakCalendar(n){
+  n=n||14;
+  const ds=LS.get(acctKey('bag_streak'),{})||{}, days=ds.days||{}, won=(dailyStats().wonDays)||{}, tk=todayKey();
+  const cur=streakDisplay(), best=Math.max(ds.longest||0,cur);
+  const cells=[];
+  for(let i=n-1;i>=0;i--){ const k=dayKeyBack(i), dom=k%100;
+    let cls,lab;
+    if(days[k]==='f'){ cls='frz'; lab='Freeze bridged this day'; }
+    else if(days[k]){ cls=won[k]?'beat':'play'; lab=won[k]?'Beat the pro':'Played'; }
+    else { cls='miss'; lab='No play'; }
+    if(k===tk) cls+=' today';
+    cells.push(`<div class="stcal-d ${cls}" title="${lab}"><span>${dom}</span></div>`);
+  }
+  const wrap=$(`<div class="stcalwrap"></div>`);
+  wrap.appendChild($(`<div class="stcal-hd"><span>🔥 ${cur} day streak</span><span class="stcal-best">Best ${best}</span></div>`));
+  wrap.appendChild($(`<div class="stcal">${cells.join('')}</div>`));
+  wrap.appendChild($(`<div class="stcal-lg"><span class="k play"></span>Played<span class="k beat"></span>Beat the pro<span class="k frz"></span>Freeze</div>`));
+  return wrap;
+}
 /* ---------- lifetime daily record (Wordle-style), total days played vs how often you beat the pro ----------
    Counts ONE play per day (first completion) and ONE "beat the pro" per day. A tie counts as a loss, so
    "beat" requires strictly bettering the tour average (won = total < avg, decided by your best of the day). */
@@ -4569,6 +4616,16 @@ function menuRow(icon,label,sub,fn){
   const row=$(`<button class="btn ghost" style="display:flex;align-items:center;gap:12px;text-align:left;padding:11px 13px;margin-bottom:7px"><span style="font-size:19px;flex:0 0 auto;width:24px;text-align:center">${icon}</span><span style="flex:1;min-width:0"><span style="display:block;font-weight:800;font-size:14px;color:var(--oncard)">${esc(label)}</span>${sub?`<span style="display:block;font-size:11.5px;color:var(--muted);margin-top:1px;font-weight:600">${esc(sub)}</span>`:''}</span><span style="color:var(--muted);flex:0 0 auto">›</span></button>`);
   row.onclick=fn; return row;
 }
+// CS252: a menu toggle row (Sound / Haptics) — flips a device-local pref and re-renders the open menu.
+function menuToggle(icon,label,sub,key,def){
+  const on=LS.get(key,def);
+  const row=$(`<button class="btn ghost" role="switch" aria-checked="${on?'true':'false'}" style="display:flex;align-items:center;gap:12px;text-align:left;padding:11px 13px;margin-bottom:7px"><span style="font-size:19px;flex:0 0 auto;width:24px;text-align:center">${icon}</span><span style="flex:1;min-width:0"><span style="display:block;font-weight:800;font-size:14px;color:var(--oncard)">${esc(label)}</span>${sub?`<span style="display:block;font-size:11.5px;color:var(--muted);margin-top:1px;font-weight:600">${esc(sub)}</span>`:''}</span><span class="mtog ${on?'on':''}"><span class="mtog-k"></span></span></button>`);
+  row.onclick=()=>{ const nv=!on; LS.set(key,nv);
+    if(nv && key==='bag_sfx_sound') sfx('hole');   // confirmation beep when enabling sound (the click is a user gesture, so audio unlocks)
+    if(nv && key==='bag_sfx_haptic') buzz(25);
+    render(); };
+  return row;
+}
 function overlayMenu(screen){
   const signedIn=sbSignedIn();
   const go=(fn)=>()=>{ S.overlay=null; fn(); render(); };
@@ -4590,6 +4647,12 @@ function overlayMenu(screen){
   acct.appendChild(menuRow(signedIn?'👤':'🔑',signedIn?(sbUsername||'Your account'):'Sign in',signedIn?(sbEmail()||'Signed in'):'Save your career & post to the leaderboards',go(()=>{ if(signedIn){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} })));
   acct.appendChild(menuRow('↺','Reset','Retire your current golfer & start over',go(()=>{S.overlay='confirmReset';})));
   ov.appendChild(acct);
+  // CS252: Settings — sound + haptics toggles (device-local, default on)
+  const settings=$(`<div style="margin-bottom:16px"></div>`);
+  settings.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Settings</div>`));
+  settings.appendChild(menuToggle('🔊','Sound','Holed putts, wins & streaks','bag_sfx_sound',true));
+  settings.appendChild(menuToggle('📳','Haptics','Vibration on key moments','bag_sfx_haptic',true));
+  ov.appendChild(settings);
   const info=$(`<div style="margin-bottom:6px"></div>`);
   info.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">About</div>`));
   info.appendChild(menuRow('ℹ️','About','Who\'s behind Run The Tour',go(()=>{S.overlay='about';})));
@@ -4840,9 +4903,10 @@ function scrTitle(){
     stack.appendChild($(`<div class="streakrisk" style="margin-top:10px">
       <div style="font-weight:900;font-size:15px;color:var(--gold)">🔥 ${st}-day streak on the line</div>
       <div class="small" style="color:#f0d9a6;margin-top:2px">Play today to keep it alive${fz>0?` (a ❄️ freeze can bridge one miss)`:''} · resets in <span style="color:#fff;font-weight:800">${dCd('clock')}</span></div></div>`));
-  } else if(st>0){
-    stack.appendChild($(`<div class="small center" style="margin-top:9px;color:var(--gold);font-weight:700">🔥 ${st}-day daily streak going${fz>0?` · ❄️ ${fz} freeze${fz>1?'s':''}`:''}</div>`));
   }
+  // CS252: the streak CALENDAR makes the streak visual (replaces the old one-line "streak going" text).
+  // Shown once there's any daily history so it isn't clutter for a first-timer.
+  if(!PRACTICE && (Object.keys(streakDays()).length>0 || st>0)) stack.appendChild(streakCalendar(14));
   // #4 weekly meta-goals — a solo weekly progression loop (complete all 3 → a streak freeze). Shown
   // once the player has some daily history so it's a goal to chase, not clutter for a first-timer.
   if(!PRACTICE && (dailyStats().played>0 || st>0)){
@@ -5802,6 +5866,28 @@ function hvSplashSound(){ try{
   og.gain.setValueAtTime(0.0001,t); og.gain.linearRampToValueAtTime(0.22,t+0.015); og.gain.exponentialRampToValueAtTime(0.0006,t+0.32);
   o.connect(og); og.connect(ac.destination); o.start(t); o.stop(t+0.36);
 }catch(e){} }
+// ── CS252: sound + haptics on key moments, with a device-local mute toggle (owner-requested) ──
+// Preferences are per-device (like autosim/dark), default ON. WebAudio needs a user gesture to start,
+// so the context is created lazily + resumed on first play — every SFX fires after the player has
+// already tapped into a round/screen, so it's always unlocked.
+function sfxOn(){ return LS.get('bag_sfx_sound', true); }
+function hapticsOn(){ return LS.get('bag_sfx_haptic', true); }
+const _reduceMo=()=>{ try{ return matchMedia('(prefers-reduced-motion:reduce)').matches; }catch(_){ return false; } };
+function buzz(pattern){ if(!hapticsOn()||_reduceMo())return; try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
+function _sfxCtx(){ try{ _ac=_ac||new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); return _ac; }catch(e){ return null; } }
+function _tone(ac,freq,start,dur,vol,type){ const o=ac.createOscillator(),g=ac.createGain();
+  o.type=type||'sine'; o.frequency.value=freq; o.connect(g); g.connect(ac.destination);
+  g.gain.setValueAtTime(0.0001,start); g.gain.linearRampToValueAtTime(vol,start+0.015); g.gain.exponentialRampToValueAtTime(0.0006,start+dur);
+  o.start(start); o.stop(start+dur+0.03); }
+// named one-shot SFX for the key moments (holed putt, birdie+, win, streak). Pure WebAudio, no assets.
+function sfx(name){
+  if(!sfxOn())return;
+  const ac=_sfxCtx(); if(!ac)return; const t=ac.currentTime;
+  if(name==='hole'){ _tone(ac,600,t,0.12,0.10,'triangle'); _tone(ac,900,t+0.045,0.16,0.09,'sine'); }       // ball into the cup
+  else if(name==='holeGood'){ [660,990,1320].forEach((f,i)=>_tone(ac,f,t+i*0.055,0.2,0.11,'sine')); }        // birdie or better — a sparkle
+  else if(name==='win'){ [523,659,784,1047].forEach((f,i)=>_tone(ac,f,t+i*0.085,0.42,0.14,'sine')); }         // triumphant rising fanfare
+  else if(name==='streak'){ _tone(ac,784,t,0.18,0.13,'sine'); _tone(ac,1175,t+0.085,0.34,0.12,'sine'); }       // warm streak-up ding
+}
 function takeAttr(k){
   S.slots[k]={golfer:S.current.name,value:S.current[k]};
   S.current=null; endIfDone();
@@ -6019,7 +6105,7 @@ function momentPopup(ce, info){
   btns.appendChild(play); btns.appendChild(sim);
   if(!reduce && typeof confettiRun==='function') try{ confettiRun(ov, [accent,'#ffffff'], 1100); }catch(e){}
   document.body.appendChild(ov);
-  if(navigator.vibrate) try{ navigator.vibrate(30); }catch(e){}
+  buzz(30);
   track('moment_offered',{evt:evt.name,major:!!evt.major,gap:info.gap,pos:info.pos});
 }
 /* ===================== SEASON STORYLINES (CS225) =====================
@@ -7371,7 +7457,7 @@ function celebrateWin(evt, o, opts){
     win.appendChild(actions);
   }
   document.body.appendChild(win);
-  try{ if(major && !reduce && navigator.vibrate) navigator.vibrate([0,35,40,55]); }catch(_){}
+  sfx('win'); buzz(major?[0,35,40,55]:[0,30,40]);
   track(major?'major_won':'tournament_won',{event:evt.name});
   const target=(o&&o.money)||0;
   if(reduce){ cheque.textContent='+'+fmt(target); }
@@ -7402,7 +7488,7 @@ function celebrateCourseRecord(courseName, scoreTxt, opts){
   const cont=$(`<button class="btn goldfill">Continue ▸</button>`); cont.onclick=e=>{ e.stopPropagation(); finish(); }; actions.appendChild(cont);
   win.appendChild(actions);
   document.body.appendChild(win);
-  try{ if(!reduce && navigator.vibrate) navigator.vibrate([0,30,40,50]); }catch(_){}
+  sfx('win'); buzz([0,30,40,50]);
   track('daily_course_record');
   if(!reduce){ _celebStop=confettiRun(cv,{count:150, colors:['#EBA61F','#f9d271','#ffffff','#35d6a0'], mode:'cannons'}); }
   win.onclick=finish;   // tap anywhere dismisses (result screen sits underneath)
@@ -7454,7 +7540,7 @@ function celebrateOlympicPodium(ce, opts){
     sub.innerHTML = emojifyIcons(m.o.p.you ? `<span style="color:#ffd76a;font-weight:800">${m.emoji} You take ${m.nm} for ${myCountry}!</span>`
       : `${m.emoji} ${m.nm}: ${esc(m.o.p.name)}`);
     if(isGold && !reduce){ _celebStop=confettiRun(cv,{count:170, colors:['#f4cf5b','#ffffff','#ffd76a','#cbd2da'], mode:'cannons'}); }
-    try{ if(m.o.p.you && !reduce && navigator.vibrate) navigator.vibrate(40); }catch(_){}
+    if(m.o.p.you){ sfx('win'); buzz(40); }
   }
   function endCeremony(){
     sub.innerHTML = emojifyIcons(youMedal>=0
@@ -10903,7 +10989,10 @@ function startShotReveal(){
     // goes in. When the sink animation finishes, show the result and move on.
     S.dailyRevealN=shots.length;
     const holeShot=shots[shots.length-1];
-    _shotTimer=setTimeout(()=>{ _shotTimer=null; if(S.screen!=='dailyround')return; S.dailySinking=false; scheduleDailyAdvance(); }, hvShotMs(holeShot));
+    _shotTimer=setTimeout(()=>{ _shotTimer=null; if(S.screen!=='dailyround')return; S.dailySinking=false;
+      // CS252: the ball is in the cup — the "holed putt" moment. Brighter sparkle + a light buzz for birdie+.
+      const lh=S.dailyHoles[S.dailyHoles.length-1], good=lh&&lh.toPar<0; sfx(good?'holeGood':'hole'); if(good) buzz(18);
+      scheduleDailyAdvance(); }, hvShotMs(holeShot));
     return;
   }
   // the shot currently animating on the hole view sets the pace: the next shot reveals when its ball has landed
@@ -11526,6 +11615,8 @@ function finishDailyRound(){
   bumpMastery(S.dailyCourse, total, grade?grade.tier:null, won);   // #5 course passport (best score + best grade per course)
   const _wg=bumpWeekGoals(won, avg-total); S.dailyWeekReward=_wg.gotReward;   // #4 weekly goals (beat-the-pro margin; + freeze reward)
   S.dailyStreakInfo={won, mile:_ds._mile||0, gotFreeze:!!_ds._gotFreeze, usedFreeze:!!_ds._usedFreeze, current:_ds.current, freezes:_ds.freezes||0, played:_st.played, beat:_st.beat};
+  // CS252: one positive sound at the finish — a win fanfare for beating the pro, else the streak-kept ding
+  if(won){ sfx('win'); buzz([0,30,40,50]); } else { sfx('streak'); buzz([0,25]); }
   // log this attempt; the LOWEST score of the day is the one that counts (leaderboard / course record).
   // The attempt was already CLAIMED at the first wheel spin (claimDailyAttempt), so read that count —
   // do NOT +1 here (that double-counted a claimed attempt). Fallback to 1 if somehow unclaimed.
@@ -12053,6 +12144,8 @@ function scrDailyResult(){
   if(si&&si.mile) add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">🔥 ${si.mile}-day streak!</b>${si.gotFreeze?' <span class="small muted">earned a ❄️ streak freeze</span>':''}</div>`));
   else if(si&&si.usedFreeze) add($(`<div class="scout small" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#7ec8ff"><b style="color:#7ec8ff">❄️ Streak freeze used</b> <span class="muted">, your ${si.current}-day streak survived a missed day.</span></div>`));
   else if(si) add($(`<div class="small center" style="margin:0 0 8px;color:var(--gold);font-weight:700">🔥 ${streakDisplay()}-day streak, see you tomorrow to keep it going</div>`));
+  // CS252: the visual streak calendar (today now filled in)
+  if(!practice && (Object.keys(streakDays()).length>0 || streakDisplay()>0)) add(streakCalendar(14));
   // Wordle-style lifetime record: total days played + how often you beat the pro (a tie counts as a loss)
   if(!practice){ const st=dailyStats(); if(st.played>0){ const pct=dailyWinPct(); const ds=LS.get(acctKey('bag_streak'),{}); const best=ds.longest||streakDisplay();
     add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px"><div class="small muted center" style="letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Your daily record</div>
@@ -12925,12 +13018,16 @@ function mergeLegendTokens(local, server){
 // literal `null` into that key via the LS.set() this feeds, poisoning every future read of it. Falling
 // back to the same empty-shape default their reader functions use closes that off at the source.
 function mergeStreak(local, server){
-  const empty={current:0,longest:0,last:null,freezes:0,miles:{}};
+  const empty={current:0,longest:0,last:null,freezes:0,miles:{},days:{}};
   if(!server) return local||empty; if(!local) return server;
-  if((server.last||0)>(local.last||0)) return server;
-  if((local.last||0)>(server.last||0)) return local;
-  return Object.assign({},local,{current:Math.max(local.current||0,server.current||0), longest:Math.max(local.longest||0,server.longest||0),
-    freezes:Math.max(local.freezes||0,server.freezes||0), miles:Object.assign({},server.miles,local.miles)});
+  // union the calendar history + milestones regardless of who's more recent (CS252)
+  const days=Object.assign({},server.days,local.days), miles=Object.assign({},server.miles,local.miles);
+  const longest=Math.max(local.longest||0,server.longest||0);
+  let base;
+  if((server.last||0)>(local.last||0)) base=server;
+  else if((local.last||0)>(server.last||0)) base=local;
+  else base=Object.assign({},local,{current:Math.max(local.current||0,server.current||0), freezes:Math.max(local.freezes||0,server.freezes||0)});
+  return Object.assign({},base,{miles, days, longest});
 }
 function mergeDailyStats(local, server){
   const empty={played:0,beat:0,lastDay:null,wonDays:{}};
@@ -13947,7 +14044,7 @@ function h2hCelebrate(){
   stage.querySelector('.h2hceleb-act').appendChild(btn);
   stage.onclick=go;
   if(iWin && !reduce){ try{ stopConf=confettiRun(stage.querySelector('.h2hconf'), {colors:['#ffd76a','#35d6a0','#3b82f6','#ffffff'], count:150, mode:'cannons'}); }catch(e){} }
-  try{ if(iWin && navigator.vibrate) navigator.vibrate([30,40,30]); }catch(e){}
+  if(iWin){ sfx('win'); buzz([30,40,30]); }
   track('h2h_celebrate',{win:iWin});
 }
 function scrH2HWatch(){

@@ -6381,6 +6381,36 @@ allows Google Fonts, or self-host Anton.*
   → dailyresult; the auto path (unchanged) still progresses; zero page errors. Screenshots confirm the
   scoreboard + control bar match the mockup. Deployed to /golf. Tunable: the `.hvctrl`/`.hvboard` styling.
 
+- **CS252 — sound + haptics on key moments (with a mute toggle) + a visual streak calendar** (owner picked
+  these two from the earlier UX-suggestions list). Both client-only, no backend.
+  1. **Sound + haptics.** A small WebAudio SFX layer (`sfx(name)` + `_tone`, no assets, in the style of the
+     existing `chime`/`hvSplashSound`) plays a one-shot at each key moment: **holed putt** every hole (a soft
+     "cup" tock, a brighter 3-note sparkle for birdie-or-better) fired when the ball actually drops in
+     `startShotReveal`'s sink timer; **win** (a rising fanfare) on every celebration — `celebrateWin`,
+     `celebratePlayoff`/podium, the daily course-record celebration, `h2hCelebrate`, and beating the pro in
+     the daily; **streak** (a warm ding) when a daily round finishes without a beat-the-pro (so there's always
+     exactly one positive sound at the finish). Haptics: all `navigator.vibrate` calls now route through a
+     single `buzz(pattern)` helper that respects the mute toggle AND `prefers-reduced-motion` (previously
+     inconsistent), plus a light buzz on birdie+ hole-outs and the win/streak finish. **Mute toggle:** a new
+     **Settings** section in the ≡ menu with **Sound** and **Haptics** switches (`menuToggle`, device-local
+     `bag_sfx_sound`/`bag_sfx_haptic`, default on; toggling Sound on plays a confirmation beep — the tap is a
+     user gesture so WebAudio unlocks). `sfxOn()`/`hapticsOn()` gate everything. Added themed `sound`/`haptic`
+     SVG icons (+ 🔊/📳 EMOJI_MAP entries) so the toggle rows match the rest of the menu's gold icon set.
+  2. **Streak calendar.** `bag_streak` now records a per-day history map (`days`: dayKey → 1 played / 'f'
+     freeze-bridged) in `bumpStreak`; `mergeStreak` unions it (grow-only) so the calendar is consistent
+     cross-device. New `streakCalendar(n)` renders the last 14 UTC days as compact coloured cells — teal =
+     played, gold = beat the pro (cross-referenced from `dailyStats().wonDays`), blue = freeze-bridged, faint =
+     missed, today ringed — with a "🔥 N day streak · Best M" header and a legend. It replaces the old
+     one-line "streak going" text on the title (shown once there's daily history) and also appears on the daily
+     result (today filled in). Makes the streak feel visual, not just a number.
+  Verified in Playwright: SFX defaults on, respects the mute (no AudioContext when muted), never throws; `buzz`
+  respects mute + reduced-motion; the menu shows both toggles (themed SVG icons, flip + persist correctly);
+  the calendar renders 14 cells with the right play/beat/freeze/today classes + legend; `bumpStreak` records
+  today and `mergeStreak` unions the day history (max longest, newer `last` wins); a full non-practice daily
+  round reaches the result with the streak advanced (2→3, today recorded) and the calendar shown; zero page
+  errors. Screenshots confirm the calendar + the Settings toggles. Deployed to /golf. (Practice mode records
+  nothing, so no streak/calendar there, as intended.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
