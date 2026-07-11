@@ -7298,6 +7298,21 @@ allows Google Fonts, or self-host Anton.*
   2-putt leaving a real ~2-footer, made). A full practice round still renders the tracer with zero page
   errors. Tunable: the `minLag` floors (14/28 ft) and the comebacker leave band. Deployed to /golf.
 
+- **CS298 — team-cup control bar: fixed pin that actually stays put (fixes CS296's "moves to the middle").**
+  CS296 used `position:sticky; bottom:0` on the controls, but as the last child of `.screen` the sticky bar
+  (a) OVERLAPPED and hid the match cards behind it (opaque background) and (b) released mid-scroll to its
+  natural position — the owner saw it "move to the middle" with cards showing below it. Replaced sticky with
+  a true **`position:fixed; bottom:0`** bar on mobile so it's glued to the viewport bottom at ALL scroll
+  positions, and RESERVED space so it never covers content: a `has-cupbar` class is added to `#app` during
+  the team-cup match-reveal phase (cleared at the top of every `render()`), giving `#app` a bottom padding
+  equal to the bar height so the last match card + the global footer scroll cleanly ABOVE the bar. Verified
+  no ancestor (`.card`/`.screen`/`#app`) has a `transform`/`filter` that would break `position:fixed`.
+  Verified in Playwright against the real DOM structure (`#app > .card>.screen[cards + .cupctrl] + footer`,
+  `#app.has-cupbar`): the bar is `fixed` and pinned to the viewport bottom at top / mid-scroll / bottom
+  (rectBottom === viewport height everywhere), the footer and the last card both clear the bar (not covered),
+  and desktop keeps the controls in-flow (position static). Screenshot confirms the bar pinned at the bottom
+  with a clean gap above it while cards scroll behind. Deployed to /golf. Tunable: the `168px` reserve height.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
