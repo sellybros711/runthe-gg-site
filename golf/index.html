@@ -505,6 +505,11 @@ window.GA_ID='G-L29P5MRWKE';
   .slot .v{font-family:var(--mono); font-weight:800; font-size:15px; color:var(--gold); min-width:30px; text-align:right}
   .slot .slotdec{font-family:var(--mono); font-weight:800; font-size:12px; color:#e07a5f; flex:0 0 auto; letter-spacing:-.02em}
   .slot.empty .v, .slot.empty .lab{color:var(--muted)}
+  /* CS292 off-season: a stat already changed this off-season is LOCKED — flag it on the scorecard so the
+     player knows what a spin can and can't touch before they use it */
+  .slot.locked{border-color:rgba(235,166,31,.30); background:rgba(235,166,31,.06)}
+  .slot .slotlock{font:800 9px/1 var(--body); letter-spacing:.09em; text-transform:uppercase; color:var(--gold);
+    border:1px solid rgba(235,166,31,.42); border-radius:999px; padding:3px 7px 3px 6px; flex:0 0 auto}
   .authbox{max-width:360px; margin:2px auto 0}
   .autherr{color:#e98a72; font-size:13px; font-weight:600; margin-top:9px}
   .author{display:flex; align-items:center; gap:10px; margin:13px 0}
@@ -10199,9 +10204,13 @@ function scrOffseason(){
   const decl=os.decline||{}; const nDec=Object.keys(decl).length;
   right.appendChild($(`<h2 style="margin:6px 0 8px">Your golfer</h2>`));
   if(nDec) right.appendChild($(`<div class="small" style="margin:-4px 0 8px;color:#e07a5f">▼ Age cost you ground this off-season, the red numbers show what each skill dropped. Re-spin to repair them.</div>`));
+  // CS292: flag stats already changed this off-season as locked, so before spending a spin the player can
+  // see exactly which of their 8 skills a swap could still land on
+  const lockedNow=os.locked||[];
+  if(lockedNow.length) right.appendChild($(`<div class="small" style="margin:-4px 0 8px;color:var(--gold)">🔒 Locked stats have already been changed this off-season and can't change again — a spin can only land on your open stats.</div>`));
   const card=$(`<div class="card-grid"></div>`);
-  CATS.forEach(cat=>{ const f=S.slots[cat.k]; const d=decl[cat.k]||0;
-    card.appendChild($(`<div class="slot ${f?'':'empty'}"><span class="lab">${cat.short}</span><span class="who">${f?f.golfer:', '}</span>${d<0?`<span class="slotdec">▼ ${Math.abs(d)}</span>`:''}<span class="v">${f?f.value:'··'}</span></div>`)); });
+  CATS.forEach(cat=>{ const f=S.slots[cat.k]; const d=decl[cat.k]||0; const isLocked=lockedNow.includes(cat.k);
+    card.appendChild($(`<div class="slot ${f?'':'empty'} ${isLocked?'locked':''}"><span class="lab">${cat.short}</span><span class="who">${f?f.golfer:', '}</span>${isLocked?`<span class="slotlock">🔒 Locked</span>`:''}${d<0?`<span class="slotdec">▼ ${Math.abs(d)}</span>`:''}<span class="v">${f?f.value:'··'}</span></div>`)); });
   right.appendChild(card);
   add(rivalStatusNode());   // emergent nemesis status (read-only)
 }
