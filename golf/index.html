@@ -151,6 +151,9 @@ window.GA_ID='G-L29P5MRWKE';
       background:#06200f; border-top:1px solid var(--line); box-shadow:0 -10px 22px -10px rgba(0,0,0,.7)}
     .cupctrl > *{max-width:560px; margin-left:auto; margin-right:auto}
     #app.has-cupbar{padding-bottom:calc(168px + env(safe-area-inset-bottom, 0px))}
+    /* CS300: hide the global footer pills on the team-cup mobile screen — they clash with the fixed
+       .cupctrl control bar, and everything in them is reachable from the ≡ menu anyway. */
+    #app.has-cupbar .foot{display:none}
   }
   .cols{display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start}
   .col{min-width:0}
@@ -8722,7 +8725,7 @@ function scrCaptainPicks(){
 }
 function scrTeamCup(){
   clearTimeout(seasonTimer);
-  if(S._cupIdx!==S.evtIndex){ S._cupIdx=S.evtIndex; S.curTeam=null; S.teamMatchN=0; S.cupChoice=null; S.cupPickTeam=null; S.cupPicks=null; }
+  if(S._cupIdx!==S.evtIndex){ S._cupIdx=S.evtIndex; S.curTeam=null; S.teamMatchN=0; S.cupChoice=null; S.cupPickTeam=null; S.cupPicks=null; S._cupScrolledN=null; }
   // PHASE 1, captaincy offer (eligible late-career veterans choose to captain or play on)
   if(captainEligible() && !S.cupChoice){ scrCaptainOffer(); return; }
   // PHASE 2, make your captain's picks
@@ -8823,7 +8826,7 @@ function scrTeamCup(){
     const rev=sess.matches.slice(0,revN);
     let sa=0,sb=0; rev.forEach(m=>{ if(m.res==='A')sa++; else if(m.res==='B')sb++; else {sa+=0.5;sb+=0.5;} });
     const complete=revN===sess.matches.length, newestHere=(matchN-1>=start && matchN-1<end);
-    const card=$(`<div style="max-width:560px;margin:0 auto 12px;background:#0a2740;border:1px solid var(--line);border-radius:13px;overflow:hidden"></div>`);
+    const card=$(`<div${newestHere?' id="cup-newest"':''} style="max-width:560px;margin:0 auto 12px;background:#0a2740;border:1px solid var(--line);border-radius:13px;overflow:hidden"></div>`);
     card.appendChild($(`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
       <div style="font:800 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)">Day ${sess.day} · ${esc(sess.title)}${complete?'':` <span class="muted" style="font-weight:600">${revN}/${sess.matches.length}</span>`}</div>
       <div class="mono" style="font-weight:800;color:#fff">${ptTxt(sa)} – ${ptTxt(sb)}</div></div>`));
@@ -8858,6 +8861,20 @@ function scrTeamCup(){
     const cv=document.createElement('canvas'); cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:55'; document.body.appendChild(cv);
     const stop=confettiRun(cv,{count:150, colors:['#EBA61F','#f9d271','#ffffff',youA?aCol:bCol], mode:'cannons'});
     setTimeout(()=>{ stop&&stop(); cv.remove(); }, 2600);
+  }
+  // CS300: auto-scroll the newest revealed match into view (above the fixed control bar) as the cup plays
+  // out, so the results follow themselves without the user scrolling. Only on a genuine reveal (teamMatchN
+  // changed), never on the many same-state re-renders, and never under reduced-motion.
+  if(!allDone && matchN>0 && S._cupScrolledN!==matchN && !reduce){
+    S._cupScrolledN=matchN;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      const card=document.getElementById('cup-newest'), bar=document.querySelector('.cupctrl');
+      if(!card) return;
+      const barH=(bar && getComputedStyle(bar).position==='fixed') ? bar.offsetHeight : 0;
+      const targetBottom=window.innerHeight - barH - 14;
+      const delta=card.getBoundingClientRect().bottom - targetBottom;
+      if(delta>4) window.scrollBy({top:delta, behavior:'smooth'});
+    }));
   }
   // auto-sim: reveal the next match on a timer (one at a time for suspense)
   if(!allDone && S.autoSim && !reduce){ seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ S.teamMatchN=matchN+1; render(); } }, 1100); }
