@@ -311,6 +311,8 @@
   .home-2nd:hover{background:rgba(7,11,26,.72);border-color:rgba(244,180,19,.85);}
   .home-2nd:active{transform:translateY(1px);}
   .home-2nd .tl-ico{height:15px;width:auto;flex:0 0 auto;}
+  /* How to Play, centred just above the primary CTA */
+  .home-howto-top{position:relative;z-index:2;display:flex;justify-content:center;margin:0 0 10px;}
 
   /* ===== Play Online: promoted to a main home-screen feature =====
      Deliberately teal, not red (Solo) or gold-bordered (Daily) — the same
@@ -3297,6 +3299,11 @@ window.GA_ID='G-L29P5MRWKE';
         <div class="hd-cap" id="hd-cap">Draft your squad.</div>
       </div>
 
+      <!-- How to Play sits just above the primary action -->
+      <div class="home-howto-top">
+        <button id="home-howto" type="button" class="home-2nd"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="9.5"/><path d="M9.2 9.2a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><circle cx="12" cy="17.4" r="1" fill="currentColor" stroke="none"/></svg> How to Play</button>
+      </div>
+
       <!-- ONE obvious primary action -->
       <button id="btn-start" class="btn red big home-primary" disabled>
         <span class="btn-label">Loading squads…</span>
@@ -3329,7 +3336,6 @@ window.GA_ID='G-L29P5MRWKE';
       <!-- secondary actions, demoted to small links -->
       <div class="home-secondary">
         <button id="btn-home-leaderboard" type="button" class="home-2nd"><svg class="tl-ico" viewBox="0 0 24 28" aria-hidden="true"><defs><linearGradient id="tlTrophy" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FCEFA8"/><stop offset=".5" stop-color="#E8C25A"/><stop offset="1" stop-color="#8A5E12"/></linearGradient></defs><path d="M5 4 C2.5 4 2.5 9 5.6 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M19 4 C21.5 4 21.5 9 18.4 9.5" fill="none" stroke="#E8C25A" stroke-width="1.4"/><path d="M6 3 H18 V8 C18 13 14.5 15 12 15 C9.5 15 6 13 6 8 Z" fill="url(#tlTrophy)" stroke="#00000033" stroke-width=".6"/><rect x="11" y="15" width="2" height="4" fill="url(#tlTrophy)"/><rect x="8" y="19" width="8" height="2" rx="1" fill="url(#tlTrophy)"/><rect x="6.5" y="21" width="11" height="2.6" rx="1.3" fill="url(#tlTrophy)" stroke="#00000022" stroke-width=".5"/></svg> Leaderboard</button>
-        <button id="home-howto" type="button" class="home-2nd"><svg class="tl-ico" viewBox="0 0 24 24" aria-hidden="true" style="fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round"><circle cx="12" cy="12" r="9.5"/><path d="M9.2 9.2a2.8 2.8 0 0 1 5.4 1c0 1.9-2.6 2.2-2.6 4"/><circle cx="12" cy="17.4" r="1" fill="currentColor" stroke="none"/></svg> How to Play</button>
       </div>
       <!-- flag lane (scrolls right) below the kickoff button -->
       <div class="flag-marquee bottom"><div class="flag-lane right" id="flag-lane-2"></div></div>
