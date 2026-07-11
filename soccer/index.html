@@ -1427,6 +1427,28 @@
     color:#f0e8d8; padding:16px; margin-bottom:14px; animation:fade 0.4s ease both;
     box-shadow:var(--shadow);
   }
+  /* outcome-tier accent bar across the top of the recap card */
+  .sim-summary::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;
+    border-radius:16px 16px 0 0;background:var(--res-acc,transparent);}
+  .res-headline{color:#f0e8d8;}
+  /* WON — the title. Gold border, gold wash from the top, glowing gold headline. */
+  .sim-summary.won{--res-acc:linear-gradient(90deg,#8A5E12,#FCEFA8,#F4B413,#FCEFA8,#8A5E12);
+    border-color:rgba(244,180,19,.6);
+    background:radial-gradient(130% 80% at 50% -12%,rgba(244,180,19,.22),transparent 62%),var(--fill-ink);
+    box-shadow:0 0 0 1.5px rgba(244,180,19,.5),0 12px 38px rgba(244,180,19,.24),var(--shadow);}
+  .sim-summary.won .res-headline{color:#F4B413;text-shadow:0 0 20px rgba(244,180,19,.55);
+    animation:wonGlow 2s ease-in-out infinite;}
+  .sim-summary.won .res-emoji{animation:wonPop .6s cubic-bezier(.3,1.5,.5,1) both;
+    filter:drop-shadow(0 4px 16px rgba(244,180,19,.6));}
+  @keyframes wonGlow{0%,100%{text-shadow:0 0 14px rgba(244,180,19,.4)}50%{text-shadow:0 0 26px rgba(244,180,19,.8)}}
+  @keyframes wonPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.15)}100%{transform:none;opacity:1}}
+  /* DEEP — a respectable run (runner-up / semi / quarter): cool silver-blue tone */
+  .sim-summary.deep{--res-acc:linear-gradient(90deg,#2A4B9B,#7fb0ff,#4ecf8a);
+    border-color:rgba(127,176,255,.32);}
+  .sim-summary.deep .res-headline{color:#9dc0ff;text-shadow:0 0 14px rgba(127,176,255,.3);}
+  /* OUT — an early exit: muted red accent, honest but motivating */
+  .sim-summary.out{--res-acc:linear-gradient(90deg,#6e2820,#E5402A,#6e2820);}
+  .sim-summary.out .res-headline{color:#ff8f80;}
   .sim-summary h2{font-family:'Anton',sans-serif; font-size:20px; margin:0 0 10px; letter-spacing:1px;}
   .sim-summary-row{
     display:flex; justify-content:space-between; align-items:center;
@@ -11932,15 +11954,20 @@ function buildSummaryCard(){
   });
 
   const card=document.createElement('div');
-  card.className='sim-summary';
+  // Outcome tier drives a distinct look: gold triumphant card for the title,
+  // a respectable silver/blue tone for a deep run (final/semi/quarter), and a
+  // muted red-accented "you're out" card for an early exit.
+  const tier = champ ? 'won'
+             : (['Final','Semi-final','Quarter-final'].includes(elimRound) ? 'deep' : 'out');
+  card.className='sim-summary '+tier;
   card.id='results-summary-box';
   const modeCls = gameMode==='hard' ? 'hard' : 'easy';
   const modeTxt = gameMode==='hard' ? 'HARD' : 'EASY';
   card.innerHTML=`
     <span class="res-mode-corner mode-pill ${modeCls}">${modeTxt}</span>
     <div class="mp-bracket" style="margin:0 auto 12px;">${bracketHtml}</div>
-    ${emoji?`<div style="text-align:center;font-size:62px;line-height:1;margin-bottom:2px;">${emToSvg(emoji)}</div>`:''}
-    <div class="display" style="text-align:center;font-size:34px;line-height:1.05;color:#f0e8d8;margin:${emoji?'2px':'4px'} 0 ${oc.message?'8px':'14px'};">${headline}</div>
+    ${emoji?`<div class="res-emoji" style="text-align:center;font-size:62px;line-height:1;margin-bottom:2px;">${emToSvg(emoji)}</div>`:''}
+    <div class="res-headline display" style="text-align:center;font-size:34px;line-height:1.05;margin:${emoji?'2px':'4px'} 0 ${oc.message?'8px':'14px'};">${headline}</div>
     ${oc.message?`<div style="text-align:center;font-weight:600;font-size:13px;line-height:1.45;color:rgba(240,232,216,.55);margin-bottom:12px;">${oc.message}</div>`:''}
     <div class="sim-sub-label">MATCHES</div>
     ${rows || '<div class="sim-summary-row"><span>No knockout matches</span><span></span></div>'}
