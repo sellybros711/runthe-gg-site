@@ -7329,6 +7329,29 @@ allows Google Fonts, or self-host Anton.*
   transform animation, pinned to the viewport bottom, and STAYS pinned after scrolling (rectBottom unchanged
   at scroll 0 and 500); zero page errors. Deployed to /golf.
 
+- **CS300 — team-cup: hide the clashing footer pills on mobile + auto-scroll the match results (owner
+  IMG_8101: "Can the footer pills live in a more hidden spot? They clash with the main controls. Also I
+  want the match results to auto scroll while keeping the controls at the bottom").** On the Atlantic/Nations
+  Cup screen the CS298 fixed control bar (Next Match / Auto Sim / Skip to Result) overlapped the global
+  footer pills (Send Feedback / Add to Home / "Love soccer? Try RunThePitch" / Home·About·Privacy·Terms).
+  Two fixes, both mobile-only:
+  1. **Footer hidden on the cup screen.** New CSS `#app.has-cupbar .foot{display:none}` inside the mobile
+     `@media(max-width:700px)` block — the `has-cupbar` class is already added to `#app` only during the
+     team-cup match-reveal (CS298), so the footer is hidden exactly there and nowhere else. Nothing is lost:
+     every footer item (feedback, add-to-home, cross-promo, legal links) is reachable from the ≡ menu.
+     Desktop keeps the footer (the media query doesn't apply).
+  2. **Auto-scroll the newest match into view.** The newest revealed session card gets `id="cup-newest"`; a
+     double-`requestAnimationFrame` after render (so render's own `scrollTo` at the end has already run)
+     computes the fixed bar's height and `window.scrollBy`s so the newest card's bottom sits just above the
+     bar (`innerHeight − barH − 14`, smooth). Guarded by `S._cupScrolledN` (last teamMatchN scrolled to) so
+     it only fires on a genuine reveal, never on the many same-state re-renders; reset to null when entering
+     a new cup event (the `S._cupIdx` block) and skipped under reduced-motion. So as the cup auto-sims
+     match-by-match the results follow themselves while the controls stay pinned at the bottom.
+  Verified in Playwright against the real DOM shape (`#app.has-cupbar > .card>.screen[cupsticky + cards +
+  .cupctrl] + .foot`): mobile → footer `display:none`, `.cupctrl` fixed + pinned to the viewport bottom, and
+  the newest card scrolls to exactly `targetBottom` above the bar while the bar stays pinned; desktop →
+  footer shown, controls in-flow. Zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
