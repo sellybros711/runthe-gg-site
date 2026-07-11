@@ -6886,6 +6886,46 @@ allows Google Fonts, or self-host Anton.*
   with the risky pill and the red backfire card. Deployed to /golf. Tunable: per-choice `risk` values + the
   backfire magnitude (confidence/`folBad`) in `showStoryline`.
 
+- **CS280 — NBA-2K-style two-axis press/reputation system (Fans ↔ Respect) with consequence cutscenes
+  (owner shared 2K MyCAREER's press mechanic: Teammate/Humble → Team Chemistry vs Arrogant/Self-centered →
+  Fan Support; "I want a system like this that's engaging, fun, and creates moments people will want to
+  share — they can be funny too").** Reworked the press/interview system from a bag of small positives into a
+  genuine two-axis reputation game with real trade-offs and shareable, funny fallout.
+  • **Two axes** (`careerStory().rep = {fans, respect}`, 0-100, persisted in the career save + cloud-synced):
+    **FANS** (popularity — the 2K "Fan Support" analog) is boosted by bold/brash/showman answers and drives
+    follower growth + **sponsor marketability** (`repMarketMult`: ±18% sponsor money). **RESPECT** (your
+    standing with peers/officials/purists — the "Team Chemistry" analog) is boosted by humble/classy/gritty
+    answers and drives a **composure floor** (`repConfBaseline`: respected pros settle at a higher confidence
+    baseline via `resultMomentum`'s mean-reversion target, ~36 disliked … ~64 revered) — a subtle, real sim
+    benefit. NO "right" answer: almost every press choice trades one axis for the other.
+  • **Choice → axis** derived from the choice's personality trait (`TRAIT_AXIS`: brash +7 fans/−5 respect,
+    humble +1/+6, etc., overridable per-choice with `fansD`/`respD`), so all ~30 existing beats gained the
+    mechanic without retagging. On a CS279 backfire the move flips sour (loses BOTH fans and respect). The
+    press overlay's "at-stake" strip is now the live two-axis meter (Fans + Respect bars), and each answer's
+    reaction shows the `Fans ▲/▼` + `Respect ▲/▼` deltas, plus a "Now: {Persona}" note when your quadrant
+    flips.
+  • **Persona = your quadrant** (`repPersona`): The Complete Superstar (high/high), **The Pantomime Villain**
+    (high fans/low respect), The Gentleman of the Tour (low fans/high respect), The Fan Favourite, The Quiet
+    Professional, Under the Radar, Rising Star. Shown on the summary, off-season, and live season strip.
+  • **Consequence cutscenes (the funny, shareable moments)** — push an axis too far and someone calls you out,
+    each a real fork (course-correct vs lean in): **caddie_words** (low respect — your caddie pulls you aside),
+    **agent_panic** (very low respect — your agent is losing a sponsor), **villain_embrace** (high fans + low
+    respect — "the tour loves to hate you", embrace the heel or start a redemption arc), **elder_shot** (low
+    respect + established — a tour legend takes a public shot at you), **underexposed** (very low fans — "you
+    have the personality of a driving-range mat", turn on the charm or let your golf talk), plus positive
+    tributes **gentleman_tribute** (high respect) and **crossover** (high both — bigger than golf). All
+    `pri:2-3` so they surface when earned, gated by the existing 2/season interruption budget + no-repeat-
+    within-8-events, so they never spam.
+  Career-only (never daily/circuit/headless). Verified in Playwright: the axis math (brash trades fans↑/respect↓,
+  humble the reverse; all 4 quadrant personas correct), a backfire bleeds both axes, the benefits (fans→market
+  1.18×/0.82×, respect→confidence baseline 64/36), `storyCtx` exposes fans/respect, all consequence beats fire
+  on their thresholds, and the press overlay renders the two-axis meter + Fans/Respect deltas; a full season →
+  summary renders the new "Your Reputation" card + the live momentum strip with zero page errors, and no
+  dangling refs from the removed followers/confidence strip. Screenshot confirms the two-axis meter + the
+  "heel turn" villain cutscene. Deployed to /golf. Tunable: `TRAIT_AXIS` deltas, `REP_START`, the market/
+  composure benefit curves, consequence-beat thresholds. FOLLOW-UPS (not built): a shareable "Career Persona"
+  card capturing your quadrant + funniest soundbites; sponsor-loyalty tie to respect; more consequence beats.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

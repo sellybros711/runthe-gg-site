@@ -6530,7 +6530,9 @@ function resultMomentum(pos, evt){
     else if(pos<=25){ dc=0; fpct=0.006; fflat=140; }
     else { dc=-2; fpct=0.002; fflat=40; }
   } else { dc=-6; fpct=-0.004; fflat=0; }   // missed the cut
-  dc += (50-seasonConf())*0.05;             // gentle mean-reversion so extremes don't stick
+  // CS280: RESPECT gives a composure floor — respected, well-liked pros settle at a higher confidence
+  // baseline (the mean-reversion target rises with respect, ~36 disliked .. ~64 revered).
+  dc += (repConfBaseline()-seasonConf())*0.05;
   adjConf(dc); gainFollowers(fpct, fflat);
 }
 // legacy shim: a storyline "confidence" choice now moves the season confidence rating
@@ -6576,14 +6578,12 @@ function confMeterHTML(conf){ const c=Math.round(conf), col=confColor(c), pct=Ma
   return `<div class="statpill"><div class="lab">Confidence</div>
     <div class="cmeter"><span style="width:${pct}%;background:${col}"></span></div>
     <div class="small" style="color:${col};font-weight:800;letter-spacing:0">${confLabel(c)} · ${c}</div></div>`; }
-function momentumNode(){   // live season-screen strip: confidence (fluctuates) + following + rival (CS278)
+function momentumNode(){   // live season-screen strip: two-axis reputation + confidence + rival (CS278/CS280)
   if(S.daily || S.circuitMode || !S.career) return null;
-  const st=careerStory(); const delta=(S.season&&S.season.followers0!=null)?((st.followers||0)-S.season.followers0):null;
   return $(`<div class="scout" style="border-color:#2f6f86;margin:0 0 12px">
-    <div style="display:flex;gap:14px;align-items:stretch">
-      <div style="flex:1">${followersChipHTML(delta>0?delta:null)}</div>
-      <div style="flex:1">${confMeterHTML(seasonConf())}</div>
-    </div>${rivalLiveHTML()}</div>`); }
+    ${repMeterHTML({persona:true})}
+    <div style="margin-top:10px">${confMeterHTML(seasonConf())}</div>
+    ${rivalLiveHTML()}</div>`); }
 // CS278 — live "vs your nemesis" chip: this season's head-to-head so far + where the rival currently sits
 function rivalLiveHTML(){
   const rv=getRival(); if(!rv || !S.season) return '';
@@ -6608,6 +6608,66 @@ function followersChipHTML(delta){ const s=careerStory();
 const STORY_PERSONA={confident:'The Confident One', brash:'The Showman', showman:'The Showman', clutch:'Mr. Clutch',
   humble:'The Humble Champion', fanFav:'Fan Favorite', loyal:'The Loyal Pro', maverick:'The Maverick', gritty:'The Grinder'};
 function storyPersona(){ const t=careerStory().traits||{}; const e=Object.entries(t).sort((a,b)=>b[1]-a[1]); return e.length&&e[0][1]>=2?(STORY_PERSONA[e[0][0]]||null):null; }
+/* ===== CS280 — TWO-AXIS REPUTATION (NBA-2K-style press system) =====
+   Press/interview choices trade between two axes with NO "right" answer — like 2K's Fan Support vs Team
+   Chemistry. FANS (popularity) is boosted by bold/brash/showman answers → drives follower growth + sponsor
+   MARKETABILITY (endorsement money). RESPECT (tour standing with peers, officials, purists) is boosted by
+   humble/classy/gritty answers → drives sponsor LOYALTY + a COMPOSURE floor (respected pros stay calm).
+   Push too far either way and a CONSEQUENCE beat fires (your caddie/agent/a tour legend calls you out — the
+   funny, shareable moments). Your quadrant is your PERSONA. Career-only; persisted on careerStory().rep. */
+const REP_START={fans:32, respect:50};
+function repClampV(v){ return Math.max(0, Math.min(100, v)); }
+function careerRep(){ const s=careerStory(); if(!s.rep) s.rep={fans:REP_START.fans, respect:REP_START.respect};
+  if(s.rep.fans==null) s.rep.fans=REP_START.fans; if(s.rep.respect==null) s.rep.respect=REP_START.respect; return s.rep; }
+function repFans(){ return careerRep().fans; }
+function repRespect(){ return careerRep().respect; }
+function adjRep(dFans, dResp){ const r=careerRep(); r.fans=repClampV(r.fans+(dFans||0)); r.respect=repClampV(r.respect+(dResp||0)); }
+// derive a choice's fans/respect move from its personality trait (so we don't retag every choice); an
+// explicit ch.fansΔ / ch.respΔ overrides. On a backfire the move flips sour (loses fans AND respect).
+const TRAIT_AXIS={
+  brash:{fans:7,respect:-5}, showman:{fans:6,respect:-3}, fanFav:{fans:5,respect:2}, confident:{fans:4,respect:0},
+  maverick:{fans:3,respect:-3}, humble:{fans:1,respect:6}, loyal:{fans:1,respect:5}, gritty:{fans:1,respect:4}, clutch:{fans:2,respect:3} };
+function repApplyChoice(ch, backfired){
+  let df, dr;
+  if(ch.fansD!=null || ch.respD!=null){ df=ch.fansD||0; dr=ch.respD||0; }
+  else { const a=TRAIT_AXIS[ch.tr]||{fans:2,respect:1}; df=a.fans; dr=a.respect; }
+  if(backfired){ df=-(Math.abs(df)*0.7)-1; dr=Math.min(dr,0)-3; }   // a flop bleeds fans AND respect
+  adjRep(df, dr);
+  return {df:Math.round(df), dr:Math.round(dr)};
+}
+// benefits: fans → sponsor MARKETABILITY (±~18% money at 100/0); respect → a CONFIDENCE floor (respected pros
+// settle at a higher composure baseline, applied gently via resultMomentum's mean-reversion target).
+function repMarketMult(){ return 1 + (repFans()-50)/50*0.18; }
+function repConfBaseline(){ return 50 + (repRespect()-50)*0.28; }   // reversion target: ~36 (low) .. ~64 (high)
+const REP_PERSONAS={
+  superstar:{name:'The Complete Superstar', d:'Adored by the fans and respected by every pro.'},
+  villain:{name:'The Pantomime Villain', d:'The star the tour loves to hate — huge following, few friends inside the ropes.'},
+  showman:{name:'The Fan Favourite', d:'The crowds can’t get enough of you.'},
+  gentleman:{name:'The Gentleman of the Tour', d:'A players’ player — universally respected.'},
+  pro:{name:'The Quiet Professional', d:'Low-key, all business, respected in the locker room.'},
+  radar:{name:'Under the Radar', d:'Flying below the radar — time to make some noise.'},
+  rising:{name:'The Rising Star', d:'Your story is still being written.'} };
+function repPersona(){ const f=repFans(), r=repRespect();
+  const hf=f>=60, lf=f<=35, hr=r>=62, lr=r<=38;
+  if(hf&&hr) return REP_PERSONAS.superstar;
+  if(hf&&lr) return REP_PERSONAS.villain;
+  if(lf&&hr) return REP_PERSONAS.gentleman;
+  if(hf) return REP_PERSONAS.showman;
+  if(hr) return REP_PERSONAS.pro;
+  if(lf&&lr) return REP_PERSONAS.radar;
+  return REP_PERSONAS.rising; }
+function repFansLabel(f){ f=f==null?repFans():f; return f>=78?'Superstar':f>=60?'Popular':f>=40?'Known':f>=22?'Low-profile':'Unknown'; }
+function repRespLabel(r){ r=r==null?repRespect():r; return r>=78?'Revered':r>=60?'Respected':r>=40?'Accepted':r>=22?'Doubted':'Disliked'; }
+// a compact two-axis meter (Fans + Respect), used in the press overlay, summary, and off-season
+function repMeterHTML(opts){ opts=opts||{}; const f=repFans(), r=repRespect(), p=repPersona();
+  const bar=(val,col,lab,sub)=>`<div class="statpill"><div class="lab">${lab}</div>
+    <div class="cmeter"><span style="width:${Math.max(4,val)}%;background:${col}"></span></div>
+    <div class="small" style="color:${col};font-weight:800;letter-spacing:0">${sub}</div></div>`;
+  return `<div style="display:flex;gap:12px;align-items:stretch">
+    <div style="flex:1">${bar(f,'#ff9d3a','Fans',repFansLabel(f)+' · '+fmtFollowers(careerStory().followers))}</div>
+    <div style="flex:1">${bar(r,'#5fd0e0','Respect',repRespLabel(r))}</div>
+  </div>${opts.persona&&p?`<div class="small" style="text-align:center;margin-top:8px;color:#ffd45e;font-weight:800">${esc(p.name)}</div>`:''}`;
+}
 function storyCtx(ce){
   const res=(S.season&&S.season.results)||[]; const last=res.length?res[res.length-1]:null;
   let won=false, top10=false, missed=false, lastName='', runnerUp=false, majorWin=false, lastMajor=false;
@@ -6639,6 +6699,7 @@ function storyCtx(ce){
   return {won, top10, missed, runnerUp, majorWin, lastMajor, lastName, rival, rivalName:(rival&&rival.name)||'', upName:ce.evt.name, major:!!ce.evt.major, big:!!ce.evt.big,
     sponsorBrand:sBrand, firstWin, worldNo1, age, rookie, veteran, twilight, hot, careerWins,
     rivalAhead, grudgeW, grudgeL,
+    fans:repFans(), respect:repRespect(),   // CS280 two-axis reputation, for consequence-beat triggers
     yr:S.year||1, rank, N:byMoney.length||1, cold, seasons:seasonsPlayed};
 }
 // each beat: when(ctx)→bool, tag, title(ctx), body(ctx), ch:[{t,s,tr,conf,endo,fan,r,head(ctx)}]
@@ -6784,7 +6845,39 @@ const STORYLINES=[
   body:c=>`An overseas event is dangling a massive appearance fee to show up — the week before a big tournament.`,
   ch:[{t:'Take the payday',s:'Cash the cheque',tr:'maverick',conf:-0.1,fol:0.09,r:'The bank account loves it; your prep takes a hit.',head:'Chased an appearance-fee payday'},
       {t:'Skip it, stay sharp',s:'Golf first',tr:'clutch',conf:0.3,r:'Disciplined. Your game thanks you.',head:'Turned down easy money to stay sharp'},
-      {t:'Go, and donate the fee',s:'Best of both',tr:'loyal',conf:0.1,fol:0.1,r:'Goodwill and a great story.',head:'Donated an appearance fee'}]}
+      {t:'Go, and donate the fee',s:'Best of both',tr:'loyal',conf:0.1,fol:0.1,r:'Goodwill and a great story.',head:'Donated an appearance fee'}]},
+ // ── CS280: CONSEQUENCE beats — push a reputation axis too far and someone calls you out (the shareable, funny moments) ──
+ {id:'caddie_words', tag:'INSIDE THE ROPES', pri:3, when:c=>c.respect<=28 && c.seasons>=1, title:c=>'Your caddie pulls you aside',
+  body:c=>`On the range your caddie leans in, dead serious: “Boss… the other loopers are talking. That stuff you keep telling the press? It’s not a great look for either of us.”`,
+  ch:[{t:'“You’re right — I’ll rein it in”',s:'Own it',tr:'humble',respD:10,fansD:-1,conf:0.2,r:'He nods and shoulders the bag. Word gets round the caddie shack that you’re alright after all.',head:'Took his caddie’s advice to heart'},
+      {t:'“They’re all just jealous”',s:'No apologies',tr:'brash',fansD:4,respD:-4,fan:1,risk:0.35,r:'He shrugs and picks the bag back up. You do you.',head:'Brushed off his own caddie’s warning',rBad:'He’s not the last one you’ll wave off this year. The whispers only get louder.',headBad:'Blew off his own caddie — and it spread'},
+      {t:'Buy the whole caddie shack a round',s:'Smooth it over',tr:'fanFav',respD:6,fansD:3,fol:0.03,r:'A crate of cold ones in the caddie shack works wonders. Instantly everyone’s favourite.',head:'Won over the caddie shack with a round'}]},
+ {id:'agent_panic', tag:'THE PHONE CALL', pri:3, when:c=>c.respect<=24 && c.seasons>=1, title:c=>'Your agent is sweating',
+  body:c=>`Your agent calls, voice tight: “I just got off the phone with a sponsor. They’re ‘reviewing the relationship.’ People with money don’t love the villain act. Help me out here.”`,
+  ch:[{t:'“Tell them I’ll tone it down”',s:'Protect the bag',tr:'humble',respD:9,fansD:-2,r:'Your agent exhales. The sponsor stays — for now.',head:'Reeled it in to keep a sponsor happy'},
+      {t:'“Bad boys sell too — trust me”',s:'Lean in',tr:'brash',fansD:6,respD:-3,fan:1,risk:0.4,r:'You double down. The edgy brand becomes the brand. High risk, high reward.',head:'Told his agent the villain act sells',rBad:'The sponsor walks. Your agent is not answering texts.',headBad:'Lost a sponsor doubling down on the villain act',folBad:0.06},
+      {t:'Fire off a charity donation',s:'Change the story',tr:'loyal',respD:6,fansD:2,fol:0.05,r:'A surprise six-figure gift flips the headlines overnight. Masterful.',head:'Flipped the narrative with a big donation'}]},
+ {id:'villain_embrace', tag:'THE HEEL TURN', pri:3, when:c=>c.fans>=68 && c.respect<=34, title:c=>'The tour loves to hate you',
+  body:c=>`You’ve become box office — the guy every gallery boos and every broadcast can’t stop showing. A promoter wants to lean ALL the way into the villain.`,
+  ch:[{t:'Embrace the villain',s:'Boos are still noise',tr:'showman',fansD:8,respD:-3,fan:1,risk:0.3,r:'Black hat on. Ticket sales spike wherever you tee it up. Pure box office.',head:'Fully embraced the pantomime villain',rBad:'The heel act gets old fast, and even neutral fans sour on it.',headBad:'Overcooked the villain act',folBad:0.05},
+      {t:'Start the redemption arc',s:'Win them back',tr:'humble',respD:9,fansD:-3,conf:0.2,r:'A softer, humbler you. The comeback story writes itself and the purists come around.',head:'Began a redemption arc'}]},
+ {id:'elder_shot', tag:'THE LEGEND SPEAKS', pri:3, when:c=>c.respect<=30 && c.careerWins>=3, title:c=>'A tour legend takes a shot',
+  body:c=>`A hall-of-famer, mic in hand: “Back in my day we let the golf do the talking. This one could learn some manners.” The clip is everywhere.`,
+  ch:[{t:'Pay your respects publicly',s:'Honour the legend',tr:'humble',respD:11,fansD:-1,conf:0.1,r:'You tip your cap to a great. The legend nods. Class recognised.',head:'Tipped his cap to a tour legend'},
+      {t:'“Different era, old timer”',s:'Clap back',tr:'brash',fansD:6,respD:-4,fan:1,risk:0.45,r:'The generational war goes viral. The kids love it; the establishment does not.',head:'Clapped back at a tour legend',rBad:'Disrespecting an icon is a bad look on everyone. Even your own camp winces.',headBad:'Took a swing at a beloved legend — and missed',folBad:0.05}]},
+ {id:'underexposed', tag:'THE MARKETING MEETING', pri:3, when:c=>c.fans<=22 && c.seasons>=2, title:c=>'“Nobody knows who you are”',
+  body:c=>`Your agent slides a marketing report across the table: “You’re one of the best players out here and you have the personality of a driving-range mat. Sponsors want a STORY. Give me something.”`,
+  ch:[{t:'Turn on the charm',s:'Time to get loud',tr:'showman',fansD:9,respD:-1,fan:1,r:'You let a little personality out. The clips get shared. People finally notice.',head:'Turned on the personality and got noticed'},
+      {t:'“My golf is my personality”',s:'Let the game talk',tr:'gritty',respD:5,fansD:-1,conf:0.2,r:'You refuse to be a character. The purists respect it, even if the marketing team sighs.',head:'Refused to be anything but a golfer'},
+      {t:'Do one viral trick-shot video',s:'Meet them halfway',tr:'fanFav',fansD:6,respD:1,fol:0.06,r:'A behind-the-back wedge spin racks up millions of views. Effortless.',head:'Went viral with a trick-shot clip'}]},
+ {id:'gentleman_tribute', tag:'A CLASS ACT', pri:2, when:c=>c.respect>=76 && c.seasons>=2, title:c=>'The gentleman of the tour',
+  body:c=>`Peers, officials and reporters keep using the same word about you: class. A magazine wants to run a feature on the most respected player in the game.`,
+  ch:[{t:'Let your actions speak',s:'Quiet class',tr:'humble',respD:4,conf:0.3,r:'You keep it understated, which only makes the tribute land harder.',head:'Honoured as the gentleman of the tour'},
+      {t:'Use the platform for good',s:'Pay it forward',tr:'loyal',respD:3,fansD:3,fol:0.07,r:'You turn the spotlight toward the game’s next generation. Beautifully done.',head:'Used his good name to lift the game'}]},
+ {id:'crossover', tag:'CROSSOVER STAR', pri:2, when:c=>c.fans>=68 && c.respect>=64, title:c=>'Bigger than golf',
+  body:c=>`Adored by fans AND respected by peers — a rare combination. A major brand wants you as the face of a global campaign that goes way beyond golf.`,
+  ch:[{t:'Become the face of the game',s:'Transcend the sport',tr:'showman',fansD:6,respD:1,fan:1,fol:0.1,r:'Billboards, ad breaks, the lot. You’re a household name now.',head:'Became the crossover face of the game'},
+      {t:'Keep golf at the centre',s:'Stay grounded',tr:'humble',respD:5,fansD:2,conf:0.2,r:'You take the deal but keep the main thing the main thing. Everyone respects it more.',head:'Went global without losing the plot'}]}
 ];
 function maybeStoryline(ce){
   if(S.daily || S.circuitMode || !S.career) return null;
@@ -6828,11 +6921,8 @@ function showStoryline(sb){
     <div style="max-width:452px;width:100%;position:relative;background:linear-gradient(180deg,#0d2334,#060f16);border:1px solid #2f6f86;border-radius:18px;padding:20px 20px 22px;box-shadow:0 30px 80px rgba(0,0,0,.6);overflow:hidden">
       <div style="position:absolute;inset:0 0 auto 0;height:120px;pointer-events:none">${bulbs}
         <div style="position:absolute;inset:-30% 18% auto 18%;height:150px;background:radial-gradient(60% 60% at 50% 0,rgba(95,208,224,.28),transparent 72%)${reduce?'':';animation:pressGlow 3.4s ease-in-out infinite'}"></div></div>
-      <!-- at-stake momentum strip -->
-      <div style="display:flex;gap:12px;align-items:stretch;position:relative;margin-bottom:12px">
-        <div style="flex:1" class="js-fol">${followersChipHTML(S.season?((story.followers||0)-(S.season.followers0||0))||null:null)}</div>
-        <div style="flex:1" class="js-conf">${confMeterHTML(seasonConf())}</div>
-      </div>
+      <!-- at-stake: the two-axis reputation this answer trades between (CS280) -->
+      <div class="js-rep" style="position:relative;margin-bottom:12px">${repMeterHTML()}</div>
       <div style="position:relative;text-align:center">
         <div style="display:inline-flex;align-items:center;gap:7px;padding:3px 11px;border:1px solid #2f6f86;border-radius:999px;background:rgba(9,32,46,.7);margin-bottom:8px">
           <span style="width:7px;height:7px;border-radius:50%;background:#ff5b52;box-shadow:0 0 8px #ff5b52${reduce?'':';animation:pressGlow 1.4s ease-in-out infinite'}"></span>
@@ -6856,7 +6946,7 @@ function showStoryline(sb){
       ${esc(ch.t)}${ch.s?`<span class="sub">${esc(ch.s)}</span>`:''}${riskTag}</button>`);
     b.onclick=()=>{
       // apply — capture before/after momentum for the on-screen deltas
-      const conf0=seasonConf(), fol0=story.followers||0;
+      const conf0=seasonConf(), fol0=story.followers||0, fans0=repFans(), resp0=repRespect();
       // CS279: risky choices ROLL — a backfire costs confidence + followers and grants no reputation (the
       // choice didn't land). Safe choices (no ch.risk) always resolve to their intended upside/trade-off.
       const backfired = ch.risk ? (Math.random() < ch.risk) : false;
@@ -6883,21 +6973,28 @@ function showStoryline(sb){
         reaction = T(ch.r);
         headline = T(ch.head)||T(beat.title);
       }
+      // CS280: move the two-axis reputation (Fans ↔ Respect) — the core trade-off, no "right" answer
+      const persona0=repPersona();
+      const rd=repApplyChoice(ch, backfired);
+      const personaShift = repPersona()!==persona0 ? repPersona() : null;
       story.feed.unshift({year:S.year||1, evt:ctx.upName, text:headline}); if(story.feed.length>60) story.feed.length=60;
       track('storyline_choice',{id:beat.id, choice:ch.t, backfired});
       const dConf=Math.round(seasonConf()-conf0), dFol=Math.round((story.followers||0)-fol0);
-      // tick the at-stake meters to their new values (meter width animates via CSS)
-      const folBox=ov.querySelector('.js-fol'), confBox=ov.querySelector('.js-conf');
-      if(folBox) folBox.innerHTML=followersChipHTML(S.season?((story.followers||0)-(S.season.followers0||0))||null:null);
-      if(confBox) confBox.innerHTML=confMeterHTML(seasonConf());
+      const dFans=Math.round(repFans()-fans0), dResp=Math.round(repRespect()-resp0);
+      // tick the at-stake two-axis meter to its new values (meter width animates via CSS)
+      const repBox=ov.querySelector('.js-rep');
+      if(repBox) repBox.innerHTML=repMeterHTML();
       // reporter reaction + the tangible fallout
       btns.querySelectorAll('button').forEach(x=>x.disabled=true);
       const chips=[];
-      if(dFol>0) chips.push(`<span style="color:#35d6a0;font-weight:800">▲ +${fmtFollowers(dFol)} followers</span>`);
-      else if(dFol<0) chips.push(`<span style="color:#E14A33;font-weight:800">▼ ${fmtFollowers(-dFol)} followers</span>`);
-      if(dConf!==0) chips.push(`<span style="color:${dConf>0?'#35d6a0':'#E14A33'};font-weight:800">Confidence ${dConf>0?'↑':'↓'} ${dConf>0?'+':''}${dConf} · ${confLabel(seasonConf())}</span>`);
+      if(dFans!==0) chips.push(`<span style="color:${dFans>0?'#ff9d3a':'#E14A33'};font-weight:800">Fans ${dFans>0?'▲':'▼'} ${dFans>0?'+':''}${dFans}</span>`);
+      if(dResp!==0) chips.push(`<span style="color:${dResp>0?'#5fd0e0':'#E14A33'};font-weight:800">Respect ${dResp>0?'▲':'▼'} ${dResp>0?'+':''}${dResp}</span>`);
+      if(dConf!==0) chips.push(`<span style="color:${dConf>0?'#35d6a0':'#E14A33'};font-weight:800">Confidence ${dConf>0?'↑':'↓'} ${dConf>0?'+':''}${dConf}</span>`);
+      if(dFol>0) chips.push(`<span style="color:#9fb3a8;font-weight:700">▲ ${fmtFollowers(dFol)} following</span>`);
+      else if(dFol<0) chips.push(`<span style="color:#c98;font-weight:700">▼ ${fmtFollowers(-dFol)} following</span>`);
       if(!backfired && ch.endo) chips.push(`<span style="color:#ffd45e;font-weight:800">Endorsement signed</span>`);
-      if(personaNew) chips.push(`<span style="color:#ffd45e;font-weight:800">You’re becoming ${esc(personaNew)}</span>`);
+      if(personaShift) chips.push(`<span style="color:#ffd45e;font-weight:800">Now: ${esc(personaShift.name)}</span>`);
+      else if(personaNew) chips.push(`<span style="color:#ffd45e;font-weight:800">You’re becoming ${esc(personaNew)}</span>`);
       replyBox.innerHTML='';
       replyBox.appendChild($(`<div class="scout" style="border-color:${backfired?'#E14A33':'#2f6f86'};text-align:left;margin:2px 0 10px">
         <div class="small" style="color:${backfired?'#ff8f7e':'#7fa8b8'};letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:4px">${backfired?'It backfired':'The reaction'}</div>
@@ -6916,23 +7013,22 @@ function showStoryline(sb){
 // the season-summary / career payoff: a compact "Career Story" card (persona + recent off-course beats)
 function storyFeedHTML(){
   const c=S.career; if(!c||!c.story) return '';
-  const s=c.story, feed=(s.feed||[]).slice(0,6), persona=storyPersona();
-  const seasonDelta=(S.season && S.season.followers0!=null)?((s.followers||0)-S.season.followers0):null;
+  const s=c.story, feed=(s.feed||[]).slice(0,6), p=repPersona();
   const conf=(S.season && S.season.confidence!=null)?S.season.confidence:(s.confidence!=null?s.confidence:CONF_START);
   const rows=feed.map(f=>`<div style="display:flex;gap:8px;padding:6px 0;border-top:1px solid rgba(255,255,255,.06)">
     <span class="small" style="color:#5fd0e0;min-width:42px;font-weight:800">Yr ${f.year}</span>
     <span class="small" style="color:#dbe7ee">${esc(f.text)}</span></div>`).join('');
-  const meta=[s.endorsements>0?(s.endorsements+' endorsement'+(s.endorsements>1?'s':'')):'', s.fan>0?'fan favourite':''].filter(Boolean).join(' · ');
   return `<div class="scout" style="border-color:#2f6f86;text-align:left;margin:8px auto;max-width:520px">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
-      <div style="font:800 11px/1 var(--body);letter-spacing:.2em;color:#5fd0e0;text-transform:uppercase">Career Story</div>
-      ${persona?`<div class="small" style="color:#ffd45e;font-weight:800">${esc(persona)}</div>`:''}
+      <div style="font:800 11px/1 var(--body);letter-spacing:.2em;color:#5fd0e0;text-transform:uppercase">Your Reputation</div>
+      ${p?`<div class="small" style="color:#ffd45e;font-weight:800">${esc(p.name)}</div>`:''}
     </div>
-    <div style="display:flex;gap:14px;align-items:stretch;margin:10px 0 6px;padding:10px 0;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08)">
-      <div style="flex:1">${followersChipHTML(seasonDelta>0?seasonDelta:null)}</div>
-      <div style="flex:1">${confMeterHTML(conf)}</div>
+    <div style="margin:10px 0 8px;padding:10px 0;border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08)">
+      ${repMeterHTML()}
+      <div style="margin-top:10px">${confMeterHTML(conf)}</div>
     </div>
-    ${meta?`<div class="small" style="color:#9fb3a8;margin-top:3px">${esc(meta)}</div>`:''}
+    ${p?`<div class="small" style="color:#9fb3a8;margin:2px 0 4px">${esc(p.d)}</div>`:''}
+    <div class="small" style="color:#7fa8b8;margin-bottom:2px">Fans grow your following &amp; sponsor money · Respect keeps you composed &amp; sponsors loyal.</div>
     ${rows||'<div class="small" style="color:#9fb3a8;margin-top:4px">Your story is just beginning.</div>'}
   </div>`;
 }
@@ -7096,7 +7192,8 @@ function sponsorRelMult(rel, brand){ const step=(brandTrait(brand).relStep)||0.0
   return 1 + step*(Math.max(1,Math.min(SPONSOR_REL_MAX,rel||1))-1); }
 function sponsorFolMult(brand){ const f=(careerStory().followers)||FOLLOWERS_START;
   const base=Math.max(0, Math.min(0.35, (Math.log10(Math.max(10000,f))-4)*0.117));   // CS242: softened — 10k→+0, 100k→+.12, 1M→+.23, 10M+→+.35 (was up to +.6)
-  return 1 + base*((brandTrait(brand).folBoost)||1); }   // image-driven brands amplify the follower effect
+  // CS280: your FANS axis is your marketability — a popular star commands richer sponsor money (±~18%)
+  return (1 + base*((brandTrait(brand).folBoost)||1)) * repMarketMult(); }   // image-driven brands amplify the follower effect
 function sponsorPick(tier, avoid, rng){ const all=brandsOfTier(tier), pool=all.filter(b=>b!==avoid), p=pool.length?pool:all;
   return p[Math.floor((rng?rng():Math.random())*p.length)]; }
 // your "market value" to sponsors: following + current OVR + career achievement (roughly 0-120)
