@@ -2333,9 +2333,18 @@
   .daily-board-link:hover{color:var(--ink);}
 
   /* daily intro / rules page */
-  .daily-intro-theme{text-align:center;background:var(--white);border:1.5px solid var(--border-soft);
-    border-radius:12px;padding:16px 16px 18px;margin:2px auto 18px;max-width:440px;box-shadow:var(--shadow-sm);}
-  .dit-label{font-weight:900;letter-spacing:2px;font-size:11px;text-transform:uppercase;color:var(--teal);}
+  .daily-intro-theme{position:relative;overflow:hidden;text-align:center;background:var(--white);
+    border:1.5px solid var(--border-soft);border-radius:12px;padding:18px 16px;margin:2px auto 18px;
+    max-width:440px;box-shadow:var(--shadow-sm);}
+  /* gold "featured today" accent + a faint wash from the top */
+  .daily-intro-theme::before{content:"";position:absolute;left:0;right:0;top:0;height:4px;
+    background:linear-gradient(90deg,#E8C25A,var(--gold),#E8C25A);}
+  .daily-intro-theme{background:radial-gradient(120% 70% at 50% -20%,rgba(244,180,19,.10),transparent 60%),var(--white);}
+  .dit-label{display:inline-flex;align-items:center;gap:6px;font-weight:900;letter-spacing:2px;font-size:11px;
+    text-transform:uppercase;color:#B8860B;}
+  .dit-label::before{content:"";width:13px;height:13px;background:var(--gold);
+    -webkit-mask:var(--cal-ico) center/contain no-repeat;mask:var(--cal-ico) center/contain no-repeat;
+    --cal-ico:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='black'%3E%3Crect x='3' y='5' width='18' height='16' rx='2.5'/%3E%3Crect x='7' y='2' width='2' height='4' rx='1'/%3E%3Crect x='15' y='2' width='2' height='4' rx='1'/%3E%3C/svg%3E");}
   .dit-name{font-family:'Anton',Impact,sans-serif;font-size:clamp(26px,7.5vw,38px);
     text-transform:uppercase;line-height:1;margin:5px 0 6px;color:var(--ink);}
   .dit-blurb{font-weight:600;font-size:14px;color:var(--muted-2);}
@@ -7721,8 +7730,13 @@ function renderStreakList(rows){
 function renderDailyList(rows){
   const list=$('daily-list'); if(!list) return;
   if(!rows.length){ list.innerHTML='<div class="lb-empty">No entries yet, be the first today!</div>'; return; }
-  const myId = gs && gs.result && gs.result._lbId;
-  list.innerHTML=rows.map((row,i)=>{
+  const myId = (gs && gs.result && gs.result._lbId) != null ? gs.result._lbId : undefined;
+  // Same top-3 podium as the global board, then rank 4+ list below.
+  const usePodium = rows.length>=3;
+  const podium = usePodium ? lbPodiumHtml(rows.slice(0,3), myId) : '';
+  const startIdx = usePodium ? 3 : 0;
+  const listHtml = rows.slice(startIdx).map((row,j)=>{
+    const i=j+startIdx;
     const you=(myId!=null && row.id===myId);
     const nm=cleanDisplayName((row.name&&String(row.name).trim())?row.name:'Anonymous');
     const fl=(row.flag&&String(row.flag).trim())?flagChip(row.flag):'';
@@ -7733,12 +7747,13 @@ function renderDailyList(rows){
     const hasLineup=Array.isArray(row.player_ids)&&row.player_ids.length>0;
     return `<div class="lb-row${you?' you':''}${hasLineup?' has-lineup':''}" data-i="${i}" data-id="${row.id==null?'':row.id}">
       ${rankCell}
-      <span class="lb-name">${fl?fl+' ':''}${escapeHtml(nm)}</span>
+      <span class="lb-name"><span class="lb-nm">${fl?fl+' ':''}${escapeHtml(nm)}</span></span>
       <span class="lb-meta">${emToSvg(lbMetaLabel(row))}</span>
       <span class="lb-ov ${ovTier(row.overall)}">${(+row.overall).toFixed(1)}</span>
       ${hasLineup?'<span class="lb-chev" aria-hidden="true">›</span>':''}
     </div>`;
   }).join('');
+  list.innerHTML = podium + (listHtml ? `<div class="lb-rows">${listHtml}</div>` : '');
 }
 
 // Fill the rank line on the results page. Records the draft once (guarded), using
@@ -8856,7 +8871,7 @@ $('btn-home-leaderboard').addEventListener('click', openLeaderboardView);
   on('daily-seg','click',e=>{ const b=e.target.closest('button'); if(!b) return; openDailyBoard(b.dataset.dv); });
   // tap a daily row with a stored lineup → show that squad
   on('daily-list','click',e=>{
-    const rowEl=e.target.closest('.lb-row.has-lineup'); if(!rowEl) return;
+    const rowEl=e.target.closest('.lb-row.has-lineup, .lb-pod-spot.has-lineup'); if(!rowEl) return;
     const rid=rowEl.dataset.id;
     const row=(rid?dailyBoardRows.find(r=>String(r.id)===rid):null)||dailyBoardRows[+rowEl.dataset.i];
     if(row) openLineupModal(row);
