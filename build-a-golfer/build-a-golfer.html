@@ -144,6 +144,19 @@ window.GA_ID='G-L29P5MRWKE';
   /* sticky setup avatar — big on desktop, much smaller on phones so it doesn't eat the screen while scrolling */
   .avatarfig.fullbody.av-setup-full{height:min(56vh,520px)}
   @media(max-width:700px){ .avatarfig.fullbody.av-setup-full{height:min(34vh,300px)} }
+  /* CS266: Build-a-Golfer live stage — spotlight glow, name above, floor shadow; sticky action bar */
+  .setup-figwrap{position:sticky; top:8px; z-index:3; padding:8px 0 12px; margin:0 -16px; background:#06200f; border-bottom:1px solid var(--line)}
+  .avstage{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end}
+  .avstage::before{content:''; position:absolute; left:50%; top:6%; width:min(72%,340px); height:80%; transform:translateX(-50%);
+    border-radius:50%; z-index:0; pointer-events:none;
+    background:radial-gradient(ellipse at center, rgba(216,173,74,.20), rgba(216,173,74,.05) 52%, transparent 72%)}
+  .avstage-name{position:relative; z-index:1; font-family:var(--display); font-style:italic; font-size:20px; line-height:1; color:#f4eddc; margin-bottom:3px; text-align:center; max-width:90%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .avstage .avatarfig{position:relative; z-index:1}
+  .avfloor{position:relative; z-index:0; width:52%; max-width:210px; height:15px; margin-top:-4px; border-radius:50%;
+    background:radial-gradient(ellipse at center, rgba(0,0,0,.5), rgba(0,0,0,.18) 55%, transparent 72%)}
+  .setup-actionbar{position:sticky; bottom:0; z-index:4; display:flex; gap:9px; align-items:stretch; margin:16px -16px 0;
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px)); border-top:1px solid var(--line);
+    background:linear-gradient(180deg, rgba(6,32,15,0), #06200f 34%)}
   @media(max-width:860px){
     .cols{grid-template-columns:1fr; gap:16px} .seasoncols .scorecol{order:-1}
     /* Stacked single-column layout breaks the row-sharing trick above (each column becomes its own
@@ -5336,11 +5349,16 @@ function scrSetup(){
   // avatar preview, large, sticky so it stays visible while you scroll the options. A solid
   // backdrop is needed once it's pinned (see the .setup-cols CSS) since the customization list
   // scrolls up underneath it, without one, the swatches/rows behind would show through.
+  // CS266: a live avatar STAGE — golden spotlight behind the golfer, name above, floor shadow beneath
   const full=sbSignedIn();
   const f=$(avatarShowHTML());
-  if(full){ f.classList.add('av-setup-full'); f.style.filter='drop-shadow(0 8px 18px rgba(0,0,0,.5))'; }
-  else { f.style.width='184px'; f.style.height='184px'; f.style.filter='drop-shadow(0 7px 16px rgba(0,0,0,.45))'; }
-  const figwrap=$(`<div style="display:flex;justify-content:center;position:sticky;top:8px;z-index:3;padding:10px 0 14px;margin:0 -16px;background:#06200f;border-bottom:1px solid var(--line)"></div>`); figwrap.appendChild(f); left.appendChild(figwrap);
+  if(full){ f.classList.add('av-setup-full'); f.style.filter='drop-shadow(0 10px 20px rgba(0,0,0,.5))'; }
+  else { f.style.width='184px'; f.style.height='184px'; f.style.filter='drop-shadow(0 9px 18px rgba(0,0,0,.45))'; }
+  const stage=$(`<div class="avstage"></div>`);
+  stage.appendChild($(`<div class="avstage-name">${esc((sbSignedIn()&&(S.name||'').trim())?S.name:'Your Golfer')}</div>`));
+  stage.appendChild(f);
+  stage.appendChild($(`<div class="avfloor" aria-hidden="true"></div>`));
+  const figwrap=$(`<div class="setup-figwrap"></div>`); figwrap.appendChild(stage); left.appendChild(figwrap);
 
   // ---- Appearance (available to everyone) ----
   right.appendChild(setupHeader('Appearance'));
@@ -5381,10 +5399,13 @@ function scrSetup(){
     right.appendChild(cosPatRow('Hat pattern','hatPat'));
   }
 
-  const go=$(`<button class="btn goldfill" style="margin-top:16px">Build Your Golfer ▸<span class="sub">${S.daily?'Build a golfer for today\'s course':'Spin the wheel to build your golfer'}</span></button>`);
-  go.onclick=()=>{ if(guest && !(S.name||'').trim()) S.name='Your Golfer'; track('draft_started',{daily:S.daily,guest}); S.screen='draft'; render(); }; right.appendChild(go);
-  const back=$(`<button class="btn ghost" style="margin-top:10px">‹ Back</button>`);
-  back.onclick=()=>{reset();S.screen='title';render();}; right.appendChild(back);
+  // CS266: sticky action bar so the primary "Build Your Golfer" CTA stays reachable while scrolling the kit
+  const bar=$(`<div class="setup-actionbar"></div>`);
+  const back=$(`<button class="btn ghost" style="margin:0;width:auto;flex:0 0 auto;padding:12px 15px">‹ Back</button>`);
+  back.onclick=()=>{reset();S.screen='title';render();};
+  const go=$(`<button class="btn goldfill" style="margin:0;flex:1 1 auto">Build Your Golfer ▸</button>`);
+  go.onclick=()=>{ if(guest && !(S.name||'').trim()) S.name='Your Golfer'; track('draft_started',{daily:S.daily,guest}); S.screen='draft'; render(); };
+  bar.appendChild(back); bar.appendChild(go); add(bar);
 }
 
 /* ---------- avatar (layered canvas recolor) ---------- */
