@@ -336,9 +336,10 @@ window.GA_ID='G-L29P5MRWKE';
   .gc-teal{background:linear-gradient(158deg,#20bda9,#0a877a 60%,#07736a); color:#eafff9; --chip:rgba(2,20,16,.28)}
   .gc-amber{background:linear-gradient(158deg,#f6c463,#ec9a25 60%,#df7d1c); color:#24170a; --chip:rgba(20,14,6,.15)}
   .gc-purple{background:linear-gradient(158deg,#b07ef0,#8149cf 58%,#6d38bd); color:#f5edff; --chip:rgba(24,8,42,.32)}
+  .gc-gold{background:linear-gradient(158deg,#f4d585,#e9ad2c 62%,#e0a01f); color:#24170a; --chip:rgba(20,14,6,.16)}
   .gc-top{display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
-  .gc-kick{font:800 10px/1.3 var(--body); letter-spacing:.14em; text-transform:uppercase; opacity:.72; display:flex; align-items:center; gap:6px}
-  .gc-title{font-family:var(--display); font-style:italic; font-size:23px; line-height:1.04; margin-top:4px; padding-right:3px; overflow-wrap:break-word}
+  .gc-kick{font:800 10.5px/1.3 var(--body); letter-spacing:.15em; text-transform:uppercase; opacity:.82; display:flex; align-items:center; gap:6px}
+  .gc-title{font-family:var(--display); font-style:italic; font-size:28px; line-height:1.02; margin-top:5px; padding-right:3px; overflow-wrap:break-word; letter-spacing:.01em}
   .gc-badge{flex:0 0 auto; font:900 12px/1 var(--mono); letter-spacing:.04em; border-radius:9px; padding:7px 10px; background:var(--chip); white-space:nowrap}
   .gc-mid{font:700 12px/1.35 var(--body); margin-top:9px; opacity:.92}
   .gc-row{display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap}
@@ -847,6 +848,14 @@ window.GA_ID='G-L29P5MRWKE';
   .wg-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font:700 13px/1.4 var(--body);color:var(--oncard);padding:2px 0}
   .wg-row .wg-v{font-family:var(--mono);font-weight:800}
   .wg-panel.done{border-color:#35d6a0;background:rgba(53,214,160,.08)}
+  /* CS261: challenges panel — Player Level XP bar + daily quests + weekly challenges */
+  .chalpanel{max-width:520px;margin:12px auto 0}
+  .chalpanel .wg-panel{margin-top:10px}
+  .xpbar-wrap{padding:12px 14px;border-radius:14px;border:1px solid #6d54c8;background:linear-gradient(160deg,rgba(78,54,160,.32),rgba(20,26,44,.5))}
+  .xpbar-hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+  .xplvl{font:800 15px/1 var(--display);font-style:italic;color:#d9c9ff;letter-spacing:.02em}
+  .xpbar{height:9px;border-radius:6px;background:rgba(8,14,28,.6);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
+  .xpbar>i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#8a6bf0,#b79bff)}
   /* CS252: streak calendar — the last N days as coloured cells so the streak feels visual */
   .stcalwrap{max-width:520px;margin:10px auto 0;padding:11px 13px;border-radius:14px;border:1px solid rgba(235,166,31,.24);background:rgba(8,17,26,.42)}
   .stcal-hd{display:flex;justify-content:space-between;align-items:center;font:800 13px/1 var(--body);color:var(--gold);margin-bottom:9px}
@@ -2081,24 +2090,93 @@ function masterySummary(){ const m=courseMastery(); let played=0,beaten=0,aGrade
   return {played,beaten,aGrades,total:DAILY_KEYS.length}; }
 // a fixed 7-day UTC block, derived from todayKey (Date.UTC is a pure static, allowed unlike Date.now)
 function weekKey(){ const t=todayKey(),y=Math.floor(t/10000),mo=Math.floor(t/100)%100,d=t%100; return Math.floor(Date.UTC(y,mo-1,d)/86400000/7); }
-const WEEK_GOALS=[
-  {k:'days',  label:'Play 5 days this week',       target:5, get:w=>Object.keys(w.days||{}).length},
-  {k:'beats', label:'Beat the pro 3 times',        target:3, get:w=>w.beats||0},
-  {k:'low',   label:'Beat the pro by 3+ in a round', target:1, get:w=>((w.bestMargin==null?-99:w.bestMargin)>=3)?1:0},
+// ═══════════════ Challenges: Daily Quests + Weekly Challenges + Player Level (XP → level → coins) ═══════════════
+// Signed-in feature (guests never accrue). XP raises a Player Level; each level-up pays out Pro Shop coins
+// (a level term added to coinsEarnedRaw, so it flows through the normal coin/reconcile/toast pipeline).
+// Weekly challenges span ALL modes and reward XP + a "mulli-spin" (a banked extra draft/off-season spin).
+const DAILY_QUEST_XP=120;      // awarded once/day for finishing all 3 daily quests
+const WEEKLY_CHAL_XP=250;      // awarded per weekly challenge completed
+const LEVEL_COIN=250;          // Pro Shop coins granted per Player Level reached
+function xpState(){ let s=LS.get(acctKey('bag_xp'),null); if(!s||typeof s!=='object') s={};
+  s.xp=s.xp||0; s.mulliEarned=s.mulliEarned||0; s.mulliSpent=s.mulliSpent||0; return s; }
+function xpSave(s){ LS.set(acctKey('bag_xp'),s); if(typeof cloudPush==='function') cloudPush(); }
+function xpTotal(){ return xpState().xp; }
+function xpForLevel(L){ return 200 + (Math.max(1,L)-1)*40; }   // XP to go from level L to L+1 (gentle ramp)
+function xpLevelInfo(total){ total=Math.max(0,total||0); let L=1,rem=total; while(rem>=xpForLevel(L)){ rem-=xpForLevel(L); L++; } return {level:L,into:rem,need:xpForLevel(L),pct:Math.min(100,Math.round(rem/xpForLevel(L)*100))}; }
+function playerLevel(){ return xpLevelInfo(xpTotal()).level; }
+function levelCoinTotal(L){ return (Math.max(1,L)-1)*LEVEL_COIN; }   // cumulative coins earned from reaching level L
+function addXp(n){ if(!sbSignedIn()||!(n>0)) return null; const s=xpState(); const before=xpLevelInfo(s.xp).level; s.xp+=n; const after=xpLevelInfo(s.xp).level; xpSave(s);
+  try{ reconcileCoins(true); }catch(e){}   // level-up coins register via coinsEarnedRaw's level term
+  const info={xp:n, level:after, leveled:after>before};
+  try{ toast('+'+n+' XP'+(info.leveled?' · Level '+after+'!':'')); }catch(e){}
+  if(info.leveled){ try{ sfx('win'); buzz([0,30,40,50]); }catch(e){} }
+  return info; }
+function mulliSpins(){ const s=xpState(); return Math.max(0,(s.mulliEarned||0)-(s.mulliSpent||0)); }
+function addMulliSpin(n){ const s=xpState(); s.mulliEarned=(s.mulliEarned||0)+(n||1); xpSave(s); }
+function useMulliSpin(){ const s=xpState(); if(Math.max(0,(s.mulliEarned||0)-(s.mulliSpent||0))<=0) return false; s.mulliSpent=(s.mulliSpent||0)+1; xpSave(s); return true; }
+// ---- Daily quests (3 tasks, reset daily; all 3 → XP) ----
+const DAILY_QUEST_DEFS=[
+  {k:'daily',  label:'Play the Daily Challenge',      hint:'Beat the Pro'},
+  {k:'season', label:'Complete a Career season',      hint:'Career Mode'},
+  {k:'h2h',    label:'Play a Head to Head match',     hint:'Play Online'},
 ];
-function weekGoals(){ const wk=weekKey(); let w=LS.get(acctKey('bag_weekgoals'),null);
-  if(!w||typeof w!=='object'||w.week!==wk) w={week:wk,days:{},beats:0,bestGrade:-1,bestMargin:-99,beatDays:{},rewarded:false};
-  w.days=w.days||{}; w.beatDays=w.beatDays||{}; return w; }
-function weekGoalsDone(w){ w=w||weekGoals(); return WEEK_GOALS.every(g=>g.get(w)>=g.target); }
-function bumpWeekGoals(won, margin){
-  const w=weekGoals(), t=todayKey(); w.days[t]=1;
-  if(won && !w.beatDays[t]){ w.beats=(w.beats||0)+1; w.beatDays[t]=1; }   // one "beat" per day (a later attempt can flip a day)
-  if(margin!=null && margin>(w.bestMargin==null?-99:w.bestMargin)) w.bestMargin=margin;   // how far under the pro average, best of the week
-  let gotReward=false;
-  if(weekGoalsDone(w) && !w.rewarded){ w.rewarded=true; gotReward=true;    // reward = a streak freeze (ties into #1)
-    const ds=LS.get(acctKey('bag_streak'),{current:0,longest:0,last:null,freezes:0,miles:{}})||{current:0,longest:0,last:null,freezes:0,miles:{}};
-    ds.freezes=(ds.freezes||0)+1; LS.set(acctKey('bag_streak'),ds); }
-  LS.set(acctKey('bag_weekgoals'),w); cloudPush(); return {w, gotReward};
+function dailyQuests(){ const t=todayKey(); let q=LS.get(acctKey('bag_dailyquests'),null);
+  if(!q||typeof q!=='object'||q.day!==t) q={day:t,daily:0,season:0,h2h:0,xpDone:0}; return q; }
+function dailyQuestsAllDone(q){ q=q||dailyQuests(); return DAILY_QUEST_DEFS.every(d=>q[d.k]); }
+function questDaily(type){ if(!sbSignedIn()) return; const q=dailyQuests(); q[type]=1;
+  let leveled=null;
+  if(dailyQuestsAllDone(q) && !q.xpDone){ q.xpDone=1; LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); leveled=addXp(DAILY_QUEST_XP); S.questDailyJustDone=true; track('daily_quests_done'); }
+  else { LS.set(acctKey('bag_dailyquests'),q); if(typeof cloudPush==='function')cloudPush(); }
+  return leveled; }
+// ---- Weekly challenges (rotate weekly, cross-mode, harder; each done → XP + a mulli-spin) ----
+const WEEKLY_POOL=[
+  {id:'win10', label:'Win 10 tournaments',          metric:'tourneysWon', target:10, mode:'career'},
+  {id:'win20', label:'Win 20 tournaments',          metric:'tourneysWon', target:20, mode:'career'},
+  {id:'maj3',  label:'Win 3 majors',                metric:'majorsWon',   target:3,  mode:'career'},
+  {id:'maj5',  label:'Win 5 majors',                metric:'majorsWon',   target:5,  mode:'career'},
+  {id:'seas3', label:'Complete 3 Career seasons',   metric:'seasonsDone', target:3,  mode:'career'},
+  {id:'seas5', label:'Complete 5 Career seasons',   metric:'seasonsDone', target:5,  mode:'career'},
+  {id:'h2h5',  label:'Play 5 Head to Head matches', metric:'h2hMatches',  target:5,  mode:'online'},
+  {id:'h2hw3', label:'Win 3 Head to Head matches',  metric:'h2hWins',     target:3,  mode:'online'},
+  {id:'h2hw5', label:'Win 5 Head to Head matches',  metric:'h2hWins',     target:5,  mode:'online'},
+  {id:'beat3', label:'Beat the Pro 3 times',        metric:'dailyBeats',  target:3,  mode:'daily'},
+  {id:'beat5', label:'Beat the Pro 5 times',        metric:'dailyBeats',  target:5,  mode:'daily'},
+  {id:'daily5',label:'Play the Daily 5 times',      metric:'dailyPlays',  target:5,  mode:'daily'},
+];
+// deterministic weekly set: one challenge from EACH mode (forces all modes) + one extra, stable within a week.
+function weeklySet(){ const wk=weekKey();
+  const one=(mode,salt)=>{ const g=WEEKLY_POOL.filter(x=>x.mode===mode); return seededShuffle(g, (wk*17+salt)>>>0)[0]; };
+  const pick=[one('career',1),one('online',2),one('daily',3)];
+  const rest=WEEKLY_POOL.filter(x=>!pick.includes(x)); const extra=seededShuffle(rest,(wk*29+7)>>>0)[0];
+  if(extra) pick.push(extra); return pick; }
+function weekChal(){ const wk=weekKey(); let w=LS.get(acctKey('bag_weeklychal'),null);
+  if(!w||typeof w!=='object'||w.week!==wk) w={week:wk,prog:{},done:{}}; w.prog=w.prog||{}; w.done=w.done||{}; return w; }
+function weekChalDoneCount(w){ w=w||weekChal(); return weeklySet().filter(c=>w.done[c.id]).length; }
+function questWeekly(metric,n){ if(!sbSignedIn()||!(n>0)) return; const w=weekChal(); w.prog[metric]=(w.prog[metric]||0)+n;
+  const newly=[]; weeklySet().forEach(c=>{ if(!w.done[c.id] && (w.prog[c.metric]||0)>=c.target){ w.done[c.id]=1; newly.push(c); } });
+  LS.set(acctKey('bag_weeklychal'),w); if(typeof cloudPush==='function')cloudPush();
+  newly.forEach(c=>{ addXp(WEEKLY_CHAL_XP); addMulliSpin(1); track('weekly_chal_done',{id:c.id}); });
+  if(newly.length) S.questWeeklyJustDone=(S.questWeeklyJustDone||[]).concat(newly);
+  return newly; }
+// mulli-spin: a banked extra spin, used when you run out of re-spins (draft + off-season)
+function mulliSpinDraft(){ if(!useMulliSpin())return; S.reSpins=(S.reSpins||0)+1; track('mulli_spin',{where:'draft'}); reSpin(); }
+function mulliSpinOff(){ if(!useMulliSpin())return; S.offseason.reSpins=(S.offseason.reSpins||0)+1; track('mulli_spin',{where:'offseason'}); offReSpin(); }
+// ---- UI: the Challenges panel (Player Level bar + daily quests + weekly challenges) ----
+function challengesNode(){
+  if(!sbSignedIn()) return null;
+  const li=xpLevelInfo(xpTotal()), q=dailyQuests(), w=weekChal(), set=weeklySet(), ms=mulliSpins();
+  const el=$(`<div class="chalpanel"></div>`);
+  el.appendChild($(`<div class="xpbar-wrap">
+    <div class="xpbar-hd"><span class="xplvl">Level ${li.level}</span><span class="small muted">${li.into} / ${li.need} XP${ms>0?' · 🌀 '+ms+' mulli-spin'+(ms===1?'':'s'):''}</span></div>
+    <div class="xpbar"><i style="width:${li.pct}%"></i></div></div>`));
+  const dq=DAILY_QUEST_DEFS.map(d=>`<div class="wg-row"><span>${q[d.k]?'✓ ':'○ '}${d.label} <span class="small muted" style="letter-spacing:0;text-transform:none">· ${d.hint}</span></span><span class="wg-v" style="color:${q[d.k]?'#35d6a0':'var(--muted)'}">${q[d.k]?'done':''}</span></div>`).join('');
+  const dqDone=dailyQuestsAllDone(q);
+  el.appendChild($(`<div class="wg-panel${dqDone?' done':''}"><div class="wg-hd"><span>Daily Quests</span>${dqDone?'<span style="color:#35d6a0">+'+DAILY_QUEST_XP+' XP ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all 3 → +'+DAILY_QUEST_XP+' XP</span>'}</div>${dq}</div>`));
+  const wr=set.map(c=>{ const v=Math.min(w.prog[c.metric]||0,c.target), ok=!!w.done[c.id];
+    return `<div class="wg-row"><span>${ok?'✓ ':''}${c.label}</span><span class="wg-v" style="color:${ok?'#35d6a0':'var(--muted)'}">${v}/${c.target}</span></div>`; }).join('');
+  const wDone=weekChalDoneCount(w), wTot=set.length;
+  el.appendChild($(`<div class="wg-panel${wDone>=wTot?' done':''}"><div class="wg-hd"><span>Weekly Challenges</span><span class="small muted" style="letter-spacing:0;text-transform:none">${wDone}/${wTot} · each → +${WEEKLY_CHAL_XP} XP &amp; 🌀 mulli-spin</span></div>${wr}</div>`));
+  return el;
 }
 /* ---------- resume an in-progress free-play golfer across a refresh ---------- */
 function saveResume(){ if(S.daily||!(S.screen==='draft'||S.screen==='build'))return;
@@ -3860,6 +3938,7 @@ function coinsEarnedRaw(){ let c=COIN_START; const ac=(achState().unlocked)||{};
   c+=(m.dailyBeats||0)*20 + (m.bestStreak||0)*25 + (m.spotWins||0)*200;      // daily / streak / spotlight
   c+=(m.seasonsPlayed||0)*40 + (m.careersCompleted||0)*1500;
   c+=(m.rivalWins||0)*150 + (m.rivalsOutgrown||0)*250 + (m.h2hWins||0)*30 + (m.holesInOne||0)*300;
+  c+=levelCoinTotal(playerLevel());                             // XP Player Level pays out coins per level reached
   return Math.round(c);
 }
 function coinBalance(){ return Math.max(0, coinsEarned()-coinState().spent); }
@@ -4167,6 +4246,7 @@ function render(){
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
     if(S.overlay==='confirmSkill') overlayConfirmSkill(app);
     if(S.overlay==='confirmRetire') overlayConfirmRetire(app);
+    if(S.overlay==='challenges') overlayChallenges(app);
     if(S.overlay==='about') overlayAbout(app);
     if(S.overlay==='feedback') overlayFeedback(app);
     if(S.overlay==='privacy') overlayPrivacy(app);
@@ -4716,6 +4796,20 @@ function overlayConfirmRetire(screen){
   ov.querySelector('.red').onclick=()=>{ S.overlay=null; circuit?endCircuit():endCareer('chose'); };
   screen.appendChild(ov);
 }
+// CS261: Challenges overlay — Player Level, daily quests, weekly challenges (reached from the ≡ menu)
+function overlayChallenges(screen){
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Challenges">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>Challenges</h3></div>`);
+  if(!sbSignedIn()){
+    ov.appendChild($(`<p class="lede">Sign in to a free RunThe.GG account to earn XP, level up for Pro Shop coins, and bank 🌀 mulli-spins from the weekly challenges.</p>`));
+  } else {
+    ov.appendChild($(`<p class="lede" style="max-width:520px;margin:0 auto 4px">Finish all 3 daily quests for XP. The weekly challenges rotate every week and span every mode — each one pays XP plus a 🌀 mulli-spin (a banked extra spin for the draft or off-season). Levelling up pays Pro Shop coins.</p>`));
+    const cn=challengesNode(); if(cn) ov.appendChild(cn);
+  }
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  screen.appendChild(ov);
+}
 function overlayDailyDone(screen){
   const r=dailyBest();
   const isRound=r&&r.course&&DAILY_COURSES[r.course];
@@ -4767,6 +4861,7 @@ function overlayMenu(screen){
   play.appendChild(menuRow('🏠','Home','Title screen',go(()=>{S.screen='title';})));
   play.appendChild(menuRow('📖','How to Play','Career mode & daily challenge',go(openRules)));
   play.appendChild(menuRow('🏆','Leaderboard','Season & career rankings',go(()=>{S.overlay='leaderboard';})));
+  play.appendChild(menuRow('🎯','Challenges',signedIn?('Level '+playerLevel()+' · daily & weekly quests'):'Sign in to earn XP & rewards',go(()=>{S.overlay='challenges';})));
   play.appendChild(menuRow('🏅','Trophy Room',signedIn?'Your badges, titles & Legend Tokens':'Sign in to unlock your record',go(()=>{S.overlay='record';})));
   play.appendChild(menuRow('⛳','Course Records','Today\'s board & all-time bests',go(()=>{S.overlay='courserecords';})));
   play.appendChild(menuRow('🎫','Course Passport',`Your best grade at all ${DAILY_KEYS.length} courses`,go(()=>{S.overlay='passport';})));
@@ -4993,7 +5088,7 @@ function dailyHeroCard(){
   const bestTxt=dbest?`Best ${dTot(dbest.total, dbest.par!=null?dbest.par:(DAILY_COURSES[dbest.course]||{}).par)}`:'';
   let badge,mid;
   if(PRACTICE){ badge='PRACTICE'; mid='Unlimited rounds · nothing recorded'; }
-  else if(datt===0){ badge='PLAY'; mid='Beat the tour average at a new famous course every day'; }
+  else if(datt===0){ badge=''; mid='Beat the tour average at a new famous course every day'; }   // no "PLAY" badge, the "Play ▸" CTA covers it
   else if(dleft<=0){ badge=dwon?'BEATEN ✓':'DONE'; mid=`${bestTxt||'Played today'}${dwon?' · you beat the pro':' · came up short'} · new course at midnight ET`; }
   else { badge=`${dleft} LEFT`; mid=`${bestTxt?bestTxt+' · ':''}${dwon?'beaten ✓ · go lower':'beat the tour average to win'}`; }
   const st=streakDisplay(), fz=streakFreezes();
@@ -5003,7 +5098,7 @@ function dailyHeroCard(){
     ? `<span class="gc-chip${atRisk?' hot':''}">🔥 ${st}-day streak${atRisk?' on the line':''}${(fz>0&&!atRisk)?` · ❄️ ${fz}`:''}</span>`
     : `<span class="gc-chip">🔥 Start your streak</span>`);
   const card=$(`<button class="gcard gc-blue" aria-label="Play the daily challenge, Beat the Pro">
-    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">Daily Challenge</div><div class="gc-title">Beat the Pro</div></div><span class="gc-badge">${badge}</span></div>
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">Daily Challenge</div><div class="gc-title">Beat the Pro</div></div>${badge?`<span class="gc-badge">${badge}</span>`:''}</div>
     <div class="gc-mid">${mid}</div>
     <div class="gc-row">${streakChip}<span class="gc-chip">New in ${dCd('hm')}</span><span class="gc-go">Play ▸</span></div>
   </button>`);
@@ -5028,6 +5123,23 @@ function spotlightHeroCard(){
     <div class="gc-row"><span class="gc-go">${playable?'Play ▸':'View result ▸'}</span></div>
   </button>`);
   card.onclick=startSpotlight;
+  return card;
+}
+// CS262: Career Mode hero card for the NEW-career state (gold, left-aligned, matches the other mode cards
+// so "start a new career" reads like a mode, not a plain centered button). The resume card handles continue.
+function careerHeroCard(fresh){
+  const c=(typeof career==='function')?career():{};
+  // lifetime career bests (persist across careers) — shown here now that they've come off the home top
+  const best=(c&&c.builds>0)
+    ? `<div class="gc-row" style="margin-top:10px"><span class="gc-chip">Best ${fmt(c.bestMoney)}</span><span class="gc-chip">OVR ${c.bestOvr}</span><span class="gc-chip">${c.builds} build${c.builds>1?'s':''}</span></div>`
+    : '';
+  const card=$(`<button class="gcard gc-gold" aria-label="Career Mode, build your golfer">
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">${fresh?'Start Your Journey':'New Career'}</div><div class="gc-title">${fresh?'Career Mode':'New Golfer'}</div></div><span class="gc-badge">30 YRS</span></div>
+    <div class="gc-mid">Build your golfer, then play a 30-year career.</div>
+    ${best}
+    <div class="gc-row"><span class="gc-go">Build ▸</span></div>
+  </button>`);
+  card.onclick=()=>{reset();S.mode='easy';S.screen='setup';render();};
   return card;
 }
 // CS256: Play Online hero card (teal) — a container with the two mode entry buttons.
@@ -5088,11 +5200,8 @@ function scrTitle(){
   w.appendChild($(`<div class="herotag center">A RunThe.GG Game</div>`));
   w.appendChild($(`<h1 class="hero" style="font-size:clamp(34px,8.5vw,52px)"><span class="hr1">Your Golfer.</span><br><span class="hr2">Your Tour.</span></h1>`));
   w.appendChild($(`<div class="herorule" aria-hidden="true"><span></span><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.6" fill="none" stroke="#EBA61F" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1.5" fill="#EBA61F"/></svg><span></span></div>`));
-  w.appendChild($(`<div class="center" style="margin:10px 0 6px"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ 30-Year Career Simulation</span></div>`));
-  const c=career();
-  if(c.builds>0){
-    w.appendChild($(`<div class="small muted center" style="margin:-4px 0 12px">Your best: <b style="color:var(--gold)">${fmt(c.bestMoney)}</b> · OVR ${c.bestOvr} · ${c.builds} build${c.builds>1?'s':''}</div>`));
-  }
+  w.appendChild($(`<div class="center" style="margin:10px 0 12px"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ 30-Year Career Simulation</span></div>`));
+  // (career bests moved off the top onto the new-career card, see careerHeroCard)
   const stack=$(`<div class="stack"></div>`);
   const ri=resumeInfo();
   const cs=careerSaveInfo();
@@ -5125,12 +5234,15 @@ function scrTitle(){
   // (Continue → off-season → Retire → start a new golfer). Only show a Career-Mode start button when
   // there's no career to continue (fresh player, or a stale build draft to turn into a career).
   if(!cs){
-    const goCls=ri?'ghost':'goldfill';
-    const go=$(`<button class="btn ${goCls}">${ri?'New Career':'Career Mode'}<span class="sub">${ri?'Build a new golfer':'Build your golfer · 30-year career'}</span></button>`);
-    // reset() clears the build state so a FRESH career never inherits a previous run's team (e.g. an 8/8
-    // Daily build that stranded the draft at "8/8 drafted" with no way to advance).
-    go.onclick=()=>{reset();S.mode='easy';S.screen='setup';render();};
-    stack.appendChild(go);
+    if(ri){
+      // stale build draft is being resumed above (gold "Resume Your Golfer"); offer a quiet ghost new-career button
+      const go=$(`<button class="btn ghost">New Career<span class="sub">Build a new golfer</span></button>`);
+      go.onclick=()=>{reset();S.mode='easy';S.screen='setup';render();};
+      stack.appendChild(go);
+    } else {
+      // fresh player: Career Mode reads as a gold mode CARD (left-aligned, matching the other cards)
+      stack.appendChild(careerHeroCard(true));
+    }
   }
   // 3) Play Online (teal card)
   stack.appendChild(onlineHeroCard());
@@ -5947,6 +6059,10 @@ function scrDraft(){
     if(S.reSpins>0){
       const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${S.reSpins} left</button>`);
       re.onclick=reSpin; left.appendChild(re);
+    } else if(!S.daily && mulliSpins()>0){
+      const mb=$(`<button class="btn ghost" style="margin-top:10px;border-color:#8a6bf0;color:#c9b8ff">🌀 Use a Mulli-Spin · ${mulliSpins()} left<span class="sub">A banked extra spin from weekly challenges</span></button>`);
+      mb.onclick=mulliSpinDraft; left.appendChild(mb);
+      left.appendChild($(`<div class="small muted center" style="margin-top:8px">Out of re-spins, or take one of ${S.current.name}'s skills.</div>`));
     } else {
       left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left, take one of ${S.current.name}'s skills.</div>`));
     }
@@ -8550,6 +8666,10 @@ function scrSummary(){
   const netTotal=ec.net+contractBonus+signing;
   const netCol0=netTotal>=0?'#35d6a0':'#E14A33';
   if(!S.recorded){S.recorded=true;
+    // Challenges: this season completed (daily quest + weekly seasons/wins/majors). Signed-in only.
+    if(!S.daily){ questDaily('season'); questWeekly('seasonsDone',1);
+      let sw=0,sm=0; (S.season.results||[]).forEach(r=>{ const me=r.order&&r.order.find(o=>o.p.you); if(me&&me.pos===1){ sw++; if(r.evt.major) sm++; } });
+      if(sw) questWeekly('tourneysWon',sw); if(sm) questWeekly('majorsWon',sm); }
     // COINS: a season SIMMED to the end (Skip to end of season) earns NO coins. Coins accrue per event, so
     // we snapshot the derived-coin raw at SEASON START (S.season.coinRaw0) and forfeit the whole season's
     // gain here (incentive to stay in and play the rounds + Moments). Suppress the per-event coin toasts too.
@@ -9303,6 +9423,7 @@ function scrOffseason(){
     });
     left.appendChild(grid);
     if(os.reSpins>0){ const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${os.reSpins} left<span class="sub">Pass on this golfer for a new one</span></button>`); re.onclick=offReSpin; left.appendChild(re); }
+    else if(mulliSpins()>0){ const mb=$(`<button class="btn ghost" style="margin-top:10px;border-color:#8a6bf0;color:#c9b8ff">🌀 Use a Mulli-Spin · ${mulliSpins()} left<span class="sub">A banked extra spin from weekly challenges</span></button>`); mb.onclick=mulliSpinOff; left.appendChild(mb); }
     else left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left, take one of ${S.current.name}'s skills.</div>`));
   } else if(!S.spinning){
     if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel<span class="sub">${os.maxChanges-os.changes} change${os.maxChanges-os.changes===1?'':'s'} left · start anytime</span></button>`); spin.onclick=offSpin; left.appendChild(spin); }
@@ -11076,16 +11197,11 @@ function scrDailyPreview(){
     <div class="small muted" style="text-transform:uppercase;letter-spacing:.12em;font-weight:800">Your target · beat the tour average</div>
     <div style="margin-top:4px"><span class="mono" style="font-weight:800;font-size:30px;color:var(--gold);white-space:nowrap">${(c.par+av).toFixed(1)} (${dAvgTxt(av)})</span> <span class="small muted">par ${c.par}</span></div>
     <div class="small muted" style="margin-top:3px">What real tour pros average here. Post a lower round to win the day.</div></div>`));
-  // CS257: the streak calendar + weekly goals now live HERE (the Beat-the-Pro flow), not the homepage (owner)
+  // CS257: streak calendar in the Beat-the-Pro flow; CS261: challenges (level + daily quests + weekly) below it
   if(!S.special && !PRACTICE){
     const st=streakDisplay();
     if(Object.keys(streakDays()).length>0 || st>0) add(streakCalendar(14));
-    if(dailyStats().played>0 || st>0){
-      const wg=weekGoals(), done=weekGoalsDone(wg);
-      const rows=WEEK_GOALS.map(g=>{ const v=Math.min(g.get(wg),g.target), ok=v>=g.target;
-        return `<div class="wg-row"><span>${ok?'✓ ':''}${g.label}</span><span class="wg-v" style="color:${ok?'#35d6a0':'var(--muted)'}">${v}/${g.target}</span></div>`; }).join('');
-      add($(`<div class="wg-panel${done?' done':''}"><div class="wg-hd"><span>This Week</span>${done?'<span style="color:#35d6a0">Complete ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all 3 → ❄️ freeze</span>'}</div>${rows}</div>`));
-    }
+    const cn=challengesNode(); if(cn) add(cn);
   }
   const recTxt=rec?`<b style="color:var(--gold)">${dTot(rec.toPar, c.par)}</b> by ${esc(rec.name)}`
     :(sbSignedIn()?`<b style="color:var(--gold)">Unclaimed</b>, be the first to set it`:`<b style="color:var(--gold)">Sign in</b> to post your score`);
@@ -11781,7 +11897,9 @@ function finishDailyRound(){
   // lifetime record instead (tie counts as a loss, `won` is strict total<avg, decided by best of the day).
   const _ds=bumpStreak(); const _st=bumpDailyStats(won);
   bumpMastery(S.dailyCourse, total, grade?grade.tier:null, won);   // #5 course passport (best score + best grade per course)
-  const _wg=bumpWeekGoals(won, avg-total); S.dailyWeekReward=_wg.gotReward;   // #4 weekly goals (beat-the-pro margin; + freeze reward)
+  // Challenges: daily quest "Play the Daily" + weekly progress (plays + beats). Signed-in only; guarded inside.
+  S.questDailyJustDone=false; S.questWeeklyJustDone=[];
+  questDaily('daily'); questWeekly('dailyPlays',1); if(won) questWeekly('dailyBeats',1);
   S.dailyStreakInfo={won, mile:_ds._mile||0, gotFreeze:!!_ds._gotFreeze, usedFreeze:!!_ds._usedFreeze, current:_ds.current, freezes:_ds.freezes||0, played:_st.played, beat:_st.beat};
   // CS252: one positive sound at the finish — a win fanfare for beating the pro, else the streak-kept ding
   if(won){ sfx('win'); buzz([0,30,40,50]); } else { sfx('streak'); buzz([0,25]); }
@@ -12331,14 +12449,15 @@ function scrDailyResult(){
         <div><div style="font-weight:800;font-size:20px;color:var(--gold)">${best}</div><div class="small muted" style="font-size:10px">Best streak</div></div>
       </div>
       ${(justPlayed&&!wonDay&&left>0)?`<div class="small center" style="margin-top:6px;color:#e9a23b;font-weight:700">Beat the pro in one of your ${left} remaining attempt${left>1?'s':''} to add a win to your record.</div>`:''}</div>`)); } }
-  // #4 weekly goals: celebrate completion (freeze earned) or show this week's progress
-  if(!practice){ const w=weekGoals(), wdone=weekGoalsDone(w);
-    if(justPlayed && S.dailyWeekReward){
-      add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#35d6a0"><b style="color:#35d6a0">🎯 Weekly goals complete!</b><div class="small muted" style="margin-top:3px">All 3 done, you earned a ❄️ streak freeze.</div></div>`));
-    } else {
-      const rows=WEEK_GOALS.map(g=>{const v=Math.min(g.get(w),g.target),ok=v>=g.target;return `<div class="wg-row"><span>${ok?'✓ ':''}${g.label}</span><span class="wg-v" style="color:${ok?'#35d6a0':'var(--muted)'}">${v}/${g.target}</span></div>`;}).join('');
-      add($(`<div class="wg-panel${wdone?' done':''}" style="margin:0 auto 8px"><div class="wg-hd"><span>This Week</span>${wdone?'<span style="color:#35d6a0">Complete ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all 3 → ❄️ freeze</span>'}</div>${rows}</div>`));
+  // CS261 Challenges: celebrate anything just completed this round, then show the challenges panel
+  if(!practice && sbSignedIn()){
+    if(justPlayed && S.questDailyJustDone){
+      add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#35d6a0"><b style="color:#35d6a0">Daily Quests complete!</b><div class="small muted" style="margin-top:3px">All 3 done today · +${DAILY_QUEST_XP} XP</div></div>`));
     }
+    if(justPlayed && (S.questWeeklyJustDone||[]).length){
+      add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">Weekly Challenge${S.questWeeklyJustDone.length>1?'s':''} complete!</b><div class="small muted" style="margin-top:3px">${S.questWeeklyJustDone.map(c=>esc(c.label)).join(' · ')} · +${WEEKLY_CHAL_XP} XP &amp; 🌀 mulli-spin each</div></div>`));
+    }
+    const cn=challengesNode(); if(cn){ cn.style.maxWidth='520px'; cn.style.margin='0 auto 8px'; add(cn); }
   }
   const rec=courseRecords()[r.course];
   if(r.record){
@@ -13108,7 +13227,9 @@ function cloudBundle(){
     ach: LS.get(acctKey('bag_ach'), null),
     special: LS.get(acctKey('bag_special'), null),
     coursemastery: LS.get(acctKey('bag_coursemastery'), null),   // #5 passport (best score+grade per course)
-    weekgoals: LS.get(acctKey('bag_weekgoals'), null),           // #4 this week's goal progress
+    xp: LS.get(acctKey('bag_xp'), null),                         // Player Level XP + mulli-spin bank
+    dailyquests: LS.get(acctKey('bag_dailyquests'), null),       // today's 3 daily quests
+    weeklychal: LS.get(acctKey('bag_weeklychal'), null),         // this week's challenge progress
     coins: LS.get(acctKey('bag_coins'), null),                   // CS183 currency: {spent,seen,owned} (earned is derived)
   };
 }
@@ -13136,14 +13257,23 @@ function mergeCoins(local, server){ const d={spent:0,seen:0,owned:{}};
   if(le!==se){ return Object.assign({}, le>se?l:s); }
   return {epoch:le, baseline:Math.max(l.baseline||0,s.baseline||0), spent:Math.max(l.spent||0,s.spent||0),
     forfeit:Math.max(l.forfeit||0,s.forfeit||0), seen:Math.max(l.seen||0,s.seen||0), owned:Object.assign({}, l.owned||{}, s.owned||{})}; }
-function mergeWeekGoals(local, server){
+// XP: monotonic — xp/mulliEarned/mulliSpent all merge by MAX (grow-only, correct cross-device).
+function mergeXp(local, server){
+  const l=(local&&typeof local==='object')?local:{}, s=(server&&typeof server==='object')?server:{};
+  return { xp:Math.max(l.xp||0,s.xp||0), mulliEarned:Math.max(l.mulliEarned||0,s.mulliEarned||0), mulliSpent:Math.max(l.mulliSpent||0,s.mulliSpent||0) };
+}
+// Daily quests: newer day wins; same day → OR the task flags (union) + keep xpDone if either did.
+function mergeDailyQuests(local, server){
   if(!server) return local; if(!local) return server;
-  if((server.week||0)>(local.week||0)) return server;
-  if((local.week||0)>(server.week||0)) return local;
-  return { week:local.week, days:Object.assign({},server.days,local.days), beatDays:Object.assign({},server.beatDays,local.beatDays),
-    beats:Math.max(local.beats||0,server.beats||0), bestGrade:Math.max(local.bestGrade==null?-1:local.bestGrade,server.bestGrade==null?-1:server.bestGrade),
-    bestMargin:Math.max(local.bestMargin==null?-99:local.bestMargin,server.bestMargin==null?-99:server.bestMargin),
-    rewarded:!!(local.rewarded||server.rewarded) };
+  if((server.day||0)>(local.day||0)) return server; if((local.day||0)>(server.day||0)) return local;
+  return { day:local.day, daily:local.daily||server.daily?1:0, season:local.season||server.season?1:0, h2h:local.h2h||server.h2h?1:0, xpDone:local.xpDone||server.xpDone?1:0 };
+}
+// Weekly challenges: newer week wins; same week → max each progress metric + union the done set.
+function mergeWeeklyChal(local, server){
+  if(!server) return local; if(!local) return server;
+  if((server.week||0)>(local.week||0)) return server; if((local.week||0)>(server.week||0)) return local;
+  const prog={}; const lp=local.prog||{}, sp=server.prog||{}; for(const k in lp) prog[k]=lp[k]; for(const k in sp) prog[k]=Math.max(prog[k]||0,sp[k]||0);
+  return { week:local.week, prog, done:Object.assign({},server.done,local.done) };
 }
 // Grow-only merge of a course-records map: for each course, the LOWER round (to-par) wins, so a merge can
 // only ever restore or improve a record, never erase or worsen one held on either device. Used to keep the
@@ -13263,7 +13393,9 @@ async function cloudPull(){
     LS.set(acctKey('bag_ach'), mergeAch(LS.get(acctKey('bag_ach'),null), server.ach));
     LS.set(acctKey('bag_special'), mergeSpecial(LS.get(acctKey('bag_special'),null), server.special));
     LS.set(acctKey('bag_coursemastery'), mergeCourseMastery(courseMastery(), server.coursemastery));   // #5 passport cross-device
-    { const mw=mergeWeekGoals(LS.get(acctKey('bag_weekgoals'),null), server.weekgoals); if(mw) LS.set(acctKey('bag_weekgoals'), mw); }   // #4 weekly goals
+    LS.set(acctKey('bag_xp'), mergeXp(LS.get(acctKey('bag_xp'),null), server.xp));                              // Player Level XP + mulli-spins
+    { const md=mergeDailyQuests(LS.get(acctKey('bag_dailyquests'),null), server.dailyquests); if(md) LS.set(acctKey('bag_dailyquests'), md); }
+    { const mw=mergeWeeklyChal(LS.get(acctKey('bag_weeklychal'),null), server.weeklychal); if(mw) LS.set(acctKey('bag_weeklychal'), mw); }
     LS.set(acctKey('bag_coins'), mergeCoins(coinState(), server.coins));   // CS183 coins/gear cross-device
     reconcileCoins(true);   // self-heal earned total + grant milestone gear silently after a cross-device merge
     cloudPush();
@@ -13976,7 +14108,9 @@ function h2hCaptureAch(){ if(!sbSignedIn()) return;
   const mode=S.h2h.mode||'1v1', won=!!(S.h2h.myUnit && S.h2h.winVal!=null && S.h2h.myUnit.id===S.h2h.winVal);
   const key={'1v1':'h2h1v1Wins','bestball':'h2hBbWins','scramble':'h2hScWins','ffa':'h2hFfaWins'}[mode]||'h2hXWins';
   const inc={h2hMatches:1}; if(won){ inc.h2hWins=1; inc[key]=1; }
-  recordAchEvent({inc}); const fresh=evaluateAch&&evaluateAch(); if(fresh&&fresh.length&&typeof achToast==='function') achToast(fresh); }
+  recordAchEvent({inc}); const fresh=evaluateAch&&evaluateAch(); if(fresh&&fresh.length&&typeof achToast==='function') achToast(fresh);
+  // Challenges: daily quest "Play a Head to Head match" + weekly matches/wins
+  questDaily('h2h'); questWeekly('h2hMatches',1); if(won) questWeekly('h2hWins',1); }
 async function h2hReport(){
   try{ const {data,error}=await sb.rpc('h2h_report',{p_match_id:S.h2h.matchId,p_result:{win:S.h2h.winVal,kind:S.h2h.winKind}});
     if(error) throw error;
