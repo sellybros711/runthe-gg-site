@@ -2212,7 +2212,7 @@ function dailyWinPct(){ const st=dailyStats(); return st.played?Math.round(100*s
 // every X/Twitter (and cross-app) share from the game carries the same handle + hashtags
 const SOCIAL_TAG='@RunTheGG #golf #RunTheTour';
 function withSocial(t){ if(!t) return SOCIAL_TAG; return t.indexOf(SOCIAL_TAG)>=0 ? t : (t+'\n\n'+SOCIAL_TAG); }
-async function shareText(text){ text=withSocial(text); recordAchEvent({set:{shared:1}}); evaluateAch();
+async function shareText(text){ text=withSocial(text); recordAchEvent({set:{shared:1}}); evaluateAch(); try{questDaily('share');}catch(e){}
   try{ if(navigator.share){ await navigator.share({text}); return; } }catch(e){ if(e&&e.name==='AbortError')return; }
   try{ await navigator.clipboard.writeText(text); toast('Copied! Paste it anywhere'); }catch(_){ toast('Could not copy'); } }
 /* ---------- ROUND RATING: a secondary "how you played" grade (S/A/B/C/D), distinct from the raw
@@ -2282,7 +2282,7 @@ function weekKey(){ const t=todayKey(),y=Math.floor(t/10000),mo=Math.floor(t/100
 // Signed-in feature (guests never accrue). XP raises a Player Level; each level-up pays out Pro Shop coins
 // (a level term added to coinsEarnedRaw, so it flows through the normal coin/reconcile/toast pipeline).
 // Weekly challenges span ALL modes and reward XP + a "mulli-spin" (a banked extra draft/off-season spin).
-const DAILY_QUEST_XP=120;      // awarded once/day for finishing all 3 daily quests
+const DAILY_QUEST_XP=120;      // awarded once/day for finishing all the day's daily quests
 const WEEKLY_CHAL_XP=250;      // awarded per weekly challenge completed
 const LEVEL_COIN=250;          // Pro Shop coins granted per Player Level reached
 function xpState(){ let s=LS.get(acctKey('bag_xp'),null); if(!s||typeof s!=='object') s={};
@@ -2307,9 +2307,10 @@ const DAILY_QUEST_DEFS=[
   {k:'daily',  label:'Play the Daily Challenge',      hint:'Beat the Pro'},
   {k:'season', label:'Complete a Career season',      hint:'Career Mode'},
   {k:'h2h',    label:'Play a Head to Head match',     hint:'Play Online'},
+  {k:'share',  label:'Share a result',                hint:'Friend or social'},
 ];
 function dailyQuests(){ const t=todayKey(); let q=LS.get(acctKey('bag_dailyquests'),null);
-  if(!q||typeof q!=='object'||q.day!==t) q={day:t,daily:0,season:0,h2h:0,xpDone:0}; return q; }
+  if(!q||typeof q!=='object'||q.day!==t) q={day:t,daily:0,season:0,h2h:0,share:0,xpDone:0}; return q; }
 function dailyQuestsAllDone(q){ q=q||dailyQuests(); return DAILY_QUEST_DEFS.every(d=>q[d.k]); }
 function questDaily(type){ if(!sbSignedIn()) return; const q=dailyQuests(); q[type]=1;
   let leveled=null;
@@ -2360,7 +2361,7 @@ function challengesNode(){
     <div class="xpbar"><i style="width:${li.pct}%"></i></div></div>`));
   const dq=DAILY_QUEST_DEFS.map(d=>`<div class="wg-row"><span>${q[d.k]?'✓ ':'○ '}${d.label} <span class="small muted" style="letter-spacing:0;text-transform:none">· ${d.hint}</span></span><span class="wg-v" style="color:${q[d.k]?'#35d6a0':'var(--muted)'}">${q[d.k]?'done':''}</span></div>`).join('');
   const dqDone=dailyQuestsAllDone(q);
-  el.appendChild($(`<div class="wg-panel${dqDone?' done':''}"><div class="wg-hd"><span>Daily Quests</span>${dqDone?'<span style="color:#35d6a0">+'+DAILY_QUEST_XP+' XP ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all 3 → +'+DAILY_QUEST_XP+' XP</span>'}</div>${dq}</div>`));
+  el.appendChild($(`<div class="wg-panel${dqDone?' done':''}"><div class="wg-hd"><span>Daily Quests</span>${dqDone?'<span style="color:#35d6a0">+'+DAILY_QUEST_XP+' XP ✓</span>':'<span class="small muted" style="letter-spacing:0;text-transform:none">all '+DAILY_QUEST_DEFS.length+' → +'+DAILY_QUEST_XP+' XP</span>'}</div>${dq}</div>`));
   const wr=set.map(c=>{ const v=Math.min(w.prog[c.metric]||0,c.target), ok=!!w.done[c.id];
     return `<div class="wg-row"><span>${ok?'✓ ':''}${c.label}</span><span class="wg-v" style="color:${ok?'#35d6a0':'var(--muted)'}">${v}/${c.target}</span></div>`; }).join('');
   const wDone=weekChalDoneCount(w), wTot=set.length;
@@ -9302,7 +9303,7 @@ function drawCareerCard(cv,info,vals){
 }
 function shareCard(cv,text,name,suffix){
   text=withSocial(text);
-  recordAchEvent({set:{shared:1}}); evaluateAch();
+  recordAchEvent({set:{shared:1}}); evaluateAch(); try{questDaily('share');}catch(e){}
   cv.toBlob(async b=>{
     if(!b){toast('Could not build the image, copy the text instead');return;}
     const file=new File([b],((name||'golfer').replace(/\s+/g,'-'))+'-'+(suffix||'season')+'.png',{type:'image/png'});
@@ -12443,6 +12444,7 @@ function gifBuild(w,h,pal,frames){
 }
 function hvGifShare(holeIdx){
   try{
+    try{questDaily('share');}catch(e){}
     const hole=S.dailyHoles&&S.dailyHoles[holeIdx], c=DAILY_COURSES[S.dailyCourse];
     if(!hole||!c||!(hole.shots&&hole.shots.length&&hole.shots[0]&&hole.shots[0].k)){ return hvShareShot(holeIdx); }
     track('daily_share_gif',{hole:holeIdx+1});
@@ -12525,6 +12527,7 @@ function hvGifCompose(img,g,plots,hole,c,D){
 }
 function hvShareShot(holeIdx){
   const hole=S.dailyHoles[holeIdx], c=DAILY_COURSES[S.dailyCourse]; if(!hole||!c) return;
+  try{questDaily('share');}catch(e){}
   const svg=hvStaticSVG(hole, S.dailyCourse, holeIdx); if(!svg){ toast('Nothing to share on this hole'); return; }
   const [,,vw,vh]=HV_CAM, scale=2.4;
   const W=Math.round(vw*scale), imgH=Math.round(vh*scale), barH=Math.round(W*0.12), H=imgH+barH;
@@ -13325,7 +13328,7 @@ function scrDailyResult(){
   // CS261 Challenges: celebrate anything just completed this round, then show the challenges panel
   if(!practice && sbSignedIn()){
     if(justPlayed && S.questDailyJustDone){
-      add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#35d6a0"><b style="color:#35d6a0">Daily Quests complete!</b><div class="small muted" style="margin-top:3px">All 3 done today · +${DAILY_QUEST_XP} XP</div></div>`));
+      add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#35d6a0"><b style="color:#35d6a0">Daily Quests complete!</b><div class="small muted" style="margin-top:3px">All ${DAILY_QUEST_DEFS.length} done today · +${DAILY_QUEST_XP} XP</div></div>`));
     }
     if(justPlayed && (S.questWeeklyJustDone||[]).length){
       add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">Weekly Challenge${S.questWeeklyJustDone.length>1?'s':''} complete!</b><div class="small muted" style="margin-top:3px">${S.questWeeklyJustDone.map(c=>esc(c.label)).join(' · ')} · +${WEEKLY_CHAL_XP} XP &amp; 🌀 mulli-spin each</div></div>`));
@@ -14173,7 +14176,7 @@ function mergeXp(local, server){
 function mergeDailyQuests(local, server){
   if(!server) return local; if(!local) return server;
   if((server.day||0)>(local.day||0)) return server; if((local.day||0)>(server.day||0)) return local;
-  return { day:local.day, daily:local.daily||server.daily?1:0, season:local.season||server.season?1:0, h2h:local.h2h||server.h2h?1:0, xpDone:local.xpDone||server.xpDone?1:0 };
+  return { day:local.day, daily:local.daily||server.daily?1:0, season:local.season||server.season?1:0, h2h:local.h2h||server.h2h?1:0, share:local.share||server.share?1:0, xpDone:local.xpDone||server.xpDone?1:0 };
 }
 // Weekly challenges: newer week wins; same week → max each progress metric + union the done set.
 function mergeWeeklyChal(local, server){
