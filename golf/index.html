@@ -4957,7 +4957,7 @@ function overlayMenu(screen){
   const settings=$(`<div style="margin-bottom:16px"></div>`);
   settings.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Settings</div>`));
   settings.appendChild(menuToggle('🔊','Sound','Holed putts, wins & streaks','bag_sfx_sound',true));
-  settings.appendChild(menuToggle('📳','Haptics','Vibration on key moments','bag_sfx_haptic',true));
+  settings.appendChild(menuToggle('📳','Haptics','Vibration on key moments · Android only (iOS blocks web vibration)','bag_sfx_haptic',true));
   ov.appendChild(settings);
   const info=$(`<div style="margin-bottom:6px"></div>`);
   info.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">About</div>`));
@@ -6233,7 +6233,9 @@ function hvSplashSound(){ try{
 function sfxOn(){ return LS.get('bag_sfx_sound', true); }
 function hapticsOn(){ return LS.get('bag_sfx_haptic', true); }
 const _reduceMo=()=>{ try{ return matchMedia('(prefers-reduced-motion:reduce)').matches; }catch(_){ return false; } };
-function buzz(pattern){ if(!hapticsOn()||_reduceMo())return; try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
+// Haptics are gated only by the Haptics toggle — NOT by prefers-reduced-motion (vibration isn't motion, and
+// reduce-motion shouldn't silence it). navigator.vibrate is unsupported on iOS, so this is a no-op there.
+function buzz(pattern){ if(!hapticsOn())return; try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){} }
 function _sfxCtx(){ try{ _ac=_ac||new (window.AudioContext||window.webkitAudioContext)(); if(_ac.state==='suspended') _ac.resume(); return _ac; }catch(e){ return null; } }
 function _tone(ac,freq,start,dur,vol,type){ const o=ac.createOscillator(),g=ac.createGain();
   o.type=type||'sine'; o.frequency.value=freq; o.connect(g); g.connect(ac.destination);
