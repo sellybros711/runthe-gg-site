@@ -6962,6 +6962,42 @@ allows Google Fonts, or self-host Anton.*
   courses, chip-in setup naturalness), zero page errors. Deployed to /golf. Tunable: the creek forced-carry
   vs green-front bands + pond lateral offset in `hvGeom`, the chip-in setup lie pool in `dShotSeq`.
 
+- **CS282 — hole-outs happen anywhere, naturally (no scripted trigger position) (owner: "I don't want there
+  to be any specific position that triggers a chip in or hole out, it has to feel natural! It can happen
+  anywhere at any time").** CS281 made the chip-in SETUP natural (just short of the green) but the mechanism
+  was still a POST-PROCESS that detected a normal one-putt finish (approach lands ON the green → tap-in) and
+  rewrote the last two shots into a fixed "just short of the green front" setup + hole-out — so a hole-out
+  always came from the same scripted greenside position. Rebuilt it so the hole-out is decided UP FRONT and
+  the ball simply comes to rest wherever a normal missed-green shot would, with the finishing stroke holing
+  from there. All in `dShotSeq` (the shot NARRATIVE + hole-view geometry); the deterministic `dSimHole` score
+  engine is untouched, and the hard shot-count===stroke-count invariant is preserved.
+  • **Decision up front.** A new `holeOut` constant (`par!==3 && P===1 && greenReach>=2`, ~2.3–5% of eligible
+    one-putt holes, skill-weighted by short game / scrambling / approach) is rolled once per hole. `greenReach>=2`
+    keeps it entirely within the last-long-shot branch (the tee shot is never the green-reaching shot), so
+    there's no fragile second interception. Par-3s are excluded (their hole-outs are aces, handled separately).
+  • **The last approach comes up just off the green NATURALLY.** When `holeOut`, the last long shot is treated
+    like any ordinary missed green: a varied, skill-and-distance-scaled miss lie drawn from the SAME natural
+    pool as CS162's miss dispersion (just off the fringe / front collar / a step off / through the back /
+    pin-high off the right or left edge / or, for weaker builds or long approaches, a greenside bunker / rough /
+    long over) at a varied distance (5–27 yds). No "just short of the green" scripting — the ball is wherever it
+    finished.
+  • **The finish holes from there.** Instead of a putt, one holing stroke drops from that natural position — a
+    chip, a pitch (>30 yds), or a holed bunker shot (from sand), narrated "chips it in from N yds!" / "pitches
+    it in!" / "holes the bunker shot!" and driven by the relevant short-game skill (Bunker for sand, Short Game
+    for fringe/collar chips, Scrambling+Short Game for rough). Count-consistent: greenReach shots to a greenside
+    spot + 1 holing stroke = the same total as reach-green + 1 putt, so the score is unchanged.
+  • **Removed the old CS281/CS154 post-process block** that rewrote a green-arrival one-putt into a fixed
+    greenside setup — that was the "specific position that triggers it" the owner objected to.
+  Verified in Playwright: the shot-count===stroke-count invariant across **36,960 par/score/skill/seed combos,
+  0 mismatches** (all decision/teePreset paths); **354 hole-outs** came from **6 distinct natural setup lies**
+  (fringe 126 / front collar 87 / long-over 43 / greenside bunker 43 / left-rough 29 / right-rough 26 — no
+  single dominant scripted position) at 5–27 yds across 23 distinct distances; sample narratives read naturally
+  and vary ("9-iron just off the fringe → chips it in from 10 yds", "PW into the greenside bunker → holes the
+  bunker shot from 13 yds", "sand wedge pin-high off the right edge → chips it in from 14 yds"); a full
+  auto-played practice round rendered many holes via hvNode with 0 page errors, and 8 constructed hole-out
+  sequences (par 4/5, fringe/collar/bunker setups) each render a valid SVG through `hvNode` with 0 errors.
+  Deployed to /golf. Tunable: the hole-out probability (`0.05*(0.45+...)`) + the miss-lie pool in `dShotSeq`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
