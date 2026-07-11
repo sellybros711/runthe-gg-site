@@ -6704,6 +6704,16 @@ allows Google Fonts, or self-host Anton.*
   inert design-foundation tokens added to `:root` in CS271 were left in place (no visual effect). Verified the
   dark scorecard renders with zero page errors. Deployed to /golf.
 
+- **CS273 — off-season lock-in confirm is now INLINE on the tile (owner: "don't move users around the page").**
+  The CS258 lock-in confirmation was a full-screen `.ov` popup (a new page + scrolling). Replaced it with an
+  in-place confirm on the SAME skill tile: tapping a tile arms `S.offConfirm=<stat>` and that tile restyles
+  in place (gold-bordered, spans the row) to show `cur → nv (▲/▼)` + "Lock in your change?" with inline
+  Cancel / Lock in buttons — no overlay, no navigation, no scrolling. Cancel clears it; Lock in calls
+  `offTake`. `S.offConfirm` is cleared on take / re-spin / spin so it never strands. Removed the now-unused
+  `overlayConfirmSkill` + its dispatch. Verified in Playwright: tapping a tile shows the inline confirm (no
+  `.ov`), the message reads "Lock in your change?", Cancel applies nothing, Lock in applies the swap
+  (changes 0→1, stat locked); zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
