@@ -6788,6 +6788,37 @@ allows Google Fonts, or self-host Anton.*
   polish/variety pass) then rivals (CS226-era emergent rivalry — deepen). Tunable: the per-decision weights +
   major/closing multipliers in `momentDecisionStakes`.
 
+- **CS277 — sponsor variety + polish (3rd of the four career-depth areas; owner: "add variety and polish up
+  the sponsors").** The sponsor system was already deep (two slots hat+shirt, tiered contracts scaling with
+  following, a relationship meter, signing bonuses, 24 fictional brands with logos/personalities — CS228/229/236/242),
+  so this was a variety + polish pass rather than a rebuild.
+  • **Brand roster 24 → 36** (`BRANDS` + `LOGO_SPEC`): 3 more fictional brands per tier (Birchwood, Anvil Gear,
+    Cypress Provisions, Falcon Athletic, Cobalt Financial, Voltaic, Emberline, Solace Resorts, Titan Tour Gear,
+    Celestia, Vortex Motors, Empyrean), each with a distinct vector logo, category, colour, tagline and
+    personality trait — so offers, the "sponsor comes calling" storyline, and past-sponsor history feel fresher
+    and repeat less. Now 9 brands per tier.
+  • **2 new goal kinds** for the middle "TARGET" goal pool (which is deterministically drawn per season+slot, so
+    it varies year to year): `top5` (record N top-5 finishes — added to all three player tiers) and `cutStreak`
+    (make N cuts in a row — a consistency goal for grinders). Both compute live from `S.season.results` and
+    render a progress bar; wired into `goalProg`. The contract goals are now less same-y season to season.
+  • **Brand Ambassador milestone (the marquee polish).** When a slot's relationship reaches max loyalty (Lv 5),
+    the brand names you the face of the company: the relationship meter flips from "Loyalty Lv 5" to a gold
+    "★ Brand Ambassador", the season report card shows a one-time celebration ("Max loyalty with {brand} — they've
+    made you the face of the brand · ▲ N followers"), and it banks a one-time FOLLOWING bump + a career-feed note.
+    Deliberately **no cash reward** — CS242 tuned sponsor income down on purpose, so the ambassador payoff is
+    prestige + reach (followers feed the CS226 story system), keeping the money economy untouched. Set once in
+    the settlement block (`sp.ambassador`), persisted on `S.season._ambNew` so summary re-renders keep the
+    celebration.
+  • **Report-card polish**: the outlook now spells out the concrete reward growth ("next year's bonuses +N%")
+    when loyalty climbs (met ≥2 goals), matching the brand's relationship step, so progression is legible.
+  Verified in Playwright: 36 brands (9/tier, every one has a logo + valid trait, no dups, all SVGs render); the
+  new `top5`/`cutStreak` goals compute correctly and appear in generated contracts; the ambassador trigger sets
+  the flag + follower boost + stored celebration and the meter shows "★ Brand Ambassador" at Lv 5 vs "Loyalty Lv
+  4" below; the report card renders the ambassador banner + follower line; and a full simulated season → summary
+  renders both sponsor Report Cards with zero page errors. Deployed to /golf. NEXT (last of the four): rivals —
+  deepen the CS226-era emergent rivalry. Tunable: `BRANDS`/`LOGO_SPEC`, the per-tier TARGET goal pools, the
+  ambassador follower bump in the settlement.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

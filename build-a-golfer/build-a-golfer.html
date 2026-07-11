@@ -6911,7 +6911,20 @@ const BRANDS=[
   {name:'Aurora Global', tier:3, cat:'airline', color:'#3fb08a', tag:'The world, connected.', trait:'marketing'},
   {name:'Nimbus', tier:3, cat:'tech', color:'#6f8ae8', tag:'Golf in the cloud.', trait:'steady'},
   {name:'Veloce', tier:3, cat:'auto', color:'#d43a3a', tag:'Pure velocity.', trait:'performance'},
-  {name:'Zenith Bank', tier:3, cat:'finance', color:'#c9a24a', tag:'At the summit of finance.', trait:'patient'}
+  {name:'Zenith Bank', tier:3, cat:'finance', color:'#c9a24a', tag:'At the summit of finance.', trait:'patient'},
+  // CS277 — 12 more fictional brands (3 per tier) so offers + past-sponsor lists feel fresher
+  {name:'Birchwood', tier:0, cat:'apparel', color:'#7a9b62', tag:'Grain and grit.', trait:'steady'},
+  {name:'Anvil Gear', tier:0, cat:'equipment', color:'#6a7480', tag:'Forged to last.', trait:'demanding'},
+  {name:'Cypress Provisions', tier:0, cat:'beverage', color:'#4f8a6a', tag:'Fuel the front nine.', trait:'loyal'},
+  {name:'Falcon Athletic', tier:1, cat:'apparel', color:'#c0603a', tag:'Strike first.', trait:'performance'},
+  {name:'Cobalt Financial', tier:1, cat:'finance', color:'#3f6fd0', tag:'Steady returns.', trait:'patient'},
+  {name:'Voltaic', tier:1, cat:'energy', color:'#c9b23a', tag:'Charge the turn.', trait:'marketing'},
+  {name:'Emberline', tier:2, cat:'apparel', color:'#d0663a', tag:'Play with fire.', trait:'demanding'},
+  {name:'Solace Resorts', tier:2, cat:'luxury', color:'#c08a4a', tag:'Play in paradise.', trait:'marketing'},
+  {name:'Titan Tour Gear', tier:2, cat:'equipment', color:'#5a6470', tag:'Built for the elite.', trait:'performance'},
+  {name:'Celestia', tier:3, cat:'luxury', color:'#b07ae0', tag:'Beyond the horizon.', trait:'marketing'},
+  {name:'Vortex Motors', tier:3, cat:'auto', color:'#3a9ad0', tag:'Bend the road.', trait:'performance'},
+  {name:'Empyrean', tier:3, cat:'finance', color:'#c9b24a', tag:'The height of trust.', trait:'demanding'}
 ];
 const BRAND_BY_NAME={}; BRANDS.forEach(b=>BRAND_BY_NAME[b.name]=b);
 function brandInfo(name){ return BRAND_BY_NAME[name]||{name:name||'Sponsor', tier:0, cat:'apparel', color:'#5fd0e0', tag:'', trait:'steady'}; }
@@ -6930,7 +6943,11 @@ const LOGO_SPEC={
   'Meridian Golf':{sh:'circle',accent:'ring'}, 'Ironclad':{sh:'shield',accent:'none'}, 'Vanguard Athletic':{sh:'hex',accent:'split'},
   'Halcyon Air':{sh:'circle',accent:'bar'}, 'Aeris':{sh:'rounded',accent:'ring'}, 'Sterling Trust':{sh:'shield',accent:'ubar'},
   'Apex Athletic':{sh:'diamond',accent:'bar',mono:'A'}, 'Monarch':{sh:'shield',accent:'none',mono:'M'}, 'Aurora Global':{sh:'circle',accent:'split'},
-  'Nimbus':{sh:'rounded',accent:'ring',mono:'N'}, 'Veloce':{sh:'tag',accent:'split',mono:'V'}, 'Zenith Bank':{sh:'hex',accent:'bar',mono:'Z'}
+  'Nimbus':{sh:'rounded',accent:'ring',mono:'N'}, 'Veloce':{sh:'tag',accent:'split',mono:'V'}, 'Zenith Bank':{sh:'hex',accent:'bar',mono:'Z'},
+  'Birchwood':{sh:'rounded',accent:'ubar'}, 'Anvil Gear':{sh:'shield',accent:'bar',mono:'A'}, 'Cypress Provisions':{sh:'hex',accent:'ring'},
+  'Falcon Athletic':{sh:'diamond',accent:'split',mono:'F'}, 'Cobalt Financial':{sh:'shield',accent:'ubar'}, 'Voltaic':{sh:'tag',accent:'bar',mono:'V'},
+  'Emberline':{sh:'circle',accent:'split'}, 'Solace Resorts':{sh:'rounded',accent:'ring'}, 'Titan Tour Gear':{sh:'hex',accent:'none',mono:'T'},
+  'Celestia':{sh:'shield',accent:'ring',mono:'C'}, 'Vortex Motors':{sh:'diamond',accent:'bar',mono:'V'}, 'Empyrean':{sh:'circle',accent:'ubar',mono:'E'}
 };
 function logoSpecOf(name){ const s=LOGO_SPEC[name]||{sh:'rounded',accent:'none'}; return {sh:s.sh, accent:s.accent||'none', mono:s.mono||brandInitials(name)}; }
 function _logoShade(hex, amt){ const c=avHexRgb(hex); const f=x=>Math.max(0,Math.min(255,Math.round(x+(amt<0?x*amt:(255-x)*amt)))); return '#'+[f(c.r),f(c.g),f(c.b)].map(v=>v.toString(16).padStart(2,'0')).join(''); }
@@ -7070,6 +7087,11 @@ function goalProg(g,t){
     case 'scoreAvg':{ const rounds=t.rounds||0, avg=rounds?t.toPar/rounds:1, ok=rounds>=(g.minRounds||30)&&avg<=g.target;
                      const base=1.0, pct=ok?100:Math.max(0,Math.min(99,Math.round((base-avg)/(base-g.target)*100)));
                      return {cur:avg, done:ok, txt:rounds>=8?('scoring '+(avg>=0?'+':'')+avg.toFixed(2)+'/rd · need '+(g.target>=0?'+':'')+g.target.toFixed(2)):'building rounds', pct}; }
+    // CS277 variety goals:
+    case 'top5':{ let n=0; (S.season.results||[]).forEach(x=>{ const m=x.order.find(o=>o.p&&o.p.you); if(m&&typeof m.pos==='number'&&m.pos<=5) n++; });
+                     return {cur:n, done:n>=g.target, txt:n+' / '+g.target+' top-5s', pct:Math.min(100,Math.round(n/g.target*100))}; }
+    case 'cutStreak':{ let best=0,run=0; (S.season.results||[]).forEach(x=>{ const m=x.order.find(o=>o.p&&o.p.you); const made=m&&m.pos!=='CUT'; if(made){ run++; best=Math.max(best,run); } else run=0; });
+                     return {cur:best, done:best>=g.target, txt:best+' / '+g.target+' cuts in a row', pct:Math.min(100,Math.round(best/g.target*100))}; }
   }
   return {cur:0,done:false,txt:'',pct:0};
 }
@@ -7101,7 +7123,9 @@ function makeContractFor(sp, slot){
     const target=vpick([
       {kind:'top10', target:T(3,'top10'), bonus:B(1200000), label:'Record '+T(3,'top10')+' top-10s', tag:'TARGET'},
       {kind:'money', target:mTgt(6e6), bonus:B(1200000), label:'Win '+fmtShort(mTgt(6e6))+' in prize money', tag:'TARGET'},
-      {kind:'scoreAvg', target:0.3, minRounds:30, bonus:B(1200000), label:'Season scoring average under +0.3 per round', tag:'TARGET'} ]);
+      {kind:'scoreAvg', target:0.3, minRounds:30, bonus:B(1200000), label:'Season scoring average under +0.3 per round', tag:'TARGET'},
+      {kind:'cutStreak', target:5, bonus:B(1200000), label:'Make 5 cuts in a row', tag:'TARGET'},
+      {kind:'top5', target:T(2,'top10'), bonus:B(1200000), label:'Record '+T(2,'top10')+' top-5 finishes', tag:'TARGET'} ]);
     goals=[{kind:'cuts', target:c1, bonus:B(400000), label:'Make '+c1+' cuts', tag:'FLOOR'},
       target,
       {kind:'ptsRank', target:CARD_LINE, bonus:B(1500000,true), label:'Keep your Tour Card · top '+CARD_LINE, tag:'CARD', card:true}]; }
@@ -7110,7 +7134,8 @@ function makeContractFor(sp, slot){
       {kind:'ptsRank', target:70, bonus:B(2000000), label:'Reach the Playoffs · top 70', tag:'TARGET'},
       {kind:'money', target:mTgt(12e6), bonus:B(2000000), label:'Win '+fmtShort(mTgt(12e6))+' in prize money', tag:'TARGET'},
       {kind:'sigWin', target:1, bonus:B(2000000), label:'Win a signature event or major', tag:'TARGET'},
-      {kind:'scoreAvg', target:-0.5, minRounds:30, bonus:B(2000000), label:'Season scoring average under −0.5 per round', tag:'TARGET'} ]);
+      {kind:'scoreAvg', target:-0.5, minRounds:30, bonus:B(2000000), label:'Season scoring average under −0.5 per round', tag:'TARGET'},
+      {kind:'top5', target:T(4,'top10'), bonus:B(2000000), label:'Record '+T(4,'top10')+' top-5 finishes', tag:'TARGET'} ]);
     goals=[{kind:'top10', target:c1, bonus:B(900000), label:'Record '+c1+' top-10s', tag:'FLOOR'},
       target,
       {kind:'wins', target:w, bonus:B(3600000,true), label:w>1?('Win '+w+' tournaments'):'Win a tournament', tag:'STRETCH'}]; }
@@ -7119,7 +7144,8 @@ function makeContractFor(sp, slot){
       {kind:'ptsRank', target:30, bonus:B(2600000), label:'Reach the Tour Cup Finale · top 30', tag:'TARGET'},
       {kind:'money', target:mTgt(22e6), bonus:B(2600000), label:'Win '+fmtShort(mTgt(22e6))+' in prize money', tag:'TARGET'},
       {kind:'sigWin', target:1, bonus:B(2600000), label:'Win a signature event or major', tag:'TARGET'},
-      {kind:'scoreAvg', target:-1.1, minRounds:30, bonus:B(2600000), label:'Season scoring average under −1.1 per round', tag:'TARGET'} ]);
+      {kind:'scoreAvg', target:-1.1, minRounds:30, bonus:B(2600000), label:'Season scoring average under −1.1 per round', tag:'TARGET'},
+      {kind:'top5', target:T(6,'top10'), bonus:B(2600000), label:'Record '+T(6,'top10')+' top-5 finishes', tag:'TARGET'} ]);
     goals=[{kind:'wins', target:w, bonus:B(1600000), label:'Win '+(w>2?w+' times':'twice'), tag:'FLOOR'},
       target,
       {kind:'major', target:1, bonus:B(5600000,true), label:'Win a major', tag:'STRETCH'}]; }
@@ -7133,11 +7159,13 @@ function makeContracts(){ if(S.daily||S.circuitMode||!S.career||!S.season) retur
 function contractsList(){ const cs=S.season&&S.season.contracts; if(!cs) return []; return SPONSOR_SLOTS.filter(k=>cs[k]).map(k=>({slot:k, contract:cs[k]})); }
 // relationship meter chip (rel level + loyalty %); used in the off-season card, season deal, report card
 function sponsorRelMeterHTML(sp){ const rel=Math.max(1,Math.min(SPONSOR_REL_MAX,sp.rel||1));
+  const amb=!!sp.ambassador||rel>=SPONSOR_REL_MAX;
   const pct=Math.round((sponsorRelMult(rel, sp.brand)-1)*100), pips=Array.from({length:SPONSOR_REL_MAX},(_,i)=>
     `<span style="width:16px;height:6px;border-radius:3px;background:${i<rel?'#ffd45e':'rgba(255,255,255,.14)'}"></span>`).join('');
   return `<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
     <span style="display:flex;gap:3px">${pips}</span>
-    <span class="small" style="color:#ffd45e;font-weight:800;letter-spacing:0">Loyalty Lv ${rel}${pct>0?' · +'+pct+'% rewards':''}</span></div>`; }
+    ${amb?`<span class="small" style="color:#ffd45e;font-weight:800;letter-spacing:0">★ Brand Ambassador${pct>0?' · +'+pct+'% rewards':''}</span>`
+        :`<span class="small" style="color:#ffd45e;font-weight:800;letter-spacing:0">Loyalty Lv ${rel}${pct>0?' · +'+pct+'% rewards':''}</span>`}</div>`; }
 // signing bonus paid when you switch brands — a one-time cash sweetener that offsets losing your loyalty
 function sponsorSigningBonus(brand){ const ti=sponsorTierInfo(brandInfo(brand).tier);
   return Math.round(2.4e6*ti.reward*sponsorFolMult(brand)*purseMult(S.year||1)/1e5)*1e5; }
@@ -7258,10 +7286,13 @@ function contractReportCardHTML(x){
     <span class="mono small" style="color:${s.done?'#ffd45e':'#7d8f86'};font-weight:800;white-space:nowrap">${s.done?'+'+fmt(g.bonus):'missed'}</span></div>`; }).join('');
   const lc=(S.career&&S.career.lastContracts&&S.career.lastContracts[slot])||null, dropped=!!(lc&&lc.dropped);
   const sp=sponsorOf(slot);
+  const ambNew=(S.season&&S.season._ambNew&&S.season._ambNew[slot])||null;
+  // reward growth headline: loyalty climbing (+2 goals met) grows next year's bonuses by the brand's relationship step
+  const relGrow = (!dropped && met>=2 && sp) ? Math.round((sponsorRelMult(Math.min(SPONSOR_REL_MAX,(sp.rel||1)),sp.brand)-sponsorRelMult(Math.max(1,(sp.rel||1)-1),sp.brand))*100) : 0;
   const outlook = dropped ? `${esc(contract.sponsor)} has walked away. A fresh, smaller deal awaits, prove yourself and climb again.`
-    : all ? 'Every goal delivered. This sponsor is thrilled, the relationship deepens and next year’s bonuses grow.'
+    : all ? `Every goal delivered. ${esc(contract.sponsor)} is thrilled${relGrow>0?`, next year’s bonuses grow +${relGrow}%`:''}.`
     : met===0 ? 'A tough year. The relationship took a hit.'
-    : `${met} of ${contract.goals.length} goals met. The relationship holds, there’s more on the table.`;
+    : `${met} of ${contract.goals.length} goals met. The relationship holds${relGrow>0?`, next year’s bonuses +${relGrow}%`:''}.`;
   return `<div class="scout" style="border-color:${all?'#ffd45e':brandInfo(contract.sponsor).color+'66'};text-align:left;margin:0 0 10px;${all?'box-shadow:0 0 22px rgba(235,166,31,.18)':''}">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <span style="display:flex;align-items:center;gap:9px;min-width:0">${brandLogoSVG(contract.sponsor,30)}
@@ -7270,6 +7301,7 @@ function contractReportCardHTML(x){
       <div style="text-align:right"><div class="small" style="color:#ffd45e;font-weight:800">${met}/${contract.goals.length} met · +${fmt(bonus)}</div></div></div>
     ${rows}
     ${(sp&&!dropped)?`<div style="margin-top:8px">${sponsorRelMeterHTML(sp)}</div>`:''}
+    ${ambNew?`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(235,166,31,.12);border:1px solid rgba(235,166,31,.4)"><span class="small" style="color:#ffd45e;font-weight:800">★ Brand Ambassador</span><span class="small" style="display:block;color:#e6d6a8;margin-top:2px">Max loyalty with ${esc(ambNew.brand)} — they’ve made you the face of the brand${ambNew.fol>0?` · ▲ ${fmtFollowers(ambNew.fol)} followers`:''}.</span></div>`:''}
     <div class="small" style="color:#9fb3a8;margin-top:8px">${outlook}</div></div>`;
 }
 // season-summary: both slots' report cards + a combined signing-bonus line
@@ -8983,6 +9015,12 @@ function scrSummary(){
         else if(x.met===0){ sp.rel=Math.max(1,(sp.rel||1)-1); sp.strikes=(sp.strikes||0)+1; }
         else sp.strikes=0;   // met exactly 1 → hold steady
         sp.seasons=(sp.seasons||0)+1;
+        // CS277 — BRAND AMBASSADOR: hit max loyalty (Lv 5) and the brand names you the face of the company.
+        // Recognition + a one-time following bump (fans notice the partnership) — no cash, so the economy is untouched.
+        if(sp.rel>=SPONSOR_REL_MAX && !sp.ambassador){ sp.ambassador=true;
+          const fol=gainFollowers(0.07, 4000);
+          S.season._ambNew=S.season._ambNew||{}; S.season._ambNew[slot]={brand:c.sponsor, fol};   // persist so the summary re-renders keep the celebration
+          careerStory().feed.unshift({year:S.year||1, evt:'Sponsor', text:`Named a brand ambassador for ${c.sponsor}`}); }
         let dropped=false;
         if((sp.strikes||0)>=dropAt){ dropped=true; anyDropped=true;
           const rng=mulberry32((((S.careerSeed||1)>>>0)^(((S.year||1)*0x71c07)>>>0)^(slot==='hat'?0x48a7:0x53b1))>>>0);
