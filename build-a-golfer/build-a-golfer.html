@@ -5128,9 +5128,15 @@ function spotlightHeroCard(){
 // CS262: Career Mode hero card for the NEW-career state (gold, left-aligned, matches the other mode cards
 // so "start a new career" reads like a mode, not a plain centered button). The resume card handles continue.
 function careerHeroCard(fresh){
+  const c=(typeof career==='function')?career():{};
+  // lifetime career bests (persist across careers) — shown here now that they've come off the home top
+  const best=(c&&c.builds>0)
+    ? `<div class="gc-row" style="margin-top:10px"><span class="gc-chip">Best ${fmt(c.bestMoney)}</span><span class="gc-chip">OVR ${c.bestOvr}</span><span class="gc-chip">${c.builds} build${c.builds>1?'s':''}</span></div>`
+    : '';
   const card=$(`<button class="gcard gc-gold" aria-label="Career Mode, build your golfer">
     <div class="gc-top"><div style="min-width:0"><div class="gc-kick">${fresh?'Start Your Journey':'New Career'}</div><div class="gc-title">${fresh?'Career Mode':'New Golfer'}</div></div><span class="gc-badge">30 YRS</span></div>
     <div class="gc-mid">Build your golfer, then play a 30-year career.</div>
+    ${best}
     <div class="gc-row"><span class="gc-go">Build ▸</span></div>
   </button>`);
   card.onclick=()=>{reset();S.mode='easy';S.screen='setup';render();};
@@ -5194,11 +5200,8 @@ function scrTitle(){
   w.appendChild($(`<div class="herotag center">A RunThe.GG Game</div>`));
   w.appendChild($(`<h1 class="hero" style="font-size:clamp(34px,8.5vw,52px)"><span class="hr1">Your Golfer.</span><br><span class="hr2">Your Tour.</span></h1>`));
   w.appendChild($(`<div class="herorule" aria-hidden="true"><span></span><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.6" fill="none" stroke="#EBA61F" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1.5" fill="#EBA61F"/></svg><span></span></div>`));
-  w.appendChild($(`<div class="center" style="margin:10px 0 6px"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ 30-Year Career Simulation</span></div>`));
-  const c=career();
-  if(c.builds>0){
-    w.appendChild($(`<div class="small muted center" style="margin:-4px 0 12px">Your best: <b style="color:var(--gold)">${fmt(c.bestMoney)}</b> · OVR ${c.bestOvr} · ${c.builds} build${c.builds>1?'s':''}</div>`));
-  }
+  w.appendChild($(`<div class="center" style="margin:10px 0 12px"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ 30-Year Career Simulation</span></div>`));
+  // (career bests moved off the top onto the new-career card, see careerHeroCard)
   const stack=$(`<div class="stack"></div>`);
   const ri=resumeInfo();
   const cs=careerSaveInfo();

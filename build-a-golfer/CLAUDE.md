@@ -6608,6 +6608,14 @@ allows Google Fonts, or self-host Anton.*
   the resume card shows and the daily badge correctly reads "2 LEFT"; zero page errors. Screenshot confirms
   the four cohesive cards. Deployed to /golf.
 
+- **CS263 — career bests moved from the home top onto the new-career card (owner).** The "Your best:
+  $X · OVR Y · N builds" line under the "30-Year Career Simulation" badge is removed from the top of the
+  title; those lifetime career bests (`career()` → bestMoney/bestOvr/builds) now render as chips ("Best $X"
+  / "OVR Y" / "N builds") inside `careerHeroCard()` — so they show on the Career Mode card exactly when you
+  have no banked career and are about to start a new one. With a saved career you see the Continue-Career
+  card's own stats instead. Verified in Playwright: top no longer contains "Your best", the gold new-career
+  card shows the three bests chips; zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
