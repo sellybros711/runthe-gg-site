@@ -7137,6 +7137,38 @@ allows Google Fonts, or self-host Anton.*
   new categories; a full practice daily round + title/trophy render with zero page errors. Tunable: the new
   achievement goals/points, the popup cadence.
 
+- **CS291 — press-conference bug fix + authentic fan tweets / headlines / opponent quotes + one more
+  presser per season (owner, from a screenshot: "What's going on here [a choice showing raw JS] · add one
+  more of these per season here and there · add real quotes from fans, opponents, or the golfer so it feels
+  authentic — more like tweets and headlines people relate to").**
+  1. **The bug (IMG_8090).** The "David Puig rivalry" press conference showed a choice as raw source —
+     `c=>c.grudgeW>c.grudgeL?'"I OWN THAT MATCHUP"':...` — because the `rival_grudge` beat's choice `t` (and
+     `s`) are FUNCTIONS of ctx, but `showStoryline` rendered them with `esc(ch.t)`, which serializes the
+     function source instead of calling it. Fixed by evaluating through the existing `T=(v)=>typeof
+     v==='function'?v(ctx):v` helper: `esc(T(ch.t))` / `esc(T(ch.s))` on the button, and the two `track()`
+     calls now log `String(T(ch.t))` instead of the raw function. (Verified: the grudge choice now renders
+     "I OWN THAT MATCHUP" — correctly picked because grudgeW 2 > grudgeL 1 — with no `=>`/`grudgeW` source
+     anywhere.)
+  2. **The reaction feed (`pressBuzz`/`pressBuzzHTML`).** After you answer a presser, the WORLD now reacts:
+     2 fan tweets (avatar + handle + time + like/retweet counts), a newspaper-style headline card, and an
+     occasional (~45%) opponent quote. Tone-matched to the choice via `pbTone`: **bold** (brash/showman/
+     fanFav), **humble**, **gritty** (gritty/confident/clutch), **bad** (a CS279 backfire), or **neutral** —
+     each with its own tweet/headline/opponent-quote pools (`PB_TONES`), parameterized with the golfer name
+     (`dShort`), the rival (`ctx.rivalName` or a fictional name), the event (`ctx.upName`), and the choice
+     quote. Uses only NON-theme-mapped emoji (😤💀🥶😬👀🤝😭🫡💪🙌) so nothing renders as an SVG icon
+     mid-tweet. Fictional handles/outlets/names (`PB_HANDLES`/`PB_OUTLETS`/`PB_NAMES`) so it reads authentic
+     without impersonating anyone. Wired into the press overlay's reply box between the reaction scout and the
+     Continue button (try/catch so it can never break the presser). New `.pbuzz`/`.pb-tweet`/`.pb-hl`/etc CSS
+     (Twitter-style rows + a gold-accent headline card).
+  3. **Frequency** ("one more per season here and there"): `STORY_PER_SEASON` 2→3 and the shared interruption
+     budget `SEASON_STOP_BUDGET` 4→5, so pressers surface a bit more often without exceeding a casual-friendly
+     cap.
+  Verified in Playwright (cs291): the constants (3/5); the grudge choice renders evaluated text with no raw
+  source leak; the buzz feed renders 2 tweets + a headline (+ backfire-tone buzz on the CS279 backfire path);
+  zero page errors; screenshot confirms the press conference with the "The reaction · online & in print" feed
+  (fan tweets + a headline card). Deployed to /golf. Tunable: the `PB_TONES` content pools, the opponent-quote
+  probability (0.45), `STORY_PER_SEASON`/`SEASON_STOP_BUDGET`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
