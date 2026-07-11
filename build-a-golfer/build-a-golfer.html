@@ -1907,8 +1907,16 @@ function dayKeyBack(n){ const d=new Date(); d.setUTCDate(d.getUTCDate()-n); retu
 // not just a number. Played = teal, Beat the pro = gold, Freeze-bridged = blue, missed = faint; today ringed.
 function streakCalendar(n){
   n=n||14;
-  const ds=LS.get(acctKey('bag_streak'),{})||{}, days=ds.days||{}, won=(dailyStats().wonDays)||{}, tk=todayKey();
+  const ds=LS.get(acctKey('bag_streak'),{})||{}, real=ds.days||{}, won=(dailyStats().wonDays)||{}, tk=todayKey();
   const cur=streakDisplay(), best=Math.max(ds.longest||0,cur);
+  // Backfill the CURRENT streak's days as "played" so a 9-day streak shows 9 filled cells even when the
+  // per-day history is missing (a streak that predates CS252, or was synced from another device). Real
+  // recorded days (beat=gold, freeze=blue) always win over the synthesized "played".
+  const days=Object.assign({},real);
+  if(cur>0 && ds.last){
+    let lastOff=-1; for(let o=0;o<=6;o++){ if(dayKeyBack(o)===ds.last){ lastOff=o; break; } }
+    if(lastOff>=0){ for(let d=0; d<cur; d++){ const off=lastOff+d; if(off>=n) break; const k=dayKeyBack(off); if(days[k]==null) days[k]=1; } }
+  }
   const cells=[];
   for(let i=n-1;i>=0;i--){ const k=dayKeyBack(i), dom=k%100;
     let cls,lab;
