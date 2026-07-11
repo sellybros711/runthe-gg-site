@@ -306,6 +306,25 @@ window.GA_ID='G-L29P5MRWKE';
   .stack-sep{display:flex; align-items:center; justify-content:center; gap:12px; width:100%; max-width:420px; margin:20px auto 8px}
   .stack-sep span{height:1px; flex:1; background:linear-gradient(90deg,transparent,rgba(244,227,201,.22),transparent)}
   .stack-sep b{font-family:var(--body); font-weight:800; letter-spacing:.2em; font-size:11px; color:var(--pagemut); text-transform:uppercase}
+  /* CS254: richer "continue your career" card — bigger than a button, shows where you are (owner) */
+  .resumecard{display:block; width:100%; max-width:520px; margin:0 auto; text-align:left; cursor:pointer; color:#20160a;
+    background:linear-gradient(158deg,#f4d585,#e9ad2c 62%,#e0a01f); border:0; border-radius:18px; padding:15px 17px 14px;
+    box-shadow:0 14px 34px -14px rgba(235,166,31,.65), inset 0 1px 0 rgba(255,255,255,.35)}
+  .resumecard:active{transform:translateY(1px)}
+  .rc-top{display:flex; align-items:center; justify-content:space-between; gap:12px}
+  .rc-kick{font:800 10px/1 var(--body); letter-spacing:.15em; text-transform:uppercase; opacity:.62}
+  .rc-name{font-family:var(--display); font-style:italic; font-size:25px; line-height:1; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .rc-ovr{flex:0 0 auto; text-align:center; background:rgba(20,15,8,.15); border-radius:11px; padding:6px 12px}
+  .rc-ovr b{display:block; font:900 21px/1 var(--mono)}
+  .rc-ovr span{font:800 8px/1 var(--body); letter-spacing:.12em; opacity:.62}
+  .rc-prog{margin-top:12px}
+  .rc-prog-lb{display:flex; justify-content:space-between; align-items:baseline; font:800 12px/1 var(--body); margin-bottom:5px}
+  .rc-status{font-size:10px; letter-spacing:.08em; text-transform:uppercase; opacity:.75}
+  .rc-prog-bar{height:7px; border-radius:4px; background:rgba(20,15,8,.16); overflow:hidden}
+  .rc-prog-bar i{display:block; height:100%; background:#20160a; border-radius:4px}
+  .rc-stats{display:flex; align-items:center; gap:16px; margin-top:12px}
+  .rc-stat b{font:900 16px/1 var(--mono)} .rc-stat span{font:700 10px/1 var(--body); opacity:.66; margin-left:3px}
+  .rc-go{margin-left:auto; font:900 12.5px/1 var(--body); letter-spacing:.03em; background:rgba(20,15,8,.14); border-radius:9px; padding:8px 13px}
   .trophy{width:54px; height:72px; display:block; margin:2px auto 4px; filter:drop-shadow(0 6px 14px rgba(235,166,31,.4))}
   .scorechip{display:inline-flex; align-items:center; gap:14px; background:rgba(7,18,30,.82);
     border:1px solid var(--gold); border-radius:12px; padding:9px 16px; margin:6px auto 16px;
@@ -657,7 +676,7 @@ window.GA_ID='G-L29P5MRWKE';
      hole, so a top-right board covered it (owner). Anchored to the bottom, it grows upward into the
      lower fairway/rough, never the green. CS251: restyled as ONE cohesive dark gold-bordered panel
      (owner mockup) with a THRU/TARGET header, name+score rows, and a "TO BEAT" footer. */
-  .hvboard{bottom:48px;right:8px;width:158px;max-width:60%;
+  .hvboard{bottom:48px;right:8px;width:176px;max-width:64%;
     background:linear-gradient(180deg,rgba(10,21,31,.9),rgba(6,14,22,.92));
     border:1.5px solid rgba(235,166,31,.5);border-radius:13px;padding:7px 8px 7px;
     box-shadow:0 12px 30px -12px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.05);
@@ -671,7 +690,7 @@ window.GA_ID='G-L29P5MRWKE';
   .hvbrow.mine{background:rgba(235,166,31,.17);box-shadow:inset 0 0 0 1px rgba(235,166,31,.4)}
   .hvbrow .cdot{width:7px;height:7px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
   .hvbrow .rk{color:#c7b489;font-family:var(--mono);font-size:9.5px;font-weight:800;min-width:9px}
-  .hvbrow .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:92px;letter-spacing:.02em}
+  .hvbrow .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:112px;letter-spacing:.01em}
   .hvbrow .tp{font-family:var(--mono);font-weight:800;margin-left:auto;padding-left:6px}
   .hvbfoot{border-top:1px solid rgba(255,255,255,.12);margin-top:3px;padding:4px 3px 0;
     font:800 8.5px/1 var(--body);letter-spacing:.08em;color:#d6c191;text-align:left}
@@ -4830,6 +4849,40 @@ function trophySVG(){return `<svg class="trophy" viewBox="0 0 60 80" fill="none"
   <rect x="18" y="43" width="24" height="6" rx="2" fill="#EBA61F"/>
   <rect x="22" y="49" width="16" height="9" rx="2" fill="#caa23a"/></svg>`;}
 
+// CS254: the "continue your career" card — a bigger, structured resume affordance that shows where you
+// are (golfer, OVR, year progress, status, wins/majors/net worth), replacing a run-on text sub.
+function resumeCareerCard(cs){
+  const circuit=!!cs.circuitMode;
+  const who=esc(cs.name||'Your Golfer');
+  const cc=(circuit?cs.circuitCareer:cs.career)||{};
+  const wins=cc.wins||0, majors=cc.majors||0, net=(cc.net!=null?cc.net:(cc.money||0));
+  const mid=cs.mid&&cs.mid.season;
+  const status=cs.resumeScreen==='summary'?'Season results'
+    :cs.resumeScreen==='offseason'?'Off-season'
+    :mid?`Mid-season · event ${(cs.mid.evtIndex||0)+1}`
+    :'Ready to play';
+  let yrLabel,pct;
+  if(circuit){ const cy=Math.max(1,(cs.year||31)-30); yrLabel=`Legend Circuit · Year ${cy}`; pct=Math.min(100,Math.max(7,cy/12*100)); }
+  else { yrLabel=`Year ${cs.year} of 30`; pct=Math.min(100,Math.max(7,(cs.year||1)/30*100)); }
+  const card=$(`<button class="resumecard" aria-label="Resume ${circuit?'Legend Circuit':'Career Mode'} — ${who}, ${yrLabel}">
+    <div class="rc-top">
+      <div style="min-width:0"><div class="rc-kick">Continue ${circuit?'Legend Circuit':'Career'}</div><div class="rc-name">${who}</div></div>
+      <div class="rc-ovr"><b>${cs.ovr}</b><span>OVR</span></div>
+    </div>
+    <div class="rc-prog">
+      <div class="rc-prog-lb"><span>${yrLabel}</span><span class="rc-status">${status}</span></div>
+      <div class="rc-prog-bar"><i style="width:${pct}%"></i></div>
+    </div>
+    <div class="rc-stats">
+      <span class="rc-stat"><b>${wins}</b><span>${wins===1?'win':'wins'}</span></span>
+      <span class="rc-stat"><b>${majors}</b><span>${majors===1?'major':'majors'}</span></span>
+      <span class="rc-stat"><b>${fmtShort(net)}</b><span>net worth</span></span>
+      <span class="rc-go">Continue ▸</span>
+    </div>
+  </button>`);
+  card.onclick=resumeCareer;
+  return card;
+}
 function scrTitle(){
   reconcileDailyAttempts();   // self-heal "attempts left" against the server before it's even displayed below
   const scene=$(`<div class="scene"><svg class="coursebg" viewBox="0 0 440 440" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
@@ -4893,10 +4946,10 @@ function scrTitle(){
   // every branch below must tolerate it instead of assuming "attempts used" implies "we know the score."
   const bestTxt = dbest ? `Best ${dTot(dbest.total, dbest.par!=null?dbest.par:(DAILY_COURSES[dbest.course]||{}).par)}` : `Best on this device: not yet known`;
   let dMain, dSub, dCls;
-  if(PRACTICE){ dMain='Beat the Pro · Practice'; dSub='Unlimited practice rounds · nothing is recorded, no attempts used'; dCls='blue'; }
-  else if(datt===0){ dMain='Beat the Pro'; dSub='Beat the tour average at a new famous course every day'; dCls='blue'; }
-  else if(dleft<=0){ dMain=`Beat the Pro · ${dwon?'Beaten ✓':'Done'}`; dSub=`${bestTxt}${dbest?(dwon?', you beat the tour average':' · came up short of the tour average'):''} · new course at midnight UTC`; dCls='blue'; }   // stays blue even when done (gold is reserved for the single primary action)
-  else { dMain=`Beat the Pro · ${dleft} left`; dSub=`${bestTxt} · ${dwon?'tour average beaten ✓, go lower':'beat the tour average to win'} (${dailyMaxAttempts()} tr${dailyMaxAttempts()===1?'y':'ies'}/day)`; dCls='blue'; }
+  if(PRACTICE){ dMain='Beat the Pro · Practice'; dSub='Unlimited rounds · nothing recorded'; dCls='blue'; }
+  else if(datt===0){ dMain='Beat the Pro'; dSub='A new famous course every day'; dCls='blue'; }
+  else if(dleft<=0){ dMain=`Beat the Pro · ${dwon?'Beaten ✓':'Done'}`; dSub=`${bestTxt}${dbest?(dwon?' · beaten ✓':' · came up short'):''} · new course at midnight`; dCls='blue'; }   // stays blue even when done (gold is reserved for the single primary action)
+  else { dMain=`Beat the Pro · ${dleft} left`; dSub=`${bestTxt} · ${dwon?'beaten ✓ · go lower':'beat the tour average'}`; dCls='blue'; }
   const daily=$(`<button class="btn ${dCls}">${dMain}<span class="sub">${dSub}</span></button>`);
   daily.onclick=startDailyChallenge;
   stack.appendChild(daily);
@@ -4953,32 +5006,22 @@ function scrTitle(){
     const cb=$(`<button class="btn teal">View ${circuit?'Legend Circuit':'Career'} Ceremony<span class="sub">${yrs} season${yrs===1?'':'s'} · ${esc(cs.name||'Your Golfer')} · ${circuit?'circuit':'career'} complete</span></button>`);
     cb.onclick=viewEndedCareer; stack.appendChild(cb);
   } else if(cs){
-    const mid=cs.mid&&cs.mid.season;
-    const circuit=!!cs.circuitMode;
-    const who=esc(cs.name||'Your Golfer');
-    const sub=cs.resumeScreen==='summary'
-      ? `Year ${cs.year} results · ${who} · back to your season results`
-      : cs.resumeScreen==='offseason'
-      ? `Year ${cs.year} off-season · ${who} · tune your game, then run the season`
-      : mid
-      ? `Year ${cs.year} · mid-season (event ${(cs.mid.evtIndex||0)+1}) · ${who} · pick up where you left off`
-      : `Year ${cs.year} done · ${who} · OVR ${cs.ovr} · continue your ${circuit?'circuit':'career'}`;
-    const cb=$(`<button class="btn goldfill">Resume ${circuit?'Legend Circuit':'Career Mode'}<span class="sub">${sub}</span></button>`);
-    cb.onclick=resumeCareer; stack.appendChild(cb);
+    // CS254: a richer "continue" card (bigger, shows where you are) instead of a run-on text sub
+    stack.appendChild(resumeCareerCard(cs));
   }
   // "Resume Your Golfer" is a stale in-progress DRAFT snapshot (a half-drafted golfer never taken into a
   // season). If you already have a career to resume, this is redundant + confusing (two "resume" buttons
   // meaning different things — starting the draft would just begin ANOTHER golfer, which is what the
   // Career Mode button below already does), so only show it when there's no career save.
   if(ri && !cs){
-    const rb=$(`<button class="btn goldfill">Resume Your Golfer<span class="sub">${ri.n}/8 skills drafted · pick up where you left off</span></button>`);
+    const rb=$(`<button class="btn goldfill">Resume Your Golfer<span class="sub">${ri.n}/8 skills drafted</span></button>`);
     rb.onclick=restoreResume; stack.appendChild(rb);
   }
   // Colour hierarchy: gold = your single primary action. When a career/draft is already in progress, RESUME
   // (above) is the gold primary, so "start a new golfer" drops to a quiet ghost secondary. With nothing to
   // resume, Career Mode IS the gold primary.
   const goCls=(ri||cs)?'ghost':'goldfill';
-  const go=$(`<button class="btn ${goCls}">Career Mode<span class="sub">${(ri||cs)?'Start a new golfer, play a fresh 30-year career':'Draft your golfer, play a 30-year career'}</span></button>`);
+  const go=$(`<button class="btn ${goCls}">${(ri||cs)?'New Career':'Career Mode'}<span class="sub">${(ri||cs)?'Draft a new golfer':'Draft your golfer · 30-year career'}</span></button>`);
   // reset() clears the draft state (slots/reSpins/revealed/drawRng) so a FRESH career draft never
   // inherits a previous run's team — e.g. the 8/8 build left over from a Daily Challenge, which
   // stranded the draft at "8/8 drafted" with no way to advance.
@@ -9109,7 +9152,7 @@ function scrOffseason(){
   const circuitYear3=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):null;
   add($(`<div class="center"><span class="tag">${S.circuitMode?('Legend Circuit · Off-Season · Year '+circuitYear3+' prep'):('Career Mode · Off-Season · Year '+S.year+' prep')}</span></div>`));
   add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tune your game</h1>`));
-  add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Spin to swap a fresh skill into your bag, up to <b>${os.maxChanges} changes</b> with <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. <b style="color:var(--gold)">Each stat can only be changed once per off-season</b> — upgrade it and it locks until next year, so choose which to protect. Once you spin, you must take a skill before moving on.</p>`));
+  add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Swap fresh skills into your bag — up to <b>${os.maxChanges} change${os.maxChanges===1?'':'s'}</b>, <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. <b style="color:var(--gold)">Each stat can only change once</b>, so choose which to protect. Once you spin, you must take a skill.</p>`));
   // Tour Rep perk banner, shows what your rank grants + what the next rank unlocks (a "keep climbing" nudge)
   { const r=repTier(), cur=repPerk(); let teaser='';
     if(r.next){ const np=repPerk2(r.next.name); const dc=np.changes-cur.changes, dr=np.reSpins-cur.reSpins;
@@ -9155,10 +9198,10 @@ function scrOffseason(){
       bt.onclick=()=>offTake(cat.k); grid.appendChild(bt);
     });
     left.appendChild(grid);
-    if(os.reSpins>0){ const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${os.reSpins} left<span class="sub">Pass on this golfer for a new one. You still must take a skill from whoever lands.</span></button>`); re.onclick=offReSpin; left.appendChild(re); }
+    if(os.reSpins>0){ const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${os.reSpins} left<span class="sub">Pass on this golfer for a new one</span></button>`); re.onclick=offReSpin; left.appendChild(re); }
     else left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left, take one of ${S.current.name}'s skills.</div>`));
   } else if(!S.spinning){
-    if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel<span class="sub">Once you spin, you must take one of that golfer's skills. You don't have to use every spin — you can start the season anytime.</span></button>`); spin.onclick=offSpin; left.appendChild(spin); }
+    if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel<span class="sub">${os.maxChanges-os.changes} change${os.maxChanges-os.changes===1?'':'s'} left · start anytime</span></button>`); spin.onclick=offSpin; left.appendChild(spin); }
     else left.appendChild($(`<div class="small muted center" style="padding:10px 0">All ${os.maxChanges} changes used.</div>`));
     const cont=$(`<button class="btn goldfill" style="margin-top:10px">Start Year ${S.circuitMode?circuitYear3:S.year} ▸<span class="sub">${os.changes>0?'Run the new season':'Keep your bag, run it as-is'}</span></button>`);
     cont.onclick=finishOffseason;
@@ -11160,6 +11203,8 @@ function beginDailyRound(){
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
   S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;   // the round plays itself; only signature-hole decisions pause it
   S.dailyLegend=null; S.momentPO=null; S.momentPOHoleIdx=null;
+  // CS255: load today's global board so the in-round scoreboard can show the day's best (fails open)
+  if(sb && !S.special){ const d=S.dailySeed||todayKey(); if(dbCache===null||dbCache.day!==d) dbLoad(d); }
   track('daily_round_start',{course:S.dailyCourse,ovr:S.dailyOvr});
   S.screen='dailyround'; render(); scheduleDailyAdvance();
 }
@@ -11990,13 +12035,20 @@ function scrDailyRound(){
           bd.appendChild($(`<div class="hvbrow ${r.you?'mine':''}" data-nm="${esc(r.nm)}"><span class="cdot" style="background:${r.you?'#3b82f6':'#8fa39a'}"></span><span class="rk">${rk}</span><span class="nm">${esc(r.nm)}</span><span class="tp" style="color:${tpCol(r.tp)}">${dtp(r.tp)}</span></div>`));
         });
       } else {
-        // CS251: mockup-style panel — THRU header, gold TARGET line, YOU/TOUR PRO rows, "TO BEAT" footer
+        // CS251/CS255: mockup-style panel — THRU header, gold TARGET line, a mini leaderboard
+        // (TODAY'S BEST · YOU · TOUR PRO sorted by score so you see your standing), "TO BEAT" footer.
         bd.appendChild($(`<div class="hvbcap">THRU ${through}</div>`));
         bd.appendChild($(`<div class="hvbtarget">TARGET ${dAvgTxt(av)}</div>`));
         const pace=av*(through/18);
         const paceTxt=Math.abs(pace)<0.05?'E':(pace>0?'+':'')+pace.toFixed(1);
         const rows=[{nm:meNm, v:total, txt:dtp(total), mine:true, col:'#3b82f6'},
-                    {nm:'TOUR PRO', v:pace, txt:paceTxt, mine:false, col:'#ef4444'}].sort((a,b)=>a.v-b.v);
+                    {nm:'TOUR PRO', v:pace, txt:paceTxt, mine:false, col:'#ef4444'}];
+        // CS255: today's best — the day's global leader if the board is loaded, else your own best of the day
+        let bestVal=null;
+        if(dbCache && dbCache.ok && dbCache.rows && dbCache.rows.length) bestVal=Math.min.apply(null, dbCache.rows.map(r=>r.to_par));
+        else { const _db=dailyBest(); if(_db && _db.total!=null) bestVal=_db.total; }
+        if(bestVal!=null) rows.push({nm:"TODAY'S BEST", v:bestVal, txt:dtp(bestVal), mine:false, col:'#f4cf5b'});
+        rows.sort((a,b)=>a.v-b.v);
         rows.forEach((r,ri)=>bd.appendChild($(`<div class="hvbrow ${r.mine?'mine':''}" data-nm="${r.nm}"><span class="cdot" style="background:${r.col}"></span><span class="rk">${ri+1}</span><span class="nm">${r.nm}</span><span class="tp" style="color:${tpCol(r.v)}">${r.txt}</span></div>`)));
         bd.appendChild($(`<div class="hvbfoot">TO BEAT<b>${dAvgTxt(av)}</b></div>`));
       }
