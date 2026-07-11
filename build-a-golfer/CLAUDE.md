@@ -6714,6 +6714,43 @@ allows Google Fonts, or self-host Anton.*
   `.ov`), the message reads "Lock in your change?", Cancel applies nothing, Lock in applies the swap
   (changes 0→1, stat locked); zero page errors. Deployed to /golf.
 
+- **CS274 — haptics labelled Android-only + no longer suppressed by reduce-motion (owner: "I've noticed the
+  haptics aren't working. Is there something on my side I must do?").** Explained the platform reality: the
+  Web Vibration API (`navigator.vibrate`) is simply not implemented in iOS Safari / iOS home-screen web apps
+  — nothing user-side fixes it (a genuine platform limitation, not a bug). Two changes: the ≡-menu Haptics
+  toggle sub now reads "Vibration on key moments · Android only (iOS blocks web vibration)" so iOS users
+  aren't left wondering; and `buzz(pattern)` no longer bails on `prefers-reduced-motion` (a vibration isn't
+  screen motion, and coupling the two meant reduce-motion silently killed haptics on Android too) — it now
+  gates only on the Haptics toggle (`hapticsOn()`). Verified the menu label + that buzz fires under
+  reduced-motion when haptics are on. Deployed to /golf.
+
+- **CS275 — career interview / press-conference build-out (first of the four career-depth areas: owner asked
+  to build out interviews, decisions, sponsors, rivals "one by one, starting with interview" + "I want both"
+  content variety AND deeper mechanics/stakes).** Turned the storyline press-conference system (CS225/226)
+  from a couple of generic beats into a rich, situational interview catalog with real trade-offs.
+  • **Situational context.** `storyCtx(ce)` extended with the signals a good presser needs to react to your
+    actual career: `runnerUp`, `majorWin`, `lastMajor`, `firstWin`, `worldNo1`, `age`, `rookie` (year 1),
+    `veteran` / `twilight` (late career), `hot` (streak), `careerWins`, alongside the existing form/rank/
+    momentum flags — so the game can pick a beat that matches THIS moment (a major just won, a maiden win, a
+    rookie's first mic, a #1 ascension, a cold streak, a legacy/retirement question).
+  • **14 new scenarios** added to `STORYLINES`, each with a `pri` (priority) so the most situationally-relevant
+    beat surfaces: major_champ (pri 4), rookie_win (4), world_no1 (4), runner_up (3), rookie_intro (3),
+    veteran_legacy (2), twilight_retire (2), hot_streak (2), plus lower-priority colour beats (social_flare,
+    media_critic, caddie, money_lead, appearance_fee, sponsor). `maybeStoryline` now prefers the highest-`pri`
+    applicable beat instead of a flat random pick, so a major win reliably triggers the major-champion presser.
+  • **Real stakes (the "deeper mechanics" half).** Each choice carries an explicit, negative-capable `ch.fol`
+    follower delta so answers are genuine trade-offs (a brash clap-back at a critic goes viral for a big
+    follower spike but can cost you; a humble/measured answer builds confidence but fewer followers). The
+    `showStoryline` apply block honours `ch.fol` (a negative value shows "▼ N followers" and skips the default
+    flat growth), and surfaces a persona-unlock note ("You're becoming {persona}") the moment a trait choice
+    crosses the `STORY_PERSONA` threshold — so the interview answers visibly shape who your golfer becomes,
+    on top of the CS226 Confidence + Followers stats.
+  Verified in Playwright: 25 storylines, 0 duplicate ids, situational priority works (a major win surfaces
+  major_champ over lower-priority beats), the follower-loss trade-off renders (▼ followers + Confidence delta),
+  and the apply flow shows the reaction/persona chips; zero page errors. Deployed to /golf. NEXT of the four:
+  signature-hole decisions, then sponsors (largely built in CS228/229/236), then rivals (built in CS226-era
+  emergent-rivalry) — building out each for both content variety and mechanics.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
