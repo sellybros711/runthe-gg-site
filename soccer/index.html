@@ -2320,6 +2320,42 @@
   /* gold thumb (Quick) keeps dark ink text for contrast */
   .seg.k-draft[data-active="quick"] .seg-opt[data-draft="quick"]{color:var(--ink);}
 
+  /* ---------- draft-setup visual mode cards (reuse #seg-draft/#seg-mode +
+       data-active + .seg-opt so the select logic is unchanged) ---------- */
+  .mode-cards, .diff-cards{display:flex;gap:10px;}
+  .mode-card, .diff-card{flex:1 1 0;position:relative;display:flex;flex-direction:column;align-items:center;
+    gap:3px;background:var(--white);border:2px solid var(--border-soft);border-radius:14px;
+    cursor:pointer;text-align:center;text-transform:none;font-family:inherit;letter-spacing:normal;
+    box-shadow:var(--shadow-sm);transition:border-color .15s, background .15s, box-shadow .15s, transform .12s;}
+  .mode-card{padding:12px 8px 11px;}
+  .diff-card{padding:14px 8px;}
+  .mode-card:active, .diff-card:active{transform:translateY(1px);}
+  .mc-svg{width:88px;height:60px;margin-bottom:4px;display:block;}
+  .mc-name{font-family:'Anton',Impact,sans-serif;font-size:19px;color:var(--ink);letter-spacing:.3px;line-height:1;}
+  .mc-meta{font-weight:900;font-size:11px;color:var(--teal);}
+  .mc-desc, .dc-desc{font-weight:600;font-size:11px;color:var(--muted-2);line-height:1.25;}
+  .dc-ico{font-size:22px;line-height:1;}
+  .dc-mystery{width:30px;height:30px;border-radius:8px;background:var(--fill-ink);color:var(--gold);
+    font-family:'Anton',Impact,sans-serif;font-size:18px;display:flex;align-items:center;justify-content:center;
+    border:2px solid var(--gold);}
+  .dc-name{font-family:'Anton',Impact,sans-serif;font-size:18px;color:var(--ink);line-height:1;}
+  .mc-check{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;
+    background:var(--teal);color:#fff;font-size:12px;font-weight:900;display:none;align-items:center;justify-content:center;
+    box-shadow:0 2px 5px rgba(0,0,0,.25);z-index:2;}
+  /* selected states, keyed off the container's data-active (same as .seg) */
+  .mode-cards[data-active="quick"] .mode-card[data-draft="quick"],
+  .mode-cards[data-active="full"]  .mode-card[data-draft="full"]{
+    border-color:var(--teal);background:rgba(19,138,107,.08);box-shadow:0 6px 18px rgba(19,138,107,.20);}
+  .mode-cards[data-active="quick"] .mode-card[data-draft="quick"] .mc-check,
+  .mode-cards[data-active="full"]  .mode-card[data-draft="full"] .mc-check{display:flex;}
+  .diff-cards[data-active="easy"] .diff-card[data-mode="easy"]{
+    border-color:var(--teal);background:rgba(19,138,107,.08);box-shadow:0 6px 18px rgba(19,138,107,.20);}
+  .diff-cards[data-active="hard"] .diff-card[data-mode="hard"]{
+    border-color:var(--red);background:rgba(229,64,42,.08);box-shadow:0 6px 18px rgba(229,64,42,.20);}
+  .diff-cards[data-active="easy"] .diff-card[data-mode="easy"] .mc-check,
+  .diff-cards[data-active="hard"] .diff-card[data-mode="hard"] .mc-check{display:flex;}
+  .diff-cards[data-active="hard"] .diff-card[data-mode="hard"] .mc-check{background:var(--red);}
+
   /* single borderless live-description panel (no button look) */
   .setup-info{text-align:center;padding:6px 6px 0;}
   .si-combo{font-family:'Anton',Impact,sans-serif;font-size:18px;text-transform:uppercase;
@@ -3237,23 +3273,60 @@ window.GA_ID='G-L29P5MRWKE';
       <div class="mode-sub">Pick your squad size and difficulty.</div>
     </div>
 
-    <!-- Draft mode slider -->
+    <!-- Draft mode: visual mode cards (keeps #seg-draft + data-active + .seg-opt
+         so the existing click/select logic is unchanged) -->
     <div class="setup-block">
       <div class="setup-label">Draft Mode</div>
-      <div class="seg k-draft" id="seg-draft" data-active="quick">
-        <span class="seg-thumb"></span>
-        <button type="button" class="seg-opt" data-draft="quick">Quick Draft</button>
-        <button type="button" class="seg-opt" data-draft="full">Full Team</button>
+      <div class="mode-cards" id="seg-draft" data-active="quick">
+        <button type="button" class="mode-card seg-opt" data-draft="quick">
+          <span class="mc-check" aria-hidden="true">✓</span>
+          <svg class="mc-svg" viewBox="0 0 88 60" aria-hidden="true">
+            <rect x="1.5" y="1.5" width="85" height="57" rx="7" fill="#127a4f" stroke="rgba(255,255,255,.22)"/>
+            <line x1="1.5" y1="30" x2="86.5" y2="30" stroke="rgba(255,255,255,.18)"/>
+            <circle cx="44" cy="30" r="8" fill="none" stroke="rgba(255,255,255,.18)"/>
+            <circle cx="44" cy="12" r="3.6" fill="#E5402A"/>
+            <circle cx="30" cy="23" r="3.6" fill="#1F9E57"/><circle cx="58" cy="23" r="3.6" fill="#1F9E57"/>
+            <circle cx="30" cy="42" r="3.6" fill="#2A4B9B"/><circle cx="58" cy="42" r="3.6" fill="#2A4B9B"/>
+            <circle cx="44" cy="52" r="3.6" fill="#F4B413"/>
+          </svg>
+          <span class="mc-name">Quick Draft</span>
+          <span class="mc-meta">6 rounds · ~2 min</span>
+          <span class="mc-desc">Fast, flexible squad</span>
+        </button>
+        <button type="button" class="mode-card seg-opt" data-draft="full">
+          <span class="mc-check" aria-hidden="true">✓</span>
+          <svg class="mc-svg" viewBox="0 0 88 60" aria-hidden="true">
+            <rect x="1.5" y="1.5" width="85" height="57" rx="7" fill="#127a4f" stroke="rgba(255,255,255,.22)"/>
+            <line x1="1.5" y1="30" x2="86.5" y2="30" stroke="rgba(255,255,255,.18)"/>
+            <circle cx="44" cy="30" r="8" fill="none" stroke="rgba(255,255,255,.18)"/>
+            <circle cx="24" cy="11" r="3.2" fill="#E5402A"/><circle cx="44" cy="11" r="3.2" fill="#E5402A"/><circle cx="64" cy="11" r="3.2" fill="#E5402A"/>
+            <circle cx="24" cy="24" r="3.2" fill="#1F9E57"/><circle cx="44" cy="24" r="3.2" fill="#1F9E57"/><circle cx="64" cy="24" r="3.2" fill="#1F9E57"/>
+            <circle cx="18" cy="42" r="3.2" fill="#2A4B9B"/><circle cx="36" cy="42" r="3.2" fill="#2A4B9B"/><circle cx="52" cy="42" r="3.2" fill="#2A4B9B"/><circle cx="70" cy="42" r="3.2" fill="#2A4B9B"/>
+            <circle cx="44" cy="52" r="3.2" fill="#F4B413"/>
+          </svg>
+          <span class="mc-name">Full Team</span>
+          <span class="mc-meta">11 rounds · ~5 min</span>
+          <span class="mc-desc">A complete XI + your formation</span>
+        </button>
       </div>
     </div>
 
-    <!-- Difficulty slider -->
+    <!-- Difficulty: refined segmented cards, Hard flagged as a "mystery" pick -->
     <div class="setup-block">
       <div class="setup-label">Difficulty</div>
-      <div class="seg k-mode" id="seg-mode" data-active="easy">
-        <span class="seg-thumb"></span>
-        <button type="button" class="seg-opt" data-mode="easy">Easy</button>
-        <button type="button" class="seg-opt" data-mode="hard">Hard</button>
+      <div class="diff-cards" id="seg-mode" data-active="easy">
+        <button type="button" class="diff-card seg-opt" data-mode="easy">
+          <span class="mc-check" aria-hidden="true">✓</span>
+          <span class="dc-ico">👁️</span>
+          <span class="dc-name">Easy</span>
+          <span class="dc-desc">Ratings visible as you draft</span>
+        </button>
+        <button type="button" class="diff-card seg-opt" data-mode="hard">
+          <span class="mc-check" aria-hidden="true">✓</span>
+          <span class="dc-ico dc-mystery">?</span>
+          <span class="dc-name">Hard</span>
+          <span class="dc-desc">Ratings hidden until the reveal</span>
+        </button>
       </div>
     </div>
 
