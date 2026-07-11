@@ -6819,6 +6819,41 @@ allows Google Fonts, or self-host Anton.*
   deepen the CS226-era emergent rivalry. Tunable: `BRANDS`/`LOGO_SPEC`, the per-tier TARGET goal pools, the
   ambassador follower bump in the settlement.
 
+- **CS278 — rivals pass: the Grudge Match + live rivalry presence (4th and last of the four career-depth
+  areas; owner: deepen rivals + build the "grudge match" idea).** The emergent-rivalry system (CS226-era)
+  was purely statistical — it crowned a nemesis and tracked a season-series/career H2H, but there was no
+  visceral, in-the-moment confrontation. This pass makes the rivalry felt during play. Owner picks
+  (AskUserQuestion): grudge triggers **organically** (when you're both in contention), and — owner's own
+  steer — the format is **your Moment round with the rival highlighted in the sim**, not a separate dueling
+  screen (keeps both the tournament and the rivalry alive, reuses the CS276-deepened Moment flow, no new
+  edge-case surface).
+  • **Grudge Match** (`grudgeRival(ce)`): during a career Moment (you in Sunday contention at a marquee
+    event), if your emergent nemesis is ALSO in the mix (top-8 or within 4 shots of you), the Moment is
+    billed as a **Grudge Match**. The offer pop-up flips to a red "⚔ GRUDGE MATCH · You vs {Rival}" set piece
+    ("your nemesis is right there — N behind you… settle it head-to-head"); the round header reads "⚔ GRUDGE ·
+    You vs {Rival}"; and the live TOURTRACE scoreboard **pins + highlights the rival's row** (their own red
+    colour, a ⚔ marker, always shown even if they slip down the board) so you track them shot-for-shot. The
+    signature-hole decision pop-up's pressure line becomes rival-specific ("⚔ {Rival} is right there · you're
+    N up on them — beat your rival").
+  • **Grudge stakes** (in `finishMomentRound`, once, before any playoff branch): the personal head-to-head is
+    graded (did you finish the event ahead of your rival?) and banks a **grudge W/L record** on the rival, a
+    confidence swing (+3.5 win / −2.5 loss, on TOP of the CS276 decision stakes + the season series), a
+    follower bump, a `gritty` persona nudge on a win, a career-feed note, and a combined "⚔ GRUDGE MATCH — You
+    beat {Rival}!" toast. All career-only, deterministic (reads the already-simmed totals).
+  • **Live rivalry presence**: the season-screen momentum strip (CS226) now carries a "⚔ vs {Rival}" chip —
+    this season's running head-to-head + where the rival currently sits on the money list — so the rivalry is
+    visible every event, not just at season end. The off-season "Your Rival" panel gained the lifetime grudge
+    record.
+  Verified in Playwright: grudge detection fires for a contending rival and correctly returns null for a
+  buried one (realistic 22-player field); the pop-up + round header + scoreboard rival-row + decision line all
+  render the grudge framing; `finishMomentRound` grades the H2H, banks the record (0→1), raises confidence
+  (55→68.5), and writes the "Beat {Rival}…" feed note; the live chip renders the season H2H + rival standing;
+  the off-season panel shows the grudge record; and a full simulated season with a rival runs to summary with
+  zero page errors. Screenshot confirms the grudge pop-up. Deployed to /golf. **This completes the four
+  career-depth areas** (interviews CS275 · decisions CS276 · sponsors CS277 · rivals CS278). Tunable: the
+  grudge detection band (top-8 / ±4) in `grudgeRival`, the grudge confidence/follower weights in
+  `finishMomentRound`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -755,6 +755,7 @@ window.GA_ID='G-L29P5MRWKE';
   .hvbrow{display:flex;align-items:center;gap:6px;background:transparent;border:0;
     border-radius:7px;padding:3px 5px;font:700 10.5px/1 var(--body);color:#eef4ee}
   .hvbrow.mine{background:rgba(235,166,31,.17);box-shadow:inset 0 0 0 1px rgba(235,166,31,.4)}
+  .hvbrow.rival{background:rgba(255,90,77,.15);box-shadow:inset 0 0 0 1px rgba(255,90,77,.42)}
   .hvbrow .cdot{width:7px;height:7px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
   .hvbrow .rk{color:#c7b489;font-family:var(--mono);font-size:9.5px;font-weight:800;min-width:9px}
   .hvbrow .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:112px;letter-spacing:.01em}
@@ -3622,7 +3623,9 @@ function rivalStatusNode(){
   const rv=getRival();
   if(rv){ const h=(S.career&&S.career.h2h&&S.career.h2h[rv.name])||{meAhead:0,themAhead:0,ev:0};
     const tot=h.meAhead+h.themAhead;
+    const gw=rv.grudgeWins||0, gl=rv.grudgeLosses||0;
     box.appendChild($(`<div class="small" style="color:var(--oncard)">Your nemesis is <b style="color:var(--gold)">${esc(rv.name)}</b> · OVR ${rv.ovr}. ${tot?`You're ahead in <b>${h.meAhead}</b> of <b>${tot}</b> career meetings`:'Your battle starts this season'}${(rv.seasonsWon+rv.seasonsLost)?` · season series <b>${rv.seasonsWon}–${rv.seasonsLost}</b>`:''}. Finish the season ahead of them to win the year and earn a <b>Rivalry tee</b>.</div>`));
+    if(gw+gl>0) box.appendChild($(`<div class="small" style="margin-top:6px;color:#ff8f7e;font-weight:700">⚔ Grudge matches (both in Sunday contention): <b style="color:var(--oncard)">${gw}–${gl}</b></div>`));
   } else if(!fr){
     const seasons=(S.career&&S.career.seasons&&S.career.seasons.length)||0;
     box.appendChild($(`<div class="small muted">${seasons<RIVAL_MIN_SEASONS?`No rival yet, keep competing. After a few seasons, the player who battles you closest will emerge as your nemesis. No picking required.`:`No clear rival has emerged yet. Stay in the mix with players near your level and one will surface.`}</div>`));
@@ -6434,7 +6437,20 @@ function momentInfo(ce){
   if(!(gap<=th.gap && pos<=th.pos)) return null;
   const margin=(pos===1&&alive[1])?Math.round(alive[1].total-me.total):0;
   const rival=(pos===1?alive[1]:alive[0]);
-  return {pos, gap, margin, leaderName:rival?rival.p.name:'', major:!!evt.major};
+  return {pos, gap, margin, leaderName:rival?rival.p.name:'', major:!!evt.major, grudge:grudgeRival(ce)};
+}
+// CS278 — Grudge Match: when your emergent nemesis (getRival) is ALSO in contention on Sunday, the Moment is
+// billed as a personal head-to-head and the rival is pinned/highlighted on the live leaderboard. Returns the
+// rival's live standing when they're genuinely in the mix (top-8 or within 4 of you), else null.
+function grudgeRival(ce){
+  if(S.daily || S.circuitMode || !S.career) return null;
+  const rv=getRival(); if(!rv || !ce || !ce.players) return null;
+  const rp=ce.players.find(o=>o.made && o.p && o.p.name===rv.name); if(!rp) return null;
+  const alive=ce.players.filter(o=>o.made).sort((a,b)=>a.total-b.total);
+  const me=alive.find(o=>o.p.you); if(!me) return null;
+  const rvPos=alive.indexOf(rp)+1, gap=Math.round(rp.total-me.total);   // gap>0 → rival behind you
+  if(rvPos<=8 || Math.abs(gap)<=4) return {name:rv.name, ovr:rv.ovr, rvPos, gap};
+  return null;
 }
 function momentPosTxt(info){
   if(info.pos===1) return info.gap<0||info.margin>0 ? `You LEAD by ${Math.max(1,info.margin)}` : 'You are tied for the lead';
@@ -6446,19 +6462,20 @@ function momentPopup(ce, info){
   document.querySelectorAll('.momentov').forEach(n=>n.remove());
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const th=evt.major?majorTheme(evt.name):null;
-  const kicker=evt.major?'MAJOR CHAMPIONSHIP SUNDAY':(evt.playoff?'PLAYOFF SUNDAY':'SIGNATURE SUNDAY');
-  const accent=evt.major?'#ffd45e':'#ff8a5b';
+  const g=info.grudge;
+  const kicker=g?'GRUDGE MATCH':(evt.major?'MAJOR CHAMPIONSHIP SUNDAY':(evt.playoff?'PLAYOFF SUNDAY':'SIGNATURE SUNDAY'));
+  const accent=g?'#ff5a4d':(evt.major?'#ffd45e':'#ff8a5b');
   // GRANDER, cinematic (owner: fewer + more grand). Full-screen spotlight, the major's own trophy, big type.
   const ov=$(`<div class="momentov" style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;
       background:radial-gradient(120% 90% at 50% 18%, rgba(30,18,4,.78), rgba(2,7,5,.97) 70%)">
     <div class="momentcard" style="max-width:460px;width:100%;text-align:center;position:relative">
       <div style="position:absolute;inset:-40% 10% auto 10%;height:220px;background:radial-gradient(60% 60% at 50% 0,${accent}44,transparent 70%);filter:blur(6px);pointer-events:none${reduce?'':';animation:momGlow 3.2s ease-in-out infinite'}"></div>
-      ${th?`<div style="width:92px;height:104px;margin:0 auto 8px;filter:drop-shadow(0 8px 22px rgba(0,0,0,.5))${reduce?'':';animation:momRise .7s cubic-bezier(.2,1.3,.4,1) both'}">${th.svg()}</div>`:`<div style="font-size:52px;line-height:1;margin-bottom:4px">🔥</div>`}
+      ${g?`<div style="font-size:52px;line-height:1;margin-bottom:4px">⚔️</div>`:th?`<div style="width:92px;height:104px;margin:0 auto 8px;filter:drop-shadow(0 8px 22px rgba(0,0,0,.5))${reduce?'':';animation:momRise .7s cubic-bezier(.2,1.3,.4,1) both'}">${th.svg()}</div>`:`<div style="font-size:52px;line-height:1;margin-bottom:4px">🔥</div>`}
       <div style="font:800 12px/1 var(--body);letter-spacing:.28em;color:${accent};text-transform:uppercase">${kicker}</div>
-      <h1 style="margin:8px 0 2px;font-size:30px;line-height:1.05;color:#fff">${esc(evt.name)}</h1>
-      <div style="font:800 11px/1 var(--body);letter-spacing:.22em;color:#ff6b5e;text-transform:uppercase;margin-bottom:12px">🔥 The Moment</div>
-      <p class="lede" style="margin:4px 0 6px;color:#e8f0e8">Sunday. The final round${evt.major?' of a major':''}. <b style="color:${accent}">${momentPosTxt(info)}</b> with 18 holes to play.</p>
-      <p class="small" style="margin:0 0 18px;color:#9fb3a8">This is what a career is made of. Take the sticks and play every shot yourself — the big calls on the signature holes are yours — or let the sim decide.</p>
+      <h1 style="margin:8px 0 2px;font-size:30px;line-height:1.05;color:#fff">${g?'You vs '+esc(g.name):esc(evt.name)}</h1>
+      <div style="font:800 11px/1 var(--body);letter-spacing:.22em;color:#ff6b5e;text-transform:uppercase;margin-bottom:12px">${g?esc(evt.name):'🔥 The Moment'}</div>
+      <p class="lede" style="margin:4px 0 6px;color:#e8f0e8">${g?`Sunday${evt.major?' at a major':''}, and your nemesis <b style="color:${accent}">${esc(g.name)}</b> is right there — ${g.gap>0?`${g.gap} behind you`:g.gap<0?`${-g.gap} ahead of you`:'dead level with you'}. `:''}<b style="color:${accent}">${momentPosTxt(info)}</b> with 18 holes to play.${g?' Settle it head-to-head.':''}</p>
+      <p class="small" style="margin:0 0 18px;color:#9fb3a8">${g?'Beat your rival today and the whole tour will know it.':'This is what a career is made of.'} Take the sticks and play every shot yourself — the big calls on the signature holes are yours — or let the sim decide.</p>
       <div class="mbtns" style="display:grid;gap:10px"></div>
     </div></div>`);
   const btns=ov.querySelector('.mbtns');
@@ -6559,14 +6576,28 @@ function confMeterHTML(conf){ const c=Math.round(conf), col=confColor(c), pct=Ma
   return `<div class="statpill"><div class="lab">Confidence</div>
     <div class="cmeter"><span style="width:${pct}%;background:${col}"></span></div>
     <div class="small" style="color:${col};font-weight:800;letter-spacing:0">${confLabel(c)} · ${c}</div></div>`; }
-function momentumNode(){   // live season-screen strip: confidence (fluctuates) + following
+function momentumNode(){   // live season-screen strip: confidence (fluctuates) + following + rival (CS278)
   if(S.daily || S.circuitMode || !S.career) return null;
   const st=careerStory(); const delta=(S.season&&S.season.followers0!=null)?((st.followers||0)-S.season.followers0):null;
   return $(`<div class="scout" style="border-color:#2f6f86;margin:0 0 12px">
     <div style="display:flex;gap:14px;align-items:stretch">
       <div style="flex:1">${followersChipHTML(delta>0?delta:null)}</div>
       <div style="flex:1">${confMeterHTML(seasonConf())}</div>
-    </div></div>`); }
+    </div>${rivalLiveHTML()}</div>`); }
+// CS278 — live "vs your nemesis" chip: this season's head-to-head so far + where the rival currently sits
+function rivalLiveHTML(){
+  const rv=getRival(); if(!rv || !S.season) return '';
+  let meAhead=0, rvAhead=0;
+  (S.season.results||[]).forEach(r=>{ const me=r.order&&r.order.find(o=>o.p&&o.p.you), them=r.order&&r.order.find(o=>o.p&&o.p.name===rv.name);
+    if(!me||!them) return; const mp=me.pos==='CUT'?999:me.pos, tp=them.pos==='CUT'?999:them.pos; if(mp===tp) return; if(mp<tp) meAhead++; else rvAhead++; });
+  let rvRankTxt=''; const tot=S.season.totals||{};
+  if(tot[rv.name]){ const byM=Object.entries(tot).map(([n,v])=>({n,m:v.money})).sort((a,b)=>b.m-a.m); const rk=byM.findIndex(x=>x.n===rv.name)+1; if(rk) rvRankTxt='#'+rk; }
+  const met=meAhead+rvAhead, lead=meAhead>rvAhead, tie=meAhead===rvAhead;
+  const col=lead?'#35d6a0':tie?'#e0c060':'#e0a53a';
+  return `<div style="margin-top:9px;border-top:1px solid rgba(255,255,255,.08);padding-top:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <span class="small" style="color:var(--oncard);font-weight:700">⚔ vs <b style="color:#ff8f7e">${esc(rv.name)}</b>${rvRankTxt?` <span class="muted">· they're ${rvRankTxt}</span>`:''}</span>
+    <span class="small" style="color:${col};font-weight:800;white-space:nowrap">${met?`${meAhead}–${rvAhead} head-to-head`:'no meetings yet'}</span></div>`;
+}
 function followersChipHTML(delta){ const s=careerStory();
   return `<div class="statpill"><div class="lab">Followers</div>
     <div class="v gold" style="font-size:19px;line-height:1">${fmtFollowers(s.followers)}</div>
@@ -7333,7 +7364,7 @@ function startMomentRound(ce, info){
     for(let i=0;i<18;i++) t+=dSimHole(c.holes[i][0],c.holes[i][1],diffs[i],sk,c.fit,DCFG.COND[cond],'balanced',null,rr);
     dSum+=t; }
   let shift=(sSum/240 - dSum/K)/18; if(!isFinite(shift)) shift=0;
-  S.moment={idx:ce.idx, evtName:ce.evt.name, info, major:!!ce.evt.major};
+  S.moment={idx:ce.idx, evtName:ce.evt.name, info, major:!!ce.evt.major, grudge:!!(info&&info.grudge), rivalName:(info&&info.grudge&&info.grudge.name)||null};
   // Pre-sim the FIELD's Sunday round now, so the leaderboard can play out LIVE alongside you (challengers
   // making their moves hole by hole) instead of everyone freezing at their start-of-day total and all
   // leapfrogging you at the very end. finishMomentRound reuses these exact scores, so nothing changes
@@ -7370,7 +7401,31 @@ function finishMomentRound(){
   // separately in finalizeEvent, so the two don't double-count.
   if(!S.circuitMode && S.career && S.season){
     const st=applyMomentStakes(holes, ce.evt);
-    if(st){ ce._momentStakes=st;
+    // CS278 — GRUDGE MATCH result: if your nemesis was in the mix, grade the personal head-to-head this event
+    // (did you finish ahead of them?) and bank grudge stakes ON TOP of the decision stakes + season series.
+    let gr=null;
+    if(m && m.grudge && m.rivalName){
+      const meP=ce.players.find(o=>o.p.you), rvP=ce.players.find(o=>o.p && o.p.name===m.rivalName);
+      if(meP && rvP && rvP.made){
+        const tie=Math.round(meP.total)===Math.round(rvP.total), won=!tie && meP.total<rvP.total;
+        gr={name:m.rivalName, won, tie, me:Math.round(meP.total), rv:Math.round(rvP.total), evt:m.evtName};
+        const rvObj=getRival();
+        if(rvObj){ if(won){ rvObj.grudgeWins=(rvObj.grudgeWins||0)+1; } else if(!tie){ rvObj.grudgeLosses=(rvObj.grudgeLosses||0)+1; } }
+        adjConf(won?3.5:tie?0:-2.5);
+        gr.fol = won ? gainFollowers(0.035, 1600) : tie ? gainFollowers(0.006, 200) : gainFollowers(0.004, 120);
+        if(won){ const s=careerStory(); s.traits=s.traits||{}; s.traits.gritty=(s.traits.gritty||0)+1; }
+        careerStory().feed.unshift({year:S.year||1, evt:'Rivalry', text: won?`Beat ${m.rivalName} head-to-head at ${m.evtName}`:tie?`Went toe-to-toe with ${m.rivalName} at ${m.evtName}`:`${m.rivalName} edged you at ${m.evtName}`});
+        ce._grudge=gr;
+        track('grudge_result',{rival:m.rivalName, won, tie});
+      }
+    }
+    if(st) ce._momentStakes=st;
+    // one combined toast: grudge leads if it was a grudge match, else the decision-stakes line
+    if(gr){
+      const gHead = gr.won?`You beat ${esc(gr.name)}!`:gr.tie?`Even with ${esc(gr.name)}`:`${esc(gr.name)} got you`;
+      const gCol = gr.won?'#35d6a0':gr.tie?'#e0c060':'#E14A33';
+      toast(`<span style="color:#ff8f7e;font-weight:800">⚔ GRUDGE MATCH</span><br><b style="color:${gCol}">${gHead}</b> · ${gr.me>=0?'+':''}${gr.me} to ${gr.rv>=0?'+':''}${gr.rv}${gr.fol>0?`<br><span style="color:var(--gold);font-weight:800">▲ ${fmtFollowers(gr.fol)} followers</span>`:''}${st&&st.folGained>0&&st.folGained!==gr.fol?'':''}`, 4600);
+    } else if(st){
       const parts=[];
       if(st.boldWins) parts.push(`${st.boldWins} bold call${st.boldWins>1?'s':''} paid off`);
       if(st.boldFails) parts.push(`${st.boldFails} backfired`);
@@ -12470,6 +12525,15 @@ function momentStakesLine(i){
       else if(meIdx>0){ const back=Math.round(rows[meIdx].tp-rows[0].tp); posTxt=back<=0?`Tied for the lead`:`${back} back · T${meIdx+1}`; }
     }
   }catch(e){}
+  if(S.moment.grudge && S.moment.rivalName){
+    // grudge framing: where you stand vs the rival specifically
+    let rvTxt='';
+    try{ if(ce&&ce.players){ const thr=S.dailyHoles.length, myTot=S.dailyHoles.reduce((s,h)=>s+h.toPar,0);
+      const meP=ce.players.find(o=>o.p.you), rvP=ce.players.find(o=>o.p&&o.p.name===S.moment.rivalName);
+      if(meP&&rvP){ const myProj=meP.total+myTot, rvProj=rvP.total+(rvP._r4sim||0)*thr/18, d=Math.round(rvProj-myProj);
+        rvTxt = d>0?`you're ${d} up on them`:d<0?`they're ${-d} ahead of you`:`dead level`; } } }catch(e){}
+    return `⚔ ${esc(S.moment.rivalName)} is right there${rvTxt?' · '+rvTxt:''} — beat your rival`;
+  }
   const stage = major?'A MAJOR on the line':'The title on the line';
   const late = holesLeft<=3?' coming home':'';
   return `🔥 ${stage}${late}${posTxt?' · '+posTxt:''} — the gallery holds its breath`;
@@ -12526,9 +12590,9 @@ function scrDailyRound(){
   const teeSig = previewNext ? c.sig.find(s=>s[0]===i+1) : null;
   add($(`<div class="droundglow" style="--gl:${hvThemeAccent(S.dailyCourse)}"></div>`));   // CS248: subtle themed glow behind the whole round
   if(S.moment){   // career-mode Moment: this round IS the tournament's final round
-    const po=S.momentPO;
-    add($(`<div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 ${esc(S.moment.evtName||'The Moment')} · ${po?'Sudden-Death Playoff':'Final Round'}</span></div>`));
-    add($(`<p class="lede center" style="margin:5px 0 0">📍 ${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)}${po?` · Playoff hole ${po.round+1}`:''}</p>`));
+    const po=S.momentPO, grd=S.moment.grudge&&S.moment.rivalName;
+    add($(`<div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">${grd?'⚔ GRUDGE · You vs '+esc(S.moment.rivalName):'🔥 '+esc(S.moment.evtName||'The Moment')} · ${po?'Sudden-Death Playoff':'Final Round'}</span></div>`));
+    add($(`<p class="lede center" style="margin:5px 0 0">📍 ${esc(dShort(c.v))} · ${dCondLabel(S.dailyCond)}${grd?` · ${esc(S.moment.evtName)}`:''}${po?` · Playoff hole ${po.round+1}`:''}</p>`));
     if(!boardPresent && !reviewing && !po){
       add($(`<div class="center" style="margin:8px 0 4px"><span class="mono" style="font-weight:800;font-size:34px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${through>0?strokesThrough+' ('+dtp(total)+')':'E'}</span> <span class="small muted">through ${through}</span></div>`));
       add($(`<div class="center small" style="margin:0 0 4px;color:var(--gold);font-weight:700">${esc(S.moment.evtName)} · ${momentPosTxt(S.moment.info).replace(/<[^>]*>/g,'')} at the start of the day</div>`));
@@ -12621,15 +12685,19 @@ function scrDailyRound(){
         S.momentPO.alive.forEach((o,ri)=>{ const you=!!o.p.you;
           bd.appendChild($(`<div class="hvbrow ${you?'mine':''}" data-nm="${esc(o.p.you?'YOU':o.p.name)}"><span class="cdot" style="background:${you?'#3b82f6':'#8fa39a'}"></span><span class="rk">${ri+1}</span><span class="nm">${esc(you?'YOU':o.p.name)}</span><span class="tp" style="color:#ffd76a">TIED</span></div>`)); });
       } else if(S.moment && S.curEvt && S.curEvt.players){
-        bd.appendChild($(`<div class="hvbcap">FINAL ROUND · THRU ${through}</div>`));
+        const rvNm=S.moment.grudge?S.moment.rivalName:null;   // CS278: pin + highlight your nemesis in a Grudge Match
+        bd.appendChild($(`<div class="hvbcap">${rvNm?'GRUDGE · THRU '+through:'FINAL ROUND · THRU '+through}</div>`));
         // opponents' Sunday round is REVEALED progressively (× holes you've played / 18), so the board moves
         // live as challengers make their moves — instead of them being frozen then jumping at the finish.
         // Round the whole projected total (not the parts) so the live board matches the final leaderboard exactly.
-        const rows=S.curEvt.players.filter(o=>o.made).map(o=>({nm:o.p.you?'YOU':o.p.name, tp:Math.round(o.p.you?(o.total+total):(o.total+(o._r4sim||0)*through/18)), you:!!o.p.you})).sort((a,b)=>a.tp-b.tp);
+        const rows=S.curEvt.players.filter(o=>o.made).map(o=>({nm:o.p.you?'YOU':o.p.name, tp:Math.round(o.p.you?(o.total+total):(o.total+(o._r4sim||0)*through/18)), you:!!o.p.you, rival:!!(rvNm&&o.p.name===rvNm)})).sort((a,b)=>a.tp-b.tp);
         const meIdx=rows.findIndex(r=>r.you);
-        const show=meIdx<4?rows.slice(0,4):rows.slice(0,3).concat([rows[meIdx]]);
+        let show=meIdx<4?rows.slice(0,4):rows.slice(0,3).concat([rows[meIdx]]);
+        // always surface the rival's row in a Grudge Match, even if they've slipped outside the shown rows
+        if(rvNm){ const rvRow=rows.find(r=>r.rival); if(rvRow && show.indexOf(rvRow)<0) show=show.slice(0,3).concat([rvRow]); }
         show.forEach(r=>{ const rk=rows.indexOf(r)+1;
-          bd.appendChild($(`<div class="hvbrow ${r.you?'mine':''}" data-nm="${esc(r.nm)}"><span class="cdot" style="background:${r.you?'#3b82f6':'#8fa39a'}"></span><span class="rk">${rk}</span><span class="nm">${esc(r.nm)}</span><span class="tp" style="color:${tpCol(r.tp)}">${dtp(r.tp)}</span></div>`));
+          const dot=r.you?'#3b82f6':r.rival?'#ff5a4d':'#8fa39a';
+          bd.appendChild($(`<div class="hvbrow ${r.you?'mine':''}${r.rival?' rival':''}" data-nm="${esc(r.nm)}"><span class="cdot" style="background:${dot}"></span><span class="rk">${rk}</span><span class="nm">${r.rival?'⚔ ':''}${esc(r.nm)}</span><span class="tp" style="color:${tpCol(r.tp)}">${dtp(r.tp)}</span></div>`));
         });
       } else {
         // CS251/CS255: mockup-style panel — THRU header, gold TARGET line, a mini leaderboard
