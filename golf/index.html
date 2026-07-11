@@ -424,6 +424,17 @@ window.GA_ID='G-L29P5MRWKE';
     color:var(--oncard); font:inherit; width:100%; box-shadow:0 4px 12px -10px rgba(0,0,0,.6); transition:transform .05s ease, border-color .12s ease}
   .attr .attrbar{position:absolute; left:0; right:0; bottom:0; height:3px; background:rgba(255,255,255,.06); border-radius:0 0 10px 10px; overflow:hidden}
   .attr .attrbar>i{display:block; height:100%; border-radius:0 2px 2px 0}
+  /* CS273: inline off-season lock-in confirm on the same tile (no popup, no scroll) */
+  .attr.confirming{grid-column:1 / -1; display:flex; flex-direction:column; align-items:stretch; gap:8px; cursor:default;
+    border-color:var(--gold); background:linear-gradient(180deg,rgba(235,166,31,.14),rgba(235,166,31,.04)); box-shadow:0 0 0 1px rgba(235,166,31,.4) inset}
+  .attr.confirming .oc-top{display:flex; align-items:center; gap:10px}
+  .attr.confirming .oc-swap{margin-left:auto; font-family:var(--mono); font-weight:800; font-size:14px}
+  .attr.confirming .oc-row{display:flex; align-items:center; gap:8px}
+  .attr.confirming .oc-msg{flex:1; min-width:0; color:var(--gold); font-weight:800; font-size:12.5px}
+  .attr.confirming .oc-no,.attr.confirming .oc-yes{flex:0 0 auto; border-radius:8px; padding:8px 12px; font:800 12px/1 var(--body); cursor:pointer; border:1px solid}
+  .attr.confirming .oc-no{background:transparent; border-color:rgba(244,227,201,.25); color:var(--muted)}
+  .attr.confirming .oc-yes{background:var(--gold); border-color:var(--gold); color:#20160a}
+  .attr.confirming .oc-no:active,.attr.confirming .oc-yes:active{transform:translateY(1px)}
   .attr .lab{flex:1; font-weight:600; font-size:12px; color:#cfdbe6}
   .attr .val{font-family:var(--mono); font-weight:800; font-size:16px; color:var(--gold)}
   .attr .take{font:800 9px/1 var(--body); letter-spacing:.08em; text-transform:uppercase; color:#04211c;
@@ -4325,7 +4336,6 @@ function render(){
     if(S.overlay==='passport') overlayPassport(app);
     if(S.overlay==='shop') overlayShop(app);
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
-    if(S.overlay==='confirmSkill') overlayConfirmSkill(app);
     if(S.overlay==='confirmRetire') overlayConfirmRetire(app);
     if(S.overlay==='challenges') overlayChallenges(app);
     if(S.overlay==='about') overlayAbout(app);
@@ -4837,26 +4847,7 @@ function overlayConfirmReset(screen){
   };
   screen.appendChild(ov);
 }
-// Confirm an off-season skill swap before it's locked in (a stat can only change once per off-season,
-// so a mis-tap is costly). Shows the exact swap and asks the player to lock it in.
-function overlayConfirmSkill(screen){
-  const k=S.confirmSkill; const cat=CATS.find(c=>c.k===k);
-  if(!k||!cat||!S.current){ S.overlay=null; return render(); }
-  const cur=S.slots[k]?S.slots[k].value:REPLACEMENT; const nv=S.current[k]; const d=nv-cur;
-  const dcol=d>0?'#35d6a0':(d<0?'#e07a5f':'var(--muted)');
-  const dtxt=d>0?`▲ +${d} upgrade`:(d<0?`▼ ${Math.abs(d)} downgrade`:'no change');
-  const ov=$(`<div class="ov" role="dialog" aria-modal="true">
-    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
-    <h3>Lock in ${cat.short}?</h3>
-    <p class="lede">Swap in <b>${esc(S.current.name)}</b>'s ${cat.short}. <b style="color:var(--gold)">This stat locks for the rest of the off-season</b>, so you can't change it again this year.</p>
-    <div class="scout center" style="max-width:340px;margin:0 auto 4px"><span class="mono" style="font-weight:800;font-size:26px">${cur} → ${nv}</span> <span style="color:${dcol};font-family:var(--mono);font-weight:800">${dtxt}</span></div>
-    <button class="btn goldfill">Lock it in ▸</button>
-    <button class="btn ghost cancel" style="margin-top:10px">Cancel</button></div>`);
-  ov.querySelector('.x').onclick=()=>{S.overlay=null;S.confirmSkill=null;render();};
-  ov.querySelector('.cancel').onclick=()=>{S.overlay=null;S.confirmSkill=null;render();};
-  ov.querySelector('.goldfill').onclick=()=>{ S.overlay=null; const kk=S.confirmSkill; S.confirmSkill=null; offTake(kk); };
-  screen.appendChild(ov);
-}
+// (CS273: the off-season lock-in confirm is now inline on the tile itself, see scrOffseason — no popup.)
 // Confirm before voluntarily retiring / ending the circuit early — surfaces how many years are left.
 function overlayConfirmRetire(screen){
   const circuit=!!S.circuitMode;
@@ -9506,9 +9497,10 @@ function startCircuit(){
 function newCareer(){ clearCareerSave(); reset(); render(); }
 function finishOffseason(){ if(S.career) S.career.sponsorOffers=[];   // undecided offers = you passed
   track('offseason_done',{changes:S.offseason.changes}); startSeason(false); }
-function offSpin(){ if(S.current||S.spinning)return; reveal(); }
-function offReSpin(){ if(S.offseason.reSpins<=0)return; S.offseason.reSpins--; track('offseason_respin'); saveCareer(offseasonResumeExtra()); reveal(); }
+function offSpin(){ S.offConfirm=null; if(S.current||S.spinning)return; reveal(); }
+function offReSpin(){ S.offConfirm=null; if(S.offseason.reSpins<=0)return; S.offseason.reSpins--; track('offseason_respin'); saveCareer(offseasonResumeExtra()); reveal(); }
 function offTake(k){
+  S.offConfirm=null;
   if(!S.offseason.locked) S.offseason.locked=[];
   if(S.offseason.locked.includes(k)) return;          // a stat can be changed only once per off-season
   S.slots[k]={golfer:S.current.name,value:S.current[k]}; S.offseason.changes++;
@@ -9559,10 +9551,21 @@ function scrOffseason(){
           <span class="take" style="background:none;padding:0 0 0 2px;color:var(--muted);font-size:12px">🔒 locked</span></button>`);
         grid.appendChild(bt); return;
       }
+      // CS273: confirm INLINE on the same tile (no full-screen popup, no scrolling) — the tapped tile
+      // restyles in place to "Lock in your change?" with Cancel / Lock in, so the player isn't moved.
+      if(S.offConfirm===cat.k){
+        const bt=$(`<div class="attr confirming" role="group" aria-label="Confirm ${cat.short} change">
+          <div class="oc-top"><span class="lab">${cat.short}</span><span class="oc-swap"><span style="color:var(--muted)">${cur}</span> → <span style="color:${dcol}">${nv}</span> <span style="color:${dcol};font-family:var(--mono)">${d>0?'▲+'+d:(d<0?'▼'+Math.abs(d):'·')}</span></span></div>
+          <div class="oc-row"><span class="oc-msg">Lock in your change?</span>
+            <button class="oc-no" type="button">Cancel</button><button class="oc-yes" type="button">Lock in</button></div></div>`);
+        bt.querySelector('.oc-no').onclick=(e)=>{ e.stopPropagation(); S.offConfirm=null; render(); };
+        bt.querySelector('.oc-yes').onclick=(e)=>{ e.stopPropagation(); S.offConfirm=null; offTake(cat.k); };
+        grid.appendChild(bt); return;
+      }
       const bt=$(`<button class="attr" aria-label="Swap ${cat.short} to ${nv}, ${d>=0?'up':'down'} ${Math.abs(d)}">
         <span class="lab">${cat.short}</span><span class="val">${nv}</span>
         <span class="take" style="background:none;padding:0 0 0 2px;color:${dcol};font-family:var(--mono);font-weight:800;font-size:13px">${d>0?'▲+':(d<0?'▼':'·')}${d!==0?Math.abs(d):''}</span></button>`);
-      bt.onclick=()=>{ S.confirmSkill=cat.k; S.overlay='confirmSkill'; render(); };  // confirm before it locks in (no mis-tap)
+      bt.onclick=()=>{ S.offConfirm=cat.k; render(); };   // arm the inline confirm on THIS tile
       grid.appendChild(bt);
     });
     left.appendChild(grid);
