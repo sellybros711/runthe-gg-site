@@ -545,14 +545,6 @@ window.GA_ID='G-L29P5MRWKE';
   .dcardhd{display:flex; align-items:baseline; justify-content:space-between; margin:0 2px 8px}
   .dcardhd .t{font:800 10.5px/1 var(--body); letter-spacing:.17em; text-transform:uppercase; color:var(--muted)}
   .dcardhd .h{font:700 10.5px/1 var(--body); color:var(--gold); opacity:.85}
-  /* CS271: CREAM "physical scorecard" surface — reserved for the scorecard, so it reads like paper */
-  .dcardwrap.cream{background:linear-gradient(180deg,#f6ecda,#ecdfc6); border-color:#d9c8a4; box-shadow:0 10px 26px -14px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.6)}
-  .dcardwrap.cream .dcardhd .t{color:#8a7a55}
-  .dcardwrap.cream .dcardhd .h{color:#b6862a}
-  .dcardwrap.cream .dcell{background:rgba(255,255,255,.5); border-color:#dccdac; box-shadow:inset 0 1px 0 rgba(255,255,255,.5)}
-  .dcardwrap.cream .dcell .dn{color:#9a8a63}
-  .dcardwrap.cream .dcell.cur{border-color:#c58f1f; box-shadow:0 0 0 1px #c58f1f inset, 0 0 10px -4px #c58f1f; background:rgba(255,238,200,.7)}
-  .dcardwrap.cream .dcell.sel{border-color:var(--teal); box-shadow:0 0 0 1px var(--teal) inset}
   @media(max-width:700px){
     .bcasthd,.dcardwrap{max-width:none; width:100vw; margin-left:calc(50% - 50vw); margin-right:calc(50% - 50vw);
       border-radius:0; border-left:none; border-right:none}
@@ -9712,8 +9704,6 @@ function dtp(t){ return t===0?'E':(t>0?'+'+t:''+t); }
 function dTot(toPar, par){ return (par!=null && !isNaN(par)) ? (par+toPar)+' ('+dtp(toPar)+')' : dtp(toPar); }
 function dResultLabel(par,toPar){ return toPar<=-2?'Eagle':toPar===-1?'Birdie':toPar===0?'Par':toPar===1?'Bogey':toPar===2?'Double':'Triple+'; }
 function dScoreCol(toPar){ return toPar<0?'#35d6a0':toPar===0?'var(--oncard)':toPar===1?'#e9a23b':'#E14A33'; }
-// CS271: score ink for the CREAM scorecard — darker shades that read on the off-white surface
-function dScoreInk(toPar){ return toPar<=-2?'#0e6b3c':toPar<0?'#147a45':toPar===0?'#25382b':toPar===1?'#bd5a17':'#a8321c'; }
 // real-scorecard notation: birdie circled, eagle double-circled, bogey boxed, double+ double-boxed, par plain
 function dMarkClass(toPar){ return toPar<=-2?'smk dcircle':toPar===-1?'smk circle':toPar===1?'smk box':toPar>=2?'smk dbox':'smk'; }
 function dCellScore(pl){ return `<span class="${dMarkClass(pl.toPar)}">${pl.par+pl.toPar}</span>`; }
@@ -11986,10 +11976,10 @@ function scrSpotlightResult(){
   }
   const holes=(S.dailyHoles&&S.dailyHoles.length===18)?S.dailyHoles:(r.holes&&r.holes.length===18?r.holes:null);
   if(holes){
-    const grid=$(`<div class="dcardwrap cream" style="margin-top:14px"></div>`);
+    const grid=$(`<div style="max-width:600px;margin:14px auto 0"></div>`);
     [[0,9,'OUT'],[9,18,'IN']].forEach(([a,b,lab])=>{ const row=$(`<div class="dcard"></div>`);
-      for(let k=a;k<b;k++){ const pl=holes[k]; row.appendChild($(`<div class="dcell done"><div class="dn">${k+1}</div><div class="ds" style="color:${dScoreInk(pl.toPar)}">${dCellScore(pl)}</div></div>`)); }
-      grid.appendChild($(`<div class="small center" style="letter-spacing:.12em;margin:2px 0 6px;font-weight:800;color:#8a7a55">${lab}</div>`)); grid.appendChild(row); });
+      for(let k=a;k<b;k++){ const pl=holes[k]; row.appendChild($(`<div class="dcell done"><div class="dn">${k+1}</div><div class="ds" style="color:${dScoreCol(pl.toPar)}">${dCellScore(pl)}</div></div>`)); }
+      grid.appendChild($(`<div class="small muted center" style="letter-spacing:.12em;margin-top:6px">${lab}</div>`)); grid.appendChild(row); });
     add(grid);
   }
   const shr=$(`<button class="btn goldfill" style="max-width:520px;margin:14px auto 0">↗ Share your result<span class="sub">Brag about the special event</span></button>`);
@@ -12482,12 +12472,12 @@ function scrDailyRound(){
   // scorecard strip lives BELOW the window now (the tracer is the star, H2H-style). The sudden-death
   // playoff plays one extra hole at a time (overlay resolves it), so the 18-cell strip is skipped.
   if(!S.momentPO){
-  const wrap=$(`<div class="dcardwrap cream"></div>`);
+  const wrap=$(`<div class="dcardwrap"></div>`);
   wrap.appendChild($(`<div class="dcardhd"><span class="t">Scorecard · ${through} thru</span><span class="h">${(played.length>1&&!reviewing)?'Tap a hole to rewatch':''}</span></div>`));
   const strip=$(`<div class="dcard"></div>`);
   for(let k=0;k<18;k++){ const pl=played[k], isReveal=(k===lastIdx&&revealing), cur=(k===i&&!done&&!revealing);
     const showScore=pl&&!isReveal;   // the in-flight hole shows no score until the ball drops
-    const cell=$(`<div class="dcell ${(cur||isReveal)?'cur':''} ${showScore?'done':''} ${(showScore&&k===vh&&played.length>1)?'sel':''}"><div class="dn">${k+1}</div><div class="ds" style="color:${showScore?dScoreInk(pl.toPar):'#9a8a63'}">${showScore?dCellScore(pl):'·'}</div></div>`);
+    const cell=$(`<div class="dcell ${(cur||isReveal)?'cur':''} ${showScore?'done':''} ${(showScore&&k===vh&&played.length>1)?'sel':''}"><div class="dn">${k+1}</div><div class="ds" style="color:${showScore?dScoreCol(pl.toPar):'var(--muted)'}">${showScore?dCellScore(pl):'·'}</div></div>`);
     if(pl){ cell.style.cursor='pointer'; cell.setAttribute('role','button'); cell.setAttribute('aria-label',`Rewatch hole ${k+1}`); cell.onclick=()=>{ if(S.dailyViewHole===k) dailyReviewClose(); else dailyReviewOpen(k); }; }
     strip.appendChild(cell); }
   wrap.appendChild(strip);
