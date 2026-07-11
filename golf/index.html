@@ -798,6 +798,7 @@ window.GA_ID='G-L29P5MRWKE';
     box-shadow:0 18px 40px -16px rgba(0,0,0,.95);animation:hvresPop .44s cubic-bezier(.2,1.3,.4,1)}
   .hvresult .rn{font:900 22px/1 var(--body);letter-spacing:.03em}
   .hvresult .rs{font:800 14px/1 var(--mono);opacity:.92;margin-left:8px}
+  .hvresult .rsub{font:800 11px/1.2 var(--body);letter-spacing:.04em;text-transform:uppercase;margin-top:6px}
   /* keep the translate centering through the pop (a bare scale() keyframe would drop it) */
   @keyframes hvresPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.84)}60%{transform:translate(-50%,-50%) scale(1.04)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
   @media (prefers-reduced-motion:reduce){ .hvresult{animation:none} }
@@ -815,6 +816,7 @@ window.GA_ID='G-L29P5MRWKE';
   .dc-hole{font:900 19px/1.15 var(--body);color:var(--cream);margin-top:8px}
   .dc-sub{font:600 12px/1.35 var(--body);color:var(--muted);margin-top:5px}
   .dc-sit{font:800 13px/1.35 var(--body);color:#ffcf6a;margin-top:11px}
+  .dc-stakes{font:800 12px/1.4 var(--body);color:#ff8f7e;margin-top:11px;padding:7px 10px;border:1px solid rgba(255,107,94,.4);border-radius:8px;background:rgba(255,107,94,.09)}
   .dc-tag{font:800 10.5px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-top:12px}
   .dc-prompt{font:600 14px/1.5 var(--body);color:var(--oncard);margin-top:7px}
   .dc-opts{margin-top:16px}
@@ -5361,11 +5363,11 @@ function startRoll(){
     setTimeout(()=>{ if(el.isConnected){el.textContent=CATS[i].short; el.style.opacity='1';} },180);
   },1700);
 }
-function toast(msg){
+function toast(msg, ms){
   // sit ABOVE the "scroll to continue" pill when it's on the page (both live bottom-centre), so they don't clash
   const bottom = document.querySelector('.scrollcue') ? 'calc(74px + env(safe-area-inset-bottom,0px))' : '26px';
-  const t=$(`<div style="position:fixed;left:50%;bottom:${bottom};transform:translateX(-50%);z-index:45;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4)">${msg}</div>`);
-  document.body.appendChild(t); setTimeout(()=>t.remove(),1800);
+  const t=$(`<div style="position:fixed;left:50%;bottom:${bottom};transform:translateX(-50%);z-index:45;max-width:min(92vw,420px);text-align:center;line-height:1.4;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4)">${msg}</div>`);
+  document.body.appendChild(t); setTimeout(()=>t.remove(), ms||1800);
 }
 
 /* ---------- setup (create your golfer) ---------- */
@@ -6516,6 +6518,42 @@ function resultMomentum(pos, evt){
 }
 // legacy shim: a storyline "confidence" choice now moves the season confidence rating
 function storyGainConf(n){ adjConf((n||0)*11); }   // ch.conf 0.2-0.5 → ~+2 to +5 confidence
+// CS276 — Career Moment shot-decisions carry real stakes beyond that hole's score. When you play a Sunday
+// round in contention, each signature-hole Attack/Safe call is evaluated on how it turned out: bold calls
+// that pay off (birdie/eagle) build confidence + followers (fans love clutch, aggressive golf); bold calls
+// that backfire (bogey+) dent confidence. Closing holes + majors weigh more. Returns a summary; caller
+// applies it once at Moment finish. Deterministic (reads the already-simmed hole scores).
+function momentDecisionStakes(holes, evt){
+  const major=!!(evt&&evt.major), big=!!(evt&&(evt.big||evt.playoff));
+  let dc=0, fpct=0, fflat=0, boldWins=0, boldFails=0, decisions=0;
+  (holes||[]).forEach(h=>{
+    if(h.attack==null) return;               // only holes where you actually made a call
+    decisions++;
+    const w = (h.n>=16?1.6:1.0);             // the closing stretch matters most
+    if(h.attack===true){                     // aggressive
+      if(h.toPar<0){ dc+=2.2*w; fpct+=0.018*w; fflat+=240*w; boldWins++; }   // the gamble pays off
+      else if(h.toPar===0){ dc+=0.7*w; fpct+=0.004*w; fflat+=60*w; }         // held your nerve
+      else { dc-=2.4*w; fflat+=40*w; boldFails++; }                          // backfired (fans still respect the go)
+    } else {                                 // safe / smart
+      if(h.toPar<=0){ dc+=0.5*w; }           // executed the plan
+      else { dc-=0.8*w; }                    // the safe play still leaked a shot
+    }
+  });
+  const mult = major?1.35:big?1.15:1.0;
+  dc*=mult; fpct*=mult; fflat=Math.round(fflat*mult);
+  dc=Math.max(-10, Math.min(10, dc));
+  return {dc, fpct, fflat, boldWins, boldFails, decisions};
+}
+// apply the Moment's decision stakes to Confidence + Followers + the persona, once, at finish
+function applyMomentStakes(holes, evt){
+  const st=momentDecisionStakes(holes, evt);
+  if(!st.decisions) return null;
+  adjConf(st.dc);
+  st.folGained = gainFollowers(st.fpct, st.fflat);
+  // a genuinely clutch, aggressive round nudges the "Mr. Clutch" identity trait (feeds STORY_PERSONA)
+  if(st.boldWins>=2 && st.boldWins>st.boldFails){ const s=careerStory(); s.traits=s.traits||{}; s.traits.clutch=(s.traits.clutch||0)+1; st.clutchTrait=true; }
+  return st;
+}
 // shared UI bits
 function confMeterHTML(conf){ const c=Math.round(conf), col=confColor(c), pct=Math.max(4,Math.min(100,c));
   return `<div class="statpill"><div class="lab">Confidence</div>
@@ -7295,6 +7333,20 @@ function finishMomentRound(){
     const s=o.p.you ? total : (o._r4sim!=null ? o._r4sim : simRound(o.eo,o.p.clu,{major:ce.evt.major,big:ce.evt.big,finalRd:true,courseAdj:ce.courseAdj}));
     o.rounds[r]=s; o.total+=s; delete o._r4sim; });
   ce.roundsDone=4; ce._momentHoles=holes; ce._momentTotal=total;
+  // CS276: the Sunday decisions you made carry career stakes (confidence + followers + persona), applied
+  // once here regardless of whether a playoff follows. resultMomentum (from the final position) applies
+  // separately in finalizeEvent, so the two don't double-count.
+  if(!S.circuitMode && S.career && S.season){
+    const st=applyMomentStakes(holes, ce.evt);
+    if(st){ ce._momentStakes=st;
+      const parts=[];
+      if(st.boldWins) parts.push(`${st.boldWins} bold call${st.boldWins>1?'s':''} paid off`);
+      if(st.boldFails) parts.push(`${st.boldFails} backfired`);
+      const cSign=st.dc>=0?'↑':'↓', cCol=st.dc>=0?'#35d6a0':'#E14A33';
+      const head = st.boldWins>=2&&st.boldWins>st.boldFails ? 'Clutch Sunday!' : st.dc>=1 ? 'Sunday nerve' : st.dc<=-1 ? 'A costly gamble' : 'Steady down the stretch';
+      toast(`<b>${head}</b>${parts.length?' · '+parts.join(', '):''}<br><span style="color:${cCol};font-weight:800">Confidence ${cSign} ${st.dc>=0?'+':''}${Math.round(st.dc)}</span>${st.folGained>0?` · <span style="color:var(--gold);font-weight:800">▲ ${fmtFollowers(st.folGained)} followers</span>`:''}${st.clutchTrait?' · <span style="color:#ffd45e;font-weight:800">becoming Mr. Clutch</span>':''}`, 4200);
+    }
+  }
   // TIE FOR THE LEAD that includes YOU → play a REAL sudden-death playoff. You played the round, so you
   // play the playoff too, hole by hole, the way it goes on the PGA Tour. (Won/lost outright → finalize now.)
   const made=ce.players.filter(o=>o.made).sort((a,b)=>a.total-b.total);
@@ -12312,6 +12364,22 @@ function dScenario(courseKey,i,total,av){
       `${yd} yards, fully exposed with the wind whipping. Flight a knockdown to take the wind out of it, or ride a stock shot at the flag?`,
       'Ride a stock shot at it', 'A great look if the wind holds off, at its mercy if not',
       'Knockdown to the middle', 'Flight it low, take the gust out, two-putt par'));
+  // ---------- extra variety templates (CS276) ----------
+  if(type==='app4'||type==='tee3'){
+    T.push(S2(`${yd} yds · a gettable pin`,
+      `${yd} yards to a receptive green, the pin sitting in a gather. This is a green-light birdie chance — do you take dead aim, or bank the two-putt?`,
+      'Go pin-hunting', 'A real birdie chance if you flush it, short-side if you push it',
+      'Middle of the green', 'Guarantee a putt at birdie, no risk of worse'));
+    T.push(S2(`${yd} yds · spin it or release it`,
+      `${yd} yards, the pin cut just over the front edge. Nip a high spinner that checks fast, or land it past and spin it back?`,
+      'Fire the high spinner', 'Stops on a dime if pured, into the front trouble if you catch it thin',
+      'Land past, let it feed back', 'Safer landing zone, leaves a longer putt'));
+  }
+  if(type==='app4'||type==='drive4'||type==='short4')
+    T.push(S2(`${yards} yds · position or power`,
+      `Off the tee: rip driver and leave a wedge but bring ${hazWord} into play, or hit a controlled 3-wood to take the trouble out and accept a longer iron in?`,
+      'Rip driver, wedge in', `Short iron if it finds the short grass, but ${hazWord} lurks`,
+      'Stinger 3-wood for position', 'Longer approach, but dead safe off the tee', false, 'tee'));
   // ---------- situational decisions (late, behind/ahead of the tour average) ----------
   const holesLeft=18-i, pace=av*(i/18), diff=Math.round(total-pace);
   if(holesLeft<=5 && diff>=2)
@@ -12349,12 +12417,33 @@ function dLegend(){
 // A real pop-up presenting a signature-hole decision: the situation + the two options, over a dimmed
 // course. position:fixed so it never shifts the page underneath (owner: an exciting, attention-drawing
 // pop-up). `pick(agg)` runs the chosen line.
+// CS276: in a career Moment, a shot decision carries real weight — surface a live pressure line (the stage,
+// your standing) so the call feels like it matters, then applyMomentStakes rewards how it turns out.
+function momentStakesLine(i){
+  if(!S.moment) return '';
+  const ce=S.curEvt, major=S.moment.major, holesLeft=18-i;
+  let posTxt='';
+  try{
+    if(ce && ce.players){
+      const thr=S.dailyHoles.length, myTot=S.dailyHoles.reduce((s,h)=>s+h.toPar,0);
+      const rows=ce.players.filter(o=>o.made).map(o=>({you:!!o.p.you, tp:o.p.you?(o.total+myTot):(o.total+(o._r4sim||0)*thr/18)})).sort((a,b)=>a.tp-b.tp);
+      const meIdx=rows.findIndex(r=>r.you);
+      if(meIdx===0){ const gap=rows.length>1?Math.round(rows[1].tp-rows[0].tp):0; posTxt=gap>=1?`You lead by ${gap}`:`You share the lead`; }
+      else if(meIdx>0){ const back=Math.round(rows[meIdx].tp-rows[0].tp); posTxt=back<=0?`Tied for the lead`:`${back} back · T${meIdx+1}`; }
+    }
+  }catch(e){}
+  const stage = major?'A MAJOR on the line':'The title on the line';
+  const late = holesLeft<=3?' coming home':'';
+  return `🔥 ${stage}${late}${posTxt?' · '+posTxt:''} — the gallery holds its breath`;
+}
 function dDecisionModal(holeLine, subLine, sc, pick){
   const ov=$(`<div class="decisionov"></div>`);
   const card=$(`<div class="decisioncard" role="dialog" aria-modal="true"></div>`);
+  const stakes = S.moment ? momentStakesLine(S.dailyHoles.length) : '';
   card.appendChild($(`<div class="dc-flag">⛳ Your call</div>`));
   card.appendChild($(`<div class="dc-hole">${esc(holeLine)}</div>`));
   if(subLine) card.appendChild($(`<div class="dc-sub">${esc(subLine)}</div>`));
+  if(stakes) card.appendChild($(`<div class="dc-stakes">${esc(stakes)}</div>`));
   if(sc.sit) card.appendChild($(`<div class="dc-sit">${esc(sc.sit)}</div>`));
   card.appendChild($(`<div class="dc-tag">${esc(sc.tag)}</div>`));
   card.appendChild($(`<div class="dc-prompt">${esc(sc.prompt)}</div>`));
@@ -12472,7 +12561,15 @@ function scrDailyRound(){
       const big=ace?'HOLE-IN-ONE!':esc(dResultLong(lh.par,lh.toPar)).toUpperCase();
       // the number next to the result is where you STAND in the round (running to-par), not the hole's
       // strokes (owner: "that should say birdie −3", i.e. my score, not −1 for the hole)
-      shell.appendChild($(`<div class="hvob hvresult" style="border-color:${col}"><span class="rn" style="color:${col}">${big}</span><span class="rs" style="color:${col}">${dtp(total)}</span></div>`));
+      // CS276: in a career Moment, if this hole was a bold/safe CALL, say how it turned out (the decision had stakes)
+      let boldSub='';
+      if(S.moment && lh.attack!=null){
+        const under=lh.toPar<0, over=lh.toPar>0;
+        const bl = lh.attack===true ? (under?['The gamble pays off','#35d6a0']:over?['The gamble backfires','#E14A33']:['Bold call, no harm done','#e0c060'])
+                                    : (under?['Smart golf rewarded','#35d6a0']:over?['Even the safe play leaked','#e0a53a']:['Right call, clean par','#8fd0c0']);
+        boldSub=`<div class="rsub" style="color:${bl[1]}">${bl[0]}</div>`;
+      }
+      shell.appendChild($(`<div class="hvob hvresult" style="border-color:${col}"><span class="rn" style="color:${col}">${big}</span><span class="rs" style="color:${col}">${dtp(total)}</span>${boldSub}</div>`));
     }
     if(latest){   // the scoreboard is ALWAYS shown on the live window (owner: it must never disappear, even
       // during the holed-result pill — the pill floats over the center, the board stays put top-corner)
