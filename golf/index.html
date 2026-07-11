@@ -139,6 +139,14 @@ window.GA_ID='G-L29P5MRWKE';
      match-by-match session cards below it scroll, so the score never leaves view. */
   .cupsticky{position:sticky; top:0; z-index:6; margin:0 -16px 4px; padding:calc(8px + env(safe-area-inset-top, 0px)) 16px 6px;
     background:#06200f; border-bottom:1px solid var(--line); box-shadow:0 8px 14px -10px rgba(0,0,0,.55)}
+  /* CS296: on mobile, pin the team-cup controls to the bottom of the viewport so you don't scroll the whole
+     28-match list to reach Next match / Auto Sim / Skip. Desktop keeps them in-flow. */
+  .cupctrl{max-width:560px; margin:6px auto 0}
+  @media(max-width:700px){
+    .cupctrl{position:sticky; bottom:0; z-index:6; max-width:none; margin:10px -16px 0;
+      padding:10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
+      background:#06200f; border-top:1px solid var(--line); box-shadow:0 -8px 16px -10px rgba(0,0,0,.6)}
+  }
   .cols{display:grid; grid-template-columns:1fr 1fr; gap:24px; align-items:start}
   .col{min-width:0}
   /* align-items:stretch (overriding .cols' :start) so the avatar column's own box spans the full
@@ -8812,8 +8820,8 @@ function scrTeamCup(){
     add(card);
   });
 
-  // controls
-  const ctrl=$(`<div style="max-width:560px;margin:6px auto 0"></div>`);
+  // controls (CS296: sticky to the bottom of the viewport on mobile)
+  const ctrl=$(`<div class="cupctrl"></div>`);
   if(!allDone){
     const next=flat[matchN];
     const b=$(`<button class="btn red">Next match ▸<span class="sub">Day ${next.sess.day} · ${esc(next.sess.title)} · match ${next.mi+1}</span></button>`);
