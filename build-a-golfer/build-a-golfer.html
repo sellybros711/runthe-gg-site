@@ -141,6 +141,9 @@ window.GA_ID='G-L29P5MRWKE';
      row height, matching the (taller) customization column, without this, a position:sticky child
      has no room to travel and just scrolls away with the rest of the row instead of staying put. */
   .setup-cols{grid-template-columns:0.85fr 1fr; max-width:840px; margin:0 auto; align-items:stretch}
+  /* sticky setup avatar — big on desktop, much smaller on phones so it doesn't eat the screen while scrolling */
+  .avatarfig.fullbody.av-setup-full{height:min(56vh,520px)}
+  @media(max-width:700px){ .avatarfig.fullbody.av-setup-full{height:min(34vh,300px)} }
   @media(max-width:860px){
     .cols{grid-template-columns:1fr; gap:16px} .seasoncols .scorecol{order:-1}
     /* Stacked single-column layout breaks the row-sharing trick above (each column becomes its own
@@ -5183,7 +5186,7 @@ function scrSetup(){
   // scrolls up underneath it, without one, the swatches/rows behind would show through.
   const full=sbSignedIn();
   const f=$(avatarShowHTML());
-  if(full){ f.style.height='min(58vh,520px)'; f.style.filter='drop-shadow(0 8px 18px rgba(0,0,0,.5))'; }
+  if(full){ f.classList.add('av-setup-full'); f.style.filter='drop-shadow(0 8px 18px rgba(0,0,0,.5))'; }
   else { f.style.width='184px'; f.style.height='184px'; f.style.filter='drop-shadow(0 7px 16px rgba(0,0,0,.45))'; }
   const figwrap=$(`<div style="display:flex;justify-content:center;position:sticky;top:8px;z-index:3;padding:10px 0 14px;margin:0 -16px;background:#06200f;border-bottom:1px solid var(--line)"></div>`); figwrap.appendChild(f); left.appendChild(figwrap);
 

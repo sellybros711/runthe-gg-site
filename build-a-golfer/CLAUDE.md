@@ -6531,6 +6531,16 @@ allows Google Fonts, or self-host Anton.*
   "15 years left" (career) and "9 seasons left" (circuit) with the right title/buttons; zero page errors.
   Deployed to /golf.
 
+- **CS259 — setup avatar no longer eats the phone screen (owner: "golfer is way too big when scrolling on
+  phone, takes up almost the whole screen").** The sticky full-body avatar on the "Create your golfer"
+  screen was `min(58vh,520px)` tall for everyone, so on a phone it dominated the viewport while the options
+  scrolled beneath it. Replaced the inline height with a responsive class `.avatarfig.fullbody.av-setup-full`:
+  `min(56vh,520px)` on desktop (unchanged), `min(34vh,300px)` on phones (`@media max-width:700px`). Needed
+  the three-class selector to beat the existing `.avatarfig.fullbody{height:auto}` rule (a single-class rule
+  lost on specificity and collapsed the canvas to its 1400px intrinsic height — caught in Playwright).
+  Verified: phone 390×844 → 287px (34vh), desktop 1200×900 → 504px (56vh), zero page errors. Deployed to
+  /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
