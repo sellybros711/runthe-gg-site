@@ -6349,6 +6349,7 @@ function startSeason(majorsOnly){
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0,toPar:0,rounds:0}]))};
   S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0; S.seasonRank=null;
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false; S._impactShown=false;   // unlocked during THIS season (shown on the summary)
+  S._bannerNet=null;   // CS284: reset the banner Net count-up baseline so a new season's first render doesn't animate from the prior season's net
   if(S.career && S.career.story){ S.career.story.seasonCount=0; }   // reset the per-season storyline cap (CS225)
   S.season.stops=0; S.season.momentsShown=0;   // shared interruption budget (max 4 pop-ups/season)
   if(!S.daily && !S.circuitMode && S.career){   // CS226 momentum: carry confidence over with gentle reversion; snapshot followers for the season delta
@@ -8721,19 +8722,27 @@ function scrSeason(){
   const conf=(S.season&&S.season.confidence!=null)?S.season.confidence:50;
   const confCol=confColor(conf);   // CS281: show the confidence RATING (number + colour) instead of a Form label
   const netShort=(ec.net>=0?'+':'−')+fmtShort(Math.abs(ec.net));
-  add($(`<div class="careerbanner">
+  const _bnr=$(`<div class="careerbanner">
     <div class="cb-id"><div class="cb-av">${avatarHTML()}</div>
       <div style="min-width:0"><div class="cb-name">${cbName}</div><div class="cb-sub">${cbYr} · Age ${playerAge()}</div></div></div>
     <div class="cb-stats">
       ${!S.daily?`<div class="cb-stat"><div class="k">World</div><div class="v" style="color:var(--gold)">#${wr}</div></div>`:''}
       <div class="cb-stat"><div class="k">Tour</div><div class="v" style="color:var(--gold)">${rankTxt}</div></div>
-      <div class="cb-stat"><div class="k">Net</div><div class="v" style="color:${netCol};font-size:16px">${netShort}</div></div>
+      <div class="cb-stat"><div class="k">Net</div><div class="v" id="cb-net" style="color:${netCol};font-size:16px">${netShort}</div></div>
       <div class="cb-stat"><div class="k">Wins</div><div class="v">${t.wins}</div></div>
       <div class="cb-stat"><div class="k">Top 10</div><div class="v">${t.top10}</div></div>
-      <div class="cb-stat"><div class="k">Cuts</div><div class="v">${t.made}</div></div>
+      <div class="cb-stat"><div class="k">Cuts</div><div class="v">${t.made}/${t.played||0}</div></div>
       <div class="cb-stat"><div class="k">Confidence</div><div class="v" style="color:${confCol}">${Math.round(conf)}</div></div>
     </div>
-  </div>`));
+  </div>`);
+  add(_bnr);
+  // CS284: the Net figure COUNTS UP/DOWN to its new value when it changes (event to event) instead of
+  // snapping suddenly. Fires only when the net actually changed from what was last shown (i.e. right after
+  // an event finalizes), skips the season's very first render (reset in startSeason) and reduced-motion.
+  { const _ne=_bnr.querySelector('#cb-net'), _pr=S._bannerNet;
+    if(_ne && _pr!=null && _pr!==ec.net && !matchMedia('(prefers-reduced-motion:reduce)').matches)
+      _animCount(_ne, _pr, ec.net, v=>(v>=0?'+':'−')+fmtShort(Math.abs(v)), 950);
+    S._bannerNet=ec.net; }
   { const rail=seasonRailNode(); if(rail) add(rail); }
   if(evt.major) add($(`<div class="majorbanner">★ Major Championship ★</div>`));
   // CS241: the live tournament (leaderboard + scorecard) now sits right under the season-stat bar so a
