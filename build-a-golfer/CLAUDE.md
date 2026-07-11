@@ -7023,6 +7023,19 @@ allows Google Fonts, or self-host Anton.*
   with 0 page errors. Deployed to /golf. Tunable: the par-4 driveable threshold (335 yds) + the par-4/par-5
   fairway-hole-out probabilities in `dShotSeq`.
 
+- **CS284 — season banner: Cuts shown as a ratio + Net counts up/down instead of snapping (owner, from a
+  live screenshot).** Two tweaks to the CS264 franchise banner (`scrSeason`):
+  • **Cuts → "made/played".** The Cuts cell showed a bare number ("5"); now it reads `t.made/t.played`
+    (e.g. "15/17" — cuts made out of tournaments played so far), matching the CS281 season-summary strip
+    convention.
+  • **Net counts up/down.** The Net figure used to snap to its new value each event. It now tweens
+    (ease-out, ~950ms) from the previously-shown value to the new one via the existing `_animCount` helper —
+    fires only when the net actually changed (right after an event finalizes), skips the season's very first
+    render (a new `S._bannerNet` baseline, reset in `startSeason` so year N+1 doesn't animate from year N's
+    net), and respects reduced-motion. Verified in Playwright: the Cuts cell renders "12/16", and after an
+    event the Net text animated +$343k → +$618k → +$1.1M over the tween window (start ≠ settled); a
+    phone-width banner screenshot confirms the wider Cuts cell fits cleanly; zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
