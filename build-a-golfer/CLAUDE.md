@@ -6350,6 +6350,37 @@ allows Google Fonts, or self-host Anton.*
   bottom-tab nav, an "Up Next" resume hero for returning careers, sound/haptics polish) — not yet built,
   awaiting picks.
 
+- **CS251 — round-screen restyle to the owner's mockup: gold-panel scoreboard + simple PREV/PLAY/NEXT
+  controls.** Owner sent a mockup from another AI and circled two elements to adopt the STYLE of (keeping our
+  own scoreboard LOCATION): the live scoreboard and a simple bottom control bar; "the simple controls would
+  make our game a lot easier to play and understand." All presentation/UX — the sim, hole view, and score
+  engine are untouched.
+  1. **Scoreboard → one cohesive gold-bordered panel** (was loose translucent chip rows). Restyled
+     `.hvboard`/`.hvbcap`/`.hvbrow` into a single dark panel with a gold border + soft shadow: a left-aligned
+     **THRU n** header, a gold **TARGET x** line, the YOU / TOUR PRO rows (rank · dot · name · score, the YOU
+     row highlighted with a gold-tinted fill + ring), and a **TO BEAT x** footer — matching the mockup.
+     Because the CSS is on the shared board classes, the Moment and online H2H watch/sudden-death boards
+     inherit the same panel style automatically (they keep their own caption/rows, no target/footer). Kept
+     the CS232 bottom-right location + the CS170 live FLIP row-swap animation.
+  2. **Simple bottom control bar** (`dRoundControls()` + `.hvctrl` CSS) replaces the old stack of three ghost
+     buttons (Skip-this-hole / Pause / Skip-to-end). One bar: **◀◀ PREV SHOT** · a big green **PLAY/PAUSE**
+     circle · **NEXT SHOT ▶▶** (crisp inline-SVG icons, no emoji), with a state caption ("Playing your round"
+     / "Paused · tap play to continue" / "Reviewing · Hole n · Shot j of m") and a small "Skip to the end"
+     link. Wired to the existing reveal engine: **PLAY/PAUSE** = `dailyResume`/`dailyPause`; **NEXT** =
+     `dailyNext` (reveal the next shot now while a ball is in flight — keeping the auto pace if playing —
+     else `dailyAdvanceNow` advances to the next hole / triggers the signature decision / finishes, a
+     timer-free mirror of `scheduleDailyAdvance`); **PREV** = `dailyPrev` (pause + open the shot-review one
+     shot back; steps within/across holes when already reviewing). The centre button becomes Resume/Back in
+     review. The old separate review exit button was removed (the bar's centre handles it). Mulligan stays as
+     a secondary button between holes. Shown for every live/review state; the done + momentPO branches keep
+     their existing "Heading to the clubhouse" / "See your round" / playoff handling.
+  Verified in Playwright (practice-mode round): the scoreboard renders the panel with THRU/TARGET/TO BEAT +
+  the highlighted YOU row; the control bar renders PREV/PLAY/NEXT + caption + skip link; PAUSE→"Play",
+  NEXT advances shots then holes (reached hole 3 then 11), NEXT correctly fires a signature-hole decision
+  modal, PREV enters review ("Reviewing · Hole 3 · Shot 1 of 4", centre="Resume"), PLAY resumes, Skip-to-end
+  → dailyresult; the auto path (unchanged) still progresses; zero page errors. Screenshots confirm the
+  scoreboard + control bar match the mockup. Deployed to /golf. Tunable: the `.hvctrl`/`.hvboard` styling.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
