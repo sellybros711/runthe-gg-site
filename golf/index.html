@@ -949,6 +949,7 @@ window.GA_ID='G-L29P5MRWKE';
   .cb-stat .k{font:800 8.5px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
   .cb-stat .v{font-family:var(--mono); font-weight:800; font-size:19px; margin-top:5px; color:var(--oncard); white-space:nowrap}
   @media(max-width:540px){ .cb-stats{width:100%; margin-left:0; justify-content:space-between; gap:8px} .cb-stat{min-width:0} }
+  .cb-meters{flex-basis:100%; width:100%; margin-top:6px; padding-top:11px; border-top:1px solid rgba(255,255,255,.09)}
   .seasonrail{display:flex; gap:7px; overflow-x:auto; padding:1px 0 9px; margin-bottom:10px; -webkit-overflow-scrolling:touch; scrollbar-width:none}
   .seasonrail::-webkit-scrollbar{display:none}
   .srev{flex:0 0 auto; min-width:56px; max-width:96px; border-radius:10px; padding:7px 9px; text-align:center;
@@ -6349,7 +6350,8 @@ function startSeason(majorsOnly){
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0,toPar:0,rounds:0}]))};
   S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0; S.seasonRank=null;
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false; S._impactShown=false;   // unlocked during THIS season (shown on the summary)
-  S._bannerNet=null;   // CS284: reset the banner Net count-up baseline so a new season's first render doesn't animate from the prior season's net
+  S._bannerNet=null; S._confBar=null; S._respBar=null;   // CS284/285: reset the banner count-up + meter-glide baselines so a new season's first render doesn't animate from prior values
+  S._railIdx=null; S._railScroll=null;                   // CS285: reset the season-rail smooth-scroll tracking so a new season snaps to centre (no glide from last season's schedule position)
   if(S.career && S.career.story){ S.career.story.seasonCount=0; }   // reset the per-season storyline cap (CS225)
   S.season.stops=0; S.season.momentsShown=0;   // shared interruption budget (max 4 pop-ups/season)
   if(!S.daily && !S.circuitMode && S.career){   // CS226 momentum: carry confidence over with gentle reversion; snapshot followers for the season delta
@@ -6580,6 +6582,10 @@ function confMeterHTML(conf){ const c=Math.round(conf), col=confColor(c), pct=Ma
   return `<div class="statpill"><div class="lab">Confidence</div>
     <div class="cmeter"><span style="width:${pct}%;background:${col}"></span></div>
     <div class="small" style="color:${col};font-weight:800;letter-spacing:0">${confLabel(c)} · ${c}</div></div>`; }
+function respMeterHTML(r){ r=Math.round(r); const col='#5fd0e0', pct=Math.max(4,Math.min(100,r));
+  return `<div class="statpill"><div class="lab">Respect</div>
+    <div class="cmeter"><span style="width:${pct}%;background:${col}"></span></div>
+    <div class="small" style="color:${col};font-weight:800;letter-spacing:0">${repRespLabel(r)} · ${r}</div></div>`; }
 function momentumNode(){   // live season-screen strip: two-axis reputation + confidence + rival (CS278/CS280)
   if(S.daily || S.circuitMode || !S.career) return null;
   return $(`<div class="scout" style="border-color:#2f6f86;margin:0 0 12px">
@@ -8668,8 +8674,18 @@ function seasonRailNode(){
     else if(i===S.evtIndex){ cls+=' cur'; res='NOW'; }
     rail.appendChild($(`<div class="${cls}" title="${esc(evt.name)}"><div class="en">${evt.major?'★ ':''}${esc(evt.name)}</div><div class="er">${res}</div></div>`));
   });
-  // center the current event in the rail (container-only scroll, never moves the page)
-  requestAnimationFrame(()=>{ try{ const cur=rail.querySelector('.srev.cur'); if(cur&&rail.clientWidth) rail.scrollLeft=Math.max(0, cur.offsetLeft - rail.clientWidth/2 + cur.clientWidth/2); }catch(e){} });
+  // Center the current event. CS285: glide SMOOTHLY when the schedule ADVANCES (event to event) so the
+  // calendar reads as a clean scroll; on a same-event re-render (the many mid-round redraws) snap straight
+  // to centre so it never jitters. Container-only scroll, never moves the page. Reduced-motion = snap.
+  requestAnimationFrame(()=>{ try{
+    const cur=rail.querySelector('.srev.cur'); if(!cur||!rail.clientWidth) return;
+    const target=Math.max(0, cur.offsetLeft - rail.clientWidth/2 + cur.clientWidth/2);
+    const advanced=(S._railIdx!=null && S._railIdx!==S.evtIndex);
+    const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+    if(advanced && !reduce){ rail.scrollLeft=(S._railScroll!=null?S._railScroll:target); rail.scrollTo({left:target,behavior:'smooth'}); }
+    else rail.scrollLeft=target;
+    S._railIdx=S.evtIndex; S._railScroll=target;
+  }catch(e){} });
   return rail;
 }
 function scrSeason(){
@@ -8720,8 +8736,15 @@ function scrSeason(){
   const cbName=esc(S.season.me.name||S.name||'Your Golfer');
   const cbYr=S.circuitMode?('Legend Circuit · Yr '+Math.max(1,(S.year||1)-30)):('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS);
   const conf=(S.season&&S.season.confidence!=null)?S.season.confidence:50;
-  const confCol=confColor(conf);   // CS281: show the confidence RATING (number + colour) instead of a Form label
   const netShort=(ec.net>=0?'+':'−')+fmtShort(Math.abs(ec.net));
+  // CS285: Confidence is now a HORIZONTAL meter (fits the wrapped second-row space better than a number),
+  // with the Respect meter below it — both career-only (the reputation system is off in daily/circuit).
+  const showMeters=!S.daily && !S.circuitMode && S.career;
+  const rspVal=showMeters?repRespect():0;
+  const metersHTML=showMeters?`<div class="cb-meters">
+      <div class="cb-conf">${confMeterHTML(conf)}</div>
+      <div class="cb-resp" style="margin-top:9px">${respMeterHTML(rspVal)}</div>
+    </div>`:'';
   const _bnr=$(`<div class="careerbanner">
     <div class="cb-id"><div class="cb-av">${avatarHTML()}</div>
       <div style="min-width:0"><div class="cb-name">${cbName}</div><div class="cb-sub">${cbYr} · Age ${playerAge()}</div></div></div>
@@ -8732,17 +8755,25 @@ function scrSeason(){
       <div class="cb-stat"><div class="k">Wins</div><div class="v">${t.wins}</div></div>
       <div class="cb-stat"><div class="k">Top 10</div><div class="v">${t.top10}</div></div>
       <div class="cb-stat"><div class="k">Cuts</div><div class="v">${t.made}/${t.played||0}</div></div>
-      <div class="cb-stat"><div class="k">Confidence</div><div class="v" style="color:${confCol}">${Math.round(conf)}</div></div>
     </div>
+    ${metersHTML}
   </div>`);
   add(_bnr);
   // CS284: the Net figure COUNTS UP/DOWN to its new value when it changes (event to event) instead of
   // snapping suddenly. Fires only when the net actually changed from what was last shown (i.e. right after
   // an event finalizes), skips the season's very first render (reset in startSeason) and reduced-motion.
-  { const _ne=_bnr.querySelector('#cb-net'), _pr=S._bannerNet;
-    if(_ne && _pr!=null && _pr!==ec.net && !matchMedia('(prefers-reduced-motion:reduce)').matches)
+  { const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+    const _ne=_bnr.querySelector('#cb-net'), _pr=S._bannerNet;
+    if(_ne && _pr!=null && _pr!==ec.net && !reduce)
       _animCount(_ne, _pr, ec.net, v=>(v>=0?'+':'−')+fmtShort(Math.abs(v)), 950);
-    S._bannerNet=ec.net; }
+    S._bannerNet=ec.net;
+    // CS285: the Confidence / Respect meter bars GLIDE to their new width when they change (reusing the
+    // .cmeter width transition), matching the polished feel of the count-up. Snaps on the first render.
+    if(showMeters){ const glide=(cls,key,val)=>{ const sp=_bnr.querySelector('.'+cls+' .cmeter>span'); const pw=Math.max(4,Math.min(100,val));
+        if(sp){ const prev=S[key]; if(!reduce && prev!=null && prev!==val){ sp.style.width=Math.max(4,Math.min(100,prev))+'%'; requestAnimationFrame(()=>requestAnimationFrame(()=>{ if(sp.isConnected) sp.style.width=pw+'%'; })); } }
+        S[key]=val; };
+      glide('cb-conf','_confBar',Math.round(conf)); glide('cb-resp','_respBar',Math.round(rspVal)); }
+    else { S._confBar=null; S._respBar=null; } }
   { const rail=seasonRailNode(); if(rail) add(rail); }
   if(evt.major) add($(`<div class="majorbanner">★ Major Championship ★</div>`));
   // CS241: the live tournament (leaderboard + scorecard) now sits right under the season-stat bar so a
