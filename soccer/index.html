@@ -814,15 +814,23 @@
      each 2-up card awkwardly wide */
   @media (min-width:520px){ .grid{grid-template-columns:repeat(3,1fr);} }
   .pcard{
-    position:relative;
+    position:relative;overflow:hidden;
     border:1.5px solid var(--border-soft);border-radius:10px;background:var(--white);
-    padding:5px 7px 7px;box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);transition:transform .1s ease, box-shadow .1s ease;
+    padding:5px 7px 7px 11px;box-shadow:0 4px 10px rgba(var(--shadow-rgb),.24);transition:transform .1s ease, box-shadow .1s ease;
     text-align:left;color:var(--ink);display:flex;flex-direction:column;gap:1px;
     min-height:60px;            /* uniform height, sized so 2-line names fit too */
   }
+  /* position-coloured accent down the leading edge (matches the reveal + tokens) */
+  .pcard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+    background:var(--pos,#c9bdae);}
   .pcard:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--shadow-col);}
   .pcard:disabled{opacity:.34;filter:grayscale(.7);box-shadow:none;}
   .pcard.taken{opacity:.5;filter:grayscale(.55);}
+  /* the single best available player on the board (easy mode): a subtle gold halo
+     + a leading star, a "top pick on the board right now" cue */
+  .pcard.best{border-color:var(--gold);box-shadow:0 0 0 1.5px var(--gold),0 4px 12px rgba(var(--shadow-rgb),.28);}
+  .pcard .best-star{color:var(--gold);font-size:11px;margin-right:2px;vertical-align:1px;
+    text-shadow:0 0 1px var(--ink);flex:0 0 auto;}
   .drafted-tag{position:absolute;right:7px;bottom:5px;font-weight:900;font-size:9px;letter-spacing:.5px;
     text-transform:uppercase;color:#fff;background:var(--teal);border-radius:5px;padding:2px 6px;}
   .pcard .ptop{display:flex;justify-content:space-between;align-items:center;gap:6px;}
@@ -5336,17 +5344,26 @@ function renderGrid(squad){
     return hard ? (surnameOf(a.name).localeCompare(surnameOf(b.name)) || a.name.localeCompare(b.name))
                 : ((ov(b)-ov(a)) || a.name.localeCompare(b.name));
   });
+  // the single strongest player you can still pick right now — a "top pick on the
+  // board" cue. Easy mode only (hard hides ratings, so no rating-based hint).
+  let bestId=null;
+  if(!hard){
+    const pickable=squad.filter(p=>available(p));
+    if(pickable.length) bestId=pickable.reduce((a,b)=>ov(b)>ov(a)?b:a).player_id;
+  }
   sorted.forEach(p=>{
     const elig=eligibleSlotsFor(p);
     const taken = pickedIds.has(p.player_id);
     const btn=document.createElement('button');
     // hard mode = blind pick: don't flag captains until the reveal
     const showCap = p.is_captain && gameMode!=='hard';
-    btn.className='pcard'+(taken?' taken':'')+(showCap?' cap':'');
+    const isBest = p.player_id===bestId;
+    btn.className='pcard'+(taken?' taken':'')+(showCap?' cap':'')+(isBest?' best':'');
+    btn.style.setProperty('--pos', PITCH_COLORS[p.position]||'#c9bdae'); // position accent
     btn.disabled = elig.length===0 || taken; // grey out & block re-picking
     btn.innerHTML=`
       <div class="ptop">
-        <span class="nm">${p.name}</span>
+        <span class="nm">${isBest?'<span class="best-star" title="Top pick available">★</span>':''}${p.name}</span>
         <span class="posbadge ${p.position}">${p.position}</span>
       </div>
       <div class="pbottom">
