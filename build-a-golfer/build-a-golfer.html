@@ -6502,7 +6502,7 @@ function momentPopup(ce, info){
     </div></div>`);
   const btns=ov.querySelector('.mbtns');
   const playCoins=sbSignedIn()?momentPlayCoins(evt):0;   // CS288: playing earns bonus coins; simming forfeits them
-  const play=$(`<button class="btn goldfill" style="font-size:16px;padding:15px">⛳ Play the final round<span class="sub">Hole by hole, every decision is yours${playCoins?` · <b style="color:#7a4a00">+${playCoins} coins</b>`:''}</span></button>`);
+  const play=$(`<button class="btn goldfill" style="font-size:16px;padding:15px">⛳ Play the final round<span class="sub">Hole by hole, make the crucial decisions${playCoins?` · <b style="color:#7a4a00">+${playCoins} coins</b>`:''}</span></button>`);
   play.onclick=()=>{ ov.remove(); track('moment_play',{evt:evt.name,major:!!evt.major}); startMomentRound(ce, info); };
   const sim=$(`<button class="btn ghost">Continue simulation ▸${playCoins?`<span class="sub">Skip playing — you'll forfeit the +${playCoins} bonus coins</span>`:''}</button>`);
   sim.onclick=()=>{ ov.remove(); track('moment_sim',{evt:evt.name}); render(); };
