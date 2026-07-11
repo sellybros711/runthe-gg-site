@@ -260,6 +260,21 @@ window.GA_ID='G-L29P5MRWKE';
   .sp-opt:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
   .sp-opt .sp-acc{height:4px;width:100%}
   @media (prefers-reduced-motion:reduce){ .flashbulb{animation:none!important;display:none} .sp-opt{transition:none} }
+  /* CS291 press-reaction feed — fan tweets + a headline + an occasional opponent quote */
+  .pbuzz{margin-top:12px;text-align:left}
+  .pb-hd{font:800 9.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:#7fa8b8;margin:0 0 8px}
+  .pb-tweet{display:flex;gap:9px;padding:9px 10px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:rgba(9,26,38,.55);margin-bottom:7px}
+  .pb-av{flex:0 0 auto;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 13px/1 var(--body);color:#06131c}
+  .pb-b{min-width:0;flex:1}
+  .pb-name{font:800 12.5px/1.15 var(--body);color:#eef4f7}
+  .pb-name .h{color:#7fa8b8;font-weight:600}
+  .pb-time{color:#5f7f8e;font-weight:600}
+  .pb-tx{color:#dbe7ee;font-size:13.5px;line-height:1.35;margin-top:3px;word-wrap:break-word}
+  .pb-meta{color:#6f8f9e;font-size:11px;margin-top:5px;display:flex;gap:14px}
+  .pb-opp{display:flex;gap:9px;padding:9px 10px;border:1px solid rgba(255,90,77,.32);border-radius:12px;background:rgba(40,14,12,.4);margin-bottom:7px}
+  .pb-hl{border:1px solid rgba(235,166,31,.4);border-left:4px solid var(--gold);border-radius:10px;padding:10px 12px;background:rgba(235,166,31,.08);margin-top:2px}
+  .pb-outlet{font:800 9px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
+  .pb-hltx{color:#fff;font:800 15px/1.25 var(--body)}
   @keyframes celebSpot{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
   @media (prefers-reduced-motion:reduce){ .celebrate,.celeb-trophy,.celeb-kicker,.celeb-title,.celeb-sub,.celeb-cheque,.celeb-tally,.celeb-actions,.celebrate .spot{animation-duration:.01ms} }
   .btn:disabled{opacity:.45; cursor:not-allowed}
@@ -6607,11 +6622,11 @@ function momentPopup(ce, info){
    a career PERSONA (traits), can grant a small one-event confidence perk, and is logged to a "Career
    Story" feed shown on the season summary + career end. Interactive CAREER play only (never daily,
    circuit, or headless). The ONLY sim effect is a tiny, capped composure boost consumed in beginEvent. */
-const STORY_CONF_CAP=0.8, STORY_PER_SEASON=2, STORY_GAP=2;
+const STORY_CONF_CAP=0.8, STORY_PER_SEASON=3, STORY_GAP=2;
 // Interruption budget (owner): a season is a SIMULATOR for anyone, not just golf fans — cap the total
 // number of times the sim pauses for a pop-up (storyline + Moment) at 4/season so casual users aren't
 // nagged into skipping. Moments (play-the-final-round) are prioritized within that budget over storylines.
-const SEASON_STOP_BUDGET=4, MOMENT_PER_SEASON=3;
+const SEASON_STOP_BUDGET=5, MOMENT_PER_SEASON=3;
 function seasonStops(){ return (S.season&&S.season.stops)||0; }
 function seasonStopLeft(){ return SEASON_STOP_BUDGET - seasonStops(); }
 function careerStory(){ const c=(S.career=S.career||{}); if(!c.story) c.story={traits:{}, endorsements:0, fan:0, feed:[], lastBeat:-99, seasonCount:0, seenEvt:{}};
@@ -7021,6 +7036,70 @@ const PRESS_MIC=`<svg viewBox="0 0 24 32" width="30" height="40" aria-hidden="tr
   <path d="M5.5 12.5a6.5 6.5 0 0 0 13 0" fill="none" stroke="#7fa8b8" stroke-width="1.7" stroke-linecap="round"/>
   <line x1="12" y1="19" x2="12" y2="26" stroke="#7fa8b8" stroke-width="1.7" stroke-linecap="round"/>
   <line x1="7.5" y1="27" x2="16.5" y2="27" stroke="#7fa8b8" stroke-width="1.7" stroke-linecap="round"/></svg>`;
+/* CS291 — after a press answer, show the WORLD reacting: fan tweets, a headline, and an occasional
+   opponent quote, tone-matched to the choice (bold / humble / gritty / backfired / neutral). Real,
+   relatable "tweets & headlines" so the press conference feels authentic and shareable. Avoids the
+   theme-mapped emoji (⚔🐐🔥🎯 + arrows) so nothing renders as an SVG icon mid-sentence. */
+const PB_HANDLES=['birdiebandit','fairway_frank','teeboxtina','the19thholer','greengrass_gg','sundaycharge','pin_seeker','bogeyfreebri','driverdanny','claretchaser','the_backnine','golfgremlin','albatross_al','mulliganmax','flagstickfan'];
+const PB_OUTLETS=['Tour Report','The Clubhouse','Fairway Wire','Global Golf Daily','The Back Nine','Pin High','Bunker & Blade','The Range Finder'];
+const PB_AVCOL=['#5fd0e0','#35d6a0','#ffd45e','#ff9d6b','#c9a6ff','#7fd0a0','#f18fb0','#8fb8ff'];
+const PB_NAMES=['Kellan Vance','Rory Dax','Miko Sato','Andre Cole','Tuomas Vire','Beau Ramsey','Nils Berg','Cade Whitlock'];
+const PB_TONES={
+  bold:{ tw:['ok {you} said WHAT 😤 the confidence is unreal','{you} looked the cameras dead in the eye: “{quote}” 💀 iconic','the swagger on {you} is different. sign me UP 🙌','not {you} calling their shot 👀 love to see it','{you} is the main character of this tour and it is not close'],
+    hd:['{you} sends a message at {evt}: “{quote}”','All swagger: {you} owns the room at {evt}','{you} turns up the volume ahead of {evt}'],
+    op:['Respect the confidence. We will see it on the course.','Talk is easy out here. I will let my clubs answer.'] },
+  humble:{ tw:['the humility from {you} 🫡 what a pro','{you} deflecting all the credit… class act honestly','love how grounded {you} stays. easy to root for','no ego with {you}, just the work 🤝'],
+    hd:['{you} stays grounded at {evt}: “{quote}”','Class act: {you} keeps it humble before {evt}','All business, no ego — {you} at {evt}'],
+    op:['Always been a class act. Good guy to compete against.','That is the one we all respect out here.'] },
+  gritty:{ tw:['{you} with the ice in the veins 🥶 built different','that steel from {you}… “{quote}” 💪','{you} does not flinch. love this for the sport','quiet-killer energy from {you} 👀'],
+    hd:['{you} unshaken at {evt}: “{quote}”','Steady hand: {you} keeps composure heading into {evt}','{you} means business at {evt}'],
+    op:['Tough competitor. Never gives you anything.','You have to earn it against {you}. Always.'] },
+  bad:{ tw:['oof {you} that was NOT the read 😬','the clip of {you} saying “{quote}” is everywhere for the wrong reasons 💀','yikes. someone get {you} a media coach 😭','not {you} handing the whole locker room bulletin-board material 👀'],
+    hd:['{you} stumbles at the {evt} podium: “{quote}”','Backlash builds after {you}’s {evt} remarks','{you} on the defensive after {evt} comments'],
+    op:['Saw the comments. That is extra motivation for all of us.','New bulletin-board quote, thanks to {you}.'] },
+  neutral:{ tw:['{you} handled that one like a vet','solid answer from {you}, nothing to see here','{you} keeping it steady at the podium 🫡','fair enough from {you}. on to the golf'],
+    hd:['{you} faces the media at {evt}','{you} weighs in ahead of {evt}','Podium notes: {you} at {evt}'],
+    op:[] }
+};
+function pbTone(ch, backfired){
+  if(backfired) return 'bad';
+  const tr=ch&&ch.tr;
+  if(tr==='brash'||tr==='showman'||tr==='fanFav') return 'bold';
+  if(tr==='humble') return 'humble';
+  if(tr==='gritty'||tr==='confident'||tr==='clutch') return 'gritty';
+  return 'neutral';
+}
+function pbFill(tpl, v){ return tpl.replace(/\{you\}/g,v.you).replace(/\{rival\}/g,v.rival).replace(/\{evt\}/g,v.evt).replace(/\{quote\}/g,v.quote); }
+function pbPick(a){ return a[Math.floor(Math.random()*a.length)]; }
+function pressBuzz(ch, beat, ctx, backfired){
+  const you=dShort((S.season&&S.season.me&&S.season.me.name)||S.name||'You');
+  const quoteRaw=String((typeof ch.t==='function')?ch.t(ctx):ch.t).replace(/[“”"]/g,'').trim();
+  const v={you, rival:ctx.rivalName||pbPick(PB_NAMES), evt:ctx.upName||'the event', quote:quoteRaw};
+  const T=PB_TONES[pbTone(ch, backfired)]||PB_TONES.neutral;
+  // 2 fan tweets (unique), 1 headline, ~45% an opponent quote
+  const pool=T.tw.slice(); const tweets=[];
+  for(let i=0;i<2 && pool.length;i++){ const idx=Math.floor(Math.random()*pool.length); tweets.push(pbFill(pool.splice(idx,1)[0], v)); }
+  const handles=PB_HANDLES.slice();
+  const rows=tweets.map(tx=>{ const h=handles.splice(Math.floor(Math.random()*handles.length),1)[0];
+    return {handle:h, color:pbPick(PB_AVCOL), time:pbPick(['2m','4m','7m','11m','18m','24m']), likes:120+Math.floor(Math.random()*4800), tx}; });
+  const headline={outlet:pbPick(PB_OUTLETS), text:pbFill(pbPick(T.hd), v)};
+  let opp=null;
+  if(T.op.length && Math.random()<0.45) opp={name:v.rival, tx:pbFill(pbPick(T.op), v)};
+  return {rows, headline, opp};
+}
+function fmtLikes(n){ return n>=1000?(n/1000).toFixed(1).replace(/\.0$/,'')+'K':String(n); }
+function pressBuzzHTML(bz){
+  const tweet=(r)=>`<div class="pb-tweet"><div class="pb-av" style="background:${r.color}">${esc(r.handle[0].toUpperCase())}</div>
+    <div class="pb-b"><div class="pb-name">@${esc(r.handle)} <span class="h">· <span class="pb-time">${r.time}</span></span></div>
+      <div class="pb-tx">${esc(r.tx)}</div>
+      <div class="pb-meta"><span>♥ ${fmtLikes(r.likes)}</span><span>↺ ${Math.floor(r.likes/6)}</span></div></div></div>`;
+  const opp=bz.opp?`<div class="pb-opp"><div class="pb-av" style="background:#ff8f7e">${esc(bz.opp.name[0].toUpperCase())}</div>
+    <div class="pb-b"><div class="pb-name">${esc(bz.opp.name)} <span class="h">· a rival responds</span></div>
+      <div class="pb-tx">“${esc(bz.opp.tx)}”</div></div></div>`:'';
+  return `<div class="pbuzz"><div class="pb-hd">The reaction · online &amp; in print</div>
+    ${bz.rows.map(tweet).join('')}${opp}
+    <div class="pb-hl"><div class="pb-outlet">${esc(bz.headline.outlet)}</div><div class="pb-hltx">${esc(bz.headline.text)}</div></div></div>`;
+}
 function showStoryline(sb){
   const {beat, ctx}=sb, story=careerStory();
   if(S.season) S.season.stops=(S.season.stops||0)+1;   // count against the shared interruption budget
@@ -7060,7 +7139,7 @@ function showStoryline(sb){
     const riskTag = ch.risk ? `<span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font:800 9px/1 var(--body);letter-spacing:.08em;color:#ff8f7e;border:1px solid rgba(255,90,77,.5);border-radius:999px;padding:3px 7px;text-transform:uppercase">⚡ Risky</span>` : '';
     const b=$(`<button class="btn ghost" style="text-align:left;padding-left:36px;padding-right:${ch.risk?'78px':'14px'};position:relative">
       <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#5fd0e0;font-size:15px">“</span>
-      ${esc(ch.t)}${ch.s?`<span class="sub">${esc(ch.s)}</span>`:''}${riskTag}</button>`);
+      ${esc(T(ch.t))}${ch.s?`<span class="sub">${esc(T(ch.s))}</span>`:''}${riskTag}</button>`);
     b.onclick=()=>{
       // apply — capture before/after momentum for the on-screen deltas
       const conf0=seasonConf(), fol0=story.followers||0, fans0=repFans(), resp0=repRespect();
@@ -7074,7 +7153,7 @@ function showStoryline(sb){
         gainFollowers(-(ch.folBad!=null?ch.folBad:0.05), 0);   // lose ~5% of your following
         reaction = T(ch.rBad) || 'It lands badly. The clip is everywhere for the wrong reasons and the room turns on you.';
         headline = T(ch.headBad) || ((T(ch.head)||T(beat.title))+' — and it backfired');
-        track('storyline_backfire',{id:beat.id, choice:ch.t});
+        track('storyline_backfire',{id:beat.id, choice:String(T(ch.t))});
       } else {
         if(ch.tr) story.traits[ch.tr]=(story.traits[ch.tr]||0)+1;
         personaNew=(ch.tr && story.traits[ch.tr]===2 && STORY_PERSONA[ch.tr]) ? STORY_PERSONA[ch.tr] : null;   // CS275: trait just hit the persona threshold
@@ -7095,7 +7174,7 @@ function showStoryline(sb){
       const rd=repApplyChoice(ch, backfired);
       const personaShift = repPersona()!==persona0 ? repPersona() : null;
       story.feed.unshift({year:S.year||1, evt:ctx.upName, text:headline}); if(story.feed.length>60) story.feed.length=60;
-      track('storyline_choice',{id:beat.id, choice:ch.t, backfired});
+      track('storyline_choice',{id:beat.id, choice:String(T(ch.t)), backfired});
       const dConf=Math.round(seasonConf()-conf0), dFol=Math.round((story.followers||0)-fol0);
       const dFans=Math.round(repFans()-fans0), dResp=Math.round(repRespect()-resp0);
       // tick the at-stake two-axis meter to its new values (meter width animates via CSS)
@@ -7117,6 +7196,8 @@ function showStoryline(sb){
         <div class="small" style="color:${backfired?'#ff8f7e':'#7fa8b8'};letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:4px">${backfired?'It backfired':'The reaction'}</div>
         <div style="color:#eef4f7">${esc(reaction)}</div>
         ${chips.length?`<div class="small" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px 12px">${chips.join('')}</div>`:''}</div>`));
+      // CS291: the world reacts — fan tweets, a headline, and an occasional opponent quote
+      try{ replyBox.appendChild($(pressBuzzHTML(pressBuzz(ch, beat, ctx, backfired)))); }catch(e){}
       const cont=$(`<button class="btn goldfill">Back to the tournament ▸</button>`);
       cont.onclick=()=>{ ov.remove(); render(); };
       replyBox.appendChild(cont);
