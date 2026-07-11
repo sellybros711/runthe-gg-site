@@ -6698,6 +6698,12 @@ allows Google Fonts, or self-host Anton.*
   destabilising the rest of the UI. Verified in Playwright + screenshot (cream card renders on a 9-hole
   practice round with correct ink colors + gold current-hole, zero page errors). Deployed to /golf.
 
+- **CS272 — reverted the CS271 cream scorecard (owner: "not sure I like the cream scoreboard").** Rolled the
+  daily round strip + result OUT/IN card back to the original dark scorecard styling (removed `.dcardwrap.cream`
+  CSS, the `.cream` class on both surfaces, and the unused `dScoreInk`); scores use `dScoreCol` again. The
+  inert design-foundation tokens added to `:root` in CS271 were left in place (no visual effect). Verified the
+  dark scorecard renders with zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
