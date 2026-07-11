@@ -6442,6 +6442,27 @@ allows Google Fonts, or self-host Anton.*
   leader (−5) sorted correctly, and falls back to the player's own best-of-day (−3) with no global board;
   zero page errors. Screenshot confirms the layout. Deployed to /golf.
 
+- **CS256 — matching hero cards for Daily / Spotlight / Online (owner loved the CS254 resume card, wanted
+  the same for the other primary actions).** A shared `.gcard` component (same polish as `.resumecard` —
+  rounded, soft shadow, kicker + display-italic title + badge + one-line mid + a chip/go row) with three
+  accent themes, replacing the plain title buttons:
+  • **Daily → `dailyHeroCard()` (blue)** — "Daily Challenge / Beat the Pro" with an attempts badge
+    (PLAY / N LEFT / BEATEN ✓ / DONE / PRACTICE), a one-line best/objective, and a chip row that **folds in
+    the streak** (🔥 N-day streak, a hot gold chip + "on the line" when the streak is at risk today, else
+    "Start your streak") + the live "New in HH:MM" countdown + Play ▸. Replaces the separate daily button +
+    countdown line + streak-risk banner; the CS252 streak calendar still renders below it.
+  • **Spotlight → `spotlightHeroCard()` (amber, pulsing)** — "★ Monthly Spotlight / July Spotlight" with a
+    THIS WEEK / N LEFT / WON ✓ badge, the course + conditions, and Play ▸.
+  • **Online → `onlineHeroCard()` (teal)** — "Play Online · NEW / Head to Head" with the 1v1 + Foursomes
+    mode buttons inside (a `<div>` container, since a button can't nest buttons), wired to `openH2H`.
+  All keep the CS210 colour hierarchy (daily blue, online teal, spotlight amber-event, career gold) so the
+  title reads as a cohesive set of premium cards. Reduced-motion disables the spotlight pulse.
+  Verified in Playwright: the daily card renders title/badge/streak-chip (hot when at-risk)/countdown and is
+  clickable; the no-streak state shows "Start your streak"; the spotlight card renders when live (July
+  Spotlight · THIS WEEK); the online card renders Head to Head with both mode buttons wired; the streak
+  calendar still shows below the daily card; zero page errors. Screenshot confirms the four-card layout.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
