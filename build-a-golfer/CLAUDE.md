@@ -6655,6 +6655,33 @@ allows Google Fonts, or self-host Anton.*
   to /golf. Remaining audit follow-ups: Build-a-Golfer live stage, broadcast-recap results (animated
   ResultDeltas), design-token/card-tier foundation.
 
+- **CS266–CS269 — visual-audit batch (owner: "run everything from ChatGPT's list").** Autonomous pass
+  through the remaining high-ROI items of the ChatGPT aesthetic audit, each tested + deployed:
+  • **CS266 — Build-a-Golfer live stage.** The setup avatar is now a proper STAGE: a golden radial
+    spotlight glow behind the golfer, the golfer's name in display-italic ABOVE it, and an elliptical floor
+    shadow beneath (`.avstage`/`.avfloor`). Replaced the inline "Build Your Golfer" button with a **sticky
+    bottom action bar** (`.setup-actionbar`, Back + primary CTA) so the primary action stays reachable while
+    scrolling the kit options. Guest shows "Your Golfer" + the existing locker-room upsell.
+  • **CS267 — Season Impact broadcast card.** Replaced the static World-Ranking box on the season summary
+    with a recap card whose numbers **count up on first view** (ease-out tween, reduced-motion paints final):
+    World Rank prev→now (with ▲/▼), Tour Points gained, Earnings, Net Profit (green/red), + the Tour Card
+    status line. New `_animCount()` + `seasonImpactNode()`; guarded once per summary via `S._impactShown`
+    (reset in startSeason).
+  • **CS268 — leaderboard top-3 podium.** A podium above the ranked list (only on the default best-first
+    view): #1 centred + elevated + gold, #2 left (silver), #3 right (bronze), each with medal icon + name +
+    stat value + golfer. Renders for signed-in and guest views; the full ranked list continues below.
+  • **CS269 — draft skill tiles as cards.** Each skill tile on the draft screen gets a colour-graded
+    **strength bar** along its bottom edge (rating→colour: 90+ gold / 80+ green / 70+ blue / else grey), so
+    the 8 skills of a revealed golfer read like collectible stat cards. Draft-only (off-season tiles
+    unchanged). The progress pips + rarity reel already provided the rest of the "collectible" feel.
+  All presentation-only, using existing data. Verified in Playwright (setup stage + sticky bar signed-in &
+  guest; Season Impact unit + summary integration; podium order #1-centre with 3 medal icons + 6 rows;
+  draft 8 tiles × strength bar; title/screen sweep) + screenshots; zero page errors throughout. Combined
+  with CS264 (career dashboard banner + season rail) and CS265 (career milestone timeline), this covers the
+  audit's top-priority items (Career Hub, Build-a-Golfer stage, results deltas, leaderboard podium). Still
+  open from the audit: a full design-token/card-tier foundation applied site-wide, cream-scorecard surface
+  system, and a modal/nav consistency pass.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

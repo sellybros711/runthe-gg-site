@@ -415,9 +415,11 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes pop{0%{transform:scale(.97)}55%{transform:scale(1.02)}100%{transform:scale(1)}}
   .spinning .name{animation:flick .08s steps(1) infinite} @keyframes flick{50%{opacity:.34}}
   .attrs{display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-top:10px}
-  .attr{display:flex; align-items:center; gap:9px; background:var(--panel);
-    border:1px solid var(--panelb); border-radius:10px; padding:9px 10px 9px 12px; cursor:pointer; text-align:left;
+  .attr{display:flex; align-items:center; gap:9px; background:var(--panel); position:relative;
+    border:1px solid var(--panelb); border-radius:10px; padding:9px 10px 11px 12px; cursor:pointer; text-align:left;
     color:var(--oncard); font:inherit; width:100%; box-shadow:0 4px 12px -10px rgba(0,0,0,.6); transition:transform .05s ease, border-color .12s ease}
+  .attr .attrbar{position:absolute; left:0; right:0; bottom:0; height:3px; background:rgba(255,255,255,.06); border-radius:0 0 10px 10px; overflow:hidden}
+  .attr .attrbar>i{display:block; height:100%; border-radius:0 2px 2px 0}
   .attr .lab{flex:1; font-weight:600; font-size:12px; color:#cfdbe6}
   .attr .val{font-family:var(--mono); font-weight:800; font-size:16px; color:var(--gold)}
   .attr .take{font:800 9px/1 var(--body); letter-spacing:.08em; text-transform:uppercase; color:#04211c;
@@ -6136,8 +6138,9 @@ function scrDraft(){
     CATS.forEach(cat=>{
       const filled=!!S.slots[cat.k];
       const key=dailyKeys&&dailyKeys.has(cat.k);
-      const b=$(`<button class="attr${key?' keyhole':''}" ${filled?'disabled':''} aria-label="${filled?'Already filled: '+cat.short:'Draft '+cat.short+', rated '+S.current[cat.k]+(key?', key skill for today\'s course':'')}">
-        ${key?'<span class="keystar" aria-hidden="true">★</span>':''}<span class="lab">${cat.short}</span><span class="val">${S.current[cat.k]}</span>${filled?'':'<span class="take">Take</span>'}</button>`);
+      const rv=S.current[cat.k], rc=rv>=90?'#d8ad4a':rv>=80?'#49b675':rv>=70?'#7ec8ff':'#9fb0bd';   // CS269 rating→strength colour
+      const b=$(`<button class="attr${key?' keyhole':''}" ${filled?'disabled':''} aria-label="${filled?'Already filled: '+cat.short:'Draft '+cat.short+', rated '+rv+(key?', key skill for today\'s course':'')}">
+        ${key?'<span class="keystar" aria-hidden="true">★</span>':''}<span class="lab">${cat.short}</span><span class="val">${rv}</span><span class="attrbar"><i style="width:${Math.min(100,rv)}%;background:${rc}"></i></span>${filled?'':'<span class="take">Take</span>'}</button>`);
       if(!filled) b.onclick=()=>takeAttr(cat.k);
       grid.appendChild(b);
     });
