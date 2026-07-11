@@ -6552,6 +6552,62 @@ allows Google Fonts, or self-host Anton.*
   Playwright: with a career the stack is gc-blue / resumecard / gc-teal / gc-purple and no New-Career button;
   with no career the gold "Career Mode" button shows; zero page errors. Deployed to /golf.
 
+- **CS261 — Challenges system: Daily Quests + Weekly Challenges + Player Level (XP→coins) + mulli-spins
+  (owner: replaced the disliked weekly streak-freeze reward).** Removed the old `WEEK_GOALS`/`bumpWeekGoals`
+  weekly-goals-→-freeze system entirely and built a proper challenges layer (signed-in feature; guests never
+  accrue). Owner decisions: XP raises a Player Level that pays out Pro Shop coins per level; the weekly reward
+  is a "mulli-spin" (a banked extra spin used when you run out of draft/off-season re-spins).
+  • **Player Level (XP → level → coins).** `bag_xp={xp,mulliEarned,mulliSpent}`. Level curve `xpForLevel(L)=
+    200+(L-1)*40`; `addXp(n)` bumps XP, and a `levelCoinTotal(playerLevel())` term added to `coinsEarnedRaw()`
+    means level-ups flow coins through the existing coin/reconcile/toast pipeline (250 coins per level). XP
+    toast on gain, "Level N!" + fanfare on level-up.
+  • **Daily Quests** (`bag_dailyquests`, reset daily): 3 tasks — Play the Daily · Complete a Career season ·
+    Play a Head to Head match. Finishing all 3 in a day → +120 XP once. Hooked in `finishDailyRound`
+    (daily), the season record block (season), and `h2hCaptureAch` (h2h).
+  • **Weekly Challenges** (`bag_weeklychal`, reset weekly): a deterministic set of 4 drawn from a 12-entry
+    pool — always one career + one online + one daily + an extra, so the week forces all modes. Harder,
+    cross-mode goals (Win 5 majors, Win 10/20 tournaments, Complete 3/5 seasons, Play/Win 3-5 H2H matches,
+    Beat the Pro 3-5×, Play the Daily 5×). Each completed → +250 XP **and a 🌀 mulli-spin**. Metrics
+    incremented at the same hooks (daily plays/beats, season seasons/wins/majors from the season results,
+    h2h matches/wins).
+  • **Mulli-spins** (`mulliSpins()`/`addMulliSpin`/`useMulliSpin`): a "Use a Mulli-Spin · N left" button
+    appears in the career draft AND the off-season tune-up when you've run out of re-spins, granting one
+    more spin per banked token (owner's "when you run out of spins → use a mulli-spin").
+  • **UI:** `challengesNode()` (a Player Level XP bar + Daily Quests panel + Weekly Challenges panel) renders
+    on the Daily preview (replacing the old weekly-goals panel) and the Daily result (celebrating anything
+    completed this round), plus a dedicated **Challenges overlay** reachable from a new ≡-menu "🎯 Challenges"
+    row (shows the player's level). New `.chalpanel`/`.xpbar` CSS.
+  • **Cloud sync:** `bag_xp`/`bag_dailyquests`/`bag_weeklychal` added to the CS82 cloud bundle with grow-only
+    merges (`mergeXp` max-all, `mergeDailyQuests` newer-day-then-union, `mergeWeeklyChal` newer-week-then-max-
+    prog+union-done). The old `bag_weekgoals`/`mergeWeekGoals` were removed from collection + pull.
+  Verified in Playwright: level 1→2 after 250 XP; all-3 daily quests → +120 XP; a weekly challenge completing
+  → +250 XP + 1 mulli-spin; a mulli-spin banks (2) and is consumed (→1) on use; the level-coin term makes
+  coins rise +1500 for reaching level 7 (2000 XP); the Challenges panel + overlay + menu row render; weekly
+  set spans career/online/daily; zero page errors. Deployed to /golf. (No SQL — all client-side via the
+  existing cloud-save blob.) Tunable: `DAILY_QUEST_XP`, `WEEKLY_CHAL_XP`, `LEVEL_COIN`, `xpForLevel` curve,
+  `WEEKLY_POOL`.
+
+- **CS262 — home-screen polish: new-career gold CARD, no duplicate "Play", bigger mode titles (owner
+  screenshots, mobile).** Three asks: the "start a new career" state looked like a plain centered button
+  (unlike the liked Continue-Career card); "Play" appeared twice on the Beat-the-Pro card; and the mode
+  titles needed more emphasis so it's obvious what each mode is.
+  • **New-career as a gold card.** Replaced the centered gold `.btn` "Career Mode" with `careerHeroCard()` —
+    a left-aligned gold `.gcard.gc-gold` matching the other mode cards (kicker "Start Your Journey", big
+    italic title "Career Mode", "Build your golfer, then play a 30-year career", 30 YRS badge, "Build ▸").
+    So the home is now four consistent left-aligned cards (blue Beat the Pro / gold Career Mode / teal Head
+    to Head / purple Spotlight) with no odd centered button. A stale build-draft still shows the quiet ghost
+    "New Career" button under "Resume Your Golfer" (that path is unchanged).
+  • **Removed the duplicate "Play".** The Beat-the-Pro card's fresh state showed a "PLAY" badge AND a
+    "Play ▸" CTA; dropped the "PLAY" badge (badge only renders for real states now: 2 LEFT / BEATEN ✓ /
+    DONE / PRACTICE), leaving just the "Play ▸" CTA.
+  • **Bigger mode titles.** `.gc-title` 23px→28px (heavier line-height + slight letter-spacing) and the
+    `.gc-kick` label brightened (opacity .72→.82, 10→10.5px) so "Beat the Pro" / "Head to Head" / "Career
+    Mode" read as the clear headline of each card.
+  Verified in Playwright (412px phone): fresh player shows the gold left-aligned Career Mode card (no
+  centered button), the daily card has no PLAY badge (only "Play ▸"), title renders at 28px; with a career
+  the resume card shows and the daily badge correctly reads "2 LEFT"; zero page errors. Screenshot confirms
+  the four cohesive cards. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
