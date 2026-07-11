@@ -8736,7 +8736,14 @@ function scrSeason(){
   const cbName=esc(S.season.me.name||S.name||'Your Golfer');
   const cbYr=S.circuitMode?('Legend Circuit · Yr '+Math.max(1,(S.year||1)-30)):('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS);
   const conf=(S.season&&S.season.confidence!=null)?S.season.confidence:50;
-  const netShort=(ec.net>=0?'+':'−')+fmtShort(Math.abs(ec.net));
+  // CS286: banner Net shows 2 decimal places on the M/B abbreviation (e.g. +$2.43M), a bit more precise
+  // than the shared fmtShort's 1-decimal form. Local so it doesn't touch fmtShort's other call sites.
+  const netFmt2=(x)=>{ x=Math.abs(Math.round(x||0));
+    if(x>=1e9) return '$'+(x/1e9).toFixed(2)+'B';
+    if(x>=1e6) return '$'+(x/1e6).toFixed(2)+'M';
+    if(x>=1e3) return '$'+Math.round(x/1e3)+'k';
+    return '$'+x; };
+  const netShort=(ec.net>=0?'+':'−')+netFmt2(ec.net);
   // CS285: Confidence is now a HORIZONTAL meter (fits the wrapped second-row space better than a number),
   // with the Respect meter below it — both career-only (the reputation system is off in daily/circuit).
   const showMeters=!S.daily && !S.circuitMode && S.career;
@@ -8765,7 +8772,7 @@ function scrSeason(){
   { const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
     const _ne=_bnr.querySelector('#cb-net'), _pr=S._bannerNet;
     if(_ne && _pr!=null && _pr!==ec.net && !reduce)
-      _animCount(_ne, _pr, ec.net, v=>(v>=0?'+':'−')+fmtShort(Math.abs(v)), 950);
+      _animCount(_ne, _pr, ec.net, v=>(v>=0?'+':'−')+netFmt2(v), 950);
     S._bannerNet=ec.net;
     // CS285: the Confidence / Respect meter bars GLIDE to their new width when they change (reusing the
     // .cmeter width transition), matching the polished feel of the count-up. Snaps on the first render.
