@@ -6682,6 +6682,10 @@ allows Google Fonts, or self-host Anton.*
   open from the audit: a full design-token/card-tier foundation applied site-wide, cream-scorecard surface
   system, and a modal/nav consistency pass.
 
+- **CS270 — leaderboard skeleton loading rows.** Replaced the bare "Loading the global board…" line with
+  8 shimmering skeleton rows (`.lbskel`/`.skb`, reduced-motion static) so the board reads as loading, not
+  broken. Verified in Playwright (8 skeleton rows render while the board is loading, zero errors). Deployed.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -974,6 +974,11 @@ window.GA_ID='G-L29P5MRWKE';
   .lbpod .nm{font-weight:800; font-size:12px; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--oncard)}
   .lbpod .vl{font-family:var(--mono); font-weight:800; font-size:13px; margin-top:3px; color:var(--gold)}
   .lbpod .rk{font:700 9.5px/1.2 var(--body); color:var(--muted); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  /* CS270: leaderboard skeleton loading rows */
+  .lbskel{opacity:.7} .lbskel .pl{display:flex; flex-direction:column}
+  .skb{display:inline-block; border-radius:5px; background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.13),rgba(255,255,255,.06)); background-size:200% 100%; animation:sksh 1.2s ease-in-out infinite}
+  @keyframes sksh{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  @media(prefers-reduced-motion:reduce){ .skb{animation:none} }
   .screen.major-screen{background:radial-gradient(130% 70% at 50% -8%, rgba(235,166,31,.20), transparent 62%)}
   .majorbanner{display:flex; align-items:center; justify-content:center; gap:8px;
     background:linear-gradient(90deg,#5a3d0b,var(--gold),#5a3d0b); color:#1a1206;
@@ -4714,7 +4719,8 @@ function overlayLeaderboard(screen){
       <div style="display:flex;gap:8px;justify-content:center"><button class="btn gold" id="lb-lock-up" style="width:auto;padding:9px 14px;font-size:12px">Create account</button><button class="btn ghost" id="lb-lock-in" style="width:auto;padding:9px 14px;font-size:12px">Sign in</button></div></div>` : '';
   let board;
   if(!view || view.loading){
-    board=`<div class="small muted center" style="padding:18px 8px">Loading the global board…</div>`;
+    // CS270: skeleton rows while the global board loads (nicer than a bare "Loading…" line)
+    board=Array.from({length:8},()=>`<div class="lb lbskel" style="grid-template-columns:34px 1fr auto"><span class="pos"><span class="skb" style="width:16px;height:16px;border-radius:50%"></span></span><span class="pl"><span class="skb" style="width:52%;height:12px"></span><span class="skb" style="width:34%;height:9px;margin-top:5px"></span></span><span class="mny"><span class="skb" style="width:56px;height:13px"></span></span></div>`).join('');
   } else if(globalOk && globalRows.length){
     const rowFn=r=>{
       const you=sbUser&&r.user_id===sbUser.id, v=lbStatVal(r,tab,sort), id=lbCanon(r);
