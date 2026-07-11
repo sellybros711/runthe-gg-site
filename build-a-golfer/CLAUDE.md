@@ -6541,6 +6541,17 @@ allows Google Fonts, or self-host Anton.*
   Verified: phone 390×844 → 287px (34vh), desktop 1200×900 → 504px (56vh), zero page errors. Deployed to
   /golf.
 
+- **CS260 — home is just the 4 modes: no "New Career" button when a career exists (owner: "take out the
+  new career button… to start a new career, go into your existing career").** The title screen always
+  appended a Career-start button, so a player with a saved career saw a redundant ghost "New Career / Build
+  a new golfer" between the gold Continue-Career card and Play Online. Now the Career-start button only
+  renders when there's NO career save (`if(!cs)`): a fresh player gets the gold "Career Mode" primary, and
+  a stale build-draft with no career gets the ghost "New Career". With a saved career, the home is exactly
+  the four mode cards — Beat the Pro / Continue Career / Play Online / Monthly Spotlight — and a new career
+  is started from inside the current one (Continue → off-season → Retire → start a new golfer). Verified in
+  Playwright: with a career the stack is gc-blue / resumecard / gc-teal / gc-purple and no New-Career button;
+  with no career the gold "Career Mode" button shows; zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
