@@ -12953,8 +12953,10 @@ function scrDailyRound(){
         // always surface the rival's row in a Grudge Match, even if they've slipped outside the shown rows
         if(rvNm){ const rvRow=rows.find(r=>r.rival); if(rvRow && show.indexOf(rvRow)<0) show=show.slice(0,3).concat([rvRow]); }
         show.forEach(r=>{ const rk=rows.indexOf(r)+1;
+          // CS289: the rival gets its own highlight colour (red dot + red row) parallel to YOU being gold —
+          // no busy ⚔ marker on the name (owner). The .hvbrow.rival class supplies the red highlight.
           const dot=r.you?'#3b82f6':r.rival?'#ff5a4d':'#8fa39a';
-          bd.appendChild($(`<div class="hvbrow ${r.you?'mine':''}${r.rival?' rival':''}" data-nm="${esc(r.nm)}"><span class="cdot" style="background:${dot}"></span><span class="rk">${rk}</span><span class="nm">${r.rival?'⚔ ':''}${esc(r.nm)}</span><span class="tp" style="color:${tpCol(r.tp)}">${dtp(r.tp)}</span></div>`));
+          bd.appendChild($(`<div class="hvbrow ${r.you?'mine':''}${r.rival?' rival':''}" data-nm="${esc(r.nm)}"><span class="cdot" style="background:${dot}"></span><span class="rk">${rk}</span><span class="nm">${esc(r.nm)}</span><span class="tp" style="color:${tpCol(r.tp)}">${dtp(r.tp)}</span></div>`));
         });
       } else {
         // CS251/CS255: mockup-style panel — THRU header, gold TARGET line, a mini leaderboard
