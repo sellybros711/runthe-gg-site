@@ -4025,12 +4025,12 @@ function accById(id){ return ACC_BY_ID[id]||null; }
 function coinState(){ let s=LS.get(acctKey('bag_coins'),null)||{}; s.spent=s.spent||0; s.seen=s.seen||0; s.owned=(s.owned&&typeof s.owned==='object')?s.owned:{};
   // CS186 one-time reset to 0: bank the current derived earned as a baseline, wipe spend + owned gear, so
   // every account starts at 0 and earns going forward. Equipped-but-unowned gear simply stops rendering.
-  if(s.epoch!==COIN_EPOCH){ s.epoch=COIN_EPOCH; s.baseline=coinsEarnedRaw(); s.spent=0; s.owned={}; s.seen=s.baseline; LS.set(acctKey('bag_coins'), s); }
-  s.baseline=s.baseline||0; s.forfeit=s.forfeit||0; return s; }
+  if(s.epoch!==COIN_EPOCH){ s.epoch=COIN_EPOCH; s.baseline=coinsEarnedRaw(); s.spent=0; s.owned={}; s.bonus=0; s.seen=s.baseline; LS.set(acctKey('bag_coins'), s); }
+  s.baseline=s.baseline||0; s.forfeit=s.forfeit||0; s.bonus=s.bonus||0; return s; }
 function coinSave(s){ LS.set(acctKey('bag_coins'), s); if(typeof cloudPush==='function') cloudPush(); }
 // spendable coins = derived-earned minus the reset baseline (so post-reset everyone starts at 0) minus
 // forfeited coins (a season SKIPPED via "Sim to end of season" earns nothing, see the summary record block)
-function coinsEarned(){ const s=coinState(); return Math.max(0, coinsEarnedRaw()-s.baseline-(s.forfeit||0)); }
+function coinsEarned(){ const s=coinState(); return Math.max(0, coinsEarnedRaw()-s.baseline-(s.forfeit||0)+(s.bonus||0)); }
 let _coinsSuppressToast=false;   // set while finalizing a skipped season so the "+N coins" toast doesn't flash
 // deterministic RAW earned total — every entry here is a "way to earn coins"; add terms to add more
 function coinsEarnedRaw(){ let c=COIN_START; const ac=(achState().unlocked)||{};
@@ -4047,6 +4047,14 @@ function coinsEarnedRaw(){ let c=COIN_START; const ac=(achState().unlocked)||{};
   return Math.round(c);
 }
 function coinBalance(){ return Math.max(0, coinsEarned()-coinState().spent); }
+// CS288: bonus coins earned by ACTIONS (e.g. playing a career Moment yourself instead of simming it).
+// Added on top of the derived earned total (kept out of coinsEarnedRaw to avoid the reset-baseline loop).
+function addBonusCoins(n, opts){ opts=opts||{}; n=Math.round(n||0); if(!sbSignedIn()||n<=0) return 0;
+  const s=coinState(); s.bonus=(s.bonus||0)+n; s.seen=(s.seen||0); coinSave(s);
+  if(!opts.silent){ try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(opts.label?' '+opts.label:' earned')+'!'); }catch(e){} }
+  return n; }
+// coins awarded for PLAYING a Moment round yourself (simming forfeits this). Bigger stage = bigger bonus.
+function momentPlayCoins(evt){ if(!evt) return 120; return evt.major?300:(evt.big||evt.playoff||evt.type==='finale')?200:120; }
 function coinFmt(n){ n=Math.round(n||0); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','); }   // comma-grouped, no $ — the coin icon is the currency mark
 function grantMilestoneItems(s){ const m=achMetrics(); MILESTONE_ITEMS.forEach(mi=>{ try{ if(!s.owned[mi.id] && mi.when(m)) s.owned[mi.id]=1; }catch(e){} }); }
 // reconcile: self-heal earned total, grant milestone gear, toast newly-earned coins. Runs on load +
@@ -6493,9 +6501,10 @@ function momentPopup(ce, info){
       <div class="mbtns" style="display:grid;gap:10px"></div>
     </div></div>`);
   const btns=ov.querySelector('.mbtns');
-  const play=$(`<button class="btn goldfill" style="font-size:16px;padding:15px">⛳ Play the final round<span class="sub">Hole by hole, every decision is yours</span></button>`);
+  const playCoins=sbSignedIn()?momentPlayCoins(evt):0;   // CS288: playing earns bonus coins; simming forfeits them
+  const play=$(`<button class="btn goldfill" style="font-size:16px;padding:15px">⛳ Play the final round<span class="sub">Hole by hole, every decision is yours${playCoins?` · <b style="color:#7a4a00">+${playCoins} coins</b>`:''}</span></button>`);
   play.onclick=()=>{ ov.remove(); track('moment_play',{evt:evt.name,major:!!evt.major}); startMomentRound(ce, info); };
-  const sim=$(`<button class="btn ghost">Watch the sim ▸</button>`);
+  const sim=$(`<button class="btn ghost">Continue simulation ▸${playCoins?`<span class="sub">Skip playing — you'll forfeit the +${playCoins} bonus coins</span>`:''}</button>`);
   sim.onclick=()=>{ ov.remove(); track('moment_sim',{evt:evt.name}); render(); };
   btns.appendChild(play); btns.appendChild(sim);
   if(!reduce && typeof confettiRun==='function') try{ confettiRun(ov, [accent,'#ffffff'], 1100); }catch(e){}
@@ -7587,19 +7596,24 @@ function finishMomentRound(){
       }
     }
     if(st) ce._momentStakes=st;
+    // CS288: PLAYING the round yourself earns bonus coins (simming forfeits them). Award once, then fold the
+    // "+N coins" into the finish toast so it doesn't collide with a second toast.
+    let coinSpan='';
+    if(!ce._momentCoined){ ce._momentCoined=true; const cg=addBonusCoins(momentPlayCoins(ce.evt), {silent:true});
+      if(cg>0) coinSpan=` · <span style="color:#ffd45e;font-weight:800">+${coinFmt(cg)} coins</span>`; }
     // one combined toast: grudge leads if it was a grudge match, else the decision-stakes line
     if(gr){
       const gHead = gr.won?`You beat ${esc(gr.name)}!`:gr.tie?`Even with ${esc(gr.name)}`:`${esc(gr.name)} got you`;
       const gCol = gr.won?'#35d6a0':gr.tie?'#e0c060':'#E14A33';
-      toast(`<span style="color:#ff8f7e;font-weight:800">⚔ GRUDGE MATCH</span><br><b style="color:${gCol}">${gHead}</b> · ${gr.me>=0?'+':''}${gr.me} to ${gr.rv>=0?'+':''}${gr.rv}${gr.fol>0?`<br><span style="color:var(--gold);font-weight:800">▲ ${fmtFollowers(gr.fol)} followers</span>`:''}${st&&st.folGained>0&&st.folGained!==gr.fol?'':''}`, 4600);
+      toast(`<span style="color:#ff8f7e;font-weight:800">⚔ GRUDGE MATCH</span><br><b style="color:${gCol}">${gHead}</b> · ${gr.me>=0?'+':''}${gr.me} to ${gr.rv>=0?'+':''}${gr.rv}${gr.fol>0?`<br><span style="color:var(--gold);font-weight:800">▲ ${fmtFollowers(gr.fol)} followers</span>`:''}${coinSpan}`, 4600);
     } else if(st){
       const parts=[];
       if(st.boldWins) parts.push(`${st.boldWins} bold call${st.boldWins>1?'s':''} paid off`);
       if(st.boldFails) parts.push(`${st.boldFails} backfired`);
       const cSign=st.dc>=0?'↑':'↓', cCol=st.dc>=0?'#35d6a0':'#E14A33';
       const head = st.boldWins>=2&&st.boldWins>st.boldFails ? 'Clutch Sunday!' : st.dc>=1 ? 'Sunday nerve' : st.dc<=-1 ? 'A costly gamble' : 'Steady down the stretch';
-      toast(`<b>${head}</b>${parts.length?' · '+parts.join(', '):''}<br><span style="color:${cCol};font-weight:800">Confidence ${cSign} ${st.dc>=0?'+':''}${Math.round(st.dc)}</span>${st.folGained>0?` · <span style="color:var(--gold);font-weight:800">▲ ${fmtFollowers(st.folGained)} followers</span>`:''}${st.clutchTrait?' · <span style="color:#ffd45e;font-weight:800">becoming Mr. Clutch</span>':''}`, 4200);
-    }
+      toast(`<b>${head}</b>${parts.length?' · '+parts.join(', '):''}<br><span style="color:${cCol};font-weight:800">Confidence ${cSign} ${st.dc>=0?'+':''}${Math.round(st.dc)}</span>${st.folGained>0?` · <span style="color:var(--gold);font-weight:800">▲ ${fmtFollowers(st.folGained)} followers</span>`:''}${st.clutchTrait?' · <span style="color:#ffd45e;font-weight:800">becoming Mr. Clutch</span>':''}${coinSpan}`, 4200);
+    } else if(coinSpan){ toast(`<b>Round complete</b>${coinSpan}`, 3200); }
   }
   // TIE FOR THE LEAD that includes YOU → play a REAL sudden-death playoff. You played the round, so you
   // play the playoff too, hole by hole, the way it goes on the PGA Tour. (Won/lost outright → finalize now.)
@@ -13965,7 +13979,7 @@ function mergeCoins(local, server){ const d={spent:0,seen:0,owned:{}};
   const le=l.epoch||0, se=s.epoch||0;
   if(le!==se){ return Object.assign({}, le>se?l:s); }
   return {epoch:le, baseline:Math.max(l.baseline||0,s.baseline||0), spent:Math.max(l.spent||0,s.spent||0),
-    forfeit:Math.max(l.forfeit||0,s.forfeit||0), seen:Math.max(l.seen||0,s.seen||0), owned:Object.assign({}, l.owned||{}, s.owned||{})}; }
+    forfeit:Math.max(l.forfeit||0,s.forfeit||0), bonus:Math.max(l.bonus||0,s.bonus||0), seen:Math.max(l.seen||0,s.seen||0), owned:Object.assign({}, l.owned||{}, s.owned||{})}; }
 // XP: monotonic — xp/mulliEarned/mulliSpent all merge by MAX (grow-only, correct cross-device).
 function mergeXp(local, server){
   const l=(local&&typeof local==='object')?local:{}, s=(server&&typeof server==='object')?server:{};

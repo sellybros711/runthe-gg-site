@@ -7077,6 +7077,24 @@ allows Google Fonts, or self-host Anton.*
     Pro Shop). Verified in Playwright (badge gone, exactly one How to Play button = the `.howtop`, nav no
     longer lists it, `.rc-name` renders "Coby Selly" in full) + screenshots; zero page errors.
 
+- **CS288 — Moment popup: "Continue simulation" + bonus coins for playing (owner, from a screenshot).**
+  On the career "Moment" popup (play-the-final-round vs sim), the owner disliked "Watch the sim" and wanted
+  playing to be rewarded with coins + the sim option to state the forfeit. Changes:
+  • **Playing earns bonus coins.** New `momentPlayCoins(evt)` (regular 120 / big·playoff·finale 200 / major
+    300) awarded via a new `addBonusCoins(n)` when you FINISH a played Moment round (`finishMomentRound`,
+    guarded once via `ce._momentCoined`, signed-in only). Coins are a real, separate `bonus` accumulator on
+    `coinState` added into `coinsEarned()` (kept out of the derived `coinsEarnedRaw()` to avoid the
+    reset-baseline loop), merged grow-only cross-device (`mergeCoins` bonus:max) and zeroed on an epoch
+    reset. The "+N coins" is folded into the existing moment-finish toast (grudge / stakes / a "Round
+    complete" fallback) so it never collides with a second toast.
+  • **Copy.** The sim button "Watch the sim ▸" → **"Continue simulation ▸"** with a sub "Skip playing —
+    you'll forfeit the +N bonus coins"; the Play button sub now shows "· +N coins" so the incentive is
+    explicit. (Guests — not signed in — see the original coin-free copy and earn nothing, since career mode
+    requires an account anyway.)
+  Verified in Playwright: `addBonusCoins(200)` raises the balance by 200; `momentPlayCoins` = 120/300/200
+  for regular/major/big; the popup buttons render the new "Continue simulation" + forfeit copy and the
+  "+120 coins" incentive; a screenshot confirms it; zero page errors. Tunable: `momentPlayCoins` amounts.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
