@@ -950,6 +950,17 @@ window.GA_ID='G-L29P5MRWKE';
   .ct-body{padding-top:3px}
   .ct-title{font-weight:800; font-size:14px; color:var(--oncard)}
   .ct-sub{font-size:12px; color:var(--muted); margin-top:2px}
+  /* CS267: Season Impact broadcast card (animated deltas) */
+  .impactcard{margin:8px 0 12px}
+  .impact-hd{font:800 11.5px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--gold); margin-bottom:9px}
+  .impact-rank{margin-bottom:11px}
+  .impact-rank .il{font:800 9.5px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+  .impact-rank .iv{font:800 26px/1 var(--body); color:var(--oncard); margin-top:5px; font-variant-numeric:tabular-nums}
+  .impact-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border-radius:11px; overflow:hidden; margin-bottom:10px}
+  .istat{background:rgba(255,255,255,.04); padding:9px 10px; text-align:center}
+  .istat .k{font:800 8.5px/1 var(--body); letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+  .istat .v{font-family:var(--mono); font-weight:800; font-size:16px; margin-top:5px; color:var(--oncard); font-variant-numeric:tabular-nums}
+  .impact-card-status{font-size:12px; font-weight:700}
   .screen.major-screen{background:radial-gradient(130% 70% at 50% -8%, rgba(235,166,31,.20), transparent 62%)}
   .majorbanner{display:flex; align-items:center; justify-content:center; gap:8px;
     background:linear-gradient(90deg,#5a3d0b,var(--gold),#5a3d0b); color:#1a1206;
@@ -6306,7 +6317,7 @@ function startSeason(majorsOnly){
   field.push(me);
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0,toPar:0,rounds:0}]))};
   S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0; S.seasonRank=null;
-  S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false;   // unlocked during THIS season (shown on the summary)
+  S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false; S._impactShown=false;   // unlocked during THIS season (shown on the summary)
   if(S.career && S.career.story){ S.career.story.seasonCount=0; }   // reset the per-season storyline cap (CS225)
   S.season.stops=0; S.season.momentsShown=0;   // shared interruption budget (max 4 pop-ups/season)
   if(!S.daily && !S.circuitMode && S.career){   // CS226 momentum: carry confidence over with gentle reversion; snapshot followers for the season delta
@@ -8723,6 +8734,36 @@ function headlinesHTML(h){
     ${notes}</div>`;
 }
 /* ---------- summary ---------- */
+// CS267: a count-up tween for the Season Impact card (ease-out; respects reduced motion via the caller)
+function _animCount(el, from, to, fmtFn, ms){
+  const now=()=>((typeof performance!=='undefined'&&performance.now)?performance.now():Date.now());
+  const t0=now(); (function fr(){ const p=Math.min(1,(now()-t0)/ms), e=1-Math.pow(1-p,3);
+    el.textContent=fmtFn(from+(to-from)*e); if(p<1) requestAnimationFrame(fr); else el.textContent=fmtFn(to); })();
+}
+function seasonImpactNode(m, cst, moveTxt, moveCol, firstYr, points, gross, net){
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const wrap=$(`<div class="scout impactcard" style="border-color:${cst.col}">
+    <div class="impact-hd">Season Impact</div>
+    <div class="impact-rank"><div class="il">Official World Ranking</div>
+      <div class="iv"><span id="imp-wr">World #${m.now}</span> <span style="font-size:13px;color:${moveCol};font-weight:700">${moveTxt}</span></div></div>
+    <div class="impact-grid">
+      <div class="istat"><div class="k">Tour Points</div><div class="v" id="imp-pts">+${points}</div></div>
+      <div class="istat"><div class="k">Earnings</div><div class="v" id="imp-earn">+${fmtShort(gross)}</div></div>
+      <div class="istat"><div class="k">Net Profit</div><div class="v" style="color:${net>=0?'#35d6a0':'#E14A33'}" id="imp-net">${(net>=0?'+':'−')+fmtShort(Math.abs(net))}</div></div>
+    </div>
+    <div class="impact-card-status" style="color:${cst.col}">${esc(cst.label)} <span class="muted" style="font-weight:600">· ${esc(cst.note)} · of ${m.size}</span></div>
+  </div>`);
+  if(S._impactShown || reduce) return wrap;   // animate only once per summary
+  S._impactShown=true;
+  requestAnimationFrame(()=>{
+    const wr=wrap.querySelector('#imp-wr'), pts=wrap.querySelector('#imp-pts'), earn=wrap.querySelector('#imp-earn'), netEl=wrap.querySelector('#imp-net');
+    if(wr && !firstYr) _animCount(wr, m.prev, m.now, v=>'World #'+Math.round(v), 900);
+    if(pts) _animCount(pts, 0, points, v=>'+'+Math.round(v), 850);
+    if(earn) _animCount(earn, 0, gross, v=>'+'+fmtShort(Math.max(0,v)), 850);
+    if(netEl) _animCount(netEl, 0, net, v=>(v>=0?'+':'−')+fmtShort(Math.abs(v)), 850);
+  });
+  return wrap;
+}
 function scrSummary(){
   const me=S.season.me, t=S.season.totals[me.name];
   const byMoney=Object.entries(S.season.totals).map(([n,v])=>({n,...v})).sort((a,b)=>b.money-a.money);
@@ -9022,21 +9063,14 @@ function scrSummary(){
       add(wrap);
     }
   }
-  // Official World Ranking + Tour Card status, the season's headline standing, with year-over-year movement
+  // CS267: Season Impact — a broadcast-style recap card whose numbers COUNT UP on first view
+  // (world rank prev→now, tour points gained, season earnings, net). Tour Card status underneath.
   if(!S.daily && S.worldRankMove){
-    const m=S.worldRankMove, cs=cardStatus(m.now), dlt=m.prev-m.now;   // dlt>0 = climbed (lower number is better)
+    const m=S.worldRankMove, cst=cardStatus(m.now), dlt=m.prev-m.now;   // dlt>0 = climbed (lower is better)
     const firstYr=(S.career&&S.career.seasons.length<=1);
-    const moveTxt=firstYr?'New entry':(dlt>0?`▲ ${dlt}`:dlt<0?`▼ ${Math.abs(dlt)}`:'- level');
+    const moveTxt=firstYr?'New entry':(dlt>0?`▲ ${dlt}`:dlt<0?`▼ ${Math.abs(dlt)}`:'— level');
     const moveCol=firstYr?'var(--gold)':(dlt>0?'#35d6a0':dlt<0?'#E14A33':'var(--muted)');
-    add($(`<div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin:8px 0 12px;border-color:${cs.col}">
-      <div style="min-width:0">
-        <div style="font:800 11.5px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">Official World Ranking</div>
-        <div style="font:800 26px/1 var(--body);color:var(--oncard);margin-top:6px">World #${m.now} <span style="font-size:13px;color:${moveCol};font-weight:700">${moveTxt}</span></div>
-        <div class="small" style="margin-top:5px;color:${cs.col};font-weight:700">${cs.label}</div>
-        <div class="small muted" style="margin-top:1px">${cs.note}</div>
-      </div>
-      <div style="text-align:right;flex:0 0 auto"><div class="small muted">of ${m.size}</div></div>
-    </div>`));
+    add(seasonImpactNode(m, cst, moveTxt, moveCol, firstYr, (t.points||0), ec.gross, ec.net));
   }
   // ---- Season Awards ----
   if(!S.daily && S.seasonAwards){
