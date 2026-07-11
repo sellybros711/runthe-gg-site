@@ -7095,6 +7095,14 @@ allows Google Fonts, or self-host Anton.*
   for regular/major/big; the popup buttons render the new "Continue simulation" + forfeit copy and the
   "+120 coins" incentive; a screenshot confirms it; zero page errors. Tunable: `momentPlayCoins` amounts.
 
+- **CS289 — Grudge Match scoreboard: rival is just a red-highlighted row (owner disliked the ⚔ marker).**
+  On the live Moment/Grudge scoreboard the rival's row had a `⚔ ` prefix on the name (which emojified to a
+  swords SVG that rendered as a busy block over the name). Removed the marker — the rival row already gets a
+  distinct **red** highlight (red dot `#ff5a4d` + `.hvbrow.rival` red row background/border), exactly
+  parallel to how YOU is gold (`.hvbrow.mine`). So the opponent is now cleanly distinguished by colour, like
+  the user's gold, with no extra icon clutter. Verified in Playwright (no swords SVG in the board, rival row
+  keeps its red highlight, name renders clean) + a screenshot; zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
