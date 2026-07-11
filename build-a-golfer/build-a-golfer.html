@@ -305,6 +305,13 @@ window.GA_ID='G-L29P5MRWKE';
   .navtile .nl{font-weight:800; font-size:13.5px; letter-spacing:.01em}
   .navtile .ns{font-size:11px; color:var(--muted); font-weight:700; display:inline-flex; align-items:center; gap:4px}
   .navtile.hot{border-color:rgba(235,166,31,.55); background:linear-gradient(160deg,rgba(235,166,31,.12),rgba(235,166,31,.03))}
+  /* CS287: "How to Play" pill-button under the hero (replaces the 30-year-sim badge) */
+  .howtop{display:inline-flex; align-items:center; gap:7px; cursor:pointer; font:800 12px/1 var(--body); letter-spacing:.06em;
+    text-transform:uppercase; color:var(--gold); padding:9px 18px; border-radius:999px; border:1px solid var(--gold);
+    background:color-mix(in srgb, var(--gold) 12%, transparent); box-shadow:0 3px 12px -6px rgba(235,166,31,.5)}
+  .howtop:hover{background:color-mix(in srgb, var(--gold) 20%, transparent)}
+  .howtop:active{transform:translateY(1px)}
+  .howtop:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
 
   /* ---- title scene ---- */
   .scene{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none}
@@ -333,7 +340,7 @@ window.GA_ID='G-L29P5MRWKE';
   .resumecard:active{transform:translateY(1px)}
   .rc-top{display:flex; align-items:center; justify-content:space-between; gap:12px}
   .rc-kick{font:800 10px/1 var(--body); letter-spacing:.15em; text-transform:uppercase; opacity:.62}
-  .rc-name{font-family:var(--display); font-style:italic; font-size:25px; line-height:1; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .rc-name{font-family:var(--display); font-style:italic; font-size:25px; line-height:1; margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:6px}
   .rc-ovr{flex:0 0 auto; text-align:center; background:rgba(20,15,8,.15); border-radius:11px; padding:6px 12px}
   .rc-ovr b{display:block; font:900 21px/1 var(--mono)}
   .rc-ovr span{font:800 8px/1 var(--body); letter-spacing:.12em; opacity:.62}
@@ -5288,7 +5295,10 @@ function scrTitle(){
   w.appendChild($(`<div class="herotag center">A RunThe.GG Game</div>`));
   w.appendChild($(`<h1 class="hero" style="font-size:clamp(34px,8.5vw,52px)"><span class="hr1">Your Golfer.</span><br><span class="hr2">Your Tour.</span></h1>`));
   w.appendChild($(`<div class="herorule" aria-hidden="true"><span></span><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.6" fill="none" stroke="#EBA61F" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1.5" fill="#EBA61F"/></svg><span></span></div>`));
-  w.appendChild($(`<div class="center" style="margin:10px 0 12px"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ 30-Year Career Simulation</span></div>`));
+  // CS287: the "30-Year Career Simulation" badge is replaced by the How to Play button in this spot (owner)
+  { const hw=$(`<div class="center" style="margin:10px 0 12px"></div>`);
+    const hb=$(`<button type="button" class="howtop" aria-label="How to Play">📖 How to Play</button>`);
+    hb.onclick=openRules; hw.appendChild(hb); w.appendChild(hw); }
   // (career bests moved off the top onto the new-career card, see careerHeroCard)
   const stack=$(`<div class="stack"></div>`);
   const ri=resumeInfo();
@@ -5351,7 +5361,7 @@ function scrTitle(){
   mkTile('🏆','Leaderboard','Rankings', ()=>{S.overlay='leaderboard';render();}, true);
   mkTile('🏅','Trophy Room', signedIn?'Trophies & rank':'Sign in', ()=>{S.overlay='record';render();}, true);
   if(SHOP_ENABLED) mkTile(ic('cart'),'Pro Shop', signedIn?(ic('coin')+' '+coinFmt(coinBalance())):'Gear & boosts', ()=>{S.overlay='shop';render();}, true);
-  mkTile('📖','How to Play','Rules & tips', openRules, false);
+  // (How to Play moved up under the hero, CS287)
   w.appendChild(sec);
   const credit=$(`<div class="small muted center" style="margin-top:16px;line-height:1.6;opacity:.7">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
   w.appendChild(credit);

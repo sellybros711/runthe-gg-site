@@ -7065,6 +7065,18 @@ allows Google Fonts, or self-host Anton.*
   $2.43M, 5M→$5.00M, 12.35M, 1.23B, negatives, k) + the banner count-up settling on the precise 2-decimal
   value; zero page errors.
 
+- **CS287 — fix clipped golfer name on the Continue Career card + How to Play replaces the title badge
+  (owner, from a screenshot).** Two title-screen tweaks:
+  • **Name no longer clipped.** The `.rc-name` on the resume/continue-career card had `overflow:hidden`
+    with no right padding, so the italic display font's rightward overhang clipped the last glyph (e.g. the
+    "y" in "Coby Selly"). Added `padding-right:6px` (same fix `.gc-title` already uses) so the overhang has
+    room within the clip region; a genuinely too-long name still ellipsis-truncates.
+  • **How to Play button in the badge spot.** Removed the "⛳ 30-Year Career Simulation" pill under the hero
+    and put a gold **📖 How to Play** pill-button (`.howtop`, opens the rules screen) in that spot; removed
+    the now-duplicate How to Play tile from the bottom nav grid (which is now Leaderboard / Trophy Room /
+    Pro Shop). Verified in Playwright (badge gone, exactly one How to Play button = the `.howtop`, nav no
+    longer lists it, `.rc-name` renders "Coby Selly" in full) + screenshots; zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
