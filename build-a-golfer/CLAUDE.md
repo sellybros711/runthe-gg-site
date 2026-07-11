@@ -6751,6 +6751,43 @@ allows Google Fonts, or self-host Anton.*
   signature-hole decisions, then sponsors (largely built in CS228/229/236), then rivals (built in CS226-era
   emergent-rivalry) — building out each for both content variety and mechanics.
 
+- **CS276 — career Moment shot-decisions now carry real stakes (2nd of the four career-depth areas; owner:
+  "in-round shot decisions" + "I want both" content variety AND deeper mechanics/stakes).** When you play a
+  Sunday round in contention (a "Moment", CS144), each signature-hole Attack/Safe call is now more than that
+  hole's score — it moves your career the way a real clutch (or costly) decision does, tied into the CS226
+  Confidence + Followers + persona system.
+  • **Stakes engine** (`momentDecisionStakes(holes, evt)` + `applyMomentStakes`): after the round, every hole
+    where you actually made a call is graded on how it turned out — a bold call that pays off (birdie/eagle)
+    builds Confidence + Followers (fans love aggressive golf that works); a bold call that backfires (bogey+)
+    dents Confidence (fans still respect the go, so a little follower flat); a safe call executed cleanly is a
+    small positive, a safe call that still leaks a shot a small negative. Closing holes (16+) weigh ×1.6 and
+    the whole tally scales for a major (×1.35) / big event (×1.15); total Confidence swing clamped ±10. A
+    genuinely clutch, aggressive round (≥2 bold wins, wins>fails) nudges the `clutch` identity trait toward
+    the "Mr. Clutch" persona — so decisions shape who your golfer becomes, same as the CS275 interviews.
+    Applied ONCE at `finishMomentRound` (before any playoff branch, so it never double-fires), gated to career
+    Moments (`!circuit && S.career && S.season`); `resultMomentum` (from the final position) applies separately
+    in `finalizeEvent`, so the two don't overlap. A summary toast fires at finish ("Clutch Sunday! · 2 bold
+    calls paid off · Confidence ↑ +3 · ▲ 13K followers · becoming Mr. Clutch"). `toast()` gained an optional
+    duration arg + wrapping/centering for the richer message.
+  • **Live pressure (the decision feels weighty).** In a Moment, the decision pop-up now shows a red stakes
+    line — `momentStakesLine(i)` reads the stage (a MAJOR / the title on the line, "coming home" on the last 3)
+    and your LIVE standing (You lead by N / N back · TN / Tied for the lead, projected from the field's
+    partially-revealed Sunday) — e.g. "🔥 A MAJOR on the line · You lead by 5 — the gallery holds its breath".
+  • **Outcome feedback.** When a Moment hole holes out, the floating result pill adds a bold-call verdict —
+    "The gamble pays off" (green) / "The gamble backfires" (red) / "Smart golf rewarded" / "Even the safe play
+    leaked" — so you feel each decision land. Daily/Spotlight rounds are unaffected (gated on `S.moment`).
+  • **More variety.** Added 3 fresh `dScenario` templates (a gettable green-light birdie pin, a spin-it-vs-
+    release-it front pin, a position-vs-power 3-wood/driver tee call) — the shared library grew ~45→47 tags,
+    benefiting career Moments AND the Daily.
+  Deterministic (the stakes read the already-simmed hole scores; the `dSimHole` score engine + shot-count
+  invariant are untouched). Verified in Playwright: the engine math (clutch major round → +3.2 conf / +6.3%+929
+  followers / 2 wins-1 fail; steady → +1; none → 0), applyMomentStakes moves season Confidence 50→60 + followers
+  +13.2K + clutch trait, a backfiring bold round DROPS confidence 60→52, `momentStakesLine`/`dc-stakes` render
+  the pressure line with your standing, the new templates are reachable, and a full 18-hole daily still finishes
+  with zero page errors. Deployed to /golf. NEXT of the four: sponsors (largely built CS228/229/236 — a
+  polish/variety pass) then rivals (CS226-era emergent rivalry — deepen). Tunable: the per-decision weights +
+  major/closing multipliers in `momentDecisionStakes`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
