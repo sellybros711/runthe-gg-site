@@ -926,6 +926,17 @@ window.GA_ID='G-L29P5MRWKE';
   .srev .en{font:800 8.5px/1.15 var(--body); letter-spacing:.02em; text-transform:uppercase; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .srev .er{font-family:var(--mono); font-weight:800; font-size:13px; margin-top:4px; color:var(--oncard)}
   .srev.win .er{color:var(--gold)}
+  /* CS265: career milestone timeline */
+  .ctimeline{max-width:520px; margin:16px auto 0}
+  .ct-hd{font:800 12px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:var(--gold); margin-bottom:13px; text-align:center}
+  .ct-row{display:grid; grid-template-columns:44px 26px 1fr; align-items:start; gap:10px; position:relative; padding-bottom:15px}
+  .ct-row:not(:last-child)::before{content:''; position:absolute; left:67px; top:24px; bottom:-3px; width:2px; background:rgba(216,173,74,.28)}
+  .ct-yr{font:800 11px/1.3 var(--mono); color:var(--muted); text-align:right; padding-top:5px}
+  .ct-dot{width:26px; height:26px; border-radius:50%; background:rgba(216,173,74,.16); border:1px solid rgba(216,173,74,.5); display:flex; align-items:center; justify-content:center; color:var(--gold); font-size:13px; z-index:1}
+  .ct-dot .ic{width:14px; height:14px}
+  .ct-body{padding-top:3px}
+  .ct-title{font-weight:800; font-size:14px; color:var(--oncard)}
+  .ct-sub{font-size:12px; color:var(--muted); margin-top:2px}
   .screen.major-screen{background:radial-gradient(130% 70% at 50% -8%, rgba(235,166,31,.20), transparent 62%)}
   .majorbanner{display:flex; align-items:center; justify-content:center; gap:8px;
     background:linear-gradient(90deg,#5a3d0b,var(--gold),#5a3d0b); color:#1a1206;
@@ -9154,6 +9165,7 @@ function scrSummary(){
     left.appendChild(ct);
     // ---- Career Stats (CS214): measured career scoring + career-average derived profile ----
     { const cSk=careerAvgSkills(c); if(cSk) left.appendChild($(statSheetHTML(cSk, careerRealStats(c), {title:'Career Stats · '+c.seasons.length+' years'}))); }
+    { const tl=careerTimelineNode(c); if(tl) left.appendChild(tl); }   // CS265 career milestone timeline
     // Wins + seasons, grouped into dropdowns so a long career stays readable
     const wl=(c.winsList||[]);
     const majWins=wl.filter(w=>w.major).length;
@@ -12836,6 +12848,38 @@ function overlayCourseRecords(screen){
 /* ---- career win/season displays, grouped into collapsible dropdowns so a long career stays readable ---- */
 const MAJOR_NAMES=['The Magnolia Invitational','The Championship','The National Open','The Links Championship'];
 // majors grouped by championship (× count + the years won), in a dropdown, your prestige cabinet at a glance
+// CS265: career milestone/narrative timeline — derived from the career's own history (winsList + seasons),
+// so it reads like a franchise story: turned pro → first win → first major → milestones → grand slam, etc.
+function careerMilestones(c){
+  if(!c) return [];
+  const seasons=(c.seasons||[]), wins=(c.winsList||[]).slice().sort((a,b)=>a.year-b.year);
+  const M=[];
+  const firstYear=seasons.length?Math.min(...seasons.map(s=>s.year)):(S.year||1);
+  M.push({year:firstYear, icon:'⛳', title:'Turned Pro', sub:'Rookie season · age '+START_AGE});
+  if(wins.length) M.push({year:wins[0].year, icon:'🏆', title:'First Tour Win', sub:wins[0].name});
+  [10,25,50,75].forEach(n=>{ if(wins.length>=n) M.push({year:wins[n-1].year, icon:'🏆', title:n+'th Career Win', sub:'A milestone victory'}); });
+  const majW=wins.filter(w=>w.major);
+  if(majW.length) M.push({year:majW[0].year, icon:'★', title:'First Major Championship', sub:majW[0].name});
+  [3,5,10].forEach(n=>{ if(majW.length>=n) M.push({year:majW[n-1].year, icon:'★', title:n+' Career Majors', sub:'Among the greats'}); });
+  // Career Grand Slam: the year the 4th DISTINCT major is captured
+  { const seen=new Set(); for(const w of majW){ if(!seen.has(w.name)){ seen.add(w.name); if(seen.size===4){ M.push({year:w.year, icon:'👑', title:'Career Grand Slam', sub:'All four majors won'}); break; } } } }
+  const moneyNo1=seasons.filter(s=>s.rank===1).sort((a,b)=>a.year-b.year)[0];
+  if(moneyNo1) M.push({year:moneyNo1.year, icon:'💰', title:'Topped the Money List', sub:'Season money leader'});
+  { const best=seasons.slice().sort((a,b)=>(b.net||0)-(a.net||0))[0]; if(best && best.net>0) M.push({year:best.year, icon:'💰', title:'Career-Best Season', sub:fmtShort(best.net)+' net · '+best.wins+(best.wins===1?' win':' wins')}); }
+  M.sort((a,b)=>a.year-b.year);
+  return M;
+}
+function careerTimelineNode(c){
+  const M=careerMilestones(c); if(M.length<2) return null;   // needs at least a story beyond "turned pro"
+  const wrap=$(`<div class="ctimeline"></div>`);
+  wrap.appendChild($(`<div class="ct-hd">Career Timeline</div>`));
+  M.forEach(m=>{ wrap.appendChild($(`<div class="ct-row">
+    <div class="ct-yr">Yr ${m.year}</div>
+    <div class="ct-dot">${m.icon}</div>
+    <div class="ct-body"><div class="ct-title">${esc(m.title)}</div><div class="ct-sub">${esc(m.sub)}</div></div>
+  </div>`)); });
+  return wrap;
+}
 function careerMajorsHTML(c){
   const majors=(c.winsList||[]).filter(w=>w.major);
   if(!majors.length) return '';
@@ -12890,6 +12934,7 @@ function scrCareerEnd(){
   add(tiles);
   // ---- Career Stats (CS214) ----
   { const cSk=careerAvgSkills(c); if(cSk){ const w=$(`<div style="max-width:520px;margin:6px auto"></div>`); w.innerHTML=emojifyIcons(statSheetHTML(cSk, careerRealStats(c), {title:'Career Stats'})); add(w); } }
+  { const tl=careerTimelineNode(c); if(tl) add(tl); }   // CS265 career milestone timeline
   { const sf=storyFeedHTML(); if(sf){ const w=$(`<div style="max-width:520px;margin:0 auto"></div>`); w.innerHTML=emojifyIcons(sf); add(w); } }   // CS225 Career Story
   // career record at the 4 major championships
   const MAJORS=['The Magnolia Invitational','The Championship','The National Open','The Links Championship'];
@@ -12970,6 +13015,7 @@ function scrCircuitEnd(){
   add(tiles);
   // ---- Circuit Career Stats (CS214) ----
   { const cSk=careerAvgSkills(c); if(cSk){ const w=$(`<div style="max-width:520px;margin:6px auto"></div>`); w.innerHTML=emojifyIcons(statSheetHTML(cSk, careerRealStats(c), {title:'Circuit Career Stats'})); add(w); } }
+  { const tl=careerTimelineNode(c); if(tl) add(tl); }   // CS265 circuit career timeline
   // record at the 5 Legend Circuit majors
   const mstats=c.majorStats||{};
   const winsByName={}; (c.winsList||[]).forEach(w=>{ if(w.major) winsByName[w.name]=(winsByName[w.name]||0)+1; });
