@@ -6686,6 +6686,18 @@ allows Google Fonts, or self-host Anton.*
   8 shimmering skeleton rows (`.lbskel`/`.skb`, reduced-motion static) so the board reads as loading, not
   broken. Verified in Playwright (8 skeleton rows render while the board is loading, zero errors). Deployed.
 
+- **CS271 — cream "physical scorecard" surface + design-foundation tokens (audit's #5 priority + Phase 1).**
+  Introduced the audit's surface-level + accent tokens to `:root` (`--tour-bg-deep/-bg/-panel/-panel-raised`,
+  `--tour-cream/-gold/-green-bright/-danger/-water`, `--score-birdie/-bogey`) as the design foundation, and
+  applied the headline idea — **cream scorecard surfaces, gold reserved for the focal item** — to the clearest
+  scorecard surfaces: the daily/Moment/Spotlight ROUND scorecard strip and the daily RESULT OUT/IN card now
+  render as a warm off-white paper card (`.dcardwrap.cream`) with dark ink, hole numbers, score notation in
+  scorecard-appropriate ink (`dScoreInk`: deep green under par, dark par, deep orange/red over), the current
+  hole ringed gold, and the reviewed hole ringed teal. Deliberately scoped to the scorecard only (not a
+  site-wide recolor) so it reads as a premium physical card against the dark-green broadcast view without
+  destabilising the rest of the UI. Verified in Playwright + screenshot (cream card renders on a 9-hole
+  practice round with correct ink colors + gold current-hole, zero page errors). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
