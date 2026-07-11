@@ -6411,6 +6411,37 @@ allows Google Fonts, or self-host Anton.*
   errors. Screenshots confirm the calendar + the Settings toggles. Deployed to /golf. (Practice mode records
   nothing, so no streak/calendar there, as intended.)
 
+- **CS254 — button-copy audit: trim verbose subs + a richer "continue your career" card** (owner: "too
+  many words on a single button… lessen the descriptions or find a better way; for the career continuation
+  button, make it a little bigger with info of where you are"). Client-only.
+  • **Resume Career → a structured card** (`resumeCareerCard(cs)` + `.resumecard` CSS) instead of a run-on
+    text sub. A bigger gold card showing: the golfer's name + an OVR badge, a **year-progress line + bar**
+    ("Year 13 of 30" / "Legend Circuit · Year N"), a **status** chip (Off-season / Mid-season · event N /
+    Season results / Ready to play), and a **stat row** (wins · majors · net worth via `fmtShort`) with a
+    "Continue ▸" affordance. It's a single accessible button → `resumeCareer`. Replaces the old
+    "Year 13 off-season · JJ · tune your game, then run the season" sub.
+  • **Trimmed verbose subs** across the flagged surfaces: the daily **Beat the Pro** button
+    ("Best 70 (−1) · tour average beaten ✓, go lower (3 tries/day)" → "Best 70 (−1) · beaten ✓ · go lower",
+    and the other states shortened); **Career Mode** start ("Draft your golfer · 30-year career"; the
+    new-golfer variant is now "New Career · Draft a new golfer"); **Resume Your Golfer** draft
+    ("N/8 skills drafted"); and the **off-season** Spin ("N changes left · start anytime"), Re-spin
+    ("Pass on this golfer for a new one") and lede (the rules explained once, concisely) — the buttons no
+    longer repeat the full rules the lede already covers.
+  Verified in Playwright: the resume card renders name/OVR/year-of-30/status/wins/majors/net-worth with a
+  progress bar and is clickable; the trimmed daily + career subs read short with the old run-on copy gone;
+  zero page errors. Screenshot confirms the card. Deployed to /golf.
+- **CS255 — daily "Beat the Pro" in-round scoreboard shows TODAY'S BEST** (owner: "somewhere on the daily
+  leaderboard should be the high score of the day — maybe the high score, your current standing, and the
+  course avg"). The floating TOURTRACE scoreboard's daily branch is now a mini leaderboard: a **TODAY'S
+  BEST** row (gold) + **YOU** (blue) + **TOUR PRO** (course-avg pace, red), sorted by score so your row's
+  rank shows where you stand, under the THRU/TARGET header and above the TO BEAT footer. Today's best =
+  the day's global board leader (`dbCache`, loaded once at round start via `dbLoad` in `beginDailyRound`,
+  fails open) or, when the board isn't available (guest/offline/early), your own best of the day
+  (`dailyBest`); the row is omitted only when neither exists. Widened the board (176px) + name column so
+  "TODAY'S BEST" fits. Verified in Playwright: the board shows TODAY'S BEST/YOU/TOUR PRO with the global
+  leader (−5) sorted correctly, and falls back to the player's own best-of-day (−3) with no global board;
+  zero page errors. Screenshot confirms the layout. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
