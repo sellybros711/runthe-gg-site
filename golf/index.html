@@ -3312,12 +3312,35 @@ function courseRecordsLegend(){ return LS.get('bag_courserecords_legend',{}); }
 // Spotlight-run course records live in their OWN bucket too — the Spotlight is played in forced tough
 // weather, so its records must not mix with the normal daily records for the same course.
 function courseRecordsSpot(){ return LS.get('bag_courserecords_spotlight',{}); }
+// CS307: a course record can be TIED — every player who posts the low score co-holds it (nobody is
+// excluded for tying). Records store a `names[]` of all holders; crHolders() renders them.
+function crHolders(rec){ if(!rec) return ''; const ns=(rec.names&&rec.names.length?rec.names:[rec.name]).filter(Boolean); return ns.length?ns.join(', '):'You'; }
 function recordCourseScore(courseKey,toPar,ovr,name,isLegend,isSpotlight){
   const key=isSpotlight?'bag_courserecords_spotlight':(isLegend?'bag_courserecords_legend':'bag_courserecords');
-  const r=isSpotlight?courseRecordsSpot():(isLegend?courseRecordsLegend():courseRecords()); const cur=r[courseKey];
-  if(!cur || toPar<cur.toPar){ r[courseKey]={toPar,ovr,name:name||'You',mine:true,date:todayKey()}; LS.set(key,r);
-    if(typeof cloudPush==='function') cloudPush(); return true; }   // sync the new record to the account (cross-device)
+  const r=isSpotlight?courseRecordsSpot():(isLegend?courseRecordsLegend():courseRecords()); const cur=r[courseKey]; name=name||'You';
+  if(!cur || toPar<cur.toPar){ r[courseKey]={toPar,ovr,name,names:[name],mine:true,date:todayKey()}; LS.set(key,r);
+    if(typeof cloudPush==='function') cloudPush(); return 'record'; }   // sole new record — sync to the account
+  if(toPar===cur.toPar){   // TIE — join the record as a co-holder rather than being told you missed
+    cur.names=(cur.names&&cur.names.length?cur.names.slice():[cur.name]).filter(Boolean);
+    if(!cur.names.includes(name)) cur.names.push(name);
+    cur.mine=true; LS.set(key,r); if(typeof cloudPush==='function') cloudPush(); return 'tie'; }
   return false; }
+// Group the server's course-record rows (may be MANY per course when tied) into one record per course
+// with every tied holder's name. Works whether the RPC returns one row/course (pre-migration) or all ties.
+function buildCourseRecs(data){ const recs={};
+  (data||[]).forEach(r=>{ const k=r.course_key, ex=recs[k];
+    if(!ex || r.to_par<ex.toPar){ recs[k]={toPar:r.to_par,name:r.display_name,names:[r.display_name],ovr:r.ovr,day:r.day,mine:!!(sbUser&&r.user_id===sbUser.id),global:true}; }
+    else if(r.to_par===ex.toPar){ if(!ex.names.includes(r.display_name)) ex.names.push(r.display_name); if(sbUser&&r.user_id===sbUser.id) ex.mine=true; } });
+  return recs; }
+// adopt the global grouped records into the local store: a lower score replaces; an EQUAL score unions the
+// tied names in (so the all-time list shows every co-holder everywhere, not just the device's own).
+function adoptCourseRecs(recs, cur, lsKey){ let changed=false;
+  for(const k in recs){ const g=recs[k], lo=cur[k];
+    if(!lo || g.toPar<lo.toPar){ cur[k]={toPar:g.toPar,ovr:g.ovr,name:g.name,names:g.names.slice(),mine:g.mine,date:g.day,global:true}; changed=true; }
+    else if(g.toPar===lo.toPar){ const ln=(lo.names&&lo.names.length?lo.names.slice():[lo.name]).filter(Boolean); let add=false;
+      g.names.forEach(n=>{ if(!ln.includes(n)){ ln.push(n); add=true; } });
+      if(add || (g.mine&&!lo.mine)){ lo.names=ln; lo.mine=lo.mine||g.mine; changed=true; } } }
+  if(changed) LS.set(lsKey,cur); }
 
 const FIELDSIZE=120;   // season field = you + (FIELDSIZE-1) data-grounded golfers (DataGolf spec §3)
 const FIELDPOOL=GOLFERS.filter(g=>g.fld);   // only current/historical (SG-rated) players make a credible field
@@ -8569,8 +8592,8 @@ function celebrateCourseRecord(courseName, scoreTxt, opts){
   win.appendChild($(`<div class="spot"></div>`));
   win.appendChild($(`<div class="celeb-trophy">${winTrophySVG()}</div>`));
   win.appendChild($(`<div class="celeb-kicker">${esc(opts.kicker||'Course Record')}</div>`));
-  win.appendChild($(`<div class="celeb-title">New Record!</div>`));
-  win.appendChild($(`<div class="celeb-sub">${scoreTxt?esc(scoreTxt)+' · ':''}You hold the record at ${esc(courseName)}</div>`));
+  win.appendChild($(`<div class="celeb-title">${opts.shared?'Record Tied!':'New Record!'}</div>`));
+  win.appendChild($(`<div class="celeb-sub">${scoreTxt?esc(scoreTxt)+' · ':''}You ${opts.shared?'share':'hold'} the record at ${esc(courseName)}</div>`));
   let done=false, timer=null;
   function finish(){ if(done)return; done=true; if(timer){clearTimeout(timer);timer=null;} if(_celebStop){_celebStop();_celebStop=null;} win.remove(); }
   const actions=$(`<div class="celeb-actions"></div>`);
@@ -12205,7 +12228,7 @@ function scrDailyPreview(){
     const st=streakDisplay();
     if(Object.keys(streakDays()).length>0 || st>0) add(streakCalendar(14));
   }
-  const recTxt=rec?`<b style="color:var(--gold)">${dTot(rec.toPar, c.par)}</b> by ${esc(rec.name)}`
+  const recTxt=rec?`<b style="color:var(--gold)">${dTot(rec.toPar, c.par)}</b> by ${esc(crHolders(rec))}`
     :(sbSignedIn()?`<b style="color:var(--gold)">Unclaimed</b>, be the first to set it`:`<b style="color:var(--gold)">Sign in</b> to post your score`);
   add($(`<div class="scout" style="max-width:560px;margin:12px auto 0;text-align:center"><div class="small muted" style="text-transform:uppercase;letter-spacing:.12em;font-weight:800">Course record</div><div style="margin-top:4px">${recTxt}</div></div>`));
   add($(`<h2 class="center" style="margin:16px 0 8px;font-size:15px">Signature holes</h2>`));
@@ -12818,14 +12841,15 @@ function scrSpotlightResult(){
   // SPOTLIGHT course record (server-based, its own bucket) — separate from the regular daily record
   { const srec=(crCacheSpot&&crCacheSpot.recs[sp.key])||courseRecordsSpot()[sp.key];
     if(S.spotResult&&S.spotResult.record){
+      const shared=(S.spotResult.record==='tie'), co=(srec&&crHolders(srec))||'You';
       if(!S.spotResult._crCelebrated){ S.spotResult._crCelebrated=true; const cn=dShort(c.v), st=dTot(total, c.par);
-        setTimeout(()=>{ if(S.screen==='dailyresult'){ try{ celebrateCourseRecord(cn, st, {kicker:sp.month+' Spotlight Record'}); }catch(e){} } }, 360); }
+        setTimeout(()=>{ if(S.screen==='dailyresult'){ try{ celebrateCourseRecord(cn, st, {kicker:sp.month+' Spotlight Record', shared}); }catch(e){} } }, 360); }
       add($(`<div style="max-width:520px;margin:0 auto 8px;text-align:center;padding:16px 18px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(235,166,31,.22),rgba(235,166,31,.05));box-shadow:0 6px 22px rgba(235,166,31,.18)">
         <div style="width:50px;height:58px;margin:0 auto 4px">${winTrophySVG()}</div>
-        <div style="font:800 12px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">New Spotlight Record</div>
+        <div style="font:800 12px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">${shared?'Spotlight Record Tied':'New Spotlight Record'}</div>
         <div style="font-family:var(--display);font-size:26px;color:var(--oncard);margin-top:6px;line-height:1">${dTot(total, c.par)}</div>
-        <div class="small" style="margin-top:5px;color:#dfeae2">You hold the ${esc(sp.month)} Spotlight record at <b>${esc(dShort(c.v))}</b></div></div>`)); }
-    else if(srec){ add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center">Spotlight record: <b style="color:var(--gold)">${dTot(srec.toPar, c.par)}</b> by ${esc(srec.name)}${srec.toPar<total?` · you were ${total-srec.toPar} back`:''}</div>`)); }
+        <div class="small" style="margin-top:5px;color:#dfeae2">${shared?`You share the ${esc(sp.month)} Spotlight record at <b>${esc(dShort(c.v))}</b> with ${esc(co)}`:`You hold the ${esc(sp.month)} Spotlight record at <b>${esc(dShort(c.v))}</b>`}</div></div>`)); }
+    else if(srec){ add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center">Spotlight record: <b style="color:var(--gold)">${dTot(srec.toPar, c.par)}</b> by ${esc(crHolders(srec))}${srec.toPar<total?` · you were ${total-srec.toPar} back`:''}</div>`)); }
     else if(!sbSignedIn()){ add($(`<div class="scout small muted" style="max-width:520px;margin:0 auto 8px;text-align:center">Sign in to post your Spotlight score to the global leaderboard.</div>`)); } }
   // SPOTLIGHT global leaderboard (this event's own board, server-based)
   if(dbCacheSpot&&dbCacheSpot.day===_spDay&&dbCacheSpot.ok&&dbCacheSpot.rows.length){
@@ -12934,20 +12958,22 @@ async function verifyDailyRecord(courseKey, isLegend, isSpotlight){
   if(!sb || !sbUser) return;
   await (isSpotlight ? crLoadSpot() : (isLegend ? crLoadLegend() : crLoad()));   // refetch + self-heal the local course-record cache
   const rec=(isSpotlight?courseRecordsSpot():(isLegend?courseRecordsLegend():courseRecords()))[courseKey];
-  const trulyMine=!!(rec && rec.mine);
+  // CS307: preserve the tie vs sole-record distinction ('tie' when you co-hold with others, 'record' when
+  // you hold it alone, false when someone shot lower) instead of a bare boolean.
+  const code = (rec && rec.mine) ? ((rec.names && rec.names.length>1) ? 'tie' : 'record') : false;
   let changed=false;
-  if(isSpotlight){ if(S.spotResult && S.spotResult.course===courseKey && S.spotResult.record!==trulyMine){ S.spotResult.record=trulyMine; changed=true; if(S.dailyResult===S.spotResult){} } if(changed) render(); return; }
-  if(S.dailyResult && S.dailyResult.course===courseKey && !!S.dailyResult.isLegend===!!isLegend && S.dailyResult.record!==trulyMine){
-    S.dailyResult.record=trulyMine; changed=true;
+  if(isSpotlight){ if(S.spotResult && S.spotResult.course===courseKey && S.spotResult.record!==code){ S.spotResult.record=code; changed=true; if(S.dailyResult===S.spotResult){} } if(changed) render(); return; }
+  if(S.dailyResult && S.dailyResult.course===courseKey && !!S.dailyResult.isLegend===!!isLegend && S.dailyResult.record!==code){
+    S.dailyResult.record=code; changed=true;
     const today=dailyToday();
     if(today){
-      if(today.result && today.result.course===courseKey) today.result.record=trulyMine;
-      if(today.best && today.best.course===courseKey) today.best.record=trulyMine;
+      if(today.result && today.result.course===courseKey) today.result.record=code;
+      if(today.best && today.best.course===courseKey) today.best.record=code;
       LS.set(acctKey('bag_daily'), today);
     }
   }
   // the "logged a guest round to your account" banner also claims a record, guest claims are never legend
-  if(!isLegend && S.dailyClaimMsg && S.dailyClaimMsg.record!==trulyMine){ S.dailyClaimMsg.record=trulyMine; changed=true; }
+  if(!isLegend && S.dailyClaimMsg && S.dailyClaimMsg.record!==code){ S.dailyClaimMsg.record=code; changed=true; }
   if(changed) render();
 }
 // When a guest signs in (or creates an account) with a just-played daily round waiting, log that round
@@ -12974,7 +13000,7 @@ function maybeClaimDaily(){
   if(improved) sbSubmitDaily(best);                        // post to the global board / course records
   verifyDailyRecord(r.course, false);                      // correct the optimistic "record!" guess against the server
   S.dailyClaimMsg={ok:true, attempt:attempts, max:dailyMaxAttempts(), total:r.total, record:isRec, improved};
-  toast('✓ Score saved to your account'+(isRec?' · course record!':''));
+  toast('✓ Score saved to your account'+(isRec==='tie'?' · shared course record!':isRec?' · course record!':''));
   return true;
 }
 /* ---- signature-hole decision scenarios: a course-aware risk/reward dilemma at each
@@ -13468,7 +13494,7 @@ function scrDailyResult(){
   // result of logging a guest round to a just-signed-in account (saved, or out of attempts)
   if(S.dailyClaimMsg){ const m=S.dailyClaimMsg;
     add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:${m.ok?'#35d6a0':'#E14A33'}">
-      ${m.ok?`<b style="color:#35d6a0">✓ Saved to your account</b><div class="small muted" style="margin-top:3px">Logged as attempt ${m.attempt} of ${m.max}${m.record?' · 🏆 course record!':''}.</div>`
+      ${m.ok?`<b style="color:#35d6a0">✓ Saved to your account</b><div class="small muted" style="margin-top:3px">Logged as attempt ${m.attempt} of ${m.max}${m.record==='tie'?' · 🏆 shared course record!':m.record?' · 🏆 course record!':''}.</div>`
             :`<b style="color:#E14A33">Couldn't submit this score</b><div class="small muted" style="margin-top:3px">This account is out of daily attempts (${m.used}/${m.max} used today). A new course drops at midnight ET.</div>`}</div>`)); }
   // guests: one attempt, no course records, sign in to log this score and unlock more attempts
   if(!practice && !sbSignedIn()){
@@ -13517,16 +13543,17 @@ function scrDailyResult(){
   // overlay. (Quests/challenges are still CREDITED on finish; only their on-page display was removed here.)
   const rec=courseRecords()[r.course];
   if(r.record){
-    // fire the celebration pop-up once for this result, then list the record prominently
+    // CS307: a tie co-holds the record (nobody excluded); adapt the copy to "shared" and list every holder.
+    const shared=(r.record==='tie'), co=(rec&&crHolders(rec))||'You';
     if(!r._crCelebrated){ r._crCelebrated=true; const cn=dShort(c.v), st=dTot(total, c.par);
-      setTimeout(()=>{ if(S.screen==='dailyresult'){ try{ celebrateCourseRecord(cn, st); }catch(e){} } }, 360); }
+      setTimeout(()=>{ if(S.screen==='dailyresult'){ try{ celebrateCourseRecord(cn, st, {shared}); }catch(e){} } }, 360); }
     add($(`<div style="max-width:520px;margin:0 auto;text-align:center;padding:16px 18px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(235,166,31,.22),rgba(235,166,31,.05));box-shadow:0 6px 22px rgba(235,166,31,.18)">
       <div style="width:50px;height:58px;margin:0 auto 4px">${winTrophySVG()}</div>
-      <div style="font:800 12px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">New Course Record</div>
+      <div style="font:800 12px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">${shared?'Course Record Tied':'New Course Record'}</div>
       <div style="font-family:var(--display);font-size:26px;color:var(--oncard);margin-top:6px;line-height:1">${dTot(total, c.par)}</div>
-      <div class="small" style="margin-top:5px;color:#dfeae2">You hold the record at <b>${esc(dShort(c.v))}</b></div></div>`));
+      <div class="small" style="margin-top:5px;color:#dfeae2">${shared?`You share the record at <b>${esc(dShort(c.v))}</b> with ${esc(co)}`:`You hold the record at <b>${esc(dShort(c.v))}</b>`}</div></div>`));
   }
-  else if(rec) add($(`<div class="scout" style="max-width:520px;margin:0 auto;text-align:center">Course record: <b style="color:var(--gold)">${dTot(rec.toPar, c.par)}</b> by ${esc(rec.name)}${rec.toPar<total?` · you were ${total-rec.toPar} back`:''}</div>`));
+  else if(rec) add($(`<div class="scout" style="max-width:520px;margin:0 auto;text-align:center">Course record: <b style="color:var(--gold)">${dTot(rec.toPar, c.par)}</b> by ${esc(crHolders(rec))}${rec.toPar<total?` · you were ${total-rec.toPar} back`:''}</div>`));
   const holes=(S.dailyHoles&&S.dailyHoles.length===18)?S.dailyHoles:(r.holes&&r.holes.length===18?r.holes:null);
   if(holes){
     const grid=$(`<div style="max-width:600px;margin:14px auto 0"></div>`);
@@ -13820,7 +13847,7 @@ function overlayCourseRecords(screen){
   const rows=DAILY_KEYS.map(k=>{ const c=DAILY_COURSES[k], rec=recs[k], isToday=(k===today);
     return `<div class="lb ${isToday?'you':''}" style="grid-template-columns:1fr auto">
       <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(dShort(c.v))}${isToday?' · <span style="color:var(--gold)">today</span>':''}</div><div class="small muted" style="font-size:10.5px">Par ${c.par} · ${esc(c.loc)}</div></span>
-      <span style="text-align:right">${rec?`<div class="sc" style="color:var(--gold);font-weight:800;white-space:nowrap">${dTot(rec.toPar, c.par)}</div><div class="small muted" style="font-size:10px">${esc(rec.name||'You')}</div>`:'<div class="small muted">unclaimed</div>'}</span></div>`; }).join('');
+      <span style="text-align:right">${rec?`<div class="sc" style="color:var(--gold);font-weight:800;white-space:nowrap">${dTot(rec.toPar, c.par)}</div><div class="small muted" style="font-size:10px">${esc(crHolders(rec))}</div>`:'<div class="small muted">unclaimed</div>'}</span></div>`; }).join('');
   const tabs=$(`<div class="mini" style="margin-bottom:2px"></div>`);
   const humanTab=$(`<button class="btn ${tab==='human'?'goldfill':'ghost'}" style="font-size:12.5px">Human</button>`);
   const legendTab=$(`<button class="btn ${tab==='legend'?'goldfill':'ghost'}" style="font-size:12.5px">🏆 Legend</button>`);
@@ -14637,12 +14664,8 @@ async function reconcileDailyAttempts(){
 async function crLoad(){
   if(!sb){ crCache={recs:{},ok:false}; render(); return; }
   try{ const {data,error}=await sb.rpc('runtour_course_records');
-    const recs={}; (data||[]).forEach(r=>{ recs[r.course_key]={toPar:r.to_par,name:r.display_name,ovr:r.ovr,day:r.day,mine:(sbUser&&r.user_id===sbUser.id),global:true}; });
-    crCache={recs,ok:!error};
-    // adopt the true global record locally so the preview / records page show it everywhere
-    if(!error){ const loc=courseRecords(); let changed=false;
-      for(const k in recs){ if(!loc[k] || recs[k].toPar<loc[k].toPar){ loc[k]={toPar:recs[k].toPar,ovr:recs[k].ovr,name:recs[k].name,mine:recs[k].mine,date:recs[k].day,global:true}; changed=true; } }
-      if(changed) LS.set('bag_courserecords',loc); }
+    const recs=buildCourseRecs(data); crCache={recs,ok:!error};
+    if(!error) adoptCourseRecs(recs, courseRecords(), 'bag_courserecords');   // adopt/merge the global record (incl. tied co-holders) locally
   }catch(e){ crCache={recs:{},ok:false}; }
   render();
 }
@@ -14652,11 +14675,8 @@ async function crLoad(){
 async function crLoadLegend(){
   if(!sb){ crCacheLegend={recs:{},ok:false}; render(); return; }
   try{ const {data,error}=await sb.rpc('runtour_course_records',{p_legend:true});
-    const recs={}; (data||[]).forEach(r=>{ recs[r.course_key]={toPar:r.to_par,name:r.display_name,ovr:r.ovr,day:r.day,mine:(sbUser&&r.user_id===sbUser.id),global:true}; });
-    crCacheLegend={recs,ok:!error};
-    if(!error){ const loc=courseRecordsLegend(); let changed=false;
-      for(const k in recs){ if(!loc[k] || recs[k].toPar<loc[k].toPar){ loc[k]={toPar:recs[k].toPar,ovr:recs[k].ovr,name:recs[k].name,mine:recs[k].mine,date:recs[k].day,global:true}; changed=true; } }
-      if(changed) LS.set('bag_courserecords_legend',loc); }
+    const recs=buildCourseRecs(data); crCacheLegend={recs,ok:!error};
+    if(!error) adoptCourseRecs(recs, courseRecordsLegend(), 'bag_courserecords_legend');
   }catch(e){ crCacheLegend={recs:{},ok:false}; }
   render();
 }
@@ -14679,11 +14699,8 @@ async function dbLoadLegend(day){
 async function crLoadSpot(){
   if(!sb){ crCacheSpot={recs:{},ok:false}; render(); return; }
   try{ const {data,error}=await sb.rpc('runtour_course_records',{p_spotlight:true});
-    const recs={}; (data||[]).forEach(r=>{ recs[r.course_key]={toPar:r.to_par,name:r.display_name,ovr:r.ovr,day:r.day,mine:(sbUser&&r.user_id===sbUser.id),global:true}; });
-    crCacheSpot={recs,ok:!error};
-    if(!error){ const loc=courseRecordsSpot(); let changed=false;
-      for(const k in recs){ if(!loc[k] || recs[k].toPar<loc[k].toPar){ loc[k]={toPar:recs[k].toPar,ovr:recs[k].ovr,name:recs[k].name,mine:recs[k].mine,date:recs[k].day,global:true}; changed=true; } }
-      if(changed) LS.set('bag_courserecords_spotlight',loc); }
+    const recs=buildCourseRecs(data); crCacheSpot={recs,ok:!error};
+    if(!error) adoptCourseRecs(recs, courseRecordsSpot(), 'bag_courserecords_spotlight');
   }catch(e){ crCacheSpot={recs:{},ok:false}; }
   render();
 }
