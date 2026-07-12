@@ -4574,7 +4574,11 @@ function render(){
   const showNav = !NAV_HIDE.includes(S.screen) && !app.classList.contains('has-cupbar');
   app.classList.toggle('has-botnav', showNav);
   document.body.classList.toggle('has-botnav', showNav);   // CS305: cascades --botnav-space so bottom pop-ups clear the nav
-  if(showNav){ try{ app.appendChild(bottomNav()); }catch(e){ console.error('[RunTheTour] bottomNav failed:', e); } }
+  // CS306: the nav lives on <body>, NOT #app — a position:fixed element pins to the viewport most reliably
+  // as a direct child of the scroll root (on iOS a fixed child of #app drifted to mid-screen while scrolling).
+  // render() clears #app but not body, so remove any prior nav first.
+  document.querySelectorAll('.botnav').forEach(n=>n.remove());
+  if(showNav){ try{ document.body.appendChild(bottomNav()); }catch(e){ console.error('[RunTheTour] bottomNav failed:', e); } }
   paintAvatars();   // recolor any avatar canvases just added to the DOM
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
   _lastView=view;
@@ -4597,10 +4601,10 @@ function bottomNav(){
   const h2hScr=['h2hhome','h2hlobby','h2hdraft','h2hpreview','h2hwatch','h2hresult','h2hboard'];
   const tabs=[
     {id:'home',   ico:'home',   label:'Home',        on:scr==='title'&&!ov,          go:()=>{ S.overlay=null; S.screen='title'; render(); }},
-    {id:'career', ico:'golfer', label:'Career',      on:careerScr.includes(scr)&&!ov, go:()=>{ S.overlay=null; const cs=careerSaveInfo(); if(cs){ if(cs.ended && typeof viewEndedCareer==='function') viewEndedCareer(); else resumeCareer(); } else { reset(); S.mode='easy'; S.screen='setup'; render(); } }},
+    {id:'career', ico:'flag',   label:'Career',      on:careerScr.includes(scr)&&!ov, go:()=>{ S.overlay=null; const cs=careerSaveInfo(); if(cs){ if(cs.ended && typeof viewEndedCareer==='function') viewEndedCareer(); else resumeCareer(); } else { reset(); S.mode='easy'; S.screen='setup'; render(); } }},
     {id:'daily',  ico:'target', label:'Daily',       on:dailyScr.includes(scr)&&!ov,  go:()=>{ S.overlay=null; startDailyChallenge(); }},
     {id:'online', ico:'swords', label:'Online',      on:h2hScr.includes(scr)&&!ov,    go:()=>{ S.overlay=null; openH2H(); }},
-    {id:'board',  ico:'chartup',label:'Leaderboard', on:ov==='leaderboard',           go:()=>{ S.overlay='leaderboard'; render(); }},
+    {id:'board',  ico:'trophy', label:'Leaderboard', on:ov==='leaderboard',           go:()=>{ S.overlay='leaderboard'; render(); }},
   ];
   const nav=$(`<nav class="botnav" role="navigation" aria-label="Main navigation"><div class="botnav-in"></div></nav>`);
   const inner=nav.querySelector('.botnav-in');
