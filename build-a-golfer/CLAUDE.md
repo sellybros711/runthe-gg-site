@@ -7438,6 +7438,17 @@ allows Google Fonts, or self-host Anton.*
   (bottom 746) and a toast (688) both clear the nav (top 772); on `dailyround` (nav hidden) the var
   correctly falls back to 0. Zero page errors. Deployed to /golf.
 
+- **CS306 — bottom nav: clearer icons + never drifts to mid-screen on iOS (owner IMG_8137).** (1) The
+  Career (`golfer` — a tiny stroked swing figure) and Leaderboard (`chartup` — a thin zigzag) icons read as
+  warped squiggles at 22px; swapped to **`flag`** (a clean golf pin) for Career and **`trophy`** for
+  Leaderboard. (2) The nav (a `position:fixed` child of `#app`) drifted into the middle of the screen while
+  scrolling on iOS (containing-block/paint bug). Moved it to be a direct child of **`document.body`** (the
+  scroll root — the most reliable place to pin a fixed element on iOS, matching where the working
+  toasts/selectionPopup attach); `render()` clears `#app` but not `body`, so any prior `.botnav` is removed
+  first. z-order intact: overlays (z-40, in #app) still cover the nav (z-25) since #app creates no stacking
+  context. Verified in Playwright: exactly one nav after repeated renders, on `<body>`, Career=flag /
+  Leaderboard=trophy, overlay (z40) above nav (z25), zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
