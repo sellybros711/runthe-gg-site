@@ -4355,6 +4355,23 @@ let gameMode = null; // 'easy' or 'hard', chosen on the difficulty screen
 let draftType = 'quick'; // 'quick' (6-man) or 'full' (11-man), chosen on the draft-type screen
 let pendingFormation = null; // formation chosen on the reveal screen, before the game state exists
 
+// Remembered draft preference: persist the player's last-picked draft mode +
+// difficulty across visits (localStorage) so a returning player keeps their
+// choice instead of resetting to Quick/Easy every time. (Player feedback.)
+const DRAFT_PREF_KEY = 'rtp_draft_pref';
+function loadDraftPref(){
+  try{
+    const p = JSON.parse(localStorage.getItem(DRAFT_PREF_KEY) || '{}');
+    return {
+      draft: (p.draft==='full'  || p.draft==='quick') ? p.draft : 'quick',
+      mode:  (p.mode==='hard'   || p.mode==='easy')   ? p.mode  : 'easy',
+    };
+  }catch(e){ return { draft:'quick', mode:'easy' }; }
+}
+function saveDraftPref(){
+  try{ localStorage.setItem(DRAFT_PREF_KEY, JSON.stringify({ draft:draftType, mode:gameMode })); }catch(e){}
+}
+
 // ---------- iOS pull-to-refresh guard ----------
 // CSS overscroll-behavior doesn't reliably stop Safari's pull-to-refresh, which
 // reloads the page and wipes an in-progress draft. This cancels the gesture: on a
@@ -8826,11 +8843,13 @@ function renderSetupInfo(){
 // defaults so the sliders always have an active value.
 function goToDraftSetup(){
   if(typeof friendlyReset==='function') friendlyReset(); // Solo entry clears Friendly state
-  draftType='quick';
-  gameMode='easy';
+  // Restore the player's remembered mode + difficulty (defaults Quick/Easy).
+  const pref = loadDraftPref();
+  draftType = pref.draft;
+  gameMode  = pref.mode;
   pendingFormation=null;
-  $('seg-draft').dataset.active='quick';
-  $('seg-mode').dataset.active='easy';
+  $('seg-draft').dataset.active = draftType;
+  $('seg-mode').dataset.active  = gameMode;
   renderSetupInfo();
   showScreen('setup');
 }
@@ -8925,6 +8944,7 @@ $('seg-draft').querySelectorAll('.seg-opt').forEach(opt=>{
   opt.addEventListener('click',()=>{
     draftType=opt.dataset.draft;
     $('seg-draft').dataset.active=draftType;
+    saveDraftPref();   // remember this choice for next visit
     renderSetupInfo();
   });
 });
@@ -8933,6 +8953,7 @@ $('seg-mode').querySelectorAll('.seg-opt').forEach(opt=>{
   opt.addEventListener('click',()=>{
     gameMode=opt.dataset.mode;
     $('seg-mode').dataset.active=gameMode;
+    saveDraftPref();   // remember this choice for next visit
     renderSetupInfo();
   });
 });
