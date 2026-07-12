@@ -356,6 +356,9 @@ window.GA_ID='G-L29P5MRWKE';
   .botnav button:active{transform:translateY(1px)}
   .botnav button:focus-visible{outline:2px solid var(--gold); outline-offset:-3px; border-radius:8px}
   #app.has-botnav{padding-bottom:calc(58px + env(safe-area-inset-bottom,0px))}
+  /* CS305: when the bottom nav is shown, lift any bottom-fixed pop-up (scroll cue, toast, selection
+     pop-up, sign-in/error pills) above it via this cascading var so nothing hides behind the nav. */
+  body.has-botnav{--botnav-space:58px}
 
   /* ---- title scene ---- */
   .scene{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none}
@@ -765,7 +768,7 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes scPop{0%,100%{transform:none}35%{transform:scale(1.16)}}
   @media (prefers-reduced-motion:reduce){ .lb-flash-up,.lb-flash-dn,.moment.fresh,.sc-topar.tick{animation:none} }
   /* floating "scroll down to continue" cue on the long year-summary page */
-  .scrollcue{position:fixed; left:50%; bottom:calc(16px + env(safe-area-inset-bottom,0px)); transform:translate(-50%,14px);
+  .scrollcue{position:fixed; left:50%; bottom:calc(16px + env(safe-area-inset-bottom,0px) + var(--botnav-space,0px)); transform:translate(-50%,14px);
     z-index:25; display:flex; align-items:center; gap:8px; padding:11px 18px; border-radius:999px; max-width:90vw;
     background:linear-gradient(180deg,#f6c944,#e39a12); color:#1a1206; font:800 13px/1 var(--body); letter-spacing:.01em;
     border:1px solid rgba(0,0,0,.18); box-shadow:0 12px 30px -8px rgba(0,0,0,.6); cursor:pointer;
@@ -4511,7 +4514,7 @@ function render(){
   // round-trips. Show a visible "finishing" pill so the wait reads as in-progress instead of
   // "sign-in is broken" (otherwise the confirmation can land mid-sim and feel like a bug).
   if(S.authPending){
-    app.appendChild($(`<div style="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:30;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4);display:flex;align-items:center;gap:9px"><span class="authspin"></span>Finishing Google sign-in…</div>`));
+    app.appendChild($(`<div style="position:fixed;left:50%;bottom:calc(26px + var(--botnav-space,0px));transform:translateX(-50%);z-index:30;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4);display:flex;align-items:center;gap:9px"><span class="authspin"></span>Finishing Google sign-in…</div>`));
   }
   RT=screen;
   // overlays attach to #app (top level), NOT the screen, the screen lives inside .card
@@ -4542,7 +4545,7 @@ function render(){
     try{ track('screen_render_error',{overlay:S.overlay,message:(err&&err.message)||String(err)}); }catch(e){}
     const broken=S.overlay; S.overlay=null;
     const stray=app.querySelector('.ov'); if(stray) stray.remove();
-    app.appendChild($(`<div style="position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:45;max-width:90vw;background:#0a1626;color:var(--oncard);border:1px solid #E14A33;border-radius:10px;padding:11px 16px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
+    app.appendChild($(`<div style="position:fixed;left:50%;bottom:calc(26px + var(--botnav-space,0px));transform:translateX(-50%);z-index:45;max-width:90vw;background:#0a1626;color:var(--oncard);border:1px solid #E14A33;border-radius:10px;padding:11px 16px;box-shadow:0 8px 24px rgba(0,0,0,.4)">
       <b style="color:#E14A33">That popped up broke, closed it.</b>
       <div class="small muted" style="margin-top:3px;word-break:break-word">${esc(broken)}: ${esc((err&&err.message)||String(err))}</div></div>`));
   }
@@ -4570,6 +4573,7 @@ function render(){
   const NAV_HIDE=['dailyround','playoffwatch','h2hwatch','h2hpreview','h2hdraft','h2hlobby'];
   const showNav = !NAV_HIDE.includes(S.screen) && !app.classList.contains('has-cupbar');
   app.classList.toggle('has-botnav', showNav);
+  document.body.classList.toggle('has-botnav', showNav);   // CS305: cascades --botnav-space so bottom pop-ups clear the nav
   if(showNav){ try{ app.appendChild(bottomNav()); }catch(e){ console.error('[RunTheTour] bottomNav failed:', e); } }
   paintAvatars();   // recolor any avatar canvases just added to the DOM
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
@@ -5600,7 +5604,7 @@ function startRoll(){
 }
 function toast(msg, ms){
   // sit ABOVE the "scroll to continue" pill when it's on the page (both live bottom-centre), so they don't clash
-  const bottom = document.querySelector('.scrollcue') ? 'calc(74px + env(safe-area-inset-bottom,0px))' : '26px';
+  const bottom = document.querySelector('.scrollcue') ? 'calc(74px + env(safe-area-inset-bottom,0px) + var(--botnav-space,0px))' : 'calc(26px + var(--botnav-space,0px))';
   const t=$(`<div style="position:fixed;left:50%;bottom:${bottom};transform:translateX(-50%);z-index:45;max-width:min(92vw,420px);text-align:center;line-height:1.4;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4)">${msg}</div>`);
   document.body.appendChild(t); setTimeout(()=>t.remove(), ms||1800);
 }
@@ -8712,7 +8716,7 @@ function selectionPopup(evt){
   // centering and an OPACITY-only fade. The old version used `animation:celebRise` (a transform keyframe),
   // and on iOS a fixed element with a running transform animation gets positioned relative to the document
   // instead of the viewport, so it drifted to the middle when scrolling (owner: "it moves to the middle").
-  const t=$(`<div style="position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:45;width:min(440px,92vw);box-sizing:border-box;background:linear-gradient(180deg,${info.made?'#15331f':'#0a2740'},#0a1626);color:var(--oncard);border:1px solid ${col};border-radius:12px;padding:13px 16px;box-shadow:0 10px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .3s ease">
+  const t=$(`<div style="position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom,0px) + var(--botnav-space,0px));transform:translateX(-50%);z-index:45;width:min(440px,92vw);box-sizing:border-box;background:linear-gradient(180deg,${info.made?'#15331f':'#0a2740'},#0a1626);color:var(--oncard);border:1px solid ${col};border-radius:12px;padding:13px 16px;box-shadow:0 10px 30px rgba(0,0,0,.5);opacity:0;transition:opacity .3s ease">
     <div style="font:800 11.5px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:${col};margin-bottom:5px">${info.made?'🎉 ':''}${esc(info.tag)} · Selection</div>
     <div style="font:800 17px/1.2 var(--body);color:${col}">${info.made?'🏆 ':''}${info.title}</div>
     <div class="small muted" style="margin-top:4px">${info.sub}</div></div>`);

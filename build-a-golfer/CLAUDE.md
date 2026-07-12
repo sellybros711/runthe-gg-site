@@ -7427,6 +7427,17 @@ allows Google Fonts, or self-host Anton.*
   the dispatch). Screenshot confirms the mockup-style bar. Deployed to /golf. Tunable: `NAV_HIDE`, the tab
   set/icons in `bottomNav`.
 
+- **CS305 — bottom-fixed pop-ups clear the new bottom nav (owner IMG_8136: the "Scroll down · Continue"
+  cue was peeking out from behind the CS304 nav bar).** Added a cascading CSS var `--botnav-space` (58px
+  when the nav is shown, via a new `body.has-botnav` class toggled alongside `#app.has-botnav` in
+  `render()`; falls back to 0 when hidden). Every bottom-fixed pop-up now adds `+ var(--botnav-space,0px)`
+  to its `bottom`: the `.scrollcue` pill, `toast()` (both the plain and the scroll-cue-aware branch), the
+  `selectionPopup` (playoff/qualification bottom card), the auth "Finishing Google sign-in…" pill, and the
+  render-error toast. So on any screen where the nav shows, these sit above it; on live-play screens (no
+  nav) they sit at their normal offset. Verified in Playwright on the title (nav present): the scroll cue
+  (bottom 746) and a toast (688) both clear the nav (top 772); on `dailyround` (nav hidden) the var
+  correctly falls back to 0. Zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
