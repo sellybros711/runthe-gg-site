@@ -12142,11 +12142,11 @@ function scrDailyPreview(){
     <div class="small muted" style="text-transform:uppercase;letter-spacing:.12em;font-weight:800">Your target · beat the tour average</div>
     <div style="margin-top:4px"><span class="mono" style="font-weight:800;font-size:30px;color:var(--gold);white-space:nowrap">${(c.par+av).toFixed(1)} (${dAvgTxt(av)})</span> <span class="small muted">par ${c.par}</span></div>
     <div class="small muted" style="margin-top:3px">What real tour pros average here. Post a lower round to win the day.</div></div>`));
-  // CS257: streak calendar in the Beat-the-Pro flow; CS261: challenges (level + daily quests + weekly) below it
+  // CS257: streak calendar in the Beat-the-Pro flow. (CS302: quests/weekly/rep panel removed from here —
+  // it lives in the ≡ Challenges overlay; the owner wanted the Beat-the-Pro page decluttered.)
   if(!S.special && !PRACTICE){
     const st=streakDisplay();
     if(Object.keys(streakDays()).length>0 || st>0) add(streakCalendar(14));
-    const cn=challengesNode(); if(cn) add(cn);
   }
   const recTxt=rec?`<b style="color:var(--gold)">${dTot(rec.toPar, c.par)}</b> by ${esc(rec.name)}`
     :(sbSignedIn()?`<b style="color:var(--gold)">Unclaimed</b>, be the first to set it`:`<b style="color:var(--gold)">Sign in</b> to post your score`);
@@ -13456,16 +13456,8 @@ function scrDailyResult(){
         <div><div style="font-weight:800;font-size:20px;color:var(--gold)">${best}</div><div class="small muted" style="font-size:10px">Best streak</div></div>
       </div>
       ${(justPlayed&&!wonDay&&left>0)?`<div class="small center" style="margin-top:6px;color:#e9a23b;font-weight:700">Beat the pro in one of your ${left} remaining attempt${left>1?'s':''} to add a win to your record.</div>`:''}</div>`)); } }
-  // CS261 Challenges: celebrate anything just completed this round, then show the challenges panel
-  if(!practice && sbSignedIn()){
-    if(justPlayed && S.questDailyJustDone){
-      add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#35d6a0"><b style="color:#35d6a0">Daily Quests complete!</b><div class="small muted" style="margin-top:3px">All ${DAILY_QUEST_DEFS.length} done today · +${DAILY_QUEST_XP} Tour Rep</div></div>`));
-    }
-    if(justPlayed && (S.questWeeklyJustDone||[]).length){
-      add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">Weekly Challenge${S.questWeeklyJustDone.length>1?'s':''} complete!</b><div class="small muted" style="margin-top:3px">${S.questWeeklyJustDone.map(c=>esc(c.label)).join(' · ')} · +${WEEKLY_CHAL_XP} Tour Rep &amp; 🌀 mulli-spin each</div></div>`));
-    }
-    const cn=challengesNode(); if(cn){ cn.style.maxWidth='520px'; cn.style.margin='0 auto 8px'; add(cn); }
-  }
+  // CS302: quests/weekly/rep panel removed from the Beat-the-Pro result too — it lives in the ≡ Challenges
+  // overlay. (Quests/challenges are still CREDITED on finish; only their on-page display was removed here.)
   const rec=courseRecords()[r.course];
   if(r.record){
     // fire the celebration pop-up once for this result, then list the record prominently

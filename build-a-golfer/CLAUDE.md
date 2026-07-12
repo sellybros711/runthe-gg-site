@@ -7382,6 +7382,18 @@ allows Google Fonts, or self-host Anton.*
   to /golf. (No SQL — the "Fans" leaderboard SQL is the already-written `supabase/48_runtour_fans.sql`,
   still owner-to-run.)
 
+- **CS302 — remove Daily Quests / Weekly Challenges / Tour Rep from the Beat the Pro page (owner
+  IMG_8117).** The daily preview and daily result both rendered the full `challengesNode()` panel (the Tour
+  Rep tier bar + Daily Quests + Weekly Challenges), which the owner wanted off the Beat-the-Pro flow.
+  Removed the `challengesNode()` call from BOTH `scrDailyPreview` and `scrDailyResult` (plus the result
+  screen's "Daily Quests complete!" / "Weekly Challenge complete!" celebration scouts). The **streak
+  calendar is kept** on the preview (owner didn't flag it). Challenges/quests/rep still live in the ≡
+  **Challenges** overlay (nav tile + the once-a-day sign-in pop-up), and — importantly — quests/challenges
+  are still CREDITED on finish (the `questDaily`/`questWeekly` crediting is independent of the removed
+  display, unchanged). Verified in Playwright: the daily preview shows no challenges panel / rep bar / daily
+  quests / weekly challenges while the streak calendar + target still render, zero page errors. Deployed to
+  /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
