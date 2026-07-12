@@ -7449,6 +7449,32 @@ allows Google Fonts, or self-host Anton.*
   context. Verified in Playwright: exactly one nav after repeated renders, on `<body>`, Career=flag /
   Leaderboard=trophy, overlay (z40) above nav (z25), zero page errors. Deployed to /golf.
 
+- **CS307 — Daily / Monthly Spotlight course records can be TIED; every co-holder is shown (owner: "players
+  should be able to tie for first and all of their names should be reflected on the course record. I don't
+  want players to feel excluded for tying").** Previously the record RPC picked ONE holder per course
+  (`distinct on`, earliest-first), so anyone who tied the low score was excluded and told they "missed."
+  Now a tie is co-held and all names appear.
+  - **SQL `supabase/49_runtour_course_record_ties.sql` (owner-run):** redefines `runtour_course_records`
+    (daily / `p_legend` / `p_spotlight`) to return EVERY player tied for the lowest score at each course
+    (one row per co-holder, earliest-first), deduped so a player who tied on multiple days appears once.
+    Same return columns → drop-in. Validated on local Postgres: 3 tied holders all returned (worse scores
+    excluded), same-user dupes dedupe to one row, spotlight/legend buckets correct, idempotent.
+  - **Client:** new `crHolders(rec)` (joins all `names`), `buildCourseRecs(data)` (groups the RPC rows —
+    possibly many per course — into one record with every tied name; works pre- and post-migration) +
+    `adoptCourseRecs` (merges the global record into the local store, unioning tied names on an equal score).
+    The 3 `crLoad*` fns use them. `recordCourseScore` now stores `names[]` and, on a TIE (`toPar===cur.toPar`),
+    joins the player as a co-holder and returns `'tie'` (a new sole record returns `'record'`, worse
+    `false`) — so a tying player is credited + celebrated, never excluded. `verifyDailyRecord` preserves the
+    `'tie'`/`'record'` distinction. Every record display lists all holders (`crHolders`): the daily preview,
+    the daily + spotlight result banners (+ celebration pop-up copy: "Record Tied! · You share the record at
+    X with Y"), the Course Records overlay all-time rows, and the save/claim toasts ("shared course record").
+  - Deploy-safe: pre-migration the RPC returns one row/course, so the client shows a single name and degrades
+    gracefully; running migration 49 turns on the full tied list. **ACTION: run
+    `supabase/49_runtour_course_record_ties.sql`.**
+  Verified in Playwright: `buildCourseRecs` groups tied holders ("jah, coby") and excludes worse scores;
+  `recordCourseScore` returns record→tie→false and co-holds on a tie; `adoptCourseRecs` unions a server
+  co-holder into a local tie; zero page errors. Deployed client to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
