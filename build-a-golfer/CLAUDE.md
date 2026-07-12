@@ -7352,6 +7352,36 @@ allows Google Fonts, or self-host Anton.*
   the newest card scrolls to exactly `targetBottom` above the bar while the bar stays pinned; desktop →
   footer shown, controls in-flow. Zero page errors. Deployed to /golf.
 
+- **CS301 — fewer press pop-ups/season, enhanced reaction page, "Fan Support" vs following disambiguated,
+  and realistic follower ceiling (owner IMG_8111: "one too many of these pop ups per year · enhance the
+  response page after your selection · I don't understand fans +6 if my following is 371m · 371m feels too
+  high").**
+  1. **One fewer presser/year.** `STORY_PER_SEASON` 3→2 and the shared interruption budget
+     `SEASON_STOP_BUDGET` 5→4, so a season now pauses for at most 2 press conferences + 2 (really-big)
+     Moments. The guaranteed-first-storyline logic is unchanged, so a career year never passes with zero.
+  2. **Enhanced reaction page.** The post-choice fallout (was a flat wrap of comma-separated chips) is now a
+     polished aftermath card: the reaction quote, then three stat tiles — **Fan Support / Respect /
+     Confidence** — each showing the delta arrow AND the resulting value out of 100, then a separate
+     **Reach** row for the follower change, then the persona/endorsement badges. (Verified render: "Fan
+     Support ▲ +6 · 38/100 · Respect ▼ -3 · 47/100 · Confidence ▲ +4 · 64/100 · Reach ▲ 320K, now 8.5M
+     following".)
+  3. **"Fans +6" confusion fixed.** The 0-100 popularity AXIS is now labelled **"Fan Support"** everywhere
+     (the reaction tiles + the top two-axis meter, which also spells out "N following"), and shown as a
+     rating `/100`, clearly distinct from the raw **following/Reach** count. So "Fan Support +6" (a rating)
+     no longer reads as contradicting "371M following" (the reach).
+  4. **371M following → realistic ceiling.** `gainFollowers` was compounding (`cur*pct + flat`) with no
+     cap, so a long career exploded into hundreds of millions. Added diminishing returns (`damp =
+     FOLLOWERS_SOFT/(FOLLOWERS_SOFT+cur)`, `FOLLOWERS_SOFT=3.5M`) so the % growth tapers as the following
+     grows, plus a hard cap `FOLLOWERS_MAX=40M`. `careerStory()` also clamps a saved following to
+     `FOLLOWERS_MAX` on read, so the owner's inflated 371M **heals to 40M** on next load. Verified via the
+     real `gainFollowers`: a dominant 30-year career now tops out at 40M (was hundreds of M), an average
+     15-year career ~361K, and 371M heals to 40M. All tunable at the `FOLLOWERS_SOFT`/`FOLLOWERS_MAX`
+     constants.
+  Verified in Playwright (follower math across dominant/average/heal + the press overlay rendering the
+  enhanced reaction with the Fan Support/Respect/Confidence tiles + Reach row), zero page errors. Deployed
+  to /golf. (No SQL — the "Fans" leaderboard SQL is the already-written `supabase/48_runtour_fans.sql`,
+  still owner-to-run.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
