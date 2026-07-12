@@ -6686,26 +6686,34 @@ function momentPopup(ce, info){
    a career PERSONA (traits), can grant a small one-event confidence perk, and is logged to a "Career
    Story" feed shown on the season summary + career end. Interactive CAREER play only (never daily,
    circuit, or headless). The ONLY sim effect is a tiny, capped composure boost consumed in beginEvent. */
-const STORY_CONF_CAP=0.8, STORY_PER_SEASON=3, STORY_GAP=2;
+const STORY_CONF_CAP=0.8, STORY_PER_SEASON=2, STORY_GAP=2;   // CS301: 3→2 pressers/season (one too many)
 // Interruption budget (owner): a season is a SIMULATOR for anyone, not just golf fans — cap the total
 // number of times the sim pauses for a pop-up (storyline + Moment) at 4/season so casual users aren't
 // nagged into skipping. Moments (play-the-final-round) are prioritized within that budget over storylines.
-const SEASON_STOP_BUDGET=5, MOMENT_PER_SEASON=2;   // CS295: at most 2 (really-big) Moments/season
+const SEASON_STOP_BUDGET=4, MOMENT_PER_SEASON=2;   // CS295/CS301: ≤2 (really-big) Moments + ≤2 pressers/season
 function seasonStops(){ return (S.season&&S.season.stops)||0; }
 function seasonStopLeft(){ return SEASON_STOP_BUDGET - seasonStops(); }
 function careerStory(){ const c=(S.career=S.career||{}); if(!c.story) c.story={traits:{}, endorsements:0, fan:0, feed:[], lastBeat:-99, seasonCount:0, seenEvt:{}};
   const s=c.story; s.traits=s.traits||{}; s.feed=s.feed||[]; s.seenEvt=s.seenEvt||{};
-  if(s.followers==null) s.followers=FOLLOWERS_START; if(s.confidence==null) s.confidence=CONF_START; return s; }
+  if(s.followers==null) s.followers=FOLLOWERS_START; if(s.confidence==null) s.confidence=CONF_START;
+  if(s.followers>FOLLOWERS_MAX) s.followers=FOLLOWERS_MAX;   // CS301: heal old inflated saves (following was compounding to 100s of M)
+  return s; }
 /* ---- Momentum: CONFIDENCE (0-100, fluctuates with results + press choices; a small ±eo edge) and
    FOLLOWERS (career popularity that grows with wins/moments/soundbites). CS226. Career play only. ---- */
 const CONF_START=50, FOLLOWERS_START=2500, CONF_EO_MAX=0.7;
+// CS301: following was compounding (% of current + flat) with no ceiling → a long career hit absurd
+// hundreds of millions (owner saw 371M). Damp the % growth as the following grows (diminishing returns)
+// and hard-cap it, so a legendary career tops out in the realistic tens of millions, not 371M.
+const FOLLOWERS_SOFT=3.5e6, FOLLOWERS_MAX=40e6;
 function confClamp(v){ return Math.max(0, Math.min(100, v)); }
 function seasonConf(){ return (S.season && S.season.confidence!=null) ? S.season.confidence : CONF_START; }
 function adjConf(d){ if(!S.season) return; S.season.confidence=confClamp((S.season.confidence!=null?S.season.confidence:CONF_START)+d); }
 function confEo(){ return ((seasonConf()-50)/50)*CONF_EO_MAX; }   // ±0.7 OVR-equiv nudge for the player only; 0 at neutral
 function confLabel(c){ c=Math.round(c); return c>=82?'Locked in':c>=64?'Confident':c>=44?'Steady':c>=26?'Shaky':'Rattled'; }
 function confColor(c){ c=Math.round(c); return c>=64?'#35d6a0':c>=44?'#5fd0e0':c>=26?'#e0a53a':'#E14A33'; }
-function gainFollowers(pct, flat){ const s=careerStory(); const cur=s.followers||FOLLOWERS_START; const add=Math.round(cur*(pct||0)+(flat||0)); s.followers=Math.max(0, cur+add); return add; }
+function gainFollowers(pct, flat){ const s=careerStory(); const cur=s.followers||FOLLOWERS_START;
+  const damp=FOLLOWERS_SOFT/(FOLLOWERS_SOFT+Math.max(0,cur));   // CS301: % growth tapers as you get big
+  const add=Math.round(cur*(pct||0)*damp+(flat||0)); s.followers=Math.max(0, Math.min(FOLLOWERS_MAX, cur+add)); return add; }
 function fmtFollowers(n){ n=Math.round(n||0);
   if(n>=1e6) return (n/1e6).toFixed(n>=1e7?0:1).replace(/\.0$/,'')+'M';
   if(n>=1e4) return Math.round(n/1e3)+'K';
@@ -6860,7 +6868,7 @@ function repMeterHTML(opts){ opts=opts||{}; const f=repFans(), r=repRespect(), p
     <div class="cmeter"><span style="width:${Math.max(4,val)}%;background:${col}"></span></div>
     <div class="small" style="color:${col};font-weight:800;letter-spacing:0">${sub}</div></div>`;
   return `<div style="display:flex;gap:12px;align-items:stretch">
-    <div style="flex:1">${bar(f,'#ff9d3a','Fans',repFansLabel(f)+' · '+fmtFollowers(careerStory().followers))}</div>
+    <div style="flex:1">${bar(f,'#ff9d3a','Fan Support',repFansLabel(f)+' · '+fmtFollowers(careerStory().followers)+' following')}</div>
     <div style="flex:1">${bar(r,'#5fd0e0','Respect',repRespLabel(r))}</div>
   </div>${opts.persona&&p?`<div class="small" style="text-align:center;margin-top:8px;color:#ffd45e;font-weight:800">${esc(p.name)}</div>`:''}`;
 }
@@ -7253,22 +7261,39 @@ function showStoryline(sb){
       // tick the at-stake two-axis meter to its new values (meter width animates via CSS)
       const repBox=ov.querySelector('.js-rep');
       if(repBox) repBox.innerHTML=repMeterHTML();
-      // reporter reaction + the tangible fallout
+      // CS301: reporter reaction + the tangible fallout, redesigned so the 0-100 REPUTATION ratings
+      // (Fan Support / Respect / Confidence) read clearly as ratings out of 100, distinct from your raw
+      // "following" reach count — the owner was confused by "Fans +6" sitting next to "371M following".
       btns.querySelectorAll('button').forEach(x=>x.disabled=true);
-      const chips=[];
-      if(dFans!==0) chips.push(`<span style="color:${dFans>0?'#ff9d3a':'#E14A33'};font-weight:800">Fans ${dFans>0?'▲':'▼'} ${dFans>0?'+':''}${dFans}</span>`);
-      if(dResp!==0) chips.push(`<span style="color:${dResp>0?'#5fd0e0':'#E14A33'};font-weight:800">Respect ${dResp>0?'▲':'▼'} ${dResp>0?'+':''}${dResp}</span>`);
-      if(dConf!==0) chips.push(`<span style="color:${dConf>0?'#35d6a0':'#E14A33'};font-weight:800">Confidence ${dConf>0?'↑':'↓'} ${dConf>0?'+':''}${dConf}</span>`);
-      if(dFol>0) chips.push(`<span style="color:#9fb3a8;font-weight:700">▲ ${fmtFollowers(dFol)} following</span>`);
-      else if(dFol<0) chips.push(`<span style="color:#c98;font-weight:700">▼ ${fmtFollowers(-dFol)} following</span>`);
-      if(!backfired && ch.endo) chips.push(`<span style="color:#ffd45e;font-weight:800">Endorsement signed</span>`);
-      if(personaShift) chips.push(`<span style="color:#ffd45e;font-weight:800">Now: ${esc(personaShift.name)}</span>`);
-      else if(personaNew) chips.push(`<span style="color:#ffd45e;font-weight:800">You’re becoming ${esc(personaNew)}</span>`);
+      const fansNow=repFans(), respNow=repRespect(), confNow=Math.round(seasonConf());
+      const statTile=(label,dv,now,upCol)=>{
+        const dcol = dv>0?upCol : dv<0?'#E14A33':'#67839a';
+        const arrow = dv>0?'▲' : dv<0?'▼' : '–';
+        return `<div style="flex:1 1 86px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:7px 9px">
+          <div style="color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;font:800 9px/1 var(--body)">${label}</div>
+          <div style="display:flex;align-items:baseline;gap:5px;margin-top:4px">
+            <span style="color:${dcol};font-weight:800;font-size:12.5px">${arrow}${dv>0?' +':dv<0?' ':' '}${dv||0}</span>
+            <span style="color:#eef4f7;font-weight:800;font-size:15px">${Math.round(now)}</span>
+            <span style="color:#5f7d90;font-size:9px;font-weight:700">/100</span>
+          </div></div>`;
+      };
+      const reachRow = dFol!==0 ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+        <span style="color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;font:800 9px/1 var(--body)">Reach</span>
+        <span style="color:${dFol>0?'#35d6a0':'#c98'};font-weight:800">${dFol>0?'▲':'▼'} ${fmtFollowers(Math.abs(dFol))}</span>
+        <span class="small" style="color:#9fb3a8">now ${fmtFollowers(story.followers)} following</span></div>` : '';
+      const badge = (!backfired && personaShift) ? `<div style="margin-top:9px;color:#ffd45e;font-weight:800">★ Now: ${esc(personaShift.name)}</div>`
+        : (!backfired && personaNew) ? `<div style="margin-top:9px;color:#ffd45e;font-weight:800">★ You’re becoming ${esc(personaNew)}</div>` : '';
+      const endoBadge = (!backfired && ch.endo) ? `<div style="margin-top:6px;color:#ffd45e;font-weight:800">✍ Endorsement signed</div>` : '';
       replyBox.innerHTML='';
-      replyBox.appendChild($(`<div class="scout" style="border-color:${backfired?'#E14A33':'#2f6f86'};text-align:left;margin:2px 0 10px">
-        <div class="small" style="color:${backfired?'#ff8f7e':'#7fa8b8'};letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:4px">${backfired?'It backfired':'The reaction'}</div>
-        <div style="color:#eef4f7">${esc(reaction)}</div>
-        ${chips.length?`<div class="small" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px 12px">${chips.join('')}</div>`:''}</div>`));
+      replyBox.appendChild($(`<div class="scout" style="border-color:${backfired?'#E14A33':'#2f6f86'};text-align:left;margin:2px 0 10px;padding:12px 13px">
+        <div class="small" style="color:${backfired?'#ff8f7e':'#7fa8b8'};letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:5px">${backfired?'It backfired':'The reaction'}</div>
+        <div style="color:#eef4f7;font-size:14.5px;line-height:1.4">${esc(reaction)}</div>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
+          ${statTile('Fan Support',dFans,fansNow,'#ff9d3a')}
+          ${statTile('Respect',dResp,respNow,'#5fd0e0')}
+          ${statTile('Confidence',dConf,confNow,'#35d6a0')}
+        </div>
+        ${reachRow}${endoBadge}${badge}</div>`));
       // CS291: the world reacts — fan tweets, a headline, and an occasional opponent quote
       try{ replyBox.appendChild($(pressBuzzHTML(pressBuzz(ch, beat, ctx, backfired)))); }catch(e){}
       const cont=$(`<button class="btn goldfill">Back to the tournament ▸</button>`);
