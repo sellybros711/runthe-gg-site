@@ -7394,6 +7394,18 @@ allows Google Fonts, or self-host Anton.*
   quests / weekly challenges while the streak calendar + target still render, zero page errors. Deployed to
   /golf.
 
+- **CS303 — no auto Challenges pop-up (put it behind a "Daily Quests" button) + remove the clipped setup
+  avatar name (owner).** (1) The once-a-day Challenges sign-in pop-up (`maybeChallengesPopup`, CS290) popped
+  over the title screen; removed that auto-call and added a **🎯 Daily Quests** pill-button beside the
+  **📖 How to Play** button under the hero (both `.howtop` style, in one centered flex row). It opens the
+  same Challenges overlay (`S.overlay='challenges'`) — the panel (Tour Rep bar + Daily Quests + Weekly
+  Challenges) is now only shown on demand. (2) The setup "live stage" name label above the avatar
+  (`.avstage-name`, CS266) was clipping (display-italic overflow, e.g. "JJ") and is redundant — the golfer
+  name is already in the Name field below on that screen — so it was removed. Verified in Playwright: the
+  title shows both How to Play + Daily Quests, no overlay auto-opens, clicking Daily Quests opens the
+  Challenges overlay; the setup screen has no name label above the avatar (stage + Name field intact); zero
+  page errors. Deployed to /golf. (The `.avstage-name` CSS rule is left in place, unused/harmless.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

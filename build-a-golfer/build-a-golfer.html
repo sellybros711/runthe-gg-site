@@ -5464,9 +5464,13 @@ function scrTitle(){
   w.appendChild($(`<h1 class="hero" style="font-size:clamp(34px,8.5vw,52px)"><span class="hr1">Your Golfer.</span><br><span class="hr2">Your Tour.</span></h1>`));
   w.appendChild($(`<div class="herorule" aria-hidden="true"><span></span><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.6" fill="none" stroke="#EBA61F" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1.5" fill="#EBA61F"/></svg><span></span></div>`));
   // CS287: the "30-Year Career Simulation" badge is replaced by the How to Play button in this spot (owner)
-  { const hw=$(`<div class="center" style="margin:10px 0 12px"></div>`);
+  // CS303: a "Daily Quests" button sits beside it (owner: no auto-pop-up — open the challenges panel here)
+  { const hw=$(`<div class="center" style="margin:10px 0 12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"></div>`);
     const hb=$(`<button type="button" class="howtop" aria-label="How to Play">📖 How to Play</button>`);
-    hb.onclick=openRules; hw.appendChild(hb); w.appendChild(hw); }
+    hb.onclick=openRules; hw.appendChild(hb);
+    const qb=$(`<button type="button" class="howtop" aria-label="Daily Quests">🎯 Daily Quests</button>`);
+    qb.onclick=()=>{ S.overlay='challenges'; render(); }; hw.appendChild(qb);
+    w.appendChild(hw); }
   // (career bests moved off the top onto the new-career card, see careerHeroCard)
   const stack=$(`<div class="stack"></div>`);
   const ri=resumeInfo();
@@ -5534,7 +5538,7 @@ function scrTitle(){
   if(SHOP_ENABLED) mkTile(ic('cart'),'Pro Shop', signedIn?(ic('coin')+' '+coinFmt(coinBalance())):'Gear & boosts', ()=>{S.overlay='shop';render();}, true);
   // (How to Play moved up under the hero, CS287)
   w.appendChild(sec);
-  if(signedIn) setTimeout(()=>{ try{ maybeChallengesPopup(); }catch(e){} }, 260);   // CS290: once-a-day challenges pop-up on entry
+  // CS303: the once-a-day challenges pop-up is removed (owner) — the "🎯 Daily Quests" button under the hero opens it.
   const credit=$(`<div class="small muted center" style="margin-top:16px;line-height:1.6;opacity:.7">Player ratings derived from DataGolf data. Not affiliated with the PGA Tour, DataGolf, or any player.</div>`);
   w.appendChild(credit);
   add(w);
@@ -5577,7 +5581,8 @@ function scrSetup(){
   if(full){ f.classList.add('av-setup-full'); f.style.filter='drop-shadow(0 10px 20px rgba(0,0,0,.5))'; }
   else { f.style.width='184px'; f.style.height='184px'; f.style.filter='drop-shadow(0 9px 18px rgba(0,0,0,.45))'; }
   const stage=$(`<div class="avstage"></div>`);
-  stage.appendChild($(`<div class="avstage-name">${esc((sbSignedIn()&&(S.name||'').trim())?S.name:'Your Golfer')}</div>`));
+  // CS303: the name label above the avatar was clipping (display-italic overflow) and is redundant — the
+  // name is shown in the Name field below on this screen. Removed.
   stage.appendChild(f);
   stage.appendChild($(`<div class="avfloor" aria-hidden="true"></div>`));
   const figwrap=$(`<div class="setup-figwrap"></div>`); figwrap.appendChild(stage); left.appendChild(figwrap);
