@@ -99,6 +99,11 @@ begin
 end; $$;
 
 -- ---- boards: return `followers` + support p_sort='fans' (redefine of 38's 3-arg fns) ----
+-- These already exist from migration 38 with a return type that lacks `followers`, and Postgres won't let
+-- `create or replace` change a function's return type, so drop them first (safe: read-only leaderboard fns).
+drop function if exists public.runtour_season_board(int,text,text);
+drop function if exists public.runtour_career_board(int,text,text);
+
 create or replace function public.runtour_season_board(
     p_limit int default 100, p_sort text default 'earnings', p_dir text default 'desc')
 returns table(rank int, user_id uuid, display_name text, golfer_name text,
