@@ -7406,6 +7406,27 @@ allows Google Fonts, or self-host Anton.*
   Challenges overlay; the setup screen has no name label above the avatar (stage + Name field intact); zero
   page errors. Deployed to /golf. (The `.avstage-name` CSS rule is left in place, unused/harmless.)
 
+- **CS304 — persistent bottom tab nav (Home / Career / Daily / Online / Leaderboard) (owner: liked the
+  bottom nav in the TikTok promo mockup, "navigating to any page from any page really easy").** New
+  `bottomNav()` renders a fixed bottom tab bar (5 tabs, clean `ic()` SVG icons — home / golfer / target /
+  swords / chartup — active tab in gold, `aria-current`), appended in `render()` AFTER the screen dispatch
+  (so `has-cupbar` is known) on every screen EXCEPT immersive live-play ones that have their own bottom
+  controls (`NAV_HIDE`: dailyround, playoffwatch, h2hwatch, h2hpreview, h2hdraft, h2hlobby, and the team-cup
+  reveal via `has-cupbar`). `#app.has-botnav` reserves 58px + safe-area so the footer never hides behind it.
+  Owner picks (AskUserQuestion): 5th tab = **Leaderboard** (the Pro Shop is disabled, so Store wasn't
+  used), and show **everywhere except live play**. Routing mirrors the title's own handlers: Home →
+  title; Career → `resumeCareer()`/`viewEndedCareer()` if a save exists else `reset()`+setup; Daily →
+  `startDailyChallenge()`; Online → `openH2H()` (guest sign-in nudge); Leaderboard → `S.overlay='leaderboard'`.
+  z-index 25, so an open full-screen overlay (z-40) simply covers it (close it to navigate) — standard modal
+  behavior. Active-tab detection groups screens (career: setup/draft/build/season/summary/offseason/
+  careerend/circuitend/recap; daily: dailyintro/dailyprev/dailyround/dailyresult; online: all h2h*). Wrapped
+  in its own try/catch so it can never blank the page. Verified in Playwright: 5 fixed tabs on the title
+  (Home active, 58px reserve), Career active on the season screen, Online active on h2hhome, Leaderboard tab
+  opens the overlay + marks active, Home tab from setup returns to title, Daily tab starts the daily; nav
+  hidden on dailyround / h2hwatch; the nav renders even when a screen fn throws (resilient, appended after
+  the dispatch). Screenshot confirms the mockup-style bar. Deployed to /golf. Tunable: `NAV_HIDE`, the tab
+  set/icons in `bottomNav`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
