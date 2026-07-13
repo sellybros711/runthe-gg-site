@@ -7919,6 +7919,18 @@ allows Google Fonts, or self-host Anton.*
   line); the buzz engine/rendering is unchanged. Deployed to /golf. Tunable: the `PB_TONES` pools, the
   2-vs-3 tweet probability, `PB_HANDLES`/`PB_OUTLETS`.
 
+- **CS336 — fan handles are GENERATED on the fly (owner: "the fan handles should generate on the spot so
+  it's different every time").** Replaced the fixed 30-name `PB_HANDLES` pool with a procedural `pbHandle()`
+  that assembles a golf-flavored username from word-part banks (`PB_H1` adjectives/nouns ×44, `PB_H2`
+  suffixes ×32, `PB_HNAME` first names ×22) in several shapes (word+suffix, word_name, the+word+suffix,
+  word+name) with a ~40% chance of a trailing number — e.g. `bunkerwhisperer`, `chip_gus53`, `acegoat80`,
+  `drawronnie`, `flag_finn`, `the19thnerd92`. `pressBuzz` now generates a unique handle per tweet (dedupe
+  loop within the presser). Verified in Playwright: 1822 distinct handles out of 2000 generations, all valid
+  (`^[a-z0-9_]+$`, 4-24 chars), 0 duplicate handles within a single presser across 200 pressers, 472/487
+  distinct across those pressers — 0 page errors. Data/generator-only; the buzz engine is otherwise
+  unchanged. Deployed to /golf. Tunable: the `PB_H1`/`PB_H2`/`PB_HNAME` banks + the shape/number
+  probabilities in `pbHandle`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

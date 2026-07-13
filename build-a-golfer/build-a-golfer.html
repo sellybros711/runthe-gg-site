@@ -7588,7 +7588,21 @@ const PRESS_MIC=`<svg viewBox="0 0 24 32" width="30" height="40" aria-hidden="tr
    opponent quote, tone-matched to the choice (bold / humble / gritty / backfired / neutral). Real,
    relatable "tweets & headlines" so the press conference feels authentic and shareable. Avoids the
    theme-mapped emoji (⚔🐐🔥🎯 + arrows) so nothing renders as an SVG icon mid-sentence. */
-const PB_HANDLES=['birdiebandit','fairway_frank','teeboxtina','the19thholer','greengrass_gg','sundaycharge','pin_seeker','bogeyfreebri','driverdanny','claretchaser','the_backnine','golfgremlin','albatross_al','mulliganmax','flagstickfan','tourjunkie88','rangeratkev','wedgewitch','fadeordraw','par5paulie','clubhouseleak','scramblesam','frontninefinn','majorszn','downtheline_dm','gimmegolf','sundayreds','the_yips','caddieshackcait','linksandlager'];
+// CS336: fan handles are GENERATED on the fly (pbHandle) for near-infinite variety, so the same usernames
+// never recur. Assembled from golf-flavored word parts + optional name/number, several shapes.
+const PB_H1=['birdie','bogey','fairway','greenside','sunday','backnine','teebox','pin','flag','driver','wedge','putt','links','bunker','eagle','mulligan','scramble','range','clubhouse','par3','par5','ace','dogleg','fringe','rough','gimme','chip','draw','fade','albatross','sandtrap','tour','major','claret','green','19th','frontnine','downtheline','caddie','divot','tempo','grip','flagstick','shortgame'];
+const PB_H2=['fan','junkie','chaser','seeker','hunter','addict','hacker','hero','guru','nerd','watcher','life','szn','time','gremlin','bandit','whisperer','dawg','goat','era','wire','daily','vibes','truther','stan','enjoyer','head','poster','takes','nation','report','club'];
+const PB_HNAME=['frank','tina','kev','sam','finn','cait','paulie','danny','al','bri','betty','ronnie','deb','marco','jules','theo','nash','pip','gus','mo','ray','vic'];
+function pbHandle(){
+  const r=Math.random(); let h;
+  if(r<0.30) h=pbPick(PB_H1)+pbPick(PB_H2);
+  else if(r<0.52) h=pbPick(PB_H1)+'_'+pbPick(PB_HNAME);
+  else if(r<0.68) h='the'+pbPick(PB_H1)+pbPick(PB_H2);
+  else if(r<0.84) h=pbPick(PB_H1)+pbPick(PB_H2);
+  else h=pbPick(PB_H1)+pbPick(PB_HNAME);
+  if(Math.random()<0.4) h+=(Math.random()<0.5?'':'_')+(Math.floor(Math.random()*90)+10);   // ~40% get a number tag
+  return h;
+}
 const PB_OUTLETS=['Tour Report','The Clubhouse','Fairway Wire','Global Golf Daily','The Back Nine','Pin High','Bunker & Blade','The Range Finder','The Cut Line','Sunday Red','Green Report','Tee Sheet','The Approach','Caddyshack Daily'];
 const PB_AVCOL=['#5fd0e0','#35d6a0','#ffd45e','#ff9d6b','#c9a6ff','#7fd0a0','#f18fb0','#8fb8ff'];
 const PB_NAMES=['Kellan Vance','Rory Dax','Miko Sato','Andre Cole','Tuomas Vire','Beau Ramsey','Nils Berg','Cade Whitlock'];
@@ -7693,8 +7707,8 @@ function pressBuzz(ch, beat, ctx, backfired){
   const nTw=Math.random()<0.4?3:2;
   const pool=T.tw.slice(); const tweets=[];
   for(let i=0;i<nTw && pool.length;i++){ const idx=Math.floor(Math.random()*pool.length); tweets.push(pbFill(pool.splice(idx,1)[0], v)); }
-  const handles=PB_HANDLES.slice();
-  const rows=tweets.map(tx=>{ const h=handles.splice(Math.floor(Math.random()*handles.length),1)[0];
+  const usedH=new Set();
+  const rows=tweets.map(tx=>{ let h,g=0; do{ h=pbHandle(); }while(usedH.has(h)&&g++<8); usedH.add(h);   // CS336: generated per tweet, unique within a presser
     return {handle:h, color:pbPick(PB_AVCOL), time:pbPick(['2m','4m','7m','11m','18m','24m']), likes:120+Math.floor(Math.random()*4800), tx}; });
   const headline={outlet:pbPick(PB_OUTLETS), text:pbFill(pbPick(T.hd), v)};
   let opp=null;
