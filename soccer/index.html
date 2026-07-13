@@ -677,6 +677,7 @@
   .hero .stadium .stripes{fill:#0f9048;}
   .hero .stadium .fl-pole{fill:#8496b0;}       /* silver stanchions by day */
   .hero .stadium .fl-head{fill:#a6b4c8;}
+  .hero .stadium .day-cloud{opacity:.92;}      /* clouds by day (behind the towers) */
   .hero .stadium .stars{opacity:0;}            /* no stars by day */
   .hero .stadium .flood{display:none;}         /* floodlight glow + lamps off by day */
   .hero .stadium .mark-neon{opacity:0;}        /* no neon glow on the lines */
@@ -691,32 +692,23 @@
   html.dark .hero .stadium .stripes{fill:#0a5a2e;}
   html.dark .hero .stadium .fl-pole{fill:#22335f;}
   html.dark .hero .stadium .fl-head{fill:#16213f;}
+  html.dark .hero .stadium .day-cloud{display:none;}
   html.dark .hero .stadium .stars{opacity:.9;}
   html.dark .hero .stadium .flood{display:inline;}
   html.dark .hero .stadium .mark-neon{opacity:.5;}
   html.dark .hero .stadium .horizon-glow{opacity:1;}
   html.dark .hero .stadium .horizon-line{opacity:.55;}
-  /* ---- daytime sky overlay (sun, clouds, blimp) — positioned in the hero's sky
-     band so it's always visible no matter how the stadium SVG is cropped ---- */
+  /* ---- daytime blimp overlay — positioned in the hero's sky band so it's always
+     visible no matter how the stadium SVG is cropped. Flies nose-first (right→
+     left). Clouds live in the stadium SVG so the light stands sit in front. ---- */
   .hero .sky-day{position:absolute;left:0;right:0;top:0;height:100%;z-index:1;
     pointer-events:none;overflow:hidden;}
   html.dark .hero .sky-day{display:none;}      /* night has its own sky */
-  .hero .sd-sun{position:absolute;top:6%;right:11%;width:clamp(52px,7.5vw,92px);height:auto;
-    filter:drop-shadow(0 0 16px rgba(255,214,90,.6));}
-  .hero .sd-rays{transform-box:fill-box;transform-origin:center;animation:sdSunSpin 70s linear infinite;}
-  .hero .sd-cloud{position:absolute;width:clamp(60px,11vw,132px);height:auto;opacity:.92;
-    filter:drop-shadow(0 3px 6px rgba(40,70,110,.18));}
-  .hero .sd-cloud-1{top:9%;left:5%;animation:sdCloud 30s ease-in-out infinite;}
-  .hero .sd-cloud-2{top:19%;left:58%;transform:scale(.8);animation:sdCloud 40s ease-in-out infinite reverse;}
-  .hero .sd-cloud-3{top:6%;left:37%;transform:scale(.62);opacity:.82;animation:sdCloud 34s ease-in-out infinite;}
-  .hero .sd-blimp{position:absolute;top:12%;left:-16%;width:clamp(76px,13vw,150px);height:auto;
+  .hero .sd-blimp{position:absolute;top:12%;left:110%;width:clamp(76px,13vw,150px);height:auto;
     filter:drop-shadow(0 4px 7px rgba(30,50,80,.28));animation:sdBlimp 42s linear infinite;}
-  @keyframes sdSunSpin{to{transform:rotate(360deg);}}
-  @keyframes sdCloud{0%,100%{margin-left:0;}50%{margin-left:22px;}}
-  @keyframes sdBlimp{0%{left:-16%;}100%{left:114%;}}
+  @keyframes sdBlimp{0%{left:110%;}100%{left:-18%;}}
   @media (prefers-reduced-motion:reduce){
-    .hero .sd-rays,.hero .sd-cloud,.hero .sd-blimp{animation:none;}
-    .hero .sd-blimp{left:52%;}
+    .hero .sd-blimp{animation:none;left:52%;}
   }
   /* DAY veil — lighter up top so the sky, sun and blimp read bright; still darkens
      the lower pitch for button/text contrast. Night restores the deep veil below. */
@@ -3236,6 +3228,20 @@ window.GA_ID='G-L29P5MRWKE';
           <circle cx="5"  cy="30" r=".35"/><circle cx="55" cy="21" r=".3"/><circle cx="40" cy="28" r=".3"/>
         </g>
 
+        <!-- daytime clouds (day only) — drawn BEFORE the towers so the light stands
+             sit in front of them; kept low enough to survive the wide-screen crop -->
+        <g class="day-cloud" fill="#ffffff">
+          <g transform="translate(16 43)">
+            <ellipse cx="0" cy="1" rx="7" ry="2.4"/><circle cx="-3.4" cy="0" r="2.4"/><circle cx="0" cy="-1.6" r="3.2"/><circle cx="3.6" cy="-.2" r="2.6"/>
+          </g>
+          <g transform="translate(64 49) scale(.82)">
+            <ellipse cx="0" cy="1" rx="7" ry="2.4"/><circle cx="-3.4" cy="0" r="2.4"/><circle cx="0" cy="-1.6" r="3.2"/><circle cx="3.6" cy="-.2" r="2.6"/>
+          </g>
+          <g transform="translate(41 39) scale(.66)">
+            <ellipse cx="0" cy="1" rx="7" ry="2.4"/><circle cx="-3.4" cy="0" r="2.4"/><circle cx="0" cy="-1.6" r="3.2"/><circle cx="3.6" cy="-.2" r="2.6"/>
+          </g>
+        </g>
+
         <!-- floodlight towers (silver stanchions by day; glow + lamps flicker at night) -->
         <g>
           <rect class="fl-pole" x="13.4" y="40" width="1.2" height="26"/>
@@ -3269,19 +3275,7 @@ window.GA_ID='G-L29P5MRWKE';
       <!-- daytime sky dressing: sits in the hero's sky band so it's always visible
            regardless of how the stadium SVG is cropped. Hidden in dark mode. -->
       <div class="sky-day" aria-hidden="true">
-        <svg class="sd-sun" viewBox="0 0 64 64">
-          <g class="sd-rays" stroke="#FFD65A" stroke-width="3" stroke-linecap="round">
-            <line x1="32" y1="2" x2="32" y2="11"/><line x1="32" y1="53" x2="32" y2="62"/>
-            <line x1="2" y1="32" x2="11" y2="32"/><line x1="53" y1="32" x2="62" y2="32"/>
-            <line x1="10.8" y1="10.8" x2="17.2" y2="17.2"/><line x1="46.8" y1="46.8" x2="53.2" y2="53.2"/>
-            <line x1="10.8" y1="53.2" x2="17.2" y2="46.8"/><line x1="46.8" y1="17.2" x2="53.2" y2="10.8"/>
-          </g>
-          <circle cx="32" cy="32" r="14" fill="#FFD24A"/>
-          <circle cx="32" cy="32" r="14" fill="#FFF3B0" opacity=".5"/>
-        </svg>
-        <svg class="sd-cloud sd-cloud-1" viewBox="0 0 66 30"><g fill="#fff"><ellipse cx="33" cy="21" rx="27" ry="7.5"/><circle cx="20" cy="17" r="9"/><circle cx="34" cy="12" r="12"/><circle cx="47" cy="17" r="9"/></g></svg>
-        <svg class="sd-cloud sd-cloud-2" viewBox="0 0 66 30"><g fill="#fff"><ellipse cx="33" cy="21" rx="27" ry="7.5"/><circle cx="20" cy="17" r="9"/><circle cx="34" cy="12" r="12"/><circle cx="47" cy="17" r="9"/></g></svg>
-        <svg class="sd-cloud sd-cloud-3" viewBox="0 0 66 30"><g fill="#fff"><ellipse cx="33" cy="21" rx="27" ry="7.5"/><circle cx="20" cy="17" r="9"/><circle cx="34" cy="12" r="12"/><circle cx="47" cy="17" r="9"/></g></svg>
+        <!-- blimp is drawn nose-first in its travel direction; it crosses over the top -->
         <svg class="sd-blimp" viewBox="0 0 46 20">
           <ellipse cx="21" cy="9" rx="16.5" ry="6" fill="#dfe4ec" stroke="#a7afbe" stroke-width=".7"/>
           <ellipse cx="15" cy="6.6" rx="7.5" ry="2.6" fill="#fff" opacity=".55"/>
