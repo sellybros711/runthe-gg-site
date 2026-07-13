@@ -10867,10 +10867,14 @@ const HV_FLAG_OVR={
   'Oakmont':{c:'#3a3f4a',a:'#f2c94c',s:'solid'},                   // charcoal / gold
   'Kiawah Island Ocean':{c:'#00789c',a:'#ffffff',s:'stripe'},      // ocean blue
   'Whistling Straits':{c:'#e23b2e',a:'#ffffff',s:'stripe'} };
-// hue-based so nearly every course flies a distinct flag (consistent per course-key hash)
+// hue-based so nearly every course flies a distinct flag (consistent per course-key hash). Output HEX
+// (not hsl()) so the flag ALWAYS paints — some SVG renderers reject hsl() in a fill presentation attribute.
+function hslHex(h,s,l){ s/=100; l/=100; const k=n=>(n+h/30)%12, a=s*Math.min(l,1-l);
+  const f=n=>{ const c=l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1))); return Math.round(255*c).toString(16).padStart(2,'0'); };
+  return '#'+f(0)+f(8)+f(4); }
 function hvFlag(k){ if(k && HV_FLAG_OVR[k]) return HV_FLAG_OVR[k];
   const h=(k?dHash(k):0x1234)>>>0, hue=h%360, sat=60+((h>>>9)%24), lit=45+((h>>>15)%13);
-  return {c:`hsl(${hue} ${sat}% ${lit}%)`, a:HV_FLAG_ACC[(h>>>4)%HV_FLAG_ACC.length], s:HV_FLAG_STYLE[(h>>>3)&1]}; }
+  return {c:hslHex(hue,sat,lit), a:HV_FLAG_ACC[(h>>>4)%HV_FLAG_ACC.length], s:HV_FLAG_STYLE[(h>>>3)&1]}; }
 function hvFlagSVG(px,py,fl){ const top=py-15;
   let f=`<line x1="${px}" y1="${py}" x2="${px}" y2="${top}" stroke="#f4f2ea" stroke-width="1.3"/>`;
   f+=`<path d="M ${px} ${top} q 5 0.6 9 2.6 q -4.2 1.9 -9 3.4 Z" fill="${fl.c}" stroke="rgba(0,0,0,.4)" stroke-width=".5"/>`;
@@ -11561,8 +11565,9 @@ function hvTerrain(g, seedN, B){
   // style) regardless of each course's own colors — a highlight top-left, shadow bottom-right, overlaid.
   defs+=`<radialGradient id="hvsphere" cx=".33" cy=".28" r=".82"><stop offset="0" stop-color="#ffffff" stop-opacity=".34"/><stop offset=".42" stop-color="#ffffff" stop-opacity="0"/><stop offset=".72" stop-color="#02100a" stop-opacity="0"/><stop offset="1" stop-color="#02100a" stop-opacity=".46"/></radialGradient>`;
   defs+=`<linearGradient id="hvcone" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff" stop-opacity=".22"/><stop offset=".46" stop-color="#ffffff" stop-opacity="0"/><stop offset="1" stop-color="#02100a" stop-opacity=".44"/></linearGradient>`;
-  defs+=`<filter id="hvsoft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>`;
-  defs+=`<filter id="hvgsoft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4.5"/></filter>`;  // soft green-elevation shading
+  // (CS318: removed the unused hvsoft filter + the green-elevation blur — SVG filters force an offscreen
+  // re-rasterization on every reveal, which was a real cost; the green shading now uses filter-free
+  // low-opacity organic lobes instead.)
   let fwDD=null, fwBounds=null;   // fwBounds: per-depth fairway screen x-range → keeps the forest out of the corridor
   if(g.par!==3){ const Lp=[],Rp=[];
     for(let k=0;k<=22;k++){ const y=g.fw0+(g.fw1-g.fw0)*k/22;
@@ -11770,19 +11775,9 @@ function hvTerrain(g, seedN, B){
       o+=`<line x1="${bx.toFixed(1)}" y1="${py.toFixed(1)}" x2="${(bx+lean).toFixed(1)}" y2="${(py-h).toFixed(1)}" stroke="#3f6a2e" stroke-width=".85" stroke-linecap="round"/>`;
       if(k===1) o+=`<ellipse cx="${(bx+lean).toFixed(1)}" cy="${(py-h).toFixed(1)}" rx=".7" ry="1.7" fill="#7a5326"/>`; }   // cattail head
     return o; };
-  // tournament atmosphere: a greenside grandstand (tiered seating full of fans) + loose gallery crowds
+  // tournament atmosphere: loose gallery crowds (CS318: removed the grandstand per owner)
   const CROWD=['#e6ddce','#cf5347','#3f6ecb','#e0a93a','#f2eee6','#7a4a86','#2f8f5a','#d98cae','#4aa3c0','#b7bec7'];
   const cCol=(fs)=>CROWD[(hvHash(seedN,fs,5)*CROWD.length)|0];
-  const grandstand=(cx,cy,w,fs)=>{ const h=w*0.46, x=cx-w/2, y=cy-h/2;
-    let o=`<rect x="${(x+1).toFixed(1)}" y="${(y+2).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="2.5" fill="#04120a" opacity=".4"/>`;   // cast shadow
-    o+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="2.5" fill="#464d57" stroke="#23272e" stroke-width=".9"/>`;   // structure
-    o+=`<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${(h*0.3).toFixed(1)}" rx="2.5" fill="#2c313a"/>`;   // shaded back wall
-    const rows=3, per=Math.max(5,Math.round(w/2.3));
-    for(let r=0;r<rows;r++){ const ry=y+h*0.34+r*(h*0.58)/(rows-1);
-      for(let c=0;c<per;c++){ const fx=x+2.4+c*(w-4.8)/(per-1);
-        o+=`<circle cx="${fx.toFixed(1)}" cy="${ry.toFixed(1)}" r="0.95" fill="${cCol(fs*29+r*per+c)}"/>`; } }
-    o+=`<rect x="${x.toFixed(1)}" y="${(y+h-1.1).toFixed(1)}" width="${w.toFixed(1)}" height="1.3" rx="0.6" fill="#1b1e24"/>`;   // front rail
-    return o; };
   const gallery=(cx,cy,n,sw,fs)=>{ let o=''; for(let i=0;i<n;i++){ const gx=cx+(hvHash(seedN,fs*7+i,3)-0.5)*sw, gy=cy+(hvHash(seedN,fs*5+i,4)-0.5)*sw*0.44;
       o+=`<circle cx="${gx.toFixed(1)}" cy="${(gy+0.9).toFixed(1)}" r="1" fill="#04120a" opacity=".28"/><circle cx="${gx.toFixed(1)}" cy="${gy.toFixed(1)}" r="0.95" fill="${cCol(fs*11+i)}"/>`; }
     return o; };
@@ -11837,7 +11832,7 @@ function hvTerrain(g, seedN, B){
     // CS247 declutter: bigger STEP (fewer trees), larger/varied trees, an OPEN band along the fairway
     // (breathing room), organic clearings, and half the flower speckles — so a hole reads as an intentional
     // tree-framed course, not a wall-to-wall carpet of identical dots.
-    const dense=(B.ground==='grass' && !B.sparse), STEP=Math.round((dense?30:34)*(B.stepMul||1)), gap=dense?0.3:0.44;
+    const dense=(B.ground==='grass' && !B.sparse), STEP=Math.round((dense?33:38)*(B.stepMul||1)), gap=dense?0.3:0.44;   // CS318: sparser scatter → fewer nodes → smoother reveal
     const nearFw=(px,py,m)=>{ if(!fwBounds) return false;
       if(py<fwBounds[0].y-m||py>fwBounds[fwBounds.length-1].y+m) return false;
       let a=fwBounds[0];
@@ -11864,12 +11859,12 @@ function hvTerrain(g, seedN, B){
     for(const t of items) tr+=`<g>${plantAt(t.type,t.x,t.y,t.r,t.fs)}</g>`;
     // light, universal grass-tuft texture in the rough (natural landscaping, allowed near the fairway edge
     // since tufts are low) — sparse so it adds life, not clutter
-    const GS=Math.round(STEP*1.25);
+    const GS=Math.round(STEP*1.55);   // CS318: sparser tufts (fewer nodes)
     for(let py=2; py<HV_H; py+=GS){ for(let px=-HV_EX; px<HV_W+HV_EX; px+=GS){
       const x=px+(hvHash(seedN,(px*3+py*7)|0,23)-0.5)*GS, y=py+(hvHash(seedN,(px*7+py*3)|0,29)-0.5)*GS;
       if(x<-HV_EX||x>HV_W+HV_EX||y<0||y>HV_H) continue;
       if(inFairway(x,y)||!clear(x,y)) continue;
-      if(hvHash(seedN,(px*11+py*13)|0,31)<0.55) continue;   // sparse
+      if(hvHash(seedN,(px*11+py*13)|0,31)<0.68) continue;   // sparse
       tr+=grassTuft(x,y,(px*5+py)|0);
     }}
   }
@@ -11919,15 +11914,15 @@ function hvTerrain(g, seedN, B){
       gg+=`<line x1="${(cx0-dx).toFixed(1)}" y1="${(cy0-dy).toFixed(1)}" x2="${(cx0+dx).toFixed(1)}" y2="${(cy0+dy).toFixed(1)}" stroke="${k%2?'#ffffff':'#0a2c14'}" stroke-width="${bw.toFixed(1)}" opacity="${k%2?'.05':'.06'}"/>`; }
     gg+=`</g>`;
     s.push(gg);
-    // ELEVATION SHADING (owner: no disc/oval shading — organic, soft lobes that follow the green so it
-    // reads as real undulation/tiers). 3-4 blurred, irregular light/dark blobs clipped to the surface.
-    let el=`<g clip-path="url(#${gcid})" filter="url(#hvgsoft)">`;
+    // ELEVATION SHADING (organic, filter-free): low-opacity irregular light/dark lobes that follow the
+    // green so it reads as gentle undulation/tiers without a costly blur filter.
+    let el=`<g clip-path="url(#${gcid})">`;
     const nlobe=3+Math.floor(hvHash(gseed,60,3)*2);
     for(let c=0;c<nlobe;c++){
       const ang=hvHash(gseed,70+c,3)*6.283, rr=0.25+hvHash(gseed,80+c,3)*0.6;
       const cx=gpx+Math.cos(ang)*grx*0.6*rr, cy=gpy+Math.sin(ang)*gry*0.6*rr;
-      const lr=grx*(0.42+hvHash(gseed,90+c,3)*0.42), light=(c%2===0);
-      el+=`<path d="${hvBlobD(cx,cy,lr,lr*0.72,gseed^Math.imul(c+1,0x2b3),0.42,9)}" fill="${light?'#eaffce':'#04160b'}" opacity="${light?'.08':'.1'}"/>`;
+      const lr=grx*(0.5+hvHash(gseed,90+c,3)*0.5), light=(c%2===0);
+      el+=`<path d="${hvBlobD(cx,cy,lr,lr*0.74,gseed^Math.imul(c+1,0x2b3),0.34,12)}" fill="${light?'#eaffce':'#04160b'}" opacity="${light?'.06':'.08'}"/>`;
     }
     el+=`</g>`;
     s.push(el);
@@ -11953,8 +11948,8 @@ function hvTerrain(g, seedN, B){
     for(let k2=0;k2<6;k2++){ sp+=`<circle cx="${(bx+(hvHash(bseed,k2,5)-0.5)*brx*1.3).toFixed(1)}" cy="${(by+(hvHash(bseed,k2,6)-0.5)*bry*1.2).toFixed(1)}" r=".7" fill="${B.sandSpeck}"/>`; }
     s.push(sp);
   });
-  // tournament atmosphere: one greenside grandstand (typical location) + gallery crowds flanking the green,
-  // placed only where there's open ground (fills the empty space without crowding the play corridor)
+  // tournament atmosphere: light gallery crowds flanking the green (owner: removed the grandstand). Only
+  // where there's open ground — cheap (a few dots) so it adds life without cost.
   { const openSpot=(x,y)=>{
       if(oceanSide && ((oceanSide>0 && x>HV_W-oceanW-8)||(oceanSide<0 && x<oceanW+8))) return false;
       if(Math.pow((x-gpx)/(grx+5),2)+Math.pow((y-gpy)/(gry+5),2)<1) return false;              // not on the green
@@ -11962,13 +11957,6 @@ function hvTerrain(g, seedN, B){
       if(creekPy!=null && Math.abs(y-creekPy)<8) return false;
       for(const bp of bpos){ if(Math.pow((x-bp.x)/(bp.rx+2),2)+Math.pow((y-bp.y)/(bp.ry+2),2)<1) return false; }
       return true; };
-    const sw=15+hvHash(seedN,0x9a3,3)*8, sh=sw*0.46, gap=6;
-    const cands=[[gpx, gpy-(gry+sh/2+gap)], [gpx+(grx+sw/2+gap), gpy-gry*0.15], [gpx-(grx+sw/2+gap), gpy-gry*0.15], [gpx, gpy+(gry+sh/2+gap+2)]];
-    const fits=(cx,cy)=>{ if(cx-sw/2<-HV_EX+3||cx+sw/2>HV_W+HV_EX-3||cy-sh/2<3||cy+sh/2>HV_H-3) return false;
-      for(const [ox,oy] of [[0,0],[-sw*0.42,0],[sw*0.42,0],[0,-sh*0.35],[0,sh*0.35]]){ const x=cx+ox,y=cy+oy; if(!openSpot(x,y)||inFairway(x,y)) return false; } return true; };
-    let stx=null; for(const c of cands){ if(fits(c[0],c[1])){ stx=c; break; } }
-    if(stx) s.push(grandstand(stx[0],stx[1],sw,(gpx*3+gpy)|0));
-    // gallery clusters lining the front sides of the green (spectators at the ropes)
     for(const side of [-1,1]){ const gcx=gpx+side*(grx+9), gcy=gpy+gry*0.5;
       if(gcx<-HV_EX+3||gcx>HV_W+HV_EX-3||gcy>HV_H-3) continue;
       if(openSpot(gcx,gcy)&&!inFairway(gcx,gcy)) s.push(gallery(gcx,gcy,7,7,((gcx*5+gcy)|0)+side)); }
@@ -11986,7 +11974,7 @@ function hvTerrain(g, seedN, B){
   s.push(`<rect x="${-HV_EX}" y="0" width="${FW}" height="${HV_H}" fill="url(#hvfog)" pointer-events="none"/>`);   // faint cool haze
   // CS249: gold FIREFLY particles drifting in the shadows (the mockup's signature) — tiny warm dots,
   // denser in the darker rough, sparse over the lit fairway, each with a soft glow.
-  { let fl=''; for(let i=0;i<46;i++){ const fx=-HV_EX+hh(950+i)*FW, fy=hh(980+i)*HV_H, br=0.7+hh(1010+i)*1.3;
+  { let fl=''; for(let i=0;i<30;i++){ const fx=-HV_EX+hh(950+i)*FW, fy=hh(980+i)*HV_H, br=0.7+hh(1010+i)*1.3;   // CS318: 46→30 (fewer nodes)
       const onFw=(typeof inFairway==='function')&&inFairway(fx,fy);
       if(onFw && hh(1040+i)<0.7) continue;                       // keep them mostly in the dark rough
       const a=(0.25+hh(1020+i)*0.45).toFixed(2);

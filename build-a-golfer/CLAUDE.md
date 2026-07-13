@@ -7581,6 +7581,35 @@ allows Google Fonts, or self-host Anton.*
   and the galleries line the green, filling the empty space. Deployed to /golf. Tunable: stand width (`sw`),
   the candidate order / footprint check, gallery cluster size (`gallery(...,7,7,...)`), the `CROWD` palette.
 
+- **CS318 — remove the grandstand, kill gameplay lag, and make flags always load (owner: "Please remove the
+  grandstand. Ensure there is no lag on gameplay, I noticed some lag. And also please make sure the flags
+  graphics are loaded into the game always because I've noticed that they don't load in always or it takes a
+  while. However we can speed up/smoothen out the game everywhere else we can do that also").** Three issues,
+  all in the hole view (`hvTerrain`/`hvGeom`/`hvFlag`); rendering-only, sim/geometry/score untouched.
+  1. **Grandstand removed (per the explicit ask).** Dropped the CS317 greenside grandstand — both the
+     placement block AND the now-unused `grandstand()` helper (kept `CROWD`/`cCol`/`gallery`). The light
+     gallery crowds flanking the green (the "fans" the owner wanted) stay — they're cheap (a few dots) and
+     add the tournament atmosphere without the grandstand's ~30-node tiered structure per hole.
+  2. **Flags now ALWAYS load (root cause of "they don't load in always / takes a while").** `hvFlag`'s
+     hue-derived colour was emitting a modern space-separated `hsl(...)` string into the SVG `fill=`
+     PRESENTATION attribute — which some SVG renderers reject (a rejected fill = an invisible/blank flag,
+     intermittently by course). Added `hslHex(h,s,l)` and `hvFlag` now returns a HEX colour (`hslHex(...)`),
+     which every renderer accepts, so each course's flag paints reliably every time. All 39 courses still
+     distinct (verified 39/39). The per-course overrides + accent/style are unchanged.
+  3. **Lag fixed / smoothing pass.** The hole-view SVG is re-parsed via `innerHTML` on every shot reveal, so
+     two costs dominated: (a) **SVG blur filters** (`feGaussianBlur`) force an offscreen re-rasterization each
+     reveal — removed the dead `hvsoft` filter AND the `hvgsoft` green-elevation blur; the green's elevation
+     shading now uses **filter-free** low-opacity organic `hvBlobD` lobes (CS314/315 style, opacity .06/.08)
+     instead of a blur. (b) **Node count** — cut the forest scatter density (STEP dense 30→33 / open 34→38),
+     made the universal grass tufts sparser (GS `STEP*1.25`→`*1.55`, skip `<0.55`→`<0.68`), and dropped the
+     fireflies 46→30. Terrain was already built-once-and-cached per hole (`g._terrainStr`), so this is a pure
+     node/rasterization reduction on the hot re-parse path.
+  Verified in Playwright over 144 holes across 8 biomes: **0 page errors**, `hsl(` count **0** (flags all
+  hex), blur-filter refs **0**, grandstand refs **0**, galleries render on 95/144 (where open ground flanks
+  the green — expected variety), 39/39 flags distinct, avg ~1616 nodes/hole; `node --check` clean. Deployed
+  to /golf. Tunable: the forest STEP (dense/open), grass-tuft `GS`/skip, firefly count, the green-lobe
+  opacities.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
