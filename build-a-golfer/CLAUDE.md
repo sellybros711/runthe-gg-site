@@ -7635,6 +7635,15 @@ allows Google Fonts, or self-host Anton.*
   swatches shown + the Pro Shop link; guest path unchanged (still the sign-in locker-room upsell); 0 real
   page errors. Screenshot confirms the compact layout. Deployed to /golf.
 
+- **CS320 — American spelling: "colour"→"color", "cheque"→"check" everywhere (owner).** Global
+  case-preserving replace across the whole game file (53 colour → 0, 12 cheque → 0). "colour" had no
+  identifier uses (safe global). "cheque" was also a JS variable (`const cheque` in `celebrateWin`) and a
+  CSS class (`.celeb-cheque`) — both define+use together, so the global replace renamed them consistently
+  to `check` / `.celeb-check` (verified: class def+usage match, variable + `.textContent` refs all
+  renamed, no `check` collision in scope). node --check clean; Playwright boot 0 page errors + the win
+  celebration still renders `.celeb-check`. Deployed to /golf. (Other British spellings — favour/honour/
+  centre/-ise — left as-is; only the two named words were requested.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
