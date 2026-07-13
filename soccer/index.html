@@ -714,6 +714,9 @@
      the lower pitch for button/text contrast. Night restores the deep veil below. */
   .hero .veil{position:absolute;inset:0;pointer-events:none;
     background:
+      /* soft reading scrim behind the headline/tagline so cream text stays legible
+         over bright sky + clouds, without darkening the sun/blimp/corners */
+      radial-gradient(72% 34% at 50% 45%, rgba(6,15,32,.52) 0%, rgba(6,15,32,.28) 46%, rgba(6,15,32,0) 74%),
       radial-gradient(120% 72% at 50% 44%, rgba(10,22,44,0) 0%, rgba(10,22,44,.10) 66%, rgba(6,14,30,.52) 100%),
       linear-gradient(180deg,
         rgba(10,22,44,.16) 0%,
@@ -766,14 +769,14 @@
   }
   .hero h1{position:relative;color:#FDF6E3;font-size:clamp(29px,8vw,42px);
     margin:13px 0 5px;line-height:1;white-space:nowrap;letter-spacing:.5px;
-    text-shadow:0 2px 0 rgba(0,0,0,.4), 0 0 20px rgba(244,180,19,.38);}
+    text-shadow:0 2px 3px rgba(3,10,26,.62), 0 0 12px rgba(3,10,26,.55), 0 0 22px rgba(244,180,19,.36);}
   /* one-line tagline under the headline */
   .hero-sub{position:relative;z-index:2;color:#EAE1CC;font-weight:600;font-size:13.5px;
     line-height:1.4;letter-spacing:.2px;margin:6px auto 0;max-width:360px;
-    text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 10px rgba(0,0,0,.55);}
+    text-shadow:0 1px 2px rgba(3,10,26,.95), 0 0 6px rgba(3,10,26,.9), 0 0 14px rgba(3,10,26,.6);}
   .hero p{position:relative;color:#EAE1CC;font-weight:600;font-size:14.5px;
     line-height:1.45;letter-spacing:.2px;margin:5px auto 18px;max-width:440px;
-    text-shadow:0 1px 3px rgba(0,0,0,.85), 0 0 10px rgba(0,0,0,.55);}
+    text-shadow:0 1px 2px rgba(3,10,26,.95), 0 0 6px rgba(3,10,26,.9), 0 0 14px rgba(3,10,26,.6);}
   .rules{position:relative;z-index:2;text-align:left;margin:0 auto 17px;max-width:340px;display:grid;gap:12px;
     background:rgba(7,11,26,.58);border:1.5px solid rgba(244,180,19,.25);border-radius:14px;
     padding:14px 15px;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px);
