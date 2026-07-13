@@ -7496,6 +7496,22 @@ allows Google Fonts, or self-host Anton.*
   the reaction shows; with 0 attempts left the result screen renders the Legend section + "Play free" button
   + token name; zero page errors. Screenshot confirms the highlighted "✓ Your answer" chip. Deployed to /golf.
 
+- **CS312 — sponsor goals: all 6 (hat + shirt) always different + rotate every year (owner: "I don't like
+  how the sponsors for the hat and shirt have the same goals each year... make sure all 6 goals are always
+  different, and always changing").** Before, each slot's 3 goals were mostly FIXED by the player's OVR tier
+  (only the middle "TARGET" rotated), so hat & shirt shared near-identical floor/stretch goals and they
+  repeated season to season. Rebuilt generation: `SPONSOR_GOAL_POOLS[grind|contender|elite]` = 8 DISTINCT
+  goal-template builders each (cuts / cut-streak / top-10s / top-5s / prize money / scoring avg / playoffs /
+  card / signature win / wins / major), ordered by difficulty `d`. `makeContracts()` now coordinates BOTH
+  slots: it seed-shuffles the pool per (careerSeed, year), picks 3×(filled slots) distinct goals, sorts them
+  easy→hard, and deals them round-robin (hat=ranks 0,2,4 / shirt=1,3,5) — so every one of the 6 goals is
+  distinct AND each slot still gets its own floor/target/stretch. `makeContractFor` now takes the pre-chosen
+  templates and assigns the tag + bonus by POSITION (floor pays little, stretch big — CS242 money balance
+  preserved) while targets still scale by that slot's sponsor difficulty. Deterministic per (career, year)
+  so resume/re-render is stable, but the shuffle changes every season so the goals stay fresh. Verified in
+  Playwright across grind/contender/elite: all 6 goals distinct every year, hat/shirt each FLOOR/TARGET/
+  STRETCH with ascending bonuses, and the full set rotates Y1→Y2→Y3; zero page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

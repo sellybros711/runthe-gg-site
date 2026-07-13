@@ -7662,10 +7662,54 @@ function goalProg(g,t){
   }
   return {cur:0,done:false,txt:'',pct:0};
 }
-// build ONE slot's season contract (goals + bonuses) from that slot's sponsor. Each of the two deals pays a
-// touch less and asks a touch more (SPONSOR_DUAL_*), so filling both slots is a meaningful bump, not a 2× windfall.
-function makeContractFor(sp, slot){
-  if(S.daily || S.circuitMode || !S.career || !S.season || !sp) return null;
+// CS312: pools of DISTINCT goal templates per player-OVR band. makeContracts() deterministically shuffles
+// the band's pool per (career, year) and hands each slot 3 DIFFERENT goals, coordinating the two slots so
+// ALL 6 goals across hat + shirt are distinct AND rotate every season (owner: "make sure all 6 goals are
+// always different, and always changing"). Each template is a builder evaluated with that slot's context
+// (T scales targets by the slot's sponsor difficulty; the bonus is set by POSITION so the money weighting —
+// floor pays little, stretch big — is preserved regardless of which goal lands where). `d` orders easy→hard.
+const SPONSOR_GOAL_POOLS={
+  grind:[
+    {dk:'cuts',      kind:'cuts',      d:.10, build:c=>({kind:'cuts',      target:c.T(10,'cuts'), label:'Make '+c.T(10,'cuts')+' cuts'})},
+    {dk:'cutStreak', kind:'cutStreak', d:.28, build:c=>({kind:'cutStreak', target:4,              label:'Make 4 cuts in a row'})},
+    {dk:'top10',     kind:'top10',     d:.42, build:c=>({kind:'top10',     target:c.T(3,'top10'), label:'Record '+c.T(3,'top10')+' top-10s'})},
+    {dk:'money',     kind:'money',     d:.50, build:c=>({kind:'money',     target:c.mTgt(6e6),    label:'Win '+fmtShort(c.mTgt(6e6))+' in prize money'})},
+    {dk:'top5',      kind:'top5',      d:.58, build:c=>({kind:'top5',      target:c.T(2,'top5'),  label:'Record '+c.T(2,'top5')+' top-5 finishes'})},
+    {dk:'scoreAvg',  kind:'scoreAvg',  d:.64, build:c=>({kind:'scoreAvg',  target:0.3, minRounds:30, label:'Season scoring average under +0.3 per round'})},
+    {dk:'playoffs',  kind:'ptsRank',   d:.78, build:c=>({kind:'ptsRank',   target:70,             label:'Reach the Playoffs · top 70'})},
+    {dk:'card',      kind:'ptsRank',   d:.90, card:true, build:c=>({kind:'ptsRank', target:CARD_LINE, label:'Keep your Tour Card · top '+CARD_LINE})},
+  ],
+  contender:[
+    {dk:'top10',     kind:'top10',     d:.15, build:c=>({kind:'top10',     target:c.T(6,'top10'), label:'Record '+c.T(6,'top10')+' top-10s'})},
+    {dk:'cutStreak', kind:'cutStreak', d:.30, build:c=>({kind:'cutStreak', target:8,              label:'Make 8 cuts in a row'})},
+    {dk:'top5',      kind:'top5',      d:.42, build:c=>({kind:'top5',      target:c.T(4,'top5'),  label:'Record '+c.T(4,'top5')+' top-5 finishes'})},
+    {dk:'money',     kind:'money',     d:.50, build:c=>({kind:'money',     target:c.mTgt(12e6),   label:'Win '+fmtShort(c.mTgt(12e6))+' in prize money'})},
+    {dk:'scoreAvg',  kind:'scoreAvg',  d:.55, build:c=>({kind:'scoreAvg',  target:-0.5, minRounds:30, label:'Season scoring average under −0.5 per round'})},
+    {dk:'playoffs',  kind:'ptsRank',   d:.66, build:c=>({kind:'ptsRank',   target:70,             label:'Reach the Playoffs · top 70'})},
+    {dk:'sigWin',    kind:'sigWin',    d:.82, build:c=>({kind:'sigWin',    target:1,              label:'Win a signature event or major'})},
+    {dk:'wins',      kind:'wins',      d:.90, build:c=>({kind:'wins',       target:c.T(1,'wins'),  label:(c.T(1,'wins')>1?('Win '+c.T(1,'wins')+' tournaments'):'Win a tournament')})},
+  ],
+  elite:[
+    {dk:'top10',     kind:'top10',     d:.18, build:c=>({kind:'top10',     target:c.T(8,'top10'), label:'Record '+c.T(8,'top10')+' top-10s'})},
+    {dk:'top5',      kind:'top5',      d:.34, build:c=>({kind:'top5',      target:c.T(6,'top5'),  label:'Record '+c.T(6,'top5')+' top-5 finishes'})},
+    {dk:'money',     kind:'money',     d:.46, build:c=>({kind:'money',     target:c.mTgt(22e6),   label:'Win '+fmtShort(c.mTgt(22e6))+' in prize money'})},
+    {dk:'scoreAvg',  kind:'scoreAvg',  d:.52, build:c=>({kind:'scoreAvg',  target:-1.1, minRounds:30, label:'Season scoring average under −1.1 per round'})},
+    {dk:'finale',    kind:'ptsRank',   d:.60, build:c=>({kind:'ptsRank',   target:30,             label:'Reach the Tour Cup Finale · top 30'})},
+    {dk:'wins',      kind:'wins',      d:.72, build:c=>({kind:'wins',       target:c.T(2,'wins'),  label:'Win '+(c.T(2,'wins')>2?c.T(2,'wins')+' times':'twice')})},
+    {dk:'sigWin',    kind:'sigWin',    d:.80, build:c=>({kind:'sigWin',    target:1,              label:'Win a signature event or major'})},
+    {dk:'major',     kind:'major',     d:.95, build:c=>({kind:'major',     target:1,              label:'Win a major'})},
+  ],
+};
+const SPONSOR_POS=[   // per position within a slot: display tag + base bonus (by player tier) + stretch flag
+  {tag:'FLOOR',   base:{grind:4e5, contender:9e5,  elite:16e5}, stretch:false},
+  {tag:'TARGET',  base:{grind:12e5,contender:20e5, elite:26e5}, stretch:false},
+  {tag:'STRETCH', base:{grind:15e5,contender:36e5, elite:56e5}, stretch:true},
+];
+// build ONE slot's season contract from PRE-CHOSEN goal templates (makeContracts coordinates distinctness).
+// Each of the two deals pays a touch less and asks a touch more (SPONSOR_DUAL_*), so filling both slots is a
+// meaningful bump, not a 2× windfall.
+function makeContractFor(sp, slot, tmpls){
+  if(S.daily || S.circuitMode || !S.career || !S.season || !sp || !tmpls || !tmpls.length) return null;
   const ti=sponsorTierInfo(sp.tier), tr=brandTrait(sp.brand);
   const me=S.season.me, ovr=me?Math.round(me.skill):(S.career.peakOvr||82), yr=S.year||1, infl=purseMult(yr);
   // bonuses scale with: purse inflation × sponsor tier × BRAND TRAIT × your FOLLOWING × RELATIONSHIP loyalty
@@ -7673,55 +7717,33 @@ function makeContractFor(sp, slot){
   const lc=(S.career.lastContracts&&S.career.lastContracts[slot])||null;
   const proveIt=!!(lc && lc.dropped);   // small "prove it" deal right after being dropped
   const B=(v,stretch)=>Math.max(2e5,Math.round(v*infl*ti.reward*trR*folM*relM*(stretch?trStretch:1)*(proveIt?0.82:1)*SPONSOR_DUAL_REWARD*SPONSOR_MONEY/1e4)*1e4);
-  // a bigger sponsor (and a "demanding" brand) demands MORE: countable goals scale up, the top tier wants an
-  // extra win. Structural rank goals (Tour Card top-100, Playoffs top-70, Finale top-30) map to real cutlines.
+  // a bigger sponsor (and a "demanding" brand) demands MORE: countable goal targets scale up.
   const effDiff=ti.diff*(tr.diff||1)*SPONSOR_DUAL_DIFF, dm=1+(effDiff-1)*0.6;
-  const T=(base,kind)=> (kind==='cuts'||kind==='top10')?Math.max(base,Math.ceil(base*dm)) : (kind==='wins')?(base+(effDiff>=1.9?1:0)) : base;
-  const tier = ovr>=88?'elite' : ovr>=83?'contender' : 'grind';
+  const T=(base,kind)=> (kind==='cuts'||kind==='top10'||kind==='top5')?Math.max(base,Math.ceil(base*dm)) : (kind==='wins')?(base+(effDiff>=1.9?1:0)) : base;
   const mTgt=base=>Math.round(base*infl/1e5)*1e5;   // prize-money target scales with inflation
-  // CS242: the FLOOR now pays little (it's near-automatic for a strong build, so it shouldn't be big money);
-  // the money sits on the hard STRETCH. The middle "TARGET" goal is DETERMINISTICALLY drawn from a per-tier
-  // POOL (stable within a save/year, but varies season to season + between the two slots) so it's not the
-  // same three checkboxes every year — sometimes prize money, a scoring average, or a signature win.
-  const vseed=(dHash('sponsorvar')^((S.careerSeed||0)>>>0)^Math.imul((S.year||1),0x9e3779b1)^(slot==='hat'?0x51ed:0x27a1))>>>0;
-  const vpick=arr=>arr[vseed%arr.length];
-  let goals;
-  if(tier==='grind'){ const c1=T(10,'cuts');
-    const target=vpick([
-      {kind:'top10', target:T(3,'top10'), bonus:B(1200000), label:'Record '+T(3,'top10')+' top-10s', tag:'TARGET'},
-      {kind:'money', target:mTgt(6e6), bonus:B(1200000), label:'Win '+fmtShort(mTgt(6e6))+' in prize money', tag:'TARGET'},
-      {kind:'scoreAvg', target:0.3, minRounds:30, bonus:B(1200000), label:'Season scoring average under +0.3 per round', tag:'TARGET'},
-      {kind:'cutStreak', target:5, bonus:B(1200000), label:'Make 5 cuts in a row', tag:'TARGET'},
-      {kind:'top5', target:T(2,'top10'), bonus:B(1200000), label:'Record '+T(2,'top10')+' top-5 finishes', tag:'TARGET'} ]);
-    goals=[{kind:'cuts', target:c1, bonus:B(400000), label:'Make '+c1+' cuts', tag:'FLOOR'},
-      target,
-      {kind:'ptsRank', target:CARD_LINE, bonus:B(1500000,true), label:'Keep your Tour Card · top '+CARD_LINE, tag:'CARD', card:true}]; }
-  else if(tier==='contender'){ const c1=T(6,'top10'), w=T(1,'wins');
-    const target=vpick([
-      {kind:'ptsRank', target:70, bonus:B(2000000), label:'Reach the Playoffs · top 70', tag:'TARGET'},
-      {kind:'money', target:mTgt(12e6), bonus:B(2000000), label:'Win '+fmtShort(mTgt(12e6))+' in prize money', tag:'TARGET'},
-      {kind:'sigWin', target:1, bonus:B(2000000), label:'Win a signature event or major', tag:'TARGET'},
-      {kind:'scoreAvg', target:-0.5, minRounds:30, bonus:B(2000000), label:'Season scoring average under −0.5 per round', tag:'TARGET'},
-      {kind:'top5', target:T(4,'top10'), bonus:B(2000000), label:'Record '+T(4,'top10')+' top-5 finishes', tag:'TARGET'} ]);
-    goals=[{kind:'top10', target:c1, bonus:B(900000), label:'Record '+c1+' top-10s', tag:'FLOOR'},
-      target,
-      {kind:'wins', target:w, bonus:B(3600000,true), label:w>1?('Win '+w+' tournaments'):'Win a tournament', tag:'STRETCH'}]; }
-  else { const w=T(2,'wins');
-    const target=vpick([
-      {kind:'ptsRank', target:30, bonus:B(2600000), label:'Reach the Tour Cup Finale · top 30', tag:'TARGET'},
-      {kind:'money', target:mTgt(22e6), bonus:B(2600000), label:'Win '+fmtShort(mTgt(22e6))+' in prize money', tag:'TARGET'},
-      {kind:'sigWin', target:1, bonus:B(2600000), label:'Win a signature event or major', tag:'TARGET'},
-      {kind:'scoreAvg', target:-1.1, minRounds:30, bonus:B(2600000), label:'Season scoring average under −1.1 per round', tag:'TARGET'},
-      {kind:'top5', target:T(6,'top10'), bonus:B(2600000), label:'Record '+T(6,'top10')+' top-5 finishes', tag:'TARGET'} ]);
-    goals=[{kind:'wins', target:w, bonus:B(1600000), label:'Win '+(w>2?w+' times':'twice'), tag:'FLOOR'},
-      target,
-      {kind:'major', target:1, bonus:B(5600000,true), label:'Win a major', tag:'STRETCH'}]; }
+  const tier = ovr>=88?'elite' : ovr>=83?'contender' : 'grind';
+  const ctx={T,mTgt};
+  const goals=tmpls.map((tp,i)=>{ const g=tp.build(ctx), p=SPONSOR_POS[Math.min(i,SPONSOR_POS.length-1)];
+    g.tag = tp.card?'CARD':p.tag; g.bonus=B(p.base[tier]||p.base.grind, p.stretch); g.card=!!tp.card; return g; });
   return {sponsor:sp.brand, tier, sponsorTier:sp.tier, tierName:ti.name, rel:sp.rel, trait:brandInfo(sp.brand).trait, goals, proveIt, slot};
 }
-// build both slots' contracts for the season (null slot → null contract)
+// build both slots' contracts for the season: pick 3×(filled slots) DISTINCT goals from the player-tier pool,
+// shuffled per (career, year) so they change every season, sorted easy→hard and dealt round-robin so each
+// slot ends up with its own floor / target / stretch and no goal repeats across the two slots.
 function makeContracts(){ if(S.daily||S.circuitMode||!S.career||!S.season) return {hat:null,shirt:null};
   const s=ensureSponsors(), out={hat:null,shirt:null};
-  SPONSOR_SLOTS.forEach(k=>{ if(s[k]) out[k]=makeContractFor(s[k],k); });
+  const filled=SPONSOR_SLOTS.filter(k=>s[k]); if(!filled.length) return out;
+  const me=S.season.me, ovr=me?Math.round(me.skill):(S.career.peakOvr||82);
+  const tier = ovr>=88?'elite' : ovr>=83?'contender' : 'grind';
+  const pool=SPONSOR_GOAL_POOLS[tier]||SPONSOR_GOAL_POOLS.grind;
+  const seed=(dHash('sponsorgoals')^((S.careerSeed||0)>>>0)^Math.imul((S.year||1),0x9e3779b1))>>>0;
+  const shuffled=seededShuffle(pool, seed);
+  const need=3*filled.length, picks=[], seen=new Set();
+  for(const t of shuffled){ if(seen.has(t.dk)) continue; seen.add(t.dk); picks.push(t); if(picks.length>=need) break; }
+  while(picks.length<need) picks.push(shuffled[picks.length%shuffled.length]);   // safety (pool always ≥ need)
+  picks.sort((a,b)=>a.d-b.d);
+  const n=filled.length;
+  filled.forEach((k,i)=>{ const tmpls=[picks[i], picks[i+n], picks[i+2*n]]; out[k]=makeContractFor(s[k], k, tmpls); });
   return out; }
 function contractsList(){ const cs=S.season&&S.season.contracts; if(!cs) return []; return SPONSOR_SLOTS.filter(k=>cs[k]).map(k=>({slot:k, contract:cs[k]})); }
 // relationship meter chip (rel level + loyalty %); used in the off-season card, season deal, report card
