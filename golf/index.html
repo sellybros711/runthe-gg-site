@@ -10880,7 +10880,7 @@ function hvFlag(k){ if(k && HV_FLAG_OVR[k]) return HV_FLAG_OVR[k];
   return {c:hslHex(hue,sat,lit), a:HV_FLAG_ACC[(h>>>4)%HV_FLAG_ACC.length], s:HV_FLAG_STYLE[(h>>>3)%HV_FLAG_STYLE.length]}; }
 // SWALLOWTAIL flag matching the crest logo (a rectangular flag with a V-notch cut into the fly end),
 // plus a clipped accent design per course.
-function hvFlagSVG(px,py,fl){ const top=py-15, W=12, H=6.8, nd=3.4, x2=px+W, ym=top+H/2, yb=top+H;
+function hvFlagSVG(px,py,fl){ const top=py-15, W=8, H=4.6, nd=2.3, x2=px+W, ym=top+H/2, yb=top+H;
   const flagD=`M ${px} ${top} h ${W} l ${-nd} ${(H/2).toFixed(1)} l ${nd} ${(H/2).toFixed(1)} h ${-W} z`;
   const cid='hvfl'+(((Math.round(px)*1399+Math.round(py))>>>0)).toString(36);
   const a=fl.a||'#ffffff';
