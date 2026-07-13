@@ -7671,6 +7671,24 @@ allows Google Fonts, or self-host Anton.*
   with 0 page errors. (Word-choice Briticisms like "whilst"/"amongst" left as-is — those are word choices,
   not spellings.)
 
+- **CS323 — in-game flag shape matches the logo (swallowtail) + more flag designs (owner: "our flag shape
+  is inconsistent with our logo… I like the flag we use in the logo and want that shape in the game. Also
+  add further designs — simple patterns or logos").** The crest logo's flag (`crestSVG`, path
+  `M26 18 h16 l-4 5 4 5 h-16 z`) is a **swallowtail** — a rectangular flag with a V-notch cut into the fly
+  end — but the hole-view flag (`hvFlagSVG`) was a curved single-point pennant. Rewrote `hvFlagSVG` to draw
+  the swallowtail (W 12 · H 6.8 · notch 3.4, proportioned like the crest) so the on-green flag now reads as
+  the same mark as the logo. And expanded the designs from 2 (`solid`/`stripe`) to **7** — `solid`, `stripe`
+  (horizontal band), `vbar` (hoist-side vertical bar), `tri` (hoist triangle), `dot` (center emblem), `cross`
+  (plus), `diag` (diagonal split) — each drawn in the course's accent colour and CLIPPED to the swallowtail
+  (unique per-position `clipPath` id) so nothing overflows the notch. `hvFlag`'s hue-based picker now spreads
+  all 7 across the 39 courses (verified distribution 6/8/2/7/5/7/4), and the marquee overrides got
+  design-appropriate looks (St Andrews navy + white cross, Oakmont charcoal + gold hoist bar, Whistling red +
+  white emblem dot). Applies everywhere the hole view is used (Daily/Moments/Spotlight/Legend/H2H + the
+  static share SVG). Rendering-only. Verified in Playwright: swallowtail path present, all 7 designs render
+  distinct (flag-grid screenshot), a live Augusta hole shows the small gold swallowtail on the pin, 0 page
+  errors. Deployed to /golf. Tunable: the flag W/H/notch + the per-design accent shapes in `hvFlagSVG`, the
+  design spread + `HV_FLAG_OVR` in `hvFlag`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
