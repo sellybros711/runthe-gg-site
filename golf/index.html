@@ -10854,7 +10854,28 @@ const HV_EX=52, HV_CAM=[-HV_EX,0,HV_W+2*HV_EX,HV_H];
 // cup + on-green ball sizes (viewBox units). A real ball (1.68") is ~0.4× the hole's width (4.25"), so on
 // the green the ball is drawn at a FIXED small radius — because ball AND cup are both in viewBox units, the
 // camera scales them together and the ratio stays realistic at every zoom (no more ball-bigger-than-hole).
-const HV_CUP_RX=2.15, HV_CUP_RY=1.5, HV_GBALL=0.95;   // slightly smaller hole + ball (owner)
+const HV_CUP_RX=1.82, HV_CUP_RY=1.28, HV_GBALL=0.86;   // smaller hole + ball, realistic ratio (owner)
+// ---- per-course FLAGS: every course flies its own flag (colour + optional accent stripe), like real
+// life. Marquee venues get a hand-picked look; everything else is deterministically derived from the
+// course-key hash, so each course has a consistent, unique flag.
+const HV_FLAG_STYLE=['solid','stripe'];
+const HV_FLAG_ACC=['#ffffff','#ffffff','#f2d94c','#1f3a68'];
+const HV_FLAG_OVR={
+  'Augusta National':{c:'#f2c231',a:'#c0392b',s:'solid'},          // Masters yellow
+  'St Andrews Old Course':{c:'#ffffff',a:'#1f3a68',s:'stripe'},    // white / St Andrews navy
+  'Pebble Beach Golf Links':{c:'#1f6fd0',a:'#ffffff',s:'solid'},   // Pacific blue
+  'Oakmont':{c:'#3a3f4a',a:'#f2c94c',s:'solid'},                   // charcoal / gold
+  'Kiawah Island Ocean':{c:'#00789c',a:'#ffffff',s:'stripe'},      // ocean blue
+  'Whistling Straits':{c:'#e23b2e',a:'#ffffff',s:'stripe'} };
+// hue-based so nearly every course flies a distinct flag (consistent per course-key hash)
+function hvFlag(k){ if(k && HV_FLAG_OVR[k]) return HV_FLAG_OVR[k];
+  const h=(k?dHash(k):0x1234)>>>0, hue=h%360, sat=60+((h>>>9)%24), lit=45+((h>>>15)%13);
+  return {c:`hsl(${hue} ${sat}% ${lit}%)`, a:HV_FLAG_ACC[(h>>>4)%HV_FLAG_ACC.length], s:HV_FLAG_STYLE[(h>>>3)&1]}; }
+function hvFlagSVG(px,py,fl){ const top=py-15;
+  let f=`<line x1="${px}" y1="${py}" x2="${px}" y2="${top}" stroke="#f4f2ea" stroke-width="1.3"/>`;
+  f+=`<path d="M ${px} ${top} q 5 0.6 9 2.6 q -4.2 1.9 -9 3.4 Z" fill="${fl.c}" stroke="rgba(0,0,0,.4)" stroke-width=".5"/>`;
+  if(fl.s==='stripe') f+=`<path d="M ${px} ${(top+2.1).toFixed(1)} q 4.6 0.6 8.6 2.1 l 0 1.6 q -4.4 -1.4 -8.6 -2.1 Z" fill="${fl.a}"/>`;
+  return f; }
 // The pin ROTATES per play (like a real course's 4 hole locations). It's cosmetic — the score is engine-
 // decided — so we derive the rotation from whatever play context is current (day/attempt/round/match).
 function hvPinRot(){ try{ if(typeof S!=='undefined' && S){
@@ -10929,7 +10950,7 @@ function hvGeom(seedN, par, yds, courseKey, holeIdx){
   const st=hvStyle(courseKey);
   const feat=(courseKey!=null&&holeIdx!=null)?hvFeat(courseKey,(holeIdx|0)+1):null;
   const L=Math.max(90,yds);
-  const g={L, par, span:L+28, fw0:Math.min(58,L*0.24), fw1:L-22};
+  const g={L, par, span:L+28, fw0:Math.min(58,L*0.24), fw1:L-22, courseKey};
   // scale: vertical px/yd is fixed by the hole length; lateral FOLLOWS it (clamped) so long
   // holes aren't wildly stretched sideways vs downrange.
   g.vy=(HV_H-78)/g.span;
@@ -11739,6 +11760,16 @@ function hvTerrain(g, seedN, B){
     for(let k=0;k<n;k++){ const bx=px+(k-2)*1.7, sway=(hvHash(seedN,fs*7+k,3)-0.5)*3.4;
       o+=`<path d="M ${bx.toFixed(1)} ${(py+r*0.3).toFixed(1)} q ${sway.toFixed(1)} ${(-r*0.7).toFixed(1)} ${(sway*1.5).toFixed(1)} ${(-r*1.35).toFixed(1)}" fill="none" stroke="${k%2?B.tickD:B.tickL}" stroke-width=".95" stroke-linecap="round"/>`; }
     return o; };
+  // natural landscaping: a small clump of grass blades (rough texture, all biomes) + waterside reeds/cattails
+  const grassTuft=(px,py,fs)=>{ let o='';
+    for(let k=0;k<4;k++){ const bx=px+(k-1.5)*1.1, sway=(hvHash(seedN,fs*11+k,3)-0.5)*2.4;
+      o+=`<path d="M ${bx.toFixed(1)} ${py.toFixed(1)} q ${sway.toFixed(1)} -2.2 ${(sway*1.5).toFixed(1)} -4.4" fill="none" stroke="${k%2?B.tickD:B.tickL}" stroke-width=".8" stroke-linecap="round" opacity=".9"/>`; }
+    return o; };
+  const reed=(px,py,fs)=>{ let o='';
+    for(let k=0;k<3;k++){ const bx=px+(k-1)*1.5, h=4.5+hvHash(seedN,fs*5+k,3)*3, lean=(hvHash(seedN,fs*3+k,4)-0.5)*1.8;
+      o+=`<line x1="${bx.toFixed(1)}" y1="${py.toFixed(1)}" x2="${(bx+lean).toFixed(1)}" y2="${(py-h).toFixed(1)}" stroke="#3f6a2e" stroke-width=".85" stroke-linecap="round"/>`;
+      if(k===1) o+=`<ellipse cx="${(bx+lean).toFixed(1)}" cy="${(py-h).toFixed(1)}" rx=".7" ry="1.7" fill="#7a5326"/>`; }   // cattail head
+    return o; };
   // ---- alpine/heathland flora (CS218) ----
   const spruce=(px,py,r,fs)=>{ const C=B.spruce||['#1a3a22','#25502e','#33683a'], w=r*0.9, ht=r*2.2;   // tall narrow dark conifer
     let o=`<ellipse cx="${(px+r*0.3).toFixed(1)}" cy="${(py+r*0.5).toFixed(1)}" rx="${(r*0.7).toFixed(1)}" ry="${(r*0.34).toFixed(1)}" fill="${B.shad}" opacity=".5"/>`;
@@ -11815,6 +11846,16 @@ function hvTerrain(g, seedN, B){
     }
     items.sort((a,b)=>a.y-b.y);
     for(const t of items) tr+=`<g>${plantAt(t.type,t.x,t.y,t.r,t.fs)}</g>`;
+    // light, universal grass-tuft texture in the rough (natural landscaping, allowed near the fairway edge
+    // since tufts are low) — sparse so it adds life, not clutter
+    const GS=Math.round(STEP*1.25);
+    for(let py=2; py<HV_H; py+=GS){ for(let px=-HV_EX; px<HV_W+HV_EX; px+=GS){
+      const x=px+(hvHash(seedN,(px*3+py*7)|0,23)-0.5)*GS, y=py+(hvHash(seedN,(px*7+py*3)|0,29)-0.5)*GS;
+      if(x<-HV_EX||x>HV_W+HV_EX||y<0||y>HV_H) continue;
+      if(inFairway(x,y)||!clear(x,y)) continue;
+      if(hvHash(seedN,(px*11+py*13)|0,31)<0.55) continue;   // sparse
+      tr+=grassTuft(x,y,(px*5+py)|0);
+    }}
   }
   s.push(tr);
   // creek: a wobbled stream crossing the whole hole (mud banks + bright water + ripple dashes)
@@ -11826,6 +11867,11 @@ function hvTerrain(g, seedN, B){
     s.push(`<path d="${cd}" fill="none" stroke="${B.waterBank}" stroke-width="9.5" stroke-linejoin="round" opacity=".9"/>`);
     s.push(`<path d="${cd}" fill="none" stroke="${B.water}" stroke-width="6" stroke-linejoin="round"/>`);
     s.push(`<path d="${cd}" fill="none" stroke="${B.ripple}" stroke-width=".9" stroke-dasharray="5 7" opacity=".6"/>`);
+    let cr2=''; for(let k=1;k<pts.length-1;k+=2){ const ex=pts[k][0], ey=pts[k][1]-4;   // reeds on the creek bank
+      if(ex<-HV_EX||ex>HV_W+HV_EX||ey<2||ey>HV_H) continue;
+      if(Math.pow((ex-gpx)/(grx+6),2)+Math.pow((ey-gpy)/(gry+5),2)<1) continue;
+      cr2+=reed(ex,ey,(k*17)|0); }
+    s.push(cr2);
   }
   // water hazard: mud bank ring → flat bright blue → waterline → ripple dashes
   if(wpos){ const wseed=seedN^0x77;
@@ -11833,6 +11879,11 @@ function hvTerrain(g, seedN, B){
     s.push(`<path d="${hvBlobD(wpos.x,wpos.y,wpos.rx+2.5,wpos.ry+2.2,wseed,0.24,12)}" fill="${B.waterBank}"/>`);
     s.push(`<path d="${wD}" fill="${B.water}" stroke="#eef8ff" stroke-width=".9"/>`);
     s.push(`<path d="M ${(wpos.x-wpos.rx*0.45).toFixed(1)} ${(wpos.y-wpos.ry*0.2).toFixed(1)} h 7 M ${(wpos.x+wpos.rx*0.1).toFixed(1)} ${(wpos.y+wpos.ry*0.3).toFixed(1)} h 6 M ${(wpos.x-wpos.rx*0.15).toFixed(1)} ${(wpos.y+wpos.ry*0.02).toFixed(1)} h 5" fill="none" stroke="${B.ripple}" stroke-width="1" opacity=".65"/>`);
+    let wr=''; for(let k=0;k<6;k++){ const a=hvHash(wseed,k,7)*6.283, ex=wpos.x+Math.cos(a)*(wpos.rx+2.4), ey=wpos.y+Math.sin(a)*(wpos.ry+2);   // reeds/cattails on the pond bank
+      if(ex<-HV_EX||ex>HV_W+HV_EX||ey<2||ey>HV_H) continue;
+      if(Math.pow((ex-gpx)/(grx+6),2)+Math.pow((ey-gpy)/(gry+5),2)<1) continue;
+      wr+=reed(ex,ey,(k*23)|0); }
+    s.push(wr);
   }
   // green complex (CS313 realism): cast shadow → fringe ring → putting surface, then (clipped to the
   // surface) subtle mowing bands + soft contour patches + a domed light/shadow so the green reads like a
@@ -11890,12 +11941,11 @@ function hvTerrain(g, seedN, B){
   const [tx,ty]=hvProj(g,0,0);
   s.push(`<rect x="${(tx-13).toFixed(1)}" y="${(ty-5).toFixed(1)}" width="26" height="10" rx="3" fill="${B.fw}" stroke="${B.outline}"/>`);
   s.push(`<circle cx="${(tx-8).toFixed(1)}" cy="${ty.toFixed(1)}" r="1.3" fill="#EBA61F"/><circle cx="${(tx+8).toFixed(1)}" cy="${ty.toFixed(1)}" r="1.3" fill="#EBA61F"/>`);
-  // cup + pin: exaggerated cup so putts visibly fall in; classic red flag (reference style)
+  // cup + pin: cup so putts visibly fall in; each course flies its OWN flag (per-course colour/style)
   const [ppx,ppy]=hvProj(g,g.pin[0],g.pin[1]);
   s.push(`<g id="hv-pin"><ellipse cx="${ppx.toFixed(1)}" cy="${(ppy+0.4).toFixed(1)}" rx="${HV_CUP_RX}" ry="${HV_CUP_RY}" fill="#0c1810"/><ellipse cx="${ppx.toFixed(1)}" cy="${(ppy+0.2).toFixed(1)}" rx="${HV_CUP_RX}" ry="${HV_CUP_RY}" fill="none" stroke="#ffffff" stroke-width=".45" opacity=".75"/>`
     +`<line x1="${(ppx+0.6).toFixed(1)}" y1="${(ppy+0.6).toFixed(1)}" x2="${(ppx+4.4).toFixed(1)}" y2="${(ppy+2).toFixed(1)}" stroke="${B.shad}" stroke-width=".8" opacity=".6"/>`
-    +`<line x1="${ppx.toFixed(1)}" y1="${ppy.toFixed(1)}" x2="${ppx.toFixed(1)}" y2="${(ppy-15).toFixed(1)}" stroke="#f4f2ea" stroke-width="1.3"/>`
-    +`<path d="M ${ppx.toFixed(1)} ${(ppy-15).toFixed(1)} q 5 0.6 9 2.6 q -4.2 1.9 -9 3.4 Z" fill="#e14a33" stroke="#8c2416" stroke-width=".5"/></g>`);
+    +hvFlagSVG(ppx,ppy,hvFlag(g.courseKey))+`</g>`);
   s.push(`<rect x="${-HV_EX}" y="0" width="${FW}" height="${HV_H}" fill="url(#hvvig)" pointer-events="none"/>`);   // moody dark edges
   s.push(`<rect x="${-HV_EX}" y="0" width="${FW}" height="${HV_H}" fill="url(#hvfog)" pointer-events="none"/>`);   // faint cool haze
   // CS249: gold FIREFLY particles drifting in the shadows (the mockup's signature) — tiny warm dots,
