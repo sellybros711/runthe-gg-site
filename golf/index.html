@@ -7588,26 +7588,91 @@ const PRESS_MIC=`<svg viewBox="0 0 24 32" width="30" height="40" aria-hidden="tr
    opponent quote, tone-matched to the choice (bold / humble / gritty / backfired / neutral). Real,
    relatable "tweets & headlines" so the press conference feels authentic and shareable. Avoids the
    theme-mapped emoji (⚔🐐🔥🎯 + arrows) so nothing renders as an SVG icon mid-sentence. */
-const PB_HANDLES=['birdiebandit','fairway_frank','teeboxtina','the19thholer','greengrass_gg','sundaycharge','pin_seeker','bogeyfreebri','driverdanny','claretchaser','the_backnine','golfgremlin','albatross_al','mulliganmax','flagstickfan'];
-const PB_OUTLETS=['Tour Report','The Clubhouse','Fairway Wire','Global Golf Daily','The Back Nine','Pin High','Bunker & Blade','The Range Finder'];
+const PB_HANDLES=['birdiebandit','fairway_frank','teeboxtina','the19thholer','greengrass_gg','sundaycharge','pin_seeker','bogeyfreebri','driverdanny','claretchaser','the_backnine','golfgremlin','albatross_al','mulliganmax','flagstickfan','tourjunkie88','rangeratkev','wedgewitch','fadeordraw','par5paulie','clubhouseleak','scramblesam','frontninefinn','majorszn','downtheline_dm','gimmegolf','sundayreds','the_yips','caddieshackcait','linksandlager'];
+const PB_OUTLETS=['Tour Report','The Clubhouse','Fairway Wire','Global Golf Daily','The Back Nine','Pin High','Bunker & Blade','The Range Finder','The Cut Line','Sunday Red','Green Report','Tee Sheet','The Approach','Caddyshack Daily'];
 const PB_AVCOL=['#5fd0e0','#35d6a0','#ffd45e','#ff9d6b','#c9a6ff','#7fd0a0','#f18fb0','#8fb8ff'];
 const PB_NAMES=['Kellan Vance','Rory Dax','Miko Sato','Andre Cole','Tuomas Vire','Beau Ramsey','Nils Berg','Cade Whitlock'];
+// CS335: much larger, more varied pools so the buzz rarely repeats and weaves in the real opponent ({rival})
+// + event ({evt}) for flavor. {you}=your short name, {quote}=your soundbite. Curly ’ “ ” used so the
+// single-quoted strings never need escaping.
 const PB_TONES={
-  bold:{ tw:['ok {you} said WHAT 😤 the confidence is unreal','{you} looked the cameras dead in the eye: “{quote}” 💀 iconic','the swagger on {you} is different. sign me UP 🙌','not {you} calling their shot 👀 love to see it','{you} is the main character of this tour and it is not close'],
-    hd:['{you} sends a message at {evt}: “{quote}”','All swagger: {you} owns the room at {evt}','{you} turns up the volume ahead of {evt}'],
-    op:['Respect the confidence. We will see it on the course.','Talk is easy out here. I will let my clubs answer.'] },
-  humble:{ tw:['the humility from {you} 🫡 what a pro','{you} deflecting all the credit… class act honestly','love how grounded {you} stays. easy to root for','no ego with {you}, just the work 🤝'],
-    hd:['{you} stays grounded at {evt}: “{quote}”','Class act: {you} keeps it humble before {evt}','All business, no ego — {you} at {evt}'],
-    op:['Always been a class act. Good guy to compete against.','That is the one we all respect out here.'] },
-  gritty:{ tw:['{you} with the ice in the veins 🥶 built different','that steel from {you}… “{quote}” 💪','{you} does not flinch. love this for the sport','quiet-killer energy from {you} 👀'],
-    hd:['{you} unshaken at {evt}: “{quote}”','Steady hand: {you} keeps composure heading into {evt}','{you} means business at {evt}'],
-    op:['Tough competitor. Never gives you anything.','You have to earn it against {you}. Always.'] },
-  bad:{ tw:['oof {you} that was NOT the read 😬','the clip of {you} saying “{quote}” is everywhere for the wrong reasons 💀','yikes. someone get {you} a media coach 😭','not {you} handing the whole locker room bulletin-board material 👀'],
-    hd:['{you} stumbles at the {evt} podium: “{quote}”','Backlash builds after {you}’s {evt} remarks','{you} on the defensive after {evt} comments'],
-    op:['Saw the comments. That is extra motivation for all of us.','New bulletin-board quote, thanks to {you}.'] },
-  neutral:{ tw:['{you} handled that one like a vet','solid answer from {you}, nothing to see here','{you} keeping it steady at the podium 🫡','fair enough from {you}. on to the golf'],
-    hd:['{you} faces the media at {evt}','{you} weighs in ahead of {evt}','Podium notes: {you} at {evt}'],
-    op:[] }
+  bold:{ tw:[
+    'ok {you} said WHAT 😤 the confidence is unreal','{you} looked the cameras dead in the eye: “{quote}” 💀 iconic',
+    'the swagger on {you} is different. sign me UP 🙌','not {you} calling their shot 👀 love to see it',
+    '{you} is the main character of this tour and it is not close','imagine having the audacity of {you} rn 😭 goated behavior',
+    '“{quote}” — {you} really said that with their whole chest 🔥','every broadcast needs a {you}. appointment television fr',
+    'the way {you} bends a presser to their will… villain arc unlocked 😈','nobody in golf is more quotable than {you} right now',
+    'even {rival} has to respect the confidence from {you} tbh','{you} strolling into {evt} like they already won it 👑',
+    'giving zero and i mean ZERO percent. {you} does not care what you think 💅','screenshot this: “{quote}” — {you}. replaying it all year',
+    'the {evt} field just got put on notice by {you} lmaooo','unbothered legend energy, {you} runs this tour',
+    '{you} out here writing checks and fully intending to cash them 🧾','the pressers are content now that {you} shows up 🍿'],
+    hd:['{you} sends a message at {evt}: “{quote}”','All swagger: {you} owns the room at {evt}','{you} turns up the volume ahead of {evt}',
+    '“{quote}”: {you} throws down the gauntlet','{you} isn’t here to make friends at {evt}','Bulletin-board fuel: {you} fires a shot before {evt}',
+    'Box office: why {you} is must-watch at {evt}','{you} to the field: catch me if you can','Confidence or arrogance? {you} doesn’t care',
+    '{you} names the moment at {evt}','The {evt} just got interesting, thanks to {you}','{you} puts a target on their own back at {evt}'],
+    op:['Respect the confidence. We’ll see it on the course.','Talk is easy out here. I’ll let my clubs answer.',
+    'Good for {you}. I’ve got a few things to say Sunday too.','Heard it all before. Bring it.',
+    'Adds a little spice to the week. I’m here for it.','They can say what they want. Scoreboard does the talking.',
+    'One way to pile pressure on yourself, I guess.'] },
+  humble:{ tw:[
+    'the humility from {you} 🫡 what a pro','{you} deflecting all the credit… class act honestly',
+    'love how grounded {you} stays. easy to root for','no ego with {you}, just the work 🤝',
+    'we do not deserve {you}. so gracious every single time','“{quote}” — the maturity from {you} is unreal for this sport',
+    '{you} could brag and chooses not to. respect level: max','the way {you} lifts everyone up instead of themselves 🥹',
+    'quietly one of the best AND one of the nicest. {you} gets it','no drama, no noise, just {you} being a total pro 🙏',
+    'other players could learn a thing or two from {you} honestly','{you} keeping it classy before {evt} as always',
+    'humble legend behavior from {you}, love this era of golf','not {you} thanking the caddie, the fans, everyone but themselves 😌',
+    'this is why {you} has the whole locker room’s respect','refreshing to see someone like {you} stay so level-headed'],
+    hd:['{you} stays grounded at {evt}: “{quote}”','Class act: {you} keeps it humble before {evt}','All business, no ego — {you} at {evt}',
+    '{you} deflects the spotlight ahead of {evt}','The quiet professional: {you} at {evt}','“{quote}”: {you} lets the work do the talking',
+    '{you} credits the team heading into {evt}','Grounded and grateful: {you} before {evt}','Why peers rate {you} a class above',
+    '{you} keeps the main thing the main thing at {evt}','No noise, all substance: {you} at {evt}'],
+    op:['Always been a class act. Good one to compete against.','That’s the one we all respect out here.',
+    'You want more players like {you} in the game.','Genuinely a good person. Makes you want to beat them even more, ha.',
+    'Nothing but respect. Proper pro.','The tour’s better with {you} in it.','Humble, sure. Don’t let it fool you though. Fierce.'] },
+  gritty:{ tw:[
+    '{you} with the ice in the veins 🥶 built different','that steel from {you}… “{quote}” 💪',
+    '{you} does not flinch. love this for the sport','quiet-killer energy from {you} 👀',
+    'you can just tell {you} wants it more than everyone else','the mental game on {you} is on another level rn',
+    'no theatrics, just {you} grinding everyone into dust 😤','“{quote}” — that is a closer talking. {you} different',
+    'give me {you} with the tournament on the line every time','the composure from {you} down the stretch is scary',
+    'other guys crack under this. {you} feeds on it','clutch gene fully activated for {you} at {evt} 🔒',
+    'i would not want to be paired with {you} on Sunday lol','that dawg in {you} is undeniable 🐕',
+    '{you} making the whole {evt} field nervous and barely saying a word','unbothered. focused. lethal. {you} szn'],
+    hd:['{you} unshaken at {evt}: “{quote}”','Steady hand: {you} keeps composure heading into {evt}','{you} means business at {evt}',
+    'Ice water: {you} ready for the {evt} pressure','“{quote}”: {you} in full closer mode','The grinder: {you} sets the tone at {evt}',
+    '{you} thrives when it’s hardest','All business at {evt}: {you} won’t blink','Why nobody wants to face {you} on Sunday',
+    '{you} lets the fire do the talking at {evt}','Quiet, focused, dangerous: {you} at {evt}'],
+    op:['Tough competitor. Never gives you anything.','You have to earn it against {you}. Always.',
+    'Hate playing with them, love watching them. So solid.','You know exactly what you’re getting: a fight.',
+    'No weakness in that game right now.','{you} makes you play your best just to keep up.','That’s a hard out, every single week.'] },
+  bad:{ tw:[
+    'oof {you} that was NOT the read 😬','the clip of {you} saying “{quote}” is everywhere for the wrong reasons 💀',
+    'yikes. someone get {you} a media coach 😭','not {you} handing the whole locker room bulletin-board material 👀',
+    'reading the room has never been {you}’s strong suit huh 😅','“{quote}” is going to age like milk. bookmark this',
+    'the second-hand embarrassment watching {you} today 🫣','and THIS is why you keep it simple at a presser. rough one {you}',
+    'every rival just pinned “{quote}” above their locker lmao','delete it {you}. actually no keep it, it is very funny 😭',
+    'confidence is one thing but {you} just cooked themselves live on air','the pundits are going to feast on {you} for a WEEK after that',
+    'imagine giving {rival} that quote for free. tragic {you}','not the takes we needed from {you} before {evt} 💀',
+    '{you} really fumbled the softest question of the presser','somewhere {rival} is smiling reading {you}’s quotes'],
+    hd:['{you} stumbles at the {evt} podium: “{quote}”','Backlash builds after {you}’s {evt} remarks','{you} on the defensive after {evt} comments',
+    'Did {you} just hand rivals bulletin-board fuel?','“{quote}”: {you}’s words come back to bite','{you} walks back {evt} comments amid backlash',
+    'A presser to forget for {you} at {evt}','Critics pounce on {you} after {evt}','{you} under fire for {evt} soundbite',
+    'The quote {you} may wish they could take back'],
+    op:['Saw the comments. That’s extra motivation for all of us.','New bulletin-board quote, thanks to {you}.',
+    'I’ll keep that one in my back pocket for Sunday.','People say a lot of things in June. We’ll see.',
+    'Appreciate the extra motivation, honestly.','That’ll look funny if it doesn’t go their way.','Noted. See you on the course.'] },
+  neutral:{ tw:[
+    '{you} handled that one like a vet','solid answer from {you}, nothing to see here',
+    '{you} keeping it steady at the podium 🫡','fair enough from {you}. on to the golf',
+    'measured stuff from {you} as usual','no notes. {you} said the right things and moved on',
+    '{you} not giving the media anything juicy today lol','professional and boring in the best way. {you} at {evt}',
+    'a very {you} presser: calm, tidy, done','{you} straight-batted every question there 🏏',
+    'nothing controversial, just {you} focused on {evt}','clip-free presser from {you}. the media hates to see it'],
+    hd:['{you} faces the media at {evt}','{you} weighs in ahead of {evt}','Podium notes: {you} at {evt}',
+    '{you} keeps it measured before {evt}','What {you} said heading into {evt}','{you} talks form and focus at {evt}',
+    'Steady as it goes: {you} ahead of {evt}','{you} sets sights on {evt}'],
+    op:['Good player. Always in the mix.','We’ll all be ready this week. Should be a good one.','Solid pro. Nothing flashy, just gets it done.'] }
 };
 function pbTone(ch, backfired){
   if(backfired) return 'bad';
@@ -7624,9 +7689,10 @@ function pressBuzz(ch, beat, ctx, backfired){
   const quoteRaw=String((typeof ch.t==='function')?ch.t(ctx):ch.t).replace(/[“”"]/g,'').trim();
   const v={you, rival:ctx.rivalName||ctx.starName||ctx.proName||pbPick(PB_NAMES), evt:ctx.upName||'the event', quote:quoteRaw};   // CS334: prefer a real opponent name
   const T=PB_TONES[pbTone(ch, backfired)]||PB_TONES.neutral;
-  // 2 fan tweets (unique), 1 headline, ~45% an opponent quote
+  // 2-3 unique fan tweets, 1 headline, ~45% an opponent quote (CS335: bigger pools + a variable count for freshness)
+  const nTw=Math.random()<0.4?3:2;
   const pool=T.tw.slice(); const tweets=[];
-  for(let i=0;i<2 && pool.length;i++){ const idx=Math.floor(Math.random()*pool.length); tweets.push(pbFill(pool.splice(idx,1)[0], v)); }
+  for(let i=0;i<nTw && pool.length;i++){ const idx=Math.floor(Math.random()*pool.length); tweets.push(pbFill(pool.splice(idx,1)[0], v)); }
   const handles=PB_HANDLES.slice();
   const rows=tweets.map(tx=>{ const h=handles.splice(Math.floor(Math.random()*handles.length),1)[0];
     return {handle:h, color:pbPick(PB_AVCOL), time:pbPick(['2m','4m','7m','11m','18m','24m']), likes:120+Math.floor(Math.random()*4800), tx}; });
