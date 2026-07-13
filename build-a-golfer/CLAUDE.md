@@ -7689,6 +7689,48 @@ allows Google Fonts, or self-host Anton.*
   errors. Deployed to /golf. Tunable: the flag W/H/notch + the per-design accent shapes in `hvFlagSVG`, the
   design spread + `HV_FLAG_OVR` in `hvFlag`.
 
+- **CS325 — Career Dilemmas: specific situational risk/reward decisions with weighted outcomes + real
+  stakes (owner: "incorporate more risk/reward decisions into career mode, and more specific events that
+  aren't as generic… very in depth, a ton of outcomes and scenarios").** A whole new decision layer beside
+  the existing press-conference storylines, built for depth and variance. (AskUserQuestion errored; proceeded
+  with the recommended default: **bounded-but-real stakes** — temporary effects, never career-ending unless
+  YOU pick a wild gamble — and a broad scenario mix.)
+  • **Temporary-effects engine** (`S.career.fx`): decisions can push time-limited modifiers — an injury
+    (−6 Approach for 3 events), a coaching bet (+3 Putting all season), form, etc. Applied for DISPLAY in
+    `buildPlayer` (radar/OVR) AND, crucially, to the SIM as a course-fit-weighted `eo` delta in `beginEvent`
+    (`careerFxEo`, parallel to how confidence/caddie bonuses already nudge the sim), so injuries/boosts
+    genuinely move your finishes. Ticked down one event at a time in `advanceEvent`; surfaced as live chips
+    on the season banner (🩹 Wrist strain · −6 Approach · 2 left). Career-only (never Daily/Circuit —
+    `careerFxOn()` gate), so it can't bleed into the Daily.
+  • **Weighted-outcome model** — the KEY to "a ton of outcomes": every choice has multiple `outcomes` with
+    relative weights (some skill-influenced, e.g. a high-composure player is likelier to gut out an injury),
+    so the SAME choice resolves several ways (pays off / mixed / backfires), each with its own concrete
+    effects: temp skills, confidence, Fans/Respect (the CS280 two-axis rep), followers, money, and a career-
+    feed headline. `rollOutcome` picks by weight; `applyDilemmaOutcome` applies + returns effect chips.
+  • **24-scenario catalog** (`DILEMMAS`) across a pro's whole life — injury/health (wrist twinge, back spasm,
+    illness), schedule/prep (seven-figure appearance fee before a major, overplaying, red-eye vs charter),
+    gear/swing/coaching (new driver, swing overhaul, sports psychologist, putter switch), off-course/life
+    (baby due, business investment, bachelor party), integrity (a fix offer → report/ignore/entertain, a
+    questionable drop, a wrong scorecard → DQ risk), media/fans (heckler, mic'd-up, viral trick shot),
+    nature/course (alligator on the fairway, ball-thieving dog, weather delay), and rivalry/locker-room
+    (money practice round vs your nemesis, mentoring a rookie). Each is situational (`when(ctx)` gated on age/
+    event/rank/rival/skills), so the beats fit the moment instead of reading generic.
+  • **Off-course money** (`S.season.sideMoney`) folds into the season NET only (not the prize-money
+    leaderboard), added to career net at season-end.
+  • **Frequency** (owner wants MORE decisions): season interruption budget 4→6, split across ≤4 dilemmas +
+    pressers + ≤2 Moments; the season loop prefers a specific dilemma (~60%) over a press beat. A distinct
+    gold "⚖ Career Decision" overlay (vs the blue press room) presents the situation → choices (⚡ Risky
+    flagged) → the ROLLED outcome revealed with tone-colored framing + effect chips. Saves/resumes via the
+    existing career + mid-season snapshot (added `sideMoney`; `fx`/`dilSeason` ride on `S.career`).
+  Verified in Playwright: catalog integrity (24 dilemmas, 0 dupes, all outcomes weighted, effects bounded);
+  the engine (injury 82→76 display, weighted sim delta −1.26, expires after 3 events, roll distribution
+  matches weights, effects apply, daily-mode isolation); the overlay renders + reveals the outcome + chips;
+  and a full 20-event career season fired 4 dilemmas + 2 pressers within budget with injuries showing on the
+  banner and off-course money folded into the summary net — **0 page errors** throughout. Deployed to /golf.
+  This is a strong first wave; the catalog is a simple data table that's easy to keep expanding (more
+  scenarios, per-event/course-specific beats, longer branching chains). Tunable: `SEASON_STOP_BUDGET`,
+  `DILEMMA_PER_SEASON`, the ~60% dilemma-vs-presser split, and every effect magnitude in the catalog.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
