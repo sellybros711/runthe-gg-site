@@ -1,10 +1,10 @@
 -- ============================================================================
 -- 20_reload_wc_players_2026.sql  —  Reload the server ratings after the 2026
---                                   World Cup data swap (ratings through Jul 4)
+--                                   World Cup data swap (latest matchday update)
 -- ============================================================================
 -- WHY: submit_draft() recomputes every leaderboard score from wc_players. The
 -- client now ships recalibrated 2026 ratings (data/players_all.json, DATA_VERSION
--- 0.0.37). If the server table still holds the OLD ratings, new submissions get
+-- 0.0.38). If the server table still holds the OLD ratings, new submissions get
 -- scored against stale numbers and the leaderboard drifts from what players see.
 -- Reloading wc_players from the freshly generated CSV keeps server == client.
 --

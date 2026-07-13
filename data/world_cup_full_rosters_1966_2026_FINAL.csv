@@ -4927,7 +4927,7 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2002,United States,Earnie Stewart,MF,33,,NAC Breda,77.0,,,,,,,,,,0,quarterfinal,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,72,,,,52,76,88.0
 2002,United States,Cobi Jones,MF,31,,LA Galaxy,153.0,,,,,,,,,,0,quarterfinal,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,52,70,88.0
 2002,United States,DaMarcus Beasley,MF,20,,Chicago Fire,9.0,,,,,,,,,,0,quarterfinal,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,74,,,,52,70,88.0
-2002,United States,Landon Donovan,FW,20,,San Jose Earthquakes,20.0,,2.0,,,,,,,,0,quarterfinal,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,82,,,,55,85,88.0
+2002,United States,Landon Donovan,FW,20,,San Jose Earthquakes,20.0,,2.0,,,,,,,,0,quarterfinal,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,82,best_young_player,,,55,85,88.0
 2002,United States,Brian McBride,FW,29,,Columbus Crew,58.0,,2.0,,,,,,,,0,quarterfinal,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,81,,,,55,83,88.0
 2002,United States,Clint Mathis,FW,25,,New York Red Bulls,19.0,,1.0,,,,,,,,0,quarterfinal,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,74,,,,53,81,88.0
 2002,United States,Joe-Max Moore,FW,31,,Everton,95.0,,,,,,,,,,0,quarterfinal,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,51,78,88.0
@@ -6381,22 +6381,22 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2010,Switzerland,Eren Derdiyok,FW,21,,Bayer Leverkusen,21.0,,,,,,,,,,0,group,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,71,75.0
 2010,Switzerland,Albert Bunjaku,FW,26,,1. FC Nürnberg,3.0,,,,,,,,,,0,group,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,47,54,75.0
 2010,Switzerland,Blaise Nkufo,FW,35,,Twente,31.0,,,,,,,,,,0,group,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,47,52,75.0
-2010,United States,Tim Howard,GK,31,,Everton,51.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,51,77,82.0
+2010,United States,Tim Howard,GK,31,,Everton,51.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,51,79,82.0
 2010,United States,Brad Guzan,GK,25,,Aston Villa,16.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,51,76,82.0
 2010,United States,Marcus Hahnemann,GK,37,,Wolverhampton Wanderers,7.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,51,68,82.0
-2010,United States,Oguchi Onyewu,DF,28,,Milan,54.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,50,85,82.0
 2010,United States,Jonathan Spector,DF,24,,West Ham United,25.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,50,80,82.0
 2010,United States,Carlos Bocanegra,DF,31,,Rennes,79.0,,,,,,,,,,1,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,53,73,82.0
+2010,United States,Oguchi Onyewu,DF,28,,Milan,54.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,50,72,82.0
 2010,United States,Steve Cherundolo,DF,31,,Hannover 96,60.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,50,69,82.0
 2010,United States,Jonathan Bornstein,DF,25,,Chivas USA,32.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,50,68,82.0
 2010,United States,Jay DeMerit,DF,30,,Watford,19.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,50,60,82.0
 2010,United States,Clarence Goodson,DF,28,,Start,14.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,50,60,82.0
-2010,United States,Landon Donovan,MF,28,,LA Galaxy,123.0,,3.0,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,65,,,,59,80,82.0
+2010,United States,Landon Donovan,MF,28,,LA Galaxy,123.0,,3.0,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,65,,,,59,83,82.0
 2010,United States,Michael Bradley,MF,22,,Borussia Mönchengladbach,43.0,,1.0,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,53,79,82.0
+2010,United States,Clint Dempsey,MF,27,,Fulham,62.0,,1.0,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,53,79,82.0
 2010,United States,Ricardo Clark,MF,27,,Eintracht Frankfurt,29.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,49,77,82.0
 2010,United States,DaMarcus Beasley,MF,28,,Rangers,92.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,49,76,82.0
 2010,United States,Maurice Edu,MF,24,,Rangers,13.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,49,74,82.0
-2010,United States,Clint Dempsey,MF,27,,Fulham,62.0,,1.0,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,53,74,82.0
 2010,United States,Benny Feilhaber,MF,25,,AGF,32.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,49,67,82.0
 2010,United States,José Francisco Torres,MF,22,,Pachuca,10.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,49,60,82.0
 2010,United States,Stuart Holden,MF,24,,Bolton Wanderers,14.0,,,,,,,,,,0,round16,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,49,59,82.0
@@ -8760,24 +8760,24 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2026,Argentina,Juan Musso,GK,32,,Atlético Madrid,3.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,48,78,
 2026,Argentina,Gerónimo Rulli,GK,34,,Marseille,7.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,82,,,,48,77,
 2026,Argentina,Nahuel Molina,DF,28,,Atlético Madrid,58.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,82,
+2026,Argentina,Cristian Romero,DF,28,,Tottenham Hotspur,49.0,3.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,81,
 2026,Argentina,Gonzalo Montiel,DF,29,,River Plate,38.0,2.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,80,
-2026,Argentina,Cristian Romero,DF,28,,Tottenham Hotspur,49.0,3.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,80,
 2026,Argentina,Lisandro Martínez,DF,28,,Manchester United,26.0,1.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,80,
 2026,Argentina,Nicolás Tagliafico,DF,33,,Lyon,75.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,77,
 2026,Argentina,Nicolás Otamendi,DF,38,,Benfica,130.0,8.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,76,
 2026,Argentina,Leonardo Balerdi,DF,27,,Marseille,11.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,71,
 2026,Argentina,Facundo Medina,DF,27,,Marseille,7.0,0.0,,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,71,
-2026,Argentina,Enzo Fernández,MF,25,,Chelsea,40.0,6.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,87,
+2026,Argentina,Enzo Fernández,MF,25,,Chelsea,40.0,6.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,88,
+2026,Argentina,Alexis Mac Allister,MF,27,,Liverpool,44.0,6.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,85,
 2026,Argentina,Rodrigo De Paul,MF,32,,Inter Miami CF,85.0,2.0,,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,83,,,,47,84,
-2026,Argentina,Alexis Mac Allister,MF,27,,Liverpool,44.0,6.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,84,
 2026,Argentina,Nicolás González,MF,28,,Atlético Madrid,50.0,6.0,,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,84,
 2026,Argentina,Exequiel Palacios,MF,27,,Bayer Leverkusen,38.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,80,
 2026,Argentina,Leandro Paredes,MF,31,,Boca Juniors,77.0,5.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,77,
 2026,Argentina,Giovani Lo Celso,MF,30,,Real Betis,65.0,4.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,77,
 2026,Argentina,Valentín Barco,MF,21,,Strasbourg,2.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,47,64,
-2026,Argentina,Lionel Messi,FW,38,,Inter Miami CF,198.0,116.0,7.0,,,,,,,,1,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,96,,,1.0,50,99,
-2026,Argentina,Lautaro Martínez,FW,28,,Inter Milan,75.0,36.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,90,,,,47,90,
-2026,Argentina,Julián Alvarez,FW,26,,Atlético Madrid,51.0,14.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,87,,,,47,89,
+2026,Argentina,Lionel Messi,FW,38,,Inter Miami CF,198.0,116.0,8.0,,,,,,,,1,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,96,,,1.0,50,99,
+2026,Argentina,Lautaro Martínez,FW,28,,Inter Milan,75.0,36.0,2.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,90,,,,47,91,
+2026,Argentina,Julián Alvarez,FW,26,,Atlético Madrid,51.0,14.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,87,,,,47,90,
 2026,Argentina,Nico Paz,FW,21,,Como,8.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,47,80,
 2026,Argentina,Thiago Almada,FW,25,,Atlético Madrid,14.0,4.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,77,
 2026,Argentina,Giuliano Simeone,FW,23,,Atlético Madrid,11.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,77,
@@ -8849,15 +8849,15 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2026,Belgium,Youri Tielemans,MF,29,,Aston Villa,84.0,13.0,2.0,,,,,,,,1,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,50,81,
 2026,Belgium,Alexis Saelemaekers,MF,26,,Milan,24.0,2.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,80,
 2026,Belgium,Amadou Onana,MF,24,,Aston Villa,28.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,76,
-2026,Belgium,Hans Vanaken,MF,33,,Club Brugge,33.0,7.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,73,
-2026,Belgium,Nicolas Raskin,MF,25,,Rangers,12.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,70,
+2026,Belgium,Hans Vanaken,MF,33,,Club Brugge,33.0,7.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,74,
+2026,Belgium,Nicolas Raskin,MF,25,,Rangers,12.0,1.0,,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,70,
 2026,Belgium,Axel Witsel,MF,37,,Girona,137.0,12.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,65,,,,47,64,
 2026,Belgium,Diego Moreira,MF,21,,Strasbourg,2.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,47,63,
 2026,Belgium,Jérémy Doku,FW,24,,Manchester City,42.0,7.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,87,
-2026,Belgium,Leandro Trossard,FW,31,,Arsenal,50.0,11.0,2.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,86,
-2026,Belgium,Romelu Lukaku,FW,33,,Napoli,125.0,90.0,2.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,90,,,,47,86,
+2026,Belgium,Romelu Lukaku,FW,33,,Napoli,125.0,90.0,3.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,90,,,,47,87,
+2026,Belgium,Leandro Trossard,FW,31,,Arsenal,50.0,11.0,2.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,86,
+2026,Belgium,Charles De Ketelaere,FW,25,,Atalanta,29.0,5.0,3.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,81,
 2026,Belgium,Dodi Lukébakio,FW,28,,Benfica,29.0,5.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,77,
-2026,Belgium,Charles De Ketelaere,FW,25,,Atalanta,29.0,5.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,77,
 2026,Belgium,Matias Fernandez-Pardo,FW,21,,Lille,1.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,47,63,
 2026,Bosnia and Herzegovina,Nikola Vasilj,GK,30,,FC St. Pauli,25.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,48,60,
 2026,Bosnia and Herzegovina,Martin Zlomislić,GK,27,,Rijeka,3.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,48,57,
@@ -8904,7 +8904,7 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2026,Brazil,Fabinho,MF,32,,Al-Ittihad,32.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,47,68,
 2026,Brazil,Vinícius Júnior,FW,25,,Real Madrid,48.0,9.0,4.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,89,,,,47,99,
 2026,Brazil,Raphinha,FW,29,,Barcelona,38.0,11.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,88,,,,47,89,
-2026,Brazil,Neymar,FW,34,,Santos,128.0,79.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,90,,,1.0,47,85,
+2026,Brazil,Neymar,FW,34,,Santos,128.0,79.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,90,,,1.0,47,86,
 2026,Brazil,Matheus Cunha,FW,27,,Manchester United,22.0,1.0,3.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,83,
 2026,Brazil,Gabriel Martinelli,FW,24,,Arsenal,22.0,4.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,80,
 2026,Brazil,Endrick,FW,19,,Lyon,16.0,3.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,71,
@@ -8962,7 +8962,7 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2026,Cape Verde,Dailon Livramento,FW,25,,Casa Pia,21.0,7.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,83,,,,47,77,
 2026,Cape Verde,Gilson Benchimol,FW,24,,Akron Tolyatti,22.0,6.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,78,,,,47,76,
 2026,Cape Verde,Ryan Mendes,FW,36,,Iğdır,97.0,22.0,,,,,,,,,1,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,75,,,,50,74,
-2026,Colombia,David Ospina,GK,37,,Atlético Nacional,130.0,0.0,,,,,,,,2.0,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,48,80,
+2026,Colombia,David Ospina,GK,37,,Atlético Nacional,130.0,0.0,,,,,,,,3.0,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,48,81,
 2026,Colombia,Álvaro Montero,GK,31,,Vélez Sarsfield,11.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,48,56,
 2026,Colombia,Camilo Vargas,GK,37,,Atlas,41.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,48,53,
 2026,Colombia,Davinson Sánchez,DF,29,,Galatasaray,78.0,4.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,78,
@@ -9159,7 +9159,7 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2026,Egypt,Emam Ashour,MF,28,,Al Ahly,28.0,0.0,2.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,47,72,
 2026,Egypt,Marwan Attia,MF,27,,Al Ahly,33.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,47,68,
 2026,Egypt,Hamdy Fathy,MF,31,,Al-Wakrah,62.0,3.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,47,64,
-2026,Egypt,Mostafa Ziko,MF,29,,Pyramids,1.0,1.0,1.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,47,62,
+2026,Egypt,Mostafa Ziko,MF,29,,Pyramids,1.0,1.0,2.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,47,63,
 2026,Egypt,Mahmoud Saber,MF,24,,ZED,15.0,1.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,63,,,,47,60,
 2026,Egypt,Nabil Emad,MF,30,,Al-Najma,12.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,47,59,
 2026,Egypt,Mohanad Lasheen,MF,30,,Pyramids,22.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,47,57,
@@ -9182,21 +9182,21 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2026,England,Jarell Quansah,DF,23,,Bayer Leverkusen,1.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,72,
 2026,England,Djed Spence,DF,25,,Tottenham Hotspur,4.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,70,
 2026,England,Dan Burn,DF,34,,Newcastle United,6.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,69,
-2026,England,Jude Bellingham,MF,22,,Real Madrid,46.0,6.0,2.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,89,,,,47,92,
+2026,England,Jude Bellingham,MF,22,,Real Madrid,46.0,6.0,6.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,89,,,,47,96,
 2026,England,Declan Rice,MF,27,,Arsenal,72.0,6.0,,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,86,,,,47,89,
 2026,England,Morgan Rogers,MF,23,,Aston Villa,13.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,83,
 2026,England,Elliot Anderson,MF,23,,Nottingham Forest,7.0,0.0,,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,83,
 2026,England,Eberechi Eze,MF,27,,Arsenal,16.0,3.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,80,
 2026,England,Kobbie Mainoo,MF,21,,Manchester United,12.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,77,
 2026,England,Jordan Henderson,MF,35,,Brentford,89.0,3.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,74,,,,47,75,
-2026,England,Harry Kane,FW,32,,Bayern Munich,112.0,78.0,5.0,,,,,,,,1,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,90,,,,50,99,
+2026,England,Harry Kane,FW,32,,Bayern Munich,112.0,78.0,6.0,,,,,,,,1,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,90,,,,50,99,
 2026,England,Bukayo Saka,FW,24,,Arsenal,48.0,14.0,,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,89,
 2026,England,Marcus Rashford,FW,28,,Barcelona,70.0,18.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,84,
 2026,England,Noni Madueke,FW,24,,Arsenal,10.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,78,
 2026,England,Anthony Gordon,FW,25,,Newcastle United,17.0,2.0,,2.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,76,
 2026,England,Ollie Watkins,FW,30,,Aston Villa,20.0,6.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,81,,,,47,74,
 2026,England,Ivan Toney,FW,30,,Al-Ahli,7.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,47,67,
-2026,France,Mike Maignan,GK,30,,Milan,39.0,0.0,,,,,,,,3.0,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,48,86,
+2026,France,Mike Maignan,GK,30,,Milan,39.0,0.0,,,,,,,,4.0,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,48,87,
 2026,France,Robin Risser,GK,21,,Lens,0.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,48,65,
 2026,France,Brice Samba,GK,32,,Rennes,4.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,48,64,
 2026,France,William Saliba,DF,25,,Arsenal,31.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,86,,,,47,87,
@@ -9215,8 +9215,8 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2026,France,Warren Zaïre-Emery,MF,20,,Paris Saint-Germain,11.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,74,
 2026,France,Manu Koné,MF,25,,Roma,13.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,72,
 2026,France,Maghnes Akliouche,MF,24,,Monaco,8.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,71,
-2026,France,Kylian Mbappé,FW,27,,Real Madrid,97.0,56.0,7.0,2.0,,,,,,,1,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,95,,,1.0,50,99,
-2026,France,Ousmane Dembélé,FW,29,,Paris Saint-Germain,58.0,7.0,4.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,99,
+2026,France,Kylian Mbappé,FW,27,,Real Madrid,97.0,56.0,8.0,3.0,,,,,,,1,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,95,,,1.0,50,99,
+2026,France,Ousmane Dembélé,FW,29,,Paris Saint-Germain,58.0,7.0,5.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,99,
 2026,France,Michael Olise,FW,24,,Bayern Munich,16.0,4.0,,5.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,93,
 2026,France,Désiré Doué,FW,21,,Paris Saint-Germain,6.0,2.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,88,
 2026,France,Bradley Barcola,FW,23,,Paris Saint-Germain,19.0,3.0,2.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,82,
@@ -9421,7 +9421,7 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2026,Mexico,Álvaro Fidalgo,MF,29,,Real Betis,3.0,0.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,71,
 2026,Mexico,Brian Gutiérrez,MF,22,,Guadalajara,6.0,2.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,47,67,
 2026,Mexico,Gilberto Mora,MF,17,,Tijuana,7.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,47,53,
-2026,Mexico,Raúl Jiménez,FW,35,,Fulham,123.0,44.0,2.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,85,,,,47,87,
+2026,Mexico,Raúl Jiménez,FW,35,,Fulham,123.0,44.0,3.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,85,,,,47,88,
 2026,Mexico,Santiago Giménez,FW,25,,Milan,47.0,6.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,83,
 2026,Mexico,César Huerta,FW,25,,Anderlecht,26.0,3.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,76,
 2026,Mexico,Guillermo Martínez,FW,31,,Pumas,11.0,3.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,78,,,,47,72,
@@ -9520,15 +9520,15 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2026,Norway,Sondre Langås,DF,25,,Derby County,3.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,47,56,
 2026,Norway,Martin Ødegaard,MF,27,,Arsenal,67.0,4.0,,2.0,,,,,,,1,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,50,85,
 2026,Norway,Sander Berge,MF,28,,Fulham,65.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,74,,,,47,79,
+2026,Norway,Andreas Schjelderup,MF,22,,Benfica,11.0,1.0,1.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,76,
 2026,Norway,Fredrik Aursnes,MF,30,,Benfica,21.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,75,
-2026,Norway,Andreas Schjelderup,MF,22,,Benfica,11.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,75,
 2026,Norway,Oscar Bobb,MF,22,,Fulham,19.0,2.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,47,71,
 2026,Norway,Thelo Aasgaard,MF,24,,Rangers,7.0,5.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,71,
 2026,Norway,Kristian Thorstvedt,MF,27,,Sassuolo,36.0,4.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,66,,,,47,68,
 2026,Norway,Patrick Berg,MF,28,,Bodø/Glimt,42.0,0.0,,2.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,47,63,
 2026,Norway,Morten Thorsby,MF,30,,Cremonese,31.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,47,61,
 2026,Norway,Jens Petter Hauge,MF,26,,Bodø/Glimt,15.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,63,,,,47,59,
-2026,Norway,Erling Haaland,FW,25,,Manchester City,49.0,55.0,5.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,90,,,,47,99,
+2026,Norway,Erling Haaland,FW,25,,Manchester City,49.0,55.0,7.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,90,,,,47,99,
 2026,Norway,Alexander Sørloth,FW,30,,Atlético Madrid,71.0,26.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,85,,,,47,84,
 2026,Norway,Julian Ryerson,FW,28,,Borussia Dortmund,42.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,83,
 2026,Norway,Antonio Nusa,FW,21,,RB Leipzig,23.0,8.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,80,
@@ -9767,7 +9767,7 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2026,South Korea,Son Heung-min,FW,33,,Los Angeles FC,144.0,56.0,,,,,,,,,1,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,85,,,1.0,50,85,
 2026,South Korea,Cho Gue-sung,FW,28,,Midtjylland,44.0,12.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,78,,,,47,77,
 2026,South Korea,Oh Hyeon-gyu,FW,25,,Beşiktaş,27.0,6.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,76,
-2026,Spain,Unai Simón,GK,29,,Athletic Bilbao,57.0,0.0,,,,,,,,4.0,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,48,85,
+2026,Spain,Unai Simón,GK,29,,Athletic Bilbao,57.0,0.0,,,,,,,,5.0,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,48,86,
 2026,Spain,David Raya,GK,30,,Arsenal,12.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,48,82,
 2026,Spain,Joan Garcia,GK,25,,Barcelona,1.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,48,76,
 2026,Spain,Pau Cubarsí,DF,19,,Barcelona,11.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,83,
@@ -9780,8 +9780,8 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2026,Spain,Álex Grimaldo,DF,30,,Bayer Leverkusen,12.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,70,
 2026,Spain,Pedri,MF,23,,Barcelona,40.0,5.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,88,,,,47,92,
 2026,Spain,Rodri,MF,29,,Manchester City,61.0,4.0,,,,,,,,,1,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,89,,,,50,89,
-2026,Spain,Fabián Ruiz,MF,30,,Paris Saint-Germain,41.0,6.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,83,
-2026,Spain,Mikel Merino,MF,29,,Arsenal,41.0,10.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,82,
+2026,Spain,Fabián Ruiz,MF,30,,Paris Saint-Germain,41.0,6.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,84,
+2026,Spain,Mikel Merino,MF,29,,Arsenal,41.0,10.0,2.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,84,
 2026,Spain,Gavi,MF,21,,Barcelona,28.0,5.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,85,,,,47,81,
 2026,Spain,Martín Zubimendi,MF,27,,Arsenal,25.0,3.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,80,
 2026,Spain,Álex Baena,MF,24,,Atlético Madrid,15.0,2.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,78,
@@ -9819,7 +9819,7 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2026,Sweden,Gustaf Nilsson,FW,29,,Club Brugge,10.0,4.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,88,,,,47,81,
 2026,Sweden,Anthony Elanga,FW,24,,Newcastle United,30.0,6.0,2.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,80,
 2026,Sweden,Taha Ali,FW,27,,Malmö FF,2.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,47,68,
-2026,Switzerland,Gregor Kobel,GK,28,,Borussia Dortmund,20.0,0.0,,,,,,,,1.0,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,48,80,
+2026,Switzerland,Gregor Kobel,GK,28,,Borussia Dortmund,20.0,0.0,,,,,,,,2.0,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,48,81,
 2026,Switzerland,Marvin Keller,GK,23,,Young Boys,1.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,70,,,,48,66,
 2026,Switzerland,Yvon Mvogo,GK,32,,Lorient,13.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,48,56,
 2026,Switzerland,Manuel Akanji,DF,30,,Inter Milan,80.0,4.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,83,
@@ -9840,9 +9840,9 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2026,Switzerland,Fabian Rieder,MF,24,,FC Augsburg,27.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,47,60,
 2026,Switzerland,Zeki Amdouni,FW,25,,Burnley,28.0,11.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,87,,,,47,84,
 2026,Switzerland,Breel Embolo,FW,29,,Rennes,86.0,24.0,2.0,2.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,79,,,,47,82,
-2026,Switzerland,Rubén Vargas,FW,27,,Sevilla,61.0,11.0,2.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,80,
+2026,Switzerland,Rubén Vargas,FW,27,,Sevilla,61.0,11.0,2.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,81,
 2026,Switzerland,Cedric Itten,FW,29,,Fortuna Düsseldorf,14.0,5.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,85,,,,47,79,
-2026,Switzerland,Dan Ndoye,FW,25,,Nottingham Forest,30.0,7.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,77,
+2026,Switzerland,Dan Ndoye,FW,25,,Nottingham Forest,30.0,7.0,2.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,78,
 2026,Switzerland,Noah Okafor,FW,26,,Leeds United,24.0,2.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,75,
 2026,Switzerland,Christian Fassnacht,FW,32,,Young Boys,22.0,5.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,75,,,,47,72,
 2026,Tunisia,Aymen Dahmen,GK,29,,CS Sfaxien,37.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,48,62,
@@ -9912,8 +9912,8 @@ wc_year,country,player_name,position,age_at_tournament,birth_year,club_at_tourna
 2026,United States,Maximilian Arfsten,DF,25,,Columbus Crew,19.0,1.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,47,59,
 2026,United States,Weston McKennie,MF,27,,Juventus,65.0,12.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,84,,,,47,82,
 2026,United States,Giovanni Reyna,MF,23,,Borussia Mönchengladbach,37.0,9.0,1.0,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,81,
+2026,United States,Malik Tillman,MF,24,,Bayer Leverkusen,29.0,3.0,2.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,79,
 2026,United States,Tyler Adams,MF,27,,Bournemouth,53.0,2.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,78,
-2026,United States,Malik Tillman,MF,24,,Bayer Leverkusen,29.0,3.0,1.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,77,,,,47,78,
 2026,United States,Cristian Roldan,MF,31,,Seattle Sounders FC,46.0,0.0,,,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,62,,,,47,65,
 2026,United States,Sebastian Berhalter,MF,25,,Vancouver Whitecaps FC,12.0,1.0,1.0,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,64,,,,47,61,
 2026,United States,Christian Pulisic,FW,27,,Milan,85.0,33.0,,1.0,,,,,,,0,,,Wikipedia squad (verified); baseline=caps-based experience proxy; blanks=not recorded,87,,,,47,84,
