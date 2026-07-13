@@ -7841,13 +7841,17 @@ function storyFeedHTML(){
 // signing one RESETS the relationship you build over seasons (loyalty grows the bonuses a little each year).
 // Rewards also scale with your FOLLOWING (popularity sells). Each off-season, if your standing has grown
 // enough to attract a bigger brand, you're offered the choice: stay and keep compounding loyalty, or upgrade.
-const SPONSOR_TIERS=[   // CS242: reward ladder compressed (was 1/1.45/2/2.7) so the top tier can't compound to a windfall
+const SPONSOR_TIERS=[   // CS242: reward ladder compressed so the top tier can't compound to a windfall. CS330: +Elite/Icon so the climb lasts a whole career.
   {name:'Regional', reward:1.00, diff:1.00},
   {name:'National', reward:1.28, diff:1.24},
   {name:'Premium',  reward:1.50, diff:1.50},
-  {name:'Global',   reward:2.05, diff:1.80}
+  {name:'Global',   reward:2.05, diff:1.80},
+  {name:'Elite',    reward:2.40, diff:2.05},
+  {name:'Icon',     reward:2.80, diff:2.30}
 ];
-const SPONSOR_TIER_REQ=[0, 26, 56, 88];   // market value needed to attract each tier's interest
+// CS330: market value needed to attract each tier — Global comes mid-career, Elite/Icon are the long game
+// (Icon needs a legendary CV: huge following + peak OVR + many wins/majors, so it's a late-career pinnacle).
+const SPONSOR_TIER_REQ=[0, 24, 48, 70, 94, 114];
 const SPONSOR_REL_MAX=5;
 // CS229: every sponsor is a FAKE BRAND with its own identity — category, color, tagline, and a
 // PERSONALITY trait that changes the deal. So two offers at the same tier can feel very different, and
@@ -7902,7 +7906,50 @@ const BRANDS=[
   {name:'Titan Tour Gear', tier:2, cat:'equipment', color:'#5a6470', tag:'Built for the elite.', trait:'performance'},
   {name:'Celestia', tier:3, cat:'luxury', color:'#b07ae0', tag:'Beyond the horizon.', trait:'marketing'},
   {name:'Vortex Motors', tier:3, cat:'auto', color:'#3a9ad0', tag:'Bend the road.', trait:'performance'},
-  {name:'Empyrean', tier:3, cat:'finance', color:'#c9b24a', tag:'The height of trust.', trait:'demanding'}
+  {name:'Empyrean', tier:3, cat:'finance', color:'#c9b24a', tag:'The height of trust.', trait:'demanding'},
+  // CS330 — 36 MORE fictional brands so the sponsor journey lasts a whole career (a fresh choice keeps coming)
+  // +3 Regional
+  {name:'Old Course Outfitters', tier:0, cat:'apparel', color:'#5f7f4a', tag:'Tradition, tailored.', trait:'loyal'},
+  {name:'Grip & Grain', tier:0, cat:'equipment', color:'#8a6a3f', tag:'Feel every shot.', trait:'steady'},
+  {name:'Caddie Coffee Co.', tier:0, cat:'beverage', color:'#7a5a3a', tag:'Dawn-patrol fuel.', trait:'marketing'},
+  // +3 National
+  {name:'Pinnacle Wear', tier:1, cat:'apparel', color:'#3f8f6f', tag:'Dress the moment.', trait:'demanding'},
+  {name:'Torque Motors', tier:1, cat:'auto', color:'#c0562f', tag:'Grip the road.', trait:'performance'},
+  {name:'Harbor Financial', tier:1, cat:'finance', color:'#3f7f9f', tag:'Anchor your future.', trait:'patient'},
+  // +3 Premium
+  {name:'Slate & Iron', tier:2, cat:'equipment', color:'#5a6470', tag:'Cold-forged confidence.', trait:'demanding'},
+  {name:'Azure Airlines', tier:2, cat:'airline', color:'#3f9fd0', tag:'Chase the sun.', trait:'marketing'},
+  {name:'Verdant Spirits', tier:2, cat:'beverage', color:'#4f8f4a', tag:'Toast the round.', trait:'steady'},
+  // +3 Global
+  {name:'Helios Athletic', tier:3, cat:'apparel', color:'#e0a03a', tag:'Rise and shine.', trait:'performance'},
+  {name:'Sovereign Watches', tier:3, cat:'luxury', color:'#b0904a', tag:'Master your time.', trait:'demanding'},
+  {name:'Quantum Tech', tier:3, cat:'tech', color:'#5f7ae8', tag:'Precision, computed.', trait:'steady'},
+  // Tier 4 — Elite (12)
+  {name:'Imperium Athletic', tier:4, cat:'apparel', color:'#c94a5a', tag:'Rule every fairway.', trait:'performance'},
+  {name:'Aurelian', tier:4, cat:'luxury', color:'#c9a24a', tag:'The gold standard.', trait:'demanding'},
+  {name:'Meridian One', tier:4, cat:'finance', color:'#3f9f8a', tag:'Wealth without limits.', trait:'loyal'},
+  {name:'Skyline Airways', tier:4, cat:'airline', color:'#3fa0c0', tag:'The world, closer.', trait:'marketing'},
+  {name:'Velocity GT', tier:4, cat:'auto', color:'#d43a4a', tag:'Beyond fast.', trait:'performance'},
+  {name:'Halo Tech', tier:4, cat:'tech', color:'#6f8ae8', tag:'Every edge, measured.', trait:'steady'},
+  {name:'Regalia', tier:4, cat:'luxury', color:'#9a6fe0', tag:'Worn by champions.', trait:'demanding'},
+  {name:'Everpeak', tier:4, cat:'apparel', color:'#3f8f6f', tag:'Summit-tested.', trait:'patient'},
+  {name:'Titanova', tier:4, cat:'equipment', color:'#5a6a80', tag:'The new standard.', trait:'performance'},
+  {name:'Solaris Energy', tier:4, cat:'energy', color:'#e0902a', tag:'Powered by the sun.', trait:'marketing'},
+  {name:'Nova Beverages', tier:4, cat:'beverage', color:'#3fa08a', tag:'Fuel the greatness.', trait:'marketing'},
+  {name:'Ascend Capital', tier:4, cat:'finance', color:'#c9a24a', tag:'Climb with confidence.', trait:'patient'},
+  // Tier 5 — Icon (12) — the pinnacle: face-of-the-sport, worldwide brands
+  {name:'Olympus', tier:5, cat:'luxury', color:'#d4b24a', tag:'Home of legends.', trait:'demanding'},
+  {name:'Vanguard One', tier:5, cat:'apparel', color:'#c0384a', tag:'The face of the game.', trait:'performance'},
+  {name:'Eternia', tier:5, cat:'luxury', color:'#b07ae0', tag:'Timeless by design.', trait:'marketing'},
+  {name:'Apex Global', tier:5, cat:'apparel', color:'#e0b23a', tag:'The peak of everything.', trait:'performance'},
+  {name:'Zenith One', tier:5, cat:'finance', color:'#c9a24a', tag:'The summit of finance.', trait:'demanding'},
+  {name:'Celeste Airways', tier:5, cat:'airline', color:'#3fb0c0', tag:'Fly among the stars.', trait:'marketing'},
+  {name:'Monarch Prestige', tier:5, cat:'luxury', color:'#9a6fe0', tag:'Reign supreme.', trait:'demanding'},
+  {name:'Stratos Motors', tier:5, cat:'auto', color:'#3a9ad0', tag:'Rewrite the limit.', trait:'performance'},
+  {name:'Infinitum Tech', tier:5, cat:'tech', color:'#6f8ae8', tag:'No ceiling.', trait:'steady'},
+  {name:'Empire Athletic', tier:5, cat:'apparel', color:'#c94a3a', tag:'Build a dynasty.', trait:'loyal'},
+  {name:'Aurum', tier:5, cat:'luxury', color:'#d4a63a', tag:'Pure gold.', trait:'demanding'},
+  {name:'Legacy Global', tier:5, cat:'finance', color:'#3f9f8a', tag:'Written in history.', trait:'loyal'}
 ];
 const BRAND_BY_NAME={}; BRANDS.forEach(b=>BRAND_BY_NAME[b.name]=b);
 function brandInfo(name){ return BRAND_BY_NAME[name]||{name:name||'Sponsor', tier:0, cat:'apparel', color:'#5fd0e0', tag:'', trait:'steady'}; }
@@ -7927,7 +7974,13 @@ const LOGO_SPEC={
   'Emberline':{sh:'circle',accent:'split'}, 'Solace Resorts':{sh:'rounded',accent:'ring'}, 'Titan Tour Gear':{sh:'hex',accent:'none',mono:'T'},
   'Celestia':{sh:'shield',accent:'ring',mono:'C'}, 'Vortex Motors':{sh:'diamond',accent:'bar',mono:'V'}, 'Empyrean':{sh:'circle',accent:'ubar',mono:'E'}
 };
-function logoSpecOf(name){ const s=LOGO_SPEC[name]||{sh:'rounded',accent:'none'}; return {sh:s.sh, accent:s.accent||'none', mono:s.mono||brandInitials(name)}; }
+// CS330: brands without a hand-authored LOGO_SPEC get a deterministic, varied shape/accent from a name hash
+// (so the 36 new brands each look distinct without 36 literal entries).
+const LOGO_SHAPES=['rounded','circle','hex','diamond','shield','tag'], LOGO_ACCENTS=['none','bar','ubar','ring','split'];
+function logoSpecOf(name){ const s=LOGO_SPEC[name];
+  if(s) return {sh:s.sh, accent:s.accent||'none', mono:s.mono||brandInitials(name)};
+  const h=(dHash(String(name||''))>>>0);
+  return {sh:LOGO_SHAPES[h%LOGO_SHAPES.length], accent:LOGO_ACCENTS[(h>>>4)%LOGO_ACCENTS.length], mono:brandInitials(name)}; }
 function _logoShade(hex, amt){ const c=avHexRgb(hex); const f=x=>Math.max(0,Math.min(255,Math.round(x+(amt<0?x*amt:(255-x)*amt)))); return '#'+[f(c.r),f(c.g),f(c.b)].map(v=>v.toString(16).padStart(2,'0')).join(''); }
 function _logoContrast(hex){ const c=avHexRgb(hex); return (0.299*c.r+0.587*c.g+0.114*c.b)>150?'#0c1a12':'#ffffff'; }
 function _logoShapeSVG(sh){
@@ -8028,15 +8081,25 @@ function sponsorFilledSlots(){ const s=ensureSponsors(); return SPONSOR_SLOTS.fi
 function ensureSponsor(){ const s=ensureSponsors(); return s.shirt||s.hat||null; }
 // pending off-season offers (up to 2 interested brands) — fill an OPEN slot at your eligible tier, and/or a
 // tier-up brand for your lowest filled slot once you've outgrown it. Deterministic per (careerSeed, year).
+const SPONSOR_POACH_CHANCE=0.5;   // CS330: ~half of "at your ceiling" years, a RIVAL brand comes calling → the journey keeps going all career
 function computeSponsorOffers(){ if(S.daily||S.circuitMode||!S.career) return [];
-  const s=ensureSponsors(), elig=eligibleSponsorTier();
+  const s=ensureSponsors(), elig=eligibleSponsorTier(), maxT=SPONSOR_TIERS.length-1;
   const have=new Set(SPONSOR_SLOTS.map(k=>s[k]&&s[k].brand).filter(Boolean));
   const seed=(((S.careerSeed||1)>>>0)^(((S.year||1)*0x9E3779B1)>>>0))>>>0, rng=mulberry32((seed^0x0FFE5)>>>0);
   const offers=[];
   const emptySlot=SPONSOR_SLOTS.find(k=>!s[k]);
   if(emptySlot){ const pool=brandsOfTier(elig).filter(b=>!have.has(b)); if(pool.length){ const b=pool[Math.floor(rng()*pool.length)]; offers.push({brand:b,tier:elig}); have.add(b); } }
   const filled=SPONSOR_SLOTS.filter(k=>s[k]).map(k=>s[k]).sort((a,b)=>a.tier-b.tier);
-  if(filled.length){ const low=filled[0]; if(elig>low.tier && low.tier<SPONSOR_TIERS.length-1){ const nt=low.tier+1, pool=brandsOfTier(nt).filter(b=>!have.has(b)); if(pool.length){ const b=pool[Math.floor(rng()*pool.length)]; offers.push({brand:b,tier:nt}); have.add(b); } } }
+  if(filled.length){ const low=filled[0], target=Math.min(elig,maxT);
+    if(target>low.tier){
+      // a BIGGER brand comes calling — a genuine upgrade, always offered once you've outgrown your current deal
+      const pool=brandsOfTier(target).filter(b=>!have.has(b)); if(pool.length){ const b=pool[Math.floor(rng()*pool.length)]; offers.push({brand:b,tier:target,upgrade:true}); have.add(b); }
+    } else if(rng()<SPONSOR_POACH_CHANCE){
+      // you're at your ceiling: a RIVAL at the same top tier tries to poach you — keeps fresh choices coming
+      // for the rest of your career (fixes "20 years with the same sponsor, never offered anything new").
+      const pool=brandsOfTier(low.tier).filter(b=>!have.has(b)); if(pool.length){ const b=pool[Math.floor(rng()*pool.length)]; offers.push({brand:b,tier:low.tier,poach:true}); have.add(b); }
+    }
+  }
   return offers.slice(0,2); }
 // sign an offered brand into a chosen slot (replaces whatever is there; loyalty resets; a signing bonus is paid)
 function signSponsor(offer, slot){ const s=ensureSponsors(); const prev=s[slot];
@@ -8257,7 +8320,11 @@ function sponsorDecisionNode(){
   const box=$(`<div style="display:grid;gap:11px"></div>`); wrap.appendChild(box);
   offers.forEach(offer=>{
     const nti=sponsorTierInfo(offer.tier), ntr=brandTrait(offer.brand), bi=brandInfo(offer.brand), signing=sponsorSigningBonus(offer.brand);
+    // CS330: frame WHY this offer showed up — a step-up to a bigger tier, or a rival at your ceiling trying to poach you.
+    const badge = offer.upgrade ? `<div class="small" style="display:inline-block;background:rgba(235,166,31,.16);color:#ffd45e;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">↑ A bigger brand is calling · step up to ${esc(nti.name)}</div>`
+      : offer.poach ? `<div class="small" style="display:inline-block;background:rgba(95,208,224,.14);color:#7fe0e8;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">⚡ A rival ${esc(nti.name)} brand wants to poach you</div>` : '';
     const card=$(`<div class="scout" style="border-color:${bi.color}66;margin:0;text-align:left;padding:12px 13px">
+      ${badge}
       <div style="display:flex;align-items:center;gap:11px">${brandLogoSVG(offer.brand,42)}
         <span style="flex:1;min-width:0">
           <span style="display:block;font-weight:800;font-size:16px;color:var(--oncard);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(offer.brand)}</span>
