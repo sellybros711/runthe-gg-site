@@ -7871,6 +7871,11 @@ allows Google Fonts, or self-host Anton.*
   unchanged re-spins, a repeat free `offSpin()` is a no-op (cheat blocked), and a legit `offReSpin()` still
   works and costs exactly 1 re-spin — 0 page errors. Deployed to /golf.
 
+- **CS333 — title hero tagline → "BUILD A GOLFER. LIVE YOUR LEGACY." (owner).** Changed the title-screen
+  hero (`scrTitle`) from "Your Golfer. / Your Tour." to "Build a Golfer." (cream `.hr1`) / "Live your
+  Legacy." (gold `.hr2`); the `.hero` CSS uppercases it. Verified at 412px — both lines centered, no
+  overflow, 0 page errors. Deployed to /golf. (Copy-only; the RUN THE TOUR wordmark/brand is unchanged.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
