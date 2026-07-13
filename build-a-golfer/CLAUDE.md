@@ -7731,6 +7731,34 @@ allows Google Fonts, or self-host Anton.*
   scenarios, per-event/course-specific beats, longer branching chains). Tunable: `SEASON_STOP_BUDGET`,
   `DILEMMA_PER_SEASON`, the ~60% dilemma-vs-presser split, and every effect magnitude in the catalog.
 
+- **CS326 — multi-part story ARCS (decisions continue into later beats) + cleaner, fewer pop-ups (owner:
+  "I love multi branching storylines and maybe some that continue into later developments or storylines…
+  ensure all the decision pop-ups are clean and non-obstructive… 6 might be a little too many on top of
+  Moments").** Built on CS325.
+  • **Arcs — a decision now seeds a follow-up that fires later, forming a chain.** New infra
+    (`S.career.arcs`): an outcome can carry `arc:{fid, in:[minEvents,maxEvents]}`; `applyDilemmaOutcome`
+    schedules it with a randomized wait, `tickArcs` (in `advanceEvent`) counts it down per event, and
+    `dueArc` surfaces it when ready. A due follow-up fires FIRST and bypasses the per-season fresh-dilemma
+    cap (it's a payoff the player is owed), still bounded by the season interruption budget; showing it
+    consumes it. Stuck arcs (whose `when` never passes) self-prune after 30 events. Six follow-ups
+    (`STORY_ARCS`) wired to seeding outcomes: **The Venture** (go all in on a business → first-year numbers
+    boom/steady/bust → if it booms, an "expand the empire?" part 3), **The Rebuild** (commit to a swing
+    overhaul → weeks later it clicks-for-good or you scrap it), **The Rivalry** (win a money match vs your
+    nemesis → they demand a doubled-stakes rematch), **The Comeback** (a bad wrist/back injury → a "back to
+    full fitness, is the game still there?" beat that resolves strong or rusty), **The Protégé** (mentor a
+    rookie → they break out and you root for them / use it as fuel). Follow-ups read the seed via `ctx.arc`
+    and can seed further arcs, so chains branch.
+  • **Cleaner / non-obstructive.** At most ONE pop-up per event now — when a dilemma/presser fires at the
+    start of an event it flags `ce._interrupted`, so the Sunday Moment won't also fire that week.
+  • **Fewer.** Season interruption budget 6→**4** total (dilemmas + arcs + pressers + Moments combined),
+    fresh dilemmas/season 4→**3**. So a season sees ~3-4 decisions max including any Moment — not a
+    pop-up every event.
+  Verified in Playwright: arc catalog (6, 0 issues); full lifecycle (seed→wait→due→consume, doesn't touch
+  the fresh cap); a due arc fires even at the fresh-dilemma cap; and a full career season produced exactly
+  4 interruptions total with **0 events showing two pop-ups**, 0 page errors. Deployed to /golf. Tunable:
+  `SEASON_STOP_BUDGET` (4), `DILEMMA_PER_SEASON` (3), each arc's `in:[…]` delay, and the ~60% dilemma-vs-
+  presser split.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
