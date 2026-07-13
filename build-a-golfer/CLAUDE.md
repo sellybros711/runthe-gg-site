@@ -7759,6 +7759,15 @@ allows Google Fonts, or self-host Anton.*
   `SEASON_STOP_BUDGET` (4), `DILEMMA_PER_SEASON` (3), each arc's `in:[…]` delay, and the ~60% dilemma-vs-
   presser split.
 
+- **CS327 — never interrupt in back-to-back weeks (owner: "shouldn't come up with dilemmas or pressers
+  back to back weeks… players should flow through the sim without being abruptly stopped twice in a row.
+  It annoys people").** Added a min-gap rule to the season-loop trigger: a dilemma/presser/arc only fires
+  if at least one clean event has passed since the last pop-up (`S.evtIndex − S.season._lastStopEvt >= 2`).
+  Every pop-up — dilemma, presser, arc, AND a Sunday Moment — stamps `_lastStopEvt`, so nothing (including
+  a Moment the following week) can stop the player two events in a row. Reset in `startSeason`, carried in
+  the mid-season save. Verified in Playwright across 5 seasons: interruptions always land ≥2 events apart
+  (e.g. events [1,3,5,7]), **0 adjacent** anywhere, 0 page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
