@@ -7876,6 +7876,34 @@ allows Google Fonts, or self-host Anton.*
   Legacy." (gold `.hr2`); the `.hero` CSS uppercases it. Verified at 412px — both lines centered, no
   overflow, 0 page errors. Deployed to /golf. (Copy-only; the RUN THE TOUR wordmark/brand is unchanged.)
 
+- **CS334 — career decisions name REAL opponents instead of "a young golfer / a veteran" (owner: "the
+  decisions use very generic descriptions… use the opponent golfer names so it feels authentic and
+  immersive… everywhere generic language is applied. Give real life to this thing").** The rival-specific
+  beats already used the real `rivalName`, but the mentor/veteran/rookie beats used generic phrasing. Added
+  `fieldPeople()` — pulls REAL recognizable players from the living world (`S.world.active`): a veteran
+  (age ≥35, established), a young star (age ≤25), a rookie (debutant/age ≤22), a top star, and a field pro
+  — preferring non-generated (real) players and field-caliber names, deterministic per (careerSeed, year,
+  evtIndex) so a beat's names stay stable across re-renders/resume. Exposed on `storyCtx` as `vetName`/
+  `youngName`/`rookieName`/`starName`/`proName`. Rewrote the generic beats to use them (with a graceful
+  generic fallback when there's no world): the **veteran** locker-room beat ("Brian Harman pulls you
+  aside…"), the **veteran_legacy** mentor choice ("Mentor Tom Kim"), the **rookie_intro** backfire
+  ("Veterans like {name} smirk"), the **dil_rookie_help** dilemma ("{rookie} asks for help", now gated on a
+  real rookie existing), and the **dil_practice_rival** title (fixed a stray `${''}` artifact → "A money
+  round with {rival}"). Multi-part continuity: **dil_rookie_help** now captures the mentored player's name
+  into the seeded arc (`arcData:c=>({rookie:c.rookieName})`), so the **arc_mentee** follow-up months later
+  names the SAME player ("Caleb Surratt is winning" — the one you mentored). **pressBuzz** opponent quotes/
+  headlines now prefer a real opponent name (rival → star → pro) over the fictional `PB_NAMES` pool. Also
+  fixed a **latent crash**: `applyDilemmaOutcome` called a function `head` with no ctx (`o.head()`), so any
+  named dilemma feed-headline would throw — now threads `ctx` through (`o.head(ctx)`, and dynamic
+  `arcData(ctx)`). Deliberately left non-opponent roles generic (caddie/agent/reporter/heckler/fan, and the
+  "legend takes a shot" quote) — those aren't field players, and putting a fabricated quote in a real
+  retired legend's mouth is a right-of-publicity gray area. Verified in Playwright against a real living
+  world: all five name pickers return real players, every rewritten beat renders the real name, the mentee
+  arc carries the captured name, press-buzz uses a real opponent, the head-fn path no longer throws, and
+  beats gracefully fall back to generic text with no world — 0 page errors. Deployed to /golf. (Player
+  roster names are real by the standing RENAME-SPEC §7 decision — only courses/tournaments/cups are
+  fictionalized — so naming opponents here is consistent with the rest of the game.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

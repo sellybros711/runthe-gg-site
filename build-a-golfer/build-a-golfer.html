@@ -6980,6 +6980,29 @@ function repMeterHTML(opts){ opts=opts||{}; const f=repFans(), r=repRespect(), p
     <div style="flex:1">${bar(r,'#5fd0e0','Respect',repRespLabel(r))}</div>
   </div>${opts.persona&&p?`<div class="small" style="text-align:center;margin-top:8px;color:#ffd45e;font-weight:800">${esc(p.name)}</div>`:''}`;
 }
+// CS334: pull REAL opponent names from the living world so decisions name actual players you face
+// ("a young golfer" → the actual rising star, "a veteran" → a real old pro). Deterministic per
+// (careerSeed, year, evtIndex) so a beat's names stay stable across re-renders/resume. Prefers real
+// (non-generated) players and recognizable field-caliber names for authenticity.
+function fieldPeople(){
+  const out={vet:'', young:'', rookie:'', star:'', pro:''};
+  const w=(!S.daily && S.world && Array.isArray(S.world.active)) ? S.world : null;
+  if(!w) return out;
+  const sy=w.simYear||(typeof CAREER_START_YEAR!=='undefined'?CAREER_START_YEAR:2026);
+  const act=w.active.filter(g=>g&&g.name&&!g.retiredYear);
+  if(!act.length) return out;
+  const age=g=>sy-(g.born||1994);
+  const real=arr=>{ const r=arr.filter(g=>!g.fictional); return r.length?r:arr; };
+  const top=(arr,n)=>real(arr).slice().sort((a,b)=>(b.lov||0)-(a.lov||0)).slice(0,n||14);
+  const rng=mulberry32((((S.careerSeed||1)>>>0) ^ Math.imul((S.year||1),0x9e3779b1) ^ Math.imul((S.evtIndex||0)+7,0x85ebca6b))>>>0);
+  const pick=arr=>arr.length?arr[Math.floor(rng()*arr.length)].name:'';
+  out.star = pick(top(act,8));
+  out.pro  = pick(top(act.filter(g=>(g.lov||0)>=72),20)) || out.star;
+  out.vet  = pick(top(act.filter(g=>age(g)>=35 && (g.lov||0)>=73),14)) || pick(top(act,14));
+  out.young= pick(top(act.filter(g=>age(g)<=25),14)) || out.pro;
+  out.rookie = pick(top(act.filter(g=>(g.debutYear&&(sy-g.debutYear)<=1) || age(g)<=22),14)) || out.young;
+  return out;
+}
 function storyCtx(ce){
   const res=(S.season&&S.season.results)||[]; const last=res.length?res[res.length-1]:null;
   let won=false, top10=false, missed=false, lastName='', runnerUp=false, majorWin=false, lastMajor=false;
@@ -7008,9 +7031,11 @@ function storyCtx(ce){
   // a fitting brand for the "sponsor comes calling" beat: one tier above your current deal, named for immersion
   let sBrand='a major brand'; try{ const sp=ensureSponsor(), t=Math.min(SPONSOR_TIERS.length-1, sp.tier+1), pool=brandsOfTier(t).filter(b=>b!==sp.brand);
     if(pool.length) sBrand=pool[(S.evtIndex||0)%pool.length]; }catch(e){}
+  const ppl=fieldPeople();   // CS334: real opponent names for the beats
   return {won, top10, missed, runnerUp, majorWin, lastMajor, lastName, rival, rivalName:(rival&&rival.name)||'', upName:ce.evt.name, major:!!ce.evt.major, big:!!ce.evt.big,
     sponsorBrand:sBrand, firstWin, worldNo1, age, rookie, veteran, twilight, hot, careerWins,
     rivalAhead, grudgeW, grudgeL,
+    vetName:ppl.vet, youngName:ppl.young, rookieName:ppl.rookie, starName:ppl.star, proName:ppl.pro,
     fans:repFans(), respect:repRespect(),   // CS280 two-axis reputation, for consequence-beat triggers
     yr:S.year||1, rank, N:byMoney.length||1, cold, seasons:seasonsPlayed};
 }
@@ -7068,9 +7093,9 @@ const STORYLINES=[
   body:c=>`A couple of quiet weeks and the pundits are asking if the magic’s gone. What’s the plan?`,
   ch:[{t:'Grind it out',s:'Extra range time',tr:'gritty',conf:0.5,r:'You put in the work. Form is temporary; class is permanent.',head:'Answered slump talk with hard work'},
       {t:'Shrug it off',s:'Golf is golf',tr:'maverick',conf:0.3,r:'You’re not worried. It’ll turn.',head:'Waved off the slump chatter'}]},
- {id:'vet', tag:'THE LOCKER ROOM', when:c=>c.seasons>=2, title:c=>'A veteran pulls you aside',
-  body:c=>`An old pro shares some hard-won advice about handling the back-nine pressure that separates good from great.`,
-  ch:[{t:'Take it to heart',s:'Learn from the best',tr:'clutch',conf:0.5,r:'The words stick. You feel calmer over the ball.',head:'Soaked up a veteran’s wisdom'},
+ {id:'vet', tag:'THE LOCKER ROOM', when:c=>c.seasons>=2, title:c=>c.vetName?`${esc(c.vetName)} pulls you aside`:'A veteran pulls you aside',
+  body:c=>`${c.vetName?esc(c.vetName)+', one of the tour’s grizzled veterans,':'An old pro'} shares some hard-won advice about the back-nine pressure that separates good from great.`,
+  ch:[{t:'Take it to heart',s:'Learn from the best',tr:'clutch',conf:0.5,r:'The words stick. You feel calmer over the ball.',head:c=>c.vetName?`Soaked up ${c.vetName}’s wisdom`:'Soaked up a veteran’s wisdom'},
       {t:'Trust your own game',s:'My way',tr:'maverick',conf:0.3,r:'You nod politely — but you’ll do it your way.',head:'Backed his own instincts'}]},
  {id:'home', tag:'HOME GAME', when:c=>true, title:c=>'The hometown crowd',
   body:c=>`This week the galleries are packed with folks who’ve followed you since day one, chanting your name off the first tee.`,
@@ -7111,7 +7136,7 @@ const STORYLINES=[
  {id:'rookie_intro', tag:'ROOKIE', pri:3, when:c=>c.rookie && c.seasons===0, title:c=>'Your first tour presser',
   body:c=>`You’re a tour rookie and the microphones are new. What kind of pro do you want to be?`,
   ch:[{t:'“I’m here to win, now”',s:'No fear',tr:'confident',conf:0.4,risk:0.35,r:'Bold for a rookie. The room raises an eyebrow — and remembers.',head:'A fearless rookie declaration',
-        rBad:'The veterans smirk. A rookie writing checks they can’t cash — the pressure just doubled.',headBad:'A rookie boast the locker room won’t forget'},
+        rBad:c=>`${c.vetName?'Veterans like '+esc(c.vetName)+' smirk':'The veterans smirk'}. A rookie writing checks they can’t cash — the pressure just doubled.`,headBad:'A rookie boast the locker room won’t forget'},
       {t:'Soak it all in and learn',s:'Student of the game',tr:'humble',conf:0.3,fol:0.05,r:'Mature beyond your years. Veterans nod.',head:'A humble rookie debut'}]},
  {id:'rookie_win', tag:'MAIDEN WIN', pri:4, when:c=>c.firstWin, title:c=>'Your FIRST tour win',
   body:c=>`Your maiden victory at ${esc(c.lastName)} — the one you’ll never forget. Emotions are running high.`,
@@ -7122,7 +7147,7 @@ const STORYLINES=[
   body:c=>`Deep into your career, the press keeps asking about your legacy and how much you’ve got left.`,
   ch:[{t:'“I’m chasing greatness till the end”',s:'Still hungry',tr:'gritty',conf:0.5,r:'The fire still burns. Inspiring stuff.',head:'A veteran still chasing greatness'},
       {t:'Reflect and give thanks',s:'Grateful',tr:'humble',conf:0.3,fol:0.08,r:'A elder statesman moment. Beautifully done.',head:'A grateful career reflection'},
-      {t:'Mentor the next generation',s:'Pay it forward',tr:'loyal',conf:0.2,fol:0.1,r:'Rookies flock to you. A respected veteran.',head:'Became a mentor to the young guns'}]},
+      {t:c=>c.youngName?`Mentor ${esc(c.youngName)}`:'Mentor the next generation',s:'Pay it forward',tr:'loyal',conf:0.2,fol:0.1,r:c=>c.youngName?`Young stars like ${esc(c.youngName)} flock to you. A respected elder of the tour.`:'Rookies flock to you. A respected veteran.',head:c=>c.youngName?`Took ${c.youngName} under his wing`:'Became a mentor to the young guns'}]},
  {id:'twilight_retire', tag:'THE FINAL STRETCH', pri:2, when:c=>c.twilight, title:c=>'Retirement talk',
   body:c=>`With the finish line in sight, everyone wants to know: how long will you keep teeing it up?`,
   ch:[{t:'“I’m not done yet”',s:'One more run',tr:'gritty',conf:0.5,r:'You’ve got fight left. Nobody counts you out.',head:'Vowed he’s not done yet'},
@@ -7220,14 +7245,14 @@ function dilemmaCtx(ce){ const c=storyCtx(ce); try{ const p=buildPlayer(); c.sk=
 function rollOutcome(ch, ctx){ const outs=ch.outcomes||[{p:1}]; let tot=0; const w=outs.map(o=>{ const p=Math.max(0,(typeof o.p==='function'?o.p(ctx):(o.p==null?1:o.p))); tot+=p; return p; });
   let r=Math.random()*tot; for(let i=0;i<outs.length;i++){ if((r-=w[i])<0) return outs[i]; } return outs[outs.length-1]; }
 // apply one outcome's effects; returns the effect chips to display
-function applyDilemmaOutcome(o){ const eff=[];
+function applyDilemmaOutcome(o, ctx){ const eff=[];
   if(o.skill){ const ev=o.ev||3; for(const k in o.skill){ addFx({k:'skill',skill:k,amt:o.skill[k],ev,label:o.label||CAT_LABEL[k]}); } eff.push({t:'skill',skill:o.skill,ev,label:o.label}); }
   if(o.conf){ adjConf(o.conf); eff.push({t:'conf',v:o.conf}); }
   if(o.fans||o.respect){ adjRep(o.fans||0,o.respect||0); eff.push({t:'rep',f:o.fans||0,r:o.respect||0}); }
   if(o.fol){ gainFollowers(o.fol, o.fol<0?0:400); eff.push({t:'fol',v:o.fol}); }
   if(o.money){ if(S.season) S.season.sideMoney=(S.season.sideMoney||0)+o.money; eff.push({t:'money',v:o.money}); }
-  if(o.head){ const s=careerStory(); s.feed.unshift({year:S.year||1,evt:'Career',text:typeof o.head==='function'?o.head():o.head}); if(s.feed.length>60) s.feed.length=60; }
-  if(o.arc){ seedArc(o.arc.fid, o.arc.in, o.arcData); }   // CS326: this decision SEEDS a follow-up story beat later
+  if(o.head){ const s=careerStory(); s.feed.unshift({year:S.year||1,evt:'Career',text:typeof o.head==='function'?o.head(ctx):o.head}); if(s.feed.length>60) s.feed.length=60; }   // CS334: pass ctx so named heads work (was a latent crash)
+  if(o.arc){ seedArc(o.arc.fid, o.arc.in, typeof o.arcData==='function'?o.arcData(ctx):o.arcData); }   // CS326: this decision SEEDS a follow-up story beat later (CS334: dynamic data, e.g. the mentee's name)
   return eff; }
 // ---- CS326: multi-part story ARCS — a decision seeds a follow-up dilemma that fires later, forming a chain ----
 function careerArcs(){ const c=(S.career=S.career||{}); if(!Array.isArray(c.arcs)) c.arcs=[]; return c.arcs; }
@@ -7279,11 +7304,11 @@ const STORY_ARCS={
     {t:'Ease back in carefully', s:'Rebuild slowly', outcomes:[
       {p:1.7, tone:'good', text:'A patient return. The sharpness comes back within a couple of weeks.', skill:{clu:2}, ev:3, label:'Easing back', conf:3}]}]},
  arc_mentee:{ tag:'THE PROTÉGÉ', dom:'rival',
-   title:c=>'Your protégé is winning',
-   body:c=>`The rookie you took under your wing is climbing fast — and this week they’re in the field, right on your heels.`,
+   title:c=>(c.arc&&c.arc.rookie)?`${esc(c.arc.rookie)} is winning`:'Your protégé is winning',
+   body:c=>`${(c.arc&&c.arc.rookie)?esc(c.arc.rookie)+', the young player you took under your wing,':'The rookie you took under your wing'} is climbing fast — and this week they’re in the field, right on your heels.`,
    choices:[
     {t:'Root for them publicly', s:'Proud mentor', outcomes:[
-      {p:1.6, tone:'good', text:'You praise them to the press. The classy-veteran story writes itself.', respect:6, fol:0.05, head:'Cheered on the rookie he mentored'}]},
+      {p:1.6, tone:'good', text:c=>(c.arc&&c.arc.rookie)?`You praise ${esc(c.arc.rookie)} to the press. The classy-veteran story writes itself.`:'You praise them to the press. The classy-veteran story writes itself.', respect:6, fol:0.05, head:c=>(c.arc&&c.arc.rookie)?`Cheered on ${c.arc.rookie}, the player he mentored`:'Cheered on the rookie he mentored'}]},
     {t:'Use it as fuel', s:'Not done yet', outcomes:[
       {p:1.3, tone:'good', text:'The young gun lights a fire under you. Plenty left in the tank.', conf:5, skill:{clu:2}, ev:3, label:'Fired up'}]}]}
 };
@@ -7489,7 +7514,7 @@ const DILEMMAS=[
      {p:1.3, tone:'mixed', text:'You nap in the locker room. Fresh, but a touch cold restarting.', skill:{put:-2}, ev:1, label:'Cold restart'},
      {p:1, tone:'bad', text:'You lose the thread entirely and come out flat when the horn blows again.', skill:{clu:-4,put:-2}, ev:1, label:'Lost the rhythm', conf:-3}]}]},
  // ── RIVALRY & LOCKER ROOM ──
- {id:'dil_practice_rival', tag:'THE LOCKER ROOM', dom:'rival', when:c=>!!c.rivalName, title:c=>`A practice round with ${''}your rival`,
+ {id:'dil_practice_rival', tag:'THE LOCKER ROOM', dom:'rival', when:c=>!!c.rivalName, title:c=>`A money round with ${esc(c.rivalName)}`,
   body:c=>`${esc(c.rivalName)} invites you to play a money practice round Tuesday — friendly on the surface, but everyone knows nothing between you two is friendly.`,
   choices:[
    {t:'Accept and bury them', s:'Send a message', risk:true, outcomes:[
@@ -7497,11 +7522,11 @@ const DILEMMAS=[
      {p:1.2, tone:'bad', text:'They edge you on the last and won’t let you forget it. Into your head early.', skill:{clu:-3}, ev:1, label:'Needled', conf:-4}]},
    {t:'Politely decline', s:'Keep them guessing', outcomes:[
      {p:1.8, tone:'neutral', text:'You keep your cards close. Let them wonder.', conf:1, respect:1}]}]},
- {id:'dil_rookie_help', tag:'THE LOCKER ROOM', dom:'rival', when:c=>c.seasons>=3, title:c=>'A nervous rookie asks for help',
-  body:c=>`A wide-eyed rookie sheepishly asks if you’d walk them around the major venue and share a few reads. It’ll cost you your own prep time.`,
+ {id:'dil_rookie_help', tag:'THE LOCKER ROOM', dom:'rival', when:c=>c.seasons>=3&&!!c.rookieName, title:c=>`${esc(c.rookieName)} asks for help`,
+  body:c=>`${esc(c.rookieName)}, a wide-eyed rookie, sheepishly asks if you’d walk them around the major venue and share a few reads. It’ll cost you your own prep time.`,
   choices:[
    {t:'Take them under your wing', s:'Pay it forward', outcomes:[
-     {p:2, tone:'good', text:'You spend the afternoon teaching. Word gets round that you’re a class act.', respect:6, fol:0.04, head:'Mentored a rookie at a major', arc:{fid:'arc_mentee',in:[6,10]}}]},
+     {p:2, tone:'good', text:c=>`You spend the afternoon teaching ${esc(c.rookieName)}. Word gets round that you’re a class act.`, respect:6, fol:0.04, head:c=>`Mentored ${c.rookieName} at a major`, arc:{fid:'arc_mentee',in:[6,10]}, arcData:c=>({rookie:c.rookieName})}]},
    {t:'“Every man for himself”', s:'Guard your edge', outcomes:[
      {p:1.6, tone:'mixed', text:'You keep your prep to yourself. Sharp for the week, a little cold in the room.', skill:{app:2}, ev:1, label:'Extra prep', respect:-2}]}]}
 ];
@@ -7597,7 +7622,7 @@ function pbPick(a){ return a[Math.floor(Math.random()*a.length)]; }
 function pressBuzz(ch, beat, ctx, backfired){
   const you=dShort((S.season&&S.season.me&&S.season.me.name)||S.name||'You');
   const quoteRaw=String((typeof ch.t==='function')?ch.t(ctx):ch.t).replace(/[“”"]/g,'').trim();
-  const v={you, rival:ctx.rivalName||pbPick(PB_NAMES), evt:ctx.upName||'the event', quote:quoteRaw};
+  const v={you, rival:ctx.rivalName||ctx.starName||ctx.proName||pbPick(PB_NAMES), evt:ctx.upName||'the event', quote:quoteRaw};   // CS334: prefer a real opponent name
   const T=PB_TONES[pbTone(ch, backfired)]||PB_TONES.neutral;
   // 2 fan tweets (unique), 1 headline, ~45% an opponent quote
   const pool=T.tw.slice(); const tweets=[];
@@ -7783,7 +7808,7 @@ function showDilemma(sb){
     b.onclick=()=>{
       const fol0=story.followers||0;
       const o=rollOutcome(ch, ctx);
-      const eff=applyDilemmaOutcome(o);
+      const eff=applyDilemmaOutcome(o, ctx);
       const dFol=Math.round((story.followers||0)-fol0);
       track('dilemma_choice',{id:beat.id, choice:String(T(ch.t)), tone:o.tone});
       // keep the chosen option, drop the rest (CS311 pattern)
