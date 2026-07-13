@@ -163,7 +163,7 @@ window.GA_ID='G-L29P5MRWKE';
   .setup-cols{grid-template-columns:0.85fr 1fr; max-width:840px; margin:0 auto; align-items:stretch}
   /* sticky setup avatar — big on desktop, much smaller on phones so it doesn't eat the screen while scrolling */
   .avatarfig.fullbody.av-setup-full{height:min(56vh,520px)}
-  @media(max-width:700px){ .avatarfig.fullbody.av-setup-full{height:min(34vh,300px)} }
+  @media(max-width:700px){ .avatarfig.fullbody.av-setup-full{height:min(30vh,270px)} }
   /* CS266: Build-a-Golfer live stage — spotlight glow, name above, floor shadow; sticky action bar */
   .setup-figwrap{position:sticky; top:8px; z-index:3; padding:8px 0 12px; margin:0 -16px; background:#06200f; border-bottom:1px solid var(--line)}
   .avstage{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end}
@@ -4600,7 +4600,7 @@ function render(){
   // CS304: persistent bottom tab nav. Appended AFTER the screen dispatch so has-cupbar (set by the team-cup
   // screen) is known. Hidden on immersive live-play screens with their own bottom controls; an open
   // full-screen overlay (z-40) simply covers it (z-25).
-  const NAV_HIDE=['dailyround','playoffwatch','h2hwatch','h2hpreview','h2hdraft','h2hlobby'];
+  const NAV_HIDE=['dailyround','playoffwatch','h2hwatch','h2hpreview','h2hdraft','h2hlobby','setup'];   // setup has its own Back + Build bar → hide the global nav (no clash)
   const showNav = !NAV_HIDE.includes(S.screen) && !app.classList.contains('has-cupbar');
   app.classList.toggle('has-botnav', showNav);
   document.body.classList.toggle('has-botnav', showNav);   // CS305: cascades --botnav-space so bottom pop-ups clear the nav
@@ -5645,7 +5645,7 @@ function toast(msg, ms){
 
 /* ---------- setup (create your golfer) ---------- */
 // a labelled section header with a divider rule, groups the form so it doesn't read as a wall of controls
-function setupHeader(label){ return $(`<div style="display:flex;align-items:center;gap:10px;margin:18px 0 4px"><span style="letter-spacing:.08em;text-transform:uppercase;font-size:12.5px;font-weight:800;color:#cadecf">${esc(label)}</span><span style="flex:1;height:1px;background:rgba(255,255,255,.1)"></span></div>`); }
+function setupHeader(label){ return $(`<div style="display:flex;align-items:center;gap:10px;margin:13px 0 3px"><span style="letter-spacing:.08em;text-transform:uppercase;font-size:12.5px;font-weight:800;color:#cadecf">${esc(label)}</span><span style="flex:1;height:1px;background:rgba(255,255,255,.1)"></span></div>`); }
 function scrSetup(){
   const guest=!sbSignedIn();
   add($(`<div class="center"><span class="tag"${S.special?' style="color:#ffd76a;border-color:#ffd76a"':''}>${S.special?'⭐ Monthly Spotlight':(S.daily?'Beat the Pro':'New golfer')}</span></div>`));
@@ -5689,7 +5689,7 @@ function scrSetup(){
     lock.querySelector('#setup-signin').onclick=()=>{ S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); };
     right.appendChild(lock);
   } else {
-    // ---- signed-in: full customization, grouped into tidy sections ----
+    // ---- signed-in: full customization, grouped tight. Kit shows only what you OWN + one Pro Shop link. ----
     right.appendChild(setupHeader('Name'));
     const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${esc(S.name||'')}">`);
     inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name); saveLook();}; right.appendChild(inp);   // stamp + sync identity (name rides with look)
@@ -5699,13 +5699,12 @@ function scrSetup(){
     right.appendChild(setupHeader('Caddie'));
     right.appendChild(caddieRow());
     right.appendChild(setupHeader('Kit'));
-    right.appendChild(cosColorRow('Shirt','shirt'));
-    right.appendChild(cosPatRow('Shirt pattern','shirtPat'));
-    right.appendChild(cosColorRow('Trousers','pants'));
-    right.appendChild(cosColorRow('Shoes','shoes'));
     right.appendChild(capToggleRow());
-    right.appendChild(cosColorRow('Hat','hat'));
-    right.appendChild(cosPatRow('Hat pattern','hatPat'));
+    // only the categories where you actually own a choice render a row; the rest is one Pro Shop link
+    [cosColorRow('Shirt','shirt'), cosPatRow('Shirt pattern','shirtPat'), cosColorRow('Trousers','pants'),
+     cosColorRow('Shoes','shoes'), cosColorRow('Hat','hat'), cosPatRow('Hat pattern','hatPat')]
+      .forEach(r=>{ if(r) right.appendChild(r); });
+    if(anyCosmeticLocked()) right.appendChild(proShopLinkRow());
   }
 
   // CS266: sticky action bar so the primary "Build Your Golfer" CTA stays reachable while scrolling the kit
@@ -6229,35 +6228,44 @@ function capToggleRow(){
   row.appendChild(mk('Cap on',true)); row.appendChild(mk('No cap',false));
   wrap.appendChild(row); return wrap;
 }
-// colour picker gated by OWNERSHIP (buy in the Pro Shop). cat: shirt|hat|pants|shoes.
+// colour picker — shows ONLY the colours the player OWNS (unlocks live in the Pro Shop, linked once under
+// the Kit section). Returns null when there's no real choice yet (≤1 owned), so the row collapses.
 function cosColorRow(label,cat){
   const c=COS_CATS.find(x=>x.k===cat), lookKey=c.lookKey;
   const dflt=(cat==='shirt'?'white':cat==='pants'?'stone':'white');
   const cur=(cat==='hat')?(S.look.hat||S.look.polo):(S.look[lookKey]||dflt);
-  const row=$(`<div style="margin:9px 0"></div>`);
+  const owned=cosmeticItems(cat).filter(o=>cosOwned(cat,o.id));
+  if(owned.length<2) return null;
+  const row=$(`<div style="margin:8px 0"></div>`);
   row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${esc(label)}</div>`));
   const wrap=$(`<div style="display:flex;gap:9px;flex-wrap:wrap"></div>`);
-  cosmeticItems(cat).forEach(o=>{ const sel=cur===o.id, owned=cosOwned(cat,o.id), price=cosmeticPrice(cat,o.id);
-    const sw=$(`<button aria-label="${esc(label)} ${esc(o.name)}${owned?'':' (locked)'}" title="${esc(o.name)}${owned?'':' · '+coinFmt(price)+' coins'}" style="position:relative;width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.col};cursor:pointer;padding:0;opacity:${owned?'1':'0.4'};box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}">${owned?'':'<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px">🔒</span>'}</button>`);
-    sw.onclick=()=>{ if(!owned){ openShopTo(cat); return; } S.look[lookKey]=o.id; saveLook(); render(); };
+  owned.forEach(o=>{ const sel=cur===o.id;
+    const sw=$(`<button aria-label="${esc(label)} ${esc(o.name)}" title="${esc(o.name)}" style="width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.col};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}"></button>`);
+    sw.onclick=()=>{ S.look[lookKey]=o.id; saveLook(); render(); };
     wrap.appendChild(sw); });
-  row.appendChild(wrap);
-  if(cosmeticItems(cat).some(o=>!cosOwned(cat,o.id))) row.appendChild($(`<div class="small muted" style="margin-top:5px;font-size:10.5px">🔒 Locked colours are in the Pro Shop.</div>`));
-  return row;
+  row.appendChild(wrap); return row;
 }
 function openShopTo(cat){ if(!sbSignedIn()){ toast('Sign in to shop'); return; } S.overlay='shop'; S.shopSec='apparel'; S.shopCat=cat; render(); }
-// pattern picker (shirt or hat), labelled chips, locked ones show 🔒 + toast the requirement.
-// pattern picker gated by OWNERSHIP (buy in the Pro Shop). lookKey: shirtPat|hatPat (patterns are owned once).
+// pattern picker — shows only OWNED patterns; collapses (null) when only the default is owned.
 function cosPatRow(label,lookKey){
   const cur=S.look[lookKey]||'none';
-  const row=$(`<div style="margin:9px 0"></div>`);
+  const owned=PATTERNS.filter(p=>cosOwned('pat',p.id));
+  if(owned.length<2) return null;
+  const row=$(`<div style="margin:8px 0"></div>`);
   row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${esc(label)}</div>`));
   const wrap=$(`<div style="display:flex;gap:6px;flex-wrap:wrap"></div>`);
-  PATTERNS.forEach(p=>{ const sel=cur===p.id, owned=cosOwned('pat',p.id), price=cosmeticPrice('pat',p.id);
-    const chip=$(`<button title="${esc(p.name)}${owned?'':' · '+coinFmt(price)+' coins'}" style="font:700 11px var(--body);padding:6px 10px;border-radius:999px;cursor:pointer;background:${sel?'rgba(235,166,31,.14)':'transparent'};border:1px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};color:${sel?'var(--gold)':(owned?'var(--oncard)':'var(--muted)')};opacity:${owned?1:0.6}">${owned?'':'🔒 '}${esc(p.name)}</button>`);
-    chip.onclick=()=>{ if(!owned){ openShopTo('pat'); return; } S.look[lookKey]=p.id; saveLook(); render(); };
+  owned.forEach(p=>{ const sel=cur===p.id;
+    const chip=$(`<button title="${esc(p.name)}" style="font:700 11px var(--body);padding:6px 10px;border-radius:999px;cursor:pointer;background:${sel?'rgba(235,166,31,.14)':'transparent'};border:1px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};color:${sel?'var(--gold)':'var(--oncard)'}">${esc(p.name)}</button>`);
+    chip.onclick=()=>{ S.look[lookKey]=p.id; saveLook(); render(); };
     wrap.appendChild(chip); });
   row.appendChild(wrap); return row;
+}
+// any cosmetic still locked? (drives the single "unlock in the Pro Shop" link under Kit)
+function anyCosmeticLocked(){ return COS_CATS.some(c=>cosmeticItems(c.k).some(o=>!cosOwned(c.k,o.id))); }
+function proShopLinkRow(){
+  const b=$(`<button class="btn ghost" style="width:100%;margin:6px 0 2px;padding:11px;font-size:12.5px">🛍 Unlock more colours, patterns & gear in the Pro Shop ▸</button>`);
+  b.onclick=()=>openShopTo('shirt');
+  return b;
 }
 function handRow(){
   const lefty=!!S.look.lefty;
@@ -6296,15 +6304,8 @@ function caddieRow(){
     const cad=CADDIE_BY_ID[e.target.value]; if(cad){ recordAchEvent({set:{caddieEquipped:1}}); if(cad.tier<=1) recordAchEvent({set:{caddieLegend:1}}); evaluateAch&&evaluateAch(); } render(); };
   row.appendChild(sel);
   const cad=equippedCaddie();
-  if(cad){
-    row.appendChild($(`<div class="scout" style="margin-top:8px;padding:10px 12px">
-      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap"><span style="font-size:15px">🎒</span><b style="color:var(--gold);font-size:13px">${esc(cad.name)}</b><span class="tag" style="font-size:9px;padding:2px 7px;color:var(--gold);border-color:var(--gold)">${esc(cad.desc)}</span></div>
-      <div class="small muted" style="margin-top:5px;line-height:1.45">${esc(cad.flavor)}</div></div>`));
-  } else {
-    row.appendChild($(`<div class="small muted" style="margin-top:6px;line-height:1.45">Pick a legendary looper for a small, on-theme edge on your golfer.</div>`));
-  }
-  const nxt=nextCaddieUnlock();
-  if(nxt) row.appendChild($(`<div class="small" style="margin-top:6px;color:var(--teal);font-weight:600">🔒 ${nxt.count} more caddie${nxt.count>1?'s':''} unlock at ${esc(nxt.rank)}, climb your Tour Rep.</div>`));
+  // one tight line: the equipped caddie's edge, or a short prompt (no big flavor card / unlock nudge — keep it compact)
+  row.appendChild($(`<div class="small muted" style="margin-top:6px;line-height:1.4">${cad?`🎒 <b style="color:var(--gold)">${esc(cad.name)}</b> · ${esc(cad.desc)}`:'A caddie gives your golfer a small, on-theme edge.'}</div>`));
   return row;
 }
 function genderRow(){

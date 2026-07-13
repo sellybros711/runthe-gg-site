@@ -7610,6 +7610,31 @@ allows Google Fonts, or self-host Anton.*
   to /golf. Tunable: the forest STEP (dense/open), grass-tuft `GS`/skip, firefly count, the green-lobe
   opacities.
 
+- **CS319 — simpler "Create your golfer" screen: less scrolling, owned-only kit, one store link, no
+  bottom-nav clash (owner IMG_8152: "since adding the nav at the bottom, the player customization menu is
+  crowded and clashes with it. Create a simpler layout with much less scrolling. We don't need all of the
+  information we show. And definitely don't need to show every item that the player does not own, there just
+  needs to be one message that can link them to the store").** Client-only, `scrSetup` + the cosmetic row
+  builders.
+  • **Bottom nav hidden on setup** (`NAV_HIDE` += `'setup'`). The setup screen already has its own sticky
+    Back + Build Your Golfer action bar, so the global bottom tab bar was redundant AND clashed with it (the
+    CTA sat half-behind the nav). Hiding it removes the clash and frees the 58px reserve.
+  • **Kit shows ONLY what you own.** `cosColorRow`/`cosPatRow` now render just the OWNED colours/patterns and
+    return `null` when there's no real choice yet (≤1 owned), so those rows collapse entirely — a brand-new
+    signed-in player's whole Kit section is just the Cap on/off toggle + ONE link. Removed every locked 🔒
+    swatch/chip and the per-row "Locked colours are in the Pro Shop" messages. One shared
+    `proShopLinkRow()` ("🛍 Unlock more colours, patterns & gear in the Pro Shop ▸", gated on
+    `anyCosmeticLocked()`) is the single store entry point (opens the shop's apparel section).
+  • **Less info.** The caddie section's big flavor scout-card + the "N more caddies unlock at…" nudge line
+    are gone — replaced by one tight line (the equipped caddie's name + edge, or a short prompt). Tightened
+    the section-header spacing (18→13px top margin) and trimmed the mobile avatar a touch (34vh→30vh).
+  Net: a fresh signed-in setup went from ~2600px+ (7 full kit rows × ~14 locked swatches each) to ~1726px,
+  and grows only as the player actually buys gear. Verified in Playwright (412px): bottom nav absent on
+  setup; fresh player → 0 locked-🔒 swatches, 0 kit colour swatches (collapsed), no caddie card, one Pro
+  Shop link present; a player who owns navy/red shirt + argyle + navy trousers → exactly the 5 owned
+  swatches shown + the Pro Shop link; guest path unchanged (still the sign-in locker-room upsell); 0 real
+  page errors. Screenshot confirms the compact layout. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
