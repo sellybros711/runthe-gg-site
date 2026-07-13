@@ -6782,7 +6782,7 @@ const STORY_CONF_CAP=0.8, STORY_PER_SEASON=2, STORY_GAP=2;   // CS301: 3→2 pre
 // Interruption budget (owner): a season is a SIMULATOR for anyone, not just golf fans — cap the total
 // number of times the sim pauses for a pop-up (storyline + Moment) at 4/season so casual users aren't
 // nagged into skipping. Moments (play-the-final-round) are prioritized within that budget over storylines.
-const SEASON_STOP_BUDGET=6, MOMENT_PER_SEASON=2;   // CS325: ≤6 interruptions/season (≤2 Moments + pressers + dilemmas) — owner wants MORE decisions
+const SEASON_STOP_BUDGET=4, MOMENT_PER_SEASON=2;   // CS326: ≤4 total interruptions/season (dilemmas + arcs + pressers + Moments) — owner: 6 was too many on top of Moments
 function seasonStops(){ return (S.season&&S.season.stops)||0; }
 function seasonStopLeft(){ return SEASON_STOP_BUDGET - seasonStops(); }
 function careerStory(){ const c=(S.career=S.career||{}); if(!c.story) c.story={traits:{}, endorsements:0, fan:0, feed:[], lastBeat:-99, seasonCount:0, seenEvt:{}};
@@ -7211,7 +7211,66 @@ function applyDilemmaOutcome(o){ const eff=[];
   if(o.fol){ gainFollowers(o.fol, o.fol<0?0:400); eff.push({t:'fol',v:o.fol}); }
   if(o.money){ if(S.season) S.season.sideMoney=(S.season.sideMoney||0)+o.money; eff.push({t:'money',v:o.money}); }
   if(o.head){ const s=careerStory(); s.feed.unshift({year:S.year||1,evt:'Career',text:typeof o.head==='function'?o.head():o.head}); if(s.feed.length>60) s.feed.length=60; }
+  if(o.arc){ seedArc(o.arc.fid, o.arc.in, o.arcData); }   // CS326: this decision SEEDS a follow-up story beat later
   return eff; }
+// ---- CS326: multi-part story ARCS — a decision seeds a follow-up dilemma that fires later, forming a chain ----
+function careerArcs(){ const c=(S.career=S.career||{}); if(!Array.isArray(c.arcs)) c.arcs=[]; return c.arcs; }
+function seedArc(fid, inRange, data){ const r=inRange||[3,6]; const wait=r[0]+Math.floor(Math.random()*(r[1]-r[0]+1)); careerArcs().push({fid, wait, data:data||{}}); }
+function tickArcs(){ const a=careerArcs(); for(const x of a) if(x.wait!=null) x.wait--; for(let i=a.length-1;i>=0;i--) if(a[i].wait<-30) a.splice(i,1); }   // prune arcs that could never fire
+function dueArc(ctx){ const arcs=careerArcs(); for(const x of arcs){ if(x.wait<=0){ const f=STORY_ARCS[x.fid]; if(!f) continue; let ok=true; if(f.when){ try{ ok=!!f.when(ctx, x.data); }catch(e){ ok=true; } } if(ok) return {arc:x, beat:f}; } } return null; }
+const STORY_ARCS={
+ arc_invest:{ tag:'THE VENTURE', dom:'life',
+   title:c=>'Your investment’s first numbers',
+   body:c=>`Remember the ${(c.arc&&c.arc.what)||'business'} you bought into? The first-year figures just landed on your desk.`,
+   choices:[{t:'Open the report', s:'Moment of truth', outcomes:[
+     {p:1.1, tone:'good', text:'It’s booming — packed every night. Your stake has doubled.', money:700000, fol:0.04, head:'A business bet paid off big', arc:{fid:'arc_invest_expand', in:[4,7]}},
+     {p:1, tone:'mixed', text:'Ticking along nicely. A quiet, steady little earner.', money:120000},
+     {p:1, tone:'bad', text:'It’s bleeding cash. You quietly write it off and move on.', money:-350000, conf:-2, head:'A business venture folded'}]}]},
+ arc_invest_expand:{ tag:'THE VENTURE', dom:'life',
+   title:c=>'Expand the empire?',
+   body:c=>`Your venture is a hit and the partners want to open three more locations — real money, and real attention off the course.`,
+   choices:[
+    {t:'Go national', s:'Swing for the fences', risk:true, outcomes:[
+      {p:1, tone:'good', text:'The chain takes off. You’re a mogul now, and the brand lifts your profile.', money:1500000, fol:0.06, head:'Built a business empire off the course'},
+      {p:1.2, tone:'bad', text:'Overextended. Two locations flop and the headache follows you inside the ropes.', money:-700000, skill:{clu:-3}, ev:2, label:'Distracted', head:'Overexpanded and paid for it'}]},
+    {t:'Keep it small and profitable', s:'Don’t get greedy', outcomes:[
+      {p:1, tone:'good', text:'One great spot, steady income, zero stress. The smart play.', money:200000, respect:2}]}]},
+ arc_swing:{ tag:'THE REBUILD', dom:'gear',
+   title:c=>'The swing change, weeks on',
+   body:c=>`The rebuild you committed to has been rough going. On the range this week, something finally feels… different.`,
+   choices:[
+    {t:'Trust it and commit', s:'All the way in', risk:true, outcomes:[
+      {p:1.4, tone:'good', text:'It clicks. The new move is bulletproof — you’ve genuinely levelled up.', skill:{acc:4,app:4}, ev:16, label:'New swing (locked in)', conf:6, head:'The swing rebuild finally paid off'},
+      {p:1, tone:'bad', text:'False dawn. You’re still searching, and now the doubt is loud.', skill:{acc:-4}, ev:3, label:'Still rebuilding', conf:-4}]},
+    {t:'Scrap it, go back to your old move', s:'Cut your losses', outcomes:[
+      {p:1.6, tone:'mixed', text:'You revert to what you know. A wasted few weeks, but you feel like yourself again.', conf:2}]}]},
+ arc_rival_rematch:{ tag:'THE RIVALRY', dom:'rival', when:(c,d)=>!!c.rivalName,
+   title:c=>`${esc(c.rivalName)} wants a rematch`,
+   body:c=>`${esc(c.rivalName)} hasn’t forgotten your last money match. They’ve doubled the stakes and told the whole locker room about it.`,
+   choices:[
+    {t:'Accept — bury them again', s:'Twist the knife', risk:true, outcomes:[
+      {p:c=>0.9+(c.ovr-78)/12, tone:'good', text:'You take their money AND their pride. The whole tour’s talking about it.', money:40000, conf:5, fans:4, head:c=>`Beat ${c.rivalName} again head-to-head`},
+      {p:1.2, tone:'bad', text:'They get you back this time — and you won’t hear the end of it.', conf:-4, skill:{clu:-2}, ev:1, label:'Stewing'}]},
+    {t:'Decline — nothing to prove', s:'Above it now', outcomes:[
+      {p:1.4, tone:'neutral', text:'You wave it off. Let them stew on the last one.', respect:2}]}]},
+ arc_comeback:{ tag:'THE COMEBACK', dom:'injury',
+   title:c=>'Back to full fitness',
+   body:c=>`The injury that set you back has finally healed. Now the question every pro dreads: is the game still there when you return?`,
+   choices:[
+    {t:'Attack from day one', s:'No easing in', risk:true, outcomes:[
+      {p:1.3, tone:'good', text:'You come back swinging and it’s ALL there. Sharper than ever, honestly.', skill:{clu:3}, ev:5, label:'Fully recovered', conf:6, fol:0.04, head:'Returned from injury stronger than ever'},
+      {p:1, tone:'bad', text:'You rush it. The rust — and a flicker of the old pain — lingers a while.', skill:{app:-3}, ev:2, label:'Rusty return', conf:-2}]},
+    {t:'Ease back in carefully', s:'Rebuild slowly', outcomes:[
+      {p:1.7, tone:'good', text:'A patient return. The sharpness comes back within a couple of weeks.', skill:{clu:2}, ev:3, label:'Easing back', conf:3}]}]},
+ arc_mentee:{ tag:'THE PROTÉGÉ', dom:'rival',
+   title:c=>'Your protégé is winning',
+   body:c=>`The rookie you took under your wing is climbing fast — and this week they’re in the field, right on your heels.`,
+   choices:[
+    {t:'Root for them publicly', s:'Proud mentor', outcomes:[
+      {p:1.6, tone:'good', text:'You praise them to the press. The classy-veteran story writes itself.', respect:6, fol:0.05, head:'Cheered on the rookie he mentored'}]},
+    {t:'Use it as fuel', s:'Not done yet', outcomes:[
+      {p:1.3, tone:'good', text:'The young gun lights a fire under you. Plenty left in the tank.', conf:5, skill:{clu:2}, ev:3, label:'Fired up'}]}]}
+};
 
 // ---- the catalog: {id, tag, when(ctx), title(ctx), body(ctx), choices:[{t,s,sub?,risk?,outcomes:[{p,tone,text,head,skill,ev,conf,fans,respect,fol,money}]}]} ----
 const DILEMMAS=[
@@ -7222,7 +7281,7 @@ const DILEMMAS=[
    {t:'Play through it', s:'Grit your teeth', risk:true, outcomes:[
      {p:c=>1.1+ (c.sk.clu||80)/60, tone:'good', text:'You block out the ache and swing free. By Sunday it’s forgotten.', head:'Gutted through a wrist scare'},
      {p:1.3, tone:'mixed', text:'It nags all week — you baby every iron. Playable, but not free.', skill:{app:-4}, ev:2, label:'Sore wrist'},
-     {p:0.8, tone:'bad', text:'It flares badly on a fat lie. You’re compromised for a few weeks.', skill:{app:-7,sht:-4}, ev:3, label:'Wrist strain', conf:-5, head:'Aggravated a wrist injury'}]},
+     {p:0.8, tone:'bad', text:'It flares badly on a fat lie. You’re compromised for a few weeks.', skill:{app:-7,sht:-4}, ev:3, label:'Wrist strain', conf:-5, head:'Aggravated a wrist injury', arc:{fid:'arc_comeback',in:[4,6]}}]},
    {t:'Strap it and ease off', s:'Manage the load', outcomes:[
      {p:2, tone:'good', text:'Tape, ice, half a range session. It settles. Smart management.', skill:{app:-2}, ev:1, label:'Managed wrist'},
      {p:1, tone:'neutral', text:'Cautious week. You’re fine, if a touch tentative.', conf:-2}]},
@@ -7237,7 +7296,7 @@ const DILEMMAS=[
    {t:'Tee it up anyway', s:'Never withdraw', risk:true, outcomes:[
      {p:1.1, tone:'good', text:'It loosens on the range. You grind out a gritty week on feel alone.', conf:4, fans:3, head:'Refused to withdraw with a bad back'},
      {p:1.6, tone:'bad', text:'You’re a passenger, swinging at 70%. It’s a long, sore four days.', skill:{dist:-6,acc:-4}, ev:2, label:'Back spasm', conf:-4},
-     {p:0.7, tone:'bad', text:'You tweak it worse on the 4th hole and limp home. Weeks of recovery.', skill:{dist:-7,app:-4}, ev:4, label:'Back injury', conf:-6, head:'Aggravated his back trying to play on'}]}]},
+     {p:0.7, tone:'bad', text:'You tweak it worse on the 4th hole and limp home. Weeks of recovery.', skill:{dist:-7,app:-4}, ev:4, label:'Back injury', conf:-6, head:'Aggravated his back trying to play on', arc:{fid:'arc_comeback',in:[5,7]}}]}]},
  {id:'dil_illness', tag:'THE NIGHT BEFORE', dom:'injury', when:c=>true, title:c=>'Up all night, sick',
   body:c=>`Bad room-service shrimp. You’re green, exhausted, and dehydrated at 6am on tournament morning.`,
   choices:[
@@ -7286,7 +7345,7 @@ const DILEMMAS=[
   body:c=>`A famous coach says your move has a flaw that caps your ceiling — but rebuilding it mid-season means a rough patch before it clicks.`,
   choices:[
    {t:'Commit to the rebuild', s:'Long game', sub:'Worse before better', risk:true, outcomes:[
-     {p:1.2, tone:'bad', text:'Deep in the muck — nothing feels right and the scores sag for a stretch.', skill:{acc:-5,app:-4}, ev:3, label:'Mid-swing-change', conf:-4, head:'Tore down his swing mid-season'},
+     {p:1.2, tone:'bad', text:'Deep in the muck — nothing feels right and the scores sag for a stretch.', skill:{acc:-5,app:-4}, ev:3, label:'Mid-swing-change', conf:-4, head:'Tore down his swing mid-season', arc:{fid:'arc_swing',in:[3,5]}},
      {p:1, tone:'good', text:'It clicks fast. The new move is cleaner and it holds up under pressure.', skill:{acc:4,app:3}, ev:12, label:'New swing pattern', conf:5, head:'Rebuilt his swing and leveled up'}]},
    {t:'Small tweaks only', s:'Patch, don’t rebuild', outcomes:[
      {p:2, tone:'good', text:'A grip nudge and a setup fix. Marginal gains, no downside.', skill:{acc:2}, ev:4, label:'Setup tweak'}]},
@@ -7321,7 +7380,7 @@ const DILEMMAS=[
   body:c=>`An old friend wants you to headline his new golf-and-dining concept. Big money in, big potential — or a big write-off.`,
   choices:[
    {t:'Go all in', s:'Bet on the vision', sub:'High risk, high reward', risk:true, outcomes:[
-     {p:1, tone:'good', text:'It takes off. The place is packed and your stake balloons.', money:900000, fol:0.05, head:'Cashed in on a business venture'},
+     {p:1, tone:'good', text:'It takes off. The place is packed and your stake balloons.', money:900000, fol:0.05, head:'Cashed in on a business venture', arc:{fid:'arc_invest',in:[5,9]}, arcData:{what:'golf-and-dining concept'}},
      {p:1.4, tone:'bad', text:'It flops within a year. The money’s gone and it nags at you on the course.', money:-500000, skill:{clu:-2}, ev:2, label:'Money worries', head:'A business bet went south'}]},
    {t:'Small stake only', s:'Toe in the water', outcomes:[
      {p:1.6, tone:'mixed', text:'You put in a little. Modest return, no sleepless nights.', money:80000}]},
@@ -7418,7 +7477,7 @@ const DILEMMAS=[
   body:c=>`${esc(c.rivalName)} invites you to play a money practice round Tuesday — friendly on the surface, but everyone knows nothing between you two is friendly.`,
   choices:[
    {t:'Accept and bury them', s:'Send a message', risk:true, outcomes:[
-     {p:c=>0.9+(c.ovr-78)/12, tone:'good', text:'You take their cash and their pride. You walk to Thursday nine feet tall.', conf:5, fans:3, money:20000, head:c=>`Beat ${c.rivalName} in a money practice round`},
+     {p:c=>0.9+(c.ovr-78)/12, tone:'good', text:'You take their cash and their pride. You walk to Thursday nine feet tall.', conf:5, fans:3, money:20000, head:c=>`Beat ${c.rivalName} in a money practice round`, arc:{fid:'arc_rival_rematch',in:[5,9]}},
      {p:1.2, tone:'bad', text:'They edge you on the last and won’t let you forget it. Into your head early.', skill:{clu:-3}, ev:1, label:'Needled', conf:-4}]},
    {t:'Politely decline', s:'Keep them guessing', outcomes:[
      {p:1.8, tone:'neutral', text:'You keep your cards close. Let them wonder.', conf:1, respect:1}]}]},
@@ -7426,7 +7485,7 @@ const DILEMMAS=[
   body:c=>`A wide-eyed rookie sheepishly asks if you’d walk them around the major venue and share a few reads. It’ll cost you your own prep time.`,
   choices:[
    {t:'Take them under your wing', s:'Pay it forward', outcomes:[
-     {p:2, tone:'good', text:'You spend the afternoon teaching. Word gets round that you’re a class act.', respect:6, fol:0.04, head:'Mentored a rookie at a major'}]},
+     {p:2, tone:'good', text:'You spend the afternoon teaching. Word gets round that you’re a class act.', respect:6, fol:0.04, head:'Mentored a rookie at a major', arc:{fid:'arc_mentee',in:[6,10]}}]},
    {t:'“Every man for himself”', s:'Guard your edge', outcomes:[
      {p:1.6, tone:'mixed', text:'You keep your prep to yourself. Sharp for the week, a little cold in the room.', skill:{app:2}, ev:1, label:'Extra prep', respect:-2}]}]}
 ];
@@ -7435,8 +7494,12 @@ const DILEMMAS=[
 function maybeDilemma(ce){
   if(!careerFxOn() || !ce || ce.done) return null;
   const story=careerStory(); story.seenDil=story.seenDil||{};
-  if((story.dilSeason||0) >= DILEMMA_PER_SEASON) return null;
   const ctx=dilemmaCtx(ce);
+  // CS326: a DUE follow-up (the continuation of an earlier decision) fires FIRST and bypasses the per-season
+  // fresh-dilemma cap — it's a payoff the player is owed — still bounded by the season interruption budget.
+  const arc=dueArc(ctx);
+  if(arc){ ctx.arc=arc.arc.data; return {beat:arc.beat, ctx, arcRef:arc.arc, isArc:true}; }
+  if((story.dilSeason||0) >= DILEMMA_PER_SEASON) return null;
   let pool=DILEMMAS.filter(d=>{ try{ return d.when(ctx) && (story.seenDil[d.id]==null || (S.evtIndex-story.seenDil[d.id])>DILEMMA_REPEAT_GAP); }catch(e){ return false; } });
   // avoid repeating the same domain back-to-back within a season for variety
   if(story._lastDom){ const diff=pool.filter(d=>d.dom!==story._lastDom); if(diff.length) pool=diff; }
@@ -7444,7 +7507,7 @@ function maybeDilemma(ce){
   const beat=pool[Math.floor(Math.random()*pool.length)];
   return {beat, ctx};
 }
-const DILEMMA_PER_SEASON=4, DILEMMA_REPEAT_GAP=40;   // no more than ~4 dilemmas/season; don't repeat one for many events
+const DILEMMA_PER_SEASON=3, DILEMMA_REPEAT_GAP=40;   // CS326: ≤3 fresh dilemmas/season (arcs are on top, budget-capped); no repeats for many events
 
 function maybeStoryline(ce){
   if(S.daily || S.circuitMode || !S.career) return null;
@@ -7677,7 +7740,9 @@ function showStoryline(sb){
 function showDilemma(sb){
   const {beat, ctx}=sb, story=careerStory();
   if(S.season) S.season.stops=(S.season.stops||0)+1;
-  story.seenDil=story.seenDil||{}; story.seenDil[beat.id]=S.evtIndex; story.dilSeason=(story.dilSeason||0)+1; story._lastDom=beat.dom;
+  story._lastDom=beat.dom;
+  if(sb.arcRef){ const a=careerArcs(), i=a.indexOf(sb.arcRef); if(i>=0) a.splice(i,1); }   // CS326: consume the fired follow-up
+  else { story.seenDil=story.seenDil||{}; story.seenDil[beat.id]=S.evtIndex; story.dilSeason=(story.dilSeason||0)+1; }
   const T=(v)=>typeof v==='function'?v(ctx):v;
   document.querySelectorAll('.momentov,.storyov,.dilemmaov').forEach(n=>n.remove());
   const ov=$(`<div class="dilemmaov" style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;
@@ -8713,7 +8778,7 @@ function liveOrder(ce){   // current standings mid-event; assigns _pos / _tied (
   tag(made); cut.forEach(o=>{o._pos='CUT';o._tied=false;});
   return made.concat(cut);
 }
-function advanceEvent(){ if(!S.circuitMode && S.career && !S.daily) tickCareerFx();   // CS325: age temporary decision effects one event
+function advanceEvent(){ if(!S.circuitMode && S.career && !S.daily){ tickCareerFx(); tickArcs(); }   // CS325/326: age temp effects + pending story arcs one event
   if(S.evtIndex>=S.schedule.length-1){ S.screen='summary'; } else { S.evtIndex++; S.curEvt=null; autoSaveSeason(); } }
 function skipToEnd(){
   clearTimeout(seasonTimer);
@@ -9724,18 +9789,18 @@ function scrSeason(){
   if(!ce.done && ce.roundsDone===1 && !ce._storyChecked && S.evtIndex>0 && !S.circuitMode && !S.daily){
     ce._storyChecked=true;
     if(seasonStopLeft()>0){
-      // CS325: prefer a specific Career Dilemma (~60% when one's available); else an off-course press beat.
-      const dil = (Math.random()<0.6) ? maybeDilemma(ce) : null;
-      if(dil){ clearTimeout(seasonTimer); showDilemma(dil); return; }
+      // CS325/326: a DUE arc always wins; else prefer a fresh dilemma (~60%) over a press beat. Marks the
+      // event interrupted so the Sunday Moment won't ALSO fire this week (at most one pop-up per event).
+      const dil = maybeDilemma(ce);   // includes any due follow-up arc (priority)
+      if(dil && (dil.isArc || Math.random()<0.6)){ ce._interrupted=true; clearTimeout(seasonTimer); showDilemma(dil); return; }
       const sb=maybeStoryline(ce);
-      if(sb){ clearTimeout(seasonTimer); showStoryline(sb); return; }
-      const dil2=maybeDilemma(ce);   // if the presser roll came up empty, still try a dilemma
-      if(dil2){ clearTimeout(seasonTimer); showDilemma(dil2); return; }
+      if(sb){ ce._interrupted=true; clearTimeout(seasonTimer); showStoryline(sb); return; }
+      if(dil){ ce._interrupted=true; clearTimeout(seasonTimer); showDilemma(dil); return; }   // presser roll empty → take the dilemma
     }
   }
   // THE MOMENT: heading into Sunday in contention → pause and offer to play the final round.
   // Interactive career play only; skip-to-end / headless sims never reach this scheduler.
-  if(!ce.done && ce.roundsDone===3 && !ce._momentAsked
+  if(!ce.done && ce.roundsDone===3 && !ce._momentAsked && !ce._interrupted
      && seasonStopLeft()>0 && (S.season&&(S.season.momentsShown||0)<MOMENT_PER_SEASON)){
     ce._momentAsked=true;
     const mi=momentInfo(ce);
