@@ -8064,7 +8064,7 @@ const SPONSOR_SLOTS=['hat','shirt'];
 const SPONSOR_SLOT_LABEL={hat:'Hat', shirt:'Shirt'};
 const SPONSOR_DUAL_REWARD=0.72;   // each deal pays a bit less (two slots shouldn't simply double income)
 const SPONSOR_DUAL_DIFF=1.12;     // ...and asks slightly harder goals
-const SPONSOR_MONEY=0.78;         // CS242: global payout scale — sponsors are a SUPPLEMENT to prize money (~1/3-1/2), not the main earner
+const SPONSOR_MONEY=0.70;         // CS242: global payout scale — sponsors are a SUPPLEMENT to prize money (~1/3-1/2), not the main earner. CS331: trimmed 0.78→0.70 (~10% less).
 // ensure the two-slot map exists; migrate a legacy single sponsor into the SHIRT slot; seed a starter shirt deal
 function ensureSponsors(){ const c=(S.career=S.career||{});
   if(!c.sponsors){ c.sponsors={hat:null, shirt:null};
@@ -8134,6 +8134,18 @@ function goalProg(g,t){
                      return {cur:n, done:n>=g.target, txt:n+' / '+g.target+' top-5s', pct:Math.min(100,Math.round(n/g.target*100))}; }
     case 'cutStreak':{ let best=0,run=0; (S.season.results||[]).forEach(x=>{ const m=x.order.find(o=>o.p&&o.p.you); const made=m&&m.pos!=='CUT'; if(made){ run++; best=Math.max(best,run); } else run=0; });
                      return {cur:best, done:best>=g.target, txt:best+' / '+g.target+' cuts in a row', pct:Math.min(100,Math.round(best/g.target*100))}; }
+    // CS331 variety goals:
+    case 'topN':{ const n=g.n||20; let c=0; (S.season.results||[]).forEach(x=>{ const m=x.order.find(o=>o.p&&o.p.you); if(m&&typeof m.pos==='number'&&m.pos<=n) c++; });
+                     return {cur:c, done:c>=g.target, txt:c+' / '+g.target+' top-'+n+'s', pct:Math.min(100,Math.round(c/g.target*100))}; }
+    case 'moneyRank':{ const r=t.played?moneyRank(S.season.me.name):N, ok=t.played>0&&r<=g.target;
+                     return {cur:r, done:ok, rankGoal:true, txt:t.played?('#'+r+' on the money list'):('need top '+g.target), pct:ok?100:0}; }
+    case 'majorTop10':{ const w=(S.season.results||[]).some(x=>{ if(!x.evt.major) return false; const m=x.order.find(o=>o.p&&o.p.you); return m&&typeof m.pos==='number'&&m.pos<=10; });
+                     return {cur:w?1:0, done:w, txt:w?'Top-10 at a major':'No major top-10 yet', pct:w?100:0}; }
+    case 'allCuts':{ const need=g.target||12, clean=t.made===t.played, ok=t.played>=need&&clean;
+                     return {cur:t.made, done:ok, txt:t.played?(t.made+'/'+t.played+' cuts'+(clean?' · clean':' · missed one')):('play '+need+'+ clean'), pct: clean? Math.min(100,Math.round(t.played/need*100)) : Math.round(t.made/Math.max(1,t.played)*100)}; }
+    case 'avgFinish':{ let sum=0,c=0; (S.season.results||[]).forEach(x=>{ const m=x.order.find(o=>o.p&&o.p.you); if(m&&typeof m.pos==='number'){ sum+=m.pos; c++; } });
+                     const avg=c?sum/c:99, ok=c>=(g.minEvents||8)&&avg<=g.target;
+                     return {cur:avg, done:ok, txt:c?('avg finish '+avg.toFixed(1)+' · need ≤'+g.target):('play '+(g.minEvents||8)+'+'), pct: c? Math.max(0,Math.min(99,Math.round((40-avg)/(40-g.target)*100))):0}; }
   }
   return {cur:0,done:false,txt:'',pct:0};
 }
@@ -8153,6 +8165,10 @@ const SPONSOR_GOAL_POOLS={
     {dk:'scoreAvg',  kind:'scoreAvg',  d:.64, build:c=>({kind:'scoreAvg',  target:0.3, minRounds:30, label:'Season scoring average under +0.3 per round'})},
     {dk:'playoffs',  kind:'ptsRank',   d:.78, build:c=>({kind:'ptsRank',   target:70,             label:'Reach the Playoffs · top 70'})},
     {dk:'card',      kind:'ptsRank',   d:.90, card:true, build:c=>({kind:'ptsRank', target:CARD_LINE, label:'Keep your Tour Card · top '+CARD_LINE})},
+    {dk:'top20',     kind:'topN',      d:.34, build:c=>({kind:'topN', n:20,  target:c.T(5,'top10'), label:'Record '+c.T(5,'top10')+' top-20 finishes'})},
+    {dk:'moneyRank', kind:'moneyRank', d:.70, build:c=>({kind:'moneyRank', target:100,             label:'Finish top 100 on the money list'})},
+    {dk:'majorT10',  kind:'majorTop10',d:.84, build:c=>({kind:'majorTop10', target:1,              label:'Post a top-10 at a major'})},
+    {dk:'allCuts',   kind:'allCuts',   d:.60, build:c=>({kind:'allCuts',   target:12,              label:'Make every cut across 12+ starts'})},
   ],
   contender:[
     {dk:'top10',     kind:'top10',     d:.15, build:c=>({kind:'top10',     target:c.T(6,'top10'), label:'Record '+c.T(6,'top10')+' top-10s'})},
@@ -8163,6 +8179,11 @@ const SPONSOR_GOAL_POOLS={
     {dk:'playoffs',  kind:'ptsRank',   d:.66, build:c=>({kind:'ptsRank',   target:70,             label:'Reach the Playoffs · top 70'})},
     {dk:'sigWin',    kind:'sigWin',    d:.82, build:c=>({kind:'sigWin',    target:1,              label:'Win a signature event or major'})},
     {dk:'wins',      kind:'wins',      d:.90, build:c=>({kind:'wins',       target:c.T(1,'wins'),  label:(c.T(1,'wins')>1?('Win '+c.T(1,'wins')+' tournaments'):'Win a tournament')})},
+    {dk:'top20',     kind:'topN',      d:.20, build:c=>({kind:'topN', n:20,  target:c.T(9,'top10'), label:'Record '+c.T(9,'top10')+' top-20 finishes'})},
+    {dk:'moneyRank', kind:'moneyRank', d:.58, build:c=>({kind:'moneyRank', target:40,              label:'Finish top 40 on the money list'})},
+    {dk:'avgFinish', kind:'avgFinish', d:.62, build:c=>({kind:'avgFinish', target:35, minEvents:8, label:'Average a top-35 finish'})},
+    {dk:'majorT10',  kind:'majorTop10',d:.74, build:c=>({kind:'majorTop10', target:1,              label:'Post a top-10 at a major'})},
+    {dk:'allCuts',   kind:'allCuts',   d:.48, build:c=>({kind:'allCuts',   target:14,              label:'Make every cut across 14+ starts'})},
   ],
   elite:[
     {dk:'top10',     kind:'top10',     d:.18, build:c=>({kind:'top10',     target:c.T(8,'top10'), label:'Record '+c.T(8,'top10')+' top-10s'})},
@@ -8173,6 +8194,10 @@ const SPONSOR_GOAL_POOLS={
     {dk:'wins',      kind:'wins',      d:.72, build:c=>({kind:'wins',       target:c.T(2,'wins'),  label:'Win '+(c.T(2,'wins')>2?c.T(2,'wins')+' times':'twice')})},
     {dk:'sigWin',    kind:'sigWin',    d:.80, build:c=>({kind:'sigWin',    target:1,              label:'Win a signature event or major'})},
     {dk:'major',     kind:'major',     d:.95, build:c=>({kind:'major',     target:1,              label:'Win a major'})},
+    {dk:'moneyRank', kind:'moneyRank', d:.40, build:c=>({kind:'moneyRank', target:10,              label:'Finish top 10 on the money list'})},
+    {dk:'avgFinish', kind:'avgFinish', d:.50, build:c=>({kind:'avgFinish', target:22, minEvents:8, label:'Average a top-22 finish'})},
+    {dk:'majorT10',  kind:'majorTop10',d:.44, build:c=>({kind:'majorTop10', target:1,              label:'Post a top-10 at a major'})},
+    {dk:'allCuts',   kind:'allCuts',   d:.66, build:c=>({kind:'allCuts',   target:14,              label:'Make every cut across 14+ starts'})},
   ],
 };
 const SPONSOR_POS=[   // per position within a slot: display tag + base bonus (by player tier) + stretch flag
@@ -9181,6 +9206,9 @@ function celebrateOlympicPodium(ce, opts){
 // where the player sits on the season points list (1 = leader)
 function pointsRank(name){
   return Object.entries(S.season.totals).map(([n,v])=>({n,p:v.points})).sort((a,b)=>b.p-a.p).findIndex(r=>r.n===name)+1;
+}
+function moneyRank(name){
+  return Object.entries(S.season.totals).map(([n,v])=>({n,m:v.money||0})).sort((a,b)=>b.m-a.m).findIndex(r=>r.n===name)+1;
 }
 // simulate the rest of the schedule with no UI (used when the player is eliminated from the
 // playoffs but the world still needs to crown a Cup champion)

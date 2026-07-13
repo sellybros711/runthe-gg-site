@@ -7823,6 +7823,30 @@ allows Google Fonts, or self-host Anton.*
   /golf. Tunable: `SPONSOR_TIERS` reward/diff, `SPONSOR_TIER_REQ` thresholds, `SPONSOR_POACH_CHANCE`, the
   `BRANDS` catalog.
 
+- **CS331 — more variety of in-season sponsor goals + slightly less sponsor pay (owner: "increase the
+  variety of in-season goals given by sponsors, and slightly decrease how much they pay").** Built on the
+  CS312 `SPONSOR_GOAL_POOLS` (per-OVR-band template pools that `makeContracts` shuffles per (career, year)
+  and deals 3-distinct-goals-per-slot).
+  • **Variety:** grew each band's pool from 8 → 12-13 templates by adding 5 new goal KINDS (all computable
+    from existing season data, wired into `goalProg`): `topN` (top-20 finish count — a broader consistency
+    goal distinct from top-10/top-5), `moneyRank` (finish top-N on the money list — new `moneyRank()` helper
+    mirroring `pointsRank`, a different curve from the points/ptsRank goals), `majorTop10` (post a top-10 at
+    a major), `allCuts` (make EVERY cut across N+ starts — a perfect-consistency stretch goal), and
+    `avgFinish` (season average finish inside top-N). Spread across the bands by difficulty: grind adds
+    top-20/money-top-100/major-top-10/all-cuts-12; contender adds top-20/money-top-40/avg-top-35/major-top-10/
+    all-cuts-14; elite adds money-top-10/avg-top-22/major-top-10/all-cuts-14. So the seasonal shuffle now
+    draws from a much larger, more varied set — verified 6 straight seasons produced 6 DISTINCT goal-sets
+    (11 distinct kinds seen), still all-6-distinct within each season, still rotating every year.
+  • **Pay:** trimmed the global `SPONSOR_MONEY` payout scale 0.78 → 0.70 (~10% less across all goal bonuses)
+    — a slight trim on top of the CS242 ~50% cut, keeping sponsors a supplement to prize money. Signing
+    bonuses (their own formula) unchanged; the CS242 tier/dual/follower balance otherwise untouched.
+  Verified in Playwright: `SPONSOR_MONEY`=0.70, pools 12/13/12 with 0 dup `dk` per band, all 6 goals distinct
+  per season, 6/6 distinct season goal-sets across years, every new goal kind computes correct live progress
+  (txt/done/pct) without throwing, and a live season renders the contract strip + report cards with the new
+  goals ("Make every cut across 14+ starts", "Finish top 40 on the money list") — 0 page errors. Deployed to
+  /golf. Tunable: `SPONSOR_MONEY`, the per-band template pools + their `d` difficulty ordering, the new-goal
+  targets.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
