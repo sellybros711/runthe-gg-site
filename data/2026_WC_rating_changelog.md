@@ -184,7 +184,6 @@ _Harry Kane (England) remains at 96: his goals took him to the ceiling but no bu
 - Ronwen Williams (South Africa): 62 → 63 — clean sheet in the 1–0 win over South Korea
 - Thapelo Maseko (South Africa): 57 → 58 — scored the only goal in the 1–0 win over South Korea
 - Mateo Chávez (Mexico): 55 → 56 — opener in the 3–0 win over Czechia
-
 - Achraf Hakimi (Morocco): 87 → 89 — goal and an assist in the 4–2 win over Haiti
 - Soufiane Rahimi (Morocco): 81 → 83 — goal and an assist off the bench in the 4–2 win over Haiti
 - Ismael Saibari (Morocco): 79 → 80 — equaliser, his third of the tournament, in the 4–2 win over Haiti
@@ -216,8 +215,7 @@ _June 24 own goal (Bounou, off Duverne's cross) credited to nobody, per framewor
 - Jan Paul van Hecke (Netherlands): 68 → 69 — header in the 3–1 win over Tunisia
 - Sebastian Berhalter (United States): 59 → 61 — goal and an assist in the 3–2 loss to Turkey
 
-_Own goal credited to nobody: Ellyes Skhiri (Tunisia), which gave the Netherlands their opener._
-_Pending: Paraguay and Australia keeper clean sheets from the 0–0 draw — confirming which keeper started (Gill/Beach vs the higher-rated Fernández/Ryan) before crediting +1._
+_Own goal credited to nobody: Ellyes Skhiri (Tunisia), which gave the Netherlands their opener. Pending: Paraguay and Australia keeper clean sheets from the 0–0 draw — confirming which keeper started (Gill/Beach vs the higher-rated Fernández/Ryan) before crediting +1._
 
 ## 📅 June 26 (Matchday 3)
 - Ousmane Dembélé (France): 97 → 99 — first-half hat-trick in the 4–1 win over Norway; fourth 2026 player to reach 99
@@ -240,9 +238,7 @@ _Pending: Paraguay and Australia keeper clean sheets from the 0–0 draw — con
 - Vozinha (Cape Verde): 80 → 81 — second clean sheet of the tournament in the 0–0 draw with Saudi Arabia
 - Mahmoud Saber (Egypt): 59 → 60 — 5th-minute opener in the 1–1 draw with Iran
 
-_Kylian Mbappé (France) had two assists vs Norway (worth +2) but is at the 99 ceiling, so his rating held._
-_Al-Owais's clean sheet may merit +2 (reported "heroics" vs Cape Verde's 1.52 xG) — logged as +1 pending a save count._
-_Single assists logged, no bump: Trézéguet (Egypt), Marcos Llorente (Spain), Bradley Barcola (France), Abdoulaye Seck & Lamine Camara (Senegal)._
+_Kylian Mbappé (France) had two assists vs Norway (worth +2) but is at the 99 ceiling, so his rating held. Al-Owais's clean sheet may merit +2 (reported "heroics" vs Cape Verde's 1.52 xG) — logged as +1 pending a save count. Single assists logged, no bump: Trézéguet (Egypt), Marcos Llorente (Spain), Bradley Barcola (France), Abdoulaye Seck & Lamine Camara (Senegal)._
 
 ## 📅 June 27 (Matchday 3 — group stage complete)
 - Harry Kane (England): 96 → 97 — record 11th England World Cup goal in the 2–0 win over Panama
@@ -265,8 +261,7 @@ _Single assists logged, no bump: Trézéguet (Egypt), Marcos Llorente (Spain), B
 - Rafik Belghali (Algeria): 57 → 58 — goal in the 3–3 draw with Austria
 - Derrick Luckassen (Ghana): 54 → 55 — scored Ghana's goal in the 2–1 loss to Croatia
 
-_Lionel Messi (Argentina) scored off the bench vs Jordan — a record 7th straight World Cup game scoring — but is at the 99 ceiling, so his rating held._
-_Luka Modrić assist logged (Croatia), the oldest assist in World Cup history at 40._
+_Lionel Messi (Argentina) scored off the bench vs Jordan — a record 7th straight World Cup game scoring — but is at the 99 ceiling, so his rating held. Luka Modrić assist logged (Croatia), the oldest assist in World Cup history at 40._
 
 ## 📅 June 28 – July 3 (Round of 32)
 - Harry Kane (England): 97 → 99 — brace in the 2–1 win over DR Congo; joins the 99 club
@@ -317,9 +312,7 @@ _Luka Modrić assist logged (Croatia), the oldest assist in World Cup history at
 - Hossam Abdelmaguid (Egypt): 59 → 60 — decisive winning penalty in the shootout vs Australia
 - Brian Cipenga (DR Congo): 55 → 56 — 7th-minute opener in the 2–1 loss to England
 
-_Lionel Messi (Argentina) held at 99 (goal vs Cape Verde)._
-_Own goals credited to nobody: Diney Borges (Cape Verde) gave Argentina their extra-time winner; Australia's equaliser vs Egypt was an own goal._
-_Shootout handling (per ruling): the winning keeper and the decisive penalty scorer are credited; individual shootout penalties are not added to tournament-goal totals._
+_Lionel Messi (Argentina) held at 99 (goal vs Cape Verde). Own goals credited to nobody: Diney Borges (Cape Verde) gave Argentina their extra-time winner; Australia's equaliser vs Egypt was an own goal. Shootout handling (per ruling): the winning keeper and the decisive penalty scorer are credited; individual shootout penalties are not added to tournament-goal totals._
 
 ## 📅 July 4 (Round of 16)
 - Soufiane Rahimi (Morocco): 83 → 84 — third goal in the 3–0 win over Canada
@@ -329,3 +322,45 @@ _Shootout handling (per ruling): the winning keeper and the decisive penalty sco
 - Mike Maignan (France): 85 → 86 — clean sheet in the 1–0 win over Paraguay
 
 _Kylian Mbappé held at 99 (penalty winner vs Paraguay). Achraf Hakimi assist logged (Morocco)._
+
+## 📅 July 5 – 7 (Round of 16, remaining)
+- Jude Bellingham (England): 92 → 94 — brace in the 3–2 win over Mexico
+- Enzo Fernández (Argentina): 87 → 88 — stoppage-time winner (the 3,000th goal in World Cup history) in the 3–2 comeback over Egypt
+- Raúl Jiménez (Mexico): 87 → 88 — penalty in the 3–2 loss to England
+- Romelu Lukaku (Belgium): 86 → 87 — goal in the 4–1 win over the USA
+- Unai Simón (Spain): 85 → 86 — clean sheet in the 1–0 win over Portugal (extended his record tournament shutout streak)
+- Neymar (Brazil): 85 → 86 — stoppage-time penalty in the 2–1 loss to Norway, his final Brazil appearance
+- Mikel Merino (Spain): 82 → 83 — added-time winner in the 1–0 win over Portugal
+- Cristian Romero (Argentina): 80 → 81 — goal to spark the comeback in the 3–2 win over Egypt
+- Charles De Ketelaere (Belgium): 77 → 80 — two goals and an assist in the 4–1 win over the USA
+- Gregor Kobel (Switzerland): 80 → 81 — clean sheet through 120' in the 0–0 (won 4–3 on pens) vs Colombia
+- David Ospina (Colombia): 80 → 81 — clean sheet through 120' in the 0–0 (lost 4–3 on pens) vs Switzerland
+- Rubén Vargas (Switzerland): 80 → 81 — decisive winning penalty in the shootout vs Colombia
+- Malik Tillman (United States): 78 → 79 — goal in the 4–1 loss to Belgium
+- Hans Vanaken (Belgium): 73 → 74 — goal in the 4–1 win over the USA
+- Mostafa Ziko (Egypt): 62 → 63 — goal in the 3–2 loss to Argentina
+
+_Held at 99: Erling Haaland (brace vs Brazil), Harry Kane (penalty vs Mexico), Lionel Messi (goal in the comeback vs Egypt). Pending (scorer ambiguous across sources, not yet credited): Mexico's non-penalty goal vs England; Egypt's opener vs Argentina._
+
+## 📅 July 9 – 11 (Quarterfinals)
+- Jude Bellingham (England): 94 → 96 — brace including the extra-time winner in the 2–1 win over Norway
+- Lautaro Martínez (Argentina): 90 → 91 — extra-time goal in the 3–1 win over Switzerland
+- Julián Alvarez (Argentina): 89 → 90 — extra-time golazo in the 3–1 win over Switzerland
+- Mike Maignan (France): 86 → 87 — clean sheet in the 2–0 win over Morocco
+- Alexis Mac Allister (Argentina): 84 → 85 — opener in the 3–1 win over Switzerland
+- Fabián Ruiz (Spain): 83 → 84 — opener in the 2–1 win over Belgium
+- Mikel Merino (Spain): 83 → 84 — 88th-minute winner in the 2–1 win over Belgium, super-sub hero again
+- Charles De Ketelaere (Belgium): 80 → 81 — equaliser in the 2–1 loss to Spain
+- Dan Ndoye (Switzerland): 77 → 78 — goal in the 3–1 loss to Argentina
+- Andreas Schjelderup (Norway): 75 → 76 — early opener in the 2–1 loss to England
+
+_Held at 99: Kylian Mbappé (goal and assist vs Morocco), Ousmane Dembélé (goal vs Morocco). Semifinals (July 14 France–Spain, July 15 England–Argentina) still to come._
+
+## 🛠️ July 12 — Historical rating corrections (fan feedback via runthe.gg)
+- Oguchi Onyewu (United States, 2010): 85 → 72 — correction; he barely featured (injury recovery) yet was erroneously the highest-rated USA player of that tournament
+- Landon Donovan (United States, 2010): 80 → 83 — 3 goals including the stoppage-time winner vs Algeria that won Group C
+- Clint Dempsey (United States, 2010): 74 → 79 — co-talisman, scored vs England
+- Tim Howard (United States, 2010): 77 → 79 — solid tournament as group winners
+- Landon Donovan (United States, 2002): award set to Best Young Player (retrospective 2002 winner); rating unchanged at 85
+
+_Declined: Kalidou Koulibaly (Senegal, 2018) suggested 88 — held at 78 (blank rationale, and Senegal exited in the group stage; the wc_overall rates the tournament)._

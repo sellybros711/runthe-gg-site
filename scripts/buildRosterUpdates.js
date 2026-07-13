@@ -38,13 +38,17 @@ const COUNTRY = {
 };
 const ncountry = c => COUNTRY[norm(c)] || norm(c);
 
-// index players by normalized name+country (and name alone) for position/canonical lookup
+// index players by normalized name+country (and name alone) for position/canonical
+// lookup. Lookups default to 2026, but historical corrections tag the year in the
+// country field ("United States, 2010") so those resolve against the right squad.
 const players = JSON.parse(fs.readFileSync(PLAYERS, 'utf8'));
-const p2026 = players.filter(p => +p.year === 2026);
-function lookup(name, country) {
+const byYear = {};
+function playersForYear(y) { return (byYear[y] || (byYear[y] = players.filter(p => +p.year === +y))); }
+function lookup(name, country, year) {
+  const pool = playersForYear(year || 2026);
   const nn = norm(name), nc = ncountry(country);
-  let m = p2026.filter(p => norm(p.name) === nn && ncountry(p.country) === nc);
-  if (m.length !== 1) m = p2026.filter(p => norm(p.name) === nn);
+  let m = pool.filter(p => norm(p.name) === nn && ncountry(p.country) === nc);
+  if (m.length !== 1) m = pool.filter(p => norm(p.name) === nn);
   return m[0] || null;
 }
 
@@ -62,19 +66,22 @@ for (const raw of md.split('\n')) {
   // (Country): x → y") — the real subject is after the last semicolon.
   let name = m[1].trim();
   if (name.includes(';')) name = name.split(';').pop().trim();
-  const country = m[2].trim();
-  const pl = lookup(name, country);
+  // Historical corrections tag the tournament year: "Player (Country, 2010)".
+  let country = m[2].trim(), year = 2026;
+  const ym = country.match(/^(.+?),\s*(\d{4})\s*$/);
+  if (ym) { country = ym[1].trim(); year = +ym[2]; }
+  const pl = lookup(name, country, year);
   events.push({
     name: pl ? pl.name : name,
     country: pl ? pl.country : country,
-    year: 2026,
+    year,
     position: pl ? pl.position : '',
     pre_wc_overall: +m[3],
     wc_overall: +m[4],
     wc_date: curDate,
     wc_note: m[5].trim(),
   });
-  if (!pl) console.warn('  no player match for', name, '(' + country + ')');
+  if (!pl) console.warn('  no player match for', name, '(' + country + (year !== 2026 ? ', ' + year : '') + ')');
 }
 console.log('Parsed', events.length, 'individual upgrade events.');
 
