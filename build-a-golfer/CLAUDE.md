@@ -7787,6 +7787,42 @@ allows Google Fonts, or self-host Anton.*
   across 5 same-screen re-renders (was recreated each time), still `position:fixed;bottom:0` on `<body>`,
   rebuilds + re-highlights on tab/overlay change, hides on live-play screens; 0 page errors. Deployed to /golf.
 
+- **CS330 — a LOT more sponsor brands so the sponsor journey lasts a whole career (owner: "I've been with
+  the same global sponsors for 20 years and haven't been offered new choices. This journey should last
+  throughout the majority of your career… reaching the max at year 7 defeats the purpose. Can we add a lot
+  more brands").** Root cause: sponsor offers only surfaced for an EMPTY slot or a tier-up of your lowest
+  filled slot, and there were only 4 tiers topping out at Global — so once both slots were at Global (mid-
+  career), `low.tier < maxTier` was false forever and `computeSponsorOffers` returned nothing for the rest
+  of the career. Fixes:
+  • **2 new prestige tiers** (`SPONSOR_TIERS` 4→6): **Elite** (reward 2.40, diff 2.05) + **Icon** (2.80,
+    2.30) above Global, so there's a genuine ladder to keep climbing. `SPONSOR_TIER_REQ=[0,24,48,70,94,114]`
+    (market value 0-~120 from following+OVR+wins/majors) — Global now unlocks at ~year 7 (a MID-career
+    milestone, not the ceiling), Elite ~year 9, Icon ~year 11+ for a DOMINANT star, and Icon needs a
+    near-maxed CV (huge following + peak OVR + many wins/majors), so it's a late-career pinnacle a moderate
+    career reaches much later or never. Verified the unlock timing in Playwright (Regional yr1 · National yr4
+    · Premium yr5 · Global yr7 · Elite yr9 · Icon yr11 for a dominant career).
+  • **36 more fictional brands** (`BRANDS` 36→72, `LOGO_SPEC` + hash-derived logos): +3 each to Regional/
+    National/Premium/Global, +12 Elite, +12 Icon — 12 per tier. Each has a distinct category/color/tagline/
+    trait; the 36 new ones get a deterministic shape+accent from a name hash (`logoSpecOf`: `LOGO_SHAPES`/
+    `LOGO_ACCENTS` via `dHash`) so they render distinct without 36 literal LOGO_SPEC entries. `brandLogoSVG`/
+    `brandLogoDraw` both read `logoSpecOf`, so marks match across the UI + the worn-on-avatar logo.
+  • **Poaching keeps offers coming at the ceiling** (`computeSponsorOffers` + `SPONSOR_POACH_CHANCE=0.5`):
+    for your lowest filled slot, if you've outgrown it a BIGGER-tier brand offers an upgrade (as before);
+    once you're at your ceiling, ~50% of years a RIVAL brand at the same top tier tries to POACH you
+    (`{poach:true}`) — so fresh choices keep arriving for the rest of a career, fixing "20 years, never
+    offered anything new." Verified: a dominant career reached Icon in both slots then still saw poach
+    offers in 12 of 20 subsequent years.
+  • **Offer-card framing** (`sponsorDecisionNode`): each offer now shows WHY it appeared — a gold "↑ A bigger
+    brand is calling · step up to {Tier}" badge for an upgrade, or a teal "⚡ A rival {Tier} brand wants to
+    poach you" badge for a poach.
+  All in the existing two-slot sponsor system (CS236) — no SQL, no economy change (the CS242 money balance +
+  `SPONSOR_MONEY` scale are untouched; new tiers pay more but goals scale harder). Verified in Playwright:
+  72 brands / 6 tiers / 12 per tier / 0 dup names / all tiers valid; logos render distinct; offers persist
+  across a long career (tier-ups while climbing + poach at ceiling); `sponsorDecisionNode` renders the
+  upgrade/poach badges; 0 page errors (only sandbox-blocked external-resource console noise). Deployed to
+  /golf. Tunable: `SPONSOR_TIERS` reward/diff, `SPONSOR_TIER_REQ` thresholds, `SPONSOR_POACH_CHANCE`, the
+  `BRANDS` catalog.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
