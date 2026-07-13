@@ -249,7 +249,7 @@ window.GA_ID='G-L29P5MRWKE';
     font-size:40px; line-height:.95; margin-top:7px; letter-spacing:.02em; animation:celebRise .5s .18s ease both}
   .celebrate.major .celeb-title{font-size:46px; color:#f9d271}
   .celeb-sub{position:relative; margin-top:9px; font-size:15px; color:#dfeae2; max-width:440px; animation:celebRise .5s .24s ease both}
-  .celeb-cheque{position:relative; margin-top:10px; font-family:var(--mono); font-weight:800; font-size:27px; color:#35d6a0; animation:celebRise .5s .3s ease both}
+  .celeb-check{position:relative; margin-top:10px; font-family:var(--mono); font-weight:800; font-size:27px; color:#35d6a0; animation:celebRise .5s .3s ease both}
   .celeb-tally{position:relative; margin-top:6px; font:800 12px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--gold); animation:celebRise .5s .36s ease both}
   .celeb-actions{position:relative; margin-top:24px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center; animation:celebRise .5s .44s ease both}
   .celeb-actions .btn{width:auto; padding:12px 22px}
@@ -299,7 +299,7 @@ window.GA_ID='G-L29P5MRWKE';
   .pb-outlet{font:800 9px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
   .pb-hltx{color:#fff;font:800 15px/1.25 var(--body)}
   @keyframes celebSpot{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
-  @media (prefers-reduced-motion:reduce){ .celebrate,.celeb-trophy,.celeb-kicker,.celeb-title,.celeb-sub,.celeb-cheque,.celeb-tally,.celeb-actions,.celebrate .spot{animation-duration:.01ms} }
+  @media (prefers-reduced-motion:reduce){ .celebrate,.celeb-trophy,.celeb-kicker,.celeb-title,.celeb-sub,.celeb-check,.celeb-tally,.celeb-actions,.celebrate .spot{animation-duration:.01ms} }
   .btn:disabled{opacity:.45; cursor:not-allowed}
   .btn:focus-visible, button:focus-visible, [tabindex]:focus-visible, input:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   .mini{display:flex; gap:10px; margin-top:10px}
@@ -966,7 +966,7 @@ window.GA_ID='G-L29P5MRWKE';
   .reptbar{height:9px;border-radius:6px;background:rgba(8,14,28,.6);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
   .reptbar>i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#e6a91f,#f6cd74)}
   .reptbar-foot{margin-top:7px;font-size:11px;color:var(--muted)}
-  /* CS252: streak calendar — the last N days as coloured cells so the streak feels visual */
+  /* CS252: streak calendar — the last N days as colored cells so the streak feels visual */
   .stcalwrap{max-width:520px;margin:10px auto 0;padding:11px 13px;border-radius:14px;border:1px solid rgba(235,166,31,.24);background:rgba(8,17,26,.42)}
   .stcal-hd{display:flex;justify-content:space-between;align-items:center;font:800 13px/1 var(--body);color:var(--gold);margin-bottom:9px}
   .stcal-best{color:var(--muted);font-weight:700;font-size:11px}
@@ -1207,8 +1207,8 @@ function track(ev,props){try{(window.dataLayer=window.dataLayer||[]).push(Object
   window.dispatchEvent(new CustomEvent('rtt:'+ev,{detail:props||{}}));
   if(typeof window.gtag==='function') window.gtag('event',ev,props||{});}catch(e){}}   // forward to GA4 when configured (inert otherwise)
 /* ============ Themed inline-SVG icons (replace emoji in the UI) ============
-   Minimal line/fill icons on a 24x24 grid, drawn in `currentColor` so each one inherits the themed colour
-   of the text it sits in (gold/cream/teal), except metals (medals/jacket) which bake their own colour.
+   Minimal line/fill icons on a 24x24 grid, drawn in `currentColor` so each one inherits the themed color
+   of the text it sits in (gold/cream/teal), except metals (medals/jacket) which bake their own color.
    ic(name) returns an <svg> string sized to ~1em with baseline alignment, safe to drop into any template
    literal. Emoji is kept ONLY in copy-to-clipboard share text (SVG can't live there). Clean typographic
    glyphs (→ ✓ ✕ ★ arrows) are intentionally left as text. */
@@ -1294,8 +1294,8 @@ function ic(name,o){ o=o||{}; const inner=ICONS[name]; if(!inner) return '';
    touch the hundreds of emoji spots individually and data-field emojis (badge.e, headline.icon, …) convert
    for free. Copy-to-clipboard share text never passes through here, so it keeps its emoji (SVG can't live in
    plain text). Only replaces emoji in TEXT runs, never inside a tag/attribute. Kept as text on purpose:
-   plain text arrows (→ ← ↺), ✓, ✕, ★, country flags, and the daily-share colour squares. The
-   emoji-presentation arrows (⬆ ↗ ↩) that iOS renders as coloured boxes ARE mapped to themed icons. */
+   plain text arrows (→ ← ↺), ✓, ✕, ★, country flags, and the daily-share color squares. The
+   emoji-presentation arrows (⬆ ↗ ↩) that iOS renders as colored boxes ARE mapped to themed icons. */
 const EMOJI_MAP={
   '🏆':'trophy','⛳':'flag','📍':'pin','🔒':'lock','🔐':'lockkey','🔑':'key','🏅':'medal','🎖':'ribbon',
   '⚔':'swords','🐐':'goat','🥇':'medalGold','🥈':'medalSilver','🥉':'medalBronze','🔥':'fire','🎯':'target',
@@ -1441,11 +1441,11 @@ function badgeCard(b,m){ const v=b.get(m); const lvl=badgeLevel(b,m); const max=
     <div class="bbar"><span style="width:${Math.round(frac*100)}%;background:${col}"></span></div>
     <div class="btees">${tees}</div>
   </div>`; }
-/* ---------- cosmetics (#8): unlockable shirt colours + equippable titles, earned via lifetime badges ----------
+/* ---------- cosmetics (#8): unlockable shirt colors + equippable titles, earned via lifetime badges ----------
    Unlocks are DERIVED from lifetime badge metrics (never reset), so nothing extra is persisted: an item is
    unlocked iff its req() passes. Equipped choices live in bag_look (title) / the shirt id. Special shirts only
-   need m/s hex, the avatar recolours from a hex, so no art assets are required. */
-// UNLOCKABLE colours, each a DISTINCT hue (never a shade of a basic) tied to real golf lore. Shared by
+   need m/s hex, the avatar recolors from a hex, so no art assets are required. */
+// UNLOCKABLE colors, each a DISTINCT hue (never a shade of a basic) tied to real golf lore. Shared by
 // shirt + hat. Unlocks are derived from lifetime metrics + Tour Rep, so nothing extra is persisted.
 const COSMETIC_SHIRTS=[
   {id:'red',        m:'#d2342e', s:'#a82822', name:'Victory Red',     req:m=>m.wins>=10,        reqText:"Win 10 tournaments, Tiger's Sunday red"},
@@ -1456,7 +1456,7 @@ const COSMETIC_SHIRTS=[
   {id:'bronze',     m:'#b5763a', s:'#92602e', name:'Bronze',         req:m=>m.wins>=3,         reqText:'Win 3 tournaments'},
   {id:'linkssky',   m:'#38a8d8', s:'#2c87ad', name:'Links Sky',      req:()=>repAtLeast('Star'), reqText:'Reach Tour Rep: Star'},
 ];
-function allShirts(){ return POLOS.concat(COSMETIC_SHIRTS); }   // base colours + special unlockables
+function allShirts(){ return POLOS.concat(COSMETIC_SHIRTS); }   // base colors + special unlockables
 function findShirt(id){ return allShirts().find(x=>x.id===id)||POLOS[0]; }
 function cosmeticShirtUnlocked(id,m){ const cs=COSMETIC_SHIRTS.find(x=>x.id===id); return cs?!!cs.req(m||badgeMetrics()):true; }
 // ---- unlockable PATTERNS (shirt + hat). Drawn as a tonal overlay clipped to the mask region, so they
@@ -1480,7 +1480,7 @@ const PATTERNS=[
 ];
 function findPattern(id){ return PATTERNS.find(p=>p.id===id)||PATTERNS[0]; }
 function patternUnlocked(id,m){ const p=PATTERNS.find(x=>x.id===id); return p?!!p.req(m||badgeMetrics()):true; }
-// pattern mask value in [0,1] at pixel (x,y), 0 = base colour, 1 = full accent
+// pattern mask value in [0,1] at pixel (x,y), 0 = base color, 1 = full accent
 function patFactor(id,x,y){
   switch(id){
     case 'pinstripe':{ const P=18; return ((x%P+P)%P)<4?1:0; }
@@ -2229,7 +2229,7 @@ function streakDays(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.
 function dayKeyBack(n){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
   const dt=new Date(Date.UTC(y,m-1,d,12,0,0)); dt.setUTCDate(dt.getUTCDate()-n);   // calendar arithmetic on the ET date, anchored at noon (DST-safe)
   return dt.getUTCFullYear()*10000+(dt.getUTCMonth()+1)*100+dt.getUTCDate(); }
-// CS252: a tiny "streak calendar" — the last N UTC days as coloured cells so the streak feels visual,
+// CS252: a tiny "streak calendar" — the last N UTC days as colored cells so the streak feels visual,
 // not just a number. Played = teal, Beat the pro = gold, Freeze-bridged = blue, missed = faint; today ringed.
 function streakCalendar(n){
   n=n||14;
@@ -3927,8 +3927,8 @@ const SKINS=[
   {id:'deep',     m:'#523524', s:'#41291b'},
   {id:'ebony',    m:'#36231a', s:'#281913'},
 ];
-// BASIC colours (free, shared by shirt + hat). All distinct, no two close shades, and no red/green
-// (red is Tiger's Sunday colour and green is the Masters jacket, both reserved as unlocks below).
+// BASIC colors (free, shared by shirt + hat). All distinct, no two close shades, and no red/green
+// (red is Tiger's Sunday color and green is the Masters jacket, both reserved as unlocks below).
 const POLOS=[
   {id:'teal',  m:'#0FA888', s:'#0c917a'},
   {id:'navy',  m:'#214a8c', s:'#1a3c72'},
@@ -4298,15 +4298,15 @@ function accBoost(){ if(!SHOP_ENABLED) return {};   // shelved: equipped gear gi
   return out;
 }
 function accBoostTotal(){ const b=accBoost(); return Object.values(b).reduce((a,x)=>a+x,0); }
-// ---- cosmetics (colours + patterns) are PURCHASED too (same coin economy, namespaced owned keys) ----
-// keys: sh:<shirt>  sp:<pattern>  ht:<hat colour>  pt:<pants>  so:<shoes>. Free defaults below.
+// ---- cosmetics (colors + patterns) are PURCHASED too (same coin economy, namespaced owned keys) ----
+// keys: sh:<shirt>  sp:<pattern>  ht:<hat color>  pt:<pants>  so:<shoes>. Free defaults below.
 const FREE_COSMETICS={'sh:white':1,'sp:none':1,'hp:none':1,'ht:white':1,'pt:stone':1,'so:white':1};
-const COS_CATS=[ {k:'shirt',pk:'sh',lookKey:'polo',name:'Shirt colour'}, {k:'pat',pk:'sp',lookKey:'shirtPat',name:'Shirt pattern'},
-  {k:'hat',pk:'ht',lookKey:'hat',name:'Hat colour'}, {k:'pants',pk:'pt',lookKey:'pants',name:'Trousers'}, {k:'shoes',pk:'so',lookKey:'shoes',name:'Shoe colour'} ];
+const COS_CATS=[ {k:'shirt',pk:'sh',lookKey:'polo',name:'Shirt color'}, {k:'pat',pk:'sp',lookKey:'shirtPat',name:'Shirt pattern'},
+  {k:'hat',pk:'ht',lookKey:'hat',name:'Hat color'}, {k:'pants',pk:'pt',lookKey:'pants',name:'Trousers'}, {k:'shoes',pk:'so',lookKey:'shoes',name:'Shoe color'} ];
 function cosPk(cat){ const c=COS_CATS.find(x=>x.k===cat); return c?c.pk:cat; }
 function cosKey(cat,id){ return cosPk(cat)+':'+id; }
 function cosmeticPrice(cat,id){
-  if(cat==='shirt') return COSMETIC_SHIRTS.some(s=>s.id===id)?12000:4000;   // basic 4k, special/lore colours 12k
+  if(cat==='shirt') return COSMETIC_SHIRTS.some(s=>s.id===id)?12000:4000;   // basic 4k, special/lore colors 12k
   if(cat==='pat')   return id==='none'?0:10000;
   if(cat==='hat')   return 4000;
   if(cat==='pants') return 4000;
@@ -4322,7 +4322,7 @@ function cosBuy(cat,id){
   s.spent+=price; s.owned[cosKey(cat,id)]=1; coinSave(s);
   track('shop_buy_cos',{cat,id,price}); return {ok:true};
 }
-// the selectable items in a cosmetic category (id, display name, swatch colour / pattern id)
+// the selectable items in a cosmetic category (id, display name, swatch color / pattern id)
 function cosmeticItems(cat){
   if(cat==='shirt'||cat==='hat') return allShirts().map(o=>({id:o.id,name:o.name||cosTitle(o.id),col:o.m}));
   if(cat==='pat')   return PATTERNS.map(p=>({id:p.id,name:p.name,pat:p.id}));
@@ -5565,7 +5565,7 @@ function scrTitle(){
   // ════════════════════════════════════════════════════════════════════
   // 1) Beat the Pro (folds in the streak chip + attempts + countdown)
   stack.appendChild(dailyHeroCard());
-  // 2) CAREER — right below Beat the Pro. Resume card if in progress, else Career Mode. Colour stays gold.
+  // 2) CAREER — right below Beat the Pro. Resume card if in progress, else Career Mode. Color stays gold.
   if(cs && cs.ended){
     // a retired/completed career, never resumable, just lets them revisit the ceremony they just saw
     const circuit=!!cs.circuitEnded;
@@ -5683,7 +5683,7 @@ function scrSetup(){
     right.appendChild($(`<div class="small muted" style="margin:5px 0 14px 2px">🔒 Sign in to your RunThe.gg account to add a name.</div>`));
     const lock=$(`<div style="margin-top:2px;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(235,166,31,.08),rgba(10,22,38,.25));padding:15px 15px 14px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:18px">🔒</span><b style="color:var(--gold);font-size:14.5px">Unlock the full locker room</b></div>
-      <div class="small muted" style="margin-bottom:12px;line-height:1.5">A free account lets you <b style="color:var(--oncard)">name your golfer</b>, fly your <b style="color:var(--oncard)">country's flag</b>, play <b style="color:var(--oncard)">left-handed</b>, and pick your <b style="color:var(--oncard)">shirt, hat colours &amp; patterns</b>, plus it saves your career and posts you to the global leaderboards.</div>
+      <div class="small muted" style="margin-bottom:12px;line-height:1.5">A free account lets you <b style="color:var(--oncard)">name your golfer</b>, fly your <b style="color:var(--oncard)">country's flag</b>, play <b style="color:var(--oncard)">left-handed</b>, and pick your <b style="color:var(--oncard)">shirt, hat colors &amp; patterns</b>, plus it saves your career and posts you to the global leaderboards.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn goldfill" id="setup-signup" style="width:auto;flex:1 1 160px;padding:11px">Create free account ▸</button><button class="btn ghost" id="setup-signin" style="width:auto;flex:0 0 auto;padding:11px 18px">Sign in</button></div></div>`);
     lock.querySelector('#setup-signup').onclick=()=>{ track('setup_signup_click'); S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); };
     lock.querySelector('#setup-signin').onclick=()=>{ S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); };
@@ -5720,7 +5720,7 @@ function scrSetup(){
 // Two high-quality painted base portraits (male + female) are recolored live on a
 // <canvas>: skin / hair / shirt / cap pixels are re-tinted from the player's
 // choices (the exact wheel-swatch colors) while preserving the painted shading.
-// The cap matches the shirt colour. No per-combo PNGs. Base art:
+// The cap matches the shirt color. No per-combo PNGs. Base art:
 // public/avatars/golfers/base/{male,female}-base.png (relative → dev + /golf).
 // Result is cached per look combo.
 const AV_BASE={ male:'public/avatars/golfers/base/male-base.png', female:'public/avatars/golfers/base/female-base.png' };
@@ -5768,10 +5768,10 @@ function avClassify(r,g,b,a,nx,ny){
   const shirt=lower&&nx>0.05&&nx<0.95&&avInHue(h,150,202)&&s>0.24&&l>0.21&&l<0.86;
   if(cap)return'cap';if(shirt)return'shirt';if(hair)return'hair';if(skin)return'skin';return null;
 }
-// targets are the exact wheel-swatch colours (palette .m) so the avatar matches the picker.
+// targets are the exact wheel-swatch colors (palette .m) so the avatar matches the picker.
 function avLook(L){L=L||DEFLOOK;
   const sk=SKINS.find(x=>x.id===L.skin)||SKINS[1], hr=HAIRS.find(x=>x.id===L.hair)||HAIRS[1], po=findShirt(L.polo);
-  const ht=findShirt(L.hat||L.polo);   // hat colour (own choice; falls back to shirt colour for old saves)
+  const ht=findShirt(L.hat||L.polo);   // hat color (own choice; falls back to shirt color for old saves)
   const g=(L.gender==='female')?'female':'male';
   const sp=L.shirtPat||'none', hp=L.hatPat||'none', so=L.shoes||'white';
   return{ gender:g, skinHex:sk.m, hairHex:hr.m, shirtHex:po.m, hatHex:ht.m, shoesHex:shoeCol(so), shirtPat:sp, hatPat:hp,
@@ -5779,7 +5779,7 @@ function avLook(L){L=L||DEFLOOK;
 }
 function avBlit(canvas,off){const cx=canvas.getContext('2d');cx.clearRect(0,0,canvas.width,canvas.height);cx.drawImage(off,0,0,canvas.width,canvas.height);}
 function avVectorFallback(canvas){const w=canvas.closest('.avatarfig');if(w)w.innerHTML=golferSVG();}
-// authored region masks (flat-colour stencils baked from the base art) → pixel-perfect recolour, no guessing.
+// authored region masks (flat-color stencils baked from the base art) → pixel-perfect recolor, no guessing.
 const AV_MASK={ male:'public/avatars/golfers/base/male-base-mask.png', female:'public/avatars/golfers/base/female-base-mask.png' };
 // map a mask pixel to its region by dominant channel: skin=red, hair=green, shirt=blue, cap=yellow, else none.
 function avMaskRegion(r,g,b){ if(r<45&&g<45&&b<45) return null;
@@ -5788,17 +5788,17 @@ function avMaskRegion(r,g,b){ if(r<45&&g<45&&b<45) return null;
   if(g>=r&&g>=b&&g>110) return 'hair';
   if(r>=g&&r>=b&&r>110) return 'skin';
   return null; }
-// eyebrows are baked into the HAIR region of the mask, but they shouldn't take the (now light) hair colour.
+// eyebrows are baked into the HAIR region of the mask, but they shouldn't take the (now light) hair color.
 // Keep them a fixed natural brow. Brow/eye band = mid-face, away from the temples/sideburns.
 const BROW_HEX='#34281b';
 function avIsBrow(nx,ny){ return ny>0.275 && ny<0.42 && nx>0.30 && nx<0.70; }   // eyebrow band (measured from the mask)
-// shirt/cap pull: mid colours keep their painted shading (0.12); black & white need a much stronger pull
+// shirt/cap pull: mid colors keep their painted shading (0.12); black & white need a much stronger pull
 // toward the target or they stay base-toned teal/grey instead of reading black/white.
 function avKitLp(hex){ const c=avHexRgb(hex), l=avRgbHsl(c.r,c.g,c.b).l, d=Math.abs(l-0.5);
   return d<0.22 ? 0.12 : 0.12 + Math.min(1,(d-0.22)/0.13)*0.74; }   // → ~0.86 at pure black/white
 // The full-body kit art is near-WHITE (shirt mean ~0.96, shoes ~0.95, pants ~0.80), so a lightness LERP
 // keeps a navy/black garment reading as pale-tinted white. Instead SHIFT the whole garment so its mean
-// lands on the target's lightness while preserving the base fold/shading contrast → true dark colours.
+// lands on the target's lightness while preserving the base fold/shading contrast → true dark colors.
 const AV_KIT_MEAN={ male:{shirt:0.965,pants:0.789,shoes:0.944}, female:{shirt:0.968,pants:0.817,shoes:0.956} };
 function avKitTint(r,g,b,hex,baseMean,satB){
   const s=avRgbHsl(r,g,b), t=avHexRgb(hex), th=avRgbHsl(t.r,t.g,t.b);
@@ -5886,7 +5886,7 @@ const AV_ANAT={
   // slightly turned so it differs from the silhouette headCx; the cap/glasses centre on faceCx.
   // handY = the fist centre; gripY = where a held club's grip sits (just above the fist); hipLx = belt/pocket
   // for a clipped marker. Measured per-gender from the base art (the female is skirted with hands higher-relative).
-  // glove{Cx,Cy,Rx,Ry} = an ellipse over the RIGHT fist; the glove is painted by recolouring the hand's own
+  // glove{Cx,Cy,Rx,Ry} = an ellipse over the RIGHT fist; the glove is painted by recoloring the hand's own
   // skin pixels white (a golf glove is a form-fitting white hand), so it always fits perfectly.
   male:  {W:420,H:1400,headCx:211,faceCx:214,headTop:2,eyeY:116,browLine:100,footCx:211,footY:1330,handRx:385,handLx:42,handY:730,gripY:716,hipLx:158,gloveCx:382,gloveCy:721,gloveRx:39,gloveRy:55,sideRxIn:372,sideLxIn:48,waistY:690},
   female:{W:380,H:1400,headCx:213,faceCx:213,headTop:4,eyeY:97,browLine:80,footCx:197,footY:1330,handRx:320,handLx:96,handY:778,gripY:764,hipLx:132,gloveCx:333,gloveCy:736,gloveRx:21,gloveRy:44,gloveMaxY:781,sideRxIn:338,sideLxIn:42,waistY:712},
@@ -6015,13 +6015,13 @@ function _avWaitAll(entries, cb){ const pend=entries.filter(e=>e&&!e.ready&&!e.f
 function avatarFullHTML(){
   return `<div class="avatarfig fullbody"><canvas class="avatarcanvas avfull" width="${AV_FRAME_W}" height="${AV_FRAME_H}" data-avatar-full="1" data-avatar-pending="1" role="img" aria-label="Your golfer"></canvas></div>`;
 }
-// a free basic cap (recoloured to the player's hat colour), drawn when no shop headwear is equipped —
-// so every golfer can wear a hat in setup, like the old portrait. Cached per colour.
+// a free basic cap (recolored to the player's hat color), drawn when no shop headwear is equipped —
+// so every golfer can wear a hat in setup, like the old portrait. Cached per color.
 const _avCapCache=new Map();
 function avTintedCap(hex){
   const e=avLoad(ACC_DIR+'acc-head-cap.png'); if(!e.ready) return null;
   let c=_avCapCache.get(hex); if(c) return c;
-  const w=e.img.naturalWidth||ACC_NATIVE_W, h=e.img.naturalHeight||ACC_NATIVE_H;   // recolour the full pre-positioned cap art
+  const w=e.img.naturalWidth||ACC_NATIVE_W, h=e.img.naturalHeight||ACC_NATIVE_H;   // recolor the full pre-positioned cap art
   const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
   const cx=cv.getContext('2d',{willReadFrequently:true}); cx.drawImage(e.img,0,0,w,h);
   const id=cx.getImageData(0,0,w,h), d=id.data, lp=avKitLp(hex);
@@ -6208,7 +6208,7 @@ function swatchRow(label,opts,curId,key,colorOf){
   const wrap=$(`<div style="display:flex;gap:10px;flex-wrap:wrap"></div>`);
   opts.forEach(o=>{
     const sel=curId===o.id, col=colorOf(o);
-    // check colour adapts to the swatch lightness so it stays legible on light AND dark tones
+    // check color adapts to the swatch lightness so it stays legible on light AND dark tones
     const rgb=avHexRgb(col), lum=(0.299*rgb.r+0.587*rgb.g+0.114*rgb.b)/255;
     const sw=$(`<button aria-label="${label} ${o.id}" title="${esc(o.id)}" style="position:relative;width:34px;height:34px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.20)'};background:${col};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 3px rgba(235,166,31,.30)':'none'};transition:transform .08s">${sel?`<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:${lum>0.55?'#1a1208':'#fff'}">✓</span>`:''}</button>`);
     sw.onclick=()=>{S.look[key]=o.id; saveLook(); render();};
@@ -6216,9 +6216,9 @@ function swatchRow(label,opts,curId,key,colorOf){
   });
   row.appendChild(wrap); return row;
 }
-// colour picker (shirt or hat) with unlockable cosmetic colours (locked ones show 🔒 + the requirement).
-// `cur` is the currently-equipped id (hat falls back to the shirt colour for old saves).
-// cap on/off toggle (the free basic cap on the full-body avatar; its colour is the Hat row below)
+// color picker (shirt or hat) with unlockable cosmetic colors (locked ones show 🔒 + the requirement).
+// `cur` is the currently-equipped id (hat falls back to the shirt color for old saves).
+// cap on/off toggle (the free basic cap on the full-body avatar; its color is the Hat row below)
 function capToggleRow(){
   const on=S.look.cap!==false;
   const wrap=$(`<div style="margin:9px 0 2px"></div>`);
@@ -6228,7 +6228,7 @@ function capToggleRow(){
   row.appendChild(mk('Cap on',true)); row.appendChild(mk('No cap',false));
   wrap.appendChild(row); return wrap;
 }
-// colour picker — shows ONLY the colours the player OWNS (unlocks live in the Pro Shop, linked once under
+// color picker — shows ONLY the colors the player OWNS (unlocks live in the Pro Shop, linked once under
 // the Kit section). Returns null when there's no real choice yet (≤1 owned), so the row collapses.
 function cosColorRow(label,cat){
   const c=COS_CATS.find(x=>x.k===cat), lookKey=c.lookKey;
@@ -6263,7 +6263,7 @@ function cosPatRow(label,lookKey){
 // any cosmetic still locked? (drives the single "unlock in the Pro Shop" link under Kit)
 function anyCosmeticLocked(){ return COS_CATS.some(c=>cosmeticItems(c.k).some(o=>!cosOwned(c.k,o.id))); }
 function proShopLinkRow(){
-  const b=$(`<button class="btn ghost" style="width:100%;margin:6px 0 2px;padding:11px;font-size:12.5px">🛍 Unlock more colours, patterns & gear in the Pro Shop ▸</button>`);
+  const b=$(`<button class="btn ghost" style="width:100%;margin:6px 0 2px;padding:11px;font-size:12.5px">🛍 Unlock more colors, patterns & gear in the Pro Shop ▸</button>`);
   b.onclick=()=>openShopTo('shirt');
   return b;
 }
@@ -6416,7 +6416,7 @@ function scrDraft(){
     CATS.forEach(cat=>{
       const filled=!!S.slots[cat.k];
       const key=dailyKeys&&dailyKeys.has(cat.k);
-      const rv=S.current[cat.k], rc=rv>=90?'#d8ad4a':rv>=80?'#49b675':rv>=70?'#7ec8ff':'#9fb0bd';   // CS269 rating→strength colour
+      const rv=S.current[cat.k], rc=rv>=90?'#d8ad4a':rv>=80?'#49b675':rv>=70?'#7ec8ff':'#9fb0bd';   // CS269 rating→strength color
       const b=$(`<button class="attr${key?' keyhole':''}" ${filled?'disabled':''} aria-label="${filled?'Already filled: '+cat.short:'Draft '+cat.short+', rated '+rv+(key?', key skill for today\'s course':'')}">
         ${key?'<span class="keystar" aria-hidden="true">★</span>':''}<span class="lab">${cat.short}</span><span class="val">${rv}</span><span class="attrbar"><i style="width:${Math.min(100,rv)}%;background:${rc}"></i></span>${filled?'':'<span class="take">Take</span>'}</button>`);
       if(!filled) b.onclick=()=>takeAttr(cat.k);
@@ -7035,7 +7035,7 @@ const STORYLINES=[
       {t:'Credit the rivalry for your best golf',s:'Respect it',tr:'humble',conf:0.3,fol:0.06,r:'Gracious and true. A rivalry for the ages needs two greats.',head:c=>`Credited the ${c.rivalName} rivalry`},
       {t:'Downplay it entirely',s:'Just another player',tr:'clutch',conf:0.3,r:'Ice cold. You give them nothing.',head:'Downplayed the rivalry'}]},
  {id:'fan_kid', tag:'THE FANS', when:c=>true, title:c=>'A young fan at the ropes',
-  body:c=>`A kid in your colours has waited all morning by the ropes for an autograph — right as you’re walking to warm up.`,
+  body:c=>`A kid in your colors has waited all morning by the ropes for an autograph — right as you’re walking to warm up.`,
   ch:[{t:'Make their day',s:'Sign + a photo',tr:'fanFav',fan:1,conf:0.2,r:'The photo makes the local news. A fan for life.',head:'Made a young fan’s whole year'},
       {t:'Quick wave, stay locked in',s:'Tunnel vision',tr:'clutch',conf:0.4,r:'All business. Your focus is razor-sharp.',head:'All business at the ropes'}]},
  {id:'media_fav', tag:'THE STORY', when:c=>c.rank<=3 && c.seasons>=1, title:c=>'You’re the story of the season',
@@ -7059,7 +7059,7 @@ const STORYLINES=[
  {id:'charity', tag:'OFF THE COURSE', when:c=>c.seasons>=1, title:c=>'A charity asks for your help',
   body:c=>`A junior-golf foundation wants you to host a clinic for kids who’d never otherwise pick up a club.`,
   ch:[{t:'Host the clinic',s:'Give back',tr:'loyal',fan:1,conf:0.2,r:'A hundred kids, a hundred smiles. This matters.',head:'Hosted a junior clinic'},
-      {t:'Donate quietly',s:'No cameras',tr:'humble',fan:1,r:'You write the cheque and skip the photo op.',head:'Gave back quietly'}]},
+      {t:'Donate quietly',s:'No cameras',tr:'humble',fan:1,r:'You write the check and skip the photo op.',head:'Gave back quietly'}]},
  {id:'gear', tag:'THE BAG', when:c=>true, title:c=>'A rep offers new gear',
   body:c=>`A club rep is pushing a hot new driver they swear will add distance — but it’s the week of a big event.`,
   ch:[{t:'Gamble on it',s:'Chase the upside',tr:'maverick',conf:0.2,risk:0.4,r:'It’s dialled in from the first swing. Free speed — what a find.',head:'Gambled on new gear and it paid off',
@@ -7091,7 +7091,7 @@ const STORYLINES=[
  {id:'rookie_intro', tag:'ROOKIE', pri:3, when:c=>c.rookie && c.seasons===0, title:c=>'Your first tour presser',
   body:c=>`You’re a tour rookie and the microphones are new. What kind of pro do you want to be?`,
   ch:[{t:'“I’m here to win, now”',s:'No fear',tr:'confident',conf:0.4,risk:0.35,r:'Bold for a rookie. The room raises an eyebrow — and remembers.',head:'A fearless rookie declaration',
-        rBad:'The veterans smirk. A rookie writing cheques they can’t cash — the pressure just doubled.',headBad:'A rookie boast the locker room won’t forget'},
+        rBad:'The veterans smirk. A rookie writing checks they can’t cash — the pressure just doubled.',headBad:'A rookie boast the locker room won’t forget'},
       {t:'Soak it all in and learn',s:'Student of the game',tr:'humble',conf:0.3,fol:0.05,r:'Mature beyond your years. Veterans nod.',head:'A humble rookie debut'}]},
  {id:'rookie_win', tag:'MAIDEN WIN', pri:4, when:c=>c.firstWin, title:c=>'Your FIRST tour win',
   body:c=>`Your maiden victory at ${esc(c.lastName)} — the one you’ll never forget. Emotions are running high.`,
@@ -7129,13 +7129,13 @@ const STORYLINES=[
   ch:[{t:'Ride with my guy',s:'Loyalty',tr:'loyal',conf:0.3,fol:0.05,r:'You back your team publicly. They’ll run through walls for you.',head:'Backed his caddie through a slump'},
       {t:'Make a change',s:'Shake it up',tr:'maverick',conf:0.2,fol:-0.02,r:'A cold, business decision. Time will tell.',head:'Split with his caddie'}]},
  {id:'money_lead', tag:'THE MONEY LIST', pri:1, when:c=>c.rank<=5 && c.seasons>=1, title:c=>'Leading the money list',
-  body:c=>`You’re #${c.rank} on the money list and the cheques are enormous. Reporters ask what it all means to you.`,
+  body:c=>`You’re #${c.rank} on the money list and the checks are enormous. Reporters ask what it all means to you.`,
   ch:[{t:'“The money’s a byproduct”',s:'It’s about winning',tr:'humble',conf:0.3,r:'The right note. Substance over flash.',head:'Kept the focus off the money'},
       {t:'“I’ve earned every cent”',s:'Own it',tr:'confident',conf:0.3,fol:0.04,r:'Unapologetic. Fans respect the honesty.',head:'Owned his earnings'},
       {t:'Pledge a chunk to charity',s:'Give it back',tr:'loyal',conf:0.2,fol:0.11,r:'A headline for all the right reasons.',head:'Pledged winnings to charity'}]},
  {id:'appearance_fee', tag:'THE OFFER', pri:1, when:c=>c.top10||c.won, title:c=>'A huge appearance fee',
   body:c=>`An overseas event is dangling a massive appearance fee to show up — the week before a big tournament.`,
-  ch:[{t:'Take the payday',s:'Cash the cheque',tr:'maverick',conf:-0.1,fol:0.09,r:'The bank account loves it; your prep takes a hit.',head:'Chased an appearance-fee payday'},
+  ch:[{t:'Take the payday',s:'Cash the check',tr:'maverick',conf:-0.1,fol:0.09,r:'The bank account loves it; your prep takes a hit.',head:'Chased an appearance-fee payday'},
       {t:'Skip it, stay sharp',s:'Golf first',tr:'clutch',conf:0.3,r:'Disciplined. Your game thanks you.',head:'Turned down easy money to stay sharp'},
       {t:'Go, and donate the fee',s:'Best of both',tr:'loyal',conf:0.1,fol:0.1,r:'Goodwill and a great story.',head:'Donated an appearance fee'}]},
  // ── CS280: CONSEQUENCE beats — push a reputation axis too far and someone calls you out (the shareable, funny moments) ──
@@ -7438,7 +7438,7 @@ const SPONSOR_TIERS=[   // CS242: reward ladder compressed (was 1/1.45/2/2.7) so
 ];
 const SPONSOR_TIER_REQ=[0, 26, 56, 88];   // market value needed to attract each tier's interest
 const SPONSOR_REL_MAX=5;
-// CS229: every sponsor is a FAKE BRAND with its own identity — category, colour, tagline, and a
+// CS229: every sponsor is a FAKE BRAND with its own identity — category, color, tagline, and a
 // PERSONALITY trait that changes the deal. So two offers at the same tier can feel very different, and
 // choosing is about more than money. (All brands are fictional — see the not-affiliated disclaimer.)
 const BRAND_TRAITS={
@@ -7499,7 +7499,7 @@ function brandsOfTier(t){ return BRANDS.filter(b=>b.tier===t).map(b=>b.name); }
 function brandTrait(name){ return BRAND_TRAITS[brandInfo(name).trait]||BRAND_TRAITS.steady; }
 function brandInitials(name){ const w=String(name).replace(/&/g,'').split(/\s+/).filter(Boolean);
   return ((w[0]||'?')[0]+(w[1]?w[1][0]:'')).toUpperCase(); }
-// CS236: a real vector LOGO per fake brand — a shaped badge (shape varies per brand) in the brand colour with
+// CS236: a real vector LOGO per fake brand — a shaped badge (shape varies per brand) in the brand color with
 // a monogram + an accent motif. Drawn as SVG for the UI and as canvas primitives for the avatar (so a hat/shirt
 // sponsor's mark can be worn on the golfer). Both renderers read the same LOGO_SPEC so the marks match everywhere.
 const LOGO_SPEC={
@@ -8587,7 +8587,7 @@ function celebrateWin(evt, o, opts){
   win.appendChild($(`<div class="celeb-kicker">${esc(major?theme.label:'Tournament Won')}</div>`));
   win.appendChild($(`<div class="celeb-title">${major?'Major Champion':'Champion'}</div>`));
   win.appendChild($(`<div class="celeb-sub">${esc(me.name)} · ${esc(evt.name)}${o&&o.score!=null?` · ${par(o.score)}`:''}</div>`));
-  const cheque=$(`<div class="celeb-cheque">+$0</div>`); win.appendChild(cheque);
+  const check=$(`<div class="celeb-check">+$0</div>`); win.appendChild(check);
   if(major){ const cm=Math.max(1,((S.career&&S.career.majors)||0)+((S.season.totals[me.name]&&S.season.totals[me.name].majors)||0));
     win.appendChild($(`<div class="celeb-tally">${ord(cm)} career major</div>`)); }
   // Auto Sim on → no buttons, the celebration just plays and advances on its own (incl. majors).
@@ -8606,9 +8606,9 @@ function celebrateWin(evt, o, opts){
   sfx('win'); buzz(major?[0,35,40,55]:[0,30,40]);
   track(major?'major_won':'tournament_won',{event:evt.name});
   const target=(o&&o.money)||0;
-  if(reduce){ cheque.textContent='+'+fmt(target); }
+  if(reduce){ check.textContent='+'+fmt(target); }
   else { const dur=820,t0=performance.now(); (function cu(now){ const k=Math.min(1,(now-t0)/dur);
-    cheque.textContent='+'+fmt(Math.round(target*(1-Math.pow(1-k,3)))); if(k<1) requestAnimationFrame(cu); })(t0); }
+    check.textContent='+'+fmt(Math.round(target*(1-Math.pow(1-k,3)))); if(k<1) requestAnimationFrame(cu); })(t0); }
   if(major && !reduce){ const colors=['#EBA61F','#f9d271','#ffffff',theme.accent];   // confetti = majors only
     _celebStop=confettiRun(cv,{count:170, colors, mode:'cannons'}); }
   win.onclick=finish;   // tap anywhere advances (skip)
@@ -10529,7 +10529,7 @@ function scrRecap(){
         <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.evt.name}</div><div class="small muted" style="font-size:10.5px">${typeLbl} · ${fmt(r.evt.purse)}</div></span>
         <span style="text-align:right;line-height:1.25">
           <div class="sc" style="color:${col};font-weight:800">${fin}${cut?'':' · '+par(me.score)}</div>
-          <div class="mny small ${me.money>0?'':'muted'}" style="color:${me.money>0?'var(--gold)':''};font-size:11px">${me.money>0?'+'+fmt(me.money):'no cheque'}</div></span></div>`);
+          <div class="mny small ${me.money>0?'':'muted'}" style="color:${me.money>0?'var(--gold)':''};font-size:11px">${me.money>0?'+'+fmt(me.money):'no check'}</div></span></div>`);
       row.onclick=()=>{S.recapEvent=i;render();};
       board.appendChild(row);
     });
@@ -10856,7 +10856,7 @@ const HV_EX=52, HV_CAM=[-HV_EX,0,HV_W+2*HV_EX,HV_H];
 // the green the ball is drawn at a FIXED small radius — because ball AND cup are both in viewBox units, the
 // camera scales them together and the ratio stays realistic at every zoom (no more ball-bigger-than-hole).
 const HV_CUP_RX=1.82, HV_CUP_RY=1.28, HV_GBALL=0.86;   // smaller hole + ball, realistic ratio (owner)
-// ---- per-course FLAGS: every course flies its own flag (colour + optional accent stripe), like real
+// ---- per-course FLAGS: every course flies its own flag (color + optional accent stripe), like real
 // life. Marquee venues get a hand-picked look; everything else is deterministically derived from the
 // course-key hash, so each course has a consistent, unique flag.
 const HV_FLAG_STYLE=['solid','stripe'];
@@ -11966,7 +11966,7 @@ function hvTerrain(g, seedN, B){
   const [tx,ty]=hvProj(g,0,0);
   s.push(`<rect x="${(tx-13).toFixed(1)}" y="${(ty-5).toFixed(1)}" width="26" height="10" rx="3" fill="${B.fw}" stroke="${B.outline}"/>`);
   s.push(`<circle cx="${(tx-8).toFixed(1)}" cy="${ty.toFixed(1)}" r="1.3" fill="#EBA61F"/><circle cx="${(tx+8).toFixed(1)}" cy="${ty.toFixed(1)}" r="1.3" fill="#EBA61F"/>`);
-  // cup + pin: cup so putts visibly fall in; each course flies its OWN flag (per-course colour/style)
+  // cup + pin: cup so putts visibly fall in; each course flies its OWN flag (per-course color/style)
   const [ppx,ppy]=hvProj(g,g.pin[0],g.pin[1]);
   s.push(`<g id="hv-pin"><ellipse cx="${ppx.toFixed(1)}" cy="${(ppy+0.4).toFixed(1)}" rx="${HV_CUP_RX}" ry="${HV_CUP_RY}" fill="#0c1810"/><ellipse cx="${ppx.toFixed(1)}" cy="${(ppy+0.2).toFixed(1)}" rx="${HV_CUP_RX}" ry="${HV_CUP_RY}" fill="none" stroke="#ffffff" stroke-width=".45" opacity=".75"/>`
     +`<line x1="${(ppx+0.6).toFixed(1)}" y1="${(ppy+0.6).toFixed(1)}" x2="${(ppx+4.4).toFixed(1)}" y2="${(ppy+2).toFixed(1)}" stroke="${B.shad}" stroke-width=".8" opacity=".6"/>`
@@ -13499,7 +13499,7 @@ function scrDailyRound(){
         // always surface the rival's row in a Grudge Match, even if they've slipped outside the shown rows
         if(rvNm){ const rvRow=rows.find(r=>r.rival); if(rvRow && show.indexOf(rvRow)<0) show=show.slice(0,3).concat([rvRow]); }
         show.forEach(r=>{ const rk=rows.indexOf(r)+1;
-          // CS289: the rival gets its own highlight colour (red dot + red row) parallel to YOU being gold —
+          // CS289: the rival gets its own highlight color (red dot + red row) parallel to YOU being gold —
           // no busy ⚔ marker on the name (owner). The .hvbrow.rival class supplies the red highlight.
           const dot=r.you?'#3b82f6':r.rival?'#ff5a4d':'#8fa39a';
           bd.appendChild($(`<div class="hvbrow ${r.you?'mine':''}${r.rival?' rival':''}" data-nm="${esc(r.nm)}"><span class="cdot" style="background:${dot}"></span><span class="rk">${rk}</span><span class="nm">${esc(r.nm)}</span><span class="tp" style="color:${tpCol(r.tp)}">${dtp(r.tp)}</span></div>`));
@@ -13782,7 +13782,7 @@ function shopCard(it){ const r=ACC_RARITY[it.rarity]||ACC_RARITY.common, owned=a
     <div class="small muted" style="font-size:10px;flex:1 1 auto">${esc(it.desc||'')}</div>
     ${action}</div>`;
 }
-// equip a purchased cosmetic (set the look key; a hat colour also turns the cap on)
+// equip a purchased cosmetic (set the look key; a hat color also turns the cap on)
 function cosEquip(cat,id){ if(!S.look) return; const c=COS_CATS.find(x=>x.k===cat); if(!c) return; S.look[c.lookKey]=id; if(cat==='hat') S.look.cap=true; saveLook(); }
 // ---- Pro Shop purchase preview + confirm: tapping a locked item PREVIEWS it (no coins spent) until you confirm ----
 // the look the full-body avatar paints with — merged with a pending COSMETIC preview while shopping (gear
@@ -13795,7 +13795,7 @@ function shopConfirmBuy(){ const p=S.shopPreview; if(!p) return; let r;
   S.shopPreview=null;
   try{ toast(r&&r.ok?'Purchased & equipped!':((r&&r.msg)||'Could not buy')); }catch(e){}
   render(); }
-// a shop card for a cosmetic (shirt/hat/pants/shoes colour or a pattern)
+// a shop card for a cosmetic (shirt/hat/pants/shoes color or a pattern)
 function cosCard(cat,o){
   const c=COS_CATS.find(x=>x.k===cat), owned=cosOwned(cat,o.id), price=cosmeticPrice(cat,o.id);
   const equipped=(cat==='hat')?((S.look.hat||S.look.polo)===o.id):(cat==='pat'?(S.look.shirtPat===o.id):(S.look[c.lookKey]===o.id));
