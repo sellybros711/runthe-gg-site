@@ -676,6 +676,21 @@
   .hero .stadium .pitch-b{stop-color:#128440;}
   .hero .stadium .stripes{fill:#0f9048;}
   .hero .stadium .sun{opacity:1;}
+  .hero .stadium .clouds{opacity:1;}
+  .hero .stadium .blimp{opacity:1;}
+  /* slow, gentle life: sun rays turn, clouds breathe, the blimp crosses the sky */
+  .hero .stadium .sun-rays{transform-box:fill-box;transform-origin:center;animation:sunSpin 60s linear infinite;}
+  .hero .stadium .cloud-a{animation:cloudDrift 26s ease-in-out infinite;}
+  .hero .stadium .cloud-b{animation:cloudDrift 34s ease-in-out infinite reverse;}
+  .hero .stadium .cloud-c{animation:cloudDrift 30s ease-in-out infinite;}
+  .hero .stadium .blimp-move{animation:blimpDrift 38s linear infinite;}
+  @keyframes sunSpin{to{transform:rotate(360deg);}}
+  @keyframes cloudDrift{0%,100%{transform:translateX(0);}50%{transform:translateX(7px);}}
+  @keyframes blimpDrift{0%{transform:translateX(-24px);}100%{transform:translateX(124px);}}
+  @media (prefers-reduced-motion:reduce){
+    .hero .stadium .sun-rays,.hero .stadium .cloud-a,.hero .stadium .cloud-b,
+    .hero .stadium .cloud-c,.hero .stadium .blimp-move{animation:none;}
+  }
   .hero .stadium .stars{opacity:0;}            /* no stars by day */
   .hero .stadium .flood{display:none;}         /* floodlight glow off by day */
   .hero .stadium .mark-neon{opacity:0;}        /* no neon glow on the lines */
@@ -689,12 +704,24 @@
   html.dark .hero .stadium .pitch-b{stop-color:#0a4f2a;}
   html.dark .hero .stadium .stripes{fill:#0a5a2e;}
   html.dark .hero .stadium .sun{opacity:0;}
+  html.dark .hero .stadium .clouds{display:none;}
+  html.dark .hero .stadium .blimp{display:none;}
   html.dark .hero .stadium .stars{opacity:.9;}
   html.dark .hero .stadium .flood{display:inline;}
   html.dark .hero .stadium .mark-neon{opacity:.5;}
   html.dark .hero .stadium .horizon-glow{opacity:1;}
   html.dark .hero .stadium .horizon-line{opacity:.55;}
+  /* DAY veil — lighter up top so the sky, sun and blimp read bright; still darkens
+     the lower pitch for button/text contrast. Night restores the deep veil below. */
   .hero .veil{position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(120% 72% at 50% 44%, rgba(10,22,44,0) 0%, rgba(10,22,44,.10) 66%, rgba(6,14,30,.52) 100%),
+      linear-gradient(180deg,
+        rgba(10,22,44,.16) 0%,
+        rgba(10,22,44,.02) 24%,
+        rgba(10,22,44,.02) 56%,
+        rgba(4,10,24,.52) 100%);}
+  html.dark .hero .veil{
     background:
       radial-gradient(120% 72% at 50% 40%, rgba(8,10,26,0) 0%, rgba(8,10,26,.30) 66%, rgba(5,7,18,.74) 100%),
       linear-gradient(180deg,
@@ -3193,11 +3220,46 @@ window.GA_ID='G-L29P5MRWKE';
         <!-- sky (day palette in light mode, night palette in dark mode via CSS) -->
         <rect x="0" y="0" width="100" height="66" fill="url(#nightSky)"/>
 
-        <!-- sun (daytime only; hidden in dark mode) -->
+        <!-- daytime sky dressing (all hidden in dark mode): clouds, sun, blimp -->
+        <g class="clouds" fill="#ffffff">
+          <g transform="translate(15 21)"><g class="cloud cloud-a">
+            <ellipse cx="0" cy="1" rx="7" ry="2.4" opacity=".92"/>
+            <circle cx="-3.4" cy="0" r="2.4" opacity=".92"/><circle cx="0" cy="-1.5" r="3.1" opacity=".92"/><circle cx="3.6" cy="-.2" r="2.6" opacity=".92"/>
+          </g></g>
+          <g transform="translate(60 27) scale(.78)"><g class="cloud cloud-b">
+            <ellipse cx="0" cy="1" rx="7" ry="2.4" opacity=".85"/>
+            <circle cx="-3.4" cy="0" r="2.4" opacity=".85"/><circle cx="0" cy="-1.5" r="3.1" opacity=".85"/><circle cx="3.6" cy="-.2" r="2.6" opacity=".85"/>
+          </g></g>
+          <g transform="translate(43 11) scale(.62)"><g class="cloud cloud-c">
+            <ellipse cx="0" cy="1" rx="7" ry="2.4" opacity=".8"/>
+            <circle cx="-3.4" cy="0" r="2.4" opacity=".8"/><circle cx="0" cy="-1.5" r="3.1" opacity=".8"/><circle cx="3.6" cy="-.2" r="2.6" opacity=".8"/>
+          </g></g>
+        </g>
+
+        <!-- sun (daytime only) -->
         <g class="sun">
-          <circle cx="22" cy="17" r="20" fill="url(#sunGlow)"/>
-          <circle cx="22" cy="17" r="6.5" fill="#FFE08A"/>
-          <circle cx="22" cy="17" r="6.5" fill="#FFF6CF" opacity=".6"/>
+          <circle cx="74" cy="12" r="19" fill="url(#sunGlow)"/>
+          <g class="sun-rays" stroke="#FFDE7A" stroke-width="1.1" stroke-linecap="round" opacity=".9">
+            <line x1="74" y1="1.4" x2="74" y2="5"/><line x1="74" y1="19" x2="74" y2="22.6"/>
+            <line x1="63.4" y1="12" x2="67" y2="12"/><line x1="81" y1="12" x2="84.6" y2="12"/>
+            <line x1="66.5" y1="4.5" x2="69.1" y2="7.1"/><line x1="78.9" y1="16.9" x2="81.5" y2="19.5"/>
+            <line x1="66.5" y1="19.5" x2="69.1" y2="16.9"/><line x1="78.9" y1="7.1" x2="81.5" y2="4.5"/>
+          </g>
+          <circle cx="74" cy="12" r="6.3" fill="#FFD24A"/>
+          <circle cx="74" cy="12" r="6.3" fill="#FFF3B0" opacity=".5"/>
+        </g>
+
+        <!-- blimp drifting across the sky (daytime only) -->
+        <g class="blimp" transform="translate(0 18)">
+          <g class="blimp-move">
+            <ellipse cx="0" cy="0" rx="7.6" ry="2.7" fill="#dfe4ec" stroke="#a7afbe" stroke-width=".3"/>
+            <ellipse cx="-2.6" cy="-.7" rx="3.4" ry="1.1" fill="#ffffff" opacity=".55"/>
+            <rect x="-4.2" y="-.55" width="7.4" height="1.1" rx=".5" fill="#E5402A" opacity=".85"/>
+            <path d="M6.8 0 L9.6 -1.9 L9.6 1.9 Z" fill="#c6cdd8" stroke="#a7afbe" stroke-width=".25" stroke-linejoin="round"/>
+            <rect x="-2.6" y="2.4" width="5.2" height="1.4" rx=".6" fill="#33405e"/>
+            <line x1="-1.6" y1="2.7" x2="-1.6" y2="1.9" stroke="#8a93a5" stroke-width=".3"/>
+            <line x1="1.6" y1="2.7" x2="1.6" y2="1.9" stroke="#8a93a5" stroke-width=".3"/>
+          </g>
         </g>
 
         <!-- starfield -->
