@@ -7542,6 +7542,27 @@ allows Google Fonts, or self-host Anton.*
   natural, organic elevation shading. Deployed to /golf. Tunable: lobe count (`nlobe`), the `hvgsoft` blur
   radius, the light/dark lobe opacities.
 
+- **CS316 — smaller cup + per-course flags + more natural landscaping (owner: "make the hole itself
+  slightly smaller... give each course their unique flags like real life... add more natural landscaping
+  into all courses").** All in the hole view (`hvTerrain`/`hvGeom`); rendering-only, sim/geometry/score
+  untouched, still cached-per-hole deterministic.
+  • **Smaller hole + ball:** `HV_CUP_RX/RY` 2.15/1.5 → **1.82/1.28**, `HV_GBALL` 0.95 → **0.86** (keeps the
+    realistic ~0.46 ball-to-hole ratio).
+  • **Per-course flags:** every course now flies its OWN flag. `hvFlag(courseKey)` returns a colour + accent
+    + style; six marquee venues get a hand-picked look (Augusta Masters-yellow, Pebble Pacific-blue, Oakmont
+    charcoal/gold, St Andrews white/navy, Kiawah ocean-blue, Whistling red) and every other course gets a
+    **hue-derived** colour from its key hash so all 39 daily courses are distinct (verified 39/39 unique),
+    with two styles (solid / accent-stripe). `hvFlagSVG` renders it; `g.courseKey` now stored in `hvGeom` so
+    the terrain can look it up. Applies everywhere the hole view is used (Daily/Moments/Spotlight/Legend/H2H).
+  • **Natural landscaping (all courses):** a light, universal scatter of **grass tufts** in the rough
+    (small biome-coloured blade clumps, sparse, allowed near the fairway edge since they're low → adds life,
+    not clutter) + **reeds/cattails** on the banks of every pond and creek. New `grassTuft`/`reed` helpers.
+  Verified in Playwright: syntax OK, 39/39 flags distinct, reeds render on water holes, terrain renders on
+  parkland/pine/coastal/desert with 0 page errors; screenshots confirm the per-course flag colours, the
+  reeds on pond banks (incl. the Sawgrass island green), the grass-tuft texture, and the smaller hole.
+  Deployed to /golf. Tunable: `HV_CUP_RX`/`HV_GBALL`, `HV_FLAG_OVR` overrides + the hue formula in `hvFlag`,
+  the grass-tuft density (`GS`/0.55 skip) and reed count.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
