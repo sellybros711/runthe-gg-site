@@ -7847,6 +7847,30 @@ allows Google Fonts, or self-host Anton.*
   /golf. Tunable: `SPONSOR_MONEY`, the per-band template pools + their `d` difficulty ordering, the new-goal
   targets.
 
+- **CS332 — off-season "spin forever" cheat closed (owner: "in the off-season you can spin the wheel, see
+  the result, tap to another page with the nav, and when you return to career it brings you back to before
+  the spin — stop this so people can't cheat and spin forever").** Root cause: the off-season save
+  (`offseasonResumeExtra`) captured the committed state (locked stats, changes used, re-spins remaining) but
+  NOT the in-progress spin — the revealed golfer (`S.current`) and the seen-this-off-season set
+  (`S.revealed`). The free "Spin the Wheel" (`offSpin`, no re-spin cost) also never saved on land. So the
+  bottom-nav "Career" tab, which reloads via `resumeCareer()` from the save, restored the PRE-spin state
+  with `S.current=null` — letting the player spin again for free, forever, without ever spending a re-spin.
+  Fix (3 small changes): (1) `offseasonResumeExtra()` now snapshots `offCurrent` (the revealed golfer, only
+  when on the off-season screen and not mid-animation) + `offRevealed` (`[...S.revealed]`, an array of
+  names); (2) new `offPersistSpin()` fires at both completion points of `reveal()` (reduced-motion + the
+  animated interval), gated to `S.offseason && S.screen==='offseason' && S.current && !S.spinning`, so the
+  instant a spin LANDS it's saved (`offSpin` is free/async, so this is where the commit happens; the daily/
+  career draft paths are unaffected since they aren't on the off-season screen); (3) the `resumeCareer`
+  off-season branch restores `S.current=r.offCurrent||null` and `S.revealed=new Set(r.offRevealed||[])`
+  instead of nulling them. Net: after spinning, leaving, and returning you resume on the SAME golfer and
+  must take a skill or spend a re-spin — no free re-roll. `offReSpin` already saved its re-spin decrement
+  BEFORE revealing, so a rare mid-animation exit still can't refund a re-spin. Signed-in only, matching the
+  rest of career save/resume (career mode requires an account). Verified in Playwright (reduced-motion so
+  `reveal()` is synchronous, `sbSignedIn` stubbed for the LS round-trip): a free spin is saved
+  (`offCurrent`/`offRevealed` present), `resumeCareer()` restores the exact same golfer + revealed set +
+  unchanged re-spins, a repeat free `offSpin()` is a no-op (cheat blocked), and a legit `offReSpin()` still
+  works and costs exactly 1 re-spin — 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
