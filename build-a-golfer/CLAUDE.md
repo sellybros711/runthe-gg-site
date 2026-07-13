@@ -7768,6 +7768,15 @@ allows Google Fonts, or self-host Anton.*
   the mid-season save. Verified in Playwright across 5 seasons: interruptions always land ≥2 events apart
   (e.g. events [1,3,5,7]), **0 adjacent** anywhere, 0 page errors.
 
+- **CS328 — chosen Career Decision option stays legible (owner: "don't like how the selected choice turns
+  grey after selection… it needs to remain legible and clear it was the chosen decision").** The `.sb-chosen`
+  highlight (gold border, gold-tinted fill, white text, "✓ Your answer") was CSS-scoped to `.sbtns` (the
+  press-conference overlay), so a picked DILEMMA (`.dbtns`) got the class but none of the styling and fell
+  through to the grey `.btn:disabled{opacity:.45}` look — grey-on-grey, barely readable. Made the `.sb-chosen`
+  rules container-agnostic (drop the `.sbtns` prefix, `!important` to beat `:disabled`), so the chosen option
+  now stays clearly gold + legible in BOTH overlays. Verified in Playwright: the picked dilemma button
+  computes opacity 1, white text, gold border, "✓ Your answer" tag; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

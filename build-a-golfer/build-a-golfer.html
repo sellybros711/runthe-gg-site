@@ -277,12 +277,14 @@ window.GA_ID='G-L29P5MRWKE';
   .sp-opt .sp-acc{height:4px;width:100%}
   @media (prefers-reduced-motion:reduce){ .flashbulb{animation:none!important;display:none} .sp-opt{transition:none} }
   /* CS291 press-reaction feed — fan tweets + a headline + an occasional opponent quote */
-  /* CS311: the chosen press-conference answer stays highlighted at the top after you pick it */
-  .sbtns .sb-chosen, .sbtns .sb-chosen:disabled{opacity:1; cursor:default; color:#fff; padding-right:96px!important;
-    border:1px solid var(--gold); background:color-mix(in srgb, var(--gold) 16%, rgba(255,255,255,.03));
-    box-shadow:0 0 0 1px var(--gold), 0 5px 16px -7px rgba(235,166,31,.55)}
-  .sbtns .sb-chosen .sub{color:#ffe1a6}
-  .sbtns .sb-chosen::after{content:"✓ Your answer"; position:absolute; right:12px; top:50%;
+  /* CS311/CS328: the chosen answer stays clearly highlighted (gold, legible) after you pick it — both the
+     press-conference (.sbtns) AND the Career Decision (.dbtns) overlays. Was scoped to .sbtns only, so a
+     picked DILEMMA fell through to the grey :disabled look and went illegible. */
+  .sb-chosen, .sb-chosen:disabled{opacity:1!important; cursor:default; color:#fff!important; padding-right:96px!important;
+    border:1px solid var(--gold)!important; background:color-mix(in srgb, var(--gold) 16%, rgba(255,255,255,.03))!important;
+    box-shadow:0 0 0 1px var(--gold), 0 5px 16px -7px rgba(235,166,31,.55)!important}
+  .sb-chosen .sub{color:#ffe1a6!important; opacity:1!important}
+  .sb-chosen::after{content:"✓ Your answer"; position:absolute; right:12px; top:50%;
     transform:translateY(-50%); font:800 9px/1 var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--gold)}
   .pbuzz{margin-top:12px;text-align:left}
   .pb-hd{font:800 9.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:#7fa8b8;margin:0 0 8px}
