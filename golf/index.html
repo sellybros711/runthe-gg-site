@@ -10859,15 +10859,17 @@ const HV_CUP_RX=1.82, HV_CUP_RY=1.28, HV_GBALL=0.86;   // smaller hole + ball, r
 // ---- per-course FLAGS: every course flies its own flag (color + optional accent stripe), like real
 // life. Marquee venues get a hand-picked look; everything else is deterministically derived from the
 // course-key hash, so each course has a consistent, unique flag.
-const HV_FLAG_STYLE=['solid','stripe'];
+// flag DESIGNS — a plain flag + simple patterns/emblems, all drawn clipped to the swallowtail shape so
+// each course can fly something distinct (like real course flags).
+const HV_FLAG_STYLE=['solid','stripe','vbar','tri','dot','cross','diag'];
 const HV_FLAG_ACC=['#ffffff','#ffffff','#f2d94c','#1f3a68'];
 const HV_FLAG_OVR={
   'Augusta National':{c:'#f2c231',a:'#c0392b',s:'solid'},          // Masters yellow
-  'St Andrews Old Course':{c:'#ffffff',a:'#1f3a68',s:'stripe'},    // white / St Andrews navy
+  'St Andrews Old Course':{c:'#1f3a68',a:'#ffffff',s:'cross'},     // navy w/ a white saltire-ish cross
   'Pebble Beach Golf Links':{c:'#1f6fd0',a:'#ffffff',s:'solid'},   // Pacific blue
-  'Oakmont':{c:'#3a3f4a',a:'#f2c94c',s:'solid'},                   // charcoal / gold
+  'Oakmont':{c:'#3a3f4a',a:'#f2c94c',s:'vbar'},                    // charcoal / gold hoist bar
   'Kiawah Island Ocean':{c:'#00789c',a:'#ffffff',s:'stripe'},      // ocean blue
-  'Whistling Straits':{c:'#e23b2e',a:'#ffffff',s:'stripe'} };
+  'Whistling Straits':{c:'#e23b2e',a:'#ffffff',s:'dot'} };         // red w/ white emblem
 // hue-based so nearly every course flies a distinct flag (consistent per course-key hash). Output HEX
 // (not hsl()) so the flag ALWAYS paints — some SVG renderers reject hsl() in a fill presentation attribute.
 function hslHex(h,s,l){ s/=100; l/=100; const k=n=>(n+h/30)%12, a=s*Math.min(l,1-l);
@@ -10875,11 +10877,26 @@ function hslHex(h,s,l){ s/=100; l/=100; const k=n=>(n+h/30)%12, a=s*Math.min(l,1
   return '#'+f(0)+f(8)+f(4); }
 function hvFlag(k){ if(k && HV_FLAG_OVR[k]) return HV_FLAG_OVR[k];
   const h=(k?dHash(k):0x1234)>>>0, hue=h%360, sat=60+((h>>>9)%24), lit=45+((h>>>15)%13);
-  return {c:hslHex(hue,sat,lit), a:HV_FLAG_ACC[(h>>>4)%HV_FLAG_ACC.length], s:HV_FLAG_STYLE[(h>>>3)&1]}; }
-function hvFlagSVG(px,py,fl){ const top=py-15;
+  return {c:hslHex(hue,sat,lit), a:HV_FLAG_ACC[(h>>>4)%HV_FLAG_ACC.length], s:HV_FLAG_STYLE[(h>>>3)%HV_FLAG_STYLE.length]}; }
+// SWALLOWTAIL flag matching the crest logo (a rectangular flag with a V-notch cut into the fly end),
+// plus a clipped accent design per course.
+function hvFlagSVG(px,py,fl){ const top=py-15, W=12, H=6.8, nd=3.4, x2=px+W, ym=top+H/2, yb=top+H;
+  const flagD=`M ${px} ${top} h ${W} l ${-nd} ${(H/2).toFixed(1)} l ${nd} ${(H/2).toFixed(1)} h ${-W} z`;
+  const cid='hvfl'+(((Math.round(px)*1399+Math.round(py))>>>0)).toString(36);
+  const a=fl.a||'#ffffff';
   let f=`<line x1="${px}" y1="${py}" x2="${px}" y2="${top}" stroke="#f4f2ea" stroke-width="1.3"/>`;
-  f+=`<path d="M ${px} ${top} q 5 0.6 9 2.6 q -4.2 1.9 -9 3.4 Z" fill="${fl.c}" stroke="rgba(0,0,0,.4)" stroke-width=".5"/>`;
-  if(fl.s==='stripe') f+=`<path d="M ${px} ${(top+2.1).toFixed(1)} q 4.6 0.6 8.6 2.1 l 0 1.6 q -4.4 -1.4 -8.6 -2.1 Z" fill="${fl.a}"/>`;
+  f+=`<clipPath id="${cid}"><path d="${flagD}"/></clipPath>`;
+  f+=`<path d="${flagD}" fill="${fl.c}" stroke="rgba(0,0,0,.35)" stroke-width=".5"/>`;
+  let d='';
+  switch(fl.s){
+    case 'stripe': d=`<rect x="${px}" y="${(top+H*0.38).toFixed(1)}" width="${W}" height="${(H*0.26).toFixed(1)}" fill="${a}"/>`; break;
+    case 'vbar':   d=`<rect x="${px}" y="${top}" width="${(W*0.34).toFixed(1)}" height="${H}" fill="${a}"/>`; break;
+    case 'tri':    d=`<path d="M ${px} ${top} L ${(px+W*0.62).toFixed(1)} ${ym.toFixed(1)} L ${px} ${yb.toFixed(1)} z" fill="${a}"/>`; break;
+    case 'dot':    d=`<circle cx="${(px+W*0.42).toFixed(1)}" cy="${ym.toFixed(1)}" r="${(H*0.3).toFixed(1)}" fill="${a}"/>`; break;
+    case 'cross':  d=`<rect x="${(px+W*0.34).toFixed(1)}" y="${top}" width="${(W*0.17).toFixed(1)}" height="${H}" fill="${a}"/><rect x="${px}" y="${(top+H*0.42).toFixed(1)}" width="${W}" height="${(H*0.17).toFixed(1)}" fill="${a}"/>`; break;
+    case 'diag':   d=`<path d="M ${px} ${top} L ${x2.toFixed(1)} ${top} L ${px} ${yb.toFixed(1)} z" fill="${a}"/>`; break;
+  }
+  if(d) f+=`<g clip-path="url(#${cid})">${d}</g>`;
   return f; }
 // The pin ROTATES per play (like a real course's 4 hole locations). It's cosmetic — the score is engine-
 // decided — so we derive the rotation from whatever play context is current (day/attempt/round/match).
