@@ -7644,6 +7644,33 @@ allows Google Fonts, or self-host Anton.*
   celebration still renders `.celeb-check`. Deployed to /golf. (Other British spellings — favour/honour/
   centre/-ise — left as-is; only the two named words were requested.)
 
+- **CS321 — course-record celebration only fires on the FIRST time you beat it (owner: "the course record
+  pop up comes up every time I enter the daily after earning the record… looks like a glitch, pops up a
+  bunch").** Root cause in `scrDailyResult`: `r = S.dailyResult || dailyBest()`. On a fresh finish
+  `S.dailyResult` is the stable in-memory object, so the `r._crCelebrated` guard persists across the
+  finish's own re-renders (crLoad/dbLoad→render) and the pop fires once. But on RE-ENTRY (`startDailyChallenge`
+  routes a played day to the result screen with `S.dailyResult=null`), `r` becomes `dailyBest()` — a FRESH
+  object re-read from `bag_daily` storage each time, whose `_crCelebrated` is always falsy — so the
+  `celebrateCourseRecord` pop re-fired on every visit. Fixed by gating it on `justPlayed` (`!!S.dailyResult`)
+  so it only pops on the fresh finish that earned the record; the gold "New Course Record" banner still shows
+  on re-view (correct — you DO hold it), only the animated pop-up is suppressed. The Monthly Spotlight path
+  was already correct (its celebration is gated on `S.spotResult`, which is null on re-entry). Verified in
+  Playwright: pop fires once on the finish and stays at 1 across repeated re-entries; 0 page errors.
+- **CS322 — full American-spelling sweep (owner: "I want all American spelling, this is a game made by
+  Americans").** Follows CS320 (colour→color, cheque→check). Case-preserving replaces across the game file,
+  identifier/data-ID-safe: **centre→center** (33 — incl. the `centreLabel` local var, renamed consistently),
+  **favour→favor / Favour→Favor** (8 — favourite→favorite, "Fan Favorite" persona/achievement),
+  **honour→honor / Honour→Honor** (7 — "Season Honors", "Honor Roll" achievement, the `honours` local var
+  renamed consistently), **theatre→theater**, **labelled→labeled**, **recognised→recognized**,
+  **categorised→categorized**, and **Grey→Gray** (capital only → display strings like "Heritage Gray").
+  The lowercase `grey` is DELIBERATELY LEFT where it's a persisted data ID (`id:'grey'` in PANTS/SHOES/HAIRS,
+  the `hogangrey` shirt id) so saved player looks don't break; `cosTitle` gained a `grey→'Gray'` case so the
+  pants/shoes swatch LABEL still shows American "Gray" while the stored id stays `grey`. Verified: 0 remaining
+  British spellings in the candidate set (bar the intentional data-ID `grey`), the renamed vars have no
+  leftover/duplicate refs, node --check clean, cosTitle('grey')==='Gray', Trophy Room + shop + daily render
+  with 0 page errors. (Word-choice Briticisms like "whilst"/"amongst" left as-is — those are word choices,
+  not spellings.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

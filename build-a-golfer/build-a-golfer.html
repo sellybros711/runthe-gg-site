@@ -1452,7 +1452,7 @@ const COSMETIC_SHIRTS=[
   {id:'mastersgrn', m:'#1f7a44', s:'#155a31', name:'Invitational Green',  req:m=>m.maj.masters>=1,  reqText:'Win The Magnolia Invitational, the champion blazer'},
   {id:'orange',     m:'#e8702a', s:'#c25a1e', name:'Sunday Orange',  req:m=>m.top10>=10,       reqText:"Record 10 top-10 finishes, Fowler's orange"},
   {id:'pink',       m:'#e0589b', s:'#bd4480', name:'Matchplay Pink',   req:m=>m.rivalWins>=3,    reqText:"Beat your rival in 3 seasons, Poulter's pink"},
-  {id:'hogangrey',  m:'#6b7682', s:'#545d67', name:'Heritage Grey',     req:m=>m.majors>=3,       reqText:'Win 3 major championships, Hogan grey'},
+  {id:'hogangrey',  m:'#6b7682', s:'#545d67', name:'Heritage Gray',     req:m=>m.majors>=3,       reqText:'Win 3 major championships, Hogan grey'},
   {id:'bronze',     m:'#b5763a', s:'#92602e', name:'Bronze',         req:m=>m.wins>=3,         reqText:'Win 3 tournaments'},
   {id:'linkssky',   m:'#38a8d8', s:'#2c87ad', name:'Links Sky',      req:()=>repAtLeast('Star'), reqText:'Reach Tour Rep: Star'},
 ];
@@ -1557,8 +1557,8 @@ function trophyCabinetHTML(m){
     +trophyChip('🏆','Tour Cup',m.fedexCups||0,'var(--gold)')
     +trophyChip('🏌','Team Cups',m.cupWins||0,'#7ec8ff')
     +trophyChip('🎖','Captaincies',m.cupCaptain||0,'#e3b94f');
-  // Shelf 3, season honours / awards
-  const honours=trophyChip('👑','Player of Year',m.poySeasons||0,'var(--gold)')
+  // Shelf 3, season honors / awards
+  const honors=trophyChip('👑','Player of Year',m.poySeasons||0,'var(--gold)')
     +trophyChip('🌟','Rookie of Year',m.roySeasons||0,'#9fe0c0')
     +trophyChip('💰','Money Title',m.moneyLeaderSeasons||0,'#35d6a0')
     +trophyChip('🎯','Scoring Title',m.scoringSeasons||0,'#7ec8ff')
@@ -1570,11 +1570,11 @@ function trophyCabinetHTML(m){
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;align-items:end">${majorCells}</div>
     </div>
     ${trophyShelf('Medals &amp; Cups', medals)}
-    ${trophyShelf('Season Honours', honours)}
+    ${trophyShelf('Season Honors', honors)}
     <div class="center small muted" style="margin-top:14px;padding-top:11px;border-top:1px solid rgba(255,255,255,.07)">Tour wins <b style="color:var(--gold)">${m.wins||0}</b> · Majors <b style="color:var(--gold)">${m.majors||0}</b>${(m.cupApps||0)>0?` · Cup apps <b style="color:#7ec8ff">${m.cupApps}</b>`:''}${spotWins()>0?` · ⭐ Spotlights <b style="color:#16b5a6">${spotWins()}</b>`:''}</div></div>`;
 }
 /* ================= ACHIEVEMENTS / MILESTONES (revamped profile) =================
-   An extensive, categorised checklist. Each achievement has a get(m)>=goal test against a merged metric
+   An extensive, categorized checklist. Each achievement has a get(m)>=goal test against a merged metric
    bag (`achMetrics`): lifetime career stats (lt), daily stats, spotlight/rival wins, and SITUATIONAL flags
    captured at the moment they happen (playoff wins, wire-to-wire, comebacks, low rounds, etc., in bag_ach).
    Completing achievements awards POINTS → a named Tour Rep rank (the "keep playing" hook) and unlocks. */
@@ -1862,7 +1862,7 @@ const ACH=[].concat(
    {id:'wc_25',cat:'Progression',name:'Challenge Seeker', desc:'Complete 25 Weekly Challenges.', goal:25, pts:75, get:m=>m.weeklyDone},
    {id:'wc_75',cat:'Progression',name:'Challenge Conqueror',desc:'Complete 75 Weekly Challenges.',goal:75,pts:150,get:m=>m.weeklyDone}],
   // ---- Reputation & Sponsors ----
-  [{id:'rep_fan60', cat:'Reputation & Sponsors',name:'Fan Favourite',      desc:'Become a popular player (60+ Fans).',            goal:60,pts:30, get:m=>m.maxFans},
+  [{id:'rep_fan60', cat:'Reputation & Sponsors',name:'Fan Favorite',      desc:'Become a popular player (60+ Fans).',            goal:60,pts:30, get:m=>m.maxFans},
    {id:'rep_fan78', cat:'Reputation & Sponsors',name:'Superstar Following', desc:'Reach superstar popularity (78+ Fans).',        goal:78,pts:75, get:m=>m.maxFans},
    {id:'rep_res60', cat:'Reputation & Sponsors',name:'Respected',           desc:'Earn the tour’s respect (60+ Respect).',   goal:60,pts:30, get:m=>m.maxRespect},
    {id:'rep_res78', cat:'Reputation & Sponsors',name:'Revered',             desc:'Become revered on tour (78+ Respect).',         goal:78,pts:75, get:m=>m.maxRespect},
@@ -1882,7 +1882,7 @@ const ACH=[].concat(
    {id:'cm_con15',cat:'Daily Mastery',name:'Road Warrior',    desc:'Beat the tour average at 15 different courses.', goal:15,pts:75, get:m=>m.coursesConquered},
    {id:'cm_con39',cat:'Daily Mastery',name:'Conquered the Tour',desc:'Beat the tour average at all 39 daily courses.',goal:39,pts:175,get:m=>m.coursesConquered},
    {id:'cm_a5',   cat:'Daily Mastery',name:'Straight-A Golfer',desc:'Earn an A-grade round at 5 different courses.',  goal:5, pts:50, get:m=>m.coursesMasteredA},
-   {id:'cm_a15',  cat:'Daily Mastery',name:'Honour Roll',     desc:'Earn an A-grade round at 15 different courses.', goal:15,pts:120,get:m=>m.coursesMasteredA}],
+   {id:'cm_a15',  cat:'Daily Mastery',name:'Honor Roll',     desc:'Earn an A-grade round at 15 different courses.', goal:15,pts:120,get:m=>m.coursesMasteredA}],
   // ---- The Build ----
   [{id:'bld_99',cat:'The Build',name:'The Perfect Golfer',desc:'Build a 99 OVR golfer.',goal:99,pts:250,get:m=>m.maxOvr}]
 );
@@ -4330,7 +4330,7 @@ function cosmeticItems(cat){
   if(cat==='shoes') return SHOES.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
   return [];
 }
-function cosTitle(id){ return String(id).charAt(0).toUpperCase()+String(id).slice(1); }
+function cosTitle(id){ if(id==='grey') return 'Gray'; return String(id).charAt(0).toUpperCase()+String(id).slice(1); }
 // grandfather a returning player's currently-worn look so the shop launch doesn't strip it (once, on sign-in)
 function grandfatherLook(){ if(!sbSignedIn()||!S.look) return; const s=coinState(); let ch=false;
   const own=(cat,id)=>{ if(id==null) return; const k=cosKey(cat,id); if(!FREE_COSMETICS[k]&&!s.owned[k]){ s.owned[k]=1; ch=true; } };
@@ -5013,7 +5013,7 @@ function overlayLeaderboard(screen){
     // CS268: top-3 podium (only on the default best-first view, not the low→high "bottom of the DB" view)
     let podiumHTML='';
     if(dir!=='asc' && rows.length>=3){
-      const pod=[rows[1],rows[0],rows[2]];   // DOM order 2·1·3 so #1 sits centre/elevated
+      const pod=[rows[1],rows[0],rows[2]];   // DOM order 2·1·3 so #1 sits center/elevated
       const cls=['p2','p1','p3'], med=['🥈','🥇','🥉'];
       podiumHTML='<div class="lbpodium">'+pod.map((r,di)=>{ const id=lbCanon(r), v=lbStatVal(r,tab,sort);
         return `<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="nm">${esc(id.name)}</div><div class="vl">${v}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`; }).join('')+'</div>';
@@ -5637,14 +5637,14 @@ function startRoll(){
   },1700);
 }
 function toast(msg, ms){
-  // sit ABOVE the "scroll to continue" pill when it's on the page (both live bottom-centre), so they don't clash
+  // sit ABOVE the "scroll to continue" pill when it's on the page (both live bottom-center), so they don't clash
   const bottom = document.querySelector('.scrollcue') ? 'calc(74px + env(safe-area-inset-bottom,0px) + var(--botnav-space,0px))' : 'calc(26px + var(--botnav-space,0px))';
   const t=$(`<div style="position:fixed;left:50%;bottom:${bottom};transform:translateX(-50%);z-index:45;max-width:min(92vw,420px);text-align:center;line-height:1.4;background:#0a1626;color:var(--oncard);border:1px solid var(--gold);border-radius:10px;padding:11px 16px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.4)">${msg}</div>`);
   document.body.appendChild(t); setTimeout(()=>t.remove(), ms||1800);
 }
 
 /* ---------- setup (create your golfer) ---------- */
-// a labelled section header with a divider rule, groups the form so it doesn't read as a wall of controls
+// a labeled section header with a divider rule, groups the form so it doesn't read as a wall of controls
 function setupHeader(label){ return $(`<div style="display:flex;align-items:center;gap:10px;margin:13px 0 3px"><span style="letter-spacing:.08em;text-transform:uppercase;font-size:12.5px;font-weight:800;color:#cadecf">${esc(label)}</span><span style="flex:1;height:1px;background:rgba(255,255,255,.1)"></span></div>`); }
 function scrSetup(){
   const guest=!sbSignedIn();
@@ -5802,7 +5802,7 @@ function avKitLp(hex){ const c=avHexRgb(hex), l=avRgbHsl(c.r,c.g,c.b).l, d=Math.
 const AV_KIT_MEAN={ male:{shirt:0.965,pants:0.789,shoes:0.944}, female:{shirt:0.968,pants:0.817,shoes:0.956} };
 function avKitTint(r,g,b,hex,baseMean,satB){
   const s=avRgbHsl(r,g,b), t=avHexRgb(hex), th=avRgbHsl(t.r,t.g,t.b);
-  let sl=th.l+(s.l-baseMean)*0.9;                       // recentre lightness on the target, keep shading
+  let sl=th.l+(s.l-baseMean)*0.9;                       // recenter lightness on the target, keep shading
   sl=Math.max(0,Math.min(1,sl));
   const ss=Math.max(0,Math.min(1,th.s*(satB==null?1:satB)));
   return avHslRgb(th.h,ss,sl);
@@ -5882,9 +5882,9 @@ function avMaskRegionFull(r,g,b){ if(r<45&&g<45&&b<45) return null;
   return null; }
 // base-body anatomy (base-local px) — measured from the base masks — for anchoring accessories
 const AV_ANAT={
-  // faceCx = the FACE-FEATURE centre (nose/mouth axis) the eye judges "centred" by — the head is drawn
-  // slightly turned so it differs from the silhouette headCx; the cap/glasses centre on faceCx.
-  // handY = the fist centre; gripY = where a held club's grip sits (just above the fist); hipLx = belt/pocket
+  // faceCx = the FACE-FEATURE center (nose/mouth axis) the eye judges "centerd" by — the head is drawn
+  // slightly turned so it differs from the silhouette headCx; the cap/glasses center on faceCx.
+  // handY = the fist center; gripY = where a held club's grip sits (just above the fist); hipLx = belt/pocket
   // for a clipped marker. Measured per-gender from the base art (the female is skirted with hands higher-relative).
   // glove{Cx,Cy,Rx,Ry} = an ellipse over the RIGHT fist; the glove is painted by recoloring the hand's own
   // skin pixels white (a golf glove is a form-fitting white hand), so it always fits perfectly.
@@ -5895,24 +5895,24 @@ const AV_ANAT={
 // the exact spot + scale it belongs on a full-body golfer (cap on the head, glasses on the face, shoes at
 // the feet, club at the side, ball at address). So there is NO per-slot placement/trim maths any more:
 // every accessory (and the base golfer) is composited into one shared frame with a single fixed transform.
-const ACC_NATIVE_W=1024, ACC_NATIVE_H=1792;   // shared art canvas: the golfer is centred at 0.5, head~0.045, feet~0.972
+const ACC_NATIVE_W=1024, ACC_NATIVE_H=1792;   // shared art canvas: the golfer is centerd at 0.5, head~0.045, feet~0.972
 // We composite the base golfer AND every accessory into ONE shared frame with the SAME transform, so the
-// pre-positioned art lands 1:1 on the body (full-canvas overlay, per the asset spec — no per-item trim/centre).
+// pre-positioned art lands 1:1 on the body (full-canvas overlay, per the asset spec — no per-item trim/center).
 // The frame keeps a uniform horizontal window of the art (crops only the always-empty far margins, same window
 // for base + all accessories → alignment preserved) and maps the art height to the base height.
 // Horizontal window kept from the art (same for base + every accessory → alignment preserved). Cropped tight
 // to the widest content: the glove pins the left (~0.230), the side club pins the right (~0.838). This drops
-// the always-empty far margins so the golfer reads large; the golfer (centred at 0.5 in the art) ends up a
-// touch left of the frame centre, leaving room for the club on the right.
+// the always-empty far margins so the golfer reads large; the golfer (centerd at 0.5 in the art) ends up a
+// touch left of the frame center, leaving room for the club on the right.
 const ACC_WL=0.225, ACC_WR=0.845;
 const AV_FRAME_H=1400;
 const _accScale=AV_FRAME_H/ACC_NATIVE_H;                                  // art→frame scale (~0.781)
 const _accSrcX=ACC_WL*ACC_NATIVE_W, _accSrcW=(ACC_WR-ACC_WL)*ACC_NATIVE_W;
 const AV_FRAME_W=Math.round(_accSrcW*_accScale);                          // ~496
-const GOLFER_CX=Math.round((0.5-ACC_WL)/(ACC_WR-ACC_WL)*AV_FRAME_W);      // golfer's x-centre inside the frame
+const GOLFER_CX=Math.round((0.5-ACC_WL)/(ACC_WR-ACC_WL)*AV_FRAME_W);      // golfer's x-center inside the frame
 // The V2 art was drawn for a narrower reference golfer, so at height-alignment each accessory is undersized
 // for our base golfer's actual head/hands/feet (measured: cap 102px vs head ~126px, shoe-pair 168 vs foot
-// span ~338). Fix: scale each accessory UP around its own centre (frac of the art canvas) so it grows IN
+// span ~338). Fix: scale each accessory UP around its own center (frac of the art canvas) so it grows IN
 // PLACE (stays aligned) to fit. Per-slot k tuned to the base anatomy.
 const ACC_FIT={
   head:  {k:1.30, cx:0.500, cy:0.071},
@@ -5924,17 +5924,17 @@ const ACC_FIT={
   ball:  {k:1.25, cx:0.500, cy:0.936},
   charm: {k:1.22, cx:0.429, cy:0.464},
 };
-// draw an accessory scaled by its per-slot k around its centre (the centre point stays fixed, so it grows in place)
+// draw an accessory scaled by its per-slot k around its center (the center point stays fixed, so it grows in place)
 function avDrawAcc(ctx,img,slot){
   const f=ACC_FIT[slot]||{k:1,cx:0.5,cy:0.5}, k=f.k;
   const fxc=(f.cx*ACC_NATIVE_W-_accSrcX)/_accSrcW*AV_FRAME_W, fyc=f.cy*AV_FRAME_H;
   ctx.drawImage(img, _accSrcX,0,_accSrcW,ACC_NATIVE_H, fxc*(1-k),fyc*(1-k), AV_FRAME_W*k,AV_FRAME_H*k);
 }
 // The shoe art is a PAIR with a narrow stance; our golfer's feet are spread wide. Split it down the middle
-// and place each shoe under the correct foot (measured foot centres per gender, mapped through the base transform).
+// and place each shoe under the correct foot (measured foot centers per gender, mapped through the base transform).
 const FOOT_ANCHOR={ male:{lx:97,rx:325,y:1337,w:118}, female:{lx:83,rx:316,y:1337,w:90} };
 const SHOE_ART={ x0:0.396, mid:0.5005, x1:0.605, y0:0.888, y1:0.975 };   // shoe-pair content region (frac of art)
-// hand centres (base px, measured from the masks): the glove goes on the left hand, the club is gripped
+// hand centers (base px, measured from the masks): the glove goes on the left hand, the club is gripped
 // in the right hand. `groundY` is where the club head rests. Like the shoes, these place the accessory on
 // the base golfer's ACTUAL anatomy (the V2 art drew them for a narrower reference golfer, so an unscaled
 // full-canvas overlay lands off the body).
@@ -5952,7 +5952,7 @@ function avContentBBox(img){
     for(let y=0;y<ih;y++){ const row=y*iw; for(let x=0;x<iw;x++){ if(d[(row+x)*4+3]>30){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; } } }
     if(x1<x0){ c={x0:0,y0:0,x1:1,y1:1,gripFrac:0.5}; }
     else {
-      // grip = x-centre of the topmost ~9% of content rows (for a club, this is the handle end)
+      // grip = x-center of the topmost ~9% of content rows (for a club, this is the handle end)
       const gtop=y0+Math.max(1,Math.round((y1-y0)*0.09)); let gx0=iw,gx1=-1;
       for(let y=y0;y<gtop;y++){ const row=y*iw; for(let x=x0;x<=x1;x++){ if(d[(row+x)*4+3]>30){ if(x<gx0)gx0=x; if(x>gx1)gx1=x; } } }
       const gc=(gx1<gx0)?(x0+x1)/2:(gx0+gx1)/2;
@@ -5977,7 +5977,7 @@ function avDrawClub(ctx,img,g,bdx,bdy,bsc){
   const sx=bb.x0*iw, sy=bb.y0*ih, sw=(bb.x1-bb.x0)*iw, sh=(bb.y1-bb.y0)*ih;
   const gripX=bdx+ha.rx*bsc, gripY=bdy+(ha.y-14)*bsc, groundY=bdy+ha.groundY*bsc;
   const dh=groundY-gripY, dw=dh*(sw/sh);
-  // align the club's grip (not the whole-image centre) onto the hand
+  // align the club's grip (not the whole-image center) onto the hand
   const dx=gripX-(bb.gripFrac==null?0.5:bb.gripFrac)*dw;
   ctx.drawImage(img, sx,sy,sw,sh, dx, gripY, dw, dh);
 }
@@ -5987,7 +5987,7 @@ function avDrawShoes(ctx,img,g,bdx,bdy,bsc){
   const k=ACC_FIT.shoes.k, scale=AV_FRAME_W*k/_accSrcW;                  // same px scale the shoe slot used
   const ay0=S.y0*ih, ah=(S.y1-S.y0)*ih, dh=ah*scale;
   const destTop=0.926*AV_FRAME_H*(1-k)+S.y0*AV_FRAME_H*k;               // same vertical band as before
-  const FLx=bdx+fa.lx*bsc, FRx=bdx+fa.rx*bsc;                            // foot centres in frame
+  const FLx=bdx+fa.lx*bsc, FRx=bdx+fa.rx*bsc;                            // foot centers in frame
   const lsw=(S.mid-S.x0)*iw, rsw=(S.x1-S.mid)*iw;
   ctx.drawImage(img, S.x0*iw,ay0, lsw,ah, FLx-lsw*scale/2,destTop, lsw*scale,dh);   // left shoe under left foot
   ctx.drawImage(img, S.mid*iw,ay0, rsw,ah, FRx-rsw*scale/2,destTop, rsw*scale,dh);  // right shoe under right foot
@@ -6055,7 +6055,7 @@ function paintAvatarFull(canvas, look){
       const _bdw=bw*_bsc, _bdh=bh*_bsc, _bdx=Math.round(GOLFER_CX-_bdw/2), _bdy=Math.round(GB_HEAD*AV_FRAME_H-BASE_TOP*_bsc);
       const off=document.createElement('canvas'); off.width=AV_FRAME_W; off.height=AV_FRAME_H;
       const ctx=off.getContext('2d');
-      // recolor the base via its mask (temp at native size), then place it centred in the frame
+      // recolor the base via its mask (temp at native size), then place it centerd in the frame
       const tmp=document.createElement('canvas'); tmp.width=bw; tmp.height=bh;
       const tctx=tmp.getContext('2d',{willReadFrequently:true}); tctx.drawImage(base.img,0,0,bw,bh);
       const id=tctx.getImageData(0,0,bw,bh), d=id.data;
@@ -6621,7 +6621,7 @@ function startSeason(majorsOnly){
   S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0; S.seasonRank=null;
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false; S._impactShown=false;   // unlocked during THIS season (shown on the summary)
   S._bannerNet=null; S._confBar=null; S._respBar=null;   // CS284/285: reset the banner count-up + meter-glide baselines so a new season's first render doesn't animate from prior values
-  S._railIdx=null; S._railScroll=null;                   // CS285: reset the season-rail smooth-scroll tracking so a new season snaps to centre (no glide from last season's schedule position)
+  S._railIdx=null; S._railScroll=null;                   // CS285: reset the season-rail smooth-scroll tracking so a new season snaps to center (no glide from last season's schedule position)
   if(S.career && S.career.story){ S.career.story.seasonCount=0; }   // reset the per-season storyline cap (CS225)
   S.season.stops=0; S.season.momentsShown=0; S.season.grudgeShown=0;   // shared interruption budget + per-season grudge cap (CS295)
   if(!S.daily && !S.circuitMode && S.career){   // CS226 momentum: carry confidence over with gentle reversion; snapshot followers for the season delta
@@ -6934,7 +6934,7 @@ function repConfBaseline(){ return 50 + (repRespect()-50)*0.28; }   // reversion
 const REP_PERSONAS={
   superstar:{name:'The Complete Superstar', d:'Adored by the fans and respected by every pro.'},
   villain:{name:'The Pantomime Villain', d:'The star the tour loves to hate — huge following, few friends inside the ropes.'},
-  showman:{name:'The Fan Favourite', d:'The crowds can’t get enough of you.'},
+  showman:{name:'The Fan Favorite', d:'The crowds can’t get enough of you.'},
   gentleman:{name:'The Gentleman of the Tour', d:'A players’ player — universally respected.'},
   pro:{name:'The Quiet Professional', d:'Low-key, all business, respected in the locker room.'},
   radar:{name:'Under the Radar', d:'Flying below the radar — time to make some noise.'},
@@ -7030,7 +7030,7 @@ const STORYLINES=[
  {id:'rival_grudge', tag:'THE RIVALRY', pri:2, when:c=>!!c.rivalName && (c.grudgeW+c.grudgeL)>=2, title:c=>`The ${esc(c.rivalName)} rivalry`,
   body:c=>`You and ${esc(c.rivalName)} have gone head-to-head down the stretch ${c.grudgeW+c.grudgeL} times now (you’re ${c.grudgeW}–${c.grudgeL}). Everyone wants your take on the rivalry.`,
   ch:[{t:c=>c.grudgeW>c.grudgeL?'“I own that matchup”':'“I’ll get the better of them”',s:'Stake your claim',tr:'brash',conf:0.4,fan:1,risk:0.4,
-        r:'Pure theatre. The fans eat up the beef and you look every bit the star.',head:c=>`Called out ${c.rivalName} over their rivalry`,
+        r:'Pure theater. The fans eat up the beef and you look every bit the star.',head:c=>`Called out ${c.rivalName} over their rivalry`,
         rBad:'Bold talk that ages badly the moment they beat you again. The room smells insecurity.',headBad:c=>`Overplayed the ${c.rivalName} rivalry`},
       {t:'Credit the rivalry for your best golf',s:'Respect it',tr:'humble',conf:0.3,fol:0.06,r:'Gracious and true. A rivalry for the ages needs two greats.',head:c=>`Credited the ${c.rivalName} rivalry`},
       {t:'Downplay it entirely',s:'Just another player',tr:'clutch',conf:0.3,r:'Ice cold. You give them nothing.',head:'Downplayed the rivalry'}]},
@@ -7040,8 +7040,8 @@ const STORYLINES=[
       {t:'Quick wave, stay locked in',s:'Tunnel vision',tr:'clutch',conf:0.4,r:'All business. Your focus is razor-sharp.',head:'All business at the ropes'}]},
  {id:'media_fav', tag:'THE STORY', when:c=>c.rank<=3 && c.seasons>=1, title:c=>'You’re the story of the season',
   body:c=>`Sitting #${c.rank} on the money list, the media has crowned you the man to beat. The hype machine is loud.`,
-  ch:[{t:'Embrace the spotlight',s:'Own the moment',tr:'showman',conf:0.4,fan:1,risk:0.28,r:'You lean in. Pressure is a privilege, and you look built for it.',head:'Embraced favourite status',
-        rBad:'The hype gets in your head. Wearing the favourite tag turns out to be heavier than it looked.',headBad:'Let favourite status become a weight'},
+  ch:[{t:'Embrace the spotlight',s:'Own the moment',tr:'showman',conf:0.4,fan:1,risk:0.28,r:'You lean in. Pressure is a privilege, and you look built for it.',head:'Embraced favorite status',
+        rBad:'The hype gets in your head. Wearing the favorite tag turns out to be heavier than it looked.',headBad:'Let favorite status become a weight'},
       {t:'Downplay it',s:'Head down',tr:'humble',conf:0.3,r:'You wave it off and keep grinding.',head:'Shrugged off the hype'},
       {t:'Ignore the noise',s:'Blinders on',tr:'gritty',conf:0.4,r:'You tune it all out. Just golf.',head:'Tuned out the noise'}]},
  {id:'slump', tag:'THE STORY', when:c=>c.cold, title:c=>'Whispers of a slump',
@@ -7143,7 +7143,7 @@ const STORYLINES=[
   body:c=>`On the range your caddie leans in, dead serious: “Boss… the other loopers are talking. That stuff you keep telling the press? It’s not a great look for either of us.”`,
   ch:[{t:'“You’re right — I’ll rein it in”',s:'Own it',tr:'humble',respD:10,fansD:-1,conf:0.2,r:'He nods and shoulders the bag. Word gets round the caddie shack that you’re alright after all.',head:'Took his caddie’s advice to heart'},
       {t:'“They’re all just jealous”',s:'No apologies',tr:'brash',fansD:4,respD:-4,fan:1,risk:0.35,r:'He shrugs and picks the bag back up. You do you.',head:'Brushed off his own caddie’s warning',rBad:'He’s not the last one you’ll wave off this year. The whispers only get louder.',headBad:'Blew off his own caddie — and it spread'},
-      {t:'Buy the whole caddie shack a round',s:'Smooth it over',tr:'fanFav',respD:6,fansD:3,fol:0.03,r:'A crate of cold ones in the caddie shack works wonders. Instantly everyone’s favourite.',head:'Won over the caddie shack with a round'}]},
+      {t:'Buy the whole caddie shack a round',s:'Smooth it over',tr:'fanFav',respD:6,fansD:3,fol:0.03,r:'A crate of cold ones in the caddie shack works wonders. Instantly everyone’s favorite.',head:'Won over the caddie shack with a round'}]},
  {id:'agent_panic', tag:'THE PHONE CALL', pri:3, when:c=>c.respect<=24 && c.seasons>=1, title:c=>'Your agent is sweating',
   body:c=>`Your agent calls, voice tight: “I just got off the phone with a sponsor. They’re ‘reviewing the relationship.’ People with money don’t love the villain act. Help me out here.”`,
   ch:[{t:'“Tell them I’ll tone it down”',s:'Protect the bag',tr:'humble',respD:9,fansD:-2,r:'Your agent exhales. The sponsor stays — for now.',head:'Reeled it in to keep a sponsor happy'},
@@ -7155,7 +7155,7 @@ const STORYLINES=[
       {t:'Start the redemption arc',s:'Win them back',tr:'humble',respD:9,fansD:-3,conf:0.2,r:'A softer, humbler you. The comeback story writes itself and the purists come around.',head:'Began a redemption arc'}]},
  {id:'elder_shot', tag:'THE LEGEND SPEAKS', pri:3, when:c=>c.respect<=30 && c.careerWins>=3, title:c=>'A tour legend takes a shot',
   body:c=>`A hall-of-famer, mic in hand: “Back in my day we let the golf do the talking. This one could learn some manners.” The clip is everywhere.`,
-  ch:[{t:'Pay your respects publicly',s:'Honour the legend',tr:'humble',respD:11,fansD:-1,conf:0.1,r:'You tip your cap to a great. The legend nods. Class recognised.',head:'Tipped his cap to a tour legend'},
+  ch:[{t:'Pay your respects publicly',s:'Honor the legend',tr:'humble',respD:11,fansD:-1,conf:0.1,r:'You tip your cap to a great. The legend nods. Class recognized.',head:'Tipped his cap to a tour legend'},
       {t:'“Different era, old timer”',s:'Clap back',tr:'brash',fansD:6,respD:-4,fan:1,risk:0.45,r:'The generational war goes viral. The kids love it; the establishment does not.',head:'Clapped back at a tour legend',rBad:'Disrespecting an icon is a bad look on everyone. Even your own camp winces.',headBad:'Took a swing at a beloved legend — and missed',folBad:0.05}]},
  {id:'underexposed', tag:'THE MARKETING MEETING', pri:3, when:c=>c.fans<=22 && c.seasons>=2, title:c=>'“Nobody knows who you are”',
   body:c=>`Your agent slides a marketing report across the table: “You’re one of the best players out here and you have the personality of a driving-range mat. Sponsors want a STORY. Give me something.”`,
@@ -7164,12 +7164,12 @@ const STORYLINES=[
       {t:'Do one viral trick-shot video',s:'Meet them halfway',tr:'fanFav',fansD:6,respD:1,fol:0.06,r:'A behind-the-back wedge spin racks up millions of views. Effortless.',head:'Went viral with a trick-shot clip'}]},
  {id:'gentleman_tribute', tag:'A CLASS ACT', pri:2, when:c=>c.respect>=76 && c.seasons>=2, title:c=>'The gentleman of the tour',
   body:c=>`Peers, officials and reporters keep using the same word about you: class. A magazine wants to run a feature on the most respected player in the game.`,
-  ch:[{t:'Let your actions speak',s:'Quiet class',tr:'humble',respD:4,conf:0.3,r:'You keep it understated, which only makes the tribute land harder.',head:'Honoured as the gentleman of the tour'},
+  ch:[{t:'Let your actions speak',s:'Quiet class',tr:'humble',respD:4,conf:0.3,r:'You keep it understated, which only makes the tribute land harder.',head:'Honored as the gentleman of the tour'},
       {t:'Use the platform for good',s:'Pay it forward',tr:'loyal',respD:3,fansD:3,fol:0.07,r:'You turn the spotlight toward the game’s next generation. Beautifully done.',head:'Used his good name to lift the game'}]},
  {id:'crossover', tag:'CROSSOVER STAR', pri:2, when:c=>c.fans>=68 && c.respect>=64, title:c=>'Bigger than golf',
   body:c=>`Adored by fans AND respected by peers — a rare combination. A major brand wants you as the face of a global campaign that goes way beyond golf.`,
   ch:[{t:'Become the face of the game',s:'Transcend the sport',tr:'showman',fansD:6,respD:1,fan:1,fol:0.1,r:'Billboards, ad breaks, the lot. You’re a household name now.',head:'Became the crossover face of the game'},
-      {t:'Keep golf at the centre',s:'Stay grounded',tr:'humble',respD:5,fansD:2,conf:0.2,r:'You take the deal but keep the main thing the main thing. Everyone respects it more.',head:'Went global without losing the plot'}]}
+      {t:'Keep golf at the center',s:'Stay grounded',tr:'humble',respD:5,fansD:2,conf:0.2,r:'You take the deal but keep the main thing the main thing. Everyone respects it more.',head:'Went global without losing the plot'}]}
 ];
 function maybeStoryline(ce){
   if(S.daily || S.circuitMode || !S.career) return null;
@@ -9104,7 +9104,7 @@ function seasonRailNode(){
   });
   // Center the current event. CS285: glide SMOOTHLY when the schedule ADVANCES (event to event) so the
   // calendar reads as a clean scroll; on a same-event re-render (the many mid-round redraws) snap straight
-  // to centre so it never jitters. Container-only scroll, never moves the page. Reduced-motion = snap.
+  // to center so it never jitters. Container-only scroll, never moves the page. Reduced-motion = snap.
   requestAnimationFrame(()=>{ try{
     const cur=rail.querySelector('.srev.cur'); if(!cur||!rail.clientWidth) return;
     const target=Math.max(0, cur.offsetLeft - rail.clientWidth/2 + cur.clientWidth/2);
@@ -11083,7 +11083,7 @@ function hvPlots(g, shots, seedN){
     const dropToY=(shots[i+1]&&shots[i+1].toY!=null)?shots[i+1].toY:Math.round((s.fromY||L)*0.5);
     const wy=Math.max(34,Math.min(L-14, L-dropToY+13)), side=(hh(i,1)<0.5?-1:1);
     // CS281: an errant ball found a LATERAL water hazard beside the fairway — offset the pond fully past the
-    // fairway edge (center = half-width + radius + margin) so it never reads as a pond dead-centre in the
+    // fairway edge (center = half-width + radius + margin) so it never reads as a pond dead-center in the
     // fairway forcing normal shots in. The ball then rests at the pond's near edge (the 'water' lie case).
     const rx=16+hh(i,2)*8, ry=13+hh(i,3)*6, fw=(g.fww?g.fww(wy):(g.fwW/2));
     g.water={x:g.cx(wy)+side*(fw+rx+5), y:wy, rx, ry, side};
@@ -11127,7 +11127,7 @@ function hvPlots(g, shots, seedN){
       // close (usually short, occasionally a touch past). A makeable putt that misses does so one of five
       // ways — short, long (runs past), lipped out, missed left, or missed right — chosen by hash so it
       // varies. Either way the ball ends near the hole (a tap-in comeback) and never crosses the cup
-      // centre on line. (Cosmetic — the score is fixed by the engine.)
+      // center on line. (Cosmetic — the score is fixed by the engine.)
       const distNow=Math.max(0.3,hvDistYds(pin,cur)), u=hvUnit(pin,cur), perp=[-u[1],u[0]], side=(hh(i,5)<0.5?-1:1);
       const leaveFt=(s.toFt||2), d=Math.max(Math.min(2.0/g.vy, distNow*0.85), leaveFt/3);
       p._brk=(hh(i,7)-0.5)*0.13; p.onGreen=true;
@@ -11253,7 +11253,7 @@ function hvPuttPathD(g,p){
   if(p.hole && !p._brk && !p.rimIn) return `M ${f(A[0],A[1])} L ${f(P[0],P[1])}`;
   if(p.hole){
     const mid=[(A[0]+P[0])/2+px*brk,(A[1]+P[1])/2+py*brk];
-    if(p.rimIn){ const rim=[P[0]-ux*cr+px*side*cr*0.85, P[1]-uy*cr+py*side*cr*0.85];   // catch the rim, curl to centre
+    if(p.rimIn){ const rim=[P[0]-ux*cr+px*side*cr*0.85, P[1]-uy*cr+py*side*cr*0.85];   // catch the rim, curl to center
       return `M ${f(A[0],A[1])} Q ${f(mid[0],mid[1])} ${f(rim[0],rim[1])} Q ${f(P[0]+px*side*cr,P[1]+py*side*cr)} ${f(P[0],P[1])}`; }
     return `M ${f(A[0],A[1])} Q ${f(mid[0],mid[1])} ${f(P[0],P[1])}`;   // breaking putt into the cup
   }
@@ -12520,7 +12520,7 @@ function dailyResume(){ S.dailyAuto=true; S.dailyViewHole=null; render();
   const p=S.dailyHoles, len=p.length?(p[p.length-1].shots||[]).length:0;
   if((S.dailyRevealN||0)<len) startShotReveal(); else scheduleDailyAdvance(); }
 // CS251: simple round controls (owner mockup). PREV/NEXT step through the round shot-by-shot; the big
-// centre button is PLAY/PAUSE. NEXT reveals the next shot now (or advances the hole once the ball is in);
+// center button is PLAY/PAUSE. NEXT reveals the next shot now (or advances the hole once the ball is in);
 // PREV steps back into the shot-review view. All bypass the timers cleanly and never break the decision flow.
 function dailyAdvanceNow(){   // advance one hole immediately (mirror of scheduleDailyAdvance minus timers/auto-gate)
   clearDailyTimer(); S.dailyHolePause=false; S.dailySinking=false;
@@ -12587,9 +12587,9 @@ function dRoundControls(){
   const row=$(`<div class="hvctrl-row"></div>`);
   const prev=$(`<button class="hvctrl-side" aria-label="Previous shot"><span class="ci">${_SVG_PREV}</span><span class="cl">Prev shot</span></button>`);
   prev.onclick=dailyPrev;
-  // centre: PAUSE while playing, else PLAY (RESUME while reviewing; BACK if reviewing a completed round)
-  const centreLabel = playing ? 'Pause' : (reviewing ? (done18?'Back':'Resume') : 'Play');
-  const play=$(`<button class="hvctrl-play ${playing?'':'paused'}" aria-label="${centreLabel}"><span class="cb">${playing?_SVG_PAUSE:_SVG_PLAY}</span><span class="cl">${centreLabel}</span></button>`);
+  // center: PAUSE while playing, else PLAY (RESUME while reviewing; BACK if reviewing a completed round)
+  const centerLabel = playing ? 'Pause' : (reviewing ? (done18?'Back':'Resume') : 'Play');
+  const play=$(`<button class="hvctrl-play ${playing?'':'paused'}" aria-label="${centerLabel}"><span class="cb">${playing?_SVG_PAUSE:_SVG_PLAY}</span><span class="cl">${centerLabel}</span></button>`);
   play.onclick=()=>{ if(playing) dailyPause(); else if(reviewing && done18) dailyReviewClose(); else dailyResume(); };
   const next=$(`<button class="hvctrl-side" aria-label="Next shot"><span class="ci">${_SVG_NEXT}</span><span class="cl">Next shot</span></button>`);
   next.onclick=dailyNext;
@@ -13227,7 +13227,7 @@ function dScenario(courseKey,i,total,av){
       'Lay back to a wedge', 'A simple pitch in, birdie still on', false, 'tee'));
   if(type==='short4')
     T.push(S2(`short par-4 · ${yards} yds`,
-      `Short, strategic par-4. Take on the green-side trouble off the tee, or lay back to your favourite wedge number?`,
+      `Short, strategic par-4. Take on the green-side trouble off the tee, or lay back to your favorite wedge number?`,
       'Take it on off the tee', 'A close pitch if it works, short-side trouble if not',
       'Lay back for a full wedge', 'Control your number from the fairway', false, 'tee'));
   if(type==='go5'){
@@ -13291,7 +13291,7 @@ function dScenario(courseKey,i,total,av){
   if(!T.length)
     T.push(S2(`${yd} yds to the flag`, `${yd} yards in. Take dead aim for birdie, or play to the middle and take par?`,
       'Take dead aim', 'Birdie or bust', 'Play the middle', 'Two-putt par, no drama'));
-  // pick: favour a situational scenario when one applies, else seeded variety (stable per day/hole)
+  // pick: favor a situational scenario when one applies, else seeded variety (stable per day/hole)
   const sitC=T.filter(t=>t.sit);
   const chosen = (sitC.length && rng()<0.45) ? sitC[Math.floor(rng()*sitC.length)] : T[Math.floor(rng()*T.length)];
   // par-3 decisions are always shown up-front (the tee shot IS the approach); only par-4/5 'app'
@@ -13558,7 +13558,7 @@ function scrDailyRound(){
     // "In the hole" never appears before the ball is in — the result pill reveals it after)
     const descShot=(!reviewing && vh===lastIdx && revealing && !S.dailySinking) ? (played[vh].shots||[])[Math.max(0,(revealN||1)-1)] : null;
     drawWindow(played[vh], liveReveal, vh, (vh===lastIdx), holePause, descShot, reviewing?S.dailyReviewNonce:null);
-    // CS251: review exit is now the centre PLAY/Back button in the bottom control bar (no separate button here).
+    // CS251: review exit is now the center PLAY/Back button in the bottom control bar (no separate button here).
     // the full shot-by-shot log lives ONLY in review (open a hole to see it) — during play the
     // one-line description on the tracer window narrates each shot, so no between-holes log flash.
   }
@@ -13692,7 +13692,10 @@ function scrDailyResult(){
   if(r.record){
     // CS307: a tie co-holds the record (nobody excluded); adapt the copy to "shared" and list every holder.
     const shared=(r.record==='tie'), co=(rec&&crHolders(rec))||'You';
-    if(!r._crCelebrated){ r._crCelebrated=true; const cn=dShort(c.v), st=dTot(total, c.par);
+    // pop the celebration ONLY on the fresh finish that earned it (justPlayed) — not every time you re-open
+    // the result to review a record you already hold (re-entry reads a fresh object from storage, so the
+    // in-memory _crCelebrated guard alone wouldn't stop the re-fire).
+    if(justPlayed && !r._crCelebrated){ r._crCelebrated=true; const cn=dShort(c.v), st=dTot(total, c.par);
       setTimeout(()=>{ if(S.screen==='dailyresult'){ try{ celebrateCourseRecord(cn, st, {shared}); }catch(e){} } }, 360); }
     add($(`<div style="max-width:520px;margin:0 auto;text-align:center;padding:16px 18px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(235,166,31,.22),rgba(235,166,31,.05));box-shadow:0 6px 22px rgba(235,166,31,.18)">
       <div style="width:50px;height:58px;margin:0 auto 4px">${winTrophySVG()}</div>
