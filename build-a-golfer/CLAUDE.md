@@ -7475,6 +7475,15 @@ allows Google Fonts, or self-host Anton.*
   `recordCourseScore` returns record→tie→false and co-holds on a tie; `adoptCourseRecs` unions a server
   co-holder into a local tie; zero page errors. Deployed client to /golf.
 
+- **CS308 — Career Mode card: "30 YRS" → "42 YRS" + mention the Legend Circuit (owner).** The title-screen
+  Career Mode card (`careerHeroCard`) badge changed "30 YRS" → "42 YRS" (30-year tour career + the up-to-12-year
+  Legend Circuit epilogue = 42) and the description "Build your golfer, then play a 30-year career." →
+  "Build your golfer and play a 30-year tour career, then join the Legend Circuit — up to 42 years in all."
+  Just the Career Mode card copy (the resume card's "Year N of 30" tour-progress + the broader
+  meta/About/How-to "30-year" strings were left as-is — the tour career itself is still 30 years; 42 is the
+  total incl. the circuit). Verified in Playwright (badge "42 YRS", new description, badge fits, zero page
+  errors). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
