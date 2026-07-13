@@ -7777,6 +7777,16 @@ allows Google Fonts, or self-host Anton.*
   now stays clearly gold + legible in BOTH overlays. Verified in Playwright: the picked dilemma button
   computes opacity 1, white text, gold border, "✓ Your answer" tag; 0 page errors. Deployed to /golf.
 
+- **CS329 — bottom nav no longer drifts to mid-screen while scrolling the live season (owner screenshot,
+  recurring iOS glitch).** Root cause: `render()` REMOVED and re-appended the fixed `.botnav` on every
+  render, and the live-sim season screen re-renders every ~1-2s — on iOS, re-adding a `position:fixed`
+  element mid-scroll makes Safari paint it at a document position (it appears stuck in the middle of the
+  page). Fix: only REBUILD the nav when its active state actually changes (keyed on `screen|overlay`);
+  otherwise the same DOM node stays in place across renders, so it stays pinned. The nav's click handlers
+  read live state, so a persisted nav is never stale. Verified in Playwright: the nav is the SAME node
+  across 5 same-screen re-renders (was recreated each time), still `position:fixed;bottom:0` on `<body>`,
+  rebuilds + re-highlights on tab/overlay change, hides on live-play screens; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
