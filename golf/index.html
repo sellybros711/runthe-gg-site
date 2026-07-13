@@ -4610,10 +4610,17 @@ function render(){
   app.classList.toggle('has-botnav', showNav);
   document.body.classList.toggle('has-botnav', showNav);   // CS305: cascades --botnav-space so bottom pop-ups clear the nav
   // CS306: the nav lives on <body>, NOT #app — a position:fixed element pins to the viewport most reliably
-  // as a direct child of the scroll root (on iOS a fixed child of #app drifted to mid-screen while scrolling).
-  // render() clears #app but not body, so remove any prior nav first.
-  document.querySelectorAll('.botnav').forEach(n=>n.remove());
-  if(showNav){ try{ document.body.appendChild(bottomNav()); }catch(e){ console.error('[RunTheTour] bottomNav failed:', e); } }
+  // as a direct child of the scroll root. CS329: only REBUILD it when its active state actually changes
+  // (not on every render). During the live sim this screen re-renders every ~1-2s; removing + re-appending
+  // a position:fixed element mid-scroll makes iOS mis-paint it to a document position (drifts to mid-screen).
+  // Keeping the same DOM node in place across renders keeps it pinned. Key on screen+overlay (what drives the
+  // active tab); the click handlers read live state, so a persisted nav is never stale.
+  const navKey = showNav ? (S.screen+'|'+(S.overlay||'')) : '';
+  if(S._navKey!==navKey || (showNav && !document.querySelector('.botnav'))){
+    document.querySelectorAll('.botnav').forEach(n=>n.remove());
+    if(showNav){ try{ document.body.appendChild(bottomNav()); }catch(e){ console.error('[RunTheTour] bottomNav failed:', e); } }
+    S._navKey=navKey;
+  }
   paintAvatars();   // recolor any avatar canvases just added to the DOM
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
   _lastView=view;
