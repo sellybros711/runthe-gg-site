@@ -7904,6 +7904,21 @@ allows Google Fonts, or self-host Anton.*
   roster names are real by the standing RENAME-SPEC §7 decision — only courses/tournaments/cups are
   fictionalized — so naming opponents here is consistent with the rest of the game.)
 
+- **CS335 — press-buzz headlines & fan tweets expanded and varied (owner: "the headlines and fan tweets
+  feel generic and the same every time — make them more unique").** The `PB_TONES` pools (CS291) were tiny
+  (4-5 tweets, 3 headlines, 2 opponent quotes per tone), so with 2 tweets + 1 headline drawn per presser
+  they repeated fast. Grew every pool ~3-4×: **bold 18 tweets / 12 headlines / 7 opponent quotes**, humble
+  16/11/7, gritty 16/11/7, bad 16/10/7, neutral 12/8/3 — with fresher, punchier golf-twitter phrasing that
+  weaves in the real opponent (`{rival}`) and event (`{evt}`) so lines feel specific ("even {rival} has to
+  respect that", "somewhere {rival} is smiling reading {you}'s quotes", "the {evt} field just got put on
+  notice"). Also expanded `PB_HANDLES` 15→30 and `PB_OUTLETS` 8→14, and made each presser show **2 OR 3**
+  fan tweets (~40% show 3) for extra life. Gender-neutral opponent quotes (the player can be male/female).
+  Verified in Playwright over 40 same-tone pressers: 12 distinct headlines + 17 distinct tweets used, 0
+  duplicate tweets within a single presser, ~42% three-tweet pressers, ~50% show an opponent quote, real
+  names weave in, no stray unresolved `{tokens}` — 0 page errors. Data-only change (pools + the tweet-count
+  line); the buzz engine/rendering is unchanged. Deployed to /golf. Tunable: the `PB_TONES` pools, the
+  2-vs-3 tweet probability, `PB_HANDLES`/`PB_OUTLETS`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
