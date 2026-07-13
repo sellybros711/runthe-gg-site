@@ -7531,6 +7531,17 @@ allows Google Fonts, or self-host Anton.*
   discs/blobs). Deployed to /golf. Tunable: the mow-band opacity/width, the dome ellipse opacities, the
   contour-patch count, the bunker lit-floor + rake-line + lip opacities in `hvTerrain`.
 
+- **CS314 — green elevation shading: organic soft lobes instead of the disc shading (owner: "I don't like
+  the disk shading, it should be more natural and organic shapes that go with the greens so it reads more
+  like elevation changes").** Replaced CS313's two symmetric dome ellipses + ellipse contour patches (which
+  read as artificial discs) with 3-4 **blurred, irregular `hvBlobD` lobes** (a new soft `hvgsoft` blur
+  filter, stdDeviation 4.5), seeded per green, alternating light/dark, positioned to follow the surface and
+  clipped to it — so the shading reads as gradual undulation/tiers, not a hard oval. Mowing bands + fringe
+  collar + cast shadow unchanged. Rendering-only, still cached-per-hole deterministic. Verified: syntax OK,
+  terrain renders on parkland/links/desert with 0 page errors; screenshot confirms the Augusta green now has
+  natural, organic elevation shading. Deployed to /golf. Tunable: lobe count (`nlobe`), the `hvgsoft` blur
+  radius, the light/dark lobe opacities.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

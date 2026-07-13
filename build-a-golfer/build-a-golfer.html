@@ -11541,6 +11541,7 @@ function hvTerrain(g, seedN, B){
   defs+=`<radialGradient id="hvsphere" cx=".33" cy=".28" r=".82"><stop offset="0" stop-color="#ffffff" stop-opacity=".34"/><stop offset=".42" stop-color="#ffffff" stop-opacity="0"/><stop offset=".72" stop-color="#02100a" stop-opacity="0"/><stop offset="1" stop-color="#02100a" stop-opacity=".46"/></radialGradient>`;
   defs+=`<linearGradient id="hvcone" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff" stop-opacity=".22"/><stop offset=".46" stop-color="#ffffff" stop-opacity="0"/><stop offset="1" stop-color="#02100a" stop-opacity=".44"/></linearGradient>`;
   defs+=`<filter id="hvsoft" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>`;
+  defs+=`<filter id="hvgsoft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="4.5"/></filter>`;  // soft green-elevation shading
   let fwDD=null, fwBounds=null;   // fwBounds: per-depth fairway screen x-range → keeps the forest out of the corridor
   if(g.par!==3){ const Lp=[],Rp=[];
     for(let k=0;k<=22;k++){ const y=g.fw0+(g.fw1-g.fw0)*k/22;
@@ -11843,20 +11844,26 @@ function hvTerrain(g, seedN, B){
   s.push(`<path d="${hvBlobD(gpx+1.9,gpy+2.6,grx+5.6,gry+4.7,gseed,gIrr,12)}" fill="${B.shad}" opacity=".55"/>`);   // cast shadow
   s.push(`<path d="${hvBlobD(gpx,gpy,grx+5,gry+4,gseed,gIrr,12)}" fill="${B.fringe}"/>`);                            // fringe ring
   s.push(`<path d="${greenD}" fill="${B.green}" stroke="${B.gLine}" stroke-width="1.2"/>`);                          // putting surface
-  { let gg=`<g clip-path="url(#${gcid})">`;
-    // mowing bands: faint alternating light/dark stripes across the surface (angle varies per hole)
+  { // faint mowing bands across the surface (angle varies per hole)
+    let gg=`<g clip-path="url(#${gcid})">`;
     const bang=(hvHash(gseed,7,3)-0.5)*1.5, bw=Math.max(3.4,gry*0.5);
     const dx=Math.sin(bang)*(grx+gry+30), dy=-Math.cos(bang)*(grx+gry+30);
     for(let k=-9;k<=9;k++){ const off=k*bw, cx0=gpx+Math.cos(bang)*off, cy0=gpy+Math.sin(bang)*off;
       gg+=`<line x1="${(cx0-dx).toFixed(1)}" y1="${(cy0-dy).toFixed(1)}" x2="${(cx0+dx).toFixed(1)}" y2="${(cy0+dy).toFixed(1)}" stroke="${k%2?'#ffffff':'#0a2c14'}" stroke-width="${bw.toFixed(1)}" opacity="${k%2?'.05':'.06'}"/>`; }
-    // domed shading: lit top-left, shadowed bottom-right → a 3D putting surface
-    gg+=`<ellipse cx="${(gpx-grx*0.28).toFixed(1)}" cy="${(gpy-gry*0.36).toFixed(1)}" rx="${(grx*0.78).toFixed(1)}" ry="${(gry*0.62).toFixed(1)}" fill="#eaffd0" opacity=".14"/>`;
-    gg+=`<ellipse cx="${(gpx+grx*0.32).toFixed(1)}" cy="${(gpy+gry*0.42).toFixed(1)}" rx="${(grx*0.74).toFixed(1)}" ry="${(gry*0.6).toFixed(1)}" fill="#04160b" opacity=".17"/>`;
-    // 2 soft contour patches (tiers/slope) so no two greens read identically flat
-    for(let c=0;c<2;c++){ const cx=gpx+(hvHash(gseed,20+c,3)-0.5)*grx*1.1, cy=gpy+(hvHash(gseed,30+c,3)-0.5)*gry*1.0, cr=grx*(0.3+hvHash(gseed,40+c,3)*0.26);
-      gg+=`<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${cr.toFixed(1)}" ry="${(cr*0.7).toFixed(1)}" fill="${c%2?'#0a2c14':'#f0ffd8'}" opacity="${c%2?'.08':'.1'}"/>`; }
     gg+=`</g>`;
     s.push(gg);
+    // ELEVATION SHADING (owner: no disc/oval shading — organic, soft lobes that follow the green so it
+    // reads as real undulation/tiers). 3-4 blurred, irregular light/dark blobs clipped to the surface.
+    let el=`<g clip-path="url(#${gcid})" filter="url(#hvgsoft)">`;
+    const nlobe=3+Math.floor(hvHash(gseed,60,3)*2);
+    for(let c=0;c<nlobe;c++){
+      const ang=hvHash(gseed,70+c,3)*6.283, rr=0.25+hvHash(gseed,80+c,3)*0.6;
+      const cx=gpx+Math.cos(ang)*grx*0.6*rr, cy=gpy+Math.sin(ang)*gry*0.6*rr;
+      const lr=grx*(0.42+hvHash(gseed,90+c,3)*0.42), light=(c%2===0);
+      el+=`<path d="${hvBlobD(cx,cy,lr,lr*0.72,gseed^Math.imul(c+1,0x2b3),0.42,9)}" fill="${light?'#eaffce':'#04160b'}" opacity="${light?'.14':'.16'}"/>`;
+    }
+    el+=`</g>`;
+    s.push(el);
   }
   // bunkers (CS313 realism): cast shadow → sand → (clipped) concave shading + raked lines + a grassy lip
   // shadow on the top rim, so a bunker reads as a real raked, dished hazard (links pots smaller, heavier lip)
