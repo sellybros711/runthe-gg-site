@@ -11833,19 +11833,48 @@ function hvTerrain(g, seedN, B){
     s.push(`<path d="${wD}" fill="${B.water}" stroke="#eef8ff" stroke-width=".9"/>`);
     s.push(`<path d="M ${(wpos.x-wpos.rx*0.45).toFixed(1)} ${(wpos.y-wpos.ry*0.2).toFixed(1)} h 7 M ${(wpos.x+wpos.rx*0.1).toFixed(1)} ${(wpos.y+wpos.ry*0.3).toFixed(1)} h 6 M ${(wpos.x-wpos.rx*0.15).toFixed(1)} ${(wpos.y+wpos.ry*0.02).toFixed(1)} h 5" fill="none" stroke="${B.ripple}" stroke-width="1" opacity=".65"/>`);
   }
-  // green complex: fringe ring → flat putting surface → tick rows (retro grass) → chunky outline
+  // green complex (CS313 realism): cast shadow → fringe ring → putting surface, then (clipped to the
+  // surface) subtle mowing bands + soft contour patches + a domed light/shadow so the green reads like a
+  // real, gently-sloped putting surface under light instead of a flat disc.
   const gseed=seedN^0x51, gIrr=g.greenIrr||0.09;
   const greenD=hvBlobD(gpx,gpy,grx,gry,gseed,gIrr,12);
-  s.push(`<path d="${hvBlobD(gpx+1.6,gpy+2,grx+5.5,gry+4.5,gseed,gIrr,12)}" fill="${B.shad}" opacity=".5"/>`);
-  s.push(`<path d="${hvBlobD(gpx,gpy,grx+5,gry+4,gseed,gIrr,12)}" fill="${B.fringe}"/>`);
-  s.push(`<path d="${greenD}" fill="${B.green}" stroke="${B.gLine}" stroke-width="1.2"/>`);
-  // (owner: removed the "v" grass-tick pattern on the greens — the putting surface reads cleaner plain)
-  // bunkers: white speckled sand with a chunky outline (links pot bunkers smaller, heavier lip)
+  const gcid='hvgc'+(gseed>>>0);
+  s.push(`<clipPath id="${gcid}"><path d="${greenD}"/></clipPath>`);
+  s.push(`<path d="${hvBlobD(gpx+1.9,gpy+2.6,grx+5.6,gry+4.7,gseed,gIrr,12)}" fill="${B.shad}" opacity=".55"/>`);   // cast shadow
+  s.push(`<path d="${hvBlobD(gpx,gpy,grx+5,gry+4,gseed,gIrr,12)}" fill="${B.fringe}"/>`);                            // fringe ring
+  s.push(`<path d="${greenD}" fill="${B.green}" stroke="${B.gLine}" stroke-width="1.2"/>`);                          // putting surface
+  { let gg=`<g clip-path="url(#${gcid})">`;
+    // mowing bands: faint alternating light/dark stripes across the surface (angle varies per hole)
+    const bang=(hvHash(gseed,7,3)-0.5)*1.5, bw=Math.max(3.4,gry*0.5);
+    const dx=Math.sin(bang)*(grx+gry+30), dy=-Math.cos(bang)*(grx+gry+30);
+    for(let k=-9;k<=9;k++){ const off=k*bw, cx0=gpx+Math.cos(bang)*off, cy0=gpy+Math.sin(bang)*off;
+      gg+=`<line x1="${(cx0-dx).toFixed(1)}" y1="${(cy0-dy).toFixed(1)}" x2="${(cx0+dx).toFixed(1)}" y2="${(cy0+dy).toFixed(1)}" stroke="${k%2?'#ffffff':'#0a2c14'}" stroke-width="${bw.toFixed(1)}" opacity="${k%2?'.05':'.06'}"/>`; }
+    // domed shading: lit top-left, shadowed bottom-right → a 3D putting surface
+    gg+=`<ellipse cx="${(gpx-grx*0.28).toFixed(1)}" cy="${(gpy-gry*0.36).toFixed(1)}" rx="${(grx*0.78).toFixed(1)}" ry="${(gry*0.62).toFixed(1)}" fill="#eaffd0" opacity=".14"/>`;
+    gg+=`<ellipse cx="${(gpx+grx*0.32).toFixed(1)}" cy="${(gpy+gry*0.42).toFixed(1)}" rx="${(grx*0.74).toFixed(1)}" ry="${(gry*0.6).toFixed(1)}" fill="#04160b" opacity=".17"/>`;
+    // 2 soft contour patches (tiers/slope) so no two greens read identically flat
+    for(let c=0;c<2;c++){ const cx=gpx+(hvHash(gseed,20+c,3)-0.5)*grx*1.1, cy=gpy+(hvHash(gseed,30+c,3)-0.5)*gry*1.0, cr=grx*(0.3+hvHash(gseed,40+c,3)*0.26);
+      gg+=`<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${cr.toFixed(1)}" ry="${(cr*0.7).toFixed(1)}" fill="${c%2?'#0a2c14':'#f0ffd8'}" opacity="${c%2?'.08':'.1'}"/>`; }
+    gg+=`</g>`;
+    s.push(gg);
+  }
+  // bunkers (CS313 realism): cast shadow → sand → (clipped) concave shading + raked lines + a grassy lip
+  // shadow on the top rim, so a bunker reads as a real raked, dished hazard (links pots smaller, heavier lip)
   const bs=B.bunkerScale||1;
   g.bunkers.forEach((b,bi)=>{ const [bx,by]=hvProj(g,b.x,b.y), t=g.t(b.y);
     const brx=b.r*sx*t*bs, bry=g.ry(b.r)*t*0.92*bs, bseed=seedN^Math.imul(bi+3,0x61c);
-    s.push(`<path d="${hvBlobD(bx+1.2,by+1.5,brx,bry,bseed,0.22,8)}" fill="${B.shad}" opacity=".5"/>`);
-    s.push(`<path d="${hvBlobD(bx,by,brx,bry,bseed,0.22,8)}" fill="${B.sand}" stroke="${B.sandLine}" stroke-width="${bs<1?'1.1':'.9'}"/>`);
+    const bcid='hvbc'+(bseed>>>0), sandD=hvBlobD(bx,by,brx,bry,bseed,0.22,8);
+    s.push(`<clipPath id="${bcid}"><path d="${sandD}"/></clipPath>`);
+    s.push(`<path d="${hvBlobD(bx+1.4,by+1.9,brx,bry,bseed,0.22,8)}" fill="${B.shad}" opacity=".5"/>`);   // cast shadow
+    s.push(`<path d="${sandD}" fill="${B.sand}" stroke="${B.sandLine}" stroke-width="${bs<1?'1.1':'.9'}"/>`);
+    let bd=`<g clip-path="url(#${bcid})">`;
+    bd+=`<ellipse cx="${(bx-brx*0.18).toFixed(1)}" cy="${(by-bry*0.22).toFixed(1)}" rx="${(brx*0.66).toFixed(1)}" ry="${(bry*0.66).toFixed(1)}" fill="#ffffff" opacity=".18"/>`;   // lit sand floor
+    for(let r2=0;r2<3;r2++){ const f=0.72-r2*0.2;   // concentric rake lines
+      bd+=`<path d="${hvBlobD(bx,by,brx*f,bry*f,bseed^Math.imul(r2+1,29),0.22,8)}" fill="none" stroke="${B.sandLine}" stroke-width=".5" opacity=".28"/>`; }
+    bd+=`</g>`;
+    s.push(bd);
+    // grassy lip: a darker overhang shadow hugging the top rim of the sand
+    s.push(`<path d="${sandD}" fill="none" stroke="${B.shad}" stroke-width="2.4" opacity=".42" clip-path="url(#${bcid})" transform="translate(0,1.8)"/>`);
     let sp='';
     for(let k2=0;k2<6;k2++){ sp+=`<circle cx="${(bx+(hvHash(bseed,k2,5)-0.5)*brx*1.3).toFixed(1)}" cy="${(by+(hvHash(bseed,k2,6)-0.5)*bry*1.2).toFixed(1)}" r=".7" fill="${B.sandSpeck}"/>`; }
     s.push(sp);
@@ -15774,89 +15803,5 @@ render();
 try{ setInterval(tickCountdowns, 1000); }catch(e){}   // live "next daily course in …" countdowns
 try{ h2hCheckLink(); }catch(e){}   // arrived via an invite link (?h2h=CODE)? stash it + join (prompting sign-in)
 </script>
-
-<!-- ===================================================================
-     Static, crawlable "About" content. Real users can scroll to it below
-     the game; search engines and reviewers read it directly (the game
-     itself renders via JS, so this gives the page substantive HTML text).
-     =================================================================== -->
-<footer class="rt-seo" aria-label="About RunTheTour">
-  <style>
-  .rt-seo{position:relative;z-index:1;max-width:700px;margin:0 auto;
-    padding:36px 20px calc(52px + env(safe-area-inset-bottom,0px));
-    color:#e2d4b8;font-family:'Barlow Semi Condensed',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
-    line-height:1.62;border-top:1px solid rgba(244,227,201,.16);background:rgba(4,20,11,.35)}
-  .rt-seo h2{font-family:'Anton',Impact,'Arial Narrow',sans-serif;font-weight:400;text-transform:uppercase;
-    letter-spacing:.02em;color:#EBA61F;font-size:23px;line-height:1.1;margin:28px 0 10px}
-  .rt-seo h2:first-of-type{margin-top:0}
-  .rt-seo p{margin:0 0 13px;font-size:15.5px;color:#d7c8ac}
-  .rt-seo b{color:#F4E3C9}
-  .rt-seo ol,.rt-seo ul{margin:0 0 14px;padding-left:20px;font-size:15.5px;color:#d7c8ac}
-  .rt-seo li{margin:0 0 7px}
-  .rt-seo li b{color:#F4E3C9}
-  .rt-seo a{color:#EBA61F;font-weight:700;text-decoration:none}
-  .rt-seo a:hover{text-decoration:underline}
-  .rt-seo .rt-links{margin-top:22px;padding-top:16px;border-top:1px solid rgba(244,227,201,.1);
-    font-size:14px;color:#9cbfa8}
-  .rt-seo .rt-links a{color:#cfe3d6}
-  .rt-seo .rt-links .sep{margin:0 8px;color:#4a6a5a}
-  </style>
-
-  <h2>About RunTheTour</h2>
-  <p><b>RunTheTour</b> is a free, browser-based golf career simulation. You draft a golfer one signature
-     skill at a time, then guide their entire professional life — up to thirty seasons of majors, world-ranking
-     climbs, rivalries, career earnings, and an eventual run at the Hall of Fame. There is nothing to download
-     and no sign-up required: open the page and your first draft begins in seconds, on your phone, tablet, or
-     computer.</p>
-
-  <h2>How to play</h2>
-  <ol>
-    <li><b>Draft your golfer.</b> Spin for skills one at a time — driving, approach play, putting, scrambling,
-        composure — and build a player from the ground up. Rarer pulls tend to carry higher ceilings, so every
-        draft starts a different career.</li>
-    <li><b>Play your seasons.</b> Each year you tee it up in a full schedule built around the four majors, team
-        events, and the season-ending standings. Every result is simulated from your golfer's skill profile
-        against a realistic field, so scores land in believable ranges instead of being random.</li>
-    <li><b>Build a career.</b> Win tournaments, bank earnings, climb the world rankings, and develop on-course
-        rivalries across a career that can span up to 30 years — until your golfer ages, peaks, declines, and
-        retires with their record written into the Hall of Fame.</li>
-    <li><b>Take the Daily Challenge.</b> Every day there is a single 18-hole round at a rotating real-world
-        course, set up the same for everyone, so you can post a score and compare it on the global leaderboard.</li>
-  </ol>
-
-  <h2>What makes it different</h2>
-  <p>Most golf games are about swinging the club. RunTheTour is about the <b>career</b> — the drafting, the
-     long-term decisions, and the full arc of a life on tour. It is a data-driven simulation: a golfer's skills
-     feed an engine that produces realistic scoring spreads, which means no two careers ever play out the same
-     way. Make a free RunThe.GG account and your trophies, saved careers, and leaderboard rank follow you across
-     every device and visit.</p>
-
-  <h2>Tips for a longer, better career</h2>
-  <ul>
-    <li><b>Build for balance.</b> A one-dimensional golfer can win a title, but all-round skill holds up far
-        better across the majors and the toughest courses.</li>
-    <li><b>Chase wins in your prime.</b> Golfers develop, plateau, and decline with age — press your advantage
-        while your player is at their peak rating.</li>
-    <li><b>Use the Daily Challenge</b> for a quick, competitive 18 holes when you don't have time for a full
-        season.</li>
-  </ul>
-
-  <h2>Frequently asked questions</h2>
-  <p><b>Is RunTheTour free to play?</b> Yes. It is completely free, with no download and no account required.
-     We keep the game free by showing ads.</p>
-  <p><b>Do I need an account?</b> No — you can play as a guest. A free account is optional and simply saves your
-     careers and unlocks a leaderboard rank that carries across devices.</p>
-  <p><b>Is this affiliated with the PGA Tour or any real golf organization?</b> No. RunTheTour is an independent,
-     unofficial, fan-made simulation. It is not affiliated with, endorsed by, or sponsored by any real tour,
-     event, course, or golfer. Real player names are used to build fictional, simulated golfers for
-     entertainment only; all results are fictional. See our <a href="terms.html">Terms of Use</a> for details.</p>
-
-  <div class="rt-links">
-    <a href="/">RunThe.GG home</a><span class="sep">·</span>
-    <a href="/soccer/">RunThePitch</a><span class="sep">·</span>
-    <a href="privacy.html">Privacy</a><span class="sep">·</span>
-    <a href="terms.html">Terms</a>
-  </div>
-</footer>
 </body>
 </html>
