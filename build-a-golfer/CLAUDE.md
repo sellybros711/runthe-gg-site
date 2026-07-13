@@ -7512,6 +7512,25 @@ allows Google Fonts, or self-host Anton.*
   Playwright across grind/contender/elite: all 6 goals distinct every year, hat/shirt each FLOOR/TARGET/
   STRETCH with ascending bonuses, and the full set rotates Y1→Y2→Y3; zero page errors. Deployed to /golf.
 
+- **CS313 — realistic greens + bunkers in the hole view (owner IMG_8150: "we've pushed the fairway and
+  surroundings to a higher graphic level, but the greens and bunkers could use realism improvements").**
+  The green was a flat lighter-green disc + fringe ring and the bunkers flat sand blobs. Rebuilt both in
+  `hvTerrain` (rendering-only — sim/geometry/score untouched; terrain is still built-once-and-cached per
+  hole, all deterministic seeded SVG, no filters):
+  • **Greens now read as real, gently-sloped putting surfaces.** Added a per-green `clipPath` and, clipped
+    to the surface: faint alternating **mowing bands** (angle varies per hole), a **domed light/shadow**
+    (lit top-left ellipse + shaded bottom-right ellipse → a 3D dome), and 2 soft **contour patches** so no
+    two greens read identically flat. Kept the cast shadow + fringe collar (slightly deepened).
+  • **Bunkers now read as raked, dished sand with a grassy lip.** Added a per-bunker `clipPath` and, clipped
+    to the sand: a **lit concave floor** (lighter center), 3 **concentric rake lines**, and a darker
+    **grassy-lip overhang shadow** hugging the top rim. Kept the speckles + cast shadow; links pot bunkers
+    stay smaller/heavier-lipped via the existing `bunkerScale`.
+  Verified in Playwright: terrain renders with the green + bunker clip ids on parkland / links / desert
+  (Augusta, St Andrews, Oakmont), mow bands present, 0 page errors; screenshots confirm the greens are
+  domed/contoured with a collar and the bunkers dished/raked with a lip (a clear step up from the flat
+  discs/blobs). Deployed to /golf. Tunable: the mow-band opacity/width, the dome ellipse opacities, the
+  contour-patch count, the bunker lit-floor + rake-line + lip opacities in `hvTerrain`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

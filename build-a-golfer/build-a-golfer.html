@@ -11833,19 +11833,48 @@ function hvTerrain(g, seedN, B){
     s.push(`<path d="${wD}" fill="${B.water}" stroke="#eef8ff" stroke-width=".9"/>`);
     s.push(`<path d="M ${(wpos.x-wpos.rx*0.45).toFixed(1)} ${(wpos.y-wpos.ry*0.2).toFixed(1)} h 7 M ${(wpos.x+wpos.rx*0.1).toFixed(1)} ${(wpos.y+wpos.ry*0.3).toFixed(1)} h 6 M ${(wpos.x-wpos.rx*0.15).toFixed(1)} ${(wpos.y+wpos.ry*0.02).toFixed(1)} h 5" fill="none" stroke="${B.ripple}" stroke-width="1" opacity=".65"/>`);
   }
-  // green complex: fringe ring → flat putting surface → tick rows (retro grass) → chunky outline
+  // green complex (CS313 realism): cast shadow → fringe ring → putting surface, then (clipped to the
+  // surface) subtle mowing bands + soft contour patches + a domed light/shadow so the green reads like a
+  // real, gently-sloped putting surface under light instead of a flat disc.
   const gseed=seedN^0x51, gIrr=g.greenIrr||0.09;
   const greenD=hvBlobD(gpx,gpy,grx,gry,gseed,gIrr,12);
-  s.push(`<path d="${hvBlobD(gpx+1.6,gpy+2,grx+5.5,gry+4.5,gseed,gIrr,12)}" fill="${B.shad}" opacity=".5"/>`);
-  s.push(`<path d="${hvBlobD(gpx,gpy,grx+5,gry+4,gseed,gIrr,12)}" fill="${B.fringe}"/>`);
-  s.push(`<path d="${greenD}" fill="${B.green}" stroke="${B.gLine}" stroke-width="1.2"/>`);
-  // (owner: removed the "v" grass-tick pattern on the greens — the putting surface reads cleaner plain)
-  // bunkers: white speckled sand with a chunky outline (links pot bunkers smaller, heavier lip)
+  const gcid='hvgc'+(gseed>>>0);
+  s.push(`<clipPath id="${gcid}"><path d="${greenD}"/></clipPath>`);
+  s.push(`<path d="${hvBlobD(gpx+1.9,gpy+2.6,grx+5.6,gry+4.7,gseed,gIrr,12)}" fill="${B.shad}" opacity=".55"/>`);   // cast shadow
+  s.push(`<path d="${hvBlobD(gpx,gpy,grx+5,gry+4,gseed,gIrr,12)}" fill="${B.fringe}"/>`);                            // fringe ring
+  s.push(`<path d="${greenD}" fill="${B.green}" stroke="${B.gLine}" stroke-width="1.2"/>`);                          // putting surface
+  { let gg=`<g clip-path="url(#${gcid})">`;
+    // mowing bands: faint alternating light/dark stripes across the surface (angle varies per hole)
+    const bang=(hvHash(gseed,7,3)-0.5)*1.5, bw=Math.max(3.4,gry*0.5);
+    const dx=Math.sin(bang)*(grx+gry+30), dy=-Math.cos(bang)*(grx+gry+30);
+    for(let k=-9;k<=9;k++){ const off=k*bw, cx0=gpx+Math.cos(bang)*off, cy0=gpy+Math.sin(bang)*off;
+      gg+=`<line x1="${(cx0-dx).toFixed(1)}" y1="${(cy0-dy).toFixed(1)}" x2="${(cx0+dx).toFixed(1)}" y2="${(cy0+dy).toFixed(1)}" stroke="${k%2?'#ffffff':'#0a2c14'}" stroke-width="${bw.toFixed(1)}" opacity="${k%2?'.05':'.06'}"/>`; }
+    // domed shading: lit top-left, shadowed bottom-right → a 3D putting surface
+    gg+=`<ellipse cx="${(gpx-grx*0.28).toFixed(1)}" cy="${(gpy-gry*0.36).toFixed(1)}" rx="${(grx*0.78).toFixed(1)}" ry="${(gry*0.62).toFixed(1)}" fill="#eaffd0" opacity=".14"/>`;
+    gg+=`<ellipse cx="${(gpx+grx*0.32).toFixed(1)}" cy="${(gpy+gry*0.42).toFixed(1)}" rx="${(grx*0.74).toFixed(1)}" ry="${(gry*0.6).toFixed(1)}" fill="#04160b" opacity=".17"/>`;
+    // 2 soft contour patches (tiers/slope) so no two greens read identically flat
+    for(let c=0;c<2;c++){ const cx=gpx+(hvHash(gseed,20+c,3)-0.5)*grx*1.1, cy=gpy+(hvHash(gseed,30+c,3)-0.5)*gry*1.0, cr=grx*(0.3+hvHash(gseed,40+c,3)*0.26);
+      gg+=`<ellipse cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" rx="${cr.toFixed(1)}" ry="${(cr*0.7).toFixed(1)}" fill="${c%2?'#0a2c14':'#f0ffd8'}" opacity="${c%2?'.08':'.1'}"/>`; }
+    gg+=`</g>`;
+    s.push(gg);
+  }
+  // bunkers (CS313 realism): cast shadow → sand → (clipped) concave shading + raked lines + a grassy lip
+  // shadow on the top rim, so a bunker reads as a real raked, dished hazard (links pots smaller, heavier lip)
   const bs=B.bunkerScale||1;
   g.bunkers.forEach((b,bi)=>{ const [bx,by]=hvProj(g,b.x,b.y), t=g.t(b.y);
     const brx=b.r*sx*t*bs, bry=g.ry(b.r)*t*0.92*bs, bseed=seedN^Math.imul(bi+3,0x61c);
-    s.push(`<path d="${hvBlobD(bx+1.2,by+1.5,brx,bry,bseed,0.22,8)}" fill="${B.shad}" opacity=".5"/>`);
-    s.push(`<path d="${hvBlobD(bx,by,brx,bry,bseed,0.22,8)}" fill="${B.sand}" stroke="${B.sandLine}" stroke-width="${bs<1?'1.1':'.9'}"/>`);
+    const bcid='hvbc'+(bseed>>>0), sandD=hvBlobD(bx,by,brx,bry,bseed,0.22,8);
+    s.push(`<clipPath id="${bcid}"><path d="${sandD}"/></clipPath>`);
+    s.push(`<path d="${hvBlobD(bx+1.4,by+1.9,brx,bry,bseed,0.22,8)}" fill="${B.shad}" opacity=".5"/>`);   // cast shadow
+    s.push(`<path d="${sandD}" fill="${B.sand}" stroke="${B.sandLine}" stroke-width="${bs<1?'1.1':'.9'}"/>`);
+    let bd=`<g clip-path="url(#${bcid})">`;
+    bd+=`<ellipse cx="${(bx-brx*0.18).toFixed(1)}" cy="${(by-bry*0.22).toFixed(1)}" rx="${(brx*0.66).toFixed(1)}" ry="${(bry*0.66).toFixed(1)}" fill="#ffffff" opacity=".18"/>`;   // lit sand floor
+    for(let r2=0;r2<3;r2++){ const f=0.72-r2*0.2;   // concentric rake lines
+      bd+=`<path d="${hvBlobD(bx,by,brx*f,bry*f,bseed^Math.imul(r2+1,29),0.22,8)}" fill="none" stroke="${B.sandLine}" stroke-width=".5" opacity=".28"/>`; }
+    bd+=`</g>`;
+    s.push(bd);
+    // grassy lip: a darker overhang shadow hugging the top rim of the sand
+    s.push(`<path d="${sandD}" fill="none" stroke="${B.shad}" stroke-width="2.4" opacity=".42" clip-path="url(#${bcid})" transform="translate(0,1.8)"/>`);
     let sp='';
     for(let k2=0;k2<6;k2++){ sp+=`<circle cx="${(bx+(hvHash(bseed,k2,5)-0.5)*brx*1.3).toFixed(1)}" cy="${(by+(hvHash(bseed,k2,6)-0.5)*bry*1.2).toFixed(1)}" r=".7" fill="${B.sandSpeck}"/>`; }
     s.push(sp);
