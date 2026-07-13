@@ -277,6 +277,13 @@ window.GA_ID='G-L29P5MRWKE';
   .sp-opt .sp-acc{height:4px;width:100%}
   @media (prefers-reduced-motion:reduce){ .flashbulb{animation:none!important;display:none} .sp-opt{transition:none} }
   /* CS291 press-reaction feed — fan tweets + a headline + an occasional opponent quote */
+  /* CS311: the chosen press-conference answer stays highlighted at the top after you pick it */
+  .sbtns .sb-chosen, .sbtns .sb-chosen:disabled{opacity:1; cursor:default; color:#fff; padding-right:96px!important;
+    border:1px solid var(--gold); background:color-mix(in srgb, var(--gold) 16%, rgba(255,255,255,.03));
+    box-shadow:0 0 0 1px var(--gold), 0 5px 16px -7px rgba(235,166,31,.55)}
+  .sbtns .sb-chosen .sub{color:#ffe1a6}
+  .sbtns .sb-chosen::after{content:"✓ Your answer"; position:absolute; right:12px; top:50%;
+    transform:translateY(-50%); font:800 9px/1 var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--gold)}
   .pbuzz{margin-top:12px;text-align:left}
   .pb-hd{font:800 9.5px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:#7fa8b8;margin:0 0 8px}
   .pb-tweet{display:flex;gap:9px;padding:9px 10px;border:1px solid rgba(255,255,255,.09);border-radius:12px;background:rgba(9,26,38,.55);margin-bottom:7px}
@@ -7297,7 +7304,7 @@ function showStoryline(sb){
   const btns=ov.querySelector('.sbtns'), replyBox=ov.querySelector('.sreply');
   beat.ch.forEach(ch=>{
     // CS279: a choice can carry RISK — a bold answer that might blow up. Flag it so the gamble is informed.
-    const riskTag = ch.risk ? `<span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font:800 9px/1 var(--body);letter-spacing:.08em;color:#ff8f7e;border:1px solid rgba(255,90,77,.5);border-radius:999px;padding:3px 7px;text-transform:uppercase">⚡ Risky</span>` : '';
+    const riskTag = ch.risk ? `<span class="sb-risk" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font:800 9px/1 var(--body);letter-spacing:.08em;color:#ff8f7e;border:1px solid rgba(255,90,77,.5);border-radius:999px;padding:3px 7px;text-transform:uppercase">⚡ Risky</span>` : '';
     const b=$(`<button class="btn ghost" style="text-align:left;padding-left:36px;padding-right:${ch.risk?'78px':'14px'};position:relative">
       <span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#5fd0e0;font-size:15px">“</span>
       ${esc(T(ch.t))}${ch.s?`<span class="sub">${esc(T(ch.s))}</span>`:''}${riskTag}</button>`);
@@ -7344,7 +7351,11 @@ function showStoryline(sb){
       // CS301: reporter reaction + the tangible fallout, redesigned so the 0-100 REPUTATION ratings
       // (Fan Support / Respect / Confidence) read clearly as ratings out of 100, distinct from your raw
       // "following" reach count — the owner was confused by "Fans +6" sitting next to "371M following".
-      btns.querySelectorAll('button').forEach(x=>x.disabled=true);
+      // CS311 (owner): keep the chosen answer highlighted at the top and drop the other options, so it's
+      // clear which one you said. The risk pill is removed (the roll is resolved).
+      btns.querySelectorAll('button').forEach(x=>{ if(x!==b) x.remove(); });
+      b.disabled=true; b.classList.remove('ghost'); b.classList.add('sb-chosen');
+      const rp=b.querySelector('.sb-risk'); if(rp) rp.remove();
       const fansNow=repFans(), respNow=repRespect(), confNow=Math.round(seasonConf());
       const statTile=(label,dv,now,upCol)=>{
         const dcol = dv>0?upCol : dv<0?'#E14A33':'#67839a';
@@ -12252,25 +12263,28 @@ function scrDailyPreview(){
   }
   const cr=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Course Records</button>`);
   cr.onclick=()=>{ S.overlay='courserecords'; render(); }; add(cr);
-  // CS237: play the Daily FREE as any of your created career golfers (Legend builds from a completed
-  // qualifying 30-year career). Doesn't use a draft attempt, reusable, and posts to the Career Golfers board.
-  if(!S.special){ const toks=legendTokensUnused();
-    if(toks.length){
-      toks.sort((a,b)=>b.ovr-a.ovr);
-      const wrap=$(`<div style="max-width:520px;margin:14px auto 0;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(235,166,31,.08),rgba(10,22,38,.25));padding:14px 15px"></div>`);
-      wrap.appendChild($(`<div style="display:flex;align-items:center;gap:7px;margin-bottom:3px"><span style="font-size:16px">🏆</span><b style="color:var(--gold);font-size:13.5px">Your Legend golfers</b><span class="tag" style="font-size:9.5px;color:#35d6a0;border-color:#35d6a0;padding:2px 7px">FREE PLAY</span></div>`));
-      wrap.appendChild($(`<div class="small muted" style="margin-bottom:7px">Play today's course as a created golfer — doesn't use a daily attempt.</div>`));
-      toks.forEach(tok=>{
-        const row=$(`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(235,166,31,.15)"></div>`);
-        row.appendChild($(`<div style="min-width:0"><div style="font-weight:800;color:var(--oncard)">${esc(tok.name)} · OVR ${tok.ovr}</div><div class="small muted" style="margin-top:1px">${esc(tok.reason)} · ${tok.years}-year career</div></div>`));
-        const use=$(`<button class="btn gold" style="width:auto;flex:0 0 auto;padding:9px 14px;font-size:12.5px">Play free ▸</button>`);
-        use.onclick=()=>{ track('legend_token_used',{ovr:tok.ovr,free:true}); beginDailyRoundWithLegend(tok); }; row.appendChild(use);
-        wrap.appendChild(row);
-      });
-      wrap.appendChild($(`<div class="small muted" style="margin-top:9px;line-height:1.4">Free and unlimited · your Legend scores post to the separate <b style="color:var(--gold)">Career Golfers</b> leaderboard, not the draft board.</div>`));
-      add(wrap);
-    }
-  }
+  // CS237/CS311: play the Daily FREE as any of your created career golfers (Legend builds). Doesn't use a
+  // draft attempt, reusable, posts to the Career Golfers board. Shown on the preview AND the result screen
+  // (via legendPlaySection) so a Legend can ALWAYS be played, even once all draft attempts are used.
+  if(!S.special){ const w=legendPlaySection(); if(w) add(w); }
+}
+// The "Your Legend golfers · FREE PLAY" section (or null if the player owns no Legend tokens). Reusable so
+// it appears on both the daily preview and the daily result screen — a Legend is playable regardless of attempts.
+function legendPlaySection(){
+  const toks=legendTokensUnused(); if(!toks.length) return null;
+  toks.sort((a,b)=>b.ovr-a.ovr);
+  const wrap=$(`<div style="max-width:520px;margin:14px auto 0;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(235,166,31,.08),rgba(10,22,38,.25));padding:14px 15px"></div>`);
+  wrap.appendChild($(`<div style="display:flex;align-items:center;gap:7px;margin-bottom:3px"><span style="font-size:16px">🏆</span><b style="color:var(--gold);font-size:13.5px">Your Legend golfers</b><span class="tag" style="font-size:9.5px;color:#35d6a0;border-color:#35d6a0;padding:2px 7px">FREE PLAY</span></div>`));
+  wrap.appendChild($(`<div class="small muted" style="margin-bottom:7px">Play today's course as a created golfer — doesn't use a daily attempt.</div>`));
+  toks.forEach(tok=>{
+    const row=$(`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(235,166,31,.15)"></div>`);
+    row.appendChild($(`<div style="min-width:0"><div style="font-weight:800;color:var(--oncard)">${esc(tok.name)} · OVR ${tok.ovr}</div><div class="small muted" style="margin-top:1px">${esc(tok.reason)} · ${tok.years}-year career</div></div>`));
+    const use=$(`<button class="btn gold" style="width:auto;flex:0 0 auto;padding:9px 14px;font-size:12.5px">Play free ▸</button>`);
+    use.onclick=()=>{ track('legend_token_used',{ovr:tok.ovr,free:true}); beginDailyRoundWithLegend(tok); }; row.appendChild(use);
+    wrap.appendChild(row);
+  });
+  wrap.appendChild($(`<div class="small muted" style="margin-top:9px;line-height:1.4">Free and unlimited · your Legend scores post to the separate <b style="color:var(--gold)">Career Golfers</b> leaderboard, not the draft board.</div>`));
+  return wrap;
 }
 /* ---- daily round auto-advance: the round plays itself hole-by-hole, pausing only at
    signature holes for the Attack / Play-Safe decision. Pace ~0.8s/hole so you can watch
@@ -13585,6 +13599,8 @@ function scrDailyResult(){
   } else {
     const cr=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Course Records ▸<span class="sub">See every course's record holder</span></button>`); cr.onclick=()=>{S.overlay='courserecords';render();}; add(cr);
   }
+  // CS311: Legend golfers play the Daily FREE — always available here, even when all draft attempts are used.
+  if(!practice && !r.isLegend && !S.special){ const w=legendPlaySection(); if(w) add(w); }
   const pass=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">🎫 Course Passport<span class="sub">Your best grade &amp; score at all ${DAILY_KEYS.length} courses</span></button>`);
   pass.onclick=()=>{S.overlay='passport';render();}; add(pass);
   const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Return to home</button>`); home.onclick=()=>{S._claimDaily=null;S._dailyClaimFlow=false;S.dailyClaimMsg=null;S.screen='title';S.daily=false;render();}; add(home);

@@ -7484,6 +7484,18 @@ allows Google Fonts, or self-host Anton.*
   total incl. the circuit). Verified in Playwright (badge "42 YRS", new description, badge fits, zero page
   errors). Deployed to /golf.
 
+- **CS311 — press-conference: keep the chosen answer highlighted up top + Legend tokens playable after all
+  daily attempts are used (owner IMG_8144).** (1) On a press-conference/storyline choice, the click handler
+  now REMOVES the non-chosen options and keeps the chosen button at the top, styled `.sb-chosen` (gold
+  border/tint, full opacity, a "✓ Your answer" label; its risk pill is stripped since the roll is resolved),
+  so it's clear what you said while the reaction renders below. (2) The daily RESULT screen now shows the
+  "Your Legend golfers · FREE PLAY" section (factored into a reusable `legendPlaySection()` shared with the
+  preview), so a signed-in player who's used all 3 draft attempts can still start a free Legend round —
+  previously the out-of-attempts result screen only offered Course Records, stranding Legend owners.
+  Verified in Playwright: after choosing, exactly one option remains with `.sb-chosen` matching the pick and
+  the reaction shows; with 0 attempts left the result screen renders the Legend section + "Play free" button
+  + token name; zero page errors. Screenshot confirms the highlighted "✓ Your answer" chip. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
