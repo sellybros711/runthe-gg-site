@@ -15774,5 +15774,89 @@ render();
 try{ setInterval(tickCountdowns, 1000); }catch(e){}   // live "next daily course in …" countdowns
 try{ h2hCheckLink(); }catch(e){}   // arrived via an invite link (?h2h=CODE)? stash it + join (prompting sign-in)
 </script>
+
+<!-- ===================================================================
+     Static, crawlable "About" content. Real users can scroll to it below
+     the game; search engines and reviewers read it directly (the game
+     itself renders via JS, so this gives the page substantive HTML text).
+     =================================================================== -->
+<footer class="rt-seo" aria-label="About RunTheTour">
+  <style>
+  .rt-seo{position:relative;z-index:1;max-width:700px;margin:0 auto;
+    padding:36px 20px calc(52px + env(safe-area-inset-bottom,0px));
+    color:#e2d4b8;font-family:'Barlow Semi Condensed',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    line-height:1.62;border-top:1px solid rgba(244,227,201,.16);background:rgba(4,20,11,.35)}
+  .rt-seo h2{font-family:'Anton',Impact,'Arial Narrow',sans-serif;font-weight:400;text-transform:uppercase;
+    letter-spacing:.02em;color:#EBA61F;font-size:23px;line-height:1.1;margin:28px 0 10px}
+  .rt-seo h2:first-of-type{margin-top:0}
+  .rt-seo p{margin:0 0 13px;font-size:15.5px;color:#d7c8ac}
+  .rt-seo b{color:#F4E3C9}
+  .rt-seo ol,.rt-seo ul{margin:0 0 14px;padding-left:20px;font-size:15.5px;color:#d7c8ac}
+  .rt-seo li{margin:0 0 7px}
+  .rt-seo li b{color:#F4E3C9}
+  .rt-seo a{color:#EBA61F;font-weight:700;text-decoration:none}
+  .rt-seo a:hover{text-decoration:underline}
+  .rt-seo .rt-links{margin-top:22px;padding-top:16px;border-top:1px solid rgba(244,227,201,.1);
+    font-size:14px;color:#9cbfa8}
+  .rt-seo .rt-links a{color:#cfe3d6}
+  .rt-seo .rt-links .sep{margin:0 8px;color:#4a6a5a}
+  </style>
+
+  <h2>About RunTheTour</h2>
+  <p><b>RunTheTour</b> is a free, browser-based golf career simulation. You draft a golfer one signature
+     skill at a time, then guide their entire professional life — up to thirty seasons of majors, world-ranking
+     climbs, rivalries, career earnings, and an eventual run at the Hall of Fame. There is nothing to download
+     and no sign-up required: open the page and your first draft begins in seconds, on your phone, tablet, or
+     computer.</p>
+
+  <h2>How to play</h2>
+  <ol>
+    <li><b>Draft your golfer.</b> Spin for skills one at a time — driving, approach play, putting, scrambling,
+        composure — and build a player from the ground up. Rarer pulls tend to carry higher ceilings, so every
+        draft starts a different career.</li>
+    <li><b>Play your seasons.</b> Each year you tee it up in a full schedule built around the four majors, team
+        events, and the season-ending standings. Every result is simulated from your golfer's skill profile
+        against a realistic field, so scores land in believable ranges instead of being random.</li>
+    <li><b>Build a career.</b> Win tournaments, bank earnings, climb the world rankings, and develop on-course
+        rivalries across a career that can span up to 30 years — until your golfer ages, peaks, declines, and
+        retires with their record written into the Hall of Fame.</li>
+    <li><b>Take the Daily Challenge.</b> Every day there is a single 18-hole round at a rotating real-world
+        course, set up the same for everyone, so you can post a score and compare it on the global leaderboard.</li>
+  </ol>
+
+  <h2>What makes it different</h2>
+  <p>Most golf games are about swinging the club. RunTheTour is about the <b>career</b> — the drafting, the
+     long-term decisions, and the full arc of a life on tour. It is a data-driven simulation: a golfer's skills
+     feed an engine that produces realistic scoring spreads, which means no two careers ever play out the same
+     way. Make a free RunThe.GG account and your trophies, saved careers, and leaderboard rank follow you across
+     every device and visit.</p>
+
+  <h2>Tips for a longer, better career</h2>
+  <ul>
+    <li><b>Build for balance.</b> A one-dimensional golfer can win a title, but all-round skill holds up far
+        better across the majors and the toughest courses.</li>
+    <li><b>Chase wins in your prime.</b> Golfers develop, plateau, and decline with age — press your advantage
+        while your player is at their peak rating.</li>
+    <li><b>Use the Daily Challenge</b> for a quick, competitive 18 holes when you don't have time for a full
+        season.</li>
+  </ul>
+
+  <h2>Frequently asked questions</h2>
+  <p><b>Is RunTheTour free to play?</b> Yes. It is completely free, with no download and no account required.
+     We keep the game free by showing ads.</p>
+  <p><b>Do I need an account?</b> No — you can play as a guest. A free account is optional and simply saves your
+     careers and unlocks a leaderboard rank that carries across devices.</p>
+  <p><b>Is this affiliated with the PGA Tour or any real golf organization?</b> No. RunTheTour is an independent,
+     unofficial, fan-made simulation. It is not affiliated with, endorsed by, or sponsored by any real tour,
+     event, course, or golfer. Real player names are used to build fictional, simulated golfers for
+     entertainment only; all results are fictional. See our <a href="terms.html">Terms of Use</a> for details.</p>
+
+  <div class="rt-links">
+    <a href="/">RunThe.GG home</a><span class="sep">·</span>
+    <a href="/soccer/">RunThePitch</a><span class="sep">·</span>
+    <a href="privacy.html">Privacy</a><span class="sep">·</span>
+    <a href="terms.html">Terms</a>
+  </div>
+</footer>
 </body>
 </html>

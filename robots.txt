@@ -1,5 +1,6 @@
-# RunThe.GG — allow everything, point crawlers at the sitemap.
+# RunThe.GG — allow the real pages, keep internal build tools out of search.
 User-agent: *
 Allow: /
+Disallow: /scripts/
 
 Sitemap: https://runthe.gg/sitemap.xml
