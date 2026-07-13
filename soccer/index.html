@@ -666,6 +666,34 @@
     background:linear-gradient(90deg,#9C6C18,#F4B413 32%,#FCEFA8 50%,#F4B413 68%,#9C6C18);}
   /* stadium scene fills the hero; a dark veil deepens contrast for bright text */
   .hero .stadium{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;}
+  /* ---- day / night stadium: light mode = daytime pitch, dark mode = night ----
+     CSS beats the SVG's hardcoded (night) presentation attributes, so DAY is
+     applied by default and NIGHT is restored under html.dark. ---- */
+  .hero .stadium .sky-a{stop-color:#3f86cc;}   /* day sky */
+  .hero .stadium .sky-b{stop-color:#6aabde;}
+  .hero .stadium .sky-c{stop-color:#a9d6f2;}
+  .hero .stadium .pitch-a{stop-color:#1aa051;} /* brighter day turf */
+  .hero .stadium .pitch-b{stop-color:#128440;}
+  .hero .stadium .stripes{fill:#0f9048;}
+  .hero .stadium .sun{opacity:1;}
+  .hero .stadium .stars{opacity:0;}            /* no stars by day */
+  .hero .stadium .flood{display:none;}         /* floodlight glow off by day */
+  .hero .stadium .mark-neon{opacity:0;}        /* no neon glow on the lines */
+  .hero .stadium .horizon-glow{opacity:0;}
+  .hero .stadium .horizon-line{opacity:0;}
+  /* NIGHT — restore the original arcade-neon night scene in dark mode */
+  html.dark .hero .stadium .sky-a{stop-color:#070d22;}
+  html.dark .hero .stadium .sky-b{stop-color:#122253;}
+  html.dark .hero .stadium .sky-c{stop-color:#1c3a7e;}
+  html.dark .hero .stadium .pitch-a{stop-color:#0c6e38;}
+  html.dark .hero .stadium .pitch-b{stop-color:#0a4f2a;}
+  html.dark .hero .stadium .stripes{fill:#0a5a2e;}
+  html.dark .hero .stadium .sun{opacity:0;}
+  html.dark .hero .stadium .stars{opacity:.9;}
+  html.dark .hero .stadium .flood{display:inline;}
+  html.dark .hero .stadium .mark-neon{opacity:.5;}
+  html.dark .hero .stadium .horizon-glow{opacity:1;}
+  html.dark .hero .stadium .horizon-line{opacity:.55;}
   .hero .veil{position:absolute;inset:0;pointer-events:none;
     background:
       radial-gradient(120% 72% at 50% 40%, rgba(8,10,26,0) 0%, rgba(8,10,26,.30) 66%, rgba(5,7,18,.74) 100%),
@@ -3124,14 +3152,19 @@ window.GA_ID='G-L29P5MRWKE';
       <svg class="stadium" viewBox="0 0 100 130" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
         <defs>
           <linearGradient id="nightSky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0"   stop-color="#070d22"/>
-            <stop offset=".55" stop-color="#122253"/>
-            <stop offset="1"   stop-color="#1c3a7e"/>
+            <stop class="sky-a" offset="0"   stop-color="#070d22"/>
+            <stop class="sky-b" offset=".55" stop-color="#122253"/>
+            <stop class="sky-c" offset="1"   stop-color="#1c3a7e"/>
           </linearGradient>
           <linearGradient id="pitchGreen" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#0c6e38"/>
-            <stop offset="1" stop-color="#0a4f2a"/>
+            <stop class="pitch-a" offset="0" stop-color="#0c6e38"/>
+            <stop class="pitch-b" offset="1" stop-color="#0a4f2a"/>
           </linearGradient>
+          <radialGradient id="sunGlow" cx=".5" cy=".5" r=".5">
+            <stop offset="0" stop-color="#FFF3B0" stop-opacity=".95"/>
+            <stop offset=".5" stop-color="#FFD65A" stop-opacity=".5"/>
+            <stop offset="1" stop-color="#FFD65A" stop-opacity="0"/>
+          </radialGradient>
           <radialGradient id="floodGlow" cx=".5" cy=".5" r=".5">
             <stop offset="0" stop-color="#fff7d6" stop-opacity=".9"/>
             <stop offset="1" stop-color="#fff7d6" stop-opacity="0"/>
@@ -3157,11 +3190,18 @@ window.GA_ID='G-L29P5MRWKE';
           </g>
         </defs>
 
-        <!-- night sky -->
+        <!-- sky (day palette in light mode, night palette in dark mode via CSS) -->
         <rect x="0" y="0" width="100" height="66" fill="url(#nightSky)"/>
 
+        <!-- sun (daytime only; hidden in dark mode) -->
+        <g class="sun">
+          <circle cx="22" cy="17" r="20" fill="url(#sunGlow)"/>
+          <circle cx="22" cy="17" r="6.5" fill="#FFE08A"/>
+          <circle cx="22" cy="17" r="6.5" fill="#FFF6CF" opacity=".6"/>
+        </g>
+
         <!-- starfield -->
-        <g fill="#EAF2FF" opacity=".9">
+        <g class="stars" fill="#EAF2FF" opacity=".9">
           <circle cx="9"  cy="9"  r=".5"/><circle cx="21" cy="6"  r=".4"/><circle cx="34" cy="13" r=".45"/>
           <circle cx="47" cy="5"  r=".4"/><circle cx="63" cy="8"  r=".45"/><circle cx="79" cy="11" r=".5"/>
           <circle cx="91" cy="6"  r=".45"/><circle cx="15" cy="20" r=".4"/><circle cx="70" cy="18" r=".35"/>
@@ -3184,16 +3224,16 @@ window.GA_ID='G-L29P5MRWKE';
         <!-- pitch (perspective trapezoid) -->
         <path d="M30 66 L70 66 L112 130 L-12 130 Z" fill="url(#pitchGreen)"/>
         <!-- mowing stripes -->
-        <g clip-path="url(#pitchClip)" fill="#0a5a2e" opacity=".55">
+        <g class="stripes" clip-path="url(#pitchClip)" fill="#0a5a2e" opacity=".55">
           <path d="M38 66 L46 66 L38 130 L14 130 Z"/>
           <path d="M54 66 L62 66 L86 130 L62 130 Z"/>
         </g>
         <!-- horizon glow + glow line where the pitch meets the stands -->
-        <rect x="0" y="62" width="100" height="8" fill="url(#horizonGlow)"/>
-        <rect x="0" y="65.4" width="100" height="1.1" fill="#9af7c8" opacity=".55"/>
+        <rect class="horizon-glow" x="0" y="62" width="100" height="8" fill="url(#horizonGlow)"/>
+        <rect class="horizon-line" x="0" y="65.4" width="100" height="1.1" fill="#9af7c8" opacity=".55"/>
 
-        <!-- neon pitch markings: soft glow pass, then a crisp white pass -->
-        <use href="#marks" stroke="#2FD673" stroke-width="1.8" opacity=".5" filter="url(#neonBlur)"/>
+        <!-- neon pitch markings: soft glow pass (night only), then a crisp white pass -->
+        <use class="mark-neon" href="#marks" stroke="#2FD673" stroke-width="1.8" opacity=".5" filter="url(#neonBlur)"/>
         <use href="#marks" stroke="#eafff3" stroke-width=".5" opacity=".95"/>
       </svg>
       <div class="veil"></div>
