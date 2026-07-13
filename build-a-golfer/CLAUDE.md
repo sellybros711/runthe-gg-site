@@ -7563,6 +7563,24 @@ allows Google Fonts, or self-host Anton.*
   Deployed to /golf. Tunable: `HV_CUP_RX`/`HV_GBALL`, `HV_FLAG_OVR` overrides + the hue formula in `hvFlag`,
   the grass-tuft density (`GS`/0.55 skip) and reed count.
 
+- **CS317 — grandstands + gallery crowds (owner: "add grandstands in typical locations and fans as well...
+  don't want to overcrowd it but it feels like there's so much open space").** Added tournament atmosphere
+  to the hole view (`hvTerrain`); rendering-only, deterministic, cached-per-hole.
+  • **Greenside grandstand:** new `grandstand()` draws a tiered stand (dark structure + shaded back wall +
+    3 rows of small multi-coloured fan dots + a front rail). One per hole, placed at the first clear
+    candidate around the green (behind → right → left → front), gated by a local `openSpot()` (off the green/
+    water/bunker/ocean, off the fairway, in-frame) + a 5-point footprint check — so it fills space in a
+    typical spot and never sits on the play corridor. ~99% of holes get one; tight/island holes that have no
+    room get none (natural variety).
+  • **Gallery crowds:** new `gallery()` draws a loose cluster of fan dots (with tiny shadows); two small
+    clusters flank the front sides of each green (spectators at the ropes) where there's open ground.
+  • Shared `CROWD` palette (muted tans/whites + a few brights) via `cCol()`. Kept deliberately modest (one
+    stand + two small galleries per green) so it reads as a real event without clutter.
+  Verified in Playwright: syntax OK, 143/144 sampled holes place a stand + 142/144 a gallery, terrain renders
+  on all biomes with 0 page errors; screenshots confirm the stands sit behind the greens with visible crowds
+  and the galleries line the green, filling the empty space. Deployed to /golf. Tunable: stand width (`sw`),
+  the candidate order / footprint check, gallery cluster size (`gallery(...,7,7,...)`), the `CROWD` palette.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
