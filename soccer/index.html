@@ -675,24 +675,10 @@
   .hero .stadium .pitch-a{stop-color:#1aa051;} /* brighter day turf */
   .hero .stadium .pitch-b{stop-color:#128440;}
   .hero .stadium .stripes{fill:#0f9048;}
-  .hero .stadium .sun{opacity:1;}
-  .hero .stadium .clouds{opacity:1;}
-  .hero .stadium .blimp{opacity:1;}
-  /* slow, gentle life: sun rays turn, clouds breathe, the blimp crosses the sky */
-  .hero .stadium .sun-rays{transform-box:fill-box;transform-origin:center;animation:sunSpin 60s linear infinite;}
-  .hero .stadium .cloud-a{animation:cloudDrift 26s ease-in-out infinite;}
-  .hero .stadium .cloud-b{animation:cloudDrift 34s ease-in-out infinite reverse;}
-  .hero .stadium .cloud-c{animation:cloudDrift 30s ease-in-out infinite;}
-  .hero .stadium .blimp-move{animation:blimpDrift 38s linear infinite;}
-  @keyframes sunSpin{to{transform:rotate(360deg);}}
-  @keyframes cloudDrift{0%,100%{transform:translateX(0);}50%{transform:translateX(7px);}}
-  @keyframes blimpDrift{0%{transform:translateX(-24px);}100%{transform:translateX(124px);}}
-  @media (prefers-reduced-motion:reduce){
-    .hero .stadium .sun-rays,.hero .stadium .cloud-a,.hero .stadium .cloud-b,
-    .hero .stadium .cloud-c,.hero .stadium .blimp-move{animation:none;}
-  }
+  .hero .stadium .fl-pole{fill:#8496b0;}       /* silver stanchions by day */
+  .hero .stadium .fl-head{fill:#a6b4c8;}
   .hero .stadium .stars{opacity:0;}            /* no stars by day */
-  .hero .stadium .flood{display:none;}         /* floodlight glow off by day */
+  .hero .stadium .flood{display:none;}         /* floodlight glow + lamps off by day */
   .hero .stadium .mark-neon{opacity:0;}        /* no neon glow on the lines */
   .hero .stadium .horizon-glow{opacity:0;}
   .hero .stadium .horizon-line{opacity:0;}
@@ -703,14 +689,35 @@
   html.dark .hero .stadium .pitch-a{stop-color:#0c6e38;}
   html.dark .hero .stadium .pitch-b{stop-color:#0a4f2a;}
   html.dark .hero .stadium .stripes{fill:#0a5a2e;}
-  html.dark .hero .stadium .sun{opacity:0;}
-  html.dark .hero .stadium .clouds{display:none;}
-  html.dark .hero .stadium .blimp{display:none;}
+  html.dark .hero .stadium .fl-pole{fill:#22335f;}
+  html.dark .hero .stadium .fl-head{fill:#16213f;}
   html.dark .hero .stadium .stars{opacity:.9;}
   html.dark .hero .stadium .flood{display:inline;}
   html.dark .hero .stadium .mark-neon{opacity:.5;}
   html.dark .hero .stadium .horizon-glow{opacity:1;}
   html.dark .hero .stadium .horizon-line{opacity:.55;}
+  /* ---- daytime sky overlay (sun, clouds, blimp) — positioned in the hero's sky
+     band so it's always visible no matter how the stadium SVG is cropped ---- */
+  .hero .sky-day{position:absolute;left:0;right:0;top:0;height:100%;z-index:1;
+    pointer-events:none;overflow:hidden;}
+  html.dark .hero .sky-day{display:none;}      /* night has its own sky */
+  .hero .sd-sun{position:absolute;top:6%;right:11%;width:clamp(52px,7.5vw,92px);height:auto;
+    filter:drop-shadow(0 0 16px rgba(255,214,90,.6));}
+  .hero .sd-rays{transform-box:fill-box;transform-origin:center;animation:sdSunSpin 70s linear infinite;}
+  .hero .sd-cloud{position:absolute;width:clamp(60px,11vw,132px);height:auto;opacity:.92;
+    filter:drop-shadow(0 3px 6px rgba(40,70,110,.18));}
+  .hero .sd-cloud-1{top:9%;left:5%;animation:sdCloud 30s ease-in-out infinite;}
+  .hero .sd-cloud-2{top:19%;left:58%;transform:scale(.8);animation:sdCloud 40s ease-in-out infinite reverse;}
+  .hero .sd-cloud-3{top:6%;left:37%;transform:scale(.62);opacity:.82;animation:sdCloud 34s ease-in-out infinite;}
+  .hero .sd-blimp{position:absolute;top:12%;left:-16%;width:clamp(76px,13vw,150px);height:auto;
+    filter:drop-shadow(0 4px 7px rgba(30,50,80,.28));animation:sdBlimp 42s linear infinite;}
+  @keyframes sdSunSpin{to{transform:rotate(360deg);}}
+  @keyframes sdCloud{0%,100%{margin-left:0;}50%{margin-left:22px;}}
+  @keyframes sdBlimp{0%{left:-16%;}100%{left:114%;}}
+  @media (prefers-reduced-motion:reduce){
+    .hero .sd-rays,.hero .sd-cloud,.hero .sd-blimp{animation:none;}
+    .hero .sd-blimp{left:52%;}
+  }
   /* DAY veil — lighter up top so the sky, sun and blimp read bright; still darkens
      the lower pitch for button/text contrast. Night restores the deep veil below. */
   .hero .veil{position:absolute;inset:0;pointer-events:none;
@@ -3220,48 +3227,6 @@ window.GA_ID='G-L29P5MRWKE';
         <!-- sky (day palette in light mode, night palette in dark mode via CSS) -->
         <rect x="0" y="0" width="100" height="66" fill="url(#nightSky)"/>
 
-        <!-- daytime sky dressing (all hidden in dark mode): clouds, sun, blimp -->
-        <g class="clouds" fill="#ffffff">
-          <g transform="translate(15 21)"><g class="cloud cloud-a">
-            <ellipse cx="0" cy="1" rx="7" ry="2.4" opacity=".92"/>
-            <circle cx="-3.4" cy="0" r="2.4" opacity=".92"/><circle cx="0" cy="-1.5" r="3.1" opacity=".92"/><circle cx="3.6" cy="-.2" r="2.6" opacity=".92"/>
-          </g></g>
-          <g transform="translate(60 27) scale(.78)"><g class="cloud cloud-b">
-            <ellipse cx="0" cy="1" rx="7" ry="2.4" opacity=".85"/>
-            <circle cx="-3.4" cy="0" r="2.4" opacity=".85"/><circle cx="0" cy="-1.5" r="3.1" opacity=".85"/><circle cx="3.6" cy="-.2" r="2.6" opacity=".85"/>
-          </g></g>
-          <g transform="translate(43 11) scale(.62)"><g class="cloud cloud-c">
-            <ellipse cx="0" cy="1" rx="7" ry="2.4" opacity=".8"/>
-            <circle cx="-3.4" cy="0" r="2.4" opacity=".8"/><circle cx="0" cy="-1.5" r="3.1" opacity=".8"/><circle cx="3.6" cy="-.2" r="2.6" opacity=".8"/>
-          </g></g>
-        </g>
-
-        <!-- sun (daytime only) -->
-        <g class="sun">
-          <circle cx="74" cy="12" r="19" fill="url(#sunGlow)"/>
-          <g class="sun-rays" stroke="#FFDE7A" stroke-width="1.1" stroke-linecap="round" opacity=".9">
-            <line x1="74" y1="1.4" x2="74" y2="5"/><line x1="74" y1="19" x2="74" y2="22.6"/>
-            <line x1="63.4" y1="12" x2="67" y2="12"/><line x1="81" y1="12" x2="84.6" y2="12"/>
-            <line x1="66.5" y1="4.5" x2="69.1" y2="7.1"/><line x1="78.9" y1="16.9" x2="81.5" y2="19.5"/>
-            <line x1="66.5" y1="19.5" x2="69.1" y2="16.9"/><line x1="78.9" y1="7.1" x2="81.5" y2="4.5"/>
-          </g>
-          <circle cx="74" cy="12" r="6.3" fill="#FFD24A"/>
-          <circle cx="74" cy="12" r="6.3" fill="#FFF3B0" opacity=".5"/>
-        </g>
-
-        <!-- blimp drifting across the sky (daytime only) -->
-        <g class="blimp" transform="translate(0 18)">
-          <g class="blimp-move">
-            <ellipse cx="0" cy="0" rx="7.6" ry="2.7" fill="#dfe4ec" stroke="#a7afbe" stroke-width=".3"/>
-            <ellipse cx="-2.6" cy="-.7" rx="3.4" ry="1.1" fill="#ffffff" opacity=".55"/>
-            <rect x="-4.2" y="-.55" width="7.4" height="1.1" rx=".5" fill="#E5402A" opacity=".85"/>
-            <path d="M6.8 0 L9.6 -1.9 L9.6 1.9 Z" fill="#c6cdd8" stroke="#a7afbe" stroke-width=".25" stroke-linejoin="round"/>
-            <rect x="-2.6" y="2.4" width="5.2" height="1.4" rx=".6" fill="#33405e"/>
-            <line x1="-1.6" y1="2.7" x2="-1.6" y2="1.9" stroke="#8a93a5" stroke-width=".3"/>
-            <line x1="1.6" y1="2.7" x2="1.6" y2="1.9" stroke="#8a93a5" stroke-width=".3"/>
-          </g>
-        </g>
-
         <!-- starfield -->
         <g class="stars" fill="#EAF2FF" opacity=".9">
           <circle cx="9"  cy="9"  r=".5"/><circle cx="21" cy="6"  r=".4"/><circle cx="34" cy="13" r=".45"/>
@@ -3271,16 +3236,16 @@ window.GA_ID='G-L29P5MRWKE';
           <circle cx="5"  cy="30" r=".35"/><circle cx="55" cy="21" r=".3"/><circle cx="40" cy="28" r=".3"/>
         </g>
 
-        <!-- floodlight towers (glow + lamps flicker independently) -->
+        <!-- floodlight towers (silver stanchions by day; glow + lamps flicker at night) -->
         <g>
-          <rect x="13.4" y="40" width="1.2" height="26" fill="#22335f"/>
-          <rect x="8.5" y="36" width="11" height="5" rx="1" fill="#16213f"/>
+          <rect class="fl-pole" x="13.4" y="40" width="1.2" height="26"/>
+          <rect class="fl-head" x="8.5" y="36" width="11" height="5" rx="1"/>
           <circle class="flood" cx="14" cy="40" r="15" fill="url(#floodGlow)"/>
-          <g class="flood" fill="#fff7d6"><circle cx="10.5" cy="38.5" r=".5"/><circle cx="13" cy="38.5" r=".5"/><circle cx="15.5" cy="38.5" r=".5"/><circle cx="18" cy="38.5" r=".5"/></g>
-          <rect x="85.4" y="40" width="1.2" height="26" fill="#22335f"/>
-          <rect x="80.5" y="36" width="11" height="5" rx="1" fill="#16213f"/>
+          <g class="flood flood-lamp" fill="#fff7d6"><circle cx="10.5" cy="38.5" r=".5"/><circle cx="13" cy="38.5" r=".5"/><circle cx="15.5" cy="38.5" r=".5"/><circle cx="18" cy="38.5" r=".5"/></g>
+          <rect class="fl-pole" x="85.4" y="40" width="1.2" height="26"/>
+          <rect class="fl-head" x="80.5" y="36" width="11" height="5" rx="1"/>
           <circle class="flood alt" cx="86" cy="40" r="15" fill="url(#floodGlow)"/>
-          <g class="flood alt" fill="#fff7d6"><circle cx="82.5" cy="38.5" r=".5"/><circle cx="85" cy="38.5" r=".5"/><circle cx="87.5" cy="38.5" r=".5"/><circle cx="90" cy="38.5" r=".5"/></g>
+          <g class="flood flood-lamp alt" fill="#fff7d6"><circle cx="82.5" cy="38.5" r=".5"/><circle cx="85" cy="38.5" r=".5"/><circle cx="87.5" cy="38.5" r=".5"/><circle cx="90" cy="38.5" r=".5"/></g>
         </g>
 
         <!-- pitch (perspective trapezoid) -->
@@ -3300,6 +3265,33 @@ window.GA_ID='G-L29P5MRWKE';
       </svg>
       <div class="veil"></div>
       <div class="crt"></div>
+
+      <!-- daytime sky dressing: sits in the hero's sky band so it's always visible
+           regardless of how the stadium SVG is cropped. Hidden in dark mode. -->
+      <div class="sky-day" aria-hidden="true">
+        <svg class="sd-sun" viewBox="0 0 64 64">
+          <g class="sd-rays" stroke="#FFD65A" stroke-width="3" stroke-linecap="round">
+            <line x1="32" y1="2" x2="32" y2="11"/><line x1="32" y1="53" x2="32" y2="62"/>
+            <line x1="2" y1="32" x2="11" y2="32"/><line x1="53" y1="32" x2="62" y2="32"/>
+            <line x1="10.8" y1="10.8" x2="17.2" y2="17.2"/><line x1="46.8" y1="46.8" x2="53.2" y2="53.2"/>
+            <line x1="10.8" y1="53.2" x2="17.2" y2="46.8"/><line x1="46.8" y1="17.2" x2="53.2" y2="10.8"/>
+          </g>
+          <circle cx="32" cy="32" r="14" fill="#FFD24A"/>
+          <circle cx="32" cy="32" r="14" fill="#FFF3B0" opacity=".5"/>
+        </svg>
+        <svg class="sd-cloud sd-cloud-1" viewBox="0 0 66 30"><g fill="#fff"><ellipse cx="33" cy="21" rx="27" ry="7.5"/><circle cx="20" cy="17" r="9"/><circle cx="34" cy="12" r="12"/><circle cx="47" cy="17" r="9"/></g></svg>
+        <svg class="sd-cloud sd-cloud-2" viewBox="0 0 66 30"><g fill="#fff"><ellipse cx="33" cy="21" rx="27" ry="7.5"/><circle cx="20" cy="17" r="9"/><circle cx="34" cy="12" r="12"/><circle cx="47" cy="17" r="9"/></g></svg>
+        <svg class="sd-cloud sd-cloud-3" viewBox="0 0 66 30"><g fill="#fff"><ellipse cx="33" cy="21" rx="27" ry="7.5"/><circle cx="20" cy="17" r="9"/><circle cx="34" cy="12" r="12"/><circle cx="47" cy="17" r="9"/></g></svg>
+        <svg class="sd-blimp" viewBox="0 0 46 20">
+          <ellipse cx="21" cy="9" rx="16.5" ry="6" fill="#dfe4ec" stroke="#a7afbe" stroke-width=".7"/>
+          <ellipse cx="15" cy="6.6" rx="7.5" ry="2.6" fill="#fff" opacity=".55"/>
+          <rect x="6.5" y="7.4" width="18" height="2.6" rx="1.2" fill="#E5402A" opacity=".85"/>
+          <path d="M36 9 L42.5 4 L42.5 14 Z" fill="#c6cdd8" stroke="#a7afbe" stroke-width=".6" stroke-linejoin="round"/>
+          <rect x="15" y="15" width="12" height="3.2" rx="1.4" fill="#33405e"/>
+          <line x1="17.5" y1="15" x2="17.5" y2="13" stroke="#8a93a5" stroke-width=".7"/>
+          <line x1="24.5" y1="15" x2="24.5" y2="13" stroke="#8a93a5" stroke-width=".7"/>
+        </svg>
+      </div>
 
       <!-- flag lane (scrolls left) above the trophy -->
       <div class="flag-marquee top"><div class="flag-lane left" id="flag-lane-1"></div></div>
