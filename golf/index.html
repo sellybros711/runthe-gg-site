@@ -2505,7 +2505,10 @@ function summaryResumeExtra(){   // season results page: the full completed seas
     rivalOutcome:S.rivalOutcome||null, freshRival:S.freshRival||null, freshRivalOutgrown:S.freshRivalOutgrown||null,
     summaryTab:S.summaryTab||'season' } };
 }
-function offseasonResumeExtra(){ return { resumeScreen:'offseason', offseason:S.offseason||null }; }
+// CS332: also snapshot the IN-PROGRESS spin (the revealed golfer + the seen-this-off-season set) so
+// navigating away after a spin and coming back CANNOT hand out a fresh free re-roll (spin-forever cheat).
+function offseasonResumeExtra(){ return { resumeScreen:'offseason', offseason:S.offseason||null,
+  offCurrent:(S.screen==='offseason'&&!S.spinning)?(S.current||null):null, offRevealed:S.revealed?[...S.revealed]:[] }; }
 // auto-checkpoint the in-progress season at a clean event boundary so a refresh / going home resumes here.
 // Signed-in only (careers are account-scoped); the in-progress event re-sims on resume (it isn't recorded yet).
 function autoSaveSeason(){
@@ -2560,7 +2563,8 @@ function resumeCareer(){ const r=careerSaveInfo(); if(!r || r.ended) return;   /
   }
   if(r.resumeScreen==='offseason' && r.offseason){   // resume INTO the off-season tune-up (world already advanced)
     ensureWorld(); RNG=Math.random;
-    S.offseason=r.offseason; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
+    // CS332: restore the in-progress spin (same golfer + already-seen set) so a mid-spin exit can't refund a re-roll
+    S.offseason=r.offseason; S.revealed=new Set(r.offRevealed||[]); S.current=r.offCurrent||null; S.spinning=false; S.drawRng=Math.random;
     S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.autoSim=LS.get('bag_autosim',true);
     track('career_resume',{year:S.year,at:'offseason'}); S.screen='offseason'; render(); return;
   }
@@ -6470,13 +6474,16 @@ function reveal(){
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const land=drawGolfer(S.drawRng, RPOOL, S.revealed);   // rarity-weighted bucket pull
   if(!land){S.spinning=false;render();return;}
-  if(reduce){S.current=land;S.spinning=false;render();rarityFlash(land);return;}
+  if(reduce){S.current=land;S.spinning=false;render();rarityFlash(land);offPersistSpin();return;}
   let ticks=0, total=16+Math.floor(Math.random()*6);
   const iv=setInterval(()=>{
     reel.textContent=GOLFERS[Math.floor(Math.random()*GOLFERS.length)].name;   // cosmetic flicker
-    if(++ticks>=total){clearInterval(iv);S.current=land;S.spinning=false;render();rarityFlash(land);}
+    if(++ticks>=total){clearInterval(iv);S.current=land;S.spinning=false;render();rarityFlash(land);offPersistSpin();}
   },72);
 }
+// CS332: once an off-season spin LANDS, persist it (revealed golfer + seen set) so leaving and returning
+// resumes on the SAME golfer — you must take it or spend a re-spin, never get a free re-roll by navigating away.
+function offPersistSpin(){ if(S.offseason && S.screen==='offseason' && S.current && !S.spinning){ try{ saveCareer(offseasonResumeExtra()); }catch(e){} } }
 function rarityFlash(g){
   if(g.rarity==='Legendary'){ toast('★ '+g.name+', LEGENDARY!'); chime(); track('legendary_pulled',{name:g.name}); }
   else if(g.rarity==='Epic') toast('◆ '+g.name+', Epic');
