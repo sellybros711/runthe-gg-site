@@ -11860,7 +11860,7 @@ function hvTerrain(g, seedN, B){
       const ang=hvHash(gseed,70+c,3)*6.283, rr=0.25+hvHash(gseed,80+c,3)*0.6;
       const cx=gpx+Math.cos(ang)*grx*0.6*rr, cy=gpy+Math.sin(ang)*gry*0.6*rr;
       const lr=grx*(0.42+hvHash(gseed,90+c,3)*0.42), light=(c%2===0);
-      el+=`<path d="${hvBlobD(cx,cy,lr,lr*0.72,gseed^Math.imul(c+1,0x2b3),0.42,9)}" fill="${light?'#eaffce':'#04160b'}" opacity="${light?'.14':'.16'}"/>`;
+      el+=`<path d="${hvBlobD(cx,cy,lr,lr*0.72,gseed^Math.imul(c+1,0x2b3),0.42,9)}" fill="${light?'#eaffce':'#04160b'}" opacity="${light?'.08':'.1'}"/>`;
     }
     el+=`</g>`;
     s.push(el);
