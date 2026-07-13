@@ -2511,7 +2511,7 @@ function autoSaveSeason(){
   saveCareer({ resumeScreen:'season', mid:{ schedule:S.schedule, evtIndex:S.evtIndex, freshAch:S.freshAch||[],
     season:{ field:S.season.field, results:S.season.results, totals:S.season.totals, me:S.season.me,
       contracts:S.season.contracts, skipped:S.season.skipped, coinRaw0:S.season.coinRaw0,
-      stops:S.season.stops, momentsShown:S.season.momentsShown, grudgeShown:S.season.grudgeShown, sideMoney:S.season.sideMoney,
+      stops:S.season.stops, momentsShown:S.season.momentsShown, grudgeShown:S.season.grudgeShown, sideMoney:S.season.sideMoney, _lastStopEvt:S.season._lastStopEvt,
       confidence:S.season.confidence, followers0:S.season.followers0 } } });
 }
 function clearCareerSave(){ LS.set(acctKey('bag_careersave'),null); cloudPush(); }
@@ -6626,7 +6626,7 @@ function startSeason(majorsOnly){
   S._bannerNet=null; S._confBar=null; S._respBar=null;   // CS284/285: reset the banner count-up + meter-glide baselines so a new season's first render doesn't animate from prior values
   S._railIdx=null; S._railScroll=null;                   // CS285: reset the season-rail smooth-scroll tracking so a new season snaps to center (no glide from last season's schedule position)
   if(S.career && S.career.story){ S.career.story.seasonCount=0; }   // reset the per-season storyline cap (CS225)
-  S.season.stops=0; S.season.momentsShown=0; S.season.grudgeShown=0; S.season.sideMoney=0;   // shared interruption budget + per-season grudge cap (CS295) + CS325 off-course money
+  S.season.stops=0; S.season.momentsShown=0; S.season.grudgeShown=0; S.season.sideMoney=0; S.season._lastStopEvt=-99;   // interruption budget + grudge cap (CS295) + off-course money (CS325) + no-back-to-back tracker (CS327)
   { const st=careerStory(); st.dilSeason=0; st._lastDom=null; }   // CS325: reset per-season dilemma cap
   if(!S.daily && !S.circuitMode && S.career){   // CS226 momentum: carry confidence over with gentle reversion; snapshot followers for the season delta
     const st=careerStory(); const base=(st.confidence!=null?st.confidence:CONF_START);
@@ -9788,14 +9788,17 @@ function scrSeason(){
   // auto-sims Thursday, so roundsDone===1 at the first scheduler render for this event. Career play only.
   if(!ce.done && ce.roundsDone===1 && !ce._storyChecked && S.evtIndex>0 && !S.circuitMode && !S.daily){
     ce._storyChecked=true;
-    if(seasonStopLeft()>0){
-      // CS325/326: a DUE arc always wins; else prefer a fresh dilemma (~60%) over a press beat. Marks the
-      // event interrupted so the Sunday Moment won't ALSO fire this week (at most one pop-up per event).
+    // CS327: never interrupt in back-to-back weeks — require at least one clean event since the last pop-up
+    // (dilemma / presser / Moment), so players flow through the sim instead of being stopped twice in a row.
+    const lastStop=(S.season&&S.season._lastStopEvt!=null)?S.season._lastStopEvt:-99;
+    if(seasonStopLeft()>0 && (S.evtIndex-lastStop)>=2){
+      const mark=()=>{ ce._interrupted=true; S.season._lastStopEvt=S.evtIndex; clearTimeout(seasonTimer); };
+      // CS325/326: a DUE arc always wins; else prefer a fresh dilemma (~60%) over a press beat.
       const dil = maybeDilemma(ce);   // includes any due follow-up arc (priority)
-      if(dil && (dil.isArc || Math.random()<0.6)){ ce._interrupted=true; clearTimeout(seasonTimer); showDilemma(dil); return; }
+      if(dil && (dil.isArc || Math.random()<0.6)){ mark(); showDilemma(dil); return; }
       const sb=maybeStoryline(ce);
-      if(sb){ ce._interrupted=true; clearTimeout(seasonTimer); showStoryline(sb); return; }
-      if(dil){ ce._interrupted=true; clearTimeout(seasonTimer); showDilemma(dil); return; }   // presser roll empty → take the dilemma
+      if(sb){ mark(); showStoryline(sb); return; }
+      if(dil){ mark(); showDilemma(dil); return; }   // presser roll empty → take the dilemma
     }
   }
   // THE MOMENT: heading into Sunday in contention → pause and offer to play the final round.
@@ -9807,7 +9810,7 @@ function scrSeason(){
     if(mi){
       // CS295: bill at most ONE grudge match per season — a later contended Moment stays a normal Moment
       if(mi.grudge){ if((S.season.grudgeShown||0)>=1) mi.grudge=null; else S.season.grudgeShown=(S.season.grudgeShown||0)+1; }
-      S.season.stops=(S.season.stops||0)+1; S.season.momentsShown=(S.season.momentsShown||0)+1;
+      S.season.stops=(S.season.stops||0)+1; S.season.momentsShown=(S.season.momentsShown||0)+1; S.season._lastStopEvt=S.evtIndex;   // CS327: a Moment also blocks a pop-up the very next event
       clearTimeout(seasonTimer); momentPopup(ce, mi); return; }
   }
   // scheduling
