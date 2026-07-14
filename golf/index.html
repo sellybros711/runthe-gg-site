@@ -548,6 +548,12 @@ window.GA_ID='G-L29P5MRWKE';
   .attr.locked .take{background:none!important; padding:0 2px!important; font-size:13px!important}
   .osactions{max-width:520px; margin:9px auto 0; display:flex; flex-direction:column; gap:9px}
   .osactions .btn{margin:0}
+  /* CS338: draft unified-grid tiles — filled pick / open draftable / open placeholder */
+  .attr.dfilled{background:rgba(53,214,160,.07); border-color:rgba(53,214,160,.2)}
+  .attr.dfilled .lab{flex:0 0 auto} .attr.dfilled .val{color:#41dea6}
+  .attr.dfilled .dwho{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10.5px; color:var(--muted); text-align:right; margin-right:1px}
+  .attr.dempty{opacity:.5} .attr.dempty .val{color:var(--muted)}
+  .attr.dtake .lab{flex:1}
 
   .buildhero{display:flex; align-items:center; gap:20px; justify-content:center;
     background:linear-gradient(157deg, rgba(22,62,51,.66), rgba(8,30,24,.74));
@@ -6415,95 +6421,90 @@ function buildHero(){
     </div>
     <div class="radarwrap">${radarSVG()}</div></div>`);
 }
+// CS338: compact, mobile-first "Build your golfer" draft — same UX as the CS337 off-season. ONE always-present
+// 8-slot grid: filled slots show your picks (your scorecard), open slots show the spun golfer's rating to
+// draft. So you never scroll to a separate scorecard, and the tile count never changes → nothing jumps on a
+// spin. A reserved reel slot + compact avatar/OVR hero + sponsors-free layout keep it all on one screen.
 function scrDraft(){
-  // self-heal: a full board should never sit on the draft screen (it can't be advanced from here) —
-  // route straight to the build screen. Guards against any path that lands here already 8/8.
   if(filledCount()>=8 && !S.spinning){ S.current=null; S.screen='build'; return scrBuild(); }
-  const pips=Array.from({length:8},(_,i)=>`<span class="pip ${i<filledCount()?'on':''}"></span>`).join('');
-  add($(`<div class="draftbar"><div>
-    <h2 style="margin:0">Build your golfer</h2>
-    <div class="pips">${pips}</div></div>
-    <div class="spins"><span style="color:var(--gold)">${S.reSpins}</span> <span class="muted small">re-spins</span></div></div>`));
-  if(!LS.get('bag_tip_seen',false) && filledCount()===0 && !S.current && !S.spinning){
-    const tip=$(`<div class="scout" style="margin-bottom:12px;border-color:var(--gold)">
-      <b style="color:var(--gold)">How it works</b>, You fill <b>8 skill slots</b>. Each spin reveals a golfer, take one of their ratings for a slot. Don't want them? Use one of your <b>2 re-spins</b> to pass. That's <b>8 picks + 2 re-spins</b>, then your golfer's built.
-      <button class="btn ghost" style="margin-top:10px;font-size:13px;padding:8px">Got it</button></div>`);
+  const spun=!!(S.current && !S.spinning), g=S.current;
+  const filled=filledCount(), left2go=8-filled;
+  let ovr=82; try{ ovr=Math.round(buildPlayer().skill); }catch(e){}
+  const dailyKeys=(S.daily && DAILY_COURSES[S.dailyCourse])?new Set(dCourseSkillTop(DAILY_COURSES[S.dailyCourse],3).map(x=>x.k)):null;
+
+  add($(`<div class="center"><span class="tag">${S.daily?'Daily Challenge · Build':'Career · Build Your Golfer'}</span></div>`));
+
+  // first-time "how it works" tip (only at the very start)
+  if(!LS.get('bag_tip_seen',false) && filled===0 && !S.current && !S.spinning){
+    const tip=$(`<div class="scout" style="max-width:520px;margin:0 auto 10px;border-color:var(--gold)">
+      <b style="color:var(--gold)">How it works</b> — fill <b>8 skill slots</b>. Each spin reveals a golfer; tap one of their ratings to draft it into a slot. Don't like them? Use a <b>re-spin</b> to pass. 8 picks + 2 re-spins, then your golfer's built.
+      <button class="btn ghost" style="margin-top:9px;font-size:13px;padding:8px">Got it</button></div>`);
     tip.querySelector('button').onclick=()=>{LS.set('bag_tip_seen',true);render();};
     add(tip);
   }
+
+  // compact hero: small avatar + name + live OVR + drafted/re-spin budget (no giant figure/radar to scroll)
+  const hero=$(`<div class="oshero"></div>`);
+  const av=$(`<div class="oshero-av"></div>`); av.innerHTML=avatarShowHTML(); hero.appendChild(av);
+  const pips=Array.from({length:8},(_,i)=>`<span class="pip ${i<filled?'on':''}"></span>`).join('');
+  hero.appendChild($(`<div class="oshero-info">
+    <div class="oshero-name">${esc(S.name||'Your Golfer')}</div>
+    <div class="oshero-ovr"><b>${ovr}</b> <span>OVR</span></div>
+    <div class="oshero-budget"><span class="pips">${pips}</span>
+      <span class="small"><b style="color:var(--gold)">${filled}</b>/8 drafted · <b style="color:var(--gold)">${S.reSpins}</b> re-spin${S.reSpins===1?'':'s'}</span></div></div>`));
+  add(hero);
+
+  // daily course focus (compact one-liner)
   if(S.daily && DAILY_COURSES[S.dailyCourse]){
     const c=DAILY_COURSES[S.dailyCourse];
-    const topTags=dCourseSkillTop(c,3).map(x=>`<span class="tag" style="font-size:12px;color:var(--gold);border-color:var(--gold)">★ ${x.short}</span>`).join(' ');
-    const planNote={conservative:'You\'re playing it Safe, steady wins.',balanced:'Balanced plan, a complete build holds up.',aggressive:'You\'re Aggressive, these strengths fuel the low number (and protect against blow-ups).'}[S.dailyPlan]||'';
-    add($(`<div class="scout" style="margin-bottom:12px;border-color:var(--gold)">
-      <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;justify-content:space-between">
-        <b style="color:var(--gold)">⛳ Building for ${esc(dShort(c.v))}</b>
-        <span class="small muted">${dCondLabel(S.dailyCond)} · Par ${c.par}</span></div>
-      <div style="margin-top:9px"><span class="small muted" style="text-transform:uppercase;letter-spacing:.1em;font-weight:800">Focus your build on</span>
-        <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">${topTags}</div></div>
-      <div class="small muted" style="margin-top:9px;line-height:1.4">These skills are weighted heaviest here, golfers strong in them score best. ${planNote} Look for the ★ on the skill tiles.</div></div>`));
+    const topTags=dCourseSkillTop(c,3).map(x=>`★${x.short}`).join(' · ');
+    add($(`<div class="osstat" style="color:#cfe0d8"><b style="color:var(--gold)">⛳ ${esc(dShort(c.v))}</b> · Par ${c.par} · ${dCondLabel(S.dailyCond)} — favor <b style="color:var(--gold)">${topTags}</b></div>`));
   }
-  add(buildHero());   // full-width player card on top so both columns below carry content
-  if(S.current || S.spinning){
-    const g=S.current;
-    const rar=(g&&!S.spinning)?g.rarity:null;
-    const RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
-    const tag=rar?RTAG[rar]:'';
-    const rarCls=rar?('rar-'+rar.toLowerCase()):'';
-    const sub=g&&!S.spinning?[g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · '):'';
-    add($(`<div class="reel ${S.spinning?'spinning':''} ${rarCls} ${g&&!S.spinning?'landed':''}">
-      ${tag?`<div class="reeltag">${tag}</div>`:''}
-      <div class="name">${g?g.name:'…'}</div>
-      <div class="sub">${sub}</div></div>`));
-  }
-  // two responsive columns: action (reel + picks) | your build (radar + scorecard)
-  const cols=$(`<div class="cols"></div>`);
-  const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
-  cols.appendChild(left); cols.appendChild(right);
-  // move the reel (added above) into the left column if present
-  const reelEl=RT.querySelector('.reel'); if(reelEl) left.appendChild(reelEl);
-  add(cols);
-  if(S.current && !S.spinning){
-    left.appendChild($(`<div class="small muted" style="margin:10px 0 -2px;text-align:center;letter-spacing:.04em">Tap a skill to draft it into your bag</div>`));
-    const grid=$(`<div class="attrs"></div>`);
-    const dailyKeys=(S.daily && DAILY_COURSES[S.dailyCourse])?new Set(dCourseSkillTop(DAILY_COURSES[S.dailyCourse],3).map(x=>x.k)):null;
-    CATS.forEach(cat=>{
-      const filled=!!S.slots[cat.k];
-      const key=dailyKeys&&dailyKeys.has(cat.k);
-      const rv=S.current[cat.k], rc=rv>=90?'#d8ad4a':rv>=80?'#49b675':rv>=70?'#7ec8ff':'#9fb0bd';   // CS269 rating→strength color
-      const b=$(`<button class="attr${key?' keyhole':''}" ${filled?'disabled':''} aria-label="${filled?'Already filled: '+cat.short:'Draft '+cat.short+', rated '+rv+(key?', key skill for today\'s course':'')}">
-        ${key?'<span class="keystar" aria-hidden="true">★</span>':''}<span class="lab">${cat.short}</span><span class="val">${rv}</span><span class="attrbar"><i style="width:${Math.min(100,rv)}%;background:${rc}"></i></span>${filled?'':'<span class="take">Take</span>'}</button>`);
-      if(!filled) b.onclick=()=>takeAttr(cat.k);
-      grid.appendChild(b);
-    });
-    left.appendChild(grid);
-    if(S.reSpins>0){
-      const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${S.reSpins} left</button>`);
-      re.onclick=reSpin; left.appendChild(re);
-    } else if(!S.daily && mulliSpins()>0){
-      const mb=$(`<button class="btn ghost" style="margin-top:10px;border-color:#8a6bf0;color:#c9b8ff">🌀 Use a Mulli-Spin · ${mulliSpins()} left<span class="sub">A banked extra spin from weekly challenges</span></button>`);
-      mb.onclick=mulliSpinDraft; left.appendChild(mb);
-      left.appendChild($(`<div class="small muted center" style="margin-top:8px">Out of re-spins, or take one of ${S.current.name}'s skills.</div>`));
-    } else {
-      left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left, take one of ${S.current.name}'s skills.</div>`));
-    }
-  } else if(!S.spinning){
-    const left2go=8-filledCount();
-    const spin=$(`<button class="btn teal" style="font-size:24px;padding:19px">Spin the Wheel<span class="sub">${filledCount()===0?'Reveal a golfer':left2go+' slot'+(left2go>1?'s':'')+' to fill'}</span></button>`);
-    spin.onclick=spin_; left.appendChild(spin);
-    const how=$(`<button class="btn ghost" style="margin-top:10px;font-size:12px;padding:9px">How to play · pull odds</button>`);
-    how.onclick=openRules;
-    left.appendChild(how);
-  }
-  right.appendChild($(`<h2 style="margin:2px 0 8px">Your scorecard · ${filledCount()}/8</h2>`));
-  const card=$(`<div class="card-grid"></div>`);
+
+  // reserved reel slot — same height idle / spinning / landed, so tapping Spin (or an auto-spin after a take) never jumps
+  const rar=spun?g.rarity:null, RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
+  add($(`<div class="osreel ${S.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
+    ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:''}
+    <div class="name">${S.spinning?'…':(spun?esc(g.name):(filled===0?'Spin to reveal a golfer':'Spin for your next pick'))}</div>
+    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.spinning?'':(filled?filled+'/8 in your bag below':'Your bag fills in below'))}</div></div>`));
+
+  // hint
+  if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(g.name)}</b>'s rating into your bag</div>`));
+  else if(!S.spinning && filled<8) add($(`<div class="small center osgridhint muted">Spin the wheel, then tap a slot to draft a rating</div>`));
+
+  // THE unified grid: 8 slot tiles. Filled → your pick; open + golfer shown → draft option; open + idle → placeholder.
+  const grid=$(`<div class="attrs osgrid"></div>`);
   CATS.forEach(cat=>{
     const f=S.slots[cat.k];
-    card.appendChild($(`<div class="slot ${f?'':'empty'}">
-      <span class="lab">${cat.short}</span><span class="who">${f?f.golfer:', '}</span>
-      <span class="v">${f?f.value:'··'}</span></div>`));
+    if(f){
+      grid.appendChild($(`<div class="attr static dfilled" aria-label="${cat.short} drafted from ${esc(f.golfer)}, rated ${f.value}">
+        <span class="lab">${cat.short}</span><span class="dwho">${esc(f.golfer)}</span><span class="val">${f.value}</span></div>`));
+      return;
+    }
+    if(spun){
+      const rv=S.current[cat.k], rc=rv>=90?'#d8ad4a':rv>=80?'#49b675':rv>=70?'#7ec8ff':'#9fb0bd', key=dailyKeys&&dailyKeys.has(cat.k);
+      const b=$(`<button class="attr dtake${key?' keyhole':''}" aria-label="Draft ${cat.short}, rated ${rv}${key?', a key skill for today\'s course':''}">
+        ${key?'<span class="keystar" aria-hidden="true">★</span>':''}<span class="lab">${cat.short}</span><span class="val" style="color:${rc}">${rv}</span><span class="take">Take</span><span class="attrbar"><i style="width:${Math.min(100,rv)}%;background:${rc}"></i></span></button>`);
+      b.onclick=()=>takeAttr(cat.k);
+      grid.appendChild(b); return;
+    }
+    grid.appendChild($(`<div class="attr static dempty" aria-label="${cat.short} open"><span class="lab">${cat.short}</span><span class="val">—</span></div>`));
   });
-  right.appendChild(card);
+  add(grid);
+
+  // actions
+  const actions=$(`<div class="osactions"></div>`);
+  if(spun){
+    if(S.reSpins>0){ const re=$(`<button class="btn gold">Re-spin · ${S.reSpins} left<span class="sub">Pass on ${esc(g.name)} for a new golfer</span></button>`); re.onclick=reSpin; actions.appendChild(re); }
+    else if(!S.daily && mulliSpins()>0){ const mb=$(`<button class="btn ghost" style="border-color:#8a6bf0;color:#c9b8ff">🌀 Use a Mulli-Spin · ${mulliSpins()} left<span class="sub">A banked extra spin from weekly challenges</span></button>`); mb.onclick=mulliSpinDraft; actions.appendChild(mb); }
+    else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">No re-spins left — draft one of ${esc(g.name)}'s ratings above.</div>`));
+  } else if(!S.spinning){
+    const spin=$(`<button class="btn teal" style="font-size:22px;padding:17px">Spin the Wheel<span class="sub">${filled===0?'Reveal your first golfer':left2go+' slot'+(left2go>1?'s':'')+' to fill'}</span></button>`);
+    spin.onclick=spin_; actions.appendChild(spin);
+    const how=$(`<button class="btn ghost" style="font-size:12px;padding:9px">How to play · pull odds</button>`);
+    how.onclick=openRules; actions.appendChild(how);
+  }
+  add(actions);
 }
 function golfersLeft(){return GOLFERS.length-S.revealed.size;}
 function reveal(){
