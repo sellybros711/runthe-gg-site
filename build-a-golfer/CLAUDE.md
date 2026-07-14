@@ -8146,6 +8146,26 @@ allows Google Fonts, or self-host Anton.*
   the old card can linger until the platform re-scrapes (Twitter: card-validator; iMessage: often a fresh
   thread or time); the `?v=2` helps new scrapes pick it up. Regenerate anytime from `og-source.html`.
 
+- **CS347 — remove ALL em dashes, everywhere, game + graphics (owner: "make sure there are no em dashes
+  ANYWHERE. In the game and in graphics").** A prior pass (CS-era) cleared em dashes from visible COPY but
+  deliberately left them in code comments; many also crept back into copy across CS200+ features, and CS346
+  just added several to the OG graphic + meta. Cleared every one. First confirmed no em dash is used in a
+  code-semantic way (regex/split/char-class) — every "—" in the file is in a string, comment, or HTML text,
+  so replacing them can't break JS. Then a string-literal-aware Python pass (tracks `//`, `/* */`, `<!-- -->`,
+  and `'…'`/`"…"`/`` `…` `` boundaries) rewrote each: **visible sentence dashes → comma** (space-absorbing,
+  reads naturally: "Spin the wheel, then tap a slot"), **isolated glyph dashes** (e.g. `<span>—</span>`
+  empty-value placeholders, `'—'`) **→ hyphen**, and **comment dashes → hyphen** (invisible). 325 comment +
+  3 glyph + 160 sentence replacements → **0 em dashes** in `build-a-golfer.html`. The OG **meta** title/desc
+  were hand-rewritten (colon title "Run The Tour: Draft the Pros, Become the G.O.A.T.", parenthetical
+  description) and the **OG graphic** (`og-source.html`) sub reworded ("One skill from each pro: Tiger's
+  putting, Rory's driver, Scottie's approach. Build one golfer…") and `og.png` re-rendered (bumped image
+  cache-bust to `?v=3`). Verified: `node --check` clean; Playwright rendered title / rules / setup / draft /
+  off-season / daily-preview / menu / shop / challenges with **0 em dashes in the visible DOM on every
+  screen**, meta has none, 0 page errors; the two "artifact" patterns found (`, ...` spreads and a
+  `[,,vw,vh]` destructure) are pre-existing legit code, not introduced. Deployed `golf/index.html` +
+  `golf/og.png` to main. (En dashes in score displays like "9–5" are intentionally left; only em dashes were
+  targeted.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
