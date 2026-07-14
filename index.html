@@ -407,7 +407,7 @@ window.GA_ID='G-L29P5MRWKE';
   .shots::-webkit-scrollbar{display:none;}
   .phone{flex:0 0 auto;width:148px;scroll-snap-align:center;border-radius:20px;overflow:hidden;background:#0a1626;
     border:2px solid rgba(255,255,255,.15);box-shadow:0 16px 34px -16px rgba(0,0,0,.85);transition:transform .18s ease;}
-  .phone img{display:block;width:100%;height:auto;}
+  .phone img,.phone video{display:block;width:100%;height:auto;background:#0a1626;}
   .feat:hover .phone{transform:translateY(-3px);}
   /* info side reuses the .g-* classes; strip their card paddings + add per-sport colours */
   .feat .g-head{padding:0;}
@@ -502,9 +502,9 @@ window.GA_ID='G-L29P5MRWKE';
         <span class="art"></span>
         <div class="feat-in">
           <a class="shots" href="/soccer/" aria-label="Play RunThePitch">
-            <span class="phone"><img src="/assets/screens/soccer-draft.jpg" alt="Drafting a World Cup squad in RunThePitch" width="640" height="1224" loading="lazy" /></span>
-            <span class="phone"><img src="/assets/screens/soccer-lineup.jpg" alt="Your starting XI on the pitch" width="640" height="1183" loading="lazy" /></span>
-            <span class="phone"><img src="/assets/screens/soccer-sim.jpg" alt="RunThePitch World Cup simulation results" width="640" height="1287" loading="lazy" /></span>
+            <span class="phone"><video class="clip" poster="/assets/screens/soccer-clip1.jpg" width="440" height="954" muted loop autoplay playsinline preload="metadata" aria-label="Spinning a nation and year in RunThePitch"><source src="/assets/screens/soccer-clip1.webm" type="video/webm" /><source src="/assets/screens/soccer-clip1.mp4" type="video/mp4" /></video></span>
+            <span class="phone"><video class="clip" poster="/assets/screens/soccer-clip2.jpg" width="440" height="954" muted loop autoplay playsinline preload="metadata" aria-label="Building your starting XI in RunThePitch"><source src="/assets/screens/soccer-clip2.webm" type="video/webm" /><source src="/assets/screens/soccer-clip2.mp4" type="video/mp4" /></video></span>
+            <span class="phone"><video class="clip" poster="/assets/screens/soccer-clip3.jpg" width="440" height="954" muted loop autoplay playsinline preload="metadata" aria-label="Simulating a World Cup match in RunThePitch"><source src="/assets/screens/soccer-clip3.webm" type="video/webm" /><source src="/assets/screens/soccer-clip3.mp4" type="video/mp4" /></video></span>
           </a>
           <div class="feat-info">
             <span class="g-head">
@@ -965,6 +965,28 @@ window.GA_ID='G-L29P5MRWKE';
   nav.addEventListener('click',function(e){ var a=e.target.closest('a[href="#acct"]'); if(a){ e.preventDefault(); acct.scrollIntoView({behavior:'smooth',block:'center'}); } });
   try{ new MutationObserver(sync).observe(acct,{attributes:true,childList:true,attributeFilter:['class']}); }catch(e){}
   sync();
+})();
+</script>
+
+<script>
+/* Gameplay preview clips: muted + playsinline autoplay (works inline on iOS
+   Safari). Pause when scrolled out of view to save battery/CPU, and honour
+   reduced-motion (leaving the poster frame showing). */
+(function(){
+  "use strict";
+  var clips=[].slice.call(document.querySelectorAll('.phone video.clip'));
+  if(!clips.length) return;
+  var reduce=false; try{ reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches; }catch(e){}
+  if(reduce){ clips.forEach(function(v){ try{ v.removeAttribute('autoplay'); v.pause(); }catch(e){} }); return; }
+  if(!('IntersectionObserver' in window)) return;
+  var io=new IntersectionObserver(function(ents){
+    ents.forEach(function(en){
+      var v=en.target;
+      if(en.isIntersecting){ var p=v.play(); if(p&&p.catch) p.catch(function(){}); }
+      else { try{ v.pause(); }catch(e){} }
+    });
+  },{threshold:.35});
+  clips.forEach(function(v){ io.observe(v); });
 })();
 </script>
 </body>
