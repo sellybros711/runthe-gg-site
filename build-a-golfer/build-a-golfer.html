@@ -10527,7 +10527,14 @@ function scrSummary(){
     if(rivalBeat){ const rv=getRival(); if(rv&&rv.ovr>ovr) recordAchEvent({set:{rivalUpset:1}}); }
     if(rr) track('rival_season',{name:rr.name,status:rr.status,beat:rivalBeat});
     const r=recordSeason({name:me.name,ovr,money:t.money,gross:ec.gross,net:netTotal,wins:t.wins,majorsWon:t.majors,played:t.played,made:t.made,top10:t.top10,moneyRank,best:t.best,majorWins,rivalBeat}); S.freshBadges=r.fresh;
-    S.career=S.career||{money:0,net:0,wins:0,majors:0,top10:0,best:99,seasons:[],winsList:[]};
+    // CS350: S.career may already exist as a bare {} (careerStory()/ensureSponsors()/careerFx()/careerArcs()
+    // create S.career=S.career||{} for a mid-season storyline/sponsor/dilemma, and the confidence-carry above
+    // calls careerStory() right before this line), so a plain `||{...}` would NO-OP and leave seasons/winsList
+    // undefined, then S.career.winsList.push / S.career.seasons.push crash on the season-summary. Ensure every
+    // required field exists WITHOUT clobbering values already set by a resumed/in-progress career.
+    S.career=S.career||{};
+    { const _cd={money:0,net:0,wins:0,majors:0,top10:0,best:99,seasons:[],winsList:[]};
+      for(const _k in _cd){ if(S.career[_k]==null) S.career[_k]=_cd[_k]; } }
     // emergent rivalry: bank this season's series result vs your current nemesis (before accruing/forming)
     if(!S.daily){ const rvNow=S.career.rival;
       if(rvNow && rr && rr.status==='h2h'){

@@ -8201,6 +8201,28 @@ allows Google Fonts, or self-host Anton.*
   45; to get the separate **Monthly Spotlight** board/records, still run `supabase/45_runtour_spotlight.sql`.
   Also note the daily board lives under **Course Records → Today**, not the main season/career Leaderboard.
 
+- **CS350 — fix: "sim to the end of a season → view results" crashed with `summary: undefined is not an
+  object (evaluating 'S.career.seasons.push')`.** Owner: "This keeps coming up after I sim to the end of a
+  season and try to see the results" (IMG_8230, the render-error safety-net card). Root cause: the
+  season-summary record block initialized the career object with `S.career=S.career||{money:0,...,seasons:
+  [],winsList:[]}` — which only adds `seasons`/`winsList` when `S.career` is ENTIRELY undefined. But by the
+  time that line runs, `S.career` is almost always already a truthy bare object: the CS226 confidence-carry
+  right above it (`careerStory().confidence=...`) calls `careerStory()`, which does `S.career=S.career||{}`
+  (and so do `ensureSponsors()`/`careerFx()`/`careerArcs()` for any mid-season sponsor/dilemma/press beat).
+  So the `||{...}` NO-OPPED, `S.career` had no `seasons`/`winsList` arrays, and `S.career.winsList.push`
+  (line ~10578) / `S.career.seasons.push` (line ~10585) threw. Hit reliably on a fresh YEAR-1 season (where
+  `S.career` starts undefined, then the confidence-carry creates it bare) and on any career where a
+  subsystem touched `S.career` before season-end. Fix: replaced the `||{…}` with a defensive per-FIELD init
+  — `S.career=S.career||{}` then a loop that fills each of money/net/wins/majors/top10/best/seasons/winsList
+  only when it's `null`/missing, so the required arrays always exist WITHOUT clobbering values already set by
+  a resumed/in-progress career. Verified in Playwright by driving a real fresh year-1 career (fill the
+  8-skill bag → `startSeason(false)` → `skipToEnd()` → `finishSeasonHeadless()` → summary): confirmed
+  `careerStory()` creates `S.career` with no `seasons` (the trap), then the summary renders with
+  `S.career.seasons.length===1`, `winsList` an array, `S.recorded===true`, and NO "SOMETHING WENT WRONG"
+  card; a second test pre-creating `S.career={sponsors,fx,arcs}` (mid-season subsystem path) also reaches
+  the summary cleanly (`seasonsLen:1`, no error card). 0 page errors (only sandbox-blocked
+  Supabase/fonts/ads). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
