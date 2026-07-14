@@ -1,0 +1,114 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{width:1200px;height:630px;overflow:hidden}
+  body{position:relative;font-family:'Barlow Semi Condensed','Arial Narrow',Helvetica,Arial,sans-serif;
+    background:radial-gradient(120% 90% at 50% -10%, #0e5a2e 0%, #073e20 42%, #03230f 100%);color:#F6EAD0}
+  .frame{position:absolute;inset:0;border:6px solid transparent;
+    box-shadow:inset 0 0 0 3px rgba(235,166,31,.55), inset 0 0 90px rgba(0,0,0,.45)}
+  .goldtop{position:absolute;top:0;left:0;right:0;height:8px;background:linear-gradient(90deg,#b9821a,#F5C24B 45%,#EBA61F 55%,#b9821a)}
+  /* faint course backdrop */
+  .course{position:absolute;left:0;right:0;bottom:0;height:230px;opacity:.16}
+  .vig{position:absolute;inset:0;background:radial-gradient(120% 120% at 50% 40%, transparent 55%, rgba(0,0,0,.5) 100%)}
+
+  .wrap{position:absolute;inset:0;padding:26px 54px 24px;display:flex;flex-direction:column}
+  /* header */
+  .head{display:flex;align-items:center;justify-content:center;gap:14px}
+  .crest{width:44px;height:52px;flex:0 0 auto}
+  .word{font-family:'Cinzel',Georgia,'Times New Roman',serif;font-weight:800;letter-spacing:.06em;font-size:44px;line-height:1;display:flex;gap:14px}
+  .word .a{color:#F6EAD0}.word .b{color:#EBA61F}
+  .rule{width:500px;height:2px;margin:9px auto 0;background:linear-gradient(90deg,transparent,rgba(235,166,31,.65),transparent)}
+
+  /* hero body: two columns */
+  .body{flex:1;display:flex;align-items:center;gap:24px;margin-top:8px}
+  .left{width:590px}
+  .kick{font-weight:800;letter-spacing:.13em;font-size:18px;color:#7fe3c0;text-transform:uppercase;margin-bottom:7px}
+  .h1{font-family:'Anton','Arial Narrow',Impact,sans-serif;font-weight:800;line-height:.96;text-transform:uppercase;letter-spacing:.005em}
+  .h1 .l1{font-size:60px;color:#F6EAD0}
+  .h1 .l2{font-size:60px;color:#EBA61F}
+  .sub{font-size:22px;line-height:1.26;color:#dcecdf;margin-top:13px;font-weight:500;max-width:560px}
+  .sub b{color:#F6EAD0;font-weight:800}
+
+  /* right visual: draft cards -> golfer */
+  .right{flex:1;display:flex;align-items:center;justify-content:center;gap:4px;position:relative}
+  .cards{display:flex;flex-direction:column;gap:11px}
+  .pc{width:224px;height:70px;border-radius:13px;border:2px solid rgba(235,166,31,.5);
+    background:linear-gradient(160deg,rgba(9,40,22,.96),rgba(4,22,12,.96));display:flex;align-items:center;gap:11px;padding:0 13px;
+    box-shadow:0 8px 22px rgba(0,0,0,.4)}
+  .pc .av{width:42px;height:42px;border-radius:50%;flex:0 0 auto;border:2px solid rgba(235,166,31,.6);
+    background:radial-gradient(circle at 50% 32%, #d9b98c, #9c7a52);position:relative;overflow:hidden}
+  .pc .av i{position:absolute;left:7px;right:7px;bottom:-4px;height:24px;border-radius:50% 50% 0 0;background:#123}
+  .pc .who{flex:1;min-width:0}
+  .pc .nm{font-weight:800;font-size:20px;color:#F6EAD0;line-height:1}
+  .pc .sk{font-weight:700;font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:#7fe3c0;margin-top:3px}
+  .pc .rt{font-family:'Anton','Arial Narrow',Impact;font-size:38px;line-height:1;color:#EBA61F;font-weight:800;flex:0 0 auto;margin-left:4px}
+
+  .arrow{font-family:'Anton',Impact;font-size:54px;color:#7fe3c0;margin:0 2px;line-height:1;font-weight:800}
+
+  .built{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .trophy{width:60px;height:66px}
+  .radarbox{position:relative;width:190px;height:190px}
+  .ovr{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center}
+  .ovr .n{font-family:'Anton',Impact;font-size:52px;line-height:.9;color:#EBA61F;font-weight:800}
+  .ovr .t{font-size:13px;font-weight:800;letter-spacing:.22em;color:#F6EAD0}
+  .goat{font-family:'Anton',Impact;font-size:22px;letter-spacing:.1em;color:#F6EAD0;font-weight:800;text-transform:uppercase}
+  .goat b{color:#EBA61F}
+
+  /* footer pills */
+  .foot{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
+  .pills{display:flex;gap:9px}
+  .pill{border:1.5px solid rgba(235,166,31,.55);color:#F5C24B;font-weight:800;letter-spacing:.11em;font-size:15px;
+    text-transform:uppercase;padding:7px 14px;border-radius:999px;background:rgba(235,166,31,.08)}
+  .url{font-weight:800;font-size:23px;color:#F6EAD0}
+  .url b{color:#EBA61F}.url .free{color:#7fe3c0;font-size:18px;letter-spacing:.08em;margin-left:9px;text-transform:uppercase}
+</style></head><body>
+  <svg class="course" viewBox="0 0 1200 230" preserveAspectRatio="none"><path d="M0 230 L0 150 Q300 90 620 130 Q900 165 1200 110 L1200 230 Z" fill="#1f6b39"/><path d="M0 230 L0 185 Q400 150 760 178 Q1000 196 1200 165 L1200 230 Z" fill="#2c8a49"/></svg>
+  <div class="vig"></div>
+  <div class="goldtop"></div>
+  <div class="frame"></div>
+
+  <div class="wrap">
+    <div class="head">
+      <svg class="crest" viewBox="0 0 52 60"><path d="M4 6 L48 6 L48 34 Q48 52 26 58 Q4 52 4 34 Z" fill="#0a3b1e" stroke="#EBA61F" stroke-width="2.5"/><path d="M20 44 V20" stroke="#EBA61F" stroke-width="2.4"/><path d="M20 20 Q30 17 38 22 Q30 28 20 26 Z" fill="#EBA61F"/><ellipse cx="26" cy="45" rx="10" ry="3.2" fill="#2c8a49"/></svg>
+      <div class="word"><span class="a">RUN THE</span><span class="b">TOUR</span></div>
+    </div>
+    <div class="rule"></div>
+
+    <div class="body">
+      <div class="left">
+        <div class="kick">Golf's ultimate build-your-legend game</div>
+        <div class="h1"><div class="l1">Draft the pros.</div><div class="l2">Become the G.O.A.T.</div></div>
+        <div class="sub">Take <b>Tiger's putting</b>, <b>Rory's driver</b>, <b>Scottie's approach</b> — one skill from each — into <b>one golfer</b>, then live a <b>30-year career</b> chasing majors and greatness.</div>
+      </div>
+
+      <div class="right">
+        <div class="cards">
+          <div class="pc"><div class="av"><i></i></div><div class="who"><div class="nm">Rory</div><div class="sk">Driver</div></div><div class="rt">98</div></div>
+          <div class="pc"><div class="av"><i></i></div><div class="who"><div class="nm">Scottie</div><div class="sk">Approach</div></div><div class="rt">97</div></div>
+          <div class="pc"><div class="av"><i></i></div><div class="who"><div class="nm">Tiger</div><div class="sk">Putting</div></div><div class="rt">99</div></div>
+        </div>
+        <div class="arrow">&rarr;</div>
+        <div class="built">
+          <svg class="trophy" viewBox="0 0 70 78"><path d="M20 8 H50 V26 Q50 40 35 44 Q20 40 20 26 Z" fill="url(#tg)" stroke="#b9821a" stroke-width="1.5"/><path d="M20 12 H10 Q8 26 22 30" fill="none" stroke="#EBA61F" stroke-width="3"/><path d="M50 12 H60 Q62 26 48 30" fill="none" stroke="#EBA61F" stroke-width="3"/><rect x="31" y="44" width="8" height="12" fill="#c9922a"/><rect x="22" y="56" width="26" height="7" rx="2" fill="#EBA61F"/><rect x="18" y="63" width="34" height="8" rx="2" fill="#c9922a"/><defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F5C24B"/><stop offset="1" stop-color="#d69a1e"/></linearGradient></defs></svg>
+          <div class="radarbox">
+            <svg viewBox="0 0 206 206" width="206" height="206">
+              <g stroke="rgba(246,234,208,.18)" fill="none" stroke-width="1">
+                <polygon points="103,18 163,45 185,103 163,161 103,188 43,161 21,103 43,45"/>
+                <polygon points="103,45 148,62 164,103 148,144 103,161 58,144 42,103 58,62"/>
+              </g>
+              <g stroke="rgba(246,234,208,.1)"><line x1="103" y1="103" x2="103" y2="18"/><line x1="103" y1="103" x2="185" y2="103"/><line x1="103" y1="103" x2="103" y2="188"/><line x1="103" y1="103" x2="21" y2="103"/><line x1="103" y1="103" x2="163" y2="45"/><line x1="103" y1="103" x2="163" y2="161"/><line x1="103" y1="103" x2="43" y2="161"/><line x1="103" y1="103" x2="43" y2="45"/></g>
+              <polygon points="103,24 158,50 178,103 150,150 103,178 55,150 30,103 52,50" fill="rgba(18,179,154,.28)" stroke="#12b39a" stroke-width="3"/>
+              <circle cx="103" cy="103" r="40" fill="rgba(4,18,12,.86)" stroke="rgba(235,166,31,.5)" stroke-width="1.5"/>
+            </svg>
+            <div class="ovr"><div class="n">99</div><div class="t">OVR</div></div>
+          </div>
+          <div class="goat">Your <b>Legend</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="foot">
+      <div class="pills"><span class="pill">Spin</span><span class="pill">Draft</span><span class="pill">Win Majors</span></div>
+      <div class="url">runthe.gg/<b>golf</b><span class="free">· Play free</span></div>
+    </div>
+  </div>
+</body></html>

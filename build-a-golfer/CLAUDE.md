@@ -8126,6 +8126,26 @@ allows Google Fonts, or self-host Anton.*
   headwear note shows ONLY when a headwear accessory is equipped (naming it) and is absent otherwise, 0 page
   errors. Deployed to /golf.
 
+- **CS346 — richer link-preview (OG) graphic that shows the game (owner IMG_8190: "the graphic shared with
+  runthe.gg/golf is bland and doesn't draw an audience — incorporate game elements so people know exactly
+  what it is: a game where you draft skills from pro golfers and try to become the greatest of all time").**
+  The old `og.png` was just the wordmark + "Build a golfer. Run a pro season." tagline. Redesigned it to
+  show the actual game loop: **draft skills from real pros → build one golfer → chase G.O.A.T. status.**
+  Built a self-contained 1200×630 HTML source (`build-a-golfer/og-source.html`) and rendered it to
+  `og.png` via Playwright: RUN THE TOUR crest/wordmark + gold rule up top; a big "DRAFT THE PROS. / BECOME
+  THE G.O.A.T." headline (cream + gold) over a sub that names the hook ("Take Tiger's putting, Rory's
+  driver, Scottie's approach — one skill from each — into one golfer, then live a 30-year career…"); and
+  the marquee visual — three pro "draft cards" (Rory · Driver 98 / Scottie · Approach 97 / Tiger · Putting
+  99) → an arrow → the built golfer as a teal radar with a gold **OVR 99** badge + a trophy + "YOUR
+  LEGEND"; a footer of SPIN · DRAFT · WIN MAJORS pills + "runthe.gg/golf · Play free". Deep-green/gold
+  brand, course-silhouette backdrop, vignette, gold frame. Also rewrote the OG/Twitter **title**
+  ("Run The Tour — Draft the Pros, Become the G.O.A.T.") and **description** to lead with the same
+  draft-a-skill-from-each-pro hook, and appended `?v=2` to the `og:image`/`twitter:image` URLs to encourage
+  platforms to re-scrape (they cache OG images hard by URL). Rendered/verified at 1200×630, deployed
+  `golf/og.png` + `golf/index.html` to main. NOTE: iMessage/Twitter/Facebook cache previews aggressively —
+  the old card can linger until the platform re-scrapes (Twitter: card-validator; iMessage: often a fresh
+  thread or time); the `?v=2` helps new scrapes pick it up. Regenerate anytime from `og-source.html`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
