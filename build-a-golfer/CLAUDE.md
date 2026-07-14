@@ -8166,6 +8166,19 @@ allows Google Fonts, or self-host Anton.*
   `golf/og.png` to main. (En dashes in score displays like "9–5" are intentionally left; only em dashes were
   targeted.)
 
+- **CS348 — "course look" OG graphic variant (owner: "let's try the course look you mentioned").** After the
+  CS346 dark-green card OG, offered a "lighter course look" alternate; owner chose it. Built a second source
+  (`og-source-b.html`): an illustrated golden-hour golf course fills the frame (warm sky + soft sun glow,
+  rolling green hills, a putting green with a gold flag, a fairway sweep, and a distant golfer silhouette
+  celebrating by the green), with a left-side legibility scrim so the copy stays crisp over the brighter
+  scene. Keeps all the game elements: RUN THE TOUR crest/wordmark, "DRAFT THE PROS. / BECOME THE G.O.A.T.",
+  the same draft hook sub, a compact one-row draft strip (Tiger 99 · Rory 98 · Scottie 97 → OVR 99 badge),
+  and the SPIN · DRAFT · WIN MAJORS + runthe.gg/golf footer. Em-dash-free. Rendered it to the live `og.png`
+  (bumped cache-bust `?v=4`) and deployed `golf/og.png` + `golf/index.html` to main. The CS346 card-look
+  source (`og-source.html`) is kept committed, so reverting to it is a one-line re-render if preferred. NOTE:
+  X/iMessage/Facebook cache previews hard — the `?v=4` bump encourages a re-scrape for new shares; existing
+  shares may lag until the platform re-fetches.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
