@@ -177,6 +177,14 @@ window.GA_ID='G-L29P5MRWKE';
   .setup-actionbar{position:sticky; bottom:0; z-index:4; display:flex; gap:9px; align-items:stretch; margin:16px -16px 0;
     padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px)); border-top:1px solid var(--line);
     background:linear-gradient(180deg, rgba(6,32,15,0), #06200f 34%)}
+  /* CS343: accessory equip chips in the setup Kit section */
+  .accchips{display:flex; gap:7px; flex-wrap:wrap}
+  .accchip{display:inline-flex; align-items:center; gap:6px; font:700 11.5px var(--body); padding:7px 11px; border-radius:999px;
+    cursor:pointer; background:transparent; border:1px solid rgba(244,227,201,.22); color:var(--oncard); transition:background .12s,border-color .12s}
+  .accchip:hover{border-color:rgba(244,227,201,.45)}
+  .accchip.sel{background:rgba(235,166,31,.14); border-color:var(--gold); color:var(--gold)}
+  .accchip .acci{width:15px; height:15px; display:inline-flex; align-items:center}
+  .accchip .acci svg{width:15px; height:15px}
   @media(max-width:860px){
     .cols{grid-template-columns:1fr; gap:16px} .seasoncols .scorecol{order:-1}
     /* Stacked single-column layout breaks the row-sharing trick above (each column becomes its own
@@ -5783,7 +5791,10 @@ function scrSetup(){
     [cosColorRow('Shirt','shirt'), cosPatRow('Shirt pattern','shirtPat'), cosColorRow('Trousers','pants'),
      cosColorRow('Shoes','shoes'), cosColorRow('Hat','hat'), cosPatRow('Hat pattern','hatPat')]
       .forEach(r=>{ if(r) right.appendChild(r); });
-    if(anyCosmeticLocked()) right.appendChild(proShopLinkRow());
+    // CS343: accessories — equip owned gear (eyewear, glove, clubs, ball, charm…) right here
+    const gearRows=ACC_SLOTS.map(sl=>accSelectRow(sl.k)).filter(Boolean);
+    if(gearRows.length){ right.appendChild(setupHeader('Accessories')); gearRows.forEach(r=>right.appendChild(r)); }
+    if(anyCosmeticLocked()||anyGearLocked()) right.appendChild(proShopLinkRow());
   }
 
   // CS266: sticky action bar so the primary "Build Your Golfer" CTA stays reachable while scrolling the kit
@@ -6345,6 +6356,24 @@ function proShopLinkRow(){
   const b=$(`<button class="btn ghost" style="width:100%;margin:6px 0 2px;padding:11px;font-size:12.5px">🛍 Unlock more colors, patterns & gear in the Pro Shop ▸</button>`);
   b.onclick=()=>openShopTo('shirt');
   return b;
+}
+// CS343: accessories you can equip right in the setup screen. Owned gear only (unlocks live in the Pro Shop),
+// one row per slot with items, a "None" chip + a chip per owned item (icon + name), tap to equip/unequip.
+function ownedAccIn(slot){ const own=coinState().owned||{}; return ACCESSORIES.concat(MILESTONE_ITEMS).filter(a=>a.slot===slot && own[a.id]); }
+function anyGearLocked(){ const own=coinState().owned||{}; return ACCESSORIES.some(a=>!own[a.id]); }
+function accSelectRow(slot){
+  const sl=ACC_SLOT_BY[slot]; if(!sl) return null;
+  const items=ownedAccIn(slot); if(!items.length) return null;
+  const cur=accEquipped(slot);
+  const row=$(`<div style="margin:8px 0"></div>`);
+  row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${esc(sl.name)}</div>`));
+  const wrap=$(`<div class="accchips"></div>`);
+  const chip=(inner,sel,title)=>$(`<button class="accchip${sel?' sel':''}" title="${esc(title||'')}">${inner}</button>`);
+  const none=chip('None', cur==null, 'No '+sl.name.toLowerCase()); none.onclick=()=>{ accUnequip(slot); render(); };
+  wrap.appendChild(none);
+  items.forEach(it=>{ const c=chip(`<span class="acci">${ic(sl.icon)}</span>${esc(it.name)}`, cur===it.id, it.name);
+    c.onclick=()=>{ accEquip(it.id); render(); }; wrap.appendChild(c); });
+  row.appendChild(wrap); return row;
 }
 function handRow(){
   const lefty=!!S.look.lefty;
