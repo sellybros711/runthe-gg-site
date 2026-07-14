@@ -8388,10 +8388,12 @@ const SPONSOR_MONEY=0.70;         // CS242: global payout scale, sponsors are a 
 function ensureSponsors(){ const c=(S.career=S.career||{});
   if(!c.sponsors){ c.sponsors={hat:null, shirt:null};
     if(c.sponsor){ c.sponsors.shirt=c.sponsor; }   // legacy single sponsor → shirt slot
-    else { const lc=c.lastContract, rng=mulberry32((((S.careerSeed||1)>>>0)^0x53504f4e)>>>0);
+    else { const lc=c.lastContract;   // legacy in-progress single deal → migrate to the shirt slot
       if(lc && lc.sponsor){ const tier=(BRAND_BY_NAME[lc.sponsor]?brandInfo(lc.sponsor).tier:0);
         c.sponsors.shirt={brand:lc.sponsor, tier, rel:Math.max(1,Math.min(SPONSOR_REL_MAX,1+(lc.renewals||0))), seasons:(lc.renewals||0)+1}; }
-      else c.sponsors.shirt={brand:sponsorPick(0,null,rng), tier:0, rel:1, seasons:0}; }
+      // CS351: a brand-new career starts UNSPONSORED (both slots open). Nobody has signed you yet — a brand
+      // has to come calling and you choose to sign (see the off-season sponsor-offer moment). No auto-seed.
+    }
   }
   return c.sponsors; }
 function sponsorOf(slot){ return ensureSponsors()[slot]||null; }
@@ -8431,6 +8433,72 @@ function signSponsor(offer, slot){ const s=ensureSponsors(); const prev=s[slot];
   try{ saveCareer(offseasonResumeExtra()); }catch(e){}
   toast('Signed '+offer.brand+' as your '+SPONSOR_SLOT_LABEL[slot].toLowerCase()+' sponsor · +'+fmtShort(signing));
   render(); }
+// CS351: a brand wanting to sign you is now a MOMENT, not a quiet card. Once per off-season, if a brand is
+// interested, a full-screen announcement set-piece greets you (grander for your FIRST-EVER deal). Dismissing
+// leaves the same offer available in the inline off-season card, so nothing is lost.
+function firstEverSponsor(){ return sponsorFilledSlots().length===0 && !((S.career&&S.career.sponsorHistory||[]).length); }
+function maybeSponsorMoment(){
+  if(S.daily||S.circuitMode||!S.career||S.screen!=='offseason') return;
+  const offers=(S.career.sponsorOffers||[]); if(!offers.length) return;
+  if(S.career._sponsorMomentYear===(S.year||1)) return;   // fire once per off-season
+  S.career._sponsorMomentYear=(S.year||1);
+  try{ saveCareer(offseasonResumeExtra()); }catch(e){}   // persist the seen-flag so a refresh won't replay it
+  sponsorOfferPopup(offers);
+}
+function sponsorOfferPopup(offers){
+  if(!offers||!offers.length) return;
+  document.querySelectorAll('.momentov').forEach(n=>n.remove());
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const first=firstEverSponsor();
+  const lead=offers[0];
+  const kicker = first ? 'YOUR FIRST DEAL' : lead.upgrade ? 'A BIGGER BRAND CALLS' : lead.poach ? 'A RIVAL COMES CALLING' : 'A BRAND WANTS YOU';
+  const accent = lead.upgrade ? '#ffd45e' : lead.poach ? '#7fe0e8' : '#ffd45e';
+  const headline = first ? 'A brand wants to sign you!' : (offers.length>1 ? 'Brands want your name' : 'A brand wants your name');
+  const sub = first
+    ? 'You caught the eye of your first sponsor. Wear their logo, deliver on the goals, and grow the deal season after season.'
+    : 'Your play is turning heads off the course. Wear the logo, hit the goals, and the deal grows with you.';
+  const ov=$(`<div class="momentov" style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;
+      background:radial-gradient(120% 90% at 50% 16%, rgba(30,22,4,.80), rgba(2,7,5,.97) 70%)">
+    <div class="momentcard" style="max-width:480px;width:100%;text-align:center;position:relative">
+      <div style="position:absolute;inset:-40% 10% auto 10%;height:220px;background:radial-gradient(60% 60% at 50% 0,${accent}40,transparent 70%);filter:blur(6px);pointer-events:none${reduce?'':';animation:momGlow 3.2s ease-in-out infinite'}"></div>
+      <div style="font-size:46px;line-height:1;margin-bottom:4px">${first?'✍️':'🤝'}</div>
+      <div style="font:800 12px/1 var(--body);letter-spacing:.26em;color:${accent};text-transform:uppercase">${kicker}</div>
+      <h1 style="margin:8px 0 2px;font-size:27px;line-height:1.08;color:#fff">${headline}</h1>
+      <p class="lede" style="margin:8px 0 4px;color:#e8f0e8">${sub}</p>
+      <p class="small" style="margin:0 0 16px;color:#9fb3a8">Choose which slot to wear their logo, or decide later.</p>
+      <div class="soffers" style="display:grid;gap:11px;text-align:left"></div>
+      <button class="btn ghost solater" style="margin-top:12px">Decide later ▸<span class="sub">Review it on the off-season screen</span></button>
+    </div></div>`);
+  const box=ov.querySelector('.soffers');
+  offers.forEach(offer=>{
+    const nti=sponsorTierInfo(offer.tier), ntr=brandTrait(offer.brand), bi=brandInfo(offer.brand), signing=sponsorSigningBonus(offer.brand);
+    const badge = offer.upgrade ? `<div class="small" style="display:inline-block;background:rgba(235,166,31,.16);color:#ffd45e;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">↑ Step up to ${esc(nti.name)}</div>`
+      : offer.poach ? `<div class="small" style="display:inline-block;background:rgba(95,208,224,.14);color:#7fe0e8;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">⚡ A rival ${esc(nti.name)} brand</div>` : '';
+    const card=$(`<div class="scout" style="border-color:${bi.color}66;margin:0;text-align:left;padding:12px 13px">
+      ${badge}
+      <div style="display:flex;align-items:center;gap:11px">${brandLogoSVG(offer.brand,44)}
+        <span style="flex:1;min-width:0">
+          <span style="display:block;font-weight:800;font-size:17px;color:var(--oncard);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(offer.brand)}</span>
+          <span class="small" style="display:block;color:#9fb3a8">${esc(nti.name)} · ${esc(ntr.label)}</span></span>
+        <span class="mono small" style="flex:0 0 auto;color:#ffd45e;font-weight:800;text-align:right;line-height:1.2">+${fmtShort(signing)}<span style="display:block;color:#8fa7b3;font-weight:600">signing</span></span></div>
+      ${bi.tag?`<div class="small" style="color:${bi.color};font-style:italic;margin-top:7px">“${esc(bi.tag)}”</div>`:''}
+      <div style="display:flex;gap:8px;margin-top:11px" class="offer-actions"></div></div>`);
+    const acts=card.querySelector('.offer-actions');
+    SPONSOR_SLOTS.forEach(slot=>{
+      const cur=sponsorOf(slot), lab=SPONSOR_SLOT_LABEL[slot];
+      const btn=$(`<button class="btn goldfill" style="flex:1;padding:9px 8px;font-size:12px;text-transform:none;line-height:1.25">
+        <b>${cur?'Replace on '+lab:'Sign as '+lab}</b><span style="display:block;font-weight:600;font-size:10px;opacity:.85">${cur?esc(cur.brand)+' · loyalty resets':'fills the open slot'}</span></button>`);
+      btn.onclick=()=>{ ov.remove(); signSponsor(offer, slot); };
+      acts.appendChild(btn);
+    });
+    box.appendChild(card);
+  });
+  ov.querySelector('.solater').onclick=()=>{ ov.remove(); track('sponsor_moment_later',{n:offers.length}); render(); };
+  if(first && !reduce && typeof confettiRun==='function') try{ confettiRun(ov, [accent,'#ffffff'], 1100); }catch(e){}
+  document.body.appendChild(ov);
+  buzz(30);
+  track('sponsor_moment',{n:offers.length, first, kind:lead.upgrade?'upgrade':lead.poach?'poach':'fill'});
+}
 // live status of a single goal, from the season totals (lower rank = better for rank goals)
 function goalProg(g,t){
   const N=Object.keys(S.season.totals).length||1;
@@ -11314,6 +11382,9 @@ function scrOffseason(){
   add(actions);
 
   add(rivalStatusNode());   // emergent nemesis status (read-only)
+  // CS351: a brand wanting to sign you is a MOMENT — fire the full-screen announcement once per off-season
+  // (covers continueFranchise + resume). Guarded by _sponsorMomentYear so re-renders don't replay it.
+  try{ maybeSponsorMoment(); }catch(e){}
 }
 /* ---------- season recap ---------- */
 function scrRecap(){
