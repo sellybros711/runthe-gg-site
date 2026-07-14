@@ -3,57 +3,48 @@
   html,body{width:1200px;height:630px;overflow:hidden}
   body{position:relative;font-family:'Barlow Semi Condensed','Arial Narrow',Helvetica,Arial,sans-serif;color:#F6EAD0}
   .scene{position:absolute;inset:0}
-  .dim{position:absolute;inset:0;background:linear-gradient(90deg, rgba(3,24,13,.94) 0%, rgba(3,24,13,.82) 30%, rgba(3,24,13,.55) 60%, rgba(3,24,13,.5) 100%)}
-  .goldtop{position:absolute;top:0;left:0;right:0;height:8px;background:linear-gradient(90deg,#b9821a,#F5C24B 45%,#EBA61F 55%,#b9821a);z-index:5}
-  .frame{position:absolute;inset:0;box-shadow:inset 0 0 0 3px rgba(235,166,31,.5), inset 0 0 90px rgba(0,0,0,.4);z-index:5}
+  .dim{position:absolute;inset:0;background:linear-gradient(90deg, rgba(3,24,13,.95) 0%, rgba(3,24,13,.85) 32%, rgba(3,24,13,.58) 62%, rgba(3,24,13,.52) 100%)}
+  .goldtop{position:absolute;top:0;left:0;right:0;height:10px;background:linear-gradient(90deg,#b9821a,#F5C24B 45%,#EBA61F 55%,#b9821a);z-index:5}
+  .frame{position:absolute;inset:0;box-shadow:inset 0 0 0 4px rgba(235,166,31,.55), inset 0 0 90px rgba(0,0,0,.4);z-index:5}
 
-  .wrap{position:absolute;inset:0;padding:30px 54px 28px;display:flex;flex-direction:column;z-index:4}
-  .head{display:flex;align-items:center;gap:13px}
-  .crest{width:42px;height:50px;flex:0 0 auto}
-  .word{font-family:'Cinzel',Georgia,'Times New Roman',serif;font-weight:800;letter-spacing:.05em;font-size:42px;line-height:1;display:flex;gap:13px}
+  .wrap{position:absolute;inset:0;padding:34px 56px 34px;display:flex;flex-direction:column;z-index:4}
+  .head{display:flex;align-items:center;gap:15px}
+  .crest{width:50px;height:58px;flex:0 0 auto}
+  .word{font-family:'Cinzel',Georgia,'Times New Roman',serif;font-weight:800;letter-spacing:.05em;font-size:50px;line-height:1;display:flex;gap:15px}
   .word .a{color:#F6EAD0}.word .b{color:#EBA61F}
 
-  .body{flex:1;display:flex;align-items:center;gap:28px;margin-top:6px}
-  .left{width:388px;flex:0 0 auto}
-  .h1{font-family:'Anton','Arial Narrow',Impact,sans-serif;font-weight:800;line-height:.94;text-transform:uppercase;text-shadow:0 3px 14px rgba(0,0,0,.55)}
-  .h1 .l1{font-size:64px;color:#F6EAD0}
-  .h1 .l2{font-size:64px;color:#EBA61F}
-  .tagline{font-size:23px;line-height:1.3;color:#eaf3ec;margin-top:16px;font-weight:600;text-shadow:0 2px 10px rgba(0,0,0,.6)}
-  .tagline b{color:#F6EAD0;font-weight:800}
+  .body{flex:1;display:flex;align-items:center;gap:22px;margin-top:8px}
+  .left{width:366px;flex:0 0 auto}
+  .h1{font-family:'Anton','Arial Narrow',Impact,sans-serif;font-weight:800;line-height:.92;text-transform:uppercase;text-shadow:0 3px 16px rgba(0,0,0,.6)}
+  .h1 .l1{font-size:74px;color:#F6EAD0}
+  .h1 .l2{font-size:74px;color:#EBA61F}
 
-  .viz{flex:1;display:flex;align-items:center;justify-content:center;gap:16px}
-  .draftcol{display:flex;flex-direction:column;gap:12px}
-  .dlabel{font-weight:800;letter-spacing:.1em;font-size:14px;color:#8fe9c8;text-transform:uppercase;text-align:center;margin-bottom:2px;text-shadow:0 2px 8px rgba(0,0,0,.6)}
-  .scard{width:306px;height:76px;border-radius:15px;border:2.5px solid #EBA61F;position:relative;overflow:hidden;
-    background:linear-gradient(150deg,rgba(11,46,26,.98),rgba(3,18,11,.98));display:flex;align-items:center;gap:11px;padding:0 12px 0 12px;
-    box-shadow:0 10px 26px rgba(0,0,0,.5)}
-  .scard .ic{width:44px;height:44px;border-radius:12px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
-    background:radial-gradient(circle at 50% 35%, rgba(235,166,31,.22), rgba(235,166,31,.05));border:1.5px solid rgba(235,166,31,.5)}
-  .scard .ic svg{width:28px;height:28px;stroke:#F5C24B;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-  .scard .who{flex:1;min-width:0;overflow:hidden}
-  .scard .sk{font-family:'Anton','Arial Narrow',Impact;font-size:22px;line-height:.98;color:#F6EAD0;font-weight:800;letter-spacing:.01em;text-transform:uppercase;white-space:nowrap}
-  .scard .tag{font-weight:800;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#8fe9c8;margin-top:3px}
-  .scard .rt{font-family:'Anton','Arial Narrow',Impact;font-size:31px;line-height:1;color:#03180c;font-weight:800;flex:0 0 auto;
-    background:linear-gradient(180deg,#F5C24B,#e5a11c);width:50px;height:50px;border-radius:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,.35)}
+  .viz{flex:1;display:flex;align-items:center;justify-content:center;gap:14px}
+  .draftcol{display:flex;flex-direction:column;gap:14px}
+  .scard{width:344px;height:86px;border-radius:16px;border:3px solid #EBA61F;overflow:hidden;
+    background:linear-gradient(150deg,rgba(11,46,26,.98),rgba(3,18,11,.98));display:flex;align-items:center;gap:12px;padding:0 11px;
+    box-shadow:0 10px 26px rgba(0,0,0,.55)}
+  .scard .ic{width:50px;height:50px;border-radius:13px;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 50% 35%, rgba(235,166,31,.24), rgba(235,166,31,.05));border:1.5px solid rgba(235,166,31,.55)}
+  .scard .ic svg{width:32px;height:32px;stroke:#F5C24B;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .scard .sk{flex:1;min-width:0;font-family:'Anton','Arial Narrow',Impact;font-size:29px;line-height:1;color:#F6EAD0;font-weight:800;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:clip}
+  .scard .rt{font-family:'Anton','Arial Narrow',Impact;font-size:38px;line-height:1;color:#03180c;font-weight:800;flex:0 0 auto;
+    background:linear-gradient(180deg,#F5C24B,#e5a11c);width:60px;height:60px;border-radius:13px;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,.35)}
 
-  .arrow{display:flex;flex-direction:column;align-items:center;gap:3px}
-  .arrow .a{font-family:'Anton',Impact;font-size:64px;color:#EBA61F;line-height:1;font-weight:800;text-shadow:0 3px 10px rgba(0,0,0,.6)}
-  .arrow .lab{font-weight:800;font-size:10px;letter-spacing:.16em;color:#8fe9c8;text-transform:uppercase}
+  .arrow{font-family:'Anton',Impact;font-size:64px;color:#EBA61F;line-height:1;font-weight:800;text-shadow:0 3px 12px rgba(0,0,0,.6)}
 
-  .built{display:flex;flex-direction:column;align-items:center;gap:5px}
-  .trophy{width:54px;height:60px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.5))}
-  .radarbox{position:relative;width:212px;height:212px;filter:drop-shadow(0 8px 22px rgba(0,0,0,.6))}
+  .built{display:flex;flex-direction:column;align-items:center;gap:4px}
+  .trophy{width:60px;height:66px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.5))}
+  .radarbox{position:relative;width:250px;height:250px;filter:drop-shadow(0 8px 22px rgba(0,0,0,.6))}
   .ovr{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center}
-  .ovr .n{font-family:'Anton',Impact;font-size:62px;line-height:.85;color:#EBA61F;font-weight:800}
-  .ovr .t{font-size:14px;font-weight:800;letter-spacing:.22em;color:#F6EAD0}
-  .built .cap{font-family:'Anton',Impact;font-size:23px;letter-spacing:.08em;color:#F6EAD0;font-weight:800;text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+  .ovr .n{font-family:'Anton',Impact;font-size:78px;line-height:.82;color:#EBA61F;font-weight:800}
+  .ovr .t{font-size:18px;font-weight:800;letter-spacing:.22em;color:#F6EAD0}
+  .built .cap{font-family:'Anton',Impact;font-size:28px;letter-spacing:.07em;color:#F6EAD0;font-weight:800;text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,.6)}
   .built .cap b{color:#EBA61F}
 
-  .foot{display:flex;align-items:center;justify-content:space-between;margin-top:2px}
-  .pills{display:flex;gap:9px}
-  .pill{border:1.5px solid rgba(235,166,31,.6);color:#F5C24B;font-weight:800;letter-spacing:.11em;font-size:15px;text-transform:uppercase;padding:7px 14px;border-radius:999px;background:rgba(6,28,16,.6)}
-  .url{font-weight:800;font-size:24px;color:#F6EAD0;text-shadow:0 2px 8px rgba(0,0,0,.6)}
-  .url b{color:#EBA61F}.url .free{color:#8fe9c8;font-size:18px;letter-spacing:.08em;margin-left:9px;text-transform:uppercase}
+  .foot{display:flex;align-items:center;justify-content:center;margin-top:4px}
+  .url{font-weight:800;font-size:34px;color:#F6EAD0;text-shadow:0 2px 10px rgba(0,0,0,.6);letter-spacing:.01em}
+  .url b{color:#EBA61F}.url .free{color:#8fe9c8;font-size:34px;margin-left:14px}
 </style></head><body>
   <svg class="scene" viewBox="0 0 1200 630" preserveAspectRatio="xMidYMid slice">
     <defs>
@@ -68,10 +59,10 @@
     <path d="M0 300 Q220 250 460 288 Q720 330 980 278 Q1120 252 1200 288 L1200 360 L0 360 Z" fill="#2f6b3f" opacity=".85"/>
     <path d="M0 330 Q300 300 620 322 Q900 340 1200 312 L1200 372 L0 372 Z" fill="#255a34"/>
     <path d="M0 372 L1200 348 L1200 630 L0 630 Z" fill="url(#fw)"/>
-    <ellipse cx="1050" cy="392" rx="118" ry="38" fill="url(#grn)"/>
-    <ellipse cx="1060" cy="396" rx="8" ry="3.6" fill="#0c2c1a"/>
-    <path d="M1060 396 V328" stroke="#f4ecd9" stroke-width="3" stroke-linecap="round"/>
-    <path d="M1060 328 q24 5 40 -3 q-13 11 0 20 q-20 -6 -40 0 z" fill="#EBA61F"/>
+    <ellipse cx="1055" cy="392" rx="116" ry="36" fill="url(#grn)"/>
+    <ellipse cx="1065" cy="396" rx="8" ry="3.4" fill="#0c2c1a"/>
+    <path d="M1065 396 V330" stroke="#f4ecd9" stroke-width="3" stroke-linecap="round"/>
+    <path d="M1065 330 q24 5 40 -3 q-13 11 0 20 q-20 -6 -40 0 z" fill="#EBA61F"/>
   </svg>
   <div class="dim"></div>
   <div class="goldtop"></div><div class="frame"></div>
@@ -85,27 +76,25 @@
     <div class="body">
       <div class="left">
         <div class="h1"><div class="l1">Draft the pros.</div><div class="l2">Become the G.O.A.T.</div></div>
-        <div class="tagline">Draft an elite skill from each pro into <b>one golfer</b>, then chase a <b>30-year legacy</b>.</div>
       </div>
 
       <div class="viz">
         <div class="draftcol">
-          <div class="dlabel">Draft an elite skill from each pro</div>
-          <div class="scard"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20 L15 9"/><path d="M14 6 c4 -2 6 1 4 4 c-2 2 -5 2 -7 1 z" fill="#F5C24B" stroke="none"/><circle cx="4" cy="20" r="1.6" fill="#F5C24B" stroke="none"/></svg></div><div class="who"><div class="sk">Driving</div><div class="tag">Pro pick</div></div><div class="rt">98</div></div>
-          <div class="scard"><div class="ic"><svg viewBox="0 0 24 24"><path d="M7 21 V4"/><path d="M7 4 q7 2 11 -1 q-4 4 0 7 q-6 -2 -11 0 Z" fill="#F5C24B" stroke="none"/><ellipse cx="9" cy="21" rx="5" ry="1.6"/></svg></div><div class="who"><div class="sk">Approach</div><div class="tag">Pro pick</div></div><div class="rt">97</div></div>
-          <div class="scard"><div class="ic"><svg viewBox="0 0 24 24"><path d="M6 4 V15"/><rect x="3" y="15" width="12" height="3" rx="1.4" fill="#F5C24B" stroke="none"/><circle cx="19" cy="18" r="3"/></svg></div><div class="who"><div class="sk">Putting</div><div class="tag">Pro pick</div></div><div class="rt">99</div></div>
+          <div class="scard"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 20 L15 9"/><path d="M14 6 c4 -2 6 1 4 4 c-2 2 -5 2 -7 1 z" fill="#F5C24B" stroke="none"/><circle cx="4" cy="20" r="1.6" fill="#F5C24B" stroke="none"/></svg></div><div class="sk">Driving</div><div class="rt">98</div></div>
+          <div class="scard"><div class="ic"><svg viewBox="0 0 24 24"><path d="M7 21 V4"/><path d="M7 4 q7 2 11 -1 q-4 4 0 7 q-6 -2 -11 0 Z" fill="#F5C24B" stroke="none"/><ellipse cx="9" cy="21" rx="5" ry="1.6"/></svg></div><div class="sk">Approach</div><div class="rt">97</div></div>
+          <div class="scard"><div class="ic"><svg viewBox="0 0 24 24"><path d="M6 4 V15"/><rect x="3" y="15" width="12" height="3" rx="1.4" fill="#F5C24B" stroke="none"/><circle cx="19" cy="18" r="3"/></svg></div><div class="sk">Putting</div><div class="rt">99</div></div>
         </div>
-        <div class="arrow"><div class="a">&rarr;</div><div class="lab">Build</div></div>
+        <div class="arrow">&rarr;</div>
         <div class="built">
           <svg class="trophy" viewBox="0 0 70 78"><path d="M20 8 H50 V26 Q50 40 35 44 Q20 40 20 26 Z" fill="url(#tg)" stroke="#b9821a" stroke-width="1.5"/><path d="M20 12 H10 Q8 26 22 30" fill="none" stroke="#EBA61F" stroke-width="3"/><path d="M50 12 H60 Q62 26 48 30" fill="none" stroke="#EBA61F" stroke-width="3"/><rect x="31" y="44" width="8" height="12" fill="#c9922a"/><rect x="22" y="56" width="26" height="7" rx="2" fill="#EBA61F"/><rect x="18" y="63" width="34" height="8" rx="2" fill="#c9922a"/><defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F5C24B"/><stop offset="1" stop-color="#d69a1e"/></linearGradient></defs></svg>
           <div class="radarbox">
-            <svg viewBox="0 0 212 212" width="212" height="212">
-              <g stroke="rgba(246,234,208,.22)" fill="none" stroke-width="1">
-                <polygon points="106,20 167,48 189,106 167,164 106,192 45,164 23,106 45,48"/>
-                <polygon points="106,49 151,65 167,106 151,147 106,163 61,147 45,106 61,65"/></g>
-              <g stroke="rgba(246,234,208,.12)"><line x1="106" y1="106" x2="106" y2="20"/><line x1="106" y1="106" x2="189" y2="106"/><line x1="106" y1="106" x2="106" y2="192"/><line x1="106" y1="106" x2="23" y2="106"/><line x1="106" y1="106" x2="167" y2="48"/><line x1="106" y1="106" x2="167" y2="164"/><line x1="106" y1="106" x2="45" y2="164"/><line x1="106" y1="106" x2="45" y2="48"/></g>
-              <polygon points="106,26 162,53 182,106 154,153 106,182 58,153 33,106 55,53" fill="rgba(18,179,154,.34)" stroke="#12b39a" stroke-width="3.4"/>
-              <circle cx="106" cy="106" r="43" fill="rgba(3,16,10,.9)" stroke="#EBA61F" stroke-width="2"/></svg>
+            <svg viewBox="0 0 250 250" width="250" height="250">
+              <g stroke="rgba(246,234,208,.22)" fill="none" stroke-width="1.1">
+                <polygon points="125,24 197,57 223,125 197,193 125,226 53,193 27,125 53,57"/>
+                <polygon points="125,58 178,77 197,125 178,173 125,192 72,173 53,125 72,77"/></g>
+              <g stroke="rgba(246,234,208,.12)"><line x1="125" y1="125" x2="125" y2="24"/><line x1="125" y1="125" x2="223" y2="125"/><line x1="125" y1="125" x2="125" y2="226"/><line x1="125" y1="125" x2="27" y2="125"/><line x1="125" y1="125" x2="197" y2="57"/><line x1="125" y1="125" x2="197" y2="193"/><line x1="125" y1="125" x2="53" y2="193"/><line x1="125" y1="125" x2="53" y2="57"/></g>
+              <polygon points="125,30 191,62 214,125 181,180 125,214 68,180 38,125 64,62" fill="rgba(18,179,154,.36)" stroke="#12b39a" stroke-width="4"/>
+              <circle cx="125" cy="125" r="52" fill="rgba(3,16,10,.92)" stroke="#EBA61F" stroke-width="2.4"/></svg>
             <div class="ovr"><div class="n">99</div><div class="t">OVR</div></div>
           </div>
           <div class="cap">Your <b>Legend</b></div>
@@ -114,8 +103,7 @@
     </div>
 
     <div class="foot">
-      <div class="pills"><span class="pill">Spin</span><span class="pill">Draft</span><span class="pill">Win Majors</span></div>
-      <div class="url">runthe.gg/<b>golf</b><span class="free">· Play free</span></div>
+      <div class="url">Play free at runthe.gg/<b>golf</b></div>
     </div>
   </div>
 </body></html>
