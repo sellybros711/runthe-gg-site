@@ -526,25 +526,31 @@ window.GA_ID='G-L29P5MRWKE';
   .oshero-budget{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
   .oshero-budget .pips{margin-top:0}
   .osstat{max-width:520px; margin:0 auto 8px; text-align:center; font-size:12px; color:var(--muted); line-height:1.45}
-  .osreel{height:62px; max-width:520px; margin:0 auto 7px; border-radius:14px; border:1px solid var(--panelb);
-    background:radial-gradient(120% 120% at 50% 0%,rgba(255,255,255,.07),rgba(0,0,0,.12));
+  /* CS341: bigger, more-noticeable wheel with an inviting glow */
+  .osreel{height:88px; max-width:520px; margin:0 auto 9px; border-radius:16px; border:1.5px solid rgba(235,166,31,.32);
+    background:radial-gradient(120% 120% at 50% 0%,rgba(255,255,255,.08),rgba(0,0,0,.14));
+    box-shadow:0 0 20px rgba(235,166,31,.12), inset 0 1px 0 rgba(255,255,255,.05);
     display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; overflow:hidden}
-  .osreel .reeltag{position:absolute; top:5px; font:800 8.5px/1 var(--body); letter-spacing:.2em; color:var(--muted)}
-  .osreel .name{font-family:var(--display); font-weight:400; font-size:21px; text-transform:uppercase; letter-spacing:.02em; color:var(--oncard); padding:0 12px; text-align:center}
-  .osreel:not(.landed):not(.spinning) .name{font-size:14px; color:var(--muted); letter-spacing:.06em}
-  .osreel .sub{position:absolute; bottom:6px; font:800 8px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); padding:0 8px; text-align:center}
+  .osreel .reeltag{position:absolute; top:6px; font:800 8.5px/1 var(--body); letter-spacing:.2em; color:var(--muted)}
+  .osreel .name{font-family:var(--display); font-weight:400; font-size:22px; text-transform:uppercase; letter-spacing:.02em; color:var(--oncard); padding:0 12px; text-align:center}
+  .osreel:not(.landed):not(.spinning) .name{font-size:18px; color:#e9f1eb; letter-spacing:.04em}   /* CS341: idle text more apparent */
+  .osreel .sub{position:absolute; bottom:7px; font:800 8px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); padding:0 8px; text-align:center}
   .osreel.rar-rare{border-color:#4f9fd0} .osreel.rar-rare .reeltag{color:#82c1e8}
   .osreel.rar-epic{border-color:#a679e0; box-shadow:0 0 12px rgba(166,121,224,.25) inset} .osreel.rar-epic .reeltag{color:#c7a6f2}
   .osreel.rar-legendary{border-color:var(--gold); box-shadow:0 0 15px rgba(235,166,31,.34) inset} .osreel.rar-legendary .reeltag{color:var(--gold)}
   .osreel.landed{animation:pop .3s ease} .osreel.spinning .name{animation:flick .08s steps(1) infinite}
+  /* CS341: slot-machine reel — a vertical strip of names scrolls & decelerates so it reads as a wheel spin */
+  .osreel .name.slotting,.reel .name.slotting{height:34px; overflow:hidden; display:block; width:100%; padding:0; animation:none!important}
+  .slotstrip{will-change:transform}
+  .slotrow{text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 10px}
   .osgridhint{max-width:520px; margin:0 auto 7px}
   .osgrid{max-width:520px; margin:0 auto; grid-template-columns:1fr 1fr!important; gap:6px}
   .attr.static{cursor:default; box-shadow:none}
   .attr.static:hover{border-color:var(--panelb)}
-  .attr .osnew{font-family:var(--mono); font-weight:800; font-size:13.5px; flex:0 0 auto; white-space:nowrap}
+  .attr .osnew{font-family:var(--mono); font-weight:800; font-size:16px; flex:0 0 auto; white-space:nowrap}   /* CS341: colored new value now slightly bigger than the white current value */
   .attr .osnew b{font-size:12px; margin-left:1px}
   .attr .osdec{font-family:var(--mono); font-weight:800; font-size:11px; color:#e07a5f; flex:0 0 auto; letter-spacing:-.02em}
-  .attr.osswap .val{color:#cfe0d8}
+  .attr.osswap .val{color:#cfe0d8; font-size:14px}   /* CS341: white current value slightly smaller than the colored new value */
   .attr.locked .take{background:none!important; padding:0 2px!important; font-size:13px!important}
   .osactions{max-width:520px; margin:9px auto 0; display:flex; flex-direction:column; gap:9px}
   .osactions .btn{margin:0}
@@ -6599,12 +6605,27 @@ function reveal(){
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const land=drawGolfer(S.drawRng, RPOOL, S.revealed);   // rarity-weighted bucket pull
   if(!land){S.spinning=false;render();return;}
-  if(reduce){S.current=land;S.spinning=false;render();rarityFlash(land);offPersistSpin();return;}
-  let ticks=0, total=16+Math.floor(Math.random()*6);
-  const iv=setInterval(()=>{
-    if(reel) reel.textContent=GOLFERS[Math.floor(Math.random()*GOLFERS.length)].name;   // cosmetic flicker (guarded)
-    if(++ticks>=total){clearInterval(iv);S.current=land;S.spinning=false;render();rarityFlash(land);offPersistSpin();}
-  },72);
+  const finish=()=>{S.current=land;S.spinning=false;render();rarityFlash(land);offPersistSpin();};
+  if(reduce || !reel){ finish(); return; }
+  slotSpin(reel, land.name, finish);   // CS341: a real slot-reel spin (vertical scroll + decelerate), not a text shuffle
+}
+// CS341: slot-machine reel — a vertical strip of names scrolls fast then eases to a stop on the drawn golfer,
+// so it reads as a spinning wheel rather than names flickering in place. Used by every draft/off-season spin.
+function slotSpin(el, finalName, done){
+  const H=34;   // slot row height (matches .name.slotting viewport)
+  const rows=[]; for(let i=0;i<24;i++) rows.push(GOLFERS[Math.floor(Math.random()*GOLFERS.length)].name);
+  rows.push(finalName);
+  el.classList.add('slotting');
+  el.innerHTML=`<div class="slotstrip">${rows.map(nm=>`<div class="slotrow" style="height:${H}px;line-height:${H}px">${esc(nm)}</div>`).join('')}</div>`;
+  const strip=el.querySelector('.slotstrip'), endY=-(rows.length-1)*H;
+  strip.style.transform='translateY(0)';
+  let fired=false; const fin=()=>{ if(fired) return; fired=true; done(); };
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{   // 2 frames so the start transform is committed before the transition
+    strip.style.transition='transform 1.25s cubic-bezier(.13,.72,.14,1)';   // fast → decelerate to a stop
+    strip.style.transform=`translateY(${endY}px)`;
+  }));
+  strip.addEventListener('transitionend', fin, {once:true});
+  setTimeout(fin, 1600);   // safety net if transitionend is missed
 }
 // CS332: once an off-season spin LANDS, persist it (revealed golfer + seen set) so leaving and returning
 // resumes on the SAME golfer — you must take it or spend a re-spin, never get a free re-roll by navigating away.
@@ -11171,13 +11192,13 @@ function scrOffseason(){
   add($(`<div class="osreel ${S.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
     ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:''}
     <div class="name">${S.spinning?'…':(spun?esc(g.name):'Spin to swap a skill')}</div>
-    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.spinning?'':'Your current bag is below')}</div></div>`));
+    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.spinning?'':'Optional · spin at your own risk')}</div></div>`));
 
   // one-line hint above the grid
   if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap a stat to swap in <b>${esc(g.name)}</b>'s rating — <span style="color:#35d6a0">green ▲ upgrade</span>, <span style="color:#e07a5f">red ▼ downgrade</span></div>`));
   else if(nDec) add($(`<div class="small center osgridhint" style="color:#e07a5f">▼ Age cost you ground — red shows what each skill dropped. Re-spin to repair.</div>`));
   else if(lockedNow.length) add($(`<div class="small center osgridhint" style="color:var(--gold)">🔒 Locked stats already changed this off-season — a spin can only land on your open stats</div>`));
-  else add($(`<div class="small center osgridhint muted">Your current bag — spin the wheel to swap a stat</div>`));
+  else add($(`<div class="small center osgridhint" style="color:#d9c48a">⚠ Spinning is optional and a <b>risk</b> — you can start the season as-is. If you spin, you <b>must lock in</b> whatever you land on, even if it's worse.</div>`));
 
   // THE unified grid: always 8 tiles. Idle → current bag; spun → current value + the swap it would make.
   const grid=$(`<div class="attrs osgrid"></div>`);
@@ -11217,7 +11238,7 @@ function scrOffseason(){
     else if(mulliSpins()>0){ const mb=$(`<button class="btn ghost" style="border-color:#8a6bf0;color:#c9b8ff">🌀 Use a Mulli-Spin · ${mulliSpins()} left<span class="sub">A banked extra spin from weekly challenges</span></button>`); mb.onclick=mulliSpinOff; actions.appendChild(mb); }
     else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">No re-spins left — take one of ${esc(g.name)}'s skills, or start the season.</div>`));
   } else if(!S.spinning){
-    if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel<span class="sub">${os.maxChanges-os.changes} change${os.maxChanges-os.changes===1?'':'s'} left · once you spin you must take a skill</span></button>`); spin.onclick=offSpin; actions.appendChild(spin); }
+    if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel · Optional<span class="sub">${os.maxChanges-os.changes} change${os.maxChanges-os.changes===1?'':'s'} left · a risk — you must lock in whatever you land on</span></button>`); spin.onclick=offSpin; actions.appendChild(spin); }
     else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">All ${os.maxChanges} changes used.</div>`));
   }
   const cont=$(`<button class="btn goldfill">Start Year ${yr} ▸<span class="sub">${os.changes>0?'Run the new season':'Keep your bag, run it as-is'}</span></button>`);

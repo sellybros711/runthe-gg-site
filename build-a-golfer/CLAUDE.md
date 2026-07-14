@@ -8012,6 +8012,40 @@ allows Google Fonts, or self-host Anton.*
   Schauffele) all render untruncated on their own line, all tiles uniform height, 0 page errors. CSS/markup
   only. Deployed to /golf.
 
+- **CS341 — off-season wheel/UX polish (owner IMG_8188, off-season screen: "swap the sizes of the white
+  numbers and colored numbers so the colored numbers are slightly bigger · make the wheel a little larger so
+  it's more noticeable · make the text more apparent within it before the wheel is spun · make it more
+  apparent that spinning is a risk and optional and you must lock in a choice if you choose to spin · make
+  the wheel spin animation look more like a wheel spin and less like names shuffling through").** Five
+  changes, all in the shared off-season/draft reel (`.osreel`) + `reveal()`:
+  1. **Slot-machine wheel spin (the headline).** Replaced the old in-place name FLICKER (`.spinning .name{
+     animation:flick}`) with a real vertical reel: new `slotSpin(el, finalName, done)` builds a strip of 24
+     random golfer names + the drawn golfer, clips the `.name` to a 34px overflow-hidden viewport
+     (`.name.slotting` — `animation:none!important` to kill the flick), and scrolls the strip
+     `translateY(0 → -(rows-1)*34px)` over 1.25s with `cubic-bezier(.13,.72,.14,1)` so it rips fast then
+     decelerates to a stop on the drawn name — unmistakably a wheel spin, not names shuffling. `transitionend`
+     + a 1600ms safety net fire the completion (which sets `S.current`, renders, rarity-flashes, and
+     `offPersistSpin`s). Reduced-motion / no-reel paths skip straight to the result. New `.slotstrip`/
+     `.slotrow` CSS.
+  2. **Bigger, more-noticeable wheel.** `.osreel` height 62→**88px**, radius 14→16, a 1.5px gold-tinted border
+     + a soft `0 0 20px rgba(235,166,31,.12)` glow so it invites a spin.
+  3. **Idle text more apparent.** The pre-spin `.name` (`.osreel:not(.landed):not(.spinning) .name`) 14→**18px**
+     and brighter (muted → `#e9f1eb`).
+  4. **Number-size swap.** In the off-season swap tile, the COLORED new value (`.osnew`) 13.5→**16px** and the
+     WHITE current value (`.attr.osswap .val`) 16→**14px**, so the colored new value is slightly bigger.
+  5. **Risk/optional/lock-in messaging (off-season only, NOT the career draft where spinning is required).**
+     The idle grid hint now reads "⚠ Spinning is optional and a **risk** — you can start the season as-is. If
+     you spin, you **must lock in** whatever you land on, even if it's worse.", the reel sub reads "Optional ·
+     spin at your own risk", and the Spin button is "Spin the Wheel · Optional" with the sub "… a risk — you
+     must lock in whatever you land on".
+  Verified in Playwright (cs341): reel height 88, idle name 18px, risk copy present on hint+sub+button;
+  mid-spin the `.name.slotting` is a 34px overflow-hidden viewport with a 25-row strip carrying a live
+  transform (scrolling), rows measured scrolling up + decelerating; on land `S.current` set / spinning false /
+  the osswap tile shows val 14px < osnew 16px (colored bigger); node --check clean; 0 page errors (only
+  sandbox-blocked external fonts/Supabase/ads). Screenshots confirm the vertical wheel spin + the enlarged
+  glowing reel. Deployed to /golf. Tunable: the `slotSpin` row count / duration / easing, `.osreel` height +
+  glow, the `.osnew`/`.osswap .val` sizes.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
