@@ -8223,6 +8223,40 @@ allows Google Fonts, or self-host Anton.*
   the summary cleanly (`seasonsLen:1`, no error card). 0 page errors (only sandbox-blocked
   Supabase/fonts/ads). Deployed to /golf.
 
+- **CS351 — start UNSPONSORED + a brand wanting to sign you is now a MOMENT (owner: "I just finished my
+  first season and it's saying I already have a signed sponsor but I never chose one. Make this more
+  realistic and a bigger moment when brands want to sign you").** Root cause: `ensureSponsors()` auto-seeded
+  a Regional SHIRT deal (`c.sponsors.shirt={brand:sponsorPick(0,…)}`) for every brand-new career, so a rookie
+  "already had" a sponsor they never chose (the screenshot's "Birchwood · Yr 2 · Loyalty Lv 1"). Two fixes:
+  1. **Unsponsored start.** Removed the auto-seed — a brand-new career now begins with BOTH slots open
+     (`{hat:null, shirt:null}`); nobody has signed you yet, you earn and CHOOSE your first deal. Kept the
+     legacy migration (a saved single `c.sponsor`/in-progress `c.lastContract` still lands in the shirt slot),
+     so existing careers aren't stripped. Everything downstream already handles empty slots (`makeContracts`
+     returns early when none filled; `sponsorStripNode`/`slotStatusCardHTML` show "open"; the avatar only
+     paints a logo for a filled slot), verified.
+  2. **The offer is a full-screen MOMENT.** New `sponsorOfferPopup()` — a `.momentov` set-piece (same pattern
+     as the Moment/press/dilemma overlays) that greets you in the off-season when a brand is interested:
+     a kicker (**YOUR FIRST DEAL** for your first-ever sponsor / **A BIGGER BRAND CALLS** for a tier-up /
+     **A RIVAL COMES CALLING** for a poach / **A BRAND WANTS YOU**), a headline, the brand's logo + tier ·
+     trait + tagline + signing bonus, **Sign as Hat / Sign as Shirt** (or Replace) buttons, and a
+     **Decide later ▸** dismissal; the first-ever deal fires confetti. Signing routes through the existing
+     `signSponsor(offer, slot)` (pays the signing bonus, resets loyalty, saves). `maybeSponsorMoment()` fires
+     it once per off-season (guarded by `S.career._sponsorMomentYear`, persisted so a refresh won't replay it)
+     from the tail of `scrOffseason`, so it covers both `continueFranchise` and resume. Dismissing leaves the
+     same offer in the inline `sponsorDecisionNode` card — nothing is lost. Since offers only arise for an
+     open slot / genuine tier-up / a ~50%-of-years poach at your ceiling, the moment is naturally bounded
+     (not every year), and it's at the off-season decision point (never interrupts a live sim, so it doesn't
+     touch the in-season pop-up budget).
+  Verified in Playwright: a fresh career is unsponsored (both slots null, `firstEver:true`); a real simmed
+  year-1 season → off-season fires the "YOUR FIRST DEAL" popup with sign + decide-later buttons and sets the
+  once-per-off-season flag; signing as Shirt fills that slot with the offered brand + pending signing bonus +
+  removes the overlay; a re-render does NOT replay the moment; and a legacy career with an existing sponsor
+  is kept intact (non-destructive). 0 page errors. Screenshot confirms the set-piece with both slots reading
+  "Open slot" behind it. Deployed to /golf. NOTE: this cleans up NEW careers; an in-progress career that was
+  already auto-seeded keeps its current deal (removing it retroactively would be indistinguishable from a
+  deal the player actually signed, so it's left intact) — start a fresh career for the unsponsored-start
+  experience. Tunable: the kicker/copy + confetti in `sponsorOfferPopup`, the once-per-off-season gate.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
