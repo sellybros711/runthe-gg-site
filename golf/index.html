@@ -6437,10 +6437,11 @@ function ratColor(v){ return v>=90?'#f2c94c' : v>=82?'#41dea6' : v>=74?'#5fd0e0'
 const RAD_CX=125, RAD_CY=124, RAD_R=88;
 function radAng(i){ return (-Math.PI/2)+i*(2*Math.PI/CATS.length); }
 function radPt(i,r){ return [RAD_CX+Math.cos(radAng(i))*r, RAD_CY+Math.sin(radAng(i))*r]; }
-function dynRadar(){
+function dynRadar(slots){
+  slots=slots||S.slots;   // CS342: optional slots source so online-mode drafts (S.h2h.slots) reuse the same web
   const n=CATS.length;
-  const cur=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
-  const filled=CATS.map(c=> !!S.slots[c.k]);
+  const cur=CATS.map(c=> slots[c.k]? slots[c.k].value : REPLACEMENT);
+  const filled=CATS.map(c=> !!slots[c.k]);
   const from = (_radarPrev && _radarPrev.length===n) ? _radarPrev.slice() : cur.map(()=>REPLACEMENT);
   let pulseIdx=-1, pulseMax=0.6; cur.forEach((v,i)=>{ const d=Math.abs(v-(from[i]!=null?from[i]:REPLACEMENT)); if(d>pulseMax){pulseMax=d; pulseIdx=i;} });
   _radarPrev = cur.slice();
@@ -15969,6 +15970,7 @@ function h2hOnState(st){
 function h2hBeginDraft(){
   S.h2h.drafting=true; S.h2h.slots={}; S.h2h.reSpins=3; S.h2h.current=null; S.h2h.spinning=false;
   S.h2h.revealed=new Set(); S.h2h.rng=mulberry32((S.h2h.myWheel>>>0)||1); S.h2h.submitted=false;
+  _radarPrev=null;   // CS342: fresh morph baseline for the online-draft rating web
   track('h2h_draft_start'); S.screen='h2hdraft'; render();
 }
 function h2hGolfersLeft(){ return GOLFERS.length-(S.h2h.revealed?S.h2h.revealed.size:0); }
@@ -15977,13 +15979,12 @@ function h2hSkills(){ const s={}; for(const c of CATS) s[c.k]=S.h2h.slots[c.k]?S
 function h2hOvr(){ return Math.round(ovrFromSkills(h2hSkills())); }
 function h2hReveal(){
   S.h2h.spinning=true; S.h2h.current=null; render();
+  const reel=app.querySelector('.osreel .name')||app.querySelector('.reel .name');   // CS342: online draft uses the .osreel wheel
   const land=drawGolfer(S.h2h.rng,RPOOL,S.h2h.revealed);
   if(!land){ S.h2h.spinning=false; render(); return; }
   const finish=()=>{ S.h2h.current=land; S.h2h.spinning=false; render(); };
-  if(matchMedia('(prefers-reduced-motion:reduce)').matches){ finish(); return; }
-  const reel=app.querySelector('.reel .name'); let t=0, total=14+Math.floor(Math.random()*5);
-  const iv=setInterval(()=>{ if(reel&&reel.isConnected) reel.textContent=GOLFERS[Math.floor(Math.random()*GOLFERS.length)].name;
-    if(++t>=total){ clearInterval(iv); finish(); } },72);
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches || !reel){ finish(); return; }
+  slotSpin(reel, land.name, finish);   // CS342: the same slot-machine reel as the career/off-season draft
 }
 function h2hSpin(){ if(S.h2h.current||h2hGolfersLeft()<=0) return; h2hReveal(); }
 function h2hReSpin(){ if(S.h2h.reSpins<=0||h2hGolfersLeft()<=0) return; S.h2h.reSpins--; track('h2h_respin',{left:S.h2h.reSpins}); h2hReveal(); }
@@ -16321,45 +16322,73 @@ function scrH2HLobby(){
   if(!submitted) add($(`<div class="center" style="margin-top:14px"><span class="authspin" style="width:22px;height:22px"></span></div>`));
   add($(`<p class="small muted center" style="margin-top:14px">${n}/${cap} players in the match${teamsKnown?' · teams are set':''}</p>`));
 }
+// CS342: online-mode draft uses the SAME unified-grid style as the career/off-season draft — compact hero,
+// the dynamic animated rating web, a reserved slot-machine reel, and ONE always-present 8-slot grid (filled
+// = your pick, open + spun = draftable, open + idle = placeholder) so the layout never jumps on a spin.
 function scrH2HDraft(){
   const m=h2hMode(S.h2h.mode);
-  add(h2hTag(`${esc(m.label)} Draft · your wheel${m.teams&&S.h2h.myTeam!=null?` · Team ${(S.h2h.myTeam|0)+1}`:''}`));
-  add($(`<h1 class="center" style="font-size:22px;margin:8px 0 2px">Build your golfer</h1>`));
-  add($(`<p class="lede center" style="margin:2px 0 12px">Spin your own wheel and take one skill from each golfer. You get 3 re-spins. Fill all 8 to lock in your build.${m.id==='scramble'?' Your team plays the best of each skill, so cover your partner\'s gaps.':''}</p>`));
-  // live OVR + fill
-  add($(`<div class="center" style="margin-bottom:8px"><span class="tag">OVR ${h2hOvr()} · ${h2hFilled()}/8 filled</span></div>`));
-  if(S.h2h.current||S.h2h.spinning){
-    const g=S.h2h.current, sp=S.h2h.spinning;
-    const sub=g&&!sp?[g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · '):'';
-    add($(`<div class="reel ${sp?'spinning':''} ${g&&!sp?'landed':''}"><div class="name">${g?esc(g.name):'…'}</div><div class="sub">${esc(sub)}</div></div>`));
-  }
-  const cols=$(`<div class="cols"></div>`); const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
-  cols.appendChild(left); cols.appendChild(right);
-  const reelEl=RT.querySelector('.reel'); if(reelEl) left.appendChild(reelEl);
-  add(cols);
-  if(S.h2h.current&&!S.h2h.spinning){
-    left.appendChild($(`<div class="small muted" style="margin:10px 0 -2px;text-align:center">Tap a skill to draft it</div>`));
-    const grid=$(`<div class="attrs"></div>`);
-    CATS.forEach(cat=>{ const filled=!!S.h2h.slots[cat.k];
-      const b=$(`<button class="attr" ${filled?'disabled':''}><span class="lab">${cat.short}</span><span class="val">${S.h2h.current[cat.k]}</span>${filled?'':'<span class="take">Take</span>'}</button>`);
-      if(!filled) b.onclick=()=>h2hTake(cat.k); grid.appendChild(b);
-    }); left.appendChild(grid);
-    if(S.h2h.reSpins>0){ const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${S.h2h.reSpins} left</button>`); re.onclick=h2hReSpin; left.appendChild(re); }
-    else left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left, take one of ${esc(S.h2h.current.name)}'s skills.</div>`));
-  } else if(!S.h2h.spinning && h2hFilled()<8){
-    const spin=$(`<button class="btn teal" style="font-size:22px;padding:18px">Spin the Wheel<span class="sub">${8-h2hFilled()} slot${8-h2hFilled()>1?'s':''} to fill</span></button>`);
-    spin.onclick=h2hSpin; left.appendChild(spin);
-  }
-  right.appendChild($(`<h2 style="margin:2px 0 8px">Your scorecard · ${h2hFilled()}/8</h2>`));
-  const card=$(`<div class="card-grid"></div>`);
-  CATS.forEach(cat=>{ const f=S.h2h.slots[cat.k];
-    card.appendChild($(`<div class="slot ${f?'':'empty'}"><span class="lab">${cat.short}</span><span class="who">${f?esc(f.golfer):'·'}</span><span class="v">${f?f.value:'··'}</span></div>`));
+  const spun=!!(S.h2h.current && !S.h2h.spinning), g=S.h2h.current;
+  const filled=h2hFilled(), left2go=8-filled;
+
+  add(h2hTag(`${esc(m.label)} Draft · your wheel${m.teams&&S.h2h.myTeam!=null?` · Team ${(S.h2h.myTeam|0)+1}`:''}`, true));
+
+  // compact hero: small avatar + name + live OVR pips + re-spin budget
+  const hero=$(`<div class="oshero"></div>`);
+  const av=$(`<div class="oshero-av"></div>`); av.innerHTML=avatarShowHTML(); hero.appendChild(av);
+  const pips=Array.from({length:8},(_,i)=>`<span class="pip ${i<filled?'on':''}"></span>`).join('');
+  hero.appendChild($(`<div class="oshero-info">
+    <div class="oshero-name">${esc(S.name||'Your Golfer')}</div>
+    <div class="oshero-budget" style="margin-top:5px"><span class="pips">${pips}</span>
+      <span class="small"><b style="color:var(--gold)">${filled}</b>/8 drafted · <b style="color:var(--gold)">${S.h2h.reSpins}</b> re-spin${S.h2h.reSpins===1?'':'s'}</span></div></div>`));
+  add(hero);
+  add(dynRadar(S.h2h.slots));   // CS342: the same live animated rating web, driven by the online build
+
+  if(m.id==='scramble') add($(`<div class="osstat" style="color:#cfe0d8">Your team plays the <b style="color:var(--gold)">best of each skill</b> — cover your partner's gaps.</div>`));
+
+  // reserved reel slot — same height idle / spinning / landed, so a spin (or auto-spin after a take) never jumps
+  const rar=spun?g.rarity:null, RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
+  add($(`<div class="osreel ${S.h2h.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
+    ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:''}
+    <div class="name">${S.h2h.spinning?'…':(spun?esc(g.name):(filled===0?'Spin to reveal a golfer':'Spin for your next pick'))}</div>
+    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.h2h.spinning?'':(filled?filled+'/8 in your bag below':'Your bag fills in below'))}</div></div>`));
+
+  // hint
+  if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(g.name)}</b>'s rating into your bag</div>`));
+  else if(!S.h2h.spinning && filled<8) add($(`<div class="small center osgridhint muted">Spin the wheel, then tap a slot to draft a rating</div>`));
+
+  // THE unified grid: 8 slot tiles. Filled → your pick; open + golfer shown → draft option; open + idle → placeholder.
+  const grid=$(`<div class="attrs osgrid"></div>`);
+  CATS.forEach(cat=>{
+    const f=S.h2h.slots[cat.k];
+    if(f){
+      grid.appendChild($(`<div class="attr static dfilled" aria-label="${cat.short} drafted from ${esc(f.golfer)}, rated ${f.value}">
+        <span class="dcol"><span class="lab">${cat.short}</span><span class="dwho">${esc(f.golfer)}</span></span><span class="val">${f.value}</span></div>`));
+      return;
+    }
+    if(spun){
+      const rv=S.h2h.current[cat.k], rc=rv>=90?'#d8ad4a':rv>=80?'#49b675':rv>=70?'#7ec8ff':'#9fb0bd';
+      const b=$(`<button class="attr dtake" aria-label="Draft ${cat.short}, rated ${rv}">
+        <span class="lab">${cat.short}</span><span class="val" style="color:${rc}">${rv}</span><span class="take">Take</span><span class="attrbar"><i style="width:${Math.min(100,rv)}%;background:${rc}"></i></span></button>`);
+      b.onclick=()=>h2hTake(cat.k);
+      grid.appendChild(b); return;
+    }
+    grid.appendChild($(`<div class="attr static dempty" aria-label="${cat.short} open"><span class="lab">${cat.short}</span><span class="val">—</span></div>`));
   });
-  right.appendChild(card);
-  if(h2hFilled()>=8){
-    const sub=$(`<button class="btn goldfill" style="margin-top:14px"${S.h2h.submitting?' disabled':''}>${S.h2h.submitting?'Submitting…':'Lock in my golfer ▸'}<span class="sub">OVR ${h2hOvr()} · ready to play</span></button>`);
-    sub.onclick=h2hSubmitDraft; add(sub);
+  add(grid);
+
+  // actions
+  const actions=$(`<div class="osactions"></div>`);
+  if(filled>=8){
+    const sub=$(`<button class="btn goldfill"${S.h2h.submitting?' disabled':''}>${S.h2h.submitting?'Submitting…':'Lock in my golfer ▸'}<span class="sub">OVR ${h2hOvr()} · ready to play</span></button>`);
+    sub.onclick=h2hSubmitDraft; actions.appendChild(sub);
+  } else if(spun){
+    if(S.h2h.reSpins>0){ const re=$(`<button class="btn gold">Re-spin · ${S.h2h.reSpins} left<span class="sub">Pass on ${esc(g.name)} for a new golfer</span></button>`); re.onclick=h2hReSpin; actions.appendChild(re); }
+    else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">No re-spins left — draft one of ${esc(g.name)}'s ratings above.</div>`));
+  } else if(!S.h2h.spinning){
+    const spin=$(`<button class="btn teal" style="font-size:22px;padding:17px">Spin the Wheel<span class="sub">${filled===0?'Reveal your first golfer':left2go+' slot'+(left2go>1?'s':'')+' to fill'}</span></button>`);
+    spin.onclick=h2hSpin; actions.appendChild(spin);
   }
+  add(actions);
 }
 function h2hSum(scores,n){ let t=0; for(let i=0;i<Math.min(n,scores.length);i++) t+=scores[i]; return t; }
 // which units' ball is IN THE CUP at this reveal step of a hole (a unit is done when ALL its shots for
