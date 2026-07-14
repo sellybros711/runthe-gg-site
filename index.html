@@ -383,12 +383,47 @@ window.GA_ID='G-L29P5MRWKE';
   .games-head h2:before{content:"";width:11px;height:11px;border-radius:3px;background:var(--gold);flex:0 0 auto;}
   .games-head .note{font-size:11.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#8ba0b6;flex:0 0 auto;}
 
-  /* ---- responsive games grid: 2-up on desktop ---- */
-  .games{display:grid;grid-template-columns:1fr;gap:16px;}
-  @media (min-width:760px){ .games{grid-template-columns:1fr 1fr;align-items:stretch;} }
-  /* equal-height game cards: card fills the grid row, footer pinned to the bottom */
-  .games .game:not(.soon){display:flex;flex-direction:column;}
-  .games .game:not(.soon) .g-foot{margin-top:auto;}
+  /* ---- featured game blocks: lead with real gameplay screenshots ---- */
+  .games{display:block;}
+  .feat{position:relative;overflow:hidden;border-radius:22px;border:1px solid var(--cardb);
+    padding:20px 20px 22px;margin:0 0 16px;isolation:isolate;}
+  .feat .art{position:absolute;inset:0;z-index:-1;}
+  .feat.golf{border-color:rgba(235,166,31,.34);}
+  .feat.golf .art{background:radial-gradient(130% 120% at 92% -12%, rgba(235,166,31,.20), transparent 55%),
+    linear-gradient(150deg,#134734 0%,#0e3826 48%,#0a2418 100%);}
+  .feat.soccer{border-color:rgba(53,196,205,.34);}
+  .feat.soccer .art{background:radial-gradient(130% 120% at 92% -12%, rgba(53,196,205,.20), transparent 55%),
+    linear-gradient(150deg,#123152 0%,#0e2740 48%,#0a1b2e 100%);}
+  .feat-in{display:grid;gap:18px;align-items:center;}
+  @media (min-width:820px){
+    .feat-in{grid-template-columns:322px 1fr;}
+    .feat.soccer .feat-in{grid-template-columns:1fr 322px;}
+    .feat.soccer .shots{order:2;}
+  }
+  /* screenshot "phones" */
+  .shots{display:flex;gap:12px;justify-content:center;align-items:flex-start;text-decoration:none;}
+  .phone{flex:1 1 0;max-width:150px;border-radius:20px;overflow:hidden;background:#0a1626;
+    border:2px solid rgba(255,255,255,.15);box-shadow:0 16px 34px -16px rgba(0,0,0,.85);transition:transform .18s ease;}
+  .phone img{display:block;width:100%;height:auto;}
+  .phone.p2{margin-top:22px;}
+  .feat:hover .phone{transform:translateY(-3px);}
+  /* info side reuses the .g-* classes; strip their card paddings + add per-sport colours */
+  .feat .g-head{padding:0;}
+  .feat .g-desc{padding:0;margin:9px 0 0;}
+  .feat .g-chips{padding:12px 0 0;}
+  .feat .online-strip{margin:12px 0 0;}
+  .feat .g-foot{padding:16px 0 0;display:flex;align-items:center;gap:12px;}
+  .feat .play{text-decoration:none;}
+  .feat.golf .g-title .nm .g{color:#F2C14E;}
+  .feat.golf .crest img{border-radius:16px;border:1px solid rgba(235,166,31,.3);}
+  .feat.golf .crest:before{background:radial-gradient(circle, rgba(235,166,31,.22), transparent 66%);}
+  .feat.golf .chip{color:#f3dca0;background:rgba(235,166,31,.13);border-color:rgba(235,166,31,.32);}
+  .feat.golf .badge-mode{color:#f3dca0;background:rgba(235,166,31,.12);border-color:rgba(235,166,31,.34);}
+  .feat.golf .play{background:linear-gradient(180deg,#EEB23E,#D9931A);color:#1b1204;box-shadow:0 8px 20px -12px rgba(235,166,31,.9);}
+  .feat.soccer .g-title .nm .g{color:var(--teal);}
+  .feat.soccer .badge-mode{color:#bfe9df;background:rgba(53,196,205,.12);border-color:rgba(53,196,205,.34);}
+  .feat.soccer .play{background:linear-gradient(180deg,#33D3B8,#17A891);color:#04231d;box-shadow:0 8px 20px -12px rgba(53,196,205,.9);}
+  .play:hover{filter:brightness(1.06);} .play:hover .arw{transform:translateX(4px);}
 
   /* ---- "coming soon" tile styled as a game slot ---- */
   .game.soon{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:9px;
@@ -437,52 +472,53 @@ window.GA_ID='G-L29P5MRWKE';
       <span class="note">Free · No sign-up</span>
     </div>
     <main class="games">
-      <a class="game golf" href="/golf/">
-        <span class="art">
-          <svg class="sport-motif" viewBox="0 0 200 200" fill="none" aria-hidden="true">
-            <ellipse cx="116" cy="150" rx="82" ry="27" stroke="#EBA61F" stroke-width="2" opacity=".55"/>
-            <ellipse cx="116" cy="150" rx="52" ry="16.5" stroke="#EBA61F" stroke-width="1.5" opacity=".4"/>
-            <ellipse cx="102" cy="150" rx="7" ry="2.6" fill="#0a2418" stroke="#EBA61F" stroke-width="1.4"/>
-            <path d="M102 150 V50" stroke="#f0e0b8" stroke-width="2.4" stroke-linecap="round"/>
-            <path d="M102 52 L150 65 L102 78 Z" fill="#EBA61F"/>
-            <circle cx="146" cy="150" r="6" fill="#f4ecd9"/>
-          </svg>
-        </span>
-        <span class="g-head">
-          <span class="crest"><img src="/golf/icon-192.png" alt="RunTheTour crest" width="76" height="76" loading="lazy" /></span>
-          <span class="g-title">
-            <span class="nm"><span><span class="r">Run</span><span class="t">The</span><span class="g">Tour</span></span><span class="badge-new">New</span><span class="modes"><span class="badge-mode">Solo</span><span class="badge-mode">H2H</span></span></span>
-          </span>
-        </span>
-        <span class="g-desc">Draft one skill from golf's greatest, build your player, then chase majors and glory across a 30-year pro career.</span>
-        <span class="g-chips"><span class="chip">⛳ Golf Career</span><span class="chip">🎯 Daily Challenge</span><span class="chip">30-Year Sim</span></span>
-        <span class="g-foot"><span class="play">Play now <span class="arw">→</span></span><span class="free">Free · No download</span></span>
-      </a>
+      <article class="feat golf">
+        <span class="art"></span>
+        <div class="feat-in">
+          <a class="shots" href="/golf/" aria-label="Play RunTheTour">
+            <span class="phone"><img src="/assets/screens/golf-create.jpg" alt="Create your golfer in RunTheTour" width="720" height="1480" loading="lazy" /></span>
+            <span class="phone p2"><img src="/assets/screens/golf-title.jpg" alt="RunTheTour home screen" width="720" height="1480" loading="lazy" /></span>
+          </a>
+          <div class="feat-info">
+            <span class="g-head">
+              <span class="crest"><img src="/golf/icon-192.png" alt="RunTheTour crest" width="76" height="76" loading="lazy" /></span>
+              <span class="g-title">
+                <span class="nm"><span><span class="r">Run</span><span class="t">The</span><span class="g">Tour</span></span><span class="badge-new">New</span><span class="modes"><span class="badge-mode">Solo</span><span class="badge-mode">H2H</span></span></span>
+              </span>
+            </span>
+            <p class="g-desc">Draft one skill from golf's greatest, build your player, then chase majors and glory across a 30-year pro career.</p>
+            <span class="g-chips"><span class="chip">⛳ Golf Career</span><span class="chip">🎯 Daily Challenge</span><span class="chip">30-Year Sim</span></span>
+            <div class="g-foot"><a class="play" href="/golf/">Play now <span class="arw">→</span></a><span class="free">Free · No download</span></div>
+          </div>
+        </div>
+      </article>
 
-      <a class="game soccer" href="/soccer/">
-        <span class="art">
-          <svg class="sport-motif" viewBox="0 0 240 240" fill="none" aria-hidden="true">
-            <circle cx="120" cy="120" r="62" stroke="#35C4CD" stroke-width="2.4"/>
-            <path d="M120 96 L142.8 112.6 L134.1 139.4 L105.9 139.4 L97.2 112.6 Z" fill="#35C4CD" fill-opacity=".18" stroke="#35C4CD" stroke-width="2"/>
-            <path d="M120 96 V58 M142.8 112.6 L179 100.8 M134.1 139.4 L156.4 170.2 M105.9 139.4 L83.6 170.2 M97.2 112.6 L61 100.8" stroke="#35C4CD" stroke-width="2"/>
-          </svg>
-        </span>
-        <span class="g-head">
-          <span class="crest"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="RunThePitch crest" width="76" height="76" loading="lazy" /></span>
-          <span class="g-title">
-            <span class="nm"><span><span class="r">Run</span><span class="t">The</span><span class="g">Pitch</span></span><span class="modes"><span class="badge-mode">Solo</span><span class="badge-mode">H2H</span></span></span>
-          </span>
-        </span>
-        <span class="g-desc">Spin a nation &amp; year, draft a legend each round, build your dream squad, then simulate your World Cup run.</span>
-        <span class="online-strip">
-          <span class="ol-hd"><span class="ol-dot"></span>Now Online</span>
-          <span class="ol-modes">
-            <span class="ol-mode"><span class="m-nm">1v1 Friendlies</span><span class="m-sub">Live head-to-head match</span></span>
-            <span class="ol-mode"><span class="m-nm">World Cup Pool</span><span class="m-sub">48 players · full tournament</span></span>
-          </span>
-        </span>
-        <span class="g-foot"><span class="play">Play now <span class="arw">→</span></span><span class="free">Free · No download</span></span>
-      </a>
+      <article class="feat soccer">
+        <span class="art"></span>
+        <div class="feat-in">
+          <a class="shots" href="/soccer/" aria-label="Play RunThePitch">
+            <span class="phone"><img src="/assets/screens/soccer-title.jpg" alt="RunThePitch — Spin, Pick, Conquer" width="720" height="1480" loading="lazy" /></span>
+            <span class="phone p2"><img src="/assets/screens/soccer-draft.jpg" alt="RunThePitch — set up your draft" width="720" height="1480" loading="lazy" /></span>
+          </a>
+          <div class="feat-info">
+            <span class="g-head">
+              <span class="crest"><img src="/assets/runthepitch-crest_badge_transparent.png" alt="RunThePitch crest" width="76" height="76" loading="lazy" /></span>
+              <span class="g-title">
+                <span class="nm"><span><span class="r">Run</span><span class="t">The</span><span class="g">Pitch</span></span><span class="modes"><span class="badge-mode">Solo</span><span class="badge-mode">H2H</span></span></span>
+              </span>
+            </span>
+            <p class="g-desc">Spin a nation &amp; year, draft a legend each round, build your dream squad, then simulate your World Cup run.</p>
+            <span class="online-strip">
+              <span class="ol-hd"><span class="ol-dot"></span>Now Online</span>
+              <span class="ol-modes">
+                <span class="ol-mode"><span class="m-nm">1v1 Friendlies</span><span class="m-sub">Live head-to-head match</span></span>
+                <span class="ol-mode"><span class="m-nm">World Cup Pool</span><span class="m-sub">48 players · full tournament</span></span>
+              </span>
+            </span>
+            <div class="g-foot"><a class="play" href="/soccer/">Play now <span class="arw">→</span></a><span class="free">Free · No download</span></div>
+          </div>
+        </div>
+      </article>
 
       <div class="game soon">
         <span class="emoji">🎮</span>
