@@ -185,6 +185,12 @@ window.GA_ID='G-L29P5MRWKE';
   .accchip.sel{background:rgba(235,166,31,.14); border-color:var(--gold); color:var(--gold)}
   .accchip .acci{width:15px; height:15px; display:inline-flex; align-items:center}
   .accchip .acci svg{width:15px; height:15px}
+  /* CS344: live accessory-boost summary */
+  .accboost{margin:2px 0 10px; padding:11px 12px; border-radius:12px; border:1px solid rgba(65,222,166,.25);
+    background:linear-gradient(180deg, rgba(65,222,166,.07), rgba(10,22,38,.2))}
+  .boostchips{display:flex; gap:7px; flex-wrap:wrap}
+  .boostchip{font:800 11.5px var(--mono); padding:5px 9px; border-radius:999px; color:#41dea6;
+    background:rgba(65,222,166,.12); border:1px solid rgba(65,222,166,.3)}
   @media(max-width:860px){
     .cols{grid-template-columns:1fr; gap:16px} .seasoncols .scorecol{order:-1}
     /* Stacked single-column layout breaks the row-sharing trick above (each column becomes its own
@@ -5793,7 +5799,7 @@ function scrSetup(){
       .forEach(r=>{ if(r) right.appendChild(r); });
     // CS343: accessories — equip owned gear (eyewear, glove, clubs, ball, charm…) right here
     const gearRows=ACC_SLOTS.map(sl=>accSelectRow(sl.k)).filter(Boolean);
-    if(gearRows.length){ right.appendChild(setupHeader('Accessories')); gearRows.forEach(r=>right.appendChild(r)); }
+    if(gearRows.length){ right.appendChild(setupHeader('Accessories')); right.appendChild(accBoostSummaryNode()); gearRows.forEach(r=>right.appendChild(r)); }
     if(anyCosmeticLocked()||anyGearLocked()) right.appendChild(proShopLinkRow());
   }
 
@@ -6374,6 +6380,21 @@ function accSelectRow(slot){
   items.forEach(it=>{ const c=chip(`<span class="acci">${ic(sl.icon)}</span>${esc(it.name)}`, cur===it.id, it.name);
     c.onclick=()=>{ accEquip(it.id); render(); }; wrap.appendChild(c); });
   row.appendChild(wrap); return row;
+}
+// CS344: live summary of the total stat boost your equipped accessories give (the CLAMPED effective boost
+// that buildPlayer bakes into your career/daily golfer), so you know what's boosted before you draft.
+function accBoostSummaryNode(){
+  const b=accBoost(); const order=CATS.map(c=>c.k).filter(k=>b[k]>0);
+  const node=$(`<div class="accboost"></div>`);
+  if(!order.length){
+    node.appendChild($(`<div class="small muted">No stat boost equipped — pick accessories below to boost your golfer.</div>`));
+    return node;
+  }
+  const total=order.reduce((a,k)=>a+b[k],0);
+  node.appendChild($(`<div class="small" style="margin-bottom:6px"><b style="color:var(--gold)">Accessory boost</b> · <b style="color:#41dea6">+${total}</b> total, applied to your career &amp; daily golfer</div>`));
+  const chips=$(`<div class="boostchips"></div>`);
+  order.forEach(k=>chips.appendChild($(`<span class="boostchip">+${b[k]} ${esc(CATS.find(c=>c.k===k).short)}</span>`)));
+  node.appendChild(chips); return node;
 }
 function handRow(){
   const lefty=!!S.look.lefty;

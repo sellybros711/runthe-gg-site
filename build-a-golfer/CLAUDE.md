@@ -8100,6 +8100,18 @@ allows Google Fonts, or self-host Anton.*
   Driver. Deployed to /golf. (A brand-new account owning no gear sees no Accessories section, just the Pro
   Shop link — same as the cosmetics rows.)
 
+- **CS344 — live accessory-boost summary on the setup screen (owner: "it should tell you your live
+  accessory boost so you know what stats are getting boosted by accessories before you start your
+  draft").** Added `accBoostSummaryNode()` at the top of the CS343 Accessories section: a teal card showing
+  the CLAMPED effective boost your equipped gear gives (`accBoost()` — the exact map `buildPlayer` bakes
+  into your career/daily golfer), as "+N total" plus a green mono chip per boosted stat in CATS order
+  (e.g. "+1 Driving Distance · +1 Approach · +1 Putting · +1 Composure"). It re-computes on every equip/
+  unequip (render), so it's live; with nothing boosting it shows "No stat boost equipped — pick accessories
+  below to boost your golfer." New `.accboost`/`.boostchips`/`.boostchip` CSS. Verified in Playwright:
+  equipping 2 items shows +2 total with the right two chips, adding a driver updates it to +3 live with a
+  Driving Distance chip, unequipping all shows the no-boost message, chips render in CATS order, 0 page
+  errors; screenshot confirms the boost card above the accessory rows. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
