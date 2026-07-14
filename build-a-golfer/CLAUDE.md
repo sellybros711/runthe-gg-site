@@ -7958,6 +7958,26 @@ allows Google Fonts, or self-host Anton.*
   applied, stat locked), sponsors collapsed by default, guest path renders with no crash, 0 page errors.
   Deployed to /golf. Tunable: the `.oshero`/`.osreel`/`.osgrid` sizing, the avatar crop height.
 
+- **CS338 — "Build your golfer" draft screen revamped to match the CS337 off-season (owner: "revamp the
+  build your golfer screen with the same thing in mind").** `scrDraft` had the same problems as the old
+  off-season: a tall `buildHero` (big avatar + radar) on top, then a two-column `.cols` where the spin/skill
+  tiles were in one column and your SCORECARD (drafted picks) in the OTHER — on mobile that stacked below, so
+  you scrolled to see what you'd drafted, and the reel + skill grid appeared/re-flowed on every spin (jumps).
+  Rebuilt it with the same unified-grid pattern (reusing the CS337 `.oshero`/`.osreel`/`.osgrid`/`.osactions`
+  classes): ONE always-present 8-slot grid where **filled slots show your pick** (green tile: skill · golfer
+  · value — your scorecard, always visible) and **open slots show the spun golfer's rating with a Take chip**
+  to draft. Plus a compact avatar+OVR+"N/8 drafted · re-spins" hero (no giant figure/radar) and a
+  reserved-height reel slot. Because the tile count never changes, drafting a skill (which auto-spins the
+  next golfer) flips that one tile to green **in place with 0px grid jump**, and you never scroll to a
+  separate scorecard. Preserved everything: the first-time "how it works" tip, the daily course-focus line +
+  ★ keyhole key-skill markers, re-spin / Mulli-Spin, live OVR, and the self-heal + auto-advance to the build
+  screen at 8/8. Serves both the career draft AND the daily draft (same screen). Verified in Playwright
+  (412×900): idle shows 8 open placeholder tiles + Spin; spun shows 8 Take tiles; drafting fills a green tile
+  and auto-spins the next golfer with **0px** grid jump; a full 8-pick draft routes to the build screen; live
+  OVR climbs (62→67 mid-draft); guest + daily paths render; 0 page errors. Screenshots confirm your picks +
+  the current golfer's ratings sit together in one grid on one screen. Deployed to /golf. (`buildHero`
+  remains for the `scrBuild` "meet your golfer" reveal, which wasn't part of this.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
