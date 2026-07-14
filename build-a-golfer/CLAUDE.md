@@ -8078,6 +8078,28 @@ allows Google Fonts, or self-host Anton.*
   Scramble hint show correctly, and 0 page errors. Screenshot confirms the online draft is now visually
   identical to the career/off-season draft. Deployed to /golf.
 
+- **CS343 — accessories are now selectable in the Create-your-golfer screen (owner IMG_8186: "there is no
+  way to select accessories in this menu, improve the selection process and make the UI/UX pristine").** The
+  setup Kit section only had cap on/off + color/pattern rows — the equippable accessories (eyewear, glove,
+  headwear, shoes-gear, driver, putter, ball, charm, which live in `look.acc` and drive the dressable
+  avatar) could ONLY be equipped in the Pro Shop, so a player who owned gear had no way to change it while
+  building their golfer. Added an **Accessories** section to `scrSetup` (signed-in only, consistent with the
+  CS319 "show only what you own + one Pro Shop link" philosophy):
+  - New `accSelectRow(slot)` renders a row per accessory slot that has ≥1 OWNED item — a "None" chip + a chip
+    per owned item (its `ic()` slot icon + name), the equipped one highlighted gold; tap to equip
+    (`accEquip`) or None to unequip (`accUnequip`), re-rendering the avatar live. `ownedAccIn(slot)` gathers
+    owned catalog + milestone items for the slot; `anyGearLocked()` drives the shop link.
+  - Wired into setup after the Kit rows: an "Accessories" header + one row per owned slot, and the existing
+    Pro Shop link now shows when cosmetics OR gear are locked (so there's always a path to buy more).
+  - New `.accchips`/`.accchip`/`.acci` CSS matching the color/pattern chip style (pill, gold-selected,
+    hover).
+  Verified in Playwright (signed-in, owning gear across 6 slots): the Accessories section renders one chip
+  row per owned slot, the eyewear row shows None + both owned shades, tapping Sport Shades sets
+  `look.acc.eyes` and highlights the chip, None unequips, the Pro Shop link shows, 0 page errors; screenshot
+  confirms the pristine chip rows with the avatar wearing the equipped Sport Shades + Rain Glove + Titanium
+  Driver. Deployed to /golf. (A brand-new account owning no gear sees no Accessories section, just the Pro
+  Shop link — same as the cosmetics rows.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
