@@ -5793,13 +5793,16 @@ function scrSetup(){
     right.appendChild(caddieRow());
     right.appendChild(setupHeader('Kit'));
     right.appendChild(capToggleRow());
+    { const hn=headwearNote(); if(hn) right.appendChild(hn); }   // CS345: clarify when equipped headwear hides the recolorable cap
     // only the categories where you actually own a choice render a row; the rest is one Pro Shop link
     [cosColorRow('Shirt','shirt'), cosPatRow('Shirt pattern','shirtPat'), cosColorRow('Trousers','pants'),
      cosColorRow('Shoes','shoes'), cosColorRow('Hat','hat'), cosPatRow('Hat pattern','hatPat')]
       .forEach(r=>{ if(r) right.appendChild(r); });
     // CS343: accessories — equip owned gear (eyewear, glove, clubs, ball, charm…) right here
     const gearRows=ACC_SLOTS.map(sl=>accSelectRow(sl.k)).filter(Boolean);
-    if(gearRows.length){ right.appendChild(setupHeader('Accessories')); right.appendChild(accBoostSummaryNode()); gearRows.forEach(r=>right.appendChild(r)); }
+    if(gearRows.length){ right.appendChild(setupHeader('Accessories')); right.appendChild(accBoostSummaryNode());
+      right.appendChild($(`<div class="small muted" style="margin:0 0 8px;line-height:1.5">Each accessory has one fixed color &amp; style — swap the item for a different look. (Your shirt, trousers, shoes &amp; basic cap are recolorable above.)</div>`));
+      gearRows.forEach(r=>right.appendChild(r)); }
     if(anyCosmeticLocked()||anyGearLocked()) right.appendChild(proShopLinkRow());
   }
 
@@ -6395,6 +6398,13 @@ function accBoostSummaryNode(){
   const chips=$(`<div class="boostchips"></div>`);
   order.forEach(k=>chips.appendChild($(`<span class="boostchip">+${b[k]} ${esc(CATS.find(c=>c.k===k).short)}</span>`)));
   node.appendChild(chips); return node;
+}
+// CS345: accessories are fixed-color art (unlike the recolorable shirt/trousers/shoes/basic-cap), so make
+// that clear rather than pretend a color picker exists for them.
+function headwearNote(){
+  const id=(typeof accEquipped==='function')&&accEquipped('head'); if(!id) return null;
+  const it=accById(id), nm=it?it.name:'headwear';
+  return $(`<div class="small muted" style="margin:6px 0 2px;line-height:1.5">🧢 You're wearing the <b style="color:var(--oncard)">${esc(nm)}</b> accessory — its color is fixed. The cap toggle &amp; hat color below only style the basic cap hidden underneath it (set <b>Headwear → None</b> in Accessories to show it).</div>`);
 }
 function handRow(){
   const lefty=!!S.look.lefty;

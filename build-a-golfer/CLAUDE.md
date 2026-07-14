@@ -8112,6 +8112,20 @@ allows Google Fonts, or self-host Anton.*
   Driving Distance chip, unequipping all shows the no-boost message, chips render in CATS order, 0 page
   errors; screenshot confirms the boost card above the accessory rows. Deployed to /golf.
 
+- **CS345 — make it clear accessories are fixed-color (owner: "accessories like hats aren't able to change
+  colors — either make them change colors or make it clear that they can't").** The shop accessories
+  (headwear, eyewear, clubs, ball, charm) are fixed-color product art (unlike the recolorable shirt /
+  trousers / shoes / basic cap), and recoloring each would need per-item masks/art. Took the "make it
+  clear" route: (1) a muted note in the Accessories section — "Each accessory has one fixed color & style —
+  swap the item for a different look. (Your shirt, trousers, shoes & basic cap are recolorable above.)"; and
+  (2) the confusing case specifically — when a HEADWEAR accessory is equipped, the recolorable basic cap
+  (+ its Hat color picker + Cap toggle) is hidden behind it, so `headwearNote()` renders under the Cap
+  toggle: "🧢 You're wearing the {item} accessory — its color is fixed. The cap toggle & hat color below
+  only style the basic cap hidden underneath it (set Headwear → None in Accessories to show it)." Verified
+  in Playwright (rendered `#app` DOM): the fixed-color note always shows in the Accessories section, the
+  headwear note shows ONLY when a headwear accessory is equipped (naming it) and is absent otherwise, 0 page
+  errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
