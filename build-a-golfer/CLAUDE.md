@@ -7978,6 +7978,30 @@ allows Google Fonts, or self-host Anton.*
   the current golfer's ratings sit together in one grid on one screen. Deployed to /golf. (`buildHero`
   remains for the `scrBuild` "meet your golfer" reveal, which wasn't part of this.)
 
+- **CS339 — the live rating web is back, now dynamic + animated + colour-graded (owner: "I liked having the
+  live visual for all of the stats and the overall player rating web. Bring it back but make it way more
+  dynamic with animations and colors").** CS338 dropped the radar from the draft for compactness; brought it
+  back as a new `dynRadar()` — a much livelier version — on the draft, off-season, AND the build reveal.
+  • **Morphs on every change:** a module `_radarPrev` remembers the last skill values, and `animateRadar()`
+    rAF-tweens the polygon (+ its glow, the vertices, and the centre OVR) from the old shape to the new one
+    (ease-out ~580ms) each time you draft/swap a stat — the web visibly reshapes.
+  • **Colour-graded:** each spoke's vertex + axis label is coloured by that stat's strength (`ratColor`:
+    90+ gold · 82+ green · 74+ teal · 66+ indigo · else grey), a warm→teal radial-gradient fill, and the
+    outline + centre OVR tint to the **overall tier** colour. So the shape reads its own quality at a glance.
+  • **Animated OVR count-up** in the centre (recomputed from the tweened values each frame via
+    `ovrFromSkills`), a slow **rotating sheen** sweep behind it, and a **pulsing ring on the just-changed
+    vertex** (the stat you drafted). Reduced-motion snaps to the final state (no sheen/pulse).
+  • Layout-stable: fixed SVG viewBox, so the web never shifts the grid below it (0px jump preserved). Placed
+    right under the compact hero on the draft + off-season (the redundant hero OVR line was removed since the
+    radar now shows OVR big), and `buildHero()` (the "meet your golfer" reveal) was upgraded from the old flat
+    teal `radarSVG` to the new one too, so the whole build flow is consistent. `_radarPrev` resets in
+    `reset()` (declared `var`, not `let`, since `reset()` at load references it before its own line executes —
+    a `let` would TDZ-crash the whole script; caught + fixed). Verified in Playwright: radar renders on
+    draft/build/off-season; drafting morphs the polygon (points change) + counts the OVR up (62→65); vertices
+    show 3+ distinct strength colours; 0px grid jump; guest + daily paths + 0 page errors; screenshot confirms
+    the colourful animated web with the tier-tinted OVR centre. Deployed to /golf. (`radarSVG` is now unused
+    but left in place.) Tunable: `ratColor` thresholds, the tween duration, the sheen/pulse timings.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -554,6 +554,15 @@ window.GA_ID='G-L29P5MRWKE';
   .attr.dfilled .dwho{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10.5px; color:var(--muted); text-align:right; margin-right:1px}
   .attr.dempty{opacity:.5} .attr.dempty .val{color:var(--muted)}
   .attr.dtake .lab{flex:1}
+  /* CS339: dynamic animated rating web */
+  .dynradar{max-width:250px; margin:0 auto 6px; position:relative}
+  .dr-svg{width:100%; height:auto; display:block; overflow:visible; filter:drop-shadow(0 6px 16px rgba(0,0,0,.4))}
+  .dr-sheen{transform-box:fill-box; transform-origin:center; animation:drspin 15s linear infinite; opacity:.6; mix-blend-mode:screen; pointer-events:none}
+  @keyframes drspin{to{transform:rotate(360deg)}}
+  .dr-pulse{animation:drpulse 1.5s ease-out infinite}
+  @keyframes drpulse{0%{r:3; stroke-opacity:.9} 100%{r:17; stroke-opacity:0}}
+  .dr-poly{transition:stroke .3s ease}
+  @media (prefers-reduced-motion:reduce){ .dr-sheen{animation:none} .dr-pulse{display:none} }
 
   .buildhero{display:flex; align-items:center; gap:20px; justify-content:center;
     background:linear-gradient(157deg, rgba(22,62,51,.66), rgba(8,30,24,.74));
@@ -4093,7 +4102,7 @@ function caddieEventEo(ew, evtName, isMajor){
 }
 function caddieFeePct(){ const cad=equippedCaddie(); return (cad && cad.power.fee!=null)?cad.power.fee:COSTS.caddiePct; }
 let S={};
-function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);S={screen:'title',mode:'easy',revealed:new Set(),drawRng:Math.random,reSpins:2,
+function reset(){clearTimeout(seasonTimer);clearInterval(rollTimer);_radarPrev=null;S={screen:'title',mode:'easy',revealed:new Set(),drawRng:Math.random,reSpins:2,
   slots:Object.fromEntries(CATS.map(c=>[c.k,null])),current:null,spinning:false,name:LS.get('bag_name',''),
   look:Object.assign({},DEFLOOK,LS.get('bag_look',{})),year:1,career:null,
   schedule:[],evtIndex:0,season:null,curEvt:null,fieldRoster:null,overlay:null,seasonPaused:false,recorded:false,recapEvent:null,
@@ -6409,17 +6418,90 @@ function radarSVG(){
     <polygon points="${data}" fill="rgba(6,162,145,${fillOp})" stroke="#06A291" stroke-width="2" stroke-opacity="${(0.45+0.55*(nFilled/CATS.length)).toFixed(2)}"/>
     ${dots}${labels}</svg>`;
 }
+// CS339: dynamic, animated, colour-graded rating web — the live "overall player rating web" (owner) that
+// MORPHS on every stat change (rAF tween from the last values), colours each spoke + vertex by strength,
+// tints the outline + centre by the overall tier, pulses the just-changed vertex, counts the OVR up, and
+// has a slow rotating sheen. Layout-stable (fixed viewBox) so it never shifts the grid below it.
+var _radarPrev=null, _radarN=0;   // var (not let) — reset() references it before this line executes at load
+function ratColor(v){ return v>=90?'#f2c94c' : v>=82?'#41dea6' : v>=74?'#5fd0e0' : v>=66?'#7f9bd6' : '#9098a8'; }
+const RAD_CX=125, RAD_CY=124, RAD_R=88;
+function radAng(i){ return (-Math.PI/2)+i*(2*Math.PI/CATS.length); }
+function radPt(i,r){ return [RAD_CX+Math.cos(radAng(i))*r, RAD_CY+Math.sin(radAng(i))*r]; }
+function dynRadar(){
+  const n=CATS.length;
+  const cur=CATS.map(c=> S.slots[c.k]? S.slots[c.k].value : REPLACEMENT);
+  const filled=CATS.map(c=> !!S.slots[c.k]);
+  const from = (_radarPrev && _radarPrev.length===n) ? _radarPrev.slice() : cur.map(()=>REPLACEMENT);
+  let pulseIdx=-1, pulseMax=0.6; cur.forEach((v,i)=>{ const d=Math.abs(v-(from[i]!=null?from[i]:REPLACEMENT)); if(d>pulseMax){pulseMax=d; pulseIdx=i;} });
+  _radarPrev = cur.slice();
+  const uid='dr'+(_radarN++);
+  const polyPts=vals=>vals.map((v,i)=>radPt(i,RAD_R*(v/100)).map(x=>x.toFixed(1)).join(',')).join(' ');
+  let grid='';
+  [0.25,0.5,0.75,1].forEach((f,gi)=>{ grid+=`<polygon points="${CATS.map((_,i)=>radPt(i,RAD_R*f).map(v=>v.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="rgba(244,227,201,${gi===3?0.18:0.06})" stroke-width="1"/>`; });
+  let axes='', labels='';
+  CATS.forEach((c,i)=>{ const [x,y]=radPt(i,RAD_R); axes+=`<line x1="${RAD_CX}" y1="${RAD_CY}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="rgba(244,227,201,.07)"/>`;
+    const [lx,ly]=radPt(i,RAD_R+15); labels+=`<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" font-size="9.5" font-weight="800" text-anchor="middle" dominant-baseline="middle" fill="${filled[i]?ratColor(cur[i]):'#8797a6'}">${RSHORT[c.k]}</text>`; });
+  const baseline=CATS.map((_,i)=>radPt(i,RAD_R*(REPLACEMENT/100)).map(v=>v.toFixed(1)).join(',')).join(' ');
+  const sheenPoly=CATS.map((_,i)=>radPt(i,RAD_R).map(v=>v.toFixed(1)).join(',')).join(' ');
+  const dotsStr=cur.map((v,i)=>{const[x,y]=radPt(i,RAD_R*(from[i]/100));return `<circle class="dr-dot" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${filled[i]?3.4:1.9}" fill="${ratColor(v)}" stroke="rgba(0,0,0,.25)" stroke-width="${filled[i]?0.6:0}"/>`;}).join('');
+  let pulse='';
+  if(pulseIdx>=0){ const [px,py]=radPt(pulseIdx,RAD_R*(cur[pulseIdx]/100)); pulse=`<circle class="dr-pulse" cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="3" fill="none" stroke="${ratColor(cur[pulseIdx])}" stroke-width="2.2"/>`; }
+  const wrap=$(`<div class="dynradar"><svg class="dr-svg" viewBox="0 0 250 252" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="${uid}f" cx="50%" cy="45%" r="62%">
+        <stop offset="0%" stop-color="#ffe9a8" stop-opacity="0.42"/>
+        <stop offset="52%" stop-color="#41dea6" stop-opacity="0.3"/>
+        <stop offset="100%" stop-color="#06A291" stop-opacity="0.14"/></radialGradient>
+      <linearGradient id="${uid}s" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="38%" stop-color="#ffffff" stop-opacity="0"/>
+        <stop offset="52%" stop-color="#bff3e4" stop-opacity="0.22"/>
+        <stop offset="66%" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+    </defs>
+    <g class="dr-sheen"><polygon points="${sheenPoly}" fill="url(#${uid}s)"/></g>
+    ${grid}${axes}
+    <polygon points="${baseline}" fill="none" stroke="rgba(159,176,189,.4)" stroke-dasharray="3 3" stroke-width="1"/>
+    <polygon class="dr-glow" points="${polyPts(from)}" fill="none" stroke="#41dea6" stroke-width="6.5" stroke-opacity="0.16" stroke-linejoin="round"/>
+    <polygon class="dr-poly" points="${polyPts(from)}" fill="url(#${uid}f)" stroke="#41dea6" stroke-width="2.4" stroke-linejoin="round"/>
+    ${dotsStr}${pulse}${labels}
+    <circle cx="${RAD_CX}" cy="${RAD_CY}" r="27" fill="rgba(4,14,10,.74)" stroke="rgba(255,255,255,.08)"/>
+    <text class="dr-ovr" x="${RAD_CX}" y="${RAD_CY-2}" text-anchor="middle" font-weight="800" font-size="27" style="font-family:var(--mono)">--</text>
+    <text x="${RAD_CX}" y="${RAD_CY+14}" text-anchor="middle" font-size="8" font-weight="800" letter-spacing="1.5" fill="#9fb0bd" style="font-family:var(--body)">OVR</text>
+  </svg></div>`);
+  animateRadar(wrap.querySelector('.dr-svg'), from, cur);
+  return wrap;
+}
+function animateRadar(svg, from, to){
+  if(!svg) return;
+  const poly=svg.querySelector('.dr-poly'), glow=svg.querySelector('.dr-glow'), dots=[...svg.querySelectorAll('.dr-dot')], ovrT=svg.querySelector('.dr-ovr');
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const dur=reduce?0:580, t0=performance.now();
+  const paint=(vals)=>{
+    const pts=vals.map((v,i)=>radPt(i,RAD_R*(v/100)).map(x=>x.toFixed(1)).join(',')).join(' ');
+    poly.setAttribute('points',pts); glow.setAttribute('points',pts);
+    dots.forEach((d,i)=>{ const [x,y]=radPt(i,RAD_R*(vals[i]/100)); d.setAttribute('cx',x.toFixed(1)); d.setAttribute('cy',y.toFixed(1)); });
+    const sk={}; CATS.forEach((c,i)=>sk[c.k]=vals[i]); const ov=Math.round(ovrFromSkills(sk)); const tc=ovrTier(ov).c;
+    ovrT.textContent=ov; ovrT.setAttribute('fill',tc); poly.setAttribute('stroke',tc); glow.setAttribute('stroke',tc);
+  };
+  if(dur===0){ paint(to); return; }
+  const frame=(now)=>{ if(!svg.isConnected){ paint(to); return; }
+    const e=Math.min(1,(now-t0)/dur), k=1-Math.pow(1-e,3);
+    paint(to.map((v,i)=>from[i]+(v-from[i])*k));
+    if(e<1) requestAnimationFrame(frame); };
+  requestAnimationFrame(frame);
+}
 function buildHero(){
   const ovr=Math.round(buildPlayer().skill);
   const t=ovrTier(ovr);
-  return $(`<div class="buildhero">
+  const node=$(`<div class="buildhero">
     <div class="herocol">
       <div class="herofig${sbSignedIn()?' hasfull':''}">${avatarShowHTML()}
         <div class="ovrchip" style="--tc:${t.c}"><b>${ovr}</b><i>${t.lab}</i></div></div>
       <div class="heroname">${esc(S.name||'Your Golfer')}</div>
       <div class="herometa">${filledCount()}/8 drafted</div>
     </div>
-    <div class="radarwrap">${radarSVG()}</div></div>`);
+    <div class="radarwrap"></div></div>`);
+  node.querySelector('.radarwrap').appendChild(dynRadar());   // CS339: the dynamic animated rating web
+  return node;
 }
 // CS338: compact, mobile-first "Build your golfer" draft — same UX as the CS337 off-season. ONE always-present
 // 8-slot grid: filled slots show your picks (your scorecard), open slots show the spun golfer's rating to
@@ -6449,10 +6531,10 @@ function scrDraft(){
   const pips=Array.from({length:8},(_,i)=>`<span class="pip ${i<filled?'on':''}"></span>`).join('');
   hero.appendChild($(`<div class="oshero-info">
     <div class="oshero-name">${esc(S.name||'Your Golfer')}</div>
-    <div class="oshero-ovr"><b>${ovr}</b> <span>OVR</span></div>
-    <div class="oshero-budget"><span class="pips">${pips}</span>
+    <div class="oshero-budget" style="margin-top:5px"><span class="pips">${pips}</span>
       <span class="small"><b style="color:var(--gold)">${filled}</b>/8 drafted · <b style="color:var(--gold)">${S.reSpins}</b> re-spin${S.reSpins===1?'':'s'}</span></div></div>`));
   add(hero);
+  add(dynRadar());   // CS339: the live animated rating web (OVR in the centre)
 
   // daily course focus (compact one-liner)
   if(S.daily && DAILY_COURSES[S.dailyCourse]){
@@ -11064,10 +11146,10 @@ function scrOffseason(){
   const pips=Array.from({length:os.maxChanges},(_,i)=>`<span class="pip ${i<(os.maxChanges-os.changes)?'on':''}"></span>`).join('');
   hero.appendChild($(`<div class="oshero-info">
     <div class="oshero-name">${esc(S.name||'Your Golfer')}</div>
-    <div class="oshero-ovr"><b>${ovr}</b> <span>OVR</span></div>
-    <div class="oshero-budget"><span class="pips">${pips}</span>
+    <div class="oshero-budget" style="margin-top:5px"><span class="pips">${pips}</span>
       <span class="small"><b style="color:var(--gold)">${os.maxChanges-os.changes}</b> change${os.maxChanges-os.changes===1?'':'s'} · <b style="color:var(--gold)">${os.reSpins}</b> re-spin${os.reSpins===1?'':'s'}</span></div></div>`));
   add(hero);
+  add(dynRadar());   // CS339: the live animated rating web (OVR in the centre)
 
   // one tight status line: Tour Rep perk + prime/age
   { const r=repTier(); const ageMsg = nDec ? '<b style="color:#e9a23b">▼ Age catching up</b> — power fades first; a spin can repair a slot'
