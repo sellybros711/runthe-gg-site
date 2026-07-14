@@ -8166,7 +8166,7 @@ allows Google Fonts, or self-host Anton.*
   `golf/og.png` to main. (En dashes in score displays like "9–5" are intentionally left; only em dashes were
   targeted.)
 
-- **CS348 — "course look" OG graphic variant (owner: "let's try the course look you mentioned").** After the
+- **CS348 — "course look" OG graphic variant (revamped) (owner: "let's try the course look you mentioned").** After the
   CS346 dark-green card OG, offered a "lighter course look" alternate; owner chose it. Built a second source
   (`og-source-b.html`): an illustrated golden-hour golf course fills the frame (warm sky + soft sun glow,
   rolling green hills, a putting green with a gold flag, a fairway sweep, and a distant golfer silhouette
