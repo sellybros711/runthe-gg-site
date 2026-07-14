@@ -8179,6 +8179,28 @@ allows Google Fonts, or self-host Anton.*
   X/iMessage/Facebook cache previews hard — the `?v=4` bump encourages a re-scrape for new shares; existing
   shares may lag until the platform re-fetches.
 
+- **CS349 — fix: completed Daily Challenge scores silently never reached the leaderboard.** Owner: "I
+  completed the daily challenge but my score is not on the leaderboard." Root cause: a regression from
+  CS171. `sbSubmitDaily` ALWAYS passed `p_is_spotlight` (and `p_is_legend`) to `runtour_submit_daily`. If the
+  Spotlight migration `supabase/45` was never applied, the server function has no `p_is_spotlight` parameter,
+  so PostgREST can't resolve the overload and the call fails ("Could not find the function…"). The catch
+  block then, for a NORMAL daily (`!isLegend`), just logged and `return`ed WITHOUT retrying (the
+  retry-without-flags path only ran for legend rounds) — so every plain daily submission has failed silently
+  since CS171, and nothing reached the board. Fix: build the RPC args from the 24-era base signature and only
+  add `p_is_legend`/`p_is_spotlight` when they're actually TRUE, so a plain daily calls the base signature
+  that matches EVERY deployed version (24/30/45) and posts whether or not 45 is applied; legend keeps its flag
+  (needs 30, applied), spotlight keeps its flag (needs 45). Kept an explicit `{error}` check + a last-resort
+  bare-signature retry for plain dailies. Also added a **self-heal** on the daily result screen: for a
+  signed-in, non-practice, non-legend result it re-posts the stored best-of-day ONCE per view
+  (`S._dailyResub`, reset each `beginDailyRound`) — since `runtour_submit_daily` is an idempotent keep-the-
+  lower upsert, this safely gets an already-completed-but-never-posted score onto the board next time the
+  player opens the daily result. Verified in Playwright with a mock where passing `p_is_spotlight` errors
+  (45 missing): a plain daily now posts via the base signature (never passes the spotlight flag), a legend
+  round still passes `p_is_legend`, and the result-screen self-heal re-submits exactly once (not on every
+  re-render); 0 page errors. Deployed to /golf. NOTE for owner: this makes plain dailies work regardless of
+  45; to get the separate **Monthly Spotlight** board/records, still run `supabase/45_runtour_spotlight.sql`.
+  Also note the daily board lives under **Course Records → Today**, not the main season/career Leaderboard.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

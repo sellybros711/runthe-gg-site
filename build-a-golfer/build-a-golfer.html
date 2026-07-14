@@ -13484,7 +13484,7 @@ function dRoundControls(){
 function beginDailyRound(){
   const p=buildPlayer(); S.dailySkills={}; CATS.forEach(c=>S.dailySkills[c.k]=p[c.k]);
   S.dailyOvr=Math.round(p.skill); S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
-  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
+  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null; S._dailyResub=false;
   S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;   // the round plays itself; only signature-hole decisions pause it
   S.dailyLegend=null; S.momentPO=null; S.momentPOHoleIdx=null;
   // CS255: load today's global board so the in-round scoreboard can show the day's best (fails open)
@@ -13499,7 +13499,7 @@ function beginDailyRound(){
 function beginDailyRoundWithLegend(token){
   S.dailySkills=Object.assign({},token.skills); S.dailyOvr=token.ovr; S.dailyAttempt=0;
   S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
-  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null;
+  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null; S._dailyResub=false;
   S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;
   S.dailyLegend={id:token.id, name:token.name, look:token.look}; S.momentPO=null; S.momentPOHoleIdx=null;
   S.name=token.name; if(token.look) S.look=Object.assign({},token.look);
@@ -14493,6 +14493,10 @@ function scrDailyResult(){
   if(!r || !DAILY_COURSES[r.course]){ S.dailyResult=null; S.screen='title'; return scrTitle(); }
   const c=DAILY_COURSES[r.course];
   const total=r.total;
+  // CS349 self-heal: re-post this account's best-of-day once per view. If an earlier submit silently failed
+  // (e.g. the CS171 missing-migration bug), this gets the already-completed score onto the board. The RPC is
+  // an idempotent keep-the-lower upsert, so re-submitting a good score is safe.
+  if(!practice && sbSignedIn() && !r.isLegend && !S._dailyResub && r.day && r.course){ S._dailyResub=true; sbSubmitDaily(r); }
   const attempts=dailyAttempts(), left=dailyAttemptsLeft();
   add($(`<div class="center"><span class="tag" style="color:var(--gold);border-color:var(--gold)">⛳ Daily Challenge${justPlayed?' complete':''}</span></div>`));
   if(practice) add($(`<div class="center" style="margin-top:4px"><span class="tag" style="color:#16b5a6;border-color:#16b5a6">Practice round · nothing is recorded</span></div>`));
@@ -15637,28 +15641,32 @@ async function lbLoad(tab,sort,dir){
 async function sbSubmitDaily(b){
   if(!sb || !b) return;
   if(!sbUser){ if(b.isSpotlight)_pendingSpot=b; else _pendingDaily=b; return; }   // post as soon as they sign in
+  // Base signature (24-era): matches EVERY deployed version of runtour_submit_daily. The legend (30) /
+  // spotlight (45) flags are ONLY added when actually true, so a PLAIN daily never depends on those
+  // migrations being applied. (CS349 regression fix: CS171 started always passing p_is_spotlight, which
+  // made every normal daily submission fail - "function not found" - whenever supabase/45 wasn't applied,
+  // so scores silently never reached the board.)
+  const base={p_day:b.day,p_course:b.course,p_to_par:b.total,p_ovr:b.ovr,
+    p_won:!!b.won,p_golfer:(S.name||'Your Golfer'),p_skills:b.skills||null,p_decisions:b.decisions||null};
+  const args=Object.assign({}, base);
+  if(b.isLegend) args.p_is_legend=true;
+  if(b.isSpotlight) args.p_is_spotlight=true;
   try{
-    // same fix as flushPendingSeasons: supabase-js resolves (doesn't throw) on a Postgres error, so
-    // this MUST be checked explicitly, otherwise a rejected submission (bad param, RLS, etc.) looks
-    // identical to a successful one and the round is silently never posted.
-    const {error}=await sb.rpc('runtour_submit_daily',{p_day:b.day,p_course:b.course,p_to_par:b.total,p_ovr:b.ovr,
-      p_won:!!b.won,p_golfer:(S.name||'Your Golfer'),p_skills:b.skills||null,p_decisions:b.decisions||null,
-      p_is_legend:!!b.isLegend, p_is_spotlight:!!b.isSpotlight});
+    // supabase-js resolves (doesn't throw) on a Postgres error, so the {error} MUST be checked explicitly,
+    // otherwise a rejected submission looks identical to a success and the round is silently never posted.
+    const {error}=await sb.rpc('runtour_submit_daily', args);
     if(error) throw error;
     crCache=null; dbCache=null; crCacheLegend=null; dbCacheLegend=null; crCacheSpot=null; dbCacheSpot=null;
   }catch(e){
-    // A SPOTLIGHT submit needs supabase/45; if that isn't applied yet, DON'T fall back to a plain daily
-    // submit (that would wrongly post the spotlight onto the regular daily board/records) - just skip.
-    if(b.isSpotlight){ console.error('[RunTheTour] spotlight submit failed (run supabase/45):', (e&&e.message)||e, b); return; }
-    // p_is_legend/p_is_spotlight aren't recognized until 30/45 are applied; retry without them so a plain
-    // daily still posts even before those migrations. (Legend keeps its own separate board once 30 is in.)
-    if(!b.isLegend){ console.error('[RunTheTour] daily submit failed:', (e&&e.message)||e, b); return; }
+    console.error('[RunTheTour] daily submit failed:', (e&&e.message)||e, b);
+    // A legend/spotlight round can't be safely downgraded to a plain daily (separate board), so it just
+    // skips if its migration is missing. A PLAIN daily retries the bare base signature as a last resort.
+    if(b.isLegend||b.isSpotlight) return;
     try{
-      const {error:error2}=await sb.rpc('runtour_submit_daily',{p_day:b.day,p_course:b.course,p_to_par:b.total,p_ovr:b.ovr,
-        p_won:!!b.won,p_golfer:(S.name||'Your Golfer'),p_skills:b.skills||null,p_decisions:b.decisions||null});
-      if(error2) throw error2;
+      const {error:e2}=await sb.rpc('runtour_submit_daily', base);
+      if(e2) throw e2;
       crCache=null; dbCache=null;
-    }catch(e2){ console.error('[RunTheTour] daily submit failed (legend fallback too):', (e2&&e2.message)||e2, b); }
+    }catch(e2){ console.error('[RunTheTour] daily submit retry failed:', (e2&&e2.message)||e2, b); }
   }
 }
 // self-heals the LOCAL "attempts used today" counter against the server's authoritative count, so a
