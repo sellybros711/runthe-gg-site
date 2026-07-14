@@ -3,44 +3,58 @@
   html,body{width:1200px;height:630px;overflow:hidden}
   body{position:relative;font-family:'Barlow Semi Condensed','Arial Narrow',Helvetica,Arial,sans-serif;color:#F6EAD0}
   .scene{position:absolute;inset:0}
-  /* left-side legibility scrim over the brighter course */
-  .scrim{position:absolute;inset:0;background:linear-gradient(90deg, rgba(3,26,14,.93) 0%, rgba(3,26,14,.86) 34%, rgba(3,26,14,.34) 62%, rgba(3,26,14,.05) 100%)}
+  /* keep the course as a SUBTLE backdrop so the drafting visual pops */
+  .dim{position:absolute;inset:0;background:linear-gradient(90deg, rgba(3,24,13,.94) 0%, rgba(3,24,13,.82) 30%, rgba(3,24,13,.55) 60%, rgba(3,24,13,.5) 100%)}
   .goldtop{position:absolute;top:0;left:0;right:0;height:8px;background:linear-gradient(90deg,#b9821a,#F5C24B 45%,#EBA61F 55%,#b9821a);z-index:5}
   .frame{position:absolute;inset:0;box-shadow:inset 0 0 0 3px rgba(235,166,31,.5), inset 0 0 90px rgba(0,0,0,.4);z-index:5}
 
-  .wrap{position:absolute;inset:0;padding:30px 54px 26px;display:flex;flex-direction:column;z-index:4}
+  .wrap{position:absolute;inset:0;padding:30px 54px 28px;display:flex;flex-direction:column;z-index:4}
   .head{display:flex;align-items:center;gap:13px}
   .crest{width:42px;height:50px;flex:0 0 auto}
   .word{font-family:'Cinzel',Georgia,'Times New Roman',serif;font-weight:800;letter-spacing:.05em;font-size:42px;line-height:1;display:flex;gap:13px}
   .word .a{color:#F6EAD0}.word .b{color:#EBA61F}
 
-  .mid{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:660px;margin-top:6px}
-  .kick{font-weight:800;letter-spacing:.13em;font-size:18px;color:#8fe9c8;text-transform:uppercase;margin-bottom:9px;text-shadow:0 2px 8px rgba(0,0,0,.5)}
-  .h1{font-family:'Anton','Arial Narrow',Impact,sans-serif;font-weight:800;line-height:.95;text-transform:uppercase;text-shadow:0 3px 14px rgba(0,0,0,.55)}
+  .body{flex:1;display:flex;align-items:center;gap:30px;margin-top:6px}
+  /* LEFT: minimal copy */
+  .left{width:404px;flex:0 0 auto}
+  .h1{font-family:'Anton','Arial Narrow',Impact,sans-serif;font-weight:800;line-height:.94;text-transform:uppercase;text-shadow:0 3px 14px rgba(0,0,0,.55)}
   .h1 .l1{font-size:66px;color:#F6EAD0}
   .h1 .l2{font-size:66px;color:#EBA61F}
-  .sub{font-size:22px;line-height:1.26;color:#eaf3ec;margin-top:14px;font-weight:500;max-width:600px;text-shadow:0 2px 10px rgba(0,0,0,.6)}
-  .sub b{color:#F6EAD0;font-weight:800}
+  .tagline{font-size:23px;line-height:1.3;color:#eaf3ec;margin-top:16px;font-weight:600;text-shadow:0 2px 10px rgba(0,0,0,.6)}
+  .tagline b{color:#F6EAD0;font-weight:800}
 
-  /* compact draft strip: 3 pro chips -> OVR */
-  .strip{display:flex;align-items:center;gap:10px;margin-top:20px;flex-wrap:nowrap}
-  .chip{display:flex;align-items:center;gap:9px;background:rgba(6,28,16,.82);border:2px solid rgba(235,166,31,.55);border-radius:12px;padding:8px 12px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
-  .chip .nm{font-weight:800;font-size:17px;color:#F6EAD0;line-height:1}
-  .chip .sk{font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#8fe9c8;margin-top:2px}
-  .chip .rt{font-family:'Anton',Impact;font-size:30px;line-height:1;color:#EBA61F;font-weight:800;margin-left:2px}
-  .arrow{font-family:'Anton',Impact;font-size:40px;color:#8fe9c8;line-height:1;font-weight:800;text-shadow:0 2px 8px rgba(0,0,0,.6)}
-  .ovrbadge{display:flex;flex-direction:column;align-items:center;justify-content:center;width:78px;height:78px;border-radius:50%;
-    background:radial-gradient(circle at 50% 38%, rgba(6,28,16,.95), rgba(3,18,10,.98));border:2.5px solid #EBA61F;box-shadow:0 0 22px rgba(235,166,31,.35)}
-  .ovrbadge .n{font-family:'Anton',Impact;font-size:38px;line-height:.85;color:#EBA61F;font-weight:800}
-  .ovrbadge .t{font-size:10px;font-weight:800;letter-spacing:.2em;color:#F6EAD0}
+  /* RIGHT: the drafting visualization = the hero */
+  .viz{flex:1;display:flex;align-items:center;justify-content:center;gap:16px}
+  .draftcol{display:flex;flex-direction:column;gap:12px}
+  .dlabel{font-weight:800;letter-spacing:.11em;font-size:14px;color:#8fe9c8;text-transform:uppercase;text-align:center;margin-bottom:1px;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+  .pcard{width:250px;height:74px;border-radius:14px;border:2.5px solid #EBA61F;
+    background:linear-gradient(160deg,rgba(9,40,22,.97),rgba(3,18,11,.98));display:flex;align-items:center;gap:12px;padding:0 14px;
+    box-shadow:0 10px 26px rgba(0,0,0,.5)}
+  .pcard .av{width:44px;height:44px;border-radius:50%;flex:0 0 auto;border:2px solid #EBA61F;
+    background:radial-gradient(circle at 50% 32%, #d9b98c, #9c7a52);position:relative;overflow:hidden}
+  .pcard .av i{position:absolute;left:8px;right:8px;bottom:-4px;height:24px;border-radius:50% 50% 0 0;background:#123}
+  .pcard .who{flex:1;min-width:0}
+  .pcard .nm{font-weight:800;font-size:22px;color:#F6EAD0;line-height:1}
+  .pcard .sk{font-weight:800;font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:#8fe9c8;margin-top:3px}
+  .pcard .rt{font-family:'Anton','Arial Narrow',Impact;font-size:42px;line-height:1;color:#EBA61F;font-weight:800;flex:0 0 auto}
 
-  .foot{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+  .arrow{font-family:'Anton',Impact;font-size:70px;color:#EBA61F;line-height:1;font-weight:800;text-shadow:0 3px 10px rgba(0,0,0,.6)}
+
+  .built{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .trophy{width:56px;height:62px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.5))}
+  .radarbox{position:relative;width:210px;height:210px;filter:drop-shadow(0 8px 20px rgba(0,0,0,.55))}
+  .ovr{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center}
+  .ovr .n{font-family:'Anton',Impact;font-size:60px;line-height:.86;color:#EBA61F;font-weight:800}
+  .ovr .t{font-size:14px;font-weight:800;letter-spacing:.22em;color:#F6EAD0}
+  .built .cap{font-family:'Anton',Impact;font-size:22px;letter-spacing:.09em;color:#F6EAD0;font-weight:800;text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+  .built .cap b{color:#EBA61F}
+
+  .foot{display:flex;align-items:center;justify-content:space-between;margin-top:4px}
   .pills{display:flex;gap:9px}
   .pill{border:1.5px solid rgba(235,166,31,.6);color:#F5C24B;font-weight:800;letter-spacing:.11em;font-size:15px;text-transform:uppercase;padding:7px 14px;border-radius:999px;background:rgba(6,28,16,.6)}
-  .url{font-weight:800;font-size:23px;color:#F6EAD0;text-shadow:0 2px 8px rgba(0,0,0,.6)}
+  .url{font-weight:800;font-size:24px;color:#F6EAD0;text-shadow:0 2px 8px rgba(0,0,0,.6)}
   .url b{color:#EBA61F}.url .free{color:#8fe9c8;font-size:18px;letter-spacing:.08em;margin-left:9px;text-transform:uppercase}
 </style></head><body>
-  <!-- illustrated golden-hour golf course -->
   <svg class="scene" viewBox="0 0 1200 630" preserveAspectRatio="xMidYMid slice">
     <defs>
       <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d9a8"/><stop offset="42%" stop-color="#eebf86"/><stop offset="72%" stop-color="#8fbf7e"/><stop offset="100%" stop-color="#3f8a4f"/></linearGradient>
@@ -49,37 +63,17 @@
       <linearGradient id="grn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fc06a"/><stop offset="100%" stop-color="#3a9a4c"/></linearGradient>
     </defs>
     <rect width="1200" height="360" fill="url(#sky)"/>
-    <circle cx="880" cy="150" r="150" fill="url(#sun)"/>
-    <circle cx="880" cy="150" r="46" fill="#fff2cf"/>
-    <!-- distant hills / treeline -->
+    <circle cx="980" cy="140" r="150" fill="url(#sun)"/>
+    <circle cx="980" cy="140" r="44" fill="#fff2cf"/>
     <path d="M0 300 Q220 250 460 288 Q720 330 980 278 Q1120 252 1200 288 L1200 360 L0 360 Z" fill="#2f6b3f" opacity=".85"/>
     <path d="M0 330 Q300 300 620 322 Q900 340 1200 312 L1200 372 L0 372 Z" fill="#255a34"/>
-    <!-- fairway ground -->
     <path d="M0 372 L1200 348 L1200 630 L0 630 Z" fill="url(#fw)"/>
-    <!-- sweeping fairway with mow stripes toward the green -->
-    <g>
-      <path d="M120 630 Q420 430 720 372 L980 372 Q760 470 560 630 Z" fill="#57a852"/>
-      <path d="M170 630 Q450 448 720 392 L900 388 Q720 476 560 630 Z" fill="#62b45c" opacity=".7"/>
-      <path d="M240 630 Q500 470 720 415 L840 410 Q700 486 588 630 Z" fill="#6cbf63" opacity=".6"/>
-    </g>
-    <!-- bunker -->
-    <ellipse cx="440" cy="470" rx="70" ry="26" fill="#efe0b6"/>
-    <ellipse cx="440" cy="470" rx="70" ry="26" fill="none" stroke="#d8c48a" stroke-width="2"/>
-    <!-- green + flag -->
-    <ellipse cx="800" cy="392" rx="120" ry="40" fill="url(#grn)"/>
-    <ellipse cx="800" cy="392" rx="120" ry="40" fill="none" stroke="#8fd28a" stroke-width="2" opacity=".5"/>
-    <ellipse cx="810" cy="396" rx="9" ry="4" fill="#0c2c1a"/>
-    <path d="M810 396 V320" stroke="#f4ecd9" stroke-width="3.4" stroke-linecap="round"/>
-    <path d="M810 320 q26 5 44 -3 q-14 12 0 22 q-22 -6 -44 0 z" fill="#EBA61F"/>
-    <!-- golfer silhouette (follow-through), a distant figure on the fairway by the green -->
-    <g transform="translate(1040,470) scale(.9)" fill="#123821">
-      <ellipse cx="4" cy="58" rx="22" ry="5" fill="#1c3a26" opacity=".5"/>
-      <path d="M0 -40 a6.4 6.4 0 1 1 .1 0 z"/>
-      <path d="M-2 -31 L2 3 L-8 40 L-2 42 L6 6 L13 42 L19 40 L12 2 Z"/>
-      <path d="M2 -27 q20 -6 31 -20 q5 7 -2 13 q-15 9 -27 15 z"/>
-    </g>
+    <ellipse cx="1040" cy="392" rx="120" ry="40" fill="url(#grn)"/>
+    <ellipse cx="1050" cy="396" rx="8" ry="3.6" fill="#0c2c1a"/>
+    <path d="M1050 396 V326" stroke="#f4ecd9" stroke-width="3" stroke-linecap="round"/>
+    <path d="M1050 326 q24 5 40 -3 q-13 11 0 20 q-20 -6 -40 0 z" fill="#EBA61F"/>
   </svg>
-  <div class="scrim"></div>
+  <div class="dim"></div>
   <div class="goldtop"></div><div class="frame"></div>
 
   <div class="wrap">
@@ -88,16 +82,34 @@
       <div class="word"><span class="a">RUN THE</span><span class="b">TOUR</span></div>
     </div>
 
-    <div class="mid">
-      <div class="kick">Golf's ultimate build-your-legend game</div>
-      <div class="h1"><div class="l1">Draft the pros.</div><div class="l2">Become the G.O.A.T.</div></div>
-      <div class="sub">One skill from each real pro: <b>Tiger's putting</b>, <b>Rory's driver</b>, <b>Scottie's approach</b>. Build <b>one golfer</b>, then live a <b>30-year career</b> chasing majors and greatness.</div>
-      <div class="strip">
-        <div class="chip"><div><div class="nm">Tiger</div><div class="sk">Putting</div></div><div class="rt">99</div></div>
-        <div class="chip"><div><div class="nm">Rory</div><div class="sk">Driver</div></div><div class="rt">98</div></div>
-        <div class="chip"><div><div class="nm">Scottie</div><div class="sk">Appr.</div></div><div class="rt">97</div></div>
+    <div class="body">
+      <div class="left">
+        <div class="h1"><div class="l1">Draft the pros.</div><div class="l2">Become the G.O.A.T.</div></div>
+        <div class="tagline">Build <b>one golfer</b> from golf's best skills, then chase a <b>30-year legacy</b>.</div>
+      </div>
+
+      <div class="viz">
+        <div class="draftcol">
+          <div class="dlabel">Draft a skill from each pro</div>
+          <div class="pcard"><div class="av"><i></i></div><div class="who"><div class="nm">Rory</div><div class="sk">Driver</div></div><div class="rt">98</div></div>
+          <div class="pcard"><div class="av"><i></i></div><div class="who"><div class="nm">Scottie</div><div class="sk">Approach</div></div><div class="rt">97</div></div>
+          <div class="pcard"><div class="av"><i></i></div><div class="who"><div class="nm">Tiger</div><div class="sk">Putting</div></div><div class="rt">99</div></div>
+        </div>
         <div class="arrow">&rarr;</div>
-        <div class="ovrbadge"><div class="n">99</div><div class="t">OVR</div></div>
+        <div class="built">
+          <svg class="trophy" viewBox="0 0 70 78"><path d="M20 8 H50 V26 Q50 40 35 44 Q20 40 20 26 Z" fill="url(#tg)" stroke="#b9821a" stroke-width="1.5"/><path d="M20 12 H10 Q8 26 22 30" fill="none" stroke="#EBA61F" stroke-width="3"/><path d="M50 12 H60 Q62 26 48 30" fill="none" stroke="#EBA61F" stroke-width="3"/><rect x="31" y="44" width="8" height="12" fill="#c9922a"/><rect x="22" y="56" width="26" height="7" rx="2" fill="#EBA61F"/><rect x="18" y="63" width="34" height="8" rx="2" fill="#c9922a"/><defs><linearGradient id="tg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F5C24B"/><stop offset="1" stop-color="#d69a1e"/></linearGradient></defs></svg>
+          <div class="radarbox">
+            <svg viewBox="0 0 210 210" width="210" height="210">
+              <g stroke="rgba(246,234,208,.22)" fill="none" stroke-width="1">
+                <polygon points="105,20 165,47 187,105 165,163 105,190 45,163 23,105 45,47"/>
+                <polygon points="105,48 150,64 166,105 150,146 105,162 60,146 44,105 60,64"/></g>
+              <g stroke="rgba(246,234,208,.12)"><line x1="105" y1="105" x2="105" y2="20"/><line x1="105" y1="105" x2="187" y2="105"/><line x1="105" y1="105" x2="105" y2="190"/><line x1="105" y1="105" x2="23" y2="105"/><line x1="105" y1="105" x2="165" y2="47"/><line x1="105" y1="105" x2="165" y2="163"/><line x1="105" y1="105" x2="45" y2="163"/><line x1="105" y1="105" x2="45" y2="47"/></g>
+              <polygon points="105,26 160,52 180,105 152,152 105,180 57,152 32,105 54,52" fill="rgba(18,179,154,.34)" stroke="#12b39a" stroke-width="3.4"/>
+              <circle cx="105" cy="105" r="43" fill="rgba(3,16,10,.9)" stroke="#EBA61F" stroke-width="2"/></svg>
+            <div class="ovr"><div class="n">99</div><div class="t">OVR</div></div>
+          </div>
+          <div class="cap">Your <b>Legend</b></div>
+        </div>
       </div>
     </div>
 
