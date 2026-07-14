@@ -8045,6 +8045,12 @@ allows Google Fonts, or self-host Anton.*
   sandbox-blocked external fonts/Supabase/ads). Screenshots confirm the vertical wheel spin + the enlarged
   glowing reel. Deployed to /golf. Tunable: the `slotSpin` row count / duration / easing, `.osreel` height +
   glow, the `.osnew`/`.osswap .val` sizes.
+  - **CS341b — center the OVR number in the rating-web circle (owner: "the 89 in the middle of the rating
+    web is off center in the circle, shift it down").** In `dynRadar`, the `.dr-ovr` number's SVG baseline
+    was `RAD_CY-2` (122) — since an SVG `<text>` y is the BASELINE, a 27px digit's visual center landed
+    ~112, well above the circle center (124), so it read high. Moved the number baseline to `RAD_CY+5` (129)
+    and nudged the "OVR" caption `RAD_CY+14→+16` (140) to keep spacing, so the number now sits centered in
+    the dark circle. Screenshot-confirmed; deployed to /golf.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
