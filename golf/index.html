@@ -6474,8 +6474,8 @@ function dynRadar(){
     <polygon class="dr-poly" points="${polyPts(from)}" fill="url(#${uid}f)" stroke="#41dea6" stroke-width="2.4" stroke-linejoin="round"/>
     ${dotsStr}${pulse}${labels}
     <circle cx="${RAD_CX}" cy="${RAD_CY}" r="27" fill="rgba(4,14,10,.74)" stroke="rgba(255,255,255,.08)"/>
-    <text class="dr-ovr" x="${RAD_CX}" y="${RAD_CY-2}" text-anchor="middle" font-weight="800" font-size="27" style="font-family:var(--mono)">--</text>
-    <text x="${RAD_CX}" y="${RAD_CY+14}" text-anchor="middle" font-size="8" font-weight="800" letter-spacing="1.5" fill="#9fb0bd" style="font-family:var(--body)">OVR</text>
+    <text class="dr-ovr" x="${RAD_CX}" y="${RAD_CY+5}" text-anchor="middle" font-weight="800" font-size="27" style="font-family:var(--mono)">--</text>
+    <text x="${RAD_CX}" y="${RAD_CY+16}" text-anchor="middle" font-size="8" font-weight="800" letter-spacing="1.5" fill="#9fb0bd" style="font-family:var(--body)">OVR</text>
   </svg></div>`);
   animateRadar(wrap.querySelector('.dr-svg'), from, cur);
   return wrap;
