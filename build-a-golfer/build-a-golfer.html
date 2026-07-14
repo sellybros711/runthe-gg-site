@@ -510,6 +510,44 @@ window.GA_ID='G-L29P5MRWKE';
   .attr.keyhole{border-color:var(--gold); background:linear-gradient(180deg,rgba(235,166,31,.16),rgba(235,166,31,.05))}
   .attr.keyhole .lab{color:#f3e7c8}
   .attr .keystar{flex:0 0 auto; color:var(--gold); font-size:12px; line-height:1; margin-right:-3px}
+  /* CS337: compact off-season layout — everything fits with minimal scroll, nothing jumps on spin */
+  .oshero{display:flex; align-items:center; gap:13px; max-width:520px; margin:6px auto 8px;
+    background:linear-gradient(157deg,rgba(22,62,51,.6),rgba(8,30,24,.7)); border:1px solid rgba(235,166,31,.2);
+    border-radius:15px; padding:9px 15px; box-shadow:0 12px 26px -18px rgba(0,0,0,.7)}
+  .oshero-av{flex:0 0 auto; display:flex; align-items:flex-start; justify-content:center; width:62px; height:76px; overflow:hidden}
+  .oshero-av .avatarfig{width:64px!important; height:64px!important}
+  .oshero-av .avatarfig.fullbody{width:auto!important; height:176px!important; margin:0}   /* crop to head+shoulders */
+  .oshero-av .ovrchip{display:none}
+  .oshero-info{min-width:0; flex:1}
+  .oshero-name{font-family:var(--serif); font-weight:700; font-size:18px; color:var(--oncard); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding-right:4px; line-height:1.15}
+  .oshero-ovr{font-family:var(--mono); margin:1px 0 5px; line-height:1}
+  .oshero-ovr b{font-size:21px; color:var(--gold); font-weight:800}
+  .oshero-ovr span{font:800 9px/1 var(--body); letter-spacing:.14em; color:var(--muted); margin-left:2px}
+  .oshero-budget{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .oshero-budget .pips{margin-top:0}
+  .osstat{max-width:520px; margin:0 auto 8px; text-align:center; font-size:12px; color:var(--muted); line-height:1.45}
+  .osreel{height:62px; max-width:520px; margin:0 auto 7px; border-radius:14px; border:1px solid var(--panelb);
+    background:radial-gradient(120% 120% at 50% 0%,rgba(255,255,255,.07),rgba(0,0,0,.12));
+    display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; overflow:hidden}
+  .osreel .reeltag{position:absolute; top:5px; font:800 8.5px/1 var(--body); letter-spacing:.2em; color:var(--muted)}
+  .osreel .name{font-family:var(--display); font-weight:400; font-size:21px; text-transform:uppercase; letter-spacing:.02em; color:var(--oncard); padding:0 12px; text-align:center}
+  .osreel:not(.landed):not(.spinning) .name{font-size:14px; color:var(--muted); letter-spacing:.06em}
+  .osreel .sub{position:absolute; bottom:6px; font:800 8px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); padding:0 8px; text-align:center}
+  .osreel.rar-rare{border-color:#4f9fd0} .osreel.rar-rare .reeltag{color:#82c1e8}
+  .osreel.rar-epic{border-color:#a679e0; box-shadow:0 0 12px rgba(166,121,224,.25) inset} .osreel.rar-epic .reeltag{color:#c7a6f2}
+  .osreel.rar-legendary{border-color:var(--gold); box-shadow:0 0 15px rgba(235,166,31,.34) inset} .osreel.rar-legendary .reeltag{color:var(--gold)}
+  .osreel.landed{animation:pop .3s ease} .osreel.spinning .name{animation:flick .08s steps(1) infinite}
+  .osgridhint{max-width:520px; margin:0 auto 7px}
+  .osgrid{max-width:520px; margin:0 auto; grid-template-columns:1fr 1fr!important; gap:6px}
+  .attr.static{cursor:default; box-shadow:none}
+  .attr.static:hover{border-color:var(--panelb)}
+  .attr .osnew{font-family:var(--mono); font-weight:800; font-size:13.5px; flex:0 0 auto; white-space:nowrap}
+  .attr .osnew b{font-size:12px; margin-left:1px}
+  .attr .osdec{font-family:var(--mono); font-weight:800; font-size:11px; color:#e07a5f; flex:0 0 auto; letter-spacing:-.02em}
+  .attr.osswap .val{color:#cfe0d8}
+  .attr.locked .take{background:none!important; padding:0 2px!important; font-size:13px!important}
+  .osactions{max-width:520px; margin:9px auto 0; display:flex; flex-direction:column; gap:9px}
+  .osactions .btn{margin:0}
 
   .buildhero{display:flex; align-items:center; gap:20px; justify-content:center;
     background:linear-gradient(157deg, rgba(22,62,51,.66), rgba(8,30,24,.74));
@@ -6470,14 +6508,14 @@ function scrDraft(){
 function golfersLeft(){return GOLFERS.length-S.revealed.size;}
 function reveal(){
   S.spinning=true; S.current=null; render();
-  const reel=app.querySelector('.reel .name');
+  const reel=app.querySelector('.reel .name')||app.querySelector('.osreel .name');   // CS337: off-season uses .osreel
   const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
   const land=drawGolfer(S.drawRng, RPOOL, S.revealed);   // rarity-weighted bucket pull
   if(!land){S.spinning=false;render();return;}
   if(reduce){S.current=land;S.spinning=false;render();rarityFlash(land);offPersistSpin();return;}
   let ticks=0, total=16+Math.floor(Math.random()*6);
   const iv=setInterval(()=>{
-    reel.textContent=GOLFERS[Math.floor(Math.random()*GOLFERS.length)].name;   // cosmetic flicker
+    if(reel) reel.textContent=GOLFERS[Math.floor(Math.random()*GOLFERS.length)].name;   // cosmetic flicker (guarded)
     if(++ticks>=total){clearInterval(iv);S.current=land;S.spinning=false;render();rarityFlash(land);offPersistSpin();}
   },72);
 }
@@ -8481,6 +8519,25 @@ function sponsorDecisionNode(){
   });
   if(hist.length) wrap.appendChild($(`<div class="small muted" style="margin-top:8px">Past sponsors: ${esc(hist.slice(-4).join(', '))}</div>`));
   return wrap;
+}
+// CS337: compact off-season sponsor summary — a one-line collapsible strip (expand for detail). The full
+// prominent sponsorDecisionNode is used ONLY when there's an actual offer to decide, so a no-decision
+// off-season doesn't waste a whole screen of vertical space on sponsors.
+function sponsorStripNode(){
+  if(S.daily||S.circuitMode||!S.career) return null;
+  ensureSponsors();
+  const chip=slot=>{ const sp=sponsorOf(slot), lab=SPONSOR_SLOT_LABEL[slot];
+    if(!sp) return `<span class="small muted" style="opacity:.75">${lab}: open</span>`;
+    const amb=!!sp.ambassador||(sp.rel||1)>=SPONSOR_REL_MAX;
+    return `<span style="display:inline-flex;align-items:center;gap:5px;min-width:0">${brandLogoSVG(sp.brand,18)}<b style="color:var(--oncard);font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:8.5em">${esc(sp.brand)}</b>${amb?'<span style="color:var(--gold)">★</span>':`<span class="small muted">Lv${sp.rel||1}</span>`}</span>`; };
+  const det=$(`<details class="acc" ${S.sponsorsOffOpen?'open':''} style="max-width:520px;margin:0 auto 8px">
+    <summary class="accsum"><span class="chev">›</span>
+      <span style="min-width:0;flex:1;display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:12.5px">${ic('cart')}<span style="color:#ffd45e;font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:10px">Sponsors</span> ${chip('hat')}<span style="opacity:.3">·</span>${chip('shirt')}</span></summary>
+    <div style="padding:2px 12px 12px"><div class="small muted" style="margin:0 0 9px">Wear up to two brands — one on the cap, one on the shirt. Each is its own deal.</div>
+      <div style="display:flex;gap:9px;flex-wrap:wrap">${slotStatusCardHTML('hat')}${slotStatusCardHTML('shirt')}</div>
+      <div class="small muted" style="margin-top:9px">Keep delivering to grow every bonus. A bigger brand may come calling as your following grows.</div></div></details>`);
+  det.addEventListener('toggle', ()=>{ S.sponsorsOffOpen=det.open; });
+  return det;
 }
 // one slot's season-summary report card: each goal ✓/✗ + its bonus, the total banked, and the renewal outlook
 function contractReportCardHTML(x){
@@ -10988,91 +11045,98 @@ function offTake(k){
   S.slots[k]={golfer:S.current.name,value:S.current[k]}; S.offseason.changes++;
   S.offseason.locked.push(k);                          // lock this stat for the rest of the off-season
   if(S.offseason.decline) delete S.offseason.decline[k]; S.current=null; track('offseason_swap',{slot:k}); saveCareer(offseasonResumeExtra()); render(); }
+// CS337: compact, mobile-first off-season. The 8-tile skill grid is ALWAYS present (shows your current bag)
+// and after a spin the SAME tiles show the swap outcome in place — so nothing jumps, you never scroll to
+// compare your current stats, and sponsors collapse to a tight strip (full decision only when there's an offer).
 function scrOffseason(){
   const os=S.offseason||{changes:0,maxChanges:3,reSpins:2};
-  const circuitYear3=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):null;
-  add($(`<div class="center"><span class="tag">${S.circuitMode?('Legend Circuit · Off-Season · Year '+circuitYear3+' prep'):('Career Mode · Off-Season · Year '+S.year+' prep')}</span></div>`));
-  add($(`<h1 class="center" style="font-size:24px;margin:8px 0 2px">Tune your game</h1>`));
-  add($(`<p class="lede center" style="max-width:560px;margin:0 auto 10px">Swap fresh skills into your bag — up to <b>${os.maxChanges} change${os.maxChanges===1?'':'s'}</b>, <b>${os.reSpins} re-spin${os.reSpins===1?'':'s'}</b>. <b style="color:var(--gold)">Each stat can only change once</b>, so choose which to protect. Once you spin, you must take a skill.</p>`));
-  // Tour Rep perk banner, shows what your rank grants + what the next rank unlocks (a "keep climbing" nudge)
-  { const r=repTier(), cur=repPerk(); let teaser='';
-    if(r.next){ const np=repPerk2(r.next.name); const dc=np.changes-cur.changes, dr=np.reSpins-cur.reSpins;
-      if(dc>0||dr>0) teaser=` · reach <b style="color:var(--gold)">${esc(r.next.name)}</b> for ${[dc>0?`+${dc} change${dc>1?'s':''}`:'',dr>0?`+${dr} re-spin${dr>1?'s':''}`:''].filter(Boolean).join(' & ')}`; }
-    add($(`<div class="scout small" style="max-width:560px;margin:0 auto 8px;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">${r.tier.name==='G.O.A.T.'?'🐐 ':'🏅 '}${esc(r.tier.name)} perk</b> <span class="muted">${cur.changes} change${cur.changes>1?'s':''} · ${cur.reSpins} re-spin${cur.reSpins===1?'':'s'} this off-season${teaser}</span></div>`)); }
-  // age/form status, decline is performance-based: stay sharp by winning, fade if you slump
-  const declined=os.decline && Object.keys(os.decline).length;
-  if(declined) add($(`<div class="scout small" style="max-width:560px;margin:0 auto 6px;text-align:center;border-color:#e07a5f"><b style="color:#e9a23b">Age is catching up.</b> <span class="muted">Power fades first, repair a slot with a spin, or lean into your short game. Strong seasons slow the decline.</span></div>`));
-  else add($(`<div class="scout small muted" style="max-width:560px;margin:0 auto 6px;text-align:center">In your prime, no age decline this year. Keep performing to stretch it into your late career.</div>`));
-  if(!S.circuitMode){ const sd=sponsorDecisionNode(); if(sd) add(sd); }   // CS228: sponsor stay/switch decision (or current relationship status)
-  const cols=$(`<div class="cols"></div>`);
-  const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
-  cols.appendChild(left); cols.appendChild(right); add(cols);
-  // pips show REMAINING changes, start full, empty out as you use them
+  const yr=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):(S.year||1);
+  const decl=os.decline||{}, nDec=Object.keys(decl).length, lockedNow=os.locked||[];
+  const spun=!!(S.current && !S.spinning), g=S.current;
+  let ovr=82; try{ ovr=Math.round(buildPlayer().skill); }catch(e){}
+
+  add($(`<div class="center"><span class="tag">${S.circuitMode?('Legend Circuit · Off-Season · Yr '+yr):('Off-Season · Year '+S.year+' prep')}</span></div>`));
+
+  // compact hero: small avatar + name + live OVR + change/re-spin budget (no more giant figure to scroll past)
+  const hero=$(`<div class="oshero"></div>`);
+  const av=$(`<div class="oshero-av"></div>`); av.innerHTML=avatarShowHTML(); hero.appendChild(av);
   const pips=Array.from({length:os.maxChanges},(_,i)=>`<span class="pip ${i<(os.maxChanges-os.changes)?'on':''}"></span>`).join('');
-  left.appendChild($(`<div class="draftbar"><div><h2 style="margin:0">Changes</h2><div class="pips">${pips}</div></div>
-    <div class="spins"><span style="color:var(--gold)">${os.reSpins}</span> <span class="muted small">re-spins</span></div></div>`));
-  if(S.current||S.spinning){
-    const g=S.current; const rar=(g&&!S.spinning)?g.rarity:null;
-    const RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
-    const rarCls=rar?('rar-'+rar.toLowerCase()):''; const tag=rar?RTAG[rar]:'';
-    const sub=g&&!S.spinning?[g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · '):'';
-    left.appendChild($(`<div class="reel ${S.spinning?'spinning':''} ${rarCls} ${g&&!S.spinning?'landed':''}">
-      ${tag?`<div class="reeltag">${tag}</div>`:''}<div class="name">${g?g.name:'…'}</div><div class="sub">${sub}</div></div>`));
-  }
-  if(S.current&&!S.spinning){
-    left.appendChild($(`<div class="small muted" style="margin:10px 0 -2px;text-align:center">Tap a skill to swap it in, green is an upgrade, red a downgrade</div>`));
-    const grid=$(`<div class="attrs"></div>`);
-    const lockedSet=os.locked||[];
-    CATS.forEach(cat=>{
-      const cur=S.slots[cat.k]?S.slots[cat.k].value:REPLACEMENT; const nv=S.current[cat.k]; const d=nv-cur;
-      const dcol=d>0?'#35d6a0':(d<0?'#e07a5f':'var(--muted)');
-      const locked=lockedSet.includes(cat.k);
-      if(locked){
-        const bt=$(`<button class="attr locked" disabled aria-label="${cat.short} already changed this off-season, locked">
-          <span class="lab">${cat.short}</span><span class="val">${cur}</span>
-          <span class="take" style="background:none;padding:0 0 0 2px;color:var(--muted);font-size:12px">🔒 locked</span></button>`);
-        grid.appendChild(bt); return;
-      }
-      // CS273: confirm INLINE on the same tile (no full-screen popup, no scrolling) — the tapped tile
-      // restyles in place to "Lock in your change?" with Cancel / Lock in, so the player isn't moved.
-      if(S.offConfirm===cat.k){
-        const bt=$(`<div class="attr confirming" role="group" aria-label="Confirm ${cat.short} change">
-          <div class="oc-top"><span class="lab">${cat.short}</span><span class="oc-swap"><span style="color:var(--muted)">${cur}</span> → <span style="color:${dcol}">${nv}</span> <span style="color:${dcol};font-family:var(--mono)">${d>0?'▲+'+d:(d<0?'▼'+Math.abs(d):'·')}</span></span></div>
-          <div class="oc-row"><span class="oc-msg">Lock in your change?</span>
-            <button class="oc-no" type="button">Cancel</button><button class="oc-yes" type="button">Lock in</button></div></div>`);
-        bt.querySelector('.oc-no').onclick=(e)=>{ e.stopPropagation(); S.offConfirm=null; render(); };
-        bt.querySelector('.oc-yes').onclick=(e)=>{ e.stopPropagation(); S.offConfirm=null; offTake(cat.k); };
-        grid.appendChild(bt); return;
-      }
-      const bt=$(`<button class="attr" aria-label="Swap ${cat.short} to ${nv}, ${d>=0?'up':'down'} ${Math.abs(d)}">
-        <span class="lab">${cat.short}</span><span class="val">${nv}</span>
-        <span class="take" style="background:none;padding:0 0 0 2px;color:${dcol};font-family:var(--mono);font-weight:800;font-size:13px">${d>0?'▲+':(d<0?'▼':'·')}${d!==0?Math.abs(d):''}</span></button>`);
-      bt.onclick=()=>{ S.offConfirm=cat.k; render(); };   // arm the inline confirm on THIS tile
-      grid.appendChild(bt);
-    });
-    left.appendChild(grid);
-    if(os.reSpins>0){ const re=$(`<button class="btn gold" style="margin-top:10px">Re-spin · ${os.reSpins} left<span class="sub">Pass on this golfer for a new one</span></button>`); re.onclick=offReSpin; left.appendChild(re); }
-    else if(mulliSpins()>0){ const mb=$(`<button class="btn ghost" style="margin-top:10px;border-color:#8a6bf0;color:#c9b8ff">🌀 Use a Mulli-Spin · ${mulliSpins()} left<span class="sub">A banked extra spin from weekly challenges</span></button>`); mb.onclick=mulliSpinOff; left.appendChild(mb); }
-    else left.appendChild($(`<div class="small muted center" style="margin-top:12px">No re-spins left, take one of ${S.current.name}'s skills.</div>`));
+  hero.appendChild($(`<div class="oshero-info">
+    <div class="oshero-name">${esc(S.name||'Your Golfer')}</div>
+    <div class="oshero-ovr"><b>${ovr}</b> <span>OVR</span></div>
+    <div class="oshero-budget"><span class="pips">${pips}</span>
+      <span class="small"><b style="color:var(--gold)">${os.maxChanges-os.changes}</b> change${os.maxChanges-os.changes===1?'':'s'} · <b style="color:var(--gold)">${os.reSpins}</b> re-spin${os.reSpins===1?'':'s'}</span></div></div>`));
+  add(hero);
+
+  // one tight status line: Tour Rep perk + prime/age
+  { const r=repTier(); const ageMsg = nDec ? '<b style="color:#e9a23b">▼ Age catching up</b> — power fades first; a spin can repair a slot'
+      : 'In your prime — no age decline this year'; let teaser='';
+    if(r.next){ const cur=repPerk(), np=repPerk2(r.next.name), dc=np.changes-cur.changes, dr=np.reSpins-cur.reSpins;
+      if(dc>0||dr>0) teaser=` · reach <b style="color:var(--gold)">${esc(r.next.name)}</b> for ${[dc>0?`+${dc} change${dc>1?'s':''}`:'',dr>0?`+${dr} re-spin${dr>1?'s':''}`:''].filter(Boolean).join(' & ')}`; }
+    add($(`<div class="osstat">${r.tier.name==='G.O.A.T.'?'🐐':'🏅'} <b style="color:var(--gold)">${esc(r.tier.name)}</b>${teaser} · ${ageMsg}</div>`)); }
+
+  // sponsors: compact strip normally; the full prominent decision only when there's an offer to make
+  if(!S.circuitMode){ const offers=(S.career&&S.career.sponsorOffers)||[];
+    const sn = offers.length ? sponsorDecisionNode() : sponsorStripNode(); if(sn) add(sn); }
+
+  // reserved reel slot — same height whether idle / spinning / landed, so tapping Spin causes NO layout jump
+  const rar=spun?g.rarity:null, RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
+  add($(`<div class="osreel ${S.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
+    ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:''}
+    <div class="name">${S.spinning?'…':(spun?esc(g.name):'Spin to swap a skill')}</div>
+    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.spinning?'':'Your current bag is below')}</div></div>`));
+
+  // one-line hint above the grid
+  if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap a stat to swap in <b>${esc(g.name)}</b>'s rating — <span style="color:#35d6a0">green ▲ upgrade</span>, <span style="color:#e07a5f">red ▼ downgrade</span></div>`));
+  else if(nDec) add($(`<div class="small center osgridhint" style="color:#e07a5f">▼ Age cost you ground — red shows what each skill dropped. Re-spin to repair.</div>`));
+  else if(lockedNow.length) add($(`<div class="small center osgridhint" style="color:var(--gold)">🔒 Locked stats already changed this off-season — a spin can only land on your open stats</div>`));
+  else add($(`<div class="small center osgridhint muted">Your current bag — spin the wheel to swap a stat</div>`));
+
+  // THE unified grid: always 8 tiles. Idle → current bag; spun → current value + the swap it would make.
+  const grid=$(`<div class="attrs osgrid"></div>`);
+  CATS.forEach(cat=>{
+    const f=S.slots[cat.k], cur=f?f.value:REPLACEMENT, d=decl[cat.k]||0, locked=lockedNow.includes(cat.k);
+    if(spun && S.offConfirm===cat.k && !locked){   // inline lock-in confirm (CS273), on the tile
+      const nv=S.current[cat.k], dd=nv-cur, dcol=dd>0?'#35d6a0':(dd<0?'#e07a5f':'var(--muted)');
+      const bt=$(`<div class="attr confirming" role="group" aria-label="Confirm ${cat.short} change">
+        <div class="oc-top"><span class="lab">${cat.short}</span><span class="oc-swap"><span style="color:var(--muted)">${cur}</span> → <span style="color:${dcol}">${nv}</span> <span style="color:${dcol};font-family:var(--mono)">${dd>0?'▲+'+dd:(dd<0?'▼'+Math.abs(dd):'·')}</span></span></div>
+        <div class="oc-row"><span class="oc-msg">Lock in your change?</span>
+          <button class="oc-no" type="button">Cancel</button><button class="oc-yes" type="button">Lock in</button></div></div>`);
+      bt.querySelector('.oc-no').onclick=(e)=>{ e.stopPropagation(); S.offConfirm=null; render(); };
+      bt.querySelector('.oc-yes').onclick=(e)=>{ e.stopPropagation(); S.offConfirm=null; offTake(cat.k); };
+      grid.appendChild(bt); return;
+    }
+    if(locked){
+      grid.appendChild($(`<div class="attr locked" aria-label="${cat.short} locked this off-season"><span class="lab">${cat.short}</span><span class="val">${cur}</span><span class="take">🔒</span></div>`));
+      return;
+    }
+    if(spun){
+      const nv=S.current[cat.k], dd=nv-cur, dcol=dd>0?'#35d6a0':(dd<0?'#e07a5f':'#8fa7b3');
+      const bt=$(`<button class="attr osswap" aria-label="Swap ${cat.short} to ${nv}, ${dd>=0?'up':'down'} ${Math.abs(dd)}">
+        <span class="lab">${cat.short}</span><span class="val">${cur}</span>
+        <span class="osnew" style="color:${dcol}">→ ${nv} <b>${dd>0?'▲+'+dd:(dd<0?'▼'+Math.abs(dd):'·')}</b></span></button>`);
+      bt.onclick=()=>{ S.offConfirm=cat.k; render(); };
+      grid.appendChild(bt); return;
+    }
+    // idle: static current-bag tile (shows the age drop, if any)
+    grid.appendChild($(`<div class="attr static"><span class="lab">${cat.short}</span>${d<0?`<span class="osdec">▼${Math.abs(d)}</span>`:''}<span class="val">${cur}</span></div>`));
+  });
+  add(grid);
+
+  // actions
+  const actions=$(`<div class="osactions"></div>`);
+  if(spun){
+    if(os.reSpins>0){ const re=$(`<button class="btn gold">Re-spin · ${os.reSpins} left<span class="sub">Pass on ${esc(g.name)} for a new golfer</span></button>`); re.onclick=offReSpin; actions.appendChild(re); }
+    else if(mulliSpins()>0){ const mb=$(`<button class="btn ghost" style="border-color:#8a6bf0;color:#c9b8ff">🌀 Use a Mulli-Spin · ${mulliSpins()} left<span class="sub">A banked extra spin from weekly challenges</span></button>`); mb.onclick=mulliSpinOff; actions.appendChild(mb); }
+    else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">No re-spins left — take one of ${esc(g.name)}'s skills, or start the season.</div>`));
   } else if(!S.spinning){
-    if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel<span class="sub">${os.maxChanges-os.changes} change${os.maxChanges-os.changes===1?'':'s'} left · start anytime</span></button>`); spin.onclick=offSpin; left.appendChild(spin); }
-    else left.appendChild($(`<div class="small muted center" style="padding:10px 0">All ${os.maxChanges} changes used.</div>`));
-    const cont=$(`<button class="btn goldfill" style="margin-top:10px">Start Year ${S.circuitMode?circuitYear3:S.year} ▸<span class="sub">${os.changes>0?'Run the new season':'Keep your bag, run it as-is'}</span></button>`);
-    cont.onclick=finishOffseason;
-    left.appendChild(cont);
+    if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel<span class="sub">${os.maxChanges-os.changes} change${os.maxChanges-os.changes===1?'':'s'} left · once you spin you must take a skill</span></button>`); spin.onclick=offSpin; actions.appendChild(spin); }
+    else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">All ${os.maxChanges} changes used.</div>`));
   }
-  right.appendChild(buildHero());
-  const decl=os.decline||{}; const nDec=Object.keys(decl).length;
-  right.appendChild($(`<h2 style="margin:6px 0 8px">Your golfer</h2>`));
-  if(nDec) right.appendChild($(`<div class="small" style="margin:-4px 0 8px;color:#e07a5f">▼ Age cost you ground this off-season, the red numbers show what each skill dropped. Re-spin to repair them.</div>`));
-  // CS292: flag stats already changed this off-season as locked, so before spending a spin the player can
-  // see exactly which of their 8 skills a swap could still land on
-  const lockedNow=os.locked||[];
-  if(lockedNow.length) right.appendChild($(`<div class="small" style="margin:-4px 0 8px;color:var(--gold)">🔒 Locked stats have already been changed this off-season and can't change again — a spin can only land on your open stats.</div>`));
-  const card=$(`<div class="card-grid"></div>`);
-  CATS.forEach(cat=>{ const f=S.slots[cat.k]; const d=decl[cat.k]||0; const isLocked=lockedNow.includes(cat.k);
-    card.appendChild($(`<div class="slot ${f?'':'empty'} ${isLocked?'locked':''}"><span class="lab">${cat.short}</span><span class="who">${f?f.golfer:', '}</span>${isLocked?`<span class="slotlock">🔒 Locked</span>`:''}${d<0?`<span class="slotdec">▼ ${Math.abs(d)}</span>`:''}<span class="v">${f?f.value:'··'}</span></div>`)); });
-  right.appendChild(card);
+  const cont=$(`<button class="btn goldfill">Start Year ${yr} ▸<span class="sub">${os.changes>0?'Run the new season':'Keep your bag, run it as-is'}</span></button>`);
+  cont.onclick=finishOffseason; actions.appendChild(cont);
+  add(actions);
+
   add(rivalStatusNode());   // emergent nemesis status (read-only)
 }
 /* ---------- season recap ---------- */

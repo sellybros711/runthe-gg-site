@@ -7931,6 +7931,33 @@ allows Google Fonts, or self-host Anton.*
   unchanged. Deployed to /golf. Tunable: the `PB_H1`/`PB_H2`/`PB_HNAME` banks + the shape/number
   probabilities in `pbHandle`.
 
+- **CS337 — off-season page revamped: compact, no layout jump, current stats always visible (owner: "I
+  don't like the off-season spin page. Everything moves around on mobile when you're spinning and then
+  looking at your options. You also have to scroll down to see your other stats to compare. Minimize the
+  sponsorships into a tighter design and revamp the UX/UI so the user can see most things without
+  scrolling").** Rebuilt `scrOffseason` mobile-first. Root problems: the two-column `.cols` layout put the
+  spin/skill-grid in one column and your CURRENT bag (the comparison stats) in the OTHER column — on mobile
+  that stacked far below the avatar, so you scrolled to compare; the skill grid appeared/disappeared around
+  the reel on each spin (big layout jumps); and the sponsor block ate a whole screen.
+  • **Unified skill grid (the core fix):** ONE 8-tile grid that's ALWAYS present. Idle → shows your current
+    bag (8 stats). After a spin → the SAME tiles show `current → new ▲+d / ▼d` in place (e.g. "Approach 84 →
+    86 ▲+2", "Bunker 87 → 80 ▼7"), tap to swap. So your current stats are always visible right at the action
+    and the tile count never changes — nothing jumps. Verified: grid top position moves 0px between idle and
+    spun. Forced 2-column even on small phones (`.osgrid` override) so all 8 fit without scrolling.
+  • **Reserved reel slot:** a fixed-height reel ("Spin to swap a skill" idle → the golfer when landed), so
+    tapping Spin causes no shift.
+  • **Compact hero:** a small head-and-shoulders avatar + name + live OVR + change/re-spin budget replaces
+    the tall 340px build-hero figure. The Tour Rep perk + prime/age status collapse to one tight line.
+  • **Sponsors minimized:** new `sponsorStripNode()` — a one-line collapsible strip (🛍 Sponsors · 🧢 Zenith
+    Bank ★ · 👕 Aurora Global ★, expand for the full slot cards). The full prominent `sponsorDecisionNode` now
+    renders ONLY when there's an actual offer to decide.
+  Net: hero + status + sponsors + reel + all 8 current stats + the Spin button now fit essentially on one
+  mobile screen (was a long scroll). Also made `reveal()` robust to the off-season's renamed `.osreel`
+  (guards the flicker against a null reel). Inline lock-in confirm (CS273) preserved. Verified in Playwright
+  (412×900): 8 tiles idle + 8 swap tiles spun with 0px grid jump, spin→confirm→lock-in works (change
+  applied, stat locked), sponsors collapsed by default, guest path renders with no crash, 0 page errors.
+  Deployed to /golf. Tunable: the `.oshero`/`.osreel`/`.osgrid` sizing, the avatar crop height.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
