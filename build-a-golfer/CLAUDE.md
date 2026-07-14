@@ -8052,6 +8052,32 @@ allows Google Fonts, or self-host Anton.*
     and nudged the "OVR" caption `RAD_CY+14→+16` (140) to keep spacing, so the number now sits centered in
     the dark circle. Screenshot-confirmed; deployed to /golf.
 
+- **CS342 — new unified-grid draft style applied to ALL online modes (owner: "make sure this new draft
+  style is applied to all online modes").** The online head-to-head draft (`scrH2HDraft`, shared by 1v1 /
+  Best Ball / Scramble / Free-for-All) still used the OLD layout — a two-column `.cols` with a plain
+  text-flicker `.reel`, a bare `.attrs` grid, and a separate `.card-grid` scorecard — while the career +
+  off-season drafts had been rebuilt (CS338/339/341) into the compact single-screen style. Ported that
+  style over:
+  - **Generalized `dynRadar(slots)`** to take an optional skills source (defaults to `S.slots`), so the
+    online build drives the same live animated rating web via `dynRadar(S.h2h.slots)`.
+  - **`h2hReveal()` now uses the CS341 `slotSpin()`** slot-machine reel (querying `.osreel .name`) instead
+    of the old `reel.textContent` flicker — so the online wheel spins/decelerates like everywhere else; a
+    fresh morph baseline is set (`_radarPrev=null`) in `h2hBeginDraft`.
+  - **`scrH2HDraft` rebuilt** to mirror `scrDraft`: compact `.oshero` (avatar + name + fill pips + re-spin
+    budget) → `dynRadar(S.h2h.slots)` → reserved `.osreel` slot-machine wheel → ONE always-present 8-tile
+    `.osgrid` (filled = your pick with the golfer's name on its own line via `.dfilled`/`.dcol`/`.dwho`;
+    open+spun = a `.dtake` tile with a Take chip + rating bar; open+idle = `.dempty` placeholder) →
+    `.osactions` (Spin / Re-spin / "Lock in my golfer ▸"). Because the tile count never changes, drafting a
+    skill (which auto-spins the next golfer) flips a tile in place with no layout jump — same as the career
+    draft. Kept the online teal tag (now `live`), the Team badge for team modes, and the Scramble
+    "best of each skill" hint.
+  Verified in Playwright across all four modes (1v1 / Best Ball / Scramble / Free-for-All): the compact hero
+  + dynamic radar + 88px slot-machine reel + 8-tile grid + Spin all render, the old `.reel`/`.card-grid` are
+  gone, mid-spin shows the 25-row slotting strip, landing shows 8 draftable tiles, drafting a skill fills a
+  `.dfilled` tile with the golfer name (`.dwho`) on its own line and auto-spins the next, the Team badge +
+  Scramble hint show correctly, and 0 page errors. Screenshot confirms the online draft is now visually
+  identical to the career/off-season draft. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
