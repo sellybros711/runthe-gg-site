@@ -8002,6 +8002,16 @@ allows Google Fonts, or self-host Anton.*
     the colourful animated web with the tier-tinted OVR centre. Deployed to /golf. (`radarSVG` is now unused
     but left in place.) Tunable: `ratColor` thresholds, the tween duration, the sheen/pulse timings.
 
+- **CS340 — drafted pro golfer's name on its own line (owner: "fit the pro golfer's name under the stat
+  after it's selected so we can fit the name instead of it being on the same line").** The CS338 filled
+  draft tile crammed skill + golfer + value on one row, so the golfer name truncated ("S." / "Er…").
+  Restructured the `.dfilled` tile: skill label + golfer name stack in a left column (`.dcol`) with the
+  value on the right, so the full name gets its own line. Added `min-height:47px` to all `.osgrid .attr`
+  so the 2-line filled tiles align with the 1-line draftable/empty tiles (uniform ~51px rows). Verified in
+  Playwright: five long real names (Scottie Scheffler, Ludvig Åberg, Collin Morikawa, Jon Rahm, Xander
+  Schauffele) all render untruncated on their own line, all tiles uniform height, 0 page errors. CSS/markup
+  only. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
