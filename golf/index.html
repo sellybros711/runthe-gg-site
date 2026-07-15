@@ -599,6 +599,28 @@ window.GA_ID='G-L29P5MRWKE';
   .buildhero .avatarfig{width:114px; height:114px}
   .avatarfig img, .avatarfig svg, .avatarfig canvas{width:100%; height:100%; display:block}
   .avatarfig canvas{border-radius:50%}
+  /* CS353: retro pixel golfer — crisp scaling, no border-radius crop, contain within the sized box */
+  .pxfig{filter:none}
+  .pxfig .pximg{width:100%; height:100%; object-fit:contain; image-rendering:pixelated; image-rendering:crisp-edges; border-radius:0; filter:drop-shadow(0 3px 5px rgba(0,0,0,.45))}
+  /* CS353: retro pixel-game character creator */
+  .retro-creator{max-width:472px; margin:0 auto; padding:15px 15px 16px; border:2px solid var(--gold); border-radius:12px;
+    background:linear-gradient(180deg,rgba(9,26,18,.72),rgba(6,18,12,.72));
+    box-shadow:0 0 0 4px rgba(0,0,0,.35), inset 0 0 0 2px rgba(235,166,31,.18), 0 12px 32px rgba(0,0,0,.42)}
+  .retro-title{font-family:var(--serif,Georgia,serif); font-weight:800; text-transform:uppercase; letter-spacing:.13em; font-size:19px; color:var(--gold); text-align:center}
+  .retro-sub{font-size:12px; color:var(--pagemut); text-align:center; margin:3px 0 12px; letter-spacing:.02em}
+  .pxstage{position:relative; display:flex; align-items:flex-end; justify-content:center; height:196px; margin-bottom:12px; border-radius:10px; overflow:hidden;
+    background:radial-gradient(58% 52% at 50% 22%, rgba(235,166,31,.16), transparent 70%), linear-gradient(180deg,#0c2417,#07160e);
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.05), inset 0 -18px 30px rgba(0,0,0,.35)}
+  .pxstage::before{content:""; position:absolute; inset:0; opacity:.5; pointer-events:none;
+    background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px); background-size:15px 15px}
+  .pxstage .avatarfig{position:relative; z-index:1; width:150px!important; height:186px!important; filter:none}
+  .setrow{margin:0 0 11px}
+  .setlab{font:800 11px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--pagemut); margin:0 0 6px 1px}
+  .chiprow{display:flex; flex-wrap:wrap; gap:6px}
+  .hschip{padding:8px 12px; border-radius:8px; border:1.5px solid var(--line); background:rgba(255,255,255,.03);
+    color:var(--oncard); font-weight:700; font-size:12.5px; letter-spacing:.01em; cursor:pointer; text-transform:none; line-height:1}
+  .hschip.on{border-color:var(--gold); background:rgba(235,166,31,.16); color:var(--gold)}
+  .retro-creator .name{width:100%}
   /* full-body dressable avatar (signed-in): a tall figure, not a round medallion */
   .avatarfig.fullbody{width:auto; height:auto; filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}
   .avatarfig.fullbody canvas{width:auto; height:100%; border-radius:0; margin:0 auto}
@@ -4049,7 +4071,9 @@ const HAIRS=[
   {id:'platinum',  m:'#e4ca9b', s:'#c7ab78'},
   {id:'grey',      m:'#b3ada4', s:'#928c83'},
 ];
-const DEFLOOK={skin:'tan',polo:'white',pants:'stone',shoes:'white',hair:'brown',cap:false,lefty:false,gender:'male',country:'United States',caddie:''};
+const DEFLOOK={skin:'tan',polo:'white',pants:'stone',shoes:'white',hair:'brown',hairStyle:'short',cap:true,hatStyle:'cap',lefty:false,gender:'male',country:'United States',caddie:''};
+// CS353: retro pixel golfer hair styles (code-drawn avatar)
+const HAIRSTYLES=[{id:'short',label:'Short'},{id:'swoop',label:'Swoop'},{id:'curly',label:'Curly'},{id:'long',label:'Long'},{id:'buzz',label:'Buzz'}];
 // ---------- Legendary Caddies ----------
 // Pick a real, storied caddie to loop for your golfer; each grants a small, on-theme edge. They unlock
 // as you climb the Tour Rep ladder (the humble local loopers first, the legendary bagmen at the top),
@@ -4383,7 +4407,12 @@ function accBoost(){ if(!SHOP_ENABLED) return {};   // shelved: equipped gear gi
 function accBoostTotal(){ const b=accBoost(); return Object.values(b).reduce((a,x)=>a+x,0); }
 // ---- cosmetics (colors + patterns) are PURCHASED too (same coin economy, namespaced owned keys) ----
 // keys: sh:<shirt>  sp:<pattern>  ht:<hat color>  pt:<pants>  so:<shoes>. Free defaults below.
-const FREE_COSMETICS={'sh:white':1,'sp:none':1,'hp:none':1,'ht:white':1,'pt:stone':1,'so:white':1};
+// CS353: the 6 BASIC shirt/hat colors are FREE (so the retro creator always offers a shirt + hat color pick);
+// the premium/lore colors, patterns and gear stay Pro-Shop unlocks. (Restores the CS192 "basics free" intent.)
+const FREE_COSMETICS={
+  'sh:teal':1,'sh:navy':1,'sh:gold':1,'sh:white':1,'sh:purple':1,'sh:black':1,
+  'ht:teal':1,'ht:navy':1,'ht:gold':1,'ht:white':1,'ht:purple':1,'ht:black':1,
+  'sp:none':1,'hp:none':1,'pt:stone':1,'so:white':1};
 const COS_CATS=[ {k:'shirt',pk:'sh',lookKey:'polo',name:'Shirt color'}, {k:'pat',pk:'sp',lookKey:'shirtPat',name:'Shirt pattern'},
   {k:'hat',pk:'ht',lookKey:'hat',name:'Hat color'}, {k:'pants',pk:'pt',lookKey:'pants',name:'Trousers'}, {k:'shoes',pk:'so',lookKey:'shoes',name:'Shoe color'} ];
 function cosPk(cat){ const c=COS_CATS.find(x=>x.k===cat); return c?c.pk:cat; }
@@ -5739,74 +5768,62 @@ function toast(msg, ms){
 /* ---------- setup (create your golfer) ---------- */
 // a labeled section header with a divider rule, groups the form so it doesn't read as a wall of controls
 function setupHeader(label){ return $(`<div style="display:flex;align-items:center;gap:10px;margin:13px 0 3px"><span style="letter-spacing:.08em;text-transform:uppercase;font-size:12.5px;font-weight:800;color:#cadecf">${esc(label)}</span><span style="flex:1;height:1px;background:rgba(255,255,255,.1)"></span></div>`); }
+// CS353: retro chip rows for the pixel-golfer creator
+function hairStyleRow(){
+  const cur=S.look.hairStyle||'short';
+  const row=$(`<div class="setrow"><div class="setlab">Hair style</div><div class="chiprow"></div></div>`);
+  const cr=row.querySelector('.chiprow');
+  HAIRSTYLES.forEach(h=>{ const b=$(`<button class="hschip${h.id===cur?' on':''}" type="button">${esc(h.label)}</button>`);
+    b.onclick=()=>{ S.look.hairStyle=h.id; saveLook(); render(); }; cr.appendChild(b); });
+  return row;
+}
+function headwearRow(){
+  const on=S.look.cap!==false, st=(S.look.hatStyle==='visor')?'visor':'cap', cur=on?st:'none';
+  const opts=[{id:'none',label:'None'},{id:'cap',label:'Cap'},{id:'visor',label:'Visor'}];
+  const row=$(`<div class="setrow"><div class="setlab">Headwear</div><div class="chiprow"></div></div>`);
+  const cr=row.querySelector('.chiprow');
+  opts.forEach(o=>{ const b=$(`<button class="hschip${o.id===cur?' on':''}" type="button">${o.label}</button>`);
+    b.onclick=()=>{ if(o.id==='none'){ S.look.cap=false; } else { S.look.cap=true; S.look.hatStyle=o.id; } saveLook(); render(); };
+    cr.appendChild(b); });
+  return row;
+}
+// CS353: RETRO PIXEL character creator. CAREER-ONLY (other modes just use your name). Lean & fast:
+// name + skin + hair color/style + shirt color + headwear (none/cap/visor) + hat color + country.
+// Everything image-heavy (patterns, worn gear, trousers/shoes color, handedness, caddie) is out of
+// creation - kit colors are managed in the Pro Shop; the golfer is a code-drawn pixel sprite.
 function scrSetup(){
   const guest=!sbSignedIn();
-  add($(`<div class="center"><span class="tag"${S.special?' style="color:#ffd76a;border-color:#ffd76a"':''}>${S.special?'⭐ Monthly Spotlight':(S.daily?'Beat the Pro':'New golfer')}</span></div>`));
-  add($(`<h1 class="center" style="font-size:25px;margin:8px 0 2px">Create your golfer</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:10px">Choose your look${guest?'':', name and kit'}, then spin to build the skills.</p>`));
-  const cols=$(`<div class="cols setup-cols"></div>`);
-  const left=$(`<div class="col center"></div>`), right=$(`<div class="col"></div>`);
-  cols.appendChild(left); cols.appendChild(right); add(cols);
-  // avatar preview, large, sticky so it stays visible while you scroll the options. A solid
-  // backdrop is needed once it's pinned (see the .setup-cols CSS) since the customization list
-  // scrolls up underneath it, without one, the swatches/rows behind would show through.
-  // CS266: a live avatar STAGE - golden spotlight behind the golfer, name above, floor shadow beneath
-  const full=sbSignedIn();
-  const f=$(avatarShowHTML());
-  if(full){ f.classList.add('av-setup-full'); f.style.filter='drop-shadow(0 10px 20px rgba(0,0,0,.5))'; }
-  else { f.style.width='184px'; f.style.height='184px'; f.style.filter='drop-shadow(0 9px 18px rgba(0,0,0,.45))'; }
-  const stage=$(`<div class="avstage"></div>`);
-  // CS303: the name label above the avatar was clipping (display-italic overflow) and is redundant - the
-  // name is shown in the Name field below on this screen. Removed.
-  stage.appendChild(f);
-  stage.appendChild($(`<div class="avfloor" aria-hidden="true"></div>`));
-  const figwrap=$(`<div class="setup-figwrap"></div>`); figwrap.appendChild(stage); left.appendChild(figwrap);
+  const wrap=$(`<div class="retro-creator"></div>`);
+  wrap.appendChild($(`<div class="retro-title">▸ Create Your Golfer</div>`));
+  wrap.appendChild($(`<div class="retro-sub">${S.special?'Monthly Spotlight':(S.daily?'Beat the Pro':'Career Mode')} &middot; pick a look, then build your skills</div>`));
+  const stage=$(`<div class="pxstage"></div>`); stage.appendChild($(avatarShowHTML())); wrap.appendChild(stage);
 
-  // ---- Appearance (available to everyone) ----
-  right.appendChild(setupHeader('Appearance'));
-  right.appendChild(genderRow());
-  right.appendChild(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
-  right.appendChild(swatchRow('Hair',HAIRS,S.look.hair,'hair',o=>o.m));
+  // ---- appearance (everyone) ----
+  wrap.appendChild(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
+  wrap.appendChild(swatchRow('Hair color',HAIRS,S.look.hair,'hair',o=>o.m));
+  wrap.appendChild(hairStyleRow());
 
   if(guest){
-    // ---- guests: limited to gender/skin/hair; everything else is an account perk (the conversion nudge) ----
-    right.appendChild(setupHeader('Name'));
-    const nameLock=$(`<div style="position:relative"><input class="name" disabled placeholder="Your Golfer" style="opacity:.45;cursor:not-allowed"></div>`);
-    right.appendChild(nameLock);
-    right.appendChild($(`<div class="small muted" style="margin:5px 0 14px 2px">🔒 Sign in to your RunThe.gg account to add a name.</div>`));
-    const lock=$(`<div style="margin-top:2px;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(235,166,31,.08),rgba(10,22,38,.25));padding:15px 15px 14px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:18px">🔒</span><b style="color:var(--gold);font-size:14.5px">Unlock the full locker room</b></div>
-      <div class="small muted" style="margin-bottom:12px;line-height:1.5">A free account lets you <b style="color:var(--oncard)">name your golfer</b>, fly your <b style="color:var(--oncard)">country's flag</b>, play <b style="color:var(--oncard)">left-handed</b>, and pick your <b style="color:var(--oncard)">shirt, hat colors &amp; patterns</b>, plus it saves your career and posts you to the global leaderboards.</div>
+    const lock=$(`<div style="margin-top:2px;border:1px solid var(--gold);border-radius:12px;background:linear-gradient(180deg,rgba(235,166,31,.08),rgba(10,22,38,.25));padding:14px 15px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:18px">🔒</span><b style="color:var(--gold);font-size:14.5px">Sign in to finish your golfer</b></div>
+      <div class="small muted" style="margin-bottom:12px;line-height:1.5">A free account lets you <b style="color:var(--oncard)">name your golfer</b>, fly your <b style="color:var(--oncard)">country's flag</b>, and pick your <b style="color:var(--oncard)">shirt &amp; hat colors and headwear</b> - plus it saves your career and posts you to the leaderboards.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn goldfill" id="setup-signup" style="width:auto;flex:1 1 160px;padding:11px">Create free account ▸</button><button class="btn ghost" id="setup-signin" style="width:auto;flex:0 0 auto;padding:11px 18px">Sign in</button></div></div>`);
     lock.querySelector('#setup-signup').onclick=()=>{ track('setup_signup_click'); S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); };
     lock.querySelector('#setup-signin').onclick=()=>{ S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); };
-    right.appendChild(lock);
+    wrap.appendChild(lock);
   } else {
-    // ---- signed-in: full customization, grouped tight. Kit shows only what you OWN + one Pro Shop link. ----
-    right.appendChild(setupHeader('Name'));
+    const nrow=$(`<div class="setrow"><div class="setlab">Name</div></div>`);
     const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${esc(S.name||'')}">`);
-    inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name); saveLook();}; right.appendChild(inp);   // stamp + sync identity (name rides with look)
-    right.appendChild(setupHeader('Country & handedness'));
-    right.appendChild(countryRow());
-    right.appendChild(handRow());
-    right.appendChild(setupHeader('Caddie'));
-    right.appendChild(caddieRow());
-    right.appendChild(setupHeader('Kit'));
-    right.appendChild(capToggleRow());
-    { const hn=headwearNote(); if(hn) right.appendChild(hn); }   // CS345: clarify when equipped headwear hides the recolorable cap
-    // only the categories where you actually own a choice render a row; the rest is one Pro Shop link
-    [cosColorRow('Shirt','shirt'), cosPatRow('Shirt pattern','shirtPat'), cosColorRow('Trousers','pants'),
-     cosColorRow('Shoes','shoes'), cosColorRow('Hat','hat'), cosPatRow('Hat pattern','hatPat')]
-      .forEach(r=>{ if(r) right.appendChild(r); });
-    // CS343: accessories - equip owned gear (eyewear, glove, clubs, ball, charm…) right here
-    const gearRows=ACC_SLOTS.map(sl=>accSelectRow(sl.k)).filter(Boolean);
-    if(gearRows.length){ right.appendChild(setupHeader('Accessories')); right.appendChild(accBoostSummaryNode());
-      right.appendChild($(`<div class="small muted" style="margin:0 0 8px;line-height:1.5">Each accessory has one fixed color &amp; style, swap the item for a different look. (Your shirt, trousers, shoes &amp; basic cap are recolorable above.)</div>`));
-      gearRows.forEach(r=>right.appendChild(r)); }
-    if(anyCosmeticLocked()||anyGearLocked()) right.appendChild(proShopLinkRow());
+    inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name); saveLook();}; nrow.appendChild(inp); wrap.appendChild(nrow);
+    { const r=cosColorRow('Shirt color','shirt'); if(r) wrap.appendChild(r); }
+    wrap.appendChild(headwearRow());
+    if(S.look.cap!==false){ const r=cosColorRow('Hat color','hat'); if(r) wrap.appendChild(r); }
+    const crow=$(`<div class="setrow"><div class="setlab">Country</div></div>`); crow.appendChild(countryRow()); wrap.appendChild(crow);
+    if(anyCosmeticLocked()) wrap.appendChild(proShopLinkRow());
   }
+  add(wrap);
 
-  // CS266: sticky action bar so the primary "Build Your Golfer" CTA stays reachable while scrolling the kit
+  // sticky action bar
   const bar=$(`<div class="setup-actionbar"></div>`);
   const back=$(`<button class="btn ghost" style="margin:0;width:auto;flex:0 0 auto;padding:12px 15px">‹ Back</button>`);
   back.onclick=()=>{reset();S.screen='title';render();};
@@ -5961,9 +5978,61 @@ function paintAvatars(){
   document.querySelectorAll('canvas.avatarcanvas[data-avatar-pending]').forEach(c=>{ c.removeAttribute('data-avatar-pending');
     if(c.hasAttribute('data-avatar-full')) paintAvatarFull(c,shopEffLook()); else paintAvatar(c,S.look); });
 }
-function avatarHTML(){
-  return `<div class="avatarfig"><canvas class="avatarcanvas" width="512" height="512" data-avatar-pending="1" role="img" aria-label="Your golfer"></canvas></div>`;
+// ===== CS353: code-drawn RETRO PIXEL golfer — replaces the AI-painted avatar everywhere =====
+// A hand-authored, palette-swappable sprite (24x30). Chars: . transparent · k outline · s skin · e eye
+// · t shirt · d shirt-shade · p pants · o shoe · l club-shaft · g club-head · h hair · c cap · b cap-brim
+// · w cap-highlight. Colors come from the SAME resolver the old avatar used (avLook → skin/hair/shirt/hat/
+// shoe hex), so every Pro Shop COLOR unlock still shows. Patterns + worn accessory gear are intentionally
+// dropped (they don't translate to pixel art). Rendered to a cached data-URL <img>, crisp via pixelated.
+const PXG_W=24, PXG_H=30;
+const PXG_BODY=[
+"........................","........................",".........kkkkkk.........",
+"........kssssssk........","........kssssssk........","........kssssssk........",
+"........kssssssk........",".........kssssk.........","..........ssss..........",
+".......kvttttttvk.......","......kkvtttttvkk.......","......ktttttddttk.......",
+".....ksttttttttdk.......",".....kstttttttdddk.gg...",".....ksttttttttddklg....",
+".....ksttttttttddkl.....","......stttttttdd.l......","......ksttttttdkl.......",
+"......kttttttttk........","......knnnggnnnk........","......kppppppppk........",
+"......kppp..pppk........","......kppp..pppk........","......kppp..pppk........",
+"......kppp..pppk........","......oooo..oooo........","......kkkk..kkkk........",
+"........................","........................","........................"];
+const PXG_HAIR={
+ short:["........................","........................",".........hhhhhh.........","........hhhhhhhhh.......","........hh....hhh.......","........h......hh......."],
+ swoop:["........................",".........hhhhh..........","........hhhhhhhhh.......",".......hhhhhhhhhhh......",".......hhh....hhhh......","........h.......hh......"],
+ curly:["........................","........hh.hh.hh........",".......hhhhhhhhhh.......",".......hhhhhhhhhh.......",".......hh.....hhh.......","........h.....hh........"],
+ long: ["........................","........................",".........hhhhhh.........","........hhhhhhhhh.......",".......hhhhhhhhhhh......",".......hh.....hhh.......",".......hh......hh.......",".......hh......hh.......",".......hh......hh......."],
+ buzz: ["........................","........................",".........hhhhhh.........","........hhhhhhhhh.......","........h......hh......."]};
+const PXG_CAP=["........................","........................","..........c.............",".........cccccc.........","........ccccccccc.......",".....wwbbcccccccc.......",".....bbbbbbbb..........."];
+const PXG_VISOR=["........................","........................","........................","........................","........cccccccc........",".....wwbbbbbbbb.........",".....bbbbbb............."];
+const PXG_FIX={ k:'#181019', l:'#cfd2d7', g:'#9a9ea6', n:'#232733' };   // outline · club-shaft · club-head/buckle · belt
+function pxShade(hex,amt){ hex=(hex||'#888888').replace('#',''); if(hex.length<6) hex='888888';
+  const f=v=>Math.max(0,Math.min(255,parseInt(v,16)+amt)).toString(16).padStart(2,'0');
+  return '#'+f(hex.slice(0,2))+f(hex.slice(2,4))+f(hex.slice(4,6)); }
+const _pxURL=new Map();
+function pxGolferURL(look){
+  look=look||S.look||DEFLOOK; const av=avLook(look);
+  const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===(look.pants||'stone')))||{a:'#c7bfa8'}).a;
+  const style=(look.hairStyle&&PXG_HAIR[look.hairStyle])?look.hairStyle:'short';
+  const capOn=look.cap!==false;
+  const hatStyle=(look.hatStyle==='visor')?'visor':'cap';
+  const key=av.key+'|st'+style+'|cap'+(capOn?hatStyle:'0')+'|pn'+(look.pants||'stone');
+  let u=_pxURL.get(key); if(u) return u;
+  const P={ k:PXG_FIX.k, l:PXG_FIX.l, g:PXG_FIX.g, n:PXG_FIX.n,
+    s:av.skinHex, h:av.hairHex, t:av.shirtHex, d:pxShade(av.shirtHex,-26), v:pxShade(av.shirtHex,34),
+    p:pantsHex, o:av.shoesHex, c:av.hatHex, b:pxShade(av.hatHex,-24), w:pxShade(av.hatHex,26) };
+  const px=10, cv=document.createElement('canvas'); cv.width=PXG_W*px; cv.height=PXG_H*px;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(11.5*px,27.5*px,7*px,1.5*px,0,0,7); ctx.fill();
+  const paint=map=>{ for(let y=0;y<map.length;y++){ const row=map[y];
+    for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue; const col=P[ch]; if(!col)continue;
+      ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } } };
+  paint(PXG_BODY); paint(PXG_HAIR[style]); if(capOn) paint(hatStyle==='visor'?PXG_VISOR:PXG_CAP);
+  u=cv.toDataURL('image/png'); _pxURL.set(key,u); return u;
 }
+function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg" src="${pxGolferURL(look)}" alt="Your golfer"></div>`; }
+// in the Pro Shop, preview pending COLOR purchases live (worn gear is dropped, so only colors preview)
+function pxCurLook(){ return (S.overlay==='shop' && typeof shopEffLook==='function')?shopEffLook():S.look; }
+function avatarHTML(){ return pxAvatarHTML(pxCurLook()); }
 
 /* ===== CS186 - full-body dressable avatar (signed-in): recolored base + equipped accessory layers ===== */
 const AV_FULL={ male:'public/avatars/golfers/full/base-male.png', female:'public/avatars/golfers/full/base-female.png' };
@@ -6111,9 +6180,7 @@ const AV_DRAW_ORDER=['driver','putter','shoes','ball','glove','charm','eyes','he
 function _avWaitAll(entries, cb){ const pend=entries.filter(e=>e&&!e.ready&&!e.failed);
   if(!pend.length){ cb(); return; } let n=pend.length; const done=()=>{ if(--n<=0) cb(); };
   pend.forEach(e=>{ e.img.addEventListener('load',done,{once:true}); e.img.addEventListener('error',done,{once:true}); }); }
-function avatarFullHTML(){
-  return `<div class="avatarfig fullbody"><canvas class="avatarcanvas avfull" width="${AV_FRAME_W}" height="${AV_FRAME_H}" data-avatar-full="1" data-avatar-pending="1" role="img" aria-label="Your golfer"></canvas></div>`;
-}
+function avatarFullHTML(){ return pxAvatarHTML(pxCurLook()); }   // CS353: pixel golfer (was the AI full-body PNG)
 // a free basic cap (recolored to the player's hat color), drawn when no shop headwear is equipped -
 // so every golfer can wear a hat in setup, like the old portrait. Cached per color.
 const _avCapCache=new Map();
@@ -13348,8 +13415,10 @@ function scrDailyPreview(){
   add($(`<div style="height:14px"></div>`));
   const canDraft = PRACTICE || dailyAttemptsLeft()>0;
   if(canDraft){
-    const go=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Build your golfer ▸<span class="sub">For ${esc(dShort(c.v))}${PRACTICE?'':` · uses 1 of ${dailyMaxAttempts()} attempts`}</span></button>`);
-    go.onclick=()=>{ S.screen='setup'; render(); }; add(go);
+    const go=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Draft your golfer ▸<span class="sub">For ${esc(dShort(c.v))}${PRACTICE?'':` · uses 1 of ${dailyMaxAttempts()} attempts`}</span></button>`);
+    // CS353: character creation is CAREER-ONLY. The Daily uses your existing name/look and goes straight
+    // to the draft (no appearance screen) - "other modes just use your name".
+    go.onclick=()=>{ S.screen='draft'; render(); }; add(go);
   } else {
     add($(`<div class="scout" style="max-width:520px;margin:0 auto;text-align:center;border-color:#7ec8ff"><b style="color:#7ec8ff">Out of attempts today</b><div class="small muted" style="margin-top:3px">A fresh course drops at midnight ET, but your Legend golfers play free, any time. Pick one below.</div></div>`));
   }
@@ -14867,10 +14936,11 @@ function overlayShop(screen){
     const si=ov.querySelector('#shop-in'); if(si) si.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
     screen.appendChild(ov); return;
   }
-  const sec = (S.shopSec==='gear'||S.shopSec==='owned')?S.shopSec:'apparel';
-  const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes']];
-  const GEAR=ACC_SLOTS.map(sl=>[sl.k, sl.k==='shoes'?'Footwear':sl.name]);
-  const cats = sec==='apparel'?APP : sec==='gear'?GEAR : null;
+  // CS353: the golfer is a pixel sprite now — only COLOR cosmetics render, so the shop sells colors only.
+  // Patterns + worn accessory gear are dropped (they don't translate to pixel art).
+  const sec = (S.shopSec==='owned')?'owned':'apparel';
+  const APP=[['shirt','Shirt'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes']];
+  const cats = sec==='apparel'?APP : null;
   let cat=S.shopCat; if(cats && !cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.shopCat=cat;
   // sticky: bar (title+coins+close) → live preview → section segment → category chips
   const sticky=$(`<div class="shop-sticky">
@@ -14881,7 +14951,6 @@ function overlayShop(screen){
     <div class="shop-preview">${avatarFullHTML()}</div>
     <div class="segrow">
       <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel</button>
-      <button data-sec="gear" class="${sec==='gear'?'on':''}">Equipment</button>
       <button data-sec="owned" class="${sec==='owned'?'on':''}">My Items</button></div>
     ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-cat="${c[0]}">${esc(c[1])}</button>`).join('')}</div>`:''}
   </div>`);
@@ -14894,9 +14963,8 @@ function overlayShop(screen){
     list.sort((a,b)=>{ const ea=accEquipped(a.slot)===a.id?0:1, eb=accEquipped(b.slot)===b.id?0:1; if(ea!==eb)return ea-eb;
       const oa=accOwned(a.id)?0:1, ob=accOwned(b.id)?0:1; if(oa!==ob)return oa-ob; return accPrice(a)-accPrice(b); });
     list.forEach(it=>tiles.push(accTileHTML(it)));
-  } else {  // My Items: purchased cosmetics (non-free) + owned gear
-    COS_CATS.forEach(c=>cosmeticItems(c.k).forEach(o=>{ if(cosOwned(c.k,o.id)&&!FREE_COSMETICS[cosKey(c.k,o.id)]) tiles.push(cosTileHTML(c.k,o)); }));
-    ACCESSORIES.concat(MILESTONE_ITEMS).forEach(it=>{ if(accOwned(it.id)) tiles.push(accTileHTML(it)); });
+  } else {  // My Items: purchased COLOR cosmetics (non-free). Worn gear is no longer shown (pixel golfer).
+    COS_CATS.forEach(c=>{ if(c.k==='pat') return; cosmeticItems(c.k).forEach(o=>{ if(cosOwned(c.k,o.id)&&!FREE_COSMETICS[cosKey(c.k,o.id)]) tiles.push(cosTileHTML(c.k,o)); }); });
   }
   // PREVIEW + CONFIRM: a locked item you tapped is being previewed on the golfer (above) - show the
   // confirmation card instead of the grid so nothing is bought on a single tap.
