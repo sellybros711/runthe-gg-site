@@ -8277,6 +8277,51 @@ allows Google Fonts, or self-host Anton.*
   at the `SEASON_STOP_BUDGET`/`STORY_PER_SEASON`/`MOMENT_PER_SEASON`/`DILEMMA_PER_SEASON` consts — drop the
   budget to 1 for exactly one guaranteed interview/year and nothing else.
 
+- **CS353 — retro CODE-DRAWN pixel golfer + lean career-only creation (owner: character creation "way too
+  overwhelming, takes too much time, looks like AI"; wants a "real retro video game style creation page that
+  is code based and not image based"; creation should be "career mode only, other modes just your name").**
+  Replaced the AI-generated full-body PNG avatar (masks + composited accessory art) with a hand-authored,
+  palette-swappable **pixel golfer** drawn entirely in code. Owner picks (AskUserQuestion): keep **Essentials
+  + country** in creation; **keep shop COLORS, drop worn gear**. Then mid-build (screenshot feedback): "look
+  at real pros — polo, pants, golf hat/visor — not enough detail; we don't need eyes."
+  • **The sprite** (`PXG_BODY`/`PXG_HAIR`/`PXG_CAP`/`PXG_VISOR`, 24×30, chars→palette): a golf-authentic
+    golfer — **polo with a collar + placket shading**, **belt with buckle**, full-length **slacks**, golf
+    shoes, a club, **no eyes** (clean face), and a choice of **golf cap or visor** (or none). 5 hair styles
+    (short/swoop/curly/long/buzz). Colors come from the SAME resolver the old avatar used (`avLook` →
+    skin/hair/shirt/hat/pants/shoe hex), so **every Pro Shop COLOR unlock still shows**; patterns + worn
+    accessory gear are dropped (don't translate to pixel art). Rendered once to a cached `toDataURL` `<img>`,
+    crisp via `image-rendering:pixelated`. New `pxGolferURL`/`pxAvatarHTML`; `avatarHTML`/`avatarFullHTML`/
+    `avatarShowHTML` all now return it, so the pixel golfer shows EVERYWHERE the avatar appears (setup, build
+    "meet your golfer", off-season/draft heroes, Trophy Room, career banner, Pro Shop dressing room) — the AI
+    PNG pipeline (`paintAvatarFull`/masks/`AV_*`) is left defined but unused. Iterated the sprite visually in
+    a standalone preview (render→screenshot→fix) before wiring it in.
+  • **Lean retro creator** (`scrSetup` rebuilt): a gold-framed "▸ CREATE YOUR GOLFER" panel with the pixel
+    golfer on a grid "arcade" stage, then a short list — Name · Skin · Hair color · Hair style (chips) · Shirt
+    color · Headwear (None/Cap/Visor chips) · Hat color · Country — and a sticky Back/Build bar. **Cut** from
+    creation (was the overwhelm): gender, handedness, caddie, trousers/shoes colors, patterns, worn
+    accessories (kit colors are still managed in the Pro Shop; caddie/etc. weren't visual). New `hairStyle`/
+    `hatStyle` look fields (+ in `DEFLOOK`, cap on by default), saved/synced via the existing `bag_look` cloud
+    path; old saves default cleanly.
+  • **Creation is CAREER-ONLY.** The Daily's "Build your golfer" previously routed to `scrSetup`; it now goes
+    straight to the draft (`S.screen='draft'`) using your existing saved name/look — "other modes just use
+    your name." (H2H already skipped creation; season/spotlight too.) Renamed the daily button "Draft your
+    golfer ▸".
+  • **Pro Shop = colors only.** Dropped the **Pattern** category and the whole **Equipment** (worn-gear)
+    section — the shop now sells only Shirt/Hat/Trousers/Shoes COLORS (all of which the pixel golfer renders);
+    "My Items" no longer lists gear. The dressing-room preview is the pixel golfer with live color previews.
+  • **Freed the 6 basic shirt/hat colors** (`FREE_COSMETICS`) so the creator always offers a shirt + hat
+    color pick out of the box (restores the CS192 "basics free" intent; premium/lore colors stay Pro-Shop
+    unlocks).
+  Verified in Playwright: the retro creator renders the pixel golfer + the lean picks (no gender/accessories/
+  caddie), the pixel avatar appears on build/draft/off-season/Trophy Room/shop, cap/visor/none produce
+  distinct sprites, guest creation is appearance-only + the sign-in lock, the Daily's Draft button goes to
+  `draft` (NOT setup), the shop shows Apparel colors only (no Pattern/Equipment) with a working pixel
+  preview, and a full render sweep is clean — **0 page errors** throughout. Screenshots confirm a polished,
+  golf-authentic retro golfer (polo collar, belt, slacks, cap AND visor variants). Deployed to /golf. Tunable:
+  the `PXG_*` sprite maps + `HAIRSTYLES`, the creator fields in `scrSetup`. NOTE: the old AI-avatar code +
+  base/mask PNG assets are now dead but left in place (removing them is a separate cleanup); the deploy is
+  the single HTML file (no new assets needed — the golfer is pure code).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
