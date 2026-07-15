@@ -8454,6 +8454,57 @@ allows Google Fonts, or self-host Anton.*
     renders; chip + putt golfers render live (chip near the green, putt hunched on the close-up with its
     pin + flag); a full auto round completes with 0 page errors; reduced-motion hides all of it. Deployed
     to /golf. Tunable: `HV_SWING`, per-kind sizes/timings, the `PXS_*` frames.
+  - **CS355e — slimmer legs + smaller shaped feet on the swinging golfer (owner: "the feet look way too big
+    and blocky and the legs are slightly too wide").** In the `swing.py` composer the mini-golfer's legs were
+    4px wide with 7×3 block shoes; narrowed the legs to 3px and replaced the blocks with a `shoe()` helper
+    drawing a small ~5×2 heel+toe side-view shoe, across all leg phases (set/back/thru) + the putt base.
+    Re-authored the swing frames JSON and re-inlined into the game (`PXS_*`). Committed + deployed to /golf.
+    (Verified via the same swing-preview render + a full round; 0 page errors.)
+
+- **CS356 — pixel theme tied through the whole game: pixel font cohesion, lemon-gold gradient headers,
+  pixel-art trophies, and the GOAT hero (owner: "bring the pixelated theme to the rest of the game... tie
+  everything together... make this game feel more human created, authentically designed, and thought out";
+  then, after approving 3 screenshots via AskUserQuestion, added: "pixelify the trophies, and switch Live
+  Your Legacy to BECOME THE GOAT").** Three coordinated layers, all self-contained (no new assets — the
+  fonts + sprites are embedded), presentation-only (no sim/engine/state change):
+  1. **Pixel font cohesion.** Embedded the OFL **Silkscreen** font (base64 woff2, weights 400 + 700) as
+     `@font-face` so it's self-contained (the sandbox can't load Google Fonts — this is why earlier
+     screenshots showed serif fallbacks, so embedding also hardens robustness/offline). Added a `--pixel`
+     token and applied it to the UI's structural/pixel-appropriate type — labels, section eyebrows, card
+     kickers/titles, buttons, nav labels, OVR/roll numbers, `h2`, the retro creator title, the hero — while
+     KEEPING the body copy + the RUN THE TOUR wordmark on their existing fonts, so pixel type is used where
+     it reads as intentional retro-game design and prose stays legible.
+  2. **Distinctive lemon-gold gradient (CS354/354b, shipped together in this commit's earlier work).** The
+     generic AI-flat `#EBA61F` gold on marquee surfaces is now a smooth bright **lemon-gold foil** via two
+     tokens — `--gold-grad` (a 9-stop vertical brushed-metal gradient, tiny deltas so no harsh band lines)
+     + `--gold-grad-d` (angled fill variant) — applied by the text-clip technique to the wordmark "TOUR",
+     the hero, and the retro creator title, and as the fill on the primary `.btn.goldfill`, the Career-Mode
+     `.gc-gold` card, and the Continue-Career `.resumecard`. Base tokens brightened (`--gold` `#EBA61F`→
+     `#F1D04A`, `--gold2`→`#c9a520`) so the many small flat-gold chips/labels shift to the new hue too, and
+     all hardcoded old-gold traces (144 `rgba(235,166,31,…)`, 32 `#EBA61F`, the `--hgold` underline, old
+     gradient stops) were swept to lemon equivalents.
+  3. **Pixel-art trophies.** Authored 5 char-grid trophy sprites in `scratchpad/trophies.py` (rect/disc
+     primitives + a 1px outline pass, previewed + iterated visually like the golfer): a gold **cup** (generic
+     wins), the same with blue bands (**National Open**), a silver **flagon** (Links Championship / claret-
+     jug analog), a two-handled lidded silver **cup** (Championship / wanamaker analog), and a burgundy
+     **blazer** with green collar + lapels + gold button (Magnolia Invitational / Masters analog). Inlined as
+     `PXT_*` constants + `PXT_PAL` + a `pxTrophySVG(rows, cls)` renderer that emits crisp-edges SVG `<rect>`
+     blocks (viewBox `0 0 24 28`, `shape-rendering:crispEdges`, 1.04-unit rects so no hairline gaps). The 5
+     major trophy fns (`winTrophySVG`/`usOpenTrophySVG`/`claretJugSVG`/`wanamakerSVG`/`greenJacketSVG`) + the
+     small title `trophySVG()` now return the pixel versions (so the win/major celebrations, the Trophy Room
+     cabinet — greyscale-when-unearned still works via CSS filter — and every `majorTheme().svg` site get
+     pixel trophies), and `canvasTrophy()` was rewritten to draw the `PXT_CUP` grid as canvas fill-rects for
+     the share card. `majorTheme()` labels/regex + accents unchanged. Left the tiny inline `ic('trophy')`
+     line-glyph as-is (it's part of the separate `currentColor` stroked-icon set used inline in nav/chips).
+  4. **Hero copy → "Become the GOAT."** The title hero `.hr2` changed "Live your Legacy." → "Become the
+     GOAT." (the `.hero` CSS uppercases it → "BECOME THE GOAT."), carrying the lemon-gold gradient.
+  Verified in Playwright: `node --check` clean; the title renders "BUILD A GOLFER. BECOME THE GOAT." in the
+  pixel font with the lemon-gold foil, and the pixel-font cohesion + gold gradient read across the whole
+  title/cards/labels; all 6 trophy graphics + the Trophy Room cabinet render cleanly at both celebration and
+  cabinet sizes with 0 page errors. Owner had already approved the pixel-font + gold direction via 3
+  screenshots (title/draft/setup) + AskUserQuestion before the trophy/hero asks. Deployed to /golf. Tunable:
+  `--gold-grad`/`--gold-grad-d` stops + `--gold` hue in `:root`, the `--pixel` cohesion CSS block, the
+  `PXT_*` sprite grids + `PXT_PAL` in `scratchpad/trophies.py`.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
