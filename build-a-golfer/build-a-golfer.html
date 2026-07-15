@@ -6024,24 +6024,24 @@ const PXG_BODY=[
 "..........xxjjtttttttdddtttddddssjj.........",
 "..........xxjjtttttttdddtttddddssjj.........",
 "..........xxjjtttttttdddtttddddssjj.........",
-"..........xxjjdddddddddddddddddssjjl........",
-"..........ssjjdddddddddddddddddssjjl........",
-"..............nnnnnngggggnnnnnn.....l.......",
-"..............nnnnnngggggnnnnnn.....l.......",
-"..............nnnnnngggggnnnnnn......l......",
-"...............mmppppppppppppp.......l......",
-"...............mmppppppppppppp........l.....",
-"...............mmpqqqpppmmpqqq........l.....",
-"...............mmpqqq...mmpqqq........l.....",
-"...............mmpqqq...mmpqqq.........l....",
-"...............mmpqqq...mmpqqq.........l....",
-"...............mmpqqq...mmpqqq..........l...",
-"...............mmpqqq...mmpqqq.........gggg.",
-"...............mmpqqq...mmpqqq.........gggg.",
-"...............mmpqqq...mmpqqq.........gggg.",
-".............uuuuooooo.uuuuooooo.......gggg.",
-".............oooooozzz.oooooozzz............",
-".............nnnnnnnnn.nnnnnnnnn............"];
+"..........xxjjdddddddddddddddddssjj.........",
+"..........ssjjdddddddddddddddddssjj.........",
+"..............nnnnnngggggnnnnnn...l.........",
+"..............nnnnnngggggnnnnnn....l........",
+"..............nnnnnngggggnnnnnn....l........",
+"...............mmppppppppppppp......l.......",
+"...............mmppppppppppppp......l.......",
+"...............mmpqqqpppmmpqqq.......l......",
+"...............mmpqqq...mmpqqq.......l......",
+"...............mmpqqq...mmpqqq........lG....",
+"...............mmpqqq...mmpqqq......HHHHHHG.",
+"...............mmpqqq...mmpqqq.....GHHHHHHGG",
+"...............mmpqqq...mmpqqq.....GGGGGGGHF",
+"...............mmpqqq...mmpqqq....GGGGGGGGGF",
+"...............mmpqqq...mmpqqq.....GGGGGGGGF",
+".............uuuuooooo.uuuuooooo...GGGGGGGGF",
+".............oooooozzz.oooooozzz...nnnnnnnnn",
+".............nnnnnnnnn.nnnnnnnnn.......G...."];
 const PXG_HAIR={
  short:[
 "............................................",
@@ -6443,7 +6443,7 @@ const PXG_VISOR=[
 "............................................",
 "............................................",
 "............................................"];
-const PXG_FIX={ k:'#181019', l:'#cfd2d7', g:'#9a9ea6', n:'#232733' };   // outline · club-shaft · club-head/buckle · belt
+const PXG_FIX={ k:'#181019', l:'#cfd2d7', g:'#c99a2a', n:'#232733', G:'#2d323c', H:'#525a68', F:'#cfd3da' };   // outline · club-shaft · buckle · belt · driver head/crown/face
 function pxShade(hex,amt){ hex=(hex||'#888888').replace('#',''); if(hex.length<6) hex='888888';
   const f=v=>Math.max(0,Math.min(255,parseInt(v,16)+amt)).toString(16).padStart(2,'0');
   return '#'+f(hex.slice(0,2))+f(hex.slice(2,4))+f(hex.slice(4,6)); }
@@ -6456,7 +6456,7 @@ function pxGolferURL(look){
   const hatStyle=(look.hatStyle==='visor')?'visor':'cap';
   const key=av.key+'|st'+style+'|cap'+(capOn?hatStyle:'0')+'|pn'+(look.pants||'stone');
   let u=_pxURL.get(key); if(u) return u;
-  const P={ k:PXG_FIX.k, l:PXG_FIX.l, g:PXG_FIX.g, n:PXG_FIX.n,
+  const P={ k:PXG_FIX.k, l:PXG_FIX.l, g:PXG_FIX.g, n:PXG_FIX.n, G:PXG_FIX.G, H:PXG_FIX.H, F:PXG_FIX.F,
     s:av.skinHex, h:av.hairHex, t:av.shirtHex, d:pxShade(av.shirtHex,-26), v:pxShade(av.shirtHex,34),
     p:pantsHex, q:pxShade(pantsHex,-22), m:pxShade(pantsHex,16),
     j:pxShade(av.skinHex,-26), x:pxShade(av.skinHex,20),

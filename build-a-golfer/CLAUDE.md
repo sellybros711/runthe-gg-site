@@ -8351,6 +8351,12 @@ allows Google Fonts, or self-host Anton.*
     **pants** get a front-leg highlight down each leg + inner-leg shade. Kept very subtle (small deltas, edge
     pixels only). Sprite/palette-only change; renderer/creator untouched. Verified in Playwright (setup/build
     render, cap/visor/none distinct, 0 page errors); screenshots confirm the added depth. Deployed to /golf.
+  - **CS353e — proper driver head (owner: "enhance the shape of the driver in the player's hand").** The club
+    was a 4px square; redrew it as a real **driver**: a silver shaft with a grip, down to a **bulbous rounded
+    head** (dark titanium `G`) with a crown highlight (`H`), a light face insert (`F`) and a sole-shadow line,
+    resting near the turf. Also made the **belt buckle gold** (`g` `#9a9ea6`→`#c99a2a`, now that `g` maps only
+    to the buckle since the driver head uses its own `G`). Sprite/palette-only. Verified in Playwright (0 page
+    errors); screenshot confirms the driver + gold buckle. Deployed to /golf.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
