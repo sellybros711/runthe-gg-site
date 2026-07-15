@@ -7001,11 +7001,11 @@ function momentPopup(ce, info){
    a career PERSONA (traits), can grant a small one-event confidence perk, and is logged to a "Career
    Story" feed shown on the season summary + career end. Interactive CAREER play only (never daily,
    circuit, or headless). The ONLY sim effect is a tiny, capped composure boost consumed in beginEvent. */
-const STORY_CONF_CAP=0.8, STORY_PER_SEASON=2, STORY_GAP=2;   // CS301: 3→2 pressers/season (one too many)
+const STORY_CONF_CAP=0.8, STORY_PER_SEASON=1, STORY_GAP=2;   // CS352: 2→1 presser/season (owner: too many pop-ups)
 // Interruption budget (owner): a season is a SIMULATOR for anyone, not just golf fans, cap the total
 // number of times the sim pauses for a pop-up (storyline + Moment) at 4/season so casual users aren't
 // nagged into skipping. Moments (play-the-final-round) are prioritized within that budget over storylines.
-const SEASON_STOP_BUDGET=4, MOMENT_PER_SEASON=2;   // CS326: ≤4 total interruptions/season (dilemmas + arcs + pressers + Moments) - owner: 6 was too many on top of Moments
+const SEASON_STOP_BUDGET=2, MOMENT_PER_SEASON=1;   // CS352: ≤2 total in-season pop-ups/season (dilemmas + arcs + pressers + Moments) - owner: 4 was still too many. Typically = 1 guaranteed interview + at most 1 situational Moment/dilemma.
 function seasonStops(){ return (S.season&&S.season.stops)||0; }
 function seasonStopLeft(){ return SEASON_STOP_BUDGET - seasonStops(); }
 function careerStory(){ const c=(S.career=S.career||{}); if(!c.story) c.story={traits:{}, endorsements:0, fan:0, feed:[], lastBeat:-99, seasonCount:0, seenEvt:{}};
@@ -7755,7 +7755,7 @@ function maybeDilemma(ce){
   const beat=pool[Math.floor(Math.random()*pool.length)];
   return {beat, ctx};
 }
-const DILEMMA_PER_SEASON=3, DILEMMA_REPEAT_GAP=40;   // CS326: ≤3 fresh dilemmas/season (arcs are on top, budget-capped); no repeats for many events
+const DILEMMA_PER_SEASON=1, DILEMMA_REPEAT_GAP=40;   // CS352: 3→1 fresh dilemma/season (owner: too many pop-ups); arcs are on top, still budget-capped; no repeats for many events
 
 function maybeStoryline(ce){
   if(S.daily || S.circuitMode || !S.career) return null;
