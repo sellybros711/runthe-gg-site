@@ -8392,6 +8392,31 @@ allows Google Fonts, or self-host Anton.*
     they follow the token. Verified: 0 old-gold hex/rgba traces left in the file, JS valid, title renders
     with every pill/card/label on the lemon hue, 0 page errors. Deployed to /golf.
 
+- **CS355 — the created pixel golfer SWINGS in TourTracer (owner: "could we implement the created golfers
+  into the tourtracer sim? mini versions of them playing that the user watches?").** Ties character
+  creation into the core gameplay loop. Authored a compact side-view mini-golfer (24×30) in **3 swing
+  frames** (address / top-of-backswing / follow-through) via a Python primitive composer with a 1px dark
+  outline (`#1c241b`) so the tiny figure reads on the busy green course; palette-swapped from the SAME
+  `avLook` resolution the menu avatar uses (skin/hair/shirt/hat/pants/shoe), so the golfer wears the
+  player's exact colors. `pxSwing3URL(look)` renders the 3 frames to cached data-URLs (chars: skin/hair/
+  cap/shirt/pants/shoe/club-shaft/club-head + outline `k` + ball `w`). `hvSwingMarkup(g,p,look)` places it
+  at each full-shot origin (tee/app/adv), mirror-flipped to face the target, **clamped inside the shot's
+  camera frame** (`hvCamFor2`) so tee shots at the very bottom edge aren't cut off (botPad clears the
+  floating desc/scoreboard). 3 stacked `<image>` cross-fade address→top→through via CSS keyframes
+  (`hvswA/B/C`, ~1.15s, impact ~34%), then fade out. In `hvKick` a `swingMs=390` launch delay holds the
+  ball at address while the golfer swings, so the **ball leaves at impact** (the whole fly timeline shifts
+  by `swingMs` via `elF`). Gated to single-ball (`!small`), so the Daily / Moments / Spotlight / Legend
+  rounds get it and **H2H multi-ball does NOT** (each competitor as their own golfer is a planned
+  follow-up). Behind a `HV_SWING` flag; reduced-motion hides it (CSS `display:none`); the deterministic
+  `dSimHole` score + shot geometry are untouched (presentation only). Verified in Playwright: sprite
+  renders 3 data-URLs; the golfer appears live at the tee (now fully in frame) AND mid-fairway approach,
+  plays address→through→fade; a full auto round completes to `dailyresult` with 0 page errors; reduced-
+  motion hides the golfer and the round still completes; H2H small-ball excluded by construction.
+  Screenshots (approach + tee + zoom) confirm a recognizable little golfer in the player's colors swinging
+  at the ball with the tracer launching. Deployed to /golf. FOLLOW-UPS (owner queue): birdie/bogey/win
+  reaction poses, and rolling it out to H2H (each ball's own created golfer) + career Moments framing.
+  Tunable: `HV_SWING` flag, `GH` (sprite size), `swingMs`, the `PXS_A/B/C` frames + `hvsw*` keyframe timing.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
