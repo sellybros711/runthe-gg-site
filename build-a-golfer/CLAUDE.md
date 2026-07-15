@@ -8342,6 +8342,15 @@ allows Google Fonts, or self-host Anton.*
     when hatless). Sprite-only change (`PXG_*` maps + 2 palette entries); renderer/creator/call sites
     unchanged. Verified in Playwright (setup/build render, cap/visor/none distinct, 0 page errors); screenshots
     confirm the clean outline-free look and forward cap. Deployed to /golf.
+  - **CS353d — subtle two-tone shading on every region (owner: "love the shading on the shirt; add very
+    subtle color variation to the hair… and the face and arms and shoes and pants").** Extended the shirt's
+    base+shade approach to the rest of the golfer with gentle self-shading/highlights (7 new palette entries,
+    all derived from the region's own color so they follow every recolor): **hair** gets a darker bottom
+    fringe + shadow side and a subtle top sheen (auto rim-shader over each style); the **face + forearms** are
+    lit-left / shadowed-right (skin highlight + jaw/neck shadow); **shoes** get a toe shade + top highlight;
+    **pants** get a front-leg highlight down each leg + inner-leg shade. Kept very subtle (small deltas, edge
+    pixels only). Sprite/palette-only change; renderer/creator untouched. Verified in Playwright (setup/build
+    render, cap/visor/none distinct, 0 page errors); screenshots confirm the added depth. Deployed to /golf.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
