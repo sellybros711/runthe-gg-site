@@ -8513,6 +8513,34 @@ allows Google Fonts, or self-host Anton.*
     / CAREER MODE / HEAD TO HEAD, in the CS356 cohesion override) went 18px → **24px + weight 700** so they
     stand out. Verified in Playwright (both compute Silkscreen; rc-name 23px, gc-title 24px/700; 0 page
     errors); screenshot confirms "LION TREES" pixel-bold matching the enlarged mode headers.
+  - **CS356c — three Trophy-Room asks (owner): fix intermittent Close, pixelate the medals/cups/honors,
+    make the golfer a PROFILE-level customization.**
+    1. **Close sometimes didn't work.** The top Close `.ov .x` was `position:absolute`, so on a long
+       overlay (the Trophy Room) it scrolled out of reach — tapping where it "should" be did nothing.
+       Changed to `position:fixed` (top-right, z-index above the scrolling content) so it stays pinned +
+       tappable at any scroll position, and added a global **Escape-to-close** for any open overlay as a
+       belt-and-suspenders. Verified `.x` computes `position:fixed` and Escape clears `S.overlay`.
+    2. **Pixelated the medal/cup/honor chips.** Authored 9 small pixel-icon sprites in
+       `scratchpad/trophyicons.py` (medal, cup, shield, star, crown, dollar, target, globe, ribbon; 18×18,
+       primitives + 1px outline) → inlined as `PXI` + a `pxMedalSVG(rows,color)` renderer that resolves
+       `m/d/h` to the chip's tint color via `pxShadeHex`/`pxLiteHex` (so the same medal sprite renders
+       gold/silver/bronze). `trophyChip(emoji,…)` → `trophyChip(iconKey,…)` now draws the pixel icon inside
+       the round medallion (call sites pass keys + hex colors, `var(--gold)`→`#F1D04A` so the shade math has
+       a hex). The 4 major trophies were already pixel (CS356). Verified all 11 chips render pixel icons,
+       0 page errors.
+    3. **Profile-level golfer + "tap to customize".** The golfer's name/look were already saved to the
+       profile (`bag_name`/`bag_look`, cloud-synced) and used in every mode (daily/h2h use the saved look
+       per CS353; career-start edits it before beginning), so the golfer was already shared — the gap was
+       discoverability + an edit entry point. Added a clickable **`.profav`** avatar + a teal
+       **"✎ Tap to customize"** pill in the Trophy Room that opens `scrSetup` in a new **edit mode**
+       (`S.setupEdit`, `S.setupReturn='record'`): the title reads "▸ Edit Your Golfer / This is your golfer
+       in every mode", and the action bar is **‹ Back / Done ✓** which return to the Trophy Room instead of
+       starting a draft (career-start setup is unchanged — `reset()` clears `setupEdit`, so it still shows
+       "Create Your Golfer / Build Your Golfer ▸"). Changes auto-save on each pick (existing `saveLook`/name
+       oninput), so Done just returns. Daily/H2H remain quick + seamless (no forced setup, they use the
+       profile golfer). Verified the full flow (avatar tap → edit mode with Back/Done → returns to the room,
+       setupEdit cleared) + the career-start regression, 0 page errors.
+    Tunable: the `PXI` sprites in `scratchpad/trophyicons.py`, the `.profav-hint` copy/style.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
