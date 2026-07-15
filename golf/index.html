@@ -74,7 +74,7 @@ window.GA_ID='G-L29P5MRWKE';
     --serif:'Cinzel','Times New Roman',Georgia,serif;
     --body:'Barlow Semi Condensed',system-ui,'Segoe UI',Roboto,sans-serif;
     --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
-    --hgreen:#16432f; --hgold:#cda24a;
+    --hgreen:#16432f; --hgold:#d3bd53;
     /* CS271 design-foundation tokens (surface levels + accents) - cream reserved for scorecards, gold for accomplishments */
     --tour-bg-deep:#071c16; --tour-bg:#0d2b21; --tour-panel:#15382c; --tour-panel-raised:#1c4536;
     --tour-cream:#f4eddc; --tour-gold:#d8ad4a; --tour-green-bright:#49b675; --tour-danger:#df655e; --tour-water:#55a9c7;
@@ -187,7 +187,7 @@ window.GA_ID='G-L29P5MRWKE';
   .accchip{display:inline-flex; align-items:center; gap:6px; font:700 11.5px var(--body); padding:7px 11px; border-radius:999px;
     cursor:pointer; background:transparent; border:1px solid rgba(244,227,201,.22); color:var(--oncard); transition:background .12s,border-color .12s}
   .accchip:hover{border-color:rgba(244,227,201,.45)}
-  .accchip.sel{background:rgba(235,166,31,.14); border-color:var(--gold); color:var(--gold)}
+  .accchip.sel{background:rgba(241,208,74,.14); border-color:var(--gold); color:var(--gold)}
   .accchip .acci{width:15px; height:15px; display:inline-flex; align-items:center}
   .accchip .acci svg{width:15px; height:15px}
   /* CS344: live accessory-boost summary */
@@ -231,7 +231,7 @@ window.GA_ID='G-L29P5MRWKE';
   .scHole{transition:background .12s ease}
   .scHole:hover{background:rgba(79,224,193,.16)}
   .scHole.colhi{background:rgba(79,224,193,.15)!important}
-  .scHdr .scHole:hover,.scHdr .scHole.colhi{background:rgba(235,166,31,.18)!important}
+  .scHdr .scHole:hover,.scHdr .scHole.colhi{background:rgba(241,208,74,.18)!important}
 
   /* ---- buttons ---- */
   .btn{appearance:none; cursor:pointer; display:block; width:100%; text-align:center;
@@ -260,13 +260,13 @@ window.GA_ID='G-L29P5MRWKE';
   .celebrate.major{background:radial-gradient(100% 72% at 50% 34%, #16331f, #03100a 72%)}
   .celebrate canvas.confetti{position:absolute; inset:0; width:100%; height:100%; pointer-events:none}
   .celebrate .spot{position:absolute; left:50%; top:32%; transform:translate(-50%,-50%); width:560px; height:560px; max-width:130vw; max-height:74vh;
-    background:radial-gradient(circle, rgba(235,166,31,.26), transparent 60%); pointer-events:none; animation:celebSpot 1.1s ease both}
+    background:radial-gradient(circle, rgba(241,208,74,.26), transparent 60%); pointer-events:none; animation:celebSpot 1.1s ease both}
   .celeb-trophy{position:relative; width:120px; height:138px; filter:drop-shadow(0 12px 26px rgba(0,0,0,.55)); animation:celebPop .6s cubic-bezier(.22,1.4,.38,1) both}
   .celebrate.major .celeb-trophy{width:150px; height:168px}
   .celeb-kicker{position:relative; margin-top:16px; font:800 12px/1.3 var(--body); letter-spacing:.3em; text-transform:uppercase; color:var(--gold); animation:celebRise .5s .12s ease both}
   .celeb-title{position:relative; font-family:var(--display); font-weight:400; text-transform:uppercase; color:var(--oncard);
     font-size:40px; line-height:.95; margin-top:7px; letter-spacing:.02em; animation:celebRise .5s .18s ease both}
-  .celebrate.major .celeb-title{font-size:46px; color:#f9d271}
+  .celebrate.major .celeb-title{font-size:46px; color:#f7e48a}
   .celeb-sub{position:relative; margin-top:9px; font-size:15px; color:#dfeae2; max-width:440px; animation:celebRise .5s .24s ease both}
   .celeb-check{position:relative; margin-top:10px; font-family:var(--mono); font-weight:800; font-size:27px; color:#35d6a0; animation:celebRise .5s .3s ease both}
   .celeb-tally{position:relative; margin-top:6px; font:800 12px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--gold); animation:celebRise .5s .36s ease both}
@@ -301,7 +301,7 @@ window.GA_ID='G-L29P5MRWKE';
      picked DILEMMA fell through to the grey :disabled look and went illegible. */
   .sb-chosen, .sb-chosen:disabled{opacity:1!important; cursor:default; color:#fff!important; padding-right:96px!important;
     border:1px solid var(--gold)!important; background:color-mix(in srgb, var(--gold) 16%, rgba(255,255,255,.03))!important;
-    box-shadow:0 0 0 1px var(--gold), 0 5px 16px -7px rgba(235,166,31,.55)!important}
+    box-shadow:0 0 0 1px var(--gold), 0 5px 16px -7px rgba(241,208,74,.55)!important}
   .sb-chosen .sub{color:#ffe1a6!important; opacity:1!important}
   .sb-chosen::after{content:"✓ Your answer"; position:absolute; right:12px; top:50%;
     transform:translateY(-50%); font:800 9px/1 var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--gold)}
@@ -316,7 +316,7 @@ window.GA_ID='G-L29P5MRWKE';
   .pb-tx{color:#dbe7ee;font-size:13.5px;line-height:1.35;margin-top:3px;word-wrap:break-word}
   .pb-meta{color:#6f8f9e;font-size:11px;margin-top:5px;display:flex;gap:14px}
   .pb-opp{display:flex;gap:9px;padding:9px 10px;border:1px solid rgba(255,90,77,.32);border-radius:12px;background:rgba(40,14,12,.4);margin-bottom:7px}
-  .pb-hl{border:1px solid rgba(235,166,31,.4);border-left:4px solid var(--gold);border-radius:10px;padding:10px 12px;background:rgba(235,166,31,.08);margin-top:2px}
+  .pb-hl{border:1px solid rgba(241,208,74,.4);border-left:4px solid var(--gold);border-radius:10px;padding:10px 12px;background:rgba(241,208,74,.08);margin-top:2px}
   .pb-outlet{font:800 9px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
   .pb-hltx{color:#fff;font:800 15px/1.25 var(--body)}
   @keyframes celebSpot{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
@@ -326,11 +326,11 @@ window.GA_ID='G-L29P5MRWKE';
   .mini{display:flex; gap:10px; margin-top:10px}
   .mini .btn{font-size:14px; padding:12px}
   .spotlive{position:relative; animation:spotpulse 2.4s ease-in-out infinite}
-  @keyframes spotpulse{0%,100%{box-shadow:0 0 0 0 rgba(235,166,31,.0)}50%{box-shadow:0 0 0 4px rgba(235,166,31,.16)}}
+  @keyframes spotpulse{0%,100%{box-shadow:0 0 0 0 rgba(241,208,74,.0)}50%{box-shadow:0 0 0 4px rgba(241,208,74,.16)}}
   @media (prefers-reduced-motion:reduce){.spotlive{animation:none}}
   .streakrisk{max-width:520px;margin-left:auto;margin-right:auto;text-align:center;padding:10px 14px;border-radius:14px;
-    border:1.5px solid var(--gold);background:rgba(235,166,31,.1);animation:streakPulse 2.4s ease-in-out infinite}
-  @keyframes streakPulse{0%,100%{box-shadow:0 0 0 0 rgba(235,166,31,.3)}50%{box-shadow:0 0 0 7px rgba(235,166,31,0)}}
+    border:1.5px solid var(--gold);background:rgba(241,208,74,.1);animation:streakPulse 2.4s ease-in-out infinite}
+  @keyframes streakPulse{0%,100%{box-shadow:0 0 0 0 rgba(241,208,74,.3)}50%{box-shadow:0 0 0 7px rgba(241,208,74,0)}}
   @media (prefers-reduced-motion:reduce){.streakrisk{animation:none}}
   .stack>*+*{margin-top:10px}
 
@@ -358,16 +358,16 @@ window.GA_ID='G-L29P5MRWKE';
   .navtile{display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center; gap:5px;
     padding:15px 8px 13px; border-radius:15px; background:var(--panel); border:1.5px solid var(--panelb); color:var(--oncard);
     font-family:var(--body); cursor:pointer; box-shadow:0 3px 12px rgba(0,0,0,.18); transition:transform .12s ease, border-color .12s ease, background .12s ease}
-  .navtile:hover{transform:translateY(-2px); border-color:var(--gold); background:rgba(235,166,31,.09)}
+  .navtile:hover{transform:translateY(-2px); border-color:var(--gold); background:rgba(241,208,74,.09)}
   .navtile:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   .navtile .ni{font-size:23px; line-height:1; color:var(--gold); margin-bottom:1px}
   .navtile .nl{font-weight:800; font-size:13.5px; letter-spacing:.01em}
   .navtile .ns{font-size:11px; color:var(--muted); font-weight:700; display:inline-flex; align-items:center; gap:4px}
-  .navtile.hot{border-color:rgba(235,166,31,.55); background:linear-gradient(160deg,rgba(235,166,31,.12),rgba(235,166,31,.03))}
+  .navtile.hot{border-color:rgba(241,208,74,.55); background:linear-gradient(160deg,rgba(241,208,74,.12),rgba(241,208,74,.03))}
   /* CS287: "How to Play" pill-button under the hero (replaces the 30-year-sim badge) */
   .howtop{display:inline-flex; align-items:center; gap:7px; cursor:pointer; font:800 12px/1 var(--body); letter-spacing:.06em;
     text-transform:uppercase; color:var(--gold); padding:9px 18px; border-radius:999px; border:1px solid var(--gold);
-    background:color-mix(in srgb, var(--gold) 12%, transparent); box-shadow:0 3px 12px -6px rgba(235,166,31,.5)}
+    background:color-mix(in srgb, var(--gold) 12%, transparent); box-shadow:0 3px 12px -6px rgba(241,208,74,.5)}
   .howtop:hover{background:color-mix(in srgb, var(--gold) 20%, transparent)}
   .howtop:active{transform:translateY(1px)}
   .howtop:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
@@ -404,15 +404,15 @@ window.GA_ID='G-L29P5MRWKE';
   .hero .hr2{background:var(--gold-grad); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent}
   .herotag{font-family:var(--body); font-weight:800; letter-spacing:.3em; text-transform:uppercase; font-size:11px; color:var(--teal); opacity:.92; margin-bottom:8px}
   .herorule{display:flex; align-items:center; justify-content:center; gap:11px; max-width:230px; margin:10px auto 2px}
-  .herorule span{height:1px; flex:1; background:rgba(235,166,31,.42)}
+  .herorule span{height:1px; flex:1; background:rgba(241,208,74,.42)}
   /* section divider inside the title button stack (e.g. "CAREER") - separates the quick-daily group from the deep career group */
   .stack-sep{display:flex; align-items:center; justify-content:center; gap:12px; width:100%; max-width:420px; margin:20px auto 8px}
   .stack-sep span{height:1px; flex:1; background:linear-gradient(90deg,transparent,rgba(244,227,201,.22),transparent)}
   .stack-sep b{font-family:var(--body); font-weight:800; letter-spacing:.2em; font-size:11px; color:var(--pagemut); text-transform:uppercase}
   /* CS254: richer "continue your career" card - bigger than a button, shows where you are (owner) */
   .resumecard{display:block; width:100%; max-width:520px; margin:0 auto; text-align:left; cursor:pointer; color:#20160a;
-    background:linear-gradient(158deg,#f4d585,#e9ad2c 62%,#e0a01f); border:0; border-radius:18px; padding:15px 17px 14px;
-    box-shadow:0 14px 34px -14px rgba(235,166,31,.65), inset 0 1px 0 rgba(255,255,255,.35)}
+    background:var(--gold-grad-d); border:0; border-radius:18px; padding:15px 17px 14px;
+    box-shadow:0 14px 34px -14px rgba(241,208,74,.65), inset 0 1px 0 rgba(255,255,255,.35)}
   .resumecard:active{transform:translateY(1px)}
   .rc-top{display:flex; align-items:center; justify-content:space-between; gap:12px}
   .rc-kick{font:800 10px/1 var(--body); letter-spacing:.15em; text-transform:uppercase; opacity:.62}
@@ -436,7 +436,7 @@ window.GA_ID='G-L29P5MRWKE';
   .gc-teal{background:linear-gradient(158deg,#20bda9,#0a877a 60%,#07736a); color:#eafff9; --chip:rgba(2,20,16,.28)}
   .gc-amber{background:linear-gradient(158deg,#f6c463,#ec9a25 60%,#df7d1c); color:#24170a; --chip:rgba(20,14,6,.15)}
   .gc-purple{background:linear-gradient(158deg,#b07ef0,#8149cf 58%,#6d38bd); color:#f5edff; --chip:rgba(24,8,42,.32)}
-  .gc-gold{background:linear-gradient(158deg,#FCEFBC,#F1D073 30%,#D29528 62%,#F6DE93 80%,#C0871B); color:#24170a; --chip:rgba(20,14,6,.16)}
+  .gc-gold{background:var(--gold-grad-d); color:#24170a; --chip:rgba(20,14,6,.16)}
   .gc-top{display:flex; align-items:flex-start; justify-content:space-between; gap:12px}
   .gc-kick{font:800 10.5px/1.3 var(--body); letter-spacing:.15em; text-transform:uppercase; opacity:.82; display:flex; align-items:center; gap:6px}
   .gc-title{font-family:var(--display); font-style:italic; font-size:28px; line-height:1.02; margin-top:5px; padding-right:3px; overflow-wrap:break-word; letter-spacing:.01em}
@@ -444,7 +444,7 @@ window.GA_ID='G-L29P5MRWKE';
   .gc-mid{font:700 12px/1.35 var(--body); margin-top:9px; opacity:.92}
   .gc-row{display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap}
   .gc-chip{display:inline-flex; align-items:center; gap:5px; font:800 11.5px/1 var(--body); border-radius:8px; padding:6px 9px; background:var(--chip)}
-  .gc-chip.hot{background:rgba(235,166,31,.92); color:#20160a}
+  .gc-chip.hot{background:rgba(241,208,74,.92); color:#20160a}
   .gc-go{margin-left:auto; font:900 12.5px/1 var(--body); letter-spacing:.03em; border-radius:9px; padding:8px 13px; background:var(--chip)}
   /* CS258: a clear gap so the stacked hero cards never look like they're touching */
   .stack>.gcard, .stack>.resumecard{margin-top:16px}
@@ -462,7 +462,7 @@ window.GA_ID='G-L29P5MRWKE';
   .oc-btn:active{transform:translateY(1px)}
   .oc-btn .ol-l{display:block; font:900 15px/1 var(--body)}
   .oc-btn .ol-s{display:block; font:700 10px/1.2 var(--body); opacity:.74; margin-top:3px}
-  .trophy{width:54px; height:72px; display:block; margin:2px auto 4px; filter:drop-shadow(0 6px 14px rgba(235,166,31,.4))}
+  .trophy{width:54px; height:72px; display:block; margin:2px auto 4px; filter:drop-shadow(0 6px 14px rgba(241,208,74,.4))}
   .scorechip{display:inline-flex; align-items:center; gap:14px; background:rgba(7,18,30,.82);
     border:1px solid var(--gold); border-radius:12px; padding:9px 16px; margin:6px auto 16px;
     font-family:var(--mono); font-weight:700; color:var(--oncard)}
@@ -495,7 +495,7 @@ window.GA_ID='G-L29P5MRWKE';
   .reel .reeltag{position:absolute; top:6px; font:800 9px/1 var(--body); letter-spacing:.2em; color:var(--muted)}
   .reel.rar-rare{border-color:#4f9fd0} .reel.rar-rare .reeltag{color:#82c1e8}
   .reel.rar-epic{border-color:#a679e0; box-shadow:0 0 13px rgba(166,121,224,.28) inset} .reel.rar-epic .reeltag{color:#c7a6f2}
-  .reel.rar-legendary{border-color:var(--gold); box-shadow:0 0 18px rgba(235,166,31,.40) inset, 0 0 14px rgba(235,166,31,.30);
+  .reel.rar-legendary{border-color:var(--gold); box-shadow:0 0 18px rgba(241,208,74,.40) inset, 0 0 14px rgba(241,208,74,.30);
     background:radial-gradient(120% 100% at 50% 0%, #2a2510, #0a1f30)}
   .reel.rar-legendary .reeltag{color:var(--gold)}
   .reel.landed{animation:pop .3s ease}
@@ -509,7 +509,7 @@ window.GA_ID='G-L29P5MRWKE';
   .attr .attrbar>i{display:block; height:100%; border-radius:0 2px 2px 0}
   /* CS273: inline off-season lock-in confirm on the same tile (no popup, no scroll) */
   .attr.confirming{grid-column:1 / -1; display:flex; flex-direction:column; align-items:stretch; gap:8px; cursor:default;
-    border-color:var(--gold); background:linear-gradient(180deg,rgba(235,166,31,.14),rgba(235,166,31,.04)); box-shadow:0 0 0 1px rgba(235,166,31,.4) inset}
+    border-color:var(--gold); background:linear-gradient(180deg,rgba(241,208,74,.14),rgba(241,208,74,.04)); box-shadow:0 0 0 1px rgba(241,208,74,.4) inset}
   .attr.confirming .oc-top{display:flex; align-items:center; gap:10px}
   .attr.confirming .oc-swap{margin-left:auto; font-family:var(--mono); font-weight:800; font-size:14px}
   .attr.confirming .oc-row{display:flex; align-items:center; gap:8px}
@@ -521,18 +521,18 @@ window.GA_ID='G-L29P5MRWKE';
   .attr .lab{flex:1; font-weight:600; font-size:12px; color:#cfdbe6}
   .attr .val{font-family:var(--mono); font-weight:800; font-size:16px; color:var(--gold)}
   .attr .take{font:800 9px/1 var(--body); letter-spacing:.08em; text-transform:uppercase; color:#04211c;
-    background:linear-gradient(180deg,#f9d271,#e9a81e); border-radius:6px; padding:5px 7px; flex:0 0 auto}
+    background:linear-gradient(180deg,#f7e48a,#e6c844); border-radius:6px; padding:5px 7px; flex:0 0 auto}
   .attr:hover:not(:disabled){border-color:var(--gold)}
   .attr:active:not(:disabled){transform:scale(.985)}
   .attr:disabled{opacity:.34; cursor:not-allowed} .attr:disabled .take{display:none}
   .attr.locked{opacity:.5; background:rgba(255,255,255,.02)} .attr.locked .val{color:var(--muted)}
   .attr.locked .take{display:inline-flex!important; align-items:center; color:var(--muted)!important; letter-spacing:.04em}
-  .attr.keyhole{border-color:var(--gold); background:linear-gradient(180deg,rgba(235,166,31,.16),rgba(235,166,31,.05))}
+  .attr.keyhole{border-color:var(--gold); background:linear-gradient(180deg,rgba(241,208,74,.16),rgba(241,208,74,.05))}
   .attr.keyhole .lab{color:#f3e7c8}
   .attr .keystar{flex:0 0 auto; color:var(--gold); font-size:12px; line-height:1; margin-right:-3px}
   /* CS337: compact off-season layout - everything fits with minimal scroll, nothing jumps on spin */
   .oshero{display:flex; align-items:center; gap:13px; max-width:520px; margin:6px auto 8px;
-    background:linear-gradient(157deg,rgba(22,62,51,.6),rgba(8,30,24,.7)); border:1px solid rgba(235,166,31,.2);
+    background:linear-gradient(157deg,rgba(22,62,51,.6),rgba(8,30,24,.7)); border:1px solid rgba(241,208,74,.2);
     border-radius:15px; padding:9px 15px; box-shadow:0 12px 26px -18px rgba(0,0,0,.7)}
   .oshero-av{flex:0 0 auto; display:flex; align-items:flex-start; justify-content:center; width:62px; height:76px; overflow:hidden}
   .oshero-av .avatarfig{width:64px!important; height:64px!important}
@@ -547,9 +547,9 @@ window.GA_ID='G-L29P5MRWKE';
   .oshero-budget .pips{margin-top:0}
   .osstat{max-width:520px; margin:0 auto 8px; text-align:center; font-size:12px; color:var(--muted); line-height:1.45}
   /* CS341: bigger, more-noticeable wheel with an inviting glow */
-  .osreel{height:88px; max-width:520px; margin:0 auto 9px; border-radius:16px; border:1.5px solid rgba(235,166,31,.32);
+  .osreel{height:88px; max-width:520px; margin:0 auto 9px; border-radius:16px; border:1.5px solid rgba(241,208,74,.32);
     background:radial-gradient(120% 120% at 50% 0%,rgba(255,255,255,.08),rgba(0,0,0,.14));
-    box-shadow:0 0 20px rgba(235,166,31,.12), inset 0 1px 0 rgba(255,255,255,.05);
+    box-shadow:0 0 20px rgba(241,208,74,.12), inset 0 1px 0 rgba(255,255,255,.05);
     display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; overflow:hidden}
   .osreel .reeltag{position:absolute; top:6px; font:800 8.5px/1 var(--body); letter-spacing:.2em; color:var(--muted)}
   .osreel .name{font-family:var(--display); font-weight:400; font-size:22px; text-transform:uppercase; letter-spacing:.02em; color:var(--oncard); padding:0 12px; text-align:center}
@@ -557,7 +557,7 @@ window.GA_ID='G-L29P5MRWKE';
   .osreel .sub{position:absolute; bottom:7px; font:800 8px/1 var(--body); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); padding:0 8px; text-align:center}
   .osreel.rar-rare{border-color:#4f9fd0} .osreel.rar-rare .reeltag{color:#82c1e8}
   .osreel.rar-epic{border-color:#a679e0; box-shadow:0 0 12px rgba(166,121,224,.25) inset} .osreel.rar-epic .reeltag{color:#c7a6f2}
-  .osreel.rar-legendary{border-color:var(--gold); box-shadow:0 0 15px rgba(235,166,31,.34) inset} .osreel.rar-legendary .reeltag{color:var(--gold)}
+  .osreel.rar-legendary{border-color:var(--gold); box-shadow:0 0 15px rgba(241,208,74,.34) inset} .osreel.rar-legendary .reeltag{color:var(--gold)}
   .osreel.landed{animation:pop .3s ease} .osreel.spinning .name{animation:flick .08s steps(1) infinite}
   /* CS341: slot-machine reel - a vertical strip of names scrolls & decelerates so it reads as a wheel spin */
   .osreel .name.slotting,.reel .name.slotting{height:34px; overflow:hidden; display:block; width:100%; padding:0; animation:none!important}
@@ -596,7 +596,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   .buildhero{display:flex; align-items:center; gap:20px; justify-content:center;
     background:linear-gradient(157deg, rgba(22,62,51,.66), rgba(8,30,24,.74));
-    border:1px solid rgba(235,166,31,.22); border-radius:18px; padding:16px 20px; margin:2px 0 14px;
+    border:1px solid rgba(241,208,74,.22); border-radius:18px; padding:16px 20px; margin:2px 0 14px;
     box-shadow:0 18px 38px -22px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.06)}
   .herocol{display:flex; flex-direction:column; align-items:center; flex:0 0 auto; min-width:128px}
   .herofig{position:relative; display:block}
@@ -611,12 +611,12 @@ window.GA_ID='G-L29P5MRWKE';
   /* CS353: retro pixel-game character creator */
   .retro-creator{max-width:472px; margin:0 auto; padding:15px 15px 16px; border:2px solid var(--gold); border-radius:12px;
     background:linear-gradient(180deg,rgba(9,26,18,.72),rgba(6,18,12,.72));
-    box-shadow:0 0 0 4px rgba(0,0,0,.35), inset 0 0 0 2px rgba(235,166,31,.18), 0 12px 32px rgba(0,0,0,.42)}
+    box-shadow:0 0 0 4px rgba(0,0,0,.35), inset 0 0 0 2px rgba(241,208,74,.18), 0 12px 32px rgba(0,0,0,.42)}
   .retro-title{font-family:var(--serif,Georgia,serif); font-weight:800; text-transform:uppercase; letter-spacing:.13em; font-size:19px; text-align:center;
     background:var(--gold-grad); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:transparent}
   .retro-sub{font-size:12px; color:var(--pagemut); text-align:center; margin:3px 0 12px; letter-spacing:.02em}
   .pxstage{position:relative; display:flex; align-items:flex-end; justify-content:center; height:196px; margin-bottom:12px; border-radius:10px; overflow:hidden;
-    background:radial-gradient(58% 52% at 50% 22%, rgba(235,166,31,.16), transparent 70%), linear-gradient(180deg,#0c2417,#07160e);
+    background:radial-gradient(58% 52% at 50% 22%, rgba(241,208,74,.16), transparent 70%), linear-gradient(180deg,#0c2417,#07160e);
     box-shadow:inset 0 0 0 2px rgba(255,255,255,.05), inset 0 -18px 30px rgba(0,0,0,.35)}
   .pxstage::before{content:""; position:absolute; inset:0; opacity:.5; pointer-events:none;
     background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px); background-size:15px 15px}
@@ -626,7 +626,7 @@ window.GA_ID='G-L29P5MRWKE';
   .chiprow{display:flex; flex-wrap:wrap; gap:6px}
   .hschip{padding:8px 12px; border-radius:8px; border:1.5px solid var(--line); background:rgba(255,255,255,.03);
     color:var(--oncard); font-weight:700; font-size:12.5px; letter-spacing:.01em; cursor:pointer; text-transform:none; line-height:1}
-  .hschip.on{border-color:var(--gold); background:rgba(235,166,31,.16); color:var(--gold)}
+  .hschip.on{border-color:var(--gold); background:rgba(241,208,74,.16); color:var(--gold)}
   .retro-creator .name{width:100%}
   /* full-body dressable avatar (signed-in): a tall figure, not a round medallion */
   .avatarfig.fullbody{width:auto; height:auto; filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}
@@ -654,9 +654,9 @@ window.GA_ID='G-L29P5MRWKE';
   .slot.empty .v, .slot.empty .lab{color:var(--muted)}
   /* CS292 off-season: a stat already changed this off-season is LOCKED - flag it on the scorecard so the
      player knows what a spin can and can't touch before they use it */
-  .slot.locked{border-color:rgba(235,166,31,.30); background:rgba(235,166,31,.06)}
+  .slot.locked{border-color:rgba(241,208,74,.30); background:rgba(241,208,74,.06)}
   .slot .slotlock{font:800 9px/1 var(--body); letter-spacing:.09em; text-transform:uppercase; color:var(--gold);
-    border:1px solid rgba(235,166,31,.42); border-radius:999px; padding:3px 7px 3px 6px; flex:0 0 auto}
+    border:1px solid rgba(241,208,74,.42); border-radius:999px; padding:3px 7px 3px 6px; flex:0 0 auto}
   .authbox{max-width:360px; margin:2px auto 0}
   .autherr{color:#e98a72; font-size:13px; font-weight:600; margin-top:9px}
   .author{display:flex; align-items:center; gap:10px; margin:13px 0}
@@ -668,7 +668,7 @@ window.GA_ID='G-L29P5MRWKE';
   .perkhd{font:800 10.5px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--gold); margin:0 0 10px; text-align:left}
   .perks{display:grid; gap:9px; margin:0 0 15px}
   .perk{display:flex; align-items:flex-start; gap:10px; text-align:left}
-  .perk .pic{flex:0 0 auto; width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-size:15px; background:rgba(235,166,31,.12); border:1px solid rgba(235,166,31,.32); border-radius:8px}
+  .perk .pic{flex:0 0 auto; width:28px; height:28px; display:flex; align-items:center; justify-content:center; font-size:15px; background:rgba(241,208,74,.12); border:1px solid rgba(241,208,74,.32); border-radius:8px}
   .perk .pt{min-width:0}
   .perk .pt b{display:block; color:var(--oncard); font-size:12.5px; font-weight:700; line-height:1.2}
   .perk .pt span{display:block; color:var(--muted); font-size:11px; line-height:1.3; margin-top:1px}
@@ -678,7 +678,7 @@ window.GA_ID='G-L29P5MRWKE';
     background:linear-gradient(180deg, rgba(8,30,24,.12) 0%, rgba(8,30,24,.6) 45%, rgba(8,30,24,.82) 100%)}
   .lockover .lockmsg b{display:block; color:var(--gold); font-size:14.5px}
   .lockcta{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:8px;
-    background:var(--panel); border:1px solid rgba(235,166,31,.3); border-radius:12px; padding:11px 13px}
+    background:var(--panel); border:1px solid rgba(241,208,74,.3); border-radius:12px; padding:11px 13px}
 
   /* tee-tier badges */
   .bcat{font:800 10.5px/1 var(--body); letter-spacing:.16em; text-transform:uppercase; color:var(--gold); margin:16px 0 8px}
@@ -686,7 +686,7 @@ window.GA_ID='G-L29P5MRWKE';
   @media(min-width:560px){ .bgrid{grid-template-columns:1fr 1fr 1fr} }
   .bcard{position:relative; background:var(--panel); border:1px solid var(--panelb); border-radius:14px; padding:13px 9px 11px; text-align:center; overflow:hidden}
   .bcard.locked{opacity:.6}
-  .bcard.maxed{border-color:rgba(235,166,31,.5); box-shadow:0 0 0 1px rgba(235,166,31,.25) inset}
+  .bcard.maxed{border-color:rgba(241,208,74,.5); box-shadow:0 0 0 1px rgba(241,208,74,.25) inset}
   .teemedal{width:54px; height:54px; margin:0 auto 7px; border-radius:50%; display:flex; align-items:center; justify-content:center;
     border:3px solid var(--tc); background:radial-gradient(circle at 38% 32%, rgba(255,255,255,.16), rgba(0,0,0,.28)); box-shadow:0 3px 9px rgba(0,0,0,.4)}
   .bcard.locked .teemedal{border-color:#46586a; filter:grayscale(.85) brightness(.8)}
@@ -747,7 +747,7 @@ window.GA_ID='G-L29P5MRWKE';
   .shothd .restag{margin-left:auto; flex:0 0 auto; font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; border:1.4px solid currentColor; border-radius:999px; padding:2px 10px}
   .shotsum{padding:9px 0 2px; font-size:13.5px; color:#cfdbe6}
   .shottoggle{display:block; width:100%; margin-top:8px; background:transparent; border:1px dashed var(--line); color:var(--gold); border-radius:9px; padding:8px; font-weight:800; font-size:12px; letter-spacing:.03em; cursor:pointer}
-  .shottoggle:hover{background:rgba(235,166,31,.06)}
+  .shottoggle:hover{background:rgba(241,208,74,.06)}
   .legendx,.blurbmore{background:transparent; border:1px solid var(--line); color:var(--gold); border-radius:8px; padding:4px 10px; font-weight:800; font-size:11px; cursor:pointer; white-space:nowrap}
   .blurbmore{padding:1px 7px; margin-left:4px}
   @keyframes shotIn{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
@@ -765,8 +765,8 @@ window.GA_ID='G-L29P5MRWKE';
     -webkit-appearance:none; -moz-appearance:none; appearance:none;
     background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23EBA61F' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><path d='M6 9l6 6 6-6'/></svg>") no-repeat right 14px center / 16px,
       linear-gradient(180deg,rgba(255,255,255,.05),rgba(0,0,0,.14)) #0a2740}
-  select.name:hover{border-color:rgba(235,166,31,.5)}
-  select.name:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(235,166,31,.16)}
+  select.name:hover{border-color:rgba(241,208,74,.5)}
+  select.name:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(241,208,74,.16)}
   select.name option{background:#0a2740; color:var(--oncard); font-weight:600}
 
   /* ---- leaderboard ---- */
@@ -781,16 +781,16 @@ window.GA_ID='G-L29P5MRWKE';
   .lb .pl{font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--oncard)}
   .lb .sc{font-family:var(--mono); font-weight:800; text-align:right; color:var(--oncard)}
   .lb .mny{font-family:var(--mono); text-align:right; color:#bfe7df; font-size:12px}
-  .lb.you{background:linear-gradient(90deg, rgba(235,166,31,.22), rgba(235,166,31,.05))}
+  .lb.you{background:linear-gradient(90deg, rgba(241,208,74,.22), rgba(241,208,74,.05))}
   /* tournament winner: gold trophy + a warm gold glow on the row */
-  .lb.winner{background:linear-gradient(90deg, rgba(235,166,31,.28), rgba(235,166,31,.06));
-    box-shadow:inset 0 0 0 1px rgba(235,166,31,.55), 0 0 20px -3px rgba(235,166,31,.55); position:relative; z-index:1;
+  .lb.winner{background:linear-gradient(90deg, rgba(241,208,74,.28), rgba(241,208,74,.06));
+    box-shadow:inset 0 0 0 1px rgba(241,208,74,.55), 0 0 20px -3px rgba(241,208,74,.55); position:relative; z-index:1;
     animation:winGlow 2.4s ease-in-out infinite}
   .lb.winner .pos{color:var(--gold)}
-  .lb.winner .pos .ic{filter:drop-shadow(0 0 5px rgba(235,166,31,.7))}
+  .lb.winner .pos .ic{filter:drop-shadow(0 0 5px rgba(241,208,74,.7))}
   .lb.winner .pl{color:var(--gold); font-weight:800}
-  @keyframes winGlow{0%,100%{box-shadow:inset 0 0 0 1px rgba(235,166,31,.5), 0 0 16px -4px rgba(235,166,31,.45)}
-    50%{box-shadow:inset 0 0 0 1px rgba(235,166,31,.7), 0 0 26px -2px rgba(235,166,31,.7)}}
+  @keyframes winGlow{0%,100%{box-shadow:inset 0 0 0 1px rgba(241,208,74,.5), 0 0 16px -4px rgba(241,208,74,.45)}
+    50%{box-shadow:inset 0 0 0 1px rgba(241,208,74,.7), 0 0 26px -2px rgba(241,208,74,.7)}}
   @media (prefers-reduced-motion:reduce){ .lb.winner{animation:none} }
   .lb.you .pl{color:var(--gold); font-weight:800}
   .lb.cut .sc{color:#e07a5f}
@@ -835,10 +835,10 @@ window.GA_ID='G-L29P5MRWKE';
   .accsum.nochev{cursor:default}
   .acc .chev{transition:transform .15s ease, background .15s ease; color:var(--gold); font-size:15px; font-weight:900; line-height:1;
     flex:0 0 auto; width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center;
-    border-radius:8px; background:rgba(235,166,31,.16); border:1px solid rgba(235,166,31,.42)}
+    border-radius:8px; background:rgba(241,208,74,.16); border:1px solid rgba(241,208,74,.42)}
   .acc .chev.dim{color:var(--muted); font-size:13px; background:transparent; border-color:transparent}
-  .acc[open] .chev{transform:rotate(90deg); background:rgba(235,166,31,.28); border-color:var(--gold)}
-  .accsum:hover .chev:not(.dim){background:rgba(235,166,31,.26)}
+  .acc[open] .chev{transform:rotate(90deg); background:rgba(241,208,74,.28); border-color:var(--gold)}
+  .accsum:hover .chev:not(.dim){background:rgba(241,208,74,.26)}
   .acc .yrtag{flex:0 0 auto; font-family:var(--mono); color:var(--muted); font-weight:700; min-width:48px}
   .acc .acctitle{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:800}
   .acc .acctitle.thin{font-weight:600}
@@ -857,7 +857,7 @@ window.GA_ID='G-L29P5MRWKE';
   .rounds{display:flex; gap:8px}
   .rdcell{flex:1; text-align:center; background:#0a2740; border:1px solid var(--line); border-radius:12px; padding:11px 4px 10px;
     transition:background .25s ease, border-color .25s ease, transform .25s ease}
-  .rdcell.live{border-color:var(--gold); background:rgba(235,166,31,.14); transform:translateY(-2px); box-shadow:0 6px 16px -10px rgba(235,166,31,.6)}
+  .rdcell.live{border-color:var(--gold); background:rgba(241,208,74,.14); transform:translateY(-2px); box-shadow:0 6px 16px -10px rgba(241,208,74,.6)}
   .rdlab{font:800 9px/1 var(--body); letter-spacing:.16em; color:var(--muted)}
   .rdval{font-family:var(--mono); font-weight:800; font-size:24px; margin-top:7px; color:var(--oncard)}
   .rdcell.empty .rdval{color:var(--muted); opacity:.5}
@@ -893,7 +893,7 @@ window.GA_ID='G-L29P5MRWKE';
   .scrollcue .cuearrow{font-size:15px; line-height:1; animation:cuebob 1.1s ease-in-out infinite}
   @keyframes cuebob{0%,100%{transform:translateY(-1px)}50%{transform:translateY(3px)}}
   .btn.cuepulse{animation:cuePulse 1.6s ease}
-  @keyframes cuePulse{0%,100%{box-shadow:0 0 0 0 rgba(235,166,31,0)}30%{box-shadow:0 0 0 5px rgba(235,166,31,.55)}60%{box-shadow:0 0 0 3px rgba(235,166,31,.3)}}
+  @keyframes cuePulse{0%,100%{box-shadow:0 0 0 0 rgba(241,208,74,0)}30%{box-shadow:0 0 0 5px rgba(241,208,74,.55)}60%{box-shadow:0 0 0 3px rgba(241,208,74,.3)}}
   @media (prefers-reduced-motion:reduce){ .scrollcue .cuearrow,.btn.cuepulse{animation:none} }
   /* broadcast-style hole view (animated ball tracer) */
   .holeview{max-width:470px;margin:10px auto 4px}
@@ -919,7 +919,7 @@ window.GA_ID='G-L29P5MRWKE';
      (owner mockup) with a THRU/TARGET header, name+score rows, and a "TO BEAT" footer. */
   .hvboard{bottom:48px;right:8px;width:176px;max-width:64%;
     background:linear-gradient(180deg,rgba(10,21,31,.9),rgba(6,14,22,.92));
-    border:1.5px solid rgba(235,166,31,.5);border-radius:13px;padding:7px 8px 7px;
+    border:1.5px solid rgba(241,208,74,.5);border-radius:13px;padding:7px 8px 7px;
     box-shadow:0 12px 30px -12px rgba(0,0,0,.85), inset 0 1px 0 rgba(255,255,255,.05);
     display:flex;flex-direction:column;gap:2px}
   .hvboard.nodesc{bottom:10px}
@@ -928,7 +928,7 @@ window.GA_ID='G-L29P5MRWKE';
   .hvbtarget{font:800 11px/1 var(--mono);letter-spacing:.04em;color:var(--gold);text-align:left;padding:0 2px 3px}
   .hvbrow{display:flex;align-items:center;gap:6px;background:transparent;border:0;
     border-radius:7px;padding:3px 5px;font:700 10.5px/1 var(--body);color:#eef4ee}
-  .hvbrow.mine{background:rgba(235,166,31,.17);box-shadow:inset 0 0 0 1px rgba(235,166,31,.4)}
+  .hvbrow.mine{background:rgba(241,208,74,.17);box-shadow:inset 0 0 0 1px rgba(241,208,74,.4)}
   .hvbrow.rival{background:rgba(255,90,77,.15);box-shadow:inset 0 0 0 1px rgba(255,90,77,.42)}
   .hvbrow .cdot{width:7px;height:7px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
   .hvbrow .rk{color:#c7b489;font-family:var(--mono);font-size:9.5px;font-weight:800;min-width:9px}
@@ -939,15 +939,15 @@ window.GA_ID='G-L29P5MRWKE';
   .hvbfoot b{color:var(--gold);font-family:var(--mono);margin-left:3px}
   /* CS251: simple round-play controls (owner mockup) - PREV SHOT · big PLAY/PAUSE · NEXT SHOT + caption */
   .hvctrl{max-width:520px;margin:12px auto 0;background:linear-gradient(180deg,rgba(9,26,19,.6),rgba(6,18,13,.6));
-    border:1px solid rgba(235,166,31,.22);border-radius:16px;padding:14px 10px 10px;
+    border:1px solid rgba(241,208,74,.22);border-radius:16px;padding:14px 10px 10px;
     box-shadow:0 10px 26px -14px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.04)}
   .hvctrl-row{display:flex;align-items:center;justify-content:space-between;gap:6px}
   .hvctrl-side{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;
     color:#e9f2ea;cursor:pointer;padding:4px 2px;font:800 10px/1 var(--body);letter-spacing:.11em;text-transform:uppercase}
   .hvctrl-side:disabled{opacity:.32;cursor:default}
   .hvctrl-side .ci{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    border:1.5px solid rgba(235,166,31,.4);background:rgba(8,20,14,.5);color:var(--gold);font-size:17px;transition:transform .12s,background .12s}
-  .hvctrl-side:not(:disabled):active .ci{transform:scale(.92);background:rgba(235,166,31,.16)}
+    border:1.5px solid rgba(241,208,74,.4);background:rgba(8,20,14,.5);color:var(--gold);font-size:17px;transition:transform .12s,background .12s}
+  .hvctrl-side:not(:disabled):active .ci{transform:scale(.92);background:rgba(241,208,74,.16)}
   .hvctrl-side .cl{color:#cbe0d0}
   .hvctrl-play{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;cursor:pointer;padding:0 4px}
   .hvctrl-play .cb{width:66px;height:66px;border-radius:50%;display:flex;align-items:center;justify-content:center;
@@ -985,7 +985,7 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes dcFade{from{opacity:0}to{opacity:1}}
   .decisioncard{max-width:440px;width:100%;max-height:100%;overflow:auto;text-align:center;
     background:linear-gradient(180deg,#0d2c20,#07211a);border:2px solid var(--gold);border-radius:20px;padding:20px 20px 22px;
-    box-shadow:0 30px 70px -20px rgba(0,0,0,.9),0 0 0 1px rgba(235,166,31,.22) inset;animation:dcPop .34s cubic-bezier(.2,1.25,.4,1)}
+    box-shadow:0 30px 70px -20px rgba(0,0,0,.9),0 0 0 1px rgba(241,208,74,.22) inset;animation:dcPop .34s cubic-bezier(.2,1.25,.4,1)}
   @keyframes dcPop{0%{opacity:0;transform:scale(.9) translateY(10px)}100%{opacity:1;transform:none}}
   .dc-flag{font:800 11.5px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
   .dc-hole{font:900 19px/1.15 var(--body);color:var(--cream);margin-top:8px}
@@ -1068,23 +1068,23 @@ window.GA_ID='G-L29P5MRWKE';
   .xpbar{height:9px;border-radius:6px;background:rgba(8,14,28,.6);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
   .xpbar>i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#8a6bf0,#b79bff)}
   /* CS294: challenges now feed your Tour Rep tier (no separate level) - a gold tier progress bar */
-  .reptbar-wrap{padding:12px 14px;border-radius:14px;border:1px solid rgba(235,166,31,.42);background:linear-gradient(160deg,rgba(235,166,31,.14),rgba(20,26,44,.4))}
+  .reptbar-wrap{padding:12px 14px;border-radius:14px;border:1px solid rgba(241,208,74,.42);background:linear-gradient(160deg,rgba(241,208,74,.14),rgba(20,26,44,.4))}
   .reptbar-hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
   .reptbar-tier{font:800 15px/1 var(--display);font-style:italic;color:var(--gold);letter-spacing:.02em}
   .reptbar{height:9px;border-radius:6px;background:rgba(8,14,28,.6);overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
   .reptbar>i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#e6a91f,#f6cd74)}
   .reptbar-foot{margin-top:7px;font-size:11px;color:var(--muted)}
   /* CS252: streak calendar - the last N days as colored cells so the streak feels visual */
-  .stcalwrap{max-width:520px;margin:10px auto 0;padding:11px 13px;border-radius:14px;border:1px solid rgba(235,166,31,.24);background:rgba(8,17,26,.42)}
+  .stcalwrap{max-width:520px;margin:10px auto 0;padding:11px 13px;border-radius:14px;border:1px solid rgba(241,208,74,.24);background:rgba(8,17,26,.42)}
   .stcal-hd{display:flex;justify-content:space-between;align-items:center;font:800 13px/1 var(--body);color:var(--gold);margin-bottom:9px}
   .stcal-best{color:var(--muted);font-weight:700;font-size:11px}
   .stcal{display:flex;gap:4px;justify-content:space-between}
   .stcal-d{flex:1 1 0;min-width:0;aspect-ratio:1;border-radius:6px;display:flex;align-items:center;justify-content:center;
     font:800 9px/1 var(--mono);background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08);color:rgba(200,215,205,.45)}
   .stcal-d.play{background:rgba(53,214,160,.22);border-color:rgba(53,214,160,.5);color:#bff0dc}
-  .stcal-d.beat{background:rgba(235,166,31,.3);border-color:var(--gold);color:#ffe6ab}
+  .stcal-d.beat{background:rgba(241,208,74,.3);border-color:var(--gold);color:#ffe6ab}
   .stcal-d.frz{background:rgba(96,160,235,.22);border-color:rgba(120,180,255,.6);color:#cfe4ff}
-  .stcal-d.today{box-shadow:0 0 0 2px rgba(235,166,31,.6)}
+  .stcal-d.today{box-shadow:0 0 0 2px rgba(241,208,74,.6)}
   .stcal-lg{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:9px;font:700 10px/1.4 var(--body);color:var(--muted)}
   .stcal-lg .k{width:10px;height:10px;border-radius:3px;display:inline-block;margin:0 1px 0 6px;vertical-align:-1px}
   .stcal-lg .k:first-child{margin-left:0}
@@ -1114,8 +1114,8 @@ window.GA_ID='G-L29P5MRWKE';
   .sstat{background:var(--panel); padding:10px 11px}
   .sstat.wide{grid-column:1 / -1; background:rgba(255,255,255,.06)}
   .sstat.w3{grid-column:1 / 4; background:rgba(255,255,255,.06)}
-  .sstat.rankcell{background:rgba(235,166,31,.10)}
-  .authspin{width:13px;height:13px;border-radius:50%;border:2px solid rgba(235,166,31,.35);border-top-color:var(--gold);display:inline-block;animation:authspin .7s linear infinite}
+  .sstat.rankcell{background:rgba(241,208,74,.10)}
+  .authspin{width:13px;height:13px;border-radius:50%;border:2px solid rgba(241,208,74,.35);border-top-color:var(--gold);display:inline-block;animation:authspin .7s linear infinite}
   @keyframes authspin{to{transform:rotate(360deg)}}
   .sstat .k{font:800 9.5px/1 var(--body); letter-spacing:.13em; text-transform:uppercase; color:var(--muted)}
   .sstat .v{font-family:var(--mono); font-weight:800; font-size:18px; margin-top:5px; color:var(--oncard)}
@@ -1183,13 +1183,13 @@ window.GA_ID='G-L29P5MRWKE';
   .skb{display:inline-block; border-radius:5px; background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,.13),rgba(255,255,255,.06)); background-size:200% 100%; animation:sksh 1.2s ease-in-out infinite}
   @keyframes sksh{0%{background-position:200% 0}100%{background-position:-200% 0}}
   @media(prefers-reduced-motion:reduce){ .skb{animation:none} }
-  .screen.major-screen{background:radial-gradient(130% 70% at 50% -8%, rgba(235,166,31,.20), transparent 62%)}
+  .screen.major-screen{background:radial-gradient(130% 70% at 50% -8%, rgba(241,208,74,.20), transparent 62%)}
   .majorbanner{display:flex; align-items:center; justify-content:center; gap:8px;
     background:linear-gradient(90deg,#5a3d0b,var(--gold),#5a3d0b); color:#1a1206;
     font-family:var(--display); font-style:italic; font-size:17px; letter-spacing:.05em;
     padding:9px; border-radius:12px; margin-bottom:12px; text-transform:uppercase;
-    box-shadow:0 0 18px rgba(235,166,31,.35)}
-  .board.major{border-color:var(--gold); box-shadow:0 0 0 1px rgba(235,166,31,.4)}
+    box-shadow:0 0 18px rgba(241,208,74,.35)}
+  .board.major{border-color:var(--gold); box-shadow:0 0 0 1px rgba(241,208,74,.4)}
 
   .tiles{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:14px 0}
   .tiles.four{grid-template-columns:repeat(4,1fr)}
@@ -1216,7 +1216,7 @@ window.GA_ID='G-L29P5MRWKE';
     box-shadow:0 12px 14px -12px rgba(0,0,0,.7)}
   .shop-bar{display:flex; align-items:center; justify-content:space-between; gap:10px}
   .shop-bar h3{margin:0; font-size:22px}
-  .coinpill{display:inline-flex; align-items:center; gap:6px; background:rgba(235,166,31,.13); border:1px solid rgba(235,166,31,.4);
+  .coinpill{display:inline-flex; align-items:center; gap:6px; background:rgba(241,208,74,.13); border:1px solid rgba(241,208,74,.4);
     border-radius:999px; padding:5px 12px 5px 8px; font:900 16px/1 var(--body); color:var(--gold)}
   .shop-preview{display:flex; justify-content:center; align-items:flex-end; height:340px; margin:2px 0 4px}
   .shop-preview .avatarfig{height:340px}
@@ -1229,13 +1229,13 @@ window.GA_ID='G-L29P5MRWKE';
   .catrow::-webkit-scrollbar{display:none}
   .catchip{flex:0 0 auto; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.03); color:var(--muted);
     font:800 11.5px/1 var(--body); padding:8px 13px; border-radius:999px; cursor:pointer; white-space:nowrap}
-  .catchip.on{color:var(--gold); border-color:var(--gold); background:rgba(235,166,31,.12)}
+  .catchip.on{color:var(--gold); border-color:var(--gold); background:rgba(241,208,74,.12)}
   .sgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:9px; margin-top:12px}
   .stile{position:relative; display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center;
     border:1.5px solid rgba(255,255,255,.11); background:rgba(255,255,255,.035); border-radius:13px;
     padding:11px 6px 8px; cursor:pointer; transition:border-color .12s, background .12s; color:inherit; font-family:var(--body)}
   .stile:hover{border-color:rgba(255,255,255,.28)}
-  .stile.eq{border-color:var(--gold); background:rgba(235,166,31,.11)}
+  .stile.eq{border-color:var(--gold); background:rgba(241,208,74,.11)}
   .stile.lock{opacity:.94}
   .sthumb{width:48px; height:48px; border-radius:11px; display:flex; align-items:center; justify-content:center;
     background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.12); overflow:hidden; flex:0 0 auto}
@@ -1383,8 +1383,8 @@ const ICONS={
   arrowUR:'<path d="M7 17 17 7M8 7h9v9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
   arrowLeft:'<path d="M11 6l-6 6 6 6M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
   // RunTheTour-branded coin: gold, reeded edge, the flag-over-green crest mark embossed (the currency)
-  coin:'<circle cx="12" cy="12" r="11" fill="#EBA61F"/><circle cx="12" cy="12" r="11" fill="none" stroke="#9a6b17" stroke-width="1.3"/><circle cx="12" cy="12" r="9.6" fill="none" stroke="#8a6410" stroke-width="0.8" stroke-dasharray="0.5 1.05" opacity="0.85"/><circle cx="12" cy="12" r="9.4" fill="none" stroke="#f7d574" stroke-width="0.7" opacity="0.55"/><path d="M9.7 6.6 v10" stroke="#7a5410" stroke-width="1.3" stroke-linecap="round"/><path d="M9.7 6.7 h4.8 l-1.6 2 1.6 2 h-4.8 z" fill="#7a5410"/><ellipse cx="12" cy="16.6" rx="4.8" ry="1.5" fill="none" stroke="#7a5410" stroke-width="1"/><circle cx="13.7" cy="16.6" r="0.85" fill="#7a5410"/>',
-  coins:'<circle cx="8.5" cy="9" r="6.5" fill="#e0a01c" stroke="#8a6410" stroke-width="1"/><path d="M6 6.7 v4.6" stroke="#7a5410" stroke-width="1" stroke-linecap="round"/><path d="M6 6.8 h3 l-1 1.3 1 1.3 h-3 z" fill="#7a5410"/><circle cx="15.5" cy="14.5" r="7" fill="#EBA61F" stroke="#9a6b17" stroke-width="1.2"/><circle cx="15.5" cy="14.5" r="5.9" fill="none" stroke="#8a6410" stroke-width="0.6" stroke-dasharray="0.5 1" opacity="0.8"/><path d="M13.6 10.9 v7" stroke="#7a5410" stroke-width="1.1" stroke-linecap="round"/><path d="M13.6 11 h3.3 l-1.1 1.4 1.1 1.4 h-3.3 z" fill="#7a5410"/><ellipse cx="15.6" cy="17.9" rx="3.2" ry="1" fill="none" stroke="#7a5410" stroke-width="0.9"/>',
+  coin:'<circle cx="12" cy="12" r="11" fill="#F1D04A"/><circle cx="12" cy="12" r="11" fill="none" stroke="#9a6b17" stroke-width="1.3"/><circle cx="12" cy="12" r="9.6" fill="none" stroke="#8a6410" stroke-width="0.8" stroke-dasharray="0.5 1.05" opacity="0.85"/><circle cx="12" cy="12" r="9.4" fill="none" stroke="#f7d574" stroke-width="0.7" opacity="0.55"/><path d="M9.7 6.6 v10" stroke="#7a5410" stroke-width="1.3" stroke-linecap="round"/><path d="M9.7 6.7 h4.8 l-1.6 2 1.6 2 h-4.8 z" fill="#7a5410"/><ellipse cx="12" cy="16.6" rx="4.8" ry="1.5" fill="none" stroke="#7a5410" stroke-width="1"/><circle cx="13.7" cy="16.6" r="0.85" fill="#7a5410"/>',
+  coins:'<circle cx="8.5" cy="9" r="6.5" fill="#e0a01c" stroke="#8a6410" stroke-width="1"/><path d="M6 6.7 v4.6" stroke="#7a5410" stroke-width="1" stroke-linecap="round"/><path d="M6 6.8 h3 l-1 1.3 1 1.3 h-3 z" fill="#7a5410"/><circle cx="15.5" cy="14.5" r="7" fill="#F1D04A" stroke="#9a6b17" stroke-width="1.2"/><circle cx="15.5" cy="14.5" r="5.9" fill="none" stroke="#8a6410" stroke-width="0.6" stroke-dasharray="0.5 1" opacity="0.8"/><path d="M13.6 10.9 v7" stroke="#7a5410" stroke-width="1.1" stroke-linecap="round"/><path d="M13.6 11 h3.3 l-1.1 1.4 1.1 1.4 h-3.3 z" fill="#7a5410"/><ellipse cx="15.6" cy="17.9" rx="3.2" ry="1" fill="none" stroke="#7a5410" stroke-width="0.9"/>',
   cap:'<path d="M5 15c0-4.6 3.2-8 7-8 3.5 0 6.1 2.5 6.6 6.2L18 15z"/><rect x="4" y="14.6" width="10" height="2.4" rx="1.2"/>',
   shades:'<circle cx="7" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="13" r="3.4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M10.2 12h3.6M3.4 10.6l1.4.8M20.6 10.6l-1.4.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
   glove:'<path d="M7 21v-9c0-1.1.4-2 1.3-2s1.2.9 1.2 2V8.2c0-1.1.4-2 1.3-2s1.2.9 1.2 2V8c0-1.1.4-2 1.3-2s1.2.9 1.2 2v3.2l1.1-1c.9-.8 2 .1 1.5 1.4L16 17v4z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>',
@@ -1524,7 +1524,7 @@ function _badgeFresh(c){ c.btier=c.btier||{}; const m=badgeMetrics(c); const fre
 // earned-badge display that ALSO tells you what the next tee tier needs (so badges set the next goal)
 function badgeEarnedHTML(got){
   const rows=got.map(f=>{ const col=TEE_TIERS[f.tier-1].c;
-    const nxt=f.maxed?`<span class="small" style="color:#f9d271">Max tier, Black tee</span>`
+    const nxt=f.maxed?`<span class="small" style="color:#f7e48a">Max tier, Black tee</span>`
       :(f.nextReq!=null?`<span class="small muted">next ${esc(f.nextName)} at ${esc(String(f.nextReq))}</span>`:'');
     return `<div style="display:flex;gap:9px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:7px">
       <span class="tag" style="color:${col};border-color:${col}">${f.e} ${esc(f.t)} · ${f.tierName}</span>${nxt}</div>`; }).join('');
@@ -2133,7 +2133,7 @@ function evaluateAch(){ if(!sbSignedIn()) return [];
   return fresh; }
 // big celebratory Tour Rep promotion card (shown on the summary / career-end when you rank up)
 function repUpHTML(r){ if(!r) return ''; const goat=r.to==='G.O.A.T.';
-  return `<div class="scout" style="margin:4px auto 12px;max-width:520px;text-align:center;border-color:#f6cd74;background:linear-gradient(180deg,rgba(235,166,31,.16),rgba(235,166,31,.03))">
+  return `<div class="scout" style="margin:4px auto 12px;max-width:520px;text-align:center;border-color:#f6cd74;background:linear-gradient(180deg,rgba(241,208,74,.16),rgba(241,208,74,.03))">
     <div class="small" style="letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:800">Tour Rep promotion</div>
     <div style="font-family:var(--serif);font-weight:800;font-size:24px;color:var(--gold);margin:4px 0 1px">${goat?'🐐 ':'🏅 '}You're now ${goat?'the ':'a '}${esc(r.to)}!</div>
     <div class="small muted">Climbed from ${esc(r.from)}${goat?', every achievement complete.':'. Keep playing to reach the next rank.'}</div></div>`; }
@@ -2152,7 +2152,7 @@ function achToast(fresh){
 // Tour Rep header, rank + points + progress bar to the next rank (the profile's headline reward)
 function repHeaderHTML(){ const pts=achPoints(), r=repTier(pts), done=achCount(), goat=(r.tier.name==='G.O.A.T.');
   const lo=r.tier.at, hi=r.next?r.next.at:ACH_TOTAL_PTS, frac=hi>lo?Math.max(0,Math.min(1,(pts-lo)/(hi-lo))):1;
-  return `<div class="scout" style="max-width:520px;margin:0 auto 12px;border-color:${goat?'#f6cd74':'var(--gold)'}${goat?';background:linear-gradient(180deg,rgba(235,166,31,.14),rgba(235,166,31,.04))':''}">
+  return `<div class="scout" style="max-width:520px;margin:0 auto 12px;border-color:${goat?'#f6cd74':'var(--gold)'}${goat?';background:linear-gradient(180deg,rgba(241,208,74,.14),rgba(241,208,74,.04))':''}">
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
       <div><div class="small muted" style="letter-spacing:.14em;text-transform:uppercase;font-size:10px">Tour Rep</div>
         <div style="font-family:var(--serif);font-weight:800;font-size:${goat?24:22}px;color:var(--gold);line-height:1.05">${goat?'🐐 ':''}${r.tier.name}</div></div>
@@ -2390,7 +2390,7 @@ const RGRADES=[
   {k:'C', label:'Solid',     col:'#e7eee7', blurb:'Steady and solid.'},
   {k:'B', label:'Clutch',    col:'#2fd1c0', blurb:'Clutch when it counted.'},
   {k:'A', label:'Brilliant', col:'#35d6a0', blurb:'Brilliant golf.'},
-  {k:'S', label:'Legendary', col:'#EBA61F', blurb:'A round for the ages.'}
+  {k:'S', label:'Legendary', col:'#F1D04A', blurb:'A round for the ages.'}
 ];
 function dRoundGrade(holes, total, avg){
   if(!holes||!holes.length) return null;
@@ -2560,7 +2560,7 @@ function maybeChallengesPopup(){
   const q=dailyQuests(), w=weekChal(), set=weeklySet();
   const dqLeft=DAILY_QUEST_DEFS.filter(d=>!q[d.k]).length, wLeft=set.filter(c=>!w.done[c.id]).length;
   const ov=$(`<div class="chalpop" style="position:fixed;inset:0;z-index:62;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;background:radial-gradient(120% 90% at 50% 12%, rgba(10,30,20,.82), rgba(2,7,5,.96) 70%)">
-    <div style="max-width:440px;width:100%;background:linear-gradient(180deg,#0d2036,#0a1626);border:1px solid rgba(235,166,31,.4);border-radius:18px;padding:18px 17px;box-shadow:0 20px 60px -18px rgba(0,0,0,.7)">
+    <div style="max-width:440px;width:100%;background:linear-gradient(180deg,#0d2036,#0a1626);border:1px solid rgba(241,208,74,.4);border-radius:18px;padding:18px 17px;box-shadow:0 20px 60px -18px rgba(0,0,0,.7)">
       <div style="text-align:center;font:800 12px/1 var(--body);letter-spacing:.24em;text-transform:uppercase;color:var(--gold)">🎯 Your Challenges</div>
       <div class="small muted" style="text-align:center;margin:5px 0 13px">${dqLeft||wLeft?`${dqLeft} daily quest${dqLeft===1?'':'s'} &amp; ${wLeft} weekly left today, earn Tour Rep, coins &amp; mulli-spins`:`All caught up, nice work! Check back tomorrow`}</div>
       <div class="cn-holder"></div>
@@ -3624,7 +3624,7 @@ function worldRankOfName(name){ const L=worldRanking(); const i=L.findIndex(x=>x
 const CARD_LINE=100;
 function cardStatus(rank){ rank=rank||myWorldRank();
   if(rank<=CARD_LINE-15) return {key:'secure', rank, col:'#35d6a0', label:'Tour Card secured', note:`Comfortably inside the top ${CARD_LINE}`};
-  if(rank<=CARD_LINE)     return {key:'bubble', rank, col:'#EBA61F', label:'Tour Card held · on the bubble', note:`Stay inside the top ${CARD_LINE} to keep your card`};
+  if(rank<=CARD_LINE)     return {key:'bubble', rank, col:'#F1D04A', label:'Tour Card held · on the bubble', note:`Stay inside the top ${CARD_LINE} to keep your card`};
   return {key:'lost', rank, col:'#E14A33', label:'Lost your Tour Card', note:`Outside the top ${CARD_LINE} · limited status next season`};
 }
 // end-of-season ranking update: decay everyone, add the year's Tour points (run BEFORE advanceWorld ages the world)
@@ -3940,7 +3940,7 @@ function rivalSeasonResult(){ const rv=getRival(); if(!rv||!S.season||!S.season.
     myRank, rvRank, myMoney:mine.money, rvMoney:theirs.money, myWins:mine.wins, rvWins:theirs.wins}; }
 // read-only nemesis status for the off-season screen (no picking, rivalry is emergent)
 function rivalStatusNode(){
-  const box=$(`<div class="scout" style="max-width:560px;margin:12px auto 0;text-align:left;border-color:rgba(235,166,31,.4)"></div>`);
+  const box=$(`<div class="scout" style="max-width:560px;margin:12px auto 0;text-align:left;border-color:rgba(241,208,74,.4)"></div>`);
   box.appendChild($(`<div style="letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:11px;margin-bottom:6px">⚔️ Your Rival</div>`));
   const fr=S.freshRivalRetired;
   if(fr){ const tot=fr.meAhead+fr.themAhead, mine=fr.meAhead>fr.themAhead;
@@ -4044,7 +4044,7 @@ const SKINS=[
 const POLOS=[
   {id:'teal',  m:'#0FA888', s:'#0c917a'},
   {id:'navy',  m:'#214a8c', s:'#1a3c72'},
-  {id:'gold',  m:'#e6a91f', s:'#c98f12'},
+  {id:'gold',  m:'#e6a91f', s:'#c7a31f'},
   {id:'white', m:'#eef0ee', s:'#d7dbd6'},
   {id:'purple',m:'#6b4bb0', s:'#583c93'},
   {id:'black', m:'#20242b', s:'#16191f'},
@@ -4290,7 +4290,7 @@ function accPrice(it){ if(!it||it.rarity==='exclusive') return 0;
 // display + gameplay boost for an item, scaled down from the catalog value (min +1 on any listed skill)
 function accItemBoost(it){ const o={}; if(it&&it.boost) for(const k in it.boost) o[k]=Math.max(1,Math.floor(it.boost[k]*ACC_BOOST_SCALE)); return o; }
 const ACC_RARITY={ common:{c:'#b8c4bd',label:'Common'}, rare:{c:'#4aa3ff',label:'Rare'},
-  epic:{c:'#b06be0',label:'Epic'}, legendary:{c:'#EBA61F',label:'Legendary'}, exclusive:{c:'#35d6a0',label:'Exclusive'} };
+  epic:{c:'#b06be0',label:'Epic'}, legendary:{c:'#F1D04A',label:'Legendary'}, exclusive:{c:'#35d6a0',label:'Exclusive'} };
 const ACC_SLOTS=[ {k:'head',name:'Headwear',icon:'cap'}, {k:'eyes',name:'Eyewear',icon:'shades'},
   {k:'glove',name:'Glove',icon:'glove'}, {k:'shoes',name:'Shoes',icon:'shoe'}, {k:'driver',name:'Driver',icon:'driver'},
   {k:'putter',name:'Putter',icon:'putter'}, {k:'ball',name:'Ball',icon:'ball'}, {k:'charm',name:'Charm',icon:'charm'} ];
@@ -4475,7 +4475,7 @@ function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
 /* ---------- build identity ---------- */
 function ovrTier(o){
   if(o>=90) return {c:'#35d6a0', glow:'0 0 14px rgba(53,214,160,.45)', lab:'ELITE'};
-  if(o>=86) return {c:'#EBA61F', glow:'0 0 12px rgba(235,166,31,.40)', lab:'GOLD'};
+  if(o>=86) return {c:'#F1D04A', glow:'0 0 12px rgba(241,208,74,.40)', lab:'GOLD'};
   if(o>=82) return {c:'#c7ced8', glow:'none', lab:'SILVER'};
   return {c:'#cd8e5a', glow:'none', lab:'BRONZE'};
 }
@@ -4578,10 +4578,10 @@ function scoutingNote(p){
 
 /* ---------- shell ---------- */
 function crestSVG(){return `<svg class="crest" viewBox="0 0 64 76" fill="none">
-  <path d="M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z" fill="#0b2e1f" stroke="#cda24a" stroke-width="2.6"/>
+  <path d="M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z" fill="#0b2e1f" stroke="#d3bd53" stroke-width="2.6"/>
   <path d="M32 5 L57 14 V40 C57 56 45.5 65 32 70.5 C18.5 65 7 56 7 40 V14 Z" fill="none" stroke="#cda54a" stroke-width="0.8" opacity="0.55"/>
   <path d="M26 17 v36" stroke="#e9d8ac" stroke-width="2.6" stroke-linecap="round"/>
-  <path d="M26 18 h16 l-4 5 4 5 h-16 z" fill="#EBA61F"/>
+  <path d="M26 18 h16 l-4 5 4 5 h-16 z" fill="#F1D04A"/>
   <ellipse cx="32" cy="57" rx="17" ry="5.4" fill="none" stroke="#cda54a" stroke-width="1.6"/>
   <circle cx="26" cy="57" r="1.7" fill="#0a2a20"/>
   <circle cx="38" cy="57" r="2.2" fill="#f4ecd9"/></svg>`;}
@@ -4836,7 +4836,7 @@ function overlayRecordGuest(screen){
     <div style="min-width:0"><div style="font-weight:800;color:var(--oncard);font-size:14px">${title}</div>
       <div class="small muted" style="margin-top:2px;line-height:1.35">${desc}</div></div></div>`;
   const progressLine=hasProgress
-    ? `<div class="scout" style="max-width:520px;margin:0 auto 4px;border-color:var(--gold);background:rgba(235,166,31,.07);text-align:center;padding:12px 14px">
+    ? `<div class="scout" style="max-width:520px;margin:0 auto 4px;border-color:var(--gold);background:rgba(241,208,74,.07);text-align:center;padding:12px 14px">
         <div style="font-weight:800;color:var(--gold);font-size:13px">You're already playing as a guest${seasons?` &middot; ${seasons} season${seasons===1?'':'s'} in`:''}</div>
         <div class="small muted" style="margin-top:3px">Your golfers and trophies live only on this device right now. Create a free account to lock them in before they're gone.</div></div>`
     : '';
@@ -4895,7 +4895,7 @@ function overlayRecord(screen){
   const cabinet=trophyCabinetHTML(bm);
   const curTitle=(S.look&&S.look.title)||'none';
   const titleChips=TITLES.map(t=>{ const open=titleUnlocked(t.id,bm); const on=(curTitle===t.id)&&open;
-    return `<button class="tchip" data-title="${t.id}" ${open?'':'disabled aria-disabled="true"'} style="font:inherit;font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;cursor:${open?'pointer':'default'};border:1px solid ${on?'var(--gold)':'rgba(244,227,201,.22)'};background:${on?'rgba(235,166,31,.16)':'transparent'};color:${open?(on?'var(--gold)':'var(--oncard)'):'var(--muted)'};opacity:${open?1:0.55}">${open?'':'🔒 '}${esc(t.name)}</button>`; }).join('');
+    return `<button class="tchip" data-title="${t.id}" ${open?'':'disabled aria-disabled="true"'} style="font:inherit;font-size:12px;font-weight:700;padding:6px 11px;border-radius:999px;cursor:${open?'pointer':'default'};border:1px solid ${on?'var(--gold)':'rgba(244,227,201,.22)'};background:${on?'rgba(241,208,74,.16)':'transparent'};color:${open?(on?'var(--gold)':'var(--oncard)'):'var(--muted)'};opacity:${open?1:0.55}">${open?'':'🔒 '}${esc(t.name)}</button>`; }).join('');
   const titleSection=`<h2 style="margin:18px 0 6px">Player title</h2>
     <div class="small muted" style="margin-bottom:8px">Equip a title you've earned, it shows under your name.</div>
     <div style="display:flex;flex-wrap:wrap;gap:7px">${titleChips}</div>`;
@@ -5514,11 +5514,11 @@ function overlayTerms(screen){
 
 /* ---------- title (mode select) ---------- */
 function trophySVG(){return `<svg class="trophy" viewBox="0 0 60 80" fill="none">
-  <path d="M16 6 h28 v11 a14 14 0 0 1 -28 0 z" fill="#EBA61F"/>
-  <path d="M16 9 H8 a9 9 0 0 0 9 10" stroke="#EBA61F" stroke-width="3" fill="none"/>
-  <path d="M44 9 H52 a9 9 0 0 1 -9 10" stroke="#EBA61F" stroke-width="3" fill="none"/>
+  <path d="M16 6 h28 v11 a14 14 0 0 1 -28 0 z" fill="#F1D04A"/>
+  <path d="M16 9 H8 a9 9 0 0 0 9 10" stroke="#F1D04A" stroke-width="3" fill="none"/>
+  <path d="M44 9 H52 a9 9 0 0 1 -9 10" stroke="#F1D04A" stroke-width="3" fill="none"/>
   <rect x="27" y="30" width="6" height="13" fill="#caa23a"/>
-  <rect x="18" y="43" width="24" height="6" rx="2" fill="#EBA61F"/>
+  <rect x="18" y="43" width="24" height="6" rx="2" fill="#F1D04A"/>
   <rect x="22" y="49" width="16" height="9" rx="2" fill="#caa23a"/></svg>`;}
 
 // CS254: the "continue your career" card - a bigger, structured resume affordance that shows where you
@@ -5638,7 +5638,7 @@ function scrTitle(){
       <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="#06182e"/><stop offset="0.5" stop-color="#0b3149"/><stop offset="0.78" stop-color="#1a5b50"/></linearGradient>
       <radialGradient id="sun" cx="0.64" cy="0.52" r="0.45">
-        <stop offset="0" stop-color="#f6cd74" stop-opacity="0.65"/><stop offset="0.5" stop-color="#EBA61F" stop-opacity="0.16"/><stop offset="1" stop-color="#EBA61F" stop-opacity="0"/></radialGradient>
+        <stop offset="0" stop-color="#f6cd74" stop-opacity="0.65"/><stop offset="0.5" stop-color="#F1D04A" stop-opacity="0.16"/><stop offset="1" stop-color="#F1D04A" stop-opacity="0"/></radialGradient>
       <linearGradient id="topfade" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0" stop-color="#0a1a2c" stop-opacity="0.5"/><stop offset="0.4" stop-color="#0a1a2c" stop-opacity="0"/></linearGradient>
       <linearGradient id="botfade" x1="0" y1="0" x2="0" y2="1">
@@ -5661,7 +5661,7 @@ function scrTitle(){
     <ellipse cx="388" cy="288" rx="64" ry="19" fill="none" stroke="#38c270" stroke-width="1.4" opacity="0.55"/>
     <ellipse cx="402" cy="285" rx="3.4" ry="1.6" fill="#06241a"/>
     <line x1="402" y1="285" x2="402" y2="232" stroke="#F4E3C9" stroke-width="2.4" stroke-linecap="round"/>
-    <path d="M402,234 l20,5 -20,6 z" fill="#EBA61F"/>
+    <path d="M402,234 l20,5 -20,6 z" fill="#F1D04A"/>
     <circle cx="372" cy="292" r="3" fill="#F8F2E6"/>
     <!-- bunker pushed to the left -->
     <ellipse cx="50" cy="300" rx="42" ry="12" fill="#efe0c0"/>
@@ -5673,7 +5673,7 @@ function scrTitle(){
   const w=$(`<div class="titlewrap center"></div>`);
   w.appendChild($(`<div class="herotag center">A RunThe.GG Game</div>`));
   w.appendChild($(`<h1 class="hero" style="font-size:clamp(34px,8.5vw,52px)"><span class="hr1">Build a Golfer.</span><br><span class="hr2">Live your Legacy.</span></h1>`));
-  w.appendChild($(`<div class="herorule" aria-hidden="true"><span></span><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.6" fill="none" stroke="#EBA61F" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1.5" fill="#EBA61F"/></svg><span></span></div>`));
+  w.appendChild($(`<div class="herorule" aria-hidden="true"><span></span><svg width="11" height="11" viewBox="0 0 11 11"><circle cx="5.5" cy="5.5" r="4.6" fill="none" stroke="#F1D04A" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1.5" fill="#F1D04A"/></svg><span></span></div>`));
   // CS287: the "30-Year Career Simulation" badge is replaced by the How to Play button in this spot (owner)
   // CS303: a "Daily Quests" button sits beside it (owner: no auto-pop-up - open the challenges panel here)
   { const hw=$(`<div class="center" style="margin:10px 0 12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"></div>`);
@@ -5811,7 +5811,7 @@ function scrSetup(){
   wrap.appendChild(hairStyleRow());
 
   if(guest){
-    const lock=$(`<div style="margin-top:2px;border:1px solid var(--gold);border-radius:12px;background:linear-gradient(180deg,rgba(235,166,31,.08),rgba(10,22,38,.25));padding:14px 15px">
+    const lock=$(`<div style="margin-top:2px;border:1px solid var(--gold);border-radius:12px;background:linear-gradient(180deg,rgba(241,208,74,.08),rgba(10,22,38,.25));padding:14px 15px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:18px">🔒</span><b style="color:var(--gold);font-size:14.5px">Sign in to finish your golfer</b></div>
       <div class="small muted" style="margin-bottom:12px;line-height:1.5">A free account lets you <b style="color:var(--oncard)">name your golfer</b>, fly your <b style="color:var(--oncard)">country's flag</b>, and pick your <b style="color:var(--oncard)">shirt &amp; hat colors and headwear</b> - plus it saves your career and posts you to the leaderboards.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn goldfill" id="setup-signup" style="width:auto;flex:1 1 160px;padding:11px">Create free account ▸</button><button class="btn ghost" id="setup-signin" style="width:auto;flex:0 0 auto;padding:11px 18px">Sign in</button></div></div>`);
@@ -6810,7 +6810,7 @@ function golferSVG(){
     <path d="M39,39 Q60,42 81,39 Q76,43 60,43.6 Q44,43 39,39 Z" fill="${capS}"/>
     <path d="M39,39 Q60,42 81,39 Q75,41.5 60,42 Q45,41.5 39,39 Z" fill="#000" opacity=".15"/>
     <!-- gold mark -->
-    <path d="M66.5,26 l7,3.5 -7,3.5 Z" fill="#EBA61F"/>`:`
+    <path d="M66.5,26 l7,3.5 -7,3.5 Z" fill="#F1D04A"/>`:`
     <!-- hair, no cap -->
     <path d="M41,47 C40,31 48.5,23.5 60,23.5 C71.5,23.5 80,31 79,47 C76.5,41 73.5,38 73.5,42.5 C70.5,34.5 65.5,32 60,32 C54.5,32 49.5,34.5 46.5,42.5 C46.5,38 43.5,41 41,47 Z" fill="${hair}"/>
     <path d="M41,47 C40,31 48.5,23.5 60,23.5 C56,27 52,33 51,42 C50,40 47,40 46.5,42.5 C46.5,38 43.5,41 41,47 Z" fill="${hairS}" opacity=".5"/>`}
@@ -6826,7 +6826,7 @@ function swatchRow(label,opts,curId,key,colorOf){
     const sel=curId===o.id, col=colorOf(o);
     // check color adapts to the swatch lightness so it stays legible on light AND dark tones
     const rgb=avHexRgb(col), lum=(0.299*rgb.r+0.587*rgb.g+0.114*rgb.b)/255;
-    const sw=$(`<button aria-label="${label} ${o.id}" title="${esc(o.id)}" style="position:relative;width:34px;height:34px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.20)'};background:${col};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 3px rgba(235,166,31,.30)':'none'};transition:transform .08s">${sel?`<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:${lum>0.55?'#1a1208':'#fff'}">✓</span>`:''}</button>`);
+    const sw=$(`<button aria-label="${label} ${o.id}" title="${esc(o.id)}" style="position:relative;width:34px;height:34px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.20)'};background:${col};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 3px rgba(241,208,74,.30)':'none'};transition:transform .08s">${sel?`<span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:${lum>0.55?'#1a1208':'#fff'}">✓</span>`:''}</button>`);
     sw.onclick=()=>{S.look[key]=o.id; saveLook(); render();};
     wrap.appendChild(sw);
   });
@@ -6856,7 +6856,7 @@ function cosColorRow(label,cat){
   row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${esc(label)}</div>`));
   const wrap=$(`<div style="display:flex;gap:9px;flex-wrap:wrap"></div>`);
   owned.forEach(o=>{ const sel=cur===o.id;
-    const sw=$(`<button aria-label="${esc(label)} ${esc(o.name)}" title="${esc(o.name)}" style="width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.col};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 2px rgba(235,166,31,.25)':'none'}"></button>`);
+    const sw=$(`<button aria-label="${esc(label)} ${esc(o.name)}" title="${esc(o.name)}" style="width:30px;height:30px;border-radius:50%;border:2px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};background:${o.col};cursor:pointer;padding:0;box-shadow:${sel?'0 0 0 2px rgba(241,208,74,.25)':'none'}"></button>`);
     sw.onclick=()=>{ S.look[lookKey]=o.id; saveLook(); render(); };
     wrap.appendChild(sw); });
   row.appendChild(wrap); return row;
@@ -6871,7 +6871,7 @@ function cosPatRow(label,lookKey){
   row.appendChild($(`<div class="small muted" style="margin-bottom:5px;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px">${esc(label)}</div>`));
   const wrap=$(`<div style="display:flex;gap:6px;flex-wrap:wrap"></div>`);
   owned.forEach(p=>{ const sel=cur===p.id;
-    const chip=$(`<button title="${esc(p.name)}" style="font:700 11px var(--body);padding:6px 10px;border-radius:999px;cursor:pointer;background:${sel?'rgba(235,166,31,.14)':'transparent'};border:1px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};color:${sel?'var(--gold)':'var(--oncard)'}">${esc(p.name)}</button>`);
+    const chip=$(`<button title="${esc(p.name)}" style="font:700 11px var(--body);padding:6px 10px;border-radius:999px;cursor:pointer;background:${sel?'rgba(241,208,74,.14)':'transparent'};border:1px solid ${sel?'var(--gold)':'rgba(244,227,201,.22)'};color:${sel?'var(--gold)':'var(--oncard)'}">${esc(p.name)}</button>`);
     chip.onclick=()=>{ S.look[lookKey]=p.id; saveLook(); render(); };
     wrap.appendChild(chip); });
   row.appendChild(wrap); return row;
@@ -6995,7 +6995,7 @@ function radarSVG(){
   });
   const base=CATS.map((_,i)=>pt(i,R*(REPLACEMENT/100)).map(v=>v.toFixed(1)).join(',')).join(' ');
   const data=vals.map((v,i)=>pt(i,R*(v/100)).map(x=>x.toFixed(1)).join(',')).join(' ');
-  const dots=vals.map((v,i)=>{const [x,y]=pt(i,R*(v/100));return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${filled[i]?3:1.8}" fill="${filled[i]?'#EBA61F':'rgba(159,176,189,.5)'}"/>`;}).join('');
+  const dots=vals.map((v,i)=>{const [x,y]=pt(i,R*(v/100));return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${filled[i]?3:1.8}" fill="${filled[i]?'#F1D04A':'rgba(159,176,189,.5)'}"/>`;}).join('');
   // the shape grows in as you draft, faint when empty, solid once filled
   const nFilled=filled.filter(Boolean).length;
   const fillOp=(0.07+0.27*(nFilled/CATS.length)).toFixed(3);
@@ -8594,7 +8594,7 @@ function showDilemma(sb){
       background:radial-gradient(120% 90% at 50% 6%, rgba(40,30,8,.82), rgba(3,7,5,.98) 72%)">
     <div style="max-width:452px;width:100%;position:relative;background:linear-gradient(180deg,#12251a,#070f0a);border:1px solid #6b5a2a;border-radius:18px;padding:20px 20px 22px;box-shadow:0 30px 80px rgba(0,0,0,.6)">
       <div style="text-align:center">
-        <div style="display:inline-flex;align-items:center;gap:7px;padding:3px 11px;border:1px solid var(--gold);border-radius:999px;background:rgba(235,166,31,.12);margin-bottom:8px">
+        <div style="display:inline-flex;align-items:center;gap:7px;padding:3px 11px;border:1px solid var(--gold);border-radius:999px;background:rgba(241,208,74,.12);margin-bottom:8px">
           <span style="font:800 10px/1 var(--body);letter-spacing:.24em;color:var(--gold);text-transform:uppercase">⚖ Career Decision</span></div>
         <div style="font:800 10px/1 var(--body);letter-spacing:.22em;color:#e0b45a;text-transform:uppercase;margin-top:2px">${esc(T(beat.tag))}</div>
         <h2 style="margin:6px 0 8px;font-size:21px;color:#fff;line-height:1.15">${esc(T(beat.title))}</h2>
@@ -8989,7 +8989,7 @@ function sponsorOfferPopup(offers){
   const box=ov.querySelector('.soffers');
   offers.forEach(offer=>{
     const nti=sponsorTierInfo(offer.tier), ntr=brandTrait(offer.brand), bi=brandInfo(offer.brand), signing=sponsorSigningBonus(offer.brand);
-    const badge = offer.upgrade ? `<div class="small" style="display:inline-block;background:rgba(235,166,31,.16);color:#ffd45e;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">↑ Step up to ${esc(nti.name)}</div>`
+    const badge = offer.upgrade ? `<div class="small" style="display:inline-block;background:rgba(241,208,74,.16);color:#ffd45e;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">↑ Step up to ${esc(nti.name)}</div>`
       : offer.poach ? `<div class="small" style="display:inline-block;background:rgba(95,208,224,.14);color:#7fe0e8;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">⚡ A rival ${esc(nti.name)} brand</div>` : '';
     const card=$(`<div class="scout" style="border-color:${bi.color}66;margin:0;text-align:left;padding:12px 13px">
       ${badge}
@@ -9236,7 +9236,7 @@ function sponsorDecisionNode(){
   if(S.daily || S.circuitMode || !S.career) return null;
   ensureSponsors();
   const offers=S.career.sponsorOffers||[];
-  const wrap=$(`<div class="scout" style="border-color:${offers.length?'#ffd45e':'var(--line)'};text-align:left;max-width:560px;margin:0 auto 12px;${offers.length?'box-shadow:0 0 22px rgba(235,166,31,.16)':''}"></div>`);
+  const wrap=$(`<div class="scout" style="border-color:${offers.length?'#ffd45e':'var(--line)'};text-align:left;max-width:560px;margin:0 auto 12px;${offers.length?'box-shadow:0 0 22px rgba(241,208,74,.16)':''}"></div>`);
   const hist=(S.career.sponsorHistory||[]).map(h=>h.brand);
   wrap.innerHTML=`<div style="font:800 11px/1 var(--body);letter-spacing:.22em;color:#ffd45e;text-transform:uppercase;display:flex;align-items:center;gap:7px">${ic('cart')} Your sponsors</div>
     <div class="small muted" style="margin:6px 0 10px">Wear up to two brands, one on the cap and one on the shirt. Each is its own deal.</div>
@@ -9250,7 +9250,7 @@ function sponsorDecisionNode(){
   offers.forEach(offer=>{
     const nti=sponsorTierInfo(offer.tier), ntr=brandTrait(offer.brand), bi=brandInfo(offer.brand), signing=sponsorSigningBonus(offer.brand);
     // CS330: frame WHY this offer showed up - a step-up to a bigger tier, or a rival at your ceiling trying to poach you.
-    const badge = offer.upgrade ? `<div class="small" style="display:inline-block;background:rgba(235,166,31,.16);color:#ffd45e;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">↑ A bigger brand is calling · step up to ${esc(nti.name)}</div>`
+    const badge = offer.upgrade ? `<div class="small" style="display:inline-block;background:rgba(241,208,74,.16);color:#ffd45e;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">↑ A bigger brand is calling · step up to ${esc(nti.name)}</div>`
       : offer.poach ? `<div class="small" style="display:inline-block;background:rgba(95,208,224,.14);color:#7fe0e8;font-weight:800;letter-spacing:.05em;padding:3px 8px;border-radius:20px;margin-bottom:9px">⚡ A rival ${esc(nti.name)} brand wants to poach you</div>` : '';
     const card=$(`<div class="scout" style="border-color:${bi.color}66;margin:0;text-align:left;padding:12px 13px">
       ${badge}
@@ -9309,7 +9309,7 @@ function contractReportCardHTML(x){
     : all ? `Every goal delivered. ${esc(contract.sponsor)} is thrilled${relGrow>0?`, next year’s bonuses grow +${relGrow}%`:''}.`
     : met===0 ? 'A tough year. The relationship took a hit.'
     : `${met} of ${contract.goals.length} goals met. The relationship holds${relGrow>0?`, next year’s bonuses +${relGrow}%`:''}.`;
-  return `<div class="scout" style="border-color:${all?'#ffd45e':brandInfo(contract.sponsor).color+'66'};text-align:left;margin:0 0 10px;${all?'box-shadow:0 0 22px rgba(235,166,31,.18)':''}">
+  return `<div class="scout" style="border-color:${all?'#ffd45e':brandInfo(contract.sponsor).color+'66'};text-align:left;margin:0 0 10px;${all?'box-shadow:0 0 22px rgba(241,208,74,.18)':''}">
     <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
       <span style="display:flex;align-items:center;gap:9px;min-width:0">${brandLogoSVG(contract.sponsor,30)}
         <span style="min-width:0"><span style="font-weight:800;color:var(--oncard);white-space:nowrap">${esc(contract.sponsor)}</span>
@@ -9317,7 +9317,7 @@ function contractReportCardHTML(x){
       <div style="text-align:right"><div class="small" style="color:#ffd45e;font-weight:800">${met}/${contract.goals.length} met · +${fmt(bonus)}</div></div></div>
     ${rows}
     ${(sp&&!dropped)?`<div style="margin-top:8px">${sponsorRelMeterHTML(sp)}</div>`:''}
-    ${ambNew?`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(235,166,31,.12);border:1px solid rgba(235,166,31,.4)"><span class="small" style="color:#ffd45e;font-weight:800">★ Brand Ambassador</span><span class="small" style="display:block;color:#e6d6a8;margin-top:2px">Max loyalty with ${esc(ambNew.brand)}, they’ve made you the face of the brand${ambNew.fol>0?` · ▲ ${fmtFollowers(ambNew.fol)} followers`:''}.</span></div>`:''}
+    ${ambNew?`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.4)"><span class="small" style="color:#ffd45e;font-weight:800">★ Brand Ambassador</span><span class="small" style="display:block;color:#e6d6a8;margin-top:2px">Max loyalty with ${esc(ambNew.brand)}, they’ve made you the face of the brand${ambNew.fol>0?` · ▲ ${fmtFollowers(ambNew.fol)} followers`:''}.</span></div>`:''}
     <div class="small" style="color:#9fb3a8;margin-top:8px">${outlook}</div></div>`;
 }
 // season-summary: both slots' report cards + a combined signing-bonus line
@@ -9668,7 +9668,7 @@ function scrPlayoffWatch(){
   } else {
     // final result
     const won=!!(plan.winner && plan.winner.p && plan.winner.p.you);
-    add($(`<div class="scout" style="max-width:440px;margin:16px auto 10px;text-align:center;border-color:var(--gold);box-shadow:0 0 22px rgba(235,166,31,.16)">
+    add($(`<div class="scout" style="max-width:440px;margin:16px auto 10px;text-align:center;border-color:var(--gold);box-shadow:0 0 22px rgba(241,208,74,.16)">
       <div class="center"><span class="tag" style="color:#ff6b5e;border-color:#ff6b5e">🔥 Sudden-Death Playoff</span></div>
       <h2 style="margin:12px 0 4px;font-size:22px;color:${won?'#35d6a0':'#fff'}">${won?'You won the playoff!':'Lost in the playoff'}</h2>
       <div class="small muted">${won?('Took it on the '+ord(plan.holeCount)+' playoff hole'):(esc(plan.winner&&plan.winner.p?plan.winner.p.name:'')+' won on the '+ord(plan.holeCount)+' playoff hole')}</div>
@@ -9847,7 +9847,7 @@ function momentHTML(m, fresh){
   return `<div class="moment ${fresh?'fresh':''}"><span class="mday">${m.day}</span><span class="mscore" style="color:${sCol}">${sc}</span><span class="mmove">${move}</span>${cutTag}</div>`;
 }
 /* ---------- win celebration (tournament + major) ---------- */
-function trophyGold(id){ return `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f9d271"/><stop offset="1" stop-color="#c98f12"/></linearGradient>`; }
+function trophyGold(id){ return `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7e48a"/><stop offset="1" stop-color="#c7a31f"/></linearGradient>`; }
 function trophySilver(id){ return `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef2f5"/><stop offset="1" stop-color="#aab3bd"/></linearGradient>`; }
 function winTrophySVG(){ return `<svg viewBox="0 0 100 116" width="100%" height="100%">
   <defs>${trophyGold('wg')}</defs>
@@ -9896,7 +9896,7 @@ function greenJacketSVG(){ return `<svg viewBox="0 0 100 116" width="100%" heigh
   <!-- shirt/tie gap showing between the open fronts -->
   <path d="M50 41 L46 52 L50 64 L54 52 Z" fill="#0a3d22"/>
   <!-- fastening button -->
-  <circle cx="50" cy="72" r="2.7" fill="#f9d271" stroke="#0a3d22" stroke-width="0.7"/>
+  <circle cx="50" cy="72" r="2.7" fill="#f7e48a" stroke="#0a3d22" stroke-width="0.7"/>
   <!-- breast pocket -->
   <rect x="58" y="58" width="9" height="2.6" rx="1.2" fill="#0c5430"/></svg>`; }
 function usOpenTrophySVG(){ return `<svg viewBox="0 0 100 116" width="100%" height="100%">
@@ -9913,7 +9913,7 @@ function majorTheme(name){
   if(/National Open/i.test(name)) return {label:'The National Open Champion', accent:'#3a6fb0', svg:usOpenTrophySVG};
   if(/Links Championship/i.test(name)) return {label:'The Links Championship · Links Flagon', accent:'#d8c38a', svg:claretJugSVG};
   if(/Championship/i.test(name)) return {label:'The Championship · Championship Cup', accent:'#cfd3d8', svg:wanamakerSVG};
-  return {label:'Major Championship', accent:'#EBA61F', svg:winTrophySVG};
+  return {label:'Major Championship', accent:'#F1D04A', svg:winTrophySVG};
 }
 // lightweight rAF confetti, one center burst (wins) or two corner cannons (majors); auto-stops
 function confettiRun(canvas, opts){
@@ -9946,12 +9946,12 @@ function canvasTrophy(x,cx,cy,s,col){ x.save(); x.translate(cx,cy); x.scale(s,s)
 function drawMajorWinCard(cv, info){
   const W=600,H=760; cv.width=W; cv.height=H; const x=cv.getContext('2d');
   const g=x.createLinearGradient(0,0,0,H); g.addColorStop(0,'#114a32'); g.addColorStop(1,'#06180f'); x.fillStyle=g; x.fillRect(0,0,W,H);
-  x.strokeStyle=info.accent||'#EBA61F'; x.lineWidth=4; x.strokeRect(13,13,W-26,H-26);
+  x.strokeStyle=info.accent||'#F1D04A'; x.lineWidth=4; x.strokeRect(13,13,W-26,H-26);
   x.textAlign='center';
   x.fillStyle='#F4E3C9'; x.font='600 26px Georgia, serif'; x.fillText('RUN THE', W/2, 72);
-  x.fillStyle='#EBA61F'; x.font='700 54px Georgia, serif'; x.fillText('TOUR', W/2, 124);
-  canvasTrophy(x, W/2, 240, 3.3, '#EBA61F');
-  x.fillStyle='#f9d271'; x.font='800 40px Arial, sans-serif'; x.fillText('MAJOR CHAMPION', W/2, 358);
+  x.fillStyle='#F1D04A'; x.font='700 54px Georgia, serif'; x.fillText('TOUR', W/2, 124);
+  canvasTrophy(x, W/2, 240, 3.3, '#F1D04A');
+  x.fillStyle='#f7e48a'; x.font='800 40px Arial, sans-serif'; x.fillText('MAJOR CHAMPION', W/2, 358);
   x.fillStyle='#dfeae2'; x.font='600 26px Georgia, serif'; x.fillText(info.evt, W/2, 398);
   x.fillStyle='#F4E3C9'; x.font='700 44px Georgia, serif'; x.fillText(info.name, W/2, 474);
   x.fillStyle='#9cbfa8'; x.font='700 20px Arial, sans-serif'; x.fillText('OVR '+info.ovr+'   ·   Year '+info.year, W/2, 508);
@@ -10006,7 +10006,7 @@ function celebratePlayoff(ce, opts){
 }
 function celebrateWin(evt, o, opts){
   opts=opts||{}; const major=!!evt.major, reduce=!!opts.reduce, me=S.season.me;
-  const theme=major?majorTheme(evt.name):{accent:'#EBA61F', svg:winTrophySVG, label:'Tournament Won'};
+  const theme=major?majorTheme(evt.name):{accent:'#F1D04A', svg:winTrophySVG, label:'Tournament Won'};
   const win=document.createElement('div'); win.className='celebrate'+(major?' major':'');
   if(major) win.appendChild($(`<div class="spot"></div>`));
   const cv=document.createElement('canvas'); cv.className='confetti'; win.appendChild(cv);
@@ -10036,7 +10036,7 @@ function celebrateWin(evt, o, opts){
   if(reduce){ check.textContent='+'+fmt(target); }
   else { const dur=820,t0=performance.now(); (function cu(now){ const k=Math.min(1,(now-t0)/dur);
     check.textContent='+'+fmt(Math.round(target*(1-Math.pow(1-k,3)))); if(k<1) requestAnimationFrame(cu); })(t0); }
-  if(major && !reduce){ const colors=['#EBA61F','#f9d271','#ffffff',theme.accent];   // confetti = majors only
+  if(major && !reduce){ const colors=['#F1D04A','#f7e48a','#ffffff',theme.accent];   // confetti = majors only
     _celebStop=confettiRun(cv,{count:170, colors, mode:'cannons'}); }
   win.onclick=finish;   // tap anywhere advances (skip)
   // Auto Sim ON → hands-off, auto-advance (majors a touch longer). Auto Sim OFF → the player is pacing it
@@ -10063,7 +10063,7 @@ function celebrateCourseRecord(courseName, scoreTxt, opts){
   document.body.appendChild(win);
   sfx('win'); buzz([0,30,40,50]);
   track('daily_course_record');
-  if(!reduce){ _celebStop=confettiRun(cv,{count:150, colors:['#EBA61F','#f9d271','#ffffff','#35d6a0'], mode:'cannons'}); }
+  if(!reduce){ _celebStop=confettiRun(cv,{count:150, colors:['#F1D04A','#f7e48a','#ffffff','#35d6a0'], mode:'cannons'}); }
   win.onclick=finish;   // tap anywhere dismisses (result screen sits underneath)
 }
 /* ---- Olympic medal ceremony: reveal the podium bronze → silver → gold, in order ---- */
@@ -10161,7 +10161,7 @@ function cupMatchRow(m, anim){
   const mid = m.res==='half'
     ? `<span style="color:#c9b25a;font-weight:800;font-size:12px">HALVED</span>`
     : `<span style="color:#35d6a0;font-weight:800;white-space:nowrap">${aWon?'◀ ':''}${esc(m.label)}${bWon?' ▶':''}</span>`;
-  return `<div style="display:flex;align-items:center;gap:8px;padding:8px 9px;border-bottom:1px solid rgba(255,255,255,.06)${m.you?';background:rgba(235,166,31,.10);border-left:3px solid var(--gold)':''}${anim?';animation:celebRise .4s ease both':''}">
+  return `<div style="display:flex;align-items:center;gap:8px;padding:8px 9px;border-bottom:1px solid rgba(255,255,255,.06)${m.you?';background:rgba(241,208,74,.10);border-left:3px solid var(--gold)':''}${anim?';animation:celebRise .4s ease both':''}">
     <div style="flex:1;min-width:0;text-align:left;font-size:12.5px;line-height:1.3;${aWon?'':'opacity:.7'}">${side(m.a,aWon)}</div>
     <div style="flex:0 0 auto;width:74px;text-align:center">${mid}</div>
     <div style="flex:1;min-width:0;text-align:right;font-size:12.5px;line-height:1.3;${bWon?'':'opacity:.7'}">${side(m.b,bWon)}</div>
@@ -10428,7 +10428,7 @@ function scrTeamCup(){
   // confetti when YOUR COUNTRY has just clinched it (player, captain, or fan)
   if(allDone && T.mineWon && !T._confetti && !reduce){ T._confetti=true;
     const cv=document.createElement('canvas'); cv.style.cssText='position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:55'; document.body.appendChild(cv);
-    const stop=confettiRun(cv,{count:150, colors:['#EBA61F','#f9d271','#ffffff',youA?aCol:bCol], mode:'cannons'});
+    const stop=confettiRun(cv,{count:150, colors:['#F1D04A','#f7e48a','#ffffff',youA?aCol:bCol], mode:'cannons'});
     setTimeout(()=>{ stop&&stop(); cv.remove(); }, 2600);
   }
   // CS300: auto-scroll the newest revealed match into view (above the fixed control bar) as the cup plays
@@ -10514,7 +10514,7 @@ function raceToCupNode(byPts, evt){
     </div>
     <div style="position:relative;height:8px;border-radius:5px;background:#06223a;margin-top:9px;overflow:hidden">
       <div style="position:absolute;left:0;top:0;bottom:0;width:${fillPct}%;background:${col};opacity:.85;border-radius:5px"></div>
-      ${finale?'':`<div title="Top ${gate} line" style="position:absolute;left:${linePct}%;top:-2px;bottom:-2px;width:2px;background:#f9d271;box-shadow:0 0 4px #f9d271"></div>`}
+      ${finale?'':`<div title="Top ${gate} line" style="position:absolute;left:${linePct}%;top:-2px;bottom:-2px;width:2px;background:#f7e48a;box-shadow:0 0 4px #f7e48a"></div>`}
     </div>
   </div>`);
   return wrap;
@@ -10878,7 +10878,7 @@ function drawShareCard(cv,info,vals){
   ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
   const sp=ctx.createRadialGradient(W/2,-30,30,W/2,-30,W); sp.addColorStop(0,'rgba(74,156,108,.30)'); sp.addColorStop(1,'rgba(74,156,108,0)');
   ctx.fillStyle=sp; ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#cda24a'; ctx.fillRect(0,0,W,7);
+  ctx.fillStyle='#d3bd53'; ctx.fillRect(0,0,W,7);
   ctx.strokeStyle='rgba(205,162,74,.55)'; ctx.lineWidth=2; ctx.strokeRect(11,11,W-22,H-22);
   ctx.textAlign='center';
   // title (serif, two-tone), card starts with the wordmark, then the graph
@@ -10928,7 +10928,7 @@ function drawCareerCard(cv,info,vals){
   ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
   const sp=ctx.createRadialGradient(W/2,-30,30,W/2,-30,W); sp.addColorStop(0,'rgba(74,156,108,.30)'); sp.addColorStop(1,'rgba(74,156,108,0)');
   ctx.fillStyle=sp; ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#cda24a'; ctx.fillRect(0,0,W,7);
+  ctx.fillStyle='#d3bd53'; ctx.fillRect(0,0,W,7);
   ctx.strokeStyle='rgba(205,162,74,.55)'; ctx.lineWidth=2; ctx.strokeRect(11,11,W-22,H-22);
   ctx.textAlign='center';
   ctx.font='700 32px Cinzel, Georgia, serif';
@@ -11033,8 +11033,8 @@ function seasonHeadlines(x){
 }
 function headlinesHTML(h){
   const notes=h.notes.map(n=>`<div style="display:flex;gap:9px;align-items:flex-start;margin-top:7px"><span style="font-size:15px;line-height:1.2;flex:0 0 auto">${n.icon}</span><span class="small" style="color:var(--oncard);line-height:1.35;text-align:left">${n.text}</span></div>`).join('');
-  return `<div class="scout" style="max-width:520px;margin:8px auto 14px;text-align:left;border-color:rgba(235,166,31,.4)">
-    <div style="letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;border-bottom:1px solid rgba(235,166,31,.25);padding-bottom:6px;margin-bottom:10px;display:flex;justify-content:space-between"><span>Season ${h.year} Highlights</span></div>
+  return `<div class="scout" style="max-width:520px;margin:8px auto 14px;text-align:left;border-color:rgba(241,208,74,.4)">
+    <div style="letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-weight:800;font-size:10px;border-bottom:1px solid rgba(241,208,74,.25);padding-bottom:6px;margin-bottom:10px;display:flex;justify-content:space-between"><span>Season ${h.year} Highlights</span></div>
     <div style="display:flex;gap:11px;align-items:center">
       <div style="font-size:30px;flex:0 0 auto">${h.lead.icon}</div>
       <div style="min-width:0;font-family:var(--serif);font-weight:800;font-size:20px;line-height:1.08;color:var(--oncard)">${h.lead.head}</div></div>
@@ -11373,9 +11373,9 @@ function scrSummary(){
       const wrap=$(`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:11px;max-width:600px;margin:0 auto 6px"></div>`);
       wonThisSeason.forEach(w=>{ const maj=w.major, th=maj?majorTheme(w.name):null;
         wrap.appendChild($(`<div style="display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:15px;
-          border:1.5px solid ${maj?'var(--gold)':'rgba(235,166,31,.32)'};
-          background:${maj?'linear-gradient(135deg,rgba(235,166,31,.20),rgba(235,166,31,.05))':'rgba(255,255,255,.035)'};
-          box-shadow:${maj?'0 6px 22px rgba(235,166,31,.16)':'0 2px 10px rgba(0,0,0,.18)'}">
+          border:1.5px solid ${maj?'var(--gold)':'rgba(241,208,74,.32)'};
+          background:${maj?'linear-gradient(135deg,rgba(241,208,74,.20),rgba(241,208,74,.05))':'rgba(255,255,255,.035)'};
+          box-shadow:${maj?'0 6px 22px rgba(241,208,74,.16)':'0 2px 10px rgba(0,0,0,.18)'}">
           <div style="flex:0 0 auto;width:40px;height:46px">${maj?th.svg():winTrophySVG()}</div>
           <div style="min-width:0">
             <div style="font:800 16px/1.15 var(--body);color:${maj?'var(--gold)':'var(--oncard)'};overflow:hidden;text-overflow:ellipsis">${esc(w.name)}</div>
@@ -11983,7 +11983,7 @@ function scrRecap(){
       const fin=cut?'MC':(won?'WON':(me.tied?'T':'')+me.pos);
       const col=cut?'#e07a5f':(won?'var(--gold)':'var(--oncard)');
       const typeLbl=r.evt.major?'<span class="major">Major</span>':r.evt.type==='finale'?'<span class="sig">Finale</span>':r.evt.big?'<span class="sig">Signature</span>':'<span class="reg">Tour event</span>';
-      const row=$(`<div class="lb" style="grid-template-columns:30px 1fr auto;cursor:pointer;${won?'background:rgba(235,166,31,.10);border-color:rgba(235,166,31,.4)':''}">
+      const row=$(`<div class="lb" style="grid-template-columns:30px 1fr auto;cursor:pointer;${won?'background:rgba(241,208,74,.10);border-color:rgba(241,208,74,.4)':''}">
         <span class="pos" style="${won?'color:var(--gold)':''}">${won?'🏆':(r.evt.major?'★':i+1)}</span>
         <span class="pl" style="min-width:0"><div style="font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.evt.name}</div><div class="small muted" style="font-size:10.5px">${typeLbl} · ${fmt(r.evt.purse)}</div></span>
         <span style="text-align:right;line-height:1.25">
@@ -13441,7 +13441,7 @@ function hvTerrain(g, seedN, B){
   // tee box + tee markers
   const [tx,ty]=hvProj(g,0,0);
   s.push(`<rect x="${(tx-13).toFixed(1)}" y="${(ty-5).toFixed(1)}" width="26" height="10" rx="3" fill="${B.fw}" stroke="${B.outline}"/>`);
-  s.push(`<circle cx="${(tx-8).toFixed(1)}" cy="${ty.toFixed(1)}" r="1.3" fill="#EBA61F"/><circle cx="${(tx+8).toFixed(1)}" cy="${ty.toFixed(1)}" r="1.3" fill="#EBA61F"/>`);
+  s.push(`<circle cx="${(tx-8).toFixed(1)}" cy="${ty.toFixed(1)}" r="1.3" fill="#F1D04A"/><circle cx="${(tx+8).toFixed(1)}" cy="${ty.toFixed(1)}" r="1.3" fill="#F1D04A"/>`);
   // cup + pin: cup so putts visibly fall in; each course flies its OWN flag (per-course color/style)
   const [ppx,ppy]=hvProj(g,g.pin[0],g.pin[1]);
   s.push(`<g id="hv-pin"><ellipse cx="${ppx.toFixed(1)}" cy="${(ppy+0.4).toFixed(1)}" rx="${HV_CUP_RX}" ry="${HV_CUP_RY}" fill="#0c1810"/><ellipse cx="${ppx.toFixed(1)}" cy="${(ppy+0.2).toFixed(1)}" rx="${HV_CUP_RX}" ry="${HV_CUP_RY}" fill="none" stroke="#ffffff" stroke-width=".45" opacity=".75"/>`
@@ -13482,7 +13482,7 @@ function hvDoneShot(g,p,dim,small,pcol){
 // pcol tints the tracer glow / roll / ball ring to the player's assigned color (multi-ball H2H).
 function hvLiveShot(g,p,small,pcol){
   const A=hvProj(g,p.from[0],p.from[1]);
-  const glow=pcol?`${pcol}88`:'rgba(235,166,31,.45)';
+  const glow=pcol?`${pcol}88`:'rgba(241,208,74,.45)';
   const onGreen=(p.k==='putt'||p.k==='hole');
   const ballR=onGreen?HV_GBALL:(small?2.0:3.2);   // on the green the ball is a fixed, realistic fraction of the cup
   let s='';
@@ -13497,7 +13497,7 @@ function hvLiveShot(g,p,small,pcol){
   s+=`<circle id="hv-puff" cx="0" cy="0" r="0" fill="none" stroke="#eaf5ee" stroke-width="1.5" opacity="0"/>`;
   s+=`<ellipse id="hv-shadow" cx="${A[0].toFixed(1)}" cy="${(A[1]+2).toFixed(1)}" rx="3" ry="1.6" fill="#000" opacity="0"/>`;
   s+=`<circle id="hv-ball" cx="${A[0].toFixed(1)}" cy="${A[1].toFixed(1)}" r="${ballR}" fill="url(#hvball)" stroke="${pcol||'rgba(8,22,14,.5)'}" stroke-width="${pcol?'.9':'.55'}"/>`;
-  s+=`<circle id="hv-sink" cx="0" cy="0" r="0" fill="none" stroke="${pcol||'#EBA61F'}" stroke-width="2" opacity="0"/>`;
+  s+=`<circle id="hv-sink" cx="0" cy="0" r="0" fill="none" stroke="${pcol||'#F1D04A'}" stroke-width="2" opacity="0"/>`;
   return s;
 }
 // stat strip above the graphic (SHOT n · dist · to-hole + ball speed / apex flavor).
@@ -13884,11 +13884,11 @@ function scrDailyPreview(){
 function legendPlaySection(){
   const toks=legendTokensUnused(); if(!toks.length) return null;
   toks.sort((a,b)=>b.ovr-a.ovr);
-  const wrap=$(`<div style="max-width:520px;margin:14px auto 0;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(235,166,31,.08),rgba(10,22,38,.25));padding:14px 15px"></div>`);
+  const wrap=$(`<div style="max-width:520px;margin:14px auto 0;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(241,208,74,.08),rgba(10,22,38,.25));padding:14px 15px"></div>`);
   wrap.appendChild($(`<div style="display:flex;align-items:center;gap:7px;margin-bottom:3px"><span style="font-size:16px">🏆</span><b style="color:var(--gold);font-size:13.5px">Your Legend golfers</b><span class="tag" style="font-size:9.5px;color:#35d6a0;border-color:#35d6a0;padding:2px 7px">FREE PLAY</span></div>`));
   wrap.appendChild($(`<div class="small muted" style="margin-bottom:7px">Play today's course as a created golfer, doesn't use a daily attempt.</div>`));
   toks.forEach(tok=>{
-    const row=$(`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(235,166,31,.15)"></div>`);
+    const row=$(`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(241,208,74,.15)"></div>`);
     row.appendChild($(`<div style="min-width:0"><div style="font-weight:800;color:var(--oncard)">${esc(tok.name)} · OVR ${tok.ovr}</div><div class="small muted" style="margin-top:1px">${esc(tok.reason)} · ${tok.years}-year career</div></div>`));
     const use=$(`<button class="btn gold" style="width:auto;flex:0 0 auto;padding:9px 14px;font-size:12.5px">Play free ▸</button>`);
     use.onclick=()=>{ track('legend_token_used',{ovr:tok.ovr,free:true}); beginDailyRoundWithLegend(tok); }; row.appendChild(use);
@@ -14306,7 +14306,7 @@ function hvGifCompose(img,g,plots,hole,c,D){
   const bg=document.createElement('canvas'); bg.width=W; bg.height=H; const bx=bg.getContext('2d');
   bx.fillStyle='#0a1a10'; bx.fillRect(0,0,W,H); bx.drawImage(img,0,0,W,imgH);
   bx.fillStyle='#07130c'; bx.fillRect(0,imgH,W,barH); bx.textBaseline='middle';
-  bx.fillStyle='#EBA61F'; bx.font=`800 ${Math.round(barH*0.32)}px "Barlow Semi Condensed",Arial,sans-serif`;
+  bx.fillStyle='#F1D04A'; bx.font=`800 ${Math.round(barH*0.32)}px "Barlow Semi Condensed",Arial,sans-serif`;
   bx.fillText(`Hole ${hole.n} · Par ${hole.par}`, Math.round(barH*0.2), imgH+barH*0.34);
   bx.fillStyle='#eef4ee';
   bx.fillText(`${hole.par+hole.toPar} (${dtp(hole.toPar)}) · ${dResultLong(hole.par,hole.toPar)}`, Math.round(barH*0.2), imgH+barH*0.72);
@@ -14326,7 +14326,7 @@ function hvGifCompose(img,g,plots,hole,c,D){
     if(sh.putt) ctx.lineTo(sh.rest[0],sh.rest[1]);
     else { ctx.quadraticCurveTo(sh.C[0],sh.C[1],sh.B[0],sh.B[1]); ctx.lineTo(sh.rest[0],sh.rest[1]); }
     ctx.stroke();
-    ctx.fillStyle='rgba(10,25,16,.85)'; ctx.strokeStyle='#EBA61F'; ctx.lineWidth=1.2;
+    ctx.fillStyle='rgba(10,25,16,.85)'; ctx.strokeStyle='#F1D04A'; ctx.lineWidth=1.2;
     ctx.beginPath(); ctx.arc(sh.rest[0],sh.rest[1],W*0.019,0,7); ctx.fill(); ctx.stroke(); ctx.restore(); };
   const drawActive=(ctx,sh,t)=>{ ctx.save(); ctx.lineCap='round'; const lw=Math.max(1.4,W*0.008); let head;
     if(sh.putt){ head=lin(sh.A,sh.rest,t); ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.lineWidth=lw;
@@ -14347,7 +14347,7 @@ function hvGifCompose(img,g,plots,hole,c,D){
   const push=delay=>{ const data=ctx.getImageData(0,0,W,H).data;
     if(!pal){ const s=[]; for(let i=0;i<data.length;i+=28){ s.push(data[i],data[i+1],data[i+2]); }
       pal=gifMedianCut(new Uint8Array(s),250);
-      pal.push([255,255,255],[255,215,106],[235,166,31],[10,25,16],[7,19,12],[159,179,164]);
+      pal.push([255,255,255],[255,215,106],[241,208,74],[10,25,16],[7,19,12],[159,179,164]);
       if(pal.length>256) pal=pal.slice(0,256); }
     const idx=new Uint8Array(W*H);
     for(let p=0,q=0;p<data.length;p+=4,q++) idx[q]=gifNearest(pal,data[p],data[p+1],data[p+2],cache);
@@ -14373,7 +14373,7 @@ function hvShareShot(holeIdx){
     ctx.fillStyle='#0a1a10'; ctx.fillRect(0,0,W,H); ctx.drawImage(img,0,0,W,imgH);
     ctx.fillStyle='#07130c'; ctx.fillRect(0,imgH,W,barH);
     ctx.textBaseline='middle';
-    ctx.fillStyle='#EBA61F'; ctx.font=`800 ${Math.round(barH*0.34)}px "Barlow Semi Condensed",sans-serif`;
+    ctx.fillStyle='#F1D04A'; ctx.font=`800 ${Math.round(barH*0.34)}px "Barlow Semi Condensed",sans-serif`;
     ctx.fillText(`Hole ${hole.n} · Par ${hole.par}`, Math.round(barH*0.22), imgH+barH*0.36);
     ctx.fillStyle='#eef4ee';
     ctx.fillText(`${hole.par+hole.toPar} (${dtp(hole.toPar)}) · ${dResultLong(hole.par,hole.toPar)}`, Math.round(barH*0.22), imgH+barH*0.72);
@@ -14446,7 +14446,7 @@ function scrSpotlightResult(){
   if(!r){ S.special=false; S.screen='title'; return render(); }
   const c=DAILY_COURSES[r.course], total=r.total, left=spotAttemptsLeft(mk);
   const av=r.avg!=null?r.avg:dTourAvg(c); const bestT=(rec&&rec.best!=null)?rec.best:total; const wonEvent=bestT<av; const margin=Math.abs(av-total);
-  add($(`<div class="center"><span class="tag" style="color:#ffd76a;border-color:#ffd76a;background:rgba(235,166,31,.12)">⭐ ${sp.month} Spotlight${justPlayed?' complete':''}</span></div>`));
+  add($(`<div class="center"><span class="tag" style="color:#ffd76a;border-color:#ffd76a;background:rgba(241,208,74,.12)">⭐ ${sp.month} Spotlight${justPlayed?' complete':''}</span></div>`));
   add($(`<h1 class="center" style="font-size:26px;margin:10px 0 2px">${esc(c.v)}</h1>`));
   add($(`<div class="center" style="margin:6px 0"><span class="mono" style="font-weight:800;font-size:44px;white-space:nowrap;color:${total<0?'#35d6a0':total===0?'var(--oncard)':'#E14A33'}">${dTot(total, c.par)}</span></div>`));
   add($(`<p class="lede center" style="margin:0 0 8px">Par ${c.par} · OVR ${r.ovr}${dCondLabel(r.cond)?' · '+dCondLabel(r.cond):''} · special event</p>`));
@@ -14469,7 +14469,7 @@ function scrSpotlightResult(){
       const shared=(S.spotResult.record==='tie'), co=(srec&&crHolders(srec))||'You';
       if(!S.spotResult._crCelebrated){ S.spotResult._crCelebrated=true; const cn=dShort(c.v), st=dTot(total, c.par);
         setTimeout(()=>{ if(S.screen==='dailyresult'){ try{ celebrateCourseRecord(cn, st, {kicker:sp.month+' Spotlight Record', shared}); }catch(e){} } }, 360); }
-      add($(`<div style="max-width:520px;margin:0 auto 8px;text-align:center;padding:16px 18px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(235,166,31,.22),rgba(235,166,31,.05));box-shadow:0 6px 22px rgba(235,166,31,.18)">
+      add($(`<div style="max-width:520px;margin:0 auto 8px;text-align:center;padding:16px 18px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(241,208,74,.22),rgba(241,208,74,.05));box-shadow:0 6px 22px rgba(241,208,74,.18)">
         <div style="width:50px;height:58px;margin:0 auto 4px">${winTrophySVG()}</div>
         <div style="font:800 12px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">${shared?'Spotlight Record Tied':'New Spotlight Record'}</div>
         <div style="font-family:var(--display);font-size:26px;color:var(--oncard);margin-top:6px;line-height:1">${dTot(total, c.par)}</div>
@@ -14480,7 +14480,7 @@ function scrSpotlightResult(){
   if(dbCacheSpot&&dbCacheSpot.day===_spDay&&dbCacheSpot.ok&&dbCacheSpot.rows.length){
     const board=$(`<div class="scout" style="max-width:520px;margin:0 auto 8px"><div class="small muted center" style="letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">⭐ Spotlight leaderboard</div></div>`);
     dbCacheSpot.rows.slice(0,10).forEach(row=>{ const mine=sbUser&&row.user_id===sbUser.id;
-      board.appendChild($(`<div style="display:flex;align-items:center;gap:8px;padding:3px 4px;${mine?'background:rgba(235,166,31,.10);border-radius:6px':''}"><span class="mono small muted" style="width:20px">${row.rank}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:${mine?'800':'600'}">${esc(row.display_name)}${mine?' (you)':''}</span><span class="mono" style="font-weight:800;color:${row.to_par<0?'#35d6a0':row.to_par>0?'#E14A33':'var(--oncard)'}">${dTot(row.to_par, c.par)}</span></div>`)); });
+      board.appendChild($(`<div style="display:flex;align-items:center;gap:8px;padding:3px 4px;${mine?'background:rgba(241,208,74,.10);border-radius:6px':''}"><span class="mono small muted" style="width:20px">${row.rank}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:${mine?'800':'600'}">${esc(row.display_name)}${mine?' (you)':''}</span><span class="mono" style="font-weight:800;color:${row.to_par<0?'#35d6a0':row.to_par>0?'#E14A33':'var(--oncard)'}">${dTot(row.to_par, c.par)}</span></div>`)); });
     add(board);
   }
   const holes=(S.dailyHoles&&S.dailyHoles.length===18)?S.dailyHoles:(r.holes&&r.holes.length===18?r.holes:null);
@@ -15127,7 +15127,7 @@ function scrDailyResult(){
             :`<b style="color:#E14A33">Couldn't submit this score</b><div class="small muted" style="margin-top:3px">This account is out of daily attempts (${m.used}/${m.max} used today). A new course drops at midnight ET.</div>`}</div>`)); }
   // guests: one attempt, no course records, sign in to log this score and unlock more attempts
   if(!practice && !sbSignedIn()){
-    add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:var(--gold);background:rgba(235,166,31,.06)">
+    add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:var(--gold);background:rgba(241,208,74,.06)">
       <b style="color:var(--gold)">Save this score to your account</b>
       <div class="small muted" style="margin-top:3px">Guests get ${GUEST_DAILY_ATTEMPTS} attempt a day and can't hold course records. Sign in to log this round, unlock ${DAILY_MAX_ATTEMPTS} attempts a day, and chase the record.</div></div>`)); }
   // reassurance: an attempt that didn't beat your best of the day still keeps your best, swing freely
@@ -15179,7 +15179,7 @@ function scrDailyResult(){
     // in-memory _crCelebrated guard alone wouldn't stop the re-fire).
     if(justPlayed && !r._crCelebrated){ r._crCelebrated=true; const cn=dShort(c.v), st=dTot(total, c.par);
       setTimeout(()=>{ if(S.screen==='dailyresult'){ try{ celebrateCourseRecord(cn, st, {shared}); }catch(e){} } }, 360); }
-    add($(`<div style="max-width:520px;margin:0 auto;text-align:center;padding:16px 18px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(235,166,31,.22),rgba(235,166,31,.05));box-shadow:0 6px 22px rgba(235,166,31,.18)">
+    add($(`<div style="max-width:520px;margin:0 auto;text-align:center;padding:16px 18px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(241,208,74,.22),rgba(241,208,74,.05));box-shadow:0 6px 22px rgba(241,208,74,.18)">
       <div style="width:50px;height:58px;margin:0 auto 4px">${winTrophySVG()}</div>
       <div style="font:800 12px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">${shared?'Course Record Tied':'New Course Record'}</div>
       <div style="font-family:var(--display);font-size:26px;color:var(--oncard);margin-top:6px;line-height:1">${dTot(total, c.par)}</div>
@@ -15258,7 +15258,7 @@ function shopCard(it){ const r=ACC_RARITY[it.rarity]||ACC_RARITY.common, owned=a
   else if(owned) action=`<button class="btn gold" data-equip="${it.id}" style="width:100%;padding:8px;font-size:12px">Equip</button>`;
   else if(it.rarity==='exclusive') action=`<div class="small muted center" style="padding:6px 0;font-size:10px">Earned · ${esc(it.note||'milestone')}</div>`;
   else action=`<button class="btn ${afford?'goldfill':'ghost'}" data-buy="${it.id}"${afford?'':' disabled'} style="width:100%;padding:8px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:5px"><span style="width:15px;height:15px">${ic('coin',{size:'15px'})}</span>${coinFmt(price)}</button>`;
-  return `<div style="border:1.5px solid ${eq?'var(--gold)':r.c+'55'};border-radius:13px;padding:11px;background:${eq?'rgba(235,166,31,.09)':'rgba(255,255,255,.03)'};display:flex;flex-direction:column;gap:6px">
+  return `<div style="border:1.5px solid ${eq?'var(--gold)':r.c+'55'};border-radius:13px;padding:11px;background:${eq?'rgba(241,208,74,.09)':'rgba(255,255,255,.03)'};display:flex;flex-direction:column;gap:6px">
     <div style="display:flex;align-items:center;gap:8px">
       <span style="width:30px;height:30px;color:${r.c};flex:0 0 auto">${ic(sl.icon,{size:'28px'})}</span>
       <div style="min-width:0"><div style="font-weight:800;font-size:12.5px;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(it.name)}</div>
@@ -15292,7 +15292,7 @@ function cosCard(cat,o){
   else if(owned) action=`<button class="btn gold" data-ceq="${cat}:${o.id}" style="width:100%;padding:8px;font-size:12px">Equip</button>`;
   else { const afford=coinBalance()>=price;
     action=`<button class="btn ${afford?'goldfill':'ghost'}" data-cbuy="${cat}:${o.id}"${afford?'':' disabled'} style="width:100%;padding:8px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:5px"><span style="width:15px;height:15px">${ic('coin',{size:'15px'})}</span>${coinFmt(price)}</button>`; }
-  return `<div style="border:1.5px solid ${equipped?'var(--gold)':'rgba(255,255,255,.12)'};border-radius:13px;padding:11px;background:${equipped?'rgba(235,166,31,.09)':'rgba(255,255,255,.03)'};display:flex;flex-direction:column;gap:7px">
+  return `<div style="border:1.5px solid ${equipped?'var(--gold)':'rgba(255,255,255,.12)'};border-radius:13px;padding:11px;background:${equipped?'rgba(241,208,74,.09)':'rgba(255,255,255,.03)'};display:flex;flex-direction:column;gap:7px">
     <div style="display:flex;align-items:center;gap:8px">${swatch}<div style="min-width:0"><div style="font-weight:800;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(o.name)}</div>
       <div style="font:800 8.5px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:2px">${esc(c.name)}</div></div></div>
     ${action}</div>`;
@@ -15421,7 +15421,7 @@ function overlayShop(screen){
   const pv=S.shopPreview;
   if(pv){
     const bal=coinBalance(), afford=bal>=pv.price, after=Math.max(0,bal-pv.price);
-    const card=$(`<div style="max-width:520px;margin:14px auto 0;padding:18px 16px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(235,166,31,.14),rgba(235,166,31,.03));text-align:center">
+    const card=$(`<div style="max-width:520px;margin:14px auto 0;padding:18px 16px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(241,208,74,.14),rgba(241,208,74,.03));text-align:center">
       <div style="font:800 11px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">Confirm purchase</div>
       <div style="font-family:var(--display);font-size:22px;color:var(--oncard);margin-top:6px">${esc(pv.name)}</div>
       <div style="display:inline-flex;align-items:center;gap:6px;margin-top:7px;font-weight:800;font-size:19px;color:var(--gold)"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(pv.price)}</div>
@@ -15574,7 +15574,7 @@ function scrCareerEnd(){
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${esc(S.name||'Your Golfer')}</h1>`));
   add($(`<p class="lede center" style="margin-bottom:10px">${e.years} season${e.years===1?'':'s'} on tour · ${c.wins} win${c.wins===1?'':'s'} · ${c.majors} major${c.majors===1?'':'s'}</p>`));
   if(S.freshLegendToken){ const lt=S.freshLegendToken;
-    add($(`<div class="center" style="margin:0 0 16px"><div style="display:inline-block;background:linear-gradient(180deg,#3a2a0f,#0a1626);border:1px solid var(--gold);border-radius:14px;padding:16px 22px;max-width:92vw;box-shadow:0 0 24px rgba(235,166,31,.25)">
+    add($(`<div class="center" style="margin:0 0 16px"><div style="display:inline-block;background:linear-gradient(180deg,#3a2a0f,#0a1626);border:1px solid var(--gold);border-radius:14px;padding:16px 22px;max-width:92vw;box-shadow:0 0 24px rgba(241,208,74,.25)">
       <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">🏆 Legend Token Earned</div>
       <div style="font:800 20px/1.2 var(--body);color:var(--oncard);margin-top:7px">${esc(lt.name)} · OVR ${lt.ovr} at their peak</div>
       <div class="small muted" style="margin-top:5px;max-width:400px">${esc(lt.reason)} across ${lt.years} seasons turns this golfer into a Legend, replay the Daily Challenge as this build for free, any time. It never uses a daily attempt.</div></div></div>`));
@@ -15655,7 +15655,7 @@ function scrCircuitEnd(){
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${esc(S.name||'Your Golfer')}</h1>`));
   add($(`<p class="lede center" style="margin-bottom:10px">${e.years} season${e.years===1?'':'s'} on the Legend Circuit · ${c.wins} win${c.wins===1?'':'s'} · ${c.majors} major${c.majors===1?'':'s'}</p>`));
   if(S.freshLegendToken){ const lt=S.freshLegendToken;
-    add($(`<div class="center" style="margin:0 0 16px"><div style="display:inline-block;background:linear-gradient(180deg,#3a2a0f,#0a1626);border:1px solid var(--gold);border-radius:14px;padding:16px 22px;max-width:92vw;box-shadow:0 0 24px rgba(235,166,31,.25)">
+    add($(`<div class="center" style="margin:0 0 16px"><div style="display:inline-block;background:linear-gradient(180deg,#3a2a0f,#0a1626);border:1px solid var(--gold);border-radius:14px;padding:16px 22px;max-width:92vw;box-shadow:0 0 24px rgba(241,208,74,.25)">
       <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">🏆 Legend Token Earned</div>
       <div style="font:800 20px/1.2 var(--body);color:var(--oncard)">${esc(lt.name)} · OVR ${lt.ovr}</div>
       <div class="small muted" style="margin-top:5px;max-width:400px">Completing the Legend Circuit turns this golfer into a Legend, replay the Daily Challenge as this build for free, any time. It never uses a daily attempt.</div></div></div>`));
@@ -16945,7 +16945,7 @@ function scrH2HLobby(){
     add($(`<h1 class="center" style="font-size:24px;margin:14px 0 4px">${need>0?`Waiting for ${need} more player${need>1?'s':''}…`:'Match ready'}</h1>`));
     if(S.h2h.code){
       add($(`<p class="lede center" style="margin:6px 0 4px">Invite a friend${cap>2?`s (need ${cap} players)`:''} with the code or a link:</p>`));
-      add($(`<div class="center" style="margin:6px 0"><span style="display:inline-block;font-family:var(--mono,monospace);font-size:34px;font-weight:800;letter-spacing:.28em;color:var(--gold);background:rgba(235,166,31,.08);border:1px solid var(--gold);border-radius:12px;padding:12px 22px">${esc(S.h2h.code)}</span></div>`));
+      add($(`<div class="center" style="margin:6px 0"><span style="display:inline-block;font-family:var(--mono,monospace);font-size:34px;font-weight:800;letter-spacing:.28em;color:var(--gold);background:rgba(241,208,74,.08);border:1px solid var(--gold);border-radius:12px;padding:12px 22px">${esc(S.h2h.code)}</span></div>`));
       const btns=$(`<div class="mini" style="justify-content:center;gap:8px;margin-top:6px"></div>`);
       const inv=$(`<button class="btn teal" style="width:auto;padding:9px 16px">${navigator.share?'Invite friends':'Copy invite link'}</button>`); inv.onclick=h2hInvite;
       const cp=$(`<button class="btn ghost" style="width:auto;padding:9px 16px">Copy code</button>`);
@@ -17068,7 +17068,7 @@ function h2hUnitRow(u, tp, opts){
   opts=opts||{}; const win=opts.win, mine=opts.mine, rank=opts.rank, big=opts.big;
   const mem = u.kind==='team' ? `<div class="small muted" style="margin-top:2px">${esc(u.members.map(p=>p.username).join(' & '))}${mine?' · your team':''}</div>` : '';
   const nm = u.kind==='team' ? `Team ${(u.id|0)+1}` : esc(u.label);
-  return `<div style="display:flex;align-items:center;justify-content:space-between;padding:${big?'13px 16px':'11px 14px'};border-radius:12px;border:1px solid ${win?'var(--gold)':mine?'rgba(235,166,31,.5)':'var(--line)'};background:${win?'rgba(235,166,31,.10)':'rgba(255,255,255,.02)'}">
+  return `<div style="display:flex;align-items:center;justify-content:space-between;padding:${big?'13px 16px':'11px 14px'};border-radius:12px;border:1px solid ${win?'var(--gold)':mine?'rgba(241,208,74,.5)':'var(--line)'};background:${win?'rgba(241,208,74,.10)':'rgba(255,255,255,.02)'}">
     <span><span style="font-weight:800;font-size:${big?16:15}px">${rank?`<span class="mono muted" style="margin-right:7px">${rank}</span>`:''}${win?'🏆 ':''}${nm}${mine&&u.kind!=='team'?' <span class="small" style="color:var(--gold)">· you</span>':''}</span>${mem}</span>
     <span class="mono" style="font-size:${big?22:20}px;font-weight:800;color:${h2hTpColor(tp)}">${h2hTpTxt(tp)}</span></div>`;
 }
@@ -17090,13 +17090,13 @@ function scrH2HPreview(){
   units.forEach((u,ix)=>{ const mine=u.members.some(p=>p.user_id===h2hUid());
     const nm=u.kind==='team'?`Team ${(u.id|0)+1}`:esc(u.label);
     const sub=u.kind==='team'?esc(u.members.map(p=>p.username).join(' & ')):esc(archetype(u.dispSkills).name);
-    grid.appendChild($(`<div style="text-align:center;padding:7px 5px;border-radius:9px;border:1px solid ${mine?'var(--gold)':'var(--line)'};background:${mine?'rgba(235,166,31,.08)':'rgba(255,255,255,.02)'}">
+    grid.appendChild($(`<div style="text-align:center;padding:7px 5px;border-radius:9px;border:1px solid ${mine?'var(--gold)':'var(--line)'};background:${mine?'rgba(241,208,74,.08)':'rgba(255,255,255,.02)'}">
       <div style="font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nm}${mine?' <span class="small" style="color:var(--gold)">you</span>':''}</div>
       <div class="small muted" style="margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px">${sub}</div></div>`));
   });
   // OVR row - the headline stat, visually elevated above the skill rows (Jordo: "should be a little more prominent")
   grid.appendChild($(`<div style="display:flex;align-items:center;font-weight:800;font-size:13px;color:var(--gold);letter-spacing:.04em">OVR</div>`));
-  ovrs.forEach(v=>{ const hi=v===maxOvr; grid.appendChild($(`<div style="text-align:center;font-weight:800;font-size:29px;line-height:1;padding:7px 0;border-radius:10px;font-variant-numeric:tabular-nums;background:${hi?'rgba(235,166,31,.15)':'rgba(255,255,255,.03)'};color:${hi?'var(--gold)':'var(--oncard)'}">${v}</div>`)); });
+  ovrs.forEach(v=>{ const hi=v===maxOvr; grid.appendChild($(`<div style="text-align:center;font-weight:800;font-size:29px;line-height:1;padding:7px 0;border-radius:10px;font-variant-numeric:tabular-nums;background:${hi?'rgba(241,208,74,.15)':'rgba(255,255,255,.03)'};color:${hi?'var(--gold)':'var(--oncard)'}">${v}</div>`)); });
   // divider so OVR reads as the headline, skills as supporting detail
   grid.appendChild($(`<div style="grid-column:1/-1;height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent);margin:7px 0 3px"></div>`));
   // skill rows, max highlighted
@@ -17285,11 +17285,11 @@ function h2hResultCard(){
   units.forEach((u,ui)=>{ const col=(S.h2h.unitCols&&S.h2h.unitCols[ui])||'#fff', mine=u.members.some(p=>p.user_id===h2hUid());
     const isWin=winId!=null && u.id===winId;
     const nm=u.kind==='team'?`Team ${(u.id|0)+1}`:esc(u.label);
-    const rowBg=isWin?'rgba(235,166,31,.11)':bg;
+    const rowBg=isWin?'rgba(241,208,74,.11)':bg;
     const cells=[nameCell(`${isWin?'<span class="ic" style="color:var(--gold);margin-right:4px;vertical-align:-2px">'+ic('trophy')+'</span>':''}<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${col};margin-right:6px;vertical-align:1px"></span><span style="font:800 11px/1.1 var(--body);color:${mine||isWin?'var(--gold)':'var(--oncard)'}">${nm}</span>`, `background:${rowBg};${mine?'box-shadow:inset 3px 0 0 var(--gold)':''}`)];
     for(let i=0;i<holes;i++){ const tp=u.scores[i], s=course.holes[i][0]+tp;
-      cells.push(holeCell(i,`<span style="display:block;padding:7px 0;font:700 12px/1 var(--mono);color:${dScoreCol(tp)}">${scMark(s,tp)}</span>`, isWin?'background:rgba(235,166,31,.05)':'')); }
-    cells.push(`<div style="width:${totW}px;flex:0 0 auto;text-align:center;padding:7px 0;font:800 12px/1 var(--mono);color:${h2hTpColor(u.total)};background:${isWin?'rgba(235,166,31,.05)':'transparent'}">${h2hTpTxt(u.total)}</div>`);
+      cells.push(holeCell(i,`<span style="display:block;padding:7px 0;font:700 12px/1 var(--mono);color:${dScoreCol(tp)}">${scMark(s,tp)}</span>`, isWin?'background:rgba(241,208,74,.05)':'')); }
+    cells.push(`<div style="width:${totW}px;flex:0 0 auto;text-align:center;padding:7px 0;font:800 12px/1 var(--mono);color:${h2hTpColor(u.total)};background:${isWin?'rgba(241,208,74,.05)':'transparent'}">${h2hTpTxt(u.total)}</div>`);
     tbl.appendChild(mk(cells));
   });
   wrap.appendChild(tbl);
