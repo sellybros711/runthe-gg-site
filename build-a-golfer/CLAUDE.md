@@ -8382,6 +8382,15 @@ allows Google Fonts, or self-host Anton.*
   Screenshots confirm the smooth lemon-gold foil (no harsh bands) on the TOUR wordmark, the hero, the Career
   Mode card, and the primary button — a distinctive, non-generic gold. Deployed to /golf. Tunable: the
   `--gold-grad`/`--gold-grad-d` stops + `--gold`/`--gold2` hue in `:root`.
+  - **CS354b — swept the remaining HARDCODED old-gold traces (owner: "there are still old traces of the
+    generic gold" — the streak pill, the HOW TO PLAY / DAILY QUESTS pill borders, the Continue-Career
+    `.resumecard`).** Many surfaces used the old `#EBA61F` gold directly (bypassing the token): 144
+    `rgba(235,166,31,…)` tint/border/glow/shadow values → `rgba(241,208,74,…)`; 32 `#EBA61F` → `#F1D04A`;
+    `--hgold` `#cda24a` → `#d3bd53` (muted lemon, drives the wordmark underline + dividers/rules); and the
+    old gold gradient stops `#f9d271`/`#e9a81e`/`#c98f12` → lemon equivalents. The two hardcoded amber FILL
+    cards — `.resumecard` (Continue Career) and `.gc-gold` (Career Mode) — now use `var(--gold-grad-d)` so
+    they follow the token. Verified: 0 old-gold hex/rgba traces left in the file, JS valid, title renders
+    with every pill/card/label on the lemon hue, 0 page errors. Deployed to /golf.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
