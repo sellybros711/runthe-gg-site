@@ -8358,13 +8358,16 @@ allows Google Fonts, or self-host Anton.*
     to the buckle since the driver head uses its own `G`). Sprite/palette-only. Verified in Playwright (0 page
     errors); screenshot confirms the driver + gold buckle. Deployed to /golf.
 
-- **CS354 — distinctive metallic gradient gold theme (owner: "the gold we use everywhere reads as AI, a
+- **CS354 — distinctive bright lemon-gold gradient theme (owner: "the gold we use everywhere reads as AI, a
   very generic gold used in many AI projects. Could we do a gradient gold so our theme is unique and stands
-  out?").** Replaced the flat generic `#EBA61F` gold on the marquee surfaces with a metallic FOIL gradient
-  so the brand reads bespoke, not stock. Added two theme tokens to `:root`: `--gold-grad` (a 5-stop vertical
-  foil: pale highlight → mid gold → deep gold → bright band → dark base) and `--gold-grad-d` (a slightly
-  angled variant for fills), and nudged the base tokens `--gold` `#EBA61F`→`#E9B233` / `--gold2`
-  `#c79320`→`#c28b1a` so the flat-gold used on small chips/labels everywhere is a touch richer too. Applied
+  out?").** Showed the owner 5 hue directions (champagne brass / antique amber-bronze / copper rose-gold /
+  olive green-gold / bright lemon-gold) mocked up on the wordmark + button + card; owner picked **bright
+  lemon-gold** and asked to "up the scale of the gradient so it's not as harsh of lines." Replaced the flat
+  generic `#EBA61F` gold on the marquee surfaces with a smooth bright lemon-gold foil. Added two theme tokens
+  to `:root`: `--gold-grad` (a **9-stop** vertical foil with small deltas between adjacent stops so there are
+  no hard band lines — reads as brushed metal) and `--gold-grad-d` (an angled 8-stop variant for fills), and
+  set the base tokens `--gold` `#EBA61F`→`#F1D04A` / `--gold2` `#c79320`→`#c9a520` (brighter lemon) so the
+  flat-gold used on small chips/labels everywhere shifts to the new hue too. Applied
   the gradient via the text-clip technique (`background:var(--gold-grad); -webkit-background-clip:text;
   background-clip:text; -webkit-text-fill-color:transparent; color:transparent`) to the highest-impact gold
   TEXT surfaces: the wordmark **"TOUR"** (`.wordmark .b`), the title-screen hero **"LIVE YOUR LEGACY."**
@@ -8375,10 +8378,10 @@ allows Google Fonts, or self-host Anton.*
   `color:var(--gold)` chips/labels keep the (now slightly richer) flat token for readability at small sizes;
   gradient text is reserved for the big brand moments. Verified in Playwright (title + retro setup): the
   wordmark/hero/retro-title all compute `background-clip:text` with transparent fill, the goldfill button +
-  gold card carry the metallic gradient, and readability holds on the dark-green background; 0 page errors.
-  Screenshots confirm the foil look on the TOUR wordmark, the hero, the Career Mode card, and the primary
-  button — a distinctive, non-generic gold. Deployed to /golf. Tunable: the `--gold-grad`/`--gold-grad-d`
-  stops in `:root`.
+  gold card carry the gradient, and readability holds on the dark-green background; 0 page errors.
+  Screenshots confirm the smooth lemon-gold foil (no harsh bands) on the TOUR wordmark, the hero, the Career
+  Mode card, and the primary button — a distinctive, non-generic gold. Deployed to /golf. Tunable: the
+  `--gold-grad`/`--gold-grad-d` stops + `--gold`/`--gold2` hue in `:root`.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
