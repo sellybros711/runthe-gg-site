@@ -1235,7 +1235,9 @@ window.GA_ID='G-L29P5MRWKE';
   body.ovopen{overflow:hidden}   /* lock the page behind an open overlay */
   .ov h3{font-family:var(--display); font-weight:400; font-size:26px; color:var(--gold); margin:6px 0 12px; text-transform:uppercase}
   .ov ol{margin:0 0 14px; padding-left:18px; color:#dbe6ee} .ov li{margin:7px 0}
-  .ov .x{position:absolute; top:calc(10px + env(safe-area-inset-top, 0px)); right:14px}
+  /* CS356c: fixed (not absolute) so the top Close stays pinned + tappable even when a long overlay
+     (e.g. Trophy Room) is scrolled down; z-index above the overlay's own scrolling content. */
+  .ov .x{position:fixed; top:calc(10px + env(safe-area-inset-top, 0px)); right:14px; z-index:3; box-shadow:0 2px 10px rgba(0,0,0,.5)}
 
   /* ---- Pro Shop / locker ---- */
   .shop-sticky{position:sticky; top:0; z-index:6; background:#06200f; padding-bottom:9px;
@@ -1679,10 +1681,11 @@ const TROPHY_CABINET=[
   {k:'open',   name:'The Links Championship',     svg:claretJugSVG,    short:'Links Flagon'},
 ];
 // one round medallion chip, emoji badge + count + label, dimmed when never earned (an aspirational slot)
-function trophyChip(emoji,label,n,col){
+function trophyChip(iconKey,label,n,col){
   const won=n>0;
+  const icon=`<div style="width:32px;height:32px;filter:${won?'drop-shadow(0 1px 2px rgba(0,0,0,.4))':'grayscale(1)'}">${pxMedalSVG(PXI[iconKey], col)}</div>`;
   return `<div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:58px;opacity:${won?1:0.34}">
-    <div style="width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:21px;background:${won?'radial-gradient(circle at 50% 32%,rgba(255,255,255,.14),rgba(0,0,0,.22))':'rgba(255,255,255,.03)'};border:1.5px solid ${won?col:'rgba(255,255,255,.13)'};box-shadow:${won?'0 2px 7px rgba(0,0,0,.4)':'none'};filter:${won?'none':'grayscale(1) opacity(.85)'}">${emoji}</div>
+    <div style="width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:${won?'radial-gradient(circle at 50% 32%,rgba(255,255,255,.14),rgba(0,0,0,.22))':'rgba(255,255,255,.03)'};border:1.5px solid ${won?col:'rgba(255,255,255,.13)'};box-shadow:${won?'0 2px 7px rgba(0,0,0,.4)':'none'}">${icon}</div>
     <div class="small" style="font-weight:800;color:${won?col:'var(--muted)'};font-size:11px;line-height:1">${won?'×'+n:'&ndash;'}</div>
     <div class="small muted" style="font-size:8.5px;line-height:1.1;text-align:center">${label}</div></div>`;
 }
@@ -1699,18 +1702,18 @@ function trophyCabinetHTML(m){
       <div class="small" style="margin-top:2px;font-weight:800;color:${won?'var(--gold)':'var(--muted)'}">${won?'×'+n:'&ndash;'}</div>
       <div class="small muted" style="font-size:9.5px;line-height:1.15">${t.short}</div></div>`; }).join('');
   // Shelf 2, Olympic medals + the big team / season-long trophies
-  const medals=trophyChip('🥇','Games Gold',m.olyGold||0,'#f4cf5b')
-    +trophyChip('🥈','Games Silver',m.olySilver||0,'#cbd2da')
-    +trophyChip('🥉','Games Bronze',m.olyBronze||0,'#cd8e5a')
-    +trophyChip('🏆','Tour Cup',m.fedexCups||0,'var(--gold)')
-    +trophyChip('🏌','Team Cups',m.cupWins||0,'#7ec8ff')
-    +trophyChip('🎖','Captaincies',m.cupCaptain||0,'#e3b94f');
+  const medals=trophyChip('medal','Games Gold',m.olyGold||0,'#f4cf5b')
+    +trophyChip('medal','Games Silver',m.olySilver||0,'#cbd2da')
+    +trophyChip('medal','Games Bronze',m.olyBronze||0,'#cd8e5a')
+    +trophyChip('cup','Tour Cup',m.fedexCups||0,'#F1D04A')
+    +trophyChip('shield','Team Cups',m.cupWins||0,'#7ec8ff')
+    +trophyChip('ribbon','Captaincies',m.cupCaptain||0,'#e3b94f');
   // Shelf 3, season honors / awards
-  const honors=trophyChip('👑','Player of Year',m.poySeasons||0,'var(--gold)')
-    +trophyChip('🌟','Rookie of Year',m.roySeasons||0,'#9fe0c0')
-    +trophyChip('💰','Money Title',m.moneyLeaderSeasons||0,'#35d6a0')
-    +trophyChip('🎯','Scoring Title',m.scoringSeasons||0,'#7ec8ff')
-    +trophyChip('🌍','World No. 1',m.no1Seasons||0,'#f4cf5b');
+  const honors=trophyChip('crown','Player of Year',m.poySeasons||0,'#F1D04A')
+    +trophyChip('star','Rookie of Year',m.roySeasons||0,'#9fe0c0')
+    +trophyChip('dollar','Money Title',m.moneyLeaderSeasons||0,'#35d6a0')
+    +trophyChip('target','Scoring Title',m.scoringSeasons||0,'#7ec8ff')
+    +trophyChip('globe','World No. 1',m.no1Seasons||0,'#f4cf5b');
   return `<div class="scout" style="max-width:520px;margin:0 auto 14px;padding:13px 14px 15px">
     <div class="center" style="font:800 12px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">🏆 Trophy Case</div>
     <div style="margin-top:11px">
@@ -4942,7 +4945,7 @@ function overlayRecord(screen){
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Trophy Room</h3>
-    <div class="profhdr" style="display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 12px">${avatarHTML()}<div style="font-family:var(--serif);font-weight:700;font-size:18px;color:var(--oncard)">${esc(sbUsername||S.name||'Your Golfer')}</div><div class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(equippedTitle())}</div>${(sbSignedIn()&&sbUsername)?'<div class="small muted" style="margin-top:0">RunThe.GG member</div>':''}</div>
+    <div class="profhdr" style="display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 12px"><button type="button" class="profav" aria-label="Tap to customize your golfer" style="background:none;border:0;padding:0;margin:0;cursor:pointer;display:block;position:relative">${avatarHTML()}</button><button type="button" class="profav-hint" style="background:rgba(22,181,166,.14);border:1px solid #16b5a6;color:#4fe0d0;font:700 9.5px/1 var(--pixel);letter-spacing:.03em;text-transform:uppercase;padding:5px 9px;border-radius:999px;cursor:pointer;margin-top:2px">✎ Tap to customize</button><div style="font-family:var(--serif);font-weight:700;font-size:18px;color:var(--oncard);margin-top:3px">${esc(sbUsername||S.name||'Your Golfer')}</div><div class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(equippedTitle())}</div>${(sbSignedIn()&&sbUsername)?'<div class="small muted" style="margin-top:0">RunThe.GG member</div>':''}</div>
     ${cabinet}
     ${legendTokensHTML()}
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">${acctCard}</div>
@@ -4971,6 +4974,10 @@ function overlayRecord(screen){
   ov.querySelectorAll('.achcat[data-cat]').forEach(b=>{ b.onclick=()=>{ S.achOpen=S.achOpen||{}; const c=b.dataset.cat; S.achOpen[c]=!S.achOpen[c]; render(); }; });
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  // CS356c: the golfer is customized to your PROFILE (used in every mode). Tap it to edit; returns here.
+  const editGolfer=()=>{ track('profile_edit_open'); S.setupEdit=true; S.setupReturn='record'; S.overlay=null; S.screen='setup'; render(); };
+  const pav=ov.querySelector('.profav'); if(pav) pav.onclick=editGolfer;
+  const phint=ov.querySelector('.profav-hint'); if(phint) phint.onclick=editGolfer;
   screen.appendChild(ov);
 }
 const GOOGLE_G=`<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.4 5.4 2.5 13.3l7.8 6.1C12.2 13.2 17.6 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8C43.9 38 46.5 31.8 46.5 24.5z"/><path fill="#FBBC05" d="M10.3 19.4l-7.8-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.5 10.7l7.8-6.1c-.5-1.4-.8-2.9-.8-4.6s.3-3.2.8-4.6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.5-5.8c-2 1.4-4.7 2.3-7.7 2.3-6.4 0-11.8-3.7-13.7-8.9l-7.8 6.1C6.4 42.6 14.6 48 24 48z"/></svg>`;
@@ -5834,9 +5841,10 @@ function headwearRow(){
 // creation - kit colors are managed in the Pro Shop; the golfer is a code-drawn pixel sprite.
 function scrSetup(){
   const guest=!sbSignedIn();
+  const editing=!!S.setupEdit;   // CS356c: editing the profile golfer from the Trophy Room (not starting a career)
   const wrap=$(`<div class="retro-creator"></div>`);
-  wrap.appendChild($(`<div class="retro-title">▸ Create Your Golfer</div>`));
-  wrap.appendChild($(`<div class="retro-sub">${S.special?'Monthly Spotlight':(S.daily?'Beat the Pro':'Career Mode')} &middot; pick a look, then build your skills</div>`));
+  wrap.appendChild($(`<div class="retro-title">▸ ${editing?'Edit Your Golfer':'Create Your Golfer'}</div>`));
+  wrap.appendChild($(`<div class="retro-sub">${editing?'This is your golfer in every mode &middot; change it anytime':((S.special?'Monthly Spotlight':(S.daily?'Beat the Pro':'Career Mode'))+' &middot; pick a look, then build your skills')}</div>`));
   const stage=$(`<div class="pxstage"></div>`); stage.appendChild($(avatarShowHTML())); wrap.appendChild(stage);
 
   // ---- appearance (everyone) ----
@@ -5867,6 +5875,14 @@ function scrSetup(){
 
   // sticky action bar
   const bar=$(`<div class="setup-actionbar"></div>`);
+  if(editing){
+    // Profile-edit mode (opened from the Trophy Room). Changes auto-save on each pick; Done just returns.
+    const back=$(`<button class="btn ghost" style="margin:0;width:auto;flex:0 0 auto;padding:12px 15px">‹ Back</button>`);
+    const done=$(`<button class="btn goldfill" style="margin:0;flex:1 1 auto">Done ✓</button>`);
+    const ret=()=>{ if(!guest && !(S.name||'').trim()){ S.name=(sbUsername||'Your Golfer'); LS.set('bag_name',S.name); saveLook(); } S.setupEdit=false; const r=S.setupReturn; S.setupReturn=null; S.screen='title'; S.overlay=(r==='record'?'record':null); render(); };
+    back.onclick=ret; done.onclick=()=>{ ret(); toast('Golfer saved'); };
+    bar.appendChild(back); bar.appendChild(done); add(bar); return;
+  }
   const back=$(`<button class="btn ghost" style="margin:0;width:auto;flex:0 0 auto;padding:12px 15px">‹ Back</button>`);
   back.onclick=()=>{reset();S.screen='title';render();};
   const go=$(`<button class="btn goldfill" style="margin:0;flex:1 1 auto">Build Your Golfer ▸</button>`);
@@ -9963,6 +9979,17 @@ function pxTrophySVG(rows, cls){
   let cells='';
   for(let y=0;y<rows.length;y++){ const row=rows[y]; for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.')continue; const c=PXT_PAL[ch]||'#f0f'; cells+=`<rect x="${x}" y="${y}" width="1.04" height="1.04" fill="${c}"/>`; }}
   return `<svg${cls?' class="'+cls+'"':''} viewBox="0 0 ${PXT_W} ${PXT_H}" width="100%" height="100%" shape-rendering="crispEdges" preserveAspectRatio="xMidYMid meet">${cells}</svg>`;
+}
+// CS356c: small pixel icons for the Trophy Room medal/cup/honor chips, tinted per-chip.
+const PXI={"medal":[".....kkkkkkkk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddkkddk.....",".....kddddddk.....",".....kkkkmkkkk....","....kkmmmmmmmkk...","....kmmmhmmmmmk...","....kmmhmhmmmmk...","...kkmmmhhhmmmkk..","...kmmmhhdhhmmmk..","...kkmmmhhhmmmkk..","....kmmmmhmmmmk...","....kmmmmmmmmmk...","....kkmmmmmmmkk...",".....kkkkmkkkk...."],"cup":["..................","...kkkkkkkkkkkk...",".kkkmmmmmmmmmmkkk.",".kmmkmhmmmmdmkmmk.",".kmkkmhmmmmmmkkmk.",".kmkkmmmmmmmmkkmk.",".kmmmmmmmmmmmmmmk.",".kkkkkmmmmmdkkkkk.",".....kkmmmmkk.....","......kkmmkk......",".......kmmk.......","....kkkkmmkkkk....","...kkmmmmmmmmkk...","...khhhhhhhhhhk...","...kmmmmmmmmmmk...","...kkkkkkkkkkkk...","..................",".................."],"shield":["..................","..kkkkkkkkkkkkkk..","..kmmmmmmmmmmmmk..","..kmmmmmddmmmmmk..","..kkmmmmhhmmmmkk..","...kmmmhhhhmmmk...","...kmmmhhhhmmmk...","...kmmmmhhmmmmk...","...kkkmmmmmmkkk...",".....kkkmmkkk.....",".......kkkk.......","......kkmmkk......","......kmmmmk......","......kkmmkk......",".......kkkk.......","..................","..................",".................."],"star":[".......kkkk.......",".......kmmk.......",".......khmk.......","......kkmmkk......","......kmmmmk......",".kkkkkkmmmmkkkkkk.",".kmmmmmhhhmmmmmmk.",".kmmmmmhhhmmmmmmk.",".kkkmmmmmmmmmmkkk.","...kmmmmmmmmmmk...","...kkmmmmmmmmkk...","...kkmmmmmmmmkk...","...kmmmmmmmmmmk...","...kmmmkkkkmmmk...","...kmmmk..kmmmk...","...kkkkk..kkkkk...","..................",".................."],"crown":["..................","..................",".......kkkk.......",".......khhk.......","..kkkk.kmmk.kkkk..","..khhk.kmmk.khhk..","..kmmk.kmmk.kmmk..","..kmmk.khhk.kmmk..","..kmmkkkmmkkkmmk..","..kmmmmmmmmmmmmk..","..kmmmmmmmmmmmmk..","..kmmmmmmmmmmmmk..","..kmmmmmmmmmmmmk..","..kddddddddddddk..","..kkkkkkkkkkkkkk..","..................","..................",".................."],"dollar":["..................","........kkk.......",".....kkkkmkkkk....","....kkmmmmmmmkk...","...kkmmmhhmmmmkk..","..kkmmhhhhhhdmmkk.","..kmmdhhhhhhddmmk.","..kmmdhdhhddddmmk.",".kkmmdhhhhhhddmmkk",".kmmddhhhhhhdddmmk",".kkmmdddhhdhddmmkk","..kmmdhhhhhhddmmk.","..kmmdhhhhhhddmmk.","..kkmmddhhdddmmkk.","...kkmmmhhmmmmkk..","....kkmmmmmmmkk...",".....kkkkmkkkk....","........kkk......."],"target":["..................","........kkk.......",".....kkkkmkkkk....","....kkmmmmmmmkk...","...kkmmhhhhhmmkk..","..kkmmhhmmmhhmmkk.","..kmmhmmhhhmmhmmk.","..kmhhmhdddhmhhmk.",".kkmhmhddhddhmhmkk",".kmmhmhdhhhdhmhmmk",".kkmhmhddhddhmhmkk","..kmhhmhdddhmhhmk.","..kmmhmmhhhmmhmmk.","..kkmmhhmmmhhmmkk.","...kkmmhhhhhmmkk..","....kkmmmmmmmkk...",".....kkkkmkkkk....","........kkk......."],"globe":["..................","........kkk.......",".....kkkkhkkkk....","....kkmhmhmhmkk...","...kkmmhmhmhmmkk..","..kkmmhmmhmmhmmkk.","..kmmmhmmhmmhmmmk.","..kmmmhmmhmmhmmmk.",".kkmmmhmmhmmhmmmkk",".khhhhhhhhhhhhhhhk",".kkmmmhmmhmmhmmmkk","..kmmmhmmhmmhmmmk.","..kmmmhmmhmmhmmmk.","..kkmmhmmhmmhmmkk.","...kkmmhmhmhmmkk..","....kkmhmhmhmkk...",".....kkkkhkkkk....","........kkk......."],"ribbon":["..................","......kkkkkkk.....",".....kkdddddkk....","....kkddmmmddkk...","...kkdmmmmmmmdkk..","...kddmhmhmmmddk..","...kdmmmhhhmmmdk..","...kdmmhhhhhmmdk..","...kdmmmhhhmmmdk..","...kddmmmhmmmddk..","...kkdmmmmmmmdkk..","....kkmmmmmmmkk...",".....kdddddddk....",".....kdddkdddk....",".....kdddkdddk....",".....kdddkdddk....",".....kkdkkkdkk....","......kdk.kdk....."]};
+function pxShadeHex(hex,f){ hex=hex.replace('#',''); const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16); const C=v=>Math.max(0,Math.min(255,Math.round(v))).toString(16).padStart(2,'0'); return '#'+C(r*f)+C(g*f)+C(b*f); }
+function pxLiteHex(hex,f){ hex=hex.replace('#',''); const r=parseInt(hex.slice(0,2),16),g=parseInt(hex.slice(2,4),16),b=parseInt(hex.slice(4,6),16); const C=v=>Math.max(0,Math.min(255,Math.round(v+(255-v)*f))).toString(16).padStart(2,'0'); return '#'+C(r)+C(g)+C(b); }
+function pxMedalSVG(rows, color){
+  if(!rows) return '';
+  const pal={m:color,d:pxShadeHex(color,0.62),h:pxLiteHex(color,0.5),k:'#2a2412',w:'#f2f5f7',b:'#3a6fb0',r:'#d0433a',y:'#F1D04A',g:'#2fa564'};
+  let cells='';
+  for(let y=0;y<rows.length;y++){ const row=rows[y]; for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.')continue; const c=pal[ch]||'#f0f'; cells+=`<rect x="${x}" y="${y}" width="1.05" height="1.05" fill="${c}"/>`; }}
+  return `<svg viewBox="0 0 18 18" width="100%" height="100%" shape-rendering="crispEdges" preserveAspectRatio="xMidYMid meet">${cells}</svg>`;
 }
 function trophyGold(id){ return `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7e48a"/><stop offset="1" stop-color="#c7a31f"/></linearGradient>`; }
 function trophySilver(id){ return `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef2f5"/><stop offset="1" stop-color="#aab3bd"/></linearGradient>`; }
@@ -17457,6 +17484,9 @@ async function h2hLoadBoard(mode){
 if(window.supabase && window.supabase.createClient){ sbInit(); }
 else { window.addEventListener('DOMContentLoaded', sbInit); }
 try{ window.addEventListener('online', ()=>flushPendingSeasons()); }catch(e){}   // retry any unsubmitted seasons when back online
+// CS356c: global Escape-to-close for any open overlay (belt-and-suspenders alongside the Close buttons,
+// which can be scrolled out of reach on long overlays like the Trophy Room).
+try{ window.addEventListener('keydown',e=>{ if(e.key==='Escape' && S.overlay){ S.overlay=null; render(); } }); }catch(e){}
 // Service worker: network-first for the HTML so a new deploy reaches players without a manual ?v= cache-bust,
 // with a cached copy as the offline fallback. Feature-detected + fully guarded; never blocks or breaks the game.
 if('serviceWorker' in navigator){ try{ window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); }); }catch(e){} }
