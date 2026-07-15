@@ -8331,6 +8331,17 @@ allows Google Fonts, or self-host Anton.*
     changed — renderer, palette resolver, creator, and every call site unchanged, so all CS353 behavior/tests
     still hold. Verified in Playwright (setup/build render the detailed golfer, cap/visor/none distinct, 0
     page errors); screenshots confirm the finer, less-blobby look. Deployed to /golf.
+  - **CS353c — no black outline + forward-facing cap + hair/hat integration (owner: "not a fan of the black
+    outline, and how the hat is going sideways; enhance the hair and hat and how they work together").**
+    Dropped the harsh auto-outline entirely — the golfer now reads via soft **self-shading** (a darker shirt
+    edge, a jaw/neck shadow, forearm + inner-leg shade, shoe soles) instead of a black border (added skin- and
+    pants-shade palette entries `j`/`q`). Redesigned the **cap to face FORWARD** — a rounded crown that sits on
+    the head + a short centered **bill pointing at the viewer** (it was a sideways brim before) — and the
+    **visor** to match (forehead band + forward brim, open crown). Re-authored all 5 hair styles with proper
+    **sideburns/temples that peek out below the cap**, so hair + hat sit together naturally (and fuller hair
+    when hatless). Sprite-only change (`PXG_*` maps + 2 palette entries); renderer/creator/call sites
+    unchanged. Verified in Playwright (setup/build render, cap/visor/none distinct, 0 page errors); screenshots
+    confirm the clean outline-free look and forward cap. Deployed to /golf.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
