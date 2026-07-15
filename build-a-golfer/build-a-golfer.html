@@ -917,6 +917,15 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes hvswA{0%,9%{opacity:1}10%,100%{opacity:0}}
   @keyframes hvswB{0%,10%{opacity:0}11%,33%{opacity:1}34%,100%{opacity:0}}
   @keyframes hvswC{0%,33%{opacity:0}34%,78%{opacity:1}100%{opacity:0}}
+  /* CS355d: chip (2-frame) + putt (2-frame, hunched) strokes */
+  .hvsw-chip .ch0{animation:hvswC0 640ms steps(1,end) forwards}
+  .hvsw-chip .ch1{animation:hvswC1 640ms ease-out forwards}
+  .hvsw-putt .pt0{animation:hvswP0 560ms steps(1,end) forwards}
+  .hvsw-putt .pt1{animation:hvswP1 560ms ease-out forwards}
+  @keyframes hvswC0{0%,46%{opacity:1}47%,100%{opacity:0}}
+  @keyframes hvswC1{0%,46%{opacity:0}47%,82%{opacity:1}100%{opacity:0}}
+  @keyframes hvswP0{0%,48%{opacity:1}49%,100%{opacity:0}}
+  @keyframes hvswP1{0%,48%{opacity:0}49%,84%{opacity:1}100%{opacity:0}}
   /* CS355c: the shot-number "pin" above the golfer's head (the golfer covers the resting marker) */
   .hvswnum{opacity:0; animation:hvswNum 1150ms ease forwards}
   @keyframes hvswNum{0%{opacity:0;transform:translateY(2px)}9%{opacity:1;transform:translateY(0)}84%{opacity:1}100%{opacity:0}}
@@ -5821,6 +5830,7 @@ function scrSetup(){
   wrap.appendChild(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
   wrap.appendChild(swatchRow('Hair color',HAIRS,S.look.hair,'hair',o=>o.m));
   wrap.appendChild(hairStyleRow());
+  wrap.appendChild(handRow());   // CS355d: lefty/righty - the golfer always swings from this side
 
   if(guest){
     const lock=$(`<div style="margin-top:2px;border:1px solid var(--gold);border-radius:12px;background:linear-gradient(180deg,rgba(241,208,74,.08),rgba(10,22,38,.25));padding:14px 15px">
@@ -6496,11 +6506,16 @@ function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"
    palette-swapped from the created look, mirror-flipped by shot direction. */
 const HV_SWING=true;          // POC flag - flip off to disable the swinging golfer everywhere
 const PXS_W=24, PXS_H=30;
-const PXS_A=["........................","...........kkkkkk.......","..........kkcccckk......","..........kcccccckkkk...","..........kccccccccck...","..........khhhsscccck...","..........khhhssskkkk...","..........khhhssssk.....","..........khhhssjkk.....","..........khhhsssk......","..........kkkkskkkkk....","..........kdtttttttk....","..........kdtttssttk....",".........kkdtttssttk....",".........kdttttsstkk....",".........kdttttsssk.....","........kkdtttttssk.....","........kdttttttlsk.....","........kdttttttslk.....",".......kkdttttttdlkk....",".......kqpppkkqppplk....",".......kqpppkkqppplkk...",".......kqpppkkqpppklk...",".......kqpppkkqpppklkk..",".......kqpppkkqpppkklk..",".......kqpppkkqpppkklkkk",".....kkkqpppkkqpppkkkggk",".....kooooooooooooookkkk",".....kooooooooooooook...",".....kooooooooooooook..."];
-const PXS_B=[".kkk....................","kkgkk....kkkkkk.........","kgggk...kkcccckk........","kkglk...kcccccckkkk.....",".kklkk..kccccccccck.....","..kklkk.khhhsscccck.....","...kklkkkhhhssskkkk.....","....kklkkhhhssssk.......",".....klkkhhhssjkk.......",".....kklshhhsssk........","......ksssskskkkkk......","......kksssssttttk......",".......kkdsssstttk......","........kdttsstttk......","........kdtttttttk......","........kdtttttttk......","........kdtttttttk......","........kdttttttdk......","........kdttttttdk......",".......kkdttttttdkk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".....kkkqpppkkqpppkkk...",".....kooooooooooooook...",".....kooooooooooooook...",".....kooooooooooooook..."];
-const PXS_C=[".....................kkk",".............kkkkkk.kkgk","............kkcccckkkggg","............kcccccckklgk","............kccccccclckk","............khhhsscclck.","............khhhssslkkk.","............khhhsslsk...","............khhhssssk...","............khhhssssk...","............kkkksksskk..","............kdttttsstk..","...........kkdttttsstk..","..........kkdtttttsskk..","..........kdtttttttkk...","..........kdtttttttk....",".........kkdtttttttk....","........kkdttttttdkk....","........kdttttttdkk.....",".......kkdttttttdkk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".....kkkqpppkkqpppkkk...",".....kooooooooooooook...",".....kooooooooooooook...",".....kooooooooooooook..."];
+const PXS_A=["........................","............kkkkkk......","...........kkcccckk.....","...........kcccccckkkk..","...........kccccccccck..","...........khhhsscccck..","...........khhhssskkkk..","...........khhhssssk....","...........khhhssjkk....","...........khhhsssk.....","..........kkkkkskkkk....","..........kdtttttttk....","..........kdtssttttk....","..........kdtssstttk....",".........kkdttsstttk....",".........kdtttssstkk....",".........kdttttsstk.....","........kkdttttslsk.....","........kdttttttslk.....",".......kkdtttttttlkk....",".......kqpppkkqppplk....",".......kqpppkkqppplkk...",".......kqpppkkqpppklk...",".......kqpppkkqpppklkk..",".......kqpppkkqpppkklk..",".......kqpppkkqpppkklkkk",".....kkkqpppkkqpppkkkggk",".....kooooooooooooookkkk",".....kooooooooooooook...",".....kooooooooooooook..."];
+const PXS_B=[".kkk....................","kkgkk.....kkkkkk........","kgggk....kkcccckk.......","kkglk....kcccccckkkk....",".kklkk...kccccccccck....","..kklkk..khhhsscccck....","...kklkk.khhhssskkkk....","....kklk.khhhssssk......",".....klkkkhhhssjkk......",".....kklskhhhsssk.......","......kssssskskkkk......","......kksssssttttk......",".......kkdtssssttk......","........kdttsssttk......","........kdtttttttk......","........kdtttttttk......","........kdtttttttk......","........kdtttttttk......","........kdtttttttk......","........kdtttttttkk.....","........kqpppkqpppk.....","........kqpppkqpppk.....","........kqpppkqpppk.....","........kqpppkqpppk.....","........kqpppkqpppk.....","........kqpppkqpppk.....","......kkkqpppkqpppkkk...","......koooooooooooook...","......koooooooooooook...","......koooooooooooook..."];
+const PXS_C=["........kkk..kkkkkk.....",".......kkgkkkkcccckk....",".......kggglkcccccckkkk.",".......kkgkkllcccccccck.","........kkkkkhllsscccck.","............khhhllskkkk.","............khhhssssk...","............khhhssskk...","............khhhsssk....","............kkkksskkk...","............kdtsssttk...","...........kkdtsstttk...","...........kdttssttkk...","...........kdttttttk....","..........kkdttttttk....","..........kdttttttkk....","..........kdttttttk.....",".........kkdttttttk.....",".........kdttttttkk.....",".........kdttttttkk.....",".........kkkkkqpppk.....","..........kqppqpppk.....","..........kqppqpppk.....","..........kqppqpppk.....","........kkkqppqpppk.....","........koooopqpppk.....","........koooopqpppkkk...","........kooookooooook...","........kkkkkkooooook...",".............kooooook..."];
+const PXS_CH0=["........................","........................","...........kkkkkk.......","..........kkcccckk......","..........kcccccckkkk...","..........kccccccccck...","..........khhhsscccck...","..........khhhssskkkk...","..........khhhssssk.....","..........khhhssjkk.....",".........kkhhhssskk.....",".........kdtttstttk.....",".........kdttsstttk.....","........kkgttsstttk.....","........kgggtsstttk.....","........kkgltsssttk.....","........kdttltsstkk.....","........kdtttlsstk......","........kdttttlstk......",".......kkdttttsstkk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".....kkkqpppkkqpppkkk...",".....kooooooooooooook...",".....kooooooooooooook...",".....kooooooooooooook..."];
+const PXS_CH1=["........................","........................","............kkkkkk......","...........kkcccckk.....","...........kcccccckkkk..","...........kccccccccck..","...........khhhsscccck..","...........khhhssskkkk..","...........khhhssssk....","...........khhhssjkk....","..........kkhhhssskk....","..........kdtttstttk....","..........kdtssttttk....","..........kdtssstttk....",".........kkdttsstttk....",".........kdtttssstkk....",".........kdttttsssk.....","........kkdtttttsskk....","........kdttttttslsk....","........kdtttttttslk....","........kkkkkkqppplkk...","..........kqppqpppklk...","..........kqppqpppklkk..","..........kqppqpppkklk..","........kkkqppqpppkklkk.","........koooopqpppkkklkk","........koooopqpppkkkggk","........kooookooooookkkk","........kkkkkkooooook...",".............kooooook..."];
+const PXS_PT0=["........................","........................","........................","........................","........................","........................","........................","........................","...............kkkkkkk..","...............kccccckkk","..............kkkkskccck","..............khhhssccck","............kkkhhhsssskk","...........kkdthhhsjskk.","...........kdtttssskkk..","..........kkdtttsstk....","..........kdttttsssk....",".........kkdtttttssk....",".........kdttttttsskk...","........kkdttttttsssk...",".......kkdttttttkklsk...",".......kqpppkkqpplssk...",".......kqpppkkqplpkkk...",".......kqpppkkqplpk.....",".......kqpppkkqlppk.....",".......kqpppkklpppk.....",".....kkkqpppkkgpppkkk...",".....kooooooooooooook...",".....kooooooooooooook...",".....kooooooooooooook..."];
+const PXS_PT1=["........................","........................","........................","........................","........................","........................","........................","........................","...............kkkkkkk..","...............kccccckkk","..............kkkkskccck","..............khhhssccck","............kkkhhhsssskk","...........kkdthhhsjskk.","...........kdtttssskkk..","..........kkdtttsstk....","..........kdttttsssk....",".........kkdtttttssk....",".........kdttttttsskk...","........kkdttttttsssk...",".......kkdttttttkklsk...",".......kqpppkkqpppslk...",".......kqpppkkqpppklkk..",".......kqpppkkqpppkklk..",".......kqpppkkqpppkklkk.",".......kqpppkkqpppkkklkk",".....kkkqpppkkqpppkkkggk",".....kooooooooooooookkkk",".....kooooooooooooook...",".....kooooooooooooook..."];
 const _pxSwing=new Map();
-function pxSwing3URL(look){
+// render all stroke frames (full swing 3 / chip 2 / putt 2) for a look, cached, palette-swapped
+function pxStrokeURLs(look){
   look=look||S.look||DEFLOOK; const av=avLook(look);
   const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===(look.pants||'stone')))||{a:'#c7bfa8'}).a;
   const key='sw|'+av.key+'|pn'+(look.pants||'stone');
@@ -6514,39 +6529,47 @@ function pxSwing3URL(look){
       for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue; const col=P[ch]; if(!col)continue;
         ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } }
     return cv.toDataURL('image/png'); };
-  u=[render(PXS_A),render(PXS_B),render(PXS_C)]; _pxSwing.set(key,u); return u;
+  u={ full:[render(PXS_A),render(PXS_B),render(PXS_C)], chip:[render(PXS_CH0),render(PXS_CH1)], putt:[render(PXS_PT0),render(PXS_PT1)] };
+  _pxSwing.set(key,u); return u;
 }
-// SVG markup: the swinging golfer at a full shot's origin, facing the target, animated via CSS.
+// SVG markup: the created golfer plays the shot (full swing / chip / putt). Orientation follows the
+// player's HANDEDNESS (look.lefty) so a golfer never flips between lefty/righty by shot direction.
 function hvSwingMarkup(g,p,look){
-  if(!HV_SWING || !(p.k==='tee'||p.k==='app'||p.k==='adv')) return '';
-  let urls; try{ urls=pxSwing3URL(look); }catch(e){ return ''; }
-  if(!urls) return '';
+  if(!HV_SWING) return '';
+  const kind = (p.k==='putt'||p.k==='hole')?'putt' : (p.k==='chip'?'chip' : ((p.k==='tee'||p.k==='app'||p.k==='adv')?'full':''));
+  if(!kind) return '';
+  let set; try{ set=pxStrokeURLs(look); }catch(e){ return ''; }
+  if(!set) return '';
+  const frames = kind==='full'?set.full : (kind==='chip'?set.chip : set.putt);
+  const clsBase = kind==='full'?['sw0','sw1','sw2'] : (kind==='chip'?['ch0','ch1'] : ['pt0','pt1']);
+  look=look||S.look||DEFLOOK;
+  const faceRight = !look.lefty;   // handedness, fixed (never mirrors by shot direction)
   const A=hvProj(g,p.from[0],p.from[1]);
-  const tgt=p.land||p.rest||p.from; const B=hvProj(g,tgt[0],tgt[1]);
-  const faceRight=B[0]>=A[0];
-  const GH=26, GW=GH*PXS_W/PXS_H;
-  // align the sprite's club face (grid x~21.5/24) with the ball at the shot origin A, so the club addresses the ball
-  const clubFrac=0.90;
+  const cam=hvCamFor2(g,p);
+  // putts play under the tight green close-up, so size the golfer to a fraction of THAT frame
+  const GH = kind==='putt' ? Math.max(9, Math.min(22, cam[3]*0.15)) : 26;
+  const GW=GH*PXS_W/PXS_H;
+  const clubFrac=0.90;   // align the sprite's club face (grid x~21.5/24) with the ball at the origin A
   let x0=A[0]-GW*(faceRight?clubFrac:(1-clubFrac)), y0=A[1]-GH+3;
-  // keep the whole sprite inside the shot's camera frame (tee shots sit at the very bottom edge)
-  const cam=hvCamFor2(g,p); const pad=4, botPad=42;   // botPad clears the floating desc/scoreboard
+  const pad=3, botPad=(kind==='putt'?6:42);   // botPad clears the floating desc/scoreboard on full-hole shots
   y0=Math.max(cam[1]+pad, Math.min(y0, cam[1]+cam[3]-GH-botPad));
   x0=Math.max(cam[0]+pad, Math.min(x0, cam[0]+cam[2]-GW-pad));
   const tf=faceRight?'':` transform="translate(${(2*x0+GW).toFixed(1)},0) scale(-1,1)"`;
-  const img=(u,cls)=>`<image class="hvsw ${cls}" href="${u}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH}" preserveAspectRatio="none"/>`;
+  const img=(u,cls)=>`<image class="hvsw ${cls}" href="${u}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/>`;
+  const imgs=frames.map((u,i)=>img(u,clsBase[i])).join('');
   // CS355c: the golfer stands on the shot's resting marker (covering its number). Surface the current shot
   // number as a GOLD "pin" floating above the golfer's head (gold = live shot vs teal past-shot markers).
-  // Drawn OUTSIDE the mirror group so the digit is never flipped; fades in/out with the swing.
+  // Drawn OUTSIDE the mirror group so the digit is never flipped; sized to the golfer (small under a putt).
   let badge='';
-  if(p.i!=null){ const num=p.i+1;
-    const bx=x0+(faceRight?0.62:0.38)*GW, by=Math.max(cam[1]+5.5, y0-7);
+  if(p.i!=null){ const num=p.i+1, br=GH*0.185, fs=GH*0.223;
+    const bx=x0+(faceRight?0.62:0.38)*GW, by=Math.max(cam[1]+br+0.8, y0-br*1.4);
     badge=`<g class="hvswnum">`
-      +`<circle cx="${(bx+0.6).toFixed(1)}" cy="${(by+1).toFixed(1)}" r="4.8" fill="#04150a" opacity=".45"/>`
-      +`<path d="M ${bx.toFixed(1)} ${(by+7).toFixed(1)} L ${(bx-2.6).toFixed(1)} ${(by+2.6).toFixed(1)} L ${(bx+2.6).toFixed(1)} ${(by+2.6).toFixed(1)} Z" fill="#0a1626" stroke="#F1D04A" stroke-width=".7"/>`
-      +`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="4.8" fill="#0a1626" stroke="#F1D04A" stroke-width="1.2"/>`
-      +`<text x="${bx.toFixed(1)}" y="${(by+1.9).toFixed(1)}" text-anchor="middle" font-size="5.8" font-weight="800" fill="#F6E88F" font-family="inherit">${num}</text>`
+      +`<circle cx="${(bx+0.6).toFixed(1)}" cy="${(by+1).toFixed(1)}" r="${br.toFixed(1)}" fill="#04150a" opacity=".45"/>`
+      +`<path d="M ${bx.toFixed(1)} ${(by+br*1.45).toFixed(1)} L ${(bx-br*0.54).toFixed(1)} ${(by+br*0.54).toFixed(1)} L ${(bx+br*0.54).toFixed(1)} ${(by+br*0.54).toFixed(1)} Z" fill="#0a1626" stroke="#F1D04A" stroke-width=".7"/>`
+      +`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="${br.toFixed(1)}" fill="#0a1626" stroke="#F1D04A" stroke-width="1.2"/>`
+      +`<text x="${bx.toFixed(1)}" y="${(by+fs*0.34).toFixed(1)}" text-anchor="middle" font-size="${fs.toFixed(1)}" font-weight="800" fill="#F6E88F" font-family="inherit">${num}</text>`
       +`</g>`; }
-  return `<g class="hvswing"${tf}>${img(urls[0],'sw0')}${img(urls[1],'sw1')}${img(urls[2],'sw2')}</g>${badge}`;
+  return `<g class="hvswing hvsw-${kind}"${tf}>${imgs}</g>${badge}`;
 }
 // in the Pro Shop, preview pending COLOR purchases live (worn gear is dropped, so only colors preview)
 function pxCurLook(){ return (S.overlay==='shop' && typeof shopEffLook==='function')?shopEffLook():S.look; }
@@ -13555,7 +13578,7 @@ function hvLiveShot(g,p,small,pcol){
   const onGreen=(p.k==='putt'||p.k==='hole');
   const ballR=onGreen?HV_GBALL:(small?2.0:HV_GROUND);   // on the green the ball is a fixed, realistic fraction of the cup
   let s='';
-  if(!small) s+=hvSwingMarkup(g,p,S.look);   // CS355 POC: the created golfer swings at the shot (daily/single-ball)
+  if(!pcol) s+=hvSwingMarkup(g,p,S.look);   // CS355: the created golfer plays the shot (single-ball; excludes H2H multi-ball, which passes pcol). NOT gated on `small` so it still shows on the putt close-up.
   if(p.k==='putt'||p.k==='hole'){ s+=`<path id="hv-roll" d="${hvPuttPathD(g,p)}" fill="none" stroke="${pcol||'#fff'}" stroke-width="${small?0.9:2}" stroke-linecap="round" opacity=".9" stroke-dasharray="9999" stroke-dashoffset="9999"/>`; }
   else if(p.k==='pen'){ s+=`<path id="hv-roll" d="M ${A[0]} ${A[1]} L ${hvProj(g,p.rest[0],p.rest[1]).map(v=>v.toFixed(1)).join(' ')}" fill="none" stroke="#274238" stroke-width="1.3" stroke-dasharray="3 4"/>`; }
   else { s+=`<path id="hv-traceg" d="${hvPathD(g,p)}" fill="none" stroke="${glow}" stroke-width="5" stroke-linecap="round" stroke-dasharray="9999" stroke-dashoffset="9999"/>`;
@@ -13620,7 +13643,9 @@ function hvKick(key, g, p, pPrev, reduce, opts){
     if(sh) sh.setAttribute('opacity','0'); if(pf) pf.setAttribute('opacity','0'); _hvA.done=true; };
   if(reduce){ setFinal(); return; }
   const isFly=(p.k==='tee'||p.k==='app'||p.k==='adv'||p.k==='chip');
-  const swingMs=(isFly && HV_SWING && (p.k==='tee'||p.k==='app'||p.k==='adv'))?390:0;   // CS355: hold at address while the golfer swings; ball leaves at impact
+  // CS355: hold the ball at address while the golfer swings; it leaves at impact (chip is a quicker stroke)
+  const swingMs=!HV_SWING?0 : (p.k==='chip'?290 : ((p.k==='tee'||p.k==='app'||p.k==='adv')?390:0));
+  const puttStroke=(HV_SWING && (p.k==='putt'||p.k==='hole'))?260:0;   // the golfer's putt stroke before the ball rolls
   const flyMs=isFly?hvFlightMs(p.dist):0;
   const groundMs=isFly?(p.dist>40?520:340):0;
   const rollMs=(p.k==='putt'||p.k==='hole')?Math.max(650,Math.min(1900,700+Math.min(70,p.dist*3||8)*13)):0;
@@ -13686,7 +13711,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
       if(t>=1){ ball.setAttribute('opacity','1'); setFinal(); _hvA.raf=0; return; }
     } else {   // putt / hole-out: wait for the camera, then a pure roll with decel, then the drop
       if(rollEl&&rollLen==null){ rollLen=rollEl.getTotalLength(); rollEl.style.strokeDasharray=rollLen; rollEl.style.strokeDashoffset=rollLen; }
-      const ep=el-waitMs;
+      const ep=el-Math.max(waitMs, puttStroke);   // wait for the camera AND the golfer's putt stroke
       if(ep<0){ ball.setAttribute('cx',A[0].toFixed(1)); ball.setAttribute('cy',A[1].toFixed(1)); _hvA.raf=requestAnimationFrame(frame); return; }
       const t=Math.min(1,ep/rollMs), te=1-Math.pow(1-t,2.4);
       let x,y;

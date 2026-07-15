@@ -8434,6 +8434,26 @@ allows Google Fonts, or self-host Anton.*
     (`hvswNum` keyframe), reduced-motion hides it. Verified in Playwright: the pin renders the correct
     number (shot 2 on the approach) fully faded-in at real scale, above the golfer, uncovered; full round
     completes + reduced-motion hides golfer AND pin, 0 page errors. Deployed to /golf.
+  - **CS355d — handedness choice + fixed follow-through + leg motion + putting & chipping (owner: golfer
+    was flipping lefty/righty by shot direction; wanted a lefty/righty CHOICE that always swings from that
+    side; legs too stagnant; add simulated putting + chipping; + a reference showing the proper follow-
+    through wrapped over the shoulder).** (1) **Handedness**: re-added the `handRow()` lefty/righty toggle to
+    the creator (appearance section, guests too), and `hvSwingMarkup` now orients by `look.lefty` (fixed) —
+    a righty always swings as a righty regardless of shot direction (no more flipping); lefty mirrors.
+    (2) **Follow-through** redrawn to match the reference: tall/rotated to target, hands HIGH by the head,
+    **club wrapped up over the shoulder**, back foot up on the toe. (3) **Leg motion** across the swing
+    (weight set → back knee → weight forward on the toe) so the lower body isn't frozen. (4) **Putting +
+    chipping**: authored a 2-frame **chip** (compact wedge) and a 2-frame **hunched putt** (bent over the
+    putter); `hvSwingMarkup` dispatches by shot kind — full swing (tee/app/adv, 3 frames), chip, putt/hole
+    — each with its own CSS stroke cadence and a ball-launch delay in `hvKick` (chip 290ms, putt 260ms) so
+    the ball leaves at contact. Putts play under the green close-up, so the golfer is sized to a fraction of
+    THAT camera (`GH = cam[3]*0.15`, clamped) and the shot-number pin scales with it. **Bug fixed en route**:
+    the golfer was gated on `!small`, but `small` is also true under the putt close-up, so putts got no
+    golfer — re-gated on `!pcol` (single-ball; still excludes H2H multi-ball, which passes a ball color).
+    Verified in Playwright: handedness mirrors correctly + is consistent across shots; the setup toggle
+    renders; chip + putt golfers render live (chip near the green, putt hunched on the close-up with its
+    pin + flag); a full auto round completes with 0 page errors; reduced-motion hides all of it. Deployed
+    to /golf. Tunable: `HV_SWING`, per-kind sizes/timings, the `PXS_*` frames.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
