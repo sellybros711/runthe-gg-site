@@ -6493,7 +6493,7 @@ function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"
    palette-swapped from the created look, mirror-flipped by shot direction. */
 const HV_SWING=true;          // POC flag - flip off to disable the swinging golfer everywhere
 const PXS_W=24, PXS_H=30;
-const PXS_A=["........................","...........kkkkkk.......","..........kkcccckk......","..........kcccccckkkk...","..........kccccccccck...","..........khhhsscccck...","..........khhhssskkkk...","..........khhhssssk.....","..........khhhssjkk.....","..........khhhsssk......","..........kkkkskkkkk....","..........kdtttttttk....","..........kdtttssttk....",".........kkdtttssttk....",".........kdttttsstkk....",".........kdttttsssk.....","........kkdtttttssk.....","........kdttttttlsk.....","........kdttttttlsk.....",".......kkdttttttdlkk....",".......kqpppkkqppplk....",".......kqpppkkqppplk....",".......kqpppkkqppplkk...",".......kqpppkkqpppklkk..",".......kqpppkkqpppkklk..",".......kqpppkkqpppkklkk.",".....kkkqpppkkqpppkkggkk",".....kooooooooooooookkwk",".....kooooooooooooookkkk",".....kooooooooooooook..."];
+const PXS_A=["........................","...........kkkkkk.......","..........kkcccckk......","..........kcccccckkkk...","..........kccccccccck...","..........khhhsscccck...","..........khhhssskkkk...","..........khhhssssk.....","..........khhhssjkk.....","..........khhhsssk......","..........kkkkskkkkk....","..........kdtttttttk....","..........kdtttssttk....",".........kkdtttssttk....",".........kdttttsstkk....",".........kdttttsssk.....","........kkdtttttssk.....","........kdttttttlsk.....","........kdttttttslk.....",".......kkdttttttdlkk....",".......kqpppkkqppplk....",".......kqpppkkqppplkk...",".......kqpppkkqpppklk...",".......kqpppkkqpppklkk..",".......kqpppkkqpppkklk..",".......kqpppkkqpppkklkkk",".....kkkqpppkkqpppkkkggk",".....kooooooooooooookkkk",".....kooooooooooooook...",".....kooooooooooooook..."];
 const PXS_B=[".kkk....................","kkgkk....kkkkkk.........","kgggk...kkcccckk........","kkglk...kcccccckkkk.....",".kklkk..kccccccccck.....","..kklkk.khhhsscccck.....","...kklkkkhhhssskkkk.....","....kklkkhhhssssk.......",".....klkkhhhssjkk.......",".....kklshhhsssk........","......ksssskskkkkk......","......kksssssttttk......",".......kkdsssstttk......","........kdttsstttk......","........kdtttttttk......","........kdtttttttk......","........kdtttttttk......","........kdttttttdk......","........kdttttttdk......",".......kkdttttttdkk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".....kkkqpppkkqpppkkk...",".....kooooooooooooook...",".....kooooooooooooook...",".....kooooooooooooook..."];
 const PXS_C=[".....................kkk",".............kkkkkk.kkgk","............kkcccckkkggg","............kcccccckklgk","............kccccccclckk","............khhhsscclck.","............khhhssslkkk.","............khhhsslsk...","............khhhssssk...","............khhhssssk...","............kkkksksskk..","............kdttttsstk..","...........kkdttttsstk..","..........kkdtttttsskk..","..........kdtttttttkk...","..........kdtttttttk....",".........kkdtttttttk....","........kkdttttttdkk....","........kdttttttdkk.....",".......kkdttttttdkk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".......kqpppkkqpppk.....",".....kkkqpppkkqpppkkk...",".....kooooooooooooook...",".....kooooooooooooook...",".....kooooooooooooook..."];
 const _pxSwing=new Map();
@@ -6522,7 +6522,9 @@ function hvSwingMarkup(g,p,look){
   const tgt=p.land||p.rest||p.from; const B=hvProj(g,tgt[0],tgt[1]);
   const faceRight=B[0]>=A[0];
   const GH=26, GW=GH*PXS_W/PXS_H;
-  let x0=A[0]-GW*(faceRight?0.64:0.36), y0=A[1]-GH+3;
+  // align the sprite's club face (grid x~21.5/24) with the ball at the shot origin A, so the club addresses the ball
+  const clubFrac=0.90;
+  let x0=A[0]-GW*(faceRight?clubFrac:(1-clubFrac)), y0=A[1]-GH+3;
   // keep the whole sprite inside the shot's camera frame (tee shots sit at the very bottom edge)
   const cam=hvCamFor2(g,p); const pad=4, botPad=42;   // botPad clears the floating desc/scoreboard
   y0=Math.max(cam[1]+pad, Math.min(y0, cam[1]+cam[3]-GH-botPad));
@@ -12366,6 +12368,7 @@ const HV_EX=52, HV_CAM=[-HV_EX,0,HV_W+2*HV_EX,HV_H];
 // the green the ball is drawn at a FIXED small radius - because ball AND cup are both in viewBox units, the
 // camera scales them together and the ratio stays realistic at every zoom (no more ball-bigger-than-hole).
 const HV_CUP_RX=1.82, HV_CUP_RY=1.28, HV_GBALL=0.86;   // smaller hole + ball, realistic ratio (owner)
+const HV_GROUND=2.05, HV_AIRPEAK=7.8;   // CS355b: smaller on-ground ball (in scale with the golfer); air size unchanged
 // ---- per-course FLAGS: every course flies its own flag (color + optional accent stripe), like real
 // life. Marquee venues get a hand-picked look; everything else is deterministically derived from the
 // course-key hash, so each course has a consistent, unique flag.
@@ -13535,7 +13538,7 @@ function hvLiveShot(g,p,small,pcol){
   const A=hvProj(g,p.from[0],p.from[1]);
   const glow=pcol?`${pcol}88`:'rgba(241,208,74,.45)';
   const onGreen=(p.k==='putt'||p.k==='hole');
-  const ballR=onGreen?HV_GBALL:(small?2.0:3.2);   // on the green the ball is a fixed, realistic fraction of the cup
+  const ballR=onGreen?HV_GBALL:(small?2.0:HV_GROUND);   // on the green the ball is a fixed, realistic fraction of the cup
   let s='';
   if(!small) s+=hvSwingMarkup(g,p,S.look);   // CS355 POC: the created golfer swings at the shot (daily/single-ball)
   if(p.k==='putt'||p.k==='hole'){ s+=`<path id="hv-roll" d="${hvPuttPathD(g,p)}" fill="none" stroke="${pcol||'#fff'}" stroke-width="${small?0.9:2}" stroke-linecap="round" opacity=".9" stroke-dasharray="9999" stroke-dashoffset="9999"/>`; }
@@ -13598,7 +13601,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
     if(r){r.style.strokeDasharray=(p.k==='pen')?'3 4':'none';r.style.strokeDashoffset='0';}
     if(sv) sv.setAttribute('viewBox', hvCamFor2(g,p).join(' '));   // reduced-motion users still get the right camera
     if(b){ const R=hvProj(g,p.rest[0],p.rest[1]); b.setAttribute('cx',R[0]);b.setAttribute('cy',R[1]);
-      const rr=p.hole?0:((p.k==='putt'||p.k==='hole')?HV_GBALL:(3.2*bScale())); b.setAttribute('r',(+rr).toFixed(2)); }
+      const rr=p.hole?0:((p.k==='putt'||p.k==='hole')?HV_GBALL:(HV_GROUND*bScale())); b.setAttribute('r',(+rr).toFixed(2)); }
     if(sh) sh.setAttribute('opacity','0'); if(pf) pf.setAttribute('opacity','0'); _hvA.done=true; };
   if(reduce){ setFinal(); return; }
   const isFly=(p.k==='tee'||p.k==='app'||p.k==='adv'||p.k==='chip');
@@ -13629,13 +13632,13 @@ function hvKick(key, g, p, pPrev, reduce, opts){
       if(trace&&traceLen==null){ traceLen=trace.getTotalLength(); trace.style.strokeDasharray=traceLen; trace.style.strokeDashoffset=traceLen; const tg=q('hv-traceg'); if(tg){tg.style.strokeDasharray=traceLen; tg.style.strokeDashoffset=traceLen;} }
       if(rollEl&&rollLen==null){ rollLen=rollEl.getTotalLength(); rollEl.style.strokeDasharray=rollLen; rollEl.style.strokeDashoffset=rollLen; }
       const elF=el-swingMs;   // CS355: the golfer swings for swingMs, then the ball launches at impact
-      if(elF<0){ ball.setAttribute('cx',A[0].toFixed(1)); ball.setAttribute('cy',A[1].toFixed(1)); ball.setAttribute('r',(3.2*bScale()).toFixed(2)); _hvA.raf=requestAnimationFrame(frame); return; }
+      if(elF<0){ ball.setAttribute('cx',A[0].toFixed(1)); ball.setAttribute('cy',A[1].toFixed(1)); ball.setAttribute('r',(HV_GROUND*bScale()).toFixed(2)); _hvA.raf=requestAnimationFrame(frame); return; }
       if(elF<=flyMs){
         const t=elF/flyMs, te=t<0.5?2*t*t:1-Math.pow(-2*t+2,2)/2;   // fast off the club, hangs, dives
         const x=(1-te)*(1-te)*A[0]+2*(1-te)*te*C[0]+te*te*B[0];
         const y=(1-te)*(1-te)*A[1]+2*(1-te)*te*C[1]+te*te*B[1];
         const h=4*te*(1-te)*(p.k==='tee'?1:(p.k==='chip'?0.45:0.75))*Math.min(1,p.dist/240+0.35);
-        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',y.toFixed(1)); ball.setAttribute('r',((3.2+h*4.6)*bScale()).toFixed(2));
+        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',y.toFixed(1)); ball.setAttribute('r',((HV_GROUND+h*(HV_AIRPEAK-HV_GROUND))*bScale()).toFixed(2));
         if(sh){ sh.setAttribute('cx',(x+2+h*7).toFixed(1)); sh.setAttribute('cy',(y+2+h*6).toFixed(1)); sh.setAttribute('opacity',(0.28*Math.min(1,h*3)).toFixed(2)); sh.setAttribute('rx',(3-h*1.2).toFixed(2)); }
         if(trace){ trace.style.strokeDashoffset=traceLen*(1-te); const tg=q('hv-traceg'); if(tg) tg.style.strokeDashoffset=traceLen*(1-te); }
       } else if(p.splash){
@@ -13655,7 +13658,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
         const t=(elF-flyMs)/groundMs, te=1-Math.pow(1-t,2.2);       // decelerating bounce + roll-out
         const x=B[0]+(R[0]-B[0])*te, y=B[1]+(R[1]-B[1])*te;
         const hop=(t<0.55)?Math.abs(Math.sin(t*3*Math.PI/0.55))*(0.16*(1-t/0.55)):0;
-        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',(y-hop*8).toFixed(1)); ball.setAttribute('r',((3.2+hop*2.4)*bScale()).toFixed(2));
+        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',(y-hop*8).toFixed(1)); ball.setAttribute('r',((HV_GROUND+hop*2.4)*bScale()).toFixed(2));
         if(sh) sh.setAttribute('opacity',(hop>0.02?0.2:0).toFixed(2)), sh.setAttribute('cx',(x+1.5).toFixed(1)), sh.setAttribute('cy',(y+1.5).toFixed(1));
         const pf=q('hv-puff'), pt=(elF-flyMs)/300;   // touchdown puff ring at the landing spot
         if(pf){ if(pt<=1){ pf.setAttribute('cx',B[0]);pf.setAttribute('cy',B[1]);pf.setAttribute('r',(2+pt*7).toFixed(1));pf.setAttribute('opacity',(0.5*(1-pt)).toFixed(2)); } else pf.setAttribute('opacity','0'); }
@@ -13663,7 +13666,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
       } else { setFinal(); _hvA.raf=0; return; }
     } else if(p.k==='pen'){
       const t=Math.min(1,el/penMs);
-      ball.setAttribute('cx',R[0]); ball.setAttribute('cy',(R[1]-(1-t)*8).toFixed(1)); ball.setAttribute('r',(3.2*bScale()).toFixed(2));
+      ball.setAttribute('cx',R[0]); ball.setAttribute('cy',(R[1]-(1-t)*8).toFixed(1)); ball.setAttribute('r',(HV_GROUND*bScale()).toFixed(2));
       ball.setAttribute('opacity',t.toFixed(2));
       if(t>=1){ ball.setAttribute('opacity','1'); setFinal(); _hvA.raf=0; return; }
     } else {   // putt / hole-out: wait for the camera, then a pure roll with decel, then the drop
