@@ -8416,6 +8416,24 @@ allows Google Fonts, or self-host Anton.*
   at the ball with the tracer launching. Deployed to /golf. FOLLOW-UPS (owner queue): birdie/bogey/win
   reaction poses, and rolling it out to H2H (each ball's own created golfer) + career Moments framing.
   Tunable: `HV_SWING` flag, `GH` (sprite size), `swingMs`, the `PXS_A/B/C` frames + `hvsw*` keyframe timing.
+  - **CS355b — smaller on-ground ball at the club face (owner: "make the ball a little smaller on the
+    ground so it's more in scale with the golfer... positioned at the club face; I like how it gets bigger
+    in the air").** On-ground ball radius 3.2→**HV_GROUND=2.05** (in scale with the mini golfer) across all
+    at-rest/roll/pen/address paths; the airborne size is UNCHANGED — the growth term was recomputed
+    (`HV_GROUND + h*(HV_AIRPEAK-HV_GROUND)`, peak still 7.8) so it still swells in flight. Green/putt ball
+    (HV_GBALL) untouched. Positioned at the club face: the golfer's x is aligned by `clubFrac=0.90` so its
+    club addresses the ball at the shot origin, and the sprite's own painted ball was removed (the engine
+    ball sits there). Verified at real scale + full round + reduced-motion, 0 errors.
+  - **CS355c — shot-number "pin" above the golfer (owner: "the golfer covers the number that represents
+    what shot it was; display it in a similar creative way that doesn't interfere with the golfer").** The
+    golfer stands on the shot's resting marker (`hvDoneShot` draws a numbered chip at each rest point),
+    covering it. Added a small **gold-bordered numbered pin** (matching the resting-marker chip style, but
+    GOLD = the live shot vs TEAL = past-shot markers) floating just above the golfer's head with a
+    downward pointer — a broadcast-style "now playing shot N" indicator. Shows the current shot number
+    (`p.i+1`), drawn OUTSIDE the mirror group so the digit is never flipped, fades in/out with the swing
+    (`hvswNum` keyframe), reduced-motion hides it. Verified in Playwright: the pin renders the correct
+    number (shot 2 on the approach) fully faded-in at real scale, above the golfer, uncovered; full round
+    completes + reduced-motion hides golfer AND pin, 0 page errors. Deployed to /golf.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
