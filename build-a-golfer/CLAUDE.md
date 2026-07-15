@@ -8358,6 +8358,28 @@ allows Google Fonts, or self-host Anton.*
     to the buckle since the driver head uses its own `G`). Sprite/palette-only. Verified in Playwright (0 page
     errors); screenshot confirms the driver + gold buckle. Deployed to /golf.
 
+- **CS354 — distinctive metallic gradient gold theme (owner: "the gold we use everywhere reads as AI, a
+  very generic gold used in many AI projects. Could we do a gradient gold so our theme is unique and stands
+  out?").** Replaced the flat generic `#EBA61F` gold on the marquee surfaces with a metallic FOIL gradient
+  so the brand reads bespoke, not stock. Added two theme tokens to `:root`: `--gold-grad` (a 5-stop vertical
+  foil: pale highlight → mid gold → deep gold → bright band → dark base) and `--gold-grad-d` (a slightly
+  angled variant for fills), and nudged the base tokens `--gold` `#EBA61F`→`#E9B233` / `--gold2`
+  `#c79320`→`#c28b1a` so the flat-gold used on small chips/labels everywhere is a touch richer too. Applied
+  the gradient via the text-clip technique (`background:var(--gold-grad); -webkit-background-clip:text;
+  background-clip:text; -webkit-text-fill-color:transparent; color:transparent`) to the highest-impact gold
+  TEXT surfaces: the wordmark **"TOUR"** (`.wordmark .b`), the title-screen hero **"LIVE YOUR LEGACY."**
+  (`.hero .hr2`), and the retro creator title **"CREATE YOUR GOLFER"** (`.retro-title`). Upgraded the two
+  marquee gold FILLS: the primary **`.btn.goldfill`** ("BUILD YOUR GOLFER" / "Build" CTAs) to the richer
+  `--gold-grad-d` foil, and the gold **`.gc-gold`** mode card (Career Mode) to a 5-stop metallic gradient
+  background (was a flat 3-stop). Deliberately scoped to the marquee surfaces — the many small
+  `color:var(--gold)` chips/labels keep the (now slightly richer) flat token for readability at small sizes;
+  gradient text is reserved for the big brand moments. Verified in Playwright (title + retro setup): the
+  wordmark/hero/retro-title all compute `background-clip:text` with transparent fill, the goldfill button +
+  gold card carry the metallic gradient, and readability holds on the dark-green background; 0 page errors.
+  Screenshots confirm the foil look on the TOUR wordmark, the hero, the Career Mode card, and the primary
+  button — a distinctive, non-generic gold. Deployed to /golf. Tunable: the `--gold-grad`/`--gold-grad-d`
+  stops in `:root`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
