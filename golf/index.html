@@ -917,7 +917,10 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes hvswA{0%,9%{opacity:1}10%,100%{opacity:0}}
   @keyframes hvswB{0%,10%{opacity:0}11%,33%{opacity:1}34%,100%{opacity:0}}
   @keyframes hvswC{0%,33%{opacity:0}34%,78%{opacity:1}100%{opacity:0}}
-  @media (prefers-reduced-motion:reduce){ .hvswing{display:none} }
+  /* CS355c: the shot-number "pin" above the golfer's head (the golfer covers the resting marker) */
+  .hvswnum{opacity:0; animation:hvswNum 1150ms ease forwards}
+  @keyframes hvswNum{0%{opacity:0;transform:translateY(2px)}9%{opacity:1;transform:translateY(0)}84%{opacity:1}100%{opacity:0}}
+  @media (prefers-reduced-motion:reduce){ .hvswing,.hvswnum{display:none} }
   .hvob{position:absolute;z-index:2;pointer-events:none}
   .hvhole{top:8px;left:8px;background:rgba(8,17,26,.72);border:1px solid rgba(255,255,255,.16);border-radius:8px;
     padding:5px 9px;font:800 11.5px/1 var(--body);letter-spacing:.1em;color:#eef4ee}
@@ -6531,7 +6534,19 @@ function hvSwingMarkup(g,p,look){
   x0=Math.max(cam[0]+pad, Math.min(x0, cam[0]+cam[2]-GW-pad));
   const tf=faceRight?'':` transform="translate(${(2*x0+GW).toFixed(1)},0) scale(-1,1)"`;
   const img=(u,cls)=>`<image class="hvsw ${cls}" href="${u}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH}" preserveAspectRatio="none"/>`;
-  return `<g class="hvswing"${tf}>${img(urls[0],'sw0')}${img(urls[1],'sw1')}${img(urls[2],'sw2')}</g>`;
+  // CS355c: the golfer stands on the shot's resting marker (covering its number). Surface the current shot
+  // number as a GOLD "pin" floating above the golfer's head (gold = live shot vs teal past-shot markers).
+  // Drawn OUTSIDE the mirror group so the digit is never flipped; fades in/out with the swing.
+  let badge='';
+  if(p.i!=null){ const num=p.i+1;
+    const bx=x0+(faceRight?0.62:0.38)*GW, by=Math.max(cam[1]+5.5, y0-7);
+    badge=`<g class="hvswnum">`
+      +`<circle cx="${(bx+0.6).toFixed(1)}" cy="${(by+1).toFixed(1)}" r="4.8" fill="#04150a" opacity=".45"/>`
+      +`<path d="M ${bx.toFixed(1)} ${(by+7).toFixed(1)} L ${(bx-2.6).toFixed(1)} ${(by+2.6).toFixed(1)} L ${(bx+2.6).toFixed(1)} ${(by+2.6).toFixed(1)} Z" fill="#0a1626" stroke="#F1D04A" stroke-width=".7"/>`
+      +`<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="4.8" fill="#0a1626" stroke="#F1D04A" stroke-width="1.2"/>`
+      +`<text x="${bx.toFixed(1)}" y="${(by+1.9).toFixed(1)}" text-anchor="middle" font-size="5.8" font-weight="800" fill="#F6E88F" font-family="inherit">${num}</text>`
+      +`</g>`; }
+  return `<g class="hvswing"${tf}>${img(urls[0],'sw0')}${img(urls[1],'sw1')}${img(urls[2],'sw2')}</g>${badge}`;
 }
 // in the Pro Shop, preview pending COLOR purchases live (worn gear is dropped, so only colors preview)
 function pxCurLook(){ return (S.overlay==='shop' && typeof shopEffLook==='function')?shopEffLook():S.look; }
