@@ -8553,19 +8553,22 @@ allows Google Fonts, or self-host Anton.*
        replaced with a new reusable `scrHero(title, sub)` — a big gold-gradient pixel title (`.scrhero`,
        `clamp(26px,7.5vw,40px)`, matching the main-page `.hero`) + a small teal sub. Applied to the
        off-season ("OFF-SEASON" / "Year N · prep your bag"). Verified it renders ~32px on a phone, 0 errors.
-    4. **"These scores don't seem possible" (leaderboard).** The Single-Season board showed a wall of
-       identical round numbers ($184M ×several, $182M, $180M) = EXACTLY `OVR×2,000,000`, the anti-forgery
-       cap from migration 34. MEASURED the current sim in Playwright (real startSeason/skipToEnd/seasonNet):
-       a dominant OVR-92 year-29 season nets ~$35.5M; a MAX all-99 build at year 30 tops out at ~$75M net
-       (best of 6 seeds, 9 wins). So a legit season TODAY can NEVER approach $184M — those rows are
-       stale/legacy submissions from an earlier much higher-paying balance era (or forged) clamped to
-       OVR×$2M. Wrote **`supabase/50_runtour_realistic_cap.sql`** (owner-run): lowers the ceiling to
-       `OVR×1,200,000` (OVR 99 → $118.8M, well above the ~$75M real ceiling, far below the absurd $184M so
-       forgeries are rejected and real seasons never clamped) AND truncates `runtour_scores` to clear the
-       stale season/career board rows (daily records + lifetime stats untouched). **ACTION: run
-       `supabase/50_runtour_realistic_cap.sql`.** No client change needed — the sim already pays realistic,
-       varied amounts.
-    Tunable: `scrHero` styling (`.scrhero`), the `OVR×1,200,000` cap in migration 50.
+    4. **"These scores don't seem possible" → then owner: "remove that formula that lowers people's
+       scores. It's bad for the game."** The Single-Season board showed a wall of identical round numbers
+       ($184M ×several, $182M, $180M) = EXACTLY `OVR×2,000,000`, the anti-forgery earnings/net cap from
+       migration 34. MEASURED the current sim (Playwright, real startSeason/skipToEnd/seasonNet): a dominant
+       OVR-92 year-29 season nets ~$35.5M; a MAX all-99 build at year 30 tops out at ~$75M net — so a legit
+       season TODAY can never approach $184M, and the cap was only clamping stale/legacy high submissions
+       onto identical round numbers. Per the owner, **removed the OVR cap entirely** (not lowered): wrote
+       **`supabase/51_runtour_remove_earnings_cap.sql`** (owner-run) which redefines both
+       `runtour_submit_season` (signed-in) and `runtour_submit_season_guest` to store the submitted
+       earnings/net AS-IS (only floored at 0, no `OVR×N` ceiling). Supersedes the caps in 33/34/37; the
+       superseded `50_runtour_realistic_cap.sql` was deleted. Kept the wins≤40 / majors≤10 sanity clamps +
+       name filters (not dollar-lowering). Validated against real Postgres: applies clean + idempotent, and
+       an OVR-92 $250M / guest $300M season now stores uncapped (old cap → $184M). No client change needed.
+       **ACTION: run `supabase/51_runtour_remove_earnings_cap.sql`** (optional commented truncate at the
+       bottom clears the old clamped rows so the board repopulates cleanly).
+    Tunable: `scrHero` styling (`.scrhero`). No earnings ceiling anymore (owner decision).
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
