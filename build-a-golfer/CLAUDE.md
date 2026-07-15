@@ -8321,6 +8321,16 @@ allows Google Fonts, or self-host Anton.*
   the `PXG_*` sprite maps + `HAIRSTYLES`, the creator fields in `scrSetup`. NOTE: the old AI-avatar code +
   base/mask PNG assets are now dead but left in place (removing them is a separate cleanup); the deploy is
   the single HTML file (no new assets needed — the golfer is pure code).
+  - **CS353b — higher-resolution sprite (owner: "reduce the pixel size so it's not so blobby, a little more
+    detail and resolution").** Nearly doubled the grid **24×30 → 44×56** and re-authored the golfer with real
+    detail: a rounded head, a polo with a **collar + buttoned placket**, **short sleeves with visible skin
+    forearms**, a belt with a **buckle**, tapered **slacks** with a center seam, golf shoes with a sole, a
+    **dome+brim golf cap** and a thin-band **visor**, and 5 fuller hair styles. Composed the sprite in a
+    Python shape-primitive builder with an **automatic 1px outline pass** (crisp pixel-art edges) and iterated
+    visually before porting the char-maps in. Only the `PXG_*` constants + the shadow/px in `pxGolferURL`
+    changed — renderer, palette resolver, creator, and every call site unchanged, so all CS353 behavior/tests
+    still hold. Verified in Playwright (setup/build render the detailed golfer, cap/visor/none distinct, 0
+    page errors); screenshots confirm the finer, less-blobby look. Deployed to /golf.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
