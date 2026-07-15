@@ -8257,6 +8257,26 @@ allows Google Fonts, or self-host Anton.*
   deal the player actually signed, so it's left intact) — start a fresh career for the unsponsored-start
   experience. Tunable: the kicker/copy + confetti in `sponsorOfferPopup`, the once-per-off-season gate.
 
+- **CS352 — fewer in-season pop-ups (owner: "reduce the amount of pop ups each year, it's too much").**
+  The in-season interruption system (career dilemmas + story arcs + press conferences + play-the-final-round
+  Moments) shares one `SEASON_STOP_BUDGET`; CS326 had already trimmed it 6→4, but the owner still found ~4/
+  year too much. Halved the load by cutting the budget + every sub-cap: `SEASON_STOP_BUDGET` 4→**2**,
+  `STORY_PER_SEASON` 2→**1**, `MOMENT_PER_SEASON` 2→**1**, `DILEMMA_PER_SEASON` 3→**1**. The CS295 "one
+  guaranteed interview per season" still fires (it bypasses the budget CHECK but consumes one budget slot),
+  so a typical season is now **1 guaranteed interview + at most 1 situational Moment/dilemma = ≤2 in-season
+  pop-ups** (was up to 4). All the spacing guards are unchanged (CS327 no-back-to-back, `STORY_GAP`, the
+  ~60/40 dilemma-vs-presser split, the ≤1 grudge/season cap). Pure constant change — no mechanism/state
+  change. NOT touched: the off-season sponsor moment (CS351, once/year only when a brand is actually
+  interested), and the selection announcements for the playoffs / The Games / team cups (event-gated to
+  genuine achievements, and timed bottom pop-ups under Auto Sim) — those aren't part of the per-event
+  interruption budget. Verified in Playwright: the new constants load; exercising the REAL gate + increment
+  functions across a season confirms the guaranteed storyline fires (stops→1), a 2nd storyline is blocked, a
+  dilemma fills the last slot (stops→2 = budget), and once the budget is spent every further pop-up
+  (storyline + the Moment gate) is closed off with `S.season.stops` never exceeding the budget; a real
+  career season still sims to the summary cleanly. 0 page errors. Deployed to /golf. Tunable: the four caps
+  at the `SEASON_STOP_BUDGET`/`STORY_PER_SEASON`/`MOMENT_PER_SEASON`/`DILEMMA_PER_SEASON` consts — drop the
+  budget to 1 for exactly one guaranteed interview/year and nothing else.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
