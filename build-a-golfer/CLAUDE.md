@@ -8505,6 +8505,14 @@ allows Google Fonts, or self-host Anton.*
   screenshots (title/draft/setup) + AskUserQuestion before the trophy/hero asks. Deployed to /golf. Tunable:
   `--gold-grad`/`--gold-grad-d` stops + `--gold` hue in `:root`, the `--pixel` cohesion CSS block, the
   `PXT_*` sprite grids + `PXT_PAL` in `scratchpad/trophies.py`.
+  - **CS356b — pixelate the Continue-Career golfer name + enlarge/bolden the mode-card headers (owner:
+    "the golfer's name in the resume career button is the old font, pixelate it; and increase the size of
+    the pixelated headers for each mode and make them stand out more").** The resume card's `.rc-name` (the
+    golfer name, e.g. "Lion Trees") was still `var(--display)` serif italic — switched it to
+    `var(--pixel)` 700 / 23px so it matches the pixel theme. The mode-card titles `.gc-title` (BEAT THE PRO
+    / CAREER MODE / HEAD TO HEAD, in the CS356 cohesion override) went 18px → **24px + weight 700** so they
+    stand out. Verified in Playwright (both compute Silkscreen; rc-name 23px, gc-title 24px/700; 0 page
+    errors); screenshot confirms "LION TREES" pixel-bold matching the enlarged mode headers.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
