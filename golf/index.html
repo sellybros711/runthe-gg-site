@@ -1191,11 +1191,14 @@ window.GA_ID='G-L29P5MRWKE';
   .cb-stat .v{font-family:var(--mono); font-weight:800; font-size:19px; margin-top:5px; color:var(--oncard); white-space:nowrap}
   @media(max-width:540px){ .cb-stats{width:100%; margin-left:0; justify-content:space-between; gap:8px} .cb-stat{min-width:0} }
   .cb-meters{flex-basis:100%; width:100%; margin-top:6px; padding-top:11px; border-top:1px solid rgba(255,255,255,.09)}
-  .seasonrail{display:flex; gap:7px; overflow-x:auto; padding:1px 0 9px; margin-bottom:10px; -webkit-overflow-scrolling:touch; scrollbar-width:none}
+  .seasonrail{display:flex; gap:7px; overflow-x:auto; overflow-y:hidden; padding:1px 0 9px; margin-bottom:10px; -webkit-overflow-scrolling:touch; scrollbar-width:none}
   .seasonrail::-webkit-scrollbar{display:none}
   /* CS356x: season-summary UNDERLINE tabs - reads unmistakably as tabs (baseline + active underline),
      horizontally scrollable for the finer tab set. */
-  .sumtabs{position:sticky; top:env(safe-area-inset-top, 0px); z-index:6; display:flex; gap:0; justify-content:safe center; overflow-x:auto; scrollbar-width:none; padding:0 2px; margin:2px 0 15px; background:var(--pagebg); border-bottom:2px solid rgba(255,255,255,.12)}
+  /* tabs may scroll HORIZONTALLY when they overflow, but never vertically. overflow-x:auto with a default
+     overflow-y:visible computes overflow-y to `auto` too, which let the strip scroll/rubber-band a few px
+     up-down (the "jiggle"); lock overflow-y:hidden so only horizontal scroll is possible. */
+  .sumtabs{position:sticky; top:env(safe-area-inset-top, 0px); z-index:6; display:flex; gap:0; justify-content:safe center; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; padding:0 2px; margin:2px 0 15px; background:var(--pagebg); border-bottom:2px solid rgba(255,255,255,.12)}
   .sumtabs::-webkit-scrollbar{display:none}
   .sumtabbtn{flex:0 0 auto; font:800 12.5px/1 var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); background:none; border:0; border-bottom:3px solid transparent; margin-bottom:-2px; border-radius:0; padding:13px 15px; cursor:pointer; white-space:nowrap; transition:color .12s}
   .sumtabbtn:hover{color:var(--oncard)}
@@ -1295,7 +1298,7 @@ window.GA_ID='G-L29P5MRWKE';
   .segrow button{flex:1; border:0; background:transparent; color:var(--muted); font:800 12px/1 var(--body);
     padding:8px 4px; border-radius:8px; cursor:pointer; letter-spacing:.02em}
   .segrow button.on{background:var(--gold); color:#3a2708}
-  .catrow{display:flex; gap:7px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding:9px 2px 3px; scrollbar-width:none}
+  .catrow{display:flex; gap:7px; overflow-x:auto; overflow-y:hidden; -webkit-overflow-scrolling:touch; padding:9px 2px 3px; scrollbar-width:none}
   .catrow::-webkit-scrollbar{display:none}
   .catchip{flex:0 0 auto; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.03); color:var(--muted);
     font:800 11.5px/1 var(--body); padding:8px 13px; border-radius:999px; cursor:pointer; white-space:nowrap}
