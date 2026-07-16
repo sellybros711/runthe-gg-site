@@ -8799,6 +8799,45 @@ allows Google Fonts, or self-host Anton.*
     shot isn't mirrored (faces right), a leftward shot is mirrored (faces left), a straight shot defaults to
     handedness; 0 page errors. Supersedes CS355d's handedness-fixed facing. Deployed to /golf.
 
+- **CS357 — PIXEL COURSE ART wired into the live hole view (behind a toggle).** After a multi-session
+  prototype exploration (a self-contained pixel-art renderer built in the scratchpad, iterated with the
+  owner: dithered turf, dense per-biome forest/scenery, organic greens, and correct large natural elements
+  incl. the ocean/cliff/beach on coastal & links courses), the owner approved integration. Ported the
+  renderer into the game as `pxTerrainURL(g, seedN, B)` — it reuses the EXACT same `g` (hvGeom geometry) +
+  `B` (hvBiome) + `hvHash` the SVG view uses, inverse-projects each of ~53k cells through the same
+  HV_CAM camera, builds a terrain-id buffer (rough/fairway/green/fringe/sand/water/tee/OCEAN) + a BFS
+  distance field (forest density/buffer), and paints a 210×254 canvas (Bayer-dithered turf, multi-octave
+  value-noise, per-course biome palettes, dense clustered forest with grove/bush/meadow variety, reeds,
+  and the dramatic sea for coastal/links) upscaled `image-rendering:pixelated`. Cached per seed (~112ms
+  uncached desktop, 0ms cached — every shot re-render reuses it).
+  - **Integration is a clean background swap:** new `hvBackdrop(g,seedN,B)` returns EITHER the pixel
+    `<image x=-52 y=0 w=464 h=560>` layer (pixel mode) OR `hvTerrain(...)` (illustrated). The 3 interactive
+    hole-view `hvNode` sites (live/preview/multi) now call `hvBackdrop`. Because the pixel image sits in the
+    same viewBox coords, the putt close-up camera zoom, the ball tracer, the mini pixel golfer, the shot
+    markers, the floating scoreboard, and all HUD overlay UNCHANGED on top. The tee box + cup + per-course
+    swallowtail flag are drawn as SVG on top via `hvPinTeeSVG` (parity + nicer than baked pixels). The
+    static-share PNG + GIF paths stay on the illustrated `hvTerrain` for now (canvas-rasterizing a nested
+    data-URL is riskier) — flagged as a follow-up.
+  - **Toggle:** `hvArtMode()` reads `bag_holeart_pixel` (default TRUE = pixel). A "Pixel course art" switch
+    in the ≡ Settings menu flips it (off = the illustrated view). One-line flip if the default should be
+    illustrated.
+  - **Shared geometry fix (owner-approved):** the cliff-side-pond quirk (a seeded freshwater pond crammed
+    between the fairway and the sea) is fixed in `hvGeom` itself — for a coastal/links hole, a pond whose
+    sea-facing edge reaches the shore is dropped (the ocean is the hazard on that side). This corrects BOTH
+    the pixel AND the existing illustrated view. Verified 0 cliff-side ponds across all 162 coastal/links
+    holes (was letting the pond's edge overlap the sea on Kiawah h17 with a center-only check; tightened to
+    the pond's edge). Also: greens read as organic shapes in the pixel view (an angular wobble from the
+    hole's `greenIrr`, matching how the SVG blobs the green) instead of plain circles.
+  - Verified in Playwright: `hvBackdrop` emits the pixel image + flag overlay; `hvNode` renders it in
+    live/preview/multi; the green close-up (putt) zooms crisply with the pixel backdrop; non-ocean (Augusta
+    pine) + ocean (St Andrews links beach, Pebble/Kiawah coastal cliff) all render correctly; the
+    illustrated toggle falls back to SVG; and a FULL real practice daily round (Beat the Pro → see course →
+    build → draft 8 → round) reaches `dailyround` showing the pixel hole view with the tracer/golfer/HUD
+    composited, 0 page errors end-to-end. Deployed to /golf. FOLLOW-UPS: pre-warm the next hole's pixel
+    cache during the dwell if the ~112ms first-render hitch is noticeable on mobile; route the share PNG/GIF
+    through the pixel backdrop so shares match; extend pixel art to the H2H multi-ball watch (already works —
+    it shares hvNode). The scratchpad prototype (`pixcourse7.mjs`) remains as the iteration sandbox.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
