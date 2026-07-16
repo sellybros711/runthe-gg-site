@@ -993,19 +993,20 @@ window.GA_ID='G-L29P5MRWKE';
     font:800 8.5px/1 var(--body);letter-spacing:.08em;color:#d6c191;text-align:left}
   .hvbfoot b{color:var(--gold);font-family:var(--mono);margin-left:3px}
   /* CS251: simple round-play controls (owner mockup) - PREV SHOT · big PLAY/PAUSE · NEXT SHOT + caption */
-  .hvctrl{max-width:520px;margin:12px auto 0;background:linear-gradient(180deg,rgba(9,26,19,.6),rgba(6,18,13,.6));
-    border:1px solid rgba(241,208,74,.22);border-radius:16px;padding:14px 10px 10px;
+  .hvctrl{max-width:540px;margin:12px auto 0;background:linear-gradient(180deg,rgba(9,26,19,.6),rgba(6,18,13,.6));
+    border:1px solid rgba(241,208,74,.22);border-radius:16px;padding:13px 6px 9px;
     box-shadow:0 10px 26px -14px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.04)}
-  .hvctrl-row{display:flex;align-items:center;justify-content:space-between;gap:6px}
-  .hvctrl-side{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;
-    color:#e9f2ea;cursor:pointer;padding:4px 2px;font:800 10px/1 var(--body);letter-spacing:.11em;text-transform:uppercase}
+  .hvctrl-row{display:flex;align-items:center;justify-content:space-between;gap:3px}
+  .hvctrl-side{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;
+    color:#e9f2ea;cursor:pointer;padding:4px 1px;font:800 9px/1.15 var(--body);letter-spacing:.06em;text-transform:uppercase;text-align:center}
   .hvctrl-side:disabled{opacity:.32;cursor:default}
-  .hvctrl-side .ci{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
-    border:1.5px solid rgba(241,208,74,.4);background:rgba(8,20,14,.5);color:var(--gold);font-size:17px;transition:transform .12s,background .12s}
+  .hvctrl-side .ci{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    border:1.5px solid rgba(241,208,74,.4);background:rgba(8,20,14,.5);color:var(--gold);font-size:16px;transition:transform .12s,background .12s}
+  .hvctrl-side .ci.spd{font:900 15px/1 var(--body);letter-spacing:0}
   .hvctrl-side:not(:disabled):active .ci{transform:scale(.92);background:rgba(241,208,74,.16)}
   .hvctrl-side .cl{color:#cbe0d0}
-  .hvctrl-play{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:0;cursor:pointer;padding:0 4px}
-  .hvctrl-play .cb{width:66px;height:66px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  .hvctrl-play{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;cursor:pointer;padding:0 2px}
+  .hvctrl-play .cb{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     background:radial-gradient(120% 120% at 40% 30%,#4fce6a,#2ea24d 70%);color:#fff;font-size:26px;
     border:2px solid rgba(255,255,255,.28);box-shadow:0 0 0 5px rgba(46,162,77,.18),0 10px 22px -8px rgba(0,0,0,.7);transition:transform .12s}
   .hvctrl-play:active .cb{transform:scale(.94)}
@@ -14356,6 +14357,9 @@ function hvKick(key, g, p, pPrev, reduce, opts){
   const penMs=(p.k==='pen')?700:0;
   const camMs=460;
   const t0=performance.now();
+  // daily/Moment playback speed scales the whole animation timeline (kept in sync with the reveal
+  // scheduler via dspd); every other screen plays at 1x.
+  const spd=(S.screen==='dailyround')?dailySpeed():1;
   const A=hvProj(g,p.from[0],p.from[1]), C=hvCtrl(g,p), B=hvProj(g,p.land[0],p.land[1]), R=hvProj(g,p.rest[0],p.rest[1]);
   const camFrom=hvCamFor2(g,pPrev||null), camTo=hvCamFor2(g,p);
   const camMove=camFrom.join(',')!==camTo.join(',');
@@ -14365,7 +14369,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
   let traceLen=null, rollLen=null;
   function frame(now){
     if(_hvA.key!==key) return;
-    const el=now-t0;
+    const el=(now-t0)*spd;
     const svg=q('hv-svg'), ball=q('hv-ball'), sh=q('hv-shadow');
     if(!svg||!ball){ if(el<4000){_hvA.raf=requestAnimationFrame(frame);} return; }   // mid re-render; retry
     if(camMove){ const ct=Math.min(1,el/camMs), ce=ct*(2-ct);
@@ -14717,6 +14721,18 @@ const SHOT_STAGGER=130;       // ms between shot rows when REVIEWING a past hole
 const SHOT_REVEAL_MS=750;     // live play reveals shots one at a time, 0.75s apart; the ball lands last
 const QUICK_GLANCE_MS=560;    // quick-mode routine hole: how long the full-hole glance holds before the ball drops in
 function clearDailyTimer(){ if(_dailyTimer){clearTimeout(_dailyTimer);_dailyTimer=null;} if(_shotTimer){clearTimeout(_shotTimer);_shotTimer=null;} S.dailySinking=false; }
+// Playback speed for the daily/Moment round (owner: a Speed button cycling 0.5x/1x/2x/5x). Scales BOTH the
+// reveal scheduler (dspd) AND the hole-view ball animation (hvKick reads dailySpeed on the dailyround
+// screen), so they stay in lockstep. Persisted per device; other screens (H2H watch, the result overlay)
+// are unaffected.
+const DAILY_SPEEDS=[0.5,1,2,5];
+function dailySpeed(){ const v=(S.dailySpeed!=null)?S.dailySpeed:LS.get('bag_daily_speed',1); return DAILY_SPEEDS.indexOf(v)>=0?v:1; }
+function dspd(ms, floor){ return Math.max(floor||45, Math.round(ms/dailySpeed())); }
+function cycleDailySpeed(){ const i=(DAILY_SPEEDS.indexOf(dailySpeed())+1)%DAILY_SPEEDS.length; S.dailySpeed=DAILY_SPEEDS[i]; LS.set('bag_daily_speed',S.dailySpeed);
+  render();
+  // re-pace an in-flight reveal to the new speed
+  const p=S.dailyHoles, len=p.length?(p[p.length-1].shots||[]).length:0;
+  if(S.dailyAuto && S.dailyViewHole==null && !S.dailyHolePause && !S.dailyProv && (S.dailyRevealN||0)<len) startShotReveal(); }
 function nextDailySig(){ return dIsDecHole(S.dailyHoles.length); }   // is the upcoming hole a decision hole?
 // beat after the ball is holed before the next hole auto-plays - long enough to REGISTER the result
 // (owner: it used to jump to the next tee before you could see what you scored). The shot reveal itself
@@ -14757,7 +14773,7 @@ function startShotReveal(){
     _shotTimer=setTimeout(()=>{ _shotTimer=null; if(S.screen!=='dailyround')return; S.dailySinking=false;
       // CS252: the ball is in the cup - the "holed putt" moment. Brighter sparkle + a light buzz for birdie+.
       const lh=S.dailyHoles[S.dailyHoles.length-1], good=lh&&lh.toPar<0; sfx(good?'holeGood':'hole'); if(good) buzz(18);
-      scheduleDailyAdvance(); }, hvShotMs(holeShot));
+      scheduleDailyAdvance(); }, dspd(hvShotMs(holeShot)));
     return;
   }
   // the shot currently animating on the hole view sets the pace: the next shot reveals when its ball has landed
@@ -14765,7 +14781,7 @@ function startShotReveal(){
   _shotTimer=setTimeout(()=>{ _shotTimer=null; if(S.screen!=='dailyround')return;
     S.dailyRevealN=(S.dailyRevealN||0)+1;
     if(S.dailyRevealN>=shots.length) S.dailySinking=true;   // final shot = the ball dropping in; hold the score back
-    render(); startShotReveal(); }, hvShotMs(curShot));
+    render(); startShotReveal(); }, dspd(hvShotMs(curShot)));
 }
 // shot-by-shot is opt-in: by default we show just the hole result (one clean line) so the
 // round isn't a wall of golf jargon. Tap to expand the full play-by-play; the choice sticks.
@@ -14796,19 +14812,22 @@ function dShotPanel(h, reveal){
 function scheduleDailyAdvance(){
   if(S.dailyProv)return;   // a par-4/5 approach decision is pending (drive revealing/awaiting) - don't touch its timers
   clearDailyTimer();
+  // Mulligan offer: a bogey-or-worse just finished and a mulligan is available → offer to re-roll it,
+  // once per hole. Pauses the flow (auto AND manual) until the player chooses; "Save for later" keeps it.
+  if(maybeOfferMulligan()){ render(); return; }
   if(!S.dailyAuto||S.screen!=='dailyround')return;
   // Moment sudden-death playoff: play exactly the one extra hole, then hold a beat and resolve it (no
   // signature decisions, no 18-hole finish path).
   if(S.momentPO){
     const n=S.dailyHoles.length;
-    if(n>=1){ S.dailyHolePause=true; render(); _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround') momentPlayoffResolve(); }, dailyDwell()); return; }
-    _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround'&&S.dailyAuto) playDailyHole(null); }, 550);
+    if(n>=1){ S.dailyHolePause=true; render(); _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround') momentPlayoffResolve(); }, dspd(dailyDwell(),400)); return; }
+    _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround'&&S.dailyAuto) playDailyHole(null); }, dspd(550));
     return;
   }
   const i=S.dailyHoles.length;
   // hold the immersive view on the just-holed result (scDailyRound reads S.dailyHolePause) so the score
   // registers before the next tee shot; then advance / finish after the dwell
-  if(i>=18){ S.dailyHolePause=true; render(); _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround') finishDailyRound(); }, dailyDwell()); return; }
+  if(i>=18){ S.dailyHolePause=true; render(); _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround') finishDailyRound(); }, dspd(dailyDwell(),400)); return; }
   // pause here for the player's shot choice (the one meaningful click). MUST render - the last render
   // was the ball sinking (revealing state, no decision shown); without this the signature-hole decision
   // never appears and the round looks STALLED (tester: "stalled on hole 3, didn't see any choice").
@@ -14820,7 +14839,50 @@ function scheduleDailyAdvance(){
     S.dailyProv=null; render(); return; }
   const started=i>0;   // the very first tee shot fires quickly; the post-hole beat only applies once a hole is done
   S.dailyHolePause=started; if(started) render();
-  _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround'&&S.dailyAuto){ S.dailyHolePause=false; playDailyHole(null); } }, started?dailyDwell():450);
+  _dailyTimer=setTimeout(()=>{ _dailyTimer=null; if(S.screen==='dailyround'&&S.dailyAuto){ S.dailyHolePause=false; playDailyHole(null); } }, started?dspd(dailyDwell(),400):dspd(450));
+}
+// ---- Mulligan offer (streak reward): when a bogey-or-worse finishes and a mulligan is available, prompt
+// the player to re-roll that hole (Yes / Save for later). One offer per hole; declining keeps the mulligan
+// for a later bad hole. Never fires in a Moment / sudden-death playoff.
+function maybeOfferMulligan(){
+  if(S.moment || S.momentPO) return false;
+  if(!S.dailyMullAvail || S.dailyMullUsed) return false;
+  const p=S.dailyHoles, k=p.length-1;
+  if(k<0) return false;
+  const last=p[k];
+  if(last.toPar<1) return false;                 // only bogey or worse
+  if(S.dailyMullOffer===last.i) return true;      // already offering this hole
+  S.dailyMullSeen=S.dailyMullSeen||[];
+  if(S.dailyMullSeen.indexOf(last.i)>=0) return false;   // already offered (and declined) for this hole
+  S.dailyMullOffer=last.i; S.dailyHolePause=true; S.dailySinking=false;   // show the holed result pill alongside the offer
+  return true;
+}
+function dMullAccept(){
+  S.dailyMullOffer=null;
+  dailyMulligan();           // re-rolls the last hole (keeps the better score), mullUsed=true, renders the new result
+  scheduleDailyAdvance();    // then continue: auto holds a beat + advances; manual leaves the between-holes controls up
+}
+function dMullDecline(){
+  const p=S.dailyHoles, k=p.length-1;
+  S.dailyMullSeen=S.dailyMullSeen||[]; if(k>=0) S.dailyMullSeen.push(p[k].i);
+  S.dailyMullOffer=null;     // keep the mulligan for a later bad hole
+  scheduleDailyAdvance();
+}
+// the offer card, rendered prominently at the top of the round screen (owner: prompt after a bogey+)
+function dMullOfferNode(){
+  const p=S.dailyHoles, k=p.length-1; if(k<0) return null;
+  const last=p[k], res=dResultLong(last.par,last.toPar);
+  const have=(S.dailyMullAvail&&!S.dailyMullUsed)?1:0;
+  const card=$(`<div style="max-width:520px;margin:0 auto 8px;padding:14px 16px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(241,208,74,.20),rgba(241,208,74,.05));box-shadow:0 6px 22px rgba(241,208,74,.16);text-align:center">
+    <div style="font:900 12px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--gold)">↺ Use your mulligan?</div>
+    <div style="margin-top:6px;color:var(--oncard);font-weight:800;font-size:16px"><span style="color:${dScoreCol(last.toPar)}">${esc(res)}</span> on hole ${last.n} · re-roll it?</div>
+    <div class="small muted" style="margin-top:3px">Re-roll this hole for a fresh score (you keep the better one). You have <b style="color:var(--gold)">${have}</b> mulligan${have===1?'':'s'} this round.</div>
+    <div style="display:flex;gap:8px;max-width:440px;margin:11px auto 0"></div></div>`);
+  const btns=card.querySelector('div[style*="display:flex"]');
+  const yes=$(`<button class="btn goldfill" style="flex:1;margin:0">Yes, re-roll ▸</button>`); yes.onclick=dMullAccept;
+  const no=$(`<button class="btn ghost" style="flex:1;margin:0">Save for later</button>`); no.onclick=dMullDecline;
+  btns.appendChild(yes); btns.appendChild(no);
+  return card;
 }
 function dailyPause(){ S.dailyAuto=false; S.dailyHolePause=false; S.dailyQuickStatic=false;
   if(S.dailyProv) S.dailyProv.await=true;   // land the drive so the approach decision doesn't get stranded
@@ -14880,11 +14942,30 @@ function dailyPrev(){
   dailyReviewOpen(k);
   dailyReviewShotN(Math.max(1, cur-1));
 }
-// CS251: the simple bottom control bar (owner mockup) - PREV SHOT · big PLAY/PAUSE · NEXT SHOT + caption.
-const _SVG_PREV='<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 6 4 12l7 6V6Zm8 0-7 6 7 6V6Z" fill="currentColor"/></svg>';
-const _SVG_NEXT='<svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 6l7 6-7 6V6ZM5 6l7 6-7 6V6Z" fill="currentColor"/></svg>';
-const _SVG_PLAY='<svg width="26" height="26" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>';
-const _SVG_PAUSE='<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.2" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1.2" fill="currentColor"/></svg>';
+// Per-hole navigation for the control bar (owner: Last Hole / Next Hole).
+function dailyPrevHole(){   // review the previous COMPLETED hole (or step back a hole while reviewing)
+  const p=S.dailyHoles; if(!p.length) return;
+  if(S.dailyViewHole!=null){ if(S.dailyViewHole>0) dailyReviewOpen(S.dailyViewHole-1); return; }
+  S.dailyAuto=false;
+  const cur=p.length-1, shots=(p[cur].shots||[]);
+  const doneCur=(S.dailyRevealN==null)||((S.dailyRevealN>=shots.length)&&!S.dailySinking);
+  dailyReviewOpen(doneCur?cur:Math.max(0,cur-1));
+}
+function dailyNextHole(){   // skip the current hole's remaining reveal and advance to the next hole / decision / finish
+  const p=S.dailyHoles;
+  if(S.dailyViewHole!=null){ const k=S.dailyViewHole; if(k+1<p.length) dailyReviewOpen(k+1); else dailyReviewClose(); return; }
+  if(S.dailyProv){ if(!S.dailyProv.await){ if(_shotTimer){clearTimeout(_shotTimer);_shotTimer=null;} S.dailyProv.await=true; render(); } return; }   // land the drive → approach decision
+  const k=p.length-1;
+  if(k>=0){ const shots=(p[k].shots||[]); if((S.dailyRevealN||0)<shots.length) S.dailyRevealN=shots.length; }   // land the current hole
+  if(_shotTimer){clearTimeout(_shotTimer);_shotTimer=null;} S.dailySinking=false;
+  dailyAdvanceNow();
+}
+// CS366: 5-button control bar (owner mockup) - Speed · Last hole · PLAY/PAUSE · Next hole · Sim to end.
+const _SVG_PLAY='<svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>';
+const _SVG_PAUSE='<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.2" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1.2" fill="currentColor"/></svg>';
+const _SVG_HPREV='<svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="6" width="2.6" height="12" rx="1" fill="currentColor"/><path d="M20 6l-9 6 9 6V6Z" fill="currentColor"/></svg>';
+const _SVG_HNEXT='<svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6l9 6-9 6V6Z" fill="currentColor"/><rect x="16.4" y="6" width="2.6" height="12" rx="1" fill="currentColor"/></svg>';
+const _SVG_END='<svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l7 6-7 6V6Zm7 0l7 6-7 6V6Z" fill="currentColor"/><rect x="18.4" y="6" width="2.4" height="12" rx="1" fill="currentColor"/></svg>';
 function dRoundControls(){
   const p=S.dailyHoles;
   const reviewing=S.dailyViewHole!=null;
@@ -14894,27 +14975,34 @@ function dRoundControls(){
   if(reviewing){ const shots=(p[S.dailyViewHole].shots||[]), cur=S.dailyReviewShot||shots.length;
     cap=`Reviewing · Hole ${p[S.dailyViewHole].n} · Shot ${cur} of ${shots.length}`; }
   else cap = playing ? 'Playing your round' : 'Paused · tap play to continue';
+  const spd=dailySpeed(), spdLabel=(spd===0.5?'0.5×':spd===2?'2×':spd===5?'5×':'1×');
   const bar=$(`<div class="hvctrl"></div>`);
   const row=$(`<div class="hvctrl-row"></div>`);
-  const prev=$(`<button class="hvctrl-side" aria-label="Previous shot"><span class="ci">${_SVG_PREV}</span><span class="cl">Prev shot</span></button>`);
-  prev.onclick=dailyPrev;
-  // center: PAUSE while playing, else PLAY (RESUME while reviewing; BACK if reviewing a completed round)
+  // 1. Speed - cycles 0.5x / 1x / 2x / 5x
+  const speed=$(`<button class="hvctrl-side" aria-label="Playback speed ${spdLabel}"><span class="ci spd">${spdLabel}</span><span class="cl">Speed</span></button>`);
+  speed.onclick=cycleDailySpeed;
+  // 2. Last hole - review the previous completed hole
+  const last=$(`<button class="hvctrl-side" aria-label="Last hole"><span class="ci">${_SVG_HPREV}</span><span class="cl">Last hole</span></button>`);
+  last.onclick=dailyPrevHole;
+  // 3. Play / Pause (center); RESUME while reviewing, BACK if reviewing a completed round
   const centerLabel = playing ? 'Pause' : (reviewing ? (done18?'Back':'Resume') : 'Play');
   const play=$(`<button class="hvctrl-play ${playing?'':'paused'}" aria-label="${centerLabel}"><span class="cb">${playing?_SVG_PAUSE:_SVG_PLAY}</span><span class="cl">${centerLabel}</span></button>`);
   play.onclick=()=>{ if(playing) dailyPause(); else if(reviewing && done18) dailyReviewClose(); else dailyResume(); };
-  const next=$(`<button class="hvctrl-side" aria-label="Next shot"><span class="ci">${_SVG_NEXT}</span><span class="cl">Next shot</span></button>`);
-  next.onclick=dailyNext;
-  row.appendChild(prev); row.appendChild(play); row.appendChild(next);
+  // 4. Next hole - skip the current hole's reveal, advance to the next hole / decision
+  const nexth=$(`<button class="hvctrl-side" aria-label="Next hole"><span class="ci">${_SVG_HNEXT}</span><span class="cl">Next hole</span></button>`);
+  nexth.onclick=dailyNextHole;
+  // 5. Sim to end - was the "Skip to the end" link, now a button
+  const simend=$(`<button class="hvctrl-side" aria-label="Sim to the end"><span class="ci">${_SVG_END}</span><span class="cl">Sim to end</span></button>`);
+  simend.onclick=autoFinishDaily;
+  row.appendChild(speed); row.appendChild(last); row.appendChild(play); row.appendChild(nexth); row.appendChild(simend);
   bar.appendChild(row);
-  const capEl=$(`<div class="hvctrl-cap">${cap} · <span class="sk" role="button" tabindex="0">Skip to the end</span></div>`);
-  const sk=capEl.querySelector('.sk'); sk.onclick=autoFinishDaily; sk.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); autoFinishDaily(); } };
-  bar.appendChild(capEl);
+  bar.appendChild($(`<div class="hvctrl-cap">${cap}</div>`));
   return bar;
 }
 function beginDailyRound(){
   const p=buildPlayer(); S.dailySkills={}; CATS.forEach(c=>S.dailySkills[c.k]=p[c.k]);
   S.dailyOvr=Math.round(p.skill); S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
-  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null; S._dailyResub=false;
+  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyMullSeen=[]; S.dailyMullOffer=null; S.dailySpeed=LS.get('bag_daily_speed',1); S.dailyResult=null; S._dailyResub=false;
   S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;   // the round plays itself; only signature-hole decisions pause it
   S.dailyLegend=null; S.momentPO=null; S.momentPOHoleIdx=null;
   // CS255: load today's global board so the in-round scoreboard can show the day's best (fails open)
@@ -14938,7 +15026,7 @@ function beginDailyRoundWithLegend(token){
   S.dailyCourse=dailyCourseKey(_seed); S.dailyCond=dailyConditions(_seed,S.dailyCourse); if(!S.dailyPlan) S.dailyPlan='balanced';
   S.dailySkills=Object.assign({},token.skills); S.dailyOvr=token.ovr; S.dailyAttempt=0;
   S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
-  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null; S._dailyResub=false;
+  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyMullSeen=[]; S.dailyMullOffer=null; S.dailySpeed=LS.get('bag_daily_speed',1); S.dailyResult=null; S._dailyResub=false;
   S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;
   S.dailyLegend={id:token.id, name:token.name, look:token.look}; S.momentPO=null; S.momentPOHoleIdx=null;
   S.name=token.name; if(token.look) S.look=Object.assign({},token.look);
@@ -14978,7 +15066,7 @@ function playDailyHole(attack, phase){
     _shotTimer=setTimeout(()=>{ _shotTimer=null; if(S.screen!=='dailyround'||S.dailyProv)return;
       S.dailyQuickStatic=false; S.dailySinking=true;   // phase 2: animate the ball into the cup, score withheld
       render(); startShotReveal();   // final-shot branch → drop → sfx → scheduleDailyAdvance (result beat)
-    }, QUICK_GLANCE_MS);
+    }, dspd(QUICK_GLANCE_MS));
     return;
   }
   S.dailyRevealN=1;   // first shot lands now; the rest reveal one-by-one
@@ -14996,7 +15084,7 @@ function dailyStartApproachHole(i, sc){
   render();
   // reveal the drive; when its animation lands, surface the approach decision
   _shotTimer=setTimeout(()=>{ _shotTimer=null; if(S.screen!=='dailyround'||!S.dailyProv)return;
-    S.dailyProv.await=true; render(); }, hvShotMs(d0.shot));
+    S.dailyProv.await=true; render(); }, dspd(hvShotMs(d0.shot)));
 }
 function dailyResolveApproach(agg){
   const prov=S.dailyProv; if(!prov)return; if(_shotTimer){clearTimeout(_shotTimer);_shotTimer=null;}
@@ -15886,6 +15974,8 @@ function scrDailyRound(){
   // Signature-hole DECISIONS now render as a real pop-up modal (added at the very end so it overlays
   // everything) - the tracer underneath shows the relevant hole (upcoming hole for a tee call, the drive
   // for an approach call). Only the non-decision status/controls render inline here.
+  // Mulligan offer (bogey+): a prominent prompt at the top, above the tracer.
+  if(S.dailyMullOffer!=null){ const mo=dMullOfferNode(); if(mo) add(mo); }
   if(prov && !prov.await){
     add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Off the tee…</div>`));
     add($(`<div style="height:6px"></div>`));
@@ -16034,23 +16124,15 @@ function scrDailyRound(){
   add(wrap);
   }
   add($(`<div style="height:10px"></div>`));
-  // CS251: ONE simple control bar (owner mockup) - PREV SHOT · big PLAY/PAUSE · NEXT SHOT + caption - for
-  // every live/review state, replacing the old stack of Skip/Pause/Skip-to-end ghost buttons.
+  // CS366: the 5-button control bar (Speed · Last hole · PLAY/PAUSE · Next hole · Sim to end). The mulligan
+  // (streak reward) is now offered automatically via a bogey+ prompt at the top (dMullOfferNode), so the old
+  // manual mulligan buttons are gone.
   if(S.momentPO){ /* playoff auto-plays; the extra-hole overlay carries the result + Continue */ }
+  else if(S.dailyMullOffer!=null){ /* mulligan Yes / Save-for-later prompt is shown at the top; no play controls */ }
   else if(done && S.dailyAuto){ add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Heading to the clubhouse…</div>`)); }
   else if(done){ const fin=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">See your round ▸</button>`); fin.onclick=finishDailyRound; add(fin); }
-  else if(decPending){
-    // an on-course decision is up: the tap-targets + cards ARE the action, no play controls. Mulligan
-    // (streak reward) still offered for the previous hole.
-    if(!reviewing && !revealing && S.dailyMullAvail && !S.dailyMullUsed && played.length){
-      const m=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">↺ Mulligan hole ${played[played.length-1].n}<span class="sub">Re-roll your last hole, one per round (streak reward)</span></button>`); m.onclick=dailyMulligan; add(m); }
-  }
-  else {
-    add(dRoundControls());
-    // mulligan (streak reward) only between holes when the round is held / at a decision, never mid-flight or in review
-    if(!reviewing && !revealing){ const sig=dIsDecHole(i);
-      if(S.dailyMullAvail&&!S.dailyMullUsed&&played.length&&(!S.dailyAuto||sig)){ const m=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">↺ Mulligan hole ${played[played.length-1].n}<span class="sub">Re-roll your last hole, one per round (streak reward)</span></button>`); m.onclick=dailyMulligan; add(m); } }
-  }
+  else if(decPending){ /* an on-course decision is up: the tap-targets + cards ARE the action, no play controls */ }
+  else { add(dRoundControls()); }
 }
 function scrDailyResult(){
   if(S.special) return scrSpotlightResult();
