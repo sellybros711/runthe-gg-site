@@ -8704,11 +8704,23 @@ allows Google Fonts, or self-host Anton.*
     2. **No numbered ground chip once the ball is on the green.** `hvDoneShot` now skips the numbered circle
        marker when `p.onGreen` (keeps the tracer path), so the tight green close-up isn't crowded; the
        current shot number lives on the pin above the golfer.
-    3. **Bigger number pin on the green.** The pin above the golfer is now sized to the close-up camera
-       (`cam[3]*0.085`) for putts instead of the tiny putt-golfer height, so it's large and readable on the
-       green (full-shot pins unchanged).
-    Verified in Playwright (green close-up renders the big "4" pin, no ground chips on the green, golfer +
-    badge present) + screenshot; 0 page errors. Deployed to /golf.
+    3. **Slightly bigger number pin on the green.** First sized the green pin to the close-up camera
+       (`cam[3]*0.085`), which the owner said was "way too big"; settled on `GH*0.26` badge radius /
+       `GH*0.31` font (a touch bigger than the full-shot pin), so it's a little larger on the green but not
+       oversized (full-shot pins unchanged).
+    Verified in Playwright (green close-up renders the pin, no ground chips on the green, golfer + badge
+    present) + screenshot; 0 page errors. Deployed to /golf.
+
+  - **CS356o — bolder + slightly bigger button text on every button, with a bolder "locked-in" state
+    (owner: "do you think these words should be a little bolder or bigger? For all buttons, not just that
+    one. Maybe it locks in like a bolder color").** The CS356L pixel-font revert had left `.btn` at
+    `font-family:var(--pixel);font-size:16px` weight 400 (why buttons read thin). Bumped ALL buttons to
+    `font-weight:800;font-size:17px;letter-spacing:.02em` (`.btn .sub` → weight 800 / 10.5px), and gave a
+    SELECTED/locked-in button an extra-bold, more-saturated look: `.btn.goldfill{font-weight:900}` with a
+    stronger gold ring/shadow, and toggle `.on` chips (`.segrow button.on`, `.catchip.on`) → weight 900. So
+    every button reads bolder/bigger and a chosen one clearly "locks in" heavier. Verified in Playwright on
+    the daily preview (SAFE/AGGRESSIVE weight 800, BALANCED-selected 900 + ring, goldfill CTA 900 + ring, 0
+    errors) + screenshot. Deployed to /golf.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,

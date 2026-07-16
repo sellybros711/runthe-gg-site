@@ -1317,8 +1317,12 @@ window.GA_ID='G-L29P5MRWKE';
 .gc-title{font-family:var(--display)!important;font-weight:400;font-style:normal;font-size:30px;line-height:1.06;letter-spacing:.01em}
 .hero{font-family:var(--display)!important;font-weight:400;font-size:1em;line-height:1.02;letter-spacing:.01em}
 .ovr .num,.rollval{font-family:var(--mono)!important}
-.btn{font-family:var(--pixel);font-size:16px;letter-spacing:.01em}
-.btn .sub{font-family:var(--body);font-size:10px}
+/* CS356o: bolder + slightly bigger button text on ALL buttons (owner); a locked-in/selected button
+   (goldfill / toggle .on) gets an extra-bold, more saturated gold so it clearly reads as "locked in". */
+.btn{font-family:var(--pixel);font-weight:800;font-size:17px;letter-spacing:.02em}
+.btn .sub{font-family:var(--body);font-weight:800;font-size:10.5px}
+.btn.goldfill{font-weight:900; box-shadow:0 9px 22px -8px rgba(154,110,18,.85), inset 0 1px 0 rgba(255,255,255,.55), 0 0 0 1.5px rgba(241,208,74,.55)}
+.segrow button.on, .catchip.on{font-weight:900}
 .navtile .nl{font-size:11px}
 h2{font-size:11px;letter-spacing:.04em}
 .gc-kick{font-size:9px;letter-spacing:.03em}
