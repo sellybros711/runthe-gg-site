@@ -4828,6 +4828,7 @@ function render(){
     if(S.overlay==='account') overlayAccount(app);
     if(S.overlay==='leaderboard') overlayLeaderboard(app);
     if(S.overlay==='dailydone') overlayDailyDone(app);
+    if(S.overlay==='holeshots') overlayHoleShots(app);
     if(S.overlay==='courserecords') overlayCourseRecords(app);
     if(S.overlay==='passport') overlayPassport(app);
     if(S.overlay==='shop') overlayShop(app);
@@ -5459,6 +5460,50 @@ function overlayDailyDone(screen){
   const rb=ov.querySelector('#dd-records'); if(rb) rb.onclick=()=>{S.overlay='courserecords';render();};
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  screen.appendChild(ov);
+}
+// Tap a hole on the daily RESULT scorecard to rewatch its shots on the TOURTRACE tracer, with the full
+// shot-by-shot list. Reuses the same hvNode + shotlist as the in-round review; read-only. Only works right
+// after a fresh finish (S.dailyHoles still holds each hole's shot data); on a re-opened stored result the
+// scorecard cells carry no shots, so they aren't clickable and this never opens.
+function overlayHoleShots(screen){
+  const holes=S.dailyHoles||[];
+  const has=(i)=>i>=0&&i<holes.length&&holes[i].shots&&holes[i].shots.length;
+  const k=S.dailyHoleView;
+  if(!has(k)){ S.overlay=null; return; }
+  const course=S.dailyCourse||(S.dailyResult&&S.dailyResult.course)||'';
+  const c=DAILY_COURSES[course];
+  const h=holes[k], shots=h.shots||[], sel=S.dailyHoleShot;
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Hole ${h.n} shots">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button></div>`);
+  const wrap=$(`<div style="max-width:560px;margin:0 auto"></div>`);
+  wrap.appendChild($(`<h3 style="margin:0 0 2px;text-align:center">Hole ${h.n} · Par ${h.par}</h3>`));
+  wrap.appendChild($(`<div class="small muted center" style="margin:0 0 10px">${esc(dResultLong(h.par,h.toPar))} · <span style="color:${dScoreCol(h.toPar)};font-weight:800">${h.par+h.toPar} (${dtp(h.toPar)})</span>${c?' · '+esc(dShort(c.v)):''}</div>`));
+  // the tracer window: static full-hole map by default, or a single-shot replay when one is selected
+  const node=(sel!=null)?hvNode(h, sel, k, course, null, S.dailyHoleNonce||1):hvNode(h, null, k, course);
+  if(node){ node.style.maxWidth='520px'; node.style.margin='0 auto'; wrap.appendChild(node); }
+  // shot-by-shot list, tap a row to replay that shot on the tracer
+  wrap.appendChild($(`<div class="small muted center" style="margin:11px 0 4px">Tap a shot to replay it on the tracer</div>`));
+  const list=$(`<div class="shotlist"></div>`);
+  shots.forEach((s,idx)=>{ const on=sel===idx+1;
+    const row=$(`<button class="sl ${on?'on':''}" aria-label="Replay shot ${idx+1}"><span class="sln">${idx+1}</span><span class="sld">${s&&s.d?esc(s.d):''}</span><span class="slplay">▶</span></button>`);
+    row.onclick=()=>{ S.dailyHoleShot=idx+1; S.dailyHoleNonce=(S.dailyHoleNonce||0)+1; render(); };
+    list.appendChild(row); });
+  wrap.appendChild(list);
+  // prev / next hole navigation among holes that have shot data
+  let prevK=-1; for(let i=k-1;i>=0;i--){ if(has(i)){ prevK=i; break; } }
+  let nextK=-1; for(let i=k+1;i<holes.length;i++){ if(has(i)){ nextK=i; break; } }
+  const nav=$(`<div style="display:flex;gap:8px;max-width:520px;margin:12px auto 0"></div>`);
+  const pb=$(`<button class="btn ghost" ${prevK<0?'disabled':''} style="flex:1">‹ Hole ${prevK>=0?holes[prevK].n:''}</button>`);
+  if(prevK>=0) pb.onclick=()=>{ S.dailyHoleView=prevK; S.dailyHoleShot=null; render(); };
+  const nb=$(`<button class="btn ghost" ${nextK<0?'disabled':''} style="flex:1">Hole ${nextK>=0?holes[nextK].n:''} ›</button>`);
+  if(nextK>=0) nb.onclick=()=>{ S.dailyHoleView=nextK; S.dailyHoleShot=null; render(); };
+  nav.appendChild(pb); nav.appendChild(nb); wrap.appendChild(nav);
+  ov.appendChild(wrap);
+  const doClose=()=>{ S.overlay=null; S.dailyHoleView=null; S.dailyHoleShot=null; render(); };
+  const close=$(`<button class="btn red" style="max-width:520px;margin:12px auto 0">Close</button>`);
+  close.onclick=doClose; ov.querySelector('.x').onclick=doClose;
+  ov.appendChild(close);
   screen.appendChild(ov);
 }
 // top-left ≡ menu: real navigation, reachable from every screen without losing your place (it's just
@@ -16121,10 +16166,18 @@ function scrDailyResult(){
   else if(rec) add($(`<div class="scout" style="max-width:520px;margin:0 auto;text-align:center">Course record: <b style="color:var(--gold)">${dTot(rec.toPar, c.par)}</b> by ${esc(crHolders(rec))}${rec.toPar<total?` · you were ${total-rec.toPar} back`:''}</div>`));
   const holes=(S.dailyHoles&&S.dailyHoles.length===18)?S.dailyHoles:(r.holes&&r.holes.length===18?r.holes:null);
   if(holes){
+    // tappable per-hole shot review is only possible on the fresh finish (S.dailyHoles carries each
+    // hole's shots); a re-opened stored result has par/toPar cells only, so they aren't clickable.
+    const canReview=holes.some(h=>h&&h.shots&&h.shots.length);
     const grid=$(`<div style="max-width:600px;margin:14px auto 0"></div>`);
+    if(canReview) grid.appendChild($(`<div class="small center" style="margin:0 0 2px;color:var(--gold);font-weight:700">Tap a hole to rewatch its shots</div>`));
     [[0,9,'OUT'],[9,18,'IN']].forEach(([a,b,lab])=>{
       const row=$(`<div class="dcard"></div>`);
-      for(let k=a;k<b;k++){ const pl=holes[k]; row.appendChild($(`<div class="dcell done"><div class="dn">${k+1}</div><div class="ds" style="color:${dScoreCol(pl.toPar)}">${dCellScore(pl)}</div></div>`)); }
+      for(let k=a;k<b;k++){ const pl=holes[k];
+        const cell=$(`<div class="dcell done"><div class="dn">${k+1}</div><div class="ds" style="color:${dScoreCol(pl.toPar)}">${dCellScore(pl)}</div></div>`);
+        if(pl&&pl.shots&&pl.shots.length){ cell.style.cursor='pointer'; cell.setAttribute('role','button'); cell.setAttribute('aria-label',`Rewatch hole ${k+1} shots`);
+          cell.onclick=()=>{ S.dailyHoleView=k; S.dailyHoleShot=null; S.overlay='holeshots'; render(); }; }
+        row.appendChild(cell); }
       grid.appendChild($(`<div class="small muted center" style="letter-spacing:.12em;margin-top:6px">${lab}</div>`)); grid.appendChild(row); });
     add(grid);
   }
