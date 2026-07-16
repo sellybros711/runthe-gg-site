@@ -12210,7 +12210,7 @@ function scrOffseason(){
     <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.spinning?'':'Optional · spin at your own risk')}</div></div>`));
 
   // one-line hint above the grid
-  if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap a stat to swap in <b>${esc(g.name)}</b>'s rating, <span style="color:#35d6a0">green ▲ upgrade</span>, <span style="color:#e07a5f">red ▼ downgrade</span></div>`));
+  if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap a stat to swap in <b>${esc(g.name)}</b>'s rating, <span style="color:#35d6a0">▲ upgrades apply instantly</span>, <span style="color:#e07a5f">▼ a downgrade asks you to confirm</span></div>`));
   else if(nDec) add($(`<div class="small center osgridhint" style="color:#e07a5f">▼ Age cost you ground, red shows what each skill dropped. Re-spin to repair.</div>`));
   else if(lockedNow.length) add($(`<div class="small center osgridhint" style="color:var(--gold)">🔒 Locked stats already changed this off-season, a spin can only land on your open stats</div>`));
   else add($(`<div class="small center osgridhint" style="color:#d9c48a">⚠ Spinning is optional and a <b>risk</b>, you can start the season as-is. If you spin, you <b>must lock in</b> whatever you land on, even if it's worse.</div>`));
@@ -12223,7 +12223,7 @@ function scrOffseason(){
       const nv=S.current[cat.k], dd=nv-cur, dcol=dd>0?'#35d6a0':(dd<0?'#e07a5f':'var(--muted)');
       const bt=$(`<div class="attr confirming" role="group" aria-label="Confirm ${cat.short} change">
         <div class="oc-top"><span class="lab">${cat.short}</span><span class="oc-swap"><span style="color:var(--muted)">${cur}</span> → <span style="color:${dcol}">${nv}</span> <span style="color:${dcol};font-family:var(--mono)">${dd>0?'▲+'+dd:(dd<0?'▼'+Math.abs(dd):'·')}</span></span></div>
-        <div class="oc-row"><span class="oc-msg">Lock in your change?</span>
+        <div class="oc-row"><span class="oc-msg">Lock in this downgrade?</span>
           <button class="oc-no" type="button">Cancel</button><button class="oc-yes" type="button">Lock in</button></div></div>`);
       bt.querySelector('.oc-no').onclick=(e)=>{ e.stopPropagation(); S.offConfirm=null; render(); };
       bt.querySelector('.oc-yes').onclick=(e)=>{ e.stopPropagation(); S.offConfirm=null; offTake(cat.k); };
@@ -12238,7 +12238,8 @@ function scrOffseason(){
       const bt=$(`<button class="attr osswap" aria-label="Swap ${cat.short} to ${nv}, ${dd>=0?'up':'down'} ${Math.abs(dd)}">
         <span class="lab">${cat.short}</span><span class="val">${cur}</span>
         <span class="osnew" style="color:${dcol}">→ ${nv} <b>${dd>0?'▲+'+dd:(dd<0?'▼'+Math.abs(dd):'·')}</b></span></button>`);
-      bt.onclick=()=>{ S.offConfirm=cat.k; render(); };
+      // CS356k: an upgrade (or same value) applies instantly; only a DOWNGRADE asks you to confirm first.
+      bt.onclick=()=>{ if(dd<0){ S.offConfirm=cat.k; render(); } else { offTake(cat.k); } };
       grid.appendChild(bt); return;
     }
     // idle: static current-bag tile (shows the age drop, if any)

@@ -8648,6 +8648,15 @@ allows Google Fonts, or self-host Anton.*
     never blocks the golfer/flag. Verified in Playwright (2 locked + 6 draftable with ✓ badges; pill top-
     centered ~46px) + screenshots; 0 page errors. Deployed to /golf.
 
+  - **CS356k — off-season: upgrades apply instantly, only a downgrade asks to confirm** (owner: "don't like
+    having to confirm every time; make the change if it's an improvement, and confirm with a pop-up only if
+    you're decreasing a skill"). The off-season swap tile click now branches on the delta: `dd>=0` (an
+    upgrade or same value) calls `offTake` directly (no confirm), `dd<0` arms the inline lock-in confirm
+    (CS273 style) which now reads "Lock in this downgrade?". Hint copy updated ("▲ upgrades apply instantly,
+    ▼ a downgrade asks you to confirm"). The once-per-stat lock still applies either way. Verified in
+    Playwright (upgrade applies + clears the spin with no confirm; downgrade shows the confirm and only
+    applies after Lock in); 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
