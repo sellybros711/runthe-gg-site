@@ -1183,11 +1183,13 @@ window.GA_ID='G-L29P5MRWKE';
   .cb-meters{flex-basis:100%; width:100%; margin-top:6px; padding-top:11px; border-top:1px solid rgba(255,255,255,.09)}
   .seasonrail{display:flex; gap:7px; overflow-x:auto; padding:1px 0 9px; margin-bottom:10px; -webkit-overflow-scrolling:touch; scrollbar-width:none}
   .seasonrail::-webkit-scrollbar{display:none}
-  /* CS356w: season-summary tab bar */
-  .sumtabs{position:sticky; top:0; z-index:6; display:flex; gap:6px; justify-content:center; flex-wrap:wrap; padding:9px 4px; margin:2px 0 12px; background:linear-gradient(180deg, var(--pagebg) 60%, transparent)}
-  .sumtabbtn{flex:0 0 auto; font:800 12px/1 var(--body); letter-spacing:.04em; text-transform:uppercase; color:var(--muted); background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:999px; padding:9px 16px; cursor:pointer; transition:color .12s, background .12s, border-color .12s}
-  .sumtabbtn:hover{color:var(--oncard); border-color:rgba(241,208,74,.4)}
-  .sumtabbtn.on{color:#20160a; background:var(--gold-grad-d); border-color:var(--gold); font-weight:900}
+  /* CS356x: season-summary UNDERLINE tabs - reads unmistakably as tabs (baseline + active underline),
+     horizontally scrollable for the finer tab set. */
+  .sumtabs{position:sticky; top:0; z-index:6; display:flex; gap:0; justify-content:flex-start; overflow-x:auto; scrollbar-width:none; padding:0 2px; margin:2px 0 15px; background:var(--pagebg); border-bottom:2px solid rgba(255,255,255,.12)}
+  .sumtabs::-webkit-scrollbar{display:none}
+  .sumtabbtn{flex:0 0 auto; font:800 12.5px/1 var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); background:none; border:0; border-bottom:3px solid transparent; margin-bottom:-2px; border-radius:0; padding:13px 15px; cursor:pointer; white-space:nowrap; transition:color .12s}
+  .sumtabbtn:hover{color:var(--oncard)}
+  .sumtabbtn.on{color:var(--gold); border-bottom-color:var(--gold)}
   .sumacts{margin-top:18px}
   .srev{flex:0 0 auto; min-width:56px; max-width:96px; border-radius:10px; padding:7px 9px; text-align:center;
     background:var(--panel); border:1px solid var(--line); opacity:.5}
@@ -11671,7 +11673,7 @@ function scrSummary(){
   // CS356w: split this long summary into tabs (owner: too long / too much info). Sections build into
   // per-tab containers via a shadowed local add() that appends to __cur; the header + persistent actions
   // sit OUTSIDE the tabs so Continue is always reachable.
-  const hdr=$(`<div></div>`), ovC=$(`<div></div>`), stC=$(`<div></div>`), seC=$(`<div></div>`), caC=$(`<div></div>`), actC=$(`<div class="sumacts"></div>`);
+  const hdr=$(`<div></div>`), ovC=$(`<div></div>`), moC=$(`<div></div>`), stC=$(`<div></div>`), reC=$(`<div></div>`), awC=$(`<div></div>`), caC=$(`<div></div>`), hiC=$(`<div></div>`), shC=$(`<div></div>`), actC=$(`<div class="sumacts"></div>`);
   let __cur=hdr;
   const add=(n)=>{ if(n) __cur.appendChild(n); return n; };
   add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':(S.circuitMode?('Legend Circuit · Year '+circuitYear+' complete'):(S.year>1?('Career Mode · Year '+S.year+' complete'):'Season complete'))}</span></div>`));
@@ -11712,6 +11714,7 @@ function scrSummary(){
     <div class="tile"><div class="k">Earnings</div><div class="v cream" style="font-size:23px;white-space:nowrap">${fmt(t.money)}</div><div class="small muted" style="font-size:10px;margin-top:3px">prize money won</div></div>
     <div class="tile"><div class="k">Net profit</div><div class="v" style="font-size:23px;white-space:nowrap;color:${netCol0}">${fmtSigned(netTotal)}</div><div class="small muted" style="font-size:10px;margin-top:3px">${contractBonus>0?('incl. +'+fmt(contractBonus)+' sponsor'):('after −'+fmt(ec.costs)+' costs')}</div></div>
   </div>`));
+  __cur=moC;
   // expandable itemized expense sheet (caddie / agent / travel / tour overhead)
   const expWrap=$(`<div class="center" style="margin:0 0 8px"></div>`);
   const expBtn=$(`<button class="btn ghost" style="width:auto;font-size:11px;padding:6px 13px">${S.showExpenses?'Hide expense breakdown ▴':'See expense breakdown ▾'}</button>`);
@@ -11737,7 +11740,7 @@ function scrSummary(){
     add($(`<div class="scout" style="border-color:#b98a2a;text-align:left;margin:8px auto;max-width:520px">
       <div style="font:800 11px/1 var(--body);letter-spacing:.2em;color:#ffd45e;text-transform:uppercase">${ic('coin')} No coins this season</div>
       <div class="small" style="color:#dbe7ee;margin-top:4px">You simmed this season to the end, so it earned no coins. Stay in the sim and play the rounds (and the Moments) next year to earn.</div></div>`));
-  __cur=seC;
+  __cur=moC;
   if(contractL.length) add($(contractsReportHTML(contractL, signing)));   // sponsor season report cards (both slots)
   __cur=ovC;
   if(sbSignedIn() && S.freshAch&&S.freshAch.length){   // Tour Rep / achievements are a signed-in feature, never shown to guests
@@ -11757,6 +11760,7 @@ function scrSummary(){
   // ---- Season Stats (CS214): real measured scoring + a full derived tour-stat profile ----
   { const seasonSk=Object.fromEntries(CATS.map(c=>[c.k, me[c.k]!=null?me[c.k]:REPLACEMENT]));
     add($(statSheetHTML(seasonSk, seasonRealStats(), {title:(S.circuitMode?'Legend Circuit · Season Stats':'Season Stats')}))); }
+  __cur=reC;
   { const sf=storyFeedHTML(); if(sf) add($(sf)); }   // CS225: Career Story feed + persona payoff
   __cur=ovC;
   // WINS grouped with the Wins stat: the actual tournaments won this season sit right under the row
@@ -11784,7 +11788,7 @@ function scrSummary(){
       add(wrap);
     }
   }
-  __cur=seC;
+  __cur=awC;
   // CS267: Season Impact - a broadcast-style recap card whose numbers COUNT UP on first view
   // (world rank prev→now, tour points gained, season earnings, net). Tour Card status underneath.
   if(!S.daily && S.worldRankMove){
@@ -11867,7 +11871,7 @@ function scrSummary(){
     add(dt);
   }
 
-  __cur=ovC;
+  __cur=shC;
   // guest: nudge to sign up & post this season to the global board (with would-be rank if known)
   if(!sbSignedIn() && !S.daily){
     if(!lbCache['season:earnings']) lbLoad('season','earnings');
@@ -11942,17 +11946,17 @@ function scrSummary(){
     caC.appendChild(ct);
     // ---- Career Stats (CS214): measured career scoring + career-average derived profile ----
     { const cSk=careerAvgSkills(c); if(cSk) caC.appendChild($(statSheetHTML(cSk, careerRealStats(c), {title:'Career Stats · '+c.seasons.length+' years'}))); }
-    { const tl=careerTimelineNode(c); if(tl) caC.appendChild(tl); }   // CS265 career milestone timeline
+    { const tl=careerTimelineNode(c); if(tl) hiC.appendChild(tl); }   // CS265 career milestone timeline
     // Wins + seasons, grouped into dropdowns so a long career stays readable
     const wl=(c.winsList||[]);
     const majWins=wl.filter(w=>w.major).length;
-    caC.appendChild($(`<h3 style="margin:16px 0 7px;font-size:14px;letter-spacing:.02em">Wins <span class="small muted" style="font-weight:600">· ${wl.length}${majWins?` · ${majWins} major${majWins>1?'s':''}`:''}</span></h3>`));
-    if(!wl.length) caC.appendChild($(`<div class="scout small muted" style="margin-top:2px">No tournament wins yet, keep grinding.</div>`));
-    else if(majWins) caC.appendChild($(careerMajorsHTML(c)));
-    caC.appendChild($(`<h3 style="margin:16px 0 7px;font-size:14px;letter-spacing:.02em">Season by season <span class="small muted" style="font-weight:600">· ${c.seasons.length} yrs · tap a year for its wins</span></h3>`));
-    caC.appendChild($(`<div>${careerSeasonsHTML(c)}</div>`));
+    hiC.appendChild($(`<h3 style="margin:16px 0 7px;font-size:14px;letter-spacing:.02em">Wins <span class="small muted" style="font-weight:600">· ${wl.length}${majWins?` · ${majWins} major${majWins>1?'s':''}`:''}</span></h3>`));
+    if(!wl.length) hiC.appendChild($(`<div class="scout small muted" style="margin-top:2px">No tournament wins yet, keep grinding.</div>`));
+    else if(majWins) hiC.appendChild($(careerMajorsHTML(c)));
+    hiC.appendChild($(`<h3 style="margin:16px 0 7px;font-size:14px;letter-spacing:.02em">Season by season <span class="small muted" style="font-weight:600">· ${c.seasons.length} yrs · tap a year for its wins</span></h3>`));
+    hiC.appendChild($(`<div>${careerSeasonsHTML(c)}</div>`));
     // the career share CARD lives only on the end-of-career ceremony now, here we just point to it
-    caC.appendChild($(`<div class="scout small muted" style="margin-top:12px;text-align:center">Your shareable career card unlocks when you finish your career.</div>`));
+    hiC.appendChild($(`<div class="scout small muted" style="margin-top:12px;text-align:center">Your shareable career card unlocks when you finish your career.</div>`));
   }
 
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
@@ -12013,19 +12017,20 @@ function scrSummary(){
   // the summary is long and the advance button sits at the very bottom - many players don't realize they
   // have to scroll to continue. Show a floating cue that points down to it, visible only while that button
   // is off-screen, and hiding once it scrolls into view.
-  seC.appendChild(left);
-  ovC.appendChild(right);
+  moC.appendChild(left);
+  shC.appendChild(right);
   RT.appendChild(hdr);
-  if(S.daily){
-    [ovC,stC,seC,caC].forEach(c=>{ if(c.childNodes.length) RT.appendChild(c); });
+  // CS356x: finer, content-driven tabs - only tabs that actually have content, in a fixed order.
+  const TABDEFS=[['overview','Overview',ovC],['money','Money',moC],['stats','Stats',stC],['rep','Reputation',reC],['awards','Awards',awC],['career','Career',caC],['history','History',hiC],['share','Share',shC]];
+  const TABS=TABDEFS.filter(d=>d[2].childNodes.length);
+  if(S.daily || TABS.length<=1){
+    TABDEFS.forEach(d=>{ if(d[2].childNodes.length) RT.appendChild(d[2]); });
   } else {
-    const TABS=[['overview','Overview'],['stats','Stats'],['season','Season']];
-    if(hasCareer) TABS.push(['career','Career']);
-    let atab=S.summaryTab||'overview'; if(!TABS.some(t=>t[0]===atab)) atab='overview';
-    const bar=$(`<div class="sumtabs"></div>`);
-    TABS.forEach(([k,lbl])=>{ const bb=$(`<button class="sumtabbtn ${k===atab?'on':''}" type="button">${lbl}</button>`); bb.onclick=()=>{S.summaryTab=k;render();}; bar.appendChild(bb); });
+    let atab=S.summaryTab; if(!TABS.some(t=>t[0]===atab)) atab=TABS[0][0];
+    const bar=$(`<div class="sumtabs" role="tablist"></div>`);
+    TABS.forEach(([k,lbl,c])=>{ const bb=$(`<button class="sumtabbtn ${k===atab?'on':''}" role="tab" aria-selected="${k===atab}" type="button">${lbl}</button>`); bb.onclick=()=>{S.summaryTab=k;render();}; bar.appendChild(bb); });
     RT.appendChild(bar);
-    RT.appendChild(({overview:ovC,stats:stC,season:seC,career:caC})[atab]||ovC);
+    RT.appendChild((TABS.find(t=>t[0]===atab)||TABS[0])[2]);
   }
   RT.appendChild(actC);
   setupSummaryScrollCue(advanceLabel);
