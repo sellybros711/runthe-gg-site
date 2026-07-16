@@ -12311,7 +12311,7 @@ function scrOffseason(){
     else if(mulliSpins()>0){ const mb=$(`<button class="btn ghost" style="border-color:#8a6bf0;color:#c9b8ff">🌀 Use a Mulli-Spin · ${mulliSpins()} left<span class="sub">A banked extra spin from weekly challenges</span></button>`); mb.onclick=mulliSpinOff; actions.appendChild(mb); }
     else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">No re-spins left, take one of ${esc(g.name)}'s skills, or start the season.</div>`));
   } else if(!S.spinning){
-    if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel<span class="sub">${os.maxChanges-os.changes} change${os.maxChanges-os.changes===1?'':'s'} left · optional</span></button>`); spin.onclick=offSpin; actions.appendChild(spin); }
+    if(os.changes<os.maxChanges){ const spin=$(`<button class="btn teal">Spin the Wheel (Optional)<span class="sub">${os.maxChanges-os.changes} change${os.maxChanges-os.changes===1?'':'s'} left</span></button>`); spin.onclick=offSpin; actions.appendChild(spin); }
     else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">All ${os.maxChanges} changes used.</div>`));
   }
   const cont=$(`<button class="btn goldfill">Start Year ${yr} ▸<span class="sub">${os.changes>0?'Run the new season':'Keep your bag, run it as-is'}</span></button>`);
