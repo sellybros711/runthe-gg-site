@@ -1255,6 +1255,10 @@ window.GA_ID='G-L29P5MRWKE';
     border-radius:999px; padding:5px 12px 5px 8px; font:900 16px/1 var(--body); color:var(--gold)}
   .shop-preview{display:flex; justify-content:center; align-items:flex-end; height:340px; margin:2px 0 4px}
   .shop-preview .avatarfig{height:340px}
+  /* IMG_8306: setup screen reuses the shop tab layout - non-sticky within its bordered box, shorter preview */
+  .setup-shop .shop-sticky{position:static; background:transparent; box-shadow:none; padding-bottom:0}
+  .setup-shop .shop-preview{height:236px; margin:4px 0 2px}
+  .setup-shop .shop-preview .avatarfig{height:236px}
   .segrow{display:flex; gap:6px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
     border-radius:11px; padding:4px}
   .segrow button{flex:1; border:0; background:transparent; color:var(--muted); font:800 12px/1 var(--body);
@@ -5848,41 +5852,75 @@ function headwearRow(){
     cr.appendChild(b); });
   return row;
 }
-// CS353: RETRO PIXEL character creator. CAREER-ONLY (other modes just use your name). Lean & fast:
-// name + skin + hair color/style + shirt color + headwear (none/cap/visor) + hat color + country.
-// Everything image-heavy (patterns, worn gear, trousers/shoes color, handedness, caddie) is out of
-// creation - kit colors are managed in the Pro Shop; the golfer is a code-drawn pixel sprite.
+// IMG_8306: the customization screen uses the Pro Shop's tab layout - a big pixel-golfer preview, section
+// tabs (Look / Apparel / Accessories / Details) + category chips, and a tap-to-equip / preview-then-buy
+// tile grid, so creating a golfer feels the same as shopping. Look (skin/hair/style/handedness) is free for
+// everyone; Apparel/Accessories/Details need an account. CAREER-ONLY entry (other modes use your saved golfer).
+function pxStyleThumb(id){ const base=Object.assign({},S.look||DEFLOOK); base.hairStyle=id; base.cap=false;   // cap off so the hair shows
+  return `<span class="sthumb px" style="overflow:hidden;background:#0c1f16;padding:0">${pxCropImg(pxGolferURL(base),3,48)}</span>`; }
+function setupLookTiles(cat){
+  const tiles=[], sw=(bg)=>`<span class="sthumb color" style="background:${bg}"></span>`;
+  if(cat==='skin'){ const cur=S.look.skin||'tan'; SKINS.forEach(o=>tiles.push(shopTile({thumb:sw(o.m),name:cosTitle(o.id),state:cur===o.id?'eq':'own',noFoot:true,data:`data-appset="skin" data-id="${o.id}"`}))); }
+  else if(cat==='hair'){ const cur=S.look.hair||'brown'; HAIRS.forEach(o=>tiles.push(shopTile({thumb:sw(o.m),name:cosTitle(o.id),state:cur===o.id?'eq':'own',noFoot:true,data:`data-appset="hair" data-id="${o.id}"`}))); }
+  else if(cat==='style'){ const cur=S.look.hairStyle||'short'; HAIRSTYLES.forEach(o=>tiles.push(shopTile({thumb:pxStyleThumb(o.id),name:o.label,state:cur===o.id?'eq':'own',noFoot:true,data:`data-appset="style" data-id="${o.id}"`}))); }
+  else if(cat==='hand'){ const lefty=!!S.look.lefty; const L=(t)=>`<span class="sthumb" style="font:800 22px var(--pixel);color:var(--gold)">${t}</span>`;
+    tiles.push(shopTile({thumb:L('R'),name:'Right handed',state:!lefty?'eq':'own',noFoot:true,data:`data-appset="hand" data-id="right"`}));
+    tiles.push(shopTile({thumb:L('L'),name:'Left handed',state:lefty?'eq':'own',noFoot:true,data:`data-appset="hand" data-id="left"`})); }
+  return tiles;
+}
 function scrSetup(){
   const guest=!sbSignedIn();
   const editing=!!S.setupEdit;   // CS356c: editing the profile golfer from the Trophy Room (not starting a career)
-  const wrap=$(`<div class="retro-creator"></div>`);
+  const wrap=$(`<div class="retro-creator setup-shop"></div>`);
   wrap.appendChild($(`<div class="retro-title">▸ ${editing?'Edit Your Golfer':'Create Your Golfer'}</div>`));
-  wrap.appendChild($(`<div class="retro-sub">${editing?'This is your golfer in every mode &middot; change it anytime':((S.special?'Monthly Spotlight':(S.daily?'Beat the Pro':'Career Mode'))+' &middot; pick a look, then build your skills')}</div>`));
-  const stage=$(`<div class="pxstage"></div>`); stage.appendChild($(avatarShowHTML())); wrap.appendChild(stage);
+  wrap.appendChild($(`<div class="retro-sub">${editing?'This is your golfer in every mode &middot; change it anytime':((S.special?'Monthly Spotlight':(S.daily?'Beat the Pro':'Career Mode'))+' &middot; style your golfer, then build your skills')}</div>`));
 
-  // ---- appearance (everyone) ----
-  wrap.appendChild(swatchRow('Skin tone',SKINS,S.look.skin,'skin',o=>o.m));
-  wrap.appendChild(swatchRow('Hair color',HAIRS,S.look.hair,'hair',o=>o.m));
-  wrap.appendChild(hairStyleRow());
-  wrap.appendChild(handRow());   // CS355d: lefty/righty - the golfer always swings from this side
+  const LOOKCATS=[['skin','Skin'],['hair','Hair color'],['style','Hair style'],['hand','Handedness']];
+  const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes']];
+  const ACCS=[['hw','Headwear'],['ew','Eyewear']];
+  const TABS = guest ? [['look','Look']] : [['look','Look'],['apparel','Apparel'],['accessories','Accessories'],['details','Details']];
+  let tab=S.setupTab; if(!TABS.some(t=>t[0]===tab)) tab=TABS[0][0]; S.setupTab=tab;
+  const cats = tab==='look'?LOOKCATS : tab==='apparel'?APP : tab==='accessories'?ACCS : null;
+  let cat=S.setupCat; if(cats && !cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.setupCat=cat;
+
+  // sticky-style header: preview + section tabs + category chips (reuses the Pro Shop classes)
+  const sticky=$(`<div class="shop-sticky">
+    <div class="shop-preview">${avatarShowHTML()}</div>
+    <div class="segrow">${TABS.map(t=>`<button data-stab="${t[0]}" class="${t[0]===tab?'on':''}">${esc(t[1])}</button>`).join('')}</div>
+    ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-scat="${c[0]}">${esc(c[1])}</button>`).join('')}</div>`:''}
+  </div>`);
+  wrap.appendChild(sticky);
+
+  if(S.shopPreview && !guest){ wrap.appendChild(shopPreviewNode()); }
+  else if(tab==='details'){
+    const form=$(`<div style="margin-top:12px"></div>`);
+    const nrow=$(`<div class="setrow"><div class="setlab">Name</div></div>`);
+    const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${esc(S.name||'')}">`);
+    inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name); saveLook();}; nrow.appendChild(inp); form.appendChild(nrow);
+    const crow=$(`<div class="setrow"><div class="setlab">Country</div></div>`); crow.appendChild(countryRow()); form.appendChild(crow);
+    wrap.appendChild(form);
+  } else {
+    const grid=$(`<div class="sgrid"></div>`);
+    const tiles = tab==='look' ? setupLookTiles(cat) : cosmeticItems(cat).map(o=>cosTileHTML(cat,o));
+    grid.innerHTML=tiles.join('');
+    wrap.appendChild(grid);
+    grid.querySelectorAll('[data-appset]').forEach(x=>x.onclick=()=>{ const k=x.getAttribute('data-appset'), id=x.getAttribute('data-id');
+      if(k==='skin')S.look.skin=id; else if(k==='hair')S.look.hair=id; else if(k==='style')S.look.hairStyle=id; else if(k==='hand')S.look.lefty=(id==='left');
+      saveLook(); render(); });
+    grid.querySelectorAll('[data-tile]').forEach(x=>x.onclick=()=>shopTileClick(x));
+  }
+  // tab + category handlers (cancel any pending preview when navigating)
+  sticky.querySelectorAll('[data-stab]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.setupTab=x.getAttribute('data-stab'); render(); });
+  sticky.querySelectorAll('[data-scat]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.setupCat=x.getAttribute('data-scat'); render(); });
 
   if(guest){
-    const lock=$(`<div style="margin-top:2px;border:1px solid var(--gold);border-radius:12px;background:linear-gradient(180deg,rgba(241,208,74,.08),rgba(10,22,38,.25));padding:14px 15px">
+    const lock=$(`<div style="margin-top:12px;border:1px solid var(--gold);border-radius:12px;background:linear-gradient(180deg,rgba(241,208,74,.08),rgba(10,22,38,.25));padding:14px 15px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:18px">🔒</span><b style="color:var(--gold);font-size:14.5px">Sign in to finish your golfer</b></div>
-      <div class="small muted" style="margin-bottom:12px;line-height:1.5">A free account lets you <b style="color:var(--oncard)">name your golfer</b>, fly your <b style="color:var(--oncard)">country's flag</b>, and pick your <b style="color:var(--oncard)">shirt &amp; hat colors and headwear</b> - plus it saves your career and posts you to the leaderboards.</div>
+      <div class="small muted" style="margin-bottom:12px;line-height:1.5">A free account lets you <b style="color:var(--oncard)">name your golfer</b>, fly your <b style="color:var(--oncard)">country's flag</b>, and unlock the <b style="color:var(--oncard)">Apparel &amp; Accessories</b> shop (shirt/hat colors, patterns, headwear &amp; eyewear) - plus it saves your career and posts you to the leaderboards.</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn goldfill" id="setup-signup" style="width:auto;flex:1 1 160px;padding:11px">Create free account ▸</button><button class="btn ghost" id="setup-signin" style="width:auto;flex:0 0 auto;padding:11px 18px">Sign in</button></div></div>`);
     lock.querySelector('#setup-signup').onclick=()=>{ track('setup_signup_click'); S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); };
     lock.querySelector('#setup-signin').onclick=()=>{ S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); };
     wrap.appendChild(lock);
-  } else {
-    const nrow=$(`<div class="setrow"><div class="setlab">Name</div></div>`);
-    const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${esc(S.name||'')}">`);
-    inp.oninput=e=>{S.name=e.target.value; LS.set('bag_name',S.name); saveLook();}; nrow.appendChild(inp); wrap.appendChild(nrow);
-    { const r=cosColorRow('Shirt color','shirt'); if(r) wrap.appendChild(r); }
-    wrap.appendChild(headwearRow());
-    if(S.look.cap!==false){ const r=cosColorRow('Hat color','hat'); if(r) wrap.appendChild(r); }
-    const crow=$(`<div class="setrow"><div class="setlab">Country</div></div>`); crow.appendChild(countryRow()); wrap.appendChild(crow);
-    if(anyCosmeticLocked()) wrap.appendChild(proShopLinkRow());
   }
   add(wrap);
 
@@ -5892,14 +5930,14 @@ function scrSetup(){
     // Profile-edit mode (opened from the Trophy Room). Changes auto-save on each pick; Done just returns.
     const back=$(`<button class="btn ghost" style="margin:0;width:auto;flex:0 0 auto;padding:12px 15px">‹ Back</button>`);
     const done=$(`<button class="btn goldfill" style="margin:0;flex:1 1 auto">Done ✓</button>`);
-    const ret=()=>{ if(!guest && !(S.name||'').trim()){ S.name=(sbUsername||'Your Golfer'); LS.set('bag_name',S.name); saveLook(); } S.setupEdit=false; const r=S.setupReturn; S.setupReturn=null; S.screen='title'; S.overlay=(r==='record'?'record':null); render(); };
+    const ret=()=>{ S.shopPreview=null; if(!guest && !(S.name||'').trim()){ S.name=(sbUsername||'Your Golfer'); LS.set('bag_name',S.name); saveLook(); } S.setupEdit=false; const r=S.setupReturn; S.setupReturn=null; S.screen='title'; S.overlay=(r==='record'?'record':null); render(); };
     back.onclick=ret; done.onclick=()=>{ ret(); toast('Golfer saved'); };
     bar.appendChild(back); bar.appendChild(done); add(bar); return;
   }
   const back=$(`<button class="btn ghost" style="margin:0;width:auto;flex:0 0 auto;padding:12px 15px">‹ Back</button>`);
-  back.onclick=()=>{reset();S.screen='title';render();};
+  back.onclick=()=>{S.shopPreview=null;reset();S.screen='title';render();};
   const go=$(`<button class="btn goldfill" style="margin:0;flex:1 1 auto">Build Your Golfer ▸</button>`);
-  go.onclick=()=>{ if(guest && !(S.name||'').trim()) S.name='Your Golfer'; track('draft_started',{daily:S.daily,guest}); S.screen='draft'; render(); };
+  go.onclick=()=>{ S.shopPreview=null; if(guest && !(S.name||'').trim()) S.name='Your Golfer'; track('draft_started',{daily:S.daily,guest}); S.screen='draft'; render(); };
   bar.appendChild(back); bar.appendChild(go); add(bar);
 }
 
@@ -15654,7 +15692,8 @@ function patSwatchBg(id){ const a='#5a6b5e', b='#93a598';
 // one locker tile. o={thumb, name, sub, state:'eq'|'own'|'lock', price, afford, rarColor, data}
 function shopTile(o){
   let foot;
-  if(o.state==='eq') foot=`<span class="sfoot eqf">Equipped</span>`;
+  if(o.noFoot) foot='';   // appearance tiles: selection shown by the gold ring + ✓, no owned/price label
+  else if(o.state==='eq') foot=`<span class="sfoot eqf">Equipped</span>`;
   else if(o.state==='own') foot=`<span class="sfoot own">Owned</span>`;
   else foot=`<span class="sfoot price${o.afford?'':' no'}"><span style="width:12px;height:12px">${ic('coin',{size:'12px'})}</span>${coinFmt(o.price||0)}</span>`;
   return `<button class="stile ${o.state}" ${o.data||''}>`
@@ -15664,6 +15703,23 @@ function shopTile(o){
     +`<span class="snm">${esc(o.name)}</span>`
     +(o.sub?`<span class="sfoot" style="color:#8fe0c4;font-size:9.5px">${o.sub}</span>`:'')
     +foot+`</button>`;
+}
+// the preview+confirm card for a pending shop purchase (shared by the Pro Shop + the setup screen).
+function shopPreviewNode(){ const pv=S.shopPreview; if(!pv) return $(`<span></span>`);
+  const bal=coinBalance(), afford=bal>=pv.price, after=Math.max(0,bal-pv.price);
+  const card=$(`<div style="max-width:520px;margin:14px auto 0;padding:18px 16px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(241,208,74,.14),rgba(241,208,74,.03));text-align:center">
+    <div style="font:800 11px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">Confirm purchase</div>
+    <div style="font-family:var(--display);font-size:22px;color:var(--oncard);margin-top:6px">${esc(pv.name)}</div>
+    <div style="display:inline-flex;align-items:center;gap:6px;margin-top:7px;font-weight:800;font-size:19px;color:var(--gold)"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(pv.price)}</div>
+    <div class="small muted" style="margin-top:5px">Balance ${coinFmt(bal)} &rarr; <b style="color:${afford?'#35d6a0':'#e2554e'}">${coinFmt(after)}</b> after</div>
+    <div class="small" style="margin-top:8px;color:#8fe0c4">Previewing on your golfer above &mdash; nothing is spent until you buy.</div>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button class="btn ghost" id="pv-cancel" style="flex:1;margin:0">Cancel</button>
+      <button class="btn goldfill" id="pv-buy" style="flex:1;margin:0" ${afford?'':'disabled'}>${afford?'Buy':'Not enough coins'}</button>
+    </div></div>`);
+  card.querySelector('#pv-cancel').onclick=()=>{ S.shopPreview=null; render(); };
+  const buyb=card.querySelector('#pv-buy'); if(buyb&&afford) buyb.onclick=shopConfirmBuy;
+  return card;
 }
 // CS356g: crop a pixel-golfer data-URL to a band (24 sprite rows, starting at startRow) filling a box.
 function pxCropImg(url,startRow,box){ box=box||48; const scale=box/24;
@@ -15764,20 +15820,7 @@ function overlayShop(screen){
   // confirmation card instead of the grid so nothing is bought on a single tap.
   const pv=S.shopPreview;
   if(pv){
-    const bal=coinBalance(), afford=bal>=pv.price, after=Math.max(0,bal-pv.price);
-    const card=$(`<div style="max-width:520px;margin:14px auto 0;padding:18px 16px;border-radius:16px;border:2px solid var(--gold);background:linear-gradient(160deg,rgba(241,208,74,.14),rgba(241,208,74,.03));text-align:center">
-      <div style="font:800 11px/1 var(--body);letter-spacing:.2em;text-transform:uppercase;color:var(--gold)">Confirm purchase</div>
-      <div style="font-family:var(--display);font-size:22px;color:var(--oncard);margin-top:6px">${esc(pv.name)}</div>
-      <div style="display:inline-flex;align-items:center;gap:6px;margin-top:7px;font-weight:800;font-size:19px;color:var(--gold)"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(pv.price)}</div>
-      <div class="small muted" style="margin-top:5px">Balance ${coinFmt(bal)} &rarr; <b style="color:${afford?'#35d6a0':'#e2554e'}">${coinFmt(after)}</b> after</div>
-      <div class="small" style="margin-top:8px;color:#8fe0c4">Previewing on your golfer above &mdash; nothing is spent until you buy.</div>
-      <div style="display:flex;gap:10px;margin-top:14px">
-        <button class="btn ghost" id="pv-cancel" style="flex:1;margin:0">Cancel</button>
-        <button class="btn goldfill" id="pv-buy" style="flex:1;margin:0" ${afford?'':'disabled'}>${afford?'Buy':'Not enough coins'}</button>
-      </div></div>`);
-    ov.appendChild(card);
-    card.querySelector('#pv-cancel').onclick=()=>{ S.shopPreview=null; render(); };
-    const buyb=card.querySelector('#pv-buy'); if(buyb&&afford) buyb.onclick=shopConfirmBuy;
+    ov.appendChild(shopPreviewNode());
     // tapping a section/category or the ✕ cancels the pending preview
     sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.shopSec=x.getAttribute('data-sec'); render(); });
     sticky.querySelectorAll('[data-cat]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.shopCat=x.getAttribute('data-cat'); render(); });
