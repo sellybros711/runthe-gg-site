@@ -5458,6 +5458,7 @@ function overlayMenu(screen){
   // CS252: Settings - sound + haptics toggles (device-local, default on)
   const settings=$(`<div style="margin-bottom:16px"></div>`);
   settings.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Settings</div>`));
+  settings.appendChild(menuToggle('🟩','Pixel course art','Retro pixel hole view (off = illustrated)','bag_holeart_pixel',true));
   settings.appendChild(menuToggle('🔊','Sound','Holed putts, wins & streaks','bag_sfx_sound',true));
   settings.appendChild(menuToggle('📳','Haptics','Vibration on key moments · Android only (iOS blocks web vibration)','bag_sfx_haptic',true));
   ov.appendChild(settings);
@@ -12964,6 +12965,12 @@ function hvGeom(seedN, par, yds, courseKey, holeIdx){
       setPond(g.cx(wy)+sd*(g.fww(wy)+rx+6), wy, rx, 15+hh(46)*11, sd); }
     else setPond(g.gcx+(hh(47)-0.5)*10, L-R[1]-9, R[0]*0.9, 7+hh(48)*4, 1);
   }
+  // coastal/links: a pond crammed between the fairway and the sea is unrealistic - drop it (the ocean is the hazard on that side)
+  if(g.water && courseKey!=null){ const _B=hvBiome(courseKey);
+    if(_B && _B.ocean){ const ow=_B.oceanW||[52,76], oside=hh(70)<0.5?-1:1, ow2=ow[0]+hh(71)*(ow[1]-ow[0]);
+      const tw=g.t(g.water.y), wsx=HV_W/2 + g.water.x*g.sx*tw, wr=g.water.rx*g.sx*tw;      // the pond's sea-facing edge
+      const inner=oside>0?wsx+wr:wsx-wr, shoreX=oside>0?HV_W-ow2:ow2;
+      if(oside>0 ? inner>shoreX-10 : inner<shoreX+10) g.water=null; } }   // any pond reaching the shore is dropped
   // bunkers: greenside ring + fairway bunkers, scaled by the course's sand character
   const gx=g.gcx;
   if(!g.island){
@@ -13478,6 +13485,187 @@ function dailyFeatureCard(key){
     card.appendChild(more);
   }
   return card;
+}
+// ---- PIXEL hole-view backdrop: retro pixel-art terrain, same camera/coords as the SVG view (owner-approved direction) ----
+const _pxCache=new Map();
+function hvArtMode(){ return LS.get('bag_holeart_pixel', true) ? 'pixel' : 'illus'; }
+function hvPinTeeSVG(g,B){   // tee box + cup + per-course flag drawn as SVG on top of the pixel backdrop (parity with the illustrated view)
+  const [tx,ty]=hvProj(g,0,0), [ppx,ppy]=hvProj(g,g.pin[0],g.pin[1]);
+  return `<rect x="${(tx-13).toFixed(1)}" y="${(ty-5).toFixed(1)}" width="26" height="10" rx="3" fill="${B.fw}" stroke="${B.outline}"/>`
+    +`<circle cx="${(tx-8).toFixed(1)}" cy="${ty.toFixed(1)}" r="1.3" fill="#F1D04A"/><circle cx="${(tx+8).toFixed(1)}" cy="${ty.toFixed(1)}" r="1.3" fill="#F1D04A"/>`
+    +`<g id="hv-pin"><ellipse cx="${ppx.toFixed(1)}" cy="${(ppy+0.4).toFixed(1)}" rx="${HV_CUP_RX}" ry="${HV_CUP_RY}" fill="#0c1810"/><ellipse cx="${ppx.toFixed(1)}" cy="${(ppy+0.2).toFixed(1)}" rx="${HV_CUP_RX}" ry="${HV_CUP_RY}" fill="none" stroke="#ffffff" stroke-width=".45" opacity=".75"/>`
+    +`<line x1="${(ppx+0.6).toFixed(1)}" y1="${(ppy+0.6).toFixed(1)}" x2="${(ppx+4.4).toFixed(1)}" y2="${(ppy+2).toFixed(1)}" stroke="${B.shad}" stroke-width=".8" opacity=".6"/>`
+    +hvFlagSVG(ppx,ppy,hvFlag(g.courseKey))+`</g>`;
+}
+function hvBackdrop(g, seedN, B){
+  if(hvArtMode()==='pixel'){
+    try{ const url=pxTerrainURL(g, seedN, B);
+      if(url) return `<image href="${url}" xlink:href="${url}" x="${-HV_EX}" y="0" width="${HV_W+HV_EX*2}" height="${HV_H}" preserveAspectRatio="none" style="image-rendering:pixelated"/>`+hvPinTeeSVG(g,B);
+    }catch(e){ console.warn('pixel terrain failed, falling back to illustrated', e); }
+  }
+  return hvTerrain(g, seedN, B);
+}
+function pxTerrainURL(g, seedN, B){
+  const key=seedN>>>0;
+  if(_pxCache.has(key)) return _pxCache.get(key);
+  if(_pxCache.size>80) _pxCache.clear();
+  const GW=210, GH=254, SC=3, seed=seedN>>>0;
+  const hex=h=>{h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];};
+  const shade=(c,d)=>[Math.max(0,Math.min(255,c[0]+d)),Math.max(0,Math.min(255,c[1]+d)),Math.max(0,Math.min(255,c[2]+d))];
+  const BAYER=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+  const dith=(x,y,t)=>t*16 > BAYER[y&3][x&3];
+  const hsh=(a,b)=>{let n=Math.sin(a*127.1+b*311.7)*43758.5453;return n-Math.floor(n);};
+  const vnoise=(x,y)=>{const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi;const u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+    const a=hsh(xi,yi),b=hsh(xi+1,yi),c=hsh(xi,yi+1),d=hsh(xi+1,yi+1);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v;};
+  const desert=(B.ground==='desert'), links=(B.ground==='links'), wooded=!desert&&!links;
+  const C={rough:hex(B.base),roughD:hex(desert?B.floorD:(B.tickD||B.base)),roughL:hex(desert?B.floorL:(B.tickL||B.base)),
+    fw:hex(B.fw),cut:hex(B.cut||B.fw),fwEdge:hex(B.fwEdge),green:hex(B.green),fringe:hex(B.fringe),gLine:hex(B.gLine||B.fwEdge),
+    sand:hex(B.sand),sandLine:hex(B.sandLine||B.sand),sandSpeck:hex(B.sandSpeck||B.sand),
+    water:hex(B.water),ripple:hex(B.ripple||B.water)};
+  C.path=hex(desert?'#caa26a':'#c8b59a');
+  const RO=0,DE=1,FW=2,GR=3,FR=4,SA=5,WA=6,TE=7,OC=8;
+  let oceanSide=0, oceanW=0, oedge=null, oDeep=null, oShallow=null, oCliff=null, oBeach=null;
+  if(B.ocean){
+    const ow=B.oceanW||[52,76];
+    oceanSide = hvHash(seed,70,1)<0.5?-1:1;
+    oceanW = ow[0] + hvHash(seed,71,1)*(ow[1]-ow[0]);
+    const ex=[]; for(let k=0;k<=11;k++){ const w=oceanW+(hvHash(seed,80+k,3)-0.5)*24; ex.push(oceanSide>0?HV_W-w:w); }
+    oedge=(sy)=>{ const t=Math.max(0,Math.min(1,sy/HV_H))*11, i=Math.min(10,Math.floor(t)), f=t-i; return ex[i]+(ex[i+1]-ex[i])*f; };
+    oDeep=hex(B.deep||'#1f6fbe'); oShallow=hex(B.shallow||'#5cb8ec'); oCliff=hex(B.cliff||'#6f6b60'); oBeach=B.beach?hex(B.beach):null;
+  }
+  const T=new Int8Array(GW*GH);
+  const gcx=g.gcx,gcy=g.L,grx=g.greenR[0],gry=g.greenR[1],cam=HV_CAM;
+  const gIrr=g.greenIrr||0.14, gp1=hvHash(seed,201,1)*6.283, gp2=hvHash(seed,202,1)*6.283, gp3=hvHash(seed,203,1)*6.283;
+  const gMod=(x,y)=>{const a=Math.atan2((y-gcy)/gry,(x-gcx)/grx);return 1+gIrr*(Math.sin(a*3+gp1)*0.55+Math.sin(a*2+gp2)*0.34+Math.sin(a*5+gp3)*0.22);};
+  const XY=new Float32Array(GW*GH*2);
+  for(let cy=0;cy<GH;cy++){const vy=cam[1]+(cy+0.5)/GH*cam[3],y=g.span*(HV_H-34-vy)/(HV_H-78);
+    const beyond=(y<0||y>g.span),tf=g.t(Math.max(0,Math.min(g.span,y)));
+    for(let cx=0;cx<GW;cx++){const vx=cam[0]+(cx+0.5)/GW*cam[2],x=(vx-HV_W/2)/(g.sx*tf);
+      XY[(cy*GW+cx)*2]=x;XY[(cy*GW+cx)*2+1]=y;
+      const gd=(x-gcx)*(x-gcx)/(grx*grx)+(y-gcy)*(y-gcy)/(gry*gry);const gm=gMod(x,y),gm2=gm*gm;
+      let inWater=false;if(g.water){const w=g.water;if((x-w.x)*(x-w.x)/(w.rx*w.rx)+(y-w.y)*(y-w.y)/(w.ry*w.ry)<=1)inWater=true;}
+      if(g.creek&&Math.abs(y-g.creek.y)<3.2)inWater=true;
+      let inSand=false;for(const bk of g.bunkers){if(Math.hypot(x-bk.x,y-bk.y)<bk.r){inSand=true;break;}}
+      const inFw=(!beyond&&y>5&&y<g.L+3&&Math.abs(x-g.cx(y))<g.fww(y)),inTee=(y>=0&&y<7&&Math.abs(x)<8.5);
+      let id=beyond?DE:RO;
+      if(gd<=gm2)id=GR;else if(gd<=gm2*1.32)id=FR;else if(inWater)id=WA;else if(inSand)id=SA;else if(inFw)id=FW;else if(inTee)id=TE;
+      if(oceanSide&&(id===RO||id===DE)){const exx=oedge(vy);if((oceanSide>0&&vx>exx)||(oceanSide<0&&vx<exx))id=OC;}
+      T[cy*GW+cx]=id;}}
+  const at=(x,y)=>(x<0||y<0||x>=GW||y>=GH)?-1:T[y*GW+x];
+  const edge=(x,y,id)=>at(x-1,y)!==id||at(x+1,y)!==id||at(x,y-1)!==id||at(x,y+1)!==id;
+  const DIST=new Int16Array(GW*GH).fill(999); let q=[];
+  for(let i=0;i<GW*GH;i++){const t=T[i]; if(t===FW||t===GR||t===FR||t===SA||t===WA||t===TE){DIST[i]=0;q.push(i);}}
+  for(let qi=0;qi<q.length;qi++){const i=q[qi],x=i%GW,y=(i/GW)|0,d=DIST[i]+1;
+    const nb=[[x-1,y],[x+1,y],[x,y-1],[x,y+1]];
+    for(const[nx,ny]of nb){if(nx<0||ny<0||nx>=GW||ny>=GH)continue;const ni=ny*GW+nx;if(DIST[ni]>d){DIST[ni]=d;q.push(ni);}}}
+  const cv=document.createElement('canvas');cv.width=GW;cv.height=GH;
+  const ctx=cv.getContext('2d');const img=ctx.createImageData(GW,GH);const D=img.data;
+  const put=(x,y,c)=>{if(x<0||y<0||x>=GW||y>=GH)return;const i=(y*GW+x)*4;D[i]=c[0];D[i+1]=c[1];D[i+2]=c[2];D[i+3]=255;};
+  const getc=(x,y)=>{if(x<0||y<0||x>=GW||y>=GH)return null;const i=(y*GW+x)*4;return [D[i],D[i+1],D[i+2]];};
+  const elev=(cx,cy)=>{let v=0.5+(vnoise(cx*0.05+11,cy*0.05+7)-0.5)*0.7+(vnoise(cx*0.13,cy*0.12)-0.5)*0.34+(0.42-cy/GH)*0.16;return Math.max(0,Math.min(1,v));};
+  for(let cy=0;cy<GH;cy++)for(let cx=0;cx<GW;cx++){
+    const id=T[cy*GW+cx],lv=elev(cx,cy);let col;
+    if(id===GR){col=dith(cx,cy,lv)?shade(C.green,8):C.green;if(dith(cx,cy,lv*0.5))col=C.green;
+      const x=XY[(cy*GW+cx)*2],y=XY[(cy*GW+cx)*2+1];const gd=Math.sqrt((x-gcx)*(x-gcx)/(grx*grx)+(y-gcy)*(y-gcy)/(gry*gry))/gMod(x,y);
+      if(Math.abs(gd-0.62)<0.035||Math.abs(gd-0.9)<0.035)col=shade(col,-9);if(edge(cx,cy,GR))col=C.gLine;}
+    else if(id===FR){col=dith(cx,cy,lv)?C.fringe:shade(C.fringe,-6);if(edge(cx,cy,FR)&&at(cx,cy-1)!==GR)col=shade(C.fringe,-14);}
+    else if(id===WA){const x=XY[(cy*GW+cx)*2],y=XY[(cy*GW+cx)*2+1];let deep=0;if(g.water)deep=1-Math.min(1,Math.hypot((x-g.water.x)/(g.water.rx),(y-g.water.y)/(g.water.ry)));col=deep>0.4?shade(C.water,-16):C.water;const wave=Math.round(1.6+Math.sin(cx*0.28+cy*0.05)*1.3);if((cy&3)===(wave&3))col=shade(C.ripple,deep>0.4?-10:0);if(edge(cx,cy,WA))col=shade(C.ripple,22);}
+    else if(id===SA){col=dith(cx,cy,lv)?shade(C.sand,7):C.sand;if(((cx+(cy&1?2:0))%6)===0&&cy%3===0)col=C.sandSpeck;if(edge(cx,cy,SA))col=C.sandLine;}
+    else if(id===FW){const stripe=(Math.floor(cy/6)%2===0);col=stripe?C.fw:C.cut;col=dith(cx,cy,lv*0.92)?col:shade(col,-6);if(edge(cx,cy,FW)){const nb=at(cx,cy-1);col=(nb===GR||nb===FR)?C.cut:C.fwEdge;}}
+    else if(id===TE){col=C.cut;if(edge(cx,cy,TE))col=C.fwEdge;}
+    else if(id===OC){const vy2=(cy+0.5)/GH*cam[3]+cam[1],vx2=(cx+0.5)/GW*cam[2]+cam[0];
+      const dS=oceanSide>0?vx2-oedge(vy2):oedge(vy2)-vx2;
+      col=dS>18?oDeep:(dith(cx,cy,0.5)?shade(oShallow,-6):oShallow);
+      const wv=Math.round(2+Math.sin(cx*0.22+cy*0.06+(oceanSide<0?3:0))*1.6);
+      if((cy&3)===(wv&3))col=shade(col,dS>18?13:9);
+      if(dS>16&&(cy&3)===(wv&3)&&vnoise(cx*0.32+7,cy*0.5)>0.74)col=[224,240,255];}
+    else{const t3=lv;let base=dith(cx,cy,t3)?(dith(cx,cy,(t3-0.42)*1.7)?C.roughL:C.rough):C.roughD;
+      const dd=DIST[cy*GW+cx];
+      const lr=vnoise(cx*0.04+50,cy*0.045+30);
+      if(dd>4&&lr>0.64){base=shade(base,-8);if(dith(cx,cy,(lr-0.5)*3))base=shade(C.roughL,-2);}
+      if(dd<=2)base=shade(base,-7*(3-dd));
+      if(id===DE)base=shade(base,-14-Math.round((0.5-cy/GH)*20));
+      col=base;}
+    put(cx,cy,col);
+  }
+  const proj=(x,y)=>{const f=Math.max(0,Math.min(1,y/g.span));const sy=HV_H-34-f*(HV_H-78);const sx=HV_W/2+x*g.sx*g.t(y);
+    return [Math.round((sx-cam[0])/cam[2]*GW),Math.round((sy-cam[1])/cam[3]*GH)];};
+  const pathSide=(hvHash(seed,1,9)<0.5?-1:1);
+  for(let yy=6; yy<g.L-2; yy+=0.6){ const off=g.fww(yy)+2.4+Math.sin(yy*0.08)*1.2, xx=g.cx(yy)+pathSide*off;
+    const [px,py]=proj(xx,yy); if(at(px,py)===RO||at(px,py)===DE){ put(px,py,C.path); put(px+pathSide,py,shade(C.path,-14)); } }
+  const tg=(B.treeG||['#2e5c1e','#3f7a28','#5d9c34']).map(hex),pine=(B.pine||['#1b4416','#265a1f','#37732a']).map(hex),
+    autumn=(B.treeA||['#a06a1c','#c08a2a']).map(hex),cact=(B.cactus||['#4f8f3f','#6aa74f']).map(hex),trunk=hex(B.trunk||'#7a5a2e'),
+    gorse=(B.gorse||['#4a5c22','#e2c34a']).map(hex),dune=(B.dune||['#8f9449','#a3a856']).map(hex),flower=(B.flowerCols||['#ff9ecb']).map(hex);
+  const scatter=B.scatter||[['decid',0.6],['pine',0.4]];
+  const pickK=t=>{let a=0;for(const[n,w]of scatter){a+=w;if(t<=a)return n;}return scatter[scatter.length-1][0];};
+  const okRough=(px,py)=>{const t=at(px,py);return t===RO||t===DE;};
+  const cshadow=(px,py,r)=>{for(let yy=0;yy<=r;yy++)for(let xx=-r;xx<=r;xx++){if(xx*xx+yy*yy*3>r*r*3)continue;if(okRough(px+xx+1,py+yy+2))put(px+xx+1,py+yy+2,shade(getc(px+xx+1,py+yy+2)||C.roughD,-24));}};
+  const disc=(px,py,r,cc,hi,lo)=>{for(let yy=-r;yy<=r;yy++)for(let xx=-r;xx<=r;xx++){if(xx*xx+yy*yy>r*r)continue;let c=cc;if(xx+yy<-r*0.35)c=hi;else if(xx+yy>r*0.55)c=lo;put(px+xx,py+yy-1,c);}};
+  const pk_=(a,t)=>a[(hvHash(seed,t*7,6)*a.length)|0];
+  const drawBush=(px,py,tries)=>{const base=(wooded?pk_(tg,tries):pk_(dune,tries));const tone=Math.round((vnoise(px*0.05,py*0.05)-0.5)*20);const cc=shade(base,tone),hi=shade(cc,20),lo=shade(cc,-16);
+    if(!okRough(px,py))return;cshadow(px,py,1);
+    put(px,py,cc);put(px-1,py,cc);put(px+1,py,cc);put(px,py-1,hi);put(px-1,py-1,lo);put(px+1,py-1,cc);if(hvHash(seed,tries*3,17)<0.5)put(px+2,py,lo);};
+  const drawTree=(px,py,tries)=>{ const kind=pickK(hvHash(seed,tries,5)),pk=a=>a[(hvHash(seed,tries*7,6)*a.length)|0];
+    const tvar=Math.round((vnoise(px*0.035+7,py*0.035)-0.5)*24);
+    if(kind==='pine'||kind==='cypress'){const cc=shade(pk(pine),tvar),hi=shade(cc,26),lo=shade(cc,-16);cshadow(px,py,3);
+      put(px,py-5,hi);put(px,py-4,cc);put(px-1,py-3,cc);put(px,py-3,hi);put(px+1,py-3,cc);
+      put(px-1,py-2,lo);put(px,py-2,cc);put(px+1,py-2,cc);put(px-2,py-1,cc);put(px-1,py-1,hi);put(px,py-1,cc);put(px+1,py-1,cc);put(px+2,py-1,lo);
+      put(px-2,py,lo);put(px-1,py,cc);put(px,py,cc);put(px+1,py,cc);put(px+2,py,lo);put(px,py+1,trunk);}
+    else if(kind==='palm'){const fr=pk(cact);cshadow(px,py,3);put(px,py-5,fr);put(px-2,py-4,fr);put(px-1,py-4,shade(fr,20));put(px+1,py-4,fr);put(px+2,py-4,shade(fr,-12));put(px-3,py-3,fr);put(px+3,py-3,fr);for(let k=0;k<4;k++)put(px,py-3+k,trunk);}
+    else if(kind==='saguaro'){const cc=pk(cact),hi=shade(cc,20);cshadow(px,py,2);for(let k=0;k<6;k++)put(px,py-5+k,k<2?hi:cc);put(px-2,py-3,cc);put(px-2,py-4,cc);put(px+2,py-3,cc);put(px+2,py-4,cc);}
+    else if(kind==='barrel'||kind==='scrub'||kind==='ocotillo'){const cc=pk(cact);put(px,py,cc);put(px-1,py,cc);put(px+1,py,cc);put(px,py-1,shade(cc,16));}
+    else if(kind==='rock'){const rk=hex(B.rockA||'#c46536'),hi=shade(rk,26);cshadow(px,py,2);put(px-1,py,rk);put(px,py,rk);put(px+1,py,rk);put(px,py-1,hi);put(px-1,py-1,rk);put(px+2,py,shade(rk,-14));}
+    else if(kind==='dune'){const dc=pk(dune),hi=shade(dc,16);put(px-2,py,dc);put(px-1,py,hi);put(px,py,dc);put(px+1,py,dc);put(px+2,py,shade(dc,-12));put(px,py-1,hi);put(px-1,py-1,dc);}
+    else if(kind==='gorse'){put(px,py,gorse[0]);put(px+1,py,gorse[1]);put(px,py-1,gorse[1]);put(px-1,py,gorse[0]);}
+    else if(kind==='fescue'){if(vnoise(px*0.03+3,py*0.03+40)<0.58)return;const fc=shade(C.roughL,-6);put(px,py,fc);put(px,py-1,fc);put(px,py-2,shade(fc,8));put(px+1,py,fc);}
+    else if(kind==='flower'){if(vnoise(px*0.032+80,py*0.032+15)<0.66)return;const fc=pk(flower);put(px,py,fc);put(px+1,py,fc);put(px,py-1,fc);}
+    else{const isA=hvHash(seed,tries*11,7)<(B.autumnP||0.12);const cc=shade(isA?pk(autumn):pk(tg),tvar);const big=hvHash(seed,tries*13,14)<0.08;const r=(big?4:2)+((hvHash(seed,tries*5,8)*2.6)|0);cshadow(px,py,r);disc(px,py,r,cc,shade(cc,28),shade(cc,-22));if(big)disc(px+1,py-1,r-1,shade(cc,10),shade(cc,30),shade(cc,-16));put(px,py+r-1,trunk);}
+  };
+  const BUFFER = 9;
+  const step= wooded?4 : 5;
+  let tno=0;
+  for(let py=4; py<GH-1; py+=1){ if(py%step!==0) continue;
+    for(let px=1; px<GW-1; px+=1){ if(px%step!==0) continue;
+      tno++;
+      const jx=px+((hvHash(seed,tno,10)*step)|0)-((step/2)|0), jy=py+((hvHash(seed,tno*3,11)*step)|0)-((step/2)|0);
+      if(!okRough(jx,jy)) continue;
+      const d=DIST[jy*GW+jx];
+      if(wooded && d>=BUFFER-3 && d<BUFFER){ if(hvHash(seed,tno*5,12)<0.4) drawBush(jx,jy,tno); continue; }
+      if(d<BUFFER) continue;
+      const grove = 0.62 + (vnoise(jx*0.045+20,jy*0.045+9)-0.5)*0.95;
+      const kIsFlower = wooded && pickK(hvHash(seed,tno,5))==='flower';
+      let p = (wooded ? Math.min(0.98, (d-BUFFER+1)*0.2) : Math.min(0.7,(d-BUFFER+1)*0.14)) * (kIsFlower?0.35:grove);
+      if(hvHash(seed,tno*5,12) > p) continue;
+      drawTree(jx,jy,tno);
+    }
+  }
+  if(wooded){ for(let px=2;px<GW-2;px+=3){ const py=3+((hvHash(seed,px,13)*3)|0); if(okRough(px,py)&&DIST[py*GW+px]>=BUFFER) drawTree(px,py+2,9000+px); } }
+  const reedC=shade(C.rough,-18),reedT=shade(C.roughL,-4);
+  for(let cy=2;cy<GH-2;cy++)for(let cx=2;cx<GW-2;cx++){
+    if(at(cx,cy)!==WA) continue;
+    if(at(cx,cy-1)===WA) continue;
+    if(!okRough(cx,cy+1)) continue;
+    if(hvHash(seed,cx*7+cy*3,18)>0.32) continue;
+    const hgt=1+((hvHash(seed,cx*3+cy,19)*2.4)|0);
+    for(let k=0;k<hgt;k++){const ry=cy+1+k;if(!okRough(cx,ry))break;put(cx,ry,k===0?reedT:reedC);}
+    if(hvHash(seed,cx+cy*5,20)<0.4)put(cx,cy,shade(C.ripple,10));
+  }
+  if(oceanSide){
+    for(let cy=0;cy<GH;cy++)for(let cx=0;cx<GW;cx++){
+      const t=at(cx,cy);
+      const vy2=(cy+0.5)/GH*cam[3]+cam[1],vx2=(cx+0.5)/GW*cam[2]+cam[0];
+      const inland=oceanSide>0?oedge(vy2)-vx2:vx2-oedge(vy2);
+      if(t===OC){ if(inland>-1.8) put(cx,cy,[230,244,255]); }
+      else if((t===RO||t===DE)&&inland>=0&&inland<=(oBeach?3.4:2.6)){
+        if(oBeach){ put(cx,cy,dith(cx,cy,0.5)?shade(oBeach,6):oBeach); }
+        else { const rk=inland<1.3?shade(oCliff,10):oCliff;
+          put(cx,cy,vnoise(cx*0.7,cy*0.7+3)>0.6?shade(rk,-16):rk); } }
+    }
+  }
+  ctx.putImageData(img,0,0);
+  const out=document.createElement('canvas');out.width=GW*SC;out.height=GH*SC;
+  const o=out.getContext('2d');o.imageSmoothingEnabled=false;o.drawImage(cv,0,0,out.width,out.height);
+  const url=out.toDataURL('image/png'); _pxCache.set(key,url); return url;
 }
 function hvTerrain(g, seedN, B){
   if(g._terrainStr) return g._terrainStr;   // terrain is static per hole - build once, reuse every re-render
@@ -14138,7 +14326,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce){
     const cam=live?hvCamFor2(g,prevP):HV_CAM;
     const sh=cur?multi.shots[cur.u][cur.i]:null;
     const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
-      <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvTerrain(g,seedN,hvBiome(courseKey))}${inner}</svg></div></div>`);
+      <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey))}${inner}</svg></div></div>`);
     if(live && curP){
       const key=(courseKey||'')+':m'+holeIdx+':'+showN;
       requestAnimationFrame(()=>hvKick(key, g, curP, prevP, reduce));
@@ -14154,7 +14342,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce){
     const g=(hole._hv&&hole._hv.g)||hvGeom(seedN, hole.par, hole.yards||hole.yd||400, courseKey, holeIdx);
     hole._hv={g, plots:[]};
     return $(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span><span class="ttrep">NEXT HOLE</span></div>
-      <div class="hvshell"><svg viewBox="${HV_CAM.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} preview">${hvTerrain(g,seedN,hvBiome(courseKey))}</svg></div></div>`);
+      <div class="hvshell"><svg viewBox="${HV_CAM.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} preview">${hvBackdrop(g,seedN,hvBiome(courseKey))}</svg></div></div>`);
   }
   if(!hole._hv){ const g=hvGeom(seedN, hole.par, hole.yards||hole.yd||((DAILY_COURSES[courseKey]||{}).holes||[])[holeIdx]?.[1]||400, courseKey, holeIdx);
     hole._hv={g, plots:hvPlots(g, shots, seedN)}; }
@@ -14176,7 +14364,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce){
   else if(idx>=0 && plots[idx]) inner+=hvDoneShot(g,plots[idx],false,small&&inCam(plots[idx]));
   const cam=live?hvCamFor(g,plots,Math.max(0,idx-1)):HV_CAM;
   const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
-    <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvTerrain(g,seedN,hvBiome(courseKey))}${inner}</svg></div></div>`);
+    <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey))}${inner}</svg></div></div>`);
   if(live && plots[idx]){
     const key=(courseKey||'')+':'+holeIdx+':'+showN+(animNonce!=null?':r'+animNonce:'');
     requestAnimationFrame(()=>hvKick(key, g, plots[idx], idx>0?plots[idx-1]:null, reduce));
