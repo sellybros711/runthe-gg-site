@@ -12180,34 +12180,37 @@ function legendQualifyReason(c){
   return '';
 }
 function legendTokens(){ return LS.get(acctKey('bag_legend_tokens'),[]); }
-// CS237: Legend plays are now free + reusable, so every earned Legend is always available (tokens are
-// never consumed). Kept the name/shape for back-compat; a legacy `used:true` token still shows (we no
-// longer set `used`). `hasFreeLegends()` = the player owns ≥1 Legend they can play free today.
-function legendTokensUnused(){ return legendTokens(); }
-function hasFreeLegends(){ return sbSignedIn() && legendTokens().length>0; }
+// A Legend Token is a ONE-USE free Daily Challenge pass for a retired career golfer (their PEAK build).
+// You get one per finished 30-year career; once you play it, it's spent (`used:true`) and gone - you only
+// get each golfer once. `legendTokensUnused()` = the still-playable tokens; `hasFreeLegends()` = you own
+// at least one unspent Legend today.
+function legendTokensUnused(){ return legendTokens().filter(t=>!t.used); }
+function hasFreeLegends(){ return sbSignedIn() && legendTokensUnused().length>0; }
 // Trophy Room strip, shows unused tokens (spend them from the Daily Challenge preview screen) and,
 // once at least one has been earned, a small lifetime tally. Renders nothing for a player who's never
 // finished a qualifying career, so it doesn't clutter the Trophy Room for most players.
 function legendTokensHTML(){
   const all=legendTokens(); if(!all.length) return '';
-  const rows=all.slice(0,4).map(t=>`<div class="lb" style="grid-template-columns:1fr auto">
+  const ready=all.filter(t=>!t.used);
+  const rows=all.slice(0,4).map(t=>`<div class="lb" style="grid-template-columns:1fr auto${t.used?';opacity:.5':''}">
     <span class="pl" style="min-width:0"><div style="font-weight:700">${esc(t.name)} · OVR ${t.ovr}</div><div class="small muted" style="font-size:10.5px">${esc(t.reason)}</div></span>
-    <span class="small" style="color:#35d6a0;font-weight:800;align-self:center">Free play</span></div>`).join('');
+    <span class="small" style="color:${t.used?'var(--muted)':'#35d6a0'};font-weight:800;align-self:center">${t.used?'Used':'1 free play'}</span></div>`).join('');
   return `<div style="margin-bottom:14px">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:15px">🏆</span><b style="color:var(--gold);font-size:13.5px">Your Legend golfers</b><span class="small muted">${all.length} earned</span></div>
-    <div class="board">${rows}</div><div class="small muted" style="margin-top:6px">Each plays the Daily Challenge free (no attempt used) from the preview screen, as often as you like.</div></div>`;
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:15px">🏆</span><b style="color:var(--gold);font-size:13.5px">Your Legend golfers</b><span class="small muted">${ready.length} ready · ${all.length} earned</span></div>
+    <div class="board">${rows}</div><div class="small muted" style="margin-top:6px">Finish a 30-year career to earn 1 token for that golfer's peak build. Each plays the Daily once for free (no attempt used), then it's gone - you only get each golfer once.</div></div>`;
 }
-// mints a token from the just-finished career's PEAK build, only when the full 30 years were played
-// (reason 'age', the forced-retirement path) and the career cleared the qualification bar.
+// Mints ONE token from the just-finished career's PEAK build, whenever the full 30 years were played
+// (reason 'age', the forced-retirement path). Completion-based: every finished career earns its golfer a
+// single free Daily play, no elite performance bar (a Grand Slam / 5+ majors / 3x POY just gets a nicer
+// label). One token per career = you only get each golfer once.
 function mintLegendToken(){
   if(S.daily || !sbSignedIn() || !S.career || !S.career.peakSkills) return null;
-  if(!legendQualifies(S.career)) return null;
   const token={
     id: 'lt'+Math.floor(Math.random()*1e9)+'_'+(S.career.seasons?S.career.seasons.length:0),
     name: S.career.peakName||S.name||'Your Golfer',
     ovr: S.career.peakOvr, skills: S.career.peakSkills, look: S.career.peakLook,
     peakYear: S.career.peakYear, years: S.career.seasons.length,
-    reason: legendQualifyReason(S.career), used: false,
+    reason: legendQualifyReason(S.career) || 'Retired legend', used: false,
   };
   const tokens=legendTokens(); tokens.push(token); LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush();
   track('legend_token_earned',{ovr:token.ovr,reason:token.reason,years:token.years});
@@ -12269,7 +12272,10 @@ function mintCircuitLegendToken(){
 }
 function endCircuit(){
   S._repAnimShown=false;
-  S.freshLegendToken=mintCircuitLegendToken();
+  // No Legend Token here: the token is earned once, at the 30-year career end, for that golfer's PEAK build.
+  // The Legend Circuit is the SAME golfer's epilogue, so a second token would be a duplicate (you only get
+  // each golfer once).
+  S.freshLegendToken=null;
   const cc=S.circuitCareer=S.circuitCareer||{money:0,net:0,wins:0,majors:0,top10:0,best:99,seasons:[],winsList:[],majorStats:{}};
   S.circuitEnd={years:cc.seasons.length, money:cc.money, net:cc.net, wins:cc.wins, majors:cc.majors, top10:cc.top10,
     best: cc.seasons.reduce((m,s)=>Math.max(m,s.money),0), bestFin: cc.best, age:playerAge()};
@@ -14644,15 +14650,15 @@ function legendPlaySection(){
   toks.sort((a,b)=>b.ovr-a.ovr);
   const wrap=$(`<div style="max-width:520px;margin:14px auto 0;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(241,208,74,.08),rgba(10,22,38,.25));padding:14px 15px"></div>`);
   wrap.appendChild($(`<div style="display:flex;align-items:center;gap:7px;margin-bottom:3px"><span style="font-size:16px">🏆</span><b style="color:var(--gold);font-size:13.5px">Your Legend golfers</b><span class="tag" style="font-size:9.5px;color:#35d6a0;border-color:#35d6a0;padding:2px 7px">FREE PLAY</span></div>`));
-  wrap.appendChild($(`<div class="small muted" style="margin-bottom:7px">Play today's course as a created golfer, doesn't use a daily attempt.</div>`));
+  wrap.appendChild($(`<div class="small muted" style="margin-bottom:7px">Play today's course as one of your retired career golfers (their peak build). One free play each, no daily attempt used.</div>`));
   toks.forEach(tok=>{
     const row=$(`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(241,208,74,.15)"></div>`);
     row.appendChild($(`<div style="min-width:0"><div style="font-weight:800;color:var(--oncard)">${esc(tok.name)} · OVR ${tok.ovr}</div><div class="small muted" style="margin-top:1px">${esc(tok.reason)} · ${tok.years}-year career</div></div>`));
-    const use=$(`<button class="btn gold" style="width:auto;flex:0 0 auto;padding:9px 14px;font-size:12.5px">Play free ▸</button>`);
+    const use=$(`<button class="btn gold" style="width:auto;flex:0 0 auto;padding:9px 14px;font-size:12.5px">Use token ▸</button>`);
     use.onclick=()=>{ track('legend_token_used',{ovr:tok.ovr,free:true}); beginDailyRoundWithLegend(tok); }; row.appendChild(use);
     wrap.appendChild(row);
   });
-  wrap.appendChild($(`<div class="small muted" style="margin-top:9px;line-height:1.4">Free and unlimited · your Legend scores post to the separate <b style="color:var(--gold)">Career Golfers</b> leaderboard, not the draft board.</div>`));
+  wrap.appendChild($(`<div class="small muted" style="margin-top:9px;line-height:1.4">Each token is a one-time play, once you use it, it's gone (you only get each golfer once). Legend scores post to the separate <b style="color:var(--gold)">Career Golfers</b> leaderboard, not the draft board.</div>`));
   return wrap;
 }
 /* ---- daily round auto-advance: the round plays itself hole-by-hole, pausing only at
@@ -15294,11 +15300,12 @@ function scrSpotlightResult(){
   const home=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">Back to home</button>`); home.onclick=()=>{S.special=false;S.daily=false;S.screen='title';render();}; add(home);
   add($(`<p class="small muted center" style="margin-top:12px">A special 1-day event · the next Spotlight drops next month.</p>`));
 }
-// CS237: a Legend (created-golfer) daily play is FREE + REUSABLE - the token is never consumed. This just
-// credits the "played as a Legend" achievement ONCE per token (t.played), so replaying doesn't inflate it.
-function creditLegendToken(id){
+// A Legend (created-golfer) daily play is a ONE-USE free pass: completing the round SPENDS the token
+// (`used:true`) so that golfer can't be played again - you only get each golfer once. Also credits the
+// "played as a Legend" achievement once. cloudPush syncs `used` across the player's devices.
+function consumeLegendToken(id){
   if(!id) return; const tokens=legendTokens(); const t=tokens.find(x=>x.id===id);
-  if(t && !t.played){ t.played=true; LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush(); recordAchEvent({inc:{legendTokensUsed:1}}); }
+  if(t && !t.used){ t.used=true; LS.set(acctKey('bag_legend_tokens'),tokens); cloudPush(); recordAchEvent({inc:{legendTokensUsed:1}}); }
 }
 function finishDailyRound(){
   if(S.momentPO) return;   // mid sudden-death playoff: the playoff engine drives completion, not the daily finish
@@ -15329,10 +15336,10 @@ function finishDailyRound(){
   const grade=dRoundGrade(S.dailyHoles, total, avg);   // Round Rating (secondary "how you played" grade)
   S.dailyResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,record:isRec,holes,avg,won,grade,day:S.dailySeed,skills:S.dailySkills,decisions,isLegend,legendName:isLegend?S.dailyLegend.name:null};
   if(isLegend){
-    // CS237: a FREE + REUSABLE Legend (created-golfer) play - records ONLY to the separate Career Golfers
-    // (Legend) course-record tier + board; it never touches the draft daily's attempts, best-of-day,
-    // streak, weekly goals, or mastery, so the two modes stay cleanly separate.
-    creditLegendToken(S.dailyLegend.id);
+    // A FREE, ONE-USE Legend (created-golfer) play - records ONLY to the separate Career Golfers (Legend)
+    // course-record tier + board; it never touches the draft daily's attempts, best-of-day, streak, weekly
+    // goals, or mastery, so the two modes stay cleanly separate. Completing the round SPENDS the token.
+    consumeLegendToken(S.dailyLegend.id);
     if(signedIn){ sbSubmitDaily(S.dailyResult); verifyDailyRecord(S.dailyCourse, true); }
     S.dailyStreakInfo=null; S.dailyAttemptNo=null; S.dailyImproved=false; S._claimDaily=null; S.dailyClaimMsg=null;
     track('daily_completed',{course:S.dailyCourse,total,won,avg,legend:true,free:true,guest:!signedIn});
@@ -16504,6 +16511,46 @@ function careerSeasonsHTML(c){
     return `<div class="acc flat"><div class="accsum nochev"><span class="chev dim">·</span><span class="yrtag">Yr ${s.year}</span><span class="acctitle thin">${line}</span><span class="accmeta">${meta}</span></div></div>`;
   }).join('');
 }
+// From the career-end pop-up "Play now": set up today's Daily and drop straight into it as this Legend.
+function playLegendNow(token){
+  document.querySelectorAll('.momentov').forEach(n=>n.remove());
+  const seed=todayKey();
+  reset();   // clear career/season state cleanly - beginDailyRoundWithLegend re-applies the token's name/look
+  S.daily=true; S.dailySeed=seed; S.mode='daily'; S.dailyMode='round'; S.special=false;
+  S.dailyCourse=dailyCourseKey(seed); S.dailyCond=dailyConditions(seed,S.dailyCourse); S.dailyPlan='balanced';
+  beginDailyRoundWithLegend(token);
+}
+// Career-end pop-up: tells the player that finishing their 30-year career earned 1 free Daily Challenge
+// token, with a direct "Play now" button and an X to dismiss. Fires once per ceremony (guarded on the
+// token object so a re-render / accidental refresh mid-ceremony doesn't re-pop it).
+function maybeLegendTokenPopup(){
+  const lt=S.freshLegendToken; if(!lt || lt._popShown) return;
+  lt._popShown=true;
+  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  document.querySelectorAll('.momentov').forEach(n=>n.remove());
+  const ov=$(`<div class="momentov" style="position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto;
+      background:radial-gradient(120% 90% at 50% 16%, rgba(30,22,4,.82), rgba(2,7,5,.97) 70%)">
+    <div class="momentcard" style="max-width:440px;width:100%;text-align:center;position:relative">
+      <button class="ltx" aria-label="Close" style="position:absolute;top:-8px;right:-4px;background:transparent;border:0;color:#9fb3a8;font-size:26px;line-height:1;cursor:pointer;padding:6px;z-index:2">✕</button>
+      <div style="position:absolute;inset:-40% 10% auto 10%;height:220px;background:radial-gradient(60% 60% at 50% 0,#f1d04a40,transparent 70%);filter:blur(6px);pointer-events:none${reduce?'':';animation:momGlow 3.2s ease-in-out infinite'}"></div>
+      <div style="font-size:46px;line-height:1;margin-bottom:4px">🏆</div>
+      <div style="font:800 12px/1 var(--body);letter-spacing:.26em;color:#f1d04a;text-transform:uppercase">Legend Token Earned</div>
+      <h1 style="margin:8px 0 2px;font-size:26px;line-height:1.1;color:#fff">1 free Daily Challenge play</h1>
+      <p class="lede" style="margin:8px 0 3px;color:#e8f0e8">You finished your 30-year career, so <b style="color:#f1d04a">${esc(lt.name)}</b> (OVR ${lt.ovr} at their peak) is now a Legend.</p>
+      <p class="small" style="margin:0 0 16px;color:#9fb3a8">Play today's Daily Challenge as this golfer, for free. It's a one-time play, you only get each golfer once.</p>
+      <button class="btn goldfill ltplay" style="margin:0 auto 8px">Play now ▸<span class="sub">Free · no daily attempt used</span></button>
+      <button class="btn ghost ltclose" style="margin:0 auto">Maybe later</button>
+    </div></div>`);
+  const close=()=>ov.remove();
+  ov.querySelector('.ltx').onclick=close;
+  ov.querySelector('.ltclose').onclick=close;
+  ov.querySelector('.ltplay').onclick=()=>{ ov.remove(); track('legend_token_used',{ovr:lt.ovr,free:true,from:'careerend'}); playLegendNow(lt); };
+  ov.onclick=(e)=>{ if(e.target===ov) close(); };   // tap the backdrop to dismiss
+  if(!reduce && typeof confettiRun==='function') try{ confettiRun(ov, ['#f1d04a','#ffffff'], 1100); }catch(e){}
+  document.body.appendChild(ov);
+  buzz(30);
+  track('legend_token_popup',{ovr:lt.ovr});
+}
 function scrCareerEnd(){
   const c=S.career||{seasons:[],money:0,net:0,wins:0,majors:0,top10:0,best:99,winsList:[]};
   const e=S.careerEnd||{years:c.seasons.length,money:c.money,net:c.net,wins:c.wins,majors:c.majors,best:c.seasons.reduce((m,s)=>Math.max(m,s.money),0),bestFin:c.best};
@@ -16516,7 +16563,7 @@ function scrCareerEnd(){
     add($(`<div class="center" style="margin:0 0 16px"><div style="display:inline-block;background:linear-gradient(180deg,#3a2a0f,#0a1626);border:1px solid var(--gold);border-radius:14px;padding:16px 22px;max-width:92vw;box-shadow:0 0 24px rgba(241,208,74,.25)">
       <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--gold)">🏆 Legend Token Earned</div>
       <div style="font:800 20px/1.2 var(--body);color:var(--oncard);margin-top:7px">${esc(lt.name)} · OVR ${lt.ovr} at their peak</div>
-      <div class="small muted" style="margin-top:5px;max-width:400px">${esc(lt.reason)} across ${lt.years} seasons turns this golfer into a Legend, replay the Daily Challenge as this build for free, any time. It never uses a daily attempt.</div></div></div>`));
+      <div class="small muted" style="margin-top:5px;max-width:400px">Finishing your 30-year career earns 1 free Daily Challenge play as this golfer's peak build. One-time only, no daily attempt used, you only get each golfer once.</div></div></div>`));
   }
   add($(`<div class="center" style="margin-bottom:8px">
     <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:var(--muted)">Career net worth</div>
@@ -16583,6 +16630,8 @@ function scrCareerEnd(){
   }
   const nc=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">Start a New Career ▸<span class="sub">A brand-new 2026 universe, fresh story</span></button>`);
   nc.onclick=newCareer; add(nc);
+  // announce the earned Legend Token as a pop-up (Play now + X), once the ceremony has painted
+  if(S.freshLegendToken) setTimeout(()=>{ if(S.screen==='careerend') maybeLegendTokenPopup(); }, 420);
 }
 // Legend Circuit finale ceremony, parallel to scrCareerEnd() but reads S.circuitCareer/S.circuitEnd
 // instead of S.career/S.careerEnd, so the just-finished 30-year career's own stats are never touched.
