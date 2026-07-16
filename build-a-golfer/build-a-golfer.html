@@ -1026,14 +1026,13 @@ window.GA_ID='G-L29P5MRWKE';
   /* holed-result pill: floats CENTER on the tracer (its own layer) so it never collides with the
      always-present scoreboard - the leaderboard stays put; the result pops over the middle of the course */
   /* CS356j: the holed result pops at the TOP of the tracer (below the hole chip), not over the golfer in the middle */
-  .hvresult{top:42px;left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap;
+  .hvresult{top:8px;right:8px;left:auto;text-align:center;white-space:nowrap;
     background:rgba(8,17,26,.92);border:2.5px solid var(--gold);border-radius:15px;padding:9px 20px;
     box-shadow:0 18px 40px -16px rgba(0,0,0,.95);animation:hvresPop .44s cubic-bezier(.2,1.3,.4,1)}
   .hvresult .rn{font:900 20px/1 var(--body);letter-spacing:.03em}
   .hvresult .rs{font:800 13px/1 var(--mono);opacity:.92;margin-left:8px}
   .hvresult .rsub{font:800 11px/1.2 var(--body);letter-spacing:.04em;text-transform:uppercase;margin-top:6px}
-  /* keep the horizontal centering through the pop (a bare scale() keyframe would drop it) */
-  @keyframes hvresPop{0%{opacity:0;transform:translateX(-50%) scale(.84)}60%{transform:translateX(-50%) scale(1.04)}100%{opacity:1;transform:translateX(-50%) scale(1)}}
+  @keyframes hvresPop{0%{opacity:0;transform:scale(.84)}60%{transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
   @media (prefers-reduced-motion:reduce){ .hvresult{animation:none} }
   /* decision MODAL: a real pop-up presenting the situation + 2 options over a dimmed course - never
      shifts the page underneath (owner: a real, exciting pop-up that draws attention) */
@@ -14624,6 +14623,7 @@ function legendPlaySection(){
 let _dailyTimer=null, _shotTimer=null;
 const SHOT_STAGGER=130;       // ms between shot rows when REVIEWING a past hole (CSS cascade)
 const SHOT_REVEAL_MS=750;     // live play reveals shots one at a time, 0.75s apart; the ball lands last
+const QUICK_GLANCE_MS=560;    // quick-mode routine hole: how long the full-hole glance holds before the ball drops in
 function clearDailyTimer(){ if(_dailyTimer){clearTimeout(_dailyTimer);_dailyTimer=null;} if(_shotTimer){clearTimeout(_shotTimer);_shotTimer=null;} S.dailySinking=false; }
 function nextDailySig(){ const i=S.dailyHoles.length; return DAILY_COURSES[S.dailyCourse].sig.find(s=>s[0]===i+1); }
 // beat after the ball is holed before the next hole auto-plays - long enough to REGISTER the result
@@ -14869,12 +14869,15 @@ function playDailyHole(attack, phase){
   S.dailyViewHole=null; S.dailyQuickStatic=false;
   const hole=S.dailyHoles[S.dailyHoles.length-1];
   if(!dailyHoleFull(hole)){
-    // QUICK mode, routine hole: skip the shot-by-shot animation. Show the finished hole at a glance
-    // (full-hole tracer map, all shots, ball at rest) + the result pill, then move on after a short beat.
+    // QUICK mode, routine hole (option B): a brief full-hole glance (all tracers) so you SEE the hole,
+    // then the finishing shot drops into the cup - a touch of motion, not a hard-cut static card.
     S.dailyRevealN=hole.shots.length; S.dailyQuickStatic=true; S.dailySinking=false;
-    const good=hole.toPar<0; sfx(good?'holeGood':'hole'); if(good) buzz(18);
-    render();
-    scheduleDailyAdvance();   // holds the result beat (dailyDwell), then advances / finishes / decides
+    render();   // phase 1: full-hole tracer map at a glance
+    if(_shotTimer){clearTimeout(_shotTimer);_shotTimer=null;}
+    _shotTimer=setTimeout(()=>{ _shotTimer=null; if(S.screen!=='dailyround'||S.dailyProv)return;
+      S.dailyQuickStatic=false; S.dailySinking=true;   // phase 2: animate the ball into the cup, score withheld
+      render(); startShotReveal();   // final-shot branch → drop → sfx → scheduleDailyAdvance (result beat)
+    }, QUICK_GLANCE_MS);
     return;
   }
   S.dailyRevealN=1;   // first shot lands now; the rest reveal one-by-one
