@@ -8765,6 +8765,15 @@ allows Google Fonts, or self-host Anton.*
     header, content screens (rules) render the compact legible bar with a solid-gold wordmark + hidden crest,
     the topmask mounts, 0 page errors; screenshots confirm both. Deployed to /golf.
 
+  - **CS356ah — draft skill-tile strength bar is rating-graded again (owner: "I liked when the bars under
+    the numbers changed based on the rating").** CS356j had forced every draftable tile's strength bar to a
+    flat gold (`.attr.dtake .attrbar>i{background:var(--gold)!important}`), losing the CS269 colour grading.
+    Restored it: the bar's inline colour now comes from `ratColor(rv)` (90+ gold / 82+ green / 74+ teal /
+    66+ indigo / else grey - the same scale the live radar uses), and the CSS `!important` gold override was
+    dropped to a plain fallback so the inline colour wins. Applied to both the career draft (`scrDraft`) and
+    the online H2H draft (`scrH2HDraft`). Verified in Playwright (72→indigo, 83/89→green, 91/92→gold), 0
+    page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
