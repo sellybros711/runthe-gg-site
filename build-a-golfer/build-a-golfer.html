@@ -13385,13 +13385,18 @@ function dailyFeatureCard(key){
   card.appendChild($(`<div style="font:800 10.5px system-ui;letter-spacing:2.4px;color:${A}">${S.special?'⭐ ':''}${kicker}</div>`));
   card.appendChild($(`<div style="font:800 27px/1.05 var(--display,system-ui);color:#fff;margin-top:7px">${esc(c.v)}</div>`));
   card.appendChild($(`<div class="small" style="color:#e9e0cfcc;margin-top:5px;font-weight:600">${esc(c.loc)} · Par ${c.par} · ${c.yd.toLocaleString()} yds · ${dCondLabel(S.dailyCond)}</div>`));
-  card.appendChild($(`<div style="height:1px;background:${A}40;margin:13px 0"></div>`));
-  if(th.tag) card.appendChild($(`<div style="font:italic 700 17px/1.25 Georgia,'Times New Roman',serif;color:${A}">${esc(th.tag)}</div>`));
-  const vibe=$(`<div class="small" style="color:#e9e0cfdd;line-height:1.5;margin-top:8px">${esc(open||!hasMore?c.blurb:first)}${hasMore?` <button class="blurbmore" style="background:none;border:none;color:${A};font-weight:800;cursor:pointer;padding:0">${open?'Less':'Read more'}</button>`:''}</div>`);
-  const bm=vibe.querySelector('.blurbmore'); if(bm) bm.onclick=()=>{ S.dailyBlurbOpen=!open; render(); };
-  card.appendChild(vibe);
-  card.appendChild($(`<div style="display:flex;gap:6px;margin-top:13px">${th.palette.map(h=>`<span style="width:24px;height:24px;border-radius:6px;background:${h};border:1px solid rgba(255,255,255,.16)"></span>`).join('')}</div>`));
-  if(th.motifs.length) card.appendChild($(`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">${th.motifs.map(m=>`<span style="font:600 11px system-ui;color:#f7ecd6;background:${A}1f;border:1px solid ${A}44;padding:4px 9px;border-radius:999px">${esc(m)}</span>`).join('')}</div>`));
+  // CS356p: keep only the essentials visible; the tagline/blurb/palette/motifs collapse behind a dropdown.
+  const toggle=$(`<button class="dfeat-more" style="margin-top:13px;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;background:${A}14;border:1px solid ${A}44;color:${A};font:800 11px system-ui;letter-spacing:.06em;text-transform:uppercase;padding:9px 10px;border-radius:10px;cursor:pointer">${open?'Hide course details':'More about this course'} <span style="font-size:13px">${open?'▴':'▾'}</span></button>`);
+  toggle.onclick=()=>{ S.dailyBlurbOpen=!open; render(); };
+  card.appendChild(toggle);
+  if(open){
+    const more=$(`<div style="margin-top:13px;border-top:1px solid ${A}40;padding-top:13px"></div>`);
+    if(th.tag) more.appendChild($(`<div style="font:italic 700 17px/1.25 Georgia,'Times New Roman',serif;color:${A}">${esc(th.tag)}</div>`));
+    more.appendChild($(`<div class="small" style="color:#e9e0cfdd;line-height:1.5;margin-top:8px">${esc(c.blurb)}</div>`));
+    more.appendChild($(`<div style="display:flex;gap:6px;margin-top:13px">${th.palette.map(h=>`<span style="width:24px;height:24px;border-radius:6px;background:${h};border:1px solid rgba(255,255,255,.16)"></span>`).join('')}</div>`));
+    if(th.motifs.length) more.appendChild($(`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:12px">${th.motifs.map(m=>`<span style="font:600 11px system-ui;color:#f7ecd6;background:${A}1f;border:1px solid ${A}44;padding:4px 9px;border-radius:999px">${esc(m)}</span>`).join('')}</div>`));
+    card.appendChild(more);
+  }
   return card;
 }
 function hvTerrain(g, seedN, B){
@@ -14209,7 +14214,7 @@ function scrDailyIntro(){
 function scrDailyPreview(){
   if(sb && crCache===null) crLoad();   // pull global course records so the record box is global, not just local
   const key=S.dailyCourse, c=DAILY_COURSES[key], rec=courseRecords()[key];
-  add($(`<div class="center"><span class="tag" style="color:${S.special?'#ffd76a':'var(--gold)'};border-color:${S.special?'#ffd76a':'var(--gold)'}">${S.special?'⭐ Monthly Spotlight · special event':'⛳ Beat the Pro · today\'s course'}</span></div>`));
+  add(scrHero(S.special?'Monthly Spotlight':'Beat the Pro', S.special?'Special event · today only':"Today's course"));
   if(PRACTICE && !S.special) add($(`<div class="center" style="margin-top:5px"><span class="tag" style="color:#16b5a6;border-color:#16b5a6">Practice mode · unlimited rounds, nothing is recorded</span></div>`));
   // CS240: themed "today's course" feature card - name, tagline, vibe, palette + motif chips, accent from
   // the course's own biome so every day's Daily feels special (owner-picked Option 3).
