@@ -10900,7 +10900,7 @@ function seasonRailNode(){
   S.schedule.forEach((evt,i)=>{
     let cls='srev', res='·';
     if(i<S.evtIndex){ cls+=' done'; const r=results[i], me=r&&r.order&&r.order.find(o=>o.p.you);
-      if(me){ if(me.pos===1){ cls+=' win'; res='WIN'; } else res=ord(me.pos); } else res='✓'; }
+      if(me){ if(me.pos==='CUT'){ res='CUT'; } else if(me.pos===1){ cls+=' win'; res='WIN'; } else res=(me.tied?'T'+me.pos:ord(me.pos)); } else res='✓'; }
     else if(i===S.evtIndex){ cls+=' cur'; res='NOW'; }
     rail.appendChild($(`<div class="${cls}" title="${esc(evt.name)}"><div class="en">${evt.major?'★ ':''}${esc(evt.name)}</div><div class="er">${res}</div></div>`));
   });
