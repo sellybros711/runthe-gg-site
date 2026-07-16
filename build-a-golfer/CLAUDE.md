@@ -8875,6 +8875,17 @@ allows Google Fonts, or self-host Anton.*
   while every object holds its scale (the owner's actual ask) — scale scenery + terrain-feature pitch by a
   density factor on the detail tile.
 
+- **CS360 — softer golfer outline on the course (no more "sticker on top").** Owner: the in-course swing
+  golfer's outline was way too thick, reading as a sticker pasted on the course rather than a golfer on it.
+  Root cause: the mini swing sprite (CS355d) was authored with a hard, fully-opaque near-black 1px outline
+  (`k='#1c241b'`) around the ENTIRE figure. Fix: in the sprite renderer (`pxStrokeURLs`), the OUTER-perimeter
+  outline pixels (an `k` cell touching a transparent cell or the sprite edge) are now drawn as a soft
+  translucent dark rim (`rgba(24,32,24,0.34)`) so the course shows through and the golfer sits ON the grass;
+  INTERNAL detail lines (club, limb separations, face) keep the crisp full-opacity outline. Scoped to the
+  swing sprite only (the menu/setup avatar `pxGolferURL` is separate and unchanged — it needs its outline on
+  the dark UI). Verified in Playwright: sprites render on a grass swatch + a real green close-up with the soft
+  rim blending the golfer into the course, 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
