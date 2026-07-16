@@ -5047,6 +5047,22 @@ function eligibleSlotsFor(player){
   });
   return [...slots];
 }
+// Every open slot this player can LEGALLY occupy right now, dropping only the
+// "fill your own line first" preference that eligibleSlotsFor applies (position +
+// cap are still respected). Used as a safety net so a pick can never dead-end.
+function placeableSlotsFor(player){
+  const slots=new Set();
+  const full=isFullDraft();
+  const posCount = full ? gs.picks.filter(pk=>pk.player.position===player.position).length : 0;
+  gs.openSlots.forEach(s=>{
+    if(s===player.position){ slots.add(s); return; }   // a matching dedicated slot always works
+    if(s==='FLEX'){
+      if(full){ if(player.position!=='GK' && posCount<fullCap(player.position)) slots.add('FLEX'); }
+      else if(player.position==='MID'||player.position==='FWD') slots.add('FLEX');
+    }
+  });
+  return [...slots];
+}
 
 function updateRespinButtons(){
   // One full re-spin per game (re-rolls both nation and year). Same in all modes.
@@ -5651,7 +5667,18 @@ function renderGrid(squad){
 // ---------- slot picker sheet ----------
 function openSheet(player){
   selectedPlayer=player;
-  const elig=eligibleSlotsFor(player);
+  // Never open a dead-end (Cancel-only) sheet. If this tappable card is no longer
+  // placeable under the preference rule, fall back to any slot it can legally fill;
+  // if the state has genuinely moved on (stale grid), re-sync the roster and bail
+  // so the player is never trapped on their final pick.
+  let elig=eligibleSlotsFor(player);
+  if(!elig.length) elig=placeableSlotsFor(player);
+  if(!elig.length){
+    selectedPlayer=null;
+    try{ paintSquad(); }catch(e){}
+    if(typeof showToast==='function') showToast('That pick just updated — choose again');
+    return;
+  }
   $('sheet-name').textContent=player.name;
   $('sheet-sub').innerHTML=`${player.position} · ${flagChip(player.country)} ${player.country} ${player.year}`;
   const opts=$('slot-opts'); opts.innerHTML='';
