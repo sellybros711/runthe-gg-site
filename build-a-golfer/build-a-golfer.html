@@ -6865,7 +6865,7 @@ function hvSwingMarkup(g,p,look){
   // CS356n: on the green (putt) the golfer is small but the number pin is made BIGGER + readable, sized to
   // the close-up camera rather than the tiny golfer, so it stands out (owner ask).
   if(p.i!=null){ const num=p.i+1, putt=(kind==='putt');
-    const br=putt?Math.max(4.5,cam[3]*0.085):GH*0.185, fs=putt?Math.max(5.6,cam[3]*0.105):GH*0.223;
+    const br=putt?GH*0.26:GH*0.185, fs=putt?GH*0.31:GH*0.223;   // on the green: just slightly bigger than the full-shot pin
     const bx=x0+(faceRight?0.62:0.38)*GW, by=Math.max(cam[1]+br+0.8, y0-br*1.4);
     badge=`<g class="hvswnum">`
       +`<circle cx="${(bx+0.6).toFixed(1)}" cy="${(by+1).toFixed(1)}" r="${br.toFixed(1)}" fill="#04150a" opacity=".45"/>`
