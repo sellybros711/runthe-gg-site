@@ -610,7 +610,7 @@ window.GA_ID='G-L29P5MRWKE';
   .attr.dtake{border-color:rgba(241,208,74,.65); background:linear-gradient(180deg,rgba(241,208,74,.15),rgba(241,208,74,.03))}
   .attr.dtake .lab{flex:1; color:#f6ecd0}
   .attr.dtake .val{font-size:15px; color:var(--gold)}
-  .attr.dtake .attrbar>i{background:var(--gold)!important}
+  .attr.dtake .attrbar>i{background:var(--gold)}   /* fallback; the tile sets an inline rating-graded color */
   /* gold "+" badge on a choosable tile - visually parallel to the green ✓ on a locked-in tile.
      The plus is a drawn SVG (symmetric in its viewBox) so it's always perfectly centered. */
   .attr .dadd{flex:0 0 auto; margin-left:3px; width:22px; height:22px; border-radius:50%; background:var(--gold);
@@ -7592,9 +7592,9 @@ function scrDraft(){
       return;
     }
     if(spun){
-      const rv=S.current[cat.k], rc=rv>=90?'#d8ad4a':rv>=80?'#49b675':rv>=70?'#7ec8ff':'#9fb0bd', key=dailyKeys&&dailyKeys.has(cat.k);
+      const rv=S.current[cat.k], key=dailyKeys&&dailyKeys.has(cat.k);
       const b=$(`<button class="attr dtake${key?' keyhole':''}" aria-label="Draft ${cat.short}, rated ${rv}${key?', a key skill for today\'s course':''}">
-        ${key?'<span class="keystar" aria-hidden="true">★</span>':''}<span class="lab">${cat.short}</span><span class="val">${rv}</span><span class="dadd" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M7 2.3v9.4M2.3 7h9.4" stroke="#20160a" stroke-width="2.4" stroke-linecap="round"/></svg></span><span class="attrbar"><i style="width:${Math.min(100,rv)}%"></i></span></button>`);
+        ${key?'<span class="keystar" aria-hidden="true">★</span>':''}<span class="lab">${cat.short}</span><span class="val">${rv}</span><span class="dadd" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M7 2.3v9.4M2.3 7h9.4" stroke="#20160a" stroke-width="2.4" stroke-linecap="round"/></svg></span><span class="attrbar"><i style="width:${Math.min(100,rv)}%;background:${ratColor(rv)}"></i></span></button>`);
       b.onclick=()=>takeAttr(cat.k);
       grid.appendChild(b); return;
     }
@@ -17517,7 +17517,7 @@ function scrH2HDraft(){
     if(spun){
       const rv=S.h2h.current[cat.k];
       const b=$(`<button class="attr dtake" aria-label="Draft ${cat.short}, rated ${rv}">
-        <span class="lab">${cat.short}</span><span class="val">${rv}</span><span class="dadd" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M7 2.3v9.4M2.3 7h9.4" stroke="#20160a" stroke-width="2.4" stroke-linecap="round"/></svg></span><span class="attrbar"><i style="width:${Math.min(100,rv)}%"></i></span></button>`);
+        <span class="lab">${cat.short}</span><span class="val">${rv}</span><span class="dadd" aria-hidden="true"><svg viewBox="0 0 14 14"><path d="M7 2.3v9.4M2.3 7h9.4" stroke="#20160a" stroke-width="2.4" stroke-linecap="round"/></svg></span><span class="attrbar"><i style="width:${Math.min(100,rv)}%;background:${ratColor(rv)}"></i></span></button>`);
       b.onclick=()=>h2hTake(cat.k);
       grid.appendChild(b); return;
     }
