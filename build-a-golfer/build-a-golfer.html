@@ -3456,8 +3456,11 @@ function eventCourse(evt){
   const c=EVENT_COURSE[evt.name]; if(!c) return null;
   return {v:c.v, loc:c.loc};
 }
-const DCFG={ SCORE_SHIFT:-0.06, SLOPE_H:0.019, COURSE_DIFF_SCALE:0.045, COURSE_DIFF_CLAMP:0.22, SHAPE_SCALE:1.5,
-  FIT_POWER:4.0, LATENT_S:0.92, TH:{eagle:-2.70,birdie:-0.90,par:0.78,bogey:1.95,double:2.55},
+// #8 (owner: less RNG so the build + your decisions beat luck): LATENT_S 0.92→0.80 tightens per-hole
+// variance ~13% (round SD 2.85→2.47, skill separation +12%); SCORE_SHIFT -0.06→-0.033 re-centers so an
+// OVR-80 build still averages the tour scoring average (calibration verified: drift 0.33→0.22).
+const DCFG={ SCORE_SHIFT:-0.033, SLOPE_H:0.019, COURSE_DIFF_SCALE:0.045, COURSE_DIFF_CLAMP:0.22, SHAPE_SCALE:1.5,
+  FIT_POWER:4.0, LATENT_S:0.80, TH:{eagle:-2.70,birdie:-0.90,par:0.78,bogey:1.95,double:2.55},
   // per-hole variance by archetype: most holes tighten (more pars), risk holes spread BOTH tails
   // (eagles AND blow-ups), drivable par-4s, reachable par-5s, long par-3/4s play more dramatically.
   VAR:{p3s:0.95,p3m:0.98,p3l:1.14,p4d:1.30,p4m:0.88,p4l:1.12,p5r:1.24,p5m:1.08,p5l:1.00},
@@ -14656,7 +14659,7 @@ const SHOT_STAGGER=130;       // ms between shot rows when REVIEWING a past hole
 const SHOT_REVEAL_MS=750;     // live play reveals shots one at a time, 0.75s apart; the ball lands last
 const QUICK_GLANCE_MS=560;    // quick-mode routine hole: how long the full-hole glance holds before the ball drops in
 function clearDailyTimer(){ if(_dailyTimer){clearTimeout(_dailyTimer);_dailyTimer=null;} if(_shotTimer){clearTimeout(_shotTimer);_shotTimer=null;} S.dailySinking=false; }
-function nextDailySig(){ const i=S.dailyHoles.length; return DAILY_COURSES[S.dailyCourse].sig.find(s=>s[0]===i+1); }
+function nextDailySig(){ return dIsDecHole(S.dailyHoles.length); }   // is the upcoming hole a decision hole?
 // beat after the ball is holed before the next hole auto-plays - long enough to REGISTER the result
 // (owner: it used to jump to the next tee before you could see what you scored). The shot reveal itself
 // is timed separately (hvShotMs); this is the pause on the finished hole.
@@ -14669,7 +14672,7 @@ function dailyHoleFull(hole){
   if(dailyMode()==='full') return true;
   if(!hole) return true;
   const c=DAILY_COURSES[S.dailyCourse];
-  if(c && c.sig && c.sig.some(s=>s[0]===hole.n)) return true;   // decision holes: always watch fully
+  if(dIsDecHole(hole.n-1)) return true;                         // decision holes: always watch fully
   if(hole.toPar<=-2) return true;                                // eagle / albatross / hole-in-one
   if(hole.toPar>=2) return true;                                 // double bogey or worse
   return false;
@@ -14678,7 +14681,7 @@ function dailyHoleFull(hole){
 // the dramatic ones (eagle/blow-up/decision holes).
 function dailyDwell(){
   const last=S.dailyHoles[S.dailyHoles.length-1];
-  const notable = last && (last.toPar<=-2 || last.toPar>=2 || (DAILY_COURSES[S.dailyCourse]&&(DAILY_COURSES[S.dailyCourse].sig||[]).some(s=>s[0]===last.n)));
+  const notable = last && (last.toPar<=-2 || last.toPar>=2 || dIsDecHole(last.n-1));
   return notable ? 1500 : 1000;
 }
 // reveal the latest hole's shots one-by-one (0.75s apart); only once the ball is in the hole does the
@@ -15439,6 +15442,31 @@ function dSitLine(total,av,i){ const holesLeft=18-i; if(holesLeft>5||holesLeft<1
   if(diff>=2) return `You're ${diff} off the tour-average pace with ${holesLeft} to play, you need to make something happen.`;
   if(diff<=-2) return `You're ${-diff} clear of the tour average with ${holesLeft} to play, protect the lead, or press for more?`;
   return `It's neck-and-neck with the tour average with ${holesLeft} to play, this shot could swing it.`; }
+// #6 (owner: MORE meaningful decisions per round): expand the ~3 signature holes to ~6 decision holes -
+// the signature holes + the best remaining SCORING-OPPORTUNITY holes (reachable par-5s, drivable/short
+// par-4s, hazard holes). Deterministic per course, so everyone gets the same set (fair, same across the
+// 3 attempts). Score stays engine-decided; the choice biases it (attack lowers the mean, raises variance).
+const DEC_HOLES_TARGET=6;
+function dHoleWorth(courseKey, i){
+  const c=DAILY_COURSES[courseKey], h=c.holes[i], type=dShotType(h[0],h[1]);
+  let w=({go5:5,drive4:5,short4:4,long5:3,app4:2,tee3:2})[type]||2;
+  const hz=(typeof DSIG_HAZ!=='undefined'&&(DSIG_HAZ[courseKey]||{})[i+1])||'';
+  if(/water|island|creek|cliff/.test(hz)) w+=2; else if(/bunker|wind|elevated|long/.test(hz)) w+=1;
+  if(type==='tee3' && h[1]>=215) w+=1;
+  return w;
+}
+const _decHoleCache={};
+function dDecHoleSet(courseKey){
+  if(_decHoleCache[courseKey]) return _decHoleCache[courseKey];
+  const c=DAILY_COURSES[courseKey]; const set=new Set();
+  (c.sig||[]).forEach(s=>set.add(s[0]-1));                       // signature holes always get a decision
+  const cand=[];
+  for(let i=0;i<18;i++){ if(set.has(i)) continue; cand.push({i, w:dHoleWorth(courseKey,i), tb:hvHash(dHash(courseKey),i,4)}); }
+  cand.sort((a,b)=> b.w-a.w || a.tb-b.tb);                       // best scoring holes first, seeded tiebreak
+  for(const x of cand){ if(set.size>=DEC_HOLES_TARGET) break; set.add(x.i); }
+  _decHoleCache[courseKey]=set; return set;
+}
+function dIsDecHole(i){ return dDecHoleSet(S.dailyCourse).has(i); }
 function dScenario(courseKey,i,total,av){
   const c=DAILY_COURSES[courseKey], h=c.holes[i], par=h[0], yards=h[1];
   const haz=(DSIG_HAZ[courseKey]||{})[i+1]||(par===3?'long':'bunker'), type=dShotType(par,yards);
@@ -15738,7 +15766,7 @@ function scrDailyRound(){
   // decision on hole 1 never renders and the round freezes ("Royal Causeway"/Olympic Club, seed-dependent).
   const previewNext = (!prov && !revealing && !holePause && !reviewing && !done);
   // a signature-hole tee/par-3 decision is pending (par-4/5 approach decisions come via `prov`)
-  const teeSig = previewNext ? c.sig.find(s=>s[0]===i+1) : null;
+  const teeSig = previewNext ? dIsDecHole(i) : null;
   add($(`<div class="droundglow" style="--gl:${hvThemeAccent(S.dailyCourse)}"></div>`));   // CS248: subtle themed glow behind the whole round
   if(S.moment){   // career-mode Moment: this round IS the tournament's final round
     const po=S.momentPO, grd=S.moment.grudge&&S.moment.rivalName;
@@ -15947,7 +15975,7 @@ function scrDailyRound(){
   else {
     add(dRoundControls());
     // mulligan (streak reward) only between holes when the round is held / at a decision, never mid-flight or in review
-    if(!reviewing && !revealing){ const sig=c.sig.find(s=>s[0]===i+1);
+    if(!reviewing && !revealing){ const sig=dIsDecHole(i);
       if(S.dailyMullAvail&&!S.dailyMullUsed&&played.length&&(!S.dailyAuto||sig)){ const m=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">↺ Mulligan hole ${played[played.length-1].n}<span class="sub">Re-roll your last hole, one per round (streak reward)</span></button>`); m.onclick=dailyMulligan; add(m); } }
   }
 }

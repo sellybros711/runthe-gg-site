@@ -8918,6 +8918,57 @@ allows Google Fonts, or self-host Anton.*
     intact; 0 page errors throughout. Deployed to /golf. Tunable: `HV_PX_DETAIL` (detail vertical px),
     `HV_PX_BASEH`, the `drawTreeS` `0.85` object factor, the `hvDetailCam` 60%-of-frame zoom threshold.
 
+- **CS362 — Daily Challenge retention overhaul: Quick/Full watch modes, faster pacing, on-course decisions,
+  more agency, less RNG (owner: get the daily under ~3 min from build→result "without seeming too sped up,"
+  more of a skill challenge and less luck, to bring people back Wordle-style).** Measured the old loop first:
+  ~3:40 total, of which the 18-hole sim was ~160s of ~95%-passive watching, with only 3 binary decisions of
+  real agency. Diagnosis (agreed with owner): it's an agency-vs-watching ratio problem, so the fix is to
+  REPLACE passive watch-time with active decision-time and fast-forward the routine holes. Built as a
+  sequenced batch, each step owner-approved and shown before shipping:
+  • **Two watch modes, picked up front (owner: keep the full version for purists, don't penalize either).**
+    A "How do you want to watch?" toggle on the daily preview → `bag_daily_mode` (per account, default
+    **Quick Play**; career Moments always play Full). `dailyMode()`/`dailyHoleFull(hole)`: in Quick, only the
+    holes that matter get the full shot-by-shot cinematic — decision holes + eagles + double-bogey-or-worse;
+    every routine hole fast-sims. Full plays every shot as before.
+  • **Quick Play = "you play the holes that matter" (owner picked option B: a touch of motion, not a hard
+    cut).** A routine hole shows a brief full-hole glance (all tracers, `QUICK_GLANCE_MS=560`), then the
+    finishing shot drops into the cup, then the result — ~1.9s vs ~9s. `playDailyHole` has a quick-routine
+    branch (`S.dailyQuickStatic` + a `revealN=shots.length+1` sentinel in scrDailyRound forces the static
+    full-hole render; the clamp override is the only render change). Measured: Quick round **~74s → ~84s**
+    with 6 decisions (from ~160s), Full ~168s, both complete all 18 holes with 0 errors.
+  • **Post-hole beat 1.9s → ~1s** (`dailyDwell` notable-aware: 1000ms routine / 1500ms on the dramatic ones).
+  • **On-course decisions replace the pop-up modal (#6/#7 — owner: "make the person feel they're ON the
+    course, not watching it").** The signature-hole call is now made ON the TOURTRACE window: two tappable,
+    pulsing targets placed on the course (red ⚡ aggressive + teal 🛡 safe, positioned by `dDecTargets` via
+    `hvProj` with collision-nudge) + a stat/risk card bar docked below (`dDecisionBar`) — no dimming overlay.
+    `#7 skill-test`: each option shows the relevant stat + odds via `dDecStat`/`dDecOdds` (e.g. "Approach 83 ·
+    54% birdie look · 15% bunker" vs "Low risk · 34% birdie look · par safe"), skill-responsive (elite App 96
+    → 70%/18%, weak 66 → 34%/32%). Wired into `drawWindow` (new `dec` param places targets, suppresses the
+    floating scoreboard so the cards have room) + a `decPending` block in scrDailyRound (removed the old
+    `dDecisionModal` call sites; the fn is left defined, unused). Tapping a target OR a card advances the
+    round; verified both methods, both modes.
+  • **#6 more decisions: 3 → 6 per round.** `dDecHoleSet(courseKey)` (cached, deterministic) = the 3
+    signature holes + the top 3 remaining SCORING-opportunity holes by `dHoleWorth` (reachable par-5s,
+    drivable/short par-4s, hazard holes), seeded tiebreak. All 39 courses now have exactly 6 decision holes,
+    all signature holes included, spread across the round (e.g. 3,4,8,12,13,15). `nextDailySig`/`teeSig`/
+    `dailyHoleFull`/`dailyDwell`/mulligan all route through `dIsDecHole`. The preview's "Signature holes"
+    marquee list is unchanged (still the 3); the extra 3 are in-round scoring decisions.
+  • **#8 less RNG (owner: "build + decisions should beat luck").** `DCFG.LATENT_S` 0.92→**0.80** tightens
+    per-hole variance ~13% (round SD 2.85→2.47), and `DCFG.SCORE_SHIFT` -0.06→**-0.033** re-centers so an
+    OVR-80 build still averages each venue's real tour scoring average — Monte-Carlo verified (10 courses ×
+    4000 rounds via the live `dSimHole`): calibration drift actually IMPROVED 0.33→0.22, skill separation
+    (weak-vs-strong mean gap ÷ round SD) +12% (1.13→1.26), "beat the tour average" for an OVR-80 build stays
+    balanced (~55%). Affects the whole dSimHole family (daily/moment/spotlight/legend/H2H) — less luck
+    everywhere, consistent. No cdiff re-derivation needed (mean re-centered via SCORE_SHIFT).
+  • **Result pill moved top-right** (owner image), mirroring the hole-info chip (`.hvresult` top:8px right:8px).
+  Net: the daily loop is ~2:15-2:30 total in Quick (down from ~3:40), engaged decision time roughly doubled
+  (6 on-course calls vs 3 pop-ups), and build + decisions now beat luck more reliably — while purists keep
+  the full watch. Tunable: `bag_daily_mode` default, `QUICK_GLANCE_MS`, `dailyDwell` values, `DEC_HOLES_TARGET`
+  (6), `dHoleWorth` weights, `DCFG.LATENT_S`/`SCORE_SHIFT`, the `dDecOdds` reward/risk curves. Deployed to
+  /golf. FOLLOW-UPS still open from the plan: #12 retention hooks (streak/share polish); the on-course card
+  bar can sit just below the fold on a short phone (the tap-targets, the primary interaction, are always on
+  the visible window) — a candidate polish is docking a compact card row inside the window.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
