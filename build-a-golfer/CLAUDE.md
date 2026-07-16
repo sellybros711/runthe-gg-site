@@ -8747,6 +8747,24 @@ allows Google Fonts, or self-host Anton.*
     look ties into the game's pixel theme. Deployed to /golf. (The old radar `RLABS`/`vals` path is now
     unused but the `vals` param is kept on both fns; `drawMajorWinCard` still uses its own art, untouched.)
 
+  - **CS356ag — legible compact header + clean status-bar scroll (owner: "it shouldn't be able to scroll
+    up and down like that... anytime you see the green header like that change it to a normal header so it's
+    legible").** On iOS the app uses `viewport-fit=cover` + a translucent status bar, so as you scrolled a
+    content screen (e.g. the season summary) the big decorative crest+wordmark header (`.head`, position:
+    relative) slid up UNDER the status bar and the gold gradient "TOUR" wordmark got clipped/smeared -
+    illegible + looked broken. Fixes: (1) the full decorative crest+wordmark header now renders ONLY on the
+    **title** screen (the brand moment); every other screen gets a **compact, legible top bar**
+    (`.head--compact`): crest/divider/rule hidden, a single-line "RUN THE TOUR" wordmark with the "TOUR" in
+    SOLID lemon-gold (not the transparent-clip gradient, which reads muddy at small sizes), tighter spacing.
+    (2) An opaque **status-bar mask** (`#topmask`, fixed, `height:env(safe-area-inset-top)`, mounted once on
+    `<body>`) sits over the inset so scrolling content never smears under the translucent status bar - the
+    top stays clean on every screen. (3) `.head` top padding is now `max(calc(10px+env(...)), 44px)` so the
+    header clears the status bar even in a Safari tab where the inset resolves to 0. (4) The sticky summary
+    tabs (`.sumtabs`) and Pro Shop bar (`.shop-sticky`) now pin at `top:env(safe-area-inset-top)` instead of
+    `top:0`, so they stick BELOW the status bar, not under it. Verified in Playwright: title keeps the full
+    header, content screens (rules) render the compact legible bar with a solid-gold wordmark + hidden crest,
+    the topmask mounts, 0 page errors; screenshots confirm both. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
