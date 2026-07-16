@@ -1183,6 +1183,12 @@ window.GA_ID='G-L29P5MRWKE';
   .cb-meters{flex-basis:100%; width:100%; margin-top:6px; padding-top:11px; border-top:1px solid rgba(255,255,255,.09)}
   .seasonrail{display:flex; gap:7px; overflow-x:auto; padding:1px 0 9px; margin-bottom:10px; -webkit-overflow-scrolling:touch; scrollbar-width:none}
   .seasonrail::-webkit-scrollbar{display:none}
+  /* CS356w: season-summary tab bar */
+  .sumtabs{position:sticky; top:0; z-index:6; display:flex; gap:6px; justify-content:center; flex-wrap:wrap; padding:9px 4px; margin:2px 0 12px; background:linear-gradient(180deg, var(--pagebg) 60%, transparent)}
+  .sumtabbtn{flex:0 0 auto; font:800 12px/1 var(--body); letter-spacing:.04em; text-transform:uppercase; color:var(--muted); background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); border-radius:999px; padding:9px 16px; cursor:pointer; transition:color .12s, background .12s, border-color .12s}
+  .sumtabbtn:hover{color:var(--oncard); border-color:rgba(241,208,74,.4)}
+  .sumtabbtn.on{color:#20160a; background:var(--gold-grad-d); border-color:var(--gold); font-weight:900}
+  .sumacts{margin-top:18px}
   .srev{flex:0 0 auto; min-width:56px; max-width:96px; border-radius:10px; padding:7px 9px; text-align:center;
     background:var(--panel); border:1px solid var(--line); opacity:.5}
   .srev.done{opacity:1}
@@ -2680,7 +2686,7 @@ function summaryResumeExtra(){   // season results page: the full completed seas
     seasonRank:S.seasonRank||null, worldRankMove:S.worldRankMove||null, seasonAwards:S.seasonAwards||null,
     freshBadges:S.freshBadges||null, freshAch:S.freshAch||[], freshRep:S.freshRep||null,
     rivalOutcome:S.rivalOutcome||null, freshRival:S.freshRival||null, freshRivalOutgrown:S.freshRivalOutgrown||null,
-    summaryTab:S.summaryTab||'season' } };
+    summaryTab:S.summaryTab||'overview' } };
 }
 // CS332: also snapshot the IN-PROGRESS spin (the revealed golfer + the seen-this-off-season set) so
 // navigating away after a spin and coming back CANNOT hand out a fresh free re-roll (spin-forever cheat).
@@ -2731,7 +2737,7 @@ function resumeCareer(){ const r=careerSaveInfo(); if(!r || r.ended) return;   /
     const sn=r.snap;
     S.season=sn.season; S.schedule=sn.schedule||[]; S.evtIndex=sn.evtIndex||0;
     S.recorded=true;   // the season is already in the books, don't re-run the record block (would double-count)
-    S.summaryTab=sn.summaryTab||'season';
+    S.summaryTab=sn.summaryTab||'overview';
     S.seasonRank=sn.seasonRank||null; S.worldRankMove=sn.worldRankMove||null; S.seasonAwards=sn.seasonAwards||null;
     S.freshBadges=sn.freshBadges||null; S.freshAch=sn.freshAch||[]; S.freshRep=sn.freshRep||null;
     S.rivalOutcome=sn.rivalOutcome||null; S.freshRival=sn.freshRival||null; S.freshRivalOutgrown=sn.freshRivalOutgrown||null;
@@ -11654,7 +11660,7 @@ function scrSummary(){
       track('season_coins_forfeited',{year:S.year||1});
     }
     _coinsSuppressToast=false;
-    S.summaryTab='season';
+    S.summaryTab='overview';
     track('season_finished',{ovr,net:Math.round(ec.net),gross:Math.round(ec.gross),wins:t.wins,majors:t.majors,moneyRank,N,daily:S.daily,year:S.year||1});
     if(!S.daily) saveCareer(summaryResumeExtra());   // auto-save the franchise so a refresh/return resumes RIGHT here on the results page (not next season)
     clearResume();   // golfer's season is in the books, no longer resumable
@@ -11662,7 +11668,14 @@ function scrSummary(){
   if(S.daily&&!S.dailyStored){S.dailyStored=true; bumpStreak(); track('daily_completed',{net:Math.round(ec.net),moneyRank});
     LS.set(acctKey('bag_daily'),{date:S.dailySeed,done:true,result:{name:me.name,ovr,net:ec.net,money:t.money,moneyRank,N,wins:t.wins,majors:t.majors,best:t.best}});}
   const circuitYear=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):(S.year||1);
+  // CS356w: split this long summary into tabs (owner: too long / too much info). Sections build into
+  // per-tab containers via a shadowed local add() that appends to __cur; the header + persistent actions
+  // sit OUTSIDE the tabs so Continue is always reachable.
+  const hdr=$(`<div></div>`), ovC=$(`<div></div>`), stC=$(`<div></div>`), seC=$(`<div></div>`), caC=$(`<div></div>`), actC=$(`<div class="sumacts"></div>`);
+  let __cur=hdr;
+  const add=(n)=>{ if(n) __cur.appendChild(n); return n; };
   add($(`<div class="center"><span class="tag">${S.daily?'★ Daily Challenge complete':(S.circuitMode?('Legend Circuit · Year '+circuitYear+' complete'):(S.year>1?('Career Mode · Year '+S.year+' complete'):'Season complete'))}</span></div>`));
+  __cur=ovC;
   // season highlights masthead (#6) leads the summary now - the year's story up top.
   // (The global leaderboard rank moved down into the left column, below the Full Season Recap button.)
   const HL=(!S.daily)?seasonHeadlines({t,moneyRank,N,ec,year:S.year||1}):null;
@@ -11688,9 +11701,11 @@ function scrSummary(){
         <div class="small muted" style="margin-top:4px">🏆 ${esc(champ)} won the ${finaleName}</div></div></div>`));
     }
   }
+  __cur=hdr;
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
   add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':(S.circuitMode?('Year '+circuitYear+' of '+CIRCUIT_MAX_YEARS+' · '):('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS+' · '))}${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
   const netCol=ec.net>=0?'#35d6a0':'#E14A33';
+  __cur=ovC;
   // MONEY grouped in ONE horizontal card (owner: money was scattered across ~4 spots and net profit was
   // shown twice - the big hero AND a "Profit" tile). Earnings (gross) + Net profit side by side, one place.
   add($(`<div class="tiles" style="grid-template-columns:1fr 1fr;margin:4px 0 6px">
@@ -11722,7 +11737,9 @@ function scrSummary(){
     add($(`<div class="scout" style="border-color:#b98a2a;text-align:left;margin:8px auto;max-width:520px">
       <div style="font:800 11px/1 var(--body);letter-spacing:.2em;color:#ffd45e;text-transform:uppercase">${ic('coin')} No coins this season</div>
       <div class="small" style="color:#dbe7ee;margin-top:4px">You simmed this season to the end, so it earned no coins. Stay in the sim and play the rounds (and the Moments) next year to earn.</div></div>`));
+  __cur=seC;
   if(contractL.length) add($(contractsReportHTML(contractL, signing)));   // sponsor season report cards (both slots)
+  __cur=ovC;
   if(sbSignedIn() && S.freshAch&&S.freshAch.length){   // Tour Rep / achievements are a signed-in feature, never shown to guests
     const gained=S.freshAch.reduce((s,a)=>s+(a.pts||0),0);
     add(seasonRepNode(achPoints()-gained, S.freshAch));   // status bar on top → achievements reveal one by one, rep climbs in sync
@@ -11736,10 +11753,12 @@ function scrSummary(){
   tilesB.appendChild(statTile("Top 10's",t.top10+''));
   tilesB.appendChild(statTile('Tour Rank',fedexRank+' / '+N));
   add(tilesB);
+  __cur=stC;
   // ---- Season Stats (CS214): real measured scoring + a full derived tour-stat profile ----
   { const seasonSk=Object.fromEntries(CATS.map(c=>[c.k, me[c.k]!=null?me[c.k]:REPLACEMENT]));
     add($(statSheetHTML(seasonSk, seasonRealStats(), {title:(S.circuitMode?'Legend Circuit · Season Stats':'Season Stats')}))); }
   { const sf=storyFeedHTML(); if(sf) add($(sf)); }   // CS225: Career Story feed + persona payoff
+  __cur=ovC;
   // WINS grouped with the Wins stat: the actual tournaments won this season sit right under the row
   // (owner: "wins are at top once and then tiny" - keep the count and the won-events together).
   { const wonThisSeason=[];
@@ -11765,6 +11784,7 @@ function scrSummary(){
       add(wrap);
     }
   }
+  __cur=seC;
   // CS267: Season Impact - a broadcast-style recap card whose numbers COUNT UP on first view
   // (world rank prev→now, tour points gained, season earnings, net). Tour Card status underneath.
   if(!S.daily && S.worldRankMove){
@@ -11832,6 +11852,7 @@ function scrSummary(){
   // with the change (e.g. red −1) beside it. Circuit seasons read their OWN skillSeasons
   // (tracked separately, see the circuit bookkeeping above), otherwise this froze at
   // the regular career's last entry (year 30) for the entire 12-season circuit.
+  __cur=stC;
   const ss=(!S.daily && (S.circuitMode ? (S.circuitCareer&&S.circuitCareer.skillSeasons) : (S.career&&S.career.skillSeasons)))||[];
   if(ss.length>=2 && pastPeak()){
     const cur=ss[ss.length-1].skills, prev=ss[ss.length-2].skills, py=ss[ss.length-2].year;
@@ -11846,6 +11867,7 @@ function scrSummary(){
     add(dt);
   }
 
+  __cur=ovC;
   // guest: nudge to sign up & post this season to the global board (with would-be rank if known)
   if(!sbSignedIn() && !S.daily){
     if(!lbCache['season:earnings']) lbLoad('season','earnings');
@@ -11863,13 +11885,11 @@ function scrSummary(){
     add(gb);
   }
 
-  // two columns: money list / career on the left, share + actions on the right
-  const cols=$(`<div class="cols"></div>`);
+  // CS356w: money list -> Season tab, career -> Career tab, share -> Overview, actions -> persistent
   const left=$(`<div class="col"></div>`), right=$(`<div class="col"></div>`);
-  cols.appendChild(left); cols.appendChild(right); add(cols);
 
   const hasCareer = !S.daily && S.career && S.career.seasons.length>1;
-  const tab = hasCareer ? (S.summaryTab||'season') : 'season';
+  const tab = hasCareer ? (S.moneyTab||'season') : 'season';
   // career standings (cumulative vs the persistent field)
   const careerList=Object.entries(S.career&&S.career.fieldMoney||{}).map(([n,money])=>({n,money})).sort((a,b)=>b.money-a.money);
   const cRank=careerList.findIndex(r=>r.n===me.name)+1;
@@ -11879,7 +11899,7 @@ function scrSummary(){
     const seg=$(`<div class="mini" style="margin:0;width:auto;flex:0 0 auto"></div>`);
     const t1=$(`<button class="btn ${tab==='season'?'gold':'ghost'}" style="font-size:11px;padding:6px 11px;width:auto">This Season</button>`);
     const t2=$(`<button class="btn ${tab==='career'?'gold':'ghost'}" style="font-size:11px;padding:6px 11px;width:auto">Career</button>`);
-    t1.onclick=()=>{S.summaryTab='season';render();}; t2.onclick=()=>{S.summaryTab='career';render();};
+    t1.onclick=()=>{S.moneyTab='season';render();}; t2.onclick=()=>{S.moneyTab='career';render();};
     seg.appendChild(t1); seg.appendChild(t2); head.appendChild(seg); left.appendChild(head);
   } else {
     left.appendChild($(`<h2 style="margin:2px 0 8px">Season earnings list</h2>`));
@@ -11909,7 +11929,7 @@ function scrSummary(){
   }
   if(!S.daily && S.career && S.career.seasons.length>1){
     const c=S.career, ccol=c.net>=0?'#35d6a0':'#E14A33';
-    left.appendChild($(`<h2 style="margin:16px 0 8px">Career · ${c.seasons.length} years (through Year ${S.year})</h2>`));
+    caC.appendChild($(`<h2 style="margin:16px 0 8px">Career · ${c.seasons.length} years (through Year ${S.year})</h2>`));
     const ct=$(`<div class="tiles"></div>`);
     ct.appendChild($(`<div class="tile"><div class="k">Net worth</div><div class="v" style="color:${ccol}">${fmtSigned(c.net)}</div></div>`));
     ct.appendChild(tile('Career earnings',fmt(c.money),true));
@@ -11919,20 +11939,20 @@ function scrSummary(){
     ct.appendChild(tile('Top 10s',c.top10+''));
     const bestS=(c.seasons||[]).reduce((m,s)=>(!m||s.money>m.money)?s:m,null);
     if(bestS) ct.appendChild($(`<div class="tile"><div class="k">Season high</div><div class="v cream" style="font-size:17px">${fmt(bestS.money)}</div><div class="small muted" style="font-size:10px;margin-top:2px">Year ${bestS.year}</div></div>`));
-    left.appendChild(ct);
+    caC.appendChild(ct);
     // ---- Career Stats (CS214): measured career scoring + career-average derived profile ----
-    { const cSk=careerAvgSkills(c); if(cSk) left.appendChild($(statSheetHTML(cSk, careerRealStats(c), {title:'Career Stats · '+c.seasons.length+' years'}))); }
-    { const tl=careerTimelineNode(c); if(tl) left.appendChild(tl); }   // CS265 career milestone timeline
+    { const cSk=careerAvgSkills(c); if(cSk) caC.appendChild($(statSheetHTML(cSk, careerRealStats(c), {title:'Career Stats · '+c.seasons.length+' years'}))); }
+    { const tl=careerTimelineNode(c); if(tl) caC.appendChild(tl); }   // CS265 career milestone timeline
     // Wins + seasons, grouped into dropdowns so a long career stays readable
     const wl=(c.winsList||[]);
     const majWins=wl.filter(w=>w.major).length;
-    left.appendChild($(`<h3 style="margin:16px 0 7px;font-size:14px;letter-spacing:.02em">Wins <span class="small muted" style="font-weight:600">· ${wl.length}${majWins?` · ${majWins} major${majWins>1?'s':''}`:''}</span></h3>`));
-    if(!wl.length) left.appendChild($(`<div class="scout small muted" style="margin-top:2px">No tournament wins yet, keep grinding.</div>`));
-    else if(majWins) left.appendChild($(careerMajorsHTML(c)));
-    left.appendChild($(`<h3 style="margin:16px 0 7px;font-size:14px;letter-spacing:.02em">Season by season <span class="small muted" style="font-weight:600">· ${c.seasons.length} yrs · tap a year for its wins</span></h3>`));
-    left.appendChild($(`<div>${careerSeasonsHTML(c)}</div>`));
+    caC.appendChild($(`<h3 style="margin:16px 0 7px;font-size:14px;letter-spacing:.02em">Wins <span class="small muted" style="font-weight:600">· ${wl.length}${majWins?` · ${majWins} major${majWins>1?'s':''}`:''}</span></h3>`));
+    if(!wl.length) caC.appendChild($(`<div class="scout small muted" style="margin-top:2px">No tournament wins yet, keep grinding.</div>`));
+    else if(majWins) caC.appendChild($(careerMajorsHTML(c)));
+    caC.appendChild($(`<h3 style="margin:16px 0 7px;font-size:14px;letter-spacing:.02em">Season by season <span class="small muted" style="font-weight:600">· ${c.seasons.length} yrs · tap a year for its wins</span></h3>`));
+    caC.appendChild($(`<div>${careerSeasonsHTML(c)}</div>`));
     // the career share CARD lives only on the end-of-career ceremony now, here we just point to it
-    left.appendChild($(`<div class="scout small muted" style="margin-top:12px;text-align:center">Your shareable career card unlocks when you finish your career.</div>`));
+    caC.appendChild($(`<div class="scout small muted" style="margin-top:12px;text-align:center">Your shareable career card unlocks when you finish your career.</div>`));
   }
 
   const wreath=t.wins>0?` 🏆×${t.wins}`:'';
@@ -11958,42 +11978,56 @@ function scrSummary(){
   dl.onclick=()=>{track('result_saved');cv.toBlob(b=>{if(!b)return;const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=((me.name||'golfer').replace(/\s+/g,'-'))+'-season.png';a.click();URL.revokeObjectURL(u);});};
   cp.onclick=()=>{track('result_copied');navigator.clipboard?.writeText(share); cp.textContent='Copied ✓'; setTimeout(()=>cp.textContent='Copy text',1400);};
   row.appendChild(dl); row.appendChild(cp); right.appendChild(row);
-  right.appendChild($(`<div class="sep" style="margin:16px 0"></div>`));
   let advanceLabel='';   // the primary "advance" action, mirrored in the floating scroll cue below
   if(S.daily){
     const again=$(`<button class="btn red" id="sum-advance">Build Another Golfer</button>`);
-    again.onclick=()=>{reset();render();}; right.appendChild(again);
+    again.onclick=()=>{reset();render();}; actC.appendChild(again);
     advanceLabel='Build Another Golfer';
   } else {
     const lastYear=S.circuitMode?circuitOver():((S.year||1)>=CAREER_MAX_YEARS);
     const declining=pastPeak();
     const circuitYear2=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):null;
-    right.appendChild($(`<div class="small center" style="margin:0 0 10px;color:#35d6a0;font-weight:700">✓ Progress auto-saved, your career is checkpointed at the home screen</div>`));
+    actC.appendChild($(`<div class="small center" style="margin:0 0 10px;color:#35d6a0;font-weight:700">✓ Progress auto-saved, your career is checkpointed at the home screen</div>`));
     advanceLabel=lastYear?(S.circuitMode?'Finish Legend Circuit':'Finish Career'):'Continue to Year '+((S.year||1)+1);
     const cont=$(`<button class="btn goldfill" id="sum-advance">${lastYear?(S.circuitMode?'Finish Legend Circuit ▸':'Finish Career ▸'):'Continue to Year '+((S.year||1)+1)+' ▸'}<span class="sub">${lastYear
       ? (S.circuitMode?('Year '+CIRCUIT_MAX_YEARS+' was your last, circuit ceremony'):('Year '+CAREER_MAX_YEARS+' was your last, career ceremony'))
       : (S.circuitMode?('Legend Circuit · year '+(circuitYear2+1)+' of '+CIRCUIT_MAX_YEARS+(declining?' · skills are declining (re-spin to repair)':'')+' · off-season, then a new season')
         :('Career Mode · year '+((S.year||1)+1)+' of '+CAREER_MAX_YEARS+(declining?' · skills are declining (re-spin to repair)':'')+' · off-season, then a new season'))}</span></button>`);
-    cont.onclick=continueFranchise; right.appendChild(cont);
+    cont.onclick=continueFranchise; actC.appendChild(cont);
     const save=$(`<button class="btn gold" style="margin-top:10px">Exit to Home<span class="sub">Already saved, come back and resume anytime</span></button>`);
     save.onclick=()=>{ saveCareer(summaryResumeExtra()); track('career_saved_exit',{year:S.year||1}); reset(); render(); };
-    right.appendChild(save);
+    actC.appendChild(save);
     const retire=$(`<button class="btn ghost" style="margin-top:10px">${S.circuitMode?'End Circuit Now':'Retire, End Career'}</button>`);
-    retire.onclick=()=>{ S.overlay='confirmRetire'; render(); }; right.appendChild(retire);
+    retire.onclick=()=>{ S.overlay='confirmRetire'; render(); }; actC.appendChild(retire);
     // right on the year-30 result page itself (not just the separate ceremony screen after "Finish
     // Career ▸"), finalizes the just-completed career exactly as "Finish Career" does, then drops
     // straight into the circuit's own off-season instead of lingering on the ceremony first.
     if(lastYear && !S.circuitMode && playerAge()>=CIRCUIT_MIN_AGE && sbSignedIn()){
       const joinCircuit=$(`<button class="btn teal" style="margin-top:10px">Join the Legend Circuit ▸<span class="sub">Face off against every retired legend on tour, at age ${playerAge()}</span></button>`);
-      joinCircuit.onclick=()=>{ endCareer('age'); startCircuit(); }; right.appendChild(joinCircuit);
+      joinCircuit.onclick=()=>{ endCareer('age'); startCircuit(); }; actC.appendChild(joinCircuit);
     }
     const fbLink=$(`<button type="button" style="display:block;width:100%;margin-top:16px;background:none;border:0;color:var(--muted);cursor:pointer;font-family:var(--body);font-size:13px">${ic('chat')} Found a bug or have an idea for the game? <span style="color:var(--gold);font-weight:800">Tell us ›</span></button>`);
     fbLink.onclick=()=>openFeedback();
-    right.appendChild(fbLink);
+    actC.appendChild(fbLink);
   }
   // the summary is long and the advance button sits at the very bottom - many players don't realize they
   // have to scroll to continue. Show a floating cue that points down to it, visible only while that button
   // is off-screen, and hiding once it scrolls into view.
+  seC.appendChild(left);
+  ovC.appendChild(right);
+  RT.appendChild(hdr);
+  if(S.daily){
+    [ovC,stC,seC,caC].forEach(c=>{ if(c.childNodes.length) RT.appendChild(c); });
+  } else {
+    const TABS=[['overview','Overview'],['stats','Stats'],['season','Season']];
+    if(hasCareer) TABS.push(['career','Career']);
+    let atab=S.summaryTab||'overview'; if(!TABS.some(t=>t[0]===atab)) atab='overview';
+    const bar=$(`<div class="sumtabs"></div>`);
+    TABS.forEach(([k,lbl])=>{ const bb=$(`<button class="sumtabbtn ${k===atab?'on':''}" type="button">${lbl}</button>`); bb.onclick=()=>{S.summaryTab=k;render();}; bar.appendChild(bb); });
+    RT.appendChild(bar);
+    RT.appendChild(({overview:ovC,stats:stC,season:seC,career:caC})[atab]||ovC);
+  }
+  RT.appendChild(actC);
   setupSummaryScrollCue(advanceLabel);
 }
 let _sumCueObs=null;
