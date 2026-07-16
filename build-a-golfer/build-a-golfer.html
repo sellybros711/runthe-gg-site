@@ -6395,19 +6395,19 @@ const PXG_CAP=[
 "............................................",
 "............................................",
 "............................................",
-"......................c.....................",
-"......................c.....................",
-".................ccccccccccc................",
-"...............ccccccccccccccc..............",
-"..............ccwwwwwcccccccccc.............",
-"..............ccccccccccccccccc.............",
-".............ccccccccccccccccccc............",
-".............ccccccccccccccccccc............",
-".............ccccccccccccccccccc............",
-".............ccccccccccccccccccc............",
-".............bbbbbbbbbbbbbbbbbbb............",
-"............bbbbbbbbbbbbbbbbbbbbb...........",
-"...............bbbbbbbbbbbbbbb..............",
+"............................................",
+".....................cc.....................",
+"..................cccccccc..................",
+".................cccccccccc.................",
+"................cccccccccccc................",
+"...............ccccwwwccccccc...............",
+"...............cccccccccccccc...............",
+"..............cccccccccccccccc..............",
+"..............bbccccccccccccbb..............",
+"..............bbccccccccccccbb..............",
+"...............bbbbbbbbbbbbbb...............",
+"................bbbbbbbbbbbb................",
+"............................................",
 "............................................",
 "............................................",
 "............................................",
@@ -6528,10 +6528,16 @@ function pxGolferURL(look){
   const px=7, cv=document.createElement('canvas'); cv.width=PXG_W*px; cv.height=PXG_H*px;
   const ctx=cv.getContext('2d');
   ctx.fillStyle='rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(22*px,54*px,12*px,2*px,0,0,7); ctx.fill();
-  const paint=map=>{ for(let y=0;y<map.length;y++){ const row=map[y];
+  const paint=(map,minY)=>{ for(let y=(minY||0);y<map.length;y++){ const row=map[y];
     for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue; const col=P[ch]; if(!col)continue;
       ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } } };
-  paint(PXG_BODY); paint(PXG_HAIR[style]); if(capOn) paint(hatStyle==='visor'?PXG_VISOR:PXG_CAP);
+  paint(PXG_BODY);
+  // CS356e: a full CAP covers the crown, so clip the hair to below the brim - only the fringe/sideburns
+  // "push out the bottom" of the hat (real-life), and NO hair pokes above/through it. Every hair style
+  // tucks under every cap this way. A VISOR has an open top, so hair shows full (the band sits at the brow).
+  const HAIR_UNDER_CAP=12;
+  paint(PXG_HAIR[style], (capOn && hatStyle!=='visor') ? HAIR_UNDER_CAP : 0);
+  if(capOn) paint(hatStyle==='visor'?PXG_VISOR:PXG_CAP);
   u=cv.toDataURL('image/png'); _pxURL.set(key,u); return u;
 }
 function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg" src="${pxGolferURL(look)}" alt="Your golfer"></div>`; }

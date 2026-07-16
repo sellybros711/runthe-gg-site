@@ -8569,6 +8569,18 @@ allows Google Fonts, or self-host Anton.*
        **ACTION: run `supabase/51_runtour_remove_earnings_cap.sql`** (optional commented truncate at the
        bottom clears the old clamped rows so the board repopulates cleanly).
     Tunable: `scrHero` styling (`.scrhero`). No earnings ceiling anymore (owner decision).
+  - **CS356e — pixel golfer: smaller cap + hair actually interacts with the hat (owner: "the hat is too
+    big, and it should impact the hair. The hair should be pushed out the bottom of the hat like real life.
+    All hair styles and all hats should interact with each other").** The avatar composited body → hair →
+    cap, but the cap didn't cover the crown fully and the hair blob poked out the top/sides above it. Two
+    fixes in `pxGolferURL`: (1) redrew `PXG_CAP` as a lower-profile golf cap that hugs the head (crown rows
+    5-12, small front brim rows 13-14) — smaller, no longer bulbous; (2) when a full CAP is worn, the hair
+    is now clipped to below the brim (`HAIR_UNDER_CAP=12`, `paint(map,minY)`), so only the fringe/sideburns
+    "push out the bottom" of the hat and NO hair shows above/through it — every hair style tucks under every
+    cap automatically. A VISOR (open top) is unchanged: hair shows full, the band sits at the brow. Verified
+    in Playwright across all 5 hair styles × cap/visor/none (15 combos): caps clip the hair to the fringe,
+    visors leave it on top, no-hat shows full hair, 0 page errors. Rendering-only (sprite grid +
+    composition); the swing sprites are separate and untouched. Tunable: `PXG_CAP` grid, `HAIR_UNDER_CAP`.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
