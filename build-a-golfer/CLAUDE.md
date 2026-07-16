@@ -8657,6 +8657,23 @@ allows Google Fonts, or self-host Anton.*
     Playwright (upgrade applies + clears the spin with no confirm; downgrade shows the confirm and only
     applies after Lock in); 0 page errors. Deployed to /golf.
 
+  - **CS356L — removed the pixel FONTS, kept all the pixel GRAPHICS** (owner: "we love the pixel look/graphics,
+    the only thing we don't like are the pixel fonts; push the graphic pixelization further but no pixel fonts").
+    CS356 had embedded Silkscreen (`--pixel`) and applied it to labels/eyebrows/chips/buttons/nav/card-titles/
+    hero/OVR numbers. This reverts the TYPOGRAPHY to the clean brand fonts while leaving every pixel-art asset
+    (golfer sprite, trophies, medals, hole view, patterns/accessories) untouched:
+    - `--pixel` token repointed from Silkscreen → the Barlow Semi Condensed body stack, so every label/chip/
+      button/eyebrow that referenced it renders in the clean condensed font (one-line fix covering all of them).
+    - Big titles set explicitly to the display font (Anton): `.hero`, `.gc-title` (mode cards), `.rc-name`
+      (resume card), `.scrhero .sh-t` (screen heroes) — sizes/weights retuned since Anton is condensed vs the
+      wide pixel font (hero back to 1em, gc-title 24→30px, scrhero clamp bumped, all weight 400). `.scrhero .sh-s`
+      → body. OVR/roll numbers (`.ovr .num,.rollval`) → mono.
+    - Removed the two embedded Silkscreen `@font-face` blocks (~40KB base64) so the pixel font is truly gone
+      (0 `Silkscreen` refs remain).
+    Verified in Playwright: 0 elements compute Silkscreen, hero + card titles compute Anton, off-season hero
+    renders without overflow, 0 page errors; screenshots confirm the title + off-season read clean/premium with
+    the pixel golfer graphic intact. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
