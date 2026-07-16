@@ -4469,17 +4469,21 @@ function accBoostTotal(){ const b=accBoost(); return Object.values(b).reduce((a,
 const FREE_COSMETICS={
   'sh:teal':1,'sh:navy':1,'sh:gold':1,'sh:white':1,'sh:purple':1,'sh:black':1,
   'ht:teal':1,'ht:navy':1,'ht:gold':1,'ht:white':1,'ht:purple':1,'ht:black':1,
-  'sp:none':1,'hp:none':1,'pt:stone':1,'so:white':1};
+  'sp:none':1,'hp:none':1,'pt:stone':1,'so:white':1,
+  'hw:none':1,'hw:cap':1,'hw:visor':1,'ew:none':1};   // CS356g: base hats + no-shades are free; bucket/flat/shades are shop unlocks
 const COS_CATS=[ {k:'shirt',pk:'sh',lookKey:'polo',name:'Shirt color'}, {k:'pat',pk:'sp',lookKey:'shirtPat',name:'Shirt pattern'},
-  {k:'hat',pk:'ht',lookKey:'hat',name:'Hat color'}, {k:'pants',pk:'pt',lookKey:'pants',name:'Trousers'}, {k:'shoes',pk:'so',lookKey:'shoes',name:'Shoe color'} ];
+  {k:'hat',pk:'ht',lookKey:'hat',name:'Hat color'}, {k:'pants',pk:'pt',lookKey:'pants',name:'Trousers'}, {k:'shoes',pk:'so',lookKey:'shoes',name:'Shoe color'},
+  {k:'hw',pk:'hw',lookKey:'hatStyle',name:'Headwear'}, {k:'ew',pk:'ew',lookKey:'eyewear',name:'Eyewear'} ];
 function cosPk(cat){ const c=COS_CATS.find(x=>x.k===cat); return c?c.pk:cat; }
 function cosKey(cat,id){ return cosPk(cat)+':'+id; }
 function cosmeticPrice(cat,id){
   if(cat==='shirt') return COSMETIC_SHIRTS.some(s=>s.id===id)?12000:4000;   // basic 4k, special/lore colors 12k
-  if(cat==='pat')   return id==='none'?0:10000;
+  if(cat==='pat')   return (typeof PXPAT_BY!=='undefined'&&PXPAT_BY[id])?PXPAT_BY[id].price:0;
   if(cat==='hat')   return 4000;
   if(cat==='pants') return 4000;
   if(cat==='shoes') return 4000;
+  if(cat==='hw')    return (id==='bucket'||id==='flat')?11000:0;   // cap/visor/none are free
+  if(cat==='ew')    return id==='shades'?10000:0;
   return 0;
 }
 function cosOwned(cat,id){ const k=cosKey(cat,id); return !!FREE_COSMETICS[k] || !!coinState().owned[k]; }
@@ -4494,9 +4498,11 @@ function cosBuy(cat,id){
 // the selectable items in a cosmetic category (id, display name, swatch color / pattern id)
 function cosmeticItems(cat){
   if(cat==='shirt'||cat==='hat') return allShirts().map(o=>({id:o.id,name:o.name||cosTitle(o.id),col:o.m}));
-  if(cat==='pat')   return PATTERNS.map(p=>({id:p.id,name:p.name,pat:p.id}));
+  if(cat==='pat')   return [{id:'none',name:'None',pat:'none'}].concat(PXPAT.map(p=>({id:p.id,name:p.name,pat:p.id,hist:p.hist})));
   if(cat==='pants') return PANTS.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
   if(cat==='shoes') return SHOES.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
+  if(cat==='hw')    return [{id:'none',name:'No Hat',hw:1},{id:'cap',name:'Ball Cap',hw:1},{id:'visor',name:'Visor',hw:1},{id:'bucket',name:'Bucket Hat',hw:1,hist:'Rainy-day links staple'},{id:'flat',name:'Flat Cap',hw:1,hist:'Early-1900s golf classic'}];
+  if(cat==='ew')    return [{id:'none',name:'None',ew:1},{id:'shades',name:'Shooter Shades',ew:1,hist:'Ice-cold Sunday stare'}];
   return [];
 }
 function cosTitle(id){ if(id==='grey') return 'Gray'; return String(id).charAt(0).toUpperCase()+String(id).slice(1); }
@@ -5586,8 +5592,8 @@ function resumeCareerCard(cs){
   else { yrLabel=`Year ${cs.year} of 30`; pct=Math.min(100,Math.max(7,(cs.year||1)/30*100)); }
   const card=$(`<button class="resumecard" aria-label="Resume ${circuit?'Legend Circuit':'Career Mode'}, ${who}, ${yrLabel}">
     <div class="rc-top">
-      <div style="min-width:0"><div class="rc-kick">Continue ${circuit?'Legend Circuit':'Career'}</div><div class="rc-name">${who}</div></div>
-      <div class="rc-ovr"><b>${cs.ovr}</b><span>OVR</span></div>
+      <div style="min-width:0"><div class="rc-kick">Resume ${circuit?'Legend Circuit':'Career'}</div><div class="rc-name">${who}</div></div>
+      <div style="display:flex;align-items:center;gap:9px;flex:0 0 auto">${pxAvatarChip(cs.look||S.look,36)}<div class="rc-ovr"><b>${cs.ovr}</b><span>OVR</span></div></div>
     </div>
     <div class="rc-prog">
       <div class="rc-prog-lb"><span>${yrLabel}</span><span class="rc-status">${status}</span></div>
@@ -5597,7 +5603,7 @@ function resumeCareerCard(cs){
       <span class="rc-stat"><b>${wins}</b><span>${wins===1?'win':'wins'}</span></span>
       <span class="rc-stat"><b>${majors}</b><span>${majors===1?'major':'majors'}</span></span>
       <span class="rc-stat"><b>${fmtShort(net)}</b><span>net worth</span></span>
-      <span class="rc-go">Continue ▸</span>
+      <span class="rc-go">Resume ▸</span>
     </div>
   </button>`);
   card.onclick=resumeCareer;
@@ -6508,18 +6514,209 @@ const PXG_VISOR=[
 "............................................",
 "............................................",
 "............................................"];
+const PXG_BUCKET=[
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+".................cccccccccc.................",
+"...............cccccccccccccc...............",
+"..............cccccccccccccccc..............",
+"..............ccccwwwwwccccccc..............",
+"..............cccccccccccccccc..............",
+"..............bbccccccccccccbb..............",
+".............bbccccccccccccccbb.............",
+"...........bbbbbbbbbbbbbbbbbbbbbb...........",
+"..........bbbbbbbbbbbbbbbbbbbbbbbb..........",
+"............bbbbbbbbbbbbbbbbbbbb............",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................"];
+const PXG_FLAT=[
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"................ccccccccccccc...............",
+"..............bbcccccccccccccc..............",
+".............bbccccccccccccccc..............",
+".............ccccccccccccccccc..............",
+".............bbbbbbbbbbbbbbbbb..............",
+"............bbbbbbbbbbbbb...................",
+".............bbbbbbbbbb.....................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................"];
+const PXG_SHADES=[
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"..............kkkkkkkkkkkkkkkkk.............",
+".............kkEEEEEkkEEEEEkkkk.............",
+"...............EEEEE..EEEEE.................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................",
+"............................................"];
+const PXG_HATS={ bucket:PXG_BUCKET, flat:PXG_FLAT };
+const PXG_EYEWEAR={ shades:PXG_SHADES };
 const PXG_FIX={ k:'#181019', l:'#cfd2d7', g:'#c99a2a', n:'#232733', G:'#2d323c', H:'#525a68', F:'#cfd3da' };   // outline · club-shaft · buckle · belt · driver head/crown/face
 function pxShade(hex,amt){ hex=(hex||'#888888').replace('#',''); if(hex.length<6) hex='888888';
   const f=v=>Math.max(0,Math.min(255,parseInt(v,16)+amt)).toString(16).padStart(2,'0');
   return '#'+f(hex.slice(0,2))+f(hex.slice(2,4))+f(hex.slice(4,6)); }
 const _pxURL=new Map();
+// CS356g: pixel SHIRT PATTERNS (overlay on the shirt pixels). f(x,y) -> 0 base / 1 accent / 2 accent2.
+// Historical-golf-inspired, no names. Prices in coins. Tonal accents derive from the shirt color so
+// every pattern works with any shirt.
+const _HND4=[[1,1,0,0],[1,1,2,0],[0,2,1,1],[0,0,1,1]];
+const PXPAT=[
+ {id:'pinstripe',  name:'Pinstripe',        price:9000,  hist:'Old clubhouse pinstripes', f:(x,y)=> (x%4===0)?1:0 },
+ {id:'stripe',     name:'Bold Stripe',      price:9000,  hist:'Blocky horizontal bands',  f:(x,y)=> (Math.floor(y/3)%2===0)?1:0 },
+ {id:'gingham',    name:'Gingham Check',    price:12000, hist:'Summer picnic gingham',    f:(x,y)=> { const a=(x%4<2),b=(y%4<2); return (a&&b)?2:((a||b)?1:0); } },
+ {id:'polka',      name:'Bold Dots',        price:12000, hist:'A loud, fearless look',    f:(x,y)=> ((x+(Math.floor(y/4)%2?2:0))%4===1 && y%4===1)?1:0 },
+ {id:'houndstooth',name:'Houndstooth',      price:15000, hist:'Timeless houndstooth',     f:(x,y)=> _HND4[y%4][x%4] },
+ {id:'tartan',     name:'Old Links Tartan', price:15000, hist:'Windswept links tartan',   f:(x,y)=> ((x%6<1||y%6<1)?2:((x%6<3&&y%6<3)?1:0)) },
+ {id:'argyle',     name:'Heritage Argyle',  price:18000, hist:'Knickers-era diamonds',    f:(x,y)=> { const d=Math.abs((x%8)-4)+Math.abs(((y+2)%8)-4); return d<=1?1:(d===2?2:0); } },
+ {id:'colorblock', name:'Retro Blocks',     price:14000, hist:'90s tour colorblock',      f:(x,y)=> (y<27)?0:1 },
+];
+const PXPAT_BY={}; PXPAT.forEach(p=>PXPAT_BY[p.id]=p);
+function pxLum(hex){ hex=(hex||'#888').replace('#',''); if(hex.length<6) return .5; return (parseInt(hex.slice(0,2),16)*.299+parseInt(hex.slice(2,4),16)*.587+parseInt(hex.slice(4,6),16)*.114)/255; }
 function pxGolferURL(look){
   look=look||S.look||DEFLOOK; const av=avLook(look);
   const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===(look.pants||'stone')))||{a:'#c7bfa8'}).a;
   const style=(look.hairStyle&&PXG_HAIR[look.hairStyle])?look.hairStyle:'short';
   const capOn=look.cap!==false;
-  const hatStyle=(look.hatStyle==='visor')?'visor':'cap';
-  const key=av.key+'|st'+style+'|cap'+(capOn?hatStyle:'0')+'|pn'+(look.pants||'stone');
+  const hatStyle=(look.hatStyle==='visor')?'visor':((look.hatStyle&&PXG_HATS[look.hatStyle])?look.hatStyle:'cap');
+  const pat=(look.shirtPat&&PXPAT_BY[look.shirtPat])?look.shirtPat:'';
+  const shades=(look.eyewear&&PXG_EYEWEAR[look.eyewear])?look.eyewear:'';
+  const key=av.key+'|st'+style+'|cap'+(capOn?hatStyle:'0')+'|pn'+(look.pants||'stone')+'|pt'+pat+'|ew'+shades;
   let u=_pxURL.get(key); if(u) return u;
   const P={ k:PXG_FIX.k, l:PXG_FIX.l, g:PXG_FIX.g, n:PXG_FIX.n, G:PXG_FIX.G, H:PXG_FIX.H, F:PXG_FIX.F,
     s:av.skinHex, h:av.hairHex, t:av.shirtHex, d:pxShade(av.shirtHex,-26), v:pxShade(av.shirtHex,34),
@@ -6527,7 +6724,7 @@ function pxGolferURL(look){
     j:pxShade(av.skinHex,-26), x:pxShade(av.skinHex,20),
     i:pxShade(av.hairHex,-26), Y:pxShade(av.hairHex,28),
     o:av.shoesHex, z:pxShade(av.shoesHex,-28), u:pxShade(av.shoesHex,14),
-    c:av.hatHex, b:pxShade(av.hatHex,-24), w:pxShade(av.hatHex,26) };
+    c:av.hatHex, b:pxShade(av.hatHex,-24), w:pxShade(av.hatHex,26), E:'#20242c' };   // E = sunglasses lens
   const px=7, cv=document.createElement('canvas'); cv.width=PXG_W*px; cv.height=PXG_H*px;
   const ctx=cv.getContext('2d');
   ctx.fillStyle='rgba(0,0,0,.22)'; ctx.beginPath(); ctx.ellipse(22*px,54*px,12*px,2*px,0,0,7); ctx.fill();
@@ -6535,12 +6732,23 @@ function pxGolferURL(look){
     for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue; const col=P[ch]; if(!col)continue;
       ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } } };
   paint(PXG_BODY);
+  // CS356g: SHIRT PATTERN overlay - recolor the shirt pixels (t/d/v) by the pattern function.
+  if(pat){ const pd=PXPAT_BY[pat], light=pxLum(av.shirtHex)>0.55;
+    const a1=pxShade(av.shirtHex, light?-52:46), a2=pxShade(av.shirtHex, light?-90:82);
+    for(let y=0;y<PXG_BODY.length;y++){ const row=PXG_BODY[y]; for(let x=0;x<row.length;x++){ const ch=row[x];
+      if(ch!=='t'&&ch!=='d'&&ch!=='v')continue; const a=pd.f(x,y); if(!a)continue;
+      // keep the body's own shading feel: shade/highlight cells get a stronger/weaker accent
+      let col=(a===2)?a2:a1; if(ch==='d') col=pxShade(col,-16); else if(ch==='v') col=pxShade(col,14);
+      ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } } }
   // CS356e: a full CAP covers the crown, so clip the hair to below the brim - only the fringe/sideburns
-  // "push out the bottom" of the hat (real-life), and NO hair pokes above/through it. Every hair style
-  // tucks under every cap this way. A VISOR has an open top, so hair shows full (the band sits at the brow).
+  // "push out the bottom" of the hat (real-life), and NO hair pokes above/through it. Every full-crown hat
+  // clips the hair; a VISOR has an open top, so hair shows full (the band sits at the brow).
   const HAIR_UNDER_CAP=12;
-  paint(PXG_HAIR[style], (capOn && hatStyle!=='visor') ? HAIR_UNDER_CAP : 0);
-  if(capOn) paint(hatStyle==='visor'?PXG_VISOR:PXG_CAP);
+  const openTop=(hatStyle==='visor');
+  paint(PXG_HAIR[style], (capOn && !openTop) ? HAIR_UNDER_CAP : 0);
+  if(capOn) paint(hatStyle==='visor'?PXG_VISOR:(PXG_HATS[hatStyle]||PXG_CAP));
+  // CS356g: EYEWEAR (sunglasses) over the eyes, on top of everything.
+  if(shades) paint(PXG_EYEWEAR[shades]);
   u=cv.toDataURL('image/png'); _pxURL.set(key,u); return u;
 }
 function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg" src="${pxGolferURL(look)}" alt="Your golfer"></div>`; }
@@ -6618,7 +6826,9 @@ function hvSwingMarkup(g,p,look){
   return `<g class="hvswing hvsw-${kind}"${tf}>${imgs}</g>${badge}`;
 }
 // in the Pro Shop, preview pending COLOR purchases live (worn gear is dropped, so only colors preview)
-function pxCurLook(){ return (S.overlay==='shop' && typeof shopEffLook==='function')?shopEffLook():S.look; }
+// true in the Pro Shop overlay AND the customization (setup) screen, which share the tile/preview UI
+function inShopCtx(){ return S.overlay==='shop' || S.screen==='setup'; }
+function pxCurLook(){ return (inShopCtx() && typeof shopEffLook==='function')?shopEffLook():S.look; }
 function avatarHTML(){ return pxAvatarHTML(pxCurLook()); }
 
 /* ===== CS186 - full-body dressable avatar (signed-in): recolored base + equipped accessory layers ===== */
@@ -15380,12 +15590,27 @@ function shopCard(it){ const r=ACC_RARITY[it.rarity]||ACC_RARITY.common, owned=a
     ${action}</div>`;
 }
 // equip a purchased cosmetic (set the look key; a hat color also turns the cap on)
-function cosEquip(cat,id){ if(!S.look) return; const c=COS_CATS.find(x=>x.k===cat); if(!c) return; S.look[c.lookKey]=id; if(cat==='hat') S.look.cap=true; saveLook(); }
+function cosEquip(cat,id){ if(!S.look) return; const c=COS_CATS.find(x=>x.k===cat); if(!c) return;
+  if(cat==='hw'){ if(id==='none'){ S.look.cap=false; } else { S.look.cap=true; S.look.hatStyle=id; } saveLook(); return; }   // CS356g headwear = hat shape
+  if(cat==='ew'){ S.look.eyewear=(id==='none'?'':id); saveLook(); return; }
+  S.look[c.lookKey]=id; if(cat==='hat') S.look.cap=true; saveLook(); }
+// CS356g: is a headwear/eyewear/pattern id the currently-equipped one? (special because hw drives cap+hatStyle)
+function cosIsEquipped(cat,id){
+  if(cat==='hw') return S.look.cap===false ? id==='none' : ((S.look.hatStyle||'cap')===id);
+  if(cat==='ew') return (S.look.eyewear||'none')===id;
+  if(cat==='pat') return (S.look.shirtPat||'none')===id;
+  if(cat==='hat') return (S.look.hat||S.look.polo)===id;
+  const c=COS_CATS.find(x=>x.k===cat); return c?S.look[c.lookKey]===id:false;
+}
 // ---- Pro Shop purchase preview + confirm: tapping a locked item PREVIEWS it (no coins spent) until you confirm ----
 // the look the full-body avatar paints with - merged with a pending COSMETIC preview while shopping (gear
 // preview is injected inside paintAvatarFull). Returns S.look untouched everywhere else.
-function shopEffLook(){ const p=S.shopPreview; if(!p || S.overlay!=='shop' || p.kind!=='cos' || !S.look) return S.look;
-  const L=Object.assign({},S.look), c=COS_CATS.find(x=>x.k===p.cat); if(c){ L[c.lookKey]=p.id; if(p.cat==='hat') L.cap=true; } return L; }
+function shopEffLook(){ const p=S.shopPreview; if(!p || !inShopCtx() || p.kind!=='cos' || !S.look) return S.look;
+  const L=Object.assign({},S.look);
+  if(p.cat==='hw'){ if(p.id==='none') L.cap=false; else { L.cap=true; L.hatStyle=p.id; } }
+  else if(p.cat==='ew'){ L.eyewear=(p.id==='none'?'':p.id); }
+  else { const c=COS_CATS.find(x=>x.k===p.cat); if(c){ L[c.lookKey]=p.id; if(p.cat==='hat') L.cap=true; } }
+  return L; }
 function shopConfirmBuy(){ const p=S.shopPreview; if(!p) return; let r;
   if(p.kind==='cos'){ r=cosBuy(p.cat,p.id); if(r&&r.ok) cosEquip(p.cat,p.id); }
   else { r=accBuy(p.id); }   // accBuy auto-equips
@@ -15440,14 +15665,26 @@ function shopTile(o){
     +(o.sub?`<span class="sfoot" style="color:#8fe0c4;font-size:9.5px">${o.sub}</span>`:'')
     +foot+`</button>`;
 }
+// CS356g: crop a pixel-golfer data-URL to a band (24 sprite rows, starting at startRow) filling a box.
+function pxCropImg(url,startRow,box){ box=box||48; const scale=box/24;
+  const w=Math.round(PXG_W*scale), h=Math.round(PXG_H*scale);
+  const mt=Math.round(-startRow*scale), ml=Math.round(-(w-box)/2);
+  return `<img src="${url}" alt="" style="width:${w}px;height:${h}px;margin-top:${mt}px;margin-left:${ml}px;image-rendering:pixelated">`;
+}
+// CS356g: a pixel-golfer thumbnail wearing a pattern / headwear / eyewear item (previews on YOUR look).
+function pxCosThumb(cat,id){ const base=Object.assign({},S.look||DEFLOOK);
+  if(cat==='pat') base.shirtPat=(id==='none'?'':id);
+  else if(cat==='hw'){ if(id==='none') base.cap=false; else { base.cap=true; base.hatStyle=id; } }
+  else if(cat==='ew') base.eyewear=(id==='none'?'':id);
+  const url=pxGolferURL(base), start=(cat==='pat')?20:3;   // pat → torso band, hw/ew → head band
+  return `<span class="sthumb px" style="overflow:hidden;background:#0c1f16;padding:0">${pxCropImg(url,start,48)}</span>`;
+}
 function cosTileHTML(cat,o){
-  const c=COS_CATS.find(x=>x.k===cat), owned=cosOwned(cat,o.id), price=cosmeticPrice(cat,o.id);
-  const equipped = cat==='hat' ? ((S.look.hat||S.look.polo)===o.id)
-                 : cat==='pat' ? ((S.look.shirtPat||'none')===o.id)
-                 : (S.look[c.lookKey]===o.id);
-  const thumb = (o.pat!==undefined)
-     ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
-     : `<span class="sthumb color" style="background:${o.col}"></span>`;
+  const owned=cosOwned(cat,o.id), price=cosmeticPrice(cat,o.id), equipped=cosIsEquipped(cat,o.id);
+  const thumb = (cat==='pat'||cat==='hw'||cat==='ew') ? pxCosThumb(cat,o.id)
+     : (o.pat!==undefined
+        ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
+        : `<span class="sthumb color" style="background:${o.col}"></span>`);
   const state = equipped?'eq':(owned?'own':'lock');
   return shopTile({thumb,name:o.name,state,price,afford:coinBalance()>=price,
     data:`data-tile data-kind="cos" data-cat="${cat}" data-id="${esc(o.id)}"`});
@@ -15466,9 +15703,8 @@ function accTileHTML(it){
 function shopTileClick(b){
   const kind=b.getAttribute('data-kind'); if(!kind) return;
   if(kind==='cos'){ const cat=b.getAttribute('data-cat'), id=b.getAttribute('data-id');
-    if(cosOwned(cat,id)){ const c=COS_CATS.find(x=>x.k===cat);
-      const equipped = cat==='hat'?((S.look.hat||S.look.polo)===id):cat==='pat'?((S.look.shirtPat||'none')===id):(S.look[c.lookKey]===id);
-      if(equipped){ if(cat==='pat'&&id!=='none'){ S.look.shirtPat='none'; saveLook(); } }   // tap an equipped pattern to remove it
+    if(cosOwned(cat,id)){
+      if(cosIsEquipped(cat,id)){ if(cat==='pat'&&id!=='none'){ S.look.shirtPat='none'; saveLook(); } }   // tap an equipped pattern to remove it
       else cosEquip(cat,id);
     } else {   // LOCKED → preview it on the golfer + confirm before spending coins (no instant buy)
       const it=(cosmeticItems(cat)||[]).find(o=>o.id===id);
@@ -15498,11 +15734,12 @@ function overlayShop(screen){
     const si=ov.querySelector('#shop-in'); if(si) si.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
     screen.appendChild(ov); return;
   }
-  // CS353: the golfer is a pixel sprite now — only COLOR cosmetics render, so the shop sells colors only.
-  // Patterns + worn accessory gear are dropped (they don't translate to pixel art).
-  const sec = (S.shopSec==='owned')?'owned':'apparel';
-  const APP=[['shirt','Shirt'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes']];
-  const cats = sec==='apparel'?APP : null;
+  // CS356g: the pixel golfer renders shirt/hat/pants/shoe COLORS, shirt PATTERNS, and headwear/eyewear
+  // ACCESSORIES - so the shop sells all of those (Apparel = colors + pattern, Accessories = headwear/eyewear).
+  let sec=S.shopSec; if(sec!=='accessories'&&sec!=='owned') sec='apparel';
+  const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes']];
+  const ACCS=[['hw','Headwear'],['ew','Eyewear']];
+  const cats = sec==='apparel'?APP : sec==='accessories'?ACCS : null;
   let cat=S.shopCat; if(cats && !cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.shopCat=cat;
   // sticky: bar (title+coins+close) → live preview → section segment → category chips
   const sticky=$(`<div class="shop-sticky">
@@ -15513,20 +15750,15 @@ function overlayShop(screen){
     <div class="shop-preview">${avatarFullHTML()}</div>
     <div class="segrow">
       <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel</button>
+      <button data-sec="accessories" class="${sec==='accessories'?'on':''}">Accessories</button>
       <button data-sec="owned" class="${sec==='owned'?'on':''}">My Items</button></div>
     ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-cat="${c[0]}">${esc(c[1])}</button>`).join('')}</div>`:''}
   </div>`);
   ov.appendChild(sticky);
   const grid=$(`<div class="sgrid"></div>`); const tiles=[];
-  if(sec==='apparel'){ cosmeticItems(cat).forEach(o=>tiles.push(cosTileHTML(cat,o))); }
-  else if(sec==='gear'){
-    let list=ACCESSORIES.filter(it=>it.slot===cat);
-    MILESTONE_ITEMS.forEach(mi=>{ if(mi.slot===cat && accOwned(mi.id)) list.push(mi); });
-    list.sort((a,b)=>{ const ea=accEquipped(a.slot)===a.id?0:1, eb=accEquipped(b.slot)===b.id?0:1; if(ea!==eb)return ea-eb;
-      const oa=accOwned(a.id)?0:1, ob=accOwned(b.id)?0:1; if(oa!==ob)return oa-ob; return accPrice(a)-accPrice(b); });
-    list.forEach(it=>tiles.push(accTileHTML(it)));
-  } else {  // My Items: purchased COLOR cosmetics (non-free). Worn gear is no longer shown (pixel golfer).
-    COS_CATS.forEach(c=>{ if(c.k==='pat') return; cosmeticItems(c.k).forEach(o=>{ if(cosOwned(c.k,o.id)&&!FREE_COSMETICS[cosKey(c.k,o.id)]) tiles.push(cosTileHTML(c.k,o)); }); });
+  if(sec==='apparel'||sec==='accessories'){ cosmeticItems(cat).forEach(o=>tiles.push(cosTileHTML(cat,o))); }
+  else {  // My Items: everything you've unlocked (colors, patterns, headwear, eyewear) beyond the free basics
+    COS_CATS.forEach(c=>{ cosmeticItems(c.k).forEach(o=>{ if(cosOwned(c.k,o.id)&&!FREE_COSMETICS[cosKey(c.k,o.id)]) tiles.push(cosTileHTML(c.k,o)); }); });
   }
   // PREVIEW + CONFIRM: a locked item you tapped is being previewed on the golfer (above) - show the
   // confirmation card instead of the grid so nothing is bought on a single tap.
@@ -15553,9 +15785,9 @@ function overlayShop(screen){
     screen.appendChild(ov); return;
   }
   grid.innerHTML = tiles.length?tiles.join('')
-    : `<div class="shop-empty">${sec==='owned'?'You haven’t bought anything yet, browse Apparel & Equipment to kit out your golfer.':'Nothing here yet.'}</div>`;
+    : `<div class="shop-empty">${sec==='owned'?'You haven’t unlocked anything yet, browse Apparel & Accessories to kit out your golfer.':'Nothing here yet.'}</div>`;
   ov.appendChild(grid);
-  ov.appendChild($(`<div class="small muted center" style="margin-top:14px">Tap an item to preview it, then confirm to buy. Gear boosts help in Career & Daily.</div>`));
+  ov.appendChild($(`<div class="small muted center" style="margin-top:14px">Tap an item to preview it on your golfer, then confirm to buy.</div>`));
   ov.appendChild($(`<button class="btn red" style="margin-top:10px">Done</button>`));
   sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
   sticky.querySelectorAll('[data-cat]').forEach(x=>x.onclick=()=>{ S.shopCat=x.getAttribute('data-cat'); render(); });

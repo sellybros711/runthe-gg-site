@@ -8589,6 +8589,28 @@ allows Google Fonts, or self-host Anton.*
     Verified in Playwright (chip renders, old svg gone, 0 errors). The guest default look is `DEFLOOK`
     (tan skin, brown short hair, white polo + white cap, stone trousers, white shoes, male, right-handed,
     USA); guests may customize skin/hair/hair-style (persisted in `bag_look`), so the chip reflects it.
+  - **CS356g — resume-card golfer, "Resume Career" rename, and patterns + accessories back in the Pro Shop
+    (pixelized) (owner: "put the pixelized golfer to the left of the overall in the resume career button;
+    rename continue career to resume career; bring back accessories, patterned shirts, and more in the pro
+    shop, with the new pixelized theme; use historical references without names").** Three parts:
+    1. **Resume card golfer + rename** (`resumeCareerCard`): the mini pixel golfer chip (`pxAvatarChip(cs.look,36)`)
+       now sits to the left of the OVR badge; the kicker + go label read "Resume Career/Legend Circuit" / "Resume ▸"
+       (was "Continue"). The `.rc-name` is the pixel font (CS356b).
+    2. **Pixel PATTERNS + ACCESSORIES** rendered by the sprite. New `PXPAT` (8 shirt patterns, char-grid overlay
+       functions f(x,y)→0/1/2, historical-golf-themed no names: Pinstripe/Bold Stripe/Gingham/Bold Dots/
+       Houndstooth/Old Links Tartan/Heritage Argyle/Retro Blocks, 9k-18k coins) overlaid on the shirt pixels in
+       `pxGolferURL` (tonal accents derived from the shirt color so any color works); new `PXG_BUCKET`/`PXG_FLAT`
+       headwear (`PXG_HATS`) + `PXG_SHADES` eyewear (`PXG_EYEWEAR`), painted last. Cache key includes pat/ew.
+    3. **Shop wiring** (all in the existing coin economy — `cosmeticPrice`/`cosmeticItems`/`cosBuy`/`cosEquip`,
+       new `cosIsEquipped` handling hw/ew/pat/hat, new `COS_CATS` entries `hw`/`ew`, `FREE_COSMETICS` gives the
+       base cap/visor/no-hat/no-shades free — bucket/flat 11k, shades 10k): `overlayShop` now has **Apparel**
+       (Shirt/Pattern/Hat/Trousers/Shoes) + **Accessories** (Headwear/Eyewear) sections; tiles for pat/hw/ew use
+       a real cropped pixel-golfer thumbnail (`pxCosThumb`/`pxCropImg` — pat→torso band, hw/ew→head band) so you
+       see the item on the golfer; `shopEffLook`/`pxCurLook` (now via a shared `inShopCtx()`) preview hw/ew/pat
+       live; buy = preview-on-golfer → confirm; "My Items" lists every non-free unlock incl. patterns/headwear/
+       eyewear. Verified in Playwright: Pattern category + 9 pattern tiles w/ pixel thumbs, Accessories tab shows
+       Headwear/Eyewear tiles, buying a pattern/bucket-hat deducts coins + equips (look.shirtPat / cap+hatStyle),
+       My Items updates; 0 page errors. Deployed to /golf.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
