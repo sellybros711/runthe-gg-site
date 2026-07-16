@@ -8611,6 +8611,29 @@ allows Google Fonts, or self-host Anton.*
        eyewear. Verified in Playwright: Pattern category + 9 pattern tiles w/ pixel thumbs, Accessories tab shows
        Headwear/Eyewear tiles, buying a pattern/bucket-hat deducts coins + equips (look.shirtPat / cap+hatStyle),
        My Items updates; 0 page errors. Deployed to /golf.
+  - **CS356h — the Create-your-golfer screen now uses the Pro Shop's tab layout (owner: "I love the tab
+    layout and functionality of the pro shop, implement it into the player customization screen so it's
+    smoother and everything feels similar").** Rebuilt `scrSetup` to mirror the shop: a big pixel-golfer
+    preview at top, section tabs + category chips, and a tap-to-equip / preview-then-buy tile grid (reusing
+    the shop's `.shop-sticky`/`.segrow`/`.catrow`/`.sgrid` CSS + `shopTile`/`cosTileHTML`/`shopTileClick`).
+    - Signed-in tabs: **Look** (Skin / Hair color / Hair style / Handedness - free appearance tiles via
+      `setupLookTiles`, hair-style tiles show a pixel-golfer head preview), **Apparel** (Shirt / Pattern /
+      Hat / Trousers / Shoes), **Accessories** (Headwear / Eyewear), **Details** (Name + Country form).
+      Guests get only the **Look** tab + the sign-in lock card (appearance is free; Apparel/Accessories/
+      Details need an account).
+    - Apparel/Accessories tiles are the exact shop tiles: owned → tap to equip, locked → preview on the
+      golfer + confirm-to-buy (extracted the confirm card into a reusable `shopPreviewNode()` used by both
+      the shop and setup). The live preview reflects a pending purchase because `pxCurLook`/`shopEffLook`
+      now key off a shared `inShopCtx()` (overlay==='shop' || screen==='setup'). `shopTile` gained a
+      `noFoot` flag so appearance tiles show just the gold ring + ✓ (no owned/price label).
+    - Kept: the Back/Build + Back/Done(edit-mode) sticky action bar, edit-from-Trophy-Room mode, career-only
+      entry (the Daily "Draft your golfer" still skips setup → draft). The setup preview is non-sticky within
+      its bordered box (`.setup-shop` overrides) for a clean, low-risk v1. Old flat rows
+      (`swatchRow`/`cosColorRow`/`cosPatRow`/`headwearRow`/`accSelectRow`) are now unused (left in place).
+    - Verified in Playwright: signed-in 4 tabs + Look cats + 8 skin tiles + preview; picking a skin selects
+      it; Apparel→Pattern buy (houndstooth) → owned+equipped; Accessories→Headwear buy (bucket) → cap on +
+      hatStyle; Details shows name+country no grid; guest gets only Look + lock card and can still change
+      skin/hair; Build routes to draft; shop regression still green; 0 page errors. Deployed to /golf.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
