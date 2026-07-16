@@ -8787,6 +8787,18 @@ allows Google Fonts, or self-host Anton.*
     correctly - a right-handed golfer uses the base sprite, a left-handed golfer is mirrored via
     `scale(-1,1)` in `hvSwingMarkup`, driven by `look.lefty`; verified in the live hole view.)
 
+  - **CS356aj — the hole-view golfer now faces toward the hole/target (owner: "faces away from the hole").**
+    CS355d had fixed the golfer's facing to HANDEDNESS only (righty always faces right, lefty mirrors),
+    which meant on a shot whose target is to the LEFT the golfer addressed the ball facing AWAY from where
+    it was going. Owner chose (AskUserQuestion) "always face the target, accepting it may look opposite-
+    handed on shots that go the other way." `hvSwingMarkup` now computes `faceRight` from the shot's
+    direction: it projects the shot's resting/target point (`p.rest`) vs its origin (`A`) and faces the
+    golfer toward it (`dx>0`→right); handedness (`look.lefty`) only breaks the tie on a dead-straight shot
+    (|dx|<3). The existing club-alignment/positioning already follows `faceRight`, so the golfer stands
+    behind the ball facing the target with the club reaching to it. Verified in Playwright: a rightward
+    shot isn't mirrored (faces right), a leftward shot is mirrored (faces left), a straight shot defaults to
+    handedness; 0 page errors. Supersedes CS355d's handedness-fixed facing. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
