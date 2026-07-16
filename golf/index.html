@@ -585,19 +585,23 @@ window.GA_ID='G-L29P5MRWKE';
   .osactions .btn{margin:0}
   /* CS338: draft unified-grid tiles - filled pick / open draftable / open placeholder */
   .osgrid .attr{min-height:47px}   /* CS340: uniform row height so 2-line filled tiles align with 1-line ones */
-  /* CS356j: LOCKED-IN picks look clearly done + non-clickable (muted grey + ✓), DRAFTABLE tiles are gold + tappable */
-  .attr.dfilled{background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.1); box-shadow:none; cursor:default; opacity:.92}
+  /* CS356u: two-color state system - GREY = locked in (✓), GOLD = still choosable (+). No "TAKE" word. */
+  .attr.dfilled{background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.1); box-shadow:none; cursor:default; opacity:.9}
   .attr.dfilled .val{color:#8aa89b; flex:0 0 auto; font-size:15px}
   /* CS340: golfer name on its OWN line under the skill so the full name fits */
   .attr.dfilled .dcol{display:flex; flex-direction:column; min-width:0; flex:1; gap:1px}
   .attr.dfilled .dcol .lab{flex:none; font-size:11.5px; color:#aebcb4}
   .attr.dfilled .dwho{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10.5px; color:var(--muted); line-height:1.15}
-  .attr.dfilled .dlock{flex:0 0 auto; margin-left:3px; width:19px; height:19px; border-radius:50%; background:#41dea6; color:#04211c;
+  .attr.dfilled .dlock{flex:0 0 auto; margin-left:3px; width:19px; height:19px; border-radius:50%; background:rgba(255,255,255,.16); color:#cdd8d1;
     font:900 12px/1 var(--body); display:inline-flex; align-items:center; justify-content:center}
   .attr.dempty{opacity:.4; border-style:dashed} .attr.dempty .val{color:var(--muted)}
-  .attr.dtake{border-color:rgba(241,208,74,.5); background:linear-gradient(180deg,rgba(241,208,74,.11),rgba(241,208,74,.02))}
-  .attr.dtake .lab{flex:1; color:#f3ead1}
-  .attr.dtake .val{font-size:15px}
+  .attr.dtake{border-color:rgba(241,208,74,.65); background:linear-gradient(180deg,rgba(241,208,74,.15),rgba(241,208,74,.03))}
+  .attr.dtake .lab{flex:1; color:#f6ecd0}
+  .attr.dtake .val{font-size:15px; color:var(--gold)}
+  .attr.dtake .attrbar>i{background:var(--gold)!important}
+  /* gold "+" badge on a choosable tile - visually parallel to the green ✓ on a locked-in tile */
+  .attr .dadd{flex:0 0 auto; margin-left:3px; width:20px; height:20px; border-radius:50%; background:var(--gold); color:#20160a;
+    font:900 16px/1 var(--body); display:inline-flex; align-items:center; justify-content:center}
   /* CS339: dynamic animated rating web */
   .dynradar{max-width:250px; margin:0 auto 6px; position:relative}
   .dr-svg{width:100%; height:auto; display:block; overflow:visible; filter:drop-shadow(0 6px 16px rgba(0,0,0,.4))}
@@ -7553,7 +7557,7 @@ function scrDraft(){
     if(spun){
       const rv=S.current[cat.k], rc=rv>=90?'#d8ad4a':rv>=80?'#49b675':rv>=70?'#7ec8ff':'#9fb0bd', key=dailyKeys&&dailyKeys.has(cat.k);
       const b=$(`<button class="attr dtake${key?' keyhole':''}" aria-label="Draft ${cat.short}, rated ${rv}${key?', a key skill for today\'s course':''}">
-        ${key?'<span class="keystar" aria-hidden="true">★</span>':''}<span class="lab">${cat.short}</span><span class="val" style="color:${rc}">${rv}</span><span class="take">Take</span><span class="attrbar"><i style="width:${Math.min(100,rv)}%;background:${rc}"></i></span></button>`);
+        ${key?'<span class="keystar" aria-hidden="true">★</span>':''}<span class="lab">${cat.short}</span><span class="val">${rv}</span><span class="dadd" aria-hidden="true">+</span><span class="attrbar"><i style="width:${Math.min(100,rv)}%"></i></span></button>`);
       b.onclick=()=>takeAttr(cat.k);
       grid.appendChild(b); return;
     }
@@ -17447,9 +17451,9 @@ function scrH2HDraft(){
       return;
     }
     if(spun){
-      const rv=S.h2h.current[cat.k], rc=rv>=90?'#d8ad4a':rv>=80?'#49b675':rv>=70?'#7ec8ff':'#9fb0bd';
+      const rv=S.h2h.current[cat.k];
       const b=$(`<button class="attr dtake" aria-label="Draft ${cat.short}, rated ${rv}">
-        <span class="lab">${cat.short}</span><span class="val" style="color:${rc}">${rv}</span><span class="take">Take</span><span class="attrbar"><i style="width:${Math.min(100,rv)}%;background:${rc}"></i></span></button>`);
+        <span class="lab">${cat.short}</span><span class="val">${rv}</span><span class="dadd" aria-hidden="true">+</span><span class="attrbar"><i style="width:${Math.min(100,rv)}%"></i></span></button>`);
       b.onclick=()=>h2hTake(cat.k);
       grid.appendChild(b); return;
     }
