@@ -13516,8 +13516,9 @@ function hvBackdrop(g, seedN, B, detailCam){
   return hvTerrain(g, seedN, B);
 }
 const HV_PX_DETAIL=340;   // detail-tile vertical pixel count → tuned so a zoomed course pixel ~= the golfer sprite pixel
-const hvDetailCam=(camTarget,live)=>{ if(!live||!camTarget||camTarget[2]>=HV_W*0.6) return null;   // only for the zoomed close-up
-  const m=0.1,c=camTarget; return [c[0]-c[2]*m, c[1]-c[3]*m, c[2]*(1+2*m), c[3]*(1+2*m)]; };
+const hvDetailCam=(camTarget,live)=>null;   // detail tile disabled: it shrank objects off-scale on zoom.
+  // Finer-pixels-on-zoom-while-keeping-object-scale needs a resolution-independent renderer (planned) —
+  // for now the single base tile keeps every object at a consistent scale.
 function pxTerrainURL(g, seedN, B, opts){
   opts=opts||{};
   const cam=opts.cam||HV_CAM, GW=opts.gw||210, GH=opts.gh||254;
@@ -14211,7 +14212,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
     if(r){r.style.strokeDasharray=(p.k==='pen')?'3 4':'none';r.style.strokeDashoffset='0';}
     if(sv) sv.setAttribute('viewBox', hvCamFor2(g,p).join(' '));   // reduced-motion users still get the right camera
     if(b){ const R=hvProj(g,p.rest[0],p.rest[1]); b.setAttribute('cx',R[0]);b.setAttribute('cy',R[1]);
-      const rr=p.hole?0:((p.k==='putt'||p.k==='hole')?HV_GBALL:(HV_GROUND*bScale())); b.setAttribute('r',(+rr).toFixed(2)); }
+      const rr=p.hole?0:((p.k==='putt'||p.k==='hole'||p.onGreen)?HV_GBALL:(HV_GROUND*bScale())); b.setAttribute('r',(+rr).toFixed(2)); }   // a ball resting ON the green (any shot) is the small green size, not the big ground ball
     if(sh) sh.setAttribute('opacity','0'); if(pf) pf.setAttribute('opacity','0'); _hvA.done=true; };
   if(reduce){ setFinal(); return; }
   const isFly=(p.k==='tee'||p.k==='app'||p.k==='adv'||p.k==='chip');
@@ -14270,7 +14271,7 @@ function hvKick(key, g, p, pPrev, reduce, opts){
         const t=(elF-flyMs)/groundMs, te=1-Math.pow(1-t,2.2);       // decelerating bounce + roll-out
         const x=B[0]+(R[0]-B[0])*te, y=B[1]+(R[1]-B[1])*te;
         const hop=(t<0.55)?Math.abs(Math.sin(t*3*Math.PI/0.55))*(0.16*(1-t/0.55)):0;
-        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',(y-hop*8).toFixed(1)); ball.setAttribute('r',((HV_GROUND+hop*2.4)*bScale()).toFixed(2));
+        ball.setAttribute('cx',x.toFixed(1)); ball.setAttribute('cy',(y-hop*8).toFixed(1)); ball.setAttribute('r',(p.onGreen?(HV_GBALL+hop*1.6):((HV_GROUND+hop*2.4)*bScale())).toFixed(2));   // shrink to the green ball as it rolls onto the surface
         if(sh) sh.setAttribute('opacity',(hop>0.02?0.2:0).toFixed(2)), sh.setAttribute('cx',(x+1.5).toFixed(1)), sh.setAttribute('cy',(y+1.5).toFixed(1));
         const pf=q('hv-puff'), pt=(elF-flyMs)/300;   // touchdown puff ring at the landing spot
         if(pf){ if(pt<=1){ pf.setAttribute('cx',B[0]);pf.setAttribute('cy',B[1]);pf.setAttribute('r',(2+pt*7).toFixed(1));pf.setAttribute('opacity',(0.5*(1-pt)).toFixed(2)); } else pf.setAttribute('opacity','0'); }
