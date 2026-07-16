@@ -588,14 +588,19 @@ window.GA_ID='G-L29P5MRWKE';
   .osactions .btn{margin:0}
   /* CS338: draft unified-grid tiles - filled pick / open draftable / open placeholder */
   .osgrid .attr{min-height:47px}   /* CS340: uniform row height so 2-line filled tiles align with 1-line ones */
-  .attr.dfilled{background:rgba(53,214,160,.07); border-color:rgba(53,214,160,.2)}
-  .attr.dfilled .val{color:#41dea6; flex:0 0 auto}
+  /* CS356j: LOCKED-IN picks look clearly done + non-clickable (muted grey + ✓), DRAFTABLE tiles are gold + tappable */
+  .attr.dfilled{background:rgba(255,255,255,.035); border:1px solid rgba(255,255,255,.1); box-shadow:none; cursor:default; opacity:.92}
+  .attr.dfilled .val{color:#8aa89b; flex:0 0 auto; font-size:15px}
   /* CS340: golfer name on its OWN line under the skill so the full name fits */
   .attr.dfilled .dcol{display:flex; flex-direction:column; min-width:0; flex:1; gap:1px}
-  .attr.dfilled .dcol .lab{flex:none; font-size:11.5px}
+  .attr.dfilled .dcol .lab{flex:none; font-size:11.5px; color:#aebcb4}
   .attr.dfilled .dwho{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10.5px; color:var(--muted); line-height:1.15}
-  .attr.dempty{opacity:.5} .attr.dempty .val{color:var(--muted)}
-  .attr.dtake .lab{flex:1}
+  .attr.dfilled .dlock{flex:0 0 auto; margin-left:3px; width:19px; height:19px; border-radius:50%; background:#41dea6; color:#04211c;
+    font:900 12px/1 var(--body); display:inline-flex; align-items:center; justify-content:center}
+  .attr.dempty{opacity:.4; border-style:dashed} .attr.dempty .val{color:var(--muted)}
+  .attr.dtake{border-color:rgba(241,208,74,.5); background:linear-gradient(180deg,rgba(241,208,74,.11),rgba(241,208,74,.02))}
+  .attr.dtake .lab{flex:1; color:#f3ead1}
+  .attr.dtake .val{font-size:15px}
   /* CS339: dynamic animated rating web */
   .dynradar{max-width:250px; margin:0 auto 6px; position:relative}
   .dr-svg{width:100%; height:auto; display:block; overflow:visible; filter:drop-shadow(0 6px 16px rgba(0,0,0,.4))}
@@ -1001,14 +1006,15 @@ window.GA_ID='G-L29P5MRWKE';
   @media (prefers-reduced-motion:reduce){ .hvdesc{animation:none} }
   /* holed-result pill: floats CENTER on the tracer (its own layer) so it never collides with the
      always-present scoreboard - the leaderboard stays put; the result pops over the middle of the course */
-  .hvresult{top:44%;left:50%;transform:translate(-50%,-50%);text-align:center;white-space:nowrap;
-    background:rgba(8,17,26,.92);border:2.5px solid var(--gold);border-radius:15px;padding:11px 22px;
+  /* CS356j: the holed result pops at the TOP of the tracer (below the hole chip), not over the golfer in the middle */
+  .hvresult{top:42px;left:50%;transform:translateX(-50%);text-align:center;white-space:nowrap;
+    background:rgba(8,17,26,.92);border:2.5px solid var(--gold);border-radius:15px;padding:9px 20px;
     box-shadow:0 18px 40px -16px rgba(0,0,0,.95);animation:hvresPop .44s cubic-bezier(.2,1.3,.4,1)}
-  .hvresult .rn{font:900 22px/1 var(--body);letter-spacing:.03em}
-  .hvresult .rs{font:800 14px/1 var(--mono);opacity:.92;margin-left:8px}
+  .hvresult .rn{font:900 20px/1 var(--body);letter-spacing:.03em}
+  .hvresult .rs{font:800 13px/1 var(--mono);opacity:.92;margin-left:8px}
   .hvresult .rsub{font:800 11px/1.2 var(--body);letter-spacing:.04em;text-transform:uppercase;margin-top:6px}
-  /* keep the translate centering through the pop (a bare scale() keyframe would drop it) */
-  @keyframes hvresPop{0%{opacity:0;transform:translate(-50%,-50%) scale(.84)}60%{transform:translate(-50%,-50%) scale(1.04)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+  /* keep the horizontal centering through the pop (a bare scale() keyframe would drop it) */
+  @keyframes hvresPop{0%{opacity:0;transform:translateX(-50%) scale(.84)}60%{transform:translateX(-50%) scale(1.04)}100%{opacity:1;transform:translateX(-50%) scale(1)}}
   @media (prefers-reduced-motion:reduce){ .hvresult{animation:none} }
   /* decision MODAL: a real pop-up presenting the situation + 2 options over a dimmed course - never
      shifts the page underneath (owner: a real, exciting pop-up that draws attention) */
@@ -7534,8 +7540,8 @@ function scrDraft(){
   CATS.forEach(cat=>{
     const f=S.slots[cat.k];
     if(f){
-      grid.appendChild($(`<div class="attr static dfilled" aria-label="${cat.short} drafted from ${esc(f.golfer)}, rated ${f.value}">
-        <span class="dcol"><span class="lab">${cat.short}</span><span class="dwho">${esc(f.golfer)}</span></span><span class="val">${f.value}</span></div>`));
+      grid.appendChild($(`<div class="attr static dfilled" aria-label="${cat.short} locked in from ${esc(f.golfer)}, rated ${f.value}">
+        <span class="dcol"><span class="lab">${cat.short}</span><span class="dwho">${esc(f.golfer)}</span></span><span class="val">${f.value}</span><span class="dlock" aria-hidden="true">✓</span></div>`));
       return;
     }
     if(spun){
@@ -17414,8 +17420,8 @@ function scrH2HDraft(){
   CATS.forEach(cat=>{
     const f=S.h2h.slots[cat.k];
     if(f){
-      grid.appendChild($(`<div class="attr static dfilled" aria-label="${cat.short} drafted from ${esc(f.golfer)}, rated ${f.value}">
-        <span class="dcol"><span class="lab">${cat.short}</span><span class="dwho">${esc(f.golfer)}</span></span><span class="val">${f.value}</span></div>`));
+      grid.appendChild($(`<div class="attr static dfilled" aria-label="${cat.short} locked in from ${esc(f.golfer)}, rated ${f.value}">
+        <span class="dcol"><span class="lab">${cat.short}</span><span class="dwho">${esc(f.golfer)}</span></span><span class="val">${f.value}</span><span class="dlock" aria-hidden="true">✓</span></div>`));
       return;
     }
     if(spun){
