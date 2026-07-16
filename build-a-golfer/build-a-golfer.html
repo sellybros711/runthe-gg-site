@@ -5597,7 +5597,7 @@ function resumeCareerCard(cs){
   const card=$(`<button class="resumecard" aria-label="Resume ${circuit?'Legend Circuit':'Career Mode'}, ${who}, ${yrLabel}">
     <div class="rc-top">
       <div style="min-width:0"><div class="rc-kick">Resume ${circuit?'Legend Circuit':'Career'}</div><div class="rc-name">${who}</div></div>
-      <div style="display:flex;align-items:center;gap:9px;flex:0 0 auto">${pxAvatarChip(cs.look||S.look,36)}<div class="rc-ovr"><b>${cs.ovr}</b><span>OVR</span></div></div>
+      <div style="display:flex;align-items:center;gap:9px;flex:0 0 auto">${pxFigureHTML(cs.look||S.look,62)}<div class="rc-ovr"><b>${cs.ovr}</b><span>OVR</span></div></div>
     </div>
     <div class="rc-prog">
       <div class="rc-prog-lb"><span>${yrLabel}</span><span class="rc-status">${status}</span></div>
@@ -6794,6 +6794,8 @@ function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"
 // crops the 44x56 sprite to the head+shoulders band (rows ~4-26) and centers it in an sz x sz box.
 function pxAvatarChip(look,sz){ sz=sz||22; const pr=sz/22, w=Math.round(44*pr), mt=Math.round(-4*pr), ml=Math.round(-(w-sz)/2);
   return `<span class="pxchip" style="width:${sz}px;height:${sz}px" aria-hidden="true"><img src="${pxGolferURL(look||S.look||DEFLOOK)}" alt="" style="width:${w}px;margin-top:${mt}px;margin-left:${ml}px"></span>`; }
+// the FULL standing pixel golfer at a given height (not the head-crop chip) - for the resume card etc.
+function pxFigureHTML(look,h){ h=h||60; return `<img class="pxfigsm" src="${pxGolferURL(look||S.look||DEFLOOK)}" alt="Your golfer" style="height:${h}px;width:auto;image-rendering:pixelated;display:block;flex:0 0 auto">`; }
 /* CS355 (POC): side-view mini golfer swing for TourTracer - 3 frames (address/top/through),
    palette-swapped from the created look, mirror-flipped by shot direction. */
 const HV_SWING=true;          // POC flag - flip off to disable the swinging golfer everywhere
