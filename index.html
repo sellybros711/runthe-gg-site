@@ -395,6 +395,10 @@ window.GA_ID='G-L29P5MRWKE';
   .feat.soccer .art{background:radial-gradient(130% 120% at 92% -12%, rgba(53,196,205,.20), transparent 55%),
     linear-gradient(150deg,#123152 0%,#0e2740 48%,#0a1b2e 100%);}
   .feat-in{display:grid;gap:18px;align-items:center;}
+  /* no-screenshots state (temporary, while a game is being redesigned): info full width + a sport watermark */
+  .feat.noshots .feat-in{grid-template-columns:1fr;}
+  .feat.noshots .feat-info{max-width:620px;}
+  .feat.golf .sport-motif{right:-10px;bottom:-26px;width:min(42%,300px);opacity:.5;}
   @media (min-width:820px){
     .feat-in{grid-template-columns:322px 1fr;}
     .feat.soccer .feat-in{grid-template-columns:1fr 322px;}
@@ -474,16 +478,18 @@ window.GA_ID='G-L29P5MRWKE';
       <span class="note">Free · No sign-up</span>
     </div>
     <main class="games">
-      <article class="feat golf">
-        <span class="art"></span>
+      <article class="feat golf noshots">
+        <span class="art">
+          <svg class="sport-motif" viewBox="0 0 200 200" fill="none" aria-hidden="true">
+            <ellipse cx="116" cy="150" rx="82" ry="27" stroke="#EBA61F" stroke-width="2" opacity=".55"/>
+            <ellipse cx="116" cy="150" rx="52" ry="16.5" stroke="#EBA61F" stroke-width="1.5" opacity=".4"/>
+            <ellipse cx="102" cy="150" rx="7" ry="2.6" fill="#0a2418" stroke="#EBA61F" stroke-width="1.4"/>
+            <path d="M102 150 V50" stroke="#f0e0b8" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M102 52 L150 65 L102 78 Z" fill="#EBA61F"/>
+            <circle cx="146" cy="150" r="6" fill="#f4ecd9"/>
+          </svg>
+        </span>
         <div class="feat-in">
-          <a class="shots" href="/golf/" aria-label="Play RunTheTour">
-            <span class="phone"><img src="/assets/screens/golf-build.jpg" alt="Build your golfer's skills in RunTheTour" width="640" height="1387" loading="lazy" /></span>
-            <span class="phone"><img src="/assets/screens/golf-career.jpg" alt="Your 30-year golf career and live leaderboard" width="640" height="1387" loading="lazy" /></span>
-            <span class="phone"><img src="/assets/screens/golf-tracer.jpg" alt="TourTrace shot-by-shot round view" width="640" height="1387" loading="lazy" /></span>
-            <span class="phone"><img src="/assets/screens/golf-moment.jpg" alt="Playing the final round of a major championship" width="640" height="1387" loading="lazy" /></span>
-            <span class="phone"><img src="/assets/screens/golf-champion.jpg" alt="Winning a major championship in RunTheTour" width="640" height="1387" loading="lazy" /></span>
-          </a>
           <div class="feat-info">
             <span class="g-head">
               <span class="crest"><img src="/golf/icon-192.png" alt="RunTheTour crest" width="76" height="76" loading="lazy" /></span>
