@@ -925,26 +925,28 @@ window.GA_ID='G-L29P5MRWKE';
   /* one-window HUD: scoreboard / hole info / current-shot description float ON the tracer
      as translucent chips (Pixel-Pro-style), so the course view is the whole screen */
   .hvshell{position:relative}
-  /* CS355: swinging mini golfer - 3 frames cross-fade (address->top->through) then fade out. Impact ~34%. */
+  /* CS356n: swinging mini golfer - swings once then HOLDS the finish pose (no fade-out). Between shots the
+     hole view re-renders and the golfer simply teleports to the next spot, so it no longer fades in/out
+     over and over. Impact ~34%. */
   .hvsw{opacity:0}
-  .hvswing .sw0{animation:hvswA 1150ms steps(1,end) forwards}
-  .hvswing .sw1{animation:hvswB 1150ms steps(1,end) forwards}
-  .hvswing .sw2{animation:hvswC 1150ms ease-out forwards}
-  @keyframes hvswA{0%,9%{opacity:1}10%,100%{opacity:0}}
-  @keyframes hvswB{0%,10%{opacity:0}11%,33%{opacity:1}34%,100%{opacity:0}}
-  @keyframes hvswC{0%,33%{opacity:0}34%,78%{opacity:1}100%{opacity:0}}
-  /* CS355d: chip (2-frame) + putt (2-frame, hunched) strokes */
-  .hvsw-chip .ch0{animation:hvswC0 640ms steps(1,end) forwards}
-  .hvsw-chip .ch1{animation:hvswC1 640ms ease-out forwards}
-  .hvsw-putt .pt0{animation:hvswP0 560ms steps(1,end) forwards}
-  .hvsw-putt .pt1{animation:hvswP1 560ms ease-out forwards}
-  @keyframes hvswC0{0%,46%{opacity:1}47%,100%{opacity:0}}
-  @keyframes hvswC1{0%,46%{opacity:0}47%,82%{opacity:1}100%{opacity:0}}
-  @keyframes hvswP0{0%,48%{opacity:1}49%,100%{opacity:0}}
-  @keyframes hvswP1{0%,48%{opacity:0}49%,84%{opacity:1}100%{opacity:0}}
-  /* CS355c: the shot-number "pin" above the golfer's head (the golfer covers the resting marker) */
-  .hvswnum{opacity:0; animation:hvswNum 1150ms ease forwards}
-  @keyframes hvswNum{0%{opacity:0;transform:translateY(2px)}9%{opacity:1;transform:translateY(0)}84%{opacity:1}100%{opacity:0}}
+  .hvswing .sw0{animation:hvswA 1000ms steps(1,end) forwards}
+  .hvswing .sw1{animation:hvswB 1000ms steps(1,end) forwards}
+  .hvswing .sw2{animation:hvswC 1000ms steps(1,end) forwards}
+  @keyframes hvswA{0%,21%{opacity:1}22%,100%{opacity:0}}
+  @keyframes hvswB{0%,22%{opacity:0}23%,43%{opacity:1}44%,100%{opacity:0}}
+  @keyframes hvswC{0%,43%{opacity:0}44%,100%{opacity:1}}
+  /* CS355d: chip (2-frame) + putt (2-frame, hunched) strokes - hold the finish frame too */
+  .hvsw-chip .ch0{animation:hvswC0 600ms steps(1,end) forwards}
+  .hvsw-chip .ch1{animation:hvswC1 600ms steps(1,end) forwards}
+  .hvsw-putt .pt0{animation:hvswP0 520ms steps(1,end) forwards}
+  .hvsw-putt .pt1{animation:hvswP1 520ms steps(1,end) forwards}
+  @keyframes hvswC0{0%,50%{opacity:1}51%,100%{opacity:0}}
+  @keyframes hvswC1{0%,50%{opacity:0}51%,100%{opacity:1}}
+  @keyframes hvswP0{0%,50%{opacity:1}51%,100%{opacity:0}}
+  @keyframes hvswP1{0%,50%{opacity:0}51%,100%{opacity:1}}
+  /* CS355c: the shot-number "pin" above the golfer's head (the golfer covers the resting marker); held */
+  .hvswnum{opacity:0; animation:hvswNum 1000ms ease forwards}
+  @keyframes hvswNum{0%{opacity:0;transform:translateY(2px)}10%,100%{opacity:1;transform:translateY(0)}}
   @media (prefers-reduced-motion:reduce){ .hvswing,.hvswnum{display:none} }
   .hvob{position:absolute;z-index:2;pointer-events:none}
   .hvhole{top:8px;left:8px;background:rgba(8,17,26,.72);border:1px solid rgba(255,255,255,.16);border-radius:8px;
@@ -6860,7 +6862,10 @@ function hvSwingMarkup(g,p,look){
   // number as a GOLD "pin" floating above the golfer's head (gold = live shot vs teal past-shot markers).
   // Drawn OUTSIDE the mirror group so the digit is never flipped; sized to the golfer (small under a putt).
   let badge='';
-  if(p.i!=null){ const num=p.i+1, br=GH*0.185, fs=GH*0.223;
+  // CS356n: on the green (putt) the golfer is small but the number pin is made BIGGER + readable, sized to
+  // the close-up camera rather than the tiny golfer, so it stands out (owner ask).
+  if(p.i!=null){ const num=p.i+1, putt=(kind==='putt');
+    const br=putt?Math.max(4.5,cam[3]*0.085):GH*0.185, fs=putt?Math.max(5.6,cam[3]*0.105):GH*0.223;
     const bx=x0+(faceRight?0.62:0.38)*GW, by=Math.max(cam[1]+br+0.8, y0-br*1.4);
     badge=`<g class="hvswnum">`
       +`<circle cx="${(bx+0.6).toFixed(1)}" cy="${(by+1).toFixed(1)}" r="${br.toFixed(1)}" fill="#04150a" opacity=".45"/>`
@@ -13838,7 +13843,9 @@ function hvDoneShot(g,p,dim,small,pcol){
     s+=`<path d="M ${A[0]} ${A[1]} L ${B[0]} ${B[1]}" fill="none" stroke="${col}" stroke-width="1.3" stroke-dasharray="3 4"/>`; }
   else { s+=`<path d="${hvPathD(g,p)}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`;
     s+=`<path d="${hvRollD(g,p)}" fill="none" stroke="${col}" stroke-width="${(1.2*(small?0.5:1)).toFixed(1)}" stroke-dasharray="2 3"/>`; }
-  if(!p.hole){ const [mx,my]=hvProj(g,p.rest[0],p.rest[1]);
+  // CS356n: no numbered ground chip once the ball is on the green (the tracer path still shows the shot) -
+  // keeps the tight green close-up uncrowded; the current shot number lives on the gold pin above the golfer.
+  if(!p.hole && !p.onGreen){ const [mx,my]=hvProj(g,p.rest[0],p.rest[1]);
     const mr=small?2.7:6.5, fs=small?3.6:8, sw=small?0.6:1.3;
     s+=`<g><circle cx="${(mx+0.8).toFixed(1)}" cy="${(my+1).toFixed(1)}" r="${mr}" fill="#04150a" opacity=".35"/><circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="${mr}" fill="${p.splash?'#8a2f22':'#0a1626'}" stroke="${pcol||(dim?'#3d5a52':'#06A291')}" stroke-width="${sw}"/><text x="${mx.toFixed(1)}" y="${(my+fs*0.36).toFixed(1)}" text-anchor="middle" font-size="${fs}" font-weight="800" fill="#fff" font-family="inherit">${p.i+1}</text></g>`; }
   return s;
