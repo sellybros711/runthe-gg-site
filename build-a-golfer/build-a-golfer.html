@@ -14884,6 +14884,15 @@ function beginDailyRound(){
 // Deterministic per (day, build): the attempt salt is fixed to 0 so replaying the same Legend on the same
 // day gives an identical round (no grind for a lucky seed); different Legend builds still play differently.
 function beginDailyRoundWithLegend(token){
+  // CS364: be self-sufficient about today's daily context. The "Use token" button (legendPlaySection) can be
+  // tapped from the daily RESULT screen reached via startDailyChallenge's already-played path (line ~14486),
+  // which routes straight to the result WITHOUT ever setting S.dailyCourse/Seed/Cond. Without this, the next
+  // line's dBaseDiffs(DAILY_COURSES[undefined]) threw BEFORE the screen changed, so the tap did nothing on
+  // every device. Setting it here (idempotent - it's always today's course) makes the button work from any
+  // entry point (preview, result, or the career-end "Play now" via playLegendNow).
+  const _seed=todayKey();
+  S.daily=true; S.dailySeed=_seed; S.mode='daily'; S.dailyMode='round'; S.special=false;
+  S.dailyCourse=dailyCourseKey(_seed); S.dailyCond=dailyConditions(_seed,S.dailyCourse); if(!S.dailyPlan) S.dailyPlan='balanced';
   S.dailySkills=Object.assign({},token.skills); S.dailyOvr=token.ovr; S.dailyAttempt=0;
   S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
   S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyResult=null; S._dailyResub=false;
