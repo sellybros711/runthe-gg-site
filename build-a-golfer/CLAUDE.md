@@ -8774,6 +8774,19 @@ allows Google Fonts, or self-host Anton.*
     the online H2H draft (`scrH2HDraft`). Verified in Playwright (72→indigo, 83/89→green, 91/92→gold), 0
     page errors. Deployed to /golf.
 
+  - **CS356ai — season-summary tab bar "jiggle" fixed (owner: "you should be able to scroll horizontally
+    if you need to, but not vertically. it like jiggles").** The `.sumtabs` strip (Overview/Earnings/…/Share)
+    used `overflow-x:auto` with a default `overflow-y:visible`; per CSS, when one axis is a non-visible
+    overflow the other computes to `auto`, so the strip could scroll/rubber-band a few px VERTICALLY - the
+    jiggle. Added `overflow-y:hidden` so ONLY horizontal scroll is possible (kept `overflow-x:auto` so the 8
+    tabs still scroll sideways on a narrow phone). Applied the same `overflow-y:hidden` guard to the other
+    horizontal rails with the same latent bug: the season event rail (`.seasonrail`) and the Pro Shop
+    category chips (`.catrow`). Verified in Playwright: `.sumtabs` computes overflow-x:auto / overflow-y:hidden,
+    stays horizontally scrollable (825px content in a 390px strip), the active-tab gold underline still
+    renders un-clipped. Deployed to /golf. (Also confirmed the hole-view golfer's handedness IS applied
+    correctly - a right-handed golfer uses the base sprite, a left-handed golfer is mirrored via
+    `scale(-1,1)` in `hvSwingMarkup`, driven by `look.lefty`; verified in the live hole view.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
