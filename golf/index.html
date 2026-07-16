@@ -11804,10 +11804,10 @@ function scrSummary(){
     const scoreTxt=aw.scoring?((aw.scoring.avg<=0?'−':'+')+Math.abs(aw.scoring.avg).toFixed(2)+' per round'):'';
     const items=[
       ['Player of the Year', aw.poy, ''],
+      ['World No. 1', aw.no1, ''],
       ['Money Title', aw.money, aw.money?fmt(aw.money.amount):''],
       ['Scoring Title', aw.scoring, scoreTxt],
       ['Rookie of the Year', aw.roy, ''],
-      ['World No. 1', aw.no1, ''],
     ].filter(x=>x[1]);
     const won=items.filter(x=>x[1].you).length;
     add($(`<h2 class="center" style="margin:14px 0 8px;font-size:15px">Season Awards${won?` · <span style="color:var(--gold)">you won ${won}</span>`:''}</h2>`));
