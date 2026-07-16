@@ -15640,19 +15640,24 @@ function dDecTargets(g, sc){
 // place the two tappable targets on the window shell (called from drawWindow when a decision is pending)
 function dPlaceTargets(shell, g, sc, pick){
   const tg=dDecTargets(g,sc);
+  // ring diameter = the ACTUAL landing dispersion for THIS build: the risky ring balloons when the
+  // hazard-miss odds are high (weak skill / water), and tightens as the player's skill rises.
+  const od=dDecOdds(sc, S.dailySkills||{}), sq=dSkQ(od.val);
+  const aggW=Math.round(30+od.aggRisk*1.15), safeW=Math.round(14+(1-sq)*9);   // agg ~35..71px · safe ~14..23px
   const pos=[];
-  const place=(pt,cls,icon,lab,agg)=>{
+  const place=(pt,cls,icon,lab,agg,rw)=>{
     const p=hvProj(g,pt[0],pt[1]);
     let lf=Math.max(11,Math.min(89,(p[0]+HV_EX)/(HV_W+2*HV_EX)*100)), tp=Math.max(9,Math.min(72,p[1]/HV_H*100));
     // nudge apart if the two chips would collide (close in screen space)
     for(const q of pos){ if(Math.abs(q.lf-lf)<26 && Math.abs(q.tp-tp)<9){ tp = Math.min(72, q.tp+11); } }
     pos.push({lf,tp});
-    const chip=$(`<button class="dctarget ${cls}" style="left:${lf}%;top:${tp}%" aria-label="${esc(lab)}"><span class="dtl">${icon} ${esc(lab)}</span><span class="dtp"></span><span class="dtr"></span></button>`);
+    const rh=Math.round(rw*0.53);
+    const chip=$(`<button class="dctarget ${cls}" style="left:${lf}%;top:${tp}%" aria-label="${esc(lab)}"><span class="dtl">${icon} ${esc(lab)}</span><span class="dtp"></span><span class="dtr" style="width:${rw}px;height:${rh}px"></span></button>`);
     chip.onclick=(e)=>{ e.stopPropagation(); pick(agg); };
     shell.appendChild(chip);
   };
-  place(tg.agg,'agg','⚡',tg.al||'Attack',true);
-  place(tg.safe,'safe','🛡',tg.sl||'Safe',false);
+  place(tg.agg,'agg','⚡',tg.al||'Attack',true,aggW);
+  place(tg.safe,'safe','🛡',tg.sl||'Safe',false,safeW);
 }
 // the stat/risk cards docked directly under the course view
 function dDecisionBar(sc, pick, sub){
