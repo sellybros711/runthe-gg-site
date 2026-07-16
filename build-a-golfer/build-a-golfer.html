@@ -4901,6 +4901,7 @@ function render(){
   }
   paintAvatars();   // recolor any avatar canvases just added to the DOM
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
+  markResumeView();   // remember which screen is active so a browser refresh returns here (all modes)
   _lastView=view;
   // lock the page behind an open overlay so background scroll can't bleed through / fight the overlay
   document.body.classList.toggle('ovopen', !!S.overlay);
@@ -15179,6 +15180,63 @@ function resumeDailyLive(){
     return true;
   }catch(e){ clearDailyLive(); return false; }
 }
+// ---- Universal "resume where you were" on a browser refresh (EVERY mode, not just the Daily) ----
+// The heavy per-mode state is already persisted (career save, daily-live snapshot). This lightweight marker
+// records WHICH screen is active + when, so on a reload we route straight back into that mode instead of
+// dumping the player on the title (making them think they lost progress). Only auto-restores if the reload
+// happened while the session was recently active (RESUME_WINDOW_MS), so a genuinely fresh visit still opens
+// on the title.
+const RESUME_WINDOW_MS = 30*60*1000;   // a genuine reload always resumes; a REOPEN only within 30min of last activity (else fresh visit → title)
+// True if THIS page load is a browser refresh / reload (vs a fresh navigation or a new tab). A true reload
+// always resumes; a plain reopen only resumes if it was recent (RESUME_WINDOW_MS).
+function wasReloaded(){ try{
+  const nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+  if(nav && nav.type) return nav.type==='reload' || nav.type==='back_forward';
+  return !!(performance.navigation && performance.navigation.type===1);
+}catch(e){ return false; } }
+const RESUME_SCREENS = {   // gameplay screens worth restoring → the mode they belong to
+  setup:'career', draft:'career', build:'career', offseason:'career', season:'career', summary:'career',
+  careerend:'career', circuitend:'career', recap:'career', playoffwatch:'career',
+  dailyintro:'daily', dailyprev:'daily', dailyround:'daily', dailyresult:'daily',
+  h2hlobby:'h2h', h2hdraft:'h2h', h2hpreview:'h2h', h2hwatch:'h2h', h2hresult:'h2h' };
+let _lastResumeScreen='', _lastResumeWrite=0, PENDING_CAREER_RESUME=false;
+function markResumeView(){ try{ let s=S.screen||'';
+  if(S.moment && s==='dailyround') s='season';   // a career Moment plays on the dailyround screen but BELONGS to the career → resume the career (the event re-sims, the Moment re-offers)
+  const now=Date.now();
+  if(s!==_lastResumeScreen || now-_lastResumeWrite>4000){ LS.set('bag_resume_view',{screen:s,ts:now}); _lastResumeScreen=s; _lastResumeWrite=now; } }catch(e){}
+}
+// Called once at boot (before the first render). Returns true if it routed somewhere; else the title shows.
+function bootRestore(){
+  try{
+    if(resumeDailyLive()) return true;   // daily is device-local + works pre-auth → strongest guarantee, try first
+    const m=LS.get('bag_resume_view',null);
+    if(!m || !m.screen || !RESUME_SCREENS[m.screen]) return false;
+    // a true browser refresh always resumes; a plain reopen only if it was recent, else it's a fresh visit → title
+    if(!wasReloaded() && Date.now()-(m.ts||0) > RESUME_WINDOW_MS){ return false; }
+    const mode=RESUME_SCREENS[m.screen];
+    if(mode==='daily') return false;   // a daily screen but no live round to resume (finished/preview-only) → title
+    if(mode==='h2h'){   // a live online match can't be cleanly rejoined after a reload → drop back on the Online home, not the title
+      S.screen='h2hhome'; return true;
+    }
+    if(mode==='career'){
+      // careers are account-scoped; the account loads async (sbInit), so it's usually not ready at boot.
+      // If it happens to be signed in already, resume now; otherwise flag it and sbApply resumes once auth resolves.
+      if(sbSignedIn()){ const r=careerSaveInfo(); if(r){ if(r.ended) viewEndedCareer(); else resumeCareer(); return true; } return false; }
+      PENDING_CAREER_RESUME=true; return false;
+    }
+  }catch(e){}
+  return false;
+}
+// Resume the career on a reload once the account has finished loading (called from sbApply). Guarded so it
+// only fires when the player is still on the title (hasn't navigated away during the ~1s auth load).
+function maybeResumeCareerOnReload(){
+  try{
+    if(!PENDING_CAREER_RESUME) return; PENDING_CAREER_RESUME=false;
+    if(S.screen!=='title' || S.overlay) return;
+    const r=careerSaveInfo(); if(!r) return;
+    if(r.ended) viewEndedCareer(); else resumeCareer();
+  }catch(e){}
+}
 // ---- Shot review: pause the round, rewatch any hole, replay any single shot's animation ----
 // Opening review HOLDS the round (clears the timers) without touching S.dailyAuto, so closing
 // review resumes exactly where it was. The replay animates through the normal hvNode/hvKick path.
@@ -17031,6 +17089,7 @@ async function sbApply(session){
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
     cloudPull();   // pull + merge the full profile bundle (career save, tokens, streak, stats, achievements)
+    maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
     if(_pendingDaily){ _pendingDaily=null; }   // legacy guest stash is no longer auto-posted (claim flow gates it)
     if(_pendingSpot){ const p=_pendingSpot; _pendingSpot=null; sbSubmitDaily(p); }   // post a spotlight round played before sign-in
@@ -18626,9 +18685,11 @@ if('serviceWorker' in navigator){ try{ window.addEventListener('load',()=>{ navi
 track('game_start');
 if(LS.get('bag_seen',false)) track('return_visit'); else LS.set('bag_seen',true);
 try{ practiceCheck(); }catch(e){}   // ?practice=1 → unlimited daily rounds for testing, nothing recorded
-// If a daily round was in progress when the tab was reloaded (accidental swipe, or iOS discarding the tab
-// under memory pressure while zoomed), drop straight back into it instead of losing all that progress.
-try{ resumeDailyLive(); }catch(e){}
+// If the browser refreshed / the tab was reloaded mid-play (accidental swipe, or iOS discarding the tab
+// under memory pressure), drop straight back into whatever mode was active - daily, career, or online -
+// instead of losing progress (or making the player think they did). Career resume waits for the account
+// to load (see maybeResumeCareerOnReload in sbApply); daily is device-local and restores immediately.
+try{ bootRestore(); }catch(e){}
 // Snapshot the in-progress round when the page is backgrounded / about to be discarded (iOS fires these
 // before it reloads a tab under memory pressure), so even a mid-hole reload resumes at the last hole.
 try{ window.addEventListener('pagehide',()=>{ try{ saveDailyLive(); }catch(e){} }); }catch(e){}
