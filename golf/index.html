@@ -1183,7 +1183,7 @@ window.GA_ID='G-L29P5MRWKE';
   .seasonrail::-webkit-scrollbar{display:none}
   /* CS356x: season-summary UNDERLINE tabs - reads unmistakably as tabs (baseline + active underline),
      horizontally scrollable for the finer tab set. */
-  .sumtabs{position:sticky; top:0; z-index:6; display:flex; gap:0; justify-content:flex-start; overflow-x:auto; scrollbar-width:none; padding:0 2px; margin:2px 0 15px; background:var(--pagebg); border-bottom:2px solid rgba(255,255,255,.12)}
+  .sumtabs{position:sticky; top:0; z-index:6; display:flex; gap:0; justify-content:safe center; overflow-x:auto; scrollbar-width:none; padding:0 2px; margin:2px 0 15px; background:var(--pagebg); border-bottom:2px solid rgba(255,255,255,.12)}
   .sumtabs::-webkit-scrollbar{display:none}
   .sumtabbtn{flex:0 0 auto; font:800 12.5px/1 var(--body); letter-spacing:.06em; text-transform:uppercase; color:var(--muted); background:none; border:0; border-bottom:3px solid transparent; margin-bottom:-2px; border-radius:0; padding:13px 15px; cursor:pointer; white-space:nowrap; transition:color .12s}
   .sumtabbtn:hover{color:var(--oncard)}
@@ -11444,7 +11444,7 @@ function seasonImpactNode(m, cst, moveTxt, moveCol, firstYr, points, gross, net)
       <div class="istat"><div class="k">Earnings</div><div class="v" id="imp-earn">+${fmtShort(gross)}</div></div>
       <div class="istat"><div class="k">Net Profit</div><div class="v" style="color:${net>=0?'#35d6a0':'#E14A33'}" id="imp-net">${(net>=0?'+':'−')+fmtShort(Math.abs(net))}</div></div>
     </div>
-    <div class="impact-card-status" style="color:${cst.col}">${esc(cst.label)} <span class="muted" style="font-weight:600">· ${esc(cst.note)} · of ${m.size}</span></div>
+    <div class="impact-card-status" style="color:${cst.col}">${esc(cst.label)} <span class="muted" style="font-weight:600">· ${esc(cst.note)}</span></div>
   </div>`);
   if(S._impactShown || reduce) return wrap;   // animate only once per summary
   S._impactShown=true;
@@ -11703,7 +11703,7 @@ function scrSummary(){
   }
   __cur=hdr;
   add($(`<h1 class="center" style="font-size:30px;margin:12px 0 2px">${me.name}</h1>`));
-  add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':(S.circuitMode?('Year '+circuitYear+' of '+CIRCUIT_MAX_YEARS+' · '):('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS+' · '))}${S.schedule.length} events · ${S.schedule.filter(e=>e.major).length} majors · Overall ${ovr}</p>`));
+  add($(`<p class="lede center" style="margin-bottom:10px">${S.daily?'':(S.circuitMode?('Year '+circuitYear+' of '+CIRCUIT_MAX_YEARS+' · '):('Year '+(S.year||1)+' of '+CAREER_MAX_YEARS+' · '))}Overall ${ovr}</p>`));
   const netCol=ec.net>=0?'#35d6a0':'#E14A33';
   __cur=ovC;
   // MONEY grouped in ONE horizontal card (owner: money was scattered across ~4 spots and net profit was
@@ -11792,7 +11792,7 @@ function scrSummary(){
   if(!S.daily && S.worldRankMove){
     const m=S.worldRankMove, cst=cardStatus(m.now), dlt=m.prev-m.now;   // dlt>0 = climbed (lower is better)
     const firstYr=(S.career&&S.career.seasons.length<=1);
-    const moveTxt=firstYr?'New entry':(dlt>0?`▲ ${dlt}`:dlt<0?`▼ ${Math.abs(dlt)}`:', level');
+    const moveTxt=firstYr?'New entry':(dlt>0?`▲ ${dlt}`:dlt<0?`▼ ${Math.abs(dlt)}`:'');
     const moveCol=firstYr?'var(--gold)':(dlt>0?'#35d6a0':dlt<0?'#E14A33':'var(--muted)');
     add(seasonImpactNode(m, cst, moveTxt, moveCol, firstYr, (t.points||0), ec.gross, ec.net));
   }
@@ -11991,10 +11991,7 @@ function scrSummary(){
     const circuitYear2=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):null;
     actC.appendChild($(`<div class="small center" style="margin:0 0 10px;color:#35d6a0;font-weight:700">✓ Progress auto-saved, your career is checkpointed at the home screen</div>`));
     advanceLabel=lastYear?(S.circuitMode?'Finish Legend Circuit':'Finish Career'):'Continue to Year '+((S.year||1)+1);
-    const cont=$(`<button class="btn goldfill" id="sum-advance">${lastYear?(S.circuitMode?'Finish Legend Circuit ▸':'Finish Career ▸'):'Continue to Year '+((S.year||1)+1)+' ▸'}<span class="sub">${lastYear
-      ? (S.circuitMode?('Year '+CIRCUIT_MAX_YEARS+' was your last, circuit ceremony'):('Year '+CAREER_MAX_YEARS+' was your last, career ceremony'))
-      : (S.circuitMode?('Legend Circuit · year '+(circuitYear2+1)+' of '+CIRCUIT_MAX_YEARS+(declining?' · skills are declining (re-spin to repair)':'')+' · off-season, then a new season')
-        :('Career Mode · year '+((S.year||1)+1)+' of '+CAREER_MAX_YEARS+(declining?' · skills are declining (re-spin to repair)':'')+' · off-season, then a new season'))}</span></button>`);
+    const cont=$(`<button class="btn goldfill" id="sum-advance">${lastYear?(S.circuitMode?'Finish Legend Circuit ▸':'Finish Career ▸'):'Continue to Year '+((S.year||1)+1)+' ▸'}</button>`);
     cont.onclick=continueFranchise; actC.appendChild(cont);
     const save=$(`<button class="btn gold" style="margin-top:10px">Exit to Home<span class="sub">Already saved, come back and resume anytime</span></button>`);
     save.onclick=()=>{ saveCareer(summaryResumeExtra()); track('career_saved_exit',{year:S.year||1}); reset(); render(); };
@@ -12019,7 +12016,7 @@ function scrSummary(){
   shC.appendChild(right);
   RT.appendChild(hdr);
   // CS356x: finer, content-driven tabs - only tabs that actually have content, in a fixed order.
-  const TABDEFS=[['overview','Overview',ovC],['money','Money',moC],['stats','Stats',stC],['rep','Reputation',reC],['awards','Awards',awC],['career','Career',caC],['history','History',hiC],['share','Share',shC]];
+  const TABDEFS=[['overview','Overview',ovC],['money','Earnings',moC],['stats','Analytics',stC],['rep','Reputation',reC],['awards','Awards',awC],['career','Career',caC],['history','History',hiC],['share','Share',shC]];
   const TABS=TABDEFS.filter(d=>d[2].childNodes.length);
   if(S.daily || TABS.length<=1){
     TABDEFS.forEach(d=>{ if(d[2].childNodes.length) RT.appendChild(d[2]); });
