@@ -1064,6 +1064,37 @@ window.GA_ID='G-L29P5MRWKE';
   .dc-opt.safe .dc-ol{color:#5fe0c0}
   .dc-or{font:800 11.5px/1 var(--body);letter-spacing:.2em;color:var(--muted);margin:9px 0;text-transform:uppercase}
   @media (prefers-reduced-motion:reduce){ .decisionov,.decisioncard{animation:none} }
+  /* ON-COURSE decision (owner: make the player feel on the course, not watching): tappable targets ON the
+     tracer window + stat/risk cards docked below. No dimming modal. */
+  .dctarget{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;
+    background:none;border:none;padding:0;cursor:pointer;z-index:6;filter:drop-shadow(0 3px 8px rgba(0,0,0,.55))}
+  .dctarget .dtl{font:900 12px/1 var(--body);letter-spacing:.01em;color:#fff;white-space:nowrap;border:2px solid;border-radius:11px;padding:5px 10px}
+  .dctarget .dtp{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid;margin-top:-1px}
+  .dctarget .dtr{width:26px;height:14px;border:2.5px solid;border-radius:50%;margin-top:2px;opacity:.9;animation:dtRing 1.15s ease-in-out infinite}
+  .dctarget.agg .dtl{background:rgba(180,26,26,.94);border-color:#ff5a4d}
+  .dctarget.agg .dtp{border-top-color:#ff5a4d} .dctarget.agg .dtr{border-color:#ff5a4d}
+  .dctarget.safe .dtl{background:rgba(11,74,64,.94);border-color:#22c7a6}
+  .dctarget.safe .dtp{border-top-color:#22c7a6} .dctarget.safe .dtr{border-color:#22c7a6}
+  .dctarget:active{transform:translate(-50%,calc(-100% + 2px))}
+  @keyframes dtRing{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.28);opacity:.45}}
+  @media (prefers-reduced-motion:reduce){ .dctarget .dtr{animation:none} }
+  .dcbar{max-width:600px;margin:10px auto 0;border:1px solid rgba(235,208,74,.34);border-radius:14px;
+    background:linear-gradient(180deg,rgba(14,33,20,.96),rgba(9,22,14,.96));padding:11px 12px;box-shadow:0 12px 30px -14px rgba(0,0,0,.7)}
+  .dcbar .dch{display:flex;flex-direction:column;gap:3px;margin-bottom:9px}
+  .dcbar .dchl{font:900 12px/1 var(--body);letter-spacing:.09em;text-transform:uppercase;color:var(--gold)}
+  .dcbar .dchs{font:700 11.5px/1.35 var(--body);color:#ffcf6a}
+  .dcbar .dchp{font:600 12px/1.4 var(--body);color:var(--oncard)}
+  .dcrow{display:flex;gap:9px}
+  .dccard{flex:1;text-align:left;border-radius:12px;padding:10px 11px;cursor:pointer;border:1.5px solid;
+    background:rgba(0,0,0,.24);transition:transform .1s ease}
+  .dccard:active{transform:translateY(2px)}
+  .dccard .dcl{font:900 13.5px/1.15 var(--body)}
+  .dccard .dcs{font:600 10.5px/1.35 var(--body);color:var(--muted);margin-top:4px}
+  .dccard .dco{font:700 11px/1.3 var(--body);margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,.1)}
+  .dccard .dco .rk{color:#ff8a6e} .dccard .dco b{color:#fff}
+  .dccard.agg{border-color:#ff6b4a;box-shadow:0 8px 22px -14px rgba(255,90,60,.7)}
+  .dccard.agg .dcl{color:#ff8a6e} .dccard.safe{border-color:#3fcaa8;box-shadow:0 8px 22px -14px rgba(63,202,168,.55)}
+  .dccard.safe .dcl{color:#5fe0c0}
   /* crisp FLIP glide when scoreboard rows swap order (positions animate, not teleport) */
   .hvbrow{transition:none}
   @media (prefers-reduced-motion:reduce){ .hvbrow{transition:none!important} }
@@ -15532,6 +15563,86 @@ function dScenario(courseKey,i,total,av){
   const phase=(par===3)?'app':chosen.phase;
   return {tag:chosen.tag, prompt:chosen.prompt, opts:chosen.opts, sit:chosen.sit?'':dSitLine(total,av,i), phase};
 }
+// ---- ON-COURSE decision (#6/#7): the shot decision is made ON the tracer window (tap a target), the
+// relevant stat + risk/reward shown, instead of a dimming pop-up. ----
+// which skill this decision leans on (#7: it's a skill-test)
+function dDecStat(sc){ const txt=(sc.tag+' '+sc.prompt).toLowerCase();
+  if(sc.phase==='tee'){ if(/drivable|driver at the green|rip driver|at the green off the tee/.test(txt)) return {key:'dist',name:'Power'}; return {key:'acc',name:'Accuracy'}; }
+  return {key:'app',name:'Approach'}; }
+// display-only risk/reward odds, driven by the relevant skill (higher skill → more reward, less risk).
+// Deterministic estimate for the player to read, not the sim's exact math (the sim still decides the score).
+function dDecOdds(sc, sk){
+  const st=dDecStat(sc), val=dSk(sk,st.key), q=dSkQ(val);          // competence 0..1
+  const txt=(sc.tag+' '+sc.prompt).toLowerCase();
+  const wet=/water|island|creek|cliff|wet|hazard/.test(txt), bunker=/bunker/.test(txt);
+  const aggGood=Math.round(24+q*48);                                // 24..72%
+  const hazBase=wet?36:bunker?27:21;
+  const aggRisk=Math.max(4, Math.round(hazBase - q*19));            // ~4..36%, higher on wet hazards / weaker skill
+  const safeGood=Math.round(20+q*22);
+  const goodWord=/go for|home in two|reach|drivable|rip driver/.test(txt)?'reach':/carry/.test(txt)?'carry':'birdie look';
+  const riskWord=wet?'water':bunker?'bunker':'trouble';
+  return {stat:st, val, aggGood, aggRisk, safeGood, goodWord, riskWord};
+}
+// the two course points a decision aims at (aggressive vs safe), in course coords → projected onto the window
+function dDecTargets(g, sc){
+  const L=g.L, gcx=g.gcx, par=g.par, pin=g.pin||[gcx,L];
+  const txt=(sc.tag+' '+sc.prompt).toLowerCase();
+  if(sc.phase==='tee'){
+    if(/drivable|driver at the green|at the green off the tee/.test(txt)){
+      const y=Math.max(8,L*0.6); return {agg:[gcx,L], safe:[g.cx(y),y], al:'Green', sl:'Lay back'};
+    }
+    const y=par===5?g.span*0.44:g.span*0.6, cx=g.cx(y), w=Math.max(6,g.fww(y));
+    const hz=g.water?(g.water.x>cx?1:-1):1;
+    return {agg:[cx+hz*w*0.72,y], safe:[cx-hz*w*0.32,y], al:'Attack line', sl:'Safe line'};
+  }
+  if(par!==3){
+    if(/go for|home in two|reach|rip driver to get home/.test(txt)){        // reach the green vs lay up short
+      const y=Math.max(8,L-24); return {agg:[gcx,L], safe:[g.cx(y),y], al:'Go for it', sl:'Lay up'};
+    }
+    if(/lay ?up|lay back|push the layup|chase/.test(txt)){                   // both layups: chase near green vs lay back
+      const y1=Math.max(10,L-14), y2=Math.max(6,L-34);
+      return {agg:[g.cx(y1),y1], safe:[g.cx(y2),y2], al:'Chase it', sl:'Lay back'};
+    }
+  }
+  const off=Math.max(3,(g.greenR?g.greenR[0]:12)*0.6)*(pin[0]>gcx?-1:1);     // pin-hunt vs middle of the green
+  return {agg:[pin[0],pin[1]], safe:[gcx+off,L], al:'At the pin', sl:'Middle'};
+}
+// place the two tappable targets on the window shell (called from drawWindow when a decision is pending)
+function dPlaceTargets(shell, g, sc, pick){
+  const tg=dDecTargets(g,sc);
+  const pos=[];
+  const place=(pt,cls,icon,lab,agg)=>{
+    const p=hvProj(g,pt[0],pt[1]);
+    let lf=Math.max(11,Math.min(89,(p[0]+HV_EX)/(HV_W+2*HV_EX)*100)), tp=Math.max(9,Math.min(72,p[1]/HV_H*100));
+    // nudge apart if the two chips would collide (close in screen space)
+    for(const q of pos){ if(Math.abs(q.lf-lf)<26 && Math.abs(q.tp-tp)<9){ tp = Math.min(72, q.tp+11); } }
+    pos.push({lf,tp});
+    const chip=$(`<button class="dctarget ${cls}" style="left:${lf}%;top:${tp}%" aria-label="${esc(lab)}"><span class="dtl">${icon} ${esc(lab)}</span><span class="dtp"></span><span class="dtr"></span></button>`);
+    chip.onclick=(e)=>{ e.stopPropagation(); pick(agg); };
+    shell.appendChild(chip);
+  };
+  place(tg.agg,'agg','⚡',tg.al||'Attack',true);
+  place(tg.safe,'safe','🛡',tg.sl||'Safe',false);
+}
+// the stat/risk cards docked directly under the course view
+function dDecisionBar(sc, pick, sub){
+  const od=dDecOdds(sc, S.dailySkills);
+  const stakes=S.moment?momentStakesLine(S.dailyHoles.length):'';
+  const bar=$(`<div class="dcbar"></div>`);
+  const head=$(`<div class="dch"><span class="dchl">⛳ Your call · tap the course or a card</span></div>`);
+  if(sub) head.appendChild($(`<span class="dchs" style="color:#9fe0cf">${esc(sub)}</span>`));
+  if(sc.sit) head.appendChild($(`<span class="dchs">${esc(sc.sit)}</span>`));
+  else if(stakes) head.appendChild($(`<span class="dchs">${esc(stakes)}</span>`));
+  head.appendChild($(`<span class="dchp">${esc(sc.prompt)}</span>`));
+  bar.appendChild(head);
+  const row=$(`<div class="dcrow"></div>`);
+  const ag=$(`<button class="dccard agg"><div class="dcl">⚡ ${esc(sc.opts[0].l)}</div><div class="dcs">${esc(sc.opts[0].s)}</div><div class="dco"><b>${esc(od.stat.name)} ${od.val}</b> · ${od.aggGood}% ${od.goodWord} · <span class="rk">${od.aggRisk}% ${od.riskWord}</span></div></button>`);
+  ag.onclick=()=>pick(true);
+  const sf=$(`<button class="dccard safe"><div class="dcl">🛡 ${esc(sc.opts[1].l)}</div><div class="dcs">${esc(sc.opts[1].s)}</div><div class="dco">Low risk · ${od.safeGood}% birdie look · par safe</div></button>`);
+  sf.onclick=()=>pick(false);
+  row.appendChild(ag); row.appendChild(sf); bar.appendChild(row);
+  return bar;
+}
 // one-time plain-language primer for non-golfers, dismissible, then it never shows again
 function dLegend(){
   if(LS.get('bag_daily_legend_seen',false)) return null;
@@ -15691,7 +15802,7 @@ function scrDailyRound(){
   const vh=(S.dailyViewHole!=null && S.dailyViewHole<played.length)?S.dailyViewHole:played.length-1;   // which hole's shot log is shown
   // draws the tracer window + floating HUD (hole chip, YOU-vs-pro board, one shot description). Shared
   // by the normal reveal AND the par-4/5 approach-decision drive (S.dailyProv).
-  function drawWindow(hole, reveal, holeIdx, latest, holePauseFlag, descShot, revNonce){
+  function drawWindow(hole, reveal, holeIdx, latest, holePauseFlag, descShot, revNonce, dec){
     const hvn=hvNode(hole, reveal, holeIdx, S.dailyCourse, null, revNonce!=null?revNonce:null);
     if(!hvn) return;
     const shell=hvn.querySelector('.hvshell'), h=hole;
@@ -15713,8 +15824,9 @@ function scrDailyRound(){
       }
       shell.appendChild($(`<div class="hvob hvresult" style="border-color:${col}"><span class="rn" style="color:${col}">${big}</span><span class="rs" style="color:${col}">${dtp(total)}</span>${boldSub}</div>`));
     }
-    if(latest){   // the scoreboard is ALWAYS shown on the live window (owner: it must never disappear, even
+    if(latest && !dec){   // the scoreboard is ALWAYS shown on the live window (owner: it must never disappear, even
       // during the holed-result pill - the pill floats over the center, the board stays put top-corner)
+      // (hidden while an on-course decision is up, so the tap-targets + cards are the clean focus)
       const meNm=S.dailyLegend?esc(S.dailyLegend.name):'YOU';
       const tpCol=v=>v<0?'#4be3a8':v>0?'#ff9d8f':'#e8efe9';
       const noDesc=!(descShot && descShot.d && !holePauseFlag);   // board drops to the very bottom when no shot-desc bar
@@ -15776,16 +15888,22 @@ function scrDailyRound(){
       // ONE clear shot description that swaps as the shots simulate (replaces the shot-log dump in play).
       if(descShot && descShot.d && !holePauseFlag) shell.appendChild($(`<div class="hvob hvdesc"><b style="color:#3b82f6">${meNm}</b> · ${esc(descShot.d)}</div>`));
     }
+    if(dec && hole._hv && hole._hv.g) dPlaceTargets(shell, hole._hv.g, dec.sc, dec.pick);   // on-course tap-targets
     add(hvn);
   }
+  // ON-COURSE decision (#6/#7): a pending signature-hole call is now presented ON the tracer window
+  // (tap-targets) + a stat/risk card bar below, instead of a dimming pop-up.
+  let decPending=null;
+  if(prov && prov.await) decPending={sc:prov.scenario, pick:(agg)=>dailyResolveApproach(agg), sub:`Your drive found ${dLieName(prov.d0.shot.lie)} · ${prov.d0.dist} yds to the green`};
+  else if(teeSig){ const teeSc=dScenario(S.dailyCourse,i,total,dTourAvg(c)); decPending={sc:teeSc, pick:(agg)=>playDailyHole(agg, teeSc.phase)}; }
   if(prov){
     // par-4/5 approach decision: the neutral drive plays out (shot 0), then the prompt above shows
-    drawWindow(prov.hole, prov.revealN, prov.i, true, false, prov.hole.shots[0], null);
+    drawWindow(prov.hole, prov.revealN, prov.i, true, false, prov.hole.shots[0], null, prov.await?decPending:null);
   } else if(previewNext){
     // between holes / at a tee decision → show the UPCOMING hole (fresh tee view), not the previous
     // hole's finished state, so what's on screen matches the drive/decision being asked (owner note 1).
     const ph={n:i+1, par:c.holes[i][0], yards:c.holes[i][1], shots:[]};
-    drawWindow(ph, null, i, true, false, null, null);
+    drawWindow(ph, null, i, true, false, null, null, teeSig?decPending:null);
   } else if(played.length){
     // review mode replays a chosen shot (S.dailyReviewShot) with a nonce so the animator re-fires each tap;
     // otherwise the live reveal drives the latest hole and a past hole is static
@@ -15798,6 +15916,8 @@ function scrDailyRound(){
     // the full shot-by-shot log lives ONLY in review (open a hole to see it) - during play the
     // one-line description on the tracer window narrates each shot, so no between-holes log flash.
   }
+  // on-course decision cards, docked directly under the course view (the tap-targets are ON the window)
+  if(decPending) add(dDecisionBar(decPending.sc, decPending.pick, decPending.sub));
   // scorecard strip lives BELOW the window now (the tracer is the star, H2H-style). The sudden-death
   // playoff plays one extra hole at a time (overlay resolves it), so the 18-cell strip is skipped.
   if(!S.momentPO){
@@ -15818,20 +15938,17 @@ function scrDailyRound(){
   if(S.momentPO){ /* playoff auto-plays; the extra-hole overlay carries the result + Continue */ }
   else if(done && S.dailyAuto){ add($(`<div class="center" style="color:var(--gold);font-weight:800;letter-spacing:.04em">▶ Heading to the clubhouse…</div>`)); }
   else if(done){ const fin=$(`<button class="btn goldfill" style="max-width:520px;margin:0 auto">See your round ▸</button>`); fin.onclick=finishDailyRound; add(fin); }
+  else if(decPending){
+    // an on-course decision is up: the tap-targets + cards ARE the action, no play controls. Mulligan
+    // (streak reward) still offered for the previous hole.
+    if(!reviewing && !revealing && S.dailyMullAvail && !S.dailyMullUsed && played.length){
+      const m=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">↺ Mulligan hole ${played[played.length-1].n}<span class="sub">Re-roll your last hole, one per round (streak reward)</span></button>`); m.onclick=dailyMulligan; add(m); }
+  }
   else {
     add(dRoundControls());
     // mulligan (streak reward) only between holes when the round is held / at a decision, never mid-flight or in review
     if(!reviewing && !revealing){ const sig=c.sig.find(s=>s[0]===i+1);
       if(S.dailyMullAvail&&!S.dailyMullUsed&&played.length&&(!S.dailyAuto||sig)){ const m=$(`<button class="btn ghost" style="max-width:520px;margin:10px auto 0">↺ Mulligan hole ${played[played.length-1].n}<span class="sub">Re-roll your last hole, one per round (streak reward)</span></button>`); m.onclick=dailyMulligan; add(m); } }
-  }
-  // DECISION POP-UP (added LAST so it overlays everything; position:fixed → never shifts the page). The
-  // tracer underneath shows the relevant hole (upcoming hole for a tee call, the drive for an approach).
-  if(prov && prov.await){
-    const h=prov.hole, sub=`Your drive found ${dLieName(prov.d0.shot.lie)} · ${prov.d0.dist} yds to the green`;
-    add(dDecisionModal(`Hole ${h.n} · Par ${h.par} · ${h.yards}y`, sub, prov.scenario, (agg)=>dailyResolveApproach(agg)));
-  } else if(teeSig){
-    const h=c.holes[i], sc=dScenario(S.dailyCourse,i,total,dTourAvg(c));
-    add(dDecisionModal(`Hole ${i+1} · Par ${h[0]} · ${h[1]}y`, teeSig[1]?('Signature hole · '+teeSig[1]):null, sc, (agg)=>playDailyHole(agg, sc.phase)));
   }
 }
 function scrDailyResult(){
