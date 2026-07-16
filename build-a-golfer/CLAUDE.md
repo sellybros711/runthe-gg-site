@@ -8581,6 +8581,14 @@ allows Google Fonts, or self-host Anton.*
     in Playwright across all 5 hair styles × cap/visor/none (15 combos): caps clip the hair to the fringe,
     visors leave it on top, no-hat shows full hair, 0 page errors. Rendering-only (sprite grid +
     composition); the swing sprites are separate and untouched. Tunable: `PXG_CAP` grid, `HAIR_UNDER_CAP`.
+  - **CS356f — profile pill shows the pixel golfer instead of a generic icon (owner).** The header
+    profile/sign-in pill used `swingIcon()` (a generic person glyph). Replaced it with a new
+    `pxAvatarChip(look, sz)` — a tiny head-and-shoulders crop of the player's own pixel golfer
+    (`pxGolferURL`, cropped to sprite rows ~4-26, centered in an sz×sz rounded chip via `.pxchip`). Shows
+    the signed-in player's golfer next to their username, and the guest's default golfer next to "Sign in".
+    Verified in Playwright (chip renders, old svg gone, 0 errors). The guest default look is `DEFLOOK`
+    (tan skin, brown short hair, white polo + white cap, stone trousers, white shoes, male, right-handed,
+    USA); guests may customize skin/hair/hair-style (persisted in `bag_look`), so the chip reflects it.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,

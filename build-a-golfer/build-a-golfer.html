@@ -127,6 +127,9 @@ window.GA_ID='G-L29P5MRWKE';
     font-family:var(--serif); font-weight:600; font-size:15px; color:var(--oncard); cursor:pointer;
     box-shadow:0 4px 14px -6px rgba(0,0,0,.5); display:inline-flex; align-items:center; gap:9px}
   .pill svg{width:18px;height:18px;display:block}
+  /* CS356f: small pixel-golfer chip (replaces the generic icon in the profile pill) */
+  .pxchip{display:inline-block; border-radius:6px; overflow:hidden; background:#0c1f16; vertical-align:middle; flex:0 0 auto; box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+  .pxchip img{height:auto; display:block; image-rendering:pixelated}
 
   /* ---- the game panel: full-width deep green with a gold top edge ---- */
   .card{position:relative; z-index:1; width:100%; max-width:none; margin:0; border-radius:0; overflow:visible;
@@ -4652,7 +4655,7 @@ function header(){
     </div></div>`));
   const pills=$(`<div class="pills"></div>`);
   const signedIn=sbSignedIn();
-  const pl=$(`<button class="pill" aria-label="${signedIn?'Your profile':'Sign in'}">${swingIcon()} ${signedIn?esc(sbUsername||'Player'):'Sign in'}</button>`);
+  const pl=$(`<button class="pill" aria-label="${signedIn?'Your profile':'Sign in'}">${pxAvatarChip(S.look,22)} ${signedIn?esc(sbUsername||'Player'):'Sign in'}</button>`);
   pl.onclick=()=>{ if(sbSignedIn()){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} render(); };
   pills.appendChild(pl);
   // Always confirm, this retires a saved career, not just the in-progress screen, so it must never
@@ -6541,6 +6544,10 @@ function pxGolferURL(look){
   u=cv.toDataURL('image/png'); _pxURL.set(key,u); return u;
 }
 function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg" src="${pxGolferURL(look)}" alt="Your golfer"></div>`; }
+// CS356f: tiny head-and-shoulders chip of the pixel golfer, for the profile pill etc.
+// crops the 44x56 sprite to the head+shoulders band (rows ~4-26) and centers it in an sz x sz box.
+function pxAvatarChip(look,sz){ sz=sz||22; const pr=sz/22, w=Math.round(44*pr), mt=Math.round(-4*pr), ml=Math.round(-(w-sz)/2);
+  return `<span class="pxchip" style="width:${sz}px;height:${sz}px" aria-hidden="true"><img src="${pxGolferURL(look||S.look||DEFLOOK)}" alt="" style="width:${w}px;margin-top:${mt}px;margin-left:${ml}px"></span>`; }
 /* CS355 (POC): side-view mini golfer swing for TourTracer - 3 frames (address/top/through),
    palette-swapped from the created look, mirror-flipped by shot direction. */
 const HV_SWING=true;          // POC flag - flip off to disable the swinging golfer everywhere
