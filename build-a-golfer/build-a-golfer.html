@@ -999,8 +999,16 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid rgba(241,208,74,.22);border-radius:16px;padding:13px 6px 9px;
     box-shadow:0 10px 26px -14px rgba(0,0,0,.7), inset 0 1px 0 rgba(255,255,255,.04)}
   .hvctrl-row{display:flex;align-items:center;justify-content:space-between;gap:3px}
-  .hvctrl-side{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;
+  .hvctrl-side{position:relative;flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;
     color:#e9f2ea;cursor:pointer;padding:4px 1px;font:800 9px/1.15 var(--body);letter-spacing:.06em;text-transform:uppercase;text-align:center}
+  /* Speed picker popover (accent-picker style): tap Speed → all options appear above it, pick one */
+  .spdpop{position:absolute;bottom:calc(100% + 9px);left:0;display:flex;gap:5px;z-index:8;
+    background:#0b1c14;border:1.5px solid rgba(241,208,74,.55);border-radius:13px;padding:6px;box-shadow:0 12px 28px rgba(0,0,0,.6)}
+  .spdpop::after{content:"";position:absolute;top:100%;left:24px;border:6px solid transparent;border-top-color:#0b1c14}
+  .spdopt{background:rgba(8,20,14,.65);border:1px solid rgba(241,208,74,.3);color:#eaf4ec;border-radius:9px;
+    font:900 15px/1 var(--body);letter-spacing:0;padding:9px 11px;cursor:pointer;white-space:nowrap}
+  .spdopt.on{background:linear-gradient(180deg,#f6c944,#e39a12);color:#1a1206;border-color:transparent}
+  .spdbackdrop{position:fixed;inset:0;z-index:5}
   .hvctrl-side:disabled{opacity:.32;cursor:default}
   .hvctrl-side .ci{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     border:1.5px solid rgba(241,208,74,.4);background:rgba(8,20,14,.5);color:var(--gold);font-size:16px;transition:transform .12s,background .12s}
@@ -14730,7 +14738,9 @@ function clearDailyTimer(){ if(_dailyTimer){clearTimeout(_dailyTimer);_dailyTime
 const DAILY_SPEEDS=[0.5,1,2,5];
 function dailySpeed(){ const v=(S.dailySpeed!=null)?S.dailySpeed:LS.get('bag_daily_speed',1); return DAILY_SPEEDS.indexOf(v)>=0?v:1; }
 function dspd(ms, floor){ return Math.max(floor||45, Math.round(ms/dailySpeed())); }
-function cycleDailySpeed(){ const i=(DAILY_SPEEDS.indexOf(dailySpeed())+1)%DAILY_SPEEDS.length; S.dailySpeed=DAILY_SPEEDS[i]; LS.set('bag_daily_speed',S.dailySpeed);
+function setDailySpeed(v){
+  if(DAILY_SPEEDS.indexOf(v)<0) v=1;
+  S.dailySpeed=v; LS.set('bag_daily_speed',v); S.dailySpeedOpen=false;
   render();
   // re-pace an in-flight reveal to the new speed
   const p=S.dailyHoles, len=p.length?(p[p.length-1].shots||[]).length:0;
@@ -14814,6 +14824,7 @@ function dShotPanel(h, reveal){
 function scheduleDailyAdvance(){
   if(S.dailyProv)return;   // a par-4/5 approach decision is pending (drive revealing/awaiting) - don't touch its timers
   clearDailyTimer();
+  saveDailyLive();   // snapshot at each hole boundary so an accidental / memory reload can resume the round
   // Mulligan offer: a bogey-or-worse just finished and a mulligan is available → offer to re-roll it,
   // once per hole. Pauses the flow (auto AND manual) until the player chooses; "Save for later" keeps it.
   if(maybeOfferMulligan()){ render(); return; }
@@ -14980,9 +14991,18 @@ function dRoundControls(){
   const spd=dailySpeed(), spdLabel=(spd===0.5?'0.5×':spd===2?'2×':spd===5?'5×':'1×');
   const bar=$(`<div class="hvctrl"></div>`);
   const row=$(`<div class="hvctrl-row"></div>`);
-  // 1. Speed - cycles 0.5x / 1x / 2x / 5x
-  const speed=$(`<button class="hvctrl-side" aria-label="Playback speed ${spdLabel}"><span class="ci spd">${spdLabel}</span><span class="cl">Speed</span></button>`);
-  speed.onclick=cycleDailySpeed;
+  // 1. Speed - tap to open a picker with all options (0.5x / 1x / 2x / 5x); 5x is fast, so pick don't cycle
+  const speed=$(`<button class="hvctrl-side" aria-haspopup="true" aria-expanded="${S.dailySpeedOpen?'true':'false'}" aria-label="Playback speed ${spdLabel}"><span class="ci spd">${spdLabel}</span><span class="cl">Speed</span></button>`);
+  speed.onclick=(e)=>{ e.stopPropagation(); S.dailySpeedOpen=!S.dailySpeedOpen; render(); };
+  if(S.dailySpeedOpen){
+    const pop=$(`<div class="spdpop" role="menu"></div>`);
+    DAILY_SPEEDS.forEach(v=>{ const on=v===spd, lab=(v===0.5?'0.5×':v+'×');
+      const opt=$(`<button class="spdopt ${on?'on':''}" role="menuitemradio" aria-checked="${on?'true':'false'}">${lab}</button>`);
+      opt.onclick=(e)=>{ e.stopPropagation(); setDailySpeed(v); };
+      pop.appendChild(opt); });
+    speed.appendChild(pop);
+    const bd=$(`<div class="spdbackdrop"></div>`); bd.onclick=()=>{ S.dailySpeedOpen=false; render(); }; bar.appendChild(bd);
+  }
   // 2. Last hole - review the previous completed hole
   const last=$(`<button class="hvctrl-side" aria-label="Last hole"><span class="ci">${_SVG_HPREV}</span><span class="cl">Last hole</span></button>`);
   last.onclick=dailyPrevHole;
@@ -15004,7 +15024,7 @@ function dRoundControls(){
 function beginDailyRound(){
   const p=buildPlayer(); S.dailySkills={}; CATS.forEach(c=>S.dailySkills[c.k]=p[c.k]);
   S.dailyOvr=Math.round(p.skill); S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
-  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyMullSeen=[]; S.dailyMullOffer=null; S.dailySpeed=LS.get('bag_daily_speed',1); S.dailyResult=null; S._dailyResub=false;
+  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyMullSeen=[]; S.dailyMullOffer=null; S.dailySpeed=LS.get('bag_daily_speed',1); S.dailyResult=null; S._dailyResub=false; clearDailyLive();
   S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;   // the round plays itself; only signature-hole decisions pause it
   S.dailyLegend=null; S.momentPO=null; S.momentPOHoleIdx=null;
   // CS255: load today's global board so the in-round scoreboard can show the day's best (fails open)
@@ -15028,7 +15048,7 @@ function beginDailyRoundWithLegend(token){
   S.dailyCourse=dailyCourseKey(_seed); S.dailyCond=dailyConditions(_seed,S.dailyCourse); if(!S.dailyPlan) S.dailyPlan='balanced';
   S.dailySkills=Object.assign({},token.skills); S.dailyOvr=token.ovr; S.dailyAttempt=0;
   S.dailyDiffs=dBaseDiffs(DAILY_COURSES[S.dailyCourse]);
-  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyMullSeen=[]; S.dailyMullOffer=null; S.dailySpeed=LS.get('bag_daily_speed',1); S.dailyResult=null; S._dailyResub=false;
+  S.dailyHoles=[]; S.dailyAttacks={}; S.dailyMullUsed=false; S.dailyMullAvail=(streakDisplay()>=3); S.dailyMullSeen=[]; S.dailyMullOffer=null; S.dailySpeed=LS.get('bag_daily_speed',1); S.dailyResult=null; S._dailyResub=false; clearDailyLive();
   S.dailyAuto=true; S.dailyHolePause=false; S.dailyViewHole=null; S.dailyRevealN=null; S.dailyProv=null; clearDailyTimer(); _hvbRects=null;
   S.dailyLegend={id:token.id, name:token.name, look:token.look}; S.momentPO=null; S.momentPOHoleIdx=null;
   S.name=token.name; if(token.look) S.look=Object.assign({},token.look);
@@ -15114,6 +15134,50 @@ function dailyMulligan(){
   const mopts=last.decPhase?{decPhase:last.decPhase,decAgg:last.attack, ...(last._d0?{teePreset:last._d0}:{})}:{};
   last.shots=dShotSeq(last.par,last.yards,last.par+last.toPar,dHoleRng(S.dailySeed,S.dailyCourse,last.i,dAttSalt(0x5408)),S.dailySkills,mopts);
   last.mull=true; S.dailyMullUsed=true; S.dailyRevealN=(last.shots||[]).length; S.dailyQuickStatic=false; track('daily_mulligan'); render();
+}
+// ---- In-progress daily round persistence (survives an accidental / memory-pressure page RELOAD) ----
+// The daily round lives only in memory, so a reload mid-round used to lose it entirely (e.g. iOS reloading
+// the tab under memory pressure when you pinch-zoom the course - the reported bug). We snapshot the round at
+// every hole boundary (and on pagehide) to localStorage and auto-resume it on the next load, so a reload is
+// harmless. Device-local (an in-progress attempt is device-local, and the attempt is already claimed, so
+// resuming grants no extra attempts). NOT for Moments (career-tied) or Practice (nothing is recorded).
+const DAILY_LIVE_KEY='bag_daily_live';
+function saveDailyLive(){
+  try{
+    if(PRACTICE || S.moment || S.momentPO) return;
+    if(!S.daily || S.screen!=='dailyround' || !S.dailyHoles || S.dailyHoles.length>=18) return;
+    const holes=S.dailyHoles.map(h=>({i:h.i,n:h.n,par:h.par,yards:h.yards,name:h.name,toPar:h.toPar,
+      attack:(h.attack==null?null:h.attack),decPhase:h.decPhase||null,_d0:h._d0||null,mull:!!h.mull,shots:h.shots||[]}));
+    LS.set(DAILY_LIVE_KEY,{ v:1, seed:S.dailySeed, course:S.dailyCourse, cond:S.dailyCond, plan:S.dailyPlan,
+      attempt:S.dailyAttempt||0, special:!!S.special, legend:S.dailyLegend||null,
+      skills:S.dailySkills, ovr:S.dailyOvr, speed:S.dailySpeed||1, claimed:!!S.dailyClaimed,
+      mullAvail:!!S.dailyMullAvail, mullUsed:!!S.dailyMullUsed, mullSeen:S.dailyMullSeen||[], holes });
+  }catch(e){}
+}
+function clearDailyLive(){ try{ localStorage.removeItem(DAILY_LIVE_KEY); }catch(e){} }
+function resumeDailyLive(){
+  try{
+    if(PRACTICE) return false;
+    const d=LS.get(DAILY_LIVE_KEY,null);
+    if(!d || d.v!==1) return false;
+    if(d.seed!==todayKey()){ clearDailyLive(); return false; }            // stale day → the course has rotated
+    const c=DAILY_COURSES[d.course];
+    if(!c || !Array.isArray(d.holes) || d.holes.length>=18){ clearDailyLive(); return false; }
+    S.daily=true; S.mode='daily'; S.dailyMode='round'; S.special=!!d.special; S.dailyLegend=d.legend||null;
+    S.dailySeed=d.seed; S.dailyCourse=d.course; S.dailyCond=d.cond; S.dailyPlan=d.plan||'balanced';
+    S.dailyAttempt=d.attempt||0; S.dailySkills=d.skills; S.dailyOvr=d.ovr; S.dailyDiffs=dBaseDiffs(c);   // diffs are deterministic → recompute
+    S.dailyHoles=d.holes.map(h=>({i:h.i,n:h.n,par:h.par,yards:h.yards,name:h.name,toPar:h.toPar,
+      attack:h.attack,decPhase:h.decPhase||undefined,_d0:h._d0||undefined,mull:!!h.mull,shots:h.shots||[]}));
+    S.dailyMullAvail=!!d.mullAvail; S.dailyMullUsed=!!d.mullUsed; S.dailyMullSeen=d.mullSeen||[]; S.dailyMullOffer=null;
+    S.dailySpeed=(d.speed===0.5||d.speed===1||d.speed===2||d.speed===5)?d.speed:1;
+    S.dailyClaimed=!!d.claimed;
+    S.dailyAuto=false;   // resume PAUSED so a reload lands you gently on your progress; you tap Play to continue
+    S.dailyRevealN=S.dailyHoles.length?(S.dailyHoles[S.dailyHoles.length-1].shots||[]).length:null;
+    S.dailyHolePause=false; S.dailySinking=false; S.dailyProv=null; S.dailyViewHole=null; S.dailyQuickStatic=false;
+    S.dailyResult=null; S._dailyResub=false; S.overlay=null; S.screen='dailyround';
+    track('daily_resumed',{course:d.course,thru:S.dailyHoles.length});
+    return true;
+  }catch(e){ clearDailyLive(); return false; }
 }
 // ---- Shot review: pause the round, rewatch any hole, replay any single shot's animation ----
 // Opening review HOLDS the round (clears the timers) without touching S.dailyAuto, so closing
@@ -15456,6 +15520,7 @@ function consumeLegendToken(id){
 }
 function finishDailyRound(){
   if(S.momentPO) return;   // mid sudden-death playoff: the playoff engine drives completion, not the daily finish
+  clearDailyLive();        // the round is finishing → no in-progress snapshot to resume
   if(S.moment) return finishMomentRound();   // a career-mode Moment: the score feeds the tournament, not the Daily
   if(S.special) return finishSpotlightRound();
   if(S.dailyResult)return;
@@ -18561,6 +18626,13 @@ if('serviceWorker' in navigator){ try{ window.addEventListener('load',()=>{ navi
 track('game_start');
 if(LS.get('bag_seen',false)) track('return_visit'); else LS.set('bag_seen',true);
 try{ practiceCheck(); }catch(e){}   // ?practice=1 → unlimited daily rounds for testing, nothing recorded
+// If a daily round was in progress when the tab was reloaded (accidental swipe, or iOS discarding the tab
+// under memory pressure while zoomed), drop straight back into it instead of losing all that progress.
+try{ resumeDailyLive(); }catch(e){}
+// Snapshot the in-progress round when the page is backgrounded / about to be discarded (iOS fires these
+// before it reloads a tab under memory pressure), so even a mid-hole reload resumes at the last hole.
+try{ window.addEventListener('pagehide',()=>{ try{ saveDailyLive(); }catch(e){} }); }catch(e){}
+try{ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='hidden'){ try{ saveDailyLive(); }catch(e){} } }); }catch(e){}
 render();
 try{ setInterval(tickCountdowns, 1000); }catch(e){}   // live "next daily course in …" countdowns
 try{ h2hCheckLink(); }catch(e){}   // arrived via an invite link (?h2h=CODE)? stash it + join (prompting sign-in)
