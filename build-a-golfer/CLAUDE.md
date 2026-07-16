@@ -8838,6 +8838,22 @@ allows Google Fonts, or self-host Anton.*
     through the pixel backdrop so shares match; extend pixel art to the H2H multi-ball watch (already works —
     it shares hvNode). The scratchpad prototype (`pixcourse7.mjs`) remains as the iteration sandbox.
 
+- **CS358 — pixel course pixels match the golfer's on the zoom-in (camera-aware detail tile).** Owner: on
+  the putt green close-up the COURSE pixels blew up into huge blocks while the golfer sprite stayed fine — a
+  jarring mismatch. Root cause: the pixel backdrop is a fixed 210-wide raster covering the whole hole, so
+  zooming the camera into the green magnified each course pixel ~5x while the golfer is drawn at a
+  ~constant on-screen size regardless of zoom. Fix: `pxTerrainURL` is now camera-parametrized
+  (`opts:{cam,gw,gh}`), and `hvBackdrop` takes a `detailCam` — when the hole view is zoomed to a close-up
+  (`hvDetailCam` returns the expanded close-up camera when `camTarget` width < 60% of the frame, else null),
+  it renders a SECOND high-density pixel tile scoped to just the visible region (`HV_PX_DETAIL=340` vertical
+  pixels, aspect-matched width, so one course pixel ≈ the golfer sprite pixel) and overlays it on the base
+  full-frame image at that region. The base (chunky) tile is untouched, so the full-hole view keeps its
+  pixel-art look; only the zoomed close-up swaps in the fine tile. Both tiles cache independently (key
+  includes cam+gw+gh). Wired into the two live `hvNode` branches (single + multi/H2H); the preview + share
+  paths pass no detailCam (full view). Verified in Playwright: a real practice round's green close-up
+  (viewBox width 82) renders the detail tile (2 course images = base+detail, + golfer frames) with fine
+  pixels matching the golfer, 0 page errors; full-view + illustrated toggle unaffected. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
