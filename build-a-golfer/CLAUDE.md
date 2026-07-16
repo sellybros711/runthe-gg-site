@@ -8635,6 +8635,19 @@ allows Google Fonts, or self-host Anton.*
       hatStyle; Details shows name+country no grid; guest gets only Look + lock card and can still change
       skin/hair; Build routes to draft; shop regression still green; 0 page errors. Deployed to /golf.
 
+  - **CS356i — resume card shows the full standing pixel golfer** (owner: wanted the whole golfer, not a
+    bigger head-crop). Added `pxFigureHTML(look,h)` (the full 44×56 sprite at a set height) and used it in
+    `resumeCareerCard` instead of `pxAvatarChip`. Deployed to /golf.
+  - **CS356j — draft: locked-in vs draftable is now obvious + round result pill moved to the top** (tester +
+    owner, screenshots). (1) On the draft grid the already-drafted (locked-in) slots now render **muted grey
+    with a green ✓** and are clearly non-clickable, while the draftable slots are **gold-accented/tappable**
+    (the `.attr.dfilled` green tint that looked too similar to the draftable tiles is gone; `.attr.dtake`
+    gets a gold border + faint gold fill; a `.dlock` ✓ badge added to filled tiles in both the career draft
+    and the H2H draft). (2) The holed **result pill** (`.hvresult` "PAR E") that popped over the middle of
+    the tracer (covering the golfer) now pops at the **top** (top:42px, below the hole-info chip), so it
+    never blocks the golfer/flag. Verified in Playwright (2 locked + 6 draftable with ✓ badges; pill top-
+    centered ~46px) + screenshots; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
