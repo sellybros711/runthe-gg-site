@@ -8886,6 +8886,38 @@ allows Google Fonts, or self-host Anton.*
   the dark UI). Verified in Playwright: sprites render on a grass swatch + a real green close-up with the soft
   rim blending the golfer into the course, 0 page errors. Deployed to /golf.
 
+- **CS361 — resolution-independent zoom: finer course pixels on the putt close-up while every object keeps
+  its true COURSE scale (owner IMG_8337 "the pixels of the course should match the golfer when it zooms in"
+  + IMG_8338 "keep the scale of all objects, just adjust the pixel size when it zooms in").** CS358's first
+  attempt (a higher-res detail tile) raised resolution but the renderer draws objects at FIXED pixel counts,
+  so trees/bushes shrank off-scale — reverted in CS359. This builds it properly: the detail tile renders at
+  higher pixel density AND scales every object + course-feature pitch by `os` (= detail px-density / base
+  px-density ≈ 5–8 on a putt), so the course keeps its exact scale but the pixels get finer to match the
+  golfer sprite.
+  • **Renderer (`pxTerrainURL`):** new `const os=opts.os||1;`. A `drawTreeS`/`edisc` scaled-canopy drawer
+    (rounded/shaded trees sized `R=baseR*os*0.85`, clamped) and an os-aware `drawBush`; `drawTree` delegates
+    to `drawTreeS` when `os>1`. Scenery PLACEMENT + course FEATURES scaled by os so density/scale stay
+    course-constant: `BUFFER=9*os`, scatter `step`, bush band, the density ramp slope (`/os`), grove-noise
+    frequency (`/os`), the treeline step, reed height (`*os`) + reed density (`/os`), the cart-path width +
+    sampling, and the fairway mow-stripe pitch (`cy/(6*os)`). The terrain SHAPES (green/water/bunker/fairway,
+    green organic wobble + contour rings) were already course-space (inverse-projected per cell), so they're
+    resolution-independent for free. **os=1 (the full-hole base tile) is byte-identical to before** — every
+    scaled term reduces to its original value at os=1 (verified `pxTerrainURL(...,{os:1}) === pxTerrainURL(...)`).
+  • **Wiring:** re-enabled `hvDetailCam` (returns an expanded close-up region only when genuinely zoomed,
+    `camTarget[2] < HV_W*0.6`); `hvBackdrop` computes `os=(gh/detailCam[3])/(HV_PX_BASEH/HV_H)` and passes it
+    into the detail-tile `pxTerrainURL` call. The detail `<image>` overlays the base tile at the close-up
+    region in the same SVG viewBox coords, so it scales in with the camera tween and the tracer/golfer/HUD
+    overlay unchanged. Full-hole (non-zoomed) view keeps the base tile → the retro pixel-art look is
+    preserved; only the zoom gets finer. Also fixes the CS359 pre-existing on-green ball bug carry-forward
+    (unchanged here). The illustrated toggle + H2H multi-ball paths share the same code and are unaffected.
+  • Verified in Playwright: os=1 byte-identical; a side-by-side of the OLD base-tile-magnified (chunky
+    blocks) vs the NEW detail tile (fine pixels, correctly-scaled rounded trees, clean organic green) —
+    clear win; a real live practice putt shows the course pixels matching the golfer sprite with the flag/
+    cup/shot-pin/tracer/scoreboard composited correctly; 21 course/hole/biome combos (7 courses × 3 holes,
+    pine/links/coastal/desert/tropical/parkland) all render base + detail with 0 bad; illustrated fallback
+    intact; 0 page errors throughout. Deployed to /golf. Tunable: `HV_PX_DETAIL` (detail vertical px),
+    `HV_PX_BASEH`, the `drawTreeS` `0.85` object factor, the `hvDetailCam` 60%-of-frame zoom threshold.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

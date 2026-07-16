@@ -13513,7 +13513,9 @@ function hvBackdrop(g, seedN, B, detailCam){
         // match the golfer's pixel size instead of blowing up into big blocks (owner: pixels should match on zoom)
         if(detailCam){
           const gh=Math.max(120,Math.min(360,Math.round(HV_PX_DETAIL))), gw=Math.max(120,Math.min(360,Math.round(HV_PX_DETAIL*detailCam[2]/detailCam[3])));
-          const durl=pxTerrainURL(g, seedN, B, {cam:detailCam, gw, gh});
+          // os = detail px-density / base px-density → scenery + course features keep their true course scale
+          const os=(gh/detailCam[3])/(HV_PX_BASEH/HV_H);
+          const durl=pxTerrainURL(g, seedN, B, {cam:detailCam, gw, gh, os});
           if(durl) s+=`<image href="${durl}" xlink:href="${durl}" x="${detailCam[0].toFixed(1)}" y="${detailCam[1].toFixed(1)}" width="${detailCam[2].toFixed(1)}" height="${detailCam[3].toFixed(1)}" preserveAspectRatio="none" style="image-rendering:pixelated"/>`;
         }
         return s+hvPinTeeSVG(g,B);
@@ -13523,9 +13525,15 @@ function hvBackdrop(g, seedN, B, detailCam){
   return hvTerrain(g, seedN, B);
 }
 const HV_PX_DETAIL=340;   // detail-tile vertical pixel count → tuned so a zoomed course pixel ~= the golfer sprite pixel
-const hvDetailCam=(camTarget,live)=>null;   // detail tile disabled: it shrank objects off-scale on zoom.
-  // Finer-pixels-on-zoom-while-keeping-object-scale needs a resolution-independent renderer (planned) —
-  // for now the single base tile keeps every object at a consistent scale.
+const HV_PX_BASEH=254;    // base tile vertical pixel count (pxTerrainURL default GH), over HV_H course-units
+// On a real zoom-in (putt close-up), return an expanded close-up region so hvBackdrop can render a
+// higher-density detail tile there — the resolution-independent renderer (os factor) keeps every object
+// at its true COURSE scale while the pixels get finer to match the golfer sprite (owner's ask).
+const hvDetailCam=(camTarget,live)=>{
+  if(!live || !camTarget || camTarget[2] >= HV_W*0.6) return null;   // only when genuinely zoomed
+  const m=0.12, c=camTarget;
+  return [c[0]-c[2]*m, c[1]-c[3]*m, c[2]*(1+2*m), c[3]*(1+2*m)];
+};
 function pxTerrainURL(g, seedN, B, opts){
   opts=opts||{};
   const cam=opts.cam||HV_CAM, GW=opts.gw||210, GH=opts.gh||254;
@@ -13533,6 +13541,10 @@ function pxTerrainURL(g, seedN, B, opts){
   if(_pxCache.has(key)) return _pxCache.get(key);
   if(_pxCache.size>80) _pxCache.clear();
   const SC=3, seed=seedN>>>0;
+  // os = object-scale factor: on the zoom DETAIL tile the pixel density is higher, so scenery + course-feature
+  // pitch are scaled by os to keep every object at its true COURSE scale (owner: keep object scale, finer pixels).
+  // os=1 on the full base tile → byte-identical to the un-scaled render.
+  const os=opts.os||1;
   const hex=h=>{h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];};
   const shade=(c,d)=>[Math.max(0,Math.min(255,c[0]+d)),Math.max(0,Math.min(255,c[1]+d)),Math.max(0,Math.min(255,c[2]+d))];
   const BAYER=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
@@ -13594,7 +13606,7 @@ function pxTerrainURL(g, seedN, B, opts){
     else if(id===FR){col=dith(cx,cy,lv)?C.fringe:shade(C.fringe,-6);if(edge(cx,cy,FR)&&at(cx,cy-1)!==GR)col=shade(C.fringe,-14);}
     else if(id===WA){const x=XY[(cy*GW+cx)*2],y=XY[(cy*GW+cx)*2+1];let deep=0;if(g.water)deep=1-Math.min(1,Math.hypot((x-g.water.x)/(g.water.rx),(y-g.water.y)/(g.water.ry)));col=deep>0.4?shade(C.water,-16):C.water;const wave=Math.round(1.6+Math.sin(cx*0.28+cy*0.05)*1.3);if((cy&3)===(wave&3))col=shade(C.ripple,deep>0.4?-10:0);if(edge(cx,cy,WA))col=shade(C.ripple,22);}
     else if(id===SA){col=dith(cx,cy,lv)?shade(C.sand,7):C.sand;if(((cx+(cy&1?2:0))%6)===0&&cy%3===0)col=C.sandSpeck;if(edge(cx,cy,SA))col=C.sandLine;}
-    else if(id===FW){const stripe=(Math.floor(cy/6)%2===0);col=stripe?C.fw:C.cut;col=dith(cx,cy,lv*0.92)?col:shade(col,-6);if(edge(cx,cy,FW)){const nb=at(cx,cy-1);col=(nb===GR||nb===FR)?C.cut:C.fwEdge;}}
+    else if(id===FW){const stripe=(Math.floor(cy/(6*os))%2===0);col=stripe?C.fw:C.cut;col=dith(cx,cy,lv*0.92)?col:shade(col,-6);if(edge(cx,cy,FW)){const nb=at(cx,cy-1);col=(nb===GR||nb===FR)?C.cut:C.fwEdge;}}
     else if(id===TE){col=C.cut;if(edge(cx,cy,TE))col=C.fwEdge;}
     else if(id===OC){const vy2=(cy+0.5)/GH*cam[3]+cam[1],vx2=(cx+0.5)/GW*cam[2]+cam[0];
       const dS=oceanSide>0?vx2-oedge(vy2):oedge(vy2)-vx2;
@@ -13613,9 +13625,9 @@ function pxTerrainURL(g, seedN, B, opts){
   }
   const proj=(x,y)=>{const f=Math.max(0,Math.min(1,y/g.span));const sy=HV_H-34-f*(HV_H-78);const sx=HV_W/2+x*g.sx*g.t(y);
     return [Math.round((sx-cam[0])/cam[2]*GW),Math.round((sy-cam[1])/cam[3]*GH)];};
-  const pathSide=(hvHash(seed,1,9)<0.5?-1:1);
-  for(let yy=6; yy<g.L-2; yy+=0.6){ const off=g.fww(yy)+2.4+Math.sin(yy*0.08)*1.2, xx=g.cx(yy)+pathSide*off;
-    const [px,py]=proj(xx,yy); if(at(px,py)===RO||at(px,py)===DE){ put(px,py,C.path); put(px+pathSide,py,shade(C.path,-14)); } }
+  const pathSide=(hvHash(seed,1,9)<0.5?-1:1), pw=Math.max(2,Math.round(2*os));
+  for(let yy=6; yy<g.L-2; yy+=0.6/os){ const off=g.fww(yy)+2.4+Math.sin(yy*0.08)*1.2, xx=g.cx(yy)+pathSide*off;
+    const [px,py]=proj(xx,yy); if(at(px,py)===RO||at(px,py)===DE){ for(let w=0;w<pw;w++) put(px+pathSide*w,py,w<pw*0.5?C.path:shade(C.path,-14)); } }
   const tg=(B.treeG||['#2e5c1e','#3f7a28','#5d9c34']).map(hex),pine=(B.pine||['#1b4416','#265a1f','#37732a']).map(hex),
     autumn=(B.treeA||['#a06a1c','#c08a2a']).map(hex),cact=(B.cactus||['#4f8f3f','#6aa74f']).map(hex),trunk=hex(B.trunk||'#7a5a2e'),
     gorse=(B.gorse||['#4a5c22','#e2c34a']).map(hex),dune=(B.dune||['#8f9449','#a3a856']).map(hex),flower=(B.flowerCols||['#ff9ecb']).map(hex);
@@ -13625,10 +13637,30 @@ function pxTerrainURL(g, seedN, B, opts){
   const cshadow=(px,py,r)=>{for(let yy=0;yy<=r;yy++)for(let xx=-r;xx<=r;xx++){if(xx*xx+yy*yy*3>r*r*3)continue;if(okRough(px+xx+1,py+yy+2))put(px+xx+1,py+yy+2,shade(getc(px+xx+1,py+yy+2)||C.roughD,-24));}};
   const disc=(px,py,r,cc,hi,lo)=>{for(let yy=-r;yy<=r;yy++)for(let xx=-r;xx<=r;xx++){if(xx*xx+yy*yy>r*r)continue;let c=cc;if(xx+yy<-r*0.35)c=hi;else if(xx+yy>r*0.55)c=lo;put(px+xx,py+yy-1,c);}};
   const pk_=(a,t)=>a[(hvHash(seed,t*7,6)*a.length)|0];
+  const edisc=(px,py,rx,ry,cc,hi,lo)=>{rx=Math.max(1,rx);ry=Math.max(1,ry);for(let yy=-ry;yy<=ry;yy++)for(let xx=-rx;xx<=rx;xx++){if(xx*xx/(rx*rx)+yy*yy/(ry*ry)>1)continue;let c=cc;if(xx+yy<-rx*0.35)c=hi;else if(xx+yy>rx*0.55)c=lo;put(px+xx,py+yy,c);}};
+  // scaled canopy for the zoom detail tile (os>1): objects keep their course-scale but are drawn with finer pixels
+  const drawTreeS=(px,py,tries)=>{ const kind=pickK(hvHash(seed,tries,5)),pk=a=>a[(hvHash(seed,tries*7,6)*a.length)|0];
+    const tvar=Math.round((vnoise(px*0.035+7,py*0.035)-0.5)*24);
+    if(kind==='fescue'){ if(vnoise(px*0.03+3,py*0.03+40)<0.58)return; const fc=shade(C.roughL,-6),h=Math.round(3*os); for(let k=0;k<h;k++)put(px,py-k,k>h*0.6?shade(fc,8):fc); return; }
+    if(kind==='flower'){ if(vnoise(px*0.032+80,py*0.032+15)<0.66)return; const fc=pk(flower),r=Math.max(1,Math.round(1.4*os)); edisc(px,py,r,r,fc,shade(fc,18),shade(fc,-10)); return; }
+    const baseR=(hvHash(seed,tries*13,14)<0.08?4:2)+((hvHash(seed,tries*5,8)*2.6)|0);
+    const R=Math.max(2,Math.min(Math.round(baseR*os*0.85), Math.round(GH*0.14)));
+    cshadow(px,py,R);
+    if(kind==='pine'||kind==='cypress'||kind==='saguaro'){ const cc=shade(kind==='saguaro'?pk(cact):pk(pine),tvar),hi=shade(cc,26),lo=shade(cc,-18);
+      edisc(px,py-Math.round(R*0.3),Math.max(2,Math.round(R*0.72)),Math.round(R*1.18),cc,hi,lo); for(let k=0;k<Math.round(R*0.5);k++)put(px,py+R+k,trunk); return; }
+    if(kind==='palm'){ const fr=pk(cact),hi=shade(fr,20),lo=shade(fr,-12); edisc(px,py-Math.round(R*0.2),Math.round(R*1.1),Math.max(2,Math.round(R*0.65)),fr,hi,lo); for(let k=0;k<Math.round(R*0.75);k++)put(px,py+Math.round(R*0.4)+k,trunk); return; }
+    if(kind==='rock'){ const rk=hex(B.rockA||'#c46536'); edisc(px,py,R,Math.max(2,Math.round(R*0.7)),rk,shade(rk,26),shade(rk,-16)); return; }
+    if(kind==='dune'){ const dc=pk(dune); edisc(px,py,Math.round(R*1.2),Math.max(2,Math.round(R*0.55)),dc,shade(dc,16),shade(dc,-12)); return; }
+    if(kind==='gorse'){ const gc=gorse[0]; edisc(px,py,R,R,gc,gorse[1],shade(gc,-14)); return; }
+    if(kind==='barrel'||kind==='scrub'||kind==='ocotillo'){ const cc=pk(cact),r=Math.max(2,Math.round(R*0.7)); edisc(px,py,r,r,cc,shade(cc,16),shade(cc,-14)); return; }
+    const isA=hvHash(seed,tries*11,7)<(B.autumnP||0.12); const cc=shade(isA?pk(autumn):pk(tg),tvar);
+    disc(px,py,R,cc,shade(cc,28),shade(cc,-22)); for(let k=0;k<Math.round(R*0.4);k++)put(px,py+R-1+k,trunk); };
   const drawBush=(px,py,tries)=>{const base=(wooded?pk_(tg,tries):pk_(dune,tries));const tone=Math.round((vnoise(px*0.05,py*0.05)-0.5)*20);const cc=shade(base,tone),hi=shade(cc,20),lo=shade(cc,-16);
-    if(!okRough(px,py))return;cshadow(px,py,1);
+    if(!okRough(px,py))return;
+    if(os>1){ const r=Math.max(1,Math.round(1.7*os)); cshadow(px,py,r); edisc(px,py,r,Math.max(1,Math.round(r*0.8)),cc,hi,lo); return; }
+    cshadow(px,py,1);
     put(px,py,cc);put(px-1,py,cc);put(px+1,py,cc);put(px,py-1,hi);put(px-1,py-1,lo);put(px+1,py-1,cc);if(hvHash(seed,tries*3,17)<0.5)put(px+2,py,lo);};
-  const drawTree=(px,py,tries)=>{ const kind=pickK(hvHash(seed,tries,5)),pk=a=>a[(hvHash(seed,tries*7,6)*a.length)|0];
+  const drawTree=(px,py,tries)=>{ if(os>1) return drawTreeS(px,py,tries); const kind=pickK(hvHash(seed,tries,5)),pk=a=>a[(hvHash(seed,tries*7,6)*a.length)|0];
     const tvar=Math.round((vnoise(px*0.035+7,py*0.035)-0.5)*24);
     if(kind==='pine'||kind==='cypress'){const cc=shade(pk(pine),tvar),hi=shade(cc,26),lo=shade(cc,-16);cshadow(px,py,3);
       put(px,py-5,hi);put(px,py-4,cc);put(px-1,py-3,cc);put(px,py-3,hi);put(px+1,py-3,cc);
@@ -13644,8 +13676,9 @@ function pxTerrainURL(g, seedN, B, opts){
     else if(kind==='flower'){if(vnoise(px*0.032+80,py*0.032+15)<0.66)return;const fc=pk(flower);put(px,py,fc);put(px+1,py,fc);put(px,py-1,fc);}
     else{const isA=hvHash(seed,tries*11,7)<(B.autumnP||0.12);const cc=shade(isA?pk(autumn):pk(tg),tvar);const big=hvHash(seed,tries*13,14)<0.08;const r=(big?4:2)+((hvHash(seed,tries*5,8)*2.6)|0);cshadow(px,py,r);disc(px,py,r,cc,shade(cc,28),shade(cc,-22));if(big)disc(px+1,py-1,r-1,shade(cc,10),shade(cc,30),shade(cc,-16));put(px,py+r-1,trunk);}
   };
-  const BUFFER = 9;
-  const step= wooded?4 : 5;
+  const BUFFER = Math.round(9*os);
+  const step= Math.max(2, Math.round((wooded?4:5)*os));
+  const bushBand=Math.round(3*os), rampW=(wooded?0.2:0.14)/os, groveF=0.045/os;
   let tno=0;
   for(let py=4; py<GH-1; py+=1){ if(py%step!==0) continue;
     for(let px=1; px<GW-1; px+=1){ if(px%step!==0) continue;
@@ -13653,23 +13686,23 @@ function pxTerrainURL(g, seedN, B, opts){
       const jx=px+((hvHash(seed,tno,10)*step)|0)-((step/2)|0), jy=py+((hvHash(seed,tno*3,11)*step)|0)-((step/2)|0);
       if(!okRough(jx,jy)) continue;
       const d=DIST[jy*GW+jx];
-      if(wooded && d>=BUFFER-3 && d<BUFFER){ if(hvHash(seed,tno*5,12)<0.4) drawBush(jx,jy,tno); continue; }
+      if(wooded && d>=BUFFER-bushBand && d<BUFFER){ if(hvHash(seed,tno*5,12)<0.4) drawBush(jx,jy,tno); continue; }
       if(d<BUFFER) continue;
-      const grove = 0.62 + (vnoise(jx*0.045+20,jy*0.045+9)-0.5)*0.95;
+      const grove = 0.62 + (vnoise(jx*groveF+20,jy*groveF+9)-0.5)*0.95;
       const kIsFlower = wooded && pickK(hvHash(seed,tno,5))==='flower';
-      let p = (wooded ? Math.min(0.98, (d-BUFFER+1)*0.2) : Math.min(0.7,(d-BUFFER+1)*0.14)) * (kIsFlower?0.35:grove);
+      let p = (wooded ? Math.min(0.98, (d-BUFFER+1)*rampW) : Math.min(0.7,(d-BUFFER+1)*rampW)) * (kIsFlower?0.35:grove);
       if(hvHash(seed,tno*5,12) > p) continue;
       drawTree(jx,jy,tno);
     }
   }
-  if(wooded){ for(let px=2;px<GW-2;px+=3){ const py=3+((hvHash(seed,px,13)*3)|0); if(okRough(px,py)&&DIST[py*GW+px]>=BUFFER) drawTree(px,py+2,9000+px); } }
+  if(wooded){ const tlStep=Math.max(2,Math.round(3*os)); for(let px=2;px<GW-2;px+=tlStep){ const py=3+((hvHash(seed,px,13)*3)|0); if(okRough(px,py)&&DIST[py*GW+px]>=BUFFER) drawTree(px,py+2,9000+px); } }
   const reedC=shade(C.rough,-18),reedT=shade(C.roughL,-4);
   for(let cy=2;cy<GH-2;cy++)for(let cx=2;cx<GW-2;cx++){
     if(at(cx,cy)!==WA) continue;
     if(at(cx,cy-1)===WA) continue;
     if(!okRough(cx,cy+1)) continue;
-    if(hvHash(seed,cx*7+cy*3,18)>0.32) continue;
-    const hgt=1+((hvHash(seed,cx*3+cy,19)*2.4)|0);
+    if(hvHash(seed,cx*7+cy*3,18)>0.32/os) continue;
+    const hgt=1+((hvHash(seed,cx*3+cy,19)*2.4*os)|0);
     for(let k=0;k<hgt;k++){const ry=cy+1+k;if(!okRough(cx,ry))break;put(cx,ry,k===0?reedT:reedC);}
     if(hvHash(seed,cx+cy*5,20)<0.4)put(cx,cy,shade(C.ripple,10));
   }
