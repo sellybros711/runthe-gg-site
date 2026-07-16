@@ -7845,17 +7845,18 @@ function simNextRound(){
 // CS295: Moments are reserved for REALLY big occasions and only when you're genuinely in contention - a
 // major (or the Tour Championship finale), inside the top 3 and within 2 shots of the lead. (Was: any
 // major/signature/playoff event within 4-5 of the lead, which fired several times a season.)
-const MOMENT_MAJOR={gap:2,pos:3};
+// CS356r: fire at ANY stroke-play event you're in contention at Sunday (owner: 3 seasons, never got a Moment).
+// Tiered so a major prompts from anywhere near the lead and a regular event only when you're right at the top.
+const MOMENT_TIERS={major:{gap:4,pos:6}, big:{gap:3,pos:4}, reg:{gap:2,pos:3}};
 function momentInfo(ce){
   if(!ce || ce.done || ce.roundsDone!==3 || S.daily) return null;
   const evt=ce.evt;
   if(evt.olympics || evt.teamcup) return null;          // special formats keep their own set pieces
-  if(!(evt.major || evt.stagger)) return null;          // CS295: only the biggest - a major or the Tour Championship finale
   const me=ce.players.find(o=>o.p.you); if(!me || !me.made) return null;
   const alive=ce.players.filter(o=>o.made).sort((a,b)=>a.total-b.total);
   const pos=alive.findIndex(o=>o.p.you)+1;
   const gap=Math.round(me.total-alive[0].total);
-  const th=MOMENT_MAJOR;
+  const th=evt.major?MOMENT_TIERS.major:(evt.big||evt.playoff||evt.stagger)?MOMENT_TIERS.big:MOMENT_TIERS.reg;
   if(!(gap<=th.gap && pos<=th.pos)) return null;
   const margin=(pos===1&&alive[1])?Math.round(alive[1].total-me.total):0;
   const rival=(pos===1?alive[1]:alive[0]);
@@ -7923,7 +7924,7 @@ const STORY_CONF_CAP=0.8, STORY_PER_SEASON=1, STORY_GAP=2;   // CS352: 2→1 pre
 // Interruption budget (owner): a season is a SIMULATOR for anyone, not just golf fans, cap the total
 // number of times the sim pauses for a pop-up (storyline + Moment) at 4/season so casual users aren't
 // nagged into skipping. Moments (play-the-final-round) are prioritized within that budget over storylines.
-const SEASON_STOP_BUDGET=2, MOMENT_PER_SEASON=1;   // CS352: ≤2 total in-season pop-ups/season (dilemmas + arcs + pressers + Moments) - owner: 4 was still too many. Typically = 1 guaranteed interview + at most 1 situational Moment/dilemma.
+const SEASON_STOP_BUDGET=2, MOMENT_PER_SEASON=2;   // CS352/CS356r: the shared budget (2) restrains the INTERRUPT-y pop-ups (pressers/dilemmas/arcs). Moments (opt-in "play your Sunday") are DECOUPLED - up to 2/season, not blocked by the shared budget - so a contending season reliably offers them.
 function seasonStops(){ return (S.season&&S.season.stops)||0; }
 function seasonStopLeft(){ return SEASON_STOP_BUDGET - seasonStops(); }
 function careerStory(){ const c=(S.career=S.career||{}); if(!c.story) c.story={traits:{}, endorsements:0, fan:0, feed:[], lastBeat:-99, seasonCount:0, seenEvt:{}};
@@ -11201,8 +11202,9 @@ function scrSeason(){
   }
   // THE MOMENT: heading into Sunday in contention → pause and offer to play the final round.
   // Interactive career play only; skip-to-end / headless sims never reach this scheduler.
+  const lastStopM=(S.season&&S.season._lastStopEvt!=null)?S.season._lastStopEvt:-99;
   if(!ce.done && ce.roundsDone===3 && !ce._momentAsked && !ce._interrupted
-     && seasonStopLeft()>0 && (S.season&&(S.season.momentsShown||0)<MOMENT_PER_SEASON)){
+     && (S.evtIndex-lastStopM)>=2 && (S.season&&(S.season.momentsShown||0)<MOMENT_PER_SEASON)){   // CS356r: decoupled from the shared budget; keep no-back-to-back spacing (CS327)
     ce._momentAsked=true;
     const mi=momentInfo(ce);
     if(mi){
@@ -12202,26 +12204,28 @@ function scrOffseason(){
   add(hero);
   add(dynRadar());   // CS339: the live animated rating web (OVR in the centre)
 
-  // one tight status line: Tour Rep perk + prime/age
-  { const r=repTier(); const ageMsg = nDec ? '<b style="color:#e9a23b">▼ Age catching up</b>, power fades first; a spin can repair a slot'
+  // one tight status line: Tour Rep perk + prime/age. CS356s: hidden while you're mid-swap (spun) so the
+  // decision moment stays focused - this is between-decision context, not needed while choosing a stat.
+  if(!spun){ const r=repTier(); const ageMsg = nDec ? '<b style="color:#e9a23b">▼ Age catching up</b>, power fades first; a spin can repair a slot'
       : 'In your prime, no age decline this year'; let teaser='';
     if(r.next){ const cur=repPerk(), np=repPerk2(r.next.name), dc=np.changes-cur.changes, dr=np.reSpins-cur.reSpins;
       if(dc>0||dr>0) teaser=` · reach <b style="color:var(--gold)">${esc(r.next.name)}</b> for ${[dc>0?`+${dc} change${dc>1?'s':''}`:'',dr>0?`+${dr} re-spin${dr>1?'s':''}`:''].filter(Boolean).join(' & ')}`; }
     add($(`<div class="osstat">${r.tier.name==='G.O.A.T.'?'🐐':'🏅'} <b style="color:var(--gold)">${esc(r.tier.name)}</b>${teaser} · ${ageMsg}</div>`)); }
 
-  // sponsors: compact strip normally; the full prominent decision only when there's an offer to make
+  // sponsors: an actual OFFER (a decision) always shows; the passive strip is hidden while mid-swap (CS356s).
   if(!S.circuitMode){ const offers=(S.career&&S.career.sponsorOffers)||[];
-    const sn = offers.length ? sponsorDecisionNode() : sponsorStripNode(); if(sn) add(sn); }
+    if(offers.length){ const sn=sponsorDecisionNode(); if(sn) add(sn); }
+    else if(!spun){ const sn=sponsorStripNode(); if(sn) add(sn); } }
 
   // reserved reel slot - same height whether idle / spinning / landed, so tapping Spin causes NO layout jump
   const rar=spun?g.rarity:null, RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
   add($(`<div class="osreel ${S.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
     ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:''}
     <div class="name">${S.spinning?'…':(spun?esc(g.name):'Spin to swap a skill')}</div>
-    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.spinning?'':'Optional · spin at your own risk')}</div></div>`));
+    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current'].filter(Boolean).join(' · ')):(S.spinning?'':'Optional · spin at your own risk')}</div></div>`));
 
-  // one-line hint above the grid
-  if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap a stat to swap in <b>${esc(g.name)}</b>'s rating, <span style="color:#35d6a0">▲ upgrades apply instantly</span>, <span style="color:#e07a5f">▼ a downgrade asks you to confirm</span></div>`));
+  // one-line hint above the grid (CS356s: trimmed - the tiles already show ▲/▼)
+  if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap a stat to swap it, <span style="color:#35d6a0">▲ applies instantly</span> · <span style="color:#e07a5f">▼ asks to confirm</span></div>`));
   else if(nDec) add($(`<div class="small center osgridhint" style="color:#e07a5f">▼ Age cost you ground, red shows what each skill dropped. Re-spin to repair.</div>`));
   else if(lockedNow.length) add($(`<div class="small center osgridhint" style="color:var(--gold)">🔒 Locked stats already changed this off-season, a spin can only land on your open stats</div>`));
   else add($(`<div class="small center osgridhint" style="color:#d9c48a">⚠ Spinning is optional and a <b>risk</b>, you can start the season as-is. If you spin, you <b>must lock in</b> whatever you land on, even if it's worse.</div>`));
@@ -12272,7 +12276,7 @@ function scrOffseason(){
   cont.onclick=finishOffseason; actions.appendChild(cont);
   add(actions);
 
-  add(rivalStatusNode());   // emergent nemesis status (read-only)
+  if(!spun) add(rivalStatusNode());   // emergent nemesis status (read-only); hidden mid-swap (CS356s)
   // CS356d: the sponsor offer is now shown INLINE above (sponsorDecisionNode) instead of a full-screen
   // popup (owner: the popup can go away). maybeSponsorMoment() intentionally not called here.
 }
