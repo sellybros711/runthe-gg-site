@@ -6773,7 +6773,10 @@ const PXPAT=[
 ];
 const PXPAT_BY={}; PXPAT.forEach(p=>PXPAT_BY[p.id]=p);
 function pxLum(hex){ hex=(hex||'#888').replace('#',''); if(hex.length<6) return .5; return (parseInt(hex.slice(0,2),16)*.299+parseInt(hex.slice(2,4),16)*.587+parseInt(hex.slice(4,6),16)*.114)/255; }
-function pxGolferURL(look){
+const _pxCanvas=new Map();
+// Build (and cache) the pixel golfer as a CANVAS element - so it can be drawn synchronously
+// onto other canvases (e.g. the share cards) via ctx.drawImage, with no async image load.
+function pxGolferCanvas(look){
   look=look||S.look||DEFLOOK; const av=avLook(look);
   const pantsHex=((typeof PANTS!=='undefined'&&PANTS.find(x=>x.id===(look.pants||'stone')))||{a:'#c7bfa8'}).a;
   const style=(look.hairStyle&&PXG_HAIR[look.hairStyle])?look.hairStyle:'short';
@@ -6782,7 +6785,7 @@ function pxGolferURL(look){
   const pat=(look.shirtPat&&PXPAT_BY[look.shirtPat])?look.shirtPat:'';
   const shades=(look.eyewear&&PXG_EYEWEAR[look.eyewear])?look.eyewear:'';
   const key=av.key+'|st'+style+'|cap'+(capOn?hatStyle:'0')+'|pn'+(look.pants||'stone')+'|pt'+pat+'|ew'+shades;
-  let u=_pxURL.get(key); if(u) return u;
+  let cached=_pxCanvas.get(key); if(cached) return cached;
   const P={ k:PXG_FIX.k, l:PXG_FIX.l, g:PXG_FIX.g, n:PXG_FIX.n, G:PXG_FIX.G, H:PXG_FIX.H, F:PXG_FIX.F,
     s:av.skinHex, h:av.hairHex, t:av.shirtHex, d:pxShade(av.shirtHex,-26), v:pxShade(av.shirtHex,34),
     p:pantsHex, q:pxShade(pantsHex,-22), m:pxShade(pantsHex,16),
@@ -6814,7 +6817,12 @@ function pxGolferURL(look){
   if(capOn) paint(hatStyle==='visor'?PXG_VISOR:(PXG_HATS[hatStyle]||PXG_CAP));
   // CS356g: EYEWEAR (sunglasses) over the eyes, on top of everything.
   if(shades) paint(PXG_EYEWEAR[shades]);
-  u=cv.toDataURL('image/png'); _pxURL.set(key,u); return u;
+  _pxCanvas.set(key,cv); return cv;
+}
+function pxGolferURL(look){
+  const cv=pxGolferCanvas(look);
+  let u=_pxURL.get(cv); if(u) return u;
+  u=cv.toDataURL('image/png'); _pxURL.set(cv,u); return u;
 }
 function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg" src="${pxGolferURL(look)}" alt="Your golfer"></div>`; }
 // CS356f: tiny head-and-shoulders chip of the pixel golfer, for the profile pill etc.
@@ -11260,113 +11268,103 @@ function lbRow(o){
 /* ---------- share card (canvas image) ---------- */
 const RLABS=['DRV','ACC','APP','SHT','SCR','BNK','PUT','COM'];
 function bestTxt(b){return b===99?'MC':(b===1?'WIN':'T'+b);}
+// CS356af: PLAYER-CARD share graphic - the created pixel golfer as the hero, a gold headline
+// ribbon, an OVR badge, and a clean 4-tile stat row. Drawn fully synchronously (the golfer is a
+// cached canvas, drawn via drawImage), so both the on-screen preview and the toBlob share capture render.
 function drawShareCard(cv,info,vals){
-  const W=560,H=636,ctx=cv.getContext('2d');
+  const W=560,H=720,ctx=cv.getContext('2d');
   cv.width=W; cv.height=H;
-  const bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#11432f'); bg.addColorStop(1,'#06200f');
+  let yearLine='';
+  if(info.year && !S.daily) yearLine = S.circuitMode ? ('LEGEND CIRCUIT · YEAR '+info.year) : ('YEAR '+info.year+' OF '+CAREER_MAX_YEARS);
+  drawPlayerCard(ctx,W,H,{
+    look:S.look||DEFLOOK, name:info.name, ovr:info.ovr, net:info.net,
+    headline:playerCardHeadline(info), yearLine,
+    cells:[
+      ['EARNINGS',fmtShort(info.money),'#F1D04A'],
+      ['WINS',(info.wins||0)+'','#F4E3C9'],
+      ['MAJORS',(info.majorsWon||0)+'','#F4E3C9'],
+      ['RANK','#'+info.moneyRank,'#F4E3C9'],
+    ]
+  });
+}
+// pick a punchy headline for the season card from what the player did this year
+function playerCardHeadline(info){
+  const maj=info.majorsWon||0, w=info.wins||0, yr=info.year||1;
+  if(maj>=4) return 'GRAND SLAM';
+  if(maj>0) return maj>1?maj+'× MAJOR CHAMPION':'MAJOR CHAMPION';
+  if(info.moneyRank===1) return 'MONEY LEADER';
+  if(w>0) return w>1?w+'× WINNER':'TOUR WINNER';
+  return 'SEASON '+yr;
+}
+// shared player-card renderer (season + career). o={look,name,ovr,net,headline,ribbon2,cells[4]}
+function drawPlayerCard(ctx,W,H,o){
+  const GOLD='#F1D04A', GOLD2='#c9a520', CREAM='#F4E3C9';
+  const bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#123f2c'); bg.addColorStop(.55,'#0b301d'); bg.addColorStop(1,'#061e10');
   ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
-  const sp=ctx.createRadialGradient(W/2,-30,30,W/2,-30,W); sp.addColorStop(0,'rgba(74,156,108,.30)'); sp.addColorStop(1,'rgba(74,156,108,0)');
+  const sp=ctx.createRadialGradient(W/2,130,20,W/2,130,W*0.95); sp.addColorStop(0,'rgba(74,156,108,.26)'); sp.addColorStop(1,'rgba(74,156,108,0)');
   ctx.fillStyle=sp; ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#d3bd53'; ctx.fillRect(0,0,W,7);
-  ctx.strokeStyle='rgba(205,162,74,.55)'; ctx.lineWidth=2; ctx.strokeRect(11,11,W-22,H-22);
+  // gold top bar + inner frame
+  const gt=ctx.createLinearGradient(0,0,0,9); gt.addColorStop(0,'#f6e7a6'); gt.addColorStop(1,GOLD2);
+  ctx.fillStyle=gt; ctx.fillRect(0,0,W,9);
+  ctx.strokeStyle='rgba(241,208,74,.5)'; ctx.lineWidth=2; ctx.strokeRect(13,13,W-26,H-26);
   ctx.textAlign='center';
-  // title (serif, two-tone), card starts with the wordmark, then the graph
-  ctx.font='700 32px Cinzel, Georgia, serif';
+  // wordmark
+  ctx.font='700 26px Cinzel, Georgia, serif';
   const ta='RUN THE ', tb='TOUR', wa=ctx.measureText(ta).width, wb=ctx.measureText(tb).width, tx=W/2-(wa+wb)/2;
-  ctx.textAlign='left';
-  ctx.fillStyle='#F4E3C9'; ctx.fillText(ta,tx,60);
-  ctx.fillStyle='#e7b84e'; ctx.fillText(tb,tx+wa,60);
-  ctx.textAlign='center';
-  // radar
-  const cx=W/2, cy=212, R=114, n=8;
-  const ang=i=>(-Math.PI/2)+i*(2*Math.PI/n), pt=(i,r)=>[cx+Math.cos(ang(i))*r, cy+Math.sin(ang(i))*r];
-  ctx.strokeStyle='rgba(244,227,201,.14)'; ctx.lineWidth=1;
-  [0.25,0.5,0.75,1].forEach(f=>{ctx.beginPath();for(let i=0;i<n;i++){const[x,y]=pt(i,R*f);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.stroke();});
-  for(let i=0;i<n;i++){const[x,y]=pt(i,R);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();}
-  ctx.beginPath(); vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100));i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.closePath();
-  const rg=ctx.createRadialGradient(cx,cy,10,cx,cy,R); rg.addColorStop(0,'rgba(46,214,160,.44)'); rg.addColorStop(1,'rgba(6,162,145,.13)');
-  ctx.fillStyle=rg; ctx.fill(); ctx.strokeStyle='#2ee0a6'; ctx.lineWidth=2.5; ctx.stroke();
-  ctx.save(); ctx.shadowColor='rgba(241,208,74,.85)'; ctx.shadowBlur=7;
-  ctx.fillStyle='#F1D04A'; vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100)); ctx.beginPath(); ctx.arc(x,y,3.8,0,7); ctx.fill();}); ctx.restore();
-  ctx.fillStyle='#9cbfa8'; ctx.font='700 12px system-ui,sans-serif';
-  RLABS.forEach((L,i)=>{const[x,y]=pt(i,R+17); ctx.fillText(L,x,y+4);});
-  // name (serif, auto-fit)
-  let nm=(info.name||'Your Golfer').toUpperCase(), ns=32;
-  do{ ctx.font='700 '+ns+'px Cinzel, Georgia, serif'; if(ctx.measureText(nm).width<=W-64)break; ns-=2; }while(ns>16);
-  ctx.fillStyle='#F4E3C9'; ctx.fillText(nm,W/2,386);
-  ctx.fillStyle='#9cbfa8'; ctx.font='700 14px system-ui,sans-serif';
-  ctx.fillText(`OVR ${info.ovr}${info.year>1?'  ·  YR '+info.year:''}  ·  ${info.events} EVENTS  ·  ${info.majors} MAJORS`,W/2,408);
-  ctx.fillStyle=info.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 22px Impact,system-ui,sans-serif';
-  ctx.fillText('NET '+fmtSigned(info.net),W/2,442);
-  // CS356ae: stat TILES (2x2) instead of bare floating text - a cleaner, designed stat block
-  const cells=[
-    ['EARNINGS',fmt(info.money),'#e7b84e'],
-    ['EARN. RANK',info.moneyRank+' / '+info.N,'#F4E3C9'],
-    ['WINS',info.wins+'','#F4E3C9'],
-    ['MAJORS',info.majorsWon+'','#F4E3C9'],
-  ];
-  const gap=13, gx=30, gw=(W-gx*2-gap)/2, gh=63, gy=470;
-  cells.forEach((c,i)=>{
-    const x=gx+(i%2)*(gw+gap), y=gy+Math.floor(i/2)*(gh+gap);
-    cardRoundRect(ctx,x,y,gw,gh,13);
-    ctx.fillStyle='rgba(255,255,255,.045)'; ctx.fill();
-    ctx.strokeStyle='rgba(241,208,74,.16)'; ctx.lineWidth=1; ctx.stroke();
-    ctx.textAlign='center';
-    ctx.fillStyle='#9cbfa8'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(c[0],x+gw/2,y+23);
-    ctx.fillStyle=c[2]; ctx.font='800 27px Impact,system-ui,sans-serif'; ctx.fillText(c[1],x+gw/2,y+50);
+  ctx.textAlign='left'; ctx.fillStyle=CREAM; ctx.fillText(ta,tx,56); ctx.fillStyle=GOLD; ctx.fillText(tb,tx+wa,56); ctx.textAlign='center';
+  // gold headline ribbon
+  const ry=74, rh=46; let rw=Math.min(W-56, Math.max(300, (o.headline.length*17)+80));
+  const rg=ctx.createLinearGradient(0,ry,0,ry+rh); rg.addColorStop(0,'#f4d75a'); rg.addColorStop(1,GOLD2);
+  ctx.fillStyle=rg; cardRoundRect(ctx,W/2-rw/2,ry,rw,rh,11); ctx.fill();
+  ctx.fillStyle='#1c2a15'; ctx.font='800 24px Impact,system-ui,sans-serif'; ctx.fillText(o.headline, W/2, ry+31);
+  // year line (e.g. "YEAR 5 OF 30")
+  if(o.yearLine){ ctx.fillStyle=GOLD; ctx.font='800 13px system-ui,sans-serif';
+    ctx.save(); ctx.globalAlpha=.9; ctx.fillText(o.yearLine, W/2, 141); ctx.restore(); }
+  // pixel golfer hero (pixelated), with a ground shadow
+  const golferTop=o.yearLine?162:150, gh=344, gw=gh*(PXG_W/PXG_H), gx=W/2-gw/2;
+  ctx.fillStyle='rgba(0,0,0,.30)'; ctx.beginPath(); ctx.ellipse(W/2, golferTop+gh-14, gw*0.30, 12, 0,0,7); ctx.fill();
+  const glf=pxGolferCanvas(o.look);
+  ctx.save(); ctx.imageSmoothingEnabled=false; ctx.drawImage(glf, gx, golferTop, gw, gh); ctx.restore();
+  // OVR badge (gold circle) over the golfer's shoulder
+  const bx=W/2+gw/2-8, by=golferTop+78, br=46;
+  ctx.save(); ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=10;
+  const bgr=ctx.createLinearGradient(bx-br,by-br,bx+br,by+br); bgr.addColorStop(0,'#f6e7a6'); bgr.addColorStop(1,GOLD2);
+  ctx.fillStyle=bgr; ctx.beginPath(); ctx.arc(bx,by,br,0,7); ctx.fill(); ctx.restore();
+  ctx.fillStyle='#1c2a15'; ctx.font='800 36px Impact,system-ui,sans-serif'; ctx.fillText(''+o.ovr, bx, by+7);
+  ctx.font='800 11px system-ui,sans-serif'; ctx.fillText('OVR', bx, by+24);
+  // name (auto-fit, serif)
+  let nm=(o.name||'Your Golfer').toUpperCase(), ns=34;
+  do{ ctx.font='700 '+ns+'px Cinzel, Georgia, serif'; if(ctx.measureText(nm).width<=W-90)break; ns-=2; }while(ns>16);
+  ctx.fillStyle=CREAM; ctx.fillText(nm, W/2, golferTop+gh+44);
+  // NET hero number
+  ctx.fillStyle=o.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 28px Impact,system-ui,sans-serif';
+  ctx.fillText(fmtSigned(o.net), W/2, golferTop+gh+82);
+  ctx.fillStyle='#9cbfa8'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(o.ribbon2||'NET WORTH THIS SEASON', W/2, golferTop+gh+100);
+  // 4-tile stat row
+  const n=4, gap=11, m=26, tw=(W-m*2-gap*(n-1))/n, th=72, ty=H-th-30;
+  o.cells.forEach((c,i)=>{ const x=m+i*(tw+gap);
+    cardRoundRect(ctx,x,ty,tw,th,11); ctx.fillStyle='rgba(255,255,255,.05)'; ctx.fill();
+    ctx.strokeStyle='rgba(241,208,74,.18)'; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle='#9cbfa8'; ctx.font='800 10px system-ui,sans-serif'; ctx.fillText(c[0], x+tw/2, ty+23);
+    ctx.fillStyle=c[2]; ctx.font='800 25px Impact,system-ui,sans-serif';
+    let vs=''+c[1], fs=25; while(ctx.measureText(vs).width>tw-10 && fs>13){ fs-=1; ctx.font='800 '+fs+'px Impact,system-ui,sans-serif'; }
+    ctx.fillText(vs, x+tw/2, ty+53);
   });
 }
 function cardRoundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 function drawCareerCard(cv,info,vals){
-  const W=560,H=636,ctx=cv.getContext('2d');
+  const W=560,H=720,ctx=cv.getContext('2d');
   cv.width=W; cv.height=H;
-  const bg=ctx.createLinearGradient(0,0,0,H); bg.addColorStop(0,'#11432f'); bg.addColorStop(1,'#06200f');
-  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
-  const sp=ctx.createRadialGradient(W/2,-30,30,W/2,-30,W); sp.addColorStop(0,'rgba(74,156,108,.30)'); sp.addColorStop(1,'rgba(74,156,108,0)');
-  ctx.fillStyle=sp; ctx.fillRect(0,0,W,H);
-  ctx.fillStyle='#d3bd53'; ctx.fillRect(0,0,W,7);
-  ctx.strokeStyle='rgba(205,162,74,.55)'; ctx.lineWidth=2; ctx.strokeRect(11,11,W-22,H-22);
-  ctx.textAlign='center';
-  ctx.font='700 32px Cinzel, Georgia, serif';
-  const ta='RUN THE ', tb='TOUR', wa=ctx.measureText(ta).width, wb=ctx.measureText(tb).width, tx=W/2-(wa+wb)/2;
-  ctx.textAlign='left';
-  ctx.fillStyle='#F4E3C9'; ctx.fillText(ta,tx,56);
-  ctx.fillStyle='#e7b84e'; ctx.fillText(tb,tx+wa,56);
-  ctx.textAlign='center';
-  ctx.fillStyle='#e7b84e'; ctx.font='800 13px system-ui,sans-serif';
-  ctx.fillText('· CAREER ·',W/2,78);
-  // radar
-  const cx=W/2, cy=216, R=110, n=8;
-  const ang=i=>(-Math.PI/2)+i*(2*Math.PI/n), pt=(i,r)=>[cx+Math.cos(ang(i))*r, cy+Math.sin(ang(i))*r];
-  ctx.strokeStyle='rgba(244,227,201,.14)'; ctx.lineWidth=1;
-  [0.25,0.5,0.75,1].forEach(f=>{ctx.beginPath();for(let i=0;i<n;i++){const[x,y]=pt(i,R*f);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.stroke();});
-  for(let i=0;i<n;i++){const[x,y]=pt(i,R);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();}
-  ctx.beginPath(); vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100));i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.closePath();
-  const rg=ctx.createRadialGradient(cx,cy,10,cx,cy,R); rg.addColorStop(0,'rgba(46,214,160,.44)'); rg.addColorStop(1,'rgba(6,162,145,.13)');
-  ctx.fillStyle=rg; ctx.fill(); ctx.strokeStyle='#2ee0a6'; ctx.lineWidth=2.5; ctx.stroke();
-  ctx.save(); ctx.shadowColor='rgba(241,208,74,.85)'; ctx.shadowBlur=7;
-  ctx.fillStyle='#F1D04A'; vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100)); ctx.beginPath(); ctx.arc(x,y,3.8,0,7); ctx.fill();}); ctx.restore();
-  ctx.fillStyle='#9cbfa8'; ctx.font='700 12px system-ui,sans-serif';
-  RLABS.forEach((L,i)=>{const[x,y]=pt(i,R+17); ctx.fillText(L,x,y+4);});
-  // name
-  let nm=(info.name||'Your Golfer').toUpperCase(), ns=32;
-  do{ ctx.font='700 '+ns+'px Cinzel, Georgia, serif'; if(ctx.measureText(nm).width<=W-64)break; ns-=2; }while(ns>16);
-  ctx.fillStyle='#F4E3C9'; ctx.fillText(nm,W/2,384);
-  ctx.fillStyle='#9cbfa8'; ctx.font='700 14px system-ui,sans-serif';
-  ctx.fillText(`${info.years} YEAR${info.years>1?'S':''}  ·  OVR ${info.ovr}  ·  EARNINGS RANK ${info.cRank}/${info.cN}`,W/2,406);
-  ctx.fillStyle=info.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 22px Impact,system-ui,sans-serif';
-  ctx.fillText('NET WORTH '+fmtSigned(info.net),W/2,440);
-  const cells=[
-    ['CAREER EARNINGS',fmt(info.money),'#e7b84e'],
-    ['SEASONS',info.years+'','#F4E3C9'],
-    ['CAREER WINS',info.wins+'','#F4E3C9'],
-    ['MAJORS',info.majors+'','#F4E3C9'],
-  ];
-  const colX=[W*0.28,W*0.72], y0=494, rowH=72;
-  cells.forEach((c,i)=>{
-    const x=colX[i%2], y=y0+Math.floor(i/2)*rowH;
-    ctx.fillStyle='#9cbfa8'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(c[0],x,y);
-    ctx.fillStyle=c[2]; ctx.font='800 26px Impact,system-ui,sans-serif'; ctx.fillText(c[1],x,y+28);
+  const maj=info.majors||0, w=info.wins||0, yr=info.years||1;
+  const headline = maj>=4?'GRAND SLAM LEGEND' : maj>0?(maj>1?maj+'× MAJOR CHAMPION':'MAJOR CHAMPION') : (w>0?(w>1?w+' TOUR WINS':'TOUR WINNER'):yr+'-YEAR CAREER');
+  drawPlayerCard(ctx,W,H,{
+    look:S.look||DEFLOOK, name:info.name, ovr:info.ovr, net:info.net, headline, ribbon2:'CAREER NET WORTH',
+    cells:[
+      ['EARNINGS',fmtShort(info.money),'#F1D04A'],
+      ['WINS',w+'','#F4E3C9'],
+      ['MAJORS',maj+'','#F4E3C9'],
+      ['SEASONS',yr+'','#F4E3C9'],
+    ]
   });
 }
 function shareCard(cv,text,name,suffix){

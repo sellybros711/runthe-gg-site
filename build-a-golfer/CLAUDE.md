@@ -8722,6 +8722,31 @@ allows Google Fonts, or self-host Anton.*
     the daily preview (SAFE/AGGRESSIVE weight 800, BALANCED-selected 900 + ring, goldfill CTA 900 + ring, 0
     errors) + screenshot. Deployed to /golf.
 
+  - **NOTE:** the entries CS356p through CS356ae shipped this session but were not individually logged here
+    (daily preview dropdown + hero, daily scoreboard TOUR AVG, looser Moment trigger + off-season declutter,
+    season-rail CUT fix, draft locked-in-vs-draftable colors + centered "+", season-summary TABS, Earnings/
+    Analytics rename + Season Impact copy, rivalry card winner-gold logic, off-season spin button, Thru-5
+    scorecard, Season Awards order, and the CS356ae radar/stat-tile share polish now superseded by CS356af).
+
+  - **CS356af — PLAYER-CARD share graphic (pixel golfer, replaces the radar card).** Owner wanted better
+    share buttons/card ("I don't like the icon with the stats"); rejected a radar-polish pass ("that's the
+    same style") and approved a pixel-golfer "player card" direction ("go that direction"). Rebuilt both
+    `drawShareCard` (season) and `drawCareerCard` (career-end) as one shared `drawPlayerCard(ctx,W,H,o)`
+    renderer (W=560,H=720): a gold top bar + inner frame, the RUN THE TOUR wordmark, a gold headline ribbon,
+    the player's created **pixel golfer as the hero** drawn pixelated + a ground shadow, a gold OVR circle
+    badge over the shoulder, the name, the NET WORTH hero number (green/red), and a clean 4-tile stat row
+    (EARNINGS `fmtShort` / WINS / MAJORS / RANK for the season; EARNINGS/WINS/MAJORS/SEASONS for career).
+    Fully SYNCHRONOUS: refactored `pxGolferURL` into `pxGolferCanvas(look)` (a cached `<canvas>`), so the
+    hero is drawn via `ctx.drawImage` (imageSmoothingEnabled=false) with no async image load - both the
+    on-screen preview AND the `shareCard()` `toBlob` capture render correctly. `playerCardHeadline(info)`
+    picks a punchy headline (GRAND SLAM / N× MAJOR CHAMPION / MONEY LEADER / N× WINNER / SEASON N; career:
+    GRAND SLAM LEGEND / N× MAJOR CHAMPION / N TOUR WINS / N-YEAR CAREER). Owner add: a "YEAR 5 OF 30" line
+    under the ribbon on the season card (`CAREER_MAX_YEARS`; circuit shows "LEGEND CIRCUIT · YEAR N"; hidden
+    for daily). Stat-tile values auto-shrink to fit. Verified in Playwright (season 2x-major, career grand-
+    slam, rookie negative-net) - 0 page errors, cards render clean; screenshots confirmed the pixel-golfer
+    look ties into the game's pixel theme. Deployed to /golf. (The old radar `RLABS`/`vals` path is now
+    unused but the `vals` param is kept on both fns; `drawMajorWinCard` still uses its own art, untouched.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
