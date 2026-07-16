@@ -23,8 +23,6 @@
 <meta name="twitter:description" content="Build one golfer by drafting a skill from each real pro (Tiger's putting, Rory's driver, Scottie's approach), then live a 30-year career chasing majors and greatest-of-all-time status. Play free.">
 <meta name="twitter:image" content="https://runthe.gg/golf/og.png?v=2">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 76'%3E%3Cpath d='M32 2 L60 12 V40 C60 58 47 68 32 74 C17 68 4 58 4 40 V12 Z' fill='%2311432f' stroke='%23cda24a' stroke-width='3'/%3E%3Cpath d='M26 17 v36' stroke='%23e9d8ac' stroke-width='2.6' stroke-linecap='round'/%3E%3Cpath d='M26 18 h16 l-4 5 4 5 h-16 z' fill='%23EBA61F'/%3E%3Cellipse cx='32' cy='57' rx='17' ry='5.4' fill='none' stroke='%23cda54a' stroke-width='1.6'/%3E%3Ccircle cx='38' cy='57' r='2.2' fill='%23f4ecd9'/%3E%3C/svg%3E">
-<link rel="apple-touch-icon" href="icon-180.png">
-<link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -1317,8 +1315,12 @@ window.GA_ID='G-L29P5MRWKE';
 .gc-title{font-family:var(--display)!important;font-weight:400;font-style:normal;font-size:30px;line-height:1.06;letter-spacing:.01em}
 .hero{font-family:var(--display)!important;font-weight:400;font-size:1em;line-height:1.02;letter-spacing:.01em}
 .ovr .num,.rollval{font-family:var(--mono)!important}
-.btn{font-family:var(--pixel);font-size:16px;letter-spacing:.01em}
-.btn .sub{font-family:var(--body);font-size:10px}
+/* CS356o: bolder + slightly bigger button text on ALL buttons (owner); a locked-in/selected button
+   (goldfill / toggle .on) gets an extra-bold, more saturated gold so it clearly reads as "locked in". */
+.btn{font-family:var(--pixel);font-weight:800;font-size:17px;letter-spacing:.02em}
+.btn .sub{font-family:var(--body);font-weight:800;font-size:10.5px}
+.btn.goldfill{font-weight:900; box-shadow:0 9px 22px -8px rgba(154,110,18,.85), inset 0 1px 0 rgba(255,255,255,.55), 0 0 0 1.5px rgba(241,208,74,.55)}
+.segrow button.on, .catchip.on{font-weight:900}
 .navtile .nl{font-size:11px}
 h2{font-size:11px;letter-spacing:.04em}
 .gc-kick{font-size:9px;letter-spacing:.03em}
