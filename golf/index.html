@@ -13497,19 +13497,34 @@ function hvPinTeeSVG(g,B){   // tee box + cup + per-course flag drawn as SVG on 
     +`<line x1="${(ppx+0.6).toFixed(1)}" y1="${(ppy+0.6).toFixed(1)}" x2="${(ppx+4.4).toFixed(1)}" y2="${(ppy+2).toFixed(1)}" stroke="${B.shad}" stroke-width=".8" opacity=".6"/>`
     +hvFlagSVG(ppx,ppy,hvFlag(g.courseKey))+`</g>`;
 }
-function hvBackdrop(g, seedN, B){
+function hvBackdrop(g, seedN, B, detailCam){
   if(hvArtMode()==='pixel'){
     try{ const url=pxTerrainURL(g, seedN, B);
-      if(url) return `<image href="${url}" xlink:href="${url}" x="${-HV_EX}" y="0" width="${HV_W+HV_EX*2}" height="${HV_H}" preserveAspectRatio="none" style="image-rendering:pixelated"/>`+hvPinTeeSVG(g,B);
+      if(url){
+        let s=`<image href="${url}" xlink:href="${url}" x="${-HV_EX}" y="0" width="${HV_W+HV_EX*2}" height="${HV_H}" preserveAspectRatio="none" style="image-rendering:pixelated"/>`;
+        // when zoomed to a close-up, overlay a high-density tile of the visible region so the course pixels
+        // match the golfer's pixel size instead of blowing up into big blocks (owner: pixels should match on zoom)
+        if(detailCam){
+          const gh=Math.max(120,Math.min(360,Math.round(HV_PX_DETAIL))), gw=Math.max(120,Math.min(360,Math.round(HV_PX_DETAIL*detailCam[2]/detailCam[3])));
+          const durl=pxTerrainURL(g, seedN, B, {cam:detailCam, gw, gh});
+          if(durl) s+=`<image href="${durl}" xlink:href="${durl}" x="${detailCam[0].toFixed(1)}" y="${detailCam[1].toFixed(1)}" width="${detailCam[2].toFixed(1)}" height="${detailCam[3].toFixed(1)}" preserveAspectRatio="none" style="image-rendering:pixelated"/>`;
+        }
+        return s+hvPinTeeSVG(g,B);
+      }
     }catch(e){ console.warn('pixel terrain failed, falling back to illustrated', e); }
   }
   return hvTerrain(g, seedN, B);
 }
-function pxTerrainURL(g, seedN, B){
-  const key=seedN>>>0;
+const HV_PX_DETAIL=340;   // detail-tile vertical pixel count → tuned so a zoomed course pixel ~= the golfer sprite pixel
+const hvDetailCam=(camTarget,live)=>{ if(!live||!camTarget||camTarget[2]>=HV_W*0.6) return null;   // only for the zoomed close-up
+  const m=0.1,c=camTarget; return [c[0]-c[2]*m, c[1]-c[3]*m, c[2]*(1+2*m), c[3]*(1+2*m)]; };
+function pxTerrainURL(g, seedN, B, opts){
+  opts=opts||{};
+  const cam=opts.cam||HV_CAM, GW=opts.gw||210, GH=opts.gh||254;
+  const key=(seedN>>>0)+':'+GW+'x'+GH+':'+Math.round(cam[0])+','+Math.round(cam[1])+','+Math.round(cam[2])+','+Math.round(cam[3]);
   if(_pxCache.has(key)) return _pxCache.get(key);
   if(_pxCache.size>80) _pxCache.clear();
-  const GW=210, GH=254, SC=3, seed=seedN>>>0;
+  const SC=3, seed=seedN>>>0;
   const hex=h=>{h=h.replace('#','');return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];};
   const shade=(c,d)=>[Math.max(0,Math.min(255,c[0]+d)),Math.max(0,Math.min(255,c[1]+d)),Math.max(0,Math.min(255,c[2]+d))];
   const BAYER=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
@@ -13534,7 +13549,7 @@ function pxTerrainURL(g, seedN, B){
     oDeep=hex(B.deep||'#1f6fbe'); oShallow=hex(B.shallow||'#5cb8ec'); oCliff=hex(B.cliff||'#6f6b60'); oBeach=B.beach?hex(B.beach):null;
   }
   const T=new Int8Array(GW*GH);
-  const gcx=g.gcx,gcy=g.L,grx=g.greenR[0],gry=g.greenR[1],cam=HV_CAM;
+  const gcx=g.gcx,gcy=g.L,grx=g.greenR[0],gry=g.greenR[1];
   const gIrr=g.greenIrr||0.14, gp1=hvHash(seed,201,1)*6.283, gp2=hvHash(seed,202,1)*6.283, gp3=hvHash(seed,203,1)*6.283;
   const gMod=(x,y)=>{const a=Math.atan2((y-gcy)/gry,(x-gcx)/grx);return 1+gIrr*(Math.sin(a*3+gp1)*0.55+Math.sin(a*2+gp2)*0.34+Math.sin(a*5+gp3)*0.22);};
   const XY=new Float32Array(GW*GH*2);
@@ -14325,8 +14340,9 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce){
     else if(curP) inner+=hvDoneShot(g,curP,false,small&&inCam(curP),multi.cols[cur.u]);
     const cam=live?hvCamFor2(g,prevP):HV_CAM;
     const sh=cur?multi.shots[cur.u][cur.i]:null;
+    const detailCam=hvDetailCam(camTarget, live&&!!curP);
     const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
-      <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey))}${inner}</svg></div></div>`);
+      <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey),detailCam)}${inner}</svg></div></div>`);
     if(live && curP){
       const key=(courseKey||'')+':m'+holeIdx+':'+showN;
       requestAnimationFrame(()=>hvKick(key, g, curP, prevP, reduce));
@@ -14363,8 +14379,9 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce){
   if(live && idx>=0 && plots[idx]) inner+=hvLiveShot(g,plots[idx],small);
   else if(idx>=0 && plots[idx]) inner+=hvDoneShot(g,plots[idx],false,small&&inCam(plots[idx]));
   const cam=live?hvCamFor(g,plots,Math.max(0,idx-1)):HV_CAM;
+  const detailCam=hvDetailCam(camTarget, live&&idx>=0&&!!plots[idx]);
   const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
-    <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey))}${inner}</svg></div></div>`);
+    <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey),detailCam)}${inner}</svg></div></div>`);
   if(live && plots[idx]){
     const key=(courseKey||'')+':'+holeIdx+':'+showN+(animNonce!=null?':r'+animNonce:'');
     requestAnimationFrame(()=>hvKick(key, g, plots[idx], idx>0?plots[idx-1]:null, reduce));
