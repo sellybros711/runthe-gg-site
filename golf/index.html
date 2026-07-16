@@ -1070,9 +1070,13 @@ window.GA_ID='G-L29P5MRWKE';
   .dctarget .dtp{width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:8px solid;margin-top:-1px}
   .dctarget .dtr{width:26px;height:14px;border:2.5px solid;border-radius:50%;margin-top:2px;opacity:.9;animation:dtRing 1.15s ease-in-out infinite}
   .dctarget.agg .dtl{background:rgba(180,26,26,.94);border-color:#ff5a4d}
-  .dctarget.agg .dtp{border-top-color:#ff5a4d} .dctarget.agg .dtr{border-color:#ff5a4d}
+  .dctarget.agg .dtp{border-top-color:#ff5a4d}
+  /* RISKY: big, dashed, wide landing spread */
+  .dctarget.agg .dtr{width:52px;height:27px;border-width:3px;border-style:dashed;border-color:#ff5a4d;box-shadow:0 0 14px rgba(255,90,77,.4),inset 0 0 10px rgba(255,90,77,.25)}
   .dctarget.safe .dtl{background:rgba(11,74,64,.94);border-color:#22c7a6}
-  .dctarget.safe .dtp{border-top-color:#22c7a6} .dctarget.safe .dtr{border-color:#22c7a6}
+  .dctarget.safe .dtp{border-top-color:#22c7a6}
+  /* SAFE: small, tight, solid landing spread */
+  .dctarget.safe .dtr{width:19px;height:11px;border-color:#22c7a6}
   .dctarget:active{transform:translate(-50%,calc(-100% + 2px))}
   @keyframes dtRing{0%,100%{transform:scale(1);opacity:.9}50%{transform:scale(1.28);opacity:.45}}
   @media (prefers-reduced-motion:reduce){ .dctarget .dtr{animation:none} }
