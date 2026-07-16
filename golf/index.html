@@ -15377,7 +15377,7 @@ function scrDailyRound(){
         const pace=av*(through/18);
         const paceTxt=Math.abs(pace)<0.05?'E':(pace>0?'+':'')+pace.toFixed(1);
         const rows=[{nm:meNm, v:total, txt:dtp(total), mine:true, col:'#3b82f6'},
-                    {nm:'TOUR PRO', v:pace, txt:paceTxt, mine:false, col:'#ef4444'}];
+                    {nm:'TOUR AVG', v:pace, txt:paceTxt, mine:false, col:'#ef4444'}];
         // CS255: today's best - the day's global leader if the board is loaded, else your own best of the day
         let bestVal=null;
         if(dbCache && dbCache.ok && dbCache.rows && dbCache.rows.length) bestVal=Math.min.apply(null, dbCache.rows.map(r=>r.to_par));
@@ -15385,7 +15385,6 @@ function scrDailyRound(){
         if(bestVal!=null) rows.push({nm:"TODAY'S BEST", v:bestVal, txt:dtp(bestVal), mine:false, col:'#f4cf5b'});
         rows.sort((a,b)=>a.v-b.v);
         rows.forEach((r,ri)=>bd.appendChild($(`<div class="hvbrow ${r.mine?'mine':''}" data-nm="${r.nm}"><span class="cdot" style="background:${r.col}"></span><span class="rk">${ri+1}</span><span class="nm">${r.nm}</span><span class="tp" style="color:${tpCol(r.v)}">${r.txt}</span></div>`)));
-        bd.appendChild($(`<div class="hvbfoot">TO BEAT<b>${dAvgTxt(av)}</b></div>`));
       }
       shell.appendChild(bd);
       // crisp FLIP: when the standings re-order between holes, glide each row from its old slot to the new
