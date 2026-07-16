@@ -6890,8 +6890,15 @@ function hvSwingMarkup(g,p,look){
   const frames = kind==='full'?set.full : (kind==='chip'?set.chip : set.putt);
   const clsBase = kind==='full'?['sw0','sw1','sw2'] : (kind==='chip'?['ch0','ch1'] : ['pt0','pt1']);
   look=look||S.look||DEFLOOK;
-  const faceRight = !look.lefty;   // handedness, fixed (never mirrors by shot direction)
   const A=hvProj(g,p.from[0],p.from[1]);
+  // CS356aj (owner: "faces away from the hole"): the golfer faces toward where THIS shot is going (its
+  // resting/target point), so they always address the ball toward the hole and never swing backwards.
+  // Handedness only breaks the tie on a dead-straight shot (no horizontal component).
+  let faceRight;
+  try{ const rx=(p.rest&&p.rest[0]!=null)?p.rest[0]:p.from[0], ry=(p.rest&&p.rest[1]!=null)?p.rest[1]:p.from[1];
+    const T=hvProj(g,rx,ry), dx=T[0]-A[0];
+    faceRight = Math.abs(dx)<3 ? !look.lefty : (dx>0);
+  }catch(e){ faceRight = !look.lefty; }
   const cam=hvCamFor2(g,p);
   // putts play under the tight green close-up, so size the golfer to a fraction of THAT frame
   const GH = kind==='putt' ? Math.max(9, Math.min(22, cam[3]*0.15)) : 26;
