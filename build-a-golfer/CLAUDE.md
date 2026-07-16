@@ -8854,6 +8854,27 @@ allows Google Fonts, or self-host Anton.*
   (viewBox width 82) renders the detail tile (2 course images = base+detail, + golfer frames) with fine
   pixels matching the golfer, 0 page errors; full-view + illustrated toggle unaffected. Deployed to /golf.
 
+- **CS359 — revert the CS358 zoom detail-tile (it shrank objects off-scale) + fix the oversized on-green
+  ball.** Owner: on the green close-up the CS358 detail tile made the TREES tiny / off-scale ("keep the
+  scale of all the objects, just adjust the pixel size when it zooms in"), and separately the ball
+  "glitches on the first putt and was larger than it should be." Root causes: (1) CS358's detail tile
+  increased pixel resolution on the close-up but the renderer draws objects at FIXED pixel sizes, so at
+  higher resolution every tree/bush shrank in course-scale — a resolution-independent renderer is needed
+  to get finer pixels while holding object scale (planned; bigger change). Reverted the detail tile
+  (`hvDetailCam` now returns null) so the single base tile keeps every object at one consistent scale;
+  `pxTerrainURL` stays camera-parametrized (harmless, unused for detail). (2) The oversized ball was a
+  REAL pre-existing bug, not from the pixel work: `hvLiveShot`/`hvKick` sized a resting ball as
+  "green ball" only for `p.k==='putt'||'hole'`, but an APPROACH or CHIP that lands on the green has
+  `p.onGreen=true` with `p.k==='app'/'chip'`, so it rested at the big GROUND size (2.05) instead of the
+  small green ball (HV_GBALL 0.86) — a large ball sitting on the green, then popping to 0.86 when the putt
+  began (the "glitch"). Fixed: the resting size (`setFinal`) and the roll-out frame now use HV_GBALL
+  whenever `p.onGreen`, so any ball coming to rest on the green is the small green ball and the
+  approach→putt transition is seamless. Verified in Playwright: settled close-up balls are now all 0.86
+  (was 2.05), a full practice round plays with correct object scale + small green ball, 0 page errors.
+  Deployed to /golf. NEXT: build the resolution-independent renderer so the zoom can show finer pixels
+  while every object holds its scale (the owner's actual ask) — scale scenery + terrain-feature pitch by a
+  density factor on the detail tile.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
