@@ -15478,7 +15478,7 @@ function scrDailyRound(){
   // playoff plays one extra hole at a time (overlay resolves it), so the 18-cell strip is skipped.
   if(!S.momentPO){
   const wrap=$(`<div class="dcardwrap"></div>`);
-  wrap.appendChild($(`<div class="dcardhd"><span class="t">Scorecard · ${through} thru</span><span class="h">${(played.length>1&&!reviewing)?'Tap a hole to rewatch':''}</span></div>`));
+  wrap.appendChild($(`<div class="dcardhd"><span class="t">Scorecard · thru ${through}</span><span class="h">${(played.length>1&&!reviewing)?'Tap a hole to rewatch':''}</span></div>`));
   const strip=$(`<div class="dcard"></div>`);
   for(let k=0;k<18;k++){ const pl=played[k], isReveal=(k===lastIdx&&revealing), cur=(k===i&&!done&&!revealing);
     const showScore=pl&&!isReveal;   // the in-flight hole shows no score until the ball drops
