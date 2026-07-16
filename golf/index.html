@@ -4867,7 +4867,11 @@ function render(){
   // CS304: persistent bottom tab nav. Appended AFTER the screen dispatch so has-cupbar (set by the team-cup
   // screen) is known. Hidden on immersive live-play screens with their own bottom controls; an open
   // full-screen overlay (z-40) simply covers it (z-25).
-  const NAV_HIDE=['dailyround','playoffwatch','h2hwatch','h2hpreview','h2hdraft','h2hlobby','setup'];   // setup has its own Back + Build bar → hide the global nav (no clash)
+  // CS363: the whole Daily flow is nav-free (was only 'dailyround'). The fixed bottom nav (z-25) sat over
+  // the last ~48px of the viewport and ATE taps on any button behind it - notably the "Use token" Legend
+  // buttons + Course Records/Passport/Return-home at the bottom of the preview/result. These screens carry
+  // their own home/records buttons and the header ≡ menu, so the global nav is redundant here.
+  const NAV_HIDE=['dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','h2hwatch','h2hpreview','h2hdraft','h2hlobby','setup'];   // setup has its own Back + Build bar → hide the global nav (no clash)
   const showNav = !NAV_HIDE.includes(S.screen) && !app.classList.contains('has-cupbar');
   app.classList.toggle('has-botnav', showNav);
   document.body.classList.toggle('has-botnav', showNav);   // CS305: cascades --botnav-space so bottom pop-ups clear the nav
