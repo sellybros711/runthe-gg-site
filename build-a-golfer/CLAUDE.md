@@ -8694,6 +8694,22 @@ allows Google Fonts, or self-host Anton.*
        offers were already treated as passed at season start; this just makes it explicit). Verified it
        renders + clears the offer. Both deployed to /golf.
 
+  - **CS356n — TourTracer golfer polish (owner): stop the fade in/out, hide ground shot-numbers on the
+    green, bigger number above the golfer on the green.** Three tweaks to the mini swinging golfer:
+    1. **No more fade in/out over and over.** The swing frames used to fade OUT at the end of every shot
+       (opacity→0), so the golfer disappeared then reappeared each shot. Rewrote the `hvsw*` keyframes to
+       swing once then **HOLD the finish pose** (opacity 1 `forwards`, `steps` so no fade), and the number
+       pin holds too. Between shots the hole view re-renders and the golfer simply **teleports** to the next
+       spot — no repeated flashing.
+    2. **No numbered ground chip once the ball is on the green.** `hvDoneShot` now skips the numbered circle
+       marker when `p.onGreen` (keeps the tracer path), so the tight green close-up isn't crowded; the
+       current shot number lives on the pin above the golfer.
+    3. **Bigger number pin on the green.** The pin above the golfer is now sized to the close-up camera
+       (`cam[3]*0.085`) for putts instead of the tiny putt-golfer height, so it's large and readable on the
+       green (full-shot pins unchanged).
+    Verified in Playwright (green close-up renders the big "4" pin, no ground chips on the green, golfer +
+    badge present) + screenshot; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
