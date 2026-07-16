@@ -11284,8 +11284,10 @@ function drawShareCard(cv,info,vals){
   [0.25,0.5,0.75,1].forEach(f=>{ctx.beginPath();for(let i=0;i<n;i++){const[x,y]=pt(i,R*f);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.stroke();});
   for(let i=0;i<n;i++){const[x,y]=pt(i,R);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();}
   ctx.beginPath(); vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100));i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.closePath();
-  ctx.fillStyle='rgba(6,162,145,.34)'; ctx.fill(); ctx.strokeStyle='#06A291'; ctx.lineWidth=2.5; ctx.stroke();
-  ctx.fillStyle='#e7b84e'; vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100)); ctx.beginPath(); ctx.arc(x,y,3.6,0,7); ctx.fill();});
+  const rg=ctx.createRadialGradient(cx,cy,10,cx,cy,R); rg.addColorStop(0,'rgba(46,214,160,.44)'); rg.addColorStop(1,'rgba(6,162,145,.13)');
+  ctx.fillStyle=rg; ctx.fill(); ctx.strokeStyle='#2ee0a6'; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.save(); ctx.shadowColor='rgba(241,208,74,.85)'; ctx.shadowBlur=7;
+  ctx.fillStyle='#F1D04A'; vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100)); ctx.beginPath(); ctx.arc(x,y,3.8,0,7); ctx.fill();}); ctx.restore();
   ctx.fillStyle='#9cbfa8'; ctx.font='700 12px system-ui,sans-serif';
   RLABS.forEach((L,i)=>{const[x,y]=pt(i,R+17); ctx.fillText(L,x,y+4);});
   // name (serif, auto-fit)
@@ -11296,20 +11298,25 @@ function drawShareCard(cv,info,vals){
   ctx.fillText(`OVR ${info.ovr}${info.year>1?'  ·  YR '+info.year:''}  ·  ${info.events} EVENTS  ·  ${info.majors} MAJORS`,W/2,408);
   ctx.fillStyle=info.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 22px Impact,system-ui,sans-serif';
   ctx.fillText('NET '+fmtSigned(info.net),W/2,442);
-  // stat cells, card ends with the stats
+  // CS356ae: stat TILES (2x2) instead of bare floating text - a cleaner, designed stat block
   const cells=[
     ['EARNINGS',fmt(info.money),'#e7b84e'],
-    ['EARNINGS RANK',info.moneyRank+' / '+info.N,'#F4E3C9'],
+    ['EARN. RANK',info.moneyRank+' / '+info.N,'#F4E3C9'],
     ['WINS',info.wins+'','#F4E3C9'],
     ['MAJORS',info.majorsWon+'','#F4E3C9'],
   ];
-  const colX=[W*0.28,W*0.72], y0=496, rowH=72;
+  const gap=13, gx=30, gw=(W-gx*2-gap)/2, gh=63, gy=470;
   cells.forEach((c,i)=>{
-    const x=colX[i%2], y=y0+Math.floor(i/2)*rowH;
-    ctx.fillStyle='#9cbfa8'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(c[0],x,y);
-    ctx.fillStyle=c[2]; ctx.font='800 26px Impact,system-ui,sans-serif'; ctx.fillText(c[1],x,y+28);
+    const x=gx+(i%2)*(gw+gap), y=gy+Math.floor(i/2)*(gh+gap);
+    cardRoundRect(ctx,x,y,gw,gh,13);
+    ctx.fillStyle='rgba(255,255,255,.045)'; ctx.fill();
+    ctx.strokeStyle='rgba(241,208,74,.16)'; ctx.lineWidth=1; ctx.stroke();
+    ctx.textAlign='center';
+    ctx.fillStyle='#9cbfa8'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(c[0],x+gw/2,y+23);
+    ctx.fillStyle=c[2]; ctx.font='800 27px Impact,system-ui,sans-serif'; ctx.fillText(c[1],x+gw/2,y+50);
   });
 }
+function cardRoundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 function drawCareerCard(cv,info,vals){
   const W=560,H=636,ctx=cv.getContext('2d');
   cv.width=W; cv.height=H;
@@ -11335,8 +11342,10 @@ function drawCareerCard(cv,info,vals){
   [0.25,0.5,0.75,1].forEach(f=>{ctx.beginPath();for(let i=0;i<n;i++){const[x,y]=pt(i,R*f);i?ctx.lineTo(x,y):ctx.moveTo(x,y);}ctx.closePath();ctx.stroke();});
   for(let i=0;i<n;i++){const[x,y]=pt(i,R);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(x,y);ctx.stroke();}
   ctx.beginPath(); vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100));i?ctx.lineTo(x,y):ctx.moveTo(x,y);}); ctx.closePath();
-  ctx.fillStyle='rgba(6,162,145,.34)'; ctx.fill(); ctx.strokeStyle='#06A291'; ctx.lineWidth=2.5; ctx.stroke();
-  ctx.fillStyle='#e7b84e'; vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100)); ctx.beginPath(); ctx.arc(x,y,3.6,0,7); ctx.fill();});
+  const rg=ctx.createRadialGradient(cx,cy,10,cx,cy,R); rg.addColorStop(0,'rgba(46,214,160,.44)'); rg.addColorStop(1,'rgba(6,162,145,.13)');
+  ctx.fillStyle=rg; ctx.fill(); ctx.strokeStyle='#2ee0a6'; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.save(); ctx.shadowColor='rgba(241,208,74,.85)'; ctx.shadowBlur=7;
+  ctx.fillStyle='#F1D04A'; vals.forEach((v,i)=>{const[x,y]=pt(i,R*(v/100)); ctx.beginPath(); ctx.arc(x,y,3.8,0,7); ctx.fill();}); ctx.restore();
   ctx.fillStyle='#9cbfa8'; ctx.font='700 12px system-ui,sans-serif';
   RLABS.forEach((L,i)=>{const[x,y]=pt(i,R+17); ctx.fillText(L,x,y+4);});
   // name
