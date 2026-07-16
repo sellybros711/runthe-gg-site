@@ -16536,10 +16536,9 @@ function maybeLegendTokenPopup(){
       <div style="font-size:46px;line-height:1;margin-bottom:4px">🏆</div>
       <div style="font:800 12px/1 var(--body);letter-spacing:.26em;color:#f1d04a;text-transform:uppercase">Legend Token Earned</div>
       <h1 style="margin:8px 0 2px;font-size:26px;line-height:1.1;color:#fff">1 free Daily Challenge play</h1>
-      <p class="lede" style="margin:8px 0 3px;color:#e8f0e8">You finished your 30-year career, so <b style="color:#f1d04a">${esc(lt.name)}</b> (OVR ${lt.ovr} at their peak) is now a Legend.</p>
-      <p class="small" style="margin:0 0 16px;color:#9fb3a8">Play today's Daily Challenge as this golfer, for free. It's a one-time play, you only get each golfer once.</p>
-      <button class="btn goldfill ltplay" style="margin:0 auto 8px">Play now ▸<span class="sub">Free · no daily attempt used</span></button>
-      <button class="btn ghost ltclose" style="margin:0 auto">Maybe later</button>
+      <p class="lede" style="margin:8px 0 16px;color:#e8f0e8">You finished your 30-year career, so <b style="color:#f1d04a">${esc(lt.name)}</b> (OVR ${lt.ovr} at their peak) is now a Legend.</p>
+      <button class="btn goldfill ltplay" style="margin:0 auto 8px">Play Now ▸<span class="sub">Free · no daily attempt used</span></button>
+      <button class="btn ghost ltclose" style="margin:0 auto">Save for Later</button>
     </div></div>`);
   const close=()=>ov.remove();
   ov.querySelector('.ltx').onclick=close;
