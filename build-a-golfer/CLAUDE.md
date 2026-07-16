@@ -8674,6 +8674,26 @@ allows Google Fonts, or self-host Anton.*
     renders without overflow, 0 page errors; screenshots confirm the title + off-season read clean/premium with
     the pixel golfer graphic intact. Deployed to /golf.
 
+  - **CS356m — fixed: Daily Challenge froze after Build on a hole-1 signature course + sponsor offer had no
+    "do nothing" button** (owner screenshots). Two unrelated fixes:
+    1. **Daily freeze (core-loop bug).** When today's daily landed on a course whose hole 1 is a signature
+       hole (e.g. "Royal Causeway" = Royal Portrush, or Olympic Club) AND the seed picked a TEE/par-3 style
+       decision, the round froze at "0 THRU" with no hole-view and no decision prompt. Root cause: in
+       `scrDailyRound` the `previewNext` gate (which drives both the upcoming-hole tracer preview AND the
+       `teeSig` up-front decision modal) required `played.length>0`, so at hole 1 (0 holes played) the
+       signature TEE decision never rendered — while `scheduleDailyAdvance` had already `render()`ed and
+       returned waiting for it. (App-phase hole-1 sigs went via `S.dailyProv` and worked, which is why it
+       was seed-dependent.) Fix: dropped the `played.length>0` requirement from `previewNext` so the
+       pre-first-hole state renders the hole-1 preview + decision. Verified in Playwright: Olympic Club's
+       hole-1 "YOUR CALL" decision now renders (2 options over the tracer), clicking it plays hole 1
+       (holes 0→1), and the round auto-advances h1→h2→h3; a full auto round still completes to the result;
+       0 errors.
+    2. **Sponsor offer "Not now".** The off-season sponsor offer (`sponsorDecisionNode`) only had
+       Replace/Sign-on-Hat/Shirt buttons — "there's no button to do nothing." Added a per-offer "Not now ·
+       keep my current sponsors" ghost button that drops that offer from `S.career.sponsorOffers` (undecided
+       offers were already treated as passed at season start; this just makes it explicit). Verified it
+       renders + clears the offer. Both deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
