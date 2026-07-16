@@ -6873,8 +6873,13 @@ function pxStrokeURLs(look){
     o:av.shoesHex, l:PXG_FIX.l, g:PXG_FIX.G, k:'#1c241b', w:'#f4f6f2' };
   const render=map=>{ const px=4, cv=document.createElement('canvas'); cv.width=PXS_W*px; cv.height=PXS_H*px;
     const ctx=cv.getContext('2d');
+    const tp=(x,y)=>{ if(y<0||y>=map.length)return true; const r=map[y]; if(x<0||x>=r.length)return true; const c=r[x]; return c==='.'||c===' '; };
     for(let y=0;y<map.length;y++){ const row=map[y];
-      for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue; const col=P[ch]; if(!col)continue;
+      for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue;
+        if(ch==='k'){ // OUTER-perimeter outline = a soft translucent rim (lets the course show through so the golfer sits ON the grass, not a sticker); internal detail lines stay crisp
+          const outer=tp(x-1,y)||tp(x+1,y)||tp(x,y-1)||tp(x,y+1);
+          ctx.fillStyle=outer?'rgba(24,32,24,0.34)':P.k; ctx.fillRect(x*px,y*px,px,px); continue; }
+        const col=P[ch]; if(!col)continue;
         ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } }
     return cv.toDataURL('image/png'); };
   u={ full:[render(PXS_A),render(PXS_B),render(PXS_C)], chip:[render(PXS_CH0),render(PXS_CH1)], putt:[render(PXS_PT0),render(PXS_PT1)] };
