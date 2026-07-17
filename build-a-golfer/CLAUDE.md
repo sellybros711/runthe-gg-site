@@ -9965,6 +9965,30 @@ allows Google Fonts, or self-host Anton.*
     Crown/Shades/Prism · 6 Golf Bag slot). Tunable: the `PXG_TOP_PAL`/`PXG_LEG_PAL`/`PXG_HERITAGE_HAT_PAL`
     colors, the sprite maps (regen via `scratchpad/heritage.py`), prices.
 
+- **CS412 — three tester fixes (swing facing · season-coin header refresh · Pro Shop referral CTA).**
+  1. **Swing golfer faces the wrong way on non-putt shots** (owner: "hitting it north at the hole, he should
+     be facing to the right"). The hole-view swing golfer picked its view by AIM (a north shot showed the
+     back view). Rebuilt it as a **perpendicular stance** in `hvSwingMarkup`: facing = the target rotated 90°
+     (clockwise for a righty, counter-clockwise for a lefty), mapped to a view+mirror. So a righty hitting
+     north now stands in a SIDE view **facing right**; south → facing left; a shot toward the camera → front;
+     lefty mirrors. Verified against the real function on a built hole: righty north = side/not-mirrored,
+     south = side/mirrored, east = front, lefty north = side/mirrored. (Putt facings, fixed to owner spec in
+     CS379, are unchanged.)
+  2. **Season coins "not going into my account number"** (owner screenshot: "+2,414 coins" toast but the
+     header pill still read the old balance). The coins DID persist (`awardPlayCoins`→`addBonusCoins`→
+     `s.bonus`, and `coinBalance` includes bonus) — the bug was that the header coin pill is built at the TOP
+     of the render pass, BEFORE the season-summary record block awards the coins in the SAME pass, so it
+     showed the stale pre-award number until the next render. Fix: the record block now defers a re-render
+     (`setTimeout(render,60)`, signed-in only) after awarding, so the header reflects the new balance
+     immediately; `S.recorded` is already true so the record block can't re-run (no loop). Verified
+     `awardPlayCoins(2414)` raises `coinBalance()` by exactly 2414.
+  3. **Pro Shop "invite a friend for a free pack" CTA** (owner: fill the empty space under the golfer). Added
+     a gold-bordered `.shop-refcta` banner in the Pro Shop preview area (between the dressing-room golfer and
+     the section tabs) — "Invite a friend, get a free pack · They sign up with your link, you both score a
+     pack ↗" — wired to the existing CS403 `referralShare()` (navigator.share / clipboard, signed-in +
+     username gated). Verified it renders with the handler; screenshot confirms it fills the space cleanly.
+  All client-only, 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

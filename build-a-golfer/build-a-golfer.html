@@ -1403,6 +1403,10 @@ window.GA_ID='G-L29P5MRWKE';
   .setup-shopbtn .ssb-go{margin-left:auto;opacity:.75}
   .coinpill{display:inline-flex; align-items:center; gap:6px; background:rgba(241,208,74,.13); border:1px solid rgba(241,208,74,.4);
     border-radius:999px; padding:5px 12px 5px 8px; font:900 16px/1 var(--body); color:var(--gold)}
+  .shop-refcta{display:flex; align-items:center; gap:9px; width:100%; text-align:left; margin:0 0 8px; padding:9px 12px; border-radius:11px; cursor:pointer;
+    border:1px solid rgba(241,208,74,.4); background:linear-gradient(180deg,rgba(241,208,74,.13),rgba(10,22,38,.28)); color:var(--gold); font:800 13px var(--body); line-height:1.25}
+  .shop-refcta .small{font-weight:600; color:var(--pagemut)}
+  .shop-refcta:hover{border-color:var(--gold); background:linear-gradient(180deg,rgba(241,208,74,.2),rgba(10,22,38,.3))}
   .shop-preview{display:flex; justify-content:center; align-items:flex-end; height:340px; margin:2px 0 4px}
   .shop-preview .avatarfig{height:340px}
   /* IMG_8306: setup screen reuses the shop tab layout - non-sticky within its bordered box, shorter preview */
@@ -9595,9 +9599,15 @@ function hvSwingMarkup(g,p,look){
     else { view='side'; mirror=true; }                          // side facing left
     badgeF=0.5;
   }
-  else if(up>0.42){ view='back'; mirror=!!look.lefty; badgeF=0.5; }        // aiming up the hole
-  else if(up<-0.42){ view='front'; mirror=!!look.lefty; badgeF=0.5; } // aiming toward camera
-  else { const faceRight=Math.abs(vx)<0.5?!look.lefty:(vx>0); view='side'; mirror=!faceRight; badgeF=faceRight?0.62:0.38; }
+  else {
+    // CS412: a NON-putt swing is a PERPENDICULAR stance (owner: hitting north → a righty faces RIGHT).
+    // Facing = the target rotated 90° (clockwise for a righty, counter-clockwise for a lefty); map that
+    // facing direction to a view + mirror. (up=1 aims up the hole, right=1 to the right of screen.)
+    const fRight = look.lefty ? -up : up, fUp = look.lefty ? right : -right;
+    if(Math.abs(fRight) >= Math.abs(fUp)){ view='side'; mirror=!(fRight>0); badgeF=(fRight>0)?0.62:0.38; }  // base side sprite faces right
+    else if(fUp>0){ view='back'; mirror=false; badgeF=0.5; }     // facing away from camera
+    else { view='front'; mirror=false; badgeF=0.5; }             // facing the camera
+  }
   // CS377: align the CLUB/PUTTER with the ball. The contact column depends on the shot (a putter contacts the
   // ball near lower-center, not out at the driver-head column) and flips when the golfer faces left (mirror),
   // so a leftward putt no longer stands in front of the ball.
@@ -14524,6 +14534,11 @@ function scrSummary(){
       if(amt>0){ _coinsSuppressToast=false; awardPlayCoins(amt, skipped?'season simmed to the end':('season'+(t.wins?(' · '+t.wins+' win'+(t.wins>1?'s':'')):''))); }
       track('season_coins',{year:S.year||1,amt,skipped,wins:t.wins,majors:t.majors,moneyRank});
     }
+    // CS412: the header coin pill was built at the top of THIS render pass, BEFORE these season coins were
+    // awarded, so it shows the stale pre-award balance until the next render (owner: "coins not going into my
+    // account number"). Defer a re-render so the header reflects the new balance immediately. S.recorded is
+    // now true, so the record block won't re-run (no loop).
+    if(sbSignedIn()){ try{ setTimeout(()=>{ if(typeof render==='function') render(); }, 60); }catch(e){} }
     _coinsSuppressToast=false;
     S.summaryTab='overview';
     track('season_finished',{ovr,net:Math.round(ec.net),gross:Math.round(ec.gross),wins:t.wins,majors:t.majors,moneyRank,N,daily:S.daily,year:S.year||1});
@@ -20084,6 +20099,7 @@ function overlayShop(screen){
         <span class="coinpill"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(coinBalance())}</span>
         <button class="btn ghost x2" style="width:auto;padding:7px 11px;font-size:14px">✕</button></div></div>
     <div class="shop-preview">${avatarFullHTML()}</div>
+    <button class="shop-refcta" data-refshare><span style="width:18px;height:18px;flex:0 0 auto">${ic('coins',{size:'18px'})}</span><span><b>Invite a friend, get a free pack</b><br><span class="small" style="opacity:.85">They sign up with your link, you both score a pack</span></span><span style="margin-left:auto">↗</span></button>
     <div class="segrow">
       ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
       <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel</button>
@@ -20094,6 +20110,7 @@ function overlayShop(screen){
     ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-cat="${c[0]}">${esc(c[1])}</button>`).join('')}</div>`:''}
   </div>`);
   ov.appendChild(sticky);
+  sticky.querySelectorAll('[data-refshare]').forEach(x=>x.onclick=()=>{ try{ referralShare(); }catch(e){} });   // CS412: invite-a-friend referral CTA
   if(sec==='packs'){
     ov.appendChild(packShopNode());
     ov.appendChild($(`<button class="btn red" style="margin-top:14px">Done</button>`));
