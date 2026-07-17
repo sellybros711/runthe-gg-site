@@ -8816,10 +8816,16 @@ function hvSwingMarkup(g,p,look){
     const T=hvProj(g,rx,ry); vx=T[0]-A[0]; vy=T[1]-A[1];
   }catch(e){}
   const L=Math.hypot(vx,vy)||1, up=-vy/L;   // up=1 straight up the hole, -1 back toward the camera
-  let view, mirror, clubFrac, badgeF;
-  if(up>0.42){ view='back'; mirror=!!look.lefty; clubFrac=0.5; badgeF=0.5; }        // aiming up the hole
-  else if(up<-0.42){ view='front'; mirror=!!look.lefty; clubFrac=0.5; badgeF=0.5; } // aiming toward camera
-  else { const faceRight=Math.abs(vx)<0.5?!look.lefty:(vx>0); view='side'; mirror=!faceRight; clubFrac=0.90; badgeF=faceRight?0.62:0.38; }
+  let view, mirror, badgeF;
+  if(up>0.42){ view='back'; mirror=!!look.lefty; badgeF=0.5; }        // aiming up the hole
+  else if(up<-0.42){ view='front'; mirror=!!look.lefty; badgeF=0.5; } // aiming toward camera
+  else { const faceRight=Math.abs(vx)<0.5?!look.lefty:(vx>0); view='side'; mirror=!faceRight; badgeF=faceRight?0.62:0.38; }
+  // CS377: align the CLUB/PUTTER with the ball. The contact column depends on the shot (a putter contacts the
+  // ball near lower-center, not out at the driver-head column) and flips when the golfer faces left (mirror),
+  // so a leftward putt no longer stands in front of the ball.
+  const pf = view!=='side' ? 0.50 : (kind==='putt' ? 0.75 : (kind==='chip' ? 0.86 : 0.90));
+  const clubFrac = mirror ? (1-pf) : pf;
+  if(kind==='putt') badgeF=0.5;
   const vset=set[view]||set.side;
   const frames = kind==='full'?vset.full : (kind==='chip'?vset.chip : vset.putt);
   const clsBase = kind==='full'?['sw0','sw1','sw2'] : (kind==='chip'?['ch0','ch1'] : ['pt0','pt1']);
@@ -8828,7 +8834,7 @@ function hvSwingMarkup(g,p,look){
   const GH = kind==='putt' ? Math.max(10, Math.min(20, cam[3]*0.14)) : 24;   // CS371: smaller so it's in scale with the trees/course
   const GW=GH*PXS_W/PXS_H;
   // ball address point (grid rows, of PXS_H): side ~48 bottom-right, back/front ~47 bottom-center
-  const ballGy = view==='side' ? 49 : 47;
+  const ballGy = kind==='putt' ? 48 : (view==='side' ? 49 : 47);
   let x0=A[0]-GW*clubFrac, y0=A[1]-GH*(ballGy/PXS_H);
   const pad=3, botPad=(kind==='putt'?6:14);   // CS371: less lift so the golfer sits at the ball/tee, not floating above it
   y0=Math.max(cam[1]+pad, Math.min(y0, cam[1]+cam[3]-GH-botPad));
