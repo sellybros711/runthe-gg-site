@@ -9139,6 +9139,35 @@ allows Google Fonts, or self-host Anton.*
   swing frames; resolving the decision pushes the hole with the drive preserved as shot 0 and continues the
   reveal; 0 page errors on every path. Deployed to /golf.
 
+- **CS379 — putt facing directions + no double-putt + decision-card odds on one line each (owner batch).**
+  Three fixes:
+  1. **Putt facings match real golf posture (owner's exact spec).** The TourTracer putt golfer chose its
+     view purely by aim (up→back / down→front / lateral→side), so a putt to the right showed the golfer's
+     side, etc. Rewrote the `kind==='putt'` branch of `hvSwingMarkup`: a right-handed golfer's chest faces
+     90° clockwise from the putt line (left shoulder leads the target), a lefty is the mirror. By putt
+     DIRECTION — righty: up→look right · right→face camera · down→look left · left→back to camera; lefty
+     (inverse looking, same putt direction): up→look left · right→back · down→look right · left→face camera.
+     A quadrant test (`|up|` vs `|right|`) picks the direction; an M-table maps (direction, handedness)→facing,
+     and facing→(view, mirror). Non-putt shots (full swing / chip) keep the existing logic. Verified in
+     Playwright by classifying the rendered sprite view + mirror across all 4 screen directions for both
+     handedness — every case matches the spec.
+  2. **The golfer no longer putts again after the ball drops.** Once the ball is holed and the round holds
+     the post-hole beat (`S.dailyHolePause`), a re-render was re-firing the swing's CSS animation, so the
+     golfer visibly "putts one more time after the ball goes into the hole" (owner). `hvSwingMarkup` now
+     renders only the FINISH frame statically (`.hvsw-static`, no animation) during the holed beat, and
+     drops the animating number-pin then too. Verified: during holePause the markup contains `hvsw-static`
+     and no animating `pt0/pt1/sw0` frames.
+  3. **Decision-card odds each on their own line + risky option's trouble % much higher.** The on-course
+     decision cards packed `Approach 85 · 56% birdie look · 8% trouble` onto one line, and the aggressive
+     (risky) option's trouble % read far too low. Split `.dco` into a flex column of three rows
+     (stat / birdie-look / trouble). Bumped the aggressive risk in `dDecOdds` (`hazBase` water 58 / bunker
+     46 / normal 38, less skill-reduction, floor 16) so it reads genuinely risky, and lowered the birdie-look
+     on a guarded pin + capped `good+risk ≤ 90%` so the two numbers stay internally sensible. Result e.g.
+     a skilled player firing at a tucked-over-water pin: `Approach 85 / 48% birdie look / 42% water` (was
+     ~8% trouble). Screenshot confirms the three-line layout on both cards.
+  Full auto practice round regresses clean (reveals, putts, holed beats, decisions) with 0 page errors.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
