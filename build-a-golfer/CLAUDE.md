@@ -9936,6 +9936,35 @@ allows Google Fonts, or self-host Anton.*
     (Comet Ball, Rocket Cleats, tracer skins, etc.) can now hang off this layer. Tunable: the `PXFX` colors/
     prices, the glow keyframes/blur, the tracer colors.
 
+- **CS411 — Legendary Drop 1, step 3: HERITAGE APPAREL (plus-fours, tweed cap, cardigan, straw hat,
+  champion's blazer).** Golf-heritage cosmetics for the pixel golfer, added as new sprite OVERLAY layers so
+  they cover the polo/pants beneath (like real outerwear) without touching the base art. Built the sprites
+  with a Python generator (`scratchpad/heritage.py`) that reads the body silhouette (torso = rows 23-39,
+  legs = 43-52) so every overlay aligns exactly — no floating pixels. Each garment paints with its OWN fixed
+  heritage palette via a new `paintOverlay(map,pal)` in `pxGolferCanvas`, so it never fights the global
+  sprite char set.
+  - **Cardigan** (epic, 16k→40k) — a solid tan knit with a V-neck collar band, a center button placket, and
+    a subtle fleck texture (a first cut read as an accordion from over-strong row ribbing; toned down).
+  - **Champion's Blazer** (legendary, 30k→90k) — burgundy jacket with notched lapels, a cream inner-shirt V,
+    a dark tie, and gold buttons.
+  - **Plus-Fours** (epic, 16k→40k) — tweed knickers up top + cream/red argyle long socks below the knee
+    (conveyed by recoloring the leg region, since the 3px-wide legs can't be made baggier in-silhouette).
+  - **Tweed Cap** + **Straw Boater** (epic, 16k→40k each) — new HEADWEAR (`hw` category): a heather-tweed
+    flat cap and a straw boater with a navy band, drawn like the novelty hats but with their own palettes.
+  - **Two new cosmetic categories** — **Outerwear** (`top`) and **Legwear** (`leg`) — wired through the whole
+    economy exactly like the CS410 effect layer: `look.top`/`look.leg` fields, COS_CATS + FREE_COSMETICS +
+    `cosmeticPriceBase/Items/IsEquipped/Equip`, the pack pool, `packItemLook`/label, golfer-crop shop
+    thumbnails (`pxCosThumb` torso/leg bands), and the shop **Apparel** section + the setup **Apparel** group
+    (Shirt · Pattern · Hat · Trousers · Shoes · **Outerwear** · **Legwear**). The two hats slot into the
+    existing Headwear category. Cloud-synced automatically (all `bag_look` fields, CS99).
+  - Verified in Playwright: correct rarities/prices, all 5 in the pack pool, equip/isEquipped work for
+    top+leg, the shop Apparel categories include Outerwear/Legwear, and a golfer wearing blazer + plus-fours
+    + tweed cap renders with 0 page errors; a 7-golfer preview grid confirms each item + the "Full Heritage"
+    combo read as convincing vintage golf attire. Deployed to /golf. **Step 3 ✓** (1 effect layer ✓ · 2
+    fixed patterns ✓ · 3 heritage apparel ✓ · 4 vintage equipment + favorite accessories · 5 trophy charms +
+    Crown/Shades/Prism · 6 Golf Bag slot). Tunable: the `PXG_TOP_PAL`/`PXG_LEG_PAL`/`PXG_HERITAGE_HAT_PAL`
+    colors, the sprite maps (regen via `scratchpad/heritage.py`), prices.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
