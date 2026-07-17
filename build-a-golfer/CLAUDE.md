@@ -9046,6 +9046,19 @@ allows Google Fonts, or self-host Anton.*
   + pushed to the feature branch; still NOT deployed to /golf. Tunable: the per-pose keypoints in
   `swing3.py`, limb widths in `body()`, `GH` size.
 
+- **CS366 — boxy polo torso (owner: CS365 body "looks like an egg or a bean, too round, doesn't look like
+  our characters").** The torso was a tapered CAPSULE (rounded → egg/bean). Rebuilt it in `swing3.py`'s
+  `body()` as a proper TRAPEZOID matching the menu-golfer character style: broad **squared shoulders**
+  tapering to a narrower waist (perpendicular to the spine so it still leans/rotates with each pose), with
+  short **sleeves** (shirt caps over the top of each upper arm), a collar notch, a belt band, and a spine/
+  placket shade. Arms are now drawn FIRST and the boxy torso + sleeves paint over the shoulders, so the
+  shoulders read as shirt and only the FOREARMS are bare skin (a real short-sleeve polo). All 21 frames
+  regenerated (side/back/front × full/chip/putt), same 44×56 grid + palette, so `pxStrokeURLs`/
+  `hvSwingMarkup` unchanged. Verified in Playwright: view selection still correct, sprites render on-course
+  + at zoom as a proper golfer (squared shoulders, sleeves, belt, slacks — no egg), zero page errors.
+  Committed + pushed to the feature branch; still NOT deployed to /golf. Tunable: `sw`/`ww` (shoulder/waist
+  width) + sleeve length in `body()`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
