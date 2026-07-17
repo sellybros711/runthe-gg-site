@@ -9473,6 +9473,19 @@ allows Google Fonts, or self-host Anton.*
   immediately). ACTION: run `supabase/52_runtour_leaderboard_golfers.sql` then `supabase/53_runtour_daily_weekly.sql`.**
   Tunables: the podium figure heights, the weekly ranking metric (cumulative to-par) in migration 53.
 
+- **CS394 — Tour Rep tier marking + glow on the H2H preview (owner: "add some sort of glow or tier marking
+  to the h2h preview screens that says what tier that user is").** Each competitor column on the "Tale of the
+  Tape" preview now shows the player's **Tour Rep tier**: a per-tier glow rings the column (colour from the
+  rank, subtle at the low end → bright gold/violet/prismatic up top) and a tier chip (e.g. LEGEND / ROOKIE)
+  carries that rank's own animated text effect (the same `repClass` treatment the leaderboard uses next to
+  names). Teams show the higher-tier partner. No migration: each player's rep travels inside the already-
+  transmitted H2H look jsonb as `_rep` (`h2hMyLook()` tags my `achPoints()`; `h2hBotLook()` gives bots a
+  plausible skewed-low rep so they read as a mix of tiers) — the golfer renderer ignores the extra key, and
+  H2H is consensus-trusted so a client-declared tier is consistent with the rest of that system. New helpers
+  `h2hMyLook()`, `repTierColor()` (per-rank glow colour) + a `.tierchip` style. Verified in Playwright: a
+  Legend-vs-Rookie matchup renders the correct chip names + `.rept-*` effects and a glow on both columns, 0
+  page errors. Client-only, deployed to /golf. (The leaderboard already shows the tier tag beside each name.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
