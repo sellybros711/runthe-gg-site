@@ -4486,7 +4486,7 @@ const ACC_BOOST_SCALE=1;                      // full-strength catalog boosts (o
 // CS186 severe prices (owner): earned slowly, so gear is a long-term goal. By rarity, clubs cost a bit more.
 function accPrice(it){ if(!it||it.rarity==='exclusive') return 0;
   const base={common:2500,rare:10000,epic:30000,legendary:85000}[it.rarity]||2500;
-  return Math.round(base*((it.slot==='driver'||it.slot==='putter')?1.2:1)); }
+  return Math.round(base*((it.slot==='driver'||it.slot==='putter')?1.2:1)*priceHike()); }
 // display + gameplay boost for an item, scaled down from the catalog value (min +1 on any listed skill)
 function accItemBoost(it){ const o={}; if(it&&it.boost) for(const k in it.boost) o[k]=Math.max(1,Math.floor(it.boost[k]*ACC_BOOST_SCALE)); return o; }
 const ACC_RARITY={ common:{c:'#b8c4bd',label:'Common'}, rare:{c:'#4aa3ff',label:'Rare'},
@@ -4630,7 +4630,10 @@ const COS_CATS=[ {k:'shirt',pk:'sh',lookKey:'polo',name:'Shirt color'}, {k:'pat'
   {k:'hw',pk:'hw',lookKey:'hatStyle',name:'Headwear'}, {k:'ew',pk:'ew',lookKey:'eyewear',name:'Eyewear'} ];
 function cosPk(cat){ const c=COS_CATS.find(x=>x.k===cat); return c?c.pk:cat; }
 function cosKey(cat,id){ return cosPk(cat)+':'+id; }
-function cosmeticPrice(cat,id){
+// PACK-SYSTEM: direct-buy prices go up (x PACK_HIKE) the day packs launch, so packs are the value
+// path. priceHike()==1 while PACKS_ENABLED is false, so live prices are unchanged today. Pack RARITY
+// is computed from the BASE (pre-hike) price via *Base(), so the tiers never shift when the hike flips.
+function cosmeticPriceBase(cat,id){
   if(cat==='shirt'){ const cs=COSMETIC_SHIRTS.find(s=>s.id===id); return cs?(cs.earn?0:12000):4000; }   // basic 4k, special/lore 12k, Legend (earn) 0
 
   if(cat==='pat')   return (typeof PXPAT_BY!=='undefined'&&PXPAT_BY[id])?PXPAT_BY[id].price:0;
@@ -4641,6 +4644,7 @@ function cosmeticPrice(cat,id){
   if(cat==='ew'){ if(id==='none') return 0; return {shades:10000,heart:9000,star:12000,threed:8000,monocle:15000,aviators:12000,round:9000,goggles:11000,eyepatch:10000,visorband:8000}[id]||10000; }
   return 0;
 }
+function cosmeticPrice(cat,id){ return Math.round(cosmeticPriceBase(cat,id)*priceHike()); }
 function cosOwned(cat,id){ const k=cosKey(cat,id); return !!FREE_COSMETICS[k] || !!coinState().owned[k]; }
 function cosBuy(cat,id){
   if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy'};
@@ -4710,7 +4714,7 @@ const BAG_TIER_LABEL=['Tour','Pro','Signature'];
 const BAG_BY={}; BAG_CLUBS.forEach(c=>BAG_BY[c.k]=c);
 function bagKey(club,tier){ return 'bag:'+club+':'+tier; }
 function bagTierOwned(club){ const own=coinState().owned; for(let t=3;t>=1;t--){ if(own[bagKey(club,t)]) return t; } return 0; }
-function bagPrice(tier){ return BAG_TIER_PRICE[tier-1]||0; }
+function bagPrice(tier){ return Math.round((BAG_TIER_PRICE[tier-1]||0)*priceHike()); }
 function bagBoost(){ if(!SHOP_ENABLED) return {}; const o={}; BAG_CLUBS.forEach(c=>{ const t=bagTierOwned(c.k); if(t>0){ const b=c.tiers[t-1].b; for(const k in b) o[k]=(o[k]||0)+b[k]; } }); return o; }
 function bagBuy(club,tier){ const c=BAG_BY[club]; tier=+tier; if(!c||tier<1||tier>3) return {ok:false,msg:'Unknown club'};
   if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy clubs'};
@@ -4985,6 +4989,7 @@ function render(){
     if(S.overlay==='courserecords') overlayCourseRecords(app);
     if(S.overlay==='passport') overlayPassport(app);
     if(S.overlay==='shop') overlayShop(app);
+    if(S.overlay==='packreveal') overlayPackReveal(app);
     if(S.overlay==='careerwall') overlayCareerwall(app);
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
     if(S.overlay==='confirmRetire') overlayConfirmRetire(app);
@@ -18408,6 +18413,144 @@ function shopTileClick(b){
   else if(kind==='cos-req'){ try{ toast('🔒 '+(b.getAttribute('data-req')||'Locked')); }catch(e){} return; }   // earned Legend gear: show the requirement
   render();
 }
+// ============================ PACK SYSTEM (behind PACKS_ENABLED) ============================
+// Gacha-style pack: pay coins -> a rarity-weighted random item from the whole locker (minus earned
+// Legend gear). Dupes refund a little (owner Q1). Pool includes boost gear + bag tier-1 (Q2).
+// Earned-only, client-side v1 (Q4). NOTHING is live until PACKS_ENABLED is flipped; window._PACKSTEST
+// is a test-only override for the reveal QA (never affects prices).
+const PACKS_ENABLED=false;
+const PACK_HIKE=5;                          // direct-buy prices x5 the day packs launch (Q3)
+const PACK_PRICE=20000;                     // coins per pack (tuned in P4 vs the full catalog)
+const PACK_RCOL={common:'#b8c4bd',rare:'#4aa3ff',epic:'#b06be0',legendary:'#F1D04A'};
+const PACK_RLABEL={common:'Common',rare:'Rare',epic:'Epic',legendary:'Legendary'};
+const PACK_ODDS=[['common',0.55],['rare',0.30],['epic',0.12],['legendary',0.03]];
+const PACK_DUPE_REFUND={common:1500,rare:3500,epic:8000,legendary:18000};
+const PACK_PITY_EPIC=10, PACK_PITY_LEG=40;  // guaranteed epic+ every 10 packs, legendary every 40
+const PACK_RANK=['common','rare','epic','legendary'];
+function packsOn(){ return PACKS_ENABLED===true || (typeof window!=='undefined' && window._PACKSTEST===true); }
+function priceHike(){ return PACKS_ENABLED?PACK_HIKE:1; }
+function packRarityOf(base){ base=base||0; return base>=30000?'legendary':base>=16000?'epic':base>=9000?'rare':'common'; }
+// every pack-eligible item, tagged with rarity. Excludes earned Legend gear + free items.
+function packPool(){ const pool=[];
+  [['shirt','sh'],['hat','ht'],['pat','sp'],['pants','pt'],['shoes','so'],['hw','hw'],['ew','ew']].forEach(function(cp){ var cat=cp[0],pk=cp[1];
+    (cosmeticItems(cat)||[]).forEach(function(o){ if(o.id==='none') return;
+      if((cat==='shirt'||cat==='hat') && COSMETIC_SHIRTS.find(function(x){return x.id===o.id&&x.earn;})) return;
+      var base=cosmeticPriceBase(cat,o.id); if(base<=0) return;
+      pool.push({kind:'cos',cat:cat,id:o.id,key:pk+':'+o.id,name:o.name||cosTitle(o.id),rarity:packRarityOf(base)}); }); });
+  ACCESSORIES.forEach(function(it){ if(it.rarity==='exclusive') return; pool.push({kind:'acc',id:it.id,key:it.id,name:it.name,rarity:it.rarity}); });
+  BAG_CLUBS.forEach(function(c){ pool.push({kind:'bag',club:c.k,tier:1,key:bagKey(c.k,1),name:c.tiers[0].n,rarity:packRarityOf(BAG_TIER_PRICE[0])}); });
+  return pool;
+}
+function packOwns(e){ if(e.kind==='acc') return accOwned(e.id); if(e.kind==='bag') return bagTierOwned(e.club)>=1; return cosOwned(e.cat,e.id); }
+function packGrant(e){ var s=coinState(); if(e.kind==='acc') s.owned[e.id]=1; else if(e.kind==='bag') s.owned[bagKey(e.club,1)]=1; else s.owned[cosKey(e.cat,e.id)]=1; coinSave(s); }
+function packState(){ var d={opened:0,sinceEpic:0,sinceLeg:0}; var v=LS.get(acctKey('bag_packs'),null); return (v&&typeof v==='object')?Object.assign(d,v):d; }
+function packSave(p){ LS.set(acctKey('bag_packs'),p); }
+function rollPackRarity(){ var r=Math.random(),a=0; for(var i=0;i<PACK_ODDS.length;i++){ a+=PACK_ODDS[i][1]; if(r<a) return PACK_ODDS[i][0]; } return 'common'; }
+function pickPackItem(rar){ var pool=packPool();
+  for(var ri=PACK_RANK.indexOf(rar); ri>=0; ri--){ var tier=pool.filter(function(e){return e.rarity===PACK_RANK[ri];}); if(tier.length) return tier[Math.floor(Math.random()*tier.length)]; }
+  return pool.length?pool[Math.floor(Math.random()*pool.length)]:null; }
+function packAffordable(){ return coinBalance()>=PACK_PRICE; }
+function packErr(e){ return e==='coins'?'Not enough coins':e==='signin'?'Sign in to open packs':'Could not open pack'; }
+function openPack(){
+  if(!packsOn()) return {err:'off'};
+  if(!sbSignedIn()) return {err:'signin'};
+  if(!packAffordable()) return {err:'coins'};
+  var s=coinState(); s.spent+=PACK_PRICE; coinSave(s);          // pay
+  var p=packState(); p.opened++;
+  var rar;                                                        // pity-aware rarity
+  if(p.sinceLeg+1>=PACK_PITY_LEG) rar='legendary';
+  else if(p.sinceEpic+1>=PACK_PITY_EPIC) rar='epic';
+  else rar=rollPackRarity();
+  if(rar==='legendary'){ p.sinceLeg=0; p.sinceEpic=0; }
+  else if(rar==='epic'){ p.sinceEpic=0; p.sinceLeg++; }
+  else { p.sinceEpic++; p.sinceLeg++; }
+  var item=pickPackItem(rar); if(!item){ packSave(p); return {err:'empty'}; }
+  packSave(p);
+  var dupe=packOwns(item), refund=0;
+  if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); }
+  else packGrant(item);
+  try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind}); }catch(e){}
+  return {item:item, rarity:item.rarity, dupe:dupe, refund:refund};
+}
+function packItemLook(e){ var look=Object.assign({},S.look||DEFLOOK);
+  if(e.cat==='shirt') look.polo=e.id;
+  else if(e.cat==='hat'){ look.hat=e.id; look.cap=true; }
+  else if(e.cat==='pat') look.shirtPat=e.id;
+  else if(e.cat==='hw'){ if(e.id==='none') look.cap=false; else { look.cap=true; look.hatStyle=e.id; } }
+  else if(e.cat==='ew') look.eyewear=e.id;
+  else if(e.cat==='pants') look.pants=e.id;
+  else if(e.cat==='shoes') look.shoes=e.id;
+  return look; }
+function packItemVisual(e){
+  if(e.kind==='cos'){ return '<img src="'+pxGolferURL(packItemLook(e))+'" style="height:210px;image-rendering:pixelated">'; }
+  var icon='gear', rc=PACK_RCOL[e.rarity]||'#b8c4bd';
+  if(e.kind==='acc'){ var it=accById(e.id); icon=(ACC_SLOT_BY[it&&it.slot]||{icon:'gear'}).icon; }
+  else if(e.kind==='bag'){ icon=(BAG_BY[e.club]||{ic:'driver'}).ic; }
+  return '<div style="width:150px;height:150px;border-radius:22px;display:flex;align-items:center;justify-content:center;background:'+rc+'22;border:2px solid '+rc+'"><span style="width:76px;height:76px;color:'+rc+'">'+ic(icon,{size:'76px'})+'</span></div>';
+}
+function packEquip(it){ if(it.kind==='cos') cosEquip(it.cat,it.id); else if(it.kind==='acc') accEquip(it.id); render(); }
+function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=document.createElement('style'); st.id='packcss';
+  st.textContent='.packov{position:fixed;inset:0;z-index:60;background:radial-gradient(circle at 50% 38%,#12321f,#050f0a);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center}'
+   +'.packconf{position:fixed;inset:0;pointer-events:none;z-index:61}'
+   +'.packmys{width:170px;height:210px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:74px;color:#fff}'
+   +'@keyframes packspin{0%{transform:rotateY(0) scale(.9)}70%{transform:rotateY(1600deg) scale(1.05)}100%{transform:rotateY(1800deg) scale(1)}}'
+   +'@keyframes packpulse{0%,100%{box-shadow:0 0 24px var(--gc),inset 0 0 16px var(--gc)}50%{box-shadow:0 0 62px var(--gc),inset 0 0 32px var(--gc)}}'
+   +'.packmys.spin{animation:packspin var(--pd,1.4s) cubic-bezier(.15,.5,.1,1),packpulse .5s ease-in-out infinite}'
+   +'.packcard{animation:packpop .5s cubic-bezier(.2,1.3,.4,1)}'
+   +'@keyframes packpop{0%{transform:scale(.3);opacity:0}100%{transform:scale(1);opacity:1}}'
+   +'@media(prefers-reduced-motion:reduce){.packmys.spin,.packcard{animation:none}}';
+  document.head.appendChild(st); }
+function overlayPackReveal(app){
+  var r=S.packReveal; if(!r){ S.overlay=null; return; }
+  packStyleOnce();
+  var rc=PACK_RCOL[r.rarity]||'#b8c4bd';
+  var reduce=(typeof matchMedia==='function')&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var ov=$('<div class="ov packov" role="dialog" aria-modal="true" aria-label="Pack reveal"></div>');
+  if(r.phase==='suspense' && !reduce){
+    var dur={common:1000,rare:1300,epic:1900,legendary:2600}[r.rarity]||1200;
+    ov.appendChild($('<div style="font:800 12px var(--body);letter-spacing:.2em;text-transform:uppercase;color:#cfe6d8">Opening pack…</div>'
+      +'<div class="packmys spin" style="--pd:'+dur+'ms;--gc:'+rc+';background:linear-gradient(160deg,'+rc+'55,#0c1f16)">?</div>'));
+    if(!r._t){ r._t=1; setTimeout(function(){ if(S.overlay==='packreveal'&&S.packReveal===r){ r.phase='reveal'; render(); } }, dur); }
+    app.appendChild(ov); return;
+  }
+  r.phase='reveal';
+  var it=r.item, equipable=(it.kind==='cos'||it.kind==='acc');
+  ov.appendChild($('<div class="packcard" style="display:flex;flex-direction:column;align-items:center;gap:9px">'
+    +'<div style="font:800 13px var(--body);letter-spacing:.22em;text-transform:uppercase;color:'+rc+';text-shadow:0 0 14px '+rc+'99">'+(PACK_RLABEL[r.rarity]||'')+'</div>'
+    +'<div style="filter:drop-shadow(0 0 22px '+rc+'bb)">'+packItemVisual(it)+'</div>'
+    +'<div style="font-family:var(--display);font-size:24px;color:#fff">'+esc(it.name)+'</div>'
+    +'<div style="font:800 15px var(--body);color:'+(r.dupe?'#ffd45e':'#35d6a0')+'">'+(r.dupe?('Duplicate · +'+coinFmt(r.refund)+' coins'):'NEW!')+'</div></div>'));
+  var btns=$('<div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;justify-content:center"></div>');
+  if(equipable && !r.dupe){ var eb=$('<button class="btn goldfill" style="width:auto;margin:0;padding:12px 20px">Equip</button>'); eb.onclick=function(){ packEquip(it); toast('Equipped!'); }; btns.appendChild(eb); }
+  var canBuy=packAffordable();
+  var again=$('<button class="btn '+(canBuy?'teal':'ghost')+'" style="width:auto;margin:0;padding:12px 20px"'+(canBuy?'':' disabled')+'>Open another · '+coinFmt(PACK_PRICE)+'</button>');
+  again.onclick=function(){ var res=openPack(); if(res.err){ toast(packErr(res.err)); return; } S.packReveal={item:res.item,rarity:res.rarity,dupe:res.dupe,refund:res.refund,phase:'suspense'}; render(); };
+  var done=$('<button class="btn ghost" style="width:auto;margin:0;padding:12px 20px">Done</button>');
+  done.onclick=function(){ S.packReveal=null; S.overlay='shop'; S.shopSec='packs'; render(); };
+  btns.appendChild(again); btns.appendChild(done); ov.appendChild(btns);
+  if(!reduce && (r.rarity==='epic'||r.rarity==='legendary') && !r._burst){ r._burst=1;
+    var cv=$('<canvas class="packconf"></canvas>'); app.appendChild(cv);
+    try{ requestAnimationFrame(function(){ confettiRun(cv,{colors:[rc,PACK_RCOL.legendary,'#ffffff'],mode:'cannons',count:80}); }); }catch(e){}
+    try{ if(typeof sfx==='function') sfx('win'); }catch(e){}
+    try{ if(typeof buzz==='function') buzz([12,40,12]); }catch(e){}
+  }
+  app.appendChild(ov);
+}
+function packShopNode(){
+  var p=packState(), afford=packAffordable();
+  var wrap=$('<div style="padding:6px 2px 4px"></div>');
+  wrap.appendChild($('<div style="max-width:360px;margin:0 auto;text-align:center">'
+    +'<div style="width:148px;height:178px;margin:6px auto 0;border-radius:18px;background:linear-gradient(160deg,#1a5f3f,#0c1f16);border:2px solid var(--gold);box-shadow:0 0 26px rgba(241,208,74,.3);display:flex;align-items:center;justify-content:center;font-size:58px">🎁</div>'
+    +'<div style="font-family:var(--display);font-size:22px;margin-top:12px">Pro Shop Pack</div>'
+    +'<div class="small muted" style="margin-top:3px">A random item from the whole locker. (Earned Legend gear never drops.)</div>'
+    +'<div style="margin-top:7px;font:800 11px var(--body);color:#cfe6d8">Guaranteed Epic+ in '+Math.max(0,PACK_PITY_EPIC-p.sinceEpic)+' · Legendary in '+Math.max(0,PACK_PITY_LEG-p.sinceLeg)+'</div></div>'));
+  var buy=$('<button class="btn goldfill" style="max-width:360px;margin:14px auto 0;display:flex;align-items:center;justify-content:center;gap:6px"'+(afford?'':' disabled')+'><span style="width:18px;height:18px">'+ic('coin',{size:'18px'})+'</span>Open a pack · '+coinFmt(PACK_PRICE)+'</button>');
+  buy.onclick=function(){ var res=openPack(); if(res.err){ toast(packErr(res.err)); return; } S.packReveal={item:res.item,rarity:res.rarity,dupe:res.dupe,refund:res.refund,phase:'suspense'}; S.overlay='packreveal'; render(); };
+  var odds=$('<button class="btn ghost" style="max-width:360px;margin:8px auto 0">View drop rates</button>');
+  odds.onclick=function(){ toast(PACK_ODDS.map(function(o){return PACK_RLABEL[o[0]]+' '+Math.round(o[1]*100)+'%';}).join(' · ')+' · dupes refund coins',4500); };
+  wrap.appendChild(buy); wrap.appendChild(odds);
+  return wrap;
+}
 function overlayShop(screen){
   if(!SHOP_ENABLED){ S.overlay=null; return; }   // shelved until the economy is rebalanced
   const signed=sbSignedIn();
@@ -18427,7 +18570,7 @@ function overlayShop(screen){
   }
   // CS356g: the pixel golfer renders shirt/hat/pants/shoe COLORS, shirt PATTERNS, and headwear/eyewear
   // ACCESSORIES - so the shop sells all of those (Apparel = colors + pattern, Accessories = headwear/eyewear).
-  let sec=S.shopSec; if(sec!=='accessories'&&sec!=='owned'&&sec!=='bag') sec='apparel';
+  let sec=S.shopSec; if(sec==='packs'&&!packsOn()) sec='apparel'; if(sec!=='accessories'&&sec!=='owned'&&sec!=='bag'&&sec!=='packs') sec='apparel';
   const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes']];
   const ACCS=[['hw','Headwear'],['ew','Eyewear']];
   const cats = sec==='apparel'?APP : sec==='accessories'?ACCS : null;
@@ -18440,6 +18583,7 @@ function overlayShop(screen){
         <button class="btn ghost x2" style="width:auto;padding:7px 11px;font-size:14px">✕</button></div></div>
     <div class="shop-preview">${avatarFullHTML()}</div>
     <div class="segrow">
+      ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
       <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel</button>
       <button data-sec="accessories" class="${sec==='accessories'?'on':''}">Accessories</button>
       <button data-sec="bag" class="${sec==='bag'?'on':''}">Bag</button>
@@ -18447,6 +18591,13 @@ function overlayShop(screen){
     ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-cat="${c[0]}">${esc(c[1])}</button>`).join('')}</div>`:''}
   </div>`);
   ov.appendChild(sticky);
+  if(sec==='packs'){
+    ov.appendChild(packShopNode());
+    ov.appendChild($(`<button class="btn red" style="margin-top:14px">Done</button>`));
+    sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
+    ov.querySelectorAll('.x2,.red').forEach(el=>el.onclick=()=>{S.shopPreview=null;S.overlay=null;render();});
+    screen.appendChild(ov); return;
+  }
   try{ ov.appendChild(accBoostSummaryNode()); }catch(e){}   // live "equipment boost" summary from your worn gear
   const grid=$(`<div class="sgrid"></div>`); const tiles=[];
   if(sec==='apparel'||sec==='accessories'){ cosmeticItems(cat).forEach(o=>tiles.push(cosTileHTML(cat,o))); }

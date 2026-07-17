@@ -176,6 +176,26 @@ This is the feature, so it has to *feel* great:
 
 ---
 
+## 8b. Build status (behind `PACKS_ENABLED=false` — nothing live)
+
+- ✅ **P1 pool + rarity + price-hike scaffolding** — `packPool()` enumerates **195** eligible items
+  (cosmetics + boost gear + bag tier-1, minus earned Legend gear + free items), rarity-banded
+  (common 105 / rare 62 / epic 18 / legendary 10). `priceHike()` (x5) wired into cosmetic/acc/bag
+  prices but follows the REAL flag, so **live prices are unchanged today** (verified 4000 stays 4000).
+- ✅ **P2 roll engine + pity + dupe** — `openPack()`: pays coins, pity-aware rarity
+  (guaranteed epic every 10, legendary every 40 — both verified), grants or refunds a dupe.
+  All client-side; `bag_packs` holds the pity counters.
+- ✅ **P3 Packs tab + buy flow + reveal** — a "Packs" tab in the Pro Shop, the pack card + pity
+  line + "View drop rates", and a full-screen **reveal** (suspense spin with the rarity glow
+  building, then the item worn on the golfer + NEW!/dupe, Equip / Open another / Done; confetti +
+  chime on epic/legendary, reduced-motion safe). Test-only override `window._PACKSTEST` for QA.
+- ⬜ **P4 faucets + odds screen polish** — first-pack-free, milestone pack coins, a proper drop-rate
+  panel; final pack-price + earn-rate tuning vs the full catalog.
+- ⬜ **P5 cross-device pity + (optional) server open** + Privacy/Terms update.
+- ⬜ **P6 flip `PACKS_ENABLED`** once the reveal + economy feel perfect.
+
+To QA the reveal live: set `window._PACKSTEST=true` in the console, open the Pro Shop → Packs.
+
 ## 8. Build phases (once the decisions below are locked)
 
 1. **P1 — pricing + pool:** central `packEligible()` + rarity mapping; price-hike constants
