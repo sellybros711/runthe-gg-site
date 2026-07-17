@@ -870,6 +870,10 @@ window.GA_ID='G-L29P5MRWKE';
   .lb.cut .sc{color:#e07a5f}
   /* Tour Rep tier name - a distinct text effect per rank (higher = flashier) */
   .rept{font-weight:800; font-size:10px; letter-spacing:.02em; white-space:nowrap}
+  /* CS394: H2H preview tier chip - a small bordered pill carrying the rank's own text effect (repClass) */
+  .tierchip{display:inline-block; margin:0 auto 5px; padding:2px 8px; border-radius:999px; border:1px solid var(--line);
+    background:rgba(0,0,0,.28); font-weight:800; font-size:9px; letter-spacing:.06em; text-transform:uppercase;
+    max-width:100%; overflow:hidden; text-overflow:ellipsis}
   /* every rank has its OWN look - flat hues low, gradients + glow mid, animated shimmers at the top */
   .rept-am{color:#8b978c}                                            /* Amateur - muted grey */
   .rept-rk{color:#74b47f}                                            /* Rookie - soft green */
@@ -2298,6 +2302,10 @@ const REP_CLASS={
   'Star':'st',         'All-Star':'as',        'Standout':'sd',         'Champion':'ch',          'Elite':'el',
   'Superstar':'ss',    'Legend':'lg',          'Immortal':'im',         'Icon':'ic',              'G.O.A.T.':'gt' };
 function repClass(name){ const k=REP_CLASS[(name||'').replace(/^🐐\s*/,'')]; return 'rept'+(k?' rept-'+k:''); }
+// CS394: a representative glow colour per tier (low → cool/grey, high → gold/violet/prismatic) for the H2H
+// preview tier ring. One entry per rank in REP_ORDER (Amateur..G.O.A.T.).
+const REP_GLOW=['#8aa0a8','#8fce86','#7bbf9e','#9fb0b8','#7fd6c4','#3fb8a0','#8ec5ff','#c99a4a','#e08a52','#ff8fb0','#cdd6dc','#ffd34d','#3fd0ff','#ff6a5a','#b98bff','#ff5ad0','#a97bff','#8fe6ff','#ffd76a','#ff7bd9'];
+function repTierColor(name){ const i=repRankIndex((name||'').replace(/^🐐\s*/,'')); return i<0?'#8aa0a8':REP_GLOW[Math.min(REP_GLOW.length-1,i)]; }
 // Tour Rep perk: off-season CHANGES + RE-SPINS, computed from where the rank sits on the ladder (not a
 // per-name table, so it scales with any ladder length). Floor 1 change + 1 re-spin; ramps to the MAX of
 // 3 changes + 3 re-spins by roughly three-quarters up the ladder. Top ranks are rewarded by prestige,
@@ -20422,7 +20430,13 @@ function h2hBotLook(){ const p=a=>a[Math.floor(Math.random()*a.length)], b=()=>M
     hairStyle:p(['short','swoop','curly','long','buzz']), polo:p(['white','teal','navy','gold','black','red']),
     hat:p(['navy','white','gold','black','teal']), pants:p(['stone','navy','black','grey']),
     shoes:p(['white','black','navy']), cap:b(), hatStyle:b()?'cap':'visor', club:p(['driver','iron','wedge']),
-    gender:p(['male','female']), lefty:Math.random()<0.15 }; }
+    gender:p(['male','female']), lefty:Math.random()<0.15,
+    _rep:Math.floor(Math.random()*Math.random()*8000) };   // CS394: a plausible Tour Rep (skewed low) so bots read as a mix of tiers
+}
+// CS394: my transmitted H2H look, tagged with my current Tour Rep so opponents see my tier on the preview.
+// _rep rides inside the look jsonb (already free-form client data; the golfer renderer ignores unknown keys),
+// so no migration is needed. H2H is consensus-trusted, so a client-declared tier here is consistent posture.
+function h2hMyLook(){ return Object.assign({_rep:(typeof achPoints==='function'?achPoints():0)}, S.look||{}); }
 function h2hMakeBots(n){ return h2hPickBotNames(n).map(nm=>({user_id:'bot:'+nm, username:nm, bot:true, submitted:false, draft:{skills:h2hBotSkills(), look:h2hBotLook()}})); }
 // arm/clear the "no human showed up → fill with AI" timer for a Quick Match
 function h2hArmBotFill(){ if(!H2H_BOTS_ENABLED||!S.h2h) return; h2hClearBotTimer();
@@ -20708,13 +20722,13 @@ async function h2hSubmitDraft(){
   if(h2hFilled()<8){ toast('Fill all 8 skills first'); return; }
   if(S.h2h.bots){   // AI-filled match: submit locally, then a short "waiting" beat before the matchup
     const meP=S.h2h.players.find(p=>p.slot===0);
-    meP.draft={skills:h2hSkills(), look:S.look||{}}; meP.submitted=true; S.h2h.submitted=true;
+    meP.draft={skills:h2hSkills(), look:h2hMyLook()}; meP.submitted=true; S.h2h.submitted=true;
     track('h2h_draft_submit',{ovr:h2hOvr(),bots:true}); S.screen='h2hlobby'; render();
     setTimeout(()=>{ if(S.h2h&&S.h2h.bots&&!S.h2h.previewed&&!S.h2h.watching){ S.h2h.players.forEach(p=>p.submitted=true); h2hEnterPreview(); } }, 1300+Math.random()*1100);
     return;
   }
   S.h2h.submitting=true; render();
-  try{ const {data,error}=await sb.rpc('h2h_submit_draft',{p_match_id:S.h2h.matchId,p_skills:h2hSkills(),p_look:S.look||{}});
+  try{ const {data,error}=await sb.rpc('h2h_submit_draft',{p_match_id:S.h2h.matchId,p_skills:h2hSkills(),p_look:h2hMyLook()});
     if(error) throw error; S.h2h.submitted=true; S.h2h.submitting=false;
     track('h2h_draft_submit',{ovr:h2hOvr()});
     if(data===true){ /* both in; poll will flip to live/watch */ } S.screen='h2hlobby'; render(); h2hEnsurePoll();
@@ -21151,7 +21165,14 @@ function scrH2HPreview(){
     // with the draft via h2h_state → members[].draft.look). Teams show both partners' golfers side by side.
     const team=u.kind==='team', fh=team?52:70;
     const figs=u.members.map(p=>pxFigureHTML((p.draft&&p.draft.look)||DEFLOOK, fh)).join('');
-    grid.appendChild($(`<div style="text-align:center;padding:7px 5px;border-radius:9px;border:1px solid ${mine?'var(--gold)':'var(--line)'};background:${mine?'rgba(241,208,74,.08)':'rgba(255,255,255,.02)'}">
+    // CS394: each competitor's Tour Rep tier (rep rides in the transmitted look as _rep). Teams show the
+    // higher-tier partner. A per-tier glow rings the column + a tier chip (with its animated rep text effect).
+    const urep=Math.max.apply(null, u.members.map(p=>(p.draft&&p.draft.look&&+p.draft.look._rep)||0).concat(0));
+    const tname=repTierName(urep), gi=Math.max(0,repRankIndex(tname)), tcol=repTierColor(tname);
+    const glow=gi>=1?`box-shadow:0 0 16px -3px ${tcol}${gi>=10?'88':'55'}, inset 0 0 0 1px ${tcol}55;`:'';
+    const bord=mine?'var(--gold)':(gi>=1?tcol+'99':'var(--line)');
+    grid.appendChild($(`<div style="text-align:center;padding:7px 5px;border-radius:9px;border:1px solid ${bord};background:${mine?'rgba(241,208,74,.08)':'rgba(255,255,255,.02)'};${glow}">
+      <div class="tierchip ${repClass(tname)}" title="Tour Rep tier" style="border-color:${tcol}77">${esc(tname)}</div>
       <div style="display:flex;justify-content:center;align-items:flex-end;gap:2px;min-height:${fh+4}px;margin-bottom:3px">${figs}</div>
       <div style="font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nm}${mine?' <span class="small" style="color:var(--gold)">you</span>':''}</div>
       <div class="small muted" style="margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px">${sub}</div></div>`));
