@@ -1332,6 +1332,8 @@ window.GA_ID='G-L29P5MRWKE';
   .lbpod.p3{background:linear-gradient(180deg,rgba(198,140,86,.15),rgba(198,140,86,.03))}
   .lbpod .medal{font-size:22px; line-height:1}
   .lbpod .medal .ic{width:22px; height:22px}
+  .lbpod .pgolfer{display:flex; justify-content:center; align-items:flex-end; height:58px; margin:5px 0 1px}   /* CS393: podium golfer */
+  .lbpod.p1 .pgolfer{height:76px}
   .lbpod .nm{font-weight:800; font-size:12px; margin-top:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--oncard)}
   .lbpod .vl{font-family:var(--mono); font-weight:800; font-size:13px; margin-top:3px; color:var(--gold)}
   .lbpod .rk{font:700 9.5px/1.2 var(--body); color:var(--muted); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
@@ -2517,10 +2519,14 @@ function dNextResetMs(){ try{
 function _cd2(x){ return String(x).padStart(2,'0'); }
 function fmtCdClock(ms){ if(ms<0)ms=0; let s=Math.floor(ms/1000); const h=Math.floor(s/3600); s-=h*3600; const m=Math.floor(s/60); return _cd2(h)+':'+_cd2(m)+':'+_cd2(s-m*60); }
 function fmtCdHM(ms){ if(ms<0)ms=0; const s=Math.floor(ms/1000), h=Math.floor(s/3600), m=Math.floor((s%3600)/60); return h>0?(h+'h '+m+'m'):(m+'m '+_cd2(s%60)+'s'); }
-// an inline, live-ticking countdown span (updated once a second by tickCountdowns); style: 'clock' | 'hm'
-function dCd(style){ const ms=dNextResetMs(); return `<span class="dc-val" data-cd="${style==='hm'?'hm':'clock'}" style="font-variant-numeric:tabular-nums;font-weight:800">${style==='hm'?fmtCdHM(ms):fmtCdClock(ms)}</span>`; }
-function tickCountdowns(){ const els=document.querySelectorAll('.dc-val'); if(!els.length) return; const ms=dNextResetMs();
-  els.forEach(e=>{ e.textContent = e.getAttribute('data-cd')==='hm'?fmtCdHM(ms):fmtCdClock(ms); }); }
+function fmtCdDHM(ms){ if(ms<0)ms=0; const s=Math.floor(ms/1000), d=Math.floor(s/86400), h=Math.floor((s%86400)/3600), m=Math.floor((s%3600)/60); return d>0?(d+'d '+h+'h'):(h>0?(h+'h '+m+'m'):(m+'m')); }
+// ms until the weekly board rotates (end of the current weekKey() UTC block) - same cadence as weekly challenges
+function wNextResetMs(){ try{ return Math.max(0, (weekKey()+1)*7*86400000 - Date.now()); }catch(e){ return 0; } }
+// an inline, live-ticking countdown span (updated once a second by tickCountdowns); style: 'clock' | 'hm' | 'week'
+function dCd(style){ const wk=style==='week'; const ms=wk?wNextResetMs():dNextResetMs();
+  return `<span class="dc-val" data-cd="${wk?'week':(style==='hm'?'hm':'clock')}" style="font-variant-numeric:tabular-nums;font-weight:800">${wk?fmtCdDHM(ms):(style==='hm'?fmtCdHM(ms):fmtCdClock(ms))}</span>`; }
+function tickCountdowns(){ const els=document.querySelectorAll('.dc-val'); if(!els.length) return; const dms=dNextResetMs(), wms=wNextResetMs();
+  els.forEach(e=>{ const m=e.getAttribute('data-cd'); e.textContent = m==='week'?fmtCdDHM(wms):(m==='hm'?fmtCdHM(dms):fmtCdClock(dms)); }); }
 const STREAK_MILES=[3,7,14,30,60,100];                       // milestone lengths (recognition; freeze at 7/30/100)
 function streakFreezes(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.freezes||0; }
 function bumpStreak(){const ds=LS.get(acctKey('bag_streak'),{current:0,longest:0,last:null,freezes:0,miles:{},days:{}})||{current:0,longest:0,last:null,freezes:0,miles:{},days:{}}; const t=todayKey();
@@ -2649,6 +2655,9 @@ function masterySummary(){ const m=courseMastery(); let played=0,beaten=0,aGrade
   return {played,beaten,aGrades,total:DAILY_KEYS.length}; }
 // a fixed 7-day UTC block, derived from todayKey (Date.UTC is a pure static, allowed unlike Date.now)
 function weekKey(){ const t=todayKey(),y=Math.floor(t/10000),mo=Math.floor(t/100)%100,d=t%100; return Math.floor(Date.UTC(y,mo-1,d)/86400000/7); }
+// the min/max packed day-keys (YYYYMMDD) of the current weekKey() 7-day block - for the Weekly leaderboard
+function weekDayRange(){ const start=weekKey()*7*86400000, pk=ms=>{ const d=new Date(ms); return d.getUTCFullYear()*10000+(d.getUTCMonth()+1)*100+d.getUTCDate(); };
+  return { from:pk(start), to:pk(start+6*86400000) }; }
 // ═══════════════ Challenges: Daily Quests + Weekly Challenges (CS294: feed your Tour Rep tier) ═══════════════
 // Signed-in feature (guests never accrue). Completing quests/challenges grants TOUR REP POINTS (added to
 // achPoints, so they climb your Tour Rep tier - there is no separate "level"). The same challenge-points
@@ -5496,6 +5505,7 @@ function lbStatVal(r,tab,sort){   // the right-hand value column for the chosen 
 function overlayLeaderboard(screen){
   const c=career();
   const tab=S.lbTab||'season';
+  if(tab==='daily'||tab==='weekly'){ overlayLeaderboardDaily(screen, tab); return; }   // CS393: separate board
   let sort=S.lbSort||'earnings'; if(!lbSortValid(tab,sort)){ sort='earnings'; S.lbSort='earnings'; }
   const dir=S.lbDir||'desc';   // 'desc' = high→low / best→worst (default); 'asc' = true bottom N (low→high)
   // Low→High fetches a SEPARATE ascending board (the genuinely lowest rows in the DB), not a reversed
@@ -5580,8 +5590,10 @@ function overlayLeaderboard(screen){
     if(dir!=='asc' && rows.length>=3){
       const pod=[rows[1],rows[0],rows[2]];   // DOM order 2·1·3 so #1 sits center/elevated
       const cls=['p2','p1','p3'], med=['🥈','🥇','🥉'];
+      // CS393: each podium finisher shows off their customized golfer (r.look, from the board RPC; default
+      // golfer for legacy rows with no look, or before migration 52 is applied).
       podiumHTML='<div class="lbpodium">'+pod.map((r,di)=>{ const id=lbCanon(r), v=lbStatVal(r,tab,sort);
-        return `<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="nm">${esc(id.name)}</div><div class="vl">${v}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`; }).join('')+'</div>';
+        return `<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(r.look||DEFLOOK, di===1?74:56)}</div><div class="nm">${esc(id.name)}</div><div class="vl">${v}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`; }).join('')+'</div>';
     }
     if(sbSignedIn()){
       board=podiumHTML+rows.map(rowFn).join('');
@@ -5628,7 +5640,7 @@ function overlayLeaderboard(screen){
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>🏆 Leaderboard</h3>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
-    <div class="mini" style="margin:0 0 8px;width:auto;display:flex;gap:8px">${seg('season','Single Season')}${seg('career','Career')}</div>
+    <div class="mini" style="margin:0 0 8px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Daily')}${seg('weekly','Weekly')}</div>
     <div class="small muted" style="margin:0 0 4px;letter-spacing:.08em;text-transform:uppercase;font-size:10px">Sort by</div>
     <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:6px;flex-wrap:wrap">${sortChips}</div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 0 8px">
@@ -5644,6 +5656,79 @@ function overlayLeaderboard(screen){
   ov.querySelectorAll('.lbtab').forEach(b=>b.onclick=()=>{S.lbTab=b.dataset.tab;S.lbDir='desc';render();});   // reset to high→low on tab change
   ov.querySelectorAll('.lbsort').forEach(b=>b.onclick=()=>{S.lbSort=b.dataset.sort;S.lbDir='desc';render();});   // reset to high→low on new category
   ov.querySelectorAll('.lbdir').forEach(b=>b.onclick=()=>{S.lbDir=(S.lbDir==='asc'?'desc':'asc');render();});
+  const lbSign=ov.querySelector('#lb-signin'); if(lbSign) lbSign.onclick=()=>{S.overlay='account';S.acctMode=sbSignedIn()?'username':'signin';S.acctErr='';render();};
+  const lkIn=ov.querySelector('#lb-lock-in'); if(lkIn) lkIn.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
+  const lkUp=ov.querySelector('#lb-lock-up'); if(lkUp) lkUp.onclick=()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();};
+  screen.appendChild(ov);
+}
+// CS393: the Daily and Weekly leaderboard tabs. Daily = today's global daily-challenge board (rotates at ET
+// midnight with the daily); Weekly = cumulative daily scores across the current weekKey() 7-day block. Both
+// show each player's customized golfer on the podium and a live rotation countdown. Self-contained so the
+// season/career board logic above is untouched.
+function overlayLeaderboardDaily(screen, tab){
+  const weekly=(tab==='weekly');
+  const day=todayKey(), wr=weekDayRange();
+  let cache;
+  if(weekly){ const k=wr.from+'-'+wr.to; if(!lbWeekCache[k]) lbWeekLoad(wr.from, wr.to); cache=lbWeekCache[k]; }
+  else { if(!lbDailyCache[day]) lbDailyLoad(day); cache=lbDailyCache[day]; }
+  const loading=!cache || cache.loading, ok=cache && cache.ok, rows=ok?cache.rows:[];
+  const todayCourse=DAILY_COURSES[(rows[0]&&rows[0].course_key) || S.dailyCourse || (typeof dailyCourseKey==='function'?dailyCourseKey(day):'')]||{};
+  const you=r=>sbUser && r.user_id===sbUser.id;
+  const scoreDaily=r=>dTot(r.to_par, (DAILY_COURSES[r.course_key]||{}).par);
+  const scoreWk=r=>dtp(r.total_to_par);
+  const val=r=>`<b style="color:var(--gold)">${weekly?scoreWk(r):scoreDaily(r)}</b>`;
+  const sub=r=>weekly
+    ? `${r.golfer_name?esc(r.golfer_name)+' · ':''}${r.days_played} day${r.days_played===1?'':'s'} · best ${dtp(r.best_to_par)}`
+    : `${r.golfer_name?esc(r.golfer_name)+' · ':''}OVR ${r.ovr}${r.won?' · <span style="color:var(--gold)">beat the pro</span>':''}`;
+  const rowHTML=r=>`<div class="lb ${you(r)?'you':''}" style="grid-template-columns:34px 1fr auto">
+      <span class="pos">${r.rank===1?'🏆':r.rank}</span>
+      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.display_name)}</div><div class="small muted" style="font-size:10.5px">${sub(r)}</div></span>
+      <span class="mny" style="white-space:nowrap">${val(r)}</span></div>`;
+  let podium='';
+  if(rows.length>=3){
+    const pod=[rows[1],rows[0],rows[2]], cls=['p2','p1','p3'], med=['🥈','🥇','🥉'];
+    podium='<div class="lbpodium">'+pod.map((r,di)=>`<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(r.look||DEFLOOK, di===1?74:56)}</div><div class="nm">${esc(r.display_name)}</div><div class="vl">${weekly?scoreWk(r):scoreDaily(r)}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`).join('')+'</div>';
+  }
+  const guestBoardCTA = !sbSignedIn() ? `<div class="lockcta" style="text-align:center;padding:18px 12px;margin-top:10px">
+      <div style="font-size:22px;line-height:1">🔒</div>
+      <b style="color:var(--gold);display:block;margin-top:5px">Sign in to claim your rank</b>
+      <div class="small muted" style="margin:3px auto 11px;max-width:320px">Play the Daily Challenge with an account to post your score to the global board.</div>
+      <div style="display:flex;gap:8px;justify-content:center"><button class="btn gold" id="lb-lock-up" style="width:auto;padding:9px 14px;font-size:12px">Create account</button><button class="btn ghost" id="lb-lock-in" style="width:auto;padding:9px 14px;font-size:12px">Sign in</button></div></div>` : '';
+  let board;
+  if(loading){
+    board=Array.from({length:8},()=>`<div class="lb lbskel" style="grid-template-columns:34px 1fr auto"><span class="pos"><span class="skb" style="width:16px;height:16px;border-radius:50%"></span></span><span class="pl"><span class="skb" style="width:52%;height:12px"></span><span class="skb" style="width:34%;height:9px;margin-top:5px"></span></span><span class="mny"><span class="skb" style="width:56px;height:13px"></span></span></div>`).join('');
+  } else if(ok && rows.length){
+    if(sbSignedIn()) board=podium+rows.map(rowHTML).join('');
+    else { const top=rows.slice(0,5).map(rowHTML).join(''), tail=rows.slice(5).map(rowHTML).join('');
+      board=podium+top+(tail
+        ? `<div class="lockwrap"><div class="lockblur">${tail}</div>
+            <div class="lockover"><div class="lockmsg">🔒 <b>Sign in to see the full board</b><div class="small muted">Play the Daily to claim your rank.</div></div>
+            <div class="mini" style="margin:0;width:auto;gap:8px"><button class="btn gold" id="lb-lock-up" style="width:auto;padding:9px 14px;font-size:12px">Create account</button><button class="btn ghost" id="lb-lock-in" style="width:auto;padding:9px 14px;font-size:12px">Sign in</button></div></div></div>`
+        : guestBoardCTA); }
+  } else if(ok){ board=`<div class="small muted center" style="padding:18px 8px">No scores yet, be the first to post one.</div>`+guestBoardCTA; }
+  else { board=`<div class="small muted center" style="padding:18px 8px">${weekly?'Weekly':"Today's"} board is offline right now.</div>`+guestBoardCTA; }
+  const signCTA=`<button class="btn gold" id="lb-signin" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap">Sign in</button>`;
+  let banner;
+  if(sbSignedIn() && sbUsername){ banner=`<div><b style="color:var(--gold)">Signed in as ${esc(sbUsername)}</b><div class="small muted" style="margin-top:2px">Your best Daily Challenge score posts to the board automatically.</div></div>`; }
+  else if(sbSignedIn()){ banner=`<div><b style="color:var(--gold)">Pick a username</b><div class="small muted" style="margin-top:2px">Set a username to appear on the board.</div></div>${signCTA}`; }
+  else { banner=`<div><b style="color:var(--gold)">Compete on the Daily board</b><div class="small muted" style="margin-top:2px">Sign in or create a free RunThe.GG account, your Daily scores then post here automatically.</div></div>${signCTA}`; }
+  const seg=(id,lab)=>`<button class="btn ${tab===id?'gold':'ghost'} lbtab" data-tab="${id}" style="font-size:12px;padding:8px 12px;width:auto">${lab}</button>`;
+  const title=weekly?'This Week':'Today';
+  const subtitle=weekly
+    ? `Best cumulative scores this week · resets in ${dCd('week')}`
+    : `${esc(dShort(todayCourse.v||"today's course"))} · lowest score wins · new course in ${dCd('hm')}`;
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Leaderboard">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>🏆 Leaderboard</h3>
+    <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
+    <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Daily')}${seg('weekly','Weekly')}</div>
+    <div style="margin:0 0 8px"><h2 style="margin:0 0 2px">${title}</h2><div class="small muted" style="margin:0">${subtitle}</div></div>
+    <div class="board">${board}</div>
+    <div style="height:14px"></div>
+    <button class="btn red">Close</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  ov.querySelectorAll('.lbtab').forEach(b=>b.onclick=()=>{S.lbTab=b.dataset.tab;S.lbDir='desc';render();});
   const lbSign=ov.querySelector('#lb-signin'); if(lbSign) lbSign.onclick=()=>{S.overlay='account';S.acctMode=sbSignedIn()?'username':'signin';S.acctErr='';render();};
   const lkIn=ov.querySelector('#lb-lock-in'); if(lkIn) lkIn.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
   const lkUp=ov.querySelector('#lb-lock-up'); if(lkUp) lkUp.onclick=()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();};
@@ -13860,6 +13945,7 @@ function scrSummary(){
     // post to the public leaderboard (guests post anonymized; no-op only if the backend's offline)
     if(!S.daily) sbSubmitSeason({golfer:me.name,ovr,year:S.year||1,earnings:t.money,net:netTotal,wins:t.wins,majors:t.majors,
       careerId:(S.careerSeed!=null?String(S.careerSeed):null), followers:Math.round((careerStory().followers)||0),   // CS281 Fans board
+      look:lookForBoard(),   // CS393: golfer appearance → shown on the leaderboard podium
       skills:Object.fromEntries(CATS.map(c=>[c.k, S.slots[c.k]?S.slots[c.k].value:REPLACEMENT]))})
       .then(()=>loadSeasonRank(t.money));   // fetch "ranked #N of M all-time" once the post attempt settles
     } else {
@@ -19640,6 +19726,7 @@ function moneyRow(r,pos,you){return $(`<div class="lb ${you?'you':''}" style="gr
 const SB_URL='https://jcrrxqfpdelrmvjuihnm.supabase.co';
 const SB_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjcnJ4cWZwZGVscm12anVpaG5tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3OTY5NjIsImV4cCI6MjA5NjM3Mjk2Mn0.wyjoZpa2yRW-l38-KMGqBvEgTlW9v1KheNye7csWAlM';
 let sb=null, sbUser=null, sbUsername=null, sbProfile=null, lbCache={}, _pendingSeason=null;
+let lbDailyCache={}, lbWeekCache={};   // CS393: Daily / Weekly leaderboard tabs (keyed by day / week-range)
 let _pendingDaily=null, crCache=null, dbCache=null;   // daily-challenge backend (Phase 3)
 let crCacheLegend=null, dbCacheLegend=null;   // Legend-tier course records / board (separate from the human ones above)
 let crCacheSpot=null, dbCacheSpot=null, _pendingSpot=null;   // Monthly Spotlight course records / board (own bucket)
@@ -19752,7 +19839,7 @@ async function sbSignOut(){
   // (RunThePitch's separate session key is left untouched.)
   try{ localStorage.removeItem(RTT_AUTH_KEY); localStorage.removeItem('rtt_oauth_pending'); }catch(e){}
   setRemember(false);
-  sbUser=null; sbUsername=null; sbProfile=null; lbCache={}; _pendingSeason=null;
+  sbUser=null; sbUsername=null; sbProfile=null; lbCache={}; lbDailyCache={}; lbWeekCache={}; _pendingSeason=null;
   _pendingDaily=null; _pendingSpot=null; crCache=null; dbCache=null; crCacheSpot=null; dbCacheSpot=null;
 }
 async function sbSetUsername(name){
@@ -20061,6 +20148,11 @@ async function cloudPull(){
 // signed out, offline, RPC failures and app restarts (stored in localStorage, flushed whenever
 // signed in + online). Replaces the old single-slot _pendingSeason (which lost all but the last).
 const PENDING_SEASONS_KEY='bag_pending_seasons';
+// CS393: a minimal golfer-appearance snapshot for the public boards - only the keys the pixel figure reads
+// (drops _ts/acc/caddie/country/title, which don't affect the rendered golfer). Keeps the payload tiny.
+function lookForBoard(look){ const L=look||S.look||DEFLOOK; const o={};
+  ['skin','hair','hairStyle','polo','pants','shoes','cap','hatStyle','hat','shirtPat','hatPat','eyewear','club','lefty','gender'].forEach(k=>{ if(L[k]!==undefined) o[k]=L[k]; });
+  return o; }
 function loadPendingSeasons(){ const a=LS.get(PENDING_SEASONS_KEY,[]); return Array.isArray(a)?a:[]; }
 function savePendingSeasons(a){ LS.set(PENDING_SEASONS_KEY, a.slice(-200)); }   // cap keeps storage bounded
 async function flushPendingSeasons(){
@@ -20082,13 +20174,14 @@ async function flushPendingSeasons(){
         // no identity is sent at all, the server hardcodes 'Anonymous' / 'Guest Player' regardless
         const base={p_ovr:s.ovr,p_year:s.year,p_earnings:Math.round(s.earnings||0),p_net:Math.round(s.net||0),
           p_wins:s.wins,p_majors:s.majors,p_skills:s.skills,p_career_id:s.careerId||null};
-        let res=await sb.rpc('runtour_submit_season_guest',Object.assign({p_followers:fol},base));
+        // CS393: p_look (golfer on the podium) rides with p_followers; both fall back to `base` pre-migration.
+        let res=await sb.rpc('runtour_submit_season_guest',Object.assign({p_followers:fol,p_look:s.look||null},base));
         if(res.error) res=await sb.rpc('runtour_submit_season_guest',base);
         error=res.error;
       } else {
         const base={p_golfer:s.golfer,p_ovr:s.ovr,p_year:s.year,p_earnings:Math.round(s.earnings||0),p_net:Math.round(s.net||0),
           p_wins:s.wins,p_majors:s.majors,p_skills:s.skills,p_career_id:s.careerId||null,p_rep_pts:(s.repPts!=null?s.repPts:achPoints())};
-        let res=await sb.rpc('runtour_submit_season',Object.assign({p_followers:fol},base));
+        let res=await sb.rpc('runtour_submit_season',Object.assign({p_followers:fol,p_look:s.look||null},base));
         if(res.error) res=await sb.rpc('runtour_submit_season',base);
         error=res.error;
       }
@@ -20098,6 +20191,27 @@ async function flushPendingSeasons(){
   }
   savePendingSeasons(keep);
   if(posted){ lbCache={}; }                 // something posted → refresh the board next open
+}
+// CS393: Daily leaderboard tab — today's global daily-challenge board (rotates at ET midnight with the daily).
+async function lbDailyLoad(day){
+  if(lbDailyCache[day] && lbDailyCache[day].loading) return;
+  if(!sb){ lbDailyCache[day]={rows:[],ok:false}; render(); return; }
+  lbDailyCache[day]={loading:true};
+  try{ const {data,error}=await sb.rpc('runtour_daily_board',{p_day:day,p_limit:100});
+    lbDailyCache[day]={rows:(data||[]),ok:!error};
+  }catch(e){ lbDailyCache[day]={rows:[],ok:false}; }
+  render();
+}
+// Weekly leaderboard tab — cumulative daily performance across the current weekKey() 7-day block.
+async function lbWeekLoad(from,to){
+  const k=from+'-'+to;
+  if(lbWeekCache[k] && lbWeekCache[k].loading) return;
+  if(!sb){ lbWeekCache[k]={rows:[],ok:false}; render(); return; }
+  lbWeekCache[k]={loading:true};
+  try{ const {data,error}=await sb.rpc('runtour_daily_week_board',{p_from:from,p_to:to,p_limit:100});
+    lbWeekCache[k]={rows:(data||[]),ok:!error};
+  }catch(e){ lbWeekCache[k]={rows:[],ok:false}; }
+  render();
 }
 async function sbSubmitSeason(s){
   // ALWAYS durably enqueue the finished season (so it is never lost), then try to flush the queue
@@ -20151,22 +20265,31 @@ async function sbSubmitDaily(b){
   const args=Object.assign({}, base);
   if(b.isLegend) args.p_is_legend=true;
   if(b.isSpotlight) args.p_is_spotlight=true;
+  const withLook=Object.assign({p_look:lookForBoard()}, args);   // CS393: golfer look → daily board podium
+  const clearCaches=()=>{ crCache=null; dbCache=null; crCacheLegend=null; dbCacheLegend=null; crCacheSpot=null; dbCacheSpot=null; lbDailyCache={}; lbWeekCache={}; };
   try{
     // supabase-js resolves (doesn't throw) on a Postgres error, so the {error} MUST be checked explicitly,
     // otherwise a rejected submission looks identical to a success and the round is silently never posted.
-    const {error}=await sb.rpc('runtour_submit_daily', args);
+    const {error}=await sb.rpc('runtour_submit_daily', withLook);
     if(error) throw error;
-    crCache=null; dbCache=null; crCacheLegend=null; dbCacheLegend=null; crCacheSpot=null; dbCacheSpot=null;
+    clearCaches();
   }catch(e){
     console.error('[RunTheTour] daily submit failed:', (e&&e.message)||e, b);
-    // A legend/spotlight round can't be safely downgraded to a plain daily (separate board), so it just
-    // skips if its migration is missing. A PLAIN daily retries the bare base signature as a last resort.
-    if(b.isLegend||b.isSpotlight) return;
+    // retry WITHOUT p_look (pre-migration-53 DB, but keeps the legend/spotlight flags)
     try{
-      const {error:e2}=await sb.rpc('runtour_submit_daily', base);
+      const {error:e2}=await sb.rpc('runtour_submit_daily', args);
       if(e2) throw e2;
-      crCache=null; dbCache=null;
-    }catch(e2){ console.error('[RunTheTour] daily submit retry failed:', (e2&&e2.message)||e2, b); }
+      clearCaches();
+    }catch(e2){
+      // A legend/spotlight round can't be safely downgraded to a plain daily (separate board), so it just
+      // skips if its migration is missing. A PLAIN daily retries the bare base signature as a last resort.
+      if(b.isLegend||b.isSpotlight){ console.error('[RunTheTour] daily submit retry failed:', (e2&&e2.message)||e2, b); return; }
+      try{
+        const {error:e3}=await sb.rpc('runtour_submit_daily', base);
+        if(e3) throw e3;
+        crCache=null; dbCache=null; lbDailyCache={}; lbWeekCache={};
+      }catch(e3){ console.error('[RunTheTour] daily submit retry failed:', (e3&&e3.message)||e3, b); }
+    }
   }
 }
 // self-heals the LOCAL "attempts used today" counter against the server's authoritative count, so a
@@ -20292,8 +20415,14 @@ function h2hBotSkills(){
   for(let i=0;i<spikes;i++){ const k=CATS[Math.floor(Math.random()*CATS.length)].k; s[k]=Math.min(97, s[k]+5+Math.floor(Math.random()*8)); }
   return s;
 }
-function h2hBotLook(){ const p=a=>a[Math.floor(Math.random()*a.length)];
-  return {skin:p(['light','tan','medium','brown','deep']), hair:p(['black','brown','blonde','grey']), shirt:p(['teal','navy','white','gold','black']), gender:p(['m','f'])}; }
+// a full, valid, varied look so a bot's golfer renders as a real customized character (CS393). Uses the
+// same look vocabulary as DEFLOOK (avLook falls back for anything unknown).
+function h2hBotLook(){ const p=a=>a[Math.floor(Math.random()*a.length)], b=()=>Math.random()<0.5;
+  return { skin:p(['light','tan','medium','brown','deep']), hair:p(['black','brown','blonde','grey']),
+    hairStyle:p(['short','swoop','curly','long','buzz']), polo:p(['white','teal','navy','gold','black','red']),
+    hat:p(['navy','white','gold','black','teal']), pants:p(['stone','navy','black','grey']),
+    shoes:p(['white','black','navy']), cap:b(), hatStyle:b()?'cap':'visor', club:p(['driver','iron','wedge']),
+    gender:p(['male','female']), lefty:Math.random()<0.15 }; }
 function h2hMakeBots(n){ return h2hPickBotNames(n).map(nm=>({user_id:'bot:'+nm, username:nm, bot:true, submitted:false, draft:{skills:h2hBotSkills(), look:h2hBotLook()}})); }
 // arm/clear the "no human showed up → fill with AI" timer for a Quick Match
 function h2hArmBotFill(){ if(!H2H_BOTS_ENABLED||!S.h2h) return; h2hClearBotTimer();
@@ -21018,7 +21147,12 @@ function scrH2HPreview(){
   units.forEach((u,ix)=>{ const mine=u.members.some(p=>p.user_id===h2hUid());
     const nm=u.kind==='team'?`Team ${(u.id|0)+1}`:esc(u.label);
     const sub=u.kind==='team'?esc(u.members.map(p=>p.username).join(' & ')):esc(archetype(u.dispSkills).name);
+    // CS393: show each competitor's customized golfer at the top of their column (the look already travels
+    // with the draft via h2h_state → members[].draft.look). Teams show both partners' golfers side by side.
+    const team=u.kind==='team', fh=team?52:70;
+    const figs=u.members.map(p=>pxFigureHTML((p.draft&&p.draft.look)||DEFLOOK, fh)).join('');
     grid.appendChild($(`<div style="text-align:center;padding:7px 5px;border-radius:9px;border:1px solid ${mine?'var(--gold)':'var(--line)'};background:${mine?'rgba(241,208,74,.08)':'rgba(255,255,255,.02)'}">
+      <div style="display:flex;justify-content:center;align-items:flex-end;gap:2px;min-height:${fh+4}px;margin-bottom:3px">${figs}</div>
       <div style="font-weight:800;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${nm}${mine?' <span class="small" style="color:var(--gold)">you</span>':''}</div>
       <div class="small muted" style="margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10.5px">${sub}</div></div>`));
   });
