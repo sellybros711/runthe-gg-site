@@ -9096,7 +9096,8 @@ allows Google Fonts, or self-host Anton.*
   build hero, Trophy Room, etc.); the SWING animation still uses a shot-appropriate club (driver for full
   shots, putter on the green), which is correct. Verified in Playwright: righty holds the club in the right
   hand / lefty in the left, all 5 clubs render distinct, the setup Club picker updates the avatar live,
-  zero page errors.
+  zero page errors. (CS370b: iron/wedge/putter heads recolored bright silver/chrome via a new `S` palette
+  color so they're distinct from the dark driver/wood.)
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
