@@ -4925,6 +4925,7 @@ function render(){
     if(S.overlay==='courserecords') overlayCourseRecords(app);
     if(S.overlay==='passport') overlayPassport(app);
     if(S.overlay==='shop') overlayShop(app);
+    if(S.overlay==='careerwall') overlayCareerwall(app);
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
     if(S.overlay==='confirmRetire') overlayConfirmRetire(app);
     if(S.overlay==='challenges') overlayChallenges(app);
@@ -12216,7 +12217,16 @@ function scrSummary(){
     const lastYear=S.circuitMode?circuitOver():((S.year||1)>=CAREER_MAX_YEARS);
     const declining=pastPeak();
     const circuitYear2=S.circuitMode?((S.year||1)-(S.circuitStartYear||1)+1):null;
-    actC.appendChild($(`<div class="small center" style="margin:0 0 10px;color:#35d6a0;font-weight:700">✓ Progress auto-saved, your career is checkpointed at the home screen</div>`));
+    if(sbSignedIn()){
+      actC.appendChild($(`<div class="small center" style="margin:0 0 10px;color:#35d6a0;font-weight:700">✓ Progress auto-saved, your career is checkpointed at the home screen</div>`));
+    } else if(!S.circuitMode){   // guests can't save (login wall at ${GUEST_SEASON_WALL} seasons) - honest nudge instead of a false "saved"
+      const left=GUEST_SEASON_WALL-(S.year||1);
+      const warn=left<=2;
+      const msg=warn ? `⚠ Playing as a guest, sign in within ${Math.max(1,left)} season${left===1?'':'s'} to save this career` : `Playing as a guest, sign in any time to save this career across devices`;
+      const nudge=$(`<div class="small center" style="margin:0 0 10px;color:${warn?'#f0c04a':'#9fb6a7'};font-weight:700;cursor:pointer">${msg}</div>`);
+      nudge.onclick=()=>{ S.pendingCareerAdopt=true; S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); };
+      actC.appendChild(nudge);
+    }
     advanceLabel=lastYear?(S.circuitMode?'Finish Legend Circuit':'Finish Career'):'Continue to Year '+((S.year||1)+1);
     const cont=$(`<button class="btn goldfill" id="sum-advance">${lastYear?(S.circuitMode?'Finish Legend Circuit ▸':'Finish Career ▸'):'Continue to Year '+((S.year||1)+1)+' ▸'}</button>`);
     cont.onclick=continueFranchise; actC.appendChild(cont);
@@ -12271,7 +12281,38 @@ function setupSummaryScrollCue(label){
 }
 // how many Legend Circuit seasons have been played, relative to whichever year the circuit began
 function circuitOver(){ return S.circuitMode && S.circuitStartYear!=null && ((S.year||1)-S.circuitStartYear+1)>=CIRCUIT_MAX_YEARS; }
+// ---- 10-season login wall: a signed-out guest can play GUEST_SEASON_WALL seasons, then must sign in to keep
+// going. Signing in adopts the in-memory career into the account so they continue the SAME golfer full length. ----
+const GUEST_SEASON_WALL=10;
+function careerWallDue(){ return !sbSignedIn() && !S.circuitMode && (S.year||1)>=GUEST_SEASON_WALL; }
+function overlayCareerwall(screen){
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Save your career"></div>`);
+  ov.appendChild($(`<div style="text-align:center;padding:26px 16px;max-width:460px;margin:0 auto">
+    <div style="font-size:40px">${ic('lock',{size:'40px'})}</div>
+    <h2 style="font-family:var(--display);margin:10px 0 6px">Save your career</h2>
+    <p class="muted" style="margin:0 auto 6px;max-width:36ch">You've played ${GUEST_SEASON_WALL} seasons with <b style="color:var(--oncard)">${esc(S.name||'your golfer')}</b>. Create a free account or sign in to keep this exact career and play out all 30 years, nothing is lost.</p>
+    <div style="display:flex;flex-direction:column;gap:9px;margin:18px auto 0;max-width:290px">
+      <button class="btn goldfill" id="cw-up">Create free account</button>
+      <button class="btn ghost" id="cw-in">Sign in</button>
+      <button id="cw-exit" style="background:none;border:0;color:var(--muted);font-size:13px;padding:6px;cursor:pointer">Not now, back to home</button>
+    </div>
+    <div class="small muted" style="margin-top:12px">Your golfer, world, stats and this season all carry over to your account and sync across devices.</div>
+  </div>`));
+  const go=(mode)=>{ S.pendingCareerAdopt=true; S.overlay='account'; S.acctMode=mode; S.acctErr=''; render(); };
+  ov.querySelector('#cw-up').onclick=()=>go('signup');
+  ov.querySelector('#cw-in').onclick=()=>go('signin');
+  ov.querySelector('#cw-exit').onclick=()=>{ S.overlay=null; S.screen='title'; render(); };
+  screen.appendChild(ov);
+}
+// after a guest signs in through the wall, persist the in-memory career to the account and advance the season
+function maybeAdoptGuestCareer(){ if(!S.pendingCareerAdopt || !sbSignedIn()) return; S.pendingCareerAdopt=false;
+  try{ if(S.career||S.season) saveCareer(); }catch(e){}
+  if(S.overlay==='careerwall'||S.overlay==='account') S.overlay=null;
+  try{ toast('Career saved to your account!'); }catch(e){}
+  try{ continueFranchise(); }catch(e){ render(); }
+}
 function continueFranchise(){
+  if(careerWallDue()){ S.pendingCareerAdopt=true; S.overlay='careerwall'; render(); return; }   // guest hit the login wall
   if(S.circuitMode){ if(circuitOver()){ endCircuit(); return; } }
   else if(playerRetires()){ endCareer('age'); return; }   // your golfer's career is over → ceremony
   S.year=(S.year||1)+1;
@@ -17189,6 +17230,7 @@ async function sbApply(session){
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
     cloudPull();   // pull + merge the full profile bundle (career save, tokens, streak, stats, achievements)
+    maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
     if(_pendingDaily){ _pendingDaily=null; }   // legacy guest stash is no longer auto-posted (claim flow gates it)
