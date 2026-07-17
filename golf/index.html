@@ -14639,6 +14639,20 @@ function scrSummary(){
   __cur=reC;
   { const sf=storyFeedHTML(); if(sf) add($(sf)); }   // CS225: Career Story feed + persona payoff
   __cur=ovC;
+  // CS413: where this SEASON's earnings rank on today's / this week's / all-time season boards - right above
+  // Tournaments Won (owner-placed). Resolves async via loadSeasonRank (fail-open: nothing until it lands).
+  if(!S.daily && !S.circuitMode && S.seasonRank){
+    const sr=S.seasonRank;
+    const line=(lab,rk,tot)=> (rk!=null&&tot!=null)
+      ? `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:3px 2px"><span class="small muted" style="text-transform:uppercase;letter-spacing:.08em;font-weight:800">${lab}</span><span style="font:800 15px var(--body);color:var(--gold)">#${Number(rk).toLocaleString()} <span class="small muted" style="font-weight:600">of ${Number(tot).toLocaleString()}</span></span></div>` : '';
+    const rankNode=$(`<div class="scout" style="margin:18px auto 4px;max-width:440px;padding:13px 18px">
+      <div class="center small muted" style="letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:7px">Season Leaderboard Rank</div>
+      ${line('Today',sr.today_rank,sr.today_total)}${line('This week',sr.week_rank,sr.week_total)}${line('All time',sr.rank,sr.total)}
+      <button class="btn gold lb-open" style="width:auto;margin:11px auto 0;padding:8px 16px;font-size:12px;display:block">🏆 View Leaderboard</button>
+    </div>`);
+    rankNode.querySelector('.lb-open').onclick=()=>{S.overlay='leaderboard';render();};
+    add(rankNode);
+  }
   // WINS grouped with the Wins stat: the actual tournaments won this season sit right under the row
   // (owner: "wins are at top once and then tiny" - keep the count and the won-events together).
   { const wonThisSeason=[];
@@ -14795,18 +14809,7 @@ function scrSummary(){
   left.appendChild(board);
   const recapBtn=$(`<button class="btn gold" style="margin-top:10px">Full Season Recap<span class="sub">Every event, leaderboard by leaderboard</span></button>`);
   recapBtn.onclick=()=>{S.recapEvent=null; S.recapYear=S.year||1; S.screen='recap'; render();}; left.appendChild(recapBtn);
-  // global leaderboard rank - below the Full Season Recap button, above the career stats (owner-placed).
-  // Resolves async (loadSeasonRank); omitted until it lands / if the backend never answers (fail-open).
-  if(!S.daily && !S.circuitMode && S.seasonRank){
-    const sr=S.seasonRank;
-    const rankNode=$(`<div class="scout" style="margin-top:12px;text-align:center;padding:12px 18px">
-      <div class="small muted" style="letter-spacing:.1em;text-transform:uppercase;font-weight:800">Global leaderboard</div>
-      <div style="font:800 16px/1.3 var(--body);color:var(--gold);margin-top:5px">Your season ranked #${Number(sr.rank).toLocaleString()} of ${Number(sr.total).toLocaleString()} worldwide</div>
-      <button class="btn gold lb-open" style="width:auto;margin-top:9px;padding:9px 16px;font-size:12px">🏆 View Leaderboard</button>
-    </div>`);
-    rankNode.querySelector('.lb-open').onclick=()=>{S.overlay='leaderboard';render();};
-    left.appendChild(rankNode);
-  }
+  // (CS413: the season leaderboard-rank card moved up to right above Tournaments Won.)
   if(!S.daily && S.career && S.career.seasons.length>1){
     const c=S.career, ccol=c.net>=0?'#35d6a0':'#E14A33';
     caC.appendChild($(`<h2 style="margin:16px 0 8px">Career · ${c.seasons.length} years (through Year ${S.year})</h2>`));
@@ -21037,12 +21040,19 @@ async function sbSubmitSeason(s){
 // counted) and cached on S.seasonRank; renders a card + Leaderboard button once it resolves.
 async function loadSeasonRank(earnings){
   if(!sb) return;
+  const e=Math.round(earnings||0);
+  // CS413: rank on TODAY's + THIS WEEK's + all-time boards. The window boundaries use the game's ET day
+  // (dNextResetMs) and the weekly board's UTC week block (weekKey) - the same cadences as the daily/weekly boards.
+  let sinceToday=null, sinceWeek=null;
+  try{ sinceToday=new Date(Date.now()-(86400000-dNextResetMs())).toISOString(); }catch(_){}
+  try{ sinceWeek=new Date(weekKey()*7*86400000).toISOString(); }catch(_){}
   try{
-    const {data,error}=await sb.rpc('runtour_season_rank',{p_earnings:Math.round(earnings||0)});
-    if(error || !data || !data.length) return;
-    S.seasonRank=data[0];
+    let r=await sb.rpc('runtour_season_rank',{p_earnings:e,p_since_today:sinceToday,p_since_week:sinceWeek});
+    if(r.error){ r=await sb.rpc('runtour_season_rank',{p_earnings:e}); }   // pre-migration 57 → all-time only
+    if(r.error || !r.data || !r.data.length) return;
+    S.seasonRank=r.data[0];
     render();
-  }catch(e){ /* fail open, the summary just shows no rank message */ }
+  }catch(_){ /* fail open, the summary just shows no rank */ }
 }
 // fetch ONE board for the given (tab, sort) into lbCache[`${tab}:${sort}`]. Falls back to the legacy
 // (no p_sort) call so the board still loads before migration 28 is applied.
