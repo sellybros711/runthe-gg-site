@@ -150,14 +150,16 @@ window.GA_ID='G-L29P5MRWKE';
     padding:calc(env(safe-area-inset-top, 0px) + 7px) 12px 7px;
     background:rgba(9,30,20,.88); -webkit-backdrop-filter:blur(9px); backdrop-filter:blur(9px);
     border-bottom:1px solid rgba(244,227,201,.10)}
-  .banner{display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:8px; max-width:780px; margin:0 auto}
-  .banner .icobtn{justify-self:start; width:36px;height:36px;font-size:17px}
-  .bnbrand{justify-self:center; background:none;border:0;padding:0;cursor:pointer; min-width:0}
+  /* CS429: flex layout so the centered wordmark gets the middle space with SYMMETRIC clearance to both
+     side groups (the old 3-col grid force-centered it in the banner → uneven/overlapping gaps on phones) */
+  .banner{display:flex; align-items:center; gap:10px; max-width:780px; margin:0 auto}
+  .banner .icobtn{width:36px;height:36px;font-size:17px; flex:0 0 auto}
+  .bnbrand{flex:1 1 auto; text-align:center; background:none;border:0;padding:0 12px;cursor:pointer; min-width:0; overflow:hidden}
   .bnwm{display:inline-flex; align-items:baseline; gap:5px; font-family:var(--serif); text-transform:uppercase; white-space:nowrap; line-height:1}
   .bnwm b{font-weight:700; font-size:17px; letter-spacing:.05em; color:var(--oncard)}   /* CS424: match "Tour" size */
   .bnwm i{font-style:normal; font-weight:700; font-size:17px; letter-spacing:.05em; color:var(--gold)}
-  .bnleft{justify-self:start; display:flex; align-items:center; gap:8px; min-width:0}   /* CS426: menu + profile on the left */
-  .bnright{justify-self:end; display:flex; align-items:center; gap:8px; min-width:0}
+  .bnleft{display:flex; align-items:center; gap:8px; min-width:0; flex:0 0 auto}   /* CS426: menu + profile on the left */
+  .bnright{display:flex; align-items:center; gap:8px; min-width:0; flex:0 0 auto}
   /* CS426/CS428: Legend-Token counter next to the coins → jumps to your playable Legends in the daily (violet) */
   .legendhdr{display:inline-flex; align-items:center; gap:6px; border-radius:999px;
     background:linear-gradient(180deg,rgba(139,92,246,.24),rgba(139,92,246,.06)); border:1px solid rgba(182,155,255,.55);
@@ -175,6 +177,7 @@ window.GA_ID='G-L29P5MRWKE';
      centered wordmark never collides with it; guests keep the "Sign in" label */
   @media (max-width:520px){ .bnprofile.pin .bnname{display:none} .bnprofile.pin{padding:5px 5px} }
   @media (max-width:430px){ .bnwm b{font-size:15px} .bnwm i{font-size:15px} .bnname{max-width:70px} .banner{gap:6px} }
+  @media (max-width:380px){ .bnwm b{font-size:13px} .bnwm i{font-size:13px} }   /* CS429: smaller wordmark on tiny phones so it clears the pills */
   /* CS427: skin-tone slider (light→dark). The inline background sets the gradient track. */
   .skinslider{ -webkit-appearance:none; appearance:none; height:12px; border-radius:8px; outline:none;
     box-shadow:inset 0 0 0 1px rgba(0,0,0,.28); cursor:pointer}
