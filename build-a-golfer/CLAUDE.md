@@ -9663,6 +9663,23 @@ allows Google Fonts, or self-host Anton.*
     NOTE: mulli-spins are earned again (day 3 & 6); flag to owner if the day-3/6 "mulligan" should instead be
     a DAILY-round mulligan token (a new system) rather than the off-season Mulli-Spin re-spin.
 
+- **CS402 — the daily streak display is now a 7-day ADVENT CALENDAR (login-reward style) + separate play &
+  win streak counters (owner).** Replaced the CS252 14-day streak calendar + the CS401 compact week track
+  with a single `streakAdventNode()` on the daily preview + result: a **7-day advent calendar** where each
+  day cell shows that day's reward (Days 1/2/4/5 = 500 coins, Days 3 & 6 = Mulli-Spin, Day 7 = Free Pack) —
+  claimed days show a green ✓, the next claimable day is gold-highlighted "TODAY", future days are dimmed —
+  above two counters: **🔥 Play Streak** (consecutive days played) and **⚡ Win Streak** (consecutive days
+  beating the pro). The reward is claimed after completing a daily round; the mechanic is unchanged from
+  CS401 (each day you play claims the NEXT slot in order, so missing a day just means you can't reach the
+  Day-7 pack that week — e.g. miss day 3, play day 4 → you claim slot 3), and the track resets every Sunday.
+  New `winStreak()` derives the win streak from the cloud-synced `wonDays` map (consecutive beat-the-pro days
+  counting back from today/yesterday) — no new storage. The overall play streak (`bag_streak.current`) and
+  the CS401 active-streak leaderboard are unchanged. Verified in Playwright: win streak = 3 for three
+  consecutive beaten days, 1 across a gap, 0 with no wins; the node renders both counters, 7 day cells, the
+  TODAY highlight, the correct claimed ✓ count, and the Day-7 PACK slot; guests get nothing; 0 page errors.
+  Screenshot confirms the layout. Client-only, no migration. The old `streakCalendar`/`streakWeekNode` are
+  now unused (left defined). Tunable: `STREAK_WEEK_TRACK` (day→reward), the cell/counter styling.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
