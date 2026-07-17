@@ -9810,6 +9810,32 @@ allows Google Fonts, or self-host Anton.*
   economy-value change beyond the new prices; owned gear/coins untouched. iOS may need a full reopen to
   load the new code.)
 
+- **CS407 — 7-Day Rewards retune: Day 7 = Tour pack, Day 4 = Base pack, coins scale 200→1000, mulligan
+  symbol (owner, IMG_8420).** Reworked the daily-streak advent calendar's reward track (CS402):
+  - **Day 7 prize → the middle-tier Tour Pack** (purple, CS406) instead of a base pack; **Day 4 prize → a
+    Base pack** (was 500 coins). `STREAK_WEEK_TRACK` now
+    `{1:coins,2:coins,3:mulligan,4:basepack,5:coins,6:mulligan,7:tourpack}`.
+  - **Coins scale UP day-to-day from 200 to 1000** (was a flat 500): `streakDayCoins(day)` ramps linearly
+    200→1000 across the 7 days, rounded to the nearest 100 — so the coin days (1/2/5) award 200 / 300 / 700.
+  - **Mulligans stay (days 3 & 6) + a little mulligan symbol** — the calendar cell now shows the ↻ `repeat`
+    icon above "Mulli".
+  - The calendar cells render the real reward: coin days show the ramped amount, pack days show a small
+    **tier-colored pixel pack** (green Base on day 4, purple Tour on day 7) + a "Pack"/"Tour" label,
+    mulligan days show the ↻ symbol.
+  - **Per-tier free-pack credits** (needed so a Tour-pack reward actually opens a Tour pack): the pack-credit
+    bank (`packState` earned/spent counters) is now per-tier (`packCredits(tier)` / `grantFreePack(n,{tier})`
+    for base/tour/champ), and `startPackDeal` spends the matching tier's credit (the first-pack-free stays
+    base-only). `mergePacks` carries the new counters (grow-only, so a cloud sync can't resurrect a spent
+    credit). The Pro Shop tier cards + the wheel's "Open another" now show/consume per-tier credits, and the
+    title/menu "🎁 N free packs" badge counts all tiers. The daily-completion week note reads e.g.
+    "FREE Tour Pack!" / "FREE Base Pack!".
+  Verified in Playwright: the coin ramp is [200,300,500,600,700,900,1000] (coin days award 200/300/700);
+  claiming day 3/6 grants a Mulli-Spin, day 4 grants a Base-pack credit, day 7 grants a Tour-pack credit; a
+  Tour credit then opens a **Tour** pack for FREE (credit spent, no coins charged); the advent node renders
+  the ramped coins + green Base pack (day 4) + purple Tour pack (day 7) + the ↻ mulligan symbol; 0 page
+  errors. Screenshot confirms the calendar. Deployed to /golf. Tunable: `STREAK_WEEK_COIN_MIN/MAX` (the
+  ramp), `STREAK_WEEK_TRACK` (per-day reward), the Day-7 tier ('tour').
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -2557,11 +2557,13 @@ function bumpStreak(){const ds=LS.get(acctKey('bag_streak'),{current:0,longest:0
 function streakDisplay(){const ds=LS.get(acctKey('bag_streak'),null); if(!ds||!ds.current)return 0;
   return (ds.last===todayKey()||ds.last===yesterdayKey()||(ds.last===twoDaysAgoKey()&&(ds.freezes||0)>0))?ds.current:0;}
 function streakDays(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.days||{}; }
-// CS401: the DAILY STREAK WEEK - Sunday to Sunday. Each distinct day you play the daily that week climbs a
-// reward track: days 1/2/4/5 → 500 coins, days 3 & 6 → a Mulli-Spin, day 7 → a FREE PACK. The track resets
-// every Sunday; the OVERALL streak count (bag_streak.current) persists across weeks as long as you keep it.
-const STREAK_WEEK_COINS=500;
-const STREAK_WEEK_TRACK={1:'coins',2:'coins',3:'mulligan',4:'coins',5:'coins',6:'mulligan',7:'pack'};
+// CS401/CS407: the DAILY STREAK WEEK - Sunday to Sunday. Each distinct day you play the daily that week
+// climbs a reward track: coin days scale UP from 200→1000 across the week; days 3 & 6 → a Mulli-Spin;
+// day 4 → a FREE BASE pack; day 7 → a FREE TOUR pack (the middle tier). The track resets every Sunday; the
+// OVERALL streak count (bag_streak.current) persists across weeks as long as you keep it.
+const STREAK_WEEK_COIN_MIN=200, STREAK_WEEK_COIN_MAX=1000;
+function streakDayCoins(day){ var d=Math.max(1,Math.min(7,day||1)), t=(d-1)/6; return Math.round((STREAK_WEEK_COIN_MIN+t*(STREAK_WEEK_COIN_MAX-STREAK_WEEK_COIN_MIN))/100)*100; }
+const STREAK_WEEK_TRACK={1:'coins',2:'coins',3:'mulligan',4:'basepack',5:'coins',6:'mulligan',7:'tourpack'};
 function sundayWeekKey(){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
   const dt=new Date(Date.UTC(y,m-1,d,12,0,0)); dt.setUTCDate(dt.getUTCDate()-dt.getUTCDay());   // back up to the week's Sunday (ET day-of-week)
   return dt.getUTCFullYear()*10000+(dt.getUTCMonth()+1)*100+dt.getUTCDate(); }
@@ -2575,8 +2577,9 @@ function streakWeekReward(){ if(!sbSignedIn()) return null;
   w.lastDay=t; w.days=Math.min(7,(w.days||0)+1);
   const n=w.days, kind=STREAK_WEEK_TRACK[n]||'coins'; const out={day:n, kind:kind};
   if(kind==='mulligan'){ if(typeof addMulliSpin==='function') addMulliSpin(1); }
-  else if(kind==='pack'){ if(typeof grantFreePack==='function') grantFreePack(1,{silent:true}); }
-  else { out.amt=STREAK_WEEK_COINS; if(typeof addBonusCoins==='function') addBonusCoins(STREAK_WEEK_COINS,{silent:true}); }
+  else if(kind==='basepack'||kind==='pack'){ out.tier='base'; if(typeof grantFreePack==='function') grantFreePack(1,{silent:true,tier:'base'}); }
+  else if(kind==='tourpack'){ out.tier='tour'; if(typeof grantFreePack==='function') grantFreePack(1,{silent:true,tier:'tour'}); }
+  else { out.amt=streakDayCoins(n); if(typeof addBonusCoins==='function') addBonusCoins(out.amt,{silent:true}); }
   if(w.done.indexOf(n)<0) w.done.push(n);
   LS.set(acctKey('bag_streakweek'),w); if(typeof cloudPush==='function') cloudPush();
   return out; }
@@ -2593,15 +2596,20 @@ function streakAdventNode(){ if(!sbSignedIn()) return null;
   const w=streakWeekState(), claimed=Math.min(7,w.days||0), playedToday=(w.lastDay===todayKey());
   const next = playedToday ? 0 : Math.min(7, claimed+1);            // the slot you'll claim after today's round
   const play=streakDisplay(), win=winStreak();
-  const rlab={coins:'500',mulligan:'Mulli',pack:'PACK'}, rcol={coins:'#cfe6d8',mulligan:'#8fd0ff',pack:'var(--gold)'};
+  // CS407: per-day slot content - coins scale up (200→1000), a mulligan symbol, a base pack (day 4) + tour pack (day 7)
+  const slot=(kind,d)=>{
+    if(kind==='mulligan') return '<div style="height:16px;display:flex;align-items:center;justify-content:center;color:#8fd0ff">'+ic('repeat',{size:'15px'})+'</div><div style="font:800 8px var(--body);color:#8fd0ff;margin-top:1px">Mulli</div>';
+    if(kind==='tourpack') return pxPackImg(19,'tour')+'<div style="font:800 8px var(--body);color:'+packType('tour').col+';margin-top:1px">Tour</div>';
+    if(kind==='basepack'||kind==='pack') return pxPackImg(19,'base')+'<div style="font:800 8px var(--body);color:'+packType('base').col+';margin-top:1px">Pack</div>';
+    return '<div style="font:800 12px var(--body);color:#ffd45e">'+streakDayCoins(d)+'</div><div style="font:800 7px var(--body);color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;margin-top:1px">coins</div>'; };
   let cells='';
   for(let d=1;d<=7;d++){ const kind=STREAK_WEEK_TRACK[d], got=d<=claimed, today=(d===next);
     const bg=got?'rgba(53,214,160,.14)':(today?'rgba(241,208,74,.18)':'rgba(255,255,255,.04)');
     const bd=got?'rgba(53,214,160,.5)':(today?'var(--gold)':'rgba(255,255,255,.09)');
-    cells+=`<div style="flex:1;text-align:center;padding:7px 1px;border-radius:9px;background:${bg};border:1px solid ${bd};${today?'box-shadow:0 0 10px rgba(241,208,74,.32)':''}">
+    cells+=`<div style="flex:1;text-align:center;padding:7px 1px 6px;border-radius:9px;background:${bg};border:1px solid ${bd};${today?'box-shadow:0 0 10px rgba(241,208,74,.32)':''}">
       <div style="font:800 8.5px var(--body);color:#8ea9bb;letter-spacing:.03em">DAY ${d}</div>
-      <div style="font:800 11px var(--body);color:${got?'#8fe8c4':(today?'var(--gold)':rcol[kind])};margin-top:3px">${got?'✓':rlab[kind]}</div>
-      ${today?'<div style="font:800 7.5px var(--body);color:var(--gold);margin-top:2px;letter-spacing:.04em">TODAY</div>':''}</div>`; }
+      <div style="margin-top:3px;min-height:29px;display:flex;flex-direction:column;align-items:center;justify-content:center">${got?'<div style="font:800 16px var(--body);color:#8fe8c4">✓</div>':slot(kind,d)}</div>
+      ${today?'<div style="font:800 7.5px var(--body);color:var(--gold);margin-top:1px;letter-spacing:.04em">TODAY</div>':''}</div>`; }
   const counter=(icn,lab,val,col)=>`<div style="flex:1;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 10px">
     <span style="font-size:17px">${icn}</span><div><div style="font:800 15px var(--body);color:${col};line-height:1.05">${val}</div><div class="small muted" style="font-size:9px;letter-spacing:.05em;text-transform:uppercase">${lab}</div></div></div>`;
   return $(`<div class="scout" style="text-align:left;padding:12px;margin:8px auto;max-width:520px">
@@ -6499,7 +6507,7 @@ function scrTitle(){
   mkTile('🎯','Challenges', signedIn?(repTier().tier.name+' · quests'):'Sign in to earn', ()=>{S.overlay='challenges';render();}, true);
   mkTile('🏆','Leaderboard','Rankings', ()=>{S.overlay='leaderboard';render();}, true);
   mkTile('🏅','Trophy Room', signedIn?'Trophies & rank':'Sign in', ()=>{S.overlay='record';render();}, true);
-  if(SHOP_ENABLED){ const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?packCredits():0);
+  if(SHOP_ENABLED){ const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')):0);
     mkTile(ic('cart'),'Pro Shop', nFree>0?('🎁 '+nFree+' free pack'+(nFree>1?'s':'')+'!'):(signedIn?(ic('coin')+' '+coinFmt(coinBalance())):'Gear & boosts'), ()=>{S.overlay='shop'; if(nFree>0)S.shopSec='packs'; render();}, true); }
   mkTile('🎁','Invite','You both get a pack', ()=>{ referralShare(); }, true);   // CS403: refer a friend → free packs
   // (How to Play moved up under the hero, CS287)
@@ -6600,7 +6608,7 @@ function scrSetup(){
   if(!guest && SHOP_ENABLED){
     const under=$(`<div class="setup-under"></div>`);
     try{ under.appendChild(accBoostSummaryNode()); }catch(e){}
-    const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?packCredits():0);
+    const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')):0);
     const sb=$(`<button class="setup-shopbtn">${ic('cart',{size:'16px'})}<span>Pro Shop &amp; Packs${nFree>0?' · 🎁 '+nFree+' free pack'+(nFree>1?'s':''):''}</span> <span class="ssb-go">▸</span></button>`);
     sb.onclick=()=>{ track('setup_shop_open'); S.overlay='shop'; if(freePack)S.shopSec='packs'; render(); };
     under.appendChild(sb);
@@ -18098,7 +18106,7 @@ function finishDailyRound(){
     const wr = (_ds && _ds._newDay) ? streakWeekReward() : null; S.streakWeekReward=wr;
     const wkNote = !wr ? '' : wr.kind==='coins' ? (' · 🔥 week day '+wr.day+': +'+wr.amt+' coins')
       : wr.kind==='mulligan' ? (' · 🔥 week day '+wr.day+': +1 Mulli-Spin')
-      : (' · 🔥 week day '+wr.day+': FREE PACK!');
+      : (' · 🔥 week day '+wr.day+': FREE '+packType(wr.tier||'base').short+' Pack!');
     awardPlayCoins(COIN_DAILY + (won?COIN_DAILY_BEAT:0) + margin, (won?'you beat the pro!':'daily complete')+' · +'+_xp+' Tour Rep'+wkNote); // ~1000-2000 coins + week bonus
     try{ sbSubmitStreak(); }catch(e){}   // CS401: post the updated streak to the active-streak leaderboard
   }
@@ -19239,14 +19247,16 @@ function packPool(){ const pool=[];
 }
 function packOwns(e){ if(e.kind==='acc') return accOwned(e.id); if(e.kind==='bag') return bagTierOwned(e.club)>=1; return cosOwned(e.cat,e.id); }
 function packGrant(e){ var s=coinState(); if(e.kind==='acc') s.owned[e.id]=1; else if(e.kind==='bag') s.owned[bagKey(e.club,1)]=1; else s.owned[cosKey(e.cat,e.id)]=1; coinSave(s); }
-function packState(){ var d={opened:0,sinceEpic:0,sinceLeg:0,freeUsed:false,packEarned:0,packSpent:0,welcomePack:false}; var v=LS.get(acctKey('bag_packs'),null); return (v&&typeof v==='object')?Object.assign(d,v):d; }
+function packState(){ var d={opened:0,sinceEpic:0,sinceLeg:0,freeUsed:false,packEarned:0,packSpent:0,welcomePack:false,tourEarned:0,tourSpent:0,champEarned:0,champSpent:0}; var v=LS.get(acctKey('bag_packs'),null); return (v&&typeof v==='object')?Object.assign(d,v):d; }
 function packSave(p){ LS.set(acctKey('bag_packs'),p); if(typeof cloudPush==='function') cloudPush(); }
 // CS400: earned FREE PACK credits (from weekly challenges + 7-day streaks). Tracked as monotonic
 // earned/spent counters so a cloud merge (max/max) can never resurrect a spent credit. credits = earned - spent.
-function packCredits(){ var p=packState(); return Math.max(0,(p.packEarned||0)-(p.packSpent||0)); }
+// CS407: credits are now per-TIER (base / tour / champ), so a streak reward can grant a specific-tier pack.
+function packCreditFields(tier){ return tier==='tour'?['tourEarned','tourSpent']:tier==='champ'?['champEarned','champSpent']:['packEarned','packSpent']; }
+function packCredits(tier){ var f=packCreditFields(tier||'base'), p=packState(); return Math.max(0,(p[f[0]]||0)-(p[f[1]]||0)); }
 function grantFreePack(n,opts){ opts=opts||{}; n=n||1; if(!packsOn()||!sbSignedIn()||!(n>0)) return 0;
-  var p=packState(); p.packEarned=(p.packEarned||0)+n; packSave(p);
-  if(!opts.silent) toast('<span style="color:var(--gold);font-weight:800">🎁 Free pack earned!</span>'+(opts.why?' · <span class="small">'+opts.why+'</span>':'')+'<br><span class="small">Open it in the Pro Shop → Packs.</span>', 4200);
+  var f=packCreditFields(opts.tier||'base'), p=packState(); p[f[0]]=(p[f[0]]||0)+n; packSave(p);
+  if(!opts.silent){ var nm=packType(opts.tier||'base').name; toast('<span style="color:var(--gold);font-weight:800">🎁 Free '+esc(nm)+' earned!</span>'+(opts.why?' · <span class="small">'+opts.why+'</span>':'')+'<br><span class="small">Open it in the Pro Shop → Packs.</span>', 4200); }
   return n; }
 // CS401: a WELCOME free pack, once per account, for having/creating a RunThe.GG account (the sign-up
 // incentive). Runs after cloudPull so the flag is synced first and a second device never re-grants.
@@ -19374,12 +19384,11 @@ function startPackDeal(opts){ opts=opts||{};
   var tier=opts.bundle?((S.packBundle&&S.packBundle.pack)||'base'):(opts.pack||'base'); var pt=packType(tier);
   var free=false;
   if(!opts.bundle){                                    // a bundle sub-open is prepaid: never free/credit
-    var isBase=(tier==='base');                         // free/credit opens are base-tier only
-    var freeFirst=isBase && (opts.free||packIsFree());  // the one-time first-pack-free
-    var freeCredit=isBase && !freeFirst && packCredits()>0;   // CS400: an earned free-pack credit
+    var freeFirst=(tier==='base') && (opts.free||packIsFree());  // the one-time first-pack-free is base only
+    var freeCredit=!freeFirst && packCredits(tier)>0;            // CS407: an earned free-pack credit for THIS tier
     free=freeFirst||freeCredit;
     if(!free){ if(coinBalance()<pt.price){ toast(packErr('coins')); return; } var s=coinState(); s.spent+=pt.price; coinSave(s); }
-    else { var p=packState(); if(freeFirst) p.freeUsed=true; else p.packSpent=(p.packSpent||0)+1; packSave(p); }
+    else { var p=packState(); if(freeFirst){ p.freeUsed=true; } else { var f=packCreditFields(tier); p[f[1]]=(p[f[1]]||0)+1; } packSave(p); }
   }
   // CS404 — wheel spin: roll the winner up front (tier odds), build the reel, land on it.
   var win=rollPackWin(tier); if(win.err){ toast(packErr(win.err)); return; }
@@ -19509,9 +19518,9 @@ function overlayPackWheel(app){
       var d2=$('<div class="packbtns"></div>'); var done2=$('<button class="btn ghost">Done</button>'); done2.onclick=function(){ S.packWheel=null; S.packBundle=null; S.overlay='shop'; S.shopSec='packs'; render(); }; d2.appendChild(done2); footer.appendChild(d2);
       return;
     }
-    var isBase=(pt.id==='base');
-    var freeNext=isBase&&(packIsFree()||packCredits()>0), can=freeNext||packAffordable(pt.id);
-    var againLabel=freeNext?('Open a FREE pack'+(packCredits()>0&&!packIsFree()?' · '+packCredits()+' left':'')):('Open another '+esc(pt.short)+' · '+coinFmt(pt.price));
+    var isBase=(pt.id==='base'), cr=packCredits(pt.id);
+    var freeNext=(isBase&&packIsFree())||cr>0, can=freeNext||packAffordable(pt.id);
+    var againLabel=freeNext?('Open a FREE '+esc(pt.short)+' pack'+(cr>0?' · '+cr+' left':'')):('Open another '+esc(pt.short)+' · '+coinFmt(pt.price));
     var again=$('<button class="btn '+(can?'teal':'ghost')+'"'+(can?'':' disabled')+'>'+againLabel+'</button>'); again.onclick=function(){ startPackDeal({pack:pt.id}); };
     var done=$('<button class="btn ghost">Done</button>'); done.onclick=function(){ S.packWheel=null; S.overlay='shop'; S.shopSec='packs'; render(); };
     btns.appendChild(again); btns.appendChild(done); footer.appendChild(btns);
@@ -19635,7 +19644,7 @@ function packShopNode(){
     var pt=packType(id);
     var epicPlus=pt.odds.reduce(function(a,o){ return a+((o[0]==='epic'||o[0]==='legendary')?o[1]:0); },0);
     var legPct=(pt.odds.find(function(o){return o[0]==='legendary';})||[0,0])[1];
-    var isBase=(id==='base'), freeThis=isBase&&(free||credits>0), afford=freeThis||bal>=pt.price;
+    var isBase=(id==='base'), cr=packCredits(id), freeThis=(isBase&&free)||cr>0, afford=freeThis||bal>=pt.price;
     var card=$('<div style="max-width:380px;margin:12px auto 0;padding:12px;border-radius:16px;background:linear-gradient(165deg,'+pt.col+'1c,#0c1f16);border:2px solid '+pt.col+';box-shadow:0 0 22px '+pt.glow+'"></div>');
     card.appendChild($('<div style="display:flex;gap:12px;align-items:center">'
       +'<div style="flex:0 0 auto;filter:drop-shadow(0 0 12px '+pt.glow+')">'+pxPackImg(80,id)+'</div>'
@@ -19643,9 +19652,10 @@ function packShopNode(){
         +'<div style="font-family:var(--display);font-size:20px;color:'+pt.col+'">'+esc(pt.name)+'</div>'
         +'<div class="small" style="color:#cfe6d8;margin-top:3px">Epic+ <b style="color:'+PACK_RCOL.epic+'">'+Math.round(epicPlus*100)+'%</b> · Legendary <b style="color:'+PACK_RCOL.legendary+'">'+Math.round(legPct*100)+'%</b></div>'
         +'<div class="small muted" style="margin-top:2px">Guaranteed Epic+ in '+Math.max(0,pt.pityEpic-p.sinceEpic)+' · Legendary in '+Math.max(0,pt.pityLeg-p.sinceLeg)+'</div>'
+        +(cr>0?'<div style="font:800 10.5px var(--body);color:var(--gold);margin-top:3px">🎁 '+cr+' free '+(cr>1?'packs':'pack')+' ready</div>':'')
       +'</div></div>'));
     var openBtn=$('<button class="btn" style="width:100%;margin:10px 0 0;background:'+(afford?pt.col:'#2a3a30')+';color:'+(afford?'#0c1f16':'#7f978b')+';display:flex;align-items:center;justify-content:center;gap:6px"'+(afford?'':' disabled')+'>'
-      +(freeThis?('Open a FREE pack'+(credits>0&&!free?' · '+credits+' left':'')):('<span style="width:16px;height:16px">'+ic('coin',{size:'16px'})+'</span>Open · '+coinFmt(pt.price)))+'</button>');
+      +(freeThis?('Open a FREE pack'+(cr>0?' · '+cr+' left':'')):('<span style="width:16px;height:16px">'+ic('coin',{size:'16px'})+'</span>Open · '+coinFmt(pt.price)))+'</button>');
     openBtn.onclick=function(){ startPackDeal({pack:id}); };
     card.appendChild(openBtn);
     var bprice=packBundlePriceFor(id), baff=bal>=bprice;
@@ -20357,6 +20367,8 @@ function mergePacks(local, server){
   // CS400: pack credits use monotonic earned/spent counters, so max/max can never resurrect a spent credit.
   return Object.assign({}, base, {opened:Math.max(l.opened||0,s.opened||0), freeUsed:!!(l.freeUsed||s.freeUsed),
     packEarned:Math.max(l.packEarned||0,s.packEarned||0), packSpent:Math.max(l.packSpent||0,s.packSpent||0),
+    tourEarned:Math.max(l.tourEarned||0,s.tourEarned||0), tourSpent:Math.max(l.tourSpent||0,s.tourSpent||0),
+    champEarned:Math.max(l.champEarned||0,s.champEarned||0), champSpent:Math.max(l.champSpent||0,s.champSpent||0),
     welcomePack:!!(l.welcomePack||s.welcomePack)});
 }
 // grow-only merge of the course-mastery map: per course keep the LOWEST score, the BEST grade, and the
