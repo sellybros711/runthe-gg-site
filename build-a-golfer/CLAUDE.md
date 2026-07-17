@@ -9239,6 +9239,20 @@ allows Google Fonts, or self-host Anton.*
   0 (default 1 with no prior season). Verified: changes 3/3/2/3/2/1/1/0 across major/two-wins/one-win/
   world-top5/world-top20/solid/world-top60/poor, re-spins 3 in every case; 0 page errors. Deployed to /golf.
 
+- **CS385 — share card golfer is now a head-and-shoulders PORTRAIT (reduce X "sensitive content" false
+  positives) (owner).** Owner's shared season/career cards kept getting auto-flagged "sensitive" on X. Two
+  causes explained to the owner: (1) the recurring "author labeled this as sensitive" is an X ACCOUNT
+  setting (Privacy & safety → "Mark media you post as having material that may be sensitive") — a one-time
+  toggle, not our image; (2) the "we put a warning… appeal" one is X's automated classifier misreading the
+  full-body pixel golfer. Addressed (2): `drawPlayerCard` (season `drawShareCard` + career `drawCareerCard`)
+  now crops the pixel golfer to a **head-and-shoulders bust in a gold-ringed circular medallion** (sprite
+  rows ~2-34 of 56, clipped to the circle — no legs/lower body) instead of the full standing figure. A
+  standing figure with legs is what these classifiers over-flag; a framed bust reads clearly as a game
+  avatar. OVR badge moved to the medallion's lower-right; name/net/tiles re-laid-out around it. Verified in
+  Playwright (season card renders the portrait medallion, no full body, 0 page errors); screenshot confirms
+  a clean head-and-shoulders share card. Deployed to /golf. (`drawMajorWinCard` uses its own trophy art,
+  unaffected.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
