@@ -14639,20 +14639,7 @@ function scrSummary(){
   __cur=reC;
   { const sf=storyFeedHTML(); if(sf) add($(sf)); }   // CS225: Career Story feed + persona payoff
   __cur=ovC;
-  // CS413: where this SEASON's earnings rank on today's / this week's / all-time season boards - right above
-  // Tournaments Won (owner-placed). Resolves async via loadSeasonRank (fail-open: nothing until it lands).
-  if(!S.daily && !S.circuitMode && S.seasonRank){
-    const sr=S.seasonRank;
-    const line=(lab,rk,tot)=> (rk!=null&&tot!=null)
-      ? `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:3px 2px"><span class="small muted" style="text-transform:uppercase;letter-spacing:.08em;font-weight:800">${lab}</span><span style="font:800 15px var(--body);color:var(--gold)">#${Number(rk).toLocaleString()} <span class="small muted" style="font-weight:600">of ${Number(tot).toLocaleString()}</span></span></div>` : '';
-    const rankNode=$(`<div class="scout" style="margin:18px auto 4px;max-width:440px;padding:13px 18px">
-      <div class="center small muted" style="letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:7px">Season Leaderboard Rank</div>
-      ${line('Today',sr.today_rank,sr.today_total)}${line('This week',sr.week_rank,sr.week_total)}${line('All time',sr.rank,sr.total)}
-      <button class="btn gold lb-open" style="width:auto;margin:11px auto 0;padding:8px 16px;font-size:12px;display:block">🏆 View Leaderboard</button>
-    </div>`);
-    rankNode.querySelector('.lb-open').onclick=()=>{S.overlay='leaderboard';render();};
-    add(rankNode);
-  }
+  // (CS413: the season leaderboard-rank card renders just above the "Continue to Year N" button, below.)
   // WINS grouped with the Wins stat: the actual tournaments won this season sit right under the row
   // (owner: "wins are at top once and then tiny" - keep the count and the won-events together).
   { const wonThisSeason=[];
@@ -14879,6 +14866,20 @@ function scrSummary(){
       const nudge=$(`<div class="small center" style="margin:0 0 10px;color:${warn?'#f0c04a':'#9fb6a7'};font-weight:700;cursor:pointer">${msg}</div>`);
       nudge.onclick=()=>{ S.pendingCareerAdopt=true; S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); };
       actC.appendChild(nudge);
+    }
+    // CS413: where this SEASON's earnings rank on today's / this week's / all-time boards - right above the
+    // Continue-to-next-season button (owner-placed). Resolves async via loadSeasonRank (fail-open until it lands).
+    if(!S.daily && !S.circuitMode && S.seasonRank){
+      const sr=S.seasonRank;
+      const line=(lab,rk,tot)=> (rk!=null&&tot!=null)
+        ? `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:3px 2px"><span class="small muted" style="text-transform:uppercase;letter-spacing:.08em;font-weight:800">${lab}</span><span style="font:800 15px var(--body);color:var(--gold)">#${Number(rk).toLocaleString()} <span class="small muted" style="font-weight:600">of ${Number(tot).toLocaleString()}</span></span></div>` : '';
+      const rankNode=$(`<div class="scout" style="margin:0 auto 12px;max-width:440px;padding:13px 18px">
+        <div class="center small muted" style="letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:7px">Season Leaderboard Rank</div>
+        ${line('Today',sr.today_rank,sr.today_total)}${line('This week',sr.week_rank,sr.week_total)}${line('All time',sr.rank,sr.total)}
+        <button class="btn gold lb-open" style="width:auto;margin:11px auto 0;padding:8px 16px;font-size:12px;display:block">🏆 View Leaderboard</button>
+      </div>`);
+      rankNode.querySelector('.lb-open').onclick=()=>{S.overlay='leaderboard';render();};
+      actC.appendChild(rankNode);
     }
     advanceLabel=lastYear?(S.circuitMode?'Finish Legend Circuit':'Finish Career'):'Continue to Year '+((S.year||1)+1);
     const cont=$(`<button class="btn goldfill" id="sum-advance">${lastYear?(S.circuitMode?'Finish Legend Circuit ▸':'Finish Career ▸'):'Continue to Year '+((S.year||1)+1)+' ▸'}</button>`);
