@@ -9292,6 +9292,14 @@ allows Google Fonts, or self-host Anton.*
      backdrop with 0 page errors; zoomed screenshots confirm the tee box + the pixel swallowtail flag (cream
      with its accent) planted at a dark cup on the green — clearly pixelated, matching the course art.
   Deployed to /golf.
+  - **CS387b — smaller pixel cup (owner: "the hole is too big when it zooms in on the green; the ball is
+    the right size and the black hole needs to be smaller").** The pixel cup was `HV_CUP_RX*2 × HV_CUP_RY*2`
+    = 3.64×2.56 viewBox units (a rect fills more area than the old ellipse, and the rim added ~1 unit each
+    side). Shrunk it to a fixed 2.2×1.55 with a thin 0.35 rim, so the hole-to-ball ratio drops from ~2.12
+    to ~1.28 (ball unchanged at HV_GBALL 0.86 radius). Both cup and ball are in viewBox units so they scale
+    together at every zoom — the hole is now smaller relative to the ball on the green close-up. Verified:
+    the green renders a small dark cup in good proportion at the base of the flag; 0 page errors. Deployed
+    to /golf.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
