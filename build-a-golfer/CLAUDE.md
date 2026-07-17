@@ -10066,6 +10066,31 @@ allows Google Fonts, or self-host Anton.*
     PERPENDICULAR to the blade line with a gem at the junction, and a double-edged silver blade with a bright
     fuller tapering to the point.
 
+- **CS417 — leaderboard restructure: Play 18 + Streaks, Today/This week/All-Time windows, sort-by-stat**
+  (owner: "the leaderboard says daily and weekly — should be Play 18 and Streaks. The career board gets
+  Today / This week / All-Time, sortable by any stat, high↔low. Play 18 just gets today + the course
+  records"). Tabs are now **Single Season · Career · Play 18 · Streaks** (the old Daily→**Play 18**, the
+  standalone Weekly tab dropped).
+  - **Backend `supabase/58_runtour_board_scoped.sql` (owner-run):** adds an optional `p_since timestamptz`
+    to `runtour_season_board` + `runtour_career_board`; non-null filters `runtour_scores` by
+    `created_at >= p_since`, null = all-time. Drops the old 3-arg overloads first (like 52/57) so a 3-arg
+    call stays unambiguous. Validated on local Postgres (all-time / today / this-week scoping, dir asc, and
+    the legacy 3-arg call all correct).
+  - **Season + Career boards** get a **Today / This week / All-Time** window row (`S.lbWindow`); `lbLoad`
+    passes `p_since` (ET day start via `dNextResetMs`, week block via `weekKey`) and caches each window
+    separately (`ksuf`). Fail-open: pre-migration the `p_since` call is dropped and the window shows the
+    all-time board. The existing sort-by-any-stat + High↔Low toggle work within each window. (Applied to
+    Single Season too since it shares the machinery — a superset of the ask.)
+  - **Play 18 board** (`overlayLeaderboardDaily`, today only): now client-side **sortable by Score / OVR /
+    Strokes Gained / Tee-to-Green / Avg Putts / Handicap** with a Best↔Worst direction toggle (re-ranks the
+    fetched rows + podium), plus a **⛳ Course Records ▸** button opening the existing all-time records
+    overlay. The Weekly board code stays but is no longer reachable from a tab.
+  - Verified in Playwright: tabs are Season/Career/Play 18/Streaks (no Daily/Weekly), window chips switch
+    `S.lbWindow`, ET/week timestamps correct, Play 18 re-sorts by score (low-first) / OVR (high-first) and
+    flips direction, Course Records opens; 0 page errors. **ACTION: run
+    `supabase/58_runtour_board_scoped.sql`** (until then the Today/This week windows show the all-time
+    board). Deployed client to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
