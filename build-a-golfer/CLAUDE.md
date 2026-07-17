@@ -9117,6 +9117,28 @@ allows Google Fonts, or self-host Anton.*
   0 page errors. Deployed to /golf. Tunable: the `drawTree`/`drawTreeS` radii + `GH*0.18` clamp, the biome
   `trunk` palettes, `GH`/`botPad` in `hvSwingMarkup`.
 
+- **CS378-A1 — approach decision: drive at REST + golfer standing over the ball (deferred CS378 fix
+  shipped).** Owner (CS378): "The approach decision came up with the ball frozen in the air. The golfer
+  should be standing over the ball while the decision is being decided on." On a par-4/5 signature hole the
+  approach decision reveals a neutral drive first (`dailyStartApproachHole` → `S.dailyProv`), then surfaces
+  the Attack/Safe call. Previously the decision-up state (`prov.await`) still rendered the drive with
+  `revealN=1` (an in-flight `hvLiveShot` — ball mid-air, tee golfer swinging). Fixed the `prov.await` branch
+  of `scrDailyRound`: it now renders the drive as a DONE shot (`revealN=null` → `hvDoneShot`, ball at rest
+  on the fairway + tracer + numbered marker, no tee golfer) and overlays a new **static address-pose
+  golfer** at the drive's rest position (the approach origin), aiming up the hole (back-to-camera, the
+  natural "over the ball" broadcast look). New `hvAddressGolfer(hole,holeIdx,courseKey,look)` builds the
+  golfer markup from the drive plot's rest coords (reuses `hole._hv.g`/`plots` or recomputes), using only
+  the address frame of the created golfer sprite (`pxStrokeURLs(look).back.full[0]`, `.hvsw-static` CSS =
+  no swing animation). Threaded a 7th `overlay` param through `hvNode` (appended inside the svg, so SVG
+  namespacing is correct) and a 9th `overlay` param through the inner `drawWindow`. The drive-in-flight
+  phase (`prov && !prov.await`) is unchanged (swinging golfer at the tee + animating ball). Reduced-motion
+  hides the golfer (consistent with the swing sprite) but still gets the ball-at-rest fix. Verified in
+  Playwright: decision-up → `hasLiveBall:false` (no frozen-air ball) + `.hvsw-static` golfer present + the
+  done-shot marker + the decision targets/bar, screenshot confirms the golfer standing over the ball on the
+  fairway with "At the pin / Middle" targets; drive-in-flight → still `liveBall:true` + animated `.sw0`
+  swing frames; resolving the decision pushes the hole with the drive preserved as shot 0 and continues the
+  reveal; 0 page errors on every path. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
