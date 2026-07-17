@@ -10050,6 +10050,16 @@ allows Google Fonts, or self-host Anton.*
   at legendary, renders hand-correct with lefty mirror. Verified in Playwright (correct rarity/price/pool,
   equips, 0 page errors) and on the golfer at game scale. Deployed to /golf.
 
+- **CS416 — reorient every club head to FACE THE CAMERA (owner: "the heads are facing the wrong way for all
+  of them — the face should point at the camera and the club should point away from the golfer").** Redrew
+  all 10 `PXG_CLUBS` heads (stock driver/wood/iron/wedge/putter + persimmon/blade/excalibur/wand/hockey) as
+  frontal, face-on shapes resting at the shaft end on the ground: round chrome/wood faces for the woods, a
+  grooved blade face for iron/wedge, a wide flat blade + sight line for the putters, the sword/wand/hockey
+  blade turned flat-to-camera. Shafts unchanged (grip stays in-hand); only the head region (rows ~50-55) was
+  reworked, so hand placement + lefty mirroring are untouched. New geometry lives in `clubs-v2.py` (the
+  single source of truth for club sprites now; supersedes the head geometry from `vintage-clubs.py`/
+  `hockey-club.py`). Verified in Playwright on the golfer, all 10 + a lefty, 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
