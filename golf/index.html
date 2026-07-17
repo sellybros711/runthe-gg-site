@@ -4878,13 +4878,14 @@ const FREE_COSMETICS={
   'ht:teal':1,'ht:navy':1,'ht:gold':1,'ht:white':1,'ht:purple':1,'ht:black':1,
   'sp:none':1,'hp:none':1,'pt:stone':1,'so:white':1,
   'hw:none':1,'hw:cap':1,'hw:visor':1,'ew:none':1,'fx:none':1,'tp:none':1,'lg:none':1,
-  'cl:driver':1,'cl:wood':1,'cl:iron':1,'cl:wedge':1,'cl:putter':1,'bl:none':1,'ct:none':1};   // CS356g: base hats + no-shades are free; bucket/flat/shades are shop unlocks · CS414: the 5 stock clubs + "no ball" + "no cleats" stay free
+  'cl:driver':1,'cl:wood':1,'cl:iron':1,'cl:wedge':1,'cl:putter':1,'bl:none':1,'ct:none':1,'bg:none':1};   // CS356g: base hats + no-shades are free; bucket/flat/shades are shop unlocks · CS414: 5 stock clubs + "no ball/cleats" free · CS420: "no bag" free
 const COS_CATS=[ {k:'shirt',pk:'sh',lookKey:'polo',name:'Shirt color'}, {k:'pat',pk:'sp',lookKey:'shirtPat',name:'Shirt pattern'},
   {k:'hat',pk:'ht',lookKey:'hat',name:'Hat color'}, {k:'pants',pk:'pt',lookKey:'pants',name:'Trousers'}, {k:'shoes',pk:'so',lookKey:'shoes',name:'Shoe color'},
   {k:'hw',pk:'hw',lookKey:'hatStyle',name:'Headwear'}, {k:'ew',pk:'ew',lookKey:'eyewear',name:'Eyewear'}, {k:'fx',pk:'fx',lookKey:'fx',name:'Effect'},
   {k:'top',pk:'tp',lookKey:'top',name:'Outerwear'}, {k:'leg',pk:'lg',lookKey:'leg',name:'Legwear'},
   {k:'club',pk:'cl',lookKey:'club',name:'Clubs'},   // CS414: favorite club is now a cosmetic (basics free, vintage/legendary paid)
-  {k:'ball',pk:'bl',lookKey:'ball',name:'Balls'}, {k:'cleats',pk:'ct',lookKey:'cleats',name:'Cleats'} ];
+  {k:'ball',pk:'bl',lookKey:'ball',name:'Balls'}, {k:'cleats',pk:'ct',lookKey:'cleats',name:'Cleats'},
+  {k:'bag',pk:'bg',lookKey:'bag',name:'Golf Bag'} ];   // CS420: back-slung golf bag
 function cosPk(cat){ const c=COS_CATS.find(x=>x.k===cat); return c?c.pk:cat; }
 function cosKey(cat,id){ return cosPk(cat)+':'+id; }
 // PACK-SYSTEM: direct-buy prices go up (x PACK_HIKE) the day packs launch, so packs are the value
@@ -4905,6 +4906,7 @@ function cosmeticPriceBase(cat,id){
   if(cat==='club'){ return {persimmon:16000,blade:16000,excalibur:30000,wand:30000,hockey:30000}[id]||0; }   // CS414: stock clubs free (0); persimmon/blade epic, excalibur/wand/hockey legendary
   if(cat==='ball'){ if(id==='none') return 0; return (PXBALL_BY[id]?PXBALL_BY[id].price:0); }   // CS414: featherie epic, comet legendary
   if(cat==='cleats'){ return id==='rocket'?30000:0; }   // CS414: Rocket Cleats legendary
+  if(cat==='bag'){ if(id==='none') return 0; return {red:8000,navy:8000,forest:16000,champ:30000}[id]||8000; }   // CS420: red/navy rare, forest epic, champ legendary
   return 0;
 }
 // CS408: cosmeticPriceBase still SELECTS the rarity (via packRarityOf, so pool rarities never shift); the
@@ -5009,6 +5011,8 @@ function cosmeticItems(cat){
     {id:'hockey',name:'Hockey Stick Putter',club:1,hist:'You can trouble the whole tournament'}];   // CS414 · CS415 hockey putter
   if(cat==='ball')  return [{id:'none',name:'None',ball:1}].concat(PXBALL.map(function(o){ return {id:o.id,name:o.name,ball:1,hist:o.hist,col:o.col}; }));   // CS414
   if(cat==='cleats') return [{id:'none',name:'None',cleats:1},{id:'rocket',name:'Rocket Cleats',cleats:1,hist:'Blast off the tee box'}];   // CS414
+  if(cat==='bag')   return [{id:'none',name:'None',bag:1},{id:'red',name:'Red Stand Bag',bag:1,hist:'Classic carry bag'},{id:'navy',name:'Navy Tour Bag',bag:1,hist:'Tour-ready'},
+    {id:'forest',name:'Forest Staff Bag',bag:1,hist:'Full-size staff bag'},{id:'champ',name:"Champion's Bag",bag:1,hist:'Gold-trimmed winner’s bag'}];   // CS420
   return [];
 }
 function cosTitle(id){ if(id==='grey') return 'Gray'; return String(id).charAt(0).toUpperCase()+String(id).slice(1); }
@@ -6693,6 +6697,12 @@ function pxCleatsThumb(id){ const map=PXG_CLEATS[id], pal=PXG_CLEATS_PAL[id];
   const ox=12,oy=49,W=22,H=8,px=5; const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
   for(let y=0;y<map.length;y++){ const row=map[y]; for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
   return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
+// CS420: golf-bag thumbnail (a zoomed crop of the shared bag sprite in the chosen colour; 'none' → placeholder)
+function pxBagThumb(id){ const pal=PXG_BAG_PAL[id];
+  if(!pal) return `<span class="sthumb color" style="background:#12251b;display:flex;align-items:center;justify-content:center;color:#5e7468;font:700 10px var(--body)">None</span>`;
+  const ox=30,oy=14,W=12,H=30,px=4; const cv=document.createElement('canvas'); cv.width=W*px; cv.height=H*px; const ctx=cv.getContext('2d');
+  for(let y=0;y<PXG_BAG.length;y++){ const row=PXG_BAG[y]; for(let x=0;x<row.length;x++){ const c=pal[row[x]]; if(!c)continue; ctx.fillStyle=c; ctx.fillRect((x-ox)*px,(y-oy)*px,px,px); } }
+  return `<span class="sthumb"><img src="${cv.toDataURL()}" style="width:100%;height:100%;object-fit:contain;image-rendering:pixelated" alt=""></span>`; }
 function scrSetup(){
   const guest=!sbSignedIn();
   const editing=!!S.setupEdit;   // CS356c: editing the profile golfer from the Trophy Room (not starting a career)
@@ -6702,7 +6712,7 @@ function scrSetup(){
 
   const LOOKCATS=[['skin','Skin'],['hair','Hair color'],['style','Hair style'],['hand','Handedness'],['club','Club']];
   const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];
-  const ACCS=[['hw','Headwear'],['ew','Eyewear'],['ball','Balls'],['cleats','Cleats']];   // CS414: balls + cleats (clubs stay in Appearance for guest access)
+  const ACCS=[['hw','Headwear'],['ew','Eyewear'],['ball','Balls'],['cleats','Cleats'],['bag','Golf Bag']];   // CS414: balls + cleats · CS420: golf bag (clubs stay in Appearance for guest access)
   // ALL categories in ONE place (owner: customize everything here - including clubs - with no hidden tabs).
   // The tab layer used to split Apparel/Accessories/Details off and a scrolling chip row hid Club past the
   // edge. Now every category shows at once, grouped by a small label; guests get only the free appearance
@@ -6999,6 +7009,9 @@ const PXG_BALL={ featherie:["............................................","....
 const PXG_BALL_PAL={ featherie:{'o':'#b79a63','h':'#efe0bd','s':'#7c6033','T':'#caa76a'}, comet:{'o':'#d24a1a','h':'#ffe08a','t':'#ff8a2a','m':'#ffb347','s':'#fff0b0','T':'#8a939e'} };
 const PXG_CLEATS={ rocket:["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................",".................f.........f................","................F.........F.................","...............fm........fm.................",".............RRRWWCCCC.RRRWWCCCC............",".............RRWWCCCkk.RRWWCCCkk............",".............kkkkkkkkC.kkkkkkkkC............"] };
 const PXG_CLEATS_PAL={ rocket:{'R':'#d1352a','W':'#f4f6fb','C':'#c9d0da','k':'#2a2f38','f':'#ff8a2a','m':'#ffcf5a','F':'#ffe89a'} };
+const PXG_BAG=["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................",".................................HH.........",".................................c.H........",".................................ccHH.......",".................................ccc........",".................................ccc........",".................................ccc........","..................................ctttt.....","................................ss.BBBB.....","...............................s..BBBBbb....","..............................s...BBBBBb....","..............................s...BBBBBb....","...............................s..BBBBBb....","................................s.tttttt....",".................................stttttt....","..................................BBBBBb....","..................................BBBBBb....","..................................BBBBBb....","..................................BpppBb....","..................................BpppBb....","..................................BpppBb....","..................................BBBBBb....","..................................BBBBBb....","..................................BBBBBb....","..................................BBBBBb....","..................................BBBBBb....","..................................BBBBbb....","...................................BBBB.....","..................................c....c....","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................"];
+
+const PXG_BAG_PAL={ red:{'B':'#c0392b','b':'#8f271c','t':'#f2d24a','p':'#a52f22','c':'#cfd3da','H':'#2d323c','s':'#3a2f2a'}, navy:{'B':'#274a7a','b':'#1a3253','t':'#d8dde6','p':'#20406a','c':'#cfd3da','H':'#2d323c','s':'#2a3444'}, forest:{'B':'#2f6b4f','b':'#1f4a37','t':'#e8e2c8','p':'#285c44','c':'#cfd3da','H':'#2d323c','s':'#2a3a30'}, champ:{'B':'#e6b93c','b':'#b8901f','t':'#fff3c0','p':'#caa028','c':'#e8ebf0','H':'#3a2b12','s':'#5a4416'} };
 const PXG_HAIR={
  short:[
 "............................................",
@@ -9527,7 +9540,8 @@ function pxGolferCanvas(look){
   const legw=(look.leg&&PXG_LEGS[look.leg])?look.leg:'';   // CS411: heritage legwear (plus-fours)
   const ball=(look.ball&&PXG_BALL[look.ball])?look.ball:'';   // CS414: teed ball beside the golfer
   const cleats=(look.cleats&&PXG_CLEATS[look.cleats])?look.cleats:'';   // CS414: rocket cleats (footwear overlay)
-  const key=av.key+'|st'+style+'|cap'+(capOn?hatStyle:'0')+'|pn'+(look.pants||'stone')+'|pt'+pat+'|ew'+shades+'|cl'+club+'|tp'+top+'|lg'+legw+'|bl'+ball+'|ct'+cleats+(look.lefty?'L':'R');
+  const bag=(look.bag&&PXG_BAG_PAL[look.bag])?look.bag:'';   // CS420: back-slung golf bag (behind the body)
+  const key=av.key+'|st'+style+'|cap'+(capOn?hatStyle:'0')+'|pn'+(look.pants||'stone')+'|pt'+pat+'|ew'+shades+'|cl'+club+'|tp'+top+'|lg'+legw+'|bl'+ball+'|ct'+cleats+'|bg'+bag+(look.lefty?'L':'R');
   let cached=_pxCanvas.get(key); if(cached) return cached;
   const P={ k:PXG_FIX.k, l:PXG_FIX.l, g:PXG_FIX.g, n:PXG_FIX.n, G:PXG_FIX.G, H:PXG_FIX.H, F:PXG_FIX.F,
     s:av.skinHex, h:av.hairHex, t:av.shirtHex, d:pxShade(av.shirtHex,-26), v:pxShade(av.shirtHex,34),
@@ -9543,6 +9557,11 @@ function pxGolferCanvas(look){
   const paint=(map,minY)=>{ for(let y=(minY||0);y<map.length;y++){ const row=map[y];
     for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue; const col=P[ch]; if(!col)continue;
       ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } } };
+  // CS420: the golf bag is drawn BEHIND the body (before PXG_BODY) so only what clears the silhouette shows —
+  // club heads over the trail shoulder + the bag body peeking out the trail side. Flip = look.lefty (trail side).
+  if(bag){ const bp=PXG_BAG_PAL[bag], fl=!!look.lefty;
+    for(let y=0;y<PXG_BAG.length;y++){ const row=PXG_BAG[y]; for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue;
+      const col=bp[ch]; if(!col)continue; const dx=fl?(PXG_W-1-x):x; ctx.fillStyle=col; ctx.fillRect(dx*px,y*px,px,px); } } }
   paint(PXG_BODY);
   // CS370: favorite club in the correct hand - authored on the golfer's LEFT hand (lefty); a right-handed
   // golfer mirrors it to the RIGHT hand (viewer's left). Drawn on the body layer so it sits with the hands.
@@ -19472,6 +19491,7 @@ function cosIsEquipped(cat,id){
   if(cat==='leg') return (S.look.leg||'none')===id;
   if(cat==='ball') return (S.look.ball||'none')===id;
   if(cat==='cleats') return (S.look.cleats||'none')===id;
+  if(cat==='bag') return (S.look.bag||'none')===id;
   if(cat==='hat') return (S.look.hat||S.look.polo)===id;
   const c=COS_CATS.find(x=>x.k===cat); return c?S.look[c.lookKey]===id:false;
 }
@@ -19582,6 +19602,7 @@ function cosTileHTML(cat,o){
      : (cat==='club') ? pxClubThumb(o.id)
      : (cat==='ball') ? pxBallThumb(o.id)
      : (cat==='cleats') ? pxCleatsThumb(o.id)
+     : (cat==='bag') ? pxBagThumb(o.id)
      : (cat==='pat'||cat==='hw'||cat==='ew'||cat==='top'||cat==='leg') ? pxCosThumb(cat,o.id)
      : (o.pat!==undefined
         ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
@@ -19730,7 +19751,7 @@ function priceHike(){ return PACKS_ENABLED?PACK_HIKE:1; }
 function packRarityOf(base){ base=base||0; return base>=30000?'legendary':base>=16000?'epic':base>=9000?'rare':'common'; }
 // every pack-eligible item, tagged with rarity. Excludes earned Legend gear + free items.
 function packPool(){ const pool=[];
-  [['shirt','sh'],['hat','ht'],['pat','sp'],['pants','pt'],['shoes','so'],['hw','hw'],['ew','ew'],['fx','fx'],['top','tp'],['leg','lg'],['club','cl'],['ball','bl'],['cleats','ct']].forEach(function(cp){ var cat=cp[0],pk=cp[1];
+  [['shirt','sh'],['hat','ht'],['pat','sp'],['pants','pt'],['shoes','so'],['hw','hw'],['ew','ew'],['fx','fx'],['top','tp'],['leg','lg'],['club','cl'],['ball','bl'],['cleats','ct'],['bag','bg']].forEach(function(cp){ var cat=cp[0],pk=cp[1];
     (cosmeticItems(cat)||[]).forEach(function(o){ if(o.id==='none') return;
       if((cat==='shirt'||cat==='hat') && COSMETIC_SHIRTS.find(function(x){return x.id===o.id&&x.earn;})) return;
       var base=cosmeticPriceBase(cat,o.id); if(base<=0) return;
@@ -19835,6 +19856,7 @@ function packItemLook(e){ var look=Object.assign({},S.look||DEFLOOK);
   else if(e.cat==='club') look.club=e.id;
   else if(e.cat==='ball') look.ball=e.id;
   else if(e.cat==='cleats') look.cleats=e.id;
+  else if(e.cat==='bag') look.bag=e.id;
   return look; }
 function packItemVisual(e){
   if(e.kind==='cos'){ return '<img src="'+pxGolferURL(packItemLook(e))+'" style="height:210px;image-rendering:pixelated">'; }
@@ -20199,7 +20221,7 @@ function overlayShop(screen){
   // ACCESSORIES - so the shop sells all of those (Apparel = colors + pattern, Accessories = headwear/eyewear).
   let sec=S.shopSec; if(sec==='packs'&&!packsOn()) sec='apparel'; if(sec!=='accessories'&&sec!=='effects'&&sec!=='owned'&&sec!=='bag'&&sec!=='packs') sec='apparel';
   const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];
-  const ACCS=[['hw','Headwear'],['ew','Eyewear'],['club','Clubs'],['ball','Balls'],['cleats','Cleats']];   // CS414: vintage/legendary clubs + balls + cleats
+  const ACCS=[['hw','Headwear'],['ew','Eyewear'],['club','Clubs'],['ball','Balls'],['cleats','Cleats'],['bag','Golf Bag']];   // CS414: clubs/balls/cleats · CS420: golf bag
   const FXCATS=[['fx','Aura']];
   const cats = sec==='apparel'?APP : sec==='accessories'?ACCS : sec==='effects'?FXCATS : null;
   let cat=S.shopCat; if(cats && !cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.shopCat=cat;
@@ -21063,7 +21085,7 @@ const PENDING_SEASONS_KEY='bag_pending_seasons';
 // CS393: a minimal golfer-appearance snapshot for the public boards - only the keys the pixel figure reads
 // (drops _ts/acc/caddie/country/title, which don't affect the rendered golfer). Keeps the payload tiny.
 function lookForBoard(look){ const L=look||S.look||DEFLOOK; const o={};
-  ['skin','hair','hairStyle','polo','pants','shoes','cap','hatStyle','hat','shirtPat','hatPat','eyewear','club','top','leg','fx','ball','cleats','lefty','gender'].forEach(k=>{ if(L[k]!==undefined) o[k]=L[k]; });
+  ['skin','hair','hairStyle','polo','pants','shoes','cap','hatStyle','hat','shirtPat','hatPat','eyewear','club','top','leg','fx','ball','cleats','bag','lefty','gender'].forEach(k=>{ if(L[k]!==undefined) o[k]=L[k]; });
   return o; }
 // CS395: one-time retro-fill on first sign-in after the look migration — stamp the player's CURRENT profile
 // golfer onto all their existing (pre-migration, null-look) season + daily rows, so old scores show their
