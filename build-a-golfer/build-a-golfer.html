@@ -61,7 +61,7 @@ window.GA_ID='G-L29P5MRWKE';
   :root{
     --cream:#F4E8D6; --peach:#F7DCCC;
     --ink:#0C1B2E; --inkmut:#6b6256;
-    --teal:#06A291; --gold:#F1D04A; --gold2:#c9a520;
+    --teal:#06A291; --gold:#F1D04A; --gold2:#c9a520; --legend:#b69bff;   /* CS428: Legend Token accent (violet) */
     /* CS354: distinctive bright LEMON-GOLD foil gradient. Many gentle stops (small deltas, no hard
        band lines) so it reads as smooth brushed metal, not the flat generic amber AI templates use. */
     --gold-grad:linear-gradient(178deg,#FFF8CE 0%,#FBEC9C 15%,#F4DE75 29%,#EBCF54 43%,#EFD968 55%,#F7E88E 66%,#EAD054 79%,#D6B534 90%,#C7A31F 100%);
@@ -160,12 +160,12 @@ window.GA_ID='G-L29P5MRWKE';
   .bnwm i{font-style:normal; font-weight:700; font-size:17px; letter-spacing:.05em; color:var(--gold)}
   .bnleft{justify-self:start; display:flex; align-items:center; gap:8px; min-width:0}   /* CS426: menu + profile on the left */
   .bnright{justify-self:end; display:flex; align-items:center; gap:8px; min-width:0}
-  /* CS426: legends-token counter next to the coins → jumps to your playable Legends in the daily */
+  /* CS426/CS428: Legend-Token counter next to the coins → jumps to your playable Legends in the daily (violet) */
   .legendhdr{display:inline-flex; align-items:center; gap:6px; border-radius:999px;
-    background:linear-gradient(180deg,rgba(53,214,160,.2),rgba(53,214,160,.05)); border:1px solid rgba(53,214,160,.55);
-    color:#35d6a0; padding:6px 12px 6px 10px; font:800 13px/1 var(--body); cursor:pointer; box-shadow:0 3px 10px -4px rgba(0,0,0,.5); flex:0 0 auto}
-  .legendhdr .li{width:15px;height:15px;display:flex;align-items:center}
-  .legendhdr:hover{border-color:#35d6a0; background:linear-gradient(180deg,rgba(53,214,160,.32),rgba(53,214,160,.1))}
+    background:linear-gradient(180deg,rgba(139,92,246,.24),rgba(139,92,246,.06)); border:1px solid rgba(182,155,255,.55);
+    color:var(--legend); padding:6px 12px 6px 9px; font:800 13px/1 var(--body); cursor:pointer; box-shadow:0 3px 10px -4px rgba(0,0,0,.5); flex:0 0 auto}
+  .legendhdr .li{width:16px;height:16px;display:flex;align-items:center}
+  .legendhdr:hover{border-color:var(--legend); background:linear-gradient(180deg,rgba(139,92,246,.36),rgba(139,92,246,.12))}
   .legendhdr:active{transform:translateY(1px)}
   .bnprofile{display:inline-flex; align-items:center; gap:7px; background:var(--pill);
     border:1px solid var(--pillb); border-radius:999px; padding:5px 12px 5px 6px; cursor:pointer; color:var(--oncard);
@@ -309,6 +309,8 @@ window.GA_ID='G-L29P5MRWKE';
   .btn.red:active{transform:translateY(2px)}
   .btn.redline{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.16)); color:#ff8168; border:1.5px solid #ef5b45; box-shadow:0 5px 14px -7px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06)}
   .btn.gold{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(0,0,0,.16)); color:var(--gold); border:1.5px solid var(--gold); box-shadow:0 5px 14px -7px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.06)}
+  .btn.legend{background:linear-gradient(180deg,#9d7bf0,#6b3fd4); color:#150a2e; border:0; box-shadow:0 8px 20px -8px rgba(107,63,212,.7), inset 0 1px 0 rgba(255,255,255,.28)}   /* CS428: Legend Token violet */
+  .btn.legend:active{transform:translateY(2px)}
   .btn.teal{background:linear-gradient(180deg,#1ec6a6,#0a7c67); color:#04211c; box-shadow:0 8px 20px -8px rgba(10,107,88,.7), inset 0 1px 0 rgba(255,255,255,.3)}
   .btn.teal:active{transform:translateY(2px)}
   .btn.blue{background:linear-gradient(180deg,#4a90d9,#1f5fa8); color:#eaf3ff; box-shadow:0 8px 20px -8px rgba(20,70,140,.75), inset 0 1px 0 rgba(255,255,255,.32)}
@@ -1615,6 +1617,8 @@ const ICONS={
   arrowUp:'<path d="M12 20V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
   arrowUR:'<path d="M7 17 17 7M8 7h9v9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
   arrowLeft:'<path d="M11 6l-6 6 6 6M5 12h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+  // CS428: Legend Token — a distinct violet minted token with a gold star (playable retired-career legends)
+  legendtoken:'<circle cx="12" cy="12" r="11" fill="#8b5cf6"/><circle cx="12" cy="12" r="11" fill="none" stroke="#4c1d95" stroke-width="1.3"/><circle cx="12" cy="12" r="9.6" fill="none" stroke="#5b21b6" stroke-width="0.8" stroke-dasharray="0.5 1.05" opacity="0.85"/><circle cx="12" cy="12" r="9.3" fill="none" stroke="#c4b5fd" stroke-width="0.7" opacity="0.6"/><path d="M12 5.8 L13.53 9.90 L17.90 10.08 L14.47 12.80 L15.64 17.02 L12 14.6 L8.36 17.02 L9.53 12.80 L6.10 10.08 L10.47 9.90 Z" fill="#F1D04A" stroke="#9a6b17" stroke-width="0.4"/>',
   // RunTheTour-branded coin: gold, reeded edge, the flag-over-green crest mark embossed (the currency)
   coin:'<circle cx="12" cy="12" r="11" fill="#F1D04A"/><circle cx="12" cy="12" r="11" fill="none" stroke="#9a6b17" stroke-width="1.3"/><circle cx="12" cy="12" r="9.6" fill="none" stroke="#8a6410" stroke-width="0.8" stroke-dasharray="0.5 1.05" opacity="0.85"/><circle cx="12" cy="12" r="9.4" fill="none" stroke="#f7d574" stroke-width="0.7" opacity="0.55"/><path d="M9.7 6.6 v10" stroke="#7a5410" stroke-width="1.3" stroke-linecap="round"/><path d="M9.7 6.7 h4.8 l-1.6 2 1.6 2 h-4.8 z" fill="#7a5410"/><ellipse cx="12" cy="16.6" rx="4.8" ry="1.5" fill="none" stroke="#7a5410" stroke-width="1"/><circle cx="13.7" cy="16.6" r="0.85" fill="#7a5410"/>',
   coins:'<circle cx="8.5" cy="9" r="6.5" fill="#e0a01c" stroke="#8a6410" stroke-width="1"/><path d="M6 6.7 v4.6" stroke="#7a5410" stroke-width="1" stroke-linecap="round"/><path d="M6 6.8 h3 l-1 1.3 1 1.3 h-3 z" fill="#7a5410"/><circle cx="15.5" cy="14.5" r="7" fill="#F1D04A" stroke="#9a6b17" stroke-width="1.2"/><circle cx="15.5" cy="14.5" r="5.9" fill="none" stroke="#8a6410" stroke-width="0.6" stroke-dasharray="0.5 1" opacity="0.8"/><path d="M13.6 10.9 v7" stroke="#7a5410" stroke-width="1.1" stroke-linecap="round"/><path d="M13.6 11 h3.3 l-1.1 1.4 1.1 1.4 h-3.3 z" fill="#7a5410"/><ellipse cx="15.6" cy="17.9" rx="3.2" ry="1" fill="none" stroke="#7a5410" stroke-width="0.9"/>',
@@ -5225,7 +5229,7 @@ function header(){
   const right=$(`<div class="bnright"></div>`);
   if(signedIn && (typeof hasFreeLegends==='function') && hasFreeLegends()){   // CS426: playable-Legend counter → jump to your Legends in the daily
     const n=legendTokensUnused().length;
-    const leg=$(`<button class="legendhdr" aria-label="${n} playable Legend golfer${n>1?'s':''}. Play one in today's daily."><span class="li">${ic('trophy',{size:'15px'})}</span>${n}</button>`);
+    const leg=$(`<button class="legendhdr" aria-label="${n} Legend token${n>1?'s':''}. Play one in today's daily."><span class="li">${ic('legendtoken',{size:'16px'})}</span>${n}</button>`);
     leg.onclick=()=>{ track('legend_pill_open',{n}); startDailyChallenge();
       requestAnimationFrame(()=>{ const el=document.getElementById('legend-play'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }); };
     right.appendChild(leg);
@@ -15222,7 +15226,7 @@ function legendTokensHTML(){
     <span class="pl" style="min-width:0"><div style="font-weight:700">${esc(t.name)} · OVR ${t.ovr}</div><div class="small muted" style="font-size:10.5px">${esc(t.reason)}</div></span>
     <span class="small" style="color:${t.used?'var(--muted)':'#35d6a0'};font-weight:800;align-self:center">${t.used?'Used':'1 free play'}</span></div>`).join('');
   return `<div style="margin-bottom:14px">
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-size:15px">🏆</span><b style="color:var(--gold);font-size:13.5px">Your Legend golfers</b><span class="small muted">${ready.length} ready · ${all.length} earned</span></div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="display:flex;align-items:center">${ic('legendtoken',{size:'18px'})}</span><b style="color:var(--legend);font-size:13.5px">Your Legend Tokens</b><span class="small muted">${ready.length} ready · ${all.length} earned</span></div>
     <div class="board">${rows}</div><div class="small muted" style="margin-top:6px">Finish a 30-year career to earn 1 token for that golfer's peak build. Each plays the Daily once for free (no attempt used), then it's gone - you only get each golfer once.</div></div>`;
 }
 // Mints ONE token from the just-finished career's PEAK build, whenever the full 30 years were played
@@ -17733,17 +17737,17 @@ function scrDailyPreview(){
 function legendPlaySection(){
   const toks=legendTokensUnused(); if(!toks.length) return null;
   toks.sort((a,b)=>b.ovr-a.ovr);
-  const wrap=$(`<div id="legend-play" style="max-width:520px;margin:14px auto 0;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(241,208,74,.08),rgba(10,22,38,.25));padding:14px 15px"></div>`);
-  wrap.appendChild($(`<div style="display:flex;align-items:center;gap:7px;margin-bottom:3px"><span style="font-size:16px">🏆</span><b style="color:var(--gold);font-size:13.5px">Your Legend golfers</b><span class="tag" style="font-size:9.5px;color:#35d6a0;border-color:#35d6a0;padding:2px 7px">FREE PLAY</span></div>`));
+  const wrap=$(`<div id="legend-play" style="max-width:520px;margin:14px auto 0;border:1px solid var(--legend);border-radius:14px;background:linear-gradient(180deg,rgba(139,92,246,.12),rgba(10,22,38,.25));padding:14px 15px"></div>`);
+  wrap.appendChild($(`<div style="display:flex;align-items:center;gap:8px;margin-bottom:3px"><span style="display:flex;align-items:center">${ic('legendtoken',{size:'19px'})}</span><b style="color:var(--legend);font-size:13.5px">Your Legend Tokens</b><span class="tag" style="font-size:9.5px;color:#35d6a0;border-color:#35d6a0;padding:2px 7px">FREE PLAY</span></div>`));
   wrap.appendChild($(`<div class="small muted" style="margin-bottom:7px">Play today's course as one of your retired career golfers (their peak build). One free play each, no daily attempt used.</div>`));
   toks.forEach(tok=>{
-    const row=$(`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(241,208,74,.15)"></div>`);
+    const row=$(`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid rgba(182,155,255,.18)"></div>`);
     row.appendChild($(`<div style="min-width:0"><div style="font-weight:800;color:var(--oncard)">${esc(tok.name)} · OVR ${tok.ovr}</div><div class="small muted" style="margin-top:1px">${esc(tok.reason)} · ${tok.years}-year career</div></div>`));
-    const use=$(`<button class="btn gold" style="width:auto;flex:0 0 auto;padding:9px 14px;font-size:12.5px">Use token ▸</button>`);
+    const use=$(`<button class="btn legend" style="width:auto;flex:0 0 auto;padding:9px 14px;font-size:12.5px">Use token ▸</button>`);
     use.onclick=()=>{ track('legend_token_used',{ovr:tok.ovr,free:true}); beginDailyRoundWithLegend(tok); }; row.appendChild(use);
     wrap.appendChild(row);
   });
-  wrap.appendChild($(`<div class="small muted" style="margin-top:9px;line-height:1.4">Each token is a one-time play, once you use it, it's gone (you only get each golfer once). Legend scores post to the separate <b style="color:var(--gold)">Career Golfers</b> leaderboard, not the draft board.</div>`));
+  wrap.appendChild($(`<div class="small muted" style="margin-top:9px;line-height:1.4">Each token is a one-time play, once you use it, it's gone (you only get each golfer once). Legend scores post to the separate <b style="color:var(--legend)">Career Golfers</b> leaderboard, not the draft board.</div>`));
   return wrap;
 }
 /* ---- daily round auto-advance: the round plays itself hole-by-hole, pausing only at

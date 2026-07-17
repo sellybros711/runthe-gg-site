@@ -10203,6 +10203,18 @@ allows Google Fonts, or self-host Anton.*
   slider renders (0 swatch tiles) and dragging sets the tone + clears the old id + repaints the avatar; 0
   page errors. Screenshot confirms the gradient slider + a dark-tone golfer. Deployed to /golf.
 
+- **CS428 — custom violet Legend Token icon + themed menu (owner: the CS426 trophy read as "wins").** The
+  header Legend counter used the generic trophy icon (reads as wins) with a green pill that clashed with
+  everything else. Created a distinct **Legend Token** — a new `ICONS.legendtoken` minted coin (violet face
+  + reeded rim + a gold star, fixed-color like the currency coin so it reads as a token regardless of
+  context) and a `--legend` (violet #b69bff) theme accent. The header pill is recolored violet and uses the
+  new token icon; the daily "Your Legend Tokens" menu (`legendPlaySection`) is recolored gold→violet (border,
+  title + token icon, `.btn.legend` violet "Use token" buttons, "Career Golfers" accent) so the token color
+  ties the pill to the menu; the Trophy Room Legend strip matches. Renamed "Your Legend golfers" →
+  "Your Legend Tokens". Verified in Playwright: pill uses the violet token icon (no trophy path), pill color
+  violet, menu titled "Your Legend Tokens" with a violet border + `.btn.legend` buttons + token icon; 0 page
+  errors. Screenshots confirm the distinct token pill + themed menu. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
