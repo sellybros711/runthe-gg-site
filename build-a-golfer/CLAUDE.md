@@ -9748,6 +9748,35 @@ allows Google Fonts, or self-host Anton.*
     page errors throughout. Deployed to /golf. Tunable: the reel `TOTAL`/`WIN` index, the spin `DUR`/easing,
     the tick cadence in `overlayPackWheel`.
 
+- **CS405 — fix: earned coins stuck at 0 (skipped-season "forfeit" deficit swallowed play-earned coins).**
+  Owner: "When I earn coins, my profile is not updating... the top right number is staying at zero, as well
+  as when I click into my profile." Root cause in `coinsEarned()`: it computed
+  `max(0, coinsEarnedRaw() − baseline − forfeit + bonus)` — lumping the `forfeit` (coins forfeited by
+  simming a season to the end, CS392) and the CS186 reset `baseline` into the SAME `max(0,…)` as the earned
+  `bonus` (the play-faucet coins from wins/dailies/H2H). So once a player had accumulated a large `forfeit`
+  (skipping seasons) or a cross-device merge left the derived pool negative, that deficit silently absorbed
+  every newly-earned coin until the `bonus` climbed back above the deficit — the balance sat at 0 and looked
+  broken. (A cross-device merge taking independent `Math.max` of `spent`/`baseline`/`forfeit`/`bonus` can
+  also leave `spent > earned`, the same phantom-deficit effect.) Reproduced exactly: with `forfeit=5000`,
+  earning 1000 → 2000 → 5000 all showed a 0 balance, only 6000+ revealed anything.
+  Fix (two parts, both in the coin economy — no economy value change, purely how the balance is computed):
+  1. **`coinsEarned()` now clamps the DERIVED pool at 0 BEFORE adding bonus:** `derived = max(0, raw −
+     baseline − forfeit)`, then `earned = derived + bonus`. So `baseline`/`forfeit` can only ever zero out
+     the derived pool — they can NEVER reduce earned play-coins. Newly-earned coins raise the balance
+     immediately, always.
+  2. **`reconcileCoins()` self-heals a corrupt-high `spent`:** if `spent > earned` (only possible from a
+     cross-device merge or a derived-pool drop — you can't spend more than you earned), it clamps `spent`
+     down to `earned` (owned gear/cosmetics are preserved). This runs on load + after every finish, so a
+     phantom `spent` deficit can't keep swallowing earnings.
+  The header coin pill + Trophy Room + Pro Shop all read `coinBalance()`, which is rebuilt every render, so
+  the number now updates immediately on the next render after any game-mode coin award. Verified in
+  Playwright: the forfeit-deficit case now shows +1000/+1500 on earning (was stuck at 0); a corrupt
+  `spent=9000 > earned=2000` self-heals to `spent=2000` with gear kept and subsequent earning showing; a
+  normal account's first earn shows; and spending still deducts correctly (visor 5000: 200,000 → 195,000).
+  0 page errors. Deployed to /golf. (Owner note: the account will self-heal on next load; no data loss —
+  owned gear/cosmetics are untouched, and the derived/forfeit accounting is unchanged, only its interaction
+  with the spendable balance is fixed. iOS may need a full close-and-reopen to load the new code.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

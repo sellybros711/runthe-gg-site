@@ -4721,7 +4721,12 @@ function coinState(){ let s=LS.get(acctKey('bag_coins'),null)||{}; s.spent=s.spe
 function coinSave(s){ LS.set(acctKey('bag_coins'), s); if(typeof cloudPush==='function') cloudPush(); }
 // spendable coins = derived-earned minus the reset baseline (so post-reset everyone starts at 0) minus
 // forfeited coins (a season SKIPPED via "Sim to end of season" earns nothing, see the summary record block)
-function coinsEarned(){ const s=coinState(); return Math.max(0, coinsEarnedRaw()-s.baseline-(s.forfeit||0)+(s.bonus||0)); }
+// CS405 fix: baseline (reset) + forfeit (skipped seasons) only ever cancel the DERIVED pool, clamped at 0 -
+// they must NEVER reduce earned BONUS coins (play-faucet coins). The old `max(0, raw-baseline-forfeit+bonus)`
+// let a big forfeit/baseline deficit silently swallow newly-earned coins, so the balance appeared stuck at 0.
+function coinsEarned(){ const s=coinState();
+  const derived=Math.max(0, coinsEarnedRaw()-s.baseline-(s.forfeit||0));
+  return derived + (s.bonus||0); }
 let _coinsSuppressToast=false;   // set while finalizing a skipped season so the "+N coins" toast doesn't flash
 // deterministic RAW earned total - every entry here is a "way to earn coins"; add terms to add more
 function coinsEarnedRaw(){ let e=0; const ac=(achState().unlocked)||{};
@@ -4775,6 +4780,11 @@ function grantUnlockShirts(s){ const m=badgeMetrics(); COSMETIC_SHIRTS.forEach(c
 // after evaluateAch / finishes. Signed-in only (coins are an account feature).
 function reconcileCoins(silent){ if(!sbSignedIn()) return 0; const s=coinState(); const e=coinsEarnedRaw(); let gain=0, changed=false;
   if(e>s.seen){ gain=e-s.seen; s.seen=e; changed=true; }
+  // CS405 self-heal: `spent` can never legitimately exceed what's been earned. A cross-device merge (or a
+  // baseline/derived drop) can leave spent > earned, a phantom deficit that keeps the balance at 0 and
+  // absorbs new earnings. Clamp it down (owned gear is preserved) so earned coins show immediately.
+  const earned=Math.max(0, Math.max(0, e-s.baseline-(s.forfeit||0)) + (s.bonus||0));
+  if((s.spent||0) > earned){ s.spent=earned; changed=true; }
   const before=Object.keys(s.owned).length; grantMilestoneItems(s); grantUnlockShirts(s); if(Object.keys(s.owned).length!==before) changed=true;
   if(changed) coinSave(s);
   if(gain>0 && !silent && !_coinsSuppressToast) coinToast(gain);
