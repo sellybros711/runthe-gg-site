@@ -4207,28 +4207,8 @@ const POLOS=[
   {id:'white', m:'#eef0ee', s:'#d7dbd6'},
   {id:'purple',m:'#6b4bb0', s:'#583c93'},
   {id:'black', m:'#20242b', s:'#16191f'},
-  // --- fun novelty colors (purchasable, some carry a boost via COS_BOOST) ---
-  {id:'cyan',  m:'#22c3d6', s:'#1ba0b0'},
-  {id:'lime',  m:'#8ccb3a', s:'#71a82e'},
-  {id:'sky',   m:'#5cb3ec', s:'#4593c4'},
-  {id:'coral', m:'#f2795a', s:'#cf6046'},
-  {id:'mint',  m:'#5fd1a6', s:'#48ac89'},
-  {id:'hotpink',m:'#ec4f9e', s:'#c93c82'},
-  // --- catalog expansion: more shirt/hat colorways ---
-  {id:'crimson',   m:'#a5282a', s:'#84201f'},
-  {id:'maroon',    m:'#6e2532', s:'#551b26'},
-  {id:'forest',    m:'#2f5d3a', s:'#24482d'},
-  {id:'olive',     m:'#6f7434', s:'#585c29'},
-  {id:'turquoise', m:'#1fb6b0', s:'#189490'},
-  {id:'indigo',    m:'#3a3f9e', s:'#2e3280'},
-  {id:'lavender',  m:'#9b8fe0', s:'#7f74c2'},
-  {id:'salmon',    m:'#ef8f7a', s:'#cf7460'},
-  {id:'mustard',   m:'#d5a327', s:'#b58720'},
-  {id:'slate',     m:'#556074', s:'#434d5e'},
-  {id:'aqua',      m:'#37c9e0', s:'#2ba4b8'},
-  {id:'rose',      m:'#d76a86', s:'#b5546d'},
-  {id:'tangerine', m:'#ef8320', s:'#cc6c17'},
-  {id:'plum',      m:'#7d3d78', s:'#63305f'},
+  // Novelty/expansion colorways trimmed (owner: fewer colors, purely cosmetic). The special
+  // earned/lore colorways live in COSMETIC_SHIRTS below.
 ];
 const PANTS=[
   {id:'stone',a:'#c7bfa8', b:'#bcb39b'},
@@ -4239,15 +4219,6 @@ const PANTS=[
   {id:'khaki',a:'#b39a68', b:'#9c854f'},
   {id:'red',  a:'#b3413a', b:'#8f322d'},
   {id:'green',a:'#3f6b45', b:'#315538'},
-  // --- catalog expansion ---
-  {id:'olive',   a:'#6a6c3c', b:'#54562f'},
-  {id:'brown',   a:'#6f5236', b:'#57402a'},
-  {id:'burgundy',a:'#5f2733', b:'#4a1e27'},
-  {id:'teal',    a:'#2c6b66', b:'#22534f'},
-  {id:'plum',    a:'#5a3559', b:'#472a46'},
-  {id:'charcoal',a:'#33373d', b:'#282b30'},
-  {id:'cream',   a:'#e6ddc4', b:'#d5ccb2'},
-  {id:'sky',     a:'#4d84b0', b:'#3d6a8f'},
 ];
 const SHOES=[
   {id:'white',a:'#eef0ee'},
@@ -4256,13 +4227,6 @@ const SHOES=[
   {id:'grey', a:'#9aa0a8'},
   {id:'red',  a:'#c23b34'},
   {id:'tan',  a:'#c6b189'},
-  // --- catalog expansion ---
-  {id:'green', a:'#3f8b52'},
-  {id:'gold',  a:'#d9a72a'},
-  {id:'blue',  a:'#3a76c4'},
-  {id:'pink',  a:'#e06a9e'},
-  {id:'teal',  a:'#2fa39a'},
-  {id:'orange',a:'#e07a2a'},
 ];
 function shoeCol(id){ return (SHOES.find(x=>x.id===id)||SHOES[0]).a; }
 // hair shades, dark → light, each tuned to read distinctly on the painted sideburns/fringe
@@ -4658,37 +4622,29 @@ function cosBuy(cat,id){
 // Pro Shop relaunch: the VISUAL cosmetics (headwear, eyewear, patterns, special/unlockable shirts) now carry
 // stat boosts, so an item you can see on your golfer in the TourTracer is also the item that boosts you. Keyed
 // by cosKey(cat,id). Many carry a downside too (strategy, not stacking). Colors w/o an entry are pure cosmetic.
+// Owner: colors and patterns are COSMETIC ONLY. The single exception is the EARNED / lore-unlocked
+// colorways (COSMETIC_SHIRTS) and heritage patterns, which each carry a modest +1 to one fitting
+// stat (never a downside). Headwear + eyewear are ACCESSORIES (not colors/patterns), so they keep
+// their gear boosts as before.
 const COS_BOOST={
+  // headwear (accessory gear boosts)
   'hw:visor':{clu:2}, 'hw:bucket':{clu:3,dist:-1}, 'hw:flat':{app:2},
-  'ew:shades':{clu:3,app:-1},
-  'sp:pinstripe':{app:2}, 'sp:stripe':{dist:2,acc:-1}, 'sp:gingham':{scr:2}, 'sp:polka':{clu:2,app:-1},
-  'sp:houndstooth':{app:3,dist:-1}, 'sp:tartan':{acc:2,put:1}, 'sp:argyle':{app:2,acc:2,dist:-2}, 'sp:colorblock':{dist:2,clu:1},
-  'sh:puttwiz':{put:6,dist:-2}, 'sh:fairwaygen':{acc:5,app:2,dist:-2}, 'sh:ironbyron':{app:5,acc:1,scr:-2},
-  'sh:no1gold':{clu:3,app:2,acc:2}, 'sh:goatonyx':{clu:4,app:3,put:3},
-  'sh:red':{clu:4,dist:-1}, 'sh:mastersgrn':{app:3,clu:2}, 'sh:orange':{app:2,scr:2}, 'sh:pink':{clu:3,acc:1},
-  'sh:hogangrey':{acc:3,app:2,dist:-1}, 'sh:bronze':{app:2}, 'sh:linkssky':{acc:2,clu:1},
-  // --- novelty headwear (fun, with a strategic downside on the wilder ones) ---
   'hw:cowboy':{dist:2,acc:1,put:-1}, 'hw:wizard':{put:4,app:2,dist:-2}, 'hw:crown':{clu:4,app:2,dist:-1},
   'hw:party':{clu:2,scr:2,acc:-1}, 'hw:tophat':{clu:3,app:1}, 'hw:propeller':{dist:3,put:-2}, 'hw:headband':{scr:2,clu:1},
-  // --- novelty eyewear ---
-  'ew:heart':{clu:2,scr:1}, 'ew:star':{clu:3,app:1,acc:-1}, 'ew:threed':{app:3,dist:-1}, 'ew:monocle':{app:2,clu:2,dist:-1},
-  // --- novelty patterns ---
-  'sp:flames':{dist:3,acc:-2}, 'sp:stars':{clu:2,app:1}, 'sp:hearts':{clu:2,scr:1}, 'sp:camo':{acc:2,scr:1,app:-1},
-  'sp:tiedye':{scr:2,put:1,acc:-1}, 'sp:zigzag':{dist:2,clu:1}, 'sp:waves':{put:2,scr:1}, 'sp:leopard':{dist:2,app:1,put:-1}, 'sp:confetti':{clu:3,dist:-1},
-  // --- fun novelty colors ---
-  'sh:cyan':{acc:2}, 'sh:lime':{dist:2,acc:-1}, 'sh:hotpink':{clu:2}, 'sh:coral':{scr:2}, 'sh:sky':{put:1,app:1}, 'sh:mint':{scr:1,clu:1},
-  // --- catalog expansion: batch-2 headwear ---
   'hw:beanie':{clu:2}, 'hw:fedora':{app:2,clu:1}, 'hw:sombrero':{scr:2,dist:-1}, 'hw:halo':{put:3,app:2,clu:2},
   'hw:viking':{dist:3,acc:1,put:-2}, 'hw:chef':{scr:3,app:1}, 'hw:beret':{app:2,clu:1}, 'hw:headphones':{clu:3,acc:-1},
   'hw:flatbrim':{dist:2,scr:1}, 'hw:santa':{clu:2,scr:2}, 'hw:safari':{acc:2,scr:1},
-  // --- batch-2 eyewear ---
+  // eyewear (accessory gear boosts)
+  'ew:shades':{clu:3,app:-1},
+  'ew:heart':{clu:2,scr:1}, 'ew:star':{clu:3,app:1,acc:-1}, 'ew:threed':{app:3,dist:-1}, 'ew:monocle':{app:2,clu:2,dist:-1},
   'ew:aviators':{clu:2,app:1}, 'ew:round':{app:2,clu:1}, 'ew:goggles':{acc:2,dist:1,put:-1}, 'ew:eyepatch':{clu:3,acc:-1}, 'ew:visorband':{app:2,acc:1},
-  // --- new patterns ---
-  'sp:vstripe':{dist:2,acc:-1}, 'sp:chevron':{clu:1,dist:1}, 'sp:diamond':{app:2}, 'sp:crosshatch':{acc:2}, 'sp:grid':{scr:1,acc:1},
-  'sp:scales':{put:2,scr:1}, 'sp:triangles':{dist:1,clu:1}, 'sp:bricks':{acc:1,app:1}, 'sp:weave':{scr:2}, 'sp:honeycomb':{app:2,dist:-1},
-  'sp:splatter':{clu:2,acc:-1}, 'sp:circuit':{app:2,clu:1}, 'sp:noise':{scr:1}, 'sp:ripple':{put:2}, 'sp:plaid':{app:1,scr:1}, 'sp:bolts':{dist:3,put:-1},
-  // --- a few new colors carry a boost ---
-  'sh:crimson':{clu:2}, 'sh:forest':{app:2}, 'sh:turquoise':{put:2}, 'sh:indigo':{app:1,clu:1}, 'sh:tangerine':{scr:2}, 'sh:plum':{clu:2}
+  // EARNED / lore-unlocked shirt colorways: +1 only (COSMETIC_SHIRTS)
+  'sh:red':{clu:1}, 'sh:mastersgrn':{app:1}, 'sh:orange':{scr:1}, 'sh:pink':{clu:1},
+  'sh:hogangrey':{acc:1}, 'sh:bronze':{app:1}, 'sh:linkssky':{acc:1},
+  'sh:puttwiz':{put:1}, 'sh:fairwaygen':{acc:1}, 'sh:ironbyron':{app:1}, 'sh:no1gold':{clu:1}, 'sh:goatonyx':{clu:1},
+  // lore-unlocked heritage patterns: +1 only
+  'sp:pinstripe':{app:1}, 'sp:polka':{clu:1}, 'sp:gingham':{scr:1}, 'sp:argyle':{app:1},
+  'sp:tartan':{acc:1}, 'sp:houndstooth':{app:1}, 'sp:chevron':{dist:1}, 'sp:colorblock':{dist:1}
 };
 function cosBoost(cat,id){ return COS_BOOST[cosKey(cat,id)]||null; }
 // sum the boosts from the cosmetics you currently WEAR (and own). Fed into accBoost() (Career only).
