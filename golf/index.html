@@ -5481,6 +5481,55 @@ function scrRules(){
   dSteps.forEach(s=>dList.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
   add(dList);
 
+  // CS431: expanded guide — Customization, Coins, Pro Shop, Packs, Online H2H, Progress.
+  const perkSection=(tag,tagCol,h2,lede,steps)=>{
+    add($(`<div class="center"><span class="tag" style="color:${tagCol};border-color:${tagCol}">${tag}</span></div>`));
+    add($(`<h2 class="center" style="margin:10px 0 4px">${h2}</h2>`));
+    if(lede) add($(`<p class="lede center" style="margin:2px 0 14px">${lede}</p>`));
+    const list=$(`<div class="perks" style="max-width:560px;margin:0 auto 18px"></div>`);
+    steps.forEach(s=>list.appendChild($(`<div class="perk"><span class="pic">${s[0]}</span><span class="pt"><b>${s[1]}</b><span>${s[2]}</span></span></div>`)));
+    add(list);
+  };
+
+  perkSection('🎨 Your Golfer','var(--gold)','Build a golfer that\'s yours','Style one golfer that represents you everywhere: in your career, the daily, online, and on every leaderboard.',[
+    ['🧑','Free to style','Skin tone (a light-to-dark slider), hair color and style, and left- or right-handed are free for everyone, right from the create screen.'],
+    ['👕','Kit & accessories','With a free account, dress your golfer in shirt, hat, trousers and shoe colors, patterns, headwear, eyewear, favorite clubs, balls, cleats, glow effects and a golf bag.'],
+    ['🎒','Your golf bag','Choose the clubs and ball you carry from the "Your Golf Bag" menu, kept separate from your clothes and accessories.'],
+    ['🌍','Seen everywhere','Your golfer shows up in every mode and on the leaderboards and in head-to-head, so your look is a flex everyone sees.'],
+  ]);
+
+  perkSection('🪙 Coins','var(--gold)','Earn coins by playing',null,[
+    ['🏆','Win to earn','Bank coins for winning tournaments and majors, completing the daily (more for beating the pro), winning online matches and finishing seasons. The game tells you the moment you earn.'],
+    ['🎁','Never real money','Coins are earned in-game only, they can never be bought with real money, and cosmetics have no real-world value.'],
+    ['🛍️','Spend at the Pro Shop','Use coins on cosmetics or packs. Tap the coins pill at the top right any time to jump straight to the packs.'],
+  ]);
+
+  perkSection('🛍️ Pro Shop','var(--gold)','Gear up your golfer','Two ways to collect: buy exactly what you want, or open packs for a surprise.',[
+    ['🎯','Buy direct','Pick any item and pay its coin price, the premium way to get exactly the piece you want.'],
+    ['🎴','Or open packs','Packs cost fewer coins per item but give a random cosmetic, the value way to build your collection over time.'],
+    ['✨','Never miss new gear','A red dot and a "NEW" ribbon flag anything you\'ve unlocked but not looked at yet, so your latest gear is easy to find.'],
+  ]);
+
+  perkSection('🎴 Packs','var(--gold)','Open packs, spin the wheel',null,[
+    ['🟢','Three tiers','Base, Tour and Champion packs, each pricier with better odds at rare and legendary items. The drop-rate odds for every rarity are published right on the pack screen.'],
+    ['🎡','Wheel-spin reveal','Opening a pack spins a wheel that lands on your item. Duplicates are refunded as coins.'],
+    ['🎁','Lots of free packs','Your first pack is on us, weekly challenges and daily streaks hand out free packs, invite a friend and you both get one, and a 5-pack bundle saves you a pack\'s worth of coins.'],
+    ['🛡️','No bad-luck streaks','Pity timers guarantee an epic-or-better and a legendary within a set number of opens, and they hit sooner on the higher tiers.'],
+  ]);
+
+  perkSection('⚔️ Online Head-to-Head','var(--teal)','Play real people, live','Draft against other players and watch the round play out shot for shot. Low total wins.',[
+    ['🆚','Four modes','1v1, Best Ball and Scramble (2v2 teams), and Free-for-All (4 players). Everyone drafts their own golfer.'],
+    ['⚡','Quick or private','Quick Match finds you an opponent, or create a private room and share the code with friends. A private host can open the room to the public to fill empty seats.'],
+    ['⛳','Watch it play out','Every golfer plays the same course on the tracer. A tie goes to a sudden-death playoff until someone wins outright.'],
+    ['📊','W/L leaderboards','Each mode has its own win/loss leaderboard. Online is a fair fight, gear boosts apply only in career and the daily, never here.'],
+  ]);
+
+  perkSection('🏅 Progress & Rewards','var(--gold)','Level up your profile',null,[
+    ['🏆','Achievements & Tour Rep','Earn achievements across every mode to climb your Tour Rep rank, the tier shown next to your name on the leaderboards.'],
+    ['🎯','Daily & weekly challenges','Tap "Daily Quests" on the home screen for rotating goals that pay out Tour Rep, coins and free packs.'],
+    ['🎖️','Legend Tokens','Finish an elite 30-year career and that golfer becomes a Legend. The violet token counter at the top holds them, tap it to replay the daily as one for free.'],
+  ]);
+
   add($(`<div style="max-width:560px;margin:4px auto 18px;padding:13px 15px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02)">
     <div class="small muted" style="line-height:1.5">Real golfer skill ratings are derived from <a href="https://datagolf.com" target="_blank" rel="noopener" style="color:var(--gold);font-weight:700">DataGolf</a> data. Run The Tour is an independent fan project, not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, or any player or organization shown in the game. All results are simulated for entertainment only.</div></div>`));
 
