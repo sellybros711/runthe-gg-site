@@ -14454,7 +14454,7 @@ function scrOffseason(){
   const spun=!!(S.current && !S.spinning), g=S.current;
   let ovr=82; try{ ovr=Math.round(buildPlayer().skill); }catch(e){}
 
-  add(scrHero(S.circuitMode?'Legend Circuit':'Off-Season', S.circuitMode?('Off-Season · Yr '+yr+' · prep your bag'):('Year '+S.year+' · prep your bag')));
+  add(scrHero(S.circuitMode?'Legend Circuit':'Off-Season', S.circuitMode?('Off-Season · Yr '+yr+' · train your golfer'):('Year '+S.year+' · train your golfer')));
 
   // compact hero: small avatar + name + live OVR + change/re-spin budget (no more giant figure to scroll past)
   const hero=$(`<div class="oshero"></div>`);
