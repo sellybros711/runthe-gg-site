@@ -10191,6 +10191,18 @@ allows Google Fonts, or self-host Anton.*
   [legends "2", coins], no overflow, wordmark centered between them; clicking the Legends counter lands on
   `dailyprev` with the legend section + Use-token button present; 0 page errors. Deployed to /golf.
 
+- **CS427 — skin tone is now a light→dark SLIDER instead of discrete swatches (owner).** The setup
+  "Skin" category renders a gradient range slider (`skinSliderNode`, gold thumb, Light↔Dark labels) that
+  live-updates the preview golfer as you drag (updates `.shop-preview` innerHTML, no full re-render, so the
+  drag stays responsive). The value is stored as `look.skinTone` (0–100) and `skinRampHex(t)` interpolates a
+  main hex across the curated 8-tone `SKINS` ramp so every value is a natural skin color. `avLook` uses the
+  tone (and folds it into the cache key) when present; **old saves fall back to their `look.skin` id**
+  (`skinToneOf` maps an id to its ramp position for the slider's initial value). Added `skinTone` to
+  `lookForBoard` so leaderboard/H2H golfers reflect it; it also rides the existing `bag_look` cloud sync.
+  Verified in Playwright: ramp light `#f4d4ba` → mid `#af7648` → dark `#36231a`, legacy ids resolve, the
+  slider renders (0 swatch tiles) and dragging sets the tone + clears the old id + repaints the avatar; 0
+  page errors. Screenshot confirms the gradient slider + a dark-tone golfer. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
