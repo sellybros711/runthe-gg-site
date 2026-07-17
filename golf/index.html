@@ -4195,32 +4195,46 @@ function applyPlayerDecline(){   // once per off-season; severity ramps with the
   CATS.forEach(cat=>{ const sl=S.slots[cat.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[cat.k]*ramp*formMod)); });
 }
 function playerRetires(){ return (S.year||1) >= CAREER_MAX_YEARS; }   // forced at the 30-year shelf life
-// CS381: off-season RE-SPINS scale with your career STAGE + how the golfer is DOING (owner): establishing
-// early → 1; in your prime → 2, rising to 3 when you're playing well; the decline years taper back down;
-// the final stretch AND the Legend Circuit → 1. (Changes stay a Tour-Rep prestige reward, see repPerk.)
-function offRespins(){
-  if(S.circuitMode) return 1;                          // Legend Circuit: always 1
-  const yr=S.year||1, maxY=CAREER_MAX_YEARS||30;
-  // "doing well" = a strong just-finished season OR a sustained good run (prime bank)
-  let form=0; try{ const c=S.career, last=(c&&c.seasons&&c.seasons[c.seasons.length-1])||null;
-    form=Math.max(seasonForm(last), (c&&c.primeBank!=null)?c.primeBank/3:0); }catch(e){}
-  const well = form>=0.30;
-  if(yr<=4) return 1;                                   // early career: still establishing
-  if(yr>=maxY-3) return 1;                              // final ~4 years: winding down
-  if(yr>=DECLINE_START_YEAR) return well?2:1;           // decline years (15+): 2 if still performing, else 1
-  return well?3:2;                                      // prime (yrs 5-14): 2, rising to 3 in form
+// CS381/CS382: off-season CHANGES + RE-SPINS scale with your career STAGE and how you did LAST SEASON
+// (owner). The first ~5 years (and the Legend Circuit) are a fixed 1 change + 1 re-spin while you're
+// establishing; after that they're earned by last season's results. All thresholds are easy to tweak.
+const OFF_EARLY_YEARS=5;
+function lastCareerSeason(){ const c=S.career; return (c&&c.seasons&&c.seasons.length)?c.seasons[c.seasons.length-1]:null; }
+// CHANGES by last-season money-list FINISH: top-10 → 3, 11-25 → 2, 26-75 → 1, 76+ → 0.
+function offChanges(){
+  if(S.circuitMode || (S.year||1)<=OFF_EARLY_YEARS) return 1;
+  const last=lastCareerSeason(); if(!last) return 1;
+  const r=last.rank||99;
+  if(r<=10) return 3;
+  if(r<=25) return 2;
+  if(r<=75) return 1;
+  return 0;
 }
-// a short human note explaining the re-spin count for the off-season screen
-function offRespinNote(){
-  const n=(S.offseason&&S.offseason.reSpins!=null)?S.offseason.reSpins:offRespins();
-  let why;
-  if(S.circuitMode) why='Legend Circuit';
-  else { const yr=S.year||1, maxY=CAREER_MAX_YEARS||30;
-    if(yr<=4) why='early career, still building up';
-    else if(yr>=maxY-3) why='late career, winding down';
-    else if(yr>=DECLINE_START_YEAR) why=(n>=2?'a strong veteran run':'the back nine of your career');
-    else why=(n>=3?'peak form, in your prime':'your prime'); }
-  return `🎡 <b style="color:var(--gold)">${n}</b> re-spin${n===1?'':'s'} this off-season · ${why}`;
+// RE-SPINS by last-season WINS / MAJORS / EARNINGS + TOUR (world) RANKING (owner).
+function offRespins(){
+  if(S.circuitMode || (S.year||1)<=OFF_EARLY_YEARS) return 1;
+  const last=lastCareerSeason(); if(!last) return 1;
+  const w=last.wins||0, mj=last.majors||0, r=last.rank||99;
+  let wr=999; try{ wr=myWorldRank(); }catch(e){}
+  if(mj>=1 || w>=2 || wr<=5) return 3;      // a major / multi-win / world top-5
+  if(w>=1 || r<=10 || wr<=20) return 2;     // a win / top-10 on the money list / world top-20
+  if(r<=40 || wr<=60) return 1;             // a solid money + ranking season
+  return 0;                                  // a poor season earns none
+}
+// a short human note explaining what earned this off-season's change + re-spin budget
+function offBudgetNote(){
+  const ch=(S.offseason&&S.offseason.maxChanges!=null)?S.offseason.maxChanges:offChanges();
+  const rs=(S.offseason&&S.offseason.reSpins!=null)?S.offseason.reSpins:offRespins();
+  const budget=`<b style="color:var(--gold)">${ch}</b> change${ch===1?'':'s'} · <b style="color:var(--gold)">${rs}</b> re-spin${rs===1?'':'s'}`;
+  if(S.circuitMode) return `🎡 ${budget} · Legend Circuit tune-up`;
+  if((S.year||1)<=OFF_EARLY_YEARS) return `🎡 ${budget} · early career, still establishing`;
+  const last=lastCareerSeason();
+  if(!last) return `🎡 ${budget}`;
+  const parts=[];
+  if(last.wins) parts.push(last.wins+(last.wins===1?' win':' wins'));
+  if(last.majors) parts.push(last.majors+(last.majors===1?' major':' majors'));
+  parts.push(ord(last.rank||99)+' on the money list');
+  return `🎡 ${budget} · earned by last season (${parts.join(' · ')})`;
 }
 /* golfer customization palettes */
 // `file` = canonical avatar-art filename token (see public/avatars/golfers/README.md).
@@ -14196,7 +14210,9 @@ function continueFranchise(){
   const _decline={}; CATS.forEach(c=>{ const sl=S.slots[c.k]; if(sl&&_pre[c.k]!=null){ const d=sl.value-_pre[c.k]; if(d<0) _decline[c.k]=d; } });
   S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false; S.seasonRank=null;
   // off-season tune-up: re-spin to swap fresh skills in (now also to repair age decline)
-  const _perk=repPerk(); S.offseason={changes:0,maxChanges:_perk.changes,reSpins:offRespins(),decline:_decline,locked:[]}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
+  // CS382: change + re-spin budgets are earned by career stage + last season's results (offChanges/offRespins),
+  // not Tour Rep. If you earned no changes, re-spins are moot → 0 too (keeps the display coherent).
+  const _ch=offChanges(); S.offseason={changes:0,maxChanges:_ch,reSpins:_ch>0?offRespins():0,decline:_decline,locked:[]}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
   try{ S.career.sponsorOffers=computeSponsorOffers(); }catch(e){ S.career.sponsorOffers=[]; }   // CS236: interested brands (fill a slot / upgrade) this off-season
   track('offseason_start',{year:S.year});
   saveCareer(offseasonResumeExtra());   // checkpoint the off-season (world advanced, decline applied) so a refresh resumes HERE, not the prior results page
@@ -14393,12 +14409,10 @@ function scrOffseason(){
   // one tight status line: Tour Rep perk + prime/age. CS356s: hidden while you're mid-swap (spun) so the
   // decision moment stays focused - this is between-decision context, not needed while choosing a stat.
   if(!spun){ const r=repTier(); const ageMsg = nDec ? '<b style="color:#e9a23b">▼ Age catching up</b>, power fades first; a spin can repair a slot'
-      : 'In your prime, no age decline this year'; let teaser='';
-    // CS381: re-spins are now career-stage based (offRespins), so the rep teaser only advertises CHANGES.
-    if(r.next){ const cur=repPerk(), np=repPerk2(r.next.name), dc=np.changes-cur.changes;
-      if(dc>0) teaser=` · reach <b style="color:var(--gold)">${esc(r.next.name)}</b> for +${dc} change${dc>1?'s':''}`; }
-    add($(`<div class="osstat">${r.tier.name==='G.O.A.T.'?'🐐':'🏅'} <b style="color:var(--gold)">${esc(r.tier.name)}</b>${teaser} · ${ageMsg}</div>`));
-    add($(`<div class="osstat">${offRespinNote()}</div>`)); }
+      : 'In your prime, no age decline this year';
+    // CS382: both changes + re-spins are earned by career stage / last season now (offBudgetNote), not Tour Rep.
+    add($(`<div class="osstat">${r.tier.name==='G.O.A.T.'?'🐐':'🏅'} <b style="color:var(--gold)">${esc(r.tier.name)}</b> · ${ageMsg}</div>`));
+    add($(`<div class="osstat">${offBudgetNote()}</div>`)); }
 
   // sponsors: an actual OFFER (a decision) always shows; the passive strip is hidden while mid-swap (CS356s).
   if(!S.circuitMode){ const offers=(S.career&&S.career.sponsorOffers)||[];
@@ -14458,6 +14472,7 @@ function scrOffseason(){
     else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">No re-spins left, take one of ${esc(g.name)}'s skills, or start the season.</div>`));
   } else if(!S.spinning){
     if(os.changes<os.maxChanges){ const spin=$(`<button class="btn red">Spin the Wheel (Optional)<span class="sub">${os.maxChanges-os.changes} change${os.maxChanges-os.changes===1?'':'s'} left</span></button>`); spin.onclick=offSpin; actions.appendChild(spin); }
+    else if(os.maxChanges===0) actions.appendChild($(`<div class="small muted center" style="padding:6px 0">No changes earned this off-season, a stronger finish next season unlocks them. Run it as-is.</div>`));
     else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">All ${os.maxChanges} changes used.</div>`));
   }
   // Once you've spun, you MUST take a skill from the golfer you land on (re-spin to get a different one) -
