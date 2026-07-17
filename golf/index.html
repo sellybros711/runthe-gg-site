@@ -175,6 +175,13 @@ window.GA_ID='G-L29P5MRWKE';
      centered wordmark never collides with it; guests keep the "Sign in" label */
   @media (max-width:520px){ .bnprofile.pin .bnname{display:none} .bnprofile.pin{padding:5px 5px} }
   @media (max-width:430px){ .bnwm b{font-size:15px} .bnwm i{font-size:15px} .bnname{max-width:70px} .banner{gap:6px} }
+  /* CS427: skin-tone slider (light→dark). The inline background sets the gradient track. */
+  .skinslider{ -webkit-appearance:none; appearance:none; height:12px; border-radius:8px; outline:none;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.28); cursor:pointer}
+  .skinslider::-webkit-slider-thumb{ -webkit-appearance:none; width:28px;height:28px;border-radius:50%;
+    background:#fff; border:3px solid var(--gold); box-shadow:0 2px 7px rgba(0,0,0,.55); cursor:pointer}
+  .skinslider::-moz-range-thumb{ width:28px;height:28px;border-radius:50%; background:#fff;
+    border:3px solid var(--gold); box-shadow:0 2px 7px rgba(0,0,0,.55); cursor:pointer}
   /* CS356f: small pixel-golfer chip (replaces the generic icon in the profile pill) */
   .pxchip{display:inline-block; border-radius:6px; overflow:hidden; background:#0c1f16; vertical-align:middle; flex:0 0 auto; box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
   .pxchip img{height:auto; display:block; image-rendering:pixelated}
@@ -4435,6 +4442,15 @@ const SKINS=[
   {id:'deep',     m:'#523524', s:'#41291b'},
   {id:'ebony',    m:'#36231a', s:'#281913'},
 ];
+// CS427: continuous skin tone via a slider. tone 0 = lightest .. 100 = darkest, interpolated across the
+// curated SKINS ramp so every value is a natural tone. Old saves (look.skin id) map to their ramp position.
+function skinRampHex(t){ const stops=SKINS.map(s=>s.m), n=stops.length-1;
+  const p=Math.max(0,Math.min(1,(+t||0)/100))*n, i=Math.min(n-1,Math.floor(p)), f=p-i;
+  const A=avHexRgb(stops[i]), B=avHexRgb(stops[i+1]);
+  const c=k=>Math.round(A[k]+(B[k]-A[k])*f).toString(16).padStart(2,'0');
+  return '#'+c('r')+c('g')+c('b'); }
+function skinToneOf(L){ L=L||S.look||DEFLOOK; if(L.skinTone!=null) return +L.skinTone;
+  const i=SKINS.findIndex(s=>s.id===L.skin); return i>=0 ? Math.round(i/(SKINS.length-1)*100) : 29; }
 // BASIC colors (free, shared by shirt + hat). All distinct, no two close shades, and no red/green
 // (red is Tiger's Sunday color and green is the Masters jacket, both reserved as unlocks below).
 const POLOS=[
@@ -6707,6 +6723,23 @@ function setupLookTiles(cat){
   else if(cat==='club'){ const cur=S.look.club||'driver'; CLUB_OPTS.forEach(([id,lab])=>tiles.push(shopTile({thumb:pxClubThumb(id),name:lab,state:cur===id?'eq':'own',noFoot:true,data:`data-appset="club" data-id="${id}"`}))); }
   return tiles;
 }
+// CS427: skin tone chooser — a continuous light→dark slider (replaces the discrete swatches). Live-updates
+// the preview avatar as you drag; the tone is stored as look.skinTone (0..100) and clears the old id.
+function skinSliderNode(){
+  const grad='linear-gradient(90deg,'+SKINS.map(s=>s.m).join(',')+')';
+  const box=$(`<div style="margin-top:16px;max-width:440px"></div>`);
+  box.appendChild($(`<div class="setlab" style="margin-bottom:12px">Skin tone</div>`));
+  const row=$(`<div style="display:flex;align-items:center;gap:11px"></div>`);
+  row.appendChild($(`<span class="small muted" style="flex:0 0 auto">Light</span>`));
+  const sl=$(`<input type="range" min="0" max="100" step="1" value="${Math.round(skinToneOf(S.look))}" class="skinslider" aria-label="Skin tone" style="flex:1;background:${grad}">`);
+  sl.oninput=e=>{ S.look.skinTone=+e.target.value; delete S.look.skin; saveLook();
+    const p=document.querySelector('.shop-preview'); if(p) p.innerHTML=avatarShowHTML(); };   // live preview, no full re-render (keeps the drag responsive)
+  row.appendChild(sl);
+  row.appendChild($(`<span class="small muted" style="flex:0 0 auto">Dark</span>`));
+  box.appendChild(row);
+  box.appendChild($(`<div class="small muted" style="margin-top:10px;line-height:1.4">Drag to pick your skin tone.</div>`));
+  return box;
+}
 const CLUB_OPTS=[['driver','Driver'],['wood','3-Wood'],['iron','Iron'],['wedge','Wedge'],['putter','Putter']];
 // CS370: a small thumbnail of a favorite-club option (the club overlay cropped to its bounding box)
 function pxClubThumb(id){ const map=PXG_CLUBS[id]||PXG_CLUBS.driver; const pal=PXG_CLUB_PAL[id]; const P={l:PXG_FIX.l,g:PXG_FIX.g,G:PXG_FIX.G,H:PXG_FIX.H,F:PXG_FIX.F,S:'#e8ebf0'};
@@ -6762,6 +6795,7 @@ function scrSetup(){
   wrap.appendChild(sticky);
 
   if(S.shopPreview && !guest){ wrap.appendChild(shopPreviewNode()); }
+  else if(cat==='skin'){ wrap.appendChild(skinSliderNode()); }   // CS427: skin tone is a light→dark slider, not swatches
   else if(cat==='details'){
     const form=$(`<div style="margin-top:12px"></div>`);
     const nrow=$(`<div class="setrow"><div class="setlab">Name</div></div>`);
@@ -6866,11 +6900,13 @@ function avClassify(r,g,b,a,nx,ny){
 // targets are the exact wheel-swatch colors (palette .m) so the avatar matches the picker.
 function avLook(L){L=L||DEFLOOK;
   const sk=SKINS.find(x=>x.id===L.skin)||SKINS[1], hr=HAIRS.find(x=>x.id===L.hair)||HAIRS[1], po=findShirt(L.polo);
+  const skinHex=(L.skinTone!=null)?skinRampHex(L.skinTone):sk.m;                  // CS427: continuous tone slider
+  const skinKey=(L.skinTone!=null)?('t'+Math.round(L.skinTone)):sk.id;
   const ht=findShirt(L.hat||L.polo);   // hat color (own choice; falls back to shirt color for old saves)
   const g=(L.gender==='female')?'female':'male';
   const sp=L.shirtPat||'none', hp=L.hatPat||'none', so=L.shoes||'white';
-  return{ gender:g, skinHex:sk.m, hairHex:hr.m, shirtHex:po.m, hatHex:ht.m, shoesHex:shoeCol(so), shirtPat:sp, hatPat:hp,
-    key:g+'_'+sk.id+'_'+hr.id+'_'+po.id+'_'+(L.hat||po.id)+'_'+sp+'_'+hp+'_'+so };
+  return{ gender:g, skinHex:skinHex, hairHex:hr.m, shirtHex:po.m, hatHex:ht.m, shoesHex:shoeCol(so), shirtPat:sp, hatPat:hp,
+    key:g+'_'+skinKey+'_'+hr.id+'_'+po.id+'_'+(L.hat||po.id)+'_'+sp+'_'+hp+'_'+so };
 }
 function avBlit(canvas,off){const cx=canvas.getContext('2d');cx.clearRect(0,0,canvas.width,canvas.height);cx.drawImage(off,0,0,canvas.width,canvas.height);}
 function avVectorFallback(canvas){const w=canvas.closest('.avatarfig');if(w)w.innerHTML=golferSVG();}
@@ -21104,7 +21140,7 @@ const PENDING_SEASONS_KEY='bag_pending_seasons';
 // CS393: a minimal golfer-appearance snapshot for the public boards - only the keys the pixel figure reads
 // (drops _ts/acc/caddie/country/title, which don't affect the rendered golfer). Keeps the payload tiny.
 function lookForBoard(look){ const L=look||S.look||DEFLOOK; const o={};
-  ['skin','hair','hairStyle','polo','pants','shoes','cap','hatStyle','hat','shirtPat','hatPat','eyewear','club','top','leg','fx','ball','cleats','lefty','gender'].forEach(k=>{ if(L[k]!==undefined) o[k]=L[k]; });
+  ['skin','skinTone','hair','hairStyle','polo','pants','shoes','cap','hatStyle','hat','shirtPat','hatPat','eyewear','club','top','leg','fx','ball','cleats','lefty','gender'].forEach(k=>{ if(L[k]!==undefined) o[k]=L[k]; });
   return o; }
 // CS395: one-time retro-fill on first sign-in after the look migration — stamp the player's CURRENT profile
 // golfer onto all their existing (pre-migration, null-look) season + daily rows, so old scores show their
