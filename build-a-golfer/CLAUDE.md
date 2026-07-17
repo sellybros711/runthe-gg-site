@@ -9680,6 +9680,36 @@ allows Google Fonts, or self-host Anton.*
   Screenshot confirms the layout. Client-only, no migration. The old `streakCalendar`/`streakWeekNode` are
   now unused (left defined). Tunable: `STREAK_WEEK_TRACK` (day→reward), the cell/counter styling.
 
+- **CS403 — Referrals: invite a friend with your link, you BOTH get a free pack (owner).** Share link is
+  `…/golf?ref=<your username>`. When a NEW friend signs up with it, both the friend and the referrer get a
+  free pack.
+  - **Backend `supabase/56_runtour_referrals.sql` (owner-run):** `runtour_referrals` (one row per referred
+    user, ever) + `runtour_pending_rewards` (a per-user free-pack queue) + two SECURITY DEFINER RPCs.
+    `runtour_redeem_referral(p_ref_code)` resolves the referrer by username, then queues a pack for BOTH
+    sides — with anti-abuse: can't refer yourself, the referred account must be genuinely NEW (created within
+    ~2 days, so old accounts can't farm referrals), each user can only be referred once (PK), and a referrer
+    earns pack credit for up to 50 referrals (still records the rest). `runtour_claim_rewards()` returns +
+    resets the caller's queued packs (so the referrer, who's offline during the sign-up, collects on their
+    next sign-in). RLS on with no direct policies (definer-only). Validated end-to-end on a local Postgres:
+    self/badref/notnew/ok/already all correct, both sides queued a pack, claim returns-then-resets, the
+    referrer soft-cap, and anon can't read the tables.
+  - **Client (CS403, fail-open):** `refCheck()` captures `?ref=` at boot, stashes it to `rtt_ref`, cleans it
+    from the URL (keeping other params), and nudges an invited guest ("A friend invited you! Create a free
+    account and you'll BOTH get a free pack."). `maybeReferralFlow()` (on sign-in, after cloudPull) redeems
+    the stashed code once then claims any queued packs (`grantFreePack` locally). Share entry points:
+    `referralShare()` (navigator.share / clipboard with the invite link) from a new **🎁 Invite** title-nav
+    tile ("You both get a pack") and an "Invite a Friend" row in the ≡ menu; a guest tapping either is nudged
+    to sign in first (the code is your username). `referralLink()` builds `…/golf/?ref=<encoded username>`.
+    A referred new player gets the CS401 welcome pack + the referral pack (2 total).
+  - Verified: migration on Postgres (above); client — URL capture + clean at boot, referral link format,
+    guest sign-in nudge, the Invite tile + menu row render; 0 page errors. maybeReferralFlow mirrors the
+    proven maybeWelcomePack/sbSubmitStreak `sb.rpc` pattern (the module-`let` `sb`/`sbUsername` bindings
+    aren't reachable from the test harness, so that path is verified by inspection + the validated RPCs).
+    **ACTION: run `supabase/56_runtour_referrals.sql`** (referrals are a no-op / fail-open until then).
+    Deployed client to /golf. Tunable: the referrer soft-cap (50), the "new account" window (2 days), the
+    invite copy. NOTE: a referral records a friend→referrer relationship (usernames only, already public on
+    the leaderboards); flag if you want a privacy-policy line for it.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
