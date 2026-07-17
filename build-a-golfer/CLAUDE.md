@@ -9071,6 +9071,12 @@ allows Google Fonts, or self-host Anton.*
   branch; still NOT deployed to /golf. Tunable: the `hz` amplitude + mound positions in `pxTitleBgURL`,
   the card `box-shadow` values.
 
+- **CS368 — reverted the header crest to the vector shield (owner: the pixelated crest looked bad).** The
+  header `crestrow` used `pxCrestSVG()` (the CS363 pixel crest); switched it back to the original vector
+  `crestSVG()` (clean gold-outlined shield + flag + putting green + ball). `pxCrestSVG`/`PXCREST` left
+  defined but unused. Verified: title renders the crisp vector crest, zero page errors. Pushed to the
+  feature branch; NOT deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
