@@ -5884,8 +5884,8 @@ function dailyHeroCard(){
   const streakChip = PRACTICE ? '' : (st>0
     ? `<span class="gc-chip${atRisk?' hot':''}">🔥 ${st}-day streak${atRisk?' on the line':''}${(fz>0&&!atRisk)?` · ❄️ ${fz}`:''}</span>`
     : `<span class="gc-chip">🔥 Start your streak</span>`);
-  const card=$(`<button class="gcard gc-blue" aria-label="Play the daily challenge, Beat the Pro">
-    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">Daily Challenge</div><div class="gc-title">Beat the Pro</div></div>${badge?`<span class="gc-badge">${badge}</span>`:''}</div>
+  const card=$(`<button class="gcard gc-blue" aria-label="Play 18, the daily round">
+    <div class="gc-top"><div style="min-width:0"><div class="gc-kick">Daily Challenge</div><div class="gc-title">Play 18</div></div>${badge?`<span class="gc-badge">${badge}</span>`:''}</div>
     <div class="gc-mid">${mid}</div>
     <div class="gc-row">${streakChip}<span class="gc-chip">New in ${dCd('hm')}</span><span class="gc-go">Play ▸</span></div>
   </button>`);
@@ -6032,14 +6032,14 @@ function scrTitle(){
   const ri=resumeInfo();
   const cs=careerSaveInfo();
   // ════════════════════════════════════════════════════════════════════
-  // Home = a clean set of MODE cards (owner): 1) Beat the Pro, 2) Career,
+  // Home = a clean set of MODE cards (owner): 1) Play 18 (daily), 2) Career,
   // 3) Play Online, 4) Monthly Spotlight. The daily companions (streak
-  // calendar, weekly goals, free-Legend hook) moved into the Beat-the-Pro
+  // calendar, weekly goals, free-Legend hook) moved into the Play-18 (daily)
   // flow (daily preview) so they don't clutter the homepage.
   // ════════════════════════════════════════════════════════════════════
-  // 1) Beat the Pro (folds in the streak chip + attempts + countdown)
+  // 1) Play 18 / daily (folds in the streak chip + attempts + countdown)
   stack.appendChild(dailyHeroCard());
-  // 2) CAREER - right below Beat the Pro. Resume card if in progress, else Career Mode. Color stays gold.
+  // 2) CAREER - right below Play 18. Resume card if in progress, else Career Mode. Color stays gold.
   if(cs && cs.ended){
     // a retired/completed career, never resumable, just lets them revisit the ceremony they just saw
     const circuit=!!cs.circuitEnded;
@@ -6167,7 +6167,7 @@ function scrSetup(){
   const editing=!!S.setupEdit;   // CS356c: editing the profile golfer from the Trophy Room (not starting a career)
   const wrap=$(`<div class="retro-creator setup-shop"></div>`);
   wrap.appendChild($(`<div class="retro-title">▸ ${editing?'Edit Your Golfer':'Create Your Golfer'}</div>`));
-  wrap.appendChild($(`<div class="retro-sub">${editing?'This is your golfer in every mode &middot; change it anytime':((S.special?'Monthly Spotlight':(S.daily?'Beat the Pro':'Career Mode'))+' &middot; style your golfer, then build your skills')}</div>`));
+  wrap.appendChild($(`<div class="retro-sub">${editing?'This is your golfer in every mode &middot; change it anytime':((S.special?'Monthly Spotlight':(S.daily?'Play 18':'Career Mode'))+' &middot; style your golfer, then build your skills')}</div>`));
 
   const LOOKCATS=[['skin','Skin'],['hair','Hair color'],['style','Hair style'],['hand','Handedness'],['club','Club']];
   const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes']];
@@ -15405,7 +15405,7 @@ function dailyTheme(key){
 function dailyFeatureCard(key){
   const c=DAILY_COURSES[key]; if(!c) return $('<div></div>');
   const th=dailyTheme(key), A=th.accent, A2=th.accent2;
-  const kicker=S.special?'MONTHLY SPOTLIGHT':"TODAY'S BEAT THE PRO";
+  const kicker=S.special?'MONTHLY SPOTLIGHT':"TODAY'S PLAY 18";
   const first=c.blurb.split('. ')[0].replace(/\.$/,'')+'.';
   const hasMore=c.blurb.length>first.length+2, open=!!S.dailyBlurbOpen;
   const card=$(`<div class="dfeat" style="max-width:560px;margin:0 auto;border-radius:18px;padding:19px 20px;position:relative;overflow:hidden;
@@ -16482,7 +16482,7 @@ function scrDailyIntro(){
 function scrDailyPreview(){
   if(sb && crCache===null) crLoad();   // pull global course records so the record box is global, not just local
   const key=S.dailyCourse, c=DAILY_COURSES[key], rec=courseRecords()[key];
-  add(scrHero(S.special?'Monthly Spotlight':'Beat the Pro', S.special?'Special event · today only':"Today's course"));
+  add(scrHero(S.special?'Monthly Spotlight':'Play 18', S.special?'Special event · today only':"Today's course"));
   if(PRACTICE && !S.special) add($(`<div class="center" style="margin-top:5px"><span class="tag" style="color:#16b5a6;border-color:#16b5a6">Practice mode · unlimited rounds, nothing is recorded</span></div>`));
   // CS240: themed "today's course" feature card - name, tagline, vibe, palette + motif chips, accent from
   // the course's own biome so every day's Daily feels special (owner-picked Option 3).
