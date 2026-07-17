@@ -9084,6 +9084,20 @@ allows Google Fonts, or self-host Anton.*
   depth. Verified: renders as a deep bunker, zero page errors. Pushed to the feature branch; NOT deployed
   to /golf. Tunable: the bunker size/position + `SAND*`/`LIP*` colors in `pxTitleBgURL`.
 
+- **CS370 — standing golfer: club follows handedness + favorite-club picker (owner: the club was always
+  in the left hand regardless of handedness; let players pick a favorite club).** The club was baked into
+  `PXG_BODY` on the golfer's left side, so it never moved. Extracted it into a separate layer: `PXG_BODY`
+  is now clubless, and `PXG_CLUBS` holds 5 overlays (driver / 3-wood / iron / wedge / putter, same shaft,
+  different heads). `pxGolferCanvas` paints the chosen club (`look.club`, default driver) and MIRRORS it to
+  the right hand for a right-handed golfer (`!look.lefty`) — authored on the left hand for lefties. Added
+  `club` + handedness to the avatar cache key. Added a "Club" category to the setup Look tab (5 tiles with
+  cropped-club thumbnails via `pxClubThumb`), wired to `S.look.club` + `saveLook()` (device-local, cloud-
+  synced with the rest of `bag_look`). The favorite club shows on the standing golfer everywhere (setup,
+  build hero, Trophy Room, etc.); the SWING animation still uses a shot-appropriate club (driver for full
+  shots, putter on the green), which is correct. Verified in Playwright: righty holds the club in the right
+  hand / lefty in the left, all 5 clubs render distinct, the setup Club picker updates the avatar live,
+  zero page errors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
