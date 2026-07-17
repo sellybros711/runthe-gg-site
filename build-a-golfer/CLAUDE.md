@@ -9836,6 +9836,38 @@ allows Google Fonts, or self-host Anton.*
   errors. Screenshot confirms the calendar. Deployed to /golf. Tunable: `STREAK_WEEK_COIN_MIN/MAX` (the
   ramp), `STREAK_WEEK_TRACK` (per-day reward), the Day-7 tier ('tour').
 
+- **CS408 — economy balance pass: coherent item price ladder + pack prices tuned to the coin economy
+  (owner: "make sure item prices make sense with pack prices... base packs relatively easy to afford but
+  the best packs a grind you can't reach in a few sessions").** Audited the live catalog (141 pack-poolable
+  items) + earning rate and found two incoherences: (1) direct-buy prices for the SAME rarity varied wildly
+  — a legendary accessory cost 170k–204k while a legendary cosmetic cost 60–80k, an epic cosmetic 32k vs an
+  epic accessory 60–72k — with legendaries spanning 60k–204k (avg 157k); (2) pack prices didn't map cleanly
+  to how fast coins are earned. Fixed both:
+  - **One rarity → direct-price ladder for every item** (`RARITY_PRICE = {common 6k, rare 16k, epic 40k,
+    legendary 90k}`, clubs ×1.2), applied to both cosmetics AND accessories via `itemRarityPrice()`. So a
+    "rare" costs 16k whether it's a hat, a pattern, or a driver — the 170k–204k outlier is gone and the
+    catalog reads as a clean ladder (measured: common 6.0–7.2k, rare 16.0–19.2k, epic 40–48k, legendary
+    90–108k). Direct-buy stays the PREMIUM path (pick exactly what you want); packs are the value path.
+    `cosmeticPriceBase` still *selects* each item's rarity (via `packRarityOf`, so pool rarities never
+    shift) — only the price it maps to changed. Free/earned items stay free. Bag clubs kept at [6k, 24k,
+    70k] (tier1 common → tier3 legendary), coherent with the ladder.
+  - **Pack prices tuned to the earning rate** (an engaged player earns ~2,000–2,200 coins/day from
+    daily + streak + season play): Base 12k→**8,000** (~4 days / a few dailies — "relatively easy," and
+    base packs are frequently free anyway); Tour 28k→**22,000** (~10 days — moderate); Champion 55k→**45,000**
+    (~20 days / ~3 weeks — a real grind you can't reach in a few sessions). Bundles scale automatically
+    (4× the pack: 32k / 88k / 180k).
+  - **Dupe refunds** raised to ~28–33% of the new item values ({common 2k, rare 5k, epic 12k, legendary
+    25k}, from {1.5k/3.5k/8k/18k}) so duplicates feel less bad for long-term collectors.
+  Result (verified in Playwright): new-player pack value/price ratios are sensible and escalate the right
+  way — Base **1.98×** (huge onboarding value), Tour **1.12×** (good value), Champion **0.84×** (a premium
+  you pay for the 55%-epic+/17%-legendary ceiling + prestige); and a completionist who owns everything gets
+  only the dupe refund per pack (Base 4.8k, Tour 7.2k, Champion 10.8k — all far below the pack price, so
+  there's no coin-faucet exploit from spamming packs). Full catalog now ~2.98M coins to buy everything
+  directly (a ~3.5-year direct grind, much faster via packs + free packs) — a strong long-term goal.
+  Confirmed buys deduct correctly (epic accessory 40k, rare cosmetic 16k), a Champion pack charges 45k, and
+  the shop renders the new prices with 0 page errors. Deployed to /golf. Tunable: `RARITY_PRICE` (the item
+  ladder), the `PACK_TYPES` prices, `PACK_DUPE_REFUND`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

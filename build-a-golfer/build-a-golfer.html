@@ -4663,10 +4663,14 @@ const COIN_RATE=0.6;                         // Pro Shop relaunch: earned coins 
 const COIN_EPOCH=2;                          // bump to re-baseline every account's spendable coins to 0 at the new rate (owned gear/cosmetics are PRESERVED across the bump)
 const ACC_SKILL_CAP=10, ACC_TOTAL_CAP=80;    // Pro Shop relaunch: +10 hard cap on any single stat (from all gear combined). No total governor to start (80 = effectively off).
 const ACC_BOOST_SCALE=1;                      // full-strength catalog boosts (owner: bring the boosts back)
-// CS186 severe prices (owner): earned slowly, so gear is a long-term goal. By rarity, clubs cost a bit more.
+// CS408 — ONE coherent direct-buy price ladder by RARITY, applied to every pack-poolable item (cosmetics +
+// accessories), so a "rare" costs the same whether it's a hat or a driver and the ladder lines up with the
+// pack tiers/odds. Direct-buy is the PREMIUM path (pick exactly what you want); packs are the value path.
+// These are the final coin prices (no separate hike - PACKS_ENABLED is permanent). Clubs cost a touch more.
+const RARITY_PRICE={common:6000, rare:16000, epic:40000, legendary:90000};
+function itemRarityPrice(rar,isClub){ return Math.round((RARITY_PRICE[rar]||RARITY_PRICE.common)*(isClub?1.2:1)); }
 function accPrice(it){ if(!it||it.rarity==='exclusive') return 0;
-  const base={common:2500,rare:10000,epic:30000,legendary:85000}[it.rarity]||2500;
-  return Math.round(base*((it.slot==='driver'||it.slot==='putter')?1.2:1)*priceHike()); }
+  return itemRarityPrice(it.rarity, it.slot==='driver'||it.slot==='putter'); }
 // display + gameplay boost for an item, scaled down from the catalog value (min +1 on any listed skill)
 function accItemBoost(it){ const o={}; if(it&&it.boost) for(const k in it.boost) o[k]=Math.max(1,Math.floor(it.boost[k]*ACC_BOOST_SCALE)); return o; }
 const ACC_RARITY={ common:{c:'#b8c4bd',label:'Common'}, rare:{c:'#4aa3ff',label:'Rare'},
@@ -4860,7 +4864,9 @@ function cosmeticPriceBase(cat,id){
   if(cat==='ew'){ if(id==='none') return 0; return {shades:10000,heart:9000,star:12000,threed:8000,monocle:15000,aviators:12000,round:9000,goggles:11000,eyepatch:10000,visorband:8000}[id]||10000; }
   return 0;
 }
-function cosmeticPrice(cat,id){ return Math.round(cosmeticPriceBase(cat,id)*priceHike()); }
+// CS408: cosmeticPriceBase still SELECTS the rarity (via packRarityOf, so pool rarities never shift); the
+// actual coin price comes from the shared RARITY_PRICE ladder. Free/earned items (base<=0) stay free.
+function cosmeticPrice(cat,id){ const base=cosmeticPriceBase(cat,id); if(base<=0) return 0; return itemRarityPrice(packRarityOf(base),false); }
 function cosOwned(cat,id){ const k=cosKey(cat,id); return !!FREE_COSMETICS[k] || !!coinState().owned[k]; }
 function cosBuy(cat,id){
   if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy'};
@@ -19147,7 +19153,7 @@ function packBundlePrice(){ return PACK_PRICE*PACK_BUNDLE_PAY; }
 const PACK_RCOL={common:'#b8c4bd',rare:'#4aa3ff',epic:'#b06be0',legendary:'#F1D04A'};
 const PACK_RLABEL={common:'Common',rare:'Rare',epic:'Epic',legendary:'Legendary'};
 const PACK_ODDS=[['common',0.55],['rare',0.30],['epic',0.12],['legendary',0.03]];
-const PACK_DUPE_REFUND={common:1500,rare:3500,epic:8000,legendary:18000};
+const PACK_DUPE_REFUND={common:2000,rare:5000,epic:12000,legendary:25000};   // CS408: ~28-33% of the item's direct value
 const PACK_PITY_EPIC=10, PACK_PITY_LEG=40;  // guaranteed epic+ every 10 packs, legendary every 40 (BASE tier defaults)
 const PACK_RANK=['common','rare','epic','legendary'];
 // CS406 — three pack TIERS with escalating odds/price (owner: base + 2 better tiers, top = gold, mid = purple).
@@ -19155,12 +19161,12 @@ const PACK_RANK=['common','rare','epic','legendary'];
 // and an accent color. Pity counters are shared in packState (see rollPackWin) - a tier's own thresholds are
 // read per-open, so a better pack hits its guarantee floor sooner. Base tier reuses PACK_ODDS/PITY above.
 const PACK_TYPES={
-  base:  {id:'base',  name:'Pro Shop Pack', short:'Base',     price:12000, odds:PACK_ODDS,
+  base:  {id:'base',  name:'Pro Shop Pack', short:'Base',     price:8000, odds:PACK_ODDS,
           pityEpic:PACK_PITY_EPIC, pityLeg:PACK_PITY_LEG, col:'#3fbf7a', accent:'#78d2b4', glow:'rgba(63,191,122,.42)'},
-  tour:  {id:'tour',  name:'Tour Pack',     short:'Tour',     price:28000,
+  tour:  {id:'tour',  name:'Tour Pack',     short:'Tour',     price:22000,
           odds:[['common',0.30],['rare',0.40],['epic',0.22],['legendary',0.08]],
           pityEpic:6, pityLeg:24, col:'#a24be0', accent:'#c9a8ee', glow:'rgba(162,75,224,.48)'},
-  champ: {id:'champ', name:'Champion Pack',  short:'Champion', price:55000,
+  champ: {id:'champ', name:'Champion Pack',  short:'Champion', price:45000,
           odds:[['common',0.10],['rare',0.35],['epic',0.38],['legendary',0.17]],
           pityEpic:4, pityLeg:12, col:'#F1D04A', accent:'#fff0b4', glow:'rgba(241,208,74,.52)'},
 };
