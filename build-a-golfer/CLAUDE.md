@@ -9359,6 +9359,34 @@ allows Google Fonts, or self-host Anton.*
   coin economy already funds packs; server-authoritative open — only needed if coins ever become
   real-money-purchasable.)
 
+- **CS390 — coins earned by PLAYING (fixes "stuck at 0") + global header coin pill + active-boosts &
+  Pro Shop button under the golfer (owner batch).**
+  1. **Coin-earning bug — "I've been stuck at 0."** Root cause: coins are DERIVED from lifetime progress
+     (achievements + wins + majors …) but the CS186 epoch reset baselines an established account's derived
+     total to 0, and the ONLY play-faucet on top of that was playing career Moments (CS288) — so an account
+     that was reset to 0 and doesn't play Moments earns ~nothing. Fix: added visible **play coin faucets**
+     via `awardPlayCoins()`, which uses `addBonusCoins` (bonus coins bypass the reset baseline, so they
+     always accrue for every account): **+300 per tournament win / +1,000 major / +500 big-event** (in the
+     interactive win celebration — skipping the season still forfeits, consistent), **+60 per daily
+     completed (+120 more for beating the pro)**, and **+120 per online (H2H) win**. Each award shows a toast
+     nudging the player to spend at the Pro Shop / open a pack (owner: "when a player earns coins tell them
+     to spend it"). Amounts are single tunable constants (`COIN_WIN`/`_MAJOR`/`_BIG`, `COIN_DAILY`/`_BEAT`,
+     `COIN_H2H_WIN`). Verified: from a baselined 0, a win → 300, a major → +1,000 = 1,300.
+  2. **Global coin pill in the header (owner: "everywhere … clickable to bring them to the store").** Added
+     a gold coin pill to the header top bar (right of the ≡ menu) on EVERY screen for signed-in players,
+     showing the live `coinBalance()` and opening the Pro Shop on tap (`.coinhdr`, with a little bump
+     animation when the balance rises). Guests never see it. Verified present on title + setup, clicking →
+     shop, hidden for guests.
+  3. **Active boosts + a distinct Pro Shop button under the golfer, in the customize screen (owner's circled
+     empty space).** `scrSetup` now renders, directly below the avatar preview: the **live active boosts**
+     (via the existing `accBoostSummaryNode()` — the combined boost from your currently **equipped/worn gear
+     + golf bag** ONLY, exactly as the owner specified; "No stat boost equipped yet…" when none), and a
+     distinct **"Pro Shop & Packs ▸"** button (shows "· 🎁 Free pack!" when the first pack is free) that
+     opens the shop (Packs tab when a free pack is waiting). Signed-in only. Verified the boost chips reflect
+     real equipped gear (e.g. "+1 Driving Distance" from a bag club) and the button routes to the shop.
+  All verified in Playwright, 0 page errors; screenshot confirms the header coin pill, the boosts line + Pro
+  Shop button under the golfer, and the "+coins · spend at the Pro Shop" toast. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

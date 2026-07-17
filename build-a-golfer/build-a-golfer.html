@@ -138,6 +138,15 @@ window.GA_ID='G-L29P5MRWKE';
     font-family:var(--serif); font-weight:600; font-size:15px; color:var(--oncard); cursor:pointer;
     box-shadow:0 4px 14px -6px rgba(0,0,0,.5); display:inline-flex; align-items:center; gap:9px}
   .pill svg{width:18px;height:18px;display:block}
+  /* global coin pill in the header (owner: coin counter everywhere, clickable → Pro Shop) */
+  .coinhdr{margin-left:auto; display:inline-flex; align-items:center; gap:6px; border-radius:999px;
+    background:linear-gradient(180deg,rgba(241,208,74,.2),rgba(241,208,74,.05)); border:1px solid rgba(241,208,74,.5);
+    color:var(--gold); padding:7px 14px 7px 11px; font:800 14px/1 var(--body); cursor:pointer; box-shadow:0 3px 10px -4px rgba(0,0,0,.5)}
+  .coinhdr .ci{width:16px;height:16px;display:flex;align-items:center}
+  .coinhdr:hover{border-color:var(--gold); background:linear-gradient(180deg,rgba(241,208,74,.3),rgba(241,208,74,.1))}
+  .coinhdr:active{transform:translateY(1px)}
+  @keyframes coinbump{0%{transform:scale(1)}40%{transform:scale(1.14)}100%{transform:scale(1)}}
+  .coinhdr.bump{animation:coinbump .5s ease}
   /* CS356f: small pixel-golfer chip (replaces the generic icon in the profile pill) */
   .pxchip{display:inline-block; border-radius:6px; overflow:hidden; background:#0c1f16; vertical-align:middle; flex:0 0 auto; box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
   .pxchip img{height:auto; display:block; image-rendering:pixelated}
@@ -1346,6 +1355,14 @@ window.GA_ID='G-L29P5MRWKE';
     box-shadow:0 12px 14px -12px rgba(0,0,0,.7)}
   .shop-bar{display:flex; align-items:center; justify-content:space-between; gap:10px}
   .shop-bar h3{margin:0; font-size:22px}
+  /* customize: active boosts + Pro Shop button under the golfer */
+  .setup-under{margin:8px 2px 2px; display:flex; flex-direction:column; gap:9px}
+  .setup-shopbtn{display:inline-flex; align-items:center; justify-content:center; gap:8px; width:100%; border-radius:12px;
+    padding:11px 14px; cursor:pointer; font:800 14px var(--body); color:var(--gold);
+    border:1px solid rgba(241,208,74,.5); background:linear-gradient(180deg,rgba(241,208,74,.15),rgba(241,208,74,.03))}
+  .setup-shopbtn:hover{border-color:var(--gold); background:linear-gradient(180deg,rgba(241,208,74,.24),rgba(241,208,74,.06))}
+  .setup-shopbtn svg{width:16px;height:16px}
+  .setup-shopbtn .ssb-go{margin-left:auto;opacity:.75}
   .coinpill{display:inline-flex; align-items:center; gap:6px; background:rgba(241,208,74,.13); border:1px solid rgba(241,208,74,.4);
     border-radius:999px; padding:5px 12px 5px 8px; font:900 16px/1 var(--body); color:var(--gold)}
   .shop-preview{display:flex; justify-content:center; align-items:flex-end; height:340px; margin:2px 0 4px}
@@ -4633,6 +4650,17 @@ function addBonusCoins(n, opts){ opts=opts||{}; n=Math.round(n||0); if(!sbSigned
   return n; }
 // coins awarded for PLAYING a Moment round yourself (simming forfeits this). Bigger stage = bigger bonus.
 function momentPlayCoins(evt){ if(!evt) return 120; return evt.major?300:(evt.big||evt.playoff||evt.type==='finale')?200:120; }
+// ---- PLAY COIN FAUCETS (owner: coins should be earned by playing, visibly). These use addBonusCoins,
+// which bypasses the CS186 reset baseline, so they always accrue for every account (a maxed account whose
+// derived total was baselined to 0 still earns from playing). Tunable amounts. ----
+const COIN_WIN=300, COIN_WIN_MAJOR=1000, COIN_WIN_BIG=500;   // per tournament win (interactive; skipping forfeits)
+const COIN_DAILY=60, COIN_DAILY_BEAT=120;                    // finish a daily (+ beat-the-pro bonus)
+const COIN_H2H_WIN=120;                                       // win an online match
+function winCoins(evt){ if(!evt) return COIN_WIN; if(evt.major) return COIN_WIN_MAJOR; if(evt.big||evt.playoff||evt.type==='finale') return COIN_WIN_BIG; return COIN_WIN; }
+// award + a "spend it" nudge toward the Pro Shop (owner: tell players to spend / buy packs)
+function awardPlayCoins(n, label){ if(!sbSignedIn()||!(n>0)) return 0; addBonusCoins(n,{silent:true});
+  try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(label?' · '+label:'')+'<br><span class="small" style="color:#8fe0c4">Spend them at the Pro Shop, or open a pack ▸</span>', 3400); }catch(e){}
+  return n; }
 function coinFmt(n){ n=Math.round(n||0); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','); }   // comma-grouped, no $ - the coin icon is the currency mark
 function grantMilestoneItems(s){ const m=achMetrics(); MILESTONE_ITEMS.forEach(mi=>{ try{ if(!s.owned[mi.id] && mi.when(m)) s.owned[mi.id]=1; }catch(e){} }); }
 // Legend gear (earn:true special shirts) is auto-granted to owned once its hard req is met, so it's a true unlock.
@@ -4951,6 +4979,7 @@ function golfballSVG(){return `<svg class="ball" viewBox="0 0 24 24" fill="none"
   <g fill="#cdbf9b"><circle cx="12" cy="8" r="1"/><circle cx="9" cy="11" r="1"/><circle cx="15" cy="11" r="1"/><circle cx="12" cy="14" r="1"/><circle cx="9" cy="15.5" r="1"/><circle cx="15" cy="15.5" r="1"/></g></svg>`;}
 function swingIcon(){return `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="13" cy="4.3" r="2.1"/><path d="M12 6.5 C14 7 15.4 8.4 15 11 L13.4 11.3 C13 9.4 12.4 8.2 12 7.2 Z"/><path d="M13.4 9.5 L20 5.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M11.8 9 C10 11 9.5 13.5 11 15.5" stroke="currentColor" stroke-width="2.1" fill="none" stroke-linecap="round"/><path d="M12.4 14 L15.5 20.5" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/><path d="M11.4 14 L8 20.5" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/></svg>`;}
 function resetIcon(){return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8 A 8.5 8.5 0 1 1 3 12.5"/><path d="M3.2 3.4 V8 H7.8"/></svg>`;}
+let _coinHdrPrev=null;   // last-rendered header coin balance → a little bump animation when it goes up
 function header(){
   // the big decorative crest+wordmark is the brand moment on the title screen; everywhere else it's a
   // compact, legible top bar (owner: the green wordmark header wasn't legible + scrolled messily).
@@ -4959,6 +4988,13 @@ function header(){
   const menu=$(`<button class="icobtn" aria-label="Menu" aria-expanded="${S.overlay==='menu'?'true':'false'}">≡</button>`);
   menu.onclick=()=>{ S.overlay='menu'; render(); };
   top.appendChild(menu);
+  // global coin counter (owner: everywhere in the header, tap to open the Pro Shop). Signed-in only.
+  if(SHOP_ENABLED && sbSignedIn()){
+    const bal=coinBalance(); const bump=(_coinHdrPrev!=null && bal>_coinHdrPrev);
+    const coin=$(`<button class="coinhdr${bump?' bump':''}" aria-label="Coins: ${coinFmt(bal)}. Open the Pro Shop."><span class="ci">${ic('coin',{size:'16px'})}</span>${coinFmt(bal)}</button>`);
+    coin.onclick=()=>{ track('coin_pill_open'); S.overlay='shop'; render(); };
+    top.appendChild(coin); _coinHdrPrev=bal;
+  }
   h.appendChild(top);
   h.appendChild($(`<div class="crestrow">${crestSVG()}
     <div class="wmblock">
@@ -6311,10 +6347,19 @@ function scrSetup(){
 
   // sticky-style header: preview + ONE wrapping row with every category chip (grouped), reusing the shop classes
   const chips = groups.map(g=>`<span class="catglab">${esc(g[0])}</span>`+g[1].map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-scat="${c[0]}">${esc(c[1])}</button>`).join('')).join('');
-  const sticky=$(`<div class="shop-sticky">
-    <div class="shop-preview">${avatarShowHTML()}</div>
-    <div class="catrow catwrap">${chips}</div>
-  </div>`);
+  const sticky=$(`<div class="shop-sticky"><div class="shop-preview">${avatarShowHTML()}</div></div>`);
+  // UNDER THE GOLFER (owner): live active boosts (from equipped gear only) + a distinct Pro Shop / Packs
+  // button. Signed-in only (guests have no gear / can't shop).
+  if(!guest && SHOP_ENABLED){
+    const under=$(`<div class="setup-under"></div>`);
+    try{ under.appendChild(accBoostSummaryNode()); }catch(e){}
+    const freePack=(typeof packIsFree==='function')&&packIsFree();
+    const sb=$(`<button class="setup-shopbtn">${ic('cart',{size:'16px'})}<span>Pro Shop &amp; Packs${freePack?' · 🎁 Free pack!':''}</span> <span class="ssb-go">▸</span></button>`);
+    sb.onclick=()=>{ track('setup_shop_open'); S.overlay='shop'; if(freePack)S.shopSec='packs'; render(); };
+    under.appendChild(sb);
+    sticky.appendChild(under);
+  }
+  sticky.appendChild($(`<div class="catrow catwrap">${chips}</div>`));
   wrap.appendChild(sticky);
 
   if(S.shopPreview && !guest){ wrap.appendChild(shopPreviewNode()); }
@@ -13334,6 +13379,7 @@ function scrSeason(){
   // a win earns a celebration before moving on (once per event); it drives what happens next
   if(ce.done && isWin && !ce._celebrated){
     ce._celebrated=true; clearTimeout(seasonTimer);
+    if(!ce._winCoined){ ce._winCoined=true; awardPlayCoins(winCoins(evt), evt.major?'major championship!':'tournament win'); }   // coins for the win (interactive; skipping the season forfeits them)
     celebrateWin(evt, ce.order.find(x=>x.p.you), {auto:S.autoSim, lastEvent, reduce});
     return;
   }
@@ -17762,6 +17808,7 @@ function finishDailyRound(){
   S.dailyStreakInfo={won, mile:_ds._mile||0, gotFreeze:!!_ds._gotFreeze, usedFreeze:!!_ds._usedFreeze, current:_ds.current, freezes:_ds.freezes||0, played:_st.played, beat:_st.beat};
   // CS252: one positive sound at the finish - a win fanfare for beating the pro, else the streak-kept ding
   if(won){ sfx('win'); buzz([0,30,40,50]); } else { sfx('streak'); buzz([0,25]); }
+  if(signedIn) awardPlayCoins(COIN_DAILY + (won?COIN_DAILY_BEAT:0), won?'you beat the pro!':'daily round');   // coins for playing the daily (+ beat-the-pro bonus)
   // log this attempt; the LOWEST score of the day is the one that counts (leaderboard / course record).
   // The attempt was already CLAIMED at the first wheel spin (claimDailyAttempt), so read that count -
   // do NOT +1 here (that double-counted a claimed attempt). Fallback to 1 if somehow unclaimed.
@@ -20697,6 +20744,7 @@ function h2hCaptureAch(){ if(!sbSignedIn()) return;
   const key={'1v1':'h2h1v1Wins','bestball':'h2hBbWins','scramble':'h2hScWins','ffa':'h2hFfaWins'}[mode]||'h2hXWins';
   const inc={h2hMatches:1}; if(won){ inc.h2hWins=1; inc[key]=1; }
   recordAchEvent({inc}); const fresh=evaluateAch&&evaluateAch(); if(fresh&&fresh.length&&typeof achToast==='function') achToast(fresh);
+  if(won && !S.h2h._coined){ S.h2h._coined=true; awardPlayCoins(COIN_H2H_WIN, 'online win'); }   // coins for winning an online match
   // Challenges: daily quest "Play a Head to Head match" + weekly matches/wins
   questDaily('h2h'); questWeekly('h2hMatches',1); if(won) questWeekly('h2hWins',1); }
 async function h2hReport(){
