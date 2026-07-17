@@ -9253,6 +9253,46 @@ allows Google Fonts, or self-host Anton.*
   a clean head-and-shoulders share card. Deployed to /golf. (`drawMajorWinCard` uses its own trophy art,
   unaffected.)
 
+- **CS387 — Daily QUICK play: no tracer on routine holes + pixelified tee box / pins / flags (owner
+  batch, 2 asks).**
+  1. **Quick Play routine holes no longer show the tour-tracer view (owner: "The holes without a decision
+     to be made should not show the tour tracer view at all. It should simply reveal the scores of the holes
+     one by one until it gets to the next hole with a decision").** In Quick mode `dailyHoleFull(hole)` now
+     returns full-tracer ONLY for decision holes (`dIsDecHole`) — the eagle/blow-up exceptions were dropped,
+     so EVERY non-decision hole fast-sims with no tracer. The routine-quick branch of `playDailyHole` was
+     rewritten: instead of the old brief full-hole glance → ball-drop animation, it commits the score
+     directly (`S.dailyRevealN=null`, hole sfx), sets a brief `dailyHolePause` result beat, and calls
+     `scheduleDailyAdvance` (same downstream as before, so mulligan-offer + advance/decision/finish are
+     unchanged). `dailyDwell` gives quick routine holes a shorter beat (~650ms routine / ~850ms
+     eagle-or-blowup) so the scores tick by one by one. In `scrDailyRound` a new `showTracer` gate
+     (`!quick || prov || (previewNext && teeSig) || reviewing || ((revealing||holePause) && latestIsDec)`)
+     wraps the three tracer-drawing branches and feeds `boardPresent`, so a routine quick hole shows NO
+     tracer window — just the big running-score header, a compact per-hole result callout ("Hole 5 · BIRDIE
+     · 3 (−1)") as each score reveals, and the scorecard strip filling in. The tracer still appears for a
+     pending decision (tee/par-3 via `teeSig`, or the par-4/5 approach drive via `prov`), for a decision
+     hole being revealed/held after its choice, and when reviewing a past hole. FULL mode is unchanged
+     (`quick=false` → `showTracer` always true → every hole plays out on the tracer). Moments/Spotlight
+     always play full. Verified in Playwright (practice quick round, OVR-86 build, auto-answering
+     decisions): routine-hole holePause samples had the tracer 0/many times and always showed the result
+     banner; every decision-context sample (prov or decision cards) showed the tracer; the round advanced
+     steadily 0→5→11 holes with 0 stalls and 0 page errors.
+  2. **Pixelified the tee box + pins/flags in tour-tracer (pixel) mode (owner: "Pixel-ify the tee box and
+     pins/flags in tour tracer mode. keep the custom flags per course").** New `hvPinTeePixel(g,B)` replaces
+     the smooth `hvPinTeeSVG` overlay on the pixel course backdrop (`hvBackdrop` pixel path): the tee box,
+     cup, flagstick and flag are now blocky `shape-rendering:crispEdges` rects (no rounded corners /
+     anti-aliased ellipses / smooth swallowtail path) so they read as pixel art matching the pixel terrain.
+     The tee box is a flat short-grass patch with a dark outline + front-lip shade row + two gold square
+     markers; the cup is a small dark block with a light rim; the flag is a small swallowtail BITMAP (V-notch
+     cut into the fly end via a per-row notch depth) painted from the per-course `hvFlag(g.courseKey)` color
+     + accent + style (stripe/vbar/tri/dot/cross/diag as accent cells), so every course keeps its own custom
+     flag exactly as before (the 39 hue-derived + 6 marquee overrides). Applies everywhere the pixel hole
+     view renders (Daily/Moments/Spotlight/Legend/H2H). Illustrated mode (`bag_holeart_pixel=false`) is
+     unaffected — it uses `hvTerrain`'s own smooth pin. `hvPinTeeSVG` is left defined but unused. Verified in
+     Playwright: the pixel path emits 34 crisp-edge rects + the `#hv-pin` group over the pixel `<image>`
+     backdrop with 0 page errors; zoomed screenshots confirm the tee box + the pixel swallowtail flag (cream
+     with its accent) planted at a dark cup on the green — clearly pixelated, matching the course art.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
