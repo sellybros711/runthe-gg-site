@@ -158,7 +158,15 @@ window.GA_ID='G-L29P5MRWKE';
   .bnwm{display:inline-flex; align-items:baseline; gap:5px; font-family:var(--serif); text-transform:uppercase; white-space:nowrap; line-height:1}
   .bnwm b{font-weight:700; font-size:17px; letter-spacing:.05em; color:var(--oncard)}   /* CS424: match "Tour" size */
   .bnwm i{font-style:normal; font-weight:700; font-size:17px; letter-spacing:.05em; color:var(--gold)}
+  .bnleft{justify-self:start; display:flex; align-items:center; gap:8px; min-width:0}   /* CS426: menu + profile on the left */
   .bnright{justify-self:end; display:flex; align-items:center; gap:8px; min-width:0}
+  /* CS426: legends-token counter next to the coins → jumps to your playable Legends in the daily */
+  .legendhdr{display:inline-flex; align-items:center; gap:6px; border-radius:999px;
+    background:linear-gradient(180deg,rgba(53,214,160,.2),rgba(53,214,160,.05)); border:1px solid rgba(53,214,160,.55);
+    color:#35d6a0; padding:6px 12px 6px 10px; font:800 13px/1 var(--body); cursor:pointer; box-shadow:0 3px 10px -4px rgba(0,0,0,.5); flex:0 0 auto}
+  .legendhdr .li{width:15px;height:15px;display:flex;align-items:center}
+  .legendhdr:hover{border-color:#35d6a0; background:linear-gradient(180deg,rgba(53,214,160,.32),rgba(53,214,160,.1))}
+  .legendhdr:active{transform:translateY(1px)}
   .bnprofile{display:inline-flex; align-items:center; gap:7px; background:var(--pill);
     border:1px solid var(--pillb); border-radius:999px; padding:5px 12px 5px 6px; cursor:pointer; color:var(--oncard);
     box-shadow:0 3px 10px -5px rgba(0,0,0,.5); flex:0 1 auto; min-width:0}
@@ -5182,21 +5190,31 @@ function header(){
   // the top; the brand lives in the title hero, and Reset moved into the ≡ menu.
   const h=$(`<div class="head head--banner"></div>`);
   const bar=$(`<div class="banner"></div>`);
+  const signedIn=sbSignedIn();
+  // CS426: left group — menu button + profile pill (moved from the right)
+  const left=$(`<div class="bnleft"></div>`);
   const menu=$(`<button class="icobtn" aria-label="Menu" aria-expanded="${S.overlay==='menu'?'true':'false'}">≡</button>`);
   menu.onclick=()=>{ S.overlay='menu'; render(); };
-  bar.appendChild(menu);
+  left.appendChild(menu);
+  const profNew=signedIn && (typeof cosNewTotal==='function') && cosNewTotal()>0;   // CS422: unviewed new items → dot on the profile pill
+  const pl=$(`<button class="bnprofile${signedIn?' pin':''}" aria-label="${signedIn?'Your profile':'Sign in'}" style="position:relative">${pxAvatarChip(S.look,26)}<span class="bnname">${signedIn?esc(sbUsername||'Player'):'Sign in'}</span>${profNew?'<span style="position:absolute;top:-2px;right:-2px;width:11px;height:11px;border-radius:50%;background:#e2554e;border:2px solid #0b1a12;box-shadow:0 0 5px rgba(226,85,78,.9)"></span>':''}</button>`);
+  pl.onclick=()=>{ if(sbSignedIn()){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} render(); };
+  left.appendChild(pl);
+  bar.appendChild(left);
   // brand wordmark, centered horizontally across the banner → home
   const brand=$(`<button class="bnbrand" aria-label="Home"><span class="bnwm"><b>Run The</b><i>Tour</i></span></button>`);
   brand.onclick=()=>{ S.screen='title'; S.overlay=null; render(); };
   bar.appendChild(brand);
-  // right group: profile name / sign-in (→ Trophy Room when signed in, else the account overlay) + coin pill
+  // right group: legends-token counter + coin pill
   const right=$(`<div class="bnright"></div>`);
-  const signedIn=sbSignedIn();
-  const profNew=signedIn && (typeof cosNewTotal==='function') && cosNewTotal()>0;   // CS422: unviewed new items → dot on the profile pill
-  const pl=$(`<button class="bnprofile${signedIn?' pin':''}" aria-label="${signedIn?'Your profile':'Sign in'}" style="position:relative">${pxAvatarChip(S.look,26)}<span class="bnname">${signedIn?esc(sbUsername||'Player'):'Sign in'}</span>${profNew?'<span style="position:absolute;top:-2px;right:-2px;width:11px;height:11px;border-radius:50%;background:#e2554e;border:2px solid #0b1a12;box-shadow:0 0 5px rgba(226,85,78,.9)"></span>':''}</button>`);
-  pl.onclick=()=>{ if(sbSignedIn()){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} render(); };
-  right.appendChild(pl);
-  if(SHOP_ENABLED && sbSignedIn()){   // global coin counter (owner: everywhere, tap → Pro Shop). Signed-in only.
+  if(signedIn && (typeof hasFreeLegends==='function') && hasFreeLegends()){   // CS426: playable-Legend counter → jump to your Legends in the daily
+    const n=legendTokensUnused().length;
+    const leg=$(`<button class="legendhdr" aria-label="${n} playable Legend golfer${n>1?'s':''}. Play one in today's daily."><span class="li">${ic('trophy',{size:'15px'})}</span>${n}</button>`);
+    leg.onclick=()=>{ track('legend_pill_open',{n}); startDailyChallenge();
+      requestAnimationFrame(()=>{ const el=document.getElementById('legend-play'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }); };
+    right.appendChild(leg);
+  }
+  if(SHOP_ENABLED && signedIn){   // global coin counter (owner: everywhere, tap → Pro Shop). Signed-in only.
     const bal=coinBalance(); const bump=(_coinHdrPrev!=null && bal>_coinHdrPrev);
     const coin=$(`<button class="coinhdr${bump?' bump':''}" aria-label="Coins: ${coinFmt(bal)}. Open Packs."><span class="ci">${ic('coin',{size:'16px'})}</span>${coinFmt(bal)}</button>`);
     coin.onclick=()=>{ track('coin_pill_open'); S.overlay='shop'; S.shopSec='packs'; render(); };   // CS423: coin pill always opens the Packs menu
@@ -17679,7 +17697,7 @@ function scrDailyPreview(){
 function legendPlaySection(){
   const toks=legendTokensUnused(); if(!toks.length) return null;
   toks.sort((a,b)=>b.ovr-a.ovr);
-  const wrap=$(`<div style="max-width:520px;margin:14px auto 0;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(241,208,74,.08),rgba(10,22,38,.25));padding:14px 15px"></div>`);
+  const wrap=$(`<div id="legend-play" style="max-width:520px;margin:14px auto 0;border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(241,208,74,.08),rgba(10,22,38,.25));padding:14px 15px"></div>`);
   wrap.appendChild($(`<div style="display:flex;align-items:center;gap:7px;margin-bottom:3px"><span style="font-size:16px">🏆</span><b style="color:var(--gold);font-size:13.5px">Your Legend golfers</b><span class="tag" style="font-size:9.5px;color:#35d6a0;border-color:#35d6a0;padding:2px 7px">FREE PLAY</span></div>`));
   wrap.appendChild($(`<div class="small muted" style="margin-bottom:7px">Play today's course as one of your retired career golfers (their peak build). One free play each, no daily attempt used.</div>`));
   toks.forEach(tok=>{

@@ -10180,6 +10180,17 @@ allows Google Fonts, or self-host Anton.*
   matching the header coin pill (CS423). Verified in Playwright (button click → overlay 'shop', shopSec
   'packs', 0 page errors). Deployed to /golf.
 
+- **CS426 — banner reshuffle: profile pill moves left (next to ≡) + a Legends-token counter next to the
+  coins (owner).** The header banner (CS391, a 3-column grid) had the ≡ menu on the left and the
+  profile+coins group on the right. Now the **profile pill sits on the LEFT, right of the menu** (new
+  `.bnleft` group), and the **right group is Legends counter + coins**. The new teal
+  `.legendhdr` pill (trophy icon + count) shows only for a signed-in player who owns playable Legend tokens
+  (`hasFreeLegends()`), and tapping it runs `startDailyChallenge()` then scrolls to the "Your Legend golfers"
+  section (`#legend-play`) on the daily preview — i.e. straight to your free Legend plays in the daily. The
+  coin pill (→ Packs, CS423) is unchanged. Verified in Playwright (390px): left = [menu, profile], right =
+  [legends "2", coins], no overflow, wordmark centered between them; clicking the Legends counter lands on
+  `dailyprev` with the legend section + Use-token button present; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
