@@ -684,6 +684,16 @@ window.GA_ID='G-L29P5MRWKE';
   /* CS353: retro pixel golfer — crisp scaling, no border-radius crop, contain within the sized box */
   .pxfig{filter:none}
   .pxfig .pximg{width:100%; height:100%; object-fit:contain; image-rendering:pixelated; image-rendering:crisp-edges; border-radius:0; filter:drop-shadow(0 3px 5px rgba(0,0,0,.45))}
+  /* CS410: EFFECT LAYER — animated glow auras. The glow is a drop-shadow, so it hugs the golfer's silhouette
+     and works on any avatar img (the wrapped .pximg and the bare .pxfigsm). --fxc = per-effect glow color. */
+  .pxfig .pximg[class*="fx-"], .pxfigsm[class*="fx-"], img.fxa[class*="fx-"]{ animation:fxGlow 2.4s ease-in-out infinite; }
+  .fx-gold{ --fxc:#f1d04a } .fx-frost{ --fxc:#9fdcff; animation-duration:3.2s } .fx-void{ --fxc:#8a54d0; animation-duration:2.8s }
+  .fx-prism{ animation:fxPrism 3s linear infinite } .fx-inferno{ --fxc:#ff5a1e; animation:fxFlick 1.1s steps(6,end) infinite } .fx-electric{ --fxc:#35e0ff; animation:fxCrackle .9s ease-in-out infinite }
+  @keyframes fxGlow{ 0%,100%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 2px var(--fxc))} 50%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 9px var(--fxc)) drop-shadow(0 0 4px var(--fxc))} }
+  @keyframes fxPrism{ 0%,100%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 9px #ff4d6d) drop-shadow(0 0 4px #ff4d6d)} 33%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 9px #4dff9b) drop-shadow(0 0 4px #4dff9b)} 66%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 9px #4d9dff) drop-shadow(0 0 4px #4d9dff)} }
+  @keyframes fxFlick{ 0%,100%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 4px #ff5a1e)} 40%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 11px #ff8a1e) drop-shadow(0 0 5px #ff2e00)} 70%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 6px #ffb020)} }
+  @keyframes fxCrackle{ 0%,100%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 3px #35e0ff)} 45%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 10px #35e0ff) drop-shadow(0 0 5px #b0f6ff)} 55%{filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 3px #35e0ff)} }
+  @media (prefers-reduced-motion:reduce){ .pxfig .pximg[class*="fx-"], .pxfigsm[class*="fx-"], img.fxa[class*="fx-"]{ animation:none!important; filter:drop-shadow(0 3px 5px rgba(0,0,0,.45)) drop-shadow(0 0 6px var(--fxc,#f1d04a))!important } }
   /* CS353: retro pixel-game character creator */
   .retro-creator{max-width:472px; margin:0 auto; padding:15px 15px 16px; border:2px solid var(--gold); border-radius:12px;
     background:linear-gradient(180deg,rgba(9,26,18,.72),rgba(6,18,12,.72));
@@ -4837,18 +4847,31 @@ function accBoost(){ if(!SHOP_ENABLED) return {};   // shelved: equipped gear gi
   return out;
 }
 function accBoostTotal(){ const b=accBoost(); return Object.values(b).reduce((a,x)=>a+x,0); }
+// CS410: EFFECT LAYER — animated glow auras (legendary cosmetics) + a matching hole-view tracer skin.
+// An effect is a DISPLAY-layer treatment (animated CSS drop-shadow on the avatar img + the shot tracer color),
+// not baked into the sprite canvas. Owned like other cosmetics (fx:<id> in coinState.owned); look.fx = equipped id.
+const PXFX=[
+  {id:'gold',     name:'Golden Aura', hist:'Champion’s glow',      price:30000, col:'#f1d04a', tracer:{g:'rgba(241,208,74,.55)', c:'#fff2b0'}},
+  {id:'prism',    name:'Prismatic',   hist:'Refract the light',         price:30000, col:'#c060ff', tracer:{g:'rgba(180,110,255,.55)', c:'#eaf0ff'}},
+  {id:'inferno',  name:'Inferno',     hist:'Playing with fire',         price:30000, col:'#ff5a1e', tracer:{g:'rgba(255,90,30,.6)',    c:'#ffd8a0'}},
+  {id:'electric', name:'Electric',    hist:'Live wire',                 price:18000, col:'#35e0ff', tracer:{g:'rgba(53,224,255,.6)',   c:'#eaffff'}},
+  {id:'frost',    name:'Frost',       hist:'Ice cold under pressure',   price:18000, col:'#9fdcff', tracer:{g:'rgba(159,220,255,.55)', c:'#f0fbff'}},
+  {id:'void',     name:'Void',        hist:'Embrace the dark',          price:18000, col:'#8a54d0', tracer:{g:'rgba(138,84,208,.55)',  c:'#e3d6ff'}} ];
+const PXFX_BY={}; PXFX.forEach(function(f){ PXFX_BY[f.id]=f; });
+function fxOf(look){ var id=(look&&look.fx)||'none'; return (id&&id!=='none'&&PXFX_BY[id])?PXFX_BY[id]:null; }
+function pxFxClass(look){ var f=fxOf(look); return f?(' fx-'+f.id):''; }
 // ---- cosmetics (colors + patterns) are PURCHASED too (same coin economy, namespaced owned keys) ----
-// keys: sh:<shirt>  sp:<pattern>  ht:<hat color>  pt:<pants>  so:<shoes>. Free defaults below.
+// keys: sh:<shirt>  sp:<pattern>  ht:<hat color>  pt:<pants>  so:<shoes>  fx:<effect>. Free defaults below.
 // CS353: the 6 BASIC shirt/hat colors are FREE (so the retro creator always offers a shirt + hat color pick);
 // the premium/lore colors, patterns and gear stay Pro-Shop unlocks. (Restores the CS192 "basics free" intent.)
 const FREE_COSMETICS={
   'sh:teal':1,'sh:navy':1,'sh:gold':1,'sh:white':1,'sh:purple':1,'sh:black':1,
   'ht:teal':1,'ht:navy':1,'ht:gold':1,'ht:white':1,'ht:purple':1,'ht:black':1,
   'sp:none':1,'hp:none':1,'pt:stone':1,'so:white':1,
-  'hw:none':1,'hw:cap':1,'hw:visor':1,'ew:none':1};   // CS356g: base hats + no-shades are free; bucket/flat/shades are shop unlocks
+  'hw:none':1,'hw:cap':1,'hw:visor':1,'ew:none':1,'fx:none':1};   // CS356g: base hats + no-shades are free; bucket/flat/shades are shop unlocks
 const COS_CATS=[ {k:'shirt',pk:'sh',lookKey:'polo',name:'Shirt color'}, {k:'pat',pk:'sp',lookKey:'shirtPat',name:'Shirt pattern'},
   {k:'hat',pk:'ht',lookKey:'hat',name:'Hat color'}, {k:'pants',pk:'pt',lookKey:'pants',name:'Trousers'}, {k:'shoes',pk:'so',lookKey:'shoes',name:'Shoe color'},
-  {k:'hw',pk:'hw',lookKey:'hatStyle',name:'Headwear'}, {k:'ew',pk:'ew',lookKey:'eyewear',name:'Eyewear'} ];
+  {k:'hw',pk:'hw',lookKey:'hatStyle',name:'Headwear'}, {k:'ew',pk:'ew',lookKey:'eyewear',name:'Eyewear'}, {k:'fx',pk:'fx',lookKey:'fx',name:'Effect'} ];
 function cosPk(cat){ const c=COS_CATS.find(x=>x.k===cat); return c?c.pk:cat; }
 function cosKey(cat,id){ return cosPk(cat)+':'+id; }
 // PACK-SYSTEM: direct-buy prices go up (x PACK_HIKE) the day packs launch, so packs are the value
@@ -4863,6 +4886,7 @@ function cosmeticPriceBase(cat,id){
   if(cat==='shoes') return 4000;
   if(cat==='hw'){ if(id==='cap'||id==='visor'||id==='none') return 0; return {bucket:11000,flat:11000,headband:6000,cowboy:14000,tophat:16000,party:9000,propeller:12000,wizard:20000,crown:30000,beanie:8000,fedora:15000,sombrero:13000,halo:40000,viking:22000,chef:10000,beret:9000,headphones:18000,flatbrim:11000,santa:12000,safari:13000}[id]||12000; }
   if(cat==='ew'){ if(id==='none') return 0; return {shades:10000,heart:9000,star:12000,threed:8000,monocle:15000,aviators:12000,round:9000,goggles:11000,eyepatch:10000,visorband:8000}[id]||10000; }
+  if(cat==='fx'){ if(id==='none') return 0; return (PXFX_BY[id]?PXFX_BY[id].price:0); }   // CS410: effect auras (epic/legendary)
   return 0;
 }
 // CS408: cosmeticPriceBase still SELECTS the rarity (via packRarityOf, so pool rarities never shift); the
@@ -4958,6 +4982,7 @@ function cosmeticItems(cat){
   if(cat==='shoes') return SHOES.map(o=>({id:o.id,name:cosTitle(o.id),col:o.a}));
   if(cat==='hw')    return [{id:'none',name:'No Hat',hw:1},{id:'cap',name:'Ball Cap',hw:1},{id:'visor',name:'Visor',hw:1},{id:'bucket',name:'Bucket Hat',hw:1,hist:'Rainy-day links staple'},{id:'flat',name:'Flat Cap',hw:1,hist:'Early-1900s golf classic'},{id:'cowboy',name:'Cowboy Hat',hw:1,hist:'Yeehaw off the tee'},{id:'wizard',name:'Wizard Hat',hw:1,hist:'Magic on the greens'},{id:'crown',name:'Champion Crown',hw:1,hist:'Rule the leaderboard'},{id:'party',name:'Party Hat',hw:1,hist:'Every round is a celebration'},{id:'tophat',name:'Top Hat',hw:1,hist:'Dapper on the fairway'},{id:'propeller',name:'Propeller Beanie',hw:1,hist:'Pure fun'},{id:'headband',name:'Sweatband',hw:1,hist:'Clutch under pressure'},{id:'beanie',name:'Knit Beanie',hw:1,hist:'Cold-morning warmup'},{id:'fedora',name:'Fedora',hw:1,hist:'Old-school cool'},{id:'sombrero',name:'Sombrero',hw:1,hist:'Sun-drenched swagger'},{id:'halo',name:'Halo',hw:1,hist:'Angel of the greens'},{id:'viking',name:'Viking Helmet',hw:1,hist:'Conquer the course'},{id:'chef',name:'Chef Hat',hw:1,hist:'Cooking up birdies'},{id:'beret',name:'Beret',hw:1,hist:'Artist of the short game'},{id:'headphones',name:'Headphones',hw:1,hist:'In the zone'},{id:'flatbrim',name:'Snapback',hw:1,hist:'Flat-brim flex'},{id:'santa',name:'Santa Hat',hw:1,hist:'Season\u2019s greetings'},{id:'safari',name:'Safari Hat',hw:1,hist:'On expedition'}];
   if(cat==='ew')    return [{id:'none',name:'None',ew:1},{id:'shades',name:'Shooter Shades',ew:1,hist:'Ice-cold Sunday stare'},{id:'heart',name:'Heart Shades',ew:1,hist:'Crowd charmer'},{id:'star',name:'Star Shades',ew:1,hist:'Superstar swagger'},{id:'threed',name:'3D Glasses',ew:1,hist:'See the line in 3D'},{id:'monocle',name:'Monocle',ew:1,hist:'Distinguished gentleman'},{id:'aviators',name:'Aviators',ew:1,hist:'Top-gun style'},{id:'round',name:'Round Glasses',ew:1,hist:'Retro intellectual'},{id:'goggles',name:'Ski Goggles',ew:1,hist:'Downhill focus'},{id:'eyepatch',name:'Eye Patch',ew:1,hist:'Pirate of the fairways'},{id:'visorband',name:'Shield Shades',ew:1,hist:'Wraparound cool'}];
+  if(cat==='fx')    return [{id:'none',name:'None',fx:'none'}].concat(PXFX.map(function(f){ return {id:f.id,name:f.name,fx:f.id,hist:f.hist,col:f.col}; }));   // CS410
   return [];
 }
 function cosTitle(id){ if(id==='grey') return 'Gray'; return String(id).charAt(0).toUpperCase()+String(id).slice(1); }
@@ -6602,7 +6627,7 @@ function scrSetup(){
   // edge. Now every category shows at once, grouped by a small label; guests get only the free appearance
   // options (the rest sit behind the sign-in lock card below).
   const groups = guest ? [['Appearance',LOOKCATS]]
-    : [['Appearance',LOOKCATS],['Apparel',APP],['Gear',ACCS],['Profile',[['details','Name & Country']]]];
+    : [['Appearance',LOOKCATS],['Apparel',APP],['Gear',ACCS],['Effects',[['fx','Aura']]],['Profile',[['details','Name & Country']]]];
   const cats = groups.reduce((a,g)=>a.concat(g[1]),[]);
   let cat=S.setupCat; if(!cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.setupCat=cat;
   const isLook = LOOKCATS.some(c=>c[0]===cat);
@@ -9165,13 +9190,13 @@ function pxGolferURL(look){
   let u=_pxURL.get(cv); if(u) return u;
   u=cv.toDataURL('image/png'); _pxURL.set(cv,u); return u;
 }
-function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg" src="${pxGolferURL(look)}" alt="Your golfer"></div>`; }
+function pxAvatarHTML(look,cls){ return `<div class="avatarfig pxfig ${cls||''}"><img class="pximg${pxFxClass(look)}" src="${pxGolferURL(look)}" alt="Your golfer"></div>`; }
 // CS356f: tiny head-and-shoulders chip of the pixel golfer, for the profile pill etc.
 // crops the 44x56 sprite to the head+shoulders band (rows ~4-26) and centers it in an sz x sz box.
 function pxAvatarChip(look,sz){ sz=sz||22; const pr=sz/22, w=Math.round(44*pr), mt=Math.round(-4*pr), ml=Math.round(-(w-sz)/2);
   return `<span class="pxchip" style="width:${sz}px;height:${sz}px" aria-hidden="true"><img src="${pxGolferURL(look||S.look||DEFLOOK)}" alt="" style="width:${w}px;margin-top:${mt}px;margin-left:${ml}px"></span>`; }
 // the FULL standing pixel golfer at a given height (not the head-crop chip) - for the resume card etc.
-function pxFigureHTML(look,h){ h=h||60; return `<img class="pxfigsm" src="${pxGolferURL(look||S.look||DEFLOOK)}" alt="Your golfer" style="height:${h}px;width:auto;image-rendering:pixelated;display:block;flex:0 0 auto">`; }
+function pxFigureHTML(look,h){ h=h||60; look=look||S.look||DEFLOOK; return `<img class="pxfigsm${pxFxClass(look)}" src="${pxGolferURL(look)}" alt="Your golfer" style="height:${h}px;width:auto;image-rendering:pixelated;display:block;flex:0 0 auto">`; }
 /* CS355 (POC): side-view mini golfer swing for TourTracer - 3 frames (address/top/through),
    palette-swapped from the created look, mirror-flipped by shot direction. */
 const HV_SWING=true;          // POC flag - flip off to disable the swinging golfer everywhere
@@ -16785,7 +16810,9 @@ function hvDoneShot(g,p,dim,small,pcol){
 // pcol tints the tracer glow / roll / ball ring to the player's assigned color (multi-ball H2H).
 function hvLiveShot(g,p,small,pcol){
   const A=hvProj(g,p.from[0],p.from[1]);
-  const glow=pcol?`${pcol}88`:'rgba(241,208,74,.45)';
+  const fx=pcol?null:fxOf(S.look);   // CS410: tracer skin — the player's equipped effect tints their shot tracer (single-ball only)
+  const glow=pcol?`${pcol}88`:(fx?fx.tracer.g:'rgba(241,208,74,.45)');
+  const core=fx?fx.tracer.c:'#ffffff';
   const onGreen=(p.k==='putt'||p.k==='hole');
   const ballR=onGreen?HV_GBALL:(small?2.0:HV_GROUND);   // on the green the ball is a fixed, realistic fraction of the cup
   let s='';
@@ -16793,7 +16820,7 @@ function hvLiveShot(g,p,small,pcol){
   if(p.k==='putt'||p.k==='hole'){ s+=`<path id="hv-roll" d="${hvPuttPathD(g,p)}" fill="none" stroke="${pcol||'#fff'}" stroke-width="${small?0.9:2}" stroke-linecap="round" opacity=".9" stroke-dasharray="9999" stroke-dashoffset="9999"/>`; }
   else if(p.k==='pen'){ s+=`<path id="hv-roll" d="M ${A[0]} ${A[1]} L ${hvProj(g,p.rest[0],p.rest[1]).map(v=>v.toFixed(1)).join(' ')}" fill="none" stroke="#274238" stroke-width="1.3" stroke-dasharray="3 4"/>`; }
   else { s+=`<path id="hv-traceg" d="${hvPathD(g,p)}" fill="none" stroke="${glow}" stroke-width="5" stroke-linecap="round" stroke-dasharray="9999" stroke-dashoffset="9999"/>`;
-    s+=`<path id="hv-trace" d="${hvPathD(g,p)}" fill="none" stroke="#ffffff" stroke-width="2.1" stroke-linecap="round" stroke-dasharray="9999" stroke-dashoffset="9999"/>`;
+    s+=`<path id="hv-trace" d="${hvPathD(g,p)}" fill="none" stroke="${core}" stroke-width="2.1" stroke-linecap="round" stroke-dasharray="9999" stroke-dashoffset="9999"/>`;
     s+=`<path id="hv-roll" d="${hvRollD(g,p)}" fill="none" stroke="${pcol||'#ffffff'}" stroke-width="1.4" opacity=".8" stroke-dasharray="9999" stroke-dashoffset="9999"/>`; }
   s+=`<circle id="hv-splash" cx="0" cy="0" r="0" fill="none" stroke="#7fd4ff" stroke-width="2" opacity="0"/>`;
   s+=`<circle id="hv-splash2" cx="0" cy="0" r="0" fill="none" stroke="#c7edff" stroke-width="1.3" opacity="0"/>`;
@@ -19010,6 +19037,7 @@ function cosIsEquipped(cat,id){
   if(cat==='hw') return S.look.cap===false ? id==='none' : ((S.look.hatStyle||'cap')===id);
   if(cat==='ew') return (S.look.eyewear||'none')===id;
   if(cat==='pat') return (S.look.shirtPat||'none')===id;
+  if(cat==='fx')  return (S.look.fx||'none')===id;
   if(cat==='hat') return (S.look.hat||S.look.polo)===id;
   const c=COS_CATS.find(x=>x.k===cat); return c?S.look[c.lookKey]===id:false;
 }
@@ -19113,7 +19141,9 @@ function pxCosThumb(cat,id){ const base=Object.assign({},S.look||DEFLOOK);
 }
 function cosTileHTML(cat,o){
   const owned=cosOwned(cat,o.id), price=cosmeticPrice(cat,o.id), equipped=cosIsEquipped(cat,o.id);
-  const thumb = (cat==='pat'||cat==='hw'||cat==='ew') ? pxCosThumb(cat,o.id)
+  const thumb = (cat==='fx')
+     ? `<span class="sthumb color" style="background:${o.col?'radial-gradient(circle,'+o.col+',#0c1f16 72%)':'#12251b'}${o.col?';box-shadow:0 0 10px 1px '+o.col:''}"></span>`
+     : (cat==='pat'||cat==='hw'||cat==='ew') ? pxCosThumb(cat,o.id)
      : (o.pat!==undefined
         ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
         : `<span class="sthumb color" style="background:${o.col}"></span>`);
@@ -19261,7 +19291,7 @@ function priceHike(){ return PACKS_ENABLED?PACK_HIKE:1; }
 function packRarityOf(base){ base=base||0; return base>=30000?'legendary':base>=16000?'epic':base>=9000?'rare':'common'; }
 // every pack-eligible item, tagged with rarity. Excludes earned Legend gear + free items.
 function packPool(){ const pool=[];
-  [['shirt','sh'],['hat','ht'],['pat','sp'],['pants','pt'],['shoes','so'],['hw','hw'],['ew','ew']].forEach(function(cp){ var cat=cp[0],pk=cp[1];
+  [['shirt','sh'],['hat','ht'],['pat','sp'],['pants','pt'],['shoes','so'],['hw','hw'],['ew','ew'],['fx','fx']].forEach(function(cp){ var cat=cp[0],pk=cp[1];
     (cosmeticItems(cat)||[]).forEach(function(o){ if(o.id==='none') return;
       if((cat==='shirt'||cat==='hat') && COSMETIC_SHIRTS.find(function(x){return x.id===o.id&&x.earn;})) return;
       var base=cosmeticPriceBase(cat,o.id); if(base<=0) return;
@@ -19360,6 +19390,7 @@ function packItemLook(e){ var look=Object.assign({},S.look||DEFLOOK);
   else if(e.cat==='ew') look.eyewear=e.id;
   else if(e.cat==='pants') look.pants=e.id;
   else if(e.cat==='shoes') look.shoes=e.id;
+  else if(e.cat==='fx') look.fx=e.id;
   return look; }
 function packItemVisual(e){
   if(e.kind==='cos'){ return '<img src="'+pxGolferURL(packItemLook(e))+'" style="height:210px;image-rendering:pixelated">'; }
@@ -19435,7 +19466,7 @@ function startPackBundle(tier){
 function packItemCategory(e){
   if(e.kind==='bag') return 'Golf Club';
   if(e.kind==='acc'){ var it=accById(e.id); return (ACC_SLOT_BY[it&&it.slot]||{name:'Gear'}).name; }
-  return {shirt:'Shirt Color',hat:'Hat Color',pat:'Pattern',pants:'Trousers',shoes:'Shoes',hw:'Headwear',ew:'Eyewear'}[e.cat]||'Item';
+  return {shirt:'Shirt Color',hat:'Hat Color',pat:'Pattern',pants:'Trousers',shoes:'Shoes',hw:'Headwear',ew:'Eyewear',fx:'Effect Aura'}[e.cat]||'Item';
 }
 function packItemBoostTxt(e){ var b=null;
   if(e.kind==='cos') b=cosBoost(e.cat,e.id);
@@ -19443,7 +19474,7 @@ function packItemBoostTxt(e){ var b=null;
   else if(e.kind==='bag'){ var c=BAG_BY[e.club]; b=c&&c.tiers[0].b; }
   return b?shopBoostTxt(b):''; }
 function packCardVisual(e){
-  if(e.kind==='cos'){ return '<img src="'+pxGolferURL(packItemLook(e))+'" style="height:94px;image-rendering:pixelated;margin:2px 0">'; }
+  if(e.kind==='cos'){ var fxc=(e.cat==='fx')?(' fxa fx-'+e.id):''; return '<img class="pximg'+fxc+'" src="'+pxGolferURL(packItemLook(e))+'" style="height:94px;image-rendering:pixelated;margin:2px 0">'; }
   var icon='gear', rc=PACK_RCOL[e.rarity]||'#b8c4bd';
   if(e.kind==='acc'){ var it=accById(e.id); icon=(ACC_SLOT_BY[it&&it.slot]||{icon:'gear'}).icon; }
   else if(e.kind==='bag'){ icon=(BAG_BY[e.club]||{ic:'driver'}).ic; }
@@ -19722,10 +19753,11 @@ function overlayShop(screen){
   }
   // CS356g: the pixel golfer renders shirt/hat/pants/shoe COLORS, shirt PATTERNS, and headwear/eyewear
   // ACCESSORIES - so the shop sells all of those (Apparel = colors + pattern, Accessories = headwear/eyewear).
-  let sec=S.shopSec; if(sec==='packs'&&!packsOn()) sec='apparel'; if(sec!=='accessories'&&sec!=='owned'&&sec!=='bag'&&sec!=='packs') sec='apparel';
+  let sec=S.shopSec; if(sec==='packs'&&!packsOn()) sec='apparel'; if(sec!=='accessories'&&sec!=='effects'&&sec!=='owned'&&sec!=='bag'&&sec!=='packs') sec='apparel';
   const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes']];
   const ACCS=[['hw','Headwear'],['ew','Eyewear']];
-  const cats = sec==='apparel'?APP : sec==='accessories'?ACCS : null;
+  const FXCATS=[['fx','Aura']];
+  const cats = sec==='apparel'?APP : sec==='accessories'?ACCS : sec==='effects'?FXCATS : null;
   let cat=S.shopCat; if(cats && !cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.shopCat=cat;
   // sticky: bar (title+coins+close) → live preview → section segment → category chips
   const sticky=$(`<div class="shop-sticky">
@@ -19738,6 +19770,7 @@ function overlayShop(screen){
       ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
       <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel</button>
       <button data-sec="accessories" class="${sec==='accessories'?'on':''}">Accessories</button>
+      <button data-sec="effects" class="${sec==='effects'?'on':''}">Effects</button>
       <button data-sec="bag" class="${sec==='bag'?'on':''}">Bag</button>
       <button data-sec="owned" class="${sec==='owned'?'on':''}">My Items</button></div>
     ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-cat="${c[0]}">${esc(c[1])}</button>`).join('')}</div>`:''}
@@ -19752,7 +19785,7 @@ function overlayShop(screen){
   }
   try{ ov.appendChild(accBoostSummaryNode()); }catch(e){}   // live "equipment boost" summary from your worn gear
   const grid=$(`<div class="sgrid"></div>`); const tiles=[];
-  if(sec==='apparel'||sec==='accessories'){ cosmeticItems(cat).forEach(o=>tiles.push(cosTileHTML(cat,o))); }
+  if(sec==='apparel'||sec==='accessories'||sec==='effects'){ cosmeticItems(cat).forEach(o=>tiles.push(cosTileHTML(cat,o))); }
   else if(sec==='bag'){ BAG_CLUBS.forEach(c=>{ tiles.push(`<div class="bag-hdr" style="grid-column:1/-1;margin:8px 0 -2px;font:800 12px/1 var(--body);letter-spacing:.03em"><span style="color:var(--gold)">${esc(c.name)}</span> <span class="muted" style="font-weight:600">· ${esc(c.sub)}</span></div>`); c.tiers.forEach((ti,i)=>tiles.push(bagTileHTML(c.k,i+1))); }); }
   else {  // My Items: everything you've unlocked (colors, patterns, headwear, eyewear, clubs) beyond the free basics
     COS_CATS.forEach(c=>{ cosmeticItems(c.k).forEach(o=>{ if(cosOwned(c.k,o.id)&&!FREE_COSMETICS[cosKey(c.k,o.id)]) tiles.push(cosTileHTML(c.k,o)); }); });

@@ -9907,6 +9907,35 @@ allows Google Fonts, or self-host Anton.*
       first attempt with a HIGH x-frequency fragmented the stripes into noise (caught in the preview,
       dialed back).
 
+- **CS410 — Legendary Drop 1, step 1: EFFECT LAYER (animated glow auras + hole-view tracer skin).** The
+  foundational display-layer system for the effect-based legendaries. An effect is NOT baked into the sprite
+  canvas (which is a cached PNG) — it's an animated CSS treatment on the avatar img + a recolor of the shot
+  tracer, so it can glow/pulse without touching the pixel art. `PXFX` registry (6 auras): **Golden Aura /
+  Prismatic / Inferno** (legendary, 30k base → 90k direct) and **Electric / Frost / Void** (epic, 18k → 40k),
+  each `{col, tracer:{g,c}}`. `look.fx` holds the equipped id; `fxOf(look)`/`pxFxClass(look)` resolve it.
+  - **The glow is a drop-shadow**, so it hugs the golfer's alpha silhouette and works on ANY avatar img — the
+    wrapped `.pximg` (`pxAvatarHTML`) and the bare `.pxfigsm` (`pxFigureHTML`), so it shows everywhere the
+    golfer renders (setup, build, Trophy Room, shop dressing room, leaderboard/H2H — other players' auras are
+    part of the flex) and on the pack-reveal card (`img.fxa`). Animations: shared `fxGlow` pulse (gold/frost/
+    void via `--fxc`), `fxPrism` (rainbow drop-shadow cycle, no hue-rotate so the golfer keeps its colors),
+    `fxFlick` (inferno flicker), `fxCrackle` (electric). Reduced-motion → a static glow.
+  - **Tracer skin**: in `hvLiveShot` the player's single-ball shot tracer (glow + white core) is recolored to
+    the equipped effect's `tracer` colors — so a Golden Aura player's shots trace gold, Inferno traces fire,
+    etc. (H2H multi-ball keeps per-player colors, unaffected.)
+  - **Economy integration** rides the existing cosmetic system: new `fx` COS_CAT (`fx:<id>` in
+    `coinState.owned`, `fx:none` free), `cosmeticPriceBase/Items/IsEquipped/Equip`, the pack pool
+    (`packPool` array + `packItemLook`/`packCardVisual`/label), and a dedicated **Effects** shop section
+    (segment row Packs/Apparel/Accessories/**Effects**/Bag/My Items, glowing color-swatch tiles) + an
+    **Effects** group on the setup screen. Cloud-synced automatically (fx is a `bag_look` field, CS99).
+  - Verified in Playwright: the 6 effects resolve correct rarity/price (3 legendary/3 epic), all appear in
+    the pack pool at their rarity, the avatar/figure HTML carry the fx class, equip/isEquipped work, the shop
+    Effects tab renders 7 tiles + a glowing dressing-room preview, and a standalone render confirms strong
+    per-effect auras hugging the golfer; 0 page errors. Deployed to /golf. **Step 1 ✓** of the Legendary
+    Drop 1 order (1 effect layer ✓ · 2 fixed patterns ✓ · 3 heritage apparel · 4 vintage equipment +
+    favorite accessories · 5 trophy charms + Crown/Shades/Prism · 6 Golf Bag slot). Effect-based legendaries
+    (Comet Ball, Rocket Cleats, tracer skins, etc.) can now hang off this layer. Tunable: the `PXFX` colors/
+    prices, the glow keyframes/blur, the tracer colors.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
