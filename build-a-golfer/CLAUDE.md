@@ -9810,7 +9810,8 @@ allows Google Fonts, or self-host Anton.*
   economy-value change beyond the new prices; owned gear/coins untouched. iOS may need a full reopen to
   load the new code.)
 
-- **CS407 — 7-Day Rewards retune: Day 7 = Tour pack, Day 4 = Base pack, coins scale 200→1000, mulligan
+- **CS407b — 7-Day Rewards coin days raised to 1,000 / 2,500 / 7,500** (owner: "200-300-700 is too little"). The three coin days (1, 2, 5) now award 1,000 then 2,500 then 7,500 (was a 200->1000 ramp), via `STREAK_WEEK_COIN_DAY`. Verified the values grant correctly, 0 errors. Deployed to /golf.
+- **CS407  14 7-Day Rewards retune: Day 7 = Tour pack, Day 4 = Base pack, coins scale 200→1000, mulligan
   symbol (owner, IMG_8420).** Reworked the daily-streak advent calendar's reward track (CS402):
   - **Day 7 prize → the middle-tier Tour Pack** (purple, CS406) instead of a base pack; **Day 4 prize → a
     Base pack** (was 500 coins). `STREAK_WEEK_TRACK` now

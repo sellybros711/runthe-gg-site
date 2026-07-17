@@ -2561,8 +2561,9 @@ function streakDays(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.
 // climbs a reward track: coin days scale UP from 200→1000 across the week; days 3 & 6 → a Mulli-Spin;
 // day 4 → a FREE BASE pack; day 7 → a FREE TOUR pack (the middle tier). The track resets every Sunday; the
 // OVERALL streak count (bag_streak.current) persists across weeks as long as you keep it.
-const STREAK_WEEK_COIN_MIN=200, STREAK_WEEK_COIN_MAX=1000;
-function streakDayCoins(day){ var d=Math.max(1,Math.min(7,day||1)), t=(d-1)/6; return Math.round((STREAK_WEEK_COIN_MIN+t*(STREAK_WEEK_COIN_MAX-STREAK_WEEK_COIN_MIN))/100)*100; }
+// CS407b (owner): the 3 coin days (1, 2, 5) scale UP hard - 1,000 → 2,500 → 7,500. Non-coin days are unused.
+const STREAK_WEEK_COIN_DAY={1:1000, 2:2500, 3:2500, 4:2500, 5:7500, 6:7500, 7:7500};
+function streakDayCoins(day){ return STREAK_WEEK_COIN_DAY[Math.max(1,Math.min(7,day||1))]||1000; }
 const STREAK_WEEK_TRACK={1:'coins',2:'coins',3:'mulligan',4:'basepack',5:'coins',6:'mulligan',7:'tourpack'};
 function sundayWeekKey(){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
   const dt=new Date(Date.UTC(y,m-1,d,12,0,0)); dt.setUTCDate(dt.getUTCDate()-dt.getUTCDay());   // back up to the week's Sunday (ET day-of-week)
