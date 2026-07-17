@@ -18520,6 +18520,11 @@ function pickPackCard(idx){
   return {item:item,dupe:dupe,refund:refund};
 }
 function startPackDeal(){ var d=rollPackCards(); if(d.err){ toast(packErr(d.err)); return; } S.packDeal={cards:d.cards,force:d.force,chosen:null}; S.packReveal=null; S.overlay='packreveal'; render(); }
+function packItemCategory(e){
+  if(e.kind==='bag') return 'Golf Club';
+  if(e.kind==='acc'){ var it=accById(e.id); return (ACC_SLOT_BY[it&&it.slot]||{name:'Gear'}).name; }
+  return {shirt:'Shirt Color',hat:'Hat Color',pat:'Pattern',pants:'Trousers',shoes:'Shoes',hw:'Headwear',ew:'Eyewear'}[e.cat]||'Item';
+}
 function packItemBoostTxt(e){ var b=null;
   if(e.kind==='cos') b=cosBoost(e.cat,e.id);
   else if(e.kind==='acc'){ var it=accById(e.id); b=it&&accItemBoost(it); }
@@ -18548,6 +18553,7 @@ function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=
    +'.pcard-front{transform:rotateY(180deg);padding:8px 5px;gap:2px}'
    +'.pcard.dim{opacity:.42;transition:opacity .45s ease .15s}'
    +'.pcard-tier{font:800 9px var(--body);letter-spacing:.1em;text-transform:uppercase}'
+   +'.pcard-cat{font:800 7.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:#9fb6a8;margin-top:2px}'
    +'.pcard-name{font:700 11px var(--body);color:#fff;text-align:center;line-height:1.1;padding:0 2px}'
    +'.pcard-boost{font:700 8px var(--body);color:#8fe0c4;text-align:center;line-height:1.15;padding:0 1px}'
    +'.packfoot{margin-top:22px;min-height:78px;display:flex;flex-direction:column;align-items:center;gap:12px}'
@@ -18572,6 +18578,7 @@ function overlayPackReveal(app){
       +'<div class="pcard-front" style="background:linear-gradient(160deg,'+rc+'33,#0c1f16);border:2px solid '+rc+(flipped&&idx===d.chosen?';box-shadow:0 0 24px '+rc:'')+'">'
         +'<div class="pcard-tier" style="color:'+rc+'">'+PACK_RLABEL[item.rarity]+'</div>'
         +packCardVisual(item)
+        +'<div class="pcard-cat">'+esc(packItemCategory(item))+'</div>'
         +'<div class="pcard-name">'+esc(item.name)+'</div>'
         +'<div class="pcard-boost">'+(packItemBoostTxt(item)||'&nbsp;')+'</div>'
       +'</div></div></div>');
