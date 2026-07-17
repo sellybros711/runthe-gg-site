@@ -10246,6 +10246,18 @@ allows Google Fonts, or self-host Anton.*
      full TCP/TLS setup on first use.
   **Deploy note:** this deploy also ships `golf/sw.js` (the SW change), not just `golf/index.html`.
 
+- **CS431 — expanded How to Play to cover the whole game (owner).** `scrRules` only covered Career Mode +
+  Daily Challenge; added six new sections (a small `perkSection(tag,color,h2,lede,steps)` helper keeps them
+  consistent with the existing perk-list style): **Your Golfer** (free skin-tone slider/hair/handedness vs
+  account-gated kit + accessories + Your Golf Bag; seen everywhere), **Coins** (earn by playing, never real
+  money, spend at the Pro Shop / coins pill → packs), **Pro Shop** (buy-direct vs packs, NEW-item markers),
+  **Packs** (three tiers + published odds, wheel-spin reveal, free packs from first-pack/streaks/challenges/
+  referrals/bundle, pity timers), **Online Head-to-Head** (four modes, Quick Match / private code / open to
+  public, tracer + sudden-death, per-mode W/L boards, no boosts online — teal-themed), and **Progress &
+  Rewards** (achievements → Tour Rep, daily/weekly challenges, Legend Tokens). Verified in Playwright: 9
+  section headers render (6 new), 31 perk cards, Back + Got-it intact, 0 page errors. Screenshot confirms.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
