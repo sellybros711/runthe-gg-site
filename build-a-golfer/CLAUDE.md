@@ -9989,6 +9989,27 @@ allows Google Fonts, or self-host Anton.*
      username gated). Verified it renders with the handler; screenshot confirms it fills the space cleanly.
   All client-only, 0 page errors. Deployed to /golf.
 
+- **CS413 — season summary shows where the season ranks on TODAY's / THIS WEEK's / ALL-TIME boards**
+  (owner: "right above tournaments won, tell you where this season ranks on today's, weekly, and all-time
+  leaderboard"). Extended the existing all-time-only season-rank teaser (CS83) into a 3-line card, moved to
+  right above the Tournaments Won section (was down in the left column below Full Season Recap).
+  - **Backend `supabase/57_runtour_season_rank_scoped.sql` (owner-run):** redefines `runtour_season_rank`
+    to take `(p_earnings, p_since_today, p_since_week)` (both timestamps nullable) and return
+    rank/total (all-time) + today_rank/today_total + week_rank/week_total, scoping by `created_at`. Drops
+    the old 1-arg version first so a 1-arg call resolves unambiguously to the new defaulted 3-arg one
+    (keeps the old client working — it reads rank/total, the first two columns). Validated on a local
+    Postgres: correct ranks in each window, the 1-arg legacy call is unambiguous, idempotent re-run.
+  - **Client:** `loadSeasonRank` now passes the two window boundaries — today = the game's ET day start
+    (via `dNextResetMs`), this week = the weekly board's UTC week block (via `weekKey`), the same cadences
+    as the daily/weekly boards — and falls back to the 1-arg call (all-time only) pre-migration. The
+    summary renders a "Season Leaderboard Rank" card (Today / This week / All time, each `#rank of total`)
+    + a View Leaderboard button, immediately above Tournaments Won; today/week lines only show when the
+    server returns them, so it degrades to all-time-only cleanly.
+  - Verified in Playwright: the card renders "Today #2 of 9 · This week #3 of 58 · All time #7 of 1,240"
+    above Tournaments Won with a working Leaderboard button, correct ET timestamps, 0 page errors;
+    screenshot confirms placement. **ACTION: run `supabase/57_runtour_season_rank_scoped.sql`** (until
+    then the card shows only the All-time line). Deployed client to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
