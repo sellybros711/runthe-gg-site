@@ -15701,8 +15701,9 @@ function hvPinTeePixel(g,B){
   // cup + flag (per-course)
   const fl=hvFlag(g.courseKey);
   s+=`<g id="hv-pin">`;
-  const cw=HV_CUP_RX*2, ch=HV_CUP_RY*2;
-  s+=R(ppx-cw/2-0.55,ppy-ch/2-0.2,cw+1.1,ch+1.2,'#0a140d');    // rim block
+  // smaller cup (owner: the black hole reads too big on the green zoom; the ball is right so shrink the hole)
+  const cw=2.2, ch=1.55;
+  s+=R(ppx-cw/2-0.35,ppy-ch/2-0.15,cw+0.7,ch+0.75,'#0a140d');  // thin rim block
   s+=R(ppx-cw/2,ppy-ch/2,cw,ch,'#0c1810');                     // cup
   const poleTop=ppy-15;
   s+=R(ppx-0.65,poleTop,1.3,ppy-poleTop,'#ece4d2');            // flagstick
