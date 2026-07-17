@@ -9193,6 +9193,23 @@ allows Google Fonts, or self-host Anton.*
   Playwright across the full arc — circuit 1/1, early 1, prime 2(poor)/3(well), decline 2(well)/1(poor), end
   1 — and the off-season screen renders the count + note; 0 page errors. Deployed to /golf.
 
+- **CS382 — off-season CHANGES + re-spins both earned by career stage + last season (supersedes CS381).**
+  Owner: the first ~5 years should be a fixed 1 change + 1 re-spin (establishing), then BOTH budgets scale
+  with how you did last season; re-spins should also factor in tour (world) ranking. Decoupled both from
+  Tour Rep. **`offChanges()`** by last-season money-list FINISH: top-10 → 3, 11-25 → 2, 26-75 → 1, 76+ → 0
+  (owner's tweakable parameters). **`offRespins()`** by last-season WINS / MAJORS / EARNINGS + TOUR RANKING:
+  a major / 2+ wins / world top-5 → 3; a win / top-10 money / world top-20 → 2; a solid money-or-ranking
+  season (top-40 money / world top-60) → 1; else 0. First `OFF_EARLY_YEARS=5` years and the Legend Circuit
+  are a flat 1/1. `continueFranchise` sets `maxChanges=offChanges()` and `reSpins = changes>0 ? offRespins()
+  : 0` (no changes earned → re-spins are moot, kept 0 for coherence). The off-season status line drops the
+  Tour-Rep changes/re-spin teaser and shows `offBudgetNote()` (e.g. "🎡 3 changes · 2 re-spins · earned by
+  last season (1 win · 6th on the money list)"); a 0-change off-season shows "No changes earned this
+  off-season, a stronger finish next season unlocks them. Run it as-is." (no Spin button, Start works).
+  All thresholds are easy-to-tweak constants. Verified in Playwright across the full matrix — early/circuit
+  1/1, changes by finish (3/2/1/0 at rank 6/18/50/90), re-spins by wins/majors/money/world-rank incl. the
+  world-top-5→3 / top-20→2 / top-60→1 tiers — plus the rendered off-season screen (top-10 and poor finishes),
+  0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
