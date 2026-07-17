@@ -2541,8 +2541,8 @@ const STREAK_MILES=[3,7,14,30,60,100];                       // milestone length
 function streakFreezes(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.freezes||0; }
 function bumpStreak(){const ds=LS.get(acctKey('bag_streak'),{current:0,longest:0,last:null,freezes:0,miles:{},days:{}})||{current:0,longest:0,last:null,freezes:0,miles:{},days:{}}; const t=todayKey();
   ds.days=ds.days||{};
-  if(ds.last===t){ ds.days[t]=ds.days[t]||1; return ds; }
-  ds.freezes=ds.freezes||0; ds.miles=ds.miles||{}; ds._usedFreeze=false; ds._gotFreeze=false; ds._mile=0;
+  if(ds.last===t){ ds.days[t]=ds.days[t]||1; ds._newDay=false; return ds; }
+  ds.freezes=ds.freezes||0; ds.miles=ds.miles||{}; ds._usedFreeze=false; ds._gotFreeze=false; ds._mile=0; ds._newDay=true;   // CS401: first completion of a new day
   if(ds.last===yesterdayKey()) ds.current=(ds.current||0)+1;                       // played on consecutive days
   else if(ds.last===twoDaysAgoKey() && ds.freezes>0){ ds.freezes--; ds.current=(ds.current||0)+1; ds._usedFreeze=true; ds.days[yesterdayKey()]='f'; }  // a freeze bridges one missed day
   else ds.current=1;
@@ -2551,14 +2551,49 @@ function bumpStreak(){const ds=LS.get(acctKey('bag_streak'),{current:0,longest:0
   const m=ds.current;
   if(STREAK_MILES.includes(m) && !ds.miles[m]){ ds.miles[m]=1; ds._mile=m;
     if(m===7||m===30||m===100){ ds.freezes=(ds.freezes||0)+1; ds._gotFreeze=true; } }   // earn a freeze at big milestones
-  // CS400: every 7 consecutive days played earns a FREE PACK (day 7, 14, 21, ...). Guarded by packMile so
-  // it fires once per milestone; only advances when the grant lands (signed-in), so a guest doesn't burn it.
-  ds.packMile=ds.packMile||0;
-  if(m>0 && m%7===0 && m>ds.packMile){ if(typeof grantFreePack==='function' && grantFreePack(1,{silent:true})){ ds.packMile=m; ds._packFree=true; } }
+  // CS401: the per-week reward cadence (mulligans / free pack / coins) lives in streakWeekReward(), keyed to
+  // the Sunday-to-Sunday week; the OVERALL `current` count here persists as long as you keep the streak alive.
   LS.set(acctKey('bag_streak'),ds); cloudPush(); return ds;}
 function streakDisplay(){const ds=LS.get(acctKey('bag_streak'),null); if(!ds||!ds.current)return 0;
   return (ds.last===todayKey()||ds.last===yesterdayKey()||(ds.last===twoDaysAgoKey()&&(ds.freezes||0)>0))?ds.current:0;}
 function streakDays(){ const ds=LS.get(acctKey('bag_streak'),{})||{}; return ds.days||{}; }
+// CS401: the DAILY STREAK WEEK - Sunday to Sunday. Each distinct day you play the daily that week climbs a
+// reward track: days 1/2/4/5 → 500 coins, days 3 & 6 → a Mulli-Spin, day 7 → a FREE PACK. The track resets
+// every Sunday; the OVERALL streak count (bag_streak.current) persists across weeks as long as you keep it.
+const STREAK_WEEK_COINS=500;
+const STREAK_WEEK_TRACK={1:'coins',2:'coins',3:'mulligan',4:'coins',5:'coins',6:'mulligan',7:'pack'};
+function sundayWeekKey(){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
+  const dt=new Date(Date.UTC(y,m-1,d,12,0,0)); dt.setUTCDate(dt.getUTCDate()-dt.getUTCDay());   // back up to the week's Sunday (ET day-of-week)
+  return dt.getUTCFullYear()*10000+(dt.getUTCMonth()+1)*100+dt.getUTCDate(); }
+function streakWeekState(){ const wk=sundayWeekKey(); let w=LS.get(acctKey('bag_streakweek'),null);
+  if(!w||typeof w!=='object'||w.week!==wk) w={week:wk, days:0, lastDay:null, done:[]};
+  w.done=w.done||[]; return w; }
+// award the current week-day's reward, ONCE per calendar day. Called on the first daily completion of a new day.
+function streakWeekReward(){ if(!sbSignedIn()) return null;
+  const w=streakWeekState(), t=todayKey();
+  if(w.lastDay===t) return null;                        // already claimed today
+  w.lastDay=t; w.days=Math.min(7,(w.days||0)+1);
+  const n=w.days, kind=STREAK_WEEK_TRACK[n]||'coins'; const out={day:n, kind:kind};
+  if(kind==='mulligan'){ if(typeof addMulliSpin==='function') addMulliSpin(1); }
+  else if(kind==='pack'){ if(typeof grantFreePack==='function') grantFreePack(1,{silent:true}); }
+  else { out.amt=STREAK_WEEK_COINS; if(typeof addBonusCoins==='function') addBonusCoins(STREAK_WEEK_COINS,{silent:true}); }
+  if(w.done.indexOf(n)<0) w.done.push(n);
+  LS.set(acctKey('bag_streakweek'),w); if(typeof cloudPush==='function') cloudPush();
+  return out; }
+// a compact 7-day reward track for the current streak week (daily preview + result). Signed-in only.
+function streakWeekNode(){ if(!sbSignedIn()) return null;
+  const w=streakWeekState(), n=Math.min(7,w.days||0); let cells='';
+  for(let d=1;d<=7;d++){ const kind=STREAK_WEEK_TRACK[d], got=d<=n;
+    const lab = kind==='coins'?'+500':(kind==='mulligan'?'Mulli':'PACK');
+    const col = kind==='pack'?'var(--gold)':(kind==='mulligan'?'#8fd0ff':'#cfe6d8');
+    cells+=`<div style="flex:1;text-align:center;padding:6px 2px;border-radius:8px;background:${got?'rgba(241,208,74,.14)':'rgba(255,255,255,.04)'};border:1px solid ${got?'rgba(241,208,74,.4)':'rgba(255,255,255,.08)'}">
+      <div style="font:800 10px var(--body);color:#8ea9bb">${d}</div>
+      <div style="font:800 10.5px var(--body);color:${got?col:'#5f7d90'};margin-top:2px">${lab}</div></div>`; }
+  return $(`<div class="scout" style="text-align:left;padding:11px 12px;margin:8px 0">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px">
+      <span style="font:800 12px var(--body);color:#ffd45e">🔥 Daily Streak Week</span>
+      <span class="small muted" style="letter-spacing:0">Day ${n}/7 · resets Sunday</span></div>
+    <div style="display:flex;gap:4px">${cells}</div></div>`); }
 function dayKeyBack(n){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
   const dt=new Date(Date.UTC(y,m-1,d,12,0,0)); dt.setUTCDate(dt.getUTCDate()-n);   // calendar arithmetic on the ET date, anchored at noon (DST-safe)
   return dt.getUTCFullYear()*10000+(dt.getUTCMonth()+1)*100+dt.getUTCDate(); }
@@ -5521,6 +5556,7 @@ function overlayLeaderboard(screen){
   const c=career();
   const tab=S.lbTab||'season';
   if(tab==='daily'||tab==='weekly'){ overlayLeaderboardDaily(screen, tab); return; }   // CS393: separate board
+  if(tab==='streaks'){ overlayStreakBoard(screen); return; }   // CS401: active daily-streak leaderboard
   let sort=S.lbSort||'earnings'; if(!lbSortValid(tab,sort)){ sort='earnings'; S.lbSort='earnings'; }
   const dir=S.lbDir||'desc';   // 'desc' = high→low / best→worst (default); 'asc' = true bottom N (low→high)
   // Low→High fetches a SEPARATE ascending board (the genuinely lowest rows in the DB), not a reversed
@@ -5655,7 +5691,7 @@ function overlayLeaderboard(screen){
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>🏆 Leaderboard</h3>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
-    <div class="mini" style="margin:0 0 8px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Daily')}${seg('weekly','Weekly')}</div>
+    <div class="mini" style="margin:0 0 8px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Daily')}${seg('weekly','Weekly')}${seg('streaks','Streaks')}</div>
     <div class="small muted" style="margin:0 0 4px;letter-spacing:.08em;text-transform:uppercase;font-size:10px">Sort by</div>
     <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:6px;flex-wrap:wrap">${sortChips}</div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 0 8px">
@@ -5736,7 +5772,7 @@ function overlayLeaderboardDaily(screen, tab){
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>🏆 Leaderboard</h3>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
-    <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Daily')}${seg('weekly','Weekly')}</div>
+    <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Daily')}${seg('weekly','Weekly')}${seg('streaks','Streaks')}</div>
     <div style="margin:0 0 8px"><h2 style="margin:0 0 2px">${title}</h2><div class="small muted" style="margin:0">${subtitle}</div></div>
     <div class="board">${board}</div>
     <div style="height:14px"></div>
@@ -5748,6 +5784,62 @@ function overlayLeaderboardDaily(screen, tab){
   const lkIn=ov.querySelector('#lb-lock-in'); if(lkIn) lkIn.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
   const lkUp=ov.querySelector('#lb-lock-up'); if(lkUp) lkUp.onclick=()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();};
   screen.appendChild(ov);
+}
+// CS401: the ACTIVE daily-streak leaderboard (a self-contained tab, mirrors overlayLeaderboardDaily).
+let streakBoardCache=null;
+function streakBoardLoad(){
+  if(!sb){ streakBoardCache={loading:false,ok:false,rows:[]}; return; }
+  if(streakBoardCache && streakBoardCache.loading) return;
+  streakBoardCache={loading:true,ok:false,rows:[]};
+  sb.rpc('runtour_streak_board',{p_limit:100}).then(({data,error})=>{
+    streakBoardCache = error ? {loading:false,ok:false,rows:[]} : {loading:false,ok:true,rows:(data||[])};
+    if(S.overlay==='leaderboard' && (S.lbTab==='streaks')) render();
+  }).catch(()=>{ streakBoardCache={loading:false,ok:false,rows:[]}; if(S.overlay==='leaderboard'&&S.lbTab==='streaks') render(); });
+}
+function overlayStreakBoard(screen){
+  if(!streakBoardCache) streakBoardLoad();
+  const c=streakBoardCache, loading=!c||c.loading, ok=c&&c.ok, rows=ok?c.rows:[];
+  const meName=(sbUsername||'').toLowerCase();
+  const you=r=>meName && (r.username||'').toLowerCase()===meName;
+  const rowHTML=(r,i)=>`<div class="lb ${you(r)?'you':''}" style="grid-template-columns:34px 1fr auto">
+      <span class="pos">${i===0?'🏆':(i+1)}</span>
+      <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.username||'Golfer')}</div><div class="small muted" style="font-size:10.5px">best ${r.longest||r.current} days</div></span>
+      <span class="mny" style="white-space:nowrap"><b style="color:var(--gold)">🔥 ${r.current}</b></span></div>`;
+  const guestCTA = !sbSignedIn() ? `<div class="lockcta" style="text-align:center;padding:18px 12px;margin-top:10px">
+      <div style="font-size:22px;line-height:1">🔒</div><b style="color:var(--gold);display:block;margin-top:5px">Sign in to join the streak race</b>
+      <div class="small muted" style="margin:3px auto 11px;max-width:320px">Play the Daily Challenge with an account, and your streak appears here.</div>
+      <div style="display:flex;gap:8px;justify-content:center"><button class="btn gold" id="lb-lock-up" style="width:auto;padding:9px 14px;font-size:12px">Create account</button><button class="btn ghost" id="lb-lock-in" style="width:auto;padding:9px 14px;font-size:12px">Sign in</button></div></div>` : '';
+  let board;
+  if(loading){ board=Array.from({length:8},()=>`<div class="lb lbskel" style="grid-template-columns:34px 1fr auto"><span class="pos"><span class="skb" style="width:16px;height:16px;border-radius:50%"></span></span><span class="pl"><span class="skb" style="width:52%;height:12px"></span><span class="skb" style="width:34%;height:9px;margin-top:5px"></span></span><span class="mny"><span class="skb" style="width:56px;height:13px"></span></span></div>`).join(''); }
+  else if(ok && rows.length){ board=rows.map(rowHTML).join('')+guestCTA; }
+  else if(ok){ board=`<div class="small muted center" style="padding:18px 8px">No active streaks yet, start one today.</div>`+guestCTA; }
+  else { board=`<div class="small muted center" style="padding:18px 8px">Streak board is offline right now.</div>`+guestCTA; }
+  const cur=streakDisplay();
+  const banner = sbSignedIn()
+    ? `<div><b style="color:var(--gold)">🔥 Your streak: ${cur} day${cur===1?'':'s'}</b><div class="small muted" style="margin-top:2px">Play the Daily every day to climb the streak board. Streaks stay active for ~2 days.</div></div>`
+    : `<div><b style="color:var(--gold)">Active streak leaderboard</b><div class="small muted" style="margin-top:2px">Sign in and play the Daily to appear here.</div></div><button class="btn gold" id="lb-signin" style="width:auto;padding:8px 12px;font-size:12px;white-space:nowrap">Sign in</button>`;
+  const seg=(id,lab)=>`<button class="btn ${id==='streaks'?'gold':'ghost'} lbtab" data-tab="${id}" style="font-size:12px;padding:8px 12px;width:auto">${lab}</button>`;
+  const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Streak leaderboard">
+    <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
+    <h3>🏆 Leaderboard</h3>
+    <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
+    <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Daily')}${seg('weekly','Weekly')}${seg('streaks','Streaks')}</div>
+    <div style="margin:0 0 8px"><h2 style="margin:0 0 2px">Active Streaks</h2><div class="small muted" style="margin:0">Longest active daily-play streaks · keep playing to hold your spot</div></div>
+    <div class="board">${board}</div>
+    <div style="height:14px"></div>
+    <button class="btn red">Close</button></div>`);
+  ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
+  ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
+  ov.querySelectorAll('.lbtab').forEach(b=>b.onclick=()=>{S.lbTab=b.dataset.tab;S.lbDir='desc';render();});
+  const lbSign=ov.querySelector('#lb-signin'); if(lbSign) lbSign.onclick=()=>{S.overlay='account';S.acctMode=sbSignedIn()?'username':'signin';S.acctErr='';render();};
+  const lkIn=ov.querySelector('#lb-lock-in'); if(lkIn) lkIn.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
+  const lkUp=ov.querySelector('#lb-lock-up'); if(lkUp) lkUp.onclick=()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();};
+  screen.appendChild(ov);
+}
+// submit the caller's current + longest streak to the board (fail-open). Called on each new daily day + sign-in.
+function sbSubmitStreak(){ if(!sb||!sbSignedIn()) return;
+  try{ const ds=LS.get(acctKey('bag_streak'),null)||{}; const cur=streakDisplay(), lon=Math.max(ds.longest||0,cur);
+    sb.rpc('runtour_streak_submit',{p_current:cur,p_longest:lon}).then(({error})=>{ if(!error) streakBoardCache=null; }).catch(()=>{}); }catch(e){}
 }
 function overlayConfirmReset(screen){
   // Reset used to only clear the in-progress DRAFT (bag_resume), never the actual saved career
@@ -10248,9 +10340,11 @@ function confLabel(c){ c=Math.round(c); return c>=82?'Locked in':c>=64?'Confiden
 function confColor(c){ c=Math.round(c); return c>=64?'#35d6a0':c>=44?'#5fd0e0':c>=26?'#e0a53a':'#E14A33'; }
 function gainFollowers(pct, flat){ const s=careerStory(); const cur=s.followers||FOLLOWERS_START;
   const damp=FOLLOWERS_SOFT/(FOLLOWERS_SOFT+Math.max(0,cur));   // CS301: % growth tapers as you get big
-  const add=Math.round(cur*(pct||0)*damp+(flat||0));
-  // CS397: no ceiling - followers grow uncapped (the damp only slows % growth, it never caps). A loss
-  // (add<0) still applies; floored at 0.
+  // CS401: the damp only slows GROWTH. LOSSES (a negative pct - missed cut, PR backfire) apply the FULL
+  // percentage so a big star can genuinely fall from grace (a 0.5% dip / 5-10% backfire hits at any size).
+  const ep = (pct>0) ? pct*damp : (pct||0);
+  const add=Math.round(cur*ep+(flat||0));
+  // CS397: no ceiling - fans grow uncapped; a loss (add<0) still applies, floored at 0.
   s.followers=Math.max(0, cur+add); return add; }
 function fmtFollowers(n){ n=Math.round(n||0);
   if(n>=1e6) return (n/1e6).toFixed(n>=1e7?0:1).replace(/\.0$/,'')+'M';
@@ -10281,7 +10375,7 @@ function resultMomentum(pos, evt){
     else if(pos<=10){ dc=3; row=FAN_LADDER.top10[tier]; }
     else if(pos<=25){ dc=0; row=FAN_LADDER.top25[tier]; }
     else { dc=-2; fpct=0.001; fflat=25; }    // made the cut, back of the pack: a trickle
-  } else { dc=-6; fpct=-0.004; fflat=0; }     // missed the cut: a small fan dip
+  } else { dc=-6; fpct=-0.005; fflat=0; }     // CS401: missed the cut trims ~0.5% of the fan base
   if(row){ fpct=row[0]; fflat=row[1]; }
   // CS280: RESPECT gives a composure floor - respected, well-liked pros settle at a higher confidence
   // baseline (the mean-reversion target rises with respect, ~36 disliked .. ~64 revered).
@@ -11230,7 +11324,10 @@ function showStoryline(sb){
       if(backfired){
         const hit = -(Math.abs(ch.conf||0.32)*0.9 + 0.12);   // scale the confidence hit to the choice's ambition
         storyGainConf(hit);
-        gainFollowers(-(ch.folBad!=null?ch.folBad:0.05), 0);   // lose ~5% of your following
+        // CS401: a PR backfire costs 5-10% of your fans, scaled by how DETRIMENTAL the call was (the choice's
+        // riskiness). An explicit ch.folBad wins; otherwise ranges 5% (low-risk) .. 10% (a reckless gamble).
+        const folLoss = Math.max(0.05, Math.min(0.10, (ch.folBad!=null?ch.folBad:(0.05 + (ch.risk||0)*0.13))));
+        gainFollowers(-folLoss, 0);
         reaction = T(ch.rBad) || 'It lands badly. The clip is everywhere for the wrong reasons and the room turns on you.';
         headline = T(ch.headBad) || ((T(ch.head)||T(beat.title))+', and it backfired');
         track('storyline_backfire',{id:beat.id, choice:String(T(ch.t))});
@@ -17000,6 +17097,7 @@ function scrDailyPreview(){
   if(!S.special && !PRACTICE){
     const st=streakDisplay();
     if(Object.keys(streakDays()).length>0 || st>0) add(streakCalendar(14));
+    if(sbSignedIn()){ const swn=streakWeekNode(); if(swn) add(swn); }   // CS401 streak-week reward track
   }
   const recTxt=rec?`<b style="color:var(--gold)">${dTot(rec.toPar, c.par)}</b> by ${esc(crHolders(rec))}`
     :(sbSignedIn()?`<b style="color:var(--gold)">Unclaimed</b>, be the first to set it`:`<b style="color:var(--gold)">Sign in</b> to post your score`);
@@ -17960,15 +18058,21 @@ function finishDailyRound(){
   // Challenges: daily quest "Play the Daily" + weekly progress (plays + beats). Signed-in only; guarded inside.
   S.questDailyJustDone=false; S.questWeeklyJustDone=[];
   questDaily('daily'); questWeekly('dailyPlays',1); if(won) questWeekly('dailyBeats',1);
-  S.dailyStreakInfo={won, mile:_ds._mile||0, gotFreeze:!!_ds._gotFreeze, usedFreeze:!!_ds._usedFreeze, current:_ds.current, freezes:_ds.freezes||0, played:_st.played, beat:_st.beat, packFree:!!_ds._packFree};
+  S.dailyStreakInfo={won, mile:_ds._mile||0, gotFreeze:!!_ds._gotFreeze, usedFreeze:!!_ds._usedFreeze, current:_ds.current, freezes:_ds.freezes||0, played:_st.played, beat:_st.beat};
   // CS252: one positive sound at the finish - a win fanfare for beating the pro, else the streak-kept ding
   if(won){ sfx('win'); buzz([0,30,40,50]); } else { sfx('streak'); buzz([0,25]); }
   // coins for playing the daily, scaled by performance: base + beat-the-pro bonus + a margin bonus for how
   // far under the tour average you finished (CS392: every mode rewards by how you performed).
   if(signedIn){ const margin=won?Math.min(400, Math.round(Math.max(0, avg-total)*40)):0;
     const _xp=COIN_DAILY_XP + (won?COIN_DAILY_XP_BEAT:0); addXp(_xp); S.dailyXpGain=_xp;   // CS400: + Tour Rep (XP) for completing
-    awardPlayCoins(COIN_DAILY + (won?COIN_DAILY_BEAT:0) + margin, (won?'you beat the pro!':'daily complete')+' · +'+_xp+' Tour Rep'); // ~1000-2000 coins
-    if(S.dailyStreakInfo && S.dailyStreakInfo.packFree) toast('<span style="color:var(--gold);font-weight:800">🎁 '+S.dailyStreakInfo.current+'-day streak — free pack earned!</span><br><span class="small">Open it in the Pro Shop → Packs.</span>', 4600); }
+    // CS401: the Sunday-to-Sunday streak-week reward track (once per new day)
+    const wr = (_ds && _ds._newDay) ? streakWeekReward() : null; S.streakWeekReward=wr;
+    const wkNote = !wr ? '' : wr.kind==='coins' ? (' · 🔥 week day '+wr.day+': +'+wr.amt+' coins')
+      : wr.kind==='mulligan' ? (' · 🔥 week day '+wr.day+': +1 Mulli-Spin')
+      : (' · 🔥 week day '+wr.day+': FREE PACK!');
+    awardPlayCoins(COIN_DAILY + (won?COIN_DAILY_BEAT:0) + margin, (won?'you beat the pro!':'daily complete')+' · +'+_xp+' Tour Rep'+wkNote); // ~1000-2000 coins + week bonus
+    try{ sbSubmitStreak(); }catch(e){}   // CS401: post the updated streak to the active-streak leaderboard
+  }
   // log this attempt; the LOWEST score of the day is the one that counts (leaderboard / course record).
   // The attempt was already CLAIMED at the first wheel spin (claimDailyAttempt), so read that count -
   // do NOT +1 here (that double-counted a claimed attempt). Fallback to 1 if somehow unclaimed.
@@ -18717,6 +18821,7 @@ function scrDailyResult(){
   else if(si) add($(`<div class="small center" style="margin:0 0 8px;color:var(--gold);font-weight:700">🔥 ${streakDisplay()}-day streak, see you tomorrow to keep it going</div>`));
   // CS252: the visual streak calendar (today now filled in)
   if(!practice && (Object.keys(streakDays()).length>0 || streakDisplay()>0)) add(streakCalendar(14));
+  if(!practice && sbSignedIn()){ const swn=streakWeekNode(); if(swn){ swn.style.maxWidth='520px'; swn.style.marginLeft='auto'; swn.style.marginRight='auto'; add(swn); } }   // CS401 streak-week track
   // Wordle-style lifetime record: total days played + how often you beat the pro (a tie counts as a loss)
   if(!practice){ const st=dailyStats(); if(st.played>0){ const pct=dailyWinPct(); const ds=LS.get(acctKey('bag_streak'),{}); const best=ds.longest||streakDisplay();
     add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px"><div class="small muted center" style="letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Your daily record</div>
@@ -18856,7 +18961,9 @@ function shopEffLook(){ const p=S.shopPreview; if(!p || !inShopCtx() || p.kind!=
   else if(p.cat==='ew'){ L.eyewear=(p.id==='none'?'':p.id); }
   else { const c=COS_CATS.find(x=>x.k===p.cat); if(c){ L[c.lookKey]=p.id; if(p.cat==='hat') L.cap=true; } }
   return L; }
-function shopConfirmBuy(){ const p=S.shopPreview; if(!p) return; let r, okMsg='Purchased & equipped!';
+function shopConfirmBuy(){ const p=S.shopPreview; if(!p) return;
+  if(!sbSignedIn()){ S.shopPreview=null; toast('🔒 Create a free account to buy Pro Shop items.'); S.overlay='account'; S.acctMode='signup'; S.acctErr=''; render(); return; }   // CS401: store is signed-in only
+  let r, okMsg='Purchased & equipped!';
   if(p.kind==='cos'){ r=cosBuy(p.cat,p.id); if(r&&r.ok) cosEquip(p.cat,p.id); }
   else if(p.kind==='bag'){ r=bagBuy(p.club,p.tier); okMsg='Club upgraded!'; }
   else { r=accBuy(p.id); }   // accBuy auto-equips
@@ -19078,7 +19185,7 @@ function packPool(){ const pool=[];
 }
 function packOwns(e){ if(e.kind==='acc') return accOwned(e.id); if(e.kind==='bag') return bagTierOwned(e.club)>=1; return cosOwned(e.cat,e.id); }
 function packGrant(e){ var s=coinState(); if(e.kind==='acc') s.owned[e.id]=1; else if(e.kind==='bag') s.owned[bagKey(e.club,1)]=1; else s.owned[cosKey(e.cat,e.id)]=1; coinSave(s); }
-function packState(){ var d={opened:0,sinceEpic:0,sinceLeg:0,freeUsed:false,packEarned:0,packSpent:0}; var v=LS.get(acctKey('bag_packs'),null); return (v&&typeof v==='object')?Object.assign(d,v):d; }
+function packState(){ var d={opened:0,sinceEpic:0,sinceLeg:0,freeUsed:false,packEarned:0,packSpent:0,welcomePack:false}; var v=LS.get(acctKey('bag_packs'),null); return (v&&typeof v==='object')?Object.assign(d,v):d; }
 function packSave(p){ LS.set(acctKey('bag_packs'),p); if(typeof cloudPush==='function') cloudPush(); }
 // CS400: earned FREE PACK credits (from weekly challenges + 7-day streaks). Tracked as monotonic
 // earned/spent counters so a cloud merge (max/max) can never resurrect a spent credit. credits = earned - spent.
@@ -19087,6 +19194,11 @@ function grantFreePack(n,opts){ opts=opts||{}; n=n||1; if(!packsOn()||!sbSignedI
   var p=packState(); p.packEarned=(p.packEarned||0)+n; packSave(p);
   if(!opts.silent) toast('<span style="color:var(--gold);font-weight:800">🎁 Free pack earned!</span>'+(opts.why?' · <span class="small">'+opts.why+'</span>':'')+'<br><span class="small">Open it in the Pro Shop → Packs.</span>', 4200);
   return n; }
+// CS401: a WELCOME free pack, once per account, for having/creating a RunThe.GG account (the sign-up
+// incentive). Runs after cloudPull so the flag is synced first and a second device never re-grants.
+function maybeWelcomePack(){ if(!packsOn()||!sbSignedIn()) return; if(packState().welcomePack) return;
+  var p=packState(); p.welcomePack=true; p.packEarned=(p.packEarned||0)+1; packSave(p);
+  toast('<span style="color:var(--gold);font-weight:800">🎁 Welcome to RunThe.GG!</span><br><span class="small">Here’s a FREE pack, on us. Open it in the Pro Shop → Packs.</span>', 5200); }
 // First pack is free (owner onboarding): a signed-in player's very first open costs no coins.
 function packIsFree(){ return packsOn() && sbSignedIn() && !packState().freeUsed; }
 function rollPackRarity(){ var r=Math.random(),a=0; for(var i=0;i<PACK_ODDS.length;i++){ a+=PACK_ODDS[i][1]; if(r<a) return PACK_ODDS[i][0]; } return 'common'; }
@@ -19835,7 +19947,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer onto old scores (CS395)
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + grant the sign-up welcome pack + post the streak (CS401)
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -20006,6 +20118,7 @@ function cloudBundle(){
     careersave: LS.get(acctKey('bag_careersave'), null),
     legendTokens: legendTokens(),
     streak: LS.get(acctKey('bag_streak'), null),
+    streakweek: LS.get(acctKey('bag_streakweek'), null),   // CS401: Sunday-to-Sunday reward track
     dailystats: LS.get(acctKey('bag_dailystats'), null),
     ach: LS.get(acctKey('bag_ach'), null),
     special: LS.get(acctKey('bag_special'), null),
@@ -20025,7 +20138,8 @@ function mergePacks(local, server){
   const base=((l.opened||0)>=(s.opened||0))?l:s;
   // CS400: pack credits use monotonic earned/spent counters, so max/max can never resurrect a spent credit.
   return Object.assign({}, base, {opened:Math.max(l.opened||0,s.opened||0), freeUsed:!!(l.freeUsed||s.freeUsed),
-    packEarned:Math.max(l.packEarned||0,s.packEarned||0), packSpent:Math.max(l.packSpent||0,s.packSpent||0)});
+    packEarned:Math.max(l.packEarned||0,s.packEarned||0), packSpent:Math.max(l.packSpent||0,s.packSpent||0),
+    welcomePack:!!(l.welcomePack||s.welcomePack)});
 }
 // grow-only merge of the course-mastery map: per course keep the LOWEST score, the BEST grade, and the
 // higher play/beat counts, so a merge can only ever restore or improve, never lose, a course's mastery.
@@ -20128,6 +20242,15 @@ function mergeStreak(local, server){
   else base=Object.assign({},local,{current:Math.max(local.current||0,server.current||0), freezes:Math.max(local.freezes||0,server.freezes||0)});
   return Object.assign({},base,{miles, days, longest});
 }
+// CS401: the Sunday-to-Sunday streak-week reward track. Same-week: union the claimed days (max day-count,
+// keep the later lastDay); a newer week supersedes an older one (the track reset).
+function mergeStreakWeek(local, server){
+  if(!server) return local||null; if(!local) return server;
+  if((server.week||0)!==(local.week||0)) return (server.week||0)>(local.week||0)?server:local;
+  const done=Array.from(new Set([].concat(local.done||[],server.done||[])));
+  return {week:local.week, days:Math.max(local.days||0,server.days||0),
+    lastDay:Math.max(local.lastDay||0,server.lastDay||0)||null, done};
+}
 function mergeDailyStats(local, server){
   const empty={played:0,beat:0,lastDay:null,wonDays:{}};
   if(!server) return local||empty; if(!local) return server;
@@ -20183,6 +20306,7 @@ async function cloudPull(){
     if(mergedCareersave) LS.set(acctKey('bag_careersave'), mergedCareersave);
     LS.set(acctKey('bag_legend_tokens'), mergeLegendTokens(legendTokens(), server.legendTokens));
     LS.set(acctKey('bag_streak'), mergeStreak(LS.get(acctKey('bag_streak'),null), server.streak));
+    if(server.streakweek){ const mw=mergeStreakWeek(LS.get(acctKey('bag_streakweek'),null), server.streakweek); if(mw) LS.set(acctKey('bag_streakweek'), mw); }
     LS.set(acctKey('bag_dailystats'), mergeDailyStats(LS.get(acctKey('bag_dailystats'),null), server.dailystats));
     LS.set(acctKey('bag_ach'), mergeAch(LS.get(acctKey('bag_ach'),null), server.ach));
     LS.set(acctKey('bag_special'), mergeSpecial(LS.get(acctKey('bag_special'),null), server.special));

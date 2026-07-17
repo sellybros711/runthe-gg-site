@@ -9624,6 +9624,45 @@ allows Google Fonts, or self-host Anton.*
     (rides the existing CS82 cloud-save bundle). Deployed to /golf. Tunable: `COIN_DAILY`/`COIN_DAILY_BEAT`/
     the margin cap, `COIN_DAILY_XP*`, and the per-weekly / per-7-days pack grants.
 
+- **CS401 — sign-up welcome pack, store/packs restricted to accounts, harsher fan losses, and a
+  Sunday-to-Sunday daily-streak reward week + active-streak leaderboard (owner batch).**
+  - **Sign-up = a free pack.** `maybeWelcomePack()` (runs on sign-in after `cloudPull`, once per account via
+    a synced `welcomePack` flag) grants one free pack with a "Welcome to RunThe.GG!" toast — the sign-up
+    incentive. Also grants once to existing accounts on their first sign-in after this deploy (a one-time
+    gift; harmless). Merged cross-device (OR).
+  - **Store + packs are signed-in only.** Packs already required an account; `cosBuy`/`accBuy`/`bagBuy`
+    already gated purchases, and `shopConfirmBuy` now gives guests a clear "Create a free account to buy Pro
+    Shop items" nudge that opens the sign-up modal instead of a bare toast.
+  - **Losing fans stings more** (owner: "raise missed cut to .5% and a PR backfire -5 to -10 depending on how
+    detrimental"). Missed cut trims **0.5%** of the fan base (was 0.4%); a press-conference backfire loses
+    **5-10%**, scaled by how reckless the call was (`0.05 + risk*0.13`, clamped 0.05-0.10; an explicit
+    `folBad` wins). Crucially, the diminishing-returns damp now applies ONLY to GROWTH — **losses use the
+    full percentage**, so a big star genuinely falls from grace (verified: a missed cut is 0.5% at both 2M
+    and 40M fans, a backfire a full 10% at 40M; growth of the same size is still damped to ~1.7%).
+  - **The Daily Streak Week (Sunday-to-Sunday reward track).** Each distinct day you play the daily that
+    week climbs a track: days 1/2/4/5 → **500 coins**, days 3 & 6 → a **Mulli-Spin** (this re-introduces the
+    mulli-spin, replacing CS400's weekly-challenge mulli-spin), day 7 → a **FREE PACK**. `streakWeekReward()`
+    (keyed to `sundayWeekKey()`, once per new day via `bumpStreak`'s `_newDay`) awards it; the track resets
+    every Sunday (`bag_streakweek`, cloud-merged: newer week supersedes, same week unions claimed days). The
+    reward is folded into the daily coin toast, and a 7-cell "🔥 Daily Streak Week · Day N/7" track
+    (`streakWeekNode`) shows on the daily preview + result. Replaces CS400's every-7-consecutive-days pack.
+  - **The OVERALL streak persists** across weeks (`bag_streak.current`, unchanged) as long as you keep
+    playing — the weekly track is a separate, resetting layer on top.
+  - **Active-streak leaderboard** (`supabase/55_runtour_streak_board.sql`, owner-run): a `runtour_streaks`
+    table + `runtour_streak_submit(current,longest)` (upsert, clamped, longest-only-grows) +
+    `runtour_streak_board(limit)` (ACTIVE streaks = played within ~2 days, ranked by current desc, username
+    from profiles). RLS on with no direct policies (definer-only; anon can read the board, not the table).
+    Client: `sbSubmitStreak()` posts on each new daily day + on sign-in; a new **Streaks** tab on the
+    Leaderboard overlay (`overlayStreakBoard`, fail-open). **Validated end-to-end on a local Postgres**
+    (clamp to 100k, longest grows, stale streak excluded from the board, ranking, anon-board-yes /
+    anon-table-no) and the client in Playwright (welcome pack once, guest buy blocked, fan-loss magnitudes,
+    the day-1/3/7 cadence coins/mulligan/pack, week-node + board render) — 0 page errors. **ACTION: run
+    `supabase/55_runtour_streak_board.sql`** (the streak board is empty/fail-open until then; everything
+    else works without it). Deployed client to /golf. Tunable: `STREAK_WEEK_COINS`, the `STREAK_WEEK_TRACK`
+    day→reward map, the backfire `folBad` curve, the missed-cut `fpct`, the welcome pack.
+    NOTE: mulli-spins are earned again (day 3 & 6); flag to owner if the day-3/6 "mulligan" should instead be
+    a DAILY-round mulligan token (a new system) rather than the off-season Mulli-Spin re-spin.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
