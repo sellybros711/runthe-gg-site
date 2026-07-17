@@ -10105,6 +10105,15 @@ allows Google Fonts, or self-host Anton.*
   - **Still to do for step 5:** the display-only **trophy-charm collection** (a collectibles case in the
     Trophy Room, earned from milestones) — pending owner go-ahead on scope.
 
+- **CS419 — centre all eyewear on the face (owner: "all of the sunglasses are off center").** Some eyewear
+  maps (notably `shades` + `prismshades`) were authored with their lens pair ~2px left of the face centre
+  (lens midpoint col 20.5 vs face centre col 22). `pxGolferCanvas` now **auto-centres** each eyewear map at
+  paint time: it measures the map's LENS pixels' horizontal midpoint and shifts the whole map so the lenses
+  sit on the eyes — dx = round(22 − lensMid) for two-lens pieces, and 0 for already-centred pieces
+  (aviators/round/goggles/etc.) and single-eye pieces (monocle/eyepatch, which belong over one eye). Verified
+  in Playwright head close-ups: shades/prism shades now centred, aviators/round unchanged, monocle back on the
+  eye; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

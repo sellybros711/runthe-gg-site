@@ -9588,7 +9588,16 @@ function pxGolferCanvas(look){
   if(capOn){ if(PXG_HERITAGE_HAT_PAL[hatStyle]) paintOverlay(PXG_HATS[hatStyle], PXG_HERITAGE_HAT_PAL[hatStyle]);   // CS411: tweed cap / straw boater (own palette)
     else paint(hatStyle==='visor'?PXG_VISOR:(PXG_HATS[hatStyle]||PXG_CAP)); }
   // CS356g: EYEWEAR (sunglasses) over the eyes, on top of everything.
-  if(shades) paint(PXG_EYEWEAR[shades]);
+  // CS419: some eyewear maps were authored off the face centre (col 22), so glasses sat off-centre. Auto-centre
+  // each map: measure its LENS pixels' horizontal midpoint and shift the whole map so the lenses sit on the
+  // eyes. Two-lens pieces only (skip single-eye monocle/eyepatch, which belong over one eye).
+  if(shades){ const ewm=PXG_EYEWEAR[shades], LENSCH='EOPQRaefry';
+    let mn=99,mx=-1,nL=0,nR=0;
+    for(let y=0;y<ewm.length;y++){ const row=ewm[y]; for(let x=0;x<row.length;x++){ if(LENSCH.indexOf(row[x])<0)continue;
+      if(x<mn)mn=x; if(x>mx)mx=x; if(x<22)nL++; else if(x>22)nR++; } }
+    const dx=(mx>=0 && nL>0 && nR>0) ? Math.round(22-(mn+mx)/2) : 0;   // centred two-lens pieces get dx=0
+    for(let y=0;y<ewm.length;y++){ const row=ewm[y]; for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue;
+      const col=P[ch]; if(!col)continue; ctx.fillStyle=col; ctx.fillRect((x+dx)*px,y*px,px,px); } } }
   _pxCanvas.set(key,cv); return cv;
 }
 function pxGolferURL(look){
