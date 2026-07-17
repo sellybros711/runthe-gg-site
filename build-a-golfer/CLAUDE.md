@@ -9168,6 +9168,17 @@ allows Google Fonts, or self-host Anton.*
   Full auto practice round regresses clean (reveals, putts, holed beats, decisions) with 0 page errors.
   Deployed to /golf.
 
+- **CS380 — off-season: can't start the season with a spin left un-taken (owner).** You could press Spin
+  in the off-season, dislike the golfer you landed on, and just press "Start Year" without taking any of
+  its skills - dodging the "if you spin you must lock in a change" rule. Now, whenever a spin is pending
+  (`spun` = a golfer revealed, awaiting a skill pick), the "Start Year ▸" button is LOCKED (`.btn.locked`:
+  dimmed/greyscale, still tappable) with the sub "🔒 Lock in one of the skills first"; tapping it shows a
+  temporary toast "You must select one of the skills to lock in your spin before starting the season."
+  instead of starting the season. Taking a skill (or the re-spin path) clears the spun state and unlocks
+  Start normally. Verified in Playwright: spun → Start has `.locked`, tapping it stays on the off-season
+  screen (never calls startSeason) and shows the toast; after taking a skill spun clears, Start unlocks and
+  the change applies; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
