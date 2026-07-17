@@ -10114,6 +10114,20 @@ allows Google Fonts, or self-host Anton.*
   in Playwright head close-ups: shades/prism shades now centred, aviators/round unchanged, monocle back on the
   eye; 0 page errors. Deployed to /golf.
 
+- **CS420 — Legendary Drop 1, step 6: GOLF BAG cosmetic slot.** A back-slung stand bag on the standing
+  golfer, built with `golf-bag.py`. The bag is drawn **behind the body** (before `PXG_BODY`) so only what
+  clears the silhouette shows — a club head poking over the trail shoulder + the bag body peeking out the
+  trail side (with a trim band + pocket) — and it's flipped by `look.lefty` (trail side, opposite the club).
+  One shared shape (`PXG_BAG`); colour varies per bag via `PXG_BAG_PAL`. New `bag` COS_CAT (`bg:<id>`):
+  **Red Stand Bag / Navy Tour Bag** (common), **Forest Staff Bag** (epic), **Champion's Bag** (legendary,
+  gold-trimmed); `bg:none` free. Rides the full cosmetic + pack plumbing (`cosmeticItems`/`cosmeticPriceBase`/
+  `cosEquip`/pack pool/`packItemLook` → the golfer renders wearing the bag in pack reveals), a `pxBagThumb`
+  tile, the shop + setup **Golf Bag** Accessories tab, and the board snapshot (`lookForBoard` carries `bag`).
+  Verified in Playwright on the golfer (all colours + a lefty mirror), correct rarity/price/pool, equip
+  round-trip, 0 page errors. Deployed to /golf. **Step 6 ✓ — Legendary Drop 1 build order COMPLETE**
+  (1 effect layer ✓ · 2 fixed patterns ✓ · 3 heritage apparel ✓ · 4 vintage equipment + accessories ✓ ·
+  5 specialty accessories ✓ (trophy-charm collectibles deferred) · **6 Golf Bag slot ✓**).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
