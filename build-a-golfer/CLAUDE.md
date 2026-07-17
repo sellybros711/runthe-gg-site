@@ -9301,6 +9301,26 @@ allows Google Fonts, or self-host Anton.*
     the green renders a small dark cup in good proportion at the base of the flag; 0 page errors. Deployed
     to /golf.
 
+- **CS388 — customize screen: every category in one place + Club now findable (owner: "it should show you
+  all categories of items so you can customize everything in one place. There's no way to select clubs, and
+  make sure the UI of the store and customize page work well together").** `scrSetup` split its categories
+  across four TABS (Look / Apparel / Accessories / Details) and rendered the category chips in a
+  horizontally-SCROLLING row — so the **Club** chip (last in the Look tab) was pushed off the right edge and
+  effectively invisible, and Apparel/Accessories were hidden behind tabs. Removed the tab layer entirely: the
+  header now shows ONE wrapping row (`.catrow.catwrap`, a `.setup-shop`-scoped `flex-wrap:wrap` override so
+  the store's own scrolling `.catrow` is untouched) with EVERY category chip visible at once, grouped under
+  small labels — **Appearance** (Skin · Hair color · Hair style · Handedness · **Club**) · **Apparel** (Shirt
+  · Pattern · Hat · Trousers · Shoes) · **Gear** (Headwear · Eyewear) · **Profile** (Name & Country). Picking
+  a chip shows that category's tiles below (or the name/country form for Profile). Guests still get only the
+  free Appearance group + the sign-in lock card (Apparel/Accessories/Profile stay gated). The screen keeps
+  reusing the Pro Shop's own tile/chip components (`shop-sticky`/`catchip`/`sgrid`/`cosTileHTML`/preview), so
+  the customize page and the store read as one consistent system; the store keeps its section tabs
+  (Apparel/Accessories/My Items/Packs) since it legitimately needs them. Verified in Playwright: tabs gone,
+  all 13 categories render grouped, the Club chip is present + selectable (picking Putter sets `look.club`),
+  Headwear/Details still work, guests see only Appearance + the lock card, and the store still opens with its
+  `.catrow` unchanged (`flex-wrap:nowrap`); 0 page errors. Screenshot confirms the clean grouped layout with
+  Club visible. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

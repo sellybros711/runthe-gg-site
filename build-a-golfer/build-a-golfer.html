@@ -1364,6 +1364,10 @@ window.GA_ID='G-L29P5MRWKE';
   .catchip{flex:0 0 auto; border:1px solid rgba(255,255,255,.14); background:rgba(255,255,255,.03); color:var(--muted);
     font:800 11.5px/1 var(--body); padding:8px 13px; border-radius:999px; cursor:pointer; white-space:nowrap}
   .catchip.on{color:var(--gold); border-color:var(--gold); background:rgba(241,208,74,.12)}
+  /* customize screen: show EVERY category at once (grouped, wrapping) instead of a scrolling row that hides chips like Club */
+  .setup-shop .catrow.catwrap{flex-wrap:wrap; overflow:visible; align-items:center; row-gap:5px; padding-top:4px}
+  .catglab{flex:0 0 100%; width:100%; font:800 10px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:var(--pagemut); margin:9px 0 0; opacity:.8}
+  .catglab:first-child{margin-top:2px}
   .sgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(90px,1fr)); gap:9px; margin-top:12px}
   .stile{position:relative; display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center;
     border:1.5px solid rgba(255,255,255,.11); background:rgba(255,255,255,.035); border-radius:13px;
@@ -6293,21 +6297,26 @@ function scrSetup(){
   const LOOKCATS=[['skin','Skin'],['hair','Hair color'],['style','Hair style'],['hand','Handedness'],['club','Club']];
   const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes']];
   const ACCS=[['hw','Headwear'],['ew','Eyewear']];
-  const TABS = guest ? [['look','Look']] : [['look','Look'],['apparel','Apparel'],['accessories','Accessories'],['details','Details']];
-  let tab=S.setupTab; if(!TABS.some(t=>t[0]===tab)) tab=TABS[0][0]; S.setupTab=tab;
-  const cats = tab==='look'?LOOKCATS : tab==='apparel'?APP : tab==='accessories'?ACCS : null;
-  let cat=S.setupCat; if(cats && !cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.setupCat=cat;
+  // ALL categories in ONE place (owner: customize everything here - including clubs - with no hidden tabs).
+  // The tab layer used to split Apparel/Accessories/Details off and a scrolling chip row hid Club past the
+  // edge. Now every category shows at once, grouped by a small label; guests get only the free appearance
+  // options (the rest sit behind the sign-in lock card below).
+  const groups = guest ? [['Appearance',LOOKCATS]]
+    : [['Appearance',LOOKCATS],['Apparel',APP],['Gear',ACCS],['Profile',[['details','Name & Country']]]];
+  const cats = groups.reduce((a,g)=>a.concat(g[1]),[]);
+  let cat=S.setupCat; if(!cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.setupCat=cat;
+  const isLook = LOOKCATS.some(c=>c[0]===cat);
 
-  // sticky-style header: preview + section tabs + category chips (reuses the Pro Shop classes)
+  // sticky-style header: preview + ONE wrapping row with every category chip (grouped), reusing the shop classes
+  const chips = groups.map(g=>`<span class="catglab">${esc(g[0])}</span>`+g[1].map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-scat="${c[0]}">${esc(c[1])}</button>`).join('')).join('');
   const sticky=$(`<div class="shop-sticky">
     <div class="shop-preview">${avatarShowHTML()}</div>
-    <div class="segrow">${TABS.map(t=>`<button data-stab="${t[0]}" class="${t[0]===tab?'on':''}">${esc(t[1])}</button>`).join('')}</div>
-    ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-scat="${c[0]}">${esc(c[1])}</button>`).join('')}</div>`:''}
+    <div class="catrow catwrap">${chips}</div>
   </div>`);
   wrap.appendChild(sticky);
 
   if(S.shopPreview && !guest){ wrap.appendChild(shopPreviewNode()); }
-  else if(tab==='details'){
+  else if(cat==='details'){
     const form=$(`<div style="margin-top:12px"></div>`);
     const nrow=$(`<div class="setrow"><div class="setlab">Name</div></div>`);
     const inp=$(`<input class="name" maxlength="22" placeholder="e.g. The Closer" value="${esc(S.name||'')}">`);
@@ -6316,7 +6325,7 @@ function scrSetup(){
     wrap.appendChild(form);
   } else {
     const grid=$(`<div class="sgrid"></div>`);
-    const tiles = tab==='look' ? setupLookTiles(cat) : cosmeticItems(cat).map(o=>cosTileHTML(cat,o));
+    const tiles = isLook ? setupLookTiles(cat) : cosmeticItems(cat).map(o=>cosTileHTML(cat,o));
     grid.innerHTML=tiles.join('');
     wrap.appendChild(grid);
     grid.querySelectorAll('[data-appset]').forEach(x=>x.onclick=()=>{ const k=x.getAttribute('data-appset'), id=x.getAttribute('data-id');
@@ -6324,8 +6333,7 @@ function scrSetup(){
       saveLook(); render(); });
     grid.querySelectorAll('[data-tile]').forEach(x=>x.onclick=()=>shopTileClick(x));
   }
-  // tab + category handlers (cancel any pending preview when navigating)
-  sticky.querySelectorAll('[data-stab]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.setupTab=x.getAttribute('data-stab'); render(); });
+  // category handlers (cancel any pending preview when navigating)
   sticky.querySelectorAll('[data-scat]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.setupCat=x.getAttribute('data-scat'); render(); });
 
   if(guest){
