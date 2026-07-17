@@ -4615,6 +4615,44 @@ function cosmeticBoost(){ const o={}; const L=S.look||{};
   add('ew', L.eyewear); add('pat', L.shirtPat); add('shirt', L.polo);
   return o;
 }
+// ---- Golf Bag: buy a better version of every club for slight, stacking boosts. Tiers upgrade in order
+// (Stock free -> Tour -> Pro -> Signature); the ACTIVE boost per club is your highest owned tier. Owned in the
+// same coin store (keys bag:<club>:<tier>), so it cloud-syncs with everything else. Career-only via accBoost. ----
+const BAG_CLUBS=[
+  {k:'driver', name:'Driver',        sub:'off the tee',      ic:'driver', tiers:[{n:'Tour Driver',b:{dist:1}},{n:'Pro Speed Driver',b:{dist:2,acc:-1}},{n:'Signature Driver',b:{dist:3,acc:-2}}]},
+  {k:'woods',  name:'Fairway Woods', sub:'off the deck',     ic:'driver', tiers:[{n:'Tour Woods',b:{dist:1}},{n:'Pro Woods',b:{dist:1,app:1}},{n:'Signature Woods',b:{app:2,dist:-1}}]},
+  {k:'hybrid', name:'Hybrids',       sub:'long approaches',  ic:'driver', tiers:[{n:'Tour Hybrids',b:{app:1}},{n:'Pro Hybrids',b:{app:2}},{n:'Signature Hybrids',b:{app:2,scr:1}}]},
+  {k:'irons',  name:'Irons',         sub:'the scoring clubs',ic:'driver', tiers:[{n:'Tour Irons',b:{app:1}},{n:'Pro Blades',b:{app:3,scr:-2}},{n:'Signature Irons',b:{app:3,acc:1,scr:-2}}]},
+  {k:'wedges', name:'Wedges',        sub:'the short game',   ic:'driver', tiers:[{n:'Tour Wedges',b:{sht:1}},{n:'Pro Wedges',b:{sht:2,bnk:1}},{n:'Signature Wedges',b:{sht:3,bnk:2,dist:-1}}]},
+  {k:'putter', name:'Putter',        sub:'on the greens',    ic:'putter', tiers:[{n:'Tour Putter',b:{put:1}},{n:'Pro Putter',b:{put:2}},{n:'Signature Putter',b:{put:3,clu:-1}}]}
+];
+const BAG_TIER_PRICE=[3000,12000,35000];   // Tour / Pro / Signature
+const BAG_TIER_LABEL=['Tour','Pro','Signature'];
+const BAG_BY={}; BAG_CLUBS.forEach(c=>BAG_BY[c.k]=c);
+function bagKey(club,tier){ return 'bag:'+club+':'+tier; }
+function bagTierOwned(club){ const own=coinState().owned; for(let t=3;t>=1;t--){ if(own[bagKey(club,t)]) return t; } return 0; }
+function bagPrice(tier){ return BAG_TIER_PRICE[tier-1]||0; }
+function bagBoost(){ if(!SHOP_ENABLED) return {}; const o={}; BAG_CLUBS.forEach(c=>{ const t=bagTierOwned(c.k); if(t>0){ const b=c.tiers[t-1].b; for(const k in b) o[k]=(o[k]||0)+b[k]; } }); return o; }
+function bagBuy(club,tier){ const c=BAG_BY[club]; tier=+tier; if(!c||tier<1||tier>3) return {ok:false,msg:'Unknown club'};
+  if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy clubs'};
+  if(bagTierOwned(club)>=tier) return {ok:false,msg:'Already owned'};
+  if(tier>1 && bagTierOwned(club)<tier-1) return {ok:false,msg:'Upgrade the previous tier first'};
+  const s=coinState(), price=bagPrice(tier); if(coinBalance()<price) return {ok:false,msg:'Not enough coins'};
+  s.spent+=price; s.owned[bagKey(club,tier)]=1; coinSave(s);
+  track('shop_buy',{id:bagKey(club,tier),price:price,rarity:'bag'});
+  return {ok:true};
+}
+function bagTileHTML(club,tier){ const c=BAG_BY[club]; const ti=c.tiers[tier-1]; const own=bagTierOwned(club);
+  const active=(own===tier), owned=(own>=tier), price=bagPrice(tier), needPrev=(tier>1&&own<tier-1);
+  const thumb=`<span class="sthumb" style="color:var(--gold)"><span style="width:30px;height:30px">${ic(c.ic||'driver',{size:'30px'})}</span></span>`;
+  let state,data;
+  if(active){ state='eq'; data=''; }
+  else if(owned){ state='own'; data=''; }
+  else if(needPrev){ state='lock'; data=''; }
+  else { state='lock'; data=`data-tile data-kind="bag-buy" data-club="${club}" data-tier="${tier}"`; }
+  return shopTile({thumb,name:ti.n,sub:shopBoostTxt(ti.b)+(needPrev?' <span style="color:#c9a520">· upgrade prev first</span>':''),
+    state,price,afford:coinBalance()>=price,data});
+}
 function cosmeticItems(cat){
   if(cat==='shirt'||cat==='hat') return allShirts().map(o=>({id:o.id,name:o.name||cosTitle(o.id),col:o.m}));
   if(cat==='pat')   return [{id:'none',name:'None',pat:'none'}].concat(PXPAT.map(p=>({id:p.id,name:p.name,pat:p.id,hist:p.hist})));
@@ -16507,11 +16545,12 @@ function shopEffLook(){ const p=S.shopPreview; if(!p || !inShopCtx() || p.kind!=
   else if(p.cat==='ew'){ L.eyewear=(p.id==='none'?'':p.id); }
   else { const c=COS_CATS.find(x=>x.k===p.cat); if(c){ L[c.lookKey]=p.id; if(p.cat==='hat') L.cap=true; } }
   return L; }
-function shopConfirmBuy(){ const p=S.shopPreview; if(!p) return; let r;
+function shopConfirmBuy(){ const p=S.shopPreview; if(!p) return; let r, okMsg='Purchased & equipped!';
   if(p.kind==='cos'){ r=cosBuy(p.cat,p.id); if(r&&r.ok) cosEquip(p.cat,p.id); }
+  else if(p.kind==='bag'){ r=bagBuy(p.club,p.tier); okMsg='Club upgraded!'; }
   else { r=accBuy(p.id); }   // accBuy auto-equips
   S.shopPreview=null;
-  try{ toast(r&&r.ok?'Purchased & equipped!':((r&&r.msg)||'Could not buy')); }catch(e){}
+  try{ toast(r&&r.ok?okMsg:((r&&r.msg)||'Could not buy')); }catch(e){}
   render(); }
 // a shop card for a cosmetic (shirt/hat/pants/shoes color or a pattern)
 function cosCard(cat,o){
@@ -16630,6 +16669,8 @@ function shopTileClick(b){
   else if(kind==='acc-eq'){ accEquip(b.getAttribute('data-id')); }
   else if(kind==='acc-buy'){ const id=b.getAttribute('data-id'), it=accById(id);   // LOCKED gear → preview + confirm
     S.shopPreview={kind:'acc', id, slot:(it&&it.slot)||null, name:(it&&it.name)||'Item', price:it?accPrice(it):0}; }
+  else if(kind==='bag-buy'){ const club=b.getAttribute('data-club'), tier=+b.getAttribute('data-tier'); const c=BAG_BY[club], ti=c&&c.tiers[tier-1];
+    S.shopPreview={kind:'bag', club, tier, name:(ti&&ti.n)||'Club', price:bagPrice(tier)}; }
   render();
 }
 function overlayShop(screen){
@@ -16651,7 +16692,7 @@ function overlayShop(screen){
   }
   // CS356g: the pixel golfer renders shirt/hat/pants/shoe COLORS, shirt PATTERNS, and headwear/eyewear
   // ACCESSORIES - so the shop sells all of those (Apparel = colors + pattern, Accessories = headwear/eyewear).
-  let sec=S.shopSec; if(sec!=='accessories'&&sec!=='owned') sec='apparel';
+  let sec=S.shopSec; if(sec!=='accessories'&&sec!=='owned'&&sec!=='bag') sec='apparel';
   const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes']];
   const ACCS=[['hw','Headwear'],['ew','Eyewear']];
   const cats = sec==='apparel'?APP : sec==='accessories'?ACCS : null;
@@ -16666,6 +16707,7 @@ function overlayShop(screen){
     <div class="segrow">
       <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel</button>
       <button data-sec="accessories" class="${sec==='accessories'?'on':''}">Accessories</button>
+      <button data-sec="bag" class="${sec==='bag'?'on':''}">Bag</button>
       <button data-sec="owned" class="${sec==='owned'?'on':''}">My Items</button></div>
     ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-cat="${c[0]}">${esc(c[1])}</button>`).join('')}</div>`:''}
   </div>`);
@@ -16673,8 +16715,10 @@ function overlayShop(screen){
   try{ ov.appendChild(accBoostSummaryNode()); }catch(e){}   // live "equipment boost" summary from your worn gear
   const grid=$(`<div class="sgrid"></div>`); const tiles=[];
   if(sec==='apparel'||sec==='accessories'){ cosmeticItems(cat).forEach(o=>tiles.push(cosTileHTML(cat,o))); }
-  else {  // My Items: everything you've unlocked (colors, patterns, headwear, eyewear) beyond the free basics
+  else if(sec==='bag'){ BAG_CLUBS.forEach(c=>{ tiles.push(`<div class="bag-hdr" style="grid-column:1/-1;margin:8px 0 -2px;font:800 12px/1 var(--body);letter-spacing:.03em"><span style="color:var(--gold)">${esc(c.name)}</span> <span class="muted" style="font-weight:600">· ${esc(c.sub)}</span></div>`); c.tiers.forEach((ti,i)=>tiles.push(bagTileHTML(c.k,i+1))); }); }
+  else {  // My Items: everything you've unlocked (colors, patterns, headwear, eyewear, clubs) beyond the free basics
     COS_CATS.forEach(c=>{ cosmeticItems(c.k).forEach(o=>{ if(cosOwned(c.k,o.id)&&!FREE_COSMETICS[cosKey(c.k,o.id)]) tiles.push(cosTileHTML(c.k,o)); }); });
+    BAG_CLUBS.forEach(c=>{ const t=bagTierOwned(c.k); if(t>0) tiles.push(bagTileHTML(c.k,t)); });
   }
   // PREVIEW + CONFIRM: a locked item you tapped is being previewed on the golfer (above) - show the
   // confirmation card instead of the grid so nothing is bought on a single tap.
