@@ -9777,6 +9777,39 @@ allows Google Fonts, or self-host Anton.*
   owned gear/cosmetics are untouched, and the derived/forfeit accounting is unchanged, only its interaction
   with the spendable balance is fixed. iOS may need a full close-and-reopen to load the new code.)
 
+- **CS406 — three pack TIERS (Base / Tour / Champion) with escalating odds (owner: "2 new packs with
+  higher odds at pulling better items. The one we have now is the base pack, 2 more tiers above; top pack
+  golden, middle blue or purple").** The existing pack is now the **Base** tier (green, unchanged odds/
+  price); added two better tiers above it — **Tour** (purple, middle) and **Champion** (gold, top) — each
+  with better epic+/legendary odds, a higher price, and a tighter pity floor:
+  - **Base** (green #3fbf7a) — common .55 / rare .30 / epic .12 / **legendary .03** (15% epic+), 12,000
+    coins, pity Epic+ in 10 / Legendary in 40. (Unchanged from before.)
+  - **Tour** (purple #a24be0) — .30 / .40 / .22 / **.08** (30% epic+), 28,000, pity 6 / 24.
+  - **Champion** (gold #F1D04A) — .10 / .35 / .38 / **.17** (55% epic+), 55,000, pity 4 / 12.
+  Implementation (`PACK_TYPES` config table drives everything — one place to tune odds/price/pity/color):
+  `rollPackRarity(odds)`, `rollPackWin(tier)`, and `buildWheelReel(win,tier)` all take the tier so the
+  winner roll AND the reel fillers use that tier's odds; `startPackDeal({pack})` charges `packType(tier).price`
+  and carries the tier through to the wheel; `startPackBundle(tier)` runs a 5-pack bundle of the same tier
+  (Base 48k / Tour 112k / Champion 220k, still "5 for the price of 4"). Pity counters stay shared in
+  `packState` but each open reads its OWN tier's thresholds, so a better pack hits its guarantee floor
+  sooner. **Free-pack credits + the first-pack-free apply to the BASE tier only** (higher tiers are coins-
+  only — an earned "free pack" is a Base pack). The **pack art recolors per tier** (`pxPackURL(tier)` +
+  `PACK_PAL_OVR` — the green wrapper → purple / rich-gold, cached per tier), and the **wheel overlay is
+  tinted per tier** (pointer color via a `--pw` CSS var, wheel border + glow, and the pack name in the
+  title). The **Pro Shop Packs screen** now shows three tier cards (recolored pack art, epic+/legendary %,
+  live pity, Open + Bundle buttons color-matched to the tier) plus a **drop-rate comparison table** across
+  all three tiers.
+  Verified in Playwright: per-tier odds match the design over 3,000 rolls each (Base ~55/30/12/3, Tour
+  ~32/39/21/8, Champion ~9/34/38/18 — cleanly escalating 15% → 30% → 55% epic+); prices 12k/28k/55k, pity
+  10/40 → 6/24 → 4/12; the three pack arts + wheel pointer colors are distinct (green/purple/gold);
+  opening a Champion pack charges 55,000 (minus any dupe refund), lands on the winner, and "Open another"
+  re-opens the same tier; a free credit opens a Base pack (never a Champion — credit-only-on-base enforced);
+  bundle prices correct; and the shop renders all three cards + the drop table with 0 page errors.
+  Screenshots confirm the shop tiers + the gold Champion wheel. Deployed to /golf. Tunable: the whole
+  `PACK_TYPES` table (odds/price/pity/color per tier) + `PACK_PAL_OVR` (per-tier pack art). (No SQL, no
+  economy-value change beyond the new prices; owned gear/coins untouched. iOS may need a full reopen to
+  load the new code.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
