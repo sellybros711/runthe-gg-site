@@ -9005,6 +9005,29 @@ allows Google Fonts, or self-host Anton.*
   the swing view thresholds (±0.42 up) + `clubFrac`/anchor in `hvSwingMarkup`, the `PXB_*`/`PXF_*` frames in
   `swingdir.py`, the palette/composition in `pxTitleBgURL`, the `PXCREST` grid.
 
+- **CS364 — golfer re-authored at higher resolution (finer pixels + more detail) + much smoother home
+  background (owner feedback on CS363).** (1) The swing golfer was "too blocky" and, at the 24×30 grid,
+  accessories would be "impossible to see." Re-authored ALL 21 swing frames (SIDE + BACK + FRONT × full
+  swing 3 / chip 2 / putt 2) at **44×56** (up from 24×30, matching the menu-avatar resolution) via a new
+  detailed composer (`scratchpad/swing2.py`) — finer pixels with real detail: polo COLLAR + button placket,
+  a BELT, shaped golf SHOES (upper + sole shade), a proper driver HEAD, forearms, hair under the cap. Two
+  new palette chars threaded into `pxStrokeURLs` (`e` shoe-shade = `pxShade(shoesHex,-24)`, `b` belt =
+  `#2a2c32`); `PXS_W/PXS_H` bumped 24/30→44/56 and the `PXS_*`/`PXB_*`/`PXF_*` constants replaced. Since
+  `.hvsw` renders smoothed (not pixelated), the finer source grid shows as more detail when downscaled. Also
+  bumped the on-screen size a touch (`GH` 26→32 full, putt cap 22→24) so the detail + future accessories
+  actually read, and the sprite-painted ball was dropped in favour of the engine ball (the club head sits at
+  address). `hvSwingMarkup`'s ball anchor updated to the new grid (side ~row48, back/front ~row47).
+  Verified: view selection still correct (up→back, down→front, lateral→side, lefty mirror, putt→back-putt),
+  the real sprites render composited on-course with the detail visible + soft rim + number pin, zero page
+  errors. (2) The pixel home background "read as static" (the ordered dithering) and the owner disliked the
+  sun behind the gold hero text. `pxTitleBgURL` rewritten: **no dithering** (smooth multi-stop gradient
+  sky), **no sun disc** (just a warm horizon glow), higher-res 200×240, clean tree line + smooth
+  mow-striped fairway + green/flag/ball/bunker; `.coursebg` switched to `image-rendering:auto` so it renders
+  smoothly. The pixel crest logo (CS363) is unchanged. Verified: title renders the smooth bg with the gold
+  hero text fully legible, zero page errors. Committed + pushed to the feature branch; still NOT deployed to
+  /golf (awaiting owner go-ahead). Tunable: `GH` size + the `PXS_*` frames in `swing2.py`; the gradient
+  stops / composition in `pxTitleBgURL`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
