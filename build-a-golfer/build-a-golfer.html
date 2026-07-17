@@ -5989,8 +5989,23 @@ function pxTitleBgURL(){
   const fy=hy-34;
   for(let i=0;i<14;i++) for(let j=0;j<9;j++){ if(i>=8 && Math.abs(j-4)<(i-8)) continue; set(hx+2+i,fy+j, i<2?GOLDS:GOLD); }
   const bxx=132,byy=181; for(let dy=-2;dy<2;dy++) for(let dx=-2;dx<2;dx++) if(dx*dx+dy*dy<=3) set(bxx+dx,byy+dy,BALL);
-  const nx=44,ny=192,nrx=34,nry=12;
-  for(let y=ny-nry;y<ny+nry;y++) for(let x=nx-nrx;x<nx+nrx;x++){ const d=((x-nx)/nrx)**2+((y-ny)/nry)**2; if(d<=1) set(x,y, d>0.8?lp(SAND,DK,0.25):SAND); }
+  // CS369: deep greenside bunker - grass lip overhang + shaded back wall + lit sand floor + rake lines
+  const nx=46,ny=194,nrx=35,nry=15;
+  const SANDL=[243,229,193], SANDD=[188,168,124], SANDR=[210,192,146], LIP=[26,74,48], LIPD=[12,44,30];
+  for(let y=ny-nry;y<=ny+nry;y++) for(let x=nx-nrx;x<=nx+nrx;x++){ const nxx=(x-nx)/nrx, nyy=(y-ny)/nry; const d=nxx*nxx+nyy*nyy; if(d>1) continue;
+    let c;
+    if(nyy<-0.5) c=lp(SANDD,SAND,(nyy+1)/0.5*0.55);   // shaded back wall (the deep, in-shadow face)
+    else if(nyy>0.35) c=lp(SAND,SANDL,(nyy-0.35)/0.65);// lit floor sloping toward the viewer
+    else c=SAND;
+    if(d>0.8) c=lp(c,SANDD,0.55);                      // darker rim = depth
+    set(x,y,c); }
+  // rake lines: concentric arcs across the lit floor
+  for(const rr of [0.5,0.7,0.88]) for(let x=nx-nrx;x<=nx+nrx;x++){ const u=(x-nx)/(nrx*rr); if(Math.abs(u)>=1) continue;
+    const yy=Math.round(ny + nry*rr*Math.sqrt(1-u*u)); if(yy<ny) continue; set(x,yy,SANDR); }
+  // grass lip overhang along the top back edge + its cast shadow on the sand
+  for(let x=nx-nrx;x<=nx+nrx;x++){ const u=(x-nx)/nrx; if(Math.abs(u)>=1) continue; const topY=Math.round(ny-nry*Math.sqrt(1-u*u));
+    set(x,topY-2,LIPD); set(x,topY-1,LIP); set(x,topY,LIP);
+    set(x,topY+1,lp(SANDD,DK,0.25)); set(x,topY+2,SANDD); }
   // soft top darkening for header legibility
   for(let y=0;y<40;y++){ const f=(40-y)/40*0.4; for(let x=0;x<W;x++){ const i=(y*W+x)*4; const c=lp([D[i],D[i+1],D[i+2]],[8,18,40],f); D[i]=c[0];D[i+1]=c[1];D[i+2]=c[2]; } }
   ctx.putImageData(im,0,0);
