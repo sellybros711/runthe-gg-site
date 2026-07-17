@@ -9387,6 +9387,43 @@ allows Google Fonts, or self-host Anton.*
   All verified in Playwright, 0 page errors; screenshot confirms the header coin pill, the boosts line + Pro
   Shop button under the golfer, and the "+coins · spend at the Pro Shop" toast. Deployed to /golf.
 
+- **CS391 — thin persistent top banner (menu · brand · profile · coins), replacing the bulky header
+  (owner IMG_8409: "combine this information at the top into a thin banner at the top that stays there
+  always. I want the menu button, profile name/sign in and it opens to your profile if you're signed in.
+  And then the coin counter pill").** Rebuilt `header()` into ONE slim, sticky bar rendered on EVERY screen
+  (was: a big decorative crest+wordmark + Player/Reset pills on the title, a compact variant elsewhere).
+  The banner holds exactly what the owner listed: the ≡ menu button, a small crest+"RUN THE TOUR" brand
+  mark (tap → home; the wordmark text hides under 560px so it's crest-only on phones), the profile pill
+  (pixel-avatar chip + username, or "Sign in") which opens the Trophy Room (your profile) when signed in
+  else the account overlay, and the gold coin pill (live balance, tap → Pro Shop, signed-in only). The big
+  crest/wordmark + the **Reset pill are dropped from the top** — Reset now lives only in the ≡ menu (it was
+  already a row there). `.head--banner` is `position:sticky; top:0; z-20` with a translucent blurred dark
+  bg + bottom border, so it stays pinned while scrolling ("stays there always"); overlays (z-40) still
+  cover it and the bottom nav (z-25) is unaffected. The old `.crestrow`/`.pills`/`.wordmark`/`head--compact`
+  CSS is now unused (left in place, harmless). Verified in Playwright (phone + desktop): the banner renders
+  with menu+brand+profile+coin and NO Reset, is sticky, the profile pill opens the Trophy Room (`record`)
+  and the coin pill opens the shop, the ≡ menu still has a Reset row, guests see "Sign in" + no coin pill;
+  0 page errors. Screenshots confirm the clean thin banner on the title (crest-only phone, full wordmark
+  desktop). Deployed to /golf.
+
+- **CS392 — every game mode rewards coins by PERFORMANCE + skipping earns far fewer (owner: "It should be
+  a grind to earn coins, but every game mode should reward you with coins based on how you performed, and
+  if you skip to the end, you shouldn't get nearly as many coins").** Reworked the career/circuit coin
+  faucet from a per-win-only reward into a single **performance-scaled season reward** so every season pays
+  (not just wins): new `seasonCoins(t, moneyRank)` = `wins·200 + majors·700 + top10·25 + cuts·6 +
+  money-list-finish bonus` (rank 1 → +400 … top-25 → +50), awarded once at season end via `awardPlayCoins`.
+  Modest by design (a mid season ~500, a dominant season ~2,900, a poor season ~85), so coins stay a grind.
+  A season **SIMMED to the end** (Skip to end) earns `COIN_SEASON_SKIP=0.35` of it (far fewer, not zero),
+  and the existing derived-milestone-pool forfeit on skip is kept, so a skipped season is consistently the
+  reduced reward. Removed the old per-event interactive win faucet (`awardPlayCoins(winCoins(evt))` in the
+  scrSeason win-celebration block) so wins are counted ONCE in the season reward and the skip penalty
+  applies whether you play or sim (no double-count). The **Daily** now also scales by performance: base +
+  beat-the-pro bonus + a margin bonus for how far under the tour average you finished
+  (`min(150, (avg-total)·18)`). H2H win reward unchanged. Verified in Playwright: `seasonCoins` spread
+  (495 mid / 2919 dominant / 85 poor; ×0.35 skip); a real career season → summary awards the full reward
+  when played and ~35% when skipped, both reaching the summary with 0 page errors. Tunables: `seasonCoins`
+  weights + money-rank bonus, `COIN_SEASON_SKIP`, the daily margin cap/slope. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
