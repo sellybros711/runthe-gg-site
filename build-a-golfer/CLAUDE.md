@@ -10215,6 +10215,16 @@ allows Google Fonts, or self-host Anton.*
   violet, menu titled "Your Legend Tokens" with a violet border + `.btn.legend` buttons + token icon; 0 page
   errors. Screenshots confirm the distinct token pill + themed menu. Deployed to /golf.
 
+- **CS429 — even spacing between the "RUN THE TOUR" wordmark and the banner pills (owner: too close).**
+  The banner was a 3-column `1fr auto 1fr` grid that force-centered the wordmark in the whole bar, so with
+  the left group (menu+profile) narrower than the right (legends+coins) the gaps were lopsided and even
+  overlapped on small phones (measured left 50 / right 15 at 412px, right −11 at 360px). Switched `.banner`
+  to flex — the wordmark (`.bnbrand`, `flex:1; text-align:center; padding:0 12px; overflow:hidden`) takes
+  the middle space and centers within it, giving SYMMETRIC clearance to both side groups (`.bnleft`/
+  `.bnright` = `flex:0 0 auto`); gap 8→10. Added a ≤380px breakpoint shrinking the wordmark 15→13px so it
+  clears the pills on tiny phones. Verified in Playwright: gaps now 18/11 (360), 21/21 (390), 32/32 (412),
+  178/178 (780), no overflow at any width. Screenshot confirms the balanced banner. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
