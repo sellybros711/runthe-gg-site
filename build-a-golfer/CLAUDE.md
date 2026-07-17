@@ -9898,6 +9898,14 @@ allows Google Fonts, or self-host Anton.*
     irregular patches (distance-to-centers + sine wobble) scattered across the shirt instead of one blob,
     **Leopard** → staggered rosette spots (dark center + mid-brown ring on gold). Re-rendered the 12-golfer
     preview grid to confirm all read clearly; 0 page errors.
+    - **CS409c — tiger/zebra stripes de-uniformed (owner: "still too uniformly curved").** The first redraw
+      still applied a single global `sin(y)` wobble to every stripe, so they read as identical parallel
+      curves. Reworked the boundary: a mostly-y-dependent path (stripes stay continuous) + two incommensurate
+      y-frequencies (the wave isn't a clean sine) + a LOW-frequency x term (`sin(x*0.25+…)`, low enough that a
+      stripe stays intact but adjacent stripes fan/shear differently) + per-y thickness variance on tiger
+      (tapering). Result: irregular, near-vertical stripes that each bend differently, not parallel sines. A
+      first attempt with a HIGH x-frequency fragmented the stripes into noise (caught in the preview,
+      dialed back).
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
