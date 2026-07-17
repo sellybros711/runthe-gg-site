@@ -10043,6 +10043,13 @@ allows Google Fonts, or self-host Anton.*
     Crown/Shades/Prism · 6 Golf Bag slot). Tunable: the sprite maps (regen via the three `.py` generators),
     `PXG_CLUB_PAL`/`PXG_BALL_PAL`/`PXG_CLEATS_PAL`, prices, the ball hole-view tracer colors.
 
+- **CS415 — Hockey Stick Putter (legendary club).** Owner: "a wooden hockey stick like Happy Gilmore's, as a
+  legendary — it's a putter." Added `hockey` to `PXG_CLUBS`/`PXG_CLUB_PAL` (via `hockey-club.py`): a long
+  wooden shaft with black tape wraps down to an L-shaped blade lying along the ground with a taped toe. Rides
+  the CS414 club cosmetic system unchanged — legendary (30k→90k), in `cosmeticItems('club')` + the pack pool
+  at legendary, renders hand-correct with lefty mirror. Verified in Playwright (correct rarity/price/pool,
+  equips, 0 page errors) and on the golfer at game scale. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
