@@ -17980,8 +17980,18 @@ function h2hCourseKey(seed){ return DAILY_KEYS[(seed>>>0)%DAILY_KEYS.length]; }
 function h2hSeedForCourse(courseKey){
   const N=DAILY_KEYS.length, idx=DAILY_KEYS.indexOf(courseKey); if(idx<0) return null;
   let base=Math.floor(Math.random()*2147482000); base=base-(base%N)+idx;
-  if(base>2147483646) base-=N; if(base<0) base+=N; return base;
+  if(base>2147483646) base-=N; if(base<0) base+=N;
+  if(base<H2H_BOOST_MAX) base+=N*100000;   // keep normal seeds above the boost-tag range so they're never misread as an exhibition
+  return base;
 }
+// ---- Exhibition (equipment boosts) toggle for private friends matches. No SQL: the "boosts on" flag rides in
+// the shared match SEED (a small tagged value; the course = seed % N is preserved), so both clients read it and
+// each bakes their OWN gear into their submitted draft. A boosted match is NEVER reported to the leaderboard or
+// achievements (can't be farmed). Depends on the p_seed create param (migration 42). ----
+const H2H_BOOST_MAX=100000;
+function h2hMatchBoosted(seed){ return seed!=null && seed>=0 && seed<H2H_BOOST_MAX; }
+function h2hBoostSeed(courseKey){ const N=DAILY_KEYS.length; let idx=courseKey?DAILY_KEYS.indexOf(courseKey):-1;
+  if(idx<0) idx=Math.floor(Math.random()*N); return idx + N*(1+Math.floor(Math.random()*1500)); }   // < 100000, seed%N = course
 function h2hCondName(seed){ const r=mulberry32(((seed>>>0)^0x5bd1e995)>>>0)(); return r<0.27?'calm':r<0.72?'breezy':r<0.92?'windy':'gusting'; }
 function h2hBuildHash(sk){ let h=2166136261>>>0; for(const c of CATS){ h^=(sk[c.k]|0); h=Math.imul(h,16777619); } return h>>>0; }
 // one hole's strokes-to-par for a given build; i can exceed the course length (playoff wraps)
@@ -18000,8 +18010,11 @@ function h2hScorecard(sk,seed,holes){
 
 /* ---- RPC actions ---- */
 async function h2hCreate(pub){
-  // private rooms let the creator pick the course (encoded into the seed); quick/public stay random
-  const seed=(!pub && S.h2h.courseKey)?h2hSeedForCourse(S.h2h.courseKey):null;
+  // private rooms let the creator pick the course (encoded into the seed); quick/public stay random.
+  // A private room with equipment boosts ON uses a tagged seed (h2hBoostSeed) so both clients read "exhibition".
+  const boosts=!pub && !!S.h2h.boostsOn;
+  const seed=boosts ? h2hBoostSeed(S.h2h.courseKey)
+           : ((!pub && S.h2h.courseKey)?h2hSeedForCourse(S.h2h.courseKey):null);
   try{
     let r=await sb.rpc('h2h_create', seed!=null
       ? {p_mode:S.h2h.mode,p_holes:S.h2h.holes,p_public:!!pub,p_seed:seed}
@@ -18066,7 +18079,9 @@ function h2hBeginDraft(){
 }
 function h2hGolfersLeft(){ return GOLFERS.length-(S.h2h.revealed?S.h2h.revealed.size:0); }
 function h2hFilled(){ let n=0; for(const c of CATS) if(S.h2h.slots[c.k])n++; return n; }
-function h2hSkills(){ const s={}; for(const c of CATS) s[c.k]=S.h2h.slots[c.k]?S.h2h.slots[c.k].value:REPLACEMENT; return s; }
+function h2hSkills(){ const s={}; for(const c of CATS) s[c.k]=S.h2h.slots[c.k]?S.h2h.slots[c.k].value:REPLACEMENT;
+  if(h2hMatchBoosted(S.h2h&&S.h2h.seed)){ const ab=accBoost(); for(const c of CATS){ if(ab[c.k]) s[c.k]=Math.max(40,Math.min(99+ACC_SKILL_CAP, s[c.k]+ab[c.k])); } }   // exhibition: bake YOUR gear into the submitted draft
+  return s; }
 function h2hOvr(){ return Math.round(ovrFromSkills(h2hSkills())); }
 function h2hReveal(){
   S.h2h.spinning=true; S.h2h.current=null; render();
@@ -18277,6 +18292,8 @@ function h2hReplayStep(){
   } else { R.done=true; render(); }
 }
 function h2hFinishWatch(){ if(S.h2h.reported) return; S.h2h.reported=true;
+  if(h2hMatchBoosted(S.h2h.seed)){   // exhibition (equipment boosts on): never counts for record or achievements
+    S.h2h.exhibition=true; S.h2h.result={win:S.h2h.winVal,kind:S.h2h.winKind}; S.h2h.status='done'; render(); return; }
   h2hCaptureAch();
   if(S.h2h.bots){ h2hRecordBotMatch(); return; }
   h2hReport(); }
@@ -18332,6 +18349,12 @@ function scrH2HHome(){
   const csel=$(`<select id="h2h-course" style="display:block;width:100%;max-width:420px;margin:0 auto 6px;padding:11px 12px;border-radius:11px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--oncard);font-weight:600">${copts}</select>`);
   csel.onchange=()=>{ S.h2h.courseKey=csel.value||null; };
   add(csel);
+  // equipment-boosts toggle for a private friends match: gear applies, but it's an EXHIBITION (off the record)
+  const bon=!!S.h2h.boostsOn;
+  const bwrap=$(`<div class="center" style="max-width:420px;margin:2px auto 0">
+    <button id="h2h-boost" class="btn ${bon?'goldfill':'ghost'}" style="width:100%">${bon?'Equipment boosts: ON':'Equipment boosts: OFF'}<span class="sub">${bon?'Both players’ gear counts · exhibition, not on the leaderboard':'Pure skill · counts for your W/L record'}</span></button></div>`);
+  bwrap.querySelector('#h2h-boost').onclick=()=>{ S.h2h.boostsOn=!S.h2h.boostsOn; render(); };
+  add(bwrap);
   add($(`<div style="height:8px"></div>`));
   const stack=$(`<div class="stack" style="max-width:420px;margin:0 auto"></div>`);
   const q=$(`<button class="btn goldfill">Quick Match<span class="sub">${m.cap>2?`Get grouped with the next ${m.cap} players online`:'Get paired with the next player online'} · random course</span></button>`); q.onclick=h2hQuick; stack.appendChild(q);
