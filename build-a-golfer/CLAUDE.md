@@ -10128,6 +10128,19 @@ allows Google Fonts, or self-host Anton.*
   (1 effect layer ✓ · 2 fixed patterns ✓ · 3 heritage apparel ✓ · 4 vintage equipment + accessories ✓ ·
   5 specialty accessories ✓ (trophy-charm collectibles deferred) · **6 Golf Bag slot ✓**).
 
+- **CS421 — remove the visual golf bag; add a "Your Golf Bag" gear menu (owner: "not sure I like the visual
+  bag… I like the choice of clubs but it doesn't need to be visual. A top-right 'YOUR GOLF BAG' button that's
+  where you edit clubs + ball. Separate clothes/accessories from golf gear").** Reverted CS420's back-slung
+  bag sprite entirely (removed `PXG_BAG`/`PXG_BAG_PAL`, the behind-body paint, the `bag` COS_CAT, pricing,
+  catalog, pack pool, thumb, board-snapshot key). **Reorganised the customizer:** `club` left Appearance and
+  `ball` left Gear; both now live in a dedicated **Your Golf Bag** view (`S.golfBag`) reached by a gold
+  **🎒 Your Golf Bag** button at the top-right of the create/edit screen (a "‹ Styling" toggle returns). So
+  the main screen is clothes/accessories (Appearance · Apparel · Gear=Headwear/Eyewear/Cleats · Effects ·
+  Profile) and the bag holds the golf gear (Clubs · Ball). The favorite club still renders in the golfer's
+  hand — only the bag sprite is gone. Verified in Playwright: no `bag` cosmetic, styling chips exclude
+  Clubs/Ball, the button opens a Clubs+Ball view and toggles back, a stale `look.bag` renders cleanly; 0
+  page errors. Deployed to /golf. *(Cleats left in Gear as footwear; movable to the bag if wanted.)*
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
