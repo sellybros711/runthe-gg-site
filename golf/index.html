@@ -2578,19 +2578,37 @@ function streakWeekReward(){ if(!sbSignedIn()) return null;
   if(w.done.indexOf(n)<0) w.done.push(n);
   LS.set(acctKey('bag_streakweek'),w); if(typeof cloudPush==='function') cloudPush();
   return out; }
-// a compact 7-day reward track for the current streak week (daily preview + result). Signed-in only.
-function streakWeekNode(){ if(!sbSignedIn()) return null;
-  const w=streakWeekState(), n=Math.min(7,w.days||0); let cells='';
-  for(let d=1;d<=7;d++){ const kind=STREAK_WEEK_TRACK[d], got=d<=n;
-    const lab = kind==='coins'?'+500':(kind==='mulligan'?'Mulli':'PACK');
-    const col = kind==='pack'?'var(--gold)':(kind==='mulligan'?'#8fd0ff':'#cfe6d8');
-    cells+=`<div style="flex:1;text-align:center;padding:6px 2px;border-radius:8px;background:${got?'rgba(241,208,74,.14)':'rgba(255,255,255,.04)'};border:1px solid ${got?'rgba(241,208,74,.4)':'rgba(255,255,255,.08)'}">
-      <div style="font:800 10px var(--body);color:#8ea9bb">${d}</div>
-      <div style="font:800 10.5px var(--body);color:${got?col:'#5f7d90'};margin-top:2px">${lab}</div></div>`; }
-  return $(`<div class="scout" style="text-align:left;padding:11px 12px;margin:8px 0">
+// CS402: current WIN streak = consecutive days you beat the pro (derived from the cloud-synced wonDays map),
+// counting back from today (or yesterday if you haven't beaten it yet today).
+function winStreak(){ const won=(dailyStats().wonDays)||{};
+  let i = won[todayKey()] ? 0 : (won[yesterdayKey()] ? 1 : -1);
+  if(i<0) return 0;
+  let n=0; while(won[dayKeyBack(i)]){ n++; i++; if(i>400) break; }
+  return n; }
+// CS402: a 7-day ADVENT-CALENDAR of daily login rewards + the play-streak & win-streak counters. Each day
+// you play claims the next slot in order (miss a day → you just can't reach day 7 that week). Signed-in only.
+function streakAdventNode(){ if(!sbSignedIn()) return null;
+  const w=streakWeekState(), claimed=Math.min(7,w.days||0), playedToday=(w.lastDay===todayKey());
+  const next = playedToday ? 0 : Math.min(7, claimed+1);            // the slot you'll claim after today's round
+  const play=streakDisplay(), win=winStreak();
+  const rlab={coins:'500',mulligan:'Mulli',pack:'PACK'}, rcol={coins:'#cfe6d8',mulligan:'#8fd0ff',pack:'var(--gold)'};
+  let cells='';
+  for(let d=1;d<=7;d++){ const kind=STREAK_WEEK_TRACK[d], got=d<=claimed, today=(d===next);
+    const bg=got?'rgba(53,214,160,.14)':(today?'rgba(241,208,74,.18)':'rgba(255,255,255,.04)');
+    const bd=got?'rgba(53,214,160,.5)':(today?'var(--gold)':'rgba(255,255,255,.09)');
+    cells+=`<div style="flex:1;text-align:center;padding:7px 1px;border-radius:9px;background:${bg};border:1px solid ${bd};${today?'box-shadow:0 0 10px rgba(241,208,74,.32)':''}">
+      <div style="font:800 8.5px var(--body);color:#8ea9bb;letter-spacing:.03em">DAY ${d}</div>
+      <div style="font:800 11px var(--body);color:${got?'#8fe8c4':(today?'var(--gold)':rcol[kind])};margin-top:3px">${got?'✓':rlab[kind]}</div>
+      ${today?'<div style="font:800 7.5px var(--body);color:var(--gold);margin-top:2px;letter-spacing:.04em">TODAY</div>':''}</div>`; }
+  const counter=(icn,lab,val,col)=>`<div style="flex:1;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:8px 10px">
+    <span style="font-size:17px">${icn}</span><div><div style="font:800 15px var(--body);color:${col};line-height:1.05">${val}</div><div class="small muted" style="font-size:9px;letter-spacing:.05em;text-transform:uppercase">${lab}</div></div></div>`;
+  return $(`<div class="scout" style="text-align:left;padding:12px;margin:8px auto;max-width:520px">
+    <div style="display:flex;gap:8px;margin-bottom:11px">
+      ${counter('🔥','Play streak', play+' day'+(play===1?'':'s'), 'var(--gold)')}
+      ${counter('⚡','Win streak', win+' day'+(win===1?'':'s'), '#8fd0ff')}</div>
     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px">
-      <span style="font:800 12px var(--body);color:#ffd45e">🔥 Daily Streak Week</span>
-      <span class="small muted" style="letter-spacing:0">Day ${n}/7 · resets Sunday</span></div>
+      <span style="font:800 11.5px var(--body);color:#ffd45e">🎁 7-Day Rewards</span>
+      <span class="small muted" style="letter-spacing:0">Play daily to claim · resets Sunday</span></div>
     <div style="display:flex;gap:4px">${cells}</div></div>`); }
 function dayKeyBack(n){ const t=todayKey(), y=Math.floor(t/10000), m=Math.floor(t/100)%100, d=t%100;
   const dt=new Date(Date.UTC(y,m-1,d,12,0,0)); dt.setUTCDate(dt.getUTCDate()-n);   // calendar arithmetic on the ET date, anchored at noon (DST-safe)
@@ -17092,10 +17110,8 @@ function scrDailyPreview(){
     <div class="small muted" style="margin-top:3px">What real tour pros average here. Post a lower round to win the day.</div></div>`));
   // CS257: streak calendar in the Beat-the-Pro flow. (CS302: quests/weekly/rep panel removed from here -
   // it lives in the ≡ Challenges overlay; the owner wanted the Beat-the-Pro page decluttered.)
-  if(!S.special && !PRACTICE){
-    const st=streakDisplay();
-    if(Object.keys(streakDays()).length>0 || st>0) add(streakCalendar(14));
-    if(sbSignedIn()){ const swn=streakWeekNode(); if(swn) add(swn); }   // CS401 streak-week reward track
+  if(!S.special && !PRACTICE && sbSignedIn()){
+    const an=streakAdventNode(); if(an) add(an);   // CS402: play/win streak counters + 7-day advent calendar
   }
   const recTxt=rec?`<b style="color:var(--gold)">${dTot(rec.toPar, c.par)}</b> by ${esc(crHolders(rec))}`
     :(sbSignedIn()?`<b style="color:var(--gold)">Unclaimed</b>, be the first to set it`:`<b style="color:var(--gold)">Sign in</b> to post your score`);
@@ -18817,9 +18833,8 @@ function scrDailyResult(){
   if(si&&si.mile) add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:var(--gold)"><b style="color:var(--gold)">🔥 ${si.mile}-day streak!</b>${si.gotFreeze?' <span class="small muted">earned a ❄️ streak freeze</span>':''}</div>`));
   else if(si&&si.usedFreeze) add($(`<div class="scout small" style="max-width:520px;margin:0 auto 8px;text-align:center;border-color:#7ec8ff"><b style="color:#7ec8ff">❄️ Streak freeze used</b> <span class="muted">, your ${si.current}-day streak survived a missed day.</span></div>`));
   else if(si) add($(`<div class="small center" style="margin:0 0 8px;color:var(--gold);font-weight:700">🔥 ${streakDisplay()}-day streak, see you tomorrow to keep it going</div>`));
-  // CS252: the visual streak calendar (today now filled in)
-  if(!practice && (Object.keys(streakDays()).length>0 || streakDisplay()>0)) add(streakCalendar(14));
-  if(!practice && sbSignedIn()){ const swn=streakWeekNode(); if(swn){ swn.style.maxWidth='520px'; swn.style.marginLeft='auto'; swn.style.marginRight='auto'; add(swn); } }   // CS401 streak-week track
+  // CS402: play/win streak counters + the 7-day advent-calendar reward track (today now claimed)
+  if(!practice && sbSignedIn()){ const an=streakAdventNode(); if(an) add(an); }
   // Wordle-style lifetime record: total days played + how often you beat the pro (a tie counts as a loss)
   if(!practice){ const st=dailyStats(); if(st.played>0){ const pct=dailyWinPct(); const ds=LS.get(acctKey('bag_streak'),{}); const best=ds.longest||streakDisplay();
     add($(`<div class="scout" style="max-width:520px;margin:0 auto 8px"><div class="small muted center" style="letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">Your daily record</div>
