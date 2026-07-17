@@ -9099,6 +9099,24 @@ allows Google Fonts, or self-host Anton.*
   zero page errors. (CS370b: iron/wedge/putter heads recolored bright silver/chrome via a new `S` palette
   color so they're distinct from the dark driver/wood.)
 
+- **CS371 — bigger brown-trunked trees + swing golfer in scale, sits at the ball (owner IMG_8365: "Trees
+  way too small in comparison to golfer. make the trees slightly bigger. All of the trees stems are a white
+  pixel but it should be a brown pixel. Golfer out of position and is above/in front of the ball and tee
+  box").** Three fixes in the pixel course renderer (`pxTerrainURL`) + the mini swing golfer
+  (`hvSwingMarkup`); rendering-only. (1) **Bigger trees**: `drawTree` parkland disc radius `(big?4:2)+..2.6`
+  -> `(big?6:3)+..3` and `drawTreeS` `baseR` `(?4:2)` -> `(?6:3)` with the clamp `GH*0.14` -> `GH*0.18`;
+  the general pine/cypress low-res shape was redrawn taller/wider (7 rows vs 5). (2) **Brown trunks**: the
+  off-white trunk palettes (`#e8e2d2`/`#d9d2be` in the parkland/coastal/links biomes + the Riviera
+  course-tweak) changed to brown (`#6b4a2a`/`#75512e`), and the pine/general trees now draw a
+  multi-row/height-scaled brown trunk (`for k<max(1,r*0.4)`). (3) **Golfer position/scale**: `GH` 32->24
+  (in scale with the now-bigger trees, addressing "trees too small vs golfer") and `botPad` 42->14 so the
+  golfer sits AT the ball/tee instead of being lifted ~42px above it (the "above/in front of the ball"
+  complaint); putt-view cap tightened `Math.min(24,cam[3]*0.16)` -> `Math.min(20,cam[3]*0.14)`. Verified in
+  Playwright by rendering a real tee shot on a pixel course: the golfer now stands at the tee box (shot pin
+  "1" above its head), proportional to the bigger brown-trunked trees, no longer floating above the ball;
+  0 page errors. Deployed to /golf. Tunable: the `drawTree`/`drawTreeS` radii + `GH*0.18` clamp, the biome
+  `trunk` palettes, `GH`/`botPad` in `hvSwingMarkup`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
