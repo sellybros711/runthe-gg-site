@@ -9430,6 +9430,49 @@ allows Google Fonts, or self-host Anton.*
   when played and ~35% when skipped, both reaching the summary with 0 page errors. Tunables: `seasonCoins`
   weights + money-rank bonus, `COIN_SEASON_SKIP`, the daily margin cap/slope. Deployed to /golf.
 
+- **CS393 — show off your customized golfer everywhere: H2H previews, leaderboard top-3 podium, + Daily &
+  Weekly leaderboard tabs (owner: "display users' characters on leaderboards, specifically the top 3, and in
+  all h2h preview screens... your golfer to be a flex you show off to everyone" + "a proper daily and weekly
+  tab that rotates at the same time as the daily challenge").** The pixel-golfer renderers (`pxFigureHTML(look,h)`
+  / `pxAvatarChip(look,sz)`) already take an arbitrary `look`, so this is about getting each player's `look` to
+  the display site.
+  1. **H2H preview golfers (client-only, no migration).** The full `look` already travels with each H2H draft
+     (`h2h_submit_draft` → `h2h_state` → `unit.members[].draft.look`), so `scrH2HPreview` (Tale of the Tape) now
+     renders each competitor's golfer at the top of their column — one per player in 1v1/FFA, BOTH partners for
+     the 2v2 team modes. Fixed `h2hBotLook()` to emit a full, valid, varied look (was a partial `{shirt,gender:'m'}`
+     that rendered mostly default) so client bots show as real customized characters; server-fill bots (empty
+     look) fall back to the default golfer.
+  2. **Leaderboard top-3 podium golfers (migration 52).** `runtour_scores` had no appearance column, so
+     `supabase/52_runtour_leaderboard_golfers.sql` (owner-run) adds a `look` jsonb, threads an optional `p_look`
+     through `runtour_submit_season`/`_guest`, and returns `look` from `runtour_season_board`/`runtour_career_board`
+     (career picks the newest season's look). Client: a minimal `lookForBoard()` snapshot (only the render-relevant
+     keys) rides with the season submit (try-with-p_look / fall-back-without, so it's deploy-safe pre-migration),
+     and the CS268 podium now renders `pxFigureHTML(r.look||DEFLOOK)` for each of the top 3 (#1 bigger; legacy/null
+     look → default golfer).
+  3. **Daily + Weekly leaderboard tabs (migration 53).** Two new tabs on the Leaderboard overlay
+     (`overlayLeaderboardDaily`, a self-contained branch so the season/career logic is untouched). **Daily** =
+     today's global daily-challenge board (`runtour_daily_board(todayKey)`), rotating at **ET midnight** with the
+     daily (`todayKey()` is America/New_York) — subtitle shows the course + a live "new course in HH:MM" countdown
+     (`dCd('hm')`). **Weekly** = a NEW `runtour_daily_week_board(from,to)` aggregating the week's regular daily
+     rounds (cumulative to-par, most under par wins; `weekDayRange()` gives the current `weekKey()` 7-day block's
+     day-key span) — subtitle shows a live "resets in Nd Hh" weekly countdown (new `wNextResetMs()` + a `data-cd="week"`
+     variant added to `dCd`/`tickCountdowns`, so it live-ticks like the daily). Both tabs show the top-3 podium with
+     golfers + the ranked list, and `supabase/53_runtour_daily_weekly.sql` (owner-run) adds `look` to
+     `runtour_daily_scores` (+ `runtour_submit_daily` `p_look` + daily-board return) so the daily/weekly podiums show
+     golfers too. `sbSubmitDaily` sends `p_look` with graded fallbacks (with-look → flags-no-look → bare base) so a
+     plain/legend/spotlight daily still posts on any of migrations 30/45/53 being absent (preserves the CS349 fix).
+  Both migrations mirror the existing `skills`/`followers` threading, are idempotent, and were **validated on a
+  local Postgres** end-to-end: 52/53 apply clean + re-run clean; season/career/daily boards return `look` per row;
+  the career board picks the newest season's look; the weekly board aggregates cumulative to-par + days-played +
+  the most-recent look; and old-client calls WITHOUT `p_look` still insert (null look → default golfer).
+  Verified in Playwright: H2H preview renders golfers in all 4 modes (2/4/4 figures); the season/career podium shows
+  the top-3 golfers (#1 centered/bigger, legacy null-look → default); the Daily tab renders the course + live
+  countdown + podium golfers + ranked list; the Weekly tab renders cumulative scores + a weekly countdown + podium;
+  all 4 tabs switch cleanly (season keeps its sorts/dir toggle, daily/weekly omit them); 0 page errors throughout.
+  **Client deployed to /golf (fail-open: golfers show as default until the migrations land; H2H preview works
+  immediately). ACTION: run `supabase/52_runtour_leaderboard_golfers.sql` then `supabase/53_runtour_daily_weekly.sql`.**
+  Tunables: the podium figure heights, the weekly ranking metric (cumulative to-par) in migration 53.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
