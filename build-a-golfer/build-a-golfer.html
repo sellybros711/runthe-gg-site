@@ -1644,7 +1644,7 @@ function fmtMoneyShort(n){ n=Math.round(n);
   return '$'+n; }
 function ltDefault(){return {seasons:0,careers:0,wins:0,majors:0,top10:0,made:0,played:0,earnings:0,net:0,rivalWins:0,
   bestSeasonNet:0,profitSeasons:0,ironSeasons:0,moneyLeaderSeasons:0,slamSeasons:0,underdogSeasons:0,
-  poySeasons:0,roySeasons:0,scoringSeasons:0,no1Seasons:0,weeksAtNo1:0,
+  poySeasons:0,roySeasons:0,scoringSeasons:0,no1Seasons:0,weeksAtNo1:0,puttLeaderSeasons:0,driveLeaderSeasons:0,
   olyGold:0,olySilver:0,olyBronze:0,fedexCups:0,
   cupApps:0,cupWins:0,cupPoints:0,cupMatchWins:0,cupBest:0,cupCaptain:0,cupCaptainWins:0,
   maxOvr:0,distinctMajors:0,careerSlams:0,maj:{masters:0,champ:0,usopen:0,open:0}};}
@@ -1702,6 +1702,13 @@ const COSMETIC_SHIRTS=[
   {id:'hogangrey',  m:'#6b7682', s:'#545d67', name:'Heritage Gray',     req:m=>m.majors>=3,       reqText:'Win 3 major championships, Hogan grey'},
   {id:'bronze',     m:'#b5763a', s:'#92602e', name:'Bronze',         req:m=>m.wins>=3,         reqText:'Win 3 tournaments'},
   {id:'linkssky',   m:'#38a8d8', s:'#2c87ad', name:'Links Sky',      req:()=>repAtLeast('Star'), reqText:'Reach Tour Rep: Star'},
+  // Legend gear: EARNED, never bought (earn:true -> price 0, auto-granted when the req is met). The hardest
+  // grinds in the game, so they carry the biggest boosts. Two ride the new season-leader counters.
+  {id:'puttwiz',    m:'#6b3fa0', s:'#4e2d78', name:"Putting Wizard's Robe", earn:true, req:m=>(m.puttLeaderSeasons||0)>=250, reqText:'Lead the Tour in putting for 250 seasons'},
+  {id:'fairwaygen', m:'#2e7d5b', s:'#215d43', name:'Fairway General Kit',   earn:true, req:m=>(m.driveLeaderSeasons||0)>=250, reqText:'Lead the Tour in fairways found for 250 seasons'},
+  {id:'ironbyron',  m:'#5a6570', s:'#454e57', name:'Iron Byron Steel',      earn:true, req:m=>(m.scoringSeasons||0)>=25,     reqText:'Win 25 scoring titles'},
+  {id:'no1gold',    m:'#caa42a', s:'#a8871f', name:'World No.1 Gold',       earn:true, req:m=>(m.weeksAtNo1||0)>=1250,       reqText:'Spend 1,250 weeks at World No.1'},
+  {id:'goatonyx',   m:'#17171c', s:'#0c0c10', name:'G.O.A.T. Onyx',         earn:true, req:()=>repAtLeast('Legend'),        reqText:'Reach Tour Rep: Legend'},
 ];
 function allShirts(){ return POLOS.concat(COSMETIC_SHIRTS); }   // base colors + special unlockables
 function findShirt(id){ return allShirts().find(x=>x.id===id)||POLOS[0]; }
@@ -2158,6 +2165,7 @@ function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const 
     profitSeasons:lt.profitSeasons, ironSeasons:lt.ironSeasons, moneyLeaderSeasons:lt.moneyLeaderSeasons,
     poySeasons:lt.poySeasons||0, roySeasons:lt.roySeasons||0, scoringSeasons:lt.scoringSeasons||0,
     no1Seasons:lt.no1Seasons||0, weeksAtNo1:lt.weeksAtNo1||0,
+    puttLeaderSeasons:lt.puttLeaderSeasons||0, driveLeaderSeasons:lt.driveLeaderSeasons||0,
     olyGold:lt.olyGold||0, olySilver:lt.olySilver||0, olyBronze:lt.olyBronze||0, olyMedals:(lt.olyGold||0)+(lt.olySilver||0)+(lt.olyBronze||0),
     cupApps:lt.cupApps||0, cupWins:lt.cupWins||0, cupPoints:lt.cupPoints||0, cupMatchWins:lt.cupMatchWins||0, cupBest:lt.cupBest||0,
     cupCaptain:lt.cupCaptain||0, cupCaptainWins:lt.cupCaptainWins||0,
@@ -3876,12 +3884,18 @@ function computeAwards(){
   if(rookies.length) royName=best(rookies, poyScore);                                   // best debutant who actually competed
   else if(w){ const deb=w.active.filter(g=>g.debutYear===sy).sort((a,bb)=>(bb.lov||0)-(a.lov||0))[0]; royName=deb?deb.name:null; }   // else the top rookie by skill
   const top=worldRanking()[0];
+  // Pro Shop counters: tour PUTTING leader (most Putting rating = fewest putts/hole) + DRIVING leader (most
+  // Accuracy = most fairways found). Determined from the season field's ratings; you lead if you hold the max.
+  const fld=S.season.field||[], meP=fld.find(p=>p.you)||S.season.me||{};
+  const maxPut=fld.reduce((m,p)=>Math.max(m,p.put||0),0), maxAcc=fld.reduce((m,p)=>Math.max(m,p.acc||0),0);
   return {
     poy:{name:poy, you:poy===meName},
     roy: royName?{name:royName, you:royName===meName}:null,
     money:{name:money, you:money===meName, amount:tot[money].money},
     scoring: scoring?{name:scoring, you:scoring===meName, avg:avgOf(scoring)}:null,
     no1:{name:top?top.name:'-', you:!!(top&&top.you)},
+    puttLeader:{ you: maxPut>0 && (meP.put||0)>=maxPut },
+    driveLeader:{ you: maxAcc>0 && (meP.acc||0)>=maxAcc },
   };
 }
 /* ===== Atlantic Cup / Nations Cup, team match play =====
@@ -4524,11 +4538,13 @@ function addBonusCoins(n, opts){ opts=opts||{}; n=Math.round(n||0); if(!sbSigned
 function momentPlayCoins(evt){ if(!evt) return 120; return evt.major?300:(evt.big||evt.playoff||evt.type==='finale')?200:120; }
 function coinFmt(n){ n=Math.round(n||0); return String(n).replace(/\B(?=(\d{3})+(?!\d))/g,','); }   // comma-grouped, no $ - the coin icon is the currency mark
 function grantMilestoneItems(s){ const m=achMetrics(); MILESTONE_ITEMS.forEach(mi=>{ try{ if(!s.owned[mi.id] && mi.when(m)) s.owned[mi.id]=1; }catch(e){} }); }
+// Legend gear (earn:true special shirts) is auto-granted to owned once its hard req is met, so it's a true unlock.
+function grantUnlockShirts(s){ const m=badgeMetrics(); COSMETIC_SHIRTS.forEach(cs=>{ if(!cs.earn) return; const k='sh:'+cs.id; try{ if(!s.owned[k] && cs.req(m)) s.owned[k]=1; }catch(e){} }); }
 // reconcile: self-heal earned total, grant milestone gear, toast newly-earned coins. Runs on load +
 // after evaluateAch / finishes. Signed-in only (coins are an account feature).
 function reconcileCoins(silent){ if(!sbSignedIn()) return 0; const s=coinState(); const e=coinsEarnedRaw(); let gain=0, changed=false;
   if(e>s.seen){ gain=e-s.seen; s.seen=e; changed=true; }
-  const before=Object.keys(s.owned).length; grantMilestoneItems(s); if(Object.keys(s.owned).length!==before) changed=true;
+  const before=Object.keys(s.owned).length; grantMilestoneItems(s); grantUnlockShirts(s); if(Object.keys(s.owned).length!==before) changed=true;
   if(changed) coinSave(s);
   if(gain>0 && !silent && !_coinsSuppressToast) coinToast(gain);
   return gain;
@@ -4577,7 +4593,8 @@ const COS_CATS=[ {k:'shirt',pk:'sh',lookKey:'polo',name:'Shirt color'}, {k:'pat'
 function cosPk(cat){ const c=COS_CATS.find(x=>x.k===cat); return c?c.pk:cat; }
 function cosKey(cat,id){ return cosPk(cat)+':'+id; }
 function cosmeticPrice(cat,id){
-  if(cat==='shirt') return COSMETIC_SHIRTS.some(s=>s.id===id)?12000:4000;   // basic 4k, special/lore colors 12k
+  if(cat==='shirt'){ const cs=COSMETIC_SHIRTS.find(s=>s.id===id); return cs?(cs.earn?0:12000):4000; }   // basic 4k, special/lore 12k, Legend (earn) 0
+
   if(cat==='pat')   return (typeof PXPAT_BY!=='undefined'&&PXPAT_BY[id])?PXPAT_BY[id].price:0;
   if(cat==='hat')   return 4000;
   if(cat==='pants') return 4000;
@@ -4604,6 +4621,8 @@ const COS_BOOST={
   'ew:shades':{clu:3,app:-1},
   'sp:pinstripe':{app:2}, 'sp:stripe':{dist:2,acc:-1}, 'sp:gingham':{scr:2}, 'sp:polka':{clu:2,app:-1},
   'sp:houndstooth':{app:3,dist:-1}, 'sp:tartan':{acc:2,put:1}, 'sp:argyle':{app:2,acc:2,dist:-2}, 'sp:colorblock':{dist:2,clu:1},
+  'sh:puttwiz':{put:6,dist:-2}, 'sh:fairwaygen':{acc:5,app:2,dist:-2}, 'sh:ironbyron':{app:5,acc:1,scr:-2},
+  'sh:no1gold':{clu:3,app:2,acc:2}, 'sh:goatonyx':{clu:4,app:3,put:3},
   'sh:red':{clu:4,dist:-1}, 'sh:mastersgrn':{app:3,clu:2}, 'sh:orange':{app:2,scr:2}, 'sh:pink':{clu:3,acc:1},
   'sh:hogangrey':{acc:3,app:2,dist:-1}, 'sh:bronze':{app:2}, 'sh:linkssky':{acc:2,clu:1}
 };
@@ -11792,6 +11811,8 @@ function scrSummary(){
         if(aw.poy.you) lt.poySeasons=(lt.poySeasons||0)+1;
         if(aw.roy&&aw.roy.you) lt.roySeasons=(lt.roySeasons||0)+1;
         if(aw.scoring&&aw.scoring.you) lt.scoringSeasons=(lt.scoringSeasons||0)+1;
+        if(aw.puttLeader&&aw.puttLeader.you) lt.puttLeaderSeasons=(lt.puttLeaderSeasons||0)+1;   // Pro Shop counter
+        if(aw.driveLeader&&aw.driveLeader.you) lt.driveLeaderSeasons=(lt.driveLeaderSeasons||0)+1;
         if(aw.no1.you){ lt.no1Seasons=(lt.no1Seasons||0)+1; lt.weeksAtNo1=(lt.weeksAtNo1||0)+(S.schedule?S.schedule.length:20); }
         // Olympic medal (won during this season's Games)
         const med=S.season.olympicMyMedal;
@@ -16638,8 +16659,13 @@ function cosTileHTML(cat,o){
      : (o.pat!==undefined
         ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
         : `<span class="sthumb color" style="background:${o.col}"></span>`);
-  const state = equipped?'eq':(owned?'own':'lock');
   const bt=cosBoost(cat,o.id);
+  const csE=(cat==='shirt')?COSMETIC_SHIRTS.find(x=>x.id===o.id&&x.earn):null;
+  if(csE && !owned){   // EARNED Legend gear not yet unlocked: show the requirement, not a buy
+    const sub=(bt?shopBoostTxt(bt)+' · ':'')+`<span style="color:#c9a520">🔒 ${esc(csE.reqText)}</span>`;
+    return shopTile({thumb,name:o.name,state:'lock',noFoot:true,sub,data:`data-tile data-kind="cos-req" data-req="${esc(csE.reqText)}"`});
+  }
+  const state = equipped?'eq':(owned?'own':'lock');
   return shopTile({thumb,name:o.name,state,price,afford:coinBalance()>=price,sub:bt?shopBoostTxt(bt):undefined,
     data:`data-tile data-kind="cos" data-cat="${cat}" data-id="${esc(o.id)}"`});
 }
@@ -16671,6 +16697,7 @@ function shopTileClick(b){
     S.shopPreview={kind:'acc', id, slot:(it&&it.slot)||null, name:(it&&it.name)||'Item', price:it?accPrice(it):0}; }
   else if(kind==='bag-buy'){ const club=b.getAttribute('data-club'), tier=+b.getAttribute('data-tier'); const c=BAG_BY[club], ti=c&&c.tiers[tier-1];
     S.shopPreview={kind:'bag', club, tier, name:(ti&&ti.n)||'Club', price:bagPrice(tier)}; }
+  else if(kind==='cos-req'){ try{ toast('🔒 '+(b.getAttribute('data-req')||'Locked')); }catch(e){} return; }   // earned Legend gear: show the requirement
   render();
 }
 function overlayShop(screen){
