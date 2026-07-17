@@ -192,12 +192,21 @@ This is the feature, so it has to *feel* great:
   "what you could've had"). Confetti + chime on epic/legendary, `win`-pulse on the chosen card,
   reduced-motion safe. Pity forces all 3 cards to the floor tier when due, so the guarantee holds
   whatever you pick. Test-only override `window._PACKSTEST` for QA.
-- ⬜ **P4 faucets + odds screen polish** — first-pack-free, milestone pack coins, a proper drop-rate
-  panel; final pack-price + earn-rate tuning vs the full catalog.
-- ⬜ **P5 cross-device pity + (optional) server open** + Privacy/Terms update.
-- ⬜ **P6 flip `PACKS_ENABLED`** once the reveal + economy feel perfect.
+- ✅ **P4 faucets + odds screen** — **first-pack-free** (a signed-in player's first open costs 0 coins,
+  tracked by `freeUsed` in `bag_packs`; surfaced on the title Pro Shop tile as "🎁 Free pack!" and on the
+  pack screen). A published **drop-rates panel** on the pack screen (Common 55 / Rare 30 / Epic 12 /
+  Legendary 3, plus the dupe-refund table) replaced the old toast. **Pricing (owner):** hike softened
+  ×5 → **×2**, pack price 20k → **12,000**, and a **5-pack bundle for the price of 4** (48,000, save one
+  pack) that opens one-by-one with a per-pack "Next pack ▸" and a final 5-item summary. (Milestone pack
+  coins deferred — the existing coin economy already rewards majors/career-completion with coins.)
+- ✅ **P5 cross-device pity** — `bag_packs` (pity counters + `freeUsed`) added to the cloud-save bundle
+  with a `mergePacks` grow-only merge (keep the more-recent pity state, union the free-pack flag). Terms
+  (in-game + `terms.html`) now disclose randomized packs + published odds + earned-only coins. (Server-side
+  open stays optional — coins are earned-only, so client-side is fine per Q4.)
+- ✅ **P6 `PACKS_ENABLED=true`** — LIVE at /golf. Enabling the flag also flips `priceHike()` to ×2.
 
-To QA the reveal live: set `window._PACKSTEST=true` in the console, open the Pro Shop → Packs.
+**LAUNCHED.** Pack price / bundle / hike are all single constants (`PACK_PRICE`, `PACK_BUNDLE_N`/`_PAY`,
+`PACK_HIKE`) — easy to retune. Odds live in `PACK_ODDS`, dupe refunds in `PACK_DUPE_REFUND`.
 
 ## 8. Build phases (once the decisions below are locked)
 

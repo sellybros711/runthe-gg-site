@@ -9321,6 +9321,44 @@ allows Google Fonts, or self-host Anton.*
   `.catrow` unchanged (`flex-wrap:nowrap`); 0 page errors. Screenshot confirms the clean grouped layout with
   Club visible. Deployed to /golf.
 
+- **CS389 — Pack system LAUNCHED (P4–P6): first-pack-free, 5-pack bundle, softer ×2 hike, drop-rates,
+  cross-device pity (owner: "finish that and implement it").** The gacha pack system was ~built behind
+  `PACKS_ENABLED=false` (P1–P3: 141-item rarity-banded pool, pity — Epic every 10 / Legendary every 40,
+  dupe→coin refunds, Pro Shop **Packs** tab, and the full 3-card "pick one blind, all flip, keep your pick"
+  reveal with confetti/chime). Finished the launch pieces per the owner's calls (AskUserQuestion: ×2 hike
+  not ×5, pack under 20k, add bundles, first pack free):
+  - **Pricing:** `PACK_HIKE` 5→**2** (direct-buy shop prices double the day packs launch, not ×5 —
+    softer on existing balances), `PACK_PRICE` 20,000→**12,000** (undercuts most direct buys post-hike).
+  - **5-pack bundle (owner: "5 packs for the price of 4"):** `startPackBundle()` pays `PACK_BUNDLE_N`(5) ×
+    `PACK_PRICE` ... no — pays `PACK_BUNDLE_PAY`(4) × price = **48,000 for 5** (save one pack). The bundle
+    opens prepaid one-by-one: each 3-card pick shows a "Next pack ▸ · N left" button, and the last pack
+    shows a summary chip-row of all 5 items. `S.packBundle={total,done,results}` tracks it; the reveal
+    title reads "Pack N of 5 · …".
+  - **First pack free (owner onboarding):** `packIsFree()` = signed-in && `!packState().freeUsed`; the
+    first `startPackDeal()` charges 0 coins and sets `freeUsed`. Surfaced as "🎁 Your first pack is on us"
+    on the pack screen and a "🎁 Free pack!" badge on the title's Pro Shop tile (which routes to the Packs
+    tab). Refactored the coin charge OUT of `rollPackCards` into `startPackDeal(opts)`/`startPackBundle`
+    so free/bundle packs skip the charge cleanly.
+  - **Published drop-rates panel** (required + player-trust): replaced the old toast with a proper panel on
+    the pack screen — each rarity's % (55/30/12/3) + the dupe-refund table + "every pull is a fresh roll."
+  - **Cross-device pity:** `bag_packs` (pity counters + `freeUsed`) added to the CS82 cloud-save bundle
+    with a grow-only `mergePacks` (keep the more-recent pity state, union the free-pack flag); `packSave`
+    now triggers a cloud push. The unlocked GEAR already synced (it's written to `coinState.owned`, which
+    is in the bundle).
+  - **Terms:** the in-game Terms + `terms.html` now disclose randomized packs, published odds, and
+    earned-only coins (coins can't be bought with real money) — the legal/policy piece.
+  - **`PACKS_ENABLED=true`** — live. Enabling the flag also flips `priceHike()` to ×2 for everyone.
+  Verified in Playwright end-to-end (no `_PACKSTEST` needed): packsOn true / priceHike 2 / packPrice 12000 /
+  bundle 48000; the free first pack opens for 0 coins and flips `freeUsed`; a subsequent pack deducts exactly
+  12,000; a bundle deducts 48,000 and opens 5 packs sequentially with a 5-chip summary; the drop-rates
+  panel + bundle button render; a shirt's price is base×2 (4000→8000); the title tile shows "🎁 Free pack!"
+  for a fresh account; `cloudBundle()` includes `packs`; 0 page errors. Screenshot confirms the Packs tab
+  (pack art, pity line, "Open a pack · 12,000", "5-Pack Bundle · 48,000 (save 12,000)", drop-rates). Deployed
+  to /golf. Tunables (all single constants): `PACK_PRICE`, `PACK_BUNDLE_N`/`PACK_BUNDLE_PAY`, `PACK_HIKE`,
+  `PACK_ODDS`, `PACK_DUPE_REFUND`, `PACK_PITY_EPIC`/`PACK_PITY_LEG`. (Deferred: milestone pack coins — the
+  coin economy already funds packs; server-authoritative open — only needed if coins ever become
+  real-money-purchasable.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
