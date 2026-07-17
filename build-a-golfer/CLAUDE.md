@@ -10091,6 +10091,20 @@ allows Google Fonts, or self-host Anton.*
     `supabase/58_runtour_board_scoped.sql`** (until then the Today/This week windows show the all-time
     board). Deployed client to /golf.
 
+- **CS418 — Legendary Drop 1, step 5 (part A): specialty store accessories.** Owner (via AskUserQuestion):
+  trophy charms = display-only collectibles; Crown/Shades/Prism = "some more specialty accessories." Added
+  two new **legendary worn cosmetics** (sprites via `specialty-acc.py`, aligned to the head, colours ride
+  `PXG_NOV`):
+  - **Laurel Wreath** (headwear, legendary 30k→90k) — a golden champion's wreath (side leaves + brow band);
+    `PXG_LAUREL` in `PXG_HATS`, `PXG_HAT_OPEN` (sits on the hair like the crown).
+  - **Prism Shades** (eyewear, legendary 30k→90k) — rainbow-mirror lenses; `PXG_PRISM_SHADES` in
+    `PXG_EYEWEAR`, with a 5-colour rainbow lens sweep added to `PXG_NOV` (`a/e/f/r/y`).
+  - Ride the existing hw/ew cosmetic plumbing (`cosmeticItems`/`cosmeticPriceBase`/pack pool → both
+    legendary), so they appear in the shop Accessories tabs + pack reveals automatically. Verified in
+    Playwright on the golfer (both + combined), correct rarity/price/pool, 0 page errors. Deployed to /golf.
+  - **Still to do for step 5:** the display-only **trophy-charm collection** (a collectibles case in the
+    Trophy Room, earned from milestones) — pending owner go-ahead on scope.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
