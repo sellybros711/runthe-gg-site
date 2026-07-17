@@ -8,7 +8,7 @@
                               caching/CORS; the SW never intercepts them).
    skipWaiting + clients.claim mean a newly-deployed SW takes over on the next load. Bump CACHE to
    force-invalidate everything on a breaking change. */
-const CACHE = 'runtour-v6';   // CS356t: force refresh so the season-rail CUT fix reaches cached clients
+const CACHE = 'runtour-v7';   // CS430: network-first-with-timeout for HTML (fast loads on slow networks)
 
 self.addEventListener('install', () => { self.skipWaiting(); });
 
@@ -30,15 +30,18 @@ self.addEventListener('fetch', (e) => {
   const isHTML = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
 
   if (isHTML) {
-    // network-first: updates always win when online; cached copy is the offline fallback.
+    // CS430: network-first WITH a fast cache fallback. A healthy network still wins (fresh deploys land
+    // immediately), but if the network is slow/flaky we serve the cached copy after a short timeout so the
+    // game opens fast instead of waiting on the full ~2MB download. The background fetch keeps updating the
+    // cache for next time. Single cache entry ('./index.html') so any navigation URL (?h2h=, ?ref=…) hits it.
     e.respondWith((async () => {
-      try {
-        const res = await fetch(req);
-        if (res && res.ok) { const c = await caches.open(CACHE); c.put(req, res.clone()); }
-        return res;
-      } catch (_) {
-        return (await caches.match(req)) || (await caches.match('./index.html')) || Response.error();
-      }
+      const cache = await caches.open(CACHE);
+      const cached = await cache.match('./index.html');
+      const netP = fetch(req).then(res => { if (res && res.ok) cache.put('./index.html', res.clone()); return res; }).catch(() => null);
+      if (!cached) return (await netP) || Response.error();   // first-ever load: nothing cached → must wait for network
+      const winner = await Promise.race([ netP, new Promise(r => setTimeout(() => r('__slow'), 2500)) ]);
+      if (winner && winner !== '__slow') return winner;       // network responded in time → fresh
+      return cached;                                          // slow network → cached now; netP still refreshes the cache
     })());
     return;
   }
