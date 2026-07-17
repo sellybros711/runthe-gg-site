@@ -56,6 +56,24 @@ so all 32 drop freely.
 
 ---
 
+## 1b. Catalog goal — 200+ pullable items (long-term)
+
+Owner target: an **extensive** pull list, **200+ items**, grown over time (this is a long-term
+game). Current pool ≈120; we build toward 200+ in batches. Growth levers, cheapest → richest:
+
+- **Patterns** (`PXPAT`, procedural `f(x,y)`) — nearly free to add, each visually distinct on the
+  shirt. Easiest way to add dozens. Target ~50.
+- **Colors** (shirt/hat/pants/shoes) — trivial (hex + name). Named/themed colorways keep them
+  from feeling like filler. Target ~60 across categories.
+- **Boosted accessory gear** (`ACCESSORIES`, icon-based) — cheap data entries, each a boost item.
+  Target ~60.
+- **Authored headwear/eyewear sprites** (pixel art) — the exciting shaped items; slower to make,
+  highest chase value. Target ~40 combined.
+
+Because a bigger catalog means dupes are rarer and the chase is longer, a big list is exactly
+what makes packs feel good long-term. Rarity mix + refund values (below) get re-tuned as the
+catalog grows so the top tier stays genuinely rare.
+
 ## 2. Rarity tiers + odds (the core of the gamble)
 
 Bucket every pool item into a rarity from its **direct price band** (we set these), and give
@@ -92,10 +110,19 @@ Two levers, moved together:
 raise prices now (before packs are perfect), players have no cheap path and the shop feels
 punishing. So: keep today's prices live, and flip *both* on pack launch day. (Flagged as Q3.)
 
-Rough coin-economy sanity: a strong career earns ~20–35k spendable coins today (post 40%-grind
-reset). At ~20k/pack that's ~1 pack/career — probably too slow. We'll likely want to **add coin
-faucets** alongside packs (a free daily pack, a first-pack-free onboarding, pack coins from
-milestones) so opening feels regular. This is the part most worth tuning before launch.
+**Long-term economy (owner):** this is a game people play for a long time, so the pricing has to
+support a long chase, not be exhausted in a week. With a 200+ catalog, the top tiers should take
+a serious, sustained grind (or many packs) to complete — a whale shouldn't 100% it quickly, and a
+casual should still get a satisfying trickle of new items. So pack price + coin earn rate get
+tuned against the *full* catalog size and the post-hike prices, aiming for a months-long
+completion curve for a dedicated player.
+
+**Faucets — owner is wary of FREE daily packs** (hands out too many accessories, cheapens them).
+So lean AWAY from a recurring free pack. Instead earn coins → buy packs, with sparing one-offs
+only: a **first-pack-free** onboarding, and occasional **milestone pack coins** (a major win, a
+career completed) rather than a daily giveaway. The default path is *play → earn coins → choose
+to open a pack*, which keeps items feeling earned. (Revisit only if engagement data says people
+aren't opening enough.)
 
 ---
 
@@ -167,6 +194,19 @@ This is the feature, so it has to *feel* great:
 - **Q2 Pool:** include boost gear + bag tiers (§1). ✅
 - **Q3 Prices:** hike ships with packs, same day (§3). ✅
 - **Q4 Real-money coins:** earned-only for now → lighter client-side v1 (§6). ✅
-- **Q5 Pack cost + faucets:** still open — pick during P4 tuning. Target feel: everyone opens
-  regularly (free daily pack + first-pack-free + milestone pack coins), pack price ~20k, tuned
-  against the post-hike prices so packs are clearly the value path.
+- **Q5 Pack cost + faucets:** owner wary of free daily packs → lean on earned coins, with only a
+  first-pack-free + occasional milestone pack coins (§3). Exact pack price + earn rate tuned in P4
+  against the FULL 200+ catalog for a months-long completion curve. ✅ (direction set)
+
+## 10. The reveal experience (owner: "satisfying, exciting, suspenseful")
+
+This is the heart of the feature and the "don't launch until perfect" bar. Target beats:
+- **Anticipation:** the pack sits closed, a tap starts it — a shake/glow build, a rising tone.
+- **Suspense:** a slot-reel or card-flip that *slows* as it lands; the **rarity color of the glow
+  builds before the item is revealed** (you see "this is going to be big" a beat early). Longer
+  hold for Epic/Legendary.
+- **Payoff:** the item snaps in **worn on your pixel golfer**, rarity burst (confetti + chime on
+  Legendary, reusing the win-celebration + `sfx` toolkit), a big **NEW!** stamp (or "Duplicate
+  +N coins"), then **Equip** / **Open another**.
+- Reduced-motion path: same information, no big animation. Haptics on reveal (Android).
+- Multi-open: reveal one-by-one with a "skip" that fast-reveals the rest.
