@@ -185,10 +185,13 @@ This is the feature, so it has to *feel* great:
 - ✅ **P2 roll engine + pity + dupe** — `openPack()`: pays coins, pity-aware rarity
   (guaranteed epic every 10, legendary every 40 — both verified), grants or refunds a dupe.
   All client-side; `bag_packs` holds the pity counters.
-- ✅ **P3 Packs tab + buy flow + reveal** — a "Packs" tab in the Pro Shop, the pack card + pity
-  line + "View drop rates", and a full-screen **reveal** (suspense spin with the rarity glow
-  building, then the item worn on the golfer + NEW!/dupe, Equip / Open another / Done; confetti +
-  chime on epic/legendary, reduced-motion safe). Test-only override `window._PACKSTEST` for QA.
+- ✅ **P3 Packs tab + buy flow + 3-card reveal** (owner's design) — a "Packs" tab in the Pro Shop,
+  the pack card + pity line + "View drop rates". The reveal deals **3 face-down cards ("Pick your
+  card")**; you tap one blind, **all 3 flip** (each the tier color, with the item worn on the
+  golfer / gear icon, name, and boost), and **you keep the one you picked** (the other two dim as
+  "what you could've had"). Confetti + chime on epic/legendary, `win`-pulse on the chosen card,
+  reduced-motion safe. Pity forces all 3 cards to the floor tier when due, so the guarantee holds
+  whatever you pick. Test-only override `window._PACKSTEST` for QA.
 - ⬜ **P4 faucets + odds screen polish** — first-pack-free, milestone pack coins, a proper drop-rate
   panel; final pack-price + earn-rate tuning vs the full catalog.
 - ⬜ **P5 cross-device pity + (optional) server open** + Privacy/Terms update.
