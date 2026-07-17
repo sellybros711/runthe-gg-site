@@ -6736,7 +6736,7 @@ function scrSetup(){
     const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')):0);
     const newN=(typeof cosNewTotal==='function')?cosNewTotal():0;   // CS422: acquired-but-unviewed items live in the shop now
     const sb=$(`<button class="setup-shopbtn" style="position:relative">${ic('cart',{size:'16px'})}<span>Pro Shop &amp; Packs${nFree>0?' · 🎁 '+nFree+' free pack'+(nFree>1?'s':''):''}${newN>0?' · <span style="color:#ff8f88;font-weight:800">'+newN+' NEW</span>':''}</span> <span class="ssb-go">▸</span>${newN>0?'<span style="position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:#e2554e;border:2px solid #0e2016;box-shadow:0 0 6px rgba(226,85,78,.9)"></span>':''}</button>`);
-    sb.onclick=()=>{ track('setup_shop_open'); S.overlay='shop'; if(freePack)S.shopSec='packs'; render(); };
+    sb.onclick=()=>{ track('setup_shop_open'); S.overlay='shop'; S.shopSec='packs'; render(); };   // CS425: always open the pack menu (was a ReferenceError on undefined 'freePack')
     under.appendChild(sb);
     sticky.appendChild(under);
   }
