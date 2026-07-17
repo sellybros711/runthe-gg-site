@@ -9519,6 +9519,26 @@ allows Google Fonts, or self-host Anton.*
   career's follower growth can't be retroactively recomputed) until new careers post and spread the board.
   Tunables: the `careerPrestige` weights + `FOLLOWERS_PER_PRESTIGE`/`FOLLOWERS_CAP_BASE`.
 
+- **CS397 — NO ceiling on followers/fans; everything in the career impacts them (owner: "there should be
+  no ceiling of any stat. Don't you think?? And I agree everything in the career should impact fans. Wins,
+  decisions, etc").** Reversed CS396's approach entirely per the owner's latest call: removed the follower
+  cap outright rather than scaling it. `gainFollowers` no longer clamps to any ceiling (`s.followers =
+  max(0, cur+add)`) — it keeps the diminishing-returns DAMP (`FOLLOWERS_SOFT/(FOLLOWERS_SOFT+cur)`, so %
+  growth slows as the following gets large and doesn't explode exponentially) but growth is unbounded, so a
+  dominant/popular career keeps climbing without a wall. Removed the whole CS396 cap machinery
+  (`FOLLOWERS_MAX`, `FOLLOWERS_CAP_MIN/BASE`, `FOLLOWERS_PER_PRESTIGE`, `careerPrestige()`, `followerCap()`)
+  and the CS301 `careerStory()` heal clamp (`if(s.followers>FOLLOWERS_MAX)…`) that healed old saves down to
+  40M — so an existing career's real number is now preserved and free to grow. "Everything impacts fans"
+  was already fully wired (grep-confirmed: `gainFollowers` is called from per-event result momentum
+  wins/finishes/missed-cuts, press-conference/interview choices, career dilemma outcomes, press backfires,
+  and the money/win beats) — the only thing suppressing it was the ceiling, now gone. Verified in Playwright
+  against the real `gainFollowers`: uncapped + differentiated with no ties — a dominant ~30-year career
+  lands ~157M (fmt "157M"), an average one ~9M; two huge careers spread 212M vs 92M (was both pinned at
+  40M); a great event's gain (435k) vastly outweighs a poor event's (16k); a follower LOSS (backfired press
+  beat) still applies and floors at 0; 0 page errors. Client-only (the server `p_followers` param is clamped
+  to 2B, non-binding for realistic values), no migration. Deployed to /golf. Tunable: `FOLLOWERS_SOFT` (the
+  damp softness) is the only remaining follower knob.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
