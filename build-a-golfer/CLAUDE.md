@@ -9232,6 +9232,13 @@ allows Google Fonts, or self-host Anton.*
      changes 3/2/1/0 at rank 6/18/50/90.
   All verified in Playwright, 0 page errors. Deployed to /golf.
 
+- **CS384 — off-season CHANGES now use the old re-spin parameters (owner).** Keeping CS383's "always 3
+  re-spins," `offChanges()` now varies by last season's WINS / MAJORS / EARNINGS + TOUR (world) RANKING
+  (the CS382 re-spin tiers) instead of money-list finish alone: a major / 2+ wins / world top-5 → 3; a win /
+  top-10 money / world top-20 → 2; a solid money-or-ranking season (top-40 money / world top-60) → 1; poor →
+  0 (default 1 with no prior season). Verified: changes 3/3/2/3/2/1/1/0 across major/two-wins/one-win/
+  world-top5/world-top20/solid/world-top60/poor, re-spins 3 in every case; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
