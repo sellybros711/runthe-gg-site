@@ -78,20 +78,19 @@ put(blade, [
 ])
 BLADE_PAL = {'l':'#cfd3da','n':'#8a929e','S':'#cfd6df','F':'#f6f8fb','G':'#7f8894'}
 
-# EXCALIBUR — sword pointing straight down-away, broad flat blade toward camera, gold guard + gem
+# EXCALIBUR — a proper straight sword (special items don't conform to club shapes): wrapped grip to the
+# hand, gold crossguard with a set gem, long straight double-edged silver blade with a fuller, point down.
 excalibur = blank()
-put(excalibur, [(34,40,'M'),(34,41,'P'),(35,42,'g'),(36,43,'g'),(36,44,'g'),(37,45,'g'),(38,46,'g'),(39,47,'g')])
-put(excalibur, [
-    (36,48,'X'),(37,48,'X'),(38,48,'X'),(39,48,'X'),(40,48,'X'),(41,48,'X'),   # crossguard
-    (38,49,'M'),                                                                # gem in guard
-    (37,50,'S'),(38,50,'l'),(39,50,'S'),
-    (37,51,'S'),(38,51,'l'),(39,51,'S'),
-    (37,52,'S'),(38,52,'l'),(39,52,'S'),
-    (37,53,'s'),(38,53,'l'),(39,53,'S'),
-    (38,54,'S'),(38,54,'S'),(37,54,'s'),(39,54,'S'),
-    (38,55,'S'),                                                                # point
-])
-EXCALIBUR_PAL = {'P':'#e9c659','g':'#3a2b4a','X':'#e6b93c','M':'#37d0e0','S':'#dfe6ef','s':'#9aa6b6','l':'#f7fbff'}
+# wrapped grip angling up to the hand, gold pommel cap at the top
+put(excalibur, [(34,40,'P'),(35,41,'g'),(35,42,'g'),(36,43,'g'),(36,44,'g'),(37,45,'g')])
+# crossguard (gold bar, wider than the blade) with a gem set in the centre
+put(excalibur, [(35,46,'X'),(36,46,'X'),(37,46,'X'),(38,46,'M'),(39,46,'X'),(40,46,'X'),(41,46,'X'),
+                (35,47,'x'),(41,47,'x')])   # small down-turned quillon tips
+# straight double-edged blade, bright fuller down the centre, tapering to a point
+for y in range(47, 54):
+    put(excalibur, [(37,y,'S'),(38,y,'l'),(39,y,'S')])
+put(excalibur, [(37,54,'s'),(38,54,'S'),(39,54,'s'),(38,55,'S')])
+EXCALIBUR_PAL = {'P':'#f0d066','g':'#3a2b4a','X':'#e6b93c','x':'#b8901f','M':'#4de0ef','S':'#d7dfe9','s':'#9aa6b6','l':'#f8fbff'}
 
 # MAGIC WAND — star at the tip, pointing down-away
 wand = blank(); put(wand, shaft('l'))
