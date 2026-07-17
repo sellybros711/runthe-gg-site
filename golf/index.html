@@ -5187,6 +5187,7 @@ function render(){
     if(S.overlay==='passport') overlayPassport(app);
     if(S.overlay==='shop') overlayShop(app);
     if(S.overlay==='packreveal') overlayPackReveal(app);
+    if(S.overlay==='packwheel') overlayPackWheel(app);
     if(S.overlay==='careerwall') overlayCareerwall(app);
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
     if(S.overlay==='confirmRetire') overlayConfirmRetire(app);
@@ -19243,6 +19244,40 @@ function openPack(){
   try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind}); }catch(e){}
   return {item:item, rarity:item.rarity, dupe:dupe, refund:refund};
 }
+// CS404 — WHEEL SPIN: a single pity-aware roll decides the winner (identical odds to the old pick-1-of-3
+// distribution, since a picked card == one roll). The coin charge lives upstream in startPackDeal, so this
+// is a pure roll+grant (a free/prepaid pack just skips the charge). Commits pity + grant immediately.
+function rollPackWin(){
+  if(!packsOn()) return {err:'off'};
+  if(!sbSignedIn()) return {err:'signin'};
+  var p=packState(); p.opened++;
+  var rar;                                                        // pity-aware rarity (same guarantee as openPack)
+  if(p.sinceLeg+1>=PACK_PITY_LEG) rar='legendary';
+  else if(p.sinceEpic+1>=PACK_PITY_EPIC) rar='epic';
+  else rar=rollPackRarity();
+  if(rar==='legendary'){ p.sinceLeg=0; p.sinceEpic=0; }
+  else if(rar==='epic'){ p.sinceEpic=0; p.sinceLeg++; }
+  else { p.sinceEpic++; p.sinceLeg++; }
+  var item=pickPackItem(rar); if(!item){ packSave(p); return {err:'empty'}; }
+  packSave(p);
+  var dupe=packOwns(item), refund=0;
+  if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); }
+  else packGrant(item);
+  try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind,via:'wheel'}); }catch(e){}
+  if(S.packBundle){ S.packBundle.done=(S.packBundle.done||0)+1; (S.packBundle.results=S.packBundle.results||[]).push({item:item,dupe:dupe,refund:refund}); }
+  return {item:item, rarity:item.rarity, dupe:dupe, refund:refund};
+}
+// build the CS:GO-case-style horizontal reel: filler items (random rarity, cosmetic only) with the real
+// winner slotted at a fixed near-end index so the strip decelerates onto it.
+function buildWheelReel(winItem){
+  var TOTAL=54, WIN=48, reel=[];
+  for(var i=0;i<TOTAL;i++){
+    if(i===WIN){ reel.push(winItem); continue; }
+    var it=pickPackItem(rollPackRarity());
+    reel.push(it||winItem);
+  }
+  return {reel:reel, winIdx:WIN};
+}
 function packItemLook(e){ var look=Object.assign({},S.look||DEFLOOK);
   if(e.cat==='shirt') look.polo=e.id;
   else if(e.cat==='hat'){ look.hat=e.id; look.cap=true; }
@@ -19303,8 +19338,11 @@ function startPackDeal(opts){ opts=opts||{};
     if(!free){ if(!packAffordable()){ toast(packErr('coins')); return; } var s=coinState(); s.spent+=PACK_PRICE; coinSave(s); }
     else { var p=packState(); if(freeFirst) p.freeUsed=true; else p.packSpent=(p.packSpent||0)+1; packSave(p); }
   }
-  var d=rollPackCards(); if(d.err){ toast(packErr(d.err)); return; }
-  S.packDeal={cards:d.cards,force:d.force,chosen:null,bundle:!!opts.bundle,free:!!free}; S.packReveal=null; S.overlay='packreveal'; render();
+  // CS404 — wheel spin: roll the winner up front (odds unchanged), build the reel, land on it.
+  var win=rollPackWin(); if(win.err){ toast(packErr(win.err)); return; }
+  var wheel=buildWheelReel(win.item);
+  S.packWheel={reel:wheel.reel,winIdx:wheel.winIdx,win:win,spun:false,done:false,bundle:!!opts.bundle,free:!!free};
+  S.packDeal=null; S.overlay='packwheel'; render();
 }
 // bundle: pay for PACK_BUNDLE_PAY, get PACK_BUNDLE_N packs, opened one-by-one (prepaid).
 function startPackBundle(){
@@ -19362,8 +19400,114 @@ function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=
    +'.poddrow{display:flex;justify-content:space-between;font:700 12.5px var(--body);padding:5px 10px;border-bottom:1px solid rgba(255,255,255,.06)}'
    +'@keyframes packwin{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}'
    +'.pcard.win{animation:packwin .5s ease .55s}'
-   +'@media(prefers-reduced-motion:reduce){.pcard-inner,.pcard.win{transition:none;animation:none}}';
+   // CS404 wheel spin (CS:GO-case-style horizontal reel)
+   +'.pwheel{position:relative;width:100%;max-width:430px;height:172px;margin:6px auto 0;overflow:hidden;border-radius:16px;background:linear-gradient(180deg,#0c1f16,#081410);border:1px solid rgba(255,255,255,.08);box-shadow:inset 0 0 30px rgba(0,0,0,.5)}'
+   +'.pwheel:before,.pwheel:after{content:"";position:absolute;top:0;bottom:0;width:56px;z-index:3;pointer-events:none}'
+   +'.pwheel:before{left:0;background:linear-gradient(90deg,#081410,rgba(8,20,16,0))}'
+   +'.pwheel:after{right:0;background:linear-gradient(270deg,#081410,rgba(8,20,16,0))}'
+   +'.pwptr{position:absolute;left:50%;top:0;bottom:0;width:3px;margin-left:-1.5px;z-index:4;background:linear-gradient(180deg,var(--gold),#c9a520);box-shadow:0 0 12px 2px rgba(241,208,74,.7);pointer-events:none}'
+   +'.pwptr:before,.pwptr:after{content:"";position:absolute;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent}'
+   +'.pwptr:before{top:-1px;border-top:9px solid var(--gold)}'
+   +'.pwptr:after{bottom:-1px;border-bottom:9px solid var(--gold)}'
+   +'.pwstrip{position:absolute;top:50%;left:0;display:flex;gap:8px;will-change:transform}'
+   +'.pwcell{flex:0 0 auto;width:104px;height:150px;margin-top:-75px;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:6px 4px;background:linear-gradient(160deg,rgba(255,255,255,.04),#0c1f16);border:2px solid #2a3a30;overflow:hidden}'
+   +'.pwcell .pwtier{font:800 8px var(--body);letter-spacing:.08em;text-transform:uppercase}'
+   +'.pwcell .pwname{font:700 9px var(--body);color:#dfeae2;text-align:center;line-height:1.1;max-height:22px;overflow:hidden}'
+   +'.pwcell.pwwin{box-shadow:0 0 0 2px currentColor,0 0 22px currentColor}'
+   +'@keyframes pwwinpop{0%{transform:scale(1)}45%{transform:scale(1.09)}100%{transform:scale(1)}}'
+   +'.pwcell.pwlit{animation:pwwinpop .55s ease}'
+   +'@media(prefers-reduced-motion:reduce){.pcard-inner,.pcard.win,.pwstrip,.pwcell.pwlit{transition:none!important;animation:none!important}}';
   document.head.appendChild(st); }
+// CS404 — the pack-opening WHEEL SPIN (replaces the 3-card pick). One item is already decided (rollPackWin,
+// odds unchanged); the reel scrolls and decelerates onto it under a center pointer, then reveals it.
+function overlayPackWheel(app){
+  var w=S.packWheel; if(!w||!w.reel||!w.reel.length){ S.overlay=null; return; }
+  packStyleOnce();
+  var reduce=(typeof matchMedia==='function')&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var win=w.win, big=(win.rarity==='epic'||win.rarity==='legendary');
+  var ov=$('<div class="ov packov" role="dialog" aria-modal="true" aria-label="Pack wheel"></div>');
+  function titleTxt(){ var pre=''; if(S.packBundle){ pre='Pack '+(S.packBundle.done||1)+' of '+S.packBundle.total+' · '; } return pre+(w.done?'You got it!':(w.spun?'Landing...':'Spin for your pack')); }
+  var title=$('<div class="packtitle">'+titleTxt()+'</div>'); ov.appendChild(title);
+  var wheel=$('<div class="pwheel"></div>');
+  var strip=$('<div class="pwstrip"></div>');
+  var CW=104, GAP=8, PITCH=CW+GAP;
+  w.reel.forEach(function(it,i){ var rc=PACK_RCOL[it.rarity]||'#b8c4bd';
+    var cell=$('<div class="pwcell'+(i===w.winIdx?' pwwin':'')+'" style="color:'+rc+';border-color:'+rc+'">'
+      +'<div class="pwtier" style="color:'+rc+'">'+PACK_RLABEL[it.rarity]+'</div>'
+      +packCardVisual(it)
+      +'<div class="pwname">'+esc(it.name)+'</div></div>');
+    strip.appendChild(cell); });
+  wheel.appendChild(strip); wheel.appendChild($('<div class="pwptr"></div>')); ov.appendChild(wheel);
+  var footer=$('<div class="packfoot"></div>'); ov.appendChild(footer);
+  function renderFoot(){
+    footer.innerHTML='';
+    if(!w.done){
+      if(!w.spun){ var sb=$('<button class="btn goldfill">Spin the wheel</button>'); sb.onclick=function(){ spin(); }; footer.appendChild(sb); }
+      else footer.appendChild($('<div class="small muted">Good luck...</div>'));
+      return;
+    }
+    var item=win.item;
+    footer.appendChild($('<div style="font:800 15px var(--body);color:'+(win.dupe?'#ffd45e':'#35d6a0')+'">'+(win.dupe?('Duplicate · +'+coinFmt(win.refund)+' coins'):('LANDED: '+esc(item.name)+'!'))+'</div>'));
+    var btns=$('<div class="packbtns"></div>');
+    if((item.kind==='cos'||item.kind==='acc') && !win.dupe){ var eb=$('<button class="btn goldfill">Equip</button>'); eb.onclick=function(){ packEquip(item); toast('Equipped!'); }; btns.appendChild(eb); }
+    if(S.packBundle && (S.packBundle.done||0) < S.packBundle.total){
+      var nxt=$('<button class="btn teal">Next pack ▸ · '+(S.packBundle.total-(S.packBundle.done||0))+' left</button>'); nxt.onclick=function(){ startPackDeal({bundle:true}); };
+      btns.appendChild(nxt); footer.appendChild(btns); return;
+    }
+    if(S.packBundle){
+      footer.appendChild(btns);
+      var res=S.packBundle.results||[];
+      footer.appendChild($('<div class="small" style="color:var(--gold);font-weight:800;margin-top:2px">Your '+S.packBundle.total+' packs</div>'));
+      var sum=$('<div class="packsum"></div>');
+      res.forEach(function(r){ var rc=PACK_RCOL[r.item.rarity]||'#b8c4bd'; sum.appendChild($('<span class="packsumchip" style="color:'+rc+';border-color:'+rc+'">'+esc(r.item.name)+(r.dupe?' · dup':'')+'</span>')); });
+      footer.appendChild(sum);
+      var d2=$('<div class="packbtns"></div>'); var done2=$('<button class="btn ghost">Done</button>'); done2.onclick=function(){ S.packWheel=null; S.packBundle=null; S.overlay='shop'; S.shopSec='packs'; render(); }; d2.appendChild(done2); footer.appendChild(d2);
+      return;
+    }
+    var freeNext=packIsFree()||packCredits()>0, can=freeNext||packAffordable();
+    var againLabel=freeNext?('Open a FREE pack'+(packCredits()>0&&!packIsFree()?' · '+packCredits()+' left':'')):('Open another · '+coinFmt(PACK_PRICE));
+    var again=$('<button class="btn '+(can?'teal':'ghost')+'"'+(can?'':' disabled')+'>'+againLabel+'</button>'); again.onclick=function(){ startPackDeal(); };
+    var done=$('<button class="btn ghost">Done</button>'); done.onclick=function(){ S.packWheel=null; S.overlay='shop'; S.shopSec='packs'; render(); };
+    btns.appendChild(again); btns.appendChild(done); footer.appendChild(btns);
+  }
+  // final resting transform: center the winning cell under the pointer, with a small random offset within it
+  function finalX(vw, jitter){ return vw/2 - (w.winIdx*PITCH + CW/2) + (jitter||0); }
+  function land(){
+    w.done=true; title.textContent=titleTxt();
+    var winCell=strip.children[w.winIdx];
+    if(winCell) winCell.classList.add('pwlit');
+    try{ if(typeof sfx==='function') sfx(big?'win':'hole'); }catch(e){}
+    try{ if(typeof buzz==='function') buzz(big?[12,40,12]:[10]); }catch(e){}
+    if(!reduce && big){ var rc=PACK_RCOL[win.rarity]; var cv=$('<canvas class="packconf"></canvas>'); app.appendChild(cv);
+      try{ confettiRun(cv,{colors:[rc,PACK_RCOL.legendary,'#ffffff'],mode:'cannons',count:80}); }catch(e){} }
+    renderFoot();
+  }
+  function spin(){
+    if(w.spun) return; w.spun=true; title.textContent=titleTxt(); renderFoot();
+    var vw=wheel.clientWidth||360;
+    var jitter=Math.round((Math.random()*2-1)*(CW*0.28));   // land slightly off dead-center, still under the pointer
+    if(reduce){ strip.style.transform='translateX('+finalX(vw,jitter)+'px)'; land(); return; }
+    // start scrolled a bit into the reel so there's runway, then decelerate onto the winner
+    strip.style.transition='none';
+    strip.style.transform='translateX('+(vw/2 - (6*PITCH + CW/2))+'px)';
+    strip.getBoundingClientRect();   // force reflow so the start position applies before the transition
+    var DUR=4900;
+    requestAnimationFrame(function(){ requestAnimationFrame(function(){
+      strip.style.transition='transform '+DUR+'ms cubic-bezier(.12,.62,.16,1)';
+      strip.style.transform='translateX('+finalX(vw,jitter)+'px)';
+    }); });
+    // decelerating tick as cells cross the pointer (times sampled off the ease curve)
+    try{ for(var t=1;t<=16;t++){ var p=t/16; var ease=1-Math.pow(1-p,3.1); setTimeout(function(){ try{ if(sfxOn()){ var ac=_sfxCtx(); if(ac) _tone(ac,1200,ac.currentTime,0.03,0.05,'square'); } }catch(_){} }, Math.round(ease*DUR)); } }catch(e){}
+    var landed=false; function onEnd(){ if(landed) return; landed=true; land(); }
+    strip.addEventListener('transitionend', onEnd, {once:true});
+    setTimeout(onEnd, DUR+260);   // safety net
+  }
+  renderFoot();
+  app.appendChild(ov);
+  // bundle packs are prepaid, so auto-spin them (no tapping "Spin" 5 times); a single pack waits for a
+  // deliberate tap for the dopamine moment. Reduced-motion still resolves instantly inside spin().
+  if(!w.spun && !w.done && S.packBundle){ setTimeout(spin, 300); }
+}
 function overlayPackReveal(app){
   var d=S.packDeal; if(!d||!d.cards||!d.cards.length){ S.overlay=null; return; }
   packStyleOnce();
@@ -19439,7 +19583,7 @@ function packShopNode(){
   wrap.appendChild($('<div style="max-width:360px;margin:0 auto;text-align:center">'
     +'<div style="margin:8px auto 0;filter:drop-shadow(0 0 18px rgba(241,208,74,.42))">'+pxPackImg(184)+'</div>'
     +'<div style="font-family:var(--display);font-size:22px;margin-top:12px">Pro Shop Pack</div>'
-    +'<div class="small muted" style="margin-top:3px">Pick 1 of 3 cards from the whole locker. (Earned Legend gear never drops.)</div>'
+    +'<div class="small muted" style="margin-top:3px">Spin the wheel, land on an item from the whole locker. (Earned Legend gear never drops.)</div>'
     +(free?'<div style="margin-top:8px;font:800 12.5px var(--body);color:var(--gold)">🎁 Your first pack is on us — open it free!</div>'
       :(credits>0?'<div style="margin-top:8px;font:800 12.5px var(--body);color:var(--gold)">🎁 '+credits+' free pack'+(credits>1?'s':'')+' ready — from your challenges &amp; streak!</div>':''))
     +'<div style="margin-top:7px;font:800 11px var(--body);color:#cfe6d8">Guaranteed Epic+ in '+Math.max(0,PACK_PITY_EPIC-p.sinceEpic)+' · Legendary in '+Math.max(0,PACK_PITY_LEG-p.sinceLeg)+'</div></div>'));
