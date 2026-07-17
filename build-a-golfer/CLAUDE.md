@@ -9592,6 +9592,38 @@ allows Google Fonts, or self-host Anton.*
   single-event gains). 0 page errors. Client-only, no migration. Deployed to /golf. Tunable: the
   `FAN_LADDER` table (the whole system lives in one readable object).
 
+- **CS400 — daily-challenge rewards buffed (coins + XP), weekly challenges & 7-day streaks grant a FREE
+  PACK (owner: "completing daily challenges rewards the user with xp and coins (~1,000-2,000 coins), weekly
+  challenges reward a free pack, and every 7 consecutive days playing the daily gives a free pack").**
+  - **Daily coins → ~1,000-2,000** (`COIN_DAILY` 60→**1000**, `COIN_DAILY_BEAT` 120→**600**, margin cap
+    150→**400** at ×40/stroke-under-avg): completing a daily pays 1000, beating the pro adds 600 + up to
+    400 for how far under the tour average you finished. Verified: a completed loss = 1000, a beat-by-3 =
+    1720 (in range). Signed-in only, via the existing `awardPlayCoins` (which already toasts the coins +
+    a "spend it at the Pro Shop / open a pack" nudge).
+  - **Daily XP** (`COIN_DAILY_XP` 50 + `COIN_DAILY_XP_BEAT` 50 for beating): completing a daily now grants
+    Tour Rep (the game's "XP") directly via `addXp`, folded into the coin toast ("… · +100 Tour Rep") so
+    both rewards are visible. (Separate from the existing all-daily-quests-done Rep bonus.)
+  - **A cross-device-safe FREE-PACK BANK.** New pack-credit system on `bag_packs`: monotonic
+    `packEarned`/`packSpent` counters, `packCredits() = max(0, earned-spent)`, and `grantFreePack(n)` (adds
+    an earned credit, toasts unless silent). `startPackDeal` now opens for FREE from a credit when there's
+    no first-pack-free (spends one credit, charges no coins); bundles are unaffected (prepaid).
+    `mergePacks` takes max/max on earned & spent so a cloud sync can never resurrect a spent credit
+    (verified: 3 earned / 2 spent stays 1 credit, not 3).
+  - **Weekly challenges → a free pack** (`questWeekly` now calls `grantFreePack(1)` instead of the old
+    `addMulliSpin(1)`; still grants the Rep). Panel copy: "each → +250 Rep & 🎁 free pack". (Mulli-spins
+    are no longer earned; the off-season mulli-spin UI is gated on `>0` so it simply never shows — no
+    broken UI. Flag to owner if they want mulli-spins kept alongside.)
+  - **7 consecutive daily days → a free pack** (`bumpStreak`: at every 7th consecutive day — 7, 14, 21… —
+    grants a free pack, guarded by `packMile` so it fires once per milestone and only advances when the
+    grant actually lands, so a guest can't burn it). Surfaced on the daily result ("🎁 N-day streak — free
+    pack earned!").
+  - **Surfacing:** the title Pro Shop tile, the setup Pro Shop button, and the Packs overlay (banner +
+    primary CTA "Open a FREE pack · N left" + "Open another") all show the credit count. Verified in
+    Playwright end-to-end (coin magnitudes, XP, weekly→credit, 7-day streak→credit, credit-open spends 1 &
+    charges 0 coins, merge safety, all UI surfaces) with 0 page errors. Client-only, no migration
+    (rides the existing CS82 cloud-save bundle). Deployed to /golf. Tunable: `COIN_DAILY`/`COIN_DAILY_BEAT`/
+    the margin cap, `COIN_DAILY_XP*`, and the per-weekly / per-7-days pack grants.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
