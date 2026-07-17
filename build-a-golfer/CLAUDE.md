@@ -9502,6 +9502,23 @@ allows Google Fonts, or self-host Anton.*
   row that already had a look, never touches another user's rows, and a repeat call is a 0-row no-op. Client
   loads with 0 page errors. **Client deployed to /golf; ACTION: run `supabase/54_runtour_backfill_look.sql`.**
 
+- **CS396 — Fans leaderboard: achievement-scaled follower ceiling (owner: "how is everyone tied? is there
+  a limit on fans?").** The Fans board was a wall of "40M fans" ties because followers had a flat
+  `FOLLOWERS_MAX=40M` cap (CS301, added so a long career wouldn't balloon into the hundreds of millions) that
+  EVERY full/dominant career saturated. Owner picked (AskUserQuestion) a per-career ceiling. New
+  `careerPrestige()` (career wins ×2 + majors ×5 + POY ×10 + World-#1 ×7 + money/scoring titles ×3 + ROY ×2 +
+  Games medals + team-cup wins ×3) drives `followerCap()` = `clamp(1.4M + prestige·52k, 1.2M, 40M)`, and
+  `gainFollowers` now caps growth at `max(followerCap(), current)` instead of the flat 40M — so a career's
+  following asymptotes to a ceiling set by how much it actually accomplished, and the 40M absolute max is
+  reached only by a near-perfect career (so top-tier ties become rare). Grandfathered: an in-progress career
+  already above its computed cap is never retroactively dropped (`max(cap,cur)`), and follower LOSSES
+  (backfired press beats) still apply. Verified in Playwright: careers now spread 1.6M (rookie) → 37.5M (GOAT)
+  by accomplishment — a 128-win legend ≈ 32M vs a 96-win career ≈ 19M (was both 40M); growth reaches each
+  career's cap; a 40M career with a tiny cap stays 40M; 0 page errors. Client-only, deployed to /golf. NOTE:
+  this differentiates careers going FORWARD — the owner's existing 40M board entries stay 40M (a completed
+  career's follower growth can't be retroactively recomputed) until new careers post and spread the board.
+  Tunables: the `careerPrestige` weights + `FOLLOWERS_PER_PRESTIGE`/`FOLLOWERS_CAP_BASE`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
