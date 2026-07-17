@@ -9062,11 +9062,11 @@ const PXPAT=[
  {id:'flames',     name:'Flames',            price:16000, hist:'Hot streak',                f:(x,y)=> { const t=(x*7+y*3)%9; return (y>34 && t<3)?2:((y>30&&t<5)?1:0); } },
  {id:'stars',      name:'Star Spangle',      price:15000, hist:'Night-sky stars',          f:(x,y)=> ((x*5+y*3)%11===0)?1:0 },
  {id:'hearts',     name:'Hearts',            price:15000, hist:'Crowd favorite',           f:(x,y)=> { const cx=((x+ (Math.floor(y/6)%2?3:0))%6), cy=y%6; return ((cy===1&&(cx===1||cx===4))||(cy===2&&cx>0&&cx<5)||(cy===3&&cx>1&&cx<4))?1:0; } },
- {id:'camo',       name:'Camo',              price:14000, hist:'Off-course fatigues',      f:(x,y)=> { const n=(Math.sin(x*1.3)+Math.cos(y*0.9)+Math.sin((x+y)*0.6)); return n>0.8?2:(n>-0.2?1:0); } },
- {id:'tiedye',     name:'Tie-Dye',           price:16000, hist:'Anything goes',            f:(x,y)=> { const d=Math.round(Math.hypot(x-22,y-38)/2)%3; return d; } },
+ {id:'camo',       name:'Woodland Camo',     price:16000, hist:'Off-course fatigues',      fixed:true, cols:['#4e5f33','#2f3d1e','#7a6a44'], f:(x,y)=> { const n=(Math.sin(x*1.3)+Math.cos(y*0.9)+Math.sin((x+y)*0.6)); return n>0.8?2:(n>-0.2?1:0); } },
+ {id:'tiedye',     name:'Rainbow Tie-Dye',   price:30000, hist:'Groovy rainbow swirl',     fixed:true, cols:['#e23b3b','#e8862e','#e8d13a','#3fae5a','#3a7de0','#8a54d0'], f:(x,y)=> Math.floor(Math.hypot(x-22,y-24)/2.4)%6 },
  {id:'zigzag',     name:'Lightning',         price:15000, hist:'Electric',                 f:(x,y)=> (Math.abs(((x+ (Math.floor(y/3)%2?3:0))%6)-3)<1)?1:0 },
  {id:'waves',      name:'Waves',             price:14000, hist:'Seaside links',            f:(x,y)=> ((y+Math.round(Math.sin(x*0.7)*2))%5<2)?1:0 },
- {id:'leopard',    name:'Leopard',           price:16000, hist:'Bold and loud',            f:(x,y)=> { const t=(x*3+y*5)%13; return t<2?2:(((x*7+y*2)%17<2)?1:0); } },
+ {id:'leopard',    name:'Leopard Print',     price:18000, hist:'Wild on the fairway',      fixed:true, cols:['#cda24e','#7a4e1e','#2e1b0a'], f:(x,y)=>{ const cx=Math.floor(x/4),cy=Math.floor(y/4); if((cx*7+cy*13)%3!==0) return 0; const d=Math.abs(x%4-1.5)+Math.abs(y%4-1.5); return d<=1?2:(d<=2?1:0); } },
  {id:'confetti',   name:'Confetti',          price:15000, hist:'Champion celebration',     f:(x,y)=> { const t=(x*11+y*7)%13; return t<1?2:(t<3?1:0); } },
  // --- catalog expansion: more distinct procedural patterns ---
  {id:'vstripe',    name:'Vertical Stripe',   price:9000,  hist:'Bold vertical bands',      f:(x,y)=> (Math.floor(x/3)%2===0)?1:0 },
@@ -9085,6 +9085,17 @@ const PXPAT=[
  {id:'ripple',     name:'Ripple',            price:14000, hist:'Water ripples',            f:(x,y)=> ((Math.round(Math.hypot(x-22,y-40)))%4<1)?1:0 },
  {id:'plaid',      name:'Bold Plaid',        price:15000, hist:'Country-club plaid',       f:(x,y)=> { const a=(x%7<2),b=(y%7<2); return (a&&b)?2:((a||b)?1:0); } },
  {id:'bolts',      name:'Lightning Bolts',   price:15000, hist:'Storm bolts',              f:(x,y)=> { const p=(x+ (y<38?0: (y<44?2:4)))%8; return (p<1)?1:0; } },
+ // --- CS409: FIXED-PALETTE (locked-color) high-tier patterns. `fixed:true` + `cols[]` paint their own
+ // colors over the whole shirt region (ignoring the shirt color) - `f` returns the color index per pixel. ---
+ {id:'tiger',      name:'Tiger Stripe',      price:18000, hist:'Apex predator',            fixed:true, cols:['#e07a1e','#1a1206'], f:(x,y)=>{ const w=x+Math.round(Math.sin(y*0.5)*2); return (w%6<1)?1:0; } },
+ {id:'zebra',      name:'Zebra Stripe',      price:18000, hist:'Black and white',          fixed:true, cols:['#ece7df','#171717'], f:(x,y)=>{ const w=x+Math.round(Math.sin(y*0.4)*3); return (w%5<2)?1:0; } },
+ {id:'cowprint',   name:'Cow Print',         price:18000, hist:'Moovers and shakers',      fixed:true, cols:['#f2f0ea','#1b1b1b'], f:(x,y)=>{ const n=Math.sin(x*0.55+1.5)+Math.cos(y*0.5)+Math.sin((x-y)*0.38); return n>0.25?1:0; } },
+ {id:'giraffe',    name:'Giraffe Print',     price:18000, hist:'Head above the rest',      fixed:true, cols:['#efe0b8','#9a6528'], f:(x,y)=>{ const edge=((x+2)%6===0||(y+1)%6===0); if(edge) return 0; const cx=Math.floor((x+2)/6),cy=Math.floor((y+1)/6); return ((cx*5+cy*9)%4!==0)?1:0; } },
+ {id:'python',     name:'Python Scales',     price:18000, hist:'Slither to victory',       fixed:true, cols:['#4a5a28','#7d924a','#b3c47a'], f:(x,y)=>{ const yy=y%4, xx=(x+(Math.floor(y/4)%2?2:0))%4; return (yy<2 && Math.abs(xx-1.5)<1.5)?((yy===0)?2:1):0; } },
+ {id:'desertcamo', name:'Desert Camo',       price:16000, hist:'Sun-baked fatigues',       fixed:true, cols:['#c2a878','#8f7a52','#e0d3ad'], f:(x,y)=> { const n=(Math.sin(x*1.3)+Math.cos(y*0.9)+Math.sin((x+y)*0.6)); return n>0.8?2:(n>-0.2?1:0); } },
+ {id:'arcticcamo', name:'Arctic Camo',       price:16000, hist:'Snowfield fatigues',       fixed:true, cols:['#dfe4e8','#9aa6ae','#b9c2c8'], f:(x,y)=> { const n=(Math.sin(x*1.3)+Math.cos(y*0.9)+Math.sin((x+y)*0.6)); return n>0.8?2:(n>-0.2?1:0); } },
+ {id:'aloha',      name:'Aloha Floral',      price:20000, hist:'Island time',              fixed:true, cols:['#0f8f7c','#e85a3f','#f2c94e','#2f8a4a'], f:(x,y)=>{ const sx=Math.floor(x/7),sy=Math.floor(y/7),cell=(sx*5+sy*11)%3,lx=x%7,ly=y%7,d=Math.abs(lx-3)+Math.abs(ly-3); if(cell===0) return d<=1?2:(d<=3?1:0); if(cell===1) return (d<=2&&(lx+ly)%2===0)?3:0; return 0; } },
+ {id:'goldcamo',   name:'Gold Camo',         price:30000, hist:'Prestige fatigues',        fixed:true, cols:['#caa23a','#8a6d1e','#f2d878'], f:(x,y)=> { const n=(Math.sin(x*1.3)+Math.cos(y*0.9)+Math.sin((x+y)*0.6)); return n>0.8?2:(n>-0.2?1:0); } },
 ];
 const PXPAT_BY={}; PXPAT.forEach(p=>PXPAT_BY[p.id]=p);
 function pxLum(hex){ hex=(hex||'#888').replace('#',''); if(hex.length<6) return .5; return (parseInt(hex.slice(0,2),16)*.299+parseInt(hex.slice(2,4),16)*.587+parseInt(hex.slice(4,6),16)*.114)/255; }
@@ -9123,14 +9134,21 @@ function pxGolferCanvas(look){
     for(let x=0;x<row.length;x++){ const ch=row[x]; if(ch==='.'||ch===' ')continue; const col=P[ch]; if(!col)continue;
       const dx=flip?(PXG_W-1-x):x; ctx.fillStyle=col; ctx.fillRect(dx*px,y*px,px,px); } } };
   paintClub(PXG_CLUBS[club], !look.lefty);
-  // CS356g: SHIRT PATTERN overlay - recolor the shirt pixels (t/d/v) by the pattern function.
-  if(pat){ const pd=PXPAT_BY[pat], light=pxLum(av.shirtHex)>0.55;
-    const a1=pxShade(av.shirtHex, light?-52:46), a2=pxShade(av.shirtHex, light?-90:82);
-    for(let y=0;y<PXG_BODY.length;y++){ const row=PXG_BODY[y]; for(let x=0;x<row.length;x++){ const ch=row[x];
-      if(ch!=='t'&&ch!=='d'&&ch!=='v')continue; const a=pd.f(x,y); if(!a)continue;
-      // keep the body's own shading feel: shade/highlight cells get a stronger/weaker accent
-      let col=(a===2)?a2:a1; if(ch==='d') col=pxShade(col,-16); else if(ch==='v') col=pxShade(col,14);
-      ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } } }
+  // CS356g / CS409: SHIRT PATTERN overlay. FIXED patterns paint their own locked colors over the whole
+  // shirt region (ignoring the shirt color); normal patterns are a tonal accent over the shirt color.
+  if(pat){ const pd=PXPAT_BY[pat];
+    if(pd.fixed){ const cols=pd.cols||[];
+      for(let y=0;y<PXG_BODY.length;y++){ const row=PXG_BODY[y]; for(let x=0;x<row.length;x++){ const ch=row[x];
+        if(ch!=='t'&&ch!=='d'&&ch!=='v')continue; let col=cols[pd.f(x,y)|0]||cols[0]; if(!col)continue;
+        if(ch==='d') col=pxShade(col,-20); else if(ch==='v') col=pxShade(col,16);   // keep the body's 3D shading
+        ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } }
+    } else {
+      const light=pxLum(av.shirtHex)>0.55, a1=pxShade(av.shirtHex, light?-52:46), a2=pxShade(av.shirtHex, light?-90:82);
+      for(let y=0;y<PXG_BODY.length;y++){ const row=PXG_BODY[y]; for(let x=0;x<row.length;x++){ const ch=row[x];
+        if(ch!=='t'&&ch!=='d'&&ch!=='v')continue; const a=pd.f(x,y); if(!a)continue;
+        let col=(a===2)?a2:a1; if(ch==='d') col=pxShade(col,-16); else if(ch==='v') col=pxShade(col,14);
+        ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } }
+    } }
   // CS356e: a full CAP covers the crown, so clip the hair to below the brim - only the fringe/sideburns
   // "push out the bottom" of the hat (real-life), and NO hair pokes above/through it. Every full-crown hat
   // clips the hair; a VISOR has an open top, so hair shows full (the band sits at the brow).

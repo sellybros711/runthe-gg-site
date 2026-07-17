@@ -9869,6 +9869,27 @@ allows Google Fonts, or self-host Anton.*
   the shop renders the new prices with 0 page errors. Deployed to /golf. Tunable: `RARITY_PRICE` (the item
   ladder), the `PACK_TYPES` prices, `PACK_DUPE_REFUND`.
 
+- **CS409 — Legendary Drop 1, step 2: FIXED-PALETTE (locked-color) patterns (owner: "tye die should be
+  rainbow tye die, animal prints that can't change color, patterns that are specific").** The pattern engine
+  (`PXPAT`) previously drew every pattern as a TONAL accent that followed the shirt color (so "tie-dye" or
+  "camo" just tinted whatever base color you picked). Added a `fixed:true` + `cols[]` mode: a fixed pattern
+  paints its OWN locked palette over the whole shirt region regardless of the shirt color (`pd.f(x,y)` →
+  `cols[idx]`, with the body's t/d/v pixels keeping their 3D shading via `pxShade`). 12 fixed high-tier
+  patterns: **Woodland Camo** (converted), **Rainbow Tie-Dye** (concentric rainbow rings — exactly the
+  owner's ask), **Leopard Print**, **Tiger Stripe**, **Zebra Stripe**, **Cow Print**, **Giraffe Print**,
+  **Python Scales**, **Desert Camo**, **Arctic Camo**, **Aloha Floral**, **Gold Camo**. Rendering branches
+  in `pxGolferCanvas` on `pd.fixed` (locked palette) vs the existing tonal path (unchanged for the normal
+  shirt-following patterns). Prices flow through the existing rarity ladder automatically: the 16-18k base
+  patterns → **epic** (40k direct / pack epic), Rainbow Tie-Dye + Gold Camo at 30k base → **legendary**
+  (90k direct / pack legendary), so they slot into the CS408 economy + the pack pool at the right rarity
+  with no extra wiring. Leopard + Cow tuned for visible density (cell-4 / lower threshold) after a preview
+  render. Verified in Playwright: all 12 are in `PXPAT_BY` with `fixed:true`+`cols`, resolve the correct
+  rarity/price, appear in `packPool` at their rarity, render distinctly as locked-color golfers (no
+  shirt-color bleed), and produce 0 page errors. Deployed to /golf. This is step 2 of the owner-approved
+  "Legendary Drop 1" build order (1 effect layer · **2 fixed patterns ✓** · 3 heritage apparel · 4 vintage
+  equipment + favorite accessories · 5 trophy charms + Crown/Shades/Prism · 6 Golf Bag slot). Tunable: the
+  `PXPAT` `cols[]`/`f(x,y)` per pattern, the base price (→ rarity via `packRarityOf`).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
