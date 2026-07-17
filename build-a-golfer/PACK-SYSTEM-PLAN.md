@@ -8,6 +8,18 @@
 Status: **planning only.** Nothing in this doc is coded yet. The novelty items + Pro Shop
 relaunch are live at /golf; packs are the next feature and ship behind a `PACKS_ENABLED` flag.
 
+### ✅ Decisions locked (owner)
+- **Q1 Dupes → small coin refund.** True-gacha style: every pull is a fresh rarity-weighted
+  roll from the **whole** eligible pool (owned items included). A duplicate pays back a **small**
+  amount of coins (well below the pack price, scaled by the dupe's rarity). No shards/crafting.
+- **Q2 Pool → include boost items.** Packs can drop the **boost-carrying** accessory gear + Golf
+  Bag club tiers too, not just cosmetics. (A random shot at power is intended.)
+- **Q3 Price hike → same day as packs.** Keep today's prices live now; flip the big direct-buy
+  hike **and** packs together on launch day.
+- **Q4 Real-money coins → earned-only for now.** Coins stay play-earned, so a **lighter
+  client-side v1** is fine (no mandatory server-authoritative opening yet). We still publish
+  odds. If real-money coins are ever added later, revisit §6/§7 (server rolls + compliance).
+
 ---
 
 ## 1. The catalog we're pulling from
@@ -25,15 +37,22 @@ a pack just needs to *grant an owned key*. Current counts:
 | Headwear (`hw:`) | ~9 (bucket/flat + 7 novelty) | ✅ |
 | Eyewear (`ew:`) | 5 | ✅ |
 | **Legend gear** (`earn:true`) | 5–7 | ❌ **excluded** (earned, never dropped) |
-| Boosted accessory gear (`ACCESSORIES`) | 32 | ❔ decision (see Q2) |
-| Golf Bag club tiers | 18 | ❔ decision (see Q2) |
+| Boosted accessory gear (`ACCESSORIES`) | 32 | ✅ **included** (owner Q2) |
+| Golf Bag club tiers | 18 | ✅ **included** (owner Q2 — but see note) |
 
-**Packable cosmetic pool ≈ 70 items** today, and it grows every time we add novelty items —
-which is perfect: more items = more pulls to chase = packs stay fresh.
+**Packable pool ≈ 120 items** (cosmetics + boost gear + bag tiers), and it grows every time we
+add novelty items — which is perfect: more items = more pulls to chase = packs stay fresh.
 
 The **exclusion rule** is simple and already codeable: an item is pack-eligible iff it is a
-shop item AND `cosmeticPrice()` is > 0 AND it is not `earn:true`. Legend gear and anything the
-game auto-grants for an achievement is never in the pool.
+shop item AND its price is > 0 AND it is not `earn:true`. Legend gear and anything the game
+auto-grants for an achievement is never in the pool.
+
+**Bag-tier wrinkle (Q2 side-effect):** bag clubs normally must be bought in order
+(Tour → Pro → Signature). If a pack drops "Signature Driver" while you own neither lower tier,
+we should either (a) auto-grant the lower tiers with it, or (b) pool only the **Tour (tier-1)**
+club as the packable item and keep Pro/Signature on the direct-buy upgrade path. **Recommend (b)**
+— cleaner, and keeps the club-upgrade grind meaningful. Boost *accessory* gear has no ordering,
+so all 32 drop freely.
 
 ---
 
@@ -80,22 +99,14 @@ milestones) so opening feels regular. This is the part most worth tuning before 
 
 ---
 
-## 4. Duplicate handling (Q1 — biggest UX decision)
+## 4. Duplicate handling — LOCKED: small coin refund
 
-When a pack rolls something you already own:
-
-- **Option A — "no dupes" (collection-friendly):** pack only ever pulls from your *unowned*
-  eligible pool (still rarity-weighted within it). Every pack is a guaranteed new item until
-  you've collected everything; after that, dupes convert to coins. *Pro:* zero frustration,
-  clear progress. *Con:* less of a "gamble" once you're near-complete; a whale can 100% the
-  collection.
-- **Option B — "true gacha" (dupes → shards):** every pull is a fresh weighted roll from the
-  whole pool; a dupe converts into **shards** (a soft currency) that you can spend to
-  **directly craft any item you want** at a fixed shard cost per rarity. *Pro:* classic,
-  long-tail, targeted crafting is satisfying; *Con:* more moving parts, can feel bad early.
-
-**Recommendation: Option A to launch** (simplest, kindest, matches a finite cosmetic catalog),
-with the shard/craft layer as a fast-follow once the catalog is big enough that dupes are common.
+Every pull is a fresh rarity-weighted roll from the **whole** eligible pool (owned items
+included — true gacha). If the roll is something you already own, it pays back a **small** coin
+refund scaled by the dupe's rarity, e.g. Common ~1,500 · Rare ~3,500 · Epic ~8,000 ·
+Legendary ~18,000 (all well under the ~20k pack price, so a dupe still stings but isn't a total
+loss). No shards, no crafting. The reveal should clearly flag a dupe ("Duplicate — +N coins")
+vs. a genuinely new unlock ("NEW!"). Tunable refund table per rarity.
 
 ---
 
@@ -150,16 +161,12 @@ This is the feature, so it has to *feel* great:
 
 ---
 
-## 9. Open decisions for the owner (blocking the build)
+## 9. Decisions — RESOLVED
 
-- **Q1 — Dupes:** Option A (no-dupes, collection-friendly) *[recommended]* or Option B
-  (true gacha + shards/crafting)?
-- **Q2 — Pool scope:** cosmetics only *[recommended]*, or also drop the **boost-carrying** items
-  (accessory gear + bag clubs)? Dropping boost items = a random path to gameplay power (fine, or
-  keep power on the direct-buy grind?).
-- **Q3 — When to raise prices:** ship the big price hike **together with packs** *[recommended]*,
-  or raise prices sooner?
-- **Q4 — Real-money coins ever?** If yes → server-authoritative opening + full loot-box compliance
-  become required before launch. If no (earned coins only) → lighter, faster to ship.
-- **Q5 — Pack cost + coin faucets:** target ~1 pack per few careers, or a free daily pack so
-  everyone opens regularly? (Drives how generous the faucets are.)
+- **Q1 Dupes:** small coin refund (§4). ✅
+- **Q2 Pool:** include boost gear + bag tiers (§1). ✅
+- **Q3 Prices:** hike ships with packs, same day (§3). ✅
+- **Q4 Real-money coins:** earned-only for now → lighter client-side v1 (§6). ✅
+- **Q5 Pack cost + faucets:** still open — pick during P4 tuning. Target feel: everyone opens
+  regularly (free daily pack + first-pack-free + milestone pack coins), pack price ~20k, tuned
+  against the post-hike prices so packs are clearly the value path.
