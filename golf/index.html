@@ -13124,10 +13124,10 @@ function scrSeason(){
     <div class="cb-stats">
       ${!S.daily?`<div class="cb-stat"><div class="k">World</div><div class="v" style="color:var(--gold)">#${wr}</div></div>`:''}
       <div class="cb-stat"><div class="k">Tour</div><div class="v" style="color:var(--gold)">${rankTxt}</div></div>
-      <div class="cb-stat"><div class="k">Net</div><div class="v" id="cb-net" style="color:${netCol};font-size:16px">${netShort}</div></div>
       <div class="cb-stat"><div class="k">Wins</div><div class="v">${t.wins}</div></div>
       <div class="cb-stat"><div class="k">Top 10</div><div class="v">${t.top10}</div></div>
       <div class="cb-stat"><div class="k">Cuts</div><div class="v">${t.made}/${t.played||0}</div></div>
+      <div class="cb-stat"><div class="k">Net</div><div class="v" id="cb-net" style="color:${netCol};font-size:16px">${netShort}</div></div>
     </div>
     ${metersHTML}
   </div>`);
