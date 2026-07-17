@@ -10168,6 +10168,12 @@ allows Google Fonts, or self-host Anton.*
   in-shop section/chip/ribbon badges). Verified in Playwright: coin pill opens Packs, profile keeps its dot,
   Pro Shop tile shows the count+dot; 0 page errors. Deployed to /golf.
 
+- **CS424 — "Run The" now the same size as "Tour" in the header wordmark (owner).** The two-tone banner
+  wordmark rendered "Run The" (`.bnwm b`) smaller than the gold "Tour" (`.bnwm i`) — 9px vs 17px on desktop,
+  8px vs 15px on mobile. Bumped `.bnwm b` to match `.bnwm i` (font-size 17px desktop / 15px mobile, same
+  letter-spacing) so both words read at the same size. Verified in Playwright: desktop both 17px, mobile
+  both 15px, texts "Run The" / "Tour". CSS-only. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
