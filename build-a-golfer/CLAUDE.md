@@ -10159,6 +10159,15 @@ allows Google Fonts, or self-host Anton.*
     ribbon on the tile, viewing Eyewear clears its badge while Clubs stays flagged; 0 page errors. Deployed
     to /golf. *(New badges cover cosmetics; boost-gear/bag-tier pulls could be added later.)*
 
+- **CS423 — coin pill → Packs; new-item dot follows the gear path (owner: "coin pill should always open the
+  pack menu; profile keeps opening the trophy case/stats").** The header **coin pill** now always opens the
+  Pro Shop's **Packs** menu (`S.shopSec='packs'`) and no longer carries a new-item dot. The **profile pill**
+  is unchanged (→ Trophy Room) and keeps its new-item dot. Since the Trophy Room has no shop link, the
+  actual "lead to the item" path is reinforced on the title-screen **Pro Shop** tile, which now shows
+  "✨ N new items" + a red dot when there's unviewed gear (alongside the existing setup Pro Shop button +
+  in-shop section/chip/ribbon badges). Verified in Playwright: coin pill opens Packs, profile keeps its dot,
+  Pro Shop tile shows the count+dot; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

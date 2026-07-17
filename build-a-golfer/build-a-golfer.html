@@ -5198,9 +5198,8 @@ function header(){
   right.appendChild(pl);
   if(SHOP_ENABLED && sbSignedIn()){   // global coin counter (owner: everywhere, tap → Pro Shop). Signed-in only.
     const bal=coinBalance(); const bump=(_coinHdrPrev!=null && bal>_coinHdrPrev);
-    const shopNew=(typeof cosNewTotal==='function') && cosNewTotal()>0;   // CS422: new items live in the shop, which the coin pill opens
-    const coin=$(`<button class="coinhdr${bump?' bump':''}" aria-label="Coins: ${coinFmt(bal)}. Open the Pro Shop.${shopNew?' New items available.':''}" style="position:relative"><span class="ci">${ic('coin',{size:'16px'})}</span>${coinFmt(bal)}${shopNew?'<span style="position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:#e2554e;border:2px solid #0b1a12;box-shadow:0 0 5px rgba(226,85,78,.9)"></span>':''}</button>`);
-    coin.onclick=()=>{ track('coin_pill_open'); S.overlay='shop'; render(); };
+    const coin=$(`<button class="coinhdr${bump?' bump':''}" aria-label="Coins: ${coinFmt(bal)}. Open Packs."><span class="ci">${ic('coin',{size:'16px'})}</span>${coinFmt(bal)}</button>`);
+    coin.onclick=()=>{ track('coin_pill_open'); S.overlay='shop'; S.shopSec='packs'; render(); };   // CS423: coin pill always opens the Packs menu
     right.appendChild(coin); _coinHdrPrev=bal;
   }
   bar.appendChild(right);
@@ -6616,8 +6615,8 @@ function scrTitle(){
   // ── destinations, promoted to prominent nav tiles (Leaderboard / Trophy Room / Pro Shop stand out) ──
   const sec=$(`<div class="home-nav"></div>`);
   const signedIn=sbSignedIn();
-  const mkTile=(icon,label,sub,fn,hot)=>{ const b=$(`<button type="button" class="navtile${hot?' hot':''}" aria-label="${esc(label)}">
-      <span class="ni" aria-hidden="true">${icon}</span><span class="nl">${esc(label)}</span>${sub?`<span class="ns">${sub}</span>`:''}</button>`);
+  const mkTile=(icon,label,sub,fn,hot,dot)=>{ const b=$(`<button type="button" class="navtile${hot?' hot':''}" aria-label="${esc(label)}${dot?' · new items':''}" style="position:relative">
+      <span class="ni" aria-hidden="true">${icon}</span><span class="nl">${esc(label)}</span>${sub?`<span class="ns">${sub}</span>`:''}${dot?'<span style="position:absolute;top:8px;right:10px;width:11px;height:11px;border-radius:50%;background:#e2554e;border:2px solid #0e2016;box-shadow:0 0 6px rgba(226,85,78,.9)"></span>':''}</button>`);
     b.onclick=fn; sec.appendChild(b); };
   // CS290: Challenges is now a prominent nav tile (was buried in the ≡ menu) - daily quests + weekly
   // challenges - daily/weekly quests feed your Tour Rep tier + earn coins / mulli-spins.
@@ -6625,7 +6624,8 @@ function scrTitle(){
   mkTile('🏆','Leaderboard','Rankings', ()=>{S.overlay='leaderboard';render();}, true);
   mkTile('🏅','Trophy Room', signedIn?'Trophies & rank':'Sign in', ()=>{S.overlay='record';render();}, true);
   if(SHOP_ENABLED){ const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')):0);
-    mkTile(ic('cart'),'Pro Shop', nFree>0?('🎁 '+nFree+' free pack'+(nFree>1?'s':'')+'!'):(signedIn?(ic('coin')+' '+coinFmt(coinBalance())):'Gear & boosts'), ()=>{S.overlay='shop'; if(nFree>0)S.shopSec='packs'; render();}, true); }
+    const shopNew=(typeof cosNewTotal==='function')&&cosNewTotal()>0;   // CS423: NEW-item dot on the Pro Shop tile (leads to the gear)
+    mkTile(ic('cart'),'Pro Shop', shopNew?('✨ '+cosNewTotal()+' new item'+(cosNewTotal()>1?'s':'')):(nFree>0?('🎁 '+nFree+' free pack'+(nFree>1?'s':'')+'!'):(signedIn?(ic('coin')+' '+coinFmt(coinBalance())):'Gear & boosts')), ()=>{S.overlay='shop'; if(nFree>0)S.shopSec='packs'; render();}, true, shopNew); }
   mkTile('🎁','Invite','You both get a pack', ()=>{ referralShare(); }, true);   // CS403: refer a friend → free packs
   // (How to Play moved up under the hero, CS287)
   w.appendChild(sec);
