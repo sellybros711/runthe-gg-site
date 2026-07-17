@@ -9710,6 +9710,44 @@ allows Google Fonts, or self-host Anton.*
     invite copy. NOTE: a referral records a friend→referrer relationship (usernames only, already public on
     the leaderboards); flag if you want a privacy-policy line for it.
 
+- **CS404 — pack opening is now a CS:GO-case-style WHEEL SPIN (odds unchanged) (owner IMG_8415: "change
+  the way pack openings look. Instead of a 3 card choice, I want it to be a wheel spin... spin a wheel and
+  then land on an item. The odds should be the same").** Replaced the 3-card "pick one blind, all flip" pack
+  reveal with a horizontal spinning reel that scrolls through items and decelerates onto ONE winning item
+  under a center gold pointer, then reveals it. All client-only, no migration, no economy change.
+  - **Same odds, guaranteed.** New `rollPackWin()` = the pity-aware SINGLE roll (identical to `openPack`'s
+    logic, minus the coin charge which lives in `startPackDeal`): if a pack is due an Epic/Legendary it's
+    forced to that floor, else `rollPackRarity()`; commits pity + grants the item (or refunds a dupe) +
+    tracks. Because a picked-1-of-3 card equals one roll, the WON distribution is the same as before —
+    verified over 4,000 rolls: common 0.552 / rare 0.300 / epic 0.115 / legendary 0.034 (vs the
+    `PACK_ODDS` 0.55/0.30/0.12/0.03). `buildWheelReel(winItem)` builds a 54-cell reel with the real winner
+    slotted at a fixed near-end index (48) and fillers via `pickPackItem(rollPackRarity())`.
+  - **`startPackDeal`** now rolls the winner up front, builds the reel, sets `S.packWheel={reel,winIdx,win,
+    spun,done,bundle,free}` and `S.overlay='packwheel'` (was the 3-card `S.packDeal`/`packreveal`). The
+    charge/free-first/credit logic is untouched (a free/credit/bundle pack still skips the coin charge).
+  - **`overlayPackWheel(app)`** renders the reel in an overflow-hidden viewport with a center gold pointer,
+    edge fades, and rarity-colored item cells (tier label + `packCardVisual` + name). A "Spin the wheel"
+    tap starts it: the strip starts scrolled into the reel, then a `transform ~4.9s cubic-bezier` decelerates
+    onto the winner (with a small in-cell jitter so it doesn't always land dead-center), decelerating
+    WebAudio tick clicks sampled off the ease curve as cells cross the pointer, a `pwlit` pop + sfx + haptic
+    on land, and confetti cannons for epic/legendary. Reveal = "LANDED: <name>!" (or "Duplicate · +N coins")
+    + Equip (cosmetics/accessories) + Open another / Done — mirroring the old footer, including the full
+    `S.packBundle` "Next pack ▸ · N left" flow and the final N-chip summary. `transitionend` + a safety-net
+    timeout both resolve; reduced-motion skips the animation and lands instantly.
+  - **Bundle** packs are prepaid, so each of the 5 auto-spins (`setTimeout(spin,300)` on render) — the
+    player isn't tapping Spin five times; a single pack waits for a deliberate tap (the dopamine moment).
+  - Added the wheel CSS to `packStyleOnce` (`.pwheel`/`.pwptr`/`.pwstrip`/`.pwcell` + `pwwinpop`, reduced-
+    motion killswitch); registered `packwheel` in the render overlay dispatch; the pack-shop copy now reads
+    "Spin the wheel, land on an item…". The old `overlayPackReveal`/`rollPackCards`/`pickPackCard` 3-card
+    path is left defined but unused.
+  - Verified in Playwright (normal + reduced-motion): odds match, the reel is 54 cells with the winner at
+    index 48, a single pack charges 12,000 + grants a non-dupe item, "Spin the wheel" → decelerating spin →
+    lands on the winner with the `pwlit` pop + "LANDED:" reveal + Equip/Open-another/Done; a full 5-pack
+    bundle auto-spins/lands each pack one-by-one, "Next pack" advances, a dupe shows "+1,500 coins", and the
+    last pack shows the 5-chip "Your 5 packs" summary + Done; pity (sinceEpic 9 → forced epic) honored; 0
+    page errors throughout. Deployed to /golf. Tunable: the reel `TOTAL`/`WIN` index, the spin `DUR`/easing,
+    the tick cadence in `overlayPackWheel`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
