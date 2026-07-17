@@ -6032,6 +6032,7 @@ function overlayMenu(screen){
   const acct=$(`<div style="margin-bottom:16px"></div>`);
   acct.appendChild($(`<div class="small muted" style="letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:8px">Account</div>`));
   acct.appendChild(menuRow(signedIn?'👤':'🔑',signedIn?(sbUsername||'Your account'):'Sign in',signedIn?(sbEmail()||'Signed in'):'Save your career & post to the leaderboards',go(()=>{ if(signedIn){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} })));
+  acct.appendChild(menuRow('🎁','Invite a Friend','Share your link — you BOTH get a free pack',()=>{ S.overlay=null; render(); referralShare(); }));
   acct.appendChild(menuRow('↺','Reset','Retire your current golfer & start over',go(()=>{S.overlay='confirmReset';})));
   ov.appendChild(acct);
   // CS252: Settings - sound + haptics toggles (device-local, default on)
@@ -6487,6 +6488,7 @@ function scrTitle(){
   mkTile('🏅','Trophy Room', signedIn?'Trophies & rank':'Sign in', ()=>{S.overlay='record';render();}, true);
   if(SHOP_ENABLED){ const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?packCredits():0);
     mkTile(ic('cart'),'Pro Shop', nFree>0?('🎁 '+nFree+' free pack'+(nFree>1?'s':'')+'!'):(signedIn?(ic('coin')+' '+coinFmt(coinBalance())):'Gear & boosts'), ()=>{S.overlay='shop'; if(nFree>0)S.shopSec='packs'; render();}, true); }
+  mkTile('🎁','Invite','You both get a pack', ()=>{ referralShare(); }, true);   // CS403: refer a friend → free packs
   // (How to Play moved up under the hero, CS287)
   w.appendChild(sec);
   // CS303: the once-a-day challenges pop-up is removed (owner) - the "🎯 Daily Quests" button under the hero opens it.
@@ -19960,7 +19962,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + grant the sign-up welcome pack + post the streak (CS401)
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} try{ maybeWelcomePack(); }catch(e){} try{ sbSubmitStreak(); }catch(e){} try{ maybeReferralFlow(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer (CS395) + welcome pack (CS401) + post streak + referral redeem/claim (CS403)
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -20732,6 +20734,49 @@ function h2hInvite(){
   if(navigator.share){ navigator.share({title:'Run The Tour', text, url}).then(()=>{},()=>{}); }
   else { try{ navigator.clipboard.writeText(url); toast('Invite link copied'); }catch(e){ toast(url); } }
   track('h2h_invite');
+}
+/* ---- CS403: Referrals — share ?ref=<username>; a NEW friend who signs up with it earns you BOTH a free
+   pack. The code is your username; the referrer credit is granted server-side (runtour_redeem_referral)
+   into a pending-rewards ledger that each client claims on sign-in (runtour_claim_rewards). ---- */
+function referralCode(){ return sbSignedIn() ? (sbUsername||'') : ''; }
+function referralLink(){ const code=referralCode(); if(!code) return '';
+  var base; try{ base=location.origin+location.pathname.replace(/[^/]*\.html?$/i,''); }catch(e){ base=location.origin+'/golf/'; }
+  return base+'?ref='+encodeURIComponent(code); }
+function referralShare(){
+  if(!sbSignedIn()){ toast('Sign in to get your invite link'); S.overlay='account'; S.acctMode='signin'; S.acctErr=''; render(); return; }
+  if(!sbUsername){ toast('Set a username first to get your invite link'); S.overlay='account'; S.acctMode='username'; render(); return; }
+  const url=referralLink(), text='Play Run The Tour golf with me — build a golfer, chase majors, become the G.O.A.T. Sign up with my link and we each get a free pack! '+url;
+  if(navigator.share){ navigator.share({title:'Run The Tour', text, url}).then(()=>{},()=>{}); }
+  else { try{ navigator.clipboard.writeText(text); toast('Invite link copied — send it to a friend!'); }catch(e){ toast(url); } }
+  track('referral_share');
+}
+function refCheck(){
+  let code=null;
+  try{ const u=new URL(location.href); code=u.searchParams.get('ref'); }catch(e){}
+  if(!code){ const m=/[#&?]ref=([A-Za-z0-9_\-]+)/.exec(location.hash||''); if(m) code=m[1]; }
+  if(!code) return;
+  code=code.trim().slice(0,40);
+  try{ localStorage.setItem('rtt_ref', code); }catch(e){}
+  try{ const u=new URL(location.href); u.searchParams.delete('ref'); history.replaceState(null,'',u.pathname+(u.search||'')); }catch(e){}   // drop just ?ref, keep others
+  // a gentle nudge once the page has rendered (they still need to sign up to claim it)
+  try{ setTimeout(()=>{ if(!sbSignedIn()) toast('🎁 A friend invited you! Create a free account and you\'ll BOTH get a free pack.', 6000); }, 1400); }catch(e){}
+}
+// redeem a stashed referral (once, after sign-in), then claim any queued packs (referrer side too). Fail-open.
+async function maybeReferralFlow(){
+  if(!sb||!sbSignedIn()) return;
+  let ref=null; try{ ref=localStorage.getItem('rtt_ref'); }catch(e){}
+  let justRedeemed=false;
+  if(ref){
+    try{ const {data,error}=await sb.rpc('runtour_redeem_referral',{p_ref_code:ref});
+      if(!error){ try{ localStorage.removeItem('rtt_ref'); }catch(e){}   // definitive answer → don't retry
+        if(data==='ok'){ justRedeemed=true; toast('🎁 Referral bonus! You and your friend each earned a free pack.', 5200); } }
+    }catch(e){}   // network error → keep rtt_ref, retry next sign-in
+  }
+  try{ const {data,error}=await sb.rpc('runtour_claim_rewards');
+    const n=(typeof data==='number')?data:0;
+    if(!error && n>0){ if(typeof grantFreePack==='function') grantFreePack(n,{silent:true});
+      if(!justRedeemed) toast('🎁 '+n+' free pack'+(n>1?'s':'')+' — a friend joined with your invite link!', 5200); }
+  }catch(e){}
 }
 // parse ?h2h=CODE (or #h2h=CODE) on load, stash it, and try to join (prompting sign-in if needed)
 /* ---- PRACTICE MODE (?practice=1): unlimited Daily Challenge rounds for testing new features.
@@ -21680,6 +21725,7 @@ if('serviceWorker' in navigator){ try{ window.addEventListener('load',()=>{ navi
 track('game_start');
 if(LS.get('bag_seen',false)) track('return_visit'); else LS.set('bag_seen',true);
 try{ practiceCheck(); }catch(e){}   // ?practice=1 → unlimited daily rounds for testing, nothing recorded
+try{ refCheck(); }catch(e){}        // CS403: arrived via ?ref=<friend> invite link? stash it for redeem on sign-up
 // If the browser refreshed / the tab was reloaded mid-play (accidental swipe, or iOS discarding the tab
 // under memory pressure), drop straight back into whatever mode was active - daily, career, or online -
 // instead of losing progress (or making the player think they did). Career resume waits for the account
