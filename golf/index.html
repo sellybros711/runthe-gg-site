@@ -340,6 +340,8 @@ window.GA_ID='G-L29P5MRWKE';
   @keyframes celebSpot{from{opacity:0;transform:translate(-50%,-50%) scale(.6)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
   @media (prefers-reduced-motion:reduce){ .celebrate,.celeb-trophy,.celeb-kicker,.celeb-title,.celeb-sub,.celeb-check,.celeb-tally,.celeb-actions,.celebrate .spot{animation-duration:.01ms} }
   .btn:disabled{opacity:.45; cursor:not-allowed}
+  /* a "locked" button stays tappable (to show a nudge toast) but reads clearly unavailable */
+  .btn.locked{opacity:.5; filter:grayscale(.35); box-shadow:none; text-shadow:none}
   .btn:focus-visible, button:focus-visible, [tabindex]:focus-visible, input:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   .mini{display:flex; gap:10px; margin-top:10px}
   .mini .btn{font-size:14px; padding:12px}
@@ -14429,8 +14431,13 @@ function scrOffseason(){
     if(os.changes<os.maxChanges){ const spin=$(`<button class="btn red">Spin the Wheel (Optional)<span class="sub">${os.maxChanges-os.changes} change${os.maxChanges-os.changes===1?'':'s'} left</span></button>`); spin.onclick=offSpin; actions.appendChild(spin); }
     else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">All ${os.maxChanges} changes used.</div>`));
   }
-  const cont=$(`<button class="btn goldfill">Start Year ${yr} ▸<span class="sub">${os.changes>0?'Run the new season':'Keep your bag, run it as-is'}</span></button>`);
-  cont.onclick=finishOffseason; actions.appendChild(cont);
+  // Once you've spun, you MUST take a skill from the golfer you land on (re-spin to get a different one) -
+  // you can't spin, dislike it, and start the season without swapping (owner). So Start is LOCKED while a
+  // spin is pending; tapping it just nudges you to pick a skill first.
+  const cont=$(`<button class="btn goldfill${spun?' locked':''}">Start Year ${yr} ▸<span class="sub">${spun?'🔒 Lock in one of the skills first':(os.changes>0?'Run the new season':'Keep your bag, run it as-is')}</span></button>`);
+  cont.onclick=spun ? (()=>toast('You must select one of the skills to lock in your spin before starting the season.'))
+                    : finishOffseason;
+  actions.appendChild(cont);
   add(actions);
 
   if(!spun) add(rivalStatusNode());   // emergent nemesis status (read-only); hidden mid-swap (CS356s)
