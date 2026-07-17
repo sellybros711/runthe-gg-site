@@ -10174,6 +10174,12 @@ allows Google Fonts, or self-host Anton.*
   letter-spacing) so both words read at the same size. Verified in Playwright: desktop both 17px, mobile
   both 15px, texts "Run The" / "Tour". CSS-only. Deployed to /golf.
 
+- **CS425 — fix: the setup "Pro Shop & Packs" button did nothing (owner IMG_8444).** Its onclick referenced
+  an undefined variable `freePack` (the in-scope variable is `nFree`), so the handler threw a ReferenceError
+  and never opened the shop. Fixed to always open the pack menu — `S.overlay='shop'; S.shopSec='packs'` —
+  matching the header coin pill (CS423). Verified in Playwright (button click → overlay 'shop', shopSec
+  'packs', 0 page errors). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
