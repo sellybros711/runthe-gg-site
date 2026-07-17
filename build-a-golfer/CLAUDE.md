@@ -10060,9 +10060,11 @@ allows Google Fonts, or self-host Anton.*
   single source of truth for club sprites now; supersedes the head geometry from `vintage-clubs.py`/
   `hockey-club.py`). Verified in Playwright on the golfer, all 10 + a lefty, 0 page errors. Deployed to /golf.
   - **Excalibur redraw (owner: "make it a nice-looking sword — the special ones don't need to conform to
-    typical clubs").** Reworked from a club-ish shape into a proper straight sword: wrapped grip up to the
-    hand, a gold crossguard with down-turned quillon tips + a set gem, and a long straight double-edged
-    silver blade with a bright fuller tapering to a point on the ground.
+    typical clubs"; then "the blade should follow the same line as the handle — it's still bending").**
+    Reworked into a proper sword where the blade is COLINEAR with the grip: both follow the same 0.5 slope
+    straight from the hand to the point (no bend at the guard). Wrapped grip + gold pommel, a crossguard set
+    PERPENDICULAR to the blade line with a gem at the junction, and a double-edged silver blade with a bright
+    fuller tapering to the point.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,

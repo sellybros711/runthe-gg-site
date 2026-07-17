@@ -78,18 +78,19 @@ put(blade, [
 ])
 BLADE_PAL = {'l':'#cfd3da','n':'#8a929e','S':'#cfd6df','F':'#f6f8fb','G':'#7f8894'}
 
-# EXCALIBUR — a proper straight sword (special items don't conform to club shapes): wrapped grip to the
-# hand, gold crossguard with a set gem, long straight double-edged silver blade with a fuller, point down.
+# EXCALIBUR — a proper straight sword (special items don't conform to club shapes). The blade is COLINEAR
+# with the grip: both follow the same 0.5 slope (x +1 per 2 rows) straight from the hand to the point, so
+# there is no bend at the guard. Crossguard sits perpendicular to that diagonal.
 excalibur = blank()
-# wrapped grip angling up to the hand, gold pommel cap at the top
-put(excalibur, [(34,40,'P'),(35,41,'g'),(35,42,'g'),(36,43,'g'),(36,44,'g'),(37,45,'g')])
-# crossguard (gold bar, wider than the blade) with a gem set in the centre
-put(excalibur, [(35,46,'X'),(36,46,'X'),(37,46,'X'),(38,46,'M'),(39,46,'X'),(40,46,'X'),(41,46,'X'),
-                (35,47,'x'),(41,47,'x')])   # small down-turned quillon tips
-# straight double-edged blade, bright fuller down the centre, tapering to a point
-for y in range(47, 54):
-    put(excalibur, [(37,y,'S'),(38,y,'l'),(39,y,'S')])
-put(excalibur, [(37,54,'s'),(38,54,'S'),(39,54,'s'),(38,55,'S')])
+# wrapped grip on the sword's line, gold pommel cap at the hand end
+put(excalibur, [(34,40,'P'),(35,41,'g'),(35,42,'g'),(36,43,'g'),(36,44,'g'),(37,45,'g'),(37,46,'g')])
+# crossguard PERPENDICULAR to the blade line, gem set at the centre where grip meets blade
+put(excalibur, [(36,49,'x'),(37,48,'X'),(38,47,'M'),(39,46,'X'),(40,45,'x')])
+# double-edged blade continuing the SAME diagonal (centres 38,38,39,39,40,40,41), fuller down the centre
+blade_rows = [ (48,37),(49,37),(50,38),(51,38),(52,39),(53,39) ]   # (y, left-edge x); centre = x+1
+for (y,xl) in blade_rows:
+    put(excalibur, [(xl,y,'S'),(xl+1,y,'l'),(xl+2,y,'S')])
+put(excalibur, [(40,54,'s'),(41,54,'S'),(41,55,'S')])   # taper to the point
 EXCALIBUR_PAL = {'P':'#f0d066','g':'#3a2b4a','X':'#e6b93c','x':'#b8901f','M':'#4de0ef','S':'#d7dfe9','s':'#9aa6b6','l':'#f8fbff'}
 
 # MAGIC WAND — star at the tip, pointing down-away
