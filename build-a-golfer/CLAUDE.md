@@ -9573,6 +9573,25 @@ allows Google Fonts, or self-host Anton.*
     Deployed to /golf. Tunable: the `fanMult` tiers in `resultMomentum`, `FOLLOWERS_SOFT`, and the per-
     decision weights in `momentDecisionStakes` / the press + dilemma + grudge handlers.
 
+- **CS399 — fan gains as a deliberate, well-ordered LADDER: regular wins definitely count, top-10s count
+  less than wins (owner: "I want regular wins to definitely count for something, and top 10s to count for
+  less than wins. It should be a well thought out system").** Replaced CS398's opaque base×multiplier in
+  `resultMomentum` with an explicit `FAN_LADDER` table ({pct, flat} per finish tier × event tier), so the
+  design is legible and tunable. Design rules: WINNING always beats not winning (a regular win outranks a
+  top-5 anywhere, even a major top-5); MAJORS amplify every finish (a major win is the pinnacle,
+  contending at a major still draws fans); TOP-10s count clearly LESS than wins, TOP-25s less again,
+  tapering to a made-cut trickle and a missed-cut dip; and a regular win is DEFINITELY meaningful (a big
+  flat chunk even late-career when the % is heavily damped). Verified ordering (at an 8M base, all rungs
+  strictly ranked): major win 1.05M > big/signature win 404k > **regular win 242k** > major top-5 222k >
+  major top-10 101k > reg top-5 81k > **reg top-10 36k** > reg top-25 12k > made cut 4k > missed cut −16k.
+  So a regular win is ~6.7× a top-10 (top-10s clearly worth less) and majors are still ~4.3× a regular
+  win. Late-career (40M base) a regular win still adds ~402k fans — genuinely meaningful. Full careers: a
+  major-hunting GOAT ~205M fans, a win-heavy-but-major-less career ~33M (regular wins now build a real fan
+  base, fixing "regular careers barely count"), a never-wins grinder ~2.9M. The decision drivers (Moment
+  shot-decisions, press/interview, dilemmas, grudge wins) from CS398 are unchanged (still among the biggest
+  single-event gains). 0 page errors. Client-only, no migration. Deployed to /golf. Tunable: the
+  `FAN_LADDER` table (the whole system lives in one readable object).
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -10253,21 +10253,31 @@ function fmtFollowers(n){ n=Math.round(n||0);
   if(n>=1e3) return (n/1e3).toFixed(1).replace(/\.0$/,'')+'K';
   return ''+n; }
 // per-event momentum from a finish: confidence swing + follower growth (career, non-circuit)
+// CS399: a deliberate fan-value LADDER by finish tier x event tier ({pct, flat}: pct compounds early,
+// the flat carries late). The design rules, from a real golf-popularity standpoint:
+//   - WINNING always beats not winning: a regular WIN outranks a top-5 anywhere, even a major top-5.
+//   - MAJORS amplify every finish (a major win is the pinnacle; contending at a major still draws fans).
+//   - TOP-10s count clearly LESS than wins, TOP-25s less again, and it tapers to a trickle / a MC dip.
+//   - a regular win is DEFINITELY meaningful (a big flat chunk even late-career when the % is damped).
+// Ranked single-result fan gain (at an 8M base): major win >> big/signature win > REGULAR WIN >
+//   major top-5 > major top-10 > reg top-5 > reg top-10 > reg top-25 > made cut > missed cut.
+const FAN_LADDER = {
+  win:   { reg:[0.060,2000], big:[0.100,3500], major:[0.260,9000] },   // 1st
+  top5:  { reg:[0.020,700],  big:[0.030,1100], major:[0.055,2200] },   // 2-5
+  top10: { reg:[0.009,320],  big:[0.013,480],  major:[0.025,900] },    // 6-10
+  top25: { reg:[0.003,90],   big:[0.004,120],  major:[0.008,220] },    // 11-25
+};
 function resultMomentum(pos, evt){
-  const major=!!evt.major, big=!!evt.big||!!evt.playoff;
-  let dc=0, fpct=0, fflat=0;
-  if(pos===1){ dc=major?16:big?12:10; fpct=0.05; fflat=1200; }
+  const major=!!evt.major, big=!!evt.big||!!evt.playoff, tier=major?'major':big?'big':'reg';
+  let dc=0, fpct=0, fflat=0, row=null;
+  if(pos===1){ dc=major?16:big?12:10; row=FAN_LADDER.win[tier]; }
   else if(typeof pos==='number'){
-    if(pos<=5){ dc=major?7:5; fpct=0.025; fflat=520; }
-    else if(pos<=10){ dc=3; fpct=0.013; fflat=280; }
-    else if(pos<=25){ dc=0; fpct=0.005; fflat=90; }
-    else { dc=-2; fpct=0.0015; fflat=25; }
-  } else { dc=-6; fpct=-0.004; fflat=0; }   // missed the cut
-  // CS398: winning MAJORS is the single biggest on-course fan driver - a major win multiplies the fan gain
-  // ~5x, a strong major finish still gets a big boost, a big/signature event a smaller bump, and regular
-  // events are the modest grind. So the realistic way to chase the most fans is to win majors.
-  const fanMult = (pos===1&&major)?5 : (pos<=5&&major)?3.2 : major?2.2 : big?1.35 : 1.0;
-  fpct*=fanMult; fflat=Math.round(fflat*fanMult);
+    if(pos<=5){ dc=major?7:5; row=FAN_LADDER.top5[tier]; }
+    else if(pos<=10){ dc=3; row=FAN_LADDER.top10[tier]; }
+    else if(pos<=25){ dc=0; row=FAN_LADDER.top25[tier]; }
+    else { dc=-2; fpct=0.001; fflat=25; }    // made the cut, back of the pack: a trickle
+  } else { dc=-6; fpct=-0.004; fflat=0; }     // missed the cut: a small fan dip
+  if(row){ fpct=row[0]; fflat=row[1]; }
   // CS280: RESPECT gives a composure floor - respected, well-liked pros settle at a higher confidence
   // baseline (the mean-reversion target rises with respect, ~36 disliked .. ~64 revered).
   dc += (repConfBaseline()-seasonConf())*0.05;
