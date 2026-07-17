@@ -13447,26 +13447,40 @@ function drawPlayerCard(ctx,W,H,o){
   // year line (e.g. "YEAR 5 OF 30")
   if(o.yearLine){ ctx.fillStyle=GOLD; ctx.font='800 13px system-ui,sans-serif';
     ctx.save(); ctx.globalAlpha=.9; ctx.fillText(o.yearLine, W/2, 141); ctx.restore(); }
-  // pixel golfer hero (pixelated), with a ground shadow
-  const golferTop=o.yearLine?162:150, gh=344, gw=gh*(PXG_W/PXG_H), gx=W/2-gw/2;
-  ctx.fillStyle='rgba(0,0,0,.30)'; ctx.beginPath(); ctx.ellipse(W/2, golferTop+gh-14, gw*0.30, 12, 0,0,7); ctx.fill();
+  // pixel golfer as a HEAD-AND-SHOULDERS portrait medallion. A full standing figure (with legs) can trip
+  // social-media auto-sensitive classifiers on share; a circular bust reads unambiguously as a game avatar.
+  const golferTop=o.yearLine?168:156;
+  const portR=Math.round(H*0.155);                 // ~112 for H=720
+  const portCy=golferTop+portR;
   const glf=pxGolferCanvas(o.look);
-  ctx.save(); ctx.imageSmoothingEnabled=false; ctx.drawImage(glf, gx, golferTop, gw, gh); ctx.restore();
-  // OVR badge (gold circle) over the golfer's shoulder
-  const bx=W/2+gw/2-8, by=golferTop+78, br=46;
+  // medallion backing + soft drop shadow
+  ctx.save(); ctx.shadowColor='rgba(0,0,0,.42)'; ctx.shadowBlur=16; ctx.shadowOffsetY=7;
+  ctx.beginPath(); ctx.arc(W/2,portCy,portR,0,7); ctx.fillStyle='#0c2c1c'; ctx.fill(); ctx.restore();
+  // crop the sprite to head + shoulders (rows ~2..34 of 56), clipped to the circle → no lower body
+  ctx.save(); ctx.beginPath(); ctx.arc(W/2,portCy,portR-2,0,7); ctx.clip();
+  ctx.imageSmoothingEnabled=false;
+  const gsc=glf.height/PXG_H, sr0=2, srH=32, dw=portR*2.55, dh=dw*(srH/PXG_W), dx=W/2-dw/2, dy=(portCy-portR)-dh*0.03;
+  ctx.drawImage(glf, 0, Math.round(sr0*gsc), glf.width, Math.round(srH*gsc), dx, dy, dw, dh);
+  ctx.restore();
+  // gold ring
+  const rgm=ctx.createLinearGradient(W/2-portR,portCy-portR,W/2+portR,portCy+portR); rgm.addColorStop(0,'#f6e7a6'); rgm.addColorStop(1,GOLD2);
+  ctx.strokeStyle=rgm; ctx.lineWidth=4; ctx.beginPath(); ctx.arc(W/2,portCy,portR,0,7); ctx.stroke();
+  // OVR badge on the lower-right edge of the medallion
+  const bx=W/2+portR*0.72, by=portCy+portR*0.64, br=42;
   ctx.save(); ctx.shadowColor='rgba(0,0,0,.4)'; ctx.shadowBlur=10;
   const bgr=ctx.createLinearGradient(bx-br,by-br,bx+br,by+br); bgr.addColorStop(0,'#f6e7a6'); bgr.addColorStop(1,GOLD2);
   ctx.fillStyle=bgr; ctx.beginPath(); ctx.arc(bx,by,br,0,7); ctx.fill(); ctx.restore();
-  ctx.fillStyle='#1c2a15'; ctx.font='800 36px Impact,system-ui,sans-serif'; ctx.fillText(''+o.ovr, bx, by+7);
-  ctx.font='800 11px system-ui,sans-serif'; ctx.fillText('OVR', bx, by+24);
+  ctx.fillStyle='#1c2a15'; ctx.font='800 33px Impact,system-ui,sans-serif'; ctx.fillText(''+o.ovr, bx, by+5);
+  ctx.font='800 10px system-ui,sans-serif'; ctx.fillText('OVR', bx, by+21);
+  const heroBottom=portCy+portR;
   // name (auto-fit, serif)
   let nm=(o.name||'Your Golfer').toUpperCase(), ns=34;
   do{ ctx.font='700 '+ns+'px Cinzel, Georgia, serif'; if(ctx.measureText(nm).width<=W-90)break; ns-=2; }while(ns>16);
-  ctx.fillStyle=CREAM; ctx.fillText(nm, W/2, golferTop+gh+44);
+  ctx.fillStyle=CREAM; ctx.fillText(nm, W/2, heroBottom+58);
   // NET hero number
-  ctx.fillStyle=o.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 28px Impact,system-ui,sans-serif';
-  ctx.fillText(fmtSigned(o.net), W/2, golferTop+gh+82);
-  ctx.fillStyle='#9cbfa8'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(o.ribbon2||'NET WORTH THIS SEASON', W/2, golferTop+gh+100);
+  ctx.fillStyle=o.net>=0?'#35d6a0':'#E14A33'; ctx.font='800 30px Impact,system-ui,sans-serif';
+  ctx.fillText(fmtSigned(o.net), W/2, heroBottom+98);
+  ctx.fillStyle='#9cbfa8'; ctx.font='800 11px system-ui,sans-serif'; ctx.fillText(o.ribbon2||'NET WORTH THIS SEASON', W/2, heroBottom+117);
   // 4-tile stat row
   const n=4, gap=11, m=26, tw=(W-m*2-gap*(n-1))/n, th=72, ty=H-th-30;
   o.cells.forEach((c,i)=>{ const x=m+i*(tw+gap);
