@@ -376,7 +376,7 @@ window.GA_ID='G-L29P5MRWKE';
   @media(min-width:600px){ .home-nav{grid-template-columns:repeat(4,1fr); max-width:640px} }
   .navtile{display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center; gap:5px;
     padding:15px 8px 13px; border-radius:15px; background:var(--panel); border:1.5px solid var(--panelb); color:var(--oncard);
-    font-family:var(--body); cursor:pointer; box-shadow:0 3px 12px rgba(0,0,0,.18); transition:transform .12s ease, border-color .12s ease, background .12s ease}
+    font-family:var(--body); cursor:pointer; box-shadow:0 4px 10px -3px rgba(0,0,0,.4), 0 14px 26px -12px rgba(0,0,0,.55); transition:transform .12s ease, border-color .12s ease, background .12s ease}
   .navtile:hover{transform:translateY(-2px); border-color:var(--gold); background:rgba(241,208,74,.09)}
   .navtile:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   .navtile .ni{font-size:23px; line-height:1; color:var(--gold); margin-bottom:1px}
@@ -386,7 +386,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* CS287: "How to Play" pill-button under the hero (replaces the 30-year-sim badge) */
   .howtop{display:inline-flex; align-items:center; gap:7px; cursor:pointer; font:800 12px/1 var(--body); letter-spacing:.06em;
     text-transform:uppercase; color:var(--gold); padding:9px 18px; border-radius:999px; border:1px solid var(--gold);
-    background:color-mix(in srgb, var(--gold) 12%, transparent); box-shadow:0 3px 12px -6px rgba(241,208,74,.5)}
+    background:color-mix(in srgb, var(--gold) 12%, transparent); box-shadow:0 4px 11px -3px rgba(0,0,0,.5), 0 3px 12px -6px rgba(241,208,74,.5)}
   .howtop:hover{background:color-mix(in srgb, var(--gold) 20%, transparent)}
   .howtop:active{transform:translateY(1px)}
   .howtop:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
@@ -435,7 +435,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* CS254: richer "continue your career" card - bigger than a button, shows where you are (owner) */
   .resumecard{display:block; width:100%; max-width:520px; margin:0 auto; text-align:left; cursor:pointer; color:#20160a;
     background:var(--gold-grad-d); border:0; border-radius:18px; padding:15px 17px 14px;
-    box-shadow:0 14px 34px -14px rgba(241,208,74,.65), inset 0 1px 0 rgba(255,255,255,.35)}
+    box-shadow:0 6px 16px -6px rgba(0,0,0,.6), 0 22px 44px -12px rgba(0,0,0,.6), 0 16px 40px -14px rgba(241,208,74,.5), inset 0 1px 0 rgba(255,255,255,.35)}
   .resumecard:active{transform:translateY(1px)}
   .rc-top{display:flex; align-items:center; justify-content:space-between; gap:12px}
   .rc-kick{font:800 10px/1 var(--body); letter-spacing:.15em; text-transform:uppercase; opacity:.62}
@@ -453,7 +453,7 @@ window.GA_ID='G-L29P5MRWKE';
   .rc-go{margin-left:auto; font:900 12.5px/1 var(--body); letter-spacing:.03em; background:rgba(20,15,8,.14); border-radius:9px; padding:8px 13px}
   /* CS256: matching hero cards for Daily / Spotlight / Online (same polish as the resume card, own accents) */
   .gcard{display:block; width:100%; max-width:520px; margin:0 auto; text-align:left; cursor:pointer; border:0; border-radius:18px;
-    padding:14px 16px; position:relative; overflow:hidden; box-shadow:0 14px 32px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14)}
+    padding:14px 16px; position:relative; overflow:hidden; box-shadow:0 6px 15px -6px rgba(0,0,0,.6), 0 24px 48px -12px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.14)}
   .gcard:active{transform:translateY(1px)}
   .gc-blue{background:linear-gradient(158deg,#5f90f2,#3a63c8 60%,#3053b4); color:#f1f6ff; --chip:rgba(4,12,30,.3)}
   .gc-teal{background:linear-gradient(158deg,#20bda9,#0a877a 60%,#07736a); color:#eafff9; --chip:rgba(2,20,16,.28)}
@@ -5961,16 +5961,26 @@ function pxTitleBgURL(){
   const TREE=[24,60,50], TREE2=[16,44,38];
   const FAIRT=[28,104,64], FAIRB=[44,150,86], MOW=[52,168,98];
   const GREEN=[62,182,100], GREENL=[86,204,120], SAND=[230,212,166], CREAM=[244,227,201], GOLD=[241,208,74], GOLDS=[201,152,42], DK=[6,34,24], BALL=[248,246,238];
-  const HZ=150;
-  // smooth sky
-  for(let y=0;y<HZ;y++){ const c=grad(SKY,y/HZ); for(let x=0;x<W;x++) set(x,y,c); }
-  // clean tree silhouette (solid, gentle two-tone crest, no per-pixel noise)
-  for(let x=0;x<W;x++){ const h=10+7*Math.sin(x*0.10)+4*Math.sin(x*0.31+2)+3*Math.sin(x*0.6); const top=(HZ-2-h)|0;
-    for(let y=top;y<HZ+4;y++) set(x,y, y<top+3?TREE:TREE2); }
-  // fairway: smooth gradient + a few WIDE clean mow bands (subtle)
-  for(let y=HZ-1;y<H;y++){ const t=(y-HZ)/(H-HZ); const base=lp(FAIRT,FAIRB,t);
-    const bandH=8+t*14, band=Math.floor((y-HZ)/bandH); const c=(band%2===0)?lp(base,MOW,0.35):base;
-    for(let x=0;x<W;x++) set(x,y,c); }
+  const HZ=148;
+  const hz=(x)=> HZ + 9*Math.sin(x*0.045+0.6) + 5*Math.sin(x*0.13+1.7);   // CS367: rolling ground line (topography)
+  // smooth sky (drawn a bit past the lowest hill so nothing shows through)
+  for(let y=0;y<HZ+20;y++){ const c=grad(SKY,Math.min(1,y/HZ)); for(let x=0;x<W;x++) set(x,y,c); }
+  // distant rolling hill band behind the trees (adds depth)
+  const HILLC=[30,72,66];
+  for(let x=0;x<W;x++){ const base=hz(x), hl=(base-8-4*Math.sin(x*0.03))|0; for(let y=hl;y<base+2;y++) set(x,y, lp(HILLC,grad(SKY,Math.min(1,y/HZ)),0.18)); }
+  // rolling tree silhouette following the horizon
+  for(let x=0;x<W;x++){ const h=9+7*Math.sin(x*0.10)+4*Math.sin(x*0.31+2)+3*Math.sin(x*0.6); const base=hz(x)|0, top=(base-2-h)|0;
+    for(let y=top;y<base+4;y++) set(x,y, y<top+3?TREE:TREE2); }
+  // fairway with ROLLING TOPOGRAPHY: gradient by depth-below-horizon + curved mow sweeps + soft mounds/swales
+  for(let x=0;x<W;x++){ const h0=hz(x);
+    for(let y=Math.floor(h0);y<H;y++){ const t=Math.max(0,Math.min(1,(y-h0)/(H-h0))); let c=lp(FAIRT,FAIRB,t);
+      const sweep=(y-h0)+6*Math.sin(x*0.06+y*0.02);            // mow-stripe boundary drifts -> rolling contours
+      const bandH=9+t*16; if(Math.floor(sweep/bandH)%2===0) c=lp(c,MOW,0.3);
+      const m1=Math.exp(-((((x-58)/50)**2)+(((y-202)/26)**2)))*0.22;   // lit crest
+      const m2=Math.exp(-((((x-146)/44)**2)+(((y-216)/24)**2)))*0.15;  // lit rise
+      const s1=Math.exp(-((((x-104)/40)**2)+(((y-192)/18)**2)))*0.16;  // shaded swale
+      c=lp(c,MOW,Math.min(0.5,m1+m2)); c=lp(c,FAIRT,s1);
+      set(x,y,c); } }
   // putting green + swallowtail flag + ball (right), bunker (left)
   const gx=150,gy=176,grx=40,gry=14;
   for(let y=gy-gry;y<gy+gry;y++) for(let x=gx-grx;x<gx+grx;x++){ const d=((x-gx)/grx)**2+((y-gy)/gry)**2; if(d<=1) set(x,y, d>0.82?lp(GREEN,DK,0.3):(y<gy?GREENL:GREEN)); }

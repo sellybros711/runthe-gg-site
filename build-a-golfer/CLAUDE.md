@@ -9059,6 +9059,18 @@ allows Google Fonts, or self-host Anton.*
   Committed + pushed to the feature branch; still NOT deployed to /golf. Tunable: `sw`/`ww` (shoulder/waist
   width) + sleeve length in `body()`.
 
+- **CS367 — rolling grass topography on the home background + stronger home-button shadows (owner).**
+  (1) The course in `pxTitleBgURL` was flat/straight-across; added TOPOGRAPHY: a rolling ground line
+  `hz(x)` (sine undulation) that the horizon + tree line follow, a distant rolling hill band behind the
+  trees for depth, and a fairway with rolling contours - curved mow-stripe sweeps (the band boundary
+  drifts with x) plus soft lit mounds / shaded swales - so the grass reads as undulating terrain instead
+  of flat bands. (2) Increased the drop shadows behind the home mode cards + nav so they separate from the
+  background: `.gcard` and `.resumecard` got a layered close+deep dark shadow, `.navtile` a stronger
+  two-layer shadow, and the `.howtop` pills a dark drop. Verified in Playwright: title renders the rolling
+  course + the cards pop with the deeper shadows, zero page errors. Committed + pushed to the feature
+  branch; still NOT deployed to /golf. Tunable: the `hz` amplitude + mound positions in `pxTitleBgURL`,
+  the card `box-shadow` values.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
