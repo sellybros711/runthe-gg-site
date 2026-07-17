@@ -9889,6 +9889,15 @@ allows Google Fonts, or self-host Anton.*
   "Legendary Drop 1" build order (1 effect layer · **2 fixed patterns ✓** · 3 heritage apparel · 4 vintage
   equipment + favorite accessories · 5 trophy charms + Crown/Shades/Prism · 6 Golf Bag slot). Tunable: the
   `PXPAT` `cols[]`/`f(x,y)` per pattern, the base price (→ rarity via `packRarityOf`).
+  - **CS409b — redraw pass on tie-dye + the core animal prints (owner: "they aren't great").** The first
+    cut read poorly at the ~24×18 shirt resolution: tie-dye was concentric rings (looked like a rainbow
+    bib), tiger/zebra were thin 1px squiggles down the center only, cow print was one big blob, leopard a
+    sparse chocolate-chip grid. Rewrote the five `f(x,y)`: **Tie-Dye** → a rainbow SPIRAL pinwheel
+    (`atan2` + radius bands, centered on the shirt), **Tiger** → bold wavy full-width black stripes with a
+    tapering width, **Zebra** → bold ~50/50 black-and-white diagonal-flow stripes, **Cow** → 5 seeded
+    irregular patches (distance-to-centers + sine wobble) scattered across the shirt instead of one blob,
+    **Leopard** → staggered rosette spots (dark center + mid-brown ring on gold). Re-rendered the 12-golfer
+    preview grid to confirm all read clearly; 0 page errors.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
