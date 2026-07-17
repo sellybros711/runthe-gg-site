@@ -10141,6 +10141,24 @@ allows Google Fonts, or self-host Anton.*
   Clubs/Ball, the button opens a Clubs+Ball view and toggles back, a stale `look.bag` renders cleanly; 0
   page errors. Deployed to /golf. *(Cleats left in Gear as footwear; movable to the bag if wanted.)*
 
+- **CS422 — create/edit screen = Appearance + Profile only; "NEW item" indicators (owner: "this page should
+  only have appearance and profile categories… editing clothes/accessories done in the Pro Shop" + "little
+  identifiers that they have new items they haven't viewed").**
+  - **Setup slimmed:** `scrSetup` now shows just **Appearance** (skin/hair/style/handedness) + **Profile**
+    (name/country). Apparel, Gear, Effects and the CS421 "Your Golf Bag" view/button are gone — everything
+    else is bought AND equipped in the **Pro Shop** (the "Pro Shop & Packs" button leads there). The favorite
+    club still renders in the golfer's hand.
+  - **NEW-item badges:** an item is NEW when it's been acquired (in `coinState.owned` — bought/pulled/earned)
+    but not yet VIEWED. Tracked in a local `bag_seenitems` store, seeded on first run with everything already
+    owned (so only future acquisitions light up). Helpers: `seenItems`/`markItemSeen`/`cosIsNew`/`cosCatNew`/
+    `markCatSeen`/`cosNewTotal`. Indicators, forming a breadcrumb to the item: a red dot on the **profile
+    pill** + **coin pill** (top bar) and an "· N NEW" + dot on the setup **Pro Shop & Packs** button; inside
+    the Pro Shop, dots on the **section tabs** (Apparel/Accessories/Effects) and **category chips**, and a
+    **NEW** ribbon on each new tile (`shopTile`). Viewing a category (or My Items) marks its items seen, so
+    the badges clear on the next render. Verified in Playwright: grant 2 items → dots everywhere + "2 NEW",
+    ribbon on the tile, viewing Eyewear clears its badge while Clubs stays flagged; 0 page errors. Deployed
+    to /golf. *(New badges cover cosmetics; boost-gear/bag-tier pulls could be added later.)*
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

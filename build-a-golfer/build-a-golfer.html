@@ -4913,6 +4913,18 @@ function cosmeticPriceBase(cat,id){
 // actual coin price comes from the shared RARITY_PRICE ladder. Free/earned items (base<=0) stay free.
 function cosmeticPrice(cat,id){ const base=cosmeticPriceBase(cat,id); if(base<=0) return 0; return itemRarityPrice(packRarityOf(base),false); }
 function cosOwned(cat,id){ const k=cosKey(cat,id); return !!FREE_COSMETICS[k] || !!coinState().owned[k]; }
+// CS422: "NEW" tracking — an item is NEW if it's been acquired (in coinState.owned, i.e. bought/pulled/earned)
+// but not yet VIEWED in the customizer. `bag_seenitems` is local (a badge, not critical data); it's seeded on
+// first run with everything currently owned so existing gear never shows as new — only future acquisitions do.
+function seenItems(){ let v; try{ v=LS.get(acctKey('bag_seenitems'),null); }catch(e){ v=null; }
+  if(!v || typeof v!=='object'){ v={}; const own=coinState().owned||{}; for(const k in own) v[k]=1; try{ LS.set(acctKey('bag_seenitems'),v); }catch(e){} }
+  return v; }
+function markItemSeen(key){ const v=seenItems(); if(key && !v[key]){ v[key]=1; try{ LS.set(acctKey('bag_seenitems'),v); }catch(e){} } }
+function cosIsNew(cat,id){ if(id==='none'||!sbSignedIn()) return false; const k=cosKey(cat,id); return !!coinState().owned[k] && !seenItems()[k]; }
+function cosCatNew(cat){ let n=0; try{ (cosmeticItems(cat)||[]).forEach(o=>{ if(cosIsNew(cat,o.id)) n++; }); }catch(e){} return n; }
+function markCatSeen(cat){ if(!sbSignedIn()) return; const own=coinState().owned||{}; try{ (cosmeticItems(cat)||[]).forEach(o=>{ const k=cosKey(cat,o.id); if(own[k]) markItemSeen(k); }); }catch(e){} }
+function anyNewCos(cats){ if(!sbSignedIn()) return false; return (cats||COS_CATS.map(c=>c.k)).some(c=>cosCatNew(c)>0); }
+function cosNewTotal(){ if(!sbSignedIn()) return 0; let n=0; COS_CATS.forEach(c=>{ n+=cosCatNew(c.k); }); return n; }
 function cosBuy(cat,id){
   if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy'};
   if(cosOwned(cat,id)) return {ok:false,msg:'Already owned'};
@@ -5180,12 +5192,14 @@ function header(){
   // right group: profile name / sign-in (→ Trophy Room when signed in, else the account overlay) + coin pill
   const right=$(`<div class="bnright"></div>`);
   const signedIn=sbSignedIn();
-  const pl=$(`<button class="bnprofile${signedIn?' pin':''}" aria-label="${signedIn?'Your profile':'Sign in'}">${pxAvatarChip(S.look,26)}<span class="bnname">${signedIn?esc(sbUsername||'Player'):'Sign in'}</span></button>`);
+  const profNew=signedIn && (typeof cosNewTotal==='function') && cosNewTotal()>0;   // CS422: unviewed new items → dot on the profile pill
+  const pl=$(`<button class="bnprofile${signedIn?' pin':''}" aria-label="${signedIn?'Your profile':'Sign in'}" style="position:relative">${pxAvatarChip(S.look,26)}<span class="bnname">${signedIn?esc(sbUsername||'Player'):'Sign in'}</span>${profNew?'<span style="position:absolute;top:-2px;right:-2px;width:11px;height:11px;border-radius:50%;background:#e2554e;border:2px solid #0b1a12;box-shadow:0 0 5px rgba(226,85,78,.9)"></span>':''}</button>`);
   pl.onclick=()=>{ if(sbSignedIn()){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} render(); };
   right.appendChild(pl);
   if(SHOP_ENABLED && sbSignedIn()){   // global coin counter (owner: everywhere, tap → Pro Shop). Signed-in only.
     const bal=coinBalance(); const bump=(_coinHdrPrev!=null && bal>_coinHdrPrev);
-    const coin=$(`<button class="coinhdr${bump?' bump':''}" aria-label="Coins: ${coinFmt(bal)}. Open the Pro Shop."><span class="ci">${ic('coin',{size:'16px'})}</span>${coinFmt(bal)}</button>`);
+    const shopNew=(typeof cosNewTotal==='function') && cosNewTotal()>0;   // CS422: new items live in the shop, which the coin pill opens
+    const coin=$(`<button class="coinhdr${bump?' bump':''}" aria-label="Coins: ${coinFmt(bal)}. Open the Pro Shop.${shopNew?' New items available.':''}" style="position:relative"><span class="ci">${ic('coin',{size:'16px'})}</span>${coinFmt(bal)}${shopNew?'<span style="position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;background:#e2554e;border:2px solid #0b1a12;box-shadow:0 0 5px rgba(226,85,78,.9)"></span>':''}</button>`);
     coin.onclick=()=>{ track('coin_pill_open'); S.overlay='shop'; render(); };
     right.appendChild(coin); _coinHdrPrev=bal;
   }
@@ -6699,32 +6713,22 @@ function scrSetup(){
   const guest=!sbSignedIn();
   const editing=!!S.setupEdit;   // CS356c: editing the profile golfer from the Trophy Room (not starting a career)
   const wrap=$(`<div class="retro-creator setup-shop"></div>`);
-  // CS421: golf GEAR (clubs + ball) lives in a separate "Your Golf Bag" view, opened from the top-right button,
-  // so clothes/accessories are separate from golf gear. golfBag mode swaps the whole category set + title.
-  const golfBag = !!S.golfBag && !guest;
-  const hdr=$(`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
-      <div class="retro-title" style="margin:0">▸ ${golfBag?'Your Golf Bag':(editing?'Edit Your Golfer':'Create Your Golfer')}</div>
-      ${!guest?`<button class="btn ${golfBag?'ghost':'gold'} gbtoggle" style="width:auto;flex:0 0 auto;padding:8px 12px;font-size:12px;white-space:nowrap">${golfBag?'‹ Styling':'🎒 Your Golf Bag'}</button>`:''}
-    </div>`);
-  wrap.appendChild(hdr);
-  wrap.appendChild($(`<div class="retro-sub">${golfBag?'Pick your clubs &amp; ball':(editing?'This is your golfer in every mode &middot; change it anytime':((S.special?'Monthly Spotlight':(S.daily?'Play 18':'Career Mode'))+' &middot; style your golfer, then build your skills'))}</div>`));
-  { const gb=hdr.querySelector('.gbtoggle'); if(gb) gb.onclick=()=>{ S.golfBag=!S.golfBag; S.setupCat=null; S.shopPreview=null; render(); }; }
+  wrap.appendChild($(`<div class="retro-title">▸ ${editing?'Edit Your Golfer':'Create Your Golfer'}</div>`));
+  wrap.appendChild($(`<div class="retro-sub">${editing?'This is your golfer in every mode &middot; change it anytime':((S.special?'Monthly Spotlight':(S.daily?'Play 18':'Career Mode'))+' &middot; style your golfer, then build your skills')}</div>`));
 
-  const LOOKCATS=[['skin','Skin'],['hair','Hair color'],['style','Hair style'],['hand','Handedness']];   // CS421: club moved to Your Golf Bag
-  const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];
-  const ACCS=[['hw','Headwear'],['ew','Eyewear'],['cleats','Cleats']];   // CS421: ball moved to Your Golf Bag
-  const GEAR=[['club','Clubs'],['ball','Ball']];   // CS421: golf gear (in Your Golf Bag)
-  // Every category shows at once, grouped by a small label; guests get only the free appearance options
-  // (the rest sit behind the sign-in lock card below). Golf gear is separated into the Your Golf Bag view.
+  // CS422: the create/edit screen is just WHO the golfer is — Appearance + Profile. All clothes, accessories,
+  // effects and golf gear (clubs/ball) are bought AND equipped in the Pro Shop (the button below leads there).
+  const LOOKCATS=[['skin','Skin'],['hair','Hair color'],['style','Hair style'],['hand','Handedness']];
   const groups = guest ? [['Appearance',LOOKCATS]]
-    : golfBag ? [['Your Golf Bag',GEAR]]
-    : [['Appearance',LOOKCATS],['Apparel',APP],['Gear',ACCS],['Effects',[['fx','Aura']]],['Profile',[['details','Name & Country']]]];
+    : [['Appearance',LOOKCATS],['Profile',[['details','Name & Country']]]];
   const cats = groups.reduce((a,g)=>a.concat(g[1]),[]);
   let cat=S.setupCat; if(!cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.setupCat=cat;
   const isLook = LOOKCATS.some(c=>c[0]===cat);   // club/ball are cosmetics (buy/equip tiles), not free look-swatches
 
   // sticky-style header: preview + ONE wrapping row with every category chip (grouped), reusing the shop classes
-  const chips = groups.map(g=>`<span class="catglab">${esc(g[0])}</span>`+g[1].map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-scat="${c[0]}">${esc(c[1])}</button>`).join('')).join('');
+  // CS422: a red dot on a category chip when it holds an acquired-but-unviewed item (leads you to new gear).
+  const NDOT=`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e2554e;margin-left:5px;vertical-align:middle;box-shadow:0 0 4px rgba(226,85,78,.7)"></span>`;
+  const chips = groups.map(g=>`<span class="catglab">${esc(g[0])}</span>`+g[1].map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-scat="${c[0]}">${esc(c[1])}${(c[0]!==cat && cosCatNew(c[0])>0)?NDOT:''}</button>`).join('')).join('');
   const sticky=$(`<div class="shop-sticky"><div class="shop-preview">${avatarShowHTML()}</div></div>`);
   // UNDER THE GOLFER (owner): live active boosts (from equipped gear only) + a distinct Pro Shop / Packs
   // button. Signed-in only (guests have no gear / can't shop).
@@ -6732,7 +6736,8 @@ function scrSetup(){
     const under=$(`<div class="setup-under"></div>`);
     try{ under.appendChild(accBoostSummaryNode()); }catch(e){}
     const nFree=((typeof packIsFree==='function')&&packIsFree()?1:0)+((typeof packCredits==='function')?(packCredits('base')+packCredits('tour')+packCredits('champ')):0);
-    const sb=$(`<button class="setup-shopbtn">${ic('cart',{size:'16px'})}<span>Pro Shop &amp; Packs${nFree>0?' · 🎁 '+nFree+' free pack'+(nFree>1?'s':''):''}</span> <span class="ssb-go">▸</span></button>`);
+    const newN=(typeof cosNewTotal==='function')?cosNewTotal():0;   // CS422: acquired-but-unviewed items live in the shop now
+    const sb=$(`<button class="setup-shopbtn" style="position:relative">${ic('cart',{size:'16px'})}<span>Pro Shop &amp; Packs${nFree>0?' · 🎁 '+nFree+' free pack'+(nFree>1?'s':''):''}${newN>0?' · <span style="color:#ff8f88;font-weight:800">'+newN+' NEW</span>':''}</span> <span class="ssb-go">▸</span>${newN>0?'<span style="position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:#e2554e;border:2px solid #0e2016;box-shadow:0 0 6px rgba(226,85,78,.9)"></span>':''}</button>`);
     sb.onclick=()=>{ track('setup_shop_open'); S.overlay='shop'; if(freePack)S.shopSec='packs'; render(); };
     under.appendChild(sb);
     sticky.appendChild(under);
@@ -6757,6 +6762,7 @@ function scrSetup(){
       if(k==='skin')S.look.skin=id; else if(k==='hair')S.look.hair=id; else if(k==='style')S.look.hairStyle=id; else if(k==='hand')S.look.lefty=(id==='left'); else if(k==='club')S.look.club=id;
       saveLook(); render(); });
     grid.querySelectorAll('[data-tile]').forEach(x=>x.onclick=()=>shopTileClick(x));
+    if(!isLook && !guest) markCatSeen(cat);   // CS422: viewing a category's tiles clears its NEW badges (next render)
   }
   // category handlers (cancel any pending preview when navigating)
   sticky.querySelectorAll('[data-scat]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.setupCat=x.getAttribute('data-scat'); render(); });
@@ -19547,6 +19553,7 @@ function shopTile(o){
   else foot=`<span class="sfoot price${o.afford?'':' no'}"><span style="width:12px;height:12px">${ic('coin',{size:'12px'})}</span>${coinFmt(o.price||0)}</span>`;
   return `<button class="stile ${o.state}" ${o.data||''}>`
     +(o.rarColor?`<span class="srar" style="background:${o.rarColor}"></span>`:'')
+    +(o.isNew?`<span style="position:absolute;top:4px;left:4px;background:#e2554e;color:#fff;font:800 8px/1 var(--body);letter-spacing:.05em;padding:2px 4px;border-radius:4px;z-index:3;box-shadow:0 1px 3px rgba(0,0,0,.4)">NEW</span>`:'')
     +(o.state==='eq'?`<span class="sbadge">✓</span>`:'')
     +o.thumb
     +`<span class="snm">${esc(o.name)}</span>`
@@ -19604,7 +19611,7 @@ function cosTileHTML(cat,o){
     return shopTile({thumb,name:o.name,state:'lock',noFoot:true,sub,data:`data-tile data-kind="cos-req" data-req="${esc(csE.reqText)}"`});
   }
   const state = equipped?'eq':(owned?'own':'lock');
-  return shopTile({thumb,name:o.name,state,price,afford:coinBalance()>=price,sub:bt?shopBoostTxt(bt):undefined,
+  return shopTile({thumb,name:o.name,state,price,afford:coinBalance()>=price,sub:bt?shopBoostTxt(bt):undefined,isNew:cosIsNew(cat,o.id),
     data:`data-tile data-kind="cos" data-cat="${cat}" data-id="${esc(o.id)}"`});
 }
 function accTileHTML(it){
@@ -20213,6 +20220,10 @@ function overlayShop(screen){
   const ACCS=[['hw','Headwear'],['ew','Eyewear'],['club','Clubs'],['ball','Balls'],['cleats','Cleats']];   // CS414: vintage/legendary clubs + balls + cleats
   const FXCATS=[['fx','Aura']];
   const cats = sec==='apparel'?APP : sec==='accessories'?ACCS : sec==='effects'?FXCATS : null;
+  // CS422: NEW-item badges — a red dot on a section tab / category chip that holds an acquired-but-unviewed item.
+  const secNew=(list)=>{ let n=0; (list||[]).forEach(c=>{ n+=cosCatNew(c[0]); }); return n; };
+  const NDOT='<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e2554e;margin-left:4px;vertical-align:middle;box-shadow:0 0 4px rgba(226,85,78,.7)"></span>';
+  const secDot=(s)=>((s==='apparel'?secNew(APP):s==='accessories'?secNew(ACCS):s==='effects'?secNew(FXCATS):0)>0?NDOT:'');
   let cat=S.shopCat; if(cats && !cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.shopCat=cat;
   // sticky: bar (title+coins+close) → live preview → section segment → category chips
   const sticky=$(`<div class="shop-sticky">
@@ -20224,12 +20235,12 @@ function overlayShop(screen){
     <button class="shop-refcta" data-refshare><span style="width:18px;height:18px;flex:0 0 auto">${ic('coins',{size:'18px'})}</span><span><b>Invite a friend, get a free pack</b><br><span class="small" style="opacity:.85">They sign up with your link, you both score a pack</span></span><span style="margin-left:auto">↗</span></button>
     <div class="segrow">
       ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
-      <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel</button>
-      <button data-sec="accessories" class="${sec==='accessories'?'on':''}">Accessories</button>
-      <button data-sec="effects" class="${sec==='effects'?'on':''}">Effects</button>
+      <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel${secDot('apparel')}</button>
+      <button data-sec="accessories" class="${sec==='accessories'?'on':''}">Accessories${secDot('accessories')}</button>
+      <button data-sec="effects" class="${sec==='effects'?'on':''}">Effects${secDot('effects')}</button>
       <button data-sec="bag" class="${sec==='bag'?'on':''}">Bag</button>
       <button data-sec="owned" class="${sec==='owned'?'on':''}">My Items</button></div>
-    ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-cat="${c[0]}">${esc(c[1])}</button>`).join('')}</div>`:''}
+    ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-cat="${c[0]}">${esc(c[1])}${(c[0]!==cat && cosCatNew(c[0])>0)?NDOT:''}</button>`).join('')}</div>`:''}
   </div>`);
   ov.appendChild(sticky);
   sticky.querySelectorAll('[data-refshare]').forEach(x=>x.onclick=()=>{ try{ referralShare(); }catch(e){} });   // CS412: invite-a-friend referral CTA
@@ -20262,6 +20273,9 @@ function overlayShop(screen){
   grid.innerHTML = tiles.length?tiles.join('')
     : `<div class="shop-empty">${sec==='owned'?'You haven’t unlocked anything yet, browse Apparel & Accessories to kit out your golfer.':'Nothing here yet.'}</div>`;
   ov.appendChild(grid);
+  // CS422: viewing a category (or My Items) clears its NEW badges on the next render
+  if(sec==='apparel'||sec==='accessories'||sec==='effects'){ markCatSeen(cat); }
+  else if(sec==='owned'){ COS_CATS.forEach(c=>markCatSeen(c.k)); }
   ov.appendChild($(`<div class="small muted center" style="margin-top:14px">Tap an item to preview it on your golfer, then confirm to buy.</div>`));
   ov.appendChild($(`<button class="btn red" style="margin-top:10px">Done</button>`));
   sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
