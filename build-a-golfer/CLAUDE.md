@@ -10225,6 +10225,27 @@ allows Google Fonts, or self-host Anton.*
   clears the pills on tiny phones. Verified in Playwright: gaps now 18/11 (360), 21/21 (390), 32/32 (412),
   178/178 (780), no overflow at any width. Screenshot confirms the balanced banner. Deployed to /golf.
 
+- **CS430 — bottom nav mount-once (fixes drift + stuck/frozen buttons) + faster loading (owner).**
+  Two coupled bugs plus a load-speed pass:
+  1. **Bottom nav drifts off the bottom on iOS + eats taps ("buttons stuck/frozen").** The nav was REMOVED
+     and RE-APPENDED whenever screen/overlay changed (CS329 reduced but didn't eliminate this). Re-inserting
+     a `position:fixed` element makes iOS mis-paint it to a document position mid-scroll (it drifts to the
+     middle / off the bottom), and a mis-placed nav bar sits over nearby buttons and swallows their taps.
+     Fixed: the nav is now built EXACTLY ONCE (`bottomNav()` → `#rttnav`, appended to `<body>`) and never
+     removed — `render()` just toggles a `.navhide` (display:none) class for immersive/live-play screens and
+     refreshes the active tab in place (`navSetActive`). Click handlers read live `S` at click time, so the
+     persisted node is never stale. Verified in Playwright: same node across many re-renders (navCount stays
+     1, no duplicates), correct active tab on title/season/leaderboard, hidden-in-place (still in DOM) on
+     dailyround with the reserve padding removed, shown again on return — 0 page errors.
+  2. **Loading speed.** (a) Service worker HTML strategy → **network-first with a fast cache fallback**
+     (`sw.js`, CACHE v6→v7): a healthy network still wins so fresh deploys land immediately, but if the
+     network is slow/flaky the cached copy is served after a 2.5s timeout (the background fetch still
+     refreshes the cache) so the game opens fast instead of waiting on the full ~2MB download; single cache
+     entry (`./index.html`) so any navigation URL (?h2h=/?ref=…) hits it. (b) Added `preconnect` hints for
+     the Supabase CDN (deferred supabase-js) + the Supabase API origin so sign-in/leaderboard data don't pay
+     full TCP/TLS setup on first use.
+  **Deploy note:** this deploy also ships `golf/sw.js` (the SW change), not just `golf/index.html`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -32,6 +32,10 @@
 <meta name="application-name" content="Run The Tour">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- CS430: warm up the Supabase CDN (deferred supabase-js) + the Supabase API origin (accounts/leaderboard)
+     early, so sign-in + board data don't pay full TCP/TLS setup on first use. -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://jcrrxqfpdelrmvjuihnm.supabase.co" crossorigin>
 <!-- Fonts load NON-BLOCKING (print-media swap) so a slow/blocked Google Fonts CDN can't hold up first
      paint. Fallback stacks + display=swap mean text is always visible; the web fonts just upgrade in
      when they arrive. <noscript> keeps them for no-JS clients. -->
@@ -461,6 +465,7 @@ window.GA_ID='G-L29P5MRWKE';
     letter-spacing:.03em; text-transform:uppercase}
   .botnav button .ic{width:22px; height:22px}
   .botnav button span{max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .botnav.navhide{display:none}   /* CS430: hidden in place (never removed) on immersive/live-play screens */
   .botnav button.on{color:var(--gold)}
   .botnav button:active{transform:translateY(1px)}
   .botnav button:focus-visible{outline:2px solid var(--gold); outline-offset:-3px; border-radius:8px}
@@ -5370,17 +5375,17 @@ function render(){
   app.classList.toggle('has-botnav', showNav);
   document.body.classList.toggle('has-botnav', showNav);   // CS305: cascades --botnav-space so bottom pop-ups clear the nav
   // CS306: the nav lives on <body>, NOT #app - a position:fixed element pins to the viewport most reliably
-  // as a direct child of the scroll root. CS329: only REBUILD it when its active state actually changes
-  // (not on every render). During the live sim this screen re-renders every ~1-2s; removing + re-appending
-  // a position:fixed element mid-scroll makes iOS mis-paint it to a document position (drifts to mid-screen).
-  // Keeping the same DOM node in place across renders keeps it pinned. Key on screen+overlay (what drives the
-  // active tab); the click handlers read live state, so a persisted nav is never stale.
-  const navKey = showNav ? (S.screen+'|'+(S.overlay||'')) : '';
-  if(S._navKey!==navKey || (showNav && !document.querySelector('.botnav'))){
-    document.querySelectorAll('.botnav').forEach(n=>n.remove());
-    if(showNav){ try{ document.body.appendChild(bottomNav()); }catch(e){ console.error('[RunTheTour] bottomNav failed:', e); } }
-    S._navKey=navKey;
-  }
+  // as a direct child of the scroll root. CS430: mount it EXACTLY ONCE and update it in place - NEVER
+  // remove + re-append. Re-inserting a position:fixed element (which the old rebuild-on-state-change did)
+  // makes iOS mis-paint it to a document position mid-scroll (it drifts off the bottom), and a mis-placed
+  // nav also eats taps on nearby buttons (the "stuck/frozen buttons"). Show/hide via a class; the click
+  // handlers read live state so the persisted node is never stale.
+  try{
+    let nav=document.getElementById('rttnav');
+    if(!nav){ nav=bottomNav(); document.body.appendChild(nav); }
+    nav.classList.toggle('navhide', !showNav);
+    if(showNav) navSetActive(nav);
+  }catch(e){ console.error('[RunTheTour] bottomNav failed:', e); }
   paintAvatars();   // recolor any avatar canvases just added to the DOM
   saveResume();   // snapshot in-progress free-play golfer so a refresh can resume
   markResumeView();   // remember which screen is active so a browser refresh returns here (all modes)
@@ -5397,26 +5402,43 @@ function render(){
 // CS304: persistent bottom tab nav (Home / Career / Daily / Online / Leaderboard) for one-tap hub
 // navigation from any page. Hidden on immersive live-play screens (they have their own bottom controls);
 // covered by a full-screen overlay when one is open.
+const NAV_CAREER_SCR=['setup','draft','build','season','summary','offseason','careerend','circuitend','recap'];
+const NAV_DAILY_SCR=['dailyintro','dailyprev','dailyround','dailyresult'];
+const NAV_H2H_SCR=['h2hhome','h2hlobby','h2hdraft','h2hpreview','h2hwatch','h2hresult','h2hboard'];
+// CS430: the nav is built ONCE and kept mounted (see render). Handlers read live S at click time, so a
+// persisted node is never stale; navSetActive() refreshes the highlighted tab in place each render.
 function bottomNav(){
-  const scr=S.screen, ov=S.overlay;
-  const careerScr=['setup','draft','build','season','summary','offseason','careerend','circuitend','recap'];
-  const dailyScr=['dailyintro','dailyprev','dailyround','dailyresult'];
-  const h2hScr=['h2hhome','h2hlobby','h2hdraft','h2hpreview','h2hwatch','h2hresult','h2hboard'];
   const tabs=[
-    {id:'home',   ico:'home',   label:'Home',        on:scr==='title'&&!ov,          go:()=>{ S.overlay=null; S.screen='title'; render(); }},
-    {id:'career', ico:'flag',   label:'Career',      on:careerScr.includes(scr)&&!ov, go:()=>{ S.overlay=null; const cs=careerSaveInfo(); if(cs){ if(cs.ended && typeof viewEndedCareer==='function') viewEndedCareer(); else resumeCareer(); } else { reset(); S.mode='easy'; S.screen='setup'; render(); } }},
-    {id:'daily',  ico:'target', label:'Daily',       on:dailyScr.includes(scr)&&!ov,  go:()=>{ S.overlay=null; startDailyChallenge(); }},
-    {id:'online', ico:'swords', label:'Online',      on:h2hScr.includes(scr)&&!ov,    go:()=>{ S.overlay=null; openH2H(); }},
-    {id:'board',  ico:'trophy', label:'Leaderboard', on:ov==='leaderboard',           go:()=>{ S.overlay='leaderboard'; render(); }},
+    {id:'home',   ico:'home',   label:'Home',        go:()=>{ S.overlay=null; S.screen='title'; render(); }},
+    {id:'career', ico:'flag',   label:'Career',      go:()=>{ S.overlay=null; const cs=careerSaveInfo(); if(cs){ if(cs.ended && typeof viewEndedCareer==='function') viewEndedCareer(); else resumeCareer(); } else { reset(); S.mode='easy'; S.screen='setup'; render(); } }},
+    {id:'daily',  ico:'target', label:'Daily',       go:()=>{ S.overlay=null; startDailyChallenge(); }},
+    {id:'online', ico:'swords', label:'Online',      go:()=>{ S.overlay=null; openH2H(); }},
+    {id:'board',  ico:'trophy', label:'Leaderboard', go:()=>{ S.overlay='leaderboard'; render(); }},
   ];
-  const nav=$(`<nav class="botnav" role="navigation" aria-label="Main navigation"><div class="botnav-in"></div></nav>`);
+  const nav=$(`<nav id="rttnav" class="botnav" role="navigation" aria-label="Main navigation"><div class="botnav-in"></div></nav>`);
   const inner=nav.querySelector('.botnav-in');
   tabs.forEach(t=>{
-    const b=$(`<button type="button" class="${t.on?'on':''}" aria-label="${t.label}"${t.on?' aria-current="page"':''}>${ic(t.ico)}<span>${t.label}</span></button>`);
+    const b=$(`<button type="button" data-nav="${t.id}" aria-label="${t.label}">${ic(t.ico)}<span>${t.label}</span></button>`);
     b.onclick=()=>{ try{ track('botnav',{tab:t.id}); }catch(e){} t.go(); };
     inner.appendChild(b);
   });
   return nav;
+}
+// which tab is active for the current screen/overlay (a non-leaderboard overlay → none highlighted)
+function navActiveTab(){
+  const scr=S.screen, ov=S.overlay;
+  if(ov==='leaderboard') return 'board';
+  if(ov) return '';
+  if(scr==='title') return 'home';
+  if(NAV_CAREER_SCR.includes(scr)) return 'career';
+  if(NAV_DAILY_SCR.includes(scr)) return 'daily';
+  if(NAV_H2H_SCR.includes(scr)) return 'online';
+  return '';
+}
+function navSetActive(nav){
+  const active=navActiveTab();
+  nav.querySelectorAll('[data-nav]').forEach(b=>{ const on=b.getAttribute('data-nav')===active;
+    b.classList.toggle('on', on); if(on) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current'); });
 }
 function openRules(){ if(S.screen==='rules')return; S.rulesReturn=S.screen; S.overlay=null; S.screen='rules'; render(); }
 function scrRules(){
