@@ -4318,14 +4318,16 @@ const filledCount=()=>CATS.filter(c=>S.slots[c.k]).length;
    points lower, read at its true average; only sizeable downside spread (the exploit) gets docked. No
    elite "stretch": a build never reads above its own weighted average, so the number stays intuitive. */
 const OVR_IMBALANCE_K=1.37, OVR_DEADBAND=2.2;
-function ovrFromSkills(sk){
+function ovrFromSkills(sk, allowOver){
   const vals=CATS.map(c=>(sk[c.k]!=null?sk[c.k]:REPLACEMENT));
   const wmean=CATS.reduce((s,c,i)=>s+vals[i]*c.w,0);                 // weighted mean
   const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
   const below=vals.filter(v=>v<mean).map(v=>mean-v);                 // downside deviation, weak links
   const dd=below.length?Math.sqrt(below.reduce((a,b)=>a+b*b,0)/vals.length):0;
   const o=wmean - OVR_IMBALANCE_K*Math.max(0, dd-OVR_DEADBAND);      // only cherry-picked spread is penalised
-  return Math.max(40, Math.min(99, o)); }
+  // allowOver: only the player's gear-boosted build may read past 99 (equipment pushes past the ceiling).
+  // Field/NPC golfers always clamp at 99 so the world stays honest.
+  return Math.max(40, Math.min(allowOver?112:99, o)); }
 /* ===================== REAL GOLFER STATS (CS214) =====================
    A full PGA-Tour-style stat profile DERIVED from the 8 skill ratings. Ratings are DataGolf-SG-anchored
    (rating 80 = tour average), so these read like honest season stats; the sim is score-level, so the
@@ -4425,9 +4427,10 @@ function statSheetHTML(sk, real, opts){
 // While false: no shop entry points render, the overlay is unreachable, and equipped gear gives ZERO boost.
 const SHOP_ENABLED=true;   // CS186: re-enabled with a rebalanced economy (0-coin reset + higher prices + smaller boosts)
 const COIN_START=300;                       // welcome coins (baked into the reset baseline, so post-reset everyone starts at 0)
-const COIN_EPOCH=1;                          // bump to reset every account's coins/gear to 0 again
-const ACC_SKILL_CAP=3, ACC_TOTAL_CAP=8;     // CS186: boosts severely reduced - a full loadout is now a small, bounded edge
-const ACC_BOOST_SCALE=0.5;                   // scale down the catalog boosts (owner: decrease the boosts)
+const COIN_RATE=0.6;                         // Pro Shop relaunch: earned coins (above the welcome start) run ~40% slower, so the good gear is a real grind
+const COIN_EPOCH=2;                          // bump to re-baseline every account's spendable coins to 0 at the new rate (owned gear/cosmetics are PRESERVED across the bump)
+const ACC_SKILL_CAP=10, ACC_TOTAL_CAP=80;    // Pro Shop relaunch: +10 hard cap on any single stat (from all gear combined). No total governor to start (80 = effectively off).
+const ACC_BOOST_SCALE=1;                      // full-strength catalog boosts (owner: bring the boosts back)
 // CS186 severe prices (owner): earned slowly, so gear is a long-term goal. By rarity, clubs cost a bit more.
 function accPrice(it){ if(!it||it.rarity==='exclusive') return 0;
   const base={common:2500,rare:10000,epic:30000,legendary:85000}[it.rarity]||2500;
@@ -4489,7 +4492,7 @@ function accById(id){ return ACC_BY_ID[id]||null; }
 function coinState(){ let s=LS.get(acctKey('bag_coins'),null)||{}; s.spent=s.spent||0; s.seen=s.seen||0; s.owned=(s.owned&&typeof s.owned==='object')?s.owned:{};
   // CS186 one-time reset to 0: bank the current derived earned as a baseline, wipe spend + owned gear, so
   // every account starts at 0 and earns going forward. Equipped-but-unowned gear simply stops rendering.
-  if(s.epoch!==COIN_EPOCH){ s.epoch=COIN_EPOCH; s.baseline=coinsEarnedRaw(); s.spent=0; s.owned={}; s.bonus=0; s.seen=s.baseline; LS.set(acctKey('bag_coins'), s); }
+  if(s.epoch!==COIN_EPOCH){ s.epoch=COIN_EPOCH; s.baseline=coinsEarnedRaw(); s.spent=0; s.bonus=0; s.seen=s.baseline; LS.set(acctKey('bag_coins'), s); }   // re-baseline spendable coins to 0 at the new rate; PRESERVE owned gear/cosmetics
   s.baseline=s.baseline||0; s.forfeit=s.forfeit||0; s.bonus=s.bonus||0; return s; }
 function coinSave(s){ LS.set(acctKey('bag_coins'), s); if(typeof cloudPush==='function') cloudPush(); }
 // spendable coins = derived-earned minus the reset baseline (so post-reset everyone starts at 0) minus
@@ -4497,18 +4500,18 @@ function coinSave(s){ LS.set(acctKey('bag_coins'), s); if(typeof cloudPush==='fu
 function coinsEarned(){ const s=coinState(); return Math.max(0, coinsEarnedRaw()-s.baseline-(s.forfeit||0)+(s.bonus||0)); }
 let _coinsSuppressToast=false;   // set while finalizing a skipped season so the "+N coins" toast doesn't flash
 // deterministic RAW earned total - every entry here is a "way to earn coins"; add terms to add more
-function coinsEarnedRaw(){ let c=COIN_START; const ac=(achState().unlocked)||{};
-  ACH.forEach(a=>{ if(ac[a.id]) c+=a.pts*3; });                 // every achievement pays out (points ×3)
+function coinsEarnedRaw(){ let e=0; const ac=(achState().unlocked)||{};
+  ACH.forEach(a=>{ if(ac[a.id]) e+=a.pts*3; });                 // every achievement pays out (points ×3)
   const m=achMetrics();
-  c+=(m.wins||0)*60 + (m.majors||0)*400;                        // tour wins / majors
-  c+=(m.cupWins||0)*300 + (m.cupApps||0)*40 + (m.fedexCups||0)*800;
-  c+=(m.olyGold||0)*500 + (m.olySilver||0)*250 + (m.olyBronze||0)*120;
-  c+=(m.no1Seasons||0)*600 + (m.poySeasons||0)*450 + (m.moneyLeaderSeasons||0)*300 + (m.scoringSeasons||0)*300 + (m.roySeasons||0)*300;
-  c+=(m.dailyBeats||0)*20 + (m.bestStreak||0)*25 + (m.spotWins||0)*200;      // daily / streak / spotlight
-  c+=(m.seasonsPlayed||0)*40 + (m.careersCompleted||0)*1500;
-  c+=(m.rivalWins||0)*150 + (m.rivalsOutgrown||0)*250 + (m.h2hWins||0)*30 + (m.holesInOne||0)*300;
-  c+=levelCoinTotal(playerLevel());                             // XP Player Level pays out coins per level reached
-  return Math.round(c);
+  e+=(m.wins||0)*60 + (m.majors||0)*400;                        // tour wins / majors
+  e+=(m.cupWins||0)*300 + (m.cupApps||0)*40 + (m.fedexCups||0)*800;
+  e+=(m.olyGold||0)*500 + (m.olySilver||0)*250 + (m.olyBronze||0)*120;
+  e+=(m.no1Seasons||0)*600 + (m.poySeasons||0)*450 + (m.moneyLeaderSeasons||0)*300 + (m.scoringSeasons||0)*300 + (m.roySeasons||0)*300;
+  e+=(m.dailyBeats||0)*20 + (m.bestStreak||0)*25 + (m.spotWins||0)*200;      // daily / streak / spotlight
+  e+=(m.seasonsPlayed||0)*40 + (m.careersCompleted||0)*1500;
+  e+=(m.rivalWins||0)*150 + (m.rivalsOutgrown||0)*250 + (m.h2hWins||0)*30 + (m.holesInOne||0)*300;
+  e+=levelCoinTotal(playerLevel());                             // XP Player Level pays out coins per level reached
+  return Math.round(COIN_START + e*COIN_RATE);                  // Pro Shop relaunch: earned progress scaled ~40% slower (welcome start unscaled)
 }
 function coinBalance(){ return Math.max(0, coinsEarned()-coinState().spent); }
 // CS288: bonus coins earned by ACTIONS (e.g. playing a career Moment yourself instead of simming it).
@@ -4609,9 +4612,6 @@ function grandfatherLook(){ if(!sbSignedIn()||!S.look) return; const s=coinState
 }
 function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
   CATS.forEach(c=>p[c.k]=S.slots[c.k]?S.slots[c.k].value:REPLACEMENT);
-  // equipped accessory boosts (solo only - buildPlayer feeds Career + Daily; H2H uses its own draft)
-  const ab=accBoost(); for(const k in ab){ if(p[k]!=null) p[k]=Math.max(40,Math.min(99, p[k]+ab[k])); }
-  if(accBoostTotal()>0) p._gear=1;
   // caddie: bake the always-on part of your caddie's power into your ratings so it shows in OVR + radar
   // (situational major/venue bonuses are added to your event overall in the sim, not here). Clamped so a
   // boost can't push a rating out of range or a -1 (Two Shot Lynch) below the floor.
@@ -4620,8 +4620,14 @@ function buildPlayer(){const p={name:S.name||'Your Golfer',you:true};
   // CS325: temporary career-decision effects (injuries / coaching boosts) - display side; career only.
   // The SIM applies the same delta as a course-fit-weighted eo nudge in beginEvent (see careerFxEo).
   if(typeof careerFxOn==='function' && careerFxOn()){ for(const c of CATS){ const d=careerSkillFx(c.k); if(d && p[c.k]!=null) p[c.k]=Math.max(40,Math.min(99, p[c.k]+d)); } }
+  // equipped accessory/bag boosts LAST. Applied in CAREER only (Daily/Spotlight/Legend set S.daily=true and stay
+  // a neutral field). Online H2H uses its own path (h2hSkills), not buildPlayer. Gear is the ONE thing that may
+  // push an effective rating past 99 (up to 99+ACC_SKILL_CAP), so a fully-kitted OVR can read over 99.
+  let over=false;
+  if(!S.daily){ const ab=accBoost(); for(const k in ab){ if(p[k]!=null) p[k]=Math.max(40,Math.min(99+ACC_SKILL_CAP, p[k]+ab[k])); }
+    if(accBoostTotal()>0){ p._gear=1; over=true; } }
   p.country=(S.look&&S.look.country)||'United States'; p.nation=playerNation();
-  p.skill=ovrFromSkills(p); return p;}
+  p.skill=ovrFromSkills(p, over); return p;}
 
 /* ---------- build identity ---------- */
 function ovrTier(o){
