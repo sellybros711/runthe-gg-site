@@ -386,6 +386,10 @@ window.GA_ID='G-L29P5MRWKE';
     text-transform:uppercase; color:var(--gold); padding:9px 18px; border-radius:999px; border:1px solid var(--gold);
     background:color-mix(in srgb, var(--gold) 12%, transparent); box-shadow:0 4px 11px -3px rgba(0,0,0,.5), 0 3px 12px -6px rgba(241,208,74,.5)}
   .howtop:hover{background:color-mix(in srgb, var(--gold) 20%, transparent)}
+  .qbadge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#e5484d;color:#fff;font:800 10.5px/1 var(--body);letter-spacing:0}
+  .howtop.hasnew{animation:qpulse 2.4s ease-in-out infinite}
+  @keyframes qpulse{0%,100%{box-shadow:0 4px 11px -3px rgba(0,0,0,.5), 0 0 0 0 rgba(241,208,74,.5)}50%{box-shadow:0 4px 11px -3px rgba(0,0,0,.5), 0 0 0 7px rgba(241,208,74,0)}}
+  @media(prefers-reduced-motion:reduce){.howtop.hasnew{animation:none}}
   .howtop:active{transform:translateY(1px)}
   .howtop:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   /* CS304: persistent bottom tab nav - hub navigation from any page (Home / Career / Daily / Online / Leaderboard) */
@@ -2623,7 +2627,7 @@ function addMulliSpin(n){ const s=xpState(); s.mulliEarned=(s.mulliEarned||0)+(n
 function useMulliSpin(){ const s=xpState(); if(Math.max(0,(s.mulliEarned||0)-(s.mulliSpent||0))<=0) return false; s.mulliSpent=(s.mulliSpent||0)+1; xpSave(s); return true; }
 // ---- Daily quests (3 tasks, reset daily; all 3 → XP) ----
 const DAILY_QUEST_DEFS=[
-  {k:'daily',  label:'Play the Daily Challenge',      hint:'Beat the Pro'},
+  {k:'daily',  label:'Play the Daily Challenge',      hint:'Play 18'},
   {k:'season', label:'Complete a Career season',      hint:'Career Mode'},
   {k:'h2h',    label:'Play a Head to Head match',     hint:'Play Online'},
   {k:'share',  label:'Share a result',                hint:'Friend or social'},
@@ -6043,7 +6047,11 @@ function scrTitle(){
   { const hw=$(`<div class="center" style="margin:10px 0 12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap"></div>`);
     const hb=$(`<button type="button" class="howtop" aria-label="How to Play">📖 How to Play</button>`);
     hb.onclick=openRules; hw.appendChild(hb);
-    const qb=$(`<button type="button" class="howtop" aria-label="Daily Quests">🎯 Daily Quests</button>`);
+    // CS375: badge the button with how many daily quests are still to do (signed-in only) so the
+    // player knows there's something to click and complete.
+    const dqObj=(sbSignedIn() && typeof dailyQuests==='function')?dailyQuests():null;
+    const dqLeft=dqObj?DAILY_QUEST_DEFS.filter(d=>!dqObj[d.k]).length:0;
+    const qb=$(`<button type="button" class="howtop${dqLeft?' hasnew':''}" aria-label="Daily Quests${dqLeft?', '+dqLeft+' still to do':''}">🎯 Daily Quests${dqLeft?`<span class="qbadge">${dqLeft}</span>`:''}</button>`);
     qb.onclick=()=>{ S.overlay='challenges'; render(); }; hw.appendChild(qb);
     w.appendChild(hw); }
   // (career bests moved off the top onto the new-career card, see careerHeroCard)
