@@ -5919,6 +5919,7 @@ function overlayTerms(screen){
     <ol style="color:#dbe6ee;padding-left:18px">
       <li><b>Not affiliated with any real organization.</b> RunTheTour is an independent, unofficial fan project, not affiliated with, endorsed by, or sponsored by the PGA Tour, DataGolf, or any professional golfer; all tournaments, venues, cups and sponsor brands in the game are fictional, and any resemblance to a real event, company, or organization is coincidental. Real player names and public statistics build fictional, simulated golfers; all results are entirely fictional.</li>
       <li><b>Entertainment only, no real money.</b> In-game currency, prize money, and rankings have no real-world value and aren't a form of gambling or wagering.</li>
+      <li><b>Randomized packs.</b> The Pro Shop offers optional "packs" that grant a random cosmetic or gear item. Packs are opened only with coins you earn by playing (coins cannot be bought with real money), and the drop-rate odds for each rarity are published in-game on the pack screen. Items have no real-world value.</li>
       <li><b>Your account.</b> Choose a username that isn't offensive, impersonating, or misleading. We reserve the right to rename, suspend, or remove accounts, leaderboard entries, or usernames that violate this, or that we determine were used to abuse or manipulate the leaderboard.</li>
       <li><b>No warranty.</b> RunTheTour is provided "as is," in active development, without warranties of any kind, we don't guarantee the game, leaderboard, or your saved progress will always be available or error-free.</li>
     </ol>
@@ -6214,7 +6215,8 @@ function scrTitle(){
   mkTile('🎯','Challenges', signedIn?(repTier().tier.name+' · quests'):'Sign in to earn', ()=>{S.overlay='challenges';render();}, true);
   mkTile('🏆','Leaderboard','Rankings', ()=>{S.overlay='leaderboard';render();}, true);
   mkTile('🏅','Trophy Room', signedIn?'Trophies & rank':'Sign in', ()=>{S.overlay='record';render();}, true);
-  if(SHOP_ENABLED) mkTile(ic('cart'),'Pro Shop', signedIn?(ic('coin')+' '+coinFmt(coinBalance())):'Gear & boosts', ()=>{S.overlay='shop';render();}, true);
+  if(SHOP_ENABLED){ const freePack=(typeof packIsFree==='function')&&packIsFree();
+    mkTile(ic('cart'),'Pro Shop', freePack?'🎁 Free pack!':(signedIn?(ic('coin')+' '+coinFmt(coinBalance())):'Gear & boosts'), ()=>{S.overlay='shop'; if(freePack)S.shopSec='packs'; render();}, true); }
   // (How to Play moved up under the hero, CS287)
   w.appendChild(sec);
   // CS303: the once-a-day challenges pop-up is removed (owner) - the "🎯 Daily Quests" button under the hero opens it.
@@ -18784,9 +18786,12 @@ function shopTileClick(b){
 // Legend gear). Dupes refund a little (owner Q1). Pool includes boost gear + bag tier-1 (Q2).
 // Earned-only, client-side v1 (Q4). NOTHING is live until PACKS_ENABLED is flipped; window._PACKSTEST
 // is a test-only override for the reveal QA (never affects prices).
-const PACKS_ENABLED=false;
-const PACK_HIKE=5;                          // direct-buy prices x5 the day packs launch (Q3)
-const PACK_PRICE=20000;                     // coins per pack (tuned in P4 vs the full catalog)
+const PACKS_ENABLED=true;                    // LIVE (owner: finish + launch). Enabling this also flips priceHike() to PACK_HIKE.
+const PACK_HIKE=2;                           // direct-buy prices x2 the day packs launch (owner: softer than x5)
+const PACK_PRICE=12000;                      // coins per pack (owner: cheaper than 20k, undercuts most direct buys post-hike)
+const PACK_BUNDLE_N=5;                        // bundle: 5 packs...
+const PACK_BUNDLE_PAY=4;                      // ...for the price of 4 (owner) → 48,000 for 5, one pack free
+function packBundlePrice(){ return PACK_PRICE*PACK_BUNDLE_PAY; }
 const PACK_RCOL={common:'#b8c4bd',rare:'#4aa3ff',epic:'#b06be0',legendary:'#F1D04A'};
 const PACK_RLABEL={common:'Common',rare:'Rare',epic:'Epic',legendary:'Legendary'};
 const PACK_ODDS=[['common',0.55],['rare',0.30],['epic',0.12],['legendary',0.03]];
@@ -18864,8 +18869,10 @@ function packPool(){ const pool=[];
 }
 function packOwns(e){ if(e.kind==='acc') return accOwned(e.id); if(e.kind==='bag') return bagTierOwned(e.club)>=1; return cosOwned(e.cat,e.id); }
 function packGrant(e){ var s=coinState(); if(e.kind==='acc') s.owned[e.id]=1; else if(e.kind==='bag') s.owned[bagKey(e.club,1)]=1; else s.owned[cosKey(e.cat,e.id)]=1; coinSave(s); }
-function packState(){ var d={opened:0,sinceEpic:0,sinceLeg:0}; var v=LS.get(acctKey('bag_packs'),null); return (v&&typeof v==='object')?Object.assign(d,v):d; }
-function packSave(p){ LS.set(acctKey('bag_packs'),p); }
+function packState(){ var d={opened:0,sinceEpic:0,sinceLeg:0,freeUsed:false}; var v=LS.get(acctKey('bag_packs'),null); return (v&&typeof v==='object')?Object.assign(d,v):d; }
+function packSave(p){ LS.set(acctKey('bag_packs'),p); if(typeof cloudPush==='function') cloudPush(); }
+// First pack is free (owner onboarding): a signed-in player's very first open costs no coins.
+function packIsFree(){ return packsOn() && sbSignedIn() && !packState().freeUsed; }
 function rollPackRarity(){ var r=Math.random(),a=0; for(var i=0;i<PACK_ODDS.length;i++){ a+=PACK_ODDS[i][1]; if(r<a) return PACK_ODDS[i][0]; } return 'common'; }
 function pickPackItem(rar){ var pool=packPool();
   for(var ri=PACK_RANK.indexOf(rar); ri>=0; ri--){ var tier=pool.filter(function(e){return e.rarity===PACK_RANK[ri];}); if(tier.length) return tier[Math.floor(Math.random()*tier.length)]; }
@@ -18914,11 +18921,11 @@ function packEquip(it){ if(it.kind==='cos') cosEquip(it.cat,it.id); else if(it.k
 // (tier color + item + name + boost), you keep the one you chose. Pity: if a pack is due an epic/leg,
 // all 3 cards are forced to that floor so whatever you pick honors the guarantee. ----
 function forcedRarRoll(force){ if(force==='legendary') return 'legendary'; return Math.random()<0.18?'legendary':'epic'; }
+// roll a 3-card deal. The COIN CHARGE lives in startPackDeal/startPackBundle now, so this is pure (a free
+// first pack or a prepaid bundle pack just skips the charge upstream).
 function rollPackCards(){
   if(!packsOn()) return {err:'off'};
   if(!sbSignedIn()) return {err:'signin'};
-  if(!packAffordable()) return {err:'coins'};
-  var s=coinState(); s.spent+=PACK_PRICE; coinSave(s);
   var p=packState(), force=null;
   if(p.sinceLeg+1>=PACK_PITY_LEG) force='legendary';
   else if(p.sinceEpic+1>=PACK_PITY_EPIC) force='epic';
@@ -18938,9 +18945,29 @@ function pickPackCard(idx){
   else packGrant(item);
   try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind}); }catch(e){}
   d.chosen=idx; d.dupe=dupe; d.refund=refund;
+  if(S.packBundle){ S.packBundle.done=(S.packBundle.done||0)+1; (S.packBundle.results=S.packBundle.results||[]).push({item:item,dupe:dupe,refund:refund}); }
   return {item:item,dupe:dupe,refund:refund};
 }
-function startPackDeal(){ var d=rollPackCards(); if(d.err){ toast(packErr(d.err)); return; } S.packDeal={cards:d.cards,force:d.force,chosen:null}; S.packReveal=null; S.overlay='packreveal'; render(); }
+// opts.free = don't charge (marks the first-pack-free used); opts.bundle = prepaid bundle pack (don't charge)
+function startPackDeal(opts){ opts=opts||{};
+  if(!packsOn()){ toast(packErr('off')); return; }
+  if(!sbSignedIn()){ toast(packErr('signin')); return; }
+  var free=opts.free||packIsFree();
+  if(!free && !opts.bundle){ if(!packAffordable()){ toast(packErr('coins')); return; } var s=coinState(); s.spent+=PACK_PRICE; coinSave(s); }
+  if(free){ var p=packState(); p.freeUsed=true; packSave(p); }
+  var d=rollPackCards(); if(d.err){ toast(packErr(d.err)); return; }
+  S.packDeal={cards:d.cards,force:d.force,chosen:null,bundle:!!opts.bundle,free:!!free}; S.packReveal=null; S.overlay='packreveal'; render();
+}
+// bundle: pay for PACK_BUNDLE_PAY, get PACK_BUNDLE_N packs, opened one-by-one (prepaid).
+function startPackBundle(){
+  if(!packsOn()){ toast(packErr('off')); return; }
+  if(!sbSignedIn()){ toast(packErr('signin')); return; }
+  if(coinBalance()<packBundlePrice()){ toast(packErr('coins')); return; }
+  var s=coinState(); s.spent+=packBundlePrice(); coinSave(s);
+  try{ track('pack_bundle',{n:PACK_BUNDLE_N}); }catch(e){}
+  S.packBundle={total:PACK_BUNDLE_N,done:0,results:[]};
+  startPackDeal({bundle:true});
+}
 function packItemCategory(e){
   if(e.kind==='bag') return 'Golf Club';
   if(e.kind==='acc'){ var it=accById(e.id); return (ACC_SLOT_BY[it&&it.slot]||{name:'Gear'}).name; }
@@ -18981,6 +19008,10 @@ function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=
    +'.packfoot{margin-top:22px;min-height:78px;display:flex;flex-direction:column;align-items:center;gap:12px}'
    +'.packbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}'
    +'.packbtns .btn{width:auto;margin:0;padding:11px 17px}'
+   +'.packsum{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;max-width:420px}'
+   +'.packsumchip{font:700 10px var(--body);border:1px solid;border-radius:999px;padding:3px 9px;background:rgba(255,255,255,.03)}'
+   +'.packodds{max-width:320px;margin:0 auto}'
+   +'.poddrow{display:flex;justify-content:space-between;font:700 12.5px var(--body);padding:5px 10px;border-bottom:1px solid rgba(255,255,255,.06)}'
    +'@keyframes packwin{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}'
    +'.pcard.win{animation:packwin .5s ease .55s}'
    +'@media(prefers-reduced-motion:reduce){.pcard-inner,.pcard.win{transition:none;animation:none}}';
@@ -18990,7 +19021,8 @@ function overlayPackReveal(app){
   packStyleOnce();
   var reduce=(typeof matchMedia==='function')&&matchMedia('(prefers-reduced-motion: reduce)').matches;
   var ov=$('<div class="ov packov" role="dialog" aria-modal="true" aria-label="Pack reveal"></div>');
-  var title=$('<div class="packtitle">'+(d.chosen==null?'Pick your card':'Your card')+'</div>'); ov.appendChild(title);
+  function titleTxt(){ var pre=''; if(S.packBundle){ var num=(d.chosen==null)?((S.packBundle.done||0)+1):(S.packBundle.done||0); pre='Pack '+num+' of '+S.packBundle.total+' · '; } return pre+(d.chosen==null?'Pick your card':'Your card'); }
+  var title=$('<div class="packtitle">'+titleTxt()+'</div>'); ov.appendChild(title);
   var row=$('<div class="pcardrow"></div>'); var cardEls=[];
   d.cards.forEach(function(item,idx){
     var rc=PACK_RCOL[item.rarity]||'#b8c4bd';
@@ -19016,6 +19048,21 @@ function overlayPackReveal(app){
     footer.appendChild($('<div style="font:800 15px var(--body);color:'+(d.dupe?'#ffd45e':'#35d6a0')+'">'+(d.dupe?('Duplicate · +'+coinFmt(d.refund)+' coins'):('You got '+esc(item.name)+'!'))+'</div>'));
     var btns=$('<div class="packbtns"></div>');
     if((item.kind==='cos'||item.kind==='acc') && !d.dupe){ var eb=$('<button class="btn goldfill">Equip</button>'); eb.onclick=function(){ packEquip(item); toast('Equipped!'); }; btns.appendChild(eb); }
+    // BUNDLE: more prepaid packs to open → "Next pack"; the last pack shows a summary of all N
+    if(S.packBundle && (S.packBundle.done||0) < S.packBundle.total){
+      var nxt=$('<button class="btn teal">Next pack ▸ · '+(S.packBundle.total-(S.packBundle.done||0))+' left</button>'); nxt.onclick=function(){ startPackDeal({bundle:true}); };
+      btns.appendChild(nxt); footer.appendChild(btns); return;
+    }
+    if(S.packBundle){
+      footer.appendChild(btns);
+      var res=S.packBundle.results||[];
+      footer.appendChild($('<div class="small" style="color:var(--gold);font-weight:800;margin-top:2px">Your '+S.packBundle.total+' packs</div>'));
+      var sum=$('<div class="packsum"></div>');
+      res.forEach(function(r){ var rc=PACK_RCOL[r.item.rarity]||'#b8c4bd'; sum.appendChild($('<span class="packsumchip" style="color:'+rc+';border-color:'+rc+'">'+esc(r.item.name)+(r.dupe?' · dup':'')+'</span>')); });
+      footer.appendChild(sum);
+      var d2=$('<div class="packbtns"></div>'); var done2=$('<button class="btn ghost">Done</button>'); done2.onclick=function(){ S.packDeal=null; S.packBundle=null; S.overlay='shop'; S.shopSec='packs'; render(); }; d2.appendChild(done2); footer.appendChild(d2);
+      return;
+    }
     var can=packAffordable();
     var again=$('<button class="btn '+(can?'teal':'ghost')+'"'+(can?'':' disabled')+'>Open another · '+coinFmt(PACK_PRICE)+'</button>'); again.onclick=function(){ startPackDeal(); };
     var done=$('<button class="btn ghost">Done</button>'); done.onclick=function(){ S.packDeal=null; S.overlay='shop'; S.shopSec='packs'; render(); };
@@ -19023,7 +19070,7 @@ function overlayPackReveal(app){
   }
   function choose(idx){
     var res=pickPackCard(idx); if(!res) return;
-    title.textContent='Your card';
+    title.textContent=titleTxt();
     cardEls.forEach(function(c,i){ c.el.onclick=null; c.el.classList.add('flipped'); if(i===idx){ c.el.classList.add('win'); var fr=c.el.querySelector('.pcard-front'); if(fr) fr.style.boxShadow='0 0 24px '+c.rc; } else c.el.classList.add('dim'); });
     setTimeout(renderFoot, reduce?0:720);
     var big=(res.item.rarity==='epic'||res.item.rarity==='legendary');
@@ -19036,18 +19083,35 @@ function overlayPackReveal(app){
   app.appendChild(ov);
 }
 function packShopNode(){
-  var p=packState(), afford=packAffordable();
+  packStyleOnce();
+  var p=packState(), free=packIsFree(), bal=coinBalance();
   var wrap=$('<div style="padding:6px 2px 4px"></div>');
   wrap.appendChild($('<div style="max-width:360px;margin:0 auto;text-align:center">'
     +'<div style="margin:8px auto 0;filter:drop-shadow(0 0 18px rgba(241,208,74,.42))">'+pxPackImg(184)+'</div>'
     +'<div style="font-family:var(--display);font-size:22px;margin-top:12px">Pro Shop Pack</div>'
     +'<div class="small muted" style="margin-top:3px">Pick 1 of 3 cards from the whole locker. (Earned Legend gear never drops.)</div>'
+    +(free?'<div style="margin-top:8px;font:800 12.5px var(--body);color:var(--gold)">🎁 Your first pack is on us — open it free!</div>':'')
     +'<div style="margin-top:7px;font:800 11px var(--body);color:#cfe6d8">Guaranteed Epic+ in '+Math.max(0,PACK_PITY_EPIC-p.sinceEpic)+' · Legendary in '+Math.max(0,PACK_PITY_LEG-p.sinceLeg)+'</div></div>'));
-  var buy=$('<button class="btn goldfill" style="max-width:360px;margin:14px auto 0;display:flex;align-items:center;justify-content:center;gap:6px"'+(afford?'':' disabled')+'><span style="width:18px;height:18px">'+ic('coin',{size:'18px'})+'</span>Open a pack · '+coinFmt(PACK_PRICE)+'</button>');
+  // primary open (FREE first pack, else the price)
+  var afford=bal>=PACK_PRICE;
+  var buy=$('<button class="btn goldfill" style="max-width:360px;margin:14px auto 0;display:flex;align-items:center;justify-content:center;gap:6px"'+((free||afford)?'':' disabled')+'>'
+    +(free?'':('<span style="width:18px;height:18px">'+ic('coin',{size:'18px'})+'</span>'))
+    +(free?'Open your FREE first pack':('Open a pack · '+coinFmt(PACK_PRICE)))+'</button>');
   buy.onclick=function(){ startPackDeal(); };
-  var odds=$('<button class="btn ghost" style="max-width:360px;margin:8px auto 0">View drop rates</button>');
-  odds.onclick=function(){ toast(PACK_ODDS.map(function(o){return PACK_RLABEL[o[0]]+' '+Math.round(o[1]*100)+'%';}).join(' · ')+' · dupes refund coins',4500); };
-  wrap.appendChild(buy); wrap.appendChild(odds);
+  wrap.appendChild(buy);
+  // bundle: N packs for the price of PAY (owner)
+  var bprice=packBundlePrice(), baff=bal>=bprice;
+  var bundle=$('<button class="btn teal" style="max-width:360px;margin:8px auto 0;display:flex;align-items:center;justify-content:center;gap:6px"'+(baff?'':' disabled')+'>'
+    +'<span style="width:16px;height:16px;flex:0 0 auto">'+ic('coin',{size:'16px'})+'</span>'
+    +'<span>'+PACK_BUNDLE_N+'-Pack Bundle · '+coinFmt(bprice)+' <span style="opacity:.82">(save '+coinFmt(PACK_PRICE)+')</span></span></button>');
+  bundle.onclick=function(){ startPackBundle(); };
+  wrap.appendChild(bundle);
+  // published drop rates (required; replaces the old toast)
+  var odds=$('<div class="packodds"></div>');
+  odds.innerHTML='<div class="small muted" style="text-transform:uppercase;letter-spacing:.12em;margin:16px 0 4px;text-align:center">Drop rates</div>'
+    +PACK_ODDS.map(function(o){ var rc=PACK_RCOL[o[0]]; return '<div class="poddrow"><span style="color:'+rc+';font-weight:800">'+PACK_RLABEL[o[0]]+'</span><span style="color:'+rc+'">'+Math.round(o[1]*100)+'%</span></div>'; }).join('')
+    +'<div class="small muted" style="text-align:center;margin-top:8px;line-height:1.5">Every pull is a fresh random roll from the full locker. A duplicate refunds coins ('+PACK_RANK.map(function(r){return coinFmt(PACK_DUPE_REFUND[r]);}).join(' / ')+' by rarity).</div>';
+  wrap.appendChild(odds);
   return wrap;
 }
 function overlayShop(screen){
@@ -19725,7 +19789,16 @@ function cloudBundle(){
     dailyquests: LS.get(acctKey('bag_dailyquests'), null),       // today's 3 daily quests
     weeklychal: LS.get(acctKey('bag_weeklychal'), null),         // this week's challenge progress
     coins: LS.get(acctKey('bag_coins'), null),                   // CS183 currency: {spent,seen,owned} (earned is derived)
+    packs: LS.get(acctKey('bag_packs'), null),                   // pack pity counters + first-pack-free flag
   };
+}
+// packs: keep the more-recent pity state (higher `opened`) and UNION the first-pack-free flag (once used
+// on any device, it's used everywhere), so pity + the free pack sync without being re-granted.
+function mergePacks(local, server){
+  const l=(local&&typeof local==='object')?local:{opened:0,sinceEpic:0,sinceLeg:0,freeUsed:false};
+  const s=(server&&typeof server==='object')?server:{opened:0,sinceEpic:0,sinceLeg:0,freeUsed:false};
+  const base=((l.opened||0)>=(s.opened||0))?l:s;
+  return Object.assign({}, base, {opened:Math.max(l.opened||0,s.opened||0), freeUsed:!!(l.freeUsed||s.freeUsed)});
 }
 // grow-only merge of the course-mastery map: per course keep the LOWEST score, the BEST grade, and the
 // higher play/beat counts, so a merge can only ever restore or improve, never lose, a course's mastery.
@@ -19891,6 +19964,7 @@ async function cloudPull(){
     { const md=mergeDailyQuests(LS.get(acctKey('bag_dailyquests'),null), server.dailyquests); if(md) LS.set(acctKey('bag_dailyquests'), md); }
     { const mw=mergeWeeklyChal(LS.get(acctKey('bag_weeklychal'),null), server.weeklychal); if(mw) LS.set(acctKey('bag_weeklychal'), mw); }
     LS.set(acctKey('bag_coins'), mergeCoins(coinState(), server.coins));   // CS183 coins/gear cross-device
+    if(server.packs) LS.set(acctKey('bag_packs'), mergePacks(packState(), server.packs));   // pack pity + first-pack-free cross-device
     reconcileCoins(true);   // self-heal earned total + grant milestone gear silently after a cross-device merge
     cloudPush();
     render();
