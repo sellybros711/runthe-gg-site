@@ -374,7 +374,7 @@ window.GA_ID='G-L29P5MRWKE';
   @media(min-width:600px){ .home-nav{grid-template-columns:repeat(4,1fr); max-width:640px} }
   .navtile{display:flex; flex-direction:column; align-items:center; justify-content:flex-start; text-align:center; gap:5px;
     padding:15px 8px 13px; border-radius:15px; background:var(--panel); border:1.5px solid var(--panelb); color:var(--oncard);
-    font-family:var(--body); cursor:pointer; box-shadow:0 3px 12px rgba(0,0,0,.18); transition:transform .12s ease, border-color .12s ease, background .12s ease}
+    font-family:var(--body); cursor:pointer; box-shadow:0 4px 10px -3px rgba(0,0,0,.4), 0 14px 26px -12px rgba(0,0,0,.55); transition:transform .12s ease, border-color .12s ease, background .12s ease}
   .navtile:hover{transform:translateY(-2px); border-color:var(--gold); background:rgba(241,208,74,.09)}
   .navtile:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   .navtile .ni{font-size:23px; line-height:1; color:var(--gold); margin-bottom:1px}
@@ -384,7 +384,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* CS287: "How to Play" pill-button under the hero (replaces the 30-year-sim badge) */
   .howtop{display:inline-flex; align-items:center; gap:7px; cursor:pointer; font:800 12px/1 var(--body); letter-spacing:.06em;
     text-transform:uppercase; color:var(--gold); padding:9px 18px; border-radius:999px; border:1px solid var(--gold);
-    background:color-mix(in srgb, var(--gold) 12%, transparent); box-shadow:0 3px 12px -6px rgba(241,208,74,.5)}
+    background:color-mix(in srgb, var(--gold) 12%, transparent); box-shadow:0 4px 11px -3px rgba(0,0,0,.5), 0 3px 12px -6px rgba(241,208,74,.5)}
   .howtop:hover{background:color-mix(in srgb, var(--gold) 20%, transparent)}
   .howtop:active{transform:translateY(1px)}
   .howtop:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
@@ -407,7 +407,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* ---- title scene ---- */
   .scene{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none}
-  .coursebg{position:absolute; inset:0; width:100%; height:100%; display:block}
+  .coursebg{position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; object-position:center 60%; image-rendering:auto}
   .sky{position:absolute; inset:0; background:linear-gradient(180deg,#0a2038 0%,#0b2742 40%,#0f3f30 58%,#0b3325 100%)}
   .glow{position:absolute; top:-14%; width:62%; height:60%;
     background:radial-gradient(closest-side, rgba(255,242,205,.18), transparent 70%); filter:blur(2px)}
@@ -433,7 +433,7 @@ window.GA_ID='G-L29P5MRWKE';
   /* CS254: richer "continue your career" card - bigger than a button, shows where you are (owner) */
   .resumecard{display:block; width:100%; max-width:520px; margin:0 auto; text-align:left; cursor:pointer; color:#20160a;
     background:var(--gold-grad-d); border:0; border-radius:18px; padding:15px 17px 14px;
-    box-shadow:0 14px 34px -14px rgba(241,208,74,.65), inset 0 1px 0 rgba(255,255,255,.35)}
+    box-shadow:0 6px 16px -6px rgba(0,0,0,.6), 0 22px 44px -12px rgba(0,0,0,.6), 0 16px 40px -14px rgba(241,208,74,.5), inset 0 1px 0 rgba(255,255,255,.35)}
   .resumecard:active{transform:translateY(1px)}
   .rc-top{display:flex; align-items:center; justify-content:space-between; gap:12px}
   .rc-kick{font:800 10px/1 var(--body); letter-spacing:.15em; text-transform:uppercase; opacity:.62}
@@ -451,7 +451,7 @@ window.GA_ID='G-L29P5MRWKE';
   .rc-go{margin-left:auto; font:900 12.5px/1 var(--body); letter-spacing:.03em; background:rgba(20,15,8,.14); border-radius:9px; padding:8px 13px}
   /* CS256: matching hero cards for Daily / Spotlight / Online (same polish as the resume card, own accents) */
   .gcard{display:block; width:100%; max-width:520px; margin:0 auto; text-align:left; cursor:pointer; border:0; border-radius:18px;
-    padding:14px 16px; position:relative; overflow:hidden; box-shadow:0 14px 32px -14px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.14)}
+    padding:14px 16px; position:relative; overflow:hidden; box-shadow:0 6px 15px -6px rgba(0,0,0,.6), 0 24px 48px -12px rgba(0,0,0,.72), inset 0 1px 0 rgba(255,255,255,.14)}
   .gcard:active{transform:translateY(1px)}
   .gc-blue{background:linear-gradient(158deg,#5f90f2,#3a63c8 60%,#3053b4); color:#f1f6ff; --chip:rgba(4,12,30,.3)}
   .gc-teal{background:linear-gradient(158deg,#20bda9,#0a877a 60%,#07736a); color:#eafff9; --chip:rgba(2,20,16,.28)}
@@ -4205,28 +4205,8 @@ const POLOS=[
   {id:'white', m:'#eef0ee', s:'#d7dbd6'},
   {id:'purple',m:'#6b4bb0', s:'#583c93'},
   {id:'black', m:'#20242b', s:'#16191f'},
-  // --- fun novelty colors (purchasable, some carry a boost via COS_BOOST) ---
-  {id:'cyan',  m:'#22c3d6', s:'#1ba0b0'},
-  {id:'lime',  m:'#8ccb3a', s:'#71a82e'},
-  {id:'sky',   m:'#5cb3ec', s:'#4593c4'},
-  {id:'coral', m:'#f2795a', s:'#cf6046'},
-  {id:'mint',  m:'#5fd1a6', s:'#48ac89'},
-  {id:'hotpink',m:'#ec4f9e', s:'#c93c82'},
-  // --- catalog expansion: more shirt/hat colorways ---
-  {id:'crimson',   m:'#a5282a', s:'#84201f'},
-  {id:'maroon',    m:'#6e2532', s:'#551b26'},
-  {id:'forest',    m:'#2f5d3a', s:'#24482d'},
-  {id:'olive',     m:'#6f7434', s:'#585c29'},
-  {id:'turquoise', m:'#1fb6b0', s:'#189490'},
-  {id:'indigo',    m:'#3a3f9e', s:'#2e3280'},
-  {id:'lavender',  m:'#9b8fe0', s:'#7f74c2'},
-  {id:'salmon',    m:'#ef8f7a', s:'#cf7460'},
-  {id:'mustard',   m:'#d5a327', s:'#b58720'},
-  {id:'slate',     m:'#556074', s:'#434d5e'},
-  {id:'aqua',      m:'#37c9e0', s:'#2ba4b8'},
-  {id:'rose',      m:'#d76a86', s:'#b5546d'},
-  {id:'tangerine', m:'#ef8320', s:'#cc6c17'},
-  {id:'plum',      m:'#7d3d78', s:'#63305f'},
+  // Novelty/expansion colorways trimmed (owner: fewer colors, purely cosmetic). The special
+  // earned/lore colorways live in COSMETIC_SHIRTS below.
 ];
 const PANTS=[
   {id:'stone',a:'#c7bfa8', b:'#bcb39b'},
@@ -4237,15 +4217,6 @@ const PANTS=[
   {id:'khaki',a:'#b39a68', b:'#9c854f'},
   {id:'red',  a:'#b3413a', b:'#8f322d'},
   {id:'green',a:'#3f6b45', b:'#315538'},
-  // --- catalog expansion ---
-  {id:'olive',   a:'#6a6c3c', b:'#54562f'},
-  {id:'brown',   a:'#6f5236', b:'#57402a'},
-  {id:'burgundy',a:'#5f2733', b:'#4a1e27'},
-  {id:'teal',    a:'#2c6b66', b:'#22534f'},
-  {id:'plum',    a:'#5a3559', b:'#472a46'},
-  {id:'charcoal',a:'#33373d', b:'#282b30'},
-  {id:'cream',   a:'#e6ddc4', b:'#d5ccb2'},
-  {id:'sky',     a:'#4d84b0', b:'#3d6a8f'},
 ];
 const SHOES=[
   {id:'white',a:'#eef0ee'},
@@ -4254,13 +4225,6 @@ const SHOES=[
   {id:'grey', a:'#9aa0a8'},
   {id:'red',  a:'#c23b34'},
   {id:'tan',  a:'#c6b189'},
-  // --- catalog expansion ---
-  {id:'green', a:'#3f8b52'},
-  {id:'gold',  a:'#d9a72a'},
-  {id:'blue',  a:'#3a76c4'},
-  {id:'pink',  a:'#e06a9e'},
-  {id:'teal',  a:'#2fa39a'},
-  {id:'orange',a:'#e07a2a'},
 ];
 function shoeCol(id){ return (SHOES.find(x=>x.id===id)||SHOES[0]).a; }
 // hair shades, dark → light, each tuned to read distinctly on the painted sideburns/fringe
@@ -4484,7 +4448,7 @@ const ACC_BOOST_SCALE=1;                      // full-strength catalog boosts (o
 // CS186 severe prices (owner): earned slowly, so gear is a long-term goal. By rarity, clubs cost a bit more.
 function accPrice(it){ if(!it||it.rarity==='exclusive') return 0;
   const base={common:2500,rare:10000,epic:30000,legendary:85000}[it.rarity]||2500;
-  return Math.round(base*((it.slot==='driver'||it.slot==='putter')?1.2:1)); }
+  return Math.round(base*((it.slot==='driver'||it.slot==='putter')?1.2:1)*priceHike()); }
 // display + gameplay boost for an item, scaled down from the catalog value (min +1 on any listed skill)
 function accItemBoost(it){ const o={}; if(it&&it.boost) for(const k in it.boost) o[k]=Math.max(1,Math.floor(it.boost[k]*ACC_BOOST_SCALE)); return o; }
 const ACC_RARITY={ common:{c:'#b8c4bd',label:'Common'}, rare:{c:'#4aa3ff',label:'Rare'},
@@ -4628,7 +4592,10 @@ const COS_CATS=[ {k:'shirt',pk:'sh',lookKey:'polo',name:'Shirt color'}, {k:'pat'
   {k:'hw',pk:'hw',lookKey:'hatStyle',name:'Headwear'}, {k:'ew',pk:'ew',lookKey:'eyewear',name:'Eyewear'} ];
 function cosPk(cat){ const c=COS_CATS.find(x=>x.k===cat); return c?c.pk:cat; }
 function cosKey(cat,id){ return cosPk(cat)+':'+id; }
-function cosmeticPrice(cat,id){
+// PACK-SYSTEM: direct-buy prices go up (x PACK_HIKE) the day packs launch, so packs are the value
+// path. priceHike()==1 while PACKS_ENABLED is false, so live prices are unchanged today. Pack RARITY
+// is computed from the BASE (pre-hike) price via *Base(), so the tiers never shift when the hike flips.
+function cosmeticPriceBase(cat,id){
   if(cat==='shirt'){ const cs=COSMETIC_SHIRTS.find(s=>s.id===id); return cs?(cs.earn?0:12000):4000; }   // basic 4k, special/lore 12k, Legend (earn) 0
 
   if(cat==='pat')   return (typeof PXPAT_BY!=='undefined'&&PXPAT_BY[id])?PXPAT_BY[id].price:0;
@@ -4639,6 +4606,7 @@ function cosmeticPrice(cat,id){
   if(cat==='ew'){ if(id==='none') return 0; return {shades:10000,heart:9000,star:12000,threed:8000,monocle:15000,aviators:12000,round:9000,goggles:11000,eyepatch:10000,visorband:8000}[id]||10000; }
   return 0;
 }
+function cosmeticPrice(cat,id){ return Math.round(cosmeticPriceBase(cat,id)*priceHike()); }
 function cosOwned(cat,id){ const k=cosKey(cat,id); return !!FREE_COSMETICS[k] || !!coinState().owned[k]; }
 function cosBuy(cat,id){
   if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy'};
@@ -4652,37 +4620,29 @@ function cosBuy(cat,id){
 // Pro Shop relaunch: the VISUAL cosmetics (headwear, eyewear, patterns, special/unlockable shirts) now carry
 // stat boosts, so an item you can see on your golfer in the TourTracer is also the item that boosts you. Keyed
 // by cosKey(cat,id). Many carry a downside too (strategy, not stacking). Colors w/o an entry are pure cosmetic.
+// Owner: colors and patterns are COSMETIC ONLY. The single exception is the EARNED / lore-unlocked
+// colorways (COSMETIC_SHIRTS) and heritage patterns, which each carry a modest +1 to one fitting
+// stat (never a downside). Headwear + eyewear are ACCESSORIES (not colors/patterns), so they keep
+// their gear boosts as before.
 const COS_BOOST={
+  // headwear (accessory gear boosts)
   'hw:visor':{clu:2}, 'hw:bucket':{clu:3,dist:-1}, 'hw:flat':{app:2},
-  'ew:shades':{clu:3,app:-1},
-  'sp:pinstripe':{app:2}, 'sp:stripe':{dist:2,acc:-1}, 'sp:gingham':{scr:2}, 'sp:polka':{clu:2,app:-1},
-  'sp:houndstooth':{app:3,dist:-1}, 'sp:tartan':{acc:2,put:1}, 'sp:argyle':{app:2,acc:2,dist:-2}, 'sp:colorblock':{dist:2,clu:1},
-  'sh:puttwiz':{put:6,dist:-2}, 'sh:fairwaygen':{acc:5,app:2,dist:-2}, 'sh:ironbyron':{app:5,acc:1,scr:-2},
-  'sh:no1gold':{clu:3,app:2,acc:2}, 'sh:goatonyx':{clu:4,app:3,put:3},
-  'sh:red':{clu:4,dist:-1}, 'sh:mastersgrn':{app:3,clu:2}, 'sh:orange':{app:2,scr:2}, 'sh:pink':{clu:3,acc:1},
-  'sh:hogangrey':{acc:3,app:2,dist:-1}, 'sh:bronze':{app:2}, 'sh:linkssky':{acc:2,clu:1},
-  // --- novelty headwear (fun, with a strategic downside on the wilder ones) ---
   'hw:cowboy':{dist:2,acc:1,put:-1}, 'hw:wizard':{put:4,app:2,dist:-2}, 'hw:crown':{clu:4,app:2,dist:-1},
   'hw:party':{clu:2,scr:2,acc:-1}, 'hw:tophat':{clu:3,app:1}, 'hw:propeller':{dist:3,put:-2}, 'hw:headband':{scr:2,clu:1},
-  // --- novelty eyewear ---
-  'ew:heart':{clu:2,scr:1}, 'ew:star':{clu:3,app:1,acc:-1}, 'ew:threed':{app:3,dist:-1}, 'ew:monocle':{app:2,clu:2,dist:-1},
-  // --- novelty patterns ---
-  'sp:flames':{dist:3,acc:-2}, 'sp:stars':{clu:2,app:1}, 'sp:hearts':{clu:2,scr:1}, 'sp:camo':{acc:2,scr:1,app:-1},
-  'sp:tiedye':{scr:2,put:1,acc:-1}, 'sp:zigzag':{dist:2,clu:1}, 'sp:waves':{put:2,scr:1}, 'sp:leopard':{dist:2,app:1,put:-1}, 'sp:confetti':{clu:3,dist:-1},
-  // --- fun novelty colors ---
-  'sh:cyan':{acc:2}, 'sh:lime':{dist:2,acc:-1}, 'sh:hotpink':{clu:2}, 'sh:coral':{scr:2}, 'sh:sky':{put:1,app:1}, 'sh:mint':{scr:1,clu:1},
-  // --- catalog expansion: batch-2 headwear ---
   'hw:beanie':{clu:2}, 'hw:fedora':{app:2,clu:1}, 'hw:sombrero':{scr:2,dist:-1}, 'hw:halo':{put:3,app:2,clu:2},
   'hw:viking':{dist:3,acc:1,put:-2}, 'hw:chef':{scr:3,app:1}, 'hw:beret':{app:2,clu:1}, 'hw:headphones':{clu:3,acc:-1},
   'hw:flatbrim':{dist:2,scr:1}, 'hw:santa':{clu:2,scr:2}, 'hw:safari':{acc:2,scr:1},
-  // --- batch-2 eyewear ---
+  // eyewear (accessory gear boosts)
+  'ew:shades':{clu:3,app:-1},
+  'ew:heart':{clu:2,scr:1}, 'ew:star':{clu:3,app:1,acc:-1}, 'ew:threed':{app:3,dist:-1}, 'ew:monocle':{app:2,clu:2,dist:-1},
   'ew:aviators':{clu:2,app:1}, 'ew:round':{app:2,clu:1}, 'ew:goggles':{acc:2,dist:1,put:-1}, 'ew:eyepatch':{clu:3,acc:-1}, 'ew:visorband':{app:2,acc:1},
-  // --- new patterns ---
-  'sp:vstripe':{dist:2,acc:-1}, 'sp:chevron':{clu:1,dist:1}, 'sp:diamond':{app:2}, 'sp:crosshatch':{acc:2}, 'sp:grid':{scr:1,acc:1},
-  'sp:scales':{put:2,scr:1}, 'sp:triangles':{dist:1,clu:1}, 'sp:bricks':{acc:1,app:1}, 'sp:weave':{scr:2}, 'sp:honeycomb':{app:2,dist:-1},
-  'sp:splatter':{clu:2,acc:-1}, 'sp:circuit':{app:2,clu:1}, 'sp:noise':{scr:1}, 'sp:ripple':{put:2}, 'sp:plaid':{app:1,scr:1}, 'sp:bolts':{dist:3,put:-1},
-  // --- a few new colors carry a boost ---
-  'sh:crimson':{clu:2}, 'sh:forest':{app:2}, 'sh:turquoise':{put:2}, 'sh:indigo':{app:1,clu:1}, 'sh:tangerine':{scr:2}, 'sh:plum':{clu:2}
+  // EARNED / lore-unlocked shirt colorways: +1 only (COSMETIC_SHIRTS)
+  'sh:red':{clu:1}, 'sh:mastersgrn':{app:1}, 'sh:orange':{scr:1}, 'sh:pink':{clu:1},
+  'sh:hogangrey':{acc:1}, 'sh:bronze':{app:1}, 'sh:linkssky':{acc:1},
+  'sh:puttwiz':{put:1}, 'sh:fairwaygen':{acc:1}, 'sh:ironbyron':{app:1}, 'sh:no1gold':{clu:1}, 'sh:goatonyx':{clu:1},
+  // lore-unlocked heritage patterns: +1 only
+  'sp:pinstripe':{app:1}, 'sp:polka':{clu:1}, 'sp:gingham':{scr:1}, 'sp:argyle':{app:1},
+  'sp:tartan':{acc:1}, 'sp:houndstooth':{app:1}, 'sp:chevron':{dist:1}, 'sp:colorblock':{dist:1}
 };
 function cosBoost(cat,id){ return COS_BOOST[cosKey(cat,id)]||null; }
 // sum the boosts from the cosmetics you currently WEAR (and own). Fed into accBoost() (Career only).
@@ -4708,7 +4668,7 @@ const BAG_TIER_LABEL=['Tour','Pro','Signature'];
 const BAG_BY={}; BAG_CLUBS.forEach(c=>BAG_BY[c.k]=c);
 function bagKey(club,tier){ return 'bag:'+club+':'+tier; }
 function bagTierOwned(club){ const own=coinState().owned; for(let t=3;t>=1;t--){ if(own[bagKey(club,t)]) return t; } return 0; }
-function bagPrice(tier){ return BAG_TIER_PRICE[tier-1]||0; }
+function bagPrice(tier){ return Math.round((BAG_TIER_PRICE[tier-1]||0)*priceHike()); }
 function bagBoost(){ if(!SHOP_ENABLED) return {}; const o={}; BAG_CLUBS.forEach(c=>{ const t=bagTierOwned(c.k); if(t>0){ const b=c.tiers[t-1].b; for(const k in b) o[k]=(o[k]||0)+b[k]; } }); return o; }
 function bagBuy(club,tier){ const c=BAG_BY[club]; tier=+tier; if(!c||tier<1||tier>3) return {ok:false,msg:'Unknown club'};
   if(!sbSignedIn()) return {ok:false,msg:'Sign in to buy clubs'};
@@ -4878,6 +4838,12 @@ function crestSVG(){return `<svg class="crest" viewBox="0 0 64 76" fill="none">
   <ellipse cx="32" cy="57" rx="17" ry="5.4" fill="none" stroke="#cda54a" stroke-width="1.6"/>
   <circle cx="26" cy="57" r="1.7" fill="#0a2a20"/>
   <circle cx="38" cy="57" r="2.2" fill="#f4ecd9"/></svg>`;}
+// CS363: pixel-art version of the crest logo mark (shield + swallowtail flag + putting green + ball) to
+// match the game's pixel theme. Rendered as crisp-edge rects like the pixel trophies.
+const PXCREST=["......GGGGGGGGGG......","......GFFFFFFFFG......","....GGFFFFFFFFFFGG....","....GFFFFFFFFFFFFG....","...GFFFFFFFFFFFFFFG...","...GFFFFFFFFFFFFFFG...","...GFFFFFFFCgggggFG...","...GFFFFFFFCggggFFG...","...GFFFFFFFCggggFFG...","...GFFFFFFFCgggggFG...","...GFFFFFFFCFFFFFFG...","...GFFFFFFFCFFFFFFG...","...GFFFFFFFCFFFFFFG...","...GFFFFFFFCFFFFFFG...","...GFFFFFFFCFFFFFFG...","....GFFFFFECFFFFFG....","....GEEEEEECKEEEFG....","....GEEEWEEEEEEEEG....","....GGEEEEEEEEEEGG....","......GFFFEFFFFG......","......GFFFFFFFFG......","......GGFFFFFFGG......","........GFFFFG........","........GFFFFG........",".........GFFG.........",".........GGGG........."];
+const PXCREST_PAL={G:'#d3bd53',F:'#0b2e1f',C:'#e9d8ac',g:'#F1D04A',E:'#2ea65f',W:'#f4ecd9',K:'#06180f'};
+function pxCrestSVG(cls){ let r=''; for(let y=0;y<PXCREST.length;y++){ const row=PXCREST[y]; for(let x=0;x<row.length;x++){ const c=PXCREST_PAL[row[x]]; if(c) r+=`<rect x="${x}" y="${y}" width="1.04" height="1.04" fill="${c}"/>`; } }
+  return `<svg class="crest ${cls||''}" viewBox="0 0 22 26" shape-rendering="crispEdges" style="image-rendering:pixelated">${r}</svg>`; }
 function golfballSVG(){return `<svg class="ball" viewBox="0 0 24 24" fill="none">
   <circle cx="12" cy="12" r="10.5" fill="#f7f3e8" stroke="#cda54a" stroke-width="1"/>
   <g fill="#cdbf9b"><circle cx="12" cy="8" r="1"/><circle cx="9" cy="11" r="1"/><circle cx="15" cy="11" r="1"/><circle cx="12" cy="14" r="1"/><circle cx="9" cy="15.5" r="1"/><circle cx="15" cy="15.5" r="1"/></g></svg>`;}
@@ -4983,6 +4949,7 @@ function render(){
     if(S.overlay==='courserecords') overlayCourseRecords(app);
     if(S.overlay==='passport') overlayPassport(app);
     if(S.overlay==='shop') overlayShop(app);
+    if(S.overlay==='packreveal') overlayPackReveal(app);
     if(S.overlay==='careerwall') overlayCareerwall(app);
     if(S.overlay==='confirmReset') overlayConfirmReset(app);
     if(S.overlay==='confirmRetire') overlayConfirmRetire(app);
@@ -5977,44 +5944,76 @@ function onlineHeroCard(){
   if(ob4) ob4.onclick=()=>openH2H('bestball');
   return card;
 }
+// CS364: smooth dusk golf-course backdrop for the home screen (no dithering - the dither read as static).
+// Higher-res, smooth vertical gradient sky (no sun), clean tree line + fairway. Deterministic + cached.
+let _pxTitleBg=null;
+function pxTitleBgURL(){
+  if(_pxTitleBg) return _pxTitleBg;
+  const W=200,H=240, cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d'), im=ctx.createImageData(W,H), D=im.data;
+  const set=(x,y,c)=>{ x|=0;y|=0; if(x<0||x>=W||y<0||y>=H)return; const i=(y*W+x)*4; D[i]=c[0];D[i+1]=c[1];D[i+2]=c[2];D[i+3]=255; };
+  const lp=(a,b,t)=>[a[0]+(b[0]-a[0])*t|0, a[1]+(b[1]-a[1])*t|0, a[2]+(b[2]-a[2])*t|0];
+  // multi-stop smooth gradient
+  const grad=(stops,t)=>{ for(let i=0;i<stops.length-1;i++){ const [p0,c0]=stops[i],[p1,c1]=stops[i+1]; if(t<=p1){ return lp(c0,c1,(t-p0)/(p1-p0||1)); } } return stops[stops.length-1][1]; };
+  const SKY=[[0,[8,18,40]],[0.42,[20,52,76]],[0.7,[34,84,82]],[0.87,[92,110,86]],[1,[176,138,86]]]; // dusk, warm horizon glow (no sun disc)
+  const TREE=[24,60,50], TREE2=[16,44,38];
+  const FAIRT=[28,104,64], FAIRB=[44,150,86], MOW=[52,168,98];
+  const GREEN=[62,182,100], GREENL=[86,204,120], SAND=[230,212,166], CREAM=[244,227,201], GOLD=[241,208,74], GOLDS=[201,152,42], DK=[6,34,24], BALL=[248,246,238];
+  const HZ=148;
+  const hz=(x)=> HZ + 9*Math.sin(x*0.045+0.6) + 5*Math.sin(x*0.13+1.7);   // CS367: rolling ground line (topography)
+  // smooth sky (drawn a bit past the lowest hill so nothing shows through)
+  for(let y=0;y<HZ+20;y++){ const c=grad(SKY,Math.min(1,y/HZ)); for(let x=0;x<W;x++) set(x,y,c); }
+  // distant rolling hill band behind the trees (adds depth)
+  const HILLC=[30,72,66];
+  for(let x=0;x<W;x++){ const base=hz(x), hl=(base-8-4*Math.sin(x*0.03))|0; for(let y=hl;y<base+2;y++) set(x,y, lp(HILLC,grad(SKY,Math.min(1,y/HZ)),0.18)); }
+  // rolling tree silhouette following the horizon
+  for(let x=0;x<W;x++){ const h=9+7*Math.sin(x*0.10)+4*Math.sin(x*0.31+2)+3*Math.sin(x*0.6); const base=hz(x)|0, top=(base-2-h)|0;
+    for(let y=top;y<base+4;y++) set(x,y, y<top+3?TREE:TREE2); }
+  // fairway with ROLLING TOPOGRAPHY: gradient by depth-below-horizon + curved mow sweeps + soft mounds/swales
+  for(let x=0;x<W;x++){ const h0=hz(x);
+    for(let y=Math.floor(h0);y<H;y++){ const t=Math.max(0,Math.min(1,(y-h0)/(H-h0))); let c=lp(FAIRT,FAIRB,t);
+      const sweep=(y-h0)+6*Math.sin(x*0.06+y*0.02);            // mow-stripe boundary drifts -> rolling contours
+      const bandH=9+t*16; if(Math.floor(sweep/bandH)%2===0) c=lp(c,MOW,0.3);
+      const m1=Math.exp(-((((x-58)/50)**2)+(((y-202)/26)**2)))*0.22;   // lit crest
+      const m2=Math.exp(-((((x-146)/44)**2)+(((y-216)/24)**2)))*0.15;  // lit rise
+      const s1=Math.exp(-((((x-104)/40)**2)+(((y-192)/18)**2)))*0.16;  // shaded swale
+      c=lp(c,MOW,Math.min(0.5,m1+m2)); c=lp(c,FAIRT,s1);
+      set(x,y,c); } }
+  // putting green + swallowtail flag + ball (right), bunker (left)
+  const gx=150,gy=176,grx=40,gry=14;
+  for(let y=gy-gry;y<gy+gry;y++) for(let x=gx-grx;x<gx+grx;x++){ const d=((x-gx)/grx)**2+((y-gy)/gry)**2; if(d<=1) set(x,y, d>0.82?lp(GREEN,DK,0.3):(y<gy?GREENL:GREEN)); }
+  const hx=158,hy=172; set(hx,hy,DK); set(hx-1,hy,DK);
+  for(let y=hy-34;y<hy;y++){ set(hx,y,CREAM); set(hx+1,y,lp(CREAM,DK,0.35)); }
+  const fy=hy-34;
+  for(let i=0;i<14;i++) for(let j=0;j<9;j++){ if(i>=8 && Math.abs(j-4)<(i-8)) continue; set(hx+2+i,fy+j, i<2?GOLDS:GOLD); }
+  const bxx=132,byy=181; for(let dy=-2;dy<2;dy++) for(let dx=-2;dx<2;dx++) if(dx*dx+dy*dy<=3) set(bxx+dx,byy+dy,BALL);
+  // CS369: deep greenside bunker - grass lip overhang + shaded back wall + lit sand floor + rake lines
+  const nx=46,ny=194,nrx=35,nry=15;
+  const SANDL=[243,229,193], SANDD=[188,168,124], SANDR=[210,192,146], LIP=[26,74,48], LIPD=[12,44,30];
+  for(let y=ny-nry;y<=ny+nry;y++) for(let x=nx-nrx;x<=nx+nrx;x++){ const nxx=(x-nx)/nrx, nyy=(y-ny)/nry; const d=nxx*nxx+nyy*nyy; if(d>1) continue;
+    let c;
+    if(nyy<-0.5) c=lp(SANDD,SAND,(nyy+1)/0.5*0.55);   // shaded back wall (the deep, in-shadow face)
+    else if(nyy>0.35) c=lp(SAND,SANDL,(nyy-0.35)/0.65);// lit floor sloping toward the viewer
+    else c=SAND;
+    if(d>0.8) c=lp(c,SANDD,0.55);                      // darker rim = depth
+    set(x,y,c); }
+  // rake lines: concentric arcs across the lit floor
+  for(const rr of [0.5,0.7,0.88]) for(let x=nx-nrx;x<=nx+nrx;x++){ const u=(x-nx)/(nrx*rr); if(Math.abs(u)>=1) continue;
+    const yy=Math.round(ny + nry*rr*Math.sqrt(1-u*u)); if(yy<ny) continue; set(x,yy,SANDR); }
+  // grass lip overhang along the top back edge + its cast shadow on the sand
+  for(let x=nx-nrx;x<=nx+nrx;x++){ const u=(x-nx)/nrx; if(Math.abs(u)>=1) continue; const topY=Math.round(ny-nry*Math.sqrt(1-u*u));
+    set(x,topY-2,LIPD); set(x,topY-1,LIP); set(x,topY,LIP);
+    set(x,topY+1,lp(SANDD,DK,0.25)); set(x,topY+2,SANDD); }
+  // soft top darkening for header legibility
+  for(let y=0;y<40;y++){ const f=(40-y)/40*0.4; for(let x=0;x<W;x++){ const i=(y*W+x)*4; const c=lp([D[i],D[i+1],D[i+2]],[8,18,40],f); D[i]=c[0];D[i+1]=c[1];D[i+2]=c[2]; } }
+  ctx.putImageData(im,0,0);
+  _pxTitleBg=cv.toDataURL('image/png'); return _pxTitleBg;
+}
 function scrTitle(){
   reconcileDailyAttempts();   // self-heal "attempts left" against the server before it's even displayed below
-  const scene=$(`<div class="scene"><svg class="coursebg" viewBox="0 0 440 440" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#06182e"/><stop offset="0.5" stop-color="#0b3149"/><stop offset="0.78" stop-color="#1a5b50"/></linearGradient>
-      <radialGradient id="sun" cx="0.64" cy="0.52" r="0.45">
-        <stop offset="0" stop-color="#f6cd74" stop-opacity="0.65"/><stop offset="0.5" stop-color="#F1D04A" stop-opacity="0.16"/><stop offset="1" stop-color="#F1D04A" stop-opacity="0"/></radialGradient>
-      <linearGradient id="topfade" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#0a1a2c" stop-opacity="0.5"/><stop offset="0.4" stop-color="#0a1a2c" stop-opacity="0"/></linearGradient>
-      <linearGradient id="botfade" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#0a1a2c" stop-opacity="0"/><stop offset="0.85" stop-color="#0a1a2c" stop-opacity="1"/></linearGradient>
-    </defs>
-    <rect x="0" y="0" width="440" height="220" fill="url(#sky)"/>
-    <rect x="0" y="0" width="440" height="220" fill="url(#sun)"/>
-    <path d="M0,202 Q110,168 220,190 T440,182 V220 H0 Z" fill="#0e3f3b"/>
-    <g fill="#0c322e">
-      <ellipse cx="36" cy="194" rx="34" ry="17"/><ellipse cx="92" cy="198" rx="42" ry="15"/>
-      <ellipse cx="356" cy="192" rx="46" ry="18"/><ellipse cx="412" cy="196" rx="34" ry="14"/></g>
-    <path d="M0,216 Q150,190 270,214 T440,210 V440 H0 Z" fill="#1a6b40"/>
-    <path d="M0,262 Q170,234 300,264 T440,258 V440 H0 Z" fill="#218a50"/>
-    <g opacity="0.45" fill="#1b7a45">
-      <path d="M0,290 Q170,266 300,294 T440,288 V322 Q300,328 170,300 T0,324 Z"/>
-      <path d="M0,348 Q170,326 300,354 T440,348 V382 Q300,388 170,360 T0,384 Z"/>
-      <path d="M0,406 Q170,386 300,414 T440,408 V440 H0 Z"/></g>
-    <!-- putting green + flag pushed to the right so the title text stays clear -->
-    <ellipse cx="388" cy="288" rx="64" ry="19" fill="#2ea65f"/>
-    <ellipse cx="388" cy="288" rx="64" ry="19" fill="none" stroke="#38c270" stroke-width="1.4" opacity="0.55"/>
-    <ellipse cx="402" cy="285" rx="3.4" ry="1.6" fill="#06241a"/>
-    <line x1="402" y1="285" x2="402" y2="232" stroke="#F4E3C9" stroke-width="2.4" stroke-linecap="round"/>
-    <path d="M402,234 l20,5 -20,6 z" fill="#F1D04A"/>
-    <circle cx="372" cy="292" r="3" fill="#F8F2E6"/>
-    <!-- bunker pushed to the left -->
-    <ellipse cx="50" cy="300" rx="42" ry="12" fill="#efe0c0"/>
-    <ellipse cx="50" cy="300" rx="42" ry="12" fill="none" stroke="#d6c197" stroke-width="1.4"/>
-    <rect x="0" y="0" width="440" height="120" fill="url(#topfade)"/>
-    <rect x="0" y="280" width="440" height="160" fill="url(#botfade)"/>
-  </svg></div>`);
+  // CS363: pixel-art dusk-course backdrop (matches the game's pixel theme) instead of the old smooth vector scene
+  let bg=''; try{ bg=pxTitleBgURL(); }catch(e){}
+  const scene=$(`<div class="scene">${bg?`<img class="coursebg" src="${bg}" alt="" aria-hidden="true">`:''}</div>`);
   add(scene);
   const w=$(`<div class="titlewrap center"></div>`);
   w.appendChild($(`<div class="herotag center">A RunThe.GG Game</div>`));
@@ -8702,14 +8701,29 @@ function pxFigureHTML(look,h){ h=h||60; return `<img class="pxfigsm" src="${pxGo
 /* CS355 (POC): side-view mini golfer swing for TourTracer - 3 frames (address/top/through),
    palette-swapped from the created look, mirror-flipped by shot direction. */
 const HV_SWING=true;          // POC flag - flip off to disable the swinging golfer everywhere
-const PXS_W=24, PXS_H=30;
-const PXS_A=["........................","............kkkkkk......","...........kkcccckk.....","...........kcccccckkkk..","...........kccccccccck..","...........khhhsscccck..","...........khhhssskkkk..","...........khhhssssk....","...........khhhssjkk....","...........khhhsssk.....","..........kkkkkskkkk....","..........kdtttttttk....","..........kdtssttttk....","..........kdtssstttk....",".........kkdttsstttk....",".........kdtttssstkk....",".........kdttttsstk.....","........kkdttttslsk.....","........kdttttttslk.....","........kdtttttttlkk....","........kqppkkqppklk....","........kqppkkqppklkk...","........kqppkkqppkklk...","........kqppkkqppkklkk..","........kqppkkqppkkklk..","........kqppkkqppk.klkkk",".......kkqppkkqppkkkkggk",".......kooookkooookkkkkk",".......koooookoooook....",".......kkkkkkkkkkkkk...."];
-const PXS_B=[".kkk....................","kkgkk.....kkkkkk........","kgggk....kkcccckk.......","kkglk....kcccccckkkk....",".kklkk...kccccccccck....","..kklkk..khhhsscccck....","...kklkk.khhhssskkkk....","....kklk.khhhssssk......",".....klkkkhhhssjkk......",".....kklskhhhsssk.......","......kssssskskkkk......","......kksssssttttk......",".......kkdtssssttk......","........kdttsssttk......","........kdtttttttk......","........kdtttttttk......","........kdtttttttk......","........kdtttttttk......","........kdtttttttk......","........kdtttttttk......","........kqppkkqppk......","........kqppkkqppk......","........kqppkkqppk......","........kqppkkqppk......","........kqppkkqppk......","........kqppkkqppk......",".......kkqppkkqppkk.....",".......kooookkooookk....",".......koooookoooook....",".......kkkkkkkkkkkkk...."];
-const PXS_C=["........kkk..kkkkkk.....",".......kkgkkkkcccckk....",".......kggglkcccccckkkk.",".......kkgkkllcccccccck.","........kkkkkhllsscccck.","............khhhllskkkk.","............khhhssssk...","............khhhssskk...","............khhhsssk....","............kkkksskkk...","............kdtsssttk...","...........kkdtsstttk...","...........kdttssttkk...","...........kdttttttk....","..........kkdttttttk....","..........kdttttttkk....","..........kdttttttk.....",".........kkdttttttk.....",".........kdttttttkk.....",".........kdttttttk......",".........kkkkkqppk......","..........kqppqppk......","..........kqppqppk......","..........kqppqppk......","........kkkqppqppk......","........koooppqppk......","........koooopqppkk.....","........kkkkkkooookk....",".............koooook....",".............kkkkkkk...."];
-const PXS_CH0=["........................","........................","...........kkkkkk.......","..........kkcccckk......","..........kcccccckkkk...","..........kccccccccck...","..........khhhsscccck...","..........khhhssskkkk...","..........khhhssssk.....","..........khhhssjkk.....",".........kkhhhssskk.....",".........kdtttstttk.....",".........kdttsstttk.....","........kkgttsstttk.....","........kgggtsstttk.....","........kkgltsssttk.....","........kdttltsstkk.....","........kdtttlsstk......","........kdttttlstk......","........kdttttsstk......","........kqppkkqppk......","........kqppkkqppk......","........kqppkkqppk......","........kqppkkqppk......","........kqppkkqppk......","........kqppkkqppk......",".......kkqppkkqppkk.....",".......kooookkooookk....",".......koooookoooook....",".......kkkkkkkkkkkkk...."];
-const PXS_CH1=["........................","........................","............kkkkkk......","...........kkcccckk.....","...........kcccccckkkk..","...........kccccccccck..","...........khhhsscccck..","...........khhhssskkkk..","...........khhhssssk....","...........khhhssjkk....","..........kkhhhssskk....","..........kdtttstttk....","..........kdtssttttk....","..........kdtssstttk....",".........kkdttsstttk....",".........kdtttssstkk....",".........kdttttsssk.....","........kkdtttttsskk....","........kdttttttslsk....","........kdtttttttslk....","........kkkkkkqppklkk...","..........kqppqppkklk...","..........kqppqppkklkk..","..........kqppqppkkklk..","........kkkqppqppk.klkk.","........koooppqppk.kklkk","........koooopqppkk.kggk","........kkkkkkooookkkkkk",".............koooook....",".............kkkkkkk...."];
-const PXS_PT0=["........................","........................","........................","........................","........................","........................","........................","........................","...............kkkkkkk..","...............kccccckkk","..............kkkkskccck","..............khhhssccck","............kkkhhhsssskk","...........kkdthhhsjskk.","...........kdtttssskkk..","..........kkdtttsstk....","..........kdttttsssk....",".........kkdtttttssk....",".........kdttttttsskk...","........kkdttttttsssk...","........kdttttttkklsk...","........kqppkkqpplssk...","........kqppkkqplkkkk...","........kqppkkqplk......","........kqppkkqlpk......","........kqppkklppk......",".......kkqppkkgppkk.....",".......kooookkooookk....",".......koooookoooook....",".......kkkkkkkkkkkkk...."];
-const PXS_PT1=["........................","........................","........................","........................","........................","........................","........................","........................","...............kkkkkkk..","...............kccccckkk","..............kkkkskccck","..............khhhssccck","............kkkhhhsssskk","...........kkdthhhsjskk.","...........kdtttssskkk..","..........kkdtttsstk....","..........kdttttsssk....",".........kkdtttttssk....",".........kdttttttsskk...","........kkdttttttsssk...","........kdttttttkklsk...","........kqppkkqppkslk...","........kqppkkqppkklkk..","........kqppkkqppkkklk..","........kqppkkqppk.klkk.","........kqppkkqppk.kklkk",".......kkqppkkqppkk.kggk",".......kooookkooookkkkkk",".......koooookoooook....",".......kkkkkkkkkkkkk...."];
+const PXS_W=44, PXS_H=56;   // CS364: higher-res (finer pixels) so accessories can render
+// CS363/364 directional views at 44x56: SIDE + BACK (up-the-hole) + FRONT (down/toward-camera).
+const PXS_A=["............................................","............................................","............................................","............................................","............................................","............................................","......................kkkkkkkkkk............","......................kcccccccck............","......................kcccccccckkkkkk.......","......................kccccccccccccck.......","......................khhhhssscccccck.......","......................khhhhsssskkkkkk.......","......................khhhhsssskk...........","......................khhhhsssssk...........","......................khhhhsssjkk...........","......................khhhhsssjk............","......................kkkssssskk............","...................kkk..kkkskkk.............","..................kkdkkkkkkkk...............","..................kdddkktkkk................","..................kdddtttttkkk..............","..................kdddtttttttk..............","..................kdddtttttttk..............","..................kdddtttttttk..............",".................kkdddttttttsk..............",".................kdddtttttttsk..............",".................kdddtttttttskk.............",".................kdddtttttttsskk............",".................kdddttttttsssskk...........",".................kdddttttttkssssk...........",".................kdddttttttkkssskk..........","................kkdddttttttkkkslsk..........","................kdddttttttkk.kklkk..........","................kdddttttttk...kklk..........","................kdddttttttk....klkk.........","................kdddttttttk....kklk.........","................kdddttttttk.....klkk........","................kkbbbbtttkk.....kklk........",".................kbbbbbbbk.......klkk.......","................kkpqpbbbbkk......kklk.......","...............kkpqpppppppkk......klk.......","..............kkpqpppppppppkk.....klkk......","..............kpqpppkkkpppppk.....kklk......",".............kkpqpppk.kpppppkk.....klkk.....",".............kpqpppkk.kkpppppk.....kklk.....",".............kkpppkk...kkpppkk......klkk....",".............kkpppk.....kpppkk......kklk....",".............kppppk.....kppppk.......klkkk..",".............kppppk.....kppppk.......kgggk..",".............kpppkk.....kkpppk.......kgggk..","............kkpppkkk....kkpppkkk.....kgggk..","............kooooookk...kooooookk....kkkkk..","............keeeeekek...keeeeekek...........","............kkkkkkkkk...kkkkkkkkk...........","............................................","............................................"];
+const PXS_B=["............................................","............................................",".kkkkk......................................",".kgggk......................................",".kgggk......................................",".kgggkk..........kkkkkkkkkk.................",".kkkklk..........kcccccccck.................","....klkk.........kcccccccckkkkkk............","....kklkk........kccccccccccccck............",".....kklkk.......khhhhssscccccck............","......kklkk......khhhhsssskkkkkk............",".......kklkk.....khhhhsssskk................","........kklk.....khhhhsssssk................",".........klkkk...khhhhsssjkk................",".........kklskkkkkhhhhsssjk.................","..........kslssskkkkssssskk.................","..........kkssssskkkkkskkk..................","...........kkssssssskkkk....................","............kkkssdttttkkkkk.................","..............kkdddtttttttk.................","...............kdddtttttttk.................","...............kdddtttttttk.................","...............kdddtttttttk.................","...............kdddtttttttk.................","...............kdddtttttttk.................","...............kdddtttttttk.................","...............kdddtttttttk.................","...............kdddtttttttk.................","...............kdddtttttttk.................","...............kdddtttttttk.................","...............kdddtttttttk.................","...............kkdddtttttkk.................","................kdddtttttk..................","................kdddtttttk..................","................kdddtttttk..................","................kdddtttttk..................","................kdddtttttk..................","................kdbbbbbbbkk.................","................kpbbbbbbbpk.................","...............kkpqpppppppkk................","...............kpqpppppppppk................","..............kkpqpppkpppppkk...............",".............kkpqpppkkkpppppkk..............","............kkpqpppkk.kkpppppkk.............","............kpqpppkk...kkpppppk.............","............kkpppkk.....kkpppkk.............","............kppppk.......kppppk.............","............kppppk.......kppppk.............","............kpppkk.......kkpppk.............","............kpppk.........kpppk.............","...........kkpppkkk......kkpppkkk...........","...........kooooookk.....kooooookk..........","...........keeeeekek.....keeeeekek..........","...........kkkkkkkkk.....kkkkkkkkk..........","............................................","............................................"];
+const PXS_C=["............................................","............................................","............................................","..................kkkkk.....................","..................kgggk.....................","..................kgggkkkkkkkkkkk...........","..................kgggkkcccccccck...........","..................kkkkllcccccccckkkkkk......",".....................kkklcccccccccccck......",".......................khlhhssscccccck......",".......................khhlhsssskkkkkk......",".......................khhhllssskk..........",".......................khhhhslsssk..........",".......................khhhhssljkk..........",".......................khhhhsssjk...........","...................kkk.kkkssssssk...........","..................kkdkkkkkssssskk...........","..................kdddkkttttsssk............","..................kdddtttttttskk............","..................kdddtttttttkk.............","..................kdddtttttttk..............","..................kdddtttttttk..............","..................kdddtttttttk..............","..................kdddttttttkk..............","..................kdddttttttk...............","..................kdddttttttk...............",".................kkdddttttttk...............",".................kdddtttttttk...............",".................kdddtttttttk...............",".................kdddttttttkk...............",".................kdddttttttk................",".................kkdtttttttk................",".................kdddttttttk................",".................kdddttttttk................",".................kdddttttttk................",".................kdddttttttk................",".................kdddtttttkk................",".................kdbbbbtttk.................",".................kkbbbbbbbk.................",".................kkpqpbbbbkk................",".................kpqpppppppkk...............","................kkpqppppppppkk..............","................kpqpppkkpppppk..............","...............kkpqpppkkpppppkk.............","...............kpqpppkkkkpppppk.............","..............kkppppkk..kkpppkk.............","..............kpppppk....kppppk.............","..............kppppkk....kppppk.............",".............kkpppkkk....kkpppk.............",".............kooooookk....kpppk.............",".............keeeeekek...kkpppkkk...........",".............kkkkkkkkk...kooooookk..........",".........................keeeeekek..........",".........................kkkkkkkkk..........","............................................","............................................"];
+const PXS_CH0=["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................",".......................kkkkkkkkkk...........",".......................kcccccccck...........",".......................kcccccccckkkkkk......",".......................kccccccccccccck......",".......................khhhhssscccccck......",".......................khhhhsssskkkkkk......",".......................khhhhsssskk..........",".......................khhhhsssssk..........",".......................khhhhsssjkk..........",".......................khhhhsssjk...........",".......................kkkssssskk...........","....................kkk..kkkskkk............","...................kkdkkkkkkkk..............","...................kdddtktkkk...............","...................kdddtttttkkk.............","...................kdddtttttttk.............","...................kdddtttttttk.............","..................kkdgggtttttkk.............","..................kddgggtttttk..............","..................kddgggtttttkk.............","..................kdddttlltttsk.............",".................kkdddttttltsskk............",".................kdddttttttllsskk...........",".................kdddtttttttslssk...........",".................kdddttttttkkslsk...........",".................kdddttttttkkkskk...........","................kkdddttttttk.kkk............","................kdddttttttkk................","................kdddttttttk.................","................kdddttttttk.................","................kkbbbbtttkk.................","................kpbbbbbbbpk.................","...............kkpqppbbbbpkk................","...............kppqppppppppk................","..............kkpqpppkpppppkk...............",".............kkpqpppkkkpppppkk..............",".............kpqpppkk.kkpppppk..............",".............kkpppkk...kkpppkk..............",".............kkpppk.....kpppkk..............",".............kppppk.....kppppk..............",".............kppppk.....kppppk..............",".............kpppkk.....kkpppk..............","............kkpppkkk....kkpppkkk............","............kooooookk...kooooookk...........","............keeeeekek...keeeeekek...........","............kkkkkkkkk...kkkkkkkkk...........","............................................","............................................"];
+const PXS_CH1=["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................",".......................kkkkkkkkkk...........",".......................kcccccccck...........",".......................kcccccccckkkkkk......",".......................kccccccccccccck......",".......................khhhhssscccccck......",".......................khhhhsssskkkkkk......",".......................khhhhsssskk..........",".......................khhhhsssssk..........",".......................khhhhsssjkk..........",".......................khhhhsssjk...........","....................kkkkkkssssskk...........","...................kkdkkkkkkskkk............","...................kdddkktkkkk..............","...................kdddtttttkkk.............","...................kdddtttttttk.............","...................kdddtttttttk.............","...................kdddtttttttk.............","..................kkdddttttttsk.............","..................kdddtttttttsk.............","..................kdddtttttttskk............","..................kdddtttttttsskk...........","..................kdddttttttssssk...........","..................kdddttttttssssk...........","..................kdddttttttkssskk..........",".................kkdddttttttkkslsk..........",".................kdddttttttkkkklkk..........",".................kdddttttttk..kklk..........",".................kdddttttttk...klkk.........",".................kdddttttttk...kklk.........",".................kdddttttttk....klkk........",".................kkbbbbtttkk....kklk........","..................kbbbbbbbk......klkk.......",".................kkpqpbbbbkk.....kklk.......","................kkpqpppppppkk.....klkk......","................kpqpppppppppk.....kklk......","...............kkpqpppkpppppkk.....klkk.....","...............kpqpppkkkpppppk.....kklk.....","...............kppppkk.kkpppkk......klkkk...","..............kkppppk...kpppkk......kgggk...","..............kppppkk...kppppk......kgggk...","..............kppppk....kppppk......kgggk...",".............kkpppkkk...kkpppk......kkkkk...",".............kooooookk..kkpppkkk............",".............keeeeekek..kooooookk...........",".............kkkkkkkkk..keeeeekek...........","........................kkkkkkkkk...........","............................................","............................................"];
+const PXS_PT0=["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","...........................kkkkkkkkkk.......","...........................kcccccccck.......","...........................kcccccccckkkkkk..","...........................kccccccccccccck..","...........................khhhhssscccccck..","...........................khhhhsssskkkkkk..","...........................khhhhsssskk......","...........................khhhhsssssk......",".......................kkk.khhhhsssjkk......","......................kkdkkkhhhhsssjk.......","......................kdddkkkkssssskk.......",".....................kkdddttkkkkskkk........",".....................kdddttttkkkkk..........","....................kkdddttttttkk...........","....................kdddttttttttk...........","...................kkdddtttttttkk...........","...................kdddttttttttk............","...................kdddtttttttsk............","..................kkdddtttttttsk............","..................kdddtttttttssk............","..................kdddttttttslsk............",".................kkddtttttttklkk............",".................kdddtttttttlkk.............","................kkdddttttttklk..............","................kdddtttttttlkk..............","................kdbbttttttklk...............","................kkbbbbttttklk...............","................kppbbbbbtplkk...............","...............kkpqppbbbbplk................","...............kppqppppbbplkk...............","..............kkpqpppkppplppkk..............",".............kkpqpppkkkkplpppkk.............",".............kpqpppkk.kgggppppk.............",".............kkpppkk..kgggpppkk.............",".............kppppk...kgggppppk.............",".............kppppk...kkkkppppk.............",".............kpppkk......kkpppk.............","............kkpppkkk.....kkpppkkk...........","............kooooookk....kooooookk..........","............keeeeekek....keeeeekek..........","............kkkkkkkkk....kkkkkkkkk..........","............................................","............................................"];
+const PXS_PT1=["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","...........................kkkkkkkkkk.......","...........................kcccccccck.......","...........................kcccccccckkkkkk..","...........................kccccccccccccck..","...........................khhhhssscccccck..","...........................khhhhsssskkkkkk..","...........................khhhhsssskk......","...........................khhhhsssssk......",".......................kkk.khhhhsssjkk......","......................kkdkkkhhhhsssjk.......","......................kdddkkkkssssskk.......",".....................kkdddttkkkkskkk........",".....................kdddttttkkkkk..........","....................kkdddttttttkk...........","....................kdddttttttttk...........","...................kkdddtttttttkk...........","...................kdddttttttttk............","...................kdddtttttttsk............","..................kkdddtttttttsk............","..................kdddtttttttssk............","..................kdddttttttslsk............",".................kkddtttttttklkk............",".................kdddtttttttkklk............","................kkdddttttttkkklk............","................kdddtttttttk.klkk...........","................kdbbttttttkk.kklk...........","................kkbbbbttttk...klkk..........","................kppbbbbbtpk...kklk..........","...............kkpqppbbbbpkk...klk..........","...............kppqppppbbppkk..klkk.........","..............kkpqpppkppppppkk.kklk.........",".............kkpqpppkkkkpppppkk.klk.........",".............kpqpppkk..kkpppppk.klkkk.......",".............kkpppkk....kkpppkk.kgggk.......",".............kppppk......kppppk.kgggk.......",".............kppppk......kppppk.kgggk.......",".............kpppkk......kkpppk.kkkkk.......","............kkpppkkk.....kkpppkkk...........","............kooooookk....kooooookk..........","............keeeeekek....keeeeekek..........","............kkkkkkkkk....kkkkkkkkk..........","............................................","............................................"];
+const PXB_A=["............................................","............................................","............................................","............................................","............................................",".................kkkkkkkkkkk................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kkhhhhhhhkk................",".................kkhhhhhhhkk................",".................khhhhhhhhhk................",".................kkhhhhhhhkk................","..................khhhhhhhk.................","..................kkhhhhhkk.................","...................kkkjkkk..................",".....................kkk....................","...............kkkkkkkkkkkkkkk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","..............kktttttdddtttttkk.............","..............kstttttdddtttttsk.............","..............kssttttdddttttssk.............","..............kksttttdddttttskk.............","...............kkttttdddttttkk..............","................kttttdddttttk...............","................kttttdsdttttk...............","................kttttslsttttk...............","................kttttdldttttk...............","................kttttdldttttk...............","................kttttdldttttk...............","................kkbbbblbbbbkk...............",".................kbbbblbbbbk................",".................kppqplppppk................","................kkpqpplppppkk...............","...............kkpqppplpppppkk..............","...............kpqpppplppppppk..............","..............kkqppppklkpppppkk.............",".............kkpqpppkklkkpppppkk............",".............kpqpppkkklkkkpppppk............",".............kkpppkk.klk.kkpppkk............",".............kkpppk..klk..kpppkk............",".............kppppk..kkk..kppppk............",".............kppppk.......kppppk............",".............kpppkk.......kkpppk............","............kkpppkkk......kkpppkkk..........","............kooooookk.....kooooookk.........","............keeeeekek.....keeeeekek.........","............kkkkkkkkk.....kkkkkkkkk.........","............................................"];
+const PXB_B=["............................................","............................................","............................................",".......................................kkkkk",".......................................kgggk",".................kkkkkkkkkkk...........kgggk",".................kccccccccck...........kgggk",".................kccccccccck..........kklkkk",".................kccccccccck.........kklkk..",".................kccccccccck.........klkk...",".................kkhhhhhhhkk........kklk....",".................kkhhhhhhhkk.......kklkk....",".................khhhhhhhhhk.......klkk.....",".................kkhhhhhhhkk......kklk......","..................khhhhhhhk......kklkk......","..................kkhhhhhkk....kkklkk.......","...................kkkjkkk..kkkksslk........",".....................kkk..kkksssslsk........","................kkkkkkkkkkkssssssskk........","................ktttttdddtttttttskk.........","................ktttttdddtttttttkk..........","................ktttttdddtttttttk...........","................ktttttdddtttttkkk...........","................ktttttdddtttttk.............","................ktttttdddtttttk.............","................ktttttdddtttttk.............","................ktttttdddttttkk.............","................ktttttdddttttk..............","................ktttttdddttttk..............","................kttttdddtttttk..............","................kttttdddtttttk..............","................kttttdddtttttk..............","................kttttdddttttkk..............","................kttttdddttttk...............","................kttttdddttttk...............","................kttttdddttttk...............","................kttttdddttttk...............","................kkbbbbbtttttk...............",".................kbbbbbbbbbkk...............",".................kppqpbbbbbpk...............","................kkpqppppppppkk..............","...............kkpqppppppppppk..............","...............kpqppppkkpppppkk.............","..............kkqppppkkkkpppppkk............",".............kkpqpppkk..kkpppppkk...........",".............kpqpppkk....kkpppppk...........",".............kkpppkk......kkpppkk...........",".............kkpppk........kppppk...........",".............kppppk........kppppk...........",".............kppppk........kkpppk...........",".............kpppkk.........kpppk...........","............kkpppkkk.......kkpppkkk.........","............kooooookk......kooooookk........","............keeeeekek......keeeeekek........","............kkkkkkkkk......kkkkkkkkk........","............................................"];
+const PXB_C=["............................................","............................................","............................................",".kkkkk......................................",".kgggk......................................",".kgggk..........kkkkkkkkkkk.................",".kgggk..........kccccccccck.................",".kkklkk.........kccccccccck.................","...kklkk........kccccccccck.................","....kklkk.......kccccccccck.................",".....kklk.......kkhhhhhhhkk.................","......klkk......kkhhhhhhhkk.................","......kklkk.....khhhhhhhhhk.................",".......kklkk....kkhhhhhhhkk.................","........kklkkk...khhhhhhhk..................",".........klsskkkkkkhhhhhkk..................",".........kslsssskkkkkjkkk...................",".........kksssssssskkkkkkkkkk...............","..........kkstttttttdddtttttk...............","...........kktttttttdddtttttk...............","............ktttttttdddtttttk...............","............kkktttttdddtttttk...............","..............ktttttdddtttttk...............","..............ktttttdddtttttk...............","..............ktttttdddtttttk...............","..............kkttttdddtttttk...............","...............kttttdddtttttk...............","...............kttttdddtttttk...............","...............kttttdddtttttk...............","...............ktttttdddttttk...............","...............ktttttdddttttk...............","...............kkttttdddttttk...............","................kttttdddttttk...............","................kttttdddttttk...............","................kttttdddttttk...............","................kttttdddttttk...............","................kttttdddttttk...............","................ktttttbbbbbkk...............","................kkbbbbbbbbbk................",".................kbbbbbppppk................",".................kpqpppppppkk...............","................kkqpppppppppkk..............","...............kkpqpppkppppppk..............","...............kpqpppkkkpppppkk.............","..............kkpqpppk.kkpppppkk............","..............kpqpppkk..kkpppppk............","..............kppppkk....kkpppkk............",".............kkpppkk......kpppkk............",".............kppppk.......kppppk............","............kkppppkk......kppppk............","............kooooookk.....kkpppk............","............keeeeekek.....kkpppkkk..........","............kkkkkkkkk.....kooooookk.........","..........................keeeeekek.........","..........................kkkkkkkkk.........","............................................"];
+const PXB_CH0=["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................",".................kkkkkkkkkkk................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kkhhhhhhhkk................",".................kkhhhhhhhkk................",".................khhhhhhhhhk................",".................kkhhhhhhhkk................","..................khhhhhhhk.................","..................kkhhhhhkk.................","...................kkkjkkk..................",".....................kkk....................","................kkkkkkkkkkkkkkkkkkkk........","................ktttttdddtttttkkgggk........","................ktttttdddtttttkkgggk........","................ktttttdddtttttkkgggk........","................ktttttdddtttttklkkkk........","................ktttttdddtttttlkk...........","................ktttttdddtttttlk............","................ktttttdddtttslkk............","................ktttttdddttslsk.............","................ktttttdddtttskk.............","................kttttdddtttttk..............","................kttttdddtttttk..............","................kttttdddttttkk..............","................kttttdddttttk...............","................kttttdddttttk...............","................kttttdddttttk...............","................kkbbbbbtttttk...............",".................kbbbbbbbbbkk...............","................kkpqppbbbbbkk...............","................kpqpppppppppk...............","...............kkpqpppkpppppkk..............","..............kkpqpppkkkpppppkk.............",".............kkpqpppkk.kkpppppkk............",".............kpqpppkk...kkpppppk............",".............kkpppkk.....kkpppkk............",".............kkpppk.......kpppkk............",".............kppppk.......kppppk............",".............kppppk.......kppppk............",".............kpppkk.......kkpppk............","............kkpppkkk......kkpppkkk..........","............kooooookk.....kooooookk.........","............keeeeekek.....keeeeekek.........","............kkkkkkkkk.....kkkkkkkkk.........","............................................"];
+const PXB_CH1=["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................",".................kkkkkkkkkkk................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kkhhhhhhhkk................",".................kkhhhhhhhkk................",".................khhhhhhhhhk................",".................kkhhhhhhhkk................","..................khhhhhhhk.................","..................kkhhhhhkk.................","...................kkkjkkk..................",".....................kkk....................","..............kkkkkkkkkkkkkkk...............","..............ktttttdddtttttk...............","..............ktttttdddtttttk...............","..............ktttttdddtttttk...............","..............ktttttdddtttttk...............","..............ktttttdddtttttk...............","..............ktttttdddtttttk...............","..............kkttttdddtttttk...............","...............kttttdddtttttk...............","...............kttttdddtttttk...............","...............ktttttdsdttttk...............","...............ktttttslsttttk...............","...............kkttttdldttttk...............","................kttttdldttttk...............","................kttttdldttttk...............","................kttttdldttttk...............","................ktttttlbbbbkk...............","................kkbbbblbbbbk................","................kkbbbblppppkk...............","................kpqppplpppppk...............","...............kkpqppplpppppkk..............","..............kkpqpppklkpppppkk.............",".............kkpqpppkklkkpppppkk............",".............kpqpppkkklkkkpppppk............",".............kkpppkk.klk.kkpppkk............",".............kkpppk..klk..kpppkk............",".............kppppk..kkk..kppppk............",".............kppppk.......kppppk............",".............kpppkk.......kkpppk............","............kkpppkkk......kkpppkkk..........","............kooooookk.....kooooookk.........","............keeeeekek.....keeeeekek.........","............kkkkkkkkk.....kkkkkkkkk.........","............................................"];
+const PXB_PT0=["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................",".................kkkkkkkkkkk................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kkhhhhhhhkk................",".................kkhhhhhhhkk................",".................khhhhhhhhhk................",".................kkhhhhhhhkk................","..................khhhhhhhk.................","..................kkhhhhhkk.................","...............kkkkkkkjkkkkkkk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............kkttttdddttttkk..............","................kttttdsdttttk...............","................kttttslsttttk...............","................kttttdldttttk...............","................kttttdldttttk...............","................kttttlddttttk...............","................kttttlddttttk...............","................kkbbblbbbbbkk...............",".................kbbblbbbbbk................","................kkpqlppppppkk...............","...............kkpqplpppppppkk..............","..............kkpqpplpkppppppkk.............",".............kkpqppplkkkkpppppkk............",".............kpqppplkk..kkpppppk............",".............kkpppgggk...kkpppkk............",".............kkpppgggk....kpppkk............",".............kppppgggk....kppppk............",".............kppppkkkk....kppppk............",".............kpppkk.......kkpppk............","............kkpppkkk......kkpppkkk..........","............kooooookk.....kooooookk.........","............keeeeekek.....keeeeekek.........","............kkkkkkkkk.....kkkkkkkkk.........","............................................"];
+const PXB_PT1=["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................",".................kkkkkkkkkkk................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kkhhhhhhhkk................",".................kkhhhhhhhkk................",".................khhhhhhhhhk................",".................kkhhhhhhhkk................","..................khhhhhhhk.................","..................kkhhhhhkk.................","...............kkkkkkkjkkkkkkk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............ktttttdddtttttk..............","...............kkttttdddttttkk..............","................kttttdsdttttk...............","................kttttslsttttk...............","................kttttdldttttk...............","................kttttdldttttk...............","................kttttdldttttk...............","................kttttdldttttk...............","................kkbbbblbbbbkk...............",".................kbbbblbbbbk................","................kkpqpplppppkk...............","...............kkpqppplpppppkk..............","..............kkpqpppplppppppkk.............",".............kkpqpppkklkkpppppkk............",".............kpqpppkkklkkkpppppk............",".............kkpppkk.klk.kkpppkk............",".............kkpppk..klk..kpppkk............",".............kppppk..kkk..kppppk............",".............kppppk.......kppppk............",".............kpppkk.......kkpppk............","............kkpppkkk......kkpppkkk..........","............kooooookk.....kooooookk.........","............keeeeekek.....keeeeekek.........","............kkkkkkkkk.....kkkkkkkkk.........","............................................"];
+const PXF_A=["............................................","............................................","............................................","............................................","............................................",".................kkkkkkkkkkk................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kkssssssskk................","................kkksjsssjskkk...............","................khssssssssshk...............","................kkkssssssskkk...............","..................ksssssssk.................","..................kkssssskk.................","...................kkkskkk..................",".....................kkk....................","...............kkkkkkkkkkkkkkk..............","...............ktttttdtdtttttk..............","...............kttttdtdttttttk..............","...............kttttdttttttttk..............","...............kttttdttttttttk..............","...............kttttdttttttttk..............","...............kttttdttttttttk..............","...............kttttdttttttttk..............","..............kkttttdttttttttkk.............","..............ksttttdttttttttsk.............","..............ksstttdtttttttssk.............","..............kksttttdttttttskk.............","...............kkttttdttttttkk..............","................kttttdttttttk...............","................kttttdstttttk...............","................kttttslsttttk...............","................kttttdltttttk...............","................kttttdltttttk...............","................kttttdltttttk...............","................kkbbbblbbbbkk...............",".................kbbbblbbbbk................",".................kppqplppppk................","................kkpqpplppppkk...............","...............kkpqppplpppppkk..............","...............kpqpppplppppppk..............","..............kkqppppklkpppppkk.............",".............kkpqpppkklkkpppppkk............",".............kpqpppkkklkkkpppppk............",".............kkpppkk.klk.kkpppkk............",".............kkpppk..klk..kpppkk............",".............kppppk..kkk..kppppk............",".............kppppk.......kppppk............",".............kpppkk.......kkpppk............","............kkpppkkk......kkpppkkk..........","............kooooookk.....kooooookk.........","............keeeeekek.....keeeeekek.........","............kkkkkkkkk.....kkkkkkkkk.........","............................................"];
+const PXF_B=["............................................","............................................","............................................",".kkkkk......................................",".kgggk......................................",".kgggk...........kkkkkkkkkkk................",".kgggk...........kccccccccck................",".kkklkk..........kccccccccck................","...kklkk.........kccccccccck................","....kklk.........kccccccccck................",".....klkk........kkssssssskk................",".....kklkk......kkksjsssjskkk...............","......kklk......khssssssssshk...............",".......klkk.....kkkssssssskkk...............",".......kklkk......ksssssssk.................","........kklkkk....kkssssskk.................",".........klsskkkk..kkkskkk..................",".........kslsssskkk..kkk....................",".........kkssssssskkkkkkkkkkk...............","..........kkstttttttdtdtttttk...............","...........kkttttttdtdttttttk...............","............kttttttdttttttttk...............","............kkktttttdtttttttk...............","..............ktttttdtttttttk...............","..............ktttttdtttttttk...............","..............ktttttdtttttttk...............","..............kkttttdtttttttk...............","...............kttttttttttttk...............","...............kttttdtttttttk...............","...............kttttdtttttttk...............","...............kttttdtttttttk...............","...............kttttdtttttttk...............","...............kktttdtttttttk...............","................ktttdtttttttk...............","................ktttdtttttttk...............","................ktttdtttttttk...............","................kttttdttttttk...............","................kttttdbbbbbkk...............","................kkbbbbbbbbbkk...............",".................kbbbbbpppppk...............","................kkpqppppppppkk..............","...............kkpqppppppppppk..............","...............kpqppppkkpppppkk.............","..............kkqppppkkkkpppppkk............",".............kkpqpppkk..kkpppppkk...........",".............kpqpppkk....kkpppppk...........",".............kkpppkk......kkpppkk...........",".............kkpppk........kppppk...........",".............kppppk........kppppk...........",".............kppppk........kkpppk...........",".............kpppkk.........kpppk...........","............kkpppkkk.......kkpppkkk.........","............kooooookk......kooooookk........","............keeeeekek......keeeeekek........","............kkkkkkkkk......kkkkkkkkk........","............................................"];
+const PXF_C=["............................................","............................................","............................................",".......................................kkkkk",".......................................kgggk",".................kkkkkkkkkkk...........kgggk",".................kccccccccck...........kgggk",".................kccccccccck..........kklkkk",".................kccccccccck.........kklkk..",".................kccccccccck........kklkk...",".................kkssssssskk........klkk....","................kkksjsssjskkk......kklk.....","................khssssssssshk.....kklkk.....","................kkkssssssskkk....kklkk......","..................ksssssssk....kkklkk.......","..................kkssssskk.kkkksslk........","...................kkkskkkkkksssslsk........","................kkkkkkkkkksssssssskk........","................ktttttdtdtttttttskk.........","................kttttdtdttttttttkk..........","................kttttdttttttttttk...........","................kttttdttttttttkkk...........","................kttttdttttttttk.............","................kttttdttttttttk.............","................kttttdttttttttk.............","................kttttdtttttttkk.............","................kttttdtttttttk..............","................kttttdtttttttk..............","................kttttdtttttttk..............","................kttttdtttttttk..............","................kttttdtttttttk..............","................kttttdttttttkk..............","................kttttdttttttk...............","................kttttdttttttk...............","................kttttdttttttk...............","................kttttdttttttk...............","................kttttdttttttk...............","................kkbbbbbtttttk...............",".................kbbbbbbbbbkk...............",".................kppqpbbbbbk................",".................kpqpppppppkk...............","................kkqpppppppppkk..............","...............kkpqpppkppppppk..............","...............kpqpppkkkpppppkk.............","..............kkpqpppk.kkpppppkk............","..............kpqpppkk..kkpppppk............","..............kppppkk....kkpppkk............",".............kkpppkk......kpppkk............",".............kppppk.......kppppk............","............kkppppkk......kppppk............","............kooooookk.....kkpppk............","............keeeeekek.....kkpppkkk..........","............kkkkkkkkk.....kooooookk.........","..........................keeeeekek.........","..........................kkkkkkkkk.........","............................................"];
+const PXF_CH0=["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................",".................kkkkkkkkkkk................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kkssssssskk................","................kkksjsssjskkk...............","................khssssssssshk...............","................kkkssssssskkk...............","..................ksssssssk.................","..................kkssssskk.................","...................kkkskkk..................",".....................kkk....................",".........kkkkkkkkkkkkkkkkkkkk...............",".........kgggkktttttdtdtttttk...............",".........kgggkkttttdtdttttttk...............",".........kgggkkttttdttttttttk...............",".........kkkklktttttdtttttttk...............","............kkltttttdtttttttk...............",".............kltttttdtttttttk...............",".............kklstttdtttttttk...............","..............kslsttttttttttk...............","..............kkstttdtttttttk...............","...............kttttdtttttttk...............","...............kttttdtttttttk...............","...............kktttdtttttttk...............","................ktttdtttttttk...............","................ktttdtttttttk...............","................kttttdttttttk...............","................kttttdbbbbbkk...............","................kkbbbbbbbbbk................","................kkbbbbbppppkk...............","................kpqpppppppppk...............","...............kkpqpppkpppppkk..............","..............kkpqpppkkkpppppkk.............",".............kkpqpppkk.kkpppppkk............",".............kpqpppkk...kkpppppk............",".............kkpppkk.....kkpppkk............",".............kkpppk.......kpppkk............",".............kppppk.......kppppk............",".............kppppk.......kppppk............",".............kpppkk.......kkpppk............","............kkpppkkk......kkpppkkk..........","............kooooookk.....kooooookk.........","............keeeeekek.....keeeeekek.........","............kkkkkkkkk.....kkkkkkkkk.........","............................................"];
+const PXF_CH1=["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................",".................kkkkkkkkkkk................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kkssssssskk................","................kkksjsssjskkk...............","................khssssssssshk...............","................kkkssssssskkk...............","..................ksssssssk.................","..................kkssssskk.................","...................kkkskkk..................",".....................kkk....................","................kkkkkkkkkkkkkkk.............","................ktttttdtdtttttk.............","................kttttdtdttttttk.............","................kttttdttttttttk.............","................kttttdttttttttk.............","................kttttdttttttttk.............","................kttttdttttttttk.............","................kttttdtttttttkk.............","................kttttdtttttttk..............","................kttttdtttttttk..............","................kttttdsttttttk..............","................kttttslstttttk..............","................kttttdltttttkk..............","................kttttdltttttk...............","................kttttdltttttk...............","................kttttdltttttk...............","................kkbbbbltttttk...............",".................kbbbblbbbbkk...............","................kkpqpplbbbbkk...............","................kpqppplpppppk...............","...............kkpqppplpppppkk..............","..............kkpqpppklkpppppkk.............",".............kkpqpppkklkkpppppkk............",".............kpqpppkkklkkkpppppk............",".............kkpppkk.klk.kkpppkk............",".............kkpppk..klk..kpppkk............",".............kppppk..kkk..kppppk............",".............kppppk.......kppppk............",".............kpppkk.......kkpppk............","............kkpppkkk......kkpppkkk..........","............kooooookk.....kooooookk.........","............keeeeekek.....keeeeekek.........","............kkkkkkkkk.....kkkkkkkkk.........","............................................"];
+const PXF_PT0=["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................",".................kkkkkkkkkkk................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kkssssssskk................","................kkksjsssjskkk...............","................khssssssssshk...............","................kkkssssssskkk...............","..................ksssssssk.................","..................kkssssskk.................","...............kkkkkkkskkkkkkk..............","...............ktttttdtdtttttk..............","...............kttttdtdttttttk..............","...............kttttdttttttttk..............","...............kttttdttttttttk..............","...............kttttdttttttttk..............","...............kttttdttttttttk..............","...............kttttdttttttttk..............","...............kktttdtttttttkk..............","................kttttdstttttk...............","................kttttslsttttk...............","................kttttdltttttk...............","................kttttdltttttk...............","................kttttdtlttttk...............","................kttttdtlttttk...............","................kkbbbbblbbbkk...............",".................kbbbbblbbbk................","................kkpqpppplppkk...............","...............kkpqppppplpppkk..............","..............kkpqppppkplppppkk.............",".............kkpqpppkkkklpppppkk............",".............kpqpppkk..kklpppppk............",".............kkpppkk...kgggpppkk............",".............kkpppk....kgggpppkk............",".............kppppk....kgggppppk............",".............kppppk....kkkkppppk............",".............kpppkk.......kkpppk............","............kkpppkkk......kkpppkkk..........","............kooooookk.....kooooookk.........","............keeeeekek.....keeeeekek.........","............kkkkkkkkk.....kkkkkkkkk.........","............................................"];
+const PXF_PT1=["............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................","............................................",".................kkkkkkkkkkk................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kccccccccck................",".................kkssssssskk................","................kkksjsssjskkk...............","................khssssssssshk...............","................kkkssssssskkk...............","..................ksssssssk.................","..................kkssssskk.................","...............kkkkkkkskkkkkkk..............","...............ktttttdtdtttttk..............","...............kttttdtdttttttk..............","...............kttttdttttttttk..............","...............kttttdttttttttk..............","...............kttttdttttttttk..............","...............kttttdttttttttk..............","...............kttttdttttttttk..............","...............kktttdtttttttkk..............","................kttttdstttttk...............","................kttttslsttttk...............","................kttttdltttttk...............","................kttttdltttttk...............","................kttttdltttttk...............","................kttttdltttttk...............","................kkbbbblbbbbkk...............",".................kbbbblbbbbk................","................kkpqpplppppkk...............","...............kkpqppplpppppkk..............","..............kkpqpppplppppppkk.............",".............kkpqpppkklkkpppppkk............",".............kpqpppkkklkkkpppppk............",".............kkpppkk.klk.kkpppkk............",".............kkpppk..klk..kpppkk............",".............kppppk..kkk..kppppk............",".............kppppk.......kppppk............",".............kpppkk.......kkpppk............","............kkpppkkk......kkpppkkk..........","............kooooookk.....kooooookk.........","............keeeeekek.....keeeeekek.........","............kkkkkkkkk.....kkkkkkkkk.........","............................................"];
 const _pxSwing=new Map();
 // render all stroke frames (full swing 3 / chip 2 / putt 2) for a look, cached, palette-swapped
 function pxStrokeURLs(look){
@@ -8719,7 +8733,7 @@ function pxStrokeURLs(look){
   let u=_pxSwing.get(key); if(u) return u;
   const P={ s:av.skinHex, j:pxShade(av.skinHex,-26), h:av.hairHex, c:av.hatHex,
     t:av.shirtHex, d:pxShade(av.shirtHex,-30), p:pantsHex, q:pxShade(pantsHex,-22),
-    o:av.shoesHex, l:PXG_FIX.l, g:PXG_FIX.G, k:'#1c241b', w:'#f4f6f2' };
+    o:av.shoesHex, e:pxShade(av.shoesHex,-24), b:'#2a2c32', l:PXG_FIX.l, g:PXG_FIX.G, k:'#1c241b', w:'#f4f6f2' };
   const render=map=>{ const px=4, cv=document.createElement('canvas'); cv.width=PXS_W*px; cv.height=PXS_H*px;
     const ctx=cv.getContext('2d');
     const tp=(x,y)=>{ if(y<0||y>=map.length)return true; const r=map[y]; if(x<0||x>=r.length)return true; const c=r[x]; return c==='.'||c===' '; };
@@ -8731,39 +8745,47 @@ function pxStrokeURLs(look){
         const col=P[ch]; if(!col)continue;
         ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } }
     return cv.toDataURL('image/png'); };
-  u={ full:[render(PXS_A),render(PXS_B),render(PXS_C)], chip:[render(PXS_CH0),render(PXS_CH1)], putt:[render(PXS_PT0),render(PXS_PT1)] };
+  const vset=(A,B,C,H0,H1,T0,T1)=>({ full:[render(A),render(B),render(C)], chip:[render(H0),render(H1)], putt:[render(T0),render(T1)] });
+  u={ side:vset(PXS_A,PXS_B,PXS_C,PXS_CH0,PXS_CH1,PXS_PT0,PXS_PT1),
+      back:vset(PXB_A,PXB_B,PXB_C,PXB_CH0,PXB_CH1,PXB_PT0,PXB_PT1),
+      front:vset(PXF_A,PXF_B,PXF_C,PXF_CH0,PXF_CH1,PXF_PT0,PXF_PT1) };
   _pxSwing.set(key,u); return u;
 }
-// SVG markup: the created golfer plays the shot (full swing / chip / putt). Orientation follows the
-// player's HANDEDNESS (look.lefty) so a golfer never flips between lefty/righty by shot direction.
+// SVG markup: the created golfer plays the shot (full swing / chip / putt).
+// CS363: the golfer's FACING follows the shot's aim - up-the-hole shots turn the BACK to the camera,
+// down shots FACE it, lateral shots are SIDE-on (like a real broadcast). look.lefty sets the swing side.
 function hvSwingMarkup(g,p,look){
   if(!HV_SWING) return '';
   const kind = (p.k==='putt'||p.k==='hole')?'putt' : (p.k==='chip'?'chip' : ((p.k==='tee'||p.k==='app'||p.k==='adv')?'full':''));
   if(!kind) return '';
   let set; try{ set=pxStrokeURLs(look); }catch(e){ return ''; }
   if(!set) return '';
-  const frames = kind==='full'?set.full : (kind==='chip'?set.chip : set.putt);
-  const clsBase = kind==='full'?['sw0','sw1','sw2'] : (kind==='chip'?['ch0','ch1'] : ['pt0','pt1']);
   look=look||S.look||DEFLOOK;
   const A=hvProj(g,p.from[0],p.from[1]);
-  // CS356aj (owner: "faces away from the hole"): the golfer faces toward where THIS shot is going (its
-  // resting/target point), so they always address the ball toward the hole and never swing backwards.
-  // Handedness only breaks the tie on a dead-straight shot (no horizontal component).
-  let faceRight;
+  // aim vector (screen) from the shot origin toward its resting point; up = toward the hole (away from cam)
+  let vx=0, vy=-1;
   try{ const rx=(p.rest&&p.rest[0]!=null)?p.rest[0]:p.from[0], ry=(p.rest&&p.rest[1]!=null)?p.rest[1]:p.from[1];
-    const T=hvProj(g,rx,ry), dx=T[0]-A[0];
-    faceRight = Math.abs(dx)<3 ? !look.lefty : (dx>0);
-  }catch(e){ faceRight = !look.lefty; }
+    const T=hvProj(g,rx,ry); vx=T[0]-A[0]; vy=T[1]-A[1];
+  }catch(e){}
+  const L=Math.hypot(vx,vy)||1, up=-vy/L;   // up=1 straight up the hole, -1 back toward the camera
+  let view, mirror, clubFrac, badgeF;
+  if(up>0.42){ view='back'; mirror=!!look.lefty; clubFrac=0.5; badgeF=0.5; }        // aiming up the hole
+  else if(up<-0.42){ view='front'; mirror=!!look.lefty; clubFrac=0.5; badgeF=0.5; } // aiming toward camera
+  else { const faceRight=Math.abs(vx)<0.5?!look.lefty:(vx>0); view='side'; mirror=!faceRight; clubFrac=0.90; badgeF=faceRight?0.62:0.38; }
+  const vset=set[view]||set.side;
+  const frames = kind==='full'?vset.full : (kind==='chip'?vset.chip : vset.putt);
+  const clsBase = kind==='full'?['sw0','sw1','sw2'] : (kind==='chip'?['ch0','ch1'] : ['pt0','pt1']);
   const cam=hvCamFor2(g,p);
   // putts play under the tight green close-up, so size the golfer to a fraction of THAT frame
-  const GH = kind==='putt' ? Math.max(9, Math.min(22, cam[3]*0.15)) : 26;
+  const GH = kind==='putt' ? Math.max(10, Math.min(24, cam[3]*0.16)) : 32;   // CS364: a touch bigger so the finer detail/accessories read
   const GW=GH*PXS_W/PXS_H;
-  const clubFrac=0.90;   // align the sprite's club face (grid x~21.5/24) with the ball at the origin A
-  let x0=A[0]-GW*(faceRight?clubFrac:(1-clubFrac)), y0=A[1]-GH+3;
+  // ball address point (grid rows, of PXS_H): side ~48 bottom-right, back/front ~47 bottom-center
+  const ballGy = view==='side' ? 49 : 47;
+  let x0=A[0]-GW*clubFrac, y0=A[1]-GH*(ballGy/PXS_H);
   const pad=3, botPad=(kind==='putt'?6:42);   // botPad clears the floating desc/scoreboard on full-hole shots
   y0=Math.max(cam[1]+pad, Math.min(y0, cam[1]+cam[3]-GH-botPad));
   x0=Math.max(cam[0]+pad, Math.min(x0, cam[0]+cam[2]-GW-pad));
-  const tf=faceRight?'':` transform="translate(${(2*x0+GW).toFixed(1)},0) scale(-1,1)"`;
+  const tf=mirror?` transform="translate(${(2*x0+GW).toFixed(1)},0) scale(-1,1)"`:'';
   const img=(u,cls)=>`<image class="hvsw ${cls}" href="${u}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/>`;
   const imgs=frames.map((u,i)=>img(u,clsBase[i])).join('');
   // CS355c: the golfer stands on the shot's resting marker (covering its number). Surface the current shot
@@ -8774,7 +8796,7 @@ function hvSwingMarkup(g,p,look){
   // the close-up camera rather than the tiny golfer, so it stands out (owner ask).
   if(p.i!=null){ const num=p.i+1, putt=(kind==='putt');
     const br=putt?GH*0.26:GH*0.185, fs=putt?GH*0.31:GH*0.223;   // on the green: just slightly bigger than the full-shot pin
-    const bx=x0+(faceRight?0.62:0.38)*GW, by=Math.max(cam[1]+br+0.8, y0-br*1.4);
+    const bx=x0+badgeF*GW, by=Math.max(cam[1]+br+0.8, y0-br*1.4);
     badge=`<g class="hvswnum">`
       +`<circle cx="${(bx+0.6).toFixed(1)}" cy="${(by+1).toFixed(1)}" r="${br.toFixed(1)}" fill="#04150a" opacity=".45"/>`
       +`<path d="M ${bx.toFixed(1)} ${(by+br*1.45).toFixed(1)} L ${(bx-br*0.54).toFixed(1)} ${(by+br*0.54).toFixed(1)} L ${(bx+br*0.54).toFixed(1)} ${(by+br*0.54).toFixed(1)} Z" fill="#0a1626" stroke="#F1D04A" stroke-width=".7"/>`
@@ -18406,6 +18428,277 @@ function shopTileClick(b){
   else if(kind==='cos-req'){ try{ toast('🔒 '+(b.getAttribute('data-req')||'Locked')); }catch(e){} return; }   // earned Legend gear: show the requirement
   render();
 }
+// ============================ PACK SYSTEM (behind PACKS_ENABLED) ============================
+// Gacha-style pack: pay coins -> a rarity-weighted random item from the whole locker (minus earned
+// Legend gear). Dupes refund a little (owner Q1). Pool includes boost gear + bag tier-1 (Q2).
+// Earned-only, client-side v1 (Q4). NOTHING is live until PACKS_ENABLED is flipped; window._PACKSTEST
+// is a test-only override for the reveal QA (never affects prices).
+const PACKS_ENABLED=false;
+const PACK_HIKE=5;                          // direct-buy prices x5 the day packs launch (Q3)
+const PACK_PRICE=20000;                     // coins per pack (tuned in P4 vs the full catalog)
+const PACK_RCOL={common:'#b8c4bd',rare:'#4aa3ff',epic:'#b06be0',legendary:'#F1D04A'};
+const PACK_RLABEL={common:'Common',rare:'Rare',epic:'Epic',legendary:'Legendary'};
+const PACK_ODDS=[['common',0.55],['rare',0.30],['epic',0.12],['legendary',0.03]];
+const PACK_DUPE_REFUND={common:1500,rare:3500,epic:8000,legendary:18000};
+const PACK_PITY_EPIC=10, PACK_PITY_LEG=40;  // guaranteed epic+ every 10 packs, legendary every 40
+const PACK_RANK=['common','rare','epic','legendary'];
+const PXPACK=[
+"gggggggggggggggggggggggggggggg",
+"HHHHHHHHHHHHHHHHHHHHHHHHHHHHHH",
+"GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+"GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+"GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+"GGGGGGGGGGGGGGGGGGGGGGGGGGGGGG",
+"GggGggGggGggGggGggGggGggGggGgg",
+"gLEgEEgEEgEEgEEgEEgeegeegDDgDD",
+"LLEEEEEEEEEEEEEEEEeeeeeeDDDDDD",
+"LLEEEEEEEEESSEEEEEeeeeeeDDDDDD",
+"LLEEEEEEEEESSEEEEEeeeeeeWDDDDD",
+"LLEEEEEEEEESSEEEEEeeeeeHHHDDDD",
+"LLEEEEEEEEESSEEEEEeeeeeeHDDDDD",
+"LLEEEEEEEESSEEEEEEeeeeeeDDDDDD",
+"LLEEEEEEGGGGGGGGGGGGGGeeDDDDDD",
+"LLEEEEEEGKKKKKKKKKKKKGeeDDDDDD",
+"LLEEEEEEGKDDDDDDDDDDKGeeDDDDDD",
+"LLEEEEEEGKDDWDDDDDDDKGeeDDDDDD",
+"LLEEEEEEGKDDWHGGGGDDKGeeDDDDDD",
+"LLEEEEEEGKDDWGGGGDDDKGeeDDDDDD",
+"LLEEEEEEGKDDWGGGDDDDKGeeDDDDDD",
+"LLEEEEEEGKDDWGGGGDDDKGeeDDDDDD",
+"LLEEEEEEGKDDWgggggDDKGeeDDDDDD",
+"LLEEEEEEGKDDWDDDDDDDKGeeDDDDDD",
+"LLEEEEEEGKDDWDDDWWDDKGeeDDDDDD",
+"LLEEEEESGKLLWLLLWWLLKGeeDDDDDD",
+"LLEEEEESGKLLLLLLLLLLKGeeDDDDDD",
+"LLEEEEESGKEEEEEEEEEEKGeeDDDDDD",
+"LLEEEEESGKDEEEEEEEEDKGeeDDDDDD",
+"LLEEEESSgKKKKKKKKKKKKgeeDDDDDD",
+"LLEEEESSggggggggggggggeeDDDDDD",
+"LLEEEESSEEEEEEEEEEeeeeeeDDDDDD",
+"LLEEEESSEEEEEEEEEEeeeeeeDDDDDD",
+"LLEEESSEEEEEEEEEEEeeeeeeDDDDDD",
+"LLEEESSEEEEEEEEEEEeeeeeeDDDDDD",
+"LLEEESWEEEEEEEEEEEeeeeeeDDDDDD",
+"LLEEEHHHEEEEEEEEEEeeeeeeDDDDDD",
+"LLEESSHEEEEEEEEEEEeeeeeeDDDDDD",
+"LLEESSEEEEEEEEEEEEeeeeeeDDDDDD",
+"LLEESSEEEEEEEEEEEEeeeeeeDDDDDD",
+"LLEESSEEEEEEEEEEEEeeeeeeDDDDDD",
+"LLESSEEEEEEEEEEEEEeeeeeeDDDDDD",
+"LLEEEEEEEEEEEEEEEEeeeeeeDDDDDD",
+"LLEEEEEEEEEEEEEEEEeeeeeeDDDDDD",
+"LLEEEEEEEEEEEEEEEEeeeeeeDDDDDD"
+];
+const PXPACK_PAL={K:'#141c16',E:'#146e46',e:'#0f5034',D:'#0b3624',L:'#40b278',G:'#e2b43c',g:'#b48c28',H:'#fff0b4',W:'#eef0eb',R:'#c8423c',T:'#18968c',S:'#78d2b4'};
+var _pxPackURL=null;
+function pxPackURL(){ if(_pxPackURL) return _pxPackURL; var pxw=PXPACK[0].length, pxh=PXPACK.length, sc=8;
+  var cv=document.createElement('canvas'); cv.width=pxw*sc; cv.height=pxh*sc; var ctx=cv.getContext('2d');
+  for(var y=0;y<pxh;y++){ var row=PXPACK[y]; for(var x=0;x<row.length;x++){ var c=PXPACK_PAL[row[x]]; if(!c) continue; ctx.fillStyle=c; ctx.fillRect(x*sc,y*sc,sc,sc); } }
+  _pxPackURL=cv.toDataURL(); return _pxPackURL; }
+function pxPackImg(h){ return '<img src="'+pxPackURL()+'" alt="pack" style="height:'+(h||160)+'px;image-rendering:pixelated;display:block;margin:0 auto">'; }
+
+function packsOn(){ return PACKS_ENABLED===true || (typeof window!=='undefined' && window._PACKSTEST===true); }
+function priceHike(){ return PACKS_ENABLED?PACK_HIKE:1; }
+function packRarityOf(base){ base=base||0; return base>=30000?'legendary':base>=16000?'epic':base>=9000?'rare':'common'; }
+// every pack-eligible item, tagged with rarity. Excludes earned Legend gear + free items.
+function packPool(){ const pool=[];
+  [['shirt','sh'],['hat','ht'],['pat','sp'],['pants','pt'],['shoes','so'],['hw','hw'],['ew','ew']].forEach(function(cp){ var cat=cp[0],pk=cp[1];
+    (cosmeticItems(cat)||[]).forEach(function(o){ if(o.id==='none') return;
+      if((cat==='shirt'||cat==='hat') && COSMETIC_SHIRTS.find(function(x){return x.id===o.id&&x.earn;})) return;
+      var base=cosmeticPriceBase(cat,o.id); if(base<=0) return;
+      pool.push({kind:'cos',cat:cat,id:o.id,key:pk+':'+o.id,name:o.name||cosTitle(o.id),rarity:packRarityOf(base)}); }); });
+  ACCESSORIES.forEach(function(it){ if(it.rarity==='exclusive') return; pool.push({kind:'acc',id:it.id,key:it.id,name:it.name,rarity:it.rarity}); });
+  BAG_CLUBS.forEach(function(c){ pool.push({kind:'bag',club:c.k,tier:1,key:bagKey(c.k,1),name:c.tiers[0].n,rarity:packRarityOf(BAG_TIER_PRICE[0])}); });
+  return pool;
+}
+function packOwns(e){ if(e.kind==='acc') return accOwned(e.id); if(e.kind==='bag') return bagTierOwned(e.club)>=1; return cosOwned(e.cat,e.id); }
+function packGrant(e){ var s=coinState(); if(e.kind==='acc') s.owned[e.id]=1; else if(e.kind==='bag') s.owned[bagKey(e.club,1)]=1; else s.owned[cosKey(e.cat,e.id)]=1; coinSave(s); }
+function packState(){ var d={opened:0,sinceEpic:0,sinceLeg:0}; var v=LS.get(acctKey('bag_packs'),null); return (v&&typeof v==='object')?Object.assign(d,v):d; }
+function packSave(p){ LS.set(acctKey('bag_packs'),p); }
+function rollPackRarity(){ var r=Math.random(),a=0; for(var i=0;i<PACK_ODDS.length;i++){ a+=PACK_ODDS[i][1]; if(r<a) return PACK_ODDS[i][0]; } return 'common'; }
+function pickPackItem(rar){ var pool=packPool();
+  for(var ri=PACK_RANK.indexOf(rar); ri>=0; ri--){ var tier=pool.filter(function(e){return e.rarity===PACK_RANK[ri];}); if(tier.length) return tier[Math.floor(Math.random()*tier.length)]; }
+  return pool.length?pool[Math.floor(Math.random()*pool.length)]:null; }
+function packAffordable(){ return coinBalance()>=PACK_PRICE; }
+function packErr(e){ return e==='coins'?'Not enough coins':e==='signin'?'Sign in to open packs':'Could not open pack'; }
+function openPack(){
+  if(!packsOn()) return {err:'off'};
+  if(!sbSignedIn()) return {err:'signin'};
+  if(!packAffordable()) return {err:'coins'};
+  var s=coinState(); s.spent+=PACK_PRICE; coinSave(s);          // pay
+  var p=packState(); p.opened++;
+  var rar;                                                        // pity-aware rarity
+  if(p.sinceLeg+1>=PACK_PITY_LEG) rar='legendary';
+  else if(p.sinceEpic+1>=PACK_PITY_EPIC) rar='epic';
+  else rar=rollPackRarity();
+  if(rar==='legendary'){ p.sinceLeg=0; p.sinceEpic=0; }
+  else if(rar==='epic'){ p.sinceEpic=0; p.sinceLeg++; }
+  else { p.sinceEpic++; p.sinceLeg++; }
+  var item=pickPackItem(rar); if(!item){ packSave(p); return {err:'empty'}; }
+  packSave(p);
+  var dupe=packOwns(item), refund=0;
+  if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); }
+  else packGrant(item);
+  try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind}); }catch(e){}
+  return {item:item, rarity:item.rarity, dupe:dupe, refund:refund};
+}
+function packItemLook(e){ var look=Object.assign({},S.look||DEFLOOK);
+  if(e.cat==='shirt') look.polo=e.id;
+  else if(e.cat==='hat'){ look.hat=e.id; look.cap=true; }
+  else if(e.cat==='pat') look.shirtPat=e.id;
+  else if(e.cat==='hw'){ if(e.id==='none') look.cap=false; else { look.cap=true; look.hatStyle=e.id; } }
+  else if(e.cat==='ew') look.eyewear=e.id;
+  else if(e.cat==='pants') look.pants=e.id;
+  else if(e.cat==='shoes') look.shoes=e.id;
+  return look; }
+function packItemVisual(e){
+  if(e.kind==='cos'){ return '<img src="'+pxGolferURL(packItemLook(e))+'" style="height:210px;image-rendering:pixelated">'; }
+  var icon='gear', rc=PACK_RCOL[e.rarity]||'#b8c4bd';
+  if(e.kind==='acc'){ var it=accById(e.id); icon=(ACC_SLOT_BY[it&&it.slot]||{icon:'gear'}).icon; }
+  else if(e.kind==='bag'){ icon=(BAG_BY[e.club]||{ic:'driver'}).ic; }
+  return '<div style="width:150px;height:150px;border-radius:22px;display:flex;align-items:center;justify-content:center;background:'+rc+'22;border:2px solid '+rc+'"><span style="width:76px;height:76px;color:'+rc+'">'+ic(icon,{size:'76px'})+'</span></div>';
+}
+function packEquip(it){ if(it.kind==='cos') cosEquip(it.cat,it.id); else if(it.kind==='acc') accEquip(it.id); render(); }
+// ---- 3-card pick reveal (owner design): deal 3 face-down cards, player picks one blind, ALL 3 flip
+// (tier color + item + name + boost), you keep the one you chose. Pity: if a pack is due an epic/leg,
+// all 3 cards are forced to that floor so whatever you pick honors the guarantee. ----
+function forcedRarRoll(force){ if(force==='legendary') return 'legendary'; return Math.random()<0.18?'legendary':'epic'; }
+function rollPackCards(){
+  if(!packsOn()) return {err:'off'};
+  if(!sbSignedIn()) return {err:'signin'};
+  if(!packAffordable()) return {err:'coins'};
+  var s=coinState(); s.spent+=PACK_PRICE; coinSave(s);
+  var p=packState(), force=null;
+  if(p.sinceLeg+1>=PACK_PITY_LEG) force='legendary';
+  else if(p.sinceEpic+1>=PACK_PITY_EPIC) force='epic';
+  var cards=[]; for(var i=0;i<3;i++){ var it=pickPackItem(force?forcedRarRoll(force):rollPackRarity()); if(it) cards.push(it); }
+  return {cards:cards, force:force};
+}
+function pickPackCard(idx){
+  var d=S.packDeal; if(!d||d.chosen!=null||!d.cards[idx]) return null;
+  var item=d.cards[idx];
+  var p=packState(); p.opened++;
+  if(item.rarity==='legendary'){ p.sinceLeg=0; p.sinceEpic=0; }
+  else if(item.rarity==='epic'){ p.sinceEpic=0; p.sinceLeg++; }
+  else { p.sinceEpic++; p.sinceLeg++; }
+  packSave(p);
+  var dupe=packOwns(item), refund=0;
+  if(dupe){ refund=PACK_DUPE_REFUND[item.rarity]||1000; addBonusCoins(refund,{silent:true}); }
+  else packGrant(item);
+  try{ track('pack_open',{rarity:item.rarity,dupe:dupe,kind:item.kind}); }catch(e){}
+  d.chosen=idx; d.dupe=dupe; d.refund=refund;
+  return {item:item,dupe:dupe,refund:refund};
+}
+function startPackDeal(){ var d=rollPackCards(); if(d.err){ toast(packErr(d.err)); return; } S.packDeal={cards:d.cards,force:d.force,chosen:null}; S.packReveal=null; S.overlay='packreveal'; render(); }
+function packItemCategory(e){
+  if(e.kind==='bag') return 'Golf Club';
+  if(e.kind==='acc'){ var it=accById(e.id); return (ACC_SLOT_BY[it&&it.slot]||{name:'Gear'}).name; }
+  return {shirt:'Shirt Color',hat:'Hat Color',pat:'Pattern',pants:'Trousers',shoes:'Shoes',hw:'Headwear',ew:'Eyewear'}[e.cat]||'Item';
+}
+function packItemBoostTxt(e){ var b=null;
+  if(e.kind==='cos') b=cosBoost(e.cat,e.id);
+  else if(e.kind==='acc'){ var it=accById(e.id); b=it&&accItemBoost(it); }
+  else if(e.kind==='bag'){ var c=BAG_BY[e.club]; b=c&&c.tiers[0].b; }
+  return b?shopBoostTxt(b):''; }
+function packCardVisual(e){
+  if(e.kind==='cos'){ return '<img src="'+pxGolferURL(packItemLook(e))+'" style="height:94px;image-rendering:pixelated;margin:2px 0">'; }
+  var icon='gear', rc=PACK_RCOL[e.rarity]||'#b8c4bd';
+  if(e.kind==='acc'){ var it=accById(e.id); icon=(ACC_SLOT_BY[it&&it.slot]||{icon:'gear'}).icon; }
+  else if(e.kind==='bag'){ icon=(BAG_BY[e.club]||{ic:'driver'}).ic; }
+  return '<span style="width:50px;height:50px;color:'+rc+';margin:16px 0">'+ic(icon,{size:'50px'})+'</span>';
+}
+function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=document.createElement('style'); st.id='packcss';
+  st.textContent='.packov{position:fixed;inset:0;z-index:60;background:radial-gradient(circle at 50% 36%,#12321f,#050f0a);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;text-align:center}'
+   +'.packconf{position:fixed;inset:0;pointer-events:none;z-index:61}'
+   +'.packtitle{font:800 13px var(--body);letter-spacing:.2em;text-transform:uppercase;color:#eadfc4;margin-bottom:18px}'
+   +'.pcardrow{display:flex;gap:9px;justify-content:center;align-items:stretch;width:100%;max-width:430px}'
+   +'.pcard{flex:1;max-width:132px;aspect-ratio:3/4.5;perspective:900px}'
+   +'.pcard-inner{position:relative;width:100%;height:100%;transition:transform .62s cubic-bezier(.2,.7,.2,1);transform-style:preserve-3d}'
+   +'.pcard.flipped .pcard-inner{transform:rotateY(180deg)}'
+   +'.pcard-back,.pcard-front{position:absolute;inset:0;-webkit-backface-visibility:hidden;backface-visibility:hidden;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}'
+   +'.pcard-back{background:linear-gradient(160deg,#1a5f3f,#0c1f16);border:2px solid var(--gold);color:var(--gold);font-size:38px;box-shadow:inset 0 0 18px rgba(241,208,74,.18)}'
+   +'.pcard-packimg{width:100%;height:100%;object-fit:cover;image-rendering:pixelated;display:block}'
+   +'.pcard:not(.flipped){cursor:pointer}'
+   +'.pcard:not(.flipped) .pcard-inner{transition:transform .62s cubic-bezier(.2,.7,.2,1),translate .2s}'
+   +'.pcard:not(.flipped):hover{translate:0 -6px}'
+   +'.pcard-front{transform:rotateY(180deg);padding:8px 5px;gap:2px}'
+   +'.pcard.dim{opacity:.42;transition:opacity .45s ease .15s}'
+   +'.pcard-tier{font:800 9px var(--body);letter-spacing:.1em;text-transform:uppercase}'
+   +'.pcard-cat{font:800 7.5px var(--body);letter-spacing:.1em;text-transform:uppercase;color:#9fb6a8;margin-top:2px}'
+   +'.pcard-name{font:700 11px var(--body);color:#fff;text-align:center;line-height:1.1;padding:0 2px}'
+   +'.pcard-boost{font:700 8px var(--body);color:#8fe0c4;text-align:center;line-height:1.15;padding:0 1px}'
+   +'.packfoot{margin-top:22px;min-height:78px;display:flex;flex-direction:column;align-items:center;gap:12px}'
+   +'.packbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}'
+   +'.packbtns .btn{width:auto;margin:0;padding:11px 17px}'
+   +'@keyframes packwin{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}'
+   +'.pcard.win{animation:packwin .5s ease .55s}'
+   +'@media(prefers-reduced-motion:reduce){.pcard-inner,.pcard.win{transition:none;animation:none}}';
+  document.head.appendChild(st); }
+function overlayPackReveal(app){
+  var d=S.packDeal; if(!d||!d.cards||!d.cards.length){ S.overlay=null; return; }
+  packStyleOnce();
+  var reduce=(typeof matchMedia==='function')&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var ov=$('<div class="ov packov" role="dialog" aria-modal="true" aria-label="Pack reveal"></div>');
+  var title=$('<div class="packtitle">'+(d.chosen==null?'Pick your card':'Your card')+'</div>'); ov.appendChild(title);
+  var row=$('<div class="pcardrow"></div>'); var cardEls=[];
+  d.cards.forEach(function(item,idx){
+    var rc=PACK_RCOL[item.rarity]||'#b8c4bd';
+    var flipped=(d.chosen!=null), cls='pcard'+(flipped?(' flipped'+(idx===d.chosen?' win':' dim')):'');
+    var card=$('<div class="'+cls+'" data-idx="'+idx+'"><div class="pcard-inner">'
+      +'<div class="pcard-back"><img class="pcard-packimg" src="'+pxPackURL()+'" alt=""></div>'
+      +'<div class="pcard-front" style="background:linear-gradient(160deg,'+rc+'33,#0c1f16);border:2px solid '+rc+(flipped&&idx===d.chosen?';box-shadow:0 0 24px '+rc:'')+'">'
+        +'<div class="pcard-tier" style="color:'+rc+'">'+PACK_RLABEL[item.rarity]+'</div>'
+        +packCardVisual(item)
+        +'<div class="pcard-cat">'+esc(packItemCategory(item))+'</div>'
+        +'<div class="pcard-name">'+esc(item.name)+'</div>'
+        +'<div class="pcard-boost">'+(packItemBoostTxt(item)||'&nbsp;')+'</div>'
+      +'</div></div></div>');
+    if(d.chosen==null){ card.onclick=function(){ choose(idx); }; }
+    row.appendChild(card); cardEls.push({el:card, rc:rc, item:item});
+  });
+  ov.appendChild(row);
+  var footer=$('<div class="packfoot"></div>'); ov.appendChild(footer);
+  function renderFoot(){
+    footer.innerHTML='';
+    if(d.chosen==null){ footer.appendChild($('<div class="small muted">Tap a card. You keep the one you pick.</div>')); return; }
+    var item=d.cards[d.chosen];
+    footer.appendChild($('<div style="font:800 15px var(--body);color:'+(d.dupe?'#ffd45e':'#35d6a0')+'">'+(d.dupe?('Duplicate · +'+coinFmt(d.refund)+' coins'):('You got '+esc(item.name)+'!'))+'</div>'));
+    var btns=$('<div class="packbtns"></div>');
+    if((item.kind==='cos'||item.kind==='acc') && !d.dupe){ var eb=$('<button class="btn goldfill">Equip</button>'); eb.onclick=function(){ packEquip(item); toast('Equipped!'); }; btns.appendChild(eb); }
+    var can=packAffordable();
+    var again=$('<button class="btn '+(can?'teal':'ghost')+'"'+(can?'':' disabled')+'>Open another · '+coinFmt(PACK_PRICE)+'</button>'); again.onclick=function(){ startPackDeal(); };
+    var done=$('<button class="btn ghost">Done</button>'); done.onclick=function(){ S.packDeal=null; S.overlay='shop'; S.shopSec='packs'; render(); };
+    btns.appendChild(again); btns.appendChild(done); footer.appendChild(btns);
+  }
+  function choose(idx){
+    var res=pickPackCard(idx); if(!res) return;
+    title.textContent='Your card';
+    cardEls.forEach(function(c,i){ c.el.onclick=null; c.el.classList.add('flipped'); if(i===idx){ c.el.classList.add('win'); var fr=c.el.querySelector('.pcard-front'); if(fr) fr.style.boxShadow='0 0 24px '+c.rc; } else c.el.classList.add('dim'); });
+    setTimeout(renderFoot, reduce?0:720);
+    var big=(res.item.rarity==='epic'||res.item.rarity==='legendary');
+    try{ if(typeof sfx==='function') sfx(big?'win':'cup'); }catch(e){}
+    try{ if(typeof buzz==='function') buzz(big?[12,40,12]:[10]); }catch(e){}
+    if(!reduce && big){ var rc=PACK_RCOL[res.item.rarity]; var cv=$('<canvas class="packconf"></canvas>'); app.appendChild(cv);
+      try{ setTimeout(function(){ confettiRun(cv,{colors:[rc,PACK_RCOL.legendary,'#ffffff'],mode:'cannons',count:80}); }, 560); }catch(e){} }
+  }
+  if(d.chosen!=null) renderFoot();
+  app.appendChild(ov);
+}
+function packShopNode(){
+  var p=packState(), afford=packAffordable();
+  var wrap=$('<div style="padding:6px 2px 4px"></div>');
+  wrap.appendChild($('<div style="max-width:360px;margin:0 auto;text-align:center">'
+    +'<div style="margin:8px auto 0;filter:drop-shadow(0 0 18px rgba(241,208,74,.42))">'+pxPackImg(184)+'</div>'
+    +'<div style="font-family:var(--display);font-size:22px;margin-top:12px">Pro Shop Pack</div>'
+    +'<div class="small muted" style="margin-top:3px">Pick 1 of 3 cards from the whole locker. (Earned Legend gear never drops.)</div>'
+    +'<div style="margin-top:7px;font:800 11px var(--body);color:#cfe6d8">Guaranteed Epic+ in '+Math.max(0,PACK_PITY_EPIC-p.sinceEpic)+' · Legendary in '+Math.max(0,PACK_PITY_LEG-p.sinceLeg)+'</div></div>'));
+  var buy=$('<button class="btn goldfill" style="max-width:360px;margin:14px auto 0;display:flex;align-items:center;justify-content:center;gap:6px"'+(afford?'':' disabled')+'><span style="width:18px;height:18px">'+ic('coin',{size:'18px'})+'</span>Open a pack · '+coinFmt(PACK_PRICE)+'</button>');
+  buy.onclick=function(){ startPackDeal(); };
+  var odds=$('<button class="btn ghost" style="max-width:360px;margin:8px auto 0">View drop rates</button>');
+  odds.onclick=function(){ toast(PACK_ODDS.map(function(o){return PACK_RLABEL[o[0]]+' '+Math.round(o[1]*100)+'%';}).join(' · ')+' · dupes refund coins',4500); };
+  wrap.appendChild(buy); wrap.appendChild(odds);
+  return wrap;
+}
 function overlayShop(screen){
   if(!SHOP_ENABLED){ S.overlay=null; return; }   // shelved until the economy is rebalanced
   const signed=sbSignedIn();
@@ -18425,7 +18718,7 @@ function overlayShop(screen){
   }
   // CS356g: the pixel golfer renders shirt/hat/pants/shoe COLORS, shirt PATTERNS, and headwear/eyewear
   // ACCESSORIES - so the shop sells all of those (Apparel = colors + pattern, Accessories = headwear/eyewear).
-  let sec=S.shopSec; if(sec!=='accessories'&&sec!=='owned'&&sec!=='bag') sec='apparel';
+  let sec=S.shopSec; if(sec==='packs'&&!packsOn()) sec='apparel'; if(sec!=='accessories'&&sec!=='owned'&&sec!=='bag'&&sec!=='packs') sec='apparel';
   const APP=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes']];
   const ACCS=[['hw','Headwear'],['ew','Eyewear']];
   const cats = sec==='apparel'?APP : sec==='accessories'?ACCS : null;
@@ -18438,6 +18731,7 @@ function overlayShop(screen){
         <button class="btn ghost x2" style="width:auto;padding:7px 11px;font-size:14px">✕</button></div></div>
     <div class="shop-preview">${avatarFullHTML()}</div>
     <div class="segrow">
+      ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
       <button data-sec="apparel" class="${sec==='apparel'?'on':''}">Apparel</button>
       <button data-sec="accessories" class="${sec==='accessories'?'on':''}">Accessories</button>
       <button data-sec="bag" class="${sec==='bag'?'on':''}">Bag</button>
@@ -18445,6 +18739,13 @@ function overlayShop(screen){
     ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-cat="${c[0]}">${esc(c[1])}</button>`).join('')}</div>`:''}
   </div>`);
   ov.appendChild(sticky);
+  if(sec==='packs'){
+    ov.appendChild(packShopNode());
+    ov.appendChild($(`<button class="btn red" style="margin-top:14px">Done</button>`));
+    sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
+    ov.querySelectorAll('.x2,.red').forEach(el=>el.onclick=()=>{S.shopPreview=null;S.overlay=null;render();});
+    screen.appendChild(ov); return;
+  }
   try{ ov.appendChild(accBoostSummaryNode()); }catch(e){}   // live "equipment boost" summary from your worn gear
   const grid=$(`<div class="sgrid"></div>`); const tiles=[];
   if(sec==='apparel'||sec==='accessories'){ cosmeticItems(cat).forEach(o=>tiles.push(cosTileHTML(cat,o))); }
