@@ -10231,6 +10231,14 @@ const CONF_START=50, FOLLOWERS_START=2500, CONF_EO_MAX=0.7;
 // hundreds of millions (owner saw 371M). Damp the % growth as the following grows (diminishing returns)
 // and hard-cap it, so a legendary career tops out in the realistic tens of millions, not 371M.
 const FOLLOWERS_SOFT=3.5e6, FOLLOWERS_MAX=40e6;
+// CS396: each career's follower ceiling scales with its ACCOMPLISHMENTS, so the Fans leaderboard
+// differentiates careers instead of everyone piling at the flat 40M cap (owner: "how is everyone tied").
+// FOLLOWERS_MAX stays the absolute ceiling for a near-perfect career; a typical/lesser career caps lower.
+const FOLLOWERS_CAP_MIN=1.2e6, FOLLOWERS_CAP_BASE=1.4e6, FOLLOWERS_PER_PRESTIGE=52e3;
+function careerPrestige(){ const c=S.career||{}, a=c.awards||{}, md=c.medals||{}, cup=c.cup||{};
+  return (c.wins||0)*2 + (c.majors||0)*5 + (a.poy||0)*10 + (a.no1||0)*7 + (a.money||0)*3 + (a.scoring||0)*3 + (a.roy||0)*2
+    + (md.gold||0)*5 + (md.silver||0)*2 + (md.bronze||0)*1 + (cup.won||0)*3; }
+function followerCap(){ return Math.max(FOLLOWERS_CAP_MIN, Math.min(FOLLOWERS_MAX, FOLLOWERS_CAP_BASE + careerPrestige()*FOLLOWERS_PER_PRESTIGE)); }
 function confClamp(v){ return Math.max(0, Math.min(100, v)); }
 function seasonConf(){ return (S.season && S.season.confidence!=null) ? S.season.confidence : CONF_START; }
 function adjConf(d){ if(!S.season) return; S.season.confidence=confClamp((S.season.confidence!=null?S.season.confidence:CONF_START)+d); }
@@ -10239,7 +10247,11 @@ function confLabel(c){ c=Math.round(c); return c>=82?'Locked in':c>=64?'Confiden
 function confColor(c){ c=Math.round(c); return c>=64?'#35d6a0':c>=44?'#5fd0e0':c>=26?'#e0a53a':'#E14A33'; }
 function gainFollowers(pct, flat){ const s=careerStory(); const cur=s.followers||FOLLOWERS_START;
   const damp=FOLLOWERS_SOFT/(FOLLOWERS_SOFT+Math.max(0,cur));   // CS301: % growth tapers as you get big
-  const add=Math.round(cur*(pct||0)*damp+(flat||0)); s.followers=Math.max(0, Math.min(FOLLOWERS_MAX, cur+add)); return add; }
+  const add=Math.round(cur*(pct||0)*damp+(flat||0));
+  // CS396: cap growth at the career's achievement-scaled ceiling. Grandfather an already-higher following
+  // (max(cap,cur)) so an in-progress career is never retroactively dropped; a loss (add<0) still applies.
+  const ceil=Math.max(followerCap(), cur);
+  s.followers=Math.max(0, Math.min(ceil, cur+add)); return add; }
 function fmtFollowers(n){ n=Math.round(n||0);
   if(n>=1e6) return (n/1e6).toFixed(n>=1e7?0:1).replace(/\.0$/,'')+'M';
   if(n>=1e4) return Math.round(n/1e3)+'K';
