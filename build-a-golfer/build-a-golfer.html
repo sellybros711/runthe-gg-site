@@ -146,9 +146,10 @@ window.GA_ID='G-L29P5MRWKE';
   .card{position:relative; z-index:1; width:100%; max-width:none; margin:0; border-radius:0; overflow:visible;
     background:transparent; box-shadow:none}
   .cardtop{display:none}
-  .flag-ico{display:inline-block;width:1.5em;height:1.0em;border-radius:3px;background-size:cover;background-position:center;
+  .flag-ico{display:inline-block;width:1.5em;height:1.0em;border-radius:3px;overflow:hidden;background-size:cover;background-position:center;
     background-repeat:no-repeat;background-color:#e9e4d8;border:1px solid rgba(0,0,0,.22);box-shadow:0 1px 2px rgba(0,0,0,.22);
     vertical-align:-0.12em;flex:0 0 auto}
+  .flag-ico svg{display:block;width:100%;height:100%}
   .flag-none{background-image:repeating-linear-gradient(45deg,#cfc8ba 0 5px,#bdb6a7 5px 10px)}
   .flagstrip{display:flex; gap:6px; padding:8px 10px; background:rgba(0,0,0,.22); overflow:hidden}
   .flagstrip.bot{border-top:1px solid var(--line)} .flagstrip.top{border-bottom:1px solid var(--line)}
@@ -1263,14 +1264,15 @@ window.GA_ID='G-L29P5MRWKE';
   .sumtabbtn:hover{color:var(--oncard)}
   .sumtabbtn.on{color:var(--gold); border-bottom-color:var(--gold)}
   .sumacts{margin-top:18px}
-  .srev{flex:0 0 auto; min-width:56px; max-width:96px; border-radius:10px; padding:7px 9px; text-align:center;
+  .srev{flex:0 0 auto; min-width:56px; max-width:118px; border-radius:10px; padding:7px 9px; text-align:center;
     background:var(--panel); border:1px solid var(--line); opacity:.5}
   .srev.done{opacity:1}
   .srev.cur{opacity:1; border-color:var(--gold); background:rgba(216,173,74,.15); box-shadow:0 0 0 1px rgba(216,173,74,.45)}
   .srev.win{border-color:var(--gold); background:rgba(216,173,74,.22)}
   .srev .en{font:800 8.5px/1.15 var(--body); letter-spacing:.02em; text-transform:uppercase; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .srev .er{font-family:var(--mono); font-weight:800; font-size:13px; margin-top:4px; color:var(--oncard)}
+  .srev .er{font-family:var(--mono); font-weight:800; font-size:13px; margin-top:4px; color:var(--oncard); white-space:nowrap}
   .srev.win .er{color:var(--gold)}
+  .srev .er .ersc{font-size:10.5px; font-weight:700}
   /* CS265: career milestone timeline */
   .ctimeline{max-width:520px; margin:16px auto 0}
   .ct-hd{font:800 12px/1 var(--body); letter-spacing:.14em; text-transform:uppercase; color:var(--gold); margin-bottom:13px; text-align:center}
@@ -3661,17 +3663,62 @@ const COUNTRIES=[['United States','USA'],['England','ENG'],['Scotland','SCO'],['
   .map(([n,c])=>({n,c}));
 const COUNTRY_CODE=Object.fromEntries(COUNTRIES.map(x=>[x.n,x.c]));
 function playerNation(){ return COUNTRY_CODE[(S.look&&S.look.country)||'United States']||'USA'; }
-// flat-flag chips (flagcdn.com, same as RunThePitch): 3-letter golf nation code → ISO flag slug
-const NAT_FLAG={USA:'us',ENG:'gb-eng',SCO:'gb-sct',NIR:'gb-nir',WAL:'gb-wls',IRL:'ie',AUS:'au',NZL:'nz',
-  KOR:'kr',JPN:'jp',TPE:'tw',SGP:'sg',IND:'in',RSA:'za',ZIM:'zw',FIJ:'fj',ESP:'es',SWE:'se',NOR:'no',
-  DEN:'dk',GER:'de',FRA:'fr',ITA:'it',BEL:'be',AUT:'at',POL:'pl',JEY:'je',CAN:'ca',MEX:'mx',ARG:'ar',CHI:'cl',
-  EUR:'eu'};   // EUR = the European Union flag (Atlantic Cup "Europe" team)
-function natFlagUrl(code,w){ const iso=NAT_FLAG[code]; return iso?`https://flagcdn.com/w${w||40}/${iso}.png`:null; }
+// INLINE SVG flags (owner: the old flagcdn.com images loaded slowly / not at all on mobile). Self-contained,
+// instant, and never depend on the network. Simplified to read at chip size (viewBox 0 0 3 2, fills the chip).
+const NAT_NAME={USA:'United States',ENG:'England',SCO:'Scotland',NIR:'Northern Ireland',WAL:'Wales',IRL:'Ireland',
+  AUS:'Australia',NZL:'New Zealand',KOR:'South Korea',JPN:'Japan',TPE:'Chinese Taipei',SGP:'Singapore',IND:'India',
+  RSA:'South Africa',ZIM:'Zimbabwe',FIJ:'Fiji',ESP:'Spain',SWE:'Sweden',NOR:'Norway',DEN:'Denmark',GER:'Germany',
+  FRA:'France',ITA:'Italy',BEL:'Belgium',AUT:'Austria',POL:'Poland',JEY:'Jersey',CAN:'Canada',MEX:'Mexico',
+  ARG:'Argentina',CHI:'Chile',EUR:'Europe'};
+// generators
+const _vt=(a,b,c)=>`<rect width="3" height="2" fill="${a}"/><rect x="1" width="1" height="2" fill="${b}"/><rect x="2" width="1" height="2" fill="${c}"/>`;      // vertical tricolor
+const _ht=(a,b,c)=>`<rect width="3" height="2" fill="${a}"/><rect y="0.667" width="3" height="0.666" fill="${b}"/><rect y="1.333" width="3" height="0.667" fill="${c}"/>`; // horizontal tricolor
+const _hb=(a,b)=>`<rect width="3" height="2" fill="${a}"/><rect y="1" width="3" height="1" fill="${b}"/>`;                                                            // horizontal bicolor
+const _nordic=(f,c)=>`<rect width="3" height="2" fill="${f}"/><rect x="0.78" width="0.44" height="2" fill="${c}"/><rect y="0.78" width="3" height="0.44" fill="${c}"/>`; // Nordic cross
+const _stg=(f,c)=>`<rect width="3" height="2" fill="${f}"/><rect x="1.3" width="0.4" height="2" fill="${c}"/><rect y="0.8" width="3" height="0.4" fill="${c}"/>`;        // centred cross
+const _salt=(f,c)=>`<rect width="3" height="2" fill="${f}"/><path d="M0 0 3 2 M3 0 0 2" stroke="${c}" stroke-width="0.42"/>`;                                            // saltire
+const _usa=()=>{ let s=`<rect width="3" height="2" fill="#b22234"/>`; for(let i=1;i<=6;i++) s+=`<rect y="${(i*2/6.5).toFixed(3)}" width="3" height="${(2/13).toFixed(3)}" fill="#fff"/>`; s+=`<rect width="1.25" height="${(2*7/13).toFixed(3)}" fill="#3c3b6e"/>`; for(let r=0;r<3;r++)for(let c=0;c<4;c++) s+=`<circle cx="${(0.18+c*0.3).toFixed(2)}" cy="${(0.17+r*0.3).toFixed(2)}" r="0.055" fill="#fff"/>`; return s; };
+const _dot=(cx,cy,r,f)=>`<circle cx="${cx}" cy="${cy}" r="${r}" fill="${f}"/>`;
+const FLAG_SVG={
+  USA:_usa(),
+  ENG:_stg('#fff','#ce1124'),
+  SCO:_salt('#0065bf','#fff'),
+  NIR:_stg('#fff','#cf142b')+_dot(1.5,1,0.24,'#fff')+_dot(1.5,1,0.16,'#cf142b'),
+  WAL:`<rect width="3" height="1" fill="#fff"/><rect y="1" width="3" height="1" fill="#00ab39"/>`+_dot(1.5,1,0.28,'#c8102e'),
+  IRL:_vt('#169b62','#fff','#ff883e'),
+  AUS:`<rect width="3" height="2" fill="#00247d"/><rect width="1.2" height="0.8" fill="#012169"/><path d="M0 0 1.2 0.8 M1.2 0 0 0.8" stroke="#fff" stroke-width="0.16"/><path d="M0.6 0 0.6 0.8 M0 0.4 1.2 0.4" stroke="#fff" stroke-width="0.16"/>`+_dot(0.6,1.55,0.11,'#fff')+_dot(2.2,0.55,0.09,'#fff')+_dot(2.55,1.1,0.09,'#fff')+_dot(2.05,1.35,0.08,'#fff')+_dot(2.4,1.6,0.07,'#fff'),
+  NZL:`<rect width="3" height="2" fill="#00247d"/><rect width="1.2" height="0.8" fill="#012169"/><path d="M0 0 1.2 0.8 M1.2 0 0 0.8" stroke="#fff" stroke-width="0.16"/><path d="M0.6 0 0.6 0.8 M0 0.4 1.2 0.4" stroke="#fff" stroke-width="0.16"/>`+_dot(2.25,0.6,0.1,'#cc142b')+_dot(2.6,1.1,0.1,'#cc142b')+_dot(2.15,1.35,0.09,'#cc142b')+_dot(2.5,1.6,0.08,'#cc142b'),
+  KOR:`<rect width="3" height="2" fill="#fff"/><path d="M1.5 0.62 A0.38 0.38 0 0 1 1.5 1.38 A0.19 0.19 0 0 1 1.5 1 A0.19 0.19 0 0 0 1.5 0.62Z" fill="#cd2e3a"/><path d="M1.5 1.38 A0.38 0.38 0 0 1 1.5 0.62 A0.19 0.19 0 0 1 1.5 1 A0.19 0.19 0 0 0 1.5 1.38Z" fill="#0047a0"/>`,
+  JPN:`<rect width="3" height="2" fill="#fff"/>`+_dot(1.5,1,0.42,'#bc002d'),
+  TPE:`<rect width="3" height="2" fill="#fe0000"/><rect width="1.5" height="1" fill="#000095"/>`+_dot(0.75,0.5,0.3,'#fff')+_dot(0.75,0.5,0.16,'#000095'),
+  SGP:_hb('#ed2939','#fff')+`<path d="M0.85 0.5 A0.34 0.34 0 1 0 0.85 1.18 A0.28 0.28 0 1 1 0.85 0.5Z" fill="#fff"/>`,
+  IND:_ht('#ff9933','#fff','#138808')+_dot(1.5,1,0.15,'#000080'),
+  RSA:`<rect width="3" height="1" fill="#e03c31"/><rect y="1" width="3" height="1" fill="#001489"/><path d="M0 0 1.3 1 0 2Z" fill="#007749"/><path d="M0 0.35 0.95 1 0 1.65Z" fill="#000"/><path d="M0 0 1.55 1 0 2" stroke="#fff" stroke-width="0.5" fill="none"/><path d="M0 0.35 1.15 1 0 1.65" stroke="#ffb81c" stroke-width="0.18" fill="none"/><rect y="0.83" width="1.7" height="0.34" fill="#007749"/>`,
+  ZIM:`<rect width="3" height="2" fill="#319400"/><rect y="0.4" width="3" height="0.3" fill="#ffd200"/><rect y="0.7" width="3" height="0.6" fill="#de2010"/><rect y="1.3" width="3" height="0.3" fill="#ffd200"/><rect y="0.28" width="3" height="0.12" fill="#000"/><rect y="1.6" width="3" height="0.12" fill="#000"/><path d="M0 0 1.1 1 0 2Z" fill="#fff"/><path d="M0 0.15 0.85 1 0 1.85Z" fill="#000"/>`,
+  FIJ:`<rect width="3" height="2" fill="#68bfe5"/><rect width="1.2" height="0.8" fill="#00247d"/><path d="M0 0 1.2 0.8 M1.2 0 0 0.8" stroke="#fff" stroke-width="0.14"/><path d="M0.6 0 0.6 0.8 M0 0.4 1.2 0.4" stroke="#fff" stroke-width="0.14"/>`+_dot(2.1,1,0.28,'#fff'),
+  ESP:`<rect width="3" height="2" fill="#c60b1e"/><rect y="0.5" width="3" height="1" fill="#ffc400"/>`,
+  SWE:_nordic('#006aa7','#fecc00'),
+  NOR:`<rect width="3" height="2" fill="#ef2b2d"/><rect x="0.72" width="0.56" height="2" fill="#fff"/><rect y="0.72" width="3" height="0.56" fill="#fff"/><rect x="0.86" width="0.28" height="2" fill="#002868"/><rect y="0.86" width="3" height="0.28" fill="#002868"/>`,
+  DEN:_nordic('#c8102e','#fff'),
+  GER:_ht('#000000','#dd0000','#ffce00'),
+  FRA:_vt('#0055a4','#ffffff','#ef4135'),
+  ITA:_vt('#009246','#ffffff','#ce2b37'),
+  BEL:_vt('#000000','#fdda24','#ef3340'),
+  AUT:_ht('#ed2939','#ffffff','#ed2939'),
+  POL:_hb('#ffffff','#dc143c'),
+  JEY:_salt('#ffffff','#e8112d'),
+  CAN:`<rect width="3" height="2" fill="#fff"/><rect width="0.75" height="2" fill="#d52b1e"/><rect x="2.25" width="0.75" height="2" fill="#d52b1e"/>`+_dot(1.5,1,0.3,'#d52b1e'),
+  MEX:_vt('#006847','#ffffff','#ce1126')+_dot(1.5,1,0.16,'#8a5a2b'),
+  ARG:_ht('#74acdf','#ffffff','#74acdf')+_dot(1.5,1,0.16,'#f6b40e'),
+  CHI:`<rect width="3" height="2" fill="#fff"/><rect y="1" width="3" height="1" fill="#d52b1e"/><rect width="1" height="1" fill="#0039a6"/>`+`<path d="M0.5 0.28 0.57 0.5 0.8 0.5 0.61 0.63 0.68 0.85 0.5 0.72 0.32 0.85 0.39 0.63 0.2 0.5 0.43 0.5Z" fill="#fff"/>`,
+  EUR:`<rect width="3" height="2" fill="#003399"/>`+Array.from({length:12},(_,i)=>{const a=i/12*2*Math.PI-Math.PI/2;return _dot((1.5+0.62*Math.cos(a)).toFixed(2),(1+0.62*Math.sin(a)).toFixed(2),0.075,'#ffcc00');}).join(''),
+};
 function natFlag(code,cls){
-  // team designations that aren't a single country: Europe -> EU flag (via NAT_FLAG), International -> globe
-  if(code==='INT') return `<span role="img" aria-label="International" class="flag-globe${cls?' '+cls:''}" style="display:inline-flex;align-items:center;justify-content:center;width:1.5em;height:1em;vertical-align:-0.14em">${ic('globe')}</span>`;
-  const url=natFlagUrl(code,40);
-  return `<span class="flag-ico${cls?' '+cls:''}${url?'':' flag-none'}"${url?` style="background-image:url('${url}')"`:''} role="img" aria-label="${code==='EUR'?'Europe':esc(code||'')}"></span>`; }
+  // team designations that aren't a single country: International -> globe icon; unknown -> striped placeholder
+  if(code==='INT'||!code) return `<span role="img" aria-label="International" class="flag-globe${cls?' '+cls:''}" style="display:inline-flex;align-items:center;justify-content:center;width:1.5em;height:1em;vertical-align:-0.14em">${ic('globe')}</span>`;
+  const body=FLAG_SVG[code];
+  if(!body) return `<span class="flag-ico flag-none${cls?' '+cls:''}" role="img" aria-label="${esc(code||'')}"></span>`;
+  return `<span class="flag-ico${cls?' '+cls:''}" role="img" aria-label="${esc(NAT_NAME[code]||code)}"><svg viewBox="0 0 3 2" preserveAspectRatio="none">${body}</svg></span>`; }
 const FNAMES={USA:['Cole','Hayden','Brooks','Tanner','Carson','Bryce','Tripp','Mason','Reid','Cooper','Parker','Beau','Grant','Knox','Hudson','Cash','Brody','Jace','Wyatt','Colt','Easton','Brett','Chase','Drew','Brock','Hunter','Maddox','Gage','Tate','Ryder','Walker','Bo','Crew','Lane','Sawyer','Boone','Dawson','Camden','Bennett','Holden','Rhett','Jett','Pierce','Cade','Trent','Kade','Brooks','Spencer','Garrett','Weston'],England:['Ollie','Harry','Charlie','Reece','Freddie','Tom','Joe','Alfie','Archie','George','Jack','Louie','Henry','Sam','Will','Toby','Max','Ben','Leo','Jacob','Theo','Finlay','Rory','Callum'],Australia:['Kai','Lachlan','Beau','Jett','Cooper','Flynn','Hugo','Max','Oscar','Heath','Jasper','Ryder','Hudson','Lincoln','Cody','Blake','Mason','Riley'],'South Korea':['Minjae','Seungwoo','Jihun','Doyoon','Taeyang','Junseo','Hyunwoo','Sangwoo','Jiho','Woojin','Hajun','Eunwoo','Siwoo','Junho'],Japan:['Riku','Sota','Haruto','Yuki','Ren','Kaito','Yuto','Sora','Hiroto','Yuma','Asahi','Kenta','Daiki','Shota'],'South Africa':['Dewald','Ruan','Jaco','Stefan','Pieter','Wian','Armand','Hendrik','Cobus','Dawid','Tiaan','Morne'],Spain:['Pablo','Álvaro','Mateo','Hugo','Marcos','Diego','Nico','Sergio','Adrián','Iker','Gonzalo','Martín'],Sweden:['Filip','Albin','Hugo','Melvin','Viktor','Elias','Axel','Oskar','Gustav','William','Liam','Noah'],Canada:['Liam','Owen','Noah','Ethan','Nolan','Mathis','Tyler','Brayden','Carter','Logan','Hayden','Cole'],Ireland:['Cian','Conor','Sean','Eoin','Darragh','Oisin','Liam','Fionn','Cormac','Niall','Padraig','Ronan'],Germany:['Jonas','Luca','Finn','Leon','Maxi','Tim','Lukas','Niklas','Felix','Paul','Jan','Moritz'],Argentina:['Tomás','Mateo','Benjamín','Lautaro','Felipe','Santiago','Joaquín','Bruno','Ignacio'],France:['Hugo','Louis','Jules','Nathan','Théo','Lucas','Adrien','Romain','Clément','Antoine'],Italy:['Lorenzo','Matteo','Marco','Davide','Andrea','Francesco','Riccardo','Tommaso','Edoardo'],Denmark:['Oliver','Magnus','Frederik','Emil','Victor','Noah','William','Lucas','Oscar'],Other:['Alex','Daniel','Marco','Adam','Leo','Max','Sam','Niko','Tomas','David','Lucas','Mikkel','Andre','Stefan','Karel','Janne']};
 const SNAMES={USA:['Whitaker','Sutter','Calloway','Hargrove','Lindquist','Boone','Marsh','Pruitt','Vance','Ellison','Stamper','Roark','Brennan','Kessler','Holt','Mercer','Dalton','Rhodes','Fenwick','Cobb','Hollis','Ashby','Crane','Tucker','Brock','Lawson','Driscoll','Maddox','Whitfield','Sealy','Granger','Holloway','Bridges','Pruett','Vaughn','Carver','Steele','Hatcher','Conway','Beckett'],England:['Ashworth','Pemberton','Whitlock','Hartley','Bardsley','Cresswell','Fairbanks','Holloway','Radcliffe','Stanton','Marsden','Ellery','Hawthorne','Pickering','Sutcliffe','Thornbury','Whitmore','Ackroyd'],Australia:['Calvert','Hueston','Bracken','Donato','Mayberry','Sorrell','Hewson','Carrick','Maddern','Sheldon','Blakely','Trembath','Hollis','Forsythe'],'South Korea':['Kang','Seo','Yoon','Jung','Hwang','Lim','Noh','Bae','Shin','Moon','Yang','Oh','Cho','Han'],Japan:['Takeda','Morita','Fujikawa','Nishida','Okamoto','Sakai','Hayashi','Ono','Maeda','Kobayashi','Tanaka','Ishii','Matsuda','Hara'],'South Africa':['Pretorius','Coetzee','Van Wyk','Bekker','Lategan','Nel','Botha','Roux','Venter','Du Toit','Steyn','Kruger'],Spain:['Cabrera','Otero','Reyes','Castaño','Bermúdez','Gallego','Moya','Vidal','Serrano','Ortega','Lozano','Marín'],Sweden:['Ahlberg','Sjöberg','Lindkvist','Norén','Hammar','Forsberg','Ek','Dahl','Bergström','Lund','Holmberg','Sandberg'],Canada:['Tremblay','Gagnon','Beaulieu','Fortin','Leclerc','Caron','Pelletier','Bergeron','Cormier','Lavoie'],Ireland:['Doyle','Gallagher','Brennan','Kavanagh','Molloy','Hegarty','Fitzgerald','Donnelly','Mulligan','Cassidy'],Germany:['Brandt','Keller','Vogel','Schreiber','Wagner','Busch','Hofmann','Albrecht','Krause','Stein'],Argentina:['Romero','Sosa','Ibarra','Acosta','Vega','Molina','Quiroga','Paredes','Herrera'],France:['Moreau','Lefevre','Girard','Rousseau','Faure','Mercier','Blanc','Garnier','Brunet'],Italy:['Conti','Ferrari','Greco','Bianchi','Rizzo','Marino','Costa','Gallo','Ferrara'],Denmark:['Sørensen','Kjær','Mortensen','Holm','Dahl','Nygaard','Lassen','Krogh','Vinther'],Other:['Novak','Kovač','Silva','Costa','Meyer','Halonen','Brandt','Virtanen','Nowak','Horak','Bauer','Vos']};
 const ARCH_W=[['allround',.30],['bomber',.18],['ballstriker',.18],['putter',.12],['shortgame',.12],['scrambler',.10]];
@@ -4197,46 +4244,34 @@ function applyPlayerDecline(){   // once per off-season; severity ramps with the
   CATS.forEach(cat=>{ const sl=S.slots[cat.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[cat.k]*ramp*formMod)); });
 }
 function playerRetires(){ return (S.year||1) >= CAREER_MAX_YEARS; }   // forced at the 30-year shelf life
-// CS381/CS382: off-season CHANGES + RE-SPINS scale with your career STAGE and how you did LAST SEASON
-// (owner). The first ~5 years (and the Legend Circuit) are a fixed 1 change + 1 re-spin while you're
-// establishing; after that they're earned by last season's results. All thresholds are easy to tweak.
-const OFF_EARLY_YEARS=5;
-function lastCareerSeason(){ const c=S.career; return (c&&c.seasons&&c.seasons.length)?c.seasons[c.seasons.length-1]:null; }
-// CHANGES by last-season money-list FINISH: top-10 → 3, 11-25 → 2, 26-75 → 1, 76+ → 0.
+// CS383 (owner revision): the off-season always grants 3 RE-SPINS, no matter what. The number of CHANGES
+// you can make varies by LAST SEASON's money-list finish: top-10 → 3, 11-25 → 2, 26-75 → 1, 76+ → 0.
+// (Thresholds easy to tweak.) Works in the Legend Circuit too (reads the circuit's own last season).
+const OFF_RESPINS=3;
+function lastCareerSeason(){ const c=(S.circuitMode&&S.circuitCareer)?S.circuitCareer:S.career;
+  return (c&&c.seasons&&c.seasons.length)?c.seasons[c.seasons.length-1]:null; }
+function offRespins(){ return OFF_RESPINS; }                 // always 3, no matter what
 function offChanges(){
-  if(S.circuitMode || (S.year||1)<=OFF_EARLY_YEARS) return 1;
-  const last=lastCareerSeason(); if(!last) return 1;
-  const r=last.rank||99;
+  const last=lastCareerSeason();
+  if(!last || last.rank==null) return 1;                     // no prior-season data → a single default change
+  const r=last.rank;
   if(r<=10) return 3;
   if(r<=25) return 2;
   if(r<=75) return 1;
   return 0;
 }
-// RE-SPINS by last-season WINS / MAJORS / EARNINGS + TOUR (world) RANKING (owner).
-function offRespins(){
-  if(S.circuitMode || (S.year||1)<=OFF_EARLY_YEARS) return 1;
-  const last=lastCareerSeason(); if(!last) return 1;
-  const w=last.wins||0, mj=last.majors||0, r=last.rank||99;
-  let wr=999; try{ wr=myWorldRank(); }catch(e){}
-  if(mj>=1 || w>=2 || wr<=5) return 3;      // a major / multi-win / world top-5
-  if(w>=1 || r<=10 || wr<=20) return 2;     // a win / top-10 on the money list / world top-20
-  if(r<=40 || wr<=60) return 1;             // a solid money + ranking season
-  return 0;                                  // a poor season earns none
-}
-// a short human note explaining what earned this off-season's change + re-spin budget
+// a short human note: re-spins are always 3; changes are earned by last season's finish.
 function offBudgetNote(){
   const ch=(S.offseason&&S.offseason.maxChanges!=null)?S.offseason.maxChanges:offChanges();
   const rs=(S.offseason&&S.offseason.reSpins!=null)?S.offseason.reSpins:offRespins();
   const budget=`<b style="color:var(--gold)">${ch}</b> change${ch===1?'':'s'} · <b style="color:var(--gold)">${rs}</b> re-spin${rs===1?'':'s'}`;
-  if(S.circuitMode) return `🎡 ${budget} · Legend Circuit tune-up`;
-  if((S.year||1)<=OFF_EARLY_YEARS) return `🎡 ${budget} · early career, still establishing`;
   const last=lastCareerSeason();
-  if(!last) return `🎡 ${budget}`;
+  if(!last || last.rank==null) return `🎡 ${budget}`;
   const parts=[];
   if(last.wins) parts.push(last.wins+(last.wins===1?' win':' wins'));
   if(last.majors) parts.push(last.majors+(last.majors===1?' major':' majors'));
-  parts.push(ord(last.rank||99)+' on the money list');
-  return `🎡 ${budget} · earned by last season (${parts.join(' · ')})`;
+  parts.push(ord(last.rank)+' on the money list');
+  return `🎡 ${budget} · ${ch} change${ch===1?'':'s'} earned by last season (${parts.join(' · ')})`;
 }
 /* golfer customization palettes */
 // `file` = canonical avatar-art filename token (see public/avatars/golfers/README.md).
@@ -13005,7 +13040,11 @@ function seasonRailNode(){
   S.schedule.forEach((evt,i)=>{
     let cls='srev', res='·';
     if(i<S.evtIndex){ cls+=' done'; const r=results[i], me=r&&r.order&&r.order.find(o=>o.p.you);
-      if(me){ if(me.pos==='CUT'){ res='CUT'; } else if(me.pos===1){ cls+=' win'; res='WIN'; } else res=(me.tied?'T'+me.pos:ord(me.pos)); } else res='✓'; }
+      if(me){
+        // owner: show the final score to par in parens next to the place (e.g. "T7 (−6)")
+        const tp=(me.pos!=='CUT'&&me.total!=null)?Math.round(me.total):null;
+        const sc=tp!=null?` <span class="ersc" style="color:${tp<0?'#35d6a0':tp>0?'#e2a23a':'var(--muted)'}">(${dtp(tp)})</span>`:'';
+        if(me.pos==='CUT'){ res='CUT'; } else if(me.pos===1){ cls+=' win'; res='WIN'+sc; } else res=(me.tied?'T'+me.pos:ord(me.pos))+sc; } else res='✓'; }
     else if(i===S.evtIndex){ cls+=' cur'; res='NOW'; }
     rail.appendChild($(`<div class="${cls}" title="${esc(evt.name)}"><div class="en">${evt.major?'★ ':''}${esc(evt.name)}</div><div class="er">${res}</div></div>`));
   });
@@ -14212,9 +14251,8 @@ function continueFranchise(){
   const _decline={}; CATS.forEach(c=>{ const sl=S.slots[c.k]; if(sl&&_pre[c.k]!=null){ const d=sl.value-_pre[c.k]; if(d<0) _decline[c.k]=d; } });
   S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false; S.seasonRank=null;
   // off-season tune-up: re-spin to swap fresh skills in (now also to repair age decline)
-  // CS382: change + re-spin budgets are earned by career stage + last season's results (offChanges/offRespins),
-  // not Tour Rep. If you earned no changes, re-spins are moot → 0 too (keeps the display coherent).
-  const _ch=offChanges(); S.offseason={changes:0,maxChanges:_ch,reSpins:_ch>0?offRespins():0,decline:_decline,locked:[]}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
+  // CS383: always 3 re-spins; CHANGES vary by last season's finish (offChanges). Not Tour Rep.
+  S.offseason={changes:0,maxChanges:offChanges(),reSpins:offRespins(),decline:_decline,locked:[]}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
   try{ S.career.sponsorOffers=computeSponsorOffers(); }catch(e){ S.career.sponsorOffers=[]; }   // CS236: interested brands (fill a slot / upgrade) this off-season
   track('offseason_start',{year:S.year});
   saveCareer(offseasonResumeExtra());   // checkpoint the off-season (world advanced, decline applied) so a refresh resumes HERE, not the prior results page

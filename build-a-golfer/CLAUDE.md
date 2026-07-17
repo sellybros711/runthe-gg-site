@@ -9210,6 +9210,28 @@ allows Google Fonts, or self-host Anton.*
   world-top-5→3 / top-20→2 / top-60→1 tiers — plus the rendered off-season screen (top-10 and poor finishes),
   0 page errors. Deployed to /golf.
 
+- **CS383 — inline SVG flags + rail score-to-par + off-season budget revision (owner batch, 2 screenshots +
+  a mid-turn revision).**
+  1. **Flags no longer depend on the network (owner: "flags don't come up a lot of the time, or take 10
+     seconds").** The team-cup / Games / Olympic-leaderboard flags were `flagcdn.com` images (slow/unreliable
+     on mobile). Replaced `natFlag()` with self-contained **inline SVG flags** (`FLAG_SVG`, viewBox 0 0 3 2,
+     simplified to read at chip size) for all 32 nation codes + EU, via a few generators (vertical/horizontal
+     tricolor, bicolor, Nordic cross, St George cross, saltire, plus hand-built US stars-&-stripes, KOR
+     taegeuk, RSA/ZIM, Aus/NZ union+stars, EU star ring, etc.). INT → globe icon, unknown → the striped
+     placeholder. `.flag-ico` now clips an inline `<svg>` that fills it. Instant, offline-proof; `natFlagUrl`
+     removed. Verified all 32 render inline with 0 flagcdn references + a flag-grid screenshot.
+  2. **Season event rail shows final score to par next to the place (owner).** `seasonRailNode` completed
+     events now read e.g. "WIN (−18)" / "T7 (−6)" / "62nd (+4)" (from the result's `me.total`, colored by
+     to-par), CUT unchanged. Widened `.srev` max-width to fit.
+  3. **Off-season budget revised (owner: "3 re-spins always no matter what; changes vary by last season's
+     statistics").** Supersedes CS382's career-stage/world-rank model: **re-spins are always 3** (`OFF_RESPINS`),
+     and **changes** vary by last season's money-list finish (top-10 → 3, 11-25 → 2, 26-75 → 1, 76+ → 0;
+     default 1 with no prior season). `lastCareerSeason()` reads the circuit's own last season in the Legend
+     Circuit. `continueFranchise` sets `reSpins:3` unconditionally; the budget note reads "🎡 N changes · 3
+     re-spins · N changes earned by last season (…)". Verified: re-spins 3 in every case (incl. circuit/no-prior),
+     changes 3/2/1/0 at rank 6/18/50/90.
+  All verified in Playwright, 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
