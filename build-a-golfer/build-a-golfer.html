@@ -19793,7 +19793,7 @@ async function sbApply(session){
     // the player happens to open the records overlay, otherwise a signed-in session on a fresh browser
     // shows "unclaimed"/stale local state until something else happens to trigger the fetch.
     crCache=null; crLoad(); reconcileDailyAttempts();
-    cloudPull();   // pull + merge the full profile bundle (career save, tokens, streak, stats, achievements)
+    cloudPull().finally(()=>{ try{ maybeBackfillLook(); }catch(e){} });   // pull the profile bundle, then retro-fill the golfer onto old scores (CS395)
     maybeAdoptGuestCareer();   // guest signed in via the 10-season login wall → persist their in-memory career + continue
     maybeResumeCareerOnReload();   // a refresh happened mid-career → now that the account is loaded, drop back into it
     if(S._dailyClaimFlow && sbSignedIn()){ S.overlay=null; S.screen='dailyresult'; }   // return to the result screen
@@ -20163,6 +20163,20 @@ const PENDING_SEASONS_KEY='bag_pending_seasons';
 function lookForBoard(look){ const L=look||S.look||DEFLOOK; const o={};
   ['skin','hair','hairStyle','polo','pants','shoes','cap','hatStyle','hat','shirtPat','hatPat','eyewear','club','lefty','gender'].forEach(k=>{ if(L[k]!==undefined) o[k]=L[k]; });
   return o; }
+// CS395: one-time retro-fill on first sign-in after the look migration — stamp the player's CURRENT profile
+// golfer onto all their existing (pre-migration, null-look) season + daily rows, so old scores show their
+// real golfer instead of the generic placeholder. Server-side scoped to auth.uid() + look-is-null only, and
+// gated once per account. Fails open (no migration 54 yet → retries next sign-in).
+async function maybeBackfillLook(){
+  if(!sb || !sbUser || !sbSignedIn()) return;
+  let flagK; try{ flagK=acctKey('bag_look_backfill'); if(LS.get(flagK,0)) return; }catch(e){ return; }
+  try{
+    const {data,error}=await sb.rpc('runtour_backfill_look',{p_look:lookForBoard()});
+    if(error) return;   // migration 54 not applied yet → try again on the next sign-in
+    try{ LS.set(flagK,1); }catch(e){}
+    if((data|0)>0){ lbCache={}; lbDailyCache={}; lbWeekCache={}; if(S.overlay==='leaderboard') render(); }
+  }catch(e){}
+}
 function loadPendingSeasons(){ const a=LS.get(PENDING_SEASONS_KEY,[]); return Array.isArray(a)?a:[]; }
 function savePendingSeasons(a){ LS.set(PENDING_SEASONS_KEY, a.slice(-200)); }   // cap keeps storage bounded
 async function flushPendingSeasons(){

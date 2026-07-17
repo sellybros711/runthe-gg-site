@@ -9486,6 +9486,22 @@ allows Google Fonts, or self-host Anton.*
   Legend-vs-Rookie matchup renders the correct chip names + `.rept-*` effects and a glow on both columns, 0
   page errors. Client-only, deployed to /golf. (The leaderboard already shows the tier tag beside each name.)
 
+- **CS395 — retro-fill each player's golfer onto their OLD scores on first login after the look migration
+  (owner: "retroactively display the user's profile picture the first time they log in after this migration...
+  whatever their user profile is set to can take the place of the generic placeholder of their entered
+  scores").** Migrations 52/53 added `look` but left every pre-existing row null (= generic default golfer).
+  New `supabase/54_runtour_backfill_look.sql` (owner-run, after 52/53) adds a one-shot `runtour_backfill_look(p_look)`
+  RPC: it stamps the caller's supplied look onto all of THEIR OWN rows that still have `look IS NULL`, across
+  both `runtour_scores` (season/career) and `runtour_daily_scores` (daily/weekly). SECURITY DEFINER but hard-scoped
+  to `auth.uid()` + null-look-only (can't touch other users' rows or overwrite a look already saved by a
+  post-migration post), returns the count, idempotent (2nd call fills 0). Client: `maybeBackfillLook()` (called
+  from `sbApply` after `cloudPull` so it uses the freshest synced profile look) calls the RPC once per account
+  (gated by an account-scoped `bag_look_backfill` flag), then clears the board caches so the golfers appear;
+  fails open (RPC absent → retries next sign-in, flag only set on success). Validated on local Postgres: 54
+  applies clean + idempotent; a user's backfill fills exactly their null-look season + daily rows, PRESERVES a
+  row that already had a look, never touches another user's rows, and a repeat call is a 0-row no-op. Client
+  loads with 0 page errors. **Client deployed to /golf; ACTION: run `supabase/54_runtour_backfill_look.sql`.**
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
