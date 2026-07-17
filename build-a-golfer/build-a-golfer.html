@@ -4552,8 +4552,10 @@ function accBuy(id){ const it=accById(id); if(!it) return {ok:false,msg:'Unknown
 // ---- boosts: summed over equipped gear, clamped per-skill + total (SOLO ONLY via buildPlayer) ----
 function accBoost(){ if(!SHOP_ENABLED) return {};   // shelved: equipped gear gives no boost while the economy is disabled
   const out={}; let total=0; ACC_SLOTS.forEach(sl=>{ const id=accEquipped(sl.k); const it=id&&accById(id);
-    const b=it&&accItemBoost(it); if(b) for(const k in b){ out[k]=(out[k]||0)+b[k]; } });
-  for(const k in out) out[k]=Math.min(ACC_SKILL_CAP, out[k]);
+    const b=it&&accItemBoost(it); if(b) for(const k in b){ out[k]=(out[k]||0)+b[k]; } });   // legacy/milestone gear (look.acc)
+  const cb=cosmeticBoost(); for(const k in cb) out[k]=(out[k]||0)+cb[k];                     // worn cosmetics (hats/eyewear/patterns/special shirts)
+  const bb=(typeof bagBoost==='function')?bagBoost():{}; for(const k in bb) out[k]=(out[k]||0)+bb[k];   // golf bag club upgrades
+  for(const k in out) out[k]=Math.max(-ACC_SKILL_CAP, Math.min(ACC_SKILL_CAP, out[k]));
   // enforce the total cap by trimming largest-first if needed
   total=Object.values(out).reduce((a,b)=>a+b,0);
   while(total>ACC_TOTAL_CAP){ let mk=null; for(const k in out){ if(out[k]>0 && (mk===null||out[k]>out[mk])) mk=k; } if(mk===null) break; out[mk]--; total--; }
@@ -4594,6 +4596,25 @@ function cosBuy(cat,id){
   track('shop_buy_cos',{cat,id,price}); return {ok:true};
 }
 // the selectable items in a cosmetic category (id, display name, swatch color / pattern id)
+// Pro Shop relaunch: the VISUAL cosmetics (headwear, eyewear, patterns, special/unlockable shirts) now carry
+// stat boosts, so an item you can see on your golfer in the TourTracer is also the item that boosts you. Keyed
+// by cosKey(cat,id). Many carry a downside too (strategy, not stacking). Colors w/o an entry are pure cosmetic.
+const COS_BOOST={
+  'hw:visor':{clu:2}, 'hw:bucket':{clu:3,dist:-1}, 'hw:flat':{app:2},
+  'ew:shades':{clu:3,app:-1},
+  'sp:pinstripe':{app:2}, 'sp:stripe':{dist:2,acc:-1}, 'sp:gingham':{scr:2}, 'sp:polka':{clu:2,app:-1},
+  'sp:houndstooth':{app:3,dist:-1}, 'sp:tartan':{acc:2,put:1}, 'sp:argyle':{app:2,acc:2,dist:-2}, 'sp:colorblock':{dist:2,clu:1},
+  'sh:red':{clu:4,dist:-1}, 'sh:mastersgrn':{app:3,clu:2}, 'sh:orange':{app:2,scr:2}, 'sh:pink':{clu:3,acc:1},
+  'sh:hogangrey':{acc:3,app:2,dist:-1}, 'sh:bronze':{app:2}, 'sh:linkssky':{acc:2,clu:1}
+};
+function cosBoost(cat,id){ return COS_BOOST[cosKey(cat,id)]||null; }
+// sum the boosts from the cosmetics you currently WEAR (and own). Fed into accBoost() (Career only).
+function cosmeticBoost(){ const o={}; const L=S.look||{};
+  const add=(cat,id)=>{ if(!id||id==='none') return; if(!cosOwned(cat,id)) return; const b=cosBoost(cat,id); if(b) for(const k in b) o[k]=(o[k]||0)+b[k]; };
+  if(L.cap) add('hw', L.hatStyle||'cap');   // headwear boost only counts while a hat is actually worn
+  add('ew', L.eyewear); add('pat', L.shirtPat); add('shirt', L.polo);
+  return o;
+}
 function cosmeticItems(cat){
   if(cat==='shirt'||cat==='hat') return allShirts().map(o=>({id:o.id,name:o.name||cosTitle(o.id),col:o.m}));
   if(cat==='pat')   return [{id:'none',name:'None',pat:'none'}].concat(PXPAT.map(p=>({id:p.id,name:p.name,pat:p.id,hist:p.hist})));
@@ -7465,16 +7486,16 @@ function accSelectRow(slot){
 // CS344: live summary of the total stat boost your equipped accessories give (the CLAMPED effective boost
 // that buildPlayer bakes into your career/daily golfer), so you know what's boosted before you draft.
 function accBoostSummaryNode(){
-  const b=accBoost(); const order=CATS.map(c=>c.k).filter(k=>b[k]>0);
+  const b=accBoost(); const order=CATS.map(c=>c.k).filter(k=>b[k]);
   const node=$(`<div class="accboost"></div>`);
   if(!order.length){
-    node.appendChild($(`<div class="small muted">No stat boost equipped, pick accessories below to boost your golfer.</div>`));
+    node.appendChild($(`<div class="small muted">No stat boost equipped yet, gear up to boost your golfer.</div>`));
     return node;
   }
   const total=order.reduce((a,k)=>a+b[k],0);
-  node.appendChild($(`<div class="small" style="margin-bottom:6px"><b style="color:var(--gold)">Accessory boost</b> · <b style="color:#41dea6">+${total}</b> total, applied to your career &amp; daily golfer</div>`));
+  node.appendChild($(`<div class="small" style="margin-bottom:6px"><b style="color:var(--gold)">Equipment boost</b> · <b style="color:${total>=0?'#41dea6':'#e2554e'}">${total>=0?'+':''}${total}</b> total, applied in Career (Daily &amp; ranked play stay neutral)</div>`));
   const chips=$(`<div class="boostchips"></div>`);
-  order.forEach(k=>chips.appendChild($(`<span class="boostchip">+${b[k]} ${esc(CATS.find(c=>c.k===k).short)}</span>`)));
+  order.forEach(k=>{ const v=b[k]; chips.appendChild($(`<span class="boostchip" style="${v<0?'color:#e2554e;border-color:rgba(226,85,78,.4)':''}">${v>=0?'+':''}${v} ${esc(CATS.find(c=>c.k===k).short)}</span>`)); });
   node.appendChild(chips); return node;
 }
 // CS345: accessories are fixed-color art (unlike the recolorable shirt/trousers/shoes/basic-cap), so make
@@ -16447,7 +16468,7 @@ function overlayPassport(screen){
   ov.querySelectorAll('.x,.red').forEach(el=>el.onclick=()=>{S.overlay=null;render();});
   screen.appendChild(ov);
 }
-function shopBoostTxt(boost){ return Object.keys(boost).map(k=>'+'+boost[k]+' '+(RSHORT[k]||k)).join(' · '); }
+function shopBoostTxt(boost){ if(!boost) return ''; return Object.keys(boost).map(k=>{ const v=boost[k]; return `<span style="color:${v>=0?'#35d6a0':'#e2554e'}">${v>=0?'+':''}${v} ${RSHORT[k]||k}</span>`; }).join(' · '); }
 function shopCard(it){ const r=ACC_RARITY[it.rarity]||ACC_RARITY.common, owned=accOwned(it.id), eq=accEquipped(it.slot)===it.id;
   const price=accPrice(it), afford=coinBalance()>=price, sl=ACC_SLOT_BY[it.slot]||{icon:'gear'};
   let action;
@@ -16579,7 +16600,8 @@ function cosTileHTML(cat,o){
         ? `<span class="sthumb color" style="background:${patSwatchBg(o.id)}"></span>`
         : `<span class="sthumb color" style="background:${o.col}"></span>`);
   const state = equipped?'eq':(owned?'own':'lock');
-  return shopTile({thumb,name:o.name,state,price,afford:coinBalance()>=price,
+  const bt=cosBoost(cat,o.id);
+  return shopTile({thumb,name:o.name,state,price,afford:coinBalance()>=price,sub:bt?shopBoostTxt(bt):undefined,
     data:`data-tile data-kind="cos" data-cat="${cat}" data-id="${esc(o.id)}"`});
 }
 function accTileHTML(it){
@@ -16648,6 +16670,7 @@ function overlayShop(screen){
     ${cats?`<div class="catrow">${cats.map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-cat="${c[0]}">${esc(c[1])}</button>`).join('')}</div>`:''}
   </div>`);
   ov.appendChild(sticky);
+  try{ ov.appendChild(accBoostSummaryNode()); }catch(e){}   // live "equipment boost" summary from your worn gear
   const grid=$(`<div class="sgrid"></div>`); const tiles=[];
   if(sec==='apparel'||sec==='accessories'){ cosmeticItems(cat).forEach(o=>tiles.push(cosTileHTML(cat,o))); }
   else {  // My Items: everything you've unlocked (colors, patterns, headwear, eyewear) beyond the free basics
