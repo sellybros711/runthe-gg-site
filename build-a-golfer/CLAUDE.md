@@ -10009,7 +10009,39 @@ allows Google Fonts, or self-host Anton.*
   - Verified in Playwright: the card renders "Today #2 of 9 · This week #3 of 58 · All time #7 of 1,240"
     above Tournaments Won with a working Leaderboard button, correct ET timestamps, 0 page errors;
     screenshot confirms placement. **ACTION: run `supabase/57_runtour_season_rank_scoped.sql`** (until
-    then the card shows only the All-time line). Deployed client to /golf.
+    then the card shows only the All-time line). Deployed client to /golf. *(Owner ran migration 57.)*
+
+- **CS414 — Legendary Drop 1, step 4: VINTAGE EQUIPMENT + FAVORITE ACCESSORIES (clubs · balls · cleats).**
+  Seven new cosmetics that hang off the pixel golfer's held-equipment layer, built with three Python sprite
+  generators (`vintage-clubs.py` / `vintage-balls.py` / `vintage-cleats.py`) so every overlay aligns to the
+  body silhouette and carries its OWN fixed palette (never borrows body colors).
+  - **Clubs (4):** the favorite-club system (`look.club` / `PXG_CLUBS`) became a real purchasable cosmetic
+    (`club` COS_CAT). The 5 stock clubs (driver/wood/iron/wedge/putter) stay FREE; **Persimmon Driver** +
+    **Blade Putter** are epic (16k→40k), **Excalibur Driver** (a sword) + **Magic Wand Putter** (star tip)
+    are legendary (30k→90k). `paintClub` is now palette-aware (`PXG_CLUB_PAL`); the club still renders in the
+    correct hand and mirrors for lefties, everywhere the standing golfer shows. In the customizer, Club moved
+    from the free look-swatch path to buy/equip tiles (still under "Appearance" so guests keep the free
+    basics); in the Pro Shop it lives under Accessories.
+  - **Balls (2):** new `ball` COS_CAT + a small **teed-ball sprite** beside the golfer (`PXG_BALL`), painted
+    on the TRAIL side (flip = `look.lefty`, i.e. opposite the club) so it never collides. **Featherie**
+    (epic, tan leather) + **Comet Ball** (legendary, fiery with a tail). A ball also tints the HOLE-VIEW
+    in-play ball + shot tracer (`ballOf` → `hvLiveShot`), unless an aura already overrides the tracer.
+  - **Rocket Cleats (1):** new `cleats` COS_CAT + a footwear OVERLAY (`PXG_CLEATS`) that recolors both shoes
+    into red/chrome rocket boots with flame licks at the ankles — symmetric, painted inside the body
+    footprint so it clears the club and ball. Legendary (30k→90k).
+  - **Economy/pack integration** rides the existing cosmetic plumbing: all 7 flow through
+    `cosmeticPriceBase`/`cosmeticItems`/`cosOwned`/`cosEquip`/`cosIsEquipped`, the pack pool
+    (`packPool`+`packItemLook`, so a club/ball reveal renders the golfer holding it), and the shop/setup
+    Accessories tabs. Board snapshot (`lookForBoard`) now also carries club/top/leg/fx/ball/cleats so other
+    players see the full kit on leaderboards. Cloud-synced automatically (all are `bag_look` fields).
+  - Verified in Playwright: all 7 resolve the correct rarity/price (4 epic / … — persimmon/blade/featherie
+    epic; excalibur/wand/comet/rocket legendary), appear in the pack pool at that rarity, equip round-trips
+    work, and render distinctly on the golfer with correct handedness + no cross-item collision (a
+    fully-loaded legendary golfer layers crown + gold aura + excalibur + comet ball + rocket cleats cleanly);
+    0 page errors. Deployed to /golf. **Step 4 ✓** of the Legendary Drop 1 order (1 effect layer ✓ · 2 fixed
+    patterns ✓ · 3 heritage apparel ✓ · **4 vintage equipment + accessories ✓** · 5 trophy charms +
+    Crown/Shades/Prism · 6 Golf Bag slot). Tunable: the sprite maps (regen via the three `.py` generators),
+    `PXG_CLUB_PAL`/`PXG_BALL_PAL`/`PXG_CLEATS_PAL`, prices, the ball hole-view tracer colors.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
