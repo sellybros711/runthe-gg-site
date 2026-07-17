@@ -2182,8 +2182,8 @@ const ACH=[].concat(
    {id:'wc_25',cat:'Progression',name:'Challenge Seeker', desc:'Complete 25 Weekly Challenges.', goal:25, pts:75, get:m=>m.weeklyDone},
    {id:'wc_75',cat:'Progression',name:'Challenge Conqueror',desc:'Complete 75 Weekly Challenges.',goal:75,pts:150,get:m=>m.weeklyDone}],
   // ---- Reputation & Sponsors ----
-  [{id:'rep_fan60', cat:'Reputation & Sponsors',name:'Fan Favorite',      desc:'Become a popular player (60+ Fans).',            goal:60,pts:30, get:m=>m.maxFans},
-   {id:'rep_fan78', cat:'Reputation & Sponsors',name:'Superstar Following', desc:'Reach superstar popularity (78+ Fans).',        goal:78,pts:75, get:m=>m.maxFans},
+  [{id:'rep_fan60', cat:'Reputation & Sponsors',name:'Fan Favorite',      desc:'Become a popular player (60+ Popularity).',      goal:60,pts:30, get:m=>m.maxFans},
+   {id:'rep_fan78', cat:'Reputation & Sponsors',name:'Superstar Popularity', desc:'Reach superstar popularity (78+ Popularity).', goal:78,pts:75, get:m=>m.maxFans},
    {id:'rep_res60', cat:'Reputation & Sponsors',name:'Respected',           desc:'Earn the tour’s respect (60+ Respect).',   goal:60,pts:30, get:m=>m.maxRespect},
    {id:'rep_res78', cat:'Reputation & Sponsors',name:'Revered',             desc:'Become revered on tour (78+ Respect).',         goal:78,pts:75, get:m=>m.maxRespect},
    {id:'rep_both',  cat:'Reputation & Sponsors',name:'The Complete Superstar',desc:'Be both loved by fans AND respected by peers.',goal:1,pts:100,get:m=>m.repComplete},
@@ -10228,11 +10228,13 @@ function careerStory(){ const c=(S.career=S.career||{}); if(!c.story) c.story={t
 /* ---- Momentum: CONFIDENCE (0-100, fluctuates with results + press choices; a small ±eo edge) and
    FOLLOWERS (career popularity that grows with wins/moments/soundbites). CS226. Career play only. ---- */
 const CONF_START=50, FOLLOWERS_START=2500, CONF_EO_MAX=0.7;
-// CS397: NO ceiling on followers (owner: "there should be no ceiling of any stat"). Growth is still
-// damped as the following grows (diminishing returns via FOLLOWERS_SOFT) so it doesn't explode
-// exponentially, but there is no hard cap - a dominant, popular career keeps climbing without bound,
-// and everything in the career (wins, finishes, press/decision beats) already feeds it via gainFollowers.
-const FOLLOWERS_SOFT=3.5e6;
+// CS397/CS398: NO ceiling on FANS (owner: "no ceiling of any stat... I want people to go for the most
+// possible"). Growth is damped as the fan base grows (diminishing returns via FOLLOWERS_SOFT) so it
+// doesn't explode exponentially, but there's no hard cap - a dominant career keeps climbing without
+// bound. SOFT is generous so % growth stays punchy into the tens of millions, so a superstar can chase
+// hundreds of millions. WINNING MAJORS and on/off-course DECISIONS are the biggest fan drivers (see
+// resultMomentum / momentDecisionStakes / the press-conference + dilemma handlers).
+const FOLLOWERS_SOFT=8e6;
 function confClamp(v){ return Math.max(0, Math.min(100, v)); }
 function seasonConf(){ return (S.season && S.season.confidence!=null) ? S.season.confidence : CONF_START; }
 function adjConf(d){ if(!S.season) return; S.season.confidence=confClamp((S.season.confidence!=null?S.season.confidence:CONF_START)+d); }
@@ -10254,13 +10256,18 @@ function fmtFollowers(n){ n=Math.round(n||0);
 function resultMomentum(pos, evt){
   const major=!!evt.major, big=!!evt.big||!!evt.playoff;
   let dc=0, fpct=0, fflat=0;
-  if(pos===1){ dc=major?16:big?12:10; fpct=major?0.16:big?0.10:0.07; fflat=1600; }
+  if(pos===1){ dc=major?16:big?12:10; fpct=0.05; fflat=1200; }
   else if(typeof pos==='number'){
-    if(pos<=5){ dc=major?7:5; fpct=major?0.05:0.035; fflat=700; }
-    else if(pos<=10){ dc=3; fpct=0.02; fflat=380; }
-    else if(pos<=25){ dc=0; fpct=0.006; fflat=140; }
-    else { dc=-2; fpct=0.002; fflat=40; }
+    if(pos<=5){ dc=major?7:5; fpct=0.025; fflat=520; }
+    else if(pos<=10){ dc=3; fpct=0.013; fflat=280; }
+    else if(pos<=25){ dc=0; fpct=0.005; fflat=90; }
+    else { dc=-2; fpct=0.0015; fflat=25; }
   } else { dc=-6; fpct=-0.004; fflat=0; }   // missed the cut
+  // CS398: winning MAJORS is the single biggest on-course fan driver - a major win multiplies the fan gain
+  // ~5x, a strong major finish still gets a big boost, a big/signature event a smaller bump, and regular
+  // events are the modest grind. So the realistic way to chase the most fans is to win majors.
+  const fanMult = (pos===1&&major)?5 : (pos<=5&&major)?3.2 : major?2.2 : big?1.35 : 1.0;
+  fpct*=fanMult; fflat=Math.round(fflat*fanMult);
   // CS280: RESPECT gives a composure floor - respected, well-liked pros settle at a higher confidence
   // baseline (the mean-reversion target rises with respect, ~36 disliked .. ~64 revered).
   dc += (repConfBaseline()-seasonConf())*0.05;
@@ -10281,15 +10288,15 @@ function momentDecisionStakes(holes, evt){
     decisions++;
     const w = (h.n>=16?1.6:1.0);             // the closing stretch matters most
     if(h.attack===true){                     // aggressive
-      if(h.toPar<0){ dc+=2.2*w; fpct+=0.018*w; fflat+=240*w; boldWins++; }   // the gamble pays off
-      else if(h.toPar===0){ dc+=0.7*w; fpct+=0.004*w; fflat+=60*w; }         // held your nerve
-      else { dc-=2.4*w; fflat+=40*w; boldFails++; }                          // backfired (fans still respect the go)
+      if(h.toPar<0){ dc+=2.2*w; fpct+=0.03*w; fflat+=450*w; boldWins++; }    // CS398: clutch aggressive golf is a top fan driver
+      else if(h.toPar===0){ dc+=0.7*w; fpct+=0.006*w; fflat+=90*w; }         // held your nerve
+      else { dc-=2.4*w; fflat+=60*w; boldFails++; }                          // backfired (fans still respect the go)
     } else {                                 // safe / smart
       if(h.toPar<=0){ dc+=0.5*w; }           // executed the plan
       else { dc-=0.8*w; }                    // the safe play still leaked a shot
     }
   });
-  const mult = major?1.35:big?1.15:1.0;
+  const mult = major?1.5:big?1.2:1.0;
   dc*=mult; fpct*=mult; fflat=Math.round(fflat*mult);
   dc=Math.max(-10, Math.min(10, dc));
   return {dc, fpct, fflat, boldWins, boldFails, decisions};
@@ -10337,8 +10344,8 @@ function followersChipHTML(delta){ const s=careerStory();
   // CS279: the season delta can now go NEGATIVE (a press-conference backfire loses followers), so show ▼ in red
   const sub = (delta!=null && delta>0) ? `<div class="small" style="color:#35d6a0;font-weight:800;letter-spacing:0">▲ +${fmtFollowers(delta)} this season</div>`
             : (delta!=null && delta<0) ? `<div class="small" style="color:#E14A33;font-weight:800;letter-spacing:0">▼ ${fmtFollowers(-delta)} this season</div>`
-            : '<div class="small" style="color:#9fb3a8;letter-spacing:0">career following</div>';
-  return `<div class="statpill"><div class="lab">Followers</div>
+            : '<div class="small" style="color:#9fb3a8;letter-spacing:0">career fans</div>';
+  return `<div class="statpill"><div class="lab">Fans</div>
     <div class="v gold" style="font-size:19px;line-height:1">${fmtFollowers(s.followers)}</div>${sub}</div>`; }
 const STORY_PERSONA={confident:'The Confident One', brash:'The Showman', showman:'The Showman', clutch:'Mr. Clutch',
   humble:'The Humble Champion', fanFav:'Fan Favorite', loyal:'The Loyal Pro', maverick:'The Maverick', gritty:'The Grinder'};
@@ -10376,7 +10383,7 @@ function repMarketMult(){ return 1 + (repFans()-50)/50*0.18; }
 function repConfBaseline(){ return 50 + (repRespect()-50)*0.28; }   // reversion target: ~36 (low) .. ~64 (high)
 const REP_PERSONAS={
   superstar:{name:'The Complete Superstar', d:'Adored by the fans and respected by every pro.'},
-  villain:{name:'The Pantomime Villain', d:'The star the tour loves to hate, huge following, few friends inside the ropes.'},
+  villain:{name:'The Pantomime Villain', d:'The star the tour loves to hate, a huge fan base, few friends inside the ropes.'},
   showman:{name:'The Fan Favorite', d:'The crowds can’t get enough of you.'},
   gentleman:{name:'The Gentleman of the Tour', d:'A players’ player, universally respected.'},
   pro:{name:'The Quiet Professional', d:'Low-key, all business, respected in the locker room.'},
@@ -10399,7 +10406,7 @@ function repMeterHTML(opts){ opts=opts||{}; const f=repFans(), r=repRespect(), p
     <div class="cmeter"><span style="width:${Math.max(4,val)}%;background:${col}"></span></div>
     <div class="small" style="color:${col};font-weight:800;letter-spacing:0">${sub}</div></div>`;
   return `<div style="display:flex;gap:12px;align-items:stretch">
-    <div style="flex:1">${bar(f,'#ff9d3a','Fan Support',repFansLabel(f)+' · '+fmtFollowers(careerStory().followers)+' following')}</div>
+    <div style="flex:1">${bar(f,'#ff9d3a','Popularity',repFansLabel(f)+' · '+fmtFollowers(careerStory().followers)+' fans')}</div>
     <div style="flex:1">${bar(r,'#5fd0e0','Respect',repRespLabel(r))}</div>
   </div>${opts.persona&&p?`<div class="small" style="text-align:center;margin-top:8px;color:#ffd45e;font-weight:800">${esc(p.name)}</div>`:''}`;
 }
@@ -10672,7 +10679,7 @@ function applyDilemmaOutcome(o, ctx){ const eff=[];
   if(o.skill){ const ev=o.ev||3; for(const k in o.skill){ addFx({k:'skill',skill:k,amt:o.skill[k],ev,label:o.label||CAT_LABEL[k]}); } eff.push({t:'skill',skill:o.skill,ev,label:o.label}); }
   if(o.conf){ adjConf(o.conf); eff.push({t:'conf',v:o.conf}); }
   if(o.fans||o.respect){ adjRep(o.fans||0,o.respect||0); eff.push({t:'rep',f:o.fans||0,r:o.respect||0}); }
-  if(o.fol){ gainFollowers(o.fol, o.fol<0?0:400); eff.push({t:'fol',v:o.fol}); }
+  if(o.fol){ gainFollowers(o.fol, o.fol<0?0:1500); eff.push({t:'fol',v:o.fol}); }   // CS398: off-course decisions move fans a lot
   if(o.money){ if(S.season) S.season.sideMoney=(S.season.sideMoney||0)+o.money; eff.push({t:'money',v:o.money}); }
   if(o.head){ const s=careerStory(); s.feed.unshift({year:S.year||1,evt:'Career',text:typeof o.head==='function'?o.head(ctx):o.head}); if(s.feed.length>60) s.feed.length=60; }   // CS334: pass ctx so named heads work (was a latent crash)
   if(o.arc){ seedArc(o.arc.fid, o.arc.in, typeof o.arcData==='function'?o.arcData(ctx):o.arcData); }   // CS326: this decision SEEDS a follow-up story beat later (CS334: dynamic data, e.g. the mentee's name)
@@ -11218,9 +11225,9 @@ function showStoryline(sb){
         if(ch.conf) storyGainConf(ch.conf);
         // followers: an explicit ch.fol (a pct, may be NEGATIVE for a guaranteed trade-off) overrides the default growth
         let folPct, folFlat;
-        if(ch.fol!=null){ folPct=ch.fol; folFlat=ch.fol<0?0:200; }
+        if(ch.fol!=null){ folPct=ch.fol; folFlat=ch.fol<0?0:1000; }   // CS398: press/interview decisions are a top fan driver
         else { const showman=(ch.tr==='brash'||ch.tr==='showman'||ch.tr==='fanFav');
-          folPct=(ch.fan?(showman?0.11:0.075):0.015)+(showman?0.02:0); folFlat=ch.fan?900:250; }
+          folPct=(ch.fan?(showman?0.14:0.09):0.025)+(showman?0.03:0); folFlat=ch.fan?1800:600; }
         gainFollowers(folPct, folFlat);
         if(ch.endo) story.endorsements=(story.endorsements||0)+1;
         if(ch.fan) story.fan=(story.fan||0)+1;
@@ -11259,9 +11266,9 @@ function showStoryline(sb){
           </div></div>`;
       };
       const reachRow = dFol!==0 ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
-        <span style="color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;font:800 9px/1 var(--body)">Reach</span>
+        <span style="color:#8ea9bb;letter-spacing:.05em;text-transform:uppercase;font:800 9px/1 var(--body)">Fans</span>
         <span style="color:${dFol>0?'#35d6a0':'#c98'};font-weight:800">${dFol>0?'▲':'▼'} ${fmtFollowers(Math.abs(dFol))}</span>
-        <span class="small" style="color:#9fb3a8">now ${fmtFollowers(story.followers)} following</span></div>` : '';
+        <span class="small" style="color:#9fb3a8">now ${fmtFollowers(story.followers)} fans</span></div>` : '';
       const badge = (!backfired && personaShift) ? `<div style="margin-top:9px;color:#ffd45e;font-weight:800">★ Now: ${esc(personaShift.name)}</div>`
         : (!backfired && personaNew) ? `<div style="margin-top:9px;color:#ffd45e;font-weight:800">★ You’re becoming ${esc(personaNew)}</div>` : '';
       const endoBadge = (!backfired && ch.endo) ? `<div style="margin-top:6px;color:#ffd45e;font-weight:800">✍ Endorsement signed</div>` : '';
@@ -11270,7 +11277,7 @@ function showStoryline(sb){
         <div class="small" style="color:${backfired?'#ff8f7e':'#7fa8b8'};letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:5px">${backfired?'It backfired':'The reaction'}</div>
         <div style="color:#eef4f7;font-size:14.5px;line-height:1.4">${esc(reaction)}</div>
         <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-          ${statTile('Fan Support',dFans,fansNow,'#ff9d3a')}
+          ${statTile('Popularity',dFans,fansNow,'#ff9d3a')}
           ${statTile('Respect',dResp,respNow,'#5fd0e0')}
           ${statTile('Confidence',dConf,confNow,'#35d6a0')}
         </div>
@@ -11333,10 +11340,10 @@ function showDilemma(sb){
       if(o.skill){ const inj=Object.values(o.skill).some(v=>v<0); chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid ${inj?'rgba(225,74,51,.5)':'rgba(53,214,160,.5)'};background:${inj?'rgba(225,74,51,.12)':'rgba(53,214,160,.12)'};color:${inj?'#ff8f7e':'#35d6a0'}">${inj?'🩹':'▲'} ${esc(fxSkillLine(o))} · ${o.ev||3} events</span>`); }
       const stat=(lab,v,col)=>`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${v>=0?col:'#E14A33'}">${v>=0?'▲':'▼'} ${lab} ${v>=0?'+':''}${v}</span>`;
       if(o.conf) chips.push(stat('Confidence',o.conf,'#35d6a0'));
-      if(o.fans) chips.push(stat('Fan Support',o.fans,'#ff9d3a'));
+      if(o.fans) chips.push(stat('Popularity',o.fans,'#ff9d3a'));
       if(o.respect) chips.push(stat('Respect',o.respect,'#5fd0e0'));
       if(o.money) chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${o.money>=0?'#ffd45e':'#E14A33'}">${o.money>=0?'+':'−'}${fmtShort(Math.abs(o.money)).replace('$','$')}</span>`);
-      if(dFol) chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${dFol>0?'#35d6a0':'#c98'}">${dFol>0?'▲':'▼'} Reach ${fmtFollowers(Math.abs(dFol))}</span>`);
+      if(dFol) chips.push(`<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font:800 11px var(--body);border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:${dFol>0?'#35d6a0':'#c98'}">${dFol>0?'▲':'▼'} Fans ${fmtFollowers(Math.abs(dFol))}</span>`);
       replyBox.innerHTML='';
       replyBox.appendChild($(`<div class="scout" style="border-color:${toneCol};text-align:left;margin:2px 0 10px;padding:13px 14px">
         <div class="small" style="color:${toneCol};letter-spacing:.14em;text-transform:uppercase;font-weight:800;margin-bottom:5px">${toneLab}</div>
@@ -11383,7 +11390,7 @@ function storyFeedHTML(){
       <div style="margin-top:10px">${confMeterHTML(conf)}</div>
     </div>
     ${p?`<div class="small" style="color:#9fb3a8;margin:2px 0 4px">${esc(p.d)}</div>`:''}
-    <div class="small" style="color:#7fa8b8;margin-bottom:2px">Fans grow your following &amp; sponsor money · Respect keeps you composed &amp; sponsors loyal.</div>
+    <div class="small" style="color:#7fa8b8;margin-bottom:2px">Popularity grows your fan base &amp; sponsor money · Respect keeps you composed &amp; sponsors loyal.</div>
     ${rows||'<div class="small" style="color:#9fb3a8;margin-top:4px">Your story is just beginning.</div>'}
   </div>`;
 }
@@ -11416,7 +11423,7 @@ const BRAND_TRAITS={
   steady:     {label:'Steady',     desc:'A dependable, balanced partner.'},
   demanding:  {label:'Demanding',  desc:'Top dollar, but they expect results, bigger money, tougher goals.', reward:1.12, diff:1.16},
   loyal:      {label:'Loyalty-first', desc:'They reward loyalty richly, your relationship bonus grows faster.', relStep:0.10},
-  marketing:  {label:'Image-driven', desc:'A deal built on your brand, your following moves the money more.', folBoost:1.7},
+  marketing:  {label:'Image-driven', desc:'A deal built on your brand, your fan base moves the money more.', folBoost:1.7},
   patient:    {label:'Patient',    desc:'They stand by you through lean years, far slower to walk away.', strikes:3},
   performance:{label:'Big-stage',  desc:'They live for the marquee moments, win & major bonuses are boosted.', stretch:1.4}
 };
@@ -11962,7 +11969,7 @@ function sponsorDecisionNode(){
     <div class="small muted" style="margin:6px 0 10px">Wear up to two brands, one on the cap and one on the shirt. Each is its own deal.</div>
     <div style="display:flex;gap:9px;flex-wrap:wrap">${slotStatusCardHTML('hat')}${slotStatusCardHTML('shirt')}</div>`;
   if(!offers.length){
-    wrap.appendChild($(`<div class="small muted" style="margin-top:10px">Keep delivering to deepen each relationship and grow every bonus. A bigger brand may come calling as your following grows.${hist.length?' · Past: '+esc(hist.slice(-4).join(', ')):''}</div>`));
+    wrap.appendChild($(`<div class="small muted" style="margin-top:10px">Keep delivering to deepen each relationship and grow every bonus. A bigger brand may come calling as your fan base grows.${hist.length?' · Past: '+esc(hist.slice(-4).join(', ')):''}</div>`));
     return wrap;
   }
   wrap.appendChild($(`<div style="font:800 10px/1 var(--body);letter-spacing:.2em;color:#ffd45e;text-transform:uppercase;margin:15px 0 8px">${offers.length>1?'Offers on the table':'An offer on the table'}</div>`));
@@ -12012,7 +12019,7 @@ function sponsorStripNode(){
       <span style="min-width:0;flex:1;display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:12.5px">${ic('cart')}<span style="color:#ffd45e;font-weight:800;letter-spacing:.1em;text-transform:uppercase;font-size:10px">Sponsors</span> ${chip('hat')}<span style="opacity:.3">·</span>${chip('shirt')}</span></summary>
     <div style="padding:2px 12px 12px"><div class="small muted" style="margin:0 0 9px">Wear up to two brands, one on the cap, one on the shirt. Each is its own deal.</div>
       <div style="display:flex;gap:9px;flex-wrap:wrap">${slotStatusCardHTML('hat')}${slotStatusCardHTML('shirt')}</div>
-      <div class="small muted" style="margin-top:9px">Keep delivering to grow every bonus. A bigger brand may come calling as your following grows.</div></div></details>`);
+      <div class="small muted" style="margin-top:9px">Keep delivering to grow every bonus. A bigger brand may come calling as your fan base grows.</div></div></details>`);
   det.addEventListener('toggle', ()=>{ S.sponsorsOffOpen=det.open; });
   return det;
 }
@@ -12040,7 +12047,7 @@ function contractReportCardHTML(x){
       <div style="text-align:right"><div class="small" style="color:#ffd45e;font-weight:800">${met}/${contract.goals.length} met · +${fmt(bonus)}</div></div></div>
     ${rows}
     ${(sp&&!dropped)?`<div style="margin-top:8px">${sponsorRelMeterHTML(sp)}</div>`:''}
-    ${ambNew?`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.4)"><span class="small" style="color:#ffd45e;font-weight:800">★ Brand Ambassador</span><span class="small" style="display:block;color:#e6d6a8;margin-top:2px">Max loyalty with ${esc(ambNew.brand)}, they’ve made you the face of the brand${ambNew.fol>0?` · ▲ ${fmtFollowers(ambNew.fol)} followers`:''}.</span></div>`:''}
+    ${ambNew?`<div style="margin-top:8px;padding:8px 10px;border-radius:8px;background:rgba(241,208,74,.12);border:1px solid rgba(241,208,74,.4)"><span class="small" style="color:#ffd45e;font-weight:800">★ Brand Ambassador</span><span class="small" style="display:block;color:#e6d6a8;margin-top:2px">Max loyalty with ${esc(ambNew.brand)}, they’ve made you the face of the brand${ambNew.fol>0?` · ▲ ${fmtFollowers(ambNew.fol)} fans`:''}.</span></div>`:''}
     <div class="small" style="color:#9fb3a8;margin-top:8px">${outlook}</div></div>`;
 }
 // season-summary: both slots' report cards + a combined signing-bonus line
@@ -12121,7 +12128,7 @@ function finishMomentRound(){
         const rvObj=getRival();
         if(rvObj){ if(won){ rvObj.grudgeWins=(rvObj.grudgeWins||0)+1; try{ recordAchEvent({inc:{momentGrudgeWins:1}}); }catch(e){} } else if(!tie){ rvObj.grudgeLosses=(rvObj.grudgeLosses||0)+1; } }
         adjConf(won?3.5:tie?0:-2.5);
-        gr.fol = won ? gainFollowers(0.035, 1600) : tie ? gainFollowers(0.006, 200) : gainFollowers(0.004, 120);
+        gr.fol = won ? gainFollowers(0.05, 2500) : tie ? gainFollowers(0.008, 300) : gainFollowers(0.004, 120);   // CS398: winning a grudge match spikes fans
         if(won){ const s=careerStory(); s.traits=s.traits||{}; s.traits.gritty=(s.traits.gritty||0)+1; }
         careerStory().feed.unshift({year:S.year||1, evt:'Rivalry', text: won?`Beat ${m.rivalName} head-to-head at ${m.evtName}`:tie?`Went toe-to-toe with ${m.rivalName} at ${m.evtName}`:`${m.rivalName} edged you at ${m.evtName}`});
         ce._grudge=gr;
@@ -12138,14 +12145,14 @@ function finishMomentRound(){
     if(gr){
       const gHead = gr.won?`You beat ${esc(gr.name)}!`:gr.tie?`Even with ${esc(gr.name)}`:`${esc(gr.name)} got you`;
       const gCol = gr.won?'#35d6a0':gr.tie?'#e0c060':'#E14A33';
-      toast(`<span style="color:#ff8f7e;font-weight:800">⚔ GRUDGE MATCH</span><br><b style="color:${gCol}">${gHead}</b> · ${gr.me>=0?'+':''}${gr.me} to ${gr.rv>=0?'+':''}${gr.rv}${gr.fol>0?`<br><span style="color:var(--gold);font-weight:800">▲ ${fmtFollowers(gr.fol)} followers</span>`:''}${coinSpan}`, 4600);
+      toast(`<span style="color:#ff8f7e;font-weight:800">⚔ GRUDGE MATCH</span><br><b style="color:${gCol}">${gHead}</b> · ${gr.me>=0?'+':''}${gr.me} to ${gr.rv>=0?'+':''}${gr.rv}${gr.fol>0?`<br><span style="color:var(--gold);font-weight:800">▲ ${fmtFollowers(gr.fol)} fans</span>`:''}${coinSpan}`, 4600);
     } else if(st){
       const parts=[];
       if(st.boldWins) parts.push(`${st.boldWins} bold call${st.boldWins>1?'s':''} paid off`);
       if(st.boldFails) parts.push(`${st.boldFails} backfired`);
       const cSign=st.dc>=0?'↑':'↓', cCol=st.dc>=0?'#35d6a0':'#E14A33';
       const head = st.boldWins>=2&&st.boldWins>st.boldFails ? 'Clutch Sunday!' : st.dc>=1 ? 'Sunday nerve' : st.dc<=-1 ? 'A costly gamble' : 'Steady down the stretch';
-      toast(`<b>${head}</b>${parts.length?' · '+parts.join(', '):''}<br><span style="color:${cCol};font-weight:800">Confidence ${cSign} ${st.dc>=0?'+':''}${Math.round(st.dc)}</span>${st.folGained>0?` · <span style="color:var(--gold);font-weight:800">▲ ${fmtFollowers(st.folGained)} followers</span>`:''}${st.clutchTrait?' · <span style="color:#ffd45e;font-weight:800">becoming Mr. Clutch</span>':''}${coinSpan}`, 4200);
+      toast(`<b>${head}</b>${parts.length?' · '+parts.join(', '):''}<br><span style="color:${cCol};font-weight:800">Confidence ${cSign} ${st.dc>=0?'+':''}${Math.round(st.dc)}</span>${st.folGained>0?` · <span style="color:var(--gold);font-weight:800">▲ ${fmtFollowers(st.folGained)} fans</span>`:''}${st.clutchTrait?' · <span style="color:#ffd45e;font-weight:800">becoming Mr. Clutch</span>':''}${coinSpan}`, 4200);
     } else if(coinSpan){ toast(`<b>Round complete</b>${coinSpan}`, 3200); }
   }
   // TIE FOR THE LEAD that includes YOU → play a REAL sudden-death playoff. You played the round, so you

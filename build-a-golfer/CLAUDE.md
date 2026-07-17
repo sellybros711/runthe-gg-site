@@ -9539,6 +9539,40 @@ allows Google Fonts, or self-host Anton.*
   to 2B, non-binding for realistic values), no migration. Deployed to /golf. Tunable: `FOLLOWERS_SOFT` (the
   damp softness) is the only remaining follower knob.
 
+- **CS398 — majors + decisions are the biggest fan drivers; "Followers" renamed to "Fans"; realistic,
+  no limit, chaseable (owner: "more of an impact from winning majors and the on/off field decisions you
+  make... realistic. No limit on fans. I want people to go for the most possible. We can change the
+  terminology from followers to fans").** Building on CS397's uncapped model, rebalanced WHAT grows the
+  fan base so it matches how real golf popularity is built:
+  - **Winning majors dominates on-course growth.** `resultMomentum` now applies a fan MULTIPLIER by finish:
+    a major WIN ×5, a strong major finish (top-5) ×3.2, any other major finish ×2.2, a big/signature event
+    ×1.35, and regular events ×1.0 (the modest grind). Verified at an 8M base: a major win = 5.0× a regular
+    win.
+  - **On/off-course DECISIONS are the other top driver** (often the single biggest single-event gain, like
+    a viral clutch Sunday): the Moment shot-decision stakes (`momentDecisionStakes`, aggressive-birdie
+    gains + the major multiplier ×1.5), the press-conference/interview choices (`showStoryline` fan-play
+    branch + the explicit-`ch.fol` flat bump), the career-dilemma outcomes (`applyDilemmaOutcome`, flat
+    400→1500), and grudge-match wins were all boosted. Verified: a clutch major Moment (6 aggressive
+    birdie calls) gains ~1.3M vs a major win's ~1.0M; a fan-play press decision ~680k. Regular
+    back-of-pack finishes stay tiny (~6k) so it's a real chase, not a passive drip.
+  - **No limit, gentler damp so you can chase the most.** `FOLLOWERS_SOFT` 3.5M→8M so % growth stays
+    punchy into the tens of millions (a superstar keeps compounding). Uncapped from CS397. Verified full
+    careers: a major-hunting, media-present GOAT reaches ~186M fans; a steady journeyman ~2.5M — a huge,
+    ties-free spread driven by majors + decisions.
+  - **Terminology: the raw count is now "Fans"** everywhere user-facing (was "Followers"/"following") —
+    the season stat pill ("Fans", "career fans", "▲ +N this season"), the leaderboard Fans sort (already
+    "fans"), the press-reaction reach row + chip ("Fans"), and the brand-ambassador / grudge / Moment
+    toasts ("N fans"). To avoid a collision, the separate 0-100 popularity AXIS (the 2K-style rep meter,
+    was labeled "Fan Support") is now **"Popularity"** — Popularity ↔ Respect, where Popularity drives
+    fan growth + sponsor marketability. Renamed on the two-axis meter, the press-reaction tile, the
+    dilemma outcome chip, the meter explainer, the sponsor "image-driven" trait + "bigger brand calling"
+    copy, and the two rep achievements ("Superstar Popularity", "(78+ Popularity)"). Internal identifiers
+    (`s.followers`, `gainFollowers`, `fmtFollowers`, `repFans`, `m.maxFans`) are unchanged, so saves +
+    achievement unlocks are unaffected. Verified: the rep meter shows "Popularity" + "N fans" (no "Fan
+    Support"), the season pill shows "Fans" (no "Followers"); 0 page errors. Client-only, no migration.
+    Deployed to /golf. Tunable: the `fanMult` tiers in `resultMomentum`, `FOLLOWERS_SOFT`, and the per-
+    decision weights in `momentDecisionStakes` / the press + dilemma + grudge handlers.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
