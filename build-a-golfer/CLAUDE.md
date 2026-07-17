@@ -9397,7 +9397,13 @@ allows Google Fonts, or self-host Anton.*
   (pixel-avatar chip + username, or "Sign in") which opens the Trophy Room (your profile) when signed in
   else the account overlay, and the gold coin pill (live balance, tap → Pro Shop, signed-in only). The big
   crest/wordmark + the **Reset pill are dropped from the top** — Reset now lives only in the ≡ menu (it was
-  already a row there). `.head--banner` is `position:sticky; top:0; z-20` with a translucent blurred dark
+  already a row there). (Follow-up, owner: "have RUN THE TOUR read horizontally across the banner and center
+  it" — the banner is a 3-column grid `1fr auto 1fr` with the ≡ menu at the start, the **horizontal
+  "RUN THE TOUR" wordmark dead-centered** in the middle column, and the profile+coin group at the end; on
+  phones the signed-in username is hidden (avatar-only) so the compact right group never collides with the
+  centered wordmark, while guests keep the "Sign in" label and desktop shows the full name. Verified the
+  wordmark center === banner center at 360/412/1200 with clearance on both sides.)
+  `.head--banner` is `position:sticky; top:0; z-20` with a translucent blurred dark
   bg + bottom border, so it stays pinned while scrolling ("stays there always"); overlays (z-40) still
   cover it and the bottom nav (z-25) is unaffected. The old `.crestrow`/`.pills`/`.wordmark`/`head--compact`
   CSS is now unused (left in place, harmless). Verified in Playwright (phone + desktop): the banner renders
