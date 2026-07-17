@@ -8797,12 +8797,12 @@ function hvSwingMarkup(g,p,look){
   const clsBase = kind==='full'?['sw0','sw1','sw2'] : (kind==='chip'?['ch0','ch1'] : ['pt0','pt1']);
   const cam=hvCamFor2(g,p);
   // putts play under the tight green close-up, so size the golfer to a fraction of THAT frame
-  const GH = kind==='putt' ? Math.max(10, Math.min(24, cam[3]*0.16)) : 32;   // CS364: a touch bigger so the finer detail/accessories read
+  const GH = kind==='putt' ? Math.max(10, Math.min(20, cam[3]*0.14)) : 24;   // CS371: smaller so it's in scale with the trees/course
   const GW=GH*PXS_W/PXS_H;
   // ball address point (grid rows, of PXS_H): side ~48 bottom-right, back/front ~47 bottom-center
   const ballGy = view==='side' ? 49 : 47;
   let x0=A[0]-GW*clubFrac, y0=A[1]-GH*(ballGy/PXS_H);
-  const pad=3, botPad=(kind==='putt'?6:42);   // botPad clears the floating desc/scoreboard on full-hole shots
+  const pad=3, botPad=(kind==='putt'?6:14);   // CS371: less lift so the golfer sits at the ball/tee, not floating above it
   y0=Math.max(cam[1]+pad, Math.min(y0, cam[1]+cam[3]-GH-botPad));
   x0=Math.max(cam[0]+pad, Math.min(x0, cam[0]+cam[2]-GW-pad));
   const tf=mirror?` transform="translate(${(2*x0+GW).toFixed(1)},0) scale(-1,1)"`:'';
@@ -15172,7 +15172,7 @@ const HV_BIOMES={
    backdrop:'treeline',ocean:false,bunkerScale:1,
    scatter:[['decid',0.5],['pine',0.4],['flower',0.1]],
    treeG:['#2e5c1e','#3f7a28','#5d9c34','#79b944'],treeA:['#7a4d16','#a06a1c','#c08a2a','#d9a83f'],
-   pine:['#1b4416','#265a1f','#37732a'],trunk:'#e8e2d2',flowerCols:['#ff9ecb','#ffffff','#ef6fa6']},
+   pine:['#1b4416','#265a1f','#37732a'],trunk:'#6b4a2a',flowerCols:['#ff9ecb','#ffffff','#ef6fa6']},
  // coastal: windswept Monterey cypress + pines above the sea cliffs
  coastal:{ground:'grass',base:'#5a8a34',tickD:'#4c7628',tickL:'#74a442',cut:'#7fad45',fw:'#90bd4f',fwEdge:'#517a2c',
    green:'#b4d96f',fringe:'#9fc95e',gLine:'#6a933b',sand:'#f2ecd8',sandLine:'#948d74',sandSpeck:'#bcb59d',
@@ -15180,7 +15180,7 @@ const HV_BIOMES={
    backdrop:'cliffsea',ocean:true,oceanW:[54,80],deep:'#1663b4',shallow:'#4fb6ea',cliff:'#726d62',bunkerScale:1,
    scatter:[['cypress',0.5],['pine',0.38],['flower',0.12]],
    treeG:['#274f1c','#356b24','#4c8a2e','#63a83c'],treeA:['#4f6b24','#5f7f2c','#748f36','#8aa444'],
-   pine:['#1b4416','#265a1f','#37732a'],cypress:['#22401b','#356b26'],trunk:'#d9d2be',flowerCols:['#f4b6d0','#ffffff']},
+   pine:['#1b4416','#265a1f','#37732a'],cypress:['#22401b','#356b26'],trunk:'#75512e',flowerCols:['#f4b6d0','#ffffff']},
  // desert: a Sonoran rock-and-mountain course - bare desert floor, red-rock outcrops, saguaro/ocotillo/
  // scrub, jagged mountains on the horizon; the irrigated fairway + green pop against the sand
  desert:{ground:'desert',base:'#c99457',floorD:'#b57e42',floorL:'#dcab68',gravel:'#a9743e',
@@ -15196,7 +15196,7 @@ const HV_BIOMES={
    water:'#5a8fb0',waterBank:'#7a6a44',ripple:'#c7ddec',outline:'#484f24',shad:'#5f6634',
    backdrop:'dunesea',ocean:true,oceanW:[40,58],deep:'#3f6f92',shallow:'#6fa4c2',beach:'#d8c99e',bunkerScale:0.6,
    scatter:[['dune',0.5],['gorse',0.28],['fescue',0.22]],
-   dune:['#7d8140','#8f9449','#a3a856'],gorse:['#4a5c22','#e2c34a'],trunk:'#e8e2d2',flowerCols:['#e2c34a','#c9b2d6']},
+   dune:['#7d8140','#8f9449','#a3a856'],gorse:['#4a5c22','#e2c34a'],trunk:'#6b4a2a',flowerCols:['#e2c34a','#c9b2d6']},
  // tropical: palms + broadleaf jungle, bright hibiscus, teal lagoon water, jungle-hill horizon
  tropical:{ground:'grass',base:'#3f8a24',tickD:'#347222',tickL:'#5faa38',cut:'#74c040',fw:'#84d048',fwEdge:'#489428',
    green:'#c2e878',fringe:'#a8d662',gLine:'#6ea238',sand:'#f6f1de',sandLine:'#948c70',sandSpeck:'#c2b998',
@@ -15290,7 +15290,7 @@ const HV_COURSE_TWEAK={
  'Glen Abbey':{grassShift:[-3,0.95,1.0], treeShift:[-2,0.94,1.0], stepMul:0.94, autumnP:0.28, bunkerScale:1.0,
    scatter:[['decid',0.5],['pine',0.36],['flower',0.14]], flowerCols:['#d9a83f','#ffffff','#e0567f'], water:'#3a97d8'},   // Canadian valley, cold creek, autumnal
  'Riviera Country Club':{grassShift:[-11,0.92,0.9], treeShift:[-6,0.96,0.92], stepMul:1.0, autumnP:0.06, bunkerScale:1.12,
-   scatter:[['decid',0.56],['pine',0.2],['flower',0.24]], flowerCols:['#f0c23e','#ffffff','#d6a0d0'], trunk:'#d9d2be'},   // blue-green kikuyu, eucalyptus, canyon
+   scatter:[['decid',0.56],['pine',0.2],['flower',0.24]], flowerCols:['#f0c23e','#ffffff','#d6a0d0'], trunk:'#75512e'},   // blue-green kikuyu, eucalyptus, canyon
  'Firestone South':{grassShift:[-3,0.9,1.0], treeShift:[-4,0.88,1.0], stepMul:0.8, autumnP:0.1, bunkerScale:1.0,
    scatter:[['decid',0.5],['pine',0.42],['flower',0.08]], flowerCols:['#ffffff','#d8e0c0']},                  // towering trees, tight corridors ("the Monster")
  'Baltusrol':{grassShift:[2,1.0,1.0], treeShift:[1,1.0,1.0], stepMul:1.0, autumnP:0.14, bunkerScale:1.18,
@@ -15580,8 +15580,8 @@ function pxTerrainURL(g, seedN, B, opts){
     const tvar=Math.round((vnoise(px*0.035+7,py*0.035)-0.5)*24);
     if(kind==='fescue'){ if(vnoise(px*0.03+3,py*0.03+40)<0.58)return; const fc=shade(C.roughL,-6),h=Math.round(3*os); for(let k=0;k<h;k++)put(px,py-k,k>h*0.6?shade(fc,8):fc); return; }
     if(kind==='flower'){ if(vnoise(px*0.032+80,py*0.032+15)<0.66)return; const fc=pk(flower),r=Math.max(1,Math.round(1.4*os)); edisc(px,py,r,r,fc,shade(fc,18),shade(fc,-10)); return; }
-    const baseR=(hvHash(seed,tries*13,14)<0.08?4:2)+((hvHash(seed,tries*5,8)*2.6)|0);
-    const R=Math.max(2,Math.min(Math.round(baseR*os*0.85), Math.round(GH*0.14)));
+    const baseR=(hvHash(seed,tries*13,14)<0.08?6:3)+((hvHash(seed,tries*5,8)*3)|0);
+    const R=Math.max(3,Math.min(Math.round(baseR*os*0.85), Math.round(GH*0.18)));
     cshadow(px,py,R);
     if(kind==='pine'||kind==='cypress'||kind==='saguaro'){ const cc=shade(kind==='saguaro'?pk(cact):pk(pine),tvar),hi=shade(cc,26),lo=shade(cc,-18);
       edisc(px,py-Math.round(R*0.3),Math.max(2,Math.round(R*0.72)),Math.round(R*1.18),cc,hi,lo); for(let k=0;k<Math.round(R*0.5);k++)put(px,py+R+k,trunk); return; }
@@ -15599,10 +15599,14 @@ function pxTerrainURL(g, seedN, B, opts){
     put(px,py,cc);put(px-1,py,cc);put(px+1,py,cc);put(px,py-1,hi);put(px-1,py-1,lo);put(px+1,py-1,cc);if(hvHash(seed,tries*3,17)<0.5)put(px+2,py,lo);};
   const drawTree=(px,py,tries)=>{ if(os>1) return drawTreeS(px,py,tries); const kind=pickK(hvHash(seed,tries,5)),pk=a=>a[(hvHash(seed,tries*7,6)*a.length)|0];
     const tvar=Math.round((vnoise(px*0.035+7,py*0.035)-0.5)*24);
-    if(kind==='pine'||kind==='cypress'){const cc=shade(pk(pine),tvar),hi=shade(cc,26),lo=shade(cc,-16);cshadow(px,py,3);
-      put(px,py-5,hi);put(px,py-4,cc);put(px-1,py-3,cc);put(px,py-3,hi);put(px+1,py-3,cc);
-      put(px-1,py-2,lo);put(px,py-2,cc);put(px+1,py-2,cc);put(px-2,py-1,cc);put(px-1,py-1,hi);put(px,py-1,cc);put(px+1,py-1,cc);put(px+2,py-1,lo);
-      put(px-2,py,lo);put(px-1,py,cc);put(px,py,cc);put(px+1,py,cc);put(px+2,py,lo);put(px,py+1,trunk);}
+    if(kind==='pine'||kind==='cypress'){const cc=shade(pk(pine),tvar),hi=shade(cc,26),lo=shade(cc,-16);cshadow(px,py,4);
+      put(px,py-7,hi);put(px,py-6,cc);put(px-1,py-5,cc);put(px,py-5,hi);put(px+1,py-5,cc);
+      put(px-1,py-4,cc);put(px,py-4,cc);put(px+1,py-4,cc);
+      put(px-2,py-3,lo);put(px-1,py-3,cc);put(px,py-3,hi);put(px+1,py-3,cc);put(px+2,py-3,cc);
+      put(px-2,py-2,cc);put(px-1,py-2,cc);put(px,py-2,cc);put(px+1,py-2,cc);put(px+2,py-2,lo);
+      put(px-3,py-1,lo);put(px-2,py-1,cc);put(px-1,py-1,hi);put(px,py-1,cc);put(px+1,py-1,cc);put(px+2,py-1,cc);put(px+3,py-1,lo);
+      put(px-3,py,lo);put(px-2,py,cc);put(px-1,py,cc);put(px,py,cc);put(px+1,py,cc);put(px+2,py,cc);put(px+3,py,lo);
+      put(px,py+1,trunk);put(px,py+2,trunk);}
     else if(kind==='palm'){const fr=pk(cact);cshadow(px,py,3);put(px,py-5,fr);put(px-2,py-4,fr);put(px-1,py-4,shade(fr,20));put(px+1,py-4,fr);put(px+2,py-4,shade(fr,-12));put(px-3,py-3,fr);put(px+3,py-3,fr);for(let k=0;k<4;k++)put(px,py-3+k,trunk);}
     else if(kind==='saguaro'){const cc=pk(cact),hi=shade(cc,20);cshadow(px,py,2);for(let k=0;k<6;k++)put(px,py-5+k,k<2?hi:cc);put(px-2,py-3,cc);put(px-2,py-4,cc);put(px+2,py-3,cc);put(px+2,py-4,cc);}
     else if(kind==='barrel'||kind==='scrub'||kind==='ocotillo'){const cc=pk(cact);put(px,py,cc);put(px-1,py,cc);put(px+1,py,cc);put(px,py-1,shade(cc,16));}
@@ -15611,7 +15615,7 @@ function pxTerrainURL(g, seedN, B, opts){
     else if(kind==='gorse'){put(px,py,gorse[0]);put(px+1,py,gorse[1]);put(px,py-1,gorse[1]);put(px-1,py,gorse[0]);}
     else if(kind==='fescue'){if(vnoise(px*0.03+3,py*0.03+40)<0.58)return;const fc=shade(C.roughL,-6);put(px,py,fc);put(px,py-1,fc);put(px,py-2,shade(fc,8));put(px+1,py,fc);}
     else if(kind==='flower'){if(vnoise(px*0.032+80,py*0.032+15)<0.66)return;const fc=pk(flower);put(px,py,fc);put(px+1,py,fc);put(px,py-1,fc);}
-    else{const isA=hvHash(seed,tries*11,7)<(B.autumnP||0.12);const cc=shade(isA?pk(autumn):pk(tg),tvar);const big=hvHash(seed,tries*13,14)<0.08;const r=(big?4:2)+((hvHash(seed,tries*5,8)*2.6)|0);cshadow(px,py,r);disc(px,py,r,cc,shade(cc,28),shade(cc,-22));if(big)disc(px+1,py-1,r-1,shade(cc,10),shade(cc,30),shade(cc,-16));put(px,py+r-1,trunk);}
+    else{const isA=hvHash(seed,tries*11,7)<(B.autumnP||0.12);const cc=shade(isA?pk(autumn):pk(tg),tvar);const big=hvHash(seed,tries*13,14)<0.08;const r=(big?6:3)+((hvHash(seed,tries*5,8)*3)|0);cshadow(px,py,r);disc(px,py,r,cc,shade(cc,28),shade(cc,-22));if(big)disc(px+1,py-1,r-1,shade(cc,10),shade(cc,30),shade(cc,-16));for(let k=0;k<Math.max(1,Math.round(r*0.4));k++)put(px,py+r-1+k,trunk);}
   };
   const BUFFER = Math.round(9*os);
   const step= Math.max(2, Math.round((wooded?4:5)*os));
