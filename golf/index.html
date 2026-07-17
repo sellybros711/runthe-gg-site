@@ -953,6 +953,8 @@ window.GA_ID='G-L29P5MRWKE';
      hole view re-renders and the golfer simply teleports to the next spot, so it no longer fades in/out
      over and over. Impact ~34%. */
   .hvsw{opacity:0}
+  /* CS378-A1: a STATIC address-pose golfer (no swing) set over the ball during a par-4/5 approach decision */
+  .hvsw-static{opacity:1;animation:none}
   .hvswing .sw0{animation:hvswA 1000ms steps(1,end) forwards}
   .hvswing .sw1{animation:hvswB 1000ms steps(1,end) forwards}
   .hvswing .sw2{animation:hvswC 1000ms steps(1,end) forwards}
@@ -8867,6 +8869,34 @@ function hvSwingMarkup(g,p,look){
       +`</g>`; }
   return `<g class="hvswing hvsw-${kind}"${tf}>${imgs}</g>${badge}`;
 }
+// CS378-A1: a STATIC address-pose golfer standing OVER the ball, used during a par-4/5 approach decision so
+// the drive's ball rests on the fairway with the golfer set over it (owner: "not a ball frozen in the air.
+// The golfer should be standing over the ball while the decision is being decided on"). It stands at the
+// DRIVE'S rest position (the approach origin), aims up the hole (back to camera - the natural "over the
+// ball" broadcast look), and shows just the address frame (no swing). Returns '' if unavailable.
+function hvAddressGolfer(hole, holeIdx, courseKey, look){
+  if(!HV_SWING) return '';
+  const shots=(hole&&hole.shots)||[]; if(!shots.length || !shots[0].k) return '';
+  look=look||S.look||DEFLOOK;
+  let set; try{ set=pxStrokeURLs(look); }catch(e){ return ''; }
+  if(!set) return '';
+  const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
+  let g, plots;
+  if(hole._hv && hole._hv.g && hole._hv.plots && hole._hv.plots.length){ g=hole._hv.g; plots=hole._hv.plots; }
+  else { g=hvGeom(seedN, hole.par, hole.yards||hole.yd||400, courseKey, holeIdx); plots=hvPlots(g, shots, seedN); }
+  const p0=plots[0]; if(!p0 || !p0.rest) return '';
+  const A=hvProj(g, p0.rest[0], p0.rest[1]);   // the drive's resting spot = where the approach is played from
+  const view='back', mirror=!!look.lefty;      // aiming up the hole toward the green → back to camera
+  const addr=(set[view]&&set[view].full&&set[view].full[0]);   // address frame (frame 0 of the full swing)
+  if(!addr) return '';
+  const GH=24, GW=GH*PXS_W/PXS_H, clubFrac=0.50, ballGy=47;
+  let x0=A[0]-GW*clubFrac, y0=A[1]-GH*(ballGy/PXS_H);
+  const pad=3, botPad=14;
+  y0=Math.max(HV_CAM[1]+pad, Math.min(y0, HV_CAM[1]+HV_CAM[3]-GH-botPad));
+  x0=Math.max(HV_CAM[0]+pad, Math.min(x0, HV_CAM[0]+HV_CAM[2]-GW-pad));
+  const tf=mirror?` transform="translate(${(2*x0+GW).toFixed(1)},0) scale(-1,1)"`:'';
+  return `<g class="hvswing hvsw-full"${tf}><image class="hvsw hvsw-static" href="${addr}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/></g>`;
+}
 // in the Pro Shop, preview pending COLOR purchases live (worn gear is dropped, so only colors preview)
 // true in the Pro Shop overlay AND the customization (setup) screen, which share the tile/preview UI
 function inShopCtx(){ return S.overlay==='shop' || S.screen==='setup'; }
@@ -16383,7 +16413,7 @@ function hvThemeAccent(courseKey){ const k=courseKey||'_';
   return _hvAccentCache[k]; }
 function hvFrameStyle(courseKey){ const a=hvThemeAccent(courseKey);
   return `border-color:${a}99;box-shadow:0 0 0 2px ${a}3d, 0 0 20px -6px ${a}66, 0 16px 36px -22px rgba(0,0,0,.82), inset 0 1px 0 rgba(255,255,255,.05)`; }
-function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce){
+function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce, overlay){
   const seedN=(dHash(courseKey||'x')^Math.imul((holeIdx|0)+1,0x9e3779b1))>>>0;
   const fst=hvFrameStyle(courseKey);   // themed frame for every svg in this node
   if(multi){
@@ -16451,7 +16481,7 @@ function hvNode(hole, revealN, holeIdx, courseKey, multi, animNonce){
   const cam=live?hvCamFor(g,plots,Math.max(0,idx-1)):HV_CAM;
   const detailCam=hvDetailCam(camTarget, live&&idx>=0&&!!plots[idx]);
   const node=$(`<div class="holeview"><div class="hvbrand"><span class="ttmark">TOUR<b>TRACE</b></span>${live?'<span class="ttlive"><span class="ttdot"></span>LIVE</span>':'<span class="ttrep">REPLAY</span>'}</div>
-    <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey),detailCam)}${inner}</svg></div></div>`);
+    <div class="hvshell"><svg id="hv-svg" viewBox="${cam.join(' ')}" preserveAspectRatio="xMidYMid slice" style="${fst}" role="img" aria-label="Hole ${hole.n} shot tracer map">${hvBackdrop(g,seedN,hvBiome(courseKey),detailCam)}${inner}${overlay||''}</svg></div></div>`);
   if(live && plots[idx]){
     const key=(courseKey||'')+':'+holeIdx+':'+showN+(animNonce!=null?':r'+animNonce:'');
     requestAnimationFrame(()=>hvKick(key, g, plots[idx], idx>0?plots[idx-1]:null, reduce));
@@ -18041,8 +18071,8 @@ function scrDailyRound(){
   const vh=(S.dailyViewHole!=null && S.dailyViewHole<played.length)?S.dailyViewHole:played.length-1;   // which hole's shot log is shown
   // draws the tracer window + floating HUD (hole chip, YOU-vs-pro board, one shot description). Shared
   // by the normal reveal AND the par-4/5 approach-decision drive (S.dailyProv).
-  function drawWindow(hole, reveal, holeIdx, latest, holePauseFlag, descShot, revNonce, dec){
-    const hvn=hvNode(hole, reveal, holeIdx, S.dailyCourse, null, revNonce!=null?revNonce:null);
+  function drawWindow(hole, reveal, holeIdx, latest, holePauseFlag, descShot, revNonce, dec, overlay){
+    const hvn=hvNode(hole, reveal, holeIdx, S.dailyCourse, null, revNonce!=null?revNonce:null, overlay||null);
     if(!hvn) return;
     const shell=hvn.querySelector('.hvshell'), h=hole;
     // (CS246: the themed accent frame now lives on the svg itself via hvFrameStyle, so the whole window is framed)
@@ -18136,8 +18166,18 @@ function scrDailyRound(){
   if(prov && prov.await) decPending={sc:prov.scenario, pick:(agg)=>dailyResolveApproach(agg), sub:`Your drive found ${dLieName(prov.d0.shot.lie)} · ${prov.d0.dist} yds to the green`};
   else if(teeSig){ const teeSc=dScenario(S.dailyCourse,i,total,dTourAvg(c)); decPending={sc:teeSc, pick:(agg)=>playDailyHole(agg, teeSc.phase)}; }
   if(prov){
-    // par-4/5 approach decision: the neutral drive plays out (shot 0), then the prompt above shows
-    drawWindow(prov.hole, prov.revealN, prov.i, true, false, prov.hole.shots[0], null, prov.await?decPending:null);
+    // par-4/5 approach decision (CS378-A1):
+    //  - drive in flight (!await): the neutral drive plays out live (shot 0), golfer swings at the tee.
+    //  - decision up (await): the drive's ball is at REST on the fairway and a golfer is set OVER it
+    //    addressing the approach (owner: "not a ball frozen in the air. The golfer should be standing
+    //    over the ball while the decision is being decided on"). revealN=null renders the drive as a
+    //    done shot (ball at rest, no tee golfer); the address golfer is overlaid at the drive's rest.
+    if(prov.await){
+      const addr=hvAddressGolfer(prov.hole, prov.i, S.dailyCourse, S.look);
+      drawWindow(prov.hole, null, prov.i, true, false, null, null, decPending, addr);
+    } else {
+      drawWindow(prov.hole, prov.revealN, prov.i, true, false, prov.hole.shots[0], null, null);
+    }
   } else if(previewNext){
     // between holes / at a tee decision → show the UPCOMING hole (fresh tee view), not the previous
     // hole's finished state, so what's on screen matches the drive/decision being asked (owner note 1).
