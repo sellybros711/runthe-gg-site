@@ -9077,6 +9077,13 @@ allows Google Fonts, or self-host Anton.*
   defined but unused. Verified: title renders the crisp vector crest, zero page errors. Pushed to the
   feature branch; NOT deployed to /golf.
 
+- **CS369 — deeper, detailed home-screen bunker (owner: make it look like a deep bunker, not a flat
+  ellipse).** Replaced the flat sand ellipse in `pxTitleBgURL` with a proper greenside bunker: a grass
+  lip/overhang along the top edge with a cast shadow on the sand, a shaded (in-shadow) back wall grading to
+  a lit sand floor sloping toward the viewer, concentric rake lines across the floor, and a darker rim for
+  depth. Verified: renders as a deep bunker, zero page errors. Pushed to the feature branch; NOT deployed
+  to /golf. Tunable: the bunker size/position + `SAND*`/`LIP*` colors in `pxTitleBgURL`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
