@@ -5654,6 +5654,12 @@ function overlayLeaderboard(screen){
   if(tab==='streaks'){ overlayStreakBoard(screen); return; }   // CS401: active daily-streak leaderboard
   let sort=S.lbSort||'earnings'; if(!lbSortValid(tab,sort)){ sort='earnings'; S.lbSort='earnings'; }
   const dir=S.lbDir||'desc';   // 'desc' = high→low / best→worst (default); 'asc' = true bottom N (low→high)
+  // CS417: TODAY / THIS WEEK / ALL-TIME window on the season+career boards. since = the window start
+  // (ET day / weekKey block), passed to the board as p_since; ksuf keys the windowed cache separately.
+  const win=(tab==='season'||tab==='career')?(S.lbWindow||'all'):'all';
+  const since = win==='today' ? new Date(Date.now()-(86400000-dNextResetMs())).toISOString()
+              : win==='week'  ? new Date(weekKey()*7*86400000).toISOString() : null;
+  const ksuf = (win==='all')?'':(':w'+win);
   // Low→High fetches a SEPARATE ascending board (the genuinely lowest rows in the DB), not a reversed
   // top-200. If the p_dir param isn't live yet (migration 38 not applied), fall back to reversing the
   // top-200 desc board so the toggle still does something.
@@ -5662,8 +5668,8 @@ function overlayLeaderboard(screen){
   if(derivedDef){
     // CS214: the server can't sort by a derived stat, so fetch the (earnings-ordered) base board - lbLoad
     // falls back to earnings order when p_sort is unknown - and rank it client-side by golferStats().
-    const k=tab+':'+sort; let v=lbCache[k];
-    if(!v){ lbLoad(tab,sort,'desc'); v=lbCache[k]; }
+    const k=tab+':'+sort+ksuf; let v=lbCache[k];
+    if(!v){ lbLoad(tab,sort,'desc',since,ksuf); v=lbCache[k]; }
     view=v;
     if(v && v.ok){
       const rows=v.rows.filter(r=>r.skills && CATS.every(cc=>typeof r.skills[cc.k]==='number'))
@@ -5674,18 +5680,18 @@ function overlayLeaderboard(screen){
       dirRows=rows;
     } else dirRows=[];
   } else if(dir==='asc'){
-    const kAsc=tab+':'+sort+':asc'; let vAsc=lbCache[kAsc];
-    if(!vAsc){ lbLoad(tab,sort,'asc'); vAsc=lbCache[kAsc]; }
+    const kAsc=tab+':'+sort+ksuf+':asc'; let vAsc=lbCache[kAsc];
+    if(!vAsc){ lbLoad(tab,sort,'asc',since,ksuf); vAsc=lbCache[kAsc]; }
     if(vAsc && vAsc.ok && !vAsc.legacyDir){ view=vAsc; dirRows=vAsc.rows; }     // true bottom N, worst-first
     else if(vAsc && vAsc.loading){ view=vAsc; dirRows=[]; }
     else {                                                                       // pre-migration fallback
-      const kDesc=tab+':'+sort; let vDesc=lbCache[kDesc];
-      if(!vDesc){ lbLoad(tab,sort,'desc'); vDesc=lbCache[kDesc]; }
+      const kDesc=tab+':'+sort+ksuf; let vDesc=lbCache[kDesc];
+      if(!vDesc){ lbLoad(tab,sort,'desc',since,ksuf); vDesc=lbCache[kDesc]; }
       view=vDesc; dirRows=(vDesc && vDesc.ok)?vDesc.rows.slice().reverse():[];
     }
   }else{
-    const kDesc=tab+':'+sort; let vDesc=lbCache[kDesc];
-    if(!vDesc){ lbLoad(tab,sort,'desc'); vDesc=lbCache[kDesc]; }
+    const kDesc=tab+':'+sort+ksuf; let vDesc=lbCache[kDesc];
+    if(!vDesc){ lbLoad(tab,sort,'desc',since,ksuf); vDesc=lbCache[kDesc]; }
     view=vDesc; dirRows=(vDesc && vDesc.ok)?vDesc.rows:[];
   }
   const youName=(c.hof[0]&&c.hof[0].name)||S.name||'You';
@@ -5779,6 +5785,7 @@ function overlayLeaderboard(screen){
     banner=`<div><b style="color:var(--gold)">Compete on the global board</b><div class="small muted" style="margin-top:2px">Sign in or create a free RunThe.GG account, finished seasons then post here automatically.${globalOk?'':' Global board is offline right now, showing your own results.'}</div></div>${signCTA}`;
   }
   const seg=(id,lab)=>`<button class="btn ${tab===id?'gold':'ghost'} lbtab" data-tab="${id}" style="font-size:12px;padding:8px 12px;width:auto">${lab}</button>`;
+  const winSeg=(id,lab)=>`<button class="btn ${win===id?'gold':'ghost'} lbwin" data-win="${id}" style="font-size:11px;padding:6px 11px;width:auto">${lab}</button>`;   // CS417 window chips
   const sortSeg=(k,lab)=>`<button class="btn ${sort===k?'gold':'ghost'} lbsort" data-sort="${k}" style="font-size:11px;padding:6px 11px;width:auto">${lab}</button>`;
   const sortChips=(LB_SORTS[tab]||[]).map(s=>sortSeg(s[0],s[1])).join('');
   const lbl=lbSortLabel(tab,sort);
@@ -5786,12 +5793,14 @@ function overlayLeaderboard(screen){
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>🏆 Leaderboard</h3>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
-    <div class="mini" style="margin:0 0 8px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Daily')}${seg('weekly','Weekly')}${seg('streaks','Streaks')}</div>
+    <div class="mini" style="margin:0 0 8px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Play 18')}${seg('streaks','Streaks')}</div>
+    <div class="small muted" style="margin:0 0 4px;letter-spacing:.08em;text-transform:uppercase;font-size:10px">Window</div>
+    <div class="mini" style="margin:0 0 8px;width:auto;display:flex;gap:6px;flex-wrap:wrap">${winSeg('today','Today')}${winSeg('week','This week')}${winSeg('all','All-Time')}</div>
     <div class="small muted" style="margin:0 0 4px;letter-spacing:.08em;text-transform:uppercase;font-size:10px">Sort by</div>
     <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:6px;flex-wrap:wrap">${sortChips}</div>
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin:0 0 8px">
-      <div style="min-width:0"><h2 style="margin:0 0 2px">${tab==='season'?'Single Season':'Career'} · ${esc(lbl)}</h2>
-        <div class="small muted" style="margin:0">${derivedDef?`Posted ${tab==='season'?'seasons':'careers'} ranked by ${esc(lbl.toLowerCase())} (derived from each golfer's ratings)`:`${tab==='season'?'Every posted season':'Every career sim'} ranked by ${esc(lbl.toLowerCase())}${dir==='asc'?' · the lowest in the database':''}`}</div></div>
+      <div style="min-width:0"><h2 style="margin:0 0 2px">${tab==='season'?'Single Season':'Career'} · ${esc(lbl)}${win==='today'?' · Today':win==='week'?' · This week':''}</h2>
+        <div class="small muted" style="margin:0">${derivedDef?`Posted ${tab==='season'?'seasons':'careers'} ranked by ${esc(lbl.toLowerCase())} (derived from each golfer's ratings)`:`${tab==='season'?'Every posted season':'Every career sim'} ranked by ${esc(lbl.toLowerCase())}${dir==='asc'?' · the lowest in the database':''}`}${win==='today'?' · posted today':win==='week'?' · posted this week':''}</div></div>
       <button class="btn ghost lbdir" style="width:auto;flex:0 0 auto;padding:7px 10px;font-size:11px;white-space:nowrap" title="${dir==='desc'?'Showing best first, tap to flip':'Showing worst first, tap to flip'}">${dir==='desc'?'▼ High–Low':'▲ Low–High'}</button>
     </div>
     <div class="board">${board}</div>
@@ -5800,6 +5809,7 @@ function overlayLeaderboard(screen){
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
   ov.querySelectorAll('.lbtab').forEach(b=>b.onclick=()=>{S.lbTab=b.dataset.tab;S.lbDir='desc';render();});   // reset to high→low on tab change
+  ov.querySelectorAll('.lbwin').forEach(b=>b.onclick=()=>{S.lbWindow=b.dataset.win;render();});   // CS417 Today/This week/All-Time
   ov.querySelectorAll('.lbsort').forEach(b=>b.onclick=()=>{S.lbSort=b.dataset.sort;S.lbDir='desc';render();});   // reset to high→low on new category
   ov.querySelectorAll('.lbdir').forEach(b=>b.onclick=()=>{S.lbDir=(S.lbDir==='asc'?'desc':'asc');render();});
   const lbSign=ov.querySelector('#lb-signin'); if(lbSign) lbSign.onclick=()=>{S.overlay='account';S.acctMode=sbSignedIn()?'username':'signin';S.acctErr='';render();};
@@ -5822,7 +5832,31 @@ function overlayLeaderboardDaily(screen, tab){
   const you=r=>sbUser && r.user_id===sbUser.id;
   const scoreDaily=r=>dTot(r.to_par, (DAILY_COURSES[r.course_key]||{}).par);
   const scoreWk=r=>dtp(r.total_to_par);
-  const val=r=>`<b style="color:var(--gold)">${weekly?scoreWk(r):scoreDaily(r)}</b>`;
+  // CS417: Play 18 (today) is re-sortable by score + golfer stats, high↔low, client-side over the fetched rows.
+  const P18_SORTS=[['score','Score'],['ovr','OVR'],['sg','Strokes Gained'],['ttg','Tee to Green'],['putts','Avg Putts'],['hcp','Handicap']];
+  const P18_LOW={score:1,putts:1,hcp:1};   // lower is better for these
+  let p18sort=S.p18Sort||'score'; if(!P18_SORTS.some(s=>s[0]===p18sort)) p18sort='score';
+  const p18worst=(S.p18Dir==='worst');
+  const p18num=(r,so)=>{
+    if(so==='score') return (r.to_par!=null?+r.to_par:9999);
+    if(so==='ovr')   return (r.ovr!=null?+r.ovr:-1);
+    if(!r.skills || !CATS.every(cc=>typeof r.skills[cc.k]==='number')) return null;
+    const g=golferStats(r.skills);
+    return so==='sg'?g.sgTot:so==='ttg'?g.ttg:so==='putts'?g.putts:so==='hcp'?g.hcp:null;
+  };
+  let srows=rows;
+  if(!weekly && rows.length){
+    srows=rows.slice().sort((a,b)=>{ const va=p18num(a,p18sort), vb=p18num(b,p18sort);
+      if(va==null&&vb==null) return 0; if(va==null) return 1; if(vb==null) return -1;
+      const cmp=P18_LOW[p18sort]?(va-vb):(vb-va); return p18worst?-cmp:cmp; });   // best first, then flip
+    srows=srows.map((r,i)=>Object.assign({},r,{rank:i+1}));
+  }
+  const p18val=r=>{ if(p18sort==='score') return scoreDaily(r);
+    if(p18sort==='ovr') return 'OVR '+(r.ovr!=null?r.ovr:'-');
+    const n=p18num(r,p18sort); if(n==null) return '–';
+    if(p18sort==='sg') return fmtSG(n)+' SG'; if(p18sort==='ttg') return fmtSG(n)+' T2G';
+    if(p18sort==='putts') return n.toFixed(1)+' putts'; if(p18sort==='hcp') return fmtHcp(n); return String(n); };
+  const val=r=>`<b style="color:var(--gold)">${weekly?scoreWk(r):p18val(r)}</b>`;
   const sub=r=>weekly
     ? `${r.golfer_name?esc(r.golfer_name)+' · ':''}${r.days_played} day${r.days_played===1?'':'s'} · best ${dtp(r.best_to_par)}`
     : `${r.golfer_name?esc(r.golfer_name)+' · ':''}OVR ${r.ovr}${r.won?' · <span style="color:var(--gold)">beat the pro</span>':''}`;
@@ -5831,9 +5865,9 @@ function overlayLeaderboardDaily(screen, tab){
       <span class="pl" style="min-width:0"><div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.display_name)}</div><div class="small muted" style="font-size:10.5px">${sub(r)}</div></span>
       <span class="mny" style="white-space:nowrap">${val(r)}</span></div>`;
   let podium='';
-  if(rows.length>=3){
-    const pod=[rows[1],rows[0],rows[2]], cls=['p2','p1','p3'], med=['🥈','🥇','🥉'];
-    podium='<div class="lbpodium">'+pod.map((r,di)=>`<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(r.look||DEFLOOK, di===1?74:56)}</div><div class="nm">${esc(r.display_name)}</div><div class="vl">${weekly?scoreWk(r):scoreDaily(r)}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`).join('')+'</div>';
+  if(srows.length>=3){
+    const pod=[srows[1],srows[0],srows[2]], cls=['p2','p1','p3'], med=['🥈','🥇','🥉'];
+    podium='<div class="lbpodium">'+pod.map((r,di)=>`<div class="lbpod ${cls[di]}"><div class="medal">${med[di]}</div><div class="pgolfer">${pxFigureHTML(r.look||DEFLOOK, di===1?74:56)}</div><div class="nm">${esc(r.display_name)}</div><div class="vl">${weekly?scoreWk(r):p18val(r)}</div><div class="rk">${r.golfer_name?esc(r.golfer_name):('#'+r.rank)}</div></div>`).join('')+'</div>';
   }
   const guestBoardCTA = !sbSignedIn() ? `<div class="lockcta" style="text-align:center;padding:18px 12px;margin-top:10px">
       <div style="font-size:22px;line-height:1">🔒</div>
@@ -5843,9 +5877,9 @@ function overlayLeaderboardDaily(screen, tab){
   let board;
   if(loading){
     board=Array.from({length:8},()=>`<div class="lb lbskel" style="grid-template-columns:34px 1fr auto"><span class="pos"><span class="skb" style="width:16px;height:16px;border-radius:50%"></span></span><span class="pl"><span class="skb" style="width:52%;height:12px"></span><span class="skb" style="width:34%;height:9px;margin-top:5px"></span></span><span class="mny"><span class="skb" style="width:56px;height:13px"></span></span></div>`).join('');
-  } else if(ok && rows.length){
-    if(sbSignedIn()) board=podium+rows.map(rowHTML).join('');
-    else { const top=rows.slice(0,5).map(rowHTML).join(''), tail=rows.slice(5).map(rowHTML).join('');
+  } else if(ok && srows.length){
+    if(sbSignedIn()) board=podium+srows.map(rowHTML).join('');
+    else { const top=srows.slice(0,5).map(rowHTML).join(''), tail=srows.slice(5).map(rowHTML).join('');
       board=podium+top+(tail
         ? `<div class="lockwrap"><div class="lockblur">${tail}</div>
             <div class="lockover"><div class="lockmsg">🔒 <b>Sign in to see the full board</b><div class="small muted">Play the Daily to claim your rank.</div></div>
@@ -5862,19 +5896,28 @@ function overlayLeaderboardDaily(screen, tab){
   const title=weekly?'This Week':'Today';
   const subtitle=weekly
     ? `Best cumulative scores this week · resets in ${dCd('week')}`
-    : `${esc(dShort(todayCourse.v||"today's course"))} · lowest score wins · new course in ${dCd('hm')}`;
+    : `${esc(dShort(todayCourse.v||"today's course"))} · ${p18sort==='score'?'lowest score wins · ':''}new course in ${dCd('hm')}`;
+  // CS417: Play 18 gets a sort-by-stat row + a link to the all-time Course Records
+  const p18SortSeg=(k,lab)=>`<button class="btn ${p18sort===k?'gold':'ghost'} p18sort" data-sort="${k}" style="font-size:11px;padding:6px 11px;width:auto">${lab}</button>`;
+  const p18Controls = weekly ? '' : `<div class="small muted" style="margin:0 0 4px;letter-spacing:.08em;text-transform:uppercase;font-size:10px">Sort by</div>
+    <div class="mini" style="margin:0 0 8px;width:auto;display:flex;gap:6px;flex-wrap:wrap">${P18_SORTS.map(s=>p18SortSeg(s[0],s[1])).join('')}<button class="btn ghost p18dir" style="width:auto;padding:6px 10px;font-size:11px;white-space:nowrap">${p18worst?'▲ Worst first':'▼ Best first'}</button></div>`;
+  const p18Records = weekly ? '' : `<button class="btn ghost p18recs" style="width:auto;margin:0 0 10px;padding:8px 14px;font-size:12px">⛳ Course Records ▸</button>`;
   const ov=$(`<div class="ov" role="dialog" aria-modal="true" aria-label="Leaderboard">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>🏆 Leaderboard</h3>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
-    <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Daily')}${seg('weekly','Weekly')}${seg('streaks','Streaks')}</div>
+    <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Play 18')}${seg('streaks','Streaks')}</div>
     <div style="margin:0 0 8px"><h2 style="margin:0 0 2px">${title}</h2><div class="small muted" style="margin:0">${subtitle}</div></div>
+    ${p18Controls}${p18Records}
     <div class="board">${board}</div>
     <div style="height:14px"></div>
     <button class="btn red">Close</button></div>`);
   ov.querySelector('.x').onclick=()=>{S.overlay=null;render();};
   ov.querySelector('.red').onclick=()=>{S.overlay=null;render();};
   ov.querySelectorAll('.lbtab').forEach(b=>b.onclick=()=>{S.lbTab=b.dataset.tab;S.lbDir='desc';render();});
+  ov.querySelectorAll('.p18sort').forEach(b=>b.onclick=()=>{S.p18Sort=b.dataset.sort;S.p18Dir='best';render();});   // CS417 Play 18 sort
+  { const p18d=ov.querySelector('.p18dir'); if(p18d) p18d.onclick=()=>{S.p18Dir=(S.p18Dir==='worst'?'best':'worst');render();}; }
+  { const p18r=ov.querySelector('.p18recs'); if(p18r) p18r.onclick=()=>{S.overlay='courserecords';render();}; }
   const lbSign=ov.querySelector('#lb-signin'); if(lbSign) lbSign.onclick=()=>{S.overlay='account';S.acctMode=sbSignedIn()?'username':'signin';S.acctErr='';render();};
   const lkIn=ov.querySelector('#lb-lock-in'); if(lkIn) lkIn.onclick=()=>{S.overlay='account';S.acctMode='signin';S.acctErr='';render();};
   const lkUp=ov.querySelector('#lb-lock-up'); if(lkUp) lkUp.onclick=()=>{S.overlay='account';S.acctMode='signup';S.acctErr='';render();};
@@ -5918,7 +5961,7 @@ function overlayStreakBoard(screen){
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>🏆 Leaderboard</h3>
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border-color:var(--gold);margin-bottom:12px">${banner}</div>
-    <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Daily')}${seg('weekly','Weekly')}${seg('streaks','Streaks')}</div>
+    <div class="mini" style="margin:0 0 10px;width:auto;display:flex;gap:8px;flex-wrap:wrap">${seg('season','Single Season')}${seg('career','Career')}${seg('daily','Play 18')}${seg('streaks','Streaks')}</div>
     <div style="margin:0 0 8px"><h2 style="margin:0 0 2px">Active Streaks</h2><div class="small muted" style="margin:0">Longest active daily-play streaks · keep playing to hold your spot</div></div>
     <div class="board">${board}</div>
     <div style="height:14px"></div>
@@ -21111,19 +21154,22 @@ async function loadSeasonRank(earnings){
 }
 // fetch ONE board for the given (tab, sort) into lbCache[`${tab}:${sort}`]. Falls back to the legacy
 // (no p_sort) call so the board still loads before migration 28 is applied.
-async function lbLoad(tab,sort,dir){
-  tab=tab||'season'; sort=sort||'earnings'; dir=(dir==='asc')?'asc':'desc';
+async function lbLoad(tab,sort,dir,since,ksuf){
+  tab=tab||'season'; sort=sort||'earnings'; dir=(dir==='asc')?'asc':'desc'; ksuf=ksuf||'';
   // desc (top N) keeps the legacy key so other readers (e.g. the summary rank teaser) keep working;
-  // asc (true bottom N) gets its own key so both can be cached at once.
-  const k=(dir==='asc')?(tab+':'+sort+':asc'):(tab+':'+sort);
+  // asc (true bottom N) gets its own key so both can be cached at once. CS417: ksuf (':wtoday'/':wweek')
+  // keys the date-scoped windows separately; since = the window's start passed to the board as p_since.
+  const k=(dir==='asc')?(tab+':'+sort+ksuf+':asc'):(tab+':'+sort+ksuf);
   if(lbCache[k] && lbCache[k].loading) return;          // already fetching
   if(!sb){ lbCache[k]={rows:[],ok:false}; render(); return; }
   lbCache[k]={loading:true};
   try{
     const fn=(tab==='career')?'runtour_career_board':'runtour_season_board';
     let legacyDir=false;
-    let r=await sb.rpc(fn,{p_limit:200,p_sort:sort,p_dir:dir});
-    if(r.error){ legacyDir=true; r=await sb.rpc(fn,{p_limit:200,p_sort:sort}); }  // DB without p_dir → top-N only
+    // p_since is migration 58; if unsupported, drop it and show the all-time board (fail-open window).
+    let r=await sb.rpc(fn, since?{p_limit:200,p_sort:sort,p_dir:dir,p_since:since}:{p_limit:200,p_sort:sort,p_dir:dir});
+    if(r.error && since){ r=await sb.rpc(fn,{p_limit:200,p_sort:sort,p_dir:dir}); }   // pre-58 → all-time
+    if(r.error){ legacyDir=true; r=await sb.rpc(fn,{p_limit:200,p_sort:sort}); }      // DB without p_dir → top-N only
     if(r.error){ r=await sb.rpc(fn,{p_limit:200}); }     // legacy DB without p_sort → earnings order
     lbCache[k]={rows:(r.data||[]),ok:!r.error,legacyDir:legacyDir};
   }catch(e){ lbCache[k]={rows:[],ok:false}; }
