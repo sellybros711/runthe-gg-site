@@ -409,7 +409,7 @@ window.GA_ID='G-L29P5MRWKE';
 
   /* ---- title scene ---- */
   .scene{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none}
-  .coursebg{position:absolute; inset:0; width:100%; height:100%; display:block}
+  .coursebg{position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; object-position:center 62%; image-rendering:pixelated}
   .sky{position:absolute; inset:0; background:linear-gradient(180deg,#0a2038 0%,#0b2742 40%,#0f3f30 58%,#0b3325 100%)}
   .glow{position:absolute; top:-14%; width:62%; height:60%;
     background:radial-gradient(closest-side, rgba(255,242,205,.18), transparent 70%); filter:blur(2px)}
@@ -4840,6 +4840,12 @@ function crestSVG(){return `<svg class="crest" viewBox="0 0 64 76" fill="none">
   <ellipse cx="32" cy="57" rx="17" ry="5.4" fill="none" stroke="#cda54a" stroke-width="1.6"/>
   <circle cx="26" cy="57" r="1.7" fill="#0a2a20"/>
   <circle cx="38" cy="57" r="2.2" fill="#f4ecd9"/></svg>`;}
+// CS363: pixel-art version of the crest logo mark (shield + swallowtail flag + putting green + ball) to
+// match the game's pixel theme. Rendered as crisp-edge rects like the pixel trophies.
+const PXCREST=["......GGGGGGGGGG......","......GFFFFFFFFG......","....GGFFFFFFFFFFGG....","....GFFFFFFFFFFFFG....","...GFFFFFFFFFFFFFFG...","...GFFFFFFFFFFFFFFG...","...GFFFFFFFCgggggFG...","...GFFFFFFFCggggFFG...","...GFFFFFFFCggggFFG...","...GFFFFFFFCgggggFG...","...GFFFFFFFCFFFFFFG...","...GFFFFFFFCFFFFFFG...","...GFFFFFFFCFFFFFFG...","...GFFFFFFFCFFFFFFG...","...GFFFFFFFCFFFFFFG...","....GFFFFFECFFFFFG....","....GEEEEEECKEEEFG....","....GEEEWEEEEEEEEG....","....GGEEEEEEEEEEGG....","......GFFFEFFFFG......","......GFFFFFFFFG......","......GGFFFFFFGG......","........GFFFFG........","........GFFFFG........",".........GFFG.........",".........GGGG........."];
+const PXCREST_PAL={G:'#d3bd53',F:'#0b2e1f',C:'#e9d8ac',g:'#F1D04A',E:'#2ea65f',W:'#f4ecd9',K:'#06180f'};
+function pxCrestSVG(cls){ let r=''; for(let y=0;y<PXCREST.length;y++){ const row=PXCREST[y]; for(let x=0;x<row.length;x++){ const c=PXCREST_PAL[row[x]]; if(c) r+=`<rect x="${x}" y="${y}" width="1.04" height="1.04" fill="${c}"/>`; } }
+  return `<svg class="crest ${cls||''}" viewBox="0 0 22 26" shape-rendering="crispEdges" style="image-rendering:pixelated">${r}</svg>`; }
 function golfballSVG(){return `<svg class="ball" viewBox="0 0 24 24" fill="none">
   <circle cx="12" cy="12" r="10.5" fill="#f7f3e8" stroke="#cda54a" stroke-width="1"/>
   <g fill="#cdbf9b"><circle cx="12" cy="8" r="1"/><circle cx="9" cy="11" r="1"/><circle cx="15" cy="11" r="1"/><circle cx="12" cy="14" r="1"/><circle cx="9" cy="15.5" r="1"/><circle cx="15" cy="15.5" r="1"/></g></svg>`;}
@@ -4854,7 +4860,7 @@ function header(){
   menu.onclick=()=>{ S.overlay='menu'; render(); };
   top.appendChild(menu);
   h.appendChild(top);
-  h.appendChild($(`<div class="crestrow">${crestSVG()}
+  h.appendChild($(`<div class="crestrow">${pxCrestSVG()}
     <div class="wmblock">
       <div class="divider"><span class="ln"></span>${golfballSVG()}<span class="ln r"></span></div>
       <div class="wordmark"><span class="a">Run The</span><span class="b">Tour</span></div>
@@ -5940,44 +5946,50 @@ function onlineHeroCard(){
   if(ob4) ob4.onclick=()=>openH2H('bestball');
   return card;
 }
+// CS363: pixel-art dusk golf-course backdrop for the home screen. Deterministic + cached; drawn to a
+// 128x128 canvas and upscaled by CSS (image-rendering:pixelated) so it reads as chunky retro pixels.
+let _pxTitleBg=null;
+function pxTitleBgURL(){
+  if(_pxTitleBg) return _pxTitleBg;
+  const W=128,H=128, cv=document.createElement('canvas'); cv.width=W; cv.height=H;
+  const ctx=cv.getContext('2d'), im=ctx.createImageData(W,H), D=im.data;
+  const B=[[0,8,2,10],[12,4,14,6],[3,11,1,9],[15,7,13,5]];
+  const set=(x,y,c)=>{ x|=0;y|=0; if(x<0||x>=W||y<0||y>=H)return; const i=(y*W+x)*4; D[i]=c[0];D[i+1]=c[1];D[i+2]=c[2];D[i+3]=255; };
+  const get=(x,y)=>{ const i=(y*W+x)*4; return [D[i],D[i+1],D[i+2]]; };
+  const lp=(a,b,t)=>[a[0]+(b[0]-a[0])*t|0, a[1]+(b[1]-a[1])*t|0, a[2]+(b[2]-a[2])*t|0];
+  const dith=(a,b,t,x,y)=> (t > (B[y&3][x&3]+0.5)/16 ? b : a);
+  const SKY_TOP=[14,26,54],SKY_MID=[24,64,84],SKY_LOW=[44,96,86],HZC=[206,150,74];
+  const SUN=[246,205,116],SUNC=[250,222,150],TREE=[16,52,44],TREE2=[22,66,52];
+  const FAIR1=[30,112,66],FAIR2=[40,140,82],FAIR3=[24,92,56],GREEN=[58,178,96],GREENL=[80,200,116];
+  const SAND=[232,214,168],SANDS=[210,190,140],CREAM=[244,227,201],GOLD=[241,208,74],GOLDS=[198,150,40],DK=[6,36,26];
+  const HZ=78;
+  for(let y=0;y<HZ;y++){ const t=y/HZ; let base,nxt;
+    if(t<0.55){ base=lp(SKY_TOP,SKY_MID,t/0.55); nxt=lp(SKY_TOP,SKY_MID,Math.min(1,(t+0.08)/0.55)); }
+    else { base=lp(SKY_MID,SKY_LOW,(t-0.55)/0.45); nxt=lp(SKY_MID,HZC,(t-0.55)/0.45); }
+    for(let x=0;x<W;x++) set(x,y,dith(base,nxt,0.5,x,y)); }
+  for(let y=HZ-6;y<HZ;y++) for(let x=0;x<W;x++) set(x,y,dith(get(x,y),HZC,(y-(HZ-6))/6*0.8,x,y));
+  const sx=90,sy=34,sr=26;
+  for(let y=Math.max(0,sy-sr);y<Math.min(HZ,sy+sr);y++) for(let x=0;x<W;x++){ const d=Math.hypot(x-sx,y-sy); if(d<sr){ const t=1-d/sr; if(d<7) set(x,y,SUNC); else set(x,y,dith(get(x,y),SUN,t*0.7,x,y)); } }
+  for(let x=0;x<W;x++){ const h=6+4*Math.sin(x*0.18)+3*Math.sin(x*0.51+1)+((x*7)%13<3?2:0); const top=(HZ-2-h)|0; for(let y=top;y<HZ+3;y++) set(x,y,(x+y)%5?TREE:TREE2); }
+  for(let y=HZ-1;y<H;y++){ const t=(y-HZ)/(H-HZ); const base=lp(FAIR3,FAIR2,t); const band=((y-HZ)/(2+t*3))|0; const stripe=band%2===0?FAIR2:FAIR1; for(let x=0;x<W;x++) set(x,y,dith(base,stripe,0.55,x,y)); }
+  const gx=96,gy=92,grx=26,gry=9;
+  for(let y=gy-gry;y<gy+gry;y++) for(let x=gx-grx;x<gx+grx;x++){ if(((x-gx)/grx)**2+((y-gy)/gry)**2<=1) set(x,y,dith(GREEN,GREENL,0.5,x,y)); }
+  const hx=101,hy=90; set(hx,hy,DK); set(hx-1,hy,DK);
+  for(let y=hy-22;y<hy;y++) set(hx,y,CREAM);
+  const fy=hy-22;
+  for(let i=0;i<9;i++) for(let j=0;j<6;j++){ if(i>=5 && Math.abs(j-2.5)<(i-5)+0.5) continue; set(hx+1+i,fy+j,(i+j)%4?GOLD:GOLDS); }
+  const bx=84,by=94; for(let dy=-1;dy<2;dy++) for(let dx=-1;dx<2;dx++) if(dx*dx+dy*dy<=2) set(bx+dx,by+dy,[248,246,238]);
+  const nx=26,ny=100,nrx=22,nry=8;
+  for(let y=ny-nry;y<ny+nry;y++) for(let x=nx-nrx;x<nx+nrx;x++){ if(((x-nx)/nrx)**2+((y-ny)/nry)**2<=1) set(x,y,dith(SAND,SANDS,0.5,x,y)); }
+  for(let y=0;y<18;y++) for(let x=0;x<W;x++){ const c=get(x,y),f=(18-y)/18*0.5; set(x,y,lp(c,SKY_TOP,f)); }
+  ctx.putImageData(im,0,0);
+  _pxTitleBg=cv.toDataURL('image/png'); return _pxTitleBg;
+}
 function scrTitle(){
   reconcileDailyAttempts();   // self-heal "attempts left" against the server before it's even displayed below
-  const scene=$(`<div class="scene"><svg class="coursebg" viewBox="0 0 440 440" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#06182e"/><stop offset="0.5" stop-color="#0b3149"/><stop offset="0.78" stop-color="#1a5b50"/></linearGradient>
-      <radialGradient id="sun" cx="0.64" cy="0.52" r="0.45">
-        <stop offset="0" stop-color="#f6cd74" stop-opacity="0.65"/><stop offset="0.5" stop-color="#F1D04A" stop-opacity="0.16"/><stop offset="1" stop-color="#F1D04A" stop-opacity="0"/></radialGradient>
-      <linearGradient id="topfade" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#0a1a2c" stop-opacity="0.5"/><stop offset="0.4" stop-color="#0a1a2c" stop-opacity="0"/></linearGradient>
-      <linearGradient id="botfade" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#0a1a2c" stop-opacity="0"/><stop offset="0.85" stop-color="#0a1a2c" stop-opacity="1"/></linearGradient>
-    </defs>
-    <rect x="0" y="0" width="440" height="220" fill="url(#sky)"/>
-    <rect x="0" y="0" width="440" height="220" fill="url(#sun)"/>
-    <path d="M0,202 Q110,168 220,190 T440,182 V220 H0 Z" fill="#0e3f3b"/>
-    <g fill="#0c322e">
-      <ellipse cx="36" cy="194" rx="34" ry="17"/><ellipse cx="92" cy="198" rx="42" ry="15"/>
-      <ellipse cx="356" cy="192" rx="46" ry="18"/><ellipse cx="412" cy="196" rx="34" ry="14"/></g>
-    <path d="M0,216 Q150,190 270,214 T440,210 V440 H0 Z" fill="#1a6b40"/>
-    <path d="M0,262 Q170,234 300,264 T440,258 V440 H0 Z" fill="#218a50"/>
-    <g opacity="0.45" fill="#1b7a45">
-      <path d="M0,290 Q170,266 300,294 T440,288 V322 Q300,328 170,300 T0,324 Z"/>
-      <path d="M0,348 Q170,326 300,354 T440,348 V382 Q300,388 170,360 T0,384 Z"/>
-      <path d="M0,406 Q170,386 300,414 T440,408 V440 H0 Z"/></g>
-    <!-- putting green + flag pushed to the right so the title text stays clear -->
-    <ellipse cx="388" cy="288" rx="64" ry="19" fill="#2ea65f"/>
-    <ellipse cx="388" cy="288" rx="64" ry="19" fill="none" stroke="#38c270" stroke-width="1.4" opacity="0.55"/>
-    <ellipse cx="402" cy="285" rx="3.4" ry="1.6" fill="#06241a"/>
-    <line x1="402" y1="285" x2="402" y2="232" stroke="#F4E3C9" stroke-width="2.4" stroke-linecap="round"/>
-    <path d="M402,234 l20,5 -20,6 z" fill="#F1D04A"/>
-    <circle cx="372" cy="292" r="3" fill="#F8F2E6"/>
-    <!-- bunker pushed to the left -->
-    <ellipse cx="50" cy="300" rx="42" ry="12" fill="#efe0c0"/>
-    <ellipse cx="50" cy="300" rx="42" ry="12" fill="none" stroke="#d6c197" stroke-width="1.4"/>
-    <rect x="0" y="0" width="440" height="120" fill="url(#topfade)"/>
-    <rect x="0" y="280" width="440" height="160" fill="url(#botfade)"/>
-  </svg></div>`);
+  // CS363: pixel-art dusk-course backdrop (matches the game's pixel theme) instead of the old smooth vector scene
+  let bg=''; try{ bg=pxTitleBgURL(); }catch(e){}
+  const scene=$(`<div class="scene">${bg?`<img class="coursebg" src="${bg}" alt="" aria-hidden="true">`:''}</div>`);
   add(scene);
   const w=$(`<div class="titlewrap center"></div>`);
   w.appendChild($(`<div class="herotag center">A RunThe.GG Game</div>`));
@@ -8673,6 +8685,21 @@ const PXS_CH0=["........................","........................","..........
 const PXS_CH1=["........................","........................","............kkkkkk......","...........kkcccckk.....","...........kcccccckkkk..","...........kccccccccck..","...........khhhsscccck..","...........khhhssskkkk..","...........khhhssssk....","...........khhhssjkk....","..........kkhhhssskk....","..........kdtttstttk....","..........kdtssttttk....","..........kdtssstttk....",".........kkdttsstttk....",".........kdtttssstkk....",".........kdttttsssk.....","........kkdtttttsskk....","........kdttttttslsk....","........kdtttttttslk....","........kkkkkkqppklkk...","..........kqppqppkklk...","..........kqppqppkklkk..","..........kqppqppkkklk..","........kkkqppqppk.klkk.","........koooppqppk.kklkk","........koooopqppkk.kggk","........kkkkkkooookkkkkk",".............koooook....",".............kkkkkkk...."];
 const PXS_PT0=["........................","........................","........................","........................","........................","........................","........................","........................","...............kkkkkkk..","...............kccccckkk","..............kkkkskccck","..............khhhssccck","............kkkhhhsssskk","...........kkdthhhsjskk.","...........kdtttssskkk..","..........kkdtttsstk....","..........kdttttsssk....",".........kkdtttttssk....",".........kdttttttsskk...","........kkdttttttsssk...","........kdttttttkklsk...","........kqppkkqpplssk...","........kqppkkqplkkkk...","........kqppkkqplk......","........kqppkkqlpk......","........kqppkklppk......",".......kkqppkkgppkk.....",".......kooookkooookk....",".......koooookoooook....",".......kkkkkkkkkkkkk...."];
 const PXS_PT1=["........................","........................","........................","........................","........................","........................","........................","........................","...............kkkkkkk..","...............kccccckkk","..............kkkkskccck","..............khhhssccck","............kkkhhhsssskk","...........kkdthhhsjskk.","...........kdtttssskkk..","..........kkdtttsstk....","..........kdttttsssk....",".........kkdtttttssk....",".........kdttttttsskk...","........kkdttttttsssk...","........kdttttttkklsk...","........kqppkkqppkslk...","........kqppkkqppkklkk..","........kqppkkqppkkklk..","........kqppkkqppk.klkk.","........kqppkkqppk.kklkk",".......kkqppkkqppkk.kggk",".......kooookkooookkkkkk",".......koooookoooook....",".......kkkkkkkkkkkkk...."];
+// CS363 directional views: BACK (back-to-camera, up-the-hole shots) + FRONT (down/toward-camera shots).
+const PXB_A=["........................",".........kkkkkkk........","........kkccccckk.......","........kccccccck.......","........kccccccck.......","........kccccccck.......","........khhhhhhhk.......","........kkhhhhhkk.......",".........khhhhhk........",".......kkkkjjjkkk.......",".......kttttdtttk.......",".......kttttdtttkk......",".......kssttdttssk......",".......kssttdttssk......",".......kssttdttssk......",".......kssttdttssk......",".......kssttdttssk......",".......ksssssssssk......",".......kkttslstkkk......","........ktttlttkkk......","........kpqplkpqpk......","........kpqplkpqpk......","........kpqplkpqpk......","........kpqplkpqpk......","........kpqpwkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........koookkoook......","........koookkoook......","........kkkkkkkkkk......"];
+const PXB_B=["....................kkk.",".........kkkkkkk...kkgkk","........kkccccckk..kgggk","........kccccccck..kkgkk","........kccccccck..klkk.","........kccccccck.kklk..","........khhhhhhhk.klkk..","........kkhhhhhkkkklk...",".........khhhhhk.klkk...",".........kkjjjkkkklk....",".........kttttdtslkk....",".......kkkttttssssk.....",".......kssttttssssk.....",".......kssktttssssk.....",".......ksstttdttkkk.....",".......ksstttdttk.......",".......ksstttdttk.......",".......kkktttdttk.......","........ktttdttkk.......","........ktttdttkkk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........koookkoook......","........koookkoook......","........kkkkkkkkkk......"];
+const PXB_C=[".kkk....................","kkgkk....kkkkkkk........","kgggk...kkccccckk.......","kkgkk...kccccccck.......",".klkk...kccccccck.......",".kklkk..kccccccck.......","..kklk..khhhhhhhk.......","...klk..kkhhhhhkk.......","...klkkkkkhhhhhk........","...kklstttdjjjkk........","....kkssssdtttk.........",".....kssssdtttkkk.......",".....kssssdttkssk.......",".....kktttdttkssk.......","......kktttdttssk.......",".......ktttdttssk.......",".......ktttdttkkk.......",".......ktttdttkk........",".......kktttdttk........","........ktttdttkk.......","........kkkkkpqpk.......","........kpqpppqpk.......","........kpqpppqpk.......","........kpqpppqpk.......","........kpqpppqpk.......","........kpqpppqpk.......","........koooppqpk.......","........koookoook.......","........kkkkkoook.......","............kkkkk......."];
+const PXB_CH0=["........................","........................","........................",".........kkkkkkk........","........kkccccckk.......","........kccccccck.......","........kccccccck.......","........kccccccck.......","........khhhhhhhk.......","........kkhhhhhkkkk.....",".........khhhhhkkgkk....",".......kkkkjjjkkgggk....",".......kttttdtttkgkk....",".......ktsstdtsslkk.....",".......ktsstdtsslk......",".......kksstdtslsk......","........ksstdtlssk......","........kssssstkkk......","........kttssstk........","........ktttdttkkk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........koookkoook......","........koookkoook......","........kkkkkkkkkk......"];
+const PXB_CH1=["........................","........................","........................",".........kkkkkkk........","........kkccccckk.......","........kccccccck.......","........kccccccck.......","........kccccccck.......","........khhhhhhhk.......","........kkhhhhhkk.......",".........khhhhhk........","......kkkkkjjjkk........","......kttttdtttkk.......","......ktsssdttssk.......","......ktsssdttssk.......","......kksssdttssk.......",".......kssstdtssk.......",".......kkttsssssk.......","........kttslstkk.......","........ktttlttkk.......","........kkkklpqpk.......","........kpqplpqpk.......","........kpqplpqpk.......","........kpqplpqpk.......","........kpqpwpqpk.......","........kpqpppqpk.......","........koooppqpk.......","........koookoook.......","........kkkkkoook.......","............kkkkk......."];
+const PXB_PT0=["........................","........................","........................","........................","........................","........................","........................","........kkkkkkkkk.......","........kccccccck.......","........kccccccck.......","........khhhhhhhk.......","........kkhhhhhkk.......",".......kkkkkhkkkk.......",".......kttttdtttk.......",".......ktsstdtssk.......",".......ktsstdtssk.......",".......kksstdtssk.......","........ksstdtssk.......","........ksssssssk.......","........kttslstkkk......","........ktttlttqpk......","........kpqlkkpqpk......","........kpqlkkpqpk......","........kplpkkpqpk......","........kplpkkpqpk......","........kpgpkkpqpk......","........kpqpkkpqpk......","........koookkoook......","........koookkoook......","........kkkkkkkkkk......"];
+const PXB_PT1=["........................","........................","........................","........................","........................","........................","........................","........kkkkkkkkk.......","........kccccccck.......","........kccccccck.......","........khhhhhhhk.......","........kkhhhhhkk.......",".......kkkkkhkkkk.......",".......kttttdtttk.......",".......ktsstdtssk.......",".......ktsstdtssk.......",".......kksstdtssk.......","........ksstdtssk.......","........ksssssssk.......","........kttslstkkk......","........ktttlttqpk......","........kpqplkpqpk......","........kpqplkpqpk......","........kpqplkpqpk......","........kpqpwgpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........koookkoook......","........koookkoook......","........kkkkkkkkkk......"];
+const PXF_A=["........................",".........kkkkkkk........","........kkccccckk.......","........kccccccck.......","........kccccccck.......","........kccccccck.......","........kssjsjssk.......","........khssssshk.......","........kkssssskk.......",".......kkkkkskkkk.......",".......kdtttttttk.......",".......kdtttttttkk......",".......ksstttttssk......",".......ksstttttssk......",".......ksstttttssk......",".......ksstttttssk......",".......ksstttttssk......",".......ksstssstssk......",".......kkdtslstkkk......","........kdttlttkkk......","........kpqplkpqpk......","........kpqplkpqpk......","........kpqplkpqpk......","........kpqplkpqpk......","........kpqpwkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........koookkoook......","........koookkoook......","........kkkkkkkkkk......"];
+const PXF_B=["........................","..kkk....kkkkkkk........",".kkgkk..kkccccckk.......",".kgggk..kccccccck.......",".kkgkk..kccccccck.......","..kklk..kccccccck.......","...klkk.kssjsjssk.......","...kklk.khssssshk.......","....klkkkkssssskk.......","....kklkkkkkskkk........",".....kltttttttk.........",".....kdlssttttkkkk......",".....kdlssttttsssk......",".....kkdlstttksssk......","......kkdtttttsssk......",".......kdtttttsssk......",".......kdtttttsssk......",".......kdtttttkkkk......",".......kkdtttttk........","........kdtttttkkk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........koookkoook......","........koookkoook......","........kkkkkkkkkk......"];
+const PXF_C=["....................kkk.",".........kkkkkkk...kkgkk","........kkccccckk..kgggk","........kccccccck..kkgkk","........kccccccck..kklk.","........kccccccck..klkk.","........kssjsjssk.kklk..","........khssssshk.klkk..","........kkssssskkkklk...",".........kdtstttttlkk...",".........kdtttsssslk....","........kkdtttsssskk....","........kssdttssssk.....","........kssdtttttkk.....","........ksstttttkk......","........ksstttttk.......","........kkdtttttk.......","........kkdtttttk.......","........kdtttttkk.......","........kdtttttkk.......","........kkkkkpqpk.......","........kpqpppqpk.......","........kpqpppqpk.......","........kpqpppqpk.......","........kpqpppqpk.......","........kpqpppqpk.......","........koooppqpk.......","........koookoook.......","........kkkkkoook.......","............kkkkk......."];
+const PXF_CH0=["........................","........................","........................",".........kkkkkkk........","........kkccccckk.......","........kccccccck.......","........kccccccck.......","........kccccccck.......","........kssjsjssk.......","......kkkhssssshk.......",".....kkgkkssssskk.......",".....kgggkkkskkkk.......",".....kkgdtttttttk.......","......kklsstttssk.......",".......klsstttssk.......",".......kslstttssk.......",".......kssltttssk.......",".......kkdtsssssk.......","........kdtssstkk.......","........kdtttttkkk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........koookkoook......","........koookkoook......","........kkkkkkkkkk......"];
+const PXF_CH1=["........................","........................","........................",".........kkkkkkk........","........kkccccckk.......","........kccccccck.......","........kccccccck.......","........kccccccck.......","........kssjsjssk.......","........khssssshk.......","........kkssssskk.......","........kkkkskkkkk......",".......kkdtttttttk......",".......kssttttsssk......",".......kssttttsssk......",".......kssdtttsssk......",".......kssttttsssk......",".......ksstssstkkk......",".......kkdtslstk........","........kdttlttkk.......","........kkkklpqpk.......","........kpqplpqpk.......","........kpqplpqpk.......","........kpqplpqpk.......","........kpqpwpqpk.......","........kpqpppqpk.......","........koooppqpk.......","........koookoook.......","........kkkkkoook.......","............kkkkk......."];
+const PXF_PT0=["........................","........................","........................","........................","........................","........................","........................","........kkkkkkkkk.......","........kccccccck.......","........kccccccck.......","........ksssssssk.......","........kkssssskk.......",".......kkkkkskkkk.......",".......kdtttttttk.......",".......kdsstttssk.......",".......kdsstttssk.......",".......kksstttssk.......","........ksstttssk.......","........ksssssssk.......","........kdtslstkkk......","........kdttlttqpk......","........kpqpklpqpk......","........kpqpklpqpk......","........kpqpkklqpk......","........kpqpkklqpk......","........kpqpkkgqpk......","........kpqpkkpqpk......","........koookkoook......","........koookkoook......","........kkkkkkkkkk......"];
+const PXF_PT1=["........................","........................","........................","........................","........................","........................","........................","........kkkkkkkkk.......","........kccccccck.......","........kccccccck.......","........ksssssssk.......","........kkssssskk.......",".......kkkkkskkkk.......",".......kdtttttttk.......",".......kdsstttssk.......",".......kdsstttssk.......",".......kksstttssk.......","........ksstttssk.......","........ksssssssk.......","........kdtslstkkk......","........kdttlttqpk......","........kpqplkpqpk......","........kpqplkpqpk......","........kpqplkpqpk......","........kpqgwkpqpk......","........kpqpkkpqpk......","........kpqpkkpqpk......","........koookkoook......","........koookkoook......","........kkkkkkkkkk......"];
 const _pxSwing=new Map();
 // render all stroke frames (full swing 3 / chip 2 / putt 2) for a look, cached, palette-swapped
 function pxStrokeURLs(look){
@@ -8694,39 +8721,46 @@ function pxStrokeURLs(look){
         const col=P[ch]; if(!col)continue;
         ctx.fillStyle=col; ctx.fillRect(x*px,y*px,px,px); } }
     return cv.toDataURL('image/png'); };
-  u={ full:[render(PXS_A),render(PXS_B),render(PXS_C)], chip:[render(PXS_CH0),render(PXS_CH1)], putt:[render(PXS_PT0),render(PXS_PT1)] };
+  const vset=(A,B,C,H0,H1,T0,T1)=>({ full:[render(A),render(B),render(C)], chip:[render(H0),render(H1)], putt:[render(T0),render(T1)] });
+  u={ side:vset(PXS_A,PXS_B,PXS_C,PXS_CH0,PXS_CH1,PXS_PT0,PXS_PT1),
+      back:vset(PXB_A,PXB_B,PXB_C,PXB_CH0,PXB_CH1,PXB_PT0,PXB_PT1),
+      front:vset(PXF_A,PXF_B,PXF_C,PXF_CH0,PXF_CH1,PXF_PT0,PXF_PT1) };
   _pxSwing.set(key,u); return u;
 }
-// SVG markup: the created golfer plays the shot (full swing / chip / putt). Orientation follows the
-// player's HANDEDNESS (look.lefty) so a golfer never flips between lefty/righty by shot direction.
+// SVG markup: the created golfer plays the shot (full swing / chip / putt).
+// CS363: the golfer's FACING follows the shot's aim - up-the-hole shots turn the BACK to the camera,
+// down shots FACE it, lateral shots are SIDE-on (like a real broadcast). look.lefty sets the swing side.
 function hvSwingMarkup(g,p,look){
   if(!HV_SWING) return '';
   const kind = (p.k==='putt'||p.k==='hole')?'putt' : (p.k==='chip'?'chip' : ((p.k==='tee'||p.k==='app'||p.k==='adv')?'full':''));
   if(!kind) return '';
   let set; try{ set=pxStrokeURLs(look); }catch(e){ return ''; }
   if(!set) return '';
-  const frames = kind==='full'?set.full : (kind==='chip'?set.chip : set.putt);
-  const clsBase = kind==='full'?['sw0','sw1','sw2'] : (kind==='chip'?['ch0','ch1'] : ['pt0','pt1']);
   look=look||S.look||DEFLOOK;
   const A=hvProj(g,p.from[0],p.from[1]);
-  // CS356aj (owner: "faces away from the hole"): the golfer faces toward where THIS shot is going (its
-  // resting/target point), so they always address the ball toward the hole and never swing backwards.
-  // Handedness only breaks the tie on a dead-straight shot (no horizontal component).
-  let faceRight;
+  // aim vector (screen) from the shot origin toward its resting point; up = toward the hole (away from cam)
+  let vx=0, vy=-1;
   try{ const rx=(p.rest&&p.rest[0]!=null)?p.rest[0]:p.from[0], ry=(p.rest&&p.rest[1]!=null)?p.rest[1]:p.from[1];
-    const T=hvProj(g,rx,ry), dx=T[0]-A[0];
-    faceRight = Math.abs(dx)<3 ? !look.lefty : (dx>0);
-  }catch(e){ faceRight = !look.lefty; }
+    const T=hvProj(g,rx,ry); vx=T[0]-A[0]; vy=T[1]-A[1];
+  }catch(e){}
+  const L=Math.hypot(vx,vy)||1, up=-vy/L;   // up=1 straight up the hole, -1 back toward the camera
+  let view, mirror, clubFrac, badgeF;
+  if(up>0.42){ view='back'; mirror=!!look.lefty; clubFrac=0.5; badgeF=0.5; }        // aiming up the hole
+  else if(up<-0.42){ view='front'; mirror=!!look.lefty; clubFrac=0.5; badgeF=0.5; } // aiming toward camera
+  else { const faceRight=Math.abs(vx)<0.5?!look.lefty:(vx>0); view='side'; mirror=!faceRight; clubFrac=0.90; badgeF=faceRight?0.62:0.38; }
+  const vset=set[view]||set.side;
+  const frames = kind==='full'?vset.full : (kind==='chip'?vset.chip : vset.putt);
+  const clsBase = kind==='full'?['sw0','sw1','sw2'] : (kind==='chip'?['ch0','ch1'] : ['pt0','pt1']);
   const cam=hvCamFor2(g,p);
   // putts play under the tight green close-up, so size the golfer to a fraction of THAT frame
   const GH = kind==='putt' ? Math.max(9, Math.min(22, cam[3]*0.15)) : 26;
   const GW=GH*PXS_W/PXS_H;
-  const clubFrac=0.90;   // align the sprite's club face (grid x~21.5/24) with the ball at the origin A
-  let x0=A[0]-GW*(faceRight?clubFrac:(1-clubFrac)), y0=A[1]-GH+3;
+  // ball address point: side sprite is bottom-right (grid y~26); back/front are bottom-CENTER (grid y~24)
+  let x0=A[0]-GW*clubFrac, y0=view==='side' ? (A[1]-GH+3) : (A[1]-GH*(24/PXS_H));
   const pad=3, botPad=(kind==='putt'?6:42);   // botPad clears the floating desc/scoreboard on full-hole shots
   y0=Math.max(cam[1]+pad, Math.min(y0, cam[1]+cam[3]-GH-botPad));
   x0=Math.max(cam[0]+pad, Math.min(x0, cam[0]+cam[2]-GW-pad));
-  const tf=faceRight?'':` transform="translate(${(2*x0+GW).toFixed(1)},0) scale(-1,1)"`;
+  const tf=mirror?` transform="translate(${(2*x0+GW).toFixed(1)},0) scale(-1,1)"`:'';
   const img=(u,cls)=>`<image class="hvsw ${cls}" href="${u}" x="${x0.toFixed(1)}" y="${y0.toFixed(1)}" width="${GW.toFixed(1)}" height="${GH.toFixed(1)}" preserveAspectRatio="none"/>`;
   const imgs=frames.map((u,i)=>img(u,clsBase[i])).join('');
   // CS355c: the golfer stands on the shot's resting marker (covering its number). Surface the current shot
@@ -8737,7 +8771,7 @@ function hvSwingMarkup(g,p,look){
   // the close-up camera rather than the tiny golfer, so it stands out (owner ask).
   if(p.i!=null){ const num=p.i+1, putt=(kind==='putt');
     const br=putt?GH*0.26:GH*0.185, fs=putt?GH*0.31:GH*0.223;   // on the green: just slightly bigger than the full-shot pin
-    const bx=x0+(faceRight?0.62:0.38)*GW, by=Math.max(cam[1]+br+0.8, y0-br*1.4);
+    const bx=x0+badgeF*GW, by=Math.max(cam[1]+br+0.8, y0-br*1.4);
     badge=`<g class="hvswnum">`
       +`<circle cx="${(bx+0.6).toFixed(1)}" cy="${(by+1).toFixed(1)}" r="${br.toFixed(1)}" fill="#04150a" opacity=".45"/>`
       +`<path d="M ${bx.toFixed(1)} ${(by+br*1.45).toFixed(1)} L ${(bx-br*0.54).toFixed(1)} ${(by+br*0.54).toFixed(1)} L ${(bx+br*0.54).toFixed(1)} ${(by+br*0.54).toFixed(1)} Z" fill="#0a1626" stroke="#F1D04A" stroke-width=".7"/>`

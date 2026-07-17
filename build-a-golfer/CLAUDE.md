@@ -8969,6 +8969,42 @@ allows Google Fonts, or self-host Anton.*
   bar can sit just below the fold on a short phone (the tap-targets, the primary interaction, are always on
   the visible window) — a candidate polish is docking a compact card row inside the window.
 
+- **CS363 — directional swinging golfer (back-to-camera / side / front) + pixel home-screen background &
+  logo mark (owner: two-part request).** PART 1 (animation): the mini TourTracer golfer (CS355) was a single
+  SIDE-view sprite that only mirror-flipped left/right by the shot's target (CS356aj) — no back-to-camera and
+  no true directional facing. Authored TWO new view sets (composed in `scratchpad/swingdir.py`, a
+  primitive/char-grid builder with a soft-rim outline, iterated against a contact-sheet render): **BACK**
+  (back turned to the camera, for up-the-hole shots — the dominant case and the "broadcast" look the owner
+  wanted) and **FRONT** (facing the camera, for shots aimed back toward the tee), each with full swing (3
+  frames: address/top/through, with leg weight-shift + the club wrapped over the shoulder on the
+  follow-through), chip (2), and putt (2, hunched). Inlined as `PXB_*`/`PXF_*` char-grid constants;
+  `pxStrokeURLs` now renders three cached view sets (`{side,back,front}` each `{full,chip,putt}`),
+  palette-swapped from the created look exactly like the side view (skin/hair/cap/shirt/pants/shoe + the
+  translucent outer rim so the golfer sits ON the grass). `hvSwingMarkup` was rewritten to pick the view
+  from the shot's AIM (screen vector origin→resting point): `up>0.42`→BACK, `up<-0.42`→FRONT, else SIDE;
+  handedness (`look.lefty`) mirrors the back/front swing side (righty base, lefty flipped), and a lateral
+  side shot faces its target (mirror when it goes left) as before. Ball address anchor is bottom-CENTER for
+  back/front (clubFrac 0.5) vs bottom-right for side (0.90, unchanged), and the gold shot-number pin centers
+  above the golfer for back/front. Covers ALL scenarios (full/chip/putt × back/side/front × righty/lefty).
+  The existing CSS keyframes (sw0/sw1/sw2, ch0/ch1, pt0/pt1) are reused by class name across every view, so
+  the hold-the-final-pose animation (CS356n) works unchanged; H2H multi-ball watch is unaffected (it passes
+  a ball color and is excluded, per CS355d). Verified in Playwright: view-selection unit test with the REAL
+  `hvSwingMarkup` (only projection/camera stubbed) — up_R→back/no-mirror, up_L→back/mirror, down→front,
+  left→side/mirror, right→side/no-mirror, putt-up→back-putt; the real sprites render composited on grass via
+  the real functions with the soft rim + number pin, zero page errors. PART 2 (visuals): replaced the smooth
+  vector dusk-course home-screen backdrop (`.coursebg` SVG in `scrTitle`) with a **pixel-art** version —
+  new cached `pxTitleBgURL()` draws a 128×128 canvas (ordered-Bayer-dithered dusk sky gradient + sun glow,
+  dithered tree line, mow-striped receding fairway, a swallowtail gold flag on a putting green, ball, sand
+  bunker) upscaled via CSS `image-rendering:pixelated` + `object-fit:cover`; and a **pixel logo crest**
+  (`pxCrestSVG()` + `PXCREST` char grid: gold-bordered green shield + cream flagpole + swallowtail gold flag
+  + green surface + ball, rendered as crisp-edge rects) now shows in the title header in place of the vector
+  `crestSVG()` (which stays defined, unused). Both match the game's established pixel theme (golfer sprite,
+  trophies, hole-view). Verified: title renders the pixel bg `<img>` (128px source) + the pixel crest with
+  zero page errors; a hole render still shows the directional golfer clean. Committed + pushed to the
+  feature branch; NOT yet deployed to /golf (awaiting owner go-ahead per the deploy guardrail). Tunable:
+  the swing view thresholds (±0.42 up) + `clubFrac`/anchor in `hvSwingMarkup`, the `PXB_*`/`PXF_*` frames in
+  `swingdir.py`, the palette/composition in `pxTitleBgURL`, the `PXCREST` grid.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
