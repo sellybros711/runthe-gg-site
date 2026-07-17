@@ -4197,6 +4197,33 @@ function applyPlayerDecline(){   // once per off-season; severity ramps with the
   CATS.forEach(cat=>{ const sl=S.slots[cat.k]; if(sl) sl.value=Math.max(48, Math.round(sl.value - DECLINE_RATE[cat.k]*ramp*formMod)); });
 }
 function playerRetires(){ return (S.year||1) >= CAREER_MAX_YEARS; }   // forced at the 30-year shelf life
+// CS381: off-season RE-SPINS scale with your career STAGE + how the golfer is DOING (owner): establishing
+// early → 1; in your prime → 2, rising to 3 when you're playing well; the decline years taper back down;
+// the final stretch AND the Legend Circuit → 1. (Changes stay a Tour-Rep prestige reward, see repPerk.)
+function offRespins(){
+  if(S.circuitMode) return 1;                          // Legend Circuit: always 1
+  const yr=S.year||1, maxY=CAREER_MAX_YEARS||30;
+  // "doing well" = a strong just-finished season OR a sustained good run (prime bank)
+  let form=0; try{ const c=S.career, last=(c&&c.seasons&&c.seasons[c.seasons.length-1])||null;
+    form=Math.max(seasonForm(last), (c&&c.primeBank!=null)?c.primeBank/3:0); }catch(e){}
+  const well = form>=0.30;
+  if(yr<=4) return 1;                                   // early career: still establishing
+  if(yr>=maxY-3) return 1;                              // final ~4 years: winding down
+  if(yr>=DECLINE_START_YEAR) return well?2:1;           // decline years (15+): 2 if still performing, else 1
+  return well?3:2;                                      // prime (yrs 5-14): 2, rising to 3 in form
+}
+// a short human note explaining the re-spin count for the off-season screen
+function offRespinNote(){
+  const n=(S.offseason&&S.offseason.reSpins!=null)?S.offseason.reSpins:offRespins();
+  let why;
+  if(S.circuitMode) why='Legend Circuit';
+  else { const yr=S.year||1, maxY=CAREER_MAX_YEARS||30;
+    if(yr<=4) why='early career, still building up';
+    else if(yr>=maxY-3) why='late career, winding down';
+    else if(yr>=DECLINE_START_YEAR) why=(n>=2?'a strong veteran run':'the back nine of your career');
+    else why=(n>=3?'peak form, in your prime':'your prime'); }
+  return `🎡 <b style="color:var(--gold)">${n}</b> re-spin${n===1?'':'s'} this off-season · ${why}`;
+}
 /* golfer customization palettes */
 // `file` = canonical avatar-art filename token (see public/avatars/golfers/README.md).
 // Skins map by lightness order to the 5 art tones (game ids kept for save compat).
@@ -14171,7 +14198,7 @@ function continueFranchise(){
   const _decline={}; CATS.forEach(c=>{ const sl=S.slots[c.k]; if(sl&&_pre[c.k]!=null){ const d=sl.value-_pre[c.k]; if(d<0) _decline[c.k]=d; } });
   S.schedule=[]; S.evtIndex=0; S.season=null; S.curEvt=null; S.recorded=false; S.freshBadges=null; S.seasonPaused=false; S.seasonRank=null;
   // off-season tune-up: re-spin to swap fresh skills in (now also to repair age decline)
-  const _perk=repPerk(); S.offseason={changes:0,maxChanges:_perk.changes,reSpins:_perk.reSpins,decline:_decline,locked:[]}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
+  const _perk=repPerk(); S.offseason={changes:0,maxChanges:_perk.changes,reSpins:offRespins(),decline:_decline,locked:[]}; S.revealed=new Set(); S.current=null; S.spinning=false; S.drawRng=Math.random;
   try{ S.career.sponsorOffers=computeSponsorOffers(); }catch(e){ S.career.sponsorOffers=[]; }   // CS236: interested brands (fill a slot / upgrade) this off-season
   track('offseason_start',{year:S.year});
   saveCareer(offseasonResumeExtra());   // checkpoint the off-season (world advanced, decline applied) so a refresh resumes HERE, not the prior results page
@@ -14369,9 +14396,11 @@ function scrOffseason(){
   // decision moment stays focused - this is between-decision context, not needed while choosing a stat.
   if(!spun){ const r=repTier(); const ageMsg = nDec ? '<b style="color:#e9a23b">▼ Age catching up</b>, power fades first; a spin can repair a slot'
       : 'In your prime, no age decline this year'; let teaser='';
-    if(r.next){ const cur=repPerk(), np=repPerk2(r.next.name), dc=np.changes-cur.changes, dr=np.reSpins-cur.reSpins;
-      if(dc>0||dr>0) teaser=` · reach <b style="color:var(--gold)">${esc(r.next.name)}</b> for ${[dc>0?`+${dc} change${dc>1?'s':''}`:'',dr>0?`+${dr} re-spin${dr>1?'s':''}`:''].filter(Boolean).join(' & ')}`; }
-    add($(`<div class="osstat">${r.tier.name==='G.O.A.T.'?'🐐':'🏅'} <b style="color:var(--gold)">${esc(r.tier.name)}</b>${teaser} · ${ageMsg}</div>`)); }
+    // CS381: re-spins are now career-stage based (offRespins), so the rep teaser only advertises CHANGES.
+    if(r.next){ const cur=repPerk(), np=repPerk2(r.next.name), dc=np.changes-cur.changes;
+      if(dc>0) teaser=` · reach <b style="color:var(--gold)">${esc(r.next.name)}</b> for +${dc} change${dc>1?'s':''}`; }
+    add($(`<div class="osstat">${r.tier.name==='G.O.A.T.'?'🐐':'🏅'} <b style="color:var(--gold)">${esc(r.tier.name)}</b>${teaser} · ${ageMsg}</div>`));
+    add($(`<div class="osstat">${offRespinNote()}</div>`)); }
 
   // sponsors: an actual OFFER (a decision) always shows; the passive strip is hidden while mid-swap (CS356s).
   if(!S.circuitMode){ const offers=(S.career&&S.career.sponsorOffers)||[];

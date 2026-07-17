@@ -9179,6 +9179,20 @@ allows Google Fonts, or self-host Anton.*
   screen (never calls startSeason) and shows the toast; after taking a skill spun clears, Start unlocks and
   the change applies; 0 page errors. Deployed to /golf.
 
+- **CS381 — off-season re-spins scale with career stage + form (owner).** Re-spins were driven by Tour Rep
+  rank (`repPerk().reSpins`); the owner wants them tied to where you are in your career and how the golfer
+  is doing: early career → 1, prime/peak → 2 (rising to 3 when you're playing well), the decline years taper
+  back down, the final stretch AND the Legend Circuit → 1. New `offRespins()`: Legend Circuit → 1; year ≤4
+  (early) → 1; final ~4 years (year ≥ `CAREER_MAX_YEARS-3`) → 1; decline years (year ≥ `DECLINE_START_YEAR`
+  =15) → 2 if still performing else 1; prime (years 5-14) → 2, or 3 in form. "Playing well" = a strong
+  just-finished season (`seasonForm(last) ≥ 0.30`, from rank/wins/majors) OR a sustained good run
+  (`primeBank/3 ≥ 0.30`). Wired into `continueFranchise` (replaces `_perk.reSpins`); CHANGES stay a Tour-Rep
+  prestige reward. The off-season status line drops the now-inaccurate "reach {rank} for +N re-spins" teaser
+  (keeps the +N changes teaser) and adds a stage note (`offRespinNote()`, e.g. "🎡 3 re-spins this off-season
+  · peak form, in your prime"). Resume-safe (the count is stored in `S.offseason.reSpins`). Verified in
+  Playwright across the full arc — circuit 1/1, early 1, prime 2(poor)/3(well), decline 2(well)/1(poor), end
+  1 — and the off-season screen renders the count + note; 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
