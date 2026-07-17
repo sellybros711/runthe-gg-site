@@ -18427,6 +18427,58 @@ const PACK_ODDS=[['common',0.55],['rare',0.30],['epic',0.12],['legendary',0.03]]
 const PACK_DUPE_REFUND={common:1500,rare:3500,epic:8000,legendary:18000};
 const PACK_PITY_EPIC=10, PACK_PITY_LEG=40;  // guaranteed epic+ every 10 packs, legendary every 40
 const PACK_RANK=['common','rare','epic','legendary'];
+const PXPACK=[
+"..............................",
+"....gggggggggggggggggggggg....",
+"....gHHHHHHHHHHHHHHHHHHHHg....",
+"....gGGGGGGGGGGGGGGGGGGGGg....",
+"....gGGGGGGGGGGGGGGGGGGGGg....",
+"....gGGGGGGGGGGGGGGGGGGGGg....",
+"....gG..G..G..G..G..G..G.g....",
+"....KgLEgEEgEEgEEgeegeDgDK....",
+"....KLLEEEEEEEEEEEeeeeDDDK....",
+"....KLLEEESSEEEEEEeeeeWDDK....",
+"....KLLEEESSEEEEEEeeeHHHDK....",
+"....KLLEEESSEEEEEEeeeeHDDK....",
+"....KLLEEESSEEEEEEeeeeDDDK....",
+"....KLLEESSEEEEEEEeeeeDDDK....",
+"....KLLEESSEEEEEEEeeeeDDDK....",
+"....KLLEEGGGGGGGGGGGGeDDDK....",
+"....KLLEEGKKKKKKKKKKGeDDDK....",
+"....KLLESGKeeeeeeeeKGeDDDK....",
+"....KLLESGKDDDDDDDDKGeDDDK....",
+"....KLLESGKDWHHHHHDKGeDDDK....",
+"....KLLESGKDWGGGG.DKGeDDDK....",
+"....KLLSSGKDWGGGG.DKGeDDDK....",
+"....KLLSSGKDWGGGGGDKGeDDDK....",
+"....KLLSSGKDWgggggDKGeDDDK....",
+"....KLLSSGKDWDDDDDDKGeDDDK....",
+"....KLSSEGKDWDDDDDDKGeDDDK....",
+"....KLSSEGKDeDDDDDDKGeDDDK....",
+"....KLSSEGKDDDDDDDDKGeDDDK....",
+"....KLSSEGKDDDDDDDDKGeDDDK....",
+"....KLSEEgKKKKKKKKKKgeDDDK....",
+"....KLSEEggggggggggggeDDDK....",
+"....KLSEEEEEEEEEEEeeeeDDDK....",
+"....KLSEEEEEEEEEEEeeeeDDDK....",
+"....KLLEWEEEEEEEEEeeeeDDDK....",
+"....KLLHHHEEEEEEEEeeeeDDDK....",
+"....KLLEHEEEEEEEEEeeeeDDDK....",
+"....KLLEEEEEEEEEEEeeeeDDDK....",
+"....KLLEEEEEEEEEEEeeeeDDDK....",
+"....KLLEEEEEEEEEEEeeeeDDDK....",
+"....KLLEEEEEEEEEEEeeeeDDDK....",
+"....KKKKKKKKKKKKKKKKKKKKKK....",
+".............................."
+];
+const PXPACK_PAL={K:'#141c16',E:'#146e46',e:'#0f5034',D:'#0b3624',L:'#40b278',G:'#e2b43c',g:'#b48c28',H:'#fff0b4',W:'#eef0eb',R:'#c8423c',T:'#18968c',S:'#78d2b4'};
+var _pxPackURL=null;
+function pxPackURL(){ if(_pxPackURL) return _pxPackURL; var pxw=PXPACK[0].length, pxh=PXPACK.length, sc=8;
+  var cv=document.createElement('canvas'); cv.width=pxw*sc; cv.height=pxh*sc; var ctx=cv.getContext('2d');
+  for(var y=0;y<pxh;y++){ var row=PXPACK[y]; for(var x=0;x<row.length;x++){ var c=PXPACK_PAL[row[x]]; if(!c) continue; ctx.fillStyle=c; ctx.fillRect(x*sc,y*sc,sc,sc); } }
+  _pxPackURL=cv.toDataURL(); return _pxPackURL; }
+function pxPackImg(h){ return '<img src="'+pxPackURL()+'" alt="pack" style="height:'+(h||160)+'px;image-rendering:pixelated;display:block;margin:0 auto">'; }
+
 function packsOn(){ return PACKS_ENABLED===true || (typeof window!=='undefined' && window._PACKSTEST===true); }
 function priceHike(){ return PACKS_ENABLED?PACK_HIKE:1; }
 function packRarityOf(base){ base=base||0; return base>=30000?'legendary':base>=16000?'epic':base>=9000?'rare':'common'; }
@@ -18547,6 +18599,7 @@ function packStyleOnce(){ if(document.getElementById('packcss')) return; var st=
    +'.pcard.flipped .pcard-inner{transform:rotateY(180deg)}'
    +'.pcard-back,.pcard-front{position:absolute;inset:0;-webkit-backface-visibility:hidden;backface-visibility:hidden;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden}'
    +'.pcard-back{background:linear-gradient(160deg,#1a5f3f,#0c1f16);border:2px solid var(--gold);color:var(--gold);font-size:38px;box-shadow:inset 0 0 18px rgba(241,208,74,.18)}'
+   +'.pcard-packimg{height:74%;width:auto;image-rendering:pixelated}'
    +'.pcard:not(.flipped){cursor:pointer}'
    +'.pcard:not(.flipped) .pcard-inner{transition:transform .62s cubic-bezier(.2,.7,.2,1),translate .2s}'
    +'.pcard:not(.flipped):hover{translate:0 -6px}'
@@ -18574,7 +18627,7 @@ function overlayPackReveal(app){
     var rc=PACK_RCOL[item.rarity]||'#b8c4bd';
     var flipped=(d.chosen!=null), cls='pcard'+(flipped?(' flipped'+(idx===d.chosen?' win':' dim')):'');
     var card=$('<div class="'+cls+'" data-idx="'+idx+'"><div class="pcard-inner">'
-      +'<div class="pcard-back">?</div>'
+      +'<div class="pcard-back"><img class="pcard-packimg" src="'+pxPackURL()+'" alt=""></div>'
       +'<div class="pcard-front" style="background:linear-gradient(160deg,'+rc+'33,#0c1f16);border:2px solid '+rc+(flipped&&idx===d.chosen?';box-shadow:0 0 24px '+rc:'')+'">'
         +'<div class="pcard-tier" style="color:'+rc+'">'+PACK_RLABEL[item.rarity]+'</div>'
         +packCardVisual(item)
@@ -18617,7 +18670,7 @@ function packShopNode(){
   var p=packState(), afford=packAffordable();
   var wrap=$('<div style="padding:6px 2px 4px"></div>');
   wrap.appendChild($('<div style="max-width:360px;margin:0 auto;text-align:center">'
-    +'<div style="width:148px;height:178px;margin:6px auto 0;border-radius:18px;background:linear-gradient(160deg,#1a5f3f,#0c1f16);border:2px solid var(--gold);box-shadow:0 0 26px rgba(241,208,74,.3);display:flex;align-items:center;justify-content:center;font-size:58px">🎁</div>'
+    +'<div style="margin:8px auto 0;filter:drop-shadow(0 0 18px rgba(241,208,74,.42))">'+pxPackImg(184)+'</div>'
     +'<div style="font-family:var(--display);font-size:22px;margin-top:12px">Pro Shop Pack</div>'
     +'<div class="small muted" style="margin-top:3px">Pick 1 of 3 cards from the whole locker. (Earned Legend gear never drops.)</div>'
     +'<div style="margin-top:7px;font:800 11px var(--body);color:#cfe6d8">Guaranteed Epic+ in '+Math.max(0,PACK_PITY_EPIC-p.sinceEpic)+' · Legendary in '+Math.max(0,PACK_PITY_LEG-p.sinceLeg)+'</div></div>'));
