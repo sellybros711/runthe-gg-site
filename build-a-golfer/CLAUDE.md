@@ -9028,6 +9028,24 @@ allows Google Fonts, or self-host Anton.*
   /golf (awaiting owner go-ahead). Tunable: `GH` size + the `PXS_*` frames in `swing2.py`; the gradient
   stops / composition in `pxTitleBgURL`.
 
+- **CS365 — anatomically-accurate swing re-authored from a real swing-sequence reference (owner shared a
+  vintage golf swing-position poster; asked to make it accurate + proportional + not disconnected).**
+  Rebuilt the composer (`scratchpad/swing3.py`) as **skeleton-first**: each pose is a set of keypoints
+  (hip / shoulder / head / hands / elbow / knees / feet / club) drawn as CONNECTED tapered limbs (a
+  `limb()` capsule stamps discs along each segment; a `quad()` fills the torso/belt) so body parts stay
+  proportional and joined at the joints - fixing the thin/disconnected arms of CS364. Posture now follows
+  the reference: a forward HIP-HINGE (torso tilted over the ball) held at address/through, a coiled TOP
+  with the hands high behind the head and the club up-and-back away from the target, and a tall ROTATED
+  FINISH with the club wrapped over the shoulder and weight forward. Arms are anatomically routed: for a
+  low central grip (address/putt/chip) they hang from the shoulders through an elbow then in to the hands;
+  for raised-club poses they extend straight to the high hands. All 21 frames (SIDE + BACK + FRONT × full
+  3 / chip 2 / putt 2) re-authored; still 44×56, same palette, so `pxStrokeURLs`/`hvSwingMarkup` are
+  unchanged except the side ball-anchor row (48→49). Verified in Playwright: view selection still correct
+  (up→back, down→front, lateral→side, lefty mirror), the real sprites render on-course + at zoom with clear
+  golf posture, connected proportional limbs, and the club addressing the ball, zero page errors. Committed
+  + pushed to the feature branch; still NOT deployed to /golf. Tunable: the per-pose keypoints in
+  `swing3.py`, limb widths in `body()`, `GH` size.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
