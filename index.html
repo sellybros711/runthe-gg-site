@@ -454,9 +454,10 @@ window.GA_ID='G-L29P5MRWKE';
     overflow-x:auto;scroll-snap-type:x proximity;padding:2px 2px 9px;
     scrollbar-width:none;-webkit-overflow-scrolling:touch;}
   .shots::-webkit-scrollbar{display:none;}
-  .phone{flex:0 0 auto;width:148px;scroll-snap-align:center;border-radius:20px;overflow:hidden;background:#0a1626;
+  /* fixed aspect box so the frame is correct even before the video reports its size (iOS Safari) */
+  .phone{flex:0 0 auto;width:148px;aspect-ratio:440/954;scroll-snap-align:center;border-radius:20px;overflow:hidden;background:#0a1626;
     border:2px solid rgba(255,255,255,.15);box-shadow:0 16px 34px -16px rgba(0,0,0,.85);transition:transform .18s ease;}
-  .phone img,.phone video{display:block;width:100%;height:auto;background:#0a1626;}
+  .phone img,.phone video{display:block;width:100%;height:100%;object-fit:cover;background:#0a1626;}
   .feat:hover .phone{transform:translateY(-3px);}
   /* info side reuses the .g-* classes; strip their card paddings + add per-sport colours */
   .feat .g-head{padding:0;}
