@@ -10318,6 +10318,23 @@ allows Google Fonts, or self-host Anton.*
   still gated at 100% completion; 0 page errors. Deployed to /golf. Tunable: the Collector goals/points, the
   new super-long-term tiers.
 
+- **CS435 — bigger Moment coin reward + coins for decisions paying off (owner: "200 coins for finishing a
+  moment feels like too little for how expensive packs are. Maybe we do 500? And then we can also give coin
+  rewards in game for decisions paying off").** Two changes to the Moment coin faucet (CS288; `addBonusCoins`,
+  so it bypasses the CS186 reset baseline and always accrues; signed-in career play only):
+  1. **Bigger base reward** — `momentPlayCoins` bumped from 120/200/300 to **500 regular / 800 big·playoff·
+     finale / 1200 major** (200 felt too little vs pack prices of 8k/22k/45k).
+  2. **Coins for in-round decisions that pay off** — new `momentDecisionCoins(st, evt)`: each aggressive
+     signature-hole call that produced a birdie/eagle (`st.boldWins` from `momentDecisionStakes`) pays
+     `COIN_BOLD_WIN=250`, scaled by the stage (`stageMult`: ×1.5 major / ×1.2 big / ×1.0 regular); plus a
+     `COIN_GRUDGE_WIN=400` (×stage) bonus for winning a Grudge Match. Folded into the single Moment-finish
+     toast with a breakdown line ("500 for playing · 500 bold calls · 400 grudge win") so the reward is
+     visibly tied to the choices, not just finishing. So a major Sunday played well (3 bold calls + a grudge
+     win) now pays ~2,925 coins vs the old ~300 — a real dent in a pack. Simming still forfeits all of it.
+  Verified in Playwright: play 500/800/1200; bold-call bonus 0 (no wins) / 500 (reg ×2) / 600 (big ×2) /
+  1125 (major ×3); grudge 400/600; 0 page errors. Deployed to /golf. Tunable: `momentPlayCoins`,
+  `COIN_BOLD_WIN`, `COIN_GRUDGE_WIN`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
