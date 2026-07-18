@@ -1437,12 +1437,15 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid rgba(241,208,74,.4); background:linear-gradient(180deg,rgba(241,208,74,.13),rgba(10,22,38,.28)); color:var(--gold); font:800 13px var(--body); line-height:1.25}
   .shop-refcta .small{font-weight:600; color:var(--pagemut)}
   .shop-refcta:hover{border-color:var(--gold); background:linear-gradient(180deg,rgba(241,208,74,.2),rgba(10,22,38,.3))}
-  .shop-preview{display:flex; justify-content:center; align-items:flex-end; height:340px; margin:2px 0 4px}
-  .shop-preview .avatarfig{height:340px}
+  /* CS440: shorter preview box so the item grid shows more (owner: box too tall, wasted space). The golfer
+     is width-constrained, so give the avatarfig an explicit width to fill the shorter box instead of floating
+     tiny in a big empty area. */
+  .shop-preview{display:flex; justify-content:center; align-items:flex-end; height:190px; margin:2px 0 2px}
+  .shop-preview .avatarfig{height:190px; width:150px}
   /* IMG_8306: setup screen reuses the shop tab layout - non-sticky within its bordered box, shorter preview */
   .setup-shop .shop-sticky{position:static; background:transparent; box-shadow:none; padding-bottom:0}
-  .setup-shop .shop-preview{height:236px; margin:4px 0 2px}
-  .setup-shop .shop-preview .avatarfig{height:236px}
+  .setup-shop .shop-preview{height:210px; margin:4px 0 2px}
+  .setup-shop .shop-preview .avatarfig{height:210px; width:150px}
   .segrow{display:flex; gap:6px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
     border-radius:11px; padding:4px}
   .segrow button{flex:1; border:0; background:transparent; color:var(--muted); font:800 12px/1 var(--body);
