@@ -458,14 +458,19 @@ window.GA_ID='G-L29P5MRWKE';
   .howtop:focus-visible{outline:2px solid var(--gold); outline-offset:2px}
   /* CS304: persistent bottom tab nav - hub navigation from any page (Home / Career / Daily / Online / Leaderboard) */
   .botnav{position:fixed; left:0; right:0; bottom:0; z-index:25; background:linear-gradient(180deg,#072612,#04160b);
-    border-top:1px solid var(--line); box-shadow:0 -8px 22px -10px rgba(0,0,0,.7); padding-bottom:env(safe-area-inset-bottom,0px)}
+    border-top:1px solid var(--line); box-shadow:0 -8px 22px -10px rgba(0,0,0,.7); padding-bottom:env(safe-area-inset-bottom,0px);
+    transform:translateZ(0); -webkit-transform:translateZ(0)}   /* CS439: promote to its own GPU layer so iOS keeps it pinned to the viewport bottom (no mid-scroll drift) */
   .botnav-in{display:flex; width:100%; max-width:600px; margin:0 auto}
   .botnav button{flex:1; min-width:0; background:none; border:0; cursor:pointer; color:#9fb3a8; display:flex;
     flex-direction:column; align-items:center; gap:3px; padding:7px 2px 6px; font:800 9px/1 var(--body);
     letter-spacing:.03em; text-transform:uppercase}
   .botnav button .ic{width:22px; height:22px}
   .botnav button span{max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-  .botnav.navhide{display:none}   /* CS430: hidden in place (never removed) on immersive/live-play screens */
+  /* CS439: hide by sliding OFF-SCREEN (+ visibility/pointer-events) instead of display:none. display:none
+     removes the fixed layer, and re-showing it re-lays-out the fixed element, which iOS can mis-paint mid-
+     scroll (the recurring "nav drifts into the middle"). Keeping the layer stable avoids that; pointer-
+     events:none means a hidden nav can never eat taps even if it were painted. */
+  .botnav.navhide{transform:translate3d(0,130%,0); -webkit-transform:translate3d(0,130%,0); visibility:hidden; pointer-events:none}
   .botnav button.on{color:var(--gold)}
   .botnav button:active{transform:translateY(1px)}
   .botnav button:focus-visible{outline:2px solid var(--gold); outline-offset:-3px; border-radius:8px}
@@ -5458,7 +5463,12 @@ function render(){
   // the last ~48px of the viewport and ATE taps on any button behind it - notably the "Use token" Legend
   // buttons + Course Records/Passport/Return-home at the bottom of the preview/result. These screens carry
   // their own home/records buttons and the header ≡ menu, so the global nav is redundant here.
-  const NAV_HIDE=['dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','h2hwatch','h2hpreview','h2hplay','h2hdraft','h2hlobby','setup'];   // setup has its own Back + Build bar → hide the global nav (no clash)
+  // CS439: the draft-flow screens (setup/draft/build/off-season) each have their OWN prominent bottom
+  // actions (Spin / Take / Lock in / Start Year), so the global nav both CLASHED with them (it was
+  // overlapping/blocking the Spin button) and was redundant. Hidden here like setup already was; Home and
+  // the rest stay reachable from the ≡ menu. This also removes the fixed-nav drift surface on these
+  // long, frequently-re-rendering screens.
+  const NAV_HIDE=['dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','h2hwatch','h2hpreview','h2hplay','h2hdraft','h2hlobby','setup','draft','build','offseason'];
   const showNav = !NAV_HIDE.includes(S.screen) && !app.classList.contains('has-cupbar');
   app.classList.toggle('has-botnav', showNav);
   document.body.classList.toggle('has-botnav', showNav);   // CS305: cascades --botnav-space so bottom pop-ups clear the nav
