@@ -10483,6 +10483,38 @@ allows Google Fonts, or self-host Anton.*
   all-done shows the green button + ✓ DONE chip (green color, no count badge), 0 page errors. Deployed to
   /golf.
 
+- **CS444 — marquee finals: optionally PLAY every major & the Summer Games hole-by-hole + a signature Games
+  course (owner, from the tester's "watch all 4 days of the Games / majors if you want to, make special
+  courses, at least an option").** Two coordinated pieces; team-cup storyline beats parked for a later
+  brainstorm per owner.
+  • **#3 — The Summer Games plays a purpose-built signature venue: Concordia National** (Meridian Bay, Host
+    City). A fictional, dramatic coastal medal course (par 72, 7,513 yds, its own hole names, a
+    complete-golfer fit that rewards no single strength, a wide bay + a ceremonial gold flag). Added to
+    `DAILY_COURSES` but **filtered out of `DAILY_KEYS`** (`GAMES_COURSE_KEY`), so it's a career-marquee
+    course only — never in the Daily rotation / course records / passport / H2H pool. Mapped
+    `EVENT_COURSE['Summer Games']` + `COURSEFIT['Summer Games']` + a coastal biome/tweak/flag, so the Games
+    now shows a venue subtitle in the season sim, sims with a course personality, and plays on Concordia in
+    the hole view.
+  • **#2 — majors & the Summer Games can be played immersively regardless of contention, opt-in.** Extended
+    the Moment engine: `momentInfo` no longer excludes the Games (only team cups keep their own set piece),
+    so the Games can fire a normal in-contention Moment; and new `marqueeEligible`/`marqueeInfo` offer the
+    play-the-final-round Moment on ANY major or Games final round even when you're not in the hunt. It's
+    **opt-in and pacing-safe** (respects CS352's popup reduction): the first eligible marquee final asks
+    once ("New · you can play the final round of every major and the Summer Games… try it now?") and the
+    choice sets the preference (`bag_marquee_finals`); a **Settings toggle** ("Play marquee finals") flips
+    it thereafter; the marquee offer bypasses the interrupt budget (it's the player's own choice) but keeps
+    the no-back-to-back spacing. The popup reuses the cinematic Moment set-piece with Games framing (🥇 medal,
+    "THE GAMES · FINAL ROUND", "Play for a medal"). `startMomentRound`/`finishMomentRound`/`finalizeEvent`
+    are unchanged — the Games Moment feeds round 4 exactly like a major Moment, and the olympics medal
+    finalize runs as normal.
+  Verified in Playwright: Concordia is excluded from `DAILY_KEYS` (39) but exists (40) + renders in the hole
+  view; `momentCourseKey('Summer Games')`→Concordia; marquee eligible for majors + Games (not regular
+  events); the Games popup renders the medal framing + first-ask note + coins; a Games Moment loads the
+  Concordia course, plays, finalizes and assigns medals; the major contention Moment still fires; pref
+  off/on both behave; a full season reaches the summary; a normal daily round still works; 0 page errors
+  throughout. Deployed to /golf. Tunable: the Concordia course data, `marqueeFinalsPref` default (currently
+  first-ask), the Games-course biome/flag.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
