@@ -1482,9 +1482,13 @@ window.GA_ID='G-L29P5MRWKE';
   .shop-preview{display:flex; justify-content:center; align-items:flex-end; height:190px; margin:2px 0 2px}
   .shop-preview .avatarfig{height:190px; width:150px}
   /* IMG_8306: setup screen reuses the shop tab layout - non-sticky within its bordered box, shorter preview */
-  .setup-shop .shop-sticky{position:static; background:transparent; box-shadow:none; padding-bottom:0}
-  .setup-shop .shop-preview{height:210px; margin:4px 0 2px}
-  .setup-shop .shop-preview .avatarfig{height:210px; width:150px}
+  /* CS453: pin the golfer preview so it stays visible while scrolling the customization options.
+     Sits just under the sticky app banner (~50px + safe area), opaque bg so tiles scroll cleanly beneath. */
+  .setup-shop .shop-sticky{position:sticky; top:calc(env(safe-area-inset-top, 0px) + 50px); z-index:6;
+    background:#0a1c12; box-shadow:0 8px 12px -8px rgba(0,0,0,.6); border-bottom:1px solid rgba(241,208,74,.12);
+    padding:4px 0 6px; margin:0 0 6px}
+  .setup-shop .shop-preview{height:188px; margin:2px 0 2px}
+  .setup-shop .shop-preview .avatarfig{height:188px; width:150px}
   .segrow{display:flex; gap:6px; background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08);
     border-radius:11px; padding:4px}
   .segrow button{flex:1; border:0; background:transparent; color:var(--muted); font:800 12px/1 var(--body);
@@ -7124,6 +7128,7 @@ function scrSetup(){
   const NDOT=`<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#e2554e;margin-left:5px;vertical-align:middle;box-shadow:0 0 4px rgba(226,85,78,.7)"></span>`;
   const chips = groups.map(g=>`<span class="catglab">${esc(g[0])}</span>`+g[1].map(c=>`<button class="catchip ${c[0]===cat?'on':''}" data-scat="${c[0]}">${esc(c[1])}${(c[0]!==cat && cosCatNew(c[0])>0)?NDOT:''}</button>`).join('')).join('');
   const sticky=$(`<div class="shop-sticky"><div class="shop-preview">${avatarShowHTML()}</div></div>`);
+  wrap.appendChild(sticky);   // CS453: ONLY the golfer pins (sticky) — everything below scrolls, so the golfer stays visible while customizing
   // UNDER THE GOLFER (owner): live active boosts (from equipped gear only) + a distinct Pro Shop / Packs
   // button. Signed-in only (guests have no gear / can't shop).
   if(!guest && SHOP_ENABLED){
@@ -7134,10 +7139,9 @@ function scrSetup(){
     const sb=$(`<button class="setup-shopbtn" style="position:relative">${ic('cart',{size:'16px'})}<span>Pro Shop &amp; Packs${nFree>0?' · 🎁 '+nFree+' free pack'+(nFree>1?'s':''):''}${newN>0?' · <span style="color:#ff8f88;font-weight:800">'+newN+' NEW</span>':''}</span> <span class="ssb-go">▸</span>${newN>0?'<span style="position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:#e2554e;border:2px solid #0e2016;box-shadow:0 0 6px rgba(226,85,78,.9)"></span>':''}</button>`);
     sb.onclick=()=>{ track('setup_shop_open'); S.overlay='shop'; S.shopSec='packs'; render(); };   // CS425: always open the pack menu (was a ReferenceError on undefined 'freePack')
     under.appendChild(sb);
-    sticky.appendChild(under);
+    wrap.appendChild(under);
   }
-  sticky.appendChild($(`<div class="catrow catwrap">${chips}</div>`));
-  wrap.appendChild(sticky);
+  wrap.appendChild($(`<div class="catrow catwrap">${chips}</div>`));
 
   if(S.shopPreview && !guest){ wrap.appendChild(shopPreviewNode()); }
   else if(cat==='skin'){ wrap.appendChild(skinSliderNode()); }   // CS427: skin tone is a light→dark slider, not swatches
@@ -7171,8 +7175,8 @@ function scrSetup(){
     }
     if(!isLook && !guest) markCatSeen(cat);   // CS422: viewing a category's tiles clears its NEW badges (next render)
   }
-  // category handlers (cancel any pending preview when navigating)
-  sticky.querySelectorAll('[data-scat]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.setupCat=x.getAttribute('data-scat'); render(); });
+  // category handlers (cancel any pending preview when navigating). CS453: chips live in `wrap` now (not the pinned golfer).
+  wrap.querySelectorAll('[data-scat]').forEach(x=>x.onclick=()=>{ S.shopPreview=null; S.setupCat=x.getAttribute('data-scat'); render(); });
 
   if(guest){
     const lock=$(`<div style="margin-top:12px;border:1px solid var(--gold);border-radius:12px;background:linear-gradient(180deg,rgba(241,208,74,.08),rgba(10,22,38,.25));padding:14px 15px">

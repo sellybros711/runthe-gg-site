@@ -10714,6 +10714,23 @@ allows Google Fonts, or self-host Anton.*
   the shop shows the Closet CTA and clicking it round-trips back to the "Closet" with the shop closed; 0
   page errors. Screenshot confirms the store CTA. Deployed to /golf.
 
+- **CS453 — the golfer preview stays pinned while scrolling the Closet (owner: "freeze the golfer so they
+  stay while the user scrolls — it's hard to customize when you have to keep scrolling up to check what it
+  looks like").** CS356h had made the setup/Closet golfer preview `position:static` (a "low-risk v1"), so
+  scrolling to the item tiles pushed the golfer off-screen. Re-pinned it: the golfer's `.shop-sticky`
+  wrapper in the `.setup-shop` context is now `position:sticky; top:calc(env(safe-area-inset-top)+50px)`
+  (tucked just under the sticky app banner), with an opaque `#0a1c12` background + a soft bottom border so
+  the item tiles scroll cleanly beneath it. For sticky to hold while the TILES scroll (they're outside the
+  wrapper), `scrSetup` was restructured so the sticky wrapper contains ONLY the golfer preview — the active-
+  boosts card, the "Pro Shop & Packs" button, and the category chips moved out into normal flow (`wrap`)
+  below it (the chip `[data-scat]` handler now queries `wrap`). Preview height trimmed 210→188px so more
+  tiles show under the pinned golfer. Applies to both the Closet (edit) and the career-start create flow.
+  Verified in Playwright (430×740): after scrolling 500px the preview's `position` is `sticky` and its top
+  stays at ~56px (pinned below the banner) instead of scrolling off (would be ~-350px), with the equipped
+  shirt visible on the pinned golfer as the color tiles scroll under it; locker + store + guest regressions
+  all green, 0 page errors. Screenshot confirms the frozen golfer over the scrolling shirt-color grid.
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
