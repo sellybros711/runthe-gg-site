@@ -1941,7 +1941,7 @@ function trophyCabinetHTML(m){
    bag (`achMetrics`): lifetime career stats (lt), daily stats, spotlight/rival wins, and SITUATIONAL flags
    captured at the moment they happen (playoff wins, wire-to-wire, comebacks, low rounds, etc., in bag_ach).
    Completing achievements awards POINTS → a named Tour Rep rank (the "keep playing" hook) and unlocks. */
-const ACH_CATS=['Getting Started','Winning','Season Awards','International','Majors','Clutch','Records & Streaks','Consistency','The Money','Career & Legacy','Daily Challenge','Daily Mastery','Rivalry & Spotlight','The Moment','Reputation & Sponsors','Online','Legend Circuit','Progression','The Build','The Draft'];
+const ACH_CATS=['Getting Started','Winning','Season Awards','International','Majors','Clutch','Records & Streaks','Consistency','The Money','Career & Legacy','Daily Challenge','Daily Mastery','Rivalry & Spotlight','The Moment','Reputation & Sponsors','Online','Legend Circuit','Progression','Collector','The Build','The Draft'];
 // tiered-achievement helper: one metric, several thresholds
 function aT(idb,cat,key,defs){ return defs.map(([g,nm,d,p])=>({id:idb+'_'+g,cat,name:nm,desc:d,goal:g,pts:p,get:m=>m[key]||0})); }
 const ACH=[].concat(
@@ -2246,6 +2246,37 @@ const ACH=[].concat(
    {id:'cm_con39',cat:'Daily Mastery',name:'Conquered the Tour',desc:'Beat the tour average at all 39 daily courses.',goal:39,pts:175,get:m=>m.coursesConquered},
    {id:'cm_a5',   cat:'Daily Mastery',name:'Straight-A Golfer',desc:'Earn an A-grade round at 5 different courses.',  goal:5, pts:50, get:m=>m.coursesMasteredA},
    {id:'cm_a15',  cat:'Daily Mastery',name:'Honor Roll',     desc:'Earn an A-grade round at 15 different courses.', goal:15,pts:120,get:m=>m.coursesMasteredA}],
+  // ================= EXPANSION 5 (CS434): Collector — cosmetics + packs =================
+  // ---- Collector: collectibles owned (paid Pro Shop / pack items, not free basics) ----
+  [{id:'col_1',   cat:'Collector',name:'First Find',        desc:'Own your first Pro Shop collectible.', goal:1,  pts:15, get:m=>m.itemsOwned},
+   {id:'col_10',  cat:'Collector',name:'Building a Wardrobe',desc:'Own 10 collectibles.',                goal:10, pts:35, get:m=>m.itemsOwned},
+   {id:'col_25',  cat:'Collector',name:'Serious Collector', desc:'Own 25 collectibles.',                 goal:25, pts:60, get:m=>m.itemsOwned},
+   {id:'col_50',  cat:'Collector',name:'Cabinet Filler',    desc:'Own 50 collectibles.',                 goal:50, pts:100,get:m=>m.itemsOwned},
+   {id:'col_100', cat:'Collector',name:'The Hoard',         desc:'Own 100 collectibles.',                goal:100,pts:200,get:m=>m.itemsOwned}],
+  // ---- Collector: rarity ----
+  [{id:'col_ep1', cat:'Collector',name:'Rare Air',          desc:'Own an Epic collectible.',             goal:1,  pts:25, get:m=>m.epicOwned},
+   {id:'col_ep10',cat:'Collector',name:'Epic Wardrobe',     desc:'Own 10 Epic collectibles.',            goal:10, pts:90, get:m=>m.epicOwned},
+   {id:'col_lg1', cat:'Collector',name:'One of One',        desc:'Own a Legendary collectible.',         goal:1,  pts:50, get:m=>m.legendaryOwned},
+   {id:'col_lg5', cat:'Collector',name:'Legend Hunter',     desc:'Own 5 Legendary collectibles.',        goal:5,  pts:125,get:m=>m.legendaryOwned},
+   {id:'col_lg12',cat:'Collector',name:'The Vault',         desc:'Own 12 Legendary collectibles.',       goal:12, pts:250,get:m=>m.legendaryOwned}],
+  // ---- Collector: complete a category ----
+  [{id:'col_set1',cat:'Collector',name:'Complete the Set',  desc:'Own every item in a category.',        goal:1,  pts:40, get:m=>m.setsComplete},
+   {id:'col_set3',cat:'Collector',name:'Set Collector',     desc:'Complete 3 categories.',               goal:3,  pts:100,get:m=>m.setsComplete},
+   {id:'col_set6',cat:'Collector',name:'Completionist',     desc:'Complete 6 categories.',               goal:6,  pts:200,get:m=>m.setsComplete}],
+  // ---- Collector: packs opened ----
+  [{id:'pk_1',    cat:'Collector',name:'Pack Ripper',       desc:'Open your first pack.',                goal:1,  pts:15, get:m=>m.packsOpened},
+   {id:'pk_10',   cat:'Collector',name:'Pack Regular',      desc:'Open 10 packs.',                       goal:10, pts:35, get:m=>m.packsOpened},
+   {id:'pk_50',   cat:'Collector',name:'Pack Fiend',        desc:'Open 50 packs.',                       goal:50, pts:80, get:m=>m.packsOpened},
+   {id:'pk_150',  cat:'Collector',name:'Pack Addict',       desc:'Open 150 packs.',                      goal:150,pts:150,get:m=>m.packsOpened},
+   {id:'pk_500',  cat:'Collector',name:'Pack Legend',       desc:'Open 500 packs.',                      goal:500,pts:250,get:m=>m.packsOpened}],
+  // ================= EXPANSION 5 (CS434): super-long-term goals across every category =================
+  aT('winxl','Winning','wins',[[250,'Living Legend','Win 250 career tournaments.',225],[500,'The Untouchable','Win 500 career tournaments.',350]]),
+  aT('majxl','Majors','majors',[[50,'Major Immortal','Win 50 career majors.',200],[75,'Beyond the G.O.A.T.','Win 75 career majors.',350]]),
+  [{id:'leg_years60', cat:'Career & Legacy',name:'A Life on Tour', desc:'Play 60 tour seasons across your careers.', goal:60,pts:150,get:m=>m.seasons},
+   {id:'leg_years100',cat:'Career & Legacy',name:'Timeless',       desc:'Play 100 tour seasons across your careers.',goal:100,pts:250,get:m=>m.seasons}],
+  aT('dailyxl','Daily Challenge','dailyPlayed',[[365,'A Year of Golf','Play the Daily Challenge 365 times.',150],[1000,'Every Single Day','Play the Daily Challenge 1,000 times.',300]]),
+  aT('h2hxl','Online','h2hWins',[[2000,'Online Deity','Win 2,000 online matches.',400]]),
+  [{id:'coin_10m',cat:'Progression',name:'Coin Emperor',   desc:'Earn 10,000,000 coins.',  goal:10000000,pts:350,get:()=>{try{return Math.round(coinsEarnedRaw());}catch(e){return 0;}}}],
   // ---- The Build ----
   [{id:'bld_99',cat:'The Build',name:'The Perfect Golfer',desc:'Build a 99 OVR golfer.',goal:99,pts:250,get:m=>m.maxOvr}]
 );
@@ -2267,6 +2298,19 @@ const REP_TIERS=[
 // literal `null` (see mergeAch/mergeStreak/etc. below) comes back as null, not the default, so every
 // reader here also needs its own `||{...}` fallback before touching a sub-property.
 function achState(){ const s=LS.get(acctKey('bag_ach'),{unlocked:{},flags:{},pts:0})||{unlocked:{},flags:{},pts:0}; s.unlocked=s.unlocked||{}; s.flags=s.flags||{}; return s; }
+// CS434: Pro Shop / pack collector metrics. Reads the `bag_coins` owned map DIRECTLY from storage (NOT via
+// coinState()/cosOwned(), which can reach coinsEarnedRaw()->achMetrics() and recurse). cosmeticItems() /
+// cosmeticPriceBase() / packRarityOf() are all pure. Counts only NON-FREE (base>0) cosmetics as collectibles.
+function collectorMetrics(){
+  const out={itemsOwned:0,epicOwned:0,legendaryOwned:0,setsComplete:0};
+  try{ const c=LS.get(acctKey('bag_coins'),null); const own=(c&&c.owned&&typeof c.owned==='object')?c.owned:{};
+    COS_CATS.forEach(cat=>{ let paid=0, have=0;
+      (cosmeticItems(cat.k)||[]).forEach(it=>{ const base=cosmeticPriceBase(cat.k,it.id); if(base<=0) return;   // skip free items
+        paid++; if(own[cosKey(cat.k,it.id)]){ have++; out.itemsOwned++;
+          const r=packRarityOf(base); if(r==='legendary') out.legendaryOwned++; else if(r==='epic') out.epicOwned++; } });
+      if(paid>0 && have>=paid) out.setsComplete++; });
+  }catch(e){}
+  return out; }
 function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const ds=dailyStats(); const sk=LS.get(acctKey('bag_streak'),{})||{};
   return Object.assign({}, f, {
     wins:lt.wins, majors:lt.majors, top10:lt.top10, made:lt.made, played:lt.played, earnings:lt.earnings, net:lt.net,
@@ -2302,6 +2346,9 @@ function achMetrics(){ const lt=badgeMetrics(); const f=achState().flags; const 
     // NOTE: coins are NOT read here - coinsEarnedRaw() calls achMetrics(), so referencing it here would recurse.
     // The coin achievements read coinsEarnedRaw() directly in their get() (called after achMetrics resolves).
     cosmeticsOwned:(function(){try{const c=LS.get(acctKey('bag_coins'),null); return (c&&c.owned)?Object.keys(c.owned).length:0;}catch(e){return 0;}})(),   // read the store directly (coinState() can call coinsEarnedRaw → recursion)
+    // CS434: collector metrics (cosmetics/packs). collectorMetrics() reads bag_coins directly (no recursion).
+    packsOpened:(function(){try{return packState().opened||0;}catch(e){return 0;}})(),
+    ...(function(){try{return collectorMetrics();}catch(e){return {itemsOwned:0,epicOwned:0,legendaryOwned:0,setsComplete:0};}})(),
     mulliEarned:(function(){try{return xpState().mulliEarned||0;}catch(e){return 0;}})(),
     coursesConquered:(function(){try{const cm=courseMastery();return DAILY_KEYS.filter(k=>cm[k]&&cm[k].beat>0).length;}catch(e){return 0;}})(),
     coursesMasteredA:(function(){try{const cm=courseMastery();return DAILY_KEYS.filter(k=>cm[k]&&(cm[k].grade==null?-1:cm[k].grade)>=3).length;}catch(e){return 0;}})(),
@@ -10822,7 +10869,7 @@ function startSeason(majorsOnly){
   S.season={field,me,results:[],totals:Object.fromEntries(field.map(p=>[p.name,{money:0,points:0,wins:0,majors:0,top10:0,best:99,made:0,played:0,finishSum:0,toPar:0,rounds:0}]))};
   S.seasonAwards=null; S.season.olympicMedals=null; S.season.olympicMyMedal=null; S.season.teamCup=null; S.curTeam=null; S.teamMatchN=0; S.seasonRank=null;
   S.freshAch=[]; S.freshRep=null; S.freshRival=null; S.freshRivalRetired=null; S.freshRivalOutgrown=null; S._repAnimShown=false; S._impactShown=false;   // unlocked during THIS season (shown on the summary)
-  S._bannerNet=null; S._confBar=null; S._respBar=null;   // CS284/285: reset the banner count-up + meter-glide baselines so a new season's first render doesn't animate from prior values
+  S._bannerNet=null; S._bannerFans=null; S._confBar=null; S._respBar=null;   // CS284/285/434: reset the banner count-up + meter-glide baselines so a new season's first render doesn't animate from prior values
   S._railIdx=null; S._railScroll=null;                   // CS285: reset the season-rail smooth-scroll tracking so a new season snaps to center (no glide from last season's schedule position)
   if(S.career && S.career.story){ S.career.story.seasonCount=0; }   // reset the per-season storyline cap (CS225)
   S.season.stops=0; S.season.momentsShown=0; S.season.grudgeShown=0; S.season.sideMoney=0; S.season._lastStopEvt=-99;   // interruption budget + grudge cap (CS295) + off-course money (CS325) + no-back-to-back tracker (CS327)
@@ -14079,6 +14126,7 @@ function scrSeason(){
   // with the Respect meter below it - both career-only (the reputation system is off in daily/circuit).
   const showMeters=!S.daily && !S.circuitMode && S.career;
   const rspVal=showMeters?repRespect():0;
+  const fansVal=showMeters?Math.round(careerStory().followers||0):0;   // CS434: live Fans counter (moves up/down each event)
   const metersHTML=showMeters?`<div class="cb-meters">
       <div class="cb-conf">${confMeterHTML(conf)}</div>
       <div class="cb-resp" style="margin-top:9px">${respMeterHTML(rspVal)}</div>
@@ -14092,6 +14140,7 @@ function scrSeason(){
       <div class="cb-stat"><div class="k">Wins</div><div class="v">${t.wins}</div></div>
       <div class="cb-stat"><div class="k">Top 10</div><div class="v">${t.top10}</div></div>
       <div class="cb-stat"><div class="k">Cuts</div><div class="v">${t.made}/${t.played||0}</div></div>
+      ${showMeters?`<div class="cb-stat"><div class="k">Fans</div><div class="v" id="cb-fans" style="color:#f78fb3">${fmtFollowers(fansVal)}</div></div>`:''}
       <div class="cb-stat"><div class="k">Net</div><div class="v" id="cb-net" style="color:${netCol};font-size:16px">${netShort}</div></div>
     </div>
     ${metersHTML}
@@ -14106,6 +14155,15 @@ function scrSeason(){
     if(_ne && _pr!=null && _pr!==ec.net && !reduce)
       _animCount(_ne, _pr, ec.net, v=>(v>=0?'+':'−')+fmtShort(Math.abs(v)), 950);
     S._bannerNet=ec.net;
+    // CS434: the Fans counter counts up/down to its new value each event, and flashes green (gained) /
+    // red (lost) briefly so the direction reads at a glance.
+    const _fe=_bnr.querySelector('#cb-fans'), _pfn=S._bannerFans;
+    if(showMeters && _fe && _pfn!=null && _pfn!==fansVal && !reduce){
+      _animCount(_fe, _pfn, fansVal, v=>fmtFollowers(v), 950);
+      const up=fansVal>_pfn; _fe.style.transition='color .2s'; _fe.style.color=up?'#35d6a0':'#E14A33';
+      setTimeout(()=>{ if(_fe.isConnected) _fe.style.color='#f78fb3'; }, 1100);
+    }
+    S._bannerFans = showMeters ? fansVal : null;
     // CS285: the Confidence / Respect meter bars GLIDE to their new width when they change (reusing the
     // .cmeter width transition), matching the polished feel of the count-up. Snaps on the first render.
     if(showMeters){ const glide=(cls,key,val)=>{ const sp=_bnr.querySelector('.'+cls+' .cmeter>span'); const pw=Math.max(4,Math.min(100,val));

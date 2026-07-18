@@ -10282,6 +10282,42 @@ allows Google Fonts, or self-host Anton.*
   −3 at 360 into the pill's padding — same as the signed-in case), coin→shop wall, legend→signup+note, 0
   page errors. Screenshot confirms. Deployed to /golf.
 
+- **CS434 — live "Fans" counter on the season banner + Collector achievements + super-long-term goals
+  (owner: "Need a live 'Fans' counter that moves up and down as the sim goes. Then add collector
+  achievements. We should award xp and milestones for everything. Now that we have all new collectibles and
+  pack systems we have way more room for new achievements! We can also add more for everything category with
+  super long term goals. I've completed 230/330 in like a week or 2").** Two parts:
+  1. **Live Fans counter on the franchise banner** (`scrSeason`). Added a **Fans** stat cell to the CS264
+     career banner's stat row (pink #f78fb3), reading `careerStory().followers` — the real, uncapped fan
+     count that already moves per event (up on wins/majors/high finishes + press/dilemma decisions, down on
+     missed cuts + press backfires, CS398/399). It COUNTS UP/DOWN between events (reusing `_animCount`,
+     ~950ms ease) with a green/red directional color flash, tracked by `S._bannerFans` (reset in
+     `startSeason` alongside the Net/meter baselines so year N+1 doesn't animate from year N's number).
+     Career-only (`showMeters`), so daily/circuit are unaffected.
+  2. **Collector achievements (18) — a new "Collector" category** covering the cosmetics + pack systems that
+     had zero achievement coverage: **collectibles owned** (1/10/25/50/100 paid Pro Shop / pack items),
+     **rarity** (own an Epic / 10 Epics / a Legendary / 5 / 12 Legendaries), **complete a category** (own
+     every item in 1/3/6 categories), and **packs opened** (1/10/50/150/500). New `collectorMetrics()` helper
+     computes `itemsOwned`/`epicOwned`/`legendaryOwned`/`setsComplete` by iterating `COS_CATS` ×
+     `cosmeticItems()` — reading the `bag_coins` owned map DIRECTLY from storage (NOT via `coinState()`/
+     `cosOwned()`, which can reach `coinsEarnedRaw()`→`achMetrics()` and RECURSE — the same guard the existing
+     `cosmeticsOwned` metric uses), counting only NON-FREE (`cosmeticPriceBase>0`) items as collectibles and
+     mapping rarity via `packRarityOf(cosmeticPriceBase(...))` (all pure). `packsOpened` reads
+     `packState().opened` (the counter already incremented in `rollPackWin`). Both fold into `achMetrics()`.
+  3. **Super-long-term goals** across every category (owner: "more for everything category with super long
+     term goals") — new top tiers on wins (250/500), majors (50/75), seasons (60/100 across careers), daily
+     played (365/1000), online wins (2000), and coins earned (10M), so the maxed-out player has a real
+     end-game to chase.
+  Catalog grew **331 → 359 achievements** (20 → 21 categories, 33,890 → 38,435 total points). The Tour Rep
+  tiers auto-rescale (thresholds are a % of `ACH_TOTAL_PTS`), so every rank's goalpost moves up with the
+  bigger denominator and `evaluateAch` re-slots each player on next open — the "230/330 in 2 weeks" pace now
+  has far more headroom, and nobody loses anything (unlocked achievements + points are preserved; the rank
+  name just recomputes). Verified in Playwright: 359 ach / 0 dup ids / 0 invalid get·goal·pts / every cat
+  valid; `achMetrics()` + `coinsEarnedRaw()` run with NO recursion error; seeded owned gear + packs count
+  correctly (7 items, 3 epic, 3 legendary, 2 sets complete [club + leg fully owned], 57 packs); G.O.A.T.
+  still gated at 100% completion; 0 page errors. Deployed to /golf. Tunable: the Collector goals/points, the
+  new super-long-term tiers.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
