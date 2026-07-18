@@ -394,6 +394,15 @@ window.GA_ID='G-L29P5MRWKE';
     /* wordmark now lives in the top bar; drop the whole hero so the page opens on PLAY NOW + the games */
     .brand.hero{display:none;}
     .games-head{margin-top:14px;}
+    /* signed in: no sign-up buttons, so the wordmark spans the whole banner and the account collapses to its avatar, floated over the top-right corner */
+    .nav.signed-in .nav-in{position:relative;height:auto;min-height:var(--nav-h);padding-top:8px;padding-bottom:8px;}
+    .nav.signed-in .nav-brand{flex:1;min-width:0;margin-right:0;}
+    .nav.signed-in .nav-wordmark{width:100%;height:auto;max-height:96px;}
+    .nav.signed-in .nav-acct{position:absolute;top:8px;right:max(12px,env(safe-area-inset-right,0px));}
+    .nav.signed-in .nav-chip .nm{display:none;}
+    .nav.signed-in .nav-chip{padding:5px;}
+    /* keep RunThePitch compact on phones so both games show without the tall screenshot gallery */
+    .feat.soccer .shots{display:none;}
   }
 
   /* ---- wider portal layout; keep text columns readable + centered ---- */
@@ -982,10 +991,13 @@ window.GA_ID='G-L29P5MRWKE';
 (function(){
   "use strict";
   var nav=document.getElementById('nav-acct'), acct=document.getElementById('acct');
+  var navBar=document.querySelector('.nav');
   if(!nav||!acct) return;
   function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
   function sync(){
-    if(acct.classList.contains('in')){
+    var signedIn=acct.classList.contains('in');
+    if(navBar) navBar.classList.toggle('signed-in', signedIn);
+    if(signedIn){
       var u=acct.querySelector('.who .hi .u'), name=(u&&u.textContent)||'Player';
       nav.innerHTML='<a class="nav-chip" href="#acct" title="Your account"><span class="av">'+
         esc((name.charAt(0)||'P').toUpperCase())+'</span><span class="nm">'+esc(name)+'</span></a>';
