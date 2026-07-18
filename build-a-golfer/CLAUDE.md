@@ -10437,6 +10437,17 @@ allows Google Fonts, or self-host Anton.*
   fixed-height app-shell (inner scroll container + non-fixed nav) — deferred as it's a larger refactor
   needing real-iOS testing.
 
+- **CS440 — shorter Pro Shop golfer preview box (owner: "make the box that the player sits in shorter so
+  it's not taking up so much space. We want to see more of the bottom").** The dressing-room preview
+  (`.shop-preview`) was a 340px-tall box, but the golfer sprite is width-constrained, so it floated small in
+  the middle with big empty space above and below. Shortened the box to **190px** and gave the avatarfig an
+  explicit **150px width** so the golfer scales up to fill the shorter box instead of floating in a tall
+  empty area — netting ~150px of vertical space back so the invite banner, section tabs, category chips, and
+  two-plus rows of items are all visible above the fold. Applied the same tightening to the create-your-golfer
+  variant (`.setup-shop .shop-preview`, 236px→210px). Verified in Playwright (430×930): box computes 190px,
+  golfer fills it without clipping, more of the item grid on screen, 0 page errors. Deployed to /golf.
+  Tunable: the `.shop-preview` height/width.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
