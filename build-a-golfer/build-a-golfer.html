@@ -493,12 +493,12 @@ window.GA_ID='G-L29P5MRWKE';
   .sc-scene{position:absolute; inset:0; width:100%; height:100%; display:block}
   .sc-sprite{position:absolute; image-rendering:pixelated; pointer-events:none}
   .sc-bunker{left:4%; bottom:11%; width:300px; filter:drop-shadow(0 7px 13px rgba(0,0,0,.3)) brightness(.82) saturate(.9)}
-  .sc-green{right:6%; bottom:9%; width:352px; filter:drop-shadow(0 8px 15px rgba(0,0,0,.3)) brightness(.95)}
+  .sc-green{right:-13%; bottom:7%; width:660px; filter:drop-shadow(0 8px 15px rgba(0,0,0,.3)) brightness(.95)}
   .sc-ov{position:absolute; inset:0; pointer-events:none}
   .sc-scrim{background:linear-gradient(180deg, rgba(3,11,8,.82) 0%, rgba(3,11,8,.66) 30%, rgba(3,11,8,.34) 54%, rgba(3,11,8,.06) 74%, transparent 88%)}
   .sc-vig{background:radial-gradient(135% 105% at 50% 22%, transparent 46%, rgba(2,9,7,.62) 100%)}
   .sc-ground{background:linear-gradient(0deg, rgba(2,9,7,.5) 0%, transparent 12%)}
-  @media(max-width:700px){ .sc-bunker{width:172px; left:2%; bottom:6%} .sc-green{width:200px; right:2%; bottom:7%} }
+  @media(max-width:700px){ .sc-bunker{width:172px; left:2%; bottom:6%} .sc-green{width:380px; right:-16%; bottom:6%} }
   .sky{position:absolute; inset:0; background:linear-gradient(180deg,#0a2038 0%,#0b2742 40%,#0f3f30 58%,#0b3325 100%)}
   .glow{position:absolute; top:-14%; width:62%; height:60%;
     background:radial-gradient(closest-side, rgba(255,242,205,.18), transparent 70%); filter:blur(2px)}
@@ -6826,8 +6826,9 @@ function pxGreenFlagURL(){   // crisp pixel putting green + swallowtail flag + b
   const px=(x,y,c)=>{ cx.fillStyle=c; cx.fillRect(x,y,1,1); };
   const gcx=52,gcy=58,grx=48,gry=15;
   for(let y=gcy-gry;y<=gcy+gry;y++) for(let x=gcx-grx;x<=gcx+grx;x++){ const d=((x-gcx)/grx)**2+((y-gcy)/gry)**2; if(d<=1) px(x,y, d>0.8?'#256b40':(y<gcy?'#49b76c':'#329457')); }
-  for(let y=52;y<=54;y++) for(let x=40;x<=42;x++) px(x,y,'#eeece2');   // ball
-  const fx=58; for(let y=18;y<=57;y++){ px(fx,y,'#e4e7e0'); px(fx+1,y,'#aeb7b1'); }   // pole
+  // pin + ball sit on the LEFT of the green so they stay on-screen when the green's right half bleeds off the edge
+  for(let y=52;y<=54;y++) for(let x=18;x<=20;x++) px(x,y,'#eeece2');   // ball
+  const fx=30; for(let y=18;y<=57;y++){ px(fx,y,'#e4e7e0'); px(fx+1,y,'#aeb7b1'); }   // pole
   for(let i=0;i<15;i++) for(let j=0;j<10;j++){ if(i>=9 && Math.abs(j-4.5)<(i-8)) continue; px(fx+2+i,18+j, i<2?'#bf922a':'#eac845'); }   // swallowtail flag
   _pxTitleGreen=cv.toDataURL('image/png'); return _pxTitleGreen;
 }
