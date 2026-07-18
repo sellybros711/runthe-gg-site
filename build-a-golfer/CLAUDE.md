@@ -10335,6 +10335,26 @@ allows Google Fonts, or self-host Anton.*
   1125 (major ×3); grudge 400/600; 0 page errors. Deployed to /golf. Tunable: `momentPlayCoins`,
   `COIN_BOLD_WIN`, `COIN_GRUDGE_WIN`.
 
+- **CS436 — decision-payoff coins in EVERY hole-by-hole mode (owner: "These decision payoff coin rewards
+  should be applied to all game modes so we incentivize playing the game and not simming").** CS435 added
+  bold-call coins to career Moments; extended to the other modes that share the same signature-hole
+  Attack/Safe decision engine. Shared helpers `boldWinsIn(holes)` (aggressive calls that produced a
+  birdie/eagle) + `decisionPayoutCoins(holes, mult)` (= boldWins × `COIN_BOLD_WIN` 250 × stage mult).
+  - **Daily Challenge** (`finishDailyRound`): the bold-call payout (×1.0) is added to the existing coin
+    award, with a "+N bold calls" note in the toast. Server-attempt-gated (CS81), so not farmable.
+  - **Monthly Spotlight** (`finishSpotlightRound`): previously awarded NO coins at all — now pays a base
+    play reward + beat-the-pro bonus + bold-call payout (×1.2, marquee), **gated once per Spotlight month**
+    (`rec.coined`) since Spotlight attempts aren't server-enforced (a localStorage-reset replay can't
+    re-farm it). Hardened `mergeSpecial` to merge months per-key (max attempts, lower best, OR won/coined)
+    so a cross-device sync can never reset the `coined` flag or lose a better score.
+  - **Legend Token rounds** deliberately EXCLUDED — they're free, unlimited, and deterministic per (day,
+    build), so awarding coins would be re-farmable by re-finishing.
+  - **Online H2H** has no in-round shot decisions (the decision is the draft; the watch is a spectator sim),
+    so the bold-call concept doesn't apply; the existing win reward already incentivizes playing.
+  Verified in Playwright: `boldWinsIn`=2 for two aggressive birdies; daily payout 500 (×1.0) / spotlight 600
+  (×1.2); `mergeSpecial` preserves `coined:true` + the lower best across a sync where local was uncoined; 0
+  page errors. Deployed to /golf. Tunable: `COIN_BOLD_WIN`, the per-mode stage mults.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
