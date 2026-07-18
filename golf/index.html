@@ -4244,6 +4244,34 @@ function pairs8(team){   // top 8 by skill into 4 pairs, with YOU forced into th
   if(mi>=8){ const me=s.splice(mi,1)[0]; s.splice(7,0,me); }
   const e=s.slice(0,8); return [[e[0],e[1]],[e[2],e[3]],[e[4],e[5]],[e[6],e[7]]];
 }
+// CS446: real cups rotate the lineup and change partnerships session to session, they don't send out the
+// same eight in the same four pairs every time. Build a DIFFERENT arrangement for each of the 4 team
+// sessions (sess 0..3): rotate which 8 of the 12 play (so squad members sit different sessions), and vary
+// the partnerships (a distinct pairing pattern per session), with YOU always in the eight when on this side.
+function rotN(arr, n){ const a=[...arr]; n=((n%a.length)+a.length)%a.length; return a.slice(n).concat(a.slice(0,n)); }
+const CUP_PAIR_PATTERNS=[[[0,1],[2,3],[4,5],[6,7]],[[0,2],[1,3],[4,6],[5,7]],[[0,3],[1,2],[5,6],[4,7]],[[0,1],[2,4],[3,5],[6,7]]];
+function cupSessionPairs(team, sess){
+  const s=[...team].sort((a,b)=>b.eo-a.eo);
+  const you=s.find(p=>p.you), others=s.filter(p=>!p.you);
+  // rotate the bench so a different subset sits each session; YOU always play when on this side
+  let play;
+  if(you){ play=[you, ...rotN(others, sess*3).slice(0,7)]; }
+  else { play=rotN(others, sess*3).slice(0,8); }
+  play.sort((a,b)=>b.eo-a.eo);                         // face like-for-like across the two teams (tier i vs tier i)
+  const pat=CUP_PAIR_PATTERNS[sess%CUP_PAIR_PATTERNS.length];
+  return pat.map(([i,j])=>[play[i], play[j]]);
+}
+// CS446 part B: resolve a captain's chosen name-pairs into player objects from their (adjusted) team, ordered
+// strongest-first so their best pairing faces the other side's best (removes the which-pair-faces-which
+// micro-decision, keeps matches balanced). Returns null unless a full 4 pairs resolve.
+function applyCaptainPairs(setPairs, srcTeam){
+  if(!setPairs) return null;
+  const byName=n=>srcTeam.find(p=>teamNm(p)===n);
+  const chosen=setPairs.map(pr=>[byName(pr[0]), byName(pr[1])]).filter(pr=>pr[0]&&pr[1]);
+  if(chosen.length!==4) return null;
+  chosen.sort((x,y)=>(y[0].eo+y[1].eo)-(x[0].eo+x[1].eo));
+  return chosen;
+}
 function teamNm(p){ return p.you?(S.name||'You'):p.name; }
 function simTeamEvent(opts){
   opts=opts||{};
@@ -4266,11 +4294,22 @@ function simTeamEvent(opts){
   teamA.forEach(p=>p.eo-=adj); teamB.forEach(p=>p.eo+=adj);
   let ptA=0, ptB=0; const sessions=[], rec={w:0,l:0,h:0};
   const SESS=[['Foursomes',1,'foursomes'],['Fourball',1,'fourball'],['Foursomes',2,'foursomes'],['Fourball',2,'fourball'],['Singles',3,'singles']];
+  // captain-set pairings for your side (CS446 part B): opts.captainPairs[teamSessN] = array of 4 [nameA,nameB]
+  const capSide=opts.captainSide, capPairs=opts.captainPairs;
+  let teamSessN=0;   // 0..3 across the four team sessions (singles excluded)
   for(const [title,day,fmt] of SESS){
     const matches=[];
     if(fmt==='singles'){ const sa=[...teamA].sort((a,b)=>b.eo-a.eo), sb=[...teamB].sort((a,b)=>b.eo-a.eo);
       for(let i=0;i<12;i++) matches.push(simMatch('singles',[sa[i]],[sb[i]])); }
-    else { const pa=pairs8(teamA), pb=pairs8(teamB); for(let i=0;i<4;i++) matches.push(simMatch(fmt,pa[i],pb[i])); }
+    else {
+      // each team session rotates the eight and varies partnerships (CS446); when you captain a side and have
+      // set that session's pairings, use them for your side, the AI still arranges the other side.
+      let pa=cupSessionPairs(teamA, teamSessN), pb=cupSessionPairs(teamB, teamSessN);
+      const chosen=capPairs && applyCaptainPairs(capPairs[teamSessN], capSide==='A'?teamA:teamB);
+      if(chosen){ if(capSide==='A') pa=chosen; else pb=chosen; }
+      for(let i=0;i<4;i++) matches.push(simMatch(fmt,pa[i],pb[i]));
+      teamSessN++;
+    }
     const rows=matches.map(mt=>{
       if(mt.res==='A')ptA++; else if(mt.res==='B')ptB++; else {ptA+=0.5;ptB+=0.5;}
       const youIn=mt.a.some(p=>p.you)||mt.b.some(p=>p.you); let youWin=null;
@@ -4290,7 +4329,45 @@ function simTeamEvent(opts){
     // selection / captaincy info for the pre-match announcement
     mySide, playerSelected:!!playerSide, captain:!!opts.captainSide,
     meRank: myPool?(myPool.meIdx>=0?myPool.meIdx+1:null):null, poolSize: myPool?myPool.pool.length:0,
-    rosterA, rosterB, mineWon:!!mineWon};
+    rosterA, rosterB, mineWon:!!mineWon,
+    // CS446 part B: keep the (adjusted) teams + captain side so a captain can re-pair Day 2 and re-sim the
+    // unrevealed sessions between days without re-rolling the already-watched Day 1.
+    _teamA:teamA, _teamB:teamB, _capSide:opts.captainSide||null};
+}
+// CS446: recompute a cup's tallies/result purely from its session rows (used after a between-days re-sim).
+function cupRetally(T){
+  let ptA=0, ptB=0, w=0, l=0, h=0;
+  T.sessions.forEach(s=>s.matches.forEach(m=>{
+    if(m.res==='A')ptA++; else if(m.res==='B')ptB++; else {ptA+=0.5;ptB+=0.5;}
+    if(m.you){ if(m.youWin==='win')w++; else if(m.youWin==='loss')l++; else h++; }
+  }));
+  T.ptA=ptA; T.ptB=ptB;
+  T.winner=ptA>ptB?'A':ptB>ptA?'B':'tie';
+  T.mineWon=!!(T.mySide && T.winner!=='tie' && T.winner===T.mySide);
+  T.playerRec={w,l,h,pts:w+h*0.5};
+  T.playerWon=!!(T.playerSide && T.winner!=='tie' && T.winner===T.playerSide);
+  T.retained=T.winner==='tie';
+}
+// CS446 part B: a captain sets Day-2 pairings at the between-days beat. Re-sim ONLY the two Day-2 team
+// sessions (indices 2,3), keeping the already-revealed Day-1 sessions + Sunday singles pool, then re-tally.
+function resimCupDay2(T, day2Pairs){
+  if(!T || !T._teamA || !T._teamB) return;
+  const capSide=T._capSide;
+  [[2,'foursomes'],[3,'fourball']].forEach(([sIdx, fmt])=>{
+    let pa=cupSessionPairs(T._teamA, sIdx), pb=cupSessionPairs(T._teamB, sIdx);
+    const chosen=applyCaptainPairs(day2Pairs, capSide==='A'?T._teamA:T._teamB);
+    if(chosen){ if(capSide==='A') pa=chosen; else pb=chosen; }
+    const rows=[];
+    for(let i=0;i<4;i++){ const mt=simMatch(fmt, pa[i], pb[i]);
+      const youIn=mt.a.some(p=>p.you)||mt.b.some(p=>p.you); let youWin=null;
+      if(youIn){ const onA=mt.a.some(p=>p.you);
+        if(mt.res==='half')youWin='half'; else if((mt.res==='A')===onA)youWin='win'; else youWin='loss'; }
+      rows.push({format:fmt, a:mt.a.map(p=>({nm:teamNm(p),nat:p.nation||p.nat,you:!!p.you})), b:mt.b.map(p=>({nm:teamNm(p),nat:p.nation||p.nat,you:!!p.you})),
+        res:mt.res, label:mt.label, you:youIn, youWin});
+    }
+    T.sessions[sIdx].matches=rows;
+  });
+  cupRetally(T);
 }
 /* ---- Emergent rivalry: no manual pick. The game tallies your head-to-head vs every field player and,
    after a few seasons, crowns the recurring peer who keeps finishing right beside you as your nemesis
@@ -13910,6 +13987,60 @@ function scrCaptainPicks(){
   if(done) c.onclick=()=>{ const chosen=cands.filter(p=>picks.includes(p.name)); S.cupPickTeam=auto.concat(chosen).map(p=>Object.assign({},p)); render(); };
   ctrl.appendChild(c); add(ctrl);
 }
+// CS446 part B: session->pairs map from the captain's per-day choices (each day's pairs play both that day's
+// sessions). teamSess 0,1 = Day 1; 2,3 = Day 2.
+function captainPairsMap(){
+  const d=S.cupDayPairs||{}, m={};
+  if(d[1]){ m[0]=d[1]; m[1]=d[1]; }
+  if(d[2]){ m[2]=d[2]; m[3]=d[2]; }
+  return m;
+}
+// CS446 part B: captain pairing screen (Day 1 up front, Day 2 at the between-days beat). Form 4 pairs from
+// the 12, the other 4 sit that day. Tap two players to pair them; tap a paired player to break the pair.
+function scrCaptainPairs(day){
+  clearTimeout(seasonTimer); RT.classList.add('major-screen');
+  const team=(S.cupPickTeam||[]).slice().sort((a,b)=>b.eo-a.eo);
+  const th=cupTheme(teamEventForYear(S.year||1).type);
+  const bd=(S.cupPairBuild && S.cupPairBuild.day===day) ? S.cupPairBuild : (S.cupPairBuild={day, pending:null, pairs:[]});
+  const natOf=n=>{ const p=team.find(x=>teamNm(x)===n); return p?(p.nation||p.nat):''; };
+  const inPair=n=>bd.pairs.findIndex(pr=>pr.indexOf(n)>=0);
+  add($(`<div class="center" style="margin-top:6px"><span class="tag" style="color:${th.accent};border-color:${th.border};background:${th.bg}">${th.emoji} Captain · Day ${day} pairings</span></div>`));
+  add($(`<h2 class="center" style="margin:10px 0 2px;font-size:19px">Set your Day ${day} pairings</h2>`));
+  add($(`<p class="small muted center" style="margin:0 0 10px;max-width:470px">Tap two players to pair them. Send out 4 pairs — the other ${Math.max(0,team.length-8)} sit today. ${day===1?'This lineup plays both of today’s sessions; you can shuffle it for Day 2.':'Fresh legs and new partnerships to swing the Cup.'}</p>`));
+  const slots=$(`<div style="max-width:520px;margin:0 auto 10px;display:grid;gap:6px"></div>`);
+  for(let i=0;i<4;i++){ const pr=bd.pairs[i];
+    slots.appendChild($(`<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid ${pr?'var(--gold)':'var(--line)'};border-radius:11px;background:${pr?'rgba(235,208,74,.08)':'#0a2740'}">
+      <span class="small muted" style="width:44px">Pair ${i+1}</span>${pr?`<span style="flex:1;font-size:13px;color:#dce8ff">${natFlag(natOf(pr[0]))} ${esc(pr[0])} &amp; ${natFlag(natOf(pr[1]))} ${esc(pr[1])}</span>`:`<span class="small muted" style="flex:1">empty</span>`}</div>`));
+  }
+  add(slots);
+  const grid=$(`<div style="max-width:520px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>`);
+  team.forEach(p=>{ const nm=teamNm(p), pi=inPair(nm), paired=pi>=0, pend=bd.pending===nm;
+    const b=$(`<button class="btn ${pend?'gold':paired?'teal':'ghost'}" style="text-align:left;padding:9px 11px;display:flex;align-items:center;gap:6px">
+      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${natFlag(p.nation||p.nat)} ${esc(nm)}</span><span class="small muted">${p.eo}${paired?` · P${pi+1}`:''}</span></button>`);
+    b.onclick=()=>{
+      if(paired){ bd.pairs.splice(pi,1); bd.pending=null; }
+      else if(pend){ bd.pending=null; }
+      else if(bd.pending){ if(bd.pairs.length<4) bd.pairs.push([bd.pending,nm]); bd.pending=null; }
+      else if(bd.pairs.length<4){ bd.pending=nm; }
+      render();
+    };
+    grid.appendChild(b);
+  });
+  add(grid);
+  const ctrl=$(`<div style="max-width:520px;margin:12px auto 0"></div>`);
+  const auto=$(`<button class="btn ghost" style="margin-bottom:8px">↺ Auto-pair the top 8</button>`);
+  auto.onclick=()=>{ const sp=cupSessionPairs(team, day===1?0:2); bd.pairs=sp.map(pr=>[teamNm(pr[0]),teamNm(pr[1])]); bd.pending=null; render(); };
+  ctrl.appendChild(auto);
+  const done=bd.pairs.length===4;
+  const c=$(`<button class="btn ${done?'goldfill':'ghost'}"${done?'':' disabled style="opacity:.55"'}>${day===1?'Start the Cup ▸':'Play Day 2 ▸'}<span class="sub">${done?'Send out your four pairs':`Form ${4-bd.pairs.length} more pair${4-bd.pairs.length===1?'':'s'}`}</span></button>`);
+  if(done) c.onclick=()=>{
+    S.cupDayPairs=S.cupDayPairs||{}; S.cupDayPairs[day]=bd.pairs.slice(); S.cupPairBuild=null;
+    if(day===1){ render(); }   // PHASE 3 will sim the cup with your Day-1 pairings
+    else { S.cupPairPrompt=null; resimCupDay2(S.curTeam, S.cupDayPairs[2]);
+      S.curTeam._dayAck=S.curTeam._dayAck||{}; S.curTeam._dayAck.d1=true; S.teamMatchN=9; render(); }
+  };
+  ctrl.appendChild(c); add(ctrl);
+}
 /* ===================== CS445: TEAM CUP STORYLINES =====================
    Between-days "Cup Dispatch" beats, a Sunday-singles set-piece, pre-cup hype, a rivalry needle, and career
    stakes (fans + confidence) so the cups feel alive instead of a flat match-by-match reveal. */
@@ -14015,14 +14146,18 @@ function cupCareerStakes(T){
 }
 function scrTeamCup(){
   clearTimeout(seasonTimer);
-  if(S._cupIdx!==S.evtIndex){ S._cupIdx=S.evtIndex; S.curTeam=null; S.teamMatchN=0; S.cupChoice=null; S.cupPickTeam=null; S.cupPicks=null; S._cupScrolledN=null; }
+  if(S._cupIdx!==S.evtIndex){ S._cupIdx=S.evtIndex; S.curTeam=null; S.teamMatchN=0; S.cupChoice=null; S.cupPickTeam=null; S.cupPicks=null; S._cupScrolledN=null; S.cupDayPairs=null; S.cupPairPrompt=null; S.cupPairBuild=null; }
   // PHASE 1, captaincy offer (eligible late-career veterans choose to captain or play on)
   if(captainEligible() && !S.cupChoice){ scrCaptainOffer(); return; }
   // PHASE 2, make your captain's picks
   if(S.cupChoice==='captain' && !S.cupPickTeam){ scrCaptainPicks(); return; }
-  // PHASE 3, sim + watch (using your captain team if you took the armband)
+  // PHASE 2b (CS446), captain sets Day-1 pairings before the Cup begins
+  if(S.cupChoice==='captain' && S.cupPickTeam && !(S.cupDayPairs&&S.cupDayPairs[1])){ scrCaptainPairs(1); return; }
+  // CS446, captain re-pairs at the between-days beat (prompted from the Day-1 Dispatch)
+  if(S.cupPairPrompt && S.curTeam){ scrCaptainPairs(S.cupPairPrompt); return; }
+  // PHASE 3, sim + watch (using your captain team + your chosen pairings if you took the armband)
   if(!S.curTeam || S.curTeam._idx!==S.evtIndex){
-    S.curTeam = (S.cupChoice==='captain' && S.cupPickTeam) ? simTeamEvent({captainSide:myCupSide(), captainTeam:S.cupPickTeam}) : simTeamEvent();
+    S.curTeam = (S.cupChoice==='captain' && S.cupPickTeam) ? simTeamEvent({captainSide:myCupSide(), captainTeam:S.cupPickTeam, captainPairs:captainPairsMap()}) : simTeamEvent();
     S.curTeam._idx=S.evtIndex; S.teamMatchN=0;
     if(S.cupChoice==='captain') S.curTeam._introSeen=true;   // the pick screen was your intro
   }
@@ -14138,10 +14273,17 @@ function scrTeamCup(){
   app.classList.add('has-cupbar');
   const ctrl=$(`<div class="cupctrl"></div>`);
   if(!allDone && dayBeat){
+    // CS446: a captain sets Day-2 pairings at the Day-1 Dispatch (re-pairing the lineup between days)
+    if(T.captain && dayBeat===1){
+      const b=$(`<button class="btn goldfill">Set your Day 2 pairings ▸<span class="sub">Shuffle the lineup for the Saturday sessions</span></button>`);
+      b.onclick=()=>{ clearTimeout(seasonTimer); S.cupPairPrompt=2; S.cupPairBuild=null; render(); };
+      ctrl.appendChild(b);
+    } else {
     // CS445: pause the reveal on the Dispatch - a single "play the next day" continue button
     const b=$(`<button class="btn goldfill">${dayBeat===1?'Play Day 2 ▸':'Sunday Singles ▸'}<span class="sub">${dayBeat===1?'Foursomes & fourball resume':'The 12 singles that decide the Cup'}</span></button>`);
     b.onclick=()=>{ clearTimeout(seasonTimer); T._dayAck['d'+dayBeat]=true; S.teamMatchN=matchN+1; render(); };
     ctrl.appendChild(b);
+    }
     const skip=$(`<button class="btn ghost" style="margin-top:10px">Skip to Result ⏭</button>`);
     skip.onclick=()=>{ clearTimeout(seasonTimer); T._dayAck.d1=true; T._dayAck.d2=true; S.teamMatchN=TOTAL; render(); };
     ctrl.appendChild(skip);
