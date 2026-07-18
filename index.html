@@ -401,10 +401,14 @@ window.GA_ID='G-L29P5MRWKE';
     .nav.signed-in .nav-acct{position:absolute;top:8px;right:max(12px,env(safe-area-inset-right,0px));}
     .nav.signed-in .nav-chip .nm{display:none;}
     .nav.signed-in .nav-chip{padding:5px;}
-    /* RunThePitch on phones: lead with the animated gameplay phones instead of the Now Online strip */
+    /* RunThePitch on phones: swap the Now Online strip for the animated phones in that exact slot — below the title, above Play now.
+       display:contents lets the phones (a sibling of .feat-info) interleave with the title + Play now via order. */
     .feat.soccer .online-strip{display:none;}
-    .feat.soccer .shots{gap:10px;padding-bottom:4px;}
+    .feat.soccer .feat-info{display:contents;}
+    .feat.soccer .g-head{order:1;}
+    .feat.soccer .shots{order:2;gap:10px;padding:2px 2px 0;}
     .feat.soccer .phone{width:118px;}
+    .feat.soccer .g-foot{order:3;padding-top:0;}
     /* phones: drop the paragraph descriptions so both cards' titles, widget chips + Play now fit on one screen (desktop keeps the full copy) */
     .feat .g-desc{display:none;}
     .feat .g-chips{padding-top:2px;}
