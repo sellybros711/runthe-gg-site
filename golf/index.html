@@ -4860,7 +4860,13 @@ function addBonusCoins(n, opts){ opts=opts||{}; n=Math.round(n||0); if(!sbSigned
   if(!opts.silent){ try{ toast('<b style="color:#ffd45e">+'+coinFmt(n)+' coins</b>'+(opts.label?' '+opts.label:' earned')+'!'); }catch(e){} }
   return n; }
 // coins awarded for PLAYING a Moment round yourself (simming forfeits this). Bigger stage = bigger bonus.
-function momentPlayCoins(evt){ if(!evt) return 120; return evt.major?300:(evt.big||evt.playoff||evt.type==='finale')?200:120; }
+// CS435 (owner): bumped up (200 felt too little vs pack prices) - base 500, big 800, major 1200.
+function momentPlayCoins(evt){ if(!evt) return 500; return evt.major?1200:(evt.big||evt.playoff||evt.type==='finale')?800:500; }
+// CS435: coins for in-round DECISIONS PAYING OFF - each aggressive call that produced a birdie/eagle (boldWins),
+// plus a bonus for winning a Grudge Match. Scaled by the stage. Rewards the choices, not just finishing.
+const COIN_BOLD_WIN=250, COIN_GRUDGE_WIN=400;
+function stageMult(evt){ return (evt&&evt.major)?1.5:(evt&&(evt.big||evt.playoff||evt.type==='finale'))?1.2:1.0; }
+function momentDecisionCoins(st, evt){ if(!st||!st.boldWins) return 0; return Math.round(st.boldWins*COIN_BOLD_WIN*stageMult(evt)); }
 // ---- PLAY COIN FAUCETS (owner: coins should be earned by playing, visibly). These use addBonusCoins,
 // which bypasses the CS186 reset baseline, so they always accrue for every account (a maxed account whose
 // derived total was baselined to 0 still earns from playing). Tunable amounts. ----
@@ -12963,8 +12969,13 @@ function finishMomentRound(){
     // CS288: PLAYING the round yourself earns bonus coins (simming forfeits them). Award once, then fold the
     // "+N coins" into the finish toast so it doesn't collide with a second toast.
     let coinSpan='';
-    if(!ce._momentCoined){ ce._momentCoined=true; const cg=addBonusCoins(momentPlayCoins(ce.evt), {silent:true});
-      if(cg>0) coinSpan=` · <span style="color:#ffd45e;font-weight:800">+${coinFmt(cg)} coins</span>`; }
+    if(!ce._momentCoined){ ce._momentCoined=true;
+      const base=momentPlayCoins(ce.evt);
+      const dcoins=momentDecisionCoins(st, ce.evt);                                  // CS435: bold calls that paid off
+      const gcoins=(gr&&gr.won)?Math.round(COIN_GRUDGE_WIN*stageMult(ce.evt)):0;     // CS435: winning the grudge match
+      const total=addBonusCoins(base+dcoins+gcoins, {silent:true});
+      if(total>0){ const extra=[]; if(dcoins>0) extra.push(`${coinFmt(dcoins)} bold calls`); if(gcoins>0) extra.push(`${coinFmt(gcoins)} grudge win`);
+        coinSpan=` · <span style="color:#ffd45e;font-weight:800">+${coinFmt(total)} coins</span>`+(extra.length?`<br><span class="small" style="color:#8fe0c4">${coinFmt(base)} for playing · ${extra.join(' · ')}</span>`:''); } }
     // one combined toast: grudge leads if it was a grudge match, else the decision-stakes line
     if(gr){
       const gHead = gr.won?`You beat ${esc(gr.name)}!`:gr.tie?`Even with ${esc(gr.name)}`:`${esc(gr.name)} got you`;
