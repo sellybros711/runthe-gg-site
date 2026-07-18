@@ -10656,6 +10656,39 @@ allows Google Fonts, or self-host Anton.*
   the copy shows "attribute" with no "rating" left in the draft flow; 0 page errors + screenshot (a Legendary
   landing shows the gold name over the bold labels). Deployed to /golf.
 
+- **CS451 — separated the LOCKER (edit your golfer) from the STORE (Pro Shop): dress in one, buy in the
+  other (owner, from testers: "the edit-your-golfer page should be your locker/closet where you dress your
+  golfer with everything you own by category; the store is just to buy packs and items and should show what
+  you own by making those boxes green — they're bleeding into each other logically").** CS422 had collapsed
+  editing INTO the shop (setup = Appearance + Profile only; the Pro Shop did both buy AND equip), which is
+  exactly the bleed the owner objected to. Split them cleanly with a single context helper `inShopStore()`
+  (`S.overlay==='shop'` = STORE, buy-only) vs the setup screen (LOCKER, equip-only):
+  • **Locker (`scrSetup`)** now shows your closet: the free Appearance group plus **My Apparel** (Shirt ·
+    Pattern · Hat · Trousers · Shoes · Outerwear · Legwear), **My Gear** (Headwear · Eyewear · Clubs · Balls ·
+    Cleats) and **Effects** (Aura) — each category rendered from `cosmeticItems(cat).filter(cosOwned)`, so it
+    lists ONLY what you own; tap a tile to EQUIP it (equipped = gold ring + ✓, owned = green). No prices, no
+    buying. An empty category shows "you don't own any X yet" and each category with locked items gets a
+    "Get more {category} in the Pro Shop ▸" link (`cosShopSec(cat)` opens the store to that section). Guests
+    still get only Appearance + the sign-in lock. Subtitle for the Trophy-Room edit mode reworded to "Your
+    locker · dress your golfer with everything you own".
+  • **Store (`overlayShop`)** is now buy-only: in `cosTileHTML`, when `inShopStore()`, an OWNED item renders
+    as a **green "Owned" tile that is NOT clickable** (`state:'own'`, `cls:'noeq'`, no `data-tile`), and only
+    a LOCKED item is actionable (preview-on-golfer → confirm-buy, unchanged). New CSS `.stile.own` = green
+    border + faint green fill (so owned boxes pop green everywhere; in the locker green=owned, gold=equipped).
+    The store's dressing-room avatar stays (it's the buy-preview, not editing) and the footer hint now reads
+    "Tap a locked item to preview … Items you own are marked green — equip them in Edit Your Golfer." The
+    store's "My Items" tab is now a read-only green collection view (equip lives in the locker). The boost
+    "Bag" (buy-upgrade golf clubs) stays store-only (it's not an equippable, so it's not in the locker).
+    `shopTileClick`'s owned→equip path is only reachable from the locker now (owned store tiles have no
+    handler). `accTileHTML` (dead code) left untouched.
+  Verified in Playwright: the locker shows Appearance/My Apparel/My Gear/Effects/Profile groups, Pattern
+  category shows only the 2 owned tiles (None + Houndstooth) with NO price tiles + a "get more" link, tapping
+  an owned Bucket Hat in My Gear equips it (gold ring, golfer wears it), and a guest gets only Appearance +
+  the lock; the store shows owned items green + non-clickable (0 owned tiles carry a click handler, green
+  border rgb(63,191,122)) alongside buyable price tiles; 0 page errors throughout. Screenshots confirm the
+  locker (dressed golfer + owned-only categories) and the store (green "Owned" boxes vs priced buy tiles).
+  Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
