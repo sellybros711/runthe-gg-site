@@ -10546,6 +10546,42 @@ allows Google Fonts, or self-host Anton.*
   full season plays to the summary — 0 page errors. Deployed to /golf. Tunable: the headline priority +
   copy in `cupDayRecap`, the fans/confidence weights in `cupCareerStakes`.
 
+- **CS446 — team cups: pairings rotate session to session + captain between-days pairing decisions (owner:
+  "I like giving captains between-days pairing decisions, and I don't like how you always have the same
+  partner throughout the tourney — in real life the pairings change for strategy reasons").** Two parts, all
+  in `simTeamEvent`/`scrTeamCup`, no engine-math change (still the same match-play sim, just different pairing
+  inputs per session).
+  • **Part A (always-on, all cups): pairings vary across the 4 team sessions.** Before, every foursomes/
+    fourball session sent out the SAME top-8 in the SAME 4 pairs (`pairs8`), so a player had the same partner
+    all week. New `cupSessionPairs(team, sess)` builds a DIFFERENT arrangement for each of the 4 team sessions
+    (sess 0..3): it rotates which 8 of the 12 play (`rotN(others, sess*3)` so squad members sit different
+    sessions) and varies the partnerships (a distinct pattern per session from `CUP_PAIR_PATTERNS`), with YOU
+    always in the eight when on that side. Both sides use it, so a non-captain player now gets a rotating
+    partner every session and the bench genuinely changes day to day. Singles (session 5) still plays all 12
+    by rank. Verified: you play all 4 team sessions, partners vary across sessions, and the playing-eight
+    rotates (4 distinct lineups).
+  • **Part B (captain only): set your pairings between days.** When you captain, after picking the 12-man
+    team a new **Day-1 pairing screen** (`scrCaptainPairs(1)`) lets you form 4 pairs from the 12 (tap two
+    players to pair, tap a paired player to break it, or "↺ Auto-pair the top 8"); the other 4 sit that day,
+    and that lineup plays both of Day 1's sessions. The cup then sims with your pairings. At the **Day-1
+    Dispatch beat** (CS445), a captain gets a **"Set your Day 2 pairings ▸"** button instead of "Play Day 2",
+    opening `scrCaptainPairs(2)` to re-pair for Saturday — a fresh 8, new partnerships. Confirming re-sims
+    ONLY the two Day-2 team sessions (`resimCupDay2`, keeping the already-watched Day 1 + the Sunday singles
+    pool intact) and continues the reveal. Captain-chosen pairs are ordered strongest-first (`applyCaptainPairs`)
+    so their best pairing faces the other side's best (removes a which-pair-faces-which micro-decision, keeps
+    matches balanced); the AI still arranges the opponent's side each session. `captainPairsMap()` maps the
+    per-day choices to session pairs (teamSess 0,1 = Day 1; 2,3 = Day 2). `simTeamEvent` now returns
+    `_teamA/_teamB/_capSide` (the adjusted teams) so the between-days re-sim can run without re-rolling Day 1;
+    `cupRetally` recomputes the cup's tallies/result purely from the session rows afterward. `scrTeamCup`
+    resets `cupDayPairs`/`cupPairPrompt`/`cupPairBuild` per event.
+  Verified in Playwright: `cupSessionPairs` (you in all 4, varied partners, rotating lineups); `applyCaptainPairs`
+  (4 pairs sorted strong-first, null on a bad pair) + `captainPairsMap`; `resimCupDay2` (preserves Day 1 +
+  singles, swaps the captain's 8 chosen players into sessions 2-3, re-tallies to 28 with the right winner and
+  a captain's 0-0-0 record); and the full captain UI end-to-end — Day-1 Dispatch → "Set your Day 2 pairings" →
+  the pairing screen (12 players + auto-pair) → confirm re-sims Day 2 (A8-A11 who sat Day 1 rotated in),
+  advances to match 9, prompt cleared, 0 page errors. Deployed to /golf. Tunable: `CUP_PAIR_PATTERNS`, the
+  `rotN(others, sess*3)` bench-rotation offset.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
