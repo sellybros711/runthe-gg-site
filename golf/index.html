@@ -4867,6 +4867,10 @@ function momentPlayCoins(evt){ if(!evt) return 500; return evt.major?1200:(evt.b
 const COIN_BOLD_WIN=250, COIN_GRUDGE_WIN=400;
 function stageMult(evt){ return (evt&&evt.major)?1.5:(evt&&(evt.big||evt.playoff||evt.type==='finale'))?1.2:1.0; }
 function momentDecisionCoins(st, evt){ if(!st||!st.boldWins) return 0; return Math.round(st.boldWins*COIN_BOLD_WIN*stageMult(evt)); }
+// CS436: decision-payoff coins in EVERY hole-by-hole mode (Daily / Spotlight / Moment) - each aggressive
+// signature-hole call that produced a birdie/eagle. Rewards engaging with the shots, not just watching.
+function boldWinsIn(holes){ let n=0; (holes||[]).forEach(h=>{ if(h.attack===true && h.toPar<0) n++; }); return n; }
+function decisionPayoutCoins(holes, mult){ const bw=boldWinsIn(holes); return bw>0?Math.round(bw*COIN_BOLD_WIN*(mult||1)):0; }
 // ---- PLAY COIN FAUCETS (owner: coins should be earned by playing, visibly). These use addBonusCoins,
 // which bypasses the CS186 reset baseline, so they always accrue for every account (a maxed account whose
 // derived total was baselined to 0 still earns from playing). Tunable amounts. ----
@@ -18671,6 +18675,12 @@ function finishSpotlightRound(){
   // SERVER-BASED: log the Spotlight to its OWN global board + course records (signed-in only; its own
   // bucket + own weather, so it never mixes with the regular daily). Guests' rounds queue until sign-in.
   const signedIn=sbSignedIn();
+  // CS436: coins for playing the Spotlight (previously awarded none). Base + beat-the-pro + a decision payout
+  // for bold calls that paid off. Gated once per Spotlight MONTH (rec.coined) - Spotlight attempts aren't
+  // server-enforced, so this stops a localStorage-reset replay from re-farming the reward.
+  if(signedIn && !rec.coined){ rec.coined=true; LS.set(acctKey('bag_special'),st);
+    const dcoins=decisionPayoutCoins(S.dailyHoles, 1.2);   // marquee event
+    awardPlayCoins(COIN_DAILY + (won?COIN_DAILY_BEAT:0) + dcoins, (won?'you beat the Spotlight!':'Spotlight complete')+(dcoins>0?' · +'+coinFmt(dcoins)+' bold calls':'')); }
   const isRec = signedIn ? recordCourseScore(sp.key, total, S.dailyOvr, sbUsername||S.name||'You', false, true) : false;
   S.spotResult={course:S.dailyCourse,total,par:c.par,ovr:S.dailyOvr,cond:S.dailyCond,holes,avg,won,firstWin,best:rec.best,attemptNo:rec.attempts,mk:sp.mk,record:isRec,day:sp.liveDayKey};
   S.dailyResult=S.spotResult;   // lets the shared scorecard-grid path treat this as "just played"
@@ -18810,12 +18820,13 @@ function finishDailyRound(){
   // far under the tour average you finished (CS392: every mode rewards by how you performed).
   if(signedIn){ const margin=won?Math.min(400, Math.round(Math.max(0, avg-total)*40)):0;
     const _xp=COIN_DAILY_XP + (won?COIN_DAILY_XP_BEAT:0); addXp(_xp); S.dailyXpGain=_xp;   // CS400: + Tour Rep (XP) for completing
+    const dcoins=decisionPayoutCoins(S.dailyHoles, 1.0);   // CS436: coins for bold calls that paid off
     // CS401: the Sunday-to-Sunday streak-week reward track (once per new day)
     const wr = (_ds && _ds._newDay) ? streakWeekReward() : null; S.streakWeekReward=wr;
     const wkNote = !wr ? '' : wr.kind==='coins' ? (' · 🔥 week day '+wr.day+': +'+wr.amt+' coins')
       : wr.kind==='mulligan' ? (' · 🔥 week day '+wr.day+': +1 Mulli-Spin')
       : (' · 🔥 week day '+wr.day+': FREE '+packType(wr.tier||'base').short+' Pack!');
-    awardPlayCoins(COIN_DAILY + (won?COIN_DAILY_BEAT:0) + margin, (won?'you beat the pro!':'daily complete')+' · +'+_xp+' Tour Rep'+wkNote); // ~1000-2000 coins + week bonus
+    awardPlayCoins(COIN_DAILY + (won?COIN_DAILY_BEAT:0) + margin + dcoins, (won?'you beat the pro!':'daily complete')+(dcoins>0?' · +'+coinFmt(dcoins)+' bold calls':'')+' · +'+_xp+' Tour Rep'+wkNote); // ~1000-2000 coins + bold-call bonus + week bonus
     try{ sbSubmitStreak(); }catch(e){}   // CS401: post the updated streak to the active-streak leaderboard
   }
   // log this attempt; the LOWEST score of the day is the one that counts (leaderboard / course record).
@@ -21233,7 +21244,14 @@ function mergeAch(local, server){
 function mergeSpecial(local, server){
   const empty={wins:0,played:0,months:{}};
   if(!server) return local||empty; if(!local) return server;
-  return { wins:Math.max(local.wins||0,server.wins||0), played:Math.max(local.played||0,server.played||0), months:Object.assign({},server.months,local.months) };
+  // CS436: merge months PER-KEY (grow-only): max attempts, LOWER best, OR won/coined - so a cross-device sync
+  // never resets a month's coined flag (which would re-award the Spotlight coin reward) or loses a better score.
+  const months={}, keys=new Set([].concat(Object.keys(server.months||{}), Object.keys(local.months||{})));
+  keys.forEach(k=>{ const a=(local.months||{})[k]||{}, b=(server.months||{})[k]||{};
+    months[k]={ attempts:Math.max(a.attempts||0,b.attempts||0),
+      best:(a.best==null?b.best:(b.best==null?a.best:Math.min(a.best,b.best))),
+      won:!!(a.won||b.won), coined:!!(a.coined||b.coined) }; });
+  return { wins:Math.max(local.wins||0,server.wins||0), played:Math.max(local.played||0,server.played||0), months };
 }
 let _cloudPushT=null, _cloudSyncing=false;
 // debounced push of the full profile bundle, call this from every place one of the bundled pieces
