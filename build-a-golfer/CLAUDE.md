@@ -10473,6 +10473,16 @@ allows Google Fonts, or self-host Anton.*
   comma-free, `hvDoneShot` emits no `2 3` dash and renders a solid roll over the pixel course (screenshot
   confirms a clean continuous blue tracer), 0 page errors. Deployed to /golf.
 
+- **CS443 — title "Daily Quests" button shows a completion state when all quests are done (owner: "this
+  should show something when you complete all daily quests").** The title-screen 🎯 Daily Quests pill (CS303/
+  CS375) badged how many quests were still to do (red count + gold pulse), but once all of the day's quests
+  were finished the badge just vanished — no positive "all done" signal. Now, when a signed-in player has
+  completed every daily quest that day (`dailyQuestsAllDone`), the button turns green (`.howtop.done`) with
+  a green "✓ DONE" chip and an "all done today" aria-label; while quests remain it keeps the red count badge
+  + pulse; a guest sees the plain gold button. Verified in Playwright: partial state shows the red count,
+  all-done shows the green button + ✓ DONE chip (green color, no count badge), 0 page errors. Deployed to
+  /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
