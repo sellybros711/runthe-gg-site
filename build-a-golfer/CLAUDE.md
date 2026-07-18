@@ -10413,6 +10413,30 @@ allows Google Fonts, or self-host Anton.*
   Cup 1,500; grand year 5,000; empty 0), 0 page errors. Deployed to /golf. Tunable: `COIN_CUP_MATCH`,
   `COIN_CUP_WIN`, `COIN_CUP_CAPTAIN_WIN`, `COIN_CUP_PERFECT`, `COIN_MEDAL`, `COIN_TOURCUP`.
 
+- **CS439 — bottom nav no longer drifts into mid-screen / blocks the Spin button (owner: "This can't keep
+  happening. The bottom bar is getting moved up and it blocks important buttons").** Screenshot showed the
+  fixed bottom nav (Home/Career/Daily/Online/Leaderboard) painted in the MIDDLE of the DRAFT screen, over the
+  "Spin the Wheel" button, with content below it — the classic iOS `position:fixed;bottom:0` drift (no
+  transformed ancestor exists; it's the genuine iOS momentum-scroll / dynamic-viewport bug). Two-part fix:
+  1. **Hide the nav on the draft-flow screens** (`draft`, `build`, `offseason`) — added to `NAV_HIDE`
+     alongside `setup`, which was already hidden for exactly this reason. Each of these screens has its OWN
+     prominent bottom actions (Spin / Take a rating / Lock in / Start Year), so the global nav both CLASHED
+     with them (it was overlapping/blocking the Spin button) and was redundant. Home + everything else stay
+     reachable from the ≡ menu. This removes the fixed-nav from the long, frequently-re-rendering screens
+     where the drift was surfacing.
+  2. **Harden the fixed nav against iOS drift** (for the screens that keep it — title/season/summary/etc.):
+     (a) GPU-pin it with `transform:translateZ(0)` so iOS keeps it anchored to the viewport bottom instead
+     of stranding it mid-scroll; (b) changed the hide mechanism from `display:none` to sliding it OFF-SCREEN
+     (`translate3d(0,130%,0)` + `visibility:hidden` + `pointer-events:none`) — `display:none` destroys the
+     fixed layer and re-showing it re-lays-out the element, which iOS can mis-paint; keeping the layer stable
+     avoids that, and `pointer-events:none` means a hidden nav can never eat taps.
+  Verified in Playwright (430×900): the nav is hidden (off-screen, `visibility:hidden`, `pointer-events:none`,
+  no `#app` reserve) on draft/build/offseason and shown normally on title/season; the draft screen renders
+  with the Spin button unobstructed and no nav bar; 0 page errors. Deployed to /golf. NOTE: if drift ever
+  shows on the live-season screen (which keeps the nav and re-renders every ~2s), the robust cure is a
+  fixed-height app-shell (inner scroll container + non-fixed nav) — deferred as it's a larger refactor
+  needing real-iOS testing.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
