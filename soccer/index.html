@@ -1641,6 +1641,8 @@
   .match-popup.win{ border-top:6px solid var(--teal); }
   .match-popup.loss{ border-top:6px solid var(--red); }
   .match-popup.champion{ border-top:6px solid var(--gold); }
+  .match-popup.bronze{ border-top:6px solid #cd7f32; }
+  .match-popup.playoff{ border-top:6px solid var(--blue); }
   .mp-stamp{
     font-family:'Anton',Impact,sans-serif; font-weight:400;
     font-size:52px; line-height:1; letter-spacing:2px;
@@ -1650,6 +1652,8 @@
   }
   .match-popup.win .mp-stamp{ color:var(--teal); }
   .match-popup.loss .mp-stamp{ color:var(--red); }
+  .match-popup.bronze .mp-stamp{ color:#cd7f32; }
+  .match-popup.playoff .mp-stamp{ color:var(--blue); }
   .match-popup.champion .mp-stamp{ color:var(--gold); animation:simChampGlow 1.5s ease-in-out infinite; }
   .mp-msg{
     font-weight:700; font-size:14px; line-height:1.4;
@@ -1708,6 +1712,8 @@
     transition:width linear;
   }
   .match-popup.loss .mp-auto-bar-fill{ background:var(--red); }
+  .match-popup.bronze .mp-auto-bar-fill{ background:#cd7f32; }
+  .match-popup.playoff .mp-auto-bar-fill{ background:var(--blue); }
 
   /* ---------- live match scoreboard (Qatar-2022 broadcast style) ---------- */
   .sb-wrap{margin-bottom:12px;opacity:0;transition:opacity .3s ease;}
@@ -9844,6 +9850,7 @@ const ROUND_OPPONENTS = {
   'Round of 16':   { range:[65,78], prefer:['group','round16'],              fallback:[60,80] },
   'Quarter-final': { range:[75,84], prefer:['round16','quarterfinal'],       fallback:[70,86] },
   'Semi-final':    { range:[83,91], prefer:['quarterfinal','third','fourth'], fallback:[80,93] },
+  'Third Place':   { range:[82,90], prefer:['third','fourth','semifinal'],    fallback:[78,92] },
   'Final':         { range:[90,99], prefer:['runner_up','champion'],          fallback:null },
 };
 
@@ -10507,7 +10514,31 @@ function simulateTournament(userSquad, userOverall, playerPool, userRatings){
       }
     });
 
-    if(m.winner!=='user'){ result.eliminated=true; break; }
+    if(m.winner!=='user'){
+      result.eliminated=true;
+      // Losing the Semi-final drops the user into the third-place play-off:
+      // one more real match (bronze on the line) before the run ends. This is
+      // solo-only — furthestRound stays 'Semi-final' so every server/leaderboard
+      // /progress path is untouched; only the extra match + medal flags are new.
+      if(rounds[i]==='Semi-final'){
+        const tpOpp = drawOpponentForRound(playerPool, 'Third Place');
+        if(tpOpp){
+          const tp = simulateMatch(userSquad, userOverall, tpOpp, i, userRatings, identity);
+          tp.round = 'Third Place';
+          result.matches.push(tp);
+          tp.goalEvents.forEach(e=>{
+            if(e.team==='user' && !e.isOG){
+              const k = e.scorerId || e.scorer;
+              result.userGoalScorers[k] = (result.userGoalScorers[k]||0) + 1;
+              result.userScorerNames[k] = e.scorer;
+            }
+          });
+          result.thirdPlacePlayed = true;
+          result.wonThird = (tp.winner==='user');
+        }
+      }
+      break;
+    }
   }
 
   simFinalizeMOT(result, userSquad);
@@ -10675,13 +10706,35 @@ function simOutcome(r){
       `Silver isn't gold. ${motRef}You know what to do, spin and come back stronger.`,
       'You made the World Cup final. That is elite. Now imagine lifting the trophy.',
     ]) };
-    case 'Semi-final': return { label:'Semi-Finalists', emoji:'', message: pick([
-      'A top-four finish, just one game from the final. Spin again and go all the way!',
-      `The semi-final is where the dream ended. ${motRef}So close. Spin it back.`,
-      'Four teams left and you were one of them. A serious squad, push further next time.',
-      `Semi-final heartbreak. ${motRef}Draft sharper and make the final.`,
-      'You were 90 minutes from the final. Build that squad again and do not stop.',
-    ]) };
+    case 'Semi-final':
+      // The semi-final loss sends the user to the third-place play-off. Bronze
+      // won = 🥉 Third Place; play-off lost = Fourth Place. (If no play-off was
+      // drawn, fall back to the plain semi-finalist finish.)
+      if(r.thirdPlacePlayed && r.wonThird){
+        return { label:'Third Place', emoji:'🥉', message: pick([
+          'Bronze secured! You bounced back from the semi to win the third-place play-off. A podium finish.',
+          `Third place at the World Cup. ${motRef}You answered the semi-final heartbreak with a medal.`,
+          'A podium finish. The play-off proved this squad has real character. Now chase the gold.',
+          `Bronze medallists. ${motRef}Beaten in the semi, but you finished on the podium. Run it back.`,
+          'You closed out third place in style. Top of the podium is the only step left.',
+        ]) };
+      }
+      if(r.thirdPlacePlayed){
+        return { label:'Fourth Place', emoji:'', message: pick([
+          'Fourth place, agonizingly off the podium. The play-off got away, but a top-four run is serious. Spin again.',
+          `Fourth at the World Cup. ${motRef}The bronze slipped away, but this squad belongs at the sharp end.`,
+          'One game from a medal. Fourth place stings, but few teams get this far. Draft again and podium.',
+          `Just off the podium. ${motRef}Fourth is still top-four. Sharpen the draft and go one better.`,
+          'You were minutes from bronze. A fourth-place finish is a strong base, build on it and climb.',
+        ]) };
+      }
+      return { label:'Semi-Finalists', emoji:'', message: pick([
+        'A top-four finish, just one game from the final. Spin again and go all the way!',
+        `The semi-final is where the dream ended. ${motRef}So close. Spin it back.`,
+        'Four teams left and you were one of them. A serious squad, push further next time.',
+        `Semi-final heartbreak. ${motRef}Draft sharper and make the final.`,
+        'You were 90 minutes from the final. Build that squad again and do not stop.',
+      ]) };
     case 'Quarter-final': return { label:'Quarter-Finalists', emoji:'', message: pick([
       'A strong run to the last eight. Draft sharper next time and push for more!',
       `Quarter-final exit, you reached the business end. ${motRef}So close.`,
@@ -11066,14 +11119,18 @@ function showMatchResultPopup(opts){
     // trigger it here; intermediate wins just resolve and the loop races on, and
     // the final-win navigation is handled by the caller.
     if(simSkip){
-      if(!opts.won) goToResults();
+      // Terminal popups jump to results: any elimination, plus the bronze/fourth
+      // third-place finish. A semi-final loss with a play-off still to come is NOT
+      // terminal — let the loop race into the bronze match, which navigates itself.
+      const terminal = (!opts.won && !opts.playoffAhead) || (opts.won && opts.isThirdPlace);
+      if(terminal) goToResults();
       return resolve();
     }
     // NON-FINAL WIN: no blocking popup, no Continue button. Drop the result
     // verbiage right above the current slide's box score, then let the sim loop
     // slide horizontally to the next game when this resolves. (Eliminations and
     // the championship still use the modal below, they go to the results page.)
-    if(opts.won && !opts.isFinal){
+    if(opts.won && !opts.isFinal && !opts.isThirdPlace){
       const isGroupStage = opts.currentRound === 'Group Stage';
       const stamp   = isGroupStage ? 'QUALIFIED' : 'ADVANCED';
       const msgLine = opts.gsPopupMsg || knockoutResultMsg(opts);
@@ -11097,17 +11154,23 @@ function showMatchResultPopup(opts){
     }
     const ov=document.createElement('div');
     ov.className='match-popup-overlay';
-    const roundIdx=BRACKET_ROUNDS.indexOf(opts.currentRound);
+    let roundIdx=BRACKET_ROUNDS.indexOf(opts.currentRound);
+    // 'Third Place' is not a bracket node — it sits at the Semi-final tier, so
+    // the bracket shows the SF exit (bronze or not, the user left at the semis).
+    if(roundIdx<0) roundIdx=BRACKET_ROUNDS.indexOf('Semi-final');
+    // A third-place result and the SF-loss play-off banner are both "did not
+    // advance past the semis" for bracket purposes, so colour them as exits.
+    const bwon = opts.won && !opts.isThirdPlace && !opts.playoffAhead;
 
     // build bracket nodes
     let bracketHtml='';
     BRACKET_ROUNDS.forEach((r,i)=>{
-      if(i>0) bracketHtml+=`<div class="mp-bracket-line${i<=(opts.won?roundIdx+1:roundIdx)?' done':''}"></div>`;
-      const nextIdx = opts.won ? roundIdx+1 : roundIdx;
+      if(i>0) bracketHtml+=`<div class="mp-bracket-line${i<=(bwon?roundIdx+1:roundIdx)?' done':''}"></div>`;
+      const nextIdx = bwon ? roundIdx+1 : roundIdx;
       let dotCls='';
-      if(opts.won && opts.isFinal && i===roundIdx) dotCls='champ';
+      if(bwon && opts.isFinal && i===roundIdx) dotCls='champ';
       else if(i<nextIdx) dotCls='done';
-      else if(i===nextIdx) dotCls=opts.won?'current':'elim';
+      else if(i===nextIdx) dotCls=bwon?'current':'elim';
       bracketHtml+=`<div class="mp-bracket-node"><div class="mp-bracket-dot ${dotCls}"></div><div class="mp-bracket-label">${BRACKET_LABELS[i]}</div></div>`;
     });
 
@@ -11123,6 +11186,15 @@ function showMatchResultPopup(opts){
     if(opts.isFinal && opts.won){
       stamp='CHAMPIONS!'; popupCls='champion';
       msgLine=pickOne(['World Cup winners. History made.','The greatest prize in football. Yours.','From the draft to the trophy. Unbelievable.','Champions of the world. Nothing more to say.']);
+    } else if(opts.isThirdPlace && opts.won){
+      stamp='🥉 THIRD PLACE'; popupCls='bronze';
+      msgLine=pickOne(['Bronze secured. A podium finish at the World Cup.','You answered the semi-final loss with a win. Third place, on the podium.','Beaten in the semi, but the bronze is yours. A medal is a medal.','Third place play-off won. This squad finished on the podium.']);
+    } else if(opts.isThirdPlace){
+      stamp='FOURTH PLACE'; popupCls='loss';
+      msgLine=pickOne(['The play-off got away. Fourth place, just off the podium.','So close to bronze. Fourth at the World Cup still means a top-four run.','One game from a medal. Fourth place stings, but few teams get this far.']);
+    } else if(opts.playoffAhead){
+      stamp='PLAY-OFF'; popupCls='playoff';
+      msgLine=pickOne(['Beaten in the semi-final. One game left: the third-place play-off, bronze on the line.','The final slips away, but a medal is still there to be won. Play-off next.','Semi-final heartbreak. Regroup — the third-place play-off is your shot at bronze.']);
     } else if(opts.won){
       stamp=isGroupStage?'QUALIFIED':'ADVANCED'; popupCls='win';
       // The next-round line is dropped, the bracket animation already shows it.
@@ -11132,13 +11204,19 @@ function showMatchResultPopup(opts){
       msgLine=opts.gsPopupMsg||knockoutResultMsg(opts);
     }
 
+    // Where does this popup lead? A play-off-ahead (SF loss) resolves back into the
+    // sim loop to play the bronze match; everything terminal (loss, bronze, fourth)
+    // heads to the results page; the championship win is navigated by the caller.
+    const contLoop = opts.playoffAhead;
+    const navResults = (!opts.won && !opts.playoffAhead) || (opts.won && opts.isThirdPlace);
+
     ov.innerHTML=`<div class="match-popup ${popupCls}">
       <div class="mp-stamp">${stamp}</div>
       <div class="mp-msg">${msgLine}</div>
       <div class="mp-bracket">${bracketHtml}</div>
-      ${!opts.won?`<button class="btn red big" id="mp-results-btn" style="width:100%;margin-top:4px">CONTINUE TO RESULTS</button>`:''}
+      ${navResults?`<button class="btn red big" id="mp-results-btn" style="width:100%;margin-top:4px">CONTINUE TO RESULTS</button>`:''}
       ${opts.won&&opts.isFinal?`<button class="btn red big" id="mp-results-btn" style="width:100%;margin-top:4px">CONTINUE TO RESULTS</button>`:''}
-      ${opts.won&&!opts.isFinal?`<button class="btn teal big" id="mp-next-btn" style="width:100%;margin-top:4px">Continue →</button>`:''}
+      ${contLoop?`<button class="btn teal big" id="mp-next-btn" style="width:100%;margin-top:4px">Play-off →</button>`:''}
       ${autoAdvance?`<div class="mp-auto-bar"><div class="mp-auto-bar-fill"></div></div>`:''}
     </div>`;
     document.body.appendChild(ov);
@@ -11153,7 +11231,7 @@ function showMatchResultPopup(opts){
       requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ fill.style.width='100%'; }); });
     };
 
-    if(!opts.won){
+    if(navResults){
       let done=false;
       const advance=()=>{ if(done) return; done=true; clearTimeout(autoTimer); ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); goToResults(); },350); };
       ov.querySelector('#mp-results-btn').addEventListener('click',advance);
@@ -11164,7 +11242,8 @@ function showMatchResultPopup(opts){
       // Tap-to-continue + auto-advance. The button is wired up FRONT (not after the
       // bracket animation) so a tap, or the toolbar's Skip, is never dropped while
       // the bracket fills in. Between-round wins auto-advance after 2.5s; the
-      // championship win (isFinal) waits for a tap.
+      // championship win (isFinal) waits for a tap. A play-off-ahead (SF loss)
+      // resolves the same way, dropping the sim loop into the bronze match.
       let done=false;
       const advance=()=>{ if(done) return; done=true; clearTimeout(autoTimer); ov.classList.remove('active'); setTimeout(()=>{ ov.remove(); resolve(); },350); };
       const btn=ov.querySelector(opts.isFinal?'#mp-results-btn':'#mp-next-btn');
@@ -11175,18 +11254,21 @@ function showMatchResultPopup(opts){
         startAutoBar(ms);
       }
 
-      // Instantly fill all previously-completed rounds, then animate only the new one.
-      const dots=ov.querySelectorAll('.mp-bracket-dot');
-      const lines=ov.querySelectorAll('.mp-bracket-line');
-      const animTarget = opts.isFinal ? roundIdx : roundIdx+1;
-      dots.forEach((d,i)=>{ d.className='mp-bracket-dot'+(i<animTarget?' done':''); });
-      lines.forEach((l,i)=>{ l.className='mp-bracket-line'+(i<animTarget?' done':''); });
-      setTimeout(()=>{
-        if(animTarget<dots.length){
-          if(animTarget>0 && lines[animTarget-1]) lines[animTarget-1].classList.add('done');
-          dots[animTarget].classList.add(opts.isFinal?'champ':'current');
-        }
-      }, 400);
+      // Bracket fill animation only runs on a genuine advance. A play-off-ahead
+      // loss keeps the static SF-exit bracket (no round to advance into).
+      if(bwon){
+        const dots=ov.querySelectorAll('.mp-bracket-dot');
+        const lines=ov.querySelectorAll('.mp-bracket-line');
+        const animTarget = opts.isFinal ? roundIdx : roundIdx+1;
+        dots.forEach((d,i)=>{ d.className='mp-bracket-dot'+(i<animTarget?' done':''); });
+        lines.forEach((l,i)=>{ l.className='mp-bracket-line'+(i<animTarget?' done':''); });
+        setTimeout(()=>{
+          if(animTarget<dots.length){
+            if(animTarget>0 && lines[animTarget-1]) lines[animTarget-1].classList.add('done');
+            dots[animTarget].classList.add(opts.isFinal?'champ':'current');
+          }
+        }, 400);
+      }
     }
   });
 }
@@ -12452,8 +12534,13 @@ async function runSimulationScreen(){
     const kbWait = simDelay;       // honours the live speed toggle + skip-to-result
     await kbWait(350);             // let the swipe land
     await kbWait(200);             // brief beat before kickoff
-    const next = simResult.rounds[i+1];
-    const isFinal = !next;         // a win here wins the whole tournament
+    // Derive the frame from the match itself, not a fixed round ladder — a
+    // semi-final loss appends a Third Place match, so the array can run past
+    // 'Final' and the "next game" is whatever match actually follows.
+    const nextMatch = simResult.matches[i+1];
+    const isFinal = m.round === 'Final';        // a win here wins the whole tournament
+    const isThirdPlace = m.round === 'Third Place';
+    const next = nextMatch ? nextMatch.round : null;
     // Typical knockout game runs ~15s (two halves + halftime + stoppage); tied
     // games add extra time / penalties on top.
     const won = await playMatchAnimation(m, card, isFinal, {
@@ -12465,10 +12552,14 @@ async function runSimulationScreen(){
       picks: gs.picks
     });
 
+    // A semi-final loss with a bronze match still to play isn't elimination —
+    // it's the play-off. Frame the popup that way and keep the loop running.
+    const playoffAhead = !won && m.round === 'Semi-final' && nextMatch && nextMatch.round === 'Third Place';
+
     // brief pause so the final score registers, then show the popup
     await simSleep(700);
     await showMatchResultPopup({
-      won, isFinal,
+      won, isFinal, isThirdPlace, playoffAhead,
       isPens: !!m.penalties,
       currentRound: m.round,
       nextRound: next || null,
@@ -12480,7 +12571,9 @@ async function runSimulationScreen(){
       goToResults();
       return;
     }
-    if(!won) break;
+    if(isThirdPlace) break;        // bronze or fourth — the run ends here (popup → results)
+    if(!won && !playoffAhead) break;  // ordinary elimination
+    // else: a win (advance) or the SF-loss play-off — fall through to the next match
   }
 
   await simSleep(400);
