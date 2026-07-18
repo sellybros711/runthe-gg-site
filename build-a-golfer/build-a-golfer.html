@@ -5365,7 +5365,7 @@ function render(){
   if(!document.getElementById('topmask')){ const tm=document.createElement('div'); tm.id='topmask'; tm.className='topmask'; document.body.appendChild(tm); }
   app.appendChild(header());
   const card=$(`<main class="card"></main>`);
-  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','rules','h2hhome','h2hlobby','h2hdraft','h2hpreview','h2hwatch','h2hresult','h2hboard'].includes(S.screen)?' wide':''}"></div>`);
+  const screen=$(`<div class="screen${['title','draft','season','setup','offseason','build','summary','dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','rules','h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwatch','h2hresult','h2hboard'].includes(S.screen)?' wide':''}"></div>`);
   card.appendChild(screen);
   app.appendChild(card);
   app.appendChild(footer());
@@ -5417,7 +5417,7 @@ function render(){
   // card instead (showing the real error message so a recurrence is diagnosable straight from a
   // screenshot, not just from analytics we might never see).
   try{
-    ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult,playoffwatch:scrPlayoffWatch,h2hhome:scrH2HHome,h2hlobby:scrH2HLobby,h2hdraft:scrH2HDraft,h2hpreview:scrH2HPreview,h2hwatch:scrH2HWatch,h2hresult:scrH2HResult,h2hboard:scrH2HBoard})[S.screen]();
+    ({title:scrTitle,setup:scrSetup,draft:scrDraft,build:scrBuild,offseason:scrOffseason,season:scrSeason,summary:scrSummary,recap:scrRecap,careerend:scrCareerEnd,circuitend:scrCircuitEnd,rules:scrRules,dailyintro:scrDailyIntro,dailyprev:scrDailyPreview,dailyround:scrDailyRound,dailyresult:scrDailyResult,playoffwatch:scrPlayoffWatch,h2hhome:scrH2HHome,h2hlobby:scrH2HLobby,h2hdraft:scrH2HDraft,h2hplay:scrH2HPlay,h2hpreview:scrH2HPreview,h2hwatch:scrH2HWatch,h2hresult:scrH2HResult,h2hboard:scrH2HBoard})[S.screen]();
   }catch(err){
     console.error('[RunTheTour] screen render failed:', S.screen, err);
     try{ track('screen_render_error',{screen:S.screen,message:(err&&err.message)||String(err)}); }catch(e){}
@@ -5437,7 +5437,7 @@ function render(){
   // the last ~48px of the viewport and ATE taps on any button behind it - notably the "Use token" Legend
   // buttons + Course Records/Passport/Return-home at the bottom of the preview/result. These screens carry
   // their own home/records buttons and the header ≡ menu, so the global nav is redundant here.
-  const NAV_HIDE=['dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','h2hwatch','h2hpreview','h2hdraft','h2hlobby','setup'];   // setup has its own Back + Build bar → hide the global nav (no clash)
+  const NAV_HIDE=['dailyintro','dailyprev','dailyround','dailyresult','playoffwatch','h2hwatch','h2hpreview','h2hplay','h2hdraft','h2hlobby','setup'];   // setup has its own Back + Build bar → hide the global nav (no clash)
   const showNav = !NAV_HIDE.includes(S.screen) && !app.classList.contains('has-cupbar');
   app.classList.toggle('has-botnav', showNav);
   document.body.classList.toggle('has-botnav', showNav);   // CS305: cascades --botnav-space so bottom pop-ups clear the nav
@@ -5471,7 +5471,7 @@ function render(){
 // covered by a full-screen overlay when one is open.
 const NAV_CAREER_SCR=['setup','draft','build','season','summary','offseason','careerend','circuitend','recap'];
 const NAV_DAILY_SCR=['dailyintro','dailyprev','dailyround','dailyresult'];
-const NAV_H2H_SCR=['h2hhome','h2hlobby','h2hdraft','h2hpreview','h2hwatch','h2hresult','h2hboard'];
+const NAV_H2H_SCR=['h2hhome','h2hlobby','h2hdraft','h2hplay','h2hpreview','h2hwatch','h2hresult','h2hboard'];
 // CS430: the nav is built ONCE and kept mounted (see render). Handlers read live S at click time, so a
 // persisted node is never stale; navSetActive() refreshes the highlighted tab in place each render.
 function bottomNav(){
@@ -18384,7 +18384,7 @@ const RESUME_SCREENS = {   // gameplay screens worth restoring → the mode they
   setup:'career', draft:'career', build:'career', offseason:'career', season:'career', summary:'career',
   careerend:'career', circuitend:'career', recap:'career', playoffwatch:'career',
   dailyintro:'daily', dailyprev:'daily', dailyround:'daily', dailyresult:'daily',
-  h2hlobby:'h2h', h2hdraft:'h2h', h2hpreview:'h2h', h2hwatch:'h2h', h2hresult:'h2h' };
+  h2hlobby:'h2h', h2hdraft:'h2h', h2hplay:'h2h', h2hpreview:'h2h', h2hwatch:'h2h', h2hresult:'h2h' };
 let _lastResumeScreen='', _lastResumeWrite=0, PENDING_CAREER_RESUME=false;
 function markResumeView(){ try{ let s=S.screen||'';
   if(S.moment && s==='dailyround') s='season';   // a career Moment plays on the dailyround screen but BELONGS to the career → resume the career (the event re-sims, the Moment re-offers)
@@ -21618,7 +21618,9 @@ function h2hBotLook(){ const p=a=>a[Math.floor(Math.random()*a.length)], b=()=>M
 // CS394: my transmitted H2H look, tagged with my current Tour Rep so opponents see my tier on the preview.
 // _rep rides inside the look jsonb (already free-form client data; the golfer renderer ignores unknown keys),
 // so no migration is needed. H2H is consensus-trusted, so a client-declared tier here is consistent posture.
-function h2hMyLook(){ return Object.assign({_rep:(typeof achPoints==='function'?achPoints():0)}, S.look||{}); }
+function h2hMyLook(){ const l=Object.assign({_rep:(typeof achPoints==='function'?achPoints():0)}, S.look||{});
+  if(S.h2h && S.h2h.myDec && Object.keys(S.h2h.myDec).length) l._dec=S.h2h.myDec;   // CS437: my in-round calls ride in the look (no migration)
+  return l; }
 function h2hMakeBots(n){ return h2hPickBotNames(n).map(nm=>({user_id:'bot:'+nm, username:nm, bot:true, submitted:false, draft:{skills:h2hBotSkills(), look:h2hBotLook()}})); }
 // arm/clear the "no human showed up → fill with AI" timer for a Quick Match
 function h2hArmBotFill(){ if(!H2H_BOTS_ENABLED||!S.h2h) return; h2hClearBotTimer();
@@ -21840,10 +21842,61 @@ function h2hBoostSeed(courseKey){ const N=DAILY_KEYS.length; let idx=courseKey?D
 function h2hCondName(seed){ const r=mulberry32(((seed>>>0)^0x5bd1e995)>>>0)(); return r<0.27?'calm':r<0.72?'breezy':r<0.92?'windy':'gusting'; }
 function h2hBuildHash(sk){ let h=2166136261>>>0; for(const c of CATS){ h^=(sk[c.k]|0); h=Math.imul(h,16777619); } return h>>>0; }
 // one hole's strokes-to-par for a given build; i can exceed the course length (playoff wraps)
-function h2hHoleScore(sk,course,courseKey,diffs,cond,seed,i){
+// CS437: `dec` (true=aggressive / false=safe / null=balanced) makes each player's signature-hole DECISION
+// affect their own score, exactly like the daily. The rng seed is UNCHANGED (attack & safe share the same
+// luck draw; the decision only shifts the mean/variance), so it stays deterministic + consensus-verifiable.
+function h2hHoleScore(sk,course,courseKey,diffs,cond,seed,i,dec){
   const h=course.holes[i%18]; const bh=h2hBuildHash(sk);
   const rng=mulberry32(((seed>>>0)^dHash(courseKey)^Math.imul(i+1,0x9e3779b1)^bh)>>>0);
-  return dSimHole(h[0],h[1],diffs[i%18],sk,course.fit,cond,'balanced',null,rng);
+  return dSimHole(h[0],h[1],diffs[i%18],sk,course.fit,cond,'balanced',(dec==null?null:dec),rng);
+}
+/* ---- CS437: in-round DECISIONS in online H2H (1v1 + FFA - each player plays their own ball).
+   A quick "make your calls" phase after drafting: you set Attack/Safe on each signature hole (blind,
+   before the reveal), your calls ride in the transmitted look (look._dec, like _rep/_ts - no migration),
+   and BOTH clients score each slot unit with ITS decisions, so the deterministic consensus resolve holds.
+   Team modes (Best Ball / Scramble) are unchanged for now. ---- */
+const H2H_DEC_MODES={'1v1':1,'ffa':1};
+function h2hHasDecisions(mode){ return !!H2H_DEC_MODES[mode||'1v1']; }
+function h2hDecHoles(seed, holes){ try{ const key=h2hCourseKey(seed);
+  return Array.from(dDecHoleSet(key)).filter(i=>i<holes).sort((a,b)=>a-b); }catch(e){ return []; } }
+// a player's decision map ({holeIdx:true/false}). Human → their submitted look._dec; bot → generated + cached.
+function h2hUnitDec(p, idxs, seed){
+  const look=p&&p.draft&&p.draft.look;
+  if(look && look._dec && typeof look._dec==='object') return look._dec;
+  if(p&&p.bot&&p.draft&&p.draft.skills){ const d=h2hGenBotDec(p.draft.skills, idxs, seed); if(look) look._dec=d; return d; }
+  return {};
+}
+// bots pick a stable, skill-weighted aggression per match (single-client, so no cross-client determinism needed)
+function h2hGenBotDec(skills, idxs, seed){
+  const rng=mulberry32(((seed>>>0)^h2hBuildHash(skills)^0xB07D)>>>0);
+  const aggr=0.32+rng()*0.36, edge=((skills.app||80)-80)/60, d={};
+  (idxs||[]).forEach(i=>{ d[i] = rng() < Math.max(0.12, Math.min(0.86, aggr+edge*0.5)); });
+  return d;
+}
+// build the "make your calls" cards for MY round (what I see to decide; the decision boolean is what matters,
+// so the card text need not match across clients). dScenario reads S.daily* → temp-point it at the H2H round.
+function h2hBuildDecisions(){
+  const seed=S.h2h.seed, key=h2hCourseKey(seed), condName=h2hCondName(seed), holes=S.h2h.holes;
+  const idxs=h2hDecHoles(seed, holes), sk=h2hSkills();
+  const sv={s:S.dailySeed,c:S.dailyCond,k:S.dailyCourse,a:S.dailyAttempt};
+  S.dailySeed=seed; S.dailyCond=condName; S.dailyCourse=key; S.dailyAttempt=0;
+  S.h2h.decCards = idxs.map(i=>{ let sc; try{ sc=dScenario(key,i,0,0); }catch(e){ sc=null; }
+    return {i, sc, odds:(sc?dDecOdds(sc,sk):null)}; }).filter(c=>c.sc);
+  S.dailySeed=sv.s; S.dailyCond=sv.c; S.dailyCourse=sv.k; S.dailyAttempt=sv.a;
+  S.h2h.myDec={}; S.h2h.decIdx=0;
+}
+function h2hStartPlay(){
+  if(!h2hHasDecisions(S.h2h.mode)){ h2hSubmitDraft(); return; }
+  h2hBuildDecisions();
+  if(!S.h2h.decCards.length){ h2hSubmitDraft(); return; }   // no signature holes on this course/length
+  track('h2h_play_start',{mode:S.h2h.mode, n:S.h2h.decCards.length});
+  S.screen='h2hplay'; render();
+}
+function h2hPickDec(agg){
+  const card=(S.h2h.decCards||[])[S.h2h.decIdx]; if(!card) return;
+  S.h2h.myDec[card.i]=!!agg; S.h2h.decIdx++;
+  if(S.h2h.decIdx>=S.h2h.decCards.length){ h2hSubmitDraft(); return; }
+  render();
 }
 function h2hScorecard(sk,seed,holes){
   const key=h2hCourseKey(seed), course=DAILY_COURSES[key], diffs=dBaseDiffs(course);
@@ -21919,6 +21972,7 @@ function h2hOnState(st){
 function h2hBeginDraft(){
   S.h2h.drafting=true; S.h2h.slots={}; S.h2h.reSpins=3; S.h2h.current=null; S.h2h.spinning=false;
   S.h2h.revealed=new Set(); S.h2h.rng=mulberry32((S.h2h.myWheel>>>0)||1); S.h2h.submitted=false;
+  S.h2h.myDec={}; S.h2h.decCards=null; S.h2h.decIdx=0;   // CS437: clear any prior match's calls
   _radarPrev=null;   // CS342: fresh morph baseline for the online-draft rating web
   track('h2h_draft_start'); S.screen='h2hdraft'; render();
 }
@@ -21970,10 +22024,16 @@ function h2hBuildUnits(){
   const ps=S.h2h.players, seed=S.h2h.seed, mode=S.h2h.mode;
   const key=h2hCourseKey(seed), course=DAILY_COURSES[key], diffs=dBaseDiffs(course), cond=DCFG.COND[h2hCondName(seed)];
   S.h2h.course=course; S.h2h.cond=h2hCondName(seed);
-  const one=(sk,i)=>h2hHoleScore(sk,course,key,diffs,cond,seed,i);
+  const one=(sk,i,dec)=>h2hHoleScore(sk,course,key,diffs,cond,seed,i,dec);
   if(!h2hMode(mode).teams){
-    return ps.slice().sort((a,b)=>a.slot-b.slot).map(p=>({kind:'slot', id:p.slot, label:p.username, members:[p],
-      dispSkills:p.draft.skills, holeScore:i=>one(p.draft.skills,i)}));
+    // CS437: each slot unit is scored with ITS OWN in-round decisions (1v1 + FFA). h2hUnitDec reads the
+    // player's submitted look._dec (human) or generates+caches one (bot); missing → {} = balanced (null).
+    const decIdxs=h2hHasDecisions(mode)?h2hDecHoles(seed,S.h2h.holes):[];
+    return ps.slice().sort((a,b)=>a.slot-b.slot).map(p=>{
+      const dec=h2hHasDecisions(mode)?h2hUnitDec(p,decIdxs,seed):{};
+      return {kind:'slot', id:p.slot, label:p.username, members:[p], dispSkills:p.draft.skills, dec,
+        holeScore:i=>one(p.draft.skills,i,(dec[i]!=null?dec[i]:null))};
+    });
   }
   const teams={}; ps.forEach(p=>{ const t=(p.team==null?0:p.team); (teams[t]=teams[t]||[]).push(p); });
   return Object.keys(teams).sort().map(tk=>{ const mem=teams[tk], ti=+tk, label=mem.map(p=>p.username).join(' & ');
@@ -22339,8 +22399,9 @@ function scrH2HDraft(){
   // actions
   const actions=$(`<div class="osactions"></div>`);
   if(filled>=8){
-    const sub=$(`<button class="btn goldfill"${S.h2h.submitting?' disabled':''}>${S.h2h.submitting?'Submitting…':'Lock in my golfer ▸'}<span class="sub">OVR ${h2hOvr()} · ready to play</span></button>`);
-    sub.onclick=h2hSubmitDraft; actions.appendChild(sub);
+    const decMode=h2hHasDecisions(S.h2h.mode);   // CS437: 1v1/FFA go to the "make your calls" phase first
+    const sub=$(`<button class="btn goldfill"${S.h2h.submitting?' disabled':''}>${S.h2h.submitting?'Submitting…':(decMode?'Lock in & make your calls ▸':'Lock in my golfer ▸')}<span class="sub">OVR ${h2hOvr()} · ${decMode?'set your strategy':'ready to play'}</span></button>`);
+    sub.onclick=(decMode?h2hStartPlay:h2hSubmitDraft); actions.appendChild(sub);
   } else if(spun){
     if(S.h2h.reSpins>0){ const re=$(`<button class="btn gold">Re-spin · ${S.h2h.reSpins} left<span class="sub">Pass on ${esc(g.name)} for a new golfer</span></button>`); re.onclick=h2hReSpin; actions.appendChild(re); }
     else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">No re-spins left, draft one of ${esc(g.name)}'s ratings above.</div>`));
@@ -22349,6 +22410,39 @@ function scrH2HDraft(){
     spin.onclick=h2hSpin; actions.appendChild(spin);
   }
   add(actions);
+}
+// CS437: the quick "make your calls" phase (1v1 + FFA). You set Attack/Safe on each signature hole, blind,
+// before the head-to-head reveal. Your calls affect YOUR score in the watch, so bold calls that pay off win.
+function scrH2HPlay(){
+  const cards=S.h2h.decCards||[], idx=S.h2h.decIdx||0, card=cards[idx];
+  add(h2hTag(`Your game plan · call ${Math.min(idx+1,cards.length)} of ${cards.length}`, true));
+  if(!card){ add($(`<p class="lede center" style="margin-top:24px">Locking in your calls…</p>`)); return; }
+  const key=h2hCourseKey(S.h2h.seed), course=DAILY_COURSES[key], h=course.holes[card.i], par=h[0], yards=h[1];
+  const sc=card.sc, od=card.odds, agg=sc.opts.find(o=>o.agg)||sc.opts[0], safe=sc.opts.find(o=>!o.agg)||sc.opts[1];
+  add($(`<h1 class="center" style="font-size:23px;margin:6px 0 2px">Set Your Strategy</h1>`));
+  add($(`<p class="lede center" style="margin:0 0 12px">Your opponent is making the same calls, blind. A bold call that pays off can win the match — but it can cost you.</p>`));
+  // progress pips (which calls are made)
+  const pips=cards.map((c,ci)=>`<span class="pip ${ci<idx?'on':''}${ci===idx?' cur':''}"></span>`).join('');
+  add($(`<div class="center" style="margin:0 0 12px"><span class="pips">${pips}</span></div>`));
+  // the hole + scenario
+  add($(`<div class="scout" style="max-width:540px;margin:0 auto 14px;border-color:#eab308;background:rgba(234,179,8,.06)">
+    <div class="small" style="color:#eab308;font-weight:800;letter-spacing:.06em;text-transform:uppercase">Hole ${card.i+1} · Par ${par} · ${yards}y · ${esc(sc.tag)}</div>
+    <p style="margin:8px 0 0;font-size:15px">${esc(sc.prompt)}</p></div>`));
+  // two calls: aggressive (red) vs safe (teal), each with its risk/reward odds
+  const wrap=$(`<div style="max-width:540px;margin:0 auto;display:flex;flex-direction:column;gap:10px"></div>`);
+  const oddsSub = od ? `${esc(od.stat.name)} ${od.val} · <b style="color:#35d6a0">${od.aggGood}%</b> ${esc(od.goodWord)} · <b style="color:#ff8f7e">${od.aggRisk}%</b> ${esc(od.riskWord)}` : esc(agg.s||'');
+  const aggB=$(`<button class="btn" style="background:linear-gradient(180deg,#e0533b,#b83824);border:1px solid #ff8f7e;text-align:left;padding:14px 16px">
+    <span style="display:block;font-weight:800;font-size:16px">⚡ ${esc(agg.l)}</span>
+    <span class="sub" style="opacity:.95;text-transform:none;letter-spacing:0;font-weight:600">${oddsSub}</span></button>`);
+  aggB.onclick=()=>h2hPickDec(true);
+  const safeSub = od ? `Steady play · <b style="color:#35d6a0">${od.safeGood}%</b> ${esc(od.goodWord)} · protect par` : esc(safe.s||'');
+  const safeB=$(`<button class="btn" style="background:linear-gradient(180deg,#0f8f86,#0b6f68);border:1px solid #35d6a0;text-align:left;padding:14px 16px">
+    <span style="display:block;font-weight:800;font-size:16px">🛡 ${esc(safe.l)}</span>
+    <span class="sub" style="opacity:.95;text-transform:none;letter-spacing:0;font-weight:600">${safeSub}</span></button>`);
+  safeB.onclick=()=>h2hPickDec(false);
+  wrap.appendChild(aggB); wrap.appendChild(safeB);
+  add(wrap);
+  add($(`<p class="small muted center" style="margin:14px 0 0">Make all ${cards.length} calls to lock in your golfer.</p>`));
 }
 function h2hSum(scores,n){ let t=0; for(let i=0;i<Math.min(n,scores.length);i++) t+=scores[i]; return t; }
 // which units' ball is IN THE CUP at this reveal step of a hole (a unit is done when ALL its shots for

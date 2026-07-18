@@ -10355,6 +10355,42 @@ allows Google Fonts, or self-host Anton.*
   (×1.2); `mergeSpecial` preserves `coined:true` + the lower best across a sync where local was uncoined; 0
   page errors. Deployed to /golf. Tunable: `COIN_BOLD_WIN`, the per-mode stage mults.
 
+- **CS437 — online H2H is now COMPETITIVE: in-round Attack/Safe decisions (1v1 + FFA) (owner: "Online h2h
+  should definitely have decisions to make. It should be competitive!").** H2H was fully passive after the
+  draft (you drafted, then watched two pre-computed rounds). Now each player makes real signature-hole
+  calls that affect their own score, so bold calls that pay off can win the match. Owner picks
+  (AskUserQuestion): a **quick "make your calls" phase** (not a full shot-by-shot round), for **1v1 and
+  Free-for-All** (the slot modes where each player plays their own ball; Best Ball / Scramble unchanged for
+  now). **No SQL migration** — decisions ride in the transmitted `look` jsonb (`look._dec`, the same
+  established pattern as `_rep`/`_ts`, CS394), so both clients get both players' calls and the deterministic
+  2-client consensus resolve holds.
+  - **Flow:** draft → new **`h2hplay`** "Set Your Strategy" screen (after "Lock in & make your calls ▸") →
+    for each of the ~6 signature holes (via the daily's `dDecHoleSet`, filtered to the round length): the
+    hole + scenario + a red **Attack** call vs a teal **Safe** call, each with its risk/reward odds
+    (reuses the daily `dScenario`/`dDecOdds`/`dDecStat`, temp-pointing the daily-state vars at the H2H
+    round) → your calls go into `S.h2h.myDec` → submit `{skills, look:{…,_dec}}`. Calls are made blind
+    (the opponent's round is hidden), which is the fair competitive model. `dScenario`'s situational
+    "you're N clear" branch is disabled here (av=0) since there's no live position vs a hidden opponent.
+  - **Scoring:** `h2hHoleScore(...,dec)` passes the decision as the `attack` arg to `dSimHole` (rng seed
+    UNCHANGED, so attack & safe share the same luck draw — only the mean/variance shift). `h2hBuildUnits`
+    scores each slot unit with ITS OWN decisions (`h2hUnitDec`: human → submitted `look._dec`; bot →
+    `h2hGenBotDec`, a stable skill-weighted aggression, generated + cached; missing → balanced). Aggressive
+    = near-equal mean but much higher variance (birdie-or-blowup) vs safe = steady — so the favorite plays
+    safe to let skill win and the underdog gambles for variance, real competitive depth. Team modes'
+    scoring is untouched.
+  - **Anti-cheat:** same trust level as today — a client could submit fake `_dec` just as it could a fake
+    draft, and H2H is already 2-client-consensus-trusted (not server-re-simulated), so this fits the
+    existing posture with no new exposure.
+  - Verified in Playwright: mode gating (1v1/FFA yes, team no); decision holes filtered under the round
+    length; the decision changes a hole score **~22.7%** of the time with a large variance swing; two
+    clients build identical unit totals from the same drafts + `_dec` (consensus holds); `h2hMyLook` carries
+    `_dec`; bots generate a dec map; team modes score without error (decisions ignored); the play screen
+    renders + answering all calls advances and submits the correct dec map; 0 page errors. Screenshot
+    confirms the "Set Your Strategy" screen. Deployed to /golf (no migration — client-only). FOLLOW-UPS: the
+    watch narrative doesn't yet flavor an aggressive-birdie as "fired at the pin" (the SCORE reflects the
+    call; the shot text is generic) — a polish item; and team modes (Best Ball / Scramble) decisions.
+    Tunable: `H2H_DEC_MODES`, the bot aggression in `h2hGenBotDec`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
