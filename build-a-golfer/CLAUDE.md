@@ -10460,6 +10460,19 @@ allows Google Fonts, or self-host Anton.*
   green up-flash / red down-flash for genuine per-event changes. Verified in Playwright: the banner renders
   Fans in `rgb(255,157,58)`, 0 page errors. Deployed to /golf.
 
+- **CS442 — two H2H-screen fixes: stray-comma lobby-fill text + broken/dashed shot tracer (owner
+  screenshot).** (1) The host-only "fill the open seat" divider on the H2H lobby read
+  `, or fill the open seat,` — a leading + trailing comma that looked like a fragment (owner: "doesn't need
+  ', or fill the open seat'"). Cleaned to a proper standalone label "Or fill the open seat" (pluralized for
+  multiple open seats). (2) The shot tracer on the pixel course rendered a completed shot's ROLL segment as
+  a dashed line (`hvDoneShot`, `stroke-dasharray="2 3"`), so a finished shot's tracer read as broken/glitchy
+  — both players' tracers in the screenshot showed dashes. Made the done-shot roll a SOLID continuous line
+  (rounded caps, .85 opacity, kept thinner than the flight so it still reads as the ground roll), so a
+  completed shot now draws as one clean unbroken tracer from tee to rest. The penalty-drop indicator stays
+  dashed (it's a deliberate drop marker, not a continuous shot). Verified in Playwright: the lobby text is
+  comma-free, `hvDoneShot` emits no `2 3` dash and renders a solid roll over the pixel course (screenshot
+  confirms a clean continuous blue tracer), 0 page errors. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
