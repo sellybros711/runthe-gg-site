@@ -4263,6 +4263,46 @@ function cupSessionPairs(team, sess){
   const pat=CUP_PAIR_PATTERNS[sess%CUP_PAIR_PATTERNS.length];
   return pat.map(([i,j])=>[play[i], play[j]]);
 }
+// CS446: a side's pairs+outcomes from a given session, from that side's perspective (for results-driven
+// re-pairing). outcome = win / loss / half for THIS side.
+function priorPairsFor(session, side){
+  return session.matches.map(m=>{ const names=(side==='A'?m.a:m.b).map(p=>p.nm);
+    return {names, outcome: m.res==='half'?'half':(m.res===side?'win':'loss')}; });
+}
+// CS446 (owner: pairings don't always change - a captain keeps a pairing that's playing well and switches
+// one that's doing poorly). Pick a side's pairs for a session AFTER the first, informed by the previous
+// session's results: KEEP pairs that won (likely), keep halves sometimes, SPLIT losers; rotate rested
+// (benched-last-session) players in for fresh legs; YOU always play when on this side. `prior` = this side's
+// pairs+outcomes from the last session.
+function cupPairsAfter(team, prior){
+  const nm=p=>teamNm(p), byName=n=>team.find(p=>nm(p)===n);
+  const kept=[], used=new Set();
+  (prior||[]).forEach(pr=>{
+    const keepP = pr.outcome==='win'?0.82 : pr.outcome==='half'?0.5 : 0.15;   // winners stay, losers likely switch
+    if(kept.length<4 && Math.random()<keepP){
+      const a=byName(pr.names[0]), b=byName(pr.names[1]);
+      if(a&&b && !used.has(nm(a)) && !used.has(nm(b))){ kept.push([a,b]); used.add(nm(a)); used.add(nm(b)); }
+    }
+  });
+  const need=(4-kept.length)*2;
+  const played=new Set((prior||[]).flatMap(pr=>pr.names));   // who played last session (this side) -> rest them a touch
+  const score=p=>(played.has(nm(p))?0:2.2)+p.eo;             // fresh legs get a small boost over skill
+  let pool=team.filter(p=>!used.has(nm(p))); pool.sort((a,b)=>score(b)-score(a));
+  const you=team.find(p=>p.you);
+  if(you && !used.has(nm(you))){ const i=pool.findIndex(p=>p.you); if(i>=need){ const me=pool.splice(i,1)[0]; pool.splice(Math.max(0,need-1),0,me); } }
+  const pick=pool.slice(0, need).sort((a,b)=>b.eo-a.eo);
+  const half=pick.length/2, fresh=[];
+  for(let i=0;i<half;i++) fresh.push([pick[i], pick[i+half]]);   // strong + steady, fresh partnerships for the split players
+  return kept.concat(fresh);
+}
+// CS446: each player's win-loss-half record over the given sessions (for the captain's Day-1 form badges).
+function cupPlayerForm(sessions, side){
+  const rec={};
+  sessions.forEach(s=>s.matches.forEach(m=>{ const mine=side==='A'?m.a:m.b;
+    mine.forEach(p=>{ const r=rec[p.nm]||(rec[p.nm]={w:0,l:0,h:0});
+      if(m.res==='half')r.h++; else if(m.res===side)r.w++; else r.l++; }); }));
+  return rec;
+}
 // CS446 part B: resolve a captain's chosen name-pairs into player objects from their (adjusted) team, ordered
 // strongest-first so their best pairing faces the other side's best (removes the which-pair-faces-which
 // micro-decision, keeps matches balanced). Returns null unless a full 4 pairs resolve.
@@ -4304,9 +4344,12 @@ function simTeamEvent(opts){
     if(fmt==='singles'){ const sa=[...teamA].sort((a,b)=>b.eo-a.eo), sb=[...teamB].sort((a,b)=>b.eo-a.eo);
       for(let i=0;i<12;i++) matches.push(simMatch('singles',[sa[i]],[sb[i]])); }
     else {
-      // each team session rotates the eight and varies partnerships (CS446); when you captain a side and have
-      // set that session's pairings, use them for your side, the AI still arranges the other side.
-      let pa=cupSessionPairs(teamA, teamSessN), pb=cupSessionPairs(teamB, teamSessN);
+      // CS446: the opening session is a skill-based lineup; each session after keeps the pairings that are
+      // playing well and switches the ones doing poorly (results-driven, not a mechanical rotation). When you
+      // captain a side and have set that session's pairings, use them for your side; the AI arranges the other.
+      const prev = teamSessN>0 ? sessions[teamSessN-1] : null;
+      let pa = prev ? cupPairsAfter(teamA, priorPairsFor(prev,'A')) : cupSessionPairs(teamA, 0);
+      let pb = prev ? cupPairsAfter(teamB, priorPairsFor(prev,'B')) : cupSessionPairs(teamB, 0);
       const chosen=capPairs && applyCaptainPairs(capPairs[teamSessN], capSide==='A'?teamA:teamB);
       if(chosen){ if(capSide==='A') pa=chosen; else pb=chosen; }
       for(let i=0;i<4;i++) matches.push(simMatch(fmt,pa[i],pb[i]));
@@ -4356,7 +4399,8 @@ function resimCupDay2(T, day2Pairs){
   if(!T || !T._teamA || !T._teamB) return;
   const capSide=T._capSide;
   [[2,'foursomes'],[3,'fourball']].forEach(([sIdx, fmt])=>{
-    let pa=cupSessionPairs(T._teamA, sIdx), pb=cupSessionPairs(T._teamB, sIdx);
+    const prev=T.sessions[sIdx-1];   // opponent re-pairs off the last session's results (keep winners, switch losers)
+    let pa=cupPairsAfter(T._teamA, priorPairsFor(prev,'A')), pb=cupPairsAfter(T._teamB, priorPairsFor(prev,'B'));
     const chosen=applyCaptainPairs(day2Pairs, capSide==='A'?T._teamA:T._teamB);
     if(chosen){ if(capSide==='A') pa=chosen; else pb=chosen; }
     const rows=[];
@@ -14006,9 +14050,11 @@ function scrCaptainPairs(day){
   const bd=(S.cupPairBuild && S.cupPairBuild.day===day) ? S.cupPairBuild : (S.cupPairBuild={day, pending:null, pairs:[]});
   const natOf=n=>{ const p=team.find(x=>teamNm(x)===n); return p?(p.nation||p.nat):''; };
   const inPair=n=>bd.pairs.findIndex(pr=>pr.indexOf(n)>=0);
+  // CS446: Day-2 shows each player's Day-1 form so you can keep the hot pairings and switch the cold ones.
+  const form = (day===2 && S.curTeam && S.curTeam.sessions) ? cupPlayerForm([S.curTeam.sessions[0], S.curTeam.sessions[1]], myCupSide()) : null;
   add($(`<div class="center" style="margin-top:6px"><span class="tag" style="color:${th.accent};border-color:${th.border};background:${th.bg}">${th.emoji} Captain · Day ${day} pairings</span></div>`));
   add($(`<h2 class="center" style="margin:10px 0 2px;font-size:19px">Set your Day ${day} pairings</h2>`));
-  add($(`<p class="small muted center" style="margin:0 0 10px;max-width:470px">Tap two players to pair them. Send out 4 pairs — the other ${Math.max(0,team.length-8)} sit today. ${day===1?'This lineup plays both of today’s sessions; you can shuffle it for Day 2.':'Fresh legs and new partnerships to swing the Cup.'}</p>`));
+  add($(`<p class="small muted center" style="margin:0 0 10px;max-width:470px">Tap two players to pair them. Send out 4 pairs — the other ${Math.max(0,team.length-8)} sit today. ${day===1?'This lineup plays both of today’s sessions; you can shuffle it for Day 2.':'Keep the pairings that are hot, switch the ones that struggled Day 1 (their record is shown), and rest a few legs.'}</p>`));
   const slots=$(`<div style="max-width:520px;margin:0 auto 10px;display:grid;gap:6px"></div>`);
   for(let i=0;i<4;i++){ const pr=bd.pairs[i];
     slots.appendChild($(`<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid ${pr?'var(--gold)':'var(--line)'};border-radius:11px;background:${pr?'rgba(235,208,74,.08)':'#0a2740'}">
@@ -14017,8 +14063,12 @@ function scrCaptainPairs(day){
   add(slots);
   const grid=$(`<div style="max-width:520px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:6px"></div>`);
   team.forEach(p=>{ const nm=teamNm(p), pi=inPair(nm), paired=pi>=0, pend=bd.pending===nm;
+    let formTag='';
+    if(form){ const r=form[nm]; if(r){ const played=r.w+r.l+r.h;
+      const col = !played?'#7f93a6' : r.w>r.l?'#35d6a0' : r.l>r.w?'#e88a5b' : '#d9c26a';
+      formTag = played ? `<span style="color:${col};font-weight:800;font-size:10px;margin-right:5px">${r.w}-${r.l}-${r.h}</span>` : `<span class="small muted" style="margin-right:5px;font-size:10px">sat</span>`; } }
     const b=$(`<button class="btn ${pend?'gold':paired?'teal':'ghost'}" style="text-align:left;padding:9px 11px;display:flex;align-items:center;gap:6px">
-      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${natFlag(p.nation||p.nat)} ${esc(nm)}</span><span class="small muted">${p.eo}${paired?` · P${pi+1}`:''}</span></button>`);
+      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${natFlag(p.nation||p.nat)} ${esc(nm)}</span>${formTag}<span class="small muted">${p.eo}${paired?` · P${pi+1}`:''}</span></button>`);
     b.onclick=()=>{
       if(paired){ bd.pairs.splice(pi,1); bd.pending=null; }
       else if(pend){ bd.pending=null; }
@@ -14030,8 +14080,14 @@ function scrCaptainPairs(day){
   });
   add(grid);
   const ctrl=$(`<div style="max-width:520px;margin:12px auto 0"></div>`);
-  const auto=$(`<button class="btn ghost" style="margin-bottom:8px">↺ Auto-pair the top 8</button>`);
-  auto.onclick=()=>{ const sp=cupSessionPairs(team, day===1?0:2); bd.pairs=sp.map(pr=>[teamNm(pr[0]),teamNm(pr[1])]); bd.pending=null; render(); };
+  const auto=$(`<button class="btn ghost" style="margin-bottom:8px">↺ ${day===1?'Auto-pair the top 8':'Suggest (keep hot, switch cold)'}</button>`);
+  auto.onclick=()=>{
+    // Day 1: skill-based top 8. Day 2: results-driven suggestion off Day 1 (keep winners, split losers, rest legs).
+    const sp = (day===2 && S.curTeam && S.curTeam.sessions)
+      ? cupPairsAfter(team, priorPairsFor(S.curTeam.sessions[1], myCupSide()))
+      : cupSessionPairs(team, 0);
+    bd.pairs=sp.map(pr=>[teamNm(pr[0]),teamNm(pr[1])]); bd.pending=null; render();
+  };
   ctrl.appendChild(auto);
   const done=bd.pairs.length===4;
   const c=$(`<button class="btn ${done?'goldfill':'ghost'}"${done?'':' disabled style="opacity:.55"'}>${day===1?'Start the Cup ▸':'Play Day 2 ▸'}<span class="sub">${done?'Send out your four pairs':`Form ${4-bd.pairs.length} more pair${4-bd.pairs.length===1?'':'s'}`}</span></button>`);

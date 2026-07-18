@@ -10581,6 +10581,22 @@ allows Google Fonts, or self-host Anton.*
   the pairing screen (12 players + auto-pair) → confirm re-sims Day 2 (A8-A11 who sat Day 1 rotated in),
   advances to match 9, prompt cleared, 0 page errors. Deployed to /golf. Tunable: `CUP_PAIR_PATTERNS`, the
   `rotN(others, sess*3)` bench-rotation offset.
+  • **Follow-up (owner: "they don't always change, but if a pairing does really poorly the captain may
+    switch them"): pairings are now RESULTS-DRIVEN, not a mechanical rotation.** The opening session is a
+    skill-based lineup; each session after keeps the pairings that are playing well and switches the ones
+    doing poorly. New `cupPairsAfter(team, prior)` (used by the AI for both sides, in `simTeamEvent`'s SESS
+    loop for sessions 1-3 and in `resimCupDay2`): KEEP a pair that won (82%), keep a half sometimes (50%),
+    SPLIT a loser (kept only ~15%) — so a hot pairing usually stays together and a cold one usually gets
+    broken up, but not always (a fully-winning lineup stays intact ~76% of the time). Rested players
+    (benched last session) get a small boost over skill so fresh legs rotate in (~84%); YOU always play when
+    on this side; split players get fresh strong+steady partners. `priorPairsFor(session, side)` reads the
+    prior session's pairs+outcomes. For the captain, the Day-2 pairing screen now shows each player's Day-1
+    W-L-H form (green if winning, orange if losing, "sat" if benched) so you can decide who to switch, and
+    the auto-pair button becomes **"Suggest (keep hot, switch cold)"** — a results-driven default off Day 1
+    (`cupPairsAfter` on the captain side's Day-1 results). Verified in Playwright: winners kept 82% / each
+    loser ~15% / rested-in 84% / all-win-unchanged 76%; `cupPlayerForm` tallies W-L-H correctly; and the
+    captain UI shows the form badges + Suggest button and re-sims cleanly. Deployed to /golf. Tunable: the
+    keep-probabilities (win 0.82 / half 0.5 / loss 0.15) + the fresh-legs boost (2.2) in `cupPairsAfter`.
 
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
