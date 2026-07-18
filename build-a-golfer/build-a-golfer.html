@@ -488,6 +488,17 @@ window.GA_ID='G-L29P5MRWKE';
   /* ---- title scene ---- */
   .scene{position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none}
   .coursebg{position:absolute; inset:0; width:100%; height:100%; display:block; object-fit:cover; object-position:center 60%; image-rendering:auto}
+  /* CS447: clean dusk-course scene (crisp SVG layout) + crisp pixel motifs (bunker + green/flag), high
+     contrast so the cards pop and the scene recedes. */
+  .sc-scene{position:absolute; inset:0; width:100%; height:100%; display:block}
+  .sc-sprite{position:absolute; image-rendering:pixelated; pointer-events:none}
+  .sc-bunker{left:4%; bottom:11%; width:300px; filter:drop-shadow(0 7px 13px rgba(0,0,0,.3)) brightness(.82) saturate(.9)}
+  .sc-green{right:6%; bottom:9%; width:352px; filter:drop-shadow(0 8px 15px rgba(0,0,0,.3)) brightness(.95)}
+  .sc-ov{position:absolute; inset:0; pointer-events:none}
+  .sc-scrim{background:linear-gradient(180deg, rgba(3,11,8,.82) 0%, rgba(3,11,8,.66) 30%, rgba(3,11,8,.34) 54%, rgba(3,11,8,.06) 74%, transparent 88%)}
+  .sc-vig{background:radial-gradient(135% 105% at 50% 22%, transparent 46%, rgba(2,9,7,.62) 100%)}
+  .sc-ground{background:linear-gradient(0deg, rgba(2,9,7,.5) 0%, transparent 12%)}
+  @media(max-width:700px){ .sc-bunker{width:172px; left:2%; bottom:6%} .sc-green{width:200px; right:2%; bottom:7%} }
   .sky{position:absolute; inset:0; background:linear-gradient(180deg,#0a2038 0%,#0b2742 40%,#0f3f30 58%,#0b3325 100%)}
   .glow{position:absolute; top:-14%; width:62%; height:60%;
     background:radial-gradient(closest-side, rgba(255,242,205,.18), transparent 70%); filter:blur(2px)}
@@ -6804,70 +6815,55 @@ function onlineHeroCard(){
   if(ob4) ob4.onclick=()=>openH2H('bestball');
   return card;
 }
-// CS364: smooth dusk golf-course backdrop for the home screen (no dithering - the dither read as static).
-// Higher-res, smooth vertical gradient sky (no sun), clean tree line + fairway. Deterministic + cached.
-let _pxTitleBg=null;
-function pxTitleBgURL(){
-  if(_pxTitleBg) return _pxTitleBg;
-  const W=200,H=240, cv=document.createElement('canvas'); cv.width=W; cv.height=H;
-  const ctx=cv.getContext('2d'), im=ctx.createImageData(W,H), D=im.data;
-  const set=(x,y,c)=>{ x|=0;y|=0; if(x<0||x>=W||y<0||y>=H)return; const i=(y*W+x)*4; D[i]=c[0];D[i+1]=c[1];D[i+2]=c[2];D[i+3]=255; };
-  const lp=(a,b,t)=>[a[0]+(b[0]-a[0])*t|0, a[1]+(b[1]-a[1])*t|0, a[2]+(b[2]-a[2])*t|0];
-  // multi-stop smooth gradient
-  const grad=(stops,t)=>{ for(let i=0;i<stops.length-1;i++){ const [p0,c0]=stops[i],[p1,c1]=stops[i+1]; if(t<=p1){ return lp(c0,c1,(t-p0)/(p1-p0||1)); } } return stops[stops.length-1][1]; };
-  const SKY=[[0,[8,18,40]],[0.42,[20,52,76]],[0.7,[34,84,82]],[0.87,[92,110,86]],[1,[176,138,86]]]; // dusk, warm horizon glow (no sun disc)
-  const TREE=[24,60,50], TREE2=[16,44,38];
-  const FAIRT=[28,104,64], FAIRB=[44,150,86], MOW=[52,168,98];
-  const GREEN=[62,182,100], GREENL=[86,204,120], SAND=[230,212,166], CREAM=[244,227,201], GOLD=[241,208,74], GOLDS=[201,152,42], DK=[6,34,24], BALL=[248,246,238];
-  const HZ=148;
-  const hz=(x)=> HZ + 9*Math.sin(x*0.045+0.6) + 5*Math.sin(x*0.13+1.7);   // CS367: rolling ground line (topography)
-  // smooth sky (drawn a bit past the lowest hill so nothing shows through)
-  for(let y=0;y<HZ+20;y++){ const c=grad(SKY,Math.min(1,y/HZ)); for(let x=0;x<W;x++) set(x,y,c); }
-  // distant rolling hill band behind the trees (adds depth)
-  const HILLC=[30,72,66];
-  for(let x=0;x<W;x++){ const base=hz(x), hl=(base-8-4*Math.sin(x*0.03))|0; for(let y=hl;y<base+2;y++) set(x,y, lp(HILLC,grad(SKY,Math.min(1,y/HZ)),0.18)); }
-  // rolling tree silhouette following the horizon
-  for(let x=0;x<W;x++){ const h=9+7*Math.sin(x*0.10)+4*Math.sin(x*0.31+2)+3*Math.sin(x*0.6); const base=hz(x)|0, top=(base-2-h)|0;
-    for(let y=top;y<base+4;y++) set(x,y, y<top+3?TREE:TREE2); }
-  // fairway with ROLLING TOPOGRAPHY: gradient by depth-below-horizon + curved mow sweeps + soft mounds/swales
-  for(let x=0;x<W;x++){ const h0=hz(x);
-    for(let y=Math.floor(h0);y<H;y++){ const t=Math.max(0,Math.min(1,(y-h0)/(H-h0))); let c=lp(FAIRT,FAIRB,t);
-      const sweep=(y-h0)+6*Math.sin(x*0.06+y*0.02);            // mow-stripe boundary drifts -> rolling contours
-      const bandH=9+t*16; if(Math.floor(sweep/bandH)%2===0) c=lp(c,MOW,0.3);
-      const m1=Math.exp(-((((x-58)/50)**2)+(((y-202)/26)**2)))*0.22;   // lit crest
-      const m2=Math.exp(-((((x-146)/44)**2)+(((y-216)/24)**2)))*0.15;  // lit rise
-      const s1=Math.exp(-((((x-104)/40)**2)+(((y-192)/18)**2)))*0.16;  // shaded swale
-      c=lp(c,MOW,Math.min(0.5,m1+m2)); c=lp(c,FAIRT,s1);
-      set(x,y,c); } }
-  // putting green + swallowtail flag + ball (right), bunker (left)
-  const gx=150,gy=176,grx=40,gry=14;
-  for(let y=gy-gry;y<gy+gry;y++) for(let x=gx-grx;x<gx+grx;x++){ const d=((x-gx)/grx)**2+((y-gy)/gry)**2; if(d<=1) set(x,y, d>0.82?lp(GREEN,DK,0.3):(y<gy?GREENL:GREEN)); }
-  const hx=158,hy=172; set(hx,hy,DK); set(hx-1,hy,DK);
-  for(let y=hy-34;y<hy;y++){ set(hx,y,CREAM); set(hx+1,y,lp(CREAM,DK,0.35)); }
-  const fy=hy-34;
-  for(let i=0;i<14;i++) for(let j=0;j<9;j++){ if(i>=8 && Math.abs(j-4)<(i-8)) continue; set(hx+2+i,fy+j, i<2?GOLDS:GOLD); }
-  const bxx=132,byy=181; for(let dy=-2;dy<2;dy++) for(let dx=-2;dx<2;dx++) if(dx*dx+dy*dy<=3) set(bxx+dx,byy+dy,BALL);
-  // CS369: deep greenside bunker - grass lip overhang + shaded back wall + lit sand floor + rake lines
-  const nx=46,ny=194,nrx=35,nry=15;
-  const SANDL=[243,229,193], SANDD=[188,168,124], SANDR=[210,192,146], LIP=[26,74,48], LIPD=[12,44,30];
-  for(let y=ny-nry;y<=ny+nry;y++) for(let x=nx-nrx;x<=nx+nrx;x++){ const nxx=(x-nx)/nrx, nyy=(y-ny)/nry; const d=nxx*nxx+nyy*nyy; if(d>1) continue;
-    let c;
-    if(nyy<-0.5) c=lp(SANDD,SAND,(nyy+1)/0.5*0.55);   // shaded back wall (the deep, in-shadow face)
-    else if(nyy>0.35) c=lp(SAND,SANDL,(nyy-0.35)/0.65);// lit floor sloping toward the viewer
-    else c=SAND;
-    if(d>0.8) c=lp(c,SANDD,0.55);                      // darker rim = depth
-    set(x,y,c); }
-  // rake lines: concentric arcs across the lit floor
-  for(const rr of [0.5,0.7,0.88]) for(let x=nx-nrx;x<=nx+nrx;x++){ const u=(x-nx)/(nrx*rr); if(Math.abs(u)>=1) continue;
-    const yy=Math.round(ny + nry*rr*Math.sqrt(1-u*u)); if(yy<ny) continue; set(x,yy,SANDR); }
-  // grass lip overhang along the top back edge + its cast shadow on the sand
-  for(let x=nx-nrx;x<=nx+nrx;x++){ const u=(x-nx)/nrx; if(Math.abs(u)>=1) continue; const topY=Math.round(ny-nry*Math.sqrt(1-u*u));
-    set(x,topY-2,LIPD); set(x,topY-1,LIP); set(x,topY,LIP);
-    set(x,topY+1,lp(SANDD,DK,0.25)); set(x,topY+2,SANDD); }
-  // soft top darkening for header legibility
-  for(let y=0;y<40;y++){ const f=(40-y)/40*0.4; for(let x=0;x<W;x++){ const i=(y*W+x)*4; const c=lp([D[i],D[i+1],D[i+2]],[8,18,40],f); D[i]=c[0];D[i+1]=c[1];D[i+2]=c[2]; } }
-  ctx.putImageData(im,0,0);
-  _pxTitleBg=cv.toDataURL('image/png'); return _pxTitleBg;
+// CS447: home-screen backdrop = a clean crisp dusk-course scene (smooth SVG layout: sky, hazy distant
+// treeline, far + near ground planes for depth, warm horizon glow) with crisp PIXEL motifs (a greenside
+// bunker left, a putting green + swallowtail flag + ball right), plus a heavy top scrim + vignette so the
+// cards stay the hero and the scene recedes. Replaces the old full-canvas pixel bg (which upscaled blurry).
+let _pxTitleGreen=null, _pxTitleBunker=null;
+function pxGreenFlagURL(){   // crisp pixel putting green + swallowtail flag + ball
+  if(_pxTitleGreen) return _pxTitleGreen;
+  const W=104,H=76, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const cx=cv.getContext('2d');
+  const px=(x,y,c)=>{ cx.fillStyle=c; cx.fillRect(x,y,1,1); };
+  const gcx=52,gcy=58,grx=48,gry=15;
+  for(let y=gcy-gry;y<=gcy+gry;y++) for(let x=gcx-grx;x<=gcx+grx;x++){ const d=((x-gcx)/grx)**2+((y-gcy)/gry)**2; if(d<=1) px(x,y, d>0.8?'#256b40':(y<gcy?'#49b76c':'#329457')); }
+  for(let y=52;y<=54;y++) for(let x=40;x<=42;x++) px(x,y,'#eeece2');   // ball
+  const fx=58; for(let y=18;y<=57;y++){ px(fx,y,'#e4e7e0'); px(fx+1,y,'#aeb7b1'); }   // pole
+  for(let i=0;i<15;i++) for(let j=0;j<10;j++){ if(i>=9 && Math.abs(j-4.5)<(i-8)) continue; px(fx+2+i,18+j, i<2?'#bf922a':'#eac845'); }   // swallowtail flag
+  _pxTitleGreen=cv.toDataURL('image/png'); return _pxTitleGreen;
+}
+function pxBunkerURL(){   // crisp pixel greenside bunker: sand floor + grass lip overhang + rake lines
+  if(_pxTitleBunker) return _pxTitleBunker;
+  const W=98,H=54, cv=document.createElement('canvas'); cv.width=W; cv.height=H; const cx=cv.getContext('2d');
+  const px=(x,y,c)=>{ cx.fillStyle=c; cx.fillRect(x,y,1,1); };
+  const bcx=49,bcy=32,brx=45,bry=17;
+  for(let y=bcy-bry;y<=bcy+bry;y++) for(let x=bcx-brx;x<=bcx+brx;x++){ const nx=(x-bcx)/brx, ny=(y-bcy)/bry; const d=nx*nx+ny*ny; if(d>1) continue;
+    let c = y<bcy-2?'#c9b788' : (y>bcy+4?'#f0e4bf':'#ddcb9a'); if(d>0.86) c='#c2ad78'; px(x,y,c); }
+  for(let x=bcx-brx;x<=bcx+brx;x++){ const nx=(x-bcx)/brx, inside=1-nx*nx; if(inside<0) continue; const ty=bcy-Math.sqrt(inside)*bry;
+    for(let y=Math.floor(ty)-3;y<Math.floor(ty)+1;y++) px(x,y, y<ty-1?'#1b452e':'#123320');   // grass lip
+    px(x,Math.floor(ty)+1,'#b8a675'); px(x,Math.floor(ty)+2,'#c8b684'); }                       // lip shadow on sand
+  for(let r=0;r<3;r++){ const ry2=bcy+4+r*4; for(let x=bcx-brx+8;x<=bcx+brx-8;x++){ const nx=(x-bcx)/brx; if(1-nx*nx<0.05) continue; if((x+r)%3===0) px(x,ry2,'#cbb984'); } }   // rake lines
+  _pxTitleBunker=cv.toDataURL('image/png'); return _pxTitleBunker;
+}
+function titleSceneHTML(){
+  let green='', bunker='';
+  try{ green=pxGreenFlagURL(); }catch(e){}
+  try{ bunker=pxBunkerURL(); }catch(e){}
+  return `<svg class="sc-scene" viewBox="0 0 1440 1000" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="sc-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#040d0a"/><stop offset="0.34" stop-color="#0b2733"/><stop offset="0.58" stop-color="#1c4f4a"/><stop offset="0.71" stop-color="#5c5f3c"/><stop offset="0.78" stop-color="#8a6636"/></linearGradient>
+      <linearGradient id="sc-grnd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a6a45"/><stop offset="0.5" stop-color="#1c5334"/><stop offset="1" stop-color="#0f3a24"/></linearGradient>
+      <radialGradient id="sc-glow" cx="72%" cy="86%" r="52%"><stop offset="0" stop-color="#e2b45a" stop-opacity="0.34"/><stop offset="0.55" stop-color="#e2b45a" stop-opacity="0"/></radialGradient>
+    </defs>
+    <rect width="1440" height="1000" fill="url(#sc-sky)"/>
+    <path d="M0 700 q40 -20 80 -6 t80 -8 t80 6 t80 -12 t80 4 t80 -10 t80 8 t80 -6 t80 -8 t80 8 t80 -6 t80 6 t80 -8 t80 6 t80 -6 t80 8 t80 -6 L1440 720 L0 720 Z" fill="#0c3330" opacity="0.55"/>
+    <rect x="0" y="700" width="1440" height="60" fill="#1c4f4a" opacity="0.2"/>
+    <path d="M0 728 Q 360 690 720 720 T 1440 710 L1440 1000 L0 1000 Z" fill="#2b6b47"/>
+    <path d="M0 812 Q 480 772 960 806 T 1440 796 L1440 1000 L0 1000 Z" fill="url(#sc-grnd)"/>
+    <rect width="1440" height="1000" fill="url(#sc-glow)"/>
+  </svg>
+  ${bunker?`<img class="sc-sprite sc-bunker" src="${bunker}" alt="" aria-hidden="true">`:''}
+  ${green?`<img class="sc-sprite sc-green" src="${green}" alt="" aria-hidden="true">`:''}
+  <div class="sc-ov sc-scrim"></div><div class="sc-ov sc-vig"></div><div class="sc-ov sc-ground"></div>`;
 }
 // CS374: scale the one-line title headline to fill its width (biggest that fits, capped). Re-run on
 // font load + resize since the display font (Anton) loads async / may fall back to a wider face.
@@ -6888,8 +6884,8 @@ function scheduleFitHero(){
 function scrTitle(){
   reconcileDailyAttempts();   // self-heal "attempts left" against the server before it's even displayed below
   // CS363: pixel-art dusk-course backdrop (matches the game's pixel theme) instead of the old smooth vector scene
-  let bg=''; try{ bg=pxTitleBgURL(); }catch(e){}
-  const scene=$(`<div class="scene">${bg?`<img class="coursebg" src="${bg}" alt="" aria-hidden="true">`:''}</div>`);
+  let sceneHtml=''; try{ sceneHtml=titleSceneHTML(); }catch(e){}
+  const scene=$(`<div class="scene" aria-hidden="true">${sceneHtml}</div>`);
   add(scene);
   const w=$(`<div class="titlewrap center"></div>`);
   w.appendChild($(`<div class="herotag center">A RunThe.GG Game</div>`));

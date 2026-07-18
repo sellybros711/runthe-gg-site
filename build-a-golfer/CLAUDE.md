@@ -10598,6 +10598,25 @@ allows Google Fonts, or self-host Anton.*
     captain UI shows the form badges + Suggest button and re-sims cleanly. Deployed to /golf. Tunable: the
     keep-probabilities (win 0.82 / half 0.5 / loss 0.15) + the fresh-legs boost (2.2) in `cupPairsAfter`.
 
+- **CS447 — home-screen background redesign (owner: the pixel course bg was "way too low quality" +
+  distracting).** Root cause: the old `pxTitleBgURL` rendered a 200×240 pixel canvas stretched ~10× with
+  smoothing → a blurry low-res upscale, and the busy tree line + fairway sat behind the cards at high
+  contrast. Mocked up 4 directions for the owner (abstract gradient / crisp-pixel-course / clean vector
+  course / hybrid), then combined the picks: **C's clean vector-course layout + D's crisp pixel motifs.**
+  New `titleSceneHTML()` builds the `.scene` as: a smooth **SVG dusk course** (sky gradient → a hazy
+  distant treeline + horizon-haze band → far + near ground planes for **depth** via atmospheric
+  perspective → a warm horizon glow), plus two **crisp pixel-art sprites** (`pxBunkerURL` = a greenside
+  bunker with grass-lip overhang + rake lines, left; `pxGreenFlagURL` = a putting green + swallowtail flag
+  + ball, right), plus a heavy **top scrim + vignette + foreground grounding** so the cards are the hero
+  and the scene recedes. Everything is either vector or crisp pixel (`image-rendering:pixelated`) — no more
+  blurry upscale. Owner tweaks applied: bunker sand **knocked back ~10%** (`brightness(.82) saturate(.9)`)
+  and the pixel **mow-stripes removed** for cleaner turf. Responsive: the sprites shrink/reposition under
+  700px (`@media`). Replaces the old `.coursebg` `<img>` + `pxTitleBgURL` (removed). Verified in Playwright
+  desktop + mobile: the scene renders (`.sc-scene`/`.sc-bunker`/`.sc-green`/`.sc-scrim` present, old
+  `.coursebg` gone, bunker filter = brightness .82), 0 page errors. Deployed to /golf. Tunable: the
+  `.sc-scrim`/`.sc-vig` opacity, the sprite `filter`/size/position, the SVG gradient stops in
+  `titleSceneHTML`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
