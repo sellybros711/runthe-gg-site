@@ -673,6 +673,13 @@ window.GA_ID='G-L29P5MRWKE';
   .osreel .name.slotting,.reel .name.slotting{height:34px; overflow:hidden; display:block; width:100%; padding:0; animation:none!important}
   .slotstrip{will-change:transform}
   .slotrow{text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 10px}
+  /* CS449: before the first spin, the reel slowly rotates through the golfer pool (a live preview wheel,
+     instead of a static "Spin to reveal a golfer" that read as a pressable button). */
+  .osreel .name.preview{height:36px; overflow:hidden; display:block; width:100%; padding:0; animation:none}
+  .previewstrip{will-change:transform; animation-name:previewscroll; animation-timing-function:linear; animation-iteration-count:infinite}
+  .previewstrip .slotrow{height:36px; line-height:36px; font-family:var(--display); font-weight:400; font-size:19px; text-transform:uppercase; letter-spacing:.02em}
+  @keyframes previewscroll{from{transform:translateY(0)} to{transform:translateY(-50%)}}
+  @media(prefers-reduced-motion:reduce){ .previewstrip{animation:none} }
   .osgridhint{max-width:520px; margin:0 auto 7px}
   .osgrid{max-width:520px; margin:0 auto; grid-template-columns:1fr 1fr!important; gap:6px}
   .attr.static{cursor:default; box-shadow:none}
@@ -10827,10 +10834,11 @@ function scrDraft(){
 
   // reserved reel slot - same height idle / spinning / landed, so tapping Spin (or an auto-spin after a take) never jumps
   const rar=spun?g.rarity:null, RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
+  const idlePrev=(!spun && !S.spinning);
   add($(`<div class="osreel ${S.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
-    ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:''}
-    <div class="name">${S.spinning?'…':(spun?esc(g.name):(filled===0?'Spin to reveal a golfer':'Spin for your next pick'))}</div>
-    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.spinning?'':(filled?filled+'/8 in your bag below':'Your bag fills in below'))}</div></div>`));
+    ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:(idlePrev?`<div class="reeltag">PREVIEW · THE POOL</div>`:'')}
+    <div class="name${idlePrev?' preview':''}">${S.spinning?'…':(spun?esc(g.name):(idlePrev?reelPreviewHTML():'…'))}</div>
+    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.spinning?'':(idlePrev?'Spin below to lock one in':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`));
 
   // hint
   if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(g.name)}</b>'s rating into your bag</div>`));
@@ -10873,6 +10881,16 @@ function scrDraft(){
   add(actions);
 }
 function golfersLeft(){return GOLFERS.length-S.revealed.size;}
+// CS449: a slowly-scrolling preview strip of the golfer pool for the idle reel. Rows are duplicated so the
+// linear -50% translate loops seamlessly; rarity-tinted for flair. Cosmetic only.
+function reelPreviewHTML(){
+  const arr=[...GOLFERS];
+  for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=arr[i]; arr[i]=arr[j]; arr[j]=t; }
+  const names=arr.slice(0,20);
+  const rows=names.map(g=>{ const col=g.rarity==='Legendary'?'#f1d04a':g.rarity==='Epic'?'#c7a6f2':g.rarity==='Rare'?'#82c1e8':'#dfe9e0';
+    return `<div class="slotrow" style="color:${col}">${esc(g.name)}</div>`; }).join('');
+  return `<div class="previewstrip" style="animation-duration:${(names.length*0.9).toFixed(1)}s">${rows}${rows}</div>`;
+}
 function reveal(){
   S.spinning=true; S.current=null; render();
   const reel=app.querySelector('.reel .name')||app.querySelector('.osreel .name');   // CS337: off-season uses .osreel
@@ -15963,9 +15981,10 @@ function scrOffseason(){
 
   // reserved reel slot - same height whether idle / spinning / landed, so tapping Spin causes NO layout jump
   const rar=spun?g.rarity:null, RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
+  const idlePrev=(!spun && !S.spinning);
   add($(`<div class="osreel ${S.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
-    ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:''}
-    <div class="name">${S.spinning?'…':(spun?esc(g.name):'Spin to swap a skill')}</div>
+    ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:(idlePrev?`<div class="reeltag">PREVIEW · THE POOL</div>`:'')}
+    <div class="name${idlePrev?' preview':''}">${S.spinning?'…':(spun?esc(g.name):(idlePrev?reelPreviewHTML():'…'))}</div>
     <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current'].filter(Boolean).join(' · ')):(S.spinning?'':'Optional · spin at your own risk')}</div></div>`));
 
   // one-line hint above the grid (CS356s: trimmed - the tiles already show ▲/▼)
@@ -22799,10 +22818,11 @@ function scrH2HDraft(){
 
   // reserved reel slot - same height idle / spinning / landed, so a spin (or auto-spin after a take) never jumps
   const rar=spun?g.rarity:null, RTAG={Legendary:'★ LEGENDARY',Epic:'◆ EPIC',Rare:'◇ RARE',Common:''};
+  const idlePrev=(!spun && !S.h2h.spinning);
   add($(`<div class="osreel ${S.h2h.spinning?'spinning':''} ${rar?('rar-'+rar.toLowerCase()):''} ${spun?'landed':''}">
-    ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:''}
-    <div class="name">${S.h2h.spinning?'…':(spun?esc(g.name):(filled===0?'Spin to reveal a golfer':'Spin for your next pick'))}</div>
-    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.h2h.spinning?'':(filled?filled+'/8 in your bag below':'Your bag fills in below'))}</div></div>`));
+    ${rar&&RTAG[rar]?`<div class="reeltag">${RTAG[rar]}</div>`:(idlePrev?`<div class="reeltag">PREVIEW · THE POOL</div>`:'')}
+    <div class="name${idlePrev?' preview':''}">${S.h2h.spinning?'…':(spun?esc(g.name):(idlePrev?reelPreviewHTML():'…'))}</div>
+    <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.h2h.spinning?'':(idlePrev?'Spin below to lock one in':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`));
 
   // hint
   if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(g.name)}</b>'s rating into your bag</div>`));
