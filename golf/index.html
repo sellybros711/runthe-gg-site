@@ -449,6 +449,10 @@ window.GA_ID='G-L29P5MRWKE';
   .howtop:hover{background:color-mix(in srgb, var(--gold) 20%, transparent)}
   .qbadge{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#e5484d;color:#fff;font:800 10.5px/1 var(--body);letter-spacing:0}
   .howtop.hasnew{animation:qpulse 2.4s ease-in-out infinite}
+  /* CS443: all daily quests done for the day - the button goes green with a "DONE" check */
+  .howtop.done{color:#35d6a0; border-color:#35d6a0; background:color-mix(in srgb, #35d6a0 12%, transparent); box-shadow:0 4px 11px -3px rgba(0,0,0,.5), 0 3px 12px -6px rgba(53,214,160,.5)}
+  .howtop.done:hover{background:color-mix(in srgb, #35d6a0 20%, transparent)}
+  .qdone{display:inline-flex;align-items:center;gap:3px;padding:0 6px;height:16px;border-radius:8px;background:#35d6a0;color:#062a1e;font:800 10px/1 var(--body);letter-spacing:.04em}
   @keyframes qpulse{0%,100%{box-shadow:0 4px 11px -3px rgba(0,0,0,.5), 0 0 0 0 rgba(241,208,74,.5)}50%{box-shadow:0 4px 11px -3px rgba(0,0,0,.5), 0 0 0 7px rgba(241,208,74,0)}}
   @media(prefers-reduced-motion:reduce){.howtop.hasnew{animation:none}}
   .dil-rv{opacity:0;animation:dilRise .5s ease both}
@@ -6769,7 +6773,9 @@ function scrTitle(){
     // player knows there's something to click and complete.
     const dqObj=(sbSignedIn() && typeof dailyQuests==='function')?dailyQuests():null;
     const dqLeft=dqObj?DAILY_QUEST_DEFS.filter(d=>!dqObj[d.k]).length:0;
-    const qb=$(`<button type="button" class="howtop${dqLeft?' hasnew':''}" aria-label="Daily Quests${dqLeft?', '+dqLeft+' still to do':''}">🎯 Daily Quests${dqLeft?`<span class="qbadge">${dqLeft}</span>`:''}</button>`);
+    // CS443: signed-in + every quest done today → a green "DONE" state (owner: show something on completion)
+    const dqAllDone=!!dqObj && dailyQuestsAllDone(dqObj);
+    const qb=$(`<button type="button" class="howtop${dqAllDone?' done':(dqLeft?' hasnew':'')}" aria-label="Daily Quests${dqAllDone?', all done today':(dqLeft?', '+dqLeft+' still to do':'')}">🎯 Daily Quests${dqAllDone?`<span class="qdone">✓ DONE</span>`:(dqLeft?`<span class="qbadge">${dqLeft}</span>`:'')}</button>`);
     qb.onclick=()=>{ S.overlay='challenges'; render(); }; hw.appendChild(qb);
     w.appendChild(hw); }
   // (career bests moved off the top onto the new-career card, see careerHeroCard)
