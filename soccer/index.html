@@ -2647,6 +2647,7 @@
   .mc-ico-svg{width:46px;height:46px;display:block;filter:drop-shadow(0 3px 4px rgba(22,18,15,.22));}
   /* inline trophy/medal graphic that sits like an emoji within a run of text */
   .ico-em{height:1.05em;width:auto;display:inline-block;vertical-align:-.18em;}
+  .eico{width:1.05em;height:1.05em;display:inline-block;vertical-align:-.16em;flex:0 0 auto;}
   /* keep the position abbreviations together on one line */
   .mc-desc .mc-pos{white-space:nowrap;}
 
@@ -3596,7 +3597,7 @@ window.GA_ID='G-L29P5MRWKE';
       <div class="diff-cards" id="seg-mode" data-active="easy">
         <button type="button" class="diff-card seg-opt" data-mode="easy">
           <span class="mc-check" aria-hidden="true">✓</span>
-          <span class="dc-ico">👁️</span>
+          <span class="dc-ico"><svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="3"/></svg></span>
           <span class="dc-name">Easy</span>
           <span class="dc-desc">Ratings visible as you draft</span>
         </button>
@@ -3682,7 +3683,7 @@ window.GA_ID='G-L29P5MRWKE';
       <button id="btn-go-spin" class="btn red big" disabled>Loading squads…</button>
     </div>
     <div class="stack">
-      <button id="btn-start-wc" class="btn red big" style="display:none">⚽ Start World Cup</button>
+      <button id="btn-start-wc" class="btn red big" style="display:none"><svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.4l3.3 2.4-1.25 3.9h-4.1L8.7 9.8z" fill="currentColor"/><path d="M12 3.2v2.4M20.4 9.4l-2.1 1.5M17.7 19.2l-1.9-1.5M6.3 19.2l1.9-1.5M3.6 9.4l2.1 1.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg> Start World Cup</button>
     </div>
   </section>
 
@@ -3758,7 +3759,7 @@ window.GA_ID='G-L29P5MRWKE';
         <button type="button" class="sim-speed-btn active" data-rate="1">1×</button>
         <button type="button" class="sim-speed-btn" data-rate="2">2×</button>
       </div>
-      <button type="button" id="sim-skip-btn" class="sim-skip-btn">Skip to result ⏭</button>
+      <button type="button" id="sim-skip-btn" class="sim-skip-btn">Skip to result <svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5l8 7-8 7z"/><rect x="15" y="5" width="2.4" height="14" rx="1"/></svg></button>
     </div>
     <div class="sim-wrap">
       <div id="sim-content"></div>
@@ -3797,7 +3798,7 @@ window.GA_ID='G-L29P5MRWKE';
   <!-- ===== FRIENDLY: challenge ready (challenger, after draft) ===== -->
   <section id="screen-challenge-ready" class="screen">
     <div class="fr-wrap">
-      <div class="fr-title">CHALLENGE READY! 🔥</div>
+      <div class="fr-title">CHALLENGE READY! <svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 3-2 4-2 7 0 1 .5 2 1.5 2S13 11 13 9c2 1.5 4 3.6 4 7a5 5 0 0 1-10 0c0-3.4 3-5 3-8 0-2 1-4 2-6Z"/></svg></div>
       <div class="fr-desc">Share this link with your friend. They'll build their squad and the match will kick off automatically.</div>
       <ul class="fr-lineup" id="cr-lineup"></ul>
       <textarea id="cr-link" class="fr-linkbox" rows="3" readonly></textarea>
@@ -3819,7 +3820,7 @@ window.GA_ID='G-L29P5MRWKE';
   <!-- ===== FRIENDLIES: opponent landing ===== -->
   <section id="screen-challenge-landing" class="screen">
     <div class="fr-wrap">
-      <div class="fr-title">YOU'VE BEEN CHALLENGED! ⚔️</div>
+      <div class="fr-title">YOU'VE BEEN CHALLENGED! <svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M14 3h6v6l-8 8-3-3zM4 3h5l7 12-2 2z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M4 18l4-4M20 18l-4-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
       <div class="fr-desc"><b id="cl-from"></b>A friend has built their World Cup dream squad and wants to face you in a <b>HEAD-TO-HEAD MATCH</b>.<br><br>Draft your own squad from World Cup history. Once you're done, the match plays out live, goal by goal.<br><br>Think you can beat them? 🔥</div>
       <ul class="fr-lineup" id="cl-mystery"></ul>
       <div class="fr-muted" style="margin-top:0;margin-bottom:6px">Their squad is a mystery, out-draft them.</div>
@@ -3899,7 +3900,7 @@ window.GA_ID='G-L29P5MRWKE';
       </div>
 
       <details class="htp-acc" open>
-        <summary><span class="htp-emoji">🃏</span> Drafting your squad<span class="htp-chev">›</span></summary>
+        <summary><span class="htp-emoji"><svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5.5" y="6" width="9" height="12.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6" transform="rotate(-9 10 12)"/><rect x="9.5" y="5.5" width="9" height="12.5" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6" transform="rotate(9 14 12)"/></svg></span> Drafting your squad<span class="htp-chev">›</span></summary>
         <div class="htp-body">
           <p>Every round the wheel lands on a <b>country and a World Cup year</b> (1966–2026). You draft one player from that squad into an open slot. Great teams come from reading the spin — knowing which nations were stacked in which year.</p>
           <p><b>Two draft sizes:</b></p>
@@ -3912,7 +3913,7 @@ window.GA_ID='G-L29P5MRWKE';
       </details>
 
       <details class="htp-acc">
-        <summary><span class="htp-emoji">⭐</span> Team Rating (OVR)<span class="htp-chev">›</span></summary>
+        <summary><span class="htp-emoji"><svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3l2.6 5.5 6 .7-4.4 4.1 1.2 5.9L12 20.9 6.6 19.2l1.2-5.9L3.4 9.2l6-.7z" fill="currentColor"/></svg></span> Team Rating (OVR)<span class="htp-chev">›</span></summary>
         <div class="htp-body">
           <p>Your <b>Team OVR</b> is the number that ranks you on the leaderboard. It's your XI's quality, built up like this:</p>
           <ul>
@@ -3926,7 +3927,7 @@ window.GA_ID='G-L29P5MRWKE';
       </details>
 
       <details class="htp-acc">
-        <summary><span class="htp-emoji">🧩</span> Formations &amp; Tactics<span class="htp-chev">›</span></summary>
+        <summary><span class="htp-emoji"><svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 8.5h3.1a2 2 0 1 1 3.9 0H14v3.1a2 2 0 1 1 0 3.9V19h-3.1a2 2 0 1 0-3.9 0H4v-3.1a2 2 0 1 0 0-3.9z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></span> Formations &amp; Tactics<span class="htp-chev">›</span></summary>
         <div class="htp-body">
           <p>In <b>Full Team</b> drafts, the positions you pick — especially your 3 FLEX slots — settle your XI into a real <b>formation</b> (like 4-3-3 or 5-3-2) and one of four <b>tactical identities</b>. Your identity shapes how your matches play out:</p>
           <div id="htp-identities" class="htp-ids"></div>
@@ -3935,7 +3936,7 @@ window.GA_ID='G-L29P5MRWKE';
       </details>
 
       <details class="htp-acc">
-        <summary><span class="htp-emoji">⚽</span> How matches are simulated<span class="htp-chev">›</span></summary>
+        <summary><span class="htp-emoji"><svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.4l3.3 2.4-1.25 3.9h-4.1L8.7 9.8z" fill="currentColor"/><path d="M12 3.2v2.4M20.4 9.4l-2.1 1.5M17.7 19.2l-1.9-1.5M6.3 19.2l1.9-1.5M3.6 9.4l2.1 1.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span> How matches are simulated<span class="htp-chev">›</span></summary>
         <div class="htp-body">
           <p>Your opponents are <b>real historical World Cup squads</b>, drawn to match the round. Each match is decided by a calibrated model, not a coin flip:</p>
           <ul>
@@ -3949,7 +3950,7 @@ window.GA_ID='G-L29P5MRWKE';
       </details>
 
       <details class="htp-acc">
-        <summary><span class="htp-emoji">🏆</span> Game modes<span class="htp-chev">›</span></summary>
+        <summary><span class="htp-emoji"><svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4h12v3a6 6 0 0 1-12 0V4Z"/><path d="M6 5H3v2a3 3 0 0 0 3 3M18 5h3v2a3 3 0 0 1-3 3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M10 13h4v3h-4z"/><path d="M8 20h8v1.5H8z"/><path d="M9.5 17h5v2h-5z"/></svg></span> Game modes<span class="htp-chev">›</span></summary>
         <div class="htp-body">
           <ul>
             <li><b>World Cup (solo)</b> — the main event. Draft, then simulate group stage → knockouts → Final. Reach the trophy and top the all-time board.</li>
@@ -3970,7 +3971,7 @@ window.GA_ID='G-L29P5MRWKE';
     <div class="fr-wrap">
       <div class="fr-title">ONLINE FRIENDLY</div>
       <div class="fr-desc">Quick Match pairs you with the next available opponent. Private Match lets you invite a specific friend by code.</div>
-      <button id="h2h-quick-btn" class="btn red big">⚡ QUICK MATCH</button>
+      <button id="h2h-quick-btn" class="btn red big"><svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg> QUICK MATCH</button>
       <div style="height:18px"></div>
       <div class="online-divider">OR PLAY A FRIEND</div>
       <button id="h2h-create-private-btn" class="btn ghost">CREATE PRIVATE MATCH</button>
@@ -4019,7 +4020,7 @@ window.GA_ID='G-L29P5MRWKE';
   <!-- ===== ONLINE WORLD CUP: waiting in the pool ===== -->
   <section id="screen-wc-waiting" class="screen">
     <div class="fr-wrap">
-      <div class="fr-title">YOU'RE IN THE POOL ⚽</div>
+      <div class="fr-title">YOU'RE IN THE POOL <svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.4l3.3 2.4-1.25 3.9h-4.1L8.7 9.8z" fill="currentColor"/><path d="M12 3.2v2.4M20.4 9.4l-2.1 1.5M17.7 19.2l-1.9-1.5M6.3 19.2l1.9-1.5M3.6 9.4l2.1 1.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
       <div class="fr-desc">Once the pool fills, your group is drawn and the whole tournament plays out automatically. Come back any time, your run will be waiting.</div>
       <div class="online-pool-status big" id="wc-waiting-status">Loading…</div>
       <div class="wc-progress-track"><div class="wc-progress-fill" id="wc-waiting-fill"></div></div>
@@ -4245,7 +4246,7 @@ window.GA_ID='G-L29P5MRWKE';
 
     <!-- after sign-up with email confirmation on -->
     <div id="acct-confirm" style="display:none;">
-      <p class="acct-confirm-msg">✉️ <b>Check your email</b><br>We sent a confirmation link to <b id="acct-confirm-email"></b>. Click it to activate your account, then come back and sign in.<br><br><b>Don’t see it?</b> Check your spam or junk folder, confirmation emails sometimes land there.</p>
+      <p class="acct-confirm-msg"><svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4 7l8 6 8-6" fill="none" stroke="currentColor" stroke-width="1.7"/></svg> <b>Check your email</b><br>We sent a confirmation link to <b id="acct-confirm-email"></b>. Click it to activate your account, then come back and sign in.<br><br><b>Don’t see it?</b> Check your spam or junk folder, confirmation emails sometimes land there.</p>
       <p class="acct-note">Still nothing? Wait a minute and try again.</p>
     </div>
 
@@ -4286,7 +4287,7 @@ window.GA_ID='G-L29P5MRWKE';
     </div>
     <img class="share-preview" id="share-preview" alt="Your result card" />
     <div class="share-grid" id="share-grid"></div>
-    <button class="btn red share-copy" id="share-copy">🔗 Copy Link</button>
+    <button class="btn red share-copy" id="share-copy"><svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 15l6-6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M8.6 12.6l-2 2a3 3 0 0 0 4.2 4.2l2-2M15.4 11.4l2-2a3 3 0 0 0-4.2-4.2l-2 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg> Copy Link</button>
   </div>
 </div>
 
@@ -4352,9 +4353,9 @@ window.GA_ID='G-L29P5MRWKE';
     <div class="rate-title">Send Feedback</div>
     <div class="rate-sub">Found a bug, or have an idea to make the game better? We read every message.</div>
     <div class="fb-cats" id="fb-cats">
-      <button type="button" class="fb-cat active" data-cat="Bug">🐞 Bug</button>
-      <button type="button" class="fb-cat" data-cat="Idea">💡 Idea</button>
-      <button type="button" class="fb-cat" data-cat="Other">💬 Other</button>
+      <button type="button" class="fb-cat active" data-cat="Bug"><svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 6a3 3 0 0 1 6 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><rect x="7" y="8" width="10" height="11" rx="5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 9v10M3 11h4M17 11h4M3.6 6.6 7 9M20.4 6.6 17 9M3.6 16.4 7 14M20.4 16.4 17 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Bug</button>
+      <button type="button" class="fb-cat" data-cat="Idea"><svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3a6 6 0 0 0-4 10.4c.8.7 1 1.4 1 2.6h6c0-1.2.2-1.9 1-2.6A6 6 0 0 0 12 3Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9.5 19h5M10.2 21h3.6" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg> Idea</button>
+      <button type="button" class="fb-cat" data-cat="Other"><svg class="eico" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M4 5h16a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H9l-4 4v-4H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M7.5 9.5h9M7.5 12.5h6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg> Other</button>
     </div>
     <label class="rate-field">Your message<textarea id="fb-msg" rows="5" maxlength="1500" placeholder="What happened, or what would you like to see?"></textarea></label>
     <label class="rate-field">Email <span class="fb-optional">(optional — only if you'd like a reply)</span><input id="fb-email" type="email" maxlength="120" autocomplete="email"></label>
