@@ -10617,6 +10617,17 @@ allows Google Fonts, or self-host Anton.*
   `.sc-scrim`/`.sc-vig` opacity, the sprite `filter`/size/position, the SVG gradient stops in
   `titleSceneHTML`.
 
+- **CS448 — flashing arrows pointing at the draft Spin button (owner: players were confusing the reel for
+  a pressable button).** On the draft screen the "SPIN TO REVEAL A GOLFER" reel is a display box that reads
+  like a button, so people tapped it (nothing happens) instead of the red **Spin the Wheel** button at the
+  bottom. Added two flashing gold down-arrows (CSS triangles, `.spinarrow` `.l`/`.r`) flanking the red spin
+  button and pointing down at it (`spinbounce` bounce + opacity flash, `.42s` offset between the two;
+  reduced-motion → static/visible). Wrapped the spin button in a `.spinwrap` so the arrows anchor to it. In
+  `scrDraft`, which serves BOTH the career and daily draft, so both are covered. Verified in Playwright (2
+  `.spinarrow` in the wrap, `spinbounce` animation, spin button intact, 0 page errors) + screenshot.
+  Deployed to /golf. (The off-season + H2H drafts share the same reel component but weren't flagged — easy
+  to add there too if wanted.)
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

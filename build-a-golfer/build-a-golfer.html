@@ -686,6 +686,15 @@ window.GA_ID='G-L29P5MRWKE';
   .attr.locked .take{background:none!important; padding:0 2px!important; font-size:13px!important}
   .osactions{max-width:520px; margin:9px auto 0; display:flex; flex-direction:column; gap:9px}
   .osactions .btn{margin:0}
+  /* CS448: flashing arrows flanking the red Spin button so it's clear THAT is the pressable control
+     (people were tapping the reel display, which looks like a button). */
+  .spinwrap{position:relative; width:100%}
+  .spinarrow{position:absolute; top:-19px; width:0; height:0; border-left:12px solid transparent; border-right:12px solid transparent;
+    border-top:17px solid var(--gold); filter:drop-shadow(0 0 6px rgba(241,208,74,.65)); animation:spinbounce .85s ease-in-out infinite; pointer-events:none; z-index:2}
+  .spinarrow.l{left:14%}
+  .spinarrow.r{right:14%; animation-delay:.42s}
+  @keyframes spinbounce{0%,100%{transform:translateY(-3px); opacity:.4} 50%{transform:translateY(6px); opacity:1}}
+  @media(prefers-reduced-motion:reduce){ .spinarrow{animation:none; opacity:.9; transform:none} }
   /* CS338: draft unified-grid tiles - filled pick / open draftable / open placeholder */
   .osgrid .attr{min-height:47px}   /* CS340: uniform row height so 2-line filled tiles align with 1-line ones */
   /* CS356u: two-color state system - GREY = locked in (✓), GOLD = still choosable (+). No "TAKE" word. */
@@ -10857,7 +10866,9 @@ function scrDraft(){
     else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">No re-spins left, draft one of ${esc(g.name)}'s ratings above.</div>`));
   } else if(!S.spinning){
     const spin=$(`<button class="btn red" style="font-size:22px;padding:17px">Spin the Wheel<span class="sub">${filled===0?'Reveal your first golfer':left2go+' slot'+(left2go>1?'s':'')+' to fill'}</span></button>`);
-    spin.onclick=spin_; actions.appendChild(spin);
+    spin.onclick=spin_;
+    const spinWrap=$(`<div class="spinwrap"><span class="spinarrow l"></span><span class="spinarrow r"></span></div>`);
+    spinWrap.appendChild(spin); actions.appendChild(spinWrap);
     const how=$(`<button class="btn ghost" style="font-size:12px;padding:9px">How to play · pull odds</button>`);
     how.onclick=openRules; actions.appendChild(how);
   }
