@@ -1499,6 +1499,8 @@ window.GA_ID='G-L29P5MRWKE';
     padding:11px 6px 8px; cursor:pointer; transition:border-color .12s, background .12s; color:inherit; font-family:var(--body)}
   .stile:hover{border-color:rgba(255,255,255,.28)}
   .stile.eq{border-color:var(--gold); background:rgba(241,208,74,.11)}
+  .stile.own{border-color:#3fbf7a; background:rgba(63,191,122,.13)}   /* owned = green (store shows what you own) */
+  .stile.own.noeq{cursor:default}
   .stile.lock{opacity:.94}
   .sthumb{width:48px; height:48px; border-radius:11px; display:flex; align-items:center; justify-content:center;
     background:rgba(0,0,0,.22); border:1px solid rgba(255,255,255,.12); overflow:hidden; flex:0 0 auto}
@@ -7097,16 +7099,19 @@ function scrSetup(){
   const editing=!!S.setupEdit;   // CS356c: editing the profile golfer from the Trophy Room (not starting a career)
   const wrap=$(`<div class="retro-creator setup-shop"></div>`);
   wrap.appendChild($(`<div class="retro-title">▸ ${editing?'Edit Your Golfer':'Create Your Golfer'}</div>`));
-  wrap.appendChild($(`<div class="retro-sub">${editing?'This is your golfer in every mode &middot; change it anytime':((S.special?'Monthly Spotlight':(S.daily?'Play 18':'Career Mode'))+' &middot; style your golfer, then build your skills')}</div>`));
+  wrap.appendChild($(`<div class="retro-sub">${editing?'Your locker &middot; dress your golfer with everything you own':((S.special?'Monthly Spotlight':(S.daily?'Play 18':'Career Mode'))+' &middot; style your golfer, then build your skills')}</div>`));
 
-  // CS422: the create/edit screen is just WHO the golfer is — Appearance + Profile. All clothes, accessories,
-  // effects and golf gear (clubs/ball) are bought AND equipped in the Pro Shop (the button below leads there).
+  // LOCKER: the edit-your-golfer screen is your closet. Appearance (free look), then every category of items
+  // you OWN so you can dress/equip your golfer here (equip only, no buying). Buying happens in the Pro Shop.
   const LOOKCATS=[['skin','Skin'],['hair','Hair color'],['style','Hair style'],['hand','Handedness']];
+  const APPAREL=[['shirt','Shirt'],['pat','Pattern'],['hat','Hat'],['pants','Trousers'],['shoes','Shoes'],['top','Outerwear'],['leg','Legwear']];
+  const GEAR=[['hw','Headwear'],['ew','Eyewear'],['club','Clubs'],['ball','Balls'],['cleats','Cleats']];
+  const EFFECTS=[['fx','Aura']];
   const groups = guest ? [['Appearance',LOOKCATS]]
-    : [['Appearance',LOOKCATS],['Profile',[['details','Name & Country']]]];
+    : [['Appearance',LOOKCATS],['My Apparel',APPAREL],['My Gear',GEAR],['Effects',EFFECTS],['Profile',[['details','Name & Country']]]];
   const cats = groups.reduce((a,g)=>a.concat(g[1]),[]);
   let cat=S.setupCat; if(!cats.some(c=>c[0]===cat)){ cat=cats[0][0]; } S.setupCat=cat;
-  const isLook = LOOKCATS.some(c=>c[0]===cat);   // club/ball are cosmetics (buy/equip tiles), not free look-swatches
+  const isLook = LOOKCATS.some(c=>c[0]===cat);   // free appearance swatches vs owned cosmetics (equip tiles)
 
   // sticky-style header: preview + ONE wrapping row with every category chip (grouped), reusing the shop classes
   // CS422: a red dot on a category chip when it holds an acquired-but-unviewed item (leads you to new gear).
@@ -7139,13 +7144,25 @@ function scrSetup(){
     wrap.appendChild(form);
   } else {
     const grid=$(`<div class="sgrid"></div>`);
-    const tiles = isLook ? setupLookTiles(cat) : cosmeticItems(cat).map(o=>cosTileHTML(cat,o));
-    grid.innerHTML=tiles.join('');
+    let tiles;
+    if(isLook){ tiles=setupLookTiles(cat); }
+    else {   // LOCKER: show only the items you OWN in this category — tap to equip. No buying here.
+      tiles=cosmeticItems(cat).filter(o=>cosOwned(cat,o.id)).map(o=>cosTileHTML(cat,o));
+    }
+    const catLabel=(cats.find(c=>c[0]===cat)||[,cat])[1];
+    grid.innerHTML=tiles.length?tiles.join('')
+      :`<div class="shop-empty">You don't own any ${esc(String(catLabel).toLowerCase())} yet — grab some in the Pro Shop.</div>`;
     wrap.appendChild(grid);
     grid.querySelectorAll('[data-appset]').forEach(x=>x.onclick=()=>{ const k=x.getAttribute('data-appset'), id=x.getAttribute('data-id');
       if(k==='skin')S.look.skin=id; else if(k==='hair')S.look.hair=id; else if(k==='style')S.look.hairStyle=id; else if(k==='hand')S.look.lefty=(id==='left'); else if(k==='club')S.look.club=id;
       saveLook(); render(); });
     grid.querySelectorAll('[data-tile]').forEach(x=>x.onclick=()=>shopTileClick(x));
+    // a link to the STORE for anything you don't own in this category (buying lives in the Pro Shop, not here)
+    if(!isLook && !guest && SHOP_ENABLED && cosmeticItems(cat).some(o=>!cosOwned(cat,o.id))){
+      const more=$(`<button class="setup-shopbtn" style="margin-top:11px">${ic('cart',{size:'16px'})}<span>Get more ${esc(String(catLabel).toLowerCase())} in the Pro Shop</span> <span class="ssb-go">▸</span></button>`);
+      more.onclick=()=>{ S.shopPreview=null; S.overlay='shop'; S.shopSec=cosShopSec(cat); S.shopCat=cat; render(); };
+      wrap.appendChild(more);
+    }
     if(!isLook && !guest) markCatSeen(cat);   // CS422: viewing a category's tiles clears its NEW badges (next render)
   }
   // category handlers (cancel any pending preview when navigating)
@@ -10184,6 +10201,11 @@ function hvAddressGolfer(hole, holeIdx, courseKey, look){
 // in the Pro Shop, preview pending COLOR purchases live (worn gear is dropped, so only colors preview)
 // true in the Pro Shop overlay AND the customization (setup) screen, which share the tile/preview UI
 function inShopCtx(){ return S.overlay==='shop' || S.screen==='setup'; }
+// The STORE (Pro Shop overlay) is buy-only: owned items show green + non-clickable; only locked items act (buy).
+// The LOCKER (setup / edit-your-golfer screen) is equip-only: it shows only what you own, tap to equip. This split
+// keeps the two from bleeding into each other (owner: store = buy, locker = dress).
+function inShopStore(){ return S.overlay==='shop'; }
+function cosShopSec(cat){ if(cat==='fx') return 'effects'; if(cat==='hw'||cat==='ew'||cat==='club'||cat==='ball'||cat==='cleats') return 'accessories'; return 'apparel'; }
 function pxCurLook(){ return (inShopCtx() && typeof shopEffLook==='function')?shopEffLook():S.look; }
 function avatarHTML(){ return pxAvatarHTML(pxCurLook()); }
 
@@ -20226,7 +20248,7 @@ function shopTile(o){
   else if(o.state==='eq') foot=`<span class="sfoot eqf">Equipped</span>`;
   else if(o.state==='own') foot=`<span class="sfoot own">Owned</span>`;
   else foot=`<span class="sfoot price${o.afford?'':' no'}"><span style="width:12px;height:12px">${ic('coin',{size:'12px'})}</span>${coinFmt(o.price||0)}</span>`;
-  return `<button class="stile ${o.state}" ${o.data||''}>`
+  return `<button class="stile ${o.state}${o.cls?' '+o.cls:''}" ${o.data||''}>`
     +(o.rarColor?`<span class="srar" style="background:${o.rarColor}"></span>`:'')
     +(o.isNew?`<span style="position:absolute;top:4px;left:4px;background:#e2554e;color:#fff;font:800 8px/1 var(--body);letter-spacing:.05em;padding:2px 4px;border-radius:4px;z-index:3;box-shadow:0 1px 3px rgba(0,0,0,.4)">NEW</span>`:'')
     +(o.state==='eq'?`<span class="sbadge">✓</span>`:'')
@@ -20285,8 +20307,15 @@ function cosTileHTML(cat,o){
     const sub=(bt?shopBoostTxt(bt)+' · ':'')+`<span style="color:#c9a520">🔒 ${esc(csE.reqText)}</span>`;
     return shopTile({thumb,name:o.name,state:'lock',noFoot:true,sub,data:`data-tile data-kind="cos-req" data-req="${esc(csE.reqText)}"`});
   }
+  const bsub=bt?shopBoostTxt(bt):undefined;
+  if(inShopStore()){   // STORE: buy only. Owned → green "Owned", not clickable. Locked → preview + buy.
+    if(owned) return shopTile({thumb,name:o.name,state:'own',sub:bsub,cls:'noeq'});
+    return shopTile({thumb,name:o.name,state:'lock',price,afford:coinBalance()>=price,sub:bsub,isNew:cosIsNew(cat,o.id),
+      data:`data-tile data-kind="cos" data-cat="${cat}" data-id="${esc(o.id)}"`});
+  }
+  // LOCKER (setup): equip only. Equipped → gold, owned → green; tap to equip.
   const state = equipped?'eq':(owned?'own':'lock');
-  return shopTile({thumb,name:o.name,state,price,afford:coinBalance()>=price,sub:bt?shopBoostTxt(bt):undefined,isNew:cosIsNew(cat,o.id),
+  return shopTile({thumb,name:o.name,state,price,afford:coinBalance()>=price,sub:bsub,isNew:cosIsNew(cat,o.id),
     data:`data-tile data-kind="cos" data-cat="${cat}" data-id="${esc(o.id)}"`});
 }
 function accTileHTML(it){
@@ -20951,7 +20980,7 @@ function overlayShop(screen){
   // CS422: viewing a category (or My Items) clears its NEW badges on the next render
   if(sec==='apparel'||sec==='accessories'||sec==='effects'){ markCatSeen(cat); }
   else if(sec==='owned'){ COS_CATS.forEach(c=>markCatSeen(c.k)); }
-  ov.appendChild($(`<div class="small muted center" style="margin-top:14px">Tap an item to preview it on your golfer, then confirm to buy.</div>`));
+  ov.appendChild($(`<div class="small muted center" style="margin-top:14px">Tap a locked item to preview it on your golfer, then confirm to buy. <span style="color:#7fd3b0">Items you own are marked green</span> — equip them in Edit Your Golfer.</div>`));
   ov.appendChild($(`<button class="btn red" style="margin-top:10px">Done</button>`));
   sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
   sticky.querySelectorAll('[data-cat]').forEach(x=>x.onclick=()=>{ S.shopCat=x.getAttribute('data-cat'); render(); });
