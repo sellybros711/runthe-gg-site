@@ -10643,6 +10643,19 @@ allows Google Fonts, or self-host Anton.*
   lands on a golfer (preview gone), 0 page errors + screenshot. Deployed to /golf. Tunable: the sample size
   (20) + the `*0.9s`/row scroll speed in `reelPreviewHTML`.
 
+- **CS450 — draft polish (owner): "rating" → "attribute", tier-colored golfer name, bolder category names.**
+  Three tweaks on the draft screen (career + daily `scrDraft` and the online H2H draft + the How-to/rules
+  tips): (1) user-facing **"rating" → "attribute"** in the drafting copy ("draft {golfer}'s attribute into
+  your bag", "tap a slot to draft an attribute", "draft one of {golfer}'s attributes above", the how-it-works
+  tip, and the rules "Spin for golfers" tip) — the DataGolf disclaimers / stat-sheet / leaderboard "skill
+  ratings" wording (a data-source sense) were left as-is. (2) The **landed golfer's name is tinted to their
+  rarity tier** — new `.osreel.rar-rare/.rar-epic/.rar-legendary .name` rules (blue/purple/gold; Common stays
+  default), matching the reel border/tag. (3) **Bolder attribute-category names** — `.attr .lab` font-weight
+  600 → 800 (covers the draftable, filled, and empty tiles). Verified in Playwright: landed Rare/Epic names
+  compute the correct tier colors (Legendary uses the same `var(--gold)` rule), `.attr .lab` weight 800, and
+  the copy shows "attribute" with no "rating" left in the draft flow; 0 page errors + screenshot (a Legendary
+  landing shows the gold name over the bold labels). Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -630,7 +630,7 @@ window.GA_ID='G-L29P5MRWKE';
   .attr.confirming .oc-no{background:transparent; border-color:rgba(244,227,201,.25); color:var(--muted)}
   .attr.confirming .oc-yes{background:var(--gold); border-color:var(--gold); color:#20160a}
   .attr.confirming .oc-no:active,.attr.confirming .oc-yes:active{transform:translateY(1px)}
-  .attr .lab{flex:1; font-weight:600; font-size:12px; color:#cfdbe6}
+  .attr .lab{flex:1; font-weight:800; font-size:12px; color:#cfdbe6}   /* CS450: bolder attribute-category names */
   .attr .val{font-family:var(--mono); font-weight:800; font-size:16px; color:var(--gold)}
   .attr .take{font:800 9px/1 var(--body); letter-spacing:.08em; text-transform:uppercase; color:#04211c;
     background:linear-gradient(180deg,#f7e48a,#e6c844); border-radius:6px; padding:5px 7px; flex:0 0 auto}
@@ -670,6 +670,8 @@ window.GA_ID='G-L29P5MRWKE';
   .osreel.rar-rare{border-color:#4f9fd0} .osreel.rar-rare .reeltag{color:#82c1e8}
   .osreel.rar-epic{border-color:#a679e0; box-shadow:0 0 12px rgba(166,121,224,.25) inset} .osreel.rar-epic .reeltag{color:#c7a6f2}
   .osreel.rar-legendary{border-color:var(--gold); box-shadow:0 0 15px rgba(241,208,74,.34) inset} .osreel.rar-legendary .reeltag{color:var(--gold)}
+  /* CS450: the landed golfer's name is tinted to their rarity tier */
+  .osreel.rar-rare .name{color:#82c1e8} .osreel.rar-epic .name{color:#c7a6f2} .osreel.rar-legendary .name{color:var(--gold)}
   .osreel.landed{animation:pop .3s ease} .osreel.spinning .name{animation:flick .08s steps(1) infinite}
   /* CS341: slot-machine reel - a vertical strip of names scrolls & decelerates so it reads as a wheel spin */
   .osreel .name.slotting,.reel .name.slotting{height:34px; overflow:hidden; display:block; width:100%; padding:0; animation:none!important}
@@ -5712,7 +5714,7 @@ function scrRules(){
 
   add($(`<h2 class="center" style="margin:8px 0 10px">Career Mode · Up to 30 Years</h2>`));
   const cSteps=[
-    ['🎰','Spin for golfers','Each spin reveals a real golfer. Take one of their eight ratings to fill a slot, one skill per golfer.'],
+    ['🎰','Spin for golfers','Each spin reveals a real golfer. Take one of their eight attributes to fill a slot, one per golfer.'],
     ['🔁','Re-spin twice','Don\'t like who landed? Re-spin to pass and reveal someone else, you get 2 re-spins for the whole draft.'],
     ['🧱','Fill all 8 skills','Distance, accuracy, approach, short game, scrambling, bunker, putting, composure. Spikes win events; one weak slot loses weekends.'],
     ['💰','Run a pro season','Bank the most prize money and climb the earnings list. Winnings are big, but caddie, agent and ~$2.8M/yr of tour costs can put a mediocre build in the red.'],
@@ -10810,7 +10812,7 @@ function scrDraft(){
   // first-time "how it works" tip (only at the very start)
   if(!LS.get('bag_tip_seen',false) && filled===0 && !S.current && !S.spinning){
     const tip=$(`<div class="scout" style="max-width:520px;margin:0 auto 10px;border-color:var(--gold)">
-      <b style="color:var(--gold)">How it works</b>, fill <b>8 skill slots</b>. Each spin reveals a golfer; tap one of their ratings to draft it into a slot. Don't like them? Use a <b>re-spin</b> to pass. 8 picks + 2 re-spins, then your golfer's built.
+      <b style="color:var(--gold)">How it works</b>, fill <b>8 skill slots</b>. Each spin reveals a golfer; tap one of their attributes to draft it into a slot. Don't like them? Use a <b>re-spin</b> to pass. 8 picks + 2 re-spins, then your golfer's built.
       <button class="btn ghost" style="margin-top:9px;font-size:13px;padding:8px">Got it</button></div>`);
     tip.querySelector('button').onclick=()=>{LS.set('bag_tip_seen',true);render();};
     add(tip);
@@ -10843,8 +10845,8 @@ function scrDraft(){
     <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.spinning?'':(idlePrev?'Spin below to lock one in':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`));
 
   // hint
-  if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(g.name)}</b>'s rating into your bag</div>`));
-  else if(!S.spinning && filled<8) add($(`<div class="small center osgridhint muted">Spin the wheel, then tap a slot to draft a rating</div>`));
+  if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(g.name)}</b>'s attribute into your bag</div>`));
+  else if(!S.spinning && filled<8) add($(`<div class="small center osgridhint muted">Spin the wheel, then tap a slot to draft an attribute</div>`));
 
   // THE unified grid: 8 slot tiles. Filled → your pick; open + golfer shown → draft option; open + idle → placeholder.
   const grid=$(`<div class="attrs osgrid"></div>`);
@@ -10871,7 +10873,7 @@ function scrDraft(){
   if(spun){
     if(S.reSpins>0){ const re=$(`<button class="btn redline">Re-spin · ${S.reSpins} left<span class="sub">Pass on ${esc(g.name)} for a new golfer</span></button>`); re.onclick=reSpin; actions.appendChild(re); }
     else if(!S.daily && mulliSpins()>0){ const mb=$(`<button class="btn ghost" style="border-color:#8a6bf0;color:#c9b8ff">🌀 Use a Mulli-Spin · ${mulliSpins()} left<span class="sub">A banked extra spin from weekly challenges</span></button>`); mb.onclick=mulliSpinDraft; actions.appendChild(mb); }
-    else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">No re-spins left, draft one of ${esc(g.name)}'s ratings above.</div>`));
+    else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">No re-spins left, draft one of ${esc(g.name)}'s attributes above.</div>`));
   } else if(!S.spinning){
     const spin=$(`<button class="btn red" style="font-size:22px;padding:17px">Spin the Wheel<span class="sub">${filled===0?'Reveal your first golfer':left2go+' slot'+(left2go>1?'s':'')+' to fill'}</span></button>`);
     spin.onclick=spin_;
@@ -22827,8 +22829,8 @@ function scrH2HDraft(){
     <div class="sub">${spun?esc([g.nation,g.era==='leg'?'Legend':'Current',g.note].filter(Boolean).join(' · ')):(S.h2h.spinning?'':(idlePrev?'Spin below to lock one in':(filled?filled+'/8 in your bag below':'Your bag fills in below')))}</div></div>`));
 
   // hint
-  if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(g.name)}</b>'s rating into your bag</div>`));
-  else if(!S.h2h.spinning && filled<8) add($(`<div class="small center osgridhint muted">Spin the wheel, then tap a slot to draft a rating</div>`));
+  if(spun) add($(`<div class="small center osgridhint" style="color:#cfe0d8">Tap an open slot to draft <b>${esc(g.name)}</b>'s attribute into your bag</div>`));
+  else if(!S.h2h.spinning && filled<8) add($(`<div class="small center osgridhint muted">Spin the wheel, then tap a slot to draft an attribute</div>`));
 
   // THE unified grid: 8 slot tiles. Filled → your pick; open + golfer shown → draft option; open + idle → placeholder.
   const grid=$(`<div class="attrs osgrid"></div>`);
@@ -22858,7 +22860,7 @@ function scrH2HDraft(){
     sub.onclick=(decMode?h2hStartPlay:h2hSubmitDraft); actions.appendChild(sub);
   } else if(spun){
     if(S.h2h.reSpins>0){ const re=$(`<button class="btn gold">Re-spin · ${S.h2h.reSpins} left<span class="sub">Pass on ${esc(g.name)} for a new golfer</span></button>`); re.onclick=h2hReSpin; actions.appendChild(re); }
-    else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">No re-spins left, draft one of ${esc(g.name)}'s ratings above.</div>`));
+    else actions.appendChild($(`<div class="small muted center" style="padding:6px 0">No re-spins left, draft one of ${esc(g.name)}'s attributes above.</div>`));
   } else if(!S.h2h.spinning){
     const spin=$(`<button class="btn teal" style="font-size:22px;padding:17px">Spin the Wheel<span class="sub">${filled===0?'Reveal your first golfer':left2go+' slot'+(left2go>1?'s':'')+' to fill'}</span></button>`);
     spin.onclick=h2hSpin; actions.appendChild(spin);
