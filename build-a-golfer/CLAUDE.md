@@ -10515,6 +10515,37 @@ allows Google Fonts, or self-host Anton.*
   throughout. Deployed to /golf. Tunable: the Concordia course data, `marqueeFinalsPref` default (currently
   first-ask), the Games-course biome/flag.
 
+- **CS445 — Team Cup storylines: between-days Dispatch beats, Sunday-singles set-piece, pre-Cup hype,
+  rivalry needle + career stakes (owner: the Ryder/Presidents-style cups "feel too disconnected and
+  boring… maybe after each day there's a little storyline beat").** Brainstormed with the owner, who chose
+  the full package + tying it to career fans/confidence. The cup reveals 5 sessions across 3 days (Day 1
+  foursomes+fourball, Day 2 same, Day 3 singles); the beats hang off the existing match-by-match reveal.
+  • **Between-days "Cup Dispatch" beats** (`cupDayRecap`/`cupDispatchNode`): the reveal now PAUSES at each
+    day boundary (after 8 and 16 matches) on a broadcast card — a priority-ranked headline drawn from the
+    real state (YOU LEAD THE CHARGE / {SIDE} STORM BACK / RUN RIOT ON DAY N / TIGHTEN THEIR GRIP / ALL
+    SQUARE INTO SUNDAY / EDGE AHEAD), a tug-of-war momentum bar, and 2–4 notes (your day's W-L-H, the
+    session scores, a standout blowout match, the rivalry needle). A single "Play Day 2 ▸" / "Sunday
+    Singles ▸" continue button resumes the reveal (Auto Sim + reduced-motion both pause here; the reveal
+    never auto-runs past a beat).
+  • **Sunday Singles set-piece** (`cupNeedLine`): the Day-2 Dispatch spells out exactly what each side needs
+    ("Sunday singles, 12 points left. USA need 5½, Europe need 7½. 14½ wins the Cup, 14–14 and the holders
+    keep it.").
+  • **Pre-Cup hype** (`cupIntroStory`): a storyline line on the team-selection intro, with the rivalry
+    needle when your emergent nemesis lines up for the other side.
+  • **Career stakes** (`cupCareerStakes`, idempotent): your Cup week feeds fans + confidence (CS226/398) —
+    each match won lifts confidence + fans, a Cup win / captaincy win is a big boost, a rough week or a lost
+    captaincy dents confidence, and beating your rival in the singles is a bigger swing. Shown as a "🔥 Fan
+    base +N · Confidence ▲/▼" line on the cup result banner AND the season-summary cup callout (which also
+    gets a one-line headline, e.g. "You went 2-1-2 as USA lifted the Cup."). Applied exactly once (banner or
+    finalize, whichever fires first) and stored on `S.season.teamCup.stake`.
+  Non-involved fans still skip straight to the result (CS58 unchanged); the beats are for the playing/
+  captaining case. All client-side, no migration, reuses the seasonHeadlines/resultMomentum/gainFollowers
+  patterns. Verified in Playwright end-to-end on a real career cup: the Day 1 + Day 2 Dispatch cards render
+  with correct headlines/momentum/notes, the Sunday needs line, the continue buttons pause the reveal, the
+  result banner + summary callout show the headline + stake, fans/confidence apply once (idempotent), and a
+  full season plays to the summary — 0 page errors. Deployed to /golf. Tunable: the headline priority +
+  copy in `cupDayRecap`, the fans/confidence weights in `cupCareerStakes`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

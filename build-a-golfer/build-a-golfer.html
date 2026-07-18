@@ -13912,6 +13912,109 @@ function scrCaptainPicks(){
   if(done) c.onclick=()=>{ const chosen=cands.filter(p=>picks.includes(p.name)); S.cupPickTeam=auto.concat(chosen).map(p=>Object.assign({},p)); render(); };
   ctrl.appendChild(c); add(ctrl);
 }
+/* ===================== CS445: TEAM CUP STORYLINES =====================
+   Between-days "Cup Dispatch" beats, a Sunday-singles set-piece, pre-cup hype, a rivalry needle, and career
+   stakes (fans + confidence) so the cups feel alive instead of a flat match-by-match reveal. */
+function cupSideName(T, side){ return side==='A'?T.nameA:T.nameB; }
+function cupShortName(n){ return (n||'').replace('United States','USA').replace('Team ',''); }
+// the emergent rival, if they play for the OPPOSING side (a needle for the week)
+function cupRivalName(T){
+  const rv=getRival(); if(!rv || !T.mySide) return null;
+  const foe = T.mySide==='A'?T.rosterB:T.rosterA;
+  return (foe&&foe.some(p=>p.nm===rv.name))?rv.name:null;
+}
+function cupRecOf(matches){ let w=0,l=0,h=0; matches.forEach(m=>{ if(!m.you) return; if(m.youWin==='win')w++; else if(m.youWin==='loss')l++; else if(m.youWin==='half')h++; }); return {w,l,h}; }
+function cupPtsOf(matches){ let a=0,b=0; matches.forEach(m=>{ if(m.res==='A')a++; else if(m.res==='B')b++; else {a+=0.5;b+=0.5;} }); return {a,b}; }
+// day-recap Dispatch (day 1 or 2). ra/rb = running score AFTER that day.
+function cupDayRecap(T, day, ra, rb){
+  const sIdx = day===1?[0,1]:[2,3];
+  const dayMatches = sIdx.flatMap(i=>T.sessions[i].matches);
+  const dp=cupPtsOf(dayMatches);
+  const before={a:ra-dp.a, b:rb-dp.b};
+  const mineA=T.mySide==='A', myPts=mineA?ra:rb, foePts=mineA?rb:ra;
+  const myName=cupShortName(cupSideName(T,T.mySide||'A')), foeName=cupShortName(cupSideName(T, mineA?'B':'A'));
+  const myDay=mineA?dp.a:dp.b, foeDay=mineA?dp.b:dp.a;
+  const rec=cupRecOf(dayMatches), rival=cupRivalName(T);
+  const lead = ra>rb?'A':rb>ra?'B':'tie';
+  const beforeLead = before.a>before.b?'A':before.b>before.a?'B':'tie';
+  let headline, tone='neutral';
+  if(rec.w>=2 && rec.w>rec.l){ headline='YOU LEAD THE CHARGE'; tone='you'; }
+  else if(beforeLead!=='tie' && lead!=='tie' && beforeLead!==lead){ headline=`${(lead===T.mySide?myName:foeName).toUpperCase()} STORM BACK`; tone=lead===T.mySide?'good':'bad'; }
+  else if(Math.abs(myDay-foeDay)>=4){ const wm=myDay>foeDay?myName:foeName; headline=`${wm.toUpperCase()} RUN RIOT ON DAY ${day}`; tone=myDay>foeDay?'good':'bad'; }
+  else if(lead==='tie'){ headline=day===2?'ALL SQUARE INTO SUNDAY':`DEADLOCKED AFTER DAY ${day}`; tone='neutral'; }
+  else { const wm=lead===T.mySide?myName:foeName; headline=`${wm.toUpperCase()} ${beforeLead===lead?'TIGHTEN THEIR GRIP':'EDGE AHEAD'}`; tone=lead===T.mySide?'good':'bad'; }
+  const notes=[];
+  if(rec.w+rec.l+rec.h>0){ const rr=`${rec.w}-${rec.l}-${rec.h}`;
+    notes.push(rec.w>rec.l?`You went ${rr} today, the gallery roaring you on.`:rec.l>rec.w?`A tough ${rr} on the day, but there is golf left to play.`:`You halved the day at ${rr}, holding firm.`); }
+  else if(T.captain){ notes.push(`From the captain's chair you watched your side ${myDay>foeDay?'seize the day':myDay<foeDay?'ride out a hard one':'trade blows all day'}.`); }
+  notes.push(`Day ${day}: ${myName} ${ptTxt(myDay)}, ${foeName} ${ptTxt(foeDay)}. The Cup stands ${ptTxt(myPts)}&ndash;${ptTxt(foePts)}.`);
+  const blow=dayMatches.filter(m=>/&/.test(m.label)).sort((x,y)=>parseInt(y.label)-parseInt(x.label))[0];
+  if(blow){ const wa=blow.res==='A', wname=cupShortName(cupSideName(T, wa?'A':'B')); const pr=(wa?blow.a:blow.b).map(p=>p.nm).join(' & '); notes.push(`${esc(pr)} routed their match ${esc(blow.label)} for ${wname}.`); }
+  if(rival && day===2) notes.push(`Your nemesis ${esc(rival)} lurks in the enemy singles, keep an eye out Sunday.`);
+  return {headline, tone, notes:notes.slice(0,4), myPts, foePts, myName, foeName, ra, rb, lead};
+}
+// what each side needs going into Sunday singles
+function cupNeedLine(T, ra, rb){
+  const remaining=28-Math.round((ra+rb)*2)/2;
+  const mineA=T.mySide==='A';
+  const myNeed=Math.max(0,(mineA?14.5-ra:14.5-rb)), foeNeed=Math.max(0,(mineA?14.5-rb:14.5-ra));
+  const myName=cupShortName(cupSideName(T,T.mySide||'A')), foeName=cupShortName(cupSideName(T, mineA?'B':'A'));
+  return `Sunday singles, ${remaining} points left. ${myName} need ${ptTxt(myNeed)}, ${foeName} need ${ptTxt(foeNeed)}. 14&frac12; wins the Cup, 14&ndash;14 and the holders keep it.`;
+}
+// a tug-of-war momentum bar (ra vs rb, side colors)
+function cupMomentumBar(T, ra, rb){
+  const th=cupTheme(T.type), tot=Math.max(1, ra+rb), pa=Math.round(ra/tot*100);
+  return `<div style="max-width:360px;margin:8px auto 0"><div style="display:flex;height:12px;border-radius:7px;overflow:hidden;border:1px solid var(--line)">
+    <div style="width:${pa}%;background:${th.aCol}"></div><div style="flex:1;background:${th.bCol}"></div></div>
+    <div class="small muted" style="display:flex;justify-content:space-between;margin-top:3px"><span>${natFlag(T.codeA)} ${ptTxt(ra)}</span><span>${ptTxt(rb)} ${natFlag(T.codeB)}</span></div></div>`;
+}
+// the Dispatch card element (day recap + momentum + optional Sunday needs). No button - the caller wires continue.
+function cupDispatchNode(T, day, ra, rb){
+  const d=cupDayRecap(T, day, ra, rb);
+  const th=cupTheme(T.type);
+  const toneCol=d.tone==='good'||d.tone==='you'?'#35d6a0':d.tone==='bad'?'#e88a5b':th.accent;
+  const el=$(`<div class="cupdispatch" style="max-width:560px;margin:2px auto 12px;background:linear-gradient(180deg,#12243d,#0a2036);border:1px solid ${th.border};border-radius:14px;padding:14px 16px;text-align:center"></div>`);
+  el.innerHTML=emojifyIcons(`<div style="font:800 10px/1 var(--body);letter-spacing:.24em;text-transform:uppercase;color:${th.accent};opacity:.85">${th.emoji} ${esc(T.short)} Dispatch · Day ${day}</div>
+    <div style="font-family:var(--display);font-size:26px;line-height:1.05;letter-spacing:.02em;text-transform:uppercase;color:${toneCol};margin:6px 0 2px">${esc(d.headline)}</div>
+    ${cupMomentumBar(T, ra, rb)}
+    <div style="text-align:left;max-width:420px;margin:10px auto 0;display:grid;gap:5px">${d.notes.map(n=>`<div class="small" style="color:#cfe0d6;line-height:1.35">• ${n}</div>`).join('')}</div>
+    ${day===2?`<div class="small" style="margin-top:10px;color:${th.accent};font-weight:700;line-height:1.4">${cupNeedLine(T, ra, rb)}</div>`:''}`);
+  return el;
+}
+// pre-cup storyline line for the intro (rivalry needle + hype)
+function cupIntroStory(T){
+  const mineA=T.mySide==='A'; const myName=cupShortName(cupSideName(T,T.mySide||'A')); const foeName=cupShortName(cupSideName(T, mineA?'B':'A'));
+  const rival=cupRivalName(T);
+  let s=`Three days, five sessions, 28 points, and a nation's pride on the line. ${myName} against ${foeName}.`;
+  if(rival) s+=` And there is needle, your nemesis ${esc(rival)} lines up for ${foeName}.`;
+  return s;
+}
+// CS445: career stakes - your Cup week feeds fans + confidence (CS226/398). Idempotent: applied exactly once
+// (the result banner OR finalize, whichever fires first), the other reuses the cached result.
+function cupCareerStakes(T){
+  if(T._stakeApplied) return T._stake||null;
+  if(S.daily || S.circuitMode || !S.career || !S.season) return null;
+  if(!(T.playerPlayed || T.captain)){ T._stakeApplied=true; return null; }
+  T._stakeApplied=true;
+  let conf=0, fansPct=0, fansFlat=0, grudge=false;
+  const rec=T.playerRec||{w:0,l:0,h:0};
+  if(!T.captain){
+    conf += rec.w*2.4 - rec.l*1.6 + rec.h*0.4;
+    fansFlat += rec.w*6000 + rec.h*1500;
+    const rv=getRival();
+    if(rv){ T.sessions.forEach(s=>{ if(s.fmt!=='singles') return; s.matches.forEach(m=>{ if(!m.you || m.youWin!=='win') return;
+      const foe=m.a.some(p=>p.you)?m.b:m.a; if(foe.some(p=>p.nm===rv.name)) grudge=true; }); }); }
+    if(grudge){ conf+=4; fansPct+=0.02; fansFlat+=20000; }
+  }
+  if(T.mineWon){ conf += T.captain?7:5; fansPct += 0.045; fansFlat += T.captain?30000:22000; }
+  else if(T.retained){ conf += 2; fansPct += 0.015; fansFlat += 8000; }
+  else { conf += T.captain?-3:-1.5; }
+  conf=Math.max(-10, Math.min(14, conf));
+  adjConf(conf);
+  const fans=gainFollowers(fansPct, fansFlat);
+  T._stake={conf:Math.round(conf), fans, grudge};   // cache so the idempotent re-call (finalize / summary) reuses it
+  return T._stake;
+}
 function scrTeamCup(){
   clearTimeout(seasonTimer);
   if(S._cupIdx!==S.evtIndex){ S._cupIdx=S.evtIndex; S.curTeam=null; S.teamMatchN=0; S.cupChoice=null; S.cupPickTeam=null; S.cupPicks=null; S._cupScrolledN=null; }
@@ -13943,6 +14046,8 @@ function scrTeamCup(){
         <div style="font:800 18px/1.15 var(--body);color:var(--oncard)">So close, you just missed Team ${esc(usaShort(myName))}</div>
         <div class="small muted" style="margin-top:5px">${T.meRank?`You finished #${T.meRank} in your country and the top 12 make the team. `:''}Keep climbing the World Ranking, your nation will be calling soon. Cheer them on this week.</div></div></div>`));
     }
+    // CS445: pre-cup storyline / hype (+ rivalry needle if your nemesis is on the other side)
+    add($(`<p class="small center" style="max-width:520px;margin:10px auto 2px;color:#bcd0c4;line-height:1.45">${emojifyIcons(cupIntroStory(T))}</p>`));
     const row=$(`<div style="display:flex;gap:8px;max-width:560px;margin:8px auto 0"></div>`);
     row.innerHTML = cupRosterCol(T.rosterA, T.codeA, T.nameA, T.mySide==='A') + cupRosterCol(T.rosterB, T.codeB, T.nameB, T.mySide==='B');
     add(row);
@@ -13968,6 +14073,9 @@ function scrTeamCup(){
   let ra=0, rb=0;
   for(let k=0;k<matchN;k++){ const r=flat[k].m.res; if(r==='A')ra++; else if(r==='B')rb++; else {ra+=0.5;rb+=0.5;} }
   const allDone=matchN>=TOTAL;
+  // CS445: pause on a between-days "Cup Dispatch" beat at each day boundary (Day 1 = 8 matches, Day 2 = 16)
+  T._dayAck=T._dayAck||{};
+  const dayBeat = (!allDone && matchN===8 && !T._dayAck.d1) ? 1 : (!allDone && matchN===16 && !T._dayAck.d2) ? 2 : 0;
   const th=cupTheme(T.type), aCol=th.aCol, bCol=th.bCol;
   const youA=T.mySide==='A';   // the side your country plays for (you may be a player, captain, or just a fan)
   // "YOU" only belongs on the board when you're actually IN the event (playing or captaining), a fan
@@ -13998,13 +14106,15 @@ function scrTeamCup(){
   if(allDone){
     const mineWon=T.mineWon, tie=T.retained, winName=T.winner==='A'?T.nameA:T.nameB;
     const col=mineWon?'var(--gold)':tie?'#c9b25a':'#9fb0bf';
+    const stake=cupCareerStakes(T);   // CS445: apply fans + confidence once, then show the swing
+    const stakeLine = stake ? `<div class="small" style="margin-top:7px;color:#9fe6c4;font-weight:700">${stake.fans>0?`🔥 Fan base +${fmtFollowers(stake.fans)}`:''}${stake.fans>0&&stake.conf?' · ':''}${stake.conf?`Confidence ${stake.conf>0?'▲ +':'▼ '}${stake.conf}`:''}${stake.grudge?' · ⚔️ beat your rival':''}</div>` : '';
     const sub = T.captain ? (mineWon?'🎖️🏆 You captained them to glory!':tie?'You captained them to a tie, the Cup is retained':"A tough week in the captain's chair, they came up just short")
       : T.playerPlayed ? `Your record: ${T.playerRec.w}-${T.playerRec.l}-${T.playerRec.h} · ${ptTxt(T.playerRec.pts)} point${T.playerRec.pts===1?'':'s'}${T.playerWon?' · 🏆 champions':''}`
       : (mineWon?'🏆 Your nation are champions, you cheered them home':tie?'Your nation retain the Cup':'Your nation came up short this time, next time');
     add($(`<div class="center" style="margin:0 0 14px"><div style="display:inline-block;background:linear-gradient(180deg,#15331f,#0a2740);border:1px solid ${col};border-radius:14px;padding:13px 20px">
       <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${col}">${esc(T.short)} · Final</div>
       <div style="font:800 21px/1.15 var(--body);color:${col};margin-top:6px">${tie?`${esc(winName)} retain the Cup`:`${esc(winName)} win the ${esc(T.short)}`}</div>
-      <div class="small muted" style="margin-top:4px">${sub}</div></div></div>`));
+      <div class="small muted" style="margin-top:4px">${sub}</div>${stakeLine}</div></div>`));
   }
 
   // session cards, show each session that has at least one revealed match, with only its revealed matches
@@ -14015,7 +14125,7 @@ function scrTeamCup(){
     const rev=sess.matches.slice(0,revN);
     let sa=0,sb=0; rev.forEach(m=>{ if(m.res==='A')sa++; else if(m.res==='B')sb++; else {sa+=0.5;sb+=0.5;} });
     const complete=revN===sess.matches.length, newestHere=(matchN-1>=start && matchN-1<end);
-    const card=$(`<div${newestHere?' id="cup-newest"':''} style="max-width:560px;margin:0 auto 12px;background:#0a2740;border:1px solid var(--line);border-radius:13px;overflow:hidden"></div>`);
+    const card=$(`<div${(newestHere && !dayBeat)?' id="cup-newest"':''} style="max-width:560px;margin:0 auto 12px;background:#0a2740;border:1px solid var(--line);border-radius:13px;overflow:hidden"></div>`);
     card.appendChild($(`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 11px;background:rgba(255,255,255,.03);border-bottom:1px solid var(--line)">
       <div style="font:800 11px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--gold)">Day ${sess.day} · ${esc(sess.title)}${complete?'':` <span class="muted" style="font-weight:600">${revN}/${sess.matches.length}</span>`}</div>
       <div class="mono" style="font-weight:800;color:#fff">${ptTxt(sa)} – ${ptTxt(sb)}</div></div>`));
@@ -14023,10 +14133,21 @@ function scrTeamCup(){
     add(card);
   });
 
+  // CS445: the between-days Cup Dispatch beat (day recap headline + momentum + notes, Sunday needs on Day 2)
+  if(dayBeat){ const dn=cupDispatchNode(T, dayBeat, ra, rb); dn.id='cup-newest'; add(dn); }
+
   // controls (CS298: fixed to the bottom of the viewport on mobile - reserve space so it never covers cards)
   app.classList.add('has-cupbar');
   const ctrl=$(`<div class="cupctrl"></div>`);
-  if(!allDone){
+  if(!allDone && dayBeat){
+    // CS445: pause the reveal on the Dispatch - a single "play the next day" continue button
+    const b=$(`<button class="btn goldfill">${dayBeat===1?'Play Day 2 ▸':'Sunday Singles ▸'}<span class="sub">${dayBeat===1?'Foursomes & fourball resume':'The 12 singles that decide the Cup'}</span></button>`);
+    b.onclick=()=>{ clearTimeout(seasonTimer); T._dayAck['d'+dayBeat]=true; S.teamMatchN=matchN+1; render(); };
+    ctrl.appendChild(b);
+    const skip=$(`<button class="btn ghost" style="margin-top:10px">Skip to Result ⏭</button>`);
+    skip.onclick=()=>{ clearTimeout(seasonTimer); T._dayAck.d1=true; T._dayAck.d2=true; S.teamMatchN=TOTAL; render(); };
+    ctrl.appendChild(skip);
+  } else if(!allDone){
     const next=flat[matchN];
     const b=$(`<button class="btn red">Next match ▸<span class="sub">Day ${next.sess.day} · ${esc(next.sess.title)} · match ${next.mi+1}</span></button>`);
     b.onclick=()=>{ clearTimeout(seasonTimer); S.teamMatchN=matchN+1; render(); };
@@ -14065,16 +14186,17 @@ function scrTeamCup(){
       if(delta>4) window.scrollBy({top:delta, behavior:'smooth'});
     }));
   }
-  // auto-sim: reveal the next match on a timer (one at a time for suspense)
-  if(!allDone && S.autoSim && !reduce){ seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ S.teamMatchN=matchN+1; render(); } }, 1100); }
-  else if(!allDone && reduce){ S.teamMatchN=TOTAL; render(); }
+  // auto-sim: reveal the next match on a timer (one at a time for suspense). CS445: never auto-past a day beat.
+  if(!allDone && !dayBeat && S.autoSim && !reduce){ seasonTimer=setTimeout(()=>{ if(S.screen==='season'){ S.teamMatchN=matchN+1; render(); } }, 1100); }
+  else if(!allDone && !dayBeat && reduce){ S.teamMatchN=TOTAL; render(); }
 }
 // bank the team-cup result into the season + career when leaving the screen
 function finalizeTeamCup(){
   const T=S.curTeam; if(!T||T._banked) return; T._banked=true;
+  const stake=cupCareerStakes(T); T._stake=stake;   // CS445: fans + confidence from your Cup week
   S.season.teamCup={short:T.short, type:T.type, winner:T.winner, nameA:T.nameA, nameB:T.nameB,
     playerSide:T.playerSide, playerWon:T.playerWon, retained:T.retained, playerRec:T.playerRec, ptA:T.ptA, ptB:T.ptB,
-    captain:T.captain, mySide:T.mySide, mineWon:T.mineWon};
+    captain:T.captain, mySide:T.mySide, mineWon:T.mineWon, stake};
   if(!S.daily && (T.playerPlayed || T.captain)){
     S.career.cup=S.career.cup||{apps:0,won:0,w:0,l:0,h:0,pts:0,captained:0,captainWins:0};
     const c=S.career.cup; const cc=career(), lt=(cc.lt=Object.assign(ltDefault(),cc.lt||{}));
@@ -15148,10 +15270,16 @@ function scrSummary(){
     const winName=T.winner==='A'?T.nameA:T.nameB, mine=(T.captain?T.mySide:T.playerSide)==='A'?T.nameA:T.nameB;
     const sub=T.captain?(mineWon?'🎖️ You captained them to the Cup':tie?'You captained them to a retained Cup':'Captained, fell just short')
       :`Your record: ${T.playerRec.w}-${T.playerRec.l}-${T.playerRec.h} · ${ptTxt(T.playerRec.pts)} point${T.playerRec.pts===1?'':'s'}`;
+    // CS445: a one-line headline + the fans/confidence swing your Cup week earned
+    const hl = T.captain ? (mineWon?'You captained a Cup triumph.':tie?'You captained a Cup retained.':'A hard week in the hot seat.')
+      : (T.playerWon?`You went ${T.playerRec.w}-${T.playerRec.l}-${T.playerRec.h} as ${cupShortName(mine)} lifted the Cup.`:tie?`You battled to a ${cupShortName(mine)} tie, the Cup retained.`:`You gave it everything, but ${cupShortName(winName)} took it.`);
+    const st=T.stake;
+    const stakeLine = st ? `<div class="small" style="margin-top:5px;color:#9fe6c4;font-weight:700">${st.fans>0?`🔥 Fan base +${fmtFollowers(st.fans)}`:''}${st.fans>0&&st.conf?' · ':''}${st.conf?`Confidence ${st.conf>0?'▲ +':'▼ '}${st.conf}`:''}${st.grudge?' · ⚔️ beat your rival':''}</div>` : '';
     add($(`<div class="center" style="margin:8px 0 12px"><div style="display:inline-block;background:linear-gradient(180deg,#15331f,#0a2740);border:1px solid ${col};border-radius:14px;padding:12px 20px">
       <div style="font:800 11px/1 var(--body);letter-spacing:.18em;text-transform:uppercase;color:${col}">${esc(T.short)} · ${esc(mine)}${T.captain?' · Captain':''}</div>
       <div style="font:800 19px/1.15 var(--body);color:${col};margin-top:6px">${tie?esc(winName)+' retain the Cup':(mineWon?'🏆 ':'')+esc(winName)+' win the Cup'}</div>
-      <div class="small muted" style="margin-top:4px">${sub}</div></div></div>`));
+      <div class="small" style="margin-top:5px;color:#cfe0d6;line-height:1.4">${emojifyIcons(hl)}</div>
+      <div class="small muted" style="margin-top:3px">${sub}</div>${stakeLine}</div></div>`));
   }
   if(S.freshRivalOutgrown) add($(rivalOutgrownHTML(S.freshRivalOutgrown)));
   if(S.freshRival) add($(rivalFormedHTML(S.freshRival)));
