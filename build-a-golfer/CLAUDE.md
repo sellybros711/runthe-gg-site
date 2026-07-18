@@ -10628,6 +10628,21 @@ allows Google Fonts, or self-host Anton.*
   Deployed to /golf. (The off-season + H2H drafts share the same reel component but weren't flagged — easy
   to add there too if wanted.)
 
+- **CS449 — the idle draft reel is now a slowly-rotating PREVIEW wheel of the golfer pool (owner: instead
+  of "Spin to reveal a golfer," make it a preview wheel slowly rotating through all the golfers).** Before
+  the first spin the reel showed a static "Spin to reveal a golfer" (which read as a pressable button, the
+  CS448 confusion). Now the idle reel continuously, slowly scrolls through a shuffled sample of the roster
+  (rarity-tinted names), tagged "PREVIEW · THE POOL" with the sub "Spin below to lock one in" (reinforcing
+  that the real control is the red Spin button below). New `reelPreviewHTML()` builds a `.previewstrip` of
+  20 golfer names duplicated so the linear `previewscroll` (translateY 0 → -50%) loops seamlessly;
+  reduced-motion → static. Applied to all three reels that share the `.osreel` component — the career draft,
+  the daily draft (both `scrDraft`), the off-season tune-up, and the online H2H draft. The spin flow is
+  untouched: tapping Spin re-renders to the spinning state (plain `…`), then the existing `slotSpin`
+  slot-machine decelerate runs and lands on the golfer. Verified in Playwright: idle shows a 40-row
+  (20×2) `.previewstrip` animating `previewscroll` with real names + the PREVIEW tag, and a real spin still
+  lands on a golfer (preview gone), 0 page errors + screenshot. Deployed to /golf. Tunable: the sample size
+  (20) + the `*0.9s`/row scroll speed in `reelPreviewHTML`.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim
