@@ -10258,6 +10258,17 @@ allows Google Fonts, or self-host Anton.*
   section headers render (6 new), 31 perk cards, Back + Got-it intact, 0 page errors. Screenshot confirms.
   Deployed to /golf.
 
+- **CS432 — "RUN THE TOUR" centered on the banner for guests (owner).** CS429's flex layout centered the
+  wordmark in the leftover space *between* the two side groups, so for a guest (empty right side, wide
+  "[avatar] Sign in" pill on the left) the wordmark got pushed toward the empty side — not banner-centered.
+  Fixed by absolutely centering the wordmark on the banner (`.bnbrand` position:absolute, left:50% +
+  translateX(-50%); `.banner` space-between + position:relative) so it's the true center regardless of the
+  side groups' widths, AND moving the GUEST "Sign in" pill to the RIGHT (left group = just the menu) so the
+  centered wordmark clears it. Signed-in keeps profile-on-left + coins/token-on-right (unchanged). Verified
+  in Playwright across 360/390/412(/780): wordmark offset-from-banner-center = 0 in every case, guest gaps
+  clear on both sides (left 78–96, right 10–28), signed-in unchanged. Screenshot confirms the guest banner
+  is centered with the Sign-in pill on the right. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -156,11 +156,13 @@ window.GA_ID='G-L29P5MRWKE';
     padding:calc(env(safe-area-inset-top, 0px) + 7px) 12px 7px;
     background:rgba(9,30,20,.88); -webkit-backdrop-filter:blur(9px); backdrop-filter:blur(9px);
     border-bottom:1px solid rgba(244,227,201,.10)}
-  /* CS429: flex layout so the centered wordmark gets the middle space with SYMMETRIC clearance to both
-     side groups (the old 3-col grid force-centered it in the banner → uneven/overlapping gaps on phones) */
-  .banner{display:flex; align-items:center; gap:10px; max-width:780px; margin:0 auto}
+  /* CS432: the wordmark is ABSOLUTELY centered on the banner (true center regardless of side-group widths),
+     so it stays centered whether a guest (empty right side) or a signed-in player (coins/token pills) is
+     playing. The side groups sit at the edges via space-between; the ≤380px font step keeps it clear of the
+     pills on small phones. */
+  .banner{display:flex; align-items:center; justify-content:space-between; gap:10px; max-width:780px; margin:0 auto; position:relative}
   .banner .icobtn{width:36px;height:36px;font-size:17px; flex:0 0 auto}
-  .bnbrand{flex:1 1 auto; text-align:center; background:none;border:0;padding:0 12px;cursor:pointer; min-width:0; overflow:hidden}
+  .bnbrand{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); background:none;border:0;padding:0;cursor:pointer; z-index:1}
   .bnwm{display:inline-flex; align-items:baseline; gap:5px; font-family:var(--serif); text-transform:uppercase; white-space:nowrap; line-height:1}
   .bnwm b{font-weight:700; font-size:17px; letter-spacing:.05em; color:var(--oncard)}   /* CS424: match "Tour" size */
   .bnwm i{font-style:normal; font-weight:700; font-size:17px; letter-spacing:.05em; color:var(--gold)}
@@ -5227,7 +5229,10 @@ function header(){
   const profNew=signedIn && (typeof cosNewTotal==='function') && cosNewTotal()>0;   // CS422: unviewed new items → dot on the profile pill
   const pl=$(`<button class="bnprofile${signedIn?' pin':''}" aria-label="${signedIn?'Your profile':'Sign in'}" style="position:relative">${pxAvatarChip(S.look,26)}<span class="bnname">${signedIn?esc(sbUsername||'Player'):'Sign in'}</span>${profNew?'<span style="position:absolute;top:-2px;right:-2px;width:11px;height:11px;border-radius:50%;background:#e2554e;border:2px solid #0b1a12;box-shadow:0 0 5px rgba(226,85,78,.9)"></span>':''}</button>`);
   pl.onclick=()=>{ if(sbSignedIn()){S.overlay='record';} else {S.overlay='account';S.acctMode='signin';S.acctErr='';} render(); };
-  left.appendChild(pl);
+  // CS432: a signed-in player's profile pill sits on the LEFT (next to the menu); a GUEST's wide "Sign in"
+  // pill goes on the RIGHT so the left group is just the menu — that keeps the absolutely-centered wordmark
+  // clear of it and truly centered on the banner.
+  if(signedIn) left.appendChild(pl);
   bar.appendChild(left);
   // brand wordmark, centered horizontally across the banner → home
   const brand=$(`<button class="bnbrand" aria-label="Home"><span class="bnwm"><b>Run The</b><i>Tour</i></span></button>`);
@@ -5248,6 +5253,7 @@ function header(){
     coin.onclick=()=>{ track('coin_pill_open'); S.overlay='shop'; S.shopSec='packs'; render(); };   // CS423: coin pill always opens the Packs menu
     right.appendChild(coin); _coinHdrPrev=bal;
   }
+  if(!signedIn) right.appendChild(pl);   // CS432: guest "Sign in" pill lives on the right (see above)
   bar.appendChild(right);
   h.appendChild(bar);
   return h;
