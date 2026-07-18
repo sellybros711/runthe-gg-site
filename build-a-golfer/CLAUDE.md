@@ -10689,6 +10689,31 @@ allows Google Fonts, or self-host Anton.*
   locker (dressed golfer + owned-only categories) and the store (green "Owned" boxes vs priced buy tiles).
   Deployed to /golf.
 
+- **CS452 — pack-wheel title bug fixed + renamed "Edit Your Golfer" → "Closet" with a clear store→Closet
+  link (owner, from screenshots).** Three fixes:
+  1. **Pack opening showed raw HTML** (owner screenshot: the title read `<SPAN STYLE="COLOR:#A24BE0">TOUR
+     PACK</SPAN> · LANDING…`). Root cause in `overlayPackWheel`: `titleTxt()` returns HTML (a per-tier
+     color `<span>` around the pack name, e.g. Tour = purple, Champion = gold) and the initial title node
+     is built via `$()` (innerHTML) — correct — but the three in-place updates (on spin, on land, and the
+     reduced-motion path) reassigned `title.textContent=titleTxt()`, which renders the markup **literally**.
+     Changed all three to `title.innerHTML=titleTxt()`. Verified in Playwright driving a real Tour pack:
+     the title renders the colored span (no literal markup) across all states — "Tour Pack · Spin for your
+     pack" → "Tour Pack · Landing…" → "Tour Pack · You got it!", 0 page errors.
+  2. **Renamed the edit-your-golfer page to "Closet"** (owner: clearer that it's where you change your
+     outfit). `scrSetup`'s edit-mode title "Edit Your Golfer" → **"Closet"** (the career-start build flow
+     keeps "Create Your Golfer"); subtitle "Your locker" → "Your closet · dress your golfer with everything
+     you own"; the Trophy Room avatar hint "✎ Tap to customize" → **"✎ Open Closet"** (+ aria-label); the
+     store's owned-items footer hint now reads "equip them in your Closet."
+  3. **Clear store→Closet link.** Added a prominent teal `.shop-closetcta` button at the top of the Pro Shop
+     (under the dressing-room avatar, above the invite banner): "🚪 Dress your golfer in the Closet · Equip
+     everything you own — colors, patterns, gear & effects ▸". Tapping it (`data-closet`) closes the shop
+     and opens the Closet: if the shop was opened FROM the closet (`S.screen==='setup'`) it just reveals it
+     underneath; otherwise it opens the Closet in edit mode (`setupEdit`, landing on My Apparel → Shirt).
+     Pairs with the existing Closet→"Pro Shop & Packs" button for a clean store↔closet loop.
+  Verified in Playwright: pack title (above); the Trophy Room "Open Closet" hint opens the "Closet" page;
+  the shop shows the Closet CTA and clicking it round-trips back to the "Closet" with the shop closed; 0
+  page errors. Screenshot confirms the store CTA. Deployed to /golf.
+
 ### Still parked (need owner go-ahead)
 Online leaderboard/accounts (backend+deploy), real Strokes-Gained roster data,
 hosting/domain. Tunable knobs flagged in code: `COSTS.travelPerEvent`, sim

@@ -1472,6 +1472,10 @@ window.GA_ID='G-L29P5MRWKE';
     border:1px solid rgba(241,208,74,.4); background:linear-gradient(180deg,rgba(241,208,74,.13),rgba(10,22,38,.28)); color:var(--gold); font:800 13px var(--body); line-height:1.25}
   .shop-refcta .small{font-weight:600; color:var(--pagemut)}
   .shop-refcta:hover{border-color:var(--gold); background:linear-gradient(180deg,rgba(241,208,74,.2),rgba(10,22,38,.3))}
+  .shop-closetcta{display:flex; align-items:center; gap:9px; width:100%; text-align:left; margin:0 0 8px; padding:9px 12px; border-radius:11px; cursor:pointer;
+    border:1px solid rgba(22,181,166,.5); background:linear-gradient(180deg,rgba(22,181,166,.16),rgba(10,22,38,.28)); color:#4fe0d0; font:800 13px var(--body); line-height:1.25}
+  .shop-closetcta .small{font-weight:600; color:var(--pagemut)}
+  .shop-closetcta:hover{border-color:#4fe0d0; background:linear-gradient(180deg,rgba(22,181,166,.24),rgba(10,22,38,.3))}
   /* CS440: shorter preview box so the item grid shows more (owner: box too tall, wasted space). The golfer
      is width-constrained, so give the avatarfig an explicit width to fill the shorter box instead of floating
      tiny in a big empty area. */
@@ -5882,7 +5886,7 @@ function overlayRecord(screen){
   const ov=$(`<div class="ov" role="dialog" aria-modal="true">
     <button class="btn ghost x" style="width:auto;padding:8px 12px;font-size:14px">Close ✕</button>
     <h3>Trophy Room</h3>
-    <div class="profhdr" style="display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 12px"><button type="button" class="profav" aria-label="Tap to customize your golfer" style="background:none;border:0;padding:0;margin:0;cursor:pointer;display:block;position:relative">${avatarHTML()}</button><button type="button" class="profav-hint" style="background:rgba(22,181,166,.14);border:1px solid #16b5a6;color:#4fe0d0;font:700 9.5px/1 var(--pixel);letter-spacing:.03em;text-transform:uppercase;padding:5px 9px;border-radius:999px;cursor:pointer;margin-top:2px">✎ Tap to customize</button><div style="font-family:var(--serif);font-weight:700;font-size:18px;color:var(--oncard);margin-top:3px">${esc(sbUsername||S.name||'Your Golfer')}</div><div class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(equippedTitle())}</div>${(sbSignedIn()&&sbUsername)?'<div class="small muted" style="margin-top:0">RunThe.GG member</div>':''}</div>
+    <div class="profhdr" style="display:flex;flex-direction:column;align-items:center;gap:4px;margin:0 0 12px"><button type="button" class="profav" aria-label="Open your Closet to dress your golfer" style="background:none;border:0;padding:0;margin:0;cursor:pointer;display:block;position:relative">${avatarHTML()}</button><button type="button" class="profav-hint" style="background:rgba(22,181,166,.14);border:1px solid #16b5a6;color:#4fe0d0;font:700 9.5px/1 var(--pixel);letter-spacing:.03em;text-transform:uppercase;padding:5px 9px;border-radius:999px;cursor:pointer;margin-top:2px">✎ Open Closet</button><div style="font-family:var(--serif);font-weight:700;font-size:18px;color:var(--oncard);margin-top:3px">${esc(sbUsername||S.name||'Your Golfer')}</div><div class="tag" style="color:var(--gold);border-color:var(--gold)">${esc(equippedTitle())}</div>${(sbSignedIn()&&sbUsername)?'<div class="small muted" style="margin-top:0">RunThe.GG member</div>':''}</div>
     ${cabinet}
     ${legendTokensHTML()}
     <div class="scout" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px">${acctCard}</div>
@@ -7100,8 +7104,8 @@ function scrSetup(){
   const guest=!sbSignedIn();
   const editing=!!S.setupEdit;   // CS356c: editing the profile golfer from the Trophy Room (not starting a career)
   const wrap=$(`<div class="retro-creator setup-shop"></div>`);
-  wrap.appendChild($(`<div class="retro-title">▸ ${editing?'Edit Your Golfer':'Create Your Golfer'}</div>`));
-  wrap.appendChild($(`<div class="retro-sub">${editing?'Your locker &middot; dress your golfer with everything you own':((S.special?'Monthly Spotlight':(S.daily?'Play 18':'Career Mode'))+' &middot; style your golfer, then build your skills')}</div>`));
+  wrap.appendChild($(`<div class="retro-title">▸ ${editing?'Closet':'Create Your Golfer'}</div>`));
+  wrap.appendChild($(`<div class="retro-sub">${editing?'Your closet &middot; dress your golfer with everything you own':((S.special?'Monthly Spotlight':(S.daily?'Play 18':'Career Mode'))+' &middot; style your golfer, then build your skills')}</div>`));
 
   // LOCKER: the edit-your-golfer screen is your closet. Appearance (free look), then every category of items
   // you OWN so you can dress/equip your golfer here (equip only, no buying). Buying happens in the Pro Shop.
@@ -20752,7 +20756,7 @@ function overlayPackWheel(app){
   // final resting transform: center the winning cell under the pointer, with a small random offset within it
   function finalX(vw, jitter){ return vw/2 - (w.winIdx*PITCH + CW/2) + (jitter||0); }
   function land(){
-    w.done=true; title.textContent=titleTxt();
+    w.done=true; title.innerHTML=titleTxt();
     var winCell=strip.children[w.winIdx];
     if(winCell) winCell.classList.add('pwlit');
     try{ if(typeof sfx==='function') sfx(big?'win':'hole'); }catch(e){}
@@ -20762,7 +20766,7 @@ function overlayPackWheel(app){
     renderFoot();
   }
   function spin(){
-    if(w.spun) return; w.spun=true; title.textContent=titleTxt(); renderFoot();
+    if(w.spun) return; w.spun=true; title.innerHTML=titleTxt(); renderFoot();
     var vw=wheel.clientWidth||360;
     var jitter=Math.round((Math.random()*2-1)*(CW*0.28));   // land slightly off dead-center, still under the pointer
     if(reduce){ strip.style.transform='translateX('+finalX(vw,jitter)+'px)'; land(); return; }
@@ -20842,7 +20846,7 @@ function overlayPackReveal(app){
   }
   function choose(idx){
     var res=pickPackCard(idx); if(!res) return;
-    title.textContent=titleTxt();
+    title.innerHTML=titleTxt();
     cardEls.forEach(function(c,i){ c.el.onclick=null; c.el.classList.add('flipped'); if(i===idx){ c.el.classList.add('win'); var fr=c.el.querySelector('.pcard-front'); if(fr) fr.style.boxShadow='0 0 24px '+c.rc; } else c.el.classList.add('dim'); });
     setTimeout(renderFoot, reduce?0:720);
     var big=(res.item.rarity==='epic'||res.item.rarity==='legendary');
@@ -20938,6 +20942,7 @@ function overlayShop(screen){
         <span class="coinpill"><span style="width:18px;height:18px">${ic('coin',{size:'18px'})}</span>${coinFmt(coinBalance())}</span>
         <button class="btn ghost x2" style="width:auto;padding:7px 11px;font-size:14px">✕</button></div></div>
     <div class="shop-preview">${avatarFullHTML()}</div>
+    <button class="shop-closetcta" data-closet><span style="font-size:18px;flex:0 0 auto">🚪</span><span><b>Dress your golfer in the Closet</b><br><span class="small" style="opacity:.85">Equip everything you own — colors, patterns, gear &amp; effects</span></span><span style="margin-left:auto">▸</span></button>
     <button class="shop-refcta" data-refshare><span style="width:18px;height:18px;flex:0 0 auto">${ic('coins',{size:'18px'})}</span><span><b>Invite a friend, get a free pack</b><br><span class="small" style="opacity:.85">They sign up with your link, you both score a pack</span></span><span style="margin-left:auto">↗</span></button>
     <div class="segrow">
       ${packsOn()?`<button data-sec="packs" class="${sec==='packs'?'on':''}">Packs</button>`:''}
@@ -20950,6 +20955,10 @@ function overlayShop(screen){
   </div>`);
   ov.appendChild(sticky);
   sticky.querySelectorAll('[data-refshare]').forEach(x=>x.onclick=()=>{ try{ referralShare(); }catch(e){} });   // CS412: invite-a-friend referral CTA
+  // CS452: clear link from the STORE to the CLOSET (edit-your-golfer). If the shop was opened from the closet
+  // (screen already 'setup'), just close the overlay to reveal it; otherwise open the closet in edit mode.
+  sticky.querySelectorAll('[data-closet]').forEach(x=>x.onclick=()=>{ track('shop_open_closet'); S.shopPreview=null; S.overlay=null;
+    if(S.screen==='setup'){ render(); return; } S.setupEdit=true; S.setupReturn=null; S.screen='setup'; S.setupCat='shirt'; render(); });
   if(sec==='packs'){
     ov.appendChild(packShopNode());
     ov.appendChild($(`<button class="btn red" style="margin-top:14px">Done</button>`));
@@ -20982,7 +20991,7 @@ function overlayShop(screen){
   // CS422: viewing a category (or My Items) clears its NEW badges on the next render
   if(sec==='apparel'||sec==='accessories'||sec==='effects'){ markCatSeen(cat); }
   else if(sec==='owned'){ COS_CATS.forEach(c=>markCatSeen(c.k)); }
-  ov.appendChild($(`<div class="small muted center" style="margin-top:14px">Tap a locked item to preview it on your golfer, then confirm to buy. <span style="color:#7fd3b0">Items you own are marked green</span> — equip them in Edit Your Golfer.</div>`));
+  ov.appendChild($(`<div class="small muted center" style="margin-top:14px">Tap a locked item to preview it on your golfer, then confirm to buy. <span style="color:#7fd3b0">Items you own are marked green</span> — equip them in your Closet.</div>`));
   ov.appendChild($(`<button class="btn red" style="margin-top:10px">Done</button>`));
   sticky.querySelectorAll('[data-sec]').forEach(x=>x.onclick=()=>{ S.shopSec=x.getAttribute('data-sec'); render(); });
   sticky.querySelectorAll('[data-cat]').forEach(x=>x.onclick=()=>{ S.shopCat=x.getAttribute('data-cat'); render(); });
